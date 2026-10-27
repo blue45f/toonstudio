@@ -584,3 +584,25 @@ export function localizeToTsv(lines: readonly ExportLine[]): string {
 export function localizeToJson(lines: readonly ExportLine[], meta: { readonly sourceLang: string; readonly targetLang: string }): string {
   return JSON.stringify({ sourceLang: meta.sourceLang, targetLang: meta.targetLang, lines }, null, 2);
 }
+
+export {
+  runClaudeAnimeSettei3ToneModelSheetDirector,
+  runClaudeEmoticon24PackChibiSpecDirector,
+  runClaudeGlobalIpMgRsRoyaltyWaterfallDirector,
+  runClaudeKoreanUrbanEverydayGeographyDirector,
+  runClaudeLunarPhaseStarSkyLockDirector,
+  runClaudeOttLiveActionShowrunnerBibleDirector,
+  runClaudeQuadrupedCreatureWingAnatomyDirector,
+  runClaudeThaiVietnameseArabicRtlShapingDirector,
+  type ClaudeAnimeSetteiModelSheet,
+  type ClaudeEmoticon24PackSpec,
+  type ClaudeGlobalIpRoyaltyWaterfall,
+  type ClaudeKoreanUrbanGeography,
+  type ClaudeLunarPhaseSkyLock,
+  type ClaudeOttLiveActionBible,
+  type ClaudeQuadrupedCreatureAnatomy,
+  type ClaudeThaiVietnameseRtlShaping,
+  type RunWave30LocalizeAssistOptions,
+  type Wave30LocalizeAssistInput,
+  type Wave30LocalizeAssistResult,
+} from "./claude-alt-text";

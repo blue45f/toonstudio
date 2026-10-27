@@ -154,7 +154,16 @@ export type ClaudeCreatorTaskId =
   | "art-director:culinary-knife-pinch-grip-plating-steam-lock"
   | "art-director:acrylic-stand-photocard-dieline-white-plate-lock"
   | "art-director:east-asian-palace-dancheong-roof-bracket-lock"
-  | "art-director:reader-comment-sentiment-catharsis-cliff-director";
+  | "art-director:reader-comment-sentiment-catharsis-cliff-director"
+  // 14. Wave 30~32 Creature/Urban/RTL-Shaping/AnimeSettei/OTT/Royalty AI Engines (8 — Total 116 Tasks)
+  | "localize:lunar-phase-star-conjunction-sky-lock"
+  | "localize:emoticon-24pack-chibi-proportion-spec-lock"
+  | "localize:quadruped-creature-hock-wing-membrane-lock"
+  | "localize:k-urban-convenience-metro-rooftop-prop-lock"
+  | "localize:thai-vietnamese-arabic-rtl-balloon-shaping-lock"
+  | "localize:anime-settei-3tone-color-model-sheet-lock"
+  | "localize:ott-live-action-8ep-showrunner-pitch-director"
+  | "localize:global-ip-mg-rs-royalty-waterfall-director";
 
 export interface ClaudeCreatorProfileSpec {
   readonly profile: ClaudeCreatorTaskProfile;
@@ -639,6 +648,14 @@ export const CLAUDE_CREATOR_TASK_ROUTES: Readonly<
   "art-director:acrylic-stand-photocard-dieline-white-plate-lock": defineRoute("art-director:acrylic-stand-photocard-dieline-white-plate-lock", "웹툰 IP 아크릴 스탠드 칼선(2mm 오프셋)·화이트 백판·발판 결합 홈(12×3mm)·홀로그램 포토카드 설계기", "art-director", "creative-production", "아크릴 스탠드 레이저 칼선(CutLine)·배면 백판(0.2mm 축소)·3T 발판 꽂이 공차·포토카드 R3 재단선 설계는 Sonnet 5.5 적용", 4_096),
   "art-director:east-asian-palace-dancheong-roof-bracket-lock": defineRoute("art-director:east-asian-palace-dancheong-roof-bracket-lock", "동아시아 궁궐/사찰 목조건축 공포(포작)·추녀마루 잡상·단청 오방색(뇌록색)·기와 골 원근 총괄 감독", "art-director", "deep-architecture", "사극/무협 전통 건축물의 다포 공포 구조·처마 반전 곡률·단청 뇌록색/석간주 배색·기와 골 소실점 감리는 Opus 5.5 심층 추론 적용", 6_144),
   "art-director:reader-comment-sentiment-catharsis-cliff-director": defineRoute("art-director:reader-comment-sentiment-catharsis-cliff-director", "연재 직후 예상 독자 댓글 감성(고구마 피로도 vs 사이다 카타르시스)·별점 방어 대사 처방 총괄 감독", "art-director", "deep-architecture", "회차별 독자 고구마 누적 피로도와 사이다 해소 비율 시뮬레이션 및 캐릭터 붕괴/별점 하락 방어 처방은 Opus 5.5 심층 추론 적용", 6_144),
+  "localize:lunar-phase-star-conjunction-sky-lock": defineRoute("localize:lunar-phase-star-conjunction-sky-lock", "초승달/그믐달 어두운 면(지구조) 내부 별 침범(Star-in-Moon) 작붕 차단 및 달 볼록면 광원 고정기", "localize", "fast-inline", "초승달 안쪽 그림자 영역에 배경 별이 찍히는 천문학 작붕 차단 및 달 위상 연속성 고정은 Haiku 5.5 적용", 3_072),
+  "localize:emoticon-24pack-chibi-proportion-spec-lock": defineRoute("localize:emoticon-24pack-chibi-proportion-spec-lock", "카카오/라인/OGQ 웹툰 캐릭터 2.5등신 SD 치비 이모티콘 24종(360×360px 24fps) 기획 고정기", "localize", "fast-inline", "웹툰 캐릭터의 시그니처 표정 기반 2.5등신 SD 이모티콘 24종 구성 및 다크모드 외곽선 시인성 검증은 Haiku 5.5 적용", 3_072),
+  "localize:quadruped-creature-hock-wing-membrane-lock": defineRoute("localize:quadruped-creature-hock-wing-membrane-lock", "드래곤/마수/늑대/전투마 뒷다리 발목 관절(Hock)·지행성 보행·날개 4지 비막 접힘 해부학 고정 디렉터", "localize", "creative-production", "사족보행 동물/신수의 뒷다리 발목(Hock) 꺾임 방향과 드래곤 날개 손가락 비막 접힘 구조 고정은 Sonnet 5.5 적용", 4_096),
+  "localize:k-urban-convenience-metro-rooftop-prop-lock": defineRoute("localize:k-urban-convenience-metro-rooftop-prop-lock", "한국형 일상 공간(지하철 7인석/스크린도어·편의점 파라솔·옥탑방 녹색 우레탄·교실 채광) 고증 디렉터", "localize", "creative-production", "K-웹툰 특유의 한국 도시/학원/주거 공간 비례와 소품 배치가 컷마다 달라지는 배경 오류 차단은 Sonnet 5.5 적용", 4_096),
+  "localize:thai-vietnamese-arabic-rtl-balloon-shaping-lock": defineRoute("localize:thai-vietnamese-arabic-rtl-balloon-shaping-lock", "태국어/베트남어 2단 성조 잘림 방지(행간 155%)·아랍어 RTL 말풍선 순서 미러링(흉터 보존) 디렉터", "localize", "creative-production", "동남아 복합 성조 문자 상하단 클리핑 방지 및 중동 RTL 말풍선 순서 역전·캐릭터 비대칭 보존은 Sonnet 5.5 적용", 4_096),
+  "localize:anime-settei-3tone-color-model-sheet-lock": defineRoute("localize:anime-settei-3tone-color-model-sheet-lock", "웹툰 그라데이션 원고 → TV 애니메이션 3단 셀 채색 지정표(Normal/1-Shadow/Hi HEX) 변환 디렉터", "localize", "creative-production", "웹툰 원작 애니메이션화 시 브러시 그라데이션을 셀 작화용 노멀/그림자/하이라이트 3단 색지정표로 변환은 Sonnet 5.5 적용", 4_096),
+  "localize:ott-live-action-8ep-showrunner-pitch-director": defineRoute("localize:ott-live-action-8ep-showrunner-pitch-director", "웹툰 원작 넷플릭스/OTT 8부작 실사 드라마 각색 쇼러너 바이블·세트장 압축·VFX 예산 총괄 감독", "localize", "deep-architecture", "웹툰 70화 분량을 8부작 드라마 회차별 엔딩 훅과 로케이션/VFX 예산 티어로 재설계하는 바이블은 Opus 5.5 심층 추론 적용", 6_144),
+  "localize:global-ip-mg-rs-royalty-waterfall-director": defineRoute("localize:global-ip-mg-rs-royalty-waterfall-director", "글로벌 연재·출판·영상화 계약 미니멈 개런티(MG 선차감/후차감)·러닝개런티(RS) 워터폴 정산 감사 감독", "localize", "deep-architecture", "MG 선차감/후차감 수식 비교와 2차 저작물 권리 귀속·RS 정산 워터폴 시뮬레이션은 Opus 5.5 심층 추론 적용", 6_144),
 });
 
 export interface ResolvedCreatorTaskRoute extends ClaudeCreatorTaskRoute {

@@ -335,6 +335,21 @@ export const REA15_PLATFORM_IDS = [
   "tumblbug-webtoon-crowdfunding", "wadiz-ip-merch-launchpad", "kickstarter-graphic-novel-tier", "pacdora-3d-merch-box-dieline", "artioscad-acrylic-stand-slot",
   "printify-global-pod-apparel", "superplay-game-ip-goods-spec", "brandwatch-reader-sentiment", "sprout-social-pv-shortform", "tubebuddy-webtoon-ost-seo",
   "patreon-creator-tier-preview", "pixiv-fanbox-psd-layer-strip", "gumroad-webtoon-brush-store", "booth-pm-3d-vrm-asset-pack", "acon3d-carpenter-revenue-opt",
+  // Wave 30 (20개 플랫폼 — 총 560개 플랫폼 완성: 판타지 몬스터/드래곤 비교해부학·곤충 외골격·보석 굴절·천문/구름/용암 물리)
+  "terryl-whitlatch-creature-anat", "goldfinger-animal-anatomy-atlas", "ellenberger-atlas-animal-bones", "scott-eaton-bodies-in-motion", "skeletal-drawing-paleo-theropod",
+  "pterosaur-wing-patagium-tension", "arthropod-chitin-exoskeleton-rig", "cephalopod-tentacle-sucker-ik", "serpent-scale-hex-tessellation", "avian-primary-secondary-feather",
+  "feline-retractable-claw-paw-pad", "ungulate-cloven-hoof-fetlock", "horns-antlers-keratin-growth", "bioluminescent-abyssal-flora", "alchemical-herbarium-botany-db",
+  "gemological-gia-facet-refraction", "astronomy-stellarium-night-sky", "cloud-atlas-wmo-cumulonimbus", "aurora-borealis-curtain-shader", "volcanic-magma-crust-incandescence",
+  // Wave 31 (20개 플랫폼 — 총 580개 플랫폼 완성: K-웹툰 한국형 도시/학원/편의점/옥탑방/지하철/포장마차/PC방 일상 공간 고증)
+  "seoul-metro-cabin-handrail-spec", "kr-convenience-store-shelf-plan", "kr-highschool-classroom-locker", "rooftop-watertank-green-urethane", "pojangmacha-red-plastic-chair",
+  "pc-bang-curved-monitor-booth", "korean-apt-doorlock-intercom", "han-river-bridge-parapet-lamp", "kr-police-station-detective-desk", "kr-wedding-hall-virgin-road",
+  "funeral-hall-chrysanthemum-altar", "incheon-airport-departure-gate", "university-lecture-tiered-hall", "broadcast-studio-teleprompter-rig", "esports-arena-booth-led-stage",
+  "webnovel-office-dual-monitor-ergo", "luxury-penthouse-marble-bookmatch", "underground-parking-epoxy-pillar", "alleyway-utility-pole-transformer", "karaoke-coin-noraebang-tambourine",
+  // Wave 32 (20개 플랫폼 — 총 600개 플랫폼 완성!: 글로벌 다국어 식자/RTL/성조·문화 금기 감리·넷플릭스/애니/게임/뮤지컬/팝업스토어 2차 판권)
+  "rtl-arabic-comic-mirror-engine", "thai-line-webtoon-tone-mark-stack", "indonesian-bahasa-slang-balloon", "french-bande-dessinee-guillemet", "spanish-latam-inverted-mark-rig",
+  "german-compound-word-hyphenator", "vietnamese-diacritic-leading-guard", "hindi-devanagari-shirorekha-line", "global-cultural-taboo-sanitizer", "netflix-live-action-series-bible",
+  "crunchyroll-anime-adaptation-sheet", "unity-unreal-webtoon-rpg-skill-spec", "audible-dolby-atmos-drama-script", "musical-stage-lighting-cue-sheet", "theme-park-pop-up-store-spatial",
+  "emoticon-kakao-naver-ogq-24pack", "ost-vinyl-lp-gatefold-jacket-spec", "artbook-collector-hardcover-index", "character-perfume-top-middle-base", "global-ip-royalty-mg-rs-calculator",
 ] as const;
 
 export const REA39_PLATFORM_IDS = REA15_PLATFORM_IDS;
@@ -364,6 +379,9 @@ export const REA480_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA500_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA520_PLATFORM_IDS = REA15_PLATFORM_IDS;
 export const REA540_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA560_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA580_PLATFORM_IDS = REA15_PLATFORM_IDS;
+export const REA600_PLATFORM_IDS = REA15_PLATFORM_IDS;
 
 export type Rea15PlatformId = (typeof REA15_PLATFORM_IDS)[number];
 export type Rea39PlatformId = Rea15PlatformId;
@@ -721,3 +739,6 @@ export const REA480_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA500_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA520_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
 export const REA540_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA560_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA580_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;
+export const REA600_PLATFORM_UI_THEME_CATALOG = REA15_PLATFORM_UI_THEME_CATALOG;

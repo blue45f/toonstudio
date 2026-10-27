@@ -238,5 +238,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     fireEvent.click(screen.getByTestId("ecosystem-tab-cat-4-style-transfer"));
     expect(screen.getByTestId("wave27-29-category4-consistency-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("wave27-tool-btn-goreum"));
+    expect(screen.getByTestId("wave30-32-category4-osmu-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("wave30-tool-btn-lunar"));
   });
 });

@@ -46,12 +46,37 @@ describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
     expect(overridden.effort).toBe("high");
   });
 
-  it("웹툰 일관성 확보(Webtoon Consistency) 전용 57대 창의 AI 작업을 포함한 총 108개 라우팅 카탈로그를 검증한다", () => {
+  it("웹툰 일관성 확보(Webtoon Consistency) 전용 65대 창의 AI 작업을 포함한 총 116개 라우팅 카탈로그를 검증한다", () => {
     const summary = summarizeCreatorModelRouterCatalog();
-    expect(summary.totalTasks).toBe(108);
-    expect(summary.byProfile["fast-inline"]).toBe(28);
-    expect(summary.byProfile["creative-production"]).toBe(54);
-    expect(summary.byProfile["deep-architecture"]).toBe(26);
+    expect(summary.totalTasks).toBe(116);
+    expect(summary.byProfile["fast-inline"]).toBe(30);
+    expect(summary.byProfile["creative-production"]).toBe(58);
+    expect(summary.byProfile["deep-architecture"]).toBe(28);
+
+    expect(
+      resolveCreatorTaskModelRoute("localize:lunar-phase-star-conjunction-sky-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:emoticon-24pack-chibi-proportion-spec-lock").model,
+    ).toBe("claude-haiku-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:quadruped-creature-hock-wing-membrane-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:k-urban-convenience-metro-rooftop-prop-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:thai-vietnamese-arabic-rtl-balloon-shaping-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:anime-settei-3tone-color-model-sheet-lock").model,
+    ).toBe("claude-sonnet-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:ott-live-action-8ep-showrunner-pitch-director").model,
+    ).toBe("claude-opus-5-5");
+    expect(
+      resolveCreatorTaskModelRoute("localize:global-ip-mg-rs-royalty-waterfall-director").model,
+    ).toBe("claude-opus-5-5");
 
     expect(
       resolveCreatorTaskModelRoute("art-director:traditional-clothing-collar-knot-goreum-lock").model,

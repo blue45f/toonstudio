@@ -21,6 +21,16 @@ import {
   runClaudeTraditionalClothingCollarGoreumLockDirector,
 } from "./claude/claude-art-director";
 import {
+  runClaudeAnimeSettei3ToneModelSheetDirector,
+  runClaudeEmoticon24PackChibiSpecDirector,
+  runClaudeGlobalIpMgRsRoyaltyWaterfallDirector,
+  runClaudeKoreanUrbanEverydayGeographyDirector,
+  runClaudeLunarPhaseStarSkyLockDirector,
+  runClaudeOttLiveActionShowrunnerBibleDirector,
+  runClaudeQuadrupedCreatureWingAnatomyDirector,
+  runClaudeThaiVietnameseArabicRtlShapingDirector,
+} from "./claude/claude-localize";
+import {
   runClaudeEyetrackScrollVelocityAoiDirector,
   runClaudeFastenerOverlapBeltBuckleLockDirector,
   runClaudeHeraldryCrestEmblemGeometryLockDirector,
@@ -381,6 +391,48 @@ export function StudioAiWebtoonCategory4Panel({
     }
   }
 
+  async function handleRunWave30Tool(toolId: string): Promise<void> {
+    setWave27Tool(toolId);
+    const input = {
+      episodeTitle: `${storyGenre} 글로벌 OSMU`,
+      genre: storyGenre,
+      scriptSummary: "초승달 밤 옥탑방 결전 이후 글로벌 연재와 애니메이션·OTT 드라마화가 진행된다.",
+    };
+    if (toolId === "lunar") {
+      const res = await runClaudeLunarPhaseStarSkyLockDirector(input);
+      setWave27Badge(`${res.model} · 천문달위상 ${res.data.skyIntegrityScore}점`);
+      setWave27Summary(`${res.data.lunarPhaseAndLitSideKo} | ${res.data.darkLimbStarOcclusionGuardKo}`);
+    } else if (toolId === "emoticon") {
+      const res = await runClaudeEmoticon24PackChibiSpecDirector(input);
+      setWave27Badge(`${res.model} · 이모티콘24종 ${res.data.emoticonPackReadinessScore}점`);
+      setWave27Summary(`${res.data.chibiHeadRatioAndCanvasSpecKo} | ${res.data.darkModeStrokeVisibilityKo}`);
+    } else if (toolId === "creature") {
+      const res = await runClaudeQuadrupedCreatureWingAnatomyDirector(input);
+      setWave27Badge(`${res.model} · 신수해부학 ${res.data.creatureAnatomyScore}점`);
+      setWave27Summary(`${res.data.hindlimbHockAndCarpusRuleKo} | ${res.data.wingFingerPatagiumFoldKo}`);
+    } else if (toolId === "k-urban") {
+      const res = await runClaudeKoreanUrbanEverydayGeographyDirector(input);
+      setWave27Badge(`${res.model} · 한국일상고증 ${res.data.urbanRealismScore}점`);
+      setWave27Summary(`${res.data.subwayAndClassroomLayoutKo} | ${res.data.convenienceStoreAndRooftopKo}`);
+    } else if (toolId === "rtl-thai") {
+      const res = await runClaudeThaiVietnameseArabicRtlShapingDirector(input);
+      setWave27Badge(`${res.model} · 글로벌식자 ${res.data.shapingIntegrityScore}점`);
+      setWave27Summary(`${res.data.thaiVietStackedDiacriticRuleKo} | ${res.data.asymmetricCharacterGuardKo}`);
+    } else if (toolId === "settei") {
+      const res = await runClaudeAnimeSettei3ToneModelSheetDirector(input);
+      setWave27Badge(`${res.model} · 애니색지정표 ${res.data.setteiConversionScore}점`);
+      setWave27Summary(`${res.data.skinThreeToneHexSpecKo} | ${res.data.colorTraceLineRuleKo}`);
+    } else if (toolId === "ott-bible") {
+      const res = await runClaudeOttLiveActionShowrunnerBibleDirector(input);
+      setWave27Badge(`${res.model} · OTT8부작바이블 ${res.data.adaptationFeasibilityScore}점`);
+      setWave27Summary(`${res.data.eightEpisodeCliffhangerArcKo} | ${res.data.locationConsolidationPlanKo}`);
+    } else {
+      const res = await runClaudeGlobalIpMgRsRoyaltyWaterfallDirector(input);
+      setWave27Badge(`${res.model} · MG/RS정산안전 ${res.data.contractSafetyScore}점`);
+      setWave27Summary(`${res.data.mgDeductionMethodComparisonKo} | ${res.data.netRevenueShareWaterfallKo}`);
+    }
+  }
+
   const filmoraResult = useMemo(
     () => runFilmoraMediaToWebtoonPipeline({ filterPresetId: filmoraPresetId }),
     [filmoraPresetId],
@@ -537,6 +589,42 @@ export function StudioAiWebtoonCategory4Panel({
               </button>
             ))}
           </div>
+        </div>
+        <div
+          data-testid="wave30-32-category4-osmu-bar"
+          className="flex flex-wrap gap-1 pt-1"
+          role="group"
+          aria-label="Wave 30~32 600대 플랫폼 일관성 및 글로벌 OSMU 도구"
+        >
+          {(
+            [
+              { id: "lunar", label: "초승달 별침범 차단" },
+              { id: "emoticon", label: "SD 이모티콘 24종" },
+              { id: "creature", label: "드래곤·사족 관절" },
+              { id: "k-urban", label: "한국 지하철·옥탑방" },
+              { id: "rtl-thai", label: "아랍어RTL·태국성조" },
+              { id: "settei", label: "TV애니 3단색지정표" },
+              { id: "ott-bible", label: "OTT 8부작 바이블" },
+              { id: "royalty", label: "글로벌 MG·RS 정산" },
+            ] as const
+          ).map((btn) => (
+            <button
+              key={btn.id}
+              type="button"
+              data-testid={`wave30-tool-btn-${btn.id}`}
+              aria-pressed={wave27Tool === btn.id}
+              onClick={() => void handleRunWave30Tool(btn.id)}
+              className={cn(
+                "rounded border px-1.5 py-0.5 text-[0.55rem] font-semibold",
+                STUDIO_FOCUS_RING,
+                wave27Tool === btn.id
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-card text-fg-2",
+              )}
+            >
+              {btn.label}
+            </button>
+          ))}
         </div>
         {wave27Summary && (
           <div
