@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { test } from "node:test";
 import { assertPrivateNativeBody, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const rights = { status: "public-domain", licenseName: "CC0-1.0", commercialUse: true, attributionRequired: false };
 const sha256 = "a".repeat(64);

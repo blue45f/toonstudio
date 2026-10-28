@@ -197,6 +197,9 @@ apps/web/src/domains/creator/bg3d/studio-bg3d-babylon-color-conversion.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-babylon-normal-capture.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-babylon-texture-preflight.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-build-notice.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-asset-loader.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-model-resolution.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-theme-packs.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-camera-application.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-camera-framing.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-camera-selection.test.ts
@@ -208,6 +211,7 @@ apps/web/src/domains/creator/bg3d/studio-bg3d-editor-recipe-host.load-timeout.te
 apps/web/src/domains/creator/bg3d/studio-bg3d-editor-recipe-host.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-editor-recipe-host.thin.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-engine-remount-safety.test.ts
+apps/web/src/domains/creator/bg3d/studio-bg3d-genre-scene-pack-links.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-import-ai-use.lazy-copy.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-import-ai-use.test.ts
 apps/web/src/domains/creator/bg3d/studio-bg3d-import-asset-metadata.test.ts
@@ -327,7 +331,12 @@ apps/web/src/domains/creator/canvas/StudioCanvasStickyBanners.view-workspace.tes
 apps/web/src/domains/creator/canvas/StudioLiveAdjustmentGroup.test.tsx
 apps/web/src/domains/creator/canvas/StudioRecoveryNotice.test.tsx
 apps/web/src/domains/creator/canvas/studio-stage-document-raster-contract.test.ts
+apps/web/src/domains/creator/catalog/StudioBundleAssetLibraryPanel.save.test.tsx
 apps/web/src/domains/creator/catalog/StudioIllustrationScenePreview.test.tsx
+apps/web/src/domains/creator/catalog/studio-bundle-backgrounds.test.ts
+apps/web/src/domains/creator/catalog/studio-bundle-personal-library-save.test.ts
+apps/web/src/domains/creator/catalog/studio-bundle-project-archive.test.ts
+apps/web/src/domains/creator/catalog/studio-bundle-source-credit.test.ts
 apps/web/src/domains/creator/catalog/studio-illustration-pack.test.ts
 apps/web/src/domains/creator/catalog/studio-illustration-template-insertion.test.ts
 apps/web/src/domains/creator/character-platform/thumbnail/character-runtime-thumbnail-store.test.tsx
@@ -428,6 +437,7 @@ apps/web/src/domains/creator/live/studio-live-gesture-preview-studio-page-wiring
 apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts
+apps/web/src/domains/creator/live/studio-live-transform-*.test.ts
 apps/web/src/domains/creator/live/studio-pending-stroke-admission.test.ts
 apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.test.ts
 apps/web/src/domains/creator/offline
@@ -513,7 +523,6 @@ apps/web/src/domains/creator/studio-host-architecture-ratchet.test.ts
 apps/web/src/domains/creator/studio-inspector-multi-selection-boundary.test.ts
 apps/web/src/domains/creator/studio-integration-closure.test.ts
 apps/web/src/domains/creator/studio-live-adjustment.test.ts
-apps/web/src/domains/creator/studio-live-transform-*.test.ts
 apps/web/src/domains/creator/studio-marketplace-cc0-provenance.test.ts
 apps/web/src/domains/creator/studio-menubar-content-boundary.test.ts
 apps/web/src/domains/creator/studio-mobile-editing-dock-boundary.test.ts
@@ -588,6 +597,7 @@ apps/web/src/domains/creator/useStudioOnDemandModule.test.tsx
 apps/web/src/domains/creator/vector/studio-node-edit-pointer-ownership.test.tsx
 apps/web/src/domains/creator/virtual-space
 apps/web/src/domains/creator/virtual-space/StudioReviewPolicyHistory.test.tsx
+apps/web/src/domains/creator/virtual-space/studio-virtual-space-bundle-decor.test.ts
 apps/web/src/domains/creator/vrm/StudioVrmXpbdSkirtAttachment.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-garment-skinning-fixture.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-png-worker-client.test.ts
@@ -670,11 +680,14 @@ scripts/browser-core-entry-isolation.test.ts
 scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
 scripts/cloudflare-static-rules.test.mjs
+scripts/creator-bundle-decor.test.mjs
 scripts/creator-bundle-pack-rights-form.test.mjs
 scripts/creator-bundle-pack-rights-gate.test.mjs
 scripts/creator-bundle-pack-rights.test.mjs
 scripts/creator-bundle-render-rights-parity.test.mjs
 scripts/creator-bundle-render-rights.test.mjs
+scripts/creator-bundle-scene-catalog.test.mjs
+scripts/creator-bundle-serving-parity.test.mjs
 scripts/creator-career-confirmation-database-contract.test.mjs
 scripts/creator-hiring-automation-database-contract.test.mjs
 scripts/deploy-cloudflare-analytics.test.mjs
@@ -701,6 +714,7 @@ scripts/prepare-cloudflare-static-assets.test.ts
 scripts/prepare-managed-database-bootstrap.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs
 scripts/provision-gcp-free-data-plane.test.mjs
+scripts/rebuild-creator-bundle-local-ingest.test.mjs
 scripts/release-static-chunk-boundary.test.ts
 scripts/run-production-database-migrations.test.mjs
 scripts/setup-toonstudio-blender-pipeline.test.mjs
@@ -732,4 +746,5 @@ tests/integration/api-web/api/modules/creator-marketplace/creator-marketplace-so
 tests/integration/api-web/api/modules/creator/studio-live-lock.repository.test.ts
 tests/integration/api-web/api/modules/creator/studio-live.gateway.test.ts
 tests/integration/api-web/api/modules/creator/studio-live.protocol.test.ts
+tests/integration/itch-bundle-source-credit.test.ts
 tests/integration/web-api/domains/creator/studio-large-epics-product-wiring.test.ts
