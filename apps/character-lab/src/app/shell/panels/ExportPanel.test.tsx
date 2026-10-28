@@ -295,10 +295,36 @@ describe("ExportPanel", () => {
     expect(await readTextFile(file)).toBe("안녕");
   });
 
+  it("헤어 분리 미지원 사유를 저장 전에 표시하고 일반 PSD 경로를 유지한다", async () => {
+    const calls: SaveCall[] = [];
+    const engine = createMockEngine();
+    engine.psdHairLayers = () => ({ status: "unavailable", reasonKo: "겹친 BLEND 표면은 분리할 수 없습니다. 일반 PSD를 사용하세요." });
+    render(<MockLabProvider engineSession={readySession(engine)}><ExportPanel session={createPaintSession({ layerSize: 8 })} deps={{ save: fakeSave(calls) }} /></MockLabProvider>);
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "24" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "24" } });
+    fireEvent.click(screen.getByLabelText(/헤어 3-레이어 분리/u));
+    expect((screen.getByRole("button", { name: "레이어 PSD 저장" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/겹친 BLEND 표면은 분리할 수 없습니다/u)).toBeTruthy();
+    expect(engine.calls.some(call => call.method === "renderPasses")).toBe(false);
+    fireEvent.click(screen.getByLabelText(/헤어 3-레이어 분리/u));
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+  });
+
   it("SHAPER 프리셋 저장 및 .preset 파일 불러오기·헤어 3-레이어 분리 PSD 옵션을 지원한다", async () => {
     const calls: SaveCall[] = [];
     const dispatched: LabCommand[] = [];
     const engine = createMockEngine({ partIdPalette: { 1: { role: "hair", labelKo: "머리" } } });
+    engine.psdHairLayers = () => ({ status: "available" });
+    const renderPasses = engine.renderPasses.bind(engine);
+    engine.renderPasses = async (request) => {
+      const result = await renderPasses(request);
+      const lit = result.passes.lit;
+      if (!request.includeHairOwnership || !lit) return result;
+      const rgba = new Uint8ClampedArray(lit.rgba);
+      for (let i = 0; i < rgba.length; i += 4) rgba[i] = rgba[i + 1] = rgba[i + 2] = rgba[i + 3] ? 255 : 0;
+      return { ...result, hairOwnership: { status: "available", raster: { ...lit, rgba }, samples: 1, classification: "majority-visible-samples", limitationsKo: [] } };
+    };
     let presetText = "";
     render(
       <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(command) => dispatched.push(command)}>

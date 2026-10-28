@@ -79,9 +79,9 @@
 | tone-split | Photoshop multiply/screen 분리형 블렌드 수식 | 공개 수식 |
 | OKLab/색 변환 | `shared/color.ts`(Björn Ottosson 2020) | 공개 |
 
-## 6. 브라우저 미검증 항목(요약)
+## 6. 초기 브라우저 미검증 항목(이전 검증 범위)
 
-실제 GPU readback 행 순서·premultiply 상수, 페인트 텍스처의 UV 방향·반영, `<a download>` 저장 동작, ag-psd 브라우저 캔버스 등록 후 PSD를 Photoshop/CLIP STUDIO PAINT에서 열기, PSD 레이어 재합성 MAE 실측, GLB 실파일 재import, 2048² PNG/PSD 처리 시간.
+초기 검증에서 남긴 항목은 실제 GPU readback 행 순서·premultiply 상수, 페인트 텍스처의 UV 방향·반영, `<a download>` 저장 동작, ag-psd 브라우저 캔버스 등록 후 PSD를 Photoshop/CLIP STUDIO PAINT에서 열기, PSD 레이어 재합성 MAE 실측, GLB 실파일 재import, 2048² PNG/PSD 처리 시간이다. 2026-10-29의 실제 GPU·PSD 재합성 확인 범위는 §10을 따른다. 외부 편집기 호환성과 큰 이미지 처리 시간은 여전히 별도 검증이 필요하다.
 
 ## 7. 키트 소스 행 (KT-12, 2026-10-08)
 
@@ -93,7 +93,7 @@
 
 ## 8. 헤어 PSD 실분리 (2026-10-28)
 
-상태: **current**. `splitHairLayers`를 켜고 `part-id`에 헤어·헤어 부속 픽셀이 있으면 본체 밑색·음영·하이라이트·주선에서 해당 RGBA를 비우고 헤어 그룹으로 옮긴다. 이전에는 원본 전체 레이어 위에 헤어 그룹을 추가해 그룹을 숨겨도 헤어가 남았다.
+상태: **이전 구현 기록**. `splitHairLayers`를 켜고 `part-id`에 헤어·헤어 부속 픽셀이 있으면 본체 밑색·음영·하이라이트·주선에서 해당 RGBA를 비우고 헤어 그룹으로 옮겼다. 이 방식만으로는 부위 ID 밖의 외곽선을 분류하지 못하므로, 현재 내보내기 경로는 §10의 기하 소유권 캡처를 요청한다. 아래 표는 2026-10-28 당시의 검증 기록이다.
 
 | 항목 | 구현 상태 | Node 검증 | 브라우저·외부 편집기 검증 | 비고 |
 | --- | --- | --- | --- | --- |
@@ -117,3 +117,25 @@
 | 셰이더 준비 대기 중 각 dab 브러시 비트맵 보존 | `babylon-projection-brush-queue.test.ts`의 업로드 브러시 바이트 재생 | 미검증 | 가변 GPU 텍스처 참조 대신 비트맵을 큐에 저장한다 |
 
 카메라 조작 설정·F/L/T 시점 연결은 `render/viewport-input-style.ts`의 엔진 중립 포트를 거치게 옮겼다. 앱이 Babylon 내부 모듈을 직접 가져오던 경계 위반을 제거하고, 실제 카메라 각도 변경·재연결·해제를 `viewport-input-style.test.ts`로 검증한다.
+
+## 10. PSD 알파·외곽선 소유권 보존 — 2026-10-29
+
+상태: **current**. 기존 PSD의 본체 음영·하이라이트·주선을 일반 source-over로 쌓으면 부분 알파가 불투명해지는 결함과, 부위 ID가 0인 헤어 외곽선이 본체에 남는 결함을 재현해 수정했다. 밑색은 실제 lit 알파를 사용하고 음영·하이라이트·선은 PSD clipping으로 그 알파를 보존한다. flat 밖의 실제 hull 픽셀은 이미 렌더된 lit RGB를 보존한다. 입력 래스터는 수정하지 않는다.
+
+추가 추출 주선은 원본 선 성분의 완전한 역분해가 아니므로 본체·헤어 모두 기본 숨김이다. 원래 렌더에 있던 선은 밑색·톤 분해 안에 보존된다. 사용자가 추출 주선을 켜면 추가 선 효과가 합성되며, 기본 표시 레이어의 재합성·영수증은 원본 lit와 비교한다. 숨긴 UV 페인트 참조 그룹은 clipping 연결 사이에 끼워 넣지 않는다.
+
+| 항목 | 구현·검증 범위 | 제한 |
+| --- | --- | --- |
+| 실제 헤어 소유권 | 분리 PSD만 `includeHairOwnership`를 요청한다. 원래 메시·본·morph·알파 컷아웃·깊이 순서와 실제 native/필압 hull 경로를 별도 RTT에서 그린다. 원본색 추정·ID 팽창을 사용하지 않는다 | 기본 PBR·일반 툰의 불투명·지원되는 컷아웃 재질에 한함 |
+| 같은 포즈의 lit·소유권 | 보조 재질 준비 후 lit의 실제 GPU 제출과 소유권 제출을 같은 동기 구간에서 수행한다. readback 중 물리 프레임이 진행돼도 두 draw의 본 회전은 같다 | 기존 다른 패스 전체를 한 시점으로 고정하는 계약은 추가하지 않았다 |
+| MSAA 공유 픽셀 | 가시 샘플의 과반 소유로 전체 RGBA를 한 그룹에 배정하며 동률은 헤어에 배정한다 | 공유 픽셀에 섞인 본체·헤어의 색을 서브픽셀별로 역분리하지 않는다. 그룹 숨김은 이 픽셀 단위 소유 정책을 따른다 |
+| 미지원 사전 안내 | 겹친 BLEND, 실제 반투명 정점 알파, 별도 opacity 맵, PBR UV2 컷아웃, 사용자 클리핑·베이크 정점 애니메이션·베타/미확인 재질은 저장 전 사유를 표시한다 | 헤어 분리를 끄면 일반 PSD 경로를 사용할 수 있다. 실제 알파가 전부 1인 RGBA 정점 데이터는 지원한다 |
+| 수명·예산 | 보조 RGBA 1패스를 메모리 추정에 포함한다. 실패 시 임시 재질·override·native 선 색을 복원하고 타깃 lease를 해제한다. clone 수정·해제 후 원본 uniform·재질 옵션·공유 텍스처 보존을 검증한다 | 장치별 대형 출력 성능·모든 제작 에셋 조합은 별도 측정이 필요하다 |
+
+실제 Chrome의 Apple M2 Max Metal WebGPU(`apple`·`metal-3`·fallback false, 추가 GPU 플래그 없음)에서 384²의 16조건을 검사했다. 불투명·정점 알파 1·본체 가림·컷아웃 각각에 PBR/툰 선 없음/native hull/필압 hull을 적용했다. 보조 요청 전후 기존 6패스(lit·flat·normal·part-id·material-id·depth) 바이트 차이는 모두 0이다. 저장된 PSD를 다시 읽어 제품 합성 함수를 사용하지 않는 source-over·clipping 계산으로 합성한 결과 16조건 모두 RGB 최대 오차 0, 알파 최대 오차 0이다. 헤어 그룹을 숨기면 소유권으로 지정한 헤어 잔여 알파 0, 나머지 픽셀 변화 0이다. 별도 hair-only/body-only 실제 렌더와 비교해 헤어 단독 footprint 밖의 잘못된 헤어 소유 픽셀도 0임을 확인했다.
+
+움직임 시험은 실제 PhysicsBridge·스킨·WebGPU 경로에 결정적인 이동 provider를 주입했다. lit와 소유권 draw는 step 1의 같은 본 회전을 기록했고 readback 동안 step 2가 진행됐다. 같은 step의 소유권 없는 lit와도 바이트가 같으며 이 PSD의 독립 재합성 RGBA 오차도 0이다. 이 시험은 내장 물리 solver의 품질·성능 비교가 아니다.
+
+검증 원본은 ignored 배치 `batch_generated/tripo-studio-2026-10-28/verification/shaper-hair-ownership-final-metal-manual/`와 `shaper-hair-ownership-moving-metal-manual/`의 `evidence.json`·`independent-psd-composite.json`에 있다. 이 작은 fixture의 결과로 Photoshop/CLIP STUDIO PAINT 실사용, 모든 헤어·의상 조합, 반투명 혼합의 정확한 분리 또는 SHAPER 이상의 품질을 주장하지 않는다.
+
+추가 GPU 플래그 없는 Chrome의 명시적 WebGL2(`ANGLE Metal Renderer: Apple M2 Max`)에서도 16조건의 GLSL·컷아웃·native/필압 hull을 확인했다. 소유권 포함과 이후 일반 캡처의 기존 6패스 차이 0, 실제 PSD 독립 합성 RGB·알파 오차 0, 헤어 숨김 잔여 0, GL·페이지 오류 0이다. 이 레인의 첫 PBR lit는 소유권을 요청하지 않은 1회·2회 일반 캡처끼리도 최대 64/255·36,798픽셀이 달랐다. 2회차 일반 캡처와 소유권 캡처는 같았으므로 이 초기 차이는 소유권 오염으로 집계하지 않으며, 첫 PBR의 반복 안정성은 별도 미해결 검증 항목이다. 원본은 `shaper-hair-ownership-comparison-metal-webgl2-manual/`·`shaper-hair-ownership-baseline-metal-webgl2-manual/`에 있다. 소프트웨어 보조 검사는 기존 서버 종료와 겹친 응답 대기·연결 거부로 미완료이며 셰이더 실패·성공으로 집계하지 않는다.

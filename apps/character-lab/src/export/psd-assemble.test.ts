@@ -101,6 +101,25 @@ describe("assemblePsd", () => {
     expect(reference?.children?.[0]?.name).toBe("깊이");
   });
 
+  it("실제 PSD 왕복에서 본체의 clipping 체인과 반투명 알파가 보존된다", () => {
+    const flat = fillRaster(2, 1, (x) => [100, 140, 180, x === 0 ? 64 : 128]);
+    const lit = fillRaster(2, 1, (x) => [60, 180, 120, x === 0 ? 64 : 96]);
+    const result = planCharacterPsd(captureResultFixture({ width: 2, height: 1, passes: { flat, lit } }), [], { includeIdMasks: false, includeReferencePasses: false, lineArt: { alphaEdges: false, idEdges: false, lumaEdges: false, depthThreshold: 0, normalAngleDeg: 0 } });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    const psd = readPsd(assemblePsd(result.plan), { useImageData: true });
+    expect(find(psd.children, "밑색")?.clipping ?? false).toBe(false);
+    for (const name of ["음영", "하이라이트", "주선"]) expect(find(psd.children, name)?.clipping, name).toBe(true);
+    for (let x = 0; x < 2; x += 1) {
+      let alpha = 0;
+      for (const layer of psd.children ?? []) {
+        if (layer.hidden || layer.children || layer.clipping) continue;
+        const sourceAlpha = pixelAt(rasterOf(layer), x, 0)[3] / 255 * (layer.opacity ?? 1);
+        alpha = sourceAlpha + alpha * (1 - sourceAlpha);
+      }
+      expect(alpha * 255).toBe(pixelAt(lit, x, 0)[3]);
+    }
+  });
+
   it("실제 PSD 왕복에서도 헤어 알파 분리·음영/주선 clipping·반투명 밑색이 보존된다", () => {
     const roles = ["skin", "hair", "hair-accessory", "skin"] as const;
     const flat = fillRaster(4, 2, (x) => [80, 140, 190, x === 1 ? 64 : x === 2 ? 128 : 255]);

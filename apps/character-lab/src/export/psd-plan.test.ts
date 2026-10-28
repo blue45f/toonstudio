@@ -92,9 +92,9 @@ describe("planCharacterPsd", () => {
       "밑색",
       "음영",
       "하이라이트",
+      "주선",
       "페인트",
       "페인트/피부 (UV 공간 1/4)",
-      "주선",
     ]);
     expect(plan.receipt.names).toEqual(flatten(plan.layers));
     expect(plan.receipt.layerCount).toBe(7);
@@ -320,6 +320,77 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(split.plan.composite).toBe(lit);
     expect(flat.rgba).toEqual(originalBytes[0]);
     expect(lit.rgba).toEqual(originalBytes[1]);
+  });
+
+  it("본체의 반투명·flat 밖 hull coverage를 실제 레이어로 재합성하고 입력 렌더를 보존한다", () => {
+    const flatAlpha = [64, 128, 200, 0];
+    const litAlpha = [64, 96, 224, 128];
+    const flat = fillRaster(4, 2, (x, y) => y === 0 ? [100, 180, 40, flatAlpha[x] ?? 0] : [0, 0, 0, 0]);
+    const lit = fillRaster(4, 2, (x, y) => y === 0 ? x === 3 ? [0, 0, 0, 128] : [50, 200, 100, litAlpha[x] ?? 0] : [0, 0, 0, 0]);
+    const originals = [new Uint8ClampedArray(flat.rgba), new Uint8ClampedArray(lit.rgba)];
+    const result = planCharacterPsd(captureResultFixture({ width: 4, height: 2, passes: { flat, lit } }), [paintLayer("skin", 4, true)], { includeIdMasks: false, includeReferencePasses: false, lineArt: NO_LINE_EDGES });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    for (let x = 0; x < 4; x += 1) {
+      const actual = compositePixel(result.plan.layers, x, 0);
+      const expected = pixelAt(lit, x, 0);
+      expect(actual[3]).toBe(expected[3]);
+      for (let c = 0; c < 3; c += 1) expect(Math.abs((actual[c] ?? 0) - (expected[c] ?? 0))).toBeLessThanOrEqual(2);
+    }
+    for (const name of ["음영", "하이라이트", "주선"]) expect(rasterLayer(result.plan.layers, name).clipping, name).toBe(true);
+    expect(result.plan.layers.findIndex((layer) => layer.name === "주선")).toBe(result.plan.layers.findIndex((layer) => layer.name === "밑색") + 3);
+    expect(result.plan.layers.findIndex((layer) => layer.name === "페인트")).toBeGreaterThan(result.plan.layers.findIndex((layer) => layer.name === "주선"));
+    expect(flat.rgba).toEqual(originals[0]);
+    expect(lit.rgba).toEqual(originals[1]);
+    expect(result.plan.composite).toBe(lit);
+  });
+
+  it("가시 주선도 본체 밑색 알파에 클리핑돼 반투명 가장자리를 불투명하게 만들지 않는다", () => {
+    const flat = fillRaster(3, 3, (x, y) => x === 1 && y === 1 ? [100, 100, 100, 64] : [0, 0, 0, 0]);
+    const lit = fillRaster(3, 3, (x, y) => x === 1 && y === 1 ? [50, 50, 50, 64] : [0, 0, 0, 0]);
+    const result = planCharacterPsd(captureResultFixture({ width: 3, height: 3, passes: { flat, lit } }), [], { includeIdMasks: false, includeReferencePasses: false });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(pixelAt(rasterLayer(result.plan.layers, "주선").raster, 1, 1)[3]).toBe(255);
+    expect(rasterLayer(result.plan.layers, "주선").hidden).toBe(true);
+    const visibleLine = result.plan.layers.map(layer => layer.name === "주선" ? { ...layer, hidden: false } : layer);
+    expect(compositePixel(visibleLine, 1, 1)[3]).toBe(64);
+    const originalRender = compositePixel(result.plan.layers, 1, 1);
+    expect(originalRender[3]).toBe(64);
+    for (let c = 0; c < 3; c += 1) expect(Math.abs((originalRender[c] ?? 0) - 50)).toBeLessThanOrEqual(2);
+  });
+
+  it("기하학적 소유권으로 part-id 밖 hull까지 헤어에 넣고 숨김 시 잔여선을 제거한다", () => {
+    const hair = rolePartId("hair");
+    const fringe = (x: number, y: number) => (y === 1 && x >= 1 && x <= 3) || (x === 2 && y >= 0 && y <= 2);
+    const flat = fillRaster(5, 3, (x, y) => x === 2 && y === 1 ? [120, 80, 40, 255] : [0, 0, 0, 0]);
+    const lit = fillRaster(5, 3, (x, y) => x === 2 && y === 1 ? [100, 60, 20, 255] : fringe(x, y) ? [12, 10, 14, 64] : [0, 0, 0, 0]);
+    const capture = captureResultFixture({ width: 5, height: 3, partIdPalette: allocatePartIdsByRole([{ role: "hair" }]), passes: { flat, lit, "part-id": idPassRaster(5, 3, (x, y) => x === 2 && y === 1 ? hair : 0) } });
+    const withoutOwnership = planCharacterPsd(capture, [], { includeIdMasks: false, includeReferencePasses: false, splitHairLayers: true });
+    expect(withoutOwnership).toMatchObject({ ok: false, failure: { code: "psd-hair-ownership-missing" } });
+    const mask = fillRaster(5, 3, (x, y) => fringe(x, y) ? [255, 255, 255, 255] : [0, 0, 0, 0]);
+    const result = planCharacterPsd({ ...capture, hairOwnership: { status: "available", raster: mask, samples: 4, classification: "majority-visible-samples", limitationsKo: [] } }, [], { includeIdMasks: false, includeReferencePasses: false, splitHairLayers: true });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    for (let y = 0; y < 3; y += 1) for (let x = 0; x < 5; x += 1) {
+      const actual = compositePixel(result.plan.layers, x, y), expected = pixelAt(lit, x, y);
+      expect(actual[3]).toBe(expected[3]);
+      for (let c = 0; c < 3; c += 1) expect(Math.abs((actual[c] ?? 0) - (expected[c] ?? 0))).toBeLessThanOrEqual(2);
+      expect(compositePixel(result.plan.layers, x, y, ["헤어 분리"])[3]).toBe(0);
+    }
+    expect(result.plan.receipt.recomposeMae).toBeLessThanOrEqual(2);
+  });
+
+  it("MSAA 공유 경계는 명시한 기하 과반 소유로 나누고 전체 RGBA는 보존한다", () => {
+    const flat = solidRaster(2, 1, [120, 80, 40, 255]), lit = solidRaster(2, 1, [80, 100, 60, 128]);
+    const mask = fillRaster(2, 1, (x) => [x === 0 ? 127 : 128, 0, 0, 255]);
+    const capture = captureResultFixture({ width: 2, height: 1, passes: { flat, lit }, partIdPalette: { 1: { role: "hair", labelKo: "헤어" } } });
+    const result = planCharacterPsd({ ...capture, hairOwnership: { status: "available", raster: mask, samples: 4, classification: "majority-visible-samples", limitationsKo: [] } }, [], { includeIdMasks: false, includeReferencePasses: false, splitHairLayers: true });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    expect(compositePixel(result.plan.layers, 0, 0, ["헤어 분리"])[3]).toBe(128);
+    expect(compositePixel(result.plan.layers, 1, 0, ["헤어 분리"])[3]).toBe(0);
+    for (let x = 0; x < 2; x += 1) {
+      const actual = compositePixel(result.plan.layers, x, 0), expected = pixelAt(lit, x, 0);
+      expect(actual[3]).toBe(expected[3]);
+      for (let c = 0; c < 3; c += 1) expect(Math.abs((actual[c] ?? 0) - (expected[c] ?? 0))).toBeLessThanOrEqual(2);
+    }
   });
 
   it("헤어 ID가 없으면 분리 사유를 남기고 본체 레이어를 비우지 않는다", () => {

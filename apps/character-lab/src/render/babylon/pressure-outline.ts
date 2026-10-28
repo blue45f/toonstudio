@@ -97,7 +97,7 @@ export class PressureOutlineController {
     mesh.receiveShadows = false;
     mesh.material = material;
     mesh.overrideMaterialSideOrientation = source.overrideMaterialSideOrientation;
-    markPressureOutline(mesh);
+    markPressureOutline(mesh, source);
     return { rig, part, source, mesh, material, width: baseWidth * hullOutlineWidthScale(rig.kind, part.role) };
   }
 

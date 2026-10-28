@@ -24,10 +24,12 @@ import { projectAabb } from "../synthetic-projection";
 import { acquireCaptureTarget, readCaptureTarget } from "./capture-targets";
 import { computeRigBounds, rigVisibleMeshes } from "./character-rig";
 import { fromVector3 } from "./convert";
+import { prepareHairOwnership } from "./hair-ownership";
 
-import type { CameraFraming, CaptureProvenance, CaptureRequest, CaptureResult, CapturedDepth, CapturedRaster, RasterPassId, RenderPassId } from "../../contracts";
+import type { CameraFraming, CaptureProvenance, CaptureRequest, CaptureResult, CapturedDepth, CapturedRaster, HairOwnership, RasterPassId, RenderPassId } from "../../contracts";
 import type { ReadbackLane, SyntheticBox } from "../readback";
 import type { CharacterRig, RigPart } from "./character-rig";
+import type { PreparedHairOwnership } from "./hair-ownership";
 import type { CharacterScene } from "./scene-builder";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
 import type { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
@@ -71,7 +73,7 @@ export interface CaptureDeps {
   readonly now: number;
 }
 
-function validateRequest(deps: CaptureDeps, width: number, height: number, passes: readonly RenderPassId[]): void {
+function validateRequest(deps: CaptureDeps, width: number, height: number, passes: readonly RenderPassId[], includeHairOwnership = false): void {
   const maxSize = deps.scene.getEngine().getCaps().maxTextureSize;
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
     throw failVisible("capture-size-invalid", `캡처 크기는 1 이상 정수여야 합니다(${width}×${height}).`, undefined, deps.now);
@@ -79,7 +81,7 @@ function validateRequest(deps: CaptureDeps, width: number, height: number, passe
   if (width > maxSize || height > maxSize) {
     throw failVisible("capture-size-exceeds-texture", `캡처 크기 ${width}×${height}가 엔진 최대 텍스처 ${maxSize}px를 넘습니다.`, undefined, deps.now);
   }
-  const bytes = estimateCaptureBytes({ width, height, passes });
+  const bytes = estimateCaptureBytes({ width, height, passes, includeHairOwnership });
   if (bytes > CAPTURE_BYTE_BUDGET) {
     throw failVisible("capture-too-large", `캡처 readback ${Math.round(bytes / 1048576)}MiB가 예산 ${CAPTURE_BYTE_BUDGET / 1048576}MiB를 넘습니다. 해상도나 패스 수를 줄이세요.`, undefined, deps.now);
   }
@@ -241,6 +243,7 @@ interface PassRenderResult {
   readonly bytes: Uint8Array | Uint8ClampedArray | null;
   /** readback이 없을 때(NullEngine) 일시 적용 구간 안에서 만든 합성 상자 */
   readonly boxes: SyntheticBox[] | null;
+  readonly hairOwnership?: HairOwnership;
 }
 
 /** 비주선 패스에는 Babylon의 암묵적인 hull·edge·overlay 드로도 넣지 않는다. 동기 RTT 제출 직후 복원한다. */
@@ -269,7 +272,7 @@ export interface CaptureAround {
   after(): void;
 }
 
-async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: (pass: RenderPassId) => readonly Mesh[], around: CaptureAround | undefined): Promise<PassRenderResult> {
+async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: (pass: RenderPassId) => readonly Mesh[], around: CaptureAround | undefined, ownership?: PreparedHairOwnership): Promise<PassRenderResult> {
   const multisample = pass === "flat" || pass === "lit";
   const engine = deps.scene.getEngine();
   // 수동 renderFrame의 swapchain 명령은 첫 await 전에 제출한다. 다음 이벤트 루프에서 그리기 표면이 만료될 수 있다.
@@ -310,6 +313,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
     // (2) 동기 구간: 일시 적용 → 프레이밍·렌더 목록 → 렌더 → readPixels 호출 → 복원
     around?.before();
     let pending: ReturnType<RenderTargetTexture["readPixels"]> = null;
+    let pendingOwnership: Promise<HairOwnership> | undefined;
     let boxes: SyntheticBox[] | null = null;
     try {
       const meshes = [...frame(pass), ...(pass === "lit" ? deps.pressureOutlines?.() ?? [] : [])];
@@ -328,15 +332,21 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
       withNativeOutlinesOff(meshes, pass !== "lit", () => withScatteringOff(deps.rig, pass === "lit", () => rtt.render(false, false)));
       // WebGL2는 PBO 비동기 readback으로 읽기 명령만 제출한다(GPU 완료를 메인 스레드에서 기다리지 않는다, capture-targets.ts).
       pending = readCaptureTarget(engine, rtt, width, height);
+      // readPixels는 WebGPU 명령도 실제 제출한다. 원래 native outline UBO를 제출한 뒤 같은 포즈·동기 구간에서 owner 색을 쓴다.
+      pendingOwnership = ownership?.submit();
       if (pending === null) boxes = syntheticBoxes(deps, camera, width, height);
     } finally {
       around?.after();
     }
 
     // (3) 비동기 구간: GPU readback 대기(이 동안 뷰포트는 복원된 상태를 그린다)
-    const buffer = pending ? await pending : null;
-    if (buffer === null) return { bytes: null, boxes };
-    if (buffer instanceof Uint8Array || buffer instanceof Uint8ClampedArray) return { bytes: buffer, boxes: null };
+    const [readback, ownershipReadback] = await Promise.allSettled([pending, pendingOwnership] as const);
+    if (readback.status === "rejected") throw readback.reason;
+    if (ownershipReadback.status === "rejected") throw ownershipReadback.reason;
+    const buffer = readback.value;
+    const extra = ownershipReadback.value ? { hairOwnership: ownershipReadback.value } : {};
+    if (buffer === null) return { bytes: null, boxes, ...extra };
+    if (buffer instanceof Uint8Array || buffer instanceof Uint8ClampedArray) return { bytes: buffer, boxes: null, ...extra };
     throw failVisible("capture-readback-type", `RTT readback 타입이 RGBA8이 아닙니다(${buffer.constructor.name}).`, undefined, deps.now);
   } finally {
     for (const mesh of overridden) rtt.setMaterialForRendering(mesh, undefined);
@@ -351,12 +361,14 @@ export interface CaptureFrameOptions {
   readonly framing: CameraFraming;
   /** 일시 적용 구간(단일 패스 전용: 썸네일). 주면 passes는 정확히 1개여야 한다. */
   readonly around?: CaptureAround;
+  readonly ownership?: PreparedHairOwnership;
 }
 
 export interface CaptureFrameResult {
   readonly passes: Partial<Record<RasterPassId, CapturedRaster>>;
   readonly depth?: CapturedDepth;
   readonly synthetic: boolean;
+  readonly hairOwnership?: HairOwnership;
 }
 
 /** 패스 집합을 한 번에 그려 규약 래스터로 돌려준다(엔진 renderPasses·renderThumbnail 공용). */
@@ -376,12 +388,14 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
   };
   const passes: Partial<Record<RasterPassId, CapturedRaster>> = {};
   let depth: CapturedDepth | undefined;
+  let hairOwnership: HairOwnership | undefined;
   let synthetic = false;
   let lateBoxes: SyntheticBox[] | null = null;
   const flipY = RTT_READBACK_FLIP_Y[deps.lane];
   const premultiplied = RTT_READBACK_PREMULTIPLIED[deps.lane];
   for (const pass of options.passes) {
-    const rendered = await renderPass(deps, camera, pass, width, height, frame, options.around);
+    const rendered = await renderPass(deps, camera, pass, width, height, frame, options.around, pass === "lit" ? options.ownership : undefined);
+    if (rendered.hairOwnership) hairOwnership = rendered.hairOwnership;
     if (rendered.bytes === null) {
       synthetic = true;
       // 일시 적용 구간 안에서 만든 상자가 있으면 그것을, 없으면(비동기 readback이 뒤늦게 null) 현재 상태로 만든다.
@@ -397,21 +411,27 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
       passes[pass] = toCapturedRaster(rendered.bytes, width, height, { flipY, premultiplied: premultiplied && (pass === "flat" || pass === "lit") });
     }
   }
-  return depth ? { passes, depth, synthetic } : { passes, synthetic };
+  return { passes, synthetic, ...(depth ? { depth } : {}), ...(hairOwnership ? { hairOwnership } : {}) };
 }
 
 export async function capturePasses(deps: CaptureDeps, req: CaptureRequest, framing: CameraFraming): Promise<CaptureResult> {
-  const frame = await captureFrame(deps, { width: req.width, height: req.height, passes: req.passes, framing });
-  const backend: CaptureProvenance["backend"] = deps.lane;
-  return {
-    profile: CAPTURE_PROFILE_ID,
-    width: req.width,
-    height: req.height,
-    passes: frame.passes,
-    ...(frame.depth ? { depth: frame.depth } : {}),
-    partIdPalette: deps.rig.partIdPalette,
-    provenance: { ...deps.provenance, backend, synthetic: frame.synthetic, settleSteps: req.settleSteps },
-  };
+  validateRequest(deps, req.width, req.height, req.passes, req.includeHairOwnership);
+  if (req.includeHairOwnership && !req.passes.includes("lit")) throw failVisible("capture-hair-requires-lit", "헤어 소유권은 같은 포즈의 lit 패스와 함께 요청해야 합니다.", undefined, deps.now);
+  const ownership = req.includeHairOwnership ? await prepareHairOwnership(deps, req.width, req.height, (rtt, pairs) => ensureReady(deps, rtt, pairs, true)) : undefined;
+  try {
+    const frame = await captureFrame(deps, { width: req.width, height: req.height, passes: req.passes, framing, ...(ownership ? { ownership } : {}) });
+    const backend: CaptureProvenance["backend"] = deps.lane;
+    return {
+      profile: CAPTURE_PROFILE_ID,
+      width: req.width,
+      height: req.height,
+      passes: frame.passes,
+      ...(frame.depth ? { depth: frame.depth } : {}),
+      ...(frame.hairOwnership ? { hairOwnership: frame.hairOwnership } : {}),
+      partIdPalette: deps.rig.partIdPalette,
+      provenance: { ...deps.provenance, backend, synthetic: frame.synthetic, settleSteps: req.settleSteps },
+    };
+  } finally { ownership?.dispose(); }
 }
 
 export async function captureThumbnail(deps: CaptureDeps, size: number, framing: CameraFraming, around?: CaptureAround): Promise<CapturedRaster> {

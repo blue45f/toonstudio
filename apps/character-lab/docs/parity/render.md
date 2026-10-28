@@ -282,3 +282,19 @@ Orion GLB 내보내기(NullEngine): sparse 정리 전 12.36 MB → 후 3.61 MB(�
 최종 Metal 검증 원본은 ignored 배치 폴더의 `verification/pressure-outline-metal-webgpu-bounded-manual/`·`pressure-outline-metal-webgpu-bounded-live/`에 있다. 두 방식 모두 hull 효과 4개가 준비됐고, GPU validation scope 오류가 없으며, 실제 GPUShaderModule 4개의 `getCompilationInfo`도 메시지 없이 완료됐다. 이 보조 진단은 모듈별로 중복 제거하고 15초 상한을 둔다. 앞선 반복 조회 대기는 제품 캡처 실패와 구분한다.
 
 이전 증거는 같은 배치의 `verification/pressure-outline/`(최초 소프트웨어), `pressure-outline-software-regression/`, `pressure-outline-metal-webgpu/`(최초 실패), `pressure-outline-metal-webgpu-flush-only/`(원인 분리)에 보존했다. 앞선 소프트웨어 WebGPU 컴파일 진단의 `Instance dropped error` 실패도 그대로 남아 있으며 Metal 성공과 구분한다. 앱의 WebGPU fallback 차단·명시적 backend 선택 정책은 변경하지 않았다.
+
+## 12. PSD 전용 헤어 소유권 보조 RTT — 2026-10-29
+
+상태: **current**. 분리 PSD 요청은 기존 공개 6패스에 새 패스 ID를 넣지 않고 선택적 `CaptureRequest.includeHairOwnership`와 `CaptureResult.hairOwnership`로 보조 래스터를 주고받는다. 이 요청에는 lit가 필요하며 메모리 예산에 RGBA 1패스를 더한다. 일반 capture·PNG·일반 PSD는 보조 RTT를 만들지 않는다.
+
+`babylon/hair-ownership.ts`는 실제 source mesh별 flat 재질 clone에 원래 character vertex 경로와 알파 컷아웃을 연결한다. native hull은 원래 OutlineRenderer의 스킨·morph·기하 확장·알파 테스트 프로토콜을 그대로 사용한다. 필압 hull은 실제 원본 필압 재질 clone을 사용하고, 명시적으로 연결한 source mesh의 역할에 따라 출력색만 바꾼다. 원본 재질이 native hull에 제공하지 않던 임의 discard를 새로 보장하지 않는다. 원본 native hull의 cutoff 0.4와 UV 동작도 같은 경로로 유지한다.
+
+보조 재질·타깃의 준비 대기는 원래 native 선 색을 바꾸지 않는다. 실제 lit readPixels가 명령을 제출한 직후 같은 동기 구간에서 소유권을 그린다. 그 사이 await·입력·물리 프레임이 없고, 두 제출이 끝나면 원래 선 색·override를 복원한 뒤 readback을 기다린다. 오류·준비 실패·readback 실패도 finally에서 clone·타깃 lease를 해제한다. 두 readback은 `Promise.allSettled`로 완료를 확인해 아직 쓰는 타깃을 먼저 반환하지 않는다. 이 보장은 lit와 새 보조 마스크의 동일 draw 상태에 한정되며 다른 모든 패스의 전역 시점 고정을 뜻하지 않는다.
+
+실제 정점 알파가 모두 1인 입력은 원래 alpha queue·깊이·culling 규약을 복제해 지원한다. 실제 반투명 정점·BLEND/ALPHATESTANDBLEND·별도 opacity 맵·PBR UV2 컷아웃·사용자 clipping·베이크 정점 애니메이션·미확인 custom/베타 재질은 분리 지원을 사전에 거부한다. source geometry·재질·정점 데이터가 바뀌면 프리플라이트가 현재 데이터를 다시 검사하며, 준비 중 source/material이 바뀐 결과를 조용히 사용하지 않는다. 일반 PSD는 계속 사용할 수 있다.
+
+검증은 `render/hair-ownership.test.ts`의 실제 NullEngine 계약·수명·moving PhysicsBridge 시험, 양 테스트 설정의 관련 9파일 118개와 별도 실제 Metal WebGPU 16조건이다. 같은 fixture의 원래 6패스 전후 바이트는 모두 같고, owner mask의 hair-only footprint 이탈은 0이다. 저장 PSD 기본 레이어의 독립 재합성 RGB/알파 오차 0, 헤어 숨김 잔여 알파 0도 확인했다. 원본 flat options/uniform·필압 outlineColor와 공유 텍스처가 clone 수정·해제 후 그대로인 회귀를 포함한다.
+
+MSAA는 가시 샘플 과반으로 전체 픽셀을 한 소유자에게 배정하고 동률을 헤어로 정한다. 공유 경계의 혼합색을 본체·헤어별 서브픽셀로 역분리하지 않는다. 검증 원본과 움직임 시험은 `verification/shaper-hair-ownership-final-metal-manual/`·`shaper-hair-ownership-moving-metal-manual/`에 보존한다. 실제 키트 기본 10파트의 지원 프리플라이트는 확인했지만 모든 키트·생성 에셋 조합의 렌더 결과를 검사한 것은 아니다.
+
+같은 16조건의 GLSL은 추가 GPU 플래그 없는 실제 `ANGLE Metal Renderer: Apple M2 Max` WebGL2에서도 확인했다. 준비된 동일 상태에서 소유권 요청 전후 6패스 바이트와 실제 PSD 독립 재합성 오차는 0이고 GL·페이지 오류도 0이다. 다만 이 레인 첫 PBR lit의 일반 캡처 1회↔2회는 최대 64/255·36,798픽셀의 차이를 별도 재현했다. 소유권 없는 두 일반 캡처만으로 발생하고 이후 일반↔소유권은 같으므로 소유권 재질 오염으로 단정하지 않으며, 원인·첫 PBR 안정성은 미해결로 남긴다. 비교·분리 원본은 `verification/shaper-hair-ownership-comparison-metal-webgl2-manual/`와 `shaper-hair-ownership-baseline-metal-webgl2-manual/`다. 앞선 SwiftShader 보조 진단의 서버 종료·연결 거부 기록은 셰이더 판정에서 제외했다.

@@ -7,15 +7,15 @@
  *   밑색                   flat, normal
  *   음영                   tone-split shade, multiply
  *   하이라이트             tone-split highlight, screen
+ *   주선(숨김)             lit에서 추가 추출한 선 효과, normal(켜면 원본 선 위에 추가)
  *   [페인트](숨김 그룹)    페인트/<부위> (UV 공간)         (칠한 픽셀이 있는 레이어만)
- *   주선                   line-extract, normal
- * 합성(root imageData)은 lit 패스다. 밑색×음영→screen 하이라이트는 불투명 영역에서 lit와 MAE ≤ 2/255로 재합성된다.
+ * 합성(root imageData)은 원본 lit다. 기본 가시 레이어는 그 coverage를 보존하고 밑색×음영→screen 하이라이트로 재합성한다.
  */
 import { PART_ROLES, PART_ROLE_LABELS_KO, failVisible } from "../contracts";
 
 import { extractLineArt, extractOutlinePassLuminanceToAlpha, lineArtToRaster } from "./line-extract";
 import { decodeIdPass } from "./raster-convert";
-import { multiplyByte, opaqueMae, recompose, screenByte, splitTones } from "./tone-split";
+import { multiplyByte, recompose, screenByte, splitTones } from "./tone-split";
 
 import type { CaptureResult, CapturedDepth, CapturedRaster, LabFailure, PaintLayer, PartRole } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
@@ -55,7 +55,7 @@ export interface PsdPlanReceipt {
   /** 건너뛴 레이어와 한글 사유 */
   readonly skippedKo: readonly string[];
   readonly lineArtPixels: number;
-  /** 밑색·음영·하이라이트 재합성 vs lit 불투명 MAE(0..255) */
+  /** 기본 가시 레이어 재합성 vs lit RGBA MAE(0..255), 두 결과 중 하나라도 보이는 픽셀을 검사한다. */
   readonly recomposeMae: number;
 }
 
@@ -256,6 +256,21 @@ function withoutPartIds(source: CapturedRaster, partIds: Uint16Array, removedIds
   return { width: source.width, height: source.height, rgba };
 }
 
+/** lit의 실제 coverage를 밑색에 보존한다. flat 밖 hull은 이미 렌더된 RGB를 쓰며 입력 캡처를 수정하지 않는다. */
+function flatWithLitCoverage(flat: CapturedRaster, lit: CapturedRaster): CapturedRaster {
+  const rgba = new Uint8ClampedArray(flat.rgba.length);
+  for (let i = 0; i < rgba.length; i += 4) {
+    const alpha = lit.rgba[i + 3] ?? 0;
+    if (alpha === 0) continue;
+    const source = (flat.rgba[i + 3] ?? 0) > 0 ? flat.rgba : lit.rgba;
+    rgba[i] = source[i] ?? 0;
+    rgba[i + 1] = source[i + 1] ?? 0;
+    rgba[i + 2] = source[i + 2] ?? 0;
+    rgba[i + 3] = alpha;
+  }
+  return { width: flat.width, height: flat.height, rgba };
+}
+
 /** 3레이어 형식을 유지하면서 screen 하이라이트를 헤어 밑색으로 옮긴다. */
 function hairBaseWithHighlights(flat: CapturedRaster, highlight: CapturedRaster): CapturedRaster {
   const rgba = new Uint8ClampedArray(flat.rgba);
@@ -265,6 +280,16 @@ function hairBaseWithHighlights(flat: CapturedRaster, highlight: CapturedRaster)
     for (let c = 0; c < 3; c += 1) rgba[i + c] = screenByte(rgba[i + c] ?? 0, highlight.rgba[i + c] ?? 0);
   }
   return { width: flat.width, height: flat.height, rgba };
+}
+
+function visibleRgbaMae(a: CapturedRaster, b: CapturedRaster): number {
+  let sum = 0, count = 0;
+  for (let i = 0; i < a.rgba.length; i += 4) {
+    if ((a.rgba[i + 3] ?? 0) === 0 && (b.rgba[i + 3] ?? 0) === 0) continue;
+    for (let c = 0; c < 4; c += 1) sum += Math.abs((a.rgba[i + c] ?? 0) - (b.rgba[i + c] ?? 0));
+    count += 4;
+  }
+  return count ? sum / count : 0;
 }
 
 export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly PaintLayer[], options: PsdPlanOptions, now?: number): PlanPsdResult {
@@ -306,14 +331,28 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     }
   }
 
-  const tones = splitTones(flat, lit);
+  const base = flatWithLitCoverage(flat, lit);
+  const tones = splitTones(base, lit);
   let hairIds: ReadonlySet<number> | null = null;
+  let hairSelection = partIds;
   let hairFlat: CapturedRaster | null = null;
   if (options.splitHairLayers) {
-    if (!partIds) skippedKo.push("헤어 분리: part-id 패스가 없습니다.");
+    const ownership = capture.hairOwnership;
+    if (ownership?.status === "unavailable") return { ok: false, failure: failVisible("psd-hair-ownership-unavailable", ownership.reasonKo, undefined, now) };
+    let ids = collectHairPartIds(capture.partIdPalette);
+    if (ownership?.status === "available") {
+      const mask = ownership.raster;
+      if (mask.width !== width || mask.height !== height || mask.rgba.length !== width * height * 4) return { ok: false, failure: failVisible("psd-hair-ownership-size", "헤어 소유권 마스크 크기가 원본 캡처와 다릅니다.", undefined, now) };
+      hairSelection = new Uint16Array(width * height);
+      // 해상도·MSAA가 같은 실제 기하 coverage의 과반 소유를 쓴다. 원본 RGB·이웃 픽셀에서 추정하지 않는다.
+      for (let p = 0; p < hairSelection.length; p += 1) if ((mask.rgba[p * 4 + 3] ?? 0) > 0 && (mask.rgba[p * 4] ?? 0) >= 128) hairSelection[p] = 1;
+      ids = new Set([1]);
+    } else if (partIds && ids.size && partIds.some((id, p) => id === 0 && (lit.rgba[p * 4 + 3] ?? 0) > 0)) {
+      return { ok: false, failure: failVisible("psd-hair-ownership-missing", "바깥 외곽선의 파츠를 확인할 소유권 마스크가 없습니다. 지원 엔진을 사용하거나 헤어 분리를 끄고 일반 PSD로 저장하세요.", undefined, now) };
+    }
+    if (!hairSelection) skippedKo.push("헤어 분리: part-id 패스가 없습니다.");
     else {
-      const ids = collectHairPartIds(capture.partIdPalette);
-      const filtered = filterRasterByPartIdSet(flat, partIds, ids);
+      const filtered = filterRasterByPartIdSet(base, hairSelection, ids);
       if (filtered.pixelCount === 0) skippedKo.push("헤어 분리: 헤어 부위 픽셀이 없습니다.");
       else {
         hairIds = ids;
@@ -321,14 +360,14 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
       }
     }
   }
-  const bodyRaster = (source: CapturedRaster): CapturedRaster => partIds && hairIds ? withoutPartIds(source, partIds, hairIds) : source;
-  const bodyFlat = bodyRaster(flat);
+  const bodyRaster = (source: CapturedRaster): CapturedRaster => hairSelection && hairIds ? withoutPartIds(source, hairSelection, hairIds) : source;
+  const bodyFlat = bodyRaster(base);
   const bodyShade = bodyRaster(tones.shade);
   const bodyHighlight = bodyRaster(tones.highlight);
   const recomposed = recompose(bodyFlat, bodyShade, bodyHighlight);
   layers.push(raster(PSD_LAYER_NAMES.flat, "normal", bodyFlat));
-  layers.push(raster(PSD_LAYER_NAMES.shade, "multiply", bodyShade));
-  layers.push(raster(PSD_LAYER_NAMES.highlight, "screen", bodyHighlight));
+  layers.push({ ...raster(PSD_LAYER_NAMES.shade, "multiply", bodyShade), clipping: true });
+  layers.push({ ...raster(PSD_LAYER_NAMES.highlight, "screen", bodyHighlight), clipping: true });
 
   const paintChildren: PsdLayerPlan[] = [];
   for (const layer of paintLayers) {
@@ -340,7 +379,6 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     const data = downsampleRaster({ width: layer.width, height: layer.height, rgba: layer.rgba }, factor);
     paintChildren.push(raster(`${PART_ROLE_LABELS_KO[layer.part]} (UV 공간${factor > 1 ? ` 1/${factor}` : ""})`, "normal", data, true));
   }
-  if (paintChildren.length > 0) layers.push(group(PSD_LAYER_NAMES.paint, true, paintChildren));
 
   const lineInput = {
     lit,
@@ -363,17 +401,19 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     for (let p = 0; p < lineMask.length; p += 1) if ((lineMask[p] ?? 0) > 0) lineArtPixels += 1;
     fullLineRaster = lineArtToRaster(lineMask, width, height);
   }
-  layers.push(raster(PSD_LAYER_NAMES.line, "normal", bodyRaster(fullLineRaster)));
+  layers.push({ ...raster(PSD_LAYER_NAMES.line, "normal", bodyRaster(fullLineRaster), true), clipping: true });
+  // 클리핑 주선과 밑색 사이에 숨긴 그룹을 끼우면 그 그룹이 PSD의 새 clipping base가 된다.
+  if (paintChildren.length > 0) layers.push(group(PSD_LAYER_NAMES.paint, true, paintChildren));
 
-  if (partIds && hairIds && hairFlat) {
+  if (hairSelection && hairIds && hairFlat) {
     const hairBase = hairBaseWithHighlights(hairFlat, tones.highlight);
-    const hairShade = filterRasterByPartIdSet(tones.shade, partIds, hairIds).raster;
-    const hairLine = filterRasterByPartIdSet(fullLineRaster, partIds, hairIds).raster;
+    const hairShade = filterRasterByPartIdSet(tones.shade, hairSelection, hairIds).raster;
+    const hairLine = filterRasterByPartIdSet(fullLineRaster, hairSelection, hairIds).raster;
     layers.push(
       group(PSD_LAYER_NAMES.hairGroup, false, [
         raster(PSD_LAYER_NAMES.hairFlat, "normal", hairBase),
         { ...raster(PSD_LAYER_NAMES.hairShade, "multiply", hairShade), clipping: true },
-        { ...raster(PSD_LAYER_NAMES.hairLine, "normal", hairLine), clipping: true },
+        { ...raster(PSD_LAYER_NAMES.hairLine, "normal", hairLine, true), clipping: true },
       ]),
     );
     // 영수증도 실제 분리한 색 레이어로 재합성한다(추출 주선은 기존과 같이 MAE 대상에서 제외).
@@ -383,7 +423,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
       recomposed.rgba[i + 3] = hairBase.rgba[i + 3] ?? 0;
     }
   }
-  const recomposeMae = opaqueMae(recomposed, lit);
+  const recomposeMae = visibleRgbaMae(recomposed, lit);
 
   const names: string[] = [];
   let layerCount = 0;

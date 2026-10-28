@@ -177,6 +177,8 @@ export interface CharacterEngine {
   jointHandles(): readonly JointDragHandle[];
   /** 실제 좌·우 눈 본의 현재 회전. 지원하지 않는 엔진·소스는 제어를 비활성화한다. */
   eyeGaze?(): import("./eye-gaze").EyeGazeReading;
+  /** 현재 소스·재질에서 PSD 헤어 분리의 기하학적 소유권 캡처를 지원하는지 확인한다. */
+  psdHairLayers?(): import("./capture").HairLayerSupport;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;

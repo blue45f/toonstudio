@@ -36,6 +36,7 @@ import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
+import { hairLayerSupport } from "./hair-ownership";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
@@ -564,8 +565,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.pressureOutline.release(rig);
     rig.dispose();
   }
-
-
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
     const rig = this.requireRig("apply-plan-no-source", "플랜을 적용할 캐릭터 소스가 없습니다. loadSource 뒤에 호출하세요.");
@@ -596,6 +595,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.gaze.update();
   }
   eyeGaze() { return this.gaze.read(); }
+  psdHairLayers() { return hairLayerSupport(this.rig); }
 
   currentFraming(): CameraFraming {
     return this.framing;
