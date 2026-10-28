@@ -1,10 +1,33 @@
+import { episodeScope, projectScope, scopeContains, scopeIntersects } from "./scope";
+
 import type {
   ApprovalEvaluation,
   ApprovalLaneEvaluation,
   ReviewDecision,
   ReviewLane,
   ReviewPolicy,
+  ProductionProjectAggregate,
+  Submission,
+  ClarificationThread,
 } from "./types";
+
+/** 현재 인수인계와 겹치는 미해결 차단 질문만 제출본 승인에 적용한다. */
+export function productionSubmissionBlockingClarifications(
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "handoffs" | "clarifications" | "episodes">,
+  submission: Submission,
+): readonly ClarificationThread[] {
+  const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId && entry.projectId === submission.projectId);
+  if (!deliverable) return [];
+  const activeHandoffIds = new Set(aggregate.handoffs.filter((handoff) => {
+    if (handoff.projectId !== submission.projectId || ["cancelled", "superseded"].includes(handoff.status)
+      || !scopeIntersects(episodeScope(handoff.projectId, handoff.episodeId), deliverable.scope)) return false;
+    const episode = aggregate.episodes.find((entry) => entry.projectId === submission.projectId && entry.episodeId === handoff.episodeId);
+    return !episode?.activeHandoffId || episode.activeHandoffId === handoff.id;
+  }).map((handoff) => handoff.id));
+  return aggregate.clarifications.filter((thread) => thread.blocking && ["open", "answered"].includes(thread.status)
+    && activeHandoffIds.has(thread.handoffId) && scopeContains(projectScope(submission.projectId), thread.scope)
+    && scopeIntersects(thread.scope, deliverable.scope));
+}
 
 export function evaluateReviewApproval(
   policy: ReviewPolicy,
@@ -14,7 +37,7 @@ export function evaluateReviewApproval(
   for (const decision of decisions) {
     const key = `${decision.lane}:${decision.assignmentId}`;
     const current = latestByLaneAndAssignment.get(key);
-    if (!current || Date.parse(decision.createdAt) > Date.parse(current.createdAt)) {
+    if (!current || Date.parse(decision.createdAt) >= Date.parse(current.createdAt)) {
       latestByLaneAndAssignment.set(key, decision);
     }
   }

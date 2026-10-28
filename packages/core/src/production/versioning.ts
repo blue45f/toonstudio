@@ -133,6 +133,7 @@ export function validateCreativeMergeRequest(input: {
 export function validateDeliverable(
   deliverable: Deliverable,
   projectId: string,
+  current?: Deliverable | null,
 ): readonly string[] {
   const issues: string[] = [];
   if (deliverable.projectId !== projectId) issues.push("deliverable-project-mismatch");
@@ -141,6 +142,10 @@ export function validateDeliverable(
   if (deliverable.completionCriteria.length === 0) issues.push("deliverable-criteria-missing");
   if (deliverable.approvedSubmissionId && deliverable.currentSubmissionId !== deliverable.approvedSubmissionId) {
     issues.push("deliverable-approved-not-current");
+  }
+  if (current !== undefined && (deliverable.currentSubmissionId !== (current?.currentSubmissionId ?? null)
+    || deliverable.approvedSubmissionId !== (current?.approvedSubmissionId ?? null))) {
+    issues.push("deliverable-submission-pointers-managed-by-submission");
   }
   return Object.freeze(issues);
 }
@@ -162,12 +167,32 @@ export function validateSubmission(input: {
   if (submission.inputRevisionRefs.length === 0) issues.push("submission-input-revisions-missing");
   if (submission.revisionRef.revision < 1) issues.push("submission-revision-invalid");
   if (current) {
-    if (current.deliverableId !== submission.deliverableId) issues.push("submission-identity-changed");
+    if (deliverable.currentSubmissionId !== submission.id && submission.status !== "superseded") {
+      issues.push("submission-not-current");
+    }
+    if (current.projectId !== submission.projectId || current.deliverableId !== submission.deliverableId
+      || current.submittedByAssignmentId !== submission.submittedByAssignmentId || current.submittedAt !== submission.submittedAt) {
+      issues.push("submission-identity-changed");
+    }
     if (current.status !== submission.status && !SUBMISSION_TRANSITIONS[current.status].includes(submission.status)) {
       issues.push(`illegal-submission-transition:${current.status}:${submission.status}`);
     }
+    if (current.status === "approved" && (current.evidenceRefs.length !== submission.evidenceRefs.length
+      || current.evidenceRefs.some((evidence, index) => submission.evidenceRefs[index] !== evidence))) {
+      issues.push("submission-approval-evidence-mutated");
+    }
     if (current.revisionRef.id !== submission.revisionRef.id
-      || current.revisionRef.digest !== submission.revisionRef.digest) {
+      || current.revisionRef.digest !== submission.revisionRef.digest
+      || current.revisionRef.lineage !== submission.revisionRef.lineage
+      || current.revisionRef.revision !== submission.revisionRef.revision
+      || current.revisionRef.createdAt !== submission.revisionRef.createdAt
+      || current.inputRevisionRefs.length !== submission.inputRevisionRefs.length
+      || current.inputRevisionRefs.some((revision, index) => {
+        const next = submission.inputRevisionRefs[index];
+        return !next || revision.id !== next.id || revision.digest !== next.digest
+          || revision.lineage !== next.lineage || revision.revision !== next.revision
+          || revision.createdAt !== next.createdAt;
+      })) {
       issues.push("submission-content-mutated");
     }
   }
@@ -184,11 +209,18 @@ export function applySubmissionToDeliverable(
   if (deliverable.id !== submission.deliverableId) {
     throw new Error("Submission does not belong to deliverable.");
   }
+  if (submission.status === "superseded") {
+    return Object.freeze({
+      ...deliverable,
+      currentSubmissionId: deliverable.currentSubmissionId === submission.id ? null : deliverable.currentSubmissionId,
+      approvedSubmissionId: deliverable.approvedSubmissionId === submission.id ? null : deliverable.approvedSubmissionId,
+    });
+  }
   return Object.freeze({
     ...deliverable,
     currentSubmissionId: submission.id,
     approvedSubmissionId: submission.status === "approved"
       ? submission.id
-      : deliverable.approvedSubmissionId,
+      : null,
   });
 }

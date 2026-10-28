@@ -6,8 +6,6 @@ import { AlertTriangle, ArrowRight } from "lucide-react";
 
 import { ProductionClarificationAnswer } from "./ProductionClarificationAnswer";
 import { ProductionDivisionHandoffTriageSuite } from "./ProductionDivisionHandoffTriageSuite";
-import { ProductionLayerOwnersMergeGateSuite } from "./ProductionLayerOwnersMergeGateSuite";
-import { StudioLiveLayerSeatDivisionBench } from "../live/StudioLiveLayerSeatDivisionBench";
 import type { ProductionClientCommand } from "./production-api";
 import { handoffBoardHref, handoffDirections, handoffNextProcess } from "./handoff-next-process-model";
 import {
@@ -77,10 +75,13 @@ export function ProductionHandoffSurface({
   const handoff = activeHandoffs.find((entry) => entry.id === selectedHandoffId) ?? activeHandoffs[0];
   if (!handoff) {
     return (
-      <ProductionEmptyState
-        title={bt("인계할 작업이 없습니다", "Nothing to hand off")}
-        description={bt("스토리 확정 후 회차 의도와 참고 파일을 묶어 다음 작업자에게 전달하세요.", "After locking the story, bundle the episode intent and references for the next artist.")}
-      />
+      <div className="space-y-4">
+        <ProductionDivisionHandoffTriageSuite aggregate={aggregate} episodeId={null} episodeLabel={bt("전체 회차", "All episodes")} canEdit={canEdit} execute={execute} />
+        <ProductionEmptyState
+          title={bt("스토리 인계 패키지가 없습니다", "No story handoff package")}
+          description={bt("스토리 확정 후 회차 의도와 참고 파일을 묶어 다음 작업자에게 전달하세요.", "After locking the story, bundle the episode intent and references for the next artist.")}
+        />
+      </div>
     );
   }
   const clarifications = aggregate.clarifications.filter((entry) => entry.handoffId === handoff.id);
@@ -118,7 +119,7 @@ export function ProductionHandoffSurface({
                     aria-pressed={selected}
                     onClick={() => setSelectedHandoffId(entry.id)}
                     className={cn(
-                      "flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-colors",
+                      "flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-colors",
                       selected
                         ? "border-accent/50 bg-accent-soft text-fg"
                         : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
@@ -136,6 +137,9 @@ export function ProductionHandoffSurface({
           </ProductionSectionCard>
         </div>
       ) : null}
+      <div className="xl:col-span-2">
+        <ProductionDivisionHandoffTriageSuite aggregate={aggregate} episodeId={handoff.episodeId} episodeLabel={episodeName} canEdit={canEdit} execute={execute} />
+      </div>
       <ProductionSectionCard
         title={bt("인계 준비도", "Handoff readiness")}
         description={bt("필수 확인 항목이 하나라도 남으면 다음 작업을 시작할 수 없습니다.", "The next step can't start while a required item is missing.")}
@@ -302,11 +306,6 @@ export function ProductionHandoffSurface({
             {clarifications.length === 0 ? <p className="text-xs text-fg-3">{bt("질문이 없습니다.", "No questions.")}</p> : null}
           </div>
         </ProductionSectionCard>
-      </div>
-      <div className="space-y-4 xl:col-span-2">
-        <ProductionDivisionHandoffTriageSuite episodeLabel={episodeName} />
-        <StudioLiveLayerSeatDivisionBench />
-        <ProductionLayerOwnersMergeGateSuite />
       </div>
     </div>
   );

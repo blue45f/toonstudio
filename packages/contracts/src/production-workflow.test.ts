@@ -105,6 +105,26 @@ describe("제작 공정 프로필", () => {
   });
 });
 describe("작업 보드의 원자적 상태 전환", () => {
+  it.each(["future", "expired", "wrong-scope"] as const)("%s 배정은 새 담당·검수 배정과 제작 시작에서 제외하고 기존 제목 수정을 보존한다", (kind) => {
+    const aggregate = configured([task("t")]);
+    const assignment = aggregate.assignments[0];
+    if (!assignment) throw new Error("검증용 배정이 없습니다.");
+    const invalid = { ...assignment,
+      ...(kind === "future" ? { startsAt: "2026-10-01T00:00:00.000Z" } : {}),
+      ...(kind === "expired" ? { endsAt: "2026-09-26T00:00:00.000Z" } : {}),
+      ...(kind === "wrong-scope" ? { scope: episodeScope("p", "other") } : {}),
+    };
+    const before = { ...aggregate, assignments: [invalid] };
+    const entry = before.tasks[0];
+    if (!entry) throw new Error("검증용 작업이 없습니다.");
+    expect(() => transitionProductionTaskBatch(before, [{ taskId: entry.id, fromStatus: "ready", toStatus: "in-progress" }], at)).toThrow("활성 담당자");
+    expect(validateProductionWorkflowMutation(before, { ...before, tasks: [{ ...entry, title: "기존 작업 제목 수정" }] }, at)).toEqual([]);
+    const unassignedEntry = { ...entry, assignmentIds: [], reviewerAssignmentIds: [] };
+    const unassigned = { ...before, tasks: [unassignedEntry] };
+    for (const assigned of [{ ...unassignedEntry, assignmentIds: [invalid.id] }, { ...unassignedEntry, reviewerAssignmentIds: [invalid.id] }]) {
+      expect(validateProductionWorkflowMutation(unassigned, { ...unassigned, tasks: [assigned] }, at).join()).toContain("활동 기간");
+    }
+  });
   it("선행 조건을 충족한 작업을 이동하고 원본을 보존한다", () => {
     const aggregate = configured([task("t")]);
     const result = transitionProductionTaskBatch(
@@ -154,7 +174,14 @@ describe("작업 보드의 원자적 상태 전환", () => {
     ).toThrow("활성 담당자");
   });
   it("필수 검수자 없이 검수 공정에 진입하지 않는다", () => {
-    const aggregate = { ...configured([task("t", { processKey: "joint-proof", status: "in-progress" })]) };
+    const entry = task("t", { processKey: "joint-proof", status: "in-progress", outputDeliverableIds: ["output"] });
+    const revisionRef = entry.inputRevisionRefs[0];
+    if (!revisionRef) throw new Error("검증용 고정 입력이 없습니다.");
+    const aggregate: ProductionProjectAggregate = { ...configured([entry]),
+      deliverables: [{ id: "output", projectId: "p", scope: projectScope("p"), type: "원고", expectedFormat: "PNG", completionCriteria: ["교정"], currentSubmissionId: "submission", approvedSubmissionId: null }],
+      submissions: [{ id: "submission", projectId: "p", deliverableId: "output", revisionRef, submittedByAssignmentId: "assignment:owner:producer",
+        submittedAt: at, status: "submitted", inputRevisionRefs: entry.inputRevisionRefs, evidenceRefs: [] }],
+    };
     expect(() =>
       transitionProductionTaskBatch(
         aggregate,
@@ -172,6 +199,34 @@ describe("작업 보드의 원자적 상태 전환", () => {
         at,
       ),
     ).toThrow("승인된 제출본");
+  });
+  it("선행 작업 상태만 승인되었거나 최신 제출본이 미승인인 경우 시작하지 않는다", () => {
+    const upstream = task("upstream", { status: "done", outputDeliverableIds: ["output"] });
+    const downstream = task("downstream", { dependencyTaskIds: [upstream.id] });
+    const aggregate = configured([upstream, downstream]);
+    const revisionRef = upstream.inputRevisionRefs[0];
+    if (!revisionRef) throw new Error("검증용 고정 입력이 없습니다.");
+    const transition = [{ taskId: downstream.id, fromStatus: "ready", toStatus: "in-progress" }] as const;
+    expect(() => transitionProductionTaskBatch(aggregate, transition, at)).toThrow("선행 작업");
+    const reviewed: ProductionProjectAggregate = { ...aggregate,
+      deliverables: [{ id: "output", projectId: "p", scope: projectScope("p"), type: "원고", expectedFormat: "PNG",
+        completionCriteria: ["교정 완료"], currentSubmissionId: "submission", approvedSubmissionId: "submission" }],
+      submissions: [{ id: "submission", projectId: "p", deliverableId: "output", revisionRef,
+        submittedByAssignmentId: "assignment:owner:producer", submittedAt: at, status: "approved",
+        inputRevisionRefs: upstream.inputRevisionRefs, evidenceRefs: ["review"] }],
+    };
+    expect(transitionProductionTaskBatch(reviewed, transition, at)[0]?.status).toBe("in-progress");
+    const revised = { ...reviewed, deliverables: reviewed.deliverables.map((entry) => ({ ...entry, currentSubmissionId: "replacement", approvedSubmissionId: null })) };
+    expect(() => transitionProductionTaskBatch(revised, transition, at)).toThrow("선행 작업");
+    const latestOutput = { ...revisionRef, id: "r2", revision: 2, digest: `sha256:${"b".repeat(64)}` };
+    const republished = { ...reviewed, submissions: reviewed.submissions.map((entry) => ({ ...entry, revisionRef: latestOutput })) };
+    expect(() => transitionProductionTaskBatch(republished, transition, at)).toThrow("현재 승인 버전");
+    const pinned = { ...republished, tasks: [upstream, { ...downstream, inputRevisionRefs: [latestOutput] }] };
+    expect(transitionProductionTaskBatch(pinned, transition, at)[0]?.status).toBe("in-progress");
+  });
+  it("실제 현재 제출본 없이 검수 요청을 보낼 수 없다", () => {
+    const entry = task("t", { status: "in-progress", outputDeliverableIds: ["missing"], reviewerAssignmentIds: ["assignment:owner:producer"] });
+    expect(() => transitionProductionTaskBatch(configured([entry]), [{ taskId: "t", fromStatus: "in-progress", toStatus: "internal-review" }], at)).toThrow("현재 제출본");
   });
   it("일반 수정 명령으로도 활성 공정의 동시 작업 제한을 우회하지 못한다", () => {
     const aggregate = configured([task("a", { status: "in-progress" }), task("b")]);

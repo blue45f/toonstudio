@@ -1,6 +1,71 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+async function openHandoff(page: Page) {
+  // 샘플 UI는 API 서버 없이 검사한다. 실제 인증·권한·저장은 별도 PostgreSQL HTTP 통합 검증이 담당한다.
+  await page.route("**/api/auth/session", (route) => route.fulfill({ json: { authenticated: false, user: null } }));
+  await page.route("**/api/health/capabilities", (route) => route.fulfill({ json: {
+    status: "available", incidentId: null, retryAfterSeconds: null, checkedAt: new Date().toISOString(),
+    capabilities: {
+      publicCatalog: "available", authSession: "available", communityRead: "available", communityWrite: "available",
+      marketplaceRead: "available", studioLocalEditing: "available", studioProjectRead: "available",
+      studioCloudSave: "available", realtimeCollaboration: "available", publishing: "available", serverAi: "available",
+    },
+  } }));
+  await page.goto("/production/projects/sample-project/handoff", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("division-handoff-queue")).toBeVisible({ timeout: 120_000 });
+  await expect(page.locator('[aria-hidden="true"][data-phase]')).toBeHidden();
+}
+
+test("분업 인계 작업함의 실제 검색·차단·보드 연결", async ({ page }) => {
+  await openHandoff(page);
+  const queue = page.getByTestId("division-handoff-queue");
+  await expect(queue).toBeVisible({ timeout: 120_000 });
+  await queue.getByRole("textbox", { name: "작업·공정·담당자 검색" }).fill("야간 배경");
+  await expect(queue.getByRole("heading", { name: "12화 야간 배경 12컷 외주" })).toBeVisible();
+  await expect(queue.getByRole("heading", { name: "12화 콘티와 세로 리듬" })).toHaveCount(0);
+  await expect(queue.getByRole("button", { name: "작업 시작·재개" })).toBeDisabled();
+  await expect(queue).toContainText("현재 제출본 없음");
+  const detail = queue.getByRole("link", { name: "작업 상세·배정" });
+  await expect(detail).toHaveAttribute("href", /openTask=task-episode-12-background/u);
+  await detail.click();
+  await expect(page.getByRole("dialog", { name: "12화 야간 배경 12컷 외주" })).toBeVisible();
+});
+
+test("분업 인계 작업함의 세 테마·모바일·접근성", async ({ page }, testInfo) => {
+  await openHandoff(page);
+  const queue = page.getByTestId("division-handoff-queue");
+  await expect(queue).toBeVisible({ timeout: 120_000 });
+  await queue.getByRole("textbox", { name: "작업·공정·담당자 검색" }).fill("콘티와 세로 리듬");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const theme of ["light", "dark", "contrast"]) {
+    await page.evaluate((value) => document.documentElement.setAttribute("data-design-theme", value), theme);
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: width < 600 ? 900 : 1000 });
+      await queue.scrollIntoViewIfNeeded();
+      const geometry = await queue.evaluate((element) => ({ width: element.clientWidth, scroll: element.scrollWidth }));
+      expect(geometry.scroll, `${theme}/${width} 작업함 가로 넘침`).toBeLessThanOrEqual(geometry.width + 1);
+      await page.screenshot({ path: testInfo.outputPath(`handoff-${theme}-${width}.png`) });
+    }
+    const result = await new AxeBuilder({ page }).include('[data-testid="division-handoff-queue"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    expect(result.violations.map((entry) => ({ id: entry.id, nodes: entry.nodes.map((node) => node.target) }))).toEqual([]);
+  }
+});
+
+test("분업 인계 작업함에서 정확한 현재 제출본 검수로 이동한다", async ({ page }) => {
+  await openHandoff(page);
+  const queue = page.getByTestId("division-handoff-queue");
+  await expect(queue).toBeVisible({ timeout: 120_000 });
+  await queue.getByRole("textbox", { name: "작업·공정·담당자 검색" }).fill("콘티와 세로 리듬");
+  await queue.getByRole("link", { name: "제출본 검수 열기" }).click();
+  const review = page.locator("[data-production-review-workspace]");
+  await expect(review.getByText("선택한 작업 · 12화 콘티와 세로 리듬", { exact: true })).toBeVisible();
+  await expect(review.getByRole("combobox", { name: "검수 회차" })).toHaveValue("episode-12");
+  await expect(review.getByRole("combobox", { name: "검수 제출본" })).toHaveValue("submission-thumbnail-12-r2");
+  await expect(page.getByText("C2PA 검증 완료", { exact: true })).toHaveCount(0);
+});
+
 async function openBoard(page: Page) {
   await page.goto("/production/projects/sample-project/production", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("production-work-board")).toBeVisible({ timeout: 90_000 });

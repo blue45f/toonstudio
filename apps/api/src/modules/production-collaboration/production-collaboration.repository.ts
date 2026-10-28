@@ -12,6 +12,7 @@ import {
   productionProjects,
 } from "../../platform/database";
 import { resolveCreatorCollaborationAccess } from "../creator/creator-collaboration.policy";
+import { matchesProductionTaskBatchPreconditions, type ProductionTaskBatchPreconditions } from "./production-task-batch-concurrency";
 
 export interface ProductionProjectAccess {
   readonly view: boolean;
@@ -431,6 +432,7 @@ export class ProductionCollaborationRepository {
     readonly mutationId: string;
     readonly requestDigest: string;
     readonly requiredCapability?: "comment" | "edit" | "manage";
+    readonly taskBatchPreconditions?: ProductionTaskBatchPreconditions;
     readonly mutate: (
       aggregate: ProductionProjectAggregate,
       access: ProductionProjectAccess,
@@ -471,7 +473,8 @@ export class ProductionCollaborationRepository {
         }
         return receipt.response;
       }
-      if (row.revision !== input.expectedRevision) {
+      if (row.revision !== input.expectedRevision && (input.expectedRevision > row.revision
+        || !matchesProductionTaskBatchPreconditions(currentAggregate, input.taskBatchPreconditions))) {
         throw new ProductionProjectRevisionConflictError(row.revision);
       }
 
