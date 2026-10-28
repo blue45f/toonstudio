@@ -5,6 +5,7 @@ export type StudioHybridDccPolygonPoint3 = readonly [number, number, number];
  * value, and edge bevel checks its result against it, so a bevel cannot hand back a face the viewport would drop.
  */
 export const STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES = 128;
+export const STUDIO_HYBRID_DCC_MAX_POLYGON_PAIR_WORK_PER_ASSET = 2_000_000;
 
 function cross2d(
   a: readonly [number, number],
@@ -59,17 +60,18 @@ function projectStudioHybridDccPolygon(
 }
 
 /**
- * Validates the exact polygon class supported by the synchronous DCC fan triangulator.
- *
- * Callers enforce their own corner and pair-work budgets before entering this routine. Concave,
- * self-intersecting, non-planar, or degenerate polygons fail closed until a bounded ear-clipping
- * or worker triangulation path is available.
+ * 렌더 전용 fan의 안전 범위를 검사한다. 단순한 convex 투영을 유지한 비평면 quad는
+ * 두 유효한 삼각형으로 표시하되 원본 face/vertex ID와 half-edge 위상은 바꾸지 않는다.
+ * 비평면 n-gon, 오목·자기 교차·퇴화 면은 별도 삼각화 경로가 생길 때까지 거부한다.
  */
 export function validateStudioHybridDccFanPolygon(
   points: readonly StudioHybridDccPolygonPoint3[],
   faceId: number,
 ): void {
   if (points.length < 3) throw new Error(`면 ${faceId}의 정점이 3개보다 적습니다.`);
+  if (points.length > STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES) {
+    throw new Error(`면 ${faceId}의 꼭짓점 수가 동기 삼각화 예산을 초과했습니다.`);
+  }
   if (points.some((point) => point.some((coordinate) => !Number.isFinite(coordinate)))) {
     throw new Error(`면 ${faceId}에 유효하지 않은 좌표가 있습니다.`);
   }
@@ -86,7 +88,7 @@ export function validateStudioHybridDccFanPolygon(
     nz += (current[0] - next[0]) * (current[1] + next[1]);
   }
   const normalLength = Math.hypot(nx, ny, nz);
-  if (normalLength <= 1e-10) throw new Error(`면 ${faceId}의 면적이 0입니다.`);
+  if (!Number.isFinite(normalLength) || normalLength <= 1e-10) throw new Error(`면 ${faceId}의 면적이 0이거나 불안정합니다.`);
   const normal: StudioHybridDccPolygonPoint3 = [
     nx / normalLength,
     ny / normalLength,
@@ -103,11 +105,12 @@ export function validateStudioHybridDccFanPolygon(
     );
   }
   const planeTolerance = Math.max(1e-7, span * 1e-5);
-  if (points.some((point) => Math.abs(
+  const nonPlanar = points.some((point) => Math.abs(
     (point[0] - anchor[0]) * normal[0]
       + (point[1] - anchor[1]) * normal[1]
       + (point[2] - anchor[2]) * normal[2],
-  ) > planeTolerance)) {
+  ) > planeTolerance);
+  if (nonPlanar && points.length !== 4) {
     throw new Error(`면 ${faceId}가 평면 다각형이 아닙니다.`);
   }
 
@@ -152,6 +155,18 @@ export function validateStudioHybridDccFanPolygon(
     const fanArea = cross2d(projected[0]!, projected[index]!, projected[index + 1]!);
     if (Math.abs(fanArea) <= epsilon || Math.sign(fanArea) !== winding) {
       throw new Error(`면 ${faceId}는 안전한 fan 삼각화가 필요합니다.`);
+    }
+    if (nonPlanar) {
+      const a = points[index];
+      const b = points[index + 1];
+      if (!a || !b) throw new Error(`면 ${faceId}의 fan 정점이 없습니다.`);
+      const ax = a[0] - anchor[0], ay = a[1] - anchor[1], az = a[2] - anchor[2];
+      const bx = b[0] - anchor[0], by = b[1] - anchor[1], bz = b[2] - anchor[2];
+      const alignment = (ay * bz - az * by) * normal[0]
+        + (az * bx - ax * bz) * normal[1] + (ax * by - ay * bx) * normal[2];
+      if (!Number.isFinite(alignment) || alignment <= epsilon) {
+        throw new Error(`면 ${faceId}의 비평면 fan 삼각형이 퇴화하거나 뒤집혔습니다.`);
+      }
     }
   }
 }

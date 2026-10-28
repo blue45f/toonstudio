@@ -62,7 +62,7 @@ import {
   STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION,
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
-import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
+import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, STUDIO_HYBRID_DCC_MAX_POLYGON_PAIR_WORK_PER_ASSET, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
@@ -193,7 +193,7 @@ const STUDIO_HYBRID_DCC_RENDER_PROFILE = Object.freeze({
   maxSynchronousFacesPerAsset: 120_000,
   maxSynchronousTrianglesPerAsset: 120_000,
   maxSynchronousLinearWorkPerAsset: 1_250_000,
-  maxSynchronousPolygonPairWorkPerAsset: 2_000_000,
+  maxSynchronousPolygonPairWorkPerAsset: STUDIO_HYBRID_DCC_MAX_POLYGON_PAIR_WORK_PER_ASSET,
   maxSynchronousLinearWorkTotal: 2_000_000,
   maxSynchronousPolygonPairWorkTotal: 3_000_000,
   maxSynchronousTrianglesTotal: 180_000,

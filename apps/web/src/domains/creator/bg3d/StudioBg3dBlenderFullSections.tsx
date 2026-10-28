@@ -1,6 +1,8 @@
 import { Aperture, Box, Camera, Cpu, Layers, PenTool, Sparkles, Waves } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import {
   buildBlenderPresetScenePrimitives,
@@ -77,6 +79,7 @@ export function StudioBg3dBlenderFullSections({
   onApplySceneCamera,
   onSyncSceneLineArt,
 }: StudioBg3dBlenderFullSectionsProps): React.JSX.Element {
+  const bt = useBilingual("StudioBg3dBlenderFullSections");
   // 6. Modifier Stack state
   const [arrayCount, setArrayCount] = useState<number>(4);
   const [subsurfLevels, setSubsurfLevels] = useState<number>(2);
@@ -232,6 +235,22 @@ export function StudioBg3dBlenderFullSections({
 
   return (
     <div className="space-y-2.5 border-t border-line pt-2.5">
+      <section className="space-y-2 rounded-lg border border-line bg-panel p-3" aria-label={bt("웹 모델링 작업대", "Web modeling workbench")}>
+        <p className="text-xs leading-6 text-fg-2">
+          {bt(
+            "점·모서리·면 편집과 비파괴 모디파이어는 웹 3D 모델링 작업대에서 사용합니다. 아래 패널은 설정 검토와 배경 프리셋 생성에 사용합니다.",
+            "Use the web 3D modeling workbench to edit vertices, edges and faces and apply non-destructive modifiers. The panels below review settings and generate background presets.",
+          )}
+        </p>
+        <a
+          href="/studio/3d/dcc/model"
+          aria-disabled={disabled || undefined}
+          onClick={(event) => { if (disabled) event.preventDefault(); }}
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent aria-disabled:opacity-50"
+        >
+          {bt("3D 모델링 작업대로 이동", "Open the 3D modeling workbench")}
+        </a>
+      </section>
       {/* 6. Blender 5.2 6-Category Modifier Stack & GN Essentials */}
       <section
         data-testid="bg3d-blender-modifier-stack-section"

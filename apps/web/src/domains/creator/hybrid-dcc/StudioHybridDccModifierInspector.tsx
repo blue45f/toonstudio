@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useId, useState } from "react";
 
+import { CONTROL_CLASS, ModifierNumberField, ModifierSelectField, ModifierToggleField } from "./StudioHybridDccModifierFields";
 import { StudioThreeDToggleControl } from "../StudioThreeDToggle";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 
@@ -64,6 +65,9 @@ export interface StudioHybridDccArrayModifierView
   readonly mode: "linear" | "radial";
   readonly radialAngleRad?: number;
   readonly realizeInstances: boolean;
+  readonly useConstantOffset?: boolean;
+  readonly useRelativeOffset?: boolean;
+  readonly relativeOffset?: { readonly x: number; readonly y: number; readonly z: number };
 }
 
 export interface StudioHybridDccBooleanOperandOption {
@@ -87,6 +91,7 @@ export interface StudioHybridDccSolidifyModifierView
   readonly thickness: number;
   readonly evenThickness: boolean;
   readonly rim: boolean;
+  readonly offset?: number;
 }
 
 export interface StudioHybridDccBevelModifierView
@@ -218,133 +223,8 @@ const MODIFIER_COPY: Readonly<Record<
   },
 };
 
-const CONTROL_CLASS =
-  "min-h-11 w-full min-w-0 rounded-lg border border-line bg-card px-3 text-sm text-fg outline-none transition-[border-color,background-color] duration-150 hover:bg-raised focus-visible:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none";
-
-interface ModifierNumberFieldProps {
-  readonly label: string;
-  readonly visibleLabel?: string;
-  readonly description?: string;
-  readonly value: number;
-  readonly onChange: (value: number) => void;
-  readonly disabled: boolean;
-  readonly min?: number;
-  readonly max?: number;
-  readonly step?: number;
-  readonly unit?: string;
-}
-
-function ModifierNumberField({
-  label,
-  visibleLabel,
-  description,
-  value,
-  onChange,
-  disabled,
-  min,
-  max,
-  step,
-  unit,
-}: ModifierNumberFieldProps) {
-  return (
-    <label className="block min-w-0 text-xs font-medium text-fg-2">
-      <span className="mb-1.5 block break-words [overflow-wrap:anywhere]">
-        {visibleLabel ?? label}
-      </span>
-      <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <input
-          type="number"
-          aria-label={label}
-          value={Number.isFinite(value) ? value : 0}
-          min={min}
-          max={max}
-          step={step}
-          disabled={disabled}
-          className={CONTROL_CLASS}
-          onChange={(event) => {
-            const next = event.currentTarget.valueAsNumber;
-            if (Number.isFinite(next)) onChange(next);
-          }}
-        />
-        {unit ? <span className="shrink-0 text-[0.6875rem] text-fg-3">{unit}</span> : null}
-      </span>
-      {description ? (
-        <span className="mt-1.5 block break-words text-[0.6875rem] font-normal leading-relaxed text-fg-3 [overflow-wrap:anywhere]">
-          {description}
-        </span>
-      ) : null}
-    </label>
-  );
-}
-
-interface ModifierSelectFieldProps<T extends string> {
-  readonly label: string;
-  readonly visibleLabel?: string;
-  readonly value: T;
-  readonly onChange: (value: T) => void;
-  readonly disabled: boolean;
-  readonly options: readonly { readonly value: T; readonly label: string; readonly disabled?: boolean }[];
-}
-
-function ModifierSelectField<T extends string>({
-  label,
-  visibleLabel,
-  value,
-  onChange,
-  disabled,
-  options,
-}: ModifierSelectFieldProps<T>) {
-  return (
-    <label className="block min-w-0 text-xs font-medium text-fg-2">
-      <span className="mb-1.5 block break-words [overflow-wrap:anywhere]">
-        {visibleLabel ?? label}
-      </span>
-      <select
-        aria-label={label}
-        value={value}
-        disabled={disabled}
-        className={CONTROL_CLASS}
-        onChange={(event) => onChange(event.currentTarget.value as T)}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value} disabled={option.disabled}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 function modifierInstanceName(kind: StudioHybridDccModifierKind, index: number): string {
   return `${index + 1}단계 ${MODIFIER_COPY[kind].label}`;
-}
-
-function ModifierToggleField({
-  checked,
-  disabled,
-  label,
-  description,
-  onChange,
-}: {
-  readonly checked: boolean;
-  readonly disabled: boolean;
-  readonly label: string;
-  readonly description: string;
-  readonly onChange: (checked: boolean) => void;
-}) {
-  return (
-    <StudioThreeDToggleControl
-      checked={checked}
-      disabled={disabled}
-      label={label}
-      description={description}
-      className="min-h-11 rounded-lg bg-canvas/35 px-3 py-2 hover:bg-raised"
-      labelClassName="text-xs font-semibold text-fg"
-      descriptionClassName="text-[0.6875rem] leading-relaxed text-fg-3"
-      onChange={onChange}
-    />
-  );
 }
 
 function ModifierParameters({
@@ -455,6 +335,23 @@ function ModifierParameters({
             ))}
           </div>
         </fieldset>
+        {modifier.mode === "linear" ? <>
+          <ModifierToggleField checked={modifier.useConstantOffset ?? true} disabled={busy}
+            label={`${instanceName} 고정 거리 사용`} description="위에 입력한 거리만큼 복사본을 이동합니다."
+            onChange={(useConstantOffset) => onPatch({ useConstantOffset })} />
+          <ModifierToggleField checked={modifier.useRelativeOffset ?? false} disabled={busy}
+            label={`${instanceName} 모델 크기에 비례한 간격`} description="앞 단계까지 변형된 모델 크기에 배수를 곱합니다. 고정 거리와 함께 사용하면 합산합니다."
+            onChange={(useRelativeOffset) => onPatch({ useRelativeOffset })} />
+          {modifier.useRelativeOffset ? <fieldset className="min-w-0 sm:col-span-2">
+            <legend className="mb-1.5 text-xs font-medium text-fg-2">모델 크기 기준 배수</legend>
+            <div className="grid min-w-0 gap-2 min-[480px]:grid-cols-3">
+              {(["x", "y", "z"] as const).map((axis) => <ModifierNumberField key={axis}
+                label={`${instanceName} 상대 간격 ${axis.toUpperCase()}`} visibleLabel={`${axis.toUpperCase()}축 배수`}
+                value={(modifier.relativeOffset ?? { x: 1, y: 0, z: 0 })[axis]} step={0.1} unit="배" disabled={busy}
+                onChange={(value) => onPatch({ relativeOffset: { ...(modifier.relativeOffset ?? { x: 1, y: 0, z: 0 }), [axis]: value } })} />)}
+            </div>
+          </fieldset> : null}
+        </> : null}
         {modifier.mode === "radial" ? (
           <ModifierNumberField
             label={`${instanceName} 원형 전체 각도`}
@@ -547,6 +444,10 @@ function ModifierParameters({
           description="기울어진 면에서도 보이는 두께 차이를 줄입니다."
           onChange={(evenThickness) => onPatch({ evenThickness })}
         />
+        <ModifierNumberField label={`${instanceName} 두께 배치`} visibleLabel="원본 면 기준 배치"
+          description="-1은 안쪽, 0은 양쪽, 1은 바깥쪽입니다. 원본 면을 직접 움직이지 않습니다."
+          value={modifier.offset ?? 1} step={0.1} disabled={busy} unit="배"
+          onChange={(offset) => onPatch({ offset })} />
         <ModifierToggleField
           checked={modifier.rim}
           disabled={busy}

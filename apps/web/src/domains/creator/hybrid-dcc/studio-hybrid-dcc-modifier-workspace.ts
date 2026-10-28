@@ -252,6 +252,7 @@ function defaultModifier(
         id,
         enabled: true,
         thickness: 0.08,
+        offset: 1,
         evenThickness: true,
         rim: true,
       };
@@ -351,6 +352,10 @@ function patchModifier(
       const offset = patch.offset && typeof patch.offset === "object"
         ? patch.offset as Readonly<Record<string, unknown>>
         : {};
+      const relative = patch.relativeOffset && typeof patch.relativeOffset === "object"
+        ? patch.relativeOffset as Readonly<Record<string, unknown>> : {};
+      const relativeBefore = modifier.relativeOffset ?? { x: 1, y: 0, z: 0 };
+      const mode = patch.mode === "linear" || patch.mode === "radial" ? patch.mode : modifier.mode;
       return {
         ...modifier,
         enabled,
@@ -370,6 +375,17 @@ function patchModifier(
           Math.PI * 8,
         ),
         realizeInstances: booleanValue(patch.realizeInstances, modifier.realizeInstances),
+        ...(patch.useConstantOffset !== undefined || modifier.useConstantOffset !== undefined ? {
+          useConstantOffset: mode === "radial" ? true : booleanValue(patch.useConstantOffset, modifier.useConstantOffset ?? true),
+        } : {}),
+        ...(patch.useRelativeOffset !== undefined || modifier.useRelativeOffset !== undefined ? {
+          useRelativeOffset: mode === "linear" && booleanValue(patch.useRelativeOffset, modifier.useRelativeOffset ?? false),
+        } : {}),
+        ...(patch.relativeOffset !== undefined || modifier.relativeOffset !== undefined ? { relativeOffset: {
+          x: finiteNumber(relative.x, relativeBefore.x, -1_000, 1_000),
+          y: finiteNumber(relative.y, relativeBefore.y, -1_000, 1_000),
+          z: finiteNumber(relative.z, relativeBefore.z, -1_000, 1_000),
+        } } : {}),
       };
     }
     case "boolean": {
@@ -407,6 +423,8 @@ function patchModifier(
         thickness: finiteNumber(patch.thickness, modifier.thickness, -10, 10),
         evenThickness: booleanValue(patch.evenThickness, modifier.evenThickness),
         rim: booleanValue(patch.rim, modifier.rim),
+        ...(patch.offset !== undefined || modifier.offset !== undefined
+          ? { offset: finiteNumber(patch.offset, modifier.offset ?? 1, -1_000, 1_000) } : {}),
       };
     case "bevel":
       return {

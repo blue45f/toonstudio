@@ -52,6 +52,8 @@ import {
 import { StudioHybridDccEnvironmentNotice } from "./StudioHybridDccEnvironmentNotice";
 import { StudioHybridDccIntro, type StudioHybridDccStartKind } from "./StudioHybridDccIntro";
 import { StudioHybridDccViewport } from "./StudioHybridDccViewport";
+import { StudioHybridDccFileTools } from "./StudioHybridDccFileTools";
+import { useStudioHybridDccFileTools } from "./useStudioHybridDccFileTools";
 import {
   StudioHybridDccExpertTools,
   StudioHybridDccModeTabs,
@@ -81,18 +83,9 @@ import {
 
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { friendlyHybridDccAssetName } from "./studio-hybrid-dcc-asset-label";
 
 export type { StudioHybridDccPersistenceStatus };
-
-type BilingualFn = (ko: string, en: string) => string;
-
-/** 장면 목록에 보이는 쉬운 이름. 원본 식별자는 작은 글씨로 따로 보여 준다. */
-function friendlyHybridDccAssetName(bt: BilingualFn, assetId: string, index: number): string {
-  if (/^(?:asset-)?cube(?:-|$)/iu.test(assetId)) return bt("큐브", "Cube");
-  const roomPart = /-part-(\d+)$/u.exec(assetId);
-  if (roomPart) return formatI18nTemplate(bt("방 구성품 {n}", "Room part {n}"), { n: Number(roomPart[1]) });
-  return formatI18nTemplate(bt("오브젝트 {n}", "Object {n}"), { n: index + 1 });
-}
 
 function isStudioHybridDccRunResult(
   value: StudioHybridDccWorkspace | StudioHybridDccRunResult,
@@ -268,6 +261,7 @@ export function StudioHybridDccPanel({
       | StudioHybridDccWorkspace
       | StudioHybridDccRunResult
       | Promise<StudioHybridDccWorkspace | StudioHybridDccRunResult>,
+    canCommit: () => boolean = () => true,
   ) => {
     const generation = ++runGenerationRef.current;
     setBusy(true);
@@ -278,7 +272,7 @@ export function StudioHybridDccPanel({
         ? result.selection
         : undefined;
       const next = await workspaceRefreshModifierPreviews(raw);
-      if (!mountedRef.current || generation !== runGenerationRef.current) return;
+      if (!mountedRef.current || generation !== runGenerationRef.current || !canCommit()) return;
       setWs(next);
       setComponentSelection((current) => alignHybridDccSelectionToWorkspace(
         requestedSelection ?? current,
@@ -286,13 +280,14 @@ export function StudioHybridDccPanel({
       ));
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.lastUvMap?.mode ?? frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
     } catch (error) {
-      if (!mountedRef.current || generation !== runGenerationRef.current) return;
+      if (!mountedRef.current || generation !== runGenerationRef.current || !canCommit()) return;
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runFailed", { label, detail: error instanceof Error ? error.message : String(error) }, "{label} 실패 · {detail}"));
     } finally {
       if (mountedRef.current && generation === runGenerationRef.current) setBusy(false);
     }
   };
 
+  const fileTools = useStudioHybridDccFileTools({ workspace: ws, workspaceDocumentId, busy, run });
   const runModifier = (
     label: string,
     fn: () => StudioHybridDccWorkspace | Promise<StudioHybridDccWorkspace>,
@@ -347,6 +342,9 @@ export function StudioHybridDccPanel({
                 mode: modifier.mode,
                 radialAngleRad: modifier.radialAngleRad,
                 realizeInstances: modifier.realizeInstances,
+                useConstantOffset: modifier.useConstantOffset,
+                useRelativeOffset: modifier.useRelativeOffset,
+                relativeOffset: modifier.relativeOffset,
               };
             case "boolean":
               return {
@@ -370,6 +368,7 @@ export function StudioHybridDccPanel({
                 thickness: modifier.thickness,
                 evenThickness: modifier.evenThickness,
                 rim: modifier.rim,
+                offset: modifier.offset,
               };
             case "bevel":
               return {
@@ -585,6 +584,8 @@ export function StudioHybridDccPanel({
     run,
     runModifier,
     setLog,
+    downloadWorkfile: fileTools.save,
+    downloadObj: fileTools.saveObj,
     pickImportFile: () => fileRef.current?.click(),
     canOpenInBackground3d: Boolean(onOpenInBackground3D),
     openInBackground3d,
@@ -640,6 +641,7 @@ export function StudioHybridDccPanel({
       <div className="flex flex-wrap items-center gap-2" data-studio-hybrid-dcc-topbar="true">
         <StudioHybridDccModeTabs mode={workbenchMode} onChange={changeWorkbenchMode} />
         <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
+          <StudioHybridDccFileTools model={fileTools} modelFileRef={fileRef} onModelFile={(file) => { void run(`모델 가져오기 · ${file.name}`, async () => workspaceImportBytes(ws, file.name, new Uint8Array(await file.arrayBuffer()))); }} />
           {persistenceStatus && persistenceCopy ? (
             <span
               className={cn(
@@ -717,25 +719,6 @@ export function StudioHybridDccPanel({
       </div>
 
       {webglSupported === false ? <StudioHybridDccEnvironmentNotice onRecheck={recheckWebgl} /> : null}
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".stl,.ply,.dae,.dxf,.off,.3mf,.bvh,.ifc,.obj,.glb,.gltf,.vrm,.fbx,.3dm,.step,.stp"
-        className="sr-only"
-        tabIndex={-1}
-        aria-label={bt("가져올 3D 파일 선택", "Choose a 3D file to import")}
-        data-studio-hybrid-dcc-import="true"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (!file) return;
-          void run(`모델 가져오기 · ${file.name}`, async () => {
-            const buf = new Uint8Array(await file.arrayBuffer());
-            return workspaceImportBytes(ws, file.name, buf);
-          });
-        }}
-      />
 
       <div
         className={cn(

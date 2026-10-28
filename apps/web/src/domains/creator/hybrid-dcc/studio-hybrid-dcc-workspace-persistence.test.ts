@@ -21,9 +21,9 @@ import {
   mutateStudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
 import {
-  workspaceAddActiveModifier,
   workspaceRefreshModifierPreviews,
 } from "./studio-hybrid-dcc-modifier-workspace";
+import { createPreSliceArraySolidifyWorkspace } from "./studio-hybrid-dcc-legacy-modifier-fixture";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddArtistInk,
@@ -299,10 +299,7 @@ async function createPreSliceModifierPreviewFixture(): Promise<{
   readonly bytes: Uint8Array;
   readonly currentWorkspace: StudioHybridDccWorkspace;
 }> {
-  let workspace = createStudioHybridDccWorkspace("legacy-modifier-preview");
-  workspace = workspaceAddUnitCube(workspace, "cube");
-  workspace = await workspaceAddActiveModifier(workspace, "array");
-  workspace = await workspaceAddActiveModifier(workspace, "solidify");
+  let workspace = await createPreSliceArraySolidifyWorkspace();
   // History fidelity is covered by the main legacy fixture. Keep this fixture bounded to the
   // nonempty persisted stack and its disposable evaluated bridge presentation.
   workspace = {

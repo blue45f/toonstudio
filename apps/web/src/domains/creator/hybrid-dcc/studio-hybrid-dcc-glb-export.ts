@@ -26,6 +26,7 @@ import {
   STUDIO_HYBRID_DCC_GLB_EXPORT_MAX_ISSUE_IDS,
   STUDIO_HYBRID_DCC_GLB_EXPORT_MAX_REPORT_ISSUES,
 } from "./studio-hybrid-dcc-glb-export-diagnostic-limits";
+import { canonicalStudioHybridDccFaceLoop, triangulateStudioHybridDccRenderQuad } from "./studio-hybrid-dcc-render-face";
 
 import type {
   StudioEditableFace,
@@ -195,6 +196,7 @@ interface ValidatedFace {
   readonly triangles: readonly (readonly [number, number, number])[];
   readonly rawNormal: StudioMeshVec3;
   readonly normal: StudioMeshVec3;
+  readonly warped: boolean;
 }
 
 interface EdgeUse {
@@ -495,23 +497,6 @@ function polygonSelfIntersects(points: readonly Vec2[], epsilon: number): boolea
   return false;
 }
 
-function rotateTogether<T>(values: readonly T[], offset: number): readonly T[] {
-  return [...values.slice(offset), ...values.slice(0, offset)];
-}
-
-function canonicalLoopStart(vertexIds: readonly number[], halfEdgeIds: readonly number[]): number {
-  let best = 0;
-  for (let index = 1; index < vertexIds.length; index += 1) {
-    if (
-      vertexIds[index]! < vertexIds[best]! ||
-      (vertexIds[index] === vertexIds[best] && halfEdgeIds[index]! < halfEdgeIds[best]!)
-    ) {
-      best = index;
-    }
-  }
-  return best;
-}
-
 function pointInsideTriangle(
   point: Vec2,
   a: Vec2,
@@ -617,9 +602,7 @@ function prepareFace(
   vertexIdsInput: readonly number[],
   vertexById: ReadonlyMap<number, StudioEditableVertex>,
 ): InternalResult<{ readonly face: ValidatedFace; readonly warnings: readonly StudioHybridDccGlbIssue[] }> {
-  const start = canonicalLoopStart(vertexIdsInput, halfEdgeIdsInput);
-  const halfEdgeIds = rotateTogether(halfEdgeIdsInput, start);
-  const vertexIds = rotateTogether(vertexIdsInput, start);
+  const { halfEdgeIds, vertexIds } = canonicalStudioHybridDccFaceLoop(vertexIdsInput, halfEdgeIdsInput);
   const points3d = vertexIds.map((id) => vertexById.get(id)!.position);
   const rawNormal = newellNormal(points3d);
   const normal = normalized(rawNormal);
@@ -636,10 +619,17 @@ function prepareFace(
     );
   }
   const planeOrigin = points3d[0]!;
-  for (const point of points3d) {
-    if (Math.abs(dot(sub(point, planeOrigin), normal)) > PLANAR_EPSILON * extent) {
+  const warped = points3d.some((point) => Math.abs(dot(sub(point, planeOrigin), normal)) > PLANAR_EPSILON * extent);
+  let quadTriangles: readonly (readonly [number, number, number])[] | null = null;
+  if (warped) {
+    try {
+      quadTriangles = triangulateStudioHybridDccRenderQuad(vertexIdsInput, vertexIdsInput.map((id) => {
+        const point = vertexById.get(id)!.position;
+        return [point.x, point.y, point.z];
+      }), face.id);
+    } catch {
       return stop(
-        issue("error", "face-non-planar", `Face ${face.id} is outside the planar export tolerance`, {
+        issue("error", "face-non-planar", `Face ${face.id} has no verified non-planar quad projection`, {
           faceIds: [face.id],
           vertexIds,
         }),
@@ -653,7 +643,7 @@ function prepareFace(
   const retained = vertexIds.map((_, index) => index);
   const omitted: number[] = [];
   let changed = true;
-  while (changed && retained.length > 3) {
+  while (!warped && changed && retained.length > 3) {
     changed = false;
     for (let cursor = 0; cursor < retained.length; cursor += 1) {
       const previousIndex = retained[(cursor + retained.length - 1) % retained.length]!;
@@ -703,7 +693,7 @@ function prepareFace(
       }),
     );
   }
-  const triangulated = triangulateSimplePolygon(
+  const triangulated = quadTriangles ? pass(quadTriangles) : triangulateSimplePolygon(
     face.id,
     triangulationVertexIds,
     triangulationPoints,
@@ -729,6 +719,7 @@ function prepareFace(
       triangles: triangulated.value,
       rawNormal,
       normal,
+      warped,
     },
     warnings,
   });
@@ -1144,6 +1135,9 @@ function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
   for (const faceData of mesh.faces) {
     for (const triangle of faceData.triangles) {
       triangleSourceFaceIds.push(faceData.face.id);
+      const flatNormal = faceData.warped && !faceData.face.smooth
+        ? normalized(newellNormal(triangle.map((id) => mesh.vertexById.get(id)!.position))) : faceData.normal;
+      if (!flatNormal) return stop(issue("error", "normal-unresolved", "Non-planar triangle normal is unstable"));
       for (const sourceVertexId of triangle) {
         const groupId = faceData.face.smooth
           ? groups.value.groupByCorner.get(`${sourceVertexId}:${faceData.face.id}`)
@@ -1153,7 +1147,7 @@ function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
         }
         const key = faceData.face.smooth
           ? `smooth:${sourceVertexId}:${groupId}`
-          : `flat:${faceData.face.id}:${sourceVertexId}`;
+          : `flat:${faceData.face.id}:${faceData.warped ? `${triangle.join(",")}:` : ""}${sourceVertexId}`;
         let outputIndex = outputIndexByKey.get(key);
         if (outputIndex === undefined) {
           outputIndex = outputSourceVertexIds.length;
@@ -1163,7 +1157,7 @@ function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
           const position = mesh.vertexById.get(sourceVertexId)!.position;
           const normal = faceData.face.smooth
             ? groups.value.normalByGroup.get(`${sourceVertexId}:${groupId}`)!
-            : faceData.normal;
+            : flatNormal;
           positions.push(position.x, position.y, position.z);
           normals.push(normal.x, normal.y, normal.z);
           outputSourceVertexIds.push(sourceVertexId);

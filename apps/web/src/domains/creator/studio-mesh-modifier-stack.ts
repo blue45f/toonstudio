@@ -18,8 +18,26 @@ import {
 import { decimateStudioMesh } from "./studio-mesh-ops-advanced";
 import { sha256HexPortable } from "./studio-sha256";
 import { createStudioDefaultSolidBooleanBackend } from "./studio-solid-boolean-backend";
+import { studioBlenderArrayStep, studioBlenderSolidifyDistances } from "./mesh-modifiers/studio-blender-modifier-placement";
 
-export const STUDIO_MESH_MODIFIER_STACK_REVISION = 1 as const;
+import { STUDIO_MESH_MODIFIER_STACK_REVISION } from "./mesh-modifiers/studio-mesh-modifier-types";
+import type {
+  StudioMeshMirrorModifier,
+  StudioMeshArrayModifier,
+  StudioMeshSolidifyModifier,
+  StudioMeshBevelModifier,
+  StudioMeshSubdivisionModifier,
+  StudioMeshWeldModifier,
+  StudioMeshDecimateModifier,
+  StudioMeshSimpleDeformModifier,
+  StudioMeshModifier,
+  StudioMeshModifierDto,
+  StudioMeshModifierStackDto,
+  StudioMeshModifierStack,
+  StudioMeshModifierFailureCode,
+  StudioMeshModifierResult,
+  StudioSolidBooleanBackend,
+} from "./mesh-modifiers/studio-mesh-modifier-types";
 
 /** Persistence/import budgets. Invalid data is rejected instead of being truncated. */
 export const STUDIO_MESH_MODIFIER_STACK_LIMITS = Object.freeze({
@@ -41,243 +59,29 @@ export const STUDIO_MESH_MODIFIER_STACK_LIMITS = Object.freeze({
   maxEvaluationAllocatedBytes: 192 * 1024 * 1024,
   maxEvaluationWorkUnits: 20_000_000,
 });
-
-export type StudioMeshModifierKind =
-  | "mirror"
-  | "array"
-  | "boolean"
-  | "solidify"
-  | "bevel"
-  | "subdivision"
-  | "weld"
-  | "decimate"
-  | "simple-deform";
-
-export type StudioMeshBooleanOp = "union" | "difference" | "intersection";
-
-export interface StudioMeshMirrorModifier {
-  readonly kind: "mirror";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly axis: "x" | "y" | "z";
-  readonly merge: boolean;
-  readonly mergeThreshold: number;
-  readonly bisect: boolean;
-  readonly clip: boolean;
-}
-
-export interface StudioMeshArrayModifier {
-  readonly kind: "array";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly count: number;
-  readonly offset: StudioMeshVec3;
-  readonly mode: "linear" | "radial";
-  readonly radialAngleRad?: number;
-  readonly realizeInstances: boolean;
-}
-
-export interface StudioMeshBooleanModifier {
-  readonly kind: "boolean";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly operation: StudioMeshBooleanOp;
-  /** Stable cutter provenance for UI selection/rebinding; geometry remains self-contained below. */
-  readonly operandAssetId?: string;
-  /** Operand mesh serialized as triangle soup for solid commit. */
-  readonly operand: {
-    readonly positions: Float32Array;
-    readonly indices: Uint32Array;
-  };
-}
-
-export interface StudioMeshSolidifyModifier {
-  readonly kind: "solidify";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly thickness: number;
-  readonly evenThickness: boolean;
-  readonly rim: boolean;
-}
-
-export interface StudioMeshBevelModifier {
-  readonly kind: "bevel";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly amount: number;
-  readonly segments: number;
-  readonly angleLimitRad: number;
-  readonly weightInfluence: number;
-}
-
-export interface StudioMeshSubdivisionModifier {
-  readonly kind: "subdivision";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly levels: number;
-  readonly smooth: boolean;
-}
-
-export interface StudioMeshWeldModifier {
-  readonly kind: "weld";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly quantum: number;
-}
-
-export interface StudioMeshDecimateModifier {
-  readonly kind: "decimate";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly ratio: number;
-}
-
-export type StudioMeshSimpleDeformMode = "twist" | "taper" | "stretch";
-
-export interface StudioMeshSimpleDeformModifier {
-  readonly kind: "simple-deform";
-  readonly id: string;
-  readonly enabled: boolean;
-  readonly mode: StudioMeshSimpleDeformMode;
-  readonly axis: "x" | "y" | "z";
-  /** twist rotation at the far end, radians. */
-  readonly angleRad: number;
-  /** taper scale at the far end (1 = untouched); stretch factor along the axis. */
-  readonly factor: number;
-}
-
-export type StudioMeshModifier =
-  | StudioMeshMirrorModifier
-  | StudioMeshArrayModifier
-  | StudioMeshBooleanModifier
-  | StudioMeshSolidifyModifier
-  | StudioMeshBevelModifier
-  | StudioMeshSubdivisionModifier
-  | StudioMeshWeldModifier
-  | StudioMeshDecimateModifier
-  | StudioMeshSimpleDeformModifier;
-
-/** Exact JSON-safe DTO. Boolean typed arrays are deliberately encoded as dense number arrays. */
-export type StudioMeshModifierDto =
-  | {
-      readonly kind: "mirror";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly axis: "x" | "y" | "z";
-      readonly merge: boolean;
-      readonly mergeThreshold: number;
-      readonly bisect: boolean;
-      readonly clip: boolean;
-    }
-  | {
-      readonly kind: "array";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly count: number;
-      readonly offset: StudioMeshVec3;
-      readonly mode: "linear" | "radial";
-      readonly radialAngleRad?: number;
-      readonly realizeInstances: boolean;
-    }
-  | {
-      readonly kind: "boolean";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly operation: StudioMeshBooleanOp;
-      readonly operandAssetId?: string;
-      readonly operand: {
-        readonly positions: readonly number[];
-        readonly indices: readonly number[];
-      };
-    }
-  | {
-      readonly kind: "solidify";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly thickness: number;
-      readonly evenThickness: boolean;
-      readonly rim: boolean;
-    }
-  | {
-      readonly kind: "bevel";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly amount: number;
-      readonly segments: number;
-      readonly angleLimitRad: number;
-      readonly weightInfluence: number;
-    }
-  | {
-      readonly kind: "subdivision";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly levels: number;
-      readonly smooth: boolean;
-    }
-  | {
-      readonly kind: "weld";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly quantum: number;
-    }
-  | {
-      readonly kind: "decimate";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly ratio: number;
-    }
-  | {
-      readonly kind: "simple-deform";
-      readonly id: string;
-      readonly enabled: boolean;
-      readonly mode: StudioMeshSimpleDeformMode;
-      readonly axis: "x" | "y" | "z";
-      readonly angleRad: number;
-      readonly factor: number;
-    };
-
-export interface StudioMeshModifierStackDto {
-  readonly revision: typeof STUDIO_MESH_MODIFIER_STACK_REVISION;
-  /** Array order is evaluation order and therefore part of the persisted authority. */
-  readonly modifiers: readonly StudioMeshModifierDto[];
-}
-
-export type StudioMeshModifierStackSnapshot = StudioMeshModifierStackDto;
-
-export interface StudioMeshModifierStack {
-  readonly revision: typeof STUDIO_MESH_MODIFIER_STACK_REVISION;
-  readonly source: StudioEditableMesh;
-  readonly modifiers: readonly StudioMeshModifier[];
-}
-
-export type StudioMeshModifierFailureCode =
-  | "boolean-empty"
-  | "boolean-failed"
-  | "budget-exceeded"
-  | "invalid-parameter"
-  | "invalid-stack";
-
-export type StudioMeshModifierResult<T> =
-  | { readonly ok: true; readonly value: T }
-  | {
-      readonly ok: false;
-      readonly code: StudioMeshModifierFailureCode;
-      readonly detail: string;
-      readonly diagnostics?: readonly string[];
-    };
-
-/** Solid boolean commit backend (Manifold-class contract). */
-export interface StudioSolidBooleanBackend {
-  boolean(input: {
-    readonly left: { readonly positions: Float32Array; readonly indices: Uint32Array };
-    readonly right: { readonly positions: Float32Array; readonly indices: Uint32Array };
-    readonly operation: StudioMeshBooleanOp;
-  }): Promise<{
-    readonly positions: Float32Array;
-    readonly indices: Uint32Array;
-    readonly diagnostic?: string;
-  }>;
-}
+export { STUDIO_MESH_MODIFIER_STACK_REVISION } from "./mesh-modifiers/studio-mesh-modifier-types";
+export type {
+  StudioMeshModifierKind,
+  StudioMeshBooleanOp,
+  StudioMeshMirrorModifier,
+  StudioMeshArrayModifier,
+  StudioMeshBooleanModifier,
+  StudioMeshSolidifyModifier,
+  StudioMeshBevelModifier,
+  StudioMeshSubdivisionModifier,
+  StudioMeshWeldModifier,
+  StudioMeshDecimateModifier,
+  StudioMeshSimpleDeformMode,
+  StudioMeshSimpleDeformModifier,
+  StudioMeshModifier,
+  StudioMeshModifierDto,
+  StudioMeshModifierStackDto,
+  StudioMeshModifierStackSnapshot,
+  StudioMeshModifierStack,
+  StudioMeshModifierFailureCode,
+  StudioMeshModifierResult,
+  StudioSolidBooleanBackend,
+} from "./mesh-modifiers/studio-mesh-modifier-types";
 
 function ok<T>(value: T): StudioMeshModifierResult<T> {
   return { ok: true, value };
@@ -411,7 +215,7 @@ function decodeModifier(
           "realizeInstances",
         ]
       : ["kind", "id", "enabled", "count", "offset", "mode", "realizeInstances"];
-    if (!hasExactKeys(value, arrayKeys)) {
+    if (!hasExactKeys(value, [...arrayKeys, ...["useConstantOffset", "useRelativeOffset", "relativeOffset"].filter((key) => Object.hasOwn(value, key))])) {
       return fail("invalid-stack", `${path} array DTO keys are invalid`);
     }
     if (!Number.isSafeInteger(value.count) || (value.count as number) < 1
@@ -430,6 +234,12 @@ function decodeModifier(
     }
     const offset = decodeVec3(value.offset, `${path}.offset`);
     if (!offset.ok) return offset;
+    for (const key of ["useConstantOffset", "useRelativeOffset"] as const) {
+      if (Object.hasOwn(value, key) && typeof value[key] !== "boolean") return fail("invalid-stack", `${path}.${key} must be boolean`);
+    }
+    if (value.mode === "radial" && value.useRelativeOffset === true) return fail("invalid-parameter", `${path} relative offset requires a linear array`);
+    const relative = Object.hasOwn(value, "relativeOffset") ? decodeVec3(value.relativeOffset, `${path}.relativeOffset`) : null;
+    if (relative && !relative.ok) return relative;
     return ok({
       kind: "array",
       id: value.id,
@@ -441,6 +251,9 @@ function decodeModifier(
         ? { radialAngleRad: value.radialAngleRad as number }
         : {}),
       realizeInstances: value.realizeInstances,
+      ...(Object.hasOwn(value, "useConstantOffset") ? { useConstantOffset: value.useConstantOffset as boolean } : {}),
+      ...(Object.hasOwn(value, "useRelativeOffset") ? { useRelativeOffset: value.useRelativeOffset as boolean } : {}),
+      ...(relative?.ok ? { relativeOffset: relative.value } : {}),
     });
   }
 
@@ -501,7 +314,7 @@ function decodeModifier(
 
   if (value.kind === "solidify") {
     if (!hasExactKeys(value, [
-      "kind", "id", "enabled", "thickness", "evenThickness", "rim",
+      "kind", "id", "enabled", "thickness", "evenThickness", "rim", ...(Object.hasOwn(value, "offset") ? ["offset"] : []),
     ])) return fail("invalid-stack", `${path} solidify DTO keys are invalid`);
     const limit = STUDIO_MESH_MODIFIER_STACK_LIMITS.maxParameterMagnitude;
     if (!finiteInRange(value.thickness, -limit, limit)) {
@@ -510,6 +323,7 @@ function decodeModifier(
     if (typeof value.evenThickness !== "boolean" || typeof value.rim !== "boolean") {
       return fail("invalid-stack", `${path} solidify flags must be boolean`);
     }
+    if (Object.hasOwn(value, "offset") && !finiteInRange(value.offset, -limit, limit)) return fail("invalid-parameter", `${path}.offset is invalid`);
     return ok({
       kind: "solidify",
       id: value.id,
@@ -517,6 +331,7 @@ function decodeModifier(
       thickness: value.thickness,
       evenThickness: value.evenThickness,
       rim: value.rim,
+      ...(Object.hasOwn(value, "offset") ? { offset: value.offset as number } : {}),
     });
   }
 
@@ -678,7 +493,14 @@ function validateRuntimeModifier(
       || !finiteInRange(modifier.offset.y, -limit, limit)
       || !finiteInRange(modifier.offset.z, -limit, limit)
       || (modifier.radialAngleRad !== undefined
-        && !finiteInRange(modifier.radialAngleRad, -Math.PI * 128, Math.PI * 128))) {
+        && !finiteInRange(modifier.radialAngleRad, -Math.PI * 128, Math.PI * 128))
+      || (modifier.useConstantOffset !== undefined && typeof modifier.useConstantOffset !== "boolean")
+      || (modifier.useRelativeOffset !== undefined && typeof modifier.useRelativeOffset !== "boolean")
+      || (modifier.mode === "radial" && modifier.useRelativeOffset === true)
+      || (modifier.relativeOffset !== undefined && (!modifier.relativeOffset
+        || !finiteInRange(modifier.relativeOffset.x, -limit, limit)
+        || !finiteInRange(modifier.relativeOffset.y, -limit, limit)
+        || !finiteInRange(modifier.relativeOffset.z, -limit, limit)))) {
       return fail("invalid-parameter", `${path} array parameters are invalid`);
     }
     return ok(0);
@@ -725,7 +547,9 @@ function validateRuntimeModifier(
       modifier.thickness,
       -STUDIO_MESH_MODIFIER_STACK_LIMITS.maxParameterMagnitude,
       STUDIO_MESH_MODIFIER_STACK_LIMITS.maxParameterMagnitude,
-    ) || typeof modifier.evenThickness !== "boolean" || typeof modifier.rim !== "boolean") {
+    ) || typeof modifier.evenThickness !== "boolean" || typeof modifier.rim !== "boolean"
+      || (modifier.offset !== undefined && !finiteInRange(modifier.offset,
+        -STUDIO_MESH_MODIFIER_STACK_LIMITS.maxParameterMagnitude, STUDIO_MESH_MODIFIER_STACK_LIMITS.maxParameterMagnitude))) {
       return fail("invalid-parameter", `${path} solidify parameters are invalid`);
     }
     return ok(0);
@@ -838,7 +662,7 @@ function cloneModifier(modifier: StudioMeshModifier): StudioMeshModifier {
     };
   }
   if (modifier.kind === "array") {
-    return { ...modifier, offset: { ...modifier.offset } };
+    return { ...modifier, offset: { ...modifier.offset }, ...(modifier.relativeOffset === undefined ? {} : { relativeOffset: { ...modifier.relativeOffset } }) };
   }
   return { ...modifier };
 }
@@ -880,6 +704,9 @@ function serializeModifier(modifier: StudioMeshModifier, index: number): StudioM
         ? {}
         : { radialAngleRad: modifier.radialAngleRad }),
       realizeInstances: modifier.realizeInstances,
+      ...(modifier.useConstantOffset === undefined ? {} : { useConstantOffset: modifier.useConstantOffset }),
+      ...(modifier.useRelativeOffset === undefined ? {} : { useRelativeOffset: modifier.useRelativeOffset }),
+      ...(modifier.relativeOffset === undefined ? {} : { relativeOffset: { ...modifier.relativeOffset } }),
     };
   } else if (modifier.kind === "mirror") {
     dto = {
@@ -900,6 +727,7 @@ function serializeModifier(modifier: StudioMeshModifier, index: number): StudioM
       thickness: modifier.thickness,
       evenThickness: modifier.evenThickness,
       rim: modifier.rim,
+      ...(modifier.offset === undefined ? {} : { offset: modifier.offset }),
     };
   } else if (modifier.kind === "bevel") {
     dto = {
@@ -1511,17 +1339,18 @@ function applyArray(
   const indices = new Uint32Array(outputIndices);
   const coordinateLimit = STUDIO_MESH_MODIFIER_STACK_LIMITS.maxCoordinateMagnitude;
   const totalAngle = mod.radialAngleRad ?? Math.PI * 2;
+  const step = studioBlenderArrayStep(mesh, mod);
   for (let instance = 0; instance < mod.count; instance += 1) {
     const angle = mod.mode === "radial" ? totalAngle * (instance / mod.count) : 0;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
     const offsetX = mod.mode === "radial"
-      ? mod.offset.x * cos - mod.offset.z * sin
-      : mod.offset.x * instance;
-    const offsetY = mod.offset.y * instance;
+      ? step.x * cos - step.z * sin
+      : step.x * instance;
+    const offsetY = step.y * instance;
     const offsetZ = mod.mode === "radial"
-      ? mod.offset.x * sin + mod.offset.z * cos
-      : mod.offset.z * instance;
+      ? step.x * sin + step.z * cos
+      : step.z * instance;
     const vertexBase = instance * metrics.vertexCount;
     for (let vertexIndex = 0; vertexIndex < metrics.vertexCount; vertexIndex += 1) {
       const sourceOffset = vertexIndex * 3;
@@ -1741,10 +1570,17 @@ function applySolidify(
       return fail("invalid-stack", `solidify ${mod.id}: even-thickness projection is unstable`);
     }
     const distance = mod.thickness / projection;
+    const [frontDistance, backDistance] = mod.offset === undefined
+      ? [0, distance] : studioBlenderSolidifyDistances(distance, mod.offset);
+    for (let axis = 0; axis < 3; axis += 1) {
+      const front = soup.positions[sourceOffset + axis]! + normals[sourceOffset + axis]! * frontDistance;
+      if (!finiteInRange(front, -coordinateLimit, coordinateLimit)) return fail("invalid-parameter", `solidify ${mod.id}: offset coordinate is out of range`);
+      positions[sourceOffset + axis] = front;
+    }
     const outputOffset = (metrics.vertexCount + vertexIndex) * 3;
-    const outputX = soup.positions[sourceOffset]! + normals[sourceOffset]! * distance;
-    const outputY = soup.positions[sourceOffset + 1]! + normals[sourceOffset + 1]! * distance;
-    const outputZ = soup.positions[sourceOffset + 2]! + normals[sourceOffset + 2]! * distance;
+    const outputX = soup.positions[sourceOffset]! + normals[sourceOffset]! * backDistance;
+    const outputY = soup.positions[sourceOffset + 1]! + normals[sourceOffset + 1]! * backDistance;
+    const outputZ = soup.positions[sourceOffset + 2]! + normals[sourceOffset + 2]! * backDistance;
     if (!finiteInRange(outputX, -coordinateLimit, coordinateLimit)
       || !finiteInRange(outputY, -coordinateLimit, coordinateLimit)
       || !finiteInRange(outputZ, -coordinateLimit, coordinateLimit)) {
