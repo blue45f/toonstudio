@@ -211,14 +211,14 @@ Unity/Godot 프로젝트와 셰이더는 Web의 Three.js/Canvas 런타임에서 
 
 2026-10-29 최종 구현 상태에서 `pnpm test:creator-bundle-rights`는 Node 169개와 Vitest 12파일 208개, Python 렌더 파이프라인은 26개가 통과했다. 별도 Web/API canonical·SQLite/OPFS·archive 관련 8파일 162개와 마지막 변경 회귀, 가상 장소 이동·충돌·작업대 관련 48개도 통과했다. 중복 실행 수는 합산하지 않는다. 새 아카이브/CLI와 native 하니스의 strict 한정 타입 검사는 root tsconfig 옵션을 그대로 확장해 진단 0개로 통과했다. 후속 캐시·경합 회귀 3파일 55개와 아카이브·기존 VRM/참조 보드 회귀 5파일 90개, 독립 pre-aborted 재현도 통과했다.
 
-`pnpm validate:architecture`, 하네스 구조 검사, lockfile, 보안·라이선스 감사가 통과했다. creator root 2506/2506, source-size 위반 0개, eager graph 19.18MiB/최대 19.34MiB다. 이전 구현의 전체 타입 검사는 소스 확장과 실제 타입 오류 수정 뒤 종료했고, 후속 아카이브·캐시 회귀 수정이 끝난 동결 상태에서 `pnpm harness:verify`를 다시 실행한다. 이 명령의 종료 전에는 전체 통과로 집계하지 않는다.
+`pnpm validate:architecture`, 하네스 구조 검사, lockfile, 보안·라이선스 감사가 통과했다. creator root 2506/2506, source-size 위반 0개, eager graph 19.18MiB/최대 19.34MiB다. 이전 구현의 전체 타입 검사는 소스 확장과 실제 타입 오류 수정 뒤 종료했고, 후속 아카이브·캐시 회귀 수정이 끝난 동결 커밋 뒤 `pnpm harness:verify`를 다시 시작했다. 이 명령의 종료 전에는 전체 통과로 집계하지 않는다.
 
 기존 qs 취약 범위는 공식 6.16.1로 고정했다. 공식 수정판이 없는 deepmerge 결과 객체 프로토타입 오염은 저장소의 기존 braces 선례에 따라 최소 백포트로 고쳤다. CJS/UMD의 자체 속성 쓰기 세 곳만 바꾸고 npm 원본 SHA·MIT·타입 선언을 보존한다. PoC·10,000쌍 차등·실제 Nest 소비 설치본과 production 패키징 산출물 검증이 수정 근거이며, 감사 제외는 없다. 로컬 패키지가 registry 감사 대상에서 빠지는 한계와 공식 패치로의 제거 조건은 [README](../../patches/deepmerge/README.md)에 명시했다.
 
-로컬 API build는 종료 코드 0, 1,080개 compiled 파일/3,211개 import의 runtime guard와 문법 검사를 통과했다. 실제 `pnpm deploy --legacy --prod` 산출물 안의 nestjs-zod가 같은 deepmerge CJS/UMD/타입/MIT 바이트를 사용하는 것도 확인했다. 이 산출물은 macOS arm64 검토용 패키징이며 Linux 운영 이미지 검증은 아니다.
+로컬 API build는 종료 코드 0, 1,080개 compiled 파일/3,211개 import의 runtime guard와 문법 검사를 통과했다. [Web 로컬 빌드 증거](../evidence/itch-bundle-build-20261029/README.md)는 build:bundle·postbuild·Studio 구조·제품 투어 청크 검사와 manifest 생성을 모두 종료 코드 0으로 확인한다. dist에 복사된 소품·배경·장식 368파일은 public 원본과 SHA가 모두 같으며, 현재 정책 적용 후 Static Assets 파일 수 상한은 12,024/20,000이다. 원격 quota나 승인된 main SHA의 운영 산출물 검증과는 구분한다. 실제 `pnpm deploy --legacy --prod` 산출물 안의 nestjs-zod가 같은 deepmerge CJS/UMD/타입/MIT 바이트를 사용하는 것도 확인했다. 이 산출물은 macOS arm64 검토용 패키징이며 Linux 운영 이미지 검증은 아니다.
 
 원격 main `40179e94698323384e4804bad4a4ef473abc3794`의 필수 core/verify는 GitHub 계정 결제/사용 한도 문제로 job 자체가 시작되지 않은 상태다. 2026-10-29 추가 읽기 확인에서는 Cloudflare API 연결이 Invalid access token, 로컬 Wrangler가 미인증 상태여서 현재 R2 quota를 확인하지 못했다. 인증 복구·필수 CI·정확한 main SHA·롤백 대상이 확인되기 전에는 병합·배포하지 않는다. 별도 유료 추론·유료 runner·운영 업로드는 실행하지 않았다.
 
-출처 보존은 API canonical 계약에도 optional 필드를 추가한다. 운영 전환은 검증된 API 이미지 → Web 순서로 진행해야 기존 서버가 새 출처 필드를 거부하지 않는다. DB migration·환경변수 변경은 없다. onpod API 이미지 교체는 [인프라 지도 3절](../operations/infrastructure-map.md#3-승인과-정책-위치)의 별도 명시 승인 대상이며, 원본 GLB bulk R2 업로드도 정적 웹 승인과 같은 것으로 간주하지 않는다. 현재 작업에서 운영 이미지·원본 GLB·index를 반영하지 않았다.
+출처 보존은 API canonical 계약에도 optional 필드를 추가한다. 운영 전환은 검증된 API 이미지 → Web 순서로 진행해야 기존 서버가 새 출처 필드를 거부하지 않는다. DB migration·환경변수 변경은 없다. onpod API 이미지 교체는 [인프라 지도 3절](../operations/infrastructure-map.md#3-승인과-정책-위치)의 별도 명시 승인 대상이다. 원장 허용 GLB를 기존 R2 버킷에 등록하는 단계는 이번 사용자의 구매 번들 서비스 적용 지시 범위로 진행한다. [번들 운영 문서](./creator-bundle-theme-packs-20261021.md)의 전용 플래너·실물/권리 검증·GLB 먼저/index 마지막 순서를 사용하고, 인증·현재 quota·무료 한도·정확한 main SHA·필수 CI를 먼저 확인한다. 정적 sync와의 기술적 분리는 추가 재승인 의무로 확대하지 않는다. 새 자원·유료 전환·지시 범위 밖의 변경은 기존 정책대로 별도 승인을 받는다. 현재 작업에서 운영 이미지·원본 GLB·index를 반영하지 않았다.
 
 일반 변형/필터처럼 원본 바이트를 유지하는 편집은 출처를 보존한다. 픽셀을 굳혀 바이트가 달라진 문서는 저장·재열기와 원래 출처를 유지하지만 게시 권리는 원본 SHA와 다름을 unknown으로 닫는다. 새 바이트의 파생 관계를 입증하는 별도 계약은 아직 구현하지 않았다.

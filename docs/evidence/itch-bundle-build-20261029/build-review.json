@@ -1,0 +1,55 @@
+{
+  "schema": "toonstudio.itch-local-build-review.v1",
+  "scope": "동결한 작업 브랜치 소스의 로컬 빌드·구조 검증, 운영 배포 산출물 승인 아님",
+  "sourceCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf",
+  "buildStartedWithHead": "4c65834fcebcc6e8b3ca91acfefca1dba88cdf2d",
+  "sourceCommittedDuringWebBuild": true,
+  "productionDeployment": false,
+  "linuxApiContainerTested": false,
+  "checks": [
+    {
+      "command": "pnpm --filter @webtoon-nest/api build",
+      "exitCode": 0,
+      "scope": "macOS arm64 로컬 빌드",
+      "runtimeGuard": {
+        "compiledFiles": 1080,
+        "imports": 3211
+      }
+    },
+    {
+      "command": "node --check apps/api/dist/apps/api/src/main.js",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm run build:bundle",
+      "exitCode": 0,
+      "postbuild": [
+        "third-party notices: 598 pnpm entries / 444 license texts",
+        "CSP: 1 hashed inline data block"
+      ]
+    },
+    {
+      "command": "pnpm run check:studio-bundle",
+      "exitCode": 0,
+      "studioChunks": 417,
+      "studioRawKiB": 8346.7,
+      "studioGzipKiB": 2714.7,
+      "runtimeStartupRemeasured": false
+    },
+    {
+      "command": "pnpm run check:product-tour-remotion-chunks",
+      "exitCode": 0
+    },
+    {
+      "command": "test -s dist/.vite/manifest.json",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm harness:verify",
+      "status": "running",
+      "log": "toonstudio-itch-harness-reviewed-final-20261029.log"
+    }
+  ],
+  "applicationSourceChangedDuringWebBuild": false,
+  "preCommitHooksChangedStagedFiles": false
+}

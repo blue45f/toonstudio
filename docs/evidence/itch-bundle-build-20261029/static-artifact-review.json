@@ -1,0 +1,32 @@
+{
+  "schema": "toonstudio.itch-static-artifact-audit.v1",
+  "checkedAt": "2026-10-28T16:32:51.973Z",
+  "localBuildOnly": true,
+  "originalModelsUploaded": false,
+  "remoteQuotaVerified": false,
+  "totalDistFiles": 19329,
+  "staticFileCountUpperBound": 12024,
+  "staticFileLimit": 20000,
+  "policy": "현재 R2 media descriptor와 oversized ignore pattern 적용; Wrangler의 기본 hidden-file 제외 전이므로 상한",
+  "selected": [
+    {
+      "path": "assets/studio/bundle-renders-v1",
+      "files": 357,
+      "bytes": 80948537,
+      "shaParity": true
+    },
+    {
+      "path": "assets/studio/bundle-scenes-v1",
+      "files": 7,
+      "bytes": 4440353,
+      "shaParity": true
+    },
+    {
+      "path": "assets/virtual-studio/bundle-decor-v1",
+      "files": 4,
+      "bytes": 800020,
+      "shaParity": true
+    }
+  ],
+  "manifestSha256": "0e556d5b294283e0a715339a23d8056b8b565e1955c329162ca721253f2b041a"
+}
