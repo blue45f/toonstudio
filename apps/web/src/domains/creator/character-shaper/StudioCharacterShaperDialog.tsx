@@ -59,6 +59,7 @@ import type { ChangeEvent, ReactNode, RefObject } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import { ModalStatusSlot } from "@/shared/components/modal-status-slot";
 
 type MobileSheetTab = "shelf" | "inspector" | "view";
 
@@ -724,7 +725,10 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
       }}
     >
       <div data-character-shaper-surface="true" className="relative mx-auto grid h-full max-h-full min-h-0 w-full max-w-[1600px] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
-        {summaryBar}
+        <div data-character-shaper-header="true" className="min-w-0">
+          {summaryBar}
+          <ModalStatusSlot className="flex min-w-0 justify-end px-2 pb-1.5 empty:hidden" />
+        </div>
         {middle}
         {dock}
       </div>

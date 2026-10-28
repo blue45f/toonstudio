@@ -21,6 +21,8 @@ import type {
 import type { CharacterShaperBinding, CharacterShaperCommitResult } from "./character-shaper-ui-contract";
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 
+import { getActiveModalStatusSlot } from "@/shared/lib/modal-status-slot";
+
 vi.mock("../vrm/StudioVrmPoserViewport", () => ({
   StudioVrmPoserViewport: ({ presentation }: { presentation?: string }) => <section data-testid="viewport" data-presentation={presentation}>viewport</section>,
 }));
@@ -354,6 +356,16 @@ afterEach(() => {
 });
 
 describe("StudioCharacterShaperDialog shell", () => {
+  it.each([320, 1440])("%spx 머리글에 서비스 상태를 받아 하단 조작을 가리지 않고 닫을 때 반환한다", (width) => {
+    const view = renderDialog({ width });
+    const slot = document.querySelector('[data-character-shaper-header="true"] [data-modal-status-slot="true"]');
+    expect(slot).toBeTruthy();
+    expect(getActiveModalStatusSlot()).toBe(slot);
+    expect(dialogRoot()?.contains(slot)).toBe(true);
+    view.unmount();
+    expect(getActiveModalStatusSlot()).toBeNull();
+  });
+
   it.each([[768, 1024], [820, 1180]])("세로 터치 태블릿 %sx%s는 검사 패널이 카메라를 덮지 않는다", (width, height) => {
     const { h } = renderDialog({ width, height, coarse: true });
     expect(dialogRoot()?.getAttribute("data-character-shaper-layout")).toBe("mobile");
