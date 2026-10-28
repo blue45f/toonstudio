@@ -9,54 +9,19 @@
  * 장면이 해제되면 리스너도 해제한다.
  */
 import { v3Cross, v3Length, v3Normalize } from "../../shared/math";
+import { getCanvasCameraInputStyle, registerCanvasCameraInputTarget } from "../viewport-input-style";
 import { clampPanTarget, keyboardOrbitAction, screenPanOffset, wheelZoomRadius } from "../viewport-orbit";
 
 import { fromVector3, toVector3 } from "./convert";
 
 import type { Vec3 } from "../../contracts";
 import type { WorldBounds } from "../camera-framing";
+import type { ShaperCameraStyle } from "../viewport-input-style";
 import type { OrbitLimits } from "../viewport-orbit";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
 
 /** 카메라별 팬 범위(프레이밍이 정한다). 없으면 팬을 묶지 않는다. */
 const panBoundsByCamera = new WeakMap<ArcRotateCamera, WorldBounds>();
-
-export type ShaperCameraStyle = "unity" | "blender" | "max";
-
-const cameraStyleByCanvas = new WeakMap<HTMLCanvasElement, ShaperCameraStyle>();
-const cameraByCanvas = new WeakMap<HTMLCanvasElement, ArcRotateCamera>();
-
-/** 캔버스에 연결된 SHAPER 카메라 조작 프리셋(`unity`·`blender`·`max`)을 설정한다. */
-export function setCanvasCameraInputStyle(canvas: HTMLCanvasElement, style: ShaperCameraStyle): void {
-  cameraStyleByCanvas.set(canvas, style);
-}
-
-/** 캔버스에 설정된 SHAPER 카메라 조작 프리셋을 읽는다(기본 `"unity"`). */
-export function getCanvasCameraInputStyle(canvas: HTMLCanvasElement): ShaperCameraStyle {
-  return cameraStyleByCanvas.get(canvas) ?? "unity";
-}
-
-/**
- * SHAPER 뷰포트 직교 시점 단축키(`F`: 정면, `L`: 좌측면, `T`: 상단)를 캔버스에 연결된 카메라 구면각(`alpha`, `beta`)에 즉시 반영한다.
- */
-export function applyCanvasShaperViewPreset(canvas: HTMLCanvasElement, view: "front" | "left" | "top"): boolean {
-  const camera = cameraByCanvas.get(canvas);
-  if (!camera) return false;
-  if (view === "front") {
-    camera.alpha = Math.PI / 2;
-    camera.beta = Math.PI / 2;
-    return true;
-  }
-  if (view === "left") {
-    camera.alpha = Math.PI;
-    camera.beta = Math.PI / 2;
-    return true;
-  }
-  const lowerBeta = camera.lowerBetaLimit ?? 0.05;
-  camera.alpha = Math.PI / 2;
-  camera.beta = Math.max(lowerBeta, 0.08);
-  return true;
-}
 
 /** 카메라의 팬 범위를 정한다(scene-builder `applyFraming`이 캐릭터 경계 상자로 부른다). */
 export function setPanBounds(camera: ArcRotateCamera, bounds: WorldBounds): void {
@@ -128,7 +93,7 @@ function resolveMouseDragMode(event: PointerEvent, style: ShaperCameraStyle): Mo
  * 캔버스에 카메라 입력을 붙인다. 반환 함수로 해제한다. `resetView`는 현재 프레이밍을 다시 적용한다(엔진 `setCamera(현재 프레이밍)`).
  */
 export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanvasElement, resetView: () => void): () => void {
-  cameraByCanvas.set(canvas, camera);
+  const unregisterCamera = registerCanvasCameraInputTarget(canvas, camera);
   camera.attachControl(canvas, true);
   camera.inputs.removeByType("ArcRotateCameraMouseWheelInput");
   camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
@@ -219,6 +184,7 @@ export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanv
   const detach = (): void => {
     if (!attached) return;
     attached = false;
+    unregisterCamera();
     canvas.removeEventListener("pointerdown", onPointerDown);
     canvas.removeEventListener("pointermove", onPointerMove);
     canvas.removeEventListener("pointerup", onPointerEnd);

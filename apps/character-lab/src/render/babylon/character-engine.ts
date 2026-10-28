@@ -78,7 +78,7 @@ import type {
   PhysicsProviderFactory,
   PhysicsProviderId,
   PhysicsStatus,
-  PickHit,
+  CharacterPickOptions, PickHit,
   Quat,
   SettleReceipt,
   ShadingProfile,
@@ -979,9 +979,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   // ---------------------------------------------------------------- 피킹·핸들·페인트
 
-  pick(ndcX: number, ndcY: number): PickHit | null {
+  pick(ndcX: number, ndcY: number, options?: CharacterPickOptions): PickHit | null {
     if (this.disposed || !this.rig) return null;
-    return pickRig(this.character.scene, this.character.camera, this.rig, ndcX, ndcY);
+    return pickRig(this.character.scene, this.character.camera, this.rig, ndcX, ndcY, options);
   }
 
   jointHandles(): readonly JointDragHandle[] {

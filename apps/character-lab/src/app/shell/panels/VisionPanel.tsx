@@ -24,7 +24,9 @@ import { createVisionSession } from "../../../domains/vision/vision-session";
 import { useCatalog, useDispatch, useLabContext, useLabState } from "../lab-store-context";
 
 import { ShaperVisionAiSection } from "./shaper-vision-ai-section";
+import { VisionLandmarkPreview } from "./vision-landmark-preview";
 
+import type { VisionPoseTarget } from "./shaper-vision-ai-section";
 import type { CapturedRaster, LabFailure, LandmarkApplyScope, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/vision/kmeans-palette";
 import type { LandmarkSpace } from "../../../domains/vision/landmark-space";
@@ -124,7 +126,7 @@ type ReferenceState =
 type PoseState =
   | { readonly phase: "idle" }
   | { readonly phase: "working"; readonly step: string }
-  | { readonly phase: "ready"; readonly image: DecodedImage; readonly detection: PoseDetection; readonly hands: readonly HandDetection[] | null; readonly handFailure: LabFailure | null }
+  | { readonly phase: "ready"; readonly image: DecodedImage; readonly detection: PoseDetection | null; readonly hands: readonly HandDetection[] | null; readonly handFailure: LabFailure | null; readonly inputSource: "photo" | "camera" }
   | { readonly phase: "failed"; readonly failure: LabFailure };
 
 /**
@@ -468,6 +470,7 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
   const { store } = useLabContext();
   const ids = useId();
   const [pose, setPose] = useState<PoseState>({ phase: "idle" });
+  const [target, setTarget] = useState<VisionPoseTarget>("body");
   const [scope, setScope] = useState<LandmarkApplyScope>("full");
   const [mirror, setMirror] = useState(false);
   const [selfie, setSelfie] = useState(false);
@@ -501,7 +504,7 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
   }, [camera.stream]);
 
   const analyze = useCallback(
-    async (decode: () => Promise<DecodedImage>): Promise<void> => {
+    async (decode: () => Promise<DecodedImage>, inputSource: "photo" | "camera" = "photo"): Promise<void> => {
       const update = (next: PoseState): void => {
         if (mounted.current) setPose(next);
       };
@@ -510,11 +513,14 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
         update({ phase: "working", step: "이미지 디코드" });
         image = await decode();
         if (!images.track(image)) return;
-        update({ phase: "working", step: "포즈 랜드마커 로드" });
-        const poseModel = await session.ensure("poseLandmarker");
-        update({ phase: "working", step: "포즈 추론" });
-        const detection = await poseModel.port.detect(image.source);
-        if (!detection) throw failVisible("vision-no-person", "사진에서 사람(포즈)을 찾지 못했습니다.", undefined, now());
+        let detection: PoseDetection | null = null;
+        if (target === "body") {
+          update({ phase: "working", step: "포즈 랜드마커 로드" });
+          const poseModel = await session.ensure("poseLandmarker");
+          update({ phase: "working", step: "포즈 추론" });
+          detection = await poseModel.port.detect(image.source);
+          if (!detection) throw failVisible("vision-no-person", "사진에서 사람(포즈)을 찾지 못했습니다.", undefined, now());
+        }
         let hands: readonly HandDetection[] | null = null;
         let handFailure: LabFailure | null = null;
         try {
@@ -522,11 +528,13 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
           const handModel = await session.ensure("handLandmarker");
           hands = await handModel.port.detect(image.source);
         } catch (error) {
+          if (target === "hands") throw error;
           handFailure = toFailure("vision-hand-failed", "손 랜드마크 추론에 실패했습니다.", error, now());
         }
+        if (target === "hands" && !hands?.length) throw failVisible("vision-no-hands", "사진에서 손을 찾지 못했습니다. 손과 손목이 잘 보이는 사진을 선택해 주세요.", undefined, now());
         setHandSides({});
-        update({ phase: "ready", image, detection, hands, handFailure });
-        if (!detection.worldLandmarks) setSpace("image");
+        update({ phase: "ready", image, detection, hands, handFailure, inputSource });
+        if (!detection?.worldLandmarks) setSpace("image");
       } catch (error) {
         if (image) images.discard(image);
         const failure = toFailure("vision-pose-failed", "사진 포즈 인식에 실패했습니다.", error, now());
@@ -537,7 +545,7 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
         image?.releaseSource?.();
       }
     },
-    [images, now, session, store],
+    [images, now, session, store, target],
   );
 
   const onFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -562,12 +570,12 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
     const video = videoRef.current;
     const captureVideo = deps.captureVideo;
     if (!video || !captureVideo) return;
-    void analyze(() => captureVideo(video));
+    void analyze(() => captureVideo(video), "camera");
   };
 
-  const effectiveSpace: LandmarkSpace = pose.phase === "ready" && !pose.detection.worldLandmarks ? "image" : space;
+  const effectiveSpace: LandmarkSpace = pose.phase === "ready" && !pose.detection?.worldLandmarks ? "image" : space;
   const poseResult: LandmarksToPoseResult | null = useMemo(() => {
-    if (pose.phase !== "ready") return null;
+    if (pose.phase !== "ready" || !pose.detection) return null;
     const landmarks = effectiveSpace === "world" && pose.detection.worldLandmarks ? pose.detection.worldLandmarks : pose.detection.landmarks;
     try {
       return landmarksToPose(landmarks, { scope, mirror, visibilityMin, space: effectiveSpace, aspectRatio: pose.image.width / pose.image.height });
@@ -578,7 +586,7 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
 
   const applyPose = (): void => {
     if (!poseResult) return;
-    dispatch({ type: "pose/set", pose: poseResult.pose, scope, labelKo: `사진 포즈(${POSE_SCOPE_LABELS_KO[scope]}${mirror ? ", 거울" : ""})` });
+    dispatch({ type: "pose/set", pose: poseResult.pose, scope, labelKo: `${pose.phase === "ready" && pose.inputSource === "camera" ? "카메라" : "사진"} 포즈(${POSE_SCOPE_LABELS_KO[scope]}${mirror ? ", 거울" : ""})` });
   };
 
   const sideOf = (index: number, hand: HandDetection): "left" | "right" | null => handSides[index] ?? resolveHandSide(hand.reportedHandedness, { selfie });
@@ -587,15 +595,21 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
     const side = sideOf(index, hand);
     if (!side) return;
     const result = handLandmarksToPose(hand.landmarks, { side, mirror, space: "image", aspectRatio: pose.phase === "ready" ? pose.image.width / pose.image.height : 1 });
-    dispatch({ type: "pose/set", pose: result.pose, scope: result.side === "left" ? "left-hand" : "right-hand", labelKo: `사진 손 포즈(${result.side === "left" ? "왼손" : "오른손"})` });
+    dispatch({ type: "pose/set", pose: result.pose, scope: result.side === "left" ? "left-hand" : "right-hand", labelKo: `${pose.phase === "ready" && pose.inputSource === "camera" ? "카메라" : "사진"} 손 포즈(${result.side === "left" ? "왼손" : "오른손"})` });
   };
 
-  const overlay = pose.phase === "ready" ? poseOverlayPlan(pose.detection.landmarks, pose.image.width, pose.image.height, { visibilityMin }) : null;
+  const bodyOverlay = pose.phase === "ready" && pose.detection ? poseOverlayPlan(pose.detection.landmarks, pose.image.width, pose.image.height, { visibilityMin }) : null;
   const handOverlays = pose.phase === "ready" && pose.hands ? pose.hands.map((hand) => handOverlayPlan(hand.landmarks, pose.image.width, pose.image.height)) : [];
+  const overlay = bodyOverlay ?? handOverlays[0] ?? null;
 
   return (
     <section className="cl-vision-pose" aria-labelledby={`${ids}-title`}>
       <h3 id={`${ids}-title`}>사진·카메라 포즈 인식</h3>
+      <ShaperVisionAiSection target={target} disabled={pose.phase === "working"} onTargetChange={(next) => {
+        if (pose.phase === "ready") images.discard(pose.image);
+        setPose({ phase: "idle" });
+        setTarget(next);
+      }} />
       <div className="cl-vision-row">
         <label htmlFor={`${ids}-file`}>포즈 사진 파일</label>
         <input id={`${ids}-file`} type="file" accept="image/*" onChange={onFile} disabled={pose.phase === "working"} />
@@ -643,33 +657,9 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
       ) : null}
       {pose.phase === "ready" && overlay ? (
         <div className="cl-vision-pose-result">
-          <div className="cl-vision-photo" style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}>
-            {pose.image.previewUrl ? <img className="cl-vision-preview" src={pose.image.previewUrl} alt={`포즈 사진 ${pose.image.label}`} style={{ display: "block", maxWidth: "100%" }} /> : null}
-            <svg className="cl-vision-overlay" viewBox={overlay.viewBox} role="img" aria-label="랜드마크 오버레이" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} preserveAspectRatio="xMidYMid meet">
-              {overlay.segments.map((segment) => (
-                <line key={`p${segment.from}-${segment.to}`} className="cl-vision-bone" x1={segment.x1} y1={segment.y1} x2={segment.x2} y2={segment.y2} stroke={segment.visible ? "#36c" : "#c33"} strokeWidth={Math.max(1, overlay.width / 300)} strokeDasharray={segment.visible ? undefined : "4 4"} />
-              ))}
-              {overlay.points.map((point) => (
-                <circle key={`p${point.index}`} className="cl-vision-landmark" cx={point.x} cy={point.y} r={Math.max(2, overlay.width / 150)} fill={point.visible ? "#2a7" : "#c33"} opacity={0.35 + 0.65 * point.visibility}>
-                  <title>
-                    {point.name} ({(point.visibility * 100).toFixed(0)}%)
-                  </title>
-                </circle>
-              ))}
-              {handOverlays.map((plan, handIndex) => (
-                <g key={`hand-${handIndex}`} className="cl-vision-hand">
-                  {plan.segments.map((segment) => (
-                    <line key={`h${handIndex}-${segment.from}-${segment.to}`} className="cl-vision-hand-bone" x1={segment.x1} y1={segment.y1} x2={segment.x2} y2={segment.y2} stroke="#e8a" strokeWidth={Math.max(1, overlay.width / 400)} />
-                  ))}
-                  {plan.points.map((point) => (
-                    <circle key={`h${handIndex}-${point.index}`} className="cl-vision-hand-landmark" cx={point.x} cy={point.y} r={Math.max(1.5, overlay.width / 250)} fill="#e8a" />
-                  ))}
-                </g>
-              ))}
-            </svg>
-          </div>
+          <VisionLandmarkPreview image={pose.image} bodyOverlay={bodyOverlay} handOverlays={handOverlays} />
           <div className="cl-vision-pose-controls">
-            <div className="cl-vision-row">
+            {pose.detection ? <div className="cl-vision-row">
               <label htmlFor={`${ids}-scope`}>적용 범위</label>
               <select id={`${ids}-scope`} value={scope} onChange={(event) => setScope(LANDMARK_APPLY_SCOPES.find((candidate) => candidate === event.target.value) ?? "full")}>
                 {LANDMARK_APPLY_SCOPES.map((candidate) => (
@@ -678,7 +668,7 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
                   </option>
                 ))}
               </select>
-            </div>
+            </div> : null}
             <div className="cl-vision-row">
               <label htmlFor={`${ids}-mirror`}>거울 모드(사진 속 왼팔 → 캐릭터 오른팔)</label>
               <input id={`${ids}-mirror`} type="checkbox" checked={mirror} onChange={(event) => setMirror(event.target.checked)} />
@@ -687,23 +677,23 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
               <label htmlFor={`${ids}-selfie`}>셀피(전면 카메라, 좌우 반전) 사진</label>
               <input id={`${ids}-selfie`} type="checkbox" checked={selfie} onChange={(event) => setSelfie(event.target.checked)} />
             </div>
-            <div className="cl-vision-row">
+            {pose.detection ? <div className="cl-vision-row">
               <label htmlFor={`${ids}-visibility`}>가시성 임계</label>
               <input id={`${ids}-visibility`} type="range" min={0} max={1} step={0.05} value={visibilityMin} onChange={(event) => setVisibilityMin(Number(event.target.value))} />
               <output htmlFor={`${ids}-visibility`}>{visibilityMin.toFixed(2)}</output>
-            </div>
-            <div className="cl-vision-row">
+            </div> : null}
+            {pose.detection ? <div className="cl-vision-row">
               <label htmlFor={`${ids}-space`}>랜드마크 좌표</label>
-              <select id={`${ids}-space`} value={effectiveSpace} disabled={!pose.detection.worldLandmarks} onChange={(event) => setSpace(event.target.value === "image" ? "image" : "world")}>
+              <select id={`${ids}-space`} value={effectiveSpace} disabled={!pose.detection?.worldLandmarks} onChange={(event) => setSpace(event.target.value === "image" ? "image" : "world")}>
                 <option value="world">월드(미터)</option>
                 <option value="image">이미지(정규화)</option>
               </select>
-            </div>
-            <p className="cl-vision-pose-summary" role="status">
+            </div> : null}
+            {pose.detection ? <p className="cl-vision-pose-summary" role="status">
               {poseResult
                 ? `적용 ${poseResult.appliedBones.length}/${controllableBones(scope).length}본 · 건너뜀 ${poseResult.skippedBones.length}본 · 관절 한계 클램프 ${poseResult.clampedBones.length}본`
                 : "포즈 변환 실패"}
-            </p>
+            </p> : null}
             {poseResult && poseResult.skippedBones.length > 0 ? (
               <details className="cl-vision-skipped">
                 <summary>건너뛴 본(사유)</summary>
@@ -716,9 +706,9 @@ function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
                 </ul>
               </details>
             ) : null}
-            <button type="button" onClick={applyPose} disabled={!poseResult || poseResult.appliedBones.length === 0}>
+            {pose.detection ? <button type="button" onClick={applyPose} disabled={!poseResult || poseResult.appliedBones.length === 0}>
               포즈 적용
-            </button>
+            </button> : null}
           </div>
           <div className="cl-vision-hands">
             <h4>손 포즈(베타: 굴곡만, 벌림 미적용)</h4>
@@ -783,7 +773,6 @@ export function VisionPanel({ deps: providedDeps }: VisionPanelProps) {
       <ModelStatusList session={session} delegate={delegate} onDelegateChange={setDelegate} />
       <ReferenceSection session={session} deps={deps} now={now} />
       <PhotoPoseSection session={session} deps={deps} now={now} />
-      <ShaperVisionAiSection />
     </section>
   );
 }

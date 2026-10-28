@@ -40,6 +40,7 @@ export function toAgPsdLayer(plan: PsdLayerPlan): Layer {
     opacity: plan.opacity,
     blendMode: plan.blendMode,
     hidden: plan.hidden,
+    ...(plan.clipping ? { clipping: true } : {}),
     imageData: imageData(plan.raster),
   };
 }

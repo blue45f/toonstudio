@@ -1,7 +1,7 @@
 # Character Lab 패리티 — export-paint (모델 위 드로잉 · 투명 PNG · 레이어 PSD · 레시피 · GLB)
 
-상태: **current** (2026-10-01). 작업자 `export-paint`(W6)가 소유하는 행만 적는다. core가 `docs/shaper-parity-checklist.md`로 집계한다.
-이 컨테이너에는 GPU가 없어 **브라우저 검증 열은 전부 "미검증"**이며, Node(vitest, NullEngine 없이 모의 엔진·결정적 fixture)로 검증한 범위만 "Node 검증" 열에 적는다.
+상태: **current** (2026-10-28). 작업자 `export-paint`(W6)가 소유하는 행만 적는다. core가 `docs/shaper-parity-checklist.md`로 집계한다.
+기본 기능 행은 2026-10-01 기록이며 2026-10-28 변경은 §8·§9에 명시한다. 이번 변경의 Node·jsdom·NullEngine 검증과 실제 GPU·외부 편집기 검증을 구분하며, 실행하지 않은 브라우저 검증은 "미검증"으로 적는다.
 
 ## 1. 기능 행 (SHAPER 항목 × 구현/Node 검증/브라우저 검증)
 
@@ -62,11 +62,11 @@
 
 ## 4. 다른 작업자에게 전달하는 배선·계약 메모
 
-1. **core(`app/composition.ts`)**: `createLabStore({ ..., onPaintUndo: createPaintUndoHandler(getDefaultPaintSession(), (layer) => engineSession.engine()?.updatePaintTexture(layer)) })`. 현재 `onPaintUndo`가 비어 있어 `history/undo`가 페인트 토큰을 레이어에 반영하지 못한다.
-2. **render(`ViewportPane`)**: 드로잉 모드(`ui.drawingMode`)에서 `createPointerPaintDriver(session, { pick: (x, y) => engine.pick(x, y), upload: engine.updatePaintTexture, commit: (token) => dispatch({ type: "paint/stroke", undoToken: token }) })`를 만들고 `pointerdown/move/up/cancel`에 `clientToNdc(event.clientX, event.clientY, canvas.getBoundingClientRect())`와 `normalizePointerPressure(event)`를 넘긴다. `setPointerCapture` 권장.
+1. **core(`app/composition.ts`)**: `createLabStore({ ..., onPaintUndo: createPaintUndoHandler(paint, uploadLayer) })`로 연결되어 `history/undo`가 같은 세션의 레이어와 엔진 텍스처를 갱신한다(2026-10-28 소스 확인).
+2. **render(`ViewportPane`)**: 드로잉 모드에서 `createSwitchingPaintDriver`에 `pick: (x, y, options) => engine.pick(x, y, options)`, upload·commit을 연결한다. 포인터 이벤트는 `clientToNdc`·`normalizePointerPressure`를 거쳐 CPU 또는 베타 투영 드라이버에 들어간다. 마스킹 OFF의 신체 페인트만 선택 부위 pick 옵션을 명시한다.
 3. **render(`babylon/capture.ts`)**: `texture.readPixels()` 결과는 `toTopDownStraight(rgba, w, h, { flipY, premultiplied })`로 변환한다(backend 상수는 render가 결정, 브라우저 검증 항목). 깊이는 `decodeDepth(f32, w, h, { near, far, flipY })`.
 4. **render(`updatePaintTexture`)**: 레이어는 straight alpha·top-down(UV v=0 = 첫 행). Babylon `RawTexture.CreateRGBATexture`는 `invertY`를 명시해야 UV와 행 방향이 맞는다(브라우저 검증 항목).
-5. 계약 변경 요청: 없음(`contracts/paint.ts`, `capture.ts`, `events.ts` 그대로 사용).
+5. `contracts/engine.ts`의 선택적 `CharacterPickOptions`만 확장했다(통합 담당 승인). 기존 2인자 `pick`은 모든 보이는 부위 중 최근접 hit 동작을 유지한다. 페인트·캡처·이벤트의 저장 계약은 유지한다.
 
 ## 5. 라이선스·출처
 
@@ -90,3 +90,30 @@
 | GLB 내보내기: 키트 조립 씬(스킨 1개·68 joint, 숨긴 몸 삼각형 제외, 현재 morph influence를 메시 `weights`로, recolor 파츠 `baseColorFactor` = 현재 색) | 구현됨 | `render/babylon-glb-sparse-export.test.ts`(키트 케이스 5, NullEngine) | **미검증**(외부 뷰어에서 열기) | 계약 8.2 '미검증' 문구가 이 테스트로 확정됨 |
 | PSD 마스크 레이어에 새 역할 `underwear`('속옷') 반영 | 구현됨 | `export/psd-plan.test.ts`(8), `export/export-session.test.ts`(10) | 미검증 | 마스크 단위는 역할이라 눈 L/R은 한 레이어 |
 | 페인트 키트 경고(`paint/paint-kit-warning.ts`): `skin`·`head` 외 역할은 의상 변형을 바꾸면 UV가 달라져 그림이 어긋남 → PaintPanel 경고, 레시피 불러온 직후 `kitPaintWarningsForLayers` | 구현됨 | `paint/paint-kit-warning.test.ts`(4), `app/shell/panels/PaintPanel.test.tsx`(8, 키트 경고 3) | 미검증 | 막지 않고 경고만 한다. 정식 해결(레이어를 변형 id로 키잉)은 레시피 v3 후보 |
+
+## 8. 헤어 PSD 실분리 (2026-10-28)
+
+상태: **current**. `splitHairLayers`를 켜고 `part-id`에 헤어·헤어 부속 픽셀이 있으면 본체 밑색·음영·하이라이트·주선에서 해당 RGBA를 비우고 헤어 그룹으로 옮긴다. 이전에는 원본 전체 레이어 위에 헤어 그룹을 추가해 그룹을 숨겨도 헤어가 남았다.
+
+| 항목 | 구현 상태 | Node 검증 | 브라우저·외부 편집기 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| 헤어·헤어 부속의 실제 알파 분리, 그룹 숨김 시 헤어 픽셀 제거, 본체 픽셀 보존 | 구현됨 | `export/psd-plan.test.ts` | 미검증 | 입력 캡처·원본 래스터를 수정하지 않는다. ID 패스 또는 헤어 픽셀이 없으면 기존 전체 레이어를 유지하고 사유를 기록한다 |
+| 헤어 3레이어의 색 재합성·반투명 가장자리 보존 | 구현됨 | `export/psd-plan.test.ts`의 독립 normal/multiply/screen 재합성 | 미검증 | 헤어 하이라이트는 밑색에 보존하며 음영·주선은 헤어 밑색 알파에 clipping한다. 3레이어 형식에서 별도 하이라이트 편집은 제공하지 않는다 |
+| PSD 바이트에 clipping·분리 알파 저장 | 구현됨 | `export/psd-assemble.test.ts`의 `assemblePsd` → `readPsd` 왕복 | 미검증 | 글로벌 계약·새 의존성 없이 로컬 레이어 계획을 `ag-psd` clipping 플래그로 직렬화한다 |
+
+페인트 레이어는 기존과 같이 숨김 UV 참조로 보존한다. 현재 캡처에는 화면 공간 독립 페인트 패스가 없어 UV 이미지를 화면 레이어로 표시하지 않는다. 화면 공간 페인트 분리는 해당 렌더 패스를 제공하는 후속 작업이 필요하다.
+
+## 9. 실제 필압·의상 가림 연결 (2026-10-28)
+
+상태: **current**. PaintPanel의 필압·가림 설정을 React 밖 `PaintSession`에 두고 뷰포트의 CPU·베타 투영 경로가 읽는다. 기존 고정 반지름을 기본값으로 유지한다. 펜 모드는 PointerEvent 압력에 따라 반지름·알파를 바꾸며, 가상 필압은 종료 시 기록한 경로를 양끝이 가늘어지는 sin 곡선으로 재생한다. 재생 전 미리보기를 복원해 한 포인터 스트로크가 undo 토큰 하나를 만든다.
+
+| 항목 | 검증 근거 | 실제 GPU 검증 | 한계 |
+| --- | --- | --- | --- |
+| 패널 선택 → 실제 펜 반지름·알파 픽셀 차이, 업로드·undo | `PaintPanel.test.tsx`, `ViewportPane.test.tsx`, `stroke-session.test.ts` | 미검증 | 마우스·터치는 기존과 같이 압력 1로 정규화한다 |
+| 가상 필압 종료 후 실제 양끝 축소, 중간 불투명도·undo/redo 바이트 보존 | `stroke-session.test.ts`, `projection-paint-driver.test.ts` | 미검증 | 경로 끝을 알 수 있는 종료 시점에 최종 두께를 확정한다. 짧은 점 입력은 남긴다 |
+| 의상 앞/뒤 최근접 기하 hit, ON은 몸 페인트 차단·OFF만 선택 몸 표면 hit | `babylon-paint-pick.test.ts`, `app/paint-occlusion.integration.test.ts`(실제 NullEngine 메시) | 미검증 | 포인터 중심의 가림만 검사한다. 큰 UV dab 전체 픽셀 가림이나 제거된 몸 삼각형 복원은 제공하지 않는다 |
+| 같은 PaintLayer가 엔진 텍스처 업로드와 레시피 내 PNG 바이트에 반영 | `app/paint-occlusion.integration.test.ts`의 inspectPaint·exportRecipe 왕복 | 미검증 | NullEngine은 실제 lit 캡처의 색·UV 방향을 확인하지 못한다 |
+| 투영 드라이버 반지름·알파, 가상 필압 재생, 선택 부위 pick 옵션 | `projection-paint-driver.test.ts`의 실제 overlay 합성·단일 undo | 미검증 | 모의 포트는 GPU 셰이더·실제 투영 픽셀을 검증하지 않는다 |
+| 셰이더 준비 대기 중 각 dab 브러시 비트맵 보존 | `babylon-projection-brush-queue.test.ts`의 업로드 브러시 바이트 재생 | 미검증 | 가변 GPU 텍스처 참조 대신 비트맵을 큐에 저장한다 |
+
+카메라 조작 설정·F/L/T 시점 연결은 `render/viewport-input-style.ts`의 엔진 중립 포트를 거치게 옮겼다. 앱이 Babylon 내부 모듈을 직접 가져오던 경계 위반을 제거하고, 실제 카메라 각도 변경·재연결·해제를 `viewport-input-style.test.ts`로 검증한다.

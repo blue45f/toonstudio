@@ -16,6 +16,7 @@ import { ShaderLanguage } from "@babylonjs/core/Materials/shaderLanguage.js";
 import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
 import { InternalTexture, InternalTextureSource } from "@babylonjs/core/Materials/Textures/internalTexture.js";
 import { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture.js";
+import { MeshUVSpaceRenderer } from "@babylonjs/core/Meshes/meshUVSpaceRenderer.js";
 import { Scene } from "@babylonjs/core/scene.js";
 
 import { BabylonCharacterEngine } from "../babylon/character-engine";
@@ -297,6 +298,23 @@ export function installFakeUvReadback(handler: FakeUvReadbackHandler): () => voi
   };
   return () => {
     proto.readPixels = original;
+  };
+}
+
+/** 셰이더 준비 대기·재생 시 업로드된 브러시 바이트만 검사한다. 실제 GPU 투영 픽셀을 흉내 내지 않는다. */
+export function installFakeUvBrushReplay(ready: () => boolean, replay: (bytes: Uint8Array) => void): () => void {
+  const proto = MeshUVSpaceRenderer.prototype;
+  const originalReady = proto.isReady;
+  const originalRender = proto.renderTexture;
+  proto.isReady = ready;
+  proto.renderTexture = function renderTextureFake(texture) {
+    const bytes = texture.getInternalTexture()?._bufferView;
+    if (!(bytes instanceof Uint8Array)) throw new Error("NullEngine 브러시 바이트가 없습니다.");
+    replay(new Uint8Array(bytes));
+  };
+  return () => {
+    proto.isReady = originalReady;
+    proto.renderTexture = originalRender;
   };
 }
 

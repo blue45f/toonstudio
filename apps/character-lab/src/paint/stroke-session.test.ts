@@ -47,4 +47,23 @@ describe("createStrokeSession", () => {
     expect(session.extend({ u: 0.5, v: 0.5, pressure: 1 })).toBe(1);
     expect(session.dabCount).toBe(1);
   });
+
+  it("가상 필압은 종료 시 실제 sin 반지름으로 재생하고 단일 토큰 undo·redo로 바이트를 복원한다", () => {
+    const layer = createPaintLayer("skin", 128, 128);
+    layer.rgba.set([20, 40, 60, 255], 0);
+    const original = new Uint8ClampedArray(layer.rgba);
+    const session = createStrokeSession(layer, { ...BRUSH, radiusPx: 8, spacing: 0.25 }, { wrap: false, pressureMode: "fake" });
+    session.begin({ u: 0.1, v: 0.5, pressure: 0.1 });
+    session.extend({ u: 0.9, v: 0.5, pressure: 0.1 });
+    expect(readPixel(layer, 13, 70)[3]).toBe(255);
+    const token = session.end();
+    expect(readPixel(layer, 13, 70)[3]).toBe(0);
+    expect(readPixel(layer, 64, 70)[3]).toBe(255);
+    expect(readPixel(layer, 114, 70)[3]).toBe(0);
+    const tapered = new Uint8ClampedArray(layer.rgba);
+    const redo = applyUndoToken(layer, token);
+    expect(bytesEqual(layer.rgba, original)).toBe(true);
+    applyUndoToken(layer, redo);
+    expect(bytesEqual(layer.rgba, tapered)).toBe(true);
+  });
 });
