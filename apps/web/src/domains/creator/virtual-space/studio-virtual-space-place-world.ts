@@ -1,3 +1,4 @@
+import { studioOfficeEnvironmentManifest } from "./studio-virtual-space-office-environments";
 import { sha256HexPortable } from "../studio-sha256";
 import { TOON_HQ_PLACE_ID } from "./office2d/hq/toon-hq-blueprint";
 import { studioVirtualToonHqManifest } from "./office2d/hq/toon-hq-manifest";
@@ -238,6 +239,8 @@ export function studioVirtualPlaceWorldManifest(placeId: string, personal = fals
   const available = studioVirtualPlacesForMode(personal);
   const resolvedPlaceId = studioVirtualPlaceIdForMode(placeId, personal);
   if (resolvedPlaceId === TOON_HQ_PLACE_ID) return studioVirtualToonHqManifest(personal);
+  const officeEnvironment = studioOfficeEnvironmentManifest(resolvedPlaceId);
+  if (officeEnvironment) return officeEnvironment;
   const place = available.find((candidate) => candidate.id === resolvedPlaceId)
     ?? studioVirtualPlaceById(STUDIO_VIRTUAL_CAMPUS_HOME_PLACE_ID);
   const spec = PLACE_LAYOUTS[place.id] ?? PLACE_LAYOUTS[STUDIO_VIRTUAL_CAMPUS_HOME_PLACE_ID];

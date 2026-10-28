@@ -1,3 +1,4 @@
+import { studioOfficeEnvironment } from "./studio-virtual-space-office-environments";
 import { DoorOpen, LockKeyhole, Network, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -197,7 +198,8 @@ function ModuleCard({
 }) {
   const bt = useBilingual(`StudioSpaceModule.${module.id}`);
   const [privacyKo, privacyEn] = privacyCopy[module.privacy];
-  const visual = NANO_BANANA_SPACE_MODULE_PREVIEWS[module.id];
+  const environment = studioOfficeEnvironment(module.id);
+  const visual = environment ? { roomPreviewUrl: environment.previewUrl, hostSpriteUrl: environment.castSpriteUrl } : NANO_BANANA_SPACE_MODULE_PREVIEWS[module.id];
   const content = <>
     {visual ? (
       <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg border border-line bg-panel" aria-hidden="true">

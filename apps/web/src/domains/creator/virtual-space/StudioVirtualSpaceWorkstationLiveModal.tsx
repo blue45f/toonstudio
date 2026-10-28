@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   CheckCircle2,
   Film,
@@ -135,6 +136,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const partnerPersona =
     NANO_BANANA_V11_CREATOR_PERSONAS.find((p) => p.id === station.partnerPersonaId) ??
@@ -307,12 +309,27 @@ export function StudioVirtualSpaceWorkstationLiveModal({
   const progressPercent = Math.round(((doneCount + 38) / 48) * 100);
 
   return (
+    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog.Portal>
+    <Dialog.Overlay
+      data-space-interactive="true"
+      className="pointer-events-auto fixed inset-0 z-[1200] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm sm:p-6"
+    >
+    <Dialog.Content asChild aria-describedby={undefined}
+      onOpenAutoFocus={() => {
+        const active = document.activeElement;
+        returnFocusRef.current = active instanceof HTMLElement ? active : null;
+      }}
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus({ preventScroll: true });
+      }}>
     <div
       data-testid="workstation-live-collab-modal"
       data-space-interactive="true"
-      role="dialog"
+      aria-modal="true"
       aria-label={`${station.titleKo} 실무 협업 워크스테이션`}
-      className="pointer-events-auto absolute inset-x-4 bottom-16 top-16 z-30 mx-auto flex max-w-5xl flex-col overflow-hidden rounded-2xl border border-accent bg-panel/95 text-fg shadow-2xl backdrop-blur-xl"
+      className="pointer-events-auto relative z-10 flex max-h-[88dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-accent bg-panel/95 text-fg shadow-2xl backdrop-blur-xl"
     >
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-card/80 px-4 py-3">
@@ -327,7 +344,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
               <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
                 2D 실시간 협업 워크스테이션
               </span>
-              <h2 className="text-sm font-bold text-fg">{station.titleKo}</h2>
+              <Dialog.Title asChild><h2 className="text-sm font-bold text-fg">{station.titleKo}</h2></Dialog.Title>
             </div>
             <p className="text-xs text-fg-2">
               {station.subtitleKo} · 전담 파트너: {partnerPersona.nameKo} ({station.partnerLabelKo})
@@ -764,5 +781,9 @@ export function StudioVirtualSpaceWorkstationLiveModal({
         </div>
       </div>
     </div>
+    </Dialog.Content>
+    </Dialog.Overlay>
+    </Dialog.Portal>
+    </Dialog.Root>
   );
 }

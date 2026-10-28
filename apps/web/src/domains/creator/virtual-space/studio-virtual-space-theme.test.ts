@@ -19,7 +19,7 @@ import {
 const TONES = [...new Set(CAMPUS_ZONES.map((zone) => zone.tone))] as StudioCampusZoneTone[];
 
 describe("공간 테마 모델", () => {
-  it("테마 10종이 모두 등록돼 있고 기본 테마와 창작 특화 메타데이터가 존재한다", () => {
+  it("테마 13종이 모두 등록돼 있고 기본 테마와 창작 특화 메타데이터가 존재한다", () => {
     expect(STUDIO_SPACE_THEMES.map((theme) => theme.key)).toEqual([...STUDIO_SPACE_THEME_KEYS]);
     expect(STUDIO_SPACE_THEME_KEYS).toEqual([
       "modern-office",
@@ -32,6 +32,9 @@ describe("공간 테마 모델", () => {
       "library",
       "sakura-campus",
       "sunset-harbor",
+      "forest-atelier",
+      "orbital-observatory",
+      "tidal-atelier",
     ]);
     expect(studioSpaceTheme(DEFAULT_STUDIO_SPACE_THEME).key).toBe("modern-office");
     expect(isStudioSpaceThemeKey("webtoon-atelier")).toBe(true);

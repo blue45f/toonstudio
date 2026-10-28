@@ -1,3 +1,4 @@
+import { STUDIO_OFFICE_ENVIRONMENTS } from "./studio-virtual-space-office-environments";
 import type {
   StudioVirtualSpaceZoneId,
 } from "./studio-virtual-space-model";
@@ -51,6 +52,10 @@ export const STUDIO_VIRTUAL_TOON_HQ_PLACE: StudioVirtualPlaceDefinition = Object
 
 export const STUDIO_VIRTUAL_PLACES: readonly StudioVirtualPlaceDefinition[] = Object.freeze([
   STUDIO_VIRTUAL_TOON_HQ_PLACE,
+  ...STUDIO_OFFICE_ENVIRONMENTS.map((environment): StudioVirtualPlaceDefinition => ({
+    id: environment.key, roomId: environment.key, category: "production", labelKo: environment.labelKo, labelEn: environment.labelEn,
+    descriptionKo: environment.descriptionKo, descriptionEn: environment.descriptionEn, previewUrl: environment.previewUrl, action: "canvas", recommended: true,
+  })),
   place({ id: "skyport", roomId: "skyport", category: "community", labelKo: "스카이 포트", labelEn: "Sky Port",
     descriptionKo: "입장 부두와 월드 이동 게이트가 있는 시작 장소.", descriptionEn: "The arrival dock and gateway to every studio district.", action: "community", recommended: true }),
   place({ id: "creator-plaza", roomId: "creator-plaza", category: "community", labelKo: "창작자 광장", labelEn: "Creator Plaza",

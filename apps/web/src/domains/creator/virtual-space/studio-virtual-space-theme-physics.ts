@@ -38,6 +38,9 @@ interface ThemePhysicsModifier {
 }
 
 const THEME_MODIFIERS: Readonly<Record<StudioSpaceThemeKey, ThemePhysicsModifier>> = Object.freeze({
+  "forest-atelier": { accel: 1.01, brake: 1.04, speed: 1.0, restitution: 0.35, footstepGain: 1.1 },
+  "orbital-observatory": { accel: 0.98, brake: 0.94, speed: 1.02, restitution: 0.44, footstepGain: 1.08 },
+  "tidal-atelier": { accel: 1.02, brake: 1.0, speed: 1.01, restitution: 0.38, footstepGain: 1.05 },
   "modern-office": { accel: 1.0, brake: 1.0, speed: 1.0, restitution: 0.36, footstepGain: 1.05 },
   "webtoon-atelier": { accel: 1.03, brake: 1.04, speed: 1.01, restitution: 0.38, footstepGain: 1.08 },
   "celestial-observatory": { accel: 0.98, brake: 0.93, speed: 1.02, restitution: 0.46, footstepGain: 1.12 },

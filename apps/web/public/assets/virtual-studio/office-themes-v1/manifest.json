@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "toonstudio.generated-office-art/1",
+  "createdOn": "2026-10-28",
+  "generator": "image_gen built-in tool",
+  "model": "not-reported",
+  "status": "current",
+  "assets": [
+    {
+      "key": "forest-atelier",
+      "url": "/assets/virtual-studio/office-themes-v1/forest-atelier.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 3577206,
+      "sha256": "a8c940ac4ec9c438efb030009cd120cedfc434eadea373920f060d70c545fe35",
+      "purpose": "중앙 원형 마루·목조 서가·숲 채광의 아틀리에"
+    },
+    {
+      "key": "orbital-observatory",
+      "url": "/assets/virtual-studio/office-themes-v1/orbital-observatory.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 3464647,
+      "sha256": "9b25fd1d8f0c31201f74ccfe184f768d13815a2f9bb8d22483838af1d5dfd450",
+      "purpose": "초승달 라운지·행성 원탁·궤도 창가 작화 콘솔"
+    },
+    {
+      "key": "tidal-atelier",
+      "url": "/assets/virtual-studio/office-themes-v1/tidal-atelier.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 3235206,
+      "sha256": "e5132586d6a3dc1ff30aa3c34d50e1e23f18db82e923ba6b1253ae0849756a5f",
+      "purpose": "긴 원고 테이블·양쪽 통로·산호 아르데코 해저 스튜디오"
+    }
+  ],
+  "consumers": [
+    "studio-virtual-space-office-environments.ts",
+    "office2d-backdrop-art.ts"
+  ],
+  "limitations": [
+    "모델명과 버전은 도구가 보고하지 않아 추정하지 않음.",
+    "배경 아트와 실제 충돌·좌석·도구 좌표를 별도 manifest에서 함께 관리함."
+  ]
+}
