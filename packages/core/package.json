@@ -33,6 +33,11 @@
       "import": "./src/catalog/index.ts",
       "default": "./src/catalog/index.ts"
     },
+    "./search-pagination": {
+      "types": "./src/search-pagination.ts",
+      "import": "./src/search-pagination.ts",
+      "default": "./src/search-pagination.ts"
+    },
     "./fx": {
       "types": "./src/fx/index.ts",
       "import": "./src/fx/index.ts",
