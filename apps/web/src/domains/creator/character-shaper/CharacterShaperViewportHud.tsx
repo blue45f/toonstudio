@@ -28,6 +28,7 @@ import {
   resolveShaperContextKeycapStatusGuide,
 } from "./character-shaper-ui-model";
 
+import { useCharacterShaperSessionSettings } from "./character-shaper-session-settings";
 import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
 
 import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-contract";
@@ -142,6 +143,7 @@ function downloadLtPayloadAsPng(payload: StudioLtConvertLayerPayload): boolean {
 }
 
 export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }: CharacterShaperViewportHudProps) {
+  const settings = useCharacterShaperSessionSettings();
   const locale = useI18n((state) => state.lang);
   const bt = useBilingual("CharacterShaperViewportHud");
   const [ltOpen, setLtOpen] = useState(false);
@@ -437,8 +439,9 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
             className="flex items-center gap-2 rounded-xl border border-line/60 bg-panel/85 px-2.5 py-1 text-[0.65rem] font-medium text-fg-2 shadow-sm backdrop-blur"
           >
             {resolveShaperContextKeycapStatusGuide({
-              tab: paintMode ? "draw" : "pose",
+              tab: paintMode ? "draw" : "camera",
               drawingActive: paintMode,
+              cameraStyle: settings?.cameraStyle,
             }).map((item) => (
               <span key={item.keycap} className="inline-flex items-center gap-1">
                 <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-line-strong/70 bg-card px-1 font-mono text-[0.6rem] font-bold text-fg">

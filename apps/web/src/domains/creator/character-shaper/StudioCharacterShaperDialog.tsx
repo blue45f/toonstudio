@@ -33,7 +33,7 @@ import {
   pushCharacterShaperKeyLayer,
   reduceCharacterShaperUiState,
 } from "./character-shaper-ui-model";
-import { DEFAULT_CHARACTER_OUTPUT_FRAMING } from "./character-shaper-framing";
+import { useCharacterShaperOutputSettings } from "./character-shaper-session-settings";
 import { CharacterShaperAxisGizmo } from "./CharacterShaperAxisGizmo";
 import { CharacterShaperCompositionGuide } from "./CharacterShaperCompositionGuide";
 import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
@@ -98,7 +98,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
   const touchPortrait = useMediaQuery(CHARACTER_SHAPER_TOUCH_PORTRAIT_QUERY);
   const layout: CharacterShaperLayout = touchLandscape || touchPortrait ? "mobile" : isDesktop ? "desktop" : isTablet ? "tablet" : "mobile";
   const [ui, dispatch] = useReducer(reduceCharacterShaperUiState, undefined, () => createCharacterShaperUiState({ mobileSheet: layout === "mobile" ? "collapsed" : "half" }));
-  const [outputFraming, setOutputFraming] = useState(DEFAULT_CHARACTER_OUTPUT_FRAMING);
+  const { framing: outputFraming, setFraming: setOutputFraming } = useCharacterShaperOutputSettings();
   const previousSheetRef = useRef<"half" | "full">("half");
   const [mobileTab, setMobileTab] = useState<MobileSheetTab>("shelf");
   const activeMobileTab = mobileTab === "view" && !touchLandscape ? "shelf" : mobileTab;
@@ -330,15 +330,6 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
     }
 
     if (typing || modifier || event.altKey) return false;
-
-    if (key === "F10") {
-      if (paintActive || !modelReady) return false;
-      event.preventDefault();
-      const nextEyeballLock = !h.fixEyeballCam;
-      h.setFixEyeballCam?.(nextEyeballLock);
-      setCommitNotice(nextEyeballLock ? "F10 · 시선 카메라 고정 켜짐" : "F10 · 시선 카메라 고정 꺼짐");
-      return true;
-    }
 
     if (key === "t" || key === "T") {
       if (paintActive || !modelReady) return false;

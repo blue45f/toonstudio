@@ -1,12 +1,23 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
+import { Bone, Group, Object3D, PerspectiveCamera } from "three";
+import { VRM, VRMHumanoid, VRMLookAt } from "@pixiv/three-vrm";
+import { characterFramedExportSize } from "./character-shaper-framing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CHARACTER_SLOT_KINDS } from "./character-shaper-contract";
 import { CharacterShaperOutputDock } from "./CharacterShaperOutputDock";
+import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
+import { useCharacterShaperOutputSettings } from "./character-shaper-session-settings";
+import { createCharacterExportPreflight } from "../character-platform/export/character-export-preflight";
+import { EMPTY_CHARACTER_CAPABILITY_PROFILE } from "./character-shaper-capability";
+import { createCharacterCompatibilityReport } from "../character-platform/compatibility/character-compatibility-report";
 import { CharacterShaperViewportHud } from "./CharacterShaperViewportHud";
+import { CharacterShaperOrbitControls } from "./CharacterShaperOrbitControls";
+import { CharacterShaperGazeSelect } from "./CharacterShaperCameraControls";
+import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 
 import type {
   CharacterCapabilityProfile,
@@ -20,6 +31,16 @@ import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 const exportCharacterSemanticPsd = vi.hoisted(() => vi.fn());
 const captureStudioVrmRgbaCooperatively = vi.hoisted(() => vi.fn(async () => new Uint8ClampedArray(4)));
 const encodeStudioVrmCapturePngBlob = vi.hoisted(() => vi.fn(async () => new Blob(["png"])));
+const gazeViewport = vi.hoisted(() => ({ state: null as unknown }));
+
+vi.mock("@react-three/fiber", () => ({ useThree: () => gazeViewport.state }));
+vi.mock("../vrm/StudioVrmPoserViewport", () => ({ StudioVrmPoserViewport: () => null }));
+vi.mock("@react-three/drei/core/OrbitControls.js", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return { OrbitControls: forwardRef(function TestOrbit(_props, ref) {
+    useImperativeHandle(ref, () => ({ mouseButtons: {} })); return null;
+  }) };
+});
 
 vi.mock("./character-shaper-semantic-psd", () => ({
   exportCharacterSemanticPsd,
@@ -154,6 +175,94 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+});
+
+function gazeVrm() {
+  const scene = new Group();
+  const add = (parent: Group | Bone, x: number, y: number) => {
+    const node = new Bone(); node.position.set(x, y, 0); parent.add(node); return { node };
+  };
+  const hips = add(scene, 0, 1); const spine = add(hips.node, 0, 0.3); const head = add(spine.node, 0, 0.4);
+  const leftUpperArm = add(spine.node, 0.2, 0.2); const leftLowerArm = add(leftUpperArm.node, 0.35, 0); const leftHand = add(leftLowerArm.node, 0.3, 0);
+  const rightUpperArm = add(spine.node, -0.2, 0.2); const rightLowerArm = add(rightUpperArm.node, -0.35, 0); const rightHand = add(rightLowerArm.node, -0.3, 0);
+  const leftUpperLeg = add(hips.node, 0.1, 0); const leftLowerLeg = add(leftUpperLeg.node, 0, -0.45); const leftFoot = add(leftLowerLeg.node, 0, -0.45);
+  const rightUpperLeg = add(hips.node, -0.1, 0); const rightLowerLeg = add(rightUpperLeg.node, 0, -0.45); const rightFoot = add(rightLowerLeg.node, 0, -0.45);
+  scene.updateMatrixWorld(true);
+  const humanoid = new VRMHumanoid({ hips, spine, head, leftUpperArm, leftLowerArm, leftHand,
+    rightUpperArm, rightLowerArm, rightHand, leftUpperLeg, leftLowerLeg, leftFoot, rightUpperLeg, rightLowerLeg, rightFoot });
+  scene.add(humanoid.normalizedHumanBonesRoot);
+  const lookAt = new VRMLookAt(humanoid, { applyYawPitch: vi.fn(), lookAt: vi.fn() });
+  lookAt.target = new Object3D(); lookAt.autoUpdate = false; lookAt.yaw = 12; lookAt.pitch = -8;
+  return new VRM({ scene, humanoid, lookAt, meta: { metaVersion: "1", name: "시선 검증", authors: ["fixture"], licenseUrl: "https://example.test/license" } });
+}
+
+describe("실제 VRMLookAt과 파일 캡처 권위", () => {
+  it.each(["no-look-at", "capture", "repeat", "normal"] as const)("실제 Dialog의 %s F10은 provider 하나만 제어하며 가짜 성공 안내를 만들지 않는다", (condition) => {
+    const vrm = gazeVrm(); const lookAt = condition === "no-look-at" ? undefined : vrm.lookAt;
+    const camera = new PerspectiveCamera(); camera.position.set(2, 2, 4); camera.updateMatrixWorld(true);
+    const capturing = condition === "capture";
+    const h = makeHost({ vrm: { scene: vrm.scene, lookAt }, isCapturing: capturing,
+      dialogRef: { current: null }, closeButtonRef: { current: null }, onClose: vi.fn() });
+    gazeViewport.state = { camera, gl: h.captureRef.current.gl, invalidate: vi.fn() };
+    render(<CharacterShaperSessionSettingsProvider gazeAvailable={Boolean(lookAt)} locked={capturing}>
+      <StudioCharacterShaperDialog h={h} binding={makeBinding()} />
+      <CharacterShaperOrbitControls lookAt={lookAt} captureFrozen={capturing} />
+    </CharacterShaperSessionSettingsProvider>);
+    const before = lookAt ? { target: lookAt.target, autoUpdate: lookAt.autoUpdate, yaw: lookAt.yaw, pitch: lookAt.pitch } : null;
+    fireEvent.keyDown(window, { key: "F10", repeat: condition === "repeat" });
+    if (lookAt && condition === "normal") {
+      expect(lookAt.target).toBeUndefined(); expect(lookAt.autoUpdate).toBe(false); expect(lookAt.yaw).toBe(0);
+    } else if (lookAt) {
+      expect({ target: lookAt.target, autoUpdate: lookAt.autoUpdate, yaw: lookAt.yaw, pitch: lookAt.pitch }).toEqual(before);
+    }
+    expect(screen.queryByText(/^F10 · 시선 카메라 고정/u)).toBeNull();
+  });
+
+  it.each(["cam", "fix"] as const)("%s 시선은 PNG·PSD 캡처 중 동결되고 웹캠·모델 해제 때만 이전 소유자에게 반환된다", async (mode) => {
+    const vrm = gazeVrm(); const lookAt = vrm.lookAt;
+    if (!lookAt) throw new Error("시선 fixture 없음");
+    const previousTarget = lookAt.target;
+    const camera = new PerspectiveCamera(); camera.position.set(2, 2, 4); camera.updateMatrixWorld(true);
+    const base = makeHost({ vrm, captureRef: { current: { gl: { domElement: document.createElement("canvas") }, scene: vrm.scene, camera } } });
+    gazeViewport.state = { camera, gl: base.captureRef.current.gl, invalidate: vi.fn() };
+    function App() {
+      const [capturing, setCapturing] = useState(false);
+      const h = { ...base, isCapturing: capturing, setIsCapturing: setCapturing };
+      return <CharacterShaperSessionSettingsProvider gazeAvailable locked={capturing}>
+        <CharacterShaperGazeSelect h={h} />
+        <CharacterShaperOrbitControls lookAt={lookAt} captureFrozen={capturing} />
+        <CharacterShaperOutputDock h={h} binding={makeBinding()} drawer={null} onOpenDrawer={vi.fn()} paintActive={false} onTogglePaint={vi.fn()} />
+      </CharacterShaperSessionSettingsProvider>;
+    }
+    const view = render(<App />);
+    fireEvent.change(screen.getByLabelText("시선 추적 모드"), { target: { value: mode } });
+    const direction = { yaw: lookAt.yaw, pitch: lookAt.pitch };
+    expect(direction).not.toEqual({ yaw: 12, pitch: -8 });
+    const inspectCapture = () => {
+      expect(lookAt.autoUpdate).toBe(false);
+      expect({ yaw: lookAt.yaw, pitch: lookAt.pitch }).toEqual(direction);
+      camera.position.x += 2; camera.updateMatrixWorld(true);
+      vrm.update(0);
+      expect({ yaw: lookAt.yaw, pitch: lookAt.pitch }).toEqual(direction);
+    };
+    captureStudioVrmRgbaCooperatively.mockImplementationOnce(async () => { inspectCapture(); return new Uint8ClampedArray(4); });
+    fireEvent.click(screen.getByRole("button", { name: "PNG 저장" }));
+    expect(await screen.findByText(/PNG를 저장했습니다/u)).toBeTruthy();
+    expect(lookAt.autoUpdate).toBe(mode === "cam");
+    const afterPng = { yaw: lookAt.yaw, pitch: lookAt.pitch };
+    exportCharacterSemanticPsd.mockImplementationOnce(async () => {
+      expect(lookAt.autoUpdate).toBe(false);
+      vrm.update(0);
+      expect({ yaw: lookAt.yaw, pitch: lookAt.pitch }).toEqual(afterPng);
+      return { blob: new Blob(["psd"]), receipt: { layerNames: ["Beauty"], skipped: [] } };
+    });
+    fireEvent.click(screen.getByRole("button", { name: "PSD 내보내기" }));
+    expect(await screen.findByText(/PSD 레이어 1개 저장/u)).toBeTruthy();
+    expect(lookAt.autoUpdate).toBe(mode === "cam");
+    view.unmount();
+    expect(lookAt.target).toBe(previousTarget); expect(lookAt.autoUpdate).toBe(false);
+    expect({ yaw: lookAt.yaw, pitch: lookAt.pitch }).toEqual({ yaw: 12, pitch: -8 });
+  });
 });
 
 describe("CharacterShaperOutputDock", () => {
@@ -401,18 +510,48 @@ it("참조 작업면의 출력 설정은 팝오버로 열리고 Escape로 닫으
   expect(trigger.getAttribute("aria-expanded")).toBe("false");
 });
 
-it("뷰포트 HUD는 SHAPER 3종 카메라 조작·4모드 안구 시선 선택기와 24px 단축키 키캡 안내를 렌더링한다", () => {
+it("작업실 밖의 HUD는 연결되지 않은 조작을 비활성화한다", () => {
   render(<CharacterShaperViewportHud h={makeHost()} binding={makeBinding()} compact={false} />);
   const cameraStyle = screen.getByTestId("shaper-camera-style-select") as HTMLSelectElement;
-  expect(cameraStyle.value).toBe("unity");
-  fireEvent.change(cameraStyle, { target: { value: "blender" } });
-  expect(cameraStyle.value).toBe("blender");
-
+  expect(cameraStyle.disabled).toBe(true);
   const eyeballTracking = screen.getByTestId("shaper-eyeball-tracking-select") as HTMLSelectElement;
-  expect(eyeballTracking.value).toBe("cam");
-  fireEvent.change(eyeballTracking, { target: { value: "fix" } });
-  expect(eyeballTracking.value).toBe("fix");
+  expect(eyeballTracking.disabled).toBe(true);
+  expect(screen.getByText("이 모델에 VRM LookAt이 없어 시선을 바꿀 수 없습니다.")).toBeTruthy();
 
   const keycaps = screen.getByTestId("shaper-hud-context-keycaps");
   expect(keycaps.textContent).toContain("F10");
+});
+
+
+it("공유 preflight 옵션을 바꾸면 실제 PSD 출력 인자도 동일한 옵션을 사용한다", async () => {
+  const h = makeHost({ captureRef: { current: { gl: { domElement: document.createElement("canvas") }, scene: {}, camera: new PerspectiveCamera() } } });
+  const binding = makeBinding({ profile: EMPTY_CHARACTER_CAPABILITY_PROFILE });
+  function Preflight() {
+    const { psdOptions, setPsdOptions, exportEdge, setExportEdge, framing, setFraming } = useCharacterShaperOutputSettings();
+    const size = characterFramedExportSize(512, 640, exportEdge, framing.aspect);
+    const preflight = createCharacterExportPreflight({ format: "psd", ...size, transparent: true,
+      profile: binding.profile, compatibility: createCharacterCompatibilityReport(binding.profile), hasSurfacePaint: false, canonical: false,
+      ...psdOptions });
+    return <><button onClick={() => { setPsdOptions({ createHairLayer: false, extractLuminanceOutline: false }); setExportEdge(1024); setFraming({ aspect: "portrait", guide: "none", safeArea: false }); }}>검수에서 출력 설정</button>
+      <output data-testid="shared-preflight">{preflight.width}×{preflight.height}/{preflight.shaperHairThreeLayers?.length ? "hair" : "no-hair"}/{preflight.shaperLuminanceOutlineFormula ?? "no-luma"}</output></>;
+  }
+  function SharedDock() {
+    const { framing, setFraming } = useCharacterShaperOutputSettings();
+    return <CharacterShaperOutputDock h={h} binding={binding} framing={framing} onFramingChange={setFraming}
+      drawer={null} onOpenDrawer={vi.fn()} paintActive={false} onTogglePaint={vi.fn()} compact={false} />;
+  }
+  render(<CharacterShaperSessionSettingsProvider><Preflight /><SharedDock /></CharacterShaperSessionSettingsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "검수에서 출력 설정" }));
+  expect(screen.getByTestId("shared-preflight").textContent).toBe("768×1024/no-hair/no-luma");
+  expect((screen.getByTestId("shaper-dock-psd-hair-split") as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "PSD 내보내기" }));
+  await waitFor(() => expect(exportCharacterSemanticPsd).toHaveBeenCalled());
+  expect(exportCharacterSemanticPsd.mock.calls[0]?.[0]).toMatchObject({ createHairLayer: false, extractLuminanceOutline: false, width: 768, height: 1024 });
+});
+
+
+it("HUD 단축키 안내는 실제 세션 카메라 조작 방식과 함께 바뀐다", () => {
+  render(<CharacterShaperSessionSettingsProvider><CharacterShaperViewportHud h={makeHost()} binding={makeBinding()} compact={false} /></CharacterShaperSessionSettingsProvider>);
+  fireEvent.change(screen.getByLabelText("카메라 조작 방식"), { target: { value: "blender" } });
+  expect(screen.getByTestId("shaper-hud-context-keycaps").textContent).toContain("MMB");
 });

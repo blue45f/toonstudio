@@ -31,6 +31,8 @@
 | 웹 PSD 설정 | Workbench 사전 검사·OutputDock·실제 출력이 같은 분리 옵션·해상도·프레이밍 사용 | 1024 긴 변 세로 출력이 768×1024가 되는 경로 확인 |
 | 웹 헤어 PSD | 흰 마스크를 색으로 쓰던 경로를 실제 flat RGB·음영으로 대체하고 본체와 소유 픽셀 분리 | 실제 PSD 쓰기/읽기와 독립 재합성, 반투명 알파·헤어 숨김·clipping 확인. 선 추출은 중복 합성을 막기 위해 기본 숨김 |
 | 엔진 경계 | 셸의 Babylon 내부 직접 참조를 엔진 중립 카메라 입력 포트로 변경 | 카메라 변경·해제와 앱 경계 검사 |
+| 키트 바디 제작기 | 명시적인 `--shoulder-blend` 후보에 넓은 웨이트 전이·수렴 검사·국소 변형 연결 | 실제 HBM 45개 회귀 통과. 어깨 거상은 개선됐지만 극단 체적과 기존 의상 간격 제한이 있어 공개/default 교체 보류 |
+| GLB 표준 경계 | 양자화 morph accessor에 raw SHORT min/max를 기록 | 실제 dense·sparse·zero 바이트 디코드와 Khronos 검사 0오류·0경고. 형상 POSITION 해시는 동일 |
 
 숫자만 바뀌던 미지원 CubicMatCap·이방성 윤곽선·광원/월드 기준 눈 하이라이트는 지원 사유를 표시한다. 이 기능들은 구현 완료로 세지 않는다.
 
@@ -55,13 +57,18 @@
 | 앱 Vitest 설정 전체, `--maxWorkers=2` | 242파일·2,277개 전부 통과 |
 | 루트 Vitest 설정의 Character Lab 전체, `--maxWorkers=2` | 242파일·2,277개 전부 통과 |
 | Character Lab 실제 브라우저 프로브 | 11통과·0실패·1건너뜀. 실제 WebGL2는 ANGLE SwiftShader, WebGPU는 software fallback 사유로 차단. 실GPU 증거 아님 |
-| 웹 관련 영역 회귀 | 13파일·204개 통과. 실제 OrbitControls·VRMLookAt 객체, PNG/PSD 호출과 PSD 바이트 왕복 포함 |
+| 웹 관련 영역과 PSD 참조 합성 회귀 | 14파일·217개 통과. 실제 OrbitControls·VRMLookAt 객체, PNG/PSD 호출과 PSD 바이트 왕복, clipping의 독립 계산 포함 |
 | 하네스 무결성, 변경 영역 ESLint·Secretlint·diff 검사 | 통과 |
 | 문서·앱 경계·파일 크기·Studio 진입 그래프 | 통과, 기준선 상향 없음 |
 | 작업트리 의존성 소유권 | 자체 offline frozen 설치 후 19개 패키지의 29개 연결 통과. manifest·lockfile와 원본 체크아웃 의존성 무변경 |
 | 통합 `pnpm harness:verify` | 루트 전체 TypeScript 검사 진행 중, 최종 통과로 집계하지 않음 |
-| 웹 실제 브라우저 PNG/PSD 검증 | 첫 실행은 헤어 변경 뒤 canvas 조회 시간 초과. 원인 조사 중이며 통과로 집계하지 않음 |
+| 웹 실제 파일 출력 진단 | DOM click 입력으로 원본 헤어를 복원한 뒤 투명 PNG·헤어 ON PSD를 실제 저장. 두 파일 2048×1420, 독립 합성의 평균 알파 오차 0·색 오차 0.000205 이하, 4/255 초과 오차 0. 헤어 그룹 숨김 시 62,202픽셀 전부 투명·본체 바깥 변경 0 |
+| 웹 원본 브라우저 verifier | 같은 선택자·30초 제한·허용 오차를 유지한 두 실행에서 헤어 변경 뒤 canvas screenshot 시간 초과. 후속 진단에서는 visible canvas와 실제 native 헤어 선택 성공을 확인했지만 이 전체 verifier는 통과로 집계하지 않음 |
 
 첫 Character Lab 전체 병렬 실행에서는 물리 settle 한 사례가 기존 5초 제한으로 실패했다. 테스트 제한이나 소스를 완화하지 않았으며, 자체 의존성을 갖춘 뒤 작업자 수를 2로 제한해 두 설정의 전체 테스트를 다시 실행했다.
 
 기본 키트 바디의 어깨·겨드랑이 형상은 원본 GLB를 Blender에서 직접 불러와도 재현됐다. 원천 A 포즈와 T 포즈 변환 단계를 비교하는 별도 후보 검수를 진행한다. 기능 테스트·픽셀 존재 검사를 통과했다는 이유로 이 형상을 미학적으로 승인하지 않는다. 생성한 Tripo 자산도 고밀도 원본과 리깅 파생물, 구조 통과와 변형·시각 승인을 분리해 기록한다.
+
+어깨 후보는 거상 85°의 ROI 최대 간선 비율 3.299→2.176, 2배 초과 간선 77→5로 개선됐고 실제 import 뒤 목 공유 정점 115쌍은 검사한 6포즈 모두 틈 0mm였다. 기존 티셔츠를 그대로 쓰면 어깨 간격 P95가 22.20→52.13mm로 커지며 재피팅이 필요하다. 따라서 제작기 옵션과 표준 수정만 보존하고 현재 공개 바디·의상은 바꾸지 않는다. morph bounds는 [glTF 2.0 공식 명세](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html)의 accessor bounds·morph target 규약에 따라 normalized 여부와 무관한 실제 버퍼 성분을 기록한다.
+
+웹 파일 출력 진단의 renderer는 SwiftShader WebGL2이며 pageerror는 0이었다. 로컬 Core API 4001번 포트 부재로 발생한 502 콘솔 오류는 별도로 남았다. 이 진단과 실제 파일 검사는 네이티브 포인터의 전체 동선, 실GPU 성능, 운영 서버 연결 검증을 대신하지 않는다. 기존 브라우저 verifier의 선택자·시간 제한·픽셀 허용 오차는 변경하지 않았다.
