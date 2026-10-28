@@ -35,7 +35,6 @@ import {
   workspaceDeleteActive,
   workspaceDiagnostics,
   workspaceDuplicateActive,
-  workspaceImportBytes,
   workspaceReconcileSelectionAfterHistory,
   workspaceRedo,
   workspaceSelectAsset,
@@ -54,6 +53,8 @@ import { StudioHybridDccIntro, type StudioHybridDccStartKind } from "./StudioHyb
 import { StudioHybridDccViewport } from "./StudioHybridDccViewport";
 import { StudioHybridDccFileTools } from "./StudioHybridDccFileTools";
 import { useStudioHybridDccFileTools } from "./useStudioHybridDccFileTools";
+import { useStudioHybridDccNativeImport } from "./native-import/useStudioHybridDccNativeImport";
+import { StudioHybridDccNativeImportStatus } from "./native-import/StudioHybridDccNativeImportStatus";
 import {
   StudioHybridDccExpertTools,
   StudioHybridDccModeTabs,
@@ -288,6 +289,7 @@ export function StudioHybridDccPanel({
   };
 
   const fileTools = useStudioHybridDccFileTools({ workspace: ws, workspaceDocumentId, busy, run });
+  const modelImport = useStudioHybridDccNativeImport({ workspace: ws, workspaceDocumentId, busy, run });
   const runModifier = (
     label: string,
     fn: () => StudioHybridDccWorkspace | Promise<StudioHybridDccWorkspace>,
@@ -641,7 +643,8 @@ export function StudioHybridDccPanel({
       <div className="flex flex-wrap items-center gap-2" data-studio-hybrid-dcc-topbar="true">
         <StudioHybridDccModeTabs mode={workbenchMode} onChange={changeWorkbenchMode} />
         <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
-          <StudioHybridDccFileTools model={fileTools} modelFileRef={fileRef} onModelFile={(file) => { void run(`모델 가져오기 · ${file.name}`, async () => workspaceImportBytes(ws, file.name, new Uint8Array(await file.arrayBuffer()))); }} />
+          <StudioHybridDccFileTools model={fileTools} modelFileRef={fileRef} onModelFile={(file) => { void modelImport.open(file); }} />
+          <StudioHybridDccNativeImportStatus model={modelImport} />
           {persistenceStatus && persistenceCopy ? (
             <span
               className={cn(

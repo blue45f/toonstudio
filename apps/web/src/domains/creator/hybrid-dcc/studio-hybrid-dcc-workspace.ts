@@ -68,12 +68,10 @@ import {
   evaluateStudioGeoNodesStarterGraph,
   type StudioGeoNodesPrimitiveKind,
 } from "../studio-geometry-nodes-workspace-bridge";
-import { importStudioGradeAAsset } from "../studio-grade-a-import-pipeline";
 import {
   bomFromAssetParts,
   type StudioManufacturingBom,
 } from "../studio-manufacturing-bom-lite";
-import { importStudioMeshByExtension } from "../studio-mesh-format-adapters";
 import {
   createStudioMeshModifierStack,
   evaluateStudioMeshModifierStack,
@@ -114,6 +112,7 @@ import {
   type StudioHybridDccSelectionResult,
 } from "./studio-hybrid-dcc-component-selection";
 import { scanStudioHybridDccCorruption } from "./studio-hybrid-dcc-diagnostics";
+import { workspaceImportStudioNativeBytes } from "./native-import/studio-hybrid-dcc-native-import-workspace";
 import {
   createStudioHybridDccSession,
   hybridDccCommitGeometry,
@@ -807,33 +806,7 @@ export function workspaceImportBytes(
   fileName: string,
   bytes: Uint8Array,
 ): StudioHybridDccWorkspace {
-  const meshAdapter = importStudioMeshByExtension(fileName, bytes);
-  if (meshAdapter && meshAdapter.meshes[0]) {
-    const assetId = `import-${fileName.replace(/[^a-zA-Z0-9_-]/gu, "_").slice(0, 40)}`;
-    let session = ws.session;
-    if (!session.state.geometry.records[assetId]) {
-      session = hybridDccRegisterAsset(session, assetId, meshAdapter.meshes[0], {
-        source: fileName,
-        creator: "import",
-        license: "unknown",
-        useScope: "editorial",
-        derivative: "imported",
-      });
-    } else {
-      session = hybridDccCommitGeometry(session, assetId, meshAdapter.meshes[0]);
-    }
-    return {
-      ...synchronizeWorkspaceGeometryAuthority(ws, session),
-      activeAssetId: assetId,
-      lastImportReport: {
-        ...meshAdapter.report,
-        adapterFormat: meshAdapter.format,
-        extras: meshAdapter.extras ?? null,
-      },
-    };
-  }
-  const gradeA = importStudioGradeAAsset({ fileName, bytes });
-  return { ...ws, lastImportReport: gradeA.report };
+  return workspaceImportStudioNativeBytes(ws, fileName, bytes);
 }
 
 export function workspaceLoadRoomPreset(

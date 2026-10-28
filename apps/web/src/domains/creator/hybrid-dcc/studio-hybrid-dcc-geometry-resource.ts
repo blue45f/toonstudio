@@ -10,7 +10,8 @@ export interface StudioHybridDccGeometryResource {
 export interface StudioHybridDccGeometryResourceInput {
   readonly positions: Float32Array;
   readonly indices: Uint32Array;
-  readonly normalMode: "flat" | "smooth";
+  readonly normalMode: "flat" | "smooth" | "split";
+  readonly cornerNormals?: Float32Array;
   /** 원본 삼각형 순서의 각 코너 UV. 정점 공유를 해제해도 면 선택 순서는 보존한다. */
   readonly cornerUvs?: Float32Array;
 }
@@ -24,14 +25,24 @@ export function createStudioHybridDccGeometryResource(
     || asset.cornerUvs.some((value) => !Number.isFinite(value)))) {
     throw new Error("화면용 UV 코너와 삼각형 개수가 맞지 않거나 좌표가 유한하지 않습니다.");
   }
+  if (asset.normalMode === "split" || asset.cornerNormals !== undefined) {
+    const normals = asset.cornerNormals;
+    if (asset.normalMode === "flat") throw new Error("flat 표시에는 smooth 코너 법선을 함께 지정할 수 없습니다.");
+    if (!normals || normals.length !== asset.indices.length * 3) throw new Error("화면용 분리 법선의 코너 수가 잘못됐습니다.");
+    for (let index = 0; index < normals.length; index += 3) {
+      const length = Math.hypot(normals[index] ?? NaN, normals[index + 1] ?? NaN, normals[index + 2] ?? NaN);
+      if (!Number.isFinite(length) || Math.abs(length - 1) > 1e-4) throw new Error("화면용 분리 법선은 유한한 단위 벡터여야 합니다.");
+    }
+  }
   const indexed = new THREE.BufferGeometry();
   indexed.setAttribute("position", new THREE.BufferAttribute(asset.positions, 3));
   indexed.setIndex(new THREE.BufferAttribute(asset.indices, 1));
-  if (asset.normalMode === "smooth") indexed.computeVertexNormals();
-  const geometry = asset.normalMode === "flat" || asset.cornerUvs ? indexed.toNonIndexed() : indexed;
+  if (asset.normalMode === "smooth" && !asset.cornerNormals) indexed.computeVertexNormals();
+  const geometry = asset.normalMode !== "smooth" || asset.cornerUvs || asset.cornerNormals ? indexed.toNonIndexed() : indexed;
   if (geometry !== indexed) indexed.dispose();
   if (asset.cornerUvs) geometry.setAttribute("uv", new THREE.BufferAttribute(asset.cornerUvs, 2));
   if (asset.normalMode === "flat") geometry.computeVertexNormals();
+  if (asset.cornerNormals) geometry.setAttribute("normal", new THREE.BufferAttribute(asset.cornerNormals, 3));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   let edgeDetail: StudioHybridDccGeometryResource["edgeDetail"] = "silhouette";

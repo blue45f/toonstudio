@@ -837,7 +837,7 @@ describe("StudioHybridDccViewport", () => {
     expect(screen.getByText(/pair-b: 동시 표시 변환 예산을 초과했습니다/u)).toBeTruthy();
   });
 
-  it("rejects concave fan triangulation and mixed split-normal authority instead of lying", () => {
+  it("오목 fan은 거부하고 혼합 음영은 실제 코너 법선으로 표시한다", () => {
     const concave = createStudioEditableMeshFromPolygons(
       [
         { x: 0, y: 0, z: 0 },
@@ -870,8 +870,8 @@ describe("StudioHybridDccViewport", () => {
         webglAvailable
       />,
     );
-    expect(screen.queryByTestId("r3f-canvas")).toBeNull();
-    expect(screen.getByText(/split-normal 렌더 경로/u)).toBeTruthy();
+    expect(screen.getByTestId("r3f-canvas")).toBeTruthy();
+    const asset = deriveStudioHybridDccViewportSnapshot(workspaceWithMesh(mixed, "mixed-normals")).assets[0]; expect(asset?.normalMode).toBe("split"); expect(asset?.cornerNormals).toHaveLength(108);
   });
 
   it("owns and disposes local IBL, shadow, edge, and geometry resources", () => {

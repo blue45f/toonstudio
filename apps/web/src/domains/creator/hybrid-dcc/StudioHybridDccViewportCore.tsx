@@ -83,6 +83,7 @@ import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewport
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
 import { StudioHybridDccUvCheckerMaterial } from "./StudioHybridDccUvCheckerMaterial";
 import { deriveStudioHybridDccTriangleCornerUvs } from "./studio-hybrid-dcc-uv-render";
+import { deriveStudioHybridDccSplitCornerNormals } from "./studio-hybrid-dcc-split-normal-render";
 
 import { createStudioHybridDccGeometryResource, type StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 
@@ -165,6 +166,7 @@ export interface StudioHybridDccViewportAssetSnapshot {
   readonly positions: Float32Array;
   readonly indices: Uint32Array;
   readonly cornerUvs?: Float32Array;
+  readonly cornerNormals?: Float32Array;
   readonly renderHash: string;
   readonly renderSource: StudioHybridDccViewportRenderSource;
   readonly materialId: string;
@@ -174,7 +176,7 @@ export interface StudioHybridDccViewportAssetSnapshot {
   readonly scale: readonly [number, number, number];
   readonly worldMin: readonly [number, number, number];
   readonly worldMax: readonly [number, number, number];
-  readonly normalMode: "flat" | "smooth";
+  readonly normalMode: "flat" | "smooth" | "split";
   readonly vertexCount: number;
   readonly triangleCount: number;
 }
@@ -237,7 +239,7 @@ type StudioHybridDccRenderCacheValidation =
 interface StudioHybridDccMeshPreflight {
   readonly faceCount: number;
   readonly triangleCount: number;
-  readonly normalMode: "flat" | "smooth";
+  readonly normalMode: "flat" | "smooth" | "split";
   /** Exact O(V + H + F + corners) preflight/conversion work proxy. */
   readonly linearWork: number;
   /** Safe upper bound for the per-polygon segment-pair checks: Σ(cornerCount²). */
@@ -298,9 +300,6 @@ function inspectStudioHybridDccMeshForSynchronousProjection(
     }
     const hasSmoothFaces = mesh.faces.some((face) => face.smooth);
     const hasFlatFaces = mesh.faces.some((face) => !face.smooth);
-    if (hasSmoothFaces && hasFlatFaces) {
-      throw new Error("혼합 flat/smooth 면에는 split-normal 렌더 경로가 필요합니다.");
-    }
     if (hasSmoothFaces && (
       mesh.vertices.some((vertex) => vertex.crease > 0)
       || mesh.halfEdges.some((halfEdge) => halfEdge.crease > 0)
@@ -390,7 +389,7 @@ function inspectStudioHybridDccMeshForSynchronousProjection(
       value: {
         faceCount,
         triangleCount,
-        normalMode: hasFlatFaces ? "flat" : "smooth",
+        normalMode: hasFlatFaces && hasSmoothFaces ? "split" : hasFlatFaces ? "flat" : "smooth",
         linearWork: baseLinearWork + cornerCount,
         polygonPairWork,
       },
@@ -593,7 +592,8 @@ export function deriveStudioHybridDccViewportSnapshot(
     let projection: StudioHybridDccRenderProjection;
     try {
       if (selectionMode === "object" && !preferSource && record.renderCache) {
-        const validated = validateStudioHybridDccRenderCache(
+        const validated: StudioHybridDccRenderCacheValidation = preflight.value.normalMode === "split"
+          ? { ok: false, message: "혼합 음영 캐시에 코너 법선이 없어 원본 편집 메시로 표시합니다." } : validateStudioHybridDccRenderCache(
           record,
           record.renderCache,
           sharedObjectById.get(record.assetId)?.geometryHash ?? null,
@@ -695,6 +695,8 @@ export function deriveStudioHybridDccViewportSnapshot(
         worldMin: item.worldMin,
         worldMax: item.worldMax,
         normalMode: preflight.normalMode,
+        ...(preflight.normalMode !== "flat" && projection.renderSource !== "modifier-cache"
+          ? { cornerNormals: deriveStudioHybridDccSplitCornerNormals(item.mesh) } : {}),
         vertexCount: projection.positions.length / 3,
         triangleCount: projection.indices.length / 3,
       });
@@ -944,13 +946,13 @@ function StudioHybridDccAssetMesh({
   const [resource, setResource] = useState<StudioHybridDccGeometryResource | null>(null);
   const objectRef = useRef<THREE.Group>(null);
   const viewportSize = useThree((state) => state.size);
-  const { indices, normalMode, positions, cornerUvs } = asset;
+  const { indices, normalMode, positions, cornerUvs, cornerNormals } = asset;
 
   useEffect(() => {
-    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions, cornerUvs }, STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles);
+    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions, cornerUvs, cornerNormals }, STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles);
     setResource(next);
     return () => next.dispose();
-  }, [indices, normalMode, positions, cornerUvs]);
+  }, [indices, normalMode, positions, cornerUvs, cornerNormals]);
 
   if (!resource) return null;
   const componentCage = selectionMode !== "object";
