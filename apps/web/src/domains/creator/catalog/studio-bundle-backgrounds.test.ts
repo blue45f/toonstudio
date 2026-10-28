@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import { filterStudio2dScenes, getStudio2dAssetMetadata, isRecommendedStudio2dScene } from "../studio-2d-asset-quality";
 import { BG_SCENES } from "../studio-bg-scenes";
+import { createStudio2dCanvasImage, studioBundleFrameBackgroundPatch } from "../studio-2d-source-size";
+import type { StudioBgScene } from "../StudioToolBeltContent";
 import { STUDIO_BUNDLE_BACKGROUND_METADATA, STUDIO_BUNDLE_BG_SCENES } from "./studio-bundle-backgrounds";
 
 describe("구매 번들 완성 배경의 실제 카탈로그", () => {
@@ -33,5 +35,18 @@ describe("구매 번들 완성 배경의 실제 카탈로그", () => {
     expect(filterStudio2dScenes(groups, { query: "정원", quality: "large", environment: "실외", emptySceneOnly: true }).map((scene) => scene.id)).toEqual(["cbv1-scene-park-garden"]);
     expect(filterStudio2dScenes(groups, { query: "서재", environment: "실내", textFreeOnly: true }).map((scene) => scene.id)).toEqual(["cbv1-scene-dungeon-study"]);
     expect(STUDIO_BUNDLE_BACKGROUND_METADATA.every((asset) => asset.width === 2048 && asset.height === 1152 && !asset.containsPeople && !asset.containsText)).toBe(true);
+  });
+  it("도구 벨트의 정식 배경 계약으로 선택한 씬의 출처를 프레임과 이미지에 보존한다", () => {
+    for (const catalogScene of STUDIO_BUNDLE_BG_SCENES) {
+      const scene: StudioBgScene = catalogScene;
+      const src = scene.imgSrc;
+      if (!src) throw new Error("완성 배경 이미지 경로가 필요합니다.");
+      const patch = studioBundleFrameBackgroundPatch(scene, src);
+      const image = createStudio2dCanvasImage(scene, { id: "background", src, canvasWidth: 720, canvasHeight: 1080 });
+      expect(patch.bundleSourceCredit).toEqual(catalogScene.bundleSourceCredit);
+      expect(image.bundleSourceCredit).toEqual(catalogScene.bundleSourceCredit);
+    }
+    const legacy: StudioBgScene = { id: "legacy", label: "기존 벡터 배경", genre: "판타지", svg: "<svg/>" };
+    expect(studioBundleFrameBackgroundPatch(legacy, "data:image/svg+xml,%3Csvg/%3E").bundleSourceCredit).toBeUndefined();
   });
 });

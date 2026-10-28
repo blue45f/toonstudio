@@ -110,8 +110,13 @@ async function render(index: number) {
     `선언한 GPU backend와 실제 renderer가 다릅니다: ${JSON.stringify(backend)}`);
   const shaderErrors: string[] = [];
   renderer.debug.checkShaderErrors = true;
-  renderer.debug.onShaderError = (_context, program, vertex, fragment) => {
-    shaderErrors.push([gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertex), gl.getShaderInfoLog(fragment)].join("\n"));
+  renderer.debug.onShaderError = (context, program, vertex, fragment) => {
+    shaderErrors.push("WebGL 셰이더 프로그램 연결 오류가 발생했습니다.");
+    // Three 콜백 선언의 래퍼 타입 대신 실제 브라우저 프로그램 핸들을 확인한다.
+    const programLog = typeof globalThis.WebGLProgram === "function" && program instanceof globalThis.WebGLProgram
+      ? context.getProgramInfoLog(program)
+      : "네이티브 WebGL 프로그램 핸들을 확인하지 못했습니다.";
+    shaderErrors.push([programLog, context.getShaderInfoLog(vertex), context.getShaderInfoLog(fragment)].join("\n"));
   };
   const loaded = await loadVerifiedStudioBg3dGlbWithThree(verification, DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES.mobile, { renderer });
   assert(loaded.ok, `실제 Three 로더가 모델을 거부했습니다: ${loaded.code}`);

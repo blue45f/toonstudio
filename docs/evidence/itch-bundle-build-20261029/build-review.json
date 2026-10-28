@@ -46,10 +46,30 @@
     },
     {
       "command": "pnpm harness:verify",
-      "status": "running",
-      "log": "toonstudio-itch-harness-reviewed-final-20261029.log"
+      "status": "failed",
+      "log": "toonstudio-itch-harness-reviewed-final-20261029.log",
+      "exitCode": 2,
+      "diagnostics": 4,
+      "rootCauses": [
+        "ToolBelt의 중복 StudioBgScene 타입에 출처 필드 누락",
+        "프레임 fixture의 El union 강제 재분류",
+        "Three 선언과 native WebGLProgram 콜백 타입 차이"
+      ],
+      "sourceApplicationCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf"
     }
   ],
   "applicationSourceChangedDuringWebBuild": false,
-  "preCommitHooksChangedStagedFiles": false
+  "preCommitHooksChangedStagedFiles": false,
+  "integrationBase": "7177969d4497237c8daee031b49da3148b0f409a",
+  "correctedFullVerification": "현재 검사의 종료 후 기존 순서의 다른 두 타입 검사가 끝나면 수정된 통합 소스로 재실행",
+  "integrationChecks": {
+    "officeVitestFiles": 5,
+    "officeVitestTests": 40,
+    "decorNodeExitCode": 0,
+    "ciContractTests": 65,
+    "bundleRightsNodeTests": 169,
+    "bundleRightsVitestFiles": 12,
+    "bundleRightsVitestTests": 209,
+    "architectureExitCode": 0
+  }
 }

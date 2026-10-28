@@ -9,7 +9,7 @@ import { studioBundleCreditFixture } from "./studio-bundle-source-credit.test-fi
 import { buildStudioProjectArchive, importStudioProjectArchive } from "../studio-project-archive";
 import { parseStudioProjectFile, serializeStudioProjectFile } from "../studio-project-file";
 
-import type { ImageEl } from "../studio-element-model";
+import type { FrameEl, ImageEl } from "../studio-element-model";
 
 const CREDIT = studioBundleCreditFixture();
 const IMAGE: ImageEl = { id: "placed", type: "image", src: CREDIT.renderPath, x: 0, y: 0, width: 10, height: 10, rotation: 0, bundleSourceCredit: CREDIT };
@@ -76,15 +76,15 @@ describe("번들 렌더의 정식 출처 계약", () => {
 
   it("프레임 배경의 출처를 보존하며 일반·AI 배경으로 교체할 때 이전 번들 기록을 제거한다", () => {
     const patch = studioBundleFrameBackgroundPatch({ bundleSourceCredit: CREDIT }, IMAGE.src);
-    const frame = { id: "frame", type: "frame", x: 0, y: 0, width: 200, height: 100, ...patch };
+    const frame: FrameEl = { id: "frame", type: "frame", x: 0, y: 0, width: 200, height: 100, ...patch };
     expect(parseStudioProjectFile(project(frame)).pagesList[0]?.elements[0]).toMatchObject({ bundleSourceCredit: CREDIT });
-    expect(projectStudioAssetRightsUsages([{ id: "page", elements: [{ ...frame, type: "frame" }] }])[0]).toMatchObject({ assetId: `bundle:${CREDIT.assetId}`, assetVersion: CREDIT.contentHash });
-    const typedFrame = { ...frame, type: "frame" as const };
+    expect(projectStudioAssetRightsUsages([{ id: "page", elements: [frame] }])[0]).toMatchObject({ assetId: `bundle:${CREDIT.assetId}`, assetVersion: CREDIT.contentHash });
+    const typedFrame = frame;
     expect(applyStudioBundleSourcePatch(typedFrame, { x: 40 })).toMatchObject({ bundleSourceCredit: CREDIT });
     expect(applyStudioBundleSourcePatch(typedFrame, { bgColor: "white" })).toMatchObject({ bundleSourceCredit: CREDIT });
     expect(applyStudioBundleSourcePatch(typedFrame, { bg: undefined })).toMatchObject({ bundleSourceCredit: undefined });
     const replaced = applyStudioBundleSourcePatch(typedFrame, { bg: "/assets/normal.webp" });
-    expect(projectStudioAssetRightsUsages([{ id: "page", elements: [{ ...replaced, type: "frame" }] }])).toEqual([]);
+    expect(projectStudioAssetRightsUsages([{ id: "page", elements: [replaced] }])).toEqual([]);
     expect(parseStudioProjectFile(project(replaced)).pagesList[0]?.elements[0]).toMatchObject({ bg: "/assets/normal.webp" });
   });
 

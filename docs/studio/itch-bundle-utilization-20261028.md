@@ -209,9 +209,9 @@ Unity/Godot 프로젝트와 셰이더는 Web의 Three.js/Canvas 런타임에서 
 
 ## 구현 브랜치 검증과 운영 전환 조건
 
-2026-10-29 최종 구현 상태에서 `pnpm test:creator-bundle-rights`는 Node 169개와 Vitest 12파일 208개, Python 렌더 파이프라인은 26개가 통과했다. 별도 Web/API canonical·SQLite/OPFS·archive 관련 8파일 162개와 마지막 변경 회귀, 가상 장소 이동·충돌·작업대 관련 48개도 통과했다. 중복 실행 수는 합산하지 않는다. 새 아카이브/CLI와 native 하니스의 strict 한정 타입 검사는 root tsconfig 옵션을 그대로 확장해 진단 0개로 통과했다. 후속 캐시·경합 회귀 3파일 55개와 아카이브·기존 VRM/참조 보드 회귀 5파일 90개, 독립 pre-aborted 재현도 통과했다.
+2026-10-29 최종 구현 상태에서 `pnpm test:creator-bundle-rights`는 Node 169개와 Vitest 12파일 209개, Python 렌더 파이프라인은 26개가 통과했다. 별도 Web/API canonical·SQLite/OPFS·archive 관련 8파일 162개와 마지막 변경 회귀, 가상 장소 이동·충돌·작업대 관련 48개도 통과했다. 중복 실행 수는 합산하지 않는다. 새 아카이브/CLI와 native 하니스의 strict 한정 타입 검사는 root tsconfig 옵션을 그대로 확장해 진단 0개로 통과했다. 후속 캐시·경합 회귀 3파일 55개와 아카이브·기존 VRM/참조 보드 회귀 5파일 90개, 독립 pre-aborted 재현도 통과했다.
 
-`pnpm validate:architecture`, 하네스 구조 검사, lockfile, 보안·라이선스 감사가 통과했다. creator root 2506/2506, source-size 위반 0개, eager graph 19.18MiB/최대 19.34MiB다. 이전 구현의 전체 타입 검사는 소스 확장과 실제 타입 오류 수정 뒤 종료했고, 후속 아카이브·캐시 회귀 수정이 끝난 동결 커밋 뒤 `pnpm harness:verify`를 다시 시작했다. 이 명령의 종료 전에는 전체 통과로 집계하지 않는다.
+`pnpm validate:architecture`, 하네스 구조 검사, lockfile, 보안·라이선스 감사가 통과했다. creator root 2506/2506, source-size 위반 0개, eager graph 19.18MiB/최대 19.34MiB다. 이전 구현의 전체 타입 검사는 소스 확장과 실제 타입 오류 수정 뒤 종료했고, 후속 아카이브·캐시 회귀 수정 뒤 실행한 전체 하네스는 타입 진단 4개로 종료 코드 2였다. 도구 벨트 타입을 정식 BgScene 별칭으로 맞추고, 프레임 fixture와 native GPU 콜백을 실제 계약에 맞게 수정했다. 최신 main `7177969d4497237c8daee031b49da3148b0f409a`를 로컬 통합했으며, 수정된 통합 소스의 전체 검사 종료 전에는 통과로 집계하지 않는다.
 
 기존 qs 취약 범위는 공식 6.16.1로 고정했다. 공식 수정판이 없는 deepmerge 결과 객체 프로토타입 오염은 저장소의 기존 braces 선례에 따라 최소 백포트로 고쳤다. CJS/UMD의 자체 속성 쓰기 세 곳만 바꾸고 npm 원본 SHA·MIT·타입 선언을 보존한다. PoC·10,000쌍 차등·실제 Nest 소비 설치본과 production 패키징 산출물 검증이 수정 근거이며, 감사 제외는 없다. 로컬 패키지가 registry 감사 대상에서 빠지는 한계와 공식 패치로의 제거 조건은 [README](../../patches/deepmerge/README.md)에 명시했다.
 
