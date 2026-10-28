@@ -84,6 +84,7 @@ const REQUESTS: readonly (readonly [string, StudioFaceModelingRequest])[] = [
   ["안쪽 테두리", { tool: "inset", distance: 0.1 }],
   ["안쪽 오프셋", { tool: "offset", distance: 0.1, direction: "inward" }],
   ["면 그리기", { tool: "draw", points: SQUARE }],
+  ["따라 만들기", { tool: "follow-me", path: [{ x: 0, y: 0.5, z: 0 }, { x: 0, y: 2.5, z: 0 }, { x: 2, y: 2.5, z: 0 }] }],
 ];
 
 describe("면 모델링 작업공간: 미리보기는 문서를 건드리지 않는다", () => {

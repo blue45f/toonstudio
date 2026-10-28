@@ -86,7 +86,7 @@ export type StudioFaceModelingResult<T> =
   | { readonly ok: true; readonly value: T }
   | StudioFaceModelingFailure;
 
-export type StudioFaceModelingOperation = "inset" | "offset" | "draw" | "push-pull";
+export type StudioFaceModelingOperation = "inset" | "offset" | "draw" | "push-pull" | "follow-me";
 
 export interface StudioFaceModelingOutcome {
   readonly operation: StudioFaceModelingOperation;

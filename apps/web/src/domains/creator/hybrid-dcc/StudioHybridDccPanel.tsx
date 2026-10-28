@@ -1021,7 +1021,7 @@ export function StudioHybridDccPanel({
                     <span className="block truncate text-xs font-medium">
                       {friendlyHybridDccAssetName(bt, record.assetId, recordIndex)}
                     </span>
-                    <span className="block truncate text-[0.6875rem] opacity-75">
+                    <span className="block truncate text-[0.6875rem] text-fg-2">
                       {record.assetId} · {bt("버전", "rev")} {record.revision}
                     </span>
                   </button>
@@ -1032,7 +1032,7 @@ export function StudioHybridDccPanel({
                     title={visible
                       ? bt("뷰포트에서 잠시 숨기기", "Hide in the viewport for now")
                       : bt("뷰포트에 다시 보이기", "Show in the viewport again")}
-                    className="min-h-11 min-w-14 shrink-0 border-l border-current/15 px-2 text-[0.6875rem] font-semibold opacity-80 hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35"
+                    className="min-h-11 min-w-14 shrink-0 border-l border-current/15 px-2 text-[0.6875rem] font-semibold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-35"
                     onClick={() => {
                       try {
                         setWs(workspaceSetAssetVisibility(ws, record.assetId, !visible));

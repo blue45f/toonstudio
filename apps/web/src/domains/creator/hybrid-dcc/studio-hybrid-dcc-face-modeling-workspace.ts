@@ -9,7 +9,7 @@
  */
 
 import { mutateStudioSharedObjectGeometry } from "../live/studio-live-2d3d-bridge";
-import { hashStudioEditableMesh, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { hashStudioEditableMesh, type StudioEditableMesh, type StudioMeshVec3 } from "../studio-editable-half-edge-mesh";
 
 import {
   createStudioHybridDccComponentSelection,
@@ -18,6 +18,7 @@ import {
   type StudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
 import { hybridDccCommitGeometry } from "./studio-hybrid-dcc-document";
+import { describeStudioEditableMeshFaceForFollowMe, followMeStudioEditableMeshFace } from "./studio-hybrid-dcc-face-follow-me";
 import {
   describeStudioEditableMeshFaceForDrawing,
   drawStudioEditableMeshFacePolygon,
@@ -51,13 +52,14 @@ import {
 
 import type { StudioPlanarPoint } from "./studio-hybrid-dcc-face-modeling-geometry";
 
-export type StudioFaceModelingTool = "push-pull" | "inset" | "offset" | "draw";
+export type StudioFaceModelingTool = "push-pull" | "inset" | "offset" | "draw" | "follow-me";
 
 export type StudioFaceModelingRequest =
   | { readonly tool: "push-pull"; readonly distance: number }
   | { readonly tool: "inset"; readonly distance: number }
   | { readonly tool: "offset"; readonly distance: number; readonly direction: StudioOffsetDirection }
-  | { readonly tool: "draw"; readonly points: readonly StudioPlanarPoint[] };
+  | { readonly tool: "draw"; readonly points: readonly StudioPlanarPoint[] }
+  | { readonly tool: "follow-me"; readonly path: readonly StudioMeshVec3[] };
 
 /** 패널이 문서에 올리는 편집 함수. 최신 작업공간과 선택을 받아 결과 작업공간과 새 선택을 돌려준다. */
 export interface StudioHybridDccWorkspaceEditResult {
@@ -147,6 +149,12 @@ function runKernel(
       const face = firstFace(target);
       if (!face.ok) return face;
       const result = drawStudioEditableMeshFacePolygon(target.mesh, face.value, request.points);
+      return result.ok ? okStudioFaceModeling({ outcome: result.value }) : result;
+    }
+    case "follow-me": {
+      const face = firstFace(target);
+      if (!face.ok) return face;
+      const result = followMeStudioEditableMeshFace(target.mesh, face.value, request.path);
       return result.ok ? okStudioFaceModeling({ outcome: result.value }) : result;
     }
   }
@@ -307,7 +315,7 @@ export interface StudioFaceModelingRange {
 export function studioHybridDccFaceModelingRange(
   workspace: StudioHybridDccWorkspace,
   selection: StudioHybridDccComponentSelection,
-  tool: Exclude<StudioFaceModelingTool, "draw">,
+  tool: Exclude<StudioFaceModelingTool, "draw" | "follow-me">,
   direction: StudioOffsetDirection = "inward",
 ): StudioFaceModelingResult<StudioFaceModelingRange> {
   const target = resolveTarget(workspace, selection);
@@ -344,4 +352,16 @@ export function studioHybridDccFaceDrawingGuide(
   if (!face.ok) return face;
   const guide = describeStudioEditableMeshFaceForDrawing(target.value.mesh, face.value);
   return guide.ok ? okStudioFaceModeling({ ...guide.value, faceId: face.value }) : guide;
+}
+
+/** 선택한 실제 면의 중심·법선과 경로 한도를 안내한다. */
+export function studioHybridDccFaceFollowMeGuide(
+  workspace: StudioHybridDccWorkspace,
+  selection: StudioHybridDccComponentSelection,
+): ReturnType<typeof describeStudioEditableMeshFaceForFollowMe> {
+  const target = resolveTarget(workspace, selection);
+  if (!target.ok) return target;
+  const face = firstFace(target.value);
+  if (!face.ok) return face;
+  return describeStudioEditableMeshFaceForFollowMe(target.value.mesh, face.value);
 }
