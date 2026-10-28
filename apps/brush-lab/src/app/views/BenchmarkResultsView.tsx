@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { brushLabBenchmarkBundleFileName, createBrushLabBenchmarkBundleV2 } from "../../bench/metrics/competitor-benchmark-export";
 import {
   runBrushLabCompetitorQualityBenchmark,
   runLongDurationDrawingSoakBenchmark,
@@ -7,8 +8,9 @@ import {
   selectOptimalServiceBrushConfiguration,
 } from "../../bench/metrics/competitor-quality-bench";
 import {
-  evaluateMixbox7DLatentPigmentMix,
+  QUADRATIC_PIGMENT_MODEL,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
+  evaluateQuadraticPigmentMix,
   evaluateSpectral38BandKubelkaMunkMix,
 } from "../../engine/brush-engine/competitor-quality-kernels";
 import { downloadJson } from "../../platform/download";
@@ -43,9 +45,9 @@ export function BenchmarkResultsView() {
       }),
     [pigmentMixRatio01],
   );
-  const liveMixbox7d = useMemo(
+  const liveQuadraticPigment = useMemo(
     () =>
-      evaluateMixbox7DLatentPigmentMix(
+      evaluateQuadraticPigmentMix(
         { r: 0.99, g: 0.85, b: 0.02 },
         { r: 0.05, g: 0.14, b: 0.58 },
         pigmentMixRatio01,
@@ -74,6 +76,7 @@ export function BenchmarkResultsView() {
   const visibleEngines = promotedOnly
     ? engineMatrix.filter((row) => row.promotedToService)
     : engineMatrix;
+  const promotedEngineCount = engineMatrix.filter((row) => row.promotedToService).length;
 
   const matrixTableStyle = {
     "--label-2": '"아키텍처"',
@@ -110,18 +113,18 @@ export function BenchmarkResultsView() {
 
   const handleExportBenchmarkBundle = (): void => {
     const payload = JSON.stringify(
-      {
-        exportedAt: "2026-10-27",
+      createBrushLabBenchmarkBundleV2({
+        exportedAt: new Date().toISOString(),
         seed,
         optimalProfile,
         summaryReport,
         engineMatrix,
         soakHorizons,
-      },
+      }),
       null,
       2,
     );
-    downloadJson(`brush-lab-service-promotion-benchmark-${seed}.json`, payload);
+    downloadJson(brushLabBenchmarkBundleFileName(seed), payload);
   };
 
   return (
@@ -162,7 +165,7 @@ export function BenchmarkResultsView() {
             aria-pressed={promotedOnly}
             onClick={() => setPromotedOnly((v) => !v)}
           >
-            {promotedOnly ? "전체 12대 엔진 모두 보기" : "실서비스 승격 엔진(11종)만 필터"}
+            {promotedOnly ? `전체 ${engineMatrix.length}종 모두 보기` : `실서비스 승격 표시 항목(${promotedEngineCount}종)만 필터`}
           </button>
           <button
             type="button"
@@ -178,7 +181,7 @@ export function BenchmarkResultsView() {
             data-testid="lab-export-bench-json-btn"
             onClick={handleExportBenchmarkBundle}
           >
-            실서비스 승격 벤치마크 JSON 다운로드
+            벤치마크 JSON v2 다운로드
           </button>
         </div>
         {appliedBanner ? (
@@ -190,8 +193,8 @@ export function BenchmarkResultsView() {
 
       <dl className="lab-stats" data-testid="lab-benchmark-kpi-strip">
         <div>
-          <dt title="REA 정적·시맨틱 분석 누락 파일 수 (0이어야 합격)">REA 미분석 파일</dt>
-          <dd className="lab-verdict-PASS">{summaryReport.reaWave36NotExaminedCount}건 ({summaryReport.reaWave36RelevantFiles}/143 완결)</dd>
+          <dt title="기존 소스에 기록된 REA 값이며 이번 검토에서 원문 artifact를 확인한 것은 아니다">기록된 REA 누락값</dt>
+          <dd className="lab-mono">{summaryReport.reaWave36NotExaminedCount}건 (기록 {summaryReport.reaWave36RelevantFiles}파일)</dd>
         </div>
         <div>
           <dt title="주기 종이 질감 타일 경계 이음새 점수 (< 0.05 합격)">종이 이음새 점수</dt>
@@ -210,24 +213,24 @@ export function BenchmarkResultsView() {
           <dd className="lab-mono">+{(summaryReport.spectral38ChromaPreservationGain01 * 100).toFixed(1)}%</dd>
         </div>
         <div>
-          <dt title="Mixbox 7차원 잠재 안료 끝점(t=0, t=1) 복원 오차">Mixbox 7D 끝점 오차</dt>
-          <dd className="lab-verdict-PASS">{summaryReport.mixbox7DEndpointIdentityError.toFixed(4)}</dd>
+          <dt title="로컬 이차 다항식·RGB 잔차 모델의 끝점(t=0, t=1) 복원 오차">이차 안료 7D 끝점 오차</dt>
+          <dd className="lab-verdict-PASS">{summaryReport.quadraticPigmentEndpointIdentityError.toFixed(4)}</dd>
         </div>
         <div>
           <dt title="Cook-Torrance GGX 미세면 정반사 임파스토 하이라이트 강도">GGX 임파스토 BRDF</dt>
           <dd className="lab-mono">{summaryReport.ggxSpecularHighlightBrdf.toFixed(3)}</dd>
         </div>
         <div>
-          <dt title="실서비스 승격 게이트 최종 판정">실서비스 승격 게이트</dt>
+          <dt title="기존 수치 기준의 충족 여부이며 원산지·운영 승격 승인이 아니다">수치 품질 게이트</dt>
           <dd className={summaryReport.promotionGatePassed ? "lab-verdict-PASS" : "lab-verdict-FAIL"}>
-            {summaryReport.promotionGatePassed ? "PASS (승격 완료)" : "FAIL"}
+            {summaryReport.promotionGatePassed ? "PASS (수치 기준 충족)" : "FAIL"}
           </dd>
         </div>
       </dl>
 
       <div className="lab-banner" data-testid="lab-wave36-interactive-inspector">
         <label htmlFor="lab-wave36-pigment-ratio-slider">
-          <strong>12대 경쟁 엔진 실시간 분광 혼색(Spectral 38밴드 · Mixbox 7D) & 수채 번짐(p5.brush) 시뮬레이터:</strong>{" "}
+          <strong>분광 혼색(Spectral 38밴드) · 로컬 이차 안료 7D · 수채 번짐(p5.brush) 시뮬레이터:</strong>{" "}
           <span className="lab-mono">{Math.round(pigmentMixRatio01 * 100)}%</span>
         </label>
         <input
@@ -242,7 +245,10 @@ export function BenchmarkResultsView() {
           onChange={(e) => setPigmentMixRatio01(Number(e.target.value))}
         />
         <p className="lab-mono" data-testid="lab-wave36-live-readout">
-          Spectral38 OKLab(L={liveSpectralMix.oklabLCh.L.toFixed(2)}, C={liveSpectralMix.oklabLCh.C.toFixed(2)}, h={liveSpectralMix.oklabLCh.hDeg.toFixed(1)}°) · 채도 이득 +{(liveSpectralMix.chromaPreservationGain01 * 100).toFixed(1)}% · Mixbox7D RGB({Math.round(liveMixbox7d.mixedRgb01.r * 255)},{Math.round(liveMixbox7d.mixedRgb01.g * 255)},{Math.round(liveMixbox7d.mixedRgb01.b * 255)}) · p5.brush 수채 다각형 정점 {liveP5Bleed.grownVertices.length}개(면적 {liveP5Bleed.polygonAreaPx2}px² · 초가우시안 필압 {liveP5Bleed.superGaussianPressure01})
+          Spectral38 OKLab(L={liveSpectralMix.oklabLCh.L.toFixed(2)}, C={liveSpectralMix.oklabLCh.C.toFixed(2)}, h={liveSpectralMix.oklabLCh.hDeg.toFixed(1)}°) · 채도 이득 +{(liveSpectralMix.chromaPreservationGain01 * 100).toFixed(1)}% · 이차 안료 7D RGB({Math.round(liveQuadraticPigment.mixedRgb01.r * 255)},{Math.round(liveQuadraticPigment.mixedRgb01.g * 255)},{Math.round(liveQuadraticPigment.mixedRgb01.b * 255)}) · p5.brush 수채 다각형 정점 {liveP5Bleed.grownVertices.length}개(면적 {liveP5Bleed.polygonAreaPx2}px² · 초가우시안 필압 {liveP5Bleed.superGaussianPressure01})
+        </p>
+        <p className="lab-muted" data-testid="lab-quadratic-pigment-status">
+          로컬 이차 안료 모델은 계수 원산지·공식 호환·실측 성능이 미확인인 실험 항목이며 운영 승격 대상이 아닙니다.
         </p>
       </div>
 
@@ -255,7 +261,7 @@ export function BenchmarkResultsView() {
       >
         <table className="lab-responsive-table" style={matrixTableStyle}>
           <caption id="lab-multi-engine-bench-caption">
-            8대 브러시 엔진 아키텍처별 품질·지연·처리량·실서비스 승격 비교표 ({visibleEngines.length}개 표시)
+            {engineMatrix.length}종 브러시 모델 아키텍처별 품질·지연·처리량·승격 표시 비교표 ({visibleEngines.length}개 표시)
           </caption>
           <thead>
             <tr>
@@ -283,7 +289,7 @@ export function BenchmarkResultsView() {
                 </td>
                 <td className="lab-verdict-PASS">{row.compositeScore100.toFixed(1)}점</td>
                 <td className={row.promotedToService ? "lab-verdict-PASS" : "lab-verdict-REFERENCE"}>
-                  {row.promotedToService ? "실서비스 승격 · " : "오프라인 기준선 · "}
+                  {row.promotedToService ? "실서비스 승격 · " : row.engineId === QUADRATIC_PIGMENT_MODEL.id ? "로컬 실험 모델 · " : "오프라인 기준선 · "}
                   {row.optimalRoleKo}
                 </td>
               </tr>
