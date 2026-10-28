@@ -1,5 +1,5 @@
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
-import { eligibleAssignmentsForTask, productionTaskHasCurrentApprovedOutputs, productionTaskHasCurrentDependencyInputs, type Deliverable, type ProductionProjectAggregate, type ProductionTask, type ProductionTaskStatus, type Submission } from "@toonstudio/core/production";
+import { createProductionTaskWorkflowReader, eligibleAssignmentsForTask, type Deliverable, type ProductionProjectAggregate, type ProductionTask, type ProductionTaskStatus, type Submission } from "@toonstudio/core/production";
 
 import { previewProductionBoardMove, type ProductionBoardMovePreview } from "./production-board-move-preview";
 import { PRODUCTION_DEFAULT_PROCESS_ORDER } from "./production-labels";
@@ -49,6 +49,7 @@ export function buildDivisionHandoffQueue(
   const deliverables = new Map(aggregate.deliverables.map((entry) => [entry.id, entry]));
   const submissions = new Map(aggregate.submissions.map((entry) => [entry.id, entry]));
   const dependencyComplete = new Map<string, boolean>();
+  const workflow = createProductionTaskWorkflowReader(aggregate);
   const order = aggregate.workflowProfile?.steps.map((step) => canonicalProductionProcessKey(step.key)) ?? PRODUCTION_DEFAULT_PROCESS_ORDER;
   const processPositions = new Map(order.map((key, index) => [key, index]));
   const position = (task: ProductionTask) => {
@@ -73,7 +74,7 @@ export function buildDivisionHandoffQueue(
         episodeId: divisionTaskEpisode(task),
         dependencies: task.dependencyTaskIds.map((id) => {
           const dependency = tasks.get(id) ?? null;
-          if (!dependencyComplete.has(id)) dependencyComplete.set(id, Boolean(dependency && ["approved", "done"].includes(dependency.status) && productionTaskHasCurrentApprovedOutputs(dependency, aggregate)));
+          if (!dependencyComplete.has(id)) dependencyComplete.set(id, Boolean(dependency && ["approved", "done"].includes(dependency.status) && workflow.hasCurrentApprovedOutputs(dependency)));
           return { id, task: dependency, complete: dependencyComplete.get(id) ?? false };
         }),
         activeAssignmentIds: task.assignmentIds.filter((id) => eligibleOwners.has(id)),
@@ -86,7 +87,7 @@ export function buildDivisionHandoffQueue(
           return { id, deliverable, current, approved: approved?.status === "approved" ? approved : null };
         }),
         uncheckedCount: task.briefBlocks?.filter((block) => block.kind === "checklist" && !block.checked).length ?? 0,
-        inputVersionsCurrent: productionTaskHasCurrentDependencyInputs(task, aggregate),
+        inputVersionsCurrent: workflow.hasCurrentDependencyInputs(task),
         action: target ? { target, get preview() {
           // 전체 큐를 만들 때는 실행하지 않는다. 표시 행의 판정만 이 스냅샷에서 캐시한다.
           cachedPreview ??= previewProductionBoardMove(aggregate, [task.id], target, at);

@@ -307,11 +307,23 @@ export function executeProductionCommand(
   projectId: string,
   expectedRevision: number,
   command: ProductionClientCommand,
+  clientMutationId: string = mutationId(),
 ): Promise<ProductionMutationResponse> {
   return api.post(`/production/projects/${encodeURIComponent(projectId)}/commands`, {
     expectedRevision,
-    mutationId: mutationId(),
+    mutationId: clientMutationId,
     command,
+  });
+}
+
+/** 로컬 복구 본문도 서버 DTO·현재 권한 검증을 거친다. 새 식별자나 버전으로 바꾸지 않는다. */
+export function recoverProductionCommand(projectId: string, request: {
+  readonly mutationId: string;
+  readonly expectedRevision: number;
+  readonly command: unknown;
+}): Promise<ProductionMutationResponse> {
+  return api.post(`/production/projects/${encodeURIComponent(projectId)}/commands`, {
+    expectedRevision: request.expectedRevision, mutationId: request.mutationId, command: request.command,
   });
 }
 

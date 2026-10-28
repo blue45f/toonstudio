@@ -32,6 +32,7 @@ import {
 import { decisionsForProductionSubmission, planProductionSubmissionApproval, planProductionSubmissionReview, plainSubmissionApproval, policyForProductionSubmission, resolveProductionReviewTarget, type SubmissionReviewStep } from "./production-review-submission";
 
 import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
+import { ProductionSubmissionVisualReview } from "./ProductionSubmissionVisualReview";
 import type { ProductionClientCommand } from "./production-api";
 import { reviewLaneLabel, roleTypeLabel, submissionStatusLabel } from "./production-labels";
 
@@ -379,6 +380,8 @@ function ProductionReviewWorkspaceForProject({
       <div className="border-b border-line p-4">
         <EpisodeStageHandoffSection aggregate={aggregate} episodeId={selectedEpisodeId} targetStage="review" />
       </div>
+
+      {submission ? <ProductionSubmissionVisualReview aggregate={aggregate} submission={submission} /> : null}
 
       <div className="grid min-h-[46rem] xl:grid-cols-[13rem_minmax(0,1fr)_21rem]">
         <aside className="border-b border-line bg-panel/70 p-3 xl:border-b-0 xl:border-r" aria-label="검수 컷 목록">

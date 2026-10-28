@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ProductionProjectAggregate, ProductionTask } from "@toonstudio/core/production";
+import { createProductionTaskWorkflowReader, productionTaskHasCurrentApprovedOutputs, productionTaskHasCurrentDependencyInputs, productionTaskHasCurrentReviewOutputs, type ProductionProjectAggregate, type ProductionTask } from "@toonstudio/core/production";
 
 import { createProductionDemoProject } from "./production-demo";
 import { buildDivisionHandoffQueue, divisionQueueCandidateMatches, divisionQueueMatches } from "./production-division-handoff-queue";
 import * as boardMove from "./production-board-move-preview";
-import { divisionQueueScaleFixture } from "./production-division-handoff-queue.test-fixture";
+import { divisionQueueDependencyFixture, divisionQueueScaleFixture } from "./production-division-handoff-queue.test-fixture";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -114,5 +114,103 @@ describe("실제 프로젝트 분업 인계 작업함", () => {
     expect(divisionQueueMatches(entry, "actionable")).toBe(false);
     expect(entry.action?.preview.reason).toContain("입력 버전");
     expect(preview).toHaveBeenCalledTimes(1);
+  });
+
+  it("3001개 작업·3500개 의존선·2501개 승인본의 분기와 병합을 보존하고 표시한 검수 작업만 검증한다", () => {
+    const preview = vi.spyOn(boardMove, "previewProductionBoardMove");
+    const aggregate = divisionQueueDependencyFixture(500);
+    const entries = buildDivisionHandoffQueue(aggregate, "episode-12", AT);
+    expect(entries).toHaveLength(3001);
+    expect(entries.reduce((count, entry) => count + entry.dependencies.length, 0)).toBe(3500);
+    expect(aggregate.submissions).toHaveLength(2501);
+    expect(entries.every((entry) => entry.inputVersionsCurrent && entry.dependencies.every((dependency) => dependency.complete))).toBe(true);
+    expect(preview).not.toHaveBeenCalled();
+    const visible = entries.filter((entry) => entry.task.status === "ready").slice(0, 20);
+    expect(visible).toHaveLength(20);
+    expect(visible.every((entry) => entry.action?.preview.allowed)).toBe(true);
+    expect(preview).toHaveBeenCalledTimes(20);
+  });
+});
+
+describe("스냅샷 공정 조회의 기존 승인·입력 권위 보존", () => {
+  const variants: readonly [string, (aggregate: ProductionProjectAggregate) => ProductionProjectAggregate, boolean][] = [
+    ["현재 승인본", (aggregate) => aggregate, true],
+    ["고정 입력 누락", (aggregate) => ({ ...aggregate, tasks: aggregate.tasks.map((entry) => ({ ...entry, inputRevisionRefs: [] })) }), false],
+    ["출력 연결 누락", (aggregate) => ({ ...aggregate, tasks: aggregate.tasks.map((entry) => ({ ...entry, outputDeliverableIds: [] })) }), false],
+    ["없는 산출물", (aggregate) => ({ ...aggregate, deliverables: [] }), false],
+    ["없는 현재 제출본", (aggregate) => ({ ...aggregate, submissions: [] }), false],
+    ["미승인 현재 제출본", (aggregate) => ({ ...aggregate, submissions: aggregate.submissions.map((entry) => ({ ...entry, status: "submitted" })) }), false],
+    ["승인 포인터 누락", (aggregate) => ({ ...aggregate, deliverables: aggregate.deliverables.map((entry) => ({ ...entry, approvedSubmissionId: null })) }), false],
+    ["다른 프로젝트 산출물", (aggregate) => ({ ...aggregate, deliverables: aggregate.deliverables.map((entry) => ({ ...entry, projectId: "foreign" })) }), false],
+    ["다른 프로젝트 제출본", (aggregate) => ({ ...aggregate, submissions: aggregate.submissions.map((entry) => ({ ...entry, projectId: "foreign" })) }), false],
+    ["다른 산출물 제출본", (aggregate) => ({ ...aggregate, submissions: aggregate.submissions.map((entry) => ({ ...entry, deliverableId: "foreign" })) }), false],
+    ...(["id", "digest", "lineage", "revision"] as const).map((field): typeof variants[number] => [
+      `제출본 입력 ${field} 불일치`,
+      (aggregate) => ({ ...aggregate, submissions: aggregate.submissions.map((entry) => ({ ...entry, inputRevisionRefs: entry.inputRevisionRefs.map((input) => ({
+        ...input, [field]: field === "revision" ? input.revision + 1 : field === "lineage" ? "visual" : "changed",
+      })) })) }), false,
+    ]),
+    ["같은 ID의 무관한 제출본 뒤 실제 승인본", (aggregate) => ({ ...aggregate, submissions: [
+      ...aggregate.submissions.map((entry) => ({ ...entry, projectId: "foreign", deliverableId: "foreign" })), ...aggregate.submissions,
+    ] }), true],
+    ["같은 ID의 미승인 제출본이 먼저 등장", (aggregate) => ({ ...aggregate, submissions: [
+      ...aggregate.submissions.map((entry) => ({ ...entry, status: "superseded" as const })), ...aggregate.submissions,
+    ] }), false],
+    ["같은 ID의 잘못된 산출물이 먼저 등장", (aggregate) => ({ ...aggregate, deliverables: [
+      ...aggregate.deliverables.map((entry) => ({ ...entry, projectId: "foreign" })), ...aggregate.deliverables,
+    ] }), false],
+    ["같은 산출물 ID의 뒤 승인 포인터", (aggregate) => ({ ...aggregate, deliverables: [
+      ...aggregate.deliverables.map((entry) => ({ ...entry, approvedSubmissionId: null })), ...aggregate.deliverables,
+    ] }), true],
+  ];
+
+  it.each(variants)("%s는 직접 조회와 같은 산출물·입력 결과를 낸다", (_name, mutate, approved) => {
+    const aggregate = mutate(divisionQueueDependencyFixture(1));
+    const upstream = aggregate.tasks[0];
+    const downstream = aggregate.tasks[1];
+    if (!upstream || !downstream) throw new Error("선후행 작업이 없습니다.");
+    const reader = createProductionTaskWorkflowReader(aggregate);
+    expect(reader.hasCurrentApprovedOutputs(upstream)).toBe(approved);
+    expect(reader.hasCurrentDependencyInputs(downstream)).toBe(approved);
+    for (const task of aggregate.tasks) {
+      expect(reader.hasCurrentApprovedOutputs(task)).toBe(productionTaskHasCurrentApprovedOutputs(task, aggregate));
+      expect(reader.hasCurrentReviewOutputs(task)).toBe(productionTaskHasCurrentReviewOutputs(task, aggregate));
+      expect(reader.hasCurrentDependencyInputs(task)).toBe(productionTaskHasCurrentDependencyInputs(task, aggregate));
+    }
+  });
+
+  it("같은 ID의 선행 작업은 첫 항목을 사용하고 새 스냅샷의 수정본에 이전 캐시를 적용하지 않는다", () => {
+    const aggregate = divisionQueueDependencyFixture(1);
+    const upstream = aggregate.tasks[0];
+    const downstream = aggregate.tasks[1];
+    if (!upstream || !downstream) throw new Error("선후행 작업이 없습니다.");
+    const original = createProductionTaskWorkflowReader(aggregate);
+    expect(original.hasCurrentDependencyInputs(downstream)).toBe(true);
+    expect(original.hasCurrentApprovedOutputs({ ...upstream, inputRevisionRefs: [] })).toBe(false);
+    expect(original.hasCurrentApprovedOutputs({ ...upstream, outputDeliverableIds: ["missing"] })).toBe(false);
+    expect(original.hasCurrentApprovedOutputs(upstream)).toBe(true);
+    const duplicate = { ...aggregate, tasks: [{ ...upstream, status: "in-progress" as const }, ...aggregate.tasks] };
+    expect(createProductionTaskWorkflowReader(duplicate).hasCurrentDependencyInputs(downstream)).toBe(false);
+    const revised = { ...aggregate, submissions: aggregate.submissions.map((entry) => ({ ...entry, revisionRef: { ...entry.revisionRef, revision: 2 } })) };
+    expect(createProductionTaskWorkflowReader(revised).hasCurrentDependencyInputs(downstream)).toBe(false);
+    expect(original.hasCurrentDependencyInputs(downstream)).toBe(true);
+  });
+
+  it.each(["id", "digest", "lineage", "revision"] as const)("후속 입력의 %s 변경은 선행 산출물 승인을 유지해도 시작을 막는다", (field) => {
+    const aggregate = divisionQueueDependencyFixture(1);
+    const upstream = aggregate.tasks[0];
+    const downstream = aggregate.tasks[1];
+    if (!upstream || !downstream) throw new Error("선후행 작업이 없습니다.");
+    const task = { ...downstream, inputRevisionRefs: downstream.inputRevisionRefs.map((input) => ({
+      ...input, [field]: field === "revision" ? input.revision + 1 : field === "lineage" ? "integrated" : "changed",
+    })) };
+    const reader = createProductionTaskWorkflowReader(aggregate);
+    expect(reader.hasCurrentApprovedOutputs(upstream)).toBe(true);
+    expect(reader.hasCurrentDependencyInputs(task)).toBe(false);
+    expect(reader.hasCurrentDependencyInputs(task)).toBe(productionTaskHasCurrentDependencyInputs(task, aggregate));
+    expect(reader.hasCurrentDependencyInputs({ ...downstream, dependencyTaskIds: ["missing"] })).toBe(false);
+    expect(reader.hasCurrentDependencyInputs({ ...downstream, inputRevisionRefs: downstream.inputRevisionRefs.map((input) => ({
+      ...input, createdAt: AT,
+    })) })).toBe(true);
   });
 });

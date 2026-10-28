@@ -10,7 +10,7 @@ import {
   type ProductionTask,
   type ProductionTaskStatus,
 } from "../../core/src/production/types";
-import { detectTaskDependencyCycles, productionTaskHasCurrentApprovedOutputs, productionTaskHasCurrentDependencyInputs, productionTaskHasCurrentReviewOutputs, transitionProductionTask } from "../../core/src/production/workflow";
+import { createProductionTaskWorkflowReader, detectTaskDependencyCycles, transitionProductionTask } from "../../core/src/production/workflow";
 
 export const PRODUCTION_BOARD_STATUSES = [
   "draft",
@@ -275,13 +275,24 @@ export function validateProductionWorkflowMutation(
   after: ProductionProjectAggregate,
   at: string = after.updatedAt,
 ): readonly string[] {
+  return validateWorkflowMutation(before, after, at);
+}
+
+function validateWorkflowMutation(
+  before: ProductionProjectAggregate,
+  after: ProductionProjectAggregate,
+  at: string,
+  beforeReader?: ReturnType<typeof createProductionTaskWorkflowReader>,
+): readonly string[] {
   const profile = after.workflowProfile;
   if (!profile) return [];
   const issues: string[] = [];
   const previousById = new Map(before.tasks.map((task) => [task.id, task]));
   const stepByKey = new Map(profile.steps.map((step) => [canonicalProductionProcessKey(step.key), step]));
+  const beforeWorkflow = beforeReader ?? createProductionTaskWorkflowReader(before);
+  let afterWorkflow: ReturnType<typeof createProductionTaskWorkflowReader> | undefined;
   const completed = before.tasks
-    .filter((task) => ["approved", "done"].includes(task.status) && productionTaskHasCurrentApprovedOutputs(task, before))
+    .filter((task) => ["approved", "done"].includes(task.status) && beforeWorkflow.hasCurrentApprovedOutputs(task))
     .map((task) => task.id);
   const taskIds = new Set(after.tasks.map((task) => task.id));
   const assignments = new Map(activeAssignments(after.assignments, at).filter((assignment) => assignment.status === "active")
@@ -302,10 +313,11 @@ export function validateProductionWorkflowMutation(
       }
     }
     const entering = !previous || previous.status !== next.status || previous.processKey !== next.processKey;
-    if (entering && next.status === "in-progress" && !productionTaskHasCurrentDependencyInputs(next, before)) {
+    if (entering && next.status === "in-progress" && !beforeWorkflow.hasCurrentDependencyInputs(next)) {
       issues.push(`${next.title}: 선행 작업의 현재 승인 버전을 작업 입력에 고정하세요.`);
     }
-    if (entering && ["internal-review", "external-review"].includes(next.status) && !productionTaskHasCurrentReviewOutputs(next, after)) {
+    if (entering && ["internal-review", "external-review"].includes(next.status)
+      && !(afterWorkflow ??= createProductionTaskWorkflowReader(after)).hasCurrentReviewOutputs(next)) {
       issues.push(`${next.title}: 검수 요청 전에 고정 입력과 일치하는 현재 제출본을 저장하세요.`);
     }
     if (!previous || next.dependencyTaskIds !== previous.dependencyTaskIds) {
@@ -384,8 +396,9 @@ export function transitionProductionTaskBatch(
   ) {
     throw new Error("작업은 중복 없이 1~200개까지 선택하세요.");
   }
+  const workflow = createProductionTaskWorkflowReader(aggregate);
   const completed = aggregate.tasks
-    .filter((task) => ["approved", "done"].includes(task.status) && productionTaskHasCurrentApprovedOutputs(task, aggregate))
+    .filter((task) => ["approved", "done"].includes(task.status) && workflow.hasCurrentApprovedOutputs(task))
     .map((task) => task.id);
   const tasksById = new Map(aggregate.tasks.map((task) => [task.id, task]));
   const assignments = new Map(activeAssignments(aggregate.assignments, at).filter((assignment) => assignment.status === "active")
@@ -403,13 +416,13 @@ export function transitionProductionTaskBatch(
       throw new Error(`${task.title}: 현재 활동 기간과 범위에 맞는 활성 검수자 배정이 필요합니다.`);
     if (["approved", "conditionally-approved"].includes(entry.toStatus))
       throw new Error("승인은 작업 보드가 아니라 고정 검수 절차에서 처리하세요.");
-    if (entry.toStatus === "in-progress" && !productionTaskHasCurrentDependencyInputs(task, aggregate))
+    if (entry.toStatus === "in-progress" && !workflow.hasCurrentDependencyInputs(task))
       throw new Error(`${task.title}: 선행 작업의 현재 승인 버전을 작업 입력에 고정하세요.`);
-    if (["internal-review", "external-review"].includes(entry.toStatus) && !productionTaskHasCurrentReviewOutputs(task, aggregate))
+    if (["internal-review", "external-review"].includes(entry.toStatus) && !workflow.hasCurrentReviewOutputs(task))
       throw new Error(`${task.title}: 검수 요청 전에 고정 입력과 일치하는 현재 제출본을 저장하세요.`);
     if (
       entry.toStatus === "done" &&
-      !productionTaskHasCurrentApprovedOutputs(task, aggregate)
+      !workflow.hasCurrentApprovedOutputs(task)
     )
       throw new Error("승인된 제출본이 연결된 작업만 완료할 수 있습니다.");
     let next: ProductionTask;
@@ -437,7 +450,7 @@ export function transitionProductionTaskBatch(
   });
   const changedById = new Map(changed.map((task) => [task.id, task]));
   const tasks = aggregate.tasks.map((task) => changedById.get(task.id) ?? task);
-  const issues = validateProductionWorkflowMutation(aggregate, { ...aggregate, tasks }, at);
+  const issues = validateWorkflowMutation(aggregate, { ...aggregate, tasks }, at, workflow);
   if (issues.length) throw new Error(issues.join("\n"));
   return changed;
 }

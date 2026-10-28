@@ -228,6 +228,21 @@ describe("작업 보드의 원자적 상태 전환", () => {
     const entry = task("t", { status: "in-progress", outputDeliverableIds: ["missing"], reviewerAssignmentIds: ["assignment:owner:producer"] });
     expect(() => transitionProductionTaskBatch(configured([entry]), [{ taskId: "t", fromStatus: "in-progress", toStatus: "internal-review" }], at)).toThrow("현재 제출본");
   });
+  it("일반 수정의 검수 진입은 변경 후 스냅샷의 제출본을 검증하고 변경 전 조회 캐시를 적용하지 않는다", () => {
+    const entry = task("t", { status: "in-progress", outputDeliverableIds: ["output"], reviewerAssignmentIds: ["assignment:owner:producer"] });
+    const revisionRef = entry.inputRevisionRefs[0];
+    if (!revisionRef) throw new Error("검증용 고정 입력이 없습니다.");
+    const before = configured([entry]);
+    const after: ProductionProjectAggregate = { ...before, tasks: [{ ...entry, status: "internal-review" }],
+      deliverables: [{ id: "output", projectId: "p", scope: projectScope("p"), type: "원고", expectedFormat: "PNG",
+        completionCriteria: ["교정"], currentSubmissionId: "submission", approvedSubmissionId: null }],
+      submissions: [{ id: "submission", projectId: "p", deliverableId: "output", revisionRef,
+        submittedByAssignmentId: "assignment:owner:producer", submittedAt: at, status: "submitted",
+        inputRevisionRefs: entry.inputRevisionRefs, evidenceRefs: [] }],
+    };
+    expect(validateProductionWorkflowMutation(before, after, at)).toEqual([]);
+    expect(validateProductionWorkflowMutation(before, { ...after, submissions: [] }, at).join()).toContain("현재 제출본");
+  });
   it("일반 수정 명령으로도 활성 공정의 동시 작업 제한을 우회하지 못한다", () => {
     const aggregate = configured([task("a", { status: "in-progress" }), task("b")]);
     const tasks = aggregate.tasks.map((entry) => ({ ...entry, status: "in-progress" as const }));

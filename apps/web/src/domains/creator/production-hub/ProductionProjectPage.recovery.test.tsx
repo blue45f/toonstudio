@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { ProductionProjectPage } from "./ProductionHubPage";
 import { createProductionDemoProject } from "./production-demo";
 import type { ScopeRef } from "@toonstudio/core/production";
@@ -30,6 +30,8 @@ const project = { aggregate: { ...original, projectId: actualProjectId,
   reviewPolicies: original.reviewPolicies.map((policy) => ({ ...policy, projectId: actualProjectId, scope: scopeForProject(policy.scope) })),
 }, access: { view: true, comment: true, edit: true, manage: true, owner: true, role: "owner" } };
 
+// 실제 지연 모듈의 최초 변환을 기다려 저장 계약 검증을 컴파일 시간과 분리한다.
+beforeAll(async () => { await import("./ProductionReviewSurface"); });
 beforeEach(() => { vi.clearAllMocks(); useApp.setState({ userId: "local-test-owner" }); mocks.load.mockResolvedValue(project); });
 afterEach(() => { cleanup(); useApp.setState({ userId: null }); });
 function mount() {

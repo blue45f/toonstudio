@@ -7,7 +7,7 @@ import { vi, afterAll, beforeAll, describe, expect, it  } from "vitest";
 import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 
 import { randomBytes, randomUUID } from "node:crypto";
-import type { ProductionProjectAggregate, ProductionTask } from "@toonstudio/core/production";
+import type { ProductionProjectAggregate, ProductionTask, RevisionRef, Submission } from "@toonstudio/core/production";
 import { createProductionWorkflowProfile } from "@toonstudio/contracts/production-workflow";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -362,7 +362,103 @@ describe.skipIf(!url)("실제 일반 가입·쿠키·PostgreSQL 협업 HTTP", ()
     expect(rejected.revision).toBe(resubmitted.body.aggregate.revision);
     expect(rejected.tasks.find((entry) => entry.id === downstream.id)?.status).toBe("ready");
     expect(rejected.submissions.find((entry) => entry.id === submission.id)?.status).toBe("approved");
+    const reviewingAgain = await command({ type: "upsert-submission", submission: { ...revised, status: "in-review" } }, editor());
+    expect(reviewingAgain.status).toBe(201);
+    // 첫 제출본에 대한 실제 승인 결정이 있어도 새 제출본 승인으로 재사용하지 않는다.
+    expect((await command({ type: "upsert-submission", submission: { ...revised, status: "approved" } }, editor())).status).toBe(400);
+    expect((await project()).aggregate.revision).toBe(reviewingAgain.body.aggregate.revision);
   });
+  it("독립된 제작자와 검수자가 여덟 공정을 완주하고 재작업 이전 승인을 재사용하지 않는다", async () => {
+    const initial = (await project()).aggregate;
+    const ownerRole = initial.assignments.find((entry) => entry.id === "http-line-author");
+    if (!ownerRole) throw new Error("제작자 역할 fixture가 없습니다.");
+    const at = new Date().toISOString();
+    const profile = createProductionWorkflowProfile(projectId, "studio", at);
+    const steps = profile.steps;
+    const assignments = steps.map((step) => ({ ...ownerRole, id: `pipeline-author-${step.key}`, roleType: step.defaultRole }));
+    expect((await command({ type: "configure-collaboration", parties: initial.parties,
+      assignments: [...initial.assignments, ...assignments], authorityRules: initial.authorityRules })).status).toBe(201);
+    expect((await command({ type: "configure-workflow", profile: { ...profile, revision: (initial.workflowProfile?.revision ?? 0) + 1 },
+      expectedWorkflowRevision: initial.workflowProfile?.revision ?? 0 })).status).toBe(201);
+    const baseInput: RevisionRef = { id: "pipeline-brief", lineage: "narrative", revision: 1,
+      digest: `sha256:${"0".repeat(64)}`, createdAt: at };
+    const outputs = new Map<string, RevisionRef>(steps.map((step, index) => [step.key, {
+      id: `pipeline-${step.key}-r1`, lineage: step.key === "story-lock" ? "narrative" : "visual", revision: 1,
+      digest: `sha256:${(index + 1).toString(16).repeat(64)}`, createdAt: at,
+    }]));
+    for (const step of steps) {
+      const inputs = step.dependsOn.map((key) => outputs.get(key));
+      if (inputs.some((input) => !input)) throw new Error("선행 revision fixture가 없습니다.");
+      const inputRevisionRefs = inputs.filter((input): input is RevisionRef => input !== undefined);
+      const deliverable = { id: `pipeline-output-${step.key}`, projectId, scope: scope(), type: step.key,
+        expectedFormat: "studio-document", completionCriteria: step.completionCriteria, currentSubmissionId: null, approvedSubmissionId: null };
+      expect((await command({ type: "upsert-deliverable", deliverable })).status).toBe(201);
+      const task: ProductionTask = { ...taskDraft(`pipeline-task-${step.key}`), title: step.name, processKey: step.key,
+        assignmentIds: [`pipeline-author-${step.key}`], reviewerAssignmentIds: ["http-editor-reviewer"],
+        dependencyTaskIds: step.dependsOn.map((key) => `pipeline-task-${key}`), outputDeliverableIds: [deliverable.id],
+        inputRevisionRefs: inputRevisionRefs.length ? inputRevisionRefs : [baseInput] };
+      expect((await command({ type: "upsert-task", task })).status).toBe(201);
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "draft", toStatus: "ready" }] })).status).toBe(201);
+    }
+    const premature = await project();
+    expect((await command({ type: "transition-task-batch", transitions: [{ taskId: "pipeline-task-color", fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(400);
+    expect((await project()).aggregate.revision).toBe(premature.aggregate.revision);
+    for (const step of steps) {
+      const current = (await project()).aggregate;
+      let task = current.tasks.find((entry) => entry.id === `pipeline-task-${step.key}`);
+      const output = outputs.get(step.key);
+      if (!task || !output) throw new Error("공정 fixture가 없습니다.");
+      if (step.key === "lettering") {
+        // 이전 채색본을 고정한 식자는 재작업 승인 후에도 자동으로 시작하지 않는다.
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(400);
+        const color = outputs.get("color");
+        if (!color) throw new Error("재작업 채색 revision이 없습니다.");
+        const originalTask = task;
+        task = { ...originalTask, inputRevisionRefs: [color] };
+        expect((await command({ type: "upsert-task-batch", tasks: [task], expectedTasks: [originalTask] })).status).toBe(201);
+      }
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(201);
+      let submission: Submission = { id: `pipeline-submission-${step.key}-1`, projectId,
+        deliverableId: task.outputDeliverableIds[0] ?? "", revisionRef: output, submittedByAssignmentId: task.assignmentIds[0] ?? "",
+        submittedAt: at, status: "submitted", inputRevisionRefs: task.inputRevisionRefs, evidenceRefs: [`pipeline-proof-${step.key}`] };
+      expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "in-progress", toStatus: "internal-review" }] })).status).toBe(201);
+      expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+      if (step.key === "color") {
+        expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+          id: "pipeline-color-retake", reviewRoundId: submission.id, lane: "production", assignmentId: "http-editor-reviewer",
+          value: "request-changes", reasonCode: "color-continuity", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+        } }, editor())).status).toBe(201);
+        const retake = await command({ type: "upsert-submission", submission: { ...submission, status: "changes-requested" } }, editor());
+        expect(retake.status).toBe(201);
+        expect(retake.body.aggregate.tasks.find((entry) => entry.id === task.id)?.status).toBe("changes-requested");
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "changes-requested", toStatus: "in-progress" }] })).status).toBe(201);
+        const revised = { ...output, id: "pipeline-color-r2", revision: 2, digest: `sha256:${"f".repeat(64)}` };
+        outputs.set("color", revised);
+        submission = { ...submission, id: "pipeline-submission-color-2", revisionRef: revised };
+        expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+        expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "in-progress", toStatus: "internal-review" }] })).status).toBe(201);
+        const beforeMissingApproval = await project();
+        expect((await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor())).status).toBe(400);
+        expect((await project()).aggregate.revision).toBe(beforeMissingApproval.aggregate.revision);
+      }
+      expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+        id: `pipeline-approval-${step.key}`, reviewRoundId: submission.id, lane: "production", assignmentId: "http-editor-reviewer",
+        value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+      } }, editor())).status).toBe(201);
+      const approved = await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+      expect(approved.status).toBe(201);
+      expect(approved.body.aggregate.tasks.find((entry) => entry.id === task.id)?.status).toBe("approved");
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "approved", toStatus: "done" }] })).status).toBe(201);
+    }
+    const final = (await project()).aggregate;
+    expect(final.tasks.filter((entry) => entry.id.startsWith("pipeline-task-")).map((entry) => entry.status)).toEqual(Array(8).fill("done"));
+    expect(final.deliverables.filter((entry) => entry.id.startsWith("pipeline-output-")).every((entry) => entry.currentSubmissionId === entry.approvedSubmissionId)).toBe(true);
+    expect(final.submissions.find((entry) => entry.id === "pipeline-submission-color-1")?.status).toBe("changes-requested");
+    expect(final.reviewDecisions.find((entry) => entry.id === "pipeline-color-retake")?.value).toBe("request-changes");
+    expect(final.reviewDecisions.filter((entry) => entry.id.startsWith("pipeline-approval-")).every((entry) => entry.assignmentId === "http-editor-reviewer")).toBe(true);
+  }, 60_000);
   it("회수된 작품 권한은 과거 저장 요청 재전송에도 적용한다", async () => {
     const current = await project(); const task = current.aggregate.tasks[0]!;
     const body = { expectedRevision: current.aggregate.revision, mutationId: randomUUID(), command: { type: "upsert-task-batch", tasks: [{ ...task, title: "회수 전 저장" }], expectedTasks: [task] } };
