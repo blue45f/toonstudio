@@ -1,0 +1,107 @@
+{
+  "schema": "toonstudio.itch-license-evidence.v1",
+  "retrievedAt": "2026-10-28",
+  "statement": "로그인 쿠키 없이 공개 판매 페이지에서 직접 받은 응답의 제목과 라이선스 HTML 부분만 보관한다. 전체 응답에는 요청별 익명 CSRF 값이 있어 보관하지 않는다. sha256은 보관한 HTML 발췌 바이트의 해시다.",
+  "captures": [
+    {
+      "ledgerPackId": "cbv1-001-cartoon-city-massive-pack",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/cartoon-city.html",
+      "bytes": 182,
+      "sha256": "357f6afb847595929fe8078bb3c617ffb933d797598b111704ed4d7f9cc85424",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-030-nature-megapack-extended",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/nature-extended.html",
+      "bytes": 220,
+      "sha256": "38c4b4e9ae7d83397469649330c2d625e88662cc6643943fa60b74316c10a2e2",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-056-farm-land",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/farmland.html",
+      "bytes": 173,
+      "sha256": "b51a13a31701e9a46a6c43429f1641a83ec10785e1e66acbe8988880e130a462",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-035-pirate-island",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/pirate-island.html",
+      "bytes": 191,
+      "sha256": "86733cd6c360f3429e77ed6e2a900b697b95c840a09f6d04972a58cfa16620ec",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-038-aztec-jungle",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/aztec-jungle.html",
+      "bytes": 180,
+      "sha256": "8071a1d1f70d43997406332847c395c8690dc1aa782867a5c1a7b93a67907428",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "rg-poly-food-pack",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/food-pack.html",
+      "bytes": 166,
+      "sha256": "b797c8778096e5bb2295c6745bbc712572a4aaa50f86a14e6574d9ce0794bfe3",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-003-cartoon-characters-1",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/characters-1.html",
+      "bytes": 215,
+      "sha256": "a526afa601f6407b6519292b96b5aaa5d96af088dab062b28464060c772f7c01",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-007-cartoon-characters-2",
+      "sourceUrl": "https://rg-poly.itch.io/characters-2",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/characters-2.html",
+      "bytes": 198,
+      "sha256": "7b598a683317bb5e374ffcef720f66f743995948928b9f9081c87a07532b1b5b",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-008-cute-park-pack",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/cute-park.html",
+      "bytes": 171,
+      "sha256": "283ea595ddc1c2916293ebfa752beb3d7c5e4cf5cb5b28ed90ca04e7d4e3b374",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-024-cute-dungeon-megapack",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/cute-dungeon.html",
+      "bytes": 178,
+      "sha256": "7f568a9970c35e2aac73f7fe8cf14968478d5622bcc9931c5ffb330be4856869",
+      "observedAssetLicense": "CC0-1.0"
+    }
+  ]
+}

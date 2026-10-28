@@ -1,9 +1,9 @@
 /**
- * Studio BG3D 장르 씬팩 ↔ Creator Bundle 연결 데이터 (G8, 2026-10-22).
+ * Studio BG3D 장르 씬팩 ↔ Creator Bundle 연결 데이터 (2026-10-28).
  *
  * 씬팩(studio-bg3d-scene-composition-presets.ts)은 카메라+조명만 들고 있고, 실제로 무대를
- * 채울 소품·배경은 Creator Bundle 테마 팩(theme-packs.json, 배치 가능 14,928개 — 2026-10-22 GLB 텍스처
- * 임베드 병합·5라운드 재생성+후속 병합 기준)이 들고 있다. 이 모듈은 두 데이터를 잇는 순수 데이터 계층이다: 팩마다 어떤 번들
+ * 채울 소품·배경은 Creator Bundle 테마 팩(theme-packs.json)이 들고 있다. 2026-10-28에는 원장과 실물이
+ * 검증된 Cute Park·Dungeon 423개만 참조하며, 3D 서빙·배포 완료를 뜻하지 않는다. 이 모듈은 팩마다 어떤 번들
  * 테마/팩에서 에셋을 가져올 수 있는지와, 그 팩에 실재하는 대표 에셋 id를 기록한다.
  *
  * 정직성 계약:
@@ -60,128 +60,27 @@ function link(
 
 export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenreScenePackBundleLink[] =
   Object.freeze([
-    link("fantasy-forest-shrine", "fantasy", "nature", [
-      {
-        packIndex: 9,
-        packTitle: "NatureForge — Stylized Woodland Forest Pack",
-        placeableCount: 255,
-        sampleAssetIds: [
-          "cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18--m001",
-          "cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18--m002",
-          "cbv1-ingest-243-natureforgeprostylizedwoodland-godot-2026-10-18--m003",
-        ],
-      },
-      {
-        packIndex: 5,
-        packTitle: "LumaGrove — Wonky Woods",
-        placeableCount: 206,
-        sampleAssetIds: [
-          "cbv1-ingest-231-lumagrovewonkywoods-m001",
-          "cbv1-ingest-231-lumagrovewonkywoods-m002",
-          "cbv1-ingest-231-lumagrovewonkywoods-m003",
-        ],
-      },
-    ]),
     link("fantasy-old-town-arrival", "fantasy", "city", [
       {
         packIndex: 1,
-        packTitle: "Old Town — Courtyards",
-        placeableCount: 192,
+        packTitle: "Cute Park Pack",
+        placeableCount: 103,
         sampleAssetIds: [
-          "cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20-m002",
-          "cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20-m004",
-          "cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20-m006",
+          "cbv1-ingest-local-cute-park-bench-1-1-fd595aaee762",
+          "cbv1-ingest-local-cute-park-brickwall-1-1-9c7a46eb40b7",
+          "cbv1-ingest-local-cute-park-bridge-1-1-10a15690d937",
         ],
       },
     ]),
-    link("fantasy-swamp-crossing", "fantasy", "swamp", [
+    link("thriller-corridor-dutch", "thriller", "medieval-fantasy", [
       {
-        packIndex: 30,
-        packTitle: "Swamp Builder — Nature·Architecture",
-        placeableCount: 510,
+        packIndex: 2,
+        packTitle: "Cute Dungeon Megapack",
+        placeableCount: 320,
         sampleAssetIds: [
-          "cbv1-ingest-293-swamparch-m001",
-          "cbv1-ingest-293-swamparch-m002",
-          "cbv1-ingest-293-swamparch-m003",
-        ],
-      },
-    ]),
-    link("scifi-arena-showdown", "scifi", "sci-fi", [
-      {
-        packIndex: 18,
-        packTitle: "Sci-Fi Arena: 1",
-        placeableCount: 30,
-        sampleAssetIds: [
-          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m002",
-          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m004",
-          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m006",
-        ],
-      },
-      {
-        packIndex: 19,
-        packTitle: "Sci-Fi Arena: 2",
-        placeableCount: 29,
-        sampleAssetIds: [
-          "cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1-m002",
-          "cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1-m004",
-          "cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1-m006",
-        ],
-      },
-    ]),
-    link("scifi-planet-survey", "scifi", "sci-fi", [
-      {
-        packIndex: 20,
-        packTitle: "CosmoKit — Stylized Low Poly Planets",
-        placeableCount: 34,
-        sampleAssetIds: [
-          "cbv1-ingest-046-cosmokitstylizedlowpolyplanets-m001",
-          "cbv1-ingest-046-cosmokitstylizedlowpolyplanets-m002",
-          "cbv1-ingest-046-cosmokitstylizedlowpolyplanets-m003",
-        ],
-      },
-    ]),
-    link("scifi-station-portrait", "scifi", "sci-fi", [
-      {
-        packIndex: 18,
-        packTitle: "Sci-Fi Arena: 1",
-        placeableCount: 30,
-        sampleAssetIds: [
-          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m004",
-          "cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1-m006",
-        ],
-      },
-    ]),
-    link("thriller-graveyard-vigil", "thriller", "horror", [
-      {
-        packIndex: 22,
-        packTitle: "NecroPOLY — Stylized Graveyard",
-        placeableCount: 148,
-        sampleAssetIds: [
-          "cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09--m002",
-          "cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09--m004",
-          "cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09--m006",
-        ],
-      },
-      {
-        packIndex: 24,
-        packTitle: "Cemetery Statues Pack",
-        placeableCount: 50,
-        sampleAssetIds: [
-          "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29-m001",
-          "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29-m003",
-          "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29-m005",
-        ],
-      },
-    ]),
-    link("daily-subway-commute", "daily", "interior", [
-      {
-        packIndex: 15,
-        packTitle: "PixelDrift Metro — 3D Pixel Art Subway (VR)",
-        placeableCount: 256,
-        sampleAssetIds: [
-          "cbv1-ingest-238-metro-2026-31-1-00-17-18-m002",
-          "cbv1-ingest-238-metro-2026-31-1-00-17-18-m004",
-          "cbv1-ingest-238-metro-2026-31-1-00-17-18-m006",
+          "cbv1-ingest-local-cute-dungeon-pilar-1-6a-af19e527adb9",
+          "cbv1-ingest-local-cute-dungeon-stairs-5a-a5ee87ff17c8",
+          "cbv1-ingest-local-cute-dungeon-wall-connect-149fca7f6825",
         ],
       },
     ]),

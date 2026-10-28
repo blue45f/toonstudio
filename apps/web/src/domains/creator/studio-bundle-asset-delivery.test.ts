@@ -56,6 +56,18 @@ const fixture = () => ({
   rights: ledgerRights(),
 });
 
+const cc0Fixture = () => ({
+  ...fixture(),
+  license: {
+    ...fixture().license,
+    id: "CC0-1.0",
+    provider: "RG Poly",
+    url: "https://creativecommons.org/publicdomain/zero/1.0/",
+    redistributionAllowed: true,
+  },
+  rights: {...ledgerRights(), status: "public-domain", licenseName: "CC0-1.0"},
+});
+
 function withoutKey<T extends Record<string, unknown>>(value: T, key: string): Record<string, unknown> {
   const copy: Record<string, unknown> = {...value};
   delete copy[key];
@@ -168,13 +180,61 @@ describe("bundle render delivery catalog boundary", () => {
       ...asset,
       license: {...asset.license, id},
     }]))).toThrow();
-    // 에셋의 라이선스는 정상 선언돼 있고, 팩 선언에 CC0 계열 id가 섞인 것만이 거부 사유다.
+    // 팩 선언에 공식 deed URL 없이 CC0 계열 id만 추가해도 거부한다.
     const declared = {id: "EmaceArt-Asset-License", provider: "EmaceArt", sourceHost: "itch.io"};
     expect(parseStudioBundleCatalog(manifest([asset], {licenses: [declared]}))).toHaveLength(1);
     expect(() => parseStudioBundleCatalog(manifest(
       [asset],
       {licenses: [declared, {id, provider: "EmaceArt", sourceHost: "itch.io"}]},
     ))).toThrow();
+  });
+
+  it.each(["CC0-1.0", "cc0-1.0", "Cc0-1.0"])("원장과 공식 deed가 일치한 CC0 렌더는 전달한다 (%s)", (id) => {
+    const asset = cc0Fixture();
+    const result = parseStudioBundleCatalog(manifest([
+      {...asset, license: {...asset.license, id}},
+    ], {licenses: [{id, provider: "RG Poly", sourceHost: "itch.io", deedUrl: asset.license.url}]}));
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({licenseId: id, licenseUrl: asset.license.url, rights: asset.rights});
+    expect(isStudioBundleAssetEligibleForSelection(result[0])).toBe(true);
+  });
+
+  it.each([true, false])("팩 허용목록이 없는 CC0 렌더도 원장과 deed를 검증한다 (재배포 %s)", (redistributionAllowed) => {
+    const asset = cc0Fixture();
+    expect(parseStudioBundleCatalog(manifest([{
+      ...asset, license: {...asset.license, redistributionAllowed},
+    }]))).toHaveLength(1);
+  });
+
+  it("CC0 선언만으로 원장의 구매 라이선스를 공개 이용으로 바꾸지 않는다", () => {
+    const asset = cc0Fixture();
+    for (const rights of [
+      {...asset.rights, status: "licensed"},
+      {...asset.rights, licenseName: "Fixture proprietary license"},
+    ]) {
+      expect(() => parseStudioBundleCatalog(manifest([{...asset, rights}]))).toThrow("원장");
+    }
+    expect(parseStudioBundleCatalog(manifest([withoutRights(asset)]))).toEqual([]);
+  });
+
+  it.each([undefined, "https://example.com/license", "https://creativecommons.org/publicdomain/zero/1.0/?license=cc0"])("CC0 에셋은 공식 deed URL이 없거나 다르면 거부한다 (%s)", (url) => {
+    const asset = cc0Fixture();
+    expect(() => parseStudioBundleCatalog(manifest([{
+      ...asset, license: {...asset.license, url},
+    }]))).toThrow("deed");
+  });
+
+  it("CC0 재배포 허용은 다운로드 동선이나 서비스 외 전달을 열지 않는다", () => {
+    const asset = cc0Fixture();
+    expect(() => parseStudioBundleCatalog(manifest([asset], {downloadable: true}))).toThrow();
+    expect(() => parseStudioBundleCatalog(manifest([asset], {inServiceOnly: false}))).toThrow();
+    expect(() => parseStudioBundleCatalog(manifest([{...asset, downloadUrl: "assets/source.glb"}]))).toThrow();
+    expect(() => parseStudioBundleCatalog(manifest([{
+      ...asset, license: {...asset.license, inServiceOnly: false},
+    }]))).toThrow();
+    expect(() => parseStudioBundleCatalog(manifest([{
+      ...asset, license: {...asset.license, redistributionAllowed: "true"},
+    }]))).toThrow();
   });
 
   it("requires the in-service-only license terms, not merely commercial use", () => {

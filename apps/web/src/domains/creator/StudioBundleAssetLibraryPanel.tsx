@@ -83,6 +83,7 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
     () => (catalog ?? []).filter(isStudioBundleAssetEligibleForSelection),
     [catalog],
   );
+  const hasCc0Assets = eligible.some(asset => asset.rights.status === "public-domain" && asset.licenseId.toLowerCase() === "cc0-1.0");
   const filtered = useMemo(
     () => filterStudioBundleAssets(eligible, debouncedQuery, kind === "all" ? undefined : kind),
     [eligible, debouncedQuery, kind],
@@ -138,7 +139,9 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
             {pages > 1 && <nav className="flex items-center justify-between gap-2" aria-label="에셋 페이지"><button type="button" className={CONTROL} disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>이전</button><span className="text-xs text-fg-3">{currentPage + 1} / {pages}</span><button type="button" className={CONTROL} disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>다음</button></nav>}
           </>}
         <p role="status" aria-live="polite" className="text-xs leading-relaxed text-fg-2">{notice}</p>
-        <p className="text-[0.65rem] leading-relaxed text-fg-3">이 소품은 서비스 안에서만 사용할 수 있는 라이선스로 제공됩니다. 캔버스에 삽입한 렌더 이미지는 작품 제작에 쓸 수 있지만, 소품 자체를 다시 배포하거나 파일로 내보낼 수는 없습니다.</p>
+        <p className="text-[0.65rem] leading-relaxed text-fg-3">{hasCc0Assets
+          ? panelStatusText("studio.panelStatus.bundleLibrary.licenseSpecificUsage", "이용 권리는 각 소품 카드의 라이선스를 따릅니다. CC0 소품은 CC0 조건에 따라 이용·수정·재배포할 수 있습니다. 이 라이브러리는 렌더 이미지 삽입을 제공하며 원본 3D 모델을 내려받는 동선은 제공하지 않습니다.")
+          : "이 소품은 서비스 안에서만 사용할 수 있는 라이선스로 제공됩니다. 캔버스에 삽입한 렌더 이미지는 작품 제작에 쓸 수 있지만, 소품 자체를 다시 배포하거나 파일로 내보낼 수는 없습니다."}</p>
       </div>}
       {preview && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-3"><div ref={previewRef} role="dialog" aria-modal="true" aria-labelledby={previewTitleId} tabIndex={-1} className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-xl border border-line bg-panel p-4 shadow-xl">
         <div className="flex items-center justify-between gap-3"><h3 id={previewTitleId} className="text-sm font-bold text-fg">{preview.name}</h3><button type="button" data-autofocus="true" className={CONTROL} onClick={dismissPreview}>닫기</button></div>

@@ -1,0 +1,33 @@
+{
+  "expected": 118,
+  "imageContract": {
+    "successes": 118,
+    "failures": 0,
+    "text": "검사 완료 · 118/118개 확인 · 성공 118개 · 실패 0개"
+  },
+  "insertions": [
+    {
+      "id": "cbv1-008-bench-1-1",
+      "text": "소재\n벤치 · Bench 1 1\nID\nbundle:cbv1-008-bench-1-1\n실제 크기\n1536 × 1536px\n보이는 픽셀\n676,401\n투명 픽셀\n1,682,895\n콘텐츠 해시\nsha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49\n라이선스\nCC0-1.0\n권리 확인\n확인됨\n출처\nRG Poly — https://rg-poly.itch.io/cute-park-pack"
+    },
+    {
+      "id": "cbv1-024-potion-1-1",
+      "text": "소재\n물약 병 · Potion 1 1\nID\nbundle:cbv1-024-potion-1-1\n실제 크기\n1536 × 1536px\n보이는 픽셀\n397,775\n투명 픽셀\n1,961,521\n콘텐츠 해시\nsha256:5001f97482dc063c225838d06f1d13098c2bce4c92027682bce1c8a377424fea\n라이선스\nCC0-1.0\n권리 확인\n확인됨\n출처\nRG Poly — https://rg-poly.itch.io/cute-dungeon-megapack"
+    },
+    {
+      "id": "cbv1-008-bench-1-1",
+      "text": "소재\n벤치 · Bench 1 1\nID\nbundle:cbv1-008-bench-1-1\n실제 크기\n1536 × 1536px\n보이는 픽셀\n676,401\n투명 픽셀\n1,682,895\n콘텐츠 해시\nsha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49\n라이선스\nCC0-1.0\n권리 확인\n확인됨\n출처\nRG Poly — https://rg-poly.itch.io/cute-park-pack"
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "desktop-library.png",
+    "mobile-canvas.png"
+  ],
+  "databasePersistenceVerified": false,
+  "verifiedOn": "2026-10-28",
+  "scope": "실제 소재 패널·전달 함수·canvas 검수. 로그인 프로젝트·DB 영속성·운영 배포 검증 제외.",
+  "manifestSha256": "01353785422e4c48aeccb6f46286ac9e0a0c2cacaeb320a96d61dfcc692a4ac5",
+  "publicFiles": 237,
+  "publicBytes": 52521798
+}

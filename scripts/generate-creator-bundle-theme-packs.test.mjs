@@ -142,7 +142,7 @@ test("원장이 열어 준 팩만 packs·assets에 들어가고 hold 팩은 pend
     assert.equal(stats.heldPacks.length, held.length);
     assert.ok(held.every((pack) => typeof pack.reasonLabel === "string" && pack.reasonLabel.length > 0));
     assert.deepEqual(output.crowdPacks, []);
-    // 기존 정적 보류 14개는 그대로 앞에 남는다.
+    // 수신한 Cute Park·Dungeon을 제외한 정적 보류 12개는 그대로 앞에 남는다.
     assert.deepEqual(output.pendingPacks.slice(0, PENDING_PACKS.length), PENDING_PACKS);
     // 합계는 허용된 팩 기준으로 일치한다.
     assert.equal(output.totals.packs, output.packs.length);

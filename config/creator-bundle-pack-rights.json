@@ -842,17 +842,35 @@
         "cartoon-city-massive-pack"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/cartoon-city.html",
+          "sha256": "357f6afb847595929fe8078bb3c617ffb933d797598b111704ed4d7f9cc85424"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
-      ]
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다."
     },
     {
       "id": "cbv1-004-old-town-courtyards",
@@ -1022,17 +1040,35 @@
         "nature-megapack-extended"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/nature-extended.html",
+          "sha256": "38c4b4e9ae7d83397469649330c2d625e88662cc6643943fa60b74316c10a2e2"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
-      ]
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다."
     },
     {
       "id": "cbv1-031-poly-meadows",
@@ -1140,17 +1176,35 @@
         "farm-land"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/farmland",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/farmland.html",
+          "sha256": "b51a13a31701e9a46a6c43429f1641a83ec10785e1e66acbe8988880e130a462"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
-      ]
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다."
     },
     {
       "id": "cbv1-033-rocks-and-stone",
@@ -1667,17 +1721,35 @@
         "pirate-island"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/pirate-island",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/pirate-island.html",
+          "sha256": "86733cd6c360f3429e77ed6e2a900b697b95c840a09f6d04972a58cfa16620ec"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
-      ]
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다."
     },
     {
       "id": "cbv1-037-voxel-summer",
@@ -1733,17 +1805,35 @@
         "aztec-jungle"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 팩 페이지 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/aztec-jungle.html",
+          "sha256": "8071a1d1f70d43997406332847c395c8690dc1aa782867a5c1a7b93a67907428"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
-      ]
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다."
     },
     {
       "id": "cbv1-039-raft-on-the-desert",
@@ -2045,13 +2135,33 @@
       "catalogIds": [],
       "officialCatalogIds": [],
       "libraryPacks": [
-        "food-pack-small"
+        "food-pack-small",
+        "food-pack-full"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/food-pack",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/food-pack.html",
+          "sha256": "b797c8778096e5bb2295c6745bbc712572a4aaa50f86a14e6574d9ce0794bfe3"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
+        }
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다. 같은 공식 Food Pack의 전체판을 새로 수신한 food-pack-full 폴더도 이 팩에 귀속한다."
     },
     {
       "id": "cbv1-067-fences-and-walls",
@@ -2151,18 +2261,35 @@
         "cartoon-characters-1"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "팩 페이지 본문과 itch 메타데이터(Asset license: Creative Commons Zero)에 CC0 명시",
           "source": "docs/studio/creator-bundle-character-review-20261020.md",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/characters-1.html",
+          "sha256": "a526afa601f6407b6519292b96b5aaa5d96af088dab062b28464060c772f7c01"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
       ],
-      "note": "생성기·theme-packs에는 EmaceArt로 적혀 있었으나 공식 카탈로그와 라이브러리 기준 제작사는 RG Poly다(2026-10-22 정정). 번들 안 라이선스 문구는 없다."
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다.",
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
     },
     {
       "id": "cbv1-007-cartoon-characters-2",
@@ -2179,18 +2306,35 @@
         "cartoon-characters-2"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "팩 페이지 본문과 itch 메타데이터(Asset license: Creative Commons Zero)에 CC0 명시",
           "source": "docs/studio/creator-bundle-character-review-20261020.md",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/characters-2",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/characters-2.html",
+          "sha256": "7b598a683317bb5e374ffcef720f66f743995948928b9f9081c87a07532b1b5b"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
       ],
-      "note": "생성기·theme-packs에는 EmaceArt로 적혀 있었으나 공식 카탈로그와 라이브러리 기준 제작사는 RG Poly다(2026-10-22 정정). 번들 안 라이선스 문구는 없다."
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다.",
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
     },
     {
       "id": "cbv1-010-philipp-character",
@@ -2397,7 +2541,7 @@
     },
     {
       "id": "cbv1-008-cute-park-pack",
-      "group": "pending",
+      "group": "pack",
       "title": "Cute Park Pack",
       "creator": "RG Poly",
       "catalogIds": [
@@ -2410,9 +2554,7 @@
         "cute-park-pack"
       ],
       "licenseClass": "cc0-text-copied",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2427,9 +2569,23 @@
           "claim": "itch 메타데이터 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/cute-park-pack",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/cute-park.html",
+          "sha256": "283ea595ddc1c2916293ebfa752beb3d7c5e4cf5cb5b28ed90ca04e7d4e3b374"
         }
       ],
-      "note": "로컬 License.txt 본문이 Cute Dungeon Megapack 것을 복사한 파일이라(제목이 Dungeon) 귀속 재확인이 필요하다. itch 페이지 캡처 전까지 hold."
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다. 로컬 License.txt가 Dungeon 제목인 문제는 공식 Cute Park 페이지의 CC0 표기로 귀속을 대조했다. 로컬 라이선스 실물 해시를 재검증했고 원본·텍스처 파일의 존재를 확인했다.",
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
     },
     {
       "id": "cbv1-014-cute-graveyard",
@@ -2480,7 +2636,7 @@
     },
     {
       "id": "cbv1-024-cute-dungeon-megapack",
-      "group": "pending",
+      "group": "pack",
       "title": "Cute Dungeon Megapack",
       "creator": "RG Poly",
       "catalogIds": [
@@ -2493,9 +2649,7 @@
         "cute-dungeon-megapack"
       ],
       "licenseClass": "cc0-explicit",
-      "serve": "hold",
-      "holdReason": "pending-ingest",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2504,9 +2658,23 @@
             "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/License.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/cute-dungeon-megapack",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/cute-dungeon.html",
+          "sha256": "7f568a9970c35e2aac73f7fe8cf14968478d5622bcc9931c5ffb330be4856869"
         }
       ],
-      "note": "로컬 License.txt가 CC0를 명시해 요구 증빙은 충족했다. 다만 미수신(pending) 묶음이라 인제스션·CATALOG_PACKS 편입 전에는 serve를 allow로 바꿔도 아무것도 열리지 않는다. 편입하면서 group을 pack으로 옮긴 뒤 공개 여부는 소유자가 정한다."
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라, 공식 팩 페이지의 CC0 표시와 로그인 구매 목록 확인을 근거로 서비스 사용을 연다. 공개 HTML 발췌·해시는 docs/evidence/itch-licenses-20261028에 보관하고 비공개 구매 확인 기록은 local-private 참조로 분리한다. 로컬 CC0 License.txt 실물 해시와 gLTF/FBX·텍스처 파일의 존재를 확인했고, 수신 팩으로 편입한다.",
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
     },
     {
       "id": "cbv1-036-desert-canyon",

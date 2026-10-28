@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -41,6 +42,11 @@ const test = process.env.VITEST ? vitestTest : nodeTest;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT = resolve(REPO_ROOT, "scripts/sync-creator-bundle-render-rights.mjs");
 const COMMITTED_MANIFEST = resolve(REPO_ROOT, RENDER_PACK_DIR, RENDER_MANIFEST_FILE);
+const COMMITTED_DELIVERED_COUNT = 118;
+const COMMITTED_DRAFT_IDS = [
+  "cbv1-021-slavica-scene-render-001", "cbv1-028-nature-props-render-001",
+  "cbv1-042-kitchen-props-render-001", "cbv1-045-food-props-render-001",
+];
 
 const OFFICIAL = RENDER_OFFICIAL_IDS;
 const completeSlot = renderSlot;
@@ -68,6 +74,34 @@ test("공식 번호와 생성기 번호가 같은 원장 항목을 가리킨다 
   assert.ok(byGenerator, "생성기 번호로 못 찾았습니다.");
   assert.equal(byOfficial, byGenerator);
   assert.equal(byOfficial.title, "Restaurant Megapack");
+});
+
+test("공식·생성기 번호가 모두 빈 팩만 내부 원장 id로 정확히 찾는다", () => {
+  const ledger = loadPackRightsLedger();
+  const food = ledger.packs.find((entry) => entry.title === "Food Pack");
+  assert.ok(food);
+  assert.deepEqual(food.catalogIds, []);
+  assert.deepEqual(food.officialCatalogIds, []);
+  assert.equal(findPackRightsByCatalogId(ledger, food.id), food);
+  for (const input of [food.id.toUpperCase(), ` ${food.id}`, `${food.id} `, `${food.id}-extra`]) {
+    assert.equal(findPackRightsByCatalogId(ledger, input), null);
+  }
+  // 번호가 하나라도 있는 팩의 내부 id나, 번호 배열이 누락·손상된 항목에는 폴백하지 않는다.
+  for (const override of [
+    {catalogIds: ["other"]}, {officialCatalogIds: ["other"]},
+    {catalogIds: undefined}, {officialCatalogIds: null},
+  ]) {
+    assert.equal(findPackRightsByCatalogId({packs: [{...food, ...override}]}, food.id), null);
+  }
+});
+
+test("내부 id 폴백과 다른 항목의 번호가 충돌하거나 같은 내부 id가 중복되면 어느 쪽도 찾지 않는다", () => {
+  const ledger = loadPackRightsLedger();
+  const food = ledger.packs.find((entry) => entry.title === "Food Pack");
+  assert.ok(food);
+  assert.equal(findPackRightsByCatalogId({packs: [food, {...food}]}, food.id), null);
+  const canonicalOwner = {...food, id: "another-pack", catalogIds: [food.id]};
+  assert.equal(findPackRightsByCatalogId({packs: [food, canonicalOwner]}, food.id), null);
 });
 
 test("모르는 번호·빈 값·문자열이 아닌 값·프로토타입 키는 못 찾은 것으로 닫힌다", () => {
@@ -340,13 +374,45 @@ test("커밋된 렌더 매니페스트는 커밋된 원장과 어긋나지 않�
   assert.deepEqual(planned.problems, []);
   assert.equal(serializeRenderManifest(planned.stamped), readFileSync(COMMITTED_MANIFEST, "utf8"), "스탬프할 변경이 없다");
   assert.equal(planned.slots.length, manifest.assets.length);
+  assert.deepEqual(planned.summary, {
+    total: COMMITTED_DELIVERED_COUNT + COMMITTED_DRAFT_IDS.length,
+    draft: COMMITTED_DRAFT_IDS.length, delivered: COMMITTED_DELIVERED_COUNT, closed: 0,
+  });
+  const selection = JSON.parse(readFileSync(resolve(REPO_ROOT, "config/creator-bundle-render-selection.json"), "utf8"));
+  const sourceById = new Map(selection.assets.map((asset) => [asset.id, asset]));
+  assert.equal(sourceById.size, COMMITTED_DELIVERED_COUNT);
+  assert.deepEqual(planned.slots.filter((slot) => !slot.draft).map((slot) => slot.slotId).sort(), [...sourceById.keys()].sort());
   for (const slot of planned.slots) {
     assert.ok(slot.entry, `${slot.slotId}: 원장 항목으로 특정되지 않음`);
-    // 시드 사실: 4개 슬롯은 모두 바이트 없는 초안이고 그 팩들은 전부 hold다. 첫 렌더를 올리는 변경(팩을 여는 것은 소유자 결정)이 이 단언을 같은 변경에서 갱신한다.
-    assert.equal(slot.draft, true, slot.slotId);
-    assert.equal(slot.deliverable, false, slot.slotId);
+    const asset = slot.stamped;
+    if (slot.draft) {
+      assert.equal(slot.deliverable, false, slot.slotId);
+      assert.equal(asset.rights, undefined, slot.slotId);
+      assert.equal(asset.bytes, null, slot.slotId);
+      assert.equal(asset.sha256, null, slot.slotId);
+      continue;
+    }
+    assert.equal(slot.deliverable, true, slot.slotId);
+    assert.deepEqual(asset.rights, {ledgerPackId: slot.entry.id, ...packRightsProjection(slot.entry)}, slot.slotId);
+    assert.match(asset.sourceModelSha256, /^[a-f0-9]{64}$/u, slot.slotId);
+    const source = sourceById.get(slot.slotId);
+    assert.ok(source, `${slot.slotId}: 검수된 원본 선택 기록이 없음`);
+    assert.equal(asset.sourceModelSha256, source.sourceModelSha256, slot.slotId);
+    assert.equal(asset.derivedFromPack, source.catalogId, slot.slotId);
+    assert.equal(asset.path, `assets/${slot.slotId}/prop.webp`);
+    assert.equal(asset.previewPath, `assets/${slot.slotId}/thumbnail.webp`);
+    const image = readFileSync(resolve(REPO_ROOT, RENDER_PACK_DIR, asset.path));
+    assert.equal(image.length, asset.bytes, slot.slotId);
+    assert.equal(createHash("sha256").update(image).digest("hex"), asset.sha256, slot.slotId);
+    for (const path of [asset.path, asset.previewPath]) {
+      const bytes = readFileSync(resolve(REPO_ROOT, RENDER_PACK_DIR, path));
+      assert.equal(bytes.subarray(0, 4).toString("ascii"), "RIFF", path);
+      assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, path);
+      assert.equal(bytes.subarray(8, 12).toString("ascii"), "WEBP", path);
+    }
   }
-  assert.deepEqual(planned.slots.map((slot) => slot.entry.id).sort(), [
+  assert.deepEqual(planned.slots.filter((slot) => slot.draft).map((slot) => slot.slotId).sort(), COMMITTED_DRAFT_IDS);
+  assert.deepEqual(planned.slots.filter((slot) => slot.draft).map((slot) => slot.entry.id).sort(), [
     "cbv1-021-slavica-medieval-village",
     "cbv1-028-lumagrove-wonky-woods",
     "cbv1-042-restaurant-megapack",
@@ -354,12 +420,15 @@ test("커밋된 렌더 매니페스트는 커밋된 원장과 어긋나지 않�
   ]);
 });
 
-test("커밋된 공개 폴더에는 매니페스트 말고 서빙될 파일이 없다", () => {
+test("커밋된 공개 폴더에는 매니페스트와 전달 슬롯별 WebP 두 장만 있다", () => {
   const planned = planRenderManifestRights(loadPackRightsLedger(), JSON.parse(readFileSync(COMMITTED_MANIFEST, "utf8")));
   const listing = listRenderPackFiles(resolve(REPO_ROOT, RENDER_PACK_DIR), { mode: "auto" });
   assert.deepEqual(listing.irregular, []);
   assert.deepEqual(findRenderFileProblems(planned.slots, listing.files), []);
-  assert.ok(listing.files.includes(RENDER_MANIFEST_FILE));
+  const expected = [RENDER_MANIFEST_FILE, ...planned.slots.filter((slot) => slot.deliverable)
+    .flatMap((slot) => [slot.stamped.path, slot.stamped.previewPath])].sort();
+  assert.equal(expected.length, COMMITTED_DELIVERED_COUNT * 2 + 1);
+  assert.deepEqual([...listing.files].sort(), expected);
 });
 
 /* ── 파일 점검 ──────────────────────────────────────────────────────────────────────────── */
@@ -508,7 +577,7 @@ test("CLI --check는 커밋된 데이터에서 통과하고 아무것도 쓰지 
   const before = readFileSync(COMMITTED_MANIFEST, "utf8");
   const result = spawnSync(process.execPath, [SCRIPT, "--check", "--files", "fs"], { encoding: "utf8" });
   assert.equal(result.status, 0, result.stdout + result.stderr);
-  assert.match(result.stdout, /슬롯 4개 — 초안 4 · 전달 0 · 닫힘\(완성인데 미개방\) 0/u);
+  assert.ok(result.stdout.includes(`슬롯 ${COMMITTED_DELIVERED_COUNT + COMMITTED_DRAFT_IDS.length}개 — 초안 ${COMMITTED_DRAFT_IDS.length} · 전달 ${COMMITTED_DELIVERED_COUNT} · 닫힘(완성인데 미개방) 0`), result.stdout);
   assert.equal(readFileSync(COMMITTED_MANIFEST, "utf8"), before);
 });
 

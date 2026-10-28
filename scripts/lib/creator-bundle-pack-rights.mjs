@@ -415,12 +415,16 @@ export function findPackRights(ledger, def) {
  * 렌더 슬롯의 `derivedFromPack`은 공식 번호를 쓰고 그 번호는 항목 16개에서 생성기 번호와 다르므로, 번호 전체를 이어 만든
  * 키로 찾는 findPackRights로는 닿지 않는다. 번호가 문자열이 아니거나 비었거나, 서로 다른 항목 둘 이상이 같은 번호를 주장하면
  * (검증기가 거부하는 원장) 어느 쪽도 고르지 않고 null이다 — 호출자는 hold로 다뤄야 한다. 일치는 정확히 같은 문자열뿐이다.
+ * 생성기·공식 번호가 모두 빈 팩(Food Pack)은 내부 원장 id로만 정확히 찾는다. 번호가 있는 팩에는 이 폴백을 적용하지 않는다.
  */
 export function findPackRightsByCatalogId(ledger, catalogId) {
   if (typeof catalogId !== "string" || catalogId === "") return null;
   const entries = Array.isArray(ledger?.packs) ? ledger.packs : [];
   const owners = entries.filter((entry) => isRecord(entry)
-    && [entry.catalogIds, entry.officialCatalogIds].some((ids) => Array.isArray(ids) && ids.includes(catalogId)));
+    && ([entry.catalogIds, entry.officialCatalogIds].some((ids) => Array.isArray(ids) && ids.includes(catalogId))
+      || (Array.isArray(entry.catalogIds) && entry.catalogIds.length === 0
+        && Array.isArray(entry.officialCatalogIds) && entry.officialCatalogIds.length === 0
+        && entry.id === catalogId)));
   return owners.length === 1 ? owners[0] : null;
 }
 

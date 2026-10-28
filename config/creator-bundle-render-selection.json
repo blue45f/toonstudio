@@ -1,0 +1,1635 @@
+{
+  "schema": "toonstudio.creator-bundle-render-selection.v1",
+  "reviewedOn": "2026-10-28",
+  "assets": [
+    {
+      "id": "cbv1-008-bench-1-1",
+      "name": "벤치 · Bench 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Bench_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 벤치 ",
+      "sourceModelSha256": "fd595aaee76239496994f165d27387ee8b80d4734eff4d89b7c0de59d1294e18",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-bench-1-2",
+      "name": "벤치 · Bench 1 2",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Bench_1_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 벤치 ",
+      "sourceModelSha256": "73fc43424657701e4560694593a819f0eee9b2e5cf4dfa43efc16a6c28ea2181",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-tree-1-1",
+      "name": "나무 · Tree 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Tree_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 나무 ",
+      "sourceModelSha256": "dcf0d54806cb3f549e1b3ba01bb21a65c577ec019b2a3e221d92fc318501dae8",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-tree-1-2",
+      "name": "나무 · Tree 1 2",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Tree_1_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 나무 ",
+      "sourceModelSha256": "212d21db6d3bd8b2c89437399165e4f106a41e29601a0e2221c891c59512189c",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-tree-1-3",
+      "name": "나무 · Tree 1 3",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Tree_1_3.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 나무 ",
+      "sourceModelSha256": "9be0a741a43cf2511cd7983f952b1735566a0a3afca8811b43fbc278781c7753",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-tree-2-1",
+      "name": "나무 · Tree 2 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Tree_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 나무 ",
+      "sourceModelSha256": "50fdf2ca7fb505f6fa57b908de1b231d99ea7e46b098849ac978b5a41604b640",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-tree-2-2",
+      "name": "나무 · Tree 2 2",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Tree_2_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 나무 ",
+      "sourceModelSha256": "c8f2d4ef4805f990d102f93dcc842a170ac8c398327d48a598735a58e6e2c426",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-treecube-1-1",
+      "name": "네모 나무 · TreeCube 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/TreeCube_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 네모 나무 ",
+      "sourceModelSha256": "76ad34f7a96f415e345f2a879f0db89d64d7f96a395c4878b117bd5835321f30",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-bush-1-1",
+      "name": "관목 · Bush 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Bush_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 관목 ",
+      "sourceModelSha256": "b2ce23189ecea72ed8b721b366f344b7937ebdd608eae49c43808f7ec646fc74",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-bush-2-1",
+      "name": "관목 · Bush 2 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Bush_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 관목 ",
+      "sourceModelSha256": "d1f4d7e45a16aa7d2caf122afbe343abfbba5cf66fd5ffe01bff465e87d9e2e1",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-flower-1-1",
+      "name": "꽃 · Flower 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Flower_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 꽃 ",
+      "sourceModelSha256": "7745b2d14b444ad02f7ee8785526b5cb2a6b6f5caa43c272990488ddc2fb9b2c",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-flower-1-2",
+      "name": "꽃 · Flower 1 2",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Flower_1_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 꽃 ",
+      "sourceModelSha256": "8db7378d31b5f25b068b228ee2f1647e290fa1165bc39c5b62223a0ba7ec0a9b",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-flower-1-3",
+      "name": "꽃 · Flower 1 3",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Flower_1_3.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 꽃 ",
+      "sourceModelSha256": "0d8e2ca86d55a8959e470e70f1aab4b390804e1659ebfc240795f5bc22d73df5",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-flower-1-4",
+      "name": "꽃 · Flower 1 4",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Flower_1_4.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 꽃 ",
+      "sourceModelSha256": "73f5964778aa76a667f00c526cfcf0c00d8fbe43e99118a6620fa7f775bfd73c",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-flower-1-5",
+      "name": "꽃 · Flower 1 5",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Flower_1_5.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 꽃 ",
+      "sourceModelSha256": "c34e4fd38599c24a89c261e867c3d1c14cdb2bc5c7fe5c81e840f56d0dde0203",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-streetlamp-1-1",
+      "name": "가로등 · StreetLamp 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/StreetLamp_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 가로등 ",
+      "sourceModelSha256": "ebc6a9024f571ad9b665283a3b3a18e7a6d5362744c68c654afef7e3a90befef",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-streetlamp-1-2",
+      "name": "가로등 · StreetLamp 1 2",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/StreetLamp_1_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 가로등 ",
+      "sourceModelSha256": "762c7c8308bb6c8e91dd7a138cb4eddc7433d43a2dfa76bb2552bb20fbbec76a",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-trashbin-1-1",
+      "name": "휴지통 · Trashbin 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Trashbin_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 휴지통 ",
+      "sourceModelSha256": "efec7a254f893a8d82dd6d15086f00cf6901616cabe9837561d65d834dc39dc5",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-trashbin-1-2",
+      "name": "휴지통 · Trashbin 1 2",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Trashbin_1_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 휴지통 ",
+      "sourceModelSha256": "909988b9ea9301de6ba33c9207e24db7c11c4bef799ce8c2de31f808262a77d9",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-lili-1-1",
+      "name": "수련 잎 · Lili 1 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Lili_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 수련 잎 ",
+      "sourceModelSha256": "4a4498deacfcf6fc7c1e27971dfdb2f1122c4d36d4d6b01ca7a80d43825aa6e3",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-lili-2-1",
+      "name": "수련 잎 · Lili 2 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/Lili_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 수련 잎 ",
+      "sourceModelSha256": "083cf21f175115fe0cd921e9b702c8c99c6b4f4d9db675dadb3e9db5368412cb",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-grasshill-1",
+      "name": "잔디 언덕 · GrassHill 1",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/GrassHill_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 잔디 언덕 ",
+      "sourceModelSha256": "ad5adf656e57bfee7f5a53ceb858393d53c20a2e0850e2fd31bad39f6b44e485",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-gateleft",
+      "name": "철문 · GateLeft",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/GateLeft.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 철문 ",
+      "sourceModelSha256": "45ec52e7de686a7d081b89d058abbfe407186f4ec9ceeac602c95c6ff76d3915",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-008-gateright",
+      "name": "철문 · GateRight",
+      "packId": "cbv1-008-cute-park-pack",
+      "catalogId": "cbv1-008-cute-park-pack",
+      "source": "01-city/cute-park-pack/models/mixed/gLTF/GateRight.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "selectionTerm": "park bench tree flower 철문 ",
+      "sourceModelSha256": "cc845284f389b38715b908ffb66e721048768d546c8d8188e82d0bb094eba3d7",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-chair-1",
+      "name": "의자 · Chair 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Chair_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 의자 ",
+      "sourceModelSha256": "576db609c1aecfc28e5eafc536b766d2e3efa1ea5d55e639a0fcd9b7125c4216",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-stool-1",
+      "name": "등받이 없는 의자 · Stool 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Stool_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 등받이 없는 의자 ",
+      "sourceModelSha256": "80779adf56d8025271d50d89d0b55ab2da62342f0a62871459abb754c791195c",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-table-1",
+      "name": "탁자 · Table 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Table_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 탁자 ",
+      "sourceModelSha256": "be5614aa91943edcb1e3437f51c390df5ee1b7c889bdb042e93a2c46b42b830e",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-table-2-1",
+      "name": "탁자 · Table 2 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Table_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 탁자 ",
+      "sourceModelSha256": "9e3ebc94505613a663a35272e1bda21d504c0e396d6eb10c439e6a814e234649",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-table-3",
+      "name": "탁자 · Table 3",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Table_3.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 탁자 ",
+      "sourceModelSha256": "c810f9cee6e4694e217af636166ec9250310f84e06e381e964acb408c1fa6694",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-shelf-long-1",
+      "name": "긴 선반 · Shelf Long 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Shelf_Long_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 긴 선반 ",
+      "sourceModelSha256": "32823a2a3c285a8d24f8690ec361e39442a25071bc5edfe622e86f5d02db01d8",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-shelf-long-2",
+      "name": "긴 선반 · Shelf Long 2",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Shelf_Long_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 긴 선반 ",
+      "sourceModelSha256": "5dcadc8d03afd6549aad3b9e68eeda08ccc43b8121c878a30fd15e23f782aa80",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-wardrobe-1",
+      "name": "책장 · Wardrobe 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Wardrobe_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 책장 ",
+      "sourceModelSha256": "b8e4d737160e8c419db86db1fb4cca38f33927427ff432199a1ea719a9402b1d",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-wardrobe-2",
+      "name": "책장 · Wardrobe 2",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/Wardrobe_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 책장 ",
+      "sourceModelSha256": "d5643c9da55fb133697a28c53213f4f6f1094649ad7e578c940283ea01721eab",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-hanging-shelf-1",
+      "name": "벽 선반 · hanging shelf 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Furniture/hanging_shelf_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 벽 선반 ",
+      "sourceModelSha256": "7343413286004b823fe964bce1981935f25af0658ffd9a05a1360a466d7969c6",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-book-1-1",
+      "name": "책 · Book 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Book_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 책 ",
+      "sourceModelSha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-book-2-1",
+      "name": "책 · Book 2 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Book_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 책 ",
+      "sourceModelSha256": "2c43966f76c3e552e60647118878f690288938339324be0d92954331306a031a",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-book-3-1",
+      "name": "책 · Book 3 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Book_3_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 책 ",
+      "sourceModelSha256": "d5ff52f5d4793967c5bdfc34748f530ad72b8649794c735ab76c505ac41945c4",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-book-6",
+      "name": "책 · Book 6",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Book_6.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 책 ",
+      "sourceModelSha256": "6f8b7b50cf7859b514580b9ff1033d71d5ad782834e4814d2c3b905421444ac8",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-bowl-1-1",
+      "name": "그릇 · Bowl 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Bowl_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 그릇 ",
+      "sourceModelSha256": "396d3d097b97123b27ff4c9c5c4030d1f2e24c1110edd3467283032305b9308e",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-bowl-2-1",
+      "name": "그릇 · Bowl 2 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Bowl_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 그릇 ",
+      "sourceModelSha256": "6dd985178f85e2002405a7e8a4b027d5c42d035de0030a5f33f4999aa0ffc137",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-candle-1",
+      "name": "양초 · Candle 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Candle_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 양초 ",
+      "sourceModelSha256": "daa74b993fc40ca98c9b3498a64c84730d9c927938167b898d2850844de1eedc",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-candle-2",
+      "name": "양초 · Candle 2",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Candle_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 양초 ",
+      "sourceModelSha256": "9a7e8c05b29da6504991de9a351b8d68a80241cdb253da54bf2d1c1e536d3049",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-candleholder-1-1",
+      "name": "촛대 · CandleHolder 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/CandleHolder_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 촛대 ",
+      "sourceModelSha256": "62967281c0ff35d4bca2dbff6165a8717e5ea64dd233c254987b75498196cf3e",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-chest-1",
+      "name": "보물 상자 · Chest 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Chest_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 보물 상자 ",
+      "sourceModelSha256": "839b382c0a103e8c4e8ba02bf58f92168e15f7756bfbc6be315bcb93f693e677",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-chest-2",
+      "name": "보물 상자 · Chest 2",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Chest_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 보물 상자 ",
+      "sourceModelSha256": "5e401d4fcad849ead42c07930fe8320325ef7e3dcf7ecf4e47b4d439672fa664",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-crystal-1",
+      "name": "크리스털 · Crystal 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Crystal_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 크리스털 ",
+      "sourceModelSha256": "05a0975a7b63edbc4833c706b08b25b04b18f00969bf81294c4879377fe50d1b",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-crystal-2",
+      "name": "크리스털 · Crystal 2",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Crystal_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 크리스털 ",
+      "sourceModelSha256": "301bdd4116475a9709fd3126c8b44fbe5e89364006a56498208f27e27b837da5",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-cup-1-1",
+      "name": "잔 · Cup 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Cup_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 잔 ",
+      "sourceModelSha256": "60aa14b75e67826e461e22eb17a826933e98ad8053583a7afe1276d0b3f8cdc2",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-cup-2-1",
+      "name": "잔 · Cup 2 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Cup_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 잔 ",
+      "sourceModelSha256": "b465ca6fb18791d3f85162c51fba3940f80983723074518a1401d13e4f6061b1",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-potion-1-1",
+      "name": "물약 병 · Potion 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Potion_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 물약 병 ",
+      "sourceModelSha256": "5184a057f739ed8a1d2b17669673432b38854b633c6e188ce741d738ca910d13",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-potion-2-1",
+      "name": "물약 병 · Potion 2 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Potion_2_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 물약 병 ",
+      "sourceModelSha256": "f129740e34de196711076d792c8d8ee6f68a9c0d8fafd1074a3316f6d999ebd1",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-potion-3-1",
+      "name": "물약 병 · Potion 3 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Potion_3_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 물약 병 ",
+      "sourceModelSha256": "d0a5d863fb3466ffa48b36dee3d4c77cb3456af22210129d83ab0accdc2e6a40",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-barrel-1-1",
+      "name": "나무 통 · Barrel 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Barrel_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 나무 통 ",
+      "sourceModelSha256": "6ff3fd331b741ceb1a9ed08a012fbfb66f675ce12b25cc6548a7248841370cc8",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-barrel-2",
+      "name": "나무 통 · Barrel 2",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Barrel_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 나무 통 ",
+      "sourceModelSha256": "91879b7666d6008367fdf1be7d7bba47741237646397077616b6917f89e1dd73",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-treasure-1",
+      "name": "보물 더미 · Treasure 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Treasure_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 보물 더미 ",
+      "sourceModelSha256": "c65ab4dcad94215801160f74fb941ddc047509cd2f86e20890dae628ab76ea07",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-024-keys-1-1",
+      "name": "열쇠 묶음 · Keys 1 1",
+      "packId": "cbv1-024-cute-dungeon-megapack",
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "source": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF/Other/Keys_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+      "selectionTerm": "fantasy furniture book potion 열쇠 묶음 ",
+      "sourceModelSha256": "2791c56e10ed86962e4f6d01aaf854eecd0c6b29562370a6d8cc6e7b1ec30511",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-apple-1-a",
+      "name": "사과 · Apple 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Apple_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 사과 ",
+      "sourceModelSha256": "cd2795e00a944164880b28582a9e5bc5e862045364c1e118919462b3a0fa9ec0",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-apple-2-a",
+      "name": "사과 · Apple 2 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Apple_2_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 사과 ",
+      "sourceModelSha256": "21f5b9e2106531ac1195b098f6e9541f8dda9738e3a4f7a64b986adf0c4eab8d",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-bread-1-a",
+      "name": "빵 · Bread 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Bread_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 빵 ",
+      "sourceModelSha256": "280bbb9ec073b8400d6156de933b2dabeb586a9cf36a36497d0ba55fd76cbaf1",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-breaadslice-1-a",
+      "name": "빵 조각 · BreaadSlice 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/BreaadSlice_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 빵 조각 ",
+      "sourceModelSha256": "90e0654729cd1be14450ae33aff6b0fe1991177fefb3b97b6bc3dff6b96fda1d",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-cheese-1",
+      "name": "치즈 · Cheese 1",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Cheese_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 치즈 ",
+      "sourceModelSha256": "4896f232bdad4b75e4308585c33339644eadfba2a2d17133e2e62acabb5dc270",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-cheese-2",
+      "name": "치즈 · Cheese 2",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Cheese_2.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 치즈 ",
+      "sourceModelSha256": "5159f40c4ba4b6d91d41d0cd45e9b19ccf7a888ac6c823a9dc40fce898c72e81",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-chickenroasted-a",
+      "name": "통닭 구이 · ChickenRoasted A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/ChickenRoasted_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 통닭 구이 ",
+      "sourceModelSha256": "9cdbbc94feb5f96d483b71a333b97d8d1603c10622ee0757d19f65cb46b3bcc1",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-choppingboard-1-a",
+      "name": "도마 · ChoppingBoard 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/ChoppingBoard_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 도마 ",
+      "sourceModelSha256": "c1533602481368f195d42fb260853f67cb9f1ca15b8cf0449207f44ca53b6924",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-cup-1-a",
+      "name": "잔 · Cup 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Cup_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 잔 ",
+      "sourceModelSha256": "798e2bcca85f6cb11208b5d8080a0839a020903a927a92f557a5a2cfe3df02ed",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-dish-1-a",
+      "name": "요리 접시 · Dish 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Dish_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 요리 접시 ",
+      "sourceModelSha256": "c3d48fa5e759502952be47f7bb6cb3ec334a92e639762e002e45b5f0502d388b",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-fish-1-a",
+      "name": "물고기 · Fish 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Fish_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 물고기 ",
+      "sourceModelSha256": "4705c186604e31d3c65aa71bb9860b1a12f5cc0558b47aa48d80464c71beb5fd",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-garlic-1",
+      "name": "마늘 · Garlic 1",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Garlic_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 마늘 ",
+      "sourceModelSha256": "d0bc91871b7ea50cd4fac12a119ae7a95a5170fd0b011670078f46f795159087",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-garlic-braid",
+      "name": "마늘 묶음 · Garlic Braid",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Garlic_Braid.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 마늘 묶음 ",
+      "sourceModelSha256": "620979251f6ad1a9f58aaaf8e959418028b49315099b843081c3aee276601605",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-grainbag-1-a",
+      "name": "곡물 자루 · GrainBag 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/GrainBag_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 곡물 자루 ",
+      "sourceModelSha256": "b293f2d77ee4ab904a4d1aac4948e0b17ea6dba04c9e1dbcf0bcae74a3da1111",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-meatslice-1-a",
+      "name": "고기 조각 · MeatSlice 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/MeatSlice_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 고기 조각 ",
+      "sourceModelSha256": "f62a5fe9ebe8c1e9cab1e82302ea75db8802654f4a4329fcf2a7392fbb632d1c",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-meat-1-a",
+      "name": "고기 · Meat 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Meat_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 고기 ",
+      "sourceModelSha256": "327902c33c90250279a5dca1792917faee1b200b7aa8ddc05413a3ba15fbb2a2",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-mug-1-a",
+      "name": "머그잔 · Mug 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Mug_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 머그잔 ",
+      "sourceModelSha256": "cae38920b5f232f0e3dc58e65f8401b43f5b8e44ba59c11edc3c6498401a2f72",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-plate-1-a",
+      "name": "접시 · Plate 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Plate_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 접시 ",
+      "sourceModelSha256": "0727cef3f0d7d6be3866f9c25c5013c0ebc5e61f28ecf379fd16058119f96556",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-pot-1-1-a",
+      "name": "냄비 · Pot 1 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Pot_1_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 냄비 ",
+      "sourceModelSha256": "35abda853d85d9ef398ea246529261856c85a38087d0762eceb0a0dba18d9cbd",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-potato",
+      "name": "감자 · Potato",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Potato.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 감자 ",
+      "sourceModelSha256": "5601189281b4d8c73dcb7b9449eab5f4c89be454d290ffaac367dd259e7c2812",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-rollingpin-a",
+      "name": "밀대 · RollingPin A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/RollingPin_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 밀대 ",
+      "sourceModelSha256": "bc51e40c190ac913792ac9dec356a0f2a9e6ce075f4e4e1d82ff8d813f64a62d",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-sausage-1-a",
+      "name": "소시지 · Sausage 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Sausage_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 소시지 ",
+      "sourceModelSha256": "4d63a287822ad863d74c53ced8641f85ef09ea650969a8f4436ed0e674b22437",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-spoon-1-a",
+      "name": "숟가락 · Spoon 1 A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Spoon_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 숟가락 ",
+      "sourceModelSha256": "f0f3b4b86b45deeb39388e6272cc756888c81b6679c52746f64e522cf691bd4a",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "rg-poly-food-fork-a",
+      "name": "포크 · Fork A",
+      "packId": "rg-poly-food-pack",
+      "catalogId": "rg-poly-food-pack",
+      "source": "30-props/food-pack-full/models/mixed/GLB/Fork_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/food-pack",
+      "selectionTerm": "food kitchen cafe 포크 ",
+      "sourceModelSha256": "41fc8d16d56c8f33c6e0ec4d3fd313b9fa436b91323170dc0001effd8181248d",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-001-basketball",
+      "name": "농구공 · Basketball",
+      "packId": "cbv1-001-cartoon-city-massive-pack",
+      "catalogId": "cbv1-001-cartoon-city-massive-pack",
+      "source": "01-city/cartoon-city-massive-pack/engine/godot/Cartoon City Massive Pack/Models/Basketball/Basketball.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+      "selectionTerm": "city office street 농구공 ",
+      "sourceModelSha256": "d2227ed901e6a19b768ac404016ff10696a5be849e2b2cfc9600400c24bd13c5",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-001-coffeemachine-1-a",
+      "name": "커피머신 · CoffeeMachine 1 A",
+      "packId": "cbv1-001-cartoon-city-massive-pack",
+      "catalogId": "cbv1-001-cartoon-city-massive-pack",
+      "source": "01-city/cartoon-city-massive-pack/models/mixed/gLTF/Food Props/CoffeeMachine_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+      "selectionTerm": "city office street 커피머신 ",
+      "sourceModelSha256": "53a9a50b5566afd11f9b374c73b9ad57e2420f6594bd580ad5c47a46bb5f7f96",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-001-chair-1-a",
+      "name": "의자 · Chair 1 A",
+      "packId": "cbv1-001-cartoon-city-massive-pack",
+      "catalogId": "cbv1-001-cartoon-city-massive-pack",
+      "source": "01-city/cartoon-city-massive-pack/models/mixed/gLTF/Food Props/Chair_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+      "selectionTerm": "city office street 의자 ",
+      "sourceModelSha256": "6fe24bda7013121b470b5e9bfe6eb514ae35fb5da02c8bec3aae14546e1ec9a3",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-001-trashbin-1-a",
+      "name": "휴지통 · Trashbin 1 A",
+      "packId": "cbv1-001-cartoon-city-massive-pack",
+      "catalogId": "cbv1-001-cartoon-city-massive-pack",
+      "source": "01-city/cartoon-city-massive-pack/models/mixed/gLTF/Nature and Park/Trashbin_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+      "selectionTerm": "city office street 휴지통 ",
+      "sourceModelSha256": "d375b8b9d571897aaa90e39095954bfb9ad592b489018145f788a9e846e791a5",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-001-postbox-1-a",
+      "name": "우편함 · PostBox 1 A",
+      "packId": "cbv1-001-cartoon-city-massive-pack",
+      "catalogId": "cbv1-001-cartoon-city-massive-pack",
+      "source": "01-city/cartoon-city-massive-pack/models/mixed/gLTF/Street Props/PostBox_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack1",
+      "selectionTerm": "city office street 우편함 ",
+      "sourceModelSha256": "5c7e7534cdd89bde3a3a324e70971995b6bc86520e63a33467abd71ca1e604d2",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-030-carrot-a",
+      "name": "당근 · Carrot A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Farm Plants/Carrot_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock 당근 식물 자연 나무",
+      "sourceModelSha256": "80302818ce9ac4cc2603b83900cfc04604f11b539c287bf242895639823cc29f",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-030-hay-1-a",
+      "name": "건초 더미 · Hay 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Farm Plants/Hay_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock 건초 더미 식물 자연 나무",
+      "sourceModelSha256": "693ea0621b5b733bb5491aaa4d7e996cd919154b91076c95f028629b8457ca59",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-030-rock-10-1-a",
+      "name": "바위 · Rock 10 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Rocks/Rock_10_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock 바위 식물 자연 나무",
+      "sourceModelSha256": "93b401b940ae8f28d16ff2b563dbd72d3cbe6b4858d29dfa16786986219468da",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-030-rock-20-1-a",
+      "name": "바위 · Rock 20 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Rocks/Rock_20_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock 바위 식물 자연 나무",
+      "sourceModelSha256": "197eacc974ddbc7199aeb3060fa81bcdf1f23566b88c3bf9106f6577b8cab3f3",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-030-flower-1-1-a",
+      "name": "꽃 · Flower 1 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Flowers/Flower_1_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock 꽃 식물 자연 나무",
+      "sourceModelSha256": "4146d598b1e712e0321ecf826bd8c165bfef6738d05c886092b172825da089e7",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-030-mushroom-1-1-a",
+      "name": "버섯 · Mushroom 1 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Mushrooms/Mushroom_1_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock 버섯 식물 자연 나무",
+      "sourceModelSha256": "8df8ca5904bc9deff00d9ee00a894bebb336e3ec53102b0d39963fe988beafa9",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-barn-1-a",
+      "name": "헛간 · SM Barn 1 A",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_Barn_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 헛간 ",
+      "sourceModelSha256": "870faad50bd11e697e94d0de6627c051f733331ee19e43cf4603f9c11d2f9a08",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-chicken-a",
+      "name": "닭 · SM Chicken A",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_Chicken_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 닭 ",
+      "sourceModelSha256": "4640bd5dca3faeab580dafc1f2689aaea0e75c96bc78b7db8a2a03bba1d6932b",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-cabbage",
+      "name": "양배추 · SM Cabbage",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_Cabbage.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 양배추 ",
+      "sourceModelSha256": "7670713259aa7057414ab37cf793cf9e8125d0b073bc9414987e24fa8795b062",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-cornplant",
+      "name": "옥수수 · SM CornPlant",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_CornPlant.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 옥수수 ",
+      "sourceModelSha256": "74a214b595aaf54e847a89d059bc44ad3c1003710a263219326c244165e532df",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-carrot-1",
+      "name": "당근 · SM Carrot 1",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_Carrot_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 당근 ",
+      "sourceModelSha256": "f4503e14746c208bc14858089e97d8de046696e32554a4d0fcd433c068a53e18",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-watertank-2-a",
+      "name": "급수탑 · SM WaterTank 2 A",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_WaterTank_2_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 급수탑 ",
+      "sourceModelSha256": "370bb94c22340e1a4d9e3402b783d395177ee98aac9f683bf6d55af1c5d748e5",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Metalic_1_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        },
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-056-sm-hay-1",
+      "name": "건초 더미 · SM Hay 1",
+      "packId": "cbv1-056-farm-land",
+      "catalogId": "cbv1-056-farm-land",
+      "source": "03-nature/farm-land/models/mixed/gLTF for Godot/SM_Hay_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/farmland",
+      "selectionTerm": "farm countryside animal 건초 더미 ",
+      "sourceModelSha256": "b7b40dc41c53555908af16ffee20f91bd6cf389592f7ae9e09e1b43cb1f15989",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Farm",
+          "source": "03-nature/farm-land/engine/godot/Textures/farm_atlas.png",
+          "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-035-sm-treasure-chest-1-a",
+      "name": "보물 상자 · SM Treasure Chest 1 A",
+      "packId": "cbv1-035-pirate-island",
+      "catalogId": "cbv1-035-pirate-island",
+      "source": "03-nature/pirate-island/engine/godot/PirateIsland/Models/Treasure/SM_Treasure_Chest_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "selectionTerm": "pirate tropical island 보물 상자 ",
+      "sourceModelSha256": "b62dadda1c8930785f11d6e3e227edb65b98abfbc657aaaf653c19058e1a40b9",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        },
+        {
+          "materialName": "M_Atlas_Met_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-035-sm-palm-10-a",
+      "name": "야자수 · SM Palm 10 A",
+      "packId": "cbv1-035-pirate-island",
+      "catalogId": "cbv1-035-pirate-island",
+      "source": "03-nature/pirate-island/engine/godot/PirateIsland/Models/Nature/SM_Palm_10_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "selectionTerm": "pirate tropical island 야자수 ",
+      "sourceModelSha256": "9ad669efc72ea6d19d55a0a4c275931fa33e96bc2371a0617384ddd50792029d",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        },
+        {
+          "materialName": "M_Atlas_2_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        },
+        {
+          "materialName": "M_Atlas_3_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-035-sm-boat-a",
+      "name": "보트 · SM Boat A",
+      "packId": "cbv1-035-pirate-island",
+      "catalogId": "cbv1-035-pirate-island",
+      "source": "03-nature/pirate-island/engine/godot/PirateIsland/Models/Ships/SM_Boat_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "selectionTerm": "pirate tropical island 보트 ",
+      "sourceModelSha256": "f8e070e825fc786ebb26078cb285ae40ddd7c6fd7da4835cbd6daeedaea9bf6e",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-035-sm-anchor-a",
+      "name": "닻 · SM Anchor A",
+      "packId": "cbv1-035-pirate-island",
+      "catalogId": "cbv1-035-pirate-island",
+      "source": "03-nature/pirate-island/engine/godot/PirateIsland/Models/Ships/SM_Anchor_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "selectionTerm": "pirate tropical island 닻 ",
+      "sourceModelSha256": "01354496983cd839e472e72b088e455fe884de160a8d58c69e699cf8fa591b46",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_Met_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        },
+        {
+          "materialName": "M_Atlas_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-035-sm-barrel-1-a",
+      "name": "나무 통 · SM Barrel 1 A",
+      "packId": "cbv1-035-pirate-island",
+      "catalogId": "cbv1-035-pirate-island",
+      "source": "03-nature/pirate-island/engine/godot/PirateIsland/Models/Props/SM_Barrel_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "selectionTerm": "pirate tropical island 나무 통 ",
+      "sourceModelSha256": "daddd7cbeae6a204a3743fc582c524ff689404b84d2155eb958f63ecbba9942a",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        },
+        {
+          "materialName": "M_Atlas_Met_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-035-sm-bottle-a",
+      "name": "병 · SM Bottle A",
+      "packId": "cbv1-035-pirate-island",
+      "catalogId": "cbv1-035-pirate-island",
+      "source": "03-nature/pirate-island/engine/godot/PirateIsland/Models/Treasure/SM_Bottle_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/pirate-island",
+      "selectionTerm": "pirate tropical island 병 ",
+      "sourceModelSha256": "db9eab6a4e0c7bbb20c9ddda32240534921df3414b747ea1a8a2f89f8542e73d",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        },
+        {
+          "materialName": "M_Atlas_Met_1_TI",
+          "source": "03-nature/pirate-island/engine/godot/PirateIsland/Textures/T_Atlas_TI.png",
+          "sha256": "8c1db094bf1aac95c626aca849207c9d53b5cc704d71714a8cfe91ad5c7cd86f"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-aztec-monument-1-v1",
+      "name": "고대 유적 · Aztec Monument 1 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Buildings/Aztec Monument 1_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 고대 유적 ",
+      "sourceModelSha256": "fdd7ee1fe244bcb0826485ad5f8d6a9471adc7c047aab006c6dedc2f0df816d5",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-building-ruins-1-v1",
+      "name": "유적 벽 · Building Ruins 1 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Buildings/Building Ruins_1_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 유적 벽 ",
+      "sourceModelSha256": "8627bdf6500ec909071aaaa75120a15d7cc9990900b5a0f5d48afdb76c291cd6",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-gate-1-v1",
+      "name": "유적 아치문 · Gate 1 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Buildings/Gate_1_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 유적 아치문 ",
+      "sourceModelSha256": "641b8923e58e6563c1b02794587ffab3e5f8150e44d1cd4b21e17b96f221585b",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-tree-witchered-10-v1",
+      "name": "나무 · Tree Witchered 10 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Plants/Tree Witchered_10_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 나무 ",
+      "sourceModelSha256": "03b29c83e67f46a29f481379cf957df64d8d4bd1dbf4d55041a21623f8d6d13c",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-palm-tree-1-1-v1",
+      "name": "나무 · Palm Tree 1 1 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Plants/Palm Tree_1_1_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 나무 ",
+      "sourceModelSha256": "060cb42c54e343dd481e1f7ec4c8dd8d6e550e94d71f58c41389d19a2ac7a428",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-rock-10-v1",
+      "name": "바위 · Rock 10 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Rocks & Stones/Rock_10_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 바위 ",
+      "sourceModelSha256": "5a886d11fe57d609bd388ac930716ec0d174bbf7e116db62a16eb3af3bb50e8c",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-statue-1-v1",
+      "name": "유적 석상 · Statue 1 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Other/Statue_1_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 유적 석상 ",
+      "sourceModelSha256": "4b680dc43d03576beabd58ca7a2d6bb601dafebadbd921e4159994ae6b13431b",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        },
+        {
+          "materialName": "M_Metalic_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-038-plant-10-v1",
+      "name": "식물 · Plant 10 V1",
+      "packId": "cbv1-038-aztec-jungle",
+      "catalogId": "cbv1-038-aztec-jungle",
+      "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Models/V1_Original/Plants/Plant_10_V1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/aztec-jungle-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "aztec jungle ruins 식물 ",
+      "sourceModelSha256": "d2fa69800a82515096e494d73ff1d987df7ec9e5882746d0d727399b104dd2e5",
+      "visualReviewed": true,
+      "textureBindings": [
+        {
+          "materialName": "M_Atlas_1",
+          "source": "03-nature/aztec-jungle/engine/godot/AztecJungle/Textures/T_Atlas_Gradient_1.png",
+          "sha256": "f8c8c43a69d7a24079131da75ef140fe4f103c1254d98a584648b67a36a0ebfb"
+        }
+      ],
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-003-character-1-1-1",
+      "name": "캐릭터 의상 참고 · Character 1 1 1",
+      "packId": "cbv1-003-cartoon-characters-1",
+      "catalogId": "cbv1-003-cartoon-characters-1",
+      "source": "10-characters/cartoon-characters-1/models/mixed/gLTF/Characters/Character_1_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "selectionTerm": "character pose reference 캐릭터 의상 참고 ",
+      "sourceModelSha256": "df7100aeb4a9379c98091e2fd07eda2c8863ac7db4ffd31d041d9258e948f1c3",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-003-character-2-1-1",
+      "name": "캐릭터 의상 참고 · Character 2 1 1",
+      "packId": "cbv1-003-cartoon-characters-1",
+      "catalogId": "cbv1-003-cartoon-characters-1",
+      "source": "10-characters/cartoon-characters-1/models/mixed/gLTF/Characters/Character_2_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "selectionTerm": "character pose reference 캐릭터 의상 참고 ",
+      "sourceModelSha256": "9cd97644ac8c70f746b54fc7ebfe8f5e61b258ffb13a9d5f860a66d8aabfe943",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-003-character-3-1-1",
+      "name": "캐릭터 의상 참고 · Character 3 1 1",
+      "packId": "cbv1-003-cartoon-characters-1",
+      "catalogId": "cbv1-003-cartoon-characters-1",
+      "source": "10-characters/cartoon-characters-1/models/mixed/gLTF/Characters/Character_3_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "selectionTerm": "character pose reference 캐릭터 의상 참고 ",
+      "sourceModelSha256": "2be8d7f29c7964f706d481b6cedef6ce297ab6875186e43653a767a07e16e9dc",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-003-character-4-1-1",
+      "name": "캐릭터 의상 참고 · Character 4 1 1",
+      "packId": "cbv1-003-cartoon-characters-1",
+      "catalogId": "cbv1-003-cartoon-characters-1",
+      "source": "10-characters/cartoon-characters-1/models/mixed/gLTF/Characters/Character_4_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "selectionTerm": "character pose reference 캐릭터 의상 참고 ",
+      "sourceModelSha256": "251d53d2d2ae8facbf28cb5dc0cf9a80459ca700bb851318054d0eae04f2644a",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-003-character-5-1-1",
+      "name": "캐릭터 의상 참고 · Character 5 1 1",
+      "packId": "cbv1-003-cartoon-characters-1",
+      "catalogId": "cbv1-003-cartoon-characters-1",
+      "source": "10-characters/cartoon-characters-1/models/mixed/gLTF/Characters/Character_5_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "selectionTerm": "character pose reference 캐릭터 의상 참고 ",
+      "sourceModelSha256": "02ee39e2cc76b9d2c4e4dda88f15ffb1de95036624def750b716c19aa3dc37a7",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    },
+    {
+      "id": "cbv1-003-character-6-1-1",
+      "name": "캐릭터 의상 참고 · Character 6 1 1",
+      "packId": "cbv1-003-cartoon-characters-1",
+      "catalogId": "cbv1-003-cartoon-characters-1",
+      "source": "10-characters/cartoon-characters-1/models/mixed/gLTF/Characters/Character_6_1_1.glb",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-city-massive-pack-characters",
+      "selectionTerm": "character pose reference 캐릭터 의상 참고 ",
+      "sourceModelSha256": "2794c53db40b9c0f836f080b944338ce840d300ec7eb0dedae270a54055a04ba",
+      "visualReviewed": true,
+      "reviewMethod": "contact-sheet-and-alpha-bounds-20261028"
+    }
+  ],
+  "rejected": [
+    {
+      "id": "cbv1-030-bush-1-1-a",
+      "name": "자연 소품 · Bush 1 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Other/Bush_1_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock",
+      "sourceModelSha256": "1e4ec80a1bbca0623e0fdfb4ebd43989681a14e8dc639c5a7f25151c40306589",
+      "visualReviewed": false,
+      "reviewReason": "렌더 경계가 과도하게 작아 소품으로 식별하기 어려움"
+    },
+    {
+      "id": "cbv1-030-grass-1-a",
+      "name": "자연 소품 · Grass 1 A",
+      "packId": "cbv1-030-nature-megapack-extended",
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "source": "03-nature/nature-megapack-extended/models/mixed/low-poly-nature-extended-2/Low Poly Nature Pack - Extended/Low Poly Nature/gLTF/Other/Grass_1_A.glb",
+      "sourceUrl": "https://rg-poly.itch.io/nature-megapack-low-poly-refreshed-unity-urp",
+      "selectionTerm": "nature tree plant rock",
+      "sourceModelSha256": "a2d94578fa6cf9695d784437644afc4732774a811c39a240aa095060388a947a",
+      "visualReviewed": false,
+      "reviewReason": "원본 파일명과 실제 메시가 달라 풀 소재로 표시할 수 없음"
+    }
+  ]
+}

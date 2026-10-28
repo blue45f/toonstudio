@@ -34,9 +34,11 @@ function readThemePacks(): ThemePacksDocument {
 }
 
 describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
-  it("links every G8 pack to a real preset with matching genre and bundle theme", () => {
+  it("검증된 두 번들 팩을 기존 프리셋의 장르·테마에 정확히 연결한다", () => {
     expect(validateStudioBg3dGenreScenePackBundleLinks()).toEqual([]);
-    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.length).toBe(8);
+    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.map(entry => entry.presetId)).toEqual([
+      "fantasy-old-town-arrival", "thriller-corridor-dutch",
+    ]);
 
     const presetIds = new Set(STUDIO_BG3D_SCENE_COMPOSITION_PRESETS.map((preset) => preset.id));
     for (const entry of STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS) {
@@ -44,17 +46,21 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
       expect(getStudioBg3dGenreScenePackBundleLink(entry.presetId)).toBe(entry);
     }
     expect(getStudioBg3dGenreScenePackBundleLink("no-such-pack")).toBeUndefined();
-    // 기존 8팩은 번들 연결이 없는 카메라·조명 전용 팩으로 남는다.
+    // 확인되지 않은 번들 연결을 없애도 카메라·조명 프리셋은 유지한다.
     expect(getStudioBg3dGenreScenePackBundleLink("romance-cafe-two-shot")).toBeUndefined();
+    expect(getStudioBg3dGenreScenePackBundleLink("fantasy-forest-shrine")).toBeUndefined();
+    expect(presetIds.has("fantasy-forest-shrine")).toBe(true);
   });
 
-  it("covers the new fantasy and scifi genres with at least three packs each", () => {
+  it("모든 장르·16개 프리셋을 보존하고 검증되지 않은 번들 팩은 연결하지 않는다", () => {
     const genreIds = STUDIO_BG3D_SCENE_GENRES.map((genre) => genre.id);
     expect(genreIds).toContain("fantasy");
     expect(genreIds).toContain("scifi");
-    expect(listStudioBg3dGenreScenePackBundleLinks("fantasy")).toHaveLength(3);
-    expect(listStudioBg3dGenreScenePackBundleLinks("scifi")).toHaveLength(3);
-    expect(listStudioBg3dGenreScenePackBundleLinks(null)).toHaveLength(8);
+    expect(STUDIO_BG3D_SCENE_COMPOSITION_PRESETS).toHaveLength(16);
+    expect(listStudioBg3dGenreScenePackBundleLinks("fantasy")).toHaveLength(1);
+    expect(listStudioBg3dGenreScenePackBundleLinks("thriller")).toHaveLength(1);
+    expect(listStudioBg3dGenreScenePackBundleLinks("scifi")).toHaveLength(0);
+    expect(listStudioBg3dGenreScenePackBundleLinks(null)).toHaveLength(2);
   });
 
   it("references only assets that really exist in theme-packs.json, with matching pack snapshots", () => {
@@ -62,8 +68,8 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
     // 번들 라이선스 구조(서비스 내 사용 전용)가 유지될 때만 연결이 유효하다.
     expect(document.inServiceOnly).toBe(true);
     expect(document.downloadable).toBe(false);
-    // 2026-10-22 임베드 병합·5라운드 재생성+이름변경·신규 팩 후속 병합 기준: 배치 가능 에셋 총량은 14,928개다.
-    expect(document.totals.placeableAssets).toBe(14928);
+    // 2026-10-28 실제 GLB 해시·메트릭을 확인한 Cute Park 103개·Dungeon 320개만 연결한다.
+    expect(document.totals.placeableAssets).toBe(423);
 
     const themeIds = new Set(document.themes.map((theme) => theme.id));
     const assetById = new Map(document.assets.map((asset) => [asset.id, asset]));
@@ -84,7 +90,8 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
       }
       linkedPlaceable += entry.totalPlaceable;
     }
-    // 8개 팩이 잇는 배치 가능 에셋 합계 스냅샷(팩 18은 두 팩이 공유해 두 번 센 값).
-    expect(linkedPlaceable).toBe(1740);
+    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.flatMap(link => link.packs.map(pack => pack.packTitle)))
+      .toEqual(["Cute Park Pack", "Cute Dungeon Megapack"]);
+    expect(linkedPlaceable).toBe(423);
   });
 });
