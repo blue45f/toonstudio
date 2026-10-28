@@ -180,7 +180,7 @@ export function StudioVirtualSpaceThreeCanvas({
       node.group.position.copy(pos3);
       node.targetX = pos3.x;
       node.targetZ = pos3.z;
-      node.currentYaw = facingToYawRadians(npc.facing);
+      node.currentYaw = facingToYawRadians(npc.facing ?? "down");
       node.targetYaw = node.currentYaw;
       node.group.rotation.y = node.currentYaw;
       scene.add(node.group);
@@ -454,7 +454,7 @@ export function StudioVirtualSpaceThreeCanvas({
         if (!node.group.visible) continue;
         node.targetYaw = gapPx < 240
           ? Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y)
-          : facingToYawRadians(npc.facing);
+          : facingToYawRadians(npc.facing ?? "down");
         node.currentYaw = shortestAngleLerp(node.currentYaw, node.targetYaw, 0.14);
         node.group.rotation.y = node.currentYaw;
       }
