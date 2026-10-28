@@ -117,11 +117,13 @@
       "ledgerPackId": "cbv1-076-medieval-weapons",
       "sourceUrl": "https://rg-poly.itch.io/medieval-weapons-small-low-poly-pack",
       "retrievedAt": "2026-10-28",
-      "captureFormat": "raw-html-license-excerpt",
+      "captureFormat": "html-license-excerpt-lf",
       "path": "docs/evidence/itch-licenses-20261028/medieval-weapons.html",
-      "bytes": 186,
-      "sha256": "e3d590bedcd41ef0c93283c6553cb192b588cabec1f2f26a547a4575b012a9e2",
-      "observedAssetLicense": "CC0-1.0"
+      "bytes": 185,
+      "sha256": "50eeaf56f8980aa2b81cf001b3ebe682652815e5af3fa76e2726321a2ee093b1",
+      "observedAssetLicense": "CC0-1.0",
+      "rawExcerptSha256": "e3d590bedcd41ef0c93283c6553cb192b588cabec1f2f26a547a4575b012a9e2",
+      "normalization": "CRLF to LF only; license text unchanged"
     }
   ]
 }
