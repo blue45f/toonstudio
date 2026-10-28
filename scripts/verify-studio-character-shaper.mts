@@ -170,6 +170,7 @@ async function mobileChromeBounds(page: Page, exportOpen: boolean) {
       ...(exportOpen ? ["[data-character-export-sheet] select"] : [
         '[aria-label="뷰포트 보기 설정"] button',
         'select[aria-label="부위·방향 확대 검사"]',
+        "[data-character-camera-selects] select",
         "[data-character-quality-trigger]",
       ]),
     ];

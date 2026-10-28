@@ -248,7 +248,11 @@ describe("실제 VRMLookAt과 파일 캡처 권위", () => {
     captureStudioVrmRgbaCooperatively.mockImplementationOnce(async () => { inspectCapture(); return new Uint8ClampedArray(4); });
     fireEvent.click(screen.getByRole("button", { name: "PNG 저장" }));
     expect(await screen.findByText(/PNG를 저장했습니다/u)).toBeTruthy();
-    expect(lookAt.autoUpdate).toBe(mode === "cam");
+    // 저장 안내와 시선 lease의 effect는 서로 다른 React 커밋에서 반영될 수 있다.
+    await waitFor(() => {
+      expect(lookAt.autoUpdate).toBe(mode === "cam");
+      expect(lookAt.target).toBe(mode === "cam" ? camera : undefined);
+    });
     const afterPng = { yaw: lookAt.yaw, pitch: lookAt.pitch };
     exportCharacterSemanticPsd.mockImplementationOnce(async () => {
       expect(lookAt.autoUpdate).toBe(false);
@@ -258,7 +262,10 @@ describe("실제 VRMLookAt과 파일 캡처 권위", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "PSD 내보내기" }));
     expect(await screen.findByText(/PSD 레이어 1개 저장/u)).toBeTruthy();
-    expect(lookAt.autoUpdate).toBe(mode === "cam");
+    await waitFor(() => {
+      expect(lookAt.autoUpdate).toBe(mode === "cam");
+      expect(lookAt.target).toBe(mode === "cam" ? camera : undefined);
+    });
     view.unmount();
     expect(lookAt.target).toBe(previousTarget); expect(lookAt.autoUpdate).toBe(false);
     expect({ yaw: lookAt.yaw, pitch: lookAt.pitch }).toEqual({ yaw: 12, pitch: -8 });

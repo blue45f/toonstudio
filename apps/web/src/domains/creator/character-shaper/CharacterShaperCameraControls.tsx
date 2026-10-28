@@ -46,7 +46,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
             )}>{preset.label}</button>
         ))}
       </div>
-      <div className={cn("pointer-events-auto flex flex-wrap gap-1", compact ? "min-w-0 w-full" : "absolute left-2 top-16 max-w-[calc(100%-5rem)]")}>
+      <div data-character-camera-selects="true" className={cn("pointer-events-auto flex flex-wrap gap-1", compact ? "min-w-0 w-full" : "absolute left-2 top-16 max-w-[calc(100%-5rem)]")}>
         <select aria-label="부위·방향 확대 검사"
           title="측면·후면과 착장 접점을 확대합니다. 드래그로 자유롭게 회전할 수 있습니다."
           disabled={disabled}
@@ -68,12 +68,12 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
   ) : controls;
 }
 
-const SESSION_SELECT = cn("min-h-11 rounded-xl border border-line/70 bg-panel/90 px-2 text-xs text-fg disabled:opacity-40", STUDIO_FOCUS_RING);
+const SESSION_SELECT = cn("min-h-11 w-full min-w-0 max-w-full rounded-xl border border-line/70 bg-panel/90 px-2 text-xs text-fg disabled:opacity-40", STUDIO_FOCUS_RING);
 
 export function CharacterShaperCameraStyleSelect({ disabled = false, workbench = false }: { readonly disabled?: boolean; readonly workbench?: boolean }) {
   const bt = useBilingual("CharacterShaperCameraControls");
   const settings = useCharacterShaperSessionSettings();
-  return <label className="min-w-0 text-[0.65rem] text-fg-3">
+  return <label className="min-w-0 max-w-full text-[0.65rem] text-fg-3">
     <span className="sr-only">{bt("카메라 조작", "Camera controls")}</span>
     <select aria-label={workbench ? bt("3D 카메라 조작 스타일", "3D camera control style") : bt("카메라 조작 방식", "Camera control style")}
       data-testid={workbench ? "workbench-camera-style-select" : "shaper-camera-style-select"}
@@ -93,7 +93,7 @@ export function CharacterShaperGazeSelect({ h, workbench = false }: { readonly h
   const supported = Boolean(h.vrm?.lookAt);
   const locked = h.status !== "ready" || Boolean(h.webcamActive || h.isCapturing || h.isSharingPose || h.isThumbnailCapturing);
   const disabled = !settings || !supported || locked;
-  return <div className="min-w-0 space-y-1 text-[0.65rem] text-fg-3">
+  return <div className="min-w-0 max-w-full space-y-1 text-[0.65rem] text-fg-3">
     <select aria-label={workbench ? bt("안구 시선 모드", "Eye gaze mode") : bt("시선 추적 모드", "Gaze tracking mode")}
       data-testid={workbench ? "workbench-eyeball-tracking-select" : "shaper-eyeball-tracking-select"}
       disabled={disabled} value={settings?.gazeMode ?? "cam"}
