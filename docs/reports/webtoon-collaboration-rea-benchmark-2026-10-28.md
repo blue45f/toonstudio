@@ -354,3 +354,28 @@ QA 조회 도구에서도 별도 결함을 발견했다. `SELECT sequence::text 
 원본 계측 도구는 그대로 보존하고 v2 사본에서 DB Date와 JSON ISO 시각 비교, 실제 AppShell 초기화와 읽기 계측의 구분, route로 비활성화되는 HTTP cache의 조건 표기, 계측 시간에 섞인 JSON 검증 비용, 실제 요청된 lazy 자산과 dist 바이트 비교를 보강했다. 원본 Date 비교의 실패를 재현한 뒤 v2 순수 회귀 13개·구문 검사·동일 27파일 Secretlint를 통과했다. 최초 Secretlint는 실제 비밀이 없는 합성 BasicAuth URL fixture 한 건이었고, fixture 구성만 바꿔 탐지 규칙·거절 검사를 유지했다.
 
 현재 SHA의 production build·preview·DB 적용·실제 브라우저 p95/메모리 측정은 수행하지 않았다. 준비한 3,001작업·3,500간선·승인 기록 2,501개는 합성 데이터이며 실제 500개 원고·승인 명령·제작팀 완주가 아니다. `qualified:false`를 유지하고, `webtoon-collaboration-c9-measurement-contract-20261029`의 순수 결과를 성능 합격 수치로 사용하지 않는다.
+
+## 15. C8 수정 후 실제 두 계정 Canvas 수렴·재접속
+
+상태: **migration — 2026-10-29, 263d02403의 로컬 실제 경로 5시나리오 통과**. 13절 작성 뒤 추가한 결과다. 해당 절의 수정 후 미실행 상태 중 아래 범위는 확인했으며 production·WAN·다중 기기 검증과 구분한다.
+
+새 loopback PostgreSQL에 실제 스키마와 Studio 검증 trigger 21개를 준비하고 일반 Auth·CSRF·HttpOnly 로그인·실제 초대 수락을 거친 owner/editor를 독립 Chromium context에서 실행했다. 초기 두 페이지·10획은 앞선 실제 Canvas 원고 A 자료를 재사용했다. 새 펜 입력은 실제 편집기에서 포인터 구간이 겹치도록 수행했으며 앱 내부 문서·ref·socket을 주입하거나 직접 emit하지 않았다. 실제 Me 초기화·Live Gateway·공유 저장·Graph capture와 로컬 HTTPS 바이트 저장소를 사용했다.
+
+| 확인 구간 | 실제 결과 |
+| --- | --- |
+| 기준 원고 | 독립 두 Host의 r1·두 페이지 input/canonical PNG decoded pixels 일치 |
+| 온라인 동시 작화 | 두 계정의 새 획 각 1개·각 75점. 실제 UI PATCH 200, r1→r2·CRDT frontier 184. 두 Host의 저장 doc·PNG 일치 |
+| 영속·생성 인과 | actual wire hash/bytes·세션 actor·PG receipt/update를 연결하고 순서 복원. 생성 struct·geometry·finalized 전이를 대조. 전체 renderer 속성까지 저장 element와 canonical equality |
+| 실제 단절과 복원 | editor의 WebSocket close를 관찰한 상태에서 owner가 75점 획을 추가. 실제 공유 PATCH 200, r2→r3·frontier 217. 재접속의 새 socket·동기화 뒤 두 Host의 3획·doc·pixels 일치 |
+| 양 계정 새로고침 | 실제 reload 뒤 r3·frontier 217·세 획·두 페이지 PNG 유지. PG/causal 증명 재확인 |
+| 브라우저 종료 후 | owner/editor/viewer의 최신 GET 200·r3·frontier 217·동일 doc. readonly PG 복원과 관측 ACK 127건·새 획 3개 재대조 |
+
+정상 종료한 최종 runner는 `passed`, `phase1Passed`, `reconnectPassed`, `reloadPassed`가 모두 true였고 실제 exit 0이다. 관측 mutation ACK는 127건(owner 82·editor 45), 새 획의 직접 생성은 owner 2개·editor 1개다. page error와 observation error는 0건이었다. 온라인·재접속·reload 각각의 PG/causal proof와 실제 Host 입력 PNG·producer canonical PNG를 보관했다. 같은 SHA의 제품 소스는 API 시작·준비·각 브라우저 시작·종료·서버 종료까지 유지했다. 지정한 자동 cache 네 경로 가운데 세 파일의 전체 manifest 차이는 제품 동일성과 분리했다.
+
+첫 시도는 양쪽 온라인 저장·PNG 뒤 QA helper의 중첩 tsx namespace module import에서 중단됐다. 이 실패를 제품 실패나 전체 성공으로 바꾸지 않고 원본을 보존했다. helper가 부모 CLI의 실제 tsx 경계를 사용하도록 고친 뒤 세 reader export를 확인하고, 첫 작품의 90 ACK·r2·두 획을 별도 readonly PG 증명으로 대조했다. 이후 원래 작품·CRDT를 보존한 새 독립 작품에서 전체 시나리오를 실행했다. API·PG를 재시작하거나 원고를 reset하지 않았다. QA의 DB 연결값 오류 비교도 값 없는 메시지와 redactor로 보강했으며 실제 누출 관측과 구분한 합성 privacy 회귀 3개를 통과했다.
+
+두 시도 모두 ACK 대기가 2초 idle보다 길었으므로 이 브라우저 결과를 **pending 커밋 전 즉시 진입에서 동기 flush가 작동한 직접 증거**로 사용하지 않는다. 해당 경계의 직접 증거는 13절의 수정 전 3개 실패와 수정 후 실제 hook 회귀다. 이번 결과는 실제 동시 작화의 저장·수렴·단절·복원을 증명하며, production p95·입력 지연 합격 수치를 뜻하지 않는다.
+
+범위는 같은 기기의 Chromium 두 context·Vite development·실제 PostgreSQL·단일 memory Gateway·P2P 비활성·로컬 HTTPS QA adapter다. 단절한 editor의 신규 오프라인 편집은 수행하지 않았으며 동일 요소 충돌·Canvas ACK 유실/중복 replay·서버 재시작·다중 node·WAN·다른 기기/GPU·운영 R2의 성공으로 확대하지 않는다. C9 production 성능과 C10 실제 제작팀 납품 파일럿은 미확인이다.
+
+실행 후 소유 API·TLS·PostgreSQL의 정상 종료와 모든 QA 포트의 listener 부재를 확인했다. 임시 config·인증값·개인키를 삭제하고, 정지·소유권·정확 정본 경로를 확인한 해당 테스트 DB 파일도 정리했다. 이전 실패 ZIP은 수정하지 않고 v3 실행·로더 수정·읽기 전용 후속 검증을 새 증거 묶음으로 보존한다. 전체 하네스·타입·정상 push는 조정한 검사 순서를 기다리며 PR 준비 범위를 유지한다. main 병합·운영 DB·배포는 실행하지 않았다.
