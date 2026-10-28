@@ -8,7 +8,7 @@ import type { StudioReviewCaptureHostBindings } from "./studio-review-capture-ho
 const capture = vi.hoisted(() => ({ open: vi.fn(), getContext: null as (() => unknown) | null }));
 vi.mock("./useStudioReviewCapture", () => ({ useStudioReviewCapture: (_key: string, bindings: { getContext: () => unknown }) => {
   capture.getContext = bindings.getContext;
-  return { open: capture.open, visible: false, snapshot: { phase: "idle" }, save: vi.fn(), retry: vi.fn(), close: vi.fn() };
+  return { open: capture.open, getOpenPhase: () => "idle", visible: false, snapshot: { phase: "idle" }, save: vi.fn(), retry: vi.fn(), close: vi.fn() };
 } }));
 vi.mock("./StudioReviewCaptureDialogMount", () => ({ StudioReviewCaptureDialogMount: () => null }));
 vi.mock("../review-handoff/StudioReviewEditorHandoffMount", () => ({ StudioReviewEditorHandoffMount: () => null }));
@@ -18,6 +18,7 @@ beforeEach(() => { capture.open.mockReset().mockReturnValue(true); capture.getCo
 function bindings(available: boolean): StudioReviewCaptureHostBindings {
   return { studioAuthUserId: "actor", workId: "work", available, editorMountedRef: { current: true },
     studioRevisionProjectGenerationRef: { current: 1 }, drawingRef: { current: null }, pendingStrokeCommitsRef: { current: null },
+    flushPendingStrokeCommitsRef: { current: vi.fn(() => true) },
     captureStudioMutationTicket: () => ({ authScopeKey: "actor", workId: "work", accessGeneration: 1, documentGeneration: 1 }),
     canApplyStudioMutation: () => true, getSnapshot: () => { throw new Error("원본 조회는 캡처 bridge가 수행합니다."); },
     canvasWidth: 800, isDurableMask: () => false, save: vi.fn(async () => undefined), captureAll: vi.fn(async () => []) };

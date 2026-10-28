@@ -328,3 +328,21 @@ DB migration·schema의 정본 경로는 `platform/database`다. 불변 migratio
 A/C 나란히·겹치기 비교에서 수정한 첫 페이지는 16,276픽셀 차이, 수정하지 않은 둘째 페이지는 동일했고 B/C decoded pixel도 동일했다. 독립 editor 로그인으로 C에 실제 좌표 핀을 저장하고 새로고침으로 다시 읽었다. editor의 Studio 승인 403, owner의 승인 200, 승인 뒤 기존 핀·이미지 조회 보존을 확인했다. Production 제출은 `submitted`로 유지하며 Studio 승인과 공정 최종 승인을 혼동하지 않는다. 미처리 페이지 오류는 0건이었다.
 
 원문은 `webtoon-collaboration-c7-actual-chain-20261029.zip`에 별도 보관했다. SHA-256은 `d7c25f817cf3087a5577c97c6f97b8306e95339baea5e180b4e6240d271874bc`다. 이 결과는 Vite development·테스트 원고·실제 PG/HTTP·로컬 HTTPS adapter 범위다. 실제 스크린리더, 두 계정 동시 캔버스 CRDT 수렴, 운영 R2·WAN·실기기, C9 production p95/메모리·C10 실제 제작팀 납품 파일럿은 여전히 미확인이다.
+
+## 13. C8 동시 Canvas 입력과 검수 진입 경계
+
+상태: **migration — 2026-10-29 clean dd1287940의 부분 실행·실패 분석**. 두 계정 동시 Canvas 수렴의 합격으로 판정하지 않는다.
+
+실제 owner/editor를 일반 인증·CSRF·HttpOnly 세션으로 로그인시키고 같은 원고를 독립 Chromium context에서 열었다. 실제 `MeModule`의 초기화·병합과 Live Gateway를 거쳤으며, 기준 원고의 두 Host 캡처와 고정 PNG의 decoded pixel 일치를 먼저 확인했다. 두 계정의 실제 포인터 입력 구간을 겹친 뒤 영속 ACK 87건(owner 42·editor 45)을 관찰했다. readonly PostgreSQL 복원에는 새 펜 획 두 개가 각각 75점·finalized로 남았다. 저장 원고는 기존 10획·revision 1을 유지했다.
+
+그 직후 실제 canonical 검수 버튼을 누르면 원고 조회·저장 안내로 진입하기 전에 로컬 실패 상태가 됐다. online 단계의 공유 원고 조회·PATCH·prepare·입력 PNG는 없었다. 첫 ACK 묶음 뒤 약 2.55초·2.72초에 추가 ACK가 있었고, Host는 2초 지연 커밋이 남아 있으면 검수 가용성을 거절한다. 실제 클릭 순간 ref를 계측하지 않았으므로 이 실행의 원인을 단정하지 않는다. 활성 CTA와 로컬 커밋 경계의 연결은 별도 회귀 대상으로 삼는다. 권한·그리기·GPU 완료 fence, 저장 원고와 현재 편집 내용 비교, 명시적인 저장 절차는 유지해야 한다.
+
+후속 로컬 코드는 새 수동 캡처 진입에 기존 펜 커밋 ref를 연결했다. 현재 권한·hydration·mounted·그리기 상태를 먼저 확인하고, pending을 동기 확정한 뒤 React publication을 마친 최신 문서를 읽는다. 계정·작품·제출 원본·접근 세대가 바뀌면 새 scope로 캡처하지 않는다. 정상 문서 세대 전진은 허용하며 저장본과 다르면 기존 `needs-save` 안내를 연다. HTTP 자동저장은 추가하지 않았다. GPU 완료·활성 입력·권한 fence를 그대로 적용하고, 자동 effect에서는 동기 flush를 실행하지 않는다.
+
+실제 bridge의 현재 phase를 읽어 uncertain·busy 재열기에서는 pending을 확정하지 않는다. 이미 준비한 intent·PNG와 기존 명시적 retry는 보존한다. 수정 전 pending publication 1건과 uncertain·같은 tick checking 재진입 2건, 총 3건의 실패를 확인했다. 최종 `review-capture` 전체와 원고 복귀·origin 소비자 3개 suite를 함께 실행해 **12파일 102개 통과, exit 0**을 확인했다. 추가 필수 ref는 실제 소비자 fixture까지 갱신했다. `validate:architecture`, 소스 크기·Studio eager graph 검사도 통과했고, 큰 Host의 행 수는 늘리지 않았다. 전체 타입·하네스·정상 push는 검사 순서를 기다린다. 후속 제품 코드로 실제 두 계정 Canvas 시나리오를 다시 실행한 결과는 아직 없다.
+
+QA 조회 도구에서도 별도 결함을 발견했다. `SELECT sequence::text … ORDER BY sequence`는 출력 alias를 문자열로 정렬해 실제 87행을 100부터 반환했다. readonly 비교에서 실제 bigint 열을 명시하면 88부터 174까지 순서대로 반환했다. 원본과 실패 증거를 보존한 새 adapter만 수정했으며, 제품 repository의 Drizzle `asc(column)`은 이 결함에 해당하지 않는다. 순수 causal 8개와 숫자 순서·actor·hash·바이트 경계 7개, 합계 15개가 통과했다. 이 순수 검증은 실제 Canvas 완주 증거를 대신하지 않는다.
+
+실패한 UI 선택자·초기 시도와 canonical 진입 실행은 각각 분리해 보존했다. 부분 증거는 `webtoon-collaboration-c8-canvas-admission-20261029`에 모으고, 기존 C7·C8·펜 ZIP은 수정하지 않는다. QA 서버·TLS·PostgreSQL의 정상 종료, 임시 인증·키 파일 삭제, 정지·소유권·정확 경로 검사 뒤 해당 테스트 DB 파일 정리를 확인했다. 제품 소스는 시작부터 종료까지 dd1287940과 같았으며 전체 manifest의 자동 캐시 차이는 별도 기록했다.
+
+새 획을 포함한 공유 원고 저장·양쪽 Host 픽셀 대조·실제 WebSocket 단절·재접속·새로고침은 아직 완료하지 못했다. 한 Gateway·로컬 개발 서버·로컬 HTTPS adapter의 부분 결과를 WAN·다중 노드·실기기·운영 수렴 보장으로 확대하지 않는다.

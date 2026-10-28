@@ -24,7 +24,7 @@ function fixture() {
   const bindings = {
     studioAuthUserId: "actor", workId: "work", available: true, editorMountedRef,
     studioRevisionProjectGenerationRef: { current: 1 }, drawingRef: { current: null as unknown },
-    pendingStrokeCommitsRef: { current: null as unknown }, captureStudioMutationTicket: () => ticket,
+    pendingStrokeCommitsRef: { current: null as unknown }, flushPendingStrokeCommitsRef: { current: vi.fn(() => true) }, captureStudioMutationTicket: () => ticket,
     canApplyStudioMutation: vi.fn(() => true), getSnapshot: () => data.snapshot, canvasWidth: 800,
     isDurableMask: () => false, save: vi.fn(async () => {}), captureAll: vi.fn(async () => []),
   } satisfies StudioReviewCaptureHostBindings;

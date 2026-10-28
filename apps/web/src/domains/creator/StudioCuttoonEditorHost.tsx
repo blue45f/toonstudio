@@ -26295,7 +26295,7 @@ function clearSelectionForEdit() {
 
   const reviewCapture = useStudioReviewCaptureHost({
     studioAuthUserId, workId, captureStudioMutationTicket, canApplyStudioMutation,
-    editorMountedRef, studioRevisionProjectGenerationRef, drawingRef, pendingStrokeCommitsRef,
+    editorMountedRef, studioRevisionProjectGenerationRef, drawingRef, pendingStrokeCommitsRef, flushPendingStrokeCommitsRef,
     available: loggedIn && workHydrated && !sourceHydrationPending && !documentReloadRequired
       && !collaborationReadOnly && !workHydrationFailed && !workHydrationUnsupportedFormat,
     getSnapshot: currentStudioProjectSnapshot, canvasWidth: CANVAS_W,
