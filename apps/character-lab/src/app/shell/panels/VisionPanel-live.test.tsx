@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
-import { createPresetCatalog } from "../../../contracts";
+import { ALL_AVAILABLE_CAPABILITIES, ALL_UNAVAILABLE_CAPABILITIES, createPresetCatalog } from "../../../contracts";
 import { fistHandLandmarks, openHandLandmarks } from "../../../domains/vision/landmark-fixtures";
 import { createLabStore } from "../../../state/lab-store";
 import { MockLabProvider } from "../../../testing/mock-store";
@@ -11,11 +11,12 @@ import { vocabularyCatalogEntries } from "../../../testing/recipe-fixtures";
 import { VisionPanel } from "./VisionPanel";
 
 import type { VisionPanelDeps } from "./VisionPanel";
+import type { SlotCapabilityMap } from "../../../contracts";
 import type { HandDetection, HandDetectorPort } from "../../../domains/vision/vision-ports";
 
 const hand = (open = false): HandDetection => ({ reportedHandedness: "Left", score: 0.87, landmarks: open ? openHandLandmarks() : fistHandLandmarks(), worldLandmarks: null });
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
-function setup(port: HandDetectorPort, opening?: (stream: MediaStream) => Promise<MediaStream>) {
+function setup(port: HandDetectorPort, opening?: (stream: MediaStream) => Promise<MediaStream>, capabilities: SlotCapabilityMap = ALL_AVAILABLE_CAPABILITIES) {
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   const frames = new Map<number, FrameRequestCallback>(); let sequence = 0;
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { const id = ++sequence; frames.set(id, callback); return id; });
@@ -31,7 +32,7 @@ function setup(port: HandDetectorPort, opening?: (stream: MediaStream) => Promis
     captureHandsFrame: async () => ({ width: 8, height: 8, source: {} as ImageData, release: close }),
   };
   const catalog = createPresetCatalog(vocabularyCatalogEntries());
-  const store = createLabStore({ catalog });
+  const store = createLabStore({ catalog, initial: { capabilities } });
   const view = render(<MockLabProvider catalog={catalog} store={store}><VisionPanel deps={deps} /></MockLabProvider>);
   const start = async () => {
     fireEvent.click(screen.getByRole("radio", { name: "손 포즈" }));
@@ -54,6 +55,7 @@ it("명시 클릭 전 카메라·추론을 실행하지 않고 연속 적용을 
   const pose = h.store.getState().recipe.pose;
   expect(Object.keys(pose)).toHaveLength(15);
   expect(Object.keys(pose).every((name) => name.startsWith("right"))).toBe(true);
+  expect(h.store.getPlan().boneRotations).toMatchObject(pose);
   open = true; h.next();
   await waitFor(() => expect(detect).toHaveBeenCalledTimes(2));
   await waitFor(() => expect(h.close).toHaveBeenCalledTimes(2));
@@ -62,6 +64,33 @@ it("명시 클릭 전 카메라·추론을 실행하지 않고 연속 적용을 
   expect(h.store.getState().recipe.pose).toEqual({}); expect(h.stop).toHaveBeenCalledTimes(1);
   expect(screen.getByTestId("live-hands-status").textContent).toContain("중지");
   h.next(); expect(detect).toHaveBeenCalledTimes(2);
+});
+
+it("손 본을 지원하지 않는 모델은 사유와 함께 연속 적용을 막고 빈 플랜을 적용 성공으로 세지 않는다", async () => {
+  const detect = vi.fn(async () => [hand()]);
+  const h = setup({ detect }, undefined, ALL_UNAVAILABLE_CAPABILITIES);
+  await h.start();
+  expect((screen.getByRole("button", { name: "손 연속 인식 시작" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByRole("note").textContent).toContain("손가락 포즈 변형을 지원하지 않습니다");
+  expect(detect).not.toHaveBeenCalled();
+  expect(h.store.getState().history.depth).toBe(0);
+  expect(h.store.getState().recipe.pose).toEqual({});
+  expect(h.store.getPlan().boneRotations).toEqual({});
+});
+
+it("인식 중 손 지원 능력을 잃으면 카메라를 닫고 진행 중인 검출 결과를 폐기한다", async () => {
+  const pending = deferred<readonly HandDetection[]>();
+  const detect = vi.fn(() => pending.promise);
+  const h = setup({ detect }); await h.start();
+  await waitFor(() => expect(detect).toHaveBeenCalledTimes(1));
+  act(() => h.store.applyEvent({ type: "source/capabilities", capabilities: ALL_UNAVAILABLE_CAPABILITIES }));
+  expect(h.stop).toHaveBeenCalledTimes(1);
+  await act(async () => pending.resolve([hand()]));
+  await waitFor(() => expect(h.close).toHaveBeenCalledTimes(1));
+  expect(h.store.getState().history.depth).toBe(0);
+  expect(h.store.getState().recipe.pose).toEqual({});
+  expect(h.store.getState().failures).toEqual([]);
+  expect(screen.getByTestId("live-hands-status").textContent).toContain("지원하지 않아 인식을 중지");
 });
 
 it.each(["target", "photo", "ended", "unmount", "stop", "delegate"])("%s 전환 뒤 늦은 손 추론을 폐기하고 비트맵·스트림·모델 소유권을 지킨다", async (reason) => {

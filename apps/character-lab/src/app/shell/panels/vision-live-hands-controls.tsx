@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useLabContext } from "../lab-store-context";
+import { failVisible } from "../../../contracts";
+import { useLabContext, useLabState } from "../lab-store-context";
 import { createLiveHandsController } from "../vision-live-hands";
 
 import type { VisionSession } from "../../../domains/vision/vision-session";
@@ -29,6 +30,8 @@ function scheduleFrame(video: HTMLVideoElement | null, next: () => void): () => 
 
 export function LiveHandsControls({ session, deps, enabled, stream, video, cancelRef, onStop }: LiveHandsProps) {
   const { store } = useLabContext();
+  const handCapability = useLabState().capabilities["hand-pose"];
+  const handUnavailable = handCapability.status === "unavailable";
   const [state, setState] = useState<LiveHandsStatus>({ phase: "idle", frames: 0, appliedHands: 0, latencyMs: null, messageKo: "카메라를 열고 손 연속 인식을 시작하세요." });
   const [selfie, setSelfie] = useState(false);
   const [mirror, setMirror] = useState(false);
@@ -46,6 +49,8 @@ export function LiveHandsControls({ session, deps, enabled, stream, video, cance
     schedule: (next) => scheduleFrame(video.current, next),
     now: () => performance.now(),
     apply(pose, sessionId) {
+      const capability = store.getState().capabilities["hand-pose"];
+      if (capability.status === "unavailable") throw failVisible("vision-hand-pose-unavailable", capability.reasonKo ?? "현재 모델은 손가락 포즈 변형을 지원하지 않습니다.");
       applying.current = true;
       try {
         // pose/set은 스코프에서 빠진 본을 rest로 돌리므로 기존 팔·손목·반대 손은 명시적으로 보존한다.
@@ -62,7 +67,10 @@ export function LiveHandsControls({ session, deps, enabled, stream, video, cance
     let revision = store.getState().history.revision;
     const unsubscribe = store.subscribe(() => {
       const next = store.getState().history.revision;
-      if (next !== revision && !applying.current && controller.running()) {
+      if (controller.running() && store.getState().capabilities["hand-pose"].status === "unavailable") {
+        controller.stop("현재 모델이 손가락 포즈 변형을 지원하지 않아 인식을 중지했습니다.");
+        stopRef.current();
+      } else if (next !== revision && !applying.current && controller.running()) {
         controller.stop("다른 편집이나 실행 취소로 연속 인식을 중지했습니다.");
         stopRef.current();
       }
@@ -78,9 +86,10 @@ export function LiveHandsControls({ session, deps, enabled, stream, video, cance
   if (!enabled) return null;
   return <div className="cl-vision-row" data-testid="live-hands-controls">
     <p>카메라의 손가락 굴곡을 따라합니다. 손가락 벌림과 엄지 대립은 아직 지원하지 않습니다.</p>
+    {handCapability.status !== "available" ? <p role="note">{handUnavailable ? "현재 모델은 손가락 포즈 변형을 지원하지 않습니다." : "현재 모델은 손가락 포즈를 일부만 지원합니다."}{handCapability.reasonKo ? ` ${handCapability.reasonKo}` : ""}</p> : null}
     <label><input type="checkbox" checked={selfie} disabled={active} onChange={(event) => setSelfie(event.target.checked)} />연속 인식 입력이 셀피 반전 영상</label>
     <label><input type="checkbox" checked={mirror} disabled={active} onChange={(event) => setMirror(event.target.checked)} />연속 인식 거울 적용</label>
-    <button type="button" disabled={!stream || active || (!deps.captureVideo && !deps.captureHandsFrame)} onClick={() => controller.start({ selfie, mirror })}>손 연속 인식 시작</button>
+    <button type="button" disabled={handUnavailable || !stream || active || (!deps.captureVideo && !deps.captureHandsFrame)} onClick={() => controller.start({ selfie, mirror })}>손 연속 인식 시작</button>
     <button type="button" disabled={!active} onClick={() => { controller.stop(); onStop(); }}>손 연속 인식 중지</button>
     <p role={state.failure ? "alert" : "status"} data-testid="live-hands-status">{state.messageKo} · 처리 {state.frames}프레임{state.latencyMs === null ? "" : ` · 최근 추론 ${state.latencyMs.toFixed(1)}ms`}{state.failure ? ` (${state.failure.code})` : ""}</p>
     <details>
