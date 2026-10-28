@@ -55,6 +55,8 @@ import {
   deriveStudioBg3dSessionGlbValidationPolicy as deriveStudioBg3dGlbValidationPolicy,
 } from "./studio-bg3d-session-glb-policy";
 import { linkStudioBg3dSkpPlacement } from "./studio-bg3d-skp-sidecar";
+import { resolveStudioBg3dMetricPlacementScale, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
+import { StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
 
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type {
@@ -370,6 +372,7 @@ export function createStudioBg3dModelImportActions(
             maximumCumulativeBytes: liveScene.document.budgets.complexity.maxModelBytes,
           });
           const stagedAttachments = new Map<string, StudioBg3dModelAttachment>();
+          const stagedPlacements: BgCustomModelInstance[] = [];
           let cumulativeUsedBytes = calculateStudioBg3dPlacedModelBytes(
             liveModels,
             attachmentByStorageModelIdRef.current,
@@ -385,14 +388,16 @@ export function createStudioBg3dModelImportActions(
             const existing = attachmentByStorageModelIdRef.current.get(record.id);
             const sourceFormat =
               normalizeStudioGeneric3dSourceFormat(plannedSourceFormats[index] ?? "glb") ?? "glb";
-            const attachment = withStudioGeneric3dWorkflowMetadata(
+            const workflowAttachment = withStudioGeneric3dWorkflowMetadata(
               existing ?? await createStudioBg3dModelAttachment(record),
               {
                 sourceFormat,
                 classification: genericModelClassifications.get(record.id) ?? null,
               },
             );
-            await admitAndCacheModel({
+            const attachment: StudioBg3dModelAttachment = sourceFormat === "skp"
+              ? { ...workflowAttachment, metricPolicy: "authored-metres" } : workflowAttachment;
+            const cached = await admitAndCacheModel({
               record,
               document: sceneBaseDocument,
               quality: deviceQuality,
@@ -406,6 +411,10 @@ export function createStudioBg3dModelImportActions(
                 uploadOwnedCacheEntries.set(storageId, cacheEntry);
               },
             });
+            stagedPlacements.push(linkStudioBg3dSkpPlacement(
+              createBgCustomModelInstance(record.id, liveModels.length + index, resolveStudioBg3dMetricPlacementScale(sourceFormat === "skp" ? attachment : {}, cached)),
+              plannedSkpSourcePaths[index] == null ? null : { contentHash: record.contentHash, name: record.name },
+            ));
             stagedAttachments.set(record.id, attachment);
             if (!countedHashes.has(record.contentHash)) {
               countedHashes.add(record.contentHash);
@@ -430,13 +439,7 @@ export function createStudioBg3dModelImportActions(
             libraryEntries,
             nextAttachmentByStorageId,
             nextStorageIdByAttachment,
-            // .skp 소재는 해시에서 만든 컴포넌트 참조를 붙여, 같은 파일을 여러 번 놓아도 아웃라이너에서 한 묶음으로 보이게 한다.
-            placements: saved.map((record, index) =>
-              linkStudioBg3dSkpPlacement(
-                createBgCustomModelInstance(record.id, liveModels.length + index),
-                plannedSkpSourcePaths[index] == null ? null : { contentHash: record.contentHash, name: record.name },
-              )
-            ),
+            placements: stagedPlacements,
           };
         },
         ({
@@ -501,6 +504,8 @@ export function createStudioBg3dModelImportActions(
       skpFailureMessage =
         modelImportRuntime && importFailure instanceof modelImportRuntime.StudioBg3dModelImportError
           ? importFailure.message
+          : importFailure instanceof StudioBg3dModelMetricPolicyError
+            ? studioBg3dModelMetricPolicyMessage()
           : importFailure instanceof StudioBg3dModelPlacementAdmissionError
             ? importFailure.message
           : importFailure instanceof StudioBg3dThreeOperationError

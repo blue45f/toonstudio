@@ -55,6 +55,7 @@ const warningSchema = z.object({
 export const studioBg3dSkpImportReportSchema = z.object({
   version: z.literal(STUDIO_BG3D_SKP_IMPORT_REPORT_VERSION),
   kind: z.literal(STUDIO_BG3D_SKP_IMPORT_REPORT_KIND),
+  metricPolicy: z.literal("authored-metres").optional(),
   source: z.object({
     byteSize: count,
     container: z.enum(["vff", "legacy", "unknown"]),

@@ -1008,7 +1008,6 @@ function normalizeRights(value: unknown): StudioBg3dAttachmentRights | null {
     ...(licenseName ? { licenseName } : {}),
   };
 }
-
 function normalizeAttachment(value: unknown): StudioBg3dModelAttachment | null {
   if (!isRecord(value)) return null;
   const id = normalizedId(value.id);
@@ -1039,6 +1038,7 @@ function normalizeAttachment(value: unknown): StudioBg3dModelAttachment | null {
     byteSize: value.byteSize,
     hash: value.hash.toLowerCase(),
     rights,
+    ...(value.metricPolicy === "authored-metres" ? { metricPolicy: value.metricPolicy } : {}),
     source: value.source as StudioBg3dAttachmentSource,
   };
   // Fail closed: corrupt/unknown workflow blocks are dropped; valid v1 fields re-attach sanitized.
@@ -1052,7 +1052,6 @@ function normalizeAttachment(value: unknown): StudioBg3dModelAttachment | null {
     ...(workflow.sourceFormat ? { sourceFormat: workflow.sourceFormat } : {}),
   });
 }
-
 function normalizeAttachments(
   value: unknown,
   maxModelBytes: number

@@ -59,6 +59,7 @@ export type StudioBg3dModelRootCacheEntry = Pick<
 > & {
   readonly record: Bg3dVerifiedStoredRecord;
   readonly metrics: StudioBg3dThreeLoadSuccess["metrics"];
+  readonly normalizationScale?: number;
   readonly admittedProfiles: Set<StudioBg3dResolvedDeviceQuality["profile"]>;
   /** Lazily initialized for legacy cache fixtures; profile-only stamps are not authorization. */
   admissionPolicyKeys?: Set<string>;
@@ -284,10 +285,11 @@ async function admitAndCacheStudioBg3dModelInternal(
           renderer: args.renderer,
           qualityBudget: args.quality.textureScale,
         });
-        loaded.root.scale.setScalar(resolveStudioBg3dModelNormalizationScale(
+        const normalizationScale = resolveStudioBg3dModelNormalizationScale(
           args.record.id,
           measureBg3dObjectSize(loaded.root),
-        ));
+        );
+        loaded.root.scale.setScalar(normalizationScale);
         if (!lease.isCurrent() || !args.isActive() || !isPolicyCurrent()) {
           loaded.dispose();
           lease.throwIfRevoked();
@@ -300,6 +302,7 @@ async function admitAndCacheStudioBg3dModelInternal(
           dispose: loaded.dispose,
           record: args.record,
           metrics: loaded.metrics,
+          normalizationScale,
           admittedProfiles: new Set([policy.profile]),
           admissionPolicyKeys: new Set([policyKey]),
           joints,

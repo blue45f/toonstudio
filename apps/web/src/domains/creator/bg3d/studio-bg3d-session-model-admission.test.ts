@@ -1,4 +1,4 @@
-import { Group } from "three";
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -71,6 +71,14 @@ beforeEach(() => {
 afterEach(() => resetStudio3dAssetQualityMode());
 
 describe("session model admission and cache authorization", () => {
+  it("일반 업로드의 2m 정규화를 유지하고 역배율에 사용할 실제 캐시 배율을 기록한다", async () => {
+    const loaded = loadedModel();
+    loaded.root.add(new Mesh(new BoxGeometry(20, 12, 8), new MeshBasicMaterial()));
+    mocks.load.mockResolvedValue(loaded);
+    const entry = await admitAndCacheStudioBg3dModel(context());
+    expect(entry.normalizationScale).toBe(0.1);
+    expect(entry.root.scale.toArray()).toEqual([0.1, 0.1, 0.1]);
+  });
   it("reuses only an identical policy fingerprint", async () => {
     const args = context();
     enableStudio3dHighAssetQuality();

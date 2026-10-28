@@ -156,6 +156,7 @@ export function buildStudioBg3dSkpImportReport(input: StudioBg3dSkpReportInput):
   return {
     version: STUDIO_BG3D_SKP_IMPORT_REPORT_VERSION,
     kind: STUDIO_BG3D_SKP_IMPORT_REPORT_KIND,
+    metricPolicy: "authored-metres",
     source: {
       byteSize: input.byteSize,
       container: input.container,

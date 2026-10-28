@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from "three";
 
 import { createStudioBg3dModelImportActions, type StudioBg3dModelImportActionsContext } from "./studio-bg3d-editor-model-import-actions";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
@@ -158,7 +159,12 @@ beforeEach(() => {
   runtime.persist.mockResolvedValue("saved");
   runtime.persistAi.mockResolvedValue("saved");
   runtime.createAttachment.mockImplementation(async (record: { id: string }) => ({ id: `attachment-${record.id}`, hash: "h" }));
-  runtime.admit.mockResolvedValue(undefined);
+  runtime.admit.mockImplementation(async () => {
+    const root = new Group();
+    root.add(new Mesh(new BoxGeometry(20, 12, 8), new MeshBasicMaterial()));
+    root.scale.setScalar(0.1);
+    return { root, normalizationScale: 0.1 };
+  });
   runtime.importVerified.mockResolvedValue([{ id: "model-1", contentHash: HASH, byteSize: 2_000 }]);
   runtime.getStored.mockImplementation(async (id: string) => storedRecord(id));
   runtime.runScene.mockImplementation(async (_session: unknown, work: (lease: unknown) => Promise<unknown>, commit: (value: unknown) => void) => {

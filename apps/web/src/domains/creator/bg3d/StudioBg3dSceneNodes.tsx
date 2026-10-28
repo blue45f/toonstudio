@@ -72,10 +72,11 @@ import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCus
 export interface StudioBg3dPlacementPreviewAsset {
   readonly modelId: string;
   readonly name: string;
-  /** Bounds after import normalization and auto-fit, before instance transform. */
+  /** 최종 배치 정책의 배율까지 반영한 고스트 경계. */
   readonly size: readonly [number, number, number];
-  /** Bottom-center insertion point in the cached model root's local/world-at-identity space. */
+  /** 최종 배율을 반영한 모델 원점 기준 바닥 중심. 회전 후 포인터 접지점에서 뺀다. */
   readonly localInsertionPoint: readonly [number, number, number];
+  readonly instanceScale?: readonly [number, number, number];
 }
 
 /** Keeps persisted exposure/tone-mapping authoritative after R3F creates or reuses WebGLRenderer. */
