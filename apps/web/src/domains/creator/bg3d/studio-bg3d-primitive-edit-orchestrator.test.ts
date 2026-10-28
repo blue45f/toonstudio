@@ -14,13 +14,16 @@ import { studioBg3dModalOperationCoordinator, type StudioBg3dModalSession } from
 import { admitAndCacheStudioBg3dModel, type StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 import { applyStudioBg3dPrimitiveEditWorkspace, type StudioBg3dPrimitiveEditOrchestratorHost } from "./studio-bg3d-primitive-edit-orchestrator";
 import { captureStudioBg3dPrimitiveEditSource, type StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
-import { createStudioBg3dPrimitiveEditWorkspace, exportStudioBg3dPrimitiveEditWorkspace } from "./studio-bg3d-primitive-edit-workspace";
-import { writeStudioBg3dPrimitiveEditMaterialGlb } from "./studio-bg3d-primitive-edit-material";
+import { createStudioBg3dPrimitiveEditWorkspace } from "./studio-bg3d-primitive-edit-workspace";
+import { exportStudioBg3dFaceEditAsset } from "./studio-bg3d-face-edit-export";
 import { createDefaultStudioBg3dSceneDocument, serializeStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 import { hydrateStudioBg3dDocumentToRuntime, tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
 
 type Library = typeof import("./bg3d-model-library");
+type AcquireReadLease = typeof import("./studio-bg3d-model-read-lease")["acquireStudioBg3dModelReadLeaseV12"];
+const leasePort = vi.hoisted(() => vi.fn<AcquireReadLease>());
+vi.mock("./studio-bg3d-model-read-lease", () => ({ acquireStudioBg3dModelReadLeaseV12: leasePort }));
 const storage = vi.hoisted(() => ({
   save: vi.fn<Library["importVerifiedBg3dModelsAtomicallyWithDispositionV12"]>(),
   compensate: vi.fn<Library["compensateImportedBg3dModelsIfCreationMatchesV12"]>(),
@@ -39,6 +42,23 @@ const records = new Map<string, Bg3dVerifiedStoredRecord>();
 const verifications = new Map<string, StudioBg3dGlbValidationSuccess>();
 const fixtures: { readonly session: { readonly current: StudioBg3dModalSession }; readonly cache: Map<string, StudioBg3dModelRootCacheEntry> }[] = [];
 let manifestRevision = 0;
+const readLeases: { readonly isCurrent: () => boolean; readonly release: ReturnType<typeof vi.fn<() => Promise<void>>> }[] = [];
+
+const acquire: AcquireReadLease = async (expected, options) => {
+  if (options.signals.some((signal) => signal.aborted)) return { ok: false, code: "aborted", messageKo: "취소된 저장 읽기" };
+  for (const identity of expected) {
+    const record = records.get(identity.id);
+    if (!record || record.contentHash !== identity.contentHash || record.byteSize !== identity.byteSize
+      || record.mime !== identity.mime || JSON.stringify(record.rights) !== JSON.stringify(identity.rights)) {
+      return { ok: false, code: "record-changed", messageKo: "검사 뒤 새 파생본이 삭제되거나 바뀌었습니다." };
+    }
+  }
+  let held = true;
+  const lease = { isCurrent: () => held && options.signals.every((signal) => !signal.aborted),
+    release: vi.fn(async () => { held = false; }) };
+  readLeases.push(lease);
+  return { ok: true, lease };
+};
 
 /** 영구 저장/Worker 실행만 seam이다. 실제 exporter·writer·strict validator·verified loader·admission·replacement를 사용한다. */
 const save: Library["importVerifiedBg3dModelsAtomicallyWithDispositionV12"] = async (inputs, options = {}) => {
@@ -130,6 +150,7 @@ function blockCanonicalPreservation(f: ReturnType<typeof fixture>, mode: "source
 
 beforeEach(() => {
   records.clear(); verifications.clear(); manifestRevision = 0;
+  readLeases.length = 0; leasePort.mockReset().mockImplementation(acquire);
   resetStudio3dAssetQualityMode();
   storage.save.mockReset().mockImplementation(save);
   storage.compensate.mockReset().mockImplementation(async (receipt) => {
@@ -148,6 +169,7 @@ beforeEach(() => {
 afterEach(async () => {
   for (const f of fixtures) studioBg3dModalOperationCoordinator.endSession(f.session.current);
   await studioBg3dModalOperationCoordinator.waitForSceneMutationLane();
+  for (const lease of readLeases) await lease.release();
   vi.restoreAllMocks();
   const disposed = new Set<StudioBg3dModelRootCacheEntry>();
   for (const f of fixtures.splice(0)) for (const entry of f.cache.values()) if (!disposed.has(entry)) { entry.dispose(); disposed.add(entry); }
@@ -155,6 +177,51 @@ afterEach(async () => {
 });
 
 describe("원본 primitive 편집의 저장·admission·보상 orchestration", () => {
+  it("DB 원본이 없는 primitive도 새 B 하나의 lease를 동기 commit까지 유지한다", async () => {
+    const f = fixture(), replace = f.replace.getMockImplementation();
+    f.replace.mockImplementation((mutation) => {
+      expect(readLeases[0]?.isCurrent()).toBe(true);
+      expect(readLeases[0]?.release).not.toHaveBeenCalled();
+      return replace?.(mutation);
+    });
+    expect((await applyStudioBg3dPrimitiveEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal)).ok).toBe(true);
+    expect(leasePort).toHaveBeenCalledOnce(); expect(leasePort.mock.calls[0][0]).toHaveLength(1);
+    expect(leasePort.mock.calls[0][0][0].id).toBe("derived-model-1");
+    expect(leasePort.mock.calls[0][1].signals).toHaveLength(2);
+    expect(readLeases[0].release).toHaveBeenCalledOnce(); expect(readLeases[0].isCurrent()).toBe(false);
+  });
+
+  it("최종 get이 읽은 B가 반환 직전 삭제되면 primitive도 history/정본을 쓰지 않는다", async () => {
+    const f = fixture();
+    storage.get.mockImplementation(async (id) => { const read = records.get(id) ?? null; records.delete(id); return read; });
+    const result = await applyStudioBg3dPrimitiveEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal);
+    expect(result).toMatchObject({ ok: false, code: "stale-source" });
+    expect(leasePort).toHaveBeenCalledOnce(); expect(records.size).toBe(0);
+    expect(f.replace).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled();
+    expect(f.live.current.primitives).toHaveLength(1); expect(f.live.current.customModels).toHaveLength(0);
+  });
+
+  it("B lease가 commit 전에 취소되면 해제 완료를 기다린 뒤 새 자산만 보상한다", async () => {
+    const f = fixture(), controller = new AbortController(), unlock = deferred(), events: string[] = [];
+    leasePort.mockImplementation(async (...args) => {
+      const result = await acquire(...args);
+      if (result.ok) {
+        result.lease.release = vi.fn(async () => { events.push("release-start"); await unlock.promise; events.push("release-end"); });
+      }
+      queueMicrotask(() => controller.abort());
+      return result;
+    });
+    storage.compensate.mockImplementation(async (receipt) => { events.push("compensate"); for (const item of receipt.created) records.delete(item.id); return true; });
+    let settled = false;
+    const pending = applyStudioBg3dPrimitiveEditWorkspace(f.host, f.context, f.workspace, controller.signal).then((result) => { settled = true; return result; });
+    await vi.waitFor(() => expect(events).toContain("release-start"));
+    expect(storage.compensate).not.toHaveBeenCalled(); expect(settled).toBe(false);
+    unlock.release();
+    expect(await pending).toMatchObject({ ok: false, cleanup: "removed" });
+    expect(events.indexOf("release-end")).toBeLessThan(events.indexOf("compensate"));
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled(); expect(records.size).toBe(0);
+  });
+
   it("실제 export/material/validator/loader/admission으로 단일 교체하고 목록 갱신을 기다린다", async () => {
     const f = fixture();
     const notified = deferred(); f.notify.mockImplementation(() => notified.promise);
@@ -314,11 +381,9 @@ describe("원본 primitive 편집의 저장·admission·보상 orchestration", (
 
   it("dedup된 기존 asset/cache는 실패 보상에서 삭제하거나 dispose하지 않는다", async () => {
     const f = fixture();
-    const exported = exportStudioBg3dPrimitiveEditWorkspace(f.context, f.workspace);
+    const exported = exportStudioBg3dFaceEditAsset(f.context, f.workspace, f.context.source.primitive.color);
     if (!exported.ok) throw Error(exported.messageKo);
-    const written = writeStudioBg3dPrimitiveEditMaterialGlb(exported.bytes, f.context.source.primitive.color);
-    if (!written.ok) throw Error(written.messageKo);
-    const seeded: Bg3dModelAtomicImportDispositionV12 = await save([{ file: new File([written.bytes], "기존.glb"), rights: { status: "owned", commercialUse: true, attributionRequired: false } }]);
+    const seeded: Bg3dModelAtomicImportDispositionV12 = await save([{ file: new File([exported.bytes], "기존.glb"), rights: { status: "owned", commercialUse: true, attributionRequired: false } }]);
     const record = seeded.records[0]; if (!record) throw Error("seed 없음");
     const entry = await admitAndCacheStudioBg3dModel({ record, document: f.live.current.document, quality: f.host.deviceQuality,
       cumulativeUsedBytes: 0, renderer: null, cache: f.cache, pending: new Map(), isActive: () => true });

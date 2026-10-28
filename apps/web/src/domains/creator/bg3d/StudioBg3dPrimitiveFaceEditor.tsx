@@ -9,16 +9,16 @@ import { useStudioHybridDccFaceModeling } from "../hybrid-dcc/useStudioHybridDcc
 import { mutateStudioHybridDccComponentSelection } from "../hybrid-dcc/studio-hybrid-dcc-component-selection";
 import { workspaceComponentSelectionSource, workspaceReconcileSelectionAfterHistory, workspaceRedo, workspaceUndo } from "../hybrid-dcc/studio-hybrid-dcc-workspace";
 
-import type { StudioBg3dPrimitiveEditWorkspace } from "./studio-bg3d-primitive-edit-workspace";
+import type { StudioBg3dFaceEditWorkspace } from "./studio-bg3d-face-edit-workspace";
 import type { StudioHybridDccWorkspace } from "../hybrid-dcc/studio-hybrid-dcc-workspace";
 import type { StudioHybridDccViewportProps } from "../hybrid-dcc/StudioHybridDccViewportCore";
 import type { StudioHybridDccWorkspaceEdit } from "../hybrid-dcc/studio-hybrid-dcc-face-modeling-workspace";
 
 export type StudioBg3dPrimitiveFaceApplyResult = { readonly ok: true } | { readonly ok: false; readonly messageKo: string };
 export interface StudioBg3dPrimitiveFaceEditorProps {
-  readonly context: StudioBg3dPrimitiveEditWorkspace;
+  readonly context: StudioBg3dFaceEditWorkspace;
   readonly onClose: () => void;
-  readonly onApply: (context: StudioBg3dPrimitiveEditWorkspace, workspace: StudioHybridDccWorkspace, signal: AbortSignal) => Promise<StudioBg3dPrimitiveFaceApplyResult>;
+  readonly onApply: (context: StudioBg3dFaceEditWorkspace, workspace: StudioHybridDccWorkspace, signal: AbortSignal) => Promise<StudioBg3dPrimitiveFaceApplyResult>;
 }
 
 const BUTTON = "inline-flex min-h-11 min-w-11 max-w-full items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50";
@@ -130,8 +130,9 @@ export function StudioBg3dPrimitiveFaceEditor({ context, onClose, onApply }: Stu
     <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} data-studio-shortcut-boundary="true"
       className="flex h-[100dvh] w-full min-w-0 flex-col overflow-hidden border border-line bg-panel text-fg shadow-2xl sm:h-[94dvh] sm:max-w-[1500px] sm:rounded-2xl">
       <header className="flex min-h-14 items-center gap-2 border-b border-line px-3">
-        <div className="min-w-0 flex-1"><h2 id={titleId} className="text-sm font-bold">{t("studio.bg3d.primitiveEdit.title", "선택한 상자 면 편집")}</h2>
-          <p className="truncate text-xs text-fg-2">{context.source.primitive.name || t("studio.bg3d.primitiveEdit.unnamed", "기본 상자")}</p></div>
+        <div className="min-w-0 flex-1"><h2 id={titleId} className="text-sm font-bold">{context.kind === "authored-model"
+          ? t("studio.bg3d.primitiveEdit.modelTitle", "선택한 편집 모델 면 편집") : t("studio.bg3d.primitiveEdit.title", "선택한 상자 면 편집")}</h2>
+          <p className="truncate text-xs text-fg-2">{context.displayName || t("studio.bg3d.primitiveEdit.unnamed", "원본 메시")}</p></div>
         <button ref={closeButton} className={NEUTRAL_BUTTON} type="button" disabled={busy} onClick={() => { if (!busyRef.current) onClose(); }} aria-label={t("studio.bg3d.primitiveEdit.close", "면 편집 닫기")}><X size={18} aria-hidden /></button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">

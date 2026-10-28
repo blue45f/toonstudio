@@ -60,7 +60,7 @@ REA 증거와 실제 구현 증거는 [조사·통합 기록](../reports/sketchu
 | SK30 | 3D Warehouse·Extension Warehouse·Trimble Connect | 확인 중: 외부 서비스 접근·계정 계약 조사 필요 | 권한·카탈로그/자산·업로드·동기화·오류/취소·비용 경계의 실제 연결 |
 | SK31 | Ruby/JavaScript/확장 도구·속성 사전·observer·사용자 도구 | 확인 중: 공개 API 계약 조사 시작 | 기능별 호환 계약·도구 이벤트·원자 명령·확장 격리와 실제 실행 증거 |
 | SK32 | 단위·정밀도·Undo/Redo·저장·복원·성능·플랫폼 입력 | 부분: 기존 정본 문서/명령/직렬화와 기능별 회귀 | 각 요구와 모든 주요 context에 대한 실패 원자성·파일/브라우저/성능 검증 |
-| SK33 | BG3D 배경과 정밀 면 모델러의 실제 원본 편집 연계 | 부분: 독립 단색 상자 원본→실제 면 편집→Worker/OPFS→같은 ID 교체·Undo/Redo·캡처·새 마운트 복원 | 정확한 mesh 권위의 반복 재편집·일반 도형/계층/재질/외부 모델의 원본 보존 검증 |
+| SK33 | BG3D 배경과 정밀 면 모델러의 실제 원본 편집 연계 | 부분: 독립 단색 상자와 v1 원본 mesh 파생 모델의 반복 면 편집·Worker/OPFS·같은 ID 교체·Undo/Redo·두 번의 캡처/새 마운트 복원 | 일반 도형/계층/재질/외부 모델의 원본 보존과 전체 검사·production build 검증 |
 
 ## 실제 확인한 변경과 남은 검증
 
@@ -81,6 +81,12 @@ REA 증거와 실제 구현 증거는 [조사·통합 기록](../reports/sketchu
 
 - 2026-10-29 기본 상자 원본 편집은 관련 15파일·237개와 실제 브라우저의 선택→면 편집→Worker/OPFS→같은 ID 교체→Undo/Redo→캡처→새 마운트 복원을 확인했다.
   [지원 경계](bg3d-primitive-face-edit.md)와 [검증 기록](../reports/bg3d-primitive-face-edit-2026-10-29.md)을 SK33의 부분 증거로 사용한다.
-  변환된 모델의 반복 면 편집과 일반 모델/계층/재질 연계는 남아 있다. 최신 전체 하네스·production build는 별도 대기 중이다.
+  이 최초 경로의 기록만으로 반복 면 편집을 입증하지 않는다. 최신 전체 하네스·production build는 별도 대기 중이다.
+- v1 원본 mesh를 보관한 편집 모델은 현재 배치·단색·권리를 유지하며 재선택·재편집하는 경로를 구현했다.
+  GLB의 Float32 정점을 원본으로 재구성하지 않으며, 저장 Blob SHA·record·attachment·캐시와 현재 source를 함께 검증한다.
+  같은 read snapshot의 `[B]` 또는 `[A, B]` lease를 동기 교체까지 유지하고 실패 시 원본과 공유 인스턴스를 보존한다.
+  공통 lease 보강 후 집중 20파일·411회귀와 새 브라우저 context의 세 번 반복 편집·두 번 캡처/저장/새 마운트·17개 확인 항목을 통과했다.
+  [지원 경계](bg3d-authored-model-face-edit.md)와 [재편집 검증 기록](../reports/bg3d-authored-model-face-edit-2026-10-29.md)을 별도로 추적한다.
+  이 unsigned payload의 내부 일관성은 출처·소유권 인증이 아니며 구형 GLB·일반 모델/계층/재질 연계는 남아 있다.
 - 자기 생성 SKP의 [native camera golden corpus](../reports/sketchup-native-camera-golden-2026-10-29.md)는 SDK 저장·재읽기와 실제 파서→GLB의 4회귀를 보존한다.
   원근 FOV 축·aspect가 OpenSKP에 노출되지 않는 경계는 그대로이며, 미확인 값을 추측해 적용하지 않는다.

@@ -48,6 +48,7 @@ async function begin(host: StudioBg3dPrimitiveEditEditorHost) {
   if (!command) throw new Error("실제 begin 명령이 필요합니다.");
   const result = await command();
   if (!result.ok) throw new Error(result.messageKo);
+  if (result.context.kind !== "primitive") throw new Error("기본 상자 fixture의 편집 문맥이 필요합니다.");
   return result.context;
 }
 
@@ -153,7 +154,7 @@ describe("기본 도형 직접 편집의 가변 host adapter", () => {
   it("실제 최신 선택으로 source→6개 면 workspace를 만들고 원본·문서·history를 변경하지 않는다", async () => {
     const f = fixture(), before = JSON.stringify(f.runtime.current);
     const ports = createStudioBg3dPrimitiveEditHostPorts(f.host);
-    expect(ports.primitiveEditSelection).toEqual({ nodeId: "source-box", name: "실제 원본 상자", blockedReason: null });
+    expect(ports.primitiveEditSelection).toEqual({ nodeId: "source-box", name: "실제 원본 상자", blockedReason: null, sourceType: "primitive" });
     const context = await begin(f.host), mesh = context.workspace.session.state.geometry.records[context.assetId].mesh;
     expect(context.source.sourceNodeId).toBe(f.primitive.id);
     expect(context.source.modalSession).toBe(f.session.current);
@@ -189,6 +190,7 @@ describe("기본 도형 직접 편집의 가변 host adapter", () => {
     const result = await ports.onBeginPrimitiveEdit?.();
     expect(result?.ok).toBe(true);
     if (!result?.ok) throw new Error("최신 원본을 준비해야 합니다.");
+    if (result.context.kind !== "primitive") throw new Error("현재 fixture는 기본 상자입니다.");
     expect(result.context.source.sourceNodeId).toBe("new-box");
     expect(result.context.source.modalSession).toBe(session.current);
     expect(result.context.source.primitive.name).toBe("새 원본");

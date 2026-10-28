@@ -8,6 +8,7 @@ import {
   revalidateStudioBg3dPrimitiveEditSource,
 } from "./studio-bg3d-primitive-edit-source";
 import { isStudioBg3dWorkbenchInsertionAvailable, type StudioBg3dWorkbenchInsertionHost } from "./studio-bg3d-workbench-insertion";
+import { summarizeStudioBg3dAuthoredModelEditSource } from "./studio-bg3d-authored-model-edit-summary";
 
 export type StudioBg3dPrimitiveEditEditorHost = Partial<StudioBg3dPrimitiveEditOrchestratorHost>
   & Omit<StudioBg3dWorkbenchInsertionHost, "modelRenderer" | "physicsRuntimeSourceRef">
@@ -60,20 +61,68 @@ function ready(host: StudioBg3dPrimitiveEditEditorHost): boolean {
 }
 
 const UNAVAILABLE = "현재 장면의 원본 면 편집을 준비하지 못했습니다. 편집기를 다시 연 뒤 시도하세요.";
+const CHANGED = "선택 또는 편집기 세션이 바뀌었습니다. 현재 원본에서 다시 시작하세요.";
+
+function hasSelectedModel(host: StudioBg3dPrimitiveEditEditorHost): boolean {
+  const ids = host.selectedIdsRef?.current ?? host.selectedIds;
+  return Boolean(ids && host.physicsRuntimeSourceRef?.current.customModels.some(({ id }) => ids.has(id)));
+}
+
+function selectedId(host: StudioBg3dPrimitiveEditEditorHost): string | null {
+  const ids = host.selectedIdsRef?.current ?? host.selectedIds;
+  if (!ids || ids.size !== 1) return null;
+  return ids.values().next().value ?? null;
+}
+
+function modelPreparationScope(host: StudioBg3dPrimitiveEditEditorHost) {
+  const id = selectedId(host);
+  const runtime = host.physicsRuntimeSourceRef?.current;
+  const model = runtime?.customModels.find((value) => value.id === id);
+  const cached = model ? host.modelRootCacheRef?.current.get(model.modelId) : undefined;
+  return { id, modelJson: JSON.stringify(model), nodeJson: JSON.stringify(runtime?.document.nodes.find((node) => node.id === id)),
+    cache: cached, root: cached?.root, recordId: cached?.record.id, recordHash: cached?.record.contentHash,
+    normalizationScale: cached?.normalizationScale };
+}
 
 export function createStudioBg3dPrimitiveEditHostPorts(host: StudioBg3dPrimitiveEditEditorHost): StudioBg3dPrimitiveEditPorts {
   const live = createStudioBg3dPrimitiveEditHost(host);
-  const primitiveEditSelection = ready(host) ? inspectStudioBg3dPrimitiveEditSource(live)
+  const modelSelected = hasSelectedModel(host);
+  const primitiveEditSelection = ready(host) ? (modelSelected
+    ? { ...summarizeStudioBg3dAuthoredModelEditSource(live), sourceType: "authored-model" as const }
+    : { ...inspectStudioBg3dPrimitiveEditSource(live), sourceType: "primitive" as const })
     : { nodeId: null, name: "", blockedReason: UNAVAILABLE };
   return {
     primitiveEditSelection,
-    onBeginPrimitiveEdit: async () => {
-      if (!ready(host)) return { ok: false, messageKo: UNAVAILABLE };
+    onBeginPrimitiveEdit: async (requestSignal) => {
+      if (!ready(host) || requestSignal?.aborted) return { ok: false, messageKo: UNAVAILABLE };
+      if (hasSelectedModel(host)) {
+        const scope = modelPreparationScope(host);
+        const session = host.modalAssetSessionRef?.current;
+        const signal = requestSignal ?? new AbortController().signal;
+        try {
+          const source = await import("./studio-bg3d-authored-model-edit-source");
+          const latest = modelPreparationScope(host);
+          if (!ready(host) || signal.aborted || latest.id !== scope.id || latest.modelJson !== scope.modelJson
+            || latest.nodeJson !== scope.nodeJson || latest.cache !== scope.cache || latest.root !== scope.root
+            || latest.recordId !== scope.recordId || latest.recordHash !== scope.recordHash
+            || latest.normalizationScale !== scope.normalizationScale || host.modalAssetSessionRef?.current !== session) {
+            return { ok: false, messageKo: CHANGED };
+          }
+          const captured = await source.captureStudioBg3dAuthoredModelEditSource(live, signal);
+          if (!captured.ok) return captured;
+          const { createStudioBg3dAuthoredModelEditWorkspace } = await import("./studio-bg3d-authored-model-edit-workspace");
+          if (!ready(host) || signal.aborted) return { ok: false, messageKo: CHANGED };
+          const current = source.revalidateStudioBg3dAuthoredModelEditSource(live, captured.snapshot);
+          if (!current.ok) return current;
+          const result = createStudioBg3dAuthoredModelEditWorkspace(captured.snapshot);
+          return result.ok ? { ok: true, context: result.value } : result;
+        } catch { return { ok: false, messageKo: "보관된 원본 메시를 여는 중 오류가 발생했습니다. 다시 시도하세요." }; }
+      }
       const source = captureStudioBg3dPrimitiveEditSource(live);
       if (!source.ok) return source;
       try {
         const { createStudioBg3dPrimitiveEditWorkspace } = await import("./studio-bg3d-primitive-edit-workspace");
-        if (!ready(host)) return { ok: false, messageKo: UNAVAILABLE };
+        if (!ready(host) || requestSignal?.aborted) return { ok: false, messageKo: UNAVAILABLE };
         const current = revalidateStudioBg3dPrimitiveEditSource(live, source.snapshot);
         if (!current.ok) return current;
         const result = createStudioBg3dPrimitiveEditWorkspace(source.snapshot);
@@ -83,6 +132,11 @@ export function createStudioBg3dPrimitiveEditHostPorts(host: StudioBg3dPrimitive
     onApplyPrimitiveEdit: async (context, workspace, signal) => {
       if (!ready(host) || signal.aborted) return { ok: false, messageKo: UNAVAILABLE };
       try {
+        if (context.kind === "authored-model") {
+          const { applyStudioBg3dAuthoredModelEditWorkspace } = await import("./studio-bg3d-authored-model-edit-orchestrator");
+          if (!ready(host)) return { ok: false, messageKo: UNAVAILABLE };
+          return await applyStudioBg3dAuthoredModelEditWorkspace(live, context, workspace, signal);
+        }
         const { applyStudioBg3dPrimitiveEditWorkspace } = await import("./studio-bg3d-primitive-edit-orchestrator");
         if (!ready(host)) return { ok: false, messageKo: UNAVAILABLE };
         return await applyStudioBg3dPrimitiveEditWorkspace(live, context, workspace, signal);
