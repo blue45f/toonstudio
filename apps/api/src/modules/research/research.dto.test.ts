@@ -46,15 +46,15 @@ describe("research.dto 존재 여부 확인", () => {
 
 describe("research.dto 트렌드 다이제스트", () => {
   it("질의 수와 중복을 검증한다", () => {
-    expect(TrendDigestSchema.safeParse({ queries: [] })).toBe(false);
+    expect(TrendDigestSchema.safeParse({ queries: [] }).success).toBe(false);
     expect(TrendDigestSchema.safeParse({
       queries: Array.from({ length: 11 }, (_, i) => `질의${i}`),
-    })).toBe(false);
+    }).success).toBe(false);
     expect(TrendDigestSchema.safeParse({
       queries: ["판타지", "판타지"],
-    })).toBe(false);
+    }).success).toBe(false);
     expect(TrendDigestSchema.safeParse({
       queries: ["판타지", "로맨스"],
-    })).toBe(true);
+    }).success).toBe(true);
   });
 });
