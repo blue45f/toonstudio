@@ -1,11 +1,13 @@
 import type { VRM } from "@pixiv/three-vrm";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { isStudioVrmProductionModelUrl } from "../../vrm/studio-vrm-model-quality";
 import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../vrm/vrm-library";
 import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
+import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
+import { createStudioThreeGlbLoader, loadStudioThreeModelProps, type StudioThreeModelController } from "./studio-virtual-space-three-asset-loader";
+import { isStudioThreeCampusManifest, studioThreeGeneratedProps, studioThreeManifestProps } from "./studio-virtual-space-three-generated-assets";
 import { loadStudioThreeZoneDioramas } from "./studio-virtual-space-three-dioramas";
 
 /** 2D 월드 좌표(3072×1984 px)를 3D 미터 단위로 변환하는 비율 (32px = 1m). */
@@ -640,8 +642,10 @@ export function loadStudioThreeAssets(
   actorNodes: ReadonlyMap<string, StudioThreeActorNode>,
   isDisposed: () => boolean,
   selfAvatarIndex = 0,
-): (actorId: string, index: number) => void {
-  const glbLoader = new GLTFLoader();
+  manifest?: StudioVirtualSpaceWorldManifest,
+  onAssetError?: (url: string) => void,
+): ((actorId: string, index: number) => void) & StudioThreeModelController {
+  const glbLoader = createStudioThreeGlbLoader();
 
   const loadActorVrm = (actorId: string, index: number, forceReplace = false) => {
     const vrmUrl = resolveStudioThreeVrmUrl(index);
@@ -727,70 +731,19 @@ export function loadStudioThreeAssets(
     );
   };
 
-  const npcIds = ["self", ...CAMPUS_NPCS.map((npc) => npc.id)];
+  const npcIds = ["self", ...(manifest?.npcs ?? CAMPUS_NPCS).map((npc) => npc.id)];
 
   // 1. 초기 진입 로비 아바타(self, concierge) + 10개 구역 풀 3D 건축 디오라마 최우선 로드
   loadActorVrm("self", selfAvatarIndex);
   if (npcIds[1]) loadActorVrm(npcIds[1], 1);
-  loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed);
+  if (isStudioThreeCampusManifest(manifest)) loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed);
 
   // 2. 나머지 구역 NPC VRM 아바타 로드
   npcIds.slice(2).forEach((actorId, offset) => loadActorVrm(actorId, offset + 2));
 
-  // 3. 협업 워크스테이션 소품 로드
-  const glbCache = new Map<string, Promise<THREE.Group>>();
-  const loadNormalizedGlb = (url: string): Promise<THREE.Group> => {
-    const cached = glbCache.get(url);
-    if (cached) return cached.then((group) => group.clone(true));
-    const promise = new Promise<THREE.Group>((resolve, reject) => {
-      glbLoader.load(
-        url,
-        (gltf) => {
-          const root = gltf.scene;
-          root.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-          resolve(root);
-        },
-        undefined,
-        reject,
-      );
-    });
-    glbCache.set(url, promise);
-    return promise.then((group) => group.clone(true));
-  };
-
-  for (const prop of STUDIO_THREE_PROPS) {
-    void loadNormalizedGlb(prop.url)
-      .then((model) => {
-        if (isDisposed()) return;
-        const box = new THREE.Box3().setFromObject(model);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const currentHeight = Math.max(0.05, size.y);
-        const scale = prop.heightMeters / currentHeight;
-        model.scale.setScalar(scale);
-
-        const scaledBox = new THREE.Box3().setFromObject(model);
-        const center = new THREE.Vector3();
-        scaledBox.getCenter(center);
-
-        const wrapper = new THREE.Group();
-        wrapper.name = `prop-${prop.id}`;
-        model.position.set(-center.x, -scaledBox.min.y + 0.05 + (prop.elevationMeters ?? 0), -center.z);
-        wrapper.add(model);
-        wrapper.position.copy(worldToThree({ x: prop.x, y: prop.y }, 0));
-        if (prop.rotationY) wrapper.rotation.y = prop.rotationY;
-        scene.add(wrapper);
-      })
-      .catch(() => {
-        // GLB 로드 실패 시 조용히 무시하고 기본 건축 구성을 유지한다.
-      });
-  }
-
-  return (actorId: string, index: number) => loadActorVrm(actorId, index, true);
+  // 3. 기존 장비와 실생성 Tripo·Varco 소품·내장 모션을 함께 로드한다.
+  const props = isStudioThreeCampusManifest(manifest) || !manifest ? STUDIO_THREE_PROPS : studioThreeManifestProps(manifest);
+  const models = loadStudioThreeModelProps(scene, glbLoader, [...props, ...studioThreeGeneratedProps(manifest)], isDisposed, onAssetError);
+  return Object.assign((actorId: string, index: number) => loadActorVrm(actorId, index, true), models);
 }
 

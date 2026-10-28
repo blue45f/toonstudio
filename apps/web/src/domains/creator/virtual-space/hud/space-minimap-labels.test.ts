@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clusterSpaceMinimapPeople,
   layoutSpaceMinimapLabels,
   spaceMinimapFallbackShortLabel,
   spaceMinimapGlyphWidthEm,
+  spaceMinimapPeerTarget,
   spaceMinimapTextWidth,
 } from "./space-minimap-labels";
 import { studioVirtualToonHqManifest } from "../office2d/hq/toon-hq-manifest";
@@ -67,5 +69,20 @@ describe("미니맵 방 라벨 정리", () => {
       const zone = zones.find((candidate) => candidate.id === label.id);
       expect(zone && spaceMinimapTextWidth(label.text, label.fontSize) <= zone.width).toBe(true);
     }
+  });
+
+  it("근접한 동료 핀은 클러스터로 병합하고 도착 목적지는 ±60px 오프셋을 둔다", () => {
+    const clusters = clusterSpaceMinimapPeople([
+      { id: "p1", name: "민지", point: { x: 400, y: 400 } },
+      { id: "p2", name: "현우", point: { x: 420, y: 410 } },
+      { id: "p3", name: "서연", point: { x: 900, y: 700 } },
+    ], 64);
+    expect(clusters).toHaveLength(2);
+    expect(clusters[0]?.count).toBe(2);
+    expect(clusters[0]?.names).toEqual(["민지", "현우"]);
+    expect(clusters[1]?.count).toBe(1);
+
+    const target = spaceMinimapPeerTarget({ x: 400, y: 400 }, "p1", 60);
+    expect(Math.hypot(target.x - 400, target.y - 400)).toBeCloseTo(60, 0);
   });
 });

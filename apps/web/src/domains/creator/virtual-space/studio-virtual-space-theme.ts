@@ -13,6 +13,7 @@
  *   호스트 배경 그라데이션을 테마에서 가져간다. 방 단위 공유가 아니라 이 브라우저의 로컬
  *   적용이며 선택은 localStorage에 저장돼 재입장 시 유지된다.
  */
+import { STUDIO_OFFICE_ENVIRONMENT_KEYS, studioOfficeEnvironmentThemes } from "./studio-virtual-space-office-environments";
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import type { StudioCampusZoneTone } from "./studio-virtual-space-campus-blueprint";
 
@@ -27,6 +28,7 @@ export const STUDIO_SPACE_THEME_KEYS = [
   "library",
   "sakura-campus",
   "sunset-harbor",
+  ...STUDIO_OFFICE_ENVIRONMENT_KEYS,
 ] as const;
 export type StudioSpaceThemeKey = (typeof STUDIO_SPACE_THEME_KEYS)[number];
 
@@ -117,7 +119,7 @@ export interface StudioSpaceTheme {
 const floor = (pattern: StudioSpaceThemeFloorPattern, base: number, accent: number): StudioSpaceThemeFloorSpec =>
   Object.freeze({ pattern, base, accent });
 
-export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
+const STANDARD_STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
   {
     key: "modern-office",
     labelKo: "모던 오피스",
@@ -498,6 +500,10 @@ export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
     decorVariant: "harbor-rope",
     decorAccent: 0x2e8f83,
   },
+]);
+
+export const STUDIO_SPACE_THEMES: readonly StudioSpaceTheme[] = Object.freeze([
+  ...STANDARD_STUDIO_SPACE_THEMES, ...studioOfficeEnvironmentThemes(STANDARD_STUDIO_SPACE_THEMES),
 ]);
 
 export function isStudioSpaceThemeKey(value: unknown): value is StudioSpaceThemeKey {

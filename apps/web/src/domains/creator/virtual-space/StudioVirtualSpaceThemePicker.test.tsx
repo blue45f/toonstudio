@@ -11,13 +11,13 @@ afterEach(() => cleanup());
 vi.setConfig({ testTimeout: 30000 });
 
 describe("StudioVirtualSpaceThemePicker", () => {
-  it("테마 10종을 모두 보여 주고 현재 테마가 눌린 상태로 표시된다", () => {
+  it("테마 13종을 모두 보여 주고 현재 테마가 눌린 상태로 표시된다", () => {
     render(<StudioVirtualSpaceThemePicker value="modern-office" onChange={vi.fn()} />);
     const buttons = screen.getAllByRole("button");
     expect(buttons).toHaveLength(STUDIO_SPACE_THEMES.length);
     for (const theme of STUDIO_SPACE_THEMES) {
       expect(screen.getByText(theme.labelKo)).toBeTruthy();
-      expect(screen.getByText(theme.badgeKo)).toBeTruthy();
+      expect(screen.getAllByText(theme.badgeKo).length).toBeGreaterThan(0);
     }
     expect(screen.getByRole("button", { name: /모던 오피스/ }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: /웹툰 원고 아틀리에/ }).getAttribute("aria-pressed")).toBe("false");

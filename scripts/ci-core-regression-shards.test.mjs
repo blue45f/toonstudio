@@ -51,6 +51,7 @@ test("semantic sharding keeps expensive domains isolated", () => {
     ["apps/web/src/domains/learn/accessible-webtoon-guide-docs.test.ts", "product"],
     ["apps/web/src/domains/creator/studio-project-creation.test.ts", "studio-foundation"],
     ["apps/web/src/domains/creator/brush/StudioBrushTray.test.tsx", "studio-editing"],
+    ["apps/web/src/domains/creator/live/studio-live-transform-draft-store.test.ts", "studio-editing"],
     ["apps/web/src/domains/creator/bg3d/studio-bg3d-camera-selection.test.ts", "studio-3d"],
     ["apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.test.ts", "studio-character"],
     ["apps/web/src/domains/creator/character-shaper/character-shaper-export.test.ts", "studio-character"],
@@ -274,6 +275,29 @@ test("foundation sparse checkout은 전체 기본 래스터 소품 입력을 복
   assert.ok(restore, "foundation 입력 복원 단계를 유지해야 합니다.");
   assert.match(restore, /if: matrix.shard == 'studio-foundation'/u);
   assert.match(restore, /(?:^|\s)\/apps\/web\/public\/assets\/studio\/props\/(?:\s|$)/u);
+});
+
+test("가상 오피스 원본·런타임·기존 시트 검증 입력은 소유 foundation shard에만 복원한다", () => {
+  const execution = executionTargetsByShard();
+  for (const target of [
+    "apps/web/src/domains/creator/virtual-space/office2d/office2d-atlas-frames.test.ts",
+    "apps/web/src/domains/creator/virtual-space/studio-virtual-space-office-environments.test.ts",
+  ]) {
+    assert.equal(shardForTarget(target), "studio-foundation", target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => targetIsCovered(target, execution[name])), ["studio-foundation"], target);
+  }
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const restore = workflow.match(/- name: 가상 오피스 원본·런타임 시트와 환경 아트 검증 입력 복원\n([\s\S]*?)(?=\n {6}- name:)/u)?.[1];
+  assert.ok(restore, "실제 아트 파일을 읽는 회귀의 sparse 복원 단계를 유지해야 합니다.");
+  assert.match(restore, /if: matrix.shard == 'studio-foundation'/u);
+  assert.match(restore, /git sparse-checkout add/u);
+  const paths = [...restore.matchAll(/(?:^|\s)(\/apps\/web\/public\/assets\/[A-Za-z0-9/_-]+\/)(?=\s|$)/gu)].map((match) => match[1]);
+  assert.deepEqual(paths.sort(), [
+    "/apps/web/public/assets/virtual-studio/office-cast-v2/",
+    "/apps/web/public/assets/virtual-studio/office-themes-v1/",
+    "/apps/web/public/assets/virtual-studio/toon-office-v1/characters/",
+  ]);
+  for (const path of paths) assert.equal(workflow.split(path).length - 1, 1, `${path}: 다른 shard의 checkout 범위를 넓히지 않습니다.`);
 });
 
 test("제작 공정과 시각적 작업 보드 검증은 필수 product shard에서 한 번만 실행한다", () => {

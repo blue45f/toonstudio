@@ -28,6 +28,7 @@ import {
 } from "../studio-virtual-space-tile-effects";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import type { Office2dActor } from "./office2d-actors";
+import type { Office2dComicBurst } from "./office2d-backdrop-art";
 import type { Office2dVisibleRect } from "./office2d-camera";
 import { OFFICE2D_OVERLAY_FONT } from "./office2d-overlay";
 import type { Office2dParticles } from "./office2d-particles";
@@ -126,6 +127,10 @@ const FIXTURE_TO_SPRITE: Readonly<Record<string, Office2dSpriteKey>> = Object.fr
 
 export class Office2dStageExtensions {
   private readonly objectStates = new Map<string, { readonly stateKey: string; readonly changedAt: number }>();
+  private readonly bursts: Office2dComicBurst[] = [];
+  private burstSeq = 0;
+  public schematicMode = false;
+  public claimedSeatId: string = readOffice2dClaimedSeatId();
   private lastTriggeredTileEffectId: string | null = null;
   private lastWaveSignature = "";
   private activeTour: {
@@ -138,6 +143,18 @@ export class Office2dStageExtensions {
 
   get activeObjectStates(): ReadonlyMap<string, { readonly stateKey: string; readonly changedAt: number }> {
     return this.objectStates;
+  }
+
+  get comicBursts(): readonly Office2dComicBurst[] {
+    return this.bursts;
+  }
+
+  pushComicBurst(text: string, color: string, x: number, y: number, nowMs = Date.now(), durationMs = 2400): void {
+    this.burstSeq += 1;
+    this.bursts.push({ id: this.burstSeq, text, color, x, y, createdAt: nowMs, durationMs });
+    if (this.bursts.length > 16) {
+      this.bursts.splice(0, this.bursts.length - 16);
+    }
   }
 
   /** 상호작용 가구·소품 발동 시 로컬 상태 배지와 파티클을 일으키고 필요하면 프레즌스 상태 전이를 알린다. */
@@ -157,17 +174,22 @@ export class Office2dStageExtensions {
       nextState = prev === "coffee:brewing" ? "coffee:ready" : "coffee:brewing";
       particles.emit("steam", x, y - 56, 6, 1.3);
       particles.emit("spark", x, y - 44, 8, 1);
+      this.pushComicBurst("보글보글 ☕ 에스프레소!", "#f59e0b", x, y - 58, nowMs);
     } else if (sprite === "floor-lamp") {
       nextState = prev === "light:off" ? "light:on" : "light:off";
       particles.emit("spark", x, y - 64, 6, 0.9);
+      this.pushComicBurst("찰칵 💡 스탠드 조명!", "#fbbf24", x, y - 64, nowMs);
     } else if (sprite === "kanban-board" || sprite === "storyboard-wall" || sprite === "review-screen") {
       nextState = "media:open";
       particles.emit("note", x, y - 58, 5, 1);
+      this.pushComicBurst(sprite === "review-screen" ? "승인 PASS ✅ 합평 스크린" : "번뜩—!! 📌 콘티·칸반 동기화", "#38bdf8", x, y - 62, nowMs);
     } else if (sprite === "printer-station" || sprite === "vending-machine") {
       nextState = "print:active";
       particles.emit("confetti", x, y - 48, 10, 0.85);
+      this.pushComicBurst("위이잉 🖨 교정지 출력 완료!", "#34d399", x, y - 56, nowMs);
     } else {
       particles.emit("spark", x, y - 42, 6, 0.85);
+      this.pushComicBurst("스슥— ✒️ 워크스테이션 가동!", "#a855f7", x, y - 52, nowMs);
     }
 
     if (nextState) {
@@ -391,5 +413,135 @@ function tileEffectColor(kind: StudioTileEffectDefinition["kind"]): { readonly f
     case "zone": return { fill: "rgba(110, 231, 183, 0.16)", stroke: "#6ee7b7" };
     case "bgm": return { fill: "rgba(167, 139, 250, 0.16)", stroke: "#a78bfa" };
     default: return { fill: "rgba(240, 138, 126, 0.16)", stroke: "#f08a7e" };
+  }
+}
+
+export const OFFICE2D_CLAIMED_SEAT_STORAGE_KEY = "toonstudio:office2d:my-seat-v1";
+export const OFFICE2D_DEFAULT_CLAIMED_SEAT_ID = "hq-ink-desk-a-1-seat";
+export const OFFICE2D_SOUND_MUTED_STORAGE_KEY = "toonstudio:office2d:sound-muted-v1";
+
+/** SoWork SetMyWorkSpotModal(ev_be107c29) + WA personalArea 기반 내 지정석 ID 조회. */
+export function readOffice2dClaimedSeatId(): string {
+  try {
+    const raw = globalThis.localStorage?.getItem(OFFICE2D_CLAIMED_SEAT_STORAGE_KEY)?.trim();
+    return raw && raw.length > 0 ? raw : OFFICE2D_DEFAULT_CLAIMED_SEAT_ID;
+  } catch {
+    return OFFICE2D_DEFAULT_CLAIMED_SEAT_ID;
+  }
+}
+
+/** 내 지정석 ID를 로컬 스토리지에 영속화한다. */
+export function writeOffice2dClaimedSeatId(seatId: string): string {
+  const next = seatId.trim() || OFFICE2D_DEFAULT_CLAIMED_SEAT_ID;
+  try {
+    globalThis.localStorage?.setItem(OFFICE2D_CLAIMED_SEAT_STORAGE_KEY, next);
+  } catch {
+    // 스토리지 접근 불가 환경 무시
+  }
+  return next;
+}
+
+export function readOffice2dSoundMuted(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(OFFICE2D_SOUND_MUTED_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function writeOffice2dSoundMuted(muted: boolean): boolean {
+  try {
+    globalThis.localStorage?.setItem(OFFICE2D_SOUND_MUTED_STORAGE_KEY, muted ? "1" : "0");
+  } catch {
+    // 스토리지 접근 불가 환경 무시
+  }
+  return muted;
+}
+
+export interface Office2dQuickEmoteSpec {
+  readonly digit: "1" | "2" | "3" | "4" | "5" | "6";
+  readonly glyph: string;
+  readonly sfxKo: string;
+  readonly sfxEn: string;
+  readonly color: string;
+}
+
+/** WorkAdventure EmoteStore(ev_c8d86099) 1~6 숫자키 즉시 이모트 + 웹툰 코믹 의성어 매핑. */
+export const OFFICE2D_QUICK_EMOTES: readonly Office2dQuickEmoteSpec[] = Object.freeze([
+  { digit: "1", glyph: "👋", sfxKo: "반가워요—!! 👋", sfxEn: "HELLO—!! 👋", color: "#38bdf8" },
+  { digit: "2", glyph: "🔥", sfxKo: "마감 버닝—!! 🔥", sfxEn: "BURNING—!! 🔥", color: "#f97316" },
+  { digit: "3", glyph: "👍", sfxKo: "컷 승인 PASS 👍", sfxEn: "APPROVED 👍", color: "#34d399" },
+  { digit: "4", glyph: "💡", sfxKo: "번뜩— 유레카 💡", sfxEn: "EUREKA—!! 💡", color: "#fbbf24" },
+  { digit: "5", glyph: "🎉", sfxKo: "탈고 만세—!! 🎉", sfxEn: "SHIPPED—!! 🎉", color: "#ec4899" },
+  { digit: "6", glyph: "☕", sfxKo: "카페인 충전 ☕", sfxEn: "ESPRESSO ☕", color: "#c084fc" },
+]);
+
+export function findOffice2dQuickEmote(codeOrKey: string): Office2dQuickEmoteSpec | null {
+  const digit = codeOrKey.startsWith("Digit") ? codeOrKey.slice(5) : codeOrKey;
+  return OFFICE2D_QUICK_EMOTES.find((item) => item.digit === digit) ?? null;
+}
+
+const ROOM_CHORD_HZ: Readonly<Record<string, readonly [number, number]>> = Object.freeze({
+  "hq-story-room": [523.25, 659.25],
+  "hq-ink-bay": [587.33, 880],
+  "hq-color-lab": [659.25, 987.77],
+  "hq-bg3d-lab": [440, 659.25],
+  "hq-reference-library": [392, 523.25],
+  "hq-focus-booths": [329.63, 493.88],
+  "hq-lettering-desk": [698.46, 1046.5],
+  "hq-review-room": [523.25, 783.99],
+  "hq-war-room": [493.88, 739.99],
+  "hq-lobby": [587.33, 783.99],
+  "hq-lounge": [440, 554.37],
+  "hq-meeting-room": [493.88, 659.25],
+  "hq-publish-desk": [659.25, 1318.5],
+});
+
+/**
+ * Gather LeakyDesks + Kumospace 공간 음향 + WA decreaseAudioPlayerVolumeWhileTalking(ev_c8d86099) +
+ * SoWork AudioPool(ev_be107c29)을 결합한 절차적 WebAudio 마이크로 사운드스케이프.
+ */
+export function playOffice2dSpatialCue(
+  kind: "room-enter" | "seat-sit" | "desk-claim" | "emote" | "schematic" | "knock",
+  options?: { readonly roomId?: string | null; readonly muted?: boolean; readonly talking?: boolean },
+): boolean {
+  if (options?.muted || typeof window === "undefined") return false;
+  const AudioCtx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) return false;
+  try {
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const duck = options?.talking ? 0.25 : 1;
+    const roomPair = (options?.roomId ? ROOM_CHORD_HZ[options.roomId] : undefined) ?? [523.25, 783.99];
+    const [f0, f1] =
+      kind === "desk-claim"
+        ? [587.33, 1174.66]
+        : kind === "seat-sit"
+          ? [440, 659.25]
+          : kind === "schematic"
+            ? [659.25, 493.88]
+            : kind === "knock"
+              ? [220, 330]
+              : roomPair;
+    const dur = kind === "desk-claim" ? 0.22 : kind === "room-enter" ? 0.18 : 0.12;
+    osc.type = kind === "knock" ? "triangle" : "sine";
+    osc.frequency.setValueAtTime(f0, now);
+    osc.frequency.exponentialRampToValueAtTime(f1, now + dur * 0.85);
+    gain.gain.setValueAtTime(0.065 * duck, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + dur);
+    globalThis.setTimeout(() => {
+      void ctx.close().catch(() => undefined);
+    }, 360);
+    return true;
+  } catch {
+    return false;
   }
 }

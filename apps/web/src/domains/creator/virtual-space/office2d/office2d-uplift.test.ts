@@ -28,11 +28,33 @@ import {
   office2dWorkSheetUrl,
 } from "./office2d-sprite-catalog";
 import {
+  findOffice2dQuickEmote,
+  OFFICE2D_DEFAULT_CLAIMED_SEAT_ID,
+  OFFICE2D_QUICK_EMOTES,
   office2dDaylight,
   office2dOutsideColor,
   office2dPathSpeedMultiplier,
   Office2dStageExtensions,
+  playOffice2dSpatialCue,
+  readOffice2dClaimedSeatId,
+  readOffice2dSoundMuted,
+  writeOffice2dClaimedSeatId,
+  writeOffice2dSoundMuted,
 } from "./office2d-stage-extensions";
+import {
+  computeOffice2dObjectOcclusion,
+  findOffice2dActionableObjectAhead,
+  OFFICE2D_ROOM_ART_SPECS,
+  paintOffice2dComicBursts,
+  paintOffice2dDoorwayAndSeatPreview,
+  paintOffice2dNorthWallArtMural,
+  paintOffice2dRoomAmbientEffects,
+  paintOffice2dRoomFloorBackdrops,
+  paintOffice2dSchematicOverlay,
+  resolveOffice2dSchematicClickTarget,
+  resolveOffice2dWorkstation,
+} from "./office2d-backdrop-art";
+import { TOON_HQ_ROOMS } from "./hq/toon-hq-blueprint";
 import {
   paintOffice2dActorSpatialAura,
   paintOffice2dFloorDetails,
@@ -131,7 +153,7 @@ describe("직군 시트·제스처 매핑", () => {
 
   it("8개 직군 시트와 작업 자세 시트 경로를 갖고, 대화형 NPC도 직군에 맞는다", () => {
     expect(OFFICE2D_CHARACTERS).toHaveLength(8);
-    expect(office2dWorkSheetUrl("editor")).toBe("/assets/virtual-studio/toon-office-v1/characters/work/editor.webp");
+    expect(office2dWorkSheetUrl("editor")).toBe("/assets/virtual-studio/office-cast-v2/editor-work.webp");
     expect(office2dCharacterForNpc("npc-editor")).toBe("editor");
     expect(office2dGestureForEmote("wave")).toBe("wave");
     expect(office2dGestureForEmote("party")).toBe("cheer");
@@ -350,5 +372,176 @@ describe("스테이지 확장·배경 이펙트·상호작용 고도화", () => 
     self.seat = backSeat;
     paintOffice2dActorSpatialAura(ctx, self, detailFrame, [self]);
     expect(ctx.texts.some((text) => text.includes("내 작업 포드"))).toBe(true);
+  });
+
+  it("구역별 배경 아트·오클루전·24px 전방 하이라이트·코믹 효과음·평면도·워크스테이션 매핑을 제공한다", () => {
+    expect(Object.keys(OFFICE2D_ROOM_ART_SPECS).length).toBeGreaterThanOrEqual(12);
+    expect(resolveOffice2dWorkstation("hq-story-room", "story-board").id).toBe("nb-cowork-tarot-pavilion");
+    expect(resolveOffice2dWorkstation("hq-color-lab", null).id).toBe("nb-studio-main-cintiq");
+    expect(resolveOffice2dWorkstation("hq-bg3d-lab", null).id).toBe("nb-plaza-hologram-table");
+    expect(resolveOffice2dWorkstation("hq-lettering-desk", null).id).toBe("nb-plaza-foley-booth");
+    expect(resolveOffice2dWorkstation("hq-review-room", null).id).toBe("nb-plaza-cintiq-pod");
+
+    const ctx = createFakeCanvas2d();
+    paintOffice2dRoomFloorBackdrops(ctx, scene, 0, 0, scene.width, () => null);
+    for (const wall of scene.walls) {
+      paintOffice2dNorthWallArtMural(ctx, wall, () => null, 1.2, false);
+    }
+    paintOffice2dRoomAmbientEffects(ctx, scene, { minX: 0, minY: 0, maxX: scene.width, maxY: scene.height }, 2.4, false, () => null);
+
+    const tallObj = scene.objects.find((obj) => Boolean(obj.footprint)) ?? scene.objects[0]!;
+    const behindActor = createOffice2dActor({
+      id: "behind",
+      kind: "self",
+      character: "artist",
+      accent: "#fff",
+      name: "작가",
+      x: tallObj.x,
+      y: tallObj.y - 16,
+      now: 0,
+    });
+    expect(computeOffice2dObjectOcclusion(tallObj, 96, [behindActor]).alpha).toBe(0.44);
+
+    const interactiveObj = scene.objects.find((obj) => Boolean(obj.interactionId))!;
+    const facingActor = createOffice2dActor({
+      id: "facing",
+      kind: "self",
+      character: "artist",
+      accent: "#fff",
+      name: "작가",
+      x: interactiveObj.x,
+      y: interactiveObj.y + 20,
+      now: 0,
+    });
+    facingActor.facing = "up";
+    expect(findOffice2dActionableObjectAhead([interactiveObj], facingActor)?.id).toBe(interactiveObj.id);
+
+    paintOffice2dDoorwayAndSeatPreview(ctx, scene, facingActor, new Set(), 1.5, "ko");
+    const fakeCamera = {
+      worldToScreen: (pt: { readonly x: number; readonly y: number }) => pt,
+    } as Parameters<typeof paintOffice2dComicBursts>[1];
+    const bursts = [{ id: 1, text: "집중!", color: "#38bdf8", x: 300, y: 300, createdAt: 1000, durationMs: 1200 }];
+    paintOffice2dComicBursts(ctx, fakeCamera, bursts, 1250, false);
+    expect(ctx.texts.includes("집중!")).toBe(true);
+
+    paintOffice2dSchematicOverlay(ctx, scene, [facingActor], "facing", "ko");
+    expect(ctx.texts.some((text) => text.includes("STEP 01") || text.includes("상주"))).toBe(true);
+  });
+
+  it.each(["hq-reference-library", "hq-review-room"])("%s는 X좌표가 같은 북쪽·남쪽 출입구도 각각 안내한다", (roomId) => {
+    const room = TOON_HQ_ROOMS.find((candidate) => candidate.id === roomId);
+    if (!room) throw new Error(`테스트 구역이 없습니다: ${roomId}`);
+    for (const side of ["north", "south"] as const) {
+      const doorX = room.doors[side];
+      if (doorX === undefined) throw new Error(`테스트 출입구가 없습니다: ${roomId}/${side}`);
+      const doorY = side === "north" ? room.y : room.y + room.height;
+      const ctx = createFakeCanvas2d();
+      const fillText = vi.spyOn(ctx, "fillText");
+      const walker = createOffice2dActor({ id: "self", kind: "self", character: "artist", accent: "#fff", name: "작가", x: doorX, y: doorY + 8, now: 0 });
+      paintOffice2dDoorwayAndSeatPreview(ctx, scene, walker, new Set(), 1, "ko");
+      const doorwayLabels = fillText.mock.calls.filter(([text, x, y]) =>
+        (text.includes("노크") || text.includes("정숙 구역")) && x === doorX && y === doorY - 17,
+      );
+      expect(doorwayLabels).toEqual([[
+        room.privacy === "private" ? "🔔 노크 · 회의실 입장" : "🔇 정숙 구역 · 자동 음소거",
+        doorX,
+        doorY - 17,
+      ]]);
+    }
+  });
+
+  it("내 지정석을 저장·복원하고 평면도와 착석 안내에 ★ 비콘을 그린다", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+    });
+    try {
+      expect(readOffice2dClaimedSeatId()).toBe(OFFICE2D_DEFAULT_CLAIMED_SEAT_ID);
+      const seat = scene.seats[3]!;
+      expect(writeOffice2dClaimedSeatId(`  ${seat.id}  `)).toBe(seat.id);
+      expect(readOffice2dClaimedSeatId()).toBe(seat.id);
+      expect(writeOffice2dClaimedSeatId("   ")).toBe(OFFICE2D_DEFAULT_CLAIMED_SEAT_ID);
+      expect(readOffice2dSoundMuted()).toBe(false);
+      writeOffice2dSoundMuted(true);
+      expect(readOffice2dSoundMuted()).toBe(true);
+
+      const ctx = createFakeCanvas2d();
+      const walker = createOffice2dActor({ id: "self", kind: "self", character: "artist", accent: "#fff", name: "작가", x: seat.anchor.x + 300, y: seat.anchor.y, now: 0 });
+      paintOffice2dDoorwayAndSeatPreview(ctx, scene, walker, new Set(), 1, "ko", seat.id);
+      expect(ctx.texts).toContain("★ 내 지정석");
+      paintOffice2dDoorwayAndSeatPreview(ctx, scene, walker, new Set(), 1, "en", "missing-seat");
+      expect(ctx.texts).not.toContain("★ MY DESK");
+      paintOffice2dSchematicOverlay(ctx, scene, [walker], "self", "ko", seat.id);
+      expect(ctx.texts.some((text) => text.includes("클릭 이동"))).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("평면도 클릭은 좌석 28px 안이면 좌석, 아니면 방 스폰, 바깥이면 null로 바꾼다", () => {
+    const seat = scene.seats[0]!;
+    const seatHit = resolveOffice2dSchematicClickTarget(scene, { x: seat.anchor.x + 10, y: seat.anchor.y - 8 });
+    expect(seatHit).toMatchObject({ kind: "seat", seatId: seat.id, point: seat.anchor });
+    expect(seatHit?.roomId).toBeTruthy();
+
+    const lobby = TOON_HQ_ROOMS.find((room) => room.id === "hq-lobby")!;
+    let freePoint: { x: number; y: number } | null = null;
+    for (let gx = lobby.x + 8; gx < lobby.x + lobby.width && !freePoint; gx += 16) {
+      for (let gy = lobby.y + 8; gy < lobby.y + lobby.height && !freePoint; gy += 16) {
+        if (scene.seats.every((candidate) => Math.hypot(candidate.anchor.x - gx, candidate.anchor.y - gy) > 28)) freePoint = { x: gx, y: gy };
+      }
+    }
+    expect(freePoint).not.toBeNull();
+    expect(resolveOffice2dSchematicClickTarget(scene, freePoint!)).toEqual({ kind: "room", roomId: "hq-lobby", point: lobby.spawn });
+    expect(resolveOffice2dSchematicClickTarget(scene, { x: -500, y: -500 })).toBeNull();
+    expect(resolveOffice2dSchematicClickTarget(scene, { x: Number.NaN, y: 10 })).toBeNull();
+  });
+
+  it("1~6 숫자키 이모트 의성어와 음소거·서버 환경에서 소리를 내지 않는 공간 큐", () => {
+    expect(OFFICE2D_QUICK_EMOTES.map((item) => item.digit)).toEqual(["1", "2", "3", "4", "5", "6"]);
+    expect(findOffice2dQuickEmote("Digit4")?.glyph).toBe("💡");
+    expect(findOffice2dQuickEmote("6")?.glyph).toBe("☕");
+    expect(findOffice2dQuickEmote("Digit7")).toBeNull();
+    expect(findOffice2dQuickEmote("KeyH")).toBeNull();
+    expect(playOffice2dSpatialCue("emote", { muted: true })).toBe(false);
+    expect(playOffice2dSpatialCue("emote")).toBe(false);
+  });
+
+  it("공간 큐는 방 화음으로 울리고 음성 대화 중에는 볼륨을 1/4로 낮춘다(WA ducking)", () => {
+    const gains: number[] = [];
+    const freqs: number[] = [];
+    class FakeAudioContext {
+      readonly currentTime = 0;
+      readonly destination = {};
+      createOscillator() {
+        return {
+          type: "sine",
+          frequency: { setValueAtTime: (value: number) => void freqs.push(value), exponentialRampToValueAtTime: () => undefined },
+          connect: () => undefined,
+          start: () => undefined,
+          stop: () => undefined,
+        };
+      }
+      createGain() {
+        return { gain: { setValueAtTime: (value: number) => void gains.push(value), exponentialRampToValueAtTime: () => undefined }, connect: () => undefined };
+      }
+      close() {
+        return Promise.resolve();
+      }
+    }
+    // 이 파일은 node 환경에서 돌아 window가 없으므로 AudioContext만 가진 최소 window를 심는다.
+    vi.stubGlobal("window", { AudioContext: FakeAudioContext });
+    vi.useFakeTimers();
+    try {
+      expect(playOffice2dSpatialCue("room-enter", { roomId: "hq-color-lab" })).toBe(true);
+      expect(playOffice2dSpatialCue("room-enter", { roomId: "hq-color-lab", talking: true })).toBe(true);
+      expect(freqs[0]).toBeCloseTo(659.25);
+      expect(gains[1]! / gains[0]!).toBeCloseTo(0.25);
+      vi.runAllTimers();
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });

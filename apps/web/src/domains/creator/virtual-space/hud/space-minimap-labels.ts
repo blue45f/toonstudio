@@ -110,3 +110,64 @@ export function layoutSpaceMinimapLabels(zones: readonly SpaceMinimapLabelZone[]
   }
   return placed.map((entry) => entry.label);
 }
+
+export interface SpaceMinimapPeerCluster {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly count: number;
+  readonly names: readonly string[];
+}
+
+/**
+ * Gather 미니맵 클러스터링(ev_4fbf21ca): 인접한 팀원 핀(기본 반경 96px 이내)을 하나의 클러스터로 묶는다.
+ */
+export function clusterSpaceMinimapPeople(
+  people: readonly { readonly id: string; readonly name: string; readonly point: { readonly x: number; readonly y: number } }[],
+  radius = 96,
+): readonly SpaceMinimapPeerCluster[] {
+  const clusters: { id: string; x: number; y: number; count: number; names: string[] }[] = [];
+  const rSq = radius * radius;
+  for (const person of people) {
+    const match = clusters.find((c) => {
+      const dx = c.x - person.point.x;
+      const dy = c.y - person.point.y;
+      return dx * dx + dy * dy <= rSq;
+    });
+    if (match) {
+      match.x = (match.x * match.count + person.point.x) / (match.count + 1);
+      match.y = (match.y * match.count + person.point.y) / (match.count + 1);
+      match.count += 1;
+      if (person.name.trim()) match.names.push(person.name.trim());
+    } else {
+      clusters.push({
+        id: person.id,
+        x: person.point.x,
+        y: person.point.y,
+        count: 1,
+        names: person.name.trim() ? [person.name.trim()] : [],
+      });
+    }
+  }
+  return clusters;
+}
+
+/**
+ * SoWork 미니맵 팀원 더블클릭 이동(ev_b5e7b9e0): 아바타 겹침을 막기 위해 ±60px 결정론적 지터를 더한 도착점을 계산한다.
+ */
+export function spaceMinimapPeerTarget(
+  point: { readonly x: number; readonly y: number },
+  seedId: string,
+  jitterPx = 60,
+): { readonly x: number; readonly y: number } {
+  let hash = 2166136261;
+  for (let i = 0; i < seedId.length; i += 1) {
+    hash ^= seedId.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const angle = ((Math.abs(hash) % 360) * Math.PI) / 180;
+  return {
+    x: Math.round(point.x + Math.cos(angle) * jitterPx),
+    y: Math.round(point.y + Math.sin(angle) * jitterPx),
+  };
+}

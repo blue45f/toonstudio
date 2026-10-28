@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { STUDIO_OFFICE_ENVIRONMENTS, studioOfficeEnvironment } from "./studio-virtual-space-office-environments";
 import { StudioVirtualSpaceRoomCatalog } from "./StudioVirtualSpaceRoomCatalog";
 import { STUDIO_SPACE_MODULES } from "./studio-virtual-space-room-catalog";
 
@@ -63,7 +64,7 @@ describe("StudioVirtualSpaceRoomCatalog", () => {
     expect(screen.queryByRole("button", { name: /콘티룸 만들기/u })).toBeNull();
   });
 
-  it("renders Nano Banana 2.5D room preview and specialist host sprite for every space module", () => {
+  it("각 공간 모듈에 실제 환경 미리보기와 진행자 이미지를 표시한다", () => {
     const publicDir = existsSync(resolve(process.cwd(), "public"))
       ? resolve(process.cwd(), "public")
       : resolve(process.cwd(), "apps/web/public");
@@ -74,10 +75,20 @@ describe("StudioVirtualSpaceRoomCatalog", () => {
       const hostImg = screen.getByTestId(`space-module-host-sprite-${module.id}`);
       const roomSrc = roomImg.getAttribute("src") ?? "";
       const hostSrc = hostImg.getAttribute("src") ?? "";
-      expect(roomSrc).toContain("/assets/virtual-studio/nano-banana-");
+      const environment = studioOfficeEnvironment(module.id);
+      if (environment) expect(roomSrc).toBe(environment.previewUrl);
+      else expect(roomSrc).toContain("/assets/virtual-studio/nano-banana-");
       expect(hostSrc).toContain("/assets/virtual-studio/nano-banana-");
       expect(existsSync(resolve(publicDir, `.${roomSrc}`))).toBe(true);
       expect(existsSync(resolve(publicDir, `.${hostSrc}`))).toBe(true);
     }
   });
+  it("세 새 사무실 카드를 기존 장소 이동 계약으로 연다", () => {
+    const { onZone } = mount(false);
+    for (const environment of STUDIO_OFFICE_ENVIRONMENTS) {
+      fireEvent.click(screen.getByRole("button", { name: new RegExp(environment.labelKo) }));
+      expect(onZone).toHaveBeenLastCalledWith(environment.key);
+    }
+  });
+
 });

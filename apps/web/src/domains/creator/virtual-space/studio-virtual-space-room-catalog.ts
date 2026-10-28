@@ -1,3 +1,4 @@
+import { STUDIO_OFFICE_ENVIRONMENTS } from "./studio-virtual-space-office-environments";
 import type { StudioVirtualSpaceZoneId } from "./studio-virtual-space-model";
 import { officeZoneBounds, validateOfficeZones, type StudioOfficeZone } from "./studio-virtual-space-office-zones";
 
@@ -250,6 +251,11 @@ export interface StudioSpaceModule {
   readonly entry: StudioSpaceModuleEntry;
 }
 export const STUDIO_SPACE_MODULES: readonly StudioSpaceModule[] = Object.freeze([
+  ...STUDIO_OFFICE_ENVIRONMENTS.map((environment): StudioSpaceModule => ({
+    id: environment.key, category: "production", labelKo: environment.labelKo, labelEn: environment.labelEn,
+    descriptionKo: environment.descriptionKo, descriptionEn: environment.descriptionEn, privacy: "team", transport: "none",
+    capacity: null, requiresProject: false, entry: { type: "zone", zoneId: environment.key },
+  })),
   {
     id: "p2p-huddle",
     category: "collaboration",
