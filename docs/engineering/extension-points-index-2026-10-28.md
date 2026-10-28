@@ -24,7 +24,7 @@
 ## L5: 경계 규칙과 확인된 위반 1건
 
 - `apps/api/src/server/kmas.ts` 1행은 `packages/core/src/catalog/catalog-store`를 직접 import한다. 이는 `@toonstudio/core` 공개 export를 우회하는 확인된 위반이다.
-- 수정 순서(중위험, 1개씩): core 공개 하위 경로 export 추가 → kmas를 공개 경로로 전환 → knip + 타입체크 + kmas 관련 테스트. 이 순서를 바꾸지 않는다.
+- 수정 순서(중위험, 1개씩): kmas를 이미 있는 공개 경로 `@toonstudio/core/catalog`로 전환 → knip + 타입체크 + kmas 관련 테스트. 새로운 export 추가는 필요 없다(2026-10-28 확인, `web-api-format-public-surface-index-2026-10-28.md` 참조). 이 순서를 바꾸지 않는다.
 - core 배럴에 새로운 `export *` 도메인을 추가하지 않는다. 하위 경로를 먼저 만들고, 기존 index는 호환용으로 둔다.
 - 새 패키지는 5가지 조건을 모두 만족해야 한다: 독립 공개 표면, 2개 이상 소비자, 한 방향 의존 가능, 독립 테스트 가능, 버전 정책상 가치.
 
