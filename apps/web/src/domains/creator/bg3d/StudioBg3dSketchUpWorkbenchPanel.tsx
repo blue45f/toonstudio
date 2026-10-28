@@ -48,6 +48,7 @@ import {
 } from "./studio-bg3d-sketchup-styles-uv-engine";
 import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 import { StudioBg3dSelectionArrayPanel } from "./StudioBg3dSelectionArrayPanel";
+import { StudioBg3dSkpSourceInfoPanel } from "./StudioBg3dSkpSourceInfoPanel";
 import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import { StudioBg3dSketchUpFullSections } from "./StudioBg3dSketchUpFullSections";
@@ -136,6 +137,8 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   onInsertScenePrimitives,
   arraySelection,
   onExecuteSelectionArray,
+  skpSourceSelection,
+  onReadSkpSceneSource,
   onApplySceneCamera,
 }: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
   const t = useT();
@@ -349,6 +352,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
         </span>
       </header>
 
+      <StudioBg3dSkpSourceInfoPanel selection={skpSourceSelection} onReadSource={onReadSkpSceneSource} />
       <StudioBg3dArchitecturalModelingPanel
         disabled={disabled}
         onStatusChange={setStatusBanner}

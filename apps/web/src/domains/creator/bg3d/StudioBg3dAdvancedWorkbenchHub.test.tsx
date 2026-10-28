@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { parseSkp } from "openskp";
+import { Group } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StudioBg3dExecuteSelectionArray, StudioBg3dSelectionArraySummary } from "./studio-bg3d-selection-array";
+import type { StudioBg3dReadSkpSceneSource, StudioBg3dSkpSourceReadResult } from "./studio-bg3d-skp-source-read-command";
+import type { StudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
+import { extractStudioBg3dSkpSceneManifest } from "./studio-bg3d-skp-scene-manifest";
+import { studioBg3dSkpGeometryTransform } from "./studio-bg3d-skp-scene-source";
+import { createStudioBg3dSkpSceneSourceVffBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
+import { createStudioBg3dSkpSourceReaderFromHost, inspectStudioBg3dSkpSourceSelection } from "./studio-bg3d-skp-source-read-command";
 
 import {
   StudioBg3dAdvancedWorkbenchHub,
@@ -29,6 +37,28 @@ const ALL_WORKBENCH_TAB_IDS: readonly StudioBg3dWorkbenchTabId[] = [
   "virtual-space-collab",
   "vrm-hybrid-dcc",
 ];
+
+function actualSkpSource(): StudioBg3dSkpSceneSource {
+  const bytes = new Uint8Array(createStudioBg3dSkpSceneSourceVffBytes());
+  const result = extractStudioBg3dSkpSceneManifest(parseSkp(bytes.buffer));
+  if (!result.ok) throw new Error(result.detail);
+  return { version: 1, status: "available", manifest: result.value, reason: null, geometryTransform: studioBg3dSkpGeometryTransform() };
+}
+
+function sourceHost(source: StudioBg3dSkpSceneSource | undefined, suffix = "A") {
+  const root = new Group();
+  if (source) root.userData.toonstudioSkpSceneSource = source;
+  const host = { open: true, selectedIds: new Set([`instance-${suffix}`]),
+    physicsRuntimeSourceRef: { current: { customModels: [{ id: `instance-${suffix}`, modelId: `storage-${suffix}`, name: `원본 모델 ${suffix}` }] } },
+    modelRootCacheRef: { current: new Map([[`storage-${suffix}`, { root }]]) } };
+  return { read: vi.fn(createStudioBg3dSkpSourceReaderFromHost(host)), selection: inspectStudioBg3dSkpSourceSelection(host) };
+}
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => { throw new Error("지연 결과가 준비되지 않았습니다."); };
+  const promise = new Promise<T>((complete) => { resolve = complete; });
+  return { promise, resolve };
+}
 
 describe("StudioBg3dAdvancedWorkbenchHub", () => {
   afterEach(() => {
@@ -277,6 +307,74 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     fireEvent.click(screen.getByTestId("bg3d-array-execute"));
     expect(execute).not.toHaveBeenCalled();
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
+  });
+
+  it("Hub→실제 SketchUp 패널→원본 정보 버튼으로 검증된 자산 정보를 읽고 기존 3D 배치 수를 바꾸지 않는다", async () => {
+    const source = sourceHost(actualSkpSource());
+    const insert = vi.fn(() => true);
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" onInsertScenePrimitives={insert}
+      skpSourceSelection={source.selection} onReadSkpSceneSource={source.read} />);
+    expect(source.read).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
+    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    expect(insert).toHaveBeenCalledTimes(1);
+    const countBefore = screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent;
+    const actionBefore = screen.getByTestId("bg3d-workbench-last-action").textContent;
+    expect(countBefore).not.toContain("3D 배치 0개");
+    fireEvent.click(screen.getByTestId("bg3d-skp-source-read"));
+    const result = await screen.findByTestId("bg3d-skp-source-available");
+    expect(within(result).getByText("원근 컷")).toBeTruthy();
+    expect(within(result).getByText("평행 컷")).toBeTruthy();
+    expect(within(result).getAllByText("원본 FOV 47.5° · 기준 미확인")).toHaveLength(2);
+    expect(within(result).getByText("정의 (루트 포함)").nextElementSibling?.textContent).toBe("2");
+    expect(source.read).toHaveBeenCalledTimes(1); expect(insert).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toBe(countBefore);
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toBe(actionBefore);
+  });
+
+  it("Hub 편집이 잠겨도 원본 조회는 허용하며 기존 배치 버튼 잠금은 유지한다", async () => {
+    const source = sourceHost(actualSkpSource()), insert = vi.fn(() => true);
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" disabled onInsertScenePrimitives={insert}
+      skpSourceSelection={source.selection} onReadSkpSceneSource={source.read} />);
+    expect(screen.getByTestId("sketchup-arch-insert-scene-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("sketchup-sandbox-insert-scene-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("bg3d-skp-source-read")).toHaveProperty("disabled", false);
+    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("bg3d-skp-source-read"));
+    await screen.findByTestId("bg3d-skp-source-available");
+    expect(source.read).toHaveBeenCalledTimes(1); expect(insert).not.toHaveBeenCalled();
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
+  });
+
+  it("Hub의 선택 scope가 바뀌면 이전 결과를 숨기고 늦게 도착한 유효 원본 결과도 새 선택에 노출하지 않는다", async () => {
+    const first = sourceHost(actualSkpSource()), next = sourceHost(undefined, "B");
+    const pending = deferred<StudioBg3dSkpSourceReadResult>();
+    const oldResult = await first.read();
+    const delayed = vi.fn<StudioBg3dReadSkpSceneSource>(() => pending.promise);
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={first.selection} onReadSkpSceneSource={delayed} />);
+    fireEvent.click(screen.getByTestId("bg3d-skp-source-read")); expect(delayed).toHaveBeenCalledTimes(1);
+    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={next.selection} onReadSkpSceneSource={next.read} />);
+    expect(screen.getByTestId("bg3d-skp-source-model").textContent).toContain("원본 모델 B");
+    expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
+    expect(next.read).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("bg3d-skp-source-read"));
+    await screen.findByTestId("bg3d-skp-source-legacy");
+    await act(async () => { pending.resolve(oldResult); await pending.promise; });
+    expect(screen.getByTestId("bg3d-skp-source-legacy")).toBeTruthy();
+    expect(screen.queryByText("원근 컷")).toBeNull();
+    expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
+    expect(next.read).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
+  });
+
+  it("기존 선택에 표시한 원본 결과도 새 scope로 바뀌는 즉시 지운다", async () => {
+    const first = sourceHost(actualSkpSource()), next = sourceHost(undefined, "B");
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={first.selection} onReadSkpSceneSource={first.read} />);
+    fireEvent.click(screen.getByTestId("bg3d-skp-source-read")); await screen.findByTestId("bg3d-skp-source-available");
+    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={next.selection} onReadSkpSceneSource={next.read} />);
+    expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
+    expect(screen.queryByText("원근 컷")).toBeNull();
+    expect(next.read).not.toHaveBeenCalled();
   });
 
 });

@@ -167,6 +167,8 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
         onInsertScenePrimitives={props.onInsertScenePrimitives}
         arraySelection={props.arraySelection}
         onExecuteSelectionArray={props.onExecuteSelectionArray}
+        skpSourceSelection={props.skpSourceSelection}
+        onReadSkpSceneSource={props.onReadSkpSceneSource}
       />
     </StudioBg3dProSuiteRuntimeContext.Provider>
   );

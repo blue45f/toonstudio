@@ -70,6 +70,7 @@ async function execute(request: StudioBg3dSkpWorkerConvertRequest): Promise<void
       requestId: request.requestId,
       glb,
       report: output.report,
+      sceneSource: output.sceneSource,
     };
     scope.postMessage(response, [glb]);
   } catch (error) {

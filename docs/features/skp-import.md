@@ -1,7 +1,7 @@
 # SketchUp(.skp) 가져오기
 
 - 상태: **current** — 소스와 테스트로 확인되는 현재 동작이다.
-- 확인일: 2026-10-16 (`apps/web/src/domains/creator/bg3d/studio-bg3d-skp-*`). 2026-10-16에 자산 메타데이터 저장 절(AI 표기 결과 안내, 취소 신호와 시간 한도)을 고쳤다. 2026-10-22에 컴포넌트·태그·장면 **이름** 연결(SKP 사이드카)과 이름 검색을 더했다(→ "컴포넌트·태그·장면 이름 연결").
+- 확인일: 2026-10-29 (`apps/web/src/domains/creator/bg3d/studio-bg3d-skp-*`). 실물 치수 보존과 원본 장면 정보의 Worker·GLB 전달 및 읽기 화면을 검증했다. 2026-10-22의 이름 사이드카와 별개인 데이터 계약이다.
 - 변환기: [openskp](https://openskp.com/) 1.3.0 (MIT, 순수 TypeScript). **Trimble과 관련 없는 비공식 오픈소스 파서**이며 SketchUp은 Trimble Inc.의 상표다.
 - 범위: 배경 3D 에셋 라이브러리의 "3D 모델 및 연결 파일 가져오기"가 받는 `.skp`. 네이티브 SketchUp SDK·서버 변환·SketchUp 확장은 포함하지 않는다.
 
@@ -19,11 +19,51 @@
 2540m 모델의 최초 배치 실패 뒤 라이브러리 잔존 자산을 다시 놓아도 같은 이유로 거부되는 회귀를 포함한다.
 관련 15개 테스트 파일 265개가 통과했다. 이는 SKP 계층·카메라·태그의 전체 복원이나 운영 배포를 뜻하지 않는다.
 
+## 2026-10-29 원본 장면 정보 보관·조회
+
+새 SKP 가져오기는 OpenSKP `parseSkp`가 노출한 Page, 태그, 정의, 정의별 인스턴스,
+주석·스타일 기록을 `StudioBg3dSkpSceneManifest` v1으로 보관한다. 형상·텍스처를 이 manifest에
+복제하지 않으며, 형상의 실제 좌표 변환은 별도 `geometryTransform`에 기록한다.
+원본 좌표는 인치·Z-up, 원본 행렬은 정의 로컬 좌표 그대로다. 변환된 형상은 미터·Y-up의
+`(x, y, z) → (x, z, -y)`와 사용자가 확정한 추가 단위 배율을 따른다.
+
+Worker 응답의 `sceneSource`는 메인 스레드에서 다시 검증하고 최종 GLB의 장면 `extras`에
+`toonstudioSkpSceneSource`로 저장한다. 이후 GLTFLoader·GLTFExporter·렌더 캐시를 거쳐도
+유지된다. 기존 변환 보고서 v1과 이름 사이드카의 스키마는 바꾸지 않는다.
+
+- `available`: 검증한 파서 노출 정보를 확보했다. 각 목록의 `total`과 `stored`는 파서가 읽은 수이고,
+  파일 전체 수는 `sourceTotal: null`이다. 누락된 원본 정보가 없다는 뜻으로 해석하지 않는다.
+- `unavailable`: 형상 변환은 성공했지만 정보 재파싱 크기 제한, 파서 미제공·실패, 형식 검증 또는
+  보관 예산 때문에 정보를 보관하지 못했다. 사유를 GLB에 남기고 부분 잘림을 성공으로 표시하지 않는다.
+- `legacy`: 표시가 없는 기존 자산이다. 원본 정보를 추측하거나 기존 GLB를 다시 쓰지 않는다.
+  명시된 잘못된 payload는 legacy로 낮추지 않고 오류로 거부한다.
+
+기본 보관 한도는 Page 256개, 태그 512개, 정의 2,048개, 인스턴스 8,192개,
+주석 2,048개, 스타일 256개, 속성 16,384개다. 문자열 1개는 8KiB,
+원본 문자열 합은 128KiB, 직렬화 manifest는 256KiB로 제한한다.
+순환 참조·희소 배열·접근자·비유한 값·잘못된 정의 참조와 구조를 검증하며 임의 실행 메서드를 호출하지 않는다.
+
+실제 편집기에서 3D 모델 하나를 선택한 뒤 `시점·스토리보드 → 고급 작업대 → SketchUp`의
+`SKP 원본 정보 읽기`로 카메라·태그 목록과 파서 기록 수를 확인하고 검증된 JSON을 내려받는다.
+조회는 문서·Undo·선택 상태를 바꾸지 않는다. 모델 로딩·조회 실패는 재시도할 수 있고,
+조회 도중 선택이 바뀌면 이전 모델의 결과를 새 선택에 표시하지 않는다.
+
+Page의 `fovBasis`와 저장 상태 플래그는 파서가 노출하지 않으므로 `not-exposed`로 기록한다.
+가로·세로 화각 기준이나 화면 비율을 추측해 현재 카메라에 적용하지 않는다.
+파서 기본값이 섞인 필드, 태그 원본 ID 미노출, 정의별 기록의 미확장도 진단에 남긴다.
+보관된 계층·숨김·태그·Page를 편집 가능한 장면 엔티티로 복원하는 기능은 진행 중이다.
+
+실제 MFC·VFF 바이트의 파싱·변환·GLB 재출력 회귀와 통합 11파일·189개 항목을 검증했다.
+브라우저에서는 실제 파일 입력→SKP Worker→GLB 검증 Worker→모델 선택→정보 조회→JSON 다운로드를
+통과했고 다운로드 JSON을 실제 파싱 결과와 비교했다. 별도 컨텍스트에서 저장소의
+`worker-src 'self' blob:`를 적용한 같은 흐름도 통과했다. 이는 전체 운영 CSP·배포 빌드의 검증이 아니다.
+실제 UI CSS의 light·dark·contrast, 390px·1600px에서 접근성 자동 위반과 가로 넘침이 없었다.
+
 ## 한눈에 보기
 
 `.skp`를 고르면 브라우저 안에서 자체 포함 GLB로 변환해 기존 GLB 가져오기 경로(검증 Worker, 기기별 예산, 라이브러리 저장)에 합류한다. 파일은 외부로 전송하지 않는다. 변환은 요청마다 새로 만든 전용 Worker에서 실행하고, 끝나거나 취소·시간 초과가 되면 Worker를 종료한다.
 
-지원은 **부분 지원**이다. 모든 `.skp`가 변환되지는 않고, 정적 형상·재질·텍스처만 가져온다(장면 카메라·애니메이션은 가져오지 않는다). 변환이 끝나면 **변환 보고서 v1**(아래 "안정 계약")을 결과 화면에 보여 주고, 가져오기에 성공한 모델의 보고서는 자산 메타데이터(`skpImport`)에 함께 저장한다.
+지원은 **부분 지원**이다. 모든 `.skp`가 변환되지는 않는다. 정적 형상·재질·텍스처를 렌더링하며, 파서가 읽은 원본 장면 정보는 GLB에 별도로 보관한다. 원본 카메라·태그 상태·계층을 장면에 적용하거나 애니메이션을 재생하는 기능은 연결 중이다. 변환이 끝나면 **변환 보고서 v1**(아래 "안정 계약")을 결과 화면에 보여 주고, 가져오기에 성공한 모델의 보고서는 자산 메타데이터(`skpImport`)에 함께 저장한다.
 
 ## 사용자 흐름
 
@@ -42,9 +82,10 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
      → convertStudioBg3dSkp            studio-bg3d-skp-worker-client.ts  사전 검사(Worker 생성 전) → 새 Worker 1회, 취소·시간 제한
          → [Worker] runStudioBg3dSkpConversion  studio-bg3d-skp-worker-runtime.ts
              → convertStudioBg3dSkpBytes        studio-bg3d-skp-conversion-core.ts
-                 preflight(크기·매직·버전·모델 데이터) → buildScene → 재질별 병합 → 형상 분석 → toGLB → 보고서
+                 preflight → buildScene → 재질별 병합 → 형상 분석 → toGLB → 보고서 + 원본 sceneSource
      → (크기 비정상) 단위 질문 → scaleStudioBg3dGlbUniformly   studio-bg3d-skp-glb-scale.ts
-     → 기존 parseGlbSourceImport → 검증 Worker·예산 → 라이브러리 → 장면 배치
+     → sceneSource 단위 권위 갱신 → GLB 장면 extras 보관
+     → 기존 parseGlbSourceImport → 검증 Worker·예산 → 라이브러리 → 장면 배치 → 원본 정보 조회·JSON
      → run.complete → 결과 화면(studio-bg3d-skp-import-session) + 자산 메타데이터(skpImport)
 ```
 
@@ -55,6 +96,9 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
 | `studio-bg3d-skp-conversion-core.ts` | 변환 본체. `OpenSkpModuleLoader`를 주입받아 테스트에서 가짜로 바꾼다 |
 | `studio-bg3d-skp-worker-*.ts`, `studio-bg3d-skp.worker.ts` | Worker 메시지 계약, 런타임, 진입점, 클라이언트 |
 | `studio-bg3d-skp-unit.ts`, `studio-bg3d-skp-glb-scale.ts` | 단위 평가·후보, GLB 균일 배율 |
+| `studio-bg3d-skp-scene-manifest.ts`, `studio-bg3d-skp-scene-source.ts` | 파서 노출 원본 정보 추출·검증, 보관 상태와 실제 형상 변환 권위 |
+| `studio-bg3d-skp-scene-provenance.ts` | GLB extras 쓰기와 로드된 자산의 원본 정보 읽기 |
+| `studio-bg3d-skp-source-read-command.ts`, `StudioBg3dSkpSourceInfoPanel.tsx` | 실제 선택·캐시 읽기, 상태·목록·검증된 JSON 다운로드 |
 | `studio-bg3d-skp-mesh-merge.ts`, `studio-bg3d-skp-mesh-analysis.ts`, `studio-bg3d-skp-model-summary.ts` | 재질별 병합, 형상 통계·면 방향, 이름·단위 요약 |
 | `studio-bg3d-skp-import-report.ts` | 보고서 v1 zod 스키마·검증·타입(메인 스레드와 저장소가 읽는다) |
 | `studio-bg3d-skp-report-builder.ts`, `studio-bg3d-skp-report-constants.ts` | 보고서 생성기와 상수. zod에 의존하지 않아 Worker가 이것만 불러온다 |
@@ -83,7 +127,7 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
 | 폴리곤 경고 | 삼각형 250,000개 이상 `high-polygon-count` | `STUDIO_BG3D_SKP_HIGH_TRIANGLE_COUNT` |
 | 드로 콜 | 인스턴스마다 구워진 프리미티브를 **재질별로 병합**해 줄인다(모바일 256·데스크톱 1,024 예산 대응) | `studio-bg3d-skp-mesh-merge.ts` |
 
-가져오지 않는 것: 장면(카메라) 상태, 애니메이션, 태그 가시성 설정, 컴포넌트 계층 자체(이름만 보고서에 담는다). 이름은 배치한 모델에 **이름으로만** 연결되며 이 한계는 2026-10-22 연결 이후에도 그대로다(→ "컴포넌트·태그·장면 이름 연결"). SketchUp에서 **숨긴 면**은 변환에서 제외하지만(`respectEdgeVisibility`), **숨긴 컴포넌트·숨긴 태그의 형상은 결과에 포함될 수 있다**(보고서에 `hidden-instances-included`·`hidden-tags-included` 경고). 이름은 읽을 수 있는 범위만 담는다: 장면 이름과 파일에 적힌 표시 단위는 2021 이후 형식에서만 읽을 수 있고(레거시는 둘 다 비어 있다), 태그의 숨김 표시는 OpenSKP가 읽은 값을 그대로 따른다. OpenSKP의 타입 주석(`Layer.hidden`)은 레거시에서만 채워진다고 적었지만 소스(`collectLayers`의 `8E3C`, 레거시 레이어 레코드)는 두 컨테이너에서 모두 읽으므로 이 구현은 컨테이너로 구분하지 않는다. 2021 이후 형식의 숨김 표시는 실제 파일로 검증하지 못했다(작성기가 레거시 형식만 만든다).
+실제 장면에 아직 적용하지 않는 것: 원본 카메라·애니메이션·태그 가시성·편집 가능한 컴포넌트 계층. 이름 보고서·사이드카와 별개로 원본 manifest를 보관하지만, 현재 렌더링은 재질별 world-baked merge를 단일 모델로 배치한다. SketchUp에서 **숨긴 면**은 변환에서 제외하지만(`respectEdgeVisibility`), **숨긴 컴포넌트·숨긴 태그의 형상은 결과에 포함될 수 있다**(보고서에 `hidden-instances-included`·`hidden-tags-included` 경고). 이름은 읽을 수 있는 범위만 담는다: 장면 이름과 파일에 적힌 표시 단위는 2021 이후 형식에서만 읽을 수 있고(레거시는 둘 다 비어 있다), 태그의 숨김 표시는 OpenSKP가 읽은 값을 그대로 따른다. OpenSKP의 타입 주석(`Layer.hidden`)은 레거시에서만 채워진다고 적었지만 소스(`collectLayers`의 `8E3C`, 레거시 레이어 레코드)는 두 컨테이너에서 모두 읽으므로 이 구현은 컨테이너로 구분하지 않는다. 실제 네이티브 작성기로 만든 폭넓은 VFF 원본 corpus의 숨김·태그 의미 검증은 남아 있다.
 
 ## 단위·좌표·크기 정규화
 

@@ -4,7 +4,7 @@
 - 문서 상태: `current`
 - 조사 범위 상태: `investigation partial`
 - 목적: SketchUp의 웹툰 배경 제작 기능을 ToonStudio에서 독립적으로 구현할 때 필요한 기능·데이터·변환 계약과 후속 분석 대상을 확인한다.
-- 완료 범위: 공식 Mac 원본 확보·해시, 읽기 전용 번들 조사, REA 리소스/디렉터리 인벤토리, 작은 기하 라이브러리의 Ghidra 분석 1건, 공개 API 기능 지도.
+- 완료 범위: 공식 Mac 원본 확보·해시, 읽기 전용 번들 조사, REA 리소스/디렉터리 인벤토리, 작은 기하 라이브러리와 SDK Camera 함수 8개의 Ghidra 정적 분석, 공개 API 기능 지도.
 - 미완료 범위: 전체 SketchUp 기능의 내부 알고리즘, 편집 UI에서 커널까지의 호출 경로, 실제 SketchUp 실행·입출력 동등성, ToonStudio 전체 대체 구현.
 
 이 기록은 조사 증거다. 개별 심볼·문서·계산 함수가 존재한다는 사실을 ToonStudio 사용자 기능의 구현 완료로 해석하지 않는다.
@@ -68,7 +68,7 @@ Ghidra가 복원한 정적 흐름에서는 정수 점·폴리곤 입력, 꼭짓�
 
 같은 dylib의 공개 심볼 목록에서 `ClipperOffset::AddPath`, `DoOffset`, `DoMiter`, `DoRound`, `CleanPolygon`, `SimplifyPolygon`, `CPolygonMesh::SetUVFront`, `SetUVBack`, `Transform` 등을 확인했다. 이 심볼은 오프셋·다각형 정리·메시·앞뒷면 UV에 대한 후속 분석 후보다. SketchUp Offset/Push-Pull UI가 해당 함수를 호출한다는 연결은 아직 증명하지 않았다.
 
-SDK framework는 실행하거나 Ghidra로 전체 import하지 않고 `nm -gU`만 조사했다. `SU` 접두의 T export 1,318개가 관측됐고, 이름 분류로 `SUCamera` 27개, `SUFace` 43개, `SUGeometryInput` 26개, `SUComponentDefinition` 36개, `SUComponentInstance` 24개, `SUSectionPlane` 15개, `SUModel` 108개를 확인했다. `SUModelCreateFromFile`, `SUModelSaveToFile`, `SUFaceCreate`, `SUFaceGetNumInnerLoops`, `SUGeometryInputAddFace`, `SUSectionPlaneSetPlane`가 포함된다. 이 목록은 SDK ABI 호출 계약·반환값·라이선스·전체 기능을 대신하지 않는다.
+SDK framework의 초기 인벤토리는 실행 없이 `nm -gU`로 조사했다. `SU` 접두의 T export 1,318개가 관측됐고, 이름 분류로 `SUCamera` 27개, `SUFace` 43개, `SUGeometryInput` 26개, `SUComponentDefinition` 36개, `SUComponentInstance` 24개, `SUSectionPlane` 15개, `SUModel` 108개를 확인했다. `SUModelCreateFromFile`, `SUModelSaveToFile`, `SUFaceCreate`, `SUFaceGetNumInnerLoops`, `SUGeometryInputAddFace`, `SUSectionPlaneSetPlane`가 포함된다. 이 목록은 SDK ABI 호출 계약·반환값·라이선스·전체 기능을 대신하지 않는다. 후속 Camera 정적 분석은 8절에 별도로 기록한다.
 
 ## 5. 공개 문서에서 확인한 기능 계약
 
@@ -96,7 +96,7 @@ SDK framework는 실행하거나 Ghidra로 전체 import하지 않고 `nm -gU`�
 - native 조사 뒤 `rea-geometry-evidence.json`을 export했다: 7 records, 254,474 bytes.
 - `geometry-analysis-snapshot.json` 저장 후 `close_binary` 성공을 확인했다: snapshot 350,641 bytes.
 - 마지막 `binary_session`은 `open: false`, `cleanup_pending: false`였다. 마운트 해제도 완료했다.
-- 전체 SketchUp 본체, 전체 SDK framework, 다른 라이브러리의 대규모 Ghidra 분석은 수행하지 않았다. 공유 빌드 슬롯이 다시 점유된 뒤에는 기존 완료 세션의 캐시 조회·export·close만 수행했다.
+- 45MB SketchUp 본체와 SDK 전체 함수의 일괄 디컴파일은 수행하지 않았다. 초기 기하 세션에서는 공유 빌드 슬롯이 다시 점유된 뒤 캐시 조회·export·close만 수행했다. 이후 승인된 6.5MB SDK 사본 하나를 import해 Camera 함수만 조사한 결과는 8절에 기록한다.
 - 새로운 native import는 공유 빌드 슬롯과 분석 목표를 먼저 확인한 뒤, 보존한 정확한 hash의 선택 사본에서 이어간다. 바이너리 이름만 보고 동일 빌드로 간주하지 않는다.
 - 후속으로 면·구멍·오프셋의 퇴화 입력, 앞뒷면 UV, 공유 정의 수정, Scene의 선택적 상태 저장, 단면 엔티티의 저장/복원, 실제 `.skp` 입출력의 지원 범위를 독립적인 계약·테스트와 사용자 동선으로 확인해야 한다.
 
@@ -108,4 +108,46 @@ SDK framework는 실행하거나 Ghidra로 전체 import하지 않고 `nm -gU`�
 - `pnpm exec secretlint docs/reports/sketchup-native-rea-2026-10-29.md`: exit `0`.
 - `git diff --check -- docs/reports/sketchup-native-rea-2026-10-29.md`: exit `0`.
 
-제품 소스 변경·새 빌드·전체 TSC·운영 배포는 이 조사에서 수행하지 않았다. 이 문서는 작업트리에 추가된 상태이며 별도 커밋·PR·병합은 수행하지 않았다.
+제품 소스 변경·새 빌드·전체 TSC·운영 배포는 이 native 조사에서 수행하지 않았다. 조사 담당자는 별도 커밋·PR·병합을 수행하지 않았다.
+
+## 8. Camera 후속 분석: FOV 축과 단위의 보존 경계
+
+목표는 OpenSKP Page의 단일 `fov` 값을 수직 화각으로 가정할 수 있는지 확인하는 것이다. 2절의 SDK 사본 `6,498,016 bytes`, SHA-256 `9f8add9967ed6564fe3661f2cc41af277807d483c62c0fddeccbde354419084d`를 다시 검증하고 `provider_id: "ghidra"`로 열었다. 첫 Camera 심볼 검색은 단일 import·기본 자동 분석이 완료된 뒤 반환했다. 같은 요청을 중복 시작하지 않았고 Ghidra `12.1.4`의 동일 세션에서 후속 조회를 진행했다. analysis run ID는 `578fd2d7-7b1d-4a1e-afe5-6f20fad66e25`다.
+
+### 8.1 공식 문서 계약
+
+공식 [Camera 문서](https://ruby.sketchup.com/Sketchup/Camera.html)는 `fov`를 원근 카메라의 도 단위 값으로 설명하고, `fov_is_height?`로 수직·수평 측정 기준을 별도로 확인하도록 한다. `aspect_ratio`의 `0`은 View의 비율을 따른다는 의미다. 직교 `height`는 인치 단위다. 이들은 Ruby API 계약이며 C SDK 함수의 모든 ABI·반환 코드 의미를 대신하지 않는다.
+
+### 8.2 정적 본문과 호출 관계에서 관측한 것
+
+`SUCamera` 검색 Evidence `ev_0834b6bffe4da00ae5e0deda7f0eb4c5ffa92b7511e93f44b064f54f780e9bf4`는 이 빌드의 정의된 Camera 함수 27개를 반환했다. 본문은 아래 8개 함수만 확인했다. 오프셋은 이 SHA의 Ghidra 관측이며 공개 구조체 레이아웃이나 다른 빌드의 ABI로 일반화하지 않는다.
+
+| 함수·주소 | 관측한 정적 흐름 | 주요 Evidence |
+| --- | --- | --- |
+| `SUCameraGetPerspectiveFrustumFOV`, `0x932c` | 원근 상태 필드 `+0x68`을 검사한 뒤 `+0x70`의 8바이트 값을 복사한다. FOV 축 플래그를 읽거나 변환하지 않는다. | dossier `ev_93ac5869299a5b558e17db220237e5b0d9ac1e6137ba6a1308e837f2493e33e2` |
+| `SUCameraGetFOVIsHeight`, `0x9528` | 별도 1바이트 필드 `+0x88`을 복사한다. | dossier `ev_ec695fc3f9e2fbc1bea86a23bfe6f5d05518c3aaf9e4766bba945fa16458938c` |
+| `SUCameraSetFOVIsHeight`, `0x950c` | `+0x88`만 독립적으로 갱신한다. | `ev_7a10934debe8da2d22e7978355e054c7234aa8b3dd1fbdcc38edce9fb9a0da94` |
+| `SUCameraSetPerspectiveFrustumFOV`, `0x92d0` | `CCamera::SetPerspective(true)`를 호출하고 `+0x70`을 저장하며 `+0x88`을 `1`로 설정한다. 이 setter의 동작이 기존 모든 Page의 화각 기준을 증명하지는 않는다. | `ev_e28c0aab4f6556f21ff5d7fcf5b0386ffbf2ec92ff091465ba292ce81072b7bb` |
+| `SUCameraGetOrthographicFrustumHeight`, `0x93c0` | 원근 상태를 거른 뒤 `+0x78`의 8바이트 값을 복사한다. getter 자체에는 길이 단위 환산이 없다. | dossier `ev_3241bcf433b74325c5f3b1e230f83593a6c05c284ea50aef57b0a254aca84488` |
+| `SUCameraSetOrthographicFrustumHeight`, `0x936c` | `CCamera::SetPerspective(false)` 호출 뒤 `+0x78`에 저장한다. | `ev_afbfd1a3b315b3db85a8c87abbaff50771936e97ac81606194e1fe73b696e9ab` |
+| `SUCameraGetAspectRatio`, `0x9428` | `+0x80`을 읽는다. 값이 `1e-5` 미만인 경로에서는 출력에 `0`을 쓰고 반환 코드 `9`를 돌려준다. Ruby의 View 비율 계약과 C SDK 반환 코드를 동일시하지 않는다. | dossier `ev_30bc5c7452a12cca3d66345f33ebdadd89aeeae0f85739023efd9e3f719e0c98` |
+| `CCamera::SetPerspective`, `0x886d8` | 저장된 FOV에 `0.5 × 0.0174532925199433`을 곱해 `tan`에 넘긴다. 원근→직교 분기에서는 그 결과의 두 배와 eye-target 거리로 높이 필드를 계산한다. | dossier `ev_be231590291f7ca14dbed870e7b636e854a14a43523330ebed3ea2ac3ecb0011` |
+
+두 setter에서 `0x886d8`로 향하는 직접 호출은 각각 `ev_2d4e3778304950249b3e78befd5ad6cee3ea81b574aa0cc67bd09ec1e8fb9abd`, `ev_812585532a8fc7ade7116f045a47a1a75b2a9cb321c36b37b44264b772004a27`에 보존했다. 내부 함수 dossier는 67개 assembly 항목·6개 basic block·3개 resolved callee와 truncation 없는 value flow를 보고했다. 디컴파일의 레지스터 변수·추정 인자 순서는 원본 SDK 헤더가 아니므로 호출 서명으로 복사하지 않는다.
+
+FOV 필드가 삼각함수 전에 π/180을 곱하는 값이라는 해석은 **정적 계산에 근거한 추론**이며, 공개 문서의 도 단위 계약과 일치한다. height getter의 raw 복사만으로 인치 단위가 증명되는 것은 아니다. 인치 계약은 위 공식 문서에서 확인했다. SketchUp 앱 실행, C SDK 호출, 실제 카메라 렌더·경계값 실험은 하지 않았다.
+
+### 8.3 OpenSKP에서 소실된 정보와 가져오기 판단
+
+설치된 OpenSKP `1.3.0`의 `dist/index.js` SHA-256은 `3b4a418e320920083aefa7551a924954b336e5addd0182971c7c66aeab575c2d`다. `parsePages`는 Camera TLV에서 eye·target·up, tag `13508`의 `fov`, tag `13506`의 원근/평행 값, tag `13507`의 직교 높이를 읽는다. 이후 Page 출력도 이 값들을 복사하지만 **FOV가 높이/너비 중 어느 기준인지와 Camera/View aspect ratio는 노출하지 않는다**. `fov`가 없는 경우 `35`를 보충하는 기본값도 원본 저장값과 구분할 수 없다.
+
+따라서 native에서 별도 FOV 축 플래그의 존재를 확인했어도, 그것을 이미 파서가 축 정보를 버린 개별 Page에 되붙일 근거는 없다. 가져오기에서는 FOV scalar를 보존하고 측정 기준은 `not-exposed`로 남겨야 한다. 수직 화각으로 간주하거나, 현재 ToonStudio 화면 비율을 원본 View 비율이라고 기록하면 안 된다. eye/target·직교 높이의 길이 환산과 FOV 각도·up 방향의 처리는 각각 구분해야 한다.
+
+### 8.4 후속 증거·정리
+
+- `rea-camera-evidence.json`: 22 records, 286,641 bytes, SHA-256 `e6058e387235c11ccf1587db82a1ed4977f6fffe6cc8a70523c6d182451a27a9`.
+- `camera-analysis-snapshot.json`: 471,160 bytes, SHA-256 `ec390f4cba5a81c4eec73da5df0e001b9e8a4137026d66ab72cb9a40d3f3980f`.
+- 공개 Camera HTML 보존본 SHA-256: `354633300fd33375a58f498a42751fc71967da7632bd835386829f4595ea2989`.
+- 원본 파일·디컴파일·원장은 계속 `/private/tmp/toonstudio-sketchup-native-20261029/`에만 보존한다. 저장소에는 이 조사 설명만 추가했다.
+- export·snapshot 저장 뒤 `close_binary` 성공, 마지막 `binary_session`의 `open: false`, `cleanup_pending: false`를 확인했다. 45MB 본체·전체 함수 일괄 디컴파일·대상 실행은 수행하지 않았다.
+- Camera 절 추가 후 `pnpm harness:check`, 이 문서의 Secretlint, `git diff --check`가 각각 exit `0`으로 통과했다.

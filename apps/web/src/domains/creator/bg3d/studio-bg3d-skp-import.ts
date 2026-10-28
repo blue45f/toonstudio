@@ -28,6 +28,8 @@ import {
   type StudioBg3dSkpUnit,
 } from "./studio-bg3d-skp-unit";
 import { convertStudioBg3dSkp, type StudioBg3dSkpExecutionBackend } from "./studio-bg3d-skp-worker-client";
+import { applyStudioBg3dSkpSceneSourceUnit, parseStudioBg3dSkpSceneSource, type StudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
+import { writeStudioBg3dSkpSceneSourceToGlb } from "./studio-bg3d-skp-scene-provenance";
 
 import type { StudioBg3dGlbProfile } from "./studio-bg3d-glb-validation";
 
@@ -171,6 +173,7 @@ export async function importStudioBg3dSkpToGlb(request: StudioBg3dSkpImportReque
 
   let glb: Uint8Array;
   let report: StudioBg3dSkpImportReport;
+  let sceneSource: StudioBg3dSkpSceneSource;
   try {
     const output = await convertStudioBg3dSkp(bytes, {
       executionBackend: request.executionBackend,
@@ -181,6 +184,9 @@ export async function importStudioBg3dSkpToGlb(request: StudioBg3dSkpImportReque
     });
     glb = output.glb;
     report = output.report;
+    const parsedSource = parseStudioBg3dSkpSceneSource(output.sceneSource);
+    if (!parsedSource.ok) throw new TypeError("studio-bg3d-skp:invalid-scene-source");
+    sceneSource = parsedSource.value;
   } catch (error) {
     reportRefusedConversion(request, error);
     throw mapSkpFailure(error);
@@ -211,6 +217,11 @@ export async function importStudioBg3dSkpToGlb(request: StudioBg3dSkpImportReque
     }
   }
   throwIfAborted(signal);
+  try {
+    glb = writeStudioBg3dSkpSceneSourceToGlb(glb, applyStudioBg3dSkpSceneSourceUnit(sceneSource, report.units));
+  } catch (error) {
+    throw mapSkpFailure(error);
+  }
   context.options?.onReport?.({ sourcePath: request.path, sourceName: request.name, report });
   return toExactBuffer(glb);
 }

@@ -14,6 +14,8 @@ export function StudioBg3dSpatialStoryboardLauncher({
   onInsertScenePrimitives,
   arraySelection,
   onExecuteSelectionArray,
+  skpSourceSelection,
+  onReadSkpSceneSource,
 }: StudioBg3dWorkbenchHostPorts & {
   readonly hidden?: boolean;
   readonly disabled?: boolean;
@@ -64,6 +66,8 @@ export function StudioBg3dSpatialStoryboardLauncher({
               onInsertScenePrimitives={onInsertScenePrimitives}
               arraySelection={arraySelection}
               onExecuteSelectionArray={onExecuteSelectionArray}
+              skpSourceSelection={skpSourceSelection}
+              onReadSkpSceneSource={onReadSkpSceneSource}
             />
           </Suspense>
         ) : null}
