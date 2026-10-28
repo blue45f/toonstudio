@@ -1,7 +1,8 @@
 {
   "schema": "toonstudio.itch-local-build-review.v1",
-  "scope": "동결한 작업 브랜치 소스의 로컬 빌드·구조 검증, 운영 배포 산출물 승인 아님",
+  "scope": "main 통합 전 sourceCommit의 과거 로컬 빌드·구조 검증과 통합 후 회귀 기록, 운영 배포 산출물 승인 아님",
   "sourceCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf",
+  "webBuildIncludesIntegration": false,
   "buildStartedWithHead": "4c65834fcebcc6e8b3ca91acfefca1dba88cdf2d",
   "sourceCommittedDuringWebBuild": true,
   "productionDeployment": false,
@@ -61,7 +62,8 @@
   "applicationSourceChangedDuringWebBuild": false,
   "preCommitHooksChangedStagedFiles": false,
   "integrationBase": "7177969d4497237c8daee031b49da3148b0f409a",
-  "correctedFullVerification": "현재 검사의 종료 후 기존 순서의 다른 두 타입 검사가 끝나면 수정된 통합 소스로 재실행",
+  "integrationApplicationSourceCommit": "1ec724e357a515cd9660560008679e959f1881dd",
+  "correctedFullVerification": "수정된 통합 소스로 재실행 대기",
   "integrationChecks": {
     "officeVitestFiles": 5,
     "officeVitestTests": 40,

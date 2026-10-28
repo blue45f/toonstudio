@@ -1,5 +1,7 @@
 {
   "schema": "toonstudio.itch-static-artifact-audit.v1",
+  "sourceCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf",
+  "scope": "main 통합 전 sourceCommit의 Web 빌드에서 얻은 dist·Static Assets 상한·manifest SHA 기록",
   "checkedAt": "2026-10-28T16:32:51.973Z",
   "localBuildOnly": true,
   "originalModelsUploaded": false,
