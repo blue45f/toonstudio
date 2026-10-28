@@ -114,5 +114,6 @@ Sign In, Email or username, 비활성 Next가 관측됐다. 로그인이나 모�
 - 실제 새 패널의 390px 화면을 light/dark/contrast 테마에서 확인했다. 가로 넘침과 axe WCAG 2 A/AA·2.1 AA 위반,
   page error가 모두 0개였다. 이는 패널 fixture 범위의 접근성 검증이다.
   증거는 `sketchup-selection-array-panel-proof.json`과 `sketchup-array-panel-mobile-*.png`다.
-- 전체 `pnpm harness:verify`의 후속 루트 타입 검사는 공유 작업의 검사 순서에 맞춰 대기 중이다.
-  이 대기 상태를 최신 변경의 전체 타입 검사 통과로 보고하지 않는다. API 타입 검사·배포 빌드·운영 검증은 미완료다.
+- 후속 `pnpm harness:verify`는 공유 작업의 검사 순서에 맞춰 재개했고 종료 코드 0을 확인했다.
+  다만 해당 검사가 시작된 뒤 배열 기능 파일이 추가됐으므로 최신 변경의 전체 타입 검사 통과로 보고하지 않는다.
+  최신 변경의 루트/API 타입 검사·배포 빌드·운영 검증은 별도 완료 조건으로 남긴다.

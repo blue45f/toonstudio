@@ -3,6 +3,7 @@
 - 상태: `current` — 2026-10-29 로컬 구현 및 후속 검증. 운영 배포 상태를 뜻하지 않는다.
 - 범위: ToonStudio 자체 건축 생성기, 선택 도형의 선형·원형 배열, 실제 BG3D 장면 명령 연결.
 - REA 조사: [2026-10-28 재검증](../reports/sketchup-rea-integration-2026-10-28.md).
+- 전체 목표의 진행·미완료 항목: [SketchUp 기능·검증 원장](sketchup-feature-coverage.md).
 
 ## 사용할 수 있는 기능
 

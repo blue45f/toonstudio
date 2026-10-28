@@ -151,6 +151,13 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 
 ### SketchUp 마스터 스튜디오 워크벤치 및 전체 장면 복원기 (2026-10-26)
 
+> 2026-10-29 재검증: 아래 모듈 목록은 커널·예제의 존재를 설명하며 실제 SKP 가져오기에서 전체 장면이
+> 복원된다는 뜻이 아니다. 실제 import는 재질별 world-baked 형상을 단일 GLB 모델로 반입한다.
+> `full-scene-restorer`의 Page·태그·계층·주석 입력은 현재 작업대의 고정 예제에서만 호출되고,
+> CAD 내보내기도 고정 상자 예제의 계산이다. 실제 장면에 연결한 건축·선택 배열은
+> [배경 건축 도구](sketchup-background-modeling.md), 남은 전체 요구는
+> [기능·검증 원장](sketchup-feature-coverage.md)을 따른다.
+
 기본 에셋 라이브러리 가져오기(`skpImport` 보고서 v1)의 안정 계약을 변경하지 않고, 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`의 `sketchup-studio` 탭)와 전용 모듈을 통해 SketchUp의 고급 모델링·복원·내보내기 기능을 별도 제공한다(상세 REA 역공학 근거: [`docs/studio-rea-competitor-benchmark-2026-10-26.md`](../studio-rea-competitor-benchmark-2026-10-26.md)).
 
 | 모듈 | 주요 제공 기능 |
