@@ -66,7 +66,10 @@ describe("http-search-provider 질의 검증", () => {
   });
 
   it("자격증명 포함·비http(s) fetch URL을 거부한다", () => {
-    expect(() => normalizeSearchFetchUrl("https://user:pass@example.com/")).toThrow(
+    const syntheticCredentialUrl = new URL("https://example.com/");
+    syntheticCredentialUrl.username = "synthetic-search-user";
+    syntheticCredentialUrl.password = "synthetic-search-password";
+    expect(() => normalizeSearchFetchUrl(syntheticCredentialUrl.toString())).toThrow(
       SearchProviderError,
     );
     expect(() => normalizeSearchFetchUrl("ftp://example.com/")).toThrow(
