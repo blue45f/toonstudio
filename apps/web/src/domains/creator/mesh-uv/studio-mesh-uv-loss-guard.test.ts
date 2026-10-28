@@ -45,10 +45,18 @@ const unsupported: readonly { readonly name: string; readonly run: (workspace: S
   { name: "Cloth", run: workspaceClothStep },
   { name: "Repair", run: workspaceRepairActive },
   { name: "Outward", run: workspaceOrientOutwardActive },
-  { name: "Sculpt", run: (workspace) => workspaceSculptActive(workspace, 0.1) },
 ];
 
 describe("일반 지오메트리 편집의 UV 유실 거부", () => {
+  it("Sculpt는 검증된 원본 fan 코너의 UV를 보존하며 무UV 경로도 계속 지원한다", () => {
+    const source = workspaceUnwrapUvActive(cube()); const before = capture(source);
+    const result = workspaceSculptActive(source, 0.1);
+    expect(record(result).mesh.uvLayer?.corners).toHaveLength(36);
+    expect(result.session.state.commandCount).toBe(source.session.state.commandCount + 1);
+    expect(capture(source)).toEqual(before);
+    const plain = workspaceSculptActive(cube(), 0.1);
+    expect(record(plain).mesh.uvLayer).toBeUndefined();
+  });
   it.each(unsupported)("$name은 UV를 버리는 편집을 원본·저널·undo 변경 전에 취소하고 무UV 입력은 유지한다", ({ run }) => {
     const source = workspaceUnwrapUvActive(cube());
     const before = capture(source);

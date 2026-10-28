@@ -75,10 +75,27 @@ UV 없는 flat cube·smooth cube·비평면 quad는 이전 커밋 `06ed3b4`의 G
 지원되는 Array·Mirror·SimpleDeform·Solidify는 원본 triangle/corner provenance로 UV를 전파한다.
 정확한 전파가 없는 enabled 수정자는 UV를 버리고 성공하지 않으며 명시적 오류를 낸다.
 Region Extrude는 발급된 receipt의 face remap·boundary 순서로 기존 면·cap·side를 결합하고,
-Weld는 위상이 그대로면 UV를 보존한다. Inset·Bevel·Loop Cut·Subdivision과 삼각화 기반 Sculpt·Cloth 등
+Weld는 위상이 그대로면 UV를 보존한다. Inset·Bevel·Loop Cut·Subdivision과 Cloth 등
 다른 위상 편집의 UV 전달은 남은 범위다.
 UV 원본을 UV 없는 결과로 교체하는 일반 메시 commit과 수정자 적용은 중앙 geometry authority에서 거부한다.
 지원 전 편집은 오류를 표시하고 원본·저널·undo를 보존하며 UV를 조용히 지우고 성공하지 않는다.
+
+## migration — 기존 Sculpt stroke의 UV 보존
+
+기존 경량 Sculpt의 8개 브러시는 위치 계산과 source fan 삼각화를 유지하면서 원본 코너 UV를 새 삼각형에
+복사한다. 원본 `face.he` origin fan·soup 정점 인덱스·새 halfedge origin을 모두 대조하고, UV를 다시 투영하거나
+가까운 좌표로 추측하지 않는다. UV 값은 재반올림 없이 복사한다. 원본 면의 smooth·materialSlot, 정점 crease,
+원본 polygon 경계의 halfedge crease도 전달하며 새 fan 대각선의 crease는 0이다.
+
+원본·결과 정본이나 대응을 검증하지 못하면 기존 Sculpt Result 오류로 반환하고 workspace commit 전에 중단한다.
+voxel remesh는 이 정확한 fan 대응을 갖지 않으므로 기존 UV 유실 guard의 거부 범위로 남는다.
+이 기능은 기존 경량 메시 브러시의 저장·전달 개선이며 Blender 브러시의 수학적 출력과 같은 결과를 관측한 기록은 아니다.
+
+집중 검증 4파일 39개는 8개 브러시·mask·비선형 코너 UV·같은 island 안의 내부 seam·새 fan 대각선,
+단일 commit·undo/redo·작업파일·실제 GLB UV 전달을 검사해 exit 0으로 통과했다.
+이전 커밋 `9903b0094`의 원본 Sculpt 모듈을 별도로 실행한 16사례(8브러시×mask 유무)와 무UV의
+serialize·hash·positions가 완전히 같고 원본이 바뀌지 않음을 확인했다.
+후속 브랜치의 전체 타입·하네스·빌드와 실제 브러시 UI의 WebGL 검증은 별도 검사 순서에서 진행한다.
 
 ## current — 실제 웹 실행 증거
 

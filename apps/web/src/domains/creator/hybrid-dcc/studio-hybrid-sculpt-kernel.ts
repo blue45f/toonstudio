@@ -10,9 +10,11 @@
 import {
   createStudioEditableMeshFromPolygons,
   studioEditableMeshToTriangleSoup,
+  validateStudioEditableMeshSerializableAuthority,
   type StudioEditableMesh,
   type StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
+import { remapStudioMeshUvTriangleSoup } from "../mesh-uv/studio-mesh-uv-triangle-remap";
 
 export const STUDIO_SCULPT_KERNEL_REVISION = 1 as const;
 
@@ -63,6 +65,10 @@ export function applyStudioSculptStroke(
 ): StudioSculptResult {
   if (!(stroke.radius > 0) || !Number.isFinite(stroke.strength)) {
     return { ok: false, detail: "invalid brush" };
+  }
+  if (mesh.uvLayer !== undefined) {
+    const valid = validateStudioEditableMeshSerializableAuthority(mesh);
+    if (!valid.ok) return { ok: false, detail: `UV 원본 메시를 확인할 수 없습니다: ${valid.detail}` };
   }
   const soup = studioEditableMeshToTriangleSoup(mesh);
   const positions = new Float32Array(soup.positions);
@@ -170,7 +176,14 @@ export function applyStudioSculptStroke(
       }
     }
   }
-  return { ok: true, mesh: soupToMesh(positions, soup.indices) };
+  // 무UV 입력은 기존 생성 경로와 해시를 유지한다.
+  if (mesh.uvLayer === undefined) return { ok: true, mesh: soupToMesh(positions, soup.indices) };
+  try {
+    const triangles = soupToMesh(positions, soup.indices);
+    return { ok: true, mesh: remapStudioMeshUvTriangleSoup(mesh, triangles, soup.indices) };
+  } catch (error) {
+    return { ok: false, detail: error instanceof Error ? error.message : "Sculpt UV 코너 대응을 확인할 수 없습니다." };
+  }
 }
 
 export function createStudioSculptMask(
