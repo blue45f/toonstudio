@@ -125,6 +125,16 @@ export function withScatteringOff<T>(rig: CharacterRig, enabled: boolean, fn: ()
   }
 }
 
+/** 캡처 lit는 카메라 후처리 없이 직접 색을 쓴다. 준비와 draw를 같은 변종으로 맞추고 뷰포트 설정은 동기 구간 뒤 복원한다. */
+function withCaptureProcessing<T>(deps: CaptureDeps, lit: boolean, fn: () => T): T {
+  if (!lit) return fn();
+  const configuration = deps.scene.imageProcessingConfiguration;
+  const previous = configuration.applyByPostProcess;
+  configuration.applyByPostProcess = false;
+  try { return withScatteringOff(deps.rig, true, fn); }
+  finally { configuration.applyByPostProcess = previous; }
+}
+
 /**
  * 준비 검사 한 번(동기 구간)에 쓰는 시간 상한(ms). 새 셰이더 변종을 만드는 `isReady`는 JS 전처리가 무거워(개발 서버에서 변종 하나 20~60 ms)
  * 여러 재질을 한 태스크에 몰면 수백 ms long task가 된다(실측 2026-10-23: 카드 1회 620~811 ms). 상한을 넘으면 나머지는 다음 폴링에서 검사한다.
@@ -138,20 +148,25 @@ function yieldToMainThread(): Promise<void> {
 }
 
 function materialReady(mesh: Mesh, material: Material, nativeOutlines: boolean): boolean {
-  const instances = mesh.hasThinInstances || mesh.instances.length > 0;
-  // Babylon 9.31의 실제 Mesh.render와 같은 저장 위치를 검사한다. material.isReady만 호출하면 기본 wrapper만 준비되고 RTT 서브메시는 빠진다.
-  const ready = material._storeEffectOnSubMeshes
-    ? (mesh.subMeshes ?? []).every((subMesh) => material.isReadyForSubMesh(mesh, subMesh, instances))
-    : material.isReady(mesh, instances);
-  if (!ready) return false;
-  if (nativeOutlines && (mesh.renderOutline || mesh.renderOverlay)) {
-    const renderer = mesh.getScene().getOutlineRenderer();
-    if (!(mesh.subMeshes ?? []).every((subMesh) => renderer.isReady(subMesh, instances))) return false;
-  }
-  return true;
+  // 이전 셰이더로 그릴 수 있다는 hot-swap 성공은 현재 캡처 변종의 준비 완료가 아니다.
+  const hotSwapping = material.allowShaderHotSwapping;
+  material.allowShaderHotSwapping = false;
+  try {
+    const instances = mesh.hasThinInstances || mesh.instances.length > 0;
+    // Babylon 9.31의 실제 Mesh.render와 같은 저장 위치를 검사한다. material.isReady만 호출하면 기본 wrapper만 준비되고 RTT 서브메시는 빠진다.
+    const ready = material._storeEffectOnSubMeshes
+      ? (mesh.subMeshes ?? []).every((subMesh) => material.isReadyForSubMesh(mesh, subMesh, instances))
+      : material.isReady(mesh, instances);
+    if (!ready) return false;
+    if (nativeOutlines && (mesh.renderOutline || mesh.renderOverlay)) {
+      const renderer = mesh.getScene().getOutlineRenderer();
+      if (!(mesh.subMeshes ?? []).every((subMesh) => renderer.isReady(subMesh, instances))) return false;
+    }
+    return true;
+  } finally { material.allowShaderHotSwapping = hotSwapping; }
 }
 
-async function ensureReady(deps: CaptureDeps, rtt: RenderTargetTexture, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean): Promise<void> {
+async function ensureReady(deps: CaptureDeps, rtt: RenderTargetTexture, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean, shadow?: RenderTargetTexture | null): Promise<void> {
   if (!deps.waitForShaders) return;
   // forceCompilationAsync는 임시 서브메시로 컴파일해 실제 렌더 변종과 어긋날 수 있다 → 실제 isReady를 폴링한다(material-readiness.ts).
   // lit 패스는 SSS 없는 변종으로 그리므로 그 변종의 준비 여부를 본다(검사 호출이 변종 컴파일을 시작시킨다).
@@ -167,7 +182,9 @@ async function ensureReady(deps: CaptureDeps, rtt: RenderTargetTexture, pairs: R
     const engine = deps.scene.getEngine();
     const previousPass = engine.currentRenderPassId;
     engine.currentRenderPassId = rtt.renderPassId;
-    try { return withScatteringOff(deps.rig, scatteringOff, () => {
+    try { return withCaptureProcessing(deps, scatteringOff, () => {
+      // 첫 장면 프레임 전에도 CSM의 실제 패스·투명도 변종을 준비한다. 준비 검사는 그림자 draw를 제출하지 않는다.
+      const shadowReady = !shadow || shadow.isReadyForRendering();
       const started = performance.now();
       // 1) 아직 준비되지 않은 쌍을 시간 상한 안에서 차례로 검사한다(상한을 넘으면 다음 폴링이 이어서 본다).
       for (let step = 0; step < pairs.length; step += 1) {
@@ -180,7 +197,7 @@ async function ensureReady(deps: CaptureDeps, rtt: RenderTargetTexture, pairs: R
           break;
         }
       }
-      pending = ready.reduce((count, value) => count + (value ? 0 : 1), 0);
+      pending = ready.reduce((count, value) => count + (value ? 0 : 1), shadowReady ? 0 : 1);
       if (pending > 0) return false;
       // 2) 모두 한 번씩 준비됐으면 같은 동기 구간에서 전체를 다시 확인한다(그사이 dirty가 된 재질을 놓치지 않는다).
       for (let index = 0; index < pairs.length; index += 1) {
@@ -306,7 +323,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
       for (const mesh of deps.pressureOutlines?.() ?? []) if (mesh.material) compilePairs.push([mesh, mesh.material]);
     }
     for (const [mesh, material] of compilePairs) setOverride(mesh, material);
-    await ensureReady(deps, rtt, compilePairs, pass === "lit");
+    await ensureReady(deps, rtt, compilePairs, pass === "lit", pass === "lit" && deps.scene.shadowsEnabled && deps.character.keyLight.shadowEnabled ? deps.shadow?.getShadowMap() : undefined);
     // 준비 대기 동안 RAF가 만든 명령도 포함해 제출한다. 캡처 카메라·재질의 버퍼 변경과 같은 제출 묶음에 섞지 않는다.
     if (engine.isWebGPU) engine.flushFramebuffer();
 
@@ -329,7 +346,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
           // 그림자 맵 갱신 실패는 lit 캡처를 막지 않는다(이전 프레임 그림자 사용).
         }
       }
-      withNativeOutlinesOff(meshes, pass !== "lit", () => withScatteringOff(deps.rig, pass === "lit", () => rtt.render(false, false)));
+      withNativeOutlinesOff(meshes, pass !== "lit", () => withCaptureProcessing(deps, pass === "lit", () => rtt.render(false, false)));
       // WebGL2는 PBO 비동기 readback으로 읽기 명령만 제출한다(GPU 완료를 메인 스레드에서 기다리지 않는다, capture-targets.ts).
       pending = readCaptureTarget(engine, rtt, width, height);
       // readPixels는 WebGPU 명령도 실제 제출한다. 원래 native outline UBO를 제출한 뒤 같은 포즈·동기 구간에서 owner 색을 쓴다.

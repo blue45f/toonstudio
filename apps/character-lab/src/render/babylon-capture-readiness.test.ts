@@ -49,6 +49,10 @@ function materialOf(harness: NullEngineHarness, meshName: string): Material {
 function setReady(harness: NullEngineHarness, ready: (meshName: string) => boolean): void {
   const scene = harness.nullEngine.scenes[0];
   if (scene) scene.getOutlineRenderer().isReady = () => true;
+  for (const light of scene?.lights ?? []) {
+    const shadow = light.getShadowGenerator()?.getShadowMap();
+    if (shadow) shadow.isReadyForRendering = () => true;
+  }
   for (const mesh of scene?.meshes ?? []) {
     const material = mesh.material;
     if (material) {
@@ -68,6 +72,72 @@ describe("캡처가 재질 준비를 기다린다", () => {
     setReady(harness, () => true);
     const result = await harness.engine.renderPasses(request(["lit"]));
     expect(result.passes.lit?.rgba).toHaveLength(16 * 16 * 4);
+  });
+
+  it("후처리 뷰포트의 첫 lit도 직접 색 변종을 준비하고 이전 셰이더 hot-swap을 준비로 세지 않는다", async () => {
+    const harness = await boot({ captureCompileTimeoutMs: 5_000 });
+    setReady(harness, () => true);
+    const scene = harness.nullEngine.scenes[0];
+    if (!scene) throw new Error("장면이 없습니다.");
+    const configuration = scene.imageProcessingConfiguration;
+    configuration.applyByPostProcess = true;
+    const head = materialOf(harness, "head");
+    const betweenSlices: boolean[] = [];
+    let checks = 0;
+    head.isReadyForSubMesh = () => {
+      expect(configuration.applyByPostProcess).toBe(false);
+      expect(head.allowShaderHotSwapping).toBe(false);
+      checks += 1;
+      if (checks === 1) queueMicrotask(() => betweenSlices.push(configuration.applyByPostProcess));
+      return checks > 1;
+    };
+    const draws: boolean[] = [];
+    vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+      if (this.name === "capture-lit") draws.push(configuration.applyByPostProcess);
+    });
+    await harness.engine.renderPasses(request());
+    expect(checks).toBeGreaterThan(1);
+    expect(draws).toEqual([false]);
+    expect(betweenSlices).toEqual([true]);
+    expect(configuration.applyByPostProcess).toBe(true);
+    expect(head.allowShaderHotSwapping).toBe(true);
+  });
+
+  it.each(["ready", "draw"])("%s 실패도 뷰포트 후처리·재질 hot-swap 설정을 복원한다", async (phase) => {
+    const harness = await boot();
+    setReady(harness, () => true);
+    const scene = harness.nullEngine.scenes[0];
+    if (!scene) throw new Error("장면이 없습니다.");
+    scene.imageProcessingConfiguration.applyByPostProcess = true;
+    const head = materialOf(harness, "head");
+    head.allowShaderHotSwapping = false;
+    head.isReadyForSubMesh = () => {
+      if (phase === "ready") throw new Error("준비 실패");
+      return true;
+    };
+    vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(() => { throw new Error("draw 실패"); });
+    await expect(harness.engine.renderPasses(request())).rejects.toThrow(phase === "ready" ? "준비 실패" : "draw 실패");
+    expect(scene.imageProcessingConfiguration.applyByPostProcess).toBe(true);
+    expect(head.allowShaderHotSwapping).toBe(false);
+  });
+
+  it("장면 프레임 전에도 실제 그림자 준비를 기다리고 RTT draw를 예열로 추가하지 않는다", async () => {
+    const harness = await boot({ captureCompileTimeoutMs: 5_000 });
+    setReady(harness, () => true);
+    const scene = harness.nullEngine.scenes[0];
+    const shadow = scene?.lights.map(light => light.getShadowGenerator()?.getShadowMap()).find(target => target);
+    if (!scene || !shadow) throw new Error("그림자 타깃이 없습니다.");
+    let checks = 0;
+    shadow.isReadyForRendering = () => { checks += 1; return checks >= 3; };
+    const draws: string[] = [];
+    vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+      expect(checks).toBeGreaterThanOrEqual(3);
+      draws.push(this.name);
+    });
+    await harness.engine.renderPasses(request());
+    expect(checks).toBeGreaterThanOrEqual(3);
+    expect(draws.filter(name => name === "capture-lit")).toHaveLength(1);
+    expect(draws.filter(name => name === shadow.name)).toHaveLength(1);
   });
 
   it("패스 전용 ShaderMaterial(flat·normal·depth·id)이 준비되지 않으면(NullEngine은 컴파일 못 함) 그 패스도 기다리다 실패한다", async () => {

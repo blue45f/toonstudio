@@ -297,4 +297,20 @@ Orion GLB 내보내기(NullEngine): sparse 정리 전 12.36 MB → 후 3.61 MB(�
 
 MSAA는 가시 샘플 과반으로 전체 픽셀을 한 소유자에게 배정하고 동률을 헤어로 정한다. 공유 경계의 혼합색을 본체·헤어별 서브픽셀로 역분리하지 않는다. 검증 원본과 움직임 시험은 `verification/shaper-hair-ownership-final-metal-manual/`·`shaper-hair-ownership-moving-metal-manual/`에 보존한다. 실제 키트 기본 10파트의 지원 프리플라이트는 확인했지만 모든 키트·생성 에셋 조합의 렌더 결과를 검사한 것은 아니다.
 
-같은 16조건의 GLSL은 추가 GPU 플래그 없는 실제 `ANGLE Metal Renderer: Apple M2 Max` WebGL2에서도 확인했다. 준비된 동일 상태에서 소유권 요청 전후 6패스 바이트와 실제 PSD 독립 재합성 오차는 0이고 GL·페이지 오류도 0이다. 다만 이 레인 첫 PBR lit의 일반 캡처 1회↔2회는 최대 64/255·36,798픽셀의 차이를 별도 재현했다. 소유권 없는 두 일반 캡처만으로 발생하고 이후 일반↔소유권은 같으므로 소유권 재질 오염으로 단정하지 않으며, 원인·첫 PBR 안정성은 미해결로 남긴다. 비교·분리 원본은 `verification/shaper-hair-ownership-comparison-metal-webgl2-manual/`와 `shaper-hair-ownership-baseline-metal-webgl2-manual/`다. 앞선 SwiftShader 보조 진단의 서버 종료·연결 거부 기록은 셰이더 판정에서 제외했다.
+같은 16조건의 GLSL은 추가 GPU 플래그 없는 실제 `ANGLE Metal Renderer: Apple M2 Max` WebGL2에서도 확인했다. 준비된 동일 상태에서 소유권 요청 전후 6패스 바이트와 실제 PSD 독립 재합성 오차는 0이고 GL·페이지 오류도 0이다. 초기 추가 검사에서는 첫 PBR 일반 캡처 1회↔2회에 최대 64/255·36,798픽셀 차이가 있었다. 소유권 없는 일반 캡처만으로 발생한 독립 결함이며 §13에서 원인 분리·수정을 기록한다. 비교·분리 원본은 `verification/shaper-hair-ownership-comparison-metal-webgl2-manual/`와 `shaper-hair-ownership-baseline-metal-webgl2-manual/`다. 앞선 SwiftShader 보조 진단의 서버 종료·연결 거부 기록은 셰이더 판정에서 제외했다.
+
+## 13. 첫 PBR의 직접 색 처리·그림자 준비 — 2026-10-29
+
+상태: **current**. 첫 WebGL2 PBR 캡처는 뷰포트의 `applyByPostProcess=true`로 `IMAGEPROCESSINGPOSTPROCESS` 변종을 준비했지만, 실제 RTT의 PrePass 초기화는 이를 false로 바꿨다. 이전 변종의 shader hot-swap으로 그려 첫 RGB가 달랐다. 128² 계측에서 첫 draw의 설정은 false인데 실제 effect는 `TONEMAPPING 0`·`IMAGEPROCESSINGPOSTPROCESS`, 두 번째는 `TONEMAPPING 3`·`IMAGEPROCESSING`이었다. 알파 차이는 0이고 RGB 최대 차이는 63/255였다. 색 처리 설정만 준비 전부터 false로 맞춘 대조군은 첫 차이가 0이어서 UBO 문제로 추정해 우회하지 않았다.
+
+`capture.ts`는 준비 폴링과 실제 lit draw 각각의 동기 구간에서 직접 image-processing 변종을 사용하고 즉시 뷰포트 설정을 복원한다. 재질 준비 검사에서는 `allowShaderHotSwapping`을 잠시 false로 두어 이전 shader로 그릴 수 있다는 응답을 현재 변종의 준비 완료로 세지 않으며, 실패 시에도 원래 값을 복원한다. 전역 hot-swap 해제·숨긴 예열 캡처·sleep·자동 재시도는 추가하지 않았다.
+
+장면 프레임을 전혀 그리지 않은 대조에서는 별도 첫 lit 차이가 WebGL2 71/255·WebGPU 65/255였다. 그림자 OFF에서는 0이어서 그림자 경로를 분리했고, 첫 CSM 패스가 shader 준비를 기다리지 않는 사실을 확인했다. 활성 그림자의 공개 `RenderTargetTexture.isReadyForRendering()`을 기존 시간 제한이 있는 폴링에 포함해 실제 CSM 패스·투명도 변종을 준비한다. 이 준비 검사는 draw를 제출하지 않는다. 단순 `forceCompilationAsync`나 전역 PrePass 상태 변경으로 대체하지 않았다.
+
+최종 128² 실제 Metal 검사는 WebGL2·WebGPU 각각 장면 프레임 0회/1회/캡처 사이 뷰포트 복귀의 3조건이다. 각 조건의 첫↔두 번째·두 번째↔세 번째 6패스 바이트 차이는 0이며 첫 lit의 가시 픽셀 4,187개, 원래 정상 두 번째 결과와 새 첫 결과의 RGBA 차이 0이다. 뷰포트 색 처리 설정도 복원됐고 GPU/GL validation·캡처 실패·페이지 오류는 0이다. WebGPU 명시적 dispose 뒤의 정상 `Device was destroyed` 알림은 수집 단계를 구분해 기록했다. 실제 장치 오류를 성공으로 바꾸는 예외는 추가하지 않았다.
+
+`verification/shaper-first-pbr-diagnostic/`는 원래 실패와 변종·UBO 조사 기록, `shaper-first-pbr-shadow-diagnostic/`는 그림자 ON/OFF 분리, `shaper-first-pbr-uniform-state/`·`shaper-first-pbr-verified/`는 수정 후 원본이다. uniform 계측에서 해당 WebGL2는 UBO를 사용하지 않고, WebGPU는 Scene 68개·광원 24/20개 float의 CPU 측 UBO cache를 기록했다. PBR Material은 직접 uniform 모드라 빈 cache를 UBO 검증 성공으로 세지 않았다. GPU 버퍼 자체를 역으로 읽어 검사한 것은 아니다.
+
+관련 9파일은 양 Vitest 설정에서 각각 125개를 통과했다. 이후 384²의 기존 PSD 16조건도 양 실제 backend에서 다시 검사해 6패스 불변·독립 PSD RGB/알파 0·헤어 숨김 잔여 0을 유지했다. 원본은 `verification/shaper-hair-ownership-post-pbr-metal-manual/`·`shaper-hair-ownership-post-pbr-metal-webgl2-manual/`·`shaper-hair-ownership-post-pbr-moving-metal-manual/`이다. 이 단계에서 모든 앱 테스트·타입 검사·빌드를 새로 수행한 것은 아니며 통합 담당의 후속 게이트를 따른다.
+
+독립 검토가 찾은 초기 숨김/disabled 하위 메시의 준비·제출 목록 불일치도 수정했다. 준비와 같은 가시성 조건으로 제출 목록을 만들며 처음부터 숨긴 두 입력은 일반 lit·소유권 모두 성공한다. 준비 뒤 새로 보인 미준비 메시의 실패·정리 guard는 유지하고 세 회귀로 확인했다.
