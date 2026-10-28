@@ -52,6 +52,36 @@ function fixture() {
 }
 
 describe("Studio review capture bridge", () => {
+  it("지정된 제출 원본 tuple을 준비 요청과 재시도에 고정한다", async () => {
+    const f = fixture();
+    const sourceRevision = { artifactId: "source-artifact", revisionId: "submitted", rootGraphHash: f.subject.rootGraphHash };
+    f.context({ sourceRevision });
+    vi.mocked(f.deps.digest).mockResolvedValue(f.subject.rootGraphHash);
+    await f.bridge.start();
+    expect(f.deps.prepare).toHaveBeenCalledWith(expect.objectContaining({ sourceRevision, sourceContentDigest: sourceRevision.rootGraphHash }), expect.any(AbortSignal));
+    expect(f.bridge.getSnapshot().phase).toBe("completed");
+  });
+  it("현재 저장·편집 원고가 제출 정본과 다르면 저장하거나 캡처하지 않는다", async () => {
+    const f = fixture();
+    f.context({ sourceRevision: { artifactId: "source-artifact", revisionId: "submitted", rootGraphHash: "a".repeat(64) } });
+    vi.mocked(f.deps.digest).mockResolvedValue("b".repeat(64));
+    await f.bridge.start();
+    await f.bridge.saveAndStart();
+    expect(f.bridge.getSnapshot()).toMatchObject({ phase: "cancelled", reason: "changed" });
+    expect(f.deps.save).not.toHaveBeenCalled();
+    expect(f.deps.prepare).not.toHaveBeenCalled();
+    expect(f.deps.captureAll).not.toHaveBeenCalled();
+  });
+  it("저장본이 일치해도 미저장 편집 내용이 다르면 강제 저장으로 제출 정본을 바꾸지 않는다", async () => {
+    const f = fixture();
+    const hash = "a".repeat(64);
+    f.context({ sourceRevision: { artifactId: "source-artifact", revisionId: "submitted", rootGraphHash: hash } });
+    vi.mocked(f.deps.digest).mockResolvedValueOnce(hash).mockResolvedValueOnce("b".repeat(64));
+    await f.bridge.start();
+    expect(f.bridge.getSnapshot()).toMatchObject({ phase: "cancelled", reason: "changed" });
+    expect(f.deps.save).not.toHaveBeenCalled();
+    expect(f.deps.prepare).not.toHaveBeenCalled();
+  });
   it("starts only on explicit intent, pins before all-page capture and verifies the source again before upload", async () => {
     const f = fixture();
     expect(f.calls).toEqual([]);

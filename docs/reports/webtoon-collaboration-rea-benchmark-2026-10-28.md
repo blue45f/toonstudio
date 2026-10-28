@@ -203,7 +203,7 @@ HTTP 테스트는 이 작업에서 만든 `127.0.0.1`의 임시 PostgreSQL과 �
 PDF 요약·진행자 동기 검토·3D 자산 카메라/UV 검토·실제 팀 C10 검증은 아직 완료하지 않았다. 이 항목을 이번 이미지 비교·서버 공정 테스트의 성과에 포함하지 않는다.
 
 
-### 2026-10-29 최종 검증 기록
+### 85271d246 단계의 검증 기록
 
 | 범위 | 결과 |
 | --- | --- |
@@ -213,7 +213,42 @@ PDF 요약·진행자 동기 검토·3D 자산 카메라/UV 검토·실제 팀 C
 | 브라우저 복구 근거 | 서버는 첫 질문을 저장하고 응답만 끊는 fixture. 새로고침 후 원래 mutation ID·revision·본문이 같은 요청 2회, 질문 기록은 1건 |
 | 브라우저 시각·접근성 | 인계 3테마×3폭, 실제 프리뷰 패널 320·390·1440px 가로 넘침 없음 및 WCAG 2 A/AA·2.1 AA axe 위반 없음 |
 | 변경 Web 타입 | 변경 소스·테스트 42개와 실제 import graph를 루트 strict 옵션으로 검사해 통과 |
-| 전체 하네스 | 앞선 커밋 `c22da27766708e0ece48217b5ef73d6f301bc3b8`은 전체 통과. 이번 추가분의 lint·Secretlint·문서·아키텍처·경계·크기·Studio graph 통과 후 전체 타입 검사 진행 중 |
+| 전체 하네스 | 앞선 커밋 `c22da27766708e0ece48217b5ef73d6f301bc3b8`은 전체 통과. 이 단계의 정적 게이트 통과 후 전체 타입 검사를 실행했으나, 후속 실제 생성 경로 보강으로 중단했다. 최종 검증은 다음 절에 기록 |
 | 추가 저장소 경계 검사 | 기존 AI prompt-library·virtual-space의 무관 7건으로 실패. 신규 sessionStorage 저널의 finding은 0건이며 검사·허용 목록은 변경하지 않음 |
 
 브라우저 검증은 명시적인 프로젝트 API·이미지 fixture이며 실제 HTTP 저장 검증과 구분한다. 외부 서비스 연동·다중 기기 실서비스·사람이 참여한 제작 파일럿의 성공으로 해석하지 않는다. 임시 PostgreSQL은 최종 검증 후 종료했고 운영 자원을 변경하지 않았다.
+
+
+## 9. 실제 검수 생성 경로의 제출 원본 연결
+
+상태: **migration — 2026-10-29 로컬 보강, 병합·운영 배포 전**.
+
+### 발견한 격차
+
+실제 Studio capture producer는 작품 범위의 별도 `review-snapshot` artifact에 checkpoint → submission → snapshot과 StudioReview를 만든다. 기존 Production 제출 ref와 capture ID가 자동으로 같지 않으며, 기존 operation은 저장된 `CreatorWork.doc`만 고정하고 원본 artifact·revision·회차 관계는 기록하지 않았다. 같은 artifact에 원본·검수 revision이 이미 있는 앞선 UI fixture만으로는 이 경로를 증명할 수 없었다.
+
+### 서버와 화면의 연결
+
+- capture 입력에 선택적 원본 tuple `sourceRevision: { artifactId, revisionId, rootGraphHash }`을 추가했다. 원본 digest는 실제 저장된 `CreatorWork.doc`의 canonical SHA-256 및 실제 graph revision hash와 같아야 한다.
+- prepare는 같은 작품·프로젝트의 실제 원본 행에서 범위를 읽어 서버 전용 `sourceRevisionScope`로 고정한다. upload·complete도 원본·hash·범위를 재검증하고 DB lock과 prepared intent 전체 비교를 유지한다. 원본에 관한 호출자 scope 주장은 받지 않는다.
+- 완료 receipt·operation payload hash·저장 원고 digest·불변 parent chain과 실제 원본 행·scope가 모두 일치한 연결만 `listReviews.sourceRevision`으로 제공한다. legacy capture의 같은 hash만으로 원본을 추론하지 않는다.
+- Production의 `Submission.revisionRef`와 승인 대상은 그대로 유지한다. 실제 이미지·핀 링크에는 서버가 연결한 별도 snapshot ID를 사용하고 두 ID를 구분해 표시한다. project 범위 capture가 episode 범위 원본을 대신하는 관계도 이 명시적 증명이 있어야 한다.
+- 검수 이미지가 없으면 편집 가능한 사용자에게 정확한 원본 tuple을 가진 편집기 진입을 제공한다. 저장 원고·현재 편집 내용이 해당 정본 digest와 다르면 저장·prepare·캡처 전에 중단한다. 완료 후 원래 제출본 검수로 돌아온다.
+- 이미지가 없는 generic exact review가 검증된 capture를 가리지 않게 했다. 실제 preview 참조가 있는 direct snapshot만 직접 선택하며, preview-unavailable은 해당 원본의 캡처 복구로 안내한다. version mismatch·closed·403은 캡처로 대체하지 않는다.
+
+기존 capture·review 클라이언트는 선택 필드가 없어도 동작한다. migration과 새 core 파일은 추가하지 않았고, 800줄 초과 host와 graph repository의 크기를 늘리지 않았다.
+
+### 최종 실행 결과
+
+| 검증 | 결과 |
+| --- | --- |
+| 변경 회귀 | 27개 파일 327개 테스트 통과 |
+| 원본 캡처의 보조 계약·runner | 4개 파일 68개 테스트 통과 |
+| 실제 PostgreSQL·HTTP 통합 | 3개 파일 78개 테스트 통과: 가입·분업 HTTP 25개, capture producer 48개, 새 원본 연결 5개 |
+| 원본 연결 DB 사례 | 다른 snapshot ID의 연결 성공, 원본 불변 update `55000`, scope 변조 차단·증명 제거, legacy 추론 금지, 다른 작품·없는 원본·틀린 hash·intent 재사용·권한 회수 거절 |
+| 최종 Chromium | 실제 producer 형태의 별도 artifact와 검증된 원본 DTO를 사용한 이미지 비교·원본 보존, 새로고침 복구, 기존 인계 등 5개 통과 |
+| 변경 Web 타입 | 변경 Web 52개 소스·테스트와 실제 import graph 및 신규 E2E 파일을 루트 strict 옵션으로 검사해 통과 |
+| API 타입 | 최종 backend 원본 연결 소스에서 API 전체 `tsc --noEmit` 통과 |
+| 전체 하네스 | 최종 소스의 lint·Secretlint·문서·아키텍처·경계·소스 크기·Studio eager graph 통과. 저장소 전역 타입 검사는 진행 중이며 하네스 전체 성공으로 간주하지 않음 |
+
+실제 DB의 raster canonicalization·원본/receipt/operation/권한·조회 계약을 검증했다. 객체 저장소는 테스트 전용 adapter이며 운영 R2 업로드가 아니다. 브라우저의 API·이미지는 명시적 fixture이고 실제 DB 검증과 분리한다. 이미지 렌더링의 주관적 품질이나 실제 제작팀 파일럿을 이 결과로 대신하지 않는다. 검증용 PostgreSQL은 종료했다.

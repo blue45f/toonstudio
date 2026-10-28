@@ -160,6 +160,8 @@ export const studioReviewSummarySchema = z
     updatedAt: isoTimestampSchema,
     reviewerIds: z.array(studioEntityIdSchema),
     openRequiredCommentCount: z.number().int().nonnegative(),
+    sourceRevision: z.object({ artifactId: studioEntityIdSchema, revisionId: studioEntityIdSchema,
+      rootGraphHash: sha256Schema, scope: scopeRefSchema }).strict().optional(),
   })
   .strict();
 export type StudioReviewSummary = z.infer<typeof studioReviewSummarySchema>;

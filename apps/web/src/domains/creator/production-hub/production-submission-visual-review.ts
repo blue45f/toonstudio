@@ -3,6 +3,8 @@ import type { StudioArtifactRecord, StudioProjectRecord, StudioReviewSummary, St
 import { getStudioProjectByWork, getStudioReviewPreviews, listStudioArtifactRevisions, listStudioReviews, type StudioReviewPreviewRead } from "../project-graph/studio-project-graph-client";
 import { studioVirtualSpaceReviewHref } from "../virtual-space/studio-virtual-space-review-invitation";
 import { createStudioRevisionCandidates } from "./production-studio-revision-bridge";
+import { canonicalJson } from "@toonstudio/studio-project-model";
+import { studioReviewCaptureSourceHref } from "../review-capture/studio-review-capture-source";
 
 export interface PinnedSubmissionVisualSource {
   readonly artifact: StudioArtifactRecord;
@@ -12,6 +14,16 @@ export interface PinnedSubmissionVisualSource {
   readonly reviewHref: string | null;
   readonly projectId: string;
   readonly workId: string;
+  readonly sourceRevisionRef: RevisionRef;
+  readonly mapping: "exact" | "captured-source";
+  readonly captureHref: string | null;
+}
+
+export class SubmissionVisualReviewCaptureRequired extends Error {
+  constructor(readonly captureHref: string | null) {
+    super(captureHref ? "이 제출 정본의 고정 검수 이미지가 없습니다. 저장된 원본과 정확히 일치할 때만 이미지를 만들 수 있습니다."
+      : "이 제출 정본의 고정 검수 이미지가 없습니다. 편집 담당자가 같은 원본 버전에서 검수 이미지를 만들어야 합니다.");
+  }
 }
 
 export interface SubmissionVisualReviewData {
@@ -42,6 +54,10 @@ export function resolveSubmissionVisualReview(
     throw new Error("선택한 제출본과 Studio 프로젝트의 작품·접근 범위를 확인하세요.");
   }
   const candidates = createStudioRevisionCandidates(project, revisionsByArtifact);
+  const task = aggregate.tasks.find((entry) => entry.projectId === aggregate.projectId && entry.outputDeliverableIds.includes(submission.deliverableId));
+  const captureHrefFor = (artifactId: string, ref: RevisionRef) => project.access.edit
+    ? studioReviewCaptureSourceHref(project.workId, { artifactId, revisionId: ref.id, rootGraphHash: ref.digest.slice("sha256:".length) },
+      task ? { projectId: aggregate.projectId, taskId: task.id } : null) : null;
   const resolve = (ref: RevisionRef, label: string, requireOutputScope: boolean): PinnedSubmissionVisualSource | null => {
     const matches = candidates.filter((entry) => entry.artifactId === entry.revision.artifactId
       && entry.scope.projectId === project.id && entry.revisionRef.id === ref.id
@@ -51,20 +67,39 @@ export function resolveSubmissionVisualReview(
     const candidate = matches[0];
     if (!candidate) return null;
     const artifact = project.artifacts.find((entry) => entry.id === candidate.artifactId && entry.projectId === project.id);
-    const review = [...(reviewsByArtifact[candidate.artifactId] ?? [])]
+    if (!artifact) return null;
+    const directReview = candidate.revision.kind === "review-snapshot" && candidate.revision.blobRefs.some((entry) => entry.role === "preview")
+      ? [...(reviewsByArtifact[candidate.artifactId] ?? [])]
       .filter((entry) => entry.artifactId === candidate.artifactId && entry.revisionId === ref.id)
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
-    if (!artifact || !review) return null;
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] : undefined;
+    const captures = project.artifacts.filter((entry) => entry.kind === "review-snapshot" && entry.projectId === project.id)
+      .flatMap((target) => (reviewsByArtifact[target.id] ?? []).flatMap((review) => {
+        const source = review.sourceRevision;
+        const revision = (revisionsByArtifact[target.id] ?? []).find((entry) => entry.id === review.revisionId && entry.artifactId === target.id && entry.kind === "review-snapshot");
+        if (!source || !revision || review.artifactId !== target.id || source.artifactId !== artifact.id
+          || source.revisionId !== ref.id || source.rootGraphHash !== candidate.revision.rootGraphHash
+          || revision.rootGraphHash !== source.rootGraphHash || canonicalJson(source.scope) !== canonicalJson(artifact.scope)
+          || (requireOutputScope && !artifactWithinScope(source.scope, deliverable.scope))) return [];
+        return [{ artifact: target, revision, review }];
+      })).sort((left, right) => right.review.updatedAt.localeCompare(left.review.updatedAt));
+    const display = directReview ? { artifact, revision: candidate.revision, review: directReview } : captures[0];
+    if (!display) return null;
     const subject = { schemaVersion: 1 as const, projectId: project.id, workId: project.workId,
-      artifactId: artifact.id, reviewId: review.id, revisionId: candidate.revision.id, rootGraphHash: candidate.revision.rootGraphHash };
-    return { artifact, revision: candidate.revision, review, label, projectId: project.id, workId: project.workId,
-      reviewHref: candidate.revision.kind === "review-snapshot" ? studioVirtualSpaceReviewHref(subject) : null };
+      artifactId: display.artifact.id, reviewId: display.review.id, revisionId: display.revision.id, rootGraphHash: display.revision.rootGraphHash };
+    return { ...display, label, projectId: project.id, workId: project.workId, sourceRevisionRef: ref,
+      mapping: directReview ? "exact" : "captured-source", reviewHref: studioVirtualSpaceReviewHref(subject), captureHref: captureHrefFor(artifact.id, ref) };
   };
   const pinned = resolve(submission.revisionRef, `${submission.revisionRef.revision}차 제출본`, true);
-  if (!pinned) throw new Error("제출본과 일치하는 고정 원고·Studio 검수가 없습니다. 원고의 revision과 digest를 확인하고 해당 버전의 검수를 연결해 주세요.");
+  if (!pinned) {
+    const original = candidates.find((entry) => entry.revision.id === submission.revisionRef.id && entry.revision.artifactId === entry.artifactId
+      && entry.revisionRef.digest === submission.revisionRef.digest && entry.revisionRef.lineage === submission.revisionRef.lineage
+      && entry.scope.projectId === project.id && artifactWithinScope(entry.scope, deliverable.scope));
+    if (!original) throw new Error("제출본과 일치하는 고정 원고가 없습니다. 원고의 revision과 digest를 확인해 주세요.");
+    throw new SubmissionVisualReviewCaptureRequired(captureHrefFor(original.artifactId, submission.revisionRef));
+  }
   const activeLinks = (aggregate.studioRevisionLinks ?? []).filter((link) => link.submissionId === submission.id && link.status !== "superseded");
   if (activeLinks.some((link) => link.projectId !== aggregate.projectId || link.workId !== project.workId
-    || link.deliverableId !== submission.deliverableId || link.studioRevisionRef.id !== pinned.revision.id
+    || link.deliverableId !== submission.deliverableId || link.studioRevisionRef.id !== pinned.sourceRevisionRef.id
     || link.studioRevisionRef.digest !== submission.revisionRef.digest)) {
     throw new Error("제출본의 Studio 연결과 고정 원고가 다릅니다. 연결을 확인한 뒤 다시 열어 주세요.");
   }
@@ -77,7 +112,7 @@ export function resolveSubmissionVisualReview(
   ];
   const baselines: PinnedSubmissionVisualSource[] = [];
   for (const entry of refs) {
-    if (entry.ref.id === pinned.revision.id || baselines.some((source) => source.revision.id === entry.ref.id)) continue;
+    if (entry.ref.id === pinned.sourceRevisionRef.id || baselines.some((source) => source.sourceRevisionRef.id === entry.ref.id)) continue;
     const source = resolve(entry.ref, entry.label, entry.requireOutputScope);
     if (source) baselines.push(source);
   }
@@ -122,7 +157,8 @@ export async function loadSubmissionVisualReview(aggregate: ProductionProjectAgg
     });
   }
   const reviewsByArtifact: Record<string, readonly StudioReviewSummary[]> = {};
-  const reviewIds = [...reviewArtifactIds];
+  const reviewIds = [...new Set([...reviewArtifactIds,
+    ...project.artifacts.filter((entry) => entry.projectId === project.id && entry.kind === "review-snapshot").map((entry) => entry.id)])];
   for (let offset = 0; offset < reviewIds.length; offset += 4) {
     const batch = reviewIds.slice(offset, offset + 4);
     const results = await Promise.allSettled(batch.map((id) => listStudioReviews(id)));
@@ -130,6 +166,15 @@ export async function loadSubmissionVisualReview(aggregate: ProductionProjectAgg
       const id = batch[index];
       if (id && result.status === "fulfilled") reviewsByArtifact[id] = result.value;
     });
+  }
+  const mappedArtifactIds = reviewIds.filter((id) => !revisionsByArtifact[id] && (reviewsByArtifact[id] ?? []).some((review) => {
+    const source = review.sourceRevision, ref = source ? refsById.get(source.revisionId) : null;
+    return source && ref && ref.digest === `sha256:${source.rootGraphHash}`;
+  }));
+  for (let offset = 0; offset < mappedArtifactIds.length; offset += 4) {
+    const batch = mappedArtifactIds.slice(offset, offset + 4);
+    const results = await Promise.allSettled(batch.map((id) => listStudioArtifactRevisions(id)));
+    results.forEach((result, index) => { const id = batch[index]; if (id && result.status === "fulfilled") revisionsByArtifact[id] = result.value; });
   }
   return resolveSubmissionVisualReview(aggregate, submission, project, revisionsByArtifact, reviewsByArtifact);
 }
@@ -144,9 +189,10 @@ export async function loadPinnedSubmissionPreviews(source: PinnedSubmissionVisua
       projectId: source.projectId, workId: source.workId, artifactId: source.artifact.id,
       revisionId: source.revision.id, rootGraphHash: source.revision.rootGraphHash,
     }, cursor);
-    if (!result.ok) throw new Error(result.reason === "version-mismatch"
-      ? "고정 원고 버전이 일치하지 않습니다. 제출본 연결을 다시 확인하세요."
-      : result.reason === "closed" ? "이 원고의 Studio 검수가 닫혔습니다." : "이 고정 원고에는 표시 가능한 이미지가 없습니다.");
+    if (!result.ok) {
+      if (result.reason === "preview-unavailable") throw new SubmissionVisualReviewCaptureRequired(source.captureHref);
+      throw new Error(result.reason === "version-mismatch" ? "고정 원고 버전이 일치하지 않습니다. 제출본 연결을 다시 확인하세요." : "이 원고의 Studio 검수가 닫혔습니다.");
+    }
     pages.push(...result.previews);
     cursor = result.nextCursor;
     if (cursor && cursors.has(cursor)) throw new Error("원고 이미지 목록을 끝까지 확인하지 못했습니다. 다시 불러와 주세요.");

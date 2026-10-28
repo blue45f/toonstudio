@@ -1,16 +1,19 @@
-import { canonicalJson, isoTimestampSchema, sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
+import { canonicalJson, isoTimestampSchema, scopeRefSchema, sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
 import { z } from "zod";
 import { api, apiPath, httpStatus } from "@/platform/api";
 import { parseStudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-review-subject";
+import { studioReviewCaptureSourceRevisionSchema } from "../review-capture/studio-review-capture-source";
 
 const BASE = "/studio-project-graph/review-captures";
 const MAX_PAGE_BYTES = 8 * 1024 * 1024;
 const inputSchema = z.object({ intentId: studioEntityIdSchema, workId: studioEntityIdSchema,
   sourceServerRevision: z.number().int().positive().max(2_147_483_647), sourceContentDigest: sha256Schema,
   pageCount: z.number().int().positive().max(100_000), title: z.string().trim().min(1).max(240),
-  deviceId: studioEntityIdSchema, createdAt: isoTimestampSchema }).strict();
+  deviceId: studioEntityIdSchema, createdAt: isoTimestampSchema,
+  sourceRevision: studioReviewCaptureSourceRevisionSchema.optional() }).strict();
 const intentSchema = inputSchema.extend({ projectId: studioEntityIdSchema, artifactId: studioEntityIdSchema,
-  expectedHeadRevisionId: studioEntityIdSchema, expectedHeadRootGraphHash: sha256Schema }).strict();
+  expectedHeadRevisionId: studioEntityIdSchema, expectedHeadRootGraphHash: sha256Schema,
+  sourceRevisionScope: scopeRefSchema.optional() }).strict();
 export type StudioReviewCaptureInput = z.infer<typeof inputSchema>;
 export type StudioReviewCaptureIntent = z.infer<typeof intentSchema>;
 export type StudioReviewCapturePhase = "prepare" | "upload" | "complete" | "status" | "cancel";
@@ -65,13 +68,17 @@ export async function prepareStudioVirtualSpaceReviewCapture(input: StudioReview
   options: { readonly signal?: AbortSignal } = {}): Promise<StudioReviewCaptureIntent> {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) fail("preview-intent-invalid", "prepare");
+  if (parsed.data.sourceRevision && parsed.data.sourceRevision.rootGraphHash !== parsed.data.sourceContentDigest) fail("preview-source-version-mismatch", "prepare");
   checkAbort(options.signal, "prepare");
   return request("prepare", async () => {
     const raw = await api.post<unknown>(`${BASE}/prepare`, parsed.data, { signal: options.signal, timeout: 60_000, retry: 0 });
     const prepared = intentSchema.safeParse(raw);
     if (!prepared.success) fail("preview-response-invalid", "prepare");
-    const { projectId: _projectId, artifactId: _artifactId, expectedHeadRevisionId: _head, expectedHeadRootGraphHash: _hash, ...echo } = prepared.data;
+    const { projectId: _projectId, artifactId: _artifactId, expectedHeadRevisionId: _head, expectedHeadRootGraphHash: _hash,
+      sourceRevisionScope, ...echo } = prepared.data;
     if (canonicalJson(echo) !== canonicalJson(parsed.data)) fail("preview-response-version-mismatch", "prepare");
+    if (Boolean(parsed.data.sourceRevision) !== Boolean(sourceRevisionScope)
+      || (sourceRevisionScope && sourceRevisionScope.projectId !== prepared.data.projectId)) fail("preview-response-version-mismatch", "prepare");
     return Object.freeze(prepared.data);
   });
 }

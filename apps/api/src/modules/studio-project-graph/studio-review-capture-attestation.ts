@@ -65,12 +65,13 @@ export function studioReviewResolutionCaptureFromRows(value: unknown) {
   const base = record(row.base);
   if (!base || base.id !== intent.expectedHeadRevisionId || base.artifactId !== pin.data.artifactId
     || base.rootGraphHash !== intent.expectedHeadRootGraphHash) return null;
-  return { subject: pin.data, submissionId, sourceServerRevision: intent.sourceServerRevision, sequence };
+  return { subject: pin.data, submissionId, sourceServerRevision: intent.sourceServerRevision, sequence,
+    ...(intent.sourceRevision ? { sourceRevision: intent.sourceRevision, sourceRevisionScope: intent.sourceRevisionScope, intent } : {}) };
 }
 
 /** Call after the original comment's edit ACL and review lock. These rows are immutable;
  * taking a second review update lock would introduce opposite-direction resolution deadlocks. */
-export async function loadStudioReviewResolutionCaptures(client: PoolClient, artifactId: string, reviewIds: readonly string[]) {
+export async function loadStudioReviewResolutionCaptures(client: PoolClient, artifactId: string, reviewIds: readonly string[], boundSourceOnly = false) {
   const result = await client.query(
     `SELECT jsonb_build_object('schemaVersion',1,'workId',project."workId",'projectId',artifact."projectId",
         'artifactId',artifact.id,'reviewId',review.id,'revisionId',snapshot.id,'rootGraphHash',snapshot."rootGraphHash") AS pin,
@@ -92,6 +93,7 @@ export async function loadStudioReviewResolutionCaptures(client: PoolClient, art
      LEFT JOIN studio_revision_parent submission_edge ON submission_edge."revisionId"=submission.id AND submission_edge.ordinal=0
      LEFT JOIN studio_revision checkpoint ON checkpoint.id=submission_edge."parentRevisionId"
      LEFT JOIN studio_revision base ON base.id=capture."baseRevisionId"
-     WHERE artifact.id=$1 AND review.id=ANY($2::text[])`, [artifactId, reviewIds]);
+     WHERE artifact.id=$1 AND review.id=ANY($2::text[])
+       AND (NOT $3::boolean OR capture.operation->'payload'->'intent'->'sourceRevision' IS NOT NULL)`, [artifactId, reviewIds, boundSourceOnly]);
   return result.rows.map(studioReviewResolutionCaptureFromRows);
 }

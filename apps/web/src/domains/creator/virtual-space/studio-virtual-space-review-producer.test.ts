@@ -19,6 +19,21 @@ function uploadResult(ordinal: number) { return { ordinal, sha256: (ordinal ? "c
 beforeEach(() => { http.post.mockReset(); http.put.mockReset(); });
 
 describe("explicit pinned review production client", () => {
+  it("제출 원본 tuple과 서버가 확인한 원본 범위를 준비 응답에 고정한다", async () => {
+    const sourceRevision = { artifactId: "source-artifact", revisionId: "submitted", rootGraphHash: capture.sourceContentDigest };
+    const sourceRevisionScope = { projectId: intent.projectId, episodeId: "episode-1" };
+    http.post.mockResolvedValueOnce({ ...intent, sourceRevision, sourceRevisionScope });
+    expect(await prepareStudioVirtualSpaceReviewCapture({ ...capture, sourceRevision })).toMatchObject({ sourceRevision, sourceRevisionScope });
+    http.post.mockResolvedValueOnce({ ...intent, sourceRevision });
+    await expect(prepareStudioVirtualSpaceReviewCapture({ ...capture, sourceRevision })).rejects.toMatchObject({ code: "preview-response-version-mismatch" });
+    http.post.mockResolvedValueOnce({ ...intent, sourceRevision, sourceRevisionScope: { projectId: "other-project" } });
+    await expect(prepareStudioVirtualSpaceReviewCapture({ ...capture, sourceRevision })).rejects.toMatchObject({ code: "preview-response-version-mismatch" });
+  });
+  it("저장 원고 digest가 제출 원본과 다르면 준비 쓰기 요청도 보내지 않는다", async () => {
+    await expect(prepareStudioVirtualSpaceReviewCapture({ ...capture, sourceRevision: { artifactId: "source-artifact",
+      revisionId: "submitted", rootGraphHash: "f".repeat(64) } })).rejects.toMatchObject({ code: "preview-source-version-mismatch" });
+    expect(http.post).not.toHaveBeenCalled();
+  });
   it("computes the same canonical saved-doc digest independent of object key order", async () => {
     const doc = { pagesList: [{ id: "a", elements: [] }], version: 3 };
     expect(await studioReviewCaptureContentDigest(doc)).toBe(createHash("sha256").update(canonicalJson(doc)).digest("hex"));

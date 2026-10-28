@@ -17,7 +17,7 @@ import { STUDIO_REVIEW_PREVIEW_PAGE_SIZE, type StudioReviewPreviewBlobRow,
 import { lockStudioReviewPreviewStorage } from "./studio-review-preview-storage";
 import { studioReviewMappingFromOperation, studioReviewMappingsFromOperation } from "./studio-review-source-map";
 import { loadStudioReviewResolutionCaptures } from "./studio-review-capture-attestation";
-
+import { attachStudioReviewCaptureSources } from "./studio-review-capture-source-revision";
 import { dbPool } from "../../platform/database";
 import {
   resolveCreatorCollaborationAccess,
@@ -397,8 +397,8 @@ export interface StudioReviewSummaryRecord {
   readonly updatedAt: string;
   readonly reviewerIds: readonly string[];
   readonly openRequiredCommentCount: number;
+  readonly sourceRevision?: import("./studio-review-preview-producer.contract").StudioReviewAttestedSourceRevision;
 }
-
 export interface StudioReviewCommentRecord {
   readonly id: string;
   readonly reviewId: string;
@@ -1483,7 +1483,7 @@ export class StudioProjectGraphRepository {
          ORDER BY review."createdAt" DESC, review.id`,
         [artifactId],
       );
-      return Object.freeze(result.rows.map(mapStudioReviewSummary));
+      return await attachStudioReviewCaptureSources(client, artifactId, result.rows.map(mapStudioReviewSummary));
     } finally {
       client.release();
     }

@@ -2,8 +2,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProductionSubmissionVisualReview } from "./ProductionSubmissionVisualReview";
-import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, resolveSubmissionVisualReview } from "./production-submission-visual-review";
-import { submissionVisualFixture } from "./production-submission-visual-review.test-fixture";
+import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, resolveSubmissionVisualReview, SubmissionVisualReviewCaptureRequired } from "./production-submission-visual-review";
+import { submissionCaptureVisualFixture, submissionVisualFixture } from "./production-submission-visual-review.test-fixture";
 
 vi.mock("./production-submission-visual-review", async (importOriginal) => ({
   ...await importOriginal<typeof import("./production-submission-visual-review")>(), loadSubmissionVisualReview: vi.fn(), loadPinnedSubmissionPreviews: vi.fn(),
@@ -20,6 +20,39 @@ function fixture() {
 }
 
 describe("고정 제출 원고 이미지 패널", () => {
+  it("실제 producer 이미지와 원본 제출 정본의 ID를 구별하고 원본으로 기준본을 선택한다", async () => {
+    const f = submissionCaptureVisualFixture();
+    vi.mocked(loadSubmissionVisualReview).mockResolvedValue(resolveSubmissionVisualReview(f.aggregate, f.submission, f.project, f.revisions, f.reviews));
+    vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async (source) => [{ sha256: f.hash, ordinal: 0, mediaType: "image/png", byteLength: 10,
+      url: `https://preview.test/${source.revision.id}`, expiresAt: Date.now() + 30_000, mapping: null }]);
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    await screen.findByRole("img");
+    expect(screen.getByText(/제출 정본 submitted-revision/)).toBeTruthy();
+    expect(screen.getByText(/같은 제출 정본에서 만든 검수 이미지/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toContain("revision=capture-submitted");
+    fireEvent.change(screen.getByRole("combobox", { name: "비교 기준본" }), { target: { value: "input-revision" } });
+    await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
+    expect(screen.getAllByRole("img")[0]?.getAttribute("src")).toBe("https://preview.test/capture-input");
+  });
+  it("검수 이미지가 없으면 명시적인 정본 캡처 링크만 제공하고 자동 생성하지 않는다", async () => {
+    const f = fixture();
+    vi.mocked(loadSubmissionVisualReview).mockRejectedValue(new SubmissionVisualReviewCaptureRequired("/studio/work/work/canvas?captureRevision=submitted-revision"));
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    const link = await screen.findByRole("link", { name: "이 제출 정본으로 검수 이미지 만들기" });
+    expect(link.getAttribute("href")).toContain("captureRevision=submitted-revision");
+    expect(loadPinnedSubmissionPreviews).not.toHaveBeenCalled();
+  });
+  it("exact 검수의 서버 프리뷰가 없을 때도 원본 캡처 복구 링크를 표시한다", async () => {
+    const f = fixture();
+    vi.mocked(loadPinnedSubmissionPreviews).mockRejectedValue(new SubmissionVisualReviewCaptureRequired("/studio/work/work/canvas?captureRevision=submitted-revision"));
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    expect((await screen.findByRole("link", { name: "이 제출 정본으로 검수 이미지 만들기" })).getAttribute("href")).toContain("captureRevision=submitted-revision");
+    expect(loadSubmissionVisualReview).toHaveBeenCalledTimes(1);
+    expect(loadPinnedSubmissionPreviews).toHaveBeenCalledTimes(1);
+  });
   it("사용자가 열면 선택 제출본 이미지만 가져오고 입력본을 명시적으로 비교한다", async () => {
     const f = fixture();
     vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async (source) => [f.preview(0, source.revision.id)]);
@@ -79,7 +112,7 @@ describe("고정 제출 원고 이미지 패널", () => {
     const f = fixture();
     const first = f.data.baselines[0];
     if (!first) throw new Error("기준본 fixture가 없습니다.");
-    const second = { ...first, revision: { ...first.revision, id: "second-input" } };
+    const second = { ...first, sourceRevisionRef: { ...first.sourceRevisionRef, id: "second-input" }, revision: { ...first.revision, id: "second-input" } };
     vi.mocked(loadSubmissionVisualReview).mockResolvedValue({ ...f.data, baselines: [first, second] });
     let complete: ((pages: Awaited<ReturnType<typeof loadPinnedSubmissionPreviews>>) => void) | undefined;
     vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async (source) => source.revision.id === "second-input"

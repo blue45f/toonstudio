@@ -5,11 +5,35 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { submissionVisualFixture } from "../apps/web/src/domains/creator/production-hub/production-submission-visual-review.test-fixture";
 
+import type { StudioProjectRecord, StudioReviewSummary, StudioRevisionRecord } from "../apps/web/src/domains/creator/project-graph/studio-project-graph-contract";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 // 브라우저는 명시적인 API·이미지 fixture로 고정 버전 연결을 검사한다. 실제 저장·인가는 별도 DB HTTP 검증을 사용한다.
 async function prepareProject(page: Page) {
   const fixture = submissionVisualFixture();
+  const sourceArtifact = fixture.project.artifacts.find((entry) => entry.id === "artifact");
+  const sourceRevision = fixture.revisions.artifact.find((entry) => entry.id === "submitted-revision");
+  const inputRevision = fixture.revisions.artifact.find((entry) => entry.id === "input-revision");
+  const submissionReview = fixture.reviews.artifact.find((entry) => entry.id === "submission-review");
+  const inputReview = fixture.reviews.artifact.find((entry) => entry.id === "input-review");
+  if (!sourceArtifact || !sourceRevision || !inputRevision || !submissionReview || !inputReview) throw new Error("원고 검수 fixture가 없습니다.");
+  // 실제 producer처럼 별도 작품 범위 artifact에 검수 스냅샷을 만들고 서버가 증명한 원본 연결만 내보낸다.
+  const captureArtifact = { ...sourceArtifact, id: "capture-artifact", kind: "review-snapshot" as const,
+    scope: { projectId: fixture.project.id }, headRevisionId: "capture-submitted" };
+  const project: StudioProjectRecord = { ...fixture.project, artifacts: [...fixture.project.artifacts, captureArtifact] };
+  const revisions: Record<string, readonly StudioRevisionRecord[]> = { artifact: fixture.revisions.artifact.map((entry) => ({ ...entry,
+    kind: entry.id === "submitted-revision" ? "submission" : "checkpoint" })), "capture-artifact": [
+    { ...sourceRevision, id: "capture-submitted", artifactId: captureArtifact.id, kind: "review-snapshot" },
+    { ...inputRevision, id: "capture-input", artifactId: captureArtifact.id, kind: "review-snapshot" },
+  ] };
+  const reviews: Record<string, readonly StudioReviewSummary[]> = { artifact: [], "capture-artifact": [
+    { ...submissionReview, artifactId: captureArtifact.id, revisionId: "capture-submitted", sourceRevision: {
+      artifactId: sourceArtifact.id, revisionId: sourceRevision.id, rootGraphHash: sourceRevision.rootGraphHash, scope: sourceArtifact.scope,
+    } },
+    { ...inputReview, artifactId: captureArtifact.id, revisionId: "capture-input", sourceRevision: {
+      artifactId: sourceArtifact.id, revisionId: inputRevision.id, rootGraphHash: inputRevision.rootGraphHash, scope: sourceArtifact.scope,
+    } },
+  ] };
   const aggregate = JSON.parse(JSON.stringify(fixture.aggregate).replaceAll('"sample-project"', '"production-project"')) as ProductionProjectAggregate;
   const actor = { id: "visual-browser-owner", name: "검수자", email: null, image: null, role: "user" };
   let record = { aggregate: { ...aggregate, parties: aggregate.parties.map((party) => ({ ...party, accountUserId: actor.id })) },
@@ -37,14 +61,14 @@ async function prepareProject(page: Page) {
       return route.fulfill({ json: record });
     }
     if (path.endsWith("/production/projects/production-project")) return route.fulfill({ json: record });
-    if (path.endsWith(`/studio-project-graph/works/${aggregate.workId}/project`)) return route.fulfill({ json: fixture.project });
-    if (path.endsWith("/artifacts/artifact/revisions")) return route.fulfill({ json: fixture.revisions.artifact });
-    if (path.endsWith("/artifacts/artifact/reviews")) return route.fulfill({ json: fixture.reviews.artifact });
+    if (path.endsWith(`/studio-project-graph/works/${aggregate.workId}/project`)) return route.fulfill({ json: project });
+    const graphResource = path.match(/\/artifacts\/(artifact|capture-artifact)\/(revisions|reviews)$/u);
+    if (graphResource) return route.fulfill({ json: (graphResource[2] === "revisions" ? revisions : reviews)[graphResource[1] ?? ""] });
     if (path.endsWith("/previews")) {
       previewRequests.push(url.href);
-      const revisionId = path.includes("/input-review/") ? "input-revision" : "submitted-revision";
+      const revisionId = path.includes("/input-review/") ? "capture-input" : "capture-submitted";
       expect(url.searchParams.get("revisionId")).toBe(revisionId);
-      expect(url.searchParams.get("rootGraphHash")).toBe((revisionId === "input-revision" ? "b" : "a").repeat(64));
+      expect(url.searchParams.get("rootGraphHash")).toBe((revisionId === "capture-input" ? "b" : "a").repeat(64));
       const ordinal = url.searchParams.has("cursor") ? 1 : 0;
       return route.fulfill({ json: { ok: true, previews: [{ sha256: "d".repeat(64), ordinal, mediaType: "image/webp", byteLength: 700,
         url: `${url.origin}/__collaboration-fixture/${revisionId}-${ordinal}.webp`, expiresAt: Date.now() + 60_000, mapping: null }],
@@ -74,7 +98,7 @@ test("실제 제출 이미지의 고정 버전·비교·모바일·접근성", a
   await expect(panel.getByRole("img", { name: "2차 고정 입력본 · 2", exact: true })).toBeVisible();
   await panel.getByRole("button", { name: "원고 겹쳐 보기", exact: true }).click();
   await expect(panel.getByRole("slider", { name: "제출본 불투명도", exact: true })).toBeVisible();
-  await expect(panel.getByRole("link", { name: "이 고정본에 핀 의견 남기기", exact: true })).toHaveAttribute("href", /revision=submitted-revision/u);
+  await expect(panel.getByRole("link", { name: "이 고정본에 핀 의견 남기기", exact: true })).toHaveAttribute("href", /revision=capture-submitted/u);
   expect(previewRequests).toHaveLength(4);
   expect(previewRequests.every((value) => !value.includes("newer-head"))).toBe(true);
   for (const width of [1440, 390, 320]) {

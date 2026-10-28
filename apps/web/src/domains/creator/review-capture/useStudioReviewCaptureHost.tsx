@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StudioReviewCaptureDialogMount } from "./StudioReviewCaptureDialogMount";
 import { useStudioReviewCapture } from "./useStudioReviewCapture";
 
@@ -8,15 +8,18 @@ import { studioReviewEditorRequestFromLocation } from "../review-handoff/studio-
 import type { StudioReviewCaptureOrigin } from "../review-resolution/StudioReviewCaptureReturnLink";
 import { useStudioStableHandlers } from "../studio-stable-handlers";
 import { studioReviewCaptureHostContext, type StudioReviewCaptureHostBindings } from "./studio-review-capture-host-context";
+import { studioReviewCaptureSourceFromSearch, studioReviewCaptureSourceReturnHref } from "./studio-review-capture-source";
 
 export { studioReviewCaptureHostContext } from "./studio-review-capture-host-context";
 
 /** The host supplies runtime authority; this adapter owns capture projection and its dialog. */
 export function useStudioReviewCaptureHost(bindings: StudioReviewCaptureHostBindings & { readonly reviewHandoff?: StudioReviewEditorHostNavigation }) {
-  const scopeKey = JSON.stringify([bindings.studioAuthUserId, bindings.workId]);
+  const sourceRequest = studioReviewCaptureSourceFromSearch(bindings.reviewHandoff?.search ?? "");
+  const scopeKey = JSON.stringify([bindings.studioAuthUserId, bindings.workId, sourceRequest?.sourceRevision]);
   const [origin, setOrigin] = useState<{ key: string; value: StudioReviewCaptureOrigin | null } | null>(null);
   const capture = useStudioReviewCapture(scopeKey, {
-    getContext: () => studioReviewCaptureHostContext(bindings),
+    getContext: () => ({ ...studioReviewCaptureHostContext(bindings),
+      ...(sourceRequest ? { sourceRevision: sourceRequest.sourceRevision } : {}) }),
     projectRuntime: async (saved) => {
       const snapshot = bindings.getSnapshot();
       const { projectStudioReviewCaptureSource } = await import("./studio-review-capture-projection");
@@ -33,6 +36,12 @@ export function useStudioReviewCaptureHost(bindings: StudioReviewCaptureHostBind
     setOrigin({ key: scopeKey, value: request && bindings.studioAuthUserId && bindings.workId
       ? { actorId: bindings.studioAuthUserId, workId: bindings.workId, request } : null });
   } });
+  const openedSource = useRef<string | null>(null);
+  useEffect(() => {
+    if (!sourceRequest || !studioReviewCaptureHostContext(bindings).available || openedSource.current === scopeKey) return;
+    openedSource.current = scopeKey;
+    handlers.open();
+  }, [sourceRequest, bindings, scopeKey, handlers]);
   return {
     open: handlers.open,
     dialog: <>
@@ -41,6 +50,8 @@ export function useStudioReviewCaptureHost(bindings: StudioReviewCaptureHostBind
       open={capture.visible}
       snapshot={capture.snapshot}
       origin={origin?.key === scopeKey ? origin.value : null}
+      sourceRevision={sourceRequest?.sourceRevision}
+      returnHref={sourceRequest ? studioReviewCaptureSourceReturnHref(sourceRequest) : null}
       onSave={() => { void capture.save(); }}
       onRetry={capture.retry}
       onClose={() => { void capture.close(); }}

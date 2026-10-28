@@ -4,6 +4,7 @@ import type {
   StudioReviewCaptureIntent,
 } from "../virtual-space/studio-virtual-space-review-producer";
 import type { StudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-subject";
+import type { StudioReviewCaptureSourceRevision } from "./studio-review-capture-source";
 
 export interface StudioReviewCaptureContext {
   readonly workId: string | null;
@@ -11,6 +12,7 @@ export interface StudioReviewCaptureContext {
   readonly scopeKey: string;
   readonly generation: number | string;
   readonly available: boolean;
+  readonly sourceRevision?: StudioReviewCaptureSourceRevision;
 }
 export interface StudioReviewCaptureProjection {
   readonly doc: Record<string, unknown>;
@@ -71,7 +73,7 @@ class CaptureUnavailableError extends Error {}
 
 function sameContext(a: StudioReviewCaptureContext, b: StudioReviewCaptureContext) {
   return b.available && a.workId === b.workId && a.scopeKey === b.scopeKey
-    && a.generation === b.generation;
+    && a.generation === b.generation && JSON.stringify(a.sourceRevision) === JSON.stringify(b.sourceRevision);
 }
 function retryableRequest(error: unknown) {
   return typeof error === "object" && error !== null
@@ -120,6 +122,8 @@ export class StudioReviewCaptureBridge {
       this.dependencies.digest(saved.document.doc), this.dependencies.digest(runtime.doc),
     ]);
     this.assertCurrent(epoch, context);
+    if (context.sourceRevision && (context.sourceRevision.rootGraphHash !== digest
+      || context.sourceRevision.rootGraphHash !== runtimeDigest)) throw new CaptureChangedError();
     const savedPages = saved.document.doc.pagesList;
     const matches = digest === runtimeDigest && runtime.title === saved.document.title
       && runtime.description === saved.document.description
@@ -176,6 +180,7 @@ export class StudioReviewCaptureBridge {
         sourceServerRevision: pin.saved.revision, sourceContentDigest: pin.digest,
         pageCount: pin.pageCount, title: pin.saved.document.title,
         deviceId: this.dependencies.getDeviceId(), createdAt: this.dependencies.now(),
+        ...(pin.context.sourceRevision ? { sourceRevision: pin.context.sourceRevision } : {}),
       });
       this.update({ sourceRevision: pin.saved.revision, title: pin.saved.document.title });
       await this.continueCapture(epoch, abort.signal);

@@ -5,7 +5,7 @@ import type { PinnedSubmissionVisualSource, SubmissionVisualReviewData } from ".
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-type VisualState = { kind: "loading" } | { kind: "error"; message: string }
+type VisualState = { kind: "loading" } | { kind: "error"; message: string; captureHref?: string | null }
   | { kind: "ready"; data: SubmissionVisualReviewData; pages: readonly StudioReviewPreviewRead[] };
 type BaselineState = { kind: "idle" } | { kind: "loading"; revisionId: string } | { kind: "error"; revisionId: string; message: string }
   | { kind: "ready"; revisionId: string; pages: readonly StudioReviewPreviewRead[] };
@@ -69,13 +69,14 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
         const pages = await loadPinnedSubmissionPreviews(data.submission);
         if (!cancelled) setState({ kind: "ready", data, pages });
       } catch (cause) {
-        if (!cancelled) setState({ kind: "error", message: cause instanceof Error ? cause.message : bt("원고 이미지를 불러오지 못했습니다.", "Could not load manuscript images.") });
+        if (!cancelled) setState({ kind: "error", message: cause instanceof Error ? cause.message : bt("원고 이미지를 불러오지 못했습니다.", "Could not load manuscript images."),
+          captureHref: cause instanceof Error && "captureHref" in cause && typeof cause.captureHref === "string" ? cause.captureHref : null });
       }
     })();
     return () => { cancelled = true; requestGeneration.current += 1; };
   }, [opened, refresh, request, demo, bt]);
 
-  const baseline = state.kind === "ready" ? state.data.baselines.find((entry) => entry.revision.id === baselineId) ?? null : null;
+  const baseline = state.kind === "ready" ? state.data.baselines.find((entry) => entry.sourceRevisionRef.id === baselineId) ?? null : null;
   useEffect(() => {
     if (!baseline) { setBaselineState({ kind: "idle" }); return; }
     let cancelled = false;
@@ -131,14 +132,16 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
     </div>
     {demo ? <p className="mt-2 text-xs text-fg-3">{bt("예시 프로젝트의 계획 도식입니다. 실제 프로젝트에서 저장된 원고 이미지를 확인할 수 있습니다.", "This sample uses plan diagrams. Saved manuscript images are available in your projects.")}</p> : null}
     {opened && state.kind === "loading" ? <p role="status" className="mt-3 text-sm">{bt("제출본의 고정 버전과 원고 이미지를 확인하는 중…", "Checking the pinned submission and loading images…")}</p> : null}
-    {opened && state.kind === "error" ? <p role="alert" className="mt-3 rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm">{state.message}</p> : null}
+    {opened && state.kind === "error" ? <div role="alert" className="mt-3 rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm"><p>{state.message}</p>
+      {state.captureHref ? <a href={state.captureHref} className={buttonClass({ variant: "outline", className: "mt-3 min-h-11" })}>{bt("이 제출 정본으로 검수 이미지 만들기", "Create review images from this exact submission")}</a> : null}</div> : null}
     {opened && state.kind === "ready" ? <div className="mt-4 space-y-3">
-      <p className="break-all text-xs text-fg-2">{state.data.submission.artifact.title} · {state.data.submission.label} · {state.data.submission.revision.id}</p>
+      <p className="break-all text-xs text-fg-2">{state.data.submission.artifact.title} · {state.data.submission.label} · {bt("제출 정본", "Submitted source")} {state.data.submission.sourceRevisionRef.id}</p>
+      {state.data.submission.mapping === "captured-source" ? <p className="break-all text-xs text-fg-2">{bt("서버가 같은 제출 정본에서 만든 검수 이미지임을 확인했습니다.", "The server verified these images were captured from the same submitted source.")} · {state.data.submission.revision.id}</p> : null}
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs font-semibold">{bt("비교 기준본", "Comparison baseline")}
-          <select className="ml-2 min-h-11 max-w-full rounded-lg border border-line bg-card px-2" value={baseline?.revision.id ?? ""} onChange={(event) => setBaselineId(event.target.value)}>
+          <select className="ml-2 min-h-11 max-w-full rounded-lg border border-line bg-card px-2" value={baseline?.sourceRevisionRef.id ?? ""} onChange={(event) => setBaselineId(event.target.value)}>
             <option value="">{bt("제출본만 보기", "Submission only")}</option>
-            {state.data.baselines.map((entry) => <option key={entry.revision.id} value={entry.revision.id}>{entry.label} · {entry.artifact.title} · {entry.revision.id}</option>)}
+            {state.data.baselines.map((entry) => <option key={entry.sourceRevisionRef.id} value={entry.sourceRevisionRef.id}>{entry.label} · {entry.artifact.title} · {entry.sourceRevisionRef.id}</option>)}
           </select>
         </label>
         <label className="text-xs font-semibold">{bt("이미지 순번", "Image position")}

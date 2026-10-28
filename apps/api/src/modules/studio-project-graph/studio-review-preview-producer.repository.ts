@@ -18,6 +18,7 @@ import {
 } from "./studio-review-preview-producer.contract";
 import { lockStudioReviewPreviewStorage } from "./studio-review-preview-storage";
 import { studioReviewPageRasterSchema, type StudioReviewPageRaster } from "./studio-review-source-map";
+import { loadStudioReviewCaptureSourceRevision } from "./studio-review-capture-source-revision";
 
 export type StudioReviewPreviewCaptureStatus = { readonly status: "pending" | "cancelled" }
   | { readonly status: "completed"; readonly subject: StudioReviewPreviewSubject };
@@ -34,8 +35,16 @@ function pageGeometryKey(actor: string, intent: StudioReviewPreviewIntent, ordin
   return studioReviewPreviewDigest({ phase: "page-geometry", actor, workId: intent.workId, intentId: intent.intentId, ordinal });
 }
 function captureOf(intent: StudioReviewPreviewIntent): StudioReviewPreviewCapture {
-  const { projectId: _project, artifactId: _artifact, expectedHeadRevisionId: _head, expectedHeadRootGraphHash: _hash, ...capture } = intent;
+  const { projectId: _project, artifactId: _artifact, expectedHeadRevisionId: _head, expectedHeadRootGraphHash: _hash,
+    sourceRevisionScope: _scope, ...capture } = intent;
   return studioReviewPreviewCaptureSchema.parse(capture);
+}
+async function assertSourceRevision(client: PoolClient, input: StudioReviewPreviewCapture, projectId?: string,
+  expectedScope?: StudioReviewPreviewIntent["sourceRevisionScope"]) {
+  if (!input.sourceRevision) return undefined;
+  const source = await loadStudioReviewCaptureSourceRevision(client, input, projectId, true);
+  if (!source || (expectedScope && canonicalJson(source.scope) !== canonicalJson(expectedScope))) invariant("preview-source-revision-mismatch");
+  return source.scope;
 }
 async function preparedReceipt(client: PoolClient, actor: string, input: StudioReviewPreviewCapture): Promise<StudioReviewPreviewIntent | null> {
   const result = await client.query<{ response: { intent: StudioReviewPreviewIntent } }>(
@@ -116,8 +125,9 @@ export class StudioReviewPreviewProducerRepository {
     try {
       const source = await workSource(client, actor, input.workId);
       const prior = await preparedReceipt(client, actor, input);
-      if (prior) return prior;
+      if (prior) { await assertSourceRevision(client, prior, prior.projectId, prior.sourceRevisionScope); return prior; }
       verifySource(source, input);
+      await assertSourceRevision(client, input);
     } finally { client.release(); }
     const artifactId = artifactIdFor(input.workId);
     const initialId = `review-initial-${studioReviewPreviewDigest(input.workId)}`;
@@ -150,13 +160,15 @@ export class StudioReviewPreviewProducerRepository {
     const revisions = await this.graph.listRevisions(actor, artifactId);
     const head = revisions.find((revision) => revision.id === artifact.headRevisionId);
     if (!head) invariant("preview-head-version-mismatch");
-    const intent: StudioReviewPreviewIntent = { ...input, projectId: project.id, artifactId,
-      expectedHeadRevisionId: artifact.headRevisionId, expectedHeadRootGraphHash: head.rootGraphHash };
     return transaction(async (connection) => {
-      const source = await workSource(connection, actor, intent.workId, true);
-      await target(connection, actor, intent, false);
+      const source = await workSource(connection, actor, input.workId, true);
       const prior = await preparedReceipt(connection, actor, input);
-      if (prior) return prior;
+      if (prior) { await assertSourceRevision(connection, prior, prior.projectId, prior.sourceRevisionScope); return prior; }
+      const sourceRevisionScope = await assertSourceRevision(connection, input, project.id);
+      const intent: StudioReviewPreviewIntent = { ...input, projectId: project.id, artifactId,
+        expectedHeadRevisionId: artifact.headRevisionId, expectedHeadRootGraphHash: head.rootGraphHash,
+        ...(sourceRevisionScope ? { sourceRevisionScope } : {}) };
+      await target(connection, actor, intent, false);
       verifySource(source, intent);
       await target(connection, actor, intent, true);
       await connection.query(`INSERT INTO studio_mutation_receipt ("artifactId","actorUserId","idempotencyKeyHash","requestHash","resultRevisionId",response) VALUES ($1,$2,$3,$4,$5,$6::jsonb)`,
@@ -168,6 +180,7 @@ export class StudioReviewPreviewProducerRepository {
   async assertPending(actor: string, intent: StudioReviewPreviewIntent): Promise<void> {
     await transaction(async (client) => {
       verifySource(await workSource(client, actor, intent.workId, true), intent);
+      await assertSourceRevision(client, intent, intent.projectId, intent.sourceRevisionScope);
       await target(client, actor, intent, true);
       await assertPrepared(client, actor, intent);
       if (await receipt(client, actor, intent)) invariant("preview-intent-terminal");
@@ -195,6 +208,7 @@ export class StudioReviewPreviewProducerRepository {
       || object.byteLength !== canonical.bytes.byteLength || object.digest !== `sha256:${canonical.sha256}`) invariant("preview-validation-mismatch");
     await transaction(async (client) => {
       verifySource(await workSource(client, actor, intent.workId, true), intent);
+      await assertSourceRevision(client, intent, intent.projectId, intent.sourceRevisionScope);
       await target(client, actor, intent, true);
       await assertPrepared(client, actor, intent);
       if (await receipt(client, actor, intent)) invariant("preview-intent-terminal");
@@ -226,6 +240,7 @@ export class StudioReviewPreviewProducerRepository {
     const { intent, pages } = input;
     return transaction(async (client) => {
       const source = await workSource(client, actor, intent.workId, true);
+      await assertSourceRevision(client, intent, intent.projectId, intent.sourceRevisionScope);
       const access = await target(client, actor, intent, false);
       await assertPrepared(client, actor, intent);
       const prior = await receipt(client, actor, intent);
