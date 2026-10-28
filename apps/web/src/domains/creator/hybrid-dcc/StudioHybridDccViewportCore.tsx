@@ -81,8 +81,14 @@ import {
 } from "./StudioHybridDccViewportParts";
 import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewportInteractionBar";
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
+import { StudioHybridDccUvCheckerMaterial } from "./StudioHybridDccUvCheckerMaterial";
+import { deriveStudioHybridDccTriangleCornerUvs } from "./studio-hybrid-dcc-uv-render";
+
+import { createStudioHybridDccGeometryResource, type StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 
 import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
+
+export type { StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 
 export type StudioHybridDccViewportProjection = "perspective" | "orthographic";
 export type StudioHybridDccViewportOverlay = "material" | "material-wire" | "wireframe";
@@ -124,6 +130,8 @@ export interface StudioHybridDccViewportProps {
   readonly onComponentSelectionError?: (message: string) => void;
   /** Keeps camera inspection available while preventing stale edits during async engine work. */
   readonly editingDisabled?: boolean;
+  /** UV 작업은 원본 코너를 검사하므로 수정자 캐시 대신 편집 메시를 표시한다. */
+  readonly uvChecker?: boolean;
   /**
    * 활성 조형 브러시. 주어지면 선택 오브젝트 위에서의 포인터 드래그가 로컬 좌표 스트로크로 전달된다.
    */
@@ -156,6 +164,7 @@ export interface StudioHybridDccViewportAssetSnapshot {
   readonly mesh: StudioEditableMesh;
   readonly positions: Float32Array;
   readonly indices: Uint32Array;
+  readonly cornerUvs?: Float32Array;
   readonly renderHash: string;
   readonly renderSource: StudioHybridDccViewportRenderSource;
   readonly materialId: string;
@@ -238,13 +247,6 @@ interface StudioHybridDccMeshPreflight {
 type StudioHybridDccMeshPreflightResult =
   | { readonly ok: true; readonly value: StudioHybridDccMeshPreflight }
   | { readonly ok: false; readonly message: string };
-
-export interface StudioHybridDccGeometryResource {
-  readonly geometry: THREE.BufferGeometry;
-  readonly edges: THREE.EdgesGeometry;
-  readonly edgeDetail: "silhouette" | "bounds";
-  dispose(): void;
-}
 
 const meshRenderDataCache = new WeakMap<StudioEditableMesh, StudioHybridDccMeshRenderData>();
 const meshPreflightCache = new WeakMap<StudioEditableMesh, StudioHybridDccMeshPreflightResult>();
@@ -563,6 +565,7 @@ function sourceStudioHybridDccRenderProjection(
 export function deriveStudioHybridDccViewportSnapshot(
   workspace: StudioHybridDccWorkspace,
   selectionMode: StudioHybridDccSelectionMode = "object",
+  preferSource = false,
 ): StudioHybridDccViewportSnapshot {
   const sharedObjectById = new Map(workspace.bridge.set.objects.map((object) => [object.id, object]));
   const records = Object.values(workspace.session.state.geometry.records)
@@ -589,7 +592,7 @@ export function deriveStudioHybridDccViewportSnapshot(
     }
     let projection: StudioHybridDccRenderProjection;
     try {
-      if (selectionMode === "object" && record.renderCache) {
+      if (selectionMode === "object" && !preferSource && record.renderCache) {
         const validated = validateStudioHybridDccRenderCache(
           record,
           record.renderCache,
@@ -604,7 +607,7 @@ export function deriveStudioHybridDccViewportSnapshot(
       } else {
         projection = sourceStudioHybridDccRenderProjection(
           record,
-          selectionMode === "object" ? "authority-source" : "authority-edit-cage",
+          selectionMode === "object" && !preferSource ? "authority-source" : "authority-edit-cage",
         );
       }
     } catch (error) {
@@ -680,6 +683,8 @@ export function deriveStudioHybridDccViewportSnapshot(
         mesh: item.mesh,
         positions: projection.positions,
         indices: projection.indices,
+        ...(projection.renderSource !== "modifier-cache"
+          ? { cornerUvs: deriveStudioHybridDccTriangleCornerUvs(item.mesh) } : {}),
         renderHash: projection.renderHash,
         renderSource: projection.renderSource,
         materialId,
@@ -711,48 +716,6 @@ export function deriveStudioHybridDccViewportSnapshot(
     signature: layout.signature,
     totalVertices: assets.reduce((sum, asset) => sum + asset.vertexCount, 0),
     totalTriangles: assets.reduce((sum, asset) => sum + asset.triangleCount, 0),
-  };
-}
-
-function createStudioHybridDccGeometryResource(
-  asset: Pick<StudioHybridDccViewportAssetSnapshot, "positions" | "indices" | "normalMode">,
-): StudioHybridDccGeometryResource {
-  const indexedGeometry = new THREE.BufferGeometry();
-  indexedGeometry.setAttribute("position", new THREE.BufferAttribute(asset.positions, 3));
-  indexedGeometry.setIndex(new THREE.BufferAttribute(asset.indices, 1));
-  const geometry = asset.normalMode === "flat"
-    ? indexedGeometry.toNonIndexed()
-    : indexedGeometry;
-  if (geometry !== indexedGeometry) indexedGeometry.dispose();
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  let edgeDetail: StudioHybridDccGeometryResource["edgeDetail"] = "silhouette";
-  let edges: THREE.EdgesGeometry;
-  if (asset.indices.length / 3 <= STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles) {
-    edges = new THREE.EdgesGeometry(geometry, 24);
-  } else {
-    edgeDetail = "bounds";
-    const bounds = geometry.boundingBox;
-    const size = bounds?.getSize(new THREE.Vector3()) ?? new THREE.Vector3(1, 1, 1);
-    const center = bounds?.getCenter(new THREE.Vector3()) ?? new THREE.Vector3();
-    const box = new THREE.BoxGeometry(
-      Math.max(size.x, 1e-5),
-      Math.max(size.y, 1e-5),
-      Math.max(size.z, 1e-5),
-    );
-    box.translate(center.x, center.y, center.z);
-    edges = new THREE.EdgesGeometry(box);
-    box.dispose();
-  }
-  return {
-    geometry,
-    edges,
-    edgeDetail,
-    dispose: () => {
-      edges.dispose();
-      geometry.dispose();
-    },
   };
 }
 
@@ -946,6 +909,7 @@ function StudioHybridDccAssetMesh({
   transformMode,
   transformSpace,
   preferences,
+  uvChecker,
   onDraggingChange,
   onNotice,
   sculptStroke,
@@ -971,6 +935,7 @@ function StudioHybridDccAssetMesh({
   readonly transformMode: StudioHybridDccTransformMode;
   readonly transformSpace: StudioHybridDccTransformSpace;
   readonly preferences: StudioHybridDccViewportPreferences;
+  readonly uvChecker: boolean;
   readonly onDraggingChange: (dragging: boolean) => void;
   readonly onNotice: (message: string) => void;
   /** 활성화되면 포인터 드래그가 오브젝트 로컬 좌표로 조형 스트로크를 보낸다. */
@@ -979,18 +944,18 @@ function StudioHybridDccAssetMesh({
   const [resource, setResource] = useState<StudioHybridDccGeometryResource | null>(null);
   const objectRef = useRef<THREE.Group>(null);
   const viewportSize = useThree((state) => state.size);
-  const { indices, normalMode, positions } = asset;
+  const { indices, normalMode, positions, cornerUvs } = asset;
 
   useEffect(() => {
-    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions });
+    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions, cornerUvs }, STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles);
     setResource(next);
     return () => next.dispose();
-  }, [indices, normalMode, positions]);
+  }, [indices, normalMode, positions, cornerUvs]);
 
   if (!resource) return null;
   const componentCage = selectionMode !== "object";
   const showMaterial = overlay !== "wireframe";
-  const showWireOverlay = overlay === "material-wire" || componentCage;
+  const showWireOverlay = overlay === "material-wire" || componentCage || (uvChecker && selected);
 
   const object = (
     <group
@@ -1072,7 +1037,7 @@ function StudioHybridDccAssetMesh({
           onSelectComponent(asset.assetId, selectionMode, elementId, operation);
         }}
       >
-        {showMaterial ? (
+        {showMaterial && uvChecker && cornerUvs ? <StudioHybridDccUvCheckerMaterial /> : showMaterial ? (
           <meshPhysicalMaterial
             color={asset.materialColor
               ?? (selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
@@ -1261,6 +1226,7 @@ export function StudioHybridDccViewport({
   onDuplicateSelected,
   onSelectComponent,
   editingDisabled = false,
+  uvChecker = false,
   onSculptStroke,
   defaultTransformMode = "translate",
   defaultTransformSpace = "world",
@@ -1302,8 +1268,8 @@ export function StudioHybridDccViewport({
   const prefersReducedMotion = usePrefersReducedMotion(reducedMotion);
   const effectiveSelectionMode = componentSelection?.mode ?? "object";
   const snapshot = useMemo(
-    () => deriveStudioHybridDccViewportSnapshot(workspace, effectiveSelectionMode),
-    [workspace, effectiveSelectionMode],
+    () => deriveStudioHybridDccViewportSnapshot(workspace, effectiveSelectionMode, uvChecker),
+    [workspace, effectiveSelectionMode, uvChecker],
   );
   const isolationMatchesSelection = !workspace.activeAssetId || workspace.activeAssetId === isolatedAssetId;
   const isolatedAsset = isolationMatchesSelection
@@ -1589,6 +1555,7 @@ export function StudioHybridDccViewport({
                 key={`${asset.assetId}:${asset.renderHash}:${asset.renderSource}`}
                 asset={asset}
                 overlay={effectiveOverlay}
+                uvChecker={uvChecker}
                 selected={asset.assetId === selectedAssetId}
                 onSelect={(assetId) => { if (selectionAllowed()) onSelectAsset(assetId); }}
                 onSelectComponent={onSelectComponent

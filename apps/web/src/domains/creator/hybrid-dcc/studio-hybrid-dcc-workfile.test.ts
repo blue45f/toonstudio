@@ -54,12 +54,13 @@ async function fixture() {
   workspace = workspaceCommitActiveObjectTransform(workspace, {
     revision: 1, position: [3, 4, 5], rotationEulerRad: [0.1, 0.2, 0.3], scale: [2, 1, 0.5],
   });
+  workspace = workspaceUvUnwrapActive(workspace, "box");
   workspace = await workspaceAddActiveModifier(workspace, "array");
   workspace = await workspacePatchActiveModifier(workspace, workspace.session.state.geometry.records.cube!.modifierStack.modifiers[0]!.id, {
     useConstantOffset: false, useRelativeOffset: true, relativeOffset: { x: 1.5, y: 0, z: 0 },
   });
   workspace = await workspaceUndoWithModifierPreviews(workspace);
-  return workspaceUvUnwrapActive(workspace, "box");
+  return workspace;
 }
 
 function parsed(bytes: Uint8Array): Record<string, unknown> {

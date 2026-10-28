@@ -180,7 +180,8 @@ Solidify에는 optional `offset`을 추가했다. 명시한 Solidify offset 경�
 
 ## target — 별도 구현과 검증이 필요한 범위
 
-Blender의 범용 셰이더 노드 편집기, UV island 편집기, Grease Pencil 작화, 키프레임 저작,
+UV island 편집은 [별도 UV 구현 계약](blender-native-uv-contracts.md)에 따라 migration 상태로 연결 중이다.
+Blender의 범용 셰이더 노드 편집기, Grease Pencil 작화, 키프레임 저작,
 Mantaflow/Cloth 등의 전체 시뮬레이션은 이 변경으로 구현되지 않는다. 기존 배경 패널의 설정값·
 프리미티브 생성만으로 이 엔진들과 동등하다고 판정하지 않는다. 후속 기능은 실제 문서 변경,
 화면 결과, 저장·복원·출력, 실패 경계를 갖춘 단위로 구현하고 각 Blender 입력 관측과 대조한다.

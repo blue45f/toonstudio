@@ -82,6 +82,7 @@ const ISSUE_CODES = new Set<StudioHybridDccGlbIssueCode>([
   "face-collinear-corner-omitted",
   "triangulation-failed",
   "normal-unresolved",
+  "uv-coordinate-invalid",
   "index-overflow",
   "material-slot-metadata-only",
   "diagnostic-overflow",

@@ -222,6 +222,9 @@ export function commitStudioGeometryAuthorityMesh(
   if (!prev) return { ok: false, code: "not-found", detail: assetId };
   const coordinates = validateStudioGeometryAuthorityMesh(mesh);
   if (!coordinates.ok) return coordinates;
+  if (prev.mesh.uvLayer !== undefined && mesh.uvLayer === undefined) {
+    return { ok: false, code: "uv-layer-loss", detail: "이 편집은 현재 UV를 보존할 수 없어 취소되었습니다. 원본과 편집 이력은 그대로 유지됩니다." };
+  }
   const stack = createStudioMeshModifierStack(mesh, prev.modifierStack.modifiers);
   const record: StudioGeometryAuthorityRecord = {
     ...prev,
@@ -293,6 +296,9 @@ export function applyStudioGeometryAuthorityModifierStack(
   }
   const coordinates = validateStudioGeometryAuthorityMesh(evaluatedMesh);
   if (!coordinates.ok) return coordinates;
+  if (prev.mesh.uvLayer !== undefined && evaluatedMesh.uvLayer === undefined) {
+    return { ok: false, code: "uv-layer-loss", detail: "이 변형 결과는 현재 UV를 보존할 수 없어 적용을 취소했습니다. 원본과 편집 이력은 그대로 유지됩니다." };
+  }
   const meshHash = hashStudioEditableMesh(evaluatedMesh);
   const record: StudioGeometryAuthorityRecord = {
     ...prev,

@@ -9,6 +9,8 @@
  */
 
 import { hashStudioEditableMeshAuthority } from "./studio-editable-mesh-authority-digest";
+import { decodeStudioMeshUvLayer, snapshotStudioMeshUvLayer, validateStudioMeshUvLayer, type StudioMeshUvLayer } from "./mesh-uv/studio-mesh-uv-authority";
+import { preserveStudioMeshUvForUnchangedTopology, remapStudioMeshUvExtrudeRegion } from "./mesh-uv/studio-mesh-uv-topology-remap";
 import { bevelEditableMeshEdges } from "./hybrid-dcc/studio-editable-mesh-bevel";
 
 export const STUDIO_EDITABLE_MESH_REVISION = 1 as const;
@@ -74,6 +76,7 @@ export interface StudioEditableMesh {
   readonly nextVertexId: number;
   readonly nextHalfEdgeId: number;
   readonly nextFaceId: number;
+  readonly uvLayer?: StudioMeshUvLayer;
 }
 
 export interface StudioMeshSelection {
@@ -989,7 +992,9 @@ export function validateStudioEditableMeshSerializableAuthority(
   mesh: StudioEditableMesh,
 ): StudioEditableMeshResult<StudioEditableMesh> {
   const preflight = preflightStudioEditableMeshCanonicalAuthority(mesh);
-  return preflight.ok ? ok(mesh) : preflight;
+  if (!preflight.ok) return preflight;
+  const uvError = validateStudioMeshUvLayer(mesh);
+  return uvError ? fail("invalid-mesh", uvError) : ok(mesh);
 }
 
 function preflightStudioEditableMeshEdgeManifold(
@@ -1506,7 +1511,7 @@ export function extrudeStudioEditableMeshFacesWithReceipt(
     const selectionRemapEntries = sourceFaceIds.map(
       (faceId, index) => [faceId, capFaceIds[index]!] as const,
     );
-    return ok({
+    const mutation: StudioEditableMeshExtrudeRegionMutation = {
       mesh: resultMesh,
       receipt: issueStudioEditableMeshExtrudeRegionReceipt({
         operation: "extrude-region",
@@ -1522,7 +1527,9 @@ export function extrudeStudioEditableMeshFacesWithReceipt(
           face: { entries: selectionRemapEntries },
         },
       }),
-    });
+    };
+    const withUv = remapStudioMeshUvExtrudeRegion(mesh, mutation);
+    return ok(withUv === resultMesh ? mutation : { mesh: withUv, receipt: issueStudioEditableMeshExtrudeRegionReceipt({ ...mutation.receipt, resultMeshHash: hashStudioEditableMesh(withUv) }) });
   } catch (error) {
     return fail(
       "invalid-mesh",
@@ -1628,6 +1635,7 @@ export function bevelStudioEditableMeshEdges(
 
 /** JSON-safe mesh snapshot for OPFS recovery / undo stacks. */
 export interface StudioEditableMeshSnapshot {
+  readonly uvLayer?: StudioMeshUvLayer;
   readonly revision: typeof STUDIO_EDITABLE_MESH_REVISION;
   readonly positions: readonly (readonly [number, number, number])[];
   readonly faces: readonly (readonly number[])[];
@@ -1686,6 +1694,7 @@ export function serializeStudioEditableMesh(
     revision: STUDIO_EDITABLE_MESH_REVISION,
     positions,
     faces,
+    ...snapshotStudioMeshUvLayer(mesh),
     faceAttributes: mesh.faces.map((face, faceIndex) => ({
       faceIndex,
       materialSlot: face.materialSlot,
@@ -1822,8 +1831,11 @@ export function deserializeStudioEditableMesh(
       } : face;
     }),
   };
-  return counters === undefined ? restored : {
-    ...restored,
+  const withUv = snapshot.uvLayer === undefined ? restored : {
+    ...restored, uvLayer: decodeStudioMeshUvLayer(snapshot.uvLayer, restored),
+  };
+  return counters === undefined ? withUv : {
+    ...withUv,
     nextVertexId: counters.nextVertexId,
     nextHalfEdgeId: counters.nextHalfEdgeId,
     nextFaceId: counters.nextFaceId,
@@ -1944,7 +1956,7 @@ export function weldStudioEditableMesh(
     if (dedup.length >= 3) polygons.push(dedup);
   }
   try {
-    return ok(createStudioEditableMeshFromPolygons(positions, polygons));
+    return ok(preserveStudioMeshUvForUnchangedTopology(mesh, createStudioEditableMeshFromPolygons(positions, polygons)));
   } catch (error) {
     return fail(
       "topology-failed",
@@ -2122,45 +2134,10 @@ export function studioEditableMeshToTriangleSoup(mesh: StudioEditableMesh): {
   return { positions, indices: new Uint32Array(tris) };
 }
 
-/** Byte-for-byte structural fingerprint minted by pre-slice HEAD 7b039bbc. */
-function hashStudioEditableMeshPreSliceLegacy(mesh: StudioEditableMesh): string {
-  const parts: string[] = [
-    `v${mesh.vertices.length}`,
-    `f${mesh.faces.length}`,
-    `h${mesh.halfEdges.length}`,
-  ];
-  for (const v of mesh.vertices) {
-    parts.push(
-      `${v.id}:${v.position.x.toFixed(5)},${v.position.y.toFixed(5)},${v.position.z.toFixed(5)}:${v.crease}`,
-    );
-  }
-  for (const f of mesh.faces) {
-    parts.push(`F${f.id}:${faceLoopVertexIds(mesh, f.id).join(",")}:${f.smooth ? 1 : 0}`);
-  }
-  let h = 2166136261;
-  const s = parts.join("|");
-  for (let i = 0; i < s.length; i += 1) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return `mesh:${(h >>> 0).toString(16).padStart(8, "0")}`;
-}
-
 /** Exact streaming authority digest; never materializes a whole-mesh JSON or byte buffer. */
 export function hashStudioEditableMesh(mesh: StudioEditableMesh): string {
   return hashStudioEditableMeshAuthority(mesh);
 }
 
-/**
- * Migration-only matcher for snapshots written before the SHA-256 authority digest shipped.
- * Legacy 32-bit fingerprints are never minted for new authority records.
- */
-export function matchesStudioEditableMeshPersistedHash(
-  mesh: StudioEditableMesh,
-  persistedHash: string,
-): boolean {
-  const current = hashStudioEditableMeshAuthority(mesh);
-  if (persistedHash === current) return true;
-  return /^mesh:[0-9a-f]{8}$/u.test(persistedHash)
-    && persistedHash === hashStudioEditableMeshPreSliceLegacy(mesh);
-}
+/** 이전 스냅샷의 fingerprint 이관 경계는 digest helper에서 관리한다. */
+export { matchesStudioEditableMeshPersistedHash } from "./studio-editable-mesh-authority-digest";

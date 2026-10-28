@@ -4,6 +4,8 @@
  * into one callable surface for UI / companion tooling without React coupling.
  */
 
+import { workspaceUnwrapUvActive } from "./studio-hybrid-dcc-uv-edit";
+
 import { getStudioBg3dRoomPreset, buildStudioBg3dRoomParts } from "../bg3d/studio-bg3d-room-builder";
 import {
   exportStudioMeshByFormat,
@@ -91,8 +93,6 @@ import { sha256HexPortable } from "../studio-sha256";
 import { createStudioDefaultSolidBooleanBackend } from "../studio-solid-boolean-backend";
 import { packStudioToon3dPackage, type StudioToon3dPackage } from "../studio-toon3d-package";
 import {
-  unwrapStudioMeshBox,
-  unwrapStudioMeshPlanar,
   type StudioUvMap,
 } from "../studio-uv-unwrap-lite";
 
@@ -997,10 +997,7 @@ export function workspaceUvUnwrapActive(
   ws: StudioHybridDccWorkspace,
   mode: "planar-xy" | "box" = "box",
 ): StudioHybridDccWorkspace {
-  const mesh = workspaceActiveMesh(ws);
-  if (!mesh) throw new Error("no active asset");
-  const uv = mode === "box" ? unwrapStudioMeshBox(mesh) : unwrapStudioMeshPlanar(mesh, "planar-xy");
-  return { ...ws, lastUvMap: uv };
+  return workspaceUnwrapUvActive(ws, mode);
 }
 
 export function workspaceCadProp(
@@ -2894,7 +2891,7 @@ export async function runStudioHybridDccWaveProductLoop(
       collabEpoch: ws.collab.epoch,
       collabOps: ws.collab.ops.length,
       collabConflicts: conflicts.length,
-      uvMode: ws.lastUvMap?.mode ?? null,
+      uvMode: ws.session.state.geometry.records["geo-sphere"]?.mesh.uvLayer ? "box" : null,
       packageHash: pkg.manifest.packageHash,
       documentHasGeo: (pkg.files["document/document.json"] ?? "").includes("geo-sphere")
         || (pkg.files["document/document.json"] ?? "").includes("import-lobby"),

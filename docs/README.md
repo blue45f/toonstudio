@@ -17,6 +17,7 @@
 문서가 소스와 다르면 소스를 우선하고 문서를 즉시 갱신한다.
 
 Blender 기능을 자체 웹 도구로 구현하는 근거는 [Blender 동작 분석과 웹 모델링 구현 계약](studio/blender-native-modifier-contracts.md)에 정리한다. 원본 프로그램의 화면 연결과 웹 메시 기능의 구현을 구분한다.
+면 코너 UV·아일랜드 편집과 GLB 전달은 [UV 분석 및 구현 계약](studio/blender-native-uv-contracts.md)의 migration 상태를 따른다.
 
 ## 디렉터리 분류
 

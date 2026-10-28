@@ -27,6 +27,8 @@ import {
   STUDIO_HYBRID_DCC_GLB_EXPORT_MAX_REPORT_ISSUES,
 } from "./studio-hybrid-dcc-glb-export-diagnostic-limits";
 import { canonicalStudioHybridDccFaceLoop, triangulateStudioHybridDccRenderQuad } from "./studio-hybrid-dcc-render-face";
+import { encodeStudioHybridDccGlbBinary, type StudioHybridDccGlbBinaryGeometry } from "./studio-hybrid-dcc-glb-binary";
+import { validateStudioMeshUvLayer, type StudioMeshUvLayer } from "../mesh-uv/studio-mesh-uv-authority";
 
 import type {
   StudioEditableFace,
@@ -101,6 +103,7 @@ export type StudioHybridDccGlbIssueCode =
   | "face-collinear-corner-omitted"
   | "triangulation-failed"
   | "normal-unresolved"
+  | "uv-coordinate-invalid"
   | "index-overflow"
   | "material-slot-metadata-only"
   | "diagnostic-overflow"
@@ -223,6 +226,7 @@ interface BuiltGeometry {
   readonly positions: readonly number[];
   readonly normals: readonly number[];
   readonly indices: readonly number[];
+  readonly texcoords?: readonly number[];
   readonly outputSourceVertexIds: readonly number[];
   readonly outputSourceNormalFaceIds: readonly (number | null)[];
   readonly triangleSourceFaceIds: readonly number[];
@@ -601,6 +605,7 @@ function prepareFace(
   halfEdgeIdsInput: readonly number[],
   vertexIdsInput: readonly number[],
   vertexById: ReadonlyMap<number, StudioEditableVertex>,
+  preserveCorners: boolean,
 ): InternalResult<{ readonly face: ValidatedFace; readonly warnings: readonly StudioHybridDccGlbIssue[] }> {
   const { halfEdgeIds, vertexIds } = canonicalStudioHybridDccFaceLoop(vertexIdsInput, halfEdgeIdsInput);
   const points3d = vertexIds.map((id) => vertexById.get(id)!.position);
@@ -643,7 +648,7 @@ function prepareFace(
   const retained = vertexIds.map((_, index) => index);
   const omitted: number[] = [];
   let changed = true;
-  while (!warped && changed && retained.length > 3) {
+  while (!warped && !preserveCorners && changed && retained.length > 3) {
     changed = false;
     for (let cursor = 0; cursor < retained.length; cursor += 1) {
       const previousIndex = retained[(cursor + retained.length - 1) % retained.length]!;
@@ -1016,7 +1021,7 @@ function validateMesh(mesh: StudioEditableMesh): InternalResult<ValidatedMesh> {
   let warningCount = 0;
   const validatedFaces: ValidatedFace[] = [];
   for (const loop of rawFaceLoops) {
-    const prepared = prepareFace(loop.face, loop.halfEdgeIds, loop.vertexIds, vertexById);
+    const prepared = prepareFace(loop.face, loop.halfEdgeIds, loop.vertexIds, vertexById, mesh.uvLayer !== undefined);
     if (!prepared.ok) return prepared;
     validatedFaces.push(prepared.value.face);
     warningCount += prepared.value.warnings.length;
@@ -1121,18 +1126,21 @@ function buildSmoothGroups(mesh: ValidatedMesh): InternalResult<{
   return pass({ groupByCorner, normalByGroup });
 }
 
-function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
+function buildGeometry(mesh: ValidatedMesh, uvLayer?: StudioMeshUvLayer): InternalResult<BuiltGeometry> {
   const groups = buildSmoothGroups(mesh);
   if (!groups.ok) return groups;
   const positions: number[] = [];
   const normals: number[] = [];
   const indices: number[] = [];
+  const texcoords: number[] | undefined = uvLayer ? [] : undefined;
   const outputSourceVertexIds: number[] = [];
   const outputSourceNormalFaceIds: Array<number | null> = [];
   const triangleSourceFaceIds: number[] = [];
   const outputIndexByKey = new Map<string, number>();
 
   for (const faceData of mesh.faces) {
+    const uvByVertex = uvLayer ? new Map(faceData.vertexIds.map((id, index) => [id,
+      uvLayer.corners[faceData.halfEdgeIds[index] ?? -1]] as const)) : null;
     for (const triangle of faceData.triangles) {
       triangleSourceFaceIds.push(faceData.face.id);
       const flatNormal = faceData.warped && !faceData.face.smooth
@@ -1145,9 +1153,13 @@ function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
         if (faceData.face.smooth && groupId === undefined) {
           return stop(issue("error", "normal-unresolved", `No smoothing group for vertex ${sourceVertexId}`, { vertexIds: [sourceVertexId], faceIds: [faceData.face.id] }));
         }
-        const key = faceData.face.smooth
+        const uv = uvByVertex?.get(sourceVertexId);
+        if (uvLayer && !uv) return stop(issue("error", "uv-coordinate-invalid", "GLB 원본 면의 UV 코너를 찾지 못했습니다."));
+        // Blender의 V-up 코너를 glTF 이미지 좌표로 바꾸며 타일 밖 좌표도 보존한다.
+        const uvKey = uv ? `:uv:${uv.u}:${Math.fround(1 - uv.v)}` : "";
+        const key = (faceData.face.smooth
           ? `smooth:${sourceVertexId}:${groupId}`
-          : `flat:${faceData.face.id}:${faceData.warped ? `${triangle.join(",")}:` : ""}${sourceVertexId}`;
+          : `flat:${faceData.face.id}:${faceData.warped ? `${triangle.join(",")}:` : ""}${sourceVertexId}`) + uvKey;
         let outputIndex = outputIndexByKey.get(key);
         if (outputIndex === undefined) {
           outputIndex = outputSourceVertexIds.length;
@@ -1160,6 +1172,7 @@ function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
             : flatNormal;
           positions.push(position.x, position.y, position.z);
           normals.push(normal.x, normal.y, normal.z);
+          if (uv && texcoords) texcoords.push(uv.u, 1 - uv.v);
           outputSourceVertexIds.push(sourceVertexId);
           outputSourceNormalFaceIds.push(faceData.face.smooth ? null : faceData.face.id);
           outputIndexByKey.set(key, outputIndex);
@@ -1175,86 +1188,16 @@ function buildGeometry(mesh: ValidatedMesh): InternalResult<BuiltGeometry> {
     positions,
     normals,
     indices,
+    ...(texcoords ? { texcoords } : {}),
     outputSourceVertexIds,
     outputSourceNormalFaceIds,
     triangleSourceFaceIds,
   });
 }
 
-function alignFour(value: number): number {
-  return (value + 3) & ~3;
-}
-
-function canonicalFloat32(value: number): number | null {
-  const result = Math.fround(value);
-  if (!Number.isFinite(result)) return null;
-  return Object.is(result, -0) ? 0 : result;
-}
-
-function encodeBinary(geometry: BuiltGeometry): InternalResult<{
-  readonly bytes: Uint8Array<ArrayBuffer>;
-  readonly positions: readonly number[];
-  readonly normals: readonly number[];
-  readonly boundsMin: readonly [number, number, number];
-  readonly boundsMax: readonly [number, number, number];
-  readonly positionOffset: number;
-  readonly positionByteLength: number;
-  readonly normalOffset: number;
-  readonly normalByteLength: number;
-  readonly indexOffset: number;
-  readonly indexByteLength: number;
-}> {
-  const outputPositions: number[] = [];
-  const outputNormals: number[] = [];
-  const min: [number, number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  const max: [number, number, number] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  for (let index = 0; index < geometry.positions.length; index += 1) {
-    const value = canonicalFloat32(geometry.positions[index]!);
-    if (value === null) {
-      return stop(issue("error", "position-float32-overflow", "A source position cannot be represented as float32"));
-    }
-    outputPositions.push(value);
-    const axis = index % 3;
-    min[axis] = Math.min(min[axis], value);
-    max[axis] = Math.max(max[axis], value);
-  }
-  for (const source of geometry.normals) {
-    const value = canonicalFloat32(source);
-    if (value === null) {
-      return stop(issue("error", "normal-unresolved", "A generated normal cannot be represented as float32"));
-    }
-    outputNormals.push(value);
-  }
-  const positionByteLength = outputPositions.length * Float32Array.BYTES_PER_ELEMENT;
-  const normalOffset = alignFour(positionByteLength);
-  const normalByteLength = outputNormals.length * Float32Array.BYTES_PER_ELEMENT;
-  const indexOffset = alignFour(normalOffset + normalByteLength);
-  const indexByteLength = geometry.indices.length * Uint32Array.BYTES_PER_ELEMENT;
-  const totalByteLength = alignFour(indexOffset + indexByteLength);
-  const bytes = new Uint8Array(totalByteLength);
-  const view = new DataView(bytes.buffer);
-  outputPositions.forEach((value, index) => {
-    view.setFloat32(index * 4, value, true);
-  });
-  outputNormals.forEach((value, index) => {
-    view.setFloat32(normalOffset + index * 4, value, true);
-  });
-  geometry.indices.forEach((value, index) => {
-    view.setUint32(indexOffset + index * 4, value, true);
-  });
-  return pass({
-    bytes,
-    positions: outputPositions,
-    normals: outputNormals,
-    boundsMin: min,
-    boundsMax: max,
-    positionOffset: 0,
-    positionByteLength,
-    normalOffset,
-    normalByteLength,
-    indexOffset,
-    indexByteLength,
-  });
+function encodeBinary(geometry: BuiltGeometry): InternalResult<StudioHybridDccGlbBinaryGeometry> {
+  const encoded = encodeStudioHybridDccGlbBinary(geometry);
+  return encoded.ok ? encoded : stop(issue("error", encoded.code, encoded.detail));
 }
 
 function fileNameForAsset(assetId: string): string {
@@ -1347,7 +1290,7 @@ function buildGltfJson(
       name: input.assetId,
       extras: { toonSpectrum: { provenance: source, sourceFaceTopology: faceTopology } },
       primitives: [{
-        attributes: { POSITION: 0, NORMAL: 1 },
+        attributes: { POSITION: 0, NORMAL: 1, ...(geometry.texcoords ? { TEXCOORD_0: 3 } : {}) },
         indices: 2,
         mode: GLTF_TRIANGLES,
         extras: {
@@ -1379,6 +1322,12 @@ function buildGltfJson(
         byteLength: binary.indexByteLength,
         target: GLTF_ELEMENT_ARRAY_BUFFER,
       },
+      ...(binary.texcoordOffset === undefined ? [] : [{
+        buffer: 0,
+        byteOffset: binary.texcoordOffset,
+        byteLength: binary.texcoordByteLength,
+        target: GLTF_ARRAY_BUFFER,
+      }]),
     ],
     accessors: [
       {
@@ -1406,6 +1355,13 @@ function buildGltfJson(
         min: [minimumNumber(geometry.indices)],
         max: [maximumNumber(geometry.indices)],
       },
+      ...(geometry.texcoords ? [{
+        bufferView: 3,
+        byteOffset: 0,
+        componentType: GLTF_COMPONENT_FLOAT,
+        count: outputVertexCount,
+        type: "VEC2",
+      }] : []),
     ],
     extras: {
       toonSpectrum: {
@@ -1448,6 +1404,8 @@ export function exportStudioHybridDccMeshGlb(
   try {
     const validated = validateMesh(input.mesh);
     if (!validated.ok) return blockedReport(input, validated.issue);
+    const invalidUv = validateStudioMeshUvLayer(input.mesh);
+    if (invalidUv) return blockedReport(input, issue("error", "uv-coordinate-invalid", invalidUv));
     const actualHash = hashStudioEditableMesh(input.mesh);
     if (actualHash !== input.sourceHash) {
       return blockedReport(
@@ -1458,7 +1416,7 @@ export function exportStudioHybridDccMeshGlb(
         validated.value.warningCount,
       );
     }
-    const geometry = buildGeometry(validated.value);
+    const geometry = buildGeometry(validated.value, input.mesh.uvLayer);
     if (!geometry.ok) {
       return blockedReport(
         input,

@@ -15,6 +15,16 @@ import {
   type StudioEditableMesh,
   type StudioMeshVec3,
 } from "./studio-editable-half-edge-mesh";
+import {
+  clipStudioModifierTriangle,
+  repeatStudioModifierUvs,
+  solidifyStudioModifierUvs,
+  studioModifierSoupToMesh as soupToMesh,
+  studioModifierTriangleUvs,
+  studioModifierUvBudget,
+  type StudioModifierUv,
+} from "./mesh-uv/studio-mesh-modifier-uv";
+import { validateStudioMeshUvLayer } from "./mesh-uv/studio-mesh-uv-authority";
 import { decimateStudioMesh } from "./studio-mesh-ops-advanced";
 import { sha256HexPortable } from "./studio-sha256";
 import { createStudioDefaultSolidBooleanBackend } from "./studio-solid-boolean-backend";
@@ -1122,53 +1132,10 @@ function reserveGeneratedMesh(
   }, `${context} output`);
 }
 
-function soupToMesh(
-  positions: Float32Array,
-  indices: Uint32Array,
-): StudioEditableMesh {
-  const verts: StudioMeshVec3[] = [];
-  for (let i = 0; i < positions.length; i += 3) {
-    verts.push(v(positions[i]!, positions[i + 1]!, positions[i + 2]!));
-  }
-  const faces: number[][] = [];
-  for (let i = 0; i < indices.length; i += 3) {
-    faces.push([indices[i]!, indices[i + 1]!, indices[i + 2]!]);
-  }
-  return createStudioEditableMeshFromPolygons(verts, faces);
-}
-
 type MutablePoint3 = [number, number, number];
 
 function pointAxis(point: MutablePoint3, axis: number): number {
   return point[axis] ?? 0;
-}
-
-function clipTriangleToPositiveAxis(
-  triangle: readonly MutablePoint3[],
-  axis: number,
-): MutablePoint3[] {
-  const clipped: MutablePoint3[] = [];
-  for (let index = 0; index < triangle.length; index += 1) {
-    const current = triangle[index]!;
-    const previous = triangle[(index + triangle.length - 1) % triangle.length]!;
-    const currentDistance = pointAxis(current, axis);
-    const previousDistance = pointAxis(previous, axis);
-    const currentInside = currentDistance >= 0;
-    const previousInside = previousDistance >= 0;
-    if (currentInside !== previousInside) {
-      const denominator = previousDistance - currentDistance;
-      const t = denominator === 0 ? 0 : previousDistance / denominator;
-      const intersection: MutablePoint3 = [
-        previous[0] + (current[0] - previous[0]) * t,
-        previous[1] + (current[1] - previous[1]) * t,
-        previous[2] + (current[2] - previous[2]) * t,
-      ];
-      intersection[axis] = 0;
-      clipped.push(intersection);
-    }
-    if (currentInside) clipped.push([...current]);
-  }
-  return clipped;
 }
 
 function applyMirror(
@@ -1183,6 +1150,7 @@ function applyMirror(
   const soupResult = materializeTriangleSoup(mesh, metrics, budget, `mirror ${mod.id}`);
   if (!soupResult.ok) return soupResult;
   const soup = soupResult.value;
+  const sourceUvs = studioModifierTriangleUvs(mesh, soup.indices);
   const axis = mod.axis === "x" ? 0 : mod.axis === "y" ? 1 : 2;
   const worstBaseVertices = mod.bisect
     ? checkedProduct(metrics.triangleCount, 4)
@@ -1212,6 +1180,7 @@ function applyMirror(
 
   const basePositions: number[] = [];
   const baseIndices: number[] = [];
+  const baseUvs: StudioModifierUv[] | undefined = sourceUvs ? [] : undefined;
   const seamThreshold = mod.merge ? mod.mergeThreshold : -1;
   if (!mod.bisect) {
     for (let index = 0; index < soup.positions.length; index += 3) {
@@ -1225,6 +1194,7 @@ function applyMirror(
     }
     for (let index = 0; index < soup.indices.length; index += 1) {
       baseIndices.push(soup.indices[index]!);
+      if (baseUvs && sourceUvs) baseUvs.push(sourceUvs[index]!);
     }
   } else {
     // This DTO has no bisect-direction flag, so its documented side is the positive axis half-space.
@@ -1248,14 +1218,18 @@ function applyMirror(
           soup.positions[vertexIndex + 2]!,
         ];
       });
-      const clipped = clipTriangleToPositiveAxis(triangle, axis);
+      const clippedResult = clipStudioModifierTriangle(triangle, axis, sourceUvs?.slice(index, index + 3));
+      const clipped = clippedResult.points;
       if (clipped.length < 3) continue;
       const polygon = clipped.map(addVertex);
       for (let corner = 1; corner + 1 < polygon.length; corner += 1) {
         const a = polygon[0]!;
         const b = polygon[corner]!;
         const c = polygon[corner + 1]!;
-        if (a !== b && b !== c && c !== a) baseIndices.push(a, b, c);
+        if (a !== b && b !== c && c !== a) {
+          baseIndices.push(a, b, c);
+          if (baseUvs && clippedResult.uvs) baseUvs.push(clippedResult.uvs[0]!, clippedResult.uvs[corner]!, clippedResult.uvs[corner + 1]!);
+        }
       }
     }
   }
@@ -1283,6 +1257,7 @@ function applyMirror(
     positions.push(reflected[0], reflected[1], reflected[2]);
   }
   const indices = [...baseIndices];
+  const outputUvs = baseUvs ? [...baseUvs] : undefined;
   for (let index = 0; index < baseIndices.length; index += 3) {
     const a = mirroredVertex[baseIndices[index]!]!;
     const b = mirroredVertex[baseIndices[index + 1]!]!;
@@ -1291,6 +1266,7 @@ function applyMirror(
       && !(a === baseIndices[index] && b === baseIndices[index + 1]
         && c === baseIndices[index + 2])) {
       indices.push(a, c, b);
+      if (outputUvs && baseUvs) outputUvs.push(baseUvs[index]!, baseUvs[index + 2]!, baseUvs[index + 1]!);
     }
   }
   const exactTopology = validateEvaluatedTopologyCounts(
@@ -1299,7 +1275,7 @@ function applyMirror(
     `mirror ${mod.id}`,
   );
   if (!exactTopology.ok) return exactTopology;
-  return ok(soupToMesh(new Float32Array(positions), new Uint32Array(indices)));
+  return ok(soupToMesh(new Float32Array(positions), new Uint32Array(indices), outputUvs));
 }
 
 function applyArray(
@@ -1375,7 +1351,7 @@ function applyArray(
       indices[indexBase + index] = soup.indices[index]! + vertexBase;
     }
   }
-  return ok(soupToMesh(positions, indices));
+  return ok(soupToMesh(positions, indices, repeatStudioModifierUvs(studioModifierTriangleUvs(mesh, soup.indices), mod.count)));
 }
 
 interface SolidifyEdgeUse {
@@ -1615,7 +1591,7 @@ function applySolidify(
     ], outputIndex);
     outputIndex += 6;
   }
-  return ok(soupToMesh(positions, indices));
+  return ok(soupToMesh(positions, indices, solidifyStudioModifierUvs(studioModifierTriangleUvs(mesh, soup.indices), soup.indices, boundaryEdges)));
 }
 
 /** Dissolve only truly coplanar, uncreased triangulation seams before angle-limited beveling. */
@@ -2294,7 +2270,7 @@ function applySimpleDeform(
       positions[i * 3 + axisIndex] = positions[i * 3 + axisIndex]! * mod.factor;
     }
   }
-  return ok(soupToMesh(positions, soup.indices));
+  return ok(soupToMesh(positions, soup.indices, studioModifierTriangleUvs(mesh, soup.indices)));
 }
 
 /**
@@ -2461,11 +2437,18 @@ export async function evaluateStudioMeshModifierStack(
   let current = stack.source;
   let currentMetrics = inspectEvaluationMesh(current, budget, "modifier source");
   if (!currentMetrics.ok) return currentMetrics;
+  const invalidUv = validateStudioMeshUvLayer(current);
+  if (invalidUv) return fail("invalid-stack", invalidUv);
   // MOD-014: commit path defaults to Manifold solid CSG (with pure convex fallback).
   const backend = options.booleanBackend ?? createStudioDefaultSolidBooleanBackend();
   for (const mod of stack.modifiers) {
     if (!mod.enabled) continue;
     try {
+      const uvBudget = studioModifierUvBudget(current, currentMetrics.value.indexCount, mod);
+      if (uvBudget) {
+        const reserved = reserveEvaluationBudget(budget, uvBudget, `${mod.kind} ${mod.id} UV 코너 전파`);
+        if (!reserved.ok) return reserved;
+      }
       let applied: StudioMeshModifierResult<StudioEditableMesh>;
       if (mod.kind === "mirror") {
         applied = applyMirror(current, currentMetrics.value, mod, budget);

@@ -126,5 +126,65 @@ export function hashStudioEditableMeshAuthority(mesh: StudioEditableMesh): strin
     writer.writeBoolean(face.smooth);
   }
 
+  // UV가 없는 기존 메시의 바이트는 유지하고, 존재할 때만 정본 확장을 결합한다.
+  if (mesh.uvLayer !== undefined) {
+    writer.writeBytes(new TextEncoder().encode("toonstudio.mesh-corner-uv.v1"));
+    writer.writeInteger(mesh.uvLayer.revision);
+    writer.writeBytes(new TextEncoder().encode(mesh.uvLayer.topologyHash));
+    writer.writeInteger(mesh.uvLayer.corners.length);
+    for (const corner of mesh.uvLayer.corners) {
+      writer.writeInteger(corner.halfEdgeId);
+      writer.writeFloat64(corner.u);
+      writer.writeFloat64(corner.v);
+    }
+  }
   return `mesh:sha256:${writer.finalizeHex()}`;
+}
+
+function legacyFaceVertexIds(mesh: StudioEditableMesh, faceId: number): number[] {
+  const face = mesh.faces[faceId]?.id === faceId ? mesh.faces[faceId] : mesh.faces.find((entry) => entry.id === faceId);
+  if (!face) return [];
+  const ids: number[] = [];
+  let edgeId = face.he;
+  do {
+    const edge = mesh.halfEdges[edgeId]!;
+    ids.push(mesh.halfEdges[edge.prev]!.vertex);
+    edgeId = edge.next;
+  } while (edgeId !== face.he && ids.length <= mesh.halfEdges.length);
+  return ids;
+}
+
+/** Byte-for-byte structural fingerprint minted by pre-slice HEAD 7b039bbc. */
+function hashStudioEditableMeshPreSliceLegacy(mesh: StudioEditableMesh): string {
+  const parts: string[] = [
+    `v${mesh.vertices.length}`,
+    `f${mesh.faces.length}`,
+    `h${mesh.halfEdges.length}`,
+  ];
+  for (const v of mesh.vertices) {
+    parts.push(
+      `${v.id}:${v.position.x.toFixed(5)},${v.position.y.toFixed(5)},${v.position.z.toFixed(5)}:${v.crease}`,
+    );
+  }
+  for (const f of mesh.faces) {
+    parts.push(`F${f.id}:${legacyFaceVertexIds(mesh, f.id).join(",")}:${f.smooth ? 1 : 0}`);
+  }
+  let h = 2166136261;
+  const s = parts.join("|");
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return `mesh:${(h >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+
+/** UV를 결합하지 않는 레거시 fingerprint로 UV 정본을 인증할 수 없다. */
+export function matchesStudioEditableMeshPersistedHash(
+  mesh: StudioEditableMesh,
+  persistedHash: string,
+): boolean {
+  if (persistedHash === hashStudioEditableMeshAuthority(mesh)) return true;
+  return mesh.uvLayer === undefined && /^mesh:[0-9a-f]{8}$/u.test(persistedHash)
+    && persistedHash === hashStudioEditableMeshPreSliceLegacy(mesh);
 }

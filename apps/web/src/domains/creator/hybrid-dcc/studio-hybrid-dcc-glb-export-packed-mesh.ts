@@ -1,4 +1,5 @@
 import { calculateStudioCrc32 } from "../studio-crc32";
+import { decodeStudioMeshUvLayer } from "../mesh-uv/studio-mesh-uv-authority";
 import {
   STUDIO_EDITABLE_MESH_LIMITS,
   STUDIO_EDITABLE_MESH_REVISION,
@@ -22,7 +23,8 @@ const PACKED_FACE_BYTES = 3 * FLOAT64_BYTES + UINT8_BYTES;
 export const STUDIO_HYBRID_DCC_PACKED_MESH_MAX_BYTES =
   STUDIO_EDITABLE_MESH_LIMITS.maxVertices * PACKED_VERTEX_BYTES
   + STUDIO_EDITABLE_MESH_LIMITS.maxEdges * 2 * PACKED_HALF_EDGE_BYTES
-  + STUDIO_EDITABLE_MESH_LIMITS.maxFaces * PACKED_FACE_BYTES;
+  + STUDIO_EDITABLE_MESH_LIMITS.maxFaces * PACKED_FACE_BYTES
+  + STUDIO_EDITABLE_MESH_LIMITS.maxEdges * 2 * 2 * Float32Array.BYTES_PER_ELEMENT;
 
 export const STUDIO_HYBRID_DCC_PACKED_MESH_SECTION_NAMES = [
   "vertexIds",
@@ -80,6 +82,13 @@ export interface StudioHybridDccPackedMeshManifest {
   /** Binds source provenance, counts, offsets, encodings, and payload CRC into one receipt. */
   readonly provenanceCrc32: number;
   readonly sections: Readonly<Record<StudioHybridDccPackedMeshSectionName, StudioHybridDccPackedMeshSection>>;
+  /** UV 없는 v1의 기존 section·바이트 순서는 유지하고 선택적인 코너 스트림만 뒤에 붙인다. */
+  readonly uvLayer?: {
+    readonly revision: 1;
+    readonly topologyHash: string;
+    readonly offset: number;
+    readonly byteLength: number;
+  };
 }
 
 export interface StudioHybridDccPackedMeshPayload {
@@ -210,6 +219,7 @@ function manifestEnvelope(value: unknown): value is StudioHybridDccPackedMeshMan
       "payloadCrc32",
       "provenanceCrc32",
       "sections",
+      ...(Object.hasOwn(value, "uvLayer") ? ["uvLayer"] : []),
     ])
     || value.format !== STUDIO_HYBRID_DCC_PACKED_MESH_FORMAT
     || value.revision !== STUDIO_HYBRID_DCC_PACKED_MESH_REVISION
@@ -248,7 +258,13 @@ function manifestEnvelope(value: unknown): value is StudioHybridDccPackedMeshMan
     return false;
   }
   const sections = value.sections as Record<string, unknown>;
-  return value.byteLength === layout.byteLength
+  const uv = value.uvLayer;
+  if (Object.hasOwn(value, "uvLayer") && (!isRecord(uv)
+    || !hasExactKeys(uv, ["revision", "topologyHash", "offset", "byteLength"])
+    || uv.revision !== 1 || typeof uv.topologyHash !== "string"
+    || !/^uv-topology:sha256:[0-9a-f]{64}$/u.test(uv.topologyHash)
+    || uv.offset !== layout.byteLength || uv.byteLength !== value.counts.halfEdges * 8)) return false;
+  return value.byteLength === layout.byteLength + (isRecord(uv) ? Number(uv.byteLength) : 0)
     && STUDIO_HYBRID_DCC_PACKED_MESH_SECTION_NAMES.every(
       (name) => sameSection(sections[name], layout.sections[name]),
     );
@@ -286,6 +302,8 @@ function provenanceValues(manifest: StudioHybridDccPackedMeshManifest): readonly
     manifest.byteLength,
     manifest.payloadCrc32,
     ...sectionValues,
+    ...(manifest.uvLayer ? ["corner-uv-v1", manifest.uvLayer.revision, manifest.uvLayer.topologyHash,
+      manifest.uvLayer.offset, manifest.uvLayer.byteLength] : []),
   ];
 }
 
@@ -368,7 +386,10 @@ export function packStudioHybridDccGlbExportInput(
     faces: input.mesh.faces.length,
   };
   const layout = expectedLayout(counts.vertices, counts.halfEdges, counts.faces);
-  const buffer = new ArrayBuffer(layout.byteLength);
+  const uv = input.mesh.uvLayer === undefined ? undefined : decodeStudioMeshUvLayer(input.mesh.uvLayer, input.mesh);
+  const uvMetadata = uv ? { revision: 1 as const, topologyHash: uv.topologyHash,
+    offset: layout.byteLength, byteLength: counts.halfEdges * 8 } : undefined;
+  const buffer = new ArrayBuffer(layout.byteLength + (uvMetadata?.byteLength ?? 0));
   const view = new DataView(buffer);
 
   for (let index = 0; index < input.mesh.vertices.length; index += 1) {
@@ -418,6 +439,10 @@ export function packStudioHybridDccGlbExportInput(
     view.setUint8(layout.sections.faceSmooth.offset + index, face.smooth ? 1 : 0);
   }
 
+  if (uv && uvMetadata) uv.corners.forEach((corner, index) => {
+    view.setFloat32(uvMetadata.offset + index * 8, corner.u, true);
+    view.setFloat32(uvMetadata.offset + index * 8 + 4, corner.v, true);
+  });
   const payloadCrc32 = calculateStudioCrc32(new Uint8Array(buffer));
   const manifestWithoutProvenance: StudioHybridDccPackedMeshManifest = {
     format: STUDIO_HYBRID_DCC_PACKED_MESH_FORMAT,
@@ -437,6 +462,7 @@ export function packStudioHybridDccGlbExportInput(
     payloadCrc32,
     provenanceCrc32: 0,
     sections: layout.sections,
+    ...(uvMetadata ? { uvLayer: uvMetadata } : {}),
   };
   const manifest: StudioHybridDccPackedMeshManifest = {
     ...manifestWithoutProvenance,
@@ -513,7 +539,7 @@ export function unpackStudioHybridDccGlbExportInput(
     faces.push({ id, he, materialSlot, smooth: smooth === 1 });
   }
 
-  const mesh: StudioEditableMesh = {
+  let mesh: StudioEditableMesh = {
     revision: STUDIO_EDITABLE_MESH_REVISION,
     vertices,
     halfEdges,
@@ -522,6 +548,17 @@ export function unpackStudioHybridDccGlbExportInput(
     nextHalfEdgeId: manifest.counters.nextHalfEdgeId,
     nextFaceId: manifest.counters.nextFaceId,
   };
+  if (manifest.uvLayer) {
+    const metadata = manifest.uvLayer;
+    const corners = Array.from({ length: manifest.counts.halfEdges }, (_, halfEdgeId) => ({
+      halfEdgeId, u: view.getFloat32(metadata.offset + halfEdgeId * 8, true),
+      v: view.getFloat32(metadata.offset + halfEdgeId * 8 + 4, true),
+    }));
+    try {
+      mesh = { ...mesh, uvLayer: decodeStudioMeshUvLayer({ revision: 1,
+        topologyHash: manifest.uvLayer.topologyHash, corners }, mesh) };
+    } catch { return null; }
+  }
   return {
     assetId: manifest.assetId,
     mesh,

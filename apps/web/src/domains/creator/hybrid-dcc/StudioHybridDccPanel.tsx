@@ -278,7 +278,7 @@ export function StudioHybridDccPanel({
         requestedSelection ?? current,
         next,
       ));
-      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.lastUvMap?.mode ?? frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.activeAssetId && next.session.state.geometry.records[next.activeAssetId]?.mesh.uvLayer ? bt("면 코너 UV", "Face-corner UVs") : frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
     } catch (error) {
       if (!mountedRef.current || generation !== runGenerationRef.current || !canCommit()) return;
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runFailed", { label, detail: error instanceof Error ? error.message : String(error) }, "{label} 실패 · {detail}"));
@@ -733,6 +733,7 @@ export function StudioHybridDccPanel({
       >
         <div className={cn("order-1 min-w-0 lg:col-start-1 xl:row-start-1", introVisible ? "xl:col-start-1" : "xl:col-start-2")}>
           <StudioHybridDccViewport
+            materialMode={workbenchMode === "material"} workspaceDocumentId={workspaceDocumentId}
             stage={introVisible}
             onEmptyStart={startFromIntro}
             workspace={ws}
@@ -751,7 +752,7 @@ export function StudioHybridDccPanel({
               if (!busy) void run("오브젝트 복제", () => workspaceDuplicateActive(ws));
             }}
             onDeleteSelected={() => { if (!busy) void run("오브젝트 삭제", () => workspaceDeleteActive(ws)); }}
-            onRunWorkspaceEdit={(label, edit) => { if (!busy) void run(label, () => edit(ws, componentSelection)); }}
+            onRunWorkspaceEdit={(label, edit, canCommit) => { if (!busy) void run(label, () => edit(ws, componentSelection), canCommit); }}
             onSelectAsset={selectWorkspaceAsset}
             onSelectComponent={selectMeshComponent}
             onSculptStroke={workbenchMode === "sculpt" && !busy
@@ -951,7 +952,7 @@ export function StudioHybridDccPanel({
                 ) : null}
                 <div className="rounded-lg border border-line p-2 text-xs leading-relaxed text-fg-2">
                   <p>{bt("권리", "Rights")}: {activeRights ? `${activeRights.license} · ${activeRights.creator}` : bt("미확인", "Unverified")}</p>
-                  <p>UV: {ws.lastUvMap?.mode ?? bt("미생성", "None yet")}</p>
+                  <p>UV: {activeRecord.mesh.uvLayer ? bt("면 코너 UV", "Face-corner UVs") : bt("미생성", "None yet")}</p>
                   <p>
                     {bt("화면용 메시", "Display mesh")}: {activeRecord.renderCache
                       ? bt("비파괴 결과 표시 중", "Showing the non-destructive result")
@@ -1100,7 +1101,7 @@ export function StudioHybridDccPanel({
           data-active={ws.activeAssetId ?? "none"}
           data-shots={ws.bridge.shots.length}
           data-ink={ws.bridge.artistCorrections.deltas.length}
-          data-uv={ws.lastUvMap?.mode ?? ""}
+          data-uv={activeRecord?.mesh.uvLayer ? "corner-uv" : ""}
           data-collab={ws.collab.peers.length}
           data-cloth-step={ws.clothStep}
           data-bom={ws.bom.lines.length}
