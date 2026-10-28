@@ -54,6 +54,28 @@ Weapons의 귀속은 폴더 이름만으로 추정하지 않았다. 로컬 `_cat
 
 현재 원장 집계는 **65행, allow 16 / hold 49**, 묶음은 **pack 49 / crowd 5 / pending 11**다. 기존 결합 행 2개를 Cargo·Cars 1 보류 2행과 개방한 팩 4행으로 나눠 행 수가 늘었다. 과거 결합 ID나 다른 팩의 catalog ID를 재사용해 범위를 넓히지 않았고, 공식 catalog ID와 `libraryPacks`를 팩별로 한 owner에만 연결했다. 앞선 `allow 12 / hold 49`, `pack 45 / crowd 5 / pending 11` 및 1차의 `allow 10 / hold 51`과 2026-10-22의 `61개 전부 hold`는 각각 당시 상태다.
 
+구매 85품목의 로컬 자료 존재 확인과 생성기 65행의 권리 판정은 범위가 다르다. 기존 81항목 카탈로그의 정식 ID 66개가 원장에 직접 대응한다. Medieval·Swamp는 각각 정식 ID 2개를 한 행으로 묶고 Food는 공식 ID 없이 별도 행을 가지므로 ID 수와 행 수가 다르다. 원장 검증은 현재 생성기 정의와의 완전성을 검사하며, 구매 85품목 전체의 권리 판정 완료를 보증하지 않는다. 따라서 hold 49행을 나머지 구매 상품 전체의 수로 해석하지 않는다.
+
+정식 ID의 직접 owner가 없는 15개 중 `cbv1-027-modular-fence-narrative-pack`의 폴더는 Fences and Walls, `cbv1-064-free-lumagrove-trees-rocks`의 폴더는 Low Poly Tiny Forest의 기존 hold 행에 포함돼 있다. 이는 원장의 `mappingNote`에 기록된 별칭·귀속 확인 범위이며 바이너리 동일성이나 법적 권리 확정을 뜻하지 않는다. 나머지 13개는 아래처럼 현재 생성기·원장 범위 밖에 남긴다. 이들 모두 구매 명시 매핑에는 로컬 자료가 있으나, 별도 권리·변환·제품 검증 없이 서비스 제공 대상으로 편입하지 않으며 원장에 없는 항목의 기본 차단을 유지한다.
+
+| 향후 편입 검토 유형 | 정식 공개 catalog ID |
+| --- | --- |
+| 엔진 도구 | `cbv1-057-time-paradox-engine` |
+| 엔진 도구 — Unity URP 셰이더 | `cbv1-058-stylized-vegetation-wind-shader-urp` |
+| 엔진 도구 — 에디터 | `cbv1-059-smart-editor` |
+| 엔진 도구 — Godot 셰이더 | `cbv1-060-godot-skybox-shader` |
+| 엔진 도구 — Godot 셰이더 | `cbv1-061-godot-water-shader` |
+| 엔진 도구 — Godot 셰이더 | `cbv1-062-godot-grass-wind-shader` |
+| 별도 모델 팩 | `cbv1-047-surreal-scifi-plasticine-plants` |
+| 별도 재질 팩 | `cbv1-048-toon-plasticine-pbr-material` |
+| 무료 별도 모델판 | `cbv1-068-free-necropolyy-candles-pumpkins` |
+| 무료 별도 재질판 | `cbv1-072-free-plasticine-pbr-material` |
+| 별도 파티클·효과 팩 | `cbv1-073-free-atmospherefx-particles` |
+| 무료 별도 모델 팩 | `cbv1-075-free-stylized-explosives` |
+| 무료 별도 모델 팩 | `cbv1-078-free-vintage-retro-pack` |
+
+위 목록은 엔진 도구 6개와 모델·재질·효과·별도판 7개다. 무료판 명칭은 CC0 또는 서비스 재배포 허용의 근거가 아니다. 현재 16개 allow 판정을 이 목록이나 구매 85품목 전체에 확장하지 않는다.
+
 ## hold를 유지하는 범위
 
 Restaurant Megapack은 공식 팩 페이지의 CC0 메타데이터와 로컬 독자 라이선스 문구가 다르다. Medieval Village / Megapack과 Small Props Pack은 로컬 문서에 CC0와 독립 다운로드·재배포 금지가 함께 있다. 이 3개 팩의 `reviewRecommendedHold`와 제작사 서면 확인 요구를 유지한다. 공개 페이지의 메타데이터만으로 상충하는 로컬 문서를 지우거나 분류를 낮추지 않는다.

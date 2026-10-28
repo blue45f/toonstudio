@@ -55,7 +55,7 @@ export const DEFAULT_PACK_RIGHTS_PATH = resolve(REPO_ROOT, "config/creator-bundl
 /** 원장 팩이 속한 묶음. 생성기의 CATALOG_PACKS / CROWD_PACKS / PENDING_PACKS와 1:1이다. */
 export const PACK_GROUPS = Object.freeze(["pack", "crowd", "pending"]);
 /**
- * 서빙 판정이 실제로 일어나는 묶음. pending은 미수신·보류라 생성기가 serve와 무관하게 pendingPacks로만
+ * 서빙 판정이 실제로 일어나는 묶음. pending은 생성기 편입 대기·보류라 serve와 무관하게 pendingPacks로만
  * 내보내므로 allow가 아무것도 열지 못한다 — 편입(CATALOG_PACKS)하면서 group을 pack으로 옮긴 뒤에야 판정 대상이다.
  */
 export const SERVABLE_GROUPS = Object.freeze(["pack", "crowd"]);
@@ -143,8 +143,8 @@ export const RIGHTS_HOLD_REASON = "rights-hold";
 /**
  * 패널의 "준비 중인 팩" 목록에 원장 hold 때문에 pendingPacks(rights-hold)로 가는 팩(pack·crowd 묶음)마다 그대로
  * 보이는 문구. 사유(제작사 확인·증빙·충돌)와 공개 약속을 드러내지 않도록 모든 hold 팩이 같은 중립 문장을 쓰고,
- * 사유는 holdReason(내부 필드)에만 둔다. pending 묶음 14개의 화면 문구는 생성기의 PENDING_PACKS가 정하며
- * (회수 상태 등 권리와 무관한 사유) 그 팩들의 holdLabel은 화면에 쓰이지 않는다.
+ * 사유는 holdReason(내부 필드)에만 둔다. pending 편입 대기 11개의 화면 문구는 생성기의 PENDING_PACKS가 정하며
+ * (구매 85품목의 로컬 자료 존재와 다른 개념) 그 팩들의 holdLabel은 화면에 쓰이지 않는다.
  */
 export const HOLD_PUBLIC_LABEL = "준비 중이며 공개 시점은 정해지지 않았다.";
 
