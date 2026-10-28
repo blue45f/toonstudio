@@ -329,4 +329,16 @@ describe("Office2dRuntime", () => {
     expect(actor.moving).toBe(false);
     expect(office2dActorFrame(actor).col).toBe(0);
   });
+
+  it("빈 책상 좌석 위치에 멈추면 상주 동료가 양보하고 자동으로 착석 자세로 전환된다", () => {
+    const { runtime, bridge, run } = setup();
+    runtime.start();
+    const deskSeat = runtime.scene.seats.find((seat) => seat.chair === "chair-back");
+    expect(deskSeat).toBeDefined();
+    if (!deskSeat) return;
+    bridge.requestTeleport(deskSeat.anchor);
+    run(0.3);
+    expect(runtime.debugState().seated).toBe(true);
+    expect(runtime.debugState().facing).toBe("up");
+  });
 });

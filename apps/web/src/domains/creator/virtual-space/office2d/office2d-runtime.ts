@@ -5,6 +5,7 @@
  * frame()·draw()를 부르고, 키·포인터 이벤트를 넘긴다. 엔진 이벤트 의미(구역 변경·근접 NPC·끼임·로컬 상태)는
  * 기존 Phaser·3D 스테이지와 같은 계약(StudioVirtualSpacePhaserCanvasProps)을 따른다.
  */
+import { StudioCameraPanRuntime } from "../studio-virtual-space-camera-pan";
 import type { StudioVirtualSpaceEngineBridge } from "../studio-virtual-space-engine-bridge";
 import {
   STUDIO_VIRTUAL_SPACE_NEARBY_NPC_LIMIT,
@@ -33,6 +34,7 @@ import {
 import { studioVirtualWorldPresentation } from "../studio-virtual-space-world-presentation";
 import { advanceOffice2dActor, createOffice2dActor, office2dEmoteGlyph, type Office2dActor } from "./office2d-actors";
 import { Office2dCamera, office2dBaseZoom } from "./office2d-camera";
+import { Office2dCoworkerCrowd } from "./office2d-coworkers";
 import { createOffice2dNpc, stepOffice2dNpc, type Office2dNpcState } from "./office2d-npc";
 import { Office2dParticles } from "./office2d-particles";
 import { OFFICE2D_CATEGORY, Office2dPhysicsWorld } from "./office2d-physics";
@@ -40,11 +42,28 @@ import type { Office2dCanvas2D } from "./office2d-procedural-art";
 import { Office2dRenderer, type Office2dPropVisual, type Office2dRendererHost } from "./office2d-renderer";
 import { office2dSceneFor, type Office2dScene, type Office2dSeatVisual } from "./office2d-scene";
 import { studioUserStatusLabel } from "./office2d-status";
-import { office2dAccentFor, office2dCharacterForAvatar, office2dCharacterForNpc, office2dHashIndex } from "./office2d-sprite-catalog";
+import {
+  office2dAccentFor,
+  office2dCharacterForAvatar,
+  office2dCharacterForNpc,
+  office2dGestureForEmote,
+  office2dHashIndex,
+  type Office2dCharacterKey,
+} from "./office2d-sprite-catalog";
+import {
+  kickOffice2dNearbyProp,
+  office2dDaylight,
+  office2dPathSpeedMultiplier,
+  Office2dStageExtensions,
+} from "./office2d-stage-extensions";
 
 export type Office2dRuntimeCallbacks = Pick<StudioVirtualSpacePhaserCanvasProps,
   | "onLocalState" | "onInteract" | "onNearbyInteractionChange" | "onPeerSelect" | "onCancelFollow" | "onPortal" | "onZoneChange"
-  | "onNearbyNpcsChange" | "onStuckChange" | "onGhostModeChange" | "onNpcInteract" | "onSelfImpact" | "onRuntimeMetrics">;
+  | "onNearbyNpcsChange" | "onStuckChange" | "onGhostModeChange" | "onNpcInteract" | "onSelfImpact" | "onRuntimeMetrics"
+  | "onObjectStateChange" | "onTileEffectTrigger" | "onGuideTourChange">;
+
+export type Office2dStageProps = Pick<StudioVirtualSpacePhaserCanvasProps,
+  "atmosphere" | "spaceTheme" | "decorations" | "placedFixtures" | "tileEffects" | "waveActorIds" | "guideTourRequest">;
 
 export interface Office2dRuntimeOptions {
   readonly manifest: StudioVirtualSpaceWorldManifest;
@@ -55,11 +74,17 @@ export interface Office2dRuntimeOptions {
   readonly getSelfName: () => string;
   readonly getSeatedActors: () => NonNullable<StudioVirtualSpacePhaserCanvasProps["seatedActors"]>;
   readonly getCallbacks: () => Office2dRuntimeCallbacks;
+  readonly getStageProps?: () => Office2dStageProps;
   readonly getLanguage: () => "ko" | "en";
   readonly getReducedMotion: () => boolean;
   /** 실제 시계(ms). 테스트는 고정 값을 넣는다. */
   readonly clock?: () => number;
+  /** 참가자 아바타 번호 + 신원 → 직군 시트. 없으면 번호를 시트 수로 나눈 나머지로 고른다. */
+  readonly getAvatarCharacter?: (avatarIndex: number, identity: string) => Office2dCharacterKey;
+  /** 빈 작업실을 채우는 상주 동료를 둘지(기본 true). */
+  readonly ambientCoworkers?: boolean;
 }
+
 
 const SELF_BODY = "actor:self";
 const SELF_RADIUS = 12;
@@ -77,6 +102,8 @@ function length(x: number, y: number): number {
 export class Office2dRuntime {
   readonly scene: Office2dScene;
   readonly camera: Office2dCamera;
+  readonly extensions = new Office2dStageExtensions();
+  private readonly cameraPan: StudioCameraPanRuntime;
   private readonly physics: Office2dPhysicsWorld;
   private readonly renderer: Office2dRenderer;
   private readonly particles = new Office2dParticles();
@@ -87,6 +114,7 @@ export class Office2dRuntime {
   private readonly self: Office2dActor;
   private readonly peers = new Map<string, Office2dActor>();
   private readonly npcs: { readonly state: Office2dNpcState; readonly actor: Office2dActor }[] = [];
+  private readonly coworkers: Office2dCoworkerCrowd;
   private readonly keys = new Set<string>();
   private readonly walkSpeed: number;
   private readonly sprintMultiplier: number;
@@ -139,7 +167,7 @@ export class Office2dRuntime {
     this.physics.addBody({ id: SELF_BODY, kind: "dynamic", shape: { type: "circle", radius: SELF_RADIUS }, x: start.x, y: start.y, mass: 60,
       linearDamping: 0, restitution: 0, friction: 0.1, category: OFFICE2D_CATEGORY.actor, maxSpeed: 600 });
     const now = this.now();
-    this.self = createOffice2dActor({ id: options.selfIdentity, kind: "self", character: office2dCharacterForAvatar(snapshot.self.avatarIndex, options.selfIdentity),
+    this.self = createOffice2dActor({ id: options.selfIdentity, kind: "self", character: this.avatarCharacter(snapshot.self.avatarIndex, options.selfIdentity),
       accent: office2dAccentFor(options.selfIdentity), name: options.getSelfName(), x: start.x, y: start.y, facing: snapshot.self.facing, now });
     manifest.npcs.forEach((definition, index) => {
       const state = createOffice2dNpc(definition, office2dHashIndex(definition.id, 1_000_003) + index);
@@ -150,13 +178,22 @@ export class Office2dRuntime {
         category: OFFICE2D_CATEGORY.actor });
       this.npcs.push({ state, actor });
     });
+    this.coworkers = new Office2dCoworkerCrowd(options.ambientCoworkers === false ? null : this.scene, now, {
+      block: (id, point) => this.physics.addBody({ id, kind: "kinematic", shape: { type: "circle", radius: 11 }, x: point.x, y: point.y, category: OFFICE2D_CATEGORY.actor }),
+      unblock: (id) => this.physics.removeBody(id),
+    });
     this.camera = new Office2dCamera(manifest.width, manifest.height, start);
+    this.cameraPan = new StudioCameraPanRuntime(options.bridge.cameraPan);
     this.renderer = new Office2dRenderer(this.scene, options.host);
     for (const portal of this.portals) this.armedPortals.set(portal.id, length(portal.point.x - start.x, portal.point.y - start.y) > portal.radius);
   }
 
   private now(): number {
     return this.options.clock ? this.options.clock() : Date.now();
+  }
+
+  private avatarCharacter(avatarIndex: number, identity: string): Office2dCharacterKey {
+    return this.options.getAvatarCharacter ? this.options.getAvatarCharacter(avatarIndex, identity) : office2dCharacterForAvatar(avatarIndex, identity);
   }
 
   private resolveStart(snapshot: StudioVirtualSpaceSnapshot): StudioVirtualSpacePoint {
@@ -194,34 +231,7 @@ export class Office2dRuntime {
 
   /** 근처 동적 물리 소품(짐볼·의자·카트·휴지통 등)에 방향 충격량과 오프센터 스핀 토크를 가한다. */
   private kickNearbyProp(): boolean {
-    let closestId: string | null = null;
-    let closestDist = 64;
-    for (const prop of this.scene.physicsProps) {
-      const body = this.physics.getBody(`prop:${prop.id}`);
-      if (!body) continue;
-      const dist = length(body.x - this.self.x, body.y - this.self.y);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestId = body.id;
-      }
-    }
-    if (!closestId) return false;
-    const body = this.physics.getBody(closestId);
-    if (!body) return false;
-    const dx = body.x - this.self.x;
-    const dy = body.y - this.self.y;
-    const dist = Math.max(1, length(dx, dy));
-    const nx = dx / dist;
-    const ny = dy / dist;
-    const baseMass = body.invMass > 0 ? 1 / body.invMass : 10;
-    const impulseMag = Math.min(2800, Math.max(420, baseMass * 240));
-    const spinOffset = { rx: -ny * 8, ry: nx * 8 };
-    this.physics.applyImpulse(closestId, nx * impulseMag, ny * impulseMag, spinOffset, baseMass * 12);
-    this.self.squash = -0.055;
-    if (!this.options.getReducedMotion()) {
-      this.particles.emit("spark", body.x - nx * 8, body.y - ny * 8, 6, 1.1);
-    }
-    return true;
+    return kickOffice2dNearbyProp(this.self, this.physics, this.scene, this.particles, this.options.getReducedMotion());
   }
 
   keyUp(code: string): void {
@@ -253,16 +263,27 @@ export class Office2dRuntime {
       return;
     }
     const object = this.scene.objects.find((candidate) => {
-      if (!candidate.interactionId || !candidate.footprint) return false;
+      if (!candidate.footprint) return false;
       const box = candidate.footprint;
       return world.x >= box.x - 6 && world.x <= box.x + box.width + 6 && world.y >= box.y - 70 && world.y <= box.y + box.height + 10;
     });
     if (object?.interactionId) {
       const interaction = this.interactions.find((item) => item.id === object.interactionId);
       if (interaction) {
-        this.approach({ x: interaction.point.x, y: interaction.point.y + 24 }, { kind: "interaction", id: interaction.id });
+        const seat = this.scene.seats.find((candidate) => candidate.id === `${interaction.id}-seat`);
+        this.approach(seat ? seat.anchor : { x: interaction.point.x, y: interaction.point.y + 24 }, { kind: "interaction", id: interaction.id });
         return;
       }
+    } else if (object?.sprite === "floor-lamp") {
+      this.extensions.interactWithObject(object.id, object.sprite, object.x, object.y, this.now(), this.particles, this.options.getCallbacks().onObjectStateChange);
+      return;
+    }
+    const clickedSeat = this.scene.seats.find((seat) => length(world.x - seat.anchor.x, world.y - seat.anchor.y) <= 24);
+    if (clickedSeat) {
+      const deskId = clickedSeat.id.endsWith("-seat") ? clickedSeat.id.slice(0, -5) : null;
+      const interaction = deskId ? this.interactions.find((item) => item.id === deskId) : undefined;
+      this.approach(clickedSeat.anchor, interaction ? { kind: "interaction", id: interaction.id } : null);
+      return;
     }
     this.approach(world, null);
   }
@@ -273,6 +294,7 @@ export class Office2dRuntime {
   }
 
   private approach(target: StudioVirtualSpacePoint, pending: { readonly kind: "interaction" | "npc"; readonly id: string } | null): void {
+    this.coworkers.vacateNear(target, this.now());
     const free = this.physics.nearestFreePoint(target.x, target.y, SELF_RADIUS, 160);
     if (!free) return;
     if (this.options.bridge.getFollowingPeer()) this.options.getCallbacks().onCancelFollow();
@@ -283,6 +305,7 @@ export class Office2dRuntime {
   }
 
   private inputVector(): { readonly x: number; readonly y: number } {
+    if (this.options.bridge.cameraPan.isLooking()) return { x: 0, y: 0 };
     const joystick = this.options.bridge.getJoystick();
     let x = joystick.x;
     let y = joystick.y;
@@ -314,6 +337,7 @@ export class Office2dRuntime {
   }
 
   private teleport(point: StudioVirtualSpacePoint): void {
+    this.coworkers.vacateNear(point, this.now());
     const free = this.physics.nearestFreePoint(point.x, point.y, SELF_RADIUS) ?? studioWorldSpawn(this.options.manifest).point;
     this.physics.teleport(SELF_BODY, free.x, free.y);
     this.self.x = free.x;
@@ -329,7 +353,10 @@ export class Office2dRuntime {
   private showEmote(actor: Office2dActor, kind: string, nowMs: number): void {
     const glyph = office2dEmoteGlyph(kind);
     if (!glyph) return;
-    actor.emote = { glyph, until: nowMs + 2600 };
+    actor.emote = { glyph, until: nowMs + 2600, kind };
+    // 몸짓이 있는 이모트는 서서 멈춘 동안 작업 자세 시트의 제스처 프레임으로도 보인다(걷기 시작하면 바로 끊긴다).
+    const gesture = office2dGestureForEmote(kind);
+    actor.gesture = gesture ? { kind: gesture, until: nowMs + 2200 } : null;
     this.particles.emit("confetti", actor.x, actor.y - 60, 10, 0.7);
   }
 
@@ -372,8 +399,10 @@ export class Office2dRuntime {
           if (this.path.length === 0) this.destination = null;
         } else {
           const arrive = this.path.length === 1 ? Math.min(1, distance / 40) : 1;
-          desiredX = (dx / distance) * speed * arrive;
-          desiredY = (dy / distance) * speed * arrive;
+          const remaining = this.destination ? length(this.destination.x - this.self.x, this.destination.y - this.self.y) : distance;
+          const pathSpeed = speed * office2dPathSpeedMultiplier(remaining, sprint);
+          desiredX = (dx / distance) * pathSpeed * arrive;
+          desiredY = (dy / distance) * pathSpeed * arrive;
         }
       }
     }
@@ -428,23 +457,42 @@ export class Office2dRuntime {
       if (!actor.moving) actor.facing = state.facing;
     }
 
-    // 4) 자세·좌석
+    // 4) 자세·좌석·상주 동료
     this.updateSeats(nowMs);
+    this.updateCoworkers(dt, nowMs);
     this.self.name = this.options.getSelfName() || (this.options.getLanguage() === "en" ? "Me" : "나");
     const snapshot = this.options.getSnapshot();
-    this.self.character = office2dCharacterForAvatar(snapshot.self.avatarIndex, this.options.selfIdentity);
+    this.self.character = this.avatarCharacter(snapshot.self.avatarIndex, this.options.selfIdentity);
     this.self.bubble = snapshot.selfChatBubble && snapshot.selfChatBubble.expiresAt > nowMs ? snapshot.selfChatBubble.text : snapshot.self.bubble ?? null;
     this.self.status = studioUserStatusLabel(snapshot.self.userStatus, snapshot.self.activity, this.options.getLanguage());
 
-    // 5) 엔진 이벤트
+    // 5) 엔진 이벤트·스테이지 확장
+    const stageProps = this.options.getStageProps?.();
+    this.extensions.syncWaveActors(stageProps?.waveActorIds, this.self, this.peers, nowMs, (actor, kind, at) => this.showEmote(actor, kind, at));
+    this.extensions.stepGuideTour(this.self, this.options.manifest, stageProps?.guideTourRequest, callbacks.onGuideTourChange, directional, nowMs, (pt) => this.approach(pt, null));
+    this.extensions.stepTileEffects(this.self, stageProps?.tileEffects, this.particles, callbacks.onTileEffectTrigger);
     this.emitSignals(directional, nowMs);
 
     // 6) 카메라·파티클
     const conversation = bridge.getConversationFocus();
     const focus = conversation ? { x: (conversation.x + this.self.x) / 2, y: (conversation.y + this.self.y) / 2 } : this.self;
-    const zoom = office2dBaseZoom(this.camera.getViewport()) * bridge.userZoom.get() * (conversation ? 1.15 : 1);
-    const lead = body && !conversation ? { x: body.vx * 0.12, y: body.vy * 0.1 } : { x: 0, y: 0 };
-    this.camera.follow(focus, dt, { zoom, leadX: lead.x, leadY: lead.y, snap: this.snapCamera });
+    const viewport = this.camera.getViewport();
+    const zoom = office2dBaseZoom(viewport) * bridge.userZoom.get() * (conversation ? 1.15 : 1);
+    const pan = this.cameraPan.sample({
+      deltaSeconds: dt,
+      available: true,
+      directed: Boolean(conversation),
+      snap: this.snapCamera,
+      reducedMotion: this.options.getReducedMotion(),
+      moving: this.self.moving,
+      cssToWorld: 1 / Math.max(0.2, zoom),
+      base: focus,
+      center: { x: this.camera.x, y: this.camera.y },
+      view: { width: viewport.width / zoom, height: viewport.height / zoom },
+      world: { width: this.scene.width, height: this.scene.height },
+    });
+    const lead = body && !conversation && !pan.direct ? { x: body.vx * 0.12, y: body.vy * 0.1 } : { x: 0, y: 0 };
+    this.camera.follow({ x: focus.x + pan.x, y: focus.y + pan.y }, dt, { zoom, leadX: lead.x, leadY: lead.y, snap: this.snapCamera || pan.direct });
     this.snapCamera = false;
     this.updateAmbient(dt);
     this.particles.update(dt);
@@ -461,7 +509,7 @@ export class Office2dRuntime {
       live.add(sessionId);
       let actor = this.peers.get(sessionId);
       if (!actor) {
-        actor = createOffice2dActor({ id: `peer:${sessionId}`, kind: "peer", character: office2dCharacterForAvatar(peer.state.avatarIndex, sessionId),
+        actor = createOffice2dActor({ id: `peer:${sessionId}`, kind: "peer", character: this.avatarCharacter(peer.state.avatarIndex, sessionId),
           accent: office2dAccentFor(sessionId), name: peer.participant.displayName, x: peer.state.x, y: peer.state.y, facing: peer.state.facing, now: nowMs });
         this.peers.set(sessionId, actor);
         if (!this.physics.getBody(actor.id)) {
@@ -470,7 +518,7 @@ export class Office2dRuntime {
       }
       actor.leavingAt = null;
       actor.name = peer.participant.displayName;
-      actor.character = office2dCharacterForAvatar(peer.state.avatarIndex, sessionId);
+      actor.character = this.avatarCharacter(peer.state.avatarIndex, sessionId);
       const bubble = snapshot.chatBubbles.find((item) => item.sessionId === sessionId && item.expiresAt > nowMs);
       actor.bubble = bubble?.text ?? peer.state.bubble ?? null;
       actor.typing = peer.state.typing === true || snapshot.peerTyping.some((item) => item.sessionId === sessionId && item.expiresAt > nowMs);
@@ -500,12 +548,15 @@ export class Office2dRuntime {
         this.physics.removeBody(actor.id);
       }
     }
-    for (const actor of [this.self, ...this.peers.values()]) if (actor.emote && actor.emote.until <= nowMs) actor.emote = null;
+    for (const actor of [this.self, ...this.peers.values()]) {
+      if (actor.emote && actor.emote.until <= nowMs) actor.emote = null;
+      if (actor.gesture && (actor.gesture.until <= nowMs || actor.moving)) actor.gesture = null;
+    }
   }
 
-  private seatFor(point: StudioVirtualSpacePoint): Office2dSeatVisual | null {
+  private seatFor(point: StudioVirtualSpacePoint, maxDistance = 10): Office2dSeatVisual | null {
     let best: Office2dSeatVisual | null = null;
-    let bestDistance = 10;
+    let bestDistance = maxDistance;
     for (const seat of this.scene.seats) {
       const distance = Math.min(length(seat.attach.x - point.x, seat.attach.y - point.y), length(seat.anchor.x - point.x, seat.anchor.y - point.y));
       if (distance < bestDistance) {
@@ -525,13 +576,33 @@ export class Office2dRuntime {
       openArea: true,
       now: nowMs,
     });
-    const leased = seated.find((actor) => actor.id === this.options.selfIdentity);
-    const seatPoint = leased?.anchorPoint ?? (pose.pose === "sit" ? pose.anchor?.point : undefined);
-    this.self.seat = seatPoint && !this.self.moving ? this.seatFor(seatPoint) : null;
+    const peerSeatIds = new Set<string>();
     for (const [sessionId, actor] of this.peers) {
       const entry = seated.find((item) => item.id === sessionId);
       actor.seat = entry && !actor.moving ? this.seatFor(entry.anchorPoint) : null;
+      if (actor.seat) peerSeatIds.add(actor.seat.id);
     }
+    const leased = seated.find((actor) => actor.id === this.options.selfIdentity);
+    const seatPoint = leased?.anchorPoint ?? (pose.pose === "sit" ? pose.anchor?.point : undefined);
+    let selfSeat = seatPoint && !this.self.moving ? this.seatFor(seatPoint, 18) : null;
+    if (!selfSeat && !this.self.moving && this.path.length === 0) {
+      const candidate = this.seatFor(this.self, 18);
+      if (candidate && !peerSeatIds.has(candidate.id)) selfSeat = candidate;
+    }
+    this.self.seat = selfSeat;
+    if (selfSeat) this.self.facing = selfSeat.facing;
+  }
+
+  /** 상주 동료: 팀원 수만큼 줄이고, 누가 자리 가까이 오거나 앉으면 비켰다가 자리가 비면 돌아온다(office2d-coworkers). */
+  private updateCoworkers(dt: number, nowMs: number): void {
+    const people = [this.self, ...this.peers.values()];
+    this.coworkers.update(dt, nowMs, {
+      peerCount: this.peers.size,
+      language: this.options.getLanguage(),
+      occupants: [...people.map((actor) => ({ x: actor.x, y: actor.y })), ...(this.destination ? [this.destination] : [])],
+      takenSeatIds: new Set(people.flatMap((actor) => (actor.seat ? [actor.seat.id] : []))),
+      seatedAnchors: this.options.getSeatedActors().map((entry) => entry.anchorPoint),
+    });
   }
 
   private emitSignals(directional: boolean, nowMs: number): void {
@@ -570,10 +641,18 @@ export class Office2dRuntime {
       const pending = this.pending;
       if (pending.kind === "interaction") {
         const target = this.interactions.find((item) => item.id === pending.id);
-        if (target && length(target.point.x - this.self.x, target.point.y - this.self.y) <= target.radius + 12) {
+        const seat = target ? this.scene.seats.find((candidate) => candidate.id === `${target.id}-seat`) : undefined;
+        const reached = target
+          ? seat
+            ? length(seat.anchor.x - this.self.x, seat.anchor.y - this.self.y) <= 16 || this.path.length === 0
+            : length(target.point.x - this.self.x, target.point.y - this.self.y) <= target.radius + 12
+          : false;
+        if (target && reached) {
           this.pending = null;
           this.path = [];
           this.destination = null;
+          const sceneObj = this.scene.objects.find((item) => item.interactionId === target.id);
+          this.extensions.interactWithObject(target.id, sceneObj?.sprite ?? null, target.point.x, target.point.y, nowMs, this.particles, callbacks.onObjectStateChange);
           callbacks.onInteract(target);
         }
       } else {
@@ -590,8 +669,11 @@ export class Office2dRuntime {
     if (bridge.consumeInteract()) {
       const npc = limited[0];
       if (npc?.interaction && npc.distance <= 90) callbacks.onNpcInteract?.(npc.interaction, npc.npc);
-      else if (closest) callbacks.onInteract(closest);
-      else {
+      else if (closest) {
+        const sceneObj = this.scene.objects.find((item) => item.interactionId === closest.id);
+        this.extensions.interactWithObject(closest.id, sceneObj?.sprite ?? null, closest.point.x, closest.point.y, nowMs, this.particles, callbacks.onObjectStateChange);
+        callbacks.onInteract(closest);
+      } else {
         const portal = this.portals.find((candidate) => length(candidate.point.x - this.self.x, candidate.point.y - this.self.y) <= candidate.radius + 16);
         if (portal) callbacks.onPortal?.(portal);
       }
@@ -628,6 +710,9 @@ export class Office2dRuntime {
       if (object.sprite !== "coffee-machine" || object.x < visible.minX || object.x > visible.maxX || object.y < visible.minY || object.y > visible.maxY + 80) continue;
       this.particles.emit("steam", object.x - 22, object.y - 70, 1, 1);
     }
+    if (this.self.seat && this.particles.count < 180) {
+      this.particles.emit("note", this.self.seat.anchor.x, this.self.seat.anchor.y - 52, 1, 0.75);
+    }
     if (this.daylight() > 0.5) {
       for (const light of this.scene.lights) {
         if (light.kind !== "window" || light.x < visible.minX || light.x > visible.maxX || light.y < visible.minY || light.y > visible.maxY) continue;
@@ -638,18 +723,7 @@ export class Office2dRuntime {
 
   /** 0(밤)~1(낮). 주야 사이클이 켜져 있으면 가상 시계를, 아니면 이 기기 시계를 쓴다. 사무실 조명이 있어 밤에도 0.3 아래로 내려가지 않는다. */
   daylight(): number {
-    const cycle = this.options.bridge.getDayNightCycle();
-    let hour: number;
-    if (cycle.enabled) {
-      const period = cycle.cycleMs && cycle.cycleMs > 0 ? cycle.cycleMs : 86_400_000;
-      hour = ((((cycle.now - cycle.startMs) % period) + period) % period) / period * 24;
-    } else {
-      const date = new Date(this.now());
-      hour = date.getHours() + date.getMinutes() / 60;
-    }
-    const ramp = (value: number) => Math.max(0, Math.min(1, value));
-    const day = hour < 12 ? ramp((hour - 5.5) / 2.5) : ramp((19.5 - hour) / 2.5);
-    return 0.3 + day * 0.7;
+    return office2dDaylight(this.options.bridge.getDayNightCycle(), this.now());
   }
 
   private emitMetrics(nowMs: number): void {
@@ -658,16 +732,10 @@ export class Office2dRuntime {
     const visible = this.camera.visibleRect(40);
     const isVisible = (actor: Office2dActor) => actor.x >= visible.minX && actor.x <= visible.maxX && actor.y >= visible.minY && actor.y <= visible.maxY;
     this.options.getCallbacks().onRuntimeMetrics?.({
-      fps,
-      frameTimeMs: fps > 0 ? Math.round(1000 / fps) : 0,
-      qualityTier: fps >= 50 ? "high" : fps >= 30 ? "balanced" : "battery",
-      peerCount: this.peers.size,
-      visiblePeerCount: [...this.peers.values()].filter(isVisible).length,
-      npcCount: this.npcs.length,
-      visibleNpcCount: this.npcs.filter(({ actor }) => isVisible(actor)).length,
-      routeWaypoints: this.path.length,
-      failedTextures: 0,
-      updatedAt: nowMs,
+      fps, frameTimeMs: fps > 0 ? Math.round(1000 / fps) : 0, qualityTier: fps >= 50 ? "high" : fps >= 30 ? "balanced" : "battery",
+      peerCount: this.peers.size, visiblePeerCount: [...this.peers.values()].filter(isVisible).length,
+      npcCount: this.npcs.length, visibleNpcCount: this.npcs.filter(({ actor }) => isVisible(actor)).length,
+      routeWaypoints: this.path.length, failedTextures: 0, updatedAt: nowMs,
     });
     this.metricsFrames = 0;
     this.metricsStartedAt = nowMs;
@@ -679,37 +747,21 @@ export class Office2dRuntime {
       const body = this.physics.getBody(`prop:${prop.id}`);
       const radius = prop.shape.type === "circle" ? prop.shape.radius : prop.shape.halfHeight;
       return {
-        id: prop.id,
-        sprite: prop.sprite,
-        x: body?.x ?? prop.x,
-        y: body?.y ?? prop.y,
-        width: prop.width,
-        radius,
-        spin: body?.spin ?? 0,
-        rolls: prop.rolls === true,
-        angle: body?.angle ?? 0,
-        angularVelocity: body?.angularVelocity ?? 0,
-        impactSquash: body?.impactSquash ?? 0,
-        vx: body?.vx ?? 0,
-        vy: body?.vy ?? 0,
+        id: prop.id, sprite: prop.sprite, x: body?.x ?? prop.x, y: body?.y ?? prop.y, width: prop.width, radius,
+        spin: body?.spin ?? 0, rolls: prop.rolls === true, angle: body?.angle ?? 0, angularVelocity: body?.angularVelocity ?? 0,
+        impactSquash: body?.impactSquash ?? 0, vx: body?.vx ?? 0, vy: body?.vy ?? 0,
       };
     });
+    const stageProps = this.options.getStageProps?.();
     this.renderer.render(ctx, {
-      camera: this.camera,
-      pixelRatio,
-      time: this.elapsed,
-      now: this.now(),
-      actors: [this.self, ...this.npcs.map(({ actor }) => actor), ...this.peers.values()],
-      selfId: this.self.id,
-      props,
-      nearbyInteractionId: this.lastInteractionId ?? null,
-      destination: this.destination,
-      locateTarget: this.locateTarget(),
-      daylight: this.daylight(),
-      reducedMotion: this.options.getReducedMotion(),
-      language: this.options.getLanguage(),
-      particles: this.particles,
-      ghost: this.options.bridge.isGhostMode(),
+      camera: this.camera, pixelRatio, time: this.elapsed, now: this.now(),
+      actors: [this.self, ...this.npcs.map(({ actor }) => actor), ...this.peers.values(), ...this.coworkers.visibleActors()],
+      selfId: this.self.id, props, nearbyInteractionId: this.lastInteractionId ?? null, destination: this.destination,
+      locateTarget: this.locateTarget(), daylight: this.daylight(), reducedMotion: this.options.getReducedMotion(),
+      language: this.options.getLanguage(), particles: this.particles, ghost: this.options.bridge.isGhostMode(),
+      atmosphere: stageProps?.atmosphere, spaceTheme: stageProps?.spaceTheme, tileEffects: stageProps?.tileEffects,
+      placedFixtures: stageProps?.placedFixtures, decorations: stageProps?.decorations,
+      activeObjectStates: this.extensions.activeObjectStates, extensions: this.extensions,
     });
   }
 
@@ -721,13 +773,18 @@ export class Office2dRuntime {
   }
 
   /** 테스트·디버깅용 읽기 전용 상태. */
-  debugState(): { readonly self: StudioVirtualSpacePoint; readonly facing: string; readonly moving: boolean; readonly seated: boolean; readonly peers: number; readonly props: readonly StudioVirtualSpacePoint[] } {
+  debugState(): {
+    readonly self: StudioVirtualSpacePoint; readonly facing: string; readonly moving: boolean; readonly seated: boolean; readonly peers: number;
+    readonly props: readonly StudioVirtualSpacePoint[]; readonly coworkers: readonly { readonly id: string; readonly alpha: number }[]; readonly gesture: string | null;
+  } {
     return {
       self: { x: this.self.x, y: this.self.y },
       facing: this.self.facing,
       moving: this.self.moving,
       seated: this.self.seat !== null,
       peers: this.peers.size,
+      coworkers: this.coworkers.visibleActors().map((actor) => ({ id: actor.id, alpha: actor.alpha })),
+      gesture: this.self.gesture?.kind ?? null,
       props: this.scene.physicsProps.map((prop) => {
         const body = this.physics.getBody(`prop:${prop.id}`);
         return { x: body?.x ?? prop.x, y: body?.y ?? prop.y };

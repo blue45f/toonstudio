@@ -2,8 +2,9 @@
  * ToonOffice 2D 스프라이트 카탈로그.
  *
  * 생성 원화(scripts/build-virtual-studio-toon-office-v1.py가 크로마키·트림·정규화)를 키로 묶는다. 오브젝트 스프라이트는
- * 바닥 중앙(base)이 기준점이며, 표시 높이는 이미지 비율에서 계산한다. 캐릭터 시트는 4행(아래·왼쪽·오른쪽·위) × 3열(정지·왼발·오른발)
- * 고정 셀이다. 이미지가 없거나 불러오지 못하면 렌더러가 절차형 폴백으로 같은 자리를 그린다.
+ * 바닥 중앙(base)이 기준점이며, 표시 높이는 이미지 비율에서 계산한다. 캐릭터 보행 시트는 4행(아래·왼쪽·오른쪽·위) × 9열(정지 + 8프레임 보행)
+ * 고정 셀이고, 작업 자세 시트(characters/work/*.webp, scripts/build-virtual-studio-toon-office-cast.py)는 3행(뒤 착석 작업 · 앞 착석 · 제스처)
+ * × 4열이다. 이미지가 없거나 불러오지 못하면 렌더러가 절차형 폴백(보행 시트 0열 등)으로 같은 자리를 그린다.
  */
 
 export const OFFICE2D_ASSET_ROOT = "/assets/virtual-studio/toon-office-v1";
@@ -19,13 +20,23 @@ export const OFFICE2D_OBJECT_SPRITES = [
 
 export type Office2dSpriteKey = typeof OFFICE2D_OBJECT_SPRITES[number];
 
-export const OFFICE2D_CHARACTERS = ["artist", "pd", "writer", "colorist", "bgartist"] as const;
+/** 웹툰 제작 직군 8종: 작화 · PD · 콘티(글) · 채색 · 배경 · 식자 · 3D 배경 · 편집(검수). */
+export const OFFICE2D_CHARACTERS = ["artist", "pd", "writer", "colorist", "bgartist", "letterer", "modeler", "editor"] as const;
 export type Office2dCharacterKey = typeof OFFICE2D_CHARACTERS[number];
 
 /** 캐릭터 시트 셀 크기(px), 보행 프레임 수(1~8열), 행 순서. 0열은 정지/착석 기준 자세다. */
 export const OFFICE2D_CHARACTER_CELL = Object.freeze({ width: 128, height: 192 });
 export const OFFICE2D_CHARACTER_WALK_FRAMES = 8;
 export const OFFICE2D_CHARACTER_ROWS = Object.freeze({ down: 0, left: 1, right: 2, up: 3 } as const);
+
+/** 작업 자세 시트: 셀은 보행 시트와 같고(발끝 y=188), 행은 뒤 착석 작업 루프 · 앞 착석 · 선 자세 제스처다. */
+export const OFFICE2D_WORK_COLS = 4;
+export const OFFICE2D_WORK_ROWS = Object.freeze({ sitBack: 0, sitFront: 1, gesture: 2 } as const);
+/** 앞 착석 행의 열: 기본 · 대화 · 웃음 · 커피. */
+export const OFFICE2D_SIT_FRONT_FRAMES = Object.freeze({ idle: 0, talk: 1, laugh: 2, coffee: 3 } as const);
+/** 제스처 행의 열: 손 흔들기 · 만세 · 엄지 척 · 생각. */
+export const OFFICE2D_GESTURE_FRAMES = Object.freeze({ wave: 0, cheer: 1, thumbs: 2, think: 3 } as const);
+export type Office2dGesture = keyof typeof OFFICE2D_GESTURE_FRAMES;
 
 export type Office2dSpriteFamily = "desk" | "board" | "table" | "storage" | "seat" | "appliance" | "plant" | "lamp" | "rug" | "wall" | "small";
 
@@ -98,6 +109,43 @@ export function office2dCharacterUrl(key: Office2dCharacterKey): string {
   return `${OFFICE2D_ASSET_ROOT}/characters/${key}.webp`;
 }
 
+export function office2dWorkSheetUrl(key: Office2dCharacterKey): string {
+  return `${OFFICE2D_ASSET_ROOT}/characters/work/${key}.webp`;
+}
+
+/** 이모트 → 몸짓. 몸짓이 없는 이모트(하트·커피 등)는 null이라 말풍선 이모지만 뜬다. */
+const EMOTE_GESTURE: Readonly<Record<string, Office2dGesture>> = Object.freeze({
+  wave: "wave", "raise-hand": "wave",
+  party: "cheer", cheer: "cheer", clap: "cheer", dance: "cheer", fire: "cheer",
+  "thumbs-up": "thumbs", check: "thumbs", heart: "thumbs",
+  think: "think", question: "think", idea: "think", eyes: "think",
+});
+
+export function office2dGestureForEmote(kind: string | null | undefined): Office2dGesture | null {
+  return kind ? EMOTE_GESTURE[kind] ?? null : null;
+}
+
+/**
+ * 캐릭터 이름·직함 문구 → 직군 시트. 더 구체적인 직군을 먼저 본다("편집 PD"는 편집, "스토리 PD"는 PD, "3D 아티스트"는 3D).
+ * 알 수 없으면 null(호출자가 해시로 고른다).
+ */
+const ROLE_KEYWORDS: readonly (readonly [Office2dCharacterKey, RegExp])[] = Object.freeze([
+  ["letterer", /식자|타이포|letter|typesett/iu],
+  ["modeler", /3d|모델러|모델링|model/iu],
+  ["editor", /편집|에디터|검수|리뷰|editor|review/iu],
+  ["pd", /\bpd\b|프로듀서|디렉터|매니저|기획|producer|director|manager/iu],
+  ["colorist", /채색|컬러|color/iu],
+  ["bgartist", /배경|background|아키비스트|archiv/iu],
+  ["writer", /콘티|스토리|시나리오|각본|story|script|writer/iu],
+  ["artist", /작가|작화|아티스트|일러스트|디자이너|선화|artist|illustrat|designer/iu],
+]);
+
+export function office2dCharacterForRoleText(text: string | null | undefined): Office2dCharacterKey | null {
+  if (!text) return null;
+  for (const [key, pattern] of ROLE_KEYWORDS) if (pattern.test(text)) return key;
+  return null;
+}
+
 export function isOffice2dSpriteKey(value: unknown): value is Office2dSpriteKey {
   return typeof value === "string" && (OFFICE2D_OBJECT_SPRITES as readonly string[]).includes(value);
 }
@@ -106,11 +154,11 @@ export function isOffice2dSpriteKey(value: unknown): value is Office2dSpriteKey 
 const NPC_CHARACTER: Readonly<Record<string, Office2dCharacterKey>> = Object.freeze({
   "npc-concierge": "writer",
   "npc-producer": "pd",
-  "npc-editor": "pd",
+  "npc-editor": "editor",
   "npc-artist": "artist",
-  "npc-archivist": "bgartist",
+  "npc-archivist": "letterer",
   "npc-cafe": "colorist",
-  "npc-host": "writer",
+  "npc-host": "modeler",
   "npc-security": "bgartist",
 });
 

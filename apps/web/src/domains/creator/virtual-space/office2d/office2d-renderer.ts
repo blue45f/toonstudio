@@ -4,11 +4,21 @@
  * 그리는 순서: ① 바닥 청크 캐시(재질·낮은 벽·러그·벽 그늘) → ② 접지 그림자 → ③ y 정렬 층(북쪽 벽·가구·의자·물리 소품·배우)
  * → ④ 상호작용 강조·목적지·안내선 → ⑤ 파티클 → ⑥ 조명(주야 + 모니터·스탠드 가산광 + 창문 빛줄기) → ⑦ 화면 좌표 오버레이(이름표·말풍선·이모트·키 힌트).
  * 바닥은 512px 청크 단위로 한 번만 굽고, 배율 구간이 바뀔 때만 다시 굽는다.
+ * 이름표 자리는 월드를 그리기 전에 정하고(office2d-overlay), 이름표와 겹치는 벽 명판은 흐리게 그린다.
+ * 배우는 보행 시트 또는 작업 자세 시트(착석 작업 루프·제스처, office2d-poses)에서 프레임을 고른다.
  */
+import type { StudioBuildPlacedFixture } from "../studio-virtual-space-build-mode-vitality";
+import type { StudioVirtualDecorationState } from "../studio-virtual-space-customization";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
+import type { StudioSpaceThemeKey } from "../studio-virtual-space-theme";
+import type { StudioTileEffectDefinition } from "../studio-virtual-space-tile-effects";
 import { office2dActorBob, office2dActorFrame, office2dActorOpacity, type Office2dActor } from "./office2d-actors";
+import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot } from "./office2d-actor-geometry";
 import type { Office2dCamera } from "./office2d-camera";
+import { office2dSignAlpha, type Office2dLabelBox } from "./office2d-label-layout";
+import { drawOffice2dKeycap, drawOffice2dOverlay, planOffice2dOverlay, type Office2dOverlayPlan } from "./office2d-overlay";
 import type { Office2dParticles } from "./office2d-particles";
+import { office2dPoseFrame } from "./office2d-poses";
 import {
   office2dRoundRect,
   paintOffice2dFallbackActor,
@@ -27,9 +37,17 @@ import {
   OFFICE2D_SPRITE_SPECS,
   office2dCharacterUrl,
   office2dObjectUrl,
+  office2dWorkSheetUrl,
   type Office2dImageSource,
   type Office2dSpriteKey,
 } from "./office2d-sprite-catalog";
+import { office2dOutsideColor, type Office2dStageExtensions } from "./office2d-stage-extensions";
+import {
+  paintOffice2dActorSpatialAura,
+  paintOffice2dFloorDetails,
+  paintOffice2dObjectLiveOverlay,
+  paintOffice2dWallDecorLive,
+} from "./office2d-world-details";
 
 export type Office2dDrawable = CanvasImageSource & Office2dImageSource;
 
@@ -77,13 +95,20 @@ export interface Office2dRenderFrame {
   readonly language: "ko" | "en";
   readonly particles: Office2dParticles;
   readonly ghost: boolean;
+  readonly atmosphere?: string | undefined;
+  readonly spaceTheme?: StudioSpaceThemeKey | null | undefined;
+  readonly tileEffects?: readonly StudioTileEffectDefinition[] | undefined;
+  readonly placedFixtures?: readonly StudioBuildPlacedFixture[] | undefined;
+  readonly decorations?: StudioVirtualDecorationState | undefined;
+  readonly activeObjectStates?: ReadonlyMap<string, { readonly stateKey: string; readonly changedAt: number }> | undefined;
+  readonly extensions?: Office2dStageExtensions | undefined;
 }
 
 const CHUNK = 512;
-const ACTOR_HEIGHT = 76;
-const FOOT_RATIO = 188 / 192;
+const ACTOR_HEIGHT = OFFICE2D_ACTOR_HEIGHT;
+const FOOT_RATIO = OFFICE2D_FOOT_RATIO;
 const OUTSIDE = "#2b2420";
-const FONT = "Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif";
+const SIGN_FONT = "700 13px Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif";
 
 interface SortEntry {
   readonly y: number;
@@ -112,24 +137,35 @@ export class Office2dRenderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = OUTSIDE;
+    ctx.fillStyle = office2dOutsideColor(frame.spaceTheme);
     ctx.fillRect(0, 0, viewport.width * pixelRatio, viewport.height * pixelRatio);
     const scale = camera.zoom * pixelRatio;
     ctx.setTransform(scale, 0, 0, scale, (viewport.width / 2 - camera.x * camera.zoom) * pixelRatio, (viewport.height / 2 - camera.y * camera.zoom) * pixelRatio);
     ctx.imageSmoothingEnabled = true;
     const visible = camera.visibleRect(96);
-    this.drawFloor(ctx, visible, scale);
+    // 이름표 자리를 먼저 정해(측정만) 겹치는 벽 명판을 흐리게 그릴 수 있게 한다.
+    const overlay = planOffice2dOverlay(ctx, frame);
+    this.drawFloor(ctx, visible, scale, frame.language);
+    frame.extensions?.drawFloorTileEffects(ctx, frame.tileEffects, visible, frame.time, frame.reducedMotion);
     this.drawPortals(ctx, frame);
     this.drawShadows(ctx, frame, visible);
-    this.drawSorted(ctx, frame, visible);
+    this.drawSorted(ctx, frame, visible, overlay.boxes);
+    frame.extensions?.drawPlacedFixturesAndDecor(
+      ctx,
+      frame.placedFixtures,
+      frame.decorations,
+      visible,
+      frame.language,
+      (sprite, x, y, width, tone) => this.drawObjectSprite(ctx, sprite, undefined, x, y, width, undefined, tone, false),
+    );
     this.drawGuides(ctx, frame);
     frame.particles.draw(ctx);
     this.drawLighting(ctx, frame, visible);
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    this.drawOverlay(ctx, frame);
+    this.drawOverlay(ctx, frame, overlay);
   }
 
-  private drawFloor(ctx: Office2dCanvas2D, visible: ReturnType<Office2dCamera["visibleRect"]>, scale: number): void {
+  private drawFloor(ctx: Office2dCanvas2D, visible: ReturnType<Office2dCamera["visibleRect"]>, scale: number, language: "ko" | "en" = "ko"): void {
     const bucket = Math.max(1, Math.min(2.5, Math.ceil(scale * 2) / 2));
     if (bucket !== this.chunkScale) {
       this.chunkScale = bucket;
@@ -141,13 +177,13 @@ export class Office2dRenderer {
     const y1 = Math.min(Math.ceil(this.scene.height / CHUNK) - 1, Math.floor(visible.maxY / CHUNK));
     for (let cy = y0; cy <= y1; cy += 1) {
       for (let cx = x0; cx <= x1; cx += 1) {
-        const key = `${cx}:${cy}`;
+        const key = `${cx}:${cy}:${language}`;
         let surface = this.chunks.get(key);
         if (surface === undefined) {
           surface = this.host.createSurface(Math.ceil(CHUNK * bucket), Math.ceil(CHUNK * bucket));
           if (surface) {
             surface.context.setTransform(bucket, 0, 0, bucket, -cx * CHUNK * bucket, -cy * CHUNK * bucket);
-            this.paintFloorArea(surface.context, cx * CHUNK, cy * CHUNK);
+            this.paintFloorArea(surface.context, cx * CHUNK, cy * CHUNK, language);
           }
           this.chunks.set(key, surface);
         }
@@ -157,14 +193,14 @@ export class Office2dRenderer {
           ctx.beginPath();
           ctx.rect(cx * CHUNK, cy * CHUNK, CHUNK, CHUNK);
           ctx.clip();
-          this.paintFloorArea(ctx, cx * CHUNK, cy * CHUNK);
+          this.paintFloorArea(ctx, cx * CHUNK, cy * CHUNK, language);
           ctx.restore();
         }
       }
     }
   }
 
-  private paintFloorArea(ctx: Office2dCanvas2D, originX: number, originY: number): void {
+  private paintFloorArea(ctx: Office2dCanvas2D, originX: number, originY: number, language: "ko" | "en" = "ko"): void {
     ctx.fillStyle = OUTSIDE;
     ctx.fillRect(originX, originY, CHUNK, CHUNK);
     const intersects = (rect: { x: number; y: number; width: number; height: number }) =>
@@ -176,6 +212,7 @@ export class Office2dRenderer {
       if (object.layer !== "floor") continue;
       this.drawObjectSprite(ctx, object.sprite, object.imageUrl, object.x, object.y, object.width, object.height, object.tone, object.flip);
     }
+    paintOffice2dFloorDetails(ctx, this.scene, originX, originY, CHUNK, language);
     for (const wall of this.scene.walls) {
       if (!intersects({ x: wall.x - 20, y: wall.y - 20, width: wall.width + 40, height: wall.height + 60 })) continue;
       paintOffice2dWallShade(ctx, wall);
@@ -223,6 +260,24 @@ export class Office2dRenderer {
     return size.height;
   }
 
+  private drawChairBackBase(ctx: Office2dCanvas2D, x: number, baseY: number, width: number): void {
+    const size = this.spriteSize("chair-back", undefined, width, undefined);
+    if (!size.image) return;
+    const cropTop = 0.56;
+    const cropRatio = 1 - cropTop;
+    ctx.drawImage(
+      size.image,
+      0,
+      size.image.height * cropTop,
+      size.image.width,
+      size.image.height * cropRatio,
+      x - width / 2,
+      baseY - size.height * cropRatio,
+      width,
+      size.height * cropRatio,
+    );
+  }
+
   private drawPortals(ctx: Office2dCanvas2D, frame: Office2dRenderFrame): void {
     for (const portal of this.scene.portals) {
       const pulse = frame.reducedMotion ? 0.5 : 0.5 + Math.sin(frame.time * 3) * 0.25;
@@ -262,28 +317,37 @@ export class Office2dRenderer {
     }
   }
 
-  private drawSorted(ctx: Office2dCanvas2D, frame: Office2dRenderFrame, visible: ReturnType<Office2dCamera["visibleRect"]>): void {
+  private drawSorted(ctx: Office2dCanvas2D, frame: Office2dRenderFrame, visible: ReturnType<Office2dCamera["visibleRect"]>, labelBoxes: readonly Office2dLabelBox[]): void {
     const entries: SortEntry[] = [];
     const self = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
     for (const wall of this.scene.walls) {
       if (wall.side !== "north" || wall.x > visible.maxX || wall.x + wall.width < visible.minX || wall.y > visible.maxY || wall.y + wall.height < visible.minY) continue;
-      entries.push({ y: wall.y + wall.height, draw: () => this.drawNorthWall(ctx, wall, frame.language) });
+      entries.push({ y: wall.y + wall.height, draw: () => this.drawNorthWall(ctx, wall, frame, labelBoxes) });
     }
+    const occupiedSeats = new Set(frame.actors.flatMap((actor) => (actor.seat ? [actor.seat.id] : [])));
     for (const object of this.scene.objects) {
       if (object.layer !== "y-sort" || !inside(object, visible, 240)) continue;
       entries.push({ y: object.y, draw: () => {
         const covering = self !== null && !self.seat && object.footprint !== null
           && self.y < object.y - 4 && Math.abs(self.x - object.x) < object.width / 2 && self.y > object.y - this.spriteSize(object.sprite, object.imageUrl, object.width, object.height).height;
         if (covering) ctx.globalAlpha = 0.55;
-        this.drawObjectSprite(ctx, object.sprite, object.imageUrl, object.x, object.y, object.width, object.height, object.tone, object.flip);
+        const drawnHeight = this.drawObjectSprite(ctx, object.sprite, object.imageUrl, object.x, object.y, object.width, object.height, object.tone, object.flip);
+        paintOffice2dObjectLiveOverlay(ctx, object, drawnHeight, frame, occupiedSeats);
         ctx.globalAlpha = 1;
       } });
     }
     for (const seat of this.scene.seats) {
       if (!seat.chair || !inside(seat.anchor, visible)) continue;
       const chair = seat.chair;
-      const y = chair === "chair-back" ? seat.anchor.y + 6 : seat.anchor.y - 3;
-      entries.push({ y, draw: () => { this.drawObjectSprite(ctx, chair, undefined, seat.anchor.x, y + 4, 40, undefined, "#3b3f46", false); } });
+      const baseY = chair === "chair-back" ? seat.anchor.y + 10 : seat.anchor.y + 1;
+      if (chair === "chair-back" && occupiedSeats.has(seat.id)) {
+        // 착석 중에는 등받이·팔걸이는 캐릭터 뒤에 두고, 좌판 하단·기둥·바퀴(하단 44%)만 엉덩이 앞에 그려 자연스럽게 감싼다.
+        entries.push({ y: seat.anchor.y - 2, draw: () => { this.drawObjectSprite(ctx, chair, undefined, seat.anchor.x, baseY, 40, undefined, "#3b3f46", false); } });
+        entries.push({ y: seat.anchor.y + 2, draw: () => { this.drawChairBackBase(ctx, seat.anchor.x, baseY, 40); } });
+      } else {
+        const y = chair === "chair-back" ? seat.anchor.y + 6 : seat.anchor.y - 3;
+        entries.push({ y, draw: () => { this.drawObjectSprite(ctx, chair, undefined, seat.anchor.x, baseY, 40, undefined, "#3b3f46", false); } });
+      }
     }
     for (const prop of frame.props) {
       if (!inside(prop, visible)) continue;
@@ -291,6 +355,7 @@ export class Office2dRenderer {
     }
     for (const actor of frame.actors) {
       if (!inside(actor, visible, 120)) continue;
+      // 앉은 사람은 의자 기준으로 정렬한다(뒤 착석은 의자 등받이가 앞을 가리고, 앞 착석은 의자 위에 보인다).
       const sortY = actor.seat ? actor.seat.anchor.y : actor.y;
       entries.push({ y: sortY, draw: () => this.drawActor(ctx, actor, frame) });
     }
@@ -298,7 +363,8 @@ export class Office2dRenderer {
     for (const entry of entries) entry.draw();
   }
 
-  private drawNorthWall(ctx: Office2dCanvas2D, wall: Office2dWall, language: "ko" | "en"): void {
+  private drawNorthWall(ctx: Office2dCanvas2D, wall: Office2dWall, frame: Office2dRenderFrame, labelBoxes: readonly Office2dLabelBox[]): void {
+    const language = frame.language;
     paintOffice2dNorthWall(ctx, wall);
     const faceTop = wall.y + 12;
     const faceBottom = wall.y + wall.height - 8;
@@ -310,11 +376,19 @@ export class Office2dRenderer {
       const cy = decor.sprite === "wall-clock" || decor.sprite === "neon-balloon" ? faceTop + 8 + height / 2 : (faceTop + faceBottom) / 2;
       if (image) ctx.drawImage(image, decor.x - width / 2, cy - height / 2, width, height);
       else paintOffice2dFallbackObject(ctx, decor.x, cy + height / 2, width, height, OFFICE2D_SPRITE_SPECS[decor.sprite].tone);
+      paintOffice2dWallDecorLive(ctx, decor, decor.x, cy, width, height, frame);
     }
     if (wall.signKo && wall.signX !== undefined) {
       const step = this.roomStep.get(wall.roomId);
       const label = language === "en" ? wall.signEn ?? wall.signKo : wall.signKo;
-      paintOffice2dWallSign(ctx, wall.signX, faceTop + 6, step === null || step === undefined ? label : `${step + 1}. ${label}`);
+      const text = step === null || step === undefined ? label : `${step + 1}. ${label}`;
+      ctx.font = SIGN_FONT;
+      const signWidth = Math.min(220, ctx.measureText(text).width + 26);
+      const topLeft = frame.camera.worldToScreen({ x: wall.signX - signWidth / 2, y: faceTop + 6 });
+      const signBox = { x: topLeft.x, y: topLeft.y, width: signWidth * frame.camera.zoom, height: 24 * frame.camera.zoom };
+      ctx.globalAlpha = office2dSignAlpha(signBox, labelBoxes);
+      paintOffice2dWallSign(ctx, wall.signX, faceTop + 6, text);
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -363,15 +437,20 @@ export class Office2dRenderer {
   private drawActor(ctx: Office2dCanvas2D, actor: Office2dActor, frame: Office2dRenderFrame): void {
     const opacity = office2dActorOpacity(actor, frame.now) * (actor.id === frame.selfId && frame.ghost ? 0.5 : 1);
     if (opacity <= 0.01) return;
-    const image = this.host.image(office2dCharacterUrl(actor.character));
-    const { row, col } = office2dActorFrame(actor);
+    const pose = office2dPoseFrame(actor, frame.time, frame.now, frame.reducedMotion);
+    const workImage = pose.sheet === "work" ? this.host.image(office2dWorkSheetUrl(actor.character)) : null;
+    const walkImage = workImage ? null : this.host.image(office2dCharacterUrl(actor.character));
+    // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
+    const walkFrame = pose.sheet === "walk" ? pose : office2dActorFrame(actor);
     const bob = office2dActorBob(actor, frame.time, frame.reducedMotion);
     const seated = actor.seat !== null;
-    const footX = seated && actor.seat ? actor.seat.attach.x : actor.x;
-    const footY = seated && actor.seat ? actor.seat.attach.y + 16 : actor.y + 3;
-    const height = ACTOR_HEIGHT * (seated ? 0.9 : 1) * bob.scaleY;
+    const foot = office2dActorFoot(actor);
+    const footX = foot.x;
+    const footY = seated ? foot.y : actor.y + 3;
+    const height = ACTOR_HEIGHT * bob.scaleY;
     const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX);
     ctx.globalAlpha = opacity;
+    paintOffice2dActorSpatialAura(ctx, actor, frame, frame.actors);
     if (actor.id === frame.selfId && !seated) {
       ctx.strokeStyle = actor.accent;
       ctx.lineWidth = 2;
@@ -385,24 +464,40 @@ export class Office2dRenderer {
       ctx.strokeStyle = "rgba(167, 139, 250, 0.85)";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(actor.x, actor.y + 1, 18, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(footX, footY - 2, 18, 7, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
     const anchorY = footY + bob.offsetY;
-    if (image) {
-      const sx = col * OFFICE2D_CHARACTER_CELL.width;
-      const sy = row * OFFICE2D_CHARACTER_CELL.height;
-      const drawHeight = seated ? height * 0.92 : height;
+    const cellW = OFFICE2D_CHARACTER_CELL.width;
+    const cellH = OFFICE2D_CHARACTER_CELL.height;
+    if (workImage) {
+      // 뒤를 보고 의자에 앉은 자세는 좌판 아래로 발이 삐져나오지 않도록 엉덩이 하단(셀 높이의 80%)까지만 그린다.
+      const workCrop = seated && actor.seat?.facing === "up" ? 0.8 : 1;
+      ctx.drawImage(
+        workImage,
+        pose.col * cellW,
+        pose.row * cellH,
+        cellW,
+        cellH * workCrop,
+        footX - width / 2,
+        anchorY - height * FOOT_RATIO,
+        width,
+        height * workCrop,
+      );
+    } else if (walkImage) {
+      const sx = walkFrame.col * cellW;
+      const sy = walkFrame.row * cellH;
+      // 보행 시트로 앉은 모습을 대신할 때는 다리 아랫부분을 잘라 의자에 앉은 듯 보이게 한다(예전 방식).
+      const crop = seated ? 0.92 : 1;
+      const drawHeight = height * (seated ? 0.9 * crop : 1);
       if (!seated && Math.abs(bob.tiltRad) > 1e-4) {
         ctx.save();
         ctx.translate(footX, anchorY);
         ctx.rotate(bob.tiltRad);
-        ctx.drawImage(image, sx, sy, OFFICE2D_CHARACTER_CELL.width, OFFICE2D_CHARACTER_CELL.height,
-          -width / 2, -height * FOOT_RATIO, width, drawHeight);
+        ctx.drawImage(walkImage, sx, sy, cellW, cellH, -width / 2, -height * FOOT_RATIO, width, height);
         ctx.restore();
       } else {
-        ctx.drawImage(image, sx, sy, OFFICE2D_CHARACTER_CELL.width, OFFICE2D_CHARACTER_CELL.height * (seated ? 0.92 : 1),
-          footX - width / 2, anchorY - height * FOOT_RATIO, width, drawHeight);
+        ctx.drawImage(walkImage, sx, sy, cellW, cellH * crop, footX - width / 2, anchorY - height * FOOT_RATIO * (seated ? 0.9 : 1), width, drawHeight);
       }
     } else {
       paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, actor.facing, actor.stride / 10);
@@ -482,38 +577,16 @@ export class Office2dRenderer {
     ctx.globalCompositeOperation = "source-over";
   }
 
-  private drawOverlay(ctx: Office2dCanvas2D, frame: Office2dRenderFrame): void {
-    const { camera } = frame;
-    const viewport = camera.getViewport();
+  private drawOverlay(ctx: Office2dCanvas2D, frame: Office2dRenderFrame, overlay: Office2dOverlayPlan): void {
     if (frame.nearbyInteractionId) {
       const object = this.interactionObjects.get(frame.nearbyInteractionId);
       if (object) {
         const height = this.spriteSize(object.sprite, object.imageUrl, object.width, object.height).height;
-        const point = camera.worldToScreen({ x: object.x, y: object.y - height - 6 });
-        drawKeycap(ctx, point.x, point.y, "E");
+        const point = frame.camera.worldToScreen({ x: object.x, y: object.y - height - 6 });
+        drawOffice2dKeycap(ctx, point.x, point.y, "E");
       }
     }
-    for (const actor of frame.actors) {
-      const opacity = office2dActorOpacity(actor, frame.now);
-      if (opacity < 0.05) continue;
-      const footY = actor.seat ? actor.seat.attach.y + 16 : actor.y;
-      const footX = actor.seat ? actor.seat.attach.x : actor.x;
-      const head = camera.worldToScreen({ x: footX, y: footY - ACTOR_HEIGHT * (actor.seat ? 0.84 : 0.98) });
-      if (head.x < -80 || head.x > viewport.width + 80 || head.y < -60 || head.y > viewport.height + 120) continue;
-      ctx.globalAlpha = opacity;
-      const plateBottom = drawNamePlate(ctx, head.x, head.y - 4, actor, actor.id === frame.selfId);
-      let top = plateBottom;
-      if (actor.bubble || actor.typing) top = drawBubble(ctx, head.x, top - 6, actor.bubble ?? "", !actor.bubble && actor.typing, frame.time);
-      if (actor.emote && actor.emote.until > frame.now) {
-        const remaining = (actor.emote.until - frame.now) / 2600;
-        const pop = frame.reducedMotion ? 1 : Math.min(1, (1 - remaining) * 6) * (1 + Math.sin(frame.time * 9) * 0.04);
-        ctx.font = `${Math.round(26 * pop)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", ${FONT}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.fillText(actor.emote.glyph, head.x, top - 4);
-      }
-      ctx.globalAlpha = 1;
-    }
+    drawOffice2dOverlay(ctx, overlay, frame);
   }
 }
 
@@ -525,104 +598,4 @@ function withAlpha(hex: string, alpha: number): string {
   const value = Number.parseInt(hex.replace("#", ""), 16);
   if (!Number.isFinite(value) || hex.length !== 7) return `rgba(255, 255, 255, ${alpha})`;
   return `rgba(${(value >> 16) & 0xff}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${Math.max(0, alpha)})`;
-}
-
-function drawKeycap(ctx: Office2dCanvas2D, x: number, y: number, key: string): void {
-  office2dRoundRect(ctx, x - 13, y - 26, 26, 24, 6);
-  ctx.fillStyle = "rgba(255, 248, 232, 0.96)";
-  ctx.fill();
-  ctx.strokeStyle = "#7a5a3c";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.fillStyle = "#4a3426";
-  ctx.font = `800 13px ${FONT}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(key, x, y - 13.5);
-}
-
-/** 이름표를 그리고 윗변 y를 돌려준다. */
-function drawNamePlate(ctx: Office2dCanvas2D, x: number, bottom: number, actor: Office2dActor, self: boolean): number {
-  ctx.font = `700 12px ${FONT}`;
-  const name = actor.name.length > 18 ? `${actor.name.slice(0, 17)}…` : actor.name;
-  const width = Math.ceil(ctx.measureText(name).width) + 26;
-  const statusHeight = actor.status ? 14 : 0;
-  const height = 20 + statusHeight;
-  const top = bottom - height;
-  office2dRoundRect(ctx, x - width / 2, top, width, height, 10);
-  ctx.fillStyle = actor.kind === "npc" ? "rgba(52, 40, 78, 0.86)" : self ? "rgba(40, 30, 24, 0.9)" : "rgba(31, 26, 23, 0.82)";
-  ctx.fill();
-  ctx.fillStyle = actor.kind === "npc" ? "#c4b5fd" : actor.accent;
-  ctx.beginPath();
-  ctx.arc(x - width / 2 + 10, top + 10, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fffaf0";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText(name, x - width / 2 + 18, top + 10.5);
-  if (actor.status) {
-    ctx.font = `600 10px ${FONT}`;
-    ctx.fillStyle = "rgba(255, 238, 210, 0.85)";
-    ctx.textAlign = "center";
-    ctx.fillText(actor.status.length > 16 ? `${actor.status.slice(0, 15)}…` : actor.status, x, top + 26);
-  }
-  return top;
-}
-
-function wrapText(ctx: Office2dCanvas2D, text: string, maxWidth: number, maxLines: number): string[] {
-  const lines: string[] = [];
-  let line = "";
-  for (const char of [...text]) {
-    const candidate = line + char;
-    if (ctx.measureText(candidate).width > maxWidth && line) {
-      lines.push(line);
-      line = char.trimStart();
-      if (lines.length === maxLines) break;
-    } else {
-      line = candidate;
-    }
-  }
-  if (lines.length < maxLines && line) lines.push(line);
-  if (lines.length === maxLines && [...lines.join("")].length < [...text].length) {
-    const last = lines[maxLines - 1] ?? "";
-    lines[maxLines - 1] = `${last.slice(0, Math.max(0, last.length - 1))}…`;
-  }
-  return lines;
-}
-
-/** 말풍선을 그리고 윗변 y를 돌려준다. */
-function drawBubble(ctx: Office2dCanvas2D, x: number, bottom: number, text: string, typing: boolean, time: number): number {
-  ctx.font = `600 12px ${FONT}`;
-  const lines = typing ? ["   "] : wrapText(ctx, text, 168, 3);
-  const width = Math.max(44, Math.min(184, Math.max(...lines.map((line) => ctx.measureText(line).width)) + 20));
-  const height = lines.length * 16 + 12;
-  const top = bottom - height - 6;
-  office2dRoundRect(ctx, x - width / 2, top, width, height, 10);
-  ctx.fillStyle = "rgba(255, 253, 248, 0.97)";
-  ctx.fill();
-  ctx.strokeStyle = "rgba(90, 66, 48, 0.55)";
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x - 6, top + height - 0.5);
-  ctx.lineTo(x, top + height + 6);
-  ctx.lineTo(x + 6, top + height - 0.5);
-  ctx.closePath();
-  ctx.fillStyle = "rgba(255, 253, 248, 0.97)";
-  ctx.fill();
-  ctx.fillStyle = "#3d2e24";
-  if (typing) {
-    for (let index = 0; index < 3; index += 1) {
-      ctx.globalAlpha = 0.35 + 0.65 * Math.max(0, Math.sin(time * 6 - index * 0.8));
-      ctx.beginPath();
-      ctx.arc(x - 9 + index * 9, top + height / 2, 2.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    return top;
-  }
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  lines.forEach((line, index) => ctx.fillText(line, x, top + 14 + index * 16));
-  return top;
 }

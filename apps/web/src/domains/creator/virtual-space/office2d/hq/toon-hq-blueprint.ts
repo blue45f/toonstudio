@@ -51,6 +51,9 @@ export interface ToonHqRoom {
   /** 공정 바에 쓰는 짧은 이름(2~3글자). */
   readonly pipelineShortKo?: string;
   readonly pipelineShortEn?: string;
+  /** 미니맵처럼 좁은 곳에 쓰는 짧은 이름. 없으면 공정 약칭을 쓴다. */
+  readonly mapShortKo?: string;
+  readonly mapShortEn?: string;
   readonly action?: StudioVirtualSpaceInteractionAction;
   readonly privacy: ToonHqPrivacy;
   readonly zoneType?: StudioOfficeZoneType;
@@ -142,7 +145,7 @@ function room(definition: ToonHqRoom): ToonHqRoom {
 }
 
 export const TOON_HQ_ROOMS: readonly ToonHqRoom[] = Object.freeze([
-  room({ id: "hq-story-room", labelKo: "콘티·시나리오 룸", labelEn: "Story & Storyboard Room", row: "top",
+  room({ id: "hq-story-room", labelKo: "콘티·시나리오 룸", labelEn: "Story & Storyboard Room", mapShortKo: "콘티룸", mapShortEn: "Story", row: "top",
     descriptionKo: "기획안과 시나리오를 다듬고 콘티 보드로 회차 흐름을 잡는 방이에요.",
     descriptionEn: "Shape scripts and pin the episode flow on the storyboard wall.",
     x: T, y: T, width: 12 * T, height: 10 * T, floor: "walnut", pipelineStep: 0, pipelineKo: "시나리오·콘티", pipelineEn: "Script & boards", pipelineShortKo: "콘티", pipelineShortEn: "Boards",
@@ -170,13 +173,13 @@ export const TOON_HQ_ROOMS: readonly ToonHqRoom[] = Object.freeze([
     descriptionKo: "작업실과 검수실을 잇는 중앙 복도예요.", descriptionEn: "The central corridor between the making rooms and the review rooms.",
     x: T, y: 11 * T, width: 48 * T, height: 3 * T, floor: "terrazzo", pipelineStep: null,
     privacy: "public", doors: {}, wallTone: "#ece6dc", ambient: "#fff6e8", spawn: point(25 * T, 12.5 * T) }),
-  room({ id: "hq-reference-library", labelKo: "자료실", labelEn: "Reference Library", row: "middle",
+  room({ id: "hq-reference-library", labelKo: "자료실", labelEn: "Reference Library", mapShortKo: "자료실", mapShortEn: "Library", row: "middle",
     descriptionKo: "작화 자료와 설정집을 찾는 조용한 자료실이에요. 들어오면 마이크가 꺼져요.",
     descriptionEn: "A quiet library of references and setting bibles. Your mic mutes when you enter.",
     x: T, y: 14 * T, width: 10 * T, height: 8 * T, floor: "cork", pipelineStep: null,
     action: "assets", privacy: "silent", zoneType: "library", workMode: "focus-desk", doors: { north: 6 * T, south: 6 * T }, wallTone: "#e8dcc6", ambient: "#ffe2b3",
     spawn: point(6 * T, 20 * T) }),
-  room({ id: "hq-focus-booths", labelKo: "집중 부스", labelEn: "Focus Booths", row: "middle",
+  room({ id: "hq-focus-booths", labelKo: "집중 부스", labelEn: "Focus Booths", mapShortKo: "부스", mapShortEn: "Focus", row: "middle",
     descriptionKo: "마감 직전 몰입이 필요할 때 쓰는 1인 부스예요. 방해 금지 상태가 돼요.",
     descriptionEn: "Solo pods for deadline focus. You switch to do-not-disturb inside.",
     x: 11 * T, y: 14 * T, width: 8 * T, height: 8 * T, floor: "carpet-sage", pipelineStep: null,
@@ -188,13 +191,13 @@ export const TOON_HQ_ROOMS: readonly ToonHqRoom[] = Object.freeze([
     x: 19 * T, y: 14 * T, width: 9 * T, height: 8 * T, floor: "oak", pipelineStep: 4, pipelineKo: "식자", pipelineEn: "Lettering", pipelineShortKo: "식자", pipelineShortEn: "Letter",
     action: "comic", privacy: "public", zoneType: "studio", workMode: "focus-desk", doors: { north: 23.5 * T, south: 23.5 * T }, wallTone: "#f1e7d8", ambient: "#fff0d0",
     spawn: point(23.5 * T, 21 * T) }),
-  room({ id: "hq-review-room", labelKo: "PD 리뷰룸", labelEn: "PD Review Room", row: "middle",
+  room({ id: "hq-review-room", labelKo: "PD 리뷰룸", labelEn: "PD Review Room", mapShortKo: "리뷰룸", mapShortEn: "Review", row: "middle",
     descriptionKo: "큰 화면으로 원고를 함께 보며 수정 지시를 남기는 검수실이에요.",
     descriptionEn: "Review pages together on the big screen and leave revision notes.",
     x: 28 * T, y: 14 * T, width: 12 * T, height: 8 * T, floor: "carpet-navy", pipelineStep: 5, pipelineKo: "PD 검수", pipelineEn: "PD review", pipelineShortKo: "검수", pipelineShortEn: "Review",
     action: "review", privacy: "private", zoneType: "meeting-room", workMode: "conference", doors: { north: 30 * T, south: 30 * T }, wallTone: "#d9dde8", ambient: "#cfe0ff",
     spawn: point(30 * T, 20.8 * T) }),
-  room({ id: "hq-war-room", labelKo: "마감 워룸", labelEn: "Deadline War Room", row: "middle",
+  room({ id: "hq-war-room", labelKo: "마감 워룸", labelEn: "Deadline War Room", mapShortKo: "워룸", mapShortEn: "War room", row: "middle",
     descriptionKo: "회차별 마감과 진행 상황을 칸반 보드로 확인하는 방이에요.",
     descriptionEn: "Track every episode's deadline and status on the kanban boards.",
     x: 40 * T, y: 14 * T, width: 9 * T, height: 8 * T, floor: "concrete", pipelineStep: null,
@@ -204,19 +207,19 @@ export const TOON_HQ_ROOMS: readonly ToonHqRoom[] = Object.freeze([
     descriptionKo: "로비·라운지·회의실로 이어지는 복도예요.", descriptionEn: "The corridor to the lobby, lounge and meeting rooms.",
     x: T, y: 22 * T, width: 48 * T, height: 2 * T, floor: "terrazzo", pipelineStep: null,
     privacy: "public", doors: {}, wallTone: "#ece6dc", ambient: "#fff6e8", spawn: point(25 * T, 23 * T) }),
-  room({ id: "hq-lobby", labelKo: "로비·리셉션", labelEn: "Lobby & Reception", row: "bottom",
+  room({ id: "hq-lobby", labelKo: "로비·리셉션", labelEn: "Lobby & Reception", mapShortKo: "로비", mapShortEn: "Lobby", row: "bottom",
     descriptionKo: "출근하면 처음 도착하는 곳이에요. 오늘의 공정과 팀원 위치를 확인하세요.",
     descriptionEn: "Where you arrive. Check today's pipeline and where your teammates are.",
     x: T, y: 24 * T, width: 12 * T, height: 9 * T, floor: "tile-cream", pipelineStep: null,
     action: "community", privacy: "public", zoneType: "reception", workMode: "lounge", doors: { north: 7 * T }, wallTone: "#efe4d2", ambient: "#fff0d8",
     spawn: point(7 * T, 1470) }),
-  room({ id: "hq-lounge", labelKo: "탕비 라운지", labelEn: "Pantry Lounge", row: "bottom",
+  room({ id: "hq-lounge", labelKo: "탕비 라운지", labelEn: "Pantry Lounge", mapShortKo: "라운지", mapShortEn: "Lounge", row: "bottom",
     descriptionKo: "커피 한 잔과 짧은 대화로 머리를 식히는 라운지예요. 짐볼은 밀어서 굴릴 수 있어요.",
     descriptionEn: "Coffee, quick chats and a bouncy ball you can push around.",
     x: 13 * T, y: 24 * T, width: 15 * T, height: 9 * T, floor: "herringbone", pipelineStep: null,
     action: "community", privacy: "public", zoneType: "lounge", workMode: "lounge", doors: { north: 20.5 * T }, wallTone: "#f3e3d3", ambient: "#ffd8b0",
     spawn: point(20.5 * T, 1300) }),
-  room({ id: "hq-meeting-room", labelKo: "기획 회의실", labelEn: "Planning Room", row: "bottom",
+  room({ id: "hq-meeting-room", labelKo: "기획 회의실", labelEn: "Planning Room", mapShortKo: "회의실", mapShortEn: "Planning", row: "bottom",
     descriptionKo: "새 작품 기획과 주간 회의를 하는 비공개 회의실이에요.",
     descriptionEn: "A private room for new-series planning and weekly syncs.",
     x: 28 * T, y: 24 * T, width: 12 * T, height: 9 * T, floor: "carpet-navy", pipelineStep: null,
@@ -229,6 +232,17 @@ export const TOON_HQ_ROOMS: readonly ToonHqRoom[] = Object.freeze([
     action: "assistant", privacy: "public", zoneType: "studio", workMode: "focus-desk", doors: { north: 44.5 * T }, wallTone: "#ece2d4", ambient: "#fff0dc",
     spawn: point(44.5 * T, 1300) }),
 ]);
+
+const ROOM_BY_ID: ReadonlyMap<string, ToonHqRoom> = new Map(TOON_HQ_ROOMS.map((entry) => [entry.id, entry] as const));
+
+/** 미니맵·좁은 칩용 짧은 방 이름. 본사 방이 아니거나 짧은 이름이 없으면 null. */
+export function toonHqRoomShortLabel(roomId: string): { readonly ko: string; readonly en: string } | null {
+  const entry = ROOM_BY_ID.get(roomId);
+  if (!entry) return null;
+  const ko = entry.mapShortKo ?? entry.pipelineShortKo;
+  const en = entry.mapShortEn ?? entry.pipelineShortEn;
+  return ko && en ? { ko, en } : null;
+}
 
 function furniture(definition: ToonHqFurniture): ToonHqFurniture {
   return Object.freeze(definition);
@@ -270,6 +284,7 @@ export const TOON_HQ_FURNITURE: readonly ToonHqFurniture[] = Object.freeze([
     footprint: { width: 140, height: 26 }, interaction: { action: "comic", labelKo: "콘티 보드", labelEn: "Storyboard wall", radius: 84 } }),
   furniture({ id: "hq-story-table", sprite: "table-round", roomId: "hq-story-room", x: 300, y: 430, width: 124,
     footprint: { width: 108, height: 34 }, interaction: { action: "story", labelKo: "시나리오 회의 테이블", labelEn: "Script table", radius: 86 } }),
+  furniture({ id: "hq-story-rug", sprite: "rug-round", roomId: "hq-story-room", x: 300, y: 446, width: 168, depth: "floor" }),
   furniture({ id: "hq-story-plant", sprite: "plant-monstera", roomId: "hq-story-room", x: 88, y: 196, width: 60, footprint: { width: 36, height: 18 } }),
   furniture({ id: "hq-story-lamp", sprite: "floor-lamp", roomId: "hq-story-room", x: 590, y: 470, width: 40, footprint: { width: 20, height: 12 },
     glow: { color: WARM_GLOW, radius: 120, offsetY: -80 } }),
@@ -279,6 +294,8 @@ export const TOON_HQ_FURNITURE: readonly ToonHqFurniture[] = Object.freeze([
     action: "canvas", labelKo: "작화 데스크 A", labelEn: "Ink desk A" }),
   ...deskRow({ prefix: "hq-ink-desk-b", roomId: "hq-ink-bay", sprites: ["desk-inking", "desk-artist"], xs: [708, 852, 1116, 1260], y: 440,
     action: "canvas", labelKo: "작화 데스크 B", labelEn: "Ink desk B" }),
+  furniture({ id: "hq-ink-rug", sprite: "rug-rect", roomId: "hq-ink-bay", x: 984, y: 366, width: 196, depth: "floor" }),
+  furniture({ id: "hq-ink-partition", sprite: "partition", roomId: "hq-ink-bay", x: 984, y: 248, width: 44, footprint: { width: 30, height: 14 } }),
   furniture({ id: "hq-ink-plant", sprite: "plant-olive", roomId: "hq-ink-bay", x: 984, y: 190, width: 52, footprint: { width: 30, height: 16 } }),
 
   // 채색 랩
@@ -286,6 +303,7 @@ export const TOON_HQ_FURNITURE: readonly ToonHqFurniture[] = Object.freeze([
     action: "canvas", labelKo: "채색 데스크 A", labelEn: "Color desk A", glow: "#c9b6ff" }),
   ...deskRow({ prefix: "hq-color-desk-b", roomId: "hq-color-lab", sprites: ["desk-colorist"], xs: [1470, 1700], y: 440,
     action: "canvas", labelKo: "채색 데스크 B", labelEn: "Color desk B", glow: "#ffc2d9" }),
+  furniture({ id: "hq-color-rug", sprite: "rug-round", roomId: "hq-color-lab", x: 1585, y: 368, width: 176, depth: "floor" }),
   furniture({ id: "hq-color-plant", sprite: "plant-monstera", roomId: "hq-color-lab", x: 1585, y: 190, width: 56, footprint: { width: 34, height: 16 } }),
 
   // 배경·3D 랩
@@ -333,6 +351,7 @@ export const TOON_HQ_FURNITURE: readonly ToonHqFurniture[] = Object.freeze([
     glow: { color: "#a9c8ff", radius: 150, offsetY: -70 } }),
   furniture({ id: "hq-review-table", sprite: "table-conference", roomId: "hq-review-room", x: 1660, y: 940, width: 230,
     footprint: { width: 216, height: 36 } }),
+  furniture({ id: "hq-review-rug", sprite: "rug-rect", roomId: "hq-review-room", x: 1660, y: 960, width: 254, depth: "floor" }),
   furniture({ id: "hq-review-lamp", sprite: "floor-lamp", roomId: "hq-review-room", x: 1390, y: 800, width: 40, footprint: { width: 20, height: 12 },
     glow: { color: WARM_GLOW, radius: 110, offsetY: -80 } }),
   furniture({ id: "hq-review-plant", sprite: "plant-monstera", roomId: "hq-review-room", x: 1875, y: 800, width: 56, footprint: { width: 34, height: 16 } }),
@@ -373,6 +392,7 @@ export const TOON_HQ_FURNITURE: readonly ToonHqFurniture[] = Object.freeze([
     footprint: { width: 140, height: 24 }, interaction: { action: "live", labelKo: "기획 화이트보드", labelEn: "Planning whiteboard", radius: 80 } }),
   furniture({ id: "hq-meeting-table", sprite: "table-conference", roomId: "hq-meeting-room", x: 1660, y: 1400, width: 260,
     footprint: { width: 244, height: 36 }, interaction: { action: "live", labelKo: "회의 테이블", labelEn: "Meeting table", radius: 120 } }),
+  furniture({ id: "hq-meeting-rug", sprite: "rug-rect", roomId: "hq-meeting-room", x: 1660, y: 1420, width: 276, depth: "floor" }),
   furniture({ id: "hq-meeting-plant", sprite: "plant-monstera", roomId: "hq-meeting-room", x: 1878, y: 1540, width: 56, footprint: { width: 34, height: 16 } }),
 
   // 연재 데스크
@@ -398,14 +418,20 @@ export const TOON_HQ_WALL_DECOR: readonly ToonHqWallDecor[] = Object.freeze([
   ...[720, 900, 1070, 1250].map((x, index) => ({ id: `hq-ink-window-${index}`, sprite: "window" as const, wallRoomId: "hq-ink-bay", x, width: 86 })),
   ...[1460, 1710].map((x, index) => ({ id: `hq-color-window-${index}`, sprite: "window" as const, wallRoomId: "hq-color-lab", x, width: 86 })),
   ...[1940, 2240].map((x, index) => ({ id: `hq-bg3d-window-${index}`, sprite: "window" as const, wallRoomId: "hq-bg3d-lab", x, width: 86 })),
+  { id: "hq-story-pinboard", sprite: "pinboard", wallRoomId: "hq-story-room", x: 300, width: 58 },
   { id: "hq-ink-clock", sprite: "wall-clock", wallRoomId: "hq-ink-bay", x: 984, width: 34 },
+  { id: "hq-library-pinboard", sprite: "pinboard", wallRoomId: "hq-reference-library", x: 432, width: 58 },
+  { id: "hq-focus-clock", sprite: "wall-clock", wallRoomId: "hq-focus-booths", x: 820, width: 32 },
   { id: "hq-lettering-neon", sprite: "neon-balloon", wallRoomId: "hq-lettering-desk", x: 1010, width: 70 },
   { id: "hq-review-poster", sprite: "poster", wallRoomId: "hq-review-room", x: 1840, width: 52 },
   { id: "hq-war-clock", sprite: "wall-clock", wallRoomId: "hq-war-room", x: 2340 - 40, width: 32 },
   { id: "hq-lobby-poster-west", sprite: "poster", wallRoomId: "hq-lobby", x: 150, width: 56 },
+  { id: "hq-lobby-tv", sprite: "wall-tv", wallRoomId: "hq-lobby", x: 435, width: 64 },
   { id: "hq-lobby-poster-east", sprite: "poster", wallRoomId: "hq-lobby", x: 520, width: 56 },
   { id: "hq-lounge-neon", sprite: "neon-balloon", wallRoomId: "hq-lounge", x: 1120, width: 76 },
+  { id: "hq-meeting-tv", sprite: "wall-tv", wallRoomId: "hq-meeting-room", x: 1660, width: 72 },
   { id: "hq-meeting-clock", sprite: "wall-clock", wallRoomId: "hq-meeting-room", x: 1860, width: 32 },
+  { id: "hq-publish-tv", sprite: "wall-tv", wallRoomId: "hq-publish-desk", x: 2228, width: 58 },
   { id: "hq-publish-poster", sprite: "poster", wallRoomId: "hq-publish-desk", x: 2290, width: 52 },
 ]);
 

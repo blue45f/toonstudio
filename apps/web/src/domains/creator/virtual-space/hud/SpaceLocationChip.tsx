@@ -5,6 +5,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioAtelierPulseSnapshot } from "../studio-virtual-space-atelier-pulse";
 import { studioVirtualCampusZoneMeta } from "../studio-virtual-space-campus-world";
+import { SpaceServiceStatusSlot } from "./SpaceServiceStatusSlot";
 import { SPACE_ZONE_FALLBACK_ICON, SPACE_ZONE_FALLBACK_TONE, SPACE_ZONE_ICONS, SPACE_ZONE_TONE_TOKENS } from "./space-zone-visuals";
 import type { SpaceConnectionStatus } from "./use-space-connection-status";
 
@@ -17,7 +18,7 @@ export interface SpaceLocationZone {
 
 /**
  * 좌상단 위치 칩: 나가기 · 공간명 · 현재 구역 · 프라이빗 배지 · (프로젝트) 연결 상태 · 아틀리에 펄스 공명 배지 · 3D/2D 엔진 전환 · 퀵 파인더.
- * 모바일에서는 같은 정보를 한 줄 알약으로 줄여 보여 준다.
+ * 모바일에서는 같은 정보를 한 줄 알약으로 줄여 보여 준다. 칩 아래에는 서비스 상태 자리(SpaceServiceStatusSlot)가 붙는다.
  */
 export const SpaceLocationChip = memo(function SpaceLocationChip({
   spaceName,
@@ -47,7 +48,8 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
   const Icon = meta ? SPACE_ZONE_ICONS[meta.icon] : SPACE_ZONE_FALLBACK_ICON;
   const tone = meta ? SPACE_ZONE_TONE_TOKENS[meta.tone] : SPACE_ZONE_FALLBACK_TONE;
   const zoneLabel = bt(zone.labelKo, zone.labelEn);
-  return <div className="space-location" data-compact={compact || undefined} data-space-interactive="true"
+  // 위치 칩 바로 아래에 서비스 상태 자리를 둔다(전역 상태 배너가 하단 프롬프트를 덮지 않도록 여기로 들어온다).
+  return <><div className="space-location" data-compact={compact || undefined} data-space-interactive="true"
     style={{ "--space-zone-tone": tone } as CSSProperties}>
     <button type="button" className="space-icon-button space-location__exit" onClick={onExit}
       aria-label={bt("가상 스튜디오 나가기", "Leave the virtual studio")} title={bt("나가기", "Leave")}>
@@ -146,6 +148,8 @@ export const SpaceLocationChip = memo(function SpaceLocationChip({
         <kbd>K</kbd>
       </button>
     ) : null}
-  </div>;
+  </div>
+  <SpaceServiceStatusSlot />
+  </>;
 });
 

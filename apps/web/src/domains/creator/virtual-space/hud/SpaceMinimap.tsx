@@ -10,8 +10,10 @@ import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioVirtualPlaceById, studioVirtualPlaceIdFromPortalHref } from "../studio-virtual-space-place-world";
 import { clampStudioWorldPoint } from "../studio-virtual-space-world-pathfinding";
 import { studioWorldSpawn, type StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
+import { toonHqRoomShortLabel } from "../office2d/hq/toon-hq-blueprint";
 import { SPACE_ZONE_FALLBACK_TONE, SPACE_ZONE_TONE_TOKENS } from "./space-zone-visuals";
 import { spaceKoParticle } from "./space-korean";
+import { layoutSpaceMinimapLabels, spaceMinimapFallbackShortLabel } from "./space-minimap-labels";
 import { useStudioMapIllustration } from "./space-minimap-illustration";
 
 export interface SpaceMinimapPerson {
@@ -24,6 +26,8 @@ interface MinimapZone {
   readonly id: string;
   readonly label: string;
   readonly sign: string;
+  /** 좁은 미니맵에서 전체 이름이 들어가지 않을 때 쓰는 짧은 이름. */
+  readonly shortSign: string | null;
   readonly tone: string;
   readonly x: number;
   readonly y: number;
@@ -46,10 +50,13 @@ function minimapZones(manifest: StudioVirtualSpaceWorldManifest, bt: (ko: string
   return manifest.rooms.filter((room) => room.id !== STUDIO_VIRTUAL_CAMPUS_COMMONS_ID).map((room) => {
     const meta = studioVirtualCampusZoneMeta(room.id);
     const label = bt(meta?.labelKo ?? room.labelKo, meta?.labelEn ?? room.labelEn);
+    const short = toonHqRoomShortLabel(room.id);
+    const sign = meta?.signEn ?? label;
     return {
       id: room.id,
       label,
-      sign: meta?.signEn ?? label,
+      sign,
+      shortSign: short ? bt(short.ko, short.en) : spaceMinimapFallbackShortLabel(sign),
       tone: meta ? SPACE_ZONE_TONE_TOKENS[meta.tone] : SPACE_ZONE_FALLBACK_TONE,
       x: room.x, y: room.y, width: room.width, height: room.height,
       spawn: manifest.spawns.find((spawn) => spawn.id === room.id)?.point ?? studioWorldSpawn(manifest, room.id).point,
@@ -123,6 +130,11 @@ export const SpaceMinimap = memo(function SpaceMinimap({
   };
   // 미니맵 라벨이 232px 폭에서도 11px 이상이 되도록 월드 크기에 비례해 정한다.
   const labelSize = Math.max(manifest.width, manifest.height) / (full ? 48 : 20);
+  // 들어가는 라벨만, 겹치지 않게(지금 있는 방 → 넓은 방 순). 생략된 방 이름은 구역 툴팁(title)으로 남는다.
+  const placedLabels = useMemo(() => (full ? new Map<string, { readonly text: string; readonly fontSize: number }>() : new Map(
+    layoutSpaceMinimapLabels(zones.map((zone) => ({ id: zone.id, x: zone.x, y: zone.y, width: zone.width, height: zone.height, label: zone.sign, shortLabel: zone.shortSign })),
+      { fontSize: labelSize, currentId: currentRoomId }).map((label) => [label.id, { text: label.text, fontSize: label.fontSize }] as const),
+  )), [full, zones, labelSize, currentRoomId]);
   const stage = <div className="space-minimap__stage" data-variant={variant}
     style={{ aspectRatio: `${manifest.width} / ${manifest.height}` } as CSSProperties}>
     <button type="button" className="space-minimap__surface" onClick={moveFromClick}
@@ -134,10 +146,14 @@ export const SpaceMinimap = memo(function SpaceMinimap({
         {zones.map((zone) => <g key={zone.id} className="space-minimap__zone" data-active={zone.id === currentRoomId || undefined}
           data-role-recommended={highlightRooms.has(zone.id) || undefined}
           style={{ "--space-zone-tone": zone.tone } as CSSProperties}>
+          <title>{zone.label}</title>
           <rect x={zone.x} y={zone.y} width={zone.width} height={zone.height} rx={labelSize * 0.35} />
           {highlightRooms.has(zone.id) ? <circle className="space-minimap__role-marker"
             cx={zone.x + zone.width - labelSize * 0.55} cy={zone.y + labelSize * 0.55} r={labelSize * 0.3} /> : null}
-          {full ? null : <text x={zone.x + zone.width / 2} y={zone.y + zone.height / 2} fontSize={labelSize} textAnchor="middle" dominantBaseline="middle">{zone.sign}</text>}
+          {(() => {
+            const placed = placedLabels.get(zone.id);
+            return placed ? <text x={zone.x + zone.width / 2} y={zone.y + zone.height / 2} fontSize={placed.fontSize} textAnchor="middle" dominantBaseline="middle">{placed.text}</text> : null;
+          })()}
         </g>)}
         {gates.map((gate) => <g key={gate.id} className="space-minimap__gate" transform={`translate(${gate.point.x} ${gate.point.y})`}>
           <rect x={-labelSize * 0.45} y={-labelSize * 0.45} width={labelSize * 0.9} height={labelSize * 0.9} transform="rotate(45)" />

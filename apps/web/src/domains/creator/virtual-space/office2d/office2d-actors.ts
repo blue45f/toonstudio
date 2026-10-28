@@ -7,11 +7,12 @@
  * - 가감속 스쿼시 앤 스트레치(부피 보존 scaleX·scaleY), 주행·선회 기울기(leanAngle), 방향 전환 히스테리시스를 순수 함수로 계산한다.
  */
 import type { StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
-import type { Office2dCharacterKey } from "./office2d-sprite-catalog";
+import type { Office2dCharacterKey, Office2dGesture } from "./office2d-sprite-catalog";
 import { OFFICE2D_CHARACTER_ROWS, OFFICE2D_CHARACTER_WALK_FRAMES } from "./office2d-sprite-catalog";
 import type { Office2dSeatVisual } from "./office2d-scene";
 
-export type Office2dActorKind = "self" | "peer" | "npc";
+/** self 나 · peer 팀원 · npc 대화형 NPC · ambient 상주 동료(빈 작업실을 채우는 착석 NPC, office2d-coworkers). */
+export type Office2dActorKind = "self" | "peer" | "npc" | "ambient";
 
 export interface Office2dActor {
   readonly id: string;
@@ -42,7 +43,9 @@ export interface Office2dActor {
   alpha: number;
   bubble: string | null;
   typing: boolean;
-  emote: { readonly glyph: string; readonly until: number } | null;
+  emote: { readonly glyph: string; readonly until: number; readonly kind: string } | null;
+  /** 이모트에 딸린 몸짓(손 흔들기·만세·엄지·생각). 서서 멈춰 있을 때만 작업 자세 시트 제스처 행으로 보인다. */
+  gesture: { readonly kind: Office2dGesture; readonly until: number } | null;
   /** 대화 가능 NPC 강조. */
   highlighted: boolean;
   spawnedAt: number;
@@ -95,6 +98,7 @@ export function createOffice2dActor(input: {
     bubble: null,
     typing: false,
     emote: null,
+    gesture: null,
     highlighted: false,
     spawnedAt: input.now,
     leavingAt: null,

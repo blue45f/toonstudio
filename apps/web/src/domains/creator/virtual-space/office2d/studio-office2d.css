@@ -125,12 +125,15 @@
   background: var(--color-accent);
 }
 
-/* 위치 칩·지도와 겹치지 않도록 중간 폭에서는 한 줄 아래로 내리고 현재 공정 이름만 남긴다. */
+/* 위치 칩·지도와 겹치지 않도록 중간 폭에서는 한 줄 아래로 내린다. 1200px 이상이면 이름까지 모두 들어간다. */
 @media (max-width: 1559px) {
   .studio-office2d-pipeline {
     top: calc(var(--space-safe-top, 0px) + 70px);
   }
+}
 
+/* 1200px 미만 데스크톱·태블릿은 번호만 남기고 지금 공정 이름만 보인다. */
+@media (max-width: 1199px) {
   .studio-office2d-pipeline__step {
     padding-right: 5px;
   }
@@ -148,10 +151,85 @@
   }
 }
 
-/* 작은 화면에서는 지도·하단 독이 길찾기를 맡고 공정 바는 숨긴다. */
-@media (max-width: 719px), (max-height: 520px) {
+/* 모바일·태블릿 세로(1024px 미만): 위치 칩 아래 한 줄을 가로로 밀어 넘기는 공정 칩 줄로 바꾼다. */
+@media (max-width: 1023.98px) {
+  .studio-office2d-pipeline {
+    top: calc(var(--space-safe-top, 0px) + 74px);
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    padding: 4px;
+    transform: none;
+    border-radius: 16px;
+  }
+
+  .studio-office2d-pipeline__steps {
+    gap: 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .studio-office2d-pipeline__steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  .studio-office2d-pipeline__item {
+    flex: none;
+    scroll-snap-align: center;
+  }
+
+  .studio-office2d-pipeline__item + .studio-office2d-pipeline__item::before {
+    display: none;
+  }
+
+  .studio-office2d-pipeline__step {
+    min-height: 44px;
+    padding: 4px 12px 4px 6px;
+  }
+
+  .studio-office2d-pipeline__label,
+  .studio-office2d-pipeline__step[aria-current="location"] .studio-office2d-pipeline__label {
+    display: inline;
+  }
+}
+
+/* 가로로 누운 휴대폰처럼 높이가 낮으면 월드 시야를 지키려고 공정 바를 숨긴다(지도·하단 독이 길찾기를 맡는다). */
+@media (max-height: 520px) {
   .studio-office2d-pipeline {
     display: none;
+  }
+}
+
+/* 공정 칩 줄이 보이면 상단 가운데 HUD 칸(안내·근접 카드)을 그 아래로 내린다. */
+@media (min-width: 1560px) and (min-height: 521px) {
+  .space-hud:has(.studio-office2d-pipeline) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 68px);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1559px) and (min-height: 521px) {
+  .space-hud:has(.studio-office2d-pipeline) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 124px);
+  }
+}
+
+@media (max-width: 1023.98px) and (min-height: 521px) {
+  .space-hud:has(.studio-office2d-pipeline) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 74px + 60px);
+  }
+
+  .space-hud:has(.studio-office2d-pipeline):has(.space-status-slot:not(:empty)) .space-hud__slot--top-center {
+    top: calc(var(--space-safe-top, 0px) + 74px + 60px + 64px);
+  }
+
+  .space-hud:has(.space-status-slot:not(:empty)) .studio-office2d-pipeline {
+    top: calc(var(--space-safe-top, 0px) + 74px + 64px);
+  }
+
+  .space-hud:has(.studio-office2d-pipeline) .space-zone-splash {
+    top: max(22%, calc(var(--space-safe-top, 0px) + 206px));
   }
 }
 

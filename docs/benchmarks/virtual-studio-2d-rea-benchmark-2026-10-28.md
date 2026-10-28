@@ -1,7 +1,7 @@
 # 가상 스튜디오 2D 재구축용 REA 역공학 벤치마크 (2026-10-28)
 
-- 문서 상태: `target` (재구축 설계 입력용 리서치. 여기의 권고는 아직 구현되지 않았다)
-- 작성일: `2026-10-28` / 조사 시각: `2026-10-27T17:10Z`~`17:30Z` (UTC)
+- 문서 상태: `current` (ToonOffice 2D 엔진·HUD·반응형·8직군 스프라이트/작업 포즈 고도화 반영) + `target` (5.3절 P2 등 잔여 로드맵)
+- 작성일: `2026-10-28` / 1차 조사: `2026-10-27T17:10Z`~`17:30Z`, 2차 UI/UX·스프라이트 심화 조사: `2026-10-28T07:13Z`~`07:30Z` (UTC)
 - 기준 커밋: `origin/main` = `a166b435a9e0642c785e6e809d1ee6ff9485c3d9` (2026-10-27)
 - 대상: WorkAdventure, Gather, ZEP, oVice, Kumospace, SoWork, Teamflow
 - 선행 문서: [가상 스튜디오 경쟁 서비스 벤치마크 (2026-10-01)](../../apps/web/src/domains/creator/virtual-space/VIRTUAL_SPACE_BENCHMARK_2026-10-01.md)
@@ -284,3 +284,36 @@
 4. `inspect_web_page {include_script_sources:true}` → 10MiB 초과 시 `export_evidence_bundle`로 기록 후
    해당 레코드를 JSON으로 추출 → `export_web_scripts`로 digest 검증 파일 생성.
 5. 내보낸 디렉터리에서 엔진 구성 문자열을 검사하거나 `analyze_javascript_application {detail:"summary"}` 실행.
+
+## 8. 2차 REA UI/UX·반응형·스프라이트 심화 분석 및 반영 현황 (`current`)
+
+1차 엔진 벤치마크에서 내보낸 스크립트의 SHA-256 해시를 재검증한 뒤, UI/UX·반응형 브레이크포인트·미니맵/이름표 디클러터·줌 UX·품질/FPS 거버너·스프라이트 포즈 폴백을 핵심 청크 단위 `analyze_javascript_application`으로 추가 분석해 ToonOffice 2D에 직접 반영했다.
+
+### 8.1 2차 REA 추가 Evidence 원장
+
+| 대상 | 분석 청크 | 연산 | Evidence ID |
+| --- | --- | --- | --- |
+| 공통 | CDP `127.0.0.1:9223` 대상 목록 | `list_browser_targets` | `ev_0f0ff1bc4d8b784b43346f287dcc37f2f7d4403cb3a8a2f80e4386e4e5b4d1d3` |
+| WorkAdventure | `assets/GameManager-dVEs68va.js` (줌·HDPI·DOM 이름표·조이스틱·온보딩) | `analyze_javascript_application` | `ev_4c387d0f456df99ce52e07a32d77fee6f89dded715280a2eb760a846ad2b6190` / `ev_70eb05fcca8cdec19da604cfa4d82f4efa34f80279720ad323b1ec5e74bef3c2` |
+| Gather | `bundle.91ff4c3541de3f18d4d4.js` (`FPSController`·Matter 이름표 반발·미니맵) | `analyze_javascript_application` | `ev_a993e436a663d9db972b6cf49c08985ceed810c9ad6e58ac1071055468364f23` / `ev_4fbf21ca827b13bce1f705df39dcb9d05d9195ba41d83f75d8b3dfc5dbb9dba6` |
+| oVice | `assets/openspace-v2-De91LKT5.js` (헤더 3단 브레이크포인트·DPR 1.5 아틀라스 상한) | `analyze_javascript_application` | `ev_5e06fa8cb696d6cbda68d8d7a6eca69f589d6b3fb70f4a9c9ca70bb830255d37` / `ev_2c7c0fa0f819d1bf24e8717a65230490f295053fb173f012283c566e33a87931` |
+| Kumospace | `assets/SpacePage-Bww1d9GS.js` (품질 3단계·detect-gpu·미니맵 클릭 이동) | `analyze_javascript_application` | `ev_5d3d411b905cdd177547f5e16f1373fab47a3a6bb85705086502b0be35edefa8` / `ev_84cf0ac0da46734e08f94991443376b8b8db174915461267c8ed49f82fdff549` |
+| SoWork | `static/js/WorldFpsLimiter-L27f2-Pf.js` (가시성·비포커스 FPS 제한·자동 착석) | `analyze_javascript_application` | `ev_ecc48faa3882b20d3b5e5bb9c50b3b547024740c26f7c7ea95ef8597cd5d9199` / `ev_b5e7b9e05aa35be3cc3d2fa262a3bd276e8a3c11f03e0338419ce31dde7e4e0e` |
+
+### 8.2 심화 발견 및 ToonOffice 2D 코드 반영 매핑 (`current`)
+
+| 영역 | REA 관측 근거 | ToonOffice 2D 반영 내용 (`current`) | 구현 파일 |
+| --- | --- | --- | --- |
+| **반응형 브레이크포인트 & HUD** | WA `{sm:576, md:768, lg:992, xl:1200}` + `@container`, oVice `1200 / 740`, ZEP `1440 / 1024`, SoWork 높이 쿼리 + `env(safe-area-inset-*)` | `>=1560px` 단일 상단 행, `1200..1559px` 전체 라벨 2단 배치, `1024..1199px` 번호 + 현재 공정명 축약, `<1024px` 스와이프 가능한 공정 레일 + 중복 빠른 작업 카드 접기 + 하단 프롬프트/채팅 버튼 충돌 해소 | [`StudioOffice2dPipelineRail.tsx`](../../apps/web/src/domains/creator/virtual-space/office2d/StudioOffice2dPipelineRail.tsx), [`studio-office2d.css`](../../apps/web/src/domains/creator/virtual-space/office2d/studio-office2d.css), [`space-hud.css`](../../apps/web/src/domains/creator/virtual-space/hud/space-hud.css) |
+| **전역 배너 슬롯 도킹** | WA·SoWork 하단 액션바/프롬프트 비침범 원칙 | 전역 `ServiceDegradedBanner`가 하단 상호작용 프롬프트(`E`)를 덮지 않도록 좌상단 `SpaceLocationChip` 아래 전용 슬롯(`SpaceServiceStatusSlot`)으로 도킹 | [`SpaceServiceStatusSlot.tsx`](../../apps/web/src/domains/creator/virtual-space/hud/SpaceServiceStatusSlot.tsx), [`SpaceLocationChip.tsx`](../../apps/web/src/domains/creator/virtual-space/hud/SpaceLocationChip.tsx) |
+| **미니맵 라벨 디클러터** | SoWork 기본 라벨 숨김·폭 제한, Kumospace 미니맵 클릭 이동, Gather 클러스터링 | 복도 구역은 현재 위치일 때만 라벨 표시, 방 폭에 맞춰 전체 이름 → 축약명(`콘티룸·작화·채색 랩·배경·부스·식자·리뷰룸·워룸·로비`) → 숨김 순으로 충돌 없이 배치 | [`space-minimap-labels.ts`](../../apps/web/src/domains/creator/virtual-space/hud/space-minimap-labels.ts), [`SpaceMinimap.tsx`](../../apps/web/src/domains/creator/virtual-space/hud/SpaceMinimap.tsx), [`toon-hq-blueprint.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/hq/toon-hq-blueprint.ts) |
+| **월드 이름표 충돌 회피 & 벽면 간판 감쇠** | Gather Matter 이름표 반발, WA 이름표 스케일 클램프 및 hover 최상단, ZEP 줌 독립 말풍선 | 화면 좌표계에서 `self > peer > npc > ambient` 우선순위로 이름표 AABB 충돌을 위로 밀어 올리고 리더 라인으로 연결. 원거리 NPC/동료 라벨은 근접·선택 시만 노출하며, 이름표와 겹치는 북쪽 벽 구역 간판은 투명도(`0.22`)로 감쇠 | [`office2d-label-layout.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-label-layout.ts), [`office2d-renderer.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-renderer.ts), [`office2d-overlay.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-overlay.ts) |
+| **반응형 기준 줌 & 가로형 줌 바** | WA `getOptimalGameSize` 가시 픽셀 기반 자동 줌 + 버튼·휠·핀치 줌 | 화면 크기에 따라 가시 타일 폭(`가로 12..19칸`, `세로 8..13칸`)과 최소 캐릭터 높이(`56px`)를 함께 만족하는 반응형 기준 줌 적용. 우하단 줌 컨트롤을 가로 알약(`− 100% + \| 60% 100% 130%`)으로 재설계 | [`office2d-camera.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-camera.ts), [`SpaceZoomControls.tsx`](../../apps/web/src/domains/creator/virtual-space/hud/SpaceZoomControls.tsx) |
+| **FPS 제한 & 동적 DPR 거버너** | Gather `FPSController`(`BlurredPSM`), SoWork `WorldFpsLimiter`(`background→pause`, `inactive→15fps`), Kumospace 품질 단계, oVice DPR 상한 | `document.visibilityState === "hidden"` 시 렌더 루프 즉시 일시정지, 창 비포커스 시 `15fps` 제한, 프레임 시간 상승 시 캔버스 DPR을 `2 → 1.5 → 1.25 → 1` 단계로 자동 하향/복구하는 `Office2dResolutionGovernor` 도입 | [`office2d-quality.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-quality.ts), [`StudioOffice2dCanvas.tsx`](../../apps/web/src/domains/creator/virtual-space/office2d/StudioOffice2dCanvas.tsx) |
+| **8직군 캐릭터 & 착석·제스처 스프라이트** | ZEP `idle/walk/sit/dance` 폴백 체인, SoWork `feat_auto_sit`·좌석 스냅, WA 프리팹 depth 보정 | 웹툰 스튜디오 8직군(`artist`, `pd`, `writer`, `colorist`, `bgartist`, `letterer`, `modeler`, `editor`) 보행 시트(9×4) 및 작업·제스처 전용 시트(`work/*.webp`, 4×3: 뒷모습 타블렛 드로잉/타이핑 루프, 앞모습 착석 대기·대화·커피, 서서 손 흔들기·응원·따봉·고민) 구축. 각 공정실 데스크에 상주 동료 배치 및 플레이어 접근 시 자동 양보·자동 착석 | [`office2d-sprite-catalog.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-sprite-catalog.ts), [`office2d-poses.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-poses.ts), [`office2d-coworkers.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-coworkers.ts), [`office2d-avatar-role.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-avatar-role.ts), [`office2d-runtime.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-runtime.ts) |
+| **월드 건축 바닥 디테일 & 실시간 소품 애니메이션** | Gather `nook`/문턱 경계, WA 영역 속성, ZEP 오브젝트 반응 | 바닥 512px 청크 캐시에 복도 황동 유도선, 방 내부 몰딩, 문턱 매트(`회의·보안` / `정숙·몰입` / `STEP 01..07`) 반영. 북쪽 벽 시계 실시간 바늘, 네온 말풍선 맥동, 벽걸이 TV 대시보드, 비 오는 날 창문 빗줄기, 리뷰 스크린 3컷 프리뷰, 콘티 월 하이라이트, 칸반 포스트잇, 집중 부스 `집중 중 · ON AIR` 배지, 가구 상호작용 상태 배지(`☕ 커피 추출 중…`, `💡 스탠드 조명 켜짐`, `📌 보드 동기화됨`, `🖨 교정지 출력 완료`) 및 창작 노트(`note`) 파티클 구현 | [`office2d-world-details.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-world-details.ts), [`office2d-particles.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-particles.ts), [`toon-hq-blueprint.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/hq/toon-hq-blueprint.ts) |
+| **공간 오라(Desk Pod · 정숙 보호막 · 청취 범위)** | Gather `DeskPods` · `FocusOverBusy` · `ListeningRangeUI`, WA `personalArea` | 작업대 착석 시 `내 작업 포드`(`ACTIVE DESK POD`) 경계 하이라이트, 정숙 구역(`silent`) 진입 시 에메랄드 몰입 실드 링, 근접 대화 파트너 존재 시 청취 범위 링 표시 | [`office2d-world-details.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-world-details.ts), [`office2d-renderer.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-renderer.ts) |
+| **원거리 경로 가속 · 카메라 팬/핀치 · 스테이지 확장** | SoWork `far_distance_speed_multiplier`, WA/Gather 드래그 팬·핀치 줌, ZEP 타일 이펙트 | 320px 초과 경로 이동 시 최대 `1.45x` 가속 및 도착 감속, 캔버스 드래그 팬·2손가락 핀치 줌·`Space+WASD` 둘러보기(`StudioCameraPanRuntime`) 및 `"시점을 옮겨 둘러보는 중 — 내 위치로 돌아오기"` HUD 복귀 칩 연동, 타일 이펙트(`tileEffects`)·빌드 고정물(`placedFixtures`)·꾸미기(`decorations`)·손 흔들기(`waveActorIds`)·가이드 투어(`guideTourRequest`)·공간 테마(`spaceTheme`) 2D 스테이지 완전 연결 | [`office2d-stage-extensions.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts), [`office2d-runtime.ts`](../../apps/web/src/domains/creator/virtual-space/office2d/office2d-runtime.ts), [`StudioOffice2dCanvas.tsx`](../../apps/web/src/domains/creator/virtual-space/office2d/StudioOffice2dCanvas.tsx) |
+| **HUD 점진적 공개(Progressive Disclosure) & 가로형 모바일** | Gather/SoWork 단일 주 CTA 원칙, 모바일 가로 뷰포트 가시성 확보 | 개인 공간 중복 구역 바(`SpaceZoneWorkbar`) 및 중복 아틀리에 펄스 버튼 자동 숨김, 하단 프롬프트(`E` 상호작용·시점 복귀·따라가기) 활성 시 수동 `Enter 말풍선 채팅` 힌트 자동 접기, 가로형 모바일(`max-height: 520px`) 도크·조이스틱·상단 슬롯 압축 | [`space-hud.css`](../../apps/web/src/domains/creator/virtual-space/hud/space-hud.css), [`studio-office2d.css`](../../apps/web/src/domains/creator/virtual-space/office2d/studio-office2d.css) |
+
+

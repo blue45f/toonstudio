@@ -1,0 +1,354 @@
+import { describe, expect, it, vi } from "vitest";
+
+import { studioVirtualToonHqManifest } from "./hq/toon-hq-manifest";
+import { createOffice2dActor } from "./office2d-actors";
+import { office2dActorFoot, office2dActorHeadY, OFFICE2D_ACTOR_HEIGHT } from "./office2d-actor-geometry";
+import { office2dBaseZoom, office2dVisibleWorldSpan } from "./office2d-camera";
+import {
+  Office2dCoworkerCrowd,
+  OFFICE2D_COWORKER_MAX,
+  office2dCoworkerBudget,
+  planOffice2dCoworkers,
+  stepOffice2dCoworkerPresence,
+} from "./office2d-coworkers";
+import { layoutOffice2dLabels, office2dBoxesOverlap, office2dSignAlpha } from "./office2d-label-layout";
+import { Office2dParticles } from "./office2d-particles";
+import { OFFICE2D_WORK_LOOP, OFFICE2D_WORK_STEP_SECONDS, office2dPoseFrame } from "./office2d-poses";
+import type { Office2dCanvas2D } from "./office2d-procedural-art";
+import { OFFICE2D_PIXEL_RATIO_STEPS, Office2dResolutionGovernor } from "./office2d-quality";
+import { office2dSceneFor, type Office2dSeatVisual } from "./office2d-scene";
+import {
+  OFFICE2D_CHARACTERS,
+  OFFICE2D_GESTURE_FRAMES,
+  OFFICE2D_SIT_FRONT_FRAMES,
+  OFFICE2D_WORK_ROWS,
+  office2dCharacterForNpc,
+  office2dCharacterForRoleText,
+  office2dGestureForEmote,
+  office2dWorkSheetUrl,
+} from "./office2d-sprite-catalog";
+import {
+  office2dDaylight,
+  office2dOutsideColor,
+  office2dPathSpeedMultiplier,
+  Office2dStageExtensions,
+} from "./office2d-stage-extensions";
+import {
+  paintOffice2dActorSpatialAura,
+  paintOffice2dFloorDetails,
+  paintOffice2dObjectLiveOverlay,
+  paintOffice2dWallDecorLive,
+} from "./office2d-world-details";
+
+const backSeat: Office2dSeatVisual = { id: "seat-back", anchor: { x: 100, y: 200 }, attach: { x: 100, y: 190 }, facing: "up", chair: "chair-back" };
+const frontSeat: Office2dSeatVisual = { id: "seat-front", anchor: { x: 300, y: 200 }, attach: { x: 300, y: 190 }, facing: "down", chair: "chair-front" };
+
+function actor(id = "a") {
+  return createOffice2dActor({ id, kind: "peer", character: "artist", accent: "#fff", name: "작가", x: 10, y: 20, now: 0 });
+}
+
+describe("화면 공간 라벨 배치", () => {
+  it("겹치면 우선순위 낮은 라벨을 위로 올리고, 자리가 없으면 흐리게 남긴다", () => {
+    const base = { anchorX: 100, bottom: 100, width: 80, height: 20, distance: 0 };
+    const layout = layoutOffice2dLabels([
+      { ...base, id: "npc", priority: 2, distance: 30 },
+      { ...base, id: "self", priority: 4 },
+      { ...base, id: "peer", priority: 3, distance: 10 },
+    ]);
+    expect(layout.get("self")?.lift).toBe(0);
+    expect(layout.get("peer")?.lift).toBe(23);
+    expect(layout.get("npc")?.lift).toBe(46);
+    expect([...layout.values()].every((placement) => placement.alpha === 1)).toBe(true);
+    const crowded = layoutOffice2dLabels(Array.from({ length: 6 }, (_, index) => ({ ...base, id: `p${index}`, priority: 1, distance: index })));
+    expect(crowded.get("p5")?.alpha).toBeLessThan(1);
+    expect(crowded.get("p5")?.lift).toBe(0);
+  });
+
+  it("벽 명판은 이름표와 겹칠 때만 흐려진다", () => {
+    const sign = { x: 0, y: 0, width: 100, height: 24 };
+    expect(office2dSignAlpha(sign, [{ x: 50, y: 10, width: 60, height: 20 }])).toBeLessThan(0.5);
+    expect(office2dSignAlpha(sign, [{ x: 300, y: 10, width: 60, height: 20 }])).toBe(1);
+    expect(office2dBoxesOverlap(sign, { x: 101, y: 0, width: 10, height: 10 })).toBe(false);
+  });
+});
+
+describe("배우 자세 프레임", () => {
+  it("책상을 보고 앉으면 작업 루프를 돌고, 배우마다 박자가 다르다", () => {
+    const worker = actor("worker-1");
+    worker.seat = backSeat;
+    const frames = Array.from({ length: OFFICE2D_WORK_LOOP.length }, (_, step) => office2dPoseFrame(worker, step * OFFICE2D_WORK_STEP_SECONDS + 0.01, 0, false));
+    expect(frames.every((frame) => frame.sheet === "work" && frame.row === OFFICE2D_WORK_ROWS.sitBack)).toBe(true);
+    expect(new Set(frames.map((frame) => frame.col)).size).toBeGreaterThan(2);
+    const other = actor("worker-2");
+    other.seat = backSeat;
+    const sequence = (target: typeof worker) => Array.from({ length: 16 }, (_, step) => office2dPoseFrame(target, step * 0.2, 0, false).col).join("");
+    expect(sequence(worker)).not.toBe(sequence(other));
+    expect(office2dPoseFrame(worker, 3.3, 0, true).col).toBe(0);
+  });
+
+  it("앞을 보고 앉으면 말할 때 입을 움직이고, 웃음 이모트는 웃음 프레임이다", () => {
+    const talker = actor();
+    talker.seat = frontSeat;
+    talker.bubble = "안녕하세요";
+    const cols = new Set([0, 0.3, 0.6, 0.9].map((time) => office2dPoseFrame(talker, time, 0, false).col));
+    expect(cols).toEqual(new Set([OFFICE2D_SIT_FRONT_FRAMES.talk, OFFICE2D_SIT_FRONT_FRAMES.idle]));
+    talker.bubble = null;
+    talker.emote = { glyph: "😂", until: 5000, kind: "laugh" };
+    expect(office2dPoseFrame(talker, 0, 1000, false)).toEqual({ sheet: "work", row: OFFICE2D_WORK_ROWS.sitFront, col: OFFICE2D_SIT_FRONT_FRAMES.laugh });
+  });
+
+  it("서서 멈춘 상태의 제스처만 제스처 프레임이고, 걷거나 만료되면 보행 시트로 돌아간다", () => {
+    const waver = actor();
+    waver.gesture = { kind: "thumbs", until: 3000 };
+    expect(office2dPoseFrame(waver, 0, 1000, false)).toEqual({ sheet: "work", row: OFFICE2D_WORK_ROWS.gesture, col: OFFICE2D_GESTURE_FRAMES.thumbs });
+    expect(office2dPoseFrame(waver, 0, 4000, false).sheet).toBe("walk");
+    waver.moving = true;
+    expect(office2dPoseFrame(waver, 0, 1000, false).sheet).toBe("walk");
+  });
+
+  it("앉은 사람의 발과 머리 위치는 좌석 방향에 따라 정해진다", () => {
+    const sitter = actor();
+    sitter.seat = backSeat;
+    expect(office2dActorFoot(sitter)).toEqual({ x: 100, y: 205 });
+    expect(office2dActorHeadY(sitter)).toBeCloseTo(205 - OFFICE2D_ACTOR_HEIGHT * 0.8);
+    sitter.seat = null;
+    expect(office2dActorHeadY(sitter)).toBeCloseTo(20 - OFFICE2D_ACTOR_HEIGHT * 0.98);
+  });
+});
+
+describe("직군 시트·제스처 매핑", () => {
+  it("직함 문구로 직군을 고른다(더 구체적인 직군 우선)", () => {
+    expect(office2dCharacterForRoleText("누르 · 식자 담당")).toBe("letterer");
+    expect(office2dCharacterForRoleText("테오 · 3D 아티스트")).toBe("modeler");
+    expect(office2dCharacterForRoleText("민재 · 편집 PD")).toBe("editor");
+    expect(office2dCharacterForRoleText("하나 · 스토리 PD")).toBe("pd");
+    expect(office2dCharacterForRoleText("루카 · 채색 어시스턴트")).toBe("colorist");
+    expect(office2dCharacterForRoleText("아마라 · 배경 작가")).toBe("bgartist");
+    expect(office2dCharacterForRoleText("도윤 · 콘티 작가")).toBe("writer");
+    expect(office2dCharacterForRoleText("서하 · 웹툰 작가")).toBe("artist");
+    expect(office2dCharacterForRoleText("하늘 Haneul")).toBeNull();
+  });
+
+  it("8개 직군 시트와 작업 자세 시트 경로를 갖고, 대화형 NPC도 직군에 맞는다", () => {
+    expect(OFFICE2D_CHARACTERS).toHaveLength(8);
+    expect(office2dWorkSheetUrl("editor")).toBe("/assets/virtual-studio/toon-office-v1/characters/work/editor.webp");
+    expect(office2dCharacterForNpc("npc-editor")).toBe("editor");
+    expect(office2dGestureForEmote("wave")).toBe("wave");
+    expect(office2dGestureForEmote("party")).toBe("cheer");
+    expect(office2dGestureForEmote("coffee")).toBeNull();
+  });
+});
+
+describe("상주 동료", () => {
+  const scene = office2dSceneFor(studioVirtualToonHqManifest(false));
+
+  it("공정 방의 책상 좌석에만, 결정적으로 배치한다", () => {
+    const plans = planOffice2dCoworkers(scene);
+    expect(plans).toHaveLength(OFFICE2D_COWORKER_MAX);
+    expect(new Set(plans.map((plan) => plan.seat.id)).size).toBe(plans.length);
+    expect(plans.every((plan) => plan.seat.facing === "up" && plan.seat.chair === "chair-back")).toBe(true);
+    expect(plans.find((plan) => plan.roomId === "hq-lettering-desk")?.character).toBe("letterer");
+    expect(planOffice2dCoworkers(scene).map((plan) => plan.id)).toEqual(plans.map((plan) => plan.id));
+  });
+
+  it("팀원이 늘면 그만큼 줄인다", () => {
+    expect(office2dCoworkerBudget(8, 0)).toBe(8);
+    expect(office2dCoworkerBudget(8, 3)).toBe(5);
+    expect(office2dCoworkerBudget(8, 20)).toBe(0);
+  });
+
+  it("누가 다가오면 자리를 비켰다가, 12초 동안 비면 돌아온다", () => {
+    const presence = { alpha: 1, vacatedAt: null as number | null };
+    const base = { seat: backSeat, visible: true, seatTaken: false, deltaSeconds: 0.5 };
+    expect(stepOffice2dCoworkerPresence(presence, { ...base, occupants: [{ x: 110, y: 210 }], now: 1000 })).toBe(false);
+    expect(presence.vacatedAt).toBe(1000);
+    expect(stepOffice2dCoworkerPresence(presence, { ...base, occupants: [{ x: 600, y: 600 }], now: 8000 })).toBe(false);
+    expect(stepOffice2dCoworkerPresence(presence, { ...base, occupants: [{ x: 600, y: 600 }], now: 13_500 })).toBe(true);
+  });
+
+  it("무리는 자리를 막는 몸체를 앉을 때 붙이고 비킬 때 뗀다", () => {
+    const blocked = new Set<string>();
+    const crowd = new Office2dCoworkerCrowd(scene, 0, { block: (id) => blocked.add(id), unblock: (id) => blocked.delete(id) });
+    const input = { peerCount: 0, language: "ko" as const, occupants: [], takenSeatIds: new Set<string>(), seatedAnchors: [] };
+    for (let index = 0; index < 10; index += 1) crowd.update(0.1, index * 100, input);
+    expect(blocked.size).toBe(crowd.size);
+    expect(crowd.visibleActors().every((member) => member.kind === "ambient" && member.name.startsWith("NPC · "))).toBe(true);
+    for (let index = 0; index < 10; index += 1) crowd.update(0.1, 1000 + index * 100, { ...input, peerCount: crowd.size });
+    expect(blocked.size).toBe(0);
+    expect(new Office2dCoworkerCrowd(null, 0, { block: () => undefined, unblock: () => undefined }).size).toBe(0);
+  });
+});
+
+describe("동적 해상도", () => {
+  it("느리면 한 단계씩 내리고, 오래 여유로우면 장치 배율까지만 되돌린다", () => {
+    const governor = new Office2dResolutionGovernor(2);
+    expect(governor.pixelRatio).toBe(2);
+    let changed: number | null = null;
+    for (let index = 0; index < 70 && changed === null; index += 1) changed = governor.sample(1000 / 30);
+    expect(changed).toBe(1.5);
+    const fast = () => { let next: number | null = null; for (let index = 0; index < 130 && next === null; index += 1) next = governor.sample(1000 / 60); return next; };
+    expect(fast()).toBeNull();
+    expect(fast()).toBeNull();
+    expect(fast()).toBe(2);
+    expect(new Office2dResolutionGovernor(1).pixelRatio).toBe(OFFICE2D_PIXEL_RATIO_STEPS.at(-1));
+    expect(governor.sample(5000)).toBeNull();
+  });
+});
+
+describe("화면 클래스별 기본 배율", () => {
+  it("큰 화면일수록 더 넓게 보되 캐릭터가 너무 작아지지 않는다", () => {
+    const laptop = office2dBaseZoom({ width: 1280, height: 680 });
+    const fullHd = office2dBaseZoom({ width: 1920, height: 1080 });
+    expect(office2dVisibleWorldSpan({ width: 1920, height: 1080 }).span).toBeGreaterThan(office2dVisibleWorldSpan({ width: 1280, height: 680 }).span);
+    expect(fullHd).toBeLessThan(1080 / (14 * 48));
+    expect(OFFICE2D_ACTOR_HEIGHT * fullHd).toBeGreaterThan(90);
+    expect(OFFICE2D_ACTOR_HEIGHT * laptop).toBeGreaterThan(70);
+    const phone = office2dBaseZoom({ width: 390, height: 844 });
+    const tablet = office2dBaseZoom({ width: 768, height: 1024 });
+    expect(OFFICE2D_ACTOR_HEIGHT * phone).toBeGreaterThan(65);
+    expect(tablet).toBeLessThan(768 / (8.5 * 48));
+  });
+});
+
+function createFakeCanvas2d(): Office2dCanvas2D & { readonly texts: string[] } {
+  const texts: string[] = [];
+  const gradient = { addColorStop: () => undefined } as unknown as CanvasGradient;
+  return {
+    texts,
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    globalAlpha: 1,
+    globalCompositeOperation: "source-over",
+    font: "",
+    textAlign: "left",
+    textBaseline: "alphabetic",
+    imageSmoothingEnabled: true,
+    lineJoin: "miter",
+    lineCap: "butt",
+    save: () => undefined,
+    restore: () => undefined,
+    translate: () => undefined,
+    scale: () => undefined,
+    rotate: () => undefined,
+    setTransform: () => undefined,
+    beginPath: () => undefined,
+    closePath: () => undefined,
+    moveTo: () => undefined,
+    lineTo: () => undefined,
+    quadraticCurveTo: () => undefined,
+    arc: () => undefined,
+    ellipse: () => undefined,
+    rect: () => undefined,
+    clip: () => undefined,
+    setLineDash: () => undefined,
+    fill: () => undefined,
+    stroke: () => undefined,
+    fillRect: () => undefined,
+    strokeRect: () => undefined,
+    clearRect: () => undefined,
+    fillText: (text: string) => { texts.push(text); },
+    measureText: (text: string) => ({ width: text.length * 7 } as TextMetrics),
+    createLinearGradient: () => gradient,
+    createRadialGradient: () => gradient,
+    drawImage: () => undefined,
+  };
+}
+
+describe("스테이지 확장·배경 이펙트·상호작용 고도화", () => {
+  const manifest = studioVirtualToonHqManifest(false);
+  const scene = office2dSceneFor(manifest);
+
+  it("원거리 경로 이동은 320px 바깥에서 최대 1.45배까지 가속하고 도착 근처에서 감속한다", () => {
+    expect(office2dPathSpeedMultiplier(180, false)).toBe(1);
+    expect(office2dPathSpeedMultiplier(640, false)).toBeCloseTo(1.225);
+    expect(office2dPathSpeedMultiplier(1400, false)).toBeCloseTo(1.45);
+    expect(office2dPathSpeedMultiplier(1400, true)).toBe(1);
+  });
+
+  it("공간 테마(spaceTheme)와 주야 사이클에 맞춰 배경 톤과 일광을 계산한다", () => {
+    expect(office2dOutsideColor(undefined)).toBe("#2b2420");
+    expect(office2dOutsideColor("sakura-campus")).toMatch(/^#/u);
+    expect(office2dDaylight({ enabled: true, startMs: 0, now: 12 * 3_600_000, cycleMs: 24 * 3_600_000 }, 0)).toBeCloseTo(1);
+    expect(office2dDaylight({ enabled: true, startMs: 0, now: 2 * 3_600_000, cycleMs: 24 * 3_600_000 }, 0)).toBeCloseTo(0.3);
+  });
+
+  it("가구 상호작용 시 상태 전이·파티클·타일 이펙트·손 흔들기·투어를 처리한다", () => {
+    const ext = new Office2dStageExtensions();
+    const particles = new Office2dParticles();
+    const onStateChange = vi.fn();
+    ext.interactWithObject("hq-break-coffee", "coffee-machine", 200, 300, 1000, particles, onStateChange);
+    expect(onStateChange).toHaveBeenCalledWith({
+      objectId: "hq-break-coffee",
+      stateKey: "coffee:brewing",
+      stateChangedAt: 1000,
+    });
+    expect(particles.count).toBeGreaterThan(0);
+
+    const onTileTrigger = vi.fn();
+    const tileEffects = [{
+      id: "fx-1",
+      name: "Story Portal",
+      kind: "portal" as const,
+      tileX: 2,
+      tileY: 3,
+      width: 2,
+      height: 2,
+      destinationRoom: "hq-story-room",
+      destinationTileX: 4,
+      destinationTileY: 5,
+    }];
+    ext.stepTileEffects({ x: 2.5 * 16, y: 3.5 * 16 }, tileEffects, particles, onTileTrigger);
+    expect(onTileTrigger).toHaveBeenCalledOnce();
+    ext.stepTileEffects({ x: 2.5 * 16, y: 3.5 * 16 }, tileEffects, particles, onTileTrigger);
+    expect(onTileTrigger).toHaveBeenCalledOnce();
+
+    const self = actor("local");
+    const peers = new Map([["peer-1", actor("peer-1")]]);
+    const showEmote = vi.fn();
+    ext.syncWaveActors(["local", "peer-1"], self, peers, 2000, showEmote);
+    expect(showEmote).toHaveBeenCalledTimes(2);
+
+    const onTourChange = vi.fn();
+    const approach = vi.fn();
+    ext.stepGuideTour({ x: 400, y: 400 }, manifest, { id: "tour-1", guideId: "npc-pd" }, onTourChange, false, 3000, approach);
+    expect(approach).toHaveBeenCalledOnce();
+    expect(onTourChange).toHaveBeenCalledWith(expect.objectContaining({ status: "walking", stopIndex: 0 }));
+  });
+
+  it("바닥 건축 디테일·라이브 벽 소품·오브젝트 배지·작업 포드 오라를 그린다", () => {
+    const ctx = createFakeCanvas2d();
+    paintOffice2dFloorDetails(ctx, scene, 0, 0, scene.width, "ko");
+    expect(ctx.texts.some((text) => text.includes("회의·보안") || text.includes("정숙·몰입") || text.includes("STEP"))).toBe(true);
+
+    const states = new Map([["hq-break-coffee", { stateKey: "coffee:brewing", changedAt: 1000 }]]);
+    const detailFrame = {
+      time: 1.5,
+      now: 2000,
+      selfId: "self",
+      language: "ko" as const,
+      reducedMotion: false,
+      daylight: 0.9,
+      atmosphere: "rain",
+      activeObjectStates: states,
+    };
+    for (const wall of scene.walls) {
+      if (!wall.decor) continue;
+      for (const decor of wall.decor) {
+        paintOffice2dWallDecorLive(ctx, decor, decor.x, wall.y + wall.height * 0.45, decor.width, 40, detailFrame);
+      }
+    }
+
+    const focusSeatId = scene.seats.find((seat) => seat.id.includes("focus"))?.id ?? "hq-focus-booth-1-seat";
+    const occupiedSeats = new Set([focusSeatId]);
+    for (const obj of scene.objects) {
+      paintOffice2dObjectLiveOverlay(ctx, obj, 72, detailFrame, occupiedSeats);
+    }
+    expect(ctx.texts.some((text) => text.includes("커피 추출 중") || text.includes("ON AIR"))).toBe(true);
+
+    const self = createOffice2dActor({ id: "self", kind: "self", character: "artist", accent: "#fff", name: "작가", x: 10, y: 20, now: 0 });
+    self.seat = backSeat;
+    paintOffice2dActorSpatialAura(ctx, self, detailFrame, [self]);
+    expect(ctx.texts.some((text) => text.includes("내 작업 포드"))).toBe(true);
+  });
+});

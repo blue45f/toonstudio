@@ -500,6 +500,20 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 }
 
 /* ── 우상단 미니맵 ─────────────────────────────────────────── */
+/* 서비스 상태 자리: 위치 칩 아래 한 줄 칩. 비어 있으면 접힌다(flex gap도 차지하지 않는다). */
+.space-status-slot { display: flex; max-width: 100%; min-width: 0; }
+.space-status-slot:empty { display: none; }
+.space-status-slot > [data-service-degraded-banner] {
+  max-width: min(100%, 420px);
+  padding-block: 4px;
+  font-size: 12px;
+  box-shadow: var(--space-shadow);
+  backdrop-filter: blur(12px);
+}
+/* 좁은 화면은 상단 가운데 칸이 위치 칩 아래 고정 높이에서 시작하므로, 상태 칩이 들어오면 그만큼 내린다. */
+@media (max-width: 1023.98px) {
+  .space-hud:has(.space-status-slot:not(:empty)) .space-hud__slot--top-center { top: calc(var(--space-safe-top) + 72px + 44px); }
+}
 .space-minimap {
   width: var(--space-minimap-width);
   padding: 4px;
@@ -1560,10 +1574,11 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 .space-mobile-dock__work .space-dock__primary > span { position: static; width: auto; height: auto; clip-path: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .space-joystick { position: relative; }
 .space-joystick .studio-vspace-joystick { width: 7.5rem; height: 7.5rem; }
-/* 화면 크기(줌) 버튼: 데스크톱과 조이스틱이 없는 터치(탭 이동)의 우하단. 휠·+ - 0 키와 같은 저장소를 쓴다. */
+/* 화면 크기(줌) 버튼: 데스크톱과 조이스틱이 없는 터치(탭 이동)의 우하단. 휠·+ - 0 키와 같은 저장소를 쓴다.
+   가로 한 줄 알약(축소 · 배율 · 확대 | 빠른 배율)이라 지도·말 걸기 버튼과 세로 공간을 다투지 않는다. */
 .space-zoom {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 2px;
   padding: 4px;
@@ -1573,24 +1588,60 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   box-shadow: var(--space-shadow);
   backdrop-filter: blur(16px) saturate(1.25);
 }
+.space-zoom__step { width: 40px; height: 40px; border-radius: 12px; }
 .space-zoom__level {
   display: grid;
   place-items: center;
-  width: 44px;
-  min-height: 28px;
-  padding: 0;
+  min-width: 52px;
+  min-height: 40px;
+  padding: 0 4px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
-  color: var(--color-fg-2);
+  color: var(--color-fg);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 .space-zoom__level:hover { background: var(--space-surface-raised); color: var(--color-fg); }
-@media (pointer: coarse) { .space-zoom__level { min-height: var(--site-control-size, 44px); } }
+.space-zoom__presets {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding-left: 6px;
+  border-left: 1px solid var(--space-border);
+}
+.space-zoom__preset {
+  min-width: 42px;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-fg-2);
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.space-zoom__preset:hover { background: var(--space-surface-raised); color: var(--color-fg); }
+.space-zoom__preset[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+@media (pointer: coarse) {
+  .space-zoom__level { min-height: var(--site-control-size, 44px); }
+  .space-zoom__step { width: 44px; height: 44px; }
+}
 :root[data-design-theme="contrast"] .space-zoom__level { min-height: var(--site-control-size, 44px); }
+/* 좁은 화면·터치에서는 빠른 배율을 접는다(배율 버튼이 100% 복귀를, 핀치·+/−가 단계 이동을 맡는다). */
+@media (max-width: 1023.98px), (pointer: coarse) {
+  .space-zoom__presets { display: none; }
+}
 
 @media (max-width: 1023.98px) {
   .space-hud { --space-gutter: 10px; }
@@ -1702,11 +1753,11 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   font-size: 13px;
   line-height: 1.45;
 }
-html:has([data-service-degraded-banner="warming"]) .space-chat {
-  bottom: max(
-    calc(var(--immersive-dock-clearance, var(--space-dock-fallback)) + var(--space-safe-bottom) + 54px),
-    calc(var(--service-status-overlay-clearance, 0px) + 8px)
-  );
+/* 서비스 상태 배너는 좌상단 슬롯으로 이동했으므로, 모바일에서 하단 상호작용 프롬프트가 뜰 때만 '말 걸기' 버튼을 프롬프트 위로 올린다. */
+@media (max-width: 1023.98px) {
+  .space-hud:has(.space-interact-prompt) .space-chat {
+    bottom: calc(var(--immersive-dock-clearance, var(--space-dock-fallback)) + var(--space-safe-bottom) + 74px);
+  }
 }
 .space-chat--closed { pointer-events: none; }
 /* 휴대폰에서 리액션 줄이 열리면 같은 자리의 "말 걸기" 버튼이 줄의 첫 칸(손 흔들기)을 가린다. 줄이 열려 있는 동안만 숨긴다. */
@@ -2269,4 +2320,47 @@ button.space-location__pulse:hover {
   border-color: color-mix(in srgb, var(--color-accent) 52%, var(--space-border));
   background: color-mix(in srgb, var(--color-accent-soft) 68%, var(--color-card));
 }
+@media (max-width: 1023.98px) {
+  /* 모바일·태블릿 도크에서는 하단 '작업 시작' 주 버튼과 상단 공정 레일이 같은 역할을 맡으므로 중복 작업 카드를 접어 시야와 레일을 확보한다. */
+  .space-zone-workbar { display: none; }
+}
+
+/* ── 점진적 공개(Progressive Disclosure) 및 가로형 모바일 최적화 ── */
+/* 개인 공간에서는 하단 주 버튼('내 원고')과 위치 칩의 아틀리에 펄스가 이미 같은 역할을 맡으므로 중복 구역 바를 접는다. */
+.space-hud[data-studio-personal-space] .space-zone-workbar {
+  display: none;
+}
+/* 좌상단 위치 칩에 아틀리에 펄스 알약이 이미 떠 있으면 구역 바 안의 중복 펄스 버튼을 숨긴다. */
+.space-hud__slot--top-left:has(.space-location__pulse) .space-zone-workbar__item--pulse {
+  display: none;
+}
+/* 하단 프롬프트 자리에 상호작용(E)·카메라 시점 복귀·따라가기·제안 카드가 떠 있는 동안에는 수동 'Enter 말풍선 채팅' 힌트를 접어 2단 적재를 막는다. */
+.space-hud__prompts:has(.space-interact-prompt, .space-status-chip, .space-focus-chip, .space-context-suggestion) .space-chat-input__hint {
+  display: none;
+}
+/* 구역 진입 스플래시(1.2초)가 떠 있는 동안에는 상단 근접 스트립이 스플래시 제목과 겹치지 않도록 잠시 물러난다. */
+.space-hud:has(.space-zone-splash) .space-proximity {
+  opacity: 0;
+  pointer-events: none;
+}
+/* 모바일·가로형 화면에서 하단 NPC 상호작용 프롬프트가 이미 떠 있으면 화면 중앙을 가리는 중복 NPC 근접 카드를 접는다(팀원 카드는 유지). */
+@media (max-width: 1023.98px), (max-height: 520px) {
+  .space-hud:has(.space-interact-prompt[data-target-kind="npc"]) .space-proximity__card[data-kind="npc"] {
+    display: none;
+  }
+}
+
+/* 가로로 누운 휴대폰(높이 520px 이하): 상하 여백과 조이스틱·도크 높이를 압축해 2D 스튜디오 시야를 넓힌다. */
+@media (max-height: 520px) {
+  .space-hud { --space-gutter: 8px; }
+  .space-location { min-height: 42px; padding-block: 2px; }
+  .space-zone-workbar,
+  .space-chat-input__hint { display: none; }
+  .space-hud__slot--top-center { top: calc(var(--space-safe-top) + 54px); }
+  .space-mobile-dock { padding: 4px 6px calc(4px + var(--space-safe-bottom)); }
+  .space-mobile-dock__slot { min-height: 44px; padding-block: 2px; }
+  .space-mobile-dock__work .space-dock__primary { min-height: 48px; margin-top: -8px; }
+  .space-joystick .studio-vspace-joystick { width: 5.75rem; height: 5.75rem; }
+}
+
 

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "cell": {
     "width": 128,
     "height": 192,
@@ -17,7 +17,18 @@
     "char_pd": "cfe978d8cba969a41f1cfaa61187aa343edc31becbf9070bb6a8ed1e07288665",
     "char_writer": "965f5932af0e437ba73987bd3bc6d4022384feb15bf6c5b877431d63307e7431",
     "char_colorist": "b779b94c22727a43ef5954e1259f377340067d098f2e10a5fe28af46f4aaaecf",
-    "char_bgartist": "94c3f2f161109e11e1cf5d069114dca3a8a14ca180477c516d00ebf2fc5ea30c"
+    "char_bgartist": "94c3f2f161109e11e1cf5d069114dca3a8a14ca180477c516d00ebf2fc5ea30c",
+    "char_letterer": "48368de45fc11cefad6e7c9dd9b7c7b1bd96f7772904c500e6b2e86641260ca7",
+    "char_modeler": "ad8b6b76028eea6f546081d16635e1f3037430f2e53b60cba9b4bab4f1cd88fd",
+    "char_editor": "57f4ac9de68fcb451241f5a1700e9dbfbdb584f054b12c2f12a5759868e492f1",
+    "work_artist": "b64e9a3ac52bdfc35d3b8af5cd2caa8a2aa55496a44c6e9fc807b56b57f0d9c0",
+    "work_pd": "2151bd03d24650702f9c07bd53777eb3af20b548ae6b3502d53e5e7b8ffc610b",
+    "work_writer": "88a4e6921594d3662194584ed32e68f89c095a2077b6e59ab16f2ff60709d330",
+    "work_colorist": "12a1d54697ee575956d44a5085f8856c8f362545ca670c80a23d7f0854d3d384",
+    "work_bgartist": "a0c7509bca061b5adc0cd0523128dc0109e6c3ecb182c67937ea8ab75f879c14",
+    "work_letterer": "46001e3b2993e00d8e74003e95105b8e7ce055a498d2198604fbda0e0c1d5220",
+    "work_modeler": "bb8c0029e3005d2743790000951423845dbf9ea8aaf1153d5954dfea33461782",
+    "work_editor": "9aa48e9b5f3319be0c603aa1717a4632f08c8bb662f1b1851e7a78db911486c6"
   },
   "objects": {
     "desk-artist": {
@@ -271,11 +282,179 @@
       "rows": 4,
       "facing": "left->right",
       "hipCx": 63.0
+    },
+    "letterer": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "528b8c087dab43106ee389149b93e84e74a45e2c739bf2682697f1e144fc110e",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 65.5
+    },
+    "modeler": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "4c60794f56f5be2bbfed71c331abb9432e3bf1bb73876cadd4d6a6fbb39a3b0c",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 63.5
+    },
+    "editor": {
+      "width": 1152,
+      "height": 768,
+      "sha256": "001f85b045a2ec20fe2359ba1a8c7840bb81d815dde2b9987b548654b4bec730",
+      "cols": 9,
+      "rows": 4,
+      "facing": "left->right",
+      "hipCx": 72.25
     }
   },
   "preview": {
     "width": 640,
     "height": 360,
     "sha256": "04385d97f6a13f40e673a16ad597eb92891ef474e317cd7cae7007cd381e7ce7"
+  },
+  "work": {
+    "cell": {
+      "width": 128,
+      "height": 192,
+      "cols": 4,
+      "rows": 3
+    },
+    "rows": [
+      "sit-back",
+      "sit-front",
+      "gesture"
+    ],
+    "gestures": [
+      "wave",
+      "cheer",
+      "thumbs",
+      "think"
+    ],
+    "sheets": {
+      "artist": {
+        "width": 512,
+        "height": 576,
+        "sha256": "7578ba66287d9676e926a05d8fd1490bda5667cea374071c2ae799cbe2a62030",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7296,
+        "minFit": 1.0
+      },
+      "pd": {
+        "width": 512,
+        "height": 576,
+        "sha256": "3e2ad51f7d1da9c264906132ede712104874728515089fc8806379103e626870",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7733,
+        "minFit": 1.0
+      },
+      "writer": {
+        "width": 512,
+        "height": 576,
+        "sha256": "768f05382d3b8111b0ff8643c2beb992dd678d4c27905756f3bef39263023317",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7532,
+        "minFit": 1.0
+      },
+      "colorist": {
+        "width": 512,
+        "height": 576,
+        "sha256": "75603e990a67381ef881b858dd940abb4810e0f370d0fad853f73fb3d87e31dd",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          5,
+          5,
+          5,
+          5
+        ],
+        "scale": 0.7311,
+        "minFit": 1.0
+      },
+      "bgartist": {
+        "width": 512,
+        "height": 576,
+        "sha256": "e63d2fc10ce8cff6f72713e5384dc1ad1cc0cb942c014ab18794c3d2d4a61f44",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7436,
+        "minFit": 1.0
+      },
+      "letterer": {
+        "width": 512,
+        "height": 576,
+        "sha256": "d1ab1a464586fad5c97c8f22a08caae7989667d024f7997a16175bae152b1adf",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7389,
+        "minFit": 1.0
+      },
+      "modeler": {
+        "width": 512,
+        "height": 576,
+        "sha256": "c249a77f17f0e39a1ea5d69e26a9d408ebfce3720e40166e4fd90a32c342ca16",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7326,
+        "minFit": 1.0
+      },
+      "editor": {
+        "width": 512,
+        "height": 576,
+        "sha256": "37a3bb658a365b3921d1bc258c90bb06738b055da1daa480ee0448b82a5836f5",
+        "cols": 4,
+        "rows": 3,
+        "sourceRows": [
+          4,
+          4,
+          3,
+          3
+        ],
+        "scale": 0.7326,
+        "minFit": 1.0
+      }
+    }
   }
 }

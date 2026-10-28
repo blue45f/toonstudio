@@ -4,7 +4,7 @@
  */
 import { office2dRandom, type Office2dCanvas2D } from "./office2d-procedural-art";
 
-export type Office2dParticleKind = "dust" | "spark" | "steam" | "confetti" | "mote" | "ring";
+export type Office2dParticleKind = "dust" | "spark" | "steam" | "confetti" | "mote" | "ring" | "note";
 
 interface Particle {
   kind: Office2dParticleKind;
@@ -63,6 +63,20 @@ export class Office2dParticles {
         case "ring":
           this.push({ kind, x, y, vx: 0, vy: 0, life: 0, maxLife: 0.6, size: 6 * strength, color: "rgba(255, 255, 255, 0.85)", spin: 0 });
           break;
+        case "note":
+          this.push({
+            kind,
+            x: x + (this.random() - 0.5) * 20,
+            y: y + (this.random() - 0.5) * 8,
+            vx: (this.random() - 0.5) * 14,
+            vy: -18 - this.random() * 14 * strength,
+            life: 0,
+            maxLife: 1.1 + this.random() * 0.5,
+            size: 3.5 + this.random() * 2,
+            color: CONFETTI[Math.floor(this.random() * CONFETTI.length)] ?? "#9b7bea",
+            spin: this.random() * Math.PI,
+          });
+          break;
       }
     }
   }
@@ -101,11 +115,16 @@ export class Office2dParticles {
         continue;
       }
       ctx.fillStyle = particle.color;
-      if (particle.kind === "confetti") {
+      if (particle.kind === "confetti" || particle.kind === "note") {
         ctx.save();
         ctx.translate(particle.x, particle.y);
-        ctx.scale(Math.cos(particle.spin), 1);
-        ctx.fillRect(-particle.size / 2, -particle.size / 4, particle.size, particle.size / 2);
+        if (particle.kind === "note") {
+          ctx.rotate(Math.PI / 4 + Math.sin(particle.spin * 0.5) * 0.25);
+          ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+        } else {
+          ctx.scale(Math.cos(particle.spin), 1);
+          ctx.fillRect(-particle.size / 2, -particle.size / 4, particle.size, particle.size / 2);
+        }
         ctx.restore();
         continue;
       }
