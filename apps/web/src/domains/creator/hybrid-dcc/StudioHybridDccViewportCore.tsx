@@ -81,7 +81,8 @@ import {
 } from "./StudioHybridDccViewportParts";
 import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewportInteractionBar";
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
-import { StudioHybridDccUvCheckerMaterial } from "./StudioHybridDccUvCheckerMaterial";
+import { StudioHybridDccSurfaceMaterial } from "./materials/StudioHybridDccSurfaceMaterial";
+import { canUseStudioHybridDccToonCache, deriveStudioHybridDccToonAssetProjection, readStudioHybridDccToonBindings, studioHybridDccToonPresentationSignature, type StudioHybridDccToonBindings, type StudioHybridDccToonMaterialPreview } from "./materials/studio-hybrid-dcc-toon-projection";
 import { deriveStudioHybridDccTriangleCornerUvs } from "./studio-hybrid-dcc-uv-render";
 import { deriveStudioHybridDccSplitCornerNormals } from "./studio-hybrid-dcc-split-normal-render";
 
@@ -133,6 +134,7 @@ export interface StudioHybridDccViewportProps {
   readonly editingDisabled?: boolean;
   /** UV 작업은 원본 코너를 검사하므로 수정자 캐시 대신 편집 메시를 표시한다. */
   readonly uvChecker?: boolean;
+  readonly toonPreview?: StudioHybridDccToonMaterialPreview;
   /**
    * 활성 조형 브러시. 주어지면 선택 오브젝트 위에서의 포인터 드래그가 로컬 좌표 스트로크로 전달된다.
    */
@@ -167,6 +169,8 @@ export interface StudioHybridDccViewportAssetSnapshot {
   readonly indices: Uint32Array;
   readonly cornerUvs?: Float32Array;
   readonly cornerNormals?: Float32Array;
+  readonly triangleMaterialSlots?: Float64Array;
+  readonly toonMaterials?: StudioHybridDccToonBindings;
   readonly renderHash: string;
   readonly renderSource: StudioHybridDccViewportRenderSource;
   readonly materialId: string;
@@ -565,6 +569,7 @@ export function deriveStudioHybridDccViewportSnapshot(
   workspace: StudioHybridDccWorkspace,
   selectionMode: StudioHybridDccSelectionMode = "object",
   preferSource = false,
+  toonPreview?: StudioHybridDccToonMaterialPreview,
 ): StudioHybridDccViewportSnapshot {
   const sharedObjectById = new Map(workspace.bridge.set.objects.map((object) => [object.id, object]));
   const records = Object.values(workspace.session.state.geometry.records)
@@ -593,7 +598,9 @@ export function deriveStudioHybridDccViewportSnapshot(
     try {
       if (selectionMode === "object" && !preferSource && record.renderCache) {
         const validated: StudioHybridDccRenderCacheValidation = preflight.value.normalMode === "split"
-          ? { ok: false, message: "혼합 음영 캐시에 코너 법선이 없어 원본 편집 메시로 표시합니다." } : validateStudioHybridDccRenderCache(
+          ? { ok: false, message: "혼합 음영 캐시에 코너 법선이 없어 원본 편집 메시로 표시합니다." }
+          : !canUseStudioHybridDccToonCache(record.mesh, readStudioHybridDccToonBindings(workspace.session.state, record.assetId, record.meshHash, toonPreview))
+            ? { ok: false, message: "평가 캐시에 재질 슬롯 대응이 없어 원본 편집 메시로 표시합니다." } : validateStudioHybridDccRenderCache(
           record,
           record.renderCache,
           sharedObjectById.get(record.assetId)?.geometryHash ?? null,
@@ -683,6 +690,7 @@ export function deriveStudioHybridDccViewportSnapshot(
         mesh: item.mesh,
         positions: projection.positions,
         indices: projection.indices,
+        ...deriveStudioHybridDccToonAssetProjection(workspace.session.state, item.assetId, item.mesh, item.meshHash, projection.indices.length / 3, projection.renderSource === "modifier-cache", toonPreview),
         ...(projection.renderSource !== "modifier-cache"
           ? { cornerUvs: deriveStudioHybridDccTriangleCornerUvs(item.mesh) } : {}),
         renderHash: projection.renderHash,
@@ -715,7 +723,7 @@ export function deriveStudioHybridDccViewportSnapshot(
     center: layout.center,
     radius: layout.radius,
     gridSize: layout.gridSize,
-    signature: layout.signature,
+    signature: layout.signature + studioHybridDccToonPresentationSignature(workspace.session.state, toonPreview),
     totalVertices: assets.reduce((sum, asset) => sum + asset.vertexCount, 0),
     totalTriangles: assets.reduce((sum, asset) => sum + asset.triangleCount, 0),
   };
@@ -946,13 +954,13 @@ function StudioHybridDccAssetMesh({
   const [resource, setResource] = useState<StudioHybridDccGeometryResource | null>(null);
   const objectRef = useRef<THREE.Group>(null);
   const viewportSize = useThree((state) => state.size);
-  const { indices, normalMode, positions, cornerUvs, cornerNormals } = asset;
+  const { indices, normalMode, positions, cornerUvs, cornerNormals, triangleMaterialSlots } = asset;
 
   useEffect(() => {
-    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions, cornerUvs, cornerNormals }, STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles);
+    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions, cornerUvs, cornerNormals, triangleMaterialSlots }, STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles);
     setResource(next);
     return () => next.dispose();
-  }, [indices, normalMode, positions, cornerUvs, cornerNormals]);
+  }, [indices, normalMode, positions, cornerUvs, cornerNormals, triangleMaterialSlots]);
 
   if (!resource) return null;
   const componentCage = selectionMode !== "object";
@@ -1039,24 +1047,9 @@ function StudioHybridDccAssetMesh({
           onSelectComponent(asset.assetId, selectionMode, elementId, operation);
         }}
       >
-        {showMaterial && uvChecker && cornerUvs ? <StudioHybridDccUvCheckerMaterial /> : showMaterial ? (
-          <meshPhysicalMaterial
-            color={asset.materialColor
-              ?? (selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
-            roughness={0.62}
-            metalness={0.08}
-            clearcoat={0.12}
-            clearcoatRoughness={0.78}
-            side={THREE.DoubleSide}
-          />
-        ) : (
-          <meshStandardMaterial
-            color={selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire}
-            roughness={0.72}
-            metalness={0.02}
-            wireframe
-          />
-        )}
+        <StudioHybridDccSurfaceMaterial geometry={resource.geometry} slots={resource.materialSlots} bindings={asset.toonMaterials}
+          color={asset.materialColor ?? (selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
+          wireColor={selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire} showMaterial={showMaterial} uvChecker={uvChecker} hasUv={Boolean(cornerUvs)} />
       </mesh>
       {showWireOverlay ? (
         <mesh geometry={resource.geometry} renderOrder={3}>
@@ -1229,6 +1222,7 @@ export function StudioHybridDccViewport({
   onSelectComponent,
   editingDisabled = false,
   uvChecker = false,
+  toonPreview,
   onSculptStroke,
   defaultTransformMode = "translate",
   defaultTransformSpace = "world",
@@ -1270,8 +1264,8 @@ export function StudioHybridDccViewport({
   const prefersReducedMotion = usePrefersReducedMotion(reducedMotion);
   const effectiveSelectionMode = componentSelection?.mode ?? "object";
   const snapshot = useMemo(
-    () => deriveStudioHybridDccViewportSnapshot(workspace, effectiveSelectionMode, uvChecker),
-    [workspace, effectiveSelectionMode, uvChecker],
+    () => deriveStudioHybridDccViewportSnapshot(workspace, effectiveSelectionMode, uvChecker, toonPreview),
+    [workspace, effectiveSelectionMode, uvChecker, toonPreview],
   );
   const isolationMatchesSelection = !workspace.activeAssetId || workspace.activeAssetId === isolatedAssetId;
   const isolatedAsset = isolationMatchesSelection

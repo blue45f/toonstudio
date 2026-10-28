@@ -2,6 +2,7 @@
 import type { StudioNativeImportIssue } from "./studio-hybrid-dcc-native-import-contracts";
 
 const ISSUE_COPY: Readonly<Record<string, readonly [string, string]>> = {
+  INVALID_TOON_MATERIAL: ["GLB의 툰 재질 설정과 실제 재질 데이터가 일치하지 않아 가져오지 않았습니다. 원본 작업파일을 확인하세요.", "Import stopped because the GLB toon settings do not match its material data. Check the source workfile."],
   UV_PRECISION_LOSS: ["원본 UV가 웹 좌표 정밀도로 변환될 때 새로 접히거나 방향을 잃어 가져오지 않았습니다.", "Import stopped because converting source UVs to web coordinate precision would introduce a collapse or orientation change."],
   "obj-uv-precision": ["OBJ의 원본 UV나 분리 경계를 웹 좌표 정밀도로 보존할 수 없어 가져오지 않았습니다.", "Import stopped because source OBJ UVs or seam boundaries cannot be preserved at web coordinate precision."],
   ACCESSOR_BUDGET: ["이 모델의 정점 속성 검사량이 한 번에 처리할 수 있는 범위를 넘었습니다.", "The model exceeds the vertex-attribute validation work allowed for one import."],

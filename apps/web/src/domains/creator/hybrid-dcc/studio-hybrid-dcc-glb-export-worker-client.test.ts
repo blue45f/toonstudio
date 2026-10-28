@@ -9,6 +9,7 @@ import {
 } from "../studio-editable-half-edge-mesh";
 
 import { exportStudioHybridDccMeshGlb } from "./studio-hybrid-dcc-glb-export";
+import { createStudioHybridDccDefaultToonMaterial } from "./materials/studio-hybrid-dcc-toon-material";
 import { STUDIO_HYBRID_DCC_GLB_EXPORT_MAX_ISSUE_IDS } from "./studio-hybrid-dcc-glb-export-diagnostic-limits";
 import {
   STUDIO_HYBRID_DCC_PACKED_MESH_SECTION_NAMES,
@@ -353,6 +354,20 @@ describe("Hybrid DCC GLB export Worker protocol", () => {
 });
 
 describe("exportStudioHybridDccGlbBatch", () => {
+  it("geometry hash가 같아도 다른 재질로 만든 stale worker 응답은 거부한다", async () => {
+    const material = createStudioHybridDccDefaultToonMaterial();
+    const original = { ...input(), toonMaterials: { "0": material } };
+    const worker = new FakeWorker();
+    const pending = exportStudioHybridDccGlbBatch([original], { workerFactory: () => worker });
+    const request = worker.requests[0]; if (!request) throw new Error("worker 요청이 없습니다.");
+    const stale = successResponse({ ...request, payloads: [packStudioHybridDccGlbExportInput({ ...original,
+      toonMaterials: { "0": { ...material, shadingShift: 0.25 } } })] });
+    expect(isStudioHybridDccGlbExportWorkerResponse(stale)).toBe(true);
+    worker.emitMessage(stale);
+    await expect(pending).rejects.toMatchObject({ code: "protocol" });
+    expect(worker.terminateCalls).toBe(1);
+  });
+
   it("transfers packed SoA input ownership and restores transferred GLBs", async () => {
     const worker = new FakeWorker();
     const exportInput = input();

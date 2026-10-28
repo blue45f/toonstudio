@@ -4,6 +4,8 @@
 작은 단위 검증과 실제 Blender 실행 관측을 WebGL 브라우저 검증·전체 하네스 통과와 구분한다.
 운영 제공 완료 기록은 아니다. 기본 방향과 바이너리 버전은 [웹 모델링 계약](blender-native-modifier-contracts.md)을 따른다.
 전체 아일랜드를 한 타일에 배치하는 후속 구현은 [웹 UV 정리 계약](blender-native-uv-pack-contracts.md)을 따른다.
+2026-10-29의 추가 대조에서 화면 fan과 GLB ear clipping의 비선형 UV 보간 차이를 확인했다.
+공통 삼각화와 표면 내부 보간의 일치는 [툰 재질 계약의 target](blender-native-toon-material-contracts.md#target--화면과-glb의-공통-surface-삼각화)에 남은 작업으로 기록한다.
 
 ## current — 확인한 원본 계약
 

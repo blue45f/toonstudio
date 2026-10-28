@@ -20,6 +20,7 @@ Blender 기능을 자체 웹 도구로 구현하는 근거는 [Blender 동작 �
 면 코너 UV·아일랜드 편집과 GLB 전달은 [UV 분석 및 구현 계약](studio/blender-native-uv-contracts.md)의 migration 상태를 따른다.
 UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 계약](studio/blender-native-uv-pack-contracts.md)의 migration 상태를 따른다.
 설치 없이 실제 GLB·OBJ·VRM을 편집 메시로 등록하는 후속 경로는 [웹 모델 가져오기 계약](studio/blender-native-editable-import-contracts.md)에 기록한다.
+슬롯별 툰 재질의 저장·렌더·GLB와 BG3D 표시의 미완성 경계는 [웹 툰 재질 계약](studio/blender-native-toon-material-contracts.md)에 기록한다.
 
 ## 디렉터리 분류
 

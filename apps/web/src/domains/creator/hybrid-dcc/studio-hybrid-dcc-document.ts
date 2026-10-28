@@ -15,10 +15,8 @@ import {
 } from "../studio-command-journal";
 import {
   STUDIO_EDITABLE_MESH_LIMITS,
-  deserializeStudioEditableMesh,
   hashStudioEditableMesh,
   isIssuedStudioEditableMeshExtrudeRegionReceipt,
-  matchesStudioEditableMeshPersistedHash,
   serializeStudioEditableMesh,
   type StudioEditableMesh,
   type StudioEditableMeshExtrudeRegionReceipt,
@@ -34,7 +32,6 @@ import {
 } from "../studio-geometry-authority";
 import {
   createStudioMeshModifierStack,
-  deserializeStudioMeshModifierStack,
   hashStudioMeshModifierStack,
   serializeStudioMeshModifierStack,
   type StudioMeshModifier,
@@ -56,12 +53,19 @@ import {
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
 
-export const STUDIO_HYBRID_DCC_DOCUMENT_VERSION = 3 as const;
-export const STUDIO_HYBRID_DCC_PREVIOUS_DOCUMENT_VERSION = 2 as const;
-export const STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION = 1 as const;
-export const STUDIO_HYBRID_DCC_DOCUMENT_FORMAT =
-  "toonstudio.hybrid-dcc-document" as const;
-export const STUDIO_HYBRID_DCC_ENGINE_VERSION = "hybrid-dcc-engine-1" as const;
+import {
+  STUDIO_HYBRID_DCC_DOCUMENT_VERSION, STUDIO_HYBRID_DCC_PREVIOUS_DOCUMENT_VERSION,
+  STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION, STUDIO_HYBRID_DCC_DOCUMENT_FORMAT, STUDIO_HYBRID_DCC_ENGINE_VERSION,
+  finalizeState, restoreStudioHybridDccStateFromSnapshot, snapshotStudioHybridDccState,
+} from "./document/studio-hybrid-dcc-document-state";
+import { duplicateStudioHybridDccMaterialBindings, normalizeStudioHybridDccMaterials, setStudioHybridDccAssetToonMaterial, type StudioHybridDccMaterials } from "./materials/studio-hybrid-dcc-material-table";
+import { hashStudioHybridDccToonMaterial, normalizeStudioHybridDccToonMaterial, studioToonMaterialObject, type StudioHybridDccToonMaterial } from "./materials/studio-hybrid-dcc-toon-material";
+
+export {
+  STUDIO_HYBRID_DCC_DOCUMENT_VERSION, STUDIO_HYBRID_DCC_PREVIOUS_DOCUMENT_VERSION,
+  STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION, STUDIO_HYBRID_DCC_DOCUMENT_FORMAT, STUDIO_HYBRID_DCC_ENGINE_VERSION,
+  restoreStudioHybridDccStateFromSnapshot, snapshotStudioHybridDccState,
+} from "./document/studio-hybrid-dcc-document-state";
 
 export interface StudioRightsBomRecord {
   readonly assetId: string;
@@ -126,6 +130,7 @@ export interface StudioHybridDccDocumentState {
   readonly geometry: StudioGeometryAuthorityRegistry;
   /** Object-local geometry is placed by these canonical, undoable authoring transforms. */
   readonly objectTransforms: Readonly<Record<string, StudioHybridDccObjectTransform>>;
+  readonly materials?: StudioHybridDccMaterials;
   readonly rightsBom: readonly StudioRightsBomRecord[];
   readonly dependencies: readonly StudioHybridDccDependencyEdge[];
   readonly dirtyNodeIds: readonly string[];
@@ -146,6 +151,7 @@ export interface StudioHybridDccPersistedSnapshot {
   readonly rightsBom: readonly StudioRightsBomRecord[];
   readonly dependencies: readonly StudioHybridDccDependencyEdge[];
   readonly objectTransforms: Readonly<Record<string, StudioHybridDccObjectTransform>>;
+  readonly materials?: StudioHybridDccMaterials;
   readonly assets: readonly {
     readonly assetId: string;
     readonly meshHash: string;
@@ -208,169 +214,12 @@ export interface StudioHybridDccSession {
   readonly lamport: number;
 }
 
-function stateHash(parts: readonly string[]): string {
-  return `sha256:${sha256HexPortable(new TextEncoder().encode(parts.join("|")))}`;
-}
-
-function computeStateHash(
-  state: Omit<StudioHybridDccDocumentState, "stateHash">,
-  meshFingerprints: readonly string[],
-): string {
-  return stateHash([
-    state.documentId,
-    String(state.version),
-    String(state.commandCount),
-    String(Object.keys(state.geometry.records).length),
-    ...meshFingerprints,
-    ...Object.keys(state.objectTransforms)
-      .sort()
-      .map((id) => `${id}:${hashStudioHybridDccObjectTransform(state.objectTransforms[id]!)}`),
-    ...state.dirtyNodeIds,
-    ...state.rightsBom
-      .map((record) => canonicalStudioCommandJson(record))
-      .sort(),
-    ...state.dependencies
-      .map((dependency) => canonicalStudioCommandJson(dependency))
-      .sort(),
-    state.milestoneLabel ?? "",
-  ]);
-}
-
 function forkStudioCommandJournal(journal: StudioCommandJournal): StudioCommandJournal {
   return restoreStudioCommandJournal(serializeStudioCommandJournal(journal));
 }
 
 function contentHashForMeshHash(meshHash: string): `sha256:${string}` {
   return `sha256:${sha256HexPortable(new TextEncoder().encode(meshHash))}`;
-}
-
-function meshFingerprints(geometry: StudioGeometryAuthorityRegistry): string[] {
-  return Object.keys(geometry.records)
-    .sort()
-    .map((id) => {
-      const record = geometry.records[id]!;
-      return `${id}:${record.meshHash}:${hashStudioMeshModifierStack(record.modifierStack)}`;
-    });
-}
-
-function finalizeState(
-  partial: Omit<StudioHybridDccDocumentState, "stateHash">,
-): StudioHybridDccDocumentState {
-  const assetIds = Object.keys(partial.geometry.records).sort();
-  const transformIds = Object.keys(partial.objectTransforms).sort();
-  if (assetIds.length !== transformIds.length
-    || assetIds.some((assetId, index) => assetId !== transformIds[index])) {
-    throw new Error("object transform registry must match geometry authority assets exactly");
-  }
-  return {
-    ...partial,
-    stateHash: computeStateHash(partial, meshFingerprints(partial.geometry)),
-  };
-}
-
-export function snapshotStudioHybridDccState(
-  state: StudioHybridDccDocumentState,
-): StudioHybridDccPersistedSnapshot {
-  const assets = Object.values(state.geometry.records)
-    .map((record) => ({
-      assetId: record.assetId,
-      meshHash: record.meshHash,
-      revision: record.revision,
-      mesh: serializeStudioEditableMesh(record.mesh),
-      modifierStack: serializeStudioMeshModifierStack(record.modifierStack),
-    }))
-    .sort((a, b) => a.assetId.localeCompare(b.assetId));
-  return {
-    format: STUDIO_HYBRID_DCC_DOCUMENT_FORMAT,
-    version: STUDIO_HYBRID_DCC_DOCUMENT_VERSION,
-    documentId: state.documentId,
-    commandCount: state.commandCount,
-    stateHash: state.stateHash,
-    milestoneLabel: state.milestoneLabel,
-    dirtyNodeIds: [...state.dirtyNodeIds],
-    rightsBom: [...state.rightsBom],
-    dependencies: [...state.dependencies],
-    objectTransforms: Object.fromEntries(
-      Object.keys(state.objectTransforms)
-        .sort()
-        .map((assetId) => [
-          assetId,
-          normalizeStudioHybridDccObjectTransform(state.objectTransforms[assetId]),
-        ]),
-    ),
-    assets,
-  };
-}
-
-export function restoreStudioHybridDccStateFromSnapshot(
-  snapshot: StudioHybridDccRestorableSnapshot,
-): StudioHybridDccDocumentState {
-  if (snapshot.format !== STUDIO_HYBRID_DCC_DOCUMENT_FORMAT
-    || (snapshot.version !== STUDIO_HYBRID_DCC_DOCUMENT_VERSION
-      && snapshot.version !== STUDIO_HYBRID_DCC_PREVIOUS_DOCUMENT_VERSION
-      && snapshot.version !== STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION)) {
-    throw new Error("unsupported Hybrid DCC document snapshot");
-  }
-  let geometry = createStudioGeometryAuthorityRegistry();
-  for (const asset of snapshot.assets) {
-    const mesh = deserializeStudioEditableMesh(asset.mesh);
-    let modifierStack = createStudioMeshModifierStack(mesh);
-    if (snapshot.version === STUDIO_HYBRID_DCC_DOCUMENT_VERSION) {
-      if (!("modifierStack" in asset)) {
-        throw new Error(`invalid modifier stack for ${asset.assetId}: v3 field is missing`);
-      }
-      const decoded = deserializeStudioMeshModifierStack(asset.modifierStack, mesh);
-      if (!decoded.ok) {
-        throw new Error(`invalid modifier stack for ${asset.assetId}: ${decoded.detail}`);
-      }
-      modifierStack = decoded.value;
-    }
-    const registered = registerStudioGeometryAuthority(geometry, asset.assetId, mesh, {
-      modifierStack,
-      recordRevision: asset.revision,
-    });
-    if (!registered.ok) throw new Error(registered.detail);
-    geometry = registered.value;
-    const current = geometry.records[asset.assetId]!;
-    if (!matchesStudioEditableMeshPersistedHash(mesh, asset.meshHash)) {
-      // Exact SHA-256 is current authority. A genuine legacy v2 fingerprint is migration-only.
-      throw new Error(
-        `mesh hash mismatch for ${asset.assetId}: ${current.meshHash} vs ${asset.meshHash}`,
-      );
-    }
-  }
-  const storedTransforms = snapshot.version !== STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION
-    ? snapshot.objectTransforms
-    : {};
-  const objectTransforms = Object.fromEntries(
-    Object.keys(geometry.records).sort().map((assetId) => [
-      assetId,
-      snapshot.version !== STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION
-        ? normalizeStudioHybridDccObjectTransform(storedTransforms[assetId])
-        : createStudioHybridDccIdentityTransform(),
-    ]),
-  );
-  if (snapshot.version !== STUDIO_HYBRID_DCC_LEGACY_DOCUMENT_VERSION
-    && Object.keys(storedTransforms).some((assetId) => !Object.hasOwn(geometry.records, assetId))) {
-    throw new Error("object transform registry contains an unknown asset");
-  }
-  return finalizeState({
-    format: STUDIO_HYBRID_DCC_DOCUMENT_FORMAT,
-    version: STUDIO_HYBRID_DCC_DOCUMENT_VERSION,
-    documentId: snapshot.documentId,
-    geometry,
-    objectTransforms,
-    rightsBom: snapshot.rightsBom.map((record) => {
-      const restored = geometry.records[record.assetId];
-      return restored
-        ? { ...record, contentHash: contentHashForMeshHash(restored.meshHash) }
-        : record;
-    }),
-    dependencies: [...snapshot.dependencies],
-    dirtyNodeIds: [...snapshot.dirtyNodeIds],
-    milestoneLabel: snapshot.milestoneLabel,
-    commandCount: snapshot.commandCount,
-  });
 }
 
 export function createStudioHybridDccSession(
@@ -433,6 +282,7 @@ function appendCommand(
     documentId: nextPartial.documentId ?? session.state.documentId,
     geometry: nextPartial.geometry,
     objectTransforms: nextPartial.objectTransforms,
+    ...(Object.hasOwn(nextPartial, "materials") ? { materials: nextPartial.materials } : session.state.materials ? { materials: session.state.materials } : {}),
     rightsBom: nextPartial.rightsBom,
     dependencies: nextPartial.dependencies,
     dirtyNodeIds: nextPartial.dirtyNodeIds,
@@ -504,6 +354,7 @@ export function hybridDccRegisterAssets(
     readonly mesh: StudioEditableMesh;
     readonly rights: Omit<StudioRightsBomRecord, "assetId" | "contentHash">;
     readonly initialTransform: StudioHybridDccObjectTransform;
+    readonly initialMaterials?: Readonly<Record<string, StudioHybridDccToonMaterial>>;
   }[],
 ): StudioHybridDccSession {
   if (assets.length === 0) return session;
@@ -546,6 +397,18 @@ export function hybridDccRegisterAssets(
   });
 
   const objectTransforms = { ...session.state.objectTransforms };
+  const materialDefinitions = { ...session.state.materials?.definitions };
+  const materialBindings = { ...session.state.materials?.bindings };
+  for (const asset of prepared) {
+    if (asset.initialMaterials === undefined) continue;
+    const initial = studioToonMaterialObject(asset.initialMaterials); const bindings: Record<string, string> = {};
+    for (const slot of Object.keys(initial)) {
+      const material = normalizeStudioHybridDccToonMaterial(initial[slot]); const id = hashStudioHybridDccToonMaterial(material);
+      materialDefinitions[id] = material; bindings[slot] = id;
+    }
+    Object.defineProperty(materialBindings, asset.assetId, { value: bindings, enumerable: true });
+  }
+  const materials = normalizeStudioHybridDccMaterials({ revision: 1, definitions: materialDefinitions, bindings: materialBindings }, geometry);
   const rightsBom: StudioRightsBomRecord[] = [...session.state.rightsBom];
   const dependencies: StudioHybridDccDependencyEdge[] = [...session.state.dependencies];
   for (const asset of prepared) {
@@ -572,6 +435,7 @@ export function hybridDccRegisterAssets(
     {
       geometry,
       objectTransforms,
+      ...(materials ? { materials } : {}),
       rightsBom,
       dependencies,
       dirtyNodeIds: [...new Set([
@@ -639,6 +503,7 @@ export function hybridDccDuplicateAsset(
     { assetId: duplicateAssetId },
     {
       geometry: registered.value,
+      materials: duplicateStudioHybridDccMaterialBindings(session.state.materials, sourceAssetId, duplicateAssetId),
       objectTransforms: {
         ...session.state.objectTransforms,
         [duplicateAssetId]: transform,
@@ -1283,6 +1148,19 @@ export function hybridDccAutosaveCheckpoint(
       milestoneLabel: label,
     },
   );
+}
+
+/** 실제 face slot의 재질 정의·binding을 하나의 undo 명령으로 적용하거나 해제한다. */
+export function hybridDccSetAssetToonMaterial(session: StudioHybridDccSession, assetId: string,
+  slots: readonly number[], material: StudioHybridDccToonMaterial | null): StudioHybridDccSession {
+  const materials = setStudioHybridDccAssetToonMaterial(session.state.geometry, session.state.materials, assetId, slots, material);
+  if (materials === session.state.materials) return session;
+  const payload = JSON.parse(JSON.stringify({ assetId, slots: [...new Set(slots)].sort((a, b) => a - b),
+    materialId: material === null ? null : hashStudioHybridDccToonMaterial(material) })) as StudioCommandJsonValue;
+  const inverse = JSON.parse(JSON.stringify({ assetId, materials: session.state.materials ?? null })) as StudioCommandJsonValue;
+  return appendCommand(session, "material.toon.set", payload, inverse, { ...session.state, materials,
+    dirtyNodeIds: [...new Set([...session.state.dirtyNodeIds, assetId, "shot:*",
+      ...session.state.dependencies.filter((edge) => edge.fromId === assetId).map((edge) => edge.toId)])] });
 }
 
 /** Undo last command — restores prior geometry/document state (DOC-002). */

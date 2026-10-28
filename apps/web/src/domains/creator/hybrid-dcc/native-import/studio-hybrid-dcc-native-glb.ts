@@ -7,11 +7,12 @@ import { multiplyNativeMatrix, nativeMatrixDeterminant, nativeMatrixPoint, nativ
 import { admitNativeGlbOutputWork, admitNativeGlbPrimitiveScanWork } from "./studio-hybrid-dcc-native-glb-budget";
 import { STUDIO_NATIVE_IMPORT_MAX_ASSETS, studioNativeImportFailure, type StudioNativeImportAsset, type StudioNativeImportIssue, type StudioNativeImportResult } from "./studio-hybrid-dcc-native-import-contracts";
 import { assertStudioNativeUvPrecision, StudioNativeUvPrecisionError, type StudioNativeUvPoint } from "./studio-hybrid-dcc-native-uv-precision";
+import { decodeStudioNativeToonMaterial } from "./studio-hybrid-dcc-native-toon-material";
 
 interface PrimitiveJob {
   readonly node: number; readonly meshIndex: number; readonly primitiveIndex: number; readonly name: string;
   readonly position: NativeGltfAccessor; readonly uv?: NativeGltfAccessor; readonly indices?: NativeGltfAccessor;
-  readonly indexCount: number; readonly mode: number; readonly material: number; readonly smooth: boolean; readonly world: NativeMatrix;
+  readonly indexCount: number; readonly mode: number; readonly material: number; readonly materialAssigned: boolean; readonly smooth: boolean; readonly world: NativeMatrix;
   readonly sourceVertices: readonly number[]; readonly sourceTriangles: readonly (readonly [number, number, number])[];
   readonly placement: ReturnType<typeof nativeWorldPlacement>;
 }
@@ -107,18 +108,26 @@ export function decodeStudioNativeGlb(bytes: Uint8Array, format: "glb" | "gltf" 
       if (!used.includes(name)) reject("INVALID_EXTENSION", "필수 확장이 사용 확장 목록에 없습니다.", "extensionsRequired");
       if (name !== "KHR_mesh_quantization" && !(typeof name === "string" && KNOWN_METADATA_EXTENSIONS.has(name))) reject("REQUIRED_EXTENSION", "필수 확장 또는 압축을 현재 편집 decoder에서 해석할 수 없습니다.", "extensionsRequired");
     }
-    for (const name of used) if (name !== "KHR_mesh_quantization") warning("OPTIONAL_EXTENSION_DROPPED", "추가 확장의 동작은 가져오지 않고 기본 메시 데이터만 보존합니다.", "extensionsUsed");
+    for (const name of used) if (name !== "KHR_mesh_quantization" && name !== "VRMC_materials_mtoon") warning("OPTIONAL_EXTENSION_DROPPED", "추가 확장의 동작은 가져오지 않고 기본 메시 데이터만 보존합니다.", "extensionsUsed");
     const plans = nativeGltfAccessors(data);
     const { nodes, roots, matrices } = sceneNodes(root);
     const meshes = array(root.meshes, "meshes", true); const materials = array(root.materials, "materials", true);
     const skins = array(root.skins, "skins", true); const cameras = array(root.cameras, "cameras", true);
     if (meshes.length > 8192 || materials.length > 8192) reject("METADATA_BUDGET", "메시·재질 메타데이터 수가 편집 예산을 넘었습니다.");
+    const initialToonMaterials = materials.map((material, index) => decodeStudioNativeToonMaterial(material, `materials[${index}]`));
+    if (initialToonMaterials.some((material) => material !== null) && !used.includes("VRMC_materials_mtoon")) {
+      reject("INVALID_TOON_MATERIAL", "자체 툰 재질의 MToon 확장이 사용 확장 목록에 없습니다.", "extensionsUsed");
+    }
     for (const [index, node] of nodes.entries()) {
       if (node.mesh !== undefined) integer(node.mesh, `nodes[${index}].mesh`, meshes.length - 1);
       if (node.skin !== undefined) integer(node.skin, `nodes[${index}].skin`, skins.length - 1);
       if (node.camera !== undefined) integer(node.camera, `nodes[${index}].camera`, cameras.length - 1);
     }
-    if (materials.length) warning("MATERIALS_NOT_IMPORTED", "재질 슬롯 번호는 보존하지만 재질·텍스처 표현은 가져오지 않습니다.", "materials");
+    if (initialToonMaterials.some((material) => material === null)) warning("MATERIALS_NOT_IMPORTED", "재질 슬롯 번호와 검증된 자체 툰 재질만 보존하며 일반 외부 재질·텍스처 표현은 가져오지 않습니다.", "materials");
+    if (used.includes("VRMC_materials_mtoon") && materials.some((material, index) => initialToonMaterials[index] === null
+      && Object.hasOwn(extensions(object(material, `materials[${index}]`), `materials[${index}]`), "VRMC_materials_mtoon"))) {
+      warning("OPTIONAL_EXTENSION_DROPPED", "자체 정본 metadata가 없는 외부 MToon 확장의 동작은 가져오지 않습니다.", "extensionsUsed");
+    }
     for (const [index, raw] of array(root.images, "images", true).entries()) {
       const image = object(raw, `images[${index}]`);
       if (image.uri !== undefined && typeof image.uri !== "string") reject("INVALID_IMAGE", "이미지 URI 형식이 올바르지 않습니다.", `images[${index}]`);
@@ -168,7 +177,7 @@ export function decodeStudioNativeGlb(bytes: Uint8Array, format: "glb" | "gltf" 
         const material = primitive.material === undefined ? 0 : integer(primitive.material, `${path}.material`, materials.length - 1);
         if (primitive.targets !== undefined) { array(primitive.targets, `${path}.targets`); warning("MORPH_TARGETS_NOT_IMPORTED", "모프 타깃은 적용하지 않고 기본 메시만 가져옵니다.", path); }
         const uv = attrs.TEXCOORD_0 === undefined ? undefined : accessor(plans, attrs.TEXCOORD_0, `${path}.attributes.TEXCOORD_0`);
-        const candidate = { node: frame.id, meshIndex, primitiveIndex, position, ...(uv ? { uv } : {}), ...(indices ? { indices } : {}), indexCount, mode, material, smooth: attrs.NORMAL !== undefined, world, placement: nativeWorldPlacement(world),
+        const candidate = { node: frame.id, meshIndex, primitiveIndex, position, ...(uv ? { uv } : {}), ...(indices ? { indices } : {}), indexCount, mode, material, materialAssigned: primitive.material !== undefined, smooth: attrs.NORMAL !== undefined, world, placement: nativeWorldPlacement(world),
           name: boundedName(node.name, boundedName(mesh.name, `모델 ${frame.id + 1}`)) + (array(mesh.primitives, `${path}.primitives`).length > 1 ? ` · ${primitiveIndex + 1}` : "") };
         const referenced = new Set<number>(); const sourceTriangles: Array<readonly [number, number, number]> = []; let collapsed = 0;
         const degenerate = triangles(candidate, (a, b, c) => {
@@ -239,7 +248,10 @@ export function decodeStudioNativeGlb(bytes: Uint8Array, format: "glb" | "gltf" 
       }
       const valid = validateStudioEditableMeshSerializableAuthority(mesh);
       if (!valid.ok) reject("INVALID_TOPOLOGY", "가져온 삼각형을 편집 메시 정본으로 구성할 수 없습니다.", path);
-      assets.push({ name: job.name, mesh, initialTransform: placement.transform, sourceNodeIndex: job.node, sourceMeshIndex: job.meshIndex, sourcePrimitiveIndex: job.primitiveIndex });
+      const initialMaterial = job.materialAssigned ? initialToonMaterials[job.material] : undefined;
+      assets.push({ name: job.name, mesh, initialTransform: placement.transform,
+        ...(initialMaterial ? { initialMaterials: { [String(job.material)]: initialMaterial } } : {}),
+        sourceNodeIndex: job.node, sourceMeshIndex: job.meshIndex, sourcePrimitiveIndex: job.primitiveIndex });
     }
     if (!assets.length) reject("NO_EDITABLE_GEOMETRY", "활성 장면에 가져올 수 있는 삼각형 메시가 없습니다.");
     return { ok: true, value: { format, assets, issues } };

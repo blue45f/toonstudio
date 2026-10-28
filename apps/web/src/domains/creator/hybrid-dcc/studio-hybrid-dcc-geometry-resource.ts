@@ -1,6 +1,9 @@
 import * as THREE from "three";
 
+import { deriveStudioHybridDccMaterialGroups } from "./materials/studio-hybrid-dcc-toon-projection";
+
 export interface StudioHybridDccGeometryResource {
+  readonly materialSlots?: readonly number[];
   readonly geometry: THREE.BufferGeometry;
   readonly edges: THREE.EdgesGeometry;
   readonly edgeDetail: "silhouette" | "bounds";
@@ -8,6 +11,7 @@ export interface StudioHybridDccGeometryResource {
 }
 
 export interface StudioHybridDccGeometryResourceInput {
+  readonly triangleMaterialSlots?: Float64Array;
   readonly positions: Float32Array;
   readonly indices: Uint32Array;
   readonly normalMode: "flat" | "smooth" | "split";
@@ -21,6 +25,8 @@ export function createStudioHybridDccGeometryResource(
   asset: StudioHybridDccGeometryResourceInput,
   maxDetailedEdgeTriangles = 120_000,
 ): StudioHybridDccGeometryResource {
+  const materialGroups = asset.triangleMaterialSlots === undefined ? undefined
+    : deriveStudioHybridDccMaterialGroups(asset.triangleMaterialSlots, asset.indices.length);
   if (asset.cornerUvs && (asset.cornerUvs.length !== asset.indices.length * 2
     || asset.cornerUvs.some((value) => !Number.isFinite(value)))) {
     throw new Error("화면용 UV 코너와 삼각형 개수가 맞지 않거나 좌표가 유한하지 않습니다.");
@@ -45,6 +51,7 @@ export function createStudioHybridDccGeometryResource(
   if (asset.cornerNormals) geometry.setAttribute("normal", new THREE.BufferAttribute(asset.cornerNormals, 3));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
+  if (materialGroups) for (const group of materialGroups.groups) geometry.addGroup(group.start, group.count, group.materialIndex);
   let edgeDetail: StudioHybridDccGeometryResource["edgeDetail"] = "silhouette";
   let edges: THREE.EdgesGeometry;
   if (asset.indices.length / 3 <= maxDetailedEdgeTriangles) {
@@ -59,5 +66,5 @@ export function createStudioHybridDccGeometryResource(
     edges = new THREE.EdgesGeometry(box);
     box.dispose();
   }
-  return { geometry, edges, edgeDetail, dispose: () => { edges.dispose(); geometry.dispose(); } };
+  return { geometry, edges, edgeDetail, ...(materialGroups ? { materialSlots: materialGroups.materialSlots } : {}), dispose: () => { edges.dispose(); geometry.dispose(); } };
 }

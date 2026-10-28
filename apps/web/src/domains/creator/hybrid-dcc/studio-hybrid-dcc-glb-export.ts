@@ -26,6 +26,8 @@ import {
   STUDIO_HYBRID_DCC_GLB_EXPORT_MAX_ISSUE_IDS,
   STUDIO_HYBRID_DCC_GLB_EXPORT_MAX_REPORT_ISSUES,
 } from "./studio-hybrid-dcc-glb-export-diagnostic-limits";
+import { buildStudioHybridDccGltfJson } from "./materials/studio-hybrid-dcc-glb-json";
+import { hashStudioHybridDccToonMaterialSlots, normalizeStudioHybridDccToonMaterialSlots, planStudioHybridDccGlbMaterials, type StudioHybridDccToonMaterialSlots } from "./materials/studio-hybrid-dcc-toon-export";
 import { canonicalStudioHybridDccFaceLoop, triangulateStudioHybridDccRenderQuad } from "./studio-hybrid-dcc-render-face";
 import { encodeStudioHybridDccGlbBinary, type StudioHybridDccGlbBinaryGeometry } from "./studio-hybrid-dcc-glb-binary";
 import { validateStudioMeshUvLayer, type StudioMeshUvLayer } from "../mesh-uv/studio-mesh-uv-authority";
@@ -48,11 +50,6 @@ export const STUDIO_HYBRID_DCC_GLB_MIME_TYPE = STUDIO_VRM_EXPORT_MIME_TYPE;
 /** Bounds the synchronous deterministic n-gon checks before this path moves to a Worker. */
 export const STUDIO_HYBRID_DCC_GLB_MAX_FACE_CORNERS = 256;
 
-const GLTF_COMPONENT_FLOAT = 5126;
-const GLTF_COMPONENT_UNSIGNED_INT = 5125;
-const GLTF_ARRAY_BUFFER = 34962;
-const GLTF_ELEMENT_ARRAY_BUFFER = 34963;
-const GLTF_TRIANGLES = 4;
 const PLANAR_EPSILON = 1e-6;
 const GEOMETRY_EPSILON = 1e-12;
 
@@ -127,6 +124,7 @@ export interface StudioHybridDccGlbExportSource {
   readonly sourceRevision: number;
   readonly sourceHash: string;
   readonly meshSchemaRevision: typeof STUDIO_EDITABLE_MESH_REVISION;
+  readonly toonMaterialsHash?: string;
 }
 
 export interface StudioHybridDccGlbExportReport {
@@ -164,6 +162,7 @@ export interface StudioHybridDccMeshGlbExportInput {
   readonly sourceRevision: number;
   /** Must be the current `hashStudioEditableMesh(mesh)` value. */
   readonly sourceHash: string;
+  readonly toonMaterials?: StudioHybridDccToonMaterialSlots;
 }
 
 export type StudioHybridDccMeshGlbExportResult =
@@ -336,13 +335,16 @@ function stop<T>(entry: StudioHybridDccGlbIssue): InternalResult<T> {
 }
 
 function reportSource(input: Partial<StudioHybridDccMeshGlbExportInput>): StudioHybridDccGlbExportSource {
-  return {
+  const source: StudioHybridDccGlbExportSource = {
     authority: "editable-half-edge-mesh",
     assetId: typeof input.assetId === "string" ? input.assetId : "",
     sourceRevision: Number.isSafeInteger(input.sourceRevision) ? input.sourceRevision! : 0,
     sourceHash: typeof input.sourceHash === "string" ? input.sourceHash : "",
     meshSchemaRevision: STUDIO_EDITABLE_MESH_REVISION,
   };
+  if (input.toonMaterials === undefined) return source;
+  try { return { ...source, toonMaterialsHash: hashStudioHybridDccToonMaterialSlots(input.toonMaterials) }; }
+  catch { return source; }
 }
 
 function blockedReport(
@@ -730,7 +732,7 @@ function prepareFace(
   });
 }
 
-function validateMesh(mesh: StudioEditableMesh): InternalResult<ValidatedMesh> {
+function validateMesh(mesh: StudioEditableMesh, toonMaterials?: StudioHybridDccToonMaterialSlots): InternalResult<ValidatedMesh> {
   if (!isRecord(mesh) || !Array.isArray(mesh.vertices) || !Array.isArray(mesh.halfEdges) || !Array.isArray(mesh.faces)) {
     return stop(issue("error", "invalid-input", "Editable mesh arrays are required"));
   }
@@ -1031,7 +1033,7 @@ function validateMesh(mesh: StudioEditableMesh): InternalResult<ValidatedMesh> {
     }
   }
   const materialFaces = validatedFaces
-    .filter(({ face }) => face.materialSlot !== 0)
+    .filter(({ face }) => face.materialSlot !== 0 && !toonMaterials?.[String(face.materialSlot)])
     .map(({ face }) => face.id);
   const losses = materialFaces.length > 0
     ? [
@@ -1250,136 +1252,6 @@ function containerIssue(bytes: Uint8Array, expectedBinaryByteLength: number): St
   return null;
 }
 
-type EncodedBinary = Extract<ReturnType<typeof encodeBinary>, { readonly ok: true }>["value"];
-
-function buildGltfJson(
-  input: StudioHybridDccMeshGlbExportInput,
-  mesh: ValidatedMesh,
-  geometry: BuiltGeometry,
-  binary: EncodedBinary,
-): Record<string, unknown> {
-  const source = {
-    authority: "editable-half-edge-mesh",
-    assetId: input.assetId,
-    sourceHash: input.sourceHash,
-    sourceRevision: input.sourceRevision,
-    meshSchemaRevision: input.mesh.revision,
-  } as const;
-  const faceTopology = mesh.faces.map((entry) => ({
-    faceId: entry.face.id,
-    halfEdgeIds: entry.halfEdgeIds,
-    materialSlot: entry.face.materialSlot,
-    smooth: entry.face.smooth,
-    vertexIds: entry.vertexIds,
-  }));
-  const outputVertexCount = geometry.outputSourceVertexIds.length;
-  return {
-    asset: {
-      version: "2.0",
-      generator: STUDIO_HYBRID_DCC_GLB_EXPORT_GENERATOR,
-      extras: { toonSpectrum: { provenance: source } },
-    },
-    scene: 0,
-    scenes: [{ name: input.assetId, nodes: [0] }],
-    nodes: [{
-      name: input.assetId,
-      mesh: 0,
-      extras: { toonSpectrum: { sourceAssetId: input.assetId, sourceRevision: input.sourceRevision } },
-    }],
-    meshes: [{
-      name: input.assetId,
-      extras: { toonSpectrum: { provenance: source, sourceFaceTopology: faceTopology } },
-      primitives: [{
-        attributes: { POSITION: 0, NORMAL: 1, ...(geometry.texcoords ? { TEXCOORD_0: 3 } : {}) },
-        indices: 2,
-        mode: GLTF_TRIANGLES,
-        extras: {
-          toonSpectrum: {
-            outputSourceNormalFaceIds: geometry.outputSourceNormalFaceIds,
-            outputSourceVertexIds: geometry.outputSourceVertexIds,
-            sourceFaceIdsByTriangle: geometry.triangleSourceFaceIds,
-          },
-        },
-      }],
-    }],
-    buffers: [{ byteLength: binary.bytes.byteLength }],
-    bufferViews: [
-      {
-        buffer: 0,
-        byteOffset: binary.positionOffset,
-        byteLength: binary.positionByteLength,
-        target: GLTF_ARRAY_BUFFER,
-      },
-      {
-        buffer: 0,
-        byteOffset: binary.normalOffset,
-        byteLength: binary.normalByteLength,
-        target: GLTF_ARRAY_BUFFER,
-      },
-      {
-        buffer: 0,
-        byteOffset: binary.indexOffset,
-        byteLength: binary.indexByteLength,
-        target: GLTF_ELEMENT_ARRAY_BUFFER,
-      },
-      ...(binary.texcoordOffset === undefined ? [] : [{
-        buffer: 0,
-        byteOffset: binary.texcoordOffset,
-        byteLength: binary.texcoordByteLength,
-        target: GLTF_ARRAY_BUFFER,
-      }]),
-    ],
-    accessors: [
-      {
-        bufferView: 0,
-        byteOffset: 0,
-        componentType: GLTF_COMPONENT_FLOAT,
-        count: outputVertexCount,
-        type: "VEC3",
-        min: binary.boundsMin,
-        max: binary.boundsMax,
-      },
-      {
-        bufferView: 1,
-        byteOffset: 0,
-        componentType: GLTF_COMPONENT_FLOAT,
-        count: outputVertexCount,
-        type: "VEC3",
-      },
-      {
-        bufferView: 2,
-        byteOffset: 0,
-        componentType: GLTF_COMPONENT_UNSIGNED_INT,
-        count: geometry.indices.length,
-        type: "SCALAR",
-        min: [minimumNumber(geometry.indices)],
-        max: [maximumNumber(geometry.indices)],
-      },
-      ...(geometry.texcoords ? [{
-        bufferView: 3,
-        byteOffset: 0,
-        componentType: GLTF_COMPONENT_FLOAT,
-        count: outputVertexCount,
-        type: "VEC2",
-      }] : []),
-    ],
-    extras: {
-      toonSpectrum: {
-        provenance: source,
-        sourceCounts: {
-          vertices: input.mesh.vertices.length,
-          halfEdges: input.mesh.halfEdges.length,
-          faces: input.mesh.faces.length,
-        },
-        topology: {
-          boundaryEdges: mesh.boundaryEdgeCount,
-          triangles: geometry.indices.length / 3,
-        },
-      },
-    },
-  };
-}
-
 /**
  * Export an authoring half-edge mesh to a deterministic, self-contained GLB 2.0 byte snapshot.
  * Invalid or unsupported topology never yields partial bytes.
@@ -1402,7 +1274,8 @@ export function exportStudioHybridDccMeshGlb(
   }
 
   try {
-    const validated = validateMesh(input.mesh);
+    if (input.toonMaterials !== undefined) input = { ...input, toonMaterials: normalizeStudioHybridDccToonMaterialSlots(input.toonMaterials) };
+    const validated = validateMesh(input.mesh, input.toonMaterials);
     if (!validated.ok) return blockedReport(input, validated.issue);
     const invalidUv = validateStudioMeshUvLayer(input.mesh);
     if (invalidUv) return blockedReport(input, issue("error", "uv-coordinate-invalid", invalidUv));
@@ -1426,7 +1299,9 @@ export function exportStudioHybridDccMeshGlb(
         validated.value.warningCount,
       );
     }
-    const binary = encodeBinary(geometry.value);
+    const materials = input.toonMaterials === undefined ? undefined : planStudioHybridDccGlbMaterials(input.toonMaterials, input.mesh.faces, geometry.value.indices, geometry.value.triangleSourceFaceIds);
+    const exportGeometry = materials ? { ...geometry.value, indices: materials.indices, triangleSourceFaceIds: materials.sourceFaceIds } : geometry.value;
+    const binary = encodeBinary(exportGeometry);
     if (!binary.ok) {
       return blockedReport(
         input,
@@ -1436,7 +1311,7 @@ export function exportStudioHybridDccMeshGlb(
         validated.value.warningCount,
       );
     }
-    const json = buildGltfJson(input, validated.value, geometry.value, binary.value);
+    const json = buildStudioHybridDccGltfJson(input, validated.value, exportGeometry, binary.value, STUDIO_HYBRID_DCC_GLB_EXPORT_GENERATOR, materials);
     let bytes: Uint8Array<ArrayBuffer>;
     try {
       bytes = writeStudioVrmExportGlb({ json, binary: binary.value.bytes });

@@ -46,7 +46,7 @@ FileReader 취소·재선택·unmount와 최종 `run.canCommit` 경계를 함께
 - sparse accessor·implicit zero accessor·stride·component alignment·attribute의 상대 offset과
   행렬 column padding을 검증한다. 예약 최대 인덱스, 잘못된 참조·순환 계층·비유한 값은 거부한다.
   `KHR_mesh_quantization`의 허용 component/semantic을 검사한다.
-- 재질 슬롯 번호와 정적 geometry를 보존한다. 재질 외형·이미지·커스텀 법선·tangent·색·리깅·현재 포즈·
+- 재질 슬롯 번호와 정적 geometry를 보존한다. 일반 외부 재질 외형·이미지·커스텀 법선·tangent·색·리깅·현재 포즈·
   모프·애니메이션·카메라는 가져오지 않는 사실을 안내한다. 이미지·외부 buffer URI를 요청하지 않는다.
   외부 파일을 참조하는 glTF와 필수 Draco/Meshopt 압축은 현재 decoder에서 지원하지 않는다.
 
@@ -91,7 +91,7 @@ flat 면은 기존 fan 삼각형 법선, smooth 면은 연결된 원본 면의 N
 
 ## migration — 실행한 검증
 
-2026-10-29의 최종 집중 회귀는 **14파일 168개**가 exit 0으로 통과했다. decoder·예산·atomic 등록·취소/계정 변경 UI·
+2026-10-29의 `7ccb2684` 후보 집중 회귀는 **14파일 168개**가 exit 0으로 통과했다. decoder·예산·atomic 등록·취소/계정 변경 UI·
 파일 도구·실제 snapshot·Three normal attribute·GLB/작업파일 왕복을 함께 검증했다.
 추가 authoring 회귀는 가져온 GLB의 Sculpt→UV 정리→작업파일→GLB 흐름에서 위치·코너 UV·winding을
 비교하고, smooth·혼합 smooth OBJ가 실제 표시 geometry와 파일로 이어지는지 확인했다.
@@ -108,6 +108,9 @@ SHA-256은 `ef8f05c5e0c718a07ad6f455b3f302cd4d76c4e526aec68ae362a3c3569d1832`,
 공유 검사 순서가 돌아온 뒤 실행한다. 앞선 `9903b0094`의 통과 기록을 이 브랜치의 검증으로 대체하지 않는다.
 
 ## target — 남은 기능
+
+별도 후속 브랜치의 자체 툰 GLB는 metadata와 실제 재질 payload를 대조한 뒤 초기 재질까지 atomic 복원한다.
+이 범위와 미완성 소비자는 [툰 재질 계약](blender-native-toon-material-contracts.md)의 migration 상태를 따른다.
 
 - 압축된 Draco/Meshopt 모델의 설치 없는 안전한 preparation과 실제 해제 fixture
 - 재질·이미지·리깅/포즈·애니메이션의 정본과 실제 소비자 연결

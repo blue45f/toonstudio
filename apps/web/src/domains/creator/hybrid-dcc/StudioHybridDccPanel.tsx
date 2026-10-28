@@ -53,6 +53,8 @@ import { StudioHybridDccIntro, type StudioHybridDccStartKind } from "./StudioHyb
 import { StudioHybridDccViewport } from "./StudioHybridDccViewport";
 import { StudioHybridDccFileTools } from "./StudioHybridDccFileTools";
 import { useStudioHybridDccFileTools } from "./useStudioHybridDccFileTools";
+import { useStudioHybridDccWorkspaceLease } from "./useStudioHybridDccWorkspaceLease";
+import { studioHybridDccHandoffAnnouncement, studioHybridDccToonHandoffNotice } from "./materials/studio-hybrid-dcc-toon-handoff-copy";
 import { useStudioHybridDccNativeImport } from "./native-import/useStudioHybridDccNativeImport";
 import { StudioHybridDccNativeImportStatus } from "./native-import/StudioHybridDccNativeImportStatus";
 import {
@@ -290,6 +292,7 @@ export function StudioHybridDccPanel({
 
   const fileTools = useStudioHybridDccFileTools({ workspace: ws, workspaceDocumentId, busy, run });
   const modelImport = useStudioHybridDccNativeImport({ workspace: ws, workspaceDocumentId, busy, run });
+  const captureWorkspaceLease = useStudioHybridDccWorkspaceLease(ws, workspaceDocumentId, Boolean(onOpenInBackground3D));
   const runModifier = (
     label: string,
     fn: () => StudioHybridDccWorkspace | Promise<StudioHybridDccWorkspace>,
@@ -547,27 +550,29 @@ export function StudioHybridDccPanel({
     if (!onOpenInBackground3D || busy) return;
     const generation = ++runGenerationRef.current;
     const controller = new AbortController();
+    const current = captureWorkspaceLease(controller);
     handoffAbortRef.current?.abort();
     handoffAbortRef.current = controller;
     setBusy(true);
     try {
       const { handoffStudioHybridDccWorkspaceToBg3d } = await import( "./studio-hybrid-dcc-bg3d-handoff"
       );
+      if (!current()) return;
       const result = await handoffStudioHybridDccWorkspaceToBg3d(ws, {
         signal: controller.signal,
       });
       if (
         controller.signal.aborted ||
         !mountedRef.current ||
-        generation !== runGenerationRef.current
+        generation !== runGenerationRef.current || !current()
       ) return;
-      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.handoffCompleted", { assets: result.assets.length, shots: result.shots.length, losses: result.losses.length }, "3D 배경 편집기로 전달 완료 · 모델 {assets}개 · 컷 {shots}개 · 보존 보고 {losses}개"));
+      setLog(studioHybridDccHandoffAnnouncement(bt, result));
       onOpenInBackground3D(result);
     } catch (error) {
       if (
         controller.signal.aborted ||
         !mountedRef.current ||
-        generation !== runGenerationRef.current
+        generation !== runGenerationRef.current || !current()
       ) return;
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.handoffFailed", { detail: error instanceof Error ? error.message : String(error) }, "3D 배경 편집기 전달 실패 · {detail}"));
     } finally {
@@ -722,6 +727,7 @@ export function StudioHybridDccPanel({
       </div>
 
       {webglSupported === false ? <StudioHybridDccEnvironmentNotice onRecheck={recheckWebgl} /> : null}
+      {onOpenInBackground3D && ws.session.state.materials ? <p role="note" className="text-xs leading-relaxed text-fg-2">{studioHybridDccToonHandoffNotice(bt)}</p> : null}
 
       <div
         className={cn(

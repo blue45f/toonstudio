@@ -1,5 +1,6 @@
 import { calculateStudioCrc32 } from "../studio-crc32";
 import { decodeStudioMeshUvLayer } from "../mesh-uv/studio-mesh-uv-authority";
+import { hashStudioHybridDccToonMaterialSlots, normalizeStudioHybridDccToonMaterialSlots, type StudioHybridDccToonMaterialSlots } from "./materials/studio-hybrid-dcc-toon-export";
 import {
   STUDIO_EDITABLE_MESH_LIMITS,
   STUDIO_EDITABLE_MESH_REVISION,
@@ -66,6 +67,8 @@ export interface StudioHybridDccPackedMeshManifest {
   readonly assetId: string;
   readonly sourceRevision: number;
   readonly sourceHash: string;
+  readonly toonMaterials?: StudioHybridDccToonMaterialSlots;
+  readonly toonMaterialsHash?: string;
   readonly meshRevision: typeof STUDIO_EDITABLE_MESH_REVISION;
   readonly counts: {
     readonly vertices: number;
@@ -220,6 +223,7 @@ function manifestEnvelope(value: unknown): value is StudioHybridDccPackedMeshMan
       "provenanceCrc32",
       "sections",
       ...(Object.hasOwn(value, "uvLayer") ? ["uvLayer"] : []),
+      ...(Object.hasOwn(value, "toonMaterials") ? ["toonMaterials", "toonMaterialsHash"] : []),
     ])
     || value.format !== STUDIO_HYBRID_DCC_PACKED_MESH_FORMAT
     || value.revision !== STUDIO_HYBRID_DCC_PACKED_MESH_REVISION
@@ -250,6 +254,11 @@ function manifestEnvelope(value: unknown): value is StudioHybridDccPackedMeshMan
     || !isRecord(value.sections)
     || !hasExactKeys(value.sections, STUDIO_HYBRID_DCC_PACKED_MESH_SECTION_NAMES)
   ) return false;
+
+  if (Object.hasOwn(value, "toonMaterials")) {
+    try { if (hashStudioHybridDccToonMaterialSlots(normalizeStudioHybridDccToonMaterialSlots(value.toonMaterials)) !== value.toonMaterialsHash) return false; }
+    catch { return false; }
+  }
 
   let layout: ExpectedLayout;
   try {
@@ -304,6 +313,7 @@ function provenanceValues(manifest: StudioHybridDccPackedMeshManifest): readonly
     ...sectionValues,
     ...(manifest.uvLayer ? ["corner-uv-v1", manifest.uvLayer.revision, manifest.uvLayer.topologyHash,
       manifest.uvLayer.offset, manifest.uvLayer.byteLength] : []),
+    ...(manifest.toonMaterials === undefined ? [] : ["toon-materials-v1", manifest.toonMaterials, manifest.toonMaterialsHash]),
   ];
 }
 
@@ -444,6 +454,7 @@ export function packStudioHybridDccGlbExportInput(
     view.setFloat32(uvMetadata.offset + index * 8 + 4, corner.v, true);
   });
   const payloadCrc32 = calculateStudioCrc32(new Uint8Array(buffer));
+  const toonMaterials = input.toonMaterials === undefined ? undefined : normalizeStudioHybridDccToonMaterialSlots(input.toonMaterials);
   const manifestWithoutProvenance: StudioHybridDccPackedMeshManifest = {
     format: STUDIO_HYBRID_DCC_PACKED_MESH_FORMAT,
     revision: STUDIO_HYBRID_DCC_PACKED_MESH_REVISION,
@@ -463,6 +474,7 @@ export function packStudioHybridDccGlbExportInput(
     provenanceCrc32: 0,
     sections: layout.sections,
     ...(uvMetadata ? { uvLayer: uvMetadata } : {}),
+    ...(toonMaterials === undefined ? {} : { toonMaterials, toonMaterialsHash: hashStudioHybridDccToonMaterialSlots(toonMaterials) }),
   };
   const manifest: StudioHybridDccPackedMeshManifest = {
     ...manifestWithoutProvenance,
@@ -564,6 +576,7 @@ export function unpackStudioHybridDccGlbExportInput(
     mesh,
     sourceRevision: manifest.sourceRevision,
     sourceHash: manifest.sourceHash,
+    ...(manifest.toonMaterials === undefined ? {} : { toonMaterials: normalizeStudioHybridDccToonMaterialSlots(manifest.toonMaterials) }),
   };
 }
 

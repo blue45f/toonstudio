@@ -1,6 +1,7 @@
 /** 설치 없는 모델 가져오기의 정본 입력 계약. 보고서만 생성한 결과를 편집 성공으로 보지 않는다. */
 import type { StudioEditableMesh } from "../../studio-editable-half-edge-mesh";
 import type { StudioHybridDccObjectTransform } from "../studio-hybrid-dcc-object-transform";
+import type { StudioHybridDccToonMaterial } from "../materials/studio-hybrid-dcc-toon-material";
 
 export const STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES = 128 * 1024 * 1024;
 export const STUDIO_NATIVE_IMPORT_MAX_JSON_BYTES = 16 * 1024 * 1024;
@@ -25,6 +26,8 @@ export interface StudioNativeImportAsset {
   readonly name: string;
   readonly mesh: StudioEditableMesh;
   readonly initialTransform: StudioHybridDccObjectTransform;
+  /** 자체 내보내기의 실제 glTF payload와 대조한 재질만 실제 face slot에 결합한다. */
+  readonly initialMaterials?: Readonly<Record<string, StudioHybridDccToonMaterial>>;
   readonly sourceNodeIndex?: number;
   readonly sourceMeshIndex?: number;
   readonly sourcePrimitiveIndex?: number;
