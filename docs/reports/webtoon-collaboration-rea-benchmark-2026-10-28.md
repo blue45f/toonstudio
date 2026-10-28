@@ -346,3 +346,11 @@ QA 조회 도구에서도 별도 결함을 발견했다. `SELECT sequence::text 
 실패한 UI 선택자·초기 시도와 canonical 진입 실행은 각각 분리해 보존했다. 부분 증거는 `webtoon-collaboration-c8-canvas-admission-20261029`에 모으고, 기존 C7·C8·펜 ZIP은 수정하지 않는다. QA 서버·TLS·PostgreSQL의 정상 종료, 임시 인증·키 파일 삭제, 정지·소유권·정확 경로 검사 뒤 해당 테스트 DB 파일 정리를 확인했다. 제품 소스는 시작부터 종료까지 dd1287940과 같았으며 전체 manifest의 자동 캐시 차이는 별도 기록했다.
 
 새 획을 포함한 공유 원고 저장·양쪽 Host 픽셀 대조·실제 WebSocket 단절·재접속·새로고침은 아직 완료하지 못했다. 한 Gateway·로컬 개발 서버·로컬 HTTPS adapter의 부분 결과를 WAN·다중 노드·실기기·운영 수렴 보장으로 확대하지 않는다.
+
+## 14. C9 계측 도구의 사전 정확성 검사
+
+상태: **target — 2026-10-29 순수 계약 검증 완료, 실제 성능 계측 미실행**.
+
+원본 계측 도구는 그대로 보존하고 v2 사본에서 DB Date와 JSON ISO 시각 비교, 실제 AppShell 초기화와 읽기 계측의 구분, route로 비활성화되는 HTTP cache의 조건 표기, 계측 시간에 섞인 JSON 검증 비용, 실제 요청된 lazy 자산과 dist 바이트 비교를 보강했다. 원본 Date 비교의 실패를 재현한 뒤 v2 순수 회귀 13개·구문 검사·동일 27파일 Secretlint를 통과했다. 최초 Secretlint는 실제 비밀이 없는 합성 BasicAuth URL fixture 한 건이었고, fixture 구성만 바꿔 탐지 규칙·거절 검사를 유지했다.
+
+현재 SHA의 production build·preview·DB 적용·실제 브라우저 p95/메모리 측정은 수행하지 않았다. 준비한 3,001작업·3,500간선·승인 기록 2,501개는 합성 데이터이며 실제 500개 원고·승인 명령·제작팀 완주가 아니다. `qualified:false`를 유지하고, `webtoon-collaboration-c9-measurement-contract-20261029`의 순수 결과를 성능 합격 수치로 사용하지 않는다.
