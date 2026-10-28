@@ -99,12 +99,12 @@ describe("server capture resolution lineage", () => {
 
 function repositoryFixture() {
   const inserted = vi.fn();
-  db.query.mockImplementation(async (sql: string) => {
+  db.query.mockImplementation(async (sql: string, values?: readonly unknown[]) => {
     if (sql.includes("FROM studio_review WHERE")) return { rows: [{ artifactId: "artifact", revisionId: "snapshot", status: "open" }] };
     if (sql.includes('AS "ownerUserId"')) return { rows: [{ projectId: "project", workId: "work", ownerUserId: "owner", artifactId: "artifact",
       membershipRole: null, membershipStatus: null, projectScope: { projectId: "project" } }] };
     if (sql.includes("capture.operation")) return { rows: [{ rootGraphHash: digest, operation, hash, captureReceipt: receipt }] };
-    if (sql.includes("INSERT INTO studio_review_comment")) { inserted(); return { rows: [{ createdAt: new Date("2026-09-20T00:00:00Z") }] }; }
+    if (sql.includes("INSERT INTO studio_review_comment")) { inserted(values); return { rows: [{ createdAt: new Date("2026-09-20T00:00:00Z") }] }; }
     return { rows: [] };
   });
   const spatial = createStudioReviewSpatialAnchor(studioReviewMappingFromOperation(operation, pin, 0, hash, receipt), { kind: "panel", frameId: "frame-one" })!;
@@ -134,4 +134,26 @@ describe("review comment source authority", () => {
       })).rejects.toMatchObject({ causeCode: "review_anchor_scope_mismatch" });
       expect(inserted).not.toHaveBeenCalled();
     });
+  it("실제 캡처 mapping 안의 펜 획을 저장하고 생성 응답에도 보존한다", async () => {
+    const { repository, inserted, input } = repositoryFixture();
+    const spatial = createStudioReviewSpatialAnchor(studioReviewMappingFromOperation(operation, pin, 0, hash, receipt),
+      { kind: "region", x: 10, y: 10, width: 100, height: 100 })!;
+    const strokes = [{ id: "stroke-one", points: [{ x: 20, y: 20 }, { x: 50, y: 50 }], color: "#e5484d", width: 3 }];
+    const result = await repository.createReviewComment("owner", "review", { ...input, strokes, anchor: { ...input.anchor, ...spatial } });
+    expect(result.strokes).toEqual(strokes);
+    expect(JSON.parse(inserted.mock.calls[0]![0][7])).toEqual(strokes);
+  });
+  it.each([
+    { points: [{ x: 20, y: 20 }, { x: 400, y: 50 }], width: 3 },
+    { points: [{ x: 20, y: 20 }, { x: 900, y: 50 }], width: 3 },
+    { points: [{ x: 20, y: 20 }, { x: 50, y: 50 }], width: 1201 },
+  ])("페이지·영역 밖의 점이나 폭은 실제 source mapping으로 거절한다", async (change) => {
+    const { repository, inserted, input } = repositoryFixture();
+    const spatial = createStudioReviewSpatialAnchor(studioReviewMappingFromOperation(operation, pin, 0, hash, receipt),
+      { kind: "region", x: 10, y: 10, width: 100, height: 100 })!;
+    await expect(repository.createReviewComment("owner", "review", { ...input,
+      anchor: { ...input.anchor, ...spatial }, strokes: [{ id: "stroke-one", color: "#e5484d", ...change }],
+    })).rejects.toMatchObject({ causeCode: "review_pen_strokes_mismatch" });
+    expect(inserted).not.toHaveBeenCalled();
+  });
 });

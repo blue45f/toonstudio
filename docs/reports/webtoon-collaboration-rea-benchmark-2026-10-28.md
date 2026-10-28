@@ -284,3 +284,47 @@ PDF 요약·진행자 동기 검토·3D 자산 카메라/UV 검토·실제 팀 C
 검증한 PWA 호스트의 SHA-256은 ec0a86a38285763a0c0ee9b0e8fa029a357857640692382591df5bdba853aee3이다. 해당 파일과 회귀 테스트 외의 제품 동작은 이 보강에서 수정하지 않았다. 최종 게시 커밋의 전체 하네스·정상 푸시·원격 PR 상태는 해당 실행 로그와 PR 본문으로 별도 확인한다.
 
 이 결과는 **로컬 제작 명령과 복구의 종단 검증**이다. 실제 캔버스의 두 계정 CRDT 수렴, 운영 R2 업로드, WAN·다중 기기, 대규모 뷰어 p95/메모리, 실제 제작팀의 납품 파일럿이나 경쟁 도구 대비 우위를 입증한 결과는 아니다. C7의 전체 원고 캡처 경로, C8의 캔버스·실네트워크, C9·C10의 남은 검증은 계속 미확인으로 유지한다.
+
+## 11. 펜 첨삭의 서버 영속성과 초안 복구
+
+상태: **migration — 2026-10-29 로컬 구현·검증 중, PR 준비 범위**.
+
+### 재현과 보강
+
+`9cb4e88d7452d727914dd5c5cc1101838bb113f8`의 실제 API DTO에 일반 의견은 통과하지만 같은 본문에 `strokes`를 추가하면 `unrecognized_keys`로 거절되는 것을 재현했다. 개인 초안함도 strict schema에 해당 필드가 없어 펜 첨삭을 보관하지 못했다. 화면의 로컬 획 보관은 다른 계정의 재조회나 새로고침을 보증하지 못했다.
+
+- Web·API는 기존 Studio 공용 패키지의 펜 계약을 함께 사용한다. 50획·획당 500점·중복 없는 ID·유한한 원본 픽셀 좌표·색·굵기를 검사하고, 비어 있지 않은 획은 source가 검증된 region에만 저장한다. 실제 불변 capture mapping에서 페이지와 영역 안의 점 및 페이지 크기 안의 굵기를 검사한다.
+- 댓글 생성·조회·동일 ID 재시도에 같은 획을 포함한다. 같은 작성자의 같은 획은 원장 행 1개로 확인하고, 다른 작성자·다른 획·다른 검수본의 ID 재사용은 충돌이다. 기존 무획 요청과 빈 배열은 동등하다.
+- 화면은 실제 서버에서 다시 읽은 획을 사용한다. 생성 응답의 획·검수 ID·anchor가 요청과 다르면 저장 확인을 보류한다. 개인 초안은 획을 그대로 보관하고, 응답 유실 뒤 서버의 같은 작성자·내용·anchor·획을 확인해야 정리한다. 20개 초안 각각에서 API의 펜 계약을 보존할 수 있도록 유한한 보관 용량도 맞췄다.
+- 실제 Chromium의 이미지 위 펜 입력에서 `dragstart → pointercancel`이 발생해 획이 사라지는 것을 관찰했다. 펜·점·영역을 배치하는 동안 기본 이미지 드래그를 막고, 일반 페이지 열람의 드래그는 유지한다. 회귀 테스트는 수정 전 3개 실패와 수정 후 관련 19개 통과를 확인했다.
+- 유효한 25,000개 극소 좌표는 전송 JSON 약 503KB가 PostgreSQL JSONB 표현에서 약 8.6MB가 될 수 있다. 숫자를 반올림하거나 점을 줄이지 않고, 공유 계약에서 실제 JSONB 표현의 바이트 수를 계산해 기존 2MiB 예산과 맞춘다. 새 격리 PostgreSQL의 읽기 전용 SELECT 15건에서 예상값과 실제 값이 같았으며 정확히 2MiB는 허용하고 1바이트 초과는 거절했다. 이 검사는 저장 표현의 크기 대조이며 댓글 저장 성공 증거와 구분한다.
+
+### DB 적용 순서와 복구
+
+추가형 `0114_studio_review_comment_pen_strokes.sql`은 `strokes JSONB NOT NULL DEFAULT []`와 shape·25,000점·2MiB 예산을 추가한다. 기존 댓글은 빈 배열로 유지한다. 새 펜 댓글의 획과 source anchor는 삽입 후 변경하지 못하며, 무획 legacy 댓글의 기존 anchor 정책은 유지한다. 기존 검수·공간 anchor trigger는 교체하거나 비활성화하지 않는다.
+
+운영 반영은 이 단계에서 실행하지 않는다. 추후 반영 시 **migration을 먼저 적용하고 새 API를 배포**해야 한다. 이전 API로 되돌려도 새 열·펜 원장은 보존하며, 복구를 위해 열·댓글·획을 삭제하지 않는다. migration 자체의 실패는 트랜잭션으로 복구하고 원인 확인 후 같은 파일을 재적용한다.
+
+DB migration·schema의 정본 경로는 `platform/database`다. 불변 migration 이력 0114를 추가하면서 해당 경로의 파일 수는 165→166이 되었다. 이 정확한 한 파일을 `architecture-source-ratchet.json`에 반영했다. 이미 적용된 migration을 수정하거나 이력을 다른 폴더로 옮겨 수량을 맞추지 않는다. 파일 크기·Studio 진입 그래프·import 경계의 상한과 판정 코드는 그대로 적용한다.
+
+### 실행한 검증과 남은 증거
+
+- 공유 계약·Web 회귀: 최종 용량 계산·드래그 보강 소스에서 8개 파일 93개 통과. 원본 좌표, 부정확한 숫자·색·필드 거절, 전체 50×500점, 초안 저장과 응답 유실·서버 획 불일치 시 초안 보존, 생성 영수증의 버전 불일치를 포함한다.
+- API DTO·source mapping·comment store·migration 단위 회귀: 최종 용량 계산·anchor 불변·float64 하한 보강 소스에서 4개 파일 72개 통과했다.
+- 실제 PostgreSQL·HTTP: 최종 소스로 새 펜 suite 18개·기존 producer 48개·원본 연결 5개, 합계 3개 파일 71개 통과했다. 실제 PNG producer와 불변 mapping, 타계정 조회·새 repository 재조회, 동시 동일 ID 행 1개, 다른 획·작성자 충돌, 권한·정본 경계, SQL 획·anchor 불변, 빈/기존 상태 및 재적용을 검사했다. HTTP actor header는 DTO·인가 fixture이며 다음 일반 로그인·CSRF 검증과 구분한다.
+- 정규 PostgreSQL runner 등록 회귀 11개 통과. 새 suite를 CI 목록에 등록했다.
+- 실제 일반 인증 브라우저: 격리된 새 PostgreSQL·실제 Auth/CSRF/Creator/Graph API·바이트 로컬 HTTPS 저장소에서 owner/editor/viewer 세 계정을 각각 가입·확인·로그인하고 실제 초대·수락을 거쳤다. Chromium 6개 시나리오를 exit 0으로 완주했다. owner의 실제 Host 캡처 뒤 editor의 두 색 펜 2획을 201로 저장하고, DB·새로고침·독립 owner의 SVG에서 원본 좌표·색·굵기를 대조했다. 네 번의 실제 입력에서 기본 `dragstart`가 차단되고 `pointercancel`은 0건이었다.
+- 서버 저장 201 뒤 응답만 끊은 경우에도 입력을 보존하고 동일 ID·anchor·획·본문을 재전송해 댓글 원장 1행만 확인했다. viewer의 실제 조회와 쓰기 403, 390px의 원본 좌표 및 주석 영역 넘침 없음, 최종 댓글 2개·원고 revision/hash 보존, 미처리 페이지 오류 0건을 확인했다. 이 작품은 앞서 실제 Canvas에서 만든 원고 A를 자료로 재사용했으며 이번 실행에서 새 작화를 완료했다는 뜻이 아니다.
+- 로컬 HTTPS adapter의 CA·실제 업로드/GET hash·HMAC/Origin·오류·삭제 재시도 11건 통과. 서버 시작·준비·브라우저 시작·종료의 제품 31개 파일 바이트는 동일했다. 전체 manifest 차이는 지정한 자동 캐시 3개에서만 따로 기록했다. QA API·TLS·PostgreSQL 종료와 임시 config·키 삭제를 확인했다.
+
+실제 브라우저의 기준은 `9cb4e88d7452d727914dd5c5cc1101838bb113f8`에 미커밋 변경 31개 파일을 더한 소스다. 제품 manifest SHA-256은 `7c99164db151247921e989dbd967a9c51bc52d15686da56d59a8b8bf28361c34`이며, 실행 뒤 문서에 결과를 추가했다. 검사 원문과 수정 전 재현을 분리한 `webtoon-collaboration-pen-evidence-20261029`에 보관했다. 전체 하네스·정상 push는 다른 작업과 조정한 검사 순서를 기다리고 있으며, 원격 CI 성공·main 병합·운영 migration·배포는 수행하지 않았다. 이번 펜 첨삭 보강을 실제 팀 납품 파일럿·production 성능·경쟁 도구 전체 대비 우위로 확대하지 않는다.
+
+## 12. C7 실제 원고·제출·검수 경로의 추가 증거
+
+상태: **migration — 2026-10-29 clean 9cb4e88d7의 로컬 실제 경로 검증**. 10절 마지막의 미확인 C7 경로 중 아래 구간을 별도로 확인했으며, 11절의 펜 검수 자료와 구분한다.
+
+실제 owner 로그인·HttpOnly 세션·Live Gateway 동기화 상태에서 두 페이지에 펜으로 그린 원고 A를 일반 저장하고 ACK를 확인했다. 실제 Host 캡처로 1440×2160 PNG 두 장을 생성했으며 decoded pixel·원고 좌표·receipt·DB blobHash·로컬 HTTPS GET hash를 대조했다. 추가 pointer 획으로 원고 B를 저장하고 일반 캡처의 Graph submission 부모를 Production의 원본 제출 ref로 등록했다. 화면의 정확한 source tuple 링크에서 별도 검수 캡처 C를 만들고 서버의 sourceRevision 증명과 Production 원본 ref B 보존을 확인했다.
+
+A/C 나란히·겹치기 비교에서 수정한 첫 페이지는 16,276픽셀 차이, 수정하지 않은 둘째 페이지는 동일했고 B/C decoded pixel도 동일했다. 독립 editor 로그인으로 C에 실제 좌표 핀을 저장하고 새로고침으로 다시 읽었다. editor의 Studio 승인 403, owner의 승인 200, 승인 뒤 기존 핀·이미지 조회 보존을 확인했다. Production 제출은 `submitted`로 유지하며 Studio 승인과 공정 최종 승인을 혼동하지 않는다. 미처리 페이지 오류는 0건이었다.
+
+원문은 `webtoon-collaboration-c7-actual-chain-20261029.zip`에 별도 보관했다. SHA-256은 `d7c25f817cf3087a5577c97c6f97b8306e95339baea5e180b4e6240d271874bc`다. 이 결과는 Vite development·테스트 원고·실제 PG/HTTP·로컬 HTTPS adapter 범위다. 실제 스크린리더, 두 계정 동시 캔버스 CRDT 수렴, 운영 R2·WAN·실기기, C9 production p95/메모리·C10 실제 제작팀 납품 파일럿은 여전히 미확인이다.

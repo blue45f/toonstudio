@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { studioReviewTaskReferenceSchema, type StudioReviewTaskReference, type ReviewPolicyExpectation } from "@toonstudio/studio-project-model";
+import { canonicalJson, reviewPenStrokesSchema, studioReviewTaskReferenceSchema, type StudioReviewTaskReference, type ReviewPolicyExpectation } from "@toonstudio/studio-project-model";
 
 import { api } from "@/platform/api";
 
@@ -12,7 +12,6 @@ import {
   studioProjectRecordSchema,
   studioRestoreRevisionInputSchema,
   studioReviewCommentSchema,
-  studioReviewPenStrokeSchema,
   studioReviewRecordSchema,
   studioReviewSummarySchema,
   studioRevisionCommitResponseSchema,
@@ -241,7 +240,7 @@ export async function createStudioReview(
   return createdReviewSchema.parse(body);
 }
 
-// C-5: 서버가 strokes 같은 첨삭 필드를 에코해도 생성 응답 파싱이 깨지지 않게 strict 를 쓰지 않는다.
+// 펜 첨삭은 저장된 서버 응답을 공용 계약으로 검증하고 다시 읽는다.
 const createdCommentSchema = z
   .object({
     id: z.string(),
@@ -249,18 +248,25 @@ const createdCommentSchema = z
     status: z.literal("open"),
     anchor: studioReviewCommentSchema.shape.anchor,
     createdAt: z.string(),
-    strokes: z.array(studioReviewPenStrokeSchema).max(50).optional(),
+    strokes: reviewPenStrokesSchema.optional(),
   });
 
 export async function createStudioReviewComment(
   reviewId: string,
   input: StudioReviewCommentCreateInput,
 ) {
+  const expectedStrokes = reviewPenStrokesSchema.parse(input.strokes ?? []);
   const body = await api.post<unknown>(
     `${BASE}/reviews/${resourceId(reviewId)}/comments`,
     input,
   );
-  return createdCommentSchema.parse(body);
+  const created = createdCommentSchema.parse(body);
+  if (canonicalJson(created.strokes ?? []) !== canonicalJson(expectedStrokes)
+    || (expectedStrokes.length > 0 && (created.id !== input.id || created.reviewId !== reviewId
+      || canonicalJson(created.anchor) !== canonicalJson(studioReviewCommentSchema.shape.anchor.parse(input.anchor))))) {
+    throw new Error("review_pen_receipt_mismatch");
+  }
+  return created;
 }
 
 const reviewDecisionSchema = z

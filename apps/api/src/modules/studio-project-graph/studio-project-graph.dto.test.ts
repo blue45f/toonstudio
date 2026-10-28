@@ -91,4 +91,16 @@ describe("Studio review comment mutation normalization", () => {
     expect(CreateStudioReviewCommentSchema.safeParse({ ...input, dueAt: "tomorrow" }).success).toBe(false);
     expect(CreateStudioReviewCommentSchema.safeParse({ ...input, severity: "critical" }).success).toBe(false);
   });
+  it("펜 획은 원고 출처가 있는 영역에서만 받고 기존 빈 획은 유지한다", () => {
+    const strokes = [{ id: "stroke-one", points: [{ x: 10, y: 20 }, { x: 30, y: 40 }], color: "#e5484d", width: 3 }];
+    const anchor = { ...input.anchor, kind: "region", x: 0, y: 0, width: 100, height: 100,
+      source: { version: 1, sourceServerRevision: 7, sourceContentDigest: "a".repeat(64), pageOrdinal: 0, pageId: "page-one" } };
+    expect(CreateStudioReviewCommentSchema.parse({ ...input, anchor, strokes }).strokes).toEqual(strokes);
+    expect(CreateStudioReviewCommentSchema.parse({ ...input, strokes: [] }).strokes).toEqual([]);
+    expect(CreateStudioReviewCommentSchema.safeParse({ ...input, strokes }).success).toBe(false);
+    expect(CreateStudioReviewCommentSchema.safeParse({ ...input, anchor: { ...anchor, source: undefined }, strokes }).success).toBe(false);
+    expect(CreateStudioReviewCommentSchema.safeParse({ ...input, anchor: { ...anchor, kind: "coordinate" }, strokes }).success).toBe(false);
+    expect(CreateStudioReviewCommentSchema.safeParse({ ...input, anchor, strokes: [...strokes, ...strokes] }).success).toBe(false);
+    expect(CreateStudioReviewCommentSchema.safeParse({ ...input, anchor, strokes: [{ ...strokes[0], points: [{ x: -1, y: 0 }, { x: 1, y: 1 }] }] }).success).toBe(false);
+  });
 });

@@ -96,6 +96,9 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
   };
   return <section className="mt-4 rounded-xl border border-line p-3" aria-label={bt(`${page.ordinal + 1}페이지 의견 위치`, `Page ${page.ordinal + 1} annotation placement`)}>
     <div className="relative mx-auto" style={{ width: `min(100%, ${70 * page.renderWidth / page.renderHeight}vh)`, touchAction: mode === "coordinate" || mode === "region" || mode === "pen" ? "none" : "auto" }}
+      onDragStart={(event) => {
+        if (editable && !control.disabled && (mode === "coordinate" || mode === "region" || mode === "pen")) event.preventDefault();
+      }}
       onPointerDown={(event) => {
         if (control.disabled || event.button !== 0) return;
         if (mode === "pen") {
@@ -146,7 +149,7 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
       })()}
       {selected ? <svg className="pointer-events-none absolute inset-0 h-full w-full text-accent" viewBox={`0 0 ${page.width} ${page.height}`} preserveAspectRatio="none" aria-hidden="true">
         {selected.kind === "page" ? <rect x="0" y="0" width={page.width} height={page.height} fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.008} />
-          : selected.kind === "coordinate" ? <circle cx={selected.x} cy={selected.y} r={Math.max(page.width, page.height) * 0.008} fill="currentColor" stroke="white" strokeWidth={Math.max(page.width, page.height) * 0.002} />
+          : selected.kind === "coordinate" ? <circle cx={selected.x} cy={selected.y} r={Math.max(page.width, page.height) * 0.008} fill="currentColor" stroke="var(--color-card)" strokeWidth={Math.max(page.width, page.height) * 0.002} />
           : selected.kind === "region" ? <rect x={selected.x} y={selected.y} width={selected.width} height={selected.height} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.004} />
             : frame ? frame.polygon ? <polygon points={frame.polygon.map((value) => `${value.x},${value.y}`).join(" ")} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.004} />
               : <rect {...frame.bounds} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.004} /> : null}
