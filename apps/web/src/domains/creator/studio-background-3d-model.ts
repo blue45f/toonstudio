@@ -1,12 +1,11 @@
 // "3D 배경" 도구에 업로드한 커스텀 3D 모델(.glb/.gltf/.obj)의 씬 배치 순수 헬퍼 + 로더.
-// studio-background-3d-primitives.ts(도형 프리미티브)의 관례를 그대로 따르되 그 파일은 이번 작업
-// 범위(새 파일만 생성)상 절대 수정하지 않는다 — BgCustomModelInstance는 BgPrimitive의 새 kind가
-// 아니라 완전히 별도인 인스턴스 목록으로, 씬 상태 상에서 구조적으로 구분된다(§5 통합 문서 참고,
-// docs/studio-bg3d-custom-model-upload.md).
+// 커스텀 모델은 primitive kind가 아닌 별도 인스턴스 목록이다.
+// 기존 모델 업로드 계약: docs/studio-bg3d-custom-model-upload.md.
 import * as THREE from "three";
 
 import { applyStudioBg3dCc0PbrMapsToStandardMaterial } from "./bg3d/studio-bg3d-cc0-pbr-texture-loader";
 import { applyBg3dFallbackMaterial, loadBg3dCustomModelFromBlob } from "./bg3d/studio-bg3d-custom-model-blob";
+import { restoreStudioBg3dPrimitiveEditDepthBias } from "./bg3d/studio-bg3d-primitive-edit-material-runtime";
 import { loadStudioBg3dMeshoptDecoder } from "./bg3d/studio-bg3d-meshopt";
 import { computeStudioBg3dAutoFitScale, STUDIO_BG3D_AUTO_FIT_TARGET_SIZE } from "./bg3d/studio-bg3d-model-scale-contract";
 
@@ -1234,6 +1233,7 @@ export async function loadVerifiedStudioBg3dGlbWithThree(
     return threeFailure("invalid-scene");
   }
 
+  for (const root of ownedRoots) restoreStudioBg3dPrimitiveEditDepthBias(root);
   const parsedAnimations = Object.freeze([...(Array.isArray(parsed.animations) ? parsed.animations : [])]);
   const measured = measureStudioBg3dThreeMetrics(ownedRoots, parsedAnimations);
   if (!measured.ok) {

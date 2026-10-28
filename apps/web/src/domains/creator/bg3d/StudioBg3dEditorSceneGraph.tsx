@@ -17,11 +17,12 @@ import {
   resolveStudioBg3dEnvironmentSettings,
 } from "./studio-bg3d-hdri-environment";
 import { resolveStudioBg3dOrthographicPlanes } from "./studio-bg3d-orthographic-frustum";
+import { StudioBg3dAttachedTransformControls } from "./StudioBg3dAttachedTransformControls";
 
 export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
-    TransformControls, View, Canvas, useThree,
+    View, Canvas, useThree,
     Aperture, Boxes, Camera, ChevronDown,
     CircleDashed, Copy, Crosshair, Eye,
     EyeOff, Globe, Hexagon, Home,
@@ -303,6 +304,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
         animations={modelRootCacheRef.current.get(instance.modelId)?.animations ?? EMPTY_THREE_ANIMATION_CLIPS}
         selected={selectedIds.has(id)}
         capturing={isCapturing}
+        lineArt={lineArtPreview}
         targetFps={deviceQuality.targetFps}
         lodBias={deviceQuality.lodBias}
         onSelect={selectSceneEntity}
@@ -457,7 +459,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       effectivelyVisibleLayerIds.has(firstSelectedId) &&
       primitiveObjectsRef.current.get(firstSelectedId) ? (
         <group ref={registerStudioBg3dCaptureExcludedObject}>
-          <TransformControls
+          <StudioBg3dAttachedTransformControls
             object={primitiveObjectsRef.current.get(firstSelectedId)}
             mode={transformMode}
             space={transformSpace}

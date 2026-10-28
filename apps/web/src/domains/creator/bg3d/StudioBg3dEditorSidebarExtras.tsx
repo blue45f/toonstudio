@@ -9,6 +9,7 @@ import { useEffect as useReactEffect, useMemo, useState as useReactState } from 
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
 import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import { createStudioBg3dPrimitiveEditHostPorts } from "./studio-bg3d-primitive-edit-host";
 
 export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
@@ -485,7 +486,6 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                   장면 계층은 왼쪽 패널에서 관리할 수 있습니다. 선택한 객체의 상세 설정은 이 패널에서 이어서 편집하세요.
                 </p>
               </section>
-
               <div inert={immersiveSceneActive || undefined}>
               <StudioBg3dViewPanel
                 hidden={hideOnTab("view")}
@@ -504,6 +504,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 onSetCaptureAspectRatio={updateLtExportAspectRatio}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
                 {...createStudioBg3dWorkbenchHostPorts(h)}
+                {...createStudioBg3dPrimitiveEditHostPorts(h)}
                 aiReferenceBusy={isCapturing}
                 aiReferenceDisabled={
                   insertBlocked || (primitives.length === 0 && customModels.length === 0)
@@ -630,7 +631,6 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                   Ruler,
                 }}
               />
-
               <section
                 hidden={hideOnTab("view")}
                 className="border-t border-line pt-4"

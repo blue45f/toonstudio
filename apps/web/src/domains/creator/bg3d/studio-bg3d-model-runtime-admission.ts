@@ -171,6 +171,8 @@ type StudioBg3dModelAdmissionArgs = {
   readonly pending: Map<string, Promise<StudioBg3dModelRootCacheEntry>>;
   readonly isActive: () => boolean;
   readonly signal?: AbortSignal;
+  /** 편집 파생물의 실패는 사용자가 선택한 기존 자산 품질 모드를 바꾸지 않는다. */
+  readonly preserveQualityModeOnFailure?: boolean;
   /** Called only by the invocation that actually installs a newly decoded cache entry. */
   readonly onCacheEntryCreated?: (
     storageId: string,
@@ -191,7 +193,7 @@ export async function admitAndCacheStudioBg3dModel(
         || ("code" in error && error.code === "aborted")
       ));
     if (
-      requestedHighQuality && getStudio3dAssetQualityMode() === "high"
+      args.preserveQualityModeOnFailure !== true && requestedHighQuality && getStudio3dAssetQualityMode() === "high"
       && !cancelled && !args.signal?.aborted && args.isActive()
     ) {
       resetStudio3dAssetQualityMode(

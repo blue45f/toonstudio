@@ -8,6 +8,8 @@ import {
   type StudioBg3dModelFormat as StudioBg3dUnifiedModelFormat,
 } from "./studio-bg3d-model-loader";
 
+import { restoreStudioBg3dPrimitiveEditDepthBias } from "./studio-bg3d-primitive-edit-material-runtime";
+
 import type { Bg3dModelFormat } from "./bg3d-model-library";
 
 // PRIMITIVE_DEFS 도형들의 대략적인 크기 감각(반경 0.5~1m대)과 맞춘 오토핏 목표 치수.
@@ -64,5 +66,6 @@ export async function loadBg3dCustomModelFromBlob(
   if (format === "obj") {
     applyBg3dFallbackMaterial(root);
   }
+  restoreStudioBg3dPrimitiveEditDepthBias(root);
   return root;
 }

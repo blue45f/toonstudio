@@ -188,6 +188,9 @@ export function StudioBg3dAdvancedWorkbenchHub({
   skpSourceSelection,
   onReadSkpSceneSource,
   onApplySkpSourceCamera,
+  primitiveEditSelection,
+  onBeginPrimitiveEdit,
+  onApplyPrimitiveEdit,
   onApplySceneCamera,
   onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
@@ -585,6 +588,9 @@ export function StudioBg3dAdvancedWorkbenchHub({
             skpSourceSelection={skpSourceSelection}
             onReadSkpSceneSource={onReadSkpSceneSource}
             onApplySkpSourceCamera={onApplySkpSourceCamera}
+            primitiveEditSelection={primitiveEditSelection}
+            onBeginPrimitiveEdit={onBeginPrimitiveEdit}
+            onApplyPrimitiveEdit={onApplyPrimitiveEdit}
             onExecuteSelectionArray={onExecuteSelectionArray ? handleExecuteSelectionArray : undefined}
             onApplySceneCamera={handleApplySceneCamera}
           />

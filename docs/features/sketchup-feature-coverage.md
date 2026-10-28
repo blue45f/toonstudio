@@ -60,7 +60,7 @@ REA 증거와 실제 구현 증거는 [조사·통합 기록](../reports/sketchu
 | SK30 | 3D Warehouse·Extension Warehouse·Trimble Connect | 확인 중: 외부 서비스 접근·계정 계약 조사 필요 | 권한·카탈로그/자산·업로드·동기화·오류/취소·비용 경계의 실제 연결 |
 | SK31 | Ruby/JavaScript/확장 도구·속성 사전·observer·사용자 도구 | 확인 중: 공개 API 계약 조사 시작 | 기능별 호환 계약·도구 이벤트·원자 명령·확장 격리와 실제 실행 증거 |
 | SK32 | 단위·정밀도·Undo/Redo·저장·복원·성능·플랫폼 입력 | 부분: 기존 정본 문서/명령/직렬화와 기능별 회귀 | 각 요구와 모든 주요 context에 대한 실패 원자성·파일/브라우저/성능 검증 |
-| SK33 | BG3D 배경과 정밀 면 모델러의 실제 원본 편집 연계 | 미완료: BG3D에서 정밀 모델러를 열지만 선택 기본 도형이 editable mesh로 전달되지 않음 | 원본 자산·선택·좌표계를 보존한 진입, 사용자 확정 시 원본 배경 갱신·Undo·저장 검증 |
+| SK33 | BG3D 배경과 정밀 면 모델러의 실제 원본 편집 연계 | 부분: 독립 단색 상자 원본→실제 면 편집→Worker/OPFS→같은 ID 교체·Undo/Redo·캡처·새 마운트 복원 | 정확한 mesh 권위의 반복 재편집·일반 도형/계층/재질/외부 모델의 원본 보존 검증 |
 
 ## 실제 확인한 변경과 남은 검증
 
@@ -78,3 +78,9 @@ REA 증거와 실제 구현 증거는 [조사·통합 기록](../reports/sketchu
   이를 원본 Follow Me 전체나 SKP 전체 구조 복원의 완료로 확대하지 않는다.
 - 직교 높이·파서 평행 Page 적용은 관련 50파일·664개와 실제 Apply→Undo/Redo→캡처→새 마운트 복원을 검증했다.
   [카메라 검증 기록](../reports/sketchup-camera-restore-2026-10-29.md)의 한정 범위를 SK17/SK19의 부분 증거로 사용한다.
+
+- 2026-10-29 기본 상자 원본 편집은 관련 15파일·237개와 실제 브라우저의 선택→면 편집→Worker/OPFS→같은 ID 교체→Undo/Redo→캡처→새 마운트 복원을 확인했다.
+  [지원 경계](bg3d-primitive-face-edit.md)와 [검증 기록](../reports/bg3d-primitive-face-edit-2026-10-29.md)을 SK33의 부분 증거로 사용한다.
+  변환된 모델의 반복 면 편집과 일반 모델/계층/재질 연계는 남아 있다. 최신 전체 하네스·production build는 별도 대기 중이다.
+- 자기 생성 SKP의 [native camera golden corpus](../reports/sketchup-native-camera-golden-2026-10-29.md)는 SDK 저장·재읽기와 실제 파서→GLB의 4회귀를 보존한다.
+  원근 FOV 축·aspect가 OpenSKP에 노출되지 않는 경계는 그대로이며, 미확인 값을 추측해 적용하지 않는다.

@@ -8,8 +8,9 @@ import {
 import { createStudioBg3dSkpSourceReaderFromHost, inspectStudioBg3dSkpSourceSelection, type StudioBg3dReadSkpSceneSource, type StudioBg3dSkpSourceSelection } from "./studio-bg3d-skp-source-read-command";
 import { createStudioBg3dWorkbenchInsertionFromHost, type StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 import type { StudioBg3dApplySkpSourceCamera, StudioBg3dSkpCameraRestoreHost } from "./studio-bg3d-skp-camera-restore-types";
+import type { StudioBg3dPrimitiveEditPorts } from "./studio-bg3d-primitive-edit-ports";
 
-export interface StudioBg3dWorkbenchHostPorts {
+export interface StudioBg3dWorkbenchHostPorts extends StudioBg3dPrimitiveEditPorts {
   readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly arraySelection?: StudioBg3dSelectionArraySummary;
   readonly onExecuteSelectionArray?: StudioBg3dExecuteSelectionArray;

@@ -17,6 +17,9 @@ export function StudioBg3dSpatialStoryboardLauncher({
   skpSourceSelection,
   onReadSkpSceneSource,
   onApplySkpSourceCamera,
+  primitiveEditSelection,
+  onBeginPrimitiveEdit,
+  onApplyPrimitiveEdit,
 }: StudioBg3dWorkbenchHostPorts & {
   readonly hidden?: boolean;
   readonly disabled?: boolean;
@@ -70,6 +73,9 @@ export function StudioBg3dSpatialStoryboardLauncher({
               skpSourceSelection={skpSourceSelection}
               onReadSkpSceneSource={onReadSkpSceneSource}
               onApplySkpSourceCamera={onApplySkpSourceCamera}
+              primitiveEditSelection={primitiveEditSelection}
+              onBeginPrimitiveEdit={onBeginPrimitiveEdit}
+              onApplyPrimitiveEdit={onApplyPrimitiveEdit}
             />
           </Suspense>
         ) : null}

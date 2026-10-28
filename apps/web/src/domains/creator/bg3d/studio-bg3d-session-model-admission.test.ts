@@ -160,6 +160,16 @@ describe("session model admission and cache authorization", () => {
     expect(getStudio3dAssetQualitySnapshot().notice).toContain("경량본으로 다시 가져오세요");
   });
 
+  it("편집 파생물의 opt-in 실패는 기존 고품질 모드·안내를 그대로 보존한다", async () => {
+    const error = new Error("GPU allocation failed");
+    mocks.load.mockRejectedValue(error);
+    enableStudio3dHighAssetQuality();
+    const before = getStudio3dAssetQualitySnapshot();
+    await expect(admitAndCacheStudioBg3dModel({ ...context(), preserveQualityModeOnFailure: true })).rejects.toBe(error);
+    expect(getStudio3dAssetQualitySnapshot()).toBe(before);
+    expect(getStudio3dAssetQualityMode()).toBe("high");
+  });
+
   it.each([
     ["AbortError", () => new DOMException("cancelled", "AbortError")],
     ["worker cancellation", () => Object.assign(new Error("cancelled"), { code: "aborted" })],

@@ -47,6 +47,7 @@ import {
   type SketchUpStyleConfig,
 } from "./studio-bg3d-sketchup-styles-uv-engine";
 import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import { StudioBg3dPrimitiveEditLauncher } from "./StudioBg3dPrimitiveEditLauncher";
 import { StudioBg3dSelectionArrayPanel } from "./StudioBg3dSelectionArrayPanel";
 import { StudioBg3dSkpSourceInfoPanel } from "./StudioBg3dSkpSourceInfoPanel";
 import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
@@ -140,6 +141,9 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   skpSourceSelection,
   onReadSkpSceneSource,
   onApplySkpSourceCamera,
+  primitiveEditSelection,
+  onBeginPrimitiveEdit,
+  onApplyPrimitiveEdit,
   onApplySceneCamera,
 }: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
   const t = useT();
@@ -354,6 +358,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
       </header>
 
       <StudioBg3dSkpSourceInfoPanel selection={skpSourceSelection} onReadSource={onReadSkpSceneSource} onApplyCamera={onApplySkpSourceCamera} cameraDisabled={disabled} />
+      <StudioBg3dPrimitiveEditLauncher disabled={disabled} primitiveEditSelection={primitiveEditSelection} onBeginPrimitiveEdit={onBeginPrimitiveEdit} onApplyPrimitiveEdit={onApplyPrimitiveEdit} />
       <StudioBg3dArchitecturalModelingPanel
         disabled={disabled}
         onStatusChange={setStatusBanner}
