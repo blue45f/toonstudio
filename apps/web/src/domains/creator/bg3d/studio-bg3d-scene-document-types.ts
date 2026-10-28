@@ -285,6 +285,8 @@ export interface StudioBg3dCameraSettings {
   readonly fovDegrees: number;
   readonly projection?: "perspective" | "orthographic";
   readonly zoom?: number;
+  /** zoom 전 장면 단위 세로 높이. 부재는 기존 픽셀 절두체이며 원근 카메라에서는 보존만 한다. */
+  readonly orthographicHeight?: number;
   readonly lensShift?: readonly [number, number];
   /** Positive scene-unit near plane. Absent only on canonical pre-Camera-vNext v3 documents. */
   readonly nearClip?: number;
@@ -650,6 +652,7 @@ export interface StudioBg3dShotCameraOverride {
   readonly fovDegrees?: number;
   readonly projection?: "perspective" | "orthographic";
   readonly zoom?: number;
+  readonly orthographicHeight?: number;
   readonly lensShift?: readonly [number, number];
   readonly nearClip?: number;
   readonly up?: StudioBg3dVec3;

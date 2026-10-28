@@ -8,6 +8,7 @@ import {
 import {
   applyOrDeferStudioBg3dHistoryCamera,
   resolveStudioBg3dCameraGestureCommitView,
+  rememberStudioBg3dCameraBeforeViewportRemount,
 } from "./studio-bg3d-camera-history-transition";
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 
@@ -39,6 +40,17 @@ function expectLensShift(
 }
 
 describe("Studio BG3D cross-projection history camera handoff", () => {
+  it("내려가는 renderer의 읽기보다 이미 대기 중인 새 복원·투영 명령을 우선한다", () => {
+    const intent = { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera, target: [1, 2, 3] as const };
+    const pending: { current: StudioBg3dCameraSettings | null } = { current: intent };
+    let reads = 0;
+    const previous = { readView: () => { reads += 1; return DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera; } };
+    rememberStudioBg3dCameraBeforeViewportRemount(previous, pending);
+    expect(pending.current).toBe(intent);
+    expect(reads).toBe(0);
+    rememberStudioBg3dCameraBeforeViewportRemount(null, pending);
+    expect(pending.current).toBe(intent);
+  });
   it("commits the canonical gesture value without reading a one-frame-stale renderer", () => {
     const latestGestureView: StudioBg3dCameraSettings = {
       ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera,

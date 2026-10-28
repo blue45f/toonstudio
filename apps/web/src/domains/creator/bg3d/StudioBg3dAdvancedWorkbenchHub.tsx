@@ -187,6 +187,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
   onExecuteSelectionArray,
   skpSourceSelection,
   onReadSkpSceneSource,
+  onApplySkpSourceCamera,
   onApplySceneCamera,
   onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
@@ -583,6 +584,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
             arraySelection={arraySelection}
             skpSourceSelection={skpSourceSelection}
             onReadSkpSceneSource={onReadSkpSceneSource}
+            onApplySkpSourceCamera={onApplySkpSourceCamera}
             onExecuteSelectionArray={onExecuteSelectionArray ? handleExecuteSelectionArray : undefined}
             onApplySceneCamera={handleApplySceneCamera}
           />

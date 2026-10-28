@@ -59,11 +59,38 @@ Page의 `fovBasis`와 저장 상태 플래그는 파서가 노출하지 않으�
 `worker-src 'self' blob:`를 적용한 같은 흐름도 통과했다. 이는 전체 운영 CSP·배포 빌드의 검증이 아니다.
 실제 UI CSS의 light·dark·contrast, 390px·1600px에서 접근성 자동 위반과 가로 넘침이 없었다.
 
+## 파서가 읽은 평행 카메라 적용
+
+원본 정보의 평행 Page 카드에서 `이 평행 카메라 적용`을 누르면 현재 선택 모델의 위치·회전·배율을
+반영해 eye·target·up과 화면 높이를 현재 카메라에 적용한다. 이름으로 모델이나 Page를 찾지 않고
+선택 instance/storage ID와 검증된 manifest의 Page key를 사용한다. 모듈 준비 후에도 최신 선택·캐시를
+다시 확인하고, 공식 `updateCameraLens`의 단일 history 명령이 성공했을 때만 성공을 표시한다.
+원본 정보 조회와 JSON 다운로드는 계속 문서 변경 없이 동작한다.
+
+높이 계약은 `orthographicHeight?: number`다. 값은 **zoom 적용 전 장면 단위의 세로 높이**이고,
+실제 가시 높이는 `orthographicHeight / zoom`, 가로 폭은 실제 트랙의 종횡비로 계산한다.
+새 Page 적용은 원본 높이를 환산해 zoom 1로 설정한다. 명시 높이는 0.000001~100000 범위를
+검증하며 임의로 자르지 않는다. 기존 필드 없는 문서는 픽셀 절두체·zoom 동작과 필드 부재를 유지한다.
+샷·프레이밍·다각도 캡처·Scene3D 왕복에도 같은 높이를 전달하고, 정확한 shot ID의 편집은 해당 shot에만 반영한다.
+
+좌표는 원본 인치·Z-up → 기록된 실제 단위/축 변환 → 캐시 정규화 → 선택 모델의 정본 월드 변환
+순서로 계산한다. 부모까지 포함해 양의 균일 배율·회전·이동으로 표현 가능한 경우를 지원한다.
+비균일 배율·전단·반사, 유실된 원본 정보, 무효 방향·높이·범위를 거부한다. 저장 정규화나
+현재 near clip에 따른 OrbitControls의 거리 제한이 원본 eye를 옮길 요청도 확정 전에 거부한다.
+미터 단위 보정 노드와 캐시 역배율을 두 번 적용하지 않는 실제 GLB 왕복 회귀를 포함한다.
+
+이는 파서가 노출한 **평행 카메라 값의 적용**이다. Page의 숨김 태그·스타일·활성 단면·저장 플래그·
+애니메이션 전체를 복원하지 않으며, 가로/세로 FOV 기준이 미노출인 원근 Page는 적용하지 않는다.
+원본 필드가 파서 기본값인지 구분할 수 없다는 진단도 유지한다.
+
+관련 50파일·664개 회귀와 실제 파일 업로드→평행 Page 적용→Undo/Redo→PNG 캡처→저장 후 새 마운트를
+검증했다. 상세 범위와 발견한 경계는 [카메라 복원 검증](../reports/sketchup-camera-restore-2026-10-29.md)에 기록한다.
+
 ## 한눈에 보기
 
 `.skp`를 고르면 브라우저 안에서 자체 포함 GLB로 변환해 기존 GLB 가져오기 경로(검증 Worker, 기기별 예산, 라이브러리 저장)에 합류한다. 파일은 외부로 전송하지 않는다. 변환은 요청마다 새로 만든 전용 Worker에서 실행하고, 끝나거나 취소·시간 초과가 되면 Worker를 종료한다.
 
-지원은 **부분 지원**이다. 모든 `.skp`가 변환되지는 않는다. 정적 형상·재질·텍스처를 렌더링하며, 파서가 읽은 원본 장면 정보는 GLB에 별도로 보관한다. 원본 카메라·태그 상태·계층을 장면에 적용하거나 애니메이션을 재생하는 기능은 연결 중이다. 변환이 끝나면 **변환 보고서 v1**(아래 "안정 계약")을 결과 화면에 보여 주고, 가져오기에 성공한 모델의 보고서는 자산 메타데이터(`skpImport`)에 함께 저장한다.
+지원은 **부분 지원**이다. 모든 `.skp`가 변환되지는 않는다. 정적 형상·재질·텍스처를 렌더링하며, 파서가 읽은 원본 장면 정보는 GLB에 별도로 보관한다. 파서 평행 카메라는 선택 모델 좌표에 적용할 수 있다. 원근 카메라·태그 상태·계층의 장면 복원과 애니메이션은 연결 중이다. 변환이 끝나면 **변환 보고서 v1**(아래 "안정 계약")을 결과 화면에 보여 주고, 가져오기에 성공한 모델의 보고서는 자산 메타데이터(`skpImport`)에 함께 저장한다.
 
 ## 사용자 흐름
 
@@ -99,6 +126,7 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
 | `studio-bg3d-skp-scene-manifest.ts`, `studio-bg3d-skp-scene-source.ts` | 파서 노출 원본 정보 추출·검증, 보관 상태와 실제 형상 변환 권위 |
 | `studio-bg3d-skp-scene-provenance.ts` | GLB extras 쓰기와 로드된 자산의 원본 정보 읽기 |
 | `studio-bg3d-skp-source-read-command.ts`, `StudioBg3dSkpSourceInfoPanel.tsx` | 실제 선택·캐시 읽기, 상태·목록·검증된 JSON 다운로드 |
+| `studio-bg3d-skp-camera-restore-command.ts`, `studio-bg3d-orthographic-frustum.ts` | 평행 Page의 좌표·화면 높이 적용과 실제 절두체·resize 계약 |
 | `studio-bg3d-skp-mesh-merge.ts`, `studio-bg3d-skp-mesh-analysis.ts`, `studio-bg3d-skp-model-summary.ts` | 재질별 병합, 형상 통계·면 방향, 이름·단위 요약 |
 | `studio-bg3d-skp-import-report.ts` | 보고서 v1 zod 스키마·검증·타입(메인 스레드와 저장소가 읽는다) |
 | `studio-bg3d-skp-report-builder.ts`, `studio-bg3d-skp-report-constants.ts` | 보고서 생성기와 상수. zod에 의존하지 않아 Worker가 이것만 불러온다 |
@@ -127,7 +155,7 @@ file → planStudioBg3dModelImports (32MiB 초과 → skp-too-large)
 | 폴리곤 경고 | 삼각형 250,000개 이상 `high-polygon-count` | `STUDIO_BG3D_SKP_HIGH_TRIANGLE_COUNT` |
 | 드로 콜 | 인스턴스마다 구워진 프리미티브를 **재질별로 병합**해 줄인다(모바일 256·데스크톱 1,024 예산 대응) | `studio-bg3d-skp-mesh-merge.ts` |
 
-실제 장면에 아직 적용하지 않는 것: 원본 카메라·애니메이션·태그 가시성·편집 가능한 컴포넌트 계층. 이름 보고서·사이드카와 별개로 원본 manifest를 보관하지만, 현재 렌더링은 재질별 world-baked merge를 단일 모델로 배치한다. SketchUp에서 **숨긴 면**은 변환에서 제외하지만(`respectEdgeVisibility`), **숨긴 컴포넌트·숨긴 태그의 형상은 결과에 포함될 수 있다**(보고서에 `hidden-instances-included`·`hidden-tags-included` 경고). 이름은 읽을 수 있는 범위만 담는다: 장면 이름과 파일에 적힌 표시 단위는 2021 이후 형식에서만 읽을 수 있고(레거시는 둘 다 비어 있다), 태그의 숨김 표시는 OpenSKP가 읽은 값을 그대로 따른다. OpenSKP의 타입 주석(`Layer.hidden`)은 레거시에서만 채워진다고 적었지만 소스(`collectLayers`의 `8E3C`, 레거시 레이어 레코드)는 두 컨테이너에서 모두 읽으므로 이 구현은 컨테이너로 구분하지 않는다. 실제 네이티브 작성기로 만든 폭넓은 VFF 원본 corpus의 숨김·태그 의미 검증은 남아 있다.
+실제 장면에 아직 적용하지 않는 것: 원근 Page 카메라·애니메이션·태그 가시성·편집 가능한 컴포넌트 계층. 이름 보고서·사이드카와 별개로 원본 manifest를 보관하지만, 현재 렌더링은 재질별 world-baked merge를 단일 모델로 배치한다. SketchUp에서 **숨긴 면**은 변환에서 제외하지만(`respectEdgeVisibility`), **숨긴 컴포넌트·숨긴 태그의 형상은 결과에 포함될 수 있다**(보고서에 `hidden-instances-included`·`hidden-tags-included` 경고). 이름은 읽을 수 있는 범위만 담는다: 장면 이름과 파일에 적힌 표시 단위는 2021 이후 형식에서만 읽을 수 있고(레거시는 둘 다 비어 있다), 태그의 숨김 표시는 OpenSKP가 읽은 값을 그대로 따른다. OpenSKP의 타입 주석(`Layer.hidden`)은 레거시에서만 채워진다고 적었지만 소스(`collectLayers`의 `8E3C`, 레거시 레이어 레코드)는 두 컨테이너에서 모두 읽으므로 이 구현은 컨테이너로 구분하지 않는다. 실제 네이티브 작성기로 만든 폭넓은 VFF 원본 corpus의 숨김·태그 의미 검증은 남아 있다.
 
 ## 단위·좌표·크기 정규화
 

@@ -520,7 +520,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     {!immersiveSceneActive ? (
                       <Fragment>
                         <CaptureBridge onCaptureUpdate={onCaptureUpdate} />
-                        <BgViewportController onReady={handleViewportReady} />
+                        <BgViewportController onReady={handleViewportReady} viewportElementRef={mainViewTrackRef} />
                       </Fragment>
                     ) : null}
                     {mainScenePresentationNode}

@@ -139,6 +139,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   onExecuteSelectionArray,
   skpSourceSelection,
   onReadSkpSceneSource,
+  onApplySkpSourceCamera,
   onApplySceneCamera,
 }: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
   const t = useT();
@@ -352,7 +353,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
         </span>
       </header>
 
-      <StudioBg3dSkpSourceInfoPanel selection={skpSourceSelection} onReadSource={onReadSkpSceneSource} />
+      <StudioBg3dSkpSourceInfoPanel selection={skpSourceSelection} onReadSource={onReadSkpSceneSource} onApplyCamera={onApplySkpSourceCamera} cameraDisabled={disabled} />
       <StudioBg3dArchitecturalModelingPanel
         disabled={disabled}
         onStatusChange={setStatusBanner}

@@ -60,6 +60,20 @@ function projectedCorners(
 }
 
 describe("Studio BG3D camera framing", () => {
+  it("명시한 높이를 보존한 채 실제 장면 절두체의 화면 맞춤 zoom을 계산한다", () => {
+    const camera = { ...CAMERA, projection: "orthographic" as const, orthographicHeight: 8, zoom: 2 };
+    const result = fitStudioBg3dCameraToBounds({ camera, bounds: UNIT_BOUNDS, viewportAspect: 2,
+      orthographicFrustumAtZoomOne: { width: 16, height: 8 }, padding: 1 });
+    expect(result?.orthographicHeight).toBe(8);
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(camera.zoom).toBe(2);
+    if (!result) throw new Error("평행 화면 맞춤 결과가 필요합니다.");
+    projectedCorners(result, UNIT_BOUNDS, 2, { width: 16, height: 8 });
+    expect(fitStudioBg3dCameraToBounds({ camera: { ...camera, orthographicHeight: 100_000 }, bounds: UNIT_BOUNDS,
+      viewportAspect: 10, orthographicFrustumAtZoomOne: { width: 1_000_000, height: 100_000 } })?.orthographicHeight).toBe(100_000);
+    expect(fitStudioBg3dCameraToBounds({ camera: { ...camera, orthographicHeight: 0 }, bounds: UNIT_BOUNDS,
+      viewportAspect: 2, orthographicFrustumAtZoomOne: { width: 16, height: 8 } })).toBeNull();
+  });
   it("fits projected bounds while preserving the camera direction and composition fields", () => {
     const result = fitStudioBg3dCameraToBounds({
       camera: {

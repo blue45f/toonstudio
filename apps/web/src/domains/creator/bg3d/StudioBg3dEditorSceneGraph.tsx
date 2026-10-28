@@ -5,9 +5,9 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import {
-  applyStudioBg3dLensShiftToThreeCamera,
   resolveStudioBg3dMinimumOrbitDistance,
 } from "./studio-bg3d-camera-application";
+import { createStudioBg3dCameraMountUpdater } from "./studio-bg3d-camera-mount";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dInferenceController } from "./StudioBg3dInferenceController";
 import { StudioBg3dInferenceOverlay } from "./StudioBg3dInferenceOverlay";
@@ -16,6 +16,7 @@ import {
   isStudioBg3dHdriEnvironmentActive,
   resolveStudioBg3dEnvironmentSettings,
 } from "./studio-bg3d-hdri-environment";
+import { resolveStudioBg3dOrthographicPlanes } from "./studio-bg3d-orthographic-frustum";
 
 export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
   const {
@@ -499,17 +500,21 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       ) : null}
     </Fragment>
   );
-  const applyLensShift = (c: R.THREE.PerspectiveCamera | R.THREE.OrthographicCamera) => {
-    c.near = mainCameraNearClip;
-    c.up.set(mainCameraUp[0], mainCameraUp[1], mainCameraUp[2]);
-    applyStudioBg3dLensShiftToThreeCamera(c, sceneBaseDocument.camera.lensShift);
-    c.updateProjectionMatrix();
-  };
+  const mainViewportSize = mainViewTrackRef.current?.getBoundingClientRect() ?? viewportBoxSize;
+  const mainOrthographicHeight = sceneBaseDocument.camera.orthographicHeight;
+  const mainOrthographicPlanes = mainOrthographicHeight !== undefined
+    ? resolveStudioBg3dOrthographicPlanes(mainOrthographicHeight, mainViewportSize) : null;
+  const applyLensShift = createStudioBg3dCameraMountUpdater(() => ({
+    view: h.sceneBaseDocument.camera,
+    viewport: h.mainViewTrackRef?.current?.getBoundingClientRect() ?? h.viewportBoxSize,
+  }));
   const mainCameraNode = isMainOrtho ? (
     <OrthographicCamera
       makeDefault
       position={[...sceneBaseDocument.camera.position] as [number, number, number]}
       zoom={sceneBaseDocument.camera.zoom ?? 1}
+      manual={mainOrthographicHeight !== undefined}
+      {...(mainOrthographicPlanes ?? {})}
       near={mainCameraNearClip}
       far={mainCameraFarClip}
       onUpdate={applyLensShift}

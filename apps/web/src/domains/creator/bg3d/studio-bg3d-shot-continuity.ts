@@ -111,6 +111,7 @@ export function resolveStudioBg3dShotContinuityCamera(
   const override = shot.camera;
   const projection = override?.projection ?? baseCamera.projection;
   const zoom = finiteOr(override?.zoom, finiteOr(baseCamera.zoom, 1));
+  const orthographicHeight = override?.orthographicHeight ?? baseCamera.orthographicHeight;
   const nearClip = finiteOr(override?.nearClip, finiteOr(baseCamera.nearClip, 0.01));
   const lensShift = override?.lensShift ?? baseCamera.lensShift;
   const up = override?.up ?? baseCamera.up ?? DEFAULT_UP;
@@ -121,6 +122,7 @@ export function resolveStudioBg3dShotContinuityCamera(
     fovDegrees: finiteOr(override?.fovDegrees, baseCamera.fovDegrees),
     ...(projection ? { projection } : {}),
     ...(Number.isFinite(zoom) ? { zoom } : {}),
+    ...(orthographicHeight !== undefined ? { orthographicHeight } : {}),
     ...(lensShift ? { lensShift: [lensShift[0], lensShift[1]] as const } : {}),
     ...(Number.isFinite(nearClip) ? { nearClip } : {}),
     up: copyVec3(up),
@@ -239,7 +241,14 @@ function analyzeTransition(
     ));
   }
 
+  // 픽셀 절두체만 있는 두 legacy 컷은 기존 판정을 유지한다. 명시한 높이가 있으면 보이는 높이도 비교한다.
+  const sameOrthographicSpan = from.projection !== "orthographic"
+    || (from.orthographicHeight === undefined && to.orthographicHeight === undefined)
+    || (from.orthographicHeight !== undefined && to.orthographicHeight !== undefined
+      && Math.abs(from.orthographicHeight / (from.zoom ?? 1) - to.orthographicHeight / (to.zoom ?? 1))
+        <= Math.max(from.orthographicHeight / (from.zoom ?? 1), to.orthographicHeight / (to.zoom ?? 1)) * 0.0025);
   if (
+    sameOrthographicSpan &&
     cameraDistance <= 0.005 &&
     targetDistance <= 0.005 &&
     fovDeltaDegrees <= 0.25 &&

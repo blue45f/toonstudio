@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
 import * as THREE from "three";
 
@@ -28,6 +29,7 @@ import {
   resolveStudioBg3dCameraUpVector,
 } from "./studio-bg3d-camera-orientation";
 import { registerStudioBg3dCaptureExcludedObject } from "./studio-bg3d-capture-exclusion";
+import { readStudioBg3dCameraOrthographicHeight } from "./studio-bg3d-orthographic-frustum";
 import { resolveStudioBg3dPrimitiveCc0PbrSpread } from "./studio-bg3d-cc0-pbr-texture-loader";
 import { CAMERA_PRESETS, DEFAULT_CAMERA_TARGET } from "./studio-bg3d-editor-derivations";
 import {
@@ -111,22 +113,25 @@ export function SkyClearColorController({
   return null;
 }
 
-type OrbitLike = { target?: THREE.Vector3; update?: () => void } | null;
+type OrbitLike = { object?: THREE.Camera; target?: THREE.Vector3; update?: () => void } | null;
 
 /* Owns imperative camera/control updates so rerenders never reset the user's Orbit target. */
-export function BgViewportController({ onReady }: { onReady: (api: BgViewportApi | null) => void }) {
+export function BgViewportController({ onReady, viewportElementRef }: { onReady: (api: BgViewportApi | null) => void; viewportElementRef?: RefObject<HTMLElement | null> }) {
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls) as OrbitLike;
   const viewportSize = useThree((s) => s.size);
 
   useEffect(() => {
-    if (controls?.target) {
-      controls.target.set(DEFAULT_CAMERA_TARGET[0], DEFAULT_CAMERA_TARGET[1], DEFAULT_CAMERA_TARGET[2]);
-      controls.update?.();
+    // Drei가 새 카메라의 controls를 등록하기 전에는 복원 pending을 소비하지 않는다.
+    if (!controls?.target || typeof controls.update !== "function" || controls.object !== camera) {
+      onReady(null);
+      return;
     }
-  }, [controls]);
-
-  useEffect(() => {
+    const readViewportSize = () => {
+      const rect = viewportElementRef?.current?.getBoundingClientRect();
+      return rect && Number.isFinite(rect.width) && Number.isFinite(rect.height) && rect.width > 0 && rect.height > 0
+        ? rect : viewportSize;
+    };
     const readView = (): StudioBg3dCameraSettings => {
       const target = controls?.target ?? new THREE.Vector3(...DEFAULT_CAMERA_TARGET);
       const fovDegrees = camera instanceof THREE.PerspectiveCamera ? camera.fov : 50;
@@ -143,12 +148,14 @@ export function BgViewportController({ onReady }: { onReady: (api: BgViewportApi
             camera.view.offsetY / camera.view.fullHeight,
           ] as const
         : null;
+      const orthographicHeight = readStudioBg3dCameraOrthographicHeight(camera);
       return {
         position,
         target: targetTuple,
         fovDegrees,
         projection: camera instanceof THREE.OrthographicCamera ? "orthographic" : "perspective",
         zoom: camera.zoom,
+        ...(orthographicHeight !== undefined ? { orthographicHeight } : {}),
         nearClip: resolveStudioBg3dCameraNearClip(camera.near),
         up,
         ...(lensShift ? { lensShift } : {}),
@@ -178,12 +185,13 @@ export function BgViewportController({ onReady }: { onReady: (api: BgViewportApi
           ...(presetId === "default"
             ? { nearClip: STUDIO_BG3D_CAMERA_DEFAULT_NEAR_CLIP }
             : {}),
-        });
+        }, readViewportSize());
       },
-      applyView: (view) => applyStudioBg3dViewToThreeCamera(camera, controls, view),
+      applyView: (view) => applyStudioBg3dViewToThreeCamera(camera, controls, view, readViewportSize()),
       readView,
       readFramingState: () => {
-        const viewportAspect = viewportSize.width / viewportSize.height;
+        const currentViewport = readViewportSize();
+        const viewportAspect = currentViewport.width / currentViewport.height;
         if (!Number.isFinite(viewportAspect) || viewportAspect <= 0) return null;
         const view = readView();
         if (!(camera instanceof THREE.OrthographicCamera)) {
@@ -214,7 +222,7 @@ export function BgViewportController({ onReady }: { onReady: (api: BgViewportApi
       },
     });
     return () => onReady(null);
-  }, [camera, controls, onReady, viewportSize.height, viewportSize.width]);
+  }, [camera, controls, onReady, viewportElementRef, viewportSize]);
 
   return null;
 }

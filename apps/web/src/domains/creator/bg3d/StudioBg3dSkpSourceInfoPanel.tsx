@@ -6,11 +6,14 @@ import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-co
 import { parseStudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 import type { StudioBg3dSkpSceneSource, StudioBg3dSkpSceneSourceReason } from "./studio-bg3d-skp-scene-source";
 import type { StudioBg3dReadSkpSceneSource, StudioBg3dSkpSourceSelection } from "./studio-bg3d-skp-source-read-command";
+import type { StudioBg3dApplySkpSourceCamera } from "./studio-bg3d-skp-camera-restore-types";
 
 export interface StudioBg3dSkpSourceInfoPanelProps {
   readonly disabled?: boolean;
   readonly selection?: StudioBg3dSkpSourceSelection;
   readonly onReadSource?: StudioBg3dReadSkpSceneSource;
+  readonly onApplyCamera?: StudioBg3dApplySkpSourceCamera;
+  readonly cameraDisabled?: boolean;
 }
 
 type ReadState = { readonly status: "idle" | "loading" }
@@ -76,7 +79,7 @@ function SourceList<T>({ label, items, name, itemKey, renderItem, initiallyOpen 
   );
 }
 
-function SourceContent({ source }: { readonly source: StudioBg3dSkpSceneSource }) {
+function SourceContent({ source, renderCameraAction }: { readonly source: StudioBg3dSkpSceneSource; readonly renderCameraAction: (pageKey: string) => ReactNode }) {
   const t = useT();
   if (source.status === "legacy") return <p data-testid="bg3d-skp-source-legacy" role="status" className="rounded-lg border border-line bg-panel p-3 text-fg-2">{t("studio.bg3d.skpSource.legacy", "이 자산에는 원본 장면 정보가 기록되어 있지 않습니다. 기존 가져오기 자산은 원본 카메라·태그 정보를 확인할 수 없습니다.")}</p>;
   if (source.status === "unavailable") return <div data-testid="bg3d-skp-source-unavailable" className="space-y-1 rounded-lg border border-line bg-panel p-3 text-fg-2">
@@ -100,7 +103,7 @@ function SourceContent({ source }: { readonly source: StudioBg3dSkpSceneSource }
         <p className="font-semibold text-fg">{page.name || t("studio.bg3d.skpSource.unnamedCamera", "이름 없는 카메라")}</p>
         <p className="text-fg-2">{page.parallel ? t("studio.bg3d.skpSource.parallel", "평행 투영") : t("studio.bg3d.skpSource.perspective", "원근 투영")}</p>
         <p className="text-fg-2">{t("studio.bg3d.skpSource.originalFov", { value: page.fov }, "원본 FOV {value}° · 기준 미확인")}</p>
-        {page.parallel ? <p className="text-fg-2">{t("studio.bg3d.skpSource.originalOrthoHeight", { value: page.orthoHeight }, "원본 평행 높이 {value} in")}</p> : null}
+        {page.parallel ? <><p className="text-fg-2">{t("studio.bg3d.skpSource.originalOrthoHeight", { value: page.orthoHeight }, "원본 평행 높이 {value} in")}</p>{renderCameraAction(page.key)}</> : null}
       </>} />
     <SourceList label={t("studio.bg3d.skpSource.tagLabel", "태그")} items={manifest.tags.items} name={(tag) => tag.name} itemKey={(tag) => tag.key}
       renderItem={(tag) => <><p className="font-semibold text-fg">{tag.name || t("studio.bg3d.skpSource.unnamedTag", "이름 없는 태그")}</p><p className="text-fg-2">{tag.hidden ? t("studio.bg3d.skpSource.tagHidden", "파서 상태: 숨김") : t("studio.bg3d.skpSource.tagVisible", "파서 상태: 표시")}</p></>} />
@@ -114,7 +117,7 @@ export function StudioBg3dSkpSourceInfoPanel(props: StudioBg3dSkpSourceInfoPanel
   return <SkpSourceInfoScope key={scopeKey == null ? "none" : `selected:${scopeKey}`} {...props} />;
 }
 
-function SkpSourceInfoScope({ disabled = false, selection, onReadSource }: StudioBg3dSkpSourceInfoPanelProps) {
+function SkpSourceInfoScope({ disabled = false, selection, onReadSource, onApplyCamera, cameraDisabled = false }: StudioBg3dSkpSourceInfoPanelProps) {
   const t = useT();
   const id = useId();
   const mounted = useRef(false);
@@ -122,6 +125,7 @@ function SkpSourceInfoScope({ disabled = false, selection, onReadSource }: Studi
   const busy = useRef(false);
   const [readState, setReadState] = useState<ReadState>({ status: "idle" });
   const [downloadState, setDownloadState] = useState<DownloadState>("idle");
+  const [cameraState, setCameraState] = useState<{ readonly loading: boolean; readonly message: string; readonly error: boolean }>({ loading: false, message: "", error: false });
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; requestSequence.current += 1; };
@@ -139,6 +143,7 @@ function SkpSourceInfoScope({ disabled = false, selection, onReadSource }: Studi
     const request = ++requestSequence.current;
     setReadState({ status: "loading" });
     setDownloadState("idle");
+    setCameraState({ loading: false, message: "", error: false });
     try {
       const result = await onReadSource();
       if (!mounted.current || request !== requestSequence.current) return;
@@ -168,12 +173,29 @@ function SkpSourceInfoScope({ disabled = false, selection, onReadSource }: Studi
       if (mounted.current && request === requestSequence.current) setDownloadState("error");
     }
   };
+  const applyCamera = async (pageKey: string) => {
+    if (!source || busy.current || cameraDisabled || disabled || !selection?.scopeKey || !onApplyCamera) return;
+    busy.current = true;
+    const request = requestSequence.current;
+    setCameraState({ loading: true, message: "", error: false });
+    try {
+      const result = await onApplyCamera({ scopeKey: selection.scopeKey, pageKey });
+      if (!mounted.current || request !== requestSequence.current) return;
+      setCameraState({ loading: false, error: !result.ok, message: result.ok
+        ? t("studio.bg3d.skpSource.cameraApplied", { name: result.pageName }, "파서가 읽은 평행 카메라 ‘{name}’를 적용했습니다. 다른 Page 상태는 적용하지 않았습니다.")
+        : translateCurrentStaticSourceText("domains.creator.bg3d.skpSource.cameraFailure", "ko", result.messageKo) });
+    } catch {
+      if (mounted.current && request === requestSequence.current) setCameraState({ loading: false, error: true, message: t("studio.bg3d.skpSource.cameraError", "원본 카메라를 적용하지 못했습니다. 다시 시도하세요.") });
+    } finally {
+      if (mounted.current && request === requestSequence.current) busy.current = false;
+    }
+  };
   return <section data-testid="bg3d-skp-source-info-panel" aria-labelledby={`${id}-title`} className="min-w-0 space-y-3 rounded-xl border border-line bg-card p-3 text-xs text-fg [overflow-wrap:anywhere]">
     <h3 id={`${id}-title`} className="flex items-center gap-1.5 text-sm font-bold"><FileSearch className="size-4 shrink-0 text-accent" aria-hidden />{t("studio.bg3d.skpSource.title", "SKP 원본 정보")}</h3>
-    <p className="text-fg-2">{t("studio.bg3d.skpSource.description", "선택한 모델에 보관된 원본 장면 정보를 조회합니다. 현재 장면에 적용하는 기능은 연결 중입니다.")}</p>
+    <p className="text-fg-2">{t("studio.bg3d.skpSource.description", "선택한 모델에 보관된 원본 장면 정보를 조회합니다. 평행 카메라를 적용할 수 있으며 다른 Page 상태의 연결은 진행 중입니다.")}</p>
     {selection?.scopeKey ? <p data-testid="bg3d-skp-source-model" className="font-semibold">{t("studio.bg3d.skpSource.selectedModel", { name: selection.modelName }, "선택 모델: {name}")}</p> : null}
     {notice ? <p id={`${id}-blocked`} role="status" className="text-fg-2">{notice}</p> : null}
-    <button type="button" data-testid="bg3d-skp-source-read" disabled={Boolean(blockedReason || loading)} aria-describedby={notice ? `${id}-blocked` : undefined}
+    <button type="button" data-testid="bg3d-skp-source-read" disabled={Boolean(blockedReason || loading || cameraState.loading)} aria-describedby={notice ? `${id}-blocked` : undefined}
       onClick={() => { void readSource(); }} className={BUTTON}>
       {loading ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <FileSearch className="size-4" aria-hidden />}
       {loading ? t("studio.bg3d.skpSource.reading", "원본 정보 읽는 중") : readState.status === "error" ? t("studio.bg3d.skpSource.retry", "원본 정보 다시 읽기") : source ? t("studio.bg3d.skpSource.refresh", "원본 정보 새로 읽기") : t("studio.bg3d.skpSource.read", "SKP 원본 정보 읽기")}
@@ -181,7 +203,11 @@ function SkpSourceInfoScope({ disabled = false, selection, onReadSource }: Studi
     {!blockedReason && loading ? <p role="status" aria-live="polite" className="text-fg-2">{t("studio.bg3d.skpSource.loading", "선택 모델의 원본 정보를 읽고 있습니다.")}</p> : null}
     {!blockedReason && readState.status === "error" ? <p role="alert" className="text-danger">{readState.message}</p> : null}
     {source ? <div className="space-y-3">
-      <SourceContent source={source} />
+      <SourceContent source={source} renderCameraAction={(pageKey) => onApplyCamera ? <button type="button" className={BUTTON}
+        disabled={cameraDisabled || disabled || cameraState.loading} onClick={() => { void applyCamera(pageKey); }}>
+        {cameraState.loading ? t("studio.bg3d.skpSource.applyingCamera", "평행 카메라 적용 중") : t("studio.bg3d.skpSource.applyCamera", "이 평행 카메라 적용")}
+      </button> : null} />
+      {cameraState.message ? <p role={cameraState.error ? "alert" : "status"} className={cameraState.error ? "text-danger" : "text-fg-2"}>{cameraState.message}</p> : null}
       <button type="button" onClick={() => { void downloadSource(); }} disabled={downloadState === "loading"} className={BUTTON}><FileDown className="size-4" aria-hidden />{t("studio.bg3d.skpSource.download", "검증된 원본 정보 JSON 내려받기")}</button>
       {downloadState === "requested" ? <p role="status" className="text-fg-2">{t("studio.bg3d.skpSource.downloadRequested", "원본 정보 JSON 다운로드를 요청했습니다.")}</p> : null}
       {downloadState === "error" ? <p role="alert" className="text-danger">{t("studio.bg3d.skpSource.downloadError", "JSON 다운로드를 시작하지 못했습니다. 내려받기 버튼으로 다시 시도하세요.")}</p> : null}

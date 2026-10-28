@@ -105,7 +105,7 @@ describe("Studio BG3D shot UI integration boundary", () => {
     expect(handler).toContain("viewportApiRef.current?.applyView(appliedDocument.camera)");
     expect(handler).toContain("collectStudioBg3dEffectivelyVisibleEntityIds(appliedDocument.nodes)");
     expect(source).toContain("onClick={() => applySavedShot(shot.id)}");
-    expect(source).toContain(': selectedEntities.every((entity) => !effectivelyVisibleLayerIds.has(entity.id))');
+    expect(source).toContain(': selectedEntities.every((entity: any) => !effectivelyVisibleLayerIds.has(entity.id))');
   });
 
   it("batch-renders selected shots and passes without recording temporary scene states in history", () => {

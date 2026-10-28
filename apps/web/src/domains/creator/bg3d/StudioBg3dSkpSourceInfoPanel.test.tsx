@@ -66,7 +66,7 @@ describe("선택 모델의 실제 SKP 원본 정보 조회", () => {
     expect(value.read).not.toHaveBeenCalled();
     expect(screen.queryByText("원근 컷")).toBeNull();
     expect(screen.getByText("선택 모델: 선택 모델 A")).toBeTruthy();
-    expect(screen.getByText(/현재 장면에 적용하는 기능은 연결 중/)).toBeTruthy();
+    expect(screen.getByText(/평행 카메라를 적용할 수 있으며 다른 Page 상태/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "SKP 원본 정보 읽기" }));
     await screen.findByTestId("bg3d-skp-source-available");
     expect(value.read).toHaveBeenCalledTimes(1);
@@ -247,5 +247,71 @@ describe("선택 모델의 실제 SKP 원본 정보 조회", () => {
     expect(json).not.toContain("선택 모델 A");
     expect(value.read).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(button).toHaveProperty("disabled", false));
+  });
+});
+
+
+describe("원본 정보의 평행 카메라 적용 UI", () => {
+  it("동시에 시작한 JSON 다운로드를 카메라 적용이 무효화하거나 loading 상태에 남기지 않는다", async () => {
+    const value = host(actualSource());
+    const pending = deferred<import("./studio-bg3d-skp-camera-restore-types").StudioBg3dSkpCameraResult>();
+    render(<StudioBg3dSkpSourceInfoPanel selection={value.selection} onReadSource={value.read} onApplyCamera={() => pending.promise} />);
+    fireEvent.click(screen.getByRole("button", { name: "SKP 원본 정보 읽기" }));
+    const camera = await screen.findByRole("button", { name: "이 평행 카메라 적용" });
+    const download = screen.getByRole("button", { name: "검증된 원본 정보 JSON 내려받기" });
+    fireEvent.click(download);
+    fireEvent.click(camera);
+    await waitFor(() => expect(downloads.download).toHaveBeenCalledTimes(1));
+    expect(download).toHaveProperty("disabled", false);
+    await act(async () => { pending.resolve({ ok: false, code: "commit-rejected", messageKo: "다시 적용하세요." }); });
+    expect(screen.getByText("원본 정보 JSON 다운로드를 요청했습니다.")).toBeTruthy();
+  });
+
+  it("평행 Page에만 현재 선택 scope의 적용 명령을 보내고 실패를 재시도한다", async () => {
+    const value = host(actualSource());
+    const apply = vi.fn<import("./studio-bg3d-skp-camera-restore-types").StudioBg3dApplySkpSourceCamera>();
+    apply.mockResolvedValueOnce({ ok: false, code: "commit-rejected", messageKo: "카메라 명령이 거부됐습니다." });
+    apply.mockResolvedValueOnce({ ok: true, pageName: "평행 컷", camera: { position: [0, 12.7, 0], target: [0, 0, 0], fovDegrees: 50, projection: "orthographic", orthographicHeight: 3.6576 } });
+    render(<StudioBg3dSkpSourceInfoPanel selection={value.selection} onReadSource={value.read} onApplyCamera={apply} />);
+    fireEvent.click(screen.getByRole("button", { name: "SKP 원본 정보 읽기" }));
+    const button = await screen.findByRole("button", { name: "이 평행 카메라 적용" });
+    expect(screen.getAllByRole("button", { name: "이 평행 카메라 적용" })).toHaveLength(1);
+    fireEvent.click(button);
+    expect((await screen.findByRole("alert")).textContent).toContain("명령이 거부");
+    const source = actualSource();
+    const page = source.status === "available" ? source.manifest.pages.items.find((item) => item.parallel) : undefined;
+    expect(apply).toHaveBeenLastCalledWith({ scopeKey: value.selection.scopeKey, pageKey: page?.key });
+    fireEvent.click(button);
+    await screen.findByText(/파서가 읽은 평행 카메라 ‘평행 컷’를 적용했습니다/);
+    expect(apply).toHaveBeenCalledTimes(2);
+    expect(value.read).toHaveBeenCalledTimes(1);
+  });
+
+  it("편집 잠금 중에도 원본 조회는 허용하고 카메라 변경은 막는다", async () => {
+    const value = host(actualSource());
+    const apply = vi.fn<import("./studio-bg3d-skp-camera-restore-types").StudioBg3dApplySkpSourceCamera>();
+    render(<StudioBg3dSkpSourceInfoPanel selection={value.selection} onReadSource={value.read} onApplyCamera={apply} cameraDisabled />);
+    fireEvent.click(screen.getByRole("button", { name: "SKP 원본 정보 읽기" }));
+    const button = await screen.findByRole("button", { name: "이 평행 카메라 적용" });
+    expect(button).toHaveProperty("disabled", true);
+    fireEvent.click(button);
+    expect(apply).not.toHaveBeenCalled();
+    expect(value.read).toHaveBeenCalledTimes(1);
+  });
+
+  it("적용 중 중복 요청을 막고 선택이 바뀌면 이전 응답을 숨긴다", async () => {
+    const a = host(actualSource(), "A"), b = host(actualSource(), "B");
+    const pending = deferred<import("./studio-bg3d-skp-camera-restore-types").StudioBg3dSkpCameraResult>();
+    const apply = vi.fn(() => pending.promise);
+    const view = render(<StudioBg3dSkpSourceInfoPanel selection={a.selection} onReadSource={a.read} onApplyCamera={apply} />);
+    fireEvent.click(screen.getByRole("button", { name: "SKP 원본 정보 읽기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "이 평행 카메라 적용" }));
+    expect(screen.getByRole("button", { name: "평행 카메라 적용 중" })).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("bg3d-skp-source-read")).toHaveProperty("disabled", true);
+    view.rerender(<StudioBg3dSkpSourceInfoPanel selection={b.selection} onReadSource={b.read} onApplyCamera={apply} />);
+    await act(async () => { pending.resolve({ ok: false, code: "selection-changed", messageKo: "이전 적용 응답" }); });
+    expect(screen.queryByText("이전 적용 응답")).toBeNull();
+    expect(screen.queryByRole("button", { name: "이 평행 카메라 적용" })).toBeNull();
+    expect(apply).toHaveBeenCalledTimes(1);
   });
 });

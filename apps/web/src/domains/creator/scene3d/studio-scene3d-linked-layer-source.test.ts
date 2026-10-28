@@ -80,6 +80,35 @@ function pinnedFixture(exportAspectRatio?: number) {
 }
 
 describe("Studio Scene3D lightweight linked source", () => {
+  it.each([{ height: 18, zoom: 3 }, { height: 0.000001, zoom: 50 }])("명시 높이 $height는 H/zoom 변화와 같은 배율 재표현을 구분한다", ({ height, zoom }) => {
+    const original = pinnedFixture();
+    const source = normalizeStudioBg3dSceneDocument({ ...original.scene, pinnedVersionedCut: undefined, activeShotId: undefined, shots: [],
+      camera: { ...original.scene.camera, projection: "orthographic", orthographicHeight: height, zoom },
+    });
+    const cut = approveStudioScene3dVersionedCut(createStudioScene3dVersionedCut({
+      id: "explicit-height-cut", name: "원본 높이 컷", scene: projectStudioBg3dDocumentToScene3d({ documentId: "explicit-height-cut", source, viewportAspectRatio: 1 }), characters: {}, legacyBg3d: source,
+    }));
+    const scene = { ...source, pinnedVersionedCut: cut };
+    expect(describeStudioScene3dLinkedLayerReview({ scene })?.cameraNeedsReview).toBe(false);
+    expect(describeStudioScene3dLinkedLayerReview({ scene: { ...scene, camera: { ...scene.camera, orthographicHeight: height * 2, zoom: zoom * 2 } } })?.cameraNeedsReview).toBe(false);
+    expect(describeStudioScene3dLinkedLayerReview({ scene: { ...scene, camera: { ...scene.camera, orthographicHeight: height * 7 / 6 } } })?.cameraNeedsReview).toBe(true);
+    expect(describeStudioScene3dLinkedLayerReview({ scene: { ...scene, camera: { ...scene.camera, zoom: zoom * 2 } } })?.cameraNeedsReview).toBe(true);
+    expect(cut.status).toBe("approved");
+  });
+
+  it("명시 높이가 없는 기존 정사영 컷은 기존 zoom 비교와 필드 누락을 유지한다", () => {
+    const original = pinnedFixture();
+    const source = normalizeStudioBg3dSceneDocument({ ...original.scene, pinnedVersionedCut: undefined, activeShotId: undefined, shots: [],
+      camera: { ...original.scene.camera, projection: "orthographic", zoom: 2 },
+    });
+    const cut = approveStudioScene3dVersionedCut(createStudioScene3dVersionedCut({
+      id: "legacy-height-cut", name: "기존 컷", scene: projectStudioBg3dDocumentToScene3d({ documentId: "legacy-height-cut", source, viewportAspectRatio: 1 }), characters: {}, legacyBg3d: source,
+    }));
+    const scene = { ...source, pinnedVersionedCut: cut };
+    expect(describeStudioScene3dLinkedLayerReview({ scene })?.cameraNeedsReview).toBe(false);
+    expect(describeStudioScene3dLinkedLayerReview({ scene: { ...scene, camera: { ...scene.camera, zoom: 3 } } })?.cameraNeedsReview).toBe(true);
+    expect(source.camera).not.toHaveProperty("orthographicHeight");
+  });
   it("restores the canonical BG3D scene without constructing Scene3D authority", () => {
     const { page, element, bundleId, linked3dRender, shared3dStage } = fixture();
     const scene = resolveStudioScene3dLinkedLayerEditSource({

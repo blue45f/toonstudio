@@ -4,11 +4,13 @@ import { resolveStudioBg3dOrthographicZoom } from "./studio-bg3d-camera-framing"
 import {
   isStudioBg3dCameraNearClip,
   isStudioBg3dCameraUpVectorValid,
+  isStudioBg3dOrthographicHeight,
   resolveStudioBg3dCameraDistanceLimits,
   resolveStudioBg3dCameraNearClip,
   resolveStudioBg3dCameraUpVector,
 } from "./studio-bg3d-camera-orientation";
 import { waitForStudioBg3dCapturePhase } from "./studio-bg3d-capture-adapter";
+import { applyStudioBg3dOrthographicFrustumPlan, planStudioBg3dOrthographicFrustum, recordStudioBg3dCameraOrthographicHeight, type StudioBg3dFrustumViewport } from "./studio-bg3d-orthographic-frustum";
 
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document";
 
@@ -132,6 +134,7 @@ function validStudioBg3dCameraView(
     ) < STUDIO_BG3D_CAMERA_APPLICATION_MIN_VIEW_DISTANCE ||
     !finiteInRange(view.fovDegrees, 10, 120) ||
     !finiteInRange(view.zoom ?? 1, 0.1, 100) ||
+    (view.orthographicHeight !== undefined && !isStudioBg3dOrthographicHeight(view.orthographicHeight)) ||
     (view.projection !== undefined &&
       view.projection !== "perspective" && view.projection !== "orthographic") ||
     (view.lensShift !== undefined && (
@@ -314,13 +317,19 @@ export function applyStudioBg3dViewToThreeCamera(
   camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
   controls: OrbitLike,
   view: StudioBg3dCameraSettings,
+  viewport?: StudioBg3dFrustumViewport,
 ): boolean {
   const projectionMatches = view.projection === "orthographic"
     ? camera instanceof THREE.OrthographicCamera
     : camera instanceof THREE.PerspectiveCamera;
   if (!projectionMatches || !validStudioBg3dCameraView(camera, view)) return false;
+  const frustum = camera instanceof THREE.OrthographicCamera
+    ? planStudioBg3dOrthographicFrustum(camera, view.orthographicHeight, viewport) : null;
+  if (camera instanceof THREE.OrthographicCamera && !frustum) return false;
 
   return withoutStudioBg3dOrbitMomentum(controls, () => {
+    if (camera instanceof THREE.OrthographicCamera && frustum) applyStudioBg3dOrthographicFrustumPlan(camera, frustum);
+    else recordStudioBg3dCameraOrthographicHeight(camera, view.orthographicHeight);
     if (camera instanceof THREE.PerspectiveCamera) camera.fov = view.fovDegrees;
     camera.zoom = view.zoom ?? 1;
     camera.near = resolveStudioBg3dCameraNearClip(view.nearClip);
