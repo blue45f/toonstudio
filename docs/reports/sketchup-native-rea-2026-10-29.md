@@ -151,3 +151,67 @@ FOV 필드가 삼각함수 전에 π/180을 곱하는 값이라는 해석은 **�
 - 원본 파일·디컴파일·원장은 계속 `/private/tmp/toonstudio-sketchup-native-20261029/`에만 보존한다. 저장소에는 이 조사 설명만 추가했다.
 - export·snapshot 저장 뒤 `close_binary` 성공, 마지막 `binary_session`의 `open: false`, `cleanup_pending: false`를 확인했다. 45MB 본체·전체 함수 일괄 디컴파일·대상 실행은 수행하지 않았다.
 - Camera 절 추가 후 `pnpm harness:check`, 이 문서의 Secretlint, `git diff --check`가 각각 exit `0`으로 통과했다.
+
+## 9. Native C API golden fixture 준비 조사와 중단된 최소 읽기 실험
+
+이 절의 상태는 **`investigation partial / native read unverified`**다. 공식 배포의 export·파일 배치와 공개 C API 계약은 확인했지만, 소유 Python subprocess의 `dlopen`이 제한 시간 안에 반환하지 않았다. SDK 초기화·template 읽기·native 카메라 값 확보에 성공한 기록이 아니다. 이 결과로 SDK 부재나 인증 문제를 판단하지 않는다.
+
+### 9.1 읽기 전용 inventory에서 확인한 사실
+
+같은 공식 DMG를 `readonly`, `nobrowse`, `noautoopen`으로 잠깐 연결해 파일 목록과 정적 Mach-O 정보를 읽었다. 원본 `SketchUpAPI` SHA-256은 2절의 분석용 사본과 일치한다. `file`·`nm -gU`·`otool -L`·`otool -l`은 arm64 `MH_DYLIB`, 최소 macOS `15.0`, SDK `26.2`와 다음 정의된 외부 export를 보여준다. 주소는 이 이미지의 상대 symbol address이며 다른 빌드의 ABI로 일반화하지 않는다.
+
+| 요청한 C API | 주소 | 관측 |
+| --- | --- | --- |
+| `SUInitialize` | `0x45b1c` | export 존재 |
+| `SUModelCreate` | `0x27b6c` | export 존재 |
+| `SUModelCreateFromFile` | `0x27c70` | export 존재 |
+| `SUModelSaveToFile` | `0x28498` | export 존재 |
+| `SUModelAddScenes` | `0x2a104` | export 존재 |
+| `SUSceneGetCamera` | `0x30598` | export 존재 |
+| `SUCameraGetFOVIsHeight` | `0x9528` | export 존재 |
+
+`SUTerminate`, Model·Scene·Camera의 release, Scene 열거, Camera orientation·projection·FOV·aspect·직교 높이의 getter/setter도 export되어 있다. 이 목록은 호출 성공을 증명하지 않는다.
+
+API의 `LC_RPATH`는 `@loader_path/Libraries`이며 원래 framework에는 다음 private dylib 7개가 모두 arm64로 존재한다: `libSketchUpCommonPreferences`, `libcommon_geoutils-shared`, `libcommon_image-shared`, `libcommon_units-shared`, `libcommon_zip-shared`, `libcommon_geometry-shared`, `libcommon_utils-shared`. 조사한 private 전이 의존성은 이 집합 안에서 닫힌다. 나머지 정적 의존성에는 AppKit·Cocoa·CoreFoundation·Foundation·OpenGL·CoreGraphics·ImageIO·objc·libc++·libSystem이 있다. 실제 실험은 평탄화된 `targets/` 사본 대신 이 원본 framework 위치를 사용했다. 정적 링크 구조만으로 UI·인증·초기화 부작용이나 헤드리스 동작을 확정하지 않는다.
+
+앱 내부에서 `.skp` 파일 371개를 확인했다. 14개 언어의 `Templates`에 각 21개, 합계 294개가 있고, `Resources/Components`에는 70개, 나머지 경로에는 7개가 있다. 예시는 `Resources/en-US/Templates/Temp01a - Simple.skp`, `Temp04a - AEC.skp`, `Resources/Tutorials/Tutorial01.skp`다. 파일 이름으로 단위·카메라 상태를 추정하지 않았으며, 공식 template를 golden 정답이나 재배포용 fixture로 사용하지 않았다.
+
+### 9.2 공식 공개 문서에서 먼저 확인한 호출·수명 계약
+
+공식 문서의 검색 응답으로 아래 signature와 수명 설명을 확인했다. 직접 페이지 열기는 HTTP `403`을 반환했으며, 로그인이나 인증 우회를 하지 않았다. 검색으로 받은 공식 문서 설명과 로컬 바이너리의 export 존재를 구분한다.
+
+| 계약 | 확인한 signature·사용 조건 | 공식 출처 |
+| --- | --- | --- |
+| 초기화·종료 | `void SUInitialize()` → API 사용 → `void SUTerminate()`. standalone 사용의 main thread에서 호출한다. Live API에서는 이 초기화·종료 함수를 사용하지 않는다. | [initialize.h](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/initialize_8h.html), [C API 개요](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/index.html) |
+| 파일 읽기·모델 해제 | `enum SUResult SUModelCreateFromFile(SUModelRef *model, const char *file_path)`; `enum SUResult SUModelRelease(SUModelRef *model)`. 생성된 모델은 반드시 해제하며 소유된 하위 객체를 별도로 해제하지 않는다. 파일 읽기의 deprecated 표기와 `WithStatus` 대체 API도 확인했다. | [SUModelRef](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_model_ref.html) |
+| Scene 열거 | `SUModelGetNumScenes(SUModelRef model, size_t *num_scenes)`; `SUModelGetScenes(SUModelRef model, size_t len, SUSceneRef scenes[], size_t *count)`. 모두 `enum SUResult`를 반환한다. | [SUModelRef](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_model_ref.html) |
+| Camera 읽기·소유권 | `SUSceneGetCamera(SUSceneRef scene, SUCameraRef *camera)`와 `SUModelGetCamera(SUModelRef model, SUCameraRef *camera)`는 내부 카메라 참조를 반환한다. 반환된 참조에 `SUCameraRelease`를 호출하지 않는다. | [SUSceneRef](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_scene_ref.html), [SUModelRef](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_model_ref.html) |
+| Camera orientation | `SUCameraGetOrientation(SUCameraRef camera, struct SUPoint3D *position, struct SUPoint3D *target, struct SUVector3D *up_vector)`. `SUPoint3D`·`SUVector3D`는 x/y/z의 `double` 3개다. 위치 좌표는 inches다. | [SUCameraRef](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_camera_ref.html), [SUPoint3D](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_point3_d.html), [SUVector3D](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_vector3_d.html) |
+| Camera 조건부 값 | `SUCameraGetPerspective`·`SUCameraGetFOVIsHeight`는 `(SUCameraRef, bool *)`, `SUCameraGetPerspectiveFrustumFOV`·`SUCameraGetAspectRatio`·`SUCameraGetOrthographicFrustumHeight`는 `(SUCameraRef, double *)`다. 모두 `enum SUResult`를 반환한다. FOV 각도와 FOV 축 플래그는 따로 읽는다. | [SUCameraRef](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/struct_s_u_camera_ref.html) |
+
+공식 공유 `SketchUpAPI/common.h`의 [`DEFINE_SU_TYPE`](https://extensions.sketchup.com/developers/layout_c_api/layout/_sketch_up_a_p_i_2common_8h_source.html)는 `void *ptr` 하나를 가진 참조 구조체다. 이 layout과 공개 scalar·geometry 계약을 명시적으로 바인딩했으며, 8절 디컴파일의 추정 인자 순서를 호출 signature로 사용하지 않았다. [SUResult 열거](https://extensions.sketchup.com/developers/sketchup_c_api/sketchup/common_8h.html)에서 `0`은 `SU_ERROR_NONE`, `9`는 `SU_ERROR_NO_DATA`다. 화면 비율 사용·투영 종류 불일치 등 조건부 데이터 부재를 `SU_ERROR_UNSUPPORTED`나 성공 값으로 바꾸지 않는 방식으로 probe를 준비했다.
+
+### 9.3 한 번의 소유 subprocess에서 실제 관측한 중단 지점
+
+실험 파일과 원시 결과는 `/private/tmp/toonstudio-sketchup-native-20261029/`에만 기록했다. 제품 source와 SDK 바이너리는 변경하지 않았다.
+
+- 실행 파일: Xcode 제공 `/Applications/Xcode.app/Contents/Developer/usr/bin/python3`의 별도 소유 subprocess.
+- 실행 정책: `/usr/bin/sandbox-exec -p '(version 1)(allow default)(deny network*)'`로 outbound network를 차단하고, 30초 제한·소유 process group 정리를 적용했다.
+- 대상: 원본 framework의 `Versions/A/SketchUpAPI`와 영문 `Temp04a - AEC.skp` 한 파일. template SHA-256은 `854bd2ec83bbf7bf3012bc7f50b17724290404badaeaa60578d72abc95f36d98`다.
+- 실제 마지막 checkpoint: **`before-dlopen`**. `ctypes.CDLL`이 반환했다는 `loaded` checkpoint는 기록되지 않았다.
+- 30.005초 경과 뒤 소유 process group에 `SIGTERM`을 보내고 subprocess exit `-15`, `timedOut: true`를 확인했다. stderr는 비어 있었다.
+- **자동 재시도는 0회**다. sandbox·의존성·라이선스 설정을 바꿔 같은 native 호출을 재실행하지 않았다.
+
+따라서 `SUInitialize`, API version 조회, `SUModelCreateFromFile`, Scene 열거, Camera getter, `SUModelRelease`, `SUTerminate`는 모두 **미실행**이다. 라이브러리 constructor는 `dlopen` 도중 실행될 수 있으므로 native 코드가 전혀 실행되지 않았다고 단정하지 않지만, SDK 초기화나 template 메타데이터 읽기에 성공했다고 표현하지 않는다. 멈춘 원인이 의존성·인증·네트워크 정책·initializer 중 무엇인지는 현재 증거로 알 수 없다.
+
+성공한 native 읽기를 전제로 허용된 같은 파일의 OpenSKP 비교와 local golden probe도 수행하지 않았다. SketchUp 앱 UI 실행 명령·로그인·설치·라이선스 우회·바이너리 패치·원본 template 재배포·SDK 제품 포함 변경은 하지 않았다. 새로운 Ghidra import나 전체 분석도 시작하지 않고 기존 Ghidra `12.1.4` Camera 증거를 재사용했다.
+
+### 9.4 정리·남은 원인 조사·검증
+
+소유 PID·process group `38337`의 잔존 프로세스가 없음을 확인했다. 첫 DMG detach는 `리소스 사용 중`을 반환했지만, 열린 파일 소유자가 관측되지 않은 뒤 정상 detach가 `"disk4" ejected.`로 끝났다. 이는 SDK 실험의 재시도가 아니라 읽기 전용 조사 볼륨 정리다. 강제 분리나 다른 프로세스 종료는 하지 않았다.
+
+원시 증거는 `camera-golden-inventory.json`, `camera-native-read-process.json`, `camera-native-template-read.json`, `camera-native-read-final.json`과 소유 probe 파일에 있다. 특히 `camera-native-template-read.json`의 `running`은 종료 직전 마지막 checkpoint이고, 최종 판정은 `camera-native-read-final.json`의 `inconclusive-stopped`다.
+
+다음 원인 조사는 별도 제어 실험으로 남긴다. 먼저 멈춘 `dlopen`의 소유 process stack·dyld/initializer 대기 지점을 제한된 시간 안에 관측하고, 그 증거로 필요한 의존성·호스트 환경을 판단해야 한다. 초기화 성공이 확인되기 전에는 native camera golden 값을 얻었다고 표시하거나 OpenSKP의 미노출 필드를 native 값으로 보충하지 않는다.
+
+이 절 추가 후 `pnpm exec secretlint docs/reports/sketchup-native-rea-2026-10-29.md`, `pnpm harness:check`, `git diff --check -- docs/reports/sketchup-native-rea-2026-10-29.md`가 각각 exit `0`으로 통과했다. 전체 TSC·production build·커밋·배포는 이 후속 조사에서 수행하지 않았다.
