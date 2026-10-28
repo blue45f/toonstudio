@@ -4,9 +4,10 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioHybridDccPanel } from "./StudioHybridDccPanel";
-import { deriveStudioHybridDccUvEditorModel, workspaceUnwrapUvActive } from "./studio-hybrid-dcc-uv-edit";
+import { createStudioHybridDccUvSelection, deriveStudioHybridDccUvEditorModel, workspaceTransformUvIslands, workspaceUnwrapUvActive } from "./studio-hybrid-dcc-uv-edit";
 import { decodeStudioHybridDccWorkfile, encodeStudioHybridDccWorkfile } from "./studio-hybrid-dcc-workfile";
 import { createStudioHybridDccWorkspace, workspaceAddUnitCube } from "./studio-hybrid-dcc-workspace";
+import { workspacePackUvActive } from "./studio-hybrid-dcc-uv-pack-workspace";
 import { studioUvViewBox } from "./studio-hybrid-dcc-uv-editor-session";
 
 import type { StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
@@ -40,13 +41,14 @@ function source(unwrap = true) {
   const workspace = workspaceAddUnitCube(createStudioHybridDccWorkspace("uv-doc"), "uv-cube");
   return unwrap ? workspaceUnwrapUvActive(workspace) : workspace;
 }
-async function mount(unwrap = true) {
-  const workspace = source(unwrap); const notify = vi.fn<(workspace: StudioHybridDccWorkspace) => void>();
+async function mount(unwrap = true, initialWorkspace?: StudioHybridDccWorkspace) {
+  const workspace = initialWorkspace ?? source(unwrap); const notify = vi.fn<(workspace: StudioHybridDccWorkspace) => void>();
   const view = render(<StudioHybridDccPanel initialWorkspace={workspace} workspaceDocumentId="uv-doc" workbenchMode="material" onWorkspaceChange={notify} />);
   await waitFor(() => expect(probe().getAttribute("data-checker")).toBe("true"));
   return { workspace, notify, view };
 }
-function firstIsland() { fireEvent.click(within(region()).getAllByRole("checkbox")[0] ?? (() => { throw new Error("UV 아일랜드가 없습니다."); })()); }
+const selectionChecks = () => within(within(region()).getByRole("group", { name: "UV 목록에서 선택" })).getAllByRole("checkbox");
+function firstIsland() { fireEvent.click(selectionChecks()[0] ?? (() => { throw new Error("UV 아일랜드가 없습니다."); })()); }
 function move(u = "0.2", v = "-0.1") {
   fireEvent.change(within(region()).getByRole("textbox", { name: "U (이동량)" }), { target: { value: u } });
   fireEvent.change(within(region()).getByRole("textbox", { name: "V (이동량)" }), { target: { value: v } });
@@ -106,7 +108,7 @@ describe("실제 원본 UV의 웹 편집", () => {
   it("코너 하나를 독립 편집하고, 도 회전과 0배율을 실제 UV에 적용한다", async () => {
     const { notify } = await mount();
     fireEvent.click(within(region()).getByRole("button", { name: "코너" }));
-    const check = within(region()).getAllByRole("checkbox")[0]; if (!check) throw new Error("코너 목록이 없습니다."); fireEvent.click(check);
+    const check = selectionChecks()[0]; if (!check) throw new Error("코너 목록이 없습니다."); fireEvent.click(check);
     const original = deriveStudioHybridDccUvEditorModel(source()); if (!original) throw new Error("UV가 없습니다.");
     move("-2", "3"); fireEvent.click(within(region()).getByRole("button", { name: "UV 변형 적용" }));
     await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
@@ -125,7 +127,7 @@ describe("실제 원본 UV의 웹 편집", () => {
     fireEvent.click(within(region()).getByRole("button", { name: "UV 변형 적용" })); await waitFor(() => expect(notify).toHaveBeenCalledTimes(3));
     const collapsed = deriveStudioHybridDccUvEditorModel(latest(notify));
     expect(new Set(collapsed?.corners.map(({ u, v }) => `${u},${v}`)).size).toBe(1);
-    expect(within(region()).getAllByRole("checkbox").length).toBe(24);
+    expect(selectionChecks().length).toBe(24);
   });
 
   it("잘못된 값·취소·선택 전환·구역 내 Esc는 미리보기만 버리고 원본 이력을 바꾸지 않는다", async () => {
@@ -135,7 +137,7 @@ describe("실제 원본 UV의 웹 편집", () => {
     move("Infinity", "0"); expect(within(region()).getByRole("alert").textContent).toMatch(/유한한/u);
     expect(within(region()).getByRole("button", { name: "UV 변형 적용" })).toHaveProperty("disabled", true);
     move(); fireEvent.click(within(region()).getByRole("button", { name: "UV 미리보기 취소" })); expect(uv()).toBe(original);
-    move(); fireEvent.click(within(region()).getAllByRole("checkbox")[1] ?? (() => { throw new Error("두 번째 섬이 없습니다."); })()); expect(uv()).toBe(original);
+    move(); fireEvent.click(selectionChecks()[1] ?? (() => { throw new Error("두 번째 섬이 없습니다."); })()); expect(uv()).toBe(original);
     expect(notify).not.toHaveBeenCalled();
   });
 
@@ -156,5 +158,89 @@ describe("실제 원본 UV의 웹 편집", () => {
     await act(async () => { fixture.release.splice(0).forEach((release) => release()); await Promise.resolve(); });
     await waitFor(() => expect(probe().getAttribute("data-locked")).toBe("false"));
     expect(uv()).toBe(original); expect(notify).not.toHaveBeenCalled();
+  });
+});
+
+const packing = () => screen.getByRole("form", { name: "아일랜드 정리" });
+function displaced() {
+  const workspace = source(); const model = deriveStudioHybridDccUvEditorModel(workspace);
+  if (!model) throw new Error("정리할 UV가 없습니다.");
+  return workspaceTransformUvIslands(workspace, createStudioHybridDccUvSelection(workspace, model.islands.map(({ id }) => id)), { kind: "translate", value: { x: 2, y: -3 } }).workspace;
+}
+function uvBytes(workspace: StudioHybridDccWorkspace): Uint8Array {
+  const model = deriveStudioHybridDccUvEditorModel(workspace); if (!model) throw new Error("정본 UV가 없습니다.");
+  return new Uint8Array(Float32Array.from(model.corners.flatMap(({ u, v }) => [u, v])).buffer);
+}
+
+describe("실제 UV 아일랜드 정리 UI", () => {
+  it("여백·회전 설정은 원본을 바꾸지 않고 명시 제출만 실제 kernel과 같은 UV bytes를 단일 undo로 적용한다", async () => {
+    const workspace = displaced(); const { notify } = await mount(true, workspace); const original = uv();
+    expect(within(packing()).getByRole("textbox", { name: "UV 여백" })).toHaveProperty("value", "0.02");
+    expect(within(packing()).getByRole("checkbox", { name: "90도 회전 허용" })).toHaveProperty("checked", true);
+    fireEvent.change(within(packing()).getByRole("textbox", { name: "UV 여백" }), { target: { value: "0.04" } });
+    fireEvent.click(within(packing()).getByRole("checkbox", { name: "90도 회전 허용" }));
+    expect(uv()).toBe(original); expect(notify).not.toHaveBeenCalled();
+    const expected = workspacePackUvActive(workspace, { margin: 0.04, rotate: false });
+    const button = within(packing()).getByRole("button", { name: "UV 정리 적용" });
+    fireEvent.click(button); fireEvent.click(button);
+    await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
+    const result = latest(notify); const model = deriveStudioHybridDccUvEditorModel(result);
+    expect(uvBytes(result)).toEqual(uvBytes(expected)); expect(uv()).not.toBe(original);
+    expect(model?.corners.every(({ u, v }) => u >= 0 && u <= 1 && v >= 0 && v <= 1)).toBe(true);
+    expect(result.session.undoStack).toHaveLength(workspace.session.undoStack.length + 1);
+    expect(result.session.state.geometry.records["uv-cube"]?.mesh.vertices).toEqual(workspace.session.state.geometry.records["uv-cube"]?.mesh.vertices);
+    expect(result.session.state.geometry.records["uv-cube"]?.mesh.halfEdges).toEqual(workspace.session.state.geometry.records["uv-cube"]?.mesh.halfEdges);
+    expect(result.session.state.objectTransforms).toEqual(workspace.session.state.objectTransforms);
+    const packed = uv();
+    fireEvent.click(screen.getByRole("button", { name: "마지막 3D 편집 되돌리기" })); await waitFor(() => expect(uv()).toBe(original));
+    fireEvent.click(screen.getByRole("button", { name: "되돌린 3D 편집 다시 실행" })); await waitFor(() => expect(uv()).toBe(packed));
+    expect(uvBytes(decodeStudioHybridDccWorkfile(Uint8Array.from(encodeStudioHybridDccWorkfile(result)), { documentId: "packed-reopened" }))).toEqual(uvBytes(result));
+    expect(uvBytes(workspace)).not.toEqual(uvBytes(result));
+  });
+
+  it("변형 draft 중에는 정리를 잠그며 강제 제출도 미리보기·입력·원본 이력을 버리지 않는다", async () => {
+    const { notify } = await mount(); firstIsland(); move("0.3", "0.15"); const preview = uv();
+    expect(within(packing()).getByRole("button", { name: "UV 정리 적용" }).matches(":disabled")).toBe(true);
+    expect(within(packing()).getByRole("textbox", { name: "UV 여백" }).matches(":disabled")).toBe(true);
+    expect(within(packing()).getByText(/변형 미리보기를 먼저 적용하거나 취소/u)).toBeTruthy();
+    fireEvent.submit(packing()); expect(uv()).toBe(preview); expect(notify).not.toHaveBeenCalled();
+    expect(within(region()).getByRole("textbox", { name: "U (이동량)" })).toHaveProperty("value", "0.3");
+    fireEvent.click(within(region()).getByRole("button", { name: "UV 미리보기 취소" }));
+    expect(within(packing()).getByRole("button", { name: "UV 정리 적용" }).matches(":disabled")).toBe(false);
+  });
+
+  it.each(["", "NaN", "1e999", "-0.01", "0.251"])("잘못된 여백 %j는 명령 전 접근 가능한 오류로 알리고 원본을 보존한다", async (value) => {
+    const { notify } = await mount(); const original = uv(); const input = within(packing()).getByRole("textbox", { name: "UV 여백" });
+    fireEvent.change(input, { target: { value } }); fireEvent.submit(packing());
+    expect(within(region()).getByRole("alert").textContent).toMatch(/유한한|0 이상 0.25 이하/u);
+    expect(input.getAttribute("aria-invalid")).toBe("true"); expect(uv()).toBe(original); expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("0 여백은 유효하며 최소 간격 안내와 함께 실제 kernel의 좌표를 적용한다", async () => {
+    const workspace = displaced(); const { notify } = await mount(true, workspace);
+    expect(within(packing()).getByText(/여백이 0이어도/u)).toBeTruthy();
+    fireEvent.change(within(packing()).getByRole("textbox", { name: "UV 여백" }), { target: { value: "0" } });
+    fireEvent.submit(packing()); await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
+    expect(uvBytes(latest(notify))).toEqual(uvBytes(workspacePackUvActive(workspace, { margin: 0, rotate: true })));
+  });
+
+  it("접힌 UV의 kernel 실패는 원본을 보존하고 다시 펼치라는 오류를 표시한다", async () => {
+    const before = source(); const model = deriveStudioHybridDccUvEditorModel(before); if (!model) throw new Error("UV가 없습니다.");
+    const collapsed = workspaceTransformUvIslands(before, createStudioHybridDccUvSelection(before, model.islands.map(({ id }) => id)), { kind: "scale", value: { x: 0, y: 0 } }).workspace;
+    const { notify } = await mount(true, collapsed); const original = uv(); fireEvent.submit(packing());
+    await waitFor(() => expect(within(region()).getByRole("alert").textContent).toMatch(/접힌 UV.*펼치/u));
+    expect(uv()).toBe(original); expect(notify).not.toHaveBeenCalled();
+    expect(collapsed.session.undoStack).toHaveLength(before.session.undoStack.length + 1);
+  });
+
+  it.each(["actor", "project", "unmount"] as const)("정리 적용의 cache 대기 중 %s 전환은 이전 결과 발행을 차단한다", async (change) => {
+    const workspace = displaced(); const { notify, view } = await mount(true, workspace); const original = uv(); fixture.hold = true;
+    fireEvent.submit(packing()); await waitFor(() => expect(fixture.release).toHaveLength(1));
+    if (change === "actor") act(() => { fixture.actor = "next-packing-owner"; fixture.revision += 1; fixture.listeners.forEach((listener) => listener()); });
+    else if (change === "project") view.rerender(<StudioHybridDccPanel initialWorkspace={workspace} workspaceDocumentId="next-project" workbenchMode="material" onWorkspaceChange={notify} />);
+    else view.unmount();
+    await act(async () => { fixture.release.splice(0).forEach((release) => release()); await Promise.resolve(); });
+    if (change !== "unmount") { await waitFor(() => expect(probe().getAttribute("data-locked")).toBe("false")); expect(uv()).toBe(original); }
+    expect(notify).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,7 @@ import { getAuthSessionRevision, getAuthUserId, listeners } from "@/domains/auth
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { studioUvDefaultFields, studioUvTransformRequest, type StudioUvFields } from "./studio-hybrid-dcc-uv-editor-session";
+import { workspacePackUvActive } from "./studio-hybrid-dcc-uv-pack-workspace";
 import {
   createStudioHybridDccUvSelection,
   deriveStudioHybridDccUvEditorModel,
@@ -43,6 +44,9 @@ export function useStudioHybridDccUvEditor(
   const [kind, setKind] = useState<StudioHybridDccUvTransform["kind"]>("translate");
   const [fields, setFields] = useState<StudioUvFields>(() => studioUvDefaultFields("translate"));
   const [unwrapMode, setUnwrapMode] = useState<StudioHybridDccUvMode>("box");
+  const [packMargin, setPackMargin] = useState("0.02");
+  const [packRotate, setPackRotate] = useState(true);
+  const [packError, setPackError] = useState("");
   const [dirty, setDirty] = useState(false);
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState("");
@@ -59,7 +63,7 @@ export function useStudioHybridDccUvEditor(
     const applied = pending.current?.owner === owner && pending.current.stateHash === workspace.session.state.stateHash;
     setIslandIds(applied ? pending.current?.selection?.islandIds ?? [] : []);
     setCornerIds(applied ? pending.current?.selection?.cornerIds ?? [] : []);
-    setFields(studioUvDefaultFields(kind)); setDirty(false); setApplying(false); setOperationError("");
+    setFields(studioUvDefaultFields(kind)); setDirty(false); setApplying(false); setOperationError(""); setPackError("");
     if (dirty || applying) setNotice(applied
       ? bt("UV를 적용했습니다. 되돌리기 한 번으로 복원할 수 있습니다.", "UVs applied. One undo step restores them.")
       : bt("문서·계정·선택이 바뀌어 UV 미리보기를 취소했습니다.", "The document, account or selection changed, so the UV preview was cancelled."));
@@ -135,11 +139,20 @@ export function useStudioHybridDccUvEditor(
   };
   return {
     sectionRef, visible: materialMode, sourceModel: source.model, displayModel, selectionMode, islandIds, cornerIds, selectedCorners,
-    kind, fields, unwrapMode, dirty, applying, locked, unavailable, selectedCount: selectedCorners.size,
+    kind, fields, unwrapMode, packMargin, packRotate, packError, dirty, applying, locked, unavailable, selectedCount: selectedCorners.size,
     previewing: Boolean(candidate.result), canApply: Boolean(candidate.result && !locked),
-    error: operationError || candidate.error || source.error,
+    error: operationError || candidate.error || packError || source.error,
     notice: notice || (candidate.result ? bt("2D와 3D 화면은 미리보기입니다. 적용하면 한 번의 편집으로 기록됩니다.", "The 2D and 3D views show a preview. Apply records one edit.") : candidate.neutral ? bt("변경할 값을 입력하세요.", "Enter a value that changes the selection.") : ""),
     setUnwrapMode,
+    setPackMargin: (text: string) => { if (locked || dirty) return; setPackMargin(text); setPackError(""); setOperationError(""); },
+    setPackRotate: (rotate: boolean) => { if (locked || dirty) return; setPackRotate(rotate); setPackError(""); setOperationError(""); },
+    pack: () => {
+      if (locked || dirty || !source.model) return;
+      const margin = packMargin.trim() === "" ? NaN : Number(packMargin);
+      if (!Number.isFinite(margin)) { setPackError(bt("UV 여백에 유한한 숫자를 입력하세요.", "Enter a finite number for the UV margin.")); return; }
+      if (margin < 0 || margin > 0.25) { setPackError(bt("UV 여백은 0 이상 0.25 이하로 입력하세요.", "Enter a UV margin from 0 to 0.25.")); return; }
+      execute(bt("UV 아일랜드 정리", "Pack UV islands"), (current) => ({ workspace: workspacePackUvActive(current, { margin, rotate: packRotate }) }));
+    },
     setSelectionMode: (mode: "island" | "corner") => { if (locked) return; epoch.current += 1; setSelectionMode(mode); setIslandIds([]); setCornerIds([]); resetDraft(); },
     select: (id: number, additive: boolean) => {
       if (locked || !source.model) return;

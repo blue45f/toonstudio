@@ -30,6 +30,20 @@ export function StudioHybridDccUvEditor({ model }: { readonly model: StudioHybri
       <button type="button" className={CONTROL} disabled={model.dirty} onClick={model.unwrap}>{model.sourceModel ? bt("UV 다시 펼치기", "Unwrap UVs again") : bt("UV 펼치기", "Unwrap UVs")}</button>
     </fieldset>
     {model.sourceModel ? <p className="text-xs leading-relaxed text-fg-3">{bt("다시 펼치면 현재 UV를 교체하며 되돌릴 수 있습니다. 아일랜드는 공유 변 양끝의 UV가 정확히 같은 면들을 묶습니다.", "Unwrapping replaces the current UVs and can be undone. Islands join faces whose UVs match exactly at both ends of a shared edge.")}</p> : <p className="text-xs text-fg-2">{bt("UV를 펼치면 2D 선택 화면과 3D 체크무늬가 나타납니다.", "Unwrap UVs to show the 2D selection view and the 3D checker.")}</p>}
+    {model.sourceModel ? <form aria-labelledby={`${id}-pack-title`} className="space-y-2 rounded-lg border border-line bg-canvas/30 p-3" onSubmit={(event) => { event.preventDefault(); model.pack(); }} data-studio-hybrid-dcc-uv-pack="true">
+      <h4 id={`${id}-pack-title`} className="text-xs font-semibold text-fg">{bt("아일랜드 정리", "Pack islands")}</h4>
+      <p id={`${id}-pack-help`} className="text-xs leading-relaxed text-fg-2">{bt("현재 오브젝트의 모든 UV 아일랜드를 감싸는 사각형을 기준으로, 비율을 유지하며 0~1 타일 안에 정리합니다. 여백은 타일에 대한 비율로 0~0.25를 입력하세요. 적용하면 한 번의 편집으로 기록됩니다.", "Pack all UV islands of the current object into the 0–1 tile using their bounding rectangles, preserving their proportions. Enter a margin from 0 to 0.25 as a fraction of the tile. Apply records one edit.")}</p>
+      <p className="text-xs leading-relaxed text-fg-3">{bt("여백이 0이어도 UV 연결이 합쳐지지 않도록 최소 간격을 둡니다.", "Even with zero margin, a minimum gap keeps UV islands from joining.")}</p>
+      <fieldset disabled={model.locked || model.dirty} className="flex flex-wrap items-end gap-3">
+        <legend className="sr-only">{bt("UV 정리 설정", "UV packing settings")}</legend>
+        <label htmlFor={`${id}-pack-margin`} className="grid min-w-0 flex-1 gap-1 text-xs text-fg-2">{bt("UV 여백", "UV margin")}
+          <input id={`${id}-pack-margin`} className={`${CONTROL} w-full`} type="text" inputMode="decimal" maxLength={48} autoComplete="off" spellCheck={false} value={model.packMargin} aria-invalid={model.packError ? true : undefined} aria-describedby={`${id}-pack-help${model.error ? ` ${id}-error` : ""}`} onChange={(event) => model.setPackMargin(event.target.value)} />
+        </label>
+        <label className="flex min-h-11 items-center gap-2 text-xs text-fg-2"><input type="checkbox" checked={model.packRotate} onChange={(event) => model.setPackRotate(event.target.checked)} />{bt("90도 회전 허용", "Allow 90° rotation")}</label>
+        <button type="submit" className={CONTROL}>{bt("UV 정리 적용", "Apply UV packing")}</button>
+      </fieldset>
+      {model.dirty ? <p role="status" className="text-xs leading-relaxed text-fg-2">{bt("변형 미리보기를 먼저 적용하거나 취소한 뒤 아일랜드를 정리하세요.", "Apply or cancel the transform preview before packing islands.")}</p> : null}
+    </form> : null}
     {model.sourceModel ? <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(12rem,0.8fr)]">
       <StudioHybridDccUvSelectionSurface key={`${model.sourceModel.documentId}:${model.sourceModel.assetId}:${model.sourceModel.sourceHash}`} model={model} />
       <form className="min-w-0 space-y-3" onSubmit={(event) => { event.preventDefault(); model.apply(); }}>
