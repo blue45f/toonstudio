@@ -46,7 +46,7 @@ describe("selection hit helpers used by product marquee / pick paths", () => {
   it("StudioPage marquee completion calls the selection facade", () => {
     const page = readStudioCuttoonEditorSource();
     expect(page).toContain("selectIdsByMarquee");
-    expect(page).toMatch(/const hitIds = selectIdsByMarquee\(/u);
+    expect(page).toMatch(/const hitIds = selectIdsByMarquee(?:<El>)?\(/u);
 
     const selectionFacade = readFileSync(
       new URL("./studio-selection.ts", import.meta.url),
