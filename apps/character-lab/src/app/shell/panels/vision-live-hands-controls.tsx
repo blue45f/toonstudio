@@ -64,17 +64,18 @@ export function LiveHandsControls({ session, deps, enabled, stream, video, cance
   }), [deps, session, store, video]);
   useEffect(() => {
     cancelRef.current = () => controller.stop();
-    let revision = store.getState().history.revision;
+    let historySnapshot = store.getState().history;
     const unsubscribe = store.subscribe(() => {
-      const next = store.getState().history.revision;
+      // 페인트는 레시피 revision을 올리지 않아도 새 history 스냅샷을 발행한다.
+      const next = store.getState().history;
       if (controller.running() && store.getState().capabilities["hand-pose"].status === "unavailable") {
         controller.stop("현재 모델이 손가락 포즈 변형을 지원하지 않아 인식을 중지했습니다.");
         stopRef.current();
-      } else if (next !== revision && !applying.current && controller.running()) {
+      } else if (next !== historySnapshot && !applying.current && controller.running()) {
         controller.stop("다른 편집이나 실행 취소로 연속 인식을 중지했습니다.");
         stopRef.current();
       }
-      revision = next;
+      historySnapshot = next;
     });
     const unsubscribeModel = session.subscribe(() => {
       if (session.status("handLandmarker").phase === "idle" && controller.running()) { controller.stop("손 모델이 해제되어 중지했습니다."); stopRef.current(); }
