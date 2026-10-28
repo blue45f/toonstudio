@@ -58,7 +58,7 @@ function faceVertices(source: StudioEditableMesh, faceId: number): readonly numb
 }
 
 describe("선택 컴포넌트의 native 변환", () => {
-  it("표시 가능했던 면을 오목하게 만드는 이동은 원본·저널·선택을 바꾸기 전에 거부한다", () => {
+  it("표시 가능했던 면을 자기 교차하게 만드는 이동은 원본·저널·선택을 바꾸기 전에 거부한다", () => {
     const before = cube();
     const selection = select(before, "vertex", [0]);
     const state = JSON.stringify(before.session.state);
@@ -66,7 +66,7 @@ describe("선택 컴포넌트의 native 변환", () => {
     const savedSelection = JSON.stringify(selection);
     const undo = before.session.undoStack;
     expect(() => workspaceTransformComponents(before, selection, {
-      kind: "translate", value: { x: 0.75, y: 0.75, z: 0 },
+      kind: "translate", value: { x: 1.25, y: 0.5, z: 0 },
     })).toThrow(/면 0가 변형 후 화면에 표시될 수 없습니다/u);
     expect(JSON.stringify(before.session.state)).toBe(state);
     expect(JSON.stringify(before.session.journal.records)).toBe(journal);
@@ -74,7 +74,7 @@ describe("선택 컴포넌트의 native 변환", () => {
     expect(JSON.stringify(selection)).toBe(savedSelection);
   });
 
-  it("기존 미지원 n-gon이 있는 자산의 무관한 정점 이동을 거부하지 않는다", () => {
+  it("오목 n-gon이 있는 자산의 무관한 정점 이동을 거부하지 않는다", () => {
     const source = createStudioEditableMeshFromPolygons([
       { x: 0, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }, { x: 1, y: 0, z: 1 },
       { x: 2, y: 0, z: 2 }, { x: 0, y: 0, z: 2 },

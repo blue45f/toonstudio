@@ -33,7 +33,6 @@ export function createStudioHybridDccGeometryResource(
   }
   if (asset.normalMode === "split" || asset.cornerNormals !== undefined) {
     const normals = asset.cornerNormals;
-    if (asset.normalMode === "flat") throw new Error("flat 표시에는 smooth 코너 법선을 함께 지정할 수 없습니다.");
     if (!normals || normals.length !== asset.indices.length * 3) throw new Error("화면용 분리 법선의 코너 수가 잘못됐습니다.");
     for (let index = 0; index < normals.length; index += 3) {
       const length = Math.hypot(normals[index] ?? NaN, normals[index + 1] ?? NaN, normals[index + 2] ?? NaN);
@@ -47,7 +46,7 @@ export function createStudioHybridDccGeometryResource(
   const geometry = asset.normalMode !== "smooth" || asset.cornerUvs || asset.cornerNormals ? indexed.toNonIndexed() : indexed;
   if (geometry !== indexed) indexed.dispose();
   if (asset.cornerUvs) geometry.setAttribute("uv", new THREE.BufferAttribute(asset.cornerUvs, 2));
-  if (asset.normalMode === "flat") geometry.computeVertexNormals();
+  if (asset.normalMode === "flat" && !asset.cornerNormals) geometry.computeVertexNormals();
   if (asset.cornerNormals) geometry.setAttribute("normal", new THREE.BufferAttribute(asset.cornerNormals, 3));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();

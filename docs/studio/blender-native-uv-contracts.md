@@ -5,7 +5,8 @@
 운영 제공 완료 기록은 아니다. 기본 방향과 바이너리 버전은 [웹 모델링 계약](blender-native-modifier-contracts.md)을 따른다.
 전체 아일랜드를 한 타일에 배치하는 후속 구현은 [웹 UV 정리 계약](blender-native-uv-pack-contracts.md)을 따른다.
 2026-10-29의 추가 대조에서 화면 fan과 GLB ear clipping의 비선형 UV 보간 차이를 확인했다.
-공통 삼각화와 표면 내부 보간의 일치는 [툰 재질 계약의 target](blender-native-toon-material-contracts.md#target--화면과-glb의-공통-surface-삼각화)에 남은 작업으로 기록한다.
+공통 삼각화와 실제 Three/GLB 표면 내부 보간의 수정은 [공통 표면 계약](blender-native-shared-surface-contracts.md)에 기록한다.
+브라우저 셰이더·픽셀 검증은 이 버퍼 회귀와 구분하여 후속 실행한다.
 
 ## current — 확인한 원본 계약
 
@@ -54,8 +55,8 @@
 
 ## migration — 화면·파일 출력
 
-뷰포트는 원본 fan의 삼각형 순서로 코너 UV를 전달한다. UV seam에서 표시 정점을 분리하되 smooth 법선은
-분리 전 이웃 면으로 계산한다. UV 편집 모드에서는 수정자 캐시에 원본 UV를 잘못 붙이지 않고 원본 cage를 표시한다.
+뷰포트와 GLB는 공통 표면 planner의 삼각형·코너 UV·법선을 사용한다. UV seam에서 표시 정점을 분리해도
+공통 법선을 유지한다. 평가 캐시는 실제 평가 메시의 UV를 사용하며, UV 편집 모드는 원본 cage를 표시한다.
 
 GLB는 원본 면·정점 대응에 따라 UV를 출력 정점으로 옮기고 `TEXCOORD_0`을 쓴다. V 방향을 바꾸며 UV seam과
 UV가 있는 3D collinear 코너도 유지한다. Worker의 기존 SoA section은 그대로 두고 선택적 Float32 UV 스트림을
@@ -74,30 +75,34 @@ UV 없는 flat cube·smooth cube·비평면 quad는 이전 커밋 `06ed3b4`의 G
 `1e-6` 허용 오차로 대조한다. 0배율은 모든 코너가 `(1,0.6666667)`로 모였다.
 실제 native GLB에도 `(0.1,0.8)`·`(-0.25,-0.5)`가 출력되어 비대칭 V 변환과 범위 밖 좌표 보존을 확인했다.
 
-지원되는 Array·Mirror·SimpleDeform·Solidify는 원본 triangle/corner provenance로 UV를 전파한다.
+지원되는 Array·Mirror·SimpleDeform·Solidify·삼각 midpoint Subdivision은 명시적 원본 corner/child provenance로 UV를 전파한다.
 정확한 전파가 없는 enabled 수정자는 UV를 버리고 성공하지 않으며 명시적 오류를 낸다.
 Region Extrude는 발급된 receipt의 face remap·boundary 순서로 기존 면·cap·side를 결합하고,
-Weld는 위상이 그대로면 UV를 보존한다. Inset·Bevel·Loop Cut·Subdivision과 Cloth 등
+Weld는 위상이 그대로면 UV를 보존한다. Inset·Bevel·Loop Cut과 Cloth 등
 다른 위상 편집의 UV 전달은 남은 범위다.
 UV 원본을 UV 없는 결과로 교체하는 일반 메시 commit과 수정자 적용은 중앙 geometry authority에서 거부한다.
 지원 전 편집은 오류를 표시하고 원본·저널·undo를 보존하며 UV를 조용히 지우고 성공하지 않는다.
 
-## migration — 기존 Sculpt stroke의 UV 보존
+## migration — 공통 표면을 따르는 Sculpt stroke
 
-기존 경량 Sculpt의 8개 브러시는 위치 계산과 source fan 삼각화를 유지하면서 원본 코너 UV를 새 삼각형에
-복사한다. 원본 `face.he` origin fan·soup 정점 인덱스·새 halfedge origin을 모두 대조하고, UV를 다시 투영하거나
-가까운 좌표로 추측하지 않는다. UV 값은 재반올림 없이 복사한다. 원본 면의 smooth·materialSlot, 정점 crease,
-원본 polygon 경계의 halfedge crease도 전달하며 새 fan 대각선의 crease는 0이다.
+경량 Sculpt의 8개 브러시는 화면과 같은 공통 surface triangle/corner를 입력으로 사용한다.
+같은 표의 원본 vertex·corner ID, soup 정점 인덱스와 새 halfedge origin을 대조하며 UV를 다시 투영하거나
+가까운 좌표로 추측하지 않는다. UV 값은 재반올림 없이 복사한다. UV 유무와 관계없이 원본 면의
+smooth·materialSlot, 정점 crease와 원본 polygon 경계의 halfedge crease를 전달한다. 새 내부 대각선의 crease는 0이다.
+실제 위치가 하나도 바뀌지 않은 스트로크는 원본 mesh identity를 반환하여 polygon·UV·법선·stable ID도 보존한다.
 
 원본·결과 정본이나 대응을 검증하지 못하면 기존 Sculpt Result 오류로 반환하고 workspace commit 전에 중단한다.
-voxel remesh는 이 정확한 fan 대응을 갖지 않으므로 기존 UV 유실 guard의 거부 범위로 남는다.
+움직인 결과도 공통 표면 검증을 통과해야 성공한다. voxel remesh는 이 정확한 대응을 갖지 않으므로 기존 UV 유실 guard의 거부 범위로 남는다.
 이 기능은 기존 경량 메시 브러시의 저장·전달 개선이며 Blender 브러시의 수학적 출력과 같은 결과를 관측한 기록은 아니다.
 
-집중 검증 4파일 39개는 8개 브러시·mask·비선형 코너 UV·같은 island 안의 내부 seam·새 fan 대각선,
+선행 Sculpt 보강 커밋의 집중 검증 4파일 39개는 8개 브러시·mask·비선형 코너 UV·같은 island 안의 내부 seam·새 fan 대각선,
 단일 commit·undo/redo·작업파일·실제 GLB UV 전달을 검사해 exit 0으로 통과했다.
 이전 커밋 `9903b0094`의 원본 Sculpt 모듈을 별도로 실행한 16사례(8브러시×mask 유무)와 무UV의
-serialize·hash·positions가 완전히 같고 원본이 바뀌지 않음을 확인했다.
-후속 브랜치의 전체 타입·하네스·빌드와 실제 브러시 UI의 WebGL 검증은 별도 검사 순서에서 진행한다.
+serialize·hash·positions가 완전히 같고 원본이 바뀌지 않음을 확인한 기록은 선행 fan 구현에 한정한다.
+현재 공통 earclip 전환은 이 과거 해시를 유지한다고 주장하지 않는다. smooth의 1-ring 이웃과 일부 비평면
+inflate 입력 법선이 달라질 수 있으므로 실제 조형 위치 결과도 달라질 수 있다.
+후속 회귀는 표시 표면과 같은 입력, 0강도·전체 mask의 원본 보존, 움직인 결과의 UV·속성과 실패 시 이력 보존을 검사한다.
+전체 타입·하네스·빌드와 실제 브러시 UI의 WebGL 검증은 별도 검사 순서에서 진행한다.
 
 ## current — 실제 웹 실행 증거
 

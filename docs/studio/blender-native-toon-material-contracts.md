@@ -1,7 +1,7 @@
 # 자체 웹 툰 재질의 정본·렌더·출력 계약
 
-상태: **migration**. 2026-10-29의 `codex/blender-native-toon-material-20261029`에서 구현 중이다.
-기준 후보는 `7ccb26843454d9f1ff00adffc04e9ab40a718304`이며 운영 배포 완료 기록이 아니다.
+상태: **migration**. 2026-10-29의 툰 재질 구현 `8e445a4b648e825afa35d6f5106505a6a47f71ba`에 이어
+`codex/blender-native-shared-surface-20261029`에서 표면 일치를 보강하고 있다. 운영 배포 완료 기록이 아니다.
 Blender 동작 분석을 바탕으로 ToonStudio 자체 웹 기능을 제공하는 목표를 유지한다.
 
 ## current — 원본 관측과 기존 소비자
@@ -49,14 +49,15 @@ UV와 툰 편집은 각각 하나의 표시 초안만 사용한다. 미리보기
 
 직접 dependency인 `@pixiv/three-vrm` facade의 실제 `MToonMaterial`을 필요한 때 lazy 로드한다.
 본체와 BackSide shell은 geometry를 공유하고 소유 disposer가 재질을 생성·폐기한다.
-원본 position·index·UV·normal과 face 선택 순서는 바꾸지 않고 fan 순서의 draw group을 추가한다.
+공통 표면의 position·index·UV·normal과 face 선택 순서를 유지한 채 draw group을 추가한다.
 선택 강조가 작성한 툰 색을 대체하지 않는다. UV checker/wire에서 돌아오면 재질을 복원한다.
 
 slot은 기존의 nonnegative safe integer 계약을 유지한다. CPU stream은 Float64로 보존하고
 draw material index만 조밀하게 만든다. 같은 style의 슬롯은 하나의 표시 재질로 묶는다.
 색만 바뀌고 분리 관계가 같으면 geometry의 슬롯 stream을 재사용한다.
-원본 면이 같은 style이면 modifier 캐시에도 적용한다. 서로 다른 style의 slot provenance가 캐시에 없으면
-경고와 함께 원본 편집 메시로 표시한다. 평가 캐시의 전체 재질 지원 완료로 설명하지 않는다.
+평가 캐시의 실제 슬롯·코너 법선·UV를 검증하여 서로 다른 style도 유지한다.
+공통 표면 속성이 없는 legacy 캐시나 내용 hash가 맞지 않는 캐시는 경고와 함께 원본 편집 메시로 표시한다.
+각 수정자의 속성 전달 지원 범위는 [공통 표면 계약](blender-native-shared-surface-contracts.md)을 따른다.
 
 toony=1에서 선형 구간 양끝이 같은 경우만 step으로 정의하고 screen outline은 원근·직교를 구분한다.
 정확한 shader 문장 match, 원래 compiler 호출, 별도 program cache key를 유지하며 소스 불일치/중복 패치를 거부한다.
@@ -87,7 +88,7 @@ native PNG와 고해상도 raster/tile은 후속 required 작업이다.
 기존 tile admission은 custom shader/MToon을 거부하며 단순 허용으로 바꾸지 않는다.
 screen outline은 전체 출력 높이·tile 높이를 함께 처리하고 beauty와 normal/depth pass 의미도 검증해야 한다.
 
-## target — 화면과 GLB의 공통 surface 삼각화
+## migration — 화면과 GLB의 공통 surface 삼각화
 
 독립 actual buffer 대조에서 기존 Viewport의 원본 fan과 GLB의 planar ear clipping이 다른 대각선을 쓰는
 경우를 확인했다. 단위 평면 quad의 코너 UV `[(0,0),(2,0),(1,1),(0,1)]`에서 점 `(0.6,0.3,0)`은
@@ -97,17 +98,19 @@ corner 값만 비교해서는 표면 내부 UV의 일치를 증명할 수 없다
 
 작은 nonplanar warp `1e-7`을 GLB가 planar epsilon 아래로 처리하는 경우 flat normal 규칙도 다르다.
 이 차이를 tiny rounding으로 치부하지 않는다. shared surface planner로 삼각화·법선·코너 UV·선택 대응을
-일치시키는 수정과 실제 픽셀 검증 전에는 일반 surface 출력 fidelity를 완료로 보지 않는다.
-이 항목은 현재 툰 명령·재질 payload 보존 테스트와 별개의 남은 required 작업이다.
+연결했고, 실제 Core→Three geometry→GLB accessor 대조 6개가 통과했다.
+위 샘플은 두 경로 모두 V-up `(1.2,0.3)`이며 shallow/warped 법선도 Float32까지 일치한다.
+버퍼 계약 수정과 실제 픽셀 검증은 구분한다. 브라우저 셰이더·픽셀과 전체 검증은 아직 남아 있다.
+현재 구현과 검증 경계는 [공통 표면 계약](blender-native-shared-surface-contracts.md)에 기록한다.
 
 ## migration — 검증 경계
 
 집중 검증은 DTO·권위·OPFS/작업파일, 실제 Editor/hook·lease, Three group/normal,
 재질 부착·폐기, GLTFLoader parse·실제 worker entry·자체 import를 포함한다.
 무재질 state/snapshot/등록과 exporter는 `7ccb2684` 원문 reference와 직접 대조했다.
-최종 집중 회귀는 **18파일 214개가 exit 0**으로 통과했다. material·자체 import·workspace lease와
+툰 재질 커밋 당시의 집중 회귀는 **18파일 214개가 exit 0**으로 통과했다. material·자체 import·workspace lease와
 기존 FileTools·Viewport·handoff·실제 worker client·GLB exporter를 한 명령에서 실행했다.
-이는 위에 기록한 surface 보간 불일치를 해결했다는 증거가 아니다.
+이 과거 명령은 후속 공통 표면 수정의 증거로 대신 쓰지 않는다.
 전체 타입·하네스·프로덕션 빌드·브라우저 shader/픽셀·desktop/mobile·테마·접근성은 아직 실행하지 않았다.
 앞선 후보의 검증으로 대체하지 않으며 기능 전체나 운영 제공 완료를 선언하지 않는다.
 

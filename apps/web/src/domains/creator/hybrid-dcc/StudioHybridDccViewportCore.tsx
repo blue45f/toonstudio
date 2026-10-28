@@ -37,7 +37,6 @@ import * as THREE from "three";
 
 import {
   hashStudioEditableMesh,
-  studioEditableMeshToTriangleSoup,
   type StudioEditableMesh,
 } from "../studio-editable-half-edge-mesh";
 import {
@@ -62,7 +61,9 @@ import {
   STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION,
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
-import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, STUDIO_HYBRID_DCC_MAX_POLYGON_PAIR_WORK_PER_ASSET, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
+import { STUDIO_MESH_SURFACE_INTERACTIVE_BUDGET, STUDIO_MESH_SURFACE_INTERACTIVE_TOTAL_EAR_TESTS } from "../mesh-surface/studio-mesh-surface-interactive-budget";
+import { inspectStudioMeshSurfaceForInteractiveProjection, type StudioMeshSurfaceInteractiveInspection } from "../mesh-surface/studio-mesh-surface-interactive";
+import { projectStudioMeshSurfaceForRender } from "../mesh-surface/studio-mesh-surface-render";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
@@ -82,9 +83,7 @@ import {
 import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewportInteractionBar";
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
 import { StudioHybridDccSurfaceMaterial } from "./materials/StudioHybridDccSurfaceMaterial";
-import { canUseStudioHybridDccToonCache, deriveStudioHybridDccToonAssetProjection, readStudioHybridDccToonBindings, studioHybridDccToonPresentationSignature, type StudioHybridDccToonBindings, type StudioHybridDccToonMaterialPreview } from "./materials/studio-hybrid-dcc-toon-projection";
-import { deriveStudioHybridDccTriangleCornerUvs } from "./studio-hybrid-dcc-uv-render";
-import { deriveStudioHybridDccSplitCornerNormals } from "./studio-hybrid-dcc-split-normal-render";
+import { deriveStudioHybridDccToonAssetProjection, studioHybridDccToonPresentationSignature, type StudioHybridDccToonBindings, type StudioHybridDccToonMaterialPreview } from "./materials/studio-hybrid-dcc-toon-projection";
 
 import { createStudioHybridDccGeometryResource, type StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 
@@ -205,14 +204,14 @@ const STUDIO_HYBRID_DCC_RENDER_PROFILE = Object.freeze({
   minDpr: 1,
   maxDpr: 2,
   maxDetailedEdgeTriangles: 120_000,
-  maxSynchronousFacesPerAsset: 120_000,
-  maxSynchronousTrianglesPerAsset: 120_000,
-  maxSynchronousLinearWorkPerAsset: 1_250_000,
-  maxSynchronousPolygonPairWorkPerAsset: STUDIO_HYBRID_DCC_MAX_POLYGON_PAIR_WORK_PER_ASSET,
+  maxSynchronousFacesPerAsset: STUDIO_MESH_SURFACE_INTERACTIVE_BUDGET.maxFaces,
+  maxSynchronousTrianglesPerAsset: STUDIO_MESH_SURFACE_INTERACTIVE_BUDGET.maxTriangles,
+  maxSynchronousLinearWorkPerAsset: STUDIO_MESH_SURFACE_INTERACTIVE_BUDGET.maxLinearWork,
+  maxSynchronousPolygonPairWorkPerAsset: STUDIO_MESH_SURFACE_INTERACTIVE_BUDGET.maxPolygonPairs,
   maxSynchronousLinearWorkTotal: 2_000_000,
   maxSynchronousPolygonPairWorkTotal: 3_000_000,
   maxSynchronousTrianglesTotal: 180_000,
-  maxFaceLoopVertices: STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES,
+  maxFaceLoopVertices: STUDIO_MESH_SURFACE_INTERACTIVE_BUDGET.maxFaceCorners,
 });
 
 export interface StudioHybridDccRendererProfileTarget {
@@ -228,6 +227,9 @@ export interface StudioHybridDccRendererProfileTarget {
 interface StudioHybridDccMeshRenderData {
   readonly positions: Float32Array;
   readonly indices: Uint32Array;
+  readonly cornerNormals?: Float32Array;
+  readonly cornerUvs?: Float32Array;
+  readonly triangleMaterialSlots?: Float64Array;
 }
 
 interface StudioHybridDccRenderProjection extends StudioHybridDccMeshRenderData {
@@ -240,22 +242,7 @@ type StudioHybridDccRenderCacheValidation =
   | { readonly ok: true; readonly value: StudioHybridDccRenderProjection }
   | { readonly ok: false; readonly message: string };
 
-interface StudioHybridDccMeshPreflight {
-  readonly faceCount: number;
-  readonly triangleCount: number;
-  readonly normalMode: "flat" | "smooth" | "split";
-  /** Exact O(V + H + F + corners) preflight/conversion work proxy. */
-  readonly linearWork: number;
-  /** Safe upper bound for the per-polygon segment-pair checks: Σ(cornerCount²). */
-  readonly polygonPairWork: number;
-}
-
-type StudioHybridDccMeshPreflightResult =
-  | { readonly ok: true; readonly value: StudioHybridDccMeshPreflight }
-  | { readonly ok: false; readonly message: string };
-
-const meshRenderDataCache = new WeakMap<StudioEditableMesh, StudioHybridDccMeshRenderData>();
-const meshPreflightCache = new WeakMap<StudioEditableMesh, StudioHybridDccMeshPreflightResult>();
+type StudioHybridDccMeshPreflight = StudioMeshSurfaceInteractiveInspection;
 
 const VIEWPORT_COLORS = Object.freeze({
   background: new THREE.Color().setHSL(0.105, 0.08, 0.105, THREE.SRGBColorSpace),
@@ -287,144 +274,12 @@ function compareCodeUnits(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
-function inspectStudioHybridDccMeshForSynchronousProjection(
-  mesh: StudioEditableMesh,
-): StudioHybridDccMeshPreflightResult {
-  const cached = meshPreflightCache.get(mesh);
-  if (cached) return cached;
-  let result: StudioHybridDccMeshPreflightResult;
-  try {
-    const faceCount = mesh.faces.length;
-    if (faceCount === 0) throw new Error("렌더링할 면이 없습니다.");
-    if (faceCount > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousFacesPerAsset) {
-      throw new Error(
-        `동기 변환 면 예산을 초과했습니다 (${faceCount.toLocaleString("en-US")}). `
-          + "대용량 삼각화 worker가 필요합니다.",
-      );
-    }
-    const hasSmoothFaces = mesh.faces.some((face) => face.smooth);
-    const hasFlatFaces = mesh.faces.some((face) => !face.smooth);
-    if (hasSmoothFaces && (
-      mesh.vertices.some((vertex) => vertex.crease > 0)
-      || mesh.halfEdges.some((halfEdge) => halfEdge.crease > 0)
-    )) {
-      throw new Error("crease가 있는 smooth 메시에는 smoothing-island 렌더 경로가 필요합니다.");
-    }
-    const verticesById = new Map(mesh.vertices.map((vertex) => [vertex.id, vertex]));
-    if (verticesById.size !== mesh.vertices.length) {
-      throw new Error("메시에 중복된 정점 ID가 있습니다.");
-    }
-    if (mesh.vertices.some((vertex) => (
-      !Number.isInteger(vertex.id)
-      || !Number.isFinite(vertex.position.x)
-      || !Number.isFinite(vertex.position.y)
-      || !Number.isFinite(vertex.position.z)
-    ))) {
-      throw new Error("메시에 유효하지 않은 정점 ID 또는 좌표가 있습니다.");
-    }
-    if (new Set(mesh.faces.map((face) => face.id)).size !== mesh.faces.length) {
-      throw new Error("메시에 중복된 면 ID가 있습니다.");
-    }
-    if (mesh.faces.some((face) => !Number.isInteger(face.id))) {
-      throw new Error("메시에 유효하지 않은 면 ID가 있습니다.");
-    }
-    if (mesh.halfEdges.some((halfEdge, index) => halfEdge.id !== index)) {
-      throw new Error("half-edge ID와 저장 인덱스가 일치하지 않습니다.");
-    }
-    const baseLinearWork = mesh.vertices.length + mesh.halfEdges.length + faceCount;
-    if (baseLinearWork > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkPerAsset) {
-      throw new Error("동기 선형 메시 검사 예산을 초과했습니다. 대용량 worker가 필요합니다.");
-    }
-    let triangleCount = 0;
-    let cornerCount = 0;
-    let polygonPairWork = 0;
-    for (const face of mesh.faces) {
-      const points: Array<readonly [number, number, number]> = [];
-      const vertexIds = new Set<number>();
-      const halfEdgeIds = new Set<number>();
-      let halfEdgeId = face.he;
-      while (true) {
-        if (!Number.isInteger(halfEdgeId) || halfEdgeId < 0 || halfEdgeId >= mesh.halfEdges.length) {
-          throw new Error(`면 ${face.id}의 half-edge 연결이 잘못되었습니다.`);
-        }
-        if (halfEdgeIds.has(halfEdgeId)) {
-          if (halfEdgeId === face.he) break;
-          throw new Error(`면 ${face.id}의 half-edge 순환이 닫히지 않습니다.`);
-        }
-        halfEdgeIds.add(halfEdgeId);
-        if (halfEdgeIds.size > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxFaceLoopVertices) {
-          throw new Error(`면 ${face.id}의 꼭짓점 수가 동기 삼각화 예산을 초과했습니다.`);
-        }
-        const halfEdge = mesh.halfEdges[halfEdgeId]!;
-        const previous = mesh.halfEdges[halfEdge.prev];
-        const next = mesh.halfEdges[halfEdge.next];
-        if (halfEdge.face !== face.id || previous?.next !== halfEdgeId || next?.prev !== halfEdgeId) {
-          throw new Error(`면 ${face.id}의 half-edge 양방향 연결이 일치하지 않습니다.`);
-        }
-        const vertex = previous ? verticesById.get(previous.vertex) : undefined;
-        if (!vertex || vertexIds.has(vertex.id)) {
-          throw new Error(`면 ${face.id}에 없거나 중복된 정점이 있습니다.`);
-        }
-        vertexIds.add(vertex.id);
-        points.push([vertex.position.x, vertex.position.y, vertex.position.z]);
-        halfEdgeId = halfEdge.next;
-      }
-      if (points.length < 3) throw new Error(`면 ${face.id}의 정점이 3개보다 적습니다.`);
-      cornerCount += points.length;
-      polygonPairWork += points.length * points.length;
-      if (baseLinearWork + cornerCount
-        > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkPerAsset) {
-        throw new Error("동기 선형 메시 검사 예산을 초과했습니다. 대용량 worker가 필요합니다.");
-      }
-      if (polygonPairWork
-        > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousPolygonPairWorkPerAsset) {
-        throw new Error(
-          "동기 다각형 교차 검사 예산을 초과했습니다. 고차 면을 나누거나 worker를 사용해 주세요.",
-        );
-      }
-      validateStudioHybridDccFanPolygon(points, face.id);
-      triangleCount += points.length - 2;
-      if (triangleCount > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousTrianglesPerAsset) {
-        throw new Error("동기 변환 삼각형 예산을 초과했습니다. 대용량 삼각화 worker가 필요합니다.");
-      }
-    }
-    result = {
-      ok: true,
-      value: {
-        faceCount,
-        triangleCount,
-        normalMode: hasFlatFaces && hasSmoothFaces ? "split" : hasFlatFaces ? "flat" : "smooth",
-        linearWork: baseLinearWork + cornerCount,
-        polygonPairWork,
-      },
-    };
-  } catch (error) {
-    result = {
-      ok: false,
-      message: error instanceof Error ? error.message : "메시 삼각화 사전 검증에 실패했습니다.",
-    };
-  }
-  meshPreflightCache.set(mesh, result);
-  return result;
-}
+const inspectStudioHybridDccMeshForSynchronousProjection = inspectStudioMeshSurfaceForInteractiveProjection;
 
 function meshRenderData(mesh: StudioEditableMesh): StudioHybridDccMeshRenderData {
-  const cached = meshRenderDataCache.get(mesh);
-  if (cached) return cached;
-  const soup = studioEditableMeshToTriangleSoup(mesh);
-  if (soup.indices.length === 0 || soup.indices.length % 3 !== 0) {
-    throw new Error("렌더링할 삼각형 표면이 없습니다.");
-  }
-  const vertexCount = soup.positions.length / 3;
-  for (const index of soup.indices) {
-    if (index >= vertexCount) throw new Error("삼각형 인덱스가 정점 범위를 벗어났습니다.");
-  }
-  const data: StudioHybridDccMeshRenderData = {
-    positions: soup.positions,
-    indices: soup.indices,
-  };
-  meshRenderDataCache.set(mesh, data);
-  return data;
+  const inspection = inspectStudioHybridDccMeshForSynchronousProjection(mesh);
+  if (!inspection.ok) throw new Error(inspection.message);
+  return projectStudioMeshSurfaceForRender(mesh, inspection.value.plan);
 }
 
 function resolveStudioHybridDccRoomMaterialColor(materialId: string): `#${string}` | null {
@@ -535,11 +390,15 @@ function validateStudioHybridDccRenderCache(
       message: "화면용 메시의 원본·변형·내용 해시가 현재 권위 상태와 달라 원본 메시로 표시합니다.",
     };
   }
+  if (!cache.surface) return { ok: false, message: "화면용 캐시에 공통 표면 속성이 없어 원본 편집 메시로 표시합니다." };
   return {
     ok: true,
     value: {
       positions: cache.positions,
       indices: cache.indices,
+      cornerNormals: cache.surface.cornerNormals,
+      cornerUvs: cache.surface.cornerUvs,
+      triangleMaterialSlots: cache.surface.triangleMaterialSlots,
       renderHash: cache.derivedFromHash,
       renderSource: "modifier-cache",
       validationWork,
@@ -587,6 +446,7 @@ export function deriveStudioHybridDccViewportSnapshot(
   const projectionByAsset = new Map<string, StudioHybridDccRenderProjection>();
   let cumulativeLinearWork = 0;
   let cumulativePolygonPairWork = 0;
+  let cumulativeEarTests = 0;
   let cumulativeTriangles = 0;
   for (const record of boundedRecords) {
     const preflight = inspectStudioHybridDccMeshForSynchronousProjection(record.mesh);
@@ -597,10 +457,7 @@ export function deriveStudioHybridDccViewportSnapshot(
     let projection: StudioHybridDccRenderProjection;
     try {
       if (selectionMode === "object" && !preferSource && record.renderCache) {
-        const validated: StudioHybridDccRenderCacheValidation = preflight.value.normalMode === "split"
-          ? { ok: false, message: "혼합 음영 캐시에 코너 법선이 없어 원본 편집 메시로 표시합니다." }
-          : !canUseStudioHybridDccToonCache(record.mesh, readStudioHybridDccToonBindings(workspace.session.state, record.assetId, record.meshHash, toonPreview))
-            ? { ok: false, message: "평가 캐시에 재질 슬롯 대응이 없어 원본 편집 메시로 표시합니다." } : validateStudioHybridDccRenderCache(
+        const validated = validateStudioHybridDccRenderCache(
           record,
           record.renderCache,
           sharedObjectById.get(record.assetId)?.geometryHash ?? null,
@@ -637,11 +494,13 @@ export function deriveStudioHybridDccViewportSnapshot(
       + preflight.value.linearWork
       + projection.validationWork;
     const nextPolygonPairWork = cumulativePolygonPairWork + preflight.value.polygonPairWork;
+    const nextEarTests = cumulativeEarTests + preflight.value.earTests;
     const nextTriangles = cumulativeTriangles + projectionTriangles;
     if (nextLinearWork > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkTotal
       || nextPolygonPairWork
         > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousPolygonPairWorkTotal
-      || nextTriangles > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousTrianglesTotal) {
+      || nextTriangles > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousTrianglesTotal
+      || nextEarTests > STUDIO_MESH_SURFACE_INTERACTIVE_TOTAL_EAR_TESTS) {
       errors.push({
         assetId: record.assetId,
         message: "동시 표시 변환 예산을 초과했습니다. 에셋을 나누거나 대용량 worker 경로를 사용해 주세요.",
@@ -650,6 +509,7 @@ export function deriveStudioHybridDccViewportSnapshot(
     }
     cumulativeLinearWork = nextLinearWork;
     cumulativePolygonPairWork = nextPolygonPairWork;
+    cumulativeEarTests = nextEarTests;
     cumulativeTriangles = nextTriangles;
     accepted.push(record);
     acceptedByAsset.set(record.assetId, record);
@@ -690,9 +550,8 @@ export function deriveStudioHybridDccViewportSnapshot(
         mesh: item.mesh,
         positions: projection.positions,
         indices: projection.indices,
-        ...deriveStudioHybridDccToonAssetProjection(workspace.session.state, item.assetId, item.mesh, item.meshHash, projection.indices.length / 3, projection.renderSource === "modifier-cache", toonPreview),
-        ...(projection.renderSource !== "modifier-cache"
-          ? { cornerUvs: deriveStudioHybridDccTriangleCornerUvs(item.mesh) } : {}),
+        ...deriveStudioHybridDccToonAssetProjection(workspace.session.state, item.assetId, item.mesh, item.meshHash, projection.indices.length / 3, projection.renderSource === "modifier-cache", toonPreview, projection.triangleMaterialSlots),
+        ...(projection.cornerUvs ? { cornerUvs: projection.cornerUvs } : {}),
         renderHash: projection.renderHash,
         renderSource: projection.renderSource,
         materialId,
@@ -703,8 +562,7 @@ export function deriveStudioHybridDccViewportSnapshot(
         worldMin: item.worldMin,
         worldMax: item.worldMax,
         normalMode: preflight.normalMode,
-        ...(preflight.normalMode !== "flat" && projection.renderSource !== "modifier-cache"
-          ? { cornerNormals: deriveStudioHybridDccSplitCornerNormals(item.mesh) } : {}),
+        ...(projection.cornerNormals ? { cornerNormals: projection.cornerNormals } : {}),
         vertexCount: projection.positions.length / 3,
         triangleCount: projection.indices.length / 3,
       });

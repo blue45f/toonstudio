@@ -17,13 +17,15 @@ import {
 } from "./studio-editable-half-edge-mesh";
 import {
   clipStudioModifierTriangle,
-  repeatStudioModifierUvs,
   solidifyStudioModifierUvs,
   studioModifierSoupToMesh as soupToMesh,
-  studioModifierTriangleUvs,
   studioModifierUvBudget,
   type StudioModifierUv,
 } from "./mesh-uv/studio-mesh-modifier-uv";
+import { arrayStudioModifierPolygons, mirrorStudioModifierPolygons, repositionStudioModifierMesh } from "./mesh-surface/studio-mesh-modifier-polygons";
+import { clipStudioModifierTriangleSurface, reverseStudioModifierSurface, solidifyStudioModifierSurfaces, studioModifierSurfaceBudget, studioModifierSurfaceFan, type StudioModifierTriangleSurface } from "./mesh-surface/studio-mesh-modifier-surface";
+import { deriveStudioModifierSurfaceInput } from "./mesh-surface/studio-mesh-modifier-surface-input";
+import { countStudioModifierSubdivisionVertices, subdivideStudioModifierSurface } from "./mesh-surface/studio-mesh-modifier-subdivision";
 import { validateStudioMeshUvLayer } from "./mesh-uv/studio-mesh-uv-authority";
 import { decimateStudioMesh } from "./studio-mesh-ops-advanced";
 import { sha256HexPortable } from "./studio-sha256";
@@ -1149,8 +1151,9 @@ function applyMirror(
   }
   const soupResult = materializeTriangleSoup(mesh, metrics, budget, `mirror ${mod.id}`);
   if (!soupResult.ok) return soupResult;
-  const soup = soupResult.value;
-  const sourceUvs = studioModifierTriangleUvs(mesh, soup.indices);
+  const input = mod.bisect ? deriveStudioModifierSurfaceInput(mesh) : undefined;
+  const soup = input ?? soupResult.value;
+  const sourceUvs = input?.uvs;
   const axis = mod.axis === "x" ? 0 : mod.axis === "y" ? 1 : 2;
   const worstBaseVertices = mod.bisect
     ? checkedProduct(metrics.triangleCount, 4)
@@ -1181,6 +1184,7 @@ function applyMirror(
   const basePositions: number[] = [];
   const baseIndices: number[] = [];
   const baseUvs: StudioModifierUv[] | undefined = sourceUvs ? [] : undefined;
+  const baseSurfaces: StudioModifierTriangleSurface[] = [];
   const seamThreshold = mod.merge ? mod.mergeThreshold : -1;
   if (!mod.bisect) {
     for (let index = 0; index < soup.positions.length; index += 3) {
@@ -1219,6 +1223,8 @@ function applyMirror(
         ];
       });
       const clippedResult = clipStudioModifierTriangle(triangle, axis, sourceUvs?.slice(index, index + 3));
+      const sourceSurface = input?.surfaces[index / 3]; if (!sourceSurface) throw new Error("대칭 절단의 원본 면 속성이 없습니다.");
+      const clippedSurface = clipStudioModifierTriangleSurface(triangle, axis, sourceSurface);
       const clipped = clippedResult.points;
       if (clipped.length < 3) continue;
       const polygon = clipped.map(addVertex);
@@ -1228,6 +1234,7 @@ function applyMirror(
         const c = polygon[corner + 1]!;
         if (a !== b && b !== c && c !== a) {
           baseIndices.push(a, b, c);
+          baseSurfaces.push(studioModifierSurfaceFan(sourceSurface, clippedSurface, [0, corner, corner + 1]));
           if (baseUvs && clippedResult.uvs) baseUvs.push(clippedResult.uvs[0]!, clippedResult.uvs[corner]!, clippedResult.uvs[corner + 1]!);
         }
       }
@@ -1258,6 +1265,7 @@ function applyMirror(
   }
   const indices = [...baseIndices];
   const outputUvs = baseUvs ? [...baseUvs] : undefined;
+  const outputSurfaces = [...baseSurfaces];
   for (let index = 0; index < baseIndices.length; index += 3) {
     const a = mirroredVertex[baseIndices[index]!]!;
     const b = mirroredVertex[baseIndices[index + 1]!]!;
@@ -1266,6 +1274,7 @@ function applyMirror(
       && !(a === baseIndices[index] && b === baseIndices[index + 1]
         && c === baseIndices[index + 2])) {
       indices.push(a, c, b);
+      if (mod.bisect) { const source = baseSurfaces[index / 3]; if (!source) throw new Error("대칭 결과의 원본 면 속성이 없습니다."); outputSurfaces.push(reverseStudioModifierSurface(source)); }
       if (outputUvs && baseUvs) outputUvs.push(baseUvs[index]!, baseUvs[index + 2]!, baseUvs[index + 1]!);
     }
   }
@@ -1275,7 +1284,8 @@ function applyMirror(
     `mirror ${mod.id}`,
   );
   if (!exactTopology.ok) return exactTopology;
-  return ok(soupToMesh(new Float32Array(positions), new Uint32Array(indices), outputUvs));
+  return ok(mod.bisect ? soupToMesh(new Float32Array(positions), new Uint32Array(indices), outputUvs, outputSurfaces)
+    : mirrorStudioModifierPolygons(mesh, new Float32Array(positions), mirroredVertex));
 }
 
 function applyArray(
@@ -1312,7 +1322,6 @@ function applyArray(
   if (!soupResult.ok) return soupResult;
   const soup = soupResult.value;
   const positions = new Float32Array(outputVertices * 3);
-  const indices = new Uint32Array(outputIndices);
   const coordinateLimit = STUDIO_MESH_MODIFIER_STACK_LIMITS.maxCoordinateMagnitude;
   const totalAngle = mod.radialAngleRad ?? Math.PI * 2;
   const step = studioBlenderArrayStep(mesh, mod);
@@ -1346,12 +1355,8 @@ function applyArray(
       positions[outputOffset + 1] = outputY;
       positions[outputOffset + 2] = outputZ;
     }
-    const indexBase = instance * metrics.indexCount;
-    for (let index = 0; index < metrics.indexCount; index += 1) {
-      indices[indexBase + index] = soup.indices[index]! + vertexBase;
-    }
   }
-  return ok(soupToMesh(positions, indices, repeatStudioModifierUvs(studioModifierTriangleUvs(mesh, soup.indices), mod.count)));
+  return ok(arrayStudioModifierPolygons(mesh, positions, mod.count));
 }
 
 interface SolidifyEdgeUse {
@@ -1390,7 +1395,8 @@ function applySolidify(
   if (mod.thickness === 0) return ok(mesh);
   const soupResult = materializeTriangleSoup(mesh, metrics, budget, `solidify ${mod.id}`);
   if (!soupResult.ok) return soupResult;
-  const soup = soupResult.value;
+  const input = deriveStudioModifierSurfaceInput(mesh);
+  const soup = input;
   const normalBytes = checkedSum(
     checkedProduct(metrics.vertexCount, Float64Array.BYTES_PER_ELEMENT * 5) ?? Number.NaN,
     checkedProduct(metrics.indexCount, 80) ?? Number.NaN,
@@ -1510,7 +1516,7 @@ function applySolidify(
     : [];
   const outputVertices = checkedProduct(metrics.vertexCount, 2);
   const rimIndices = checkedProduct(boundaryEdges.length, 6);
-  const shellIndices = checkedProduct(metrics.indexCount, 2);
+  const shellIndices = checkedProduct(soup.indices.length, 2);
   const outputIndices = rimIndices === null || shellIndices === null
     ? null
     : checkedSum(shellIndices, rimIndices);
@@ -1591,7 +1597,7 @@ function applySolidify(
     ], outputIndex);
     outputIndex += 6;
   }
-  return ok(soupToMesh(positions, indices, solidifyStudioModifierUvs(studioModifierTriangleUvs(mesh, soup.indices), soup.indices, boundaryEdges)));
+  return ok(soupToMesh(positions, indices, solidifyStudioModifierUvs(input.uvs, soup.indices, boundaryEdges), solidifyStudioModifierSurfaces(input.surfaces, soup.indices, boundaryEdges)));
 }
 
 /** Dissolve only truly coplanar, uncreased triangulation seams before angle-limited beveling. */
@@ -2045,8 +2051,7 @@ function applyBevel(
 }
 
 /**
- * MOD-017: Catmull-lite subdivision (mid-edge split + optional neighbor smoothing),
- * evaluated non-destructively under the same budget discipline as the other modifiers.
+ * MOD-017: 삼각 midpoint 4분할과 선택적 이웃 평균을 같은 누적 예산으로 평가한다.
  */
 function applySubdivision(
   mesh: StudioEditableMesh,
@@ -2060,10 +2065,10 @@ function applySubdivision(
     const context = `subdivision ${mod.id} level ${level + 1}`;
     const soupResult = materializeTriangleSoup(current, currentMetrics, budget, context);
     if (!soupResult.ok) return soupResult;
-    const soup = soupResult.value;
-    const vertexCount = soup.positions.length / 3;
-    const triangleCount = soup.indices.length / 3;
-    const worstVertices = checkedSum(vertexCount, checkedProduct(triangleCount, 2) ?? Number.NaN);
+    const soup = deriveStudioModifierSurfaceInput(current);
+    const analysis = reserveEvaluationBudget(budget, { bytes: soup.indices.length * 64, workUnits: soup.indices.length }, `${context} edge receipt`);
+    if (!analysis.ok) return analysis;
+    const worstVertices = countStudioModifierSubdivisionVertices(soup);
     const worstIndices = checkedProduct(soup.indices.length, 4);
     if (worstVertices === null || worstIndices === null) {
       return fail("budget-exceeded", `${context}: topology arithmetic overflow`);
@@ -2080,57 +2085,8 @@ function applySubdivision(
       context,
     );
     if (!reserved.ok) return reserved;
-    const edgeMid = new Map<string, number>();
-    const positions: number[] = [...soup.positions];
-    const midOf = (a: number, b: number) => {
-      const lo = Math.min(a, b);
-      const hi = Math.max(a, b);
-      const key = `${lo}|${hi}`;
-      let idx = edgeMid.get(key);
-      if (idx !== undefined) return idx;
-      idx = positions.length / 3;
-      positions.push(
-        (soup.positions[a * 3]! + soup.positions[b * 3]!) / 2,
-        (soup.positions[a * 3 + 1]! + soup.positions[b * 3 + 1]!) / 2,
-        (soup.positions[a * 3 + 2]! + soup.positions[b * 3 + 2]!) / 2,
-      );
-      edgeMid.set(key, idx);
-      return idx;
-    };
-    const indices: number[] = [];
-    for (let t = 0; t < soup.indices.length; t += 3) {
-      const a = soup.indices[t]!;
-      const b = soup.indices[t + 1]!;
-      const c = soup.indices[t + 2]!;
-      const ab = midOf(a, b);
-      const bc = midOf(b, c);
-      const ca = midOf(c, a);
-      indices.push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca);
-    }
-    if (mod.smooth) {
-      const accum = new Float64Array(vertexCount * 3);
-      const degree = new Uint32Array(vertexCount);
-      for (let t = 0; t < soup.indices.length; t += 3) {
-        for (let k = 0; k < 3; k += 1) {
-          const i = soup.indices[t + k]!;
-          const j = soup.indices[t + ((k + 1) % 3)]!;
-          accum[i * 3]! += soup.positions[j * 3]!;
-          accum[i * 3 + 1]! += soup.positions[j * 3 + 1]!;
-          accum[i * 3 + 2]! += soup.positions[j * 3 + 2]!;
-          degree[i]! += 1;
-        }
-      }
-      for (let i = 0; i < vertexCount; i += 1) {
-        if (degree[i] === 0) continue;
-        positions[i * 3] = soup.positions[i * 3]! * 0.5
-          + (accum[i * 3]! / degree[i]!) * 0.5;
-        positions[i * 3 + 1] = soup.positions[i * 3 + 1]! * 0.5
-          + (accum[i * 3 + 1]! / degree[i]!) * 0.5;
-        positions[i * 3 + 2] = soup.positions[i * 3 + 2]! * 0.5
-          + (accum[i * 3 + 2]! / degree[i]!) * 0.5;
-      }
-    }
-    current = soupToMesh(new Float32Array(positions), new Uint32Array(indices));
+    const output = subdivideStudioModifierSurface(soup, mod.smooth);
+    current = soupToMesh(output.positions, output.indices, output.uvs, output.surfaces);
     const inspected = inspectEvaluationMesh(current, budget, `${context} result`, false);
     if (!inspected.ok) return inspected;
     currentMetrics = inspected.value;
@@ -2270,7 +2226,7 @@ function applySimpleDeform(
       positions[i * 3 + axisIndex] = positions[i * 3 + axisIndex]! * mod.factor;
     }
   }
-  return ok(soupToMesh(positions, soup.indices, studioModifierTriangleUvs(mesh, soup.indices)));
+  return ok(repositionStudioModifierMesh(mesh, positions));
 }
 
 /**
@@ -2449,6 +2405,8 @@ export async function evaluateStudioMeshModifierStack(
         const reserved = reserveEvaluationBudget(budget, uvBudget, `${mod.kind} ${mod.id} UV 코너 전파`);
         if (!reserved.ok) return reserved;
       }
+      const surfaceBudget = studioModifierSurfaceBudget(current, currentMetrics.value.indexCount, mod);
+      if (surfaceBudget) { const reserved = reserveEvaluationBudget(budget, surfaceBudget, `${mod.kind} ${mod.id} 면 속성 전파`); if (!reserved.ok) return reserved; }
       let applied: StudioMeshModifierResult<StudioEditableMesh>;
       if (mod.kind === "mirror") {
         applied = applyMirror(current, currentMetrics.value, mod, budget);

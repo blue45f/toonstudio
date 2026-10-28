@@ -6,7 +6,6 @@ import {
   createStudioUnitCubeMesh,
   hashStudioEditableMesh,
   STUDIO_EDITABLE_MESH_LIMITS,
-  studioEditableMeshToTriangleSoup,
   validateStudioEditableMeshSerializableAuthority,
   type StudioEditableMesh,
 } from "./studio-editable-half-edge-mesh";
@@ -20,6 +19,9 @@ import {
   type StudioSolidBooleanBackend,
 } from "./studio-mesh-modifier-stack";
 import { sha256HexPortable } from "./studio-sha256";
+import { planStudioMeshSurface } from "./mesh-surface/studio-mesh-surface-plan";
+import { projectStudioMeshSurfaceForRender } from "./mesh-surface/studio-mesh-surface-render";
+import { createStudioMeshRenderCacheSurface, validateStudioMeshRenderCacheSurface, type StudioRenderMeshCacheSurface } from "./mesh-surface/studio-mesh-render-cache-surface";
 
 export const STUDIO_GEOMETRY_AUTHORITY_REVISION = 1 as const;
 /** Shared source/render coordinate budget. Values outside this range are never renderer-safe. */
@@ -41,6 +43,8 @@ export interface StudioRenderMeshCache {
   readonly contentHash: `sha256:${string}`;
   readonly derivedFromHash: string;
   readonly generatedAt: number;
+  /** 폐기 가능한 평가 결과의 속성이다. 정본 UV·법선·재질을 대체하지 않는다. */
+  readonly surface?: StudioRenderMeshCacheSurface;
 }
 
 export interface StudioGeometryAuthorityRecord {
@@ -338,18 +342,23 @@ export async function materializeStudioGeometryRenderCache(
   }
   const evaluatedCoordinates = validateStudioGeometryAuthorityMesh(evaluated.value.mesh);
   if (!evaluatedCoordinates.ok) return evaluatedCoordinates;
-  const soup = studioEditableMeshToTriangleSoup(evaluated.value.mesh);
+  const plan = planStudioMeshSurface(evaluated.value.mesh, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+  if (!plan.ok) return { ok: false, code: plan.issue.code, detail: plan.issue.detail };
+  const projection = projectStudioMeshSurfaceForRender(evaluated.value.mesh, plan.value);
+  const soup = { ...projection, positions: projection.positions.slice(), indices: projection.indices.slice() };
   const projectedCoordinates = validateStudioGeometryRenderPositions(soup.positions);
   if (!projectedCoordinates.ok) return projectedCoordinates;
   const derivedFromHash = evaluated.value.resultHash;
+  const contentHash = contentAddressStudioGeometryBytes(soup.positions, soup.indices);
   const cache: StudioRenderMeshCache = {
     positions: soup.positions,
     indices: soup.indices,
     sourceMeshHash: prev.meshHash,
     sourceModifierStackHash: hashStudioMeshModifierStack(prev.modifierStack),
-    contentHash: contentAddressStudioGeometryBytes(soup.positions, soup.indices),
+    contentHash,
     derivedFromHash,
     generatedAt: options.now ?? 0,
+    surface: createStudioMeshRenderCacheSurface({ derivedMeshHash: derivedFromHash, geometryContentHash: contentHash, indexCount: soup.indices.length }, soup),
   };
   const record: StudioGeometryAuthorityRecord = {
     ...prev,
@@ -430,10 +439,10 @@ export function assertRenderCacheIsNotAuthority(
       return false;
     }
   }
-  return cache.contentHash === contentAddressStudioGeometryBytes(
-    cache.positions,
-    cache.indices,
-  );
+  return cache.contentHash === contentAddressStudioGeometryBytes(cache.positions, cache.indices)
+    && (cache.surface === undefined || validateStudioMeshRenderCacheSurface(cache.surface, {
+      derivedMeshHash: cache.derivedFromHash, geometryContentHash: cache.contentHash, indexCount: cache.indices.length,
+    }));
 }
 
 export function contentAddressStudioGeometryBytes(

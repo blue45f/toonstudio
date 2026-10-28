@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   createStudioUnitCubeMesh,
@@ -16,8 +16,13 @@ import {
 } from "../studio-geometry-authority";
 import {
   createStudioMeshModifierStack,
+  evaluateStudioMeshModifierStack,
   withStudioMeshModifier,
 } from "../studio-mesh-modifier-stack";
+import { hashStudioMeshUvTopology } from "../mesh-uv/studio-mesh-uv-authority";
+import { planStudioMeshSurface } from "../mesh-surface/studio-mesh-surface-plan";
+import { contentAddressStudioMeshRenderCacheSurface } from "../mesh-surface/studio-mesh-render-cache-surface";
+import * as surfaceRender from "../mesh-surface/studio-mesh-surface-render";
 
 function registeredCube(): StudioGeometryAuthorityRegistry {
   const result = registerStudioGeometryAuthority(
@@ -231,5 +236,121 @@ describe("Geometry Authority disposable render-cache integrity", () => {
       ...record,
       renderCache: { ...cache, positions: oversizedPositions },
     })).toBe(false);
+  });
+
+  it("평가된 Array의 실제 UV·혼합 음영·큰 재질 슬롯을 같은 삼각형 순서로 보존한다", async () => {
+    const cube = createStudioUnitCubeMesh();
+    const mesh: StudioEditableMesh = {
+      ...cube,
+      faces: cube.faces.map((face) => ({ ...face, smooth: face.id !== 0, materialSlot: 2 ** 40 + face.id })),
+      uvLayer: { revision: 1, topologyHash: hashStudioMeshUvTopology(cube), corners: cube.halfEdges.map(({ id }) => ({
+        halfEdgeId: id, u: Math.fround(id / 32 - 0.25), v: Math.fround(0.2 + id / 64),
+      })) },
+    };
+    const registered = registerStudioGeometryAuthority(createStudioGeometryAuthorityRegistry(), "cube", mesh);
+    if (!registered.ok) throw new Error(registered.detail);
+    const registry = withArrayModifier(registered.value); const before = registry.records.cube;
+    if (!before) throw new Error("원본 메시가 없습니다.");
+    const evaluated = await evaluateStudioMeshModifierStack(before.modifierStack);
+    if (!evaluated.ok) throw new Error(evaluated.detail);
+    const plan = planStudioMeshSurface(evaluated.value.mesh);
+    if (!plan.ok) throw new Error(plan.issue.detail);
+    const result = await materializeStudioGeometryRenderCache(registry, "cube");
+    if (!result.ok) throw new Error(result.detail);
+    const record = result.value.registry.records.cube; const cache = result.value.cache; const surface = cache.surface;
+    if (!record || !surface || !surface.cornerUvs) throw new Error("평가 결과의 표시 속성이 없습니다.");
+    expect(record.mesh).toBe(mesh); expect(record.meshHash).toBe(before.meshHash); expect(record.revision).toBe(before.revision);
+    expect(before.renderCache).toBeNull(); expect(cache.positions.length).toBe(evaluated.value.mesh.vertices.length * 3);
+    expect(cache.indices.length).toBe(plan.value.triangles.length * 3);
+    expect(surface.derivedMeshHash).toBe(evaluated.value.resultHash); expect(surface.geometryContentHash).toBe(cache.contentHash);
+    expect(surface.cornerNormals).toHaveLength(cache.indices.length * 3);
+    expect(new Set(surface.triangleMaterialSlots)).toEqual(new Set(cube.faces.map(({ id }) => 2 ** 40 + id)));
+    const uv = new Map(evaluated.value.mesh.uvLayer?.corners.map((corner) => [corner.halfEdgeId, corner]));
+    const dense = new Map(evaluated.value.mesh.vertices.map((vertex, index) => [vertex.id, index]));
+    for (const [index, triangle] of plan.value.triangles.entries()) {
+      expect(surface.triangleMaterialSlots[index]).toBe(evaluated.value.mesh.faces[triangle.faceId]?.materialSlot);
+      for (let corner = 0; corner < 3; corner += 1) {
+        const sourceId = triangle.vertexIds[corner]; const cornerId = triangle.cornerHalfEdgeIds[corner];
+        if (sourceId === undefined || cornerId === undefined) throw new Error("삼각형 원본 코너가 없습니다.");
+        const sourceUv = uv.get(cornerId); if (!sourceUv) throw new Error("평가 UV가 없습니다.");
+        const write = index * 3 + corner;
+        expect(cache.indices[write]).toBe(dense.get(sourceId));
+        expect(Array.from(surface.cornerUvs.subarray(write * 2, write * 2 + 2))).toEqual([sourceUv.u, sourceUv.v]);
+        expect(Math.hypot(...surface.cornerNormals.subarray(write * 3, write * 3 + 3))).toBeCloseTo(1, 6);
+      }
+    }
+    expect(assertRenderCacheIsNotAuthority(record)).toBe(true);
+  });
+
+  it("기하가 같아도 표시 속성의 변조를 거부하며 metadata 없는 legacy cache만 호환한다", async () => {
+    const result = await materializeStudioGeometryRenderCache(withArrayModifier(registeredCube()), "cube");
+    if (!result.ok) throw new Error(result.detail);
+    const record = result.value.registry.records.cube; const cache = result.value.cache; const surface = cache.surface;
+    if (!record || !surface) throw new Error("캐시 표시 속성이 없습니다.");
+    const normals = new Float32Array(surface.cornerNormals); normals[0] = -(normals[0] ?? 0); normals[1] = 1;
+    const slots = new Float64Array(surface.triangleMaterialSlots); slots[0] = 2 ** 40 + 1;
+    for (const changed of [{ ...surface, cornerNormals: normals }, { ...surface, triangleMaterialSlots: slots },
+      { ...surface, derivedMeshHash: "mesh:deadbeef" }, { ...surface, geometryContentHash: `sha256:${"f".repeat(64)}` as const }]) {
+      expect(assertRenderCacheIsNotAuthority({ ...record, renderCache: { ...cache, surface: changed } })).toBe(false);
+    }
+    const malformed = { ...surface, triangleMaterialSlots: new Float64Array([-1]) };
+    expect(assertRenderCacheIsNotAuthority({ ...record, renderCache: { ...cache, surface: { ...malformed, contentHash: contentAddressStudioMeshRenderCacheSurface(malformed) } } })).toBe(false);
+    const { surface: removed, ...legacy } = cache;
+    expect(removed).toBe(surface); expect(assertRenderCacheIsNotAuthority({ ...record, renderCache: legacy })).toBe(true);
+  });
+
+  it("no-op 평가 캐시의 배열을 변조해도 같은 원본 projection과 다른 asset을 오염시키지 않는다", async () => {
+    const mesh = createStudioUnitCubeMesh();
+    let registry = createStudioGeometryAuthorityRegistry();
+    for (const id of ["cube", "other"]) {
+      const result = registerStudioGeometryAuthority(registry, id, mesh);
+      if (!result.ok) throw new Error(result.detail);
+      registry = result.value;
+    }
+    const observe = vi.spyOn(surfaceRender, "projectStudioMeshSurfaceForRender");
+    try {
+      const result = await materializeStudioGeometryRenderCache(registry, "cube");
+      if (!result.ok) throw new Error(result.detail);
+      const call = observe.mock.calls[0], returned = observe.mock.results[0];
+      if (!call || !returned || returned.type !== "return") throw new Error("실제 projection 호출이 없습니다.");
+      const projection = returned.value, cache = result.value.cache;
+      if (!cache.surface) throw new Error("표시 속성이 없습니다.");
+      expect(call[0]).toBe(mesh);
+      expect(cache.positions).not.toBe(projection.positions); expect(cache.indices).not.toBe(projection.indices);
+      expect(cache.surface.cornerNormals).not.toBe(projection.cornerNormals);
+      expect(cache.surface.triangleMaterialSlots).not.toBe(projection.triangleMaterialSlots);
+      const before = { positions: projection.positions.slice(), indices: projection.indices.slice(),
+        normals: projection.cornerNormals.slice(), slots: projection.triangleMaterialSlots.slice() };
+      cache.positions[0] = 99; cache.indices[0] = 7;
+      cache.surface.cornerNormals.fill(0); cache.surface.triangleMaterialSlots.fill(17);
+      const originalDisplay = surfaceRender.projectStudioMeshSurfaceForRender(mesh, call[1]);
+      expect(originalDisplay).toBe(projection);
+      expect(originalDisplay.positions).toEqual(before.positions); expect(originalDisplay.indices).toEqual(before.indices);
+      expect(originalDisplay.cornerNormals).toEqual(before.normals); expect(originalDisplay.triangleMaterialSlots).toEqual(before.slots);
+      const other = await materializeStudioGeometryRenderCache(result.value.registry, "other");
+      if (!other.ok) throw new Error(other.detail);
+      expect(other.value.cache.positions).toEqual(before.positions); expect(other.value.cache.indices).toEqual(before.indices);
+      expect(other.value.cache.surface?.cornerNormals).toEqual(before.normals);
+      expect(other.value.cache.surface?.triangleMaterialSlots).toEqual(before.slots);
+      expect(registry.records.cube?.mesh).toBe(mesh); expect(registry.records.other?.mesh).toBe(mesh);
+      expect(mesh.vertices[0]?.position.x).toBe(-0.5);
+      const corrupted = result.value.registry.records.cube;
+      if (!corrupted) throw new Error("변조 검증 대상이 없습니다.");
+      expect(assertRenderCacheIsNotAuthority(corrupted)).toBe(false);
+    } finally { observe.mockRestore(); }
+  });
+
+  it("flat crease 정본은 GLB의 엄격한 crease 정책과 분리해 캐시를 만들고 원본 값을 유지한다", async () => {
+    const cube = createStudioUnitCubeMesh();
+    const mesh = { ...cube, vertices: cube.vertices.map((vertex) => ({ ...vertex, crease: .25 })), halfEdges: cube.halfEdges.map((edge) => ({ ...edge, crease: .5 })) };
+    const registered = registerStudioGeometryAuthority(createStudioGeometryAuthorityRegistry(), "cube", mesh);
+    if (!registered.ok) throw new Error(registered.detail);
+    const strict = planStudioMeshSurface(mesh); expect(strict.ok).toBe(false);
+    const result = await materializeStudioGeometryRenderCache(registered.value, "cube");
+    if (!result.ok) throw new Error(result.detail);
+    const record = result.value.registry.records.cube; if (!record) throw new Error("표시할 정본이 없습니다.");
+    expect(record.mesh).toBe(mesh); expect(record.renderCache?.surface).toBeDefined();
+    expect(record.mesh.halfEdges.every((edge) => edge.crease === .5)).toBe(true);
+    expect(assertRenderCacheIsNotAuthority(record)).toBe(true);
   });
 });

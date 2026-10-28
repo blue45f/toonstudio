@@ -2,6 +2,7 @@
 import { createStudioEditableMeshFromPolygons, STUDIO_EDITABLE_MESH_LIMITS } from "../studio-editable-half-edge-mesh";
 
 import { decodeStudioMeshUvLayer, hashStudioMeshUvTopology, validateStudioMeshUvLayer } from "./studio-mesh-uv-authority";
+import { applyStudioModifierSurfaceAttributes, type StudioModifierTriangleSurface } from "../mesh-surface/studio-mesh-modifier-surface";
 
 import type { StudioEditableMesh } from "../studio-editable-half-edge-mesh";
 import type { StudioMeshModifier } from "../mesh-modifiers/studio-mesh-modifier-types";
@@ -42,14 +43,15 @@ export function studioModifierTriangleUvs(mesh: StudioEditableMesh, indices: Uin
 }
 
 /** 생성 인덱스 순서의 UV를 새 halfedge-origin에 결합한다. 위치 검색은 사용하지 않는다. */
-export function studioModifierSoupToMesh(positions: Float32Array, indices: Uint32Array, uvs?: readonly StudioModifierUv[]): StudioEditableMesh {
+export function studioModifierSoupToMesh(positions: Float32Array, indices: Uint32Array, uvs?: readonly StudioModifierUv[], surfaces?: readonly StudioModifierTriangleSurface[]): StudioEditableMesh {
   const vertices = [];
   for (let index = 0; index < positions.length; index += 3) {
     vertices.push({ x: positions[index]!, y: positions[index + 1]!, z: positions[index + 2]! });
   }
   const faces: number[][] = [];
   for (let index = 0; index < indices.length; index += 3) faces.push([indices[index]!, indices[index + 1]!, indices[index + 2]!]);
-  const mesh = createStudioEditableMeshFromPolygons(vertices, faces);
+  const created = createStudioEditableMeshFromPolygons(vertices, faces);
+  const mesh = surfaces ? applyStudioModifierSurfaceAttributes(created, indices, surfaces) : created;
   if (uvs === undefined) return mesh;
   if (uvs.length !== indices.length || mesh.halfEdges.length !== uvs.length) throw new Error("생성된 삼각형과 UV 코너 수가 다릅니다.");
   const corners = mesh.halfEdges.map((edge, index) => {
@@ -143,7 +145,7 @@ export function studioModifierUvBudget(mesh: StudioEditableMesh, indexCount: num
     || (modifier.kind === "decimate" && Math.max(4, Math.floor(indexCount / 3 * modifier.ratio)) >= indexCount / 3)
     || (modifier.kind === "solidify" && modifier.thickness === 0)) return undefined;
   const copies = modifier.kind === "array" ? modifier.count : modifier.kind === "mirror" ? modifier.bisect ? 4 : 2
-    : modifier.kind === "solidify" ? 4 : modifier.kind === "simple-deform" ? 1 : null;
+    : modifier.kind === "solidify" ? 4 : modifier.kind === "simple-deform" ? 1 : modifier.kind === "subdivision" ? 4 ** modifier.levels : null;
   if (copies === null) throw new Error(`${modifier.kind}: 이 변형의 정확한 UV 코너 전파는 아직 지원하지 않습니다. UV를 보존하려면 변형을 끄거나 먼저 적용한 뒤 UV를 펼치세요.`);
   const outputCorners = indexCount * copies;
   if (!Number.isSafeInteger(outputCorners) || outputCorners > STUDIO_EDITABLE_MESH_LIMITS.maxEdges) {

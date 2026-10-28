@@ -1,0 +1,136 @@
+{
+  "reference": "8e445a4b648e825afa35d6f5106505a6a47f71ba",
+  "cases": [
+    {
+      "name": "cube",
+      "ok": true,
+      "reportSha256": "0448ba5cd97e715ccd2ac39d8b7ce3feb157af6ea21ae1284faafd42cd61d162",
+      "bytes": 3268,
+      "sha256": "590f9e27aff40137151657e964bc54e8bbce913b2d4d9f17940e61e47d48114c"
+    },
+    {
+      "name": "cube-uv",
+      "ok": true,
+      "reportSha256": "45ac1b64162a2e624e7e026f96eb725e8b9a19547da806a13865b4c99b815fcd",
+      "bytes": 3636,
+      "sha256": "777d3d0c0ee81c581d3241a4d39d1e089c0894da6e797665c74e28ff56e328d3"
+    },
+    {
+      "name": "cube-mixed",
+      "ok": true,
+      "reportSha256": "c30aae527b4471074f20f73666a7f3764d4a8e2f22cfc3dc7ade9c608dcd70ef",
+      "bytes": 3188,
+      "sha256": "41ed0f20329484d36ed5655fef734d04587118f3554b296244c1f06e17841324"
+    },
+    {
+      "name": "toon-slots",
+      "ok": true,
+      "reportSha256": "f0102827d64626bbe406fb98a653c1f8489a47ab46c6bb978ffb2bfd4087582c",
+      "bytes": 6608,
+      "sha256": "22fb2d2940d103a7c2f68e9bb9594134d15dd5b14dd8e62630b0b2621f9818e8"
+    },
+    {
+      "name": "quad",
+      "ok": true,
+      "reportSha256": "a4a08d01a259404ce47e3deb3960cf2d6782f6306dcd5d0fcf36ac1f65436e22",
+      "bytes": 2256,
+      "sha256": "dbd4a3c1445f944e7888a69e7a00d1b51955c1a0d783a518f6fe8a54a1a7bc3c"
+    },
+    {
+      "name": "quad-no-uv",
+      "ok": true,
+      "reportSha256": "3b92d294fbe376860155813cf11051826e027764d12433388e187df522fc5ce8",
+      "bytes": 2112,
+      "sha256": "8a325218485761460ebd8678408993d9ad101037caadd747224ad27ea07b981e"
+    },
+    {
+      "name": "shallow",
+      "ok": true,
+      "reportSha256": "feca16518be1481914cd76b15cda9a594943be5e514384e62225ee6d52bac06c",
+      "bytes": 2296,
+      "sha256": "f0f9a1a0704c36b51f3024b7f70f32727b48b079fcda359c7b38f3dc6a854ae1"
+    },
+    {
+      "name": "warped",
+      "ok": true,
+      "reportSha256": "6011a719c58a1adaca722e8952866cfdf473764b2c3c00e592a39e6468deea39",
+      "bytes": 2348,
+      "sha256": "2b6a2d63881aa5c96a1b9785da900225cdf75dc5f8aaa8d21e71283ed48fcbb9"
+    },
+    {
+      "name": "warped-rotated",
+      "ok": true,
+      "reportSha256": "683d816cab59d12ea59282486b38d12e2bb981312e96e1f21068e41504b4116e",
+      "bytes": 2404,
+      "sha256": "b3b95b67df1dd2af94f95f20a8b42c2a9894026c35ad185f63f92b662fb26186"
+    },
+    {
+      "name": "concave",
+      "ok": true,
+      "reportSha256": "40a77fd3ebc77ecde9d0cdd4aac0016731d70a07acbecf3a218851edc8da4869",
+      "bytes": 2152,
+      "sha256": "ffa6017413f4df995d87e26bef550234b33177bc88e85b0b0cd0ba8ff5c483f2"
+    },
+    {
+      "name": "concave-uv",
+      "ok": true,
+      "reportSha256": "0528c53b51cab57a5220b47f952170236b4c7650e553b2f13d9f3bf8d7decf00",
+      "bytes": 2368,
+      "sha256": "5b20099090e9e4046d31e1c5e1fbbcaf591126336035c294e72bd5e0f96435f1"
+    },
+    {
+      "name": "collinear",
+      "ok": true,
+      "reportSha256": "3f7bae31619fcb3dc0835706d464900c9839be9a118a230c641a82799f1bc678",
+      "bytes": 2120,
+      "sha256": "d0ac8d840febe7e5b421dc398670318af2e45b5c7ebdb944a215602a1a7c920e"
+    },
+    {
+      "name": "collinear-uv",
+      "ok": true,
+      "reportSha256": "667ad9b034441ba85c77cc879f46b3568d22f0d0cd5b51d156a17639fedf1259",
+      "bytes": 2380,
+      "sha256": "57d53ae83fc6614aa78611f6fff6b3e8198bef91affdbeece870694c20a13f3d"
+    },
+    {
+      "name": "broken-before-stale",
+      "ok": false,
+      "reportSha256": "e9ab7127126f20f23138c2422ef8462dafc7e61919687bcf289512a88155d917",
+      "codes": [
+        "half-edge-reference-invalid"
+      ]
+    },
+    {
+      "name": "uv-before-stale",
+      "ok": false,
+      "reportSha256": "27a31e2585042bdb95eddb4fa0ae76a7f2e0cb149b6db0cbf32e2394132748e4",
+      "codes": [
+        "uv-coordinate-invalid"
+      ]
+    },
+    {
+      "name": "stale-before-normal",
+      "ok": false,
+      "reportSha256": "198a54c45907e5fabe185f959876aeb3eb49702a74fb262313688dfae473002b",
+      "codes": [
+        "source-hash-mismatch"
+      ]
+    },
+    {
+      "name": "over-corners",
+      "ok": false,
+      "reportSha256": "0cc76551f488a108a9b81544364066aae5bf1bbb197c4f05d3d4280d10cb2ade",
+      "codes": [
+        "face-corner-budget-exceeded"
+      ]
+    },
+    {
+      "name": "overflow",
+      "ok": false,
+      "reportSha256": "3ed5850a41ca05eec51e6f6d43c50d6dde2c92b8a66843d3affc171cad94d270",
+      "codes": [
+        "position-float32-overflow"
+      ]
+    }
+  ]
+}

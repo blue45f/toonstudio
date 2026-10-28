@@ -20,7 +20,7 @@ function source() {
 const toon = createStudioHybridDccDefaultToonMaterial();
 
 describe("재질 슬롯의 실제 렌더 투영", () => {
-  it("서로 다른 슬롯의 fan·UV·normal·index 순서를 바꾸지 않고 실제 Three draw group에 반영한다", () => {
+  it("서로 다른 슬롯의 공통 표면·UV·normal·index 순서를 바꾸지 않고 실제 Three draw group에 반영한다", () => {
     const before = source(); const baseline = deriveStudioHybridDccViewportSnapshot(before).assets[0]!;
     const after = workspaceSetStudioHybridDccToonMaterial(before, "cube", [1], toon);
     const projected = deriveStudioHybridDccViewportSnapshot(after);
@@ -47,16 +47,26 @@ describe("재질 슬롯의 실제 렌더 투영", () => {
     try { expect(resource.materialSlots).toEqual([0]); expect(resource.geometry.groups).toEqual([{ start: 0, count: 36, materialIndex: 0 }]); }
     finally { resource.dispose(); }
   });
-  it("uniform toon은 수정자 캐시를 표시하고 서로 다른 slot은 provenance 없는 캐시 대신 원본을 경고와 함께 표시한다", async () => {
+  it("수정자 캐시의 실제 슬롯 대응으로 uniform toon과 서로 다른 재질을 모두 표시한다", async () => {
     const uniform = await workspaceAddActiveModifier(workspaceSetStudioHybridDccToonMaterial(source(), "cube", [0, 1], toon), "array");
     const same = deriveStudioHybridDccViewportSnapshot(uniform);
     expect(same.errors).toEqual([]); expect(same.warnings).toEqual([]);
     expect(same.assets[0]?.renderSource).toBe("modifier-cache"); expect(same.assets[0]?.triangleCount).toBeGreaterThan(12);
     expect(same.assets[0]?.triangleMaterialSlots).toHaveLength(same.assets[0]?.triangleCount ?? 0);
     const mixed = workspaceSetStudioHybridDccToonMaterial(uniform, "cube", [1], { ...toon, baseColorSrgb: "#112233" });
-    const fallback = deriveStudioHybridDccViewportSnapshot(mixed);
-    expect(fallback.errors).toEqual([]); expect(fallback.assets[0]?.renderSource).toBe("authority-cache-fallback");
-    expect(fallback.warnings[0]?.message).toContain("재질 슬롯"); expect(fallback.assets[0]?.triangleCount).toBe(12);
+    const evaluated = deriveStudioHybridDccViewportSnapshot(mixed);
+    const cache = mixed.session.state.geometry.records.cube!.renderCache!;
+    expect(evaluated.errors).toEqual([]); expect(evaluated.warnings).toEqual([]);
+    const asset = evaluated.assets[0]!;
+    expect(asset.renderSource).toBe("modifier-cache");
+    expect(asset.triangleCount).toBe(same.assets[0]!.triangleCount);
+    expect(asset.triangleMaterialSlots).toBe(cache.surface!.triangleMaterialSlots);
+    expect([...new Set(asset.triangleMaterialSlots)]).toEqual([0, 1]);
+    const resource = createStudioHybridDccGeometryResource(asset);
+    try {
+      expect(resource.materialSlots).toEqual([0, 1]);
+      expect(resource.geometry.groups.reduce((sum, group) => sum + group.count, 0)).toBe(asset.indices.length);
+    } finally { resource.dispose(); }
   });
   it("stale source·state·asset preview는 렌더와 signature를 바꾸지 않는다", () => {
     const workspace = source(); const expected = deriveStudioHybridDccViewportSnapshot(workspace);
@@ -69,7 +79,7 @@ describe("재질 슬롯의 실제 렌더 투영", () => {
     expect(current.assets[0]?.toonMaterials?.["0"]).toEqual(toon);
     expect(current.signature).not.toBe(expected.signature); expect(workspace.session.state.materials).toBeUndefined();
   });
-  it("슬롯 스트림의 불일치는 geometry 생성 전에 거부하고 원본 fan 대응을 유지한다", () => {
+  it("슬롯 스트림의 불일치는 geometry 생성 전에 거부하고 공통 표면 대응을 유지한다", () => {
     const workspace = source(); const mesh = workspace.session.state.geometry.records.cube!.mesh;
     expect(deriveStudioHybridDccTriangleMaterialSlots(mesh)).toHaveLength(12);
     expect(() => deriveStudioHybridDccMaterialGroups(new Float64Array(11), 36)).toThrow();

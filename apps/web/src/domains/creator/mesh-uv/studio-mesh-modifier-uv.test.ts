@@ -17,7 +17,7 @@ function withUvs(mesh: StudioEditableMesh): StudioEditableMesh {
 }
 function cube() { return withUvs(createStudioUnitCubeMesh()); }
 function uvIds(mesh: StudioEditableMesh): readonly number[] { return mesh.uvLayer!.corners.map(({ u }) => u * 32); }
-const cubeFanIds = Array.from({ length: 6 }, (_, face) => [0, 1, 2, 0, 2, 3].map((id) => face * 4 + id)).flat();
+const cubeCornerIds = Array.from({ length: 24 }, (_, id) => id);
 
 async function evaluated(mesh: StudioEditableMesh, modifiers: readonly StudioMeshModifier[]) {
   const result = await evaluateStudioMeshModifierStack(createStudioMeshModifierStack(mesh, modifiers));
@@ -27,12 +27,12 @@ async function evaluated(mesh: StudioEditableMesh, modifiers: readonly StudioMes
 }
 
 describe("모디파이어의 정확한 코너 UV 전파", () => {
-  it.each(["linear", "radial"] as const)("Array %s는 각 인스턴스의 원본 fan 코너를 복제하며 source를 변경하지 않는다", async (mode) => {
+  it.each(["linear", "radial"] as const)("Array %s는 각 인스턴스의 원본 polygon 코너를 복제하며 source를 변경하지 않는다", async (mode) => {
     const source = cube();
     const before = serializeStudioEditableMesh(source);
     const hash = hashStudioEditableMesh(source);
     const output = await evaluated(source, [{ ...array, mode }]);
-    expect(uvIds(output)).toEqual([...cubeFanIds, ...cubeFanIds]);
+    expect(uvIds(output)).toEqual([...cubeCornerIds, ...cubeCornerIds]);
     expect(output.uvLayer!.topologyHash).toBe(hashStudioMeshUvTopology(output));
     expect(output.uvLayer!.topologyHash).not.toBe(source.uvLayer!.topologyHash);
     expect(serializeStudioEditableMesh(source)).toEqual(before);
@@ -40,12 +40,12 @@ describe("모디파이어의 정확한 코너 UV 전파", () => {
     expect(output.vertices).toHaveLength(source.vertices.length * 2);
   });
 
-  it("Mirror는 반사된 삼각형 winding과 함께 UV 코너 순서도 반전한다", async () => {
+  it("Mirror는 반사된 polygon winding과 함께 UV 코너 순서도 반전한다", async () => {
     const source = cube();
     const output = await evaluated(source, [mirror]);
     const reversed: number[] = [];
-    for (let index = 0; index < cubeFanIds.length; index += 3) reversed.push(cubeFanIds[index]!, cubeFanIds[index + 2]!, cubeFanIds[index + 1]!);
-    expect(uvIds(output)).toEqual([...cubeFanIds, ...reversed]);
+    for (let index = 0; index < cubeCornerIds.length; index += 4) reversed.push(cubeCornerIds[index]!, cubeCornerIds[index + 3]!, cubeCornerIds[index + 2]!, cubeCornerIds[index + 1]!);
+    expect(uvIds(output)).toEqual([...cubeCornerIds, ...reversed]);
     // 같은 3D 정점을 공유해도 서로 다른 면의 코너 UV를 평균하거나 합치지 않는다.
     const pointUv = new Map<string, Set<number>>();
     for (const edge of output.halfEdges) {
@@ -79,10 +79,11 @@ describe("모디파이어의 정확한 코너 UV 전파", () => {
     expect(source.uvLayer.corners).toHaveLength(3);
   });
 
-  it.each(["twist", "taper", "stretch"] as const)("SimpleDeform %s는 각 원본 fan 코너 UV를 그대로 유지한다", async (mode) => {
+  it.each(["twist", "taper", "stretch"] as const)("SimpleDeform %s는 각 원본 polygon 코너 UV를 그대로 유지한다", async (mode) => {
     const source = cube();
     const output = await evaluated(source, [{ id: "deform", kind: "simple-deform", enabled: true, mode, axis: "z", angleRad: Math.PI / 4, factor: 1.5 }]);
-    expect(uvIds(output)).toEqual(cubeFanIds);
+    expect(uvIds(output)).toEqual(cubeCornerIds);
+    expect(output.uvLayer!.topologyHash).toBe(source.uvLayer!.topologyHash);
     expect(output.vertices.some((vertex, index) => JSON.stringify(vertex.position) !== JSON.stringify(source.vertices[index]?.position))).toBe(true);
     expect(output.uvLayer!.topologyHash).toBe(hashStudioMeshUvTopology(output));
   });
@@ -92,8 +93,9 @@ describe("모디파이어의 정확한 코너 UV 전파", () => {
       { x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }, { x: 0, y: 1, z: 0 },
     ], [[0, 1, 2, 3]]));
     const output = await evaluated(source, [{ ...solidify, rim }]);
-    const shells = [0, 1, 2, 0, 2, 1, 0, 2, 3, 0, 3, 2];
-    const sides = [[0, 1], [1, 2], [2, 3], [3, 0]].flatMap(([a, b]) => [a!, a!, b!, a!, b!, b!]);
+    // 공통 surface의 earclip 1–3 대각선을 shell과 rim이 그대로 이어받는다.
+    const shells = [3, 0, 1, 3, 1, 0, 1, 2, 3, 1, 3, 2];
+    const sides = [[3, 0], [0, 1], [1, 2], [2, 3]].flatMap(([a, b]) => [a!, a!, b!, a!, b!, b!]);
     expect(uvIds(output)).toEqual(rim ? [...shells, ...sides] : shells);
     expect(output.uvLayer!.topologyHash).toBe(hashStudioMeshUvTopology(output));
     expect(output.faces).toHaveLength(rim ? 12 : 4);
@@ -102,9 +104,9 @@ describe("모디파이어의 정확한 코너 UV 전파", () => {
   it("Array→Mirror→SimpleDeform이 연속되어도 각 단계의 corner provenance를 이어간다", async () => {
     const source = cube();
     const output = await evaluated(source, [array, mirror, { id: "deform", kind: "simple-deform", enabled: true, mode: "stretch", axis: "y", angleRad: 0, factor: 2 }]);
-    const first = [...cubeFanIds, ...cubeFanIds];
+    const first = [...cubeCornerIds, ...cubeCornerIds];
     const reversed: number[] = [];
-    for (let index = 0; index < first.length; index += 3) reversed.push(first[index]!, first[index + 2]!, first[index + 1]!);
+    for (let index = 0; index < first.length; index += 4) reversed.push(first[index]!, first[index + 3]!, first[index + 2]!, first[index + 1]!);
     expect(uvIds(output)).toEqual([...first, ...reversed]);
   });
 
@@ -114,7 +116,6 @@ describe("모디파이어의 정확한 코너 UV 전파", () => {
     const boolean = vi.fn(async () => { throw new Error("UV 검증 전에 backend가 실행되면 안 됩니다."); });
     const modifiers: readonly StudioMeshModifier[] = [
       { id: "bevel", kind: "bevel", enabled: true, amount: 0.1, segments: 1, angleLimitRad: 0, weightInfluence: 0 },
-      { id: "subdiv", kind: "subdivision", enabled: true, levels: 1, smooth: true },
       { id: "weld", kind: "weld", enabled: true, quantum: 0.00001 },
       { id: "decimate", kind: "decimate", enabled: true, ratio: 0.5 },
       { id: "boolean", kind: "boolean", enabled: true, operation: "union", operand: studioEditableMeshToTriangleSoup(createStudioUnitCubeMesh()) },

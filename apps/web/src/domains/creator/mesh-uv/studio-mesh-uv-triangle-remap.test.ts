@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { createStudioEditableMeshFromPolygons, serializeStudioEditableMesh, studioEditableMeshToTriangleSoup, validateStudioEditableMeshSerializableAuthority, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { createStudioEditableMeshFromPolygons, serializeStudioEditableMesh, validateStudioEditableMeshSerializableAuthority, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { planStudioMeshSurface } from "../mesh-surface/studio-mesh-surface-plan";
+import { projectStudioMeshSurfaceForRender } from "../mesh-surface/studio-mesh-surface-render";
 
 import { decodeStudioMeshUvLayer, deriveStudioMeshUvIslands, hashStudioMeshUvTopology } from "./studio-mesh-uv-authority";
 import { remapStudioMeshUvTriangleSoup } from "./studio-mesh-uv-triangle-remap";
@@ -18,7 +20,9 @@ function sourceMesh(): StudioEditableMesh {
 }
 
 function triangleMesh(source: StudioEditableMesh) {
-  const soup = studioEditableMeshToTriangleSoup(source);
+  const plan = planStudioMeshSurface(source, undefined, { allowCreaseMetadata: true });
+  if (!plan.ok) throw new Error(plan.issue.detail);
+  const soup = projectStudioMeshSurfaceForRender(source, plan.value);
   const vertices = source.vertices.map(({ position }) => ({ ...position, z: 0.25 }));
   const triangles: number[][] = [];
   for (let index = 0; index < soup.indices.length; index += 3) triangles.push(Array.from(soup.indices.slice(index, index + 3)));
@@ -26,18 +30,18 @@ function triangleMesh(source: StudioEditableMesh) {
 }
 
 describe("삼각형 soup의 검증된 원본 UV 코너 대응", () => {
-  it("source.he origin fan의 실제 soup 순서로 비선형 UV·seam·면·crease 속성을 보존한다", () => {
+  it("공유 surface의 실제 soup 순서로 비선형 UV·seam·면·crease 속성을 보존한다", () => {
     const source = sourceMesh(); const before = serializeStudioEditableMesh(source);
     const { soup, result } = triangleMesh(source);
-    expect(Array.from(soup.indices)).toEqual([1, 4, 3, 1, 3, 0, 1, 2, 5, 1, 5, 4]);
+    expect(Array.from(soup.indices)).toEqual([3, 0, 1, 1, 4, 3, 4, 1, 2, 2, 5, 4]);
     const mapped = remapStudioMeshUvTriangleSoup(source, result, soup.indices);
-    const sourceIds = [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7];
+    const sourceIds = [2, 3, 0, 0, 1, 2, 7, 4, 5, 5, 6, 7];
     expect(mapped.uvLayer?.corners.map(({ u, v }) => [u, v])).toEqual(sourceIds.map((id) => {
       const uv = source.uvLayer?.corners[id]; if (!uv) throw new Error("UV 코너가 없습니다."); return [uv.u, uv.v];
     }));
     expect(mapped.vertices.map(({ crease }) => crease)).toEqual(source.vertices.map(({ crease }) => crease));
     expect(mapped.faces.map(({ materialSlot, smooth }) => [materialSlot, smooth])).toEqual([[2, false], [2, false], [3, true], [3, true]]);
-    expect(mapped.halfEdges.map(({ crease }) => crease)).toEqual([1 / 16, 2 / 16, 0, 0, 3 / 16, 4 / 16, 5 / 16, 6 / 16, 0, 0, 7 / 16, 8 / 16]);
+    expect(mapped.halfEdges.map(({ crease }) => crease)).toEqual([3 / 16, 4 / 16, 0, 1 / 16, 2 / 16, 0, 8 / 16, 5 / 16, 0, 6 / 16, 7 / 16, 0]);
     expect(deriveStudioMeshUvIslands(mapped).map(({ faceIds }) => faceIds)).toEqual([[0, 1], [2, 3]]);
     expect(validateStudioEditableMeshSerializableAuthority(mapped).ok).toBe(true);
     expect(serializeStudioEditableMesh(source)).toEqual(before);
@@ -58,8 +62,13 @@ describe("삼각형 soup의 검증된 원본 UV 코너 대응", () => {
     expect(() => remapStudioMeshUvTriangleSoup(source, result, incomplete)).toThrow(/코너 수/u);
   });
 
-  it("UV가 없는 입력은 기존 결과 객체를 검증·속성 변경 없이 반환한다", () => {
+  it("UV가 없어도 검증된 면·crease 속성은 유지하고 UV 레이어를 새로 만들지 않는다", () => {
     const { uvLayer: _uv, ...source } = sourceMesh(); const { result, soup } = triangleMesh(source);
-    expect(remapStudioMeshUvTriangleSoup(source, result, soup.indices)).toBe(result);
+    const mapped = remapStudioMeshUvTriangleSoup(source, result, soup.indices);
+    expect(mapped.uvLayer).toBeUndefined();
+    expect(mapped.faces.map(({ materialSlot, smooth }) => [materialSlot, smooth])).toEqual([[2, false], [2, false], [3, true], [3, true]]);
+    expect(mapped.vertices.map(({ crease }) => crease)).toEqual(source.vertices.map(({ crease }) => crease));
+    expect(mapped.halfEdges.map(({ crease }) => crease)).toEqual([3 / 16, 4 / 16, 0, 1 / 16, 2 / 16, 0, 8 / 16, 5 / 16, 0, 6 / 16, 7 / 16, 0]);
+    expect(result.faces.every(({ materialSlot }) => materialSlot === 0)).toBe(true);
   });
 });

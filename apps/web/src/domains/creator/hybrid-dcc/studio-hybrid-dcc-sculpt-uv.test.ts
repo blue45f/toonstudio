@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createStudioUnitCubeMesh, hashStudioEditableMesh, serializeStudioEditableMesh, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { createStudioEditableMeshFromPolygons, createStudioUnitCubeMesh, hashStudioEditableMesh, serializeStudioEditableMesh, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
 import { decodeStudioMeshUvLayer, deriveStudioMeshUvIslands, hashStudioMeshUvTopology } from "../mesh-uv/studio-mesh-uv-authority";
 import { serializeStudioCommandJournal } from "../studio-command-journal";
+import { planStudioMeshSurface } from "../mesh-surface/studio-mesh-surface-plan";
+import { projectStudioMeshSurfaceForRender } from "../mesh-surface/studio-mesh-surface-render";
+import { surfaceRegressionInputs, surfaceTestQuad } from "../mesh-surface/studio-mesh-surface-test-fixtures";
 
 import { applyStudioSculptStroke, createStudioSculptMask, voxelRemeshStudioMesh, type StudioSculptBrushKind } from "./studio-hybrid-sculpt-kernel";
 import { hybridDccCommitGeometry } from "./studio-hybrid-dcc-document";
@@ -46,37 +49,161 @@ function glbUvPairs(bytes: Uint8Array): readonly (readonly [number, number])[] {
   return pairs;
 }
 
-describe("UV를 보존하는 기존 Sculpt stroke", () => {
-  it("무UV의 8 brush 결과 해시는 기존 기준선과 정확히 같다", () => {
-    const mesh = createStudioUnitCubeMesh();
-    const hashes = Object.fromEntries(BRUSHES.map((kind) => {
+function projected(mesh: StudioEditableMesh) {
+  const surface = planStudioMeshSurface(mesh, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+  if (!surface.ok) throw new Error(surface.issue.detail);
+  return projectStudioMeshSurfaceForRender(mesh, surface.value);
+}
+function uvAt(mesh: StudioEditableMesh, x: number, y: number) {
+  const { positions, indices, cornerUvs } = projected(mesh);
+  if (!cornerUvs) throw new Error("실제 표시 UV가 없습니다.");
+  const hits: number[][] = [];
+  for (let offset = 0; offset < indices.length; offset += 3) {
+    const points = [0, 1, 2].map((corner) => {
+      const dense = indices[offset + corner]; if (dense === undefined) throw new Error("표시 index가 없습니다.");
+      return [positions[dense * 3] ?? NaN, positions[dense * 3 + 1] ?? NaN];
+    });
+    const [a, b, c] = points; if (!a || !b || !c) throw new Error("표시 삼각형이 없습니다.");
+    const ax = a[0] ?? NaN, ay = a[1] ?? NaN, bx = b[0] ?? NaN, by = b[1] ?? NaN, cx = c[0] ?? NaN, cy = c[1] ?? NaN;
+    const determinant = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+    const wa = ((by - cy) * (x - cx) + (cx - bx) * (y - cy)) / determinant;
+    const wb = ((cy - ay) * (x - cx) + (ax - cx) * (y - cy)) / determinant;
+    const weights = [wa, wb, 1 - wa - wb];
+    if (weights.every((value) => value >= 0 && value <= 1)) hits.push([0, 1].map((axis) =>
+      weights.reduce((sum, weight, corner) => sum + weight * (cornerUvs[(offset + corner) * 2 + axis] ?? NaN), 0)));
+  }
+  return hits;
+}
+function orientedUvTriangles(mesh: StudioEditableMesh) {
+  const { indices, cornerUvs } = projected(mesh);
+  if (!cornerUvs) throw new Error("표시 UV가 없습니다.");
+  return Array.from({ length: indices.length / 3 }, (_, triangle) => {
+    const corners = [0, 1, 2].map((corner) => ({ id: indices[triangle * 3 + corner] ?? -1,
+      uv: [cornerUvs[(triangle * 3 + corner) * 2], cornerUvs[(triangle * 3 + corner) * 2 + 1]] }));
+    const first = corners.reduce((index, corner, candidate) => corner.id < (corners[index]?.id ?? -1) ? candidate : index, 0);
+    // 삼각형 face의 시작 코너가 회전해도 같은 방향·정점·UV 대응이어야 한다.
+    return [0, 1, 2].map((offset) => corners[(first + offset) % 3]);
+  });
+}
+
+describe("공유 surface의 UV를 보존하는 Sculpt stroke", () => {
+  it.each([0, 1e-7])("높이 %s의 무강도·전체 mask stroke는 원본 polygon·법선·비선형 UV를 그대로 반환한다", (height) => {
+    const source = surfaceTestQuad(height), before = serializeStudioEditableMesh(source), display = projected(source);
+    for (const kind of BRUSHES) for (const locked of [false, true]) {
+      const result = applyStudioSculptStroke(source, { ...stroke, kind, strength: locked ? stroke.strength : 0 },
+        locked ? createStudioSculptMask(source.vertices.length, 0) : undefined);
+      if (!result.ok) throw new Error(result.detail);
+      expect(result.mesh).toBe(source); expect(projected(result.mesh)).toBe(display);
+      expect(uvAt(result.mesh, .6, .3)).toEqual(uvAt(source, .6, .3));
+    }
+    expect(uvAt(source, .6, .3)[0]?.[0]).toBeCloseTo(1.2, 12);
+    expect(serializeStudioEditableMesh(source)).toEqual(before);
+  });
+
+  it("실제로 움직인 planar quad도 기존 fan의 (0.9,.3)이 아닌 공유 삼각형의 (1.2,.3) 보간을 유지한다", () => {
+    const source = surfaceTestQuad(), result = applyStudioSculptStroke(source, {
+      kind: "grab", center: { x: .5, y: .5, z: 0 }, radius: 2, strength: .1, direction: { x: 0, y: 0, z: 1 },
+    });
+    if (!result.ok) throw new Error(result.detail);
+    expect(result.mesh).not.toBe(source); expect(result.mesh.faces).toHaveLength(2);
+    const before = projected(source), after = projected(result.mesh);
+    expect(orientedUvTriangles(result.mesh)).toEqual(orientedUvTriangles(source));
+    expect(after.positions.filter((_, index) => index % 3 !== 2)).toEqual(before.positions.filter((_, index) => index % 3 !== 2));
+    expect(new Set(after.positions.filter((_, index) => index % 3 === 2)).size).toBe(1);
+    const hits = uvAt(result.mesh, .6, .3); expect(hits).toHaveLength(1);
+    expect(hits[0]?.[0]).toBeCloseTo(1.2, 12); expect(hits[0]?.[1]).toBeCloseTo(.3, 12);
+    expect(after.cornerNormals).toEqual(before.cornerNormals);
+  });
+
+  it("실제로 움직인 오목 면도 같은 ear 삼각형을 사용해 역방향·겹침 fan을 만들지 않는다", () => {
+    const input = surfaceRegressionInputs().find(({ assetId }) => assetId === "concave-uv"); if (!input) throw new Error("오목 입력이 없습니다.");
+    const source = input.mesh, before = projected(source), result = applyStudioSculptStroke(source, { ...stroke, kind: "grab", direction: { x: 0, y: 0, z: 1 } });
+    if (!result.ok) throw new Error(result.detail);
+    const after = projected(result.mesh); expect(after.indices).toEqual(before.indices); expect(after.cornerUvs).toEqual(before.cornerUvs);
+    const signedAreas = Array.from({ length: after.indices.length / 3 }, (_, triangle) => {
+      const points = [0, 1, 2].map((corner) => { const dense = after.indices[triangle * 3 + corner] ?? -1; return [after.positions[dense * 3] ?? NaN, after.positions[dense * 3 + 1] ?? NaN]; });
+      const [a, b, c] = points; if (!a || !b || !c) throw new Error("삼각형이 없습니다.");
+      const ax = a[0] ?? NaN, ay = a[1] ?? NaN;
+      return (((b[0] ?? NaN) - ax) * ((c[1] ?? NaN) - ay) - ((b[1] ?? NaN) - ay) * ((c[0] ?? NaN) - ax)) / 2;
+    });
+    expect(signedAreas).toEqual([1, .800000011920929, 1]); expect(signedAreas.every((area) => area > 0)).toBe(true);
+  });
+
+  it("무UV의 8 brush도 표시와 같은 삼각형을 입력으로 사용하며 원본을 바꾸지 않는다", () => {
+    const mesh = createStudioUnitCubeMesh(), before = serializeStudioEditableMesh(mesh), surface = planStudioMeshSurface(mesh);
+    if (!surface.ok) throw new Error(surface.issue.detail);
+    const expected = projectStudioMeshSurfaceForRender(mesh, surface.value).indices;
+    for (const kind of BRUSHES) {
       const result = applyStudioSculptStroke(mesh, { ...stroke, kind });
       if (!result.ok) throw new Error(result.detail);
       expect(result.mesh.uvLayer).toBeUndefined();
-      return [kind, hashStudioEditableMesh(result.mesh)];
-    }));
-    expect(hashes).toMatchInlineSnapshot(`
-      {
-        "clay": "mesh:sha256:58d77d10c278c18b1bd50c76fd290e0e868aac8ade145792d152ce847c795b57",
-        "crease": "mesh:sha256:19abf9934f265a3e2d1549cfad47c34a8d347d946a8fe7eb66900bce489761fa",
-        "flatten": "mesh:sha256:52cc56faf45c3a7e8d01cebb051d6300ceab8ace80f4e66433d3fad8b4c24973",
-        "grab": "mesh:sha256:ef780b69a11a312eda7ba2065f85036cafead64abf9d3ccb66804b6176868e56",
-        "inflate": "mesh:sha256:893acf683c2d11d48f4ae9330aec8a3ae34fc0d239331ac9220e6e016d45984d",
-        "scrape": "mesh:sha256:7b2c838550cb73cccbb05f82a10b2b31e838487c806cef8872f2d5f1f3c61354",
-        "smooth": "mesh:sha256:3a1a2ced659fafb3403d4fb47a152ad79cb0076b7c87dadb828f907032fc84d3",
-        "snakeHook": "mesh:sha256:ef780b69a11a312eda7ba2065f85036cafead64abf9d3ccb66804b6176868e56",
-      }
-    `);
+      const actual = result.mesh.faces.flatMap((face) => {
+        const a = result.mesh.halfEdges[face.he], b = a && result.mesh.halfEdges[a.next], c = b && result.mesh.halfEdges[b.next];
+        if (!a || !b || !c) throw new Error("결과 삼각형이 없습니다."); return [c.vertex, a.vertex, b.vertex];
+      });
+      expect(actual).toEqual(Array.from(expected));
+    }
+    expect(serializeStudioEditableMesh(mesh)).toEqual(before);
   });
 
-  it.each(BRUSHES)("%s은 기존 위치 계산과 비선형 seam UV의 원본 corner fan을 함께 보존한다", (kind) => {
+  it("무UV Sculpt도 원본 슬롯과 경계 crease를 보존하며 UV 키를 만들지 않는다", () => {
+    const base = createStudioUnitCubeMesh(), source = { ...base,
+      vertices: base.vertices.map((vertex) => ({ ...vertex, crease: .25 })),
+      halfEdges: base.halfEdges.map((edge) => ({ ...edge, crease: .5 })),
+      faces: base.faces.map((face) => ({ ...face, materialSlot: face.id + 7, smooth: false })) };
+    const plan = planStudioMeshSurface(source, undefined, { allowCreaseMetadata: true }); if (!plan.ok) throw new Error(plan.issue.detail);
+    const result = applyStudioSculptStroke(source, { ...stroke, kind: "grab" }); if (!result.ok) throw new Error(result.detail);
+    expect(Object.hasOwn(result.mesh, "uvLayer")).toBe(false);
+    expect(result.mesh.faces.map(({ materialSlot }) => materialSlot)).toEqual(plan.value.triangles.map(({ materialSlot }) => materialSlot));
+    expect(result.mesh.vertices.every(({ crease }) => crease === .25)).toBe(true);
+    const expected = plan.value.triangles.flatMap(({ cornerHalfEdgeIds }) => cornerHalfEdgeIds.map((id, index) =>
+      source.halfEdges[id]?.next === cornerHalfEdgeIds[(index + 1) % 3] ? .5 : 0));
+    expect(result.mesh.halfEdges.map(({ crease }) => crease)).toEqual(expected);
+  });
+
+  it("무UV collinear crease 코너는 공통 표면이 보존한 원본 경계를 그대로 전달한다", () => {
+    const base = createStudioEditableMeshFromPolygons([
+      { x: 0, y: 0, z: 0 }, { x: .5, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }, { x: 0, y: 1, z: 0 },
+    ], [[0, 1, 2, 3, 4]]);
+    const source = { ...base, vertices: base.vertices.map((vertex) => ({ ...vertex, crease: vertex.id === 1 ? .25 : 0 })),
+      halfEdges: base.halfEdges.map((edge) => ({ ...edge, crease: .5 })), faces: base.faces.map((face) => ({ ...face, smooth: false, materialSlot: 7 })) };
+    const plan = planStudioMeshSurface(source, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+    if (!plan.ok) throw new Error(plan.issue.detail);
+    expect(plan.value.triangles).toHaveLength(3); expect(plan.value.triangles.flatMap(({ vertexIds }) => [...vertexIds])).toContain(1);
+    const result = applyStudioSculptStroke(source, { ...stroke, kind: "grab", direction: { x: 0, y: 0, z: 1 } });
+    if (!result.ok) throw new Error(result.detail);
+    const boundaries = new Map<number, number>();
+    plan.value.triangles.forEach(({ cornerHalfEdgeIds }, triangle) => cornerHalfEdgeIds.forEach((id, corner) => {
+      const target = triangle * 3 + corner;
+      if (source.halfEdges[id]?.next === cornerHalfEdgeIds[(corner + 1) % 3]) boundaries.set(id, target);
+      else expect(result.mesh.halfEdges[target]?.crease).toBe(0);
+    }));
+    expect(boundaries.size).toBe(source.halfEdges.length);
+    for (const [original, target] of boundaries) expect(result.mesh.halfEdges[target]?.crease).toBe(source.halfEdges[original]?.crease);
+    expect(result.mesh.vertices[1]?.crease).toBe(.25); expect(result.mesh.faces.every(({ materialSlot }) => materialSlot === 7)).toBe(true);
+    expect(Object.hasOwn(result.mesh, "uvLayer")).toBe(false);
+  });
+
+  it("isolated·bowtie·세 면 공유 변의 편집 가능한 원본은 GLB 전용 제약으로 막지 않는다", () => {
+    const positions = [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: -1, z: 0 }, { x: 0, y: 0, z: 1 }];
+    const inputs = [createStudioEditableMeshFromPolygons(positions, [[0, 1, 2]]),
+      createStudioEditableMeshFromPolygons(positions, [[0, 1, 2], [0, 3, 4]]),
+      createStudioEditableMeshFromPolygons(positions, [[0, 1, 2], [1, 0, 3], [0, 1, 4]])];
+    for (const source of inputs) {
+      const before = serializeStudioEditableMesh(source), result = applyStudioSculptStroke(source, { ...stroke, kind: "grab", strength: 0 });
+      if (!result.ok) throw new Error(result.detail); expect(result.mesh).toBe(source); expect(serializeStudioEditableMesh(source)).toEqual(before);
+    }
+  });
+
+  it.each(BRUSHES)("%s은 UV 유무와 같은 위치 계산 및 공유 corner provenance를 보존한다", (kind) => {
     const plain = createStudioUnitCubeMesh(); const source = withUv(plain); const before = serializeStudioEditableMesh(source);
     const legacy = applyStudioSculptStroke(plain, { ...stroke, kind });
     const result = applyStudioSculptStroke(source, { ...stroke, kind });
     if (!legacy.ok || !result.ok) throw new Error(!legacy.ok ? legacy.detail : !result.ok ? result.detail : "Sculpt 실패");
     expect(result.mesh.vertices.map(({ position }) => position)).toEqual(legacy.mesh.vertices.map(({ position }) => position));
     expect(result.mesh.halfEdges.map(({ vertex, face, next, prev, twin }) => [vertex, face, next, prev, twin])).toEqual(legacy.mesh.halfEdges.map(({ vertex, face, next, prev, twin }) => [vertex, face, next, prev, twin]));
-    const sourceIds = source.faces.flatMap(({ he }) => [he, he + 1, he + 2, he, he + 2, he + 3]);
+    const surface = planStudioMeshSurface(source); if (!surface.ok) throw new Error(surface.issue.detail);
+    const sourceIds = surface.value.triangles.flatMap(({ cornerHalfEdgeIds }) => [...cornerHalfEdgeIds]);
     expect(result.mesh.uvLayer?.corners.map(({ u, v }) => [u, v])).toEqual(sourceIds.map((id) => {
       const corner = source.uvLayer?.corners[id]; if (!corner) throw new Error("UV가 없습니다."); return [corner.u, corner.v];
     }));
@@ -118,11 +245,13 @@ describe("UV를 보존하는 기존 Sculpt stroke", () => {
     const result = applyStudioSculptStroke(source, { ...stroke, kind: "grab" });
     if (!result.ok) throw new Error(result.detail);
     const boundary = new Map<number, number>();
-    for (const face of source.faces) {
-      const offset = face.id * 6;
-      [0, 1, 4, 5].forEach((target, index) => boundary.set(face.he + index, offset + target));
-      expect(connected(result.mesh, offset + 2)).toBe(true);
-      expect(connected(result.mesh, offset + 3)).toBe(true);
+    const surface = planStudioMeshSurface(source); if (!surface.ok) throw new Error(surface.issue.detail);
+    for (const [index, triangle] of surface.value.triangles.entries()) {
+      triangle.cornerHalfEdgeIds.forEach((id, corner) => {
+        const target = index * 3 + corner;
+        if (source.halfEdges[id]?.next === triangle.cornerHalfEdgeIds[(corner + 1) % 3]) boundary.set(id, target);
+        else expect(connected(result.mesh, target)).toBe(true);
+      });
     }
     for (const edge of source.halfEdges) {
       const target = boundary.get(edge.id); const twin = boundary.get(edge.twin);
@@ -177,6 +306,9 @@ describe("UV를 보존하는 기존 Sculpt stroke", () => {
     const state = source.session.state; const undo = source.session.undoStack; const redo = source.session.redoStack;
     const journal = serializeStudioCommandJournal(source.session.journal);
     expect(() => workspaceSculptActive(source, { ...stroke, kind: "grab", direction: { x: NaN, y: 1, z: 0 } })).toThrow();
+    const collapsed = { kind: "flatten" as const, center: { x: 0, y: 0, z: 0 }, radius: 1e20, strength: 1, direction: { x: 1, y: 0, z: 0 } };
+    expect(applyStudioSculptStroke(workspaceMesh(source), collapsed).ok).toBe(false);
+    expect(() => workspaceSculptActive(source, collapsed)).toThrow(/결과 표면/u);
     expect(() => workspaceVoxelRemeshActive(source, 0.1)).toThrow(/현재 UV를 보존할 수 없어 취소/u);
     expect(source.session.state).toBe(state); expect(source.session.undoStack).toBe(undo); expect(source.session.redoStack).toBe(redo);
     expect(serializeStudioCommandJournal(source.session.journal)).toBe(journal);

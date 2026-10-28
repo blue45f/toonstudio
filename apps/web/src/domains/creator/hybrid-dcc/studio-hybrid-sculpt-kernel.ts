@@ -15,6 +15,8 @@ import {
   type StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
 import { remapStudioMeshUvTriangleSoup } from "../mesh-uv/studio-mesh-uv-triangle-remap";
+import { planStudioMeshSurface } from "../mesh-surface/studio-mesh-surface-plan";
+import { projectStudioMeshSurfaceForRender, type StudioMeshSurfaceRenderProjection } from "../mesh-surface/studio-mesh-surface-render";
 
 export const STUDIO_SCULPT_KERNEL_REVISION = 1 as const;
 
@@ -70,7 +72,11 @@ export function applyStudioSculptStroke(
     const valid = validateStudioEditableMeshSerializableAuthority(mesh);
     if (!valid.ok) return { ok: false, detail: `UV 원본 메시를 확인할 수 없습니다: ${valid.detail}` };
   }
-  const soup = studioEditableMeshToTriangleSoup(mesh);
+  const surface = planStudioMeshSurface(mesh, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+  if (!surface.ok) return { ok: false, detail: `Sculpt 원본 표면을 확인할 수 없습니다: ${surface.issue.detail}` };
+  let soup: StudioMeshSurfaceRenderProjection;
+  try { soup = projectStudioMeshSurfaceForRender(mesh, surface.value); }
+  catch (error) { return { ok: false, detail: error instanceof Error ? error.message : "Sculpt 원본 표면을 표시할 수 없습니다." }; }
   const positions = new Float32Array(soup.positions);
   const n = positions.length / 3;
   const cx = stroke.center.x;
@@ -176,11 +182,14 @@ export function applyStudioSculptStroke(
       }
     }
   }
-  // 무UV 입력은 기존 생성 경로와 해시를 유지한다.
-  if (mesh.uvLayer === undefined) return { ok: true, mesh: soupToMesh(positions, soup.indices) };
+  // 실제 위치가 바뀌지 않았다면 원본 polygon·UV 보간·법선과 stable ID도 그대로 둔다.
+  if (positions.every((value, index) => value === soup.positions[index])) return { ok: true, mesh };
   try {
     const triangles = soupToMesh(positions, soup.indices);
-    return { ok: true, mesh: remapStudioMeshUvTriangleSoup(mesh, triangles, soup.indices) };
+    const result = remapStudioMeshUvTriangleSoup(mesh, triangles, soup.indices);
+    const planned = planStudioMeshSurface(result, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+    if (!planned.ok) return { ok: false, detail: `Sculpt 결과 표면을 표시할 수 없습니다: ${planned.issue.detail}` };
+    return { ok: true, mesh: result };
   } catch (error) {
     return { ok: false, detail: error instanceof Error ? error.message : "Sculpt UV 코너 대응을 확인할 수 없습니다." };
   }

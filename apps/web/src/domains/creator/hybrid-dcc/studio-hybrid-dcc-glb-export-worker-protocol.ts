@@ -57,6 +57,7 @@ const ISSUE_CODES = new Set<StudioHybridDccGlbIssueCode>([
   "stable-id-counter-invalid",
   "position-non-finite",
   "position-float32-overflow",
+  "position-float32-collapse",
   "crease-invalid",
   "crease-unsupported",
   "face-property-invalid",
@@ -88,6 +89,7 @@ const ISSUE_CODES = new Set<StudioHybridDccGlbIssueCode>([
   "diagnostic-overflow",
   "container-write-failed",
   "container-validation-failed",
+  "surface-budget-exceeded",
 ]);
 
 export interface StudioHybridDccGlbExportWorkerRequest {

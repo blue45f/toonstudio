@@ -36,7 +36,7 @@ function hit(workspace: StudioHybridDccWorkspace) {
 }
 
 describe("정본 UV와 실제 화면 geometry 연결", () => {
-  it("원본 fan 순서의 UV를 BufferAttribute와 Raycaster에 전달한다", () => {
+  it("공유 표면 삼각형의 UV를 BufferAttribute와 실제 Raycaster에 전달한다", () => {
     const workspace = setup();
     const projection = asset(workspace);
     expect(projection.cornerUvs).toHaveLength(12 * 3 * 2);
@@ -69,7 +69,10 @@ describe("정본 UV와 실제 화면 geometry 연결", () => {
     const evaluated = asset(workspace, false);
     const cage = asset(workspace);
     expect(evaluated.renderSource).toBe("modifier-cache");
-    expect(evaluated.cornerUvs).toBeUndefined();
+    const surface = workspace.session.state.geometry.records.cube?.renderCache?.surface;
+    expect(surface?.cornerUvs).toBeInstanceOf(Float32Array);
+    expect(evaluated.cornerUvs).toEqual(surface?.cornerUvs);
+    expect(evaluated.cornerUvs).toHaveLength(evaluated.triangleCount * 3 * 2);
     expect(cage.renderSource).toBe("authority-edit-cage");
     expect(cage.triangleCount).toBe(12);
     expect(cage.cornerUvs).toHaveLength(72);
