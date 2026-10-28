@@ -428,6 +428,7 @@ apps/web/src/domains/creator/live/studio-live-gesture-preview-studio-page-wiring
 apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts
+apps/web/src/domains/creator/live/studio-live-transform-*.test.ts
 apps/web/src/domains/creator/live/studio-pending-stroke-admission.test.ts
 apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.test.ts
 apps/web/src/domains/creator/offline
@@ -513,7 +514,6 @@ apps/web/src/domains/creator/studio-host-architecture-ratchet.test.ts
 apps/web/src/domains/creator/studio-inspector-multi-selection-boundary.test.ts
 apps/web/src/domains/creator/studio-integration-closure.test.ts
 apps/web/src/domains/creator/studio-live-adjustment.test.ts
-apps/web/src/domains/creator/studio-live-transform-*.test.ts
 apps/web/src/domains/creator/studio-marketplace-cc0-provenance.test.ts
 apps/web/src/domains/creator/studio-menubar-content-boundary.test.ts
 apps/web/src/domains/creator/studio-mobile-editing-dock-boundary.test.ts

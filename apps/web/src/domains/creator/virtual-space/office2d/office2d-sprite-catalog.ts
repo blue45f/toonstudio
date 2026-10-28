@@ -7,6 +7,8 @@
  * × 4열이다. 이미지가 없거나 불러오지 못하면 렌더러가 절차형 폴백(보행 시트 0열 등)으로 같은 자리를 그린다.
  */
 
+import { office2dGeneratedAtlas } from "./office2d-generated-atlases";
+
 export const OFFICE2D_ASSET_ROOT = "/assets/virtual-studio/toon-office-v1";
 
 export const OFFICE2D_OBJECT_SPRITES = [
@@ -106,11 +108,28 @@ export function office2dObjectUrl(key: Office2dSpriteKey): string {
 }
 
 export function office2dCharacterUrl(key: Office2dCharacterKey): string {
-  return `${OFFICE2D_ASSET_ROOT}/characters/${key}.webp`;
+  return office2dGeneratedAtlas(key, "walk")?.url ?? office2dLegacyCharacterUrl(key);
 }
 
 export function office2dWorkSheetUrl(key: Office2dCharacterKey): string {
+  return office2dGeneratedAtlas(key, "work")?.url ?? office2dLegacyWorkSheetUrl(key);
+}
+
+export function office2dLegacyCharacterUrl(key: Office2dCharacterKey): string {
+  return `${OFFICE2D_ASSET_ROOT}/characters/${key}.webp`;
+}
+
+export function office2dLegacyWorkSheetUrl(key: Office2dCharacterKey): string {
   return `${OFFICE2D_ASSET_ROOT}/characters/work/${key}.webp`;
+}
+
+/** 첫 화면은 기존 시트로 열고 고해상도 시트는 자기 직군부터 이어 받는다. */
+export function office2dActorAssetPlan(preferred: Office2dCharacterKey): { readonly critical: readonly string[]; readonly deferred: readonly string[] } {
+  const critical = OFFICE2D_CHARACTERS.map(office2dLegacyCharacterUrl);
+  const order = [preferred, ...OFFICE2D_CHARACTERS.filter((key) => key !== preferred)];
+  const deferred = [...order.flatMap((key) => [office2dCharacterUrl(key), office2dWorkSheetUrl(key)]),
+    ...OFFICE2D_CHARACTERS.map(office2dLegacyWorkSheetUrl)];
+  return { critical, deferred: [...new Set(deferred)].filter((url) => !critical.includes(url)) };
 }
 
 /** 이모트 → 몸짓. 몸짓이 없는 이모트(하트·커피 등)는 null이라 말풍선 이모지만 뜬다. */
@@ -227,10 +246,13 @@ export class Office2dSpriteStore<TImage extends Office2dImageSource = HTMLImageE
     return promise;
   }
 
-  /** 여러 이미지를 병렬로 불러온다. 제한 시간이 지나면 불러온 것만으로 진행한다. 성공 개수를 돌려준다. */
-  async loadAll(urls: readonly string[], timeoutMs: number): Promise<number> {
+  /** 제한 시간 뒤에도 개별 도착 알림은 이어져 늦게 받은 배경의 캐시를 갱신할 수 있다. */
+  async loadAll(urls: readonly string[], timeoutMs: number, onImageLoaded?: (url: string, image: TImage) => void): Promise<number> {
     const unique = [...new Set(urls)];
-    const all = Promise.all(unique.map((url) => this.load(url)));
+    const all = Promise.all(unique.map((url) => this.load(url).then((image) => {
+      if (image) onImageLoaded?.(url, image);
+      return image;
+    })));
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<void>((resolve) => { timer = setTimeout(resolve, Math.max(0, timeoutMs)); });
     await Promise.race([all, timeout]);

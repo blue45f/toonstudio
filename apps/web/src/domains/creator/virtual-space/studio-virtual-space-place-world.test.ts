@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { studioOfficeEnvironment } from "./studio-virtual-space-office-environments";
 import { TOON_HQ_PLACE_ID } from "./office2d/hq/toon-hq-blueprint";
 import { studioVirtualToonHqManifest } from "./office2d/hq/toon-hq-manifest";
 import { STUDIO_VIRTUAL_PLACES } from "./studio-virtual-space-place-catalog";
@@ -28,8 +29,8 @@ describe("Virtual Studio independent place worlds", () => {
   it("builds one valid, tiled and portal-connected world per place", () => {
     const ids = new Set<string>();
     const scopes = new Set<string>([studioVirtualPlaceWorldScope(TOON_HQ_PLACE_ID)]);
-    // 본사는 타일맵 대신 office2d 장면을 쓰는 전용 월드라 toon-hq-manifest.test.ts가 따로 검증한다.
-    for (const place of STUDIO_VIRTUAL_PLACES.filter((candidate) => candidate.id !== TOON_HQ_PLACE_ID)) {
+    // 본사와 원본 아트 사무실은 전용 장면·통로 계약을 각각 별도 테스트에서 검증한다.
+    for (const place of STUDIO_VIRTUAL_PLACES.filter((candidate) => candidate.id !== TOON_HQ_PLACE_ID && !studioOfficeEnvironment(candidate.id))) {
       const manifest = studioVirtualPlaceWorldManifest(place.id);
       const scope = studioVirtualPlaceWorldScope(place.id);
       expect(scope).toMatch(/^[a-f0-9]{64}$/u);
