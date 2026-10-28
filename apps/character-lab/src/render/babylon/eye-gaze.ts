@@ -5,6 +5,7 @@ import { qConjugate, qMultiply, qRotateVec3, v3Sub } from "../../shared/math";
 
 import { applyBoneRotation, rigBoneWorld } from "./character-rig";
 import { fromQuaternion } from "./convert";
+import { eyeGeometryUnavailableReason } from "./eye-geometry-support";
 
 import type { CharacterRig, RigBone } from "./character-rig";
 import type { EyeGaze, EyeGazeReading } from "../../contracts/eye-gaze";
@@ -42,6 +43,8 @@ function eyeAngles(rig: CharacterRig, eye: RigBone) {
 }
 
 export function readRigEyeGaze(rig: CharacterRig | null): EyeGazeReading {
+  const reasonKo = eyeGeometryUnavailableReason(rig);
+  if (reasonKo) return { status: "unavailable", reasonKo };
   const left = rig?.humanoid.get("leftEye"), right = rig?.humanoid.get("rightEye");
   return rig && left && right
     ? { status: "available", left: eyeAngles(rig, left), right: eyeAngles(rig, right), frozenPose: { leftEye: eyePose(rig, left), rightEye: eyePose(rig, right) } }

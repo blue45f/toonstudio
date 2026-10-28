@@ -314,3 +314,11 @@ MSAA는 가시 샘플 과반으로 전체 픽셀을 한 소유자에게 배정�
 관련 9파일은 양 Vitest 설정에서 각각 125개를 통과했다. 이후 384²의 기존 PSD 16조건도 양 실제 backend에서 다시 검사해 6패스 불변·독립 PSD RGB/알파 0·헤어 숨김 잔여 0을 유지했다. 원본은 `verification/shaper-hair-ownership-post-pbr-metal-manual/`·`shaper-hair-ownership-post-pbr-metal-webgl2-manual/`·`shaper-hair-ownership-post-pbr-moving-metal-manual/`이다. 이 단계에서 모든 앱 테스트·타입 검사·빌드를 새로 수행한 것은 아니며 통합 담당의 후속 게이트를 따른다.
 
 독립 검토가 찾은 초기 숨김/disabled 하위 메시의 준비·제출 목록 불일치도 수정했다. 준비와 같은 가시성 조건으로 제출 목록을 만들며 처음부터 숨긴 두 입력은 일반 lit·소유권 모두 성공한다. 준비 뒤 새로 보인 미준비 메시의 실패·정리 guard는 유지하고 세 회귀로 확인했다.
+
+## 14. 안구 시선의 실제 형상 연결 판정 — 2026-10-29
+
+상태: **current**. `eyeGaze()`는 양안 본 매핑과 함께 각 눈 자신·하위 본의 실제 양수 스킨 가중치 또는 해당 본/연결 TransformNode에 부착된 메시를 확인한다. 본 이름만 있고 눈이 텍스처에 그려진 소스는 한글 사유와 함께 미지원으로 반환하며 기존 안구 UI·F10은 비활성화된다. 일시 숨김·슬롯 가시성은 소스의 지원 능력을 없애지 않고, 영구 제외·해제된 메시·다른 스켈레톤·비활성 skin 영향은 근거로 쓰지 않는다.
+
+`eye-geometry-support.ts`는 현재 rig.parts와 스켈레톤을 읽고, 최대 8개 활성 영향 및 CPU 스킨의 원래 가중치를 다룬다. 정적 geometry의 VertexBuffer·원시 데이터·native buffer identity와 영향 수를 WeakMap으로 캐시하며 실제 로더의 버퍼 교체·삭제·키트 파트 제거/추가를 반영한다. updatable 가중치는 capability read 때 재평가한다. 매 프레임 시선 적용에는 새 버퍼 스캔을 추가하지 않으며 Geometry/전역 콜백도 바꾸지 않는다. 직접 원시 배열만 고치고 Babylon 갱신 API를 호출하지 않는 외부 변경은 지원 계약이 아니다.
+
+기존 실제 Tripo 55본 GLB의 양쪽 `J_Adj_*_FaceEye`는 양수 영향 0개이고 시선 변경 전후 CPU 스킨 위치 159,060성분의 차이도 0이다. 이제 `unavailable`이며, 실제 Orion은 각 눈 456개 영향·기본 여성 키트는 각 701개 영향으로 `available`을 유지한다. 절차 fixture의 각 24정점 눈, 하위 보조 본·rigid 부착·추가 영향·숨김·교체·UI/F10 회귀는 `render/babylon-eye-geometry.test.ts`와 기존 안구 통합 시험에 있다. 실제 파일 검증 원본은 ignored 배치의 `verification/eye-gaze-capability-20261029/`다. 이 판정은 기하 연결 지원이며 시선의 미학·해부학 품질이나 텍스처 눈의 독립 제어를 인증하지 않는다. 이 단계에서 새 GPU/브라우저·전체 타입/빌드 검사는 실행하지 않았다.

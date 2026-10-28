@@ -19,3 +19,11 @@ export function createEyeGazeFixture(eyeRestRotation: Quat = IDENTITY_QUAT): Hum
     { name: "rightEye", parent: "head", restTranslation: [-0.03, 0.15, 0.15], restRotation: eyeRestRotation },
   ] } };
 }
+
+/** 본·눈 메시가 있어도 눈 본은 형상에 영향을 주지 않는, 텍스처 눈 소스의 최소 회귀다. 가중치 합은 유지한다. */
+export function createUnweightedEyeGazeFixture(): HumanoidModelData {
+  const model = createEyeGazeFixture();
+  const head = model.skeleton.bones.findIndex((bone) => bone.name === "head");
+  return { ...model, parts: model.parts.map((part) => part.role === "eyeball" && part.jointIndices
+    ? { ...part, jointIndices: new Uint16Array(part.jointIndices.length).fill(head) } : part) };
+}

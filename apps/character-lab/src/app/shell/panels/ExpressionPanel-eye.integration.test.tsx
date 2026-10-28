@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { ALL_AVAILABLE_CAPABILITIES, DEFAULT_FRAMING, createDefaultRecipe, createPresetCatalog } from "../../../contracts";
 import { eyeAnglesQuaternion } from "../../../contracts/eye-gaze";
-import { createEyeGazeFixture } from "../../../render/testing/eye-gaze-fixture";
+import { createEyeGazeFixture, createUnweightedEyeGazeFixture } from "../../../render/testing/eye-gaze-fixture";
 import { createNullEngineHarness } from "../../../render/testing/null-engine-harness";
 import { createProceduralFixture } from "../../../render/testing/procedural-fixture";
 import { planApply } from "../../../state/apply-plan";
@@ -21,7 +21,7 @@ import type { Quat } from "../../../contracts";
 const disposers: Array<() => void> = [];
 afterEach(() => { cleanup(); disposers.splice(0).reverse().forEach((dispose) => dispose()); });
 
-async function setup() {
+async function setup(model = createEyeGazeFixture()) {
   // 실제 store·적용 루프·Babylon 스킨 본을 사용한다. 물리만 정지 모의이며 GPU 픽셀 검증은 아니다.
   const harness = await createNullEngineHarness({ physicsProviders: createMockPhysicsProviderFactory() });
   disposers.push(() => harness.dispose());
@@ -30,7 +30,7 @@ async function setup() {
   const store = createLabStore({ catalog, initial: { recipe, capabilities: ALL_AVAILABLE_CAPABILITIES } });
   const session = createMockEngineSession({ phase: "ready", backend: "webgl2", diagnostics: harness.engine.diagnostics });
   session.setEngine(harness.engine);
-  const loop = createApplyLoop({ store, catalog, planner: planApply, engineSession: session, buildSource: () => ({ kind: "procedural", model: createEyeGazeFixture() }) });
+  const loop = createApplyLoop({ store, catalog, planner: planApply, engineSession: session, buildSource: () => ({ kind: "procedural", model }) });
   disposers.push(loop.start());
   await loop.flush(); await loop.flush();
   render(<MockLabProvider store={store} engineSession={session} shell={{ applyLoop: loop }}><ExpressionPanel /></MockLabProvider>);
@@ -45,6 +45,20 @@ function expectRotation(actual: Quat | undefined, expected: Quat): void {
 }
 
 describe("안구 UI → 레시피 → 적용 루프 → 실제 눈 본", () => {
+  it("무가중 눈 본은 한글 사유와 함께 시선 제어를 비활성화하고 F10/history를 소비하지 않는다", async () => {
+    const { engine, store, flush } = await setup(createUnweightedEyeGazeFixture());
+    expect(engine.eyeGaze().status).toBe("unavailable");
+    expect(screen.getByText(/안구 본에 연결된 스킨 가중치 또는 부착 형상이 없습니다/)).toBeDefined();
+    expect(screen.getByLabelText("카메라 응시").matches(":disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "현재 시선 고정 (F10)" }).matches(":disabled")).toBe(true);
+    const revision = store.getState().history.revision;
+    const key = new KeyboardEvent("keydown", { key: "F10", bubbles: true, cancelable: true });
+    fireEvent(window, key); await flush();
+    expect(key.defaultPrevented).toBe(false);
+    expect(store.getState().history.revision).toBe(revision);
+    expect(store.getState().recipe.eyeGaze).toBeUndefined();
+  });
+
   it("수동 슬라이더·대칭 해제·undo가 실제 좌우 본 회전을 바꾼다", async () => {
     const { engine, store, loop, flush } = await setup();
     fireEvent.change(screen.getByLabelText("턱 열기"), { target: { value: "0.4" } }); await flush();
