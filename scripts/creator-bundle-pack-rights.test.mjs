@@ -52,31 +52,32 @@ const OFFICIAL_CATALOG_PATH = "apps/web/public/assets/virtual-studio/bundle-v1/m
 const EXPECTED_ALLOWED_TITLES = [
   "Cartoon City Massive Pack", "Nature Megapack - Extended", "Farm Land", "Pirate Island", "Aztec Jungle",
   "Food Pack", "Characters 1", "Characters 2", "Cute Park Pack", "Cute Dungeon Megapack",
+  "Cute Graveyard", "Medieval Weapons",
 ];
 const REVIEW_RECOMMENDED_HOLD_TITLES = ["Medieval Village / Megapack", "Restaurant Megapack", "Small Props Pack"];
 
-/* ── 완전성: 팩 44 · 군중 5 · 보류 12가 전부 원장에 있고 기본값은 hold ────────────────── */
+/* ── 완전성: 팩 45 · 군중 5 · 보류 11이 전부 원장에 있고 기본값은 hold ────────────────── */
 
 test("커밋된 원장은 스키마·증빙·고유성 검증을 통과한다", () => {
   assert.deepEqual(problemsFor(loadPackRightsLedger()), []);
 });
 
-test("생성기 정의의 팩 44·군중 5·보류 12가 빠짐없이, 같은 묶음으로 원장에 있다", () => {
+test("생성기 정의의 팩 45·군중 5·보류 11이 빠짐없이, 같은 묶음으로 원장에 있다", () => {
   const ledger = loadPackRightsLedger();
-  assert.equal(CATALOG_PACKS.length, 44);
+  assert.equal(CATALOG_PACKS.length, 45);
   assert.equal(CROWD_PACKS.length, 5);
-  assert.equal(PENDING_PACKS.length, 12);
+  assert.equal(PENDING_PACKS.length, 11);
   assert.deepEqual(checkLedgerCoversDefs(ledger, GENERATOR_DEFS), []);
   const counts = { pack: 0, crowd: 0, pending: 0 };
   for (const entry of ledger.packs) counts[entry.group] += 1;
-  assert.deepEqual(counts, { pack: 44, crowd: 5, pending: 12 });
+  assert.deepEqual(counts, { pack: 45, crowd: 5, pending: 11 });
 });
 
 test("커밋된 theme-packs.json의 packs·crowdPacks·pendingPacks도 전부 원장에 있다", () => {
   const ledger = loadPackRightsLedger();
   const themePacks = readJson(THEME_PACKS_PATH);
   const groups = [["pack", themePacks.packs], ["crowd", themePacks.crowdPacks], ["pending", themePacks.pendingPacks]];
-  assert.deepEqual(groups.map(([, list]) => list.length), [8, 2, 51]);
+  assert.deepEqual(groups.map(([, list]) => list.length), [10, 2, 49]);
   for (const [group, list] of groups) {
     for (const entry of list) {
       const rights = findPackRights(ledger, entry);
@@ -134,9 +135,9 @@ test("시드 스냅샷: 개방된 팩은 EXPECTED_ALLOWED_TITLES뿐이고 검토
   );
 });
 
-test("시드 스냅샷: 수신한 Cute Park·Dungeon은 증빙을 갖춘 팩으로 편입되어 렌더 사용이 열린다", () => {
+test("시드 스냅샷: 수신한 Park·Dungeon·Graveyard·Weapons는 증빙을 갖춘 CC0 팩으로 편입된다", () => {
   const ledger = loadPackRightsLedger();
-  for (const title of ["Cute Park Pack", "Cute Dungeon Megapack"]) {
+  for (const title of ["Cute Park Pack", "Cute Dungeon Megapack", "Cute Graveyard", "Medieval Weapons"]) {
     const entry = entryOf(ledger, title);
     assert.equal(entry.group, "pack");
     assert.equal(entry.serve, "allow");

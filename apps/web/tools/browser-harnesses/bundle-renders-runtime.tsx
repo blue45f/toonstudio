@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
+import { listAssets } from "../../src/domains/creator/studio-asset-library";
 import {
   createStudioBundleImageRecord,
   loadStudioBundleCatalog,
@@ -36,6 +37,30 @@ function BundleRendersRuntimeHarness() {
   const [drawingStatus, setDrawingStatus] = useState("소재 카드의 ‘캔버스에 삽입’을 누르면 검증된 이미지를 아래 실제 canvas에 그립니다.");
   const [drawingError, setDrawingError] = useState<string | null>(null);
   const [integrity, setIntegrity] = useState<IntegrityState>(INITIAL_INTEGRITY);
+  const [persistence, setPersistence] = useState({ phase: "idle", message: "개인 라이브러리에 저장한 뒤 새로고침 후 영속성을 확인합니다." });
+
+  function saved(asset: StudioAsset): void {
+    localStorage.setItem("bundle-runtime-expected-asset", JSON.stringify({ id: asset.id, contentHash: asset.contentHash, bundleSourceCredit: asset.bundleSourceCredit }));
+    setPersistence({ phase: "saved", message: `저장됨: ${asset.id}` });
+  }
+  async function verifyPersistence(): Promise<void> {
+    setPersistence({ phase: "checking", message: "실제 SQLite·OPFS에서 개인 소재를 다시 읽는 중…" });
+    try {
+      const raw = localStorage.getItem("bundle-runtime-expected-asset");
+      if (!raw) throw new Error("저장한 소재의 검증 기대값이 없습니다.");
+      const expected: { id?: unknown; contentHash?: unknown; bundleSourceCredit?: unknown } = JSON.parse(raw);
+      const assets = await listAssets();
+      const asset = assets.find((entry) => entry.id === expected.id);
+      if (!asset || !asset.bundleSourceCredit || asset.contentHash !== expected.contentHash
+        || JSON.stringify(asset.bundleSourceCredit) !== JSON.stringify(expected.bundleSourceCredit)) throw new Error("저장한 소재의 해시·출처가 재조회 결과와 다릅니다.");
+      const bytes = await (await fetch(asset.dataUrl)).arrayBuffer();
+      const hash = `sha256:${Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+      if (hash !== asset.contentHash) throw new Error("OPFS에서 복원한 실제 이미지 바이트의 해시가 다릅니다.");
+      setPersistence({ phase: "verified", message: JSON.stringify({ id: asset.id, contentHash: hash, bundleSourceCredit: asset.bundleSourceCredit }) });
+    } catch (error: unknown) {
+      setPersistence({ phase: "failed", message: errorMessage(error) });
+    }
+  }
 
   useEffect(() => () => {
     drawingRequest.current += 1;
@@ -138,7 +163,9 @@ function BundleRendersRuntimeHarness() {
     <div className="bundle-runtime-grid">
       <section className="bundle-runtime-section" aria-labelledby="library-heading">
         <h2 id="library-heading">실제 드로잉 소재 패널</h2>
-        <StudioBundleAssetLibraryPanel onUseAsset={onUseAsset} />
+        <StudioBundleAssetLibraryPanel onUseAsset={onUseAsset} onSavedAsset={saved} />
+        <button type="button" disabled={persistence.phase === "checking"} onClick={() => { void verifyPersistence(); }}>저장 영속성 확인</button>
+        <p role="status" data-bundle-persisted-phase={persistence.phase} style={{ overflowWrap: "anywhere" }}>{persistence.message}</p>
       </section>
       <section className="bundle-runtime-section" aria-labelledby="insertion-heading">
         <h2 id="insertion-heading">검증된 이미지의 실제 canvas 삽입</h2>

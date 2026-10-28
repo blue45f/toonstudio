@@ -146,6 +146,7 @@ export type FxPickerSection =
   | "overlay";
 
 export interface StudioToolBeltContentHandlers {
+  onSavedLocalAsset?: (asset: StudioAsset) => void;
   /**
    * 선택/그리기 전환의 단일 정본. 진행 중인 획 취소 → 픽셀 도구 disarm(스포이드 포함) →
    * tool/drawMode 커밋을 한 순서로 수행한다. 도구 벨트가 setTool/setDrawMode를 직접 만지면

@@ -845,6 +845,162 @@
       "sourceModelSha256": "2794c53db40b9c0f836f080b944338ce840d300ec7eb0dedae270a54055a04ba",
       "textureBindings": [],
       "pngSha256": "fba94db9e66175a02851a630201d8d471a21fdef12680588d5cde84567cc8795"
+    },
+    {
+      "id": "cbv1-014-catedra",
+      "sourceModelSha256": "df25def490e1e10958c8ecacdc232750532eaad61b769dda353f168f8368c8ba",
+      "textureBindings": [],
+      "pngSha256": "7d11cf265463fa5a5ee4ab1602f7065a16a28490393875f7b018aa14d67c242a"
+    },
+    {
+      "id": "cbv1-014-pumpkin-1",
+      "sourceModelSha256": "564001141986328461ff61e2b62a33e2430f6a6fc4da8c9a25b3f49a8d88af70",
+      "textureBindings": [],
+      "pngSha256": "5e638b0b8a27c3a74852e5fae2989a8993480f32c532de62bf6daa1aa874edc4"
+    },
+    {
+      "id": "cbv1-014-pumpkin-3",
+      "sourceModelSha256": "b2530e1f7789c33a2799de1830ba07dcf60563f0a20ca79aee1271940873232a",
+      "textureBindings": [],
+      "pngSha256": "2463495e82e2ce2062cf05c05d906ad0079774c41f5e3048daa414baff68173b"
+    },
+    {
+      "id": "cbv1-014-candle-1",
+      "sourceModelSha256": "381d8b0bb31590864618fa8c79ac64698e4dac31574948f07ec36b750d71e420",
+      "textureBindings": [],
+      "pngSha256": "41736c5df8f768db2fd5de337b986c1042db01ad7115e73a00ea4fbb7023db52"
+    },
+    {
+      "id": "cbv1-014-cofin-1-1",
+      "sourceModelSha256": "f45fb4bfed18cd03e604382d4264a5f44cb0c409ac35ed49622c1375be7ef098",
+      "textureBindings": [],
+      "pngSha256": "1f0798d638ecba04e55a835212e7bb53e6272f47b855ce73077c32f87008f675"
+    },
+    {
+      "id": "cbv1-014-tombstone-1",
+      "sourceModelSha256": "8b880b7487401841102b10a41501c30ecaa3dc37857f471418124b96809fc0dd",
+      "textureBindings": [],
+      "pngSha256": "e768df0fc6c0f572a4a66ef911d90de475f1541f4c0b111ee0e07e81302fe2d0"
+    },
+    {
+      "id": "cbv1-014-tombstone-2",
+      "sourceModelSha256": "756b4954e682789fa460dc6d8c493b3ab7da1c8e054b03b34860fdd671f48910",
+      "textureBindings": [],
+      "pngSha256": "c190c44a7281ec2ba3c7c8ff07e85f330b20ad8eae553a646429a93baeffe347"
+    },
+    {
+      "id": "cbv1-014-grave-1-1",
+      "sourceModelSha256": "44d92f3d5644f13937f86c4c99447a4f5005ee4bf2df5af290eb2d70d80e3d49",
+      "textureBindings": [],
+      "pngSha256": "6905ff7b1265d60d9c161eee3ba586fc7ee16804b53aa0ad7aa5ddc6877a4bbe"
+    },
+    {
+      "id": "cbv1-014-grave-3",
+      "sourceModelSha256": "7c96d0627675962eb1f1b6a46337b3ea55d0f58937664c4c372b23c0f2a3654d",
+      "textureBindings": [],
+      "pngSha256": "1f6f32f142a9b109f0e13a75c177ca31e6f4b87bc685ddd970b74c1e0c9dd590"
+    },
+    {
+      "id": "cbv1-014-cross-1-1",
+      "sourceModelSha256": "285866a4d7fc308962a9ef8183ec272f3a2c4d0d5b56972543e7b74bbb5d541e",
+      "textureBindings": [],
+      "pngSha256": "cddf7e4a57022015626741219d5289458e35ddf176c27eea5f4259d938ba3ae7"
+    },
+    {
+      "id": "cbv1-014-tree-1-1",
+      "sourceModelSha256": "7da66784aa2a99e6aa762b15488c1929b7d66167b9dde9c61adeb9c5f1098f32",
+      "textureBindings": [],
+      "pngSha256": "822900b3328292c240b85bb72fabedfbe697cea32df4e5b6c7388e8ff0a13a9b"
+    },
+    {
+      "id": "cbv1-014-tree-3-1",
+      "sourceModelSha256": "62f6d4928369301937b60d1e6c216d42f424f578779c1052c958f7abda5ead48",
+      "textureBindings": [],
+      "pngSha256": "7fcb2b38e95c2301a98a911cb65de625b2a12909bcb21d2322ffe7fd86d1386a"
+    },
+    {
+      "id": "cbv1-014-bush-1-1",
+      "sourceModelSha256": "230eaf68e1cfbc2566655df35efa44d521f2643ba5ffce499717793fd3e568d9",
+      "textureBindings": [],
+      "pngSha256": "a2ec3ad82a3bce929e72d11b4b014cafd9779e1a34d912ce678def75bcf088eb"
+    },
+    {
+      "id": "cbv1-014-fence-1-1",
+      "sourceModelSha256": "b2c37907195a7bdaac5dacaebc96e970b41c379e9dbf1e510a42b03e84aaa69e",
+      "textureBindings": [],
+      "pngSha256": "946c5d0820715b37566efb66965e45ff656eff4ea013a050165ea333ba19d54b"
+    },
+    {
+      "id": "cbv1-076-arrow-1-a",
+      "sourceModelSha256": "893213832ef8fe2f4276effe980873bd5e6f5318727b9998bee04adab5726b9e",
+      "textureBindings": [],
+      "pngSha256": "0a7ecc3d5943711fed85f3879fae31e625b93fb0f549226819b9da45cfc4a870"
+    },
+    {
+      "id": "cbv1-076-battleaxe-1-1-a",
+      "sourceModelSha256": "d1e94e3a757bd5ce8651fbe7e66e2c96cd34bac85db87363c29494b960f72394",
+      "textureBindings": [],
+      "pngSha256": "a98204e6a95329edf315e96142a1ea6409574b5a5421384b3a2b52f913378139"
+    },
+    {
+      "id": "cbv1-076-battleaxe-2-1-a",
+      "sourceModelSha256": "ffbfa1f7e108f8451a3c9466eeeb037ee53a50a1c6954ef7f28bee4849b5802e",
+      "textureBindings": [],
+      "pngSha256": "fc70f4e67d2051f74a6d5e18839b8e40b74cd78bcf8704f752ca02cc4ea3d2b0"
+    },
+    {
+      "id": "cbv1-076-battleaxe-3-1-a",
+      "sourceModelSha256": "22fea989c979a022468dab1d9df3a778fd8e6b74826c9ecbbb013ed35de35641",
+      "textureBindings": [],
+      "pngSha256": "de61c20de3b0778d3825d9664c6437333131ae1aa19b3b89150aadbe2caa4c8c"
+    },
+    {
+      "id": "cbv1-076-bow-1-1-a-001",
+      "sourceModelSha256": "6a9adccf172a98367f86c8e9ffdcc56f84bb2f460b296858d4263714581e221c",
+      "textureBindings": [],
+      "pngSha256": "7ccd58d3ed1284e5ec37d981274ba8c9ee4b17f60c887cf3fe7cbdf316be582e"
+    },
+    {
+      "id": "cbv1-076-druidstaff-1-1-a",
+      "sourceModelSha256": "2730c4634272071c87c75406157ea61b4a7f3a0cf6174bd6a0bf4d006a13fbcc",
+      "textureBindings": [],
+      "pngSha256": "df376df4b309d09afb883a0588078f5804a08d4f0ec2dc534750327afc044713"
+    },
+    {
+      "id": "cbv1-076-druidstaff-2-1-a",
+      "sourceModelSha256": "54dddd1daa836feeb56cf2f8222fde47627fb9fd2c89c650dbb5c47ff1d13add",
+      "textureBindings": [],
+      "pngSha256": "53186360bb054815810107780890dfe7a07b86caac583a287df7b4914e265029"
+    },
+    {
+      "id": "cbv1-076-hornb-1-1-a",
+      "sourceModelSha256": "3b1b7f7b3702891b9672736a96c71d1f4f82b7e58bebe1158cba87c3fb601edb",
+      "textureBindings": [],
+      "pngSha256": "26bc1ed9e50a8169bb0cffced969e1227b3fecc4b5a8c6f07d4e6913d3a30f30"
+    },
+    {
+      "id": "cbv1-076-shield-1-a",
+      "sourceModelSha256": "306b3bd774bb8e84e925d174d8fc2d414ac4df058d0f9dc16a570529d8aa5394",
+      "textureBindings": [],
+      "pngSha256": "7f1bc35680526618cc16a62ffa2dd31c1afd0e4f45beba22b60bb2660ae6adb9"
+    },
+    {
+      "id": "cbv1-076-shield-2-a",
+      "sourceModelSha256": "d32ed5ab559c43268e5d6901725811187f974edc2a567d3ecb4b77cc10af1867",
+      "textureBindings": [],
+      "pngSha256": "455dca406029aa5fcebcf47af3c188eb8b0b1709715aedecc2f88cf7e375880d"
+    },
+    {
+      "id": "cbv1-076-spikedclub-1-a",
+      "sourceModelSha256": "847ffa5971bf158ea40a59a4ada6743f0424fe309ac1c8fe64cb03d1fd66cf28",
+      "textureBindings": [],
+      "pngSha256": "d5abdeb0adc49299fd1316e955974dfad0c92147f5591b79cd349fae49ccfc31"
+    },
+    {
+      "id": "cbv1-076-sword-1-a",
+      "sourceModelSha256": "bc0593e6a1d36947286767d4d2b00f4bde43ee644969d30c2a70c1836f584531",
+      "textureBindings": [],
+      "pngSha256": "0a9522009c443d8a8ad7b33cf98c3b6a63fd6bdaa300361ac4a01a32106841c6"
     }
   ]
 }

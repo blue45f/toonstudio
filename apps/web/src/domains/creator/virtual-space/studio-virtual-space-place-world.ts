@@ -3,6 +3,7 @@ import { TOON_HQ_PLACE_ID } from "./office2d/hq/toon-hq-blueprint";
 import { studioVirtualToonHqManifest } from "./office2d/hq/toon-hq-manifest";
 import { CAMPUS_GATES } from "./studio-virtual-space-campus-blueprint";
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
+import { studioVirtualPlaceBundleDecor } from "./studio-virtual-space-bundle-decor";
 import {
   STUDIO_VIRTUAL_PLACES,
   studioVirtualPlacesForMode,
@@ -215,7 +216,7 @@ function placeProps(place: StudioVirtualPlaceDefinition, spec: PlaceLayoutSpec):
     id: `${place.id}-crate`, kind: "decor", assetKey: "place-crate",
     assetUrl: `${THEMED_OBJECT_ROOT}/crate.webp`, x: 480, y: 214, width: 48, height: 48, depth: "y-sort",
   });
-  return Object.freeze(props);
+  return Object.freeze([...props, ...studioVirtualPlaceBundleDecor(place.id)]);
 }
 
 function interactionSlots(place: StudioVirtualPlaceDefinition): readonly StudioWorldInteractionSlotDefinition[] {

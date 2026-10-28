@@ -1,4 +1,5 @@
 import type { StudioAsset } from "./studio-asset-library";
+import { createStudioBundleSourceCredit } from "./catalog/studio-bundle-source-credit";
 
 /**
  * Creator Bundle 렌더 소품 전용 배포 모듈.
@@ -443,6 +444,7 @@ export async function createStudioBundleImageRecord(asset: StudioBundleAsset, si
   let binary = "";
   for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
   return {id: `bundle:${asset.id}`, name: asset.name, dataUrl: `data:image/webp;base64,${btoa(binary)}`,
+    bundleSourceCredit: createStudioBundleSourceCredit(asset, `sha256:${hash}`),
     contentHash: `sha256:${hash}`, width: asset.width, height: asset.height, createdAt: Date.UTC(2026, 9, 20), kind: "imported",
     rights: {sourceKind: "imported", sourceId: asset.id, licenseId: `creator-bundle-ledger:${asset.rights.ledgerPackId}`, licenseLabel: asset.rights.licenseName,
       licenseUrl: asset.licenseUrl, attributionRequired: asset.rights.attributionRequired,

@@ -2,6 +2,9 @@ import legacyManifest from "./studio-2d-asset-manifest.json";
 import cc0Manifest from "./studio-2d-cc0-scene-manifest.json";
 import { GENERATED_GPT25_ASSET_METADATA } from "./studio-2d-generated-backgrounds";
 import { STUDIO_ILLUSTRATION_BACKGROUND_METADATA } from "./catalog/studio-illustration-pack";
+import { STUDIO_BUNDLE_BACKGROUND_METADATA } from "./catalog/studio-bundle-backgrounds";
+
+import type { StudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
 
 export interface Studio2dScene {
   readonly id: string;
@@ -11,6 +14,7 @@ export interface Studio2dScene {
   readonly svg?: string;
   readonly width?: number;
   readonly height?: number;
+  readonly bundleSourceCredit?: StudioBundleSourceCredit;
 }
 
 export interface Studio2dAssetMetadata {
@@ -34,7 +38,7 @@ export interface Studio2dAssetMetadata {
     readonly notes: readonly string[];
   };
   readonly provenance: {
-    readonly kind: "legacy-catalog" | "poly-haven-cc0" | "gpt-image-2.5" | "built-in-image-gen";
+    readonly kind: "legacy-catalog" | "poly-haven-cc0" | "gpt-image-2.5" | "built-in-image-gen" | "creator-bundle-cc0";
     readonly licenseStatus: "unverified" | "cc0-verified" | "first-party-generated";
     readonly aiLabelInCatalog?: boolean;
     readonly licenseId?: string;
@@ -52,7 +56,7 @@ export interface Studio2dAssetMetadata {
   readonly label?: string;
   readonly genre?: string;
   readonly sourceManifest?: string;
-  readonly style?: "photographic-reference" | "webtoon-illustration";
+  readonly style?: "photographic-reference" | "webtoon-illustration" | "stylized-low-poly";
 }
 export type Studio2dOrientation = "all" | "landscape" | "portrait" | "square";
 export type Studio2dQualityFilter = "all" | "recommended" | "large" | "raster" | "vector";
@@ -79,6 +83,7 @@ export const STUDIO_2D_ASSET_METADATA: readonly Studio2dAssetMetadata[] = Object
   ...cc0Manifest.assets,
   ...GENERATED_GPT25_ASSET_METADATA,
   ...STUDIO_ILLUSTRATION_BACKGROUND_METADATA,
+  ...STUDIO_BUNDLE_BACKGROUND_METADATA,
 ] as unknown as Studio2dAssetMetadata[]);
 const byId = new Map(STUDIO_2D_ASSET_METADATA.map((asset) => [asset.id, asset]));
 

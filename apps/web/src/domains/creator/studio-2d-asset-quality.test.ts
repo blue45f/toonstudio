@@ -20,6 +20,7 @@ import {
 
 import type { Studio2dScene } from "./studio-2d-asset-quality";
 
+import { STUDIO_BUNDLE_BG_SCENES } from "./catalog/studio-bundle-backgrounds";
 import { STUDIO_ILLUSTRATION_BG_SCENES } from "./catalog/studio-illustration-pack";
 
 const groups = groupBgScenes(BG_SCENES);
@@ -29,7 +30,7 @@ const anyScene = (id: string) => ALL_BG_SCENES.find((item) => item.id === id)!;
 describe("2D scene quality and discovery", () => {
   it("exposes only reviewed large raster originals in the default picker", () => {
     const result = filterStudio2dScenes(groups, { quality: "recommended" });
-    expect(result).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length);
+    expect(result).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length + STUDIO_BUNDLE_BG_SCENES.length);
     expect(result.every(isRecommendedStudio2dScene)).toBe(true);
     expect(filterStudio2dScenes(groups, { quality: "raster" })).toEqual(result);
     expect(result).toContain(scene("webtoon-bedroom"));
@@ -57,7 +58,7 @@ describe("2D scene quality and discovery", () => {
   it("retains every active ID exactly once after recommendation regrouping", () => {
     const sections = bgSceneSections(BG_SCENES);
     expect(sections[0].genre).toBe("추천");
-    expect(sections[0].scenes).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length);
+    expect(sections[0].scenes).toHaveLength(54 + STUDIO_ILLUSTRATION_BG_SCENES.length + STUDIO_BUNDLE_BG_SCENES.length);
     const ids = sections.flatMap((group) => group.scenes.map((item) => item.id));
     expect(new Set(ids).size).toBe(BG_SCENES.length);
     expect(ids).toHaveLength(BG_SCENES.length);
@@ -88,7 +89,7 @@ describe("2D scene quality and discovery", () => {
     expect(filterStudio2dScenes(groups, { query: "ｓｆ" })).toEqual(filterStudio2dScenes(groups, { query: "SF" }));
   });
   it("filters reviewed source aspect ratios without guessing vector dimensions", () => {
-    expect(filterStudio2dScenes(groups, { orientation: "landscape" })).toHaveLength(32 + STUDIO_ILLUSTRATION_BG_SCENES.filter((item) => item.width > item.height).length);
+    expect(filterStudio2dScenes(groups, { orientation: "landscape" })).toHaveLength(32 + STUDIO_ILLUSTRATION_BG_SCENES.filter((item) => item.width > item.height).length + STUDIO_BUNDLE_BG_SCENES.length);
     expect(filterStudio2dScenes(groups, { orientation: "square" })).toEqual([scene("webtoon-street"), scene("webtoon-palace")]);
     expect(filterStudio2dScenes(groups, { orientation: "portrait" })).toHaveLength(20);
   });

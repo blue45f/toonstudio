@@ -142,7 +142,7 @@ test("원장이 열어 준 팩만 packs·assets에 들어가고 hold 팩은 pend
     assert.equal(stats.heldPacks.length, held.length);
     assert.ok(held.every((pack) => typeof pack.reasonLabel === "string" && pack.reasonLabel.length > 0));
     assert.deepEqual(output.crowdPacks, []);
-    // 수신한 Cute Park·Dungeon을 제외한 정적 보류 12개는 그대로 앞에 남는다.
+    // 수신·귀속을 확인해 편입한 팩을 제외한 정적 보류 11개는 그대로 앞에 남는다.
     assert.deepEqual(output.pendingPacks.slice(0, PENDING_PACKS.length), PENDING_PACKS);
     // 합계는 허용된 팩 기준으로 일치한다.
     assert.equal(output.totals.packs, output.packs.length);
@@ -360,4 +360,41 @@ test("CLI는 잘못된 원장이면 아무것도 쓰지 않고 종료 코드 2�
     assert.match(result.stderr, /권리 원장이 올바르지 않습니다/);
     assert.equal(existsSync(outPath), false);
   });
+});
+
+test("로컬 실측 4팩의 메타데이터 708개는 유지하되 원본 모델과 배포 인덱스를 공개 경로에 만들지 않는다", () => {
+  const publicRoot = resolve(dirname(SCRIPT), "../apps/web/public");
+  const output = JSON.parse(readFileSync(join(publicRoot, "assets/3d/environments/bundle-v1/theme-packs.json"), "utf8"));
+  const verifiedPacks = new Map([
+    ["Cute Park Pack", { ingestId: "cbv1-ingest-local-cute-park", count: 103 }],
+    ["Cute Dungeon Megapack", { ingestId: "cbv1-ingest-local-cute-dungeon", count: 320 }],
+    ["Cute Graveyard", { ingestId: "cbv1-ingest-local-cute-graveyard", count: 253 }],
+    ["Medieval Weapons", { ingestId: "cbv1-ingest-local-medieval-weapons", count: 32 }],
+  ]);
+  assert.equal(output.totals.placeableAssets, 708);
+  assert.equal(output.assets.length, 708);
+  assert.equal(output.inServiceOnly, true);
+  assert.equal(output.downloadable, false);
+  for (const [title, expected] of verifiedPacks) {
+    const packIndex = output.packs.findIndex((pack) => pack.title === title);
+    assert.ok(packIndex >= 0, title);
+    const pack = output.packs[packIndex];
+    assert.deepEqual(pack.ingestPackIds, [expected.ingestId], title);
+    assert.equal(pack.placeable, expected.count, title);
+    assert.equal(pack.rights.status, "public-domain", title);
+    assert.equal(pack.rights.licenseName, "CC0-1.0", title);
+    assert.match(pack.note, /3D 모델 서빙·배포는 수행하지 않았다/u, title);
+    const assets = output.assets.filter((asset) => asset.pack === packIndex);
+    assert.equal(assets.length, expected.count, title);
+    for (const asset of assets) {
+      assert.ok(asset.id.startsWith(`${expected.ingestId}-`), asset.id);
+      assert.ok(asset.path.startsWith(`${expected.ingestId}/native/`), asset.id);
+      assert.match(asset.sha256, /^[0-9a-f]{64}$/u, asset.id);
+      assert.ok(Number.isSafeInteger(asset.bytes) && asset.bytes > 20, asset.id);
+      assert.ok(Number.isSafeInteger(asset.tris) && asset.tris > 0, asset.id);
+      assert.equal(existsSync(join(publicRoot, "assets/studio/bundle-v2", asset.path)), false, asset.id);
+      assert.equal(existsSync(join(publicRoot, "assets/studio/bundle-v2", `${asset.sha256}.glb`)), false, asset.id);
+    }
+  }
+  assert.equal(existsSync(join(publicRoot, "assets/studio/bundle-v2/manifest.json")), false);
 });

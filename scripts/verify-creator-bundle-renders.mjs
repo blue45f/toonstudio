@@ -65,6 +65,16 @@ try {
     report.insertions.push({ id, text: await inserted.innerText() });
   }
   await useFirstCard();
+  await cards.first().getByRole("button", { name: "개인 라이브러리에 저장", exact: true }).click();
+  await page.locator("[data-bundle-persisted-phase='saved']").waitFor({ timeout: 120_000 });
+  await page.reload({ waitUntil: "networkidle", timeout: 120_000 });
+  await page.getByRole("button", { name: "저장 영속성 확인", exact: true }).click();
+  const persisted = page.locator("[data-bundle-persisted-phase='verified']");
+  await persisted.waitFor({ timeout: 120_000 });
+  report.databasePersistenceVerified = true;
+  report.localPersistence = JSON.parse(await persisted.innerText());
+  await page.locator("[data-studio-bundle-library] summary").click();
+  await cards.first().waitFor();
   await page.locator("[data-studio-bundle-library]").scrollIntoViewIfNeeded();
   const desktop = resolve(output, "desktop-library.png");
   await page.screenshot({ path: desktop });

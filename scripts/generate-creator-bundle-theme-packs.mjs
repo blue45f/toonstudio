@@ -127,6 +127,7 @@ export const CATALOG_PACKS = [
   { catalogIds: ["cbv1-051-scifi-arena-2"], title: "Sci-Fi Arena: 2", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1"] },
   { catalogIds: ["cbv1-046-cosmokit-planets"], title: "CosmoKit — Stylized Low Poly Planets", creator: "EmaceArt", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-046-cosmokitstylizedlowpolyplanets", "cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"], presetSource: ["cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"] },
   // 공포
+  { catalogIds: ["cbv1-014-cute-graveyard"], title: "Cute Graveyard", creator: "RG Poly", theme: "horror", category: "environment", ingest: ["cbv1-ingest-local-cute-graveyard"], note: "2026-10-28 공식 CC0 증빙과 로컬 수신분의 자기완결 GLB 253개를 대조해 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-006-polyvania-burton-horror-town"], title: "Polyvania — Burton Horror Town", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-411-polyvania-blend"], note: "blend 원본만 수신돼 있어 GLB 변환 후 에셋이 채워진다." },
   { catalogIds: ["cbv1-011-necropolyy-graveyard"], title: "NecroPOLY — Stylized Graveyard", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09-", "cbv1-ingest-247-necropolytombkit", "cbv1-ingest-401-low-poly-cemetery-kit-necropoly-tombs-module-god", "cbv1-ingest-400-low-poly-cemetery-kit-necropoly-tombs-module-ble"], presetSource: ["cbv1-ingest-400-low-poly-cemetery-kit-necropoly-tombs-module-ble"] },
   { catalogIds: ["cbv1-013-graves-kit"], title: "Graves Kit", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-246-necropolygravekit", "cbv1-ingest-399-low-poly-cemetery-grave-kit-with-lods-godot", "cbv1-ingest-398-low-poly-cemetery-grave-kit-with-lods-blend"], presetSource: ["cbv1-ingest-398-low-poly-cemetery-grave-kit-with-lods-blend"] },
@@ -149,7 +150,7 @@ export const CATALOG_PACKS = [
   { catalogIds: ["cbv1-045-food-packaging"], title: "Low Poly Food Packaging", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-222-lowpolyfoodandpackaging"] },
   { catalogIds: [], title: "Food Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-154-food-pack"], note: "카탈로그 번호는 정본 카탈로그에서 확인되지 않아 비워 뒀다." },
   { catalogIds: ["cbv1-067-fences-and-walls"], title: "Fences and Walls", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-151-fences-and-walls-glb"] },
-  { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-329-weapons"], note: "Weapons 폴더 귀속은 추정 판정(STATUS §2)이다." },
+  { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-medieval-weapons"], note: "2026-10-28 수신 기록·공식 Weapons.zip의 32 Models 표기와 로컬 자기완결 GLB 32개를 대조해 귀속을 확정하고 새 인제스션 입력에 등록했다. 과거 추정 매핑 cbv1-ingest-329-weapons는 사용하지 않으며 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-019-blasters-rg"], title: "Blasters RG", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-028-blasters-rg"] },
   { catalogIds: ["cbv1-074-blasters-free"], title: "Blasters Free", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-027-blasters-free"] },
 ];
@@ -171,7 +172,6 @@ export const PENDING_PACKS = [
   { catalogIds: ["cbv1-070-ps1-psx-alone-in-the-dusk"], title: "PS1 PSX Alone in the DUSK", reason: "retrieval-partial", reasonLabel: "로컬 보유 자료와 완전한 3D 입력의 대조가 남았다." },
   { catalogIds: ["cbv1-025-backroad-bridges"], title: "Backroad Bridges — Stylized Modular", reason: "attribution-unconfirmed", reasonLabel: "수신분이 추정 귀속이라 확정 후 편입한다." },
   { catalogIds: ["cbv1-063-free-fantasy-medieval-houses"], title: "Free Fantasy Medieval Houses", reason: "attribution-unconfirmed", reasonLabel: "수신 blend의 내용이 Slavica 무료판과 겹쳐 귀속 확정 후 편입한다." },
-  { catalogIds: ["cbv1-014-cute-graveyard"], title: "Cute Graveyard", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
   { catalogIds: ["cbv1-020-viking-world-stylized"], title: "Viking World - Stylized", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
   { catalogIds: ["cbv1-036-desert-canyon"], title: "Desert Canyon", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
   { catalogIds: ["cbv1-052-scifi-arena-cargo", "cbv1-053-scifi-arena-blue-base"], title: "Sci-Fi Arena: Cargo / Blue Base", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },

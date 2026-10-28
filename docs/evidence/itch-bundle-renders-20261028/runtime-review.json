@@ -1,9 +1,9 @@
 {
-  "expected": 118,
+  "expected": 144,
   "imageContract": {
-    "successes": 118,
+    "successes": 144,
     "failures": 0,
-    "text": "검사 완료 · 118/118개 확인 · 성공 118개 · 실패 0개"
+    "text": "검사 완료 · 144/144개 확인 · 성공 144개 · 실패 0개"
   },
   "insertions": [
     {
@@ -24,10 +24,29 @@
     "desktop-library.png",
     "mobile-canvas.png"
   ],
-  "databasePersistenceVerified": false,
-  "verifiedOn": "2026-10-28",
-  "scope": "실제 소재 패널·전달 함수·canvas 검수. 로그인 프로젝트·DB 영속성·운영 배포 검증 제외.",
-  "manifestSha256": "01353785422e4c48aeccb6f46286ac9e0a0c2cacaeb320a96d61dfcc692a4ac5",
-  "publicFiles": 237,
-  "publicBytes": 52521798
+  "databasePersistenceVerified": true,
+  "localPersistence": {
+    "id": "43b29b43-4ab8-4af1-b7ab-9b389cc9e467",
+    "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+    "bundleSourceCredit": {
+      "schema": "toonstudio.bundle-source-credit.v1",
+      "assetId": "cbv1-008-bench-1-1",
+      "ledgerPackId": "cbv1-008-cute-park-pack",
+      "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+      "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "provider": "RG Poly",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseName": "CC0-1.0",
+      "serve": "allow",
+      "status": "public-domain",
+      "commercialUse": true,
+      "attributionRequired": false
+    }
+  },
+  "scope": "실제 소재 패널·전달 검증기·canvas 픽셀 및 브라우저 SQLite/OPFS 개인 저장→페이지 리로드→바이트·출처 재조회. 원격 프로젝트 저장·인증·운영 배포 검증은 별도다.",
+  "publicFiles": 289,
+  "publicBytes": 62551189,
+  "manifestSha256": "c27bf2b4c734f006cfdccd1f9fd3ca41a0586fb511a941da7d11141051ef2924"
 }

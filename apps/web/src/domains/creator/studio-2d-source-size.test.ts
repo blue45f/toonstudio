@@ -15,7 +15,7 @@ describe("2D original aspect ratio through canvas placement", () => {
       const image = createCanvasImageElement({ id: scene.id, src: scene.imgSrc!, canvasWidth: 720,
         canvasHeight: 1080, sourceWidth: scene.width!, sourceHeight: scene.height!, horizontalInset: 0, minY: 0 });
       expect(Math.abs(image.height - image.width * asset.height / asset.width)).toBeLessThanOrEqual(1);
-      expect(createStudio2dCanvasImage(scene, { id: scene.id, src: scene.imgSrc!, canvasWidth: 720, canvasHeight: 1080 })).toEqual(image);
+      expect(createStudio2dCanvasImage(scene, { id: scene.id, src: scene.imgSrc!, canvasWidth: 720, canvasHeight: 1080 })).toEqual({ ...image, ...(scene.bundleSourceCredit ? { bundleSourceCredit: scene.bundleSourceCredit } : {}) });
     }
   });
   it("places a landscape original as a landscape image, not a stretched portrait", () => {

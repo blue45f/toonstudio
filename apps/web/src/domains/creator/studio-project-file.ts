@@ -1,4 +1,5 @@
 import { parseStudioPsdSource } from "./export/studio-psd-source";
+import { canonicalizeStudioBundleCreditElement } from "./catalog/studio-bundle-source-credit";
 import { parseStudioSavedSelectionLibrary } from "./studio-saved-selections";
 import { canonicalizeStudioLiveAdjustmentElement } from "./contracts/studio-live-adjustment-contract";
 import { parseStudioColorProofDocument } from "./color/studio-color-proof-document";
@@ -154,6 +155,7 @@ function canonicalizeVrmSceneElement(value: unknown): unknown {
 }
 
 function canonicalizeStudio3dSceneElement(value: unknown): unknown {
+  value = canonicalizeStudioBundleCreditElement(value);
   if (isRecord(value) && value.psdSource !== undefined) {
     const source = parseStudioPsdSource(value.psdSource);
     if (!source) throw new Error("PSD 원본 참조가 손상되어 프로젝트를 열 수 없어요.");

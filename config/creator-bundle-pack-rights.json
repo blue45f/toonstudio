@@ -2200,11 +2200,29 @@
         "free-medieval-weapons-small-low-poly-pack"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "note": "공식 카탈로그 이름은 Free Medieval Weapons — Small Low Poly Pack이다. 폴더 귀속은 추정 판정이다."
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/medieval-weapons-small-low-poly-pack",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/medieval-weapons.html",
+          "sha256": "e3d590bedcd41ef0c93283c6553cb192b588cabec1f2f26a547a4575b012a9e2"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
+        }
+      ],
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라 1차 CC0 10팩에 이어 추가로 연 팩이다. 공식 팩 페이지의 CC0 문구·구매 목록·로컬 GLB 실물을 대조했고 공개 발췌와 SHA-256은 docs/evidence/itch-licenses-20261028에 보관한다. _catalog/SOURCES.tsv는 Weapons 및 Weapons.zip을 이 팩의 models/mixed에 명시적으로 매핑한다. 공식 파일명 Weapons.zip(42MB)과 로컬 동일 콘텐츠 원본 44,366,722바이트, 공식 32 Models와 실제 GLB 32개가 일치하며 모두 이미지·재질을 내장한다.",
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
     },
     {
       "id": "cbv1-019-blasters-rg",
@@ -2589,7 +2607,7 @@
     },
     {
       "id": "cbv1-014-cute-graveyard",
-      "group": "pending",
+      "group": "pack",
       "title": "Cute Graveyard",
       "creator": "RG Poly",
       "catalogIds": [
@@ -2602,17 +2620,35 @@
         "cute-graveyard"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "secondary-lookup",
           "claim": "itch 메타데이터 CC0 표기(2차 조회)",
           "source": "3D 에셋 활용 검토 보고(2026-10-22) §3 쟁점 1 (~/3d-asset-library/_catalog/leverage-review-2026-10-22.md)",
           "note": "캡처가 아닌 2차 조회라 allow 요구를 채우지 못한다."
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/cute-graveyard-hallowen-pack",
+          "retrievedAt": "2026-10-28",
+          "verifiedAt": "2026-10-28",
+          "ref": "docs/evidence/itch-licenses-20261028/cute-graveyard.html",
+          "sha256": "cffddc35e506d4379804dfefcd89388ce5aeba67aba3335fe8410daf3b3fb3b9"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-28"
         }
-      ]
+      ],
+      "grant": {
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "note": "2026-10-28 소유자의 구매 번들 최대 활용·서비스 적용 요청에 따라 1차 CC0 10팩에 이어 추가로 연 팩이다. 공식 팩 페이지의 CC0 문구·구매 목록·로컬 GLB 실물을 대조했고 공개 발췌와 SHA-256은 docs/evidence/itch-licenses-20261028에 보관한다. 로컬 GLB 253개 모두 외부 URI 없이 메시·이미지·재질을 내장해 수신 팩으로 편입한다."
     },
     {
       "id": "cbv1-020-viking-world-stylized",

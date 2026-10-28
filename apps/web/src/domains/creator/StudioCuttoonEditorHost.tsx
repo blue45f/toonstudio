@@ -21,7 +21,7 @@ import { useStudioMaterialBrushRequest } from "./brush/useStudioMaterialBrushReq
 import { createStudioAutosaveSnapshotFence } from "./studio-autosave-snapshot-fence";
 import { useStudioAdjustmentLayerCommands } from "./useStudioAdjustmentLayerCommands";
 import { StudioColorProofProvider } from "./color/StudioColorProofContext";
-import { createStudio2dCanvasImage } from "./studio-2d-source-size";
+import { applyStudioBundleSourcePatch, createStudio2dCanvasImage, studioBundleFrameBackgroundPatch } from "./studio-2d-source-size";
 import { useStudioSmartShapeEditing } from "./useStudioSmartShapeEditing";
 import { useStudioRecentColors } from "./useStudioRecentColors";
 import { copyStudioSmartShapeSnapshot } from "./studio-smart-shape-copy";
@@ -16790,7 +16790,7 @@ const puppetWarpArmed =
             e,
             patch as unknown as StudioInlineFilterMaskMutationPatch
           )
-        : ({ ...e, ...patch } as El);
+        : applyStudioBundleSourcePatch(e, patch);
     }));
     if (!committed) return false;
     maybeRecordMacroFromPatch(patch);
@@ -17623,7 +17623,7 @@ const puppetWarpArmed =
         y: f.y,
         width: f.width,
         height: h1,
-        bg: f.bg,
+        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
       };
       f2 = {
         id: uid(),
@@ -17632,7 +17632,7 @@ const puppetWarpArmed =
         y: f.y + h1 + gutter,
         width: f.width,
         height: h2,
-        bg: f.bg,
+        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
       };
     } else {
       const availableW = f.width - gutter;
@@ -17645,7 +17645,7 @@ const puppetWarpArmed =
         y: f.y,
         width: w1,
         height: f.height,
-        bg: f.bg,
+        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
       };
       f2 = {
         id: uid(),
@@ -17654,7 +17654,7 @@ const puppetWarpArmed =
         y: f.y,
         width: w2,
         height: f.height,
-        bg: f.bg,
+        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
       };
     }
 
@@ -18832,7 +18832,7 @@ const puppetWarpArmed =
     // svgToDataUrl 결과(data: URL)나 웹(동일 출처)에선 무변경(no-op).
     const src = resolveAssetUrl(bg.imgSrc || svgToDataUrl(bg.svg || ""));
     if (selected?.type === "frame") {
-      if (!patchEl(selected.id, { bg: src } as Partial<El>)) return false;
+      if (!patchEl(selected.id, studioBundleFrameBackgroundPatch(bg, src))) return false;
       setMenu(null);
       setTool("select");
       return true;
@@ -18840,7 +18840,7 @@ const puppetWarpArmed =
     // 패널이 있으면 한 번 클릭으로 모든 패널에 배경을 깔아 바로 웹툰 느낌(쉽게). 개별 변경은 패널 선택 후.
     const frames = elements.filter((e) => e.type === "frame");
     if (frames.length > 0) {
-      if (!commit(elements.map((e) => (e.type === "frame" ? ({ ...e, bg: src } as El) : e)))) return false;
+      if (!commit(elements.map((e) => (e.type === "frame" ? { ...e, ...studioBundleFrameBackgroundPatch(bg, src) } : e)))) return false;
       setMenu(null);
       setTool("select");
       return true;
@@ -18869,13 +18869,13 @@ const puppetWarpArmed =
     aiProvenance: StudioPublishAiProvenance
   ): boolean {
     if (selected?.type === "frame") {
-      if (!patchEl(selected.id, { bg: dataUrl, aiProvenance } as Partial<El>)) return false;
+      if (!patchEl(selected.id, { bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } as Partial<El>)) return false;
       setTool("select");
       return true;
     }
     const frames = elements.filter((e) => e.type === "frame");
     if (frames.length > 0) {
-      if (!commit(elements.map((e) => (e.type === "frame" ? ({ ...e, bg: dataUrl, aiProvenance } as El) : e)))) {
+      if (!commit(elements.map((e) => (e.type === "frame" ? ({ ...e, bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } as El) : e)))) {
         return false;
       }
       setTool("select");
@@ -27400,7 +27400,7 @@ function clearSelectionForEdit() {
     onGenerateAsset,
     onPickImage,
     onShareAsset,
-    onUploadAsset,
+    onUploadAsset, onSavedLocalAsset: () => { void loadAssetsList(); },
     onUseSharedAsset,
     openFeatureTutorial,
     pendingTextAiProviderContext,

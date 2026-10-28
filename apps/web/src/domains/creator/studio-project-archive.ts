@@ -1,4 +1,5 @@
 import { assertStudioPsdSourceArchiveEvidence } from "./export/studio-psd-source-archive";
+import { probableStudioProjectAssetField as probableAssetField, isStudioBundleArchiveMetadata } from "./studio-project-archive-dependencies";
 import { STUDIO_PSD_SOURCE_MIME, validateStudioPsdSourceBytes } from "./export/studio-psd-source";
 import { z } from "zod";
 
@@ -1533,10 +1534,7 @@ function setPointer(root: unknown, pointer: string, value: unknown): boolean {
   return true;
 }
 
-function probableAssetField(pointer: string): boolean {
-  const tail = pointer.split("/").at(-1)?.toLowerCase() ?? "";
-  return /(src|url|href|model|audio|reference|texture|file|asset)/u.test(tail);
-}
+
 
 function scanExternalProjectDependencies(
   value: unknown,
@@ -1544,6 +1542,7 @@ function scanExternalProjectDependencies(
   diagnostics: StudioProjectArchiveDiagnostic[],
   coveredPointers: ReadonlySet<string> = new Set(),
 ): void {
+  if (isStudioBundleArchiveMetadata(pointer, value)) return;
   if (typeof value === "string") {
     if (isSelfContainedUri(value) || coveredPointers.has(pointer)) return;
     const probableAsset = probableAssetField(pointer);

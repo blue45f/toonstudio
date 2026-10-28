@@ -489,6 +489,11 @@ describe("bundle render image record", () => {
     expect(record.id).toBe("bundle:cbv1-045-food-props-render-001");
     expect(record.kind).toBe("imported");
     expect(record.contentHash).toBe(`sha256:${sha256}`);
+    expect(record.bundleSourceCredit).toMatchObject({
+      schema: "toonstudio.bundle-source-credit.v1", assetId: asset.id,
+      ledgerPackId: asset.rights.ledgerPackId, contentHash: `sha256:${sha256}`,
+      licenseId: asset.licenseId, licenseUrl: asset.licenseUrl, sourceUrl: asset.sourceUrl,
+    });
     expect(record.dataUrl.startsWith("data:image/webp;base64,")).toBe(true);
     expect(record.rights).toMatchObject({
       sourceKind: "imported",

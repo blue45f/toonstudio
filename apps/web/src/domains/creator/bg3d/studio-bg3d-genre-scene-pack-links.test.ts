@@ -68,8 +68,9 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
     // 번들 라이선스 구조(서비스 내 사용 전용)가 유지될 때만 연결이 유효하다.
     expect(document.inServiceOnly).toBe(true);
     expect(document.downloadable).toBe(false);
-    // 2026-10-28 실제 GLB 해시·메트릭을 확인한 Cute Park 103개·Dungeon 320개만 연결한다.
-    expect(document.totals.placeableAssets).toBe(423);
+    // 2026-10-28 실측한 Park 103개·Dungeon 320개·Graveyard 253개·Weapons 32개의 메타데이터다.
+    // 장르 프리셋 연결은 기존 두 팩 423개만 유지한다.
+    expect(document.totals.placeableAssets).toBe(708);
 
     const themeIds = new Set(document.themes.map((theme) => theme.id));
     const assetById = new Map(document.assets.map((asset) => [asset.id, asset]));

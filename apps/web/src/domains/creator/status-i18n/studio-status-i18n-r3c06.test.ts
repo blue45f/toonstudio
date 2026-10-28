@@ -463,10 +463,13 @@ describe("studio panel status i18n r3c06", () => {
     const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
     const original = parseRegisterModule(readSource("studio-panel-status-i18n.ts"));
     const r4 = parseRegisterModule(readSource("studio-panel-status-i18n-r4.ts"));
+    const bundlePersonalSave = parseRegisterModule(readSource("catalog/studio-bundle-personal-library-save.ts"));
+    expect(Object.keys(bundlePersonalSave.ko).sort()).toEqual(Object.keys(bundlePersonalSave.en).sort());
     const registered = new Set([
       ...Object.keys(original.ko),
       ...R3C06_KEYS,
       ...Object.keys(r4.ko),
+      ...Object.keys(bundlePersonalSave.ko),
     ]);
     for (const key of R3C06_KEYS) {
       expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);

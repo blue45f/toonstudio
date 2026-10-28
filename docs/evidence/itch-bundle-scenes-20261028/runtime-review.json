@@ -1,0 +1,73 @@
+{
+  "scenes": [
+    {
+      "id": "cbv1-scene-park-garden",
+      "sourceWidth": 2048,
+      "sourceHeight": 1152,
+      "element": {
+        "id": "scene-insert",
+        "type": "image",
+        "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-park-garden.webp",
+        "x": 0,
+        "y": 338,
+        "width": 720,
+        "height": 405,
+        "rotation": 0,
+        "bundleSourceCredit": {
+          "schema": "toonstudio.bundle-source-credit.v1",
+          "assetId": "cbv1-scene-park-garden",
+          "ledgerPackId": "cbv1-008-cute-park-pack",
+          "contentHash": "sha256:1fb2c546c8b8da258d1dfbba567e1bad3ba383644513385527e7c86e687aa423",
+          "renderPath": "/assets/studio/bundle-scenes-v1/cbv1-scene-park-garden.webp",
+          "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+          "provider": "RG Poly",
+          "licenseId": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "licenseName": "CC0-1.0",
+          "serve": "allow",
+          "status": "public-domain",
+          "commercialUse": true,
+          "attributionRequired": false
+        }
+      }
+    },
+    {
+      "id": "cbv1-scene-dungeon-study",
+      "sourceWidth": 2048,
+      "sourceHeight": 1152,
+      "element": {
+        "id": "scene-insert",
+        "type": "image",
+        "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-dungeon-study.webp",
+        "x": 0,
+        "y": 338,
+        "width": 720,
+        "height": 405,
+        "rotation": 0,
+        "bundleSourceCredit": {
+          "schema": "toonstudio.bundle-source-credit.v1",
+          "assetId": "cbv1-scene-dungeon-study",
+          "ledgerPackId": "cbv1-024-cute-dungeon-megapack",
+          "contentHash": "sha256:ddfa9da3cc44a2d8684af8d4ab1a08bb51f1772909a8d99b52428daa6c0dfba5",
+          "renderPath": "/assets/studio/bundle-scenes-v1/cbv1-scene-dungeon-study.webp",
+          "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+          "provider": "RG Poly",
+          "licenseId": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "licenseName": "CC0-1.0",
+          "serve": "allow",
+          "status": "public-domain",
+          "commercialUse": true,
+          "attributionRequired": false
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "desktop-garden.png",
+    "mobile-study.png"
+  ],
+  "scope": "실제 2D 선택기·배치 함수·canvas 픽셀. 원격 저장과 프로젝트 전체 화면 검증은 별도다.",
+  "manifestSha256": "1e0b540315acd7b5bc6017b1d1f8ef17d0532f7de06af8c809856a45e357973c"
+}

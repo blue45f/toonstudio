@@ -102,6 +102,26 @@
       "bytes": 178,
       "sha256": "7f568a9970c35e2aac73f7fe8cf14968478d5622bcc9931c5ffb330be4856869",
       "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-014-cute-graveyard",
+      "sourceUrl": "https://rg-poly.itch.io/cute-graveyard-hallowen-pack",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/cute-graveyard.html",
+      "bytes": 214,
+      "sha256": "cffddc35e506d4379804dfefcd89388ce5aeba67aba3335fe8410daf3b3fb3b9",
+      "observedAssetLicense": "CC0-1.0"
+    },
+    {
+      "ledgerPackId": "cbv1-076-medieval-weapons",
+      "sourceUrl": "https://rg-poly.itch.io/medieval-weapons-small-low-poly-pack",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "raw-html-license-excerpt",
+      "path": "docs/evidence/itch-licenses-20261028/medieval-weapons.html",
+      "bytes": 186,
+      "sha256": "e3d590bedcd41ef0c93283c6553cb192b588cabec1f2f26a547a4575b012a9e2",
+      "observedAssetLicense": "CC0-1.0"
     }
   ]
 }
