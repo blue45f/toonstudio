@@ -63,7 +63,7 @@
   "preCommitHooksChangedStagedFiles": false,
   "integrationBase": "7177969d4497237c8daee031b49da3148b0f409a",
   "integrationApplicationSourceCommit": "1ec724e357a515cd9660560008679e959f1881dd",
-  "correctedFullVerification": "수정된 통합 소스로 재실행 대기",
+  "correctedFullVerification": "통합 소스의 pnpm harness:verify 종료 코드 0",
   "integrationChecks": {
     "officeVitestFiles": 5,
     "officeVitestTests": 40,
@@ -72,6 +72,95 @@
     "bundleRightsNodeTests": 169,
     "bundleRightsVitestFiles": 12,
     "bundleRightsVitestTests": 209,
-    "architectureExitCode": 0
+    "architectureExitCode": 0,
+    "genreVitestFiles": 2,
+    "genreVitestTests": 10
+  },
+  "latestIntegratedValidation": {
+    "sourceCommit": "ca9c84521e42a6aa4308b3565b9f1bd8fb2f668a",
+    "sourceTree": "a517b9c7d96cd9ebb836ffb9c4f264bb4a04ced0",
+    "applicationSourceCommit": "1ec724e357a515cd9660560008679e959f1881dd",
+    "integrationBase": "7177969d4497237c8daee031b49da3148b0f409a",
+    "scope": "최신 main·타입 수정·4팩 790개 장르 연결을 포함한 구현 브랜치 로컬 검증",
+    "webBuildIncludesIntegration": true,
+    "buildStartedWithHead": "ca9c84521e42a6aa4308b3565b9f1bd8fb2f668a",
+    "buildEndedWithHead": "ca9c84521e42a6aa4308b3565b9f1bd8fb2f668a",
+    "applicationSourceChangedDuringWebBuild": false,
+    "productionDeployment": false,
+    "approvedMainReleaseArtifact": false,
+    "linuxApiContainerTested": false,
+    "runtimeStartupRemeasured": false,
+    "checks": [
+      {
+        "command": "pnpm harness:verify",
+        "exitCode": 0,
+        "log": "toonstudio-itch-harness-integrated-final-20261029.log",
+        "rootTypecheckExitCode": 0,
+        "apiTypecheckProjects": 3
+      },
+      {
+        "command": "pnpm test:creator-bundle-rights",
+        "exitCode": 0,
+        "log": "toonstudio-itch-rights-genre-final-20261029.log",
+        "nodeTests": 169,
+        "vitestFiles": 12,
+        "vitestTests": 209
+      },
+      {
+        "command": "VITE_CATALOG_SOURCE=static pnpm run build:bundle",
+        "exitCode": 0,
+        "log": "toonstudio-itch-web-build-integrated-final-20261029.log",
+        "transformedModules": 14662,
+        "postbuild": [
+          "598 pnpm entries / 444 license texts",
+          "CSP 1 hashed inline data block"
+        ]
+      },
+      {
+        "command": "pnpm run check:studio-bundle",
+        "exitCode": 0,
+        "studioChunks": 417,
+        "studioRawKiB": 8348.8,
+        "studioGzipKiB": 2715.6,
+        "runtimeStartupRemeasured": false
+      },
+      {
+        "command": "pnpm run check:product-tour-remotion-chunks",
+        "exitCode": 0
+      },
+      {
+        "command": "test -s dist/.vite/manifest.json",
+        "exitCode": 0
+      },
+      {
+        "command": "정책 기반 정적 산출물의 public/dist SHA 전수 대조",
+        "exitCode": 0,
+        "files": 368,
+        "remoteQuotaVerified": false
+      }
+    ],
+    "apiBuildEvidence": {
+      "sourceCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf",
+      "macOSArm64Only": true,
+      "inputsUnchanged": true,
+      "comparedPaths": [
+        "apps/api",
+        "packages",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "tsconfig.json",
+        "tsconfig.base.json",
+        "nest-cli.json",
+        "scripts/verify-production-release-compatibility.mjs",
+        "scripts/verify-api-runtime-imports.test.mjs",
+        "scripts/verify-api-calendar-runtime.test.mjs",
+        "scripts/stage-api-workspace-runtime.test.mjs",
+        "scripts/stage-api-workspace-runtime.mjs",
+        "scripts/verify-api-runtime-imports.mjs",
+        "scripts/verify-legal-policy-runtime.mjs"
+      ]
+    },
+    "existingBuildWarning": "@pixiv/three-vrm nodes의 tslFn export 경고는 이전 98179 빌드에서도 관측했다. 이번 native GLB 검증을 VRM WebGPU 전체 검증으로 확장하지 않는다."
   }
 }

@@ -1,13 +1,11 @@
 {
   "schema": "toonstudio.itch-static-artifact-audit.v1",
-  "sourceCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf",
-  "scope": "main 통합 전 sourceCommit의 Web 빌드에서 얻은 dist·Static Assets 상한·manifest SHA 기록",
-  "checkedAt": "2026-10-28T16:32:51.973Z",
+  "checkedAt": "2026-10-28T18:52:12.094Z",
   "localBuildOnly": true,
   "originalModelsUploaded": false,
   "remoteQuotaVerified": false,
-  "totalDistFiles": 19329,
-  "staticFileCountUpperBound": 12024,
+  "totalDistFiles": 19370,
+  "staticFileCountUpperBound": 12030,
   "staticFileLimit": 20000,
   "policy": "현재 R2 media descriptor와 oversized ignore pattern 적용; Wrangler의 기본 hidden-file 제외 전이므로 상한",
   "selected": [
@@ -30,5 +28,41 @@
       "shaParity": true
     }
   ],
-  "manifestSha256": "0e556d5b294283e0a715339a23d8056b8b565e1955c329162ca721253f2b041a"
+  "manifestSha256": "3df2e5563f22b61c4b5dd1d950d9ffbc112fd689c34ddb566cfc6a7317fcdd83",
+  "sourceCommit": "ca9c84521e42a6aa4308b3565b9f1bd8fb2f668a",
+  "scope": "main 7177969 통합 후 sourceCommit의 로컬 Web 빌드와 정적 파일 정책·원본 SHA 대조",
+  "historicalReview": {
+    "schema": "toonstudio.itch-static-artifact-audit.v1",
+    "sourceCommit": "98179bd298ec6c1fe2c360759a8de9624305ffaf",
+    "scope": "main 통합 전 sourceCommit의 Web 빌드에서 얻은 dist·Static Assets 상한·manifest SHA 기록",
+    "checkedAt": "2026-10-28T16:32:51.973Z",
+    "localBuildOnly": true,
+    "originalModelsUploaded": false,
+    "remoteQuotaVerified": false,
+    "totalDistFiles": 19329,
+    "staticFileCountUpperBound": 12024,
+    "staticFileLimit": 20000,
+    "policy": "현재 R2 media descriptor와 oversized ignore pattern 적용; Wrangler의 기본 hidden-file 제외 전이므로 상한",
+    "selected": [
+      {
+        "path": "assets/studio/bundle-renders-v1",
+        "files": 357,
+        "bytes": 80948537,
+        "shaParity": true
+      },
+      {
+        "path": "assets/studio/bundle-scenes-v1",
+        "files": 7,
+        "bytes": 4440353,
+        "shaParity": true
+      },
+      {
+        "path": "assets/virtual-studio/bundle-decor-v1",
+        "files": 4,
+        "bytes": 800020,
+        "shaParity": true
+      }
+    ],
+    "manifestSha256": "0e556d5b294283e0a715339a23d8056b8b565e1955c329162ca721253f2b041a"
+  }
 }
