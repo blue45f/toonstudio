@@ -152,17 +152,20 @@ function drawFloorChecker(context: CanvasRenderingContext2D, spec: StudioSpaceTh
  */
 export function campusThemeFloorTexture(scene: CampusTextureScene, spec: StudioSpaceThemeFloorSpec): string {
   const key = `campus-theme-floor-${spec.pattern}-${spec.base.toString(16)}-${spec.accent.toString(16)}`;
-  return createCanvasTexture(scene, key, CAMPUS_THEME_FLOOR_TILE, CAMPUS_THEME_FLOOR_TILE, (context) => {
-    switch (spec.pattern) {
-      case "planks": drawFloorPlanks(context, spec, false); break;
-      case "deck": drawFloorPlanks(context, spec, true); break;
-      case "marble": drawFloorMarble(context, spec); break;
-      case "carpet": drawFloorSpeckle(context, spec, false); break;
-      case "sand": drawFloorSpeckle(context, spec, false); break;
-      case "lawn": drawFloorSpeckle(context, spec, true); break;
-      case "slate": drawFloorSlate(context, spec); break;
-      case "stone": drawFloorStone(context, spec); break;
-      case "checker": drawFloorChecker(context, spec); break;
-    }
-  });
+  return createCanvasTexture(scene, key, CAMPUS_THEME_FLOOR_TILE, CAMPUS_THEME_FLOOR_TILE, (context) => paintStudioSpaceThemeFloor(context, spec));
+}
+
+/** Phaser와 선택형 3D가 같은 테마 타일 원화를 그리도록 순수 Canvas painter를 공유한다. */
+export function paintStudioSpaceThemeFloor(context: CanvasRenderingContext2D, spec: StudioSpaceThemeFloorSpec): void {
+  switch (spec.pattern) {
+    case "planks": drawFloorPlanks(context, spec, false); break;
+    case "deck": drawFloorPlanks(context, spec, true); break;
+    case "marble": drawFloorMarble(context, spec); break;
+    case "carpet": drawFloorSpeckle(context, spec, false); break;
+    case "sand": drawFloorSpeckle(context, spec, false); break;
+    case "lawn": drawFloorSpeckle(context, spec, true); break;
+    case "slate": drawFloorSlate(context, spec); break;
+    case "stone": drawFloorStone(context, spec); break;
+    case "checker": drawFloorChecker(context, spec); break;
+  }
 }

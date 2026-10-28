@@ -1,6 +1,7 @@
 # 40대 글로벌·국내 가상 오피스 · 원격 페어링 · 공간 XR · 딥워크 · 스토리보드 워룸 · 플로팅PiP·AI음성·캘린더 플랫폼 REA 전수 역공학 분석 및 툰스튜디오 내재화 설계서 (2026-10-26)
 
-- **문서 상태**: `current` (2026-10-26 Wave 1 13종 + Wave 2 8종 + Wave 3 7종 + Wave 4 7종 + Wave 5 5종 = 총 40종 구현 및 테스트 완료)
+- **문서 상태**: `current` (2026-10-26 기준 40종을 참고한 로컬 상태 모델·UI와 그 테스트 기록) + `target` (별도 연결이 필요한 외부 서비스·서버·실제 미디어 처리)
+- **2026-10-28 범위 보충**: 이 문서의 구현·테스트 완료는 로컬 모델과 UI 계약에 한정한다. 경쟁 서비스의 모든 기능, 외부 SDK 연동, 실제 AI 음성 처리·번역, 다중 참가자 동작이나 운영 배포의 완료를 뜻하지 않는다. 핵심 7종의 현재 공개 페이지 재수집·정적 분석 범위는 [2026-10-28 증거 원장](../evidence/rea-virtual-office-refresh-20261028.json)을 따른다.
 - **증거 원장**: [`docs/evidence/rea-virtual-office-benchmark-20261026.json`](../evidence/rea-virtual-office-benchmark-20261026.json)
 - **기존 벤치마크 연계**: [`docs/studio/virtual-studio-office-collaboration-benchmark-20260927.md`](../studio/virtual-studio-office-collaboration-benchmark-20260927.md)
 

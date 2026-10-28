@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "toonstudio.generated-office-cast/1",
+  "status": "current",
+  "createdOn": "2026-10-28",
+  "generator": "image_gen built-in tool",
+  "model": "not-reported",
+  "roles": 8,
+  "sheets": 16,
+  "frames": 384,
+  "assets": [
+    {
+      "id": "artist-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/artist-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2505871,
+      "sha256": "fd1914cd2da92f67bf819c3ad63c56d3e23b7bd6cb2df4784fc32ed7a0732c68",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/artist.webp"
+    },
+    {
+      "id": "artist-work",
+      "url": "/assets/virtual-studio/office-cast-v2/artist-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1941720,
+      "sha256": "dd2cfcf852e6af9214a1da8a1a9912ba0dc5e188d12db1a1e39ec64ad0a45927",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/artist.webp"
+    },
+    {
+      "id": "bgartist-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/bgartist-walk.png",
+      "width": 1535,
+      "height": 1025,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2153006,
+      "sha256": "73968d84bdb50f1abe2b041b4a2f3294b1145fedc923d62a8e2dc257e23b2859",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/bgartist.webp"
+    },
+    {
+      "id": "bgartist-work",
+      "url": "/assets/virtual-studio/office-cast-v2/bgartist-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 2007039,
+      "sha256": "68e096b3dbab5b5367012f036b55baeea659de858eae30edb5ec45321d0e2816",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/bgartist.webp"
+    },
+    {
+      "id": "colorist-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/colorist-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2763479,
+      "sha256": "2b90aaf2457e1c67232ea512a4cf18a72825cd8a2874d462187895cca1e8a98b",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/colorist.webp"
+    },
+    {
+      "id": "colorist-work",
+      "url": "/assets/virtual-studio/office-cast-v2/colorist-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1912073,
+      "sha256": "62e1203d11b8bdb1824fc1fb448e0dc26f8bcdba3164d71d81c922c3386583d4",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/colorist.webp"
+    },
+    {
+      "id": "editor-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/editor-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2661388,
+      "sha256": "5086cf30a16284aeb2aaaf5ddb69c1e3e9981c500c11dafc663e7e31ea9ec274",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/editor.webp"
+    },
+    {
+      "id": "editor-work",
+      "url": "/assets/virtual-studio/office-cast-v2/editor-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1935588,
+      "sha256": "83fff6b1fc5a92400ed7004949d0e0374a50312ac757fc587737895ac3782dbb",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/editor.webp"
+    },
+    {
+      "id": "letterer-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/letterer-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2404606,
+      "sha256": "577f6686dde53bd760ca1f7a4339a272b84b75d579a3c8c33c4b85ebe5f9364d",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/letterer.webp"
+    },
+    {
+      "id": "letterer-work",
+      "url": "/assets/virtual-studio/office-cast-v2/letterer-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1785355,
+      "sha256": "87b346fd19ed541c46269b708d523769d91110530f69cfbed7ee5fab24feb796",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/letterer.webp"
+    },
+    {
+      "id": "modeler-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/modeler-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2513827,
+      "sha256": "901cb156c7c0bc813c15cc39bc7618bd9a37c4ea672a1c4c3dacd14cb776c468",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/modeler.webp"
+    },
+    {
+      "id": "modeler-work",
+      "url": "/assets/virtual-studio/office-cast-v2/modeler-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1832462,
+      "sha256": "3ca571098a9f363e2864317f9184bff0260840f2cc6a6fa07b87c4d79bd0337b",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/modeler.webp"
+    },
+    {
+      "id": "pd-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/pd-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2440746,
+      "sha256": "f6c49c9d0e11018221258e93c241e91029fd00d3c9a5d39142181720a6124bdc",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/pd.webp"
+    },
+    {
+      "id": "pd-work",
+      "url": "/assets/virtual-studio/office-cast-v2/pd-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1823810,
+      "sha256": "d393addcfa98e0ff1219a2173334c6ae28fb50fd573a7a93b6713f23156447d0",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/pd.webp"
+    },
+    {
+      "id": "writer-walk",
+      "url": "/assets/virtual-studio/office-cast-v2/writer-walk.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 9,
+      "rows": 4,
+      "bytes": 2404950,
+      "sha256": "78f859e625d86ae5ecbc584d2c8a22eb398f3edf78044f3c135f1836f99278bf",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/writer.webp"
+    },
+    {
+      "id": "writer-work",
+      "url": "/assets/virtual-studio/office-cast-v2/writer-work.png",
+      "width": 1182,
+      "height": 1330,
+      "columns": 4,
+      "rows": 3,
+      "bytes": 1659248,
+      "sha256": "420a510e2e2b47d3099723e258b86623d24158731c6dff43755a5ba187d279ae",
+      "referenceUrl": "/assets/virtual-studio/toon-office-v1/characters/work/writer.webp"
+    }
+  ],
+  "limitations": [
+    "생성 PNG 원본을 보존하고 런타임에는 동일 RGBA의 무손실 WebP를 사용한다.",
+    "프레임별 alpha 범위·접지 anchor는 생성 원본을 수정하지 않고 별도 메타데이터로 해석한다.",
+    "특정 생성 모델명·버전은 도구가 보고하지 않아 추정하지 않는다."
+  ],
+  "runtimeMetadataSource": "apps/web/src/domains/creator/virtual-space/office2d/office2d-atlas-metadata.json"
+}

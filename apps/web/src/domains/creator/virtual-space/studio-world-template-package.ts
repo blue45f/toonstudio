@@ -1,3 +1,4 @@
+import { studioOfficeEnvironmentManifest, type StudioOfficeEnvironmentKey } from "./studio-virtual-space-office-environments";
 import { canonicalJson } from "@toonstudio/studio-project-model";
 import { studioWorldManifestSchema, type StudioWorldAssetIntegrity } from "@toonstudio/studio-project-model/world-publication";
 import { studioWorldTemplatePackageSchema, type StudioWorldTemplatePackage } from "./studio-world-template-contract";
@@ -13,7 +14,7 @@ import { STUDIO_WORLD_BROWSER_ASSETS, type StudioWorldAssetDependencies } from "
 import { studioWorldDigest } from "./world-publication/studio-world-publication-client";
 
 export const STUDIO_WORLD_PACKAGE_MAX_TEXT = 2 * 1024 * 1024 + 8192;
-export type WorldStarterTemplate = "solo" | "team" | "review" | StudioThemeTemplateKind;
+export type WorldStarterTemplate = "solo" | "team" | "review" | StudioThemeTemplateKind | StudioOfficeEnvironmentKey;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 /** Build a focused single-room world from a theme template, keeping existing private
@@ -83,6 +84,18 @@ export function retainStudioWorldPrivacy(current: World, candidate: World): Worl
   return { ...candidate, id: current.id, version: current.version };
 }
 export function createStudioWorldStarterTemplate(kind: WorldStarterTemplate, current: World): World {
+  const office = studioOfficeEnvironmentManifest(kind);
+  if (office) {
+    const privateZones = current.acousticZones?.filter((zone) => zone.policy === "private" || Boolean(zone.doorId)) ?? [];
+    const retainedRoomIds = new Set(privateZones.map((zone) => zone.roomId));
+    const next: World = { ...clone(office), id: current.id, version: current.version,
+      rooms: [...office.rooms, ...clone(current.rooms.filter((room) => retainedRoomIds.has(room.id) && !office.rooms.some((candidate) => candidate.id === room.id)))],
+      acousticZones: clone(privateZones),
+    };
+    const errors = validateStudioWorldManifest(next);
+    if (errors.length) throw new Error(`Office template conflicts with current private boundaries: ${errors.join("; ")}`);
+    return retainStudioWorldPrivacy(current, next);
+  }
   if (kind === "storyboard-room" || kind === "recording-booth" || kind === "gallery") {
     return createStudioWorldThemeTemplate(kind, current);
   }

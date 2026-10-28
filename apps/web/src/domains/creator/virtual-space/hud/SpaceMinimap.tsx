@@ -13,7 +13,12 @@ import { studioWorldSpawn, type StudioVirtualSpaceWorldManifest } from "../studi
 import { toonHqRoomShortLabel } from "../office2d/hq/toon-hq-blueprint";
 import { SPACE_ZONE_FALLBACK_TONE, SPACE_ZONE_TONE_TOKENS } from "./space-zone-visuals";
 import { spaceKoParticle } from "./space-korean";
-import { layoutSpaceMinimapLabels, spaceMinimapFallbackShortLabel } from "./space-minimap-labels";
+import {
+  clusterSpaceMinimapPeople,
+  layoutSpaceMinimapLabels,
+  spaceMinimapFallbackShortLabel,
+  spaceMinimapPeerTarget,
+} from "./space-minimap-labels";
 import { useStudioMapIllustration } from "./space-minimap-illustration";
 
 export interface SpaceMinimapPerson {
@@ -135,6 +140,10 @@ export const SpaceMinimap = memo(function SpaceMinimap({
     layoutSpaceMinimapLabels(zones.map((zone) => ({ id: zone.id, x: zone.x, y: zone.y, width: zone.width, height: zone.height, label: zone.sign, shortLabel: zone.shortSign })),
       { fontSize: labelSize, currentId: currentRoomId }).map((label) => [label.id, { text: label.text, fontSize: label.fontSize }] as const),
   )), [full, zones, labelSize, currentRoomId]);
+  const clusteredPeople = useMemo(
+    () => clusterSpaceMinimapPeople(people, full ? 48 : 84),
+    [people, full],
+  );
   const stage = <div className="space-minimap__stage" data-variant={variant}
     style={{ aspectRatio: `${manifest.width} / ${manifest.height}` } as CSSProperties}>
     <button type="button" className="space-minimap__surface" onClick={moveFromClick}
@@ -158,11 +167,22 @@ export const SpaceMinimap = memo(function SpaceMinimap({
         {gates.map((gate) => <g key={gate.id} className="space-minimap__gate" transform={`translate(${gate.point.x} ${gate.point.y})`}>
           <rect x={-labelSize * 0.45} y={-labelSize * 0.45} width={labelSize * 0.9} height={labelSize * 0.9} transform="rotate(45)" />
         </g>)}
-        {people.map((person) => <g key={person.id} transform={`translate(${person.point.x} ${person.point.y})`}>
-          <circle className="space-minimap__peer" r={labelSize * 0.38} />
-          {full && person.name.trim() ? <text className="space-minimap__peer-initial" fontSize={labelSize * 0.44}
-            textAnchor="middle" dominantBaseline="central" aria-hidden>{person.name.trim().charAt(0)}</text> : null}
-        </g>)}
+        {clusteredPeople.map((cluster) => {
+          const leadName = cluster.names[0]?.trim() ?? "";
+          const badgeText = cluster.count > 1 ? `+${cluster.count}` : leadName.charAt(0);
+          return <g key={cluster.id} className="space-minimap__peer-pin" data-count={cluster.count}
+            transform={`translate(${cluster.x} ${cluster.y})`}
+            onClick={(event) => event.stopPropagation()}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              onMoveTo(clampStudioWorldPoint(manifest, spaceMinimapPeerTarget({ x: cluster.x, y: cluster.y }, cluster.id)));
+            }}>
+            <title>{cluster.names.join(", ")}</title>
+            <circle className="space-minimap__peer" r={labelSize * (cluster.count > 1 ? 0.48 : 0.38)} />
+            {(full && badgeText) || cluster.count > 1 ? <text className="space-minimap__peer-initial" fontSize={labelSize * 0.42}
+              textAnchor="middle" dominantBaseline="central" aria-hidden>{badgeText}</text> : null}
+          </g>;
+        })}
         {destination ? <g className="space-minimap__destination" transform={`translate(${destination.x} ${destination.y})`}>
           <circle className="space-minimap__destination-ring" r={labelSize * 0.95} />
           <circle className="space-minimap__destination-dot" r={labelSize * 0.42} />

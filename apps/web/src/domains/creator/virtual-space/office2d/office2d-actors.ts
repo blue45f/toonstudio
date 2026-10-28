@@ -8,7 +8,7 @@
  */
 import type { StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
 import type { Office2dCharacterKey, Office2dGesture } from "./office2d-sprite-catalog";
-import { OFFICE2D_CHARACTER_ROWS, OFFICE2D_CHARACTER_WALK_FRAMES } from "./office2d-sprite-catalog";
+import { OFFICE2D_CHARACTER_ROWS, OFFICE2D_CHARACTER_WALK_FRAMES, office2dHashIndex } from "./office2d-sprite-catalog";
 import type { Office2dSeatVisual } from "./office2d-scene";
 
 /** self 나 · peer 팀원 · npc 대화형 NPC · ambient 상주 동료(빈 작업실을 채우는 착석 NPC, office2d-coworkers). */
@@ -213,7 +213,7 @@ export interface Office2dActorMotionPose {
 
 /** 숨쉬기·보행 리듬·부피 보존 스쿼시·상체 기울기. reduced motion이면 정적 기본값을 돌려준다. */
 export function office2dActorBob(
-  actor: Pick<Office2dActor, "moving" | "stride" | "seat"> & Partial<Pick<Office2dActor, "gaitBlend" | "leanAngle" | "squash">>,
+  actor: Pick<Office2dActor, "moving" | "stride" | "seat"> & Partial<Pick<Office2dActor, "id" | "gaitBlend" | "leanAngle" | "squash">>,
   time: number,
   reducedMotion: boolean,
 ): Office2dActorMotionPose {
@@ -233,7 +233,9 @@ export function office2dActorBob(
     const shadowScale = 1 - cadence * 0.12 * blend;
     return { offsetY, scaleX, scaleY, tiltRad: lean + swayTilt, shadowScale };
   }
-  const breath = Math.sin(time * 2.2) * 0.01 + squash;
+  // 상주 동료들이 같은 박자로 숨 쉬지 않도록 신원별 고정 위상을 쓴다. 보행은 실제 이동 거리 위상을 유지한다.
+  const breathPhase = actor.id ? office2dHashIndex(actor.id, 997) / 997 * Math.PI * 2 : 0;
+  const breath = Math.sin(time * 2.2 + breathPhase) * 0.01 + squash;
   const scaleY = clamp(1 + breath, 0.92, 1.08);
   return { offsetY: 0, scaleX: clamp(1 / Math.sqrt(scaleY), 0.94, 1.06), scaleY, tiltRad: lean, shadowScale: 1 };
 }
