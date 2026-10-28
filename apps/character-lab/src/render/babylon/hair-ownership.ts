@@ -148,7 +148,7 @@ export async function prepareHairOwnership(deps: CaptureDeps, width: number, hei
             restore.push(() => { mesh.outlineColor.copyFrom(outline); mesh.overlayColor.copyFrom(overlay); mesh.edgesColor.copyFrom(edges); });
             mesh.outlineColor.set(color, color, color); mesh.overlayColor.set(color, color, color); mesh.edgesColor.set(color, color, color, edges.a);
           }
-          rtt.renderList = [...rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines }), ...(deps.pressureOutlines?.() ?? [])];
+          rtt.renderList = [...rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines }), ...(deps.pressureOutlines?.() ?? [])].filter((mesh) => mesh.isVisible && mesh.isEnabled());
           if (rtt.renderList.some((mesh) => !(mesh instanceof Mesh) || !originals.has(mesh))) throw failVisible("capture-hair-source-changed", "헤어 소유권 준비 중 가시 파츠가 바뀌었습니다. 현재 상태에서 다시 저장하세요.", undefined, deps.now);
           rtt.render(false, false);
           pending = readCaptureTarget(engine, rtt, width, height);

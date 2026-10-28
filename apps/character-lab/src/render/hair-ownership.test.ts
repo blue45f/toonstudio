@@ -94,6 +94,43 @@ it("BLEND는 사전 사유로 제한하고 기본 캡처는 그대로 제공한�
   expect(normal.hairOwnership).toBeUndefined();
 });
 
+it.each(["hidden", "disabled"])("처음부터 %s인 하위 메시는 일반 캡처와 소유권에서 함께 제외한다", async (state) => {
+  const h = await boot();
+  h.engine.setShading({ ...DEFAULT_SHADING, mode: "pbr" });
+  const hair = h.scene.getMeshByName("hair");
+  if (!hair) throw new Error("헤어 없음");
+  if (state === "hidden") hair.isVisible = false;
+  else hair.setEnabled(false);
+  let ownerDraws = 0;
+  vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+    if (this.name !== "capture-hair-ownership") return;
+    ownerDraws += 1;
+    expect(this.renderList).toHaveLength(3);
+    expect(this.renderList).not.toContain(hair);
+  });
+  expect(h.engine.psdHairLayers?.()).toEqual({ status: "available" });
+  const ordinary = await h.engine.renderPasses({ ...request, includeHairOwnership: false });
+  const captured = await h.engine.renderPasses(request);
+  expect(captured.hairOwnership).toMatchObject({ status: "available" });
+  expect(captured.passes.lit?.rgba).toEqual(ordinary.passes.lit?.rgba);
+  expect(ownerDraws).toBe(1);
+  expect(hair.isVisible).toBe(state !== "hidden");
+  expect(hair.isEnabled()).toBe(state !== "disabled");
+});
+
+it("준비에서 제외한 메시가 새로 보이면 미준비 소유권을 성공으로 내보내지 않는다", async () => {
+  const h = await boot();
+  h.engine.setShading({ ...DEFAULT_SHADING, mode: "pbr" });
+  const hair = h.scene.getMeshByName("hair");
+  if (!hair) throw new Error("헤어 없음");
+  hair.isVisible = false;
+  vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+    if (this.name === "capture-lit") hair.isVisible = true;
+  });
+  await expect(h.engine.renderPasses(request)).rejects.toMatchObject({ code: "capture-hair-source-changed" });
+  expect(h.scene.materials.some(material => material.name.startsWith("hair-owner:"))).toBe(false);
+});
+
 it("렌더 실패 때 색과 패스 override를 복원하고 임시 재질만 해제한다", async () => {
   const h = await boot();
   const meshes = h.scene.meshes.filter(mesh => mesh.getTotalVertices() > 0) as Mesh[];
