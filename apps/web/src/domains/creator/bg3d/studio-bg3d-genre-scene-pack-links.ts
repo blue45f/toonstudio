@@ -1,9 +1,9 @@
 /**
- * Studio BG3D 장르 씬팩 ↔ Creator Bundle 연결 데이터 (2026-10-28).
+ * Studio BG3D 장르 씬팩 ↔ Creator Bundle 연결 데이터 (2026-10-29).
  *
  * 씬팩(studio-bg3d-scene-composition-presets.ts)은 카메라+조명만 들고 있고, 실제로 무대를
- * 채울 소품·배경은 Creator Bundle 테마 팩(theme-packs.json)이 들고 있다. 2026-10-28에는 원장과 실물이
- * 검증된 Cute Park·Dungeon 423개만 참조하며, 3D 서빙·배포 완료를 뜻하지 않는다. 이 모듈은 팩마다 어떤 번들
+ * 채울 소품·배경은 Creator Bundle 테마 팩(theme-packs.json)이 들고 있다. 원장·실물·native 검증을 통과한
+ * Cute Park·Dungeon·Blue Base·Graveyard 790개를 참조하며, 3D 서빙·배포 완료를 뜻하지 않는다. 이 모듈은 팩마다 어떤 번들
  * 테마/팩에서 에셋을 가져올 수 있는지와, 그 팩에 실재하는 대표 에셋 id를 기록한다.
  *
  * 정직성 계약:
@@ -12,7 +12,7 @@
  *   (studio-bg3d-genre-scene-pack-links.test.ts)가 JSON 실물과 전수 대조한다.
  * - placeableCount는 theme-packs.json packs[].placeable의 스냅샷이다. 번들이 재생성돼
  *   수치가 바뀌면 대조 테스트가 실패해 이 파일의 갱신을 강제한다.
- * - 번들 라이선스: 서비스 내 사용 전용(inServiceOnly: true, downloadable: false). 이 모듈은
+ * - 서비스 전달 계약은 inServiceOnly: true, downloadable: false다. 이 모듈은
  *   에셋 id만 참조할 뿐 다운로드 경로나 파일 자체를 새로 노출하지 않는다. 실제 배치는 기존
  *   번들 로더(studio-bg3d-bundle-theme-packs.ts)의 검증 경로를 그대로 탄다.
  */
@@ -81,6 +81,30 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
           "cbv1-ingest-local-cute-dungeon-pilar-1-6a-af19e527adb9",
           "cbv1-ingest-local-cute-dungeon-stairs-5a-a5ee87ff17c8",
           "cbv1-ingest-local-cute-dungeon-wall-connect-149fca7f6825",
+        ],
+      },
+    ]),
+    link("scifi-arena-showdown", "scifi", "sci-fi", [
+      {
+        packIndex: 5,
+        packTitle: "Sci-Fi Arena: Blue Base",
+        placeableCount: 114,
+        sampleAssetIds: [
+          "cbv1-ingest-local-scifi-blue-base-other-pilarp-1-a-f60ddaf9f6b2",
+          "cbv1-ingest-local-scifi-blue-base-bariers-barierp-4-a-075512669bbf",
+          "cbv1-ingest-local-scifi-blue-base-other-rampp-2-b-36ee08428768",
+        ],
+      },
+    ]),
+    link("thriller-graveyard-vigil", "thriller", "horror", [
+      {
+        packIndex: 6,
+        packTitle: "Cute Graveyard",
+        placeableCount: 253,
+        sampleAssetIds: [
+          "cbv1-ingest-local-cute-graveyard-tombstone-1-8b880b748740",
+          "cbv1-ingest-local-cute-graveyard-catedra-df25def490e1",
+          "cbv1-ingest-local-cute-graveyard-cofin-1-1-f45fb4bfed18",
         ],
       },
     ]),
