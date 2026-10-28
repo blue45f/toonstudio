@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-async function openHandoff(page: Page) {
+test.beforeEach(async ({ page }) => {
   // 샘플 UI는 API 서버 없이 검사한다. 실제 인증·권한·저장은 별도 PostgreSQL HTTP 통합 검증이 담당한다.
   await page.route("**/api/auth/session", (route) => route.fulfill({ json: { authenticated: false, user: null } }));
   await page.route("**/api/health/capabilities", (route) => route.fulfill({ json: {
@@ -12,6 +12,9 @@ async function openHandoff(page: Page) {
       studioCloudSave: "available", realtimeCollaboration: "available", publishing: "available", serverAi: "available",
     },
   } }));
+});
+
+async function openHandoff(page: Page) {
   await page.goto("/production/projects/sample-project/handoff", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("division-handoff-queue")).toBeVisible({ timeout: 120_000 });
   await expect(page.locator('[aria-hidden="true"][data-phase]')).toBeHidden();
@@ -77,6 +80,8 @@ test("작업 작성·블록 편집·상태 이동과 입력 조건 차단", asyn
   await board.getByRole("button", { name: "작업 만들기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "새 제작 작업" });
   await dialog.getByRole("textbox", { name: "작업 제목", exact: true }).fill("브라우저 검증용 콘티 작업");
+  await dialog.getByRole("group", { name: "담당자", exact: true })
+    .getByRole("checkbox", { name: "강민서", exact: true }).check();
   await dialog.getByRole("button", { name: "제목 추가", exact: true }).click();
   await dialog.getByRole("textbox", { name: "1번 제목", exact: true }).fill("연출 의도");
   await dialog.getByRole("button", { name: "체크 항목 추가", exact: true }).click();
