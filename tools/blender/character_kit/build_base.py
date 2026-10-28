@@ -39,6 +39,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", choices=("female", "male"), default="female")
     parser.add_argument("--style", choices=sorted(ws.STYLES), default="none")
+    parser.add_argument("--shoulder-blend", action="store_true", help="검토용 어깨 전이 후보(넓은 웨이트·국소 LBS). 공개 키트 기본값은 유지한다")
     parser.add_argument("--style-override", default=None, help="`--style`의 LookStyle 필드를 덮어쓰는 JSON(예: '{\"head_scale\": 0.86}'). 값을 렌더로 맞출 때 쓴다")
     parser.add_argument("--npz", type=Path, default=None, help="HBM npz(기본: ~/.cache/toonstudio-kit/hbm-npz/hbm_<base>.npz)")
     parser.add_argument("--contract", type=Path, default=CACHE / "out" / "contract.json")
@@ -54,7 +55,7 @@ def main(argv: list[str]) -> int:
         args.npz = CACHE / "hbm-npz" / f"hbm_{look.source_hbm or args.base}.npz"
     started = time.time()
     print("컨텍스트(리그·스킨·T-포즈·정합) 준비")
-    ctx = ba.load_context(args.npz, args.contract, base_id=args.base, style=look)
+    ctx = ba.load_context(args.npz, args.contract, base_id=args.base, style=look, shoulder_blend=args.shoulder_blend)
     print("베이스 조립")
     build = ba.build_base(ctx)
     styled = ws.restyle_build(build, look)
@@ -69,6 +70,8 @@ def main(argv: list[str]) -> int:
     meta = ba.base_meta(build, base_id=args.base)
     meta["glbBytes"] = size
     meta["style"] = styled
+    if args.shoulder_blend:
+        meta["shoulderBlendCandidate"] = True
     (args.out_dir / f"base_meta_{args.base}.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"리타깃 npz: {args.out_dir / f'base_model_{args.base}.npz'}")
     print(f"사이드카: {args.out_dir / f'base_meta_{args.base}.json'}")

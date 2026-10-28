@@ -130,8 +130,8 @@ class EnsureMinDeltaTest(unittest.TestCase):
         self.assertEqual(applied, [])
 
 
-def read_accessor(document: dict, binary: bytes, index: int) -> np.ndarray:
-    """glTF accessor를 독립적으로 읽는다(정규화 SHORT·sparse·byteStride 포함, 값은 float64로 정규화해 돌려준다)."""
+def read_accessor(document: dict, binary: bytes, index: int, *, normalize: bool = True) -> np.ndarray:
+    """glTF accessor를 독립적으로 읽는다(SHORT·sparse·byteStride 포함). 기본은 정규화, normalize=False면 원시 성분이다."""
     accessor = document["accessors"][index]
     component = {5126: np.float32, 5122: np.int16, 5123: np.uint16, 5121: np.uint8, 5125: np.uint32}[accessor["componentType"]]
     width = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}[accessor["type"]]
@@ -152,7 +152,7 @@ def read_accessor(document: dict, binary: bytes, index: int) -> np.ndarray:
         indices = np.frombuffer(binary, dtype=index_dtype, count=sparse["count"], offset=index_view.get("byteOffset", 0))
         values = np.frombuffer(binary, dtype=component, count=sparse["count"] * width, offset=value_view.get("byteOffset", 0)).reshape(-1, width)
         out[indices] = values
-    if accessor.get("normalized"):
+    if normalize and accessor.get("normalized"):
         info = np.iinfo(component)
         out = np.maximum(out / float(info.max), -1.0)
     return out
@@ -169,6 +169,31 @@ def split_glb(data: bytes) -> tuple[dict, bytes]:
 
 
 class QuantizedWriterTest(unittest.TestCase):
+    def test_serialized_morph_bounds_use_raw_components_with_sparse_implicit_zero(self) -> None:
+        dense = np.tile([0.5, -0.25, 0.75], (8, 1))
+        sparse = np.zeros((8, 3))
+        sparse[3] = [0.5, -0.2, 0.00002]
+        zero = np.zeros((8, 3))
+        clipped = np.tile([2.0, -2.0, 0.5], (8, 1))
+        writer = ba.QuantizedGlbWriter()
+        ids = [writer.add_morph_accessor(delta) for delta in (dense, sparse, zero, clipped)]
+        document, binary = split_glb(writer.to_bytes())
+        for index in ids:
+            accessor = document["accessors"][index]
+            raw = read_accessor(document, binary, index, normalize=False)
+            self.assertTrue(accessor["normalized"])
+            self.assertTrue(all(isinstance(value, int) for value in accessor["min"] + accessor["max"]))
+            np.testing.assert_array_equal(accessor["min"], raw.min(axis=0))
+            np.testing.assert_array_equal(accessor["max"], raw.max(axis=0))
+        self.assertEqual(document["accessors"][ids[0]]["min"], [16384, -8192, 24575])
+        self.assertEqual(document["accessors"][ids[1]]["min"], [0, -6553, 0])
+        self.assertEqual(document["accessors"][ids[1]]["max"], [16384, 0, 1])
+        self.assertIn("sparse", document["accessors"][ids[1]])
+        self.assertNotIn("bufferView", document["accessors"][ids[2]])
+        self.assertNotIn("sparse", document["accessors"][ids[2]])
+        self.assertEqual(document["accessors"][ids[2]]["min"], [0, 0, 0])
+        self.assertEqual(document["accessors"][ids[3]]["max"], [32767, -32767, 16384])
+
     def test_morph_targets_round_trip_dense_and_sparse(self) -> None:
         rng = np.random.default_rng(7)
         count = 40
