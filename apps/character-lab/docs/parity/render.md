@@ -264,3 +264,16 @@ Orion GLB 내보내기(NullEngine): sparse 정리 전 12.36 MB → 후 3.61 MB(�
 - 위 표의 수치는 2026-10-08 실제 실행값이다: 키트 렌더 5개 파일(`babylon-kit-load` 69 · `babylon-kit-engine` 38 · `kit-region-mask` 17 · `outline-policy` 3 · `kit-bytes-cache` 6 = 133) 통과.
 - `PackagePanel.test.tsx`(18)는 처음 실행했을 때(15:05 UTC) FIX-A2가 `PackagePanel.tsx`를 편집하는 도중이라 9건이 실패했고(소유 경로 밖이라 고치지 않았다), 그 뒤 다시 실행해 18건 모두 통과했다. 다른 작업자가 같은 파일을 계속 바꿀 수 있으므로 통합 시 다시 확인한다.
 - 패널 행(SlotPanel 14 · PaintPanel 8 · ExportPanel 7 · ParamPanel 17)과 `lab-runtime.test.ts` 18 · `apply-loop.test.ts` 19는 같은 실행에서 통과했다.
+
+
+## 11. 비등방 외곽선과 캡처 분리 — 2026-10-29
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| 필압 외곽선 | 실제 렌더 연결: `shading.toon.outlinePressure` → 공유 geometry·스킨·morph의 런타임 역방향 hull. 화면 가로·세로의 확장 폭이 다르다 | `render/pressure-outline.test.ts`: 기반 정점의 morph·본 회전 일치, 파츠 숨김/변환, PBR 복귀/소스 해제, GLB 제외, 알파/UV 전달 | 2026-10-29 macOS, WebGL2 ANGLE SwiftShader 소프트웨어 렌더러: 실제 GLSL 컴파일·RTT에서 토글 전후 주선 2,264픽셀 차이(채널 차이 >4), 모서리 알파 0, 페이지·shader 오류 0 | `outlinePressure`는 v3 선택 필드. 기존 레시피에 값은 주입하지 않고 등방성 출력을 보존한다. 실 GPU 품질은 미검증 |
+| 저장·실행 취소 | 실제 recipe/history/JSON 왕복. hull 외의 모드에서는 토글 비활성 | `contracts/shading.test.ts`, `app/shell/panels/RenderPanel.test.tsx`: 실제 `createLabStore`·undo/redo·직렬화 | 전체 UI 브라우저 검증은 통합 프로브에서 별도 기록 | 고정 camera/light 수식으로 만들던 MatCap·안구 하이라이트 숫자 요약을 제거했다. 하이라이트 기준 변경은 미지원 사유를 표시한다 |
+| 비주선 캡처 | 밑색·ID·법선·깊이는 런타임 hull·패키지 outline 셸을 넣지 않고, Babylon 기본 hull/edge/overlay도 RTT 제출 동안 끈 뒤 복원한다 | `render/pressure-outline.test.ts`: lit 전용 renderList·오류 시 복원, `render/babylon-capture*.test.ts` | 같은 SwiftShader 실제 RTT에서 토글 전후 밑색·부위 ID·법선 픽셀 차이 0 | GLB에는 렌더 전용 hull을 넣지 않는다. PSD 주선 분해가 쓸 밑색/ID 마스크에 선이 섞이지 않게 한다 |
+
+위 브라우저 수치는 네모 형태의 결정적 절차 fixture를 실제 엔진에 올린 작은 렌더 검증이다. 제작 캐릭터의 모든 헤어·의상·투명 재질 조합과 실 GPU를 검증한 결과로 해석하지 않는다. 검증 원본과 PNG는 ignored 배치 폴더의 `verification/pressure-outline/`에 보관했다.
+
+WebGPU의 별도 소프트웨어 컴파일 진단도 시도했으나, 장치의 외부 Instance가 소멸해 RTT `mapAsync`가 `AbortError`, WGSL `getCompilationInfo`가 `OperationError: Instance dropped error`로 끝났다. 따라서 WGSL 컴파일 성공이나 WebGPU 픽셀 검증을 주장하지 않는다. 이 진단은 ignored 스크립트에서 명시적으로 만든 소프트웨어 하네스이며 앱의 WebGPU fallback 차단·명시적 backend 선택 정책은 변경하지 않았다.

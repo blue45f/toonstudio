@@ -194,3 +194,18 @@ pnpm exec eslint --max-warnings=0 apps/character-lab/src/domains/authored apps/c
 | 대상 변경 | 구현됨 | 기존 패널 테스트와 타입 검사 | 실제 입력 장치 미검증 | 이전 대상 결과를 지워 다른 대상에 잘못 적용되는 것 방지, 처리 중 대상 변경 비활성 |
 
 프리뷰 SVG는 `vision-landmark-preview.tsx`로 분리했다. 몸 결과가 없으면 33점 몸 오버레이와 전신 적용 버튼을 만들지 않는다. `shaper-vision-ai-section.tsx`는 대상 선택만 맡는 제어 컴포넌트이며 자체 추천·포즈 상태를 보관하지 않는다.
+
+
+## 연속 손 인식 — 2026-10-29
+
+| 항목 | 구현 상태 | Node 검증 테스트 파일 | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| 사용자 시작·중지 | 카메라 열기와 손 연속 인식 시작을 각각 사용자가 클릭한다. 전신 대상에서는 연속 손 제어를 숨긴다 | `app/shell/panels/VisionPanel-live.test.tsx` | 실제 카메라 미검증·미사용 | 카메라 권한을 자동 승인하거나 요청하지 않는다 |
+| 실제 손 포즈 적용 | 기존 SHA/bytes 고정 손 모델의 `IMAGE` detect 결과 → 월드 21점을 우선 사용하고 없을 때 이미지 21점으로 변환 → 손가락 본만 적용. 기존 팔·손목·반대 손은 보존한다 | `app/shell/vision-live-hands.test.ts`, `domains/vision/hand-landmarks-to-pose.test.ts` | 기존 이미지 모델은 공식 Google 손 사진에서 손 2개/42점·각 15본 변환 확인(root의 별도 증거). 연속 카메라 품질은 미검증 | 셀피 좌우 해석·거울 적용을 분리한다. 미검출·좌우 미정은 마지막 포즈를 유지하며 합성 손을 만들지 않는다 |
+| 역압·수명 관리 | 캡처·추론을 하나씩 처리하고 완료 후 다음 비디오 프레임을 예약한다. 중지/재시작·대상/사진 전환·스트림 종료·모델 해제·언마운트 뒤 늦은 결과를 버리고 비트맵을 닫는다 | `app/shell/vision-live-hands.test.ts`, `app/shell/panels/VisionPanel-live.test.tsx`, `domains/vision/serialized-hand-model.test.ts` | 실시간 프레임 속도·장시간 메모리 미검증 | 사진과 연속 입력의 동일 모델 호출은 직렬화한다. 모델은 세션이 소유하고 활성 추론 종료 후 정확히 한 번 해제한다 |
+| 편집·실행 취소 | 프레임 간격이 250ms를 넘어도 동일 세션의 연속 입력은 한 history 단계. 다른 편집·undo/redo는 중지 경계 | `state/live-hands-history.test.ts`, `app/shell/panels/VisionPanel-live.test.tsx` | 전체 UI 통합 프로브는 root가 별도 기록 | 수동 편집 뒤 늦은 프레임이 포즈를 다시 덮어쓰지 않는다 |
+| 처리 방식·측정 | UI에 **연속 이미지 분석(IMAGE)**와 최근 실제 추론 시간(`performance.now`)·사용한 좌표 공간을 표시한다. 모델·delegate 자동 전환 없음 | 컨트롤러의 주입 시계/프레임 회귀 | 단일 공식 이미지 CPU 추론 60.7~73.7ms(root 측정), 일반 프레임 성능으로 확대 해석하지 않는다 | 현재 동기 MediaPipe detect는 메인 스레드에서 실행한다. `VIDEO` 추적이나 worker 분리라고 표시하지 않는다. 기존 MediaPipe 스크립트 로더의 `document`/`importScripts` 경로와 ES module worker의 호환성은 별도 실증이 필요하다 |
+
+프레임 입력은 새 `createImageBitmap(video)`로 읽어 PNG 인코딩·미리보기 생성·전체 RGBA 복사를 매 프레임 반복하지 않는다. 모델 입력 해상도나 고정 모델을 낮추는 변경은 없다. 위 자동 테스트는 주입 프레임·포트로 수행했고 실제 카메라를 열지 않았다.
+
+사진 분석도 요청 세대를 검사한다. session 교체·다른 파일·대상 변경·카메라 중지·언마운트 이후 이전 분석의 UI·손 방향·좌표 공간·전역 실패는 반영하지 않고, 비트맵은 `finally`에서 닫는다. 기존 사진 인식의 모델·좌표 선택 정책은 유지한다. 지연된 모델 결과·오류 회귀는 `VisionPanel-live.test.tsx`에서 확인한다.

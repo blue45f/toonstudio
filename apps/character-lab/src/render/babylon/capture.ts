@@ -61,6 +61,8 @@ export interface CaptureDeps {
   readonly shadow: ShadowGenerator | null;
   /** toon·hull일 때 outline 셸 포함 */
   readonly includeOutlines: boolean;
+  /** 런타임 역방향 hull. lit에만 포함하고 밑색·ID·법선·깊이에는 넣지 않는다. */
+  readonly pressureOutlines?: () => readonly Mesh[];
   /** 패스 셰이더 컴파일 완료를 기다릴지(GPU 레인 true, NullEngine은 컴파일하지 않으므로 false) */
   readonly waitForShaders: boolean;
   /** 컴파일 대기 상한(ms) 덮어쓰기. 기본 `CAPTURE_COMPILE_TIMEOUT_MS`. 테스트가 시간 초과 경로를 짧게 검증한다. */
@@ -223,13 +225,33 @@ interface PassRenderResult {
   readonly boxes: SyntheticBox[] | null;
 }
 
+/** 비주선 패스에는 Babylon의 암묵적인 hull·edge·overlay 드로도 넣지 않는다. 동기 RTT 제출 직후 복원한다. */
+export function withNativeOutlinesOff<T>(meshes: readonly Mesh[], off: boolean, draw: () => T): T {
+  if (!off) return draw();
+  const restore = meshes.map((mesh) => {
+    const outline = mesh.renderOutline;
+    const overlay = mesh.renderOverlay;
+    const edges = mesh.edgesRenderer;
+    const edgesEnabled = edges?.isEnabled;
+    mesh.renderOutline = false;
+    mesh.renderOverlay = false;
+    if (edges) edges.isEnabled = false;
+    return () => {
+      mesh.renderOutline = outline;
+      mesh.renderOverlay = overlay;
+      if (edges && edgesEnabled !== undefined) edges.isEnabled = edgesEnabled;
+    };
+  });
+  try { return draw(); } finally { restore.forEach((undo) => undo()); }
+}
+
 /** 일시 적용 구간(썸네일): before는 렌더 직전, after는 readPixels 호출 직후에 동기 호출된다. */
 export interface CaptureAround {
   before(): void;
   after(): void;
 }
 
-async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: () => readonly Mesh[], around: CaptureAround | undefined): Promise<PassRenderResult> {
+async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: (pass: RenderPassId) => readonly Mesh[], around: CaptureAround | undefined): Promise<PassRenderResult> {
   const multisample = pass === "flat" || pass === "lit";
   const engine = deps.scene.getEngine();
   const samples = multisample ? Math.max(1, Math.min(4, engine.getCaps().maxMSAASamples || 1)) : 1;
@@ -251,6 +273,9 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
         if (material) compilePairs.push([mesh, material]);
       }
     }
+    if (pass === "lit") {
+      for (const mesh of deps.pressureOutlines?.() ?? []) if (mesh.material) compilePairs.push([mesh, mesh.material]);
+    }
     await ensureReady(deps, compilePairs, pass === "lit");
 
     // (2) 동기 구간: 일시 적용 → 프레이밍·렌더 목록 → 렌더 → readPixels 호출 → 복원
@@ -258,7 +283,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
     let pending: ReturnType<RenderTargetTexture["readPixels"]> = null;
     let boxes: SyntheticBox[] | null = null;
     try {
-      meshes = frame();
+      meshes = [...frame(pass), ...(pass === "lit" ? deps.pressureOutlines?.() ?? [] : [])];
       rtt.renderList = [...meshes];
       for (const mesh of meshes) {
         const material = passMaterialFor(deps, camera, pass, partOfMesh(deps, mesh), mesh);
@@ -271,7 +296,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
           // 그림자 맵 갱신 실패는 lit 캡처를 막지 않는다(이전 프레임 그림자 사용).
         }
       }
-      withScatteringOff(deps.rig, pass === "lit", () => rtt.render(false, false));
+      withNativeOutlinesOff(meshes, pass !== "lit", () => withScatteringOff(deps.rig, pass === "lit", () => rtt.render(false, false)));
       // WebGL2는 PBO 비동기 readback으로 읽기 명령만 제출한다(GPU 완료를 메인 스레드에서 기다리지 않는다, capture-targets.ts).
       pending = readCaptureTarget(engine, rtt, width, height);
       if (pending === null) boxes = syntheticBoxes(deps, camera, width, height);
@@ -314,11 +339,11 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
   }
   const camera = deps.character.captureCamera;
   /** 프레이밍은 렌더 직전(일시 적용 뒤)에 계산한다: 플랜의 가시성·포즈가 bounds에 반영되도록. */
-  const frame = (): readonly Mesh[] => {
+  const frame = (pass: RenderPassId): readonly Mesh[] => {
     deps.character.applyFraming(camera, options.framing, computeRigBounds(deps.rig), width / height);
     camera.getViewMatrix(true);
     camera.getProjectionMatrix(true);
-    return rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines });
+    return rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines && pass === "lit" });
   };
   const passes: Partial<Record<RasterPassId, CapturedRaster>> = {};
   let depth: CapturedDepth | undefined;

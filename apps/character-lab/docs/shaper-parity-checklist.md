@@ -1,5 +1,9 @@
 # SHAPER 패리티 체크리스트 — character-lab 집계표
 
+2026-10-29 재검토: 아래는 영역별로 기록한 구현·검증 범위이며 Shaper와의 동일 품질이나 기능 우위를 인증하는 표가 아니다.
+공식 자료·설치본 REA 분석과 실제 상태·렌더 연결을 다시 대조한 결과는
+[실제 동작 연결 기록](shaper-implementation-review-20261028.md)을 우선한다. 로컬 UI 숫자 변화만으로는 구현 완료로 집계하지 않는다.
+
 상태: current (집계 2026-10-02 00:55 UTC, core 작성). 영역 원본은 `docs/parity/{state,humanoid,outfit,animation,render,export,vision}.md`이며
 이 표는 그 원본과 디스크의 테스트 파일을 core가 합친 것이다. 7개 영역 원본이 모두 제출되어 "(임시)" 행은 없다(render는 render-beta 갱신본, 2026-10-02).
 

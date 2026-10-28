@@ -23,6 +23,7 @@ import { channelColorsSchema } from "./color-channels";
 import { createDefaultHairColor, createDefaultWardrobe, hairColorSchema, isAccessoryInstanceId, partParamsSchema, surfacesSchema, wardrobeSchema } from "./customization";
 import { failVisible } from "./errors";
 import { FACS_UNITS } from "./expression";
+import { eyeGazeSchema } from "./eye-gaze";
 import { PART_ROLES, RECIPE_COLOR_KEYS } from "./mesh-data";
 import { BODY_PARAM_KEYS, FACE_PARAM_KEYS } from "./params";
 import { PHYSICS_PROVIDER_IDS } from "./physics";
@@ -41,7 +42,7 @@ export const RECIPE_MIN_SUPPORTED_VERSION = 1 as const;
 export const RECIPE_SUPPORTED_VERSIONS = [1, 2, 3] as const;
 
 /** v3에서 새로 생긴 최상위 필드(v2 → v3 마이그레이션이 기본값으로 채운다) */
-export const RECIPE_V3_ONLY_FIELDS = ["style", "wardrobe", "partParams", "surfaces", "hairColor"] as const;
+export const RECIPE_V3_ONLY_FIELDS = ["style", "wardrobe", "partParams", "surfaces", "hairColor", "eyeGaze"] as const;
 
 export const HEX_COLOR = /^#[0-9a-f]{6}$/u;
 export const CHARACTER_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{1,62}$/u;
@@ -155,6 +156,8 @@ const recipeBodyShapeV3 = {
   partParams: partParamsSchema,
   surfaces: surfacesSchema,
   hairColor: hairColorSchema,
+  /** 선택 확장: 없으면 v1/v2/v3의 기존 눈 pose를 그대로 보존한다. */
+  eyeGaze: eyeGazeSchema.optional(),
 };
 
 interface RecipeIssue {

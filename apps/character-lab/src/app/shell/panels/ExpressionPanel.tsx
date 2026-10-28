@@ -10,27 +10,14 @@
  *   (`param/set`과 같은 규칙, state/lab-store가 처리). 프리셋 카드·세기·초기화·완화는 각각 1단계다.
  * - 스타일 접두 `cl-expression-`(core의 character-lab.css가 정의).
  */
-import { useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 
 import { blendExpression, blendExpressionPresets, expressionToMorphWeights, relaxAntagonists } from "../../../animation/expression-blend";
 import { EXPRESSION_PRESETS } from "../../../animation/presets";
-import { FACS_LABELS_KO, FACS_UNITS, clampExpression } from "../../../contracts";
-import { applyShaperSymmetricEyeballTransform, computeEyeballHighlightTransform } from "../../../render/toon-reference";
-import { useApplyPlan, useDispatch, useLabState } from "../lab-store-context";
+import { DEFAULT_EYE_GAZE, EYE_GAZE_LIMIT_DEG, FACS_LABELS_KO, FACS_UNITS, clampExpression } from "../../../contracts";
+import { useApplyPlan, useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
-import type { ExpressionPreset, ExpressionWeights, FacsUnit } from "../../../contracts";
-import type { EyeballHighlightMode } from "../../../render/toon-reference";
-
-const SHAPER_EYEBALL_HIGHLIGHT_MODES: readonly {
-  readonly id: EyeballHighlightMode;
-  readonly labelKo: string;
-}[] = [
-  { id: "fix", labelKo: "안구 고정 (fix)" },
-  { id: "cam", labelKo: "카메라 추적 (cam)" },
-  { id: "light", labelKo: "조명 반사 (light)" },
-  { id: "world", labelKo: "월드 고정 (world)" },
-];
-
+import type { EyeGaze, ExpressionPreset, ExpressionWeights, FacsUnit } from "../../../contracts";
 /** 두 표정이 클램프 후 같은지(없는 유닛 = 0) */
 export function expressionsEqual(a: ExpressionWeights, b: ExpressionWeights): boolean {
   const ca = clampExpression(a);
@@ -50,29 +37,33 @@ export function ExpressionPanel() {
   /** 이 패널에서 슬라이더로 만진 유닛(프리셋 세기 변경 시 보존) */
   const [overrides, setOverrides] = useState<ExpressionWeights>({});
   const [influence, setInfluence] = useState(1);
-  const [highlightMode, setHighlightMode] = useState<EyeballHighlightMode>("cam");
-  const [fixEyeballCam, setFixEyeballCam] = useState<boolean>(false);
-  const [eyeballSymmetry, setEyeballSymmetry] = useState<boolean>(true);
-  const [leftEyeYawDeg, setLeftEyeYawDeg] = useState<number>(12);
-
-  const shaperEyeballPreview = useMemo(() => {
-    const symmetric = applyShaperSymmetricEyeballTransform({
-      selectEyeball: 1,
-      symmetryControl: eyeballSymmetry,
-      leftEyeball: { position: [-3.2, 0, 0], eulerDeg: [0, 0, 0], localScale: [1, 1, 1] },
-      rightEyeball: { position: [3.2, 0, 0], eulerDeg: [0, 0, 0], localScale: [1, 1, 1] },
-      nextTransform: { eulerDeg: [0, leftEyeYawDeg, 0] },
-    });
-    const highlight = computeEyeballHighlightTransform({
-      mode: highlightMode,
-      eyeballEulerDeg: symmetric.leftEyeball.eulerDeg,
-      cameraLookEulerDeg: [0, 15, 0],
-      lightEulerDeg: [25, -30, 0],
-      offsetPos: [4, -2],
-      fixEyeballCam,
-    });
-    return { symmetric, highlight };
-  }, [eyeballSymmetry, fixEyeballCam, highlightMode, leftEyeYawDeg]);
+  const session = useEngineSession();
+  const eyeGaze = recipe.eyeGaze ?? DEFAULT_EYE_GAZE;
+  const editableGaze: EyeGaze = { mode: eyeGaze.mode, symmetry: eyeGaze.symmetry, left: eyeGaze.left, right: eyeGaze.right };
+  const eyeReading = session.engine()?.eyeGaze?.();
+  const eyesDisabled = eyeReading?.status !== "available";
+  const eyeReason = eyeReading?.status === "unavailable" ? eyeReading.reasonKo : "안구 본을 확인할 렌더 엔진이 준비되지 않았습니다.";
+  const setGaze = (gaze: EyeGaze, coalesceKey?: string): void => {
+    dispatch({ type: "eye-gaze/set", gaze, ...(coalesceKey ? { coalesceKey } : {}) });
+  };
+  const freezeGaze = useCallback((): boolean => {
+    const current = session.engine()?.eyeGaze?.();
+    if (current?.status !== "available") return false;
+    dispatch({ type: "eye-gaze/set", gaze: { mode: "manual", symmetry: false, left: current.left, right: current.right, frozenPose: current.frozenPose } });
+    return true;
+  }, [dispatch, session]);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== "F10" || event.repeat || event.defaultPrevented) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("input, textarea, select")) return;
+      const editable = target?.closest("[contenteditable]");
+      if (editable && editable.getAttribute("contenteditable") !== "false") return;
+      if (freezeGaze()) event.preventDefault();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [freezeGaze]);
 
   const capability = capabilities.expression;
   const disabled = capability.status === "unavailable";
@@ -213,61 +204,35 @@ export function ExpressionPanel() {
         className="cl-expression-shaper-eyeball"
         data-testid="shaper-expression-headpart-section"
       >
-        <h3>SHAPER EyeballData · 안구 시선·하이라이트 동기화</h3>
-        <fieldset className="cl-expression-row">
-          <legend>하이라이트 기준 (EyeballHighlightType 4종)</legend>
-          {SHAPER_EYEBALL_HIGHLIGHT_MODES.map((entry) => (
-            <label key={entry.id} htmlFor={`${ids}-eyeball-hl-${entry.id}`}>
-              <input
-                id={`${ids}-eyeball-hl-${entry.id}`}
-                type="radio"
-                name={`${ids}-eyeball-highlight-mode`}
-                value={entry.id}
-                checked={highlightMode === entry.id}
-                onChange={() => setHighlightMode(entry.id)}
-              />
-              {entry.labelKo}
-            </label>
-          ))}
+        <h3>안구 시선</h3>
+        {eyesDisabled && <p role="status">{eyeReason}</p>}
+        <fieldset className="cl-expression-row" disabled={eyesDisabled}>
+          <legend>실제 안구 본 제어</legend>
+          <label htmlFor={`${ids}-fix-eyeball-cam`}>카메라 응시</label>
+          <input id={`${ids}-fix-eyeball-cam`} type="checkbox" checked={eyeGaze.mode === "camera"}
+            onChange={(event) => event.target.checked ? setGaze({ ...editableGaze, mode: "camera" }) : freezeGaze()} />
+          <button type="button" onClick={freezeGaze}>현재 시선 고정 (F10)</button>
+          <label htmlFor={`${ids}-eyeball-symmetry`}>좌우 안구 대칭 회전</label>
+          <input id={`${ids}-eyeball-symmetry`} type="checkbox" checked={eyeGaze.symmetry}
+            disabled={eyeGaze.mode === "camera"} onChange={(event) => setGaze({ ...editableGaze, symmetry: event.target.checked })} />
+          {(["left", "right"] as const).map((side) => (["yawDeg", "pitchDeg"] as const).map((axis) => {
+            const id = `${ids}-${side}-${axis}`;
+            const label = `${side === "left" ? "좌측" : "우측"} 안구 ${axis === "yawDeg" ? "수평 시선 (Yaw°)" : "수직 시선 (Pitch°)"}`;
+            return <div className="cl-expression-row" key={id}>
+              <label htmlFor={id}>{label}</label>
+              <input id={id} type="range" min={-EYE_GAZE_LIMIT_DEG} max={EYE_GAZE_LIMIT_DEG} step={1}
+                value={side === "right" && eyeGaze.symmetry ? (axis === "yawDeg" ? -eyeGaze.left.yawDeg : eyeGaze.left.pitchDeg) : eyeGaze[side][axis]}
+                disabled={eyeGaze.mode === "camera" || (side === "right" && eyeGaze.symmetry)}
+                onChange={(event) => setGaze({ ...editableGaze, mode: "manual", [side]: { ...eyeGaze[side], [axis]: Number(event.target.value) } }, `eye-${side}-${axis}`)} />
+            </div>;
+          }))}
         </fieldset>
-        <div className="cl-expression-row">
-          <label htmlFor={`${ids}-fix-eyeball-cam`}>
-            F10 카메라 응시 고정 (fixEyeballCam)
-          </label>
-          <input
-            id={`${ids}-fix-eyeball-cam`}
-            type="checkbox"
-            checked={fixEyeballCam}
-            onChange={(event) => setFixEyeballCam(event.target.checked)}
-          />
-          <label htmlFor={`${ids}-eyeball-symmetry`}>
-            좌우 안구 대칭 회전 (symmetryControl)
-          </label>
-          <input
-            id={`${ids}-eyeball-symmetry`}
-            type="checkbox"
-            checked={eyeballSymmetry}
-            onChange={(event) => setEyeballSymmetry(event.target.checked)}
-          />
-        </div>
-        <div className="cl-expression-row">
-          <label htmlFor={`${ids}-left-eye-yaw`}>좌측 안구 수평 시선 (Yaw°)</label>
-          <input
-            id={`${ids}-left-eye-yaw`}
-            type="range"
-            min={-45}
-            max={45}
-            step={1}
-            value={leftEyeYawDeg}
-            onChange={(event) => setLeftEyeYawDeg(Number(event.target.value))}
-          />
-          <output htmlFor={`${ids}-left-eye-yaw`}>{leftEyeYawDeg}°</output>
-        </div>
-        <p className="cl-expression-footer" data-testid="shaper-eyeball-readout">
-          좌안 Yaw {shaperEyeballPreview.symmetric.leftEyeball.eulerDeg[1]}° · 우안 미러 Yaw{" "}
-          {shaperEyeballPreview.symmetric.rightEyeball.eulerDeg[1]}° · 하이라이트 오일러 (
-          {shaperEyeballPreview.highlight.highlightEulerDeg.join("°, ")}°)
-        </p>
+        <p className="cl-expression-footer">카메라 응시는 실제 뷰포트 카메라를 따라갑니다. 고정하면 현재 본 회전을 저장하며, 캡처 중에는 시선을 유지합니다. 시선 조정 범위는 ±25°입니다.</p>
+        <fieldset disabled className="cl-expression-row">
+          <legend>하이라이트 기준 변경 · 미지원</legend>
+          {["안구 고정 (fix)", "카메라 추적 (cam)", "조명 반사 (light)", "월드 고정 (world)"].map((label) => <label key={label}><input type="radio" name={`${ids}-highlight-unavailable`} />{label}</label>)}
+        </fieldset>
+        <p className="cl-expression-footer">독립 하이라이트 방향 제어는 현재 렌더러가 지원하지 않습니다. 현재 재질의 반사·메시에 포함된 하이라이트를 유지합니다.</p>
       </div>
 
       <p className="cl-expression-footer">같은 슬라이더의 연속 드래그는 되돌리기 1단계로 병합되고, 프리셋 카드·세기·초기화는 각각 1단계입니다.</p>

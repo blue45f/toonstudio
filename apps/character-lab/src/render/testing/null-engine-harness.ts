@@ -44,13 +44,14 @@ export { mapEngineCaps, readAdapterInfo } from "../babylon/engine-capabilities";
 // 베타 기능(NodeMaterial 툰·OpenPBR·IBL Shadows·투영 페인트)과 장면 보조 — 테스트는 render/babylon/**을 직접 import하지 않고 여기서만 받는다.
 export { createBetaController, DEFAULT_BETA_LOADERS } from "../babylon/beta-controller";
 export { iblShadowsSupport, openPbrSupport } from "../babylon/beta-support";
-export { withScatteringOff } from "../babylon/capture";
+export { withScatteringOff, withNativeOutlinesOff } from "../babylon/capture";
 // 반응성·카메라(P-01·F-01·H-03): 캡처 타깃 풀·morph 셰이더 고정·뷰포트 입력·장면 프레이밍 한계
 export { acquireCaptureTarget, pooledCaptureTargetCount, POOLED_CAPTURE_MAX_EDGE } from "../babylon/capture-targets";
 export { pinMorphInfluencerCount } from "../babylon/morph-shader-pin";
 export { attachViewportControls, panCameraByPixels, zoomCameraByWheel } from "../babylon/viewport-controls";
 export { createCharacterScene } from "../babylon/scene-builder";
-export { applyRigPlan, restoreRig, rigBoneSnapshots, snapshotRig } from "../babylon/character-rig";
+export { applyRigPlan, restoreRig, rigBoneSnapshots, rigBoneWorld, snapshotRig } from "../babylon/character-rig";
+export { applyRigEyeGaze, readRigEyeGaze } from "../babylon/eye-gaze";
 export { createJointOffsetRig } from "../babylon/joint-offset-rig";
 export { createIblShadows, IBL_VOXEL_MIN_INTERVAL_MS } from "../babylon/lighting/ibl-shadows";
 export { createNodeToon, NODE_TOON_INPUTS, nodeLanguageFor } from "../babylon/materials/node-toon-material";

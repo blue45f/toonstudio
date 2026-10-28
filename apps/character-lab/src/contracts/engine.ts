@@ -175,6 +175,8 @@ export interface CharacterEngine {
   /** NDC [-1, 1]. NullEngine에서는 null 허용 */
   pick(ndcX: number, ndcY: number, options?: CharacterPickOptions): PickHit | null;
   jointHandles(): readonly JointDragHandle[];
+  /** 실제 좌·우 눈 본의 현재 회전. 지원하지 않는 엔진·소스는 제어를 비활성화한다. */
+  eyeGaze?(): import("./eye-gaze").EyeGazeReading;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;

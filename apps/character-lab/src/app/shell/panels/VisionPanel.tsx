@@ -10,108 +10,29 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
-import { CHANNEL_LABELS_KO, CHARACTER_SLOT_KINDS, LANDMARK_APPLY_SCOPES, LANDMARK_VISIBILITY_MIN, POSE_SCOPE_LABELS_KO, RECIPE_COLOR_KEYS, SLOT_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
-import { handLandmarksToPose } from "../../../domains/vision/hand-landmarks-to-pose";
+import { CHANNEL_LABELS_KO, CHARACTER_SLOT_KINDS, RECIPE_COLOR_KEYS, SLOT_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
 import { downsampleRgba } from "../../../domains/vision/image-sampling";
 import { extractPalette } from "../../../domains/vision/kmeans-palette";
-import { handOverlayPlan, poseOverlayPlan } from "../../../domains/vision/landmark-overlay";
-import { controllableBones, landmarksToPose } from "../../../domains/vision/landmarks-to-pose";
 import { VISION_MODEL_SPECS, describeModelPinKo, isModelSpecPinned } from "../../../domains/vision/model-assets";
 import { recommendColors } from "../../../domains/vision/recommend";
 import { createThumbnailEmbeddingCache, recommendFromReference } from "../../../domains/vision/reference-recommender";
-import { VISION_MODEL_KEYS, VISION_MODEL_LABELS_KO, resolveHandSide, toContractVisionStatus } from "../../../domains/vision/vision-ports";
+import { VISION_MODEL_KEYS, VISION_MODEL_LABELS_KO, toContractVisionStatus } from "../../../domains/vision/vision-ports";
 import { createVisionSession } from "../../../domains/vision/vision-session";
 import { useCatalog, useDispatch, useLabContext, useLabState } from "../lab-store-context";
 
-import { ShaperVisionAiSection } from "./shaper-vision-ai-section";
-import { VisionLandmarkPreview } from "./vision-landmark-preview";
+import { useImageLifecycle } from "./vision-image-lifecycle";
+import { createBrowserVisionDeps } from "./vision-panel-deps";
+import { PhotoPoseSection } from "./vision-photo-pose-section";
 
-import type { VisionPoseTarget } from "./shaper-vision-ai-section";
-import type { CapturedRaster, LabFailure, LandmarkApplyScope, RecipeColorKey, SlotKind } from "../../../contracts";
+import type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";
+import type { LabFailure, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/vision/kmeans-palette";
-import type { LandmarkSpace } from "../../../domains/vision/landmark-space";
-import type { LandmarksToPoseResult } from "../../../domains/vision/landmarks-to-pose";
 import type { ReferenceRecommendation } from "../../../domains/vision/reference-recommender";
-import type { HandDetection, PoseDetection, VisionDelegate, VisionImageSource, VisionLoaders, VisionModelKey, VisionModelStatus } from "../../../domains/vision/vision-ports";
+import type { VisionDelegate, VisionLoaders, VisionModelKey, VisionModelStatus } from "../../../domains/vision/vision-ports";
 import type { VisionSession } from "../../../domains/vision/vision-session";
 
-export interface DecodedImage {
-  readonly width: number;
-  readonly height: number;
-  /** straight alpha RGBA, top-down */
-  readonly rgba: Uint8ClampedArray;
-  /** MediaPipe 입력. 추정이 끝나면 `releaseSource`로 닫으므로 그 뒤에는 쓰지 않는다. */
-  readonly source: VisionImageSource;
-  /** 미리보기 URL(없으면 null). Blob URL이면 `releasePreview`로 해제한다. */
-  readonly previewUrl: string | null;
-  readonly label: string;
-  /** source(ImageBitmap)를 닫는다. 추정이 끝난 직후 분석 코드가 부른다. 여러 번 불러도 안전하다. */
-  readonly releaseSource?: () => void;
-  /** 미리보기 Blob URL을 해제한다. 이미지를 교체하거나 패널이 사라질 때 부른다. 여러 번 불러도 안전하다. */
-  readonly releasePreview?: () => void;
-}
-
-export interface VisionPanelDeps {
-  /** 모델 로더(기본: mediapipe-loader.browser 동적 import) */
-  createLoaders(options: { readonly delegate: VisionDelegate }): Promise<VisionLoaders>;
-  decodeImage(file: Blob): Promise<DecodedImage>;
-  /** 썸네일 래스터 → MediaPipe 입력(기본 ImageData) */
-  rasterToImage(raster: CapturedRaster): VisionImageSource;
-  /** 없으면 '카메라 미지원' 표시 */
-  readonly openCamera?: () => Promise<MediaStream>;
-  readonly captureVideo?: (video: HTMLVideoElement) => Promise<DecodedImage>;
-  readonly now?: () => number;
-}
-
-function hasCanvas2d(): boolean {
-  return typeof document !== "undefined" && typeof HTMLCanvasElement !== "undefined";
-}
-
-/** 브라우저 기본 의존성(createImageBitmap·canvas·getUserMedia) */
-export function createBrowserVisionDeps(): VisionPanelDeps {
-  const decodeFromDrawable = async (drawable: ImageBitmap | HTMLVideoElement, width: number, height: number, previewUrl: string | null, label: string): Promise<DecodedImage> => {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    if (!context) throw failVisible("vision-canvas-unavailable", "2D 캔버스를 만들 수 없어 이미지를 읽지 못했습니다.");
-    context.drawImage(drawable, 0, 0, width, height);
-    const data = context.getImageData(0, 0, width, height);
-    const source = drawable instanceof HTMLVideoElement ? await createImageBitmap(canvas) : drawable;
-    return { width, height, rgba: data.data, source, previewUrl: previewUrl ?? canvas.toDataURL("image/png"), label, releaseSource: () => source.close() };
-  };
-  const mediaDevices = typeof navigator !== "undefined" ? navigator.mediaDevices : undefined;
-  return {
-    createLoaders: ({ delegate }) => import("../../../domains/vision/mediapipe-loader.browser").then((module) => module.createMediaPipeLoaders({ delegate })),
-    async decodeImage(file) {
-      if (typeof createImageBitmap !== "function" || !hasCanvas2d()) throw failVisible("vision-decode-unsupported", "이 환경은 createImageBitmap/canvas를 지원하지 않아 이미지를 읽을 수 없습니다.");
-      const bitmap = await createImageBitmap(file);
-      let previewUrl: string | null = null;
-      try {
-        previewUrl = typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : null;
-        const objectUrl = previewUrl;
-        const label = file instanceof File ? file.name : "이미지";
-        const decoded = await decodeFromDrawable(bitmap, bitmap.width, bitmap.height, objectUrl, label);
-        return objectUrl ? { ...decoded, releasePreview: () => URL.revokeObjectURL(objectUrl) } : decoded;
-      } catch (error) {
-        // 호출자가 DecodedImage를 받지 못하므로 만들어 둔 자원은 여기서 해제한다.
-        bitmap.close();
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        throw error;
-      }
-    },
-    rasterToImage(raster) {
-      if (typeof ImageData === "undefined") throw failVisible("vision-imagedata-unsupported", "이 환경은 ImageData를 지원하지 않아 썸네일을 임베딩할 수 없습니다.");
-      return new ImageData(new Uint8ClampedArray(raster.rgba), raster.width, raster.height);
-    },
-    ...(mediaDevices && typeof mediaDevices.getUserMedia === "function"
-      ? {
-          openCamera: () => mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false }),
-          captureVideo: (video: HTMLVideoElement) => decodeFromDrawable(video, video.videoWidth || 640, video.videoHeight || 480, null, "카메라 촬영"),
-        }
-      : {}),
-  };
-}
+export { createBrowserVisionDeps } from "./vision-panel-deps";
+export type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";
 
 export interface VisionPanelProps {
   readonly deps?: VisionPanelDeps;
@@ -123,60 +44,11 @@ type ReferenceState =
   | { readonly phase: "ready"; readonly image: DecodedImage; readonly palette: readonly PaletteEntry[]; readonly colors: Partial<Record<RecipeColorKey, string>>; readonly recommendation: ReferenceRecommendation }
   | { readonly phase: "failed"; readonly failure: LabFailure };
 
-type PoseState =
-  | { readonly phase: "idle" }
-  | { readonly phase: "working"; readonly step: string }
-  | { readonly phase: "ready"; readonly image: DecodedImage; readonly detection: PoseDetection | null; readonly hands: readonly HandDetection[] | null; readonly handFailure: LabFailure | null; readonly inputSource: "photo" | "camera" }
-  | { readonly phase: "failed"; readonly failure: LabFailure };
-
 /**
  * 기본 시각 함수. 렌더마다 새 함수를 만들면 `useMemo` 의존성이 매번 바뀌어 비전 세션(과 로드된 모델)이 렌더마다 폐기되므로
  * 모듈 상수로 둔다.
  */
 const defaultNow = (): number => Date.now();
-
-/**
- * 분석 구역이 쥔 디코드 이미지의 자원 수명. 새 이미지를 받으면 이전 이미지의 미리보기 URL을, 언마운트하면 현재 이미지의
- * 미리보기 URL을 해제한다(source 비트맵은 분석 코드가 추정 직후 `releaseSource`로 닫는다).
- */
-interface ImageLifecycle {
-  /** 방금 디코드한 이미지를 현재 이미지로 삼는다. 이미 언마운트됐으면 미리보기를 해제하고 false(분석을 이어가지 않는다). */
-  track(image: DecodedImage): boolean;
-  /** 화면에 남지 않을 이미지(분석 실패)의 미리보기를 해제한다. */
-  discard(image: DecodedImage): void;
-}
-
-function useImageLifecycle(): ImageLifecycle {
-  const current = useRef<DecodedImage | null>(null);
-  const active = useRef(true);
-  useEffect(() => {
-    active.current = true;
-    return () => {
-      active.current = false;
-      current.current?.releasePreview?.();
-      current.current = null;
-    };
-  }, []);
-  return useMemo<ImageLifecycle>(
-    () => ({
-      track(image) {
-        if (!active.current) {
-          image.releasePreview?.();
-          return false;
-        }
-        const previous = current.current;
-        current.current = image;
-        if (previous && previous !== image) previous.releasePreview?.();
-        return true;
-      },
-      discard(image) {
-        image.releasePreview?.();
-        if (current.current === image) current.current = null;
-      },
-    }),
-    [],
-  );
-}
 
 const COLOR_LABELS_KO: Readonly<Record<RecipeColorKey, string>> = CHANNEL_LABELS_KO; // 라벨 단일 기준: 계약 색 채널 라벨(레시피 v3)
 const PALETTE_K = 6;
@@ -449,294 +321,6 @@ function ReferenceSection({ session, deps, now }: ReferenceSectionProps) {
                       );
                     })}
                   </ul>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-interface PhotoPoseSectionProps {
-  readonly session: VisionSession;
-  readonly deps: VisionPanelDeps;
-  readonly now: () => number;
-}
-
-function PhotoPoseSection({ session, deps, now }: PhotoPoseSectionProps) {
-  const dispatch = useDispatch();
-  const { store } = useLabContext();
-  const ids = useId();
-  const [pose, setPose] = useState<PoseState>({ phase: "idle" });
-  const [target, setTarget] = useState<VisionPoseTarget>("body");
-  const [scope, setScope] = useState<LandmarkApplyScope>("full");
-  const [mirror, setMirror] = useState(false);
-  const [selfie, setSelfie] = useState(false);
-  const [visibilityMin, setVisibilityMin] = useState(LANDMARK_VISIBILITY_MIN);
-  const [space, setSpace] = useState<LandmarkSpace>("world");
-  const [handSides, setHandSides] = useState<Readonly<Record<number, "left" | "right">>>({});
-  const [camera, setCamera] = useState<{ readonly stream: MediaStream | null; readonly failure: LabFailure | null }>({ stream: null, failure: null });
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const mounted = useRef(true);
-  const images = useImageLifecycle();
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  const stopCamera = useCallback((): void => {
-    setCamera((current) => {
-      current.stream?.getTracks().forEach((track) => track.stop());
-      return { stream: null, failure: null };
-    });
-  }, []);
-  useEffect(() => stopCamera, [stopCamera]);
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video && camera.stream) {
-      video.srcObject = camera.stream;
-      void video.play?.()?.catch(() => undefined);
-    }
-  }, [camera.stream]);
-
-  const analyze = useCallback(
-    async (decode: () => Promise<DecodedImage>, inputSource: "photo" | "camera" = "photo"): Promise<void> => {
-      const update = (next: PoseState): void => {
-        if (mounted.current) setPose(next);
-      };
-      let image: DecodedImage | null = null;
-      try {
-        update({ phase: "working", step: "이미지 디코드" });
-        image = await decode();
-        if (!images.track(image)) return;
-        let detection: PoseDetection | null = null;
-        if (target === "body") {
-          update({ phase: "working", step: "포즈 랜드마커 로드" });
-          const poseModel = await session.ensure("poseLandmarker");
-          update({ phase: "working", step: "포즈 추론" });
-          detection = await poseModel.port.detect(image.source);
-          if (!detection) throw failVisible("vision-no-person", "사진에서 사람(포즈)을 찾지 못했습니다.", undefined, now());
-        }
-        let hands: readonly HandDetection[] | null = null;
-        let handFailure: LabFailure | null = null;
-        try {
-          update({ phase: "working", step: "손 랜드마커 로드·추론" });
-          const handModel = await session.ensure("handLandmarker");
-          hands = await handModel.port.detect(image.source);
-        } catch (error) {
-          if (target === "hands") throw error;
-          handFailure = toFailure("vision-hand-failed", "손 랜드마크 추론에 실패했습니다.", error, now());
-        }
-        if (target === "hands" && !hands?.length) throw failVisible("vision-no-hands", "사진에서 손을 찾지 못했습니다. 손과 손목이 잘 보이는 사진을 선택해 주세요.", undefined, now());
-        setHandSides({});
-        update({ phase: "ready", image, detection, hands, handFailure, inputSource });
-        if (!detection?.worldLandmarks) setSpace("image");
-      } catch (error) {
-        if (image) images.discard(image);
-        const failure = toFailure("vision-pose-failed", "사진 포즈 인식에 실패했습니다.", error, now());
-        update({ phase: "failed", failure });
-        store.applyEvent({ type: "failure", failure });
-      } finally {
-        // 포즈·손 추정이 끝났으니(성공·실패 모두) 입력 비트맵을 닫는다. 이후에는 width·height·미리보기만 쓴다.
-        image?.releaseSource?.();
-      }
-    },
-    [images, now, session, store, target],
-  );
-
-  const onFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files?.[0];
-    if (file) void analyze(() => deps.decodeImage(file));
-  };
-
-  const openCamera = async (): Promise<void> => {
-    if (!deps.openCamera) return;
-    try {
-      const stream = await deps.openCamera();
-      if (mounted.current) setCamera({ stream, failure: null });
-      else stream.getTracks().forEach((track) => track.stop());
-    } catch (error) {
-      const failure = toFailure("vision-camera-failed", "카메라를 열지 못했습니다(권한 거부 또는 장치 없음).", error, now());
-      if (mounted.current) setCamera({ stream: null, failure });
-      store.applyEvent({ type: "failure", failure });
-    }
-  };
-
-  const capture = (): void => {
-    const video = videoRef.current;
-    const captureVideo = deps.captureVideo;
-    if (!video || !captureVideo) return;
-    void analyze(() => captureVideo(video), "camera");
-  };
-
-  const effectiveSpace: LandmarkSpace = pose.phase === "ready" && !pose.detection?.worldLandmarks ? "image" : space;
-  const poseResult: LandmarksToPoseResult | null = useMemo(() => {
-    if (pose.phase !== "ready" || !pose.detection) return null;
-    const landmarks = effectiveSpace === "world" && pose.detection.worldLandmarks ? pose.detection.worldLandmarks : pose.detection.landmarks;
-    try {
-      return landmarksToPose(landmarks, { scope, mirror, visibilityMin, space: effectiveSpace, aspectRatio: pose.image.width / pose.image.height });
-    } catch {
-      return null;
-    }
-  }, [effectiveSpace, mirror, pose, scope, visibilityMin]);
-
-  const applyPose = (): void => {
-    if (!poseResult) return;
-    dispatch({ type: "pose/set", pose: poseResult.pose, scope, labelKo: `${pose.phase === "ready" && pose.inputSource === "camera" ? "카메라" : "사진"} 포즈(${POSE_SCOPE_LABELS_KO[scope]}${mirror ? ", 거울" : ""})` });
-  };
-
-  const sideOf = (index: number, hand: HandDetection): "left" | "right" | null => handSides[index] ?? resolveHandSide(hand.reportedHandedness, { selfie });
-
-  const applyHand = (index: number, hand: HandDetection): void => {
-    const side = sideOf(index, hand);
-    if (!side) return;
-    const result = handLandmarksToPose(hand.landmarks, { side, mirror, space: "image", aspectRatio: pose.phase === "ready" ? pose.image.width / pose.image.height : 1 });
-    dispatch({ type: "pose/set", pose: result.pose, scope: result.side === "left" ? "left-hand" : "right-hand", labelKo: `${pose.phase === "ready" && pose.inputSource === "camera" ? "카메라" : "사진"} 손 포즈(${result.side === "left" ? "왼손" : "오른손"})` });
-  };
-
-  const bodyOverlay = pose.phase === "ready" && pose.detection ? poseOverlayPlan(pose.detection.landmarks, pose.image.width, pose.image.height, { visibilityMin }) : null;
-  const handOverlays = pose.phase === "ready" && pose.hands ? pose.hands.map((hand) => handOverlayPlan(hand.landmarks, pose.image.width, pose.image.height)) : [];
-  const overlay = bodyOverlay ?? handOverlays[0] ?? null;
-
-  return (
-    <section className="cl-vision-pose" aria-labelledby={`${ids}-title`}>
-      <h3 id={`${ids}-title`}>사진·카메라 포즈 인식</h3>
-      <ShaperVisionAiSection target={target} disabled={pose.phase === "working"} onTargetChange={(next) => {
-        if (pose.phase === "ready") images.discard(pose.image);
-        setPose({ phase: "idle" });
-        setTarget(next);
-      }} />
-      <div className="cl-vision-row">
-        <label htmlFor={`${ids}-file`}>포즈 사진 파일</label>
-        <input id={`${ids}-file`} type="file" accept="image/*" onChange={onFile} disabled={pose.phase === "working"} />
-      </div>
-      <div className="cl-vision-row cl-vision-camera">
-        {deps.openCamera ? (
-          camera.stream ? (
-            <>
-              <video ref={videoRef} className="cl-vision-video" muted playsInline autoPlay aria-label="카메라 미리보기" />
-              <button type="button" onClick={capture} disabled={pose.phase === "working" || !deps.captureVideo}>
-                촬영
-              </button>
-              <button type="button" onClick={stopCamera}>
-                카메라 닫기
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={() => void openCamera()}>
-              카메라 열기
-            </button>
-          )
-        ) : (
-          <>
-            <button type="button" disabled>
-              카메라 열기
-            </button>
-            <span className="cl-vision-hint">이 환경은 카메라(getUserMedia)를 지원하지 않습니다.</span>
-          </>
-        )}
-        {camera.failure ? (
-          <span className="cl-vision-failure" role="alert">
-            {camera.failure.reasonKo}
-          </span>
-        ) : null}
-      </div>
-      {pose.phase === "working" ? (
-        <p className="cl-vision-progress" role="status">
-          분석 중: {pose.step}
-        </p>
-      ) : null}
-      {pose.phase === "failed" ? (
-        <p className="cl-vision-failure" role="alert">
-          {pose.failure.reasonKo} ({pose.failure.code})
-        </p>
-      ) : null}
-      {pose.phase === "ready" && overlay ? (
-        <div className="cl-vision-pose-result">
-          <VisionLandmarkPreview image={pose.image} bodyOverlay={bodyOverlay} handOverlays={handOverlays} />
-          <div className="cl-vision-pose-controls">
-            {pose.detection ? <div className="cl-vision-row">
-              <label htmlFor={`${ids}-scope`}>적용 범위</label>
-              <select id={`${ids}-scope`} value={scope} onChange={(event) => setScope(LANDMARK_APPLY_SCOPES.find((candidate) => candidate === event.target.value) ?? "full")}>
-                {LANDMARK_APPLY_SCOPES.map((candidate) => (
-                  <option key={candidate} value={candidate}>
-                    {POSE_SCOPE_LABELS_KO[candidate]}
-                  </option>
-                ))}
-              </select>
-            </div> : null}
-            <div className="cl-vision-row">
-              <label htmlFor={`${ids}-mirror`}>거울 모드(사진 속 왼팔 → 캐릭터 오른팔)</label>
-              <input id={`${ids}-mirror`} type="checkbox" checked={mirror} onChange={(event) => setMirror(event.target.checked)} />
-            </div>
-            <div className="cl-vision-row">
-              <label htmlFor={`${ids}-selfie`}>셀피(전면 카메라, 좌우 반전) 사진</label>
-              <input id={`${ids}-selfie`} type="checkbox" checked={selfie} onChange={(event) => setSelfie(event.target.checked)} />
-            </div>
-            {pose.detection ? <div className="cl-vision-row">
-              <label htmlFor={`${ids}-visibility`}>가시성 임계</label>
-              <input id={`${ids}-visibility`} type="range" min={0} max={1} step={0.05} value={visibilityMin} onChange={(event) => setVisibilityMin(Number(event.target.value))} />
-              <output htmlFor={`${ids}-visibility`}>{visibilityMin.toFixed(2)}</output>
-            </div> : null}
-            {pose.detection ? <div className="cl-vision-row">
-              <label htmlFor={`${ids}-space`}>랜드마크 좌표</label>
-              <select id={`${ids}-space`} value={effectiveSpace} disabled={!pose.detection?.worldLandmarks} onChange={(event) => setSpace(event.target.value === "image" ? "image" : "world")}>
-                <option value="world">월드(미터)</option>
-                <option value="image">이미지(정규화)</option>
-              </select>
-            </div> : null}
-            {pose.detection ? <p className="cl-vision-pose-summary" role="status">
-              {poseResult
-                ? `적용 ${poseResult.appliedBones.length}/${controllableBones(scope).length}본 · 건너뜀 ${poseResult.skippedBones.length}본 · 관절 한계 클램프 ${poseResult.clampedBones.length}본`
-                : "포즈 변환 실패"}
-            </p> : null}
-            {poseResult && poseResult.skippedBones.length > 0 ? (
-              <details className="cl-vision-skipped">
-                <summary>건너뛴 본(사유)</summary>
-                <ul>
-                  {poseResult.skippedBones.map((entry) => (
-                    <li key={entry.bone}>
-                      {entry.bone}: {entry.reasonKo}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-            {pose.detection ? <button type="button" onClick={applyPose} disabled={!poseResult || poseResult.appliedBones.length === 0}>
-              포즈 적용
-            </button> : null}
-          </div>
-          <div className="cl-vision-hands">
-            <h4>손 포즈(베타: 굴곡만, 벌림 미적용)</h4>
-            {pose.handFailure ? (
-              <p className="cl-vision-failure" role="alert">
-                {pose.handFailure.reasonKo} ({pose.handFailure.code})
-              </p>
-            ) : null}
-            {pose.hands && pose.hands.length === 0 ? <p className="cl-vision-hint">사진에서 손을 찾지 못했습니다.</p> : null}
-            {pose.hands?.map((hand, index) => {
-              const side = sideOf(index, hand);
-              const sideLabel = side === "left" ? "왼손" : side === "right" ? "오른손" : "미정";
-              return (
-                <div key={`hand-${index}`} className="cl-vision-hand-item">
-                  <span>
-                    손 {index + 1}: 모델 보고 {hand.reportedHandedness} → {sideLabel} (점수 {(hand.score * 100).toFixed(0)}%)
-                  </span>
-                  <label htmlFor={`${ids}-hand-${index}`}>적용 측</label>
-                  <select id={`${ids}-hand-${index}`} value={side ?? ""} onChange={(event) => setHandSides((current) => ({ ...current, [index]: event.target.value === "left" ? "left" : "right" }))}>
-                    <option value="" disabled>
-                      선택
-                    </option>
-                    <option value="left">왼손</option>
-                    <option value="right">오른손</option>
-                  </select>
-                  <button type="button" disabled={!side} onClick={() => applyHand(index, hand)}>
-                    {sideLabel} 포즈 적용
-                  </button>
                 </div>
               );
             })}

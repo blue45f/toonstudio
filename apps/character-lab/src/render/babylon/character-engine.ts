@@ -1,15 +1,8 @@
 /**
  * BabylonCharacterEngine — contracts/engine.ts `CharacterEngine` 포트 구현 본체. WebGPU/WebGL2/NullEngine 어느 `AbstractEngine`이든
- * 생성자 주입으로 받아 같은 클래스가 돈다. 엔진 생성(WebGPUEngine·Engine, DOM 의존)은 `render/babylon-character-engine.ts`
- * 진입점이 `engine-factory.ts`로 하므로 이 파일은 DOM 전용 Babylon 모듈을 import하지 않는다 — NullEngine 하네스
- * (`render/testing/null-engine-harness.ts`)가 Node에서 이 파일만 import해 같은 클래스를 검증한다.
- *
- * 책임 분담: 장면(scene-builder) · 리그(mesh-binding/package-loader/character-rig) · 재질(material-factory/toon-shader) ·
- * IBL(lighting/ibl) · 후처리(postprocess) · 캡처(capture) · 피킹/페인트(pick-and-paint) · 물리(physics-bridge) · HUD(hud) ·
- * GLB(glb-exporter). 이 파일은 그것들을 포트 메서드로 묶고 상태(현재 리그·셰이딩·프레이밍·마지막 플랜)만 가진다.
- *
- * 레인별 정직성: readback이 없는 NullEngine 레인은 `renderPasses().provenance.synthetic = true`, `provenance.backend = "null"`,
- * HUD `adapterLabel = "NullEngine"`로 표시한다. 브라우저 레인(WebGPU/WebGL2)은 이 컨테이너에서 실행하지 못했다(docs/parity/render.md).
+ * 생성자 주입으로 받아 같은 클래스가 돈다. 장면·리그·재질·캡처·물리·GLB는 각 helper에 위임한다.
+ * 엔진 생성은 engine-factory, Node 검증은 render/testing/null-engine-harness가 맡는다.
+ * NullEngine 캡처는 synthetic=true·backend=null이며 실제 셰이더·readback 검증은 브라우저 프로브가 맡는다.
  */
 import { Constants } from "@babylonjs/core/Engines/constants.js";
 import { Material } from "@babylonjs/core/Materials/material.js";
@@ -41,6 +34,7 @@ import { capturePasses, captureThumbnail } from "./capture";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
+import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
@@ -52,6 +46,7 @@ import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
+import { PressureOutlineController } from "./pressure-outline";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
@@ -194,6 +189,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private readonly postfx: ReturnType<typeof createPostProcessStack>;
   private readonly ibl: ProceduralIbl;
   private readonly whiteTexture: RawTexture;
+  private readonly pressureOutline: PressureOutlineController;
   private readonly clearTexture: RawTexture;
   private readonly sdfTexture: RawTexture;
   /** 입 안 UV 섬을 어둡게 곱하는 알베도 마스크(절차 소스 `head` 파츠만, `mouth-shade.ts`) */
@@ -215,6 +211,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
+  private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
   /** 캡처(썸네일·멀티패스)는 캡처 카메라·RTT·플랜 상태를 공유하므로 한 번에 하나만 실행한다. */
@@ -238,6 +235,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.paintTextures = createPaintTextures(scene);
     this.whiteTexture = RawTexture.CreateRGBATexture(new Uint8Array([255, 255, 255, 255]), 1, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
     this.whiteTexture.name = "default:white";
+    this.pressureOutline = new PressureOutlineController(scene, this.whiteTexture);
+    scene.onBeforeActiveMeshesEvaluationObservable.add(() => this.gaze.update());
     this.clearTexture = RawTexture.CreateRGBATexture(new Uint8Array([0, 0, 0, 0]), 1, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
     this.clearTexture.name = "default:clear";
     const sdf = generateFaceSdf(FACE_SDF_SIZE);
@@ -297,8 +296,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return new BabylonCharacterEngine(deps, character, ibl);
   }
 
-  // ---------------------------------------------------------------- 프레임
-
   /** 물리 1스텝 + 장면 1프레임 렌더(렌더 루프와 테스트가 공유) */
   renderFrame(): void {
     if (this.disposed) return;
@@ -319,7 +316,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.character.attachControls(canvas, () => this.setCamera(this.framing));
   }
 
-  // ---------------------------------------------------------------- 소스
 
   /**
    * 소스 로드는 캡처와 같은 큐에서 한 번에 하나만 실행한다. 리그 교체는 unload → 비동기 빌드 → 대입이라 두 호출이 겹치면 둘 다 빈 상태에서
@@ -565,16 +561,17 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.flatMaterials.clear();
     this.idMaterials.clear();
     this.beta.releaseRig(rig);
+    this.pressureOutline.release(rig);
     rig.dispose();
   }
 
-  // ---------------------------------------------------------------- 플랜·셰이딩·카메라
 
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
     const rig = this.requireRig("apply-plan-no-source", "플랜을 적용할 캐릭터 소스가 없습니다. loadSource 뒤에 호출하세요.");
     const receipt = applyRigPlan(rig, plan, { outlinesVisible: this.outlinesVisible() });
     this.lastPlan = plan;
+    this.gaze.update();
     this.refreshToonUniforms(rig);
     this.beta.markPoseChanged();
     return receipt;
@@ -596,7 +593,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const height = this.engine.getRenderHeight();
     const bounds = this.rig ? computeRigBounds(this.rig) : null;
     this.character.applyFraming(this.character.camera, framing, bounds, height > 0 ? width / height : 1);
+    this.gaze.update();
   }
+  eyeGaze() { return this.gaze.read(); }
 
   currentFraming(): CameraFraming {
     return this.framing;
@@ -623,6 +622,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     if (!rig) return;
     const toon = this.shading.mode === "toon";
     const outline = toon ? this.shading.toon.outline : "none";
+    const pressure = outline === "hull" && this.shading.toon.outlinePressure === true;
+    this.pressureOutline.sync(rig, pressure, TOON_OUTLINE_WIDTH);
     // 키트 hull은 Babylon 기본 깊이 오프셋(카메라 쪽으로 당김)을 끈다: 몸·속옷 hull이 꽉 낀 의상·신발(남성 부츠 발끝 등)을 뚫고 어두운 얼룩으로 비쳤다(실측, 0이면 사라짐).
     if (outline === "hull" && rig.kind === "kit") {
       const renderer = this.character.scene.getOutlineRenderer();
@@ -640,7 +641,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       const hull = outline === "hull" && hullOutlineAllowed(rig.kind, part.role);
       for (const mesh of part.meshes) {
         mesh.material = material;
-        mesh.renderOutline = hull;
+        mesh.renderOutline = hull && !pressure;
         if (hull) {
           mesh.outlineWidth = TOON_OUTLINE_WIDTH * hullOutlineWidthScale(rig.kind, part.role);
           mesh.outlineColor.set(0.05, 0.04, 0.06);
@@ -801,7 +802,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     };
   }
 
-  // ---------------------------------------------------------------- 물리
 
   async setPhysicsProvider(id: PhysicsProviderId): Promise<PhysicsStatus> {
     this.assertAlive();
@@ -823,8 +823,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return this.physics.pendingColliderBones();
   }
 
-  // ---------------------------------------------------------------- 캡처
-
   /**
    * 캡처 계열 작업과 소스 로드를 직렬화한다: 캡처 카메라·RTT·(현재 리그의 일시 플랜 적용)을 공유하므로 겹치면 서로의 프레이밍·플랜을
    * 오염시키고, 소스 로드는 리그를 해제·교체하므로 캡처나 다른 로드와 겹치면 안 된다. 앞선 작업이 실패해도 다음 작업은 실행된다.
@@ -840,7 +838,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   async renderThumbnail(req: ThumbnailRequest): Promise<CapturedRaster> {
     this.assertAlive();
-    return this.runExclusive(() => (req.source ? this.renderTemporaryThumbnail(req, req.source) : this.renderCurrentThumbnail(req)));
+    return this.runExclusive(() => this.gaze.freeze(() => (req.source ? this.renderTemporaryThumbnail(req, req.source) : this.renderCurrentThumbnail(req))));
   }
 
   /**
@@ -862,6 +860,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       before: () => {
         applied = true;
         applyRigPlan(rig, req.plan, { outlinesVisible: this.outlinesVisible() });
+        applyRigEyeGaze(rig, req.plan.eyeGaze, this.viewportCamera().position);
         this.refreshToonUniforms(rig);
       },
       after: restore,
@@ -889,11 +888,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       // 썸네일 임시 리그는 베타 재질을 만들지 않는다(기본 경로로 그린다).
       this.applyMaterialsForMode(rig, false);
       applyRigPlan(rig, req.plan, { outlinesVisible: this.outlinesVisible() });
+      applyRigEyeGaze(rig, req.plan.eyeGaze, this.viewportCamera().position);
       this.refreshToonUniforms(rig);
       return await captureThumbnail({ ...this.captureDeps(rig), shadow: null }, req.size, req.framing);
     } finally {
       // 엔진이 해제됐으면 scene.dispose가 모든 객체를 정리했으므로 다시 해제하지 않는다.
-      if (holder.rig && !this.disposed) holder.rig.dispose();
+      if (holder.rig && !this.disposed) { this.pressureOutline.release(holder.rig); holder.rig.dispose(); }
     }
   }
 
@@ -913,7 +913,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       this.assertAlive();
       const rig = this.requireRig("capture-no-source", "캡처할 캐릭터 소스가 없습니다.");
       if (req.settleSteps > 0) await this.physics.settle(req.settleSteps);
-      return capturePasses(this.captureDeps(rig), req, req.camera ?? this.framing);
+      return this.gaze.freeze(() => capturePasses(this.captureDeps(rig), req, req.camera ?? this.framing));
     });
   }
 
@@ -926,6 +926,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       passMaterials: this.passMaterials(),
       shadow: this.character.shadow,
       includeOutlines: this.outlinesVisible(),
+      pressureOutlines: () => this.pressureOutline.meshesFor(rig),
       waitForShaders: this.deps.awaitShaderCompile ?? this.lane !== "null",
       ...(this.deps.captureCompileTimeoutMs !== undefined ? { compileTimeoutMs: this.deps.captureCompileTimeoutMs } : {}),
       provenance: { physicsProvider: this.physics.currentId(), settleSteps: 0, recipeDigest: this.planDigest() },
@@ -937,7 +938,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   planDigest(): string {
     const plan = this.lastPlan;
     if (!plan) return "no-plan";
-    return `plan-${plan.revision}-${fnv1a64Hex(stableStringify({ morphWeights: plan.morphWeights, boneRotations: plan.boneRotations, parts: plan.parts, colors: plan.colors }))}`;
+    return `plan-${plan.revision}-${fnv1a64Hex(stableStringify({ morphWeights: plan.morphWeights, boneRotations: plan.boneRotations, parts: plan.parts, colors: plan.colors, ...(plan.eyeGaze ? { eyeGaze: plan.eyeGaze } : {}) }))}`;
   }
 
   private passMaterials(): PassMaterialSet {
@@ -977,7 +978,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     };
   }
 
-  // ---------------------------------------------------------------- 피킹·핸들·페인트
 
   pick(ndcX: number, ndcY: number, options?: CharacterPickOptions): PickHit | null {
     if (this.disposed || !this.rig) return null;
@@ -1082,11 +1082,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
   }
 
-  // ---------------------------------------------------------------- export·HUD·크기
 
   async exportGlb(): Promise<Uint8Array> {
     this.assertAlive();
     const rig = this.requireRig("glb-no-source", "GLB로 내보낼 캐릭터 소스가 없습니다.");
+    const releaseGaze = this.gaze.hold();
     // 입 안 마스크는 알베도 RawTexture라 serializer가 `readPixels`로 PNG를 만든다. GPU 레인에서는 baseColor 텍스처로 함께 내보내진다(브라우저 실측: 이미지 1장).
     // readback이 없는 레인(NullEngine)은 그 읽기가 끝나지 않아 내보내기가 멈추므로 이때만 마스크를 잠시 떼고 내보낸다.
     const detached = this.lane === "null" ? rig.parts.filter((part) => this.maskedParts.has(part)) : [];
@@ -1109,6 +1109,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       this.lastGlbReport = exported.sparse;
       return exported.glb;
     } finally {
+      releaseGaze();
       for (const undo of swapped) undo();
       for (const part of detached) part.pbr.albedoTexture = this.mouthMask;
     }
@@ -1179,7 +1180,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     return featureActive(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
   }
 
-  // ---------------------------------------------------------------- 베타 토글·투영 페인트
 
   betaFeatures(): BetaFeatureReport {
     return this.beta.report();
@@ -1213,6 +1213,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.normalMaterial?.dispose(true, false);
     this.depthMaterial?.dispose(true, false);
     this.beta.dispose();
+    this.pressureOutline.dispose();
     this.paintTextures.dispose();
     this.mouthMask.dispose();
     this.whiteTexture.dispose();
@@ -1227,7 +1228,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     else this.engine.dispose();
   }
 
-  // ---------------------------------------------------------------- 내부
 
   /** 엔진을 계속 쓸 수 있는 실패를 앱에 알린다. 보고 콜백이 던져도 렌더 루프·로드를 깨지 않는다. */
   private reportFailure(error: unknown, code: string, reasonKo: string): void {

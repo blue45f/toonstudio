@@ -22,12 +22,14 @@ import {
   CHARACTER_SLOT_KINDS,
   PART_ROLES,
   SLOT_LABELS_KO,
+  eyeAnglesQuaternion,
   expressionToMorphWeights,
   isSlotKind,
   paramToMorphWeights,
   pickBaseChannelColors,
   presetName,
   presetSlot,
+  resolveEyeGaze,
 } from "../contracts";
 import { qNormalize } from "../shared/math";
 
@@ -382,6 +384,11 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
       addPose(boneRotations, recipe.handPose.left);
       addPose(boneRotations, recipe.handPose.right);
     }
+    const eyeGaze = recipe.eyeGaze ? resolveEyeGaze(recipe.eyeGaze) : undefined;
+    if (eyeGaze?.mode === "manual") {
+      boneRotations.leftEye = eyeGaze.frozenPose?.leftEye ?? eyeAnglesQuaternion(eyeGaze.left);
+      boneRotations.rightEye = eyeGaze.frozenPose?.rightEye ?? eyeAnglesQuaternion(eyeGaze.right);
+    }
 
     const customization = planCustomization({ recipe, capabilities, catalog, unsupportedSlots, presetUnavailableReason: presetUnavailableReasonKo, materialPresetFor, ...(options.custom ? { custom: options.custom } : {}) });
     const context: PartPlanContext = { recipe, applied, unsupportedSlots, channels: customization.channels, capabilities, custom: options.custom };
@@ -397,6 +404,7 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
       unsupported,
       partial,
       ...customization,
+      ...(eyeGaze ? { eyeGaze } : {}),
     };
   };
 }

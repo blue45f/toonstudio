@@ -231,7 +231,7 @@ describe("실제 VRMLookAt과 파일 캡처 권위", () => {
       return <CharacterShaperSessionSettingsProvider gazeAvailable locked={capturing}>
         <CharacterShaperGazeSelect h={h} />
         <CharacterShaperOrbitControls lookAt={lookAt} captureFrozen={capturing} />
-        <CharacterShaperOutputDock h={h} binding={makeBinding()} drawer={null} onOpenDrawer={vi.fn()} paintActive={false} onTogglePaint={vi.fn()} />
+        <CharacterShaperOutputDock h={h} binding={makeBinding()} compact={false} drawer={null} onOpenDrawer={vi.fn()} paintActive={false} onTogglePaint={vi.fn()} />
       </CharacterShaperSessionSettingsProvider>;
     }
     const view = render(<App />);

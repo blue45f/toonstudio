@@ -20,7 +20,6 @@ import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, RI
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
 import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS_KO, readSceneFeatures } from "../../../render/scene-features";
 import { applyLabShaperTripoLookToShading, buildLabShaperTripoPipelineSpec, LAB_SHAPER_TRIPO_LOOK_PRESETS, type LabShaperTripoLookId } from "../../../render/shaper-tripo-mcp-bridge";
-import { computeCubicMatCapRamp, computeEyeballHighlightTransform } from "../../../render/toon-reference";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
@@ -29,7 +28,6 @@ import { hudRows } from "./viewport-interactions";
 import type { HudSample, QualityPresetId, ShadingProfile, ToneMapping } from "../../../contracts";
 import type { BetaFeatureId, BetaFeatureReport, BetaFeatureState } from "../../../render/beta-features";
 import type { SceneFeatureReport } from "../../../render/scene-features";
-import type { EyeballHighlightMode } from "../../../render/toon-reference";
 import type { ChangeEvent } from "react";
 
 export interface RenderPanelProps {
@@ -93,8 +91,6 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
 
   // IBL 세기 슬라이더: 드래그 중 로컬 값, 놓을 때 dispatch
   const [iblDraft, setIblDraft] = useState(shading.ibl.intensity);
-  const [outlinePressure, setOutlinePressure] = useState(true);
-  const [eyeballHighlightMode, setEyeballHighlightMode] = useState<EyeballHighlightMode>("cam");
   const [tripoLookId, setTripoLookId] = useState<LabShaperTripoLookId>("shaper-cel");
   const [tripoDelight, setTripoDelight] = useState(true);
   const [disableHairInline, setDisableHairInline] = useState(true);
@@ -175,16 +171,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const isToon = shading.mode === "toon";
   const isKit = state.recipe.source.kind === "kit";
   const hudList = hud ? hudRows(hud) : [];
-  const matCapRampWidth = shading.toon.rampSteps === 2 ? 0.1 : shading.toon.rampSteps === 3 ? 0.35 : 0.6;
-  const matCapRamp = computeCubicMatCapRamp(0.5, matCapRampWidth);
-  const outlineAspect = resolveOutlinePressureAspect(outlinePressure);
-  const eyeballHighlight = computeEyeballHighlightTransform({
-    mode: eyeballHighlightMode,
-    eyeballEulerDeg: [0, 0, 0],
-    cameraLookEulerDeg: [0, 0, 0],
-    lightEulerDeg: [15, -25, 0],
-    offsetPos: [0, 0],
-  });
+  const outlineAspect = resolveOutlinePressureAspect(shading.toon.outlinePressure === true);
   const unavailable = (id: keyof SceneFeatureReport): string | null => {
     const entry = features?.[id];
     return entry && entry.status === "unavailable" ? (entry.reasonKo ?? "사유 없음") : null;
@@ -412,30 +399,17 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
           <input
             id={`${ids}-outline-pressure`}
             type="checkbox"
-            checked={outlinePressure}
-            onChange={(event) => setOutlinePressure(event.target.checked)}
+            checked={shading.toon.outlinePressure === true}
+            disabled={shading.toon.outline !== "hull"}
+            aria-describedby={`${ids}-outline-pressure-note`}
+            onChange={(event) => set({ toon: { ...shading.toon, outlinePressure: event.target.checked } })}
           />
         </div>
-        <div className="cl-render-row">
-          <label htmlFor={`${ids}-eyeball-highlight`}>안구 하이라이트 기준</label>
-          <select
-            id={`${ids}-eyeball-highlight`}
-            value={eyeballHighlightMode}
-            onChange={(event) => {
-              const val = event.target.value;
-              if (val === "fix" || val === "cam" || val === "light" || val === "world") {
-                setEyeballHighlightMode(val);
-              }
-            }}
-          >
-            <option value="fix">안구 고정 (fix)</option>
-            <option value="cam">카메라 추적 (cam)</option>
-            <option value="light">조명 반사 (light)</option>
-            <option value="world">월드 고정 (world)</option>
-          </select>
-        </div>
-        <p className="cl-render-hint" data-testid="shaper-toon-readout">
-          MatCap 램프 배율 {matCapRamp.scaleU.toFixed(1)}× · 외곽선 비등방 ({outlineAspect.widthScale.toFixed(1)}×{outlineAspect.heightScale.toFixed(1)}) · 하이라이트 Yaw {eyeballHighlight.highlightEulerDeg[1].toFixed(0)}°
+        <p id={`${ids}-outline-pressure-note`} className="cl-render-hint" data-testid="shaper-toon-readout">
+          외곽선 비등방 ({outlineAspect.widthScale.toFixed(1)}×{outlineAspect.heightScale.toFixed(1)}) · 외곽 셸(hull)에서 적용하고 레시피에 저장합니다.
+        </p>
+        <p className="cl-render-reason" data-testid="eyeball-highlight-unavailable">
+          안구 하이라이트 기준 변경은 현재 렌더러가 지원하지 않습니다. 시선·안구 회전은 표정 패널에서 조절합니다.
         </p>
       </fieldset>
 
