@@ -1,0 +1,29 @@
+{
+  "schema": "toonstudio.security-backport.v1",
+  "upstream": "deepmerge@4.3.1",
+  "repository": "https://github.com/TehShrike/deepmerge",
+  "advisory": "GHSA-gcqx-w48m-w2h4",
+  "verifiedOn": "2026-10-28",
+  "files": [
+    {
+      "path": "dist/cjs.js",
+      "upstreamSha256": "2e5160f84a1141bd927264afe4d15766f1e6cf07daef182b37ff53fea121de7d",
+      "patchedSha256": "45244ee7dc7cd92def5cdf3d8c286a14142ec1b47b255500f4ae0cb74900afae"
+    },
+    {
+      "path": "dist/umd.js",
+      "upstreamSha256": "f33e6596482d1fb5c7c427f8ef92f2aa849eea9223acd974176b2fb27ddbf73a",
+      "patchedSha256": "01fe56407732c2fb5d9b80c52ef554d58ddf97a2d19bbc2019f82759ced02223"
+    },
+    {
+      "path": "index.d.ts",
+      "upstreamSha256": "146ba4b99c5feb82663e17a671bf9f53bb39c704cd76345d6c5a801c26372f44",
+      "patchedSha256": "146ba4b99c5feb82663e17a671bf9f53bb39c704cd76345d6c5a801c26372f44"
+    },
+    {
+      "path": "license.txt",
+      "upstreamSha256": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b",
+      "patchedSha256": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b"
+    }
+  ]
+}
