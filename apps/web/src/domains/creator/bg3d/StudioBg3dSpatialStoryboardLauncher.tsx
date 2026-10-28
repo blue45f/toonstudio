@@ -1,13 +1,24 @@
 import { lazy, Suspense, useId, useState } from "react";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 
 const SpatialStoryboardPanel = lazy(() => import("./StudioBg3dSpatialStoryboardPanel"));
 const AdvancedWorkbenchHub = lazy(() => import("./StudioBg3dAdvancedWorkbenchHub"));
 
 /** No heavyweight renderer, session request or eager specialist chunk on studio startup. */
-export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readonly hidden?: boolean }) {
+export function StudioBg3dSpatialStoryboardLauncher({
+  hidden = false,
+  disabled = false,
+  onInsertScenePrimitives,
+}: {
+  readonly hidden?: boolean;
+  readonly disabled?: boolean;
+  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
+}) {
   const t = useT();
+  const bt = useBilingual("StudioBg3dSpatialStoryboardLauncher");
   const [expanded, setExpanded] = useState(false);
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false);
   const contentId = useId();
@@ -39,12 +50,18 @@ export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readon
         className="min-h-11 w-full rounded-lg border border-line bg-card px-3 text-left text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         onClick={() => setWorkbenchExpanded((value) => !value)}
       >
-        3D 웹툰·DCC 스페셜리스트 워크벤치 (14종 도구) {workbenchExpanded ? "접기" : "열기"}
+        {workbenchExpanded
+          ? bt("배경 건축 · 3D 도구 접기", "Close background architecture · 3D tools")
+          : bt("배경 건축 · 3D 도구 열기", "Open background architecture · 3D tools")}
       </button>
       <div id={workbenchContentId} hidden={!workbenchExpanded}>
         {workbenchExpanded && !hidden ? (
           <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.spatialStoryboardTools", "3D 스페셜리스트 워크벤치를 불러오는 중이에요.")} />}>
-            <AdvancedWorkbenchHub />
+            <AdvancedWorkbenchHub
+              defaultTab="sketchup-studio"
+              disabled={disabled}
+              {...(onInsertScenePrimitives ? { onInsertScenePrimitives } : {})}
+            />
           </Suspense>
         ) : null}
       </div>

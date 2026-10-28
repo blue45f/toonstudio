@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import {
   Box,
   Compass,
@@ -45,7 +46,8 @@ import {
   solveSketchUpFourPinHomography,
   type SketchUpStyleConfig,
 } from "./studio-bg3d-sketchup-styles-uv-engine";
-import type { BgPrimitive } from "../studio-background-3d-metadata";
+import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
+import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import { StudioBg3dSketchUpFullSections } from "./StudioBg3dSketchUpFullSections";
 import {
@@ -62,7 +64,7 @@ export interface StudioBg3dSketchUpWorkbenchPanelProps {
   readonly onExecuteArray?: (token: string, placements: readonly SketchUpArrayPlacement[]) => void;
   readonly onRestoreSkpScenes?: (restoredShotCount: number, tagCount: number) => void;
   readonly onExportCadFormat?: (format: SketchUpExportFormat, byteSize: number) => void;
-  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
+  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
 }
 
@@ -134,6 +136,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   onInsertScenePrimitives,
   onApplySceneCamera,
 }: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
+  const t = useT();
   const vcbInputId = useId();
   const protractorInputId = useId();
 
@@ -143,7 +146,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   const [vcbArrayText, setVcbArrayText] = useState<string>("*4");
   const [arrayModeKind, setArrayModeKind] = useState<"linear" | "radial">("linear");
   const [statusBanner, setStatusBanner] = useState<string>(
-    "SketchUp 전 기능 엔진 준비 완료 (OpenSKP + Direct Modeling + Styles + Solar Shadow)",
+    t("studio.bg3d.architecture.readyIntro", "치수와 위치를 정해 건축 요소를 현재 배경에 배치하세요."),
   );
   const [protractorText, setProtractorText] = useState<string>("6:12");
   const [sectionOffsetMeters, setSectionOffsetMeters] = useState<number>(0);
@@ -272,7 +275,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
       setStatusBanner(parsedArrayCmd.messageKo);
       return;
     }
-    setStatusBanner(`${parsedArrayCmd.messageKo} (${arrayPlacements.length}개 인스턴스 배치 완료)`);
+    setStatusBanner(`${parsedArrayCmd.messageKo} (${arrayPlacements.length}개 예제 위치 계산)`);
     onExecuteArray?.(parsedArrayCmd.normalizedToken, arrayPlacements);
   };
 
@@ -287,7 +290,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
 
   const handleRestoreScenesAndTags = () => {
     setStatusBanner(
-      `SKP 장면 ${restoredShots.length}개(카메라·직교투영·숨김 태그), 태그 ${restoredTags.length}개, 다이나믹 컴포넌트 ${restoredHierarchy.dynamicComponents.length}개 복원 완료`,
+      `SKP 장면 ${restoredShots.length}개(카메라·직교투영·숨김 태그), 태그 ${restoredTags.length}개, 다이나믹 컴포넌트 ${restoredHierarchy.dynamicComponents.length}개 예제 복원 계산`,
     );
     onRestoreSkpScenes?.(restoredShots.length, restoredTags.length);
   };
@@ -301,7 +304,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   const handleApplyShadow = () => {
     const { solar } = shadowResult;
     setStatusBanner(
-      `태양광 스터디 적용: 방위각 ${solar.solarAzimuthDeg.toFixed(1)}° / 고도 ${solar.solarAltitudeDeg.toFixed(1)}° (${solar.colorTemperatureK}K)`,
+      `태양광 스터디 예제 계산: 방위각 ${solar.solarAzimuthDeg.toFixed(1)}° / 고도 ${solar.solarAltitudeDeg.toFixed(1)}° (${solar.colorTemperatureK}K)`,
     );
     onApplyShadowSolar?.(solar.solarAzimuthDeg, solar.solarAltitudeDeg, solar.colorTemperatureK);
   };
@@ -323,7 +326,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
     );
     const summary = `${artifact.fileName} (${artifact.byteSize.toLocaleString("ko-KR")} B, ${artifact.mimeType}) 생성 완료`;
     setLastExportSummary(summary);
-    setStatusBanner(`내보내기 완료: ${summary}`);
+    setStatusBanner(`CAD 예제 생성: ${summary}`);
     onExportCadFormat?.(artifact.format, artifact.byteSize);
   };
 
@@ -332,7 +335,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
         <div className="flex items-center gap-1.5 font-bold text-fg">
           <Box className="size-4 text-accent" aria-hidden />
-          <span>SketchUp 전 기능 마스터 스튜디오 (OpenSKP + Direct Modeling)</span>
+          <span>{t("studio.bg3d.architecture.workbench", "배경 건축 · SketchUp 작업대")}</span>
         </div>
         <span
           data-testid="sketchup-workbench-status"
@@ -344,6 +347,14 @@ export function StudioBg3dSketchUpWorkbenchPanel({
         </span>
       </header>
 
+      <StudioBg3dArchitecturalModelingPanel
+        disabled={disabled}
+        onStatusChange={setStatusBanner}
+        onInsertScenePrimitives={onInsertScenePrimitives}
+      />
+      <details className="rounded-xl border border-line p-2.5" data-testid="sketchup-example-tools">
+        <summary className="cursor-pointer font-semibold">{t("studio.bg3d.architecture.examples", "모델링 예제 · 계산 미리보기")}</summary>
+        <p className="my-2 text-fg-2">{t("studio.bg3d.architecture.exampleScope", "아래 복원·배열·작도·태양광·CAD 도구는 내장 예제로 계산합니다. 현재 선택한 모델을 편집하거나 내보내지 않습니다. Sandbox·솔리드 결과는 배치 버튼으로 장면에 추가할 수 있습니다.")}</p>
       {/* Mutually exclusive `<details name="sketchup-workbench-accordion">` per `search-hidden-content` */}
       <div className="space-y-2">
         <details name="sketchup-workbench-accordion" open className="rounded-xl border border-line bg-card p-2.5">
@@ -731,7 +742,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
                   className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
                 >
                   <Download className="size-3.5" aria-hidden />
-                  <span>선택 포맷({exportFormat.toUpperCase()})으로 장면 내보내기</span>
+                  <span>선택 포맷({exportFormat.toUpperCase()})으로 예제 생성</span>
                 </button>
                 {lastExportSummary ? (
                   <span data-testid="sketchup-export-summary" className="font-mono text-[0.62rem] text-good">
@@ -750,6 +761,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
           onApplySceneCamera={onApplySceneCamera}
         />
       </div>
+      </details>
     </div>
   );
 }

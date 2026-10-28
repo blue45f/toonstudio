@@ -5,11 +5,10 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { Studio3dAssetQualityPanel } from "../Studio3dAssetQualityPanel";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
-
 import { useEffect as useReactEffect, useMemo, useState as useReactState } from "react";
-
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
+import { createStudioBg3dWorkbenchInsertionFromHost } from "./studio-bg3d-workbench-insertion";
 
 export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
@@ -504,6 +503,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 onEnginePreferenceChange={engineRuntime.setPreference}
                 onSetCaptureAspectRatio={updateLtExportAspectRatio}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
+                onInsertScenePrimitives={createStudioBg3dWorkbenchInsertionFromHost(h)}
                 aiReferenceBusy={isCapturing}
                 aiReferenceDisabled={
                   insertBlocked || (primitives.length === 0 && customModels.length === 0)

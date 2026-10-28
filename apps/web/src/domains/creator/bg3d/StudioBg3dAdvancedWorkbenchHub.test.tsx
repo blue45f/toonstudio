@@ -174,7 +174,7 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     render(
       <StudioBg3dAdvancedWorkbenchHub
         defaultTab="sketchup-studio"
-        onInsertScenePrimitives={(prims) => insertedBatches.push(prims.length)}
+        onInsertScenePrimitives={(prims) => { insertedBatches.push(prims.length); return true; }}
         onApplySceneCamera={(cam) => appliedFovs.push(cam.fovDegrees)}
         onSyncSceneLineArt={(enabled) => lineArtStates.push(enabled)}
       />,
@@ -220,4 +220,18 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     fireEvent.click(screen.getByTestId("bg3d-blender-insert-scene-preset-btn"));
     expect(insertedBatches.length).toBe(6);
   });
+  it("장면에서 거부된 도형은 배치 수와 성공 안내에 반영하지 않는다", () => {
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" onInsertScenePrimitives={() => false} />);
+    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain("배치하지 못했습니다");
+    expect(screen.getByTestId("sketchup-workbench-status").textContent).not.toContain("배치 완료");
+  });
+
+  it("장면 연결이 없으면 건축 요소 배치를 사용할 수 없다", () => {
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" />);
+    expect(screen.getByTestId("sketchup-arch-insert-scene-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
+  });
+
 });

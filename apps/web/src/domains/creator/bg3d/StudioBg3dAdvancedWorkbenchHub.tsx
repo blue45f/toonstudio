@@ -1,5 +1,6 @@
 import { Layers, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
 
 import {
   evaluateFormatCompatibility,
@@ -27,6 +28,7 @@ import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStu
 import { StudioBg3dSketchUpWorkbenchPanel } from "./StudioBg3dSketchUpWorkbenchPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
+import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 import { StudioBg3dSpatialWebtoonPanel } from "./StudioBg3dSpatialWebtoonPanel";
 import { StudioBg3dVrmHybridDccPanel } from "./StudioBg3dVrmHybridDccPanel";
 import {
@@ -83,7 +85,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "cloner", labelKo: "절차적 클로너", groupKo: "캐릭터·DCC" },
   { id: "deformers", labelKo: "디포머·CSG 불리언", groupKo: "캐릭터·DCC" },
   { id: "dynamic-components", labelKo: "다이나믹 컴포넌트", groupKo: "캐릭터·DCC" },
-  { id: "sketchup-studio", labelKo: "스케치업 마스터 스튜디오", groupKo: "캐릭터·DCC" },
+  { id: "sketchup-studio", labelKo: "배경 건축 · SketchUp", groupKo: "캐릭터·DCC" },
   { id: "dcc-pipeline", labelKo: "DCC·도시·렌즈·품질", groupKo: "캐릭터·DCC" },
   { id: "vrm-hybrid-dcc", labelKo: "VRM·아바타·하이브리드 DCC", groupKo: "캐릭터·DCC" },
   { id: "place-set-package", labelKo: "장소 세트 정본", groupKo: "세트·XR" },
@@ -168,7 +170,7 @@ const SAMPLE_PLACE_SET_USAGES: readonly StudioBg3dPlaceSetUsageRef[] = Object.fr
 export interface StudioBg3dAdvancedWorkbenchHubProps {
   readonly defaultTab?: StudioBg3dWorkbenchTabId;
   readonly disabled?: boolean;
-  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
+  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
   readonly onSyncSceneLineArt?: (enabled: boolean, summaryKo: string) => void;
 }
@@ -184,10 +186,11 @@ export function StudioBg3dAdvancedWorkbenchHub({
   onApplySceneCamera,
   onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
+  const t = useT();
   const proSuiteRuntime = useStudioBg3dProSuiteRuntime();
   const [activeTab, setActiveTab] = useState<StudioBg3dWorkbenchTabId>(defaultTab);
   const [lastActionSummary, setLastActionSummary] = useState<string>("준비 완료");
-  const [stagedScenePrimitives, setStagedScenePrimitives] = useState<readonly BgPrimitive[]>([]);
+  const [insertedPrimitiveCount, setInsertedPrimitiveCount] = useState(0);
   const [cuts, setCuts] = useState<readonly StoryboardCut[]>(INITIAL_CUTS);
   const [placeSet, setPlaceSet] = useState<StudioBg3dPlaceSetPackage>(() => {
     const v1 = createStudioBg3dPlaceSetPackage({
@@ -226,9 +229,22 @@ export function StudioBg3dAdvancedWorkbenchHub({
   );
 
   const handleInsertScenePrimitives = (primitives: readonly BgPrimitive[], labelKo: string) => {
-    setStagedScenePrimitives((prev) => [...prev, ...primitives]);
-    setLastActionSummary(labelKo);
-    onInsertScenePrimitives?.(primitives, labelKo);
+    if (disabled || !onInsertScenePrimitives || primitives.length === 0) {
+      setLastActionSummary(t("studio.bg3d.workbench.insertion.openScene", "배치하지 못했습니다. 편집 가능한 3D 배경 장면을 열어 주세요."));
+      return false;
+    }
+    try {
+      if (!onInsertScenePrimitives(primitives, labelKo)) {
+        setLastActionSummary(t("studio.bg3d.workbench.insertion.rejected", "배치하지 못했습니다. 장면의 편집 잠금과 도형 한도를 확인해 주세요."));
+        return false;
+      }
+      setInsertedPrimitiveCount((count) => count + primitives.length);
+      setLastActionSummary(`${labelKo} · 장면 배치 완료`);
+      return true;
+    } catch {
+      setLastActionSummary(t("studio.bg3d.workbench.insertion.failed", "장면에 배치하지 못했습니다. 장면 상태를 확인해 주세요."));
+      return false;
+    }
   };
 
   const handleApplySceneCamera = (camera: StudioBg3dCameraSettings, labelKo: string) => {
@@ -321,7 +337,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
             data-testid="bg3d-workbench-dcc-compat-badge"
             className="rounded bg-raised px-2 py-0.5 font-mono text-[0.62rem] text-fg-2"
           >
-            DCC 호환성 ({dccFormatReport.format}): {dccFormatReport.grade} · 3D 배치 {stagedScenePrimitives.length}개
+            DCC 호환성 ({dccFormatReport.format}): {dccFormatReport.grade} · 누적 3D 배치 {insertedPrimitiveCount}개
           </span>
           <span
             data-testid="bg3d-workbench-last-action"
@@ -536,18 +552,18 @@ export function StudioBg3dAdvancedWorkbenchHub({
               setLastActionSummary(`SketchUp 스타일: ${style.labelKo}`);
             }}
             onApplyShadowSolar={(az, alt, k) =>
-              setLastActionSummary(`SketchUp 태양광: 방위 ${az.toFixed(1)}° / 고도 ${alt.toFixed(1)}° (${k}K)`)
+              setLastActionSummary(`태양광 예제 계산: 방위 ${az.toFixed(1)}° / 고도 ${alt.toFixed(1)}° (${k}K)`)
             }
             onExecuteArray={(token, list) =>
-              setLastActionSummary(`SketchUp VCB 배열 (${token}): ${list.length}개 배치`)
+              setLastActionSummary(`VCB 예제 계산 (${token}): ${list.length}개 위치`)
             }
             onRestoreSkpScenes={(shotCount, tagCount) =>
-              setLastActionSummary(`SKP 장면 ${shotCount}개 · 태그 ${tagCount}개 복원`)
+              setLastActionSummary(`SKP 예제 분석: 장면 ${shotCount}개 · 태그 ${tagCount}개`)
             }
             onExportCadFormat={(fmt, bytes) =>
-              setLastActionSummary(`SketchUp 내보내기 (${fmt.toUpperCase()}): ${bytes}B`)
+              setLastActionSummary(`CAD 예제 생성 (${fmt.toUpperCase()}): ${bytes}B`)
             }
-            onInsertScenePrimitives={handleInsertScenePrimitives}
+            onInsertScenePrimitives={onInsertScenePrimitives ? handleInsertScenePrimitives : undefined}
             onApplySceneCamera={handleApplySceneCamera}
           />
         ) : null}

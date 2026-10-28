@@ -161,7 +161,11 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
     <StudioBg3dProSuiteRuntimeContext.Provider value={runtime}>
       <StudioBg3dWebglRecoveryNotice hidden={props.hidden} />
       <StudioBg3dViewPanelContent {...props} />
-      <StudioBg3dSpatialStoryboardLauncher hidden={props.hidden} />
+      <StudioBg3dSpatialStoryboardLauncher
+        hidden={props.hidden}
+        disabled={disabled}
+        {...(props.onInsertScenePrimitives ? { onInsertScenePrimitives: props.onInsertScenePrimitives } : {})}
+      />
     </StudioBg3dProSuiteRuntimeContext.Provider>
   );
 }

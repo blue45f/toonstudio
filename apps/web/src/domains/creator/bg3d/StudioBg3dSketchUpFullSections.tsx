@@ -1,27 +1,26 @@
-import { Building2, Camera, Combine, FileCode2, Mountain, Sparkles } from "lucide-react";
+import { Camera, Combine, FileCode2, Mountain, Sparkles } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
+import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import {
   applySketchUpDrapePath,
   applySketchUpSmooveTerrain,
   applySketchUpStampPad,
-  buildSketchUpArchitecturalComponentPrimitives,
   buildSketchUpLayOutVectorCutawaySvg,
   buildSketchUpSandboxFromContours,
   calibrateSketchUpMatchPhotoCamera,
   evaluateSketchUpSolidOperation,
   inspectSketchUpManifoldSolid,
   synthesizeSketchUpTerrainPrimitives,
-  type SketchUpArchitecturalComponentKind,
   type SketchUpSolidOperationKind,
 } from "./studio-bg3d-sketchup-full-engine";
 
 export interface StudioBg3dSketchUpFullSectionsProps {
   readonly disabled?: boolean;
   readonly onStatusChange?: (messageKo: string) => void;
-  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
+  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
 }
 
@@ -35,21 +34,6 @@ const SOLID_OP_OPTIONS: readonly {
   { id: "trim", labelKo: "Trim (비파괴 트리밍)" },
   { id: "intersect", labelKo: "Intersect (교집합)" },
   { id: "split", labelKo: "Split (3분할)" },
-]);
-
-const ARCH_COMPONENT_OPTIONS: readonly {
-  readonly id: SketchUpArchitecturalComponentKind;
-  readonly labelKo: string;
-}[] = Object.freeze([
-  { id: "staircase-straight", labelKo: "직선형 계단" },
-  { id: "staircase-l-landing", labelKo: "L자형 참 계단" },
-  { id: "staircase-spiral", labelKo: "나선형 중앙 계단" },
-  { id: "roof-gable", labelKo: "박공 지붕 (Gable)" },
-  { id: "roof-hip", labelKo: "모임 지붕 (Hip)" },
-  { id: "roof-hanok", labelKo: "한옥 팔작 지붕" },
-  { id: "window-bay", labelKo: "돌출 베이 윈도우" },
-  { id: "door-arch", labelKo: "아치형 정문" },
-  { id: "street-colonnade", labelKo: "유럽풍 열주 회랑" },
 ]);
 
 export function StudioBg3dSketchUpFullSections({
@@ -76,8 +60,6 @@ export function StudioBg3dSketchUpFullSections({
   const [matchTargetDist, setMatchTargetDist] = useState<number>(8.5);
 
   // 9. Parametric Architectural Component & LayOut SVG state
-  const [archKind, setArchKind] = useState<SketchUpArchitecturalComponentKind>("staircase-straight");
-  const [archStepCount, setArchStepCount] = useState<number>(8);
   const [layoutSvgSummary, setLayoutSvgSummary] = useState<string | null>(null);
 
   const terrainGrid = useMemo(() => {
@@ -166,17 +148,17 @@ export function StudioBg3dSketchUpFullSections({
     [horizonSkewY, matchTargetDist, vp1X, vp2X],
   );
 
-  const archComponentResult = useMemo(
-    () =>
-      buildSketchUpArchitecturalComponentPrimitives({
-        kind: archKind,
-        widthMeters: 3.6,
-        heightMeters: 3.2,
-        depthMeters: 4.2,
-        stepOrBayCount: archStepCount,
-      }),
-    [archKind, archStepCount],
-  );
+  const insertPrimitives = (primitives: readonly BgPrimitive[], labelKo: string) => {
+    try {
+      if (!disabled && onInsertScenePrimitives?.(primitives, labelKo)) {
+        onStatusChange?.(`${labelKo} · 3D 장면 배치 완료`);
+        return;
+      }
+      onStatusChange?.("배치하지 못했습니다. 편집 가능한 장면과 도형 한도를 확인해 주세요.");
+    } catch {
+      onStatusChange?.("장면에 배치하지 못했습니다. 장면 상태를 확인해 주세요.");
+    }
+  };
 
   return (
     <>
@@ -266,12 +248,10 @@ export function StudioBg3dSketchUpFullSections({
 
             <button
               type="button"
-              disabled={disabled}
+              disabled={disabled || !onInsertScenePrimitives}
               data-testid="sketchup-sandbox-insert-scene-btn"
               onClick={() => {
-                const msg = `Sandbox 지형·Stamp 패드·Drape 도로 (${terrainPrimitives.length}개 요소) 3D 장면 배치 완료`;
-                onStatusChange?.(msg);
-                onInsertScenePrimitives?.(terrainPrimitives, msg);
+                insertPrimitives(terrainPrimitives, `Sandbox 지형·부지 (${terrainPrimitives.length}개 요소)`);
               }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
             >
@@ -350,13 +330,11 @@ export function StudioBg3dSketchUpFullSections({
               <p className="mt-1 text-[0.62rem] text-fg-2">{solidInspectorReport.issuesSummaryKo.join(" / ")}</p>
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled || !onInsertScenePrimitives}
                 data-testid="sketchup-solid-insert-scene-btn"
                 onClick={() => {
                   setInspectorStrayEdges(0);
-                  const msg = `Solid Tools (${solidResult.labelKo}) 결과 ${solidResult.primitives.length}개 바디 3D 장면 배치 완료`;
-                  onStatusChange?.(msg);
-                  onInsertScenePrimitives?.(solidResult.primitives, msg);
+                  insertPrimitives(solidResult.primitives, `솔리드 예제 (${solidResult.labelKo}) ${solidResult.primitives.length}개 바디`);
                 }}
                 className="mt-1.5 inline-flex items-center gap-1 rounded bg-accent px-2.5 py-1 text-[0.65rem] font-bold text-on-accent"
               >
@@ -458,97 +436,33 @@ export function StudioBg3dSketchUpFullSections({
         </div>
       </details>
 
-      {/* 9. Parametric Architectural Components & LayOut Vector Cutaway SVG */}
-      <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
-        <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
-          <span className="inline-flex items-center gap-1.5">
-            <Building2 className="size-3.5 text-accent" aria-hidden />
-            9. 파라메트릭 건축 라이브 컴포넌트 생성기 & LayOut 벡터 단면도(SVG)
-          </span>
-          <span className="font-mono text-[0.62rem] text-fg-3">
-            {archComponentResult.labelKo} ({archComponentResult.primitiveCount}개)
-          </span>
-        </summary>
-
-        <div className="mt-2.5 space-y-2 border-t border-line/60 pt-2">
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-            {ARCH_COMPONENT_OPTIONS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                disabled={disabled}
-                data-testid={`sketchup-arch-kind-${item.id}`}
-                onClick={() => setArchKind(item.id)}
-                className={`rounded-lg border px-2.5 py-1.5 text-left text-[0.65rem] ${
-                  archKind === item.id
-                    ? "border-accent bg-accent/15 font-bold text-accent"
-                    : "border-line bg-panel text-fg-2 hover:bg-raised"
-                }`}
-              >
-                {item.labelKo}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-panel p-2">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">계단 단수 / 열주 경간 수: {archStepCount}</span>
-              <input
-                type="range"
-                min="4"
-                max="16"
-                step="1"
-                disabled={disabled}
-                aria-label="건축 컴포넌트 분할 수"
-                value={archStepCount}
-                onChange={(e) => setArchStepCount(parseInt(e.target.value, 10))}
-                className="w-28 accent-accent"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                disabled={disabled}
-                data-testid="sketchup-arch-insert-scene-btn"
-                onClick={() => {
-                  onStatusChange?.(archComponentResult.summaryKo);
-                  onInsertScenePrimitives?.(archComponentResult.primitives, archComponentResult.summaryKo);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
-              >
-                <Sparkles className="size-3.5" aria-hidden />
-                <span>현재 3D 장면에 건축 컴포넌트 배치</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={disabled}
-                data-testid="sketchup-layout-svg-export-btn"
-                onClick={() => {
-                  const res = buildSketchUpLayOutVectorCutawaySvg({
-                    title: archComponentResult.labelKo,
-                    widthMeters: 4.0,
-                    heightMeters: 3.2,
-                    sectionElevationMeters: 1.2,
-                  });
-                  const summary = `LayOut 벡터 단면 SVG (${res.byteLength} B) 생성 완료`;
-                  setLayoutSvgSummary(summary);
-                  onStatusChange?.(summary);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-accent bg-accent/10 px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20"
-              >
-                <FileCode2 className="size-3.5" aria-hidden />
-                <span>LayOut 벡터 단면 SVG 생성</span>
-              </button>
-            </div>
-          </div>
-          {layoutSvgSummary ? (
-            <p data-testid="sketchup-layout-svg-summary" className="font-mono text-[0.62rem] text-good">
-              {layoutSvgSummary}
-            </p>
-          ) : null}
-        </div>
+      <details className="rounded-xl border border-line bg-card p-2.5">
+        <summary className="cursor-pointer font-bold text-fg">LayOut 벡터 단면도 예제 (SVG)</summary>
+        <button
+          type="button"
+          disabled={disabled}
+          data-testid="sketchup-layout-svg-export-btn"
+          onClick={() => {
+            const res = buildSketchUpLayOutVectorCutawaySvg({
+              title: "건축 단면도 예제",
+              widthMeters: 4.0,
+              heightMeters: 3.2,
+              sectionElevationMeters: 1.2,
+            });
+            const summary = `LayOut 벡터 단면 SVG (${res.byteLength} B) 생성 완료`;
+            setLayoutSvgSummary(summary);
+            onStatusChange?.(summary);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-accent bg-accent/10 px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20"
+        >
+          <FileCode2 className="size-3.5" aria-hidden />
+          <span>LayOut 벡터 단면 SVG 예제 생성</span>
+        </button>
+        {layoutSvgSummary ? (
+          <p data-testid="sketchup-layout-svg-summary" className="font-mono text-[0.62rem] text-good">
+            {layoutSvgSummary}
+          </p>
+        ) : null}
       </details>
     </>
   );
