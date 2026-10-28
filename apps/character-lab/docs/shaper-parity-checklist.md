@@ -4,10 +4,10 @@
 공식 자료·설치본 REA 분석과 실제 상태·렌더 연결을 다시 대조한 결과는
 [실제 동작 연결 기록](shaper-implementation-review-20261028.md)을 우선한다. 로컬 UI 숫자 변화만으로는 구현 완료로 집계하지 않는다.
 
-상태: current (집계 2026-10-02 00:55 UTC, core 작성). 영역 원본은 `docs/parity/{state,humanoid,outfit,animation,render,export,vision}.md`이며
+상태: **과거 집계** (2026-10-02 00:55 UTC, core 작성). 아래 본문과 표의 미검증·실행 수치는 해당 날짜의 범위다. 2026-10-29 현재 동작·검증은 위 연결 기록과 갱신된 영역 문서를 우선한다. 영역 원본은 `docs/parity/{state,humanoid,outfit,animation,render,export,vision}.md`이며
 이 표는 그 원본과 디스크의 테스트 파일을 core가 합친 것이다. 7개 영역 원본이 모두 제출되어 "(임시)" 행은 없다(render는 render-beta 갱신본, 2026-10-02).
 
-최종 실행 기록(typecheck·테스트 파일/케이스 수·eslint·build·프로브)은 §15에 있다. **실GPU(하드웨어)·WebGPU 검증은 하나도 수행하지 못했다.**
+이 과거 집계의 실행 기록(typecheck·테스트 파일/케이스 수·eslint·build·프로브)은 §15에 있다. **2026-10-02 집계 시점에는 실GPU·WebGPU 검증을 수행하지 못했다.** 2026-10-29에는 Apple M2 Max·Chrome 156·Metal WebGPU의 기본/필압 외곽선과 첫 캡처를 실제 검증했다(`parity/render.md`의 후속 기록). 당시의 미검증 문구를 현재 전체 상태로 해석하지 않는다.
 2026-10-02부터 소프트웨어 렌더러(SwiftShader) WebGL2 실브라우저 실측이 일부 행에 있고(§13, 약칭 SW), 이는 가시성·알파 규약·콘솔 오류 수준의 증거일 뿐 실GPU 품질·성능 증거가 아니다.
 
 열 의미

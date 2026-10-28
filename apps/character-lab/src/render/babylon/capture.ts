@@ -135,7 +135,21 @@ function yieldToMainThread(): Promise<void> {
   });
 }
 
-async function ensureReady(deps: CaptureDeps, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean): Promise<void> {
+function materialReady(mesh: Mesh, material: Material, nativeOutlines: boolean): boolean {
+  const instances = mesh.hasThinInstances || mesh.instances.length > 0;
+  // Babylon 9.31의 실제 Mesh.render와 같은 저장 위치를 검사한다. material.isReady만 호출하면 기본 wrapper만 준비되고 RTT 서브메시는 빠진다.
+  const ready = material._storeEffectOnSubMeshes
+    ? (mesh.subMeshes ?? []).every((subMesh) => material.isReadyForSubMesh(mesh, subMesh, instances))
+    : material.isReady(mesh, instances);
+  if (!ready) return false;
+  if (nativeOutlines && (mesh.renderOutline || mesh.renderOverlay)) {
+    const renderer = mesh.getScene().getOutlineRenderer();
+    if (!(mesh.subMeshes ?? []).every((subMesh) => renderer.isReady(subMesh, instances))) return false;
+  }
+  return true;
+}
+
+async function ensureReady(deps: CaptureDeps, rtt: RenderTargetTexture, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean): Promise<void> {
   if (!deps.waitForShaders) return;
   // forceCompilationAsync는 임시 서브메시로 컴파일해 실제 렌더 변종과 어긋날 수 있다 → 실제 isReady를 폴링한다(material-readiness.ts).
   // lit 패스는 SSS 없는 변종으로 그리므로 그 변종의 준비 여부를 본다(검사 호출이 변종 컴파일을 시작시킨다).
@@ -147,15 +161,18 @@ async function ensureReady(deps: CaptureDeps, pairs: ReadonlyArray<readonly [Mes
   const ready = pairs.map(() => false);
   let cursor = 0;
   let pending = pairs.length;
-  const sweep = (): boolean =>
-    withScatteringOff(deps.rig, scatteringOff, () => {
+  const sweep = (): boolean => {
+    const engine = deps.scene.getEngine();
+    const previousPass = engine.currentRenderPassId;
+    engine.currentRenderPassId = rtt.renderPassId;
+    try { return withScatteringOff(deps.rig, scatteringOff, () => {
       const started = performance.now();
       // 1) 아직 준비되지 않은 쌍을 시간 상한 안에서 차례로 검사한다(상한을 넘으면 다음 폴링이 이어서 본다).
       for (let step = 0; step < pairs.length; step += 1) {
         const index = (cursor + step) % pairs.length;
         const pair = pairs[index];
         if (ready[index] || !pair) continue;
-        ready[index] = pair[1].isReady(pair[0]);
+        ready[index] = materialReady(pair[0], pair[1], scatteringOff);
         if (performance.now() - started > READINESS_SLICE_MS) {
           cursor = (index + 1) % pairs.length;
           break;
@@ -166,13 +183,14 @@ async function ensureReady(deps: CaptureDeps, pairs: ReadonlyArray<readonly [Mes
       // 2) 모두 한 번씩 준비됐으면 같은 동기 구간에서 전체를 다시 확인한다(그사이 dirty가 된 재질을 놓치지 않는다).
       for (let index = 0; index < pairs.length; index += 1) {
         const pair = pairs[index];
-        if (pair && !pair[1].isReady(pair[0])) {
+        if (pair && !materialReady(pair[0], pair[1], scatteringOff)) {
           ready[index] = false;
           pending += 1;
         }
       }
       return pending === 0;
-    });
+    }); } finally { engine.currentRenderPassId = previousPass; }
+  };
   const result = await waitUntilReady([sweep], { timeoutMs });
   if (!result.ready) {
     throw failVisible(
@@ -254,11 +272,19 @@ export interface CaptureAround {
 async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: (pass: RenderPassId) => readonly Mesh[], around: CaptureAround | undefined): Promise<PassRenderResult> {
   const multisample = pass === "flat" || pass === "lit";
   const engine = deps.scene.getEngine();
+  // 수동 renderFrame의 swapchain 명령은 첫 await 전에 제출한다. 다음 이벤트 루프에서 그리기 표면이 만료될 수 있다.
+  if (engine.isWebGPU) engine.flushFramebuffer();
   const samples = multisample ? Math.max(1, Math.min(4, engine.getCaps().maxMSAASamples || 1)) : 1;
   // 작은 타깃(썸네일)은 장면별 풀에서 재사용한다(renderPassId 누적 방지, capture-targets.ts).
   const lease = acquireCaptureTarget(deps.scene, pass, width, height, samples);
   const rtt = lease.rtt;
-  let meshes: readonly Mesh[] = [];
+  const overridden = new Set<Mesh>();
+  const setOverride = (mesh: Mesh, material: Material | null): void => {
+    const override = material && material !== mesh.material ? material : undefined;
+    // setMaterialForRendering은 같은 값으로 불러도 RTT draw cache를 지운다. 준비된 wrapper를 렌더 직전에 지우지 않는다.
+    if (mesh.getMaterialForRenderPass(rtt.renderPassId) !== override) rtt.setMaterialForRendering(mesh, override);
+    if (override) overridden.add(mesh);
+  };
   try {
     rtt.activeCamera = camera;
     rtt.ignoreCameraViewport = true;
@@ -276,18 +302,21 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
     if (pass === "lit") {
       for (const mesh of deps.pressureOutlines?.() ?? []) if (mesh.material) compilePairs.push([mesh, mesh.material]);
     }
-    await ensureReady(deps, compilePairs, pass === "lit");
+    for (const [mesh, material] of compilePairs) setOverride(mesh, material);
+    await ensureReady(deps, rtt, compilePairs, pass === "lit");
+    // 준비 대기 동안 RAF가 만든 명령도 포함해 제출한다. 캡처 카메라·재질의 버퍼 변경과 같은 제출 묶음에 섞지 않는다.
+    if (engine.isWebGPU) engine.flushFramebuffer();
 
     // (2) 동기 구간: 일시 적용 → 프레이밍·렌더 목록 → 렌더 → readPixels 호출 → 복원
     around?.before();
     let pending: ReturnType<RenderTargetTexture["readPixels"]> = null;
     let boxes: SyntheticBox[] | null = null;
     try {
-      meshes = [...frame(pass), ...(pass === "lit" ? deps.pressureOutlines?.() ?? [] : [])];
+      const meshes = [...frame(pass), ...(pass === "lit" ? deps.pressureOutlines?.() ?? [] : [])];
       rtt.renderList = [...meshes];
       for (const mesh of meshes) {
         const material = passMaterialFor(deps, camera, pass, partOfMesh(deps, mesh), mesh);
-        if (material && material !== mesh.material) rtt.setMaterialForRendering(mesh, material);
+        setOverride(mesh, material);
       }
       if (pass === "lit" && deps.shadow) {
         try {
@@ -310,7 +339,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
     if (buffer instanceof Uint8Array || buffer instanceof Uint8ClampedArray) return { bytes: buffer, boxes: null };
     throw failVisible("capture-readback-type", `RTT readback 타입이 RGBA8이 아닙니다(${buffer.constructor.name}).`, undefined, deps.now);
   } finally {
-    for (const mesh of meshes) rtt.setMaterialForRendering(mesh, undefined);
+    for (const mesh of overridden) rtt.setMaterialForRendering(mesh, undefined);
     lease.release();
   }
 }

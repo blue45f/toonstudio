@@ -1,10 +1,12 @@
 /**
  * 캡처 재질 준비 대기(실브라우저 결함의 회귀 방지): Babylon은 `isReady()`가 false인 재질의 메시를 그리지 않아 준비 전에 RTT를 렌더하면 완전 투명 결과가 나온다
- * (IBL 텍스처가 죽어 PBR이 영원히 미준비였던 실측 사례). 캡처는 **실제** `material.isReady(mesh)`를 폴링해 모든 재질(PBR·툰·OpenPBR·NodeMaterial)이 준비된 뒤에만 그리고,
+ * (IBL 텍스처가 죽어 PBR이 영원히 미준비였던 실측 사례). 캡처는 실제 RTT renderPassId에서 재질·서브메시 준비를 폴링해 모든 재질이 준비된 뒤에만 그리고,
  * 시간 안에 안 되면 `capture-shader-timeout` LabFailure로 사유를 알린다(무음 폴백·투명 결과 없음). 모의 readback 레인이라 픽셀 내용이 아니라 대기 배선을 검증한다.
  * lit 패스는 SSS 없는 변종으로 그리므로 그 변종의 준비를 본다(`withScatteringOff`).
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
+import { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_SHADING, RENDER_PASS_IDS, isLabFailure } from "../contracts";
 import { applyPlanFixture } from "../testing/recipe-fixtures";
@@ -18,6 +20,7 @@ import type { Material } from "@babylonjs/core/Materials/material.js";
 
 const cleanups: Array<() => void> = [];
 afterEach(() => {
+  vi.restoreAllMocks();
   while (cleanups.length > 0) cleanups.pop()?.();
 });
 
@@ -41,13 +44,17 @@ function materialOf(harness: NullEngineHarness, meshName: string): Material {
 
 /**
  * 장면 메시의 재질 준비 여부를 지정한다. NullEngine은 셰이더를 컴파일하지 못해 커스텀 ShaderMaterial·NodeMaterial·OpenPBR이 영원히 미준비라
- * (PBRMaterial만 준비로 나온다) 실제 컴파일 대신 `isReady`를 대체해 **대기 배선**을 검증한다. 실제 컴파일 대기는 실브라우저에서 확인했다(docs/parity/render.md).
+ * 실제 컴파일 대신 두 준비 진입점을 대체해 대기 배선을 검증한다. 실제 GPU 컴파일은 별도 브라우저 증거가 필요하다.
  */
 function setReady(harness: NullEngineHarness, ready: (meshName: string) => boolean): void {
   const scene = harness.nullEngine.scenes[0];
+  if (scene) scene.getOutlineRenderer().isReady = () => true;
   for (const mesh of scene?.meshes ?? []) {
     const material = mesh.material;
-    if (material) material.isReady = () => ready(mesh.name);
+    if (material) {
+      material.isReady = () => ready(mesh.name);
+      material.isReadyForSubMesh = () => material.isReady(mesh);
+    }
   }
 }
 
@@ -74,6 +81,7 @@ describe("캡처가 재질 준비를 기다린다", () => {
 
   it("준비되지 않은 재질이 있으면 시간 안에 `capture-shader-timeout`(한글 사유)으로 실패하고 투명 결과를 돌려주지 않는다", async () => {
     const harness = await boot();
+    setReady(harness, () => true);
     const head = materialOf(harness, "head");
     head.isReady = () => false;
     const failure = await harness.engine.renderPasses(request()).then(
@@ -138,6 +146,7 @@ describe("캡처가 재질 준비를 기다린다", () => {
 
   it("lit 패스는 SSS를 끈 변종의 준비를 확인하고 끝나면 SSS를 되돌린다(뷰포트는 SSS 그대로)", async () => {
     const harness = await boot();
+    setReady(harness, () => true);
     const head = materialOf(harness, "head") as unknown as { subSurface: { isScatteringEnabled: boolean }; isReady: () => boolean };
     head.subSurface.isScatteringEnabled = true;
     const seen: boolean[] = [];
@@ -149,6 +158,85 @@ describe("캡처가 재질 준비를 기다린다", () => {
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((enabled) => !enabled)).toBe(true);
     expect(head.subSurface.isScatteringEnabled).toBe(true);
+  });
+
+  it("기본 재질 wrapper가 준비여도 실제 RTT 서브메시가 미준비면 실패하며 renderPassId를 복원한다", async () => {
+    const harness = await boot();
+    setReady(harness, () => true);
+    const beforePass = harness.nullEngine.currentRenderPassId;
+    const seen: number[] = [];
+    const head = materialOf(harness, "head");
+    head.isReadyForSubMesh = () => { seen.push(harness.nullEngine.currentRenderPassId); return false; };
+    await expect(harness.engine.renderPasses(request())).rejects.toMatchObject({ code: "capture-shader-timeout" });
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((pass) => pass !== beforePass)).toBe(true);
+    expect(harness.nullEngine.currentRenderPassId).toBe(beforePass);
+  });
+
+  it("비등방 hull의 늦은 RTT 준비까지 기다린 뒤 첫 lit를 한 번 제출한다", async () => {
+    const harness = await boot({ captureCompileTimeoutMs: 5_000 });
+    harness.engine.setShading({ ...toon(), toon: { ...DEFAULT_SHADING.toon, outline: "hull", outlinePressure: true } });
+    setReady(harness, () => true);
+    let checks = 0;
+    materialOf(harness, "pressure-outline:head").isReadyForSubMesh = () => ++checks >= 4;
+    const render = vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+      if (this.name === "capture-lit") {
+        expect(checks).toBeGreaterThanOrEqual(4);
+        expect(this.renderList?.filter((mesh) => mesh.name.startsWith("pressure-outline:"))).toHaveLength(4);
+      }
+    });
+    await harness.engine.renderPasses(request());
+    expect(render.mock.contexts.filter((rtt) => rtt instanceof RenderTargetTexture && rtt.name === "capture-lit")).toHaveLength(1);
+  });
+
+  it("기본 hull 셰이더도 준비 전에는 첫 lit를 제출하지 않는다", async () => {
+    const harness = await boot({ captureCompileTimeoutMs: 5_000 });
+    harness.engine.setShading(toon());
+    setReady(harness, () => true);
+    const renderer = harness.nullEngine.scenes[0]?.getOutlineRenderer();
+    if (!renderer) throw new Error("외곽선 렌더러가 없습니다.");
+    let checks = 0;
+    renderer.isReady = () => ++checks >= 4;
+    const render = vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+      if (this.name === "capture-lit") expect(checks).toBeGreaterThanOrEqual(4);
+    });
+    await harness.engine.renderPasses(request());
+    expect(render.mock.contexts.filter((rtt) => rtt instanceof RenderTargetTexture && rtt.name === "capture-lit")).toHaveLength(1);
+  });
+
+  it("실제 패스 override를 준비 검사 전에 설치하고 실패해도 override·현재 패스를 복원한다", async () => {
+    const harness = await boot();
+    setReady(harness, () => true);
+    const beforePass = harness.nullEngine.currentRenderPassId;
+    const checked: Array<{ readonly mesh: Parameters<ShaderMaterial["isReadyForSubMesh"]>[0]; readonly pass: number }> = [];
+    vi.spyOn(ShaderMaterial.prototype, "isReadyForSubMesh").mockImplementation(function (this: ShaderMaterial, mesh) {
+      const pass = harness.nullEngine.currentRenderPassId;
+      expect(pass).not.toBe(beforePass);
+      expect(mesh.getMaterialForRenderPass(pass)).toBe(this);
+      checked.push({ mesh, pass });
+      return false;
+    });
+    await expect(harness.engine.renderPasses(request(["flat"]))).rejects.toMatchObject({ code: "capture-shader-timeout" });
+    expect(checked.length).toBeGreaterThan(0);
+    expect(checked.every(({ mesh, pass }) => mesh.getMaterialForRenderPass(pass) === undefined)).toBe(true);
+    expect(harness.nullEngine.currentRenderPassId).toBe(beforePass);
+  });
+
+  it("WebGPU는 캡처 전에 뷰포트 명령을 제출하며 준비 뒤 RTT를 한 번만 그린다", async () => {
+    const harness = await boot();
+    setReady(harness, () => true);
+    Object.defineProperty(harness.nullEngine, "isWebGPU", { value: true, configurable: true });
+    const order: string[] = [];
+    materialOf(harness, "head").isReadyForSubMesh = () => { order.push("ready"); return true; };
+    vi.spyOn(harness.nullEngine, "flushFramebuffer").mockImplementation(() => { order.push("submit-viewport"); });
+    vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+      if (this.name === "capture-lit") order.push("draw-capture");
+    });
+    await harness.engine.renderPasses(request());
+    expect(order[0]).toBe("submit-viewport");
+    expect(order.slice(1, -2).length).toBeGreaterThan(0);
+    expect(order.slice(1, -2).every((step) => step === "ready")).toBe(true);
+    expect(order.slice(-2)).toEqual(["submit-viewport", "draw-capture"]);
   });
 
   it("기본 NullEngine 하네스는 컴파일하지 않으므로 기다리지 않는다(합성 래스터)", async () => {
