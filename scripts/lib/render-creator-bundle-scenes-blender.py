@@ -69,7 +69,7 @@ def render(job, output):
         block("산책길", (0, 0, 0.005), (4.3, 200, 0.025), path)
         for x in [-2.25, 2.25]:
             block("낮은 경계석", (x, 0, 0.07), (0.17, 200, 0.14), curb)
-    else:
+    elif job["architecture"] == "stone-study":
         stones = [material("석벽" + str(i), (0.25 + i * 0.018, 0.23 + i * 0.018, 0.22 + i * 0.018, 1)) for i in range(4)]
         for row in range(7):
             for col in range(13):
@@ -81,6 +81,14 @@ def render(job, output):
         for i in range(-6, 7):
             block("타일 가로선", (i, 0, 0.005), (0.018, 15, 0.025), tiles)
             block("타일 세로선", (0, i, 0.005), (15, 0.018, 0.025), tiles)
+    else:
+        seam = material("금속 바닥 줄눈", (0.16, 0.20, 0.26, 1))
+        blue = material("기지 바닥 유도선", (0.05, 0.32, 0.72, 1))
+        for i in range(-12, 13, 2):
+            block("금속 타일 가로선", (i, 0, 0.005), (0.035, 30, 0.025), seam)
+            block("금속 타일 세로선", (0, i, 0.005), (30, 0.035, 0.025), seam)
+        for x in [-2.5, 2.5]:
+            block("기지 유도선", (x, 0, 0.025), (0.12, 30, 0.035), blue)
     for model in job["models"]:
         add_model(model)
     target = Vector(job["camera"]["target"])

@@ -123,6 +123,7 @@ export const CATALOG_PACKS = [
   { catalogIds: ["cbv1-065-free-analog-memory-rooms"], title: "FREE Analog Memory — 80s/90s CRT VHS Rooms", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-011-80s-store"], presetSource: ["cbv1-ingest-011-80s-store"] },
   { catalogIds: ["cbv1-071-pixeldrift-metro-free"], title: "PixelDrift: Metro — FREE", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-257-pixelart-ea01-metro-2-v1", "cbv1-ingest-258-pixelart-ea01-metro-v11-2-v2", "cbv1-ingest-260-pixeldriftmetrofree"] },
   // SF
+  { catalogIds: ["cbv1-053-scifi-arena-blue-base"], title: "Sci-Fi Arena: Blue Base", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-local-scifi-blue-base"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 114개를 대조해 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-050-scifi-arena-1"], title: "Sci-Fi Arena: 1", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1"] },
   { catalogIds: ["cbv1-051-scifi-arena-2"], title: "Sci-Fi Arena: 2", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1"] },
   { catalogIds: ["cbv1-046-cosmokit-planets"], title: "CosmoKit — Stylized Low Poly Planets", creator: "EmaceArt", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-046-cosmokitstylizedlowpolyplanets", "cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"], presetSource: ["cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"] },
@@ -153,6 +154,9 @@ export const CATALOG_PACKS = [
   { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-medieval-weapons"], note: "2026-10-28 수신 기록·공식 Weapons.zip의 32 Models 표기와 로컬 자기완결 GLB 32개를 대조해 귀속을 확정하고 새 인제스션 입력에 등록했다. 과거 추정 매핑 cbv1-ingest-329-weapons는 사용하지 않으며 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-019-blasters-rg"], title: "Blasters RG", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-028-blasters-rg"] },
   { catalogIds: ["cbv1-074-blasters-free"], title: "Blasters Free", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-027-blasters-free"] },
+  { catalogIds: ["cbv1-081-cartoon-car-megapack"], title: "Cartoon Car Megapack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-cartoon-car-megapack"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 180개를 대조해 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
+  { catalogIds: ["cbv1-017-cartoon-cars-2"], title: "Cartoon Cars 2", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-cartoon-cars-2"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 453개를 대조했다. 외부 텍스처를 참조하는 Godot 사본은 제외하고 Gltf 실물만 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
+  { catalogIds: ["cbv1-018-army-pack"], title: "Army Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-army-pack"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 309개를 대조했다. 외부 텍스처를 참조하는 Godot 사본은 제외하고 gLTF 실물만 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
 ];
 
 /** 배경 군중 (렌더 전용 — bg3d 장면에 직접 배치하지 않고 오프라인 렌더 소재로만 쓴다). */
@@ -174,10 +178,10 @@ export const PENDING_PACKS = [
   { catalogIds: ["cbv1-063-free-fantasy-medieval-houses"], title: "Free Fantasy Medieval Houses", reason: "attribution-unconfirmed", reasonLabel: "수신 blend의 내용이 Slavica 무료판과 겹쳐 귀속 확정 후 편입한다." },
   { catalogIds: ["cbv1-020-viking-world-stylized"], title: "Viking World - Stylized", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
   { catalogIds: ["cbv1-036-desert-canyon"], title: "Desert Canyon", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
-  { catalogIds: ["cbv1-052-scifi-arena-cargo", "cbv1-053-scifi-arena-blue-base"], title: "Sci-Fi Arena: Cargo / Blue Base", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
+  { catalogIds: ["cbv1-052-scifi-arena-cargo"], title: "Sci-Fi Arena: Cargo", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
   { catalogIds: ["cbv1-054-low-poly-asia-pack"], title: "Low Poly Asia Pack", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
   { catalogIds: ["cbv1-079-free-stylized-medieval-village-urp"], title: "Free Stylized Medieval Village — Unity URP", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
-  { catalogIds: ["cbv1-016-cars", "cbv1-017-cars-megapack", "cbv1-081-car-megapack", "cbv1-018-army-pack"], title: "차량·군사 팩", reason: "deferred-category", reasonLabel: "웹툰 배경 수요 대비 후순위로 보류한다 (2026-10-20 활용 계획)." },
+  { catalogIds: ["cbv1-016-cars"], title: "Cartoon Cars 1", reason: "deferred-category", reasonLabel: "웹툰 배경 수요 대비 후순위로 보류한다 (2026-10-20 활용 계획)." },
 ];
 
 /* ── GLB 메트릭 실측 ─────────────────────────────────────────────────────── */

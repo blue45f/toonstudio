@@ -13,14 +13,15 @@ export const STUDIO_BUNDLE_BACKGROUND_METADATA: readonly Studio2dAssetMetadata[]
       || asset.rights.serve !== "allow" || !asset.rights.commercialUse || asset.rights.attributionRequired
       || asset.width !== 2048 || asset.height !== 1152 || asset.review.method !== "full-image"
       || asset.review.status !== "usable") throw new TypeError("번들 완성 배경의 검수·권리 기록이 올바르지 않습니다.");
-    return Object.freeze({
+    const metadata: Studio2dAssetMetadata = {
       ...asset,
       environment: asset.environment === "실내" ? "실내" : "실외",
       timeOfDay: asset.timeOfDay === "밤" ? "밤" : asset.timeOfDay === "노을" ? "노을" : "낮",
       review: { ...asset.review, method: "full-image", status: "usable" },
       provenance: { ...asset.provenance, kind: "creator-bundle-cc0", licenseStatus: "cc0-verified" },
       mediaType: "image/webp", style: "stylized-low-poly", legacySrc: null,
-    });
+    };
+    return Object.freeze(metadata);
   }),
 );
 

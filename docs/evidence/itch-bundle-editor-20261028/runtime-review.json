@@ -1,0 +1,217 @@
+{
+  "schema": "toonstudio.itch-bundle-editor-proof.v1",
+  "checkedAt": "2026-10-28T16:25:56.646593+00:00",
+  "baseHead": "4c65834fcebcc6e8b3ca91acfefca1dba88cdf2d",
+  "workingTreeCodeSha256": {
+    "apps/web/src/domains/creator/catalog/studio-bundle-project-archive.ts": "e9e96518f709feff22b1ab569be2908c97f7269411e359ee317c7148627b72f6",
+    "apps/web/src/domains/creator/catalog/studio-bundle-project-archive.test.ts": "52281a66f9b84097598c2ce555eec98bc0db9b1e5282666be6fa8af5c04b2dc0",
+    "apps/web/src/domains/creator/studio-project-archive.ts": "cb6224298db7fbf97c117d7f5fe8d10532e844b72db8e812c6020445d186b19c",
+    "apps/web/src/domains/creator/studio-project-archive-dependencies.ts": "f7324f9afaab9605bd3491bd3aedc8bd3b23020e8349faf854d2851bb5e45b17",
+    "scripts/verify-creator-bundle-editor.mts": "6ba20bc6c8c58f76c2c05213630b5ac35637910b643e1a8abc655116b08122f1",
+    "apps/web/src/domains/creator/studio-project-archive-orchestration-runtime.ts": "c3a872c1d5a1f8927e67f762b3cc617446ad14718b05616fd22fca0ad03d0ad1"
+  },
+  "browser": "별도 headless Chromium + 새 ephemeral Playwright context, 사용자 프로필 미사용",
+  "server": "127.0.0.1:5217, 원래 apps/web/vite.config.ts, 별도 /tmp Vite 캐시",
+  "productionWrites": false,
+  "formalToonstudioSaveUiTested": false,
+  "archiveRoundtrip": {
+    "ok": true,
+    "assetId": "cbv1-008-bench-1-1",
+    "autosaveAuthority": "제품 OPFS journal + worker SQLite reader",
+    "recovery": {
+      "recoveryMode": "automatic",
+      "recoveryBannerObserved": true,
+      "automaticRestoreObserved": true,
+      "automaticRestoreCompleted": true,
+      "restoreActionCompleted": false
+    },
+    "before": {
+      "isSelfContained": true,
+      "placed": [
+        {
+          "id": "97ea808e-5abe-4097-9e92-f79466f88cd9",
+          "type": "image",
+          "x": 92,
+          "y": 30,
+          "width": 537,
+          "height": 536,
+          "credit": {
+            "schema": "toonstudio.bundle-source-credit.v1",
+            "assetId": "cbv1-008-bench-1-1",
+            "ledgerPackId": "cbv1-008-cute-park-pack",
+            "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+            "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+            "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+            "provider": "RG Poly",
+            "licenseId": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "licenseName": "CC0-1.0",
+            "serve": "allow",
+            "status": "public-domain",
+            "commercialUse": true,
+            "attributionRequired": false
+          },
+          "bodyHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+          "byteSize": 588254
+        }
+      ],
+      "attachments": [
+        {
+          "sha256": "b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+          "byteSize": 588254,
+          "mimeType": "image/webp"
+        }
+      ]
+    },
+    "after": {
+      "isSelfContained": true,
+      "placed": [
+        {
+          "id": "97ea808e-5abe-4097-9e92-f79466f88cd9",
+          "type": "image",
+          "x": 92,
+          "y": 30,
+          "width": 537,
+          "height": 536,
+          "credit": {
+            "schema": "toonstudio.bundle-source-credit.v1",
+            "assetId": "cbv1-008-bench-1-1",
+            "ledgerPackId": "cbv1-008-cute-park-pack",
+            "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+            "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+            "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+            "provider": "RG Poly",
+            "licenseId": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "licenseName": "CC0-1.0",
+            "serve": "allow",
+            "status": "public-domain",
+            "commercialUse": true,
+            "attributionRequired": false
+          },
+          "bodyHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+          "byteSize": 588254
+        }
+      ],
+      "attachments": [
+        {
+          "sha256": "b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+          "byteSize": 588254,
+          "mimeType": "image/webp"
+        }
+      ]
+    },
+    "archives": [
+      {
+        "file": "before.toonproject.zip",
+        "byteSize": 592072,
+        "sha256": "765230e3a87e6094d6b1c8b16677fa889988b9fab8c29a8edd133a7d019aee31"
+      },
+      {
+        "file": "restored.toonproject.zip",
+        "byteSize": 592072,
+        "sha256": "f09d4041141699485e5f6e1a8e67cc92b5d8813525ee2bb0ea91827d1fd17aec"
+      }
+    ],
+    "runtimeErrors": [],
+    "network": {
+      "policy": "auth/session은 미인증 응답(200), 나머지 API는 503, 외부 HTTP/WS는 차단",
+      "blockedExternal": [
+        "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+        "https://fonts.googleapis.com/css2"
+      ],
+      "interceptedApiCalls": [
+        {
+          "request": "GET /api/auth/session",
+          "count": 3
+        },
+        {
+          "request": "GET /api/creator/assets/catalog",
+          "count": 9
+        },
+        {
+          "request": "GET /api/creator/marketplace/resources",
+          "count": 9
+        },
+        {
+          "request": "GET /api/health/capabilities",
+          "count": 10
+        },
+        {
+          "request": "GET /api/studio-ai/status",
+          "count": 9
+        }
+      ]
+    }
+  },
+  "pngExport": {
+    "ok": true,
+    "source": "복구한 실제 Studio host의 UI PNG 1× 내보내기",
+    "width": 720,
+    "height": 1080,
+    "pixels": {
+      "visible": 777600,
+      "nonWhite": 82612,
+      "brown": 69705,
+      "distinctColors": 651
+    },
+    "byteSize": 179175,
+    "sha256": "269c0f17e31547ecfdeae5249888293161f30326d3b142eaaf526046558d9319",
+    "errors": []
+  },
+  "pngNetwork": {
+    "policy": "auth/session은 미인증 응답(200), 나머지 API는 503, 외부 HTTP/WS는 차단",
+    "blockedExternal": [
+      "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "https://fonts.googleapis.com/css2"
+    ],
+    "interceptedApiCalls": [
+      {
+        "request": "GET /api/auth/session",
+        "count": 1
+      },
+      {
+        "request": "GET /api/creator/assets/catalog",
+        "count": 3
+      },
+      {
+        "request": "GET /api/creator/marketplace/resources",
+        "count": 3
+      },
+      {
+        "request": "GET /api/health/capabilities",
+        "count": 3
+      },
+      {
+        "request": "GET /api/studio-ai/status",
+        "count": 3
+      }
+    ]
+  },
+  "backgroundPortability": {
+    "evidence": "실제 park-garden WebP fixture를 bounded fetch 응답으로 제공하고 제품 archive writer/importer로 왕복",
+    "runtimeFullHostBackgroundSelectionTested": false,
+    "testsPassed": 17,
+    "cases": [
+      "frame.bg 및 image.src의 실제 바이트·SHA·출처·배치 왕복",
+      "동일 본문 1회 요청·모든 참조 보존",
+      "공급된 static/opaque raster attachment는 fetch 0회, 기존 검증 후 credit SHA 참조로 폐쇄",
+      "현재 workId의 기존 다운로드 포트 반환 manifest·descriptor credit·실제 Blob 대조와 writer/importer 왕복",
+      "다른 element ID·credit·본문·외부 URL 경로 불일치 거부",
+      "workId 없는 opaque는 원래 참조·외부 의존성 경고·isSelfContained false 보존",
+      "HTTP·변조·용량·30초 timeout·caller abort 명시 실패",
+      "pre-aborted supplied/opaque 및 마지막 ZIP 진행 콜백 취소 거부"
+    ],
+    "authenticatedServerBrowserTested": false,
+    "existingWorkAssetDownloadPortIntegrationTested": true
+  },
+  "validation": {
+    "focusedArchiveTests": "5 files / 90 tests PASS; independent pre-aborted regression 1 PASS",
+    "bundleRightsTests": "Node 169 PASS; Vitest 12 files / 208 PASS",
+    "cacheRegressionTests": "3 files / 55 tests PASS",
+    "strictSubset": "root tsconfig extends, archive/orchestration and cache subsets, diagnostics 0 PASS",
+    "eslint": "archive source 5 files and cache 4 files --max-warnings=0 PASS; final CLI is checked by final harness/pre-commit",
+    "sourceSize": "studio-project-archive.ts 2633 / baseline 2633; orchestration 819 / baseline 841; violations 0",
+    "fullHarness": "최종 실행 결과는 활용 문서와 PR 검증 기록을 따른다."
+  }
+}

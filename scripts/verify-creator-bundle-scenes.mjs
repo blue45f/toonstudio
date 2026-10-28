@@ -21,13 +21,13 @@ try {
   page.setDefaultTimeout(60_000);
   page.on("pageerror", (error) => report.errors.push(error.message));
   await page.goto(`${origin.origin}/tools/browser-harnesses/bundle-scenes-runtime.html`, { waitUntil: "networkidle", timeout: 120_000 });
-  for (const [index, id] of ["cbv1-scene-park-garden", "cbv1-scene-dungeon-study"].entries()) {
+  for (const [index, id] of ["cbv1-scene-park-garden", "cbv1-scene-dungeon-study", "cbv1-scene-blue-base-gateway"].entries()) {
     if (index) await page.setViewportSize({ width: 390, height: 844 });
     const card = page.locator(`[data-studio-2d-asset="${id}"]`);
     await card.getByRole("button", { name: /확대 미리보기$/u }).click();
     const dialog = page.getByRole("dialog");
     await dialog.waitFor();
-    const image = dialog.locator("img");
+    const image = dialog.locator(`img[src$="/${id}.webp"]`);
     await image.evaluate(async (element) => { await element.decode(); });
     assert.deepEqual(await image.evaluate((element) => [element.naturalWidth, element.naturalHeight]), [2048, 1152]);
     await page.keyboard.press("Escape");
@@ -45,7 +45,7 @@ try {
     assert.match(data.element.bundleSourceCredit.contentHash, /^sha256:[a-f0-9]{64}$/u);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "배경 선택기가 모바일 화면을 가로로 넘습니다.");
     await page.locator("canvas").scrollIntoViewIfNeeded();
-    const path = resolve(output, index ? "mobile-study.png" : "desktop-garden.png");
+    const path = resolve(output, ["desktop-garden.png", "mobile-study.png", "mobile-sf.png"][index]);
     await page.screenshot({ path });
     report.screenshots.push(path);
     report.scenes.push(data);

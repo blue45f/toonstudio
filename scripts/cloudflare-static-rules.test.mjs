@@ -157,10 +157,10 @@ describe("Cloudflare static response rules", () => {
 
   it("gives the catalog manifests a single revalidating Cache-Control in production rules", () => {
     const headers = readFileSync("apps/web/public/_headers", "utf8");
-    for (const manifest of ["/assets/studio/cc0-20260906/manifest.json", "/assets/studio/bundle-renders-v1/manifest.json"]) {
+    for (const manifest of ["/assets/studio/cc0-20260906/manifest.json", "/assets/studio/bundle-renders-v1/manifest.json", "/assets/3d/environments/bundle-v1/theme-packs.json"]) {
       expect(headers).toContain(`${manifest}\n  ! Cache-Control\n  Cache-Control: public, max-age=0, must-revalidate\n`);
     }
-    // 떼는 곳은 두 매니페스트뿐이다. 다른 규칙의 헤더를 잘못 떼면 보안·캐시 헤더가 사라진다.
-    expect(headers.match(/^ {2}! /gmu)).toHaveLength(2);
+    // 변경 가능한 세 매니페스트에만 일반 에셋의 immutable을 제거한다.
+    expect(headers.match(/^ {2}! /gmu)).toHaveLength(3);
   });
 });

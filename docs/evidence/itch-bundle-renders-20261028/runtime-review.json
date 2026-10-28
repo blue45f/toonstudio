@@ -1,9 +1,9 @@
 {
-  "expected": 144,
+  "expected": 178,
   "imageContract": {
-    "successes": 144,
+    "successes": 178,
     "failures": 0,
-    "text": "검사 완료 · 144/144개 확인 · 성공 144개 · 실패 0개"
+    "text": "검사 완료 · 178/178개 확인 · 성공 178개 · 실패 0개"
   },
   "insertions": [
     {
@@ -26,7 +26,7 @@
   ],
   "databasePersistenceVerified": true,
   "localPersistence": {
-    "id": "43b29b43-4ab8-4af1-b7ab-9b389cc9e467",
+    "id": "48ef9aaa-4436-489a-9d07-86bb8eca9344",
     "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
     "bundleSourceCredit": {
       "schema": "toonstudio.bundle-source-credit.v1",
@@ -45,8 +45,8 @@
       "attributionRequired": false
     }
   },
-  "scope": "실제 소재 패널·전달 검증기·canvas 픽셀 및 브라우저 SQLite/OPFS 개인 저장→페이지 리로드→바이트·출처 재조회. 원격 프로젝트 저장·인증·운영 배포 검증은 별도다.",
-  "publicFiles": 289,
-  "publicBytes": 62551189,
-  "manifestSha256": "c27bf2b4c734f006cfdccd1f9fd3ca41a0586fb511a941da7d11141051ef2924"
+  "manifestSha256": "f41b18a9031822dcf58e5c7ab48c5e098e56bd4cfe0cea37950e73113c0bac8c",
+  "verifiedOn": "2026-10-29",
+  "publicFiles": 357,
+  "publicBytes": 80948537
 }

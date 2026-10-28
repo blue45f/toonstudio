@@ -30,16 +30,16 @@
 
 기존에 BG3D 번들 매니페스트·생성기·배포 플래너·[테마 팩 패널](../../apps/web/src/domains/creator/bg3d/StudioBg3dBundleThemePackPanel.tsx)이 있다. 드로잉에는 [번들 렌더 소재 패널](../../apps/web/src/domains/creator/StudioBundleAssetLibraryPanel.tsx)과 [전달 검증기](../../apps/web/src/domains/creator/studio-bundle-asset-delivery.ts)가 있다. 새 소재 기능을 별도로 만들기보다 이 동선에 검수된 파생 이미지를 넣는다.
 
-조사 시작 시점 `bundle-renders-v1`은 파일·해시가 없는 예시 슬롯 4개뿐이었다. 또한 과거 `theme-packs.json`에 나열된 14,928개 모델은 실제 제공 중인 수나 권리 허용 수가 아니었다. [2026-10-28 권리 검토](./itch-bundle-license-review-20261028.md)에 따라 공식 CC0 증빙이 확인된 12개 팩만 연다. 기본 판정은 `hold`이고 서면 확인이 필요한 팩의 판정은 유지한다.
+조사 시작 시점 `bundle-renders-v1`은 파일·해시가 없는 예시 슬롯 4개뿐이었다. 또한 과거 `theme-packs.json`에 나열된 14,928개 모델은 실제 제공 중인 수나 권리 허용 수가 아니었다. [2026-10-28 권리 검토](./itch-bundle-license-review-20261028.md)에 따라 공식 CC0 증빙이 확인된 16개 팩만 연다. 원장은 65행이며 allow 16/hold 49다. 기본 판정은 `hold`이고 서면 확인이 필요한 팩의 판정은 유지한다.
 
 Cute Dungeon의 GLB 320개와 Cute Park의 GLB 103개를 검사해 외부 buffers/images URI가 없는 자기완결 파일임을 확인했다. Dungeon 내부에는 책·그릇·테이블·의자·책장·촛불·식물·크리스털이 있고, Park에는 벤치·가로등·분수·나무·꽃·휴지통·오리가 있다. Park에 들어 있는 `License.txt`는 Dungeon 문서의 복사본이므로 공식 Park 페이지의 CC0 증빙을 별도로 사용한다.
 
 ### current — 구현 브랜치의 실제 렌더 소재
 
-`bundle-renders-v1`에 검수된 투명 소재 **144종**과 슬롯별 384px 미리보기를 넣었다.
+`bundle-renders-v1`에 검수된 투명 소재 **178종**과 슬롯별 384px 미리보기를 넣었다.
 기존 예시 초안 4개는 그대로 보존하고 전달하지 않는다. 본 이미지는 **1536×1536 무손실
 WebP**이며 PNG 원본과 디코딩한 RGBA 픽셀을 전수 대조했다. 공개 폴더는 매니페스트 1개와
-이미지 288개뿐이며, 모델·텍스처 원본을 포함하지 않는다. 파일 합계는 62,551,189바이트다.
+이미지 356개뿐이며, 모델·텍스처 원본을 포함하지 않는다. 파일 합계는 80,948,537바이트다.
 
 | 실제 사용한 팩 | 소재 수 | 대표 용도 |
 | --- | ---: | --- |
@@ -54,6 +54,10 @@ WebP**이며 PNG 원본과 디코딩한 RGBA 픽셀을 전수 대조했다. 공�
 | Characters 1 | 6 | 캐릭터 후면 의상 참고 |
 | Cute Graveyard | 14 | 예배당·묘비·호박·관·울타리 |
 | Medieval Weapons | 12 | 활·방패·검·도끼·지팡이 |
+| Sci-Fi Arena: Blue Base | 10 | SF 방벽·기둥·플랫폼·출입문틀 |
+| Cartoon Car Megapack | 8 | 스쿨버스·택시·경찰차·밴 |
+| Cartoon Cars 2 | 8 | 시내버스·청소차·클래식 차량 |
+| Army Pack | 8 | 헬기·항공기·전차·야전 시설 |
 
 기존 그리기 소재 메뉴의 **번들 렌더 소품** 패널이 이 매니페스트를 읽고, 검색·확대 미리보기·
 해시 검증 후 이미지 삽입과 개인 라이브러리 저장을 제공한다. 저장 시 같은 이미지 해시뿐 아니라 동일한 권리·출처인 경우에만 기존 개인 소재를 재사용한다. `bundleSourceCredit`는 정식 공유 계약을 통해 개인 SQLite/OPFS·실제 삽입·프로젝트·보관 파일·게시 권리 검사에 전달한다. 한국어 소재명과 검색어를 함께 등록했다. CC0는 실제
@@ -62,12 +66,12 @@ WebP**이며 PNG 원본과 디코딩한 RGBA 픽셀을 전수 대조했다. 공�
 
 처음 렌더한 120개 중 식별이 어려운 관목과 파일명·메시가 맞지 않는 풀 2개는 선정 설정의
 `rejected`에 사유를 남겼고 공개 파일로 넣지 않았다. Characters 2는 이번 렌더에 넣지 않았으며,
-재질·리그와 완전한 렌더 입력 검증을 마친 뒤 추가한다. 후속 후보 28개 중 식별성이 낮은 박쥐와 뒤쪽 두개골 위주의 해골 2개도 제외했다. 3D 쪽은 Park 103개·Dungeon 320개·Graveyard 253개·Weapons 32개, 합계
-708개의 자기완결 GLB 메타데이터를 재생성했다. 기존 장르 프리셋 연결은 Park·Dungeon 423개이며 원본 업로드·3D 서빙 완료를 뜻하지 않는다.
+재질·리그와 완전한 렌더 입력 검증을 마친 뒤 추가한다. 후속 후보 28개 중 식별성이 낮은 박쥐와 뒤쪽 두개골 위주의 해골 2개도 제외했다. 3D 쪽은 Park 103개·Dungeon 320개·Graveyard 253개·Weapons 32개, 합계 708개에 Blue Base 114개·Car Megapack 180개·Cars 2 453개·Army 309개를 추가해
+1,764개/1,893,423,580바이트의 자기완결 GLB 메타데이터를 재생성했다. 추가 렌더 후보에서도 뒤쪽 환기 패널과 식별성이 낮은 단색 바닥 타일 2개를 제외했다. 기존 장르 프리셋 연결은 Park·Dungeon 423개이며 원본 업로드·3D 서빙 완료를 뜻하지 않는다.
 
 이는 **구현 브랜치의 적용 상태**다. 원격 필수 CI와 병합·운영 배포 완료는 별도 증거로 확인한다.
 
-### 실제 브라우저 검수 — 2026-10-28
+### 실제 브라우저 검수 — 2026-10-28~2026-10-29
 
 [전용 검수 화면](../../apps/web/tools/browser-harnesses/bundle-renders-runtime.html)에 실제 소재
 패널과 전달 함수를 마운트하고 [브라우저 검증기](../../scripts/verify-creator-bundle-renders.mjs)로
@@ -75,8 +79,8 @@ WebP**이며 PNG 원본과 디코딩한 RGBA 픽셀을 전수 대조했다. 공�
 [데스크톱 화면](../evidence/itch-bundle-renders-20261028/desktop-library.png),
 [390px 화면](../evidence/itch-bundle-renders-20261028/mobile-canvas.png)을 보존했다.
 
-- 144개 전부 실제 fetch·SHA256·바이트 수·1536px 디코딩 검사 통과, 실패 0개.
-- 기본 목록 24개와 6페이지, 한국어 `물약` 검색 3개·`벤치` 검색 2개 확인.
+- 178개 전부 실제 fetch·SHA256·바이트 수·1536px 디코딩 검사 통과, 실패 0개.
+- 기본 목록 24개와 8페이지, 한국어 `물약` 검색 3개·`벤치` 검색 2개 확인.
 - 확대 미리보기의 실제 이미지 치수와 Escape 닫기 확인.
 - 벤치·물약·모바일 벤치 3회 실제 canvas 삽입 후 알파 픽셀·해시·CC0 권리 표시 확인.
 - 390×844 화면의 가로 넘침 없음, 브라우저 예외 0개.
@@ -88,13 +92,29 @@ WebP**이며 PNG 원본과 디코딩한 RGBA 픽셀을 전수 대조했다. 공�
 
 ### current — 완성 배경과 가상 장소 장식
 
-[완성 배경 레시피](../../config/creator-bundle-scene-recipes.json)는 Park 정원 산책길과 Dungeon 판타지 서재 2개다. 원본 모델 인스턴스 33개를 바닥·건축·카메라·조명과 배치하고 **2048×1152 불투명 배경**으로 렌더했다. 모델/배치/렌더러 해시를 레시피 증명에 묶고 PNG→WebP RGBA 무손실 왕복을 확인했다. `bundle-scenes-v1`은 본문 2장·512×288 미리보기 2장·manifest, 합계 2,918,281바이트다.
+[완성 배경 레시피](../../config/creator-bundle-scene-recipes.json)는 Park 정원 산책길·Dungeon 판타지 서재·Blue Base SF 에너지 관문 3개다. 원본 모델 인스턴스 50개를 바닥·건축·카메라·조명과 배치하고 **2048×1152 불투명 배경**으로 렌더했다. 모델/배치/렌더러 해시를 레시피 증명에 묶고 PNG→WebP RGBA 무손실 왕복을 확인했다. `bundle-scenes-v1`은 본문 3장·512×288 미리보기 3장·manifest, 합계 4,440,353바이트다.
 
-[실제 2D 선택기 adapter](../../apps/web/src/domains/creator/catalog/studio-bundle-backgrounds.ts)는 `creator-bundle-cc0` 출처와 `stylized-low-poly` 화풍을 명시한다. 큰 원본·실내외·장르·인물/문자 없음 필터를 사용할 수 있고 기존 `addBgScene`의 선택 컷/모든 컷/캔버스 배경 동선을 따른다. [브라우저 기록](../evidence/itch-bundle-scenes-20261028/runtime-review.json)은 두 배경의 2048px 미리보기·720×405 실제 배치·출처 보존·불투명 canvas와 390px 화면을 확인한다. 원격 프로젝트 저장 성공을 의미하지 않는다.
+[실제 2D 선택기 adapter](../../apps/web/src/domains/creator/catalog/studio-bundle-backgrounds.ts)는 `creator-bundle-cc0` 출처와 `stylized-low-poly` 화풍을 명시한다. 큰 원본·실내외·장르·인물/문자 없음 필터를 사용할 수 있고 기존 `addBgScene`의 선택 컷/모든 컷/캔버스 배경 동선을 따른다. [브라우저 기록](../evidence/itch-bundle-scenes-20261028/runtime-review.json)은 세 배경의 2048px 미리보기·720×405 실제 배치·출처 보존·불투명 canvas와 390px 화면을 확인한다. 원격 프로젝트 저장 성공을 의미하지 않는다.
 
 가상 장소의 [고정 장식 helper](../../apps/web/src/domains/creator/virtual-space/studio-virtual-space-bundle-decor.ts)는 garden·tree-library·creator-cafe에 각각 장식 2개를 기존 `assetUrl → imageUrl` 캐시로 전달한다. 검수된 나무·관목 화단·꽃 3종만 사용한다. 1536px 원본을 보존하고 리사이즈 없이 알파 경계만 자른 바닥 고정 파생물 3개와 manifest는 800,020바이트다. 매니페스트에 원본/파생 SHA256·알파 bbox·권리·anchor를 남긴다.
 
 [장식 화면 기록](../evidence/itch-bundle-decor-20261028/runtime-review.json)은 세 장소의 1100/390px 6가지 경우에서 실제 Canvas·장소별 이미지 2개 로딩·반복 그리기·이동·작업대 선택·가로 넘침 없음·예외 0개를 확인한다. 기존 손그림 장소와 로우폴리의 화풍 차이를 고려해 전경의 소수 장식으로 배치했다. HQ·사용자 custom 장식과 아바타 런타임은 이 적용 범위에 포함하지 않는다.
+
+### current — 실제 전체 편집기와 제작 결과 검증
+
+[전체 host 증거](../evidence/itch-bundle-editor-20261028/README.md)는 격리된 guest draft에서 실제 번들 벤치를 삽입하고 정본 OPFS journal/worker SQLite 자동저장 → 페이지 reload 자동 복구 → 제품 아카이브 백업 → 다른 빈 draft의 실제 파일 input 복구 → 재내보내기를 확인한다. 두 ZIP은 각 592,072바이트이며 본문 WebP 588,254바이트/SHA, 출처 전체, 요소 ID와 x=92/y=30/537×536 배치가 같다. 복구한 실제 host의 기존 PNG 내보내기는 720×1080, 비백색 82,612픽셀·벤치 갈색 69,705픽셀, pageerror 0이었다. 실제 PNG와 UI 스크린샷을 구별해 보존했다.
+
+정식 `.toonstudio` 저장 대화상자나 운영 서버의 인증된 프로젝트 저장은 검증하지 않았다. 178종 전체에 같은 전체 host 왕복을 했다는 뜻도 아니므로 `studioRuntimeVerified`를 일괄 승격하지 않는다. 별도 배송 검사와 대표 전체 host 검사 범위를 구분한다.
+
+아카이브 writer의 상대 경로 이미지 누락을 회귀로 재현해 고쳤다. 문서에 놓인 정식 번들 credit의 정확한 renderPath만 용량 제한 안에서 읽고 SHA를 확인해 기존 attachment 수집기로 보낸다. 실제 `frame.bg`와 `image.src`의 배경 WebP는 첨부·복구·출처·배치를 포함해 왕복한다. 외부 URL·해시/HTTP/용량 실패는 명시적으로 거부하고, 출처 없는 기존 배경은 임의 수집하지 않고 외부 의존성으로 기록한다. 서버에 저장된 번들 이미지의 work-asset 참조는 현재 workId와 요소 ID를 기존 인증 다운로드 포트에 전달해 manifest·descriptor 출처·실제 Blob을 대조한다. 이미 공급된 본문은 재요청하지 않고 첨부 검증 뒤 credit SHA의 archive URI로 닫혔는지 확인한다. 작품 컨텍스트가 없는 참조는 원래 주소와 외부 의존성 경고를 보존한다. 정적 렌더·작품 다운로드에는 30초 제한과 취소 신호를 연결한다.
+
+### current — 3D 입력 재현과 실제 모바일 Worker
+
+[재현 설정](../../config/creator-bundle-local-ingest.json)과 [CLI](../../scripts/rebuild-creator-bundle-local-ingest.mjs)는 라이브러리 상대 경로에서 같은 8팩·1,764개·1,893,423,580바이트를 재구성한다. 기존 생성기의 권리·해시·GLB 구조·모바일 예산 판정을 재사용한다. copy-only이며 저장소/원본/public/dist 내부 출력과 기존 디렉터리 덮어쓰기를 거부한다. 실제 새 복사본은 manifest·source ID·경로·바이트·SHA가 기존 입력과 전부 같고 공유 inode는 0개다.
+
+[실제 native 검증](../evidence/itch-bundle-native-20261028/README.md)은 1,764개 각각을 제품 `prepareVerifiedBg3dModelRecord`의 expectedSHA/mobile/실제 Worker 조건으로 통과시켰다. 다른 예상 SHA는 제품의 hash-mismatch로 거부됐다. 8팩 대표는 실제 Three 로더·Worker 재검증·제품 2m 정규화·카메라 경계·픽셀을 확인했다. 실제 Chromium 156.0.8078.4의 Apple M2 Max/ANGLE Metal을 식별했고 셰이더/드로우 오류는 0개다. 모바일 예산 프로필 검증이며 실제 휴대폰 GPU 성능 측정이 아니다.
+
+모델은 검증된 SHA URL만 로컬 private 바이트로 응답했다. 실제 R2 업로드나 운영 BG3D 삽입 성공을 뜻하지 않는다. 새 1,765객체 계획의 순서는 GLB 먼저, index 마지막이며, 일반 정적 웹 R2 sync와 별도다. 변경 가능한 theme-packs.json은 HTTP 재검증·SW passthrough·동시 요청만 공유하도록 고쳐 옛 권리/개수 캐시가 새 index를 막지 않게 했다. 내용 주소 GLB/이미지의 immutable 캐시는 보존한다. 검증 레코드도 ID만으로 재사용하지 않고 SHA·크기·경로·URL·팩 소유권·현재 권리를 함께 대조한다. 각 응답의 assets/packs 스냅샷을 묶고, 철회·변경·초기화 뒤 늦게 끝난 요청이 새 색인을 덮거나 이전 레코드를 반환하는 경합은 별도 회귀로 차단한다.
 
 ### 텍스처가 생략된 GLB의 파생 복구
 
@@ -112,7 +132,7 @@ Farm 7개·Pirate 6개·Aztec 8개 선별 모델은 GLB의 머티리얼 이름�
 
 | 우선순위 | 팩·소재 | 서비스 동선 | 완료 기준 |
 | --- | --- | --- | --- |
-| P0 | CC0 12팩의 음식·공원·가구·책·자연 소품 | 드로잉 통합 소재 도구 → 구매 번들 렌더 소품 → 캔버스/레퍼런스 보드 | 투명 고해상도 렌더·썸네일·모델/이미지 해시·권리 스탬프·실제 삽입 검증 |
+| P0 | CC0 16팩의 음식·공원·가구·책·자연 소품 | 드로잉 통합 소재 도구 → 구매 번들 렌더 소품 → 캔버스/레퍼런스 보드 | 투명 고해상도 렌더·썸네일·모델/이미지 해시·권리 스탬프·실제 삽입 검증 |
 | P0 | 같은 팩의 선별된 공간 장식 | 가상 스튜디오의 기존 장식 렌더 경로 | 프레임마다 새 fetch 없이 캐시 사용, 이동·충돌·작업대 선택 동작 보존, 모바일 화면 확인 |
 | P1 | City·Nature·Farm·Pirate·Aztec 환경 | 완성 배경/씬 프리셋, 컷 밑그림과 레퍼런스 | 장르·실내외·시간대·카메라별 큐레이션, 실제 배경 삽입과 저장/재로드 검증 |
 | P1 | CC0 Characters 1·2 | 가상 스튜디오 아바타/군중용 렌더 sprite, 포즈 레퍼런스 | 텍스처·스켈레톤·방향·보행 프레임·모바일 성능 확인; 기존 아바타 정책과 선택 동선 준수 |
@@ -189,12 +209,16 @@ Unity/Godot 프로젝트와 셰이더는 Web의 Three.js/Canvas 런타임에서 
 
 ## 구현 브랜치 검증과 운영 전환 조건
 
-2026-10-28 최종 구현 상태에서 `pnpm test:creator-bundle-rights`는 Node 153개와 Vitest 9파일 139개, Python 렌더 파이프라인은 26개가 통과했다. 별도 SQLite/OPFS·Web/API canonical·프로젝트 archive 관련 8파일 162개, 마지막 parser/source-match 관련 3파일 46개가 통과했다. 가상 장소의 이동·충돌·작업대 관련 48개도 통과했다. 중복 실행한 테스트 수는 합산하지 않는다.
+2026-10-29 최종 구현 상태에서 `pnpm test:creator-bundle-rights`는 Node 169개와 Vitest 12파일 208개, Python 렌더 파이프라인은 26개가 통과했다. 별도 Web/API canonical·SQLite/OPFS·archive 관련 8파일 162개와 마지막 변경 회귀, 가상 장소 이동·충돌·작업대 관련 48개도 통과했다. 중복 실행 수는 합산하지 않는다. 새 아카이브/CLI와 native 하니스의 strict 한정 타입 검사는 root tsconfig 옵션을 그대로 확장해 진단 0개로 통과했다. 후속 캐시·경합 회귀 3파일 55개와 아카이브·기존 VRM/참조 보드 회귀 5파일 90개, 독립 pre-aborted 재현도 통과했다.
 
-`pnpm validate:architecture`, 하네스 구조 검사, lockfile 검증, 라이선스 감사가 통과했다. creator 루트 파일은 2506/2506, source-size 위반은 0개이며 Studio eager graph는 19.18MiB/최대 19.34MiB다. 이전 첫 구현을 대상으로 오래 실행하던 타입 검사는 변경 범위 확장 후 종료했고, 최종 상태의 `pnpm harness:verify`는 새로 시작했다. 그 명령의 종료 전에는 전체 통과로 집계하지 않는다.
+`pnpm validate:architecture`, 하네스 구조 검사, lockfile, 보안·라이선스 감사가 통과했다. creator root 2506/2506, source-size 위반 0개, eager graph 19.18MiB/최대 19.34MiB다. 이전 구현의 전체 타입 검사는 소스 확장과 실제 타입 오류 수정 뒤 종료했고, 후속 아카이브·캐시 회귀 수정이 끝난 동결 상태에서 `pnpm harness:verify`를 다시 실행한다. 이 명령의 종료 전에는 전체 통과로 집계하지 않는다.
 
-필수 보안 감사에서 기존 전이 의존성 `qs 6.16.0`의 공식 수정판 6.16.1만 적용하고 공개 PoC·API Express 소비·기존 직렬화 호환을 검증했다. `deepmerge 4.3.1`의 GHSA-gcqx-w48m-w2h4는 공식 수정 릴리스가 없고 보안 감사가 low 1건으로 실패한다. 감사 제외·검증 우회·임의 대체 의존성은 추가하지 않았다. 이 변경과 별개로 원격 main `40179e94698323384e4804bad4a4ef473abc3794`의 필수 core/verify는 GitHub 계정 결제/사용 한도 문제로 job 자체가 시작되지 않은 상태다. 이 조건들을 해결하지 않고 병합·배포하지 않는다.
+기존 qs 취약 범위는 공식 6.16.1로 고정했다. 공식 수정판이 없는 deepmerge 결과 객체 프로토타입 오염은 저장소의 기존 braces 선례에 따라 최소 백포트로 고쳤다. CJS/UMD의 자체 속성 쓰기 세 곳만 바꾸고 npm 원본 SHA·MIT·타입 선언을 보존한다. PoC·10,000쌍 차등·실제 Nest 소비 설치본과 production 패키징 산출물 검증이 수정 근거이며, 감사 제외는 없다. 로컬 패키지가 registry 감사 대상에서 빠지는 한계와 공식 패치로의 제거 조건은 [README](../../patches/deepmerge/README.md)에 명시했다.
 
-이번 출처 보존은 API canonical 계약에도 optional 필드를 추가한다. 운영 전환 시 검증된 API 이미지를 먼저 반영하고 새 Web을 이어서 반영해, 기존 서버가 새 출처 필드를 거부하지 않게 해야 한다. DB migration·환경변수 변경은 필요하지 않다. onpod API 이미지 교체는 [인프라 지도 3절](../operations/infrastructure-map.md#3-승인과-정책-위치)의 별도 명시 승인 대상이며, 현재 작업에서 운영 이미지를 교체하지 않았다.
+로컬 API build는 종료 코드 0, 1,080개 compiled 파일/3,211개 import의 runtime guard와 문법 검사를 통과했다. 실제 `pnpm deploy --legacy --prod` 산출물 안의 nestjs-zod가 같은 deepmerge CJS/UMD/타입/MIT 바이트를 사용하는 것도 확인했다. 이 산출물은 macOS arm64 검토용 패키징이며 Linux 운영 이미지 검증은 아니다.
 
-일반 변형·필터처럼 원본 바이트를 유지하는 편집은 출처를 보존한다. 픽셀을 굳혀 이미지 바이트가 달라진 문서도 저장·재열기를 허용하고 원래 출처를 기록하지만, 원본과 다른 바이트를 같은 해시로 간주하지 않으므로 게시 권리 투영은 `unknown`으로 닫힌다. 새 바이트의 파생 관계를 입증하는 별도 계약은 아직 구현하지 않았다.
+원격 main `40179e94698323384e4804bad4a4ef473abc3794`의 필수 core/verify는 GitHub 계정 결제/사용 한도 문제로 job 자체가 시작되지 않은 상태다. 2026-10-29 추가 읽기 확인에서는 Cloudflare API 연결이 Invalid access token, 로컬 Wrangler가 미인증 상태여서 현재 R2 quota를 확인하지 못했다. 인증 복구·필수 CI·정확한 main SHA·롤백 대상이 확인되기 전에는 병합·배포하지 않는다. 별도 유료 추론·유료 runner·운영 업로드는 실행하지 않았다.
+
+출처 보존은 API canonical 계약에도 optional 필드를 추가한다. 운영 전환은 검증된 API 이미지 → Web 순서로 진행해야 기존 서버가 새 출처 필드를 거부하지 않는다. DB migration·환경변수 변경은 없다. onpod API 이미지 교체는 [인프라 지도 3절](../operations/infrastructure-map.md#3-승인과-정책-위치)의 별도 명시 승인 대상이며, 원본 GLB bulk R2 업로드도 정적 웹 승인과 같은 것으로 간주하지 않는다. 현재 작업에서 운영 이미지·원본 GLB·index를 반영하지 않았다.
+
+일반 변형/필터처럼 원본 바이트를 유지하는 편집은 출처를 보존한다. 픽셀을 굳혀 바이트가 달라진 문서는 저장·재열기와 원래 출처를 유지하지만 게시 권리는 원본 SHA와 다름을 unknown으로 닫는다. 새 바이트의 파생 관계를 입증하는 별도 계약은 아직 구현하지 않았다.

@@ -1001,6 +1001,210 @@
       "sourceModelSha256": "bc0593e6a1d36947286767d4d2b00f4bde43ee644969d30c2a70c1836f584531",
       "textureBindings": [],
       "pngSha256": "0a9522009c443d8a8ad7b33cf98c3b6a63fd6bdaa300361ac4a01a32106841c6"
+    },
+    {
+      "id": "cbv1-053-barierp-4-a",
+      "sourceModelSha256": "075512669bbf9c5f65043741a2f69401bf92330988b4dd00eeb184a54ca08248",
+      "textureBindings": [],
+      "pngSha256": "2ed578ea927384a8121fbeadd7c64d37557a291432e747e5e523790b5932a736"
+    },
+    {
+      "id": "cbv1-053-pilarp-1-a",
+      "sourceModelSha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163",
+      "textureBindings": [],
+      "pngSha256": "a08b8cfa3e7e2458f254f1804b828d9fd545c13dab779e2bf5956661fcacbdec"
+    },
+    {
+      "id": "cbv1-053-rampp-1-a",
+      "sourceModelSha256": "f6348290cc8e679c60fd40b3b17b5b9f4b55a8db1ddf4361047be93fd1f660aa",
+      "textureBindings": [],
+      "pngSha256": "711e30a87af846ca74b95ed125338debf01e655c8f5f531d073f69eec0f1f8fe"
+    },
+    {
+      "id": "cbv1-053-rampp-2-b",
+      "sourceModelSha256": "36ee08428768b1e8404aed9eb4a352e3aadebed2b0560feaec8a6d76181c1fd0",
+      "textureBindings": [],
+      "pngSha256": "7289d94517c29b4e3f20c05cac6ba3b6ec8550794aae12740d2383b2281b7735"
+    },
+    {
+      "id": "cbv1-053-wallp-1-1-a",
+      "sourceModelSha256": "84825dc69ea0e15d0e4e6807416b3bbccb02a153427170c7d85920a7c18728af",
+      "textureBindings": [],
+      "pngSha256": "3c705d15e0a3da8d20a69ce41e8561d82664cdec9c2442945e70fe8ddacc3d55"
+    },
+    {
+      "id": "cbv1-053-wallp-1-2-a",
+      "sourceModelSha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650",
+      "textureBindings": [],
+      "pngSha256": "2aad3308baa3364bfda22b6a25e2c6de3bca1be7bbf2eb2d46d69e084d8f6bda"
+    },
+    {
+      "id": "cbv1-053-wallp-barier",
+      "sourceModelSha256": "7a683953d5746d1accec4068f6bfdb345ddad9ac01a99e1007b66b893d694e6a",
+      "textureBindings": [],
+      "pngSha256": "b290df2c32aa74d6ff6d01bccd3dd0ee0bd70219c6f690ca2be9012c6079d986"
+    },
+    {
+      "id": "cbv1-053-tilep-prop-4-a",
+      "sourceModelSha256": "5f68a0587a1d45219fdc077c54659e1ccf221af26603b0bdba75de83d2c876bc",
+      "textureBindings": [],
+      "pngSha256": "c87842a9e61b8af88e6b7903ed744840248c8195386a369cce494fdc3163000b"
+    },
+    {
+      "id": "cbv1-053-ball-p-a",
+      "sourceModelSha256": "35c5f6b6915f7186cd3b1f38c6068d60555f0e1050f4073478856517274cc2e3",
+      "textureBindings": [],
+      "pngSha256": "c02090e9c1db49e1c942453638dce5e10d8744cec9b3cc8fe23888348de371a3"
+    },
+    {
+      "id": "cbv1-053-fillarp-1-a",
+      "sourceModelSha256": "b4c08eee89dc57db85df07e055f844464a881eb845b8c2400e8d2040cec0f128",
+      "textureBindings": [],
+      "pngSha256": "8248c54d66281321fb6911e6ef66268ac6d380553788eb8fce2aa781a05a4375"
+    },
+    {
+      "id": "cbv1-081-ambulance",
+      "sourceModelSha256": "c8d4f6b1c97c42154bbf30ed93c44ed9c42fc84e0938fc093a99f500750566e2",
+      "textureBindings": [],
+      "pngSha256": "cf1c3324431f633bf65678ff871e1ee75f1f4f02eeb36b976cbd7694302fe6e2"
+    },
+    {
+      "id": "cbv1-081-bus-1",
+      "sourceModelSha256": "378e8fda652f8762d32f46bb63aaf3405bc7346bbb3faa5670cf858fc011db18",
+      "textureBindings": [],
+      "pngSha256": "35a043a64a8df4dcbbb326ff5a2ebf56ad18bb1404b84c859c62bc4b7ff48142"
+    },
+    {
+      "id": "cbv1-081-icecreamtruck-1",
+      "sourceModelSha256": "8ea0a6bc4c1003434aea48d275a5f8796c977eaac76b50c62b880efaae40a1d6",
+      "textureBindings": [],
+      "pngSha256": "73c48bd100224a2112e555b0ca42c0af6ec9a5d64c20ff0bcce74152d11a1c2f"
+    },
+    {
+      "id": "cbv1-081-policecar",
+      "sourceModelSha256": "39ea62be252085458fb172c5688ab61380a3f0bc36003c5aa443e9a1b5695493",
+      "textureBindings": [],
+      "pngSha256": "eabffd16eea93328ef2d617a0f0ba5a8fe8aecdad8828f5f3784670c3075e6fe"
+    },
+    {
+      "id": "cbv1-081-taxi",
+      "sourceModelSha256": "644a46b37fdb25e1e2dd7a4d6380b928cbabc7629dff2d1547c61c1d35391c73",
+      "textureBindings": [],
+      "pngSha256": "a161de9d3443a91b7095c64556f632656a9ff7b98891229a0b672f7ac5d29eca"
+    },
+    {
+      "id": "cbv1-081-pickup-1",
+      "sourceModelSha256": "0f4f3c76e877a790876f1a62198c7bb06cf3cb72b22505feaaaa084f249d7d30",
+      "textureBindings": [],
+      "pngSha256": "402b508d33689a0f17e470d89c8a63c87e6a5a82a5bf2b377ffbf00b800fde3b"
+    },
+    {
+      "id": "cbv1-081-sportcar-1",
+      "sourceModelSha256": "f2cccac9e4e45a1f03a9d9e91b557bf7ca9bce1755f45b3257c3c9dc7cf9d680",
+      "textureBindings": [],
+      "pngSha256": "e9212953902f4c64c1229a8afd6940e6197049e474c8c4c100c504ede74a4903"
+    },
+    {
+      "id": "cbv1-081-van-1",
+      "sourceModelSha256": "146ea657951a7bb3349a6e119d9e4b4740d10822a532046bb580ce7c3fa799fe",
+      "textureBindings": [],
+      "pngSha256": "2d06bef466bc20eddd2db8ef2ff7aac704ef3e5f93eac3a111724347d8e29eb0"
+    },
+    {
+      "id": "cbv1-017-trashcar-a",
+      "sourceModelSha256": "47f55e7d3b36ea84657d5decf75ced2076b9fec8e6f2b8f1764dbfb35f6d3b29",
+      "textureBindings": [],
+      "pngSha256": "8f3df5fc620b6805bc95139eafd018bda2b5499566e8b398039b37bc71728e87"
+    },
+    {
+      "id": "cbv1-017-car-bus-2-mc-h",
+      "sourceModelSha256": "de74261b769ef473afe7815ac74147659054d38c6fd2bedcc15d6377b862a92b",
+      "textureBindings": [],
+      "pngSha256": "26cf57d4ae6dffc903a87b11e63f601046bc21804a336e4a466e4adb2cd0a007"
+    },
+    {
+      "id": "cbv1-017-police-6-mc-b",
+      "sourceModelSha256": "aabc160a42985c5954c3081b35560a39cc393a050e25e8ecdd88375a3d301c45",
+      "textureBindings": [],
+      "pngSha256": "007bf0443c48ba42e740835566d61a139118651c07a5d398ad067dae1f370321"
+    },
+    {
+      "id": "cbv1-017-car-ambulance-mc-1-b",
+      "sourceModelSha256": "61e753d3e92a547ca0712812dc63f781204361263b62597b25d91d9fef5b74fb",
+      "textureBindings": [],
+      "pngSha256": "e89a2e79c2a6a7ca11b62135ac2e45dbaa2d11b0647bd805831e2d0d200829d5"
+    },
+    {
+      "id": "cbv1-017-car-1-mc-h",
+      "sourceModelSha256": "b25c1006dbf4453f263a1a6f70ede215cadafc564c3bd4eabc36186e4afd4b49",
+      "textureBindings": [],
+      "pngSha256": "da0deb6a7c0060e63512d7a72c1d081c03a079fb1866f53c7f07de52b4cf4d62"
+    },
+    {
+      "id": "cbv1-017-car-14-mc-a",
+      "sourceModelSha256": "63848181c223d7122b2b4b824db70f56941811e976d14cd4754b3451cb0d0668",
+      "textureBindings": [],
+      "pngSha256": "7cce5b8c848cb1647852565d034da365975fd453f0c669aff2fcf4a1b014d645"
+    },
+    {
+      "id": "cbv1-017-car-8-mc-a",
+      "sourceModelSha256": "60bc324f81c9ba19e858b878e7d8507edf2ab094510b99bd6a90a899f9f201c4",
+      "textureBindings": [],
+      "pngSha256": "4c1b68e6cd9c1c3c3fbff8877db2857b2bf5a951851ce1124de49b732afa1531"
+    },
+    {
+      "id": "cbv1-017-taxi-1-mc-a",
+      "sourceModelSha256": "55952a5bc90e0fa9703bf72bfbe00ad5cbfa7da63f3281b6eaace8a48cf85c7a",
+      "textureBindings": [],
+      "pngSha256": "76b818cf21c499895200b5306a62e0a77d80448f07c733ab7e5c733f2ecd16be"
+    },
+    {
+      "id": "cbv1-018-heli-1-a",
+      "sourceModelSha256": "2105cec26944ca67c455fd0643dd9e76413631ecbae1f1f4ccb4df51426f2ab4",
+      "textureBindings": [],
+      "pngSha256": "e162f7ac1cd07c5a881df0333ab5f51eb0a75f1641f7b1e709f23b8bb790e64c"
+    },
+    {
+      "id": "cbv1-018-plane-1-a",
+      "sourceModelSha256": "da031728b4e91fa8087696b6cccc1681d8f5f1e29c508191f34fbcfa995c5d6c",
+      "textureBindings": [],
+      "pngSha256": "0820e8f4dfd06a6e201629409bebed6047862b56515d09374061df6e0a22b0b6"
+    },
+    {
+      "id": "cbv1-018-tank-1-a",
+      "sourceModelSha256": "a075b7febb56964aed9f3c43091ad5f5592abbc9441fe984fefe05f7cba29721",
+      "textureBindings": [],
+      "pngSha256": "87d1fad3286f4ac0765a3bea1fc31ecc022f3d9de0cca72b10aa21d448352fa3"
+    },
+    {
+      "id": "cbv1-018-watchtower-1-a",
+      "sourceModelSha256": "dd4295afd3d3513f8c68e1507c8f8beef63968bce3fd8aef41bbb201bc7cc7f6",
+      "textureBindings": [],
+      "pngSha256": "df9c495d5f46c884927173cd1ec3343a1044a2a14cdf98367032afee3493231d"
+    },
+    {
+      "id": "cbv1-018-tent-1-a",
+      "sourceModelSha256": "a205cef2078567640d6ca6216c17b8198ed24d05c7c3d526e76be92e21343230",
+      "textureBindings": [],
+      "pngSha256": "da43b803c7aebf96b2d5ac4e952752194c88f28143fed8b8f5405abef85dd26f"
+    },
+    {
+      "id": "cbv1-018-antene-1-a",
+      "sourceModelSha256": "95cc3a9d4be07502161d0f53b1957cd84ac32ba4dd0528f3f73c4d52241acbc3",
+      "textureBindings": [],
+      "pngSha256": "ca15742ebe6978103b82998b325517f92175b96c6d767b86b570fb8ac844ce76"
+    },
+    {
+      "id": "cbv1-018-bunker-1-1",
+      "sourceModelSha256": "95c6744c60d15c5a5c760b584c721cfe1d55147395541d6805c7665c7d9eb123",
+      "textureBindings": [],
+      "pngSha256": "fa4d8dd674a6b2d7415c0223ec52037a5eaa24ac79553d047950b4f0ce890c40"
+    },
+    {
+      "id": "cbv1-018-jeep-a",
+      "sourceModelSha256": "96512f9b8b5d9ebbf04be98161ce6b9fe26f4f0a488a73b14b4e9b11cc8a3cf6",
+      "textureBindings": [],
+      "pngSha256": "783aa9f268d9cd0166e6e435d8ce9b69d1461e264b85a2a3886e84edf9eb2037"
     }
   ]
 }

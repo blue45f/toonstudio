@@ -184,7 +184,7 @@ test("생성 결과의 합계는 배포 플래너 인덱스와 일치하고, 원
   });
 });
 
-test("원장의 모든 팩을 hold로 두면 허용 팩이 없고 61개 팩이 모두 대기 목록에 있으며 합계가 맞는다", () => {
+test("원장의 모든 팩을 hold로 두면 허용 팩이 없고 65개 팩이 모두 대기 목록에 있으며 합계가 맞는다", () => {
   withFixtureTree(({ root, manifestV2, themesDoc }) => {
     // 소유자가 이미 연 팩이 있더라도 닫힌 상태를 만들어 본다 (커밋된 원장의 시드 상태에 묶이지 않는다).
     const ledger = holdAllLedger();
@@ -362,7 +362,7 @@ test("CLI는 잘못된 원장이면 아무것도 쓰지 않고 종료 코드 2�
   });
 });
 
-test("로컬 실측 4팩의 메타데이터 708개는 유지하되 원본 모델과 배포 인덱스를 공개 경로에 만들지 않는다", () => {
+test("로컬 실측 8팩의 메타데이터 1764개는 유지하되 원본 모델과 배포 인덱스를 공개 경로에 만들지 않는다", () => {
   const publicRoot = resolve(dirname(SCRIPT), "../apps/web/public");
   const output = JSON.parse(readFileSync(join(publicRoot, "assets/3d/environments/bundle-v1/theme-packs.json"), "utf8"));
   const verifiedPacks = new Map([
@@ -370,9 +370,13 @@ test("로컬 실측 4팩의 메타데이터 708개는 유지하되 원본 모델
     ["Cute Dungeon Megapack", { ingestId: "cbv1-ingest-local-cute-dungeon", count: 320 }],
     ["Cute Graveyard", { ingestId: "cbv1-ingest-local-cute-graveyard", count: 253 }],
     ["Medieval Weapons", { ingestId: "cbv1-ingest-local-medieval-weapons", count: 32 }],
+    ["Sci-Fi Arena: Blue Base", { ingestId: "cbv1-ingest-local-scifi-blue-base", count: 114 }],
+    ["Cartoon Car Megapack", { ingestId: "cbv1-ingest-local-cartoon-car-megapack", count: 180 }],
+    ["Cartoon Cars 2", { ingestId: "cbv1-ingest-local-cartoon-cars-2", count: 453 }],
+    ["Army Pack", { ingestId: "cbv1-ingest-local-army-pack", count: 309 }],
   ]);
-  assert.equal(output.totals.placeableAssets, 708);
-  assert.equal(output.assets.length, 708);
+  assert.equal(output.totals.placeableAssets, 1764);
+  assert.equal(output.assets.length, 1764);
   assert.equal(output.inServiceOnly, true);
   assert.equal(output.downloadable, false);
   for (const [title, expected] of verifiedPacks) {

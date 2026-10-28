@@ -165,6 +165,8 @@ export function classifyStudioServiceWorkerRequest(
   // `rights` block is present), so opening and withdrawing a pack must reach installed clients immediately instead of
   // being replayed from the immutable cache. Images stay under the `/assets/` rule: only slots the manifest lists are requested.
   if (pathname === "/assets/studio/bundle-renders-v1/manifest.json") return "passthrough";
+  // 팩 권리와 실제 배포 인덱스의 합계가 바뀌는 테마 메타데이터도 이전 스냅샷을 재생하지 않는다.
+  if (pathname === "/assets/3d/environments/bundle-v1/theme-packs.json") return "passthrough";
 
   if (facts.mode === "navigate") {
     return isStudioServiceWorkerIsolatedPath(pathname)

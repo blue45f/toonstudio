@@ -41,9 +41,9 @@ def plan_recipes(document, sources):
             raise PROPS.RenderError("장면 id가 잘못되었거나 중복됐습니다.")
         seen.add(ident)
         PROPS.text(recipe.get("name"), "장면 이름", 160)
-        if recipe.get("genre") not in ["daily", "fantasy", "romance", "공포"] or recipe.get("environment") not in ["실내", "실외"] or recipe.get("timeOfDay") not in ["낮", "노을", "밤"]:
+        if recipe.get("genre") not in ["daily", "fantasy", "romance", "sf", "공포"] or recipe.get("environment") not in ["실내", "실외"] or recipe.get("timeOfDay") not in ["낮", "노을", "밤"]:
             raise PROPS.RenderError("장면 장르·환경·시간 분류가 올바르지 않습니다.")
-        if recipe.get("architecture") not in ["garden-path", "stone-study"] or not isinstance(recipe.get("visualReviewed"), bool):
+        if recipe.get("architecture") not in ["garden-path", "stone-study", "blue-arena"] or not isinstance(recipe.get("visualReviewed"), bool):
             raise PROPS.RenderError("장면 건축 또는 검수 상태가 올바르지 않습니다.")
         for field in ["groundColor", "skyColor"]:
             if any(n < 0 or n > 1 for n in vector(recipe.get(field), field, 4, 1)):

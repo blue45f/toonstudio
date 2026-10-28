@@ -50,7 +50,7 @@
         "commercialUse": true,
         "attributionRequired": false
       },
-      "sourceRecipeSha256": "964cd37cd9e9478a397ab89ab1b76312aa68630d47817c9536b171aa457c03e3",
+      "sourceRecipeSha256": "2bac4b3ac2e9b2439ddd6502c96758ac4f35d27bc32d3e980e778b1d3326e1cd",
       "sourceModels": [
         {
           "assetId": "cbv1-008-tree-1-1",
@@ -159,7 +159,7 @@
         "commercialUse": true,
         "attributionRequired": false
       },
-      "sourceRecipeSha256": "686df05f78efdcbcde8667db2ee98f9f3fcb8bb6dcfd58ea044aae032053ec8c",
+      "sourceRecipeSha256": "cf46aeec6b33c4a9dfc127b1fda39590c71d023fc85b4af7e32a8f3433c75f71",
       "sourceModels": [
         {
           "assetId": "cbv1-024-wardrobe-1",
@@ -240,6 +240,131 @@
         {
           "assetId": "cbv1-024-book-1-1",
           "sha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19"
+        }
+      ],
+      "mediaType": "image/webp",
+      "style": "stylized-low-poly",
+      "legacySrc": null,
+      "sourceManifest": "bundle-scenes-v1/manifest.json"
+    },
+    {
+      "id": "cbv1-scene-blue-base-gateway",
+      "label": "SF 기지의 에너지 관문",
+      "title": "SF 기지의 에너지 관문",
+      "genre": "sf",
+      "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-blue-base-gateway.webp",
+      "previewSrc": "/assets/studio/bundle-scenes-v1/cbv1-scene-blue-base-gateway-preview.webp",
+      "width": 2048,
+      "height": 1152,
+      "previewBytes": 120404,
+      "previewSha256": "67cf88ae38b0bc5fb98908cc64bfb5d882d08d39b91013908a863360d4dbb27e",
+      "bytes": 1397052,
+      "sha256": "e89d4653a4772524c7c0f96b00f32d371a24a63104dcf4fe3f04c817326ac479",
+      "tags": [
+        "번들",
+        "3D 렌더",
+        "로우폴리",
+        "SF 기지의 에너지 관문"
+      ],
+      "environment": "실외",
+      "timeOfDay": "낮",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-10-28",
+        "notes": [
+          "CC0 모델을 배치한 완성 장면 렌더. 원본 모델의 로우폴리 스타일을 유지합니다."
+        ]
+      },
+      "provenance": {
+        "kind": "creator-bundle-cc0",
+        "licenseStatus": "cc0-verified",
+        "licenseId": "CC0-1.0",
+        "provider": "RG Poly",
+        "sourceUrl": "https://rg-poly.itch.io/sci-fi-arena-blue-base",
+        "checkedOn": "2026-10-28",
+        "recipeId": "cbv1-scene-blue-base-gateway"
+      },
+      "rights": {
+        "ledgerPackId": "cbv1-053-scifi-arena-blue-base",
+        "serve": "allow",
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "sourceRecipeSha256": "32fed802175cb2044ff59379e7057050f26d8bab97d38f984a070d80ecda19b8",
+      "sourceModels": [
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-wallp-barier",
+          "sha256": "7a683953d5746d1accec4068f6bfdb345ddad9ac01a99e1007b66b893d694e6a"
+        },
+        {
+          "assetId": "cbv1-053-barierp-4-a",
+          "sha256": "075512669bbf9c5f65043741a2f69401bf92330988b4dd00eeb184a54ca08248"
+        },
+        {
+          "assetId": "cbv1-053-barierp-4-a",
+          "sha256": "075512669bbf9c5f65043741a2f69401bf92330988b4dd00eeb184a54ca08248"
+        },
+        {
+          "assetId": "cbv1-053-tilep-prop-4-a",
+          "sha256": "5f68a0587a1d45219fdc077c54659e1ccf221af26603b0bdba75de83d2c876bc"
+        },
+        {
+          "assetId": "cbv1-053-ball-p-a",
+          "sha256": "35c5f6b6915f7186cd3b1f38c6068d60555f0e1050f4073478856517274cc2e3"
+        },
+        {
+          "assetId": "cbv1-053-rampp-1-a",
+          "sha256": "f6348290cc8e679c60fd40b3b17b5b9f4b55a8db1ddf4361047be93fd1f660aa"
+        },
+        {
+          "assetId": "cbv1-053-rampp-2-b",
+          "sha256": "36ee08428768b1e8404aed9eb4a352e3aadebed2b0560feaec8a6d76181c1fd0"
+        },
+        {
+          "assetId": "cbv1-053-rampp-2-b",
+          "sha256": "36ee08428768b1e8404aed9eb4a352e3aadebed2b0560feaec8a6d76181c1fd0"
         }
       ],
       "mediaType": "image/webp",

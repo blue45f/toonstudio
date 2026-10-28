@@ -3,13 +3,18 @@
   "assets": [
     {
       "id": "cbv1-scene-park-garden",
-      "recipeSha256": "964cd37cd9e9478a397ab89ab1b76312aa68630d47817c9536b171aa457c03e3",
-      "pngSha256": "6a4187adeb14afe79ec72e31dadca23b1bd5676106bc0e5af252398f86516c2e"
+      "recipeSha256": "2bac4b3ac2e9b2439ddd6502c96758ac4f35d27bc32d3e980e778b1d3326e1cd",
+      "pngSha256": "f1fd5870451f87413225ef5a2a71d929adef71193c07c3ad676fda11d6eb27a3"
     },
     {
       "id": "cbv1-scene-dungeon-study",
-      "recipeSha256": "686df05f78efdcbcde8667db2ee98f9f3fcb8bb6dcfd58ea044aae032053ec8c",
-      "pngSha256": "45c01c1bfe951b6047bba8d7a2eff67090dcc9ee6b12c40b60007e11159696d4"
+      "recipeSha256": "cf46aeec6b33c4a9dfc127b1fda39590c71d023fc85b4af7e32a8f3433c75f71",
+      "pngSha256": "55f0444c26236856b01463bbb3c0088c343eef64a025faeeaedec4c6d1f6bd3d"
+    },
+    {
+      "id": "cbv1-scene-blue-base-gateway",
+      "recipeSha256": "32fed802175cb2044ff59379e7057050f26d8bab97d38f984a070d80ecda19b8",
+      "pngSha256": "2647d93c06597ed15a2083660ac565c64a7ac5c605c60c57a1c29d0a4b9b3f53"
     }
   ]
 }

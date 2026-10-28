@@ -8,8 +8,8 @@ import { BG_SCENES } from "../studio-bg-scenes";
 import { STUDIO_BUNDLE_BACKGROUND_METADATA, STUDIO_BUNDLE_BG_SCENES } from "./studio-bundle-backgrounds";
 
 describe("구매 번들 완성 배경의 실제 카탈로그", () => {
-  it("두 배경의 공개 바이트·해시·CC0 출처가 등록된 실제 선택기와 일치한다", () => {
-    expect(STUDIO_BUNDLE_BG_SCENES.map((scene) => scene.id)).toEqual(["cbv1-scene-park-garden", "cbv1-scene-dungeon-study"]);
+  it("세 배경의 공개 바이트·해시·CC0 출처가 등록된 실제 선택기와 일치한다", () => {
+    expect(STUDIO_BUNDLE_BG_SCENES.map((scene) => scene.id)).toEqual(["cbv1-scene-park-garden", "cbv1-scene-dungeon-study", "cbv1-scene-blue-base-gateway"]);
     const root = new URL("../../../../public/assets/studio/bundle-scenes-v1/", import.meta.url);
     expect(readdirSync(root).sort()).toEqual(["manifest.json", ...STUDIO_BUNDLE_BG_SCENES.flatMap((scene) => [`${scene.id}.webp`, `${scene.id}-preview.webp`])].sort());
     for (const scene of STUDIO_BUNDLE_BG_SCENES) {

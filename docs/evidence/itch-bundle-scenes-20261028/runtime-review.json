@@ -61,13 +61,48 @@
           "attributionRequired": false
         }
       }
+    },
+    {
+      "id": "cbv1-scene-blue-base-gateway",
+      "sourceWidth": 2048,
+      "sourceHeight": 1152,
+      "element": {
+        "id": "scene-insert",
+        "type": "image",
+        "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-blue-base-gateway.webp",
+        "x": 0,
+        "y": 338,
+        "width": 720,
+        "height": 405,
+        "rotation": 0,
+        "bundleSourceCredit": {
+          "schema": "toonstudio.bundle-source-credit.v1",
+          "assetId": "cbv1-scene-blue-base-gateway",
+          "ledgerPackId": "cbv1-053-scifi-arena-blue-base",
+          "contentHash": "sha256:e89d4653a4772524c7c0f96b00f32d371a24a63104dcf4fe3f04c817326ac479",
+          "renderPath": "/assets/studio/bundle-scenes-v1/cbv1-scene-blue-base-gateway.webp",
+          "sourceUrl": "https://rg-poly.itch.io/sci-fi-arena-blue-base",
+          "provider": "RG Poly",
+          "licenseId": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "licenseName": "CC0-1.0",
+          "serve": "allow",
+          "status": "public-domain",
+          "commercialUse": true,
+          "attributionRequired": false
+        }
+      }
     }
   ],
   "errors": [],
   "screenshots": [
     "desktop-garden.png",
-    "mobile-study.png"
+    "mobile-study.png",
+    "mobile-sf.png"
   ],
   "scope": "실제 2D 선택기·배치 함수·canvas 픽셀. 원격 저장과 프로젝트 전체 화면 검증은 별도다.",
-  "manifestSha256": "1e0b540315acd7b5bc6017b1d1f8ef17d0532f7de06af8c809856a45e357973c"
+  "manifestSha256": "d8f554ddd6f0145164e6c4cf2177943fcef84b6b2a18f1195ce698fdd2b59f80",
+  "verifiedOn": "2026-10-29",
+  "publicFiles": 7,
+  "publicBytes": 4440353
 }

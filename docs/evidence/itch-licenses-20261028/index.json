@@ -124,6 +124,50 @@
       "observedAssetLicense": "CC0-1.0",
       "rawExcerptSha256": "e3d590bedcd41ef0c93283c6553cb192b588cabec1f2f26a547a4575b012a9e2",
       "normalization": "CRLF to LF only; license text unchanged"
+    },
+    {
+      "ledgerPackId": "cbv1-053-scifi-arena-blue-base",
+      "sourceUrl": "https://rg-poly.itch.io/sci-fi-arena-blue-base",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "html-license-excerpt-lf",
+      "path": "docs/evidence/itch-licenses-20261028/sci-fi-blue-base.html",
+      "bytes": 171,
+      "sha256": "2e873ee774e1b640a273c6ccb8a22622b954ec69738231b77a25de3fb95e4f87",
+      "observedAssetLicense": "CC0-1.0",
+      "normalization": "CRLF to LF only; license text unchanged"
+    },
+    {
+      "ledgerPackId": "cbv1-081-cartoon-car-megapack",
+      "sourceUrl": "https://rg-poly.itch.io/cartoon-car-megapack",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "html-license-excerpt-lf",
+      "path": "docs/evidence/itch-licenses-20261028/cartoon-car-megapack.html",
+      "bytes": 177,
+      "sha256": "4e6752aecebc3fc4d0da64f89d7cc8ddab37d11bce69ec3cb052297ba5524fac",
+      "observedAssetLicense": "CC0-1.0",
+      "normalization": "CRLF to LF only; license text unchanged"
+    },
+    {
+      "ledgerPackId": "cbv1-017-cartoon-cars-2",
+      "sourceUrl": "https://rg-poly.itch.io/cars-2-low-poly-cute",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "html-license-excerpt-lf",
+      "path": "docs/evidence/itch-licenses-20261028/cartoon-cars-2.html",
+      "bytes": 202,
+      "sha256": "3924a4bcbcaff94294b72e822aaeab64b4d44c18326b64a84b95eba92bd9efe2",
+      "observedAssetLicense": "CC0-1.0",
+      "normalization": "CRLF to LF only; license text unchanged"
+    },
+    {
+      "ledgerPackId": "cbv1-018-army-pack",
+      "sourceUrl": "https://rg-poly.itch.io/army-pack-cute-series",
+      "retrievedAt": "2026-10-28",
+      "captureFormat": "html-license-excerpt-lf",
+      "path": "docs/evidence/itch-licenses-20261028/army-pack.html",
+      "bytes": 166,
+      "sha256": "df96b8881a3dac18a0c0c2446ca9590eebd8a1212ae99dc4e71679c3bb6de8cb",
+      "observedAssetLicense": "CC0-1.0",
+      "normalization": "CRLF to LF only; license text unchanged"
     }
   ]
 }

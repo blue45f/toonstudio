@@ -42,7 +42,7 @@ const test = process.env.VITEST ? vitestTest : nodeTest;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT = resolve(REPO_ROOT, "scripts/sync-creator-bundle-render-rights.mjs");
 const COMMITTED_MANIFEST = resolve(REPO_ROOT, RENDER_PACK_DIR, RENDER_MANIFEST_FILE);
-const COMMITTED_DELIVERED_COUNT = 144;
+const COMMITTED_DELIVERED_COUNT = 178;
 const COMMITTED_DRAFT_IDS = [
   "cbv1-021-slavica-scene-render-001", "cbv1-028-nature-props-render-001",
   "cbv1-042-kitchen-props-render-001", "cbv1-045-food-props-render-001",

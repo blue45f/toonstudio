@@ -34,7 +34,7 @@ function withPublicTree(run) {
 test("공개 배경은 Pillow·Blender·로컬 원본 없이 현재 원장·선정·레시피·renderer와 일치한다", () => {
   const result = check();
   assert.equal(result.status, 0, result.stdout + result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout), { scenes: 2, files: 5, verified: true, localLibraryRequired: false });
+  assert.deepEqual(JSON.parse(result.stdout), { scenes: 3, files: 7, verified: true, localLibraryRequired: false });
 });
 
 test("공개 매니페스트의 권리·sourceModels·recipe fingerprint·본 이미지/미리보기 해시 변조는 닫힌다", () => {
