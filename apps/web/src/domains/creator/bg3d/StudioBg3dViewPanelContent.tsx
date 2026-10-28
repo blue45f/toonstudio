@@ -40,7 +40,7 @@ import type { StudioBg3dSectionPlaneState } from "./studio-bg3d-section-plane";
 import type { StudioBg3dShotBatchRecoveryScope } from "./studio-bg3d-shot-batch-plan";
 import type { StudioBg3dProfessionalRuntimeReadiness } from "./studio-bg3d-professional-runtime-readiness";
 import type { StudioBg3dSunRigConfig } from "./studio-bg3d-sun-rig";
-import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 import type { ViewEditorSection } from "./StudioBackground3DTypes";
 import { formatNumber } from "@toonstudio/core/format";
 
@@ -182,7 +182,7 @@ interface StudioBg3dViewPanelContext {
   readonly setScaleGuideVisible: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   readonly Ruler: typeof import("lucide-react").Ruler;
 }
-export interface StudioBg3dViewPanelProps {
+export interface StudioBg3dViewPanelProps extends StudioBg3dWorkbenchHostPorts {
   readonly engineDiagnostics?: import("../scene3d/studio-scene3d-gpu-diagnostics").StudioScene3dGpuDiagnostics;
   readonly inplaceTools?: Scene3dInplaceToolsBridge;
   readonly hidden: boolean;
@@ -203,8 +203,6 @@ export interface StudioBg3dViewPanelProps {
   readonly aiReferenceBusy?: boolean;
   readonly aiReferenceDisabled?: boolean;
   readonly onOpenPrecisionModeler?: () => void;
-  /** 전문 작업대의 도형 묶음을 기존 장면 명령 경로로 추가한다. */
-  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   /** 시네마틱 디렉터의 컷 비율을 문서 캡처 프레임 비율(output.exportAspectRatio)에 잇는 명령. */
   readonly onSetCaptureAspectRatio?: (ratio: number | null) => void;
   /**

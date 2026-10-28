@@ -89,3 +89,30 @@ Sign In, Email or username, 비활성 Next가 관측됐다. 로그인이나 모�
 - 위 브라우저 증거는 로컬 시각 산출물 폴더의 `sketchup-real-editor-proof.json`,
   `sketchup-editor-generated.png`, `sketchup-editor-reopened.png`에 보관했다.
   물리 GPU 및 배포 빌드, 전체 Studio의 서버 저장 경로를 검증한 것으로 확대하지 않는다.
+
+## 2026-10-29 선택 도형 배열 고도화
+
+- 실제 선택한 기본 도형의 선형·원형 배열을 추가했다. `*N`·`Nx`·`/N`을 지원하며 원본을 제외한 사본을
+  공식 `addGeneratedParts` 경로로 한 번에 추가한다. 신규 건축 요소와 배열 결과는 묶음 전체를 선택한다.
+- 월드 축의 delta matrix와 실제 부모 계층을 사용한다. 선택한 부모 아래 자식은 local 변환을 유지하고,
+  선택 밖 부모에서 분리하는 도형은 월드 변환을 보존한다. 비균일 크기로 생긴 shear를 보존할 수 없으면 거부한다.
+- 숨김·숨긴 태그·잠긴 조상·혼합 외부 모델·누락 ID·잘못된 수치·노드 한도·360도 중복 끝점을 원자적으로 거부한다.
+  유효한 위치·크기 경계에서 행렬 계산 때문에 생기는 부동소수점 오차만 제한적으로 복원한다.
+- 페인트 복제 전에 예상 payload를 제한하고, 실제 runtime/document adapter로 전체 후보를 검증한다.
+  최종 UUID를 적용한 공식 추가 명령에서도 기존 모델·attachment를 포함해 다시 검증하며,
+  일부 노드를 버린 결과나 320KiB 저장 한도를 넘는 후보는 history·문서·선택을 바꾸지 않는다.
+- 새 명령은 즉시 history 경계를 기록한다. 제품 history adapter를 사용한 회귀에서 debounce 전 연속 두 요청도
+  각각 Undo/Redo되는 것을 확인했다. 기존 옵션 없는 생성 명령은 첫 도형 선택·지연 history 동작을 유지한다.
+- 관련 Vitest 최종 **10개 파일·96개 테스트** 통과. 이전 건축·지붕·삽입·복원 회귀를 포함한다.
+  `pnpm harness:check`, `pnpm validate:architecture`도 종료 코드 0으로 통과했다.
+- 실제 `StudioBackground3D`의 Chrome SwiftShader WebGL2 검증에서 계단 8개를 선택해 6m 간격으로
+  16개 사본을 만들고 Undo→Redo→Undo를 수행했다. 이어 X=6m 지붕에 Y축 45도 원형 7사본을 추가했다.
+  360도 끝점 중복은 거부됐고, 실제 캡처 문서의 지붕 8개 좌표가 반지름 6m 원형 배치와 일치했다.
+  최종 16개 도형을 localStorage에 저장하고 새 편집기로 재개방·재캡처했으며 ID·이름·TRS·개수가 모두 보존됐다.
+  page error는 0개였다. 증거는 `sketchup-selection-array-editor-proof.json`에 기록했다.
+  실제 편집기의 위에서 보기로 지붕 8개와 중앙 계단을 확인한 화면은 `sketchup-array-editor-overhead.png`다.
+- 실제 새 패널의 390px 화면을 light/dark/contrast 테마에서 확인했다. 가로 넘침과 axe WCAG 2 A/AA·2.1 AA 위반,
+  page error가 모두 0개였다. 이는 패널 fixture 범위의 접근성 검증이다.
+  증거는 `sketchup-selection-array-panel-proof.json`과 `sketchup-array-panel-mobile-*.png`다.
+- 전체 `pnpm harness:verify`의 후속 루트 타입 검사는 공유 작업의 검사 순서에 맞춰 대기 중이다.
+  이 대기 상태를 최신 변경의 전체 타입 검사 통과로 보고하지 않는다. API 타입 검사·배포 빌드·운영 검증은 미완료다.

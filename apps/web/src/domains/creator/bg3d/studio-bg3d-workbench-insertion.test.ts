@@ -14,6 +14,18 @@ function box(id: string): BgPrimitive {
 }
 
 describe("전문 작업대의 정본 장면 삽입 명령", () => {
+  it("전체 선택·즉시 history 옵션을 공식 추가 명령에 넘기고 새 부모를 선택 앞에 둔다", () => {
+    const addGeneratedParts = vi.fn<StudioBg3dAddGeneratedParts>((build) => build(0, CAMERA));
+    const setSelectedIds = vi.fn();
+    const host = { open: true, modelRenderer: {}, addGeneratedParts, setSelectedIds,
+      physicsRuntimeSourceRef: { current: { primitives: [], customModels: [] } } };
+    const command = createStudioBg3dWorkbenchInsertionFromHost(host, { selectAllInserted: true, immediateHistory: true });
+    expect(command([{ ...box("child"), parentId: "parent" }, box("parent")], "반복 배치")).toBe(true);
+    expect(addGeneratedParts.mock.calls[0]?.[1]).toEqual({ labelKo: "반복 배치", selectAll: true, immediateHistory: true });
+    const added = addGeneratedParts.mock.results[0]?.value;
+    if (!added) throw new Error("추가한 도형이 없습니다.");
+    expect(setSelectedIds).toHaveBeenCalledWith(new Set([added[1]?.id, added[0]?.id]));
+  });
   it("같은 건축 요소를 두 번 추가해도 기존 노드와 ID가 겹치지 않고 한 묶음씩 전달한다", () => {
     const source = buildSketchUpArchitecturalComponentPrimitives({
       kind: "staircase-straight", stepOrBayCount: 8,

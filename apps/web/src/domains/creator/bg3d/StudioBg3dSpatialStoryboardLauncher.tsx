@@ -2,7 +2,7 @@ import { lazy, Suspense, useId, useState } from "react";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 
 const SpatialStoryboardPanel = lazy(() => import("./StudioBg3dSpatialStoryboardPanel"));
 const AdvancedWorkbenchHub = lazy(() => import("./StudioBg3dAdvancedWorkbenchHub"));
@@ -12,10 +12,11 @@ export function StudioBg3dSpatialStoryboardLauncher({
   hidden = false,
   disabled = false,
   onInsertScenePrimitives,
-}: {
+  arraySelection,
+  onExecuteSelectionArray,
+}: StudioBg3dWorkbenchHostPorts & {
   readonly hidden?: boolean;
   readonly disabled?: boolean;
-  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
 }) {
   const t = useT();
   const bt = useBilingual("StudioBg3dSpatialStoryboardLauncher");
@@ -60,7 +61,9 @@ export function StudioBg3dSpatialStoryboardLauncher({
             <AdvancedWorkbenchHub
               defaultTab="sketchup-studio"
               disabled={disabled}
-              {...(onInsertScenePrimitives ? { onInsertScenePrimitives } : {})}
+              onInsertScenePrimitives={onInsertScenePrimitives}
+              arraySelection={arraySelection}
+              onExecuteSelectionArray={onExecuteSelectionArray}
             />
           </Suspense>
         ) : null}

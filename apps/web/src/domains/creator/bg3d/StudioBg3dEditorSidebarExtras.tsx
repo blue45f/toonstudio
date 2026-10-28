@@ -8,7 +8,7 @@ import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useEffect as useReactEffect, useMemo, useState as useReactState } from "react";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
-import { createStudioBg3dWorkbenchInsertionFromHost } from "./studio-bg3d-workbench-insertion";
+import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 
 export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
@@ -503,7 +503,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 onEnginePreferenceChange={engineRuntime.setPreference}
                 onSetCaptureAspectRatio={updateLtExportAspectRatio}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
-                onInsertScenePrimitives={createStudioBg3dWorkbenchInsertionFromHost(h)}
+                {...createStudioBg3dWorkbenchHostPorts(h)}
                 aiReferenceBusy={isCapturing}
                 aiReferenceDisabled={
                   insertBlocked || (primitives.length === 0 && customModels.length === 0)

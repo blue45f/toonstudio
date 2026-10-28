@@ -164,7 +164,9 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
       <StudioBg3dSpatialStoryboardLauncher
         hidden={props.hidden}
         disabled={disabled}
-        {...(props.onInsertScenePrimitives ? { onInsertScenePrimitives: props.onInsertScenePrimitives } : {})}
+        onInsertScenePrimitives={props.onInsertScenePrimitives}
+        arraySelection={props.arraySelection}
+        onExecuteSelectionArray={props.onExecuteSelectionArray}
       />
     </StudioBg3dProSuiteRuntimeContext.Provider>
   );

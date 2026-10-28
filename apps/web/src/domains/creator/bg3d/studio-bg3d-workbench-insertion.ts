@@ -1,5 +1,6 @@
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
+import { orderStudioBg3dHierarchySelectionRootsFirst } from "./studio-bg3d-template-instance";
 
 /** 실제 장면 커밋에 성공했을 때만 true를 돌려준다. */
 export type StudioBg3dInsertScenePrimitives = (
@@ -7,8 +8,19 @@ export type StudioBg3dInsertScenePrimitives = (
   labelKo: string,
 ) => boolean;
 
+export interface StudioBg3dGeneratedPartsOptions {
+  readonly labelKo?: string;
+  readonly selectAll?: boolean;
+  readonly immediateHistory?: boolean;
+}
+
+export interface StudioBg3dWorkbenchInsertionOptions extends StudioBg3dGeneratedPartsOptions {
+  readonly selectAllInserted?: boolean;
+}
+
 export type StudioBg3dAddGeneratedParts = (
   buildParts: (count: number, view: StudioBg3dCameraSettings) => BgPrimitive[],
+  options?: StudioBg3dGeneratedPartsOptions,
 ) => BgPrimitive[] | false;
 
 interface StudioBg3dWorkbenchInsertionPorts {
@@ -16,10 +28,12 @@ interface StudioBg3dWorkbenchInsertionPorts {
   readonly readExistingIds: () => Iterable<string>;
   readonly addGeneratedParts: StudioBg3dAddGeneratedParts;
   readonly createId?: () => string;
+  readonly additionOptions?: StudioBg3dGeneratedPartsOptions;
+  readonly onInserted?: (primitives: readonly BgPrimitive[]) => void;
 }
 
 /** 기존 가변 호스트의 필요한 읽기·명령 경계만 좁혀서 사용한다. */
-interface StudioBg3dWorkbenchInsertionHost {
+export interface StudioBg3dWorkbenchInsertionHost {
   readonly open?: boolean;
   readonly modelRenderer?: unknown;
   readonly isRestoringScene?: boolean;
@@ -38,22 +52,33 @@ interface StudioBg3dWorkbenchInsertionHost {
     };
   };
   readonly addGeneratedParts?: StudioBg3dAddGeneratedParts;
+  readonly setSelectedIds?: (ids: Set<string>) => void;
+}
+
+export function isStudioBg3dWorkbenchInsertionAvailable(host: StudioBg3dWorkbenchInsertionHost): boolean {
+  return host.open === true && host.modelRenderer != null
+    && Boolean(host.physicsRuntimeSourceRef) && Boolean(host.addGeneratedParts)
+    && !host.isRestoringScene && !host.isCapturing && !host.isBatchRenderingShots
+    && !host.physicsInteractionLocked && !host.isUploadingModel && !host.isSavingTemplate
+    && !host.applyingTemplateId && !host.hasPendingClone && !host.hasCloneFailure;
 }
 
 export function createStudioBg3dWorkbenchInsertionFromHost(
   host: StudioBg3dWorkbenchInsertionHost,
+  options: StudioBg3dWorkbenchInsertionOptions = {},
 ): StudioBg3dInsertScenePrimitives {
+  const selectAll = options.selectAllInserted ?? options.selectAll ?? false;
   return createStudioBg3dWorkbenchInsertionCommand({
-    canInsert: () => host.open === true && host.modelRenderer != null
-      && Boolean(host.physicsRuntimeSourceRef) && Boolean(host.addGeneratedParts)
-      && !host.isRestoringScene && !host.isCapturing && !host.isBatchRenderingShots
-      && !host.physicsInteractionLocked && !host.isUploadingModel && !host.isSavingTemplate
-      && !host.applyingTemplateId && !host.hasPendingClone && !host.hasCloneFailure,
+    canInsert: () => isStudioBg3dWorkbenchInsertionAvailable(host),
     readExistingIds: () => {
       const live = host.physicsRuntimeSourceRef?.current;
       return live ? [...live.primitives, ...live.customModels].map(({ id }) => id) : [];
     },
-    addGeneratedParts: (buildParts) => host.addGeneratedParts?.(buildParts) ?? false,
+    addGeneratedParts: (buildParts, additionOptions) => host.addGeneratedParts?.(buildParts, additionOptions) ?? false,
+    additionOptions: { selectAll, immediateHistory: options.immediateHistory ?? false },
+    onInserted: (primitives) => {
+      if (selectAll) host.setSelectedIds?.(new Set(orderStudioBg3dHierarchySelectionRootsFirst(primitives)));
+    },
   });
 }
 
@@ -61,7 +86,7 @@ export function createStudioBg3dWorkbenchInsertionFromHost(
 export function createStudioBg3dWorkbenchInsertionCommand(
   ports: StudioBg3dWorkbenchInsertionPorts,
 ): StudioBg3dInsertScenePrimitives {
-  return (primitives) => {
+  return (primitives, labelKo) => {
     if (!ports.canInsert() || primitives.length === 0) return false;
     const occupied = new Set(ports.readExistingIds());
     const sourceIds = new Set(primitives.map((primitive) => primitive.id));
@@ -96,6 +121,9 @@ export function createStudioBg3dWorkbenchInsertionCommand(
       }
     }
     // 반환값으로 판단하므로 예산 초과·장면 잠금 거부를 성공으로 표시하지 않는다.
-    return ports.addGeneratedParts(() => copies) !== false;
+    const added = ports.addGeneratedParts(() => copies, { ...ports.additionOptions, labelKo });
+    if (added === false) return false;
+    ports.onInserted?.(added);
+    return true;
   };
 }

@@ -28,7 +28,8 @@ import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStu
 import { StudioBg3dSketchUpWorkbenchPanel } from "./StudioBg3dSketchUpWorkbenchPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
-import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import type { StudioBg3dExecuteSelectionArray } from "./studio-bg3d-selection-array";
 import { StudioBg3dSpatialWebtoonPanel } from "./StudioBg3dSpatialWebtoonPanel";
 import { StudioBg3dVrmHybridDccPanel } from "./StudioBg3dVrmHybridDccPanel";
 import {
@@ -167,10 +168,9 @@ const SAMPLE_PLACE_SET_USAGES: readonly StudioBg3dPlaceSetUsageRef[] = Object.fr
   },
 ]);
 
-export interface StudioBg3dAdvancedWorkbenchHubProps {
+export interface StudioBg3dAdvancedWorkbenchHubProps extends StudioBg3dWorkbenchHostPorts {
   readonly defaultTab?: StudioBg3dWorkbenchTabId;
   readonly disabled?: boolean;
-  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
   readonly onSyncSceneLineArt?: (enabled: boolean, summaryKo: string) => void;
 }
@@ -183,6 +183,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
   defaultTab = "atmosphere",
   disabled = false,
   onInsertScenePrimitives,
+  arraySelection,
+  onExecuteSelectionArray,
   onApplySceneCamera,
   onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
@@ -245,6 +247,18 @@ export function StudioBg3dAdvancedWorkbenchHub({
       setLastActionSummary(t("studio.bg3d.workbench.insertion.failed", "장면에 배치하지 못했습니다. 장면 상태를 확인해 주세요."));
       return false;
     }
+  };
+
+  const handleExecuteSelectionArray: StudioBg3dExecuteSelectionArray = (request) => {
+    if (disabled || !onExecuteSelectionArray) {
+      return { ok: false, code: "selection-unavailable", messageKo: t("studio.bg3d.array.openScene", "편집 가능한 3D 배경 장면을 열어 주세요.") };
+    }
+    const result = onExecuteSelectionArray(request);
+    if (result.ok) {
+      setInsertedPrimitiveCount((count) => count + result.addedNodeCount);
+      setLastActionSummary(t("studio.bg3d.array.inserted", "선택 도형 반복 배치 완료"));
+    } else setLastActionSummary(result.messageKo);
+    return result;
   };
 
   const handleApplySceneCamera = (camera: StudioBg3dCameraSettings, labelKo: string) => {
@@ -564,6 +578,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
               setLastActionSummary(`CAD 예제 생성 (${fmt.toUpperCase()}): ${bytes}B`)
             }
             onInsertScenePrimitives={onInsertScenePrimitives ? handleInsertScenePrimitives : undefined}
+            arraySelection={arraySelection}
+            onExecuteSelectionArray={onExecuteSelectionArray ? handleExecuteSelectionArray : undefined}
             onApplySceneCamera={handleApplySceneCamera}
           />
         ) : null}

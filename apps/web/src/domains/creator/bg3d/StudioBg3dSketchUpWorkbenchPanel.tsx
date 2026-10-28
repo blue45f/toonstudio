@@ -46,7 +46,8 @@ import {
   solveSketchUpFourPinHomography,
   type SketchUpStyleConfig,
 } from "./studio-bg3d-sketchup-styles-uv-engine";
-import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import { StudioBg3dSelectionArrayPanel } from "./StudioBg3dSelectionArrayPanel";
 import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import { StudioBg3dSketchUpFullSections } from "./StudioBg3dSketchUpFullSections";
@@ -57,14 +58,13 @@ import {
   restoreStudioBg3dSkpTags,
 } from "./studio-bg3d-skp-full-scene-restorer";
 
-export interface StudioBg3dSketchUpWorkbenchPanelProps {
+export interface StudioBg3dSketchUpWorkbenchPanelProps extends StudioBg3dWorkbenchHostPorts {
   readonly disabled?: boolean;
   readonly onApplyStyle?: (style: SketchUpStyleConfig) => void;
   readonly onApplyShadowSolar?: (azimuthDeg: number, altitudeDeg: number, colorTempK: number) => void;
   readonly onExecuteArray?: (token: string, placements: readonly SketchUpArrayPlacement[]) => void;
   readonly onRestoreSkpScenes?: (restoredShotCount: number, tagCount: number) => void;
   readonly onExportCadFormat?: (format: SketchUpExportFormat, byteSize: number) => void;
-  readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
 }
 
@@ -134,6 +134,8 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   onRestoreSkpScenes,
   onExportCadFormat,
   onInsertScenePrimitives,
+  arraySelection,
+  onExecuteSelectionArray,
   onApplySceneCamera,
 }: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
   const t = useT();
@@ -351,6 +353,11 @@ export function StudioBg3dSketchUpWorkbenchPanel({
         disabled={disabled}
         onStatusChange={setStatusBanner}
         onInsertScenePrimitives={onInsertScenePrimitives}
+      />
+      <StudioBg3dSelectionArrayPanel
+        disabled={disabled}
+        selection={arraySelection}
+        onExecuteSelectionArray={onExecuteSelectionArray}
       />
       <details className="rounded-xl border border-line p-2.5" data-testid="sketchup-example-tools">
         <summary className="cursor-pointer font-semibold">{t("studio.bg3d.architecture.examples", "모델링 예제 · 계산 미리보기")}</summary>

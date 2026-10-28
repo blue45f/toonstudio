@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { StudioBg3dExecuteSelectionArray, StudioBg3dSelectionArraySummary } from "./studio-bg3d-selection-array";
 
 import {
   StudioBg3dAdvancedWorkbenchHub,
@@ -231,6 +232,50 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
   it("장면 연결이 없으면 건축 요소 배치를 사용할 수 없다", () => {
     render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" />);
     expect(screen.getByTestId("sketchup-arch-insert-scene-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
+  });
+
+  it("선택 요약과 배열 명령을 실제 SketchUp 패널로 전달하고 성공 결과만 Hub 배치 수에 누적한다", () => {
+    const execute = vi.fn<StudioBg3dExecuteSelectionArray>()
+      .mockReturnValueOnce({ ok: true, addedNodeCount: 4, copyCount: 2, selectedNodeCount: 2, normalizedToken: "*2" })
+      .mockReturnValueOnce({ ok: false, code: "selection-unavailable", messageKo: "선택이 변경되어 반복 배치하지 못했습니다." })
+      .mockReturnValueOnce({ ok: true, addedNodeCount: 2, copyCount: 1, selectedNodeCount: 2, normalizedToken: "*1" });
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio"
+      arraySelection={{ selectedPrimitiveCount: 2, availableNodeCount: 50, blockedReason: null }} onExecuteSelectionArray={execute} />);
+    expect(screen.getByTestId("bg3d-selection-array-panel")).toBeTruthy();
+    expect(screen.getByTestId("bg3d-array-selection-summary").textContent).toContain("선택 도형 2개");
+    fireEvent.change(screen.getByLabelText("복제 명령"), { target: { value: "2x" } });
+    fireEvent.change(screen.getByLabelText("배치 간격 (m)"), { target: { value: "-1.25" } });
+    fireEvent.click(screen.getByTestId("bg3d-array-execute"));
+    expect(execute).toHaveBeenNthCalledWith(1, { mode: "linear", token: "*2", delta: [-1.25, 0, 0] });
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 4개");
+
+    fireEvent.change(screen.getByLabelText("복제 명령"), { target: { value: "*1" } });
+    fireEvent.click(screen.getByTestId("bg3d-array-execute"));
+    expect(screen.getByTestId("bg3d-array-result").textContent).toBe("선택이 변경되어 반복 배치하지 못했습니다.");
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 4개");
+    fireEvent.click(screen.getByTestId("bg3d-array-execute"));
+    expect(execute).toHaveBeenCalledTimes(3);
+    expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 6개");
+  });
+
+  it("부적합 선택 이유와 최신 선택 수·편집 잠금을 반복 배치 패널에 전달한다", () => {
+    const execute = vi.fn<StudioBg3dExecuteSelectionArray>(() => ({
+      ok: true, addedNodeCount: 6, copyCount: 3, selectedNodeCount: 2, normalizedToken: "*3",
+    }));
+    const selection: StudioBg3dSelectionArraySummary = {
+      selectedPrimitiveCount: 2, availableNodeCount: 50, blockedReason: "외부 모델을 포함한 선택은 반복 배치할 수 없습니다.",
+    };
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" arraySelection={selection} onExecuteSelectionArray={execute} />);
+    expect(screen.getByTestId("bg3d-array-selection-blocked").textContent).toBe(selection.blockedReason);
+    expect(screen.getByTestId("bg3d-array-execute")).toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByTestId("bg3d-array-execute"));
+    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" disabled
+      arraySelection={{ selectedPrimitiveCount: 1, availableNodeCount: 50, blockedReason: null }} onExecuteSelectionArray={execute} />);
+    expect(screen.getByTestId("bg3d-array-selection-summary").textContent).toContain("선택 도형 1개");
+    expect(screen.getByTestId("bg3d-array-execute")).toHaveProperty("disabled", true);
+    fireEvent.click(screen.getByTestId("bg3d-array-execute"));
+    expect(execute).not.toHaveBeenCalled();
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
   });
 
