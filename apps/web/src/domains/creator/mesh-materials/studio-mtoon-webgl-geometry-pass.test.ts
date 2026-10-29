@@ -45,6 +45,7 @@ describe("일회성 WebGL MToon 기하 패스", () => {
       expect(pass.uniforms).not.toBe(source.uniforms); expect(pass.map).toBe(map); expect(pass.uvAnimationMaskTexture).toBe(mask);
       expect(pass.normalMap).toBeNull(); expect(source.normalMap).toBe(normalMap);
       expect(pass.side).toBe(DoubleSide); expect(pass.flatShading).toBe(true); expect(pass.isOutline).toBe(false);
+      expect(Object.hasOwn(pass, "flatShading")).toBe(true);
       expect(pass.alphaTest).toBe(.49); expect(pass.uniforms.alphaTest.value).toBe(.37);
       expect(pass.opacity).toBe(.61); expect(pass.uniforms.opacity.value).toBe(1);
       expect(pass.clippingPlanes).toEqual(source.clippingPlanes); expect(pass.clippingPlanes).not.toBe(source.clippingPlanes);

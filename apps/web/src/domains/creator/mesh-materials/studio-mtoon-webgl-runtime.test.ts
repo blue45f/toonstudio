@@ -56,6 +56,7 @@ describe("복제 가능한 WebGL MToon compiler 계약", () => {
     try {
       expect(readStudioMToonRuntimeIdentity(source)).toBeNull();
       expect(readStudioMToonRuntimeIdentity(target)).toMatchObject({ backend: "webgl" });
+      expect(target.flatShading).toBe(false);
       expect(compileHook(target).vertexShader).toContain("#define OUTLINE true");
       expect(source.onBeforeCompile).toBe(originalCompiler);
       expect(source.fragmentShader).not.toContain("if ( a == b ) { return step( a, t ); }");
@@ -69,6 +70,7 @@ describe("복제 가능한 WebGL MToon compiler 계약", () => {
     const original = { textureVersion: map.version, sourceVersion: map.source.version, matrix: map.matrix.clone() };
     const clone = source.clone(), target = new StudioMToonMaterial().copy(source);
     try {
+      expect(source.flatShading).toBe(true);
       expect(map.version).toBe(original.textureVersion); expect(map.source.version).toBe(original.sourceVersion); expect(map.matrix).toEqual(original.matrix);
       for (const material of [clone, target]) {
         expect(material.map).toBe(map); expect(material.flatShading).toBe(true);

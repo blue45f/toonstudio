@@ -1,6 +1,7 @@
 /** SDK 3.5.5의 공개 UV 노드와 같은 식이며 VRMC_materials_mtoon의 linear B mask만 바로잡는다. */
 import { MToonAnimatedUVNode } from "@pixiv/three-vrm/nodes";
-import { cos, float, mat2, materialReference, sin, uv, vec2, vec4 } from "three/tsl";
+import { cos, float, mat2, materialReference, nodeObject, sin, uv, vec2 } from "three/tsl";
+import { ConvertNode, type Node } from "three/webgpu";
 
 import type { Material } from "three";
 
@@ -9,15 +10,19 @@ export class StudioMToonAnimatedUVNode extends MToonAnimatedUVNode {
   constructor(hasMaskTexture: boolean, private readonly referenceMaterial: Material | null = null) { super(hasMaskTexture); }
 
   override setup(): ReturnType<MToonAnimatedUVNode["setup"]> {
-    const reference = (name: string, type: string) => materialReference(name, type, this.referenceMaterial);
-    let mask = float(1);
-    if (this.hasMaskTexture) mask = vec4(reference("uvAnimationMaskTexture", "texture")).context({ getUV: () => uv() }).b;
-    const phase = reference("uvAnimationRotationPhase", "float").mul(mask), c = cos(phase), s = sin(phase);
+    // 공개 변환 노드로 출력형을 명시한다. null일 때 builder material을 읽는 참조 계약은 유지한다.
+    const scalar = (name: string) => nodeObject(new ConvertNode<"float">(materialReference(name, "float", this.referenceMaterial), "float"));
+    let mask: Node<"float"> = float(1);
+    if (this.hasMaskTexture) {
+      const texture = nodeObject(new ConvertNode<"vec4">(materialReference("uvAnimationMaskTexture", "texture", this.referenceMaterial), "vec4"));
+      mask = texture.context({ getUV: () => uv() }).b;
+    }
+    const phase = scalar("uvAnimationRotationPhase").mul(mask), c = cos(phase), s = sin(phase);
     // SDK의 row-vector 회전, 중심 복귀, scroll 순서와 texture별 후속 UV transform을 유지한다.
     let animated = uv().sub(vec2(0.5, 0.5));
     animated = animated.mul(mat2(c, s, s.negate(), c));
     animated = animated.add(vec2(0.5, 0.5));
-    const scroll = vec2(reference("uvAnimationScrollXOffset", "float"), reference("uvAnimationScrollYOffset", "float")).mul(mask);
+    const scroll = vec2(scalar("uvAnimationScrollXOffset"), scalar("uvAnimationScrollYOffset")).mul(mask);
     return animated.add(scroll).toVar("AnimatedUV");
   }
 }

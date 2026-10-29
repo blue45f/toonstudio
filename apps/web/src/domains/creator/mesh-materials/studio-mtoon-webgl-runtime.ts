@@ -52,8 +52,16 @@ function installStudioMToonWebGlGuards(material: MToonMaterial): void {
   });
 }
 
+/** Three 렌더러는 정확히 true인 경우에만 flat normal을 선택하며 SDK 기본 재질에는 이 필드가 없다. */
+export function readStudioMToonWebGlFlatShading(material: MToonMaterial): boolean {
+  return "flatShading" in material && material.flatShading === true;
+}
+
 /** SDK clone은 this.constructor를 호출하므로 원본 callback closure를 복사하지 않아도 보정을 보존한다. */
 export class StudioMToonMaterial extends MToonMaterial {
+  // ShaderMaterial에 없는 렌더러 필드를 실제 own property로 초기화한다.
+  flatShading = false;
+
   constructor(parameters: ConstructorParameters<typeof MToonMaterial>[0] = {}) {
     super(parameters);
     try { installStudioMToonWebGlGuards(this); }
@@ -61,8 +69,9 @@ export class StudioMToonMaterial extends MToonMaterial {
   }
   override copy(source: MToonMaterial): this {
     if (source instanceof StudioMToonMaterial && !readStudioMToonRuntimeIdentity(source)) throw new Error("변조된 WebGL MToon 재질을 복제할 수 없습니다.");
-    super.copy(studioMToonWebGlCopySource(source));
-    this.flatShading = source.flatShading;
+    // SDK prototype에 결합된 base copy를 호출해 raw SDK source도 실제 공개 계약대로 복제한다.
+    sdkCopy.call(this, studioMToonWebGlCopySource(source));
+    this.flatShading = readStudioMToonWebGlFlatShading(source);
     return this;
   }
 }

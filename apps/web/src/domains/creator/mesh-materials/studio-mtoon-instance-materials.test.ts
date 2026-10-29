@@ -27,7 +27,7 @@ function fixture() {
   geometry.setAttribute("normal", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 0, 0, 1], 3));
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1], 2));
   geometry.setIndex([0, 1, 2]); geometry.addGroup(0, 3, 0); geometry.addGroup(0, 3, 1);
-  const body = owned(new StudioMToonMaterial({ color: "#f2f2f2", shadeColorFactor: new THREE.Color("#56789a"), shadingToonyFactor: 1,
+  const body = owned(new StudioMToonMaterial({ color: new THREE.Color("#f2f2f2"), shadeColorFactor: new THREE.Color("#56789a"), shadingToonyFactor: 1,
     outlineWidthMode: "screenCoordinates", outlineWidthFactor: .002, map: texture, opacity: 1, side: THREE.DoubleSide }));
   body.uvAnimationScrollXSpeedFactor = .4;
   const outline = owned(body.clone()); outline.isOutline = true; outline.side = THREE.BackSide;

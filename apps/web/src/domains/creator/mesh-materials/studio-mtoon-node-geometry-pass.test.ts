@@ -18,7 +18,9 @@ function dataTexture() {
 function fixture() {
   const source = new StudioMToonNodeMaterial(), map = dataTexture(), mask = dataTexture(), normal = dataTexture();
   source.map = map; source.uvAnimationMaskTexture = mask; source.normalMap = normal;
-  source.alphaTest = .37; source.opacity = .49; source.side = DoubleSide; source.flatShading = true;
+  source.alphaTest = .37; source.opacity = .49; source.side = DoubleSide;
+  // Three builder가 읽는 실제 공개 상태를 설정한다. SDK 타입 선언을 보강하지 않는다.
+  Object.assign(source, { flatShading: true });
   source.clipIntersection = true; source.clipShadows = true;
   source.clippingPlanes = [new Plane(new Vector3(1, 0, 0), .3), new Plane(new Vector3(0, 1, 0), -.2)];
   source.uvAnimationScrollXOffset = .23; source.uvAnimationScrollYOffset = -.11; source.uvAnimationRotationPhase = .6;
@@ -58,7 +60,7 @@ describe("WebGPU MToon의 일회성 geometry pass", () => {
     const value = fixture(), versions = [value.map.version, value.map.source.version, value.mask.version, value.mask.source.version];
     const matrix = value.map.matrix.clone(), pass = createStudioMToonNodeGeometryPass(value.source, kind);
     try {
-      expect(pass).not.toBe(value.source); expect(pass.side).toBe(DoubleSide); expect(pass.flatShading).toBe(true);
+      expect(pass).not.toBe(value.source); expect(pass.side).toBe(DoubleSide); expect(Reflect.get(pass, "flatShading")).toBe(true);
       expect(pass.opacity).toBe(.49); expect(pass.alphaTest).toBe(.37); expect(pass.blending).toBe(NoBlending);
       expect(pass.depthWrite).toBe(true); expect(pass.toneMapped).toBe(false); expect(pass.fragmentNode).toBeNull();
       expect(pass.map).not.toBe(value.map); expect(pass.map?.source.data).toBe(value.map.source.data);
@@ -83,7 +85,9 @@ describe("WebGPU MToon의 일회성 geometry pass", () => {
 
   it.each([false, true])("실제 WGSL source/clone·MRT=%s에서 alpha discard 뒤 packed RGBA를 출력하고 B UV·기하 법선을 유지한다", (useMrt) => {
     const value = fixture(), geometry = new BoxGeometry(), clone = value.source.clone();
-    try { for (const source of [value.source, clone]) {
+    try {
+      expect(Reflect.get(clone, "flatShading")).toBe(true);
+      for (const source of [value.source, clone]) {
       const pass = createStudioMToonNodeGeometryPass(source, useMrt ? "normal-depth" : "depth");
       try {
         const result = build(pass, geometry, useMrt, true);

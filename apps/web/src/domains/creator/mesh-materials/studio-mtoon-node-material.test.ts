@@ -66,7 +66,8 @@ describe("guarded MToon WebGPU TSL", () => {
   });
 
   it("실제 body 직접광은 임시 변환값 대신 최종 diffuse·specular 누산기에 쓴다", () => {
-    const material = new StudioMToonNodeMaterial({ shadingToonyFactor: 1 }), geometry = new BoxGeometry();
+    const material = new StudioMToonNodeMaterial(), geometry = new BoxGeometry();
+    material.shadingToonyFactor = 1;
     const renderer = new WebGPURenderer({ canvas: document.createElement("canvas") });
     renderer.hasFeature = (feature) => { if (feature !== "float32-filterable") throw new Error(`예상하지 않은 CPU feature: ${feature}`); return false; };
     try {
@@ -95,7 +96,8 @@ describe("guarded MToon WebGPU TSL", () => {
       const feather = 1 - toony, expected = Math.max(0, Math.min(1, (dot + .05 + feather) / (2 * feather)));
       expect(evaluate(studioMToonNodeShading, [dot, .05, toony])).toBeCloseTo(expected, 12);
     }
-    const material = new StudioMToonNodeMaterial({ shadingToonyFactor: 1, shadingShiftFactor: -.35 });
+    const material = new StudioMToonNodeMaterial();
+    material.shadingToonyFactor = 1; material.shadingShiftFactor = -.35;
     expect(material.shadingToonyFactor).toBe(1); expect(material.shadingShiftFactor).toBe(-.35);
   });
 
@@ -115,7 +117,9 @@ describe("guarded MToon WebGPU TSL", () => {
   });
 
   it("실제 조명이 있는 material graph도 GPU 초기화 없이 WGSL로 구성한다", () => {
-    const material = new StudioMToonNodeMaterial({ shadingToonyFactor: 1, outlineWidthMode: "screenCoordinates", outlineWidthFactor: .003, isOutline: true });
+    const material = new StudioMToonNodeMaterial();
+    material.shadingToonyFactor = 1; material.outlineWidthMode = "screenCoordinates";
+    material.outlineWidthFactor = .003; material.isOutline = true;
     const renderer = new WebGPURenderer({ canvas: document.createElement("canvas") }), geometry = new BoxGeometry();
     const clone = material.clone(); clone.shadingToonyFactor = .75;
     try { for (const target of [material, clone]) {
@@ -145,8 +149,10 @@ describe("guarded MToon WebGPU TSL", () => {
   });
 
   it("clone/copy는 대상마다 등록하고 색·shift·toony·outline을 원본과 독립적으로 유지한다", () => {
-    const source = new StudioMToonNodeMaterial({ color: new Color(.8, .2, .1), shadeColorFactor: new Color(.1, .2, .4),
-      shadingShiftFactor: -.3, shadingToonyFactor: 1, outlineWidthMode: "screenCoordinates", outlineWidthFactor: .003, isOutline: true });
+    const source = new StudioMToonNodeMaterial();
+    source.color = new Color(.8, .2, .1); source.shadeColorFactor = new Color(.1, .2, .4);
+    source.shadingShiftFactor = -.3; source.shadingToonyFactor = 1; source.outlineWidthMode = "screenCoordinates";
+    source.outlineWidthFactor = .003; source.isOutline = true;
     const clone = source.clone(), copied = new StudioMToonNodeMaterial().copy(source);
     for (const target of [clone, copied]) {
       expect(target).not.toBe(source); expect(target.color).not.toBe(source.color); expect(target.color).toEqual(source.color);
@@ -171,7 +177,8 @@ describe("guarded MToon WebGPU TSL", () => {
 
   it("world/none outline 값도 저장값 그대로 유지하고 잘못된 factor는 승인하지 않는다", () => {
     for (const mode of ["none", "worldCoordinates", "screenCoordinates"] as const) {
-      const material = new StudioMToonNodeMaterial({ outlineWidthMode: mode, outlineWidthFactor: 0 });
+      const material = new StudioMToonNodeMaterial();
+      material.outlineWidthMode = mode; material.outlineWidthFactor = 0;
       expect(material.outlineWidthMode).toBe(mode); expect(material.outlineWidthFactor).toBe(0); expect(readStudioMToonRuntimeIdentity(material)?.backend).toBe("webgpu");
       material.shadingToonyFactor = NaN; expect(readStudioMToonRuntimeIdentity(material)).toBeNull();
     }
@@ -190,7 +197,8 @@ describe("guarded MToon WebGPU TSL", () => {
   });
 
   it("outline 모드·직접광 텍스처의 graph 구조를 program cache key로 분리한다", () => {
-    const material = new StudioMToonNodeMaterial({ isOutline: true, outlineWidthMode: "worldCoordinates" });
+    const material = new StudioMToonNodeMaterial();
+    material.isOutline = true; material.outlineWidthMode = "worldCoordinates";
     const world = material.customProgramCacheKey(); material.outlineWidthMode = "screenCoordinates";
     const screen = material.customProgramCacheKey(); expect(screen).not.toBe(world);
     material.shadingToonyFactor = 1; material.shadingShiftFactor = .5; expect(material.customProgramCacheKey()).toBe(screen);

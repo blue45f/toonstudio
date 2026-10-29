@@ -132,12 +132,19 @@ describe("MToon TSL의 B mask와 원본 UV 식", () => {
 
   it.each([false, true])("본체/outline=%s 전체 WGSL에서 모든 map의 고유 transform과 B mask를 사용하고 clone graph를 분리한다", (outline) => {
     const fixture = textureFixture(), geometry = new BoxGeometry();
-    const material = new StudioMToonNodeMaterial({ isOutline: outline, outlineWidthMode: "screenCoordinates", outlineWidthFactor: .003,
-      uvAnimationRotationPhase: .3, uvAnimationScrollXOffset: .15, uvAnimationScrollYOffset: -.2, alphaTest: .5 });
+    const material = new StudioMToonNodeMaterial();
+    material.isOutline = outline; material.outlineWidthMode = "screenCoordinates"; material.outlineWidthFactor = .003;
+    material.uvAnimationRotationPhase = .3; material.uvAnimationScrollXOffset = .15; material.uvAnimationScrollYOffset = -.2;
+    material.alphaTest = .5;
     textureProperties.forEach((name, index) => { material[name] = fixture.textures[index] ?? null; });
     const clone = material.clone(), matrices = fixture.textures.map((texture) => texture.matrix.clone());
-    expect(clone.alphaTest).toBe(.5);
-    try { for (const target of [material, clone]) {
+    try {
+      expect(clone.alphaTest).toBe(.5);
+      expect(clone.isOutline).toBe(outline); expect(clone.outlineWidthMode).toBe("screenCoordinates"); expect(clone.outlineWidthFactor).toBe(.003);
+      expect(clone.uvAnimationRotationPhase).toBe(.3);
+      expect(clone.uvAnimationScrollXOffset).toBe(.15);
+      expect(clone.uvAnimationScrollYOffset).toBe(-.2);
+      for (const target of [material, clone]) {
       const builder = builderFor(target, geometry);
       if (!("build" in builder) || typeof builder.build !== "function") throw new Error("실제 WGSL builder가 없습니다.");
       builder.build();

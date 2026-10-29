@@ -3,7 +3,7 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MToonMaterial } from "@pixiv/three-vrm";
 import { Component, type ReactNode } from "react";
-import { BackSide, BoxGeometry } from "three";
+import { BackSide, BoxGeometry, Color } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioHybridDccSurfaceMaterial } from "./StudioHybridDccSurfaceMaterial";
@@ -44,7 +44,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 function resource(input: StudioHybridDccToonMaterial) {
-  const body = new MToonMaterial({ color: input.baseColorSrgb });
+  const body = new MToonMaterial({ color: new Color(input.baseColorSrgb) });
   const outline = input.outline.enabled ? new MToonMaterial({ side: BackSide, isOutline: true }) : null;
   const bodyDisposed = vi.fn(); const outlineDisposed = vi.fn();
   body.addEventListener("dispose", bodyDisposed); outline?.addEventListener("dispose", outlineDisposed);

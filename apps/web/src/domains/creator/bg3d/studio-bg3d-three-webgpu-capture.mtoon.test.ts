@@ -11,7 +11,8 @@ describe("실제 WebGPU capture의 툰 기하 제출과 수명", () => {
   it.each(["resolve", "reject", "dispose", "submit-failure"] as const)("복사의 %s까지 임시 본체와 clock을 소유하고 제출 상태는 즉시 복원한다", async (finish) => {
     const map = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
     const mask = new THREE.DataTexture(new Uint8Array([0, 0, 128, 255]), 1, 1);
-    const body = new StudioMToonNodeMaterial({ map, uvAnimationMaskTexture: mask, side: THREE.DoubleSide, alphaTest: .5 });
+    const body = new StudioMToonNodeMaterial({ side: THREE.DoubleSide, alphaTest: .5 });
+    body.map = map; body.uvAnimationMaskTexture = mask;
     body.uvAnimationScrollXSpeedFactor = .4; body.update(.5);
     body.clippingPlanes = [new THREE.Plane(new THREE.Vector3(1, 0, 0), -.1)];
     const outline = body.clone(); outline.isOutline = true; outline.side = THREE.BackSide;

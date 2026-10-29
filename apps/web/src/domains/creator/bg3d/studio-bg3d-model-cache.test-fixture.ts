@@ -7,7 +7,9 @@ import type { Bg3dVerifiedStoredRecord } from "./studio-bg3d-model-library-loade
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 
 /** 저장 ID와 런타임 variant를 별도로 갖는 실제 타입 계약의 테스트 원본. */
-export function createStudioBg3dCacheTestRecord(id: string, contentHash = `sha256:${"a".repeat(64)}`): Bg3dVerifiedStoredRecord {
+export function createStudioBg3dCacheTestRecord(
+  id: string, contentHash: Bg3dVerifiedStoredRecord["contentHash"] = `sha256:${"a".repeat(64)}`,
+): Bg3dVerifiedStoredRecord {
   return {
     id, storageVersion: 2, name: `${id}.glb`, format: "glb",
     blob: new Blob([new Uint8Array(32)], { type: "model/gltf-binary" }), thumbnail: null,

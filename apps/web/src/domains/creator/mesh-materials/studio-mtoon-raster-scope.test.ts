@@ -23,8 +23,8 @@ const releases: Array<() => void> = [];
 afterEach(() => { releases.splice(0).reverse().forEach((release) => release()); });
 function owned<T extends { dispose(): void }>(resource: T): T { releases.push(() => resource.dispose()); return resource; }
 function fixture(backend: StudioMToonMaterialBackend = "webgl", mode: "screenCoordinates" | "worldCoordinates" = "screenCoordinates") {
-  const body = owned(backend === "webgl" ? new StudioMToonMaterial({ outlineWidthMode: mode, outlineWidthFactor: .02 })
-    : new StudioMToonNodeMaterial({ outlineWidthMode: mode, outlineWidthFactor: .02 }));
+  const body = owned(backend === "webgl" ? new StudioMToonMaterial() : new StudioMToonNodeMaterial());
+  body.outlineWidthMode = mode; body.outlineWidthFactor = .02;
   const outline = owned(body.clone()); outline.isOutline = true; outline.side = THREE.BackSide;
   const geometry = owned(new THREE.BoxGeometry()); geometry.clearGroups();
   geometry.addGroup(0, geometry.index?.count ?? 0, 0); geometry.addGroup(0, geometry.index?.count ?? 0, 1);

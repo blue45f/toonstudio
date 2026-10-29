@@ -4,9 +4,10 @@ import { NoBlending, ShaderChunk, ShaderLib, type Material } from "three";
 
 import { readStudioMToonRuntimeIdentity } from "./studio-mtoon-runtime-identity";
 import { studioMToonWebGlCopySource } from "./studio-mtoon-webgl-copy";
-import { patchStudioMToonEqualBoundary, patchStudioMToonProjectionWidth } from "./studio-mtoon-webgl-runtime";
+import { patchStudioMToonEqualBoundary, patchStudioMToonProjectionWidth, readStudioMToonWebGlFlatShading } from "./studio-mtoon-webgl-runtime";
 
 export type StudioMToonWebGlGeometryPassKind = "normal" | "depth";
+export type StudioMToonWebGlGeometryPassMaterial = MToonMaterial & { flatShading: boolean };
 export interface StudioMToonGeometryShader {
   readonly vertexShader: string;
   readonly fragmentShader: string;
@@ -65,13 +66,14 @@ export function patchStudioMToonGeometryDepthShader(shader: StudioMToonGeometryS
 export function createStudioMToonWebGlGeometryPass(
   source: Material,
   kind: StudioMToonWebGlGeometryPassKind,
-): MToonMaterial {
+): StudioMToonWebGlGeometryPassMaterial {
   if (kind !== "normal" && kind !== "depth") throw new Error("지원하지 않는 MToon 기하 패스입니다.");
   if (!(source instanceof MToonMaterial) || readStudioMToonRuntimeIdentity(source)?.backend !== "webgl" || source.isOutline) {
     throw new Error("승인된 WebGL MToon 본체만 기하 패스로 복제할 수 있습니다.");
   }
   // SDK copy는 uniform/색/clip plane을 독립 복제하면서 이미지 Texture 참조와 UV 시각을 보존한다.
-  const pass = new MToonMaterial();
+  // SDK에 없는 렌더러 필드를 실제 own property로 생성해 flat normal 계약도 보존한다.
+  const pass = Object.assign(new MToonMaterial(), { flatShading: false });
   // compiler 실패와 캡처 소유자의 finally가 같은 임시 인스턴스를 정리해도 dispose event는 한 번만 보낸다.
   const dispose = pass.dispose;
   let disposed = false;
@@ -81,9 +83,8 @@ export function createStudioMToonWebGlGeometryPass(
     dispose.call(pass);
   };
   try {
-    pass.copy(studioMToonWebGlCopySource(source));
-    // ShaderMaterial의 SDK copy는 flatShading을 별도로 전달하지 않는다.
-    pass.flatShading = source.flatShading;
+    MToonMaterial.prototype.copy.call(pass, studioMToonWebGlCopySource(source));
+    pass.flatShading = readStudioMToonWebGlFlatShading(source);
     pass.isOutline = false;
     pass.debugMode = "normal";
     pass.normalMap = null;

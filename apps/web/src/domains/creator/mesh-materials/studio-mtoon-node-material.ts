@@ -3,16 +3,24 @@ import { MToonLightingModel, MToonNodeMaterial, type MToonNodeMaterialParameters
 import { WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
 import { Fn, cameraProjectionMatrix, diffuseColor, float, length, matcapUV, materialReference, mix, modelNormalMatrix, modelViewMatrix,
   materialNormal, modelViewPosition, nodeObject, normalLocal, normalMap, positionLocal, step, transformedNormalView, vec3, vec4 } from "three/tsl";
-import { NodeMaterial, type NodeBuilder } from "three/webgpu";
+import { ConvertNode, NodeMaterial, type Node, type NodeBuilder } from "three/webgpu";
 
 import { hasStudioMToonRuntimeFactors } from "./studio-mtoon-runtime-factors";
 import { readStudioMToonRuntimeIdentity, registerStudioMToonRuntimeMaterial } from "./studio-mtoon-runtime-identity";
 import { isStudioMToonAnimatedUvContractCurrent, StudioMToonAnimatedUVNode } from "./studio-mtoon-node-animated-uv";
 
 export const STUDIO_MTOON_NODE_REVISION = "studio-mtoon-node-equal-boundary-ortho-blue-mask-clip-light-v3";
-type ScalarNode = ReturnType<typeof float>;
-type VectorNode = ReturnType<typeof vec3>;
+type ScalarNode = Node<"float">;
+type VectorNode = Node<"vec3">;
 type DirectInput = Parameters<MToonLightingModel["direct"]>[0];
+
+// 실제 변환 노드로 참조 값의 GPU 형식을 고정한다. mutable VarNode 구현에는 의존하지 않는다.
+function floatNode(value: Node): ScalarNode { return nodeObject(new ConvertNode<"float">(value, "float")); }
+function vector2Node(value: Node): Node<"vec2"> { return nodeObject(new ConvertNode<"vec2">(value, "vec2")); }
+function vector3Node(value: Node): VectorNode { return nodeObject(new ConvertNode<"vec3">(value, "vec3")); }
+function vector4Node(value: Node): Node<"vec4"> { return nodeObject(new ConvertNode<"vec4">(value, "vec4")); }
+function scalarReference(name: string): ScalarNode { return floatNode(materialReference(name, "float")); }
+function colorReference(name: string): VectorNode { return vector3Node(materialReference(name, "color")); }
 
 /** SDK 기본 GL clip bias 1e-6는 window depth 5e-7이다. 원본 본체는 이동하지 않는다. */
 export function studioMToonNodeOutlineClipBias(coordinateSystem: number, reversedDepthBuffer: boolean, isOutline: boolean): number {
@@ -40,13 +48,13 @@ export const studioMToonNodeScreenScale = Fn(([clipW, viewDepth, projectionY]: r
 
 function directNodes(material: MToonNodeMaterial) {
   const uv = nodeObject(new StudioMToonAnimatedUVNode(material.uvAnimationMaskTexture !== null));
-  const sample = (name: string) => materialReference(name, "texture").context({ getUV: () => uv });
-  const scalar = (name: string) => materialReference(name, "float"), color = (name: string) => materialReference(name, "color");
+  const sample = (name: string) => vector4Node(materialReference(name, "texture")).context({ getUV: () => uv });
+  const scalar = scalarReference, color = colorReference;
   const shade = material.shadeMultiplyTexture ? color("shadeColorFactor").mul(sample("shadeMultiplyTexture").rgb) : color("shadeColorFactor");
   const shift = material.shadingShiftTexture ? scalar("shadingShiftFactor").add(sample("shadingShiftTexture").r.mul(scalar("shadingShiftTextureScale"))) : scalar("shadingShiftFactor");
   const rimMultiply = material.rimMultiplyTexture ? sample("rimMultiplyTexture").rgb : vec3(1);
   const matcap = material.matcapTexture
-    ? materialReference("matcapTexture", "texture").context({ getUV: () => matcapUV.mul(1, -1).add(0, 1) }).rgb.mul(color("matcapFactor")) : vec3(0);
+    ? vector4Node(materialReference("matcapTexture", "texture")).context({ getUV: () => vector2Node(matcapUV).mul(1, -1).add(0, 1) }).rgb.mul(color("matcapFactor")) : vec3(0);
   const dotNV = transformedNormalView.dot(modelViewPosition.normalize().negate());
   const rim = float(1).sub(dotNV).add(scalar("parametricRimLiftFactor")).clamp().pow(scalar("parametricRimFresnelPowerFactor"))
     .mul(color("parametricRimColorFactor"));
@@ -56,26 +64,28 @@ function directNodes(material: MToonNodeMaterial) {
 class StudioMToonLightingModel extends MToonLightingModel {
   constructor(private readonly material: MToonNodeMaterial) { super(); }
   override direct(input: DirectInput): void {
-    const values = directNodes(this.material), lightColor = vec3(input.lightColor);
-    const dotNL = transformedNormalView.dot(vec3(input.lightDirection)).clamp(-1, 1);
+    const values = directNodes(this.material), lightColor = vector3Node(input.lightColor);
+    const dotNL = transformedNormalView.dot(vector3Node(input.lightDirection)).clamp(-1, 1);
     const shading = studioMToonNodeShading(dotNL, float(values.shift), float(values.toony));
     // SDK와 같은 Lambert 계수이며 나머지 간접광·emissive·rim 처리는 SDK를 유지한다.
-    nodeObject(input.reflectedLight.directDiffuse).addAssign(lightColor.mul(mix(values.shade, diffuseColor.rgb, shading).mul(1 / Math.PI)));
-    nodeObject(input.reflectedLight.directSpecular).addAssign(values.rim.add(values.matcap).mul(values.rimMultiply)
-      .mul(mix(vec3(0), lightColor.mul(1 / Math.PI), values.rimLightingMix)));
+    const directDiffuse = input.reflectedLight.directDiffuse, directSpecular = input.reflectedLight.directSpecular;
+    nodeObject(directDiffuse).assign(vector3Node(directDiffuse).add(lightColor.mul(mix(values.shade, diffuseColor.rgb, shading).mul(1 / Math.PI))));
+    nodeObject(directSpecular).assign(vector3Node(directSpecular).add(values.rim.add(values.matcap).mul(values.rimMultiply)
+      .mul(mix(vec3(0), lightColor.mul(1 / Math.PI), values.rimLightingMix))));
   }
 }
 
 function outlinePosition(material: MToonNodeMaterial): VectorNode {
   const uv = nodeObject(new StudioMToonAnimatedUVNode(material.uvAnimationMaskTexture !== null));
   const normal = normalLocal.normalize();
-  let width: ScalarNode = float(materialReference("outlineWidthFactor", "float"));
-  if (material.outlineWidthMultiplyTexture) width = width.mul(materialReference("outlineWidthMultiplyTexture", "texture").context({ getUV: () => uv }).g);
+  let width: ScalarNode = scalarReference("outlineWidthFactor");
+  if (material.outlineWidthMultiplyTexture) width = width.mul(vector4Node(materialReference("outlineWidthMultiplyTexture", "texture")).context({ getUV: () => uv }).g);
   let offset = normal.mul(width).mul(length(modelNormalMatrix.mul(normal)));
   if (material.outlineWidthMode === "screenCoordinates") {
     const projection = cameraProjectionMatrix;
-    offset = offset.mul(studioMToonNodeScreenScale(float(projection.element(3).element(3)),
-      float(modelViewMatrix.mul(positionLocal).z.negate()), float(projection.element(1).element(1))));
+    // 단위 벡터와 곱해 기존 column-major P[3][3]·P[1][1] 값을 그대로 읽는다.
+    offset = offset.mul(studioMToonNodeScreenScale(projection.mul(vec4(0, 0, 0, 1)).w,
+      float(modelViewMatrix.mul(positionLocal).z.negate()), projection.mul(vec4(0, 1, 0, 0)).y));
   }
   return positionLocal.add(offset);
 }
@@ -94,25 +104,27 @@ function plainNodeInputs(material: MToonNodeMaterial): boolean {
 function animatedNormal(material: MToonNodeMaterial) {
   const uv = nodeObject(new StudioMToonAnimatedUVNode(true));
   const normal = material.normalMap
-    ? normalMap(materialReference("normalMap", "texture").context({ getUV: () => uv }), materialReference("normalScale", "vec2")) : materialNormal;
+    ? vector3Node(normalMap(vector4Node(materialReference("normalMap", "texture")).context({ getUV: () => uv }), vector2Node(materialReference("normalScale", "vec2")))) : materialNormal;
   return material.isOutline ? normal.negate() : normal;
 }
 function animatedMapInputs(material: MToonNodeMaterial) {
   const uv = nodeObject(new StudioMToonAnimatedUVNode(true));
-  const sample = (name: string) => materialReference(name, "texture").context({ getUV: () => uv });
-  const color = materialReference("color", "color"), emissive = materialReference("emissive", "color").mul(materialReference("emissiveIntensity", "float"));
-  const shade = materialReference("shadeColorFactor", "color"), shift = materialReference("shadingShiftFactor", "float");
+  const sample = (name: string) => vector4Node(materialReference(name, "texture")).context({ getUV: () => uv });
+  const color = colorReference("color"), emissive = colorReference("emissive").mul(scalarReference("emissiveIntensity"));
+  const shade = colorReference("shadeColorFactor"), shift = scalarReference("shadingShiftFactor");
   return {
     colorNode: material.map ? color.mul(sample("map")) : color,
     normalNode: animatedNormal(material),
     emissiveNode: material.emissiveMap ? emissive.mul(sample("emissiveMap")) : emissive,
     shadeColorNode: material.shadeMultiplyTexture ? shade.mul(sample("shadeMultiplyTexture")) : shade,
-    shadingShiftNode: material.shadingShiftTexture ? shift.add(sample("shadingShiftTexture").r.mul(materialReference("shadingShiftTextureScale", "float"))) : shift,
+    shadingShiftNode: material.shadingShiftTexture ? shift.add(sample("shadingShiftTexture").r.mul(scalarReference("shadingShiftTextureScale"))) : shift,
     rimMultiplyNode: material.rimMultiplyTexture ? sample("rimMultiplyTexture").rgb : vec3(1),
   };
 }
 /** source를 캡처한 node graph를 copy하지 않고 현재 렌더 대상의 materialReference를 매번 만든다. */
 export class StudioMToonNodeMaterial extends MToonNodeMaterial {
+  /** Three builder가 실제로 소비하는 flat-shading 상태를 copy에서도 보존한다. */
+  flatShading = false;
   #building = 0;
   constructor(parameters: MToonNodeMaterialParameters = {}) {
     super({ ...parameters });
@@ -164,7 +176,7 @@ export class StudioMToonNodeMaterial extends MToonNodeMaterial {
   }
   override setupVertex(builder: NodeBuilder): ReturnType<MToonNodeMaterial["setupVertex"]> {
     if (!this.#building && !readStudioMToonRuntimeIdentity(this)) throw new Error("MToon WebGPU clip 노드 계약이 바뀌었습니다.");
-    const clip = nodeObject(sdkVertex.call(this, builder));
+    const clip = vector4Node(sdkVertex.call(this, builder));
     const bias = studioMToonNodeOutlineClipBias(builder.renderer.coordinateSystem, builder.renderer.reversedDepthBuffer, this.isOutline);
     // setupPosition의 local vec3가 아닌 최종 clip vec4에서만 먼 쪽으로 이동한다.
     return bias === 0 ? clip : clip.add(vec4(0, 0, clip.w.mul(bias), 0));
@@ -174,6 +186,10 @@ export class StudioMToonNodeMaterial extends MToonNodeMaterial {
     super.copy(source);
     // Three r186 NodeMaterial.copy는 상속된 alphaTest setter와 내부 _alphaTest를 모두 생략한다.
     this.alphaTest = source.alphaTest;
+    this.flatShading = "flatShading" in source && source.flatShading === true;
+    this.uvAnimationScrollXOffset = source.uvAnimationScrollXOffset;
+    this.uvAnimationScrollYOffset = source.uvAnimationScrollYOffset;
+    this.uvAnimationRotationPhase = source.uvAnimationRotationPhase;
     this.registerRuntime(); return this;
   }
   override customProgramCacheKey(): string {

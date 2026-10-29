@@ -543,7 +543,7 @@ export function createStudioBg3dThreeWebGpuCaptureAdapter(
       width: renderer.domElement.width,
       height: renderer.domElement.height,
     }),
-    async capture(request) {
+    async capture(request: StudioBg3dCaptureRequest) {
       const scope = beginStudioMToonRasterScope(scene, "webgpu", { registrationPolicy: "registered-only", prepareScene: () => hideStudioBg3dCaptureExcludedObjects(scene) });
       try { return await scope.submit({ fullHeight: request.height, height: request.height }, () => capture(request)); }
       finally { scope.dispose(); }

@@ -182,6 +182,12 @@ const VIEWPORT_COLORS = Object.freeze({
   rim: new THREE.Color().setHSL(0.065, 0.72, 0.65, THREE.SRGBColorSpace),
 });
 
+/** Surface의 문자열 계약에 맞추되 getStyle/getHex의 8비트 반올림 없이 같은 sRGB 색을 전달한다. */
+function viewportPaletteCssColor(color: THREE.Color): string {
+  const { h, s, l } = color.getHSL({ h: 0, s: 0, l: 0 }, THREE.SRGBColorSpace);
+  return `hsl(${h * 360},${s * 100}%,${l * 100}%)`;
+}
+
 const OVERLAY_OPTIONS = Object.freeze([
   { id: "material", label: "재질" },
   { id: "material-wire", label: "재질+선" },
@@ -507,8 +513,8 @@ function StudioHybridDccAssetMesh({
         }}
       >
         <StudioHybridDccSurfaceMaterial geometry={resource.geometry} slots={resource.materialSlots} bindings={asset.toonMaterials}
-          color={asset.materialColor ?? (selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
-          wireColor={selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire} showMaterial={showMaterial} uvChecker={uvChecker} hasUv={Boolean(cornerUvs)} />
+          color={asset.materialColor ?? viewportPaletteCssColor(selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
+          wireColor={viewportPaletteCssColor(selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire)} showMaterial={showMaterial} uvChecker={uvChecker} hasUv={Boolean(cornerUvs)} />
       </mesh>
       {showWireOverlay ? (
         <mesh geometry={resource.geometry} renderOrder={3}>

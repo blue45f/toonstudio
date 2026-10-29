@@ -2,7 +2,7 @@
 import { MToonNodeMaterial } from "@pixiv/three-vrm/nodes";
 import { Material, NoBlending, type Texture } from "three";
 import { depth as fragmentDepth, float, materialReference, nodeObject, vec4 } from "three/tsl";
-import { MeshBasicNodeMaterial } from "three/webgpu";
+import { ConvertNode, MeshBasicNodeMaterial } from "three/webgpu";
 
 import { StudioMToonAnimatedUVNode } from "./studio-mtoon-node-animated-uv";
 import { readStudioMToonRuntimeIdentity } from "./studio-mtoon-runtime-identity";
@@ -12,6 +12,8 @@ import { studioThreeNodePackDepthToRgba } from "./studio-three-node-depth-packin
 export type StudioMToonNodeGeometryPassKind = "depth" | "normal-depth";
 
 class StudioMToonNodeGeometryPass extends MeshBasicNodeMaterial {
+  /** Three NodeBuilder.isFlatShading이 실제로 읽는 플래그를 임시 pass 자신이 소유한다. */
+  flatShading = false;
   readonly uvAnimationMaskTexture: Texture | null;
   readonly uvAnimationScrollXOffset: number;
   readonly uvAnimationScrollYOffset: number;
@@ -38,11 +40,13 @@ class StudioMToonNodeGeometryPass extends MeshBasicNodeMaterial {
       this.name = `Studio MToon WebGPU ${kind}`;
       this.map = copyTexture(source.map);
       this.uvAnimationMaskTexture = copyTexture(source.uvAnimationMaskTexture);
-      this.flatShading = source.flatShading ?? false;
+      this.flatShading = "flatShading" in source && source.flatShading === true;
       this.depthWrite = true;
       this.blending = NoBlending; this.transparent = false; this.toneMapped = false; this.fog = false;
       const uv = nodeObject(new StudioMToonAnimatedUVNode(this.uvAnimationMaskTexture !== null, this));
-      const alpha = this.map ? materialReference("map", "texture", this).context({ getUV: () => uv }).a : float(1);
+      const alpha = this.map
+        ? nodeObject(new ConvertNode<"vec4">(materialReference("map", "texture", this), "vec4")).context({ getUV: () => uv }).a
+        : float(1);
       this.colorNode = vec4(1, 1, 1, alpha);
       // 표준 diffuse/opacity/alphaTest/clip 경로를 통과한 뒤 출력만 교체한다. fragmentNode는 사용하지 않는다.
       this.outputNode = studioThreeNodePackDepthToRgba(float(fragmentDepth));

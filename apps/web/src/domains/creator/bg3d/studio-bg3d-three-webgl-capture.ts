@@ -229,7 +229,7 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
       width: renderer.domElement.width,
       height: renderer.domElement.height,
     }),
-    async capture(request) {
+    async capture(request: StudioBg3dCaptureRequest) {
       const scope = beginStudioMToonRasterScope(scene, "webgl", { registrationPolicy: "registered-only", prepareScene: () => hideStudioBg3dCaptureExcludedObjects(scene) });
       try { return await scope.submit({ fullHeight: request.height, height: request.height }, () => capture(request)); }
       finally { scope.dispose(); }

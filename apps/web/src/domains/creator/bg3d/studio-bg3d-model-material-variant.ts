@@ -1,17 +1,19 @@
 /** 실제 표시 backend와 파싱된 재질 variant를 묶는다. GLB 검증의 worker/local 실행 위치와는 별개다. */
 import type { StudioMToonMaterialBackend } from "../mesh-materials/studio-mtoon-runtime-identity";
+import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 
 export type StudioBg3dMaterialBackend = StudioMToonMaterialBackend;
 export interface StudioBg3dMaterialBackendRequest {
-  readonly renderer?: { readonly isWebGLRenderer?: unknown; readonly isWebGPURenderer?: unknown } | null;
+  readonly renderer?: StudioBg3dKtx2Renderer | { readonly isWebGLRenderer?: unknown; readonly isWebGPURenderer?: unknown } | null;
   readonly materialBackend?: StudioBg3dMaterialBackend;
 }
 export function resolveStudioBg3dMaterialBackend(request: StudioBg3dMaterialBackendRequest = {}): StudioBg3dMaterialBackend {
   const declared = request.materialBackend;
   if (declared !== undefined && declared !== "webgl" && declared !== "webgpu") throw new Error("3D 재질의 요청 backend가 올바르지 않습니다.");
   if (request.renderer === null || request.renderer === undefined) return declared ?? "webgl";
-  const webgl = request.renderer.isWebGLRenderer === true, webgpu = request.renderer.isWebGPURenderer === true;
+  const webgl = "isWebGLRenderer" in request.renderer && request.renderer.isWebGLRenderer === true;
+  const webgpu = "isWebGPURenderer" in request.renderer && request.renderer.isWebGPURenderer === true;
   if (webgl === webgpu) throw new Error("3D 재질을 표시할 renderer backend를 명확하게 확인할 수 없습니다.");
   const actual = webgpu ? "webgpu" : "webgl";
   if (declared !== undefined && declared !== actual) throw new Error("3D 재질의 요청 backend와 실제 renderer가 다릅니다.");

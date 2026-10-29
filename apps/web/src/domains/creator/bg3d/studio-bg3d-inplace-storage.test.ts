@@ -54,8 +54,19 @@ vi.mock("./studio-bg3d-modal-operation-coordinator", () => ({
 }));
 const sourceHash = `sha256:${"a".repeat(64)}` as const;
 const outputHash = `sha256:${"b".repeat(64)}` as const;
-function record(id: string, hash: string): Bg3dVerifiedStoredRecord {
+function record(id: string, hash: Bg3dVerifiedStoredRecord["contentHash"]): Bg3dVerifiedStoredRecord {
   return { ...createStudioBg3dCacheTestRecord(id, hash), name: id === "storage-original" ? "source.glb" : "derivative.glb" };
+}
+function rendererFixture(backend: StudioBg3dMaterialBackend): StudioBg3dKtx2Renderer {
+  const renderer = {
+    get domElement(): HTMLCanvasElement {
+      throw new Error("원본 선택 회귀는 renderer identity만 사용하며 GPU canvas를 열지 않습니다.");
+    },
+    isWebGLRenderer: backend === "webgl",
+    isWebGPURenderer: backend === "webgpu",
+    hasFeature: (_name: string) => false,
+  };
+  return renderer;
 }
 function entry(
   rec: Bg3dVerifiedStoredRecord,
@@ -101,7 +112,7 @@ function fixture(backend: StudioBg3dMaterialBackend = "webgl") {
     selectedIds: new Set([model.id]),
     session: { epoch: 1 },
     ready: true,
-    renderer: { [backend === "webgpu" ? "isWebGPURenderer" : "isWebGLRenderer"]: true } as StudioBg3dKtx2Renderer,
+    renderer: rendererFixture(backend),
     materialBackend: backend,
     quality: {
       profile: "desktop",
@@ -372,8 +383,8 @@ it.each(["backend", "renderer", "lease"] as const)("준비 후 %s 변경이면 c
   if (boundary === "backend") {
     const gpuSource = entry(f.original, 1, "webgpu");
     f.context.cache.set(studioBg3dModelCacheKey(f.original.id, "webgpu"), gpuSource);
-    Object.assign(f.context, { materialBackend: "webgpu", renderer: { isWebGPURenderer: true } });
-  } else if (boundary === "renderer") Object.assign(f.context, { renderer: { isWebGLRenderer: true } });
+    Object.assign(f.context, { materialBackend: "webgpu", renderer: rendererFixture("webgpu") });
+  } else if (boundary === "renderer") Object.assign(f.context, { renderer: rendererFixture("webgl") });
   else runtimeCurrent = false;
   await expect(prepared.commit()).rejects.toThrow(); await prepared.rollback();
   expect(f.context.live.current.customModels[0]?.modelId).toBe(f.original.id);
