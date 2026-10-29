@@ -288,14 +288,14 @@ describe("실제 서비스 전체 브러시 카탈로그 및 장시간 소크(Lo
     resetStudioWetWashLivePipelineCacheForTests();
   });
 
-  it("서비스 전체 브러시 카탈로그(코어·프로 377종 + V6 머티리얼 123종 = 총 500종)가 실제 포인터 시작 계획·캔버스·SVG 렌더 파이프라인을 무결하게 통과한다", () => {
+  it("서비스 전체 브러시 카탈로그(코어·프로 377종 + V6 머티리얼 139종 = 총 516종)가 실제 포인터 시작 계획·캔버스·SVG 렌더 파이프라인을 무결하게 통과한다", () => {
     const itemsById = new Map<string, StudioBrushCatalogItem>();
     for (const item of STUDIO_ALL_BRUSH_CATALOG_ITEMS) itemsById.set(item.id, item);
     for (const item of STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS) itemsById.set(item.id, item);
 
     expect(STUDIO_ALL_BRUSH_CATALOG_ITEMS.length).toBeGreaterThanOrEqual(377);
-    expect(STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS.length).toBeGreaterThanOrEqual(357);
-    expect(itemsById.size).toBeGreaterThanOrEqual(500);
+    expect(STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS.length).toBeGreaterThanOrEqual(373);
+    expect(itemsById.size).toBeGreaterThanOrEqual(516);
 
     const samplePoints = [24, 36, 52, 22, 84, 46, 118, 28, 152, 40];
     const samplePressures = [0.35, 0.62, 0.84, 0.58, 0.4];

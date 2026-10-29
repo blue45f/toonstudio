@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sépia / Duotônico",
   "studio.mainMenu.item.filter.noise-add": "Adicionar ruído",
   "studio.mainMenu.item.filter.last-filter": "Reabrir o último filtro",
+  "studio.mainMenu.item.filter.filter-gallery": "Galeria de filtros…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Você não pode alterar o modo de visão de cores enquanto a transição de visualização estiver bloqueada.",
   "studio.mainMenu.item.draw.pen": "caneta",
   "studio.mainMenu.item.draw.eraser": "borracha",

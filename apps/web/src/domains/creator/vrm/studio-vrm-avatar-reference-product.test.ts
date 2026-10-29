@@ -10,6 +10,10 @@ import {
   createAvatarForgeState,
 } from "./studio-vrm-avatar-forge";
 import {
+  readAvatarForgeVrmAuthoring,
+  withAvatarForgeVrmAuthoring,
+} from "./studio-vrm-avatar-forge-authoring";
+import {
   STUDIO_VRM_AVATAR_REFERENCE_CATALOGUE_BYTE_LENGTH,
   STUDIO_VRM_AVATAR_REFERENCE_CATALOGUE_SHA256,
   STUDIO_VRM_AVATAR_REFERENCE_CANONICAL_RENDER_AUTHORITY,
@@ -260,6 +264,23 @@ describe("Avatar reference recommendation product authority", () => {
     expect(next?.bodyPresetId).toBe(current.bodyPresetId);
     expect(next?.proportions).toEqual(current.proportions);
     expect(next?.presetId).toBeUndefined();
+  });
+
+  it("keeps the author's generate-only expressions and hair sway when applying a recommendation", () => {
+    const source = catalogue();
+    const current = withAvatarForgeVrmAuthoring(createAvatarForgeState("wave-diva"), {
+      expressions: { presets: { happy: { mouthCurve: 0.5 } } },
+      hairSway: { global: { stiffness: 2 } },
+    });
+    const next = resolveStudioVrmAvatarReferenceAppearanceState({
+      current,
+      selection: selection(source),
+      catalogue: source,
+    });
+
+    expect(next).not.toBeNull();
+    expect(next?.hair).toEqual(createAvatarForgeState("natural-short").hair);
+    expect(next && readAvatarForgeVrmAuthoring(next)).toEqual(readAvatarForgeVrmAuthoring(current));
   });
 
   it("rejects a stale receipt, forged preset state, or unavailable catalogue", () => {

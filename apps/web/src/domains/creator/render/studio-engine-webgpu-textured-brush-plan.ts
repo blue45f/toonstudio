@@ -22,6 +22,7 @@ import type {
   StudioProfessionalBrushDynamicsPlan,
   StudioProfessionalBrushResolveProgress,
 } from "../studio-professional-brush-dynamics";
+import type { StudioWebGpuPressureToothResponse } from "./studio-webgpu-pressure-tooth-contract";
 
 /**
  * Clean-room textured brush specialist plan.
@@ -206,6 +207,8 @@ export interface StudioEngineWebGpuTexturedBrushPlan {
    * changing the renderer-neutral canonical plan.
    */
   readonly semanticFingerprint?: `sha256:${string}`;
+  /** 선택: 셰이더 필압 LUT·종이 이빨 단계(studio-webgpu-pressure-tooth). 없으면 항등이고 지문도 그대로다. */
+  readonly gpuPressureTooth?: StudioWebGpuPressureToothResponse;
   readonly assets: readonly StudioEngineWebGpuTexturedBrushResolvedAsset[];
   readonly dabs: readonly StudioEngineWebGpuTexturedBrushDab[];
   readonly batches: readonly StudioEngineWebGpuTexturedBrushBatch[];
@@ -353,15 +356,11 @@ function deepFreezePlan<T>(value: T): T {
  * collision-resistant. This is intentionally separate from the renderer-neutral canonical hash.
  */
 export function fingerprintStudioEngineWebGpuTexturedBrushPlanSemantics(
-  plan: Omit<StudioEngineWebGpuTexturedBrushPlan, "semanticFingerprint">
-    | StudioEngineWebGpuTexturedBrushPlan,
+  plan: Omit<StudioEngineWebGpuTexturedBrushPlan, "semanticFingerprint"> | StudioEngineWebGpuTexturedBrushPlan,
 ): `sha256:${string}` | null {
   try {
     const durableSource = plan.durableR8GrainSource === undefined
-      ? null
-      : serializeStudioBrushR8TextureGrainSourceCanonical(
-        plan.durableR8GrainSource,
-      );
+      ? null : serializeStudioBrushR8TextureGrainSourceCanonical(plan.durableR8GrainSource);
     if (plan.durableR8GrainSource !== undefined && durableSource === null) return null;
     const canonical = JSON.stringify({
       kind: plan.kind,
@@ -377,8 +376,9 @@ export function fingerprintStudioEngineWebGpuTexturedBrushPlanSemantics(
       grain: plan.grain,
       durableR8GrainSource: durableSource,
       grainPhaseStrokeSeed: plan.grainPhaseStrokeSeed ?? null,
-      grainSamplingSemantics: plan.grainSamplingSemantics
-        ?? "specialist-texture-v1",
+      grainSamplingSemantics: plan.grainSamplingSemantics ?? "specialist-texture-v1",
+      // 필압·이빨 단계는 픽셀 의미를 바꾸므로 지문에 넣는다. 없으면 키 자체가 없어 기존 지문과 같다.
+      ...(plan.gpuPressureTooth === undefined ? {} : { gpuPressureTooth: plan.gpuPressureTooth }),
       assets: plan.assets.map((asset) => ({
         assetIndex: asset.assetIndex,
         role: asset.role,

@@ -40,7 +40,9 @@ export async function renderStudioNativeBrushDocumentOnClient(
     }
     abort(signal);
     return { sourceElementId: captured.sourceElementId, sourceRevision: captured.sourceRevision,
-      engine: captured.engine, style: captured.config.style, seed: captured.config.seed, bounds: { ...captured.bounds },
+      engine: captured.engine, style: captured.config.style,
+      ...(captured.config.mypaintBrushId !== undefined ? { mypaintBrushId: captured.config.mypaintBrushId } : {}),
+      seed: captured.config.seed, bounds: { ...captured.bounds },
       src: `data:image/png;base64,${btoa(binary)}`, pngHash: hash };
   } finally {
     signal.removeEventListener("abort", onAbort);

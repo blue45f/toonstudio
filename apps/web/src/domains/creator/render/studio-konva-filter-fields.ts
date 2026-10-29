@@ -1,4 +1,5 @@
 import type { InkWash } from "../brush/studio-ink-wash";
+import type { StudioFilterGalleryStack } from "../filter/gallery/studio-filter-gallery-types";
 import type { StudioGlitchFx, StudioVignetteFx } from "../filter/studio-filter-pack";
 import type { StudioFilterUnionWave } from "../filter/studio-filter-union-wave";
 import type { StudioLayerBorderEffectSettings } from "../layer/studio-layer-border-effect";
@@ -141,6 +142,8 @@ export type ImageFilterFields = {
   vignetteFx?: StudioVignetteFx;
   /** Deterministic inverse-warp/noise/stylize union wave. */
   filterUnionWave?: StudioFilterUnionWave;
+  /** 필터 갤러리 — 효과 id·매개변수만 저장하는 비파괴 효과 스택(커널은 지연 로드되는 필터 엔진에만 있다). */
+  filterGallery?: StudioFilterGalleryStack;
   light?: Light;
   sketch?: Sketch;
   detail?: Detail;
@@ -376,6 +379,21 @@ function hasActiveAmountCandidate(value: unknown): boolean {
 function hasActiveSignedAmountCandidate(value: unknown): boolean {
   const source = candidateRecord(value);
   return !!source && candidateFinite(source.amount) && source.amount !== 0;
+}
+
+/**
+ * 필터 갤러리 가벼운 후보 판정 — 켜져 있고 불투명도가 0보다 큰 효과 id 가 하나라도 있으면 true.
+ * id 형식·등록 여부는 필터 엔진이 등록부로 다시 정규화해 판정한다(이 모듈은 type-only import 만 둔다).
+ */
+export function hasActiveStudioFilterGalleryCandidate(value: unknown): boolean {
+  const entries = candidateRecord(value)?.entries;
+  if (!Array.isArray(entries)) return false;
+  return entries.some((entry: unknown) => {
+    const candidate = candidateRecord(entry);
+    if (!candidate || candidate.enabled === false) return false;
+    if (typeof candidate.opacity === "number" && !(candidate.opacity > 0)) return false;
+    return typeof candidate.id === "string" && candidate.id.length > 0;
+  });
 }
 
 function hasActiveIntensityCandidate(value: unknown): boolean {
@@ -618,6 +636,7 @@ export function hasActiveImageFilters(el: ImageFilterFields): boolean {
     hasActiveIntensityCandidate(el.glitchFx) ||
     hasActiveDarknessCandidate(el.vignetteFx) ||
     hasActiveSignedAmountCandidate(el.filterUnionWave) ||
+    hasActiveStudioFilterGalleryCandidate(el.filterGallery) ||
     hasActiveSmartFilterProgram(el) ||
     hasActiveStrengthCandidate(el.colorToAlpha) ||
     isActiveNumber(el.saturation) ||
@@ -726,6 +745,7 @@ export function imageFilterCacheKey(el: ImageFilterFields): string {
     el.glitchFx ?? null,
     el.vignetteFx ?? null,
     el.filterUnionWave ?? null,
+    el.filterGallery ?? null,
     smartFilterProgram,
   ]);
 }

@@ -46,6 +46,7 @@ import {
   type StudioAiPremiumBudgetStore,
 } from "./studio-ai-premium-budget";
 import { resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
+import { studioAiPremiumBudgetFailure } from "./studio-ai-premium-failure";
 import {
   classifyStudioAiProviderFailure,
   resolveStudioAiProviderCandidates,
@@ -243,6 +244,9 @@ function providerFailure(
     payload,
     provider.freePool,
   );
+  if (classification.kind === "premium_budget_exhausted") {
+    return studioAiPremiumBudgetFailure();
+  }
   if (classification.kind === STUDIO_AI_PREMIUM_FAILOVER_REASON) {
     return {
       status: "provider_rate_limited",
@@ -962,7 +966,10 @@ export class StudioAiService {
           if (providerError.definitivelyRejectedBeforeInference) {
             receiptOutcome = "safe_rejection";
           }
-          if (hasFallback && providerError.billingFailoverEligible) {
+          // 운영 경로의 확정 거절은 무료 제공자로만 넘긴다. 예산 부족을 다른 유료 결제로 우회하지 않는다.
+          const nextProviderIsAllowed = provider.id !== STUDIO_AI_PREMIUM_PROVIDER_ID
+            || providers[index + 1]?.freePool === true;
+          if (hasFallback && providerError.billingFailoverEligible && nextProviderIsAllowed) {
             failoverSource = provider;
             failoverReason = providerError.failoverReason;
             continue;
@@ -1003,7 +1010,9 @@ export class StudioAiService {
         }
 
         outcomeStatus = parsed.ledgerStatus ?? "success";
-        receiptOutcome = "succeeded";
+        // 거절·잘림도 이미 과금됐을 수 있어 영수증을 해제하지 않는다. 기존 ambiguous 상태로 재실행을 막고,
+        // Messages 본문과 stop_reason은 그대로 반환해 클라이언트가 완료 여부를 판정하게 한다.
+        receiptOutcome = outcomeStatus === "success" ? "succeeded" : "ambiguous";
         const responseModel = parsed.model
           ?? (typeof payload.model === "string" && payload.model.trim()
             ? payload.model.trim().slice(0, 200)
@@ -1085,11 +1094,10 @@ export class StudioAiService {
         finishedAt,
       });
     } catch {
-      if (!failed && result && receiptOutcome === "succeeded") {
-        // The reservation already holds the conservative maximum token charge. Hiding a paid
-        // success behind 503 would invite a retry and a second provider charge, while returning it
-        // cannot open quota. Keep the over-reservation for later reconciliation and emit only
-        // bounded operational metadata (never prompts, keys, provider bodies, or user ids).
+      if (!failed && result) {
+        // 이미 처리된 응답은 잘림·거절까지 그대로 돌려줘 503이 새 호출을 유도하지 않게 한다.
+        // 최대 토큰 예약과 sent/ambiguous 영수증은 유지되므로 한도나 중복 실행이 열리지 않는다.
+        // 나중에 원장을 정합화할 수 있도록 운영 메타데이터만 남긴다(입력·키·본문·사용자 식별자 제외).
         console.error("[studio-ai] usage finalization failed after paid success", {
           provider: ledgerProvider.id,
           model: ledgerProvider.model,

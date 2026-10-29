@@ -26,6 +26,7 @@
  * 오케스트레이션(이미지 로드 → getImageData → wetMixStroke → PNG 재인코딩)은 호출부(StudioPage 의
  * applyWetMixStroke)가 담당한다 — applyDodgeBurnStroke 와 동일 분리.
  */
+import { mixSrgb8LatentPigmentTableInto } from "../brush-lab/pigment/latent-pigment-table";
 import { dodgeBurnBrushFalloff } from "../studio-dodge-burn";
 import {
   resolveStudioHandFeelMediaLoadV1,
@@ -39,6 +40,8 @@ import {
   studioFluidPaintRgbToRyb,
   studioFluidPaintRybToRgb,
 } from "./studio-fluid-paint-reference";
+
+import type { StudioWetMixModel } from "./studio-wet-mix-model";
 
 // 픽셀 공간(원본 자연 해상도) 좌표 — smudge/dodge-burn 과 같은 개념이라 타입을 공유한다.
 export type WetMixPixelPoint = SmudgePixelPoint;
@@ -66,8 +69,11 @@ export type WetMixSettings = {
   loadDepletion?: number;
   /** 0..1 스트로크 시작 로드. 기본 1(가득). */
   initialLoad?: number;
-  /** `spectral-wgm` 은 유화 경로의 감산 혼색. 기본 `lerp` 는 기존 혼색 브러시. */
-  mixModel?: "lerp" | "spectral-wgm" | "ryb";
+  /**
+   * 섞는 방식. 기본 `lerp` 는 기존 혼색 브러시(RGB 선형 보간), `spectral-wgm` 은 유화 경로의 감산 혼색,
+   * `latent-pigment` 는 자체 잠재 안료 모델의 표 고속 경로(첫 사용 때 표를 굽는다), `ryb` 는 빨노파 색상환 보간.
+   */
+  mixModel?: StudioWetMixModel;
   /** 0..1 진행 방향 수직 강모 결(Bristle Furrow Streak) 변조 강도. 기본 0. */
   bristleStreak?: number;
   /** 0..1 캔버스 종이 요철(Paper Tooth) 선택적 착색 깊이. 기본 0. */
@@ -356,6 +362,9 @@ export function wetMixStroke(
   let load = clamp01(settings.initialLoad ?? 1);
   const spectralMix = settings.mixModel === "spectral-wgm";
   const rybMix = settings.mixModel === "ryb";
+  const latentMix = settings.mixModel === "latent-pigment";
+  // 잠재 안료 혼합 결과(0..255 실수 채널)를 담는 스트로크당 1개 버퍼 — 도장마다 할당하지 않는다.
+  const latentDeposit = latentMix ? new Float64Array(3) : null;
   const bristleStreak = clamp01(settings.bristleStreak ?? 0);
   const paperGrainDepth = clamp01(settings.paperGrainDepth ?? 0);
   const solventDilution = clamp01(settings.solventDilution ?? 0);
@@ -410,16 +419,28 @@ export function wetMixStroke(
         depG = mixed.g;
         depB = mixed.b;
       } else if (rybMix) {
+        // RGB→RYB([1−g, 1−r, 1−b])는 Gossett–Chen 큐브의 역변환이 아니라 왕복하면 색이 바뀐다. 잠재 안료 경로처럼
+        // RGB 선형 혼합에 "RYB 혼합 − 두 끝점 왕복값의 선형 혼합"만큼의 차이를 더해, 혼색율 0·1 과 같은 색끼리 섞기에서는
+        // 원래 색이 그대로 나오게 한다. 끝점에서 바이트가 정확하도록 a·(1−w) + b·w 꼴로 섞는다.
+        const keep = 1 - wetness;
         const paintRyb = studioFluidPaintRgbToRyb(paintR / 255, paintG / 255, paintB / 255);
         const wellRyb = studioFluidPaintRgbToRyb(wellR / 255, wellG / 255, wellB / 255);
         const mixed = studioFluidPaintRybToRgb(
-          paintRyb[0] + (wellRyb[0] - paintRyb[0]) * wetness,
-          paintRyb[1] + (wellRyb[1] - paintRyb[1]) * wetness,
-          paintRyb[2] + (wellRyb[2] - paintRyb[2]) * wetness,
+          paintRyb[0] * keep + wellRyb[0] * wetness,
+          paintRyb[1] * keep + wellRyb[1] * wetness,
+          paintRyb[2] * keep + wellRyb[2] * wetness,
         );
-        depR = mixed[0] * 255;
-        depG = mixed[1] * 255;
-        depB = mixed[2] * 255;
+        const paintBack = studioFluidPaintRybToRgb(paintRyb[0], paintRyb[1], paintRyb[2]);
+        const wellBack = studioFluidPaintRybToRgb(wellRyb[0], wellRyb[1], wellRyb[2]);
+        depR = clampChannel(paintR * keep + wellR * wetness + (mixed[0] - (paintBack[0] * keep + wellBack[0] * wetness)) * 255);
+        depG = clampChannel(paintG * keep + wellG * wetness + (mixed[1] - (paintBack[1] * keep + wellBack[1] * wetness)) * 255);
+        depB = clampChannel(paintB * keep + wellB * wetness + (mixed[2] - (paintBack[2] * keep + wellBack[2] * wetness)) * 255);
+      } else if (latentDeposit !== null) {
+        // 혼색율 = 머금은 색 쪽 비율. 0 이면 현재 색, 1 이면 머금은 색이 그대로 돌아온다(표 경로의 무손실 끝점).
+        mixSrgb8LatentPigmentTableInto(paintR, paintG, paintB, wellR, wellG, wellB, wetness, latentDeposit);
+        depR = latentDeposit[0];
+        depG = latentDeposit[1];
+        depB = latentDeposit[2];
       } else {
         depR = paintR + (wellR - paintR) * wetness;
         depG = paintG + (wellG - paintG) * wetness;

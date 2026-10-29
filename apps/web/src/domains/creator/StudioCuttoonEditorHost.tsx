@@ -21332,6 +21332,7 @@ const puppetWarpArmed =
     try {
       const {
         encodeStudioRetouchCanvasPng,
+        getStudioWetMixModelPreference,
         loadStudioRetouchSourceImage,
         planStudioRasterRetouchRegion,
         runStudioWetMixRetouch,
@@ -21366,6 +21367,7 @@ const puppetWarpArmed =
           pickup: wetMixPickup / 100,
           paintColor: hexToRgb(color),
           loadDepletion: 0.06,
+          mixModel: getStudioWetMixModelPreference(), // 패널의 "섞는 방식"(기본 lerp)
         },
         { signal: controller.signal },
       );

@@ -113,7 +113,17 @@ export interface LibMypaintIncrementalStrokeOptions {
   seed?: number;
   /** Number of 16 ms idle samples used to resolve slow-tracking tails. */
   finishTailSteps?: number;
+  /**
+   * 첫 샘플을 칠하기 전에 그 위치로 필압 0 이벤트를 한 번 보낸다. dtime 이 libmypaint `max_dtime`(5초)보다
+   * 커서 엔진이 추적 커서를 정확히 그 위치에서 리셋한다. MyPaint 앱은 호버 이벤트로 같은 상태를 얻는다.
+   * 이것이 없으면 새 브러시는 표면 원점에서 추적을 시작해 `slow_tracking` 브러시의 획이 (0, 0) 근처에서 시작한다.
+   * 기본값은 꺼짐이다. 패리티 랩은 HokusaiCanvas 와 맞춘 입력을 바이트 단위로 유지한다.
+   */
+  primeAtFirstSample?: boolean;
 }
+
+/** 프라이밍 dtime(초). libmypaint `max_dtime`(5초)보다 커야 stroke_to 가 리셋 분기를 탄다. */
+export const LIBMYPAINT_PRIME_DTIME_SECONDS = 6;
 
 export interface LibMypaintIncrementalAppendResult {
   /** Number of source samples accepted by this append. */
@@ -267,6 +277,12 @@ export function createLibMypaintIncrementalStrokeSession(
     }
     let paintedSamples = 0;
     try {
+      const first = samples[0];
+      if (options.primeAtFirstSample && previousTMs === undefined && first) {
+        // 필압 0 은 칠하지 않고, 리셋 분기가 추적 커서를 첫 샘플 위치에 둔다.
+        lmp.strokeTo(brush, surface, first.x, first.y, 0, clampSignedUnit(first.tiltX), clampSignedUnit(first.tiltY),
+          LIBMYPAINT_PRIME_DTIME_SECONDS);
+      }
       for (const sample of samples) {
         const dtime = previousTMs === undefined ? 0.0001 : (sample.tMs - previousTMs) / 1000;
         const accepted = {

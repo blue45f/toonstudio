@@ -67,6 +67,9 @@
 >>>>>>> integrate_blender_toon_studio
 - **에이블러 (Ablur)** — 국산. 웹툰 배경으로 흔히 쓰이는 3D 스케치업(SketchUp) 파일을 가볍게 불러와
   선을 따고 연출하도록 돕는다.
+- **VRoid Studio (pixiv)** — VRM 캐릭터 제작의 기준 도구(얼굴·헤어·체형·의상, 표정 편집, 헤어 흔들림, VRM 내보내기의
+  아바타 정보·이용 조건). 2026-10-29 분석은 공개 가이드의 작업 흐름과 CC0 출력 VRM 구조만 대상으로 했고 실행 파일은 열지 않았다
+  (설계서: [`docs/design/vrm-studio-parity-analysis-20261029.md`](design/vrm-studio-parity-analysis-20261029.md)).
 
 ### AI 기반 웹툰 생성(국내)
 - **투닝 (Tooning)** — 툰스퀘어 개발. 문장/프롬프트 입력 → AI가 상황에 맞는 만화·캐릭터 생성. 에디터/
@@ -85,6 +88,13 @@
 
 모든 배치는 `src/domains/creator/studio-*.ts`(순수 로직) + `Studio*Panel.tsx`(프레젠테이션) 조합으로
 구현되고, `StudioPage.tsx`에 통합됐다. 세션 내 배치 순서:
+
+### 2026-10-29 VRM 스튜디오(VRoid Studio) 작업 흐름 대응 — 생성 VRM 표정·흔들림·이용 조건
+
+REA MCP 가 연결되지 않은 세션이라 공개 가이드와 CC0 출력 VRM 7종의 구조 분석으로 대신했다. 아바타 조형의 "새 VRM 캐릭터"에
+표정 편집(기본 표정 10종 조정 + 커스텀 표정 최대 12개), 헤어 흔들림 배율(프리셋 5종 + 묶음별), 아바타 정보·이용 조건·썸네일을
+더했다. 편집하지 않으면 생성 VRM 바이트가 이전과 같다(설계서: [`docs/design/vrm-studio-parity-analysis-20261029.md`](design/vrm-studio-parity-analysis-20261029.md),
+증거: [`docs/evidence/vrm-studio-parity-20261029.json`](evidence/vrm-studio-parity-20261029.json)).
 
 ### 2026-10-26 Adobe Photoshop (`Photoshop on the Web` v2026.21.0.0 & 바이너리 포맷 엔진) REA 역공학 전 기능 내재화
 

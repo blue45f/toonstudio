@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "सीपिया/डुओटोन",
   "studio.mainMenu.item.filter.noise-add": "शोर जोड़ें",
   "studio.mainMenu.item.filter.last-filter": "अंतिम फ़िल्टर पुनः खोलें",
+  "studio.mainMenu.item.filter.filter-gallery": "फ़िल्टर गैलरी…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "जब दृश्य संक्रमण लॉक हो तो आप रंग दृष्टि मोड नहीं बदल सकते।",
   "studio.mainMenu.item.draw.pen": "कलम",
   "studio.mainMenu.item.draw.eraser": "मिटाने वाला",

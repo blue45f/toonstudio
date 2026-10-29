@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sépia / Duotone",
   "studio.mainMenu.item.filter.noise-add": "Ajouter du bruit",
   "studio.mainMenu.item.filter.last-filter": "Rouvrir le dernier filtre",
+  "studio.mainMenu.item.filter.filter-gallery": "Galerie de filtres…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Vous ne pouvez pas modifier le mode de vision des couleurs lorsque la transition de vue est verrouillée.",
   "studio.mainMenu.item.draw.pen": "stylo",
   "studio.mainMenu.item.draw.eraser": "gomme",

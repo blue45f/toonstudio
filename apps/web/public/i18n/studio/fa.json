@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "سپیا / دوتون",
   "studio.mainMenu.item.filter.noise-add": "نویز اضافه کنید",
   "studio.mainMenu.item.filter.last-filter": "آخرین فیلتر را دوباره باز کنید",
+  "studio.mainMenu.item.filter.filter-gallery": "گالری فیلترها…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "شما نمی توانید حالت دید رنگ را در حالی که انتقال نمای قفل است تغییر دهید.",
   "studio.mainMenu.item.draw.pen": "قلم",
   "studio.mainMenu.item.draw.eraser": "پاک کن",

@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "棕褐色/雙色調",
   "studio.mainMenu.item.filter.noise-add": "添加噪音",
   "studio.mainMenu.item.filter.last-filter": "重新打開最後一個過濾器",
+  "studio.mainMenu.item.filter.filter-gallery": "濾鏡收藏館…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "當視圖轉換被鎖定時，您無法變更色覺模式。",
   "studio.mainMenu.item.draw.pen": "筆",
   "studio.mainMenu.item.draw.eraser": "橡皮擦",

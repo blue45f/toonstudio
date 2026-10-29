@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sépie / Duotone",
   "studio.mainMenu.item.filter.noise-add": "Přidejte hluk",
   "studio.mainMenu.item.filter.last-filter": "Znovu otevřete poslední filtr",
+  "studio.mainMenu.item.filter.filter-gallery": "Galerie filtrů…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Režim barevného vidění nelze změnit, pokud je přechod zobrazení uzamčen.",
   "studio.mainMenu.item.draw.pen": "pero",
   "studio.mainMenu.item.draw.eraser": "guma",

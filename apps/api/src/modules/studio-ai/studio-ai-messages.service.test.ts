@@ -68,6 +68,7 @@ function createService(premiumBudget: StudioAiPremiumBudgetStore | null = new In
     service: new StudioAiService(store, admissionGate, null, null, null, premiumBudget),
     reserve,
     finalize,
+    admissionGate,
   };
 }
 
@@ -161,6 +162,50 @@ describe("키 없는 사용자의 서버 AI: 운영 고성능 경로 → 성능 
       },
     });
     expect(finalize).toHaveBeenCalledWith(expect.objectContaining({ provider: "gemini", attemptCount: 2 }));
+  });
+
+  it.each([
+    [429, { error: { type: "rate_limit_error", details: { error_code: "enforced_spend_limit_reached" }, message: "private-budget-detail" } }],
+    [400, { error: { type: "invalid_request_error", message: "You have reached your specified API usage limits. private-budget-detail" } }],
+    [400, { error: { type: "invalid_request_error", message: "You have reached your specified workspace API usage limits. private-budget-detail" } }],
+    [400, { error: { type: "invalid_request_error", message: "Your credit balance is too low to access the Anthropic API. private-budget-detail" } }],
+  ])("운영 예산 부족 HTTP %s 뒤에는 같은 호출을 재시도하지 않고 무료 풀로만 전환한다", async (status, payload) => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(payload, status))
+      .mockResolvedValueOnce(jsonResponse(freeCompletion("무료 대사")));
+    vi.stubGlobal("fetch", fetchMock);
+    const { service, finalize } = createService();
+
+    const result = await service.complete("user-1", dialogueInput, IDEMPOTENCY_KEY);
+
+    expect(result).toMatchObject({ provider: "gemini", failover: { reason: "premium_unavailable" } });
+    expect(fetchCalls(fetchMock).map(({ url }) => url)).toEqual([
+      "https://api.anthropic.com/v1/messages",
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    ]);
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({ provider: "gemini", attemptCount: 2, status: "success" }));
+    expect(JSON.stringify(result)).not.toContain("private-budget-detail");
+  });
+
+  it("무료 풀이 없으면 운영 예산 소진을 429 코드로 알리고 다른 유료 키로 넘어가지 않는다", async () => {
+    process.env.STUDIO_AI_FREE_POOL_ENABLED = "false";
+    process.env.DEEPSEEK_API_KEY = "legacy-paid-test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      error: { type: "rate_limit_error", details: { error_code: "enforced_spend_limit_reached" }, message: "private-budget-detail" },
+    }, 429));
+    vi.stubGlobal("fetch", fetchMock);
+    const { service, finalize, admissionGate } = createService();
+
+    const error = await service.complete("user-1", dialogueInput, IDEMPOTENCY_KEY).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(HttpException);
+    expect((error as HttpException).getStatus()).toBe(429);
+    expect((error as HttpException).getResponse()).toMatchObject({ code: "PREMIUM_AI_BUDGET_EXHAUSTED" });
+    expect(JSON.stringify((error as HttpException).getResponse())).not.toContain("private-budget-detail");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchCalls(fetchMock)[0]?.url).toBe("https://api.anthropic.com/v1/messages");
+    expect(admissionGate.abandonSafeRejection).toHaveBeenCalledOnce();
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({ provider: "anthropic", status: "provider_rate_limited", usage: {} }));
   });
 
   it("오늘 고성능 예산이 바닥났으면 운영 키를 부르지 않고 무료 풀로 바로 간다", async () => {
@@ -386,14 +431,118 @@ describe("보조 기능 서버 경로(/studio-ai/messages)", () => {
     }));
   });
 
+  it.each(["max_tokens", "pause_turn", "model_context_window_exceeded"])("%s 종료는 메시지·사용량을 유지하되 성공으로 기록하거나 재전송하지 않는다", async (stopReason) => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(premiumMessage("불완전한 응답", {
+      stop_reason: stopReason,
+      usage: {
+        input_tokens: 40,
+        output_tokens: 12,
+        cache_read_input_tokens: 10,
+        cache_creation_input_tokens: 5,
+        iterations: [
+          { input_tokens: 40, output_tokens: 30, cache_read_input_tokens: 20, cache_creation_input_tokens: 8 },
+          { input_tokens: 40, output_tokens: 12, cache_read_input_tokens: 10, cache_creation_input_tokens: 5 },
+        ],
+      },
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    const { service, finalize, admissionGate } = createService();
+
+    const result = await service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY);
+
+    expect(result.message).toMatchObject({
+      stop_reason: stopReason,
+      content: [{ type: "text", text: "불완전한 응답" }],
+      usage: { input_tokens: 40, output_tokens: 12, cache_read_input_tokens: 10, cache_creation_input_tokens: 5 },
+    });
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "anthropic",
+      status: "provider_error",
+      usage: { promptTokens: 123, completionTokens: 42, totalTokens: 165 },
+    }));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(admissionGate.markSucceeded).not.toHaveBeenCalled();
+    expect(admissionGate.markAmbiguous).toHaveBeenCalledOnce();
+    expect(admissionGate.abandonSafeRejection).not.toHaveBeenCalled();
+  });
+
+  it("불완전 응답 뒤 원장 마감이 실패해도 사용량·종료 사유와 재실행 방지 영수증을 보존한다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(premiumMessage("private-partial-response", {
+      stop_reason: "max_tokens",
+      usage: { input_tokens: 40, output_tokens: 12, cache_read_input_tokens: 10, cache_creation_input_tokens: 5 },
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { service, reserve, finalize, admissionGate } = createService();
+    finalize.mockRejectedValueOnce(new Error("private-ledger-detail"));
+
+    const result = await service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY);
+
+    expect(result).toMatchObject({
+      provider: "anthropic",
+      message: {
+        stop_reason: "max_tokens",
+        content: [{ type: "text", text: "private-partial-response" }],
+        usage: { input_tokens: 40, output_tokens: 12, cache_read_input_tokens: 10, cache_creation_input_tokens: 5 },
+      },
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(reserve).toHaveBeenCalledOnce();
+    expect(finalize).toHaveBeenCalledOnce();
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "anthropic",
+      status: "provider_error",
+      usage: { promptTokens: 55, completionTokens: 12, totalTokens: 67 },
+    }));
+    expect(admissionGate.markSent).toHaveBeenCalledOnce();
+    expect(admissionGate.markAmbiguous).toHaveBeenCalledOnce();
+    expect(admissionGate.markSucceeded).not.toHaveBeenCalled();
+    expect(admissionGate.abandonBeforeSend).not.toHaveBeenCalled();
+    expect(admissionGate.abandonSafeRejection).not.toHaveBeenCalled();
+    expect(admissionGate.release).toHaveBeenCalledOnce();
+    expect(consoleError).toHaveBeenCalledOnce();
+    const log = JSON.stringify(consoleError.mock.calls);
+    expect(log).not.toContain("private-ledger-detail");
+    expect(log).not.toContain("private-partial-response");
+    expect(log).not.toContain("user-1");
+  });
+
+  it("무료 풀에서 출력이 잘려도 완료 응답으로 기록하지 않고 사용량과 종료 사유를 유지한다", async () => {
+    delete process.env.STUDIO_AI_ANTHROPIC_API_KEY;
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      ...freeCompletion("잘린 응답"),
+      choices: [{ finish_reason: "length", message: { content: "잘린 응답" } }],
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { service, finalize, admissionGate } = createService();
+
+    const result = await service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY);
+
+    expect(result.message.stop_reason).toBe("max_tokens");
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "gemini",
+      status: "provider_error",
+      usage: { promptTokens: 30, completionTokens: 10, totalTokens: 40 },
+    }));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(admissionGate.markSucceeded).not.toHaveBeenCalled();
+    expect(admissionGate.markAmbiguous).toHaveBeenCalledOnce();
+  });
+
   it("거절 응답은 Messages 형태 그대로 돌려줘 브라우저가 사유를 보여 주게 하고 원장에는 거절로 남긴다", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(premiumMessage("", { stop_reason: "refusal" })));
     vi.stubGlobal("fetch", fetchMock);
-    const { service, finalize } = createService();
+    const { service, finalize, admissionGate } = createService();
 
     const result = await service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY);
     expect(result.message.stop_reason).toBe("refusal");
-    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({ status: "content_filtered" }));
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({
+      status: "content_filtered",
+      usage: { promptTokens: 40, completionTokens: 12, totalTokens: 52 },
+    }));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(admissionGate.markSucceeded).not.toHaveBeenCalled();
+    expect(admissionGate.markAmbiguous).toHaveBeenCalledOnce();
   });
 });
 

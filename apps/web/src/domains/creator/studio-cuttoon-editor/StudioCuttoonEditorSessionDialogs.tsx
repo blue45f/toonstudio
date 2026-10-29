@@ -7,7 +7,8 @@
 import { Suspense } from "react";
 import { isEffectivelyLocked } from "../studio-layers";
 import { createStudioPixelEditCanvas, encodeStudioPixelEditResultPng, loadStudioPixelEditImage } from "../studio-legacy-editor-runtime-helpers";
-import { StudioFilterDialog, StudioLayerLiftDialog } from "../studio-page-lazy-ui";
+import { StudioFilterDialog as StudioSingleFilterDialog, StudioLayerLiftDialog } from "../studio-page-lazy-ui";
+import { StudioFilterGalleryDialog } from "../filter/gallery/studio-filter-gallery-lazy";
 import type { El, ImageEl } from "../studio-element-model";
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
@@ -55,6 +56,8 @@ export function StudioCuttoonEditorSessionDialogs(s: StudioCuttoonEditorViewSess
     studioLayerLiftUiRef,
     studioRootRef,
   } = s;
+  // 필터 갤러리는 단일 필터와 같은 세션 계약을 받는 별도 대화상자다(효과 스택 편집).
+  const StudioFilterDialog = studioFilterSession?.kind === "filter-gallery" ? StudioFilterGalleryDialog : StudioSingleFilterDialog;
   return (
     <>
       {studioFilterSession && studioFilterDialogImage?.type === "image" ? (

@@ -10,6 +10,7 @@ export { magicWandScanFromImage, sampleImageLuminanceField } from "./studio-magi
 export { quickSelectionScanFromImage } from "./studio-quick-selection-browser";
 export {
   encodeStudioRetouchCanvasPng,
+  getStudioWetMixModelPreference,
   loadStudioRetouchSourceImage,
   runStudioDodgeBurnRetouch,
   runStudioWetMixRetouch,

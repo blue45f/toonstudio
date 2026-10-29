@@ -1,3 +1,5 @@
+import { isStudioMypaintCc0BrushId } from "./mypaint-library/studio-mypaint-cc0-library-program";
+
 /** Shared bounded Worker transport. Trial frames never mutate a document; settled PNGs require an explicit document commit. */
 export const NATIVE_BRUSH_PROBE_VERSION = 1 as const;
 export const NATIVE_BRUSH_PROBE_WIDTH = 512;
@@ -17,8 +19,9 @@ export function validateNativeBrushSurface(surface: NativeBrushSurface): void {
   }
 }
 export type NativeBrushProbeEngine = "libmypaint" | "canvaskit" | "vello";
-export type NativeBrushProbeStyle = "ink" | "wash" | "chalk";
-export interface NativeBrushProbeConfig { size: number; color: string; style: NativeBrushProbeStyle; seed: number }
+/** ink·wash·chalk 는 자체 3종 설정, mypaint-library 는 CC0 MyPaint 라이브러리 브러시(`mypaintBrushId` 필수)다. */
+export type NativeBrushProbeStyle = "ink" | "wash" | "chalk" | "mypaint-library";
+export interface NativeBrushProbeConfig { size: number; color: string; style: NativeBrushProbeStyle; seed: number; mypaintBrushId?: string }
 export interface NativeBrushProbeSample { x: number; y: number; pressure: number; tiltX: number; tiltY: number; tMs: number }
 export type NativeBrushProbeOperation =
   | { type: "init"; engine: NativeBrushProbeEngine; surface?: NativeBrushSurface }
@@ -52,8 +55,12 @@ export function nativeBrushProbeEngine(value: unknown): value is NativeBrushProb
 export function validateNativeBrushProbeConfig(config: NativeBrushProbeConfig): void {
   if (!config || !Number.isFinite(config.size) || config.size < 1 || config.size > 128
     || typeof config.color !== "string" || !/^#[0-9a-f]{6}$/iu.test(config.color)
-    || !["ink", "wash", "chalk"].includes(config.style)
+    || !["ink", "wash", "chalk", "mypaint-library"].includes(config.style)
     || !Number.isSafeInteger(config.seed) || config.seed < 0 || config.seed > 0xffff_ffff
+    // 라이브러리 브러시일 때만 id 를 받는다. 자체 3종 설정에 id 가 섞이면 어느 쪽인지 모호하므로 거부한다.
+    || (config.style === "mypaint-library"
+      ? !isStudioMypaintCc0BrushId(config.mypaintBrushId)
+      : config.mypaintBrushId !== undefined)
   ) throw new TypeError("Invalid native brush test configuration");
 }
 export function validateNativeBrushProbeSamples(samples: readonly NativeBrushProbeSample[], previousTime: number, count: number, surface: NativeBrushSurface = NATIVE_BRUSH_PROBE_SURFACE): void {

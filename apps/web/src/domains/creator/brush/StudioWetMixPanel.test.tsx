@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioWetMixPanel, type StudioWetMixPanelProps } from "../StudioWetMixPanel";
 
+import { getStudioWetMixModelPreference, resetStudioWetMixModelPreference } from "./studio-wet-mix-model";
+
 function baseProps(overrides: Partial<StudioWetMixPanelProps> = {}): StudioWetMixPanelProps {
   return {
     active: false,
@@ -24,7 +26,10 @@ function baseProps(overrides: Partial<StudioWetMixPanelProps> = {}): StudioWetMi
   };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetStudioWetMixModelPreference();
+});
 
 describe("StudioWetMixPanel", () => {
   it("fires the armed toggle and reflects the pressed state", () => {
@@ -115,6 +120,46 @@ describe("StudioWetMixPanel", () => {
     expect(props.onToggleActive).not.toHaveBeenCalled();
     expect(props.onRadiusChange).not.toHaveBeenCalled();
     expect(screen.getByRole("status").textContent).toContain("편집용 이미지 복사본");
+  });
+
+  it("shows the four mixing models with Korean labels and keeps the default lerp pressed", () => {
+    render(<StudioWetMixPanel {...baseProps()} />);
+    const group = screen.getByRole("group", { name: "섞는 방식" });
+    const chips = Array.from(group.querySelectorAll("button"));
+    expect(chips.map((chip) => chip.textContent)).toEqual(["RGB 평균", "분광 물감", "잠재 안료", "빨노파 색상환"]);
+    expect(screen.getByRole("button", { name: "섞는 방식: RGB 평균" }).getAttribute("aria-pressed")).toBe("true");
+    expect(chips.filter((chip) => chip.getAttribute("aria-pressed") === "true")).toHaveLength(1);
+    expect(screen.getByTestId("wet-mix-model-description").textContent).toContain("RGB 값을 그대로 평균");
+    // Existing slider contract is unchanged by the model chips.
+    expect(screen.getAllByRole("slider")).toHaveLength(5);
+  });
+
+  it("selecting a model updates the shared preference read by the stroke host", () => {
+    const onMixModelChange = vi.fn();
+    render(<StudioWetMixPanel {...baseProps({ onMixModelChange })} />);
+    fireEvent.click(screen.getByRole("button", { name: "섞는 방식: 잠재 안료" }));
+    expect(getStudioWetMixModelPreference()).toBe("latent-pigment");
+    expect(onMixModelChange).toHaveBeenCalledWith("latent-pigment");
+    expect(screen.getByRole("button", { name: "섞는 방식: 잠재 안료" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "섞는 방식: RGB 평균" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("wet-mix-model-description").textContent).toContain("파랑과 노랑이 초록");
+  });
+
+  it("supports a controlled model and locks the model chips with the rest of the panel", () => {
+    const onMixModelChange = vi.fn();
+    const { rerender } = render(
+      <StudioWetMixPanel {...baseProps({ mixModel: "spectral-wgm", onMixModelChange })} />,
+    );
+    expect(screen.getByRole("button", { name: "섞는 방식: 분광 물감" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "섞는 방식: 빨노파 색상환" }));
+    expect(onMixModelChange).toHaveBeenCalledWith("ryb");
+    expect(getStudioWetMixModelPreference()).toBe("lerp");
+
+    rerender(<StudioWetMixPanel {...baseProps({ mixModel: "spectral-wgm", onMixModelChange, busy: true })} />);
+    const chip = screen.getByRole("button", { name: "섞는 방식: 잠재 안료" }) as HTMLButtonElement;
+    expect(chip.disabled).toBe(true);
+    fireEvent.click(chip);
+    expect(onMixModelChange).toHaveBeenCalledTimes(1);
   });
 
   it("locks controls while busy without losing the current values", () => {

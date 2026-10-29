@@ -42,6 +42,7 @@ export const PERF_BUDGET_TEST_FILES = Object.freeze([
   "apps/web/src/domains/creator/brush/studio-perf-calibration.test.ts",
   "apps/web/src/domains/creator/brush/studio-wet-edge-bloom-v1.test.ts",
   "apps/web/src/domains/creator/brush/studio-wet-ribbon-carrier.test.ts",
+  "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-runtime-budget.test.ts",
   "apps/web/src/domains/creator/live/studio-live-dynamic-brush-overlay.test.ts",
   "apps/web/src/domains/creator/studio-impasto-relief-shading-v1.cpu-band.test.ts",
   "apps/web/src/domains/creator/studio-impasto-relief-shading-v1.perf.test.ts",

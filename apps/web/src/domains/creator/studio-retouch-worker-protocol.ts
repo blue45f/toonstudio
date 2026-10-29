@@ -1,3 +1,5 @@
+import { isStudioWetMixModel } from "./brush/studio-wet-mix-model";
+
 import type {
   WetMixPixelPoint,
   WetMixSettings,
@@ -136,11 +138,8 @@ function assertWetMixSettings(value: unknown): asserts value is WetMixSettings {
   if (value.initialLoad !== undefined) {
     assertUnitInterval(value.initialLoad, "혼색 초기 로드");
   }
-  if (
-    value.mixModel !== undefined
-    && value.mixModel !== "lerp"
-    && value.mixModel !== "spectral-wgm"
-  ) {
+  // 패널이 고르는 네 방식(lerp·spectral-wgm·latent-pigment·ryb)만 받는다. 생략은 기본 lerp 다.
+  if (value.mixModel !== undefined && !isStudioWetMixModel(value.mixModel)) {
     throw new TypeError("혼색 모델이 올바르지 않습니다.");
   }
   if (!isRecord(value.paintColor)) throw new TypeError("혼색 안료 색상이 올바르지 않습니다.");

@@ -1,0 +1,253 @@
+{
+  "schema": "toonstudio.parity-evidence.v1",
+  "title": "VRM 스튜디오(VRoid Studio) 기능 대응 분석 증거",
+  "createdAt": "2026-10-29",
+  "baseCommit": "112b5f0750fecd9914faead0dd89f9f814073f54",
+  "method": {
+    "reaMcp": "unavailable",
+    "reaMcpNote": "이 클라우드 세션에는 REA(reverse-engineer-anything) MCP 서버가 연결되어 있지 않았고 Ghidra 도 설치되어 있지 않았다. REA 증거 ID(ev_…)는 만들지 않았다.",
+    "productBinary": "not-analyzed",
+    "productBinaryNote": "docs/engines/labs-character-engine-references-2026-10-01.md 5절 10항(독점 제품은 공개 가이드의 워크플로만 재현, 역공학 금지)에 따라 VRoid Studio 실행 파일은 내려받거나 열지 않았다.",
+    "substitutes": [
+      "공개 가이드·공지 검색 요약(도움말 본문은 HTTP 403 으로 직접 열람 실패)",
+      "CC0 VRoid Studio 0.8.1 출력 VRM 7종의 GLB JSON 청크 구조 요약(바이너리 청크는 해석하지 않음, Node.js 스크립트)",
+      "저장소 생성 경로 소스·테스트와 설치된 @pixiv/three-vrm 3.5.5(MIT) 로더 계약"
+    ],
+    "runtime": {
+      "node": "v22.22.0",
+      "threeVrm": "3.5.5"
+    }
+  },
+  "publicGuides": [
+    {
+      "topic": "표정 편집",
+      "fact": "v0.12.0(2020-12-17)에 얼굴 편집의 표정 탭으로 추가",
+      "url": "https://vroid.pixiv.help/hc/en-us/articles/900004840003--v0-12-0-Added-the-Expression-Editor-feature-improved-the-Darkness-Shibu-model-and-more-December-17th-2020"
+    },
+    {
+      "topic": "헤어 흔들림",
+      "fact": "본 수 1~16, 고정점 0.01~0.99, 단단함 0~1, 중력 0~1, 충돌 반경",
+      "url": "https://vroid.pixiv.help/hc/en-us/articles/900006910023-I-want-to-edit-hair-bounce"
+    },
+    {
+      "topic": "VRM 내보내기",
+      "fact": "VRM 1.0 은 아바타 이름·제작자 필수, 폴리곤·머티리얼·본 감축 단계",
+      "url": "https://vroid.pixiv.help/hc/en-us/articles/15760756822297-I-want-to-learn-more-about-the-VRM-export-feature"
+    },
+    {
+      "topic": "VRM 버전 선택",
+      "fact": "v1.20.0(2023-03-02)부터 VRM 0.0/1.0 선택, VRM 0.0 의 Other 라이선스에 추가 라이선스 URL",
+      "url": "https://vroid.com/en/studio/notice/lqLbniPQLCEfU4ZVxadnN"
+    },
+    {
+      "topic": "이용 조건 화면",
+      "fact": "VRM 파일마다 아바타 정보와 허가 범위를 설정, 추가 라이선스 정보 URL",
+      "url": "https://vroid.pixiv.help/hc/en-us/articles/360012475013-About-Avatar-information-permission-settings-regarding-the-Avatar-s-characterization-redistribution-alterations-usage-conditions-settings-screen"
+    }
+  ],
+  "outputFiles": [
+    {
+      "file": "apps/web/public/vrm/Darkness_Shibu.vrm",
+      "bytes": 20423112,
+      "sha256": "dd2904a46c019e614e17561145a389587e32e475b199246e8bb62bffc81de93b"
+    },
+    {
+      "file": "apps/web/public/vrm/Sakurada_Fumiriya.vrm",
+      "bytes": 19342280,
+      "sha256": "55c936af29b1b533276a89fe327783eb377be637512302f2375e4c3442ac3418"
+    },
+    {
+      "file": "apps/web/public/vrm/Sendagaya_Shibu.vrm",
+      "bytes": 17049284,
+      "sha256": "d5f5b72236b5e3225d452c2bdb6d3b63f09263fb377400f18fa451b2091fe82d"
+    },
+    {
+      "file": "apps/web/public/vrm/Sendagaya_Shino.vrm",
+      "bytes": 15074328,
+      "sha256": "ef8f05c5e0c718a07ad6f455b3f302cd4d76c4e526aec68ae362a3c3569d1832"
+    },
+    {
+      "file": "apps/web/public/vrm/Victoria_Rubin.vrm",
+      "bytes": 15479480,
+      "sha256": "a6cdd81f10fa710303903851b7cf94aea6694fc0f2d63bc695e9df9673b22fed"
+    },
+    {
+      "file": "apps/web/public/vrm/Vita.vrm",
+      "bytes": 14359044,
+      "sha256": "77d4494fac38d1e8177746a28b8c5951b92742341c689de0844de96b3e56748d"
+    },
+    {
+      "file": "apps/web/public/vrm/Vivi.vrm",
+      "bytes": 18089136,
+      "sha256": "17b5c9dc2a5c8f0ce68e2e6f220688c4b2a6842a45b9a9917875e5923cc9cb56"
+    }
+  ],
+  "outputFileLicense": "임베드 메타 licenseName CC0, 재배포 판정은 apps/web/public/vrm/LICENSES.md(2026-10-14 원문 대조)",
+  "observed": {
+    "generator": "asset.generator UniGLTF-1.24, VRM.exporterVersion VRoidStudio-0.8.1 (7종 공통)",
+    "faceMorphs": {
+      "file": "Sendagaya_Shino.vrm",
+      "total": 41,
+      "families": {
+        "Fcl_ALL": 5,
+        "Fcl_BRW": 5,
+        "Fcl_EYE": 11,
+        "Fcl_MTH": 13,
+        "Fcl_HA": 6,
+        "EyeExtra": 1
+      }
+    },
+    "blendShapeGroups": {
+      "count": 15,
+      "binds": {
+        "neutral": [],
+        "a": [
+          "Fcl_MTH_A=100"
+        ],
+        "i": [
+          "Fcl_MTH_I=100"
+        ],
+        "u": [
+          "Fcl_MTH_U=100"
+        ],
+        "e": [
+          "Fcl_MTH_E=100"
+        ],
+        "o": [
+          "Fcl_MTH_O=100"
+        ],
+        "blink": [
+          "Fcl_EYE_Close=100"
+        ],
+        "blink_l": [
+          "Fcl_EYE_Close_L=100"
+        ],
+        "blink_r": [
+          "Fcl_EYE_Close_R=100"
+        ],
+        "angry": [
+          "Fcl_ALL_Angry=100"
+        ],
+        "fun": [
+          "Fcl_ALL_Fun=100"
+        ],
+        "joy": [
+          "Fcl_ALL_Joy=100"
+        ],
+        "sorrow": [
+          "Fcl_ALL_Sorrow=100"
+        ],
+        "Surprised(unknown)": [
+          "Fcl_ALL_Surprised=100"
+        ],
+        "Extra(unknown)": [
+          "Fcl_EYE_Extra=100",
+          "EyeExtra_On=100"
+        ]
+      }
+    },
+    "springGroups": {
+      "hairPerGroup": {
+        "Sendagaya_Shino.vrm": 15
+      },
+      "hairRanges": {
+        "stiffness": [
+          0.4,
+          0.911
+        ],
+        "gravityPower": [
+          0,
+          0.085
+        ],
+        "dragForce": [
+          0.4,
+          0.4
+        ],
+        "hitRadius": [
+          0.0064,
+          0.0496
+        ]
+      },
+      "body": {
+        "Bust": "0.75/0/0.05/0.02, 콜라이더 없음",
+        "Skirt": "0.5/0/0.05/0.02, 허벅지 콜라이더",
+        "Sleeve": "0.5/0/0.05/0.02"
+      },
+      "colliderGroups": {
+        "count": 12,
+        "members": [
+          "Spine",
+          "UpperChest×3",
+          "Neck",
+          "Head",
+          "UpperArm×3(L/R)",
+          "LowerArm×4(L/R)",
+          "Hand(L/R)",
+          "UpperLeg×3(L/R)"
+        ]
+      }
+    },
+    "meta": {
+      "fields": [
+        "title",
+        "version",
+        "author",
+        "contactInformation",
+        "reference",
+        "texture",
+        "allowedUserName",
+        "violentUssageName",
+        "sexualUssageName",
+        "commercialUssageName",
+        "otherPermissionUrl",
+        "licenseName",
+        "otherLicenseUrl"
+      ],
+      "thumbnailEmbedded": "7/7"
+    },
+    "toonStudioBefore": {
+      "meta": "authors=[ToonStudio Studio VRM Generate], onlyAuthor·personalNonProfit·required·allowModification 고정",
+      "thumbnail": "없음",
+      "expressions": "프리셋 18종, custom 없음",
+      "hairSpring": "체인 길이 자동 조율, 조정 불가",
+      "colliders": "몸통 캡슐 1 + 두개골 캡슐 2"
+    }
+  },
+  "generatedOutputIdentity": {
+    "note": "편집하지 않은 상태(기본 + 프리셋 21종)의 생성 VRM 바이트 SHA-256. 변경 전 커밋과 변경 후 작업 트리에서 같은 스크립트로 계산했다.",
+    "identical": true,
+    "digests": {
+      "default": "191288f3edf7eedf90ffda0dbde475bae01c25ddfb0fba03e077633d6e894bae",
+      "natural-short": "191288f3edf7eedf90ffda0dbde475bae01c25ddfb0fba03e077633d6e894bae",
+      "soft-bob": "fb0df2ba48c15fb0576ec671b86292635ff41b565767b4ef76af4ee62d074d8f",
+      "romance-long": "e4befa93b211dbf983c7d24682ce9080d8f61093415fd268bda6d599ea8e5472",
+      "action-pony": "3b7d617d98f2365ec7df4aa580e461b9b43ea3d3dca8082b7306f1975c247359",
+      "pop-twin": "02807678855610565bf96f1ea9f27a8479cd96f130479ac7964e32571772943b",
+      "elegant-bun": "da46cf3db82f7a4855d9286d58873e6b898b5da2331c6ecd61804405dc86ad22",
+      "androgynous-crop": "47f584c3ef9e2588b8fa739e46f758b5078bc70ebe03e4a7a5489804c411a1e0",
+      "silver-senior": "9321354494adde0c81420731afe2c83fbe717f7c3539c96c0075930725639da6",
+      "fiery-long": "6cf26131e7245580482ce2b20e6770e97f7357d01470a22c71383d27eaff7f49",
+      "mint-bob": "9715b698f04314f5ae87661b5e4c122f789b744079c788d1dc0e406db7370305",
+      "gold-pony": "a911fb352aa61e59c56373c77cc603736cfa573193d3cf4dccdd3dcf2e7e4280",
+      "ink-twin": "d86178f7c21ca713ee8fb2e0dcfe3a93abb5f6971b2768107ce45d9f7fff6b8e",
+      "sakura-bun": "73a859fafff68e7f95d426295305aa2522c9897f81ca16bbbadc5604d50c1c39",
+      "hero-crop": "6939100d1fc2098a4b2e123cc5d9f50d77d5803c8c5b1bab30fd91ae4277b4ef",
+      "wave-diva": "080d236607245570b4ae105f6d1b1ecad37721ae1565af55b61a3190842d5574",
+      "braid-scholar": "ea51776766f335a7f1784b3a84d79aed8499ba68969a2493d0ee76040def4f1c",
+      "twin-braid-village": "35de6717ff8124acf40b16754bf7374d1a07b5b3a7b56c79d233cf97724c65be",
+      "hime-noble": "c244b999808314400851882bd3f42c58b82480340c273b59f01de69487a8fa41",
+      "wolf-rebel": "dd3638b83ae19d1bdc8f0aae644bca62729a3839c2b037302696cc426a51c577",
+      "halfup-idol": "46610991dc3ebdc90600b18e90844396429ae47108bbaf4e93e68b89f98c19e0",
+      "pixie-sport": "24029dea986e22dbbc2e5739e6fb3129c2f212827671ae0f813902470303e372"
+    }
+  },
+  "ratchets": {
+    "studioEagerGraph": "creator/vrm 14/14 (변경 없음)",
+    "sourceFileSize": {
+      "apps/web/src/domains/creator/vrm/StudioVrmAvatarForgePanel.tsx": "1258 → 1116",
+      "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": "1108 → 1107",
+      "apps/web/src/domains/creator/vrm/studio-vrm-humanoid-mesh.ts": "2029 → 1961"
+    },
+    "unconnectedCode": "변경 전 트리와 발견 목록이 같은 807건(기존 기준선 밖 항목), 차이 0건"
+  }
+}

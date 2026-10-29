@@ -1,12 +1,7 @@
+import { studioFilterGalleryRequiresWorker } from "./filter/gallery/studio-filter-gallery-engine";
 import { applyImageFilters, buildImageFilters, registerStudioKonvaFilters, type KonvaLike } from "./render/studio-konva-filters";
-import {
-  listEnabledStudioAdjustmentOperations,
-  normalizeStudioAdjustmentFilterOperations,
-} from "./studio-adjustment-stack";
-import {
-  StudioAdvancedBlurWorkerRequiredError,
-  studioAdvancedBlurRequiresWorker,
-} from "./studio-advanced-blur-filters";
+import { listEnabledStudioAdjustmentOperations, normalizeStudioAdjustmentFilterOperations } from "./studio-adjustment-stack";
+import { StudioAdvancedBlurWorkerRequiredError, studioAdvancedBlurRequiresWorker } from "./studio-advanced-blur-filters";
 import {
   STUDIO_IMAGE_FILTER_WORKER_PROTOCOL_VERSION,
   assertStudioImageFilterImageData,
@@ -213,6 +208,7 @@ function projectImageFilterFields(el: ImageFilterFields): ImageFilterFields {
     glitchFx: el.glitchFx,
     vignetteFx: el.vignetteFx,
     filterUnionWave: el.filterUnionWave,
+    filterGallery: el.filterGallery,
     // The persisted stack can carry disabled/corrupt entries. Send only one normalized ordered
     // program across the clone boundary so the Worker cannot apply it twice.
     smartFilters: undefined,
@@ -255,7 +251,8 @@ export function studioImageFilterRequiresWorker(
 ): boolean {
   return studioAdvancedBlurRequiresWorker(el, width, height)
     || studioProfessionalFilterRequiresWorker(el, width, height)
-    || studioToneArtifactRequiresWorker(el, width, height);
+    || studioToneArtifactRequiresWorker(el, width, height)
+    || studioFilterGalleryRequiresWorker(el, width, height);
 }
 
 function runImageFilterDirect(

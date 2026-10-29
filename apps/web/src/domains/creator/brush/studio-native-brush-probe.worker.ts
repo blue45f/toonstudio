@@ -144,11 +144,18 @@ async function execute(request: NativeBrushProbeRequest): Promise<NativeBrushPro
 
   if (request.type === "begin") {
     validateNativeBrushProbeConfig(request.config);
+    if (request.config.style === "mypaint-library" && !mypaint) throw new Error("CC0 MyPaint library brushes require the libmypaint engine");
     native?.dispose(); native = null;
     config = { ...request.config }; samples = []; begun = true;
     if (mypaint) {
       const { createLibMypaintIncrementalStrokeSession } = await import("@toonstudio/studio-brush-platform/libmypaint");
-      native = createLibMypaintIncrementalStrokeSession(mypaint, nativeBrushProbeMybDocument(config), { width: surface.width, height: surface.height, seed: config.seed });
+      const document = config.style === "mypaint-library"
+        ? (await (await import("./mypaint-library/studio-mypaint-cc0-library-loader"))
+          .loadStudioMypaintCc0Program(config.mypaintBrushId!, config.color, config.size)).document
+        : nativeBrushProbeMybDocument(config);
+      // 라이브러리 브러시는 slow_tracking 을 쓸 수 있다. MyPaint 호버 이벤트처럼 추적 커서를 첫 샘플에 맞춘다.
+      native = createLibMypaintIncrementalStrokeSession(mypaint, document, { width: surface.width, height: surface.height, seed: config.seed,
+        ...(config.style === "mypaint-library" ? { primeAtFirstSample: true } : {}) });
       if (native.settings.unknownSettings.length || native.settings.unknownInputs.length) throw new Error("Unsupported native test settings");
     }
     return { ...base, type: "begun", engine };

@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepya / Çift ton",
   "studio.mainMenu.item.filter.noise-add": "Gürültü ekle",
   "studio.mainMenu.item.filter.last-filter": "Son filtreyi yeniden aç",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtre Galerisi…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Görünüm geçişi kilitliyken renkli görme modunu değiştiremezsiniz.",
   "studio.mainMenu.item.draw.pen": "kalem",
   "studio.mainMenu.item.draw.eraser": "silgi",

@@ -11,6 +11,7 @@ import {
 import {
   listStudioListedPaintUniquenessCollisions,
   STUDIO_BRUSH_FEEL_CULL_PRESET_IDS,
+  STUDIO_LISTED_PAINT_POST_CULL_ENGINE_LANE_IDS,
   STUDIO_LISTED_PAINT_PRE_CHANGE_COUNT,
   studioBrushListedUniquenessKey,
 } from "./studio-brush-listed-uniqueness";
@@ -47,8 +48,12 @@ describe("listed paint uniqueness and consolidated product portfolio", () => {
       )
       .map((item) => item.id);
 
+    // 컬 기준선 + 컬 이후 새 엔진 레인(각자 고유 실행 서명 — 아래 고유성·지문 검사가 그대로 지킨다).
+    for (const laneId of STUDIO_LISTED_PAINT_POST_CULL_ENGINE_LANE_IDS) {
+      expect(expectedSafeIds, laneId).toContain(laneId);
+    }
     expect(STUDIO_LISTED_PAINT_BRUSH_CATALOG_ITEMS.length).toBeLessThan(
-      STUDIO_LISTED_PAINT_PRE_CHANGE_COUNT,
+      STUDIO_LISTED_PAINT_PRE_CHANGE_COUNT + STUDIO_LISTED_PAINT_POST_CULL_ENGINE_LANE_IDS.length,
     );
     expect(STUDIO_LISTED_PAINT_BRUSH_CATALOG_ITEMS.length).toBeGreaterThan(
       qualityCount,

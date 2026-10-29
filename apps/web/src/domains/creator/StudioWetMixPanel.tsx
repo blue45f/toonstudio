@@ -15,9 +15,12 @@
  *
  * 완전히 controlled — 내부 비즈니스 상태 없음(StudioSmudgePanel/StudioDodgeBurnPanel 과 동일
  * 관례). busy/disabled 잠금은 StudioDodgeBurnPanel 의 locked 규약을 따른다.
+ *
+ * "섞는 방식"(RGB 평균·분광 물감·잠재 안료·빨노파 색상환)은 mixModel/onMixModelChange 를 넘기면 그 값을 쓰고,
+ * 생략하면 `brush/studio-wet-mix-model` 의 탭 단위 선택을 직접 읽고 쓴다(호스트가 획을 보낼 때 같은 값을 읽는다).
  */
 import { Droplets } from "lucide-react";
-import { useId } from "react";
+import { useId, useSyncExternalStore } from "react";
 
 import {
   WET_MIX_HARDNESS_RANGE,
@@ -26,6 +29,13 @@ import {
   WET_MIX_STRENGTH_RANGE,
   WET_MIX_WETNESS_RANGE,
 } from "./brush/studio-wet-mix";
+import {
+  getStudioWetMixModelPreference,
+  setStudioWetMixModelPreference,
+  STUDIO_WET_MIX_MODELS,
+  subscribeStudioWetMixModelPreference,
+  type StudioWetMixModel,
+} from "./brush/studio-wet-mix-model";
 import { StudioSliderRow, StudioToggleChip } from "./studio-panel-ui";
 import { studioRetouchToolHelp } from "./studio-retouch-help";
 import { StudioRetouchQuickGuide } from "./StudioRetouchQuickGuide";
@@ -58,7 +68,38 @@ export type StudioWetMixPanelProps = {
   onPickupChange: (value: number) => void;
   onHardnessChange: (value: number) => void;
   onOpenTutorial?: () => void;
+  /** 섞는 방식. 생략하면 탭 단위 공유 선택(studio-wet-mix-model)을 쓴다. */
+  mixModel?: StudioWetMixModel;
+  onMixModelChange?: (value: StudioWetMixModel) => void;
 };
+
+/** 섞는 방식 칩의 짧은 이름과 설명(설명은 선택된 방식 아래 한 줄과 title 로 보여 준다). */
+const STUDIO_WET_MIX_MODEL_COPY: Readonly<Record<StudioWetMixModel, { label: string; description: string }>> =
+  Object.freeze({
+    lerp: { label: "RGB 평균", description: "지금까지의 방식입니다. 두 색의 RGB 값을 그대로 평균합니다." },
+    "spectral-wgm": { label: "분광 물감", description: "빛의 파장별 반사율로 섞어 실제 물감처럼 깊고 어둡게 섞입니다." },
+    "latent-pigment": {
+      label: "잠재 안료",
+      description: "안료 농도 공간에서 섞어 파랑과 노랑이 초록이 됩니다. 처음 쓸 때 혼합표를 한 번 만듭니다.",
+    },
+    ryb: { label: "빨노파 색상환", description: "빨강·노랑·파랑 전통 색상환을 따라 섞습니다." },
+  });
+
+function useWetMixModel(
+  mixModel: StudioWetMixModel | undefined,
+  onMixModelChange: ((value: StudioWetMixModel) => void) | undefined,
+): readonly [StudioWetMixModel, (value: StudioWetMixModel) => void] {
+  const shared = useSyncExternalStore(
+    subscribeStudioWetMixModelPreference,
+    getStudioWetMixModelPreference,
+    getStudioWetMixModelPreference,
+  );
+  if (mixModel !== undefined) return [mixModel, onMixModelChange ?? (() => undefined)];
+  return [shared, (value) => {
+    setStudioWetMixModelPreference(value);
+    onMixModelChange?.(value);
+  }];
+}
 
 export function StudioWetMixPanel({
   active,
@@ -77,10 +118,14 @@ export function StudioWetMixPanel({
   onPickupChange,
   onHardnessChange,
   onOpenTutorial,
+  mixModel: mixModelProp,
+  onMixModelChange,
 }: StudioWetMixPanelProps): ReactElement {
   const titleId = useId();
+  const modelLegendId = useId();
   const help = studioRetouchToolHelp("wet-mix");
   const locked = disabled || busy;
+  const [mixModel, changeMixModel] = useWetMixModel(mixModelProp, onMixModelChange);
 
   return (
     <section
@@ -181,6 +226,27 @@ export function StudioWetMixPanel({
         onChange={onHardnessChange}
         readout={`${Math.round(hardness * 100)}%`}
       />
+
+      <div role="group" aria-labelledby={modelLegendId} className="space-y-1" data-testid="wet-mix-model-group">
+        <p id={modelLegendId} className="text-xs text-fg-2">섞는 방식</p>
+        <div className="flex flex-wrap gap-1">
+          {STUDIO_WET_MIX_MODELS.map((model) => (
+            <StudioToggleChip
+              key={model}
+              active={mixModel === model}
+              disabled={locked}
+              onClick={() => changeMixModel(model)}
+              aria-label={`섞는 방식: ${STUDIO_WET_MIX_MODEL_COPY[model].label}`}
+              title={STUDIO_WET_MIX_MODEL_COPY[model].description}
+            >
+              {STUDIO_WET_MIX_MODEL_COPY[model].label}
+            </StudioToggleChip>
+          ))}
+        </div>
+        <p className="text-[0.66rem] leading-relaxed text-fg-3 text-pretty" data-testid="wet-mix-model-description">
+          {STUDIO_WET_MIX_MODEL_COPY[mixModel].description}
+        </p>
+      </div>
 
       <StudioRetouchQuickGuide
         toolId="wet-mix"

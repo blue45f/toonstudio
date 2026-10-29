@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia/Duotone",
   "studio.mainMenu.item.filter.noise-add": "Dodaj hałas",
   "studio.mainMenu.item.filter.last-filter": "Otwórz ponownie ostatni filtr",
+  "studio.mainMenu.item.filter.filter-gallery": "Galeria filtrów…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Nie można zmienić trybu widzenia kolorów, gdy przejście widoku jest zablokowane.",
   "studio.mainMenu.item.draw.pen": "długopis",
   "studio.mainMenu.item.draw.eraser": "gumka",

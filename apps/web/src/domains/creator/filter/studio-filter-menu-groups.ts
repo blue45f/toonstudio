@@ -11,6 +11,9 @@ export const STUDIO_FILTER_DIALOG_GROUP_ORDER = Object.freeze(
   ),
 );
 
+/** 분류보다 앞에 고정되는 행 — 마지막 필터 다시 열기와 필터 갤러리(작성 순서 유지). */
+const LEADING_ROW_IDS: ReadonlySet<string> = new Set(["last-filter", "filter-gallery"]);
+
 type GroupableFilterMenuItem = {
   id: string;
   sectionLabel?: string;
@@ -39,8 +42,8 @@ export function orderStudioFilterMenuItems<T extends GroupableFilterMenuItem>(
     }));
   });
   return [
-    ...items.filter((item) => item.id === "last-filter"),
+    ...items.filter((item) => LEADING_ROW_IDS.has(item.id)),
     ...grouped,
-    ...items.filter((item) => item.id !== "last-filter" && !groupedIds.has(item.id)),
+    ...items.filter((item) => !LEADING_ROW_IDS.has(item.id) && !groupedIds.has(item.id)),
   ];
 }

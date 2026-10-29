@@ -1,4 +1,5 @@
 import { BRUSH_STUDIO_V6_RECIPE_SEEDS } from "../brush-lab/brush-studio-v6-recipe-catalog";
+import { brushStudioV6ProviderManifestForNode } from "../brush-lab/brush-studio-v6-license-profile";
 import { brushStudioV6Topology } from "../brush-lab/brush-studio-v6-topology-catalog";
 import { studioBrushDefaultSizeProfile } from "./studio-brush-default-size-policy";
 import {
@@ -125,7 +126,11 @@ function nodeLabel(id: string): string {
 }
 
 function nodeProvider(id: string): string {
-  if (brushStudioV6Topology(id)) return "ToonStudio CPU Topology";
+  if (brushStudioV6Topology(id)) {
+    // 외부 코드 이식으로 명시 배정된 위상 노드(Klecks 등)는 그 제공자 이름을 보인다(Workbench·영수증과 같은 기록).
+    const manifest = brushStudioV6ProviderManifestForNode(id);
+    return manifest && manifest.id !== "toonstudio-cpu-contact-v2" ? manifest.label : "ToonStudio CPU Topology";
+  }
   if (id.includes("google")) return "Google Ink";
   if (id.includes("perfect")) return "Perfect Freehand";
   if (id.includes("libmypaint")) return "libmypaint";

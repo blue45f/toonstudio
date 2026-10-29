@@ -27,6 +27,15 @@ import {
   type StudioEngineWebGpuTexturedBrushResolvedAsset,
 } from "./studio-engine-webgpu-textured-brush-plan";
 import {
+  STUDIO_ENGINE_WEBGPU_TEXTURED_BRUSH_PRESSURE_TOOTH_BINDING,
+  STUDIO_ENGINE_WEBGPU_TEXTURED_BRUSH_SHADER,
+} from "./studio-engine-webgpu-textured-brush-shader";
+import {
+  isCanonicalStudioWebGpuPressureToothResponse,
+  packStudioWebGpuPressureToothUniform,
+} from "./studio-webgpu-pressure-tooth";
+import { STUDIO_WEBGPU_PRESSURE_TOOTH_UNIFORM_BYTES } from "./studio-webgpu-pressure-tooth-contract";
+import {
   StudioWebGpuR8GrainTextureCache,
   studioWebGpuR8GrainDabCenterUv,
   type StudioWebGpuR8GrainNativeInput,
@@ -52,157 +61,6 @@ const ROW_ALIGNMENT = 256;
  * tolerance large enough for two f32 multiplications, but far below one 8-bit alpha step.
  */
 const PAINT_CHANNEL_F32_EPSILON = 2e-6;
-
-/**
- * R8 sampling semantics mirror the CPU oracle:
- * - tip assets are uploaded with a one-texel zero border and bilinear filtered;
- * - grain assets repeat bilinearly;
- * - procedural grain hashes signed integer cells with u32 arithmetic;
- * - straight scene-linear colour is premultiplied by the CPU packer exactly once.
- */
-const TEXTURED_BRUSH_SHADER = /* wgsl */ `
-struct Viewport {
-  size: vec2f,
-  inverse_size: vec2f,
-  document_scale: vec2f,
-  document_offset: vec2f,
-};
-@group(0) @binding(0) var tip_texture: texture_2d<f32>;
-@group(0) @binding(1) var grain_texture: texture_2d<f32>;
-@group(0) @binding(2) var tip_sampler: sampler;
-@group(0) @binding(3) var grain_sampler: sampler;
-@group(0) @binding(4) var<uniform> viewport: Viewport;
-
-struct VertexOutput {
-  @builtin(position) position: vec4f,
-  @location(0) local: vec2f,
-  @location(1) document: vec2f,
-  @location(2) color: vec4f,
-  @location(3) dynamics: vec4f,
-  @location(4) grain_origin: vec2f,
-  @location(5) flags: vec4f,
-  @location(6) texture_info: vec4f,
-};
-
-@vertex
-fn vs_main(
-  @builtin(vertex_index) vertex_index: u32,
-  @location(0) center: vec2f,
-  @location(1) basis_x: vec2f,
-  @location(2) basis_y: vec2f,
-  @location(3) color: vec4f,
-  @location(4) dynamics: vec4f,
-  @location(5) grain_origin: vec2f,
-  @location(6) diagnostics: vec4f,
-  @location(7) flags: vec4f,
-  @location(8) texture_info: vec4f,
-) -> VertexOutput {
-  let corners = array<vec2f, 6>(
-    vec2f(-1.0, -1.0),
-    vec2f( 1.0, -1.0),
-    vec2f(-1.0,  1.0),
-    vec2f(-1.0,  1.0),
-    vec2f( 1.0, -1.0),
-    vec2f( 1.0,  1.0),
-  );
-  let local = corners[vertex_index];
-  let document_offset = basis_x * local.x + basis_y * local.y;
-  let document = center + document_offset;
-  let surface = document * viewport.document_scale + viewport.document_offset;
-  let clip = vec2f(
-    surface.x * viewport.inverse_size.x * 2.0 - 1.0,
-    1.0 - surface.y * viewport.inverse_size.y * 2.0,
-  );
-  var output: VertexOutput;
-  output.position = vec4f(clip, 0.0, 1.0);
-  output.local = local;
-  output.document = document;
-  output.color = color;
-  output.dynamics = dynamics;
-  output.grain_origin = grain_origin;
-  output.flags = flags;
-  let durable_r8 = (u32(flags.y + 0.5) & 4u) != 0u;
-  let native_grain_uv = texture_info.zw + document_offset / dynamics.z;
-  output.texture_info = vec4f(
-    texture_info.xy,
-    select(texture_info.zw, native_grain_uv, durable_r8),
-  );
-  return output;
-}
-
-fn hash_u32(input: u32) -> u32 {
-  var value = input;
-  value = value ^ (value >> 16u);
-  value = value * 0x7feb352du;
-  value = value ^ (value >> 15u);
-  value = value * 0x846ca68bu;
-  return value ^ (value >> 16u);
-}
-
-fn integer_noise(cell: vec2i, seed: u32) -> f32 {
-  let mixed = seed
-    ^ (bitcast<u32>(cell.x) * 0x9e3779b1u)
-    ^ (bitcast<u32>(cell.y) * 0x85ebca77u);
-  return f32(hash_u32(mixed)) / 4294967296.0;
-}
-
-fn shaped_grain(value: f32, contrast: f32, invert: bool, durable_r8: bool) -> f32 {
-  // The canonical specialist v1 contract retains its historical 3× contrast transfer. Durable
-  // Studio R8 assets use the Canvas/SVG contract's 4× transfer and are marked explicitly below.
-  let contrast_gain = select(3.0, 4.0, durable_r8);
-  let contrasted = clamp(
-    0.5 + (value - 0.5) * (1.0 + contrast * contrast_gain),
-    0.0,
-    1.0,
-  );
-  return select(contrasted, 1.0 - contrasted, invert);
-}
-
-@fragment
-fn fs_main(input: VertexOutput) -> @location(0) vec4f {
-  let uv = input.local * 0.5 + 0.5;
-  let tip_size = input.texture_info.xy;
-  let padded_size = tip_size + vec2f(2.0);
-  let padded_uv = (uv * tip_size + vec2f(1.0)) / padded_size;
-  let tip_value = textureSample(tip_texture, tip_sampler, padded_uv).r;
-  let hardness_edge = max(1.0 / 65535.0, 1.0 - input.dynamics.x);
-  let tip_coverage = smoothstep(0.0, hardness_edge, tip_value);
-
-  let grain_kind = u32(input.flags.x + 0.5);
-  let packed_grain_flags = u32(input.flags.y + 0.5);
-  let grain_space = packed_grain_flags & 1u;
-  let seed = u32(input.flags.z + 0.5) | (u32(input.flags.w + 0.5) << 16u);
-  let grain_position = select(
-    input.document,
-    input.document - input.grain_origin,
-    grain_space == 1u,
-  );
-  let grain_invert = (packed_grain_flags & 2u) != 0u;
-  let durable_r8 = (packed_grain_flags & 4u) != 0u;
-  let grain_cell = vec2i(floor(grain_position / input.dynamics.z));
-  let procedural_grain = integer_noise(grain_cell, seed);
-  let asset_uv = select(
-    grain_position / input.dynamics.z,
-    input.texture_info.zw,
-    durable_r8,
-  );
-  let asset_grain = textureSample(
-    grain_texture,
-    grain_sampler,
-    asset_uv,
-  ).r;
-  var grain_value = select(1.0, procedural_grain, grain_kind == 1u);
-  grain_value = select(grain_value, asset_grain, grain_kind == 2u);
-  let grain_shaped = shaped_grain(
-    grain_value,
-    input.dynamics.w,
-    grain_invert,
-    durable_r8,
-  );
-  let grain_factor = mix(1.0, grain_shaped, input.dynamics.y);
-  return input.color * (tip_coverage * grain_factor);
-}
-`;
 
 export interface StudioEngineWebGpuTexturedBrushRuntimeOptions {
   readonly device: GPUDevice;
@@ -591,6 +449,11 @@ function planIsValid(plan: StudioEngineWebGpuTexturedBrushPlan, maximumDabs: num
       && fingerprintStudioEngineWebGpuTexturedBrushPlanSemantics(plan)
         !== plan.semanticFingerprint
     ) return false;
+    // A declared GPU pressure/tooth stage must be the canonical form that the fingerprint describes.
+    if (
+      plan.gpuPressureTooth !== undefined
+      && !isCanonicalStudioWebGpuPressureToothResponse(plan.gpuPressureTooth)
+    ) return false;
     for (let index = 0; index < plan.assets.length; index += 1) {
       const asset = plan.assets[index]!;
       if (
@@ -847,6 +710,8 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
   readonly #surfaceTexture: GPUTexture | null;
   readonly #surfaceView: GPUTextureView | null;
   readonly #uniformBuffer: GPUBuffer;
+  readonly #pressureToothBuffer: GPUBuffer;
+  readonly #pressureToothScratch = new Float32Array(STUDIO_WEBGPU_PRESSURE_TOOTH_UNIFORM_BYTES / 4);
   readonly #tipSampler: GPUSampler;
   readonly #grainSampler: GPUSampler;
   readonly #pipelines: Readonly<Record<"source-over" | "destination-out", GPURenderPipeline>>;
@@ -930,6 +795,17 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
         this.#height,
       ),
     );
+    // Identity pressure LUT and tooth-off by default; execute() rewrites it from each plan.
+    this.#pressureToothBuffer = this.#device.createBuffer({
+      label: "Studio textured brush pressure-tooth uniform",
+      size: STUDIO_WEBGPU_PRESSURE_TOOTH_UNIFORM_BYTES,
+      usage: GPU_BUFFER_UNIFORM | GPU_BUFFER_COPY_DST,
+    });
+    this.#device.queue.writeBuffer(
+      this.#pressureToothBuffer,
+      0,
+      packStudioWebGpuPressureToothUniform(null, this.#pressureToothScratch),
+    );
     this.#tipSampler = this.#device.createSampler({
       label: "Studio textured brush zero-border bilinear tip sampler",
       magFilter: "linear",
@@ -948,7 +824,7 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
     });
     const module = this.#device.createShaderModule({
       label: "Studio textured brush clean-room shader",
-      code: TEXTURED_BRUSH_SHADER,
+      code: STUDIO_ENGINE_WEBGPU_TEXTURED_BRUSH_SHADER,
     });
     this.#bindGroupLayout = this.#device.createBindGroupLayout({
       label: "Studio textured brush asset bind layout",
@@ -958,6 +834,11 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
         { binding: 2, visibility: 2, sampler: { type: "filtering" } },
         { binding: 3, visibility: 2, sampler: { type: "filtering" } },
         { binding: 4, visibility: 1, buffer: { type: "uniform" } },
+        {
+          binding: STUDIO_ENGINE_WEBGPU_TEXTURED_BRUSH_PRESSURE_TOOTH_BINDING,
+          visibility: 3,
+          buffer: { type: "uniform" },
+        },
       ],
     });
     const layout = this.#device.createPipelineLayout({
@@ -1203,6 +1084,10 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
         { binding: 2, resource: this.#tipSampler },
         { binding: 3, resource: nativeR8Grain?.sampler ?? this.#grainSampler },
         { binding: 4, resource: { buffer: this.#uniformBuffer } },
+        {
+          binding: STUDIO_ENGINE_WEBGPU_TEXTURED_BRUSH_PRESSURE_TOOTH_BINDING,
+          resource: { buffer: this.#pressureToothBuffer },
+        },
       ],
     });
     if (!nativeR8Grain) {
@@ -1446,6 +1331,14 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
           documentToSurface,
         ),
       );
+      this.#device.queue.writeBuffer(
+        this.#pressureToothBuffer,
+        0,
+        packStudioWebGpuPressureToothUniform(
+          frame.plan.gpuPressureTooth,
+          this.#pressureToothScratch,
+        ),
+      );
       const instanceBuffer = this.#ensureInstanceBuffer(frame.plan.dabs.length);
       const packed = packStudioEngineWebGpuTexturedBrushDabs(
         frame.plan,
@@ -1597,6 +1490,7 @@ export class StudioEngineWebGpuTexturedBrushRuntime {
     this.#instanceBuffer?.destroy();
     this.#instanceScratch = null;
     this.#uniformBuffer.destroy();
+    this.#pressureToothBuffer.destroy();
     this.#surfaceTexture?.destroy();
     for (const resource of this.#assetTextures.values()) resource.texture.destroy();
     this.#assetTextures.clear();

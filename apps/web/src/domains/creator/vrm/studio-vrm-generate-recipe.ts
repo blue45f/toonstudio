@@ -1,10 +1,13 @@
 import {
   AVATAR_FORGE_PRESETS,
+  buildAvatarForgeHairParts,
   createAvatarForgeState,
   sanitizeAvatarForgeState,
   serializeAvatarForgeState,
+  type AvatarForgeHairPart,
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
+import { carryAvatarForgeVrmAuthoring, readAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import {
   serializeStudioVrmExport,
   type StudioVrmExportMesh,
@@ -12,10 +15,24 @@ import {
   type StudioVrmExportSceneSnapshot,
 } from "./studio-vrm-export-plan";
 import {
+  isStudioVrmCustomExpressionName,
+  strongerStudioVrmBlinkOverride,
+  studioVrmExpressionOverridePolicy,
+  type StudioVrmEditableExpressionPreset,
+  type StudioVrmExpressionAuthoring,
+} from "./studio-vrm-generate-expressions";
+import {
+  applyStudioVrmHairSway,
+  STUDIO_VRM_HAIR_SWAY_GROUPS,
+  studioVrmHairSwayGroupForRole,
+  type StudioVrmHairSwayAuthoring,
+  type StudioVrmHairSwayGroupId,
+} from "./studio-vrm-generate-hair-sway";
+import {
   studioVrmHairRigInverseBindMatrices,
   type StudioVrmHairRig,
 } from "./studio-vrm-hair-rig";
-import { buildStudioVrmHumanoidMesh } from "./studio-vrm-humanoid-mesh";
+import { buildStudioVrmHumanoidHairRig, buildStudioVrmHumanoidMesh } from "./studio-vrm-humanoid-mesh";
 import { meshClamp } from "./studio-vrm-humanoid-mesh-geometry";
 import {
   STUDIO_VRM_RIG_BONES,
@@ -30,8 +47,10 @@ import type {
   StudioVrmExportExpressionPreset,
   StudioVrmExportFirstPersonAnnotation,
   StudioVrmExportHumanoidBones,
+  StudioVrmExportMeta,
   StudioVrmExportSpringBoneConfig,
 } from "./studio-vrm-export-vrm-extension";
+import type { StudioVrmThumbnailImage } from "./studio-vrm-generate-export-meta";
 
 export const STUDIO_VRM_GENERATE_RECIPE_VERSION = 1 as const;
 export const STUDIO_VRM_GENERATE_GENERATOR = "ToonStudio Studio VRM Generate";
@@ -62,10 +81,10 @@ export type StudioVrmGenerateSeed = {
  * 골랐다면 순정이 아니므로 그대로 존중한다.
  */
 function isPristineAvatarForgeState(state: AvatarForgeState): boolean {
-  return (
-    JSON.stringify(serializeAvatarForgeState(state)) ===
-    JSON.stringify(serializeAvatarForgeState(createAvatarForgeState()))
-  );
+  // 생성 전용 저작 설정(표정·흔들림)은 외형 선택이 아니다. 표정만 다듬었다고 기본 스타일 대신
+  // 민머리가 나오면 안 되므로 비교에서 뺀다.
+  const { authoring: _authoring, ...appearance } = serializeAvatarForgeState(state);
+  return JSON.stringify(appearance) === JSON.stringify(serializeAvatarForgeState(createAvatarForgeState()));
 }
 
 /**
@@ -100,7 +119,8 @@ export function resolveStudioVrmGenerateSeed(input: {
     return { state, presetId, appliedDefaultPresetId: null };
   }
   return {
-    state: createAvatarForgeState(STUDIO_VRM_GENERATE_DEFAULT_PRESET_ID),
+    // 기본 스타일로 갈아끼워도 작가가 다듬은 표정·흔들림은 그대로 가져간다.
+    state: carryAvatarForgeVrmAuthoring(createAvatarForgeState(STUDIO_VRM_GENERATE_DEFAULT_PRESET_ID), state),
     presetId: STUDIO_VRM_GENERATE_DEFAULT_PRESET_ID,
     appliedDefaultPresetId: STUDIO_VRM_GENERATE_DEFAULT_PRESET_ID,
   };
@@ -119,6 +139,21 @@ export type StudioVrmGenerateRecipe = {
   readonly state: AvatarForgeState;
   /** 순정 기본 상태라 기본 프리셋이 대신 적용됐다면 그 id. UI 가 이 사실을 알린다. */
   readonly appliedDefaultPresetId: string | null;
+  /**
+   * 작가가 내보내기 폼에서 정한 아바타 정보·이용 조건(검증을 마친 VRM 1.0 메타). 생략하면 예전
+   * 기본 메타를 쓴다. 썸네일 번호는 생성기가 붙이므로 여기 들어 있어도 무시한다.
+   */
+  readonly exportMeta?: StudioVrmExportMeta;
+  /** VRM `meta.thumbnailImage` 로 넣을 정사각형 이미지. */
+  readonly thumbnail?: Pick<StudioVrmThumbnailImage, "mimeType" | "bytes">;
+};
+
+export type StudioVrmGenerateRecipeInput = {
+  readonly presetId?: string | null;
+  readonly state?: unknown;
+  readonly allowDefaultPreset?: boolean;
+  readonly exportMeta?: StudioVrmExportMeta;
+  readonly thumbnail?: Pick<StudioVrmThumbnailImage, "mimeType" | "bytes">;
 };
 
 export function resolveStudioVrmGeneratePresetLabel(presetId: string | null): string {
@@ -126,11 +161,7 @@ export function resolveStudioVrmGeneratePresetLabel(presetId: string | null): st
   return AVATAR_FORGE_PRESETS.find((preset) => preset.id === presetId)?.label ?? "커스텀 캐릭터";
 }
 
-export function createStudioVrmGenerateRecipe(input: {
-  readonly presetId?: string | null;
-  readonly state?: unknown;
-  readonly allowDefaultPreset?: boolean;
-} = {}): StudioVrmGenerateRecipe {
+export function createStudioVrmGenerateRecipe(input: StudioVrmGenerateRecipeInput = {}): StudioVrmGenerateRecipe {
   const seed = resolveStudioVrmGenerateSeed(input);
   return {
     version: STUDIO_VRM_GENERATE_RECIPE_VERSION,
@@ -138,6 +169,8 @@ export function createStudioVrmGenerateRecipe(input: {
     label: resolveStudioVrmGeneratePresetLabel(seed.presetId),
     state: seed.state,
     appliedDefaultPresetId: seed.appliedDefaultPresetId,
+    ...(input.exportMeta ? { exportMeta: input.exportMeta } : {}),
+    ...(input.thumbnail ? { thumbnail: input.thumbnail } : {}),
   };
 }
 
@@ -320,6 +353,10 @@ function buildHairSpringBone(
   rig: StudioVrmRig,
   firstHairNode: number,
   hairPivotNode: number,
+  sway: {
+    readonly authoring?: StudioVrmHairSwayAuthoring;
+    readonly roleOf: ReadonlyMap<string, AvatarForgeHairPart["role"]>;
+  },
 ): StudioVrmExportSpringBoneConfig {
   const spine = rig.worldRest.spine;
   const unit = rig.heightScale * STUDIO_VRM_RIG_NEUTRAL_HEIGHT;
@@ -404,18 +441,43 @@ function buildHairSpringBone(
       { name: "Torso", colliders: [0] },
       { name: "Skull", colliders: [1, 2] },
     ],
-    springs: hairRig.chains.map((chain) => ({
-      name: `Hair_${chain.id}`,
-      colliderGroups: [0, 1],
-      joints: chain.joints.map((joint, index) => ({
-        node: firstHairNode + chain.jointOffset + index,
-        hitRadius: joint.hitRadius,
-        stiffness: chain.stiffness,
-        gravityPower: chain.gravityPower,
-        dragForce: chain.dragForce,
-      })),
-    })),
+    springs: hairRig.chains.map((chain) => {
+      const group = studioVrmHairSwayGroupForRole(sway.roleOf.get(chain.id));
+      const tuning = applyStudioVrmHairSway(chain, sway.authoring, group);
+      return {
+        name: `Hair_${chain.id}`,
+        colliderGroups: [0, 1],
+        joints: chain.joints.map((joint, index) => ({
+          node: firstHairNode + chain.jointOffset + index,
+          hitRadius: joint.hitRadius,
+          stiffness: tuning.stiffness,
+          gravityPower: tuning.gravityPower,
+          dragForce: tuning.dragForce,
+        })),
+      };
+    }),
   };
+}
+
+/**
+ * 헤어 체인 id → 파츠 역할. 체인 id 는 파츠 id(가닥·덩어리)이거나 땋은 머리 접두사다. 흔들림을
+ * 조정하지 않았다면 역할이 쓰이지 않으므로 파츠 계획을 다시 만들지 않는다.
+ */
+/** 헤어 파츠 id → 역할. 체인 id 는 파츠 id 와 같고, 땋은 머리 체인은 접두사 id 라 비어 묶음 머리로 간다. */
+function hairPartRoles(state: AvatarForgeState): ReadonlyMap<string, AvatarForgeHairPart["role"]> {
+  return new Map(buildAvatarForgeHairParts(state).map((part) => [part.id, part.role]));
+}
+
+function hairSwayRoles(state: AvatarForgeState): ReadonlyMap<string, AvatarForgeHairPart["role"]> {
+  return readAvatarForgeVrmAuthoring(state)?.hairSway ? hairPartRoles(state) : new Map();
+}
+
+/** 이 조형 상태로 만든 VRM 에서 스프링 체인이 실제로 달리는 흔들림 묶음(흔들림 편집의 묶음 탭). */
+export function listStudioVrmGenerateHairSwayGroups(state: AvatarForgeState): readonly StudioVrmHairSwayGroupId[] {
+  const chains = buildStudioVrmHumanoidHairRig(state)?.chains ?? [];
+  const roleOf = hairPartRoles(state);
+  const present = new Set(chains.map((chain) => studioVrmHairSwayGroupForRole(roleOf.get(chain.id))));
+  return STUDIO_VRM_HAIR_SWAY_GROUPS.map((group) => group.id).filter((id) => present.has(id));
 }
 
 /**
@@ -508,13 +570,27 @@ export function buildStudioVrmGenerateAuthoringSnapshot(
     primitives: part.primitives,
   }));
 
-  // 표정 프리셋 이름과 모프 타깃 이름이 1:1이다 — 가중치 1로 같은 이름의 타깃 하나를 잡는다.
+  // 표정 이름과 모프 타깃 이름이 1:1이다 — 가중치 1로 같은 이름의 타깃 하나를 잡는다.
+  // 프리셋이 아닌 이름은 표정 편집기에서 더한 커스텀 표정이라 `expressions.custom` 으로 나간다.
   const faceNode = meshNodeIndex(humanoid.facePartIndex);
   const preset: Partial<Record<StudioVrmExportExpressionPreset, StudioVrmExportExpression>> = {};
+  const custom: Record<string, StudioVrmExportExpression> = {};
+  const authoring = readAvatarForgeVrmAuthoring(state);
+  const expressionAuthoring: StudioVrmExpressionAuthoring | undefined = authoring?.expressions;
   humanoid.morphTargetNames.forEach((name, index) => {
-    const overrideBlink = STUDIO_VRM_GENERATE_BLINK_OVERRIDES[name];
+    const bind = { morphTargetBinds: [{ node: faceNode, index, weight: 1 }] };
+    if (isStudioVrmCustomExpressionName(name)) {
+      const delta = expressionAuthoring?.custom?.find((entry) => entry.name === name)?.delta ?? {};
+      custom[name] = { ...bind, ...studioVrmExpressionOverridePolicy(delta) };
+      return;
+    }
+    const edited = expressionAuthoring?.presets?.[name as StudioVrmEditableExpressionPreset];
+    const overrideBlink = strongerStudioVrmBlinkOverride(
+      STUDIO_VRM_GENERATE_BLINK_OVERRIDES[name],
+      edited ? studioVrmExpressionOverridePolicy(edited).overrideBlink : undefined,
+    );
     preset[name as StudioVrmExportExpressionPreset] = {
-      morphTargetBinds: [{ node: faceNode, index, weight: 1 }],
+      ...bind,
       ...(overrideBlink ? { overrideBlink } : {}),
     };
   });
@@ -523,17 +599,26 @@ export function buildStudioVrmGenerateAuthoringSnapshot(
     (_part, index) => ({ node: meshNodeIndex(index), type: "auto" }),
   );
 
+  // 썸네일은 이 VRM 의 유일한 이미지다(생성 캐릭터의 재질은 색 값만 쓴다). 그래서 번호가 늘 0 이다.
+  const thumbnail = recipe.thumbnail;
+  const meta: StudioVrmExportMeta = recipe.exportMeta
+    ? { ...recipe.exportMeta, thumbnailImage: undefined }
+    : {
+        name: label,
+        authors: [STUDIO_VRM_GENERATE_GENERATOR],
+        version: `generate-${recipe.presetId ?? "custom"}-v${STUDIO_VRM_GENERATE_RECIPE_VERSION}`,
+        copyrightInformation: "Generated in ToonStudio Studio",
+        avatarPermission: "onlyAuthor",
+        commercialUsage: "personalNonProfit",
+        creditNotation: "required",
+        modification: "allowModification",
+      };
+
   return {
-    meta: {
-      name: label,
-      authors: [STUDIO_VRM_GENERATE_GENERATOR],
-      version: `generate-${recipe.presetId ?? "custom"}-v${STUDIO_VRM_GENERATE_RECIPE_VERSION}`,
-      copyrightInformation: "Generated in ToonStudio Studio",
-      avatarPermission: "onlyAuthor",
-      commercialUsage: "personalNonProfit",
-      creditNotation: "required",
-      modification: "allowModification",
-    },
+    meta: thumbnail ? { ...meta, thumbnailImage: 0 } : meta,
+    ...(thumbnail
+      ? { images: [{ name: "Thumbnail", mimeType: thumbnail.mimeType, bytes: thumbnail.bytes }] }
+      : {}),
     humanoidBones: humanoidBones(),
     roots: [ARMATURE_NODE],
     nodes,
@@ -552,10 +637,15 @@ export function buildStudioVrmGenerateAuthoringSnapshot(
       },
     ],
     materials: humanoid.materials,
-    expressions: { preset },
+    expressions: { preset, ...(Object.keys(custom).length > 0 ? { custom } : {}) },
     firstPerson,
     ...(hairRig
-      ? { springBone: buildHairSpringBone(hairRig, rig, firstHairJointNode, hairPivotNode) }
+      ? {
+          springBone: buildHairSpringBone(hairRig, rig, firstHairJointNode, hairPivotNode, {
+            authoring: authoring?.hairSway,
+            roleOf: hairSwayRoles(state),
+          }),
+        }
       : {}),
   };
 }

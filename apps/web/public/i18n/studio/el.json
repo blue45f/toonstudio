@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Σεπία / Ντουτόνο",
   "studio.mainMenu.item.filter.noise-add": "Προσθέστε θόρυβο",
   "studio.mainMenu.item.filter.last-filter": "Ανοίξτε ξανά το τελευταίο φίλτρο",
+  "studio.mainMenu.item.filter.filter-gallery": "Συλλογή φίλτρων…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Δεν μπορείτε να αλλάξετε τη λειτουργία χρωματικής όρασης ενώ η μετάβαση προβολής είναι κλειδωμένη.",
   "studio.mainMenu.item.draw.pen": "στυλό",
   "studio.mainMenu.item.draw.eraser": "γόμα",
