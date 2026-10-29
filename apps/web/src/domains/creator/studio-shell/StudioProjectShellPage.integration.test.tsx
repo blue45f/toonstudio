@@ -64,6 +64,11 @@ describe("StudioProjectShellPage integration", () => {
     expect(continueLink.getAttribute("href")).toContain("resume=latest");
     expect(continueLink.getAttribute("href")).toContain("uiMode=simple");
 
+    expect(view.container.querySelector('[data-studio-project-shell="focused-script"]')).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: /프로젝트 주요 단계|Main project stages/u }).closest("details")?.open).toBe(false);
+    fireEvent.click(screen.getByText(/프로젝트 메뉴|Project menu/u));
+    expect(screen.getByRole("link", { name: /전체 기획 도구 보기|Show all planning tools/u }).getAttribute("href"))
+      .toBe("/studio/p/project-1/story?view=script&uiMode=full");
     const navigation = screen.getByRole("navigation", { name: /프로젝트 주요 단계|Main project stages/u });
     fireEvent.click(within(navigation).getByRole("link", { name: /제작|Production/u }));
     await waitFor(() => {

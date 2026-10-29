@@ -23,6 +23,16 @@ describe("public creative chrome route boundaries", () => {
     expect(supportsPublicSiteOnwardJourney(pathname)).toBe(false);
   });
 
+  it.each(["/create", "/create/", "/CREATE///"])("작품 시작 %s는 공개 셸을 유지하고 다른 작업으로 이끄는 홍보를 제외한다", (pathname) => {
+    expect(isPublicCreativeRoute(pathname)).toBe(true);
+    expect(supportsPublicSiteOnwardJourney(pathname)).toBe(false);
+  });
+
+  it.each(["/create/challenges", "/create/work/example", "/create/legacy-work"])("공개 창작 결과와 챌린지 %s는 시작 입력 흐름으로 분류하지 않는다", (pathname) => {
+    expect(isPublicCreativeRoute(pathname)).toBe(true);
+    expect(supportsPublicSiteOnwardJourney(pathname)).toBe(true);
+  });
+
   it("전체화면 발표 /ir/present의 공개 셸은 유지하고 홍보 여정만 제외한다", () => {
     expect(isPublicCreativeRoute("/ir/present")).toBe(true);
     expect(supportsPublicSiteOnwardJourney("/ir/present")).toBe(false);

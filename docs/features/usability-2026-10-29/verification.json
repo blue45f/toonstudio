@@ -1,0 +1,137 @@
+{
+  "date": "2026-10-29",
+  "baseCommit": "6c53a4b32ca32afbec346fa7c5a1f9a807eabde5",
+  "branch": "codex/usability-validation-20261029",
+  "assessment": {
+    "scope": "데스크톱·비로그인 첫 작품 제작과 로컬 저장·출력",
+    "method": "전문가 휴리스틱 평가",
+    "score": 90,
+    "maximum": 100,
+    "initialScore": 63,
+    "humanUserStudy": false
+  },
+  "unit": {
+    "files": 50,
+    "tests": 746,
+    "failed": 0,
+    "fileList": "unit-test-files.txt"
+  },
+  "gates": [
+    {
+      "name": "final-unit-tests-2",
+      "exit": 0,
+      "seconds": 17.2
+    },
+    {
+      "name": "final-harness-verify-2",
+      "exit": 0,
+      "seconds": 543.1
+    },
+    {
+      "name": "final-production-build",
+      "exit": 0,
+      "seconds": 176.6
+    },
+    {
+      "name": "final-postbuild",
+      "exit": 0,
+      "seconds": 2.1
+    },
+    {
+      "name": "final-studio-bundle",
+      "exit": 0,
+      "seconds": 1.1
+    }
+  ],
+  "browser": {
+    "expected": 6,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "durationMs": 33604.583000000006,
+    "viewports": [
+      [
+        390,
+        900
+      ],
+      [
+        1280,
+        900
+      ]
+    ],
+    "apiMocked": false,
+    "apiConnected": false,
+    "themeMainAxeViolations": 0
+  },
+  "drawing": {
+    "savedAndReopenedBytesEqual": true,
+    "pngDimensions": [
+      720,
+      540
+    ],
+    "sha256": "b0600342937368e45bdc76c58ea4b60331bb6c10e1513c7b81af4755764a7f06"
+  },
+  "gpu": {
+    "checks": [
+      "Settled live ink protects the exact Skia handoff without a redundant visible Konva document draw",
+      "Real /studio/canvas: three normal pointer strokes acquire one visible Skia surface without changing document authorization",
+      "A single exact ink selection keeps Skia ownership; the hit-only proxy selects it without remounting the Konva paint tree",
+      "Real zoom and 90-degree rotation controls re-present the same three original strokes with zero geometry recompilation",
+      "Existing document Undo/Redo remains authoritative and the GPU display follows its restored source",
+      "Real GPU context loss shows recovery UI; explicit retry restores one same-engine surface and exact document pixels"
+    ],
+    "errors": [],
+    "driver": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+    "recovery": {
+      "width": 758,
+      "height": 1137,
+      "context": {
+        "alpha": true,
+        "antialias": false,
+        "depth": false,
+        "desynchronized": false,
+        "failIfMajorPerformanceCaveat": false,
+        "powerPreference": "default",
+        "premultipliedAlpha": true,
+        "preserveDrawingBuffer": true,
+        "stencil": true,
+        "xrCompatible": false
+      },
+      "waitedForRecoveredFrame": false
+    },
+    "beforeSha256": "44138cd72beb154f73339e59f05150a304bb62f085e2aaf2e9b1a71ecc500a37",
+    "afterSha256": "44138cd72beb154f73339e59f05150a304bb62f085e2aaf2e9b1a71ecc500a37",
+    "note": "첫 병렬 실행에서 즉시 캡처 픽셀 비교가 1회 불일치했다. 복구 프레임 대기를 명시한 최종 단독 실행은 동일 픽셀 조건을 통과했다. 동시 GPU 부하의 반복 안정성은 별도 검증 대상이다."
+  },
+  "deployment": {
+    "performed": false,
+    "blocker": "GitHub Actions account payment or spending limit; required core and verify have not executed",
+    "mainRun": "https://github.com/blue45f/toonstudio/actions/runs/40856018105"
+  },
+  "screenshots": [
+    {
+      "file": "01-start-desktop.png",
+      "sha256": "a9d555766c76202dde9566f7d919f68c6038058c062c561526b838c6a2b29007"
+    },
+    {
+      "file": "02-start-mobile.png",
+      "sha256": "67cbbd2095b21be7a84ae2b372f94ed7ac74fe782d7b870da1feec2985246ffe"
+    },
+    {
+      "file": "03-script-desktop.png",
+      "sha256": "da34ea19ab01442a5b384b4be3311e5605e647ff657c5045dcbe0bc99d6bb480"
+    },
+    {
+      "file": "04-editor-desktop.png",
+      "sha256": "da3da544cca50f87312c0b1c94923650968778e8501c45017e61e3b2c2e6b679"
+    },
+    {
+      "file": "05-export-mobile.png",
+      "sha256": "3c39afdd8eb724ae2c47c6332c9157dcad20e1719bd4e0197aee5ab5fd0ddead"
+    },
+    {
+      "file": "06-mobile-editor-guidance.png",
+      "sha256": "64656f389da5ec13efa7da216defa5324c2b2fc28598814784263589441188ef"
+    }
+  ]
+}

@@ -39,7 +39,7 @@ import {
   STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT,
 } from "../studio-project-document-reader";
 import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
-import { preserveStudioLaunchDensity } from "../studio-launch-mode";
+import { preserveStudioLaunchDensity, readStudioLaunchDensity } from "../studio-launch-mode";
 import { readStudioReviewHistory } from "../studio-review-history-store";
 import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
@@ -217,6 +217,43 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
   const PrimaryActionIcon = primaryAction?.icon ?? SectionIcon;
   const secondaryNavigationActive = section === "assets" || section === "settings";
   const launchHref = (href: string) => preserveStudioLaunchDensity(href, location.search);
+  const focusedScript = section === "story" && selectedView === "script"
+    && readStudioLaunchDensity(location.search) === "focus";
+  if (focusedScript) {
+    const fullParams = new URLSearchParams(location.search);
+    fullParams.set("uiMode", "full");
+    const [continuePath, continueSearch = ""] = launchHref(headerFacts?.hasResumeDocument ? headerFacts.resumeHref : workHref(displayProjectId)).split("?", 2);
+    const continueParams = new URLSearchParams(continueSearch);
+    continueParams.set("startTool", "draw");
+    return (
+      <Container size="wide" className="py-4 sm:py-6">
+        <header data-studio-project-shell="focused-script" className="rounded-2xl border border-line bg-card p-4 sm:p-5">
+          <Link href="/studio" className="inline-flex min-h-11 items-center text-sm font-semibold text-fg-2 hover:text-accent">{bt("내 작업으로", "Back to My work")}</Link>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="break-words text-sm font-semibold text-fg-2">{projectTitle}</p>
+              <h1 className="mt-1 text-2xl font-black text-fg">{bt("대본 확인하고 이어 그리기", "Review your script and keep drawing")}</h1>
+            </div>
+            <Link
+              href={`${continuePath}?${continueParams.toString()}`}
+              data-studio-project-header-continue="true"
+              className={buttonClass({ size: "lg", className: "gap-2" })}
+            >
+              <Brush size={17} aria-hidden="true" />{bt("이어서 그리기", "Continue drawing")}
+            </Link>
+          </div>
+          <details className="mt-3 rounded-xl border border-line bg-panel/40">
+            <summary className="min-h-11 cursor-pointer px-3 py-2.5 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("프로젝트 메뉴", "Project menu")}</summary>
+            <nav aria-label={bt("프로젝트 주요 단계", "Main project stages")} className="flex flex-wrap gap-2 border-t border-line p-2">
+              {PRIMARY_SECTIONS.map((id) => <Link key={id} href={launchHref(projectSectionHref(displayProjectId, id))} aria-current={id === section ? "page" : undefined} className={buttonClass({ variant: "quiet", className: "min-h-11" })}>{bt(SECTION_DEFINITIONS[id].label.ko, SECTION_DEFINITIONS[id].label.en)}</Link>)}
+            </nav>
+            <Link className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-accent" href={`${projectSectionHref(displayProjectId, "story")}?${fullParams.toString()}`}>{bt("전체 기획 도구 보기", "Show all planning tools")}</Link>
+          </details>
+        </header>
+        <StudioProjectDiagnosticsBridge projectId={displayProjectId} />
+      </Container>
+    );
+  }
 
   return (
     <Container

@@ -3,8 +3,8 @@ import { DISCOVER_PURPOSE_PREFIXES, isPublicCreativeRoute } from "@/shared/compo
 import { BETA_OPEN_EVENT } from "./event-catalog";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
-/** 영상 재생기와 챕터 목록을 가리면 시청 흐름이 끊기므로 홍보영상 페이지에는 띄우지 않는다. */
-const MEDIA_PAGES = new Set(["/product-tour", "/brand-film"]);
+/** 창작 입력과 영상 시청을 홍보 카드로 가리지 않는다. */
+const TASK_PAGES = new Set(["/create", "/product-tour", "/brand-film"]);
 
 /**
  * 레일·그리드·보드가 주인공인 탐색 표면. 큰 카드(30rem, 접이식 혜택 목록 포함)가
@@ -36,7 +36,7 @@ export function betaOpenEventGateEligible(pathname: string): boolean {
   if (!BETA_OPEN_EVENT.firstVisitExposure) return false;
   const normalized = normalizePathname(pathname);
   if (normalized === "/" || normalized === "/events" || normalized.startsWith("/events/")) return false;
-  if (MEDIA_PAGES.has(normalized)) return false;
+  if (TASK_PAGES.has(normalized)) return false;
   return isPublicCreativeRoute(normalized);
 }
 

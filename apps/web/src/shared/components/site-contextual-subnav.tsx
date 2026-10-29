@@ -39,9 +39,7 @@ export function SiteContextualSubNav({
   const nbCard = resolveSiteArtCardMetaForSubNavGroup(group.id);
   const simplicity = resolvePageSimplicityProfile(group.id);
   const goalCopy = isKo ? simplicity.koPrimaryGoal : simplicity.enPrimaryGoal;
-  const simplicityBadge = isKo
-    ? `직관도 ${simplicity.simplicityGrade} · 인지부하 -${simplicity.loadReductionPercent}%`
-    : `Clarity ${simplicity.simplicityGrade} · Load -${simplicity.loadReductionPercent}%`;
+  const simplicityBadge = isKo ? "이곳에서 할 수 있는 일" : "What you can do here";
 
   return (
     <nav

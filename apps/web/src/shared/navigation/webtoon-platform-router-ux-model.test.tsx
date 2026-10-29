@@ -383,7 +383,8 @@ describe("글로벌 웹툰·창작·에셋·교육·협업 플랫폼 28종 REA �
     expect(nav.getAttribute("data-contextual-subnav")).toBe("promo-cuts-hub");
     expect(nav.getAttribute("data-visual-preset")).toBe("cinema-curtain-shimmer");
     expect(nav.getAttribute("data-simplicity-grade")).toBe("S+");
-    expect(screen.getByTestId("site-ux-simplicity-pill").textContent).toContain("직관도 S+");
+    expect(screen.getByTestId("site-ux-simplicity-pill").textContent).toContain("이곳에서 할 수 있는 일");
+    expect(nav.textContent).not.toMatch(/직관도|인지부하|S\+|-[0-9]+%/u);
     const activeLink = screen.getByRole("link", {
       name: /홍보 영상 자료실 \(204편\)/u,
     });

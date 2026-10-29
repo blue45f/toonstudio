@@ -37,7 +37,10 @@ const QUICK_STARTS = [
 type QuickStart = (typeof QUICK_STARTS)[number];
 
 /** A deliberate click creates a real, recoverable project; mounting/prefetching never does. */
-export function StudioQuickStart({ locale }: { readonly locale: "ko" | "en" }) {
+export function StudioQuickStart({ locale, presentation = "section" }: {
+  readonly locale: string;
+  readonly presentation?: "section" | "drawing-card";
+}) {
   useBilingualI18nRevision();
   const copy = (ko: string, en: string): string =>
     translateBilingualValueForLocale(
@@ -77,6 +80,21 @@ export function StudioQuickStart({ locale }: { readonly locale: "ko" | "en" }) {
       setBusyId(null);
       setError(copy("이 브라우저에서 새 작업을 저장하지 못했어요. 저장 공간과 브라우저 설정을 확인한 뒤 다시 시도해 주세요. 기존 작업은 변경하지 않았습니다.", "This browser could not save a new project. Check available storage and browser settings, then retry. Existing work was not changed."));
     }
+  }
+
+  if (presentation === "drawing-card") {
+    return (
+      <div className="flex min-w-0 flex-col">
+        <button type="button" disabled={busyId !== null} onClick={() => start(QUICK_STARTS[1])}
+          className="flex min-h-20 flex-1 flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait"
+          aria-busy={busyId !== null}>
+          <span className="text-xs font-bold text-fg">{copy("일단 펜으로 바로 그리고 싶어요", "Just want to start drawing now")}</span>
+          <span className="mt-1.5 text-[11px] font-semibold text-accent">{busyId ? copy("새 캔버스 여는 중…", "Opening a new canvas…") : copy("새 캔버스 바로 열기 →", "Open a new canvas →")}</span>
+          <span className="mt-1 text-[11px] text-fg-2">{copy("4:3 가로형 · 새 그림", "4:3 landscape · New drawing")}</span>
+        </button>
+        {error ? <p role="alert" className="mt-2 text-xs leading-5 text-danger">{error}</p> : null}
+      </div>
+    );
   }
 
   return (

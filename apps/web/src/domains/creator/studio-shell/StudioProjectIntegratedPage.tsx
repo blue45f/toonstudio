@@ -4,6 +4,7 @@ import { useLocation, useParams } from "react-router-dom";
 
 import { Container } from "@/shared/components/section";
 import { useI18n } from "@/shared/lib/i18n";
+import { readStudioLaunchDensity } from "../studio-launch-mode";
 
 import {
   resolveStudioProjectView,
@@ -119,11 +120,13 @@ function SectionWorkflow({
   section,
   view,
   locale,
+  focusedStory = false,
 }: {
   readonly projectId: string;
   readonly section: StudioProjectSection;
   readonly view: string;
   readonly locale: "ko" | "en";
+  readonly focusedStory?: boolean;
 }) {
   useBilingualI18nRevision();
   const location = useLocation();
@@ -143,6 +146,7 @@ function SectionWorkflow({
         section={section}
         view={view}
         locale={locale}
+        focusedStory={focusedStory}
       />
       {section === "overview" && view === "intelligence" ? (
         <Suspense fallback={<ProjectGraphPanelFallback locale={locale} />}>
@@ -228,6 +232,7 @@ export function StudioProjectIntegratedPage({
 }: {
   readonly section: StudioProjectSection;
 }) {
+  const bt = useBilingual("StudioProjectIntegratedPage");
   const { projectId = "" } = useParams<{ projectId: string }>();
   const location = useLocation();
   const language = useI18n((state) => state.lang);
@@ -241,24 +246,26 @@ export function StudioProjectIntegratedPage({
     }
   })();
 
+  const focusedStory = section === "story" && view === "script"
+    && readStudioLaunchDensity(location.search) === "focus";
+  const workflow = <SectionWorkflow projectId={decodedProjectId} section={section} view={view} locale={locale} focusedStory={focusedStory} />;
+  const guidance = <>
+    <StudioProjectGraphContextBar projectId={decodedProjectId} locale={locale} />
+    <StudioProjectMediaGuide section={section} />
+  </>;
+  const assistant = <StudioProjectAssistantPanel projectId={decodedProjectId} section={section} locale={locale} />;
   return (
     <>
       <StudioProjectShellPage section={section} />
       {decodedProjectId ? (
         <Container size="wide" className="-mt-3 space-y-5 pb-10 sm:-mt-5 sm:pb-14">
-          <StudioProjectGraphContextBar projectId={decodedProjectId} locale={locale} />
-          <StudioProjectMediaGuide section={section} />
-          <SectionWorkflow
-            projectId={decodedProjectId}
-            section={section}
-            view={view}
-            locale={locale}
-          />
-          <StudioProjectAssistantPanel
-            projectId={decodedProjectId}
-            section={section}
-            locale={locale}
-          />
+          {focusedStory ? <>
+            {workflow}
+            <details className="rounded-2xl border border-line bg-card">
+              <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("작품 정보·제작 도움말", "Project details and production help")}</summary>
+              <div className="space-y-4 border-t border-line p-3">{guidance}{assistant}</div>
+            </details>
+          </> : <>{guidance}{workflow}{assistant}</>}
         </Container>
       ) : null}
     </>

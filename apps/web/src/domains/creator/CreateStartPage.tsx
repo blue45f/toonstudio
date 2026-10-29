@@ -42,6 +42,7 @@ import { useApp } from "@/shared/lib/store";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
+import { StudioQuickStart } from "./studio-shell/StudioQuickStart";
 
 /** 질문형 인터뷰는 "내 이야기"를 고른 사람만 쓰므로 시작 시트 본문과 분리해 늦게 불러온다. */
 const MyStoryStartFlow = lazyRetry(
@@ -213,17 +214,7 @@ export function CreateStartPage() {
               {bt("질문 답변형 초안 생성 →", "Generate draft via Q&A →")}
             </span>
           </Link>
-          <Link
-            href="/studio/new?lane=blank"
-            className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"
-          >
-            <span className="text-xs font-bold text-fg">
-              {bt("일단 펜으로 바로 그리고 싶어요", "Just want to start drawing now")}
-            </span>
-            <span className="mt-1.5 text-[11px] font-semibold text-accent">
-              {bt("캔버스 설정하고 그리기 →", "Set up a canvas and draw →")}
-            </span>
-          </Link>
+          <StudioQuickStart locale={locale} presentation="drawing-card" />
           <Link
             href="/studio/templates"
             className="flex flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50"

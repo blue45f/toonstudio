@@ -6623,7 +6623,7 @@ export function StudioCuttoonEditor({
   useEffect(() => {
     if (mannequinPoserOpen) normalizeMannequinRoute();
   }, [mannequinPoserOpen]);
-  const [pageSequenceOpen, setPageSequenceOpen] = useState(studioPageSequenceOpenByDefault);
+  const [pageSequenceOpen, setPageSequenceOpen] = useState(() => studioPageSequenceOpenByDefault(uiDensityMode));
   const [timelinePlayhead, setTimelinePlayhead] = useState(0);
   const [timelinePlaying, setTimelinePlaying] = useState(false);
   const timelinePlayingRef = useRef(timelinePlaying);
