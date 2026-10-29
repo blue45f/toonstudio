@@ -703,7 +703,7 @@ export const COMPETITOR_3D_PLATFORM_MATRIX: readonly Competitor3dPlatformSpec[] 
       "Humanoid / Quadruped / Equine Motion Classifier",
     ],
     internalizedInToonStudio: [
-      "StudioVarco3dInspectorWorkbench & scripts/varco3d-cli.mts",
+      "StudioAsset3dInspectorWorkbench & scripts/varco3d-cli.mts",
       "Unified Tripo + VARCO + Blender MCP Multi-Bridge Orchestrator",
     ],
   },
