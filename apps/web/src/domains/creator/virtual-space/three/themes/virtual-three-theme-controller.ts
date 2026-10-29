@@ -5,6 +5,7 @@ import { buildStudioThreeWorldArchitecture, type StudioThreeWorldArchitecture } 
 import { disposeStudioThreeSurfaceNodes } from "../studio-virtual-space-three-surface-art";
 import { prepareVirtualThreeThemeModels, type VirtualThreeStagedSourceInput, type VirtualThreeThemeModelStage } from "./virtual-three-theme-model-stage";
 import { assertVirtualThreeRendererCapacity } from "./virtual-three-renderer-inventory";
+import type { VirtualThreeRendererCapacityProfile } from "./virtual-three-capacity-profiles";
 import type { VirtualThreeTheme, VirtualThreeThemeId, VirtualThreeThemePreviewState } from "./virtual-three-theme-types";
 
 interface ThemeStage {
@@ -50,6 +51,7 @@ export interface VirtualThreeThemeLifecycleOptions {
 export function createVirtualThreeThemeController(options: VirtualThreeThemeLifecycleOptions & {
   readonly renderer: THREE.WebGLRenderer;
   readonly camera: THREE.Camera;
+  readonly capacityProfile?: VirtualThreeRendererCapacityProfile;
   readonly getRenderTargets?: () => readonly THREE.RenderTarget[];
   readonly getPendingEnvironmentCount?: () => number;
   readonly prepareEnvironment?: (theme: VirtualThreeTheme) => Promise<void>;

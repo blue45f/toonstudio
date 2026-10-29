@@ -53,6 +53,7 @@ import { StudioVirtualSpaceThreeHud } from "./StudioVirtualSpaceThreeHud";
 import { projectStudioThreeOverlays } from "./studio-virtual-space-three-hud-projection";
 import { DEFAULT_VIRTUAL_THREE_THEME } from "./themes/virtual-three-theme-catalog";
 import { createVirtualThreeThemeController } from "./themes/virtual-three-theme-controller";
+import { VIRTUAL_THREE_DESKTOP_HIGH_QUALITY_CAPACITY_PROFILE } from "./themes/virtual-three-capacity-profiles";
 import type { VirtualThreeTheme } from "./themes/virtual-three-theme-types";
 import { applyVirtualThreeThemeLighting, captureVirtualThreeThemeLightingState } from "./themes/virtual-three-theme-lighting";
 
@@ -214,6 +215,7 @@ export function StudioVirtualSpaceThreeCanvas({
     reloadActorVrmRef.current = reloadActorVrm;
     const themeController = createVirtualThreeThemeController({
       scene, manifest, renderer, camera, isDisposed: () => disposed,
+      capacityProfile: VIRTUAL_THREE_DESKTOP_HIGH_QUALITY_CAPACITY_PROFILE,
       prepareEnvironment: (nextTheme) => hdriController.preparePreset(studioThreeThemeLightingPreset(nextTheme, manifest)),
       waitForEnvironment: hdriController.whenIdle,
       getRenderTargets: hdriController.getRenderTargets,

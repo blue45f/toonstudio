@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import type { VirtualThreeRendererCapacityProfile } from "./virtual-three-capacity-profiles";
+
 export interface VirtualThreeSourceInput {
   /** SHA가 아닌 실제 활성 lease/epoch ID다. 같은 파일의 동시 복사본도 별도 ID를 쓴다. */
   readonly id: string;
@@ -38,6 +40,7 @@ export interface VirtualThreeSceneInventoryInput {
   /** renderer 밖에서 유지하는 environment/postprocess target은 호출자가 함께 제공한다. */
   readonly renderTargets?: readonly THREE.RenderTarget[];
   readonly policy?: VirtualThreeRendererCapacityPolicy;
+  readonly capacityProfile?: VirtualThreeRendererCapacityProfile;
 }
 export interface VirtualThreeRendererInventory {
   readonly schema: "toonstudio.virtual-three-renderer-inventory.v1";
@@ -63,11 +66,17 @@ export interface VirtualThreeRendererInventory {
     readonly knownAnticipatedShadowBytes: number;
     readonly knownFramebufferBytes: number;
     readonly knownAnticipatedBoneAndMorphBytes: number;
+    readonly knownMorphTextureCpuBytes: number;
     readonly knownPendingDecodeGpuBytes: number;
     readonly knownSubtotalBytes: number;
     readonly completeUpperBoundBytes: number | null;
   };
-  readonly policyReservation: { readonly jsWasmAndDriverBytes: number; readonly maxAccountedBytes: number };
+  readonly policyReservation: {
+    readonly jsWasmAndDriverBytes: number;
+    readonly maxAccountedBytes: number;
+    readonly capacityProfileId: string | null;
+    readonly capacityProfileValidation: "candidate" | null;
+  };
   readonly unknowns: readonly { readonly resource: string; readonly reason: string }[];
   readonly knownAccountedSubtotalBytes: number;
   readonly accountedTotalBytes: number | null;
@@ -121,21 +130,37 @@ function imageSize(image: unknown): { width: number; height: number; depth: numb
   return dimension(width) && dimension(height) && dimension(depth) ? { width, height, depth } : null;
 }
 
+/** 설치 Three의 WebGLTextures.getTextureCacheKey 14필드다. UV transform은 GPU 저장소를 나누지 않는다. */
+function textureStorageKey(texture: THREE.Texture): string {
+  const wrapR = "wrapR" in texture ? texture.wrapR : 0;
+  const domain = "isCubeDepthTexture" in texture && texture.isCubeDepthTexture === true ? "cube-depth"
+    : "isCubeTexture" in texture && texture.isCubeTexture === true ? "cube"
+    : "isData3DTexture" in texture && texture.isData3DTexture === true ? "3d"
+    : ("isDataArrayTexture" in texture && texture.isDataArrayTexture === true)
+      || ("isCompressedArrayTexture" in texture && texture.isCompressedArrayTexture === true) ? "2d-array" : "2d";
+  return `${domain}:${[texture.wrapS, texture.wrapT, wrapR || 0, texture.magFilter, texture.minFilter,
+    texture.anisotropy, texture.internalFormat, texture.format, texture.type, texture.generateMipmaps,
+    texture.premultiplyAlpha, texture.flipY, texture.unpackAlignment, texture.colorSpace].join()}`;
+}
+
 /** scene·staging의 invisible 노드도 포함한다. dispose·업로드·GL 상태 변경은 하지 않는다. */
 export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInventoryInput): VirtualThreeRendererInventory {
-  const policy = input.policy ?? VIRTUAL_THREE_RENDERER_CAPACITY_POLICY;
+  const policy = input.capacityProfile?.policy ?? input.policy ?? VIRTUAL_THREE_RENDERER_CAPACITY_POLICY;
   const unknowns: { resource: string; reason: string }[] = [];
   const unknown = (resource: string, reason: string) => { unknowns.push({ resource, reason }); };
+  if (input.capacityProfile !== undefined && input.policy !== undefined) unknown("capacity-policy", "capacity profile과 개별 policy를 중복 전달할 수 없습니다.");
   const cpuBuffers = new Set<ArrayBufferLike>();
+  const measuredAttributes = new Set<object>();
   const gpuAttributes = new Set<object>();
   const geometries = new Set<THREE.BufferGeometry>();
   const textures = new Set<THREE.Texture>();
+  const gpuTextureStorage = new WeakMap<object, Map<string, number>>();
   const decodedImages = new Set<object>();
   const targets = new Set<THREE.RenderTarget>();
   const objects = new Set<THREE.Object3D>();
   const skeletons = new Set<THREE.Skeleton>();
   let cpuBytes = 0, geometryBytes = 0, instanceBytes = 0, boneBytes = 0, gpuGeometry = 0;
-  let gpuTextures = 0, decodedCpu = 0, targetExtra = 0, shadows = 0, boneAndMorph = 0, pendingGpu = 0, sourceCpu = 0;
+  let gpuTextures = 0, decodedCpu = 0, targetExtra = 0, shadows = 0, boneAndMorph = 0, morphCpu = 0, pendingGpu = 0, sourceCpu = 0;
   const safe = (resource: string, value: number): number => {
     if (!validBytes(value)) { unknown(resource, "안전한 바이트 상한을 계산할 수 없습니다."); return 0; }
     return value;
@@ -144,22 +169,38 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
     if (!ArrayBuffer.isView(value)) return;
     if (!cpuBuffers.has(value.buffer)) { cpuBuffers.add(value.buffer); cpuBytes += value.buffer.byteLength; }
   };
-  const attribute = (value: THREE.BufferAttribute | THREE.InterleavedBufferAttribute | THREE.GLBufferAttribute, kind: "geometry" | "instance") => {
+  const attribute = (value: THREE.BufferAttribute | THREE.InterleavedBufferAttribute | THREE.GLBufferAttribute, kind: "geometry" | "instance", gpuUpload = true) => {
     const storage = value instanceof THREE.InterleavedBufferAttribute ? value.data : value;
-    if (gpuAttributes.has(storage)) return;
-    gpuAttributes.add(storage);
     if (!(storage instanceof THREE.BufferAttribute) && !(storage instanceof THREE.InterleavedBuffer)) {
       unknown("external-geometry-buffer", "외부 GLBufferAttribute의 byteLength를 관측할 수 없습니다."); return;
     }
     addCpu(storage.array);
-    if (kind === "instance") instanceBytes += storage.array.byteLength;
-    else geometryBytes += storage.array.byteLength;
-    gpuGeometry += page(storage.array.byteLength);
+    if (!measuredAttributes.has(storage)) {
+      measuredAttributes.add(storage);
+      if (kind === "instance") instanceBytes += storage.array.byteLength;
+      else geometryBytes += storage.array.byteLength;
+    }
+    if (gpuUpload && !gpuAttributes.has(storage)) {
+      gpuAttributes.add(storage);
+      gpuGeometry += page(storage.array.byteLength);
+    }
   };
   const countImageData = (image: unknown) => {
     if (!isRecord(image)) return;
     addCpu(image.data);
     if (Array.isArray(image.mipmaps)) for (const mip of image.mipmaps) if (isRecord(mip)) addCpu(mip.data);
+  };
+  const countGpuTexture = (value: THREE.Texture, bytes: number) => {
+    // RenderTarget는 Three의 source cache를 거치지 않고 attachment별로 직접 할당한다.
+    if (value.isRenderTargetTexture || ("isExternalTexture" in value && value.isExternalTexture === true)) {
+      gpuTextures += bytes;
+      return;
+    }
+    let storage = gpuTextureStorage.get(value.source);
+    if (!storage) { storage = new Map(); gpuTextureStorage.set(value.source, storage); }
+    const key = textureStorageKey(value), previous = storage.get(key) ?? 0;
+    // 공유 Texture의 CPU/mipmap은 모두 조사하되 GPU 저장소는 관측한 가장 큰 상한 한 번만 센다.
+    if (bytes > previous) { storage.set(key, bytes); gpuTextures += bytes - previous; }
   };
   const texture = (value: THREE.Texture, resource = value.uuid) => {
     if (textures.has(value)) return;
@@ -170,6 +211,7 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
     if (images.length === 0) { unknown(resource, "texture 이미지가 없습니다."); return; }
     const pixelBytes = bytesPerPixel(value);
     if (pixelBytes === null) { unknown(resource, "texture format/type의 할당 상한을 알 수 없습니다."); return; }
+    let gpuBytes = 0;
     for (const image of images) {
       const size = imageSize(image);
       if (!size) { unknown(resource, "실제 decoded texture 치수를 알 수 없습니다."); continue; }
@@ -185,12 +227,13 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
           if (value instanceof THREE.Data3DTexture) depth = Math.max(1, Math.floor(depth / 2));
         }
       } while (moreMipLevels);
-      gpuTextures += safe(resource, page(bytes));
+      gpuBytes += safe(resource, page(bytes));
       if (!value.isRenderTargetTexture && isRecord(image) && !decodedImages.has(image)) {
         decodedImages.add(image);
         if (!ArrayBuffer.isView(image.data) && !(value instanceof THREE.CompressedTexture)) decodedCpu += safe(resource, size.width * size.height * size.depth * 4);
       }
     }
+    countGpuTexture(value, gpuBytes);
   };
   const target = (value: THREE.RenderTarget) => {
     if (targets.has(value)) return;
@@ -229,18 +272,24 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
     geometries.add(value);
     for (const item of Object.values(value.attributes)) attribute(item, "geometry");
     if (value.index) attribute(value.index, "geometry");
-    for (const items of Object.values(value.morphAttributes)) for (const item of items) attribute(item, "geometry");
-    const morphs = Object.values(value.morphAttributes).reduce((maximum, items) => Math.max(maximum, items.length), 0);
+    // WebGLGeometries는 일반 attributes만 VBO로 올린다. morph 원본 배열은 CPU에 보존한다.
+    for (const items of Object.values(value.morphAttributes)) for (const item of items) attribute(item, "geometry", false);
+    const morphAttribute = value.morphAttributes.position || value.morphAttributes.normal || value.morphAttributes.color;
+    const morphs = morphAttribute?.length ?? 0;
     if (morphs > 0) {
       if (!dimension(input.maxTextureSize)) unknown(value.uuid, "morph texture 상한에 필요한 maxTextureSize가 없습니다.");
       else {
         const vertices = value.attributes.position?.count;
         if (!dimension(vertices)) unknown(value.uuid, "morph 정점 수를 알 수 없습니다.");
         else {
-          const streams = Object.keys(value.morphAttributes).length;
+          // WebGLMorphtargets의 고정 RGBA 슬롯: position=0, normal=1, color=2다.
+          const streams = value.morphAttributes.color !== undefined ? 3 : value.morphAttributes.normal !== undefined ? 2 : 1;
           const texels = vertices * streams;
           const width = Math.min(input.maxTextureSize, texels), height = Math.ceil(texels / width);
-          boneAndMorph += safe("morph-texture", page(width * height * morphs * 16));
+          const bytes = safe("morph-texture", width * height * morphs * 16);
+          boneAndMorph += page(bytes);
+          // Three가 별도로 만드는 Float32Array와 GPU DataArrayTexture는 함께 살아 있다.
+          morphCpu += bytes;
         }
       }
     }
@@ -312,7 +361,7 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
     framebufferBytes = safe("default-framebuffer", page(fb.width * fb.height * attachments));
   }
   if (!dimension(policy.maxAccountedBytes) || !validBytes(policy.jsWasmAndDriverReservationBytes)) unknown("capacity-policy", "명시 정책 예산이 유효하지 않습니다.");
-  const knownConservative = gpuGeometry + gpuTextures + decodedCpu + targetExtra + shadows + framebufferBytes + boneAndMorph + pendingGpu;
+  const knownConservative = gpuGeometry + gpuTextures + decodedCpu + targetExtra + shadows + framebufferBytes + boneAndMorph + morphCpu + pendingGpu;
   const knownAccounted = cpuBytes + sourceCpu + knownConservative + policy.jsWasmAndDriverReservationBytes;
   if (!validBytes(knownAccounted)) unknown("accounted-total", "합계가 안전한 정수 범위를 넘었습니다.");
   return {
@@ -320,12 +369,16 @@ export function collectVirtualThreeSceneInventory(input: VirtualThreeSceneInvent
     deviceVramMeasured: false, physicalRamMeasured: false, calibrated: false,
     measured: { geometryAttributeBytes: geometryBytes, instanceAttributeBytes: instanceBytes, uniqueCpuArrayBufferBytes: cpuBytes, boneMatrixBytes: boneBytes, geometries: geometries.size, textures: textures.size, renderTargets: targets.size },
     callerReported: { knownSourceCpuPeakBytes: sourceCpu, sourceLeases: sourceIds.size },
-    conservative: { knownGpuGeometryUploadBytes: gpuGeometry, knownGpuTextureBytes: gpuTextures, knownDecodedImageCpuBytes: decodedCpu, knownTargetAttachmentExtraBytes: targetExtra, knownAnticipatedShadowBytes: shadows, knownFramebufferBytes: framebufferBytes, knownAnticipatedBoneAndMorphBytes: boneAndMorph, knownPendingDecodeGpuBytes: pendingGpu, knownSubtotalBytes: knownConservative, completeUpperBoundBytes: unknowns.length ? null : knownConservative },
-    policyReservation: { jsWasmAndDriverBytes: policy.jsWasmAndDriverReservationBytes, maxAccountedBytes: policy.maxAccountedBytes },
+    conservative: { knownGpuGeometryUploadBytes: gpuGeometry, knownGpuTextureBytes: gpuTextures, knownDecodedImageCpuBytes: decodedCpu, knownTargetAttachmentExtraBytes: targetExtra, knownAnticipatedShadowBytes: shadows, knownFramebufferBytes: framebufferBytes, knownAnticipatedBoneAndMorphBytes: boneAndMorph, knownMorphTextureCpuBytes: morphCpu, knownPendingDecodeGpuBytes: pendingGpu, knownSubtotalBytes: knownConservative, completeUpperBoundBytes: unknowns.length ? null : knownConservative },
+    policyReservation: { jsWasmAndDriverBytes: policy.jsWasmAndDriverReservationBytes, maxAccountedBytes: policy.maxAccountedBytes,
+      capacityProfileId: input.policy === undefined ? input.capacityProfile?.id ?? null : null,
+      capacityProfileValidation: input.policy === undefined ? input.capacityProfile?.validation ?? null : null },
     unknowns, knownAccountedSubtotalBytes: knownAccounted, accountedTotalBytes: unknowns.length ? null : knownAccounted,
     assumptions: [
       "관측한 ArrayBuffer/attribute 길이와 texture 치수는 기기 VRAM 또는 프로세스 물리 RAM 측정이 아니다.",
+      "GPU texture는 실제 source 객체와 Three의 14필드 cache key 및 업로드 타입으로 공유를 센다. RenderTarget attachment는 합치지 않는다. 공유 Texture의 CPU/mipmap은 계속 조사한다.",
       "GPU 논리 할당은 공유 자원 중복 제거·4096B 정렬·RGB padding·mip/cube/depth/MSAA 및 미생성 bone/morph/shadow를 보수 계수로 센다.",
+      "morph 원본 attribute는 CPU만 세고, Three의 고정 position/normal/color 슬롯으로 생성하는 별도 Float32Array CPU와 RGBA32F array texture GPU를 각각 예약한다.",
       `압축 texture는 RGBA32F 전개 상한을 예약한다. 미관측 엔진 cache/PMREM·JS/WASM·driver는 명시 ${policy.jsWasmAndDriverReservationBytes}B 정책 예약의 범위이며 기기 보장이 아니다.`,
       "source CPU peak는 호출자가 보고한 blob/copy/decode의 동시존재량을 scene CPU와 추가 합산한 보수 예약이다. lease는 SHA로 합치지 않는다.",
       "default framebuffer는 단일 sample 표시용 color 3개와 별도의 MSAA color/depth를 보수 예약한다. 표시용 color에 MSAA 배율을 중복 적용하지 않으며 실제 swapchain 수나 물리 allocation 증명이 아니다.",
@@ -354,6 +407,7 @@ export interface VirtualThreeRendererCapacityInput {
   readonly sourceInputs: readonly VirtualThreeSourceInput[];
   readonly renderTargets?: readonly THREE.RenderTarget[];
   readonly policy?: VirtualThreeRendererCapacityPolicy;
+  readonly capacityProfile?: VirtualThreeRendererCapacityProfile;
 }
 interface VirtualThreeSampleParameterContext {
   readonly SAMPLES: number;
