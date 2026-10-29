@@ -46,6 +46,7 @@ obscure, or claim ownership of these libraries.
 | dli/paint (Fluid Paint) `brush.js` PBD chain + `splat.frag` + `painting.frag` WGSL port | first-party embedded port, no npm artifact | MIT | <https://github.com/dli/paint> |
 | croquis.js capsule pen + pulled-string port | `@disjukr/croquis-js` 0.0.3, first-party embedded port | (MIT OR Apache-2.0), MIT elected | <https://github.com/disjukr/croquis.js> |
 | Klecks brush tip kernel re-implementations | first-party embedded kernels, no npm artifact | MIT | <https://github.com/bitbof/klecks> |
+| `mypaint-brushes` brush settings data (196 `.myb`) | `08da4a48a4b63f2e0f3303942d7c21da8479ea9f`, generated data module | CC0-1.0 (`third_party/mypaint-brushes/COPYING`) | <https://github.com/mypaint/mypaint-brushes> |
 
 Some npm archives do not contain a standalone `LICENSE` file even though their
 package metadata declares an SPDX license. In particular,

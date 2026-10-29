@@ -1,4 +1,7 @@
 import {
+  findStudioMypaintCc0Brush, studioMypaintCc0Halo, studioMypaintCc0SurfaceBlockReason,
+} from "./mypaint-library/studio-mypaint-cc0-library-catalog";
+import {
   NATIVE_BRUSH_PROBE_MAX_SAMPLES, nativeBrushProbeEngine,
   validateNativeBrushProbeConfig, validateNativeBrushSurface,
 } from "./studio-native-brush-probe-contract";
@@ -23,6 +26,8 @@ export interface StudioNativeBrushDocumentResult {
   readonly sourceRevision: string;
   readonly engine: NativeBrushProbeEngine;
   readonly style: NativeBrushProbeStyle;
+  /** style 이 mypaint-library 일 때 사용한 CC0 MyPaint 브러시 id. */
+  readonly mypaintBrushId?: string;
   readonly seed: number;
   readonly bounds: StudioNativeBrushDocumentPlan["bounds"];
   readonly src: `data:image/png;base64,${string}`;
@@ -43,7 +48,11 @@ function channel(values: number[] | undefined, count: number, label: string, low
 /** Explicit re-interpretation of a finished centerline, never a silent replacement of its brush. */
 export function planStudioNativeBrushDocument(
   source: El | null,
-  options: { engine: NativeBrushProbeEngine; style: NativeBrushProbeStyle; seed?: number; documentWidth: number; documentHeight: number },
+  options: {
+    engine: NativeBrushProbeEngine; style: NativeBrushProbeStyle; seed?: number; documentWidth: number; documentHeight: number;
+    /** style 이 mypaint-library 일 때 필수인 CC0 MyPaint 브러시 id. */
+    mypaintBrushId?: string;
+  },
 ): StudioNativeBrushDocumentPlan {
   if (!source || source.type !== "draw" || (source.kind ?? "freehand") !== "freehand"
     || source.mode === "eraser" || source.hidden || source.locked) {
@@ -64,9 +73,19 @@ export function planStudioNativeBrushDocument(
     || !Number.isFinite(source.strokeWidth) || source.strokeWidth < 1 || source.strokeWidth > 128) {
     throw new Error("변환할 획은 #RRGGBB 단색과 1–128px 굵기여야 합니다.");
   }
+  if (options.style === "mypaint-library" && options.engine !== "libmypaint") {
+    throw new Error("CC0 MyPaint 라이브러리 브러시는 libmypaint 엔진에서만 변환할 수 있습니다.");
+  }
+  const library = options.style === "mypaint-library" ? findStudioMypaintCc0Brush(options.mypaintBrushId ?? "") : null;
+  if (options.style === "mypaint-library") {
+    if (!library) throw new Error("CC0 MyPaint 라이브러리에서 브러시를 고르세요.");
+    const blocked = studioMypaintCc0SurfaceBlockReason(library);
+    if (blocked) throw new Error(`${library.name}: ${blocked}`);
+  }
   const config: NativeBrushProbeConfig = {
     size: source.strokeWidth, color: source.stroke.toLowerCase(),
     style: options.engine === "libmypaint" ? options.style : "ink", seed: options.seed ?? 7,
+    ...(library ? { mypaintBrushId: library.id } : {}),
   };
   validateNativeBrushProbeConfig(config);
   if (source.opacity !== undefined && (!Number.isFinite(source.opacity) || source.opacity <= 0 || source.opacity > 1)) {
@@ -91,7 +110,8 @@ export function planStudioNativeBrushDocument(
     maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
   }
   // Conservative native dab/scatter padding. The Worker also rejects any unintended edge contact.
-  const halo = Math.ceil(config.size * 4 + 4);
+  // 라이브러리 브러시는 생성기가 추정한 도달 범위(산포·오프셋·반지름 곡선)만큼 여백을 넓힌다.
+  const halo = library ? studioMypaintCc0Halo(library, config.size) : Math.ceil(config.size * 4 + 4);
   const x = Math.max(0, Math.floor(minX - halo)), y = Math.max(0, Math.floor(minY - halo));
   const right = Math.min(documentWidth, Math.ceil(maxX + halo));
   const bottom = Math.min(documentHeight, Math.ceil(maxY + halo));

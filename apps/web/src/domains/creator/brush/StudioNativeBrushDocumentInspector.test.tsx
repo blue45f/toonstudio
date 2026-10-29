@@ -49,6 +49,23 @@ describe("native document inspector", () => {
     expect(screen.getByText(/워시·초크는 libmypaint/)).toBeTruthy();
     expect(renderProduct).not.toHaveBeenCalled();
   });
+  it("offers the CC0 MyPaint library with grouped brushes and sends the chosen id to the Worker", async () => {
+    renderProduct.mockImplementation(async () => result);
+    render(<Inspector {...props()} />); open();
+    fireEvent.change(screen.getByRole("combobox", { name: "문서 변환 재질" }), { target: { value: "mypaint-library" } });
+    const brush = screen.getByRole("combobox", { name: "MyPaint 라이브러리 브러시" }) as HTMLSelectElement;
+    expect(brush.value).toBe("deevad/2B_pencil");
+    expect(brush.querySelectorAll("optgroup")).toHaveLength(7);
+    expect(brush.querySelectorAll("option")).toHaveLength(196);
+    const eraser = brush.querySelector<HTMLOptionElement>('option[value="deevad/kneaded_eraser"]')!;
+    expect(eraser.disabled).toBe(true);
+    expect(eraser.title).toMatch(/지우개/u);
+    fireEvent.change(brush, { target: { value: "classic/pencil" } });
+    fireEvent.click(screen.getByRole("button", { name: "결과 미리보기" }));
+    await waitFor(() => expect(renderProduct).toHaveBeenCalled());
+    const [sentPlan] = renderProduct.mock.calls[0]! as [ReturnType<typeof planStudioNativeBrushDocument>];
+    expect(sentPlan.config).toMatchObject({ style: "mypaint-library", mypaintBrushId: "classic/pencil" });
+  });
   it("captures the document commit permission before calling the Worker", async () => {
     const calls: string[] = [], commit = vi.fn(() => { calls.push("commit"); return true; });
     renderProduct.mockImplementation(async () => { calls.push("worker"); return result; });
