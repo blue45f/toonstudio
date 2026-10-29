@@ -6,6 +6,7 @@ export * from "./svg";
 export * from "./kpp";
 export * from "./krita-bundle";
 export * from "./csp-sut";
+export * from "./chunked-sqlite-container";
 export * from "./csp-cls";
 export * from "./csp-pep-3dp";
 export * from "./csp-laf-sgs-spws";
