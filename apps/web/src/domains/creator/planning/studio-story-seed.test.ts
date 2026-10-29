@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   buildLocalStorySeed,
   buildStorySeedAiPrompt,
-  createAiStorySeedProvider,
+  createTextAiStorySeedProvider,
+  StorySeedAiError,
   localStorySeedProvider,
   parseStorySeedAiResponse,
   storySeedGenreKit,
@@ -135,7 +136,7 @@ describe("storySeedPlanPatch", () => {
   });
 });
 
-describe("localStorySeedProvider & createAiStorySeedProvider", () => {
+describe("localStorySeedProvider & createTextAiStorySeedProvider", () => {
   it("제공자 계약으로 같은 초안을 돌려준다", async () => {
     const viaProvider = await localStorySeedProvider.generate({
       genre: "무협",
@@ -171,12 +172,35 @@ describe("localStorySeedProvider & createAiStorySeedProvider", () => {
     expect(parsed?.emotionalArc).toEqual({ from: "불안", to: "각성" });
   });
 
-  it("AI 제공자는 네트워크 미연결 또는 오류 시 로컬 씨앗 초안으로 안전하게 폴백한다", async () => {
-    const provider = createAiStorySeedProvider({ baseUrl: "", apiKey: "", textModel: "" });
+  it("AI 제공자는 통합 AI 응답을 기본 초안 위에 덮어써 완결된 AI 초안을 돌려준다", async () => {
+    const complete = vi.fn(async () => ({
+      ok: true as const,
+      content: "```json\n" + JSON.stringify({ goalDraft: "첫눈이 오기 전에 고백한다", loglineCandidates: ["A", "B", "C"] }) + "\n```",
+    }));
+    const provider = createTextAiStorySeedProvider(complete);
     const draft = await provider.generate({ genre: "로맨스", keywords: ["첫눈"] });
+
     expect(provider.kind).toBe("ai");
-    expect(draft).not.toBeNull();
-    expect(draft?.genre).toBe("로맨스");
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(complete.mock.calls[0]?.[0].user).toContain("첫눈");
+    expect(draft).toMatchObject({ genre: "로맨스", goalDraft: "첫눈이 오기 전에 고백한다", source: "ai" });
+    expect(draft?.loglineCandidates).toEqual(["A", "B", "C"]);
+  });
+
+  it("AI가 답하지 못하면 기본 초안을 AI 결과처럼 꾸미지 않고 이유와 함께 실패한다", async () => {
+    const failing = createTextAiStorySeedProvider(async () => ({ ok: false as const, error: "로그인하면 바로 쓸 수 있어요." }));
+    await expect(failing.generate({ genre: "로맨스", keywords: ["첫눈"] })).rejects.toThrow(StorySeedAiError);
+    await expect(failing.generate({ genre: "로맨스", keywords: ["첫눈"] })).rejects.toThrow("로그인하면 바로 쓸 수 있어요.");
+
+    const unreadable = createTextAiStorySeedProvider(async () => ({ ok: true as const, content: "죄송해요, 지금은 어려워요." }));
+    await expect(unreadable.generate({ genre: "로맨스", keywords: [] })).rejects.toThrow(/씨앗 초안 형식으로 읽지 못했어요/u);
+  });
+
+  it("장르가 없으면 AI를 부르지 않는다", async () => {
+    const complete = vi.fn();
+    const provider = createTextAiStorySeedProvider(complete);
+    await expect(provider.generate({ genre: "  ", keywords: [] })).resolves.toBeNull();
+    expect(complete).not.toHaveBeenCalled();
   });
 });
 

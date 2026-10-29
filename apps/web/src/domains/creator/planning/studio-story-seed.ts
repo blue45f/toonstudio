@@ -427,13 +427,6 @@ export const localStorySeedProvider: StorySeedProvider = {
   generate: (input) => Promise.resolve(buildLocalStorySeed(input)),
 };
 
-export interface StorySeedAiEndpointSettings {
-  readonly baseUrl: string;
-  readonly apiKey: string;
-  readonly textModel?: string;
-  readonly chatCompletionsPath?: string;
-}
-
 export function buildStorySeedAiPrompt(input: StorySeedInput): {
   readonly system: string;
   readonly user: string;
@@ -538,90 +531,37 @@ export function parseStorySeedAiResponse(
   });
 }
 
-export function createAiStorySeedProvider(
-  endpoint?: StorySeedAiEndpointSettings,
-  fetchImpl: typeof fetch = fetch,
-): StorySeedProvider {
+/** 텍스트 AI를 한 번 부른다. 성공하면 응답 글, 실패하면 사용자에게 보여 줄 이유를 돌려준다. */
+export type StorySeedTextCompletion = (prompt: {
+  readonly system: string;
+  readonly user: string;
+}) => Promise<{ readonly ok: true; readonly content: string } | { readonly ok: false; readonly error: string }>;
+
+/** AI 확장이 결과를 내지 못했다. 규칙 기반 초안을 AI 결과처럼 꾸미지 않고 이유와 함께 알린다. */
+export class StorySeedAiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StorySeedAiError";
+  }
+}
+
+/**
+ * 통합 AI 경로(등록한 내 키 → ToonStudio AI 순)로 씨앗 초안을 확장하는 제공자.
+ * 응답은 장르 키트로 만든 기본 초안 위에 덮어써(빈 필드는 기본값 유지) 항상 완결된 초안을 돌려준다.
+ * AI가 답하지 못하거나 형식을 읽지 못하면 `StorySeedAiError`를 던져, 화면이 기본 제안으로 만들지를 사용자에게 맡긴다.
+ */
+export function createTextAiStorySeedProvider(complete: StorySeedTextCompletion): StorySeedProvider {
   return {
     kind: "ai",
     async generate(input: StorySeedInput): Promise<StorySeedDraft | null> {
-      const localFallback = buildLocalStorySeed(input);
-      if (!localFallback) return null;
-      const apiKey = endpoint?.apiKey?.trim() || "";
-      if (!apiKey) {
-        return Object.freeze({ ...localFallback, source: "ai" as const });
+      if (!buildLocalStorySeed(input)) return null;
+      const result = await complete(buildStorySeedAiPrompt(input));
+      if (!result.ok) throw new StorySeedAiError(result.error);
+      const parsed = parseStorySeedAiResponse(result.content, input);
+      if (!parsed) {
+        throw new StorySeedAiError("AI 응답을 씨앗 초안 형식으로 읽지 못했어요. 다시 시도하거나 기본 제안으로 만들어 보세요.");
       }
-      const isAnthropic =
-        Boolean(endpoint?.baseUrl?.includes("anthropic.com")) || apiKey.startsWith("sk-ant-");
-      const baseUrl =
-        endpoint?.baseUrl?.trim() ||
-        (isAnthropic ? "https://api.anthropic.com" : "https://models.github.ai/inference");
-      const path =
-        endpoint?.chatCompletionsPath?.trim() ||
-        (isAnthropic ? "/v1/messages" : "/chat/completions");
-      const url = isAnthropic
-        ? `${baseUrl.replace(/\/+$/u, "")}/v1/messages`
-        : `${baseUrl.replace(/\/+$/u, "")}/${path.replace(/^\/+/u, "")}`;
-      const prompt = buildStorySeedAiPrompt(input);
-      try {
-        const res = await fetchImpl(
-          url,
-          isAnthropic
-            ? {
-                method: "POST",
-                headers: {
-                  "x-api-key": apiKey,
-                  "anthropic-version": "2023-06-01",
-                  "anthropic-dangerous-direct-browser-access": "true",
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model:
-                    endpoint?.textModel?.trim().startsWith("claude-")
-                      ? endpoint.textModel.trim()
-                      : "claude-haiku-5-5",
-                  system: prompt.system,
-                  messages: [{ role: "user", content: prompt.user }],
-                  max_tokens: 2048,
-                  output_config: { effort: "low" },
-                }),
-              }
-            : {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${apiKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model: endpoint?.textModel?.trim() || "openai/gpt-4o-mini",
-                  messages: [
-                    { role: "system", content: prompt.system },
-                    { role: "user", content: prompt.user },
-                  ],
-                  temperature: 0.7,
-                  max_tokens: 900,
-                }),
-              },
-        );
-        if (!res.ok) {
-          return Object.freeze({ ...localFallback, source: "ai" as const });
-        }
-        const payload = (await res.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-          content?: Array<{ type?: string; text?: string }>;
-        };
-        const content =
-          payload.choices?.[0]?.message?.content ??
-          payload.content
-            ?.filter((b) => b?.type === "text" && typeof b.text === "string")
-            .map((b) => b.text)
-            .join("") ??
-          "";
-        return parseStorySeedAiResponse(content, input)
-          ?? Object.freeze({ ...localFallback, source: "ai" as const });
-      } catch {
-        return Object.freeze({ ...localFallback, source: "ai" as const });
-      }
+      return parsed;
     },
   };
 }
