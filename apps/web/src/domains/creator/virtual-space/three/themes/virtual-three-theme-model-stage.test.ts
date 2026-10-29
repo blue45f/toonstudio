@@ -29,7 +29,30 @@ interface BoxSpec {
   readonly size: readonly [number, number, number];
   readonly position?: readonly [number, number, number];
   readonly includeUv?: boolean;
+  readonly topBevel?: number;
 }
+/** 실제 삼각형 경사면을 가진 합성 상판이다. 구매 GLB 기하를 복사하지 않는다. */
+function beveledTopBox(size: readonly [number, number, number], bevel: number): THREE.BufferGeometry {
+  const [width, height, depth] = size, positions: number[] = [], indices: number[] = [];
+  for (const [inset, y] of [[0, -height / 2], [0, height / 2 - bevel], [bevel, height / 2]]) {
+    if (inset === undefined || y === undefined) throw new Error("합성 bevel ring이 없습니다.");
+    for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      if (x === undefined || z === undefined) throw new Error("합성 bevel corner가 없습니다.");
+      positions.push(x * (width / 2 - inset), y, z * (depth / 2 - inset));
+    }
+  }
+  indices.push(0, 1, 2, 0, 2, 3, 8, 10, 9, 8, 11, 10);
+  for (const offset of [0, 4]) for (let edge = 0; edge < 4; edge += 1) {
+    const current = offset + edge, next = offset + (edge + 1) % 4;
+    indices.push(current, current + 4, next + 4, current, next + 4, next);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(Array.from({ length: 12 }, (_, index) => [index % 2, Math.floor(index / 2) % 2]).flat(), 2));
+  geometry.setIndex(indices); geometry.computeVertexNormals();
+  return geometry;
+}
+
 /** 네트워크 URI 없는 실제 GLB다. Three의 실제 정점·법선·인덱스를 BIN에 보존한다. */
 function inlineGlb(boxes: readonly BoxSpec[] = [{ size: [1, 2, 1] }]): ArrayBuffer {
   const chunks: Uint8Array[] = [];
@@ -44,7 +67,7 @@ function inlineGlb(boxes: readonly BoxSpec[] = [{ size: [1, 2, 1] }]): ArrayBuff
     return index;
   };
   for (const box of boxes) {
-    const geometry = new THREE.BoxGeometry(...box.size);
+    const geometry = box.topBevel === undefined ? new THREE.BoxGeometry(...box.size) : beveledTopBox(box.size, box.topBevel);
     const positions = geometry.getAttribute("position"), normals = geometry.getAttribute("normal");
     const positionData = new Float32Array(positions.count * 3), normalData = new Float32Array(normals.count * 3);
     for (let index = 0; index < positions.count; index += 1) {
@@ -94,11 +117,16 @@ function inlineGlb(boxes: readonly BoxSpec[] = [{ size: [1, 2, 1] }]): ArrayBuff
 function verifiedSource(id: string, bytes = inlineGlb()): VirtualThreeVerifiedThemeModelSource {
   const hash = createHash("sha256").update(new Uint8Array(bytes)).digest("hex");
   const jsonBytes = new DataView(bytes).getUint32(12, true), binBytes = bytes.byteLength - 28 - jsonBytes;
-  const document: { nodes: unknown[]; meshes: unknown[]; accessors: { count: number }[] } = JSON.parse(new TextDecoder().decode(new Uint8Array(bytes, 20, jsonBytes)));
+  const document: { nodes: unknown[]; meshes: { primitives: { indices: number }[] }[]; accessors: { count: number }[] } = JSON.parse(new TextDecoder().decode(new Uint8Array(bytes, 20, jsonBytes)));
+  const triangles = document.meshes.reduce((sum, mesh) => sum + mesh.primitives.reduce((total, primitive) => {
+    const indices = document.accessors[primitive.indices];
+    if (!indices) throw new Error("합성 GLB의 triangle index accessor가 없습니다.");
+    return total + indices.count / 3;
+  }, 0), 0);
   const metrics: StudioBg3dGlbMetrics = {
     byteSize: bytes.byteLength, jsonByteSize: jsonBytes, binByteSize: binBytes,
     nodes: document.nodes.length, meshes: document.meshes.length, meshPrimitives: document.meshes.length,
-    drawCalls: document.meshes.length, triangles: 12 * document.meshes.length, materials: 1,
+    drawCalls: document.meshes.length, triangles, materials: 1,
     textures: 0, images: 0, imageBytes: 0, estimatedDecodedImageBytes: 0, maxImageDimension: 0,
     undeterminedImageDimensions: 0, lights: 0, animations: 0, animationChannels: 0,
     animationKeyframes: 0, animationValues: 0, skins: 0, joints: 0, morphTargets: 0,
@@ -567,6 +595,76 @@ describe("검증된 private GLB 바이트를 사용하는 테마 stage", () => {
 });
 
 describe("실제 테이블 표면과 탁상 소품", () => {
+  it("기존 격자를 먼저 보존하고 bevel·빈 중심이 있는 테이블의 실제 지지면에서 컵 4개와 그릇 2개를 배치한다", async () => {
+    // 상판 안쪽 bevel과 빈 중심 때문에 기존 3×3에는 큰 그릇의 네 모서리를 받칠 후보가 없다.
+    const tableBytes = inlineGlb([
+      { size: [2.6, 0.1, 0.59], position: [0, 0.89, -0.305], topBevel: 0.015, includeUv: true },
+      { size: [0.12, 0.8, 1.2], position: [-1.1, 0.4, 0] },
+      { size: [0.12, 0.8, 1.2], position: [1.1, 0.4, 0] },
+    ]);
+    const sources = new Map<string, VirtualThreeVerifiedThemeModelSource>([
+      [MODEL_IDS.dungeonTable, verifiedSource(MODEL_IDS.dungeonTable, tableBytes)],
+      [MODEL_IDS.dungeonChair, verifiedSource(MODEL_IDS.dungeonChair, inlineGlb([{ size: [0.4, 0.9, 0.4] }]))],
+      [MODEL_IDS.dungeonCup, verifiedSource(MODEL_IDS.dungeonCup, inlineGlb([{ size: [0.06674898497, 0.16, 0.06845785975] }]))],
+      [MODEL_IDS.dungeonBowl, verifiedSource(MODEL_IDS.dungeonBowl, inlineGlb([{ size: [0.5, 0.16, 0.5] }]))],
+    ]);
+    loadSource.mockImplementation(async (id) => {
+      const source = sources.get(id);
+      if (!source) throw new Error("합성 카페 source가 없습니다.");
+      return source;
+    });
+    const scene = new THREE.Scene();
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest, theme: recipe([
+      role("cafe-table", "workstation", MODEL_IDS.dungeonTable, 2),
+      role("cafe-chairs", "seating", MODEL_IDS.dungeonChair, 4),
+      role("cafe-cups", "tabletop", MODEL_IDS.dungeonCup, 4),
+      role("cafe-bowls", "tabletop", MODEL_IDS.dungeonBowl, 2),
+    ]), signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      expect(scene.children).toHaveLength(12);
+      const tables = [0, 1].map((index) => {
+        const table = scene.getObjectByName(`theme-model-cafe-table-${index}`);
+        if (!table) throw new Error("합성 카페 table이 없습니다.");
+        return table;
+      });
+      // 네 번째 컵은 첫 table의 추가 격자보다 두 번째 table의 기존 첫 후보를 먼저 쓴다.
+      const lastCup = scene.getObjectByName("theme-model-cafe-cups-3"), secondTable = tables[1];
+      if (!lastCup || !secondTable) throw new Error("기존 격자 우선순위의 소품이 없습니다.");
+      const tableBox = new THREE.Box3().setFromObject(secondTable), cupBox = new THREE.Box3().setFromObject(lastCup);
+      expect(cupBox.getCenter(new THREE.Vector3()).x).toBeCloseTo(THREE.MathUtils.lerp(tableBox.min.x, tableBox.max.x, 0.25));
+      expect(cupBox.getCenter(new THREE.Vector3()).z).toBeCloseTo(THREE.MathUtils.lerp(tableBox.min.z, tableBox.max.z, 0.3));
+      const occupied: THREE.Box3[] = [], normal = new THREE.Vector3(), matrix = new THREE.Matrix3();
+      for (const [id, count, width, depth] of [["cafe-cups", 4, 0.06674898497, 0.06845785975], ["cafe-bowls", 2, 0.5, 0.5]] as const) for (let index = 0; index < count; index += 1) {
+        const root = scene.getObjectByName(`theme-model-${id}-${index}`);
+        if (!root) throw new Error("카페 소품 수가 다릅니다.");
+        const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+        expect(size.y).toBeCloseTo(0.16); expect(size.x).toBeCloseTo(width); expect(size.z).toBeCloseTo(depth);
+        const padded = box.clone().expandByVector(new THREE.Vector3(0.02, 0, 0.02));
+        for (const other of occupied) expect(padded.intersectsBox(other)).toBe(false);
+        occupied.push(padded);
+        expect(tables.some((table) => {
+          const bounds = new THREE.Box3().setFromObject(table);
+          if (padded.min.x < bounds.min.x - 1e-6 || padded.max.x > bounds.max.x + 1e-6 || padded.min.z < bounds.min.z - 1e-6 || padded.max.z > bounds.max.z + 1e-6) return false;
+          const ray = new THREE.Raycaster(new THREE.Vector3(center.x, bounds.max.y + 0.5, center.z), new THREE.Vector3(0, -1, 0));
+          return ray.intersectObject(table, true).some((hit) => {
+            if (!hit.face || Math.abs(box.min.y - hit.point.y - 0.012) > 1e-6) return false;
+            normal.copy(hit.face.normal).applyMatrix3(matrix.getNormalMatrix(hit.object.matrixWorld)).normalize();
+            if (normal.y < 0.8) return false;
+            return [-1, 1].every((sx) => [-1, 1].every((sz) => {
+              ray.set(new THREE.Vector3(center.x + sx * size.x / 2, bounds.max.y + 0.5, center.z + sz * size.z / 2), new THREE.Vector3(0, -1, 0));
+              return ray.intersectObject(table, true).some((corner) => {
+                if (!corner.face || Math.abs(corner.point.y - hit.point.y) > 0.025) return false;
+                normal.copy(corner.face.normal).applyMatrix3(matrix.getNormalMatrix(corner.object.matrixWorld)).normalize();
+                return normal.y >= 0.8;
+              });
+            }));
+          });
+        })).toBe(true);
+      }
+      expect(fetch).not.toHaveBeenCalled();
+    } finally { stage.dispose(); }
+  });
+
   it("실제 상판 raycast 높이에 소품을 두고 소품끼리 겹치지 않는다", async () => {
     const table = verifiedSource("fixture-table", inlineGlb([{ size: [4, 1, 2] }]));
     const cup = verifiedSource("fixture-cup", inlineGlb([{ size: [1, 1, 1] }]));

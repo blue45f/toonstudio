@@ -45,17 +45,30 @@ function normalize(model: THREE.Object3D, display: ReturnType<typeof virtualThre
   return box.getSize(size);
 }
 
+/** 기존 배치가 없을 때만 소품 footprint의 절반 간격을 목표로 추가 후보를 찾는다. */
+function tabletopAxisCandidates(min: number, max: number, extent: number): number[] {
+  const first = min + extent / 2 + 0.02, last = max - extent / 2 - 0.02;
+  if (last < first) return [];
+  if (last === first) return [first];
+  const intervals = Math.min(32, Math.max(1, Math.ceil((last - first) / (extent / 2))));
+  return Array.from({ length: intervals + 1 }, (_, index) => THREE.MathUtils.lerp(first, last, index / intervals));
+}
+
 /** 탁상 소품은 실제 테이블의 위를 향한 표면 교차점에만 놓는다. */
 function tabletopPosition(tables: readonly THREE.Group[], size: THREE.Vector3, occupied: THREE.Box3[]): THREE.Vector3 {
   const ray = new THREE.Raycaster();
   const down = new THREE.Vector3(0, -1, 0);
   const normalMatrix = new THREE.Matrix3();
   const normal = new THREE.Vector3();
-  for (const table of tables) {
+  // 모든 테이블의 기존 3×3 배치를 먼저 보존한 뒤에만 제한된 추가 격자를 쓴다.
+  for (const detailed of [false, true]) for (const table of tables) {
     table.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(table);
-    for (const row of [0.3, 0.5, 0.7]) for (const column of [0.25, 0.5, 0.75]) {
-      const x = THREE.MathUtils.lerp(box.min.x, box.max.x, column), z = THREE.MathUtils.lerp(box.min.z, box.max.z, row);
+    const columns = detailed ? tabletopAxisCandidates(box.min.x, box.max.x, size.x)
+      : [0.25, 0.5, 0.75].map((column) => THREE.MathUtils.lerp(box.min.x, box.max.x, column));
+    const rows = detailed ? tabletopAxisCandidates(box.min.z, box.max.z, size.z)
+      : [0.3, 0.5, 0.7].map((row) => THREE.MathUtils.lerp(box.min.z, box.max.z, row));
+    for (const z of rows) for (const x of columns) {
       ray.set(new THREE.Vector3(x, box.max.y + 0.5, z), down);
       for (const hit of ray.intersectObject(table, true)) {
         if (!hit.face) continue;
