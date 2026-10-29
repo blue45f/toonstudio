@@ -49,16 +49,32 @@ describe("고정 desktop 품질 후보의 전체 자원 예산", () => {
   });
 
   it("후보에서도 기존·신규 scene과 decode의 동시 peak를 합산해 상한 초과를 거부한다", () => {
-    const current = input(), stagedScene = representativeScene(9, 4096);
+    const current = input(), stagedScene = representativeScene(18, 4096);
     try {
       expect(() => assertVirtualThreeSceneCapacity({ ...current, stagedScene, capacityProfile: desktop })).toThrow(VirtualThreeRendererCapacityError);
       expect(() => assertVirtualThreeSceneCapacity({ ...current, capacityProfile: desktop, sourceInputs: [{
         id: "staged:pending", blobBytes: 1024, bufferCopyBytes: 1024,
-        decodedGeometryBytes: 0, decodedImageBytes: 512 * 1024 * 1024, pendingDecode: true,
+        decodedGeometryBytes: 0, decodedImageBytes: 1024 * 1024 * 1024, pendingDecode: true,
       }] })).toThrow(VirtualThreeRendererCapacityError);
       expect(current.activeScene.children).toHaveLength(9);
-      expect(stagedScene.children).toHaveLength(9);
+      expect(stagedScene.children).toHaveLength(18);
     } finally { dispose(current.activeScene); dispose(stagedScene); }
+  });
+
+  it("원장 계산을 바꾸지 않고 2GiB를 넘는 동일 품질 준비량을 유한 3GiB 후보에서 평가한다", () => {
+    const current = input();
+    const sourceInputs = [{ id: "staged:fixed-quality", blobBytes: 1024, bufferCopyBytes: 1024,
+      decodedGeometryBytes: 0, decodedImageBytes: 512 * 1024 * 1024, pendingDecode: true }];
+    try {
+      expect(() => assertVirtualThreeSceneCapacity({ ...current, sourceInputs,
+        policy: { ...desktop.policy, maxAccountedBytes: 2 * 1024 * 1024 * 1024 } })).toThrow(VirtualThreeRendererCapacityError);
+      const report = assertVirtualThreeSceneCapacity({ ...current, sourceInputs, capacityProfile: desktop });
+      expect(report.accountedTotalBytes).toBeGreaterThan(2 * 1024 * 1024 * 1024);
+      expect(report.accountedTotalBytes).toBeLessThan(desktop.policy.maxAccountedBytes);
+      expect(report.calibrated).toBe(false);
+      expect(report.physicalRamMeasured).toBe(false);
+      expect(current.activeScene.children).toHaveLength(9);
+    } finally { dispose(current.activeScene); }
   });
 
   it("후보에서도 미확인 texture·중복 lease·서로 충돌하는 정책 지정을 거부한다", () => {

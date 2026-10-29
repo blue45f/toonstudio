@@ -57,9 +57,13 @@ inventory는 실제 typed-array 바이트, 호출자가 제공한 검증 지표,
 
 2026-10-30 실제 Chrome·Metal 호스트의 첫 정상 정원 전환에서 `VirtualThreeRendererCapacityError`를 확인했다. drawing buffer 3840×2160·MSAA4에서 전체 보수 합산은 1,753,553,900바이트였고 미확인 자원은 없었다. 그중 framebuffer 364,953,600바이트와 예약 134,217,728바이트, scene CPU buffer 31,480,100바이트, GPU geometry 37,797,888바이트만으로도 초기 512 MiB를 초과했다. 기본 self와 NPC 8명은 서로 다른 9종 VRM이므로 동일 actor URL의 반복 로드로 이 오류를 설명하지 않는다. 초기 baseline은 즉시 표시하지만 이후 전환은 baseline 전체까지 검사하는 계약과 초기 예산의 규모가 맞지 않았다. 이 값은 실제 물리 메모리 사용량이 아니다.
 
-수정 소스는 기본 512 MiB 정책을 유지하고, 기존 고품질 Three canvas에서 `desktop-high-quality-v1` 후보 프로필을 명시적으로 주입한다. 후보의 고정 전체 예산은 2 GiB, 그 안의 JS/WASM/driver 예약은 기존 128 MiB다. 요청별 자동 증액이나 baseline 차감은 하지 않는다. 미확인 자원 거부, 기존·신규 scene의 동시 peak, source lease별 복사·decode, framebuffer와 환경광 자원을 계속 합산한다. 동일 실제 `Texture.source`와 Three 0.186.1의 GPU cache key가 같은 경우에만 GPU 할당을 공유 계산하며, 다른 Source 또는 별도 decode를 SHA가 같다는 이유로 합치지 않는다.
+수정 소스는 기본 512 MiB 정책을 유지하고, 기존 고품질 Three canvas에서 `desktop-high-quality-v1` 후보 프로필을 명시적으로 주입한다. 후보의 고정 전체 예산은 3 GiB, 그 안의 JS/WASM/driver 예약은 기존 128 MiB다. 요청별 자동 증액이나 baseline 차감은 하지 않는다. 미확인 자원 거부, 기존·신규 scene의 동시 peak, source lease별 복사·decode, framebuffer와 환경광 자원을 계속 합산한다. 동일 실제 `Texture.source`와 Three 0.186.1의 GPU cache key가 같은 경우에만 GPU 할당을 공유 계산하며, 다른 Source 또는 별도 decode를 SHA가 같다는 이유로 합치지 않는다.
 
-후보 2 GiB는 현재 관측된 장면과 등록 레시피를 평가할 유한 설계 범위다. 원본 헤더·accessor의 읽기 전용 대조에서 각 레시피의 원본 파일·기하·RGBA8 이미지·mip에 대한 합계는 약 39~148 MiB였으나, 이는 architecture·driver·별도 source 보존·교체 후 수명까지 포함한 전체 peak가 아니다. 후보를 기기 안전 한도, Chrome 전체 지원 완료 또는 STP 통과로 홍보하지 않는다. 같은 DPR·품질에서 6개 테마, 아바타 교체, baseline 복귀와 reload의 전체 peak·headroom·정리 후 plateau를 검증해야 한다. 상한을 넘거나 자원 크기가 불명확하면 실패를 유지하며 임의 반복 상향하지 않는다. 이 문단을 작성한 시점에는 해당 후보의 Node·브라우저 검증은 아직 실행하지 않았다.
+2026-10-30 실제 호스트에서 처리된 내부 예외마다 멈추는 디버거 관측을 끈 조건은 정원 표시·저장·reload를 통과했다. 해당 대조에서도 실제 capacity breakpoint와 uncaught pageerror 판정은 유지했다. 다음 판타지 테마의 decode 전 원장 16번째 값은 2,193,406,642바이트였고 2 GiB 후보를 45,922,994바이트 초과해 거절됐다. 예외 pause가 없는 조건의 재진입 성공을 제품 클릭 수정이나 보편적인 경합 해결로 표현하지 않는다.
+
+후보 3 GiB는 이 원장과 등록 자원의 보수적 준비 계획을 검증하기 위한 유한 설계 범위다. 기존 Worker의 번들 12종 metrics와 현재 공급 GLB 생성 모델 4종의 헤더 계산은 각 레시피의 source CPU·pending GPU 예약을 재현한다. 관측된 판타지 원장에 다른 모델의 old/new 두 벌까지 중복 보수 예약한 참고 계획치는 3,100,316,770바이트다. 이 수치는 모든 architecture·14개 GPU cache-key 조합·정렬·parser 수명·아바타 전환을 증명한 완전 상한이나 실제 물리 메모리 측정이 아니다. 기본 512 MiB·128 MiB 예약·원장 산식은 그대로 두고 후보의 유한 ceiling만 명시적으로 조정했으며, 요청별 자동 증액을 하지 않는다.
+
+같은 DPR·화질에서 테마 6종, 아바타 교체, baseline 복귀·reload와 2회 반복의 전체 peak·headroom·정리 후 원장을 실제 검증해야 한다. 이 3 GiB 후보의 전체 동선·장시간 안정성과 기기 지원 완료는 아직 미검증이다. 상한을 넘거나 자원 크기가 불명확하면 실패를 유지하며, 모델·재질·해상도를 낮추거나 원장 값을 임의 차감해 통과시키지 않는다.
 
 WASM32의 4 GiB는 단일 선형 메모리 주소 범위이며 전체 브라우저·JS heap·GPU 공통 한도가 아니다. Memory64는 WASM32 빌드를 자동 전환하거나 GPU/물리 메모리를 늘리지 않는다. JS·GPU·선택형 WASM decoder와 Unity/Godot heap을 각각 측정한다. [V8 설명](https://v8.dev/blog/4gb-wasm-memory), [Unity 6.6 Memory64](https://docs.unity.com/en-us/engine/6000.6/manual/platform-specific/webgl/develop/wasm-64bit-support)
 
