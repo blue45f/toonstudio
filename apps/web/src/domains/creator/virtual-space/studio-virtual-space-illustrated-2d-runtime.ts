@@ -1,82 +1,82 @@
 /**
- * 나노 바나나(Nano Banana v10~v15) 2D Phaser 월드·캐릭터·워크스테이션·특수효과(VFX) 통합 런타임.
+ * 일러스트 팩(v10~v15) 2D Phaser 월드·캐릭터·워크스테이션·특수효과(VFX) 통합 런타임.
  *
  * - 2D Phaser 캔버스(StudioCampusRuntime + StudioSpriteVisualApplier)에서 평면 도형 가구와 구형 v8 스프라이트를
- *   나노 바나나 2.5D 웹툰 제작 워크스테이션·룸 모듈·v15 슬림 소두(5.5등신) 다중 프레임 캐릭터·4방향 보행 스프라이트로 실시간 업그레이드한다.
+ *   일러스트 2.5D 웹툰 제작 워크스테이션·룸 모듈·v15 슬림 소두(5.5등신) 다중 프레임 캐릭터·4방향 보행 스프라이트로 실시간 업그레이드한다.
  * - 단일 정적 이미지 대신 시간에 따라 `v15 슬림 액션/표정 프레임 ↔ work ↔ idle` 다중 프레임을 순환하고,
  *   파트너 대사/표정 말풍선과 2D Phaser 특수효과(홀로그램 오라·스타라이트·코믹 의성어 팝업)를 렌더링한다.
  */
 import type * as Phaser from "phaser";
 
 import {
-  NANO_BANANA_V11_CREATOR_PERSONAS,
-  NANO_BANANA_V11_STUDIO_THEMES,
-  NANO_BANANA_V13_CREATOR_EMOTES,
+  ILLUSTRATED_V11_CREATOR_PERSONAS,
+  ILLUSTRATED_V11_STUDIO_THEMES,
+  ILLUSTRATED_V13_CREATOR_EMOTES,
   type CreatorPersonaPose,
-  type NanoBananaCreatorPersonaId,
-  type NanoBananaStudioThemeId,
-  type NanoBananaV13EmoteId,
-  type NanoBananaV13PropId,
+  type IllustratedCreatorPersonaId,
+  type IllustratedStudioThemeId,
+  type IllustratedV13EmoteId,
+  type IllustratedV13PropId,
 } from "./studio-virtual-office-nextgen-engine-data";
-import { NANO_BANANA_V14_WALK_SPRITES } from "./studio-virtual-office-nextgen-engine-model";
+import { ILLUSTRATED_V14_WALK_SPRITES } from "./studio-virtual-office-nextgen-engine-model";
 import type { StudioCharacterFramePresentation, StudioCharacterMotionState } from "./studio-virtual-space-character-skins";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "./studio-virtual-space-model";
 import {
-  emitNanoBanana2dVfxBurstEvent,
+  emitIllustrated2dVfxBurstEvent,
   getPartnerDynamicExpressionLine,
-  NANO_BANANA_V15_ACTION_LABELS_KO,
-  NANO_BANANA_V15_ACTION_SPRITES,
-  nanoBananaV15ActionTextureKey,
-  requestOpenNanoBananaWorkstationModal,
+  ILLUSTRATED_V15_ACTION_LABELS_KO,
+  ILLUSTRATED_V15_ACTION_SPRITES,
+  illustratedV15ActionTextureKey,
+  requestOpenIllustratedWorkstationModal,
   resolveMultiFramePersonaTextureKey,
-  StudioNanoBanana2dVfxEngine,
-  subscribeNanoBanana2dVfxBurst,
-  subscribeNanoBananaWorkstationModal,
-  type NanoBananaV15ActionId,
-} from "./studio-virtual-space-nano-banana-2d-vfx";
+  StudioIllustrated2dVfxEngine,
+  subscribeIllustrated2dVfxBurst,
+  subscribeIllustratedWorkstationModal,
+  type IllustratedV15ActionId,
+} from "./studio-virtual-space-illustrated-2d-vfx";
 
 export {
-  NANO_BANANA_V15_ACTION_LABELS_KO,
-  NANO_BANANA_V15_ACTION_SPRITES,
-  nanoBananaV15ActionTextureKey,
-  requestOpenNanoBananaWorkstationModal,
-  subscribeNanoBanana2dVfxBurst,
-  subscribeNanoBananaWorkstationModal,
-  type NanoBananaV15ActionId,
+  ILLUSTRATED_V15_ACTION_LABELS_KO,
+  ILLUSTRATED_V15_ACTION_SPRITES,
+  illustratedV15ActionTextureKey,
+  requestOpenIllustratedWorkstationModal,
+  subscribeIllustrated2dVfxBurst,
+  subscribeIllustratedWorkstationModal,
+  type IllustratedV15ActionId,
 };
 
-export type NanoBanana2dWalkDirection = keyof typeof NANO_BANANA_V14_WALK_SPRITES;
+export type Illustrated2dWalkDirection = keyof typeof ILLUSTRATED_V14_WALK_SPRITES;
 
-export type NanoBanana2dExtraPropId =
-  | NanoBananaV13PropId
+export type Illustrated2dExtraPropId =
+  | IllustratedV13PropId
   | "cintiq-drawing-desk"
   | "hologram-pedestal"
   | "lofi-bookshelf-lounge"
   | "on-air-critique-booth"
   | "biophilic-planter-set";
 
-export type NanoBanana2dRoomModuleId =
+export type Illustrated2dRoomModuleId =
   | "tarot-story-oracle-pavilion"
   | "retro-arcade-gacha-lounge"
   | "recruit-interview-conservatory"
   | "global-ip-pitch-boardroom";
 
-export interface NanoBanana2dRuntimeState {
+export interface Illustrated2dRuntimeState {
   readonly enabled: boolean;
-  readonly themeId: NanoBananaStudioThemeId;
-  readonly personaId: NanoBananaCreatorPersonaId;
+  readonly themeId: IllustratedStudioThemeId;
+  readonly personaId: IllustratedCreatorPersonaId;
   readonly pose: CreatorPersonaPose;
-  readonly activeEmoteId: NanoBananaV13EmoteId | null;
+  readonly activeEmoteId: IllustratedV13EmoteId | null;
   readonly activeEmoteUntilMs: number;
-  readonly activeV15ActionId: NanoBananaV15ActionId | null;
+  readonly activeV15ActionId: IllustratedV15ActionId | null;
   readonly activeV15ActionUntilMs: number;
-  readonly walkDirectionOverride: NanoBanana2dWalkDirection | null;
+  readonly walkDirectionOverride: Illustrated2dWalkDirection | null;
   readonly walkDirectionOverrideUntilMs: number;
   readonly pendingTeleportPoint: StudioVirtualSpacePoint | null;
   readonly activeWorkstationId: string | null;
 }
 
-let currentState: NanoBanana2dRuntimeState = Object.freeze({
+let currentState: Illustrated2dRuntimeState = Object.freeze({
   enabled: true,
   themeId: "seoul-editorial-hq",
   personaId: "line-artist",
@@ -91,99 +91,99 @@ let currentState: NanoBanana2dRuntimeState = Object.freeze({
   activeWorkstationId: null,
 });
 
-const listeners = new Set<(state: NanoBanana2dRuntimeState) => void>();
+const listeners = new Set<(state: Illustrated2dRuntimeState) => void>();
 
-export function getNanoBanana2dRuntimeState(): NanoBanana2dRuntimeState {
+export function getIllustrated2dRuntimeState(): Illustrated2dRuntimeState {
   return currentState;
 }
 
-export function updateNanoBanana2dRuntimeState(patch: Partial<NanoBanana2dRuntimeState>): NanoBanana2dRuntimeState {
+export function updateIllustrated2dRuntimeState(patch: Partial<Illustrated2dRuntimeState>): Illustrated2dRuntimeState {
   currentState = Object.freeze({ ...currentState, ...patch });
   for (const listener of listeners) listener(currentState);
   return currentState;
 }
 
-export function subscribeNanoBanana2dRuntimeState(listener: (state: NanoBanana2dRuntimeState) => void): () => void {
+export function subscribeIllustrated2dRuntimeState(listener: (state: Illustrated2dRuntimeState) => void): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 }
 
-export function triggerNanoBanana2dEmote(emoteId: NanoBananaV13EmoteId, durationMs = 3_600): NanoBanana2dRuntimeState {
-  return updateNanoBanana2dRuntimeState({
+export function triggerIllustrated2dEmote(emoteId: IllustratedV13EmoteId, durationMs = 3_600): Illustrated2dRuntimeState {
+  return updateIllustrated2dRuntimeState({
     activeEmoteId: emoteId,
     activeEmoteUntilMs: Date.now() + Math.max(500, durationMs),
   });
 }
 
-export function triggerNanoBanana2dVfxBurst(
+export function triggerIllustrated2dVfxBurst(
   label: string,
   color = 0x38bdf8,
-  actionId?: NanoBananaV15ActionId,
+  actionId?: IllustratedV15ActionId,
   worldX?: number,
   worldY?: number,
-): NanoBanana2dRuntimeState {
+): Illustrated2dRuntimeState {
   if (actionId) {
-    updateNanoBanana2dRuntimeState({
+    updateIllustrated2dRuntimeState({
       activeV15ActionId: actionId,
       activeV15ActionUntilMs: Date.now() + 4_200,
     });
   }
-  emitNanoBanana2dVfxBurstEvent(label, color, actionId, worldX, worldY);
+  emitIllustrated2dVfxBurstEvent(label, color, actionId, worldX, worldY);
   return currentState;
 }
 
-export function triggerNanoBanana2dWalkPreview(
-  direction: NanoBanana2dWalkDirection | null,
+export function triggerIllustrated2dWalkPreview(
+  direction: Illustrated2dWalkDirection | null,
   durationMs = 2_800,
-): NanoBanana2dRuntimeState {
-  return updateNanoBanana2dRuntimeState({
+): Illustrated2dRuntimeState {
+  return updateIllustrated2dRuntimeState({
     walkDirectionOverride: direction,
     walkDirectionOverrideUntilMs: direction ? Date.now() + Math.max(400, durationMs) : 0,
   });
 }
 
-export function requestNanoBanana2dTeleport(
+export function requestIllustrated2dTeleport(
   point: StudioVirtualSpacePoint,
   workstationId: string | null = null,
-): NanoBanana2dRuntimeState {
-  return updateNanoBanana2dRuntimeState({
+): Illustrated2dRuntimeState {
+  return updateIllustrated2dRuntimeState({
     pendingTeleportPoint: { x: Math.round(point.x), y: Math.round(point.y) },
     activeWorkstationId: workstationId,
   });
 }
 
-export function consumeNanoBanana2dTeleport(): StudioVirtualSpacePoint | null {
+export function consumeIllustrated2dTeleport(): StudioVirtualSpacePoint | null {
   const target = currentState.pendingTeleportPoint;
   if (!target) return null;
   currentState = Object.freeze({ ...currentState, pendingTeleportPoint: null });
   return target;
 }
 
-/** 나노 바나나 정사각형(256×256·320×320) 캐릭터 스프라이트의 표준 접지 프레젠테이션. */
-export const NANO_BANANA_CHARACTER_PRESENTATION: StudioCharacterFramePresentation = Object.freeze({
+/** 일러스트 정사각형(256×256·320×320) 캐릭터 스프라이트의 표준 접지 프레젠테이션. */
+export const ILLUSTRATED_CHARACTER_PRESENTATION: StudioCharacterFramePresentation = Object.freeze({
   originX: 0.5,
   originY: 0.91,
   displayHeightRatio: 1.34,
   seatOriginY: 0.82,
 });
 
-export const nanoBananaWalkTextureKey = (direction: NanoBanana2dWalkDirection): string =>
+export const illustratedWalkTextureKey = (direction: Illustrated2dWalkDirection): string =>
   `nb-walk-${direction}`;
-export const nanoBananaPersonaTextureKey = (personaId: NanoBananaCreatorPersonaId, pose: CreatorPersonaPose): string =>
+export const illustratedPersonaTextureKey = (personaId: IllustratedCreatorPersonaId, pose: CreatorPersonaPose): string =>
   `nb-cast-${personaId}-${pose}`;
-export const nanoBananaEmoteTextureKey = (emoteId: NanoBananaV13EmoteId): string =>
+export const illustratedEmoteTextureKey = (emoteId: IllustratedV13EmoteId): string =>
   `nb-emote-${emoteId}`;
-export const nanoBananaPropTextureKey = (propId: NanoBanana2dExtraPropId): string =>
+export const illustratedPropTextureKey = (propId: Illustrated2dExtraPropId): string =>
   `nb-prop-${propId}`;
-export const nanoBananaRoomTextureKey = (roomId: NanoBanana2dRoomModuleId): string =>
+export const illustratedRoomTextureKey = (roomId: Illustrated2dRoomModuleId): string =>
   `nb-room-${roomId}`;
-export const nanoBananaThemeTextureKey = (themeId: NanoBananaStudioThemeId): string =>
+export const illustratedThemeTextureKey = (themeId: IllustratedStudioThemeId): string =>
   `nb-theme-${themeId}`;
 
-/** 캠퍼스 8인 상주 NPC를 나노 바나나 8인 웹툰 전문 창작자 캐스트에 1:1 매핑한다. */
-export const NANO_BANANA_NPC_CAST_MAP: Readonly<Record<string, NanoBananaCreatorPersonaId>> = Object.freeze({
+/** 캠퍼스 8인 상주 NPC를 일러스트 8인 웹툰 전문 창작자 캐스트에 1:1 매핑한다. */
+export const ILLUSTRATED_NPC_CAST_MAP: Readonly<Record<string, IllustratedCreatorPersonaId>> = Object.freeze({
   "npc-concierge": "chief-pd",
   "npc-artist": "line-artist",
   "npc-producer": "story-writer",
@@ -194,16 +194,16 @@ export const NANO_BANANA_NPC_CAST_MAP: Readonly<Record<string, NanoBananaCreator
   "npc-editor": "colorist",
 });
 
-export interface NanoBanana2dActorVisualMatch {
+export interface Illustrated2dActorVisualMatch {
   readonly textureKey: string;
   readonly flipX: boolean;
   readonly presentation: StudioCharacterFramePresentation;
 }
 
 /**
- * 플레이어(self) 및 캠퍼스 NPC의 현재 방향·상태에 맞는 나노 바나나 다중 프레임 2D 스프라이트를 결정한다.
+ * 플레이어(self) 및 캠퍼스 NPC의 현재 방향·상태에 맞는 일러스트 다중 프레임 2D 스프라이트를 결정한다.
  */
-export function resolveNanoBanana2dActorTexture(
+export function resolveIllustrated2dActorTexture(
   textures: { exists(key: string): boolean },
   input: {
     readonly owner: string;
@@ -212,7 +212,7 @@ export function resolveNanoBanana2dActorTexture(
     readonly state: StudioCharacterMotionState;
     readonly nowMs?: number;
   },
-): NanoBanana2dActorVisualMatch | null {
+): Illustrated2dActorVisualMatch | null {
   const state = currentState;
   if (!state.enabled) return null;
   const now = input.nowMs ?? Date.now();
@@ -220,53 +220,53 @@ export function resolveNanoBanana2dActorTexture(
 
   if (input.owner === "self") {
     if (state.activeV15ActionId && now < state.activeV15ActionUntilMs) {
-      const v15Key = nanoBananaV15ActionTextureKey(state.activeV15ActionId);
+      const v15Key = illustratedV15ActionTextureKey(state.activeV15ActionId);
       if (textures.exists(v15Key)) {
         return {
           textureKey: v15Key,
           flipX: input.facing === "left",
-          presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+          presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
         };
       }
     }
     if (state.activeEmoteId && now < state.activeEmoteUntilMs) {
-      const emoteKey = nanoBananaEmoteTextureKey(state.activeEmoteId);
+      const emoteKey = illustratedEmoteTextureKey(state.activeEmoteId);
       if (textures.exists(emoteKey)) {
         return {
           textureKey: emoteKey,
           flipX: input.facing === "left",
-          presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+          presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
         };
       }
     }
     if (state.walkDirectionOverride && now < state.walkDirectionOverrideUntilMs) {
-      const overrideWalkKey = nanoBananaWalkTextureKey(state.walkDirectionOverride);
+      const overrideWalkKey = illustratedWalkTextureKey(state.walkDirectionOverride);
       if (textures.exists(overrideWalkKey)) {
         return {
           textureKey: overrideWalkKey,
           flipX: false,
-          presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+          presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
         };
       }
     }
     if (input.state === "walk") {
       if (useMultiFrame) {
         const stridePhase = Math.floor(now / 220) % 2;
-        const strideV15Key = nanoBananaV15ActionTextureKey("stride-draw");
+        const strideV15Key = illustratedV15ActionTextureKey("stride-draw");
         if (stridePhase === 1 && input.facing !== "up" && textures.exists(strideV15Key)) {
           return {
             textureKey: strideV15Key,
             flipX: input.facing === "left",
-            presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+            presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
           };
         }
       }
-      const walkKey = nanoBananaWalkTextureKey(input.facing);
+      const walkKey = illustratedWalkTextureKey(input.facing);
       if (textures.exists(walkKey)) {
         return {
           textureKey: walkKey,
           flipX: false,
-          presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+          presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
         };
       }
     }
@@ -279,22 +279,22 @@ export function resolveNanoBanana2dActorTexture(
         return {
           textureKey: multiKey,
           flipX: input.facing === "left",
-          presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+          presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
         };
       }
     }
-    const personaKey = nanoBananaPersonaTextureKey(state.personaId, pose);
+    const personaKey = illustratedPersonaTextureKey(state.personaId, pose);
     if (textures.exists(personaKey)) {
       return {
         textureKey: personaKey,
         flipX: input.facing === "left",
-        presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+        presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
       };
     }
     return null;
   }
 
-  const mappedPersona = NANO_BANANA_NPC_CAST_MAP[input.skinKey];
+  const mappedPersona = ILLUSTRATED_NPC_CAST_MAP[input.skinKey];
   if (!mappedPersona) return null;
   const npcPose: CreatorPersonaPose =
     input.state === "draw" || input.state === "review" || input.state === "talk" ? "work" : "idle";
@@ -305,22 +305,22 @@ export function resolveNanoBanana2dActorTexture(
       return {
         textureKey: npcMultiKey,
         flipX: input.facing === "left",
-        presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+        presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
       };
     }
   }
-  const npcKey = nanoBananaPersonaTextureKey(mappedPersona, npcPose);
+  const npcKey = illustratedPersonaTextureKey(mappedPersona, npcPose);
   if (textures.exists(npcKey)) {
     return {
       textureKey: npcKey,
       flipX: input.facing === "left",
-      presentation: NANO_BANANA_CHARACTER_PRESENTATION,
+      presentation: ILLUSTRATED_CHARACTER_PRESENTATION,
     };
   }
   return null;
 }
 
-export interface NanoBanana2dWorkstationPlacement {
+export interface Illustrated2dWorkstationPlacement {
   readonly id: string;
   readonly zoneId: string;
   readonly titleKo: string;
@@ -332,7 +332,7 @@ export interface NanoBanana2dWorkstationPlacement {
   readonly height: number;
   readonly spawnPoint: StudioVirtualSpacePoint;
   readonly accentColor: number;
-  readonly partnerPersonaId: NanoBananaCreatorPersonaId;
+  readonly partnerPersonaId: IllustratedCreatorPersonaId;
   readonly partnerPose: CreatorPersonaPose;
   readonly partnerLabelKo: string;
   readonly partnerOffsetX: number;
@@ -340,82 +340,82 @@ export interface NanoBanana2dWorkstationPlacement {
 }
 
 /**
- * 2D 캠퍼스 전역(광장 스폰 주변 + 10개 룸)에 배치되는 나노 바나나 2.5D 웹툰 특화 워크스테이션 & 전담 파트너 캐스트.
+ * 2D 캠퍼스 전역(광장 스폰 주변 + 10개 룸)에 배치되는 일러스트 2.5D 웹툰 특화 워크스테이션 & 전담 파트너 캐스트.
  */
-export const NANO_BANANA_2D_WORKSTATIONS: readonly NanoBanana2dWorkstationPlacement[] = Object.freeze([
-  { id: "nb-plaza-cintiq-pod", zoneId: "creator-plaza", titleKo: "🎨 듀얼 신티크 원고 피드백 포드", subtitleKo: "Wacom 5K 실시간 레드라인 합평 · 클릭 시 협업창 오픈", textureKey: nanoBananaPropTextureKey("dual-cintiq-critique-pod"), x: 1272, y: 1068, width: 142, height: 128, spawnPoint: { x: 1272, y: 1126 }, accentColor: 0x38bdf8, partnerPersonaId: "line-artist", partnerPose: "work", partnerLabelKo: "✒️ 펜선 메인 작가", partnerOffsetX: -82, partnerOffsetY: 14 },
-  { id: "nb-plaza-hologram-table", zoneId: "creator-plaza", titleKo: "🧊 3D 블렌더 배경 홀로그램 테이블", subtitleKo: "판타지 성채 360° 턴테이블 · 클릭 시 협업창 오픈", textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), x: 1672, y: 1068, width: 144, height: 128, spawnPoint: { x: 1672, y: 1126 }, accentColor: 0xfbbf24, partnerPersonaId: "cgi-director", partnerPose: "work", partnerLabelKo: "🧊 3D 배경 감독", partnerOffsetX: 84, partnerOffsetY: 14 },
-  { id: "nb-plaza-foley-booth", zoneId: "creator-plaza", titleKo: "🎧 웹툰 사운드 & 효과음 폴리 부스", subtitleKo: "Dolby Atmos 의성어(SFX) 믹싱 · 클릭 시 협업창 오픈", textureKey: nanoBananaPropTextureKey("webtoon-sound-foley-booth"), x: 1272, y: 1264, width: 140, height: 126, spawnPoint: { x: 1272, y: 1316 }, accentColor: 0xa855f7, partnerPersonaId: "sound-letterer", partnerPose: "work", partnerLabelKo: "🎧 효과음·식자", partnerOffsetX: -82, partnerOffsetY: 14 },
-  { id: "nb-plaza-espresso-cat-lounge", zoneId: "creator-plaza", titleKo: "☕ 마감 에스프레소 & 캣 해먹 라운지", subtitleKo: "바리스타 스팀 라떼 & 치즈냥 힐링 · 클릭 시 협업창 오픈", textureKey: nanoBananaPropTextureKey("deadline-espresso-cat-lounge"), x: 1672, y: 1264, width: 142, height: 126, spawnPoint: { x: 1672, y: 1316 }, accentColor: 0x34d399, partnerPersonaId: "studio-cat-mascot", partnerPose: "idle", partnerLabelKo: "🐱 치즈냥 마스코트", partnerOffsetX: 82, partnerOffsetY: 14 },
-  { id: "nb-studio-main-cintiq", zoneId: "personal-atelier", titleKo: "✒️ 메인 신티크 작화 아틀리에", subtitleKo: "선화·채색·식자 전담 프로덕션 데스크", textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"), x: 1000, y: 564, width: 148, height: 132, spawnPoint: { x: 1000, y: 618 }, accentColor: 0x38bdf8, partnerPersonaId: "colorist", partnerPose: "work", partnerLabelKo: "🎨 수석 채색 아티스트", partnerOffsetX: -88, partnerOffsetY: 14 },
-  { id: "nb-cowork-tarot-pavilion", zoneId: "story-lab", titleKo: "🔮 웹툰 스토리 타로 & 세계관 파빌리온", subtitleKo: "플롯 분기점·회귀물 설정 오라클 테이블", textureKey: nanoBananaPropTextureKey("hologram-pedestal"), x: 1940, y: 548, width: 138, height: 126, spawnPoint: { x: 1984, y: 604 }, accentColor: 0xc084fc, partnerPersonaId: "story-writer", partnerPose: "work", partnerLabelKo: "📖 메인 스토리 작가", partnerOffsetX: 84, partnerOffsetY: 14 },
-  { id: "nb-cafe-lofi-storyhouse", zoneId: "creator-cafe", titleKo: "📚 로파이 스토리보드 북카페 라운지", subtitleKo: "원고 콘티 열람 & 에스프레소 휴식존", textureKey: nanoBananaPropTextureKey("lofi-bookshelf-lounge"), x: 2536, y: 648, width: 148, height: 132, spawnPoint: { x: 2620, y: 648 }, accentColor: 0xf59e0b, partnerPersonaId: "chief-pd", partnerPose: "idle", partnerLabelKo: "🎬 총괄 웹툰 PD", partnerOffsetX: -86, partnerOffsetY: 14 },
-  { id: "nb-lobby-recruit-conservatory", zoneId: "skyport", titleKo: "🌿 작가 포트폴리오 & 채용 인터뷰 온실", subtitleKo: "신규 어시스턴트·작가 영입 미팅 라운지", textureKey: nanoBananaPropTextureKey("biophilic-planter-set"), x: 312, y: 492, width: 128, height: 114, spawnPoint: { x: 448, y: 576 }, accentColor: 0x10b981, partnerPersonaId: "action-mocap-actor", partnerPose: "idle", partnerLabelKo: "⚡ 모션캡처 디렉터", partnerOffsetX: -72, partnerOffsetY: 12 },
-  { id: "nb-talk-ip-boardroom", zoneId: "team-meeting", titleKo: "🎬 글로벌 웹툰 IP 드라마 피칭 보드룸", subtitleKo: "OTT 영상화·해외 연재 런칭 프레젠테이션", textureKey: nanoBananaPropTextureKey("on-air-critique-booth"), x: 566, y: 1124, width: 138, height: 124, spawnPoint: { x: 448, y: 1116 }, accentColor: 0x60a5fa, partnerPersonaId: "chief-pd", partnerPose: "work", partnerLabelKo: "📡 글로벌 IP PD", partnerOffsetX: 84, partnerOffsetY: 14 },
-  { id: "nb-game-retro-arcade", zoneId: "arcade", titleKo: "🕹️ 레트로 픽셀 아케이드 & 캣 가챠 라운지", subtitleKo: "마감 후 팀원 미니게임 & 굿즈 캡슐 뽑기", textureKey: nanoBananaPropTextureKey("hologram-pedestal"), x: 560, y: 1684, width: 136, height: 120, spawnPoint: { x: 448, y: 1588 }, accentColor: 0xf472b6, partnerPersonaId: "studio-cat-mascot", partnerPose: "work", partnerLabelKo: "🕹️ 아케이드 마스코트", partnerOffsetX: -82, partnerOffsetY: 14 },
+export const ILLUSTRATED_2D_WORKSTATIONS: readonly Illustrated2dWorkstationPlacement[] = Object.freeze([
+  { id: "nb-plaza-cintiq-pod", zoneId: "creator-plaza", titleKo: "🎨 듀얼 신티크 원고 피드백 포드", subtitleKo: "Wacom 5K 실시간 레드라인 합평 · 클릭 시 협업창 오픈", textureKey: illustratedPropTextureKey("dual-cintiq-critique-pod"), x: 1272, y: 1068, width: 142, height: 128, spawnPoint: { x: 1272, y: 1126 }, accentColor: 0x38bdf8, partnerPersonaId: "line-artist", partnerPose: "work", partnerLabelKo: "✒️ 펜선 메인 작가", partnerOffsetX: -82, partnerOffsetY: 14 },
+  { id: "nb-plaza-hologram-table", zoneId: "creator-plaza", titleKo: "🧊 3D 블렌더 배경 홀로그램 테이블", subtitleKo: "판타지 성채 360° 턴테이블 · 클릭 시 협업창 오픈", textureKey: illustratedPropTextureKey("blender-hologram-stage-table"), x: 1672, y: 1068, width: 144, height: 128, spawnPoint: { x: 1672, y: 1126 }, accentColor: 0xfbbf24, partnerPersonaId: "cgi-director", partnerPose: "work", partnerLabelKo: "🧊 3D 배경 감독", partnerOffsetX: 84, partnerOffsetY: 14 },
+  { id: "nb-plaza-foley-booth", zoneId: "creator-plaza", titleKo: "🎧 웹툰 사운드 & 효과음 폴리 부스", subtitleKo: "Dolby Atmos 의성어(SFX) 믹싱 · 클릭 시 협업창 오픈", textureKey: illustratedPropTextureKey("webtoon-sound-foley-booth"), x: 1272, y: 1264, width: 140, height: 126, spawnPoint: { x: 1272, y: 1316 }, accentColor: 0xa855f7, partnerPersonaId: "sound-letterer", partnerPose: "work", partnerLabelKo: "🎧 효과음·식자", partnerOffsetX: -82, partnerOffsetY: 14 },
+  { id: "nb-plaza-espresso-cat-lounge", zoneId: "creator-plaza", titleKo: "☕ 마감 에스프레소 & 캣 해먹 라운지", subtitleKo: "바리스타 스팀 라떼 & 치즈냥 힐링 · 클릭 시 협업창 오픈", textureKey: illustratedPropTextureKey("deadline-espresso-cat-lounge"), x: 1672, y: 1264, width: 142, height: 126, spawnPoint: { x: 1672, y: 1316 }, accentColor: 0x34d399, partnerPersonaId: "studio-cat-mascot", partnerPose: "idle", partnerLabelKo: "🐱 치즈냥 마스코트", partnerOffsetX: 82, partnerOffsetY: 14 },
+  { id: "nb-studio-main-cintiq", zoneId: "personal-atelier", titleKo: "✒️ 메인 신티크 작화 아틀리에", subtitleKo: "선화·채색·식자 전담 프로덕션 데스크", textureKey: illustratedPropTextureKey("cintiq-drawing-desk"), x: 1000, y: 564, width: 148, height: 132, spawnPoint: { x: 1000, y: 618 }, accentColor: 0x38bdf8, partnerPersonaId: "colorist", partnerPose: "work", partnerLabelKo: "🎨 수석 채색 아티스트", partnerOffsetX: -88, partnerOffsetY: 14 },
+  { id: "nb-cowork-tarot-pavilion", zoneId: "story-lab", titleKo: "🔮 웹툰 스토리 타로 & 세계관 파빌리온", subtitleKo: "플롯 분기점·회귀물 설정 오라클 테이블", textureKey: illustratedPropTextureKey("hologram-pedestal"), x: 1940, y: 548, width: 138, height: 126, spawnPoint: { x: 1984, y: 604 }, accentColor: 0xc084fc, partnerPersonaId: "story-writer", partnerPose: "work", partnerLabelKo: "📖 메인 스토리 작가", partnerOffsetX: 84, partnerOffsetY: 14 },
+  { id: "nb-cafe-lofi-storyhouse", zoneId: "creator-cafe", titleKo: "📚 로파이 스토리보드 북카페 라운지", subtitleKo: "원고 콘티 열람 & 에스프레소 휴식존", textureKey: illustratedPropTextureKey("lofi-bookshelf-lounge"), x: 2536, y: 648, width: 148, height: 132, spawnPoint: { x: 2620, y: 648 }, accentColor: 0xf59e0b, partnerPersonaId: "chief-pd", partnerPose: "idle", partnerLabelKo: "🎬 총괄 웹툰 PD", partnerOffsetX: -86, partnerOffsetY: 14 },
+  { id: "nb-lobby-recruit-conservatory", zoneId: "skyport", titleKo: "🌿 작가 포트폴리오 & 채용 인터뷰 온실", subtitleKo: "신규 어시스턴트·작가 영입 미팅 라운지", textureKey: illustratedPropTextureKey("biophilic-planter-set"), x: 312, y: 492, width: 128, height: 114, spawnPoint: { x: 448, y: 576 }, accentColor: 0x10b981, partnerPersonaId: "action-mocap-actor", partnerPose: "idle", partnerLabelKo: "⚡ 모션캡처 디렉터", partnerOffsetX: -72, partnerOffsetY: 12 },
+  { id: "nb-talk-ip-boardroom", zoneId: "team-meeting", titleKo: "🎬 글로벌 웹툰 IP 드라마 피칭 보드룸", subtitleKo: "OTT 영상화·해외 연재 런칭 프레젠테이션", textureKey: illustratedPropTextureKey("on-air-critique-booth"), x: 566, y: 1124, width: 138, height: 124, spawnPoint: { x: 448, y: 1116 }, accentColor: 0x60a5fa, partnerPersonaId: "chief-pd", partnerPose: "work", partnerLabelKo: "📡 글로벌 IP PD", partnerOffsetX: 84, partnerOffsetY: 14 },
+  { id: "nb-game-retro-arcade", zoneId: "arcade", titleKo: "🕹️ 레트로 픽셀 아케이드 & 캣 가챠 라운지", subtitleKo: "마감 후 팀원 미니게임 & 굿즈 캡슐 뽑기", textureKey: illustratedPropTextureKey("hologram-pedestal"), x: 560, y: 1684, width: 136, height: 120, spawnPoint: { x: 448, y: 1588 }, accentColor: 0xf472b6, partnerPersonaId: "studio-cat-mascot", partnerPose: "work", partnerLabelKo: "🕹️ 아케이드 마스코트", partnerOffsetX: -82, partnerOffsetY: 14 },
 ]);
 
-/** 기존 캠퍼스 평면 오브젝트 ID → 나노 바나나 고해상도 2.5D 텍스처 교체 매핑. */
-export const NANO_BANANA_CAMPUS_OBJECT_UPGRADES: Readonly<
+/** 기존 캠퍼스 평면 오브젝트 ID → 일러스트 고해상도 2.5D 텍스처 교체 매핑. */
+export const ILLUSTRATED_CAMPUS_OBJECT_UPGRADES: Readonly<
   Record<string, { readonly textureKey: string; readonly widthScale?: number; readonly heightScale?: number }>
 > = Object.freeze({
-  "studio-monitor-desk": { textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"), widthScale: 1.25, heightScale: 1.55 },
-  "studio-green-screen": { textureKey: nanoBananaPropTextureKey("on-air-critique-booth"), widthScale: 0.82, heightScale: 1.18 },
-  "cowork-focus-desk-west": { textureKey: nanoBananaPropTextureKey("cintiq-drawing-desk"), widthScale: 1.22, heightScale: 1.52 },
-  "cowork-focus-desk-east": { textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), widthScale: 1.28, heightScale: 1.58 },
-  "lobby-phone-booth-west": { textureKey: nanoBananaPropTextureKey("webtoon-sound-foley-booth"), widthScale: 1.35, heightScale: 1.12 },
-  "lobby-phone-booth-east": { textureKey: nanoBananaPropTextureKey("on-air-critique-booth"), widthScale: 1.35, heightScale: 1.12 },
-  "cafe-counter": { textureKey: nanoBananaPropTextureKey("deadline-espresso-cat-lounge"), widthScale: 0.78, heightScale: 1.45 },
-  "talk-meeting-table": { textureKey: nanoBananaPropTextureKey("blender-hologram-stage-table"), widthScale: 0.82, heightScale: 1.52 },
-  "game-claw": { textureKey: nanoBananaPropTextureKey("hologram-pedestal"), widthScale: 1.35, heightScale: 1.18 },
-  "gallery-frame-1": { textureKey: nanoBananaThemeTextureKey("seoul-editorial-hq"), widthScale: 1.12, heightScale: 1.08 },
-  "gallery-frame-2": { textureKey: nanoBananaThemeTextureKey("cyber-neon-lab"), widthScale: 1.12, heightScale: 1.08 },
-  "gallery-frame-3": { textureKey: nanoBananaThemeTextureKey("murim-bamboo-pavilion"), widthScale: 1.12, heightScale: 1.08 },
-  "gallery-frame-4": { textureKey: nanoBananaThemeTextureKey("magic-academy-astral-library"), widthScale: 1.12, heightScale: 1.08 },
+  "studio-monitor-desk": { textureKey: illustratedPropTextureKey("cintiq-drawing-desk"), widthScale: 1.25, heightScale: 1.55 },
+  "studio-green-screen": { textureKey: illustratedPropTextureKey("on-air-critique-booth"), widthScale: 0.82, heightScale: 1.18 },
+  "cowork-focus-desk-west": { textureKey: illustratedPropTextureKey("cintiq-drawing-desk"), widthScale: 1.22, heightScale: 1.52 },
+  "cowork-focus-desk-east": { textureKey: illustratedPropTextureKey("blender-hologram-stage-table"), widthScale: 1.28, heightScale: 1.58 },
+  "lobby-phone-booth-west": { textureKey: illustratedPropTextureKey("webtoon-sound-foley-booth"), widthScale: 1.35, heightScale: 1.12 },
+  "lobby-phone-booth-east": { textureKey: illustratedPropTextureKey("on-air-critique-booth"), widthScale: 1.35, heightScale: 1.12 },
+  "cafe-counter": { textureKey: illustratedPropTextureKey("deadline-espresso-cat-lounge"), widthScale: 0.78, heightScale: 1.45 },
+  "talk-meeting-table": { textureKey: illustratedPropTextureKey("blender-hologram-stage-table"), widthScale: 0.82, heightScale: 1.52 },
+  "game-claw": { textureKey: illustratedPropTextureKey("hologram-pedestal"), widthScale: 1.35, heightScale: 1.18 },
+  "gallery-frame-1": { textureKey: illustratedThemeTextureKey("seoul-editorial-hq"), widthScale: 1.12, heightScale: 1.08 },
+  "gallery-frame-2": { textureKey: illustratedThemeTextureKey("cyber-neon-lab"), widthScale: 1.12, heightScale: 1.08 },
+  "gallery-frame-3": { textureKey: illustratedThemeTextureKey("murim-bamboo-pavilion"), widthScale: 1.12, heightScale: 1.08 },
+  "gallery-frame-4": { textureKey: illustratedThemeTextureKey("magic-academy-astral-library"), widthScale: 1.12, heightScale: 1.08 },
 });
 
-const EXTRA_PROP_URLS: Readonly<Record<NanoBanana2dExtraPropId, string>> = Object.freeze({
-  "dual-cintiq-critique-pod": "/assets/virtual-studio/nano-banana-v13/props/dual-cintiq-critique-pod.webp",
-  "blender-hologram-stage-table": "/assets/virtual-studio/nano-banana-v13/props/blender-hologram-stage-table.webp",
-  "webtoon-sound-foley-booth": "/assets/virtual-studio/nano-banana-v13/props/webtoon-sound-foley-booth.webp",
-  "deadline-espresso-cat-lounge": "/assets/virtual-studio/nano-banana-v13/props/deadline-espresso-cat-lounge.webp",
-  "cintiq-drawing-desk": "/assets/virtual-studio/nano-banana-v10/props/cintiq-drawing-desk.webp",
-  "hologram-pedestal": "/assets/virtual-studio/nano-banana-v10/props/hologram-pedestal.webp",
-  "lofi-bookshelf-lounge": "/assets/virtual-studio/nano-banana-v10/props/lofi-bookshelf-lounge.webp",
-  "on-air-critique-booth": "/assets/virtual-studio/nano-banana-v10/props/on-air-critique-booth.webp",
-  "biophilic-planter-set": "/assets/virtual-studio/nano-banana-v10/props/biophilic-planter-set.webp",
+const EXTRA_PROP_URLS: Readonly<Record<Illustrated2dExtraPropId, string>> = Object.freeze({
+  "dual-cintiq-critique-pod": "/assets/virtual-studio/studio-art-v13/props/dual-cintiq-critique-pod.webp",
+  "blender-hologram-stage-table": "/assets/virtual-studio/studio-art-v13/props/blender-hologram-stage-table.webp",
+  "webtoon-sound-foley-booth": "/assets/virtual-studio/studio-art-v13/props/webtoon-sound-foley-booth.webp",
+  "deadline-espresso-cat-lounge": "/assets/virtual-studio/studio-art-v13/props/deadline-espresso-cat-lounge.webp",
+  "cintiq-drawing-desk": "/assets/virtual-studio/studio-art-v10/props/cintiq-drawing-desk.webp",
+  "hologram-pedestal": "/assets/virtual-studio/studio-art-v10/props/hologram-pedestal.webp",
+  "lofi-bookshelf-lounge": "/assets/virtual-studio/studio-art-v10/props/lofi-bookshelf-lounge.webp",
+  "on-air-critique-booth": "/assets/virtual-studio/studio-art-v10/props/on-air-critique-booth.webp",
+  "biophilic-planter-set": "/assets/virtual-studio/studio-art-v10/props/biophilic-planter-set.webp",
 });
 
-const ROOM_MODULE_URLS: Readonly<Record<NanoBanana2dRoomModuleId, string>> = Object.freeze({
-  "tarot-story-oracle-pavilion": "/assets/virtual-studio/nano-banana-v14/rooms/tarot-story-oracle-pavilion.webp",
-  "retro-arcade-gacha-lounge": "/assets/virtual-studio/nano-banana-v14/rooms/retro-arcade-gacha-lounge.webp",
-  "recruit-interview-conservatory": "/assets/virtual-studio/nano-banana-v14/rooms/recruit-interview-conservatory.webp",
-  "global-ip-pitch-boardroom": "/assets/virtual-studio/nano-banana-v14/rooms/global-ip-pitch-boardroom.webp",
+const ROOM_MODULE_URLS: Readonly<Record<Illustrated2dRoomModuleId, string>> = Object.freeze({
+  "tarot-story-oracle-pavilion": "/assets/virtual-studio/studio-art-v14/rooms/tarot-story-oracle-pavilion.webp",
+  "retro-arcade-gacha-lounge": "/assets/virtual-studio/studio-art-v14/rooms/retro-arcade-gacha-lounge.webp",
+  "recruit-interview-conservatory": "/assets/virtual-studio/studio-art-v14/rooms/recruit-interview-conservatory.webp",
+  "global-ip-pitch-boardroom": "/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp",
 });
 
-export function buildNanoBanana2dAssetManifest(): readonly { readonly key: string; readonly url: string }[] {
+export function buildIllustrated2dAssetManifest(): readonly { readonly key: string; readonly url: string }[] {
   const entries: { readonly key: string; readonly url: string }[] = [];
-  for (const [actionId, url] of Object.entries(NANO_BANANA_V15_ACTION_SPRITES)) {
-    entries.push({ key: nanoBananaV15ActionTextureKey(actionId as NanoBananaV15ActionId), url });
+  for (const [actionId, url] of Object.entries(ILLUSTRATED_V15_ACTION_SPRITES)) {
+    entries.push({ key: illustratedV15ActionTextureKey(actionId as IllustratedV15ActionId), url });
   }
-  for (const [dir, url] of Object.entries(NANO_BANANA_V14_WALK_SPRITES)) {
-    entries.push({ key: nanoBananaWalkTextureKey(dir as NanoBanana2dWalkDirection), url });
+  for (const [dir, url] of Object.entries(ILLUSTRATED_V14_WALK_SPRITES)) {
+    entries.push({ key: illustratedWalkTextureKey(dir as Illustrated2dWalkDirection), url });
   }
-  for (const persona of NANO_BANANA_V11_CREATOR_PERSONAS) {
-    entries.push({ key: nanoBananaPersonaTextureKey(persona.id, "idle"), url: persona.idleSpriteUrl });
-    entries.push({ key: nanoBananaPersonaTextureKey(persona.id, "work"), url: persona.workSpriteUrl });
+  for (const persona of ILLUSTRATED_V11_CREATOR_PERSONAS) {
+    entries.push({ key: illustratedPersonaTextureKey(persona.id, "idle"), url: persona.idleSpriteUrl });
+    entries.push({ key: illustratedPersonaTextureKey(persona.id, "work"), url: persona.workSpriteUrl });
   }
-  for (const emote of NANO_BANANA_V13_CREATOR_EMOTES) {
-    entries.push({ key: nanoBananaEmoteTextureKey(emote.id), url: emote.spriteUrl });
+  for (const emote of ILLUSTRATED_V13_CREATOR_EMOTES) {
+    entries.push({ key: illustratedEmoteTextureKey(emote.id), url: emote.spriteUrl });
   }
   for (const [propId, url] of Object.entries(EXTRA_PROP_URLS)) {
-    entries.push({ key: nanoBananaPropTextureKey(propId as NanoBanana2dExtraPropId), url });
+    entries.push({ key: illustratedPropTextureKey(propId as Illustrated2dExtraPropId), url });
   }
   for (const [roomId, url] of Object.entries(ROOM_MODULE_URLS)) {
-    entries.push({ key: nanoBananaRoomTextureKey(roomId as NanoBanana2dRoomModuleId), url });
+    entries.push({ key: illustratedRoomTextureKey(roomId as Illustrated2dRoomModuleId), url });
   }
-  for (const theme of NANO_BANANA_V11_STUDIO_THEMES) {
-    entries.push({ key: nanoBananaThemeTextureKey(theme.id), url: theme.assetUrl });
+  for (const theme of ILLUSTRATED_V11_STUDIO_THEMES) {
+    entries.push({ key: illustratedThemeTextureKey(theme.id), url: theme.assetUrl });
   }
   return entries;
 }
@@ -423,7 +423,7 @@ export function buildNanoBanana2dAssetManifest(): readonly { readonly key: strin
 type CampusSceneLike = Pick<Phaser.Scene, "add" | "textures">;
 
 interface WorkstationVisual {
-  readonly spec: NanoBanana2dWorkstationPlacement;
+  readonly spec: Illustrated2dWorkstationPlacement;
   readonly shadow: Phaser.GameObjects.Graphics;
   readonly ring: Phaser.GameObjects.Graphics;
   readonly image: Phaser.GameObjects.Image;
@@ -440,7 +440,7 @@ interface WorkstationVisual {
   proximityLevel: number;
 }
 
-export class StudioNanoBanana2dCampusRuntime {
+export class StudioIllustrated2dCampusRuntime {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
   private readonly workstations: WorkstationVisual[] = [];
   private readonly upgradedTargets = new Map<
@@ -452,20 +452,20 @@ export class StudioNanoBanana2dCampusRuntime {
     readonly width: number;
     readonly height: number;
   }[] = [];
-  private readonly vfxEngine: StudioNanoBanana2dVfxEngine | null = null;
+  private readonly vfxEngine: StudioIllustrated2dVfxEngine | null = null;
   private disposed = false;
-  private lastThemeId: NanoBananaStudioThemeId | null = null;
+  private lastThemeId: IllustratedStudioThemeId | null = null;
   private unsubscribe: (() => void) | null = null;
 
   constructor(private readonly scene: CampusSceneLike) {
     if (typeof Image === "undefined" || typeof scene.textures?.addImage !== "function") return;
     this.buildWorkstations(scene);
-    this.vfxEngine = new StudioNanoBanana2dVfxEngine(
+    this.vfxEngine = new StudioIllustrated2dVfxEngine(
       scene,
-      NANO_BANANA_2D_WORKSTATIONS.map((w) => ({ x: w.x, y: w.y, accentColor: w.accentColor })),
+      ILLUSTRATED_2D_WORKSTATIONS.map((w) => ({ x: w.x, y: w.y, accentColor: w.accentColor })),
     );
     this.loadAllTextures(scene);
-    this.unsubscribe = subscribeNanoBanana2dRuntimeState((next) => {
+    this.unsubscribe = subscribeIllustrated2dRuntimeState((next) => {
       if (this.disposed) return;
       this.syncVisibilityAndTheme(scene, next);
     });
@@ -476,7 +476,7 @@ export class StudioNanoBanana2dCampusRuntime {
     if (objectId === "event-screen") {
       this.themeBannerTargets.push({ image, width, height });
     }
-    const upgrade = NANO_BANANA_CAMPUS_OBJECT_UPGRADES[objectId];
+    const upgrade = ILLUSTRATED_CAMPUS_OBJECT_UPGRADES[objectId];
     if (!upgrade) return;
     this.upgradedTargets.set(objectId, { image, baseWidth: width, baseHeight: height });
     this.applyObjectUpgradeIfLoaded(image.scene?.textures, objectId);
@@ -488,7 +488,7 @@ export class StudioNanoBanana2dCampusRuntime {
   ): void {
     if (!textures) return;
     const target = this.upgradedTargets.get(objectId);
-    const upgrade = NANO_BANANA_CAMPUS_OBJECT_UPGRADES[objectId];
+    const upgrade = ILLUSTRATED_CAMPUS_OBJECT_UPGRADES[objectId];
     if (!target || !upgrade || !textures.exists(upgrade.textureKey)) return;
     target.image
       .setTexture(upgrade.textureKey)
@@ -498,13 +498,13 @@ export class StudioNanoBanana2dCampusRuntime {
       );
   }
 
-  private attachClickToOpenWorkstation(target: Phaser.GameObjects.Image, spec: NanoBanana2dWorkstationPlacement): void {
+  private attachClickToOpenWorkstation(target: Phaser.GameObjects.Image, spec: Illustrated2dWorkstationPlacement): void {
     if (typeof target.setInteractive !== "function") return;
     try {
       target.setInteractive({ useHandCursor: true });
       target.on("pointerdown", () => {
-        requestOpenNanoBananaWorkstationModal(spec.id);
-        triggerNanoBanana2dVfxBurst(`${spec.titleKo} 협업 오픈! ✨`, spec.accentColor, undefined, spec.x, spec.y - 44);
+        requestOpenIllustratedWorkstationModal(spec.id);
+        triggerIllustrated2dVfxBurst(`${spec.titleKo} 협업 오픈! ✨`, spec.accentColor, undefined, spec.x, spec.y - 44);
       });
     } catch {
       // Ignore interactive registration in headless unit tests
@@ -512,7 +512,7 @@ export class StudioNanoBanana2dCampusRuntime {
   }
 
   private buildWorkstations(scene: CampusSceneLike): void {
-    for (const spec of NANO_BANANA_2D_WORKSTATIONS) {
+    for (const spec of ILLUSTRATED_2D_WORKSTATIONS) {
       const depth = Math.round(spec.y) + 860;
       const shadow = scene.add.graphics().setDepth(-895).setPosition(spec.x, spec.y - 6);
       shadow.fillStyle(0x060913, 0.34).fillEllipse(0, 0, spec.width * 0.92, 34);
@@ -562,7 +562,7 @@ export class StudioNanoBanana2dCampusRuntime {
       const partnerX = spec.x + spec.partnerOffsetX;
       const partnerY = spec.y + spec.partnerOffsetY;
       const partnerDepth = Math.round(partnerY) + 862;
-      const partnerTextureKey = nanoBananaPersonaTextureKey(spec.partnerPersonaId, spec.partnerPose);
+      const partnerTextureKey = illustratedPersonaTextureKey(spec.partnerPersonaId, spec.partnerPose);
       const partnerReady = scene.textures.exists(partnerTextureKey);
       const partnerShadow = scene.add.graphics().setDepth(-893).setPosition(partnerX, partnerY - 2);
       partnerShadow.fillStyle(0x060913, 0.36).fillEllipse(0, 0, 52, 16);
@@ -608,7 +608,7 @@ export class StudioNanoBanana2dCampusRuntime {
   }
 
   private loadAllTextures(scene: CampusSceneLike): void {
-    for (const entry of buildNanoBanana2dAssetManifest()) {
+    for (const entry of buildIllustrated2dAssetManifest()) {
       if (scene.textures.exists(entry.key)) {
         this.onTextureReady(scene, entry.key);
         continue;
@@ -641,7 +641,7 @@ export class StudioNanoBanana2dCampusRuntime {
           .setVisible(currentState.enabled);
       }
     }
-    for (const [objectId, upgrade] of Object.entries(NANO_BANANA_CAMPUS_OBJECT_UPGRADES)) {
+    for (const [objectId, upgrade] of Object.entries(ILLUSTRATED_CAMPUS_OBJECT_UPGRADES)) {
       if (upgrade.textureKey === loadedKey) {
         this.applyObjectUpgradeIfLoaded(scene.textures, objectId);
       }
@@ -649,7 +649,7 @@ export class StudioNanoBanana2dCampusRuntime {
     this.syncVisibilityAndTheme(scene, currentState);
   }
 
-  private syncVisibilityAndTheme(scene: CampusSceneLike, state: NanoBanana2dRuntimeState): void {
+  private syncVisibilityAndTheme(scene: CampusSceneLike, state: Illustrated2dRuntimeState): void {
     for (const item of this.workstations) {
       const ready = scene.textures.exists(item.spec.textureKey);
       const partnerReady = scene.textures.exists(item.currentPartnerKey) || scene.textures.exists(item.partnerTextureKey);
@@ -663,7 +663,7 @@ export class StudioNanoBanana2dCampusRuntime {
       item.partnerBadge.setVisible(state.enabled);
     }
     if (this.lastThemeId !== state.themeId) {
-      const themeKey = nanoBananaThemeTextureKey(state.themeId);
+      const themeKey = illustratedThemeTextureKey(state.themeId);
       if (scene.textures.exists(themeKey)) {
         this.lastThemeId = state.themeId;
         for (const banner of this.themeBannerTargets) {

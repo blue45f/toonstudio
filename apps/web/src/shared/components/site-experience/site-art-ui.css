@@ -1,4 +1,4 @@
-/* Nano Banana Site-Wide UI/UX Atelier System (nb-site-*) */
+/* Illustrated Site-Wide UI/UX Atelier System (nb-site-*) */
 
 .nb-site-spotlight-shell {
   container-type: inline-size;
@@ -395,7 +395,7 @@
   opacity: 0.96;
 }
 
-/* Subnav Nano Banana miniature visual badge */
+/* Subnav Illustrated miniature visual badge */
 .nb-site-subnav-brand {
   display: inline-flex;
   align-items: center;
@@ -413,7 +413,7 @@
   flex-shrink: 0;
 }
 
-/* Next Steps Nano Banana card visual header */
+/* Next Steps Illustrated card visual header */
 .nb-site-next-step-visual {
   position: relative;
   width: 100%;
@@ -450,7 +450,7 @@
   border: 1px solid rgba(246, 196, 83, 0.34);
 }
 
-/* RoutePurposeScene Nano Banana Atelier pill */
+/* RoutePurposeScene Illustrated Atelier pill */
 .nb-site-purpose-pill {
   display: inline-flex;
   align-items: center;

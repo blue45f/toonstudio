@@ -6,20 +6,20 @@ import { describe, expect, it } from "vitest";
 import type { SiteRouteVisualKind } from "@/shared/lib/site-route-visual";
 import {
   type ContextualSubNavGroupId,
-  getNanoBananaSiteCard,
-  NANO_BANANA_SITE_CARD_LIST,
-  NANO_BANANA_SITE_CARDS,
-  resolveNanoBananaCardForDomain,
-  resolveNanoBananaCardForPath,
-  resolveNanoBananaCardForRouteVisual,
-  resolveNanoBananaCardForSubNavGroup,
+  getSiteArtCard,
+  ILLUSTRATED_SITE_CARD_LIST,
+  SITE_ART_CARDS,
+  resolveIllustratedCardForDomain,
+  resolveSiteArtCardForPath,
+  resolveIllustratedCardForRouteVisual,
+  resolveIllustratedCardForSubNavGroup,
   type SiteDesignDomain,
-} from "./nano-banana-site-ui-pack";
+} from "./site-art-ui-pack";
 
 const WEB_PUBLIC_ROOT = resolve(__dirname, "../../../../public");
 const MANIFEST_PATH = resolve(
   WEB_PUBLIC_ROOT,
-  "assets/site-experience/nano-banana-site-v1/manifest.json",
+  "assets/site-experience/site-art-v1/manifest.json",
 );
 
 function sha256File(filePath: string): string {
@@ -27,7 +27,7 @@ function sha256File(filePath: string): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-describe("nano-banana-site-ui-pack", () => {
+describe("site-art-ui-pack", () => {
   it("verifies manifest.json and all 16 card + 4 master WebP files on disk with SHA-256 integrity", () => {
     expect(existsSync(MANIFEST_PATH)).toBe(true);
     const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8")) as {
@@ -43,11 +43,11 @@ describe("nano-banana-site-ui-pack", () => {
       }>;
     };
 
-    expect(manifest.packId).toBe("nano-banana-site-v1");
+    expect(manifest.packId).toBe("site-art-v1");
     expect(manifest.version).toBe(1);
     expect(manifest.boards).toHaveLength(4);
     expect(manifest.cards).toHaveLength(16);
-    expect(NANO_BANANA_SITE_CARD_LIST).toHaveLength(16);
+    expect(ILLUSTRATED_SITE_CARD_LIST).toHaveLength(16);
 
     for (const board of manifest.boards) {
       const diskPath = resolve(WEB_PUBLIC_ROOT, board.src.replace(/^\//u, ""));
@@ -87,8 +87,8 @@ describe("nano-banana-site-ui-pack", () => {
       "admin",
     ];
     for (const domain of domains) {
-      const card = resolveNanoBananaCardForDomain(domain);
-      expect(NANO_BANANA_SITE_CARDS[card.cardId]).toBeDefined();
+      const card = resolveIllustratedCardForDomain(domain);
+      expect(SITE_ART_CARDS[card.cardId]).toBeDefined();
     }
 
     const visualKinds: SiteRouteVisualKind[] = [
@@ -108,8 +108,8 @@ describe("nano-banana-site-ui-pack", () => {
       "play",
     ];
     for (const kind of visualKinds) {
-      const card = resolveNanoBananaCardForRouteVisual(kind);
-      expect(NANO_BANANA_SITE_CARDS[card.cardId]).toBeDefined();
+      const card = resolveIllustratedCardForRouteVisual(kind);
+      expect(SITE_ART_CARDS[card.cardId]).toBeDefined();
     }
 
     const subNavGroups: ContextualSubNavGroupId[] = [
@@ -121,37 +121,37 @@ describe("nano-banana-site-ui-pack", () => {
       "personal",
     ];
     for (const groupId of subNavGroups) {
-      const card = resolveNanoBananaCardForSubNavGroup(groupId);
-      expect(NANO_BANANA_SITE_CARDS[card.cardId]).toBeDefined();
+      const card = resolveIllustratedCardForSubNavGroup(groupId);
+      expect(SITE_ART_CARDS[card.cardId]).toBeDefined();
     }
   });
 
   it("resolves distinct signature cards across major site routes", () => {
-    expect(resolveNanoBananaCardForPath("/").cardId).toBe("nb-workflow-bridge");
-    expect(resolveNanoBananaCardForPath("/discover").cardId).toBe("nb-discover-spotlight");
-    expect(resolveNanoBananaCardForPath("/explore?genre=fantasy").cardId).toBe("nb-explore-spectrum");
-    expect(resolveNanoBananaCardForPath("/ranking").cardId).toBe("nb-ranking-constellation");
-    expect(resolveNanoBananaCardForPath("/calendar").cardId).toBe("nb-ranking-constellation");
-    expect(resolveNanoBananaCardForPath("/library").cardId).toBe("nb-library-archive");
-    expect(resolveNanoBananaCardForPath("/create").cardId).toBe("nb-create-canvas");
-    expect(resolveNanoBananaCardForPath("/studio").cardId).toBe("nb-create-canvas");
-    expect(resolveNanoBananaCardForPath("/story-lab").cardId).toBe("nb-planning-storylab");
-    expect(resolveNanoBananaCardForPath("/studio/3d").cardId).toBe("nb-spatial-stage");
-    expect(resolveNanoBananaCardForPath("/production").cardId).toBe("nb-production-control");
-    expect(resolveNanoBananaCardForPath("/market").cardId).toBe("nb-market-atelier");
-    expect(resolveNanoBananaCardForPath("/learn").cardId).toBe("nb-learn-academy");
-    expect(resolveNanoBananaCardForPath("/community").cardId).toBe("nb-community-plaza");
-    expect(resolveNanoBananaCardForPath("/showcase").cardId).toBe("nb-showcase-premiere");
-    expect(resolveNanoBananaCardForPath("/my-space").cardId).toBe("nb-manage-vault");
-    expect(resolveNanoBananaCardForPath("/fortune").cardId).toBe("nb-play-fortune");
-    expect(resolveNanoBananaCardForPath("/pricing").cardId).toBe("nb-trust-sanctuary");
+    expect(resolveSiteArtCardForPath("/").cardId).toBe("nb-workflow-bridge");
+    expect(resolveSiteArtCardForPath("/discover").cardId).toBe("nb-discover-spotlight");
+    expect(resolveSiteArtCardForPath("/explore?genre=fantasy").cardId).toBe("nb-explore-spectrum");
+    expect(resolveSiteArtCardForPath("/ranking").cardId).toBe("nb-ranking-constellation");
+    expect(resolveSiteArtCardForPath("/calendar").cardId).toBe("nb-ranking-constellation");
+    expect(resolveSiteArtCardForPath("/library").cardId).toBe("nb-library-archive");
+    expect(resolveSiteArtCardForPath("/create").cardId).toBe("nb-create-canvas");
+    expect(resolveSiteArtCardForPath("/studio").cardId).toBe("nb-create-canvas");
+    expect(resolveSiteArtCardForPath("/story-lab").cardId).toBe("nb-planning-storylab");
+    expect(resolveSiteArtCardForPath("/studio/3d").cardId).toBe("nb-spatial-stage");
+    expect(resolveSiteArtCardForPath("/production").cardId).toBe("nb-production-control");
+    expect(resolveSiteArtCardForPath("/market").cardId).toBe("nb-market-atelier");
+    expect(resolveSiteArtCardForPath("/learn").cardId).toBe("nb-learn-academy");
+    expect(resolveSiteArtCardForPath("/community").cardId).toBe("nb-community-plaza");
+    expect(resolveSiteArtCardForPath("/showcase").cardId).toBe("nb-showcase-premiere");
+    expect(resolveSiteArtCardForPath("/my-space").cardId).toBe("nb-manage-vault");
+    expect(resolveSiteArtCardForPath("/fortune").cardId).toBe("nb-play-fortune");
+    expect(resolveSiteArtCardForPath("/pricing").cardId).toBe("nb-trust-sanctuary");
   });
 
-  it("keeps English copy free of Hangul and omits direct NanoBanana model branding in user-facing copy", () => {
+  it("keeps English copy free of Hangul and omits direct Illustrated model branding in user-facing copy", () => {
     const hangulRegex = /[가-힣]/u;
     const directBrandingRegex = /nano\s*banana|나노\s*바나나/iu;
-    for (const card of NANO_BANANA_SITE_CARD_LIST) {
-      expect(getNanoBananaSiteCard(card.cardId)).toBe(card);
+    for (const card of ILLUSTRATED_SITE_CARD_LIST) {
+      expect(getSiteArtCard(card.cardId)).toBe(card);
       expect(card.atelierModelLabel).not.toMatch(directBrandingRegex);
       expect(card.title.ko).not.toMatch(directBrandingRegex);
       expect(card.title.en).not.toMatch(hangulRegex);
@@ -173,8 +173,8 @@ describe("nano-banana-site-ui-pack", () => {
       for (const lens of card.lenses) {
         expect(lens.previewCardId).toBeDefined();
         expect(
-          NANO_BANANA_SITE_CARDS[
-            lens.previewCardId as keyof typeof NANO_BANANA_SITE_CARDS
+          SITE_ART_CARDS[
+            lens.previewCardId as keyof typeof SITE_ART_CARDS
           ],
         ).toBeDefined();
         expect(lens.label.ko).not.toMatch(directBrandingRegex);

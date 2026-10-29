@@ -1,5 +1,5 @@
 import type { SiteRouteVisualKind } from "@/shared/lib/site-route-visual";
-import { NANO_BANANA_SITE_CARDS } from "./nano-banana-site-cards-data";
+import { SITE_ART_CARDS } from "./site-art-cards-data";
 
 export type SiteDesignDomain =
   | "workflow"
@@ -26,13 +26,13 @@ export type ContextualSubNavGroupId =
   | "academy"
   | "personal";
 
-export type NanoBananaBoardId =
+export type IllustratedBoardId =
   | "board-01-discovery-universe"
   | "board-02-creative-studio"
   | "board-03-ecosystem-academy"
   | "board-04-personal-trust-play";
 
-export type NanoBananaCardId =
+export type SiteArtCardId =
   | "nb-discover-spotlight"
   | "nb-explore-spectrum"
   | "nb-ranking-constellation"
@@ -50,25 +50,25 @@ export type NanoBananaCardId =
   | "nb-play-fortune"
   | "nb-trust-sanctuary";
 
-export interface NanoBananaLocalizedCopy {
+export interface SiteArtLocalizedCopy {
   readonly ko: string;
   readonly en: string;
 }
 
-export interface NanoBananaInteractiveLens {
+export interface SiteArtInteractiveLens {
   readonly id: "curation" | "workflow" | "recipe";
-  readonly previewCardId?: NanoBananaCardId;
-  readonly label: NanoBananaLocalizedCopy;
-  readonly headline: NanoBananaLocalizedCopy;
-  readonly detail: NanoBananaLocalizedCopy;
-  readonly promptSeed: NanoBananaLocalizedCopy;
-  readonly ctaLabel: NanoBananaLocalizedCopy;
+  readonly previewCardId?: SiteArtCardId;
+  readonly label: SiteArtLocalizedCopy;
+  readonly headline: SiteArtLocalizedCopy;
+  readonly detail: SiteArtLocalizedCopy;
+  readonly promptSeed: SiteArtLocalizedCopy;
+  readonly ctaLabel: SiteArtLocalizedCopy;
   readonly ctaHref: string;
 }
 
-export interface NanoBananaSiteCardSpec {
-  readonly cardId: NanoBananaCardId;
-  readonly boardId: NanoBananaBoardId;
+export interface SiteArtCardSpec {
+  readonly cardId: SiteArtCardId;
+  readonly boardId: IllustratedBoardId;
   readonly domain: SiteDesignDomain;
   readonly routeVisual: SiteRouteVisualKind;
   readonly src640: string;
@@ -76,24 +76,24 @@ export interface NanoBananaSiteCardSpec {
   readonly srcSet: string;
   readonly accentHex: string;
   readonly secondaryHex: string;
-  readonly stageBadge: NanoBananaLocalizedCopy;
+  readonly stageBadge: SiteArtLocalizedCopy;
   readonly atelierModelLabel: string;
-  readonly title: NanoBananaLocalizedCopy;
-  readonly subtitle: NanoBananaLocalizedCopy;
-  readonly quickChips: readonly NanoBananaLocalizedCopy[];
+  readonly title: SiteArtLocalizedCopy;
+  readonly subtitle: SiteArtLocalizedCopy;
+  readonly quickChips: readonly SiteArtLocalizedCopy[];
   readonly lenses: readonly [
-    NanoBananaInteractiveLens,
-    NanoBananaInteractiveLens,
-    NanoBananaInteractiveLens,
+    SiteArtInteractiveLens,
+    SiteArtInteractiveLens,
+    SiteArtInteractiveLens,
   ];
 }
 
-export { NANO_BANANA_SITE_CARDS };
+export { SITE_ART_CARDS };
 
-export const NANO_BANANA_SITE_CARD_LIST: readonly NanoBananaSiteCardSpec[] =
-  Object.values(NANO_BANANA_SITE_CARDS);
+export const ILLUSTRATED_SITE_CARD_LIST: readonly SiteArtCardSpec[] =
+  Object.values(SITE_ART_CARDS);
 
-const DOMAIN_TO_CARD_ID: Readonly<Record<SiteDesignDomain, NanoBananaCardId>> = {
+const DOMAIN_TO_CARD_ID: Readonly<Record<SiteDesignDomain, SiteArtCardId>> = {
   workflow: "nb-workflow-bridge",
   create: "nb-create-canvas",
   planning: "nb-planning-storylab",
@@ -111,7 +111,7 @@ const DOMAIN_TO_CARD_ID: Readonly<Record<SiteDesignDomain, NanoBananaCardId>> = 
   admin: "nb-production-control",
 };
 
-const ROUTE_VISUAL_TO_CARD_ID: Readonly<Record<SiteRouteVisualKind, NanoBananaCardId>> = {
+const ROUTE_VISUAL_TO_CARD_ID: Readonly<Record<SiteRouteVisualKind, SiteArtCardId>> = {
   workflow: "nb-workflow-bridge",
   discover: "nb-discover-spotlight",
   create: "nb-create-canvas",
@@ -128,7 +128,7 @@ const ROUTE_VISUAL_TO_CARD_ID: Readonly<Record<SiteRouteVisualKind, NanoBananaCa
   play: "nb-play-fortune",
 };
 
-const SUBNAV_GROUP_TO_CARD_ID: Readonly<Record<ContextualSubNavGroupId, NanoBananaCardId>> = {
+const SUBNAV_GROUP_TO_CARD_ID: Readonly<Record<ContextualSubNavGroupId, SiteArtCardId>> = {
   discover: "nb-discover-spotlight",
   create: "nb-create-canvas",
   production: "nb-production-control",
@@ -137,49 +137,49 @@ const SUBNAV_GROUP_TO_CARD_ID: Readonly<Record<ContextualSubNavGroupId, NanoBana
   personal: "nb-manage-vault",
 };
 
-export function getNanoBananaSiteCard(cardId: NanoBananaCardId): NanoBananaSiteCardSpec {
-  return NANO_BANANA_SITE_CARDS[cardId];
+export function getSiteArtCard(cardId: SiteArtCardId): SiteArtCardSpec {
+  return SITE_ART_CARDS[cardId];
 }
 
-export function resolveNanoBananaCardForDomain(domain: SiteDesignDomain): NanoBananaSiteCardSpec {
-  return NANO_BANANA_SITE_CARDS[DOMAIN_TO_CARD_ID[domain] ?? "nb-workflow-bridge"];
+export function resolveIllustratedCardForDomain(domain: SiteDesignDomain): SiteArtCardSpec {
+  return SITE_ART_CARDS[DOMAIN_TO_CARD_ID[domain] ?? "nb-workflow-bridge"];
 }
 
-export function resolveNanoBananaCardForRouteVisual(
+export function resolveIllustratedCardForRouteVisual(
   kind: SiteRouteVisualKind,
-): NanoBananaSiteCardSpec {
-  return NANO_BANANA_SITE_CARDS[ROUTE_VISUAL_TO_CARD_ID[kind] ?? "nb-workflow-bridge"];
+): SiteArtCardSpec {
+  return SITE_ART_CARDS[ROUTE_VISUAL_TO_CARD_ID[kind] ?? "nb-workflow-bridge"];
 }
 
-export function resolveNanoBananaCardForSubNavGroup(
+export function resolveIllustratedCardForSubNavGroup(
   groupId: ContextualSubNavGroupId,
-): NanoBananaSiteCardSpec {
-  return NANO_BANANA_SITE_CARDS[SUBNAV_GROUP_TO_CARD_ID[groupId] ?? "nb-workflow-bridge"];
+): SiteArtCardSpec {
+  return SITE_ART_CARDS[SUBNAV_GROUP_TO_CARD_ID[groupId] ?? "nb-workflow-bridge"];
 }
 
-export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCardSpec {
+export function resolveSiteArtCardForPath(pathname: string): SiteArtCardSpec {
   const clean = (pathname.split(/[?#]/, 1)[0] || "/").toLowerCase();
 
   if (clean === "/" || clean.startsWith("/workflow")) {
-    return NANO_BANANA_SITE_CARDS["nb-workflow-bridge"];
+    return SITE_ART_CARDS["nb-workflow-bridge"];
   }
   if (clean.startsWith("/explore") || clean.startsWith("/genres") || clean.startsWith("/search")) {
-    return NANO_BANANA_SITE_CARDS["nb-explore-spectrum"];
+    return SITE_ART_CARDS["nb-explore-spectrum"];
   }
   if (clean.startsWith("/ranking") || clean.startsWith("/calendar") || clean.startsWith("/schedule")) {
-    return NANO_BANANA_SITE_CARDS["nb-ranking-constellation"];
+    return SITE_ART_CARDS["nb-ranking-constellation"];
   }
   if (clean.startsWith("/library") || clean.startsWith("/bookmarks") || clean.startsWith("/history")) {
-    return NANO_BANANA_SITE_CARDS["nb-library-archive"];
+    return SITE_ART_CARDS["nb-library-archive"];
   }
   if (clean.startsWith("/discover") || clean.startsWith("/webtoon") || clean.startsWith("/series")) {
-    return NANO_BANANA_SITE_CARDS["nb-discover-spotlight"];
+    return SITE_ART_CARDS["nb-discover-spotlight"];
   }
   if (clean.startsWith("/story-lab") || clean.startsWith("/novel") || clean.startsWith("/planning")) {
-    return NANO_BANANA_SITE_CARDS["nb-planning-storylab"];
+    return SITE_ART_CARDS["nb-planning-storylab"];
   }
   if (clean.startsWith("/studio/3d") || clean.startsWith("/world") || clean.startsWith("/spatial")) {
-    return NANO_BANANA_SITE_CARDS["nb-spatial-stage"];
+    return SITE_ART_CARDS["nb-spatial-stage"];
   }
   if (
     clean.startsWith("/production") ||
@@ -187,13 +187,13 @@ export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCa
     clean.startsWith("/ops") ||
     clean.startsWith("/publish")
   ) {
-    return NANO_BANANA_SITE_CARDS["nb-production-control"];
+    return SITE_ART_CARDS["nb-production-control"];
   }
   if (clean.startsWith("/create") || clean.startsWith("/studio")) {
-    return NANO_BANANA_SITE_CARDS["nb-create-canvas"];
+    return SITE_ART_CARDS["nb-create-canvas"];
   }
   if (clean.startsWith("/market") || clean.startsWith("/asset-fit") || clean.startsWith("/goods")) {
-    return NANO_BANANA_SITE_CARDS["nb-market-atelier"];
+    return SITE_ART_CARDS["nb-market-atelier"];
   }
   if (
     clean.startsWith("/learn") ||
@@ -202,13 +202,13 @@ export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCa
     clean.startsWith("/encyclopedia") ||
     clean.startsWith("/cliche")
   ) {
-    return NANO_BANANA_SITE_CARDS["nb-learn-academy"];
+    return SITE_ART_CARDS["nb-learn-academy"];
   }
   if (clean.startsWith("/community") || clean.startsWith("/league") || clean.startsWith("/cafe")) {
-    return NANO_BANANA_SITE_CARDS["nb-community-plaza"];
+    return SITE_ART_CARDS["nb-community-plaza"];
   }
   if (clean.startsWith("/showcase") || clean.startsWith("/collab")) {
-    return NANO_BANANA_SITE_CARDS["nb-showcase-premiere"];
+    return SITE_ART_CARDS["nb-showcase-premiere"];
   }
   if (
     clean.startsWith("/my-space") ||
@@ -216,10 +216,10 @@ export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCa
     clean.startsWith("/creator") ||
     clean.startsWith("/onboarding")
   ) {
-    return NANO_BANANA_SITE_CARDS["nb-manage-vault"];
+    return SITE_ART_CARDS["nb-manage-vault"];
   }
   if (clean.startsWith("/play") || clean.startsWith("/fortune") || clean.startsWith("/cut-play")) {
-    return NANO_BANANA_SITE_CARDS["nb-play-fortune"];
+    return SITE_ART_CARDS["nb-play-fortune"];
   }
   if (
     clean.startsWith("/pricing") ||
@@ -229,12 +229,12 @@ export function resolveNanoBananaCardForPath(pathname: string): NanoBananaSiteCa
     clean.startsWith("/terms") ||
     clean.startsWith("/privacy")
   ) {
-    return NANO_BANANA_SITE_CARDS["nb-trust-sanctuary"];
+    return SITE_ART_CARDS["nb-trust-sanctuary"];
   }
 
   if (clean.startsWith("/admin")) {
-    return NANO_BANANA_SITE_CARDS["nb-production-control"];
+    return SITE_ART_CARDS["nb-production-control"];
   }
 
-  return NANO_BANANA_SITE_CARDS["nb-workflow-bridge"];
+  return SITE_ART_CARDS["nb-workflow-bridge"];
 }

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { NanoBananaSurfaceSpotlight } from "./NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "./SiteArtSurfaceSpotlight";
 
 let mockedLang = "ko";
 vi.mock("@/shared/lib/i18n", () => ({
@@ -16,11 +16,11 @@ afterEach(() => {
   cleanup();
 });
 
-describe("NanoBananaSurfaceSpotlight", () => {
+describe("SiteArtSurfaceSpotlight", () => {
   it("renders decorative artwork outside the assistive image tree and switches lenses interactively", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/discover"]}>
-        <NanoBananaSurfaceSpotlight cardId="nb-discover-spotlight" compact />
+        <SiteArtSurfaceSpotlight cardId="nb-discover-spotlight" compact />
       </MemoryRouter>,
     );
 
@@ -33,7 +33,7 @@ describe("NanoBananaSurfaceSpotlight", () => {
     const img = container.querySelector<HTMLImageElement>(".nb-site-spotlight__img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe(
-      "/assets/site-experience/nano-banana-site-v1/cards/nb-discover-spotlight-640.webp",
+      "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp",
     );
     expect(img?.getAttribute("loading")).toBe("lazy");
     expect(img?.getAttribute("decoding")).toBe("async");
@@ -44,7 +44,7 @@ describe("NanoBananaSurfaceSpotlight", () => {
     expect(curationBtn.getAttribute("aria-pressed")).toBe("true");
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("false");
 
-    // Ensure technical model badges like "NanoBanana Pro · ..." are not rendered
+    // Ensure technical model badges like "Illustrated Pro · ..." are not rendered
     expect(container.querySelector(".nb-site-spotlight__visual-badge")).toBeNull();
     expect(container.textContent).not.toMatch(/NanoBanana|나노바나나|Cel-Brush Engine/iu);
 
@@ -61,7 +61,7 @@ describe("NanoBananaSurfaceSpotlight", () => {
     fireEvent.click(recipeBtn);
     expect(recipeBtn.getAttribute("aria-pressed")).toBe("true");
     expect(img?.getAttribute("src")).toBe(
-      "/assets/site-experience/nano-banana-site-v1/cards/nb-library-archive-640.webp",
+      "/assets/site-experience/site-art-v1/cards/nb-library-archive-640.webp",
     );
     expect(screen.getByRole("link", { name: /맞춤 추천 보기/u }).getAttribute("href")).toBe(
       "/recommend",
@@ -72,7 +72,7 @@ describe("NanoBananaSurfaceSpotlight", () => {
     mockedLang = "en";
     const { container } = render(
       <MemoryRouter initialEntries={["/studio"]}>
-        <NanoBananaSurfaceSpotlight pathname="/studio" />
+        <SiteArtSurfaceSpotlight pathname="/studio" />
       </MemoryRouter>,
     );
 

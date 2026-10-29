@@ -32,7 +32,7 @@ import {
 
 import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
@@ -295,7 +295,7 @@ export function CreateStartPage() {
       </section>
       ) : null}
 
-      <NanoBananaSurfaceSpotlight cardId="nb-create-canvas" compact className="mt-6" />
+      <SiteArtSurfaceSpotlight cardId="nb-create-canvas" compact className="mt-6" />
 
       {showPipeline ? (
       <section
@@ -349,7 +349,7 @@ export function CreateStartPage() {
           <span
             aria-hidden="true"
             className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
-            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp)" }}
+            style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
             <BookOpen size={22} aria-hidden />
@@ -373,7 +373,7 @@ export function CreateStartPage() {
           <span
             aria-hidden="true"
             className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
-            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-640.webp)" }}
+            style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
             <Clapperboard size={22} aria-hidden />
@@ -397,7 +397,7 @@ export function CreateStartPage() {
           <span
             aria-hidden="true"
             className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
-            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp)" }}
+            style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
             <Plus size={22} aria-hidden />
@@ -421,7 +421,7 @@ export function CreateStartPage() {
           <span
             aria-hidden="true"
             className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
-            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-market-atelier-640.webp)" }}
+            style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-market-atelier-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
             <LayoutTemplate size={22} aria-hidden />
@@ -445,7 +445,7 @@ export function CreateStartPage() {
           <span
             aria-hidden="true"
             className="mb-3 block h-24 w-full rounded-xl border border-line/60 bg-cover bg-center"
-            style={{ backgroundImage: "url(/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp)" }}
+            style={{ backgroundImage: "url(/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp)" }}
           />
           <span className={CHOICE_ICON_CLASS}>
             <Upload size={22} aria-hidden />

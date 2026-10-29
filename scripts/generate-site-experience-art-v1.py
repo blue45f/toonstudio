@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-나노바나나(Nano Banana) 사이트 전역 비주얼 에셋 팩(nano-banana-site-v1) 생성 및 슬라이싱 스크립트.
+일러스트 사이트 전역 비주얼 에셋 팩(site-art-v1) 생성 및 슬라이싱 스크립트.
 
 4장의 2x2 마스터 아틀리에 보드로부터 16종의 시그니처 카드(640x360 및 320x180 WebP)와
 마스터 보드 아틀라스(960x540 WebP), 결정론적 SHA-256 manifest.json을 생성한다.
@@ -287,12 +287,12 @@ def main() -> None:
         "--source-dir",
         type=Path,
         default=None,
-        help="Optional directory containing raw Nano Banana master boards.",
+        help="Optional directory containing raw AI-generated master boards.",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("apps/web/public/assets/site-experience/nano-banana-site-v1"),
+        default=Path("apps/web/public/assets/site-experience/site-art-v1"),
         help="Output asset pack directory.",
     )
     args = parser.parse_args()
@@ -337,8 +337,8 @@ def main() -> None:
                         "accentHex": q["accent_hex"],
                         "secondaryHex": q["secondary_hex"],
                         "title": {"ko": q["title_ko"], "en": q["title_en"]},
-                        "src640": f"/assets/site-experience/nano-banana-site-v1/cards/{file_640.name}",
-                        "src320": f"/assets/site-experience/nano-banana-site-v1/cards/{file_320.name}",
+                        "src640": f"/assets/site-experience/site-art-v1/cards/{file_640.name}",
+                        "src320": f"/assets/site-experience/site-art-v1/cards/{file_320.name}",
                         "sha256_640": sha256_file(file_640),
                         "sha256_320": sha256_file(file_320),
                         "dimensions": {
@@ -352,16 +352,16 @@ def main() -> None:
             {
                 "boardId": board["board_id"],
                 "title": {"ko": board["title_ko"], "en": board["title_en"]},
-                "src": f"/assets/site-experience/nano-banana-site-v1/masters/{board['master_filename']}",
+                "src": f"/assets/site-experience/site-art-v1/masters/{board['master_filename']}",
                 "sha256": sha256_file(masters_dir / board["master_filename"]),
                 "dimensions": {"width": 960, "height": 540},
             }
         )
 
     manifest_payload = {
-        "packId": "nano-banana-site-v1",
+        "packId": "site-art-v1",
         "version": 1,
-        "generator": "Nano Banana (Gemini Image Generation) + generate-site-experience-nano-banana-v1.py",
+        "generator": "Nano Banana (Gemini Image Generation) + generate-site-experience-art-v1.py",
         "aesthetic": "Korean Webtoon Atelier (Starlight Indigo #0d1326, Persimmon #ff7849, Luminous Gold #f6c453)",
         "boards": manifest_boards,
         "cards": manifest_cards,

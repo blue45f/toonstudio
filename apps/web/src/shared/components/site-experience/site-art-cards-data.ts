@@ -1,12 +1,12 @@
-import type { NanoBananaCardId, NanoBananaSiteCardSpec } from "./nano-banana-site-ui-pack";
+import type { SiteArtCardId, SiteArtCardSpec } from "./site-art-ui-pack";
 
-function urls(cardId: NanoBananaCardId) {
-  const src320 = `/assets/site-experience/nano-banana-site-v1/cards/${cardId}-320.webp`;
-  const src640 = `/assets/site-experience/nano-banana-site-v1/cards/${cardId}-640.webp`;
+function urls(cardId: SiteArtCardId) {
+  const src320 = `/assets/site-experience/site-art-v1/cards/${cardId}-320.webp`;
+  const src640 = `/assets/site-experience/site-art-v1/cards/${cardId}-640.webp`;
   return { src320, src640, srcSet: `${src320} 320w, ${src640} 640w` };
 }
 
-export const NANO_BANANA_SITE_CARDS: Readonly<Record<NanoBananaCardId, NanoBananaSiteCardSpec>> = {
+export const SITE_ART_CARDS: Readonly<Record<SiteArtCardId, SiteArtCardSpec>> = {
   "nb-discover-spotlight": {
     cardId: "nb-discover-spotlight", boardId: "board-01-discovery-universe", domain: "discover", routeVisual: "discover",
     ...urls("nb-discover-spotlight"),

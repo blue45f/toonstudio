@@ -1,6 +1,6 @@
 import type { SiteRouteVisualKind } from "@/shared/lib/site-route-visual";
 
-export type NanoBananaCardId =
+export type SiteArtCardId =
   | "nb-discover-spotlight" | "nb-explore-spectrum" | "nb-ranking-constellation" | "nb-library-archive"
   | "nb-create-canvas" | "nb-planning-storylab" | "nb-spatial-stage" | "nb-production-control"
   | "nb-market-atelier" | "nb-learn-academy" | "nb-community-plaza" | "nb-showcase-premiere"
@@ -8,8 +8,8 @@ export type NanoBananaCardId =
 
 export type ContextualSubNavGroupId = "discover" | "create" | "production" | "ecosystem" | "academy" | "personal";
 
-export interface NanoBananaCardMeta {
-  readonly cardId: NanoBananaCardId;
+export interface IllustratedCardMeta {
+  readonly cardId: SiteArtCardId;
   readonly src320: string;
   readonly src640: string;
   readonly srcSet: string;
@@ -17,7 +17,7 @@ export interface NanoBananaCardMeta {
   readonly stageBadge: { readonly ko: string; readonly en: string };
 }
 
-const RAW: Record<NanoBananaCardId, readonly [string, string, string]> = {
+const RAW: Record<SiteArtCardId, readonly [string, string, string]> = {
   "nb-discover-spotlight": ["Key-Art Curation", "STAGE 01 · 작품 발견 허브", "STAGE 01 · DISCOVERY HUB"],
   "nb-explore-spectrum": ["Genre Spectrum", "STAGE 01 · 장르 스펙트럼 탐색", "STAGE 01 · GENRE SPECTRUM"],
   "nb-ranking-constellation": ["Serial Observatory", "STAGE 01 · 실시간 차트 & 요일표", "STAGE 01 · CHARTS & CALENDAR"],
@@ -36,13 +36,13 @@ const RAW: Record<NanoBananaCardId, readonly [string, string, string]> = {
   "nb-trust-sanctuary": ["Trust Sanctuary", "STAGE 04 · 신뢰 & 접근성", "STAGE 04 · TRUST SANCTUARY"],
 };
 
-function meta(cardId: NanoBananaCardId): NanoBananaCardMeta {
+function meta(cardId: SiteArtCardId): IllustratedCardMeta {
   const [atelierModelLabel, ko, en] = RAW[cardId] ?? RAW["nb-workflow-bridge"];
-  const base = `/assets/site-experience/nano-banana-site-v1/cards/${cardId}`;
+  const base = `/assets/site-experience/site-art-v1/cards/${cardId}`;
   return { cardId, src320: `${base}-320.webp`, src640: `${base}-640.webp`, srcSet: `${base}-320.webp 320w, ${base}-640.webp 640w`, atelierModelLabel, stageBadge: { ko, en } };
 }
 
-const ROUTE_MAP: Record<SiteRouteVisualKind, NanoBananaCardId> = {
+const ROUTE_MAP: Record<SiteRouteVisualKind, SiteArtCardId> = {
   workflow: "nb-workflow-bridge", discover: "nb-discover-spotlight", create: "nb-create-canvas",
   planning: "nb-planning-storylab", spatial: "nb-spatial-stage", assets: "nb-market-atelier",
   production: "nb-production-control", review: "nb-production-control", publish: "nb-showcase-premiere",
@@ -50,15 +50,15 @@ const ROUTE_MAP: Record<SiteRouteVisualKind, NanoBananaCardId> = {
   trust: "nb-trust-sanctuary", play: "nb-play-fortune",
 };
 
-const SUBNAV_MAP: Record<string, NanoBananaCardId> = {
+const SUBNAV_MAP: Record<string, SiteArtCardId> = {
   discover: "nb-discover-spotlight", create: "nb-create-canvas", production: "nb-production-control",
   ecosystem: "nb-market-atelier", academy: "nb-learn-academy", personal: "nb-manage-vault",
 };
 
-export const resolveNanoBananaCardMetaForRouteVisual = (k: SiteRouteVisualKind) => meta(ROUTE_MAP[k] ?? "nb-workflow-bridge");
-export const resolveNanoBananaCardMetaForSubNavGroup = (g: string) => meta(SUBNAV_MAP[g] ?? "nb-workflow-bridge");
+export const resolveIllustratedCardMetaForRouteVisual = (k: SiteRouteVisualKind) => meta(ROUTE_MAP[k] ?? "nb-workflow-bridge");
+export const resolveSiteArtCardMetaForSubNavGroup = (g: string) => meta(SUBNAV_MAP[g] ?? "nb-workflow-bridge");
 
-export function resolveNanoBananaCardMetaForPath(pathname: string): NanoBananaCardMeta {
+export function resolveIllustratedCardMetaForPath(pathname: string): IllustratedCardMeta {
   const p = (pathname.split(/[?#]/, 1)[0] || "/").toLowerCase();
   if (/^\/(explore|genres|search)/.test(p)) return meta("nb-explore-spectrum");
   if (/^\/(ranking|calendar|schedule)/.test(p)) return meta("nb-ranking-constellation");

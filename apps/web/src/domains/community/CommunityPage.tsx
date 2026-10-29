@@ -31,7 +31,7 @@ import {
 } from "@/shared/components/site-experience/workflow-illustration";
 import { Container, Section } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -188,10 +188,10 @@ function parseScope(raw: string | undefined): Exclude<FanCafeScopeFilter, "all" 
 }
 
 const LEAGUE_TIER_IMAGES: Readonly<Record<string, string>> = {
-  challenge: "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
-  "best-challenge": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp",
-  originals: "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-constellation-640.webp",
-  "creator-101": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
+  challenge: "/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp",
+  "best-challenge": "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp",
+  originals: "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp",
+  "creator-101": "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
 };
 
 export function CommunityPage() {
@@ -263,7 +263,7 @@ export function CommunityPage() {
         </div>
       </div>
 
-      <NanoBananaSurfaceSpotlight cardId="nb-community-plaza" compact className="mt-6" />
+      <SiteArtSurfaceSpotlight cardId="nb-community-plaza" compact className="mt-6" />
 
       {showLeague ? (
       <>
@@ -299,7 +299,7 @@ export function CommunityPage() {
                 <span
                   aria-hidden="true"
                   className="mb-2.5 block h-20 w-full rounded-xl border border-line/60 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp"})` }}
+                  style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"})` }}
                 />
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>

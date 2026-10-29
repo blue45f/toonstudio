@@ -1,5 +1,5 @@
 /**
- * 나노 바나나 v15 슬림 소두(5.5등신) 다중 프레임 스프라이트 사이클러 & 2D Phaser 특수효과(VFX) 엔진.
+ * 일러스트 v15 슬림 소두(5.5등신) 다중 프레임 스프라이트 사이클러 & 2D Phaser 특수효과(VFX) 엔진.
  *
  * - 정적인 단일 이미지 대신 `idle ↔ work ↔ v15 슬림 액션/표정 프레임 ↔ v13 이모트 프레임`을
  *   시간차(Multi-Frame Cycle)로 순환시켜 2D 월드 내 모든 캐릭터가 살아 움직이고 표정이 변화하도록 한다.
@@ -9,10 +9,10 @@ import type * as Phaser from "phaser";
 
 import type {
   CreatorPersonaPose,
-  NanoBananaCreatorPersonaId,
+  IllustratedCreatorPersonaId,
 } from "./studio-virtual-office-nextgen-engine-data";
 
-export type NanoBananaV15ActionId =
+export type IllustratedV15ActionId =
   | "stride-draw"
   | "action-slash"
   | "focus-overdrive"
@@ -22,19 +22,19 @@ export type NanoBananaV15ActionId =
   | "bg3d-holo"
   | "writer-oracle";
 
-export const NANO_BANANA_V15_ACTION_SPRITES: Readonly<Record<NanoBananaV15ActionId, string>> =
+export const ILLUSTRATED_V15_ACTION_SPRITES: Readonly<Record<IllustratedV15ActionId, string>> =
   Object.freeze({
-    "stride-draw": "/assets/virtual-studio/nano-banana-v15/actions/stride-draw.webp",
-    "action-slash": "/assets/virtual-studio/nano-banana-v15/actions/action-slash.webp",
-    "focus-overdrive": "/assets/virtual-studio/nano-banana-v15/actions/focus-overdrive.webp",
-    "cheer-coffee": "/assets/virtual-studio/nano-banana-v15/actions/cheer-coffee.webp",
-    "pd-approve": "/assets/virtual-studio/nano-banana-v15/actions/pd-approve.webp",
-    "colorist-magic": "/assets/virtual-studio/nano-banana-v15/actions/colorist-magic.webp",
-    "bg3d-holo": "/assets/virtual-studio/nano-banana-v15/actions/bg3d-holo.webp",
-    "writer-oracle": "/assets/virtual-studio/nano-banana-v15/actions/writer-oracle.webp",
+    "stride-draw": "/assets/virtual-studio/studio-art-v15/actions/stride-draw.webp",
+    "action-slash": "/assets/virtual-studio/studio-art-v15/actions/action-slash.webp",
+    "focus-overdrive": "/assets/virtual-studio/studio-art-v15/actions/focus-overdrive.webp",
+    "cheer-coffee": "/assets/virtual-studio/studio-art-v15/actions/cheer-coffee.webp",
+    "pd-approve": "/assets/virtual-studio/studio-art-v15/actions/pd-approve.webp",
+    "colorist-magic": "/assets/virtual-studio/studio-art-v15/actions/colorist-magic.webp",
+    "bg3d-holo": "/assets/virtual-studio/studio-art-v15/actions/bg3d-holo.webp",
+    "writer-oracle": "/assets/virtual-studio/studio-art-v15/actions/writer-oracle.webp",
   });
 
-export const NANO_BANANA_V15_ACTION_LABELS_KO: Readonly<Record<NanoBananaV15ActionId, string>> =
+export const ILLUSTRATED_V15_ACTION_LABELS_KO: Readonly<Record<IllustratedV15ActionId, string>> =
   Object.freeze({
     "stride-draw": "😄 총총 드로잉 보행",
     "action-slash": "😉 네온 펜슬래시",
@@ -46,12 +46,12 @@ export const NANO_BANANA_V15_ACTION_LABELS_KO: Readonly<Record<NanoBananaV15Acti
     "writer-oracle": "🔮 스토리 타로 오라클",
   });
 
-export const nanoBananaV15ActionTextureKey = (actionId: NanoBananaV15ActionId): string =>
+export const illustratedV15ActionTextureKey = (actionId: IllustratedV15ActionId): string =>
   `nb-v15-${actionId}`;
 
 /** 페르소나별 대표 v15 슬림 5.5등신 액션/표정 프레임 매핑. */
 export const PERSONA_PRIMARY_V15_ACTION: Readonly<
-  Record<NanoBananaCreatorPersonaId, NanoBananaV15ActionId>
+  Record<IllustratedCreatorPersonaId, IllustratedV15ActionId>
 > = Object.freeze({
   "line-artist": "stride-draw",
   "chief-pd": "pd-approve",
@@ -65,7 +65,7 @@ export const PERSONA_PRIMARY_V15_ACTION: Readonly<
 
 /** 페르소나별 보조 v15 슬림 액션/표정 프레임 매핑 (다중 프레임 교차 연출용). */
 export const PERSONA_SECONDARY_V15_ACTION: Readonly<
-  Record<NanoBananaCreatorPersonaId, NanoBananaV15ActionId>
+  Record<IllustratedCreatorPersonaId, IllustratedV15ActionId>
 > = Object.freeze({
   "line-artist": "action-slash",
   "chief-pd": "stride-draw",
@@ -79,7 +79,7 @@ export const PERSONA_SECONDARY_V15_ACTION: Readonly<
 
 /** 페르소나별 실시간 회전 표정 & 말풍선 대사 시퀀스. */
 export const PERSONA_DYNAMIC_EXPRESSION_LINES: Readonly<
-  Record<NanoBananaCreatorPersonaId, readonly string[]>
+  Record<IllustratedCreatorPersonaId, readonly string[]>
 > = Object.freeze({
   "line-artist": [
     "✒️ 😄 18컷 펜선 하이라이트 완료!",
@@ -129,13 +129,13 @@ export const PERSONA_DYNAMIC_EXPRESSION_LINES: Readonly<
  */
 export function resolveMultiFramePersonaTextureKey(
   textures: { exists(key: string): boolean },
-  personaId: NanoBananaCreatorPersonaId,
+  personaId: IllustratedCreatorPersonaId,
   basePose: CreatorPersonaPose,
   nowMs: number,
   seedOffset = 0,
 ): string | null {
-  const primaryV15Key = nanoBananaV15ActionTextureKey(PERSONA_PRIMARY_V15_ACTION[personaId]);
-  const secondaryV15Key = nanoBananaV15ActionTextureKey(PERSONA_SECONDARY_V15_ACTION[personaId]);
+  const primaryV15Key = illustratedV15ActionTextureKey(PERSONA_PRIMARY_V15_ACTION[personaId]);
+  const secondaryV15Key = illustratedV15ActionTextureKey(PERSONA_SECONDARY_V15_ACTION[personaId]);
   const workKey = `nb-cast-${personaId}-work`;
   const idleKey = `nb-cast-${personaId}-idle`;
 
@@ -155,7 +155,7 @@ export function resolveMultiFramePersonaTextureKey(
 }
 
 export function getPartnerDynamicExpressionLine(
-  personaId: NanoBananaCreatorPersonaId,
+  personaId: IllustratedCreatorPersonaId,
   nowMs: number,
   seedOffset = 0,
 ): string {
@@ -164,21 +164,21 @@ export function getPartnerDynamicExpressionLine(
   return lines[idx] ?? lines[0];
 }
 
-export interface NanoBanana2dVfxBurstEvent {
+export interface Illustrated2dVfxBurstEvent {
   readonly id: number;
   readonly label: string;
   readonly color: number;
-  readonly actionId?: NanoBananaV15ActionId;
+  readonly actionId?: IllustratedV15ActionId;
   readonly worldX?: number;
   readonly worldY?: number;
 }
 
 let vfxSeq = 1;
-const vfxListeners = new Set<(event: NanoBanana2dVfxBurstEvent) => void>();
+const vfxListeners = new Set<(event: Illustrated2dVfxBurstEvent) => void>();
 const modalListeners = new Set<(workstationId: string) => void>();
 
-export function subscribeNanoBanana2dVfxBurst(
-  listener: (event: NanoBanana2dVfxBurstEvent) => void,
+export function subscribeIllustrated2dVfxBurst(
+  listener: (event: Illustrated2dVfxBurstEvent) => void,
 ): () => void {
   vfxListeners.add(listener);
   return () => {
@@ -186,7 +186,7 @@ export function subscribeNanoBanana2dVfxBurst(
   };
 }
 
-export function subscribeNanoBananaWorkstationModal(
+export function subscribeIllustratedWorkstationModal(
   listener: (workstationId: string) => void,
 ): () => void {
   modalListeners.add(listener);
@@ -195,7 +195,7 @@ export function subscribeNanoBananaWorkstationModal(
   };
 }
 
-export function requestOpenNanoBananaWorkstationModal(workstationId: string): void {
+export function requestOpenIllustratedWorkstationModal(workstationId: string): void {
   for (const listener of modalListeners) listener(workstationId);
 }
 
@@ -214,7 +214,7 @@ type CampusSceneLike = Pick<Phaser.Scene, "add" | "textures">;
 /**
  * 2D Phaser 캠퍼스 위에서 실시간으로 돌아가는 홀로그램 오라·스타라이트 파티클·코믹 SFX 팝업 렌더러.
  */
-export class StudioNanoBanana2dVfxEngine {
+export class StudioIllustrated2dVfxEngine {
   private readonly ambientGraphics: Phaser.GameObjects.Graphics | null = null;
   private readonly bursts: ActiveBurstParticle[] = [];
   private lastPlayerX = 1472;
@@ -232,7 +232,7 @@ export class StudioNanoBanana2dVfxEngine {
   ) {
     if (typeof scene.add?.graphics !== "function") return;
     this.ambientGraphics = scene.add.graphics().setDepth(2450).setBlendMode("ADD");
-    this.unsubscribeVfx = subscribeNanoBanana2dVfxBurst((event) => {
+    this.unsubscribeVfx = subscribeIllustrated2dVfxBurst((event) => {
       if (this.disposed) return;
       this.spawnBurst(
         event.worldX ?? this.lastPlayerX,
@@ -348,14 +348,14 @@ export class StudioNanoBanana2dVfxEngine {
   }
 }
 
-export function emitNanoBanana2dVfxBurstEvent(
+export function emitIllustrated2dVfxBurstEvent(
   label: string,
   color = 0x38bdf8,
-  actionId?: NanoBananaV15ActionId,
+  actionId?: IllustratedV15ActionId,
   worldX?: number,
   worldY?: number,
 ): void {
-  const event: NanoBanana2dVfxBurstEvent = {
+  const event: Illustrated2dVfxBurstEvent = {
     id: vfxSeq++,
     label,
     color,

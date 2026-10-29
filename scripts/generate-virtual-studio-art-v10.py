@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build the Virtual Studio Nano Banana v10 High-DPI Theme, Decoration & Character Sprite Pack.
+"""Build the Virtual Studio Studio Art v10 High-DPI Theme, Decoration & Character Sprite Pack.
 
-Processes the three Nano Banana generated master boards into runtime WebP atlases,
+Processes the three AI-generated master boards into runtime WebP atlases,
 individual prop cards, direction-corrected transparent-matte character sprite frames,
-and a SHA-256 verified manifest.json under apps/web/public/assets/virtual-studio/nano-banana-v10/.
+and a SHA-256 verified manifest.json under apps/web/public/assets/virtual-studio/studio-art-v10/.
 """
 from __future__ import annotations
 
@@ -17,12 +17,12 @@ from typing import Final
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 ROOT: Final = Path(__file__).resolve().parents[1]
-OUT_DIR: Final = ROOT / "apps/web/public/assets/virtual-studio/nano-banana-v10"
+OUT_DIR: Final = ROOT / "apps/web/public/assets/virtual-studio/studio-art-v10"
 SOURCE_DIR: Final = OUT_DIR / "source"
 
-DECOR_SOURCE: Final = SOURCE_DIR / "nano-banana-decor-atlas-source.jpg"
-CHAR_SOURCE: Final = SOURCE_DIR / "nano-banana-character-spritesheet-source.jpg"
-PANORAMA_SOURCE: Final = SOURCE_DIR / "nano-banana-floor-panorama-source.jpg"
+DECOR_SOURCE: Final = SOURCE_DIR / "illustrated-decor-atlas-source.jpg"
+CHAR_SOURCE: Final = SOURCE_DIR / "illustrated-character-spritesheet-source.jpg"
+PANORAMA_SOURCE: Final = SOURCE_DIR / "illustrated-floor-panorama-source.jpg"
 
 
 @dataclass(frozen=True)
@@ -205,7 +205,7 @@ def main() -> None:
                 "labelEn": prop.label_en,
                 "zoneKo": prop.zone_ko,
                 "reaInspiration": prop.rea_inspiration,
-                "assetUrl": f"/assets/virtual-studio/nano-banana-v10/props/{prop.id}.webp",
+                "assetUrl": f"/assets/virtual-studio/studio-art-v10/props/{prop.id}.webp",
                 "sourceBox": list(prop.box),
             }
         )
@@ -236,7 +236,7 @@ def main() -> None:
                 "row": row,
                 "mirroredForDirectionConsistency": mirror_x,
                 "labelKo": label_ko,
-                "assetUrl": f"/assets/virtual-studio/nano-banana-v10/frames/{frame_id}.webp",
+                "assetUrl": f"/assets/virtual-studio/studio-art-v10/frames/{frame_id}.webp",
                 "atlasRect": {"x": col * 256, "y": row * 256, "width": 256, "height": 256},
             }
         )
@@ -247,23 +247,23 @@ def main() -> None:
 
     manifest = {
         "version": 10,
-        "packId": "nano-banana-v10",
+        "packId": "studio-art-v10",
         "generatedAt": "2026-10-27",
         "generator": "Nano Banana (Gemini Image Generation) + deterministic RGBA sprite & prop extraction",
         "panorama": {
-            "assetUrl": "/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp",
+            "assetUrl": "/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp",
             "width": 1280,
             "height": 720,
         },
         "decorAtlas": {
-            "assetUrl": "/assets/virtual-studio/nano-banana-v10/studio-theme-decor-atlas.webp",
+            "assetUrl": "/assets/virtual-studio/studio-art-v10/studio-theme-decor-atlas.webp",
             "width": 1024,
             "height": 1024,
             "props": prop_records,
         },
         "characterAtlas": {
-            "referenceSheetUrl": "/assets/virtual-studio/nano-banana-v10/creator-character-spritesheet.webp",
-            "cleanRgbaAtlasUrl": "/assets/virtual-studio/nano-banana-v10/creator-character-clean-atlas.webp",
+            "referenceSheetUrl": "/assets/virtual-studio/studio-art-v10/creator-character-spritesheet.webp",
+            "cleanRgbaAtlasUrl": "/assets/virtual-studio/studio-art-v10/creator-character-clean-atlas.webp",
             "width": 1024,
             "height": 512,
             "columns": 4,
@@ -285,7 +285,7 @@ def main() -> None:
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     )
     print(
-        f"Nano Banana v10 Studio Pack generated: {len(generated_files)} files, "
+        f"Studio Art v10 Studio Pack generated: {len(generated_files)} files, "
         f"{len(prop_records)} props, {len(frame_records)} character frames"
     )
 

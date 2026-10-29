@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { StudioVirtualAvatarCustomizer } from "./StudioVirtualAvatarCustomizer";
-import { NANO_BANANA_V14_WALK_SPRITES } from "./studio-virtual-office-nextgen-engine-model";
+import { ILLUSTRATED_V14_WALK_SPRITES } from "./studio-virtual-office-nextgen-engine-model";
 import { STUDIO_CHARACTER_PART_PRESETS } from "./studio-virtual-space-character-parts";
 import { parseStudioVirtualAvatarProfile } from "./studio-virtual-space-avatar-store";
 
@@ -117,7 +117,7 @@ describe("StudioVirtualAvatarCustomizer", () => {
     const publicDir = existsSync(resolve(process.cwd(), "public"))
       ? resolve(process.cwd(), "public")
       : resolve(process.cwd(), "apps/web/public");
-    for (const url of Object.values(NANO_BANANA_V14_WALK_SPRITES)) {
+    for (const url of Object.values(ILLUSTRATED_V14_WALK_SPRITES)) {
       expect(existsSync(resolve(publicDir, `.${url}`))).toBe(true);
     }
 
@@ -125,18 +125,18 @@ describe("StudioVirtualAvatarCustomizer", () => {
     const figure = view.container.querySelector("svg[data-avatar-direction]");
     expect(figure?.getAttribute("data-avatar-direction")).toBe("down");
     expect(
-      screen.getByTestId("avatar-customizer-nano-banana-walk-image").getAttribute("href"),
+      screen.getByTestId("avatar-customizer-illustrated-walk-image").getAttribute("href"),
     ).toContain("creator-walk-down.webp");
 
     fireEvent.click(screen.getByRole("button", { name: "미리보기 방향: 왼쪽" }));
     expect(view.container.querySelector("svg[data-avatar-direction]")?.getAttribute("data-avatar-direction")).toBe("left");
     expect(
-      screen.getByTestId("avatar-customizer-nano-banana-walk-image").getAttribute("href"),
+      screen.getByTestId("avatar-customizer-illustrated-walk-image").getAttribute("href"),
     ).toContain("creator-walk-left.webp");
 
     fireEvent.click(screen.getByRole("button", { name: "미리보기 방향: 위" }));
     expect(
-      screen.getByTestId("avatar-customizer-nano-banana-walk-image").getAttribute("href"),
+      screen.getByTestId("avatar-customizer-illustrated-walk-image").getAttribute("href"),
     ).toContain("creator-walk-up.webp");
   });
 

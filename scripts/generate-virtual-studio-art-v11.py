@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Deterministic Nano Banana v11 Multi-Theme & Diverse Creator Cast Asset Pipeline.
+Deterministic Studio Art v11 Multi-Theme & Diverse Creator Cast Asset Pipeline.
 
 Slices and normalizes:
-1. 4 Webtoon Studio 2.5D Isometric Themes from the 2x2 Nano Banana v11 Themes Atlas.
+1. 4 Webtoon Studio 2.5D Isometric Themes from the 2x2 Studio Art v11 Themes Atlas.
 2. 8 Transparent-Matte RGBA Chibi Creator Cast Sprites (4 Personas x 2 Poses) using border-floodfill
    alpha matting so internal white highlights (eyes, tablet canvas, storyboard paper, shirt) remain 100% opaque.
 """
@@ -18,10 +18,10 @@ from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_DIR = Path("/Users/hjunkim/.gemini/antigravity/brain/a3aadbfb-b6d6-4b51-a023-0e2c67ea0300")
-OUT_DIR = REPO_ROOT / "apps/web/public/assets/virtual-studio/nano-banana-v11"
+OUT_DIR = REPO_ROOT / "apps/web/public/assets/virtual-studio/studio-art-v11"
 
-THEMES_SRC = ARTIFACT_DIR / "nano_banana_v11_four_studio_themes_atlas_png_1793044119359.jpg"
-CAST_SRC = ARTIFACT_DIR / "nano_banana_v11_diverse_creator_cast_sheet_png_1793044138827.jpg"
+THEMES_SRC = ARTIFACT_DIR / "illustrated_v11_four_studio_themes_atlas_png_1793044119359.jpg"
+CAST_SRC = ARTIFACT_DIR / "illustrated_v11_diverse_creator_cast_sheet_png_1793044138827.jpg"
 
 
 def sha256_of(path: Path) -> str:
@@ -108,7 +108,7 @@ def main() -> None:
     manifest_files.append(
         {
             "id": "four-studio-themes-atlas",
-            "path": "/assets/virtual-studio/nano-banana-v11/four-studio-themes-atlas.webp",
+            "path": "/assets/virtual-studio/studio-art-v11/four-studio-themes-atlas.webp",
             "width": 1024,
             "height": 1024,
             "sha256": sha256_of(atlas_out),
@@ -132,7 +132,7 @@ def main() -> None:
         manifest_files.append(
             {
                 "id": theme_id,
-                "path": f"/assets/virtual-studio/nano-banana-v11/themes/{theme_id}.webp",
+                "path": f"/assets/virtual-studio/studio-art-v11/themes/{theme_id}.webp",
                 "width": 640,
                 "height": 560,
                 "sha256": sha256_of(out_path),
@@ -170,7 +170,7 @@ def main() -> None:
             manifest_files.append(
                 {
                     "id": sprite_id,
-                    "path": f"/assets/virtual-studio/nano-banana-v11/cast/{sprite_id}.webp",
+                    "path": f"/assets/virtual-studio/studio-art-v11/cast/{sprite_id}.webp",
                     "width": 256,
                     "height": 256,
                     "sha256": sha256_of(out_sprite),
@@ -182,7 +182,7 @@ def main() -> None:
     manifest_files.append(
         {
             "id": "diverse-creator-cast-clean-atlas",
-            "path": "/assets/virtual-studio/nano-banana-v11/diverse-creator-cast-clean-atlas.webp",
+            "path": "/assets/virtual-studio/studio-art-v11/diverse-creator-cast-clean-atlas.webp",
             "width": 1024,
             "height": 512,
             "sha256": sha256_of(clean_atlas_path),
@@ -190,10 +190,10 @@ def main() -> None:
     )
 
     # Also save PNG copy in artifact dir for visual embedding in artifact markdown
-    clean_atlas.save(ARTIFACT_DIR / "nano_banana_v11_diverse_creator_cast_clean_atlas.png", "PNG")
+    clean_atlas.save(ARTIFACT_DIR / "illustrated_v11_diverse_creator_cast_clean_atlas.png", "PNG")
 
     manifest_payload = {
-        "packId": "nano-banana-v11",
+        "packId": "studio-art-v11",
         "generator": "Nano Banana (Google DeepMind Image Generator Subagent + PIL RGBA Floodfill Pipeline)",
         "themeCount": 4,
         "personaCount": 4,
@@ -204,7 +204,7 @@ def main() -> None:
         json.dumps(manifest_payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    print(f"Generated {len(manifest_files)} Nano Banana v11 assets in {OUT_DIR}")
+    print(f"Generated {len(manifest_files)} Studio Art v11 assets in {OUT_DIR}")
 
 
 if __name__ == "__main__":

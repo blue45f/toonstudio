@@ -51,18 +51,18 @@ const DIRECTIONS: readonly { readonly key: StudioSpriteDirection; readonly ko: s
   { key: "down-right", ko: "오른쪽 아래", en: "Bottom right", arrow: "↘" },
 ];
 
-const NANO_BANANA_DIRECTIONAL_WALK_SPRITES: Readonly<
+const ILLUSTRATED_DIRECTIONAL_WALK_SPRITES: Readonly<
   Record<StudioSpriteDirection, string>
 > = {
-  down: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-down.webp",
-  "down-left": "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
-  left: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
-  "up-left": "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
-  up: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-up.webp",
-  "up-right": "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
-  right: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
+  down: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-down.webp",
+  "down-left": "/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
+  left: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
+  "up-left": "/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
+  up: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp",
+  "up-right": "/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
+  right: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
   "down-right":
-    "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
+    "/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
 };
 
 function ColorSwatchGroup({ legend, options, value, onSelect, bt }: {
@@ -231,24 +231,24 @@ export function StudioVirtualAvatarCustomizer({ identity }: { readonly identity:
           </figure>
         ) : null}
 
-        <figure className="avatar-customizer__sprite" data-testid="avatar-customizer-nano-banana-walk-figure">
+        <figure className="avatar-customizer__sprite" data-testid="avatar-customizer-illustrated-walk-figure">
           <svg
             width={96}
             height={112}
             viewBox="0 0 96 112"
             role="img"
             aria-label={bt("웹툰 작가 4방향 보행 스프라이트 미리보기", "Webtoon creator 4-direction walk sprite preview")}
-            data-testid="avatar-customizer-nano-banana-walk-svg"
+            data-testid="avatar-customizer-illustrated-walk-svg"
             data-walk-direction={direction}
           >
             <image
-              href={NANO_BANANA_DIRECTIONAL_WALK_SPRITES[direction]}
+              href={ILLUSTRATED_DIRECTIONAL_WALK_SPRITES[direction]}
               x="4"
               y="8"
               width="88"
               height="96"
               preserveAspectRatio="xMidYMid meet"
-              data-testid="avatar-customizer-nano-banana-walk-image"
+              data-testid="avatar-customizer-illustrated-walk-image"
             />
           </svg>
           <figcaption>{bt("2.5D 보행 스프라이트", "2.5D walk sprite")}</figcaption>

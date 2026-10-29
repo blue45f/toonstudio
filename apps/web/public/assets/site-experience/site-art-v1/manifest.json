@@ -1,7 +1,7 @@
 {
-  "packId": "nano-banana-site-v1",
+  "packId": "site-art-v1",
   "version": 1,
-  "generator": "Nano Banana (Gemini Image Generation) + generate-site-experience-nano-banana-v1.py",
+  "generator": "Nano Banana (Gemini Image Generation) + generate-site-experience-art-v1.py",
   "aesthetic": "Korean Webtoon Atelier (Starlight Indigo #0d1326, Persimmon #ff7849, Luminous Gold #f6c453)",
   "boards": [
     {
@@ -10,7 +10,7 @@
         "ko": "디스커버리 유니버스 아틀리에 보드",
         "en": "Discovery Universe Atelier Board"
       },
-      "src": "/assets/site-experience/nano-banana-site-v1/masters/master-01-discovery-universe.webp",
+      "src": "/assets/site-experience/site-art-v1/masters/master-01-discovery-universe.webp",
       "sha256": "326999e2bec175937e82a2ba53e75eaa32e2237ad5318cd90406163fac775732",
       "dimensions": {
         "width": 960,
@@ -23,7 +23,7 @@
         "ko": "크리에이티브 스튜디오 & 프로덕션 보드",
         "en": "Creative Studio & Production Board"
       },
-      "src": "/assets/site-experience/nano-banana-site-v1/masters/master-02-creative-studio.webp",
+      "src": "/assets/site-experience/site-art-v1/masters/master-02-creative-studio.webp",
       "sha256": "1cc6558ab9196e844d9589e3e06026e2393eb3a62233c7a60006c11d99d96c35",
       "dimensions": {
         "width": 960,
@@ -36,7 +36,7 @@
         "ko": "에코시스템 마켓 & 아카데미 보드",
         "en": "Ecosystem Market & Creator Academy Board"
       },
-      "src": "/assets/site-experience/nano-banana-site-v1/masters/master-03-ecosystem-academy.webp",
+      "src": "/assets/site-experience/site-art-v1/masters/master-03-ecosystem-academy.webp",
       "sha256": "ba31cb2b074ba24d192c43995e097e5435b00ccb2a78d462fe472169f8c4e458",
       "dimensions": {
         "width": 960,
@@ -49,7 +49,7 @@
         "ko": "올인원 워크플로, 내 공간 & 신뢰 보드",
         "en": "All-in-One Workflow, Personal Hub & Trust Board"
       },
-      "src": "/assets/site-experience/nano-banana-site-v1/masters/master-04-personal-trust-play.webp",
+      "src": "/assets/site-experience/site-art-v1/masters/master-04-personal-trust-play.webp",
       "sha256": "3adc7406b5fd711853bbe9f72813bb9bb20adb956a72b29ae4e63b75dea41f15",
       "dimensions": {
         "width": 960,
@@ -70,8 +70,8 @@
         "ko": "큐레이션 스포트라이트 아트리움",
         "en": "Curated Spotlight Atrium"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-discover-spotlight-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-discover-spotlight-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-320.webp",
       "sha256_640": "cd8f5bf53c87023efa7792abf19cb3ef266c14f89ababd9f387449bb79b8ee3e",
       "sha256_320": "fd0aa6fc1d4a3771fc78dafa2643cc9b5696c3056fc4fc016f8eaba76743dbea",
       "dimensions": {
@@ -97,8 +97,8 @@
         "ko": "장르 스펙트럼 프리즘 랩",
         "en": "Genre Spectrum Prism Lab"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-explore-spectrum-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-explore-spectrum-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-explore-spectrum-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-explore-spectrum-320.webp",
       "sha256_640": "38250453c92c989846ef248957997535688b903d509957a264bec71069a888c9",
       "sha256_320": "3f0fec4bc2bf8a2c92f3ce192a7999c9764d9abcc22e138fd730842832b2789d",
       "dimensions": {
@@ -124,8 +124,8 @@
         "ko": "실시간 랭킹 & 연재 천문 시계탑",
         "en": "Constellation Ranking & Serialization Clockwork"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-constellation-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-constellation-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-320.webp",
       "sha256_640": "d4aedd1b052f9fafbab3bccf89331ba1aa5ac3cb1ba416068d068383e84c8550",
       "sha256_320": "89a17fb71faf908f06a157fa081e98f757d7ee2ad9ac0112c999eeb1305db82c",
       "dimensions": {
@@ -151,8 +151,8 @@
         "ko": "트와일라잇 서재 & 컬렉션 아카이브",
         "en": "Twilight Personal Library Archive"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-library-archive-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-library-archive-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-library-archive-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-library-archive-320.webp",
       "sha256_640": "fb53a26b7eb73a7a854759a9ac18cba3cd2023882dc1c897974a37eba1921b5e",
       "sha256_320": "11cb5414cdd3971eec05cc115e11cbe15ac65cb0a5fd131c7404ac11d2e6200b",
       "dimensions": {
@@ -178,8 +178,8 @@
         "ko": "원고 캔버스 & 셀셰이딩 브러시 데스크",
         "en": "Manuscript Canvas & Cel-Shaded Brush Desk"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-create-canvas-320.webp",
       "sha256_640": "7101ae70843fc4670c0313d1483fc7fac05f5d9c90181ebf8e5315e5a14b54bb",
       "sha256_320": "8c7976f2ada10000020d884c87dc38f9ad44567ee292f2ae56e04afc7c3d2b51",
       "dimensions": {
@@ -205,8 +205,8 @@
         "ko": "스토리 랩 & 홀로그램 콘티 테이블",
         "en": "Story Lab & Holographic Storyboard Table"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-320.webp",
       "sha256_640": "e7a05fdf84c1466cbd8bf10f80c97fb71345be8fddf0be16563e3e0f92ee262a",
       "sha256_320": "060d8212de37eb3a423a3ba8b1fe419be14612c0c96b807169526589655535b6",
       "dimensions": {
@@ -232,8 +232,8 @@
         "ko": "3D 배경 & VRM 캐릭터 공간 연출 스테이지",
         "en": "Spatial 3D Background & VRM Character Stage"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-spatial-stage-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-spatial-stage-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-spatial-stage-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-spatial-stage-320.webp",
       "sha256_640": "4eb3e2fff7121473d370eea280ca3a1d8efbe963afc011a4b2018b8f7f759cc8",
       "sha256_320": "68f8fd03e84205b5a95f9f85c0a2b210e877119fb9222c23be03d7437584a2b6",
       "dimensions": {
@@ -259,8 +259,8 @@
         "ko": "에피소드 프로덕션 & 품질 검수 컨트롤 룸",
         "en": "Episode Production & Quality Review Suite"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-production-control-320.webp",
       "sha256_640": "f41bea9da3858f7283f61072addce78481719ae3b6383d431b65013cafa7bbb8",
       "sha256_320": "0903a0ea812b2639a8c34c96f3816bd1146421cc399c93b42a7744cad4783aa9",
       "dimensions": {
@@ -286,8 +286,8 @@
         "ko": "창작 에셋 마켓 & 핏 랩 쇼케이스",
         "en": "Creator Asset Market & Fit Lab Vitrine"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-market-atelier-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-market-atelier-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-market-atelier-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-market-atelier-320.webp",
       "sha256_640": "1d5d2150be7c458861c182017193bbe84d82d523b19a559e6a325eba17f18da8",
       "sha256_320": "2942b8eddc4f96031e98e542635ead8b2e713836e7e1cf0bdd16cdffe56cca88",
       "dimensions": {
@@ -313,8 +313,8 @@
         "ko": "크리에이터 아카데미 & 트레이스 실습실",
         "en": "Creator Academy & Trace Practice Studio"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-learn-academy-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-learn-academy-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-learn-academy-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-learn-academy-320.webp",
       "sha256_640": "793b75006b6faafcb631a0525f0b2cbc8679acbd100e0d99b6e128a9cc14c926",
       "sha256_320": "63d42f61785c73dc6c7085ec68d87a6da504fe8193e128ebd6e9be98a7a6af7a",
       "dimensions": {
@@ -340,8 +340,8 @@
         "ko": "커뮤니티 라운지 & 프로모션 리그 광장",
         "en": "Community Lounge & Promotion League Plaza"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-community-plaza-320.webp",
       "sha256_640": "f7c1505f139d0d20da60a62c01f6297315f96b6bf440b8b5097d08ce19843605",
       "sha256_320": "f34d2ae11ad43ff8f03e450302d97709a6fc1984744cb5d9035ae91e773406e4",
       "dimensions": {
@@ -367,8 +367,8 @@
         "ko": "작품 프리미어 쇼케이스 & 협업 라운드테이블",
         "en": "Premiere Showcase & Collaboration Roundtable"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-320.webp",
       "sha256_640": "9097753800db5ebc66edcfec0e311d290eec8ad1bf7552500d250af1e8cdcd29",
       "sha256_320": "fda991e3768c028339cef5af0a2ff75bf4a440115e66f5659b8cd92b2aa4ebe4",
       "dimensions": {
@@ -394,8 +394,8 @@
         "ko": "올인원 창작-연재 골든 브리지",
         "en": "All-in-One Creation-to-Serial Golden Bridge"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-320.webp",
       "sha256_640": "c04cf33d45984eed8b002cf0600bf0009c84e2b09dc5f4d7f477b04633549961",
       "sha256_320": "92124f7bb16b8b11186ea4515d6125b3d1377df6bc2b51db41e7f9980dd76f32",
       "dimensions": {
@@ -421,8 +421,8 @@
         "ko": "내 공간 커맨드 데스크 & AI 키 볼트",
         "en": "My Space Command Desk & AI Key Vault"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-manage-vault-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-manage-vault-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-manage-vault-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-manage-vault-320.webp",
       "sha256_640": "76060ca86da75751e4af5df2117f806239dd09f456e755f205ff1e0660120bf5",
       "sha256_320": "29215603eecde4d07d62b1661138c22cc00aae79d73d3ec90b5feaae3bce4b0f",
       "dimensions": {
@@ -448,8 +448,8 @@
         "ko": "스타라이트 웹툰 타로 & 컷플레이 아케이드",
         "en": "Starlight Webtoon Tarot & Cut-Play Arcade"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-play-fortune-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-play-fortune-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-play-fortune-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-play-fortune-320.webp",
       "sha256_640": "2c266bf52912467bdc0845c1323e1ba8da53f4c4bc7aa6488f8cd11f4c8aa391",
       "sha256_320": "5497aae82e648e173d7f87c1a5bd0bb88a06f9ef319ae757c98c6c9d03844935",
       "dimensions": {
@@ -475,8 +475,8 @@
         "ko": "플랜·보안·접근성 크리스탈 성소",
         "en": "Pricing, Security & Accessibility Sanctuary"
       },
-      "src640": "/assets/site-experience/nano-banana-site-v1/cards/nb-trust-sanctuary-640.webp",
-      "src320": "/assets/site-experience/nano-banana-site-v1/cards/nb-trust-sanctuary-320.webp",
+      "src640": "/assets/site-experience/site-art-v1/cards/nb-trust-sanctuary-640.webp",
+      "src320": "/assets/site-experience/site-art-v1/cards/nb-trust-sanctuary-320.webp",
       "sha256_640": "2fecc67277faf5f1930384e17eda606ced682c0af9be44686af5b03c494a8024",
       "sha256_320": "598c061dfc61c80c10c4e70e5e504f49bd5db4f92e85aefea9b5c245bd7c3922",
       "dimensions": {

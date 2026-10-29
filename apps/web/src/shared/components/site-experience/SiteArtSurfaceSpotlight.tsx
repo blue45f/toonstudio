@@ -5,28 +5,28 @@ import { useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
 import { runSameDocumentViewTransition } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
-  getNanoBananaSiteCard,
-  type NanoBananaCardId,
-  type NanoBananaInteractiveLens,
-  resolveNanoBananaCardForPath,
-} from "./nano-banana-site-ui-pack";
-import "./nano-banana-site-ui.css";
+  getSiteArtCard,
+  type SiteArtCardId,
+  type SiteArtInteractiveLens,
+  resolveSiteArtCardForPath,
+} from "./site-art-ui-pack";
+import "./site-art-ui.css";
 
-export interface NanoBananaSurfaceSpotlightProps {
-  readonly cardId?: NanoBananaCardId;
+export interface SiteArtSurfaceSpotlightProps {
+  readonly cardId?: SiteArtCardId;
   readonly pathname?: string;
   readonly compact?: boolean;
-  readonly defaultLensId?: NanoBananaInteractiveLens["id"];
+  readonly defaultLensId?: SiteArtInteractiveLens["id"];
   readonly className?: string;
 }
 
-export function NanoBananaSurfaceSpotlight({
+export function SiteArtSurfaceSpotlight({
   cardId,
   pathname,
   compact = false,
   defaultLensId = "curation",
   className = "",
-}: NanoBananaSurfaceSpotlightProps) {
+}: SiteArtSurfaceSpotlightProps) {
   const location = useLocation();
   const lang = useI18n((state) => state.lang) ?? "ko";
   const isEn = !lang.toLowerCase().startsWith("ko");
@@ -34,11 +34,11 @@ export function NanoBananaSurfaceSpotlight({
     isEn ? copy.en : copy.ko;
 
   const card = cardId
-    ? getNanoBananaSiteCard(cardId)
-    : resolveNanoBananaCardForPath(pathname ?? location.pathname);
+    ? getSiteArtCard(cardId)
+    : resolveSiteArtCardForPath(pathname ?? location.pathname);
 
   const [activeLensId, setActiveLensId] =
-    useState<NanoBananaInteractiveLens["id"]>(defaultLensId);
+    useState<SiteArtInteractiveLens["id"]>(defaultLensId);
 
   const activeLens =
     card.lenses.find((lens) => lens.id === activeLensId) ?? card.lenses[0];
@@ -47,7 +47,7 @@ export function NanoBananaSurfaceSpotlight({
     card.lenses.findIndex((lens) => lens.id === activeLens.id),
   );
   const activePreviewCard = activeLens.previewCardId
-    ? getNanoBananaSiteCard(activeLens.previewCardId)
+    ? getSiteArtCard(activeLens.previewCardId)
     : card;
 
   const customVars = {
@@ -135,7 +135,7 @@ export function NanoBananaSurfaceSpotlight({
             <div className="nb-site-spotlight__step-grid" aria-hidden="true">
               {card.lenses.map((lens, idx) => {
                 const stepArt = lens.previewCardId
-                  ? getNanoBananaSiteCard(lens.previewCardId)
+                  ? getSiteArtCard(lens.previewCardId)
                   : card;
                 const isSelected = lens.id === activeLens.id;
                 return (

@@ -25,7 +25,7 @@ import {
   studioWorldRoomAt,
   studioWorldSpawn,
 } from "../studio-virtual-space-world-manifest";
-import { StudioVirtualSpaceNanoBananaStageHud } from "../StudioVirtualSpaceNanoBananaStageHud";
+import { StudioVirtualSpaceIllustratedStageHud } from "../StudioVirtualSpaceIllustratedStageHud";
 import {
   applyStudioLightingPresetToScene,
   createStudioThreeChromePostPipeline,
@@ -749,7 +749,7 @@ export function StudioVirtualSpaceThreeCanvas({
           {bt("시점 리셋 [C]", "Reset View [C]")}
         </button>
       </div>
-      <StudioVirtualSpaceNanoBananaStageHud />
+      <StudioVirtualSpaceIllustratedStageHud />
       <div className="studio-vspace-three-overlays" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 2 }}>
         {overlays.map((item) => {
           const isInteractive = (item.kind === "workstation" || item.kind === "npc") && Boolean(item.targetId);
