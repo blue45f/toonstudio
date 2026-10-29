@@ -43,12 +43,12 @@ describe("컴포넌트 편집의 공유 surface 적용 경계", () => {
   it("새로 지원한 오목 면을 preview·실제 snapshot·단일 undo/redo에서 보존하며 원본 선택·UV를 바꾸지 않는다", () => {
     const before = workspaceUnwrapUvActive(workspace(createStudioUnitCubeMesh()));
     const original = sourceMesh(before), selection = vertexSelection(before, 0);
-    const hash = before.session.stateHash, journal = before.session.journal.records;
+    const hash = before.session.state.stateHash, journal = before.session.journal.records;
     const preview = workspaceTransformComponents(before, selection, { kind: "translate", value: { x: .75, y: .75, z: 0 } });
     const next = sourceMesh(preview.workspace);
     expect(next.vertices[0]?.position).toEqual({ x: .25, y: .25, z: -.5 });
     expect(next.halfEdges).toBe(original.halfEdges); expect(next.faces).toBe(original.faces); expect(next.uvLayer).toBe(original.uvLayer);
-    expect(before.session.stateHash).toBe(hash); expect(before.session.journal.records).toEqual(journal);
+    expect(before.session.state.stateHash).toBe(hash); expect(before.session.journal.records).toEqual(journal);
     const snapshot = deriveStudioHybridDccViewportSnapshot(preview.workspace, "vertex");
     expect(snapshot.errors).toEqual([]); expect(snapshot.assets).toHaveLength(1); expect(snapshot.totalTriangles).toBe(12);
     expect(snapshot.assets[0]?.cornerUvs).toHaveLength(72);
@@ -106,11 +106,11 @@ describe("컴포넌트 편집의 공유 surface 적용 경계", () => {
       { x: 999999, y: 0, z: 0 }, { x: 1000000, y: 0, z: 0 }, { x: 999999, y: 1, z: 0 },
     ], [[0, 1, 2]]);
     const before = workspace(source), selection = vertexSelection(before, 1);
-    const hash = before.session.stateHash, journal = before.session.journal.records, undo = before.session.undoStack;
+    const hash = before.session.state.stateHash, journal = before.session.journal.records, undo = before.session.undoStack;
     expect(planStudioMeshSurface(source).ok).toBe(true);
     expect(() => workspaceTransformComponents(before, selection, { kind: "translate", value: { x: -.99999999, y: 0, z: 0 } }))
       .toThrow(/변형 후 화면에 표시될 수 없습니다/u);
-    expect(before.session.stateHash).toBe(hash); expect(before.session.journal.records).toEqual(journal); expect(before.session.undoStack).toBe(undo);
+    expect(before.session.state.stateHash).toBe(hash); expect(before.session.journal.records).toEqual(journal); expect(before.session.undoStack).toBe(undo);
     expect(sourceMesh(before)).toBe(source); expect(selection.elementIds).toEqual([1]);
   });
 

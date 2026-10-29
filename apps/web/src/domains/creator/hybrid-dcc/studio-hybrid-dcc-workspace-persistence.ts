@@ -58,6 +58,10 @@ import {
 } from "./studio-hybrid-dcc-object-transform";
 import { hashPreSliceV3Snapshot } from "./document/studio-hybrid-dcc-legacy-snapshot-hash";
 import {
+  StudioHybridDccWorkspacePersistenceError,
+  type StudioHybridDccWorkspacePersistenceErrorCode,
+} from "./document/studio-hybrid-dcc-workspace-persistence-error";
+import {
   STUDIO_HYBRID_DCC_WORKSPACE_REVISION,
   type StudioHybridDccWorkspace,
   type StudioOcctSolidResult,
@@ -70,6 +74,9 @@ import type { StudioMeshExportResult } from "../export/studio-mesh-export-adapte
 import type { StudioManufacturingBom } from "../studio-manufacturing-bom-lite";
 import type { StudioOpfsFileSystem } from "../studio-opfs-filesystem";
 import type { StudioUvMap } from "../studio-uv-unwrap-lite";
+
+export { StudioHybridDccWorkspacePersistenceError };
+export type { StudioHybridDccWorkspacePersistenceErrorCode };
 
 export const STUDIO_HYBRID_DCC_WORKSPACE_PERSISTENCE_FORMAT =
   "toonstudio.hybrid-dcc-workspace-persistence" as const;
@@ -100,36 +107,6 @@ export interface StudioHybridDccWorkspacePersistenceScope {
 export interface StudioHybridDccWorkspacePersistenceScopeIdentity {
   readonly scopeKey: `sha256:${string}`;
   readonly storageDocumentId: string;
-}
-
-export type StudioHybridDccWorkspacePersistenceErrorCode =
-  | "ABORTED"
-  | "CORRUPT_PAYLOAD"
-  | "INTEGRITY_FAILED"
-  | "INVALID_SCOPE"
-  | "INVALID_WORKSPACE"
-  | "LOCK_UNAVAILABLE"
-  | "OPFS_UNAVAILABLE"
-  | "PAYLOAD_TOO_LARGE"
-  | "QUOTA_EXCEEDED"
-  | "SCOPE_MISMATCH"
-  | "STORAGE_FAILED"
-  | "UNSUPPORTED_VERSION";
-
-export class StudioHybridDccWorkspacePersistenceError extends Error {
-  readonly code: StudioHybridDccWorkspacePersistenceErrorCode;
-  override readonly cause?: unknown;
-
-  constructor(
-    code: StudioHybridDccWorkspacePersistenceErrorCode,
-    message: string,
-    options: { readonly cause?: unknown } = {},
-  ) {
-    super(message);
-    this.name = "StudioHybridDccWorkspacePersistenceError";
-    this.code = code;
-    this.cause = options.cause;
-  }
 }
 
 interface PersistedHybridDccSessionV1 {

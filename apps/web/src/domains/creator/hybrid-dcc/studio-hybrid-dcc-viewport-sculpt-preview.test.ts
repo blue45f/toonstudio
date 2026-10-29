@@ -22,7 +22,7 @@ function fixture(legacy = false) {
 describe("문서 mutation 없는 Sculpt 표시 projection", () => {
   it("실제 session preview의 공통 triangle·UV·normal buffer를 표시하고 원본 authority는 그대로 둔다", () => {
     const { workspace, record, preview } = fixture();
-    const state = workspace.session.state, journal = workspace.session.commandJournal;
+    const state = workspace.session.state, journal = workspace.session.journal;
     const source = serializeStudioEditableMesh(record.mesh);
     const snapshot = deriveStudioHybridDccViewportSnapshot(workspace, "object", true, undefined, preview);
     expect(snapshot.errors).toEqual([]); expect(snapshot.warnings).toEqual([]);
@@ -34,7 +34,7 @@ describe("문서 mutation 없는 Sculpt 표시 projection", () => {
     expect(asset.positions).toBe(expected.positions); expect(asset.indices).toBe(expected.indices);
     expect(asset.cornerUvs).toEqual(expected.cornerUvs); expect(asset.cornerNormals).toEqual(expected.cornerNormals);
     expect(asset.mesh).toBe(record.mesh); expect(asset.meshHash).toBe(record.meshHash); expect(asset.meshRevision).toBe(record.revision);
-    expect(workspace.session.state).toBe(state); expect(workspace.session.commandJournal).toBe(journal);
+    expect(workspace.session.state).toBe(state); expect(workspace.session.journal).toBe(journal);
     expect(serializeStudioEditableMesh(record.mesh)).toEqual(source);
   });
   it.each(["identity", "source-hash", "revision", "candidate-hash"] as const)("%s가 다른 preview는 원본 cage로 돌아가고 경고한다", (kind) => {

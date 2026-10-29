@@ -23,6 +23,7 @@ import {
 } from "./studio-hybrid-dcc-component-selection";
 import { workspaceRefreshModifierPreviews } from "./studio-hybrid-dcc-modifier-workspace";
 import { createPreSliceArraySolidifyWorkspace } from "./studio-hybrid-dcc-legacy-modifier-fixture";
+import { hashPreSliceV3Snapshot } from "./document/studio-hybrid-dcc-legacy-snapshot-hash";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddArtistInk,
@@ -726,6 +727,15 @@ describe("Hybrid DCC workspace OPFS persistence", () => {
 });
 
 describe("Hybrid DCC workspace persistence envelope", () => {
+  it("legacy v3 자산 누락은 공개 오류 클래스의 CORRUPT_PAYLOAD로 거절한다", () => {
+    const { currentWorkspace } = createPreSliceV3WorkspaceFixture();
+    const snapshot = currentWorkspace.session.undoStack[1];
+    if (!snapshot) throw new Error("legacy v3 회귀용 스냅샷이 없습니다.");
+    const run = () => hashPreSliceV3Snapshot({ ...snapshot, assets: [] }, currentWorkspace.session.state);
+    expect(run).toThrow(StudioHybridDccWorkspacePersistenceError);
+    expect(run).toThrow(expectPersistenceError("CORRUPT_PAYLOAD"));
+  });
+
   it("verifies and atomically migrates real pre-slice v3 state, undo and bridge hashes", () => {
     const fixture = createPreSliceV3WorkspaceFixture();
     const persistedLegacy = JSON.parse(

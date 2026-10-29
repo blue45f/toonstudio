@@ -3,6 +3,7 @@ import { canonicalStudioCommandJson } from "../../studio-command-journal";
 import { serializeStudioMeshModifierStack } from "../../studio-mesh-modifier-stack";
 import { sha256HexPortable } from "../../studio-sha256";
 import { hashStudioHybridDccObjectTransform } from "../studio-hybrid-dcc-object-transform";
+import { StudioHybridDccWorkspacePersistenceError } from "./studio-hybrid-dcc-workspace-persistence-error";
 
 import type { StudioHybridDccDocumentState, StudioHybridDccPersistedSnapshot } from "../studio-hybrid-dcc-document";
 
@@ -34,7 +35,7 @@ export function hashPreSliceV3Snapshot(
     const asset = assetById.get(assetId);
     const record = state.geometry.records[assetId];
     if (!asset || !record) {
-      persistenceError("CORRUPT_PAYLOAD", `legacy v3 geometry asset ${assetId}가 누락되었습니다.`);
+      throw new StudioHybridDccWorkspacePersistenceError("CORRUPT_PAYLOAD", `legacy v3 geometry asset ${assetId}가 누락되었습니다.`);
     }
     return `${assetId}:${asset.meshHash}:${hashPreSliceModifierStack(
       asset.meshHash,

@@ -199,10 +199,10 @@ describe("실제 viewport·Three buffer·GLB 공유 표면 회귀", () => {
     const preview = await workspaceAddActiveModifier(before, "array"), record = preview.session.state.geometry.records.surface;
     const cache = record?.renderCache;
     if (!record || !cache?.surface?.cornerUvs) throw new Error("실제 UV·법선·슬롯 평가 캐시가 없습니다.");
-    const hash = preview.session.stateHash, surface = cache.surface, { surface: removed, ...legacy } = cache;
+    const hash = preview.session.state.stateHash, surface = cache.surface, { surface: removed, ...legacy } = cache;
     expect(removed).toBe(surface); expect(snapshot(preview, "object").asset.renderSource).toBe("modifier-cache");
     const normal = new Float32Array(surface.cornerNormals); normal.set([1, 0, 0]);
-    const uv = new Float32Array(surface.cornerUvs); uv[0] = (uv[0] ?? 0) + .125;
+    const uv = new Float32Array(cache.surface.cornerUvs); uv[0] = (uv[0] ?? 0) + .125;
     const slots = new Float64Array(surface.triangleMaterialSlots); slots[0] = 17;
     const variants = [legacy, { ...cache, surface: { ...surface, cornerNormals: normal } },
       { ...cache, surface: { ...surface, cornerUvs: uv } }, { ...cache, surface: { ...surface, triangleMaterialSlots: slots } }];
@@ -214,8 +214,8 @@ describe("실제 viewport·Three buffer·GLB 공유 표면 회귀", () => {
       expect(fallback.asset.positions).toEqual(source.positions); expect(fallback.asset.indices).toEqual(source.indices);
       expect(fallback.asset.cornerUvs).toEqual(source.cornerUvs); expect(fallback.asset.cornerNormals).toEqual(source.cornerNormals);
       compareActualBuffers(fallback.asset, mesh);
-      expect(value.session.stateHash).toBe(hash); expect(value.session.state.geometry.records.surface?.mesh).toBe(mesh);
+      expect(value.session.state.stateHash).toBe(hash); expect(value.session.state.geometry.records.surface?.mesh).toBe(mesh);
     }
-    expect(serializeStudioEditableMesh(mesh)).toEqual(original); expect(preview.session.stateHash).toBe(hash);
+    expect(serializeStudioEditableMesh(mesh)).toEqual(original); expect(preview.session.state.stateHash).toBe(hash);
   });
 });
