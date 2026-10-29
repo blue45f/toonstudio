@@ -5,7 +5,7 @@ import {
   InMemoryStudioAiPremiumBudgetStore,
   studioAiPremiumBudgetAllows,
 } from "./studio-ai-premium-budget";
-import { PostgresStudioAiPremiumBudgetStore } from "./studio-ai-premium-budget.repository";
+import { PostgresStudioAiPremiumBudgetStore, STUDIO_AI_PREMIUM_UNKNOWN_USAGE_TOKENS } from "./studio-ai-premium-budget.repository";
 import { DEFAULT_STUDIO_AI_PREMIUM_LIMITS, resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
 import {
   classifyStudioAiProviderFailure,
@@ -212,7 +212,10 @@ describe("운영 고성능 경로 일일 예산", () => {
     const [sql, values] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("studio_ai_usage_provider_check");
     expect(sql).toContain("ledger.provider = $3");
-    expect(values).toEqual(["user-1", "'anthropic'", "anthropic"]);
+    expect(values).toEqual(["user-1", "'anthropic'", "anthropic", STUDIO_AI_PREMIUM_UNKNOWN_USAGE_TOKENS]);
+    // 사용량을 모르는 호출은 0이 아니라 보수적인 추정치로 센다(추론 전 거절만 0).
+    expect(sql).toContain("WHEN ledger.status = 'provider_rate_limited' THEN 0");
+    expect(sql).toContain("ELSE $4::integer");
   });
 
   it("행이 없거나 값이 이상하면 원장이 준비되지 않은 것으로 본다", async () => {
