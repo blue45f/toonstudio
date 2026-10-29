@@ -124,6 +124,7 @@ const CONSUMERS = [
   "../lift3d/StudioLift3dPage.tsx",
   "../ai/StudioToonAutomationWorkspace.tsx",
   "../vrm/StudioVrmAvatarForgePanel.tsx",
+  "../vrm/StudioVrmAvatarForgeGenerateSection.tsx",
   "../vrm/StudioVrmPhotoPoseScanner.tsx",
   "../layer/StudioLayerLiftDialog.tsx",
   "../live/StudioLiveCanvasOverlay.tsx",
@@ -162,6 +163,9 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "../lift3d/StudioLift3dPage.tsx": 815,
   "../ai/StudioToonAutomationWorkspace.tsx": 1307,
   "../vrm/StudioVrmAvatarForgePanel.tsx": 1259,
+  // 조형 패널의 "새 VRM 캐릭터" 구역을 옮긴 신규 파일(forge.generating 키가 함께 이사). 동결 파일이 아니라
+  // 신규 파일 상한(800줄)을 기준선으로 쓴다.
+  "../vrm/StudioVrmAvatarForgeGenerateSection.tsx": 800,
   "../vrm/StudioVrmPhotoPoseScanner.tsx": 885,
   "../layer/StudioLayerLiftDialog.tsx": 996,
   "../live/StudioLiveCanvasOverlay.tsx": 1579,
@@ -200,6 +204,7 @@ const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "../lift3d/StudioLift3dPage.tsx": 0,
   "../ai/StudioToonAutomationWorkspace.tsx": 0,
   "../vrm/StudioVrmAvatarForgePanel.tsx": 0,
+  "../vrm/StudioVrmAvatarForgeGenerateSection.tsx": 0,
   "../vrm/StudioVrmPhotoPoseScanner.tsx": 0,
   "../layer/StudioLayerLiftDialog.tsx": 0,
   "../live/StudioLiveCanvasOverlay.tsx": 0,

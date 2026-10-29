@@ -1,0 +1,86 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  applyStudioVrmHairSway,
+  applyStudioVrmHairSwayPreset,
+  countStudioVrmHairSwayScopes,
+  matchStudioVrmHairSwayPreset,
+  resetStudioVrmHairSwayScope,
+  resolveStudioVrmHairSwayScope,
+  sanitizeStudioVrmHairSwayAuthoring,
+  setStudioVrmHairSwayParam,
+  STUDIO_VRM_HAIR_SWAY_PRESETS,
+  studioVrmHairSwayGroupForRole,
+} from "./studio-vrm-generate-hair-sway";
+
+const CHAIN = { stiffness: 1.2, gravityPower: 0.1, dragForce: 0.6 };
+
+describe("sanitizeStudioVrmHairSwayAuthoring", () => {
+  it("drops neutral multipliers so untouched hair keeps the forge state key-free", () => {
+    expect(sanitizeStudioVrmHairSwayAuthoring(undefined)).toBeUndefined();
+    expect(sanitizeStudioVrmHairSwayAuthoring({ global: { stiffness: 1, gravity: 1, drag: 1 } })).toBeUndefined();
+    expect(
+      sanitizeStudioVrmHairSwayAuthoring({ global: { stiffness: 2.5 }, groups: { bang: { drag: 1 }, nope: { drag: 2 } } }),
+    ).toEqual({ global: { stiffness: 2.5 } });
+  });
+
+  it("clamps every multiplier into its slider range", () => {
+    expect(
+      sanitizeStudioVrmHairSwayAuthoring({ global: { stiffness: 99, gravity: -4, drag: 0.1 } }),
+    ).toEqual({ global: { stiffness: 3, gravity: 0, drag: 0.4 } });
+  });
+});
+
+describe("applyStudioVrmHairSway", () => {
+  it("leaves the automatic tuning untouched when nothing was adjusted", () => {
+    expect(applyStudioVrmHairSway(CHAIN, undefined, "bang")).toBe(CHAIN);
+    expect(applyStudioVrmHairSway(CHAIN, { groups: { tail: { stiffness: 2 } } }, "bang")).toBe(CHAIN);
+  });
+
+  it("multiplies the global and group multipliers and respects VRM ranges", () => {
+    const authoring = { global: { stiffness: 2, drag: 1.6 }, groups: { tail: { stiffness: 1.5, gravity: 3 } } };
+    const tuned = applyStudioVrmHairSway(CHAIN, authoring, "tail");
+    expect(tuned.stiffness).toBeCloseTo(1.2 * 2 * 1.5, 9);
+    expect(tuned.gravityPower).toBeCloseTo(0.3, 9);
+    // dragForce 는 VRM 1.0 에서 0~1 이다.
+    expect(tuned.dragForce).toBe(0.96);
+    expect(applyStudioVrmHairSway({ ...CHAIN, dragForce: 0.9 }, authoring, "tail").dragForce).toBe(1);
+  });
+
+  it("maps hair part roles to sway groups, treating braid chains as tied hair", () => {
+    expect(studioVrmHairSwayGroupForRole("bang")).toBe("bang");
+    expect(studioVrmHairSwayGroupForRole("side")).toBe("side");
+    expect(studioVrmHairSwayGroupForRole("back")).toBe("back");
+    expect(studioVrmHairSwayGroupForRole("ahoge")).toBe("ahoge");
+    expect(studioVrmHairSwayGroupForRole("tail")).toBe("tail");
+    expect(studioVrmHairSwayGroupForRole("bun")).toBe("tail");
+    expect(studioVrmHairSwayGroupForRole(undefined)).toBe("tail");
+  });
+});
+
+describe("hair sway editing helpers", () => {
+  it("applies presets globally while keeping group adjustments", () => {
+    const grouped = setStudioVrmHairSwayParam(undefined, "bang", "stiffness", 2);
+    const still = applyStudioVrmHairSwayPreset(grouped, "still");
+    expect(matchStudioVrmHairSwayPreset(still)).toBe("still");
+    expect(still?.groups?.bang).toEqual({ stiffness: 2 });
+    expect(countStudioVrmHairSwayScopes(still)).toBe(2);
+    expect(matchStudioVrmHairSwayPreset(applyStudioVrmHairSwayPreset(still, "auto"))).toBe("auto");
+  });
+
+  it("reports manual global edits as no preset and resets scopes back to automatic", () => {
+    const manual = setStudioVrmHairSwayParam(undefined, "global", "gravity", 1.75);
+    expect(matchStudioVrmHairSwayPreset(manual)).toBeNull();
+    expect(resolveStudioVrmHairSwayScope(manual, "global")).toEqual({ stiffness: 1, gravity: 1.75, drag: 1 });
+    expect(resetStudioVrmHairSwayScope(manual, "global")).toBeUndefined();
+    const grouped = setStudioVrmHairSwayParam(manual, "side", "drag", 0.5);
+    expect(resetStudioVrmHairSwayScope(grouped, "side")).toEqual({ global: { gravity: 1.75 } });
+  });
+
+  it("ships presets whose values stay inside the slider limits", () => {
+    for (const preset of STUDIO_VRM_HAIR_SWAY_PRESETS) {
+      const sanitized = sanitizeStudioVrmHairSwayAuthoring({ global: preset.params });
+      expect(resolveStudioVrmHairSwayScope(sanitized, "global")).toEqual(preset.params);
+    }
+  });
+});

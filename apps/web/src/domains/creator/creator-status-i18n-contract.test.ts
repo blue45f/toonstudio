@@ -49,6 +49,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * 표시 정본은 studio.vrmPanelStatus.* (studio-vrm-panel-status-i18n 등록)·
  * studio.bg3dPanelStatus.* (studio-bg3d-panel-status-i18n 등록) 키
  * (studio-status-i18n-batch3 계약과 짝).
+ * 9차 등록 (VRM 스튜디오 대응, 2026-10-29): 조형 패널 "새 VRM 캐릭터" 구역 4파일
+ * (StudioVrmAvatarForgeGenerateSection·StudioVrmGenerateExpressionEditor·
+ * StudioVrmGenerateHairSwayControls·StudioVrmGenerateExportInfoForm).
+ * 표시 정본은 studio.vrmGenerateStatus.* (status-i18n/studio-vrm-generate-status-i18n 등록) 키
+ * (studio-vrm-generate-status-i18n 계약과 짝).
  * 파일 크기 래칫 기준선 파일 3개(StudioInspectorImageToolsSection·
  * StudioBg3dEditorSidebarExtras·StudioLift3dPage)는 훅 대신
  * StudioPanelLoading의 labelKey/labelFallback 소품으로 키를 경유한다.
@@ -458,7 +463,11 @@ const GUARDED_FILES = [
   "useStudioSmartShapeEditing.tsx",
   "vector-layer/VectorStrokeEditor.tsx",
   "virtual-space/StudioVirtualSpaceCustomFurniturePicker.tsx",
+  "vrm/StudioVrmAvatarForgeGenerateSection.tsx",
   "vrm/StudioVrmBroadcastPreview.tsx",
+  "vrm/StudioVrmGenerateExportInfoForm.tsx",
+  "vrm/StudioVrmGenerateExpressionEditor.tsx",
+  "vrm/StudioVrmGenerateHairSwayControls.tsx",
   "vrm/StudioVrmPoserPanelBodyC.tsx",
   "vrm/StudioVrmProjectArchiveAttestationDialog.tsx",
   "vrm/StudioVrmProjectArchiveAttestationHost.tsx",

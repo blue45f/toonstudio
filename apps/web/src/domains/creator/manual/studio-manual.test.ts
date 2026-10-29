@@ -8,6 +8,9 @@ import {
 } from "../bg3d/studio-bg3d-skp-contract";
 import { STUDIO_CHARM_BAR_MAX_CHARMS } from "../charm/studio-charm-model";
 import { STUDIO_CHARM_STARTER_PACK } from "../charm/studio-charm-starter-pack";
+import { STUDIO_VRM_EXPORT_LICENSE_URL } from "../vrm/studio-vrm-export-vrm-extension";
+import { STUDIO_VRM_THUMBNAIL_MAX_BYTES, STUDIO_VRM_USAGE_PRESETS } from "../vrm/studio-vrm-generate-export-meta";
+import { STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS } from "../vrm/studio-vrm-generate-expressions";
 
 import { MANUAL_ARTICLES, MANUAL_CATEGORIES, MANUAL_SHORTCUTS, MANUAL_WORKSPACE_LABELS } from "./studio-manual-data";
 import {
@@ -119,6 +122,23 @@ describe("Studio user manual content", () => {
     expect(text).toContain("먼저 캔버스를 누르세요");
     expect(searchManual("참 바").map((article) => article.id)).toContain("assets");
     expect(searchManual("charm")[0]?.id).toBe("assets");
+  });
+
+  it("documents VRM generation options with the real limits and the fixed licence", () => {
+    const section = findManualArticle("character-3d")?.sections.find((candidate) => candidate.id === "vrm-generate");
+    expect(section?.title).toContain("새 VRM 캐릭터");
+    const text = JSON.stringify(section);
+    // 문서의 숫자·고정값은 생성기가 실제로 적용하는 값과 같아야 한다.
+    expect(text).toContain(`최대 ${STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS}개`);
+    expect(text).toContain(`${STUDIO_VRM_THUMBNAIL_MAX_BYTES / (1024 * 1024)}MB 이하`);
+    expect(text).toContain("실제로 흔들리는 묶음만");
+    expect(text).toContain("VRM 퍼블릭 라이선스 1.0");
+    expect(STUDIO_VRM_EXPORT_LICENSE_URL).toBe("https://vrm.dev/licenses/1.0/");
+    for (const preset of STUDIO_VRM_USAGE_PRESETS) expect(text).toContain(preset.label);
+    expect(text).toContain("이 기기에 기억");
+    expect(text).toContain("새로 만드는 VRM에만");
+    expect(searchManual("표정 편집").map((article) => article.id)).toContain("character-3d");
+    expect(searchManual("흔들림").map((article) => article.id)).toContain("character-3d");
   });
 
   it("documents shortcut defaults without claiming to read a live user keymap", () => {

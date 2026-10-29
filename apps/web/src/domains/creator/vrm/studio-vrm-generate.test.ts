@@ -3,7 +3,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { AVATAR_FORGE_PRESETS, createAvatarForgeState } from "./studio-vrm-avatar-forge";
+import { studioVrmExportErrorMessage } from "./studio-vrm-export-error";
 import { STUDIO_VRM_EXPORT_REQUIRED_BONES } from "./studio-vrm-export-vrm-extension";
+import {
+  createStudioVrmGenerateExportMetaDraft,
+  validateStudioVrmGenerateExportMeta,
+} from "./studio-vrm-generate-export-meta";
 import {
   inspectGeneratedVrmHumanoid,
   reloadGeneratedVrmAsHumanoid,
@@ -32,11 +37,15 @@ const PRESET_B = "romance-long";
 describe("studio VRM generate surface wiring", () => {
   it("exposes generate/export controls on the shipped Avatar Forge panel and Poser import path", () => {
     const panel = readFileSync(new URL("./StudioVrmAvatarForgePanel.tsx", import.meta.url), "utf8");
+    // 생성 구역은 패널이 마운트하는 별도 컴포넌트다(표정·흔들림·아바타 정보 옵션과 함께).
+    const section = readFileSync(new URL("./StudioVrmAvatarForgeGenerateSection.tsx", import.meta.url), "utf8");
     const poser = readStudioVrmPoserImplementationSource();
-    expect(panel).toContain("data-studio-vrm-generate");
-    expect(panel).toContain("data-studio-vrm-generate-submit");
-    expect(panel).toContain("data-studio-vrm-generate-export");
-    expect(panel).toContain("generateStudioVrmCharacter");
+    expect(panel).toContain("<StudioVrmAvatarForgeGenerateSection");
+    expect(panel).toContain("onGeneratedFile={onGeneratedFile}");
+    expect(section).toContain("data-studio-vrm-generate");
+    expect(section).toContain("data-studio-vrm-generate-submit");
+    expect(section).toContain("data-studio-vrm-generate-export");
+    expect(section).toContain("generateStudioVrmCharacter");
     expect(poser).toContain("onGeneratedFile=");
     expect(poser).toContain("handleGeneratedVrmFile");
   });
@@ -141,10 +150,10 @@ describe("studio VRM generate default preset", () => {
   });
 
   it("tells the user in the panel when the default preset stands in", () => {
-    const panel = readFileSync(new URL("./StudioVrmAvatarForgePanel.tsx", import.meta.url), "utf8");
-    expect(panel).toContain("data-studio-vrm-generate-default-preset");
+    const section = readFileSync(new URL("./StudioVrmAvatarForgeGenerateSection.tsx", import.meta.url), "utf8");
+    expect(section).toContain("data-studio-vrm-generate-default-preset");
     // 미리보기 스와치는 편집 상태가 아니라 실제 생성될 상태를 읽어야 한다.
-    expect(panel).toContain("previewRecipe.state.hair.baseColor");
+    expect(section).toContain("previewRecipe.state.hair.baseColor");
   });
 });
 
@@ -225,6 +234,23 @@ describe("generateStudioVrmCharacter MCP adapter", () => {
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") throw new Error("expected unavailable");
     expect(result.hostId).toBe("disabled-vrm-generate-mcp");
+  });
+
+  it("reports the exporter's own reason instead of a host outage when it rejects the avatar info", async () => {
+    const validation = validateStudioVrmGenerateExportMeta({
+      ...createStudioVrmGenerateExportMetaDraft({ avatarName: "하늘" }),
+      authors: "하늘 작가",
+    });
+    if (!validation.ok) throw new Error("expected valid avatar info");
+    const result = await generateStudioVrmCharacter({
+      presetId: PRESET_A,
+      exportMeta: { ...validation.meta, name: "  " },
+    });
+    expect(result).toMatchObject({
+      status: "unavailable",
+      message: studioVrmExportErrorMessage("meta-name-missing"),
+      hostId: "toonstudio-vrm-generate",
+    });
   });
 
   it("uses the local generate MCP to emit a reloadable humanoid", async () => {
