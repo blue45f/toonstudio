@@ -45,8 +45,8 @@ export type StudioFilterPreviewKind =
   | "transform";
 
 export type StudioFilterDialogCatalogEntry = StudioFilterCatalogEntry & {
-  /** Dialog kind that can be previewed and applied through StudioFilterDialog. */
-  kind: StudioFilterKind;
+  /** Dialog kind that can be previewed and applied through StudioFilterDialog (the filter gallery stack dialog is not listed). */
+  kind: Exclude<StudioFilterKind, "filter-gallery">;
   /** Original, deterministic CSS preview family. Never references a remote image or asset. */
   preview: StudioFilterPreviewKind;
 };
