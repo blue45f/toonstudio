@@ -15,6 +15,7 @@ import {
   parseStudioServerAiCompletion,
   parseStudioServerAiFailoverMetadata,
   resolveActiveServerAiProviderLabel,
+  studioTextUsesPersonalKeyFirst,
 } from "./studio-server-ai-client";
 
 const OPERATION_ID = "composition-00000000-0000-4000-8000-000000000001";
@@ -533,10 +534,12 @@ describe("studio automatic free AI client", () => {
 
     withRouting({ mode: "automatic" }, 10);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
+    expect(studioTextUsesPersonalKeyFirst()).toBe(true);
     withRouting({ mode: "priority" }, 10);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
     withRouting({ mode: "priority" }, 90);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: ToonStudio 고성능 AI → 무료 AI");
+    expect(studioTextUsesPersonalKeyFirst()).toBe(false);
     withRouting({ mode: "manual" }, 10);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("고정: 내 키");
   });

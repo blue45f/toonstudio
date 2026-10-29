@@ -93,6 +93,14 @@ function personalRoutesRunFirst(
   );
 }
 
+/** 텍스트 AI 요청이 ToonStudio AI보다 등록한 내 키를 먼저 쓰는지. completeStudioServerText와 같은 규칙이다(화면 표시용). */
+export function studioTextUsesPersonalKeyFirst(configuration = getUserAiSnapshot().configuration): boolean {
+  return personalRoutesRunFirst(
+    userAiRoutingSettings(configuration),
+    userAiPersonalFirstConnectionsForCapability("text", configuration),
+  );
+}
+
 export function resolveActiveServerAiProviderLabel(
   preference: StudioServerAiProviderPreference,
   status: Pick<StudioServerAiStatus, "configured" | "providers"> | null,
