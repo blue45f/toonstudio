@@ -19,6 +19,7 @@ import {
   activeAssignments,
   scopeContains,
   productionSubmissionBlockingClarifications,
+  productionSubmissionStaleDependencyTasks,
   type ClarificationThread,
   type CutPlan,
   type ProductionProjectAggregate,
@@ -255,6 +256,7 @@ function ProductionReviewWorkspaceForProject({
   const decisions = submission && policy ? decisionsForProductionSubmission(aggregate, submission, policy, at) : [];
   const evaluation = policy && submission ? plainSubmissionApproval(policy, decisions) : null;
   const submissionBlockers = submission ? productionSubmissionBlockingClarifications(aggregate, submission) : [];
+  const staleInputTasks = submission ? productionSubmissionStaleDependencyTasks(aggregate, submission) : [];
   const canReviewSubmission = !target.issue && submission != null && selectedDeliverable?.currentSubmissionId === submission.id && ["submitted", "in-review"].includes(submission.status);
 
   const issueCountForCut = (cut: CutPlan): number => {
@@ -365,7 +367,7 @@ function ProductionReviewWorkspaceForProject({
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex max-w-full overflow-x-auto rounded-xl border border-line bg-card p-1" role="group" aria-label="검수 비교 방식">{REVIEW_MODE.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)} className={cn("inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-accent", mode === id ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised")}><Icon className="size-3.5" aria-hidden="true" />{label}</button>)}</div>
-          <div className="flex flex-wrap gap-2"><Pill tone={submission?.status === "approved" ? "good" : submission ? "warn" : "neutral"}>{submission ? bt(`${submissionStatusLabel(submission.status, bt)} · ${submission.revisionRef.revision}차`, `${submissionStatusLabel(submission.status, bt)} · rev. ${submission.revisionRef.revision}`) : bt("제출본 없음", "No submission")}</Pill><Pill tone={evaluation?.approved ? "good" : "warn"}>{evaluation?.approved ? bt("검수 통과", "Review passed") : bt(`승인 대기 ${evaluation?.blockingLanes.length ?? 0}개 영역`, `${evaluation?.blockingLanes.length ?? 0} areas awaiting approval`)}</Pill><Pill>{assignment ? assignmentBadge(partyLabel(aggregate, assignment.id), assignment.publicCreditRole ?? roleTypeLabel(assignment.roleType, bt)) : bt("담당 역할 배정 없음", "No assigned role")}</Pill></div>
+          <div className="flex flex-wrap gap-2"><Pill tone={submission?.status === "approved" ? "good" : submission ? "warn" : "neutral"}>{submission ? bt(`${submissionStatusLabel(submission.status, bt)} · ${submission.revisionRef.revision}차`, `${submissionStatusLabel(submission.status, bt)} · rev. ${submission.revisionRef.revision}`) : bt("제출본 없음", "No submission")}</Pill><Pill tone={evaluation?.approved && !staleInputTasks.length ? "good" : "warn"}>{staleInputTasks.length ? bt("입력 갱신 필요", "Input update required") : evaluation?.approved ? bt("검수 통과", "Review passed") : bt(`승인 대기 ${evaluation?.blockingLanes.length ?? 0}개 영역`, `${evaluation?.blockingLanes.length ?? 0} areas awaiting approval`)}</Pill><Pill>{assignment ? assignmentBadge(partyLabel(aggregate, assignment.id), assignment.publicCreditRole ?? roleTypeLabel(assignment.roleType, bt)) : bt("담당 역할 배정 없음", "No assigned role")}</Pill></div>
         </div>
         {target.targeted ? <div className="mt-3 rounded-xl border border-accent/30 bg-accent-soft p-3 text-xs text-fg">
           <p className="font-bold">{target.task ? bt(`선택한 작업 · ${target.task.title}`, `Selected task · ${target.task.title}`) : bt("선택한 작업을 찾을 수 없습니다.", "The selected task could not be found.")}</p>
@@ -434,7 +436,11 @@ function ProductionReviewWorkspaceForProject({
                 <ul className="mt-2 list-disc space-y-1 pl-4">{submissionBlockers.slice(0, 3).map((thread) => <li key={thread.id}>{thread.question}</li>)}</ul>
                 <a href={selectedEpisodeId ? `/production/projects/${encodeURIComponent(aggregate.projectId)}/episodes/${encodeURIComponent(selectedEpisodeId)}` : `/production/projects/${encodeURIComponent(aggregate.projectId)}/handoff`} className={cn(buttonClass({ variant: "outline", className: "min-h-11" }), "mt-2")}>{bt("인계 질문 확인·답변", "Review handoff questions")}</a>
               </div> : null}
-              {canReviewSubmission && submission?.status === "in-review" && evaluation?.approved && assignment && decisions.some((decision) => decision.assignmentId === assignment.id && decision.value === "approve") ? <button type="button" className={cn(buttonClass({ className: "min-h-11" }), "mt-3 w-full")} disabled={pending || !canEdit || submissionBlockers.length > 0} onClick={() => void finalizeSubmission()}>{bt("제출본 승인 확정", "Confirm submission approval")}</button> : null}
+              {staleInputTasks.length ? <div role="alert" className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs text-fg">
+                <p>{bt("선행 입력이 바뀌었습니다. 현재 승인된 선행 입력으로 새 제출본을 준비해야 승인할 수 있습니다. 기존 검수 의견은 유지됩니다.", "Upstream inputs changed. Prepare a new submission from the current approved inputs before confirming approval. Existing review decisions are preserved.")}</p>
+                <a href={`/production/projects/${encodeURIComponent(aggregate.projectId)}/handoff`} className={cn(buttonClass({ variant: "outline", className: "min-h-11" }), "mt-2")}>{bt("인계 작업함에서 입력 확인", "Check inputs in handoff queue")}</a>
+              </div> : null}
+              {canReviewSubmission && submission?.status === "in-review" && evaluation?.approved && assignment && decisions.some((decision) => decision.assignmentId === assignment.id && decision.value === "approve") ? <button type="button" className={cn(buttonClass({ className: "min-h-11" }), "mt-3 w-full")} disabled={pending || !canEdit || submissionBlockers.length > 0 || staleInputTasks.length > 0} onClick={() => void finalizeSubmission()}>{bt("제출본 승인 확정", "Confirm submission approval")}</button> : null}
               {eligibleLanes.length === 0 && policy ? <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/10 p-2.5 text-[0.6875rem] leading-5 text-fg-2"><ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />{t("productionHub.review.noApprovalPermission", "현재 역할에는 이 회차의 승인 권한이 없습니다.")}</div> : null}
             </section>
 

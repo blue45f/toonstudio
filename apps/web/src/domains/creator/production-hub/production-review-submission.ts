@@ -3,6 +3,7 @@ import {
   evaluateReviewApproval,
   productionScopeDepth,
   productionSubmissionBlockingClarifications,
+  productionSubmissionStaleDependencyTasks,
   scopeContains,
   validateReviewDecision,
   type ProductionProjectAggregate,
@@ -111,7 +112,8 @@ export function planProductionSubmissionReview(
   if (submission.status === "submitted") steps.push({ stage: "start-review", command: { type: "upsert-submission", submission: { ...submission, status: "in-review" } } });
   steps.push({ stage: "record-decision", command: { type: "record-review-decision", policyId: policy.id, decision } });
   if (decision.value === "approve" && plainSubmissionApproval(policy, decisions).approved
-    && productionSubmissionBlockingClarifications(aggregate, submission).length === 0) {
+    && productionSubmissionBlockingClarifications(aggregate, submission).length === 0
+    && productionSubmissionStaleDependencyTasks(aggregate, submission).length === 0) {
     steps.push({ stage: "approve-submission", command: { type: "upsert-submission", submission: approvedSubmission(submission, decisions) } });
   } else if (decision.value === "request-changes" || decision.value === "veto") {
     steps.push({ stage: "request-changes", command: { type: "upsert-submission", submission: { ...submission, status: "changes-requested" } } });
@@ -127,6 +129,7 @@ export function planProductionSubmissionApproval(
   at: string,
 ): SubmissionReviewStep {
   assertCurrentSubmission(aggregate, submission);
+  if (productionSubmissionStaleDependencyTasks(aggregate, submission).length) throw new Error("선행 입력이 바뀌었습니다. 현재 승인된 선행 입력으로 새 제출본을 준비한 뒤 승인을 확정하세요.");
   if (productionSubmissionBlockingClarifications(aggregate, submission).length) throw new Error("진행을 막는 인계 질문을 해결한 뒤 제출본 승인을 확정하세요.");
   const decisions = decisionsForProductionSubmission(aggregate, submission, policy, at);
   if (submission.status !== "in-review" || policyForProductionSubmission(aggregate, submission)?.id !== policy.id

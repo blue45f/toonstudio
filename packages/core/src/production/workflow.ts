@@ -214,6 +214,18 @@ export function productionTaskHasCurrentDependencyInputs(
   return taskHasCurrentDependencyInputs(task, aggregate);
 }
 
+/** 새 제출본 승인은 작업의 현재 설정 대신 그 제출본이 실제 사용한 입력을 대조한다. */
+export function productionSubmissionStaleDependencyTasks(
+  aggregate: Pick<ProductionProjectAggregate, "tasks" | "deliverables" | "submissions">,
+  submission: Pick<Submission, "deliverableId" | "inputRevisionRefs">,
+): readonly ProductionTask[] {
+  const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId);
+  if (!deliverable) return [];
+  return aggregate.tasks.filter((task) => task.outputDeliverableIds.includes(deliverable.id)
+    && scopeContains(task.scope, deliverable.scope)
+    && !taskHasCurrentDependencyInputs({ ...task, inputRevisionRefs: submission.inputRevisionRefs }, aggregate));
+}
+
 function taskHasCurrentDependencyInputs(
   task: ProductionTask,
   aggregate: Pick<ProductionProjectAggregate, "tasks" | "deliverables" | "submissions">,

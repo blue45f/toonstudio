@@ -8,6 +8,7 @@ import {
   productionTaskHasCurrentDependencyInputs,
   productionTaskHasCurrentReviewOutputs,
   productionSubmissionBlockingClarifications,
+  productionSubmissionStaleDependencyTasks,
   scopeContains,
   transitionProductionTask,
   validateReviewDecision,
@@ -88,10 +89,7 @@ export function assertProductionSubmissionApproval(
   if (current?.status !== "in-review" || deliverable.currentSubmissionId !== submission.id) {
     throw new BadRequestException("현재 검수 중인 제출본만 승인할 수 있습니다.");
   }
-  // 작업 입력을 바꿔도 제출본의 고정 입력은 바뀌지 않으므로 새 승인 대상 자체를 대조한다.
-  const staleTasks = aggregate.tasks.filter((task) => task.outputDeliverableIds.includes(deliverable.id)
-    && scopeContains(task.scope, deliverable.scope)
-    && !productionTaskHasCurrentDependencyInputs({ ...task, inputRevisionRefs: submission.inputRevisionRefs }, aggregate));
+  const staleTasks = productionSubmissionStaleDependencyTasks(aggregate, submission);
   if (staleTasks.length) throw new BadRequestException({ message: "현재 선행 입력과 일치하는 제출본만 새로 승인할 수 있습니다.",
     issues: staleTasks.map((task) => `${task.title}: 선행 공정의 현재 승인 버전을 입력에 고정한 뒤 승인·완료하세요.`) });
   const blockers = productionSubmissionBlockingClarifications(aggregate, submission);
