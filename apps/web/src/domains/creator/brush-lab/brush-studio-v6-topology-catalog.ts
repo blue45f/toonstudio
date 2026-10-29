@@ -1,4 +1,5 @@
 import { BRUSH_STUDIO_V6_ARTISTRY_TOPOLOGIES, type BrushStudioV6ArtistryModel } from "./brush-studio-v6-artistry-catalog";
+import { BRUSH_STUDIO_V6_PROCEDURAL_TOPOLOGIES, type BrushStudioV6ProceduralModel } from "./brush-studio-v6-procedural-family-catalog";
 import type { BrushStudioV6Tuning } from "./brush-studio-v6-engine";
 
 export interface BrushStudioV6TopologyControl {
@@ -11,7 +12,9 @@ export interface BrushStudioV6TopologyControl {
 export interface BrushStudioV6TopologyDescriptor {
   readonly id: string;
   readonly recipeId: string;
-  readonly model: "spring" | "curl" | "ballistic" | "weave" | "branch" | "orbit" | BrushStudioV6ArtistryModel;
+  readonly model: "spring" | "curl" | "ballistic" | "weave" | "branch" | "orbit" | BrushStudioV6ArtistryModel | BrushStudioV6ProceduralModel;
+  /** 생략하면 자체 구현(internal). 허용형 외부 코드를 이식한 커널만 "permissive" 로 밝힌다. */
+  readonly rights?: "internal" | "permissive";
   readonly group?: string;
   readonly label: string;
   readonly description: string;
@@ -50,6 +53,7 @@ export const BRUSH_STUDIO_V6_TOPOLOGIES: readonly BrushStudioV6TopologyDescripto
     controls: [unit("patternDensity", "궤도 돌기 수"), scale, unit("patternJitter", "궤도 편심")],
     tuning: { size: 42, spacing: 0.045, patternDensity: 0.55, patternScale: 1.1, patternJitter: 0.65 } },
   ...BRUSH_STUDIO_V6_ARTISTRY_TOPOLOGIES,
+  ...BRUSH_STUDIO_V6_PROCEDURAL_TOPOLOGIES,
 ].map((entry) => Object.freeze({ ...entry, controls: Object.freeze(entry.controls.map((control) => Object.freeze(control))), tuning: Object.freeze(entry.tuning) })) as BrushStudioV6TopologyDescriptor[]);
 const BY_ID = new Map(BRUSH_STUDIO_V6_TOPOLOGIES.map((entry) => [entry.id, entry]));
 export function brushStudioV6Topology(id: string): BrushStudioV6TopologyDescriptor | undefined {

@@ -1,3 +1,5 @@
+import { BRUSH_STUDIO_V6_KLECKS_PORT_NODE_IDS } from "./brush-studio-v6-procedural-family-catalog";
+
 export type BrushStudioV6Rights =
   | "internal"
   | "permissive"
@@ -168,6 +170,14 @@ export const BRUSH_STUDIO_V6_PROVIDER_MANIFEST = Object.freeze([
     roles: ["hairy", "dual-tip", "color-smudge", "contact-adapter"],
     nodeIds: ["carrier-krita-hairy", "tip-krita-dual", "pickup-krita-smudge"],
   }),
+  // Klecks sketchy·chemy 알고리즘을 CPU 접촉 커널로 이식했다(MIT, third_party/klecks). 캔버스 판독·Canvas fill 을
+  // 쓰지 않는 근사이므로 원본 실행이 아니라 호환 이식으로 기록한다.
+  provider({
+    id: "klecks-procedural-port-v1", label: "Klecks Sketchy·Chemy 이식", version: "1",
+    license: "MIT (Klecks, Copyright (c) 2026 bitbof) + project adapter", rights: "permissive", runtime: "javascript",
+    integration: "connected", productPath: "material-contact", materialExecution: "compatibility-adapter",
+    roles: ["procedural", "contact-adapter"], nodeIds: BRUSH_STUDIO_V6_KLECKS_PORT_NODE_IDS,
+  }),
   provider({
     id: "perfect-freehand", label: "Perfect Freehand", version: "1.2.3",
     license: "MIT", rights: "permissive", runtime: "javascript",
@@ -252,10 +262,13 @@ export function brushStudioV6ProviderManifestById(id: string): BrushStudioV6Prov
 export function brushStudioV6ProviderManifestForNode(
   nodeId: string,
 ): BrushStudioV6ProviderManifestEntry | null {
+  // 명시 배정(예: 외부 코드 이식 커널)이 접두사 기본값보다 우선한다.
+  const explicit = PROVIDER_BY_NODE.get(nodeId);
+  if (explicit) return explicit;
   if (nodeId.startsWith("carrier-cpu-") || nodeId.startsWith("surface-v7-")) {
     return PROVIDER_BY_ID.get("toonstudio-cpu-contact-v2") ?? null;
   }
-  return PROVIDER_BY_NODE.get(nodeId) ?? null;
+  return null;
 }
 
 export function brushStudioV6MaterialExecutionForNode(

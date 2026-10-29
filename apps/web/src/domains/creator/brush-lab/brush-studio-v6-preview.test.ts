@@ -86,8 +86,8 @@ describe("Brush Studio V6 live input authority", () => {
 });
 
 describe("Brush Studio V6 all-recipe long-session soak stability", () => {
-  it("renders all 123 V6 recipes across multi-stroke soak paths with finite geometry and deterministic output", () => {
-    expect(BRUSH_STUDIO_V6_RECIPES.length).toBeGreaterThanOrEqual(123);
+  it("renders all 139 V6 recipes across multi-stroke soak paths with finite geometry and deterministic output", () => {
+    expect(BRUSH_STUDIO_V6_RECIPES.length).toBeGreaterThanOrEqual(139);
     for (const recipe of BRUSH_STUDIO_V6_RECIPES) {
       const program = createBrushStudioV6Program(recipe.id);
       const strokeA = createBrushStudioV6MaterialStroke(program);

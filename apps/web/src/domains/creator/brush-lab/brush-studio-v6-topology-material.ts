@@ -1,4 +1,5 @@
 import { isBrushStudioV6ArtistryModel } from "./brush-studio-v6-artistry-catalog";
+import { brushStudioV6ProceduralStep, isBrushStudioV6ProceduralModel } from "./brush-studio-v6-procedural-family-catalog";
 import { isBrushStudioV7AdvancedSurface } from "./brush-studio-v7-surface-library";
 import { brushStudioV6Topology } from "./brush-studio-v6-topology-catalog";
 import type { BrushStudioV6Tuning } from "./brush-studio-v6-engine";
@@ -22,6 +23,8 @@ export function brushStudioV6TopologyActiveTuning(program: BrushStudioV6Material
 /** Curves resolve their highest harmonic independently of the legacy dab-spacing control. */
 export function brushStudioV6TopologyStep(program: BrushStudioV6MaterialProgram, fallback: number): number {
   const topology = brushStudioV6Topology(program.slots.carrier);
+  // 절차 계열은 접촉 간격을 그대로 쓰되 크기 비율 하한을 둔다(지난 점 기억 범위·덥 상한 보호).
+  if (topology && isBrushStudioV6ProceduralModel(topology.model)) return brushStudioV6ProceduralStep(program.tuning.size, fallback);
   if (topology && isBrushStudioV6ArtistryModel(topology.model)) {
     if (![program.tuning.size, program.tuning.patternScale].every(Number.isFinite)) return fallback;
     const size = Math.max(1, Math.min(240, program.tuning.size));
