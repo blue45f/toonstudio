@@ -76,6 +76,7 @@ apps/api/src/platform/federated-data-plane/federated-data-plane.module.test.ts
 apps/api/src/runtime/runtime-boundary.test.ts
 apps/api/src/session-middleware.test.ts
 apps/brush-lab/src/boundary.test.ts
+apps/character-lab/scripts/browser-gpu-proof.test.mjs
 apps/character-lab/src/architecture.test.ts
 apps/character-lab/src/contracts/recipe.test.ts
 apps/character-lab/src/state/apply-plan.test.ts
