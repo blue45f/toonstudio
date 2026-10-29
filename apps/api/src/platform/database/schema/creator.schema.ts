@@ -1831,8 +1831,7 @@ export const studioAiUsageLedger = pgTable(
     promptTokens: integer("promptTokens"),
     completionTokens: integer("completionTokens"),
     totalTokens: integer("totalTokens"),
-    // 호출의 보수적 토큰 예약량. 사용량을 모르는 운영 고성능 호출을 예산에서 이 값으로 센다(0115).
-    reservedTokens: integer("reservedTokens"),
+    reservedTokens: integer("reservedTokens"), // 호출의 보수적 예약량(0115). 사용량 모르는 고성능 호출을 예산에서 이 값으로 센다
     startedAt: timestamp("startedAt", { mode: "date", withTimezone: true }).notNull(),
     finishedAt: timestamp("finishedAt", { mode: "date", withTimezone: true }).notNull(),
     createdAt: timestamp("createdAt", { mode: "date", withTimezone: true }).notNull().defaultNow(),
