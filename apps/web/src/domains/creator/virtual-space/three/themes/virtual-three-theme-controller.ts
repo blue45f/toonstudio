@@ -156,10 +156,18 @@ export function createVirtualThreeThemeLifecycle(options: VirtualThreeThemeLifec
     }
   };
   const prepare = async (request: { readonly theme: VirtualThreeTheme; readonly epoch: number }) => {
-    const scene = new THREE.Scene();
-    scene.name = `virtual-three-theme-${request.theme.id}`;
+    let scene: THREE.Scene | null = null;
     let stage: ThemeStage | null = null;
     try {
+      const retained = active;
+      if (request.epoch === epoch && !stopped() && !resourceCleanupFailed && retained?.ready && !retained.released && !retained.abort.signal.aborted && retained.scene.parent === options.scene && retained.theme === request.theme) {
+        let sourceIsCurrent = true;
+        try { retained.models?.assertCurrent(); } catch { sourceIsCurrent = false; }
+        // 표시 중인 무대의 기존 lease 세대와 수동 조명을 보존한다. 만료된 출처는 새 준비로 재검증한다.
+        if (sourceIsCurrent) { publish(request.theme.id, { status: "ready" }); return; }
+      }
+      scene = new THREE.Scene();
+      scene.name = `virtual-three-theme-${request.theme.id}`;
       const abort = new AbortController();
       stage = { ...request, scene, abort, architecture: dependencies.buildArchitecture(scene, options.manifest, request.theme), models: null, ready: false, released: false };
       preparing = stage;
@@ -200,7 +208,7 @@ export function createVirtualThreeThemeLifecycle(options: VirtualThreeThemeLifec
     } finally {
       if (stage && active !== stage) {
         try { release(stage); } catch { latchCleanupFailure(request.theme.id); }
-      } else if (!stage) {
+      } else if (!stage && scene) {
         // architecture 생성 도중 실패해 반환 계약을 얻지 못한 부분 노드도 소유권을 닫는다.
         try { disposeStudioThreeSurfaceNodes([...scene.children]); } catch { latchCleanupFailure(request.theme.id); }
       }
