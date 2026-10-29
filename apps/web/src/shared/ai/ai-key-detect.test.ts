@@ -59,6 +59,19 @@ describe("붙여넣기 정리", () => {
     expect(splitPastedAiKeys(pasted)).toEqual([GEMINI, GROQ, CLAUDE, OPENROUTER]);
   });
 
+  it("값 뒤 메모·주석 줄·Windows·PowerShell·JSON 형식에서도 값만 키로 잡는다", () => {
+    const openai = `sk-proj-${"e".repeat(48)}`;
+    const pasted = [
+      "# 개인 키 모음",
+      `GEMINI_API_KEY=${GEMINI} # personal`,
+      `$env:GROQ_API_KEY="${GROQ}"`,
+      `set "ANTHROPIC_API_KEY=${CLAUDE}"`,
+      `  "OPENROUTER_API_KEY": "${OPENROUTER}",`,
+      `setx OPENAI_API_KEY "${openai}"`,
+    ].join("\n");
+    expect(splitPastedAiKeys(pasted)).toEqual([GEMINI, GROQ, CLAUDE, OPENROUTER, openai]);
+  });
+
   it("가린 표기에는 앞뒤 4자만 남긴다", () => {
     expect(maskAiKey(GROQ)).toBe("gsk_…bbbb");
     expect(maskAiKey("short")).toBe("••••");
@@ -104,6 +117,37 @@ describe("addQuickKey / removeQuickKey", () => {
     expect(userAiRoutingSettings(withConsent.configuration).allowPaidFallback).toBe(true);
     const claude = findQuickKeyConnection(withConsent.configuration, "anthropic");
     expect(claude).toMatchObject({ id: "claude-byok", costPolicy: "user-funded-byok" });
+  });
+
+  it("주소가 같아도 재확인이 필요한 옛 연결이나 이미지 전용 연결에는 키를 붙이지 않고, 텍스트에 쓰일 새 연결을 만든다", () => {
+    const legacy = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", `sk-or-v1-${"0".repeat(64)}`);
+    const migrated = normalizeUserAiConfiguration({
+      ...legacy.configuration,
+      connections: legacy.configuration.connections.map((item) => ({ ...item, id: "migrated", costPolicy: "unverified" as const })),
+      assignments: { ...legacy.configuration.assignments, text: "migrated" },
+      routeAssignments: { ...legacy.configuration.routeAssignments!, text: { connectionId: "migrated", apiKeyId: null, modelId: null } },
+    });
+    expect(findQuickKeyConnection(migrated, "openrouter")).toBeUndefined();
+
+    const added = addQuickKey(migrated, "openrouter", OPENROUTER);
+    expect(added.connectionId).not.toBe("migrated");
+    const normalized = normalizeUserAiConfiguration(added.configuration);
+    expect(normalized.connections.find((item) => item.id === added.connectionId)?.costPolicy).toBe("openrouter-free");
+    // 텍스트에 쓰이지 않던 옛 배정을 새 연결로 바꾼다.
+    expect(normalized.assignments.text).toBe(added.connectionId);
+    // 이후 같은 서비스 키는 새 연결에 쌓인다.
+    expect(findQuickKeyConnection(normalized, "openrouter")?.id).toBe(added.connectionId);
+  });
+
+  it("텍스트에 쓰이는 기존 배정은 다른 서비스 키를 더해도 그대로 둔다", () => {
+    const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    const second = addQuickKey(first.configuration, "gemini", GEMINI);
+    expect(normalizeUserAiConfiguration(second.configuration).assignments.text).toBe(first.connectionId);
+
+    // 유료 Claude 연결도 텍스트에 쓰이는 배정이라 그대로 둔다.
+    const claude = addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE, { allowPaid: true });
+    const withGemini = addQuickKey(claude.configuration, "gemini", GEMINI);
+    expect(normalizeUserAiConfiguration(withGemini.configuration).assignments.text).toBe(claude.connectionId);
   });
 
   it("마지막 키를 지우면 연결과 그 연결을 가리키던 배정도 함께 지운다", () => {

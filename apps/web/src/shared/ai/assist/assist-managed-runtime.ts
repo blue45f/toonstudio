@@ -174,7 +174,8 @@ function managedMessage(value: unknown): Anthropic.Message {
 
 const LOGIN_MESSAGE = "로그인하면 ToonStudio AI를 키 없이 바로 쓸 수 있어요. 로그인하거나 설정 > AI에서 내 API 키를 연결해 주세요.";
 const UNAVAILABLE_MESSAGE = "ToonStudio AI가 아직 준비되지 않았어요. 잠시 후 다시 시도하거나 설정 > AI에서 내 API 키를 연결해 주세요.";
-const EXHAUSTED_MESSAGE = "오늘 쓸 수 있는 ToonStudio AI 사용량을 모두 썼어요. 내일(UTC 자정 이후) 다시 쓰거나 설정 > AI에서 내 API 키를 연결해 주세요.";
+// 서버는 오늘 한도를 다 쓴 경우와 무료 제공자가 잠시 요청을 제한한 경우에 같은 코드를 보낸다. 둘 다 맞는 문구를 쓴다.
+const EXHAUSTED_MESSAGE = "ToonStudio AI 사용 한도에 닿았어요. 잠시 뒤 다시 시도해 보고, 계속되면 오늘 한도를 다 쓴 것이라 UTC 자정 이후 다시 쓰거나 설정 > AI에서 내 API 키를 연결해 주세요.";
 const CANCELLED_MESSAGE = "AI 요청이 취소되거나 제한 시간을 초과했습니다. 앱은 같은 요청을 자동 재전송하지 않습니다.";
 
 /** 서버 오류를 기존 보조 기능 오류 모델로 바꾼다. 코드에 따라 화면이 로그인·설정 안내를 고른다. */

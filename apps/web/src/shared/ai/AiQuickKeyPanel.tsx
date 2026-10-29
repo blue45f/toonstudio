@@ -67,12 +67,23 @@ function providerName(id: AiKeyProviderId): string {
   return AI_KEY_PROVIDERS[id].name;
 }
 
-function costBadge(paid: boolean) {
+/** 비용 배지. "확인 필요"는 비용 정책을 다시 정해야 하는 연결이라 자동으로 쓰지 않는다. */
+function costBadge(kind: "paid" | "free" | "unverified") {
+  const tone = kind === "paid"
+    ? "border-warn/35 bg-warn/10 text-warn"
+    : kind === "free"
+      ? "border-good/35 bg-good/10 text-good"
+      : "border-line bg-panel text-fg-3";
   return (
-    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold ${paid ? "border-warn/35 bg-warn/10 text-warn" : "border-good/35 bg-good/10 text-good"}`}>
-      {paid ? "유료" : "무료"}
+    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold ${tone}`}>
+      {kind === "paid" ? "유료" : kind === "free" ? "무료" : "확인 필요"}
     </span>
   );
+}
+
+function connectionCostKind(connection: Pick<UserAiConnection, "costPolicy">): "paid" | "free" | "unverified" {
+  if (connection.costPolicy === "user-funded-byok") return "paid";
+  return connection.costPolicy === "unverified" ? "unverified" : "free";
 }
 
 /** 모델 목록이 공개라 목록 응답으로 키를 확인할 수 없는 서비스. */
@@ -359,7 +370,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                   ) : null}
                   {provider === "fal" ? (
                     <span className="text-xs text-fg-3">이미지 생성 키는 연동 키 화면에서 등록해요.</span>
-                  ) : provider ? costBadge(AI_KEY_PROVIDERS[provider].cost === "paid") : null}
+                  ) : provider ? costBadge(AI_KEY_PROVIDERS[provider].cost === "paid" ? "paid" : "free") : null}
                   <button
                     type="button"
                     className={`${ICON_BUTTON} ml-auto`}
@@ -424,7 +435,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                 <li key={connection.id} className="rounded-xl border border-line bg-card/60 p-3" data-ai-registered-connection={provider ?? "custom"}>
                   <div className="flex flex-wrap items-center gap-2">
                     <strong className="text-sm">{provider ? providerName(provider) : connection.label}</strong>
-                    {costBadge(connection.costPolicy === "user-funded-byok")}
+                    {costBadge(connectionCostKind(connection))}
                     <span className="truncate text-xs text-fg-3">{connection.textModel || connection.imageModel}</span>
                     {connection.enabled === false && <span className="text-xs font-semibold text-warn">꺼짐</span>}
                   </div>
