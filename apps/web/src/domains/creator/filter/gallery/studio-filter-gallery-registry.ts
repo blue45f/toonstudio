@@ -5,7 +5,9 @@
  * 범위를 벗어난 숫자, 목록에 없는 선택값은 실행 전에 버리거나 기본값·경계값으로 고친다. 이 모듈은 커널 전부를 가져오므로
  * 지연 로드되는 필터 엔진·대화상자 청크에서만 가져와야 한다(즉시 로드 경로는 studio-filter-gallery-types 만 쓴다).
  */
+import { STUDIO_FILTER_GALLERY_ARTISTIC_EFFECTS } from "./studio-filter-gallery-artistic";
 import { STUDIO_FILTER_GALLERY_ARTISTIC_EXTRA_EFFECTS } from "./studio-filter-gallery-artistic-extra";
+import { STUDIO_FILTER_GALLERY_BRUSH_STROKES_EFFECTS } from "./studio-filter-gallery-brush-strokes";
 import { STUDIO_FILTER_GALLERY_COLOR_EFFECTS } from "./studio-filter-gallery-color";
 import { STUDIO_FILTER_GALLERY_DECOR_EFFECTS, STUDIO_FILTER_GALLERY_LIGHT_EFFECTS } from "./studio-filter-gallery-light-decor";
 import { STUDIO_FILTER_GALLERY_BLUR_EFFECTS, STUDIO_FILTER_GALLERY_NOISE_EFFECTS } from "./studio-filter-gallery-noise";
@@ -29,7 +31,9 @@ import type {
 } from "./studio-filter-gallery-types";
 
 const FAMILIES: readonly (readonly StudioFilterGalleryEffectDef[])[] = [
+  STUDIO_FILTER_GALLERY_ARTISTIC_EFFECTS,
   STUDIO_FILTER_GALLERY_ARTISTIC_EXTRA_EFFECTS,
+  STUDIO_FILTER_GALLERY_BRUSH_STROKES_EFFECTS,
   STUDIO_FILTER_GALLERY_SKETCH_EFFECTS,
   STUDIO_FILTER_GALLERY_TEXTURE_EFFECTS,
   STUDIO_FILTER_GALLERY_STYLIZE_EFFECTS,
