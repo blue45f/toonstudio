@@ -159,6 +159,21 @@ describe("studio menu session reducer", () => {
   });
 
   it.each([
+    { toolMenu: null, appMenu: "project" },
+    { toolMenu: null, appMenu: "export" },
+    { toolMenu: "palette", appMenu: null },
+    EMPTY_STUDIO_MENU_SESSION,
+  ] satisfies readonly StudioMenuSessionState[])(
+    "같은 계정의 초기 복원은 복원 대기 중 사용자가 연 메뉴를 유지한다: %j",
+    (state) => {
+      expect(reduceStudioMenuSession(state, {
+        type: "workspace.layout-applied",
+        source: "owner-hydration",
+      })).toBe(state);
+    },
+  );
+
+  it.each([
     "switch",
     "reload",
     "active-workspace-delete",

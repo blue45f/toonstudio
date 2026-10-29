@@ -3967,7 +3967,7 @@ export function StudioCuttoonEditor({
     };
     setLeftPanelOpenWithOverride(presented.desktop.leftPanelOpen);
     setRightPanelOpenWithOverride(presented.desktop.rightPanelOpen);
-    if (source === "owner-scope-change" && uiDensityMode === "focus") {
+    if ((source === "owner-scope-change" || source === "owner-hydration") && uiDensityMode === "focus") {
       setForceLeftPanelOpen(false);
       setForceRightPanelOpen(false);
     }

@@ -335,7 +335,7 @@ function runStudioWorkspaceOwnerHydration(
     applyStudioWorkspaceLayoutFromEffect(
       hydratedState.liveLayout,
       hydratedState.activeWorkspaceId,
-      "owner-scope-change",
+      "owner-hydration",
       false,
     );
     setWorkspaceSyncNotice(
