@@ -57,6 +57,16 @@ describe("AiQuickKeyPanel", () => {
     expect(within(flow).getByText(/고성능 AI\(하루 30회까지\) → 무료 AI/u)).toBeTruthy();
   });
 
+  it("서버 상태를 확인하지 못하면 '확인하는 중'에 머물지 않고 다음 행동을 알려 준다", () => {
+    const { rerender } = render(<AiQuickKeyPanel poolStatus={null} onOpenAdvancedWizard={vi.fn()} />);
+    const flow = screen.getByText("지금 AI는 이렇게 동작해요").closest("div") as HTMLElement;
+    expect(within(flow).getByText("상태를 확인하는 중이에요.")).toBeTruthy();
+
+    rerender(<AiQuickKeyPanel poolStatus={null} poolCheckFailed onOpenAdvancedWizard={vi.fn()} />);
+    expect(within(flow).queryByText("상태를 확인하는 중이에요.")).toBeNull();
+    expect(within(flow).getByText(/지금은 상태를 확인하지 못했어요/u)).toBeTruthy();
+  });
+
   it("여러 키를 한 번에 붙여 넣으면 서비스를 알아보고 입력란에는 남기지 않는다", () => {
     const { input } = renderPanel();
     pasteInto(input, `${GEMINI}\n${GROQ}`);

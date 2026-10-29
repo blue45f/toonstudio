@@ -54,8 +54,10 @@ interface RegisterOutcome {
 }
 
 export interface AiQuickKeyPanelProps {
-  /** 서버 상태(ToonStudio AI 준비 여부·고성능 경로 한도). 불러오는 중이면 null. */
+  /** 서버 상태(ToonStudio AI 준비 여부·고성능 경로 한도). 불러오는 중이거나 확인하지 못했으면 null. */
   readonly poolStatus: FreeAiPoolStatus | null;
+  /** 서버 상태를 확인하지 못했다(네트워크·서버 오류). "확인하는 중"을 계속 보여 주지 않기 위해 따로 받는다. */
+  readonly poolCheckFailed?: boolean;
   /** 직접 주소·모델을 넣는 기존 연결 마법사를 연다(키 형식이 목록에 없는 서비스용). */
   readonly onOpenAdvancedWizard: () => void;
 }
@@ -100,7 +102,7 @@ async function verifyQuickKey(provider: QuickKeyProviderId, key: string): Promis
   return { status: "unverified", model: preset.model, reason };
 }
 
-export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKeyPanelProps) {
+export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdvancedWizard }: AiQuickKeyPanelProps) {
   const idBase = useId();
   const snapshot = useUserAi();
   const configuration = snapshot.configuration;
@@ -244,7 +246,9 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
                     ? "무료 AI가 성능 순서로 이어서 처리해요. 로그인만 하면 돼요."
                     : poolStatus
                       ? "지금은 준비 중이에요. 내 키를 등록하면 바로 쓸 수 있어요."
-                      : "상태를 확인하는 중이에요."}
+                      : poolCheckFailed
+                        ? "지금은 상태를 확인하지 못했어요. 잠시 뒤 다시 열거나 내 키를 등록해 주세요."
+                        : "상태를 확인하는 중이에요."}
               </span>
             </span>
           </li>

@@ -613,7 +613,11 @@ export function UnifiedAiSettings() {
               onSave={() => void saveWizardConnection()}
             />
           ) : (
-            <AiQuickKeyPanel poolStatus={pool.mode === "ready" ? pool.status : null} onOpenAdvancedWizard={openWizard} />
+            <AiQuickKeyPanel
+              poolStatus={pool.mode === "ready" ? pool.status : null}
+              poolCheckFailed={pool.mode === "error"}
+              onOpenAdvancedWizard={openWizard}
+            />
           )}
           <AiCapabilityStatusBoard
             managedText={managedTextState}
