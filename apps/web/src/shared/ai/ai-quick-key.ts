@@ -224,8 +224,9 @@ export function addQuickKey(
   const info = AI_KEY_PROVIDERS[provider];
   const existing = findQuickKeyConnection(configuration, provider);
   const routing = userAiRoutingSettings(configuration);
+  // 유료 키를 "먼저 쓴다"에 동의하고 등록했다: 자동 경로에서 무료 경로보다 먼저 쓴다(동의 문구가 그렇게 알린다).
   const nextRouting = info.cost === "paid" && options.allowPaid
-    ? { ...routing, allowPaidFallback: true }
+    ? { ...routing, allowPaidFallback: true, preferPaidKeys: true }
     : routing;
 
   if (existing) {

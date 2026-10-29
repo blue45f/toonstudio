@@ -3,8 +3,9 @@ import { completeWithUserTextKey } from "@/shared/ai/unified-ai-settings";
 import {
   getUserAiSnapshot,
   userAiAutomaticExternalConnectionsForCapability,
+  userAiPersonalFirstConnectionsForCapability,
 } from "@/shared/ai/user-ai-store";
-import { userAiRoutingSettings } from "@/shared/ai/user-ai-types";
+import { userAiRoutingSettings, type UserAiResolvedConnection } from "@/shared/ai/user-ai-types";
 import { aiErrorText } from "./ai/studio-ai-error-i18n";
 
 export type StudioServerAiTask = "assistant" | "composition" | "scenario" | "translation" | "dialogue" | "palette";
@@ -320,6 +321,8 @@ function httpErrorCode(error: unknown): string | undefined {
 const PERSONAL_FALLBACK_CODES = new Set([
   "FREE_AI_POOL_EXHAUSTED",
   "FREE_AI_POOL_UNAVAILABLE",
+  // 서버 고성능 경로가 추론 전에 거절됐고 이어 갈 무료 경로도 없을 때. 아직 쓰지 않은 내 키가 있으면 그쪽으로 간다.
+  "PREMIUM_AI_UNAVAILABLE",
   "USER_AI_CONNECTION_REQUIRED",
 ]);
 
@@ -335,21 +338,25 @@ interface PersonalTextAttempt {
   readonly result: StudioServerAiResult<StudioServerAiCompletion>;
   /** 모든 내 키가 인증에서 거절됐다. 추론 전 확정 거절이라 다음 경로로 넘겨도 중복 생성이 없다. */
   readonly authenticationRejected: boolean;
+  /** 답이 출력 상한에 걸려 잘렸다(무료 키 안전 상한). 다음 경로가 있으면 그쪽에서 온전한 답을 받는다. */
+  readonly truncated: boolean;
 }
 
 async function attemptPersonalText(
   input: { system: string; user: string },
   operationId: string,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  connections: readonly UserAiResolvedConnection[],
 ): Promise<PersonalTextAttempt> {
-  const result = await completeWithUserTextKey(input.system, input.user, signal);
+  const result = await completeWithUserTextKey(input.system, input.user, signal, { connections });
   if (!result.ok) {
     if (["not-configured", "quota-exhausted", "all-free-exhausted"].includes(result.code)) {
-      return { result: { ok: false, code: "free_exhausted", error: exhaustedMessage() }, authenticationRejected: false };
+      return { result: { ok: false, code: "free_exhausted", error: exhaustedMessage() }, authenticationRejected: false, truncated: false };
     }
     return {
       result: { ok: false, code: "http_error", error: result.error },
       authenticationRejected: result.code === "authentication",
+      truncated: false,
     };
   }
   return {
@@ -363,15 +370,8 @@ async function attemptPersonalText(
       },
     },
     authenticationRejected: false,
+    truncated: result.truncated,
   };
-}
-
-async function completeWithPersonalFreeAi(
-  input: { system: string; user: string },
-  operationId: string,
-  signal?: AbortSignal,
-): Promise<StudioServerAiResult<StudioServerAiCompletion>> {
-  return (await attemptPersonalText(input, operationId, signal)).result;
 }
 
 export async function completeStudioServerText(
@@ -392,28 +392,43 @@ export async function completeStudioServerText(
   const { operationId: _operationId, ...requestInput } = input;
   const configuration = getUserAiSnapshot().configuration;
   const routing = userAiRoutingSettings(configuration);
+  // 자동 경로에 쓸 수 있는 내 키 전체와, 그중 ToonStudio AI보다 먼저 쓰는 키(무료 키 + "유료 키 먼저"에 동의한 유료 키).
   const personalRoutes = userAiAutomaticExternalConnectionsForCapability("text");
+  const personalFirstRoutes = userAiPersonalFirstConnectionsForCapability("text");
   const explicitServerProvider = input.provider && input.provider !== "auto";
   // 등록한 내 키가 있으면 내 키를 먼저 쓴다(자동·고정 모드). 내 키가 없거나 확정적으로 거절되면
   // ToonStudio AI(운영 고성능 → 무료 순)로 간다. "내가 정한 순서"에서는 사용자가 정한 앞뒤를 따른다.
-  const personalFirst = !explicitServerProvider && personalRoutes.length > 0 && (
+  // "무료 경로가 끝나면 유료 키"에 동의한 유료 키는 ToonStudio AI 다음의 대체 경로로만 쓴다.
+  const personalFirst = !explicitServerProvider && personalFirstRoutes.length > 0 && (
     routing.mode !== "priority"
-    || (personalRoutes[0]?.priority ?? 100) < routing.managedPoolPriority
+    || (personalFirstRoutes[0]?.priority ?? 100) < routing.managedPoolPriority
   );
-  let personalAttempted = false;
+  const attemptedRouteIds = new Set<string>();
   // 자동 모드에서 내 키가 인증에서 거절돼 ToonStudio AI로 넘겼다면, 그쪽도 쓸 수 없을 때는
   // 사용자가 고칠 수 있는 내 키 오류를 알린다(일반 소진 문구로 덮지 않는다).
   let personalRejection: StudioServerAiResult<StudioServerAiCompletion> | null = null;
+  // 내 무료 키의 답이 출력 상한에 걸려 잘렸으면 ToonStudio AI에서 온전한 답을 받고, 그쪽이 안 되면 잘린 답이라도 돌려준다.
+  let truncatedPersonal: StudioServerAiResult<StudioServerAiCompletion> | null = null;
   if (personalFirst) {
-    personalAttempted = true;
-    const attempt = await attemptPersonalText(input, operationId, signal);
-    const handOff = !attempt.result.ok && (
-      attempt.result.code === "free_exhausted"
-      || (routing.mode === "automatic" && attempt.authenticationRejected)
-    );
-    if (routing.mode === "manual" || !handOff) return attempt.result;
-    if (attempt.authenticationRejected) personalRejection = attempt.result;
+    for (const route of personalFirstRoutes) attemptedRouteIds.add(route.routeId);
+    const attempt = await attemptPersonalText(input, operationId, signal, personalFirstRoutes);
+    if (attempt.result.ok) {
+      if (!attempt.truncated || routing.mode === "manual" || signal?.aborted) return attempt.result;
+      truncatedPersonal = attempt.result;
+    } else {
+      const handOff = attempt.result.code === "free_exhausted"
+        || (routing.mode === "automatic" && attempt.authenticationRejected);
+      if (routing.mode === "manual" || !handOff) return attempt.result;
+      if (attempt.authenticationRejected) personalRejection = attempt.result;
+    }
   }
+  // 서버 경로를 쓸 수 없을 때 아직 쓰지 않은 내 키(대체 경로로 둔 유료 키 포함)로 이어 간다.
+  const completeWithRemainingPersonal = async () => {
+    const remaining = personalRoutes.filter((route) => !attemptedRouteIds.has(route.routeId));
+    if (remaining.length === 0) return null;
+    for (const route of remaining) attemptedRouteIds.add(route.routeId);
+    return (await attemptPersonalText(input, operationId, signal, remaining)).result;
+  };
   const request = {
     ...requestInput,
     ...(!explicitServerProvider ? { providerOrder: routing.serverProviderOrder } : {}),
@@ -426,24 +441,23 @@ export async function completeStudioServerText(
       totalTimeout: STUDIO_SERVER_AI_TIMEOUT_MS + 5_000,
     });
     const data = parseStudioServerAiCompletion(raw);
-    return data
-      ? { ok: true, data }
-      : { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.server.responseFormatUnconfirmed", "자동 무료 AI 응답 형식을 확인하지 못했어요.") };
+    if (data) return { ok: true, data };
+    return truncatedPersonal
+      ?? { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.server.responseFormatUnconfirmed", "자동 무료 AI 응답 형식을 확인하지 못했어요.") };
   } catch (error) {
+    if (truncatedPersonal) return truncatedPersonal;
     const code = httpErrorCode(error);
     if (code === "FREE_AI_LOGIN_REQUIRED") {
+      const personalResult = await completeWithRemainingPersonal();
+      if (personalResult && (personalResult.ok || personalResult.code !== "free_exhausted")) return personalResult;
       if (personalRejection) return personalRejection;
-      if (!personalAttempted && personalRoutes.length > 0) {
-        const personalResult = await completeWithPersonalFreeAi(input, operationId, signal);
-        if (personalResult.ok || personalResult.code !== "free_exhausted") return personalResult;
-      }
       return { ok: false, code: "login_required", error: loginRequiredMessage() };
     }
     if (code && PERSONAL_FALLBACK_CODES.has(code)) {
+      const personalResult = await completeWithRemainingPersonal();
+      if (personalResult && (personalResult.ok || personalResult.code !== "free_exhausted")) return personalResult;
       if (personalRejection) return personalRejection;
-      return personalAttempted || personalRoutes.length === 0
-        ? { ok: false, code: "free_exhausted", error: exhaustedMessage() }
-        : completeWithPersonalFreeAi(input, operationId, signal);
+      return { ok: false, code: "free_exhausted", error: exhaustedMessage() };
     }
     if (signal?.aborted) {
       return {

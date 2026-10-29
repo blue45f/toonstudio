@@ -68,6 +68,7 @@ const completedText = (content: string): CompletedUserAiText => ({
   connection: {} as CompletedUserAiText["connection"],
   attemptedConnectionIds: [],
   attemptedRouteIds: [],
+  truncated: false,
 });
 
 const initialLanguage = useI18n.getState().lang;
