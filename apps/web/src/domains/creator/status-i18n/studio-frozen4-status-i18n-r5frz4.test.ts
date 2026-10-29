@@ -123,6 +123,8 @@ const CONSUMERS = [
   "StudioInsertHubWorkspace.tsx",
   "StudioInsertBatchPreflight.tsx",
   "music/StudioMusicPage.tsx",
+  // 2026-10-27(30a4a87a): 음악 페이지의 모드·보관함·대안 섹션을 분리했다(보관함 여는 중 키 1개가 함께 옮겨 감).
+  "music/StudioMusicPageSections.tsx",
   "StudioKonvaImageNode.tsx",
   "brush/StudioBrushEngineMixer.tsx",
   "StudioMobileEditingDock.tsx",
@@ -144,6 +146,7 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "StudioInsertHubWorkspace.tsx": 1036,
   "StudioInsertBatchPreflight.tsx": 971,
   "music/StudioMusicPage.tsx": 923,
+  "music/StudioMusicPageSections.tsx": 530,
   "StudioKonvaImageNode.tsx": 2068,
   "brush/StudioBrushEngineMixer.tsx": 835,
   "StudioMobileEditingDock.tsx": 2003,
@@ -154,7 +157,7 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "vrm/StudioVrmPoserPanelBodyD.tsx": 818,
 };
 
-/** 이관 뒤 탐지기 위반 수(실측 고정) — 17파일 전부 상태 채널 위반 0. */
+/** 이관 뒤 탐지기 위반 수(실측 고정) — 17파일과 거기서 분리한 파일 전부 상태 채널 위반 0. */
 const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "filter/StudioFilterDialog.tsx": 0,
   "promo/PromoVoiceDirector.tsx": 0,
@@ -165,6 +168,7 @@ const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "StudioInsertHubWorkspace.tsx": 0,
   "StudioInsertBatchPreflight.tsx": 0,
   "music/StudioMusicPage.tsx": 0,
+  "music/StudioMusicPageSections.tsx": 0,
   "StudioKonvaImageNode.tsx": 0,
   "brush/StudioBrushEngineMixer.tsx": 0,
   "StudioMobileEditingDock.tsx": 0,
