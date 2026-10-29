@@ -70,6 +70,8 @@ interface PendingSolveJob {
 
 interface PendingCompositeJob {
   readonly key: string;
+  /** 결과 캐시 키(합성 도중 결과가 LRU에서 밀려났는지 확인한다). */
+  readonly entryKey: string;
   readonly color: string;
   readonly entry: WetPaperBakeCacheEntry;
   readonly listeners: Set<() => void>;
@@ -85,8 +87,8 @@ const WET_PAPER_RASTER_MAX_PIXELS = 6_000_000;
 const WET_PAPER_MAX_RASTERS_PER_ENTRY = 2;
 /** 조각 예산(ms). 솔버 한 스텝은 보통 1–10 ms라 조각은 예산 + 한 단위 안에서 끝난다. */
 const WET_PAPER_SLICE_BUDGET_MS = 8;
-/** 합성 한 단위(행). 1 Mpx 래스터 기준 행당 약 0.3 ms. */
-const WET_PAPER_COMPOSITE_ROWS_PER_UNIT = 16;
+/** 합성 한 단위의 픽셀 수(행 단위로 올림). 픽셀당 약 0.25 µs라 한 단위 ≈ 4 ms. */
+const WET_PAPER_COMPOSITE_PIXELS_PER_UNIT = 16_384;
 const SIGNATURE_FIELDS_PER_DAB = 5;
 
 const bakeCache = new Map<string, WetPaperBakeCacheEntry>();
@@ -252,6 +254,7 @@ function enqueueComposite(
   }
   compositeJobs.set(compositeKey, {
     key: compositeKey,
+    entryKey: key,
     color,
     entry,
     listeners: new Set(listeners),
@@ -313,11 +316,15 @@ function advanceCompositeJob(loaded: WetPaperRuntime, job: PendingCompositeJob, 
     job.raster = job.entry.result ? loaded.createStudioWetPaperRasterJob(job.entry.result, job.color) : null;
     if (job.raster) return false;
   } else if (job.raster && job.raster.nextRow < job.raster.raster.height) {
-    loaded.advanceStudioWetPaperRasterJob(job.raster, WET_PAPER_COMPOSITE_ROWS_PER_UNIT);
+    const rows = Math.max(1, Math.floor(WET_PAPER_COMPOSITE_PIXELS_PER_UNIT / Math.max(1, job.raster.raster.width)));
+    loaded.advanceStudioWetPaperRasterJob(job.raster, rows);
     return false;
   }
   compositeJobs.delete(job.key);
-  storeRaster(job.entry, job.color, job.raster ? finishRaster(job.raster.raster) : null);
+  // 합성하는 사이 결과가 LRU에서 밀려났으면 래스터를 보관하지 않는다(다시 요청하면 처음부터 다시 굽는다).
+  if (bakeCache.get(job.entryKey) === job.entry) {
+    storeRaster(job.entry, job.color, job.raster ? finishRaster(job.raster.raster) : null);
+  }
   for (const listener of job.listeners) ready.add(listener);
   return true;
 }
