@@ -6,9 +6,9 @@ import { useLocation } from "react-router-dom";
 import { SiteAtelierChapter } from "./SiteAtelierChapter";
 import { useSiteExperience } from "./site-experience-context";
 import { EXPERIENCE_DESTINATIONS, nextExperienceDestinations } from "./site-experience-model";
-import { resolveNanoBananaCardMetaForPath } from "./nano-banana-site-card-meta";
+import { resolveIllustratedCardMetaForPath } from "./site-art-card-meta";
 import Link from "@/shared/navigation/router-link";
-import "./nano-banana-site-ui.css";
+import "./site-art-ui.css";
 
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -46,7 +46,7 @@ export function SiteNextSteps() {
           const destination = EXPERIENCE_DESTINATIONS[id];
           const Icon = ICONS[destination.icon];
           const [title, description] = bi((destination).ko, (destination).en);
-          const nbCard = resolveNanoBananaCardMetaForPath(destination.href);
+          const nbCard = resolveIllustratedCardMetaForPath(destination.href);
           return (
             <Link href={destination.href} className="site-next-steps__card" key={id} data-tone={index} data-atelier-card={nbCard.cardId}>
               <span className="site-next-steps__art" aria-hidden="true"><img src={nbCard.src640} srcSet={nbCard.srcSet} sizes="(max-width: 767px) calc(100vw - 48px), 320px" alt="" width={640} height={360} loading="lazy" decoding="async" /><span>0{index + 1} / {id.toUpperCase()} · {nbCard.stageBadge[locale]}</span></span>

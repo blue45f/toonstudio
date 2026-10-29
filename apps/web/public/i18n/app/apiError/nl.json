@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Login is vereist.",
+  "apiError.loginRequired": "Inloggen is vereist.",
   "apiError.adminRequired": "Admin-toestemmingen konden niet worden geverifieerd.",
   "apiError.adminOnlyPage": "Deze pagina is beperkt tot beheerders.",
   "apiError.notFound": "Het aangevraagde artikel kon niet worden gevonden.",

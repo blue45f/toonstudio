@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualSpaceCollaborationHub } from "./StudioVirtualSpaceCollaborationHub";
 import { StudioVirtualSpaceWorkstationLiveModal } from "./StudioVirtualSpaceWorkstationLiveModal";
-import { NANO_BANANA_2D_WORKSTATIONS } from "./studio-virtual-space-nano-banana-2d-runtime";
+import { ILLUSTRATED_2D_WORKSTATIONS } from "./studio-virtual-space-illustrated-2d-runtime";
 import {
   DYNAMIC_CREATOR_SPRITE_CAST,
   DYNAMIC_SPRITE_ACTIONS,
@@ -170,7 +170,7 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     cleanup();
     render(
       <StudioVirtualSpaceWorkstationLiveModal
-        station={NANO_BANANA_2D_WORKSTATIONS[0]}
+        station={ILLUSTRATED_2D_WORKSTATIONS[0]}
         onClose={() => undefined}
         onSelectStation={() => undefined}
       />,
@@ -184,7 +184,7 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
 
   it("협업 모달은 초점을 가두고 Escape로 닫은 뒤 실행 버튼에 초점을 돌려준다", async () => {
     const onClose = vi.fn();
-    const station = NANO_BANANA_2D_WORKSTATIONS[0];
+    const station = ILLUSTRATED_2D_WORKSTATIONS[0];
     function ModalHarness() {
       const [open, setOpen] = useState(false);
       return <>

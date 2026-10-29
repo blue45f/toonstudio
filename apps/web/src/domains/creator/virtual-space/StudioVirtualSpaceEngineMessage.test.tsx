@@ -13,7 +13,7 @@ describe("월드 로딩·실패 안내 카드", () => {
     const { container } = render(<StudioVirtualSpaceEngineMessage {...base} ready />);
     expect(screen.queryByRole("status")).toBeNull();
     expect(container.querySelector(".studio-vspace-engine-message")).toBeNull();
-    expect(screen.getByTestId("main-stage-nano-banana-hud")).toBeTruthy();
+    expect(screen.getByTestId("main-stage-illustrated-hud")).toBeTruthy();
   });
 
   it("로딩 중에는 상태 영역에 문구를 보이고, 진행률을 모르면 막대를 그리지 않는다", () => {

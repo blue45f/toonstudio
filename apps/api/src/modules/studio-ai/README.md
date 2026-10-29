@@ -4,6 +4,34 @@ server-backed Studio AI 경로는 cloud-only, free-first, fail-closed다. Postgr
 권위다. local LLM, localhost/private-network runtime, browser model download, self-hosted GPU는 이 경로의
 지원 실행 대상이 아니다.
 
+## 운영 고성능 경로 (ToonStudio AI 1순위, 2026-10-29)
+
+키를 등록하지 않은 사용자의 자동 경로는 **운영 고성능 경로(provider `anthropic`) → 아래 공유 무료 pool** 순서다.
+
+- 설정: `studio-ai-premium-config.ts`. `STUDIO_AI_ANTHROPIC_API_KEY`(서버 전용), `STUDIO_AI_ANTHROPIC_MODEL`
+  (기본 `claude-opus-5-5`), `STUDIO_AI_PREMIUM_AUTO`, `STUDIO_AI_PREMIUM_ALLOWED_MODELS`, 일일 예산
+  `STUDIO_AI_PREMIUM_USER_DAILY_REQUEST_LIMIT`(30)·`STUDIO_AI_PREMIUM_GLOBAL_DAILY_REQUEST_LIMIT`(400)·
+  `STUDIO_AI_PREMIUM_GLOBAL_DAILY_TOKEN_LIMIT`(3,000,000), `STUDIO_AI_ANTHROPIC_TIMEOUT_MS`(최대 120초).
+- 비용: 운영자 부담(`sponsored`)이라 사용자 크레딧을 차감하지 않는다. 예산은 원장을 UTC 하루 단위로 세어
+  (`studio-ai-premium-budget.repository.ts`, 한 번의 CTE 조회) 지키고, 예산·원장 준비를 확인하지 못하면
+  운영 경로를 후보에서 빼고 무료 pool로 간다(fail-closed). 마이그레이션 0114(원장 provider 제약·색인)가
+  먼저 적용돼야 열린다.
+- 전환: 429·529·402·401·403·404·400 `billing_error`처럼 추론 전 확정 거절만 같은 요청을 무료 pool로
+  넘긴다(`premium_unavailable`). 5xx·시간 초과·형식 오류는 재전송하지 않는다.
+- 요청 형태: 샘플링 매개변수 없이 작업별 `effort`, 사고 여유분(4,000토큰), 서버 측 모델 대체를 싣는다.
+
+### 보조 기능 `POST /studio-ai/messages`
+
+이미지(base64)·시스템 블록·JSON 스키마 구조화 출력을 받는 Messages API 부분 집합이다(`studio-ai-messages.dto.ts`).
+운영 고성능 경로를 먼저 쓰고, 확정 거절이면 같은 요청을 비전이 되는 무료 제공자(Gemini, 비전 모델을 쓰는 Groq)
+형식으로 바꿔 이어 간다. 결과는 경로와 무관하게 정규화된 Messages 객체다. 원장에는 범용 보조(`assistant`)로 남긴다.
+
+### 코드 구성
+
+- `studio-ai.service.ts`: admission·쿼터·영수증·원장·중복 과금 방지(두 작업 공통).
+- `studio-ai-exchange.ts`: 작업별·제공자별 요청 본문, 응답 해석, 보조 기능 후보 선정.
+- `studio-ai-messages-translate.ts`: Messages API 요청·응답 변환과 무료 풀 형식 변환.
+
 ## 공유 무료 pool
 
 기본 순서:
@@ -71,8 +99,9 @@ network error, timeout, 5xx, malformed success, auth error, 수락 후 실패는
 ## 개인 cloud route
 
 browser settings는 cloud connection마다 여러 key와 model, 우선순위와 exact manual assignment를 가질
-수 있다. shared pool은 사용자에게 keyless다. personal paid BYOK는 기본적으로 자동 fallback에서 제외하고
-명시적 사용자 동의가 있어야 한다.
+수 있다. 자동 모드에서는 사용자가 등록한 키를 먼저 쓰고, 추론 전 확정 거절일 때만 이 서버 경로(운영 고성능 →
+shared pool)로 넘어온다. shared pool과 운영 고성능 경로는 사용자에게 keyless다. personal paid BYOK는 비용 청구를
+확인한 사용자만 자동 경로에서 쓴다.
 
 endpoint는 public HTTPS여야 하며 localhost, private network, URL credential, query, fragment, 자기
 origin을 거부한다.

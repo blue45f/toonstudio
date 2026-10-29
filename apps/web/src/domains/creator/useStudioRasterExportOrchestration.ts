@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { installStudioCanvasCapture } from "./ai/claude/claude-canvas-capture-registry";
+import { installStudioCanvasCapture } from "./ai/assist/assist-canvas-capture-registry";
 import {
   shouldDrawWatermark,
   watermarkPlacement,

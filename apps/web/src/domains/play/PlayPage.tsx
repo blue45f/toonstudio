@@ -14,7 +14,7 @@ import { recordVisit, usePlayJournal } from "./lab/play-storage";
 import "./play-lab.css";
 
 import { Container } from "@/shared/components/section";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { claimMembershipActivity } from "@/platform/membership-wallet-client";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
@@ -93,7 +93,7 @@ export function PlayPage() {
       <div className="play-hero-art"><span className="play-art-label">LESS PRESSURE. MORE PLAY.</span><PlayArtwork kind="hero" /><span className="play-art-caption">한 번의 낙서가, 이야기의 시작.</span></div>
     </section>
     <PlayComicGuide cast={cast} onChange={changeCast} />
-    <NanoBananaSurfaceSpotlight cardId="nb-play-fortune" compact className="my-5" />
+    <SiteArtSurfaceSpotlight cardId="nb-play-fortune" compact className="my-5" />
     <section className="play-daily-row" aria-label="오늘의 창작과 내 기록">
       <div className="play-daily"><div className="play-daily-label"><span className="play-eyebrow">DAILY CREATIVE PROMPT</span><time dateTime={today}>{today.replaceAll("-", ".") } · KST</time></div><div className="play-daily-body"><div><h2>{daily[0]}</h2><p>{daily[1]}</p></div><button className="play-button" type="button" onClick={() => openGame("sketch-sprint", today)}>{dailyDone ? <Check size={16} /> : <Clock3 size={16} />}{dailyDone ? "다시 그려 보기" : "60초 도전"}</button></div></div>
       <div className="play-journal"><span className="play-eyebrow"><Trophy size={14} /> MY CREATIVE LOG</span><div className="play-journal-counts"><div><strong>{todayResults.length}</strong><span>오늘 완료</span></div><div><strong>{journal.results.length}</strong><span>완료 기록 · 최근 100개</span></div><div><strong>{journal.favorites.filter((id) => findGame(id)).length}</strong><span>즐겨찾기</span></div></div><p>이 브라우저에만 보관되는 나의 기록</p></div>

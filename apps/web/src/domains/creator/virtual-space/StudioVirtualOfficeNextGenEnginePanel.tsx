@@ -11,11 +11,11 @@ import {
   advanceDeskEpisodeCutStage, applyStudioLightingMood, approachCutDeskAndInspect,
   computeCharacterSecondaryMotion, computeSpatialAudioGainAndPan,
   createInitialNextGenStudioEngineState, navigateAvatarClickToWalk,
-  selectNanoBananaCreatorPersona, selectNanoBananaStudioTheme,
+  selectIllustratedCreatorPersona, selectIllustratedStudioTheme,
   setSoundscapeChannelGain, stepAvatarPhysicsTick, toggleGatherGhostModeGKey,
   triggerNearestObjectWithXKey, triggerWebAudioSynthesizerPing,
-  type CreatorPersonaPose, type NanoBananaCreatorPersonaId,
-  type NanoBananaStudioThemeId, type StudioLightingMoodId,
+  type CreatorPersonaPose, type IllustratedCreatorPersonaId,
+  type IllustratedStudioThemeId, type StudioLightingMoodId,
 } from "./studio-virtual-office-nextgen-engine-model";
 
 export interface StudioVirtualOfficeNextGenEnginePanelProps {
@@ -132,9 +132,9 @@ export function StudioVirtualOfficeNextGenEnginePanel({
                   type="button"
                   data-testid={`nextgen-theme-${theme.id}-btn`}
                   onClick={() => {
-                    const next = selectNanoBananaStudioTheme(
+                    const next = selectIllustratedStudioTheme(
                       state,
-                      theme.id as NanoBananaStudioThemeId,
+                      theme.id as IllustratedStudioThemeId,
                     );
                     setState(next);
                     onBannerChange?.(
@@ -249,7 +249,7 @@ export function StudioVirtualOfficeNextGenEnginePanel({
                   type="button"
                   data-testid={`nextgen-pose-${poseKey}-btn`}
                   onClick={() => {
-                    const next = selectNanoBananaCreatorPersona(
+                    const next = selectIllustratedCreatorPersona(
                       state,
                       state.activePersonaId,
                       poseKey,
@@ -282,9 +282,9 @@ export function StudioVirtualOfficeNextGenEnginePanel({
                   type="button"
                   data-testid={`nextgen-persona-${persona.id}-btn`}
                   onClick={() => {
-                    const next = selectNanoBananaCreatorPersona(
+                    const next = selectIllustratedCreatorPersona(
                       state,
-                      persona.id as NanoBananaCreatorPersonaId,
+                      persona.id as IllustratedCreatorPersonaId,
                       state.activePersonaPose,
                     );
                     setState(next);

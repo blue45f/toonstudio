@@ -64,7 +64,7 @@ describe("UnifiedAiSettings guided setup", () => {
     render(<UnifiedAiSettings />);
 
     expect(screen.getByRole("tab", { name: "시작하기" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("button", { name: "AI 연결하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" })).toBeTruthy();
     expect(await screen.findByText("AI를 사용할 준비가 되었어요")).toBeTruthy();
     expect(screen.queryByText("API 키 프로필")).toBeNull();
     expect(screen.queryByText("공개 HTTPS API baseURL")).toBeNull();
@@ -83,7 +83,7 @@ describe("UnifiedAiSettings guided setup", () => {
   it("connects an OpenRouter key with one guided action and assigns it to text work", async () => {
     render(<UnifiedAiSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "AI 연결하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-or-test-key" } });
     fireEvent.click(screen.getByRole("checkbox"));
@@ -109,7 +109,7 @@ describe("UnifiedAiSettings guided setup", () => {
     })));
     render(<UnifiedAiSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "AI 연결하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "invalid-key" } });
     fireEvent.click(screen.getByRole("checkbox"));
@@ -126,7 +126,7 @@ describe("UnifiedAiSettings guided setup", () => {
     })));
     render(<UnifiedAiSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "AI 연결하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "quota-limited-key" } });
     fireEvent.click(screen.getByRole("checkbox"));
@@ -159,7 +159,7 @@ describe("UnifiedAiSettings guided setup", () => {
 
     const link = screen.getByRole("link", { name: /AI 설정 열기/ });
     expect(link.getAttribute("href")).toBe("/settings/ai?source=studio");
-    expect(screen.getByText("개인 키 없이 자동 무료 AI부터 시작할 수 있어요")).toBeTruthy();
+    expect(screen.getByText("키 없이 ToonStudio AI로 바로 시작할 수 있어요")).toBeTruthy();
     expect(document.body.textContent).not.toContain("sk-");
   });
 });

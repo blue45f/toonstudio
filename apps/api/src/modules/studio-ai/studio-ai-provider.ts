@@ -1,5 +1,6 @@
 import type { StudioAiProviderPreference } from "./studio-ai.dto";
-import { STUDIO_AI_ANTHROPIC_API_URL } from "./studio-ai-anthropic-translate";
+import { STUDIO_AI_PREMIUM_MESSAGES_URL } from "./studio-ai-messages-translate";
+import { resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
 
 export const STUDIO_AI_FREE_PROVIDER_IDS = [
   "gemini",
@@ -15,14 +16,16 @@ export const STUDIO_AI_FREE_PROVIDER_IDS = [
 export const STUDIO_AI_MAX_PROVIDER_ATTEMPTS = STUDIO_AI_FREE_PROVIDER_IDS.length;
 const STUDIO_AI_LEGACY_TEST_PROVIDER_IDS = ["deepseek"] as const;
 /**
- * 운영자 부담 유료 제공자. 무료 풀(auto) 순서에는 들어가지 않으며,
- * 명시적 제공자 선택으로만 후보가 된다. 차감·게이트는 기존 경로를 탄다.
+ * 운영 프리미엄 제공자(운영자 키). 사용자가 개인 키를 등록하지 않았을 때 자동 경로의 1순위이고,
+ * 한도·결제·혼잡·인증으로 추론 전에 거절되면 성능 순 무료 풀로 이어 간다. 사용자 크레딧은 차감하지
+ * 않으며 운영 일일 예산(요청·토큰)은 서비스가 사용량 원장으로 지킨다.
  */
-const STUDIO_AI_PAID_PROVIDER_IDS = ["anthropic"] as const;
+export const STUDIO_AI_PREMIUM_PROVIDER_ID = "anthropic" as const;
+const STUDIO_AI_PREMIUM_PROVIDER_IDS = [STUDIO_AI_PREMIUM_PROVIDER_ID] as const;
 export const STUDIO_AI_PROVIDER_IDS = [
   ...STUDIO_AI_FREE_PROVIDER_IDS,
   ...STUDIO_AI_LEGACY_TEST_PROVIDER_IDS,
-  ...STUDIO_AI_PAID_PROVIDER_IDS,
+  ...STUDIO_AI_PREMIUM_PROVIDER_IDS,
 ] as const;
 
 export type StudioAiProviderId = (typeof STUDIO_AI_PROVIDER_IDS)[number];
@@ -91,7 +94,14 @@ const STUDIO_AI_LEGACY_DATA_TERMS: StudioAiProviderDataTerms = {
   dataTermsLabel: "데이터 정책이 공식으로 확인되지 않았어요",
 };
 
+/** 운영 프리미엄 경로는 상용 API 약관상 입력·출력을 모델 학습에 쓰지 않는다. */
+const STUDIO_AI_PREMIUM_DATA_TERMS: StudioAiProviderDataTerms = {
+  dataUsage: "no-training",
+  dataTermsLabel: "상용 API 약관상 입력·출력을 모델 학습에 쓰지 않아요",
+};
+
 export function studioAiProviderDataTerms(id: StudioAiProviderId): StudioAiProviderDataTerms {
+  if (id === STUDIO_AI_PREMIUM_PROVIDER_ID) return STUDIO_AI_PREMIUM_DATA_TERMS;
   return (STUDIO_AI_PROVIDER_DATA_TERMS as Partial<Record<StudioAiProviderId, StudioAiProviderDataTerms>>)[id]
     ?? STUDIO_AI_LEGACY_DATA_TERMS;
 }
@@ -104,14 +114,19 @@ export interface StudioAiProviderConfig {
   apiKey: string;
   model: string;
   freePool: boolean;
+  /** 운영 프리미엄 경로처럼 운영자가 비용을 내고 사용자 크레딧을 차감하지 않는 제공자. */
+  sponsored?: boolean;
 }
 
 export const STUDIO_AI_FREE_QUOTA_FAILOVER_REASON = "free_quota_exhausted" as const;
 /** Kept for historical receipts produced by the retired paid-provider test path. */
 export const STUDIO_AI_BILLING_FAILOVER_REASON = "billing_quota_exhausted" as const;
+/** 운영 프리미엄 경로가 추론 전에 한도·결제·혼잡·인증으로 거절돼 무료 풀로 이어 간 경우. */
+export const STUDIO_AI_PREMIUM_FAILOVER_REASON = "premium_unavailable" as const;
 export type StudioAiFailoverReason =
   | typeof STUDIO_AI_FREE_QUOTA_FAILOVER_REASON
-  | typeof STUDIO_AI_BILLING_FAILOVER_REASON;
+  | typeof STUDIO_AI_BILLING_FAILOVER_REASON
+  | typeof STUDIO_AI_PREMIUM_FAILOVER_REASON;
 
 export type StudioAiProviderFailureKind =
   | StudioAiFailoverReason
@@ -147,6 +162,7 @@ const DEFAULT_LEGACY_PROVIDER_ORDER: readonly StudioAiProviderId[] = [
   "openrouter",
 ];
 const DEFAULT_TIMEOUT_MS = 45_000;
+const DEFAULT_PREMIUM_TIMEOUT_MS = 120_000;
 
 function enabled(value: string | undefined): boolean {
   return value?.trim().toLowerCase() === "true";
@@ -424,19 +440,19 @@ function legacyTestProviderConfig(
 }
 
 function providerConfig(id: StudioAiProviderId, env: EnvLike): StudioAiProviderConfig {
-  if (id === "anthropic") {
-    // 서버 측 설정 경로로만 키를 읽는다. 클라이언트에서 키를 넘기는 경로는 없다.
-    // 게이트(paidOperationsEnabled) OFF면 크레딧 예약 단계에서 403으로 차단되므로,
-    // 키 존재만으로 호출이 열리지 않는다.
-    const apiKey = env.STUDIO_AI_ANTHROPIC_API_KEY?.trim() ?? "";
+  if (id === STUDIO_AI_PREMIUM_PROVIDER_ID) {
+    // 서버 환경변수로만 키를 읽는다. 브라우저 번들·응답·로그로 내보내는 경로는 없다.
+    // 운영자가 비용을 내므로 사용자 크레딧은 차감하지 않고(sponsored), 일일 예산은 서비스가 원장으로 지킨다.
+    const premium = resolveStudioAiPremiumConfig(env);
     return {
       id,
-      label: "Anthropic Claude",
-      configured: apiKey.length > 0,
-      endpoint: STUDIO_AI_ANTHROPIC_API_URL,
-      apiKey,
-      model: boundedText(env.STUDIO_AI_ANTHROPIC_MODEL, "claude-haiku-5-5", 200),
+      label: "ToonStudio 고성능 AI",
+      configured: premium.configured,
+      endpoint: STUDIO_AI_PREMIUM_MESSAGES_URL,
+      apiKey: env.STUDIO_AI_ANTHROPIC_API_KEY?.trim() ?? "",
+      model: premium.model,
       freePool: false,
+      sponsored: true,
     };
   }
   if (id === "zai") {
@@ -492,15 +508,34 @@ export function resolveStudioAiProviderOrder(
     .filter((id) => universe.includes(id));
 }
 
+export interface StudioAiCandidateOptions {
+  /**
+   * 운영 프리미엄 경로를 후보에 넣어도 되는지(일일 예산·원장 준비가 확인됐는지). 기본 true.
+   * 서비스는 예산 판정 결과를 넘기고, 상태 응답은 구성 여부만 보여 준다.
+   */
+  premiumAllowed?: boolean;
+}
+
+function premiumCandidate(env: EnvLike, options: StudioAiCandidateOptions): StudioAiProviderConfig[] {
+  if (options.premiumAllowed === false) return [];
+  const premium = providerConfig(STUDIO_AI_PREMIUM_PROVIDER_ID, env);
+  return premium.configured ? [premium] : [];
+}
+
 export function resolveStudioAiProviders(
   preference: StudioAiProviderPreference = "auto",
   env: EnvLike = process.env,
   userOrder: readonly StudioAiFreeProviderId[] = [],
+  options: StudioAiCandidateOptions = {},
 ): StudioAiProviderConfig[] {
+  if (preference === STUDIO_AI_PREMIUM_PROVIDER_ID) return premiumCandidate(env, options);
   const ids = preference === "auto"
     ? resolveStudioAiProviderOrder(env, userOrder)
     : [preference];
-  return ids.map((id) => providerConfig(id, env)).filter((provider) => provider.configured);
+  const providers = ids.map((id) => providerConfig(id, env)).filter((provider) => provider.configured);
+  if (preference !== "auto" || !resolveStudioAiPremiumConfig(env).automatic) return providers;
+  // 키가 없는 사용자의 자동 경로: 운영 프리미엄 → 성능 순 무료 풀. 시도 횟수 계약(최대 9)을 지킨다.
+  return [...premiumCandidate(env, options), ...providers].slice(0, STUDIO_AI_MAX_PROVIDER_ATTEMPTS);
 }
 
 /** Explicit preference remains first; only a definitive pre-inference quota rejection advances. */
@@ -508,19 +543,38 @@ export function resolveStudioAiProviderCandidates(
   preference: StudioAiProviderPreference = "auto",
   env: EnvLike = process.env,
   userOrder: readonly StudioAiFreeProviderId[] = [],
+  options: StudioAiCandidateOptions = {},
 ): StudioAiProviderConfig[] {
-  if (preference === "auto") return resolveStudioAiProviders("auto", env, userOrder);
-  const preferred = providerConfig(preference, env);
-  if (!preferred.configured) return [];
+  if (preference === "auto") return resolveStudioAiProviders("auto", env, userOrder, options);
+  const preferred = preference === STUDIO_AI_PREMIUM_PROVIDER_ID
+    ? premiumCandidate(env, options)[0]
+    : providerConfig(preference, env);
+  // 예산이 바닥난 프리미엄을 명시 선택했으면 거절 대신 무료 풀로 이어 간다(추론 전 한도 거절과 같은 규칙).
+  if (preference === STUDIO_AI_PREMIUM_PROVIDER_ID && !preferred) {
+    return providerConfig(STUDIO_AI_PREMIUM_PROVIDER_ID, env).configured
+      ? resolveStudioAiProviders("auto", env, userOrder, { premiumAllowed: false })
+      : [];
+  }
+  if (!preferred?.configured) return [];
   const remaining = resolveStudioAiProviderOrder(env, userOrder)
     .filter((id) => id !== preference)
     .map((id) => providerConfig(id, env))
     .filter((provider) => provider.configured);
-  return [preferred, ...remaining];
+  return [preferred, ...remaining].slice(0, STUDIO_AI_MAX_PROVIDER_ATTEMPTS);
 }
 
 export function studioAiProviderStatuses(env: EnvLike = process.env) {
-  return providerUniverse(env).map((id) => {
+  const premium = providerConfig(STUDIO_AI_PREMIUM_PROVIDER_ID, env);
+  const premiumStatus = premium.configured
+    ? [{
+        id: premium.id,
+        label: premium.label,
+        configured: true,
+        model: premium.model,
+        ...studioAiProviderDataTerms(premium.id),
+      }]
+    : [];
+  return [...premiumStatus, ...providerUniverse(env).map((id) => {
     const provider = providerConfig(id, env);
     const dataTerms = studioAiProviderDataTerms(provider.id);
     return {
@@ -531,7 +585,7 @@ export function studioAiProviderStatuses(env: EnvLike = process.env) {
       dataUsage: dataTerms.dataUsage,
       dataTermsLabel: dataTerms.dataTermsLabel,
     };
-  });
+  })];
 }
 
 export function resolveStudioAiTimeoutMs(
@@ -549,11 +603,18 @@ export function resolveStudioAiTimeoutMs(
     openrouter: env.STUDIO_AI_FREE_OPENROUTER_TIMEOUT_MS,
     siliconflow: env.STUDIO_AI_FREE_SILICONFLOW_TIMEOUT_MS,
   };
+  if (firstProvider === STUDIO_AI_PREMIUM_PROVIDER_ID) {
+    // 고성능 모델은 사고 시간이 길어 무료 풀 기본값(45초)으로는 긴 답이 끊긴다. 전용 값이 공통 값보다 우선한다.
+    const premiumParsed = Number(
+      env.STUDIO_AI_ANTHROPIC_TIMEOUT_MS ?? env.STUDIO_AI_TIMEOUT_MS ?? DEFAULT_PREMIUM_TIMEOUT_MS,
+    );
+    return Number.isFinite(premiumParsed) && premiumParsed >= 5_000 && premiumParsed <= 120_000
+      ? Math.round(premiumParsed)
+      : DEFAULT_PREMIUM_TIMEOUT_MS;
+  }
   const providerTimeout = studioAiFreePoolEnabled(env) && firstProvider
     ? freeTimeouts[firstProvider as StudioAiFreeProviderId]
-    : firstProvider === "anthropic"
-      ? env.STUDIO_AI_ANTHROPIC_TIMEOUT_MS
-      : firstProvider === "zai"
+    : firstProvider === "zai"
       ? env.ZAI_TIMEOUT_MS
       : firstProvider === "openrouter"
         ? env.OPENROUTER_TIMEOUT_MS
@@ -603,12 +664,43 @@ export function studioAiProviderBusinessCode(payload: unknown): string | undefin
   return boundedBusinessCode(error.code ?? error.error_code);
 }
 
+/** Messages API 오류 본문의 `error.type`(예: `overloaded_error`, `billing_error`). 형식이 다르면 undefined. */
+export function studioAiPremiumErrorType(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return undefined;
+  const error = (payload as Record<string, unknown>).error;
+  if (!error || typeof error !== "object" || Array.isArray(error)) return undefined;
+  const type = (error as Record<string, unknown>).type;
+  return typeof type === "string" && /^[a-z_]{1,64}$/u.test(type) ? type : undefined;
+}
+
+/**
+ * 운영 프리미엄 경로가 추론을 시작하기 전에 거절한 경우. 운영 키의 한도(429)·혼잡(529)·결제(402,
+ * `billing_error`)·인증/권한(401/403)·모델 없음(404)은 사용자 요청 탓이 아니고 처리되지도 않았으므로
+ * 같은 요청을 무료 풀로 이어 보내도 중복 과금이 없다. 5xx·요청 형식 오류(400)는 넘기지 않는다.
+ */
+function premiumRejectedBeforeInference(responseStatus: number, payload: unknown): boolean {
+  return responseStatus === 429
+    || responseStatus === 529
+    || responseStatus === 402
+    || responseStatus === 401
+    || responseStatus === 403
+    || responseStatus === 404
+    || (responseStatus === 400 && studioAiPremiumErrorType(payload) === "billing_error");
+}
+
 export function classifyStudioAiProviderFailure(
   provider: StudioAiProviderId,
   responseStatus: number,
   payload?: unknown,
   freePool = STUDIO_AI_FREE_PROVIDER_IDS.includes(provider as StudioAiFreeProviderId),
 ): StudioAiProviderFailureClassification {
+  if (provider === STUDIO_AI_PREMIUM_PROVIDER_ID && premiumRejectedBeforeInference(responseStatus, payload)) {
+    return {
+      kind: STUDIO_AI_PREMIUM_FAILOVER_REASON,
+      billingFailoverEligible: true,
+      failoverReason: STUDIO_AI_PREMIUM_FAILOVER_REASON,
+    };
+  }
   const businessCode = studioAiProviderBusinessCode(payload);
   const freeProvider = freePool;
   const cloudflarePaidPlanRequired = provider === "cloudflare"

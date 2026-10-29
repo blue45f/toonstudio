@@ -25,7 +25,7 @@ import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { Container } from "@/shared/components/section";
 import { ShimmerTitle } from "@/shared/components/shimmer-title";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
@@ -356,7 +356,7 @@ export function ExplorePage() {
             </Link>
           </div>
 
-          <NanoBananaSurfaceSpotlight cardId="nb-explore-spectrum" compact className="mt-6" />
+          <SiteArtSurfaceSpotlight cardId="nb-explore-spectrum" compact className="mt-6" />
 
           <RevealOnScroll className="mt-8" delayMs={60}>
             <div

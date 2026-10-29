@@ -5,7 +5,7 @@
   "revenue.dashboard.empty": "እስካሁን የተመዘገበ ገቢ የለም።",
   "revenue.dashboard.entryCount": "{count} ግብዓቶች",
   "revenue.dashboard.loading": "ገቢ በመጫን ላይ…",
-  "revenue.dashboard.login": "ይግቡ",
+  "revenue.dashboard.login": "ግባ",
   "revenue.dashboard.loginRequired": "የገቢ ዳሽቦርዱን ፈጣሪው ብቻ ማየት ይችላል። እባክዎ ይግቡ።",
   "revenue.dashboard.monthlyTrend": "ወርሃዊ አዝማሚያ",
   "revenue.dashboard.noPrevData": "ባለፈው ጊዜ ውስጥ መዝገቦች የሉም",

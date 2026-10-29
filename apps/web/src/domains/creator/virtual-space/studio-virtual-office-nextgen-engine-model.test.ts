@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  NANO_BANANA_V14_WALK_SPRITES,
+  ILLUSTRATED_V14_WALK_SPRITES,
   NEXTGEN_COMPETITOR_REA_BENCHMARKS,
   advanceDeskEpisodeCutStage,
   applyStudioLightingMood,
@@ -13,10 +13,10 @@ import {
   createInitialNextGenStudioEngineState,
   navigateAvatarClickToWalk,
   resolveAvatarDirectionalWalkSprite,
-  selectNanoBananaCreatorPersona,
-  selectNanoBananaStudioTheme,
-  selectNanoBananaV13Emote,
-  selectNanoBananaV13Prop,
+  selectIllustratedCreatorPersona,
+  selectIllustratedStudioTheme,
+  selectIllustratedV13Emote,
+  selectIllustratedV13Prop,
   setSoundscapeChannelGain,
   stepAvatarPhysicsTick,
   toggleGatherGhostModeGKey,
@@ -36,7 +36,7 @@ import {
 } from "./studio-virtual-office-practical-workbench-model";
 
 describe("studio-virtual-office-nextgen-engine-model", () => {
-  it("exposes REA competitor benchmarks and 12 Nano Banana (v11+v12+v13) themes + 8 creator/mascot personas + 4 v13 emotes + 4 v13 props on disk", () => {
+  it("exposes REA competitor benchmarks and 12 Illustrated (v11+v12+v13) themes + 8 creator/mascot personas + 4 v13 emotes + 4 v13 props on disk", () => {
     const state = createInitialNextGenStudioEngineState();
     expect(NEXTGEN_COMPETITOR_REA_BENCHMARKS).toHaveLength(4);
     expect(state.themes).toHaveLength(12);
@@ -68,7 +68,7 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
     for (const prop of state.v13Props) {
       expect(existsSync(resolve(publicDir, `.${prop.spriteUrl}`))).toBe(true);
     }
-    for (const walkUrl of Object.values(NANO_BANANA_V14_WALK_SPRITES)) {
+    for (const walkUrl of Object.values(ILLUSTRATED_V14_WALK_SPRITES)) {
       expect(existsSync(resolve(publicDir, `.${walkUrl}`))).toBe(true);
     }
 
@@ -77,32 +77,32 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
     ).toBe("/fallback.webp");
     expect(
       resolveAvatarDirectionalWalkSprite(0, 120, "/fallback.webp"),
-    ).toBe(NANO_BANANA_V14_WALK_SPRITES.right);
+    ).toBe(ILLUSTRATED_V14_WALK_SPRITES.right);
     expect(
       resolveAvatarDirectionalWalkSprite(Math.PI / 2, 120, "/fallback.webp"),
-    ).toBe(NANO_BANANA_V14_WALK_SPRITES.down);
+    ).toBe(ILLUSTRATED_V14_WALK_SPRITES.down);
     expect(
       resolveAvatarDirectionalWalkSprite(Math.PI, 120, "/fallback.webp"),
-    ).toBe(NANO_BANANA_V14_WALK_SPRITES.left);
+    ).toBe(ILLUSTRATED_V14_WALK_SPRITES.left);
     expect(
       resolveAvatarDirectionalWalkSprite(-Math.PI / 2, 120, "/fallback.webp"),
-    ).toBe(NANO_BANANA_V14_WALK_SPRITES.up);
+    ).toBe(ILLUSTRATED_V14_WALK_SPRITES.up);
 
-    const withEmote = selectNanoBananaV13Emote(state, "celebrate-highfive");
+    const withEmote = selectIllustratedV13Emote(state, "celebrate-highfive");
     expect(withEmote.activeV13EmoteId).toBe("celebrate-highfive");
 
-    const withProp = selectNanoBananaV13Prop(withEmote, "blender-hologram-stage-table");
+    const withProp = selectIllustratedV13Prop(withEmote, "blender-hologram-stage-table");
     expect(withProp.activeV13PropId).toBe("blender-hologram-stage-table");
   });
 
   it("switches studio themes and automatically syncs recommended lighting mood & soundscape presets", () => {
     const initial = createInitialNextGenStudioEngineState();
-    const cyber = selectNanoBananaStudioTheme(initial, "cyber-neon-lab");
+    const cyber = selectIllustratedStudioTheme(initial, "cyber-neon-lab");
     expect(cyber.activeThemeId).toBe("cyber-neon-lab");
     expect(cyber.lightingMoodId).toBe("midnight-crunch-fever");
     expect(cyber.deadlineCrunchFeverEnabled).toBe(true);
 
-    const hanok = selectNanoBananaStudioTheme(cyber, "hanok-botanical-atelier");
+    const hanok = selectIllustratedStudioTheme(cyber, "hanok-botanical-atelier");
     expect(hanok.activeThemeId).toBe("hanok-botanical-atelier");
     expect(hanok.lightingMoodId).toBe("dawn-ink");
     expect(hanok.deadlineCrunchFeverEnabled).toBe(false);
@@ -110,7 +110,7 @@ describe("studio-virtual-office-nextgen-engine-model", () => {
 
   it("switches creator persona and pose while binding the default episode cut desk", () => {
     const initial = createInitialNextGenStudioEngineState();
-    const cgi = selectNanoBananaCreatorPersona(initial, "cgi-director", "idle");
+    const cgi = selectIllustratedCreatorPersona(initial, "cgi-director", "idle");
     expect(cgi.activePersonaId).toBe("cgi-director");
     expect(cgi.activePersonaPose).toBe("idle");
     expect(cgi.selectedCutDeskId).toBe("desk-ep43-c19");

@@ -14,7 +14,7 @@
   "auth.callback.error.generic": "ההתחברות נכשלה. חזרו לדף ההתחברות ונסו שוב.",
   "auth.callback.error.noUser": "לא ניתן לאמת מידע על משתמש.",
   "auth.callback.error.invalidAccess": "גישה לא תקינה.",
-  "auth.callback.error.failed": "התרחשה שגיאה בעת הכניסה.",
+  "auth.callback.error.failed": "התרחשה שגיאה בעת ההתחברות.",
   "auth.callback.message.done": "ההתחברות הושלמה. מעבר בעוד רגע.",
   "auth.callback.message.doneDemo": "התחברות ההדגמה הושלמה. מעבר בעוד רגע.",
   "auth.callback.demo.message": "אתם מחוברים עם חשבון הדגמה. ייתכן שחלק מהתכונות מוגבלות.",

@@ -17,6 +17,8 @@ import { StudioAiComicDirectorService } from "./studio-ai-comic-director.service
 import { studioAiIdempotencySchemaPreflightProvider } from "./studio-ai-idempotency-schema-preflight";
 import { STUDIO_AI_USAGE_STORE } from "./studio-ai-usage";
 import { PostgresStudioAiUsageStore } from "./studio-ai-usage.repository";
+import { STUDIO_AI_PREMIUM_BUDGET_STORE } from "./studio-ai-premium-budget";
+import { PostgresStudioAiPremiumBudgetStore } from "./studio-ai-premium-budget.repository";
 import { MembershipWalletModule } from "../membership-wallet/membership-wallet.module";
 import { MembershipWalletService } from "../membership-wallet/membership-wallet.service";
 import { STUDIO_3D_CREDIT_WALLET } from "./studio-3d-credit-charge";
@@ -58,6 +60,10 @@ import { StudioAiService } from "./studio-ai.service";
     {
       provide: STUDIO_AI_USAGE_STORE,
       useFactory: () => new PostgresStudioAiUsageStore(),
+    },
+    {
+      provide: STUDIO_AI_PREMIUM_BUDGET_STORE,
+      useFactory: () => new PostgresStudioAiPremiumBudgetStore(),
     },
   ],
 })

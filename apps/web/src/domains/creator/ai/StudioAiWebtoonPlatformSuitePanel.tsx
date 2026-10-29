@@ -17,34 +17,34 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  buildLlamaGenComicV2EpisodeSequence,
-  createMangotoonContentPayload,
+  buildComicGenComicV2EpisodeSequence,
+  createTemplateToonContentPayload,
   estimateGenToonCreditCost,
   evaluateGenToonMerchPrintLayout,
   GENTOON_AI_MODEL_CATALOG,
   GENTOON_REEL_FILTER_PRESETS,
-  MANGOTOON_CHARACTER_PRESETS,
-  MANGOTOON_LIBRARY_TABS,
-  recommendTooningCutFromSentence,
+  TEMPLATE_TOON_CHARACTER_PRESETS,
+  TEMPLATE_TOON_LIBRARY_TABS,
+  recommendCreatorPlusCutFromSentence,
   synthesizeGenToonShortFormReelTimeline,
   type GenToonAiModelId,
   type GenToonCreationMode,
   type GenToonMerchLayoutMode,
   type GenToonReelFilterId,
   type GenToonReelTransitionId,
-  type LlamaGenLayoutModeId,
-  type MangotoonLibraryTabId,
+  type ComicGenLayoutModeId,
+  type TemplateToonLibraryTabId,
 } from "./ai-webtoon-platform-suite";
 import {
-  runClaudeAmusementCoasterFerrisCampingSkiDirector,
-  runClaudeChemistryMicroscopeCentrifugeAstronomyDirector,
-  runClaudeDentalOphthalmologyXrayMarkerDirector,
-  runClaudeEquestrianFalconryHorologyGemstoneDirector,
-  runClaudeFilmSetClapperboardBroadcastSwitchDirector,
-  runClaudeHourglassCandleScaleBookGutterPaywallDirector,
-  runClaudeRotaryPhoneTurntableCameraInstantDirector,
-  runClaudeSchoolCsatOmrTcgDiceMahjongDirector,
-} from "./claude/claude-alt-text";
+  runAssistAmusementCoasterFerrisCampingSkiDirector,
+  runAssistChemistryMicroscopeCentrifugeAstronomyDirector,
+  runAssistDentalOphthalmologyXrayMarkerDirector,
+  runAssistEquestrianFalconryHorologyGemstoneDirector,
+  runAssistFilmSetClapperboardBroadcastSwitchDirector,
+  runAssistHourglassCandleScaleBookGutterPaywallDirector,
+  runAssistRotaryPhoneTurntableCameraInstantDirector,
+  runAssistSchoolCsatOmrTcgDiceMahjongDirector,
+} from "./assist/assist-alt-text";
 import {
   buildDeterministicBraidPonytailAccessoryKnotLockView,
   buildDeterministicCapeCloakHemLiningFlutterLockView,
@@ -52,13 +52,13 @@ import {
   buildDeterministicMultiPlaneParallaxBokehLockView,
   buildDeterministicPropScreenUiHologramLockView,
   buildDeterministicSwordHiltGuardScabbardLockView,
-  runClaudeBraidPonytailAccessoryKnotLockDirector,
-  runClaudeCapeCloakHemLiningFlutterLockDirector,
-  runClaudeCharacterAgeFlashbackProportionLockDirector,
-  runClaudeMultiPlaneParallaxBokehLockDirector,
-  runClaudePropScreenUiHologramLockDirector,
-  runClaudeSwordHiltGuardScabbardLockDirector,
-} from "./claude/claude-creator-domain-assist";
+  runAssistBraidPonytailAccessoryKnotLockDirector,
+  runAssistCapeCloakHemLiningFlutterLockDirector,
+  runAssistCharacterAgeFlashbackProportionLockDirector,
+  runAssistMultiPlaneParallaxBokehLockDirector,
+  runAssistPropScreenUiHologramLockDirector,
+  runAssistSwordHiltGuardScabbardLockDirector,
+} from "./assist/ai-creator-domain-assist";
 import { PANEL_CARD_CLASS } from "./studio-ai-super-suite-options";
 
 import { cn } from "@/shared/lib/utils";
@@ -88,15 +88,15 @@ export function StudioAiWebtoonPlatformSuitePanel({
   const [merchLayoutMode, setMerchLayoutMode] = useState<GenToonMerchLayoutMode>("sheet");
 
   // 2. Mangotoon state
-  const [mangotoonTab, setMangotoonTab] = useState<MangotoonLibraryTabId>("character");
+  const [mangotoonTab, setMangotoonTab] = useState<TemplateToonLibraryTabId>("character");
   const [selectedMgCharacterId, setSelectedMgCharacterId] = useState<string>(
-    MANGOTOON_CHARACTER_PRESETS[0]!.id,
+    TEMPLATE_TOON_CHARACTER_PRESETS[0]!.id,
   );
   const [mgBlurRange, setMgBlurRange] = useState<number>(50);
 
   // 3. LlamaGen state
   const [llamaLayoutMode, setLlamaLayoutMode] =
-    useState<LlamaGenLayoutModeId>("vertical-golden-webtoon");
+    useState<ComicGenLayoutModeId>("vertical-golden-webtoon");
 
   // 4. Tooning sentence state
   const [tooningSentence, setTooningSentence] = useState<string>(
@@ -119,14 +119,14 @@ export function StudioAiWebtoonPlatformSuitePanel({
     setWave42Loading(true);
     const seed = { episodeTitle: "01화", genre: "현대 판타지", scriptSummary: scriptInput.trim() || tooningSentence };
     const map: Record<typeof kind, () => Promise<string>> = {
-      dental: async () => { const r = await runClaudeDentalOphthalmologyXrayMarkerDirector(seed); return `[치과/X-ray/AED · ${r.model}] ${r.data.xrayLeadMarkerAndCastSlingKo} / ${r.data.ambulanceStretcherAndAedPaddleKo}`; },
-      retro: async () => { const r = await runClaudeRotaryPhoneTurntableCameraInstantDirector(seed); return `[다이얼/턴테이블/카메라 · ${r.model}] ${r.data.vinylTurntableTonearmAndCassetteKo} / ${r.data.slrAdvanceLeverAndPolaroidBorderKo}`; },
-      lab: async () => { const r = await runClaudeChemistryMicroscopeCentrifugeAstronomyDirector(seed); return `[화학/현미경/망원경 · ${r.model}] ${r.data.buretteMeniscusAndFumeHoodRuleKo} / ${r.data.microscopeObjectiveAndCentrifugeKo}`; },
-      horology: async () => { const r = await runClaudeEquestrianFalconryHorologyGemstoneDirector(seed); return `[승마/시계기어/보석 · ${r.model}] ${r.data.stirrupBallOfFootAndFalconryKo} / ${r.data.watchGearMeshRotationRuleKo}`; },
-      filmset: async () => { const r = await runClaudeFilmSetClapperboardBroadcastSwitchDirector(seed); return `[촬영슬레이트/부조정실 · ${r.model}] ${r.data.clapperboardSlateAndBoomMicRuleKo} / ${r.data.switcherPreviewProgramTallyKo}`; },
-      campus: async () => { const r = await runClaudeSchoolCsatOmrTcgDiceMahjongDirector(seed); return `[수능OMR/TCG/마작 · ${r.model}] ${r.data.koreanCsatOmrAndMortarboardRuleKo} / ${r.data.tcgPlaymatTapAndDiceOppositeSumKo}`; },
-      coaster: async () => { const r = await runClaudeAmusementCoasterFerrisCampingSkiDirector(seed); return `[롤러코스터/관람차/스키 · ${r.model}] ${r.data.rollercoasterUpstopAndFerrisGondolaKo} / ${r.data.skiSnowboardStanceAndBasketRuleKo}`; },
-      paywall: async () => { const r = await runClaudeHourglassCandleScaleBookGutterPaywallDirector(seed); return `[모래시계/촛불/쿠키전환 · ${r.model}] ${r.data.hourglassReposeAndCandleVerticalFlameKo} / ${r.data.bookGutterCurveAndPaywallCliffhangerKo}`; },
+      dental: async () => { const r = await runAssistDentalOphthalmologyXrayMarkerDirector(seed); return `[치과/X-ray/AED · ${r.model}] ${r.data.xrayLeadMarkerAndCastSlingKo} / ${r.data.ambulanceStretcherAndAedPaddleKo}`; },
+      retro: async () => { const r = await runAssistRotaryPhoneTurntableCameraInstantDirector(seed); return `[다이얼/턴테이블/카메라 · ${r.model}] ${r.data.vinylTurntableTonearmAndCassetteKo} / ${r.data.slrAdvanceLeverAndPolaroidBorderKo}`; },
+      lab: async () => { const r = await runAssistChemistryMicroscopeCentrifugeAstronomyDirector(seed); return `[화학/현미경/망원경 · ${r.model}] ${r.data.buretteMeniscusAndFumeHoodRuleKo} / ${r.data.microscopeObjectiveAndCentrifugeKo}`; },
+      horology: async () => { const r = await runAssistEquestrianFalconryHorologyGemstoneDirector(seed); return `[승마/시계기어/보석 · ${r.model}] ${r.data.stirrupBallOfFootAndFalconryKo} / ${r.data.watchGearMeshRotationRuleKo}`; },
+      filmset: async () => { const r = await runAssistFilmSetClapperboardBroadcastSwitchDirector(seed); return `[촬영슬레이트/부조정실 · ${r.model}] ${r.data.clapperboardSlateAndBoomMicRuleKo} / ${r.data.switcherPreviewProgramTallyKo}`; },
+      campus: async () => { const r = await runAssistSchoolCsatOmrTcgDiceMahjongDirector(seed); return `[수능OMR/TCG/마작 · ${r.model}] ${r.data.koreanCsatOmrAndMortarboardRuleKo} / ${r.data.tcgPlaymatTapAndDiceOppositeSumKo}`; },
+      coaster: async () => { const r = await runAssistAmusementCoasterFerrisCampingSkiDirector(seed); return `[롤러코스터/관람차/스키 · ${r.model}] ${r.data.rollercoasterUpstopAndFerrisGondolaKo} / ${r.data.skiSnowboardStanceAndBasketRuleKo}`; },
+      paywall: async () => { const r = await runAssistHourglassCandleScaleBookGutterPaywallDirector(seed); return `[모래시계/촛불/쿠키전환 · ${r.model}] ${r.data.hourglassReposeAndCandleVerticalFlameKo} / ${r.data.bookGutterCurveAndPaywallCliffhangerKo}`; },
     };
     try {
       setWave42SummaryKo(await map[kind]());
@@ -142,22 +142,22 @@ export function StudioAiWebtoonPlatformSuitePanel({
     const seed = scriptInput.trim() || tooningSentence;
     try {
       if (kind === "screen") {
-        const res = await runClaudePropScreenUiHologramLockDirector(seed);
+        const res = await runAssistPropScreenUiHologramLockDirector(seed);
         setWave18SummaryKo(`[UI/홀로그램 · ${res.model}] ${res.uiDeviceType} · ${res.clockAndBatteryBadgeRuleKo}`);
       } else if (kind === "braid") {
-        const res = await runClaudeBraidPonytailAccessoryKnotLockDirector(seed);
+        const res = await runAssistBraidPonytailAccessoryKnotLockDirector(seed);
         setWave18SummaryKo(`[땋은머리/리본 · ${res.model}] ${res.braidSegmentCount}마디 · ${res.accessorySideRuleKo}`);
       } else if (kind === "cape") {
-        const res = await runClaudeCapeCloakHemLiningFlutterLockDirector(seed);
+        const res = await runAssistCapeCloakHemLiningFlutterLockDirector(seed);
         setWave18SummaryKo(`[망토 겉/안감 · ${res.model}] 겉감 ${res.outerFabricHex} / 안감 ${res.innerLiningHex} · ${res.windFlutterPhaseRuleKo}`);
       } else if (kind === "sword") {
-        const res = await runClaudeSwordHiltGuardScabbardLockDirector(seed);
+        const res = await runAssistSwordHiltGuardScabbardLockDirector(seed);
         setWave18SummaryKo(`[도검 코등이/칼집 · ${res.model}] ${res.weaponNameAndClassKo} · ${res.scabbardWearingSideRuleKo}`);
       } else if (kind === "age") {
-        const res = await runClaudeCharacterAgeFlashbackProportionLockDirector(seed);
+        const res = await runAssistCharacterAgeFlashbackProportionLockDirector(seed);
         setWave18SummaryKo(`[연령대/회상 비례 · ${res.model}] ${res.childhoodHeadRatio} → ${res.adultCurrentHeadRatio} · ${res.scarAndMarkTimelineRuleKo}`);
       } else {
-        const res = await runClaudeMultiPlaneParallaxBokehLockDirector(seed);
+        const res = await runAssistMultiPlaneParallaxBokehLockDirector(seed);
         setWave18SummaryKo(`[3평면 DoF/보케 · ${res.model}] 전경 ${res.foregroundBlurRadiusPx}px / 원경 ${res.backgroundBokehRadiusPx}px · ${res.virtualLensMmAndFStop}`);
       }
     } catch {
@@ -244,14 +244,14 @@ export function StudioAiWebtoonPlatformSuitePanel({
 
   const activeMgCharacter = useMemo(
     () =>
-      MANGOTOON_CHARACTER_PRESETS.find((c) => c.id === selectedMgCharacterId) ??
-      MANGOTOON_CHARACTER_PRESETS[0]!,
+      TEMPLATE_TOON_CHARACTER_PRESETS.find((c) => c.id === selectedMgCharacterId) ??
+      TEMPLATE_TOON_CHARACTER_PRESETS[0]!,
     [selectedMgCharacterId],
   );
 
   const mgContentSample = useMemo(
     () =>
-      createMangotoonContentPayload({
+      createTemplateToonContentPayload({
         id: "mg-bg-01",
         contentCategory: "background",
         src: "https://toon.mangoboard.net/contents/bg-office.png",
@@ -267,7 +267,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
-    return buildLlamaGenComicV2EpisodeSequence({
+    return buildComicGenComicV2EpisodeSequence({
       artworkId: "llama-ep-01",
       seriesTitle: "서울 네온 시퀀스",
       episodeTitle: "제1화: 황금비 세로 스크롤 콘티",
@@ -278,7 +278,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
   }, [scriptInput, llamaLayoutMode]);
 
   const tooningRec = useMemo(
-    () => recommendTooningCutFromSentence(tooningSentence),
+    () => recommendCreatorPlusCutFromSentence(tooningSentence),
     [tooningSentence],
   );
 
@@ -291,7 +291,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
         <div className="flex items-center gap-1.5">
           <Sparkles size={13} className="text-accent" aria-hidden="true" />
           <h4 className="text-xs font-bold text-fg">
-            AI 만화·인스타툰 4대 플랫폼 통합 엔진 (젠툰 · 망고툰 · 라마젠 · 투닝)
+            AI 만화·인스타툰 제작 도구 4종 (인스타툰·릴스·굿즈 · 템플릿 에셋 · 세로 웹툰 레이아웃 · 문장 연출)
           </h4>
         </div>
         <span className="rounded bg-accent-soft px-1.5 py-0.5 font-mono text-[0.58rem] font-semibold text-accent">
@@ -303,10 +303,10 @@ export function StudioAiWebtoonPlatformSuitePanel({
       <div className="flex flex-wrap gap-1" role="tablist" aria-label="AI 만화 플랫폼 선택">
         {(
           [
-            { id: "gentoon", label: "젠툰 (GenToon · 인스타툰/릴스/굿즈)" },
-            { id: "mangotoon", label: "망고툰 (Mangotoon · 클릭&드래그 에셋)" },
-            { id: "llamagen", label: "라마젠 (LlamaGen · 1.618 세로 웹툰)" },
-            { id: "tooning", label: "투닝 (Tooning · 문장→표정/포즈/배경)" },
+            { id: "gentoon", label: "인스타툰·릴스·굿즈" },
+            { id: "mangotoon", label: "클릭&드래그 템플릿 에셋" },
+            { id: "llamagen", label: "1.618 세로 웹툰 레이아웃" },
+            { id: "tooning", label: "문장 → 표정·포즈·배경" },
           ] as const
         ).map((tab) => (
           <button
@@ -337,7 +337,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
             <label className="flex flex-col gap-0.5">
               <span className="font-semibold text-fg-2">AI 생성 모델 (9종 카탈로그)</span>
               <select
-                aria-label="젠툰 AI 모델 선택"
+                aria-label="인스타툰 AI 모델 선택"
                 value={genToonModelId}
                 onChange={(e) => setGenToonModelId(e.target.value as GenToonAiModelId)}
                 className="rounded border border-line bg-raised px-1.5 py-1 text-[0.62rem] text-fg"
@@ -353,7 +353,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
               <span className="font-semibold text-fg-2">제작 모드 & 컷 수</span>
               <div className="flex items-center gap-1">
                 <select
-                  aria-label="젠툰 제작 모드"
+                  aria-label="인스타툰 제작 모드"
                   value={genToonMode}
                   onChange={(e) => setGenToonMode(e.target.value as GenToonCreationMode)}
                   className="rounded border border-line bg-raised px-1.5 py-1 text-[0.62rem] text-fg"
@@ -365,7 +365,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
                 </select>
                 <input
                   type="number"
-                  aria-label="젠툰 컷 수"
+                  aria-label="인스타툰 컷 수"
                   min={4}
                   max={12}
                   value={genToonCutCount}
@@ -482,7 +482,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
       {activeTab === "mangotoon" ? (
         <div data-testid="mangotoon-workbench-section" className="space-y-2 text-[0.64rem]">
           <div className="flex flex-wrap gap-1">
-            {MANGOTOON_LIBRARY_TABS.map((tab) => (
+            {TEMPLATE_TOON_LIBRARY_TABS.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
@@ -500,7 +500,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
           </div>
 
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-            {MANGOTOON_CHARACTER_PRESETS.map((charPreset) => (
+            {TEMPLATE_TOON_CHARACTER_PRESETS.map((charPreset) => (
               <button
                 key={charPreset.id}
                 type="button"
@@ -539,7 +539,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
             </div>
             <input
               type="range"
-              aria-label="망고툰 외곽 블러 범위"
+              aria-label="템플릿 에셋 외곽 블러 범위"
               min={0}
               max={100}
               value={mgBlurRange}
@@ -560,9 +560,9 @@ export function StudioAiWebtoonPlatformSuitePanel({
               {llamaEpisode.canvasWidthPx}×{llamaEpisode.canvasHeightPx}px)
             </span>
             <select
-              aria-label="라마젠 레이아웃 모드"
+              aria-label="세로 웹툰 레이아웃 모드"
               value={llamaLayoutMode}
-              onChange={(e) => setLlamaLayoutMode(e.target.value as LlamaGenLayoutModeId)}
+              onChange={(e) => setLlamaLayoutMode(e.target.value as ComicGenLayoutModeId)}
               className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.6rem] text-fg"
             >
               <option value="vertical-golden-webtoon">황금비 세로 스크롤 웹툰 (1.618)</option>
@@ -597,7 +597,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
         <div data-testid="tooning-workbench-section" className="space-y-2 text-[0.64rem]">
           <div className="flex flex-col gap-1">
             <label htmlFor="tooning-sentence-input" className="font-semibold text-fg-2">
-              투닝(Tooning) 교육·홍보용 문장 입력 → 표정·포즈·배경·말풍선 자동 추천
+              교육·홍보용 문장 입력 → 표정·포즈·배경·말풍선 자동 추천
             </label>
             <div className="flex gap-1">
               <input

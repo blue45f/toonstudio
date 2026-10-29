@@ -275,8 +275,8 @@ export function StudioAiSuperSuiteModal({
                 AI + 스마트 웹툰 제작 스위트
               </h2>
               <p id={descriptionId} className="text-[0.68rem] leading-relaxed text-fg-3">
-                네이버 툰필터 화풍 변환 · CSP 음영 어시스트 · 프롬프트 증강 · TooNat 콘티 디렉터 ·
-                투닝 감정 말풍선
+                툰 필터 화풍 변환 · 음영 어시스트 · 프롬프트 증강 · 콘티 디렉터 ·
+                감정 말풍선
               </p>
             </div>
           </div>

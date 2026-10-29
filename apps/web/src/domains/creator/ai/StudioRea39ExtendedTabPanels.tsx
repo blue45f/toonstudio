@@ -12,8 +12,8 @@ import type {
   TapasTappytoonRidiPostypeSudowriteNovelcrafterReport,
   TootoonGentoonTooningKrSuiteReport,
   TripoMeshyHeroforgeSunoElevenlabsOsmuReport,
-} from "./claude/claude-rea15-webtoon-ecosystem-suite";
-import type { Rea15WorkbenchTabId } from "./claude/claude-rea39-extended-engines";
+} from "./assist/assist-rea15-webtoon-ecosystem-suite";
+import type { Rea15WorkbenchTabId } from "./assist/assist-rea39-extended-engines";
 
 export interface StudioRea39ExtendedTabPanelsProps {
   readonly activeTab: Rea15WorkbenchTabId;

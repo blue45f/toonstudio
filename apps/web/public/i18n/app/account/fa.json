@@ -2,7 +2,7 @@
   "account.tabs.posts": "پست ها",
   "account.tabs.activity": "فعالیت",
   "account.tabs.profile": "پروفایل",
-  "account.signIn.title": "ثبت نام لازم",
+  "account.signIn.title": "ورود لازم است",
   "account.signIn.message": "لطفاً وارد شوید تا پست ها، فعالیت ها و پروفایل خود را ببینید.",
   "account.signIn.cta": "وارد شوید",
   "account.posts.errorTitle": "نتونستم پستات رو بار بزنم",

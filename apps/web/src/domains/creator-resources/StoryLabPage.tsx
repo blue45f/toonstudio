@@ -20,17 +20,17 @@ import {
 import { MotionIllustration } from "@/shared/motion-assets";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 const SCOPE = "domains.creator.resources.StoryLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
 const STORY_PIPELINE_ART_MAP: Readonly<Record<string, string>> = {
-  "worldbuilding-synopsis": "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
-  "novel-to-script": "/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-640.webp",
-  "storyboard-3d-blocking": "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
-  "ink-render-publish": "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
+  "worldbuilding-synopsis": "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
+  "novel-to-script": "/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp",
+  "storyboard-3d-blocking": "/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp",
+  "ink-render-publish": "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
 };
 
 export function StoryLabPage() {
@@ -135,7 +135,7 @@ export function StoryLabPage() {
       alt: tx("인물 스케치와 사건 사진을 붉은 실로 이어 붙인 스토리 연구실의 코르크보드와 램프가 켜진 책상"),
     }}>
     <SiteContextualSubNav pathnameOverride="/story-lab" className="mb-5" />
-    <NanoBananaSurfaceSpotlight cardId="nb-planning-storylab" compact className="mb-5" />
+    <SiteArtSurfaceSpotlight cardId="nb-planning-storylab" compact className="mb-5" />
     <nav
       aria-label={tx("스토리 연구실 화면 보기 모드 전환")}
       className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 p-2.5"
@@ -193,7 +193,7 @@ export function StoryLabPage() {
           >
             <div className="relative h-24 w-full overflow-hidden border-b border-line/60 bg-panel">
               <img
-                src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp"}
+                src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp"}
                 alt=""
                 aria-hidden="true"
                 loading="lazy"

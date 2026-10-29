@@ -131,7 +131,7 @@ describe("studio automatic free AI client", () => {
     expect(canonicalStudioServerAiOperationId("작업-0000000000000000")).toBeNull();
   });
 
-  it("uses the keyless shared free pool before personal connections", async () => {
+  it("uses the keyless ToonStudio AI route when no personal key is registered", async () => {
     const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
       expect(urlOf(request).pathname).toBe("/api/studio-ai/chat");
       const req = request as Request;
@@ -200,7 +200,7 @@ describe("studio automatic free AI client", () => {
     });
   });
 
-  it("uses an explicitly connected personal free key without forcing login", async () => {
+  it("uses a registered personal key first, without forcing login", async () => {
     configureFreeTextConnection();
     const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
       if (urlOf(request).pathname === "/api/studio-ai/chat") {
@@ -214,19 +214,48 @@ describe("studio automatic free AI client", () => {
       ok: true,
       data: { content: "개인 무료 결과", provider: "user" },
     });
+    // 등록한 키가 먼저라 서버 경로는 부르지 않는다.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands off to ToonStudio AI when the registered key's free quota is exhausted", async () => {
+    configureFreeTextConnection();
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ error: { message: "rate limit", type: "insufficient_quota" } }, 429);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "ToonStudio AI 결과", provider: "anthropic" },
+    });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("uses a personal free key only after shared quota exhaustion", async () => {
+  it("hands off to ToonStudio AI when every registered key is rejected at authentication", async () => {
+    configureFreeTextConnection();
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "gemini", model: "gemini-3.8-flash" });
+      }
+      return json({ error: "invalid key" }, 401);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "ToonStudio AI 결과", provider: "gemini" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the personal key first in its exact request shape", async () => {
     configureFreeTextConnection();
     const fetchMock = vi.fn(async (request: RequestInfo | URL, init?: RequestInit) => {
       const url = urlOf(request);
-      if (url.pathname === "/api/studio-ai/chat") {
-        return json({
-          code: "FREE_AI_POOL_EXHAUSTED",
-          message: "오늘의 자동 무료 AI 사용량이 모두 소진되었습니다.",
-        }, 429);
-      }
       expect(url.toString()).toBe("https://api.groq.com/openai/v1/chat/completions");
       const req = request instanceof Request ? request : new Request(request, init);
       expect(req.headers.get("Authorization")).toBe("Bearer user-secret-key");
@@ -248,7 +277,7 @@ describe("studio automatic free AI client", () => {
         requestId: `byok:${OPERATION_ID}`,
       },
     });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("does not mislabel a personal-key authentication failure as free exhaustion", async () => {

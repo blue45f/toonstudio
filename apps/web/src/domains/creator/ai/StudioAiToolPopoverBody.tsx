@@ -371,6 +371,7 @@ export function StudioAiToolPopoverBody({
                         {(serverAiStatus?.providers?.length
                           ? serverAiStatus.providers
                           : [
+                              { id: "anthropic" as const, label: "ToonStudio 고성능 AI", configured: false, model: "" },
                               { id: "gemini" as const, label: "Gemini 무료", configured: false, model: "" },
                               { id: "qwen" as const, label: "Qwen 베이징 무료 할당량", configured: false, model: "" },
                               { id: "groq" as const, label: "Groq 무료", configured: false, model: "" },

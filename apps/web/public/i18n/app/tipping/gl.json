@@ -10,7 +10,7 @@
   "tipping.dialog.done": "Feito",
   "tipping.dialog.episode": "{episode}",
   "tipping.dialog.invalidAmount": "Escribe un importe entre {min} e {max}.",
-  "tipping.dialog.loginNotice": "Podes escoller un importe e escribir unha mensaxe sen iniciar sesión. Pedirémosche que inicies sesión cando fagas o apoio.",
+  "tipping.dialog.loginNotice": "Podes escoller un importe e escribir unha mensaxe sen iniciar sesión. Pedirémosche que inicies sesión cando apoies.",
   "tipping.dialog.loginToTip": "Inicia sesión para apoiar",
   "tipping.dialog.messageLabel": "Mensaxe de apoio (opcional)",
   "tipping.dialog.messagePlaceholder": "Deixa unha nota para a persoa creadora",
