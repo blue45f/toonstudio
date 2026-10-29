@@ -16,7 +16,7 @@ import { EMPTY_CHARACTER_CAPABILITY_PROFILE } from "./character-shaper-capabilit
 import { createCharacterCompatibilityReport } from "../character-platform/compatibility/character-compatibility-report";
 import { CharacterShaperViewportHud } from "./CharacterShaperViewportHud";
 import { CharacterShaperOrbitControls } from "./CharacterShaperOrbitControls";
-import { CharacterShaperGazeSelect } from "./CharacterShaperCameraControls";
+import { CharacterShaperCameraControls, CharacterShaperGazeSelect } from "./CharacterShaperCameraControls";
 import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 
 import type {
@@ -518,7 +518,9 @@ it("참조 작업면의 출력 설정은 팝오버로 열리고 Escape로 닫으
 });
 
 it("작업실 밖의 HUD는 연결되지 않은 조작을 비활성화한다", () => {
-  render(<CharacterShaperViewportHud h={makeHost()} binding={makeBinding()} compact={false} />);
+  const h = makeHost();
+  render(<><CharacterShaperCameraControls h={h} compact />
+    <CharacterShaperViewportHud h={h} binding={makeBinding()} compact={false} /></>);
   const cameraStyle = screen.getByTestId("shaper-camera-style-select") as HTMLSelectElement;
   expect(cameraStyle.disabled).toBe(true);
   const eyeballTracking = screen.getByTestId("shaper-eyeball-tracking-select") as HTMLSelectElement;
@@ -558,7 +560,9 @@ it("공유 preflight 옵션을 바꾸면 실제 PSD 출력 인자도 동일한 �
 
 
 it("HUD 단축키 안내는 실제 세션 카메라 조작 방식과 함께 바뀐다", () => {
-  render(<CharacterShaperSessionSettingsProvider><CharacterShaperViewportHud h={makeHost()} binding={makeBinding()} compact={false} /></CharacterShaperSessionSettingsProvider>);
+  const h = makeHost();
+  render(<CharacterShaperSessionSettingsProvider><CharacterShaperCameraControls h={h} compact />
+    <CharacterShaperViewportHud h={h} binding={makeBinding()} compact={false} /></CharacterShaperSessionSettingsProvider>);
   fireEvent.change(screen.getByLabelText("카메라 조작 방식"), { target: { value: "blender" } });
   expect(screen.getByTestId("shaper-hud-context-keycaps").textContent).toContain("MMB");
 });

@@ -13,7 +13,7 @@ import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-cont
 import { cn } from "@/shared/lib/utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-/** Mobile reserves real layout space; desktop retains the floating camera controls. */
+/** 작업실의 정상 흐름 bar가 카메라 도구 높이를 확보하여 모델을 가리지 않는다. */
 export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShaperViewportHudProps, "h" | "compact">) {
   const activeCameraId = typeof h.activeCameraId === "string" ? h.activeCameraId : "front";
   const cameraLocked = Boolean(h.viewportCameraInteractionLocked || h.isCapturing || h.isSharingPose || h.isThumbnailCapturing);

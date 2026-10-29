@@ -488,13 +488,14 @@ describe("StudioCharacterShaperDialog shell", () => {
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "프리셋" }));
   });
 
-  it.each([320, 390])("reserves camera controls above the measured canvas at mobile width %s", (width) => {
+  it.each([320, 390, 1024, 1440])("화면 너비 %s에서 카메라 도구 공간을 뷰포트 바깥에 예약한다", (width) => {
     const { h } = renderDialog({ width });
     const viewport = document.querySelector<HTMLElement>('[data-character-shaper-viewport="true"]')!;
     const cameraBar = document.querySelector<HTMLElement>('[data-character-shaper-camera-bar="true"]')!;
     const presets = screen.getByRole("group", { name: "카메라 프리셋" });
     const inspection = screen.getByRole("combobox", { name: "부위·방향 확대 검사" });
     expect(cameraBar).not.toBeNull();
+    expect(document.querySelectorAll('[data-character-shaper-camera-bar="true"]')).toHaveLength(1);
     expect(cameraBar.parentElement).toBe(viewport.parentElement);
     expect(cameraBar.nextElementSibling).toBe(viewport);
     expect(cameraBar.contains(presets)).toBe(true);
@@ -511,14 +512,6 @@ describe("StudioCharacterShaperDialog shell", () => {
     fireEvent.change(inspection, { target: { value: "inspectFeet" } });
     expect(h.setActiveCameraId).toHaveBeenCalledWith("inspectFeet");
     expect(screen.getAllByRole("button", { name: /^확대$/ })).toHaveLength(1);
-  });
-
-  it("retains the existing floating camera controls on desktop", () => {
-    renderDialog({ width: 1440 });
-    const viewport = document.querySelector<HTMLElement>('[data-character-shaper-viewport="true"]')!;
-    expect(document.querySelector('[data-character-shaper-camera-bar="true"]')).toBeNull();
-    expect(viewport.contains(screen.getByRole("group", { name: "카메라 프리셋" }))).toBe(true);
-    expect(viewport.contains(screen.getByRole("combobox", { name: "부위·방향 확대 검사" }))).toBe(true);
   });
 
   it("owns a single viewport chrome and routes contact inspection through the existing camera", () => {

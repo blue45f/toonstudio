@@ -487,7 +487,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
 
   const renderViewport = (className?: string) => {
     const viewport = (
-    <div data-character-shaper-viewport="true" className={cn(VIEWPORT_WRAPPER_CLASS, layout === "mobile" ? "flex-1" : className)}>
+    <div data-character-shaper-viewport="true" className={cn(VIEWPORT_WRAPPER_CLASS, "flex-1")}>
       <div data-character-shaper-stage="true" className="relative grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
         <StudioVrmPoserViewport h={h} presentation="shaper" />
         <CharacterShaperCompositionGuide framing={outputFraming} />
@@ -562,12 +562,12 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
       ) : null}
     </div>
     );
-    return layout === "mobile" ? (
+    return (
       <div data-character-shaper-model-workspace="true" className={cn("flex min-h-0 min-w-0 flex-col bg-card", className)}>
         {!touchLandscape && !paintActive ? <CharacterShaperCameraControls h={h} compact /> : null}
         {viewport}
       </div>
-    ) : viewport;
+    );
   };
 
   const dock = (

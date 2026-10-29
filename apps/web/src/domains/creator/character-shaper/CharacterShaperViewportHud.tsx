@@ -1,7 +1,7 @@
 /**
  * Character Shaper — floating controls over the 3D viewport.
  *
- * Desktop top-left: camera presets. Mobile camera controls occupy a separate normal-flow bar.
+ * 카메라 프리셋과 선택 필드는 모든 화면에서 별도의 정상 흐름 bar가 예약한 공간을 사용한다.
  * Top-right: turntable, lighting tone, transparent background, zoom.
  * Bottom-left: a status pill (model status / busy reason / hold-to-compare). Every control is a
  * labelled 44px button; the wrapper is pointer-transparent so orbiting the model keeps working.
@@ -29,7 +29,6 @@ import {
 } from "./character-shaper-ui-model";
 
 import { useCharacterShaperSessionSettings } from "./character-shaper-session-settings";
-import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
 
 import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-contract";
 import type { LoadStatus } from "../vrm/StudioVrmPoserTypes";
@@ -297,8 +296,6 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
       data-character-shaper-hud="true"
       className="pointer-events-none absolute inset-0 z-20"
     >
-      {!compact ? <CharacterShaperCameraControls h={h} compact={false} /> : null}
-
       <div
         role="group"
         aria-label="뷰포트 보기 설정"
