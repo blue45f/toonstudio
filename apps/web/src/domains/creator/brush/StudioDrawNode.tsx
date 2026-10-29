@@ -69,10 +69,6 @@ import {
   traceStudioHighlighterWashDetail,
   traceStudioHighlighterWashPlan,
 } from "../studio-highlighter-wash-ribbon";
-import {
-  requestStudioLivingInkSettledBakeDabs,
-  resolveStudioLivingInkSettledBakeProgram,
-} from "../studio-living-ink-settled-bake-v1";
 import { STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1 } from "../studio-material-pressure-model";
 import {
   planStudioPerfectFreehandRender,
@@ -114,20 +110,17 @@ import { StudioStampDrawShape } from "../StudioStampDrawShape";
 import { StudioMaterialBrushShape } from "./StudioMaterialBrushShape";
 
 import {
-  applyStudioBrushAliasWatercolorMaterial,
   isStudioBrushEraserAliasId,
   mapStudioBrushAliasPressure,
   mapStudioBrushAliasPressureSamples,
   resolveStudioBrushAliasPencilPasses,
   resolveStudioBrushAliasWatercolorPlanSettings,
   studioBrushAliasEffectiveDiameter,
-  type StudioBrushAliasWatercolorDab,
 } from "./studio-brush-alias-profile";
 import {
   resolveStudioCapturedBrushDynamicsPresetId,
 } from "./studio-brush-dynamics";
 import { resolveStudioBrushRuntimeProgramSet } from "./studio-brush-composition-runtime";
-import { resolveStudioBrushEngineLaneWatercolorMaterial } from "./studio-brush-engine-lane-catalog";
 import {
   resolveStudioBrushRuntimeContract,
   resolveStudioBrushSinglePointRoute,
@@ -197,7 +190,7 @@ import {
   traceStudioWetRibbonCarrierBatch,
 } from "./studio-wet-ribbon-carrier";
 import { planStudioWetWashLivePipeline } from "./studio-wet-wash-live-pipeline";
-
+import { drawStudioWetPaperBake, resolveStudioWatercolorSettledSurface } from "./wet-paper/studio-watercolor-settled-surface";
 
 import type { CalligraphyStylusInput } from "../studio-brush";
 import type { DrawEl } from "../studio-element-model";
@@ -411,6 +404,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
   // wash immediately and a time-sliced background job bakes the bloom. This generation counter
   // is bumped when a requested bake lands in the deterministic cache; it flows into the request
   // call below so compiled (React Compiler) render bodies re-execute it and pick up the cache.
+  // 2026-10-29: 젖은 종이 정착 베이크(brush/wet-paper)도 같은 세대 카운터로 다시 그린다.
   const [livingInkBakeGeneration, notifyLivingInkBakeReady] = useReducer(
     (generation: number) => (generation + 1) | 0,
     0,
@@ -1852,55 +1846,25 @@ export const StudioDrawNode = memo(function StudioDrawNode({
             // language. Program resolution mirrors applyStudioBrushAliasWatercolorMaterial's
             // one-authority order (wet-edge-bloom pin wins; bake consulted only without it), so
             // lanes without a bake program keep the exact single-call path and bytes.
-            const laneWatercolorMaterial =
-              resolveStudioBrushEngineLaneWatercolorMaterial(brush);
-            // 커스텀 프로그램 세트 오버라이드가 레인 핀보다 우선한다(단일 권위:
-            // applyStudioBrushAliasWatercolorMaterial과 같은 순서).
-            const watercolorOverride = runtimeEnginePrograms?.watercolor ?? null;
-            const resolvedWetEdgeBloomProgramId =
-              watercolorOverride?.wetEdgeBloomProgramId
-              ?? laneWatercolorMaterial?.wetEdgeBloomProgramId;
-            const livingInkBakeProgramId = !resolvedWetEdgeBloomProgramId
-              ? (watercolorOverride?.livingInkBakeProgramId
-                ?? laneWatercolorMaterial?.livingInkBakeProgramId)
-              : undefined;
-            const livingInkBakeProgram =
-              durableDocumentRender && livingInkBakeProgramId
-                ? resolveStudioLivingInkSettledBakeProgram(livingInkBakeProgramId)
-                : null;
-            let dabs: readonly StudioBrushAliasWatercolorDab[];
-            if (liveWetWashPlan) {
-              // 파이프라인이 재질 스케일까지 끝냈다(프로그램 없는 레인만 진입하므로 배치의
-              // apply 결과와 값 동일).
-              dabs = liveWetWashPlan.dabs;
-            } else if (livingInkBakeProgram) {
-              const baseDabs = applyStudioBrushAliasWatercolorMaterial(
-                brush,
-                plannedDabs,
-                watercolorSeed,
-                "live",
-                runtimeEnginePrograms,
-              );
-              dabs =
-                requestStudioLivingInkSettledBakeDabs(
-                  baseDabs,
-                  {
-                    ...livingInkBakeProgram,
-                    seed: watercolorSeed,
-                    phase: "settled",
-                  },
-                  notifyLivingInkBakeReady,
-                  livingInkBakeGeneration,
-                ) ?? baseDabs;
-            } else {
-              dabs = applyStudioBrushAliasWatercolorMaterial(
-                brush,
-                plannedDabs,
-                watercolorSeed,
-                activeDraft ? "live" : "settled",
-                runtimeEnginePrograms,
-              );
-            }
+            // 2026-10-29: 이 해석(커스텀 오버라이드 > 레인 핀, 브러시당 웻 텍스처 권위 하나)과 두 정착
+            // 베이크(리빙잉크 시분할 요청 + 젖은 종이 정착 래스터)는 resolveStudioWatercolorSettledSurface
+            // 한 곳이 맡는다. 젖은 종이 레인의 커밋 획은 시분할 작업이 끝나면 종이 시뮬레이션 래스터를
+            // 그리고, 그 전에는 베이스 워시를 그린다. 라이브 파이프라인은 프로그램 없는 레인만 받아
+            // 재질 스케일까지 끝냈으므로 이 해석을 건너뛴다(바이트 동일).
+            const settledSurface = liveWetWashPlan
+              ? null
+              : resolveStudioWatercolorSettledSurface({
+                  brush,
+                  plannedDabs,
+                  seed: watercolorSeed,
+                  activeDraft,
+                  durableDocumentRender,
+                  enginePrograms: runtimeEnginePrograms,
+                  color: stroke,
+                  onBakeReady: notifyLivingInkBakeReady,
+                  bakeGeneration: livingInkBakeGeneration,
+                });
+            const dabs = settledSurface?.dabs ?? liveWetWashPlan?.dabs ?? [];
             const wetRibbonPlan = liveWetWashPlan
               ? liveWetWashPlan.carrierPlan
               : causalWatercolor
@@ -1921,6 +1885,10 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                       },
                     );
                     // A selected wet-ink replay never changes renderer after execution starts.
+                    return;
+                  }
+                  if (settledSurface?.wetPaperBake) {
+                    drawStudioWetPaperBake(context, settledSurface.wetPaperBake, opacity);
                     return;
                   }
                   // Ineligible/legacy snapshots select the compatibility renderer before execution.

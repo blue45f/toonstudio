@@ -8,6 +8,7 @@ import type { StudioLivingInkSettledBakeProgramId } from "../studio-living-ink-s
 import type { StudioPaperPresetIdV1 } from "./studio-paper-media-profile-v1";
 import type { StudioSpectralWgmColorMixProgramId } from "../studio-spectral-wgm-mix-v1";
 import type { StudioWetEdgeBloomProgramId } from "./studio-wet-edge-bloom-v1";
+import type { StudioWetPaperBakeProgramId } from "./wet-paper/studio-wet-paper-programs";
 
 export const STUDIO_BRUSH_ENGINE_LANE_CATALOG_VERSION =
   "studio-brush-engine-lane-catalog-v1" as const;
@@ -27,7 +28,8 @@ export type StudioBrushEngineLaneId =
   | "particle-fx"
   | "angled-ribbon"
   | "pencil-path"
-  | "stamp-tone";
+  | "stamp-tone"
+  | "wet-paper";
 
 export interface StudioBrushEngineLaneCatalogRow {
   readonly id: string;
@@ -67,6 +69,14 @@ export interface StudioBrushEngineLaneWatercolorMaterial {
    * texture authority per lane (2026-08-13 wave 3).
    */
   readonly livingInkBakeProgramId?: StudioLivingInkSettledBakeProgramId;
+  /**
+   * Opt-in settled-only wet-paper simulation (brush/wet-paper: MoXi LBM ink dispersion, Curtis
+   * watercolour layers, Chu & Tai dry brush). Absent means the lane's plan stays bit-identical.
+   * Still one wet-texture authority per lane: a row pinning this must pin neither
+   * wetEdgeBloomProgramId nor livingInkBakeProgramId, and a custom program-set override of either
+   * outranks it (2026-10-29 WP3).
+   */
+  readonly wetPaperBakeProgramId?: StudioWetPaperBakeProgramId;
 }
 
 export interface StudioBrushEngineLaneStampTuning {
@@ -240,6 +250,13 @@ export const STUDIO_BRUSH_ENGINE_LANE_CATALOG_ROWS: readonly StudioBrushEngineLa
     // 이 레인만의 옵션이 아니다).
     r("ink-wash--living-bake", "수묵 · 정착 건조", "ink-wash", "wet-dabs", 30, 0.66, ["리빙잉크 수묵", "living ink bake", "리빙잉크 베이크", "들면 마르는 수묵"], "watercolor", "watercolor-dabs", "living-ink-settled-bake", "watercolor", "soft", "bristle", "wet-edge", "watercolor-pressure", "engine-variant"),
     r("watercolor--fluid-feather", "수채 · 유체 페더", "watercolor", "wet-dabs", 28, 0.52, ["유체 페더", "fluid feather"], "watercolor", "watercolor-dabs", "fluid-feather-bake", "watercolor", "soft", "sponge", "wet-edge", "watercolor-pressure", "engine-variant"),
+    // 젖은 종이 확산 레인(2026-10-29 WP3): 정착 시 종이 위 물·안료 시뮬레이션을 굽는다(라이브 초안은
+    // 베이스 워시). MoXi 먹 번짐 · Curtis 백런/가장자리 짙어짐 · Curtis 입자 침전 · Chu & Tai 갈필 —
+    // 프로그램 핀은 워터컬러 재질 행의 wetPaperBakeProgramId, 해법은 brush/wet-paper/.
+    r("ink-wash--moxi-bake", "수묵 · 먹 번짐 확산", "ink-wash", "wet-paper", 30, 0.72, ["먹 번짐", "화선지 번짐", "MoXi", "ink dispersion", "젖은 종이 먹"], "watercolor", "watercolor-dabs", "moxi-wet-paper-bake", "watercolor", "soft", "soft-diffuse", "wet-edge", "watercolor-pressure", "engine-variant"),
+    r("watercolor--curtis-bake", "수채 · 백런·가장자리 짙어짐", "watercolor", "wet-paper", 28, 0.56, ["수채 백런", "꽃양배추 번짐", "가장자리 짙어짐", "backrun", "Curtis watercolor"], "watercolor", "watercolor-dabs", "curtis-wet-paper-bake", "watercolor", "soft", "sponge", "wet-edge", "watercolor-pressure", "engine-variant"),
+    r("watercolor--granulating-bake", "수채 · 입자 침전", "watercolor", "wet-paper", 32, 0.62, ["입자 침전", "그래뉼레이션", "granulation", "침전 수채"], "watercolor", "watercolor-dabs", "granulating-wet-paper-bake", "watercolor", "soft", "sponge", "procedural-grain", "watercolor-pressure", "engine-variant"),
+    r("ink-wash--dry-brush", "수묵 · 갈필", "ink-wash", "wet-paper", 24, 0.86, ["갈필", "비백", "마른 붓", "dry brush"], "watercolor", "watercolor-dabs", "dry-brush-wet-paper-bake", "watercolor", "soft", "bristle", "procedural-bristle", "watercolor-pressure", "engine-variant"),
     r("brush--bristle-physics", "유화 · 물리 강모 갈필", "brush", "oil-ribbon", 18, 0.92, ["물리 강모 붓", "physics bristle", "WetBrush", "붓 · 물리 강모"], "oil", "oil-ribbon", "bristle-physics-tuft", "oil", "oil", "bristle", "procedural-bristle", "bristle-pressure", "engine-variant"),
   ]);
 
@@ -389,6 +406,28 @@ const ENGINE_LANE_WATERCOLOR_MATERIAL: Readonly<
     diffuseRadiusScale: 1.85, diffuseOpacityScale: 0.46,
     livingInkBakeProgramId: "fluid-feather-lite",
   }),
+  // 2026-10-29 WP3 젖은 종이 확산 레인: 정착 시에만 brush/wet-paper 시뮬레이션을 굽는다(라이브 = 이 재질
+  // 스케일의 베이스 워시). 웻 텍스처 권위는 이 핀 하나(블룸·리빙잉크 핀 없음).
+  "ink-wash--moxi-bake": Object.freeze({
+    spacingRatio: 0.14, coreRadiusScale: 0.8, coreOpacityScale: 1.8,
+    diffuseRadiusScale: 1.55, diffuseOpacityScale: 0.42,
+    wetPaperBakeProgramId: "moxi-sumi-dispersion",
+  }),
+  "watercolor--curtis-bake": Object.freeze({
+    spacingRatio: 0.154, coreRadiusScale: 0.84, coreOpacityScale: 1.3,
+    diffuseRadiusScale: 1.35, diffuseOpacityScale: 0.36,
+    wetPaperBakeProgramId: "curtis-watercolor-backrun",
+  }),
+  "watercolor--granulating-bake": Object.freeze({
+    spacingRatio: 0.168, coreRadiusScale: 0.86, coreOpacityScale: 1.25,
+    diffuseRadiusScale: 1.3, diffuseOpacityScale: 0.34,
+    wetPaperBakeProgramId: "curtis-granulating-wash",
+  }),
+  "ink-wash--dry-brush": Object.freeze({
+    spacingRatio: 0.112, coreRadiusScale: 0.9, coreOpacityScale: 1.9,
+    diffuseRadiusScale: 1.05, diffuseOpacityScale: 0.18,
+    wetPaperBakeProgramId: "chu-tai-dry-brush",
+  }),
 });
 
 const ENGINE_LANE_STAMP_TUNING: Readonly<
@@ -474,6 +513,7 @@ const ENGINE_LANE_LABEL_KO: Readonly<Record<StudioBrushEngineLaneId, string>> = 
   "angled-ribbon": "각진 리본",
   "pencil-path": "연필 패스",
   "stamp-tone": "톤 스탬프",
+  "wet-paper": "젖은 종이 확산",
 });
 
 export function resolveStudioBrushEngineLaneWatercolorMaterial(

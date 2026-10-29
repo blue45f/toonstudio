@@ -128,6 +128,11 @@ describe("studio brush variant group manifest", () => {
       "pen--croquis-stabilized",
       "ink-wash--living-bake",
       "brush--bristle-physics",
+      // 2026-10-29 WP3: 젖은 종이 확산 레인 4종(정착 시뮬레이션 — brush/wet-paper).
+      "ink-wash--moxi-bake",
+      "watercolor--curtis-bake",
+      "watercolor--granulating-bake",
+      "ink-wash--dry-brush",
     ]);
     for (const experimentalId of STUDIO_BRUSH_EXPERIMENTAL_LANE_PRESET_IDS) {
       expect(resolveStudioBrushLifecycleStage(experimentalId), experimentalId)

@@ -120,6 +120,11 @@ export const STUDIO_BRUSH_EXPERIMENTAL_LANE_PRESET_IDS: readonly string[] = Obje
   "pen--croquis-stabilized",
   "ink-wash--living-bake",
   "brush--bristle-physics",
+  // 2026-10-29 WP3 젖은 종이 확산 4종: 정착 베이크가 새 엔진 경로라 랩 판정 전까지 실험 단계로 핀한다.
+  "ink-wash--moxi-bake",
+  "watercolor--curtis-bake",
+  "watercolor--granulating-bake",
+  "ink-wash--dry-brush",
 ]);
 
 const EXPERIMENTAL_LANE_PRESET_ID_SET: ReadonlySet<string> = new Set(

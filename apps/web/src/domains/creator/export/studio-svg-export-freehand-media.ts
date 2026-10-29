@@ -1,8 +1,6 @@
 import {
-  applyStudioBrushAliasWatercolorMaterial,
   mapStudioBrushAliasPressureSamples,
   resolveStudioBrushAliasPencilPasses,
-  resolveStudioBrushAliasWatercolorPlanSettings,
 } from "../brush/studio-brush-alias-profile";
 import { resolveStudioCalligraphyRenderTip } from "../brush/studio-calligraphy-nib-profile";
 import { planStudioCalligraphyRibbon } from "../brush/studio-calligraphy-ribbon";
@@ -26,14 +24,6 @@ import {
 import { resolveStudioBrushRuntimeProgramSet } from "../brush/studio-brush-composition-runtime";
 import { isStudioStrokePaintModelCompatible } from "../brush/studio-stroke-paint-model";
 import {
-  planWatercolorBrushDabs,
-  watercolorBrushSeedFromKey,
-} from "../brush/studio-watercolor-brush";
-import {
-  planStudioWetRibbonCarrier,
-  studioWetRibbonCarrierBatchPathData,
-} from "../brush/studio-wet-ribbon-carrier";
-import {
   buildCalligraphySegments,
   processFreehandPoints,
   processPencilPoints,
@@ -45,10 +35,6 @@ import {
   type StudioBrushRenderFamily,
 } from "../studio-brush";
 import { planStudioCausalInk } from "../studio-causal-ink";
-import {
-  DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS,
-  planCausalWatercolorBrushDabs,
-} from "../studio-causal-watercolor-brush";
 import {
   FX_OIL_DAB_CAP,
   FX_PASTEL_DAB_CAP,
@@ -97,6 +83,7 @@ import {
   tensionPathD,
 } from "./studio-svg-export-geometry";
 import { nextId } from "./studio-svg-export-png";
+import { serializeStudioSvgWatercolorStroke } from "./studio-svg-export-watercolor";
 
 import type { ExportCtx, SvgDrawElLike } from "./studio-svg-export-types";
 
@@ -171,71 +158,17 @@ export function serializeFreehandMedia(
   }
 
   if (brushFamily === "watercolor") {
-    const watercolorSettings = resolveStudioBrushAliasWatercolorPlanSettings(
+    return serializeStudioSvgWatercolorStroke(
+      ctx,
+      el,
+      points,
+      stroke,
+      strokeWidth,
+      strokeOpacity,
       brush,
-      strokeWidth
-    ) ?? { baseWidth: strokeWidth, spacing: Math.max(0.25, strokeWidth * 0.34) };
-    const watercolorSeed = watercolorBrushSeedFromKey(el.id);
-    const watercolorPressures = mapStudioBrushAliasPressureSamples(
-      brush,
-      el.pressures,
-      Math.floor(points.length / 2),
-      0.55
-    );
-    if (el.watercolorPipeline === "causal-walker-v2") {
-      const plannedDabs = planCausalWatercolorBrushDabs({
-          points,
-          pressures: watercolorPressures,
-          baseWidth: watercolorSettings.baseWidth,
-          spacing: watercolorSettings.spacing,
-          seed: watercolorSeed,
-          maxDabs: DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS,
-        }, true);
-      // Export is settled by definition — the opt-in living-ink bake runs here exactly as it does
-      // on the settled Canvas commit (same seed, same planner), keeping the two surfaces agreeing.
-      const dabs = applyStudioBrushAliasWatercolorMaterial(
-        brush,
-        plannedDabs,
-        watercolorSeed,
-        "settled",
-        runtimeEnginePrograms,
-      );
-      const wetRibbonPlan = planStudioWetRibbonCarrier(dabs, {
-        seed: watercolorSeed,
-      });
-      if (wetRibbonPlan.batches.length === 0) return "";
-      const ribbonPaths = wetRibbonPlan.batches.map((batch) => (
-        `<path d="${studioWetRibbonCarrierBatchPathData(batch)}" fill="${escapeXml(stroke)}" opacity="${fmtDabOpacity(batch.opacity * strokeOpacity)}"/>`
-      )).join("");
-      return `<g data-brush-engine="wet-ribbon-carrier-v2">${ribbonPaths}</g>`;
-    }
-
-    // Persisted watercolor without the causal marker is intentionally byte-compatible with the
-    // fitted legacy circle plan. Only new v2 strokes may use the directional ribbon carrier.
-    const plannedDabs = planWatercolorBrushDabs({
-      points: processFreehandPoints(points, renderSampleDistance),
-      pressures: watercolorPressures,
-      baseWidth: watercolorSettings.baseWidth,
-      spacing: watercolorSettings.spacing,
-      seed: watercolorSeed,
-      maxDabs: 512,
-    });
-    const dabs = applyStudioBrushAliasWatercolorMaterial(
-      brush,
-      plannedDabs,
-      watercolorSeed,
-      "settled",
+      renderSampleDistance,
       runtimeEnginePrograms,
     );
-    if (dabs.length === 0) return "";
-    const diffuseId = nextId(ctx, "sw");
-    ctx.defs.push(
-      `<radialGradient id="${diffuseId}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="${escapeXml(stroke)}"/><stop offset="45%" stop-color="${escapeXml(stroke)}"/><stop offset="100%" stop-color="${escapeXml(stroke)}" stop-opacity="0"/></radialGradient>`
-    );
-    const circles = dabs.map((dab) => (
-      `<circle cx="${fmt(dab.x)}" cy="${fmt(dab.y)}" r="${fmt(dab.radius)}" fill="${dab.role === "diffuse" ? `url(#${diffuseId})` : escapeXml(stroke)}" opacity="${fmtDabOpacity(dab.opacity * strokeOpacity)}"/>`
-    )).join("");
-    return `<g>${circles}</g>`;
   }
 
   if (brushFamily === "calligraphy") {
