@@ -70,6 +70,7 @@ export type StudioFaceModelingFailureCode =
   | "unsupported-face"
   | "unsupported-uv"
   | "unsupported-region"
+  | "unsupported-region-attributes"
   | "would-collide";
 
 export interface StudioFaceModelingFailure {

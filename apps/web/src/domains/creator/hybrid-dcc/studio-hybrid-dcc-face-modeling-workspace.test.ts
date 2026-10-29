@@ -13,6 +13,7 @@ import {
 import { hybridDccCommitGeometry, hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   analyzeStudioEditableMeshIntegrity,
+  readStudioMeshFaceLoops,
   STUDIO_FACE_MODELING_LIMITS,
   type StudioFaceModelingResult,
 } from "./studio-hybrid-dcc-face-modeling-mesh";
@@ -81,6 +82,178 @@ function expectFailure(result: StudioFaceModelingResult<unknown>, code: string) 
 }
 
 const SQUARE = [[-0.2, -0.2], [0.2, -0.2], [0.2, 0.2], [-0.2, 0.2]] as const;
+
+const OUTWARD_OFFSET: StudioFaceModelingRequest = { tool: "offset", distance: 0.05, direction: "outward" };
+
+/** 실제 Draw가 만든 같은 평면 조각에서 선택면·이웃·경계를 찾는다. 생성된 면 ID는 추측하지 않는다. */
+function outwardOffsetFixture(nested = false) {
+  const cube = cubeWorkspace();
+  let drawn = commitStudioHybridDccFaceModeling(cube, faceSelection(cube, [TOP]), { tool: "draw", points: SQUARE });
+  if (nested) {
+    if (!drawn.selection) throw new Error("첫 번째 Draw의 실제 선택이 없습니다.");
+    drawn = commitStudioHybridDccFaceModeling(drawn.workspace, drawn.selection,
+      { tool: "draw", points: [[-0.1, -0.1], [0.1, -0.1], [0.1, 0.1], [-0.1, 0.1]] });
+  }
+  const faceId = drawn.selection?.elementIds[0], workspace = drawn.workspace;
+  const assetId = workspace.activeAssetId;
+  const record = assetId ? workspace.session.state.geometry.records[assetId] : undefined;
+  if (faceId === undefined || !assetId || !record) throw new Error("Draw 결과의 실제 권위 메시가 없습니다.");
+  const mesh = record.mesh, loops = readStudioMeshFaceLoops(mesh);
+  const selected = loops?.find(({ id }) => id === faceId);
+  const originId = selected?.vertexIds[0], origin = originId === undefined ? undefined : mesh.vertices[originId];
+  if (!loops || !selected || !origin) throw new Error("선택면의 실제 반변 순환이 없습니다.");
+  // 이 fixture는 변환하지 않은 cube 윗면이다. 옆면은 y가 다른 정점을 포함하여 영역에서 제외된다.
+  const region = loops.filter((loop) => loop.vertexIds.every((id) => mesh.vertices[id]?.position.y === origin.position.y));
+  const regionIds = new Set(region.map(({ id }) => id));
+  const neighbors = region.filter(({ id }) => id !== faceId).sort((left, right) => left.id - right.id);
+  const restSource = neighbors[0], differentNeighbor = neighbors[1];
+  if (!restSource || !differentNeighbor) throw new Error("최소 rest 면과 다른 실제 coplanar 조각이 필요합니다.");
+  expect(differentNeighbor.id).not.toBe(restSource.id);
+  expect(selected.smooth).toBe(false);
+  return { workspace, assetId, mesh, faceId, selected, regionIds, differentNeighbor };
+}
+
+type OutwardOffsetFixture = ReturnType<typeof outwardOffsetFixture>;
+
+function outwardOffsetEdge(fixture: OutwardOffsetFixture, kind: "radial" | "selected" | "boundary") {
+  const edge = fixture.mesh.halfEdges.find((candidate) => {
+    const twin = fixture.mesh.halfEdges[candidate.twin];
+    if (!twin || !fixture.regionIds.has(candidate.face)) return false;
+    if (kind === "boundary") return !fixture.regionIds.has(twin.face);
+    if (!fixture.regionIds.has(twin.face)) return false;
+    return kind === "selected" ? candidate.face === fixture.faceId
+      : candidate.face !== fixture.faceId && twin.face !== fixture.faceId;
+  });
+  const twin = edge ? fixture.mesh.halfEdges[edge.twin] : undefined;
+  if (!edge || !twin) throw new Error(`실제 ${kind} 반변 쌍이 없습니다.`);
+  return { edge, twin };
+}
+
+function registerOffsetMesh(fixture: OutwardOffsetFixture, mesh: StudioEditableMesh) {
+  expect(validateStudioEditableMeshSerializableAuthority(mesh).ok).toBe(true);
+  const session = hybridDccCommitGeometry(fixture.workspace.session, fixture.assetId, mesh);
+  const workspace = synchronizeWorkspaceGeometryAuthority(fixture.workspace, session);
+  const record = workspace.session.state.geometry.records[fixture.assetId];
+  if (!record) throw new Error("변경한 속성이 권위 메시로 등록되지 않았습니다.");
+  expect(serializeStudioEditableMesh(record.mesh)).toEqual(serializeStudioEditableMesh(mesh));
+  return workspace;
+}
+
+function expectOffsetAttributesRejected(workspace: StudioHybridDccWorkspace, assetId: string, faceId: number) {
+  const record = workspace.session.state.geometry.records[assetId];
+  if (!record) throw new Error("거부를 검증할 권위 메시가 없습니다.");
+  const selection = faceSelection(workspace, [faceId]);
+  const before = { session: workspace.session, state: workspace.session.state, mesh: record.mesh,
+    serialized: serializeStudioEditableMesh(record.mesh), hash: hashStudioEditableMesh(record.mesh), meshHash: record.meshHash,
+    commandCount: workspace.session.state.commandCount, undo: workspace.session.undoStack, redo: workspace.session.redoStack,
+    history: JSON.stringify([workspace.session.undoStack, workspace.session.redoStack]),
+    journal: serializeStudioCommandJournal(workspace.session.journal) };
+  expectFailure(studioHybridDccFaceModelingRange(workspace, selection, "offset", "outward"), "unsupported-region-attributes");
+  expectFailure(planStudioHybridDccFaceModeling(workspace, selection, OUTWARD_OFFSET), "unsupported-region-attributes");
+  expectFailure(previewStudioHybridDccFaceModeling(workspace, selection, OUTWARD_OFFSET), "unsupported-region-attributes");
+  try {
+    commitStudioHybridDccFaceModeling(workspace, selection, OUTWARD_OFFSET);
+    throw new Error("속성을 잃는 바깥 오프셋이 확정되었습니다.");
+  } catch (error) {
+    if (!(error instanceof StudioFaceModelingCommitError)) throw error;
+    expect(error.failure.code).toBe("unsupported-region-attributes");
+  }
+  expect(workspace.session).toBe(before.session); expect(workspace.session.state).toBe(before.state);
+  expect(workspace.session.state.geometry.records[assetId]).toBe(record); expect(record.mesh).toBe(before.mesh);
+  expect(serializeStudioEditableMesh(record.mesh)).toEqual(before.serialized);
+  expect(hashStudioEditableMesh(record.mesh)).toBe(before.hash); expect(record.meshHash).toBe(before.meshHash);
+  expect(workspace.session.state.commandCount).toBe(before.commandCount);
+  expect(workspace.session.undoStack).toBe(before.undo); expect(workspace.session.redoStack).toBe(before.redo);
+  expect(JSON.stringify([workspace.session.undoStack, workspace.session.redoStack])).toBe(before.history);
+  expect(serializeStudioCommandJournal(workspace.session.journal)).toBe(before.journal);
+}
+
+function edgeCreasesByPosition(mesh: StudioEditableMesh): ReadonlyMap<string, number> {
+  return new Map(mesh.halfEdges.map((edge): readonly [string, number] => {
+    const previous = mesh.halfEdges[edge.prev];
+    const from = previous ? mesh.vertices[previous.vertex] : undefined, to = mesh.vertices[edge.vertex];
+    if (!from || !to) throw new Error("접힘 비교에 필요한 실제 반변 끝점이 없습니다.");
+    return [JSON.stringify([from.position, to.position]), edge.crease];
+  }));
+}
+
+describe("바깥 오프셋의 coplanar 영역 속성 보존 경계", () => {
+  it.each(["materialSlot", "smooth", "radial-crease", "selected-crease", "deleted-vertex-crease"])(
+    "%s 손실을 실제 유효 권위 메시의 범위·계획·미리보기·확정에서 거부한다", (attribute) => {
+      const fixture = outwardOffsetFixture(attribute === "deleted-vertex-crease");
+      expectOk(planStudioHybridDccFaceModeling(fixture.workspace, faceSelection(fixture.workspace, [fixture.faceId]), OUTWARD_OFFSET));
+      let mesh = fixture.mesh;
+      if (attribute === "materialSlot" || attribute === "smooth") {
+        mesh = { ...mesh, faces: mesh.faces.map((face) => face.id !== fixture.differentNeighbor.id ? face
+          : { ...face, ...(attribute === "materialSlot" ? { materialSlot: 7 } : { smooth: true }) }) };
+      } else if (attribute === "deleted-vertex-crease") {
+        const plain = expectOk(planStudioHybridDccFaceModeling(fixture.workspace,
+          faceSelection(fixture.workspace, [fixture.faceId]), OUTWARD_OFFSET));
+        const surviving = new Set(plain.outcome.mesh.vertices.map(({ position }) => JSON.stringify(position)));
+        const removed = mesh.vertices.find(({ position }) => !surviving.has(JSON.stringify(position)));
+        if (!removed) throw new Error("실제 바깥 오프셋이 삭제하는 내부 정점이 없습니다.");
+        expect(fixture.selected.vertexIds).not.toContain(removed.id);
+        mesh = { ...mesh, vertices: mesh.vertices.map((vertex) => vertex.id === removed.id ? { ...vertex, crease: 0.5 } : vertex) };
+      } else {
+        const { edge, twin } = outwardOffsetEdge(fixture, attribute === "radial-crease" ? "radial" : "selected");
+        mesh = { ...mesh, halfEdges: mesh.halfEdges.map((candidate) => candidate.id === edge.id ? { ...candidate, crease: 0.5 }
+          : candidate.id === twin.id ? { ...candidate, crease: attribute === "radial-crease" ? 0.5 : 0.25 } : candidate) };
+      }
+      const workspace = registerOffsetMesh(fixture, mesh);
+      expectOffsetAttributesRejected(workspace, fixture.assetId, fixture.faceId);
+    },
+  );
+
+  it("선택면과 동질 이웃 영역의 서로 다른 속성·비 coplanar 면·보존 가능한 접힘을 확정과 Undo/Redo에서 지킨다", () => {
+    const fixture = outwardOffsetFixture(), boundary = outwardOffsetEdge(fixture, "boundary");
+    const selected = outwardOffsetEdge(fixture, "selected");
+    const mesh: StudioEditableMesh = { ...fixture.mesh,
+      faces: fixture.mesh.faces.map((face) => face.id === fixture.faceId ? { ...face, materialSlot: 13, smooth: false }
+        : fixture.regionIds.has(face.id) ? { ...face, materialSlot: 7, smooth: true }
+        : face.id === boundary.twin.face ? { ...face, materialSlot: 11, smooth: false } : face),
+      halfEdges: fixture.mesh.halfEdges.map((edge) => {
+        const crease = edge.id === boundary.edge.id ? 0.375 : edge.id === boundary.twin.id ? 0.625
+          : edge.id === selected.edge.id || edge.id === selected.twin.id ? 0.5 : edge.crease;
+        return { ...edge, crease };
+      }) };
+    const workspace = registerOffsetMesh(fixture, mesh), selection = faceSelection(workspace, [fixture.faceId]);
+    expect(expectOk(studioHybridDccFaceModelingRange(workspace, selection, "offset", "outward")).maxDistance).toBeGreaterThan(0.05);
+    const plan = expectOk(planStudioHybridDccFaceModeling(workspace, selection, OUTWARD_OFFSET));
+    expectOk(previewStudioHybridDccFaceModeling(workspace, selection, OUTWARD_OFFSET));
+    const result = commitStudioHybridDccFaceModeling(workspace, selection, OUTWARD_OFFSET).workspace;
+    const source = workspace.session.state.geometry.records[fixture.assetId], output = result.session.state.geometry.records[fixture.assetId];
+    if (!source || !output) throw new Error("오프셋 전후의 권위 메시가 없습니다.");
+    expect(validateStudioEditableMeshSerializableAuthority(output.mesh).ok).toBe(true);
+    expect(serializeStudioEditableMesh(output.mesh)).toEqual(serializeStudioEditableMesh(plan.outcome.mesh));
+    const previousCreases = edgeCreasesByPosition(mesh), nextCreases = edgeCreasesByPosition(output.mesh);
+    for (const [key, crease] of previousCreases) if (crease !== 0) expect(nextCreases.get(key)).toBe(crease);
+    const outsideId = plan.outcome.faceRemap.find(([id]) => id === boundary.twin.face)?.[1];
+    if (typeof outsideId !== "number") throw new Error("영역 밖 면의 실제 대응이 없습니다.");
+    expect(output.mesh.faces.find(({ id }) => id === outsideId)).toMatchObject({ materialSlot: 11, smooth: false });
+    const loops = readStudioMeshFaceLoops(output.mesh);
+    if (!loops) throw new Error("오프셋 결과의 면 순환이 없습니다.");
+    const top = loops.filter((loop) => loop.vertexIds.every((id) => output.mesh.vertices[id]?.position.y === 0.5));
+    const selectedId = plan.outcome.faceRemap.find(([id]) => id === fixture.faceId)?.[1];
+    if (typeof selectedId !== "number") throw new Error("보존된 선택면의 실제 대응이 없습니다.");
+    expect(top.find(({ id }) => id === selectedId)).toMatchObject({ materialSlot: 13, smooth: false });
+    const ringIds = new Set(plan.outcome.selectionFaceIds);
+    expect(ringIds.size).toBeGreaterThan(0);
+    for (const ringId of ringIds) {
+      expect(top.find(({ id }) => id === ringId)).toMatchObject({ materialSlot: 13, smooth: false });
+    }
+    const rest = top.filter(({ id }) => id !== selectedId && !ringIds.has(id));
+    expect(rest.length).toBeGreaterThan(0);
+    expect(rest.every((loop) => loop.materialSlot === 7 && loop.smooth)).toBe(true);
+    expect(hashStudioEditableMesh(source.mesh)).toBe(source.meshHash);
+    expect(result.session.state.commandCount).toBe(workspace.session.state.commandCount + 1);
+    const undone = workspaceUndo(result), redone = workspaceRedo(undone);
+    const undoRecord = undone.session.state.geometry.records[fixture.assetId], redoRecord = redone.session.state.geometry.records[fixture.assetId];
+    if (!undoRecord || !redoRecord) throw new Error("Undo/Redo가 권위 메시를 복원하지 않았습니다.");
+    expect(undoRecord.meshHash).toBe(source.meshHash); expect(redoRecord.meshHash).toBe(output.meshHash);
+    expect(serializeStudioEditableMesh(undoRecord.mesh)).toEqual(serializeStudioEditableMesh(source.mesh));
+    expect(serializeStudioEditableMesh(redoRecord.mesh)).toEqual(serializeStudioEditableMesh(output.mesh));
+  });
+});
 
 const REQUESTS: readonly (readonly [string, StudioFaceModelingRequest])[] = [
   ["밀기", { tool: "push-pull", distance: 0.25 }],

@@ -308,6 +308,11 @@ export function describeStudioFaceModelingFailure(
         "이 면은 지원하지 않습니다. 평면이 아니거나 모서리가 너무 짧거나 꼭짓점이 너무 많습니다. 다른 면을 선택하세요.",
         "This face is not supported: it is not planar, has a very short edge or too many corners. Select another face.",
       );
+    case "unsupported-region-attributes":
+      return bt(
+        "주변 영역의 재질·부드러움 또는 접힘 값을 보존할 수 없어 바깥쪽 오프셋을 적용하지 않았습니다. 원본과 속성은 그대로 유지됩니다.",
+        "Outward offset was not applied because the surrounding region's material, smooth shading or crease values cannot be preserved. The original model and its attributes are unchanged.",
+      );
     case "unsupported-region":
       return tool === "push-pull"
         ? bt(
