@@ -147,7 +147,7 @@ export function StudioAiWebtoonCategory3Panel({
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="inline-flex items-center gap-1 font-bold text-fg">
             <Compass size={12} className="text-accent" aria-hidden="true" />
-            LlamaGen AI 한국형 세로 스크롤({llamaGenResult.pageShape}) 스토리 비트 감정 전환 초안
+            AI 한국형 세로 스크롤({llamaGenResult.pageShape}) 스토리 비트 감정 전환 초안
           </span>
           <div className="flex flex-wrap gap-1">
             {(["Webtoon", "Comic", "Manga"] as const).map((fmt) => (

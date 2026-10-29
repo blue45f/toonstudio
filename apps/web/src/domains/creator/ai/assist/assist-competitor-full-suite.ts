@@ -214,7 +214,7 @@ export async function runAssistSketchToLineartLayerSplitter(
     fallback: buildLocalSketchToLineartLayerSplit(input),
     noRouteReasonKo: "활성 Claude 경로가 없어 로컬 AiD 4레이어 분리 엔진을 사용했습니다.",
     systemPromptKo:
-      "당신은 크림 에이드(Cream AiD)와 클립스튜디오 페인트 5.0 벡터 선화 공정을 총괄하는 웹툰 선화·레이어 분리 디렉터입니다. " +
+      "당신은 벡터 선화 공정을 총괄하는 웹툰 선화·레이어 분리 디렉터입니다. " +
       "컷별 외곽선/내선 굵기(mm), 벡터 교차점 트리밍 규칙, L4~L1 4레이어 분리 사양을 한국어로 작성하세요.",
     userDirectiveKo:
       "위 웹툰 에피소드의 주요 4컷에 대해 스케치→벡터 선화 변환 사양과 L4(벡터 선화), L3(셀 그림자), L2(밑색 ID), L1(3D 배경 LT) 4레이어 분리 가이드를 JSON으로 생성해 주세요.",
@@ -264,7 +264,7 @@ export async function runAssistStyleTransferAndRelightingDirector(
     fallback: buildLocalStyleTransferAndRelighting(input, preset),
     noRouteReasonKo: "활성 Claude 경로가 없어 로컬 Komiko/LlamaGen 리라이팅 엔진을 사용했습니다.",
     systemPromptKo:
-      "당신은 Komiko AI와 LlamaGen Colorizer Suite를 능가하는 웹툰 화풍 변환 및 3D 리라이팅(Relighting) 감독입니다. " +
+      "당신은 웹툰 화풍 변환 및 3D 리라이팅(Relighting) 감독입니다. " +
       "선화 보존율(lineartPreservationPct)은 0~100 정수로, 모든 지침은 한국어로 작성하세요.",
     userDirectiveKo: `타깃 화풍 프리셋 '${preset}'을 적용해 주요 4컷의 화풍 변환 및 3D 광원 리라이팅(방위각, 고도각, 색온도 K, 대표 HEX 팔레트) 지시서를 JSON으로 작성해 주세요.`,
     schema: AssistStyleTransferReportSchema,
@@ -305,7 +305,7 @@ export async function runAssistSakugaMotionAndFacialMatrixDirector(
     fallback: buildLocalSakugaMotionAndFacialMatrix(input),
     noRouteReasonKo: "활성 Claude 경로가 없어 로컬 SkyReels/Mootion 모션웹툰 엔진을 사용했습니다.",
     systemPromptKo:
-      "당신은 SkyReels Comic Studio와 Mootion의 33종 표정 매트릭스 및 사쿠가(Sakuga) 모션웹툰 총괄 감독입니다. " +
+      "당신은 33종 표정 매트릭스와 사쿠가(Sakuga) 모션웹툰을 총괄하는 감독입니다. " +
       "pupilConstrictionPct는 0~100 정수로, 모든 해설은 한국어로 작성하세요.",
     userDirectiveKo:
       "위 웹툰 에피소드의 주요 4컷을 33종 안면 근육(FACS) 표정 매트릭스 코드와 사쿠가(Sakuga) 카메라 모션 곡선, 9:16 숏폼 비디오 트레일러 키프레임으로 변환해 JSON으로 출력하세요.",
@@ -344,7 +344,7 @@ export async function runAssist3dHandHeadPoseAndLtRigDirector(
     fallback: buildLocal3dHandHeadPoseAndLtRig(input),
     noRouteReasonKo: "활성 Claude 경로가 없어 로컬 CSP 5.0 3D 핸드·헤드 리그 엔진을 사용했습니다.",
     systemPromptKo:
-      "당신은 클립스튜디오 페인트 5.0 3D 핸드·헤드 및 Posemaniacs 인체 투시, 3D LT(Line & Tone) 변환 수석 테크니컬 디렉터입니다. " +
+      "당신은 3D 손·머리 데생 인형, 인체 투시, 3D LT(Line & Tone) 변환을 맡는 수석 테크니컬 디렉터입니다. " +
       "모든 설명은 한국어로 작성하세요.",
     userDirectiveKo:
       "위 웹툰 에피소드의 주요 4컷에 대해 3D 손 관절 프리셋, 3D 두상 Pitch/Yaw/Roll 각도, Posemaniacs 과장 투시 배율, CSP 5.0 카툰 LT 윤곽선·셀 그림자 추출 임계값을 JSON으로 설계해 주세요.",
@@ -385,7 +385,7 @@ export async function runAssistScreenplayBeatAndLoraLockBridge(
     fallback: buildLocalScreenplayBeatAndLoraLock(input),
     noRouteReasonKo: "활성 Claude 경로가 없어 로컬 Katalist/Anifusion 브리지 엔진을 사용했습니다.",
     systemPromptKo:
-      "당신은 Katalist.ai와 Anifusion의 시나리오 비트 분해 및 FLUX/Animagine 캐릭터 LoRA 시드 락 파이프라인 아키텍트입니다. " +
+      "당신은 시나리오 비트 분해와 캐릭터 LoRA 시드 락 파이프라인 아키텍트입니다. " +
       "pipelineCompatibilityScore는 0~100 정수로, 모든 해설은 한국어로 작성하세요.",
     userDirectiveKo:
       "위 웹툰 에피소드의 주요 4컷을 시나리오 액션 비트와 패널 그리드 템플릿, FLUX/Animagine 캐릭터 LoRA 가중치 및 REA 의무 원장 ID(reaObligationId)로 분해해 JSON으로 출력하세요.",

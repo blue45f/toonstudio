@@ -291,7 +291,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
         <div className="flex items-center gap-1.5">
           <Sparkles size={13} className="text-accent" aria-hidden="true" />
           <h4 className="text-xs font-bold text-fg">
-            AI 만화·인스타툰 4대 플랫폼 통합 엔진 (젠툰 · 망고툰 · 라마젠 · 투닝)
+            AI 만화·인스타툰 제작 도구 4종 (인스타툰·릴스·굿즈 · 템플릿 에셋 · 세로 웹툰 레이아웃 · 문장 연출)
           </h4>
         </div>
         <span className="rounded bg-accent-soft px-1.5 py-0.5 font-mono text-[0.58rem] font-semibold text-accent">
@@ -303,10 +303,10 @@ export function StudioAiWebtoonPlatformSuitePanel({
       <div className="flex flex-wrap gap-1" role="tablist" aria-label="AI 만화 플랫폼 선택">
         {(
           [
-            { id: "gentoon", label: "젠툰 (GenToon · 인스타툰/릴스/굿즈)" },
-            { id: "mangotoon", label: "망고툰 (Mangotoon · 클릭&드래그 에셋)" },
-            { id: "llamagen", label: "라마젠 (LlamaGen · 1.618 세로 웹툰)" },
-            { id: "tooning", label: "투닝 (Tooning · 문장→표정/포즈/배경)" },
+            { id: "gentoon", label: "인스타툰·릴스·굿즈" },
+            { id: "mangotoon", label: "클릭&드래그 템플릿 에셋" },
+            { id: "llamagen", label: "1.618 세로 웹툰 레이아웃" },
+            { id: "tooning", label: "문장 → 표정·포즈·배경" },
           ] as const
         ).map((tab) => (
           <button
@@ -337,7 +337,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
             <label className="flex flex-col gap-0.5">
               <span className="font-semibold text-fg-2">AI 생성 모델 (9종 카탈로그)</span>
               <select
-                aria-label="젠툰 AI 모델 선택"
+                aria-label="인스타툰 AI 모델 선택"
                 value={genToonModelId}
                 onChange={(e) => setGenToonModelId(e.target.value as GenToonAiModelId)}
                 className="rounded border border-line bg-raised px-1.5 py-1 text-[0.62rem] text-fg"
@@ -353,7 +353,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
               <span className="font-semibold text-fg-2">제작 모드 & 컷 수</span>
               <div className="flex items-center gap-1">
                 <select
-                  aria-label="젠툰 제작 모드"
+                  aria-label="인스타툰 제작 모드"
                   value={genToonMode}
                   onChange={(e) => setGenToonMode(e.target.value as GenToonCreationMode)}
                   className="rounded border border-line bg-raised px-1.5 py-1 text-[0.62rem] text-fg"
@@ -365,7 +365,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
                 </select>
                 <input
                   type="number"
-                  aria-label="젠툰 컷 수"
+                  aria-label="인스타툰 컷 수"
                   min={4}
                   max={12}
                   value={genToonCutCount}
@@ -539,7 +539,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
             </div>
             <input
               type="range"
-              aria-label="망고툰 외곽 블러 범위"
+              aria-label="템플릿 에셋 외곽 블러 범위"
               min={0}
               max={100}
               value={mgBlurRange}
@@ -560,7 +560,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
               {llamaEpisode.canvasWidthPx}×{llamaEpisode.canvasHeightPx}px)
             </span>
             <select
-              aria-label="라마젠 레이아웃 모드"
+              aria-label="세로 웹툰 레이아웃 모드"
               value={llamaLayoutMode}
               onChange={(e) => setLlamaLayoutMode(e.target.value as ComicGenLayoutModeId)}
               className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.6rem] text-fg"
@@ -597,7 +597,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
         <div data-testid="tooning-workbench-section" className="space-y-2 text-[0.64rem]">
           <div className="flex flex-col gap-1">
             <label htmlFor="tooning-sentence-input" className="font-semibold text-fg-2">
-              투닝(Tooning) 교육·홍보용 문장 입력 → 표정·포즈·배경·말풍선 자동 추천
+              교육·홍보용 문장 입력 → 표정·포즈·배경·말풍선 자동 추천
             </label>
             <div className="flex gap-1">
               <input

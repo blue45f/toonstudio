@@ -48,7 +48,7 @@ import {
 
 describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
   it("validates author handle and work registration draft with 3:1 banner and 5:7 cover crop math", () => {
-    expect(validateSerialStudioAuthorName("꿈툰작가01", ["기존작가"]).valid).toBe(true);
+    expect(validateSerialStudioAuthorName("연재작가01", ["기존작가"]).valid).toBe(true);
     expect(validateSerialStudioAuthorName("A").valid).toBe(false);
     expect(validateSerialStudioAuthorName("기존작가", ["기존작가"]).status).toBe("taken");
 

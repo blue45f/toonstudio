@@ -111,7 +111,7 @@ export async function runAssistScrollEyePathDoctor(
     system: [
       {
         type: "text",
-        text: "당신은 네이버웹툰·클립스튜디오 EX 기준 모바일 세로 스크롤(390×844px) 시선 유도(S-curve)·엄지 데드존·컷 여백(Gutter px) 진단 닥터입니다. 컷별 시선 유도 패턴, 인지 부하(0~100), 권장 여백(px), 말풍선 재배치 팁과 즉시 대본에 넣을 지문을 JSON으로 답하세요.",
+        text: "당신은 모바일 세로 스크롤 웹툰(390×844px 화면)의 시선 유도(S-curve)·엄지 데드존·컷 여백(Gutter px) 진단 닥터입니다. 컷별 시선 유도 패턴, 인지 부하(0~100), 권장 여백(px), 말풍선 재배치 팁과 즉시 대본에 넣을 지문을 JSON으로 답하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -198,7 +198,7 @@ export async function runAssistColorScriptDirector(
     system: [
       {
         type: "text",
-        text: "당신은 다쉬툰 스튜디오·리얼드로우 기준 웹툰 컬러 스크립트(Color Script) & 4레이어 조명 디렉터입니다. 각 컷의 시간대, 색온도(K), 5색 HEX 팔레트(#RRGGBB), 광원 방위각/고도, L3 Multiply/Screen 음영 농도(%), L4 선화 색트랩(Color Hold) HEX를 JSON으로 설계하세요.",
+        text: "당신은 웹툰 컬러 스크립트(Color Script) & 4레이어 조명 디렉터입니다. 각 컷의 시간대, 색온도(K), 5색 HEX 팔레트(#RRGGBB), 광원 방위각/고도, L3 Multiply/Screen 음영 농도(%), L4 선화 색트랩(Color Hold) HEX를 JSON으로 설계하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -293,7 +293,7 @@ export async function runAssistContinuityForeshadowAuditor(
     system: [
       {
         type: "text",
-        text: "당신은 오노마AI 페뷸레이터·라마젠 기준 웹툰 설정 연속성(Continuity) 감수자이자 복선(Foreshadow) 스토리 닥터입니다. 전후 컷의 180도 카메라 시선 축, 캐릭터 복장/외형 드리프트, 시간대 점프를 감수하고 미회수 복선을 회수하는 시각 연출과 대사를 JSON으로 제안하세요.",
+        text: "당신은 웹툰 설정 연속성(Continuity) 감수자이자 복선(Foreshadow) 스토리 닥터입니다. 전후 컷의 180도 카메라 시선 축, 캐릭터 복장/외형 드리프트, 시간대 점프를 감수하고 미회수 복선을 회수하는 시각 연출과 대사를 JSON으로 제안하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -387,7 +387,7 @@ export async function runAssistActingSfxChoreographer(
     system: [
       {
         type: "text",
-        text: "당신은 라이언로켓 젠버스(Genvas) 스타일의 다각도 캐릭터 표정·포즈 디렉터이자 투닝 플러스 스타일의 효과음(SFX)·말풍선 오케스트레이터입니다. 각 컷의 표정 프리셋(xf_*), 포즈 프리셋(xp_*), 미세 표정 디테일, 말풍선 호흡 분할, 효과음(SFX) 텍스트·회전각·스케일과 대본 반영 줄을 JSON으로 설계하세요.",
+        text: "당신은 다각도 캐릭터 표정·포즈 디렉터이자 효과음(SFX)·말풍선 오케스트레이터입니다. 각 컷의 표정 프리셋(xf_*), 포즈 프리셋(xp_*), 미세 표정 디테일, 말풍선 호흡 분할, 효과음(SFX) 텍스트·회전각·스케일과 대본 반영 줄을 JSON으로 설계하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],

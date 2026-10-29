@@ -87,7 +87,7 @@ const CATEGORY_TABS: readonly {
   {
     id: "cat-1-all-in-one",
     badge: "카테고리 1",
-    labelKo: "올인원 가속 (젠툰 · 투닝 · ComicAI · Dashtoon)",
+    labelKo: "올인원 제작 가속 (스토리→만화 · 글로 연출 · 캐릭터 시트 · 출판)",
   },
   {
     id: "cat-2-pro-drawing",
@@ -97,7 +97,7 @@ const CATEGORY_TABS: readonly {
   {
     id: "cat-3-storyboard",
     badge: "카테고리 3",
-    labelKo: "콘티·콘셉트 기획 (LlamaGen · 미드저니/SD · 포토샵 Firefly)",
+    labelKo: "콘티·콘셉트 기획 (세로 스크롤 초안 · 이미지 프롬프트 · 생성형 채우기)",
   },
   {
     id: "cat-4-style-transfer",
@@ -323,7 +323,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
             <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="inline-flex items-center gap-1 font-bold text-fg">
                 <Wand2 size={12} className="text-accent" aria-hidden="true" />
-                젠툰 (GenToon) Story-to-Comic · 4컷 워크시트 & 소품 연속성 원장 (점수{" "}
+                스토리→만화 · 4컷 워크시트 & 소품 연속성 원장 (점수{" "}
                 {gentoonResult.continuityScore}점)
               </span>
               <button
@@ -345,12 +345,12 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
                   STUDIO_FOCUS_RING,
                 )}
               >
-                젠툰 4컷 워크시트 대본 반영
+                4컷 워크시트 대본 반영
               </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <div className="flex gap-1" role="group" aria-label="젠툰 입력 모드">
+              <div className="flex gap-1" role="group" aria-label="스토리→만화 입력 모드">
                 {(
                   [
                     { id: "anecdote-1600", label: "내 썰 (1,600자)" },
@@ -374,7 +374,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
                 ))}
               </div>
 
-              <div className="flex gap-1" role="group" aria-label="젠툰 포맷 선택">
+              <div className="flex gap-1" role="group" aria-label="스토리→만화 포맷 선택">
                 {(
                   [
                     { id: "vertical-scroll-webtoon", label: "세로 스크롤 웹툰" },
@@ -399,7 +399,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
                 ))}
               </div>
 
-              <div className="flex gap-1" role="group" aria-label="젠툰 종횡비 선택">
+              <div className="flex gap-1" role="group" aria-label="스토리→만화 종횡비 선택">
                 {(["1:1", "4:5", "2:3", "9:16"] as const).map((ratio) => (
                   <button
                     key={ratio}
@@ -421,7 +421,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
               <label className="inline-flex items-center gap-1 text-[0.58rem] text-fg-2">
                 <span>화풍:</span>
                 <select
-                  aria-label="젠툰 화풍 패밀리 선택"
+                  aria-label="스토리→만화 화풍 패밀리 선택"
                   value={gentoonStyleId}
                   onChange={(e) => setGentoonStyleId(e.target.value as GenToonStyleFamilyId)}
                   className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] text-fg"
@@ -437,7 +437,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
               <label className="inline-flex items-center gap-1 text-[0.58rem] text-fg-2">
                 <span>언어(21개국):</span>
                 <select
-                  aria-label="젠툰 다국어 선택"
+                  aria-label="스토리→만화 다국어 선택"
                   value={gentoonLang}
                   onChange={(e) => setGentoonLang(e.target.value as GenToonLanguageCode)}
                   className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] text-fg"
@@ -471,7 +471,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
 
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
             <div className="flex flex-col gap-1 rounded border border-line bg-raised p-2 text-[0.59rem]">
-              <strong className="text-accent">투닝 (Tooning) 글로 캐릭터 연출</strong>
+              <strong className="text-accent">글로 캐릭터 연출</strong>
               <p className="text-fg-2">{tooningResult.autoDirectingSummaryKo}</p>
               {tooningResult.beats[0] ? (
                 <span className="text-fg-3">
@@ -483,7 +483,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
             </div>
 
             <div className="flex flex-col gap-1 rounded border border-line bg-raised p-2 text-[0.59rem]">
-              <strong className="text-accent">ComicAI 4면도 캐릭터 시트 & 연속 컷</strong>
+              <strong className="text-accent">4면도 캐릭터 시트 & 연속 컷</strong>
               <p className="text-fg-2">
                 시드 #{comicAiResult.characterSheet.seedLockNumber} · LoRA{" "}
                 {comicAiResult.characterSheet.loraWeight} ·{" "}
@@ -495,7 +495,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
             </div>
 
             <div className="flex flex-col gap-1 rounded border border-line bg-raised p-2 text-[0.59rem]">
-              <strong className="text-accent">Dashtoon 올인원 출판 & Frameo 브리지</strong>
+              <strong className="text-accent">올인원 출판 & 영상화 브리지</strong>
               <p className="text-fg-2">
                 출판 경로: <code>{dashtoonResult.publicationManifest.readerRoute}</code> (
                 {dashtoonResult.publicationManifest.sliceSpec.sliceCount}슬라이스)

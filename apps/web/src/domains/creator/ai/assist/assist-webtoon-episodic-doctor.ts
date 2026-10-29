@@ -217,7 +217,7 @@ export async function runAssistCharacterOocRadar(
     system: [
       {
         type: "text",
-        text: "당신은 오노마AI 페뷸레이터·캐릭터 캐논 기준 웹툰 대사 캐붕(OOC: Out of Character) 감수 및 서브텍스트 윤색 디렉터입니다. 인물별 어조/어미 일관성 점수(0~100), 캐붕 위험도, 숨겨진 욕망(Subtext), 그리고 3가지 대안 대사(캐논 정통형·고긴장 서브텍스트형·모바일 42자 압축형)를 JSON으로 제안하세요.",
+        text: "당신은 캐릭터 캐논 기준 웹툰 대사 캐붕(OOC: Out of Character) 감수 및 서브텍스트 윤색 디렉터입니다. 인물별 어조/어미 일관성 점수(0~100), 캐붕 위험도, 숨겨진 욕망(Subtext), 그리고 3가지 대안 대사(캐논 정통형·고긴장 서브텍스트형·모바일 42자 압축형)를 JSON으로 제안하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -305,7 +305,7 @@ export async function runAssistBg3dLightingAssetDirector(
     system: [
       {
         type: "text",
-        text: "당신은 리얼드로우(RealDraw)·클립스튜디오 EX·스케치업 3D 배경 에셋 디렉터입니다. 컷별 3D 공간 카테고리, 카메라 초점거리(mm), 카메라 높이(cm), 틸트 각도(°), 피사계 심도(DoF 블러 %), 안개 농도(%), 전경/중경 소품 배치와 그림자 방향을 JSON으로 설계하세요.",
+        text: "당신은 웹툰 3D 배경 에셋 디렉터입니다. 컷별 3D 공간 카테고리, 카메라 초점거리(mm), 카메라 높이(cm), 틸트 각도(°), 피사계 심도(DoF 블러 %), 안개 농도(%), 전경/중경 소품 배치와 그림자 방향을 JSON으로 설계하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],

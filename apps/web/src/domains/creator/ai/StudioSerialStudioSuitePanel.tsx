@@ -212,7 +212,7 @@ export function StudioSerialStudioSuitePanel({
 
   return (
     <section
-      aria-label="꿈툰(Ggumtoon) AI 웹툰·웹소설 창작 스튜디오 및 플랫폼 통합 워크스페이스"
+      aria-label="연재 스튜디오: AI 웹툰·웹소설 창작과 연재 플랫폼 통합 워크스페이스"
       data-testid="studio-ggumtoon-suite-panel"
       className="mt-3 space-y-3 rounded-xl border border-accent/40 bg-card/95 p-3 text-xs shadow-sm"
     >
@@ -224,7 +224,7 @@ export function StudioSerialStudioSuitePanel({
           </span>
           <div>
             <h3 className="text-xs font-bold text-fg">
-              꿈툰 (Ggumtoon · ggumtoon.com) AI 창작 스튜디오 & 연재·정산 통합 스위트
+              연재 스튜디오 · AI 창작 & 연재·정산 통합 스위트
             </h3>
             <p className="text-[0.6rem] text-fg-3">
               스타일 3장 생성·등장인물 자동인식 · 캐릭터 시트 · 장면/인페인팅/여백 패널 · 웹소설 DOCX · 이중지갑/기다무/정산
@@ -257,7 +257,7 @@ export function StudioSerialStudioSuitePanel({
       {/* 4대 워크스페이스 탭 */}
       <div
         role="tablist"
-        aria-label="꿈툰 스튜디오 기능 탭"
+        aria-label="연재 스튜디오 기능 탭"
         className="grid grid-cols-2 gap-1 sm:grid-cols-4"
       >
         {(

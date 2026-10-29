@@ -176,7 +176,7 @@ export function StudioCreatorPlusSuitePanel({
 
   return (
     <section
-      aria-label="투닝 플러스 (Tooning Plus) 전 제품군 통합 워크스페이스"
+      aria-label="크리에이터 플러스 통합 워크스페이스"
       data-testid="studio-tooning-plus-suite-panel"
       className="flex flex-col gap-2.5 rounded-xl border border-accent/45 bg-card/90 p-3 text-[0.65rem] text-fg"
     >
@@ -184,17 +184,17 @@ export function StudioCreatorPlusSuitePanel({
         <div className="flex items-center gap-1.5">
           <Sparkles size={14} className="text-accent" aria-hidden />
           <strong className="text-xs font-black text-fg">
-            투닝 플러스 (Tooning Plus) 7대 제품군 통합 워크스페이스
+            크리에이터 플러스 7종 도구 통합 워크스페이스
           </strong>
           <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.58rem] font-bold text-accent">
             {CREATOR_PLUS_SERVICES.length}개 서비스 완전 내장
           </span>
         </div>
 
-        <div role="tablist" aria-label="투닝 플러스 제품군 선택" className="flex flex-wrap gap-1">
+        <div role="tablist" aria-label="크리에이터 플러스 도구 선택" className="flex flex-wrap gap-1">
           {(
             [
-              { id: "TG", label: "TG 투닝 스토리·컷분할", icon: BookOpen },
+              { id: "TG", label: "TG 스토리·컷분할", icon: BookOpen },
               { id: "ED_MG", label: "ED/MG 다각도·매직·리터치", icon: Wand2 },
               { id: "DV", label: "DV 디브 캐릭터·로어북", icon: Bot },
               { id: "TB", label: "TB 툰비 원고검증·뷰어", icon: FileCheck2 },
@@ -361,7 +361,7 @@ export function StudioCreatorPlusSuitePanel({
               <label>
                 폰트(9종):
                 <select
-                  aria-label="투닝 스토리 캔버스 폰트"
+                  aria-label="스토리 캔버스 폰트"
                   value={tgFont}
                   onChange={(e) => setTgFont(e.target.value as TgSupportedFont)}
                   className="ml-1 rounded border border-line bg-field px-1 py-0.5"
@@ -376,7 +376,7 @@ export function StudioCreatorPlusSuitePanel({
               <label>
                 커버(844×264):
                 <select
-                  aria-label="투닝 스토리 커버 이미지 프리셋"
+                  aria-label="스토리 커버 이미지 프리셋"
                   value={tgCoverPresetId}
                   onChange={(e) => setTgCoverPresetId(e.target.value)}
                   className="ml-1 rounded border border-line bg-field px-1 py-0.5"
@@ -391,7 +391,7 @@ export function StudioCreatorPlusSuitePanel({
               <label>
                 내보내기(4종):
                 <select
-                  aria-label="투닝 스토리 내보내기 파일 포맷"
+                  aria-label="스토리 내보내기 파일 포맷"
                   value={tgExportFileType}
                   onChange={(e) => setTgExportFileType(e.target.value as TgFileType)}
                   className="ml-1 rounded border border-line bg-field px-1 py-0.5"
@@ -537,7 +537,7 @@ export function StudioCreatorPlusSuitePanel({
           <div className="rounded-lg border border-line bg-card p-2 text-[0.6rem]">
             <div className="flex flex-wrap items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5">
-                <strong className="text-fg">투닝 매직 (MG) 스타일 & 후처리 비트마스크:</strong>
+                <strong className="text-fg">매직 (MG) 스타일 & 후처리 비트마스크:</strong>
                 <span className="rounded bg-accent-soft px-1.5 py-0.5 font-mono font-bold text-accent">
                   bitmask={mgBitmask} (규격 {MG_ASPECT_RATIO_SPECS.length}종)
                 </span>

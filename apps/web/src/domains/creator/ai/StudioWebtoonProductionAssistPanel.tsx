@@ -78,22 +78,22 @@ const PRODUCTION_ASSIST_TABS: readonly {
   {
     id: "scroll-eyepath",
     labelKo: "모바일 스크롤 시선·데드존 닥터",
-    benchmarkBadgeKo: "클립스튜디오 EX · 네이버웹툰",
+    benchmarkBadgeKo: "모바일 세로 스크롤 기준",
   },
   {
     id: "color-script",
     labelKo: "컬러 스크립트 · 4레이어 조명",
-    benchmarkBadgeKo: "다쉬툰 스튜디오 · 리얼드로우",
+    benchmarkBadgeKo: "시간대·조명 연출 기준",
   },
   {
     id: "continuity-foreshadow",
     labelKo: "설정 연속성 · 복선 회수 감수",
-    benchmarkBadgeKo: "오노마AI 페뷸레이터 · 라마젠",
+    benchmarkBadgeKo: "설정·복선 연속성 기준",
   },
   {
     id: "acting-sfx",
     labelKo: "다각도 연기 · SFX 오케스트레이터",
-    benchmarkBadgeKo: "라이언로켓 젠버스 · 투닝 플러스",
+    benchmarkBadgeKo: "다각도 연기·SFX 기준",
   },
   {
     id: "multi-character-wardrobe-lock",
@@ -536,7 +536,7 @@ export function StudioWebtoonProductionAssistPanel({
           <div className="flex flex-wrap items-center justify-between gap-1">
             <span className="inline-flex items-center gap-1 font-bold text-fg">
               <Volume2 size={12} className="text-accent" aria-hidden="true" />
-              젠버스 다각도 캐릭터 시트 & 투닝 SFX 오케스트레이션
+              다각도 캐릭터 시트 & SFX 오케스트레이션
             </span>
           </div>
           <p className="text-fg-2">{currentActingView.genvasConsistencySummaryKo}</p>

@@ -62,7 +62,7 @@ const SIMULATED_NEXT_FREE_ISO = new Date(SIMULATED_BASE_MS + 125 * 60_000).toISO
 
 export function StudioSerialPlatformSubPanel(): ReactElement {
   // 1. 작가 핸들 & 작품 등록 상태
-  const [authorName, setAuthorName] = useState("꿈툰작가01");
+  const [authorName, setAuthorName] = useState("연재작가01");
   const [workTitle, setWorkTitle] = useState("레벨업 연애");
   const [selectedGenre, setSelectedGenre] = useState<SerialStudioGenre>("로맨스");
   const [serialType, setSerialType] = useState<SerialStudioSerialType>("twice_weekly");

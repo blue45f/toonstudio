@@ -145,7 +145,7 @@ export async function runAssistCharacterCanonArchitect(
     system: [
       {
         type: "text",
-        text: "당신은 라이언로켓 젠버스(Genvas)·클립스튜디오 기준 웹툰 캐릭터 캐논 시트(Character Canon Sheet) 디렉터입니다. 매 컷마다 동일한 얼굴·머리색·체형·의상이 유지되도록 외모 묘사(appearanceKo), 의상 묘사(outfitKo), 핵심 특징 태그(traitTags), 영문 이미지 시드 고정 토큰(englishPromptLockTokens), 외모 드리프트 방지 네거티브 토큰(negativeDriftTokens), 캐릭터 말투 요약(speechStyleSummaryKo)을 JSON으로 설계하세요.",
+        text: "당신은 웹툰 캐릭터 캐논 시트(Character Canon Sheet) 디렉터입니다. 매 컷마다 동일한 얼굴·머리색·체형·의상이 유지되도록 외모 묘사(appearanceKo), 의상 묘사(outfitKo), 핵심 특징 태그(traitTags), 영문 이미지 시드 고정 토큰(englishPromptLockTokens), 외모 드리프트 방지 네거티브 토큰(negativeDriftTokens), 캐릭터 말투 요약(speechStyleSummaryKo)을 JSON으로 설계하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -394,7 +394,7 @@ export async function runAssistSceneShadingDirector(
     system: [
       {
         type: "text",
-        text: "당신은 네이버웹툰 AI Painter·클립스튜디오 Shading Assist 기준 웹툰 채색·조명 디렉터입니다. 광원 방향·강도·색온도와 장면 설명을 바탕으로 1단 셀 음영(shadow1ColorHex), 2단 심층 암부(shadow2ColorHex), 역광 림라이트(rimLightColorHex), 선화 색트랩(colorHoldInkHex), 피부 경계 투과광(subsurfaceScatterHex)의 #RRGGBB HEX 코드와 불투명도(%), 채색 코칭(coloristCoachingKo)을 JSON으로 설계하세요.",
+        text: "당신은 웹툰 채색·조명 디렉터입니다. 광원 방향·강도·색온도와 장면 설명을 바탕으로 1단 셀 음영(shadow1ColorHex), 2단 심층 암부(shadow2ColorHex), 역광 림라이트(rimLightColorHex), 선화 색트랩(colorHoldInkHex), 피부 경계 투과광(subsurfaceScatterHex)의 #RRGGBB HEX 코드와 불투명도(%), 채색 코칭(coloristCoachingKo)을 JSON으로 설계하세요.",
         cache_control: { type: "ephemeral" },
       },
     ],

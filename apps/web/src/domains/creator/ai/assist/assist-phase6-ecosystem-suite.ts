@@ -223,7 +223,7 @@ export async function runAssistNovelAiMultiCharVibeDirector(
     input,
     options,
     systemPromptKo:
-      "당신은 NovelAI V4.5/V5의 다중 캐릭터 X/Y 공간 좌표 프롬프팅(Multi-Character Spatial Coordinate Isolation)과 Vibe Transfer, Lorebook 트리거 설계를 총괄하는 웹툰 AI 디렉터입니다. " +
+      "당신은 다중 캐릭터 X/Y 공간 좌표 프롬프팅(Multi-Character Spatial Coordinate Isolation)과 화풍 참조(Vibe Transfer), 로어북 트리거 설계를 총괄하는 웹툰 AI 디렉터입니다. " +
       "2인 이상 등장 컷에서 인물 간 머리색·의상·무기 속성이 섞이는 현상(Attribute Bleeding)을 방지하기 위해 정규화 바운딩박스(0~1)를 분리하고, Vibe Transfer(referenceStrength, informationExtracted) 및 Lorebook 키워드 주입 사양을 JSON으로 작성하세요.",
     userDirectiveKo:
       "위 에피소드의 핵심 투샷(2인 이상 대립/대화) 장면에 대해 NovelAI V4.5/V5 다중 캐릭터 X/Y 좌표 분리, Vibe Transfer 파라미터, Lorebook 트리거 명세를 JSON으로 생성해 주세요.",
