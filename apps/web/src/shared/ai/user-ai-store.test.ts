@@ -243,6 +243,37 @@ describe("setUserAiConfiguration — 경로 사용 기록 정리", () => {
     },
   );
 
+  it.each(["connection", "key"] as const)(
+    "%s을(를) 꺼 둔 동안 쓰지 않던 이미지 모델 프로필을 지워도 텍스트 키의 결제 잠금은 남는다",
+    async (switchedOff) => {
+      const base = addQuickKey(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration, "groq", NEW_KEY).configuration;
+      const connection = base.connections[0]!;
+      // 고급 설정에서 더하고 꺼 둔 이미지 모델 프로필(무료 정책은 텍스트만 허용하므로 꺼 두어야 저장된다).
+      const imageProfile = { id: "image-1", label: "이미지", model: "groq-image", capability: "image" as const, enabled: false, priority: 20 };
+      setUserAiConfiguration({ ...base, connections: [{ ...connection, models: [...(connection.models ?? []), imageProfile] }] });
+      await recordFreeAiRuntimeResponse(routeOfKey(getUserAiSnapshot().configuration, OLD_KEY), 402, new Headers());
+
+      const withLockedKeyOn = (configuration: UserAiConfiguration, on: boolean): UserAiConfiguration => ({
+        ...configuration,
+        connections: configuration.connections.map((item) => (switchedOff === "connection"
+          ? { ...item, enabled: on }
+          : { ...item, apiKeys: item.apiKeys?.map((key) => (key.apiKey === OLD_KEY ? { ...key, enabled: on } : key)) })),
+      });
+      setUserAiConfiguration(withLockedKeyOn(getUserAiSnapshot().configuration, false));
+      // 키와 텍스트 모델은 그대로 두고, 쓰지 않던 이미지 모델 프로필만 지운다.
+      const current = getUserAiSnapshot().configuration;
+      setUserAiConfiguration({
+        ...current,
+        connections: current.connections.map((item) => ({ ...item, models: item.models?.filter((model) => model.id !== "image-1") })),
+      });
+      setUserAiConfiguration(withLockedKeyOn(getUserAiSnapshot().configuration, true));
+
+      const again = routeOfKey(getUserAiSnapshot().configuration, OLD_KEY);
+      expect(getFreeAiRuntimeBudgetSnapshot(again).blockedReason).toBe("payment-required");
+      await expect(guardFreeAiRuntimeRequest(again, "text", "/models", "GET", undefined)).rejects.toThrow(/결제를 요구/u);
+    },
+  );
+
   it("다른 경로의 기록은 건드리지 않는다", async () => {
     const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
     setUserAiConfiguration(groq.configuration);
