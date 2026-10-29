@@ -27,6 +27,7 @@ import {
   studioAiPremiumRequestHeaders,
   type StudioAiNormalizedMessage,
   type StudioAiPremiumEffort,
+  type StudioAiPremiumStopReason,
   type StudioAiPremiumTokenCounts,
 } from "./studio-ai-messages-translate";
 import { studioAiMessagesHasImages, type StudioAiMessagesRequest } from "./studio-ai-messages.dto";
@@ -244,9 +245,15 @@ function parsePremiumChatPayload(payload: unknown): StudioAiExchangeParsed {
   return { ok: true, content: parsed.text, ...(parsed.model ? { model: parsed.model } : {}), usage };
 }
 
+/** Messages 응답 계약은 유지하되 거절·불완전 종료를 성공 사용량으로 집계하지 않는다. */
+function messagesLedgerStatus(stopReason: StudioAiPremiumStopReason): StudioAiUsageStatus {
+  if (stopReason === "refusal") return "content_filtered";
+  return stopReason === "end_turn" || stopReason === "stop_sequence" ? "success" : "provider_error";
+}
+
 /**
  * 고성능 경로 보조 기능 응답. 거절·잘림은 이미 처리된 응답이라 그대로 Messages 형태로 돌려주고,
- * 브라우저가 사유 문구를 보여 준다(BYOK 경로와 같은 판정). 원장에는 거절을 따로 표시한다.
+ * 브라우저가 사유 문구를 보여 준다(BYOK 경로와 같은 판정). 원장에는 거절·불완전 종료를 따로 표시한다.
  */
 function parsePremiumMessagesPayload(
   payload: unknown,
@@ -269,7 +276,7 @@ function parsePremiumMessagesPayload(
     content: parsed.text,
     model,
     usage,
-    ...(parsed.stopReason === "refusal" ? { ledgerStatus: "content_filtered" as const } : {}),
+    ledgerStatus: messagesLedgerStatus(parsed.stopReason),
     message: normalizedPremiumMessage({
       id: studioAiProviderRequestId(payload) ?? `msg_${randomUUID()}`,
       model,
@@ -322,7 +329,7 @@ function parseFreeMessagesPayload(
     content: text,
     model,
     usage,
-    ...(stopReason === "refusal" ? { ledgerStatus: "content_filtered" as const } : {}),
+    ledgerStatus: messagesLedgerStatus(stopReason),
     message: normalizedPremiumMessage({
       id: studioAiProviderRequestId(payload) ?? `msg_${randomUUID()}`,
       model,

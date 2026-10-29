@@ -23,7 +23,9 @@ server-backed Studio AI 경로는 cloud-only, free-first, fail-closed다. Postgr
   `503 FREE_AI_POOL_UNAVAILABLE`이 아니라 `429 FREE_AI_POOL_EXHAUSTED`(오늘 한도 소진)로 알린다.
 - 전환: 429·529·402·400(결제 오류, 워크스페이스 지정 누락 같은 운영 키 설정 오류, 구조화 출력 스키마 미지원 같은
   요청 거절)·401·403·404·413처럼 추론 전 확정 거절만 같은 요청을 무료 pool로 넘긴다(`premium_unavailable`).
-  5xx·시간 초과·깨진 응답은 재전송하지 않는다. 원인별로 10분에 한 번 상태·오류 종류만 경고 로그로 남긴다.
+  5xx·시간 초과·깨진 응답은 재전송하지 않는다. 지출상한 429(`enforced_spend_limit_reached`)와 명시적인
+  사용 한도·크레딧 부족 400은 일반 제한과 구분한다. 무료 후보가 없으면 `429 PREMIUM_AI_BUDGET_EXHAUSTED`로
+  끝내며 다른 유료 제공자로 넘기지 않는다. 원인별로 10분에 한 번 상태·오류 종류만 경고 로그로 남긴다.
 - 요청 형태: 샘플링 매개변수 없이 작업별 `effort`, 사고 여유분(4,000토큰), 서버 측 모델 대체를 싣는다.
 
 ### 보조 기능 `POST /studio-ai/messages`
@@ -31,12 +33,16 @@ server-backed Studio AI 경로는 cloud-only, free-first, fail-closed다. Postgr
 이미지(base64)·시스템 블록·JSON 스키마 구조화 출력을 받는 Messages API 부분 집합이다(`studio-ai-messages.dto.ts`).
 운영 고성능 경로를 먼저 쓰고, 확정 거절이면 같은 요청을 비전이 되는 무료 제공자(Gemini, 비전 모델을 쓰는 Groq)
 형식으로 바꿔 이어 간다. 결과는 경로와 무관하게 정규화된 Messages 객체다. 원장에는 범용 보조(`assistant`)로 남긴다.
+거절·출력 잘림·일시 중지·컨텍스트 상한 종료도 기존 `stop_reason`·`usage` 응답을 유지하지만 원장은
+`content_filtered` 또는 `provider_error`로 기록한다. 이미 처리된 요청은 재전송하지 않으며 사용량과 캐시 토큰을
+정산하고, 영수증은 `ambiguous`로 남겨 같은 작업의 중복 실행을 막는다.
 
 ### 코드 구성
 
 - `studio-ai.service.ts`: admission·쿼터·영수증·원장·중복 과금 방지(두 작업 공통).
 - `studio-ai-exchange.ts`: 작업별·제공자별 요청 본문, 응답 해석, 보조 기능 후보 선정.
 - `studio-ai-messages-translate.ts`: Messages API 요청·응답 변환과 무료 풀 형식 변환.
+- `studio-ai-premium-failure.ts`: 운영 지출한도·크레딧 부족 판별과 안전한 실패 응답 생성.
 
 ## 공유 무료 pool
 
