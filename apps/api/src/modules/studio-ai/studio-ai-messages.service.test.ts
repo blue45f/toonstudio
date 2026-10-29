@@ -319,6 +319,73 @@ describe("보조 기능 서버 경로(/studio-ai/messages)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("무료 풀이 없을 때 고성능 경로 오늘 예산을 다 썼으면 '준비 안 됨'(503)이 아니라 한도 소진(429)으로 알린다", async () => {
+    process.env.STUDIO_AI_FREE_POOL_ENABLED = "false";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const spent: StudioAiPremiumBudgetStore = {
+      todayUsage: vi.fn().mockResolvedValue({ ledgerReady: true, userRequests: 30, globalRequests: 30, globalTokens: 0 }),
+    };
+
+    for (const run of [
+      () => createService(spent).service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY),
+      () => createService(spent).service.complete("user-1", dialogueInput, IDEMPOTENCY_KEY),
+    ]) {
+      const error = await run().catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(HttpException);
+      expect((error as HttpException).getStatus()).toBe(429);
+      expect((error as HttpException).getResponse()).toMatchObject({ code: "FREE_AI_POOL_EXHAUSTED" });
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // 원장이 준비되지 않아 닫은 것은 한도 소진이 아니라 그대로 "준비 안 됨"이다.
+    const notReady = await createService(new InMemoryStudioAiPremiumBudgetStore(false)).service
+      .completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY)
+      .catch((caught: unknown) => caught);
+    expect((notReady as HttpException).getResponse()).toMatchObject({ code: "FREE_AI_POOL_UNAVAILABLE" });
+  });
+
+  it("무료 제공자가 안전 필터로 본문 없이 막으면 빈 응답(다시 시도)이 아니라 거절로 돌려준다", async () => {
+    delete process.env.STUDIO_AI_ANTHROPIC_API_KEY;
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      id: "chatcmpl-filtered",
+      model: "gemini-3.8-flash",
+      choices: [{ finish_reason: "content_filter", message: { content: null } }],
+      usage: { prompt_tokens: 30, completion_tokens: 0, total_tokens: 30 },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { service, finalize } = createService();
+
+    const result = await service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY);
+    expect(result.message.stop_reason).toBe("refusal");
+    expect(result.message.content).toEqual([{ type: "text", text: "" }]);
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({ provider: "gemini", status: "content_filtered" }));
+  });
+
+  it("서버 측 대체로 거절한 시도의 토큰까지 원장과 쿼터에 센다", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(premiumMessage("{\"summary\":\"대체 답\"}", {
+      model: "claude-opus-4-8",
+      usage: {
+        input_tokens: 40,
+        output_tokens: 12,
+        iterations: [
+          { type: "message", model: "claude-opus-5-5", input_tokens: 40, output_tokens: 30 },
+          { type: "fallback_message", model: "claude-opus-4-8", input_tokens: 40, output_tokens: 12 },
+        ],
+      },
+    })));
+    vi.stubGlobal("fetch", fetchMock);
+    const { service, finalize } = createService();
+
+    const result = await service.completeMessages("user-1", imageRequest, IDEMPOTENCY_KEY);
+    // 브라우저에 주는 메시지는 답을 낸 시도의 사용량 그대로다.
+    expect(result.message.usage).toMatchObject({ input_tokens: 40, output_tokens: 12 });
+    expect(finalize).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "anthropic",
+      usage: { promptTokens: 80, completionTokens: 42, totalTokens: 122 },
+    }));
+  });
+
   it("거절 응답은 Messages 형태 그대로 돌려줘 브라우저가 사유를 보여 주게 하고 원장에는 거절로 남긴다", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(premiumMessage("", { stop_reason: "refusal" })));
     vi.stubGlobal("fetch", fetchMock);

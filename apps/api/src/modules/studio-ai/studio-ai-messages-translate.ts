@@ -162,21 +162,56 @@ export type StudioAiPremiumStopReason =
   | "model_context_window_exceeded"
   | "other";
 
+export interface StudioAiPremiumTokenCounts {
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  readonly cacheReadTokens: number;
+  readonly cacheWriteTokens: number;
+}
+
 export type StudioAiPremiumParseResult =
-  | {
+  | ({
       readonly ok: true;
       readonly text: string;
       readonly model?: string;
       readonly stopReason: StudioAiPremiumStopReason;
-      readonly inputTokens: number;
-      readonly outputTokens: number;
-      readonly cacheReadTokens: number;
-      readonly cacheWriteTokens: number;
-    }
+      /**
+       * 이 응답 전체에서 과금되는 토큰. 서버 측 대체가 돌면 거절한 시도도 따로 과금되는데, 맨 위 usage는 답을 낸
+       * 시도만 담고 시도별 기록은 usage.iterations에만 있다. 쿼터·원장·예산은 이 값으로 센다.
+       */
+      readonly billed: StudioAiPremiumTokenCounts;
+    } & StudioAiPremiumTokenCounts)
   | { readonly ok: false; readonly reason: "invalid_response" };
 
 function nonNegativeInteger(value: unknown): number | undefined {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+}
+
+/**
+ * usage.iterations(시도별 과금 기록)를 모두 더한다. 기록이 없거나 합이 맨 위 값보다 작으면 맨 위 값을 쓴다.
+ * 추론 전에 거절된 시도는 거절 분류에 따라 과금되지 않을 수도 있지만, 예산은 넘치지 않게 보수적으로 센다.
+ */
+function billedTokenCounts(
+  usageRecord: Record<string, unknown>,
+  served: StudioAiPremiumTokenCounts,
+): StudioAiPremiumTokenCounts {
+  const iterations = usageRecord["iterations"];
+  if (!Array.isArray(iterations)) return served;
+  const sum = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
+  for (const entry of iterations) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const item = entry as Record<string, unknown>;
+    sum.inputTokens += nonNegativeInteger(item["input_tokens"]) ?? 0;
+    sum.outputTokens += nonNegativeInteger(item["output_tokens"]) ?? 0;
+    sum.cacheReadTokens += nonNegativeInteger(item["cache_read_input_tokens"]) ?? 0;
+    sum.cacheWriteTokens += nonNegativeInteger(item["cache_creation_input_tokens"]) ?? 0;
+  }
+  return {
+    inputTokens: Math.max(sum.inputTokens, served.inputTokens),
+    outputTokens: Math.max(sum.outputTokens, served.outputTokens),
+    cacheReadTokens: Math.max(sum.cacheReadTokens, served.cacheReadTokens),
+    cacheWriteTokens: Math.max(sum.cacheWriteTokens, served.cacheWriteTokens),
+  };
 }
 
 function stopReason(value: unknown): StudioAiPremiumStopReason {
@@ -220,6 +255,12 @@ export function parsePremiumMessagesResponse(body: unknown): StudioAiPremiumPars
   const model = typeof record["model"] === "string" && record["model"].trim()
     ? record["model"].trim().slice(0, 200)
     : undefined;
+  const served: StudioAiPremiumTokenCounts = {
+    inputTokens,
+    outputTokens,
+    cacheReadTokens: nonNegativeInteger(usageRecord["cache_read_input_tokens"]) ?? 0,
+    cacheWriteTokens: nonNegativeInteger(usageRecord["cache_creation_input_tokens"]) ?? 0,
+  };
   return {
     ok: true,
     text,
@@ -227,10 +268,8 @@ export function parsePremiumMessagesResponse(body: unknown): StudioAiPremiumPars
     stopReason: record["stop_reason"] === null || record["stop_reason"] === undefined
       ? "end_turn"
       : stopReason(record["stop_reason"]),
-    inputTokens,
-    outputTokens,
-    cacheReadTokens: nonNegativeInteger(usageRecord["cache_read_input_tokens"]) ?? 0,
-    cacheWriteTokens: nonNegativeInteger(usageRecord["cache_creation_input_tokens"]) ?? 0,
+    ...served,
+    billed: billedTokenCounts(usageRecord, served),
   };
 }
 

@@ -500,22 +500,26 @@ export class StudioAiService {
 
   /**
    * 운영 프리미엄 경로를 이번 요청의 후보에 넣어도 되는지. 키·자동 설정·일일 예산·원장 준비를 모두 확인하고,
-   * 예산을 확인하지 못하면 운영 비용을 열지 않고(fail-closed) 무료 풀로 진행한다.
+   * 예산을 확인하지 못하면 운영 비용을 열지 않고(fail-closed) 무료 풀로 진행한다. budgetExhausted는 오늘 예산을
+   * 다 써서 닫았을 때만 참이라, 남은 후보가 없을 때 "준비 안 됨" 대신 "오늘 한도 소진"으로 알리는 데 쓴다.
    */
-  private async premiumAllowed(
+  private async premiumDecision(
     userId: string,
     preference: StudioAiChatDto["provider"] | "auto",
-  ): Promise<boolean> {
+  ): Promise<{ readonly allowed: boolean; readonly budgetExhausted: boolean }> {
+    const closed = { allowed: false, budgetExhausted: false };
     const premium = resolveStudioAiPremiumConfig();
-    if (!premium.configured) return false;
+    if (!premium.configured) return closed;
     const wanted = preference === STUDIO_AI_PREMIUM_PROVIDER_ID
       || ((preference ?? "auto") === "auto" && premium.automatic);
-    if (!wanted || !this.premiumBudget) return false;
+    if (!wanted || !this.premiumBudget) return closed;
     try {
       const usage = await this.premiumBudget.todayUsage(userId);
-      return studioAiPremiumBudgetAllows(usage, premium.limits);
+      const allowed = studioAiPremiumBudgetAllows(usage, premium.limits);
+      // 원장이 아직 준비되지 않아 닫은 것은 한도 소진이 아니다(운영 설정 문제라 "준비 안 됨"으로 둔다).
+      return { allowed, budgetExhausted: !allowed && usage.ledgerReady };
     } catch {
-      return false;
+      return closed;
     }
   }
 
@@ -537,13 +541,15 @@ export class StudioAiService {
       requestHash: studioAiCanonicalRequestHash(input),
     };
     const providerPreference = input.provider ?? "auto";
+    const premiumDecision = await this.premiumDecision(userId, providerPreference);
     const providers = resolveStudioAiProviderCandidates(
       providerPreference,
       process.env,
       input.providerOrder ?? [],
-      { premiumAllowed: await this.premiumAllowed(userId, providerPreference) },
+      { premiumAllowed: premiumDecision.allowed },
     );
     if (providers.length === 0) {
+      if (premiumDecision.budgetExhausted) throw dailyQuotaExceededException();
       throw new ServiceUnavailableException({
         code: "FREE_AI_POOL_UNAVAILABLE",
         message: providerPreference === "auto"
@@ -579,8 +585,10 @@ export class StudioAiService {
       userKeyHash: studioAiUserIdempotencyKeyHash(userId, idempotencyKey),
       requestHash: studioAiCanonicalMessagesRequestHash(input, idempotencyKey),
     };
-    const providers = studioAiMessagesCandidates(input, await this.premiumAllowed(userId, "auto"));
+    const premiumDecision = await this.premiumDecision(userId, "auto");
+    const providers = studioAiMessagesCandidates(input, premiumDecision.allowed);
     if (providers.length === 0) {
+      if (premiumDecision.budgetExhausted) throw dailyQuotaExceededException();
       throw new ServiceUnavailableException({
         code: "FREE_AI_POOL_UNAVAILABLE",
         message: studioAiMessagesHasImages(input)
