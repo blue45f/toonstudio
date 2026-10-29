@@ -6,19 +6,19 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 type VisualState = { kind: "loading" } | { kind: "error"; message: string; captureHref?: string | null }
-  | { kind: "ready"; data: SubmissionVisualReviewData; pages: readonly StudioReviewPreviewRead[] };
+  | { kind: "ready"; data: SubmissionVisualReviewData; pages: readonly StudioReviewPreviewRead[]; complete: boolean };
 type BaselineState = { kind: "idle" } | { kind: "loading"; revisionId: string } | { kind: "error"; revisionId: string; message: string }
-  | { kind: "ready"; revisionId: string; pages: readonly StudioReviewPreviewRead[] };
+  | { kind: "ready"; revisionId: string; pages: readonly StudioReviewPreviewRead[]; complete: boolean };
 
-function PinnedImage({ preview, label, onRefresh, onLoaded }: { readonly preview: StudioReviewPreviewRead | undefined; readonly label: string;
+function PinnedImage({ preview, label, canRefresh, onRefresh, onLoaded }: { readonly preview: StudioReviewPreviewRead | undefined; readonly label: string; readonly canRefresh: boolean;
   readonly onRefresh: () => void; readonly onLoaded: () => void }) {
   const bt = useBilingual("ProductionSubmissionVisualReview");
   const [failed, setFailed] = useState(false);
   const [expired] = useState(() => preview != null && preview.expiresAt <= Date.now());
-  useEffect(() => { if (expired) onRefresh(); }, [expired, onRefresh]);
+  useEffect(() => { if (canRefresh && (expired || failed)) onRefresh(); }, [canRefresh, expired, failed, onRefresh]);
   if (!preview) return <p className="p-6 text-sm text-fg-2">{bt("이 버전에는 해당 순번의 이미지가 없습니다.", "This version has no image at this position.")}</p>;
   return failed || expired ? <p role="alert" className="p-6 text-sm text-bad">{bt("이미지를 다시 확인하고 있습니다. 복구되지 않으면 이미지 새로고침을 눌러 주세요.", "Checking the image again. Refresh images if it does not recover.")}</p>
-    : <img src={preview.url} alt={label} className="block h-auto w-full" referrerPolicy="no-referrer" onLoad={onLoaded} onError={() => { setFailed(true); onRefresh(); }} />;
+    : <img src={preview.url} alt={label} className="block h-auto w-full" referrerPolicy="no-referrer" onLoad={onLoaded} onError={() => setFailed(true)} />;
 }
 
 /** 선택 제출본과 저장된 입력본만 읽는다. 핀 작성은 같은 고정 버전의 Studio 검수에 맡긴다. */
@@ -56,7 +56,8 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
 
   useEffect(() => {
     if (!opened || demo) return;
-    requestGeneration.current += 1;
+    const generation = ++requestGeneration.current;
+    const controller = new AbortController();
     setAutoRefreshCount(0);
     let cancelled = false;
     setState({ kind: "loading" });
@@ -66,31 +67,38 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
         if (cancelled) return;
         const data = await loadSubmissionVisualReview(request.aggregate, request.submission);
         if (cancelled) return;
-        const pages = await loadPinnedSubmissionPreviews(data.submission);
-        if (!cancelled) setState({ kind: "ready", data, pages });
+        const pages = await loadPinnedSubmissionPreviews(data.submission, { signal: controller.signal,
+          onValidatedPrefix: (prefix) => {
+            if (!cancelled && generation === requestGeneration.current) setState({ kind: "ready", data, pages: prefix, complete: false });
+          } });
+        if (!cancelled && generation === requestGeneration.current) setState({ kind: "ready", data, pages, complete: true });
       } catch (cause) {
-        if (!cancelled) setState({ kind: "error", message: cause instanceof Error ? cause.message : bt("원고 이미지를 불러오지 못했습니다.", "Could not load manuscript images."),
+        if (!cancelled && generation === requestGeneration.current) setState({ kind: "error", message: cause instanceof Error ? cause.message : bt("원고 이미지를 불러오지 못했습니다.", "Could not load manuscript images."),
           captureHref: cause instanceof Error && "captureHref" in cause && typeof cause.captureHref === "string" ? cause.captureHref : null });
       }
     })();
-    return () => { cancelled = true; requestGeneration.current += 1; };
+    return () => { cancelled = true; controller.abort(); requestGeneration.current += 1; };
   }, [opened, refresh, request, demo, bt]);
 
   const baseline = state.kind === "ready" ? state.data.baselines.find((entry) => entry.sourceRevisionRef.id === baselineId) ?? null : null;
   useEffect(() => {
     if (!baseline) { setBaselineState({ kind: "idle" }); return; }
     let cancelled = false;
+    const generation = requestGeneration.current;
+    const controller = new AbortController();
     setBaselineState({ kind: "loading", revisionId: baseline.revision.id });
     void import("./production-submission-visual-review").then(({ loadPinnedSubmissionPreviews }) => {
       if (cancelled) return null;
-      return loadPinnedSubmissionPreviews(baseline);
+      return loadPinnedSubmissionPreviews(baseline, { signal: controller.signal, onValidatedPrefix: (prefix) => {
+        if (!cancelled && generation === requestGeneration.current) setBaselineState({ kind: "ready", revisionId: baseline.revision.id, pages: prefix, complete: false });
+      } });
     }).then((pages) => {
       if (!pages) return;
-      if (!cancelled) setBaselineState({ kind: "ready", revisionId: baseline.revision.id, pages });
+      if (!cancelled && generation === requestGeneration.current) setBaselineState({ kind: "ready", revisionId: baseline.revision.id, pages, complete: true });
     }).catch((cause: unknown) => {
-      if (!cancelled) setBaselineState({ kind: "error", revisionId: baseline.revision.id, message: cause instanceof Error ? cause.message : bt("기준 원고를 불러오지 못했습니다.", "Could not load the baseline.") });
+      if (!cancelled && generation === requestGeneration.current) setBaselineState({ kind: "error", revisionId: baseline.revision.id, message: cause instanceof Error ? cause.message : bt("기준 원고를 불러오지 못했습니다.", "Could not load the baseline.") });
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [baseline, bt]);
 
   const currentBaselineState = baseline && baselineState.kind !== "idle" && baselineState.revisionId === baseline.revision.id ? baselineState : null;
@@ -113,12 +121,25 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
         setState((current) => current.kind === "ready" && current.data.submission.revision.id === source.revision.id
           && current.data.submission.revision.rootGraphHash === source.revision.rootGraphHash ? { ...current, pages } : current);
         setBaselineState((current) => current.kind === "ready" && current.revisionId === source.revision.id ? { ...current, pages } : current);
-      }).catch(() => { /* 같은 정본의 자동 조회는 한 번만 시도하고 실패 시 이미지의 재조회 안내를 유지한다. */ })
+      }).catch((cause: unknown) => {
+        if (generation !== requestGeneration.current) return;
+        const message = cause instanceof Error ? cause.message : bt("고정 원고 이미지를 다시 확인해 주세요.", "Check the pinned manuscript images again.");
+        setState((current) => current.kind === "ready" && current.data.submission.revision.id === source.revision.id
+          && current.data.submission.revision.rootGraphHash === source.revision.rootGraphHash
+          ? { kind: "error", message, captureHref: cause instanceof Error && "captureHref" in cause && typeof cause.captureHref === "string" ? cause.captureHref : null } : current);
+        setBaselineState((current) => current.kind === "ready" && current.revisionId === source.revision.id
+          ? { kind: "error", revisionId: source.revision.id, message } : current);
+      })
       .finally(() => { autoInFlight.current.delete(sourceKey); if (generation === requestGeneration.current) setAutoRefreshCount((value) => Math.max(0, value - 1)); });
-  }, []);
-  const renderImage = (source: PinnedSubmissionVisualSource, page: StudioReviewPreviewRead | undefined) => <PinnedImage key={page ? `${page.url}:${page.expiresAt}` : `${source.revision.id}:missing`}
-    preview={page} label={`${source.label} · ${Number(selectedOrdinal) + 1}`}
-    onRefresh={() => { if (page) autoRefresh(source, page); }} onLoaded={() => { if (page) autoAttempts.current.delete(imageKey(source, page)); }} />;
+  }, [bt]);
+  const renderImage = (source: PinnedSubmissionVisualSource, page: StudioReviewPreviewRead | undefined) => {
+    const complete = state.kind === "ready" && (source.revision.id === state.data.submission.revision.id
+      ? state.complete : currentBaselineState?.kind === "ready" && currentBaselineState.complete === true);
+    return <PinnedImage key={page ? `${page.url}:${page.expiresAt}` : `${source.revision.id}:missing`}
+      preview={page} label={`${source.label} · ${Number(selectedOrdinal) + 1}`} canRefresh={complete}
+      onRefresh={() => { if (page && complete) autoRefresh(source, page); }}
+      onLoaded={() => { if (page) autoAttempts.current.delete(imageKey(source, page)); }} />;
+  };
 
   return <section className="border-b border-line bg-panel/50 p-4" aria-label={bt("고정 제출 원고 이미지", "Pinned submission images")}>
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -149,12 +170,14 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
             {ordinals.map((value, index) => <option key={value} value={value}>{index + 1} / {ordinals.length} · #{value + 1}</option>)}
           </select>
         </label>
-        {state.data.submission.reviewHref ? <a className={buttonClass({ variant: "outline", className: "min-h-11" })} href={state.data.submission.reviewHref}>{["open", "changes-requested"].includes(state.data.submission.review.status)
+        {state.complete && state.data.submission.reviewHref ? <a className={buttonClass({ variant: "outline", className: "min-h-11" })} href={state.data.submission.reviewHref}>{["open", "changes-requested"].includes(state.data.submission.review.status)
           ? bt("이 고정본에 핀 의견 남기기", "Leave pinned feedback on this version") : bt("이 고정본의 핀 의견 확인", "View pinned feedback on this version")}</a> : null}
       </div>
+      {!state.complete ? <p role="status" className="text-sm">{bt(`확인된 원고 ${state.pages.length}장을 표시하고 있습니다. 나머지 원고를 확인 중입니다.`, `Showing ${state.pages.length} verified manuscript images while checking the remaining pages.`)}</p> : null}
       {!state.data.baselines.length ? <p className="text-xs text-fg-2">{bt("비교 가능한 이전 제출본·고정 입력본의 이미지 검수가 없습니다.", "No image review is available for a previous submission or pinned input.")}</p> : null}
       {autoRefreshCount > 0 ? <p role="status" className="text-xs">{bt("같은 고정 원고의 이미지 주소를 갱신하는 중…", "Refreshing image URLs for the same pinned manuscript…")}</p> : null}
       {currentBaselineState?.kind === "loading" ? <p role="status" className="text-xs">{bt("고정 기준본 이미지 불러오는 중…", "Loading the pinned baseline…")}</p> : null}
+      {currentBaselineState?.kind === "ready" && !currentBaselineState.complete ? <p role="status" className="text-xs">{bt("확인된 기준 원고부터 표시하고 있습니다. 나머지 원고를 확인 중입니다.", "Showing verified baseline images while checking the remaining pages.")}</p> : null}
       {currentBaselineState?.kind === "error" ? <p role="alert" className="text-sm text-bad">{currentBaselineState.message}</p> : null}
       {baseline && currentBaselineState?.kind === "ready" ? <div className="flex flex-wrap items-center gap-3">
         <div role="group" aria-label={bt("실제 원고 비교 방식", "Manuscript comparison mode")} className="flex gap-2">

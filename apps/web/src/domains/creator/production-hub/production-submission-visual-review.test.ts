@@ -1,12 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getStudioProjectByWork, getStudioReviewPreviews, listStudioArtifactRevisions, listStudioReviews } from "../project-graph/studio-project-graph-client";
-import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, resolveSubmissionVisualReview } from "./production-submission-visual-review";
+import { getStudioProjectByWork, getStudioReviewPreviews, listStudioArtifactRevisions, listStudioReviews, type StudioReviewPreviewResult } from "../project-graph/studio-project-graph-client";
+import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, resolveSubmissionVisualReview, type PinnedSubmissionVisualSource } from "./production-submission-visual-review";
 import { submissionCaptureVisualFixture, submissionVisualFixture } from "./production-submission-visual-review.test-fixture";
 
 vi.mock("../project-graph/studio-project-graph-client", () => ({
   getStudioReviewPreviews: vi.fn(), getStudioProject: vi.fn(), getStudioReview: vi.fn(), getStudioProjectByWork: vi.fn(), listStudioArtifactRevisions: vi.fn(), listStudioReviews: vi.fn(),
 }));
 beforeEach(() => vi.resetAllMocks());
+
+function previewSubject(source: PinnedSubmissionVisualSource) {
+  return { schemaVersion: 1, projectId: source.projectId, workId: source.workId, artifactId: source.artifact.id,
+    reviewId: source.review.id, revisionId: source.revision.id, rootGraphHash: source.revision.rootGraphHash };
+}
+function previewPage(source: PinnedSubmissionVisualSource, ordinal: number) {
+  const ref = source.revision.blobRefs.find((entry) => entry.role === "preview" && entry.ordinal === ordinal);
+  if (!ref) throw new Error("해당 순번의 원본 preview manifest가 없습니다.");
+  return { sha256: ref.sha256, ordinal, mediaType: "image/png" as const, byteLength: 100,
+    url: `https://preview.test/${ordinal}`, expiresAt: Date.now() + 30_000,
+    mapping: { status: "mapped" as const, version: 1 as const, sourceServerRevision: 7, sourceContentDigest: source.revision.rootGraphHash,
+      page: { id: `page-${ordinal}`, ordinal, width: 800, height: 1200, renderWidth: 800, renderHeight: 1200, frames: [], elements: [] } } };
+}
+function previewResponse(source: PinnedSubmissionVisualSource, ordinals = [0], nextCursor: string | null = null) {
+  return { ok: true as const, subject: previewSubject(source), previews: ordinals.map((ordinal) => previewPage(source, ordinal)), nextCursor };
+}
+function pagedSource() {
+  const f = submissionVisualFixture();
+  const original = resolveSubmissionVisualReview(f.aggregate, f.submission, f.project, f.revisions, f.reviews).submission;
+  const source = { ...original, revision: { ...original.revision,
+    blobRefs: [0, 2].map((ordinal) => ({ sha256: (ordinal + 1).toString(16).padStart(64, "0"), ordinal, role: "preview" as const })) } };
+  const first = previewPage(source, 0);
+  return { source, cursor: `${first.ordinal}.${first.sha256}` };
+}
 
 describe("제출 원고 시각 검수 정본", () => {
   it("새 head가 있어도 제출 ID·digest와 저장된 입력본만 선택한다", () => {
@@ -40,8 +64,8 @@ describe("제출 원고 시각 검수 정본", () => {
     expect(result.submission.review.status).toBe(status);
     const baseline = result.baselines[0];
     if (!baseline) throw new Error("고정 기준본이 없습니다.");
-    vi.mocked(getStudioReviewPreviews).mockResolvedValue({ ok: true, previews: [{ sha256: f.hash, ordinal: 0,
-      mediaType: "image/png", byteLength: 100, url: "https://preview.test/approved", expiresAt: Date.now() + 30_000, mapping: null }], nextCursor: null });
+    vi.mocked(getStudioReviewPreviews).mockResolvedValue({ ...previewResponse(baseline),
+      previews: [{ ...previewPage(baseline, 0), url: "https://preview.test/approved" }] });
     expect((await loadPinnedSubmissionPreviews(baseline))[0]?.url).toContain("approved");
     expect(getStudioReviewPreviews).toHaveBeenCalledWith("input-review", expect.objectContaining({ revisionId: "input-revision" }), null);
   });
@@ -89,25 +113,105 @@ describe("제출 원고 시각 검수 정본", () => {
       linkedAt: f.submission.submittedAt, approvedAt: null };
     expect(() => resolveSubmissionVisualReview({ ...f.aggregate, studioRevisionLinks: [link] }, f.submission, f.project, f.revisions, f.reviews)).toThrow("Studio 연결");
   });
-  it("전체 커서를 읽고 실제 이미지 순번을 정렬한다", async () => {
-    const f = submissionVisualFixture();
-    const source = resolveSubmissionVisualReview(f.aggregate, f.submission, f.project, f.revisions, f.reviews).submission;
-    const preview = (ordinal: number) => ({ sha256: f.hash, ordinal, mediaType: "image/png" as const, byteLength: 100,
-      url: `https://preview.test/${ordinal}`, expiresAt: Date.now() + 30_000, mapping: null });
-    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce({ ok: true, previews: [preview(2)], nextCursor: "next" })
-      .mockResolvedValueOnce({ ok: true, previews: [preview(0)], nextCursor: null });
+  it("서버의 오름차순 cursor와 원본 manifest를 끝까지 검증한다", async () => {
+    const { source, cursor } = pagedSource();
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
+      .mockResolvedValueOnce(previewResponse(source, [2]));
     expect((await loadPinnedSubmissionPreviews(source)).map((page) => page.ordinal)).toEqual([0, 2]);
     expect(getStudioReviewPreviews).toHaveBeenNthCalledWith(2, "submission-review", {
-      projectId: "graph-project", workId: f.aggregate.workId, artifactId: "artifact", revisionId: "submitted-revision", rootGraphHash: f.hash,
-    }, "next");
+      projectId: "graph-project", workId: source.workId, artifactId: "artifact", revisionId: "submitted-revision", rootGraphHash: source.revision.rootGraphHash,
+    }, cursor);
   });
-  it("뒷 페이지 버전 불일치와 순환 커서를 부분 성공으로 숨기지 않는다", async () => {
+  it.each([120_000, -1_000])("서버가 확인한 만료 시각과 로컬 시계차이 %ims를 새 manifest 오류로 해석하지 않는다", async (offset) => {
     const f = submissionVisualFixture();
     const source = resolveSubmissionVisualReview(f.aggregate, f.submission, f.project, f.revisions, f.reviews).submission;
-    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce({ ok: true, previews: [], nextCursor: "next" })
+    const response = previewResponse(source), expiresAt = Date.now() + offset;
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce({ ...response,
+      previews: response.previews.map((preview) => ({ ...preview, expiresAt })) });
+    expect((await loadPinnedSubmissionPreviews(source))[0]?.expiresAt).toBe(expiresAt);
+  });
+  it("검증한 prefix를 먼저 전달해도 최종 Promise는 나머지 manifest 검증까지 기다린다", async () => {
+    const { source, cursor } = pagedSource();
+    let complete: ((value: StudioReviewPreviewResult) => void) | undefined;
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
+      .mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+    const prefix = vi.fn();
+    let settled = false;
+    const result = loadPinnedSubmissionPreviews(source, { onValidatedPrefix: prefix });
+    void result.then(() => { settled = true; });
+    await vi.waitFor(() => expect(getStudioReviewPreviews).toHaveBeenCalledTimes(2));
+    expect(prefix).toHaveBeenCalledOnce();
+    expect(prefix.mock.calls[0]?.[0].map((page: { ordinal: number }) => page.ordinal)).toEqual([0]);
+    expect(Object.isFrozen(prefix.mock.calls[0]?.[0])).toBe(true);
+    expect(settled).toBe(false);
+    if (!complete) throw new Error("대기 중인 후반 페이지 응답이 없습니다.");
+    complete(previewResponse(source, [2]));
+    expect((await result).map((page) => page.ordinal)).toEqual([0, 2]);
+    expect(prefix).toHaveBeenCalledOnce();
+  });
+  it.each(["projectId", "workId", "artifactId", "reviewId", "revisionId", "rootGraphHash"] as const)("후반 응답의 %s가 바뀌면 전체 Promise를 거절한다", async (key) => {
+    const { source, cursor } = pagedSource(), suffix = previewResponse(source, [2]);
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
+      .mockResolvedValueOnce({ ...suffix, subject: { ...suffix.subject, [key]: key === "rootGraphHash" ? "f".repeat(64) : "foreign-subject" } });
+    const prefix = vi.fn();
+    await expect(loadPinnedSubmissionPreviews(source, { onValidatedPrefix: prefix })).rejects.toThrow("버전이 일치하지 않습니다");
+    expect(prefix).toHaveBeenCalledOnce();
+  });
+  it.each(["hash", "ordinal", "digest", "mappingOrdinal", "serverRevision", "pageId"] as const)("후반 %s 불일치는 prefix 이후에도 검수 성공으로 반환하지 않는다", async (kind) => {
+    const { source, cursor } = pagedSource(), suffix = previewResponse(source, [2]), page = previewPage(source, 2);
+    const invalid = { ...page,
+      ...(kind === "hash" ? { sha256: "f".repeat(64) } : {}), ...(kind === "ordinal" ? { ordinal: 0 } : {}),
+      mapping: { ...page.mapping, ...(kind === "digest" ? { sourceContentDigest: "f".repeat(64) } : {}),
+        ...(kind === "serverRevision" ? { sourceServerRevision: 8 } : {}), page: { ...page.mapping.page,
+          ...(kind === "mappingOrdinal" ? { ordinal: 0 } : {}), ...(kind === "pageId" ? { id: "page-0" } : {}) } } };
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
+      .mockResolvedValueOnce({ ...suffix, previews: [invalid] });
+    const prefix = vi.fn();
+    await expect(loadPinnedSubmissionPreviews(source, { onValidatedPrefix: prefix })).rejects.toThrow("버전이 일치하지 않습니다");
+    expect(prefix).toHaveBeenCalledOnce();
+  });
+  it("완료 cursor가 와도 원본 manifest의 페이지가 빠져 있으면 최종 성공으로 반환하지 않는다", async () => {
+    const { source } = pagedSource(), prefix = vi.fn();
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0]));
+    await expect(loadPinnedSubmissionPreviews(source, { onValidatedPrefix: prefix })).rejects.toThrow("버전이 일치하지 않습니다");
+    expect(prefix).not.toHaveBeenCalled();
+  });
+  it("잘못된 cursor가 붙은 batch는 검증한 prefix로도 전달하지 않는다", async () => {
+    const { source } = pagedSource(), prefix = vi.fn();
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], "next"));
+    await expect(loadPinnedSubmissionPreviews(source, { onValidatedPrefix: prefix })).rejects.toThrow("버전이 일치하지 않습니다");
+    expect(prefix).not.toHaveBeenCalled();
+  });
+  it("진행 중 요청을 취소하면 늦은 suffix와 추가 callback을 적용하지 않는다", async () => {
+    const { source, cursor } = pagedSource(), controller = new AbortController(), prefix = vi.fn();
+    let complete: ((value: StudioReviewPreviewResult) => void) | undefined;
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
+      .mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+    const result = loadPinnedSubmissionPreviews(source, { signal: controller.signal, onValidatedPrefix: prefix });
+    await vi.waitFor(() => expect(getStudioReviewPreviews).toHaveBeenCalledTimes(2));
+    controller.abort();
+    if (!complete) throw new Error("대기 중인 후반 페이지 응답이 없습니다.");
+    complete(previewResponse(source, [2]));
+    await expect(result).rejects.toMatchObject({ name: "AbortError" });
+    expect(prefix).toHaveBeenCalledOnce();
+  });
+  it("조회 전에 취소되거나 원본 manifest가 모호하면 네트워크와 prefix를 시작하지 않는다", async () => {
+    const { source } = pagedSource(), controller = new AbortController(), prefix = vi.fn();
+    controller.abort();
+    await expect(loadPinnedSubmissionPreviews(source, { signal: controller.signal, onValidatedPrefix: prefix })).rejects.toMatchObject({ name: "AbortError" });
+    const ref = source.revision.blobRefs[0];
+    if (!ref) throw new Error("manifest fixture가 없습니다.");
+    await expect(loadPinnedSubmissionPreviews({ ...source, revision: { ...source.revision, blobRefs: [ref, ref] } }, { onValidatedPrefix: prefix })).rejects.toThrow("버전이 일치하지 않습니다");
+    expect(getStudioReviewPreviews).not.toHaveBeenCalled();
+    expect(prefix).not.toHaveBeenCalled();
+  });
+  it("뒷 페이지 버전 불일치와 순환 커서를 부분 성공으로 숨기지 않는다", async () => {
+    const { source, cursor } = pagedSource();
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
       .mockResolvedValueOnce({ ok: false, reason: "version-mismatch" });
     await expect(loadPinnedSubmissionPreviews(source)).rejects.toThrow("버전이 일치하지 않습니다");
-    vi.mocked(getStudioReviewPreviews).mockResolvedValue({ ok: true, previews: [], nextCursor: "repeat" });
+    vi.mocked(getStudioReviewPreviews).mockResolvedValueOnce(previewResponse(source, [0], cursor))
+      .mockResolvedValueOnce(previewResponse(source, [2], cursor));
     await expect(loadPinnedSubmissionPreviews(source)).rejects.toThrow("끝까지 확인하지 못했습니다");
     expect(getStudioReviewPreviews).toHaveBeenCalledTimes(4);
   });
@@ -126,8 +230,7 @@ describe("제출 원고 시각 검수 정본", () => {
     expect(result.baselines[0]).toMatchObject({ sourceRevisionRef: { id: "input-revision" }, revision: { id: "capture-input" } });
     expect(result.submission.reviewHref).toContain("revision=capture-submitted");
     expect(f.submission.revisionRef.id).toBe("submitted-revision");
-    vi.mocked(getStudioReviewPreviews).mockResolvedValue({ ok: true, previews: [{ sha256: f.hash, ordinal: 0,
-      mediaType: "image/png", byteLength: 100, url: "https://preview.test/captured", expiresAt: Date.now() + 30_000, mapping: null }], nextCursor: null });
+    vi.mocked(getStudioReviewPreviews).mockResolvedValue(previewResponse(result.submission));
     await loadPinnedSubmissionPreviews(result.submission);
     expect(getStudioReviewPreviews).toHaveBeenCalledWith("submission-review", expect.objectContaining({ artifactId: "capture-artifact", revisionId: "capture-submitted", rootGraphHash: f.hash }), null);
   });
