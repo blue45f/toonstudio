@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionContext } from "@/domains/auth/public/session/auth-session-store";
 import { resetClaudeBudgetForTests, setClaudeBudgetLimit } from "@/shared/ai/claude/claude-budget";
 import { resetClaudeUsage } from "@/shared/ai/claude/claude-usage-meter";
 import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
@@ -153,14 +154,32 @@ describe("ClaudeArtDirectorDialog", () => {
   });
 
   describe("처음 열었을 때", () => {
-    it("연결이 없으면 연결 안내와 설정 링크를 보여 주고 실행할 수 없다", async () => {
+    it("키가 없으면 ToonStudio AI로 무료 실행하고 요금 문구를 쓰지 않는다", async () => {
       renderDialog();
 
       expect(screen.getByRole("dialog", { name: "AI 아트 디렉터" }).getAttribute("aria-modal")).toBe("true");
-      expect(screen.getByText("Claude 연결이 필요해요.")).toBeTruthy();
-      expect(screen.getByRole("link", { name: "AI 설정에서 연결하기" }).getAttribute("href")).toBe("/settings/ai?source=studio");
+      expect(screen.queryByText("Claude 연결이 필요해요.")).toBeNull();
       await chooseImage();
-      expect((screen.getByRole("button", { name: RUN }) as HTMLButtonElement).disabled).toBe(true);
+      expect(document.querySelector("[data-claude-footer-cap='managed']")?.textContent).toBe("무료");
+      expect(screen.queryByText(/요금 발생/u)).toBeNull();
+      const run = screen.getByRole("button", { name: "분석하기" }) as HTMLButtonElement;
+      expect(run.disabled).toBe(false);
+      await act(async () => {
+        fireEvent.click(run);
+      });
+      expect(runArtDirectorReview).toHaveBeenCalledTimes(1);
+      expect(runArtDirectorReview.mock.calls[0]?.[0]).toMatchObject({ managed: true, apiKey: "" });
+    });
+
+    it("키 없이 쓰려는데 로그인하지 않았으면 로그인 안내를 보여 준다", () => {
+      render(
+        <SessionContext.Provider value={{ data: null, ready: true, status: "unauthenticated", update: async () => null }}>
+          <MemoryRouter>
+            <ClaudeArtDirectorDialog onClose={vi.fn()} />
+          </MemoryRouter>
+        </SessionContext.Provider>,
+      );
+      expect(screen.getByText(/키 없이 쓰려면 로그인해 주세요/u)).toBeTruthy();
     });
 
     it("이미지가 없으면 올리는 길과 스튜디오 연결 팁을 알리고, 실행 버튼은 이유를 말해 준다", () => {

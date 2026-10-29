@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { lockUserAi, setUserAiConfiguration } from "../user-ai-store";
+import { EMPTY_AI_CONNECTION } from "../user-ai-types";
+
 import { getClaudeBudget, resetClaudeBudgetForTests, setClaudeBudgetLimit } from "./claude-budget";
 import { recordClaudeUsage, resetClaudeUsage } from "./claude-usage-meter";
 import { ClaudeBudgetEditor } from "./ClaudeBudgetEditor";
@@ -14,18 +17,40 @@ import { useClaudeBudgetGuard } from "./use-claude-budget-guard";
 
 const INITIAL_LANGUAGE = useI18n.getState().lang;
 
+/** 예산·비용 상한은 내 키(사용자 결제) 경로에만 걸리므로, 이 화면 시험은 Claude 키를 등록한 상태에서 한다. */
+function connectClaudeKey() {
+  setUserAiConfiguration({
+    version: 1,
+    connections: [{
+      ...structuredClone(EMPTY_AI_CONNECTION),
+      id: "claude-byok",
+      label: "Claude (Anthropic)",
+      baseUrl: "https://api.anthropic.com",
+      apiKey: "sk-test-budget-ui-0000",
+      textModel: "claude-opus-5-5",
+      imageModel: "",
+      costPolicy: "user-funded-byok",
+      apiKeys: [{ id: "key-1", label: "기본 키", apiKey: "sk-test-budget-ui-0000", enabled: true, priority: 100 }],
+      models: [{ id: "text-1", label: "Claude", model: "claude-opus-5-5", capability: "text", enabled: true, priority: 100 }],
+    }],
+    assignments: { text: "claude-byok", image: null, inference: null, "three-d": null },
+  });
+}
+
 describe("Claude 예산·실행 전 확인 UI", () => {
   beforeEach(() => {
     useI18n.setState({ lang: "ko" });
     localStorage.clear();
     resetClaudeBudgetForTests();
     resetClaudeUsage();
+    connectClaudeKey();
   });
 
   afterEach(() => {
     cleanup();
     resetClaudeBudgetForTests();
     resetClaudeUsage();
+    lockUserAi(false);
     useI18n.setState({ lang: INITIAL_LANGUAGE });
   });
 
@@ -189,6 +214,20 @@ describe("Claude 예산·실행 전 확인 UI", () => {
     it("한도 안이면 경고를 그리지 않는다", () => {
       setClaudeBudgetLimit(5);
       render(<Harness cap={0.17} />);
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("키가 없으면 ToonStudio AI 경로와 무료임을 알리고 예산 경고를 띄우지 않는다", () => {
+      lockUserAi(false);
+      setClaudeBudgetLimit(0.1);
+      render(<Harness cap={0.17} />);
+
+      const summary = screen.getByText("실행 전 확인").closest("summary") as HTMLElement;
+      expect(within(summary).getByText("ToonStudio AI (자동 선택)")).toBeTruthy();
+      expect(within(summary).getByText("무료")).toBeTruthy();
+      expect(screen.getByText(/이 브라우저 → ToonStudio 서버 → 고성능 AI/u)).toBeTruthy();
+      expect(screen.getByText(/무료예요\. 내 계정에 아무것도 청구되지 않아요/u)).toBeTruthy();
+      expect(screen.queryByText(/Anthropic 계정에 청구/u)).toBeNull();
       expect(screen.queryByRole("alert")).toBeNull();
     });
   });

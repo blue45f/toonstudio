@@ -7,7 +7,7 @@
  * 3. 설정 연속성(Continuity) · 180도 카메라 축 · 복선(Foreshadow) 회수 감수기 (오노마AI 페뷸레이터 & 라마젠 벤치마크)
  * 4. 다각도 표정·포즈 일관성 매트릭스 & 효과음(SFX)·말풍선 오케스트레이터 (라이언로켓 젠버스 & 투닝 플러스 벤치마크)
  *
- * 모든 기능은 등록된 기본 Claude API 키(`hydrateDefaultEnvClaudeConnection`)를 통한 실시간 구조화 출력(`claudeParse`)과
+ * 모든 기능은 보조 기능 경로(등록한 키, 없으면 ToonStudio AI 관리형 경로)를 통한 실시간 구조화 출력(`claudeParse`)과
  * 네트워크 오프라인/미연결 시 즉시 동작하는 로컬 결정적(Deterministic) 폴백 엔진을 함께 제공한다.
  */
 import {
@@ -21,7 +21,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
@@ -60,14 +59,11 @@ function safeHex(raw: string, fallback: string): string {
   return /^#[0-9A-Fa-f]{6}$/u.test(cleaned) ? cleaned.toUpperCase() : fallback;
 }
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (explicit) return explicit;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return explicit ?? resolveClaudeRoute();
 }
 
 function buildUserContextPrompt(input: WebtoonProductionAssistInput, directiveKo: string): string {
@@ -97,7 +93,7 @@ export async function runClaudeScrollEyePathDoctor(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeScrollEyePathView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicScrollEyePathReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -184,7 +180,7 @@ export async function runClaudeColorScriptDirector(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeColorScriptView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicColorScriptReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -277,7 +273,7 @@ export async function runClaudeContinuityForeshadowAuditor(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeContinuityForeshadowView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
       return buildDeterministicContinuityForeshadowReport(input);
@@ -373,7 +369,7 @@ export async function runClaudeActingSfxChoreographer(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeActingSfxChoreographyView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicActingSfxReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -474,7 +470,7 @@ export async function runClaudeMultiCharacterWardrobeUniformDirector(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeMultiCharacterWardrobeView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
       return buildDeterministicMultiCharacterWardrobeReport(input);
@@ -561,7 +557,7 @@ export async function runClaudeWeatherTimeProgressionContinuityDirector(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeWeatherTimeProgressionView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
       return buildDeterministicWeatherTimeProgressionReport(input);

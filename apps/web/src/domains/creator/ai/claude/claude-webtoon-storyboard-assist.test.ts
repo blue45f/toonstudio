@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { resolveClaudeRoute } from "@/shared/ai/claude/claude-route";
 import {
   getUserAiSnapshot,
-  hydrateDefaultEnvClaudeConnection,
   lockUserAi,
   setUserAiConfiguration,
 } from "@/shared/ai/user-ai-store";
@@ -72,7 +72,7 @@ describe("claude-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 
     claudeParseMock.mockReset();
   });
 
-  it("hydrateDefaultEnvClaudeConnection이 명시적 토큰으로 Anthropic 연결을 메모리에 등록한다", () => {
+  it("등록한 Claude 키가 없으면 키를 만들지 않고 ToonStudio AI 관리형 경로를 쓴다", () => {
     expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
     setUserAiConfiguration({
       ...structuredClone(EMPTY_AI_CONFIGURATION),
@@ -92,14 +92,11 @@ describe("claude-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 
         },
       ],
     });
-    const hydrated = hydrateDefaultEnvClaudeConnection("test-env-claude-token", "claude-haiku-5-5");
-    expect(hydrated).toBe(true);
-    const conn = getUserAiSnapshot().configuration.connections.find(
-      (c) => c.id === "env-anthropic-claude",
-    );
-    expect(conn?.baseUrl).toBe("https://api.anthropic.com");
-    expect(conn?.textModel).toBe("claude-haiku-5-5");
-    expect(conn?.costPolicy).toBe("user-funded-byok");
+    const route = resolveClaudeRoute();
+    expect(route.managed).toBe(true);
+    expect(route.apiKey).toBe("");
+    // 환경변수 키로 연결을 몰래 만들지 않는다(브라우저 번들에 키를 넣는 경로를 없앴다).
+    expect(getUserAiSnapshot().configuration.connections.map((connection) => connection.id)).toEqual(["custom-openai"]);
   });
 
   it("Claude 구조화 출력 요청 생성과 정규화, 라이브 응답 매핑을 수행한다", async () => {

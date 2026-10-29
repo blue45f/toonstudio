@@ -10,7 +10,6 @@ import {
 import { resolveClaudeRequestModel } from "@/shared/ai/claude/claude-protocol";
 import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-route";
 import { claudeCreate, claudeParse } from "@/shared/ai/claude/claude-transport";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   findVoiceDeviations,
@@ -42,11 +41,8 @@ import type { RunWebtoonProductionAssistOptions } from "./claude-webtoon-product
 function resolveActiveClaudeRoute(
   options: RunWebtoonProductionAssistOptions,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (options.route !== undefined) return options.route;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return options.route !== undefined ? options.route : resolveClaudeRoute();
 }
 
 function normalizeScore0To100(raw: number, fallback = 85): number {

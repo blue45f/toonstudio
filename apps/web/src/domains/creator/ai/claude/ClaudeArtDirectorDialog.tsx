@@ -12,15 +12,16 @@ import "@/shared/ai/claude/claude-assist-i18n";
 
 import { LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useState, type ClipboardEvent } from "react";
-import { Link } from "react-router-dom";
 
 import { CLAUDE_BUTTON, CLAUDE_PRIMARY_BUTTON } from "@/shared/ai/claude/claude-ui";
-import { formatClaudeUsd } from "@/shared/ai/claude/claude-usage-meter";
 import { CLAUDE_PRESET_IDS, resolveClaudePreset, type ClaudePresetId } from "@/shared/ai/claude/claude-effort-presets";
 import { resolveClaudeRoute } from "@/shared/ai/claude/claude-route";
 import { ClaudePreflight } from "@/shared/ai/claude/ClaudePreflight";
 import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
+import { ClaudeCostChip } from "@/shared/ai/claude/ClaudeCostChip";
+import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useT } from "@/shared/lib/i18n";
 
 import { estimateArtDirectorCostCapUsd, type ArtDirectorContext } from "./claude-art-director";
@@ -45,6 +46,9 @@ export interface ClaudeArtDirectorDialogProps {
 export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProps) {
   const t = useT();
   const route = useClaudeRoute();
+  const session = useSession();
+  // 키 없이 쓰는 ToonStudio AI는 로그인한 사용자에게 열린다. 세션을 확인한 뒤에만 안내를 띄운다.
+  const managedLoginRequired = route.managed === true && session.ready && session.status === "unauthenticated";
   const task = useClaudeTask();
 
   const [form, setForm] = useState<ArtDirectorForm>(DEFAULT_ART_DIRECTOR_FORM);
@@ -74,7 +78,7 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
   );
   const running = task.running;
   const { runRef, stopRef } = useRunFocus(running);
-  const connectionModel = route?.model ?? "";
+  const connectionModel = route.model;
 
   const resolved = useMemo(
     () => resolveClaudePreset(form.presetId, connectionModel, { customModel: form.customModel, customDepth: form.customDepth }),
@@ -113,7 +117,7 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
     loadFile(file);
   };
 
-  const canRun = Boolean(route && rendered && !image.preparing && !running && guard.allowed);
+  const canRun = Boolean(rendered && !image.preparing && !running && guard.allowed);
 
   // 이미지를 올리면 올리기 구역이 사라지며 포커스가 body로 떨어진다. 바로 실행할 수 있게 실행 버튼으로 옮긴다.
   const hasImage = Boolean(rendered);
@@ -131,7 +135,6 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
     guard.consumeOverride();
     setHighlightState(null);
     const outcome = await task.start(async (signal) => {
-      if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
       return runArtDirectorReview(
         claudeRoute,
         input,
@@ -151,13 +154,11 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
 
   const result = results.get(segmentIndex) ?? null;
   const sizeKb = rendered ? Math.max(1, Math.round(rendered.bytes / 1024)) : 0;
-  const needHint = !route
-    ? null
-    : !rendered
-      ? t("claudeAssist.art.needImage")
-      : !guard.allowed
-        ? t("claudeAssist.art.needBudget")
-        : null;
+  const needHint = !rendered
+    ? t("claudeAssist.art.needImage")
+    : !guard.allowed
+      ? t("claudeAssist.art.needBudget")
+      : null;
 
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
@@ -170,7 +171,9 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
         onClick={() => void run()}
       >
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : result ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
-        {result && !running ? t("claudeAssist.art.rerun") : t("claudeAssist.art.run")}
+        {route.managed
+          ? (result && !running ? t("claudeAssist.managed.artRerun") : t("claudeAssist.managed.artRun"))
+          : (result && !running ? t("claudeAssist.art.rerun") : t("claudeAssist.art.run"))}
       </button>
       {running ? (
         <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
@@ -178,11 +181,7 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {typeof capUsd === "number" ? (
-        <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
-          {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
-        </span>
-      ) : null}
+      <ClaudeCostChip capUsd={capUsd} />
       <span className="ml-auto flex items-center gap-3">
         {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} />
@@ -221,11 +220,8 @@ export function ClaudeArtDirectorDialog({ onClose }: ClaudeArtDirectorDialogProp
         </div>
 
         <div className="min-w-0 space-y-4">
-          {!route ? (
-            <div className="space-y-2 rounded-xl border border-line bg-raised/50 p-3 text-sm">
-              <p>{t("claudeAssist.common.needConnection")}</p>
-              <Link to="/settings/ai?source=studio" className={CLAUDE_BUTTON} onClick={close}>{t("claudeAssist.common.openSettings")}</Link>
-            </div>
+          {managedLoginRequired ? (
+            <AiRecoveryNotice code="login_required" message={t("claudeAssist.managed.loginHint")} compact />
           ) : null}
 
           <ClaudeArtDirectorSetup form={form} onChange={patchForm} disabled={running} connectionModel={connectionModel} caps={caps} />

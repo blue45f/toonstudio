@@ -27,7 +27,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanMultilineTextDetailed, cleanSingleLineText, cleanSingleLineTextDetailed } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage, type ClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import { resolveCreatorTaskModelRoute, type ClaudeCreatorTaskId } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
@@ -334,7 +333,7 @@ async function executeWave30LocalizeTask<TSchema extends z.ZodTypeAny, TOut>(par
   readonly fallback: () => TOut;
 }): Promise<Wave30LocalizeAssistResult<TOut>> {
   const { taskId, systemPrompt, userInstruction, input, schema, options, normalize, fallback } = params;
-  const activeRoute = options.route !== undefined ? options.route : (hydrateDefaultEnvClaudeConnection(), resolveClaudeRoute());
+  const activeRoute = options.route !== undefined ? options.route : resolveClaudeRoute();
   const taskRoute = resolveCreatorTaskModelRoute(taskId, { model: options.model as never });
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {

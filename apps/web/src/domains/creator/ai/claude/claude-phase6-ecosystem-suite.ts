@@ -12,7 +12,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   resolveCreatorTaskModelRoute,
@@ -62,14 +61,11 @@ import type {
 
 export * from "./claude-phase6-ecosystem-schemas";
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (explicit) return explicit;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return explicit ?? resolveClaudeRoute();
 }
 
 function buildEcosystemPromptContext(
@@ -125,7 +121,7 @@ async function executePhase6EcosystemEngine<TSchema extends z.ZodTypeAny>(params
 }): Promise<Phase6EcosystemEnvelope<z.infer<TSchema>>> {
   const { taskId, input, options, systemPromptKo, userDirectiveKo, schema, fallbackReport } = params;
   const taskRoute = resolveCreatorTaskModelRoute(taskId, { model: options.model as never });
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
 
   if (!activeRoute) {
     const meta: Phase6EcosystemExecutionMeta = {

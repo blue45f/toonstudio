@@ -25,7 +25,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage, type ClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import { resolveCreatorTaskModelRoute, type CreatorClaudeTaskId } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
@@ -348,9 +347,7 @@ function clampWave24Int(value: number, min: number, max: number, fallback: numbe
 }
 
 function resolveWave24ClaudeRoute(explicit?: ClaudeRoute | null): ClaudeRoute | null {
-  if (explicit) return explicit;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  return explicit ?? resolveClaudeRoute();
 }
 
 async function executeWave24ProductionTask<TSchema extends z.ZodTypeAny, TOut>(params: {

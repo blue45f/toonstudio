@@ -41,6 +41,10 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { z } from "zod";
 
 const loadClaudeRuntime = () => import("./claude-runtime");
+const loadManagedRuntime = () => import("./claude-managed-runtime");
+
+/** 보조 기능 호출에 필요한 경로 정보. 관리형 경로(`managed`)는 키 없이 ToonStudio 서버로 간다. */
+export type ClaudeCallRoute = Pick<ClaudeRoute, "apiKey" | "revision"> & { readonly managed?: boolean };
 
 export interface ClaudeCallOptions {
   readonly signal?: AbortSignal;
@@ -174,25 +178,39 @@ export async function claudeBridgedResponse(
   });
 }
 
-/** Claude 네이티브 호출(비전·시스템 블록·캐시 등 자유 형식). */
+/**
+ * 보조 기능 자유 형식 호출(비전·시스템 블록·캐시 등).
+ * 사용자 키 경로는 예산·사용량 미터를 거쳐 공식 API로 직접 가고, 관리형 경로는 사용자 비용이 없으므로
+ * 예산 판정 없이 ToonStudio 서버로 간다. 어느 쪽이든 자동 재시도·모델 대체는 하지 않는다.
+ */
 export async function claudeCreate(
-  route: Pick<ClaudeRoute, "apiKey" | "revision">,
+  route: ClaudeCallRoute,
   params: Anthropic.MessageCreateParamsNonStreaming,
   options: ClaudeCallOptions = {},
 ): Promise<Anthropic.Message> {
+  if (route.managed) {
+    const managed = await loadManagedRuntime();
+    const message = await managed.runManagedClaudeMessage(params, { signal: options.signal });
+    assertClaudeMessageComplete(message);
+    return message;
+  }
   const runtime = await loadClaudeRuntime();
   const message = await runAccounted(options, (runtimeOptions) => runtime.runClaudeMessage(route, params, runtimeOptions));
   assertClaudeMessageComplete(message);
   return message;
 }
 
-/** Claude 구조화 출력 호출. Zod 스키마를 만족하는 값만 돌려준다. */
+/** 보조 기능 구조화 출력 호출. 경로와 무관하게 Zod 스키마를 만족하는 값만 돌려준다. */
 export async function claudeParse<Schema extends z.ZodType>(
-  route: Pick<ClaudeRoute, "apiKey" | "revision">,
+  route: ClaudeCallRoute,
   params: ClaudeParseParams,
   schema: Schema,
   options: ClaudeCallOptions = {},
 ): Promise<{ message: Anthropic.Message; parsed: z.infer<Schema> }> {
+  if (route.managed) {
+    const managed = await loadManagedRuntime();
+    return managed.runManagedClaudeParse(params, schema, { signal: options.signal });
+  }
   const runtime = await loadClaudeRuntime();
   return runAccounted(options, (runtimeOptions) => runtime.runClaudeParse(route, params, schema, runtimeOptions));
 }

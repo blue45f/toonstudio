@@ -18,7 +18,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage, type ClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import { resolveCreatorTaskModelRoute, type ClaudeCreatorTaskId } from "./claude-creator-model-router";
 
@@ -105,7 +104,6 @@ async function executeWave33CostCapTask<T>(params: {
   readonly fallback: () => T;
 }): Promise<Wave33CostCapAssistResult<T>> {
   const { taskId, systemPrompt, userInstruction, input, schema, options, normalize, fallback } = params;
-  hydrateDefaultEnvClaudeConnection();
   const routed = resolveCreatorTaskModelRoute(taskId, {
     model: options.model as "claude-haiku-5-5" | "claude-sonnet-5-5" | "claude-opus-5-5" | undefined,
   });

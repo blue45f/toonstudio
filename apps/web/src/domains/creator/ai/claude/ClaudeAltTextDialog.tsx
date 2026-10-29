@@ -14,15 +14,16 @@ import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Accessibility, LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useState, type ClipboardEvent } from "react";
-import { Link } from "react-router-dom";
 
 import { CLAUDE_PRESET_IDS, resolveClaudePreset, type ClaudePresetId } from "@/shared/ai/claude/claude-effort-presets";
 import { resolveClaudeRoute } from "@/shared/ai/claude/claude-route";
 import { CLAUDE_BUTTON, CLAUDE_PRIMARY_BUTTON } from "@/shared/ai/claude/claude-ui";
-import { formatClaudeUsd } from "@/shared/ai/claude/claude-usage-meter";
 import { ClaudePreflight } from "@/shared/ai/claude/ClaudePreflight";
 import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
+import { ClaudeCostChip } from "@/shared/ai/claude/ClaudeCostChip";
+import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useI18n, useT } from "@/shared/lib/i18n";
 
 import { estimateAltTextCostCapUsd, type AltTextContext } from "./claude-alt-text";
@@ -60,6 +61,9 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
   const t = useT();
   const lang = useI18n((state) => state.lang);
   const route = useClaudeRoute();
+  const session = useSession();
+  // 키 없이 쓰는 ToonStudio AI는 로그인한 사용자에게 열린다. 세션을 확인한 뒤에만 안내를 띄운다.
+  const managedLoginRequired = route.managed === true && session.ready && session.status === "unauthenticated";
   const task = useClaudeTask();
 
   const [form, setForm] = useState<AltTextForm>(() => initialAltTextForm(lang));
@@ -79,7 +83,7 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
   const { rendered, source, segmentIndex } = image;
   const running = task.running;
   const { runRef, stopRef } = useRunFocus(running);
-  const connectionModel = route?.model ?? "";
+  const connectionModel = route.model;
 
   const resolved = useMemo(
     () => resolveClaudePreset(form.presetId, connectionModel, { customModel: form.customModel, customDepth: form.customDepth }),
@@ -114,7 +118,7 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
     void load(file);
   };
 
-  const canRun = Boolean(route && rendered && !image.preparing && !running && guard.allowed);
+  const canRun = Boolean(rendered && !image.preparing && !running && guard.allowed);
 
   // 이미지를 올리면 올리기 구역이 사라지며 포커스가 body로 떨어진다. 바로 실행할 수 있게 실행 버튼으로 옮긴다.
   const hasImage = Boolean(rendered);
@@ -132,7 +136,6 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
     const budgetOverride = guard.overridden;
     guard.consumeOverride();
     const outcome = await task.start(async (signal) => {
-      if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
       return runAltText(claudeRoute, input, context, { model: resolved.model, signal, budgetOverride });
     });
     if (!outcome) return;
@@ -154,19 +157,19 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
   };
 
   const sizeKb = rendered ? Math.max(1, Math.round(rendered.bytes / 1024)) : 0;
-  const needHint = !route
-    ? null
-    : !rendered
-      ? t("claudeAssist.altText.needImage")
-      : !guard.allowed
-        ? t("claudeAssist.art.needBudget")
-        : null;
+  const needHint = !rendered
+    ? t("claudeAssist.altText.needImage")
+    : !guard.allowed
+      ? t("claudeAssist.art.needBudget")
+      : null;
 
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
       <button ref={runRef} type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={needHint ? hintId : undefined} onClick={() => void run()}>
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : draft ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
-        {draft && !running ? t("claudeAssist.altText.rerun") : t("claudeAssist.altText.run")}
+        {route.managed
+          ? (draft && !running ? t("claudeAssist.managed.altTextRerun") : t("claudeAssist.managed.altTextRun"))
+          : (draft && !running ? t("claudeAssist.altText.rerun") : t("claudeAssist.altText.run"))}
       </button>
       {running ? (
         <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
@@ -174,11 +177,7 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {typeof capUsd === "number" ? (
-        <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
-          {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
-        </span>
-      ) : null}
+      <ClaudeCostChip capUsd={capUsd} />
       <span className="ml-auto flex items-center gap-3">
         {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} />
@@ -219,11 +218,8 @@ export function ClaudeAltTextDialog({ onClose }: ClaudeAltTextDialogProps) {
         </div>
 
         <div className="min-w-0 space-y-4">
-          {!route ? (
-            <div className="space-y-2 rounded-xl border border-line bg-raised/50 p-3 text-sm">
-              <p>{t("claudeAssist.common.needConnection")}</p>
-              <Link to="/settings/ai?source=studio" className={CLAUDE_BUTTON} onClick={close}>{t("claudeAssist.common.openSettings")}</Link>
-            </div>
+          {managedLoginRequired ? (
+            <AiRecoveryNotice code="login_required" message={t("claudeAssist.managed.loginHint")} compact />
           ) : null}
 
           <ClaudeAltTextSetup form={form} onChange={patchForm} disabled={running} connectionModel={connectionModel} caps={caps} />

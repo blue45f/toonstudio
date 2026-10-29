@@ -1,8 +1,8 @@
 /**
  * claude-n7-and-llm-runners.ts
  *
- * `origin/main`에서 병합된 9종 순수 LLM 프롬프트·파서 모듈을 등록된 기본 Claude API 키
- * (`hydrateDefaultEnvClaudeConnection`) 및 `claudeCreate`와 연결하는 실시간 실행기:
+ * `origin/main`에서 병합된 9종 순수 LLM 프롬프트·파서 모듈을 보조 기능 경로(등록한 키, 없으면 ToonStudio AI
+ * 관리형 경로) 및 `claudeCreate`와 연결하는 실시간 실행기:
  * 1. N7 3단계 에이전트 오케스트레이션 (`runClaudeN7OrchestrationPipeline`: 컷 분할 → 대사 배치 → 채색 지시)
  * 2. 콘티 컷 계획 생성 (`runClaudeStoryboardCutPlan`)
  * 3. 모션 웹툰 연출 설계 (`runClaudeDirectionPlan`)
@@ -30,7 +30,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeCreate, claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   buildBgmPlacementPrompt,
@@ -92,14 +91,11 @@ import {
 } from "./claude-webtoon-production-schemas";
 import type Anthropic from "@anthropic-ai/sdk";
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (explicit) return explicit;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return explicit ?? resolveClaudeRoute();
 }
 
 export function stripJsonCodeFence(rawText: string): string {
@@ -119,7 +115,7 @@ async function callClaudePromptText(
   options: RunWebtoonProductionAssistOptions = {},
   maxTokens = 2_400,
 ): Promise<string> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
@@ -428,7 +424,7 @@ async function runWave21StructuredRunner<T extends z.ZodTypeAny>(
   readonly estimatedUsd: number | null;
 } | null> {
   const routed = resolveCreatorTaskModelRoute(taskId, runOptions);
-  const activeRoute = resolveOrHydrateClaudeRoute(runOptions.route);
+  const activeRoute = resolveActiveClaudeRoute(runOptions.route);
   if (!activeRoute) {
     if (runOptions.fallbackOnError !== false) return null;
     throw new Error("사용 가능한 Claude 연결이 없습니다.");

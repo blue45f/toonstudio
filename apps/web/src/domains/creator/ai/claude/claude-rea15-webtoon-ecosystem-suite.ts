@@ -12,7 +12,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   resolveCreatorTaskModelRoute,
@@ -59,14 +58,12 @@ import type {
 export * from "./claude-rea15-webtoon-ecosystem-schemas";
 export * from "./claude-rea39-extended-engines";
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
   if (explicit) return explicit;
   if (import.meta.env.MODE === "test") return null;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
   return resolveClaudeRoute();
 }
 
@@ -126,7 +123,7 @@ export async function executeRea15Engine<TSchema extends z.ZodTypeAny>(params: {
   const taskRoute = resolveCreatorTaskModelRoute(taskId, {
     model: options.model as never,
   });
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
 
   if (!activeRoute) {
     const meta: Rea15ExecutionMeta = {

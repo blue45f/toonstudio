@@ -5,6 +5,7 @@ import { useCallback } from "react";
 
 import { useT } from "@/shared/lib/i18n";
 
+import { isManagedAssistModelLabel } from "./claude-route";
 import { formatClaudeUsd } from "./claude-usage-meter";
 
 import type { ClaudeTokenUsage } from "./claude-models";
@@ -16,12 +17,18 @@ export interface ClaudeUsageSummary {
   readonly estimatedUsd: number | null;
 }
 
-/** 결과 아래에 붙이는 사용량 한 줄("모델 · 입력 · 출력 · 추정 비용"). 대화상자마다 같은 문구를 만들지 않도록 한 곳에 둔다. */
+/**
+ * 결과 아래에 붙이는 사용량 한 줄("모델 · 입력 · 출력 · 추정 비용"). 대화상자마다 같은 문구를 만들지 않도록 한 곳에 둔다.
+ * 관리형 경로(ToonStudio AI) 결과는 사용자 비용이 없으므로 추정 비용 대신 "무료"를 붙인다.
+ */
 export function useClaudeUsageText(): (summary: ClaudeUsageSummary) => string {
   const t = useT();
   return useCallback((summary) => {
     const input = formatNumber(summary.usage.inputTokens + summary.usage.cacheReadTokens + summary.usage.cacheWriteTokens);
     const output = formatNumber(summary.usage.outputTokens);
+    if (isManagedAssistModelLabel(summary.model)) {
+      return t("claudeAssist.managed.usageLine", { model: summary.model, input, output });
+    }
     return summary.estimatedUsd === null
       ? t("claudeAssist.common.usageLineNoCost", { model: summary.model, input, output })
       : t("claudeAssist.common.usageLine", { model: summary.model, input, output, cost: formatClaudeUsd(summary.estimatedUsd) });

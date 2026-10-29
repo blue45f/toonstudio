@@ -113,14 +113,17 @@ describe("ClaudeLocalizeDialog", () => {
   });
 
   describe("처음 열었을 때", () => {
-    it("연결이 없으면 연결 안내와 설정 링크를 보여 주고 실행할 수 없다", () => {
+    it("키가 없으면 ToonStudio AI로 무료 실행하고 요금 문구를 쓰지 않는다", async () => {
       renderDialog();
       typeLines();
 
       expect(screen.getByRole("dialog", { name: "AI 번역 도우미" }).getAttribute("aria-modal")).toBe("true");
-      expect(screen.getByText("Claude 연결이 필요해요.")).toBeTruthy();
-      expect(screen.getByRole("link", { name: "AI 설정에서 연결하기" }).getAttribute("href")).toBe("/settings/ai?source=studio");
-      expect((screen.getByRole("button", { name: RUN }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.queryByText("Claude 연결이 필요해요.")).toBeNull();
+      expect(footerCap()).toBe("무료");
+      expect(screen.queryByText(/요금 발생/u)).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "번역하기" }));
+      await screen.findByRole("region", { name: "번역 결과" });
+      expect(runLocalize.mock.calls[0]?.[0]).toMatchObject({ managed: true, apiKey: "" });
     });
 
     it("대사가 없으면 실행 버튼이 이유를 말해 주고, 대사 입력칸에 처음 포커스가 간다", () => {

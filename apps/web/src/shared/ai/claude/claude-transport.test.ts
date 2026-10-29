@@ -11,7 +11,7 @@ import { completeUserAiTextDetailed, userAiFetch, userAiLegacyJson } from "../us
 import { DEFAULT_USER_AI_ROUTING, type UserAiConnection } from "../user-ai-types";
 
 import { resetClaudeBudgetForTests, setClaudeBudgetLimit } from "./claude-budget";
-import { listClaudeRoutes, resolveClaudeRoute } from "./claude-route";
+import { listClaudeRoutes, MANAGED_ASSIST_ROUTE_ID, resolveClaudeRoute, resolveUserClaudeRoute } from "./claude-route";
 import { ClaudeBudgetError, claudeCreate, claudeParse, listClaudeModelsForKey } from "./claude-transport";
 import {
   getClaudeUsageSnapshot,
@@ -470,7 +470,9 @@ describe("Claude 네이티브 호출", () => {
     const route = resolveClaudeRoute();
     expect(route).toMatchObject({ connectionId: "claude-user", model: "claude-sonnet-5-5", apiKey: TEST_KEY });
     configure("manual", { costPolicy: "provider-free-tier" });
-    expect(resolveClaudeRoute()).toBeNull();
+    expect(resolveUserClaudeRoute()).toBeNull();
+    // 쓸 수 있는 내 키가 없으면 키 없이 서버가 처리하는 관리형 경로로 이어진다(키 값은 비어 있다).
+    expect(resolveClaudeRoute()).toMatchObject({ routeId: MANAGED_ASSIST_ROUTE_ID, managed: true, apiKey: "" });
   });
 
   it("claudeCreate는 시스템 블록·이미지·캐시 제어를 그대로 보낸다", async () => {

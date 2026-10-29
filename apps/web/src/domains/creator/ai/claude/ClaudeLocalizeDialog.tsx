@@ -14,15 +14,16 @@ import "@/shared/ai/claude/claude-assist-i18n";
 
 import { Languages, LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
 import { useCallback, useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { CLAUDE_PRESET_IDS, resolveClaudePreset, type ClaudePresetId } from "@/shared/ai/claude/claude-effort-presets";
 import { resolveClaudeRoute } from "@/shared/ai/claude/claude-route";
 import { CLAUDE_BUTTON, CLAUDE_INPUT, CLAUDE_PRIMARY_BUTTON, CLAUDE_QUIET_BUTTON } from "@/shared/ai/claude/claude-ui";
-import { formatClaudeUsd } from "@/shared/ai/claude/claude-usage-meter";
 import { ClaudePreflight } from "@/shared/ai/claude/ClaudePreflight";
 import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
+import { ClaudeCostChip } from "@/shared/ai/claude/ClaudeCostChip";
+import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useClaudeUsageText } from "@/shared/ai/claude/use-claude-usage-text";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -65,6 +66,9 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
   const t = useT();
   const lang = useI18n((state) => state.lang);
   const route = useClaudeRoute();
+  const session = useSession();
+  // 키 없이 쓰는 ToonStudio AI는 로그인한 사용자에게 열린다. 세션을 확인한 뒤에만 안내를 띄운다.
+  const managedLoginRequired = route.managed === true && session.ready && session.status === "unauthenticated";
   const task = useClaudeTask();
   const usageOf = useClaudeUsageText();
 
@@ -81,7 +85,7 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
 
   const running = task.running;
   const { runRef, stopRef } = useRunFocus(running);
-  const connectionModel = route?.model ?? "";
+  const connectionModel = route.model;
 
   const parsed = useMemo(() => parseLocalizeLines(text), [text]);
   const problem = useMemo(() => findLinesProblem(parsed.lines, parsed.lineNumbers), [parsed.lineNumbers, parsed.lines]);
@@ -122,7 +126,7 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     setForm((previous) => ({ ...previous, ...patch }));
   }, []);
 
-  const canRun = Boolean(route && sendable && !running && guard.allowed);
+  const canRun = Boolean(sendable && !running && guard.allowed);
 
   const run = async () => {
     if (!canRun) return;
@@ -134,7 +138,6 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     setProgress({ done: 0, total: planLocalizeChunks(runInput.lines.length).length });
     let started = false;
     const result = await task.start(async (signal) => {
-      if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
       return runLocalize(claudeRoute, runInput, {
         model: resolved.model,
         depth: resolved.depth,
@@ -179,15 +182,13 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     : problem.kind === "too-many"
       ? t("claudeAssist.localize.problemTooMany", { count: problem.count, max: LOCALIZE_LIMITS.maxLines })
       : t("claudeAssist.localize.problemTooLong", { line: problem.line, length: problem.length, max: LOCALIZE_LIMITS.maxLineChars });
-  const needHint = !route
-    ? null
-    : problem?.kind === "empty"
-      ? t("claudeAssist.localize.needLines")
-      : sameLanguage
-        ? t("claudeAssist.localize.sameLanguage")
-        : !guard.allowed
-          ? t("claudeAssist.art.needBudget")
-          : null;
+  const needHint = problem?.kind === "empty"
+    ? t("claudeAssist.localize.needLines")
+    : sameLanguage
+      ? t("claudeAssist.localize.sameLanguage")
+      : !guard.allowed
+        ? t("claudeAssist.art.needBudget")
+        : null;
   const hintId = `${idBase}-need-hint`;
   const problemId = `${idBase}-problem`;
   const linesId = `${idBase}-lines`;
@@ -198,7 +199,9 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
     <div className="flex flex-wrap items-center gap-3">
       <button ref={runRef} type="button" className={CLAUDE_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={describedBy} onClick={() => void run()}>
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : hasResult ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
-        {hasResult && !running ? t("claudeAssist.localize.rerun") : t("claudeAssist.localize.run")}
+        {route.managed
+          ? (hasResult && !running ? t("claudeAssist.managed.localizeRerun") : t("claudeAssist.managed.localizeRun"))
+          : (hasResult && !running ? t("claudeAssist.localize.rerun") : t("claudeAssist.localize.run"))}
       </button>
       {running ? (
         <button ref={stopRef} type="button" className={CLAUDE_BUTTON} onClick={task.stop}>
@@ -206,11 +209,7 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {typeof capUsd === "number" ? (
-        <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
-          {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
-        </span>
-      ) : null}
+      <ClaudeCostChip capUsd={capUsd} />
       <span className="ml-auto flex items-center gap-3">
         {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} />
@@ -269,11 +268,8 @@ export function ClaudeLocalizeDialog({ onClose }: ClaudeLocalizeDialogProps) {
         </div>
 
         <div className="min-w-0 space-y-4">
-          {!route ? (
-            <div className="space-y-2 rounded-xl border border-line bg-raised/50 p-3 text-sm">
-              <p>{t("claudeAssist.common.needConnection")}</p>
-              <Link to="/settings/ai?source=studio" className={CLAUDE_BUTTON} onClick={close}>{t("claudeAssist.common.openSettings")}</Link>
-            </div>
+          {managedLoginRequired ? (
+            <AiRecoveryNotice code="login_required" message={t("claudeAssist.managed.loginHint")} compact />
           ) : null}
 
           <ClaudeLocalizeSetup form={form} onChange={patchForm} disabled={running} connectionModel={connectionModel} caps={caps} glossary={glossary} />

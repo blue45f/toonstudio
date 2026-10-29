@@ -19,7 +19,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   CANON_APPEARANCE_MAX,
@@ -48,14 +47,11 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 const MAX_OUTPUT_TOKENS = 3_200;
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (explicit) return explicit;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return explicit ?? resolveClaudeRoute();
 }
 
 function safeHex(raw: string, fallback: string): string {
@@ -134,7 +130,7 @@ export async function runClaudeCharacterCanonArchitect(
   input: CharacterCanonArchitectInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<CharacterCanonArchitectView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicCharacterCanonView(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -256,7 +252,7 @@ export async function runClaudePromptEnhancer(
   enhanceOptions: PromptEnhancementOptions = {},
   runOptions: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeEnhancedPromptView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(runOptions.route);
+  const activeRoute = resolveActiveClaudeRoute(runOptions.route);
   if (!activeRoute) {
     if (runOptions.fallbackOnError !== false) {
       return buildDeterministicEnhancedPromptView(rawPrompt, enhanceOptions);
@@ -382,7 +378,7 @@ export async function runClaudeSceneShadingDirector(
   sceneDescriptionKo = "",
   runOptions: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeSceneShadingView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(runOptions.route);
+  const activeRoute = resolveActiveClaudeRoute(runOptions.route);
   if (!activeRoute) {
     if (runOptions.fallbackOnError !== false) return buildDeterministicSceneShadingView(config);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -474,7 +470,7 @@ async function runWave18DomainConsistencyEngine<T extends z.ZodTypeAny>(
   runOptions: RunWebtoonProductionAssistOptions,
 ): Promise<Wave18LiveMeta<z.infer<T>> | null> {
   const routed = resolveCreatorTaskModelRoute(taskId, runOptions);
-  const activeRoute = resolveOrHydrateClaudeRoute(runOptions.route);
+  const activeRoute = resolveActiveClaudeRoute(runOptions.route);
   if (!activeRoute) {
     if (runOptions.fallbackOnError !== false) return null;
     throw new Error("사용 가능한 Claude 연결이 없습니다.");

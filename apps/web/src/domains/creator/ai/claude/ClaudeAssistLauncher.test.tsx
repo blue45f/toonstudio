@@ -67,9 +67,9 @@ function renderLauncher() {
 }
 
 async function openMenu() {
-  const trigger = await screen.findByRole("button", { name: "Claude 보조 메뉴" });
+  const trigger = await screen.findByRole("button", { name: "AI 보조 메뉴" });
   fireEvent.click(trigger);
-  return { trigger, menu: await screen.findByRole("menu", { name: "Claude 보조 메뉴" }) };
+  return { trigger, menu: await screen.findByRole("menu", { name: "AI 보조 메뉴" }) };
 }
 
 describe("ClaudeAssistLauncher", () => {
@@ -93,12 +93,16 @@ describe("ClaudeAssistLauncher", () => {
   });
 
   describe("보이는 조건", () => {
-    it("Claude 연결이 없으면 아무것도 그리지 않는다", () => {
-      const { container } = renderLauncher();
-      expect(container.firstChild).toBeNull();
+    it("키가 없어도 메뉴 버튼을 그리고, 메뉴 아래에 ToonStudio AI로 무료 실행한다는 안내를 보여 준다", async () => {
+      renderLauncher();
+      const { menu } = await openMenu();
+      const panel = menu.parentElement as HTMLElement;
+      expect(within(panel).getByText(/키 없이 ToonStudio AI로 무료로 실행해요/u)).toBeTruthy();
+      // 내 키가 없으면 사용자 비용이 없으므로 세션 비용·예산 막대를 보여 주지 않는다.
+      expect(panel.querySelector("[data-claude-budget-meter]")).toBeNull();
     });
 
-    it("무료 공급자만 연결돼 있어도 그리지 않는다", () => {
+    it("무료 공급자만 연결돼 있어도 ToonStudio AI로 실행할 수 있게 메뉴를 그린다", async () => {
       connect({
         ...structuredClone(EMPTY_AI_CONNECTION),
         id: "openrouter-1",
@@ -106,24 +110,25 @@ describe("ClaudeAssistLauncher", () => {
         apiKey: "or-key",
         apiKeys: [{ id: "key-1", label: "기본 키", apiKey: "or-key", enabled: true, priority: 100 }],
       });
-      const { container } = renderLauncher();
-      expect(container.firstChild).toBeNull();
+      renderLauncher();
+      expect(await screen.findByRole("button", { name: "AI 보조 메뉴" })).toBeTruthy();
     });
 
-    it("정책을 통과하지 못한 Claude 연결(무료로 표시)은 그리지 않는다", () => {
+    it("정책을 통과하지 못한 Claude 연결(무료로 표시)은 내 키로 쓰지 않고 ToonStudio AI 안내를 보여 준다", async () => {
       connect(claudeConnection({ costPolicy: "provider-free-tier" }));
-      const { container } = renderLauncher();
-      expect(container.firstChild).toBeNull();
+      renderLauncher();
+      const { menu } = await openMenu();
+      expect(menu.parentElement?.querySelector("[data-claude-managed-note]")).toBeTruthy();
     });
 
-    it("연결이 사라지면 버튼도 사라진다", async () => {
+    it("내 키 연결이 사라져도 버튼은 남고 키 없는 실행으로 이어진다", async () => {
       connect();
       renderLauncher();
-      expect(await screen.findByRole("button", { name: "Claude 보조 메뉴" })).toBeTruthy();
+      expect(await screen.findByRole("button", { name: "AI 보조 메뉴" })).toBeTruthy();
 
       act(() => { lockUserAi(false); });
 
-      expect(screen.queryByRole("button", { name: "Claude 보조 메뉴" })).toBeNull();
+      expect(screen.getByRole("button", { name: "AI 보조 메뉴" })).toBeTruthy();
     });
   });
 
@@ -132,7 +137,7 @@ describe("ClaudeAssistLauncher", () => {
       connect();
       renderLauncher();
 
-      const trigger = await screen.findByRole("button", { name: "Claude 보조 메뉴" });
+      const trigger = await screen.findByRole("button", { name: "AI 보조 메뉴" });
       expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
       expect(trigger.getAttribute("aria-expanded")).toBe("false");
       expect(screen.queryByRole("menu")).toBeNull();
@@ -246,7 +251,7 @@ describe("ClaudeAssistLauncher", () => {
       connect();
       renderLauncher();
 
-      const trigger = await screen.findByRole("button", { name: "Claude assist menu" });
+      const trigger = await screen.findByRole("button", { name: "AI assist menu" });
       fireEvent.click(trigger);
       const menu = await screen.findByRole("menu");
 

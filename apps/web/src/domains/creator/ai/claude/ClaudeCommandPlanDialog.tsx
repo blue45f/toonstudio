@@ -15,15 +15,16 @@ import "@/shared/ai/claude/claude-assist-i18n";
 
 import { ListChecks, LoaderCircle, RefreshCw, Sparkles, Square } from "lucide-react";
 import { useCallback, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Link } from "react-router-dom";
 
 import { CLAUDE_BUTTON, CLAUDE_PRIMARY_BUTTON } from "@/shared/ai/claude/claude-ui";
-import { formatClaudeUsd } from "@/shared/ai/claude/claude-usage-meter";
 import { ClaudeModelSelect } from "@/shared/ai/claude/ClaudeModelSelect";
 import { ClaudePreflight } from "@/shared/ai/claude/ClaudePreflight";
 import { resolveClaudeRoute } from "@/shared/ai/claude/claude-route";
 import { useClaudeBudgetGuard } from "@/shared/ai/claude/use-claude-budget-guard";
 import { useClaudeRoute } from "@/shared/ai/claude/use-claude-route";
+import { ClaudeCostChip } from "@/shared/ai/claude/ClaudeCostChip";
+import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useClaudeUsageText } from "@/shared/ai/claude/use-claude-usage-text";
 import { useI18n, useT } from "@/shared/lib/i18n";
 
@@ -73,6 +74,10 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   const t = useT();
   const lang = useI18n((state) => state.lang);
   const route = useClaudeRoute();
+  const session = useSession();
+  // 키 없이 쓰는 ToonStudio AI는 로그인한 사용자에게 열린다. 세션을 확인한 뒤에만 안내를 띄운다.
+  const managed = route.managed === true;
+  const managedLoginRequired = managed && session.ready && session.status === "unauthenticated";
   const usageOf = useClaudeUsageText();
   const bindings = useSyncExternalStore(
     subscribeStudioCommandExecutionBindings,
@@ -109,7 +114,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   const busy = task.running || execTask.running;
   const { runRef, stopRef } = useRunFocus(busy);
   const itemCount = mode === "do" ? usableCount : knowledge.length;
-  const effectiveModel = model || route?.model || "";
+  const effectiveModel = model || route.model;
   const trimmed = normalize(request);
 
   // 보낼 요청이 아직 없으면 계산할 수 없다(undefined). "단가를 모른다"(null)와 구분해야 입력 전에 가짜 경고가 뜨지 않는다.
@@ -123,7 +128,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
 
   const planFresh = outcome?.kind === "plan" && mode === "do" && outcome.request === trimmed;
   const readyToRun = Boolean(planFresh && outcome.value.plan.steps.length > 0 && planResults.length === 0 && !execTask.running);
-  const paidReady = Boolean(route && trimmed.length > 0 && itemCount > 0 && !busy && guard.allowed);
+  const paidReady = Boolean(trimmed.length > 0 && itemCount > 0 && !busy && guard.allowed);
 
   const switchMode = (next: ClaudeCommandMode) => {
     if (next === mode) return;
@@ -143,7 +148,6 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
     guard.consumeOverride();
     setNotice(null);
     const result = await task.start(async (signal): Promise<Outcome> => {
-      if (!claudeRoute) throw new Error(t("claudeAssist.common.needConnection"));
       const options = { model: model || undefined, signal, budgetOverride };
       return asking === "do"
         ? { kind: "plan", value: await runCommandPlan(claudeRoute, asked, candidates, options), request: asked }
@@ -214,15 +218,13 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
     ? [t("claudeAssist.plan.exampleDo1"), t("claudeAssist.plan.exampleDo2"), t("claudeAssist.plan.exampleDo3")]
     : [t("claudeAssist.plan.exampleAsk1"), t("claudeAssist.plan.exampleAsk2"), t("claudeAssist.plan.exampleAsk3")];
 
-  const needHint = !route
-    ? null
-    : trimmed.length === 0
-      ? t("claudeAssist.plan.needRequest")
-      : itemCount === 0
-        ? t("claudeAssist.plan.noCandidates")
-        : !guard.allowed
-          ? t("claudeAssist.art.needBudget")
-          : null;
+  const needHint = trimmed.length === 0
+    ? t("claudeAssist.plan.needRequest")
+    : itemCount === 0
+      ? t("claudeAssist.plan.noCandidates")
+      : !guard.allowed
+        ? t("claudeAssist.art.needBudget")
+        : null;
 
   // 실행 모드는 지금 쓸 수 없는 명령의 이름도 함께 보낸다(캐시가 상태에 흔들리지 않게). 보낸 수와 쓸 수 있는 수를 나눠 알린다.
   const sentCount = Math.min(candidates.length, COMMAND_PLAN_LIMITS.maxCandidates);
@@ -236,8 +238,8 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
   const showAnswerResult = outcome?.kind === "answer" && mode === "explain";
   const primary = readyToRun ? "run" : "ask";
   const askLabel = mode === "do"
-    ? (outcome?.kind === "plan" ? t("claudeAssist.plan.remake") : t("claudeAssist.plan.make"))
-    : (outcome?.kind === "answer" ? t("claudeAssist.plan.askAgain") : t("claudeAssist.plan.ask"));
+    ? (outcome?.kind === "plan" ? t(managed ? "claudeAssist.managed.planRemake" : "claudeAssist.plan.remake") : t(managed ? "claudeAssist.managed.planMake" : "claudeAssist.plan.make"))
+    : (outcome?.kind === "answer" ? t(managed ? "claudeAssist.managed.planAskAgain" : "claudeAssist.plan.askAgain") : t(managed ? "claudeAssist.managed.planAsk" : "claudeAssist.plan.ask"));
 
   // 단축키는 계획·답변 만들기에만 쓴다. 계획이 준비돼 주 버튼이 "실행"인 동안에는 아무것도 하지 않는다.
   const shortcutAsk = primary === "ask" ? () => void ask() : undefined;
@@ -252,7 +254,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
           </button>
           <button type="button" className={CLAUDE_BUTTON} disabled={!paidReady} onClick={() => void ask()}>
             <RefreshCw size={16} aria-hidden />
-            {t("claudeAssist.plan.remake")}
+            {t(managed ? "claudeAssist.managed.planRemake" : "claudeAssist.plan.remake")}
           </button>
         </>
       ) : (
@@ -267,11 +269,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
           {t("claudeAssist.common.stop")}
         </button>
       ) : null}
-      {typeof capUsd === "number" ? (
-        <span className="text-xs font-semibold text-fg-2" data-claude-footer-cap="true">
-          {t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) })}
-        </span>
-      ) : null}
+      <ClaudeCostChip capUsd={capUsd} />
       <span className="ml-auto flex items-center gap-3">
         {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
         {shortcutAsk ? <ClaudeShortcutHint action={t("claudeAssist.common.shortcutRun")} /> : null}
@@ -292,11 +290,8 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
       footer={footer}
     >
       <div className="space-y-4">
-        {!route ? (
-          <div className="space-y-2 rounded-xl border border-line bg-raised/50 p-3 text-sm">
-            <p>{t("claudeAssist.common.needConnection")}</p>
-            <Link to="/settings/ai?source=studio" className={CLAUDE_BUTTON} onClick={close}>{t("claudeAssist.common.openSettings")}</Link>
-          </div>
+        {managedLoginRequired ? (
+          <AiRecoveryNotice code="login_required" message={t("claudeAssist.managed.loginHint")} compact />
         ) : null}
 
         <ClaudeCommandRequestPanel
@@ -317,7 +312,7 @@ export function ClaudeCommandPlanDialog({ onClose, initialRequest = "", initialM
 
         <div className="sm:max-w-xs">
           <label htmlFor="claude-plan-model" className="mb-1 block text-xs font-bold text-fg-2">{t("claudeAssist.common.modelLabel")}</label>
-          <ClaudeModelSelect id="claude-plan-model" value={model} onChange={setModel} defaultModel={route?.model ?? ""} disabled={busy} />
+          <ClaudeModelSelect id="claude-plan-model" value={model} onChange={setModel} defaultModel={route.model} disabled={busy} />
         </div>
 
         <ClaudePreflight

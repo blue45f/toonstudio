@@ -18,7 +18,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import { resolveCreatorTaskModelRoute } from "./claude-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./claude-feature-cost-cap";
@@ -62,14 +61,11 @@ export * from "./claude-webtoon-episodic-schemas";
 
 const MAX_OUTPUT_TOKENS = 4_000;
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (explicit) return explicit;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return explicit ?? resolveClaudeRoute();
 }
 
 function buildEpisodicContextPrompt(
@@ -106,7 +102,7 @@ export async function runClaudeReaderRetentionSimulator(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeReaderRetentionView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicReaderRetentionReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -203,7 +199,7 @@ export async function runClaudeCharacterOocRadar(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeCharacterOocRadarView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicCharacterOocRadarReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -291,7 +287,7 @@ export async function runClaudeBg3dLightingAssetDirector(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeBg3dLightingAssetView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicBg3dLightingAssetReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -379,7 +375,7 @@ export async function runClaudeBgmAudioToonCuesheet(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeBgmAudioToonView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicBgmAudioToonReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -465,7 +461,7 @@ export async function runClaudeVisualContinuityLinter(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeVisualContinuityLinterView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false)
       return buildDeterministicVisualContinuityLinterReport(input);
@@ -544,7 +540,7 @@ export async function runClaudeMultiEpisodeCanonVault(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeMultiEpisodeCanonVaultView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicMultiEpisodeCanonVaultReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -614,7 +610,7 @@ export async function runClaudeFootwearStrideLockDirector(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeFootwearStrideLockView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicFootwearStrideLockReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");
@@ -675,7 +671,7 @@ export async function runClaudeCrowdDepthFogLockDirector(
   input: WebtoonProductionAssistInput,
   options: RunWebtoonProductionAssistOptions = {},
 ): Promise<ClaudeCrowdDepthFogLockView> {
-  const activeRoute = resolveOrHydrateClaudeRoute(options.route);
+  const activeRoute = resolveActiveClaudeRoute(options.route);
   if (!activeRoute) {
     if (options.fallbackOnError !== false) return buildDeterministicCrowdDepthFogLockReport(input);
     throw new Error("사용 가능한 Claude 연결이 없습니다.");

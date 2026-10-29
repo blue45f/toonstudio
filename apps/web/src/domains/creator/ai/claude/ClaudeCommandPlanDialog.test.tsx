@@ -171,15 +171,19 @@ describe("ClaudeCommandPlanDialog", () => {
   });
 
   describe("처음 열었을 때", () => {
-    it("연결이 없으면 연결 안내와 설정 링크를 보여 주고 계획을 만들 수 없다", () => {
+    it("키가 없으면 ToonStudio AI로 무료 실행하고 요금 문구를 쓰지 않는다", async () => {
       installBindings();
       renderDialog();
 
       expect(screen.getByRole("dialog", { name: "AI 명령 도우미" })).toBeTruthy();
-      expect(screen.getByText("Claude 연결이 필요해요.")).toBeTruthy();
-      expect(screen.getByRole("link", { name: "AI 설정에서 연결하기" }).getAttribute("href")).toBe("/settings/ai?source=studio");
+      expect(screen.queryByText("Claude 연결이 필요해요.")).toBeNull();
       typeRequest("격자 켜 줘");
-      expect((screen.getByRole("button", { name: MAKE }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.queryByText(/요금 발생/u)).toBeNull();
+      const make = screen.getByRole("button", { name: "계획 만들기" }) as HTMLButtonElement;
+      expect(make.disabled).toBe(false);
+      fireEvent.click(make);
+      await screen.findByText("제안한 단계");
+      expect(runCommandPlan.mock.calls[0]?.[0]).toMatchObject({ managed: true, apiKey: "" });
     });
 
     it("빈 칸에서 막막하지 않도록 예시를 보여 주고, 누르면 요청 칸에 채운다", () => {

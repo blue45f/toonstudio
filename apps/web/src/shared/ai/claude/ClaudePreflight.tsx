@@ -8,6 +8,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { CLAUDE_PRICE_AS_OF, claudeModelInfo } from "./claude-models";
 import { formatClaudeUsd } from "./claude-usage-meter";
+import { useManagedAssist } from "./use-claude-route";
 
 import type { ClaudeBudgetGuard } from "./use-claude-budget-guard";
 
@@ -40,13 +41,17 @@ export interface ClaudePreflightProps {
 export function ClaudePreflight({ model, capUsd, guard, rows, summary, className }: ClaudePreflightProps) {
   const t = useT();
   const detailsId = useId();
-  const info = claudeModelInfo(model);
-  const modelLabel = info?.label ?? model;
-  const capText = capUsd === undefined
-    ? t("claudeAssist.preflight.capPending")
-    : capUsd === null
-      ? t("claudeAssist.preflight.capUnknown")
-      : t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) });
+  // 관리형 경로(ToonStudio AI)는 사용자 비용이 없고 모델은 서버가 고성능 우선으로 고른다.
+  const managed = useManagedAssist();
+  const info = managed ? undefined : claudeModelInfo(model);
+  const modelLabel = managed ? t("claudeAssist.managed.modelLabel") : info?.label ?? model;
+  const capText = managed
+    ? t("claudeAssist.managed.capChip")
+    : capUsd === undefined
+      ? t("claudeAssist.preflight.capPending")
+      : capUsd === null
+        ? t("claudeAssist.preflight.capUnknown")
+        : t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(capUsd) });
   const attention = !guard.pending && (guard.verdict.kind === "exceeds" || guard.verdict.kind === "unknown-cost");
   const limit = guard.limitUsd === null ? "" : formatClaudeUsd(guard.limitUsd);
 
@@ -65,7 +70,9 @@ export function ClaudePreflight({ model, capUsd, guard, rows, summary, className
           <span
             className={cn(
               "shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
-              capUsd === null ? "border-warn/35 bg-warn/10 text-warn" : capUsd === undefined ? "border-line bg-card text-fg-3" : "border-accent/30 bg-accent/10 text-accent",
+              managed
+                ? "border-good/35 bg-good/10 text-good"
+                : capUsd === null ? "border-warn/35 bg-warn/10 text-warn" : capUsd === undefined ? "border-line bg-card text-fg-3" : "border-accent/30 bg-accent/10 text-accent",
             )}
             data-claude-cap-chip="true"
           >
@@ -78,17 +85,19 @@ export function ClaudePreflight({ model, capUsd, guard, rows, summary, className
           className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 border-t border-line/70 px-3 py-2.5 text-[0.6875rem] leading-relaxed"
         >
           <dt className="font-semibold text-fg-3">{t("claudeAssist.preflight.route")}</dt>
-          <dd className="min-w-0 text-fg-2">{t("claudeAssist.preflight.routeValue")}</dd>
+          <dd className="min-w-0 text-fg-2">{t(managed ? "claudeAssist.managed.routeValue" : "claudeAssist.preflight.routeValue")}</dd>
           {rows.map((row) => (
             <PreflightRow key={row.label} label={row.label} value={row.value} />
           ))}
           <dt className="font-semibold text-fg-3">{t("claudeAssist.preflight.cost")}</dt>
           <dd className="min-w-0 text-fg-2">
-            {capUsd === undefined
-              ? t("claudeAssist.preflight.costPending")
-              : capUsd === null
-                ? t("claudeAssist.preflight.costUnknown")
-                : t("claudeAssist.preflight.costValue", { cost: formatClaudeUsd(capUsd) })}
+            {managed
+              ? t("claudeAssist.managed.costValue")
+              : capUsd === undefined
+                ? t("claudeAssist.preflight.costPending")
+                : capUsd === null
+                  ? t("claudeAssist.preflight.costUnknown")
+                  : t("claudeAssist.preflight.costValue", { cost: formatClaudeUsd(capUsd) })}
             {info ? (
               <span className="mt-0.5 block text-fg-3">
                 {t("claudeAssist.card.priceLine", { input: `$${info.inputUsdPerMTok}`, output: `$${info.outputUsdPerMTok}` })}
@@ -98,7 +107,7 @@ export function ClaudePreflight({ model, capUsd, guard, rows, summary, className
             ) : null}
           </dd>
           <dt className="font-semibold text-fg-3">{t("claudeAssist.preflight.failure")}</dt>
-          <dd className="min-w-0 text-fg-2">{t("claudeAssist.preflight.failureValue")}</dd>
+          <dd className="min-w-0 text-fg-2">{t(managed ? "claudeAssist.managed.failureValue" : "claudeAssist.preflight.failureValue")}</dd>
         </dl>
       </details>
 
@@ -107,7 +116,7 @@ export function ClaudePreflight({ model, capUsd, guard, rows, summary, className
           <span className="font-semibold text-fg">{t("claudeAssist.preflight.transfer")}</span>
           {" · "}
           {summary}
-          <span className="mt-0.5 block text-fg-3">{t("claudeAssist.preflight.failureShort")}</span>
+          <span className="mt-0.5 block text-fg-3">{t(managed ? "claudeAssist.managed.failureShort" : "claudeAssist.preflight.failureShort")}</span>
         </p>
       ) : null}
 

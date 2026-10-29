@@ -9,6 +9,7 @@ import { CLAUDE_PRESET_IDS, type ClaudeEffortDepth, type ClaudePresetId } from "
 import { CLAUDE_INPUT } from "./claude-ui";
 import { formatClaudeUsd } from "./claude-usage-meter";
 import { ClaudeModelSelect } from "./ClaudeModelSelect";
+import { useManagedAssist } from "./use-claude-route";
 
 /** 프리셋별 비용 상한. undefined는 아직 계산할 입력이 없다는 뜻, null은 단가를 모른다는 뜻이다. */
 export type ClaudePresetCaps = Readonly<Record<ClaudePresetId, number | null | undefined>>;
@@ -58,6 +59,8 @@ export function ClaudePresetPicker({
 }: ClaudePresetPickerProps) {
   const t = useT();
   const idBase = useId();
+  // 관리형 경로(ToonStudio AI)는 사용자 비용이 없어 방식마다 비용 대신 "무료"를 보여 준다.
+  const managed = useManagedAssist();
   return (
     <fieldset className="space-y-2" disabled={disabled} data-claude-preset-picker="true">
       <legend className="mb-1 text-xs font-bold text-fg-2">{legend}</legend>
@@ -78,7 +81,11 @@ export function ClaudePresetPicker({
               <input type="radio" name={`${idBase}-preset`} value={id} checked={selected} className="sr-only" onChange={() => onChange(id)} />
               <span className="flex items-center justify-between gap-2">
                 <span className="text-sm font-bold text-fg">{t(copy.title)}</span>
-                {cap === undefined || id === "custom" ? null : (
+                {id === "custom" ? null : managed ? (
+                  <span className="shrink-0 rounded-full border border-good/35 bg-good/10 px-2 py-0.5 text-[0.6875rem] font-bold text-good">
+                    {t("claudeAssist.managed.capChip")}
+                  </span>
+                ) : cap === undefined ? null : (
                   <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold", cap === null ? "border-warn/35 bg-warn/10 text-warn" : "border-line text-fg-2")}>
                     {cap === null ? t("claudeAssist.preflight.capUnknown") : t("claudeAssist.preflight.capChip", { cost: formatClaudeUsd(cap) })}
                   </span>

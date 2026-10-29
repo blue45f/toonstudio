@@ -5,8 +5,8 @@
  * 웹툰 스토리보드·대사·아트디렉팅·다국어 식자 통합 AI 보조 도우미 모듈.
  *
  * 특징:
- * 1. 로컬 `.env*`에 설정된 Claude API 키(`ANTHROPIC_API_KEY` / `VITE_ANTHROPIC_API_KEY` 등)를
- *    `hydrateDefaultEnvClaudeConnection()`으로 자동 인식해 별도 설정 없이도 즉시 호출 가능.
+ * 1. 사용자가 등록한 키가 없어도 ToonStudio AI 관리형 경로(서버가 운영 고성능 모델 → 무료 모델 순으로 처리)로
+ *    별도 설정 없이 즉시 호출 가능. 키를 등록하면 그 키로 실행한다.
  * 2. Claude 구조화 출력(`ClaudeStoryboardAssistSchema`)으로
  *    - 엔딩 클리프행어 훅 한 줄(`cliffhangerHookLine`)
  *    - 캐릭터 관계성 서브텍스트 대사 리라이팅(`subtextDialogueUpgrade`)
@@ -30,7 +30,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   runWebtoonStoryboardMasterPipeline,
@@ -255,23 +254,19 @@ export interface RunClaudeStoryboardAssistOptions {
 
 /**
  * Claude 구조화 출력(`claudeParse`)을 통해 스토리보드·대사·4레이어 연출 코칭을 실행한다.
- * 활성 연결이 없으면 로컬 `.env*`의 Claude API 키(`hydrateDefaultEnvClaudeConnection`)를 먼저 시도하고,
+ * 등록한 키가 없으면 ToonStudio AI 관리형 경로로 실행하고,
  * `fallbackOnError !== false`이면 오류 시 결정적 폴백으로 안전하게 복구한다.
  */
 export async function runClaudeWebtoonStoryboardAssist(
   input: ClaudeStoryboardAssistInput,
   options: RunClaudeStoryboardAssistOptions = {},
 ): Promise<ClaudeStoryboardAssistView> {
-  let activeRoute = options.route ?? resolveClaudeRoute();
-  if (!activeRoute) {
-    hydrateDefaultEnvClaudeConnection();
-    activeRoute = resolveClaudeRoute();
-  }
+  const activeRoute = options.route ?? resolveClaudeRoute();
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
       return buildDeterministicStoryboardAssistFallback(input);
     }
-    throw new Error("사용 가능한 Claude 연결이 없습니다. AI 설정에서 키를 연결하거나 환경변수를 확인하세요.");
+    throw new Error("사용 가능한 Claude 연결이 없습니다.");
   }
 
   const requestedModel = resolveClaudeRequestModel(
@@ -499,11 +494,7 @@ export async function runClaudePanelBorderGutterTensionDirector(
     "production:panel-border-gutter-tension-lock",
     options,
   );
-  let activeRoute = options.route ?? resolveClaudeRoute();
-  if (!activeRoute) {
-    hydrateDefaultEnvClaudeConnection();
-    activeRoute = resolveClaudeRoute();
-  }
+  const activeRoute = options.route ?? resolveClaudeRoute();
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
       return buildDeterministicPanelBorderGutterLock(input);
@@ -647,11 +638,7 @@ export async function runClaudeHandPropGripAnatomyDirector(
     "production:hand-prop-grip-anatomy-continuity-lock",
     options,
   );
-  let activeRoute = options.route ?? resolveClaudeRoute();
-  if (!activeRoute) {
-    hydrateDefaultEnvClaudeConnection();
-    activeRoute = resolveClaudeRoute();
-  }
+  const activeRoute = options.route ?? resolveClaudeRoute();
   if (!activeRoute) {
     if (options.fallbackOnError !== false) {
       return buildDeterministicHandPropGripLock(input);

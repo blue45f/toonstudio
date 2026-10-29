@@ -29,7 +29,7 @@ function connectClaude() {
   });
 }
 
-describe("검색 호스트의 Claude 보조 입구(모바일)", () => {
+describe("검색 호스트의 AI 보조 입구(모바일)", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -41,7 +41,7 @@ describe("검색 호스트의 Claude 보조 입구(모바일)", () => {
     lockUserAi(false);
   });
 
-  it("검색 트리거를 숨기는 모바일에서도 Claude 연결이 있으면 보조 메뉴 단추가 남는다", async () => {
+  it("검색 트리거를 숨기는 모바일에서도 내 Claude 키가 있으면 보조 메뉴 단추가 남는다", async () => {
     connectClaude();
     render(<MemoryRouter><StudioCommandSearchHost hideTrigger /></MemoryRouter>);
 
@@ -50,12 +50,13 @@ describe("검색 호스트의 Claude 보조 입구(모바일)", () => {
     expect(document.querySelector("[data-claude-assist-mobile-row]")?.querySelector('[data-claude-assist="menu"]')).not.toBeNull();
   });
 
-  it("연결이 없으면 아무것도 그리지 않아 빈 줄이 남지 않는다(empty:hidden)", () => {
+  it("키가 없어도 ToonStudio AI로 쓸 수 있어 모바일 보조 메뉴 단추가 남는다", async () => {
     render(<MemoryRouter><StudioCommandSearchHost hideTrigger /></MemoryRouter>);
 
     const row = document.querySelector("[data-claude-assist-mobile-row]");
     expect(row).not.toBeNull();
-    expect(row?.childElementCount).toBe(0);
+    // 메뉴가 늦게 불러와지는 동안에도 빈 줄이 남지 않도록 줄은 비면 숨는다.
     expect(row?.className).toContain("empty:hidden");
+    await waitFor(() => expect(row?.querySelector('[data-claude-assist="menu"]')).not.toBeNull());
   });
 });

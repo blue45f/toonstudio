@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { evaluateClaudeBudget, useClaudeBudget, type ClaudeBudgetVerdict } from "./claude-budget";
 import { claudeBudgetSpentUsd, useClaudeUsage } from "./claude-usage-meter";
+import { useManagedAssist } from "./use-claude-route";
 
 export interface ClaudeBudgetGuard {
   readonly limitUsd: number | null;
@@ -35,7 +36,10 @@ function approvalCovers(approved: number | null, current: number | null): boolea
  * "이번 한 번만" 동의는 동의한 시점의 상한 이하에서만 유효하다. 모델이나 옵션을 바꿔 상한이 커지면 다시 묻는다.
  */
 export function useClaudeBudgetGuard(capUsd: number | null | undefined): ClaudeBudgetGuard {
-  const { limitUsd } = useClaudeBudget();
+  const { limitUsd: userLimitUsd } = useClaudeBudget();
+  // 관리형 경로(ToonStudio AI)는 사용자에게 청구되지 않으므로 사용자 예산 한도를 적용하지 않는다.
+  const managed = useManagedAssist();
+  const limitUsd = managed ? null : userLimitUsd;
   const usage = useClaudeUsage();
   const spentUsd = claudeBudgetSpentUsd(usage);
   const pending = capUsd === undefined;

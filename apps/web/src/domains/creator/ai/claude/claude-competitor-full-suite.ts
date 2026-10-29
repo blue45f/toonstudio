@@ -27,7 +27,6 @@ import { resolveClaudeRoute, type ClaudeRoute } from "@/shared/ai/claude/claude-
 import { cleanSingleLineText } from "@/shared/ai/claude/claude-text";
 import { claudeParse } from "@/shared/ai/claude/claude-transport";
 import { toClaudeTokenUsage } from "@/shared/ai/claude/claude-usage-meter";
-import { hydrateDefaultEnvClaudeConnection } from "@/shared/ai/user-ai-store";
 
 import {
   buildLocal3dHandHeadPoseAndLtRig,
@@ -87,14 +86,11 @@ export * from "./claude-competitor-full-suite-schemas";
 
 const MAX_OUTPUT_TOKENS = 4_096;
 
-function resolveOrHydrateClaudeRoute(
+function resolveActiveClaudeRoute(
   explicit?: Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null,
 ): Pick<ClaudeRoute, "apiKey" | "revision" | "model"> | null {
-  if (explicit) return explicit;
-  const current = resolveClaudeRoute();
-  if (current) return current;
-  hydrateDefaultEnvClaudeConnection();
-  return resolveClaudeRoute();
+  // 등록한 키가 없으면 관리형 경로(ToonStudio AI)가 돌아오므로 항상 실행할 경로가 있다.
+  return explicit ?? resolveClaudeRoute();
 }
 
 function clampPercent(value: number, fallback = 85): number {
@@ -138,7 +134,7 @@ async function executeCompetitorEngine<T>(params: {
   readonly schema: z.ZodType<T>;
   readonly normalize: (parsed: T, fallback: T) => T;
 }): Promise<CompetitorEngineExecutionMeta<T>> {
-  const activeRoute = resolveOrHydrateClaudeRoute(params.options.route);
+  const activeRoute = resolveActiveClaudeRoute(params.options.route);
   if (!activeRoute) {
     return {
       report: params.fallback,

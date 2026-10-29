@@ -2,24 +2,58 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { lockUserAi, setUserAiConfiguration } from "../user-ai-store";
+import { EMPTY_AI_CONNECTION } from "../user-ai-types";
+
 import { resetClaudeBudgetForTests, setClaudeBudgetLimit } from "./claude-budget";
 import { beginClaudeRequest, recordClaudeUsage, resetClaudeUsage } from "./claude-usage-meter";
 import { useClaudeBudgetGuard } from "./use-claude-budget-guard";
 
+/** 예산은 내 키(사용자 결제) 경로에만 걸리므로, 예산 판정 시험은 Claude 키를 등록한 상태에서 한다. */
+function connectClaudeKey() {
+  setUserAiConfiguration({
+    version: 1,
+    connections: [{
+      ...structuredClone(EMPTY_AI_CONNECTION),
+      id: "claude-byok",
+      label: "Claude (Anthropic)",
+      baseUrl: "https://api.anthropic.com",
+      apiKey: "sk-test-budget-guard-0000",
+      textModel: "claude-opus-5-5",
+      imageModel: "",
+      costPolicy: "user-funded-byok",
+      apiKeys: [{ id: "key-1", label: "기본 키", apiKey: "sk-test-budget-guard-0000", enabled: true, priority: 100 }],
+      models: [{ id: "text-1", label: "Claude", model: "claude-opus-5-5", capability: "text", enabled: true, priority: 100 }],
+    }],
+    assignments: { text: "claude-byok", image: null, inference: null, "three-d": null },
+  });
+}
+
 beforeEach(() => {
   resetClaudeUsage();
   resetClaudeBudgetForTests();
+  connectClaudeKey();
 });
 
 afterEach(() => {
   cleanup();
   resetClaudeUsage();
   resetClaudeBudgetForTests();
+  lockUserAi(false);
 });
 
 describe("useClaudeBudgetGuard", () => {
   it("한도가 없으면 언제나 보낼 수 있다", () => {
     const { result } = renderHook(() => useClaudeBudgetGuard(99));
+    expect(result.current.verdict).toEqual({ kind: "no-limit" });
+    expect(result.current.allowed).toBe(true);
+  });
+
+  it("키가 없어 ToonStudio AI로 보내는 요청은 사용자 비용이 없어 예산 한도를 적용하지 않는다", () => {
+    lockUserAi(false);
+    setClaudeBudgetLimit(0.1);
+    const { result } = renderHook(() => useClaudeBudgetGuard(0.17));
+    expect(result.current.limitUsd).toBeNull();
     expect(result.current.verdict).toEqual({ kind: "no-limit" });
     expect(result.current.allowed).toBe(true);
   });

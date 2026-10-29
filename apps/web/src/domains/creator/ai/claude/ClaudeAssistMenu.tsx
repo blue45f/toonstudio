@@ -1,5 +1,5 @@
 /**
- * 스튜디오 검색 줄의 Claude 보조 메뉴 — 별 모양 버튼 하나로 모든 보조 기능을 이름·설명과 함께 보여 준다.
+ * 스튜디오 검색 줄의 AI 보조 메뉴 — 별 모양 버튼 하나로 모든 보조 기능을 이름·설명과 함께 보여 준다.
  *
  * 기능이 늘어도 줄 너비를 먹지 않고, 아이콘만 보고 짐작하지 않아도 되도록 항목마다 한 줄 설명을 붙인다.
  * 메뉴 버튼 패턴을 따른다: 화살표·Home·End로 이동, Esc로 닫고 버튼으로 돌아간다. 대화상자는 버튼에서 연다
@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import { ClaudeBudgetMeter } from "@/shared/ai/claude/ClaudeBudgetMeter";
+import { useManagedAssist } from "@/shared/ai/claude/use-claude-route";
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
@@ -40,6 +41,8 @@ export function ClaudeAssistMenu() {
   const panelRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [position, setPosition] = useState<Position>({ top: 0, left: VIEWPORT_MARGIN });
+  // 키가 없으면 ToonStudio AI(사용자 비용 없음)로 실행하므로 비용 막대 대신 그 사실을 알린다.
+  const managed = useManagedAssist();
 
   const closeMenu = useCallback((restoreFocus: boolean) => {
     setMenuOpen(false);
@@ -179,7 +182,11 @@ export function ClaudeAssistMenu() {
             </div>
             {/* 사용량 막대는 메뉴 항목이 아니므로 role="menu" 바깥에 둔다. */}
             <div className="border-t border-line px-2.5 pb-1 pt-2">
-              <ClaudeBudgetMeter />
+              {managed ? (
+                <p className="text-[0.6875rem] leading-relaxed text-fg-3" data-claude-managed-note="true">{t("claudeAssist.hub.managedNote")}</p>
+              ) : (
+                <ClaudeBudgetMeter />
+              )}
             </div>
           </div>,
           document.body,
