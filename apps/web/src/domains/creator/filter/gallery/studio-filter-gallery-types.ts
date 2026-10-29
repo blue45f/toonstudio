@@ -123,8 +123,11 @@ export interface StudioFilterGalleryStack {
 }
 
 export const STUDIO_FILTER_GALLERY_MAX_ENTRIES = 8;
-/** 한 번 실행에 허용하는 작업량 상한(픽셀 수 × cost 합). 넘으면 커널을 실행하지 않는다. */
-export const STUDIO_FILTER_GALLERY_WORK_BUDGET = 4096 * 4096 * 24;
+/**
+ * 한 번 실행에 허용하는 작업량 상한(픽셀 수 × cost 합). 넘으면 커널을 실행하지 않는다.
+ * 측정상 cost 1 단위가 픽셀당 약 50~216ns 라, 가장 느린 경우에도 이미지 필터 Worker 의 30초 시간 제한 안(약 22초)에 끝난다.
+ */
+export const STUDIO_FILTER_GALLERY_WORK_BUDGET = 2048 * 2048 * 24;
 const ID_PATTERN = /^[a-z]+(?:-[a-z]+)*\.[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 export function isStudioFilterGalleryEffectId(value: unknown): value is string {

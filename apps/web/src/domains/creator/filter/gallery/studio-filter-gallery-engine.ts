@@ -16,8 +16,11 @@ import { STUDIO_FILTER_GALLERY_WORK_BUDGET } from "./studio-filter-gallery-types
 
 import type { StudioFilterGalleryImage, StudioFilterGalleryStack } from "./studio-filter-gallery-types";
 
-/** 메인 스레드에서 바로 돌려도 되는 작업량 상한(픽셀 수 × cost). 넘으면 Worker 경로를 쓴다. */
-export const STUDIO_FILTER_GALLERY_DIRECT_BUDGET = 1024 * 1024 * 6;
+/**
+ * 메인 스레드에서 바로 돌려도 되는 작업량 상한(픽셀 수 × cost). 넘으면 Worker 경로를 쓴다.
+ * 측정상 cost 1 단위가 픽셀당 약 50ns(느린 효과 216ns)라 512K 단위는 약 25~110ms 다.
+ */
+export const STUDIO_FILTER_GALLERY_DIRECT_BUDGET = 512 * 1024;
 
 export type StudioFilterGalleryRunResult = "applied" | "inactive" | "over-budget";
 

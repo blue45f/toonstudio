@@ -67,13 +67,30 @@ describe("필터 갤러리 대화상자", () => {
     fireEvent.change(screen.getByLabelText("이 겹의 불투명도"), { target: { value: "40" } });
     fireEvent.click(screen.getByRole("button", { name: "명도 반전 끄기" }));
     const rows = within(screen.getByRole("list", { name: "쌓인 효과" })).getAllByRole("listitem");
-    fireEvent.click(within(rows[1]!).getByRole("button", { name: "위로" }));
+    fireEvent.click(within(rows[1]!).getByRole("button", { name: "2번째 닷지 / 번 위로 이동" }));
     fireEvent.click(screen.getByRole("button", { name: "적용" }));
     const [patch] = onApply.mock.calls[0]!;
     expect(patch.filterGallery.entries).toEqual([
       { id: "color.dodge-burn", params: { mode: "dodge", range: "midtones", exposure: 70 }, opacity: 0.4 },
       { id: "color.value-invert", params: {}, enabled: false },
     ]);
+  });
+
+  it("겹을 옮겨도 행을 다시 만들지 않아 키보드 포커스가 옮긴 겹의 버튼에 남는다", () => {
+    renderDialog();
+    fireEvent.click(effectButton("명도 반전"));
+    fireEvent.click(effectButton("닷지 / 번"));
+    fireEvent.click(effectButton("레티넥스"));
+    const list = screen.getByRole("list", { name: "쌓인 효과" });
+    const down = within(list).getByRole("button", { name: "1번째 명도 반전 아래로 이동" });
+    down.focus();
+    fireEvent.click(down);
+    // 같은 버튼 요소가 그대로 남고 이름만 새 순번으로 바뀐다.
+    expect(document.activeElement).toBe(down);
+    expect(down.getAttribute("aria-label")).toBe("2번째 명도 반전 아래로 이동");
+    fireEvent.click(down);
+    // 맨 아래에 닿아 같은 방향 버튼이 꺼지면 반대 방향 버튼으로 포커스를 넘긴다.
+    expect(document.activeElement).toBe(within(list).getByRole("button", { name: "3번째 명도 반전 위로 이동" }));
   });
 
   it("빈 스택을 적용하면 필드를 지우는 패치를 넘긴다", () => {

@@ -8,6 +8,7 @@ import {
   studioFilterGalleryKonvaFilter,
   studioFilterGalleryRequiresWorker,
 } from "./studio-filter-gallery-engine";
+import { blendWithOriginal } from "./studio-filter-gallery-kernel-utils";
 import {
   STUDIO_FILTER_GALLERY_EFFECTS,
   defaultStudioFilterGalleryParams,
@@ -159,5 +160,20 @@ describe("필터 갤러리 실행 엔진", () => {
     expect(studioFilterGalleryRequiresWorker(el, 64, 64)).toBe(false);
     expect(studioFilterGalleryRequiresWorker(el, side, side)).toBe(true);
     expect(studioFilterGalleryRequiresWorker({}, side, side)).toBe(false);
+  });
+});
+
+describe("필터 갤러리 · 겹 불투명도 섞기", () => {
+  it("알파가 바뀐 픽셀에 원본의 숨은 색을 섞지 않고(어두운 테두리 없음), 알파가 같은 픽셀은 색을 반씩 섞는다", () => {
+    const original = new Uint8ClampedArray([0, 0, 0, 0, 100, 100, 100, 200]);
+    const image: StudioFilterGalleryImage = { width: 2, height: 1, data: new Uint8ClampedArray([255, 255, 255, 64, 200, 50, 0, 200]) };
+    blendWithOriginal(image, original, 0.5);
+    expect(Array.from(image.data)).toEqual([255, 255, 255, 32, 150, 75, 50, 200]);
+  });
+
+  it("완전히 투명한 두 픽셀은 알파 0 을 유지한다", () => {
+    const image: StudioFilterGalleryImage = { width: 1, height: 1, data: new Uint8ClampedArray([10, 20, 30, 0]) };
+    blendWithOriginal(image, new Uint8ClampedArray([50, 60, 70, 0]), 0.25);
+    expect(image.data[3]).toBe(0);
   });
 });

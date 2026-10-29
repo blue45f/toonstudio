@@ -303,12 +303,24 @@ export function hslToRgb(hue: number, saturation: number, lightness: number, out
   out[0] = channel(h + 1 / 3) * 255; out[1] = channel(h) * 255; out[2] = channel(h - 1 / 3) * 255;
 }
 
-/** 원본 위에 결과를 opacity 만큼 섞는다(알파 포함). original 은 효과 적용 전 사본이다. */
+/**
+ * 원본 위에 결과를 opacity 만큼 섞는다(알파 포함). original 은 효과 적용 전 사본이다.
+ * 픽셀이 직선 알파라 색은 알파를 곱한 값으로 섞는다 — 효과가 알파를 바꾼 픽셀(투명 → 반투명 등)에 원본의 숨은 색이
+ * 섞여 어두운 테두리가 생기지 않게 한다. 알파가 그대로인 픽셀은 색의 단순 선형 혼합과 같다.
+ */
 export function blendWithOriginal(image: StudioFilterGalleryImage, original: Uint8ClampedArray, opacity: number): void {
   const amount = clamp01(opacity);
   if (amount >= 1) return;
+  const keep = 1 - amount;
   const { data } = image;
-  for (let index = 0; index < data.length; index += 1) {
-    data[index] = original[index]! + (data[index]! - original[index]!) * amount;
+  for (let offset = 0; offset < data.length; offset += 4) {
+    const originalWeight = original[offset + 3]! * keep, resultWeight = data[offset + 3]! * amount;
+    const alpha = originalWeight + resultWeight;
+    for (let channel = 0; channel < 3; channel += 1) {
+      data[offset + channel] = alpha > 0
+        ? (original[offset + channel]! * originalWeight + data[offset + channel]! * resultWeight) / alpha
+        : original[offset + channel]! * keep + data[offset + channel]! * amount;
+    }
+    data[offset + 3] = alpha;
   }
 }

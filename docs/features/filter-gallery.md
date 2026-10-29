@@ -61,8 +61,9 @@ interface StudioFilterGalleryStack {
   - 체인 위치는 비네트 뒤, 외곽선·테두리 앞이다.
 - **예산**
   - 효과마다 픽셀당 상대 작업량 `cost`가 있다.
-  - 픽셀 수 × 켜진 겹의 cost 합이 `STUDIO_FILTER_GALLERY_DIRECT_BUDGET`(1024²×6)을 넘으면 이미지 필터 Worker 경로를 쓴다.
-  - `STUDIO_FILTER_GALLERY_WORK_BUDGET`(4096²×24)을 넘으면 픽셀을 전혀 바꾸지 않는다. 부분 적용으로 결과가 뒤바뀌지 않게 하기 위해서다.
+  - 측정상 cost 1 단위는 픽셀당 약 50ns(느린 효과는 216ns까지)다.
+  - 픽셀 수 × 켜진 겹의 cost 합이 `STUDIO_FILTER_GALLERY_DIRECT_BUDGET`(512K, 약 25~110ms)을 넘으면 이미지 필터 Worker 경로를 쓴다. 메인 스레드에서 수백 ms~수 초 걸리는 스택이 편집기를 멈추지 않게 하기 위해서다.
+  - `STUDIO_FILTER_GALLERY_WORK_BUDGET`(2048²×24, 가장 느린 경우 약 22초)을 넘으면 픽셀을 전혀 바꾸지 않는다. 부분 적용으로 결과가 뒤바뀌지 않게 하고, 이미지 필터 Worker 의 30초 시간 제한을 넘는 실행을 받지 않기 위해서다.
 - **결정성**
   - 커널은 `Math.random`·시계를 쓰지 않는다. 모든 무작위성은 시드를 섞은 정수 해시다.
   - 그래서 같은 문서는 어느 기기, 어느 경로(Konva·Worker)에서 그려도 같은 픽셀이 된다.

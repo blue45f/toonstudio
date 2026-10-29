@@ -87,7 +87,7 @@ function workLabel(cost: number): string {
   if (cost <= 0) return "효과 없음";
   if (cost < 10) return "가벼움";
   if (cost < 40) return "보통";
-  return "무거움 — 큰 이미지는 미리보기가 느릴 수 있어요";
+  return "무거움 — 큰 이미지는 미리보기가 느리고, 작업량 상한을 넘으면 적용되지 않아요";
 }
 
 function ParamControl({
@@ -195,6 +195,10 @@ export function StudioFilterGalleryDialog({
 }: StudioFilterGalleryDialogProps): ReactElement {
   const dialogRef = useRef<HTMLElement>(null);
   const [stack, setStack] = useState<StudioFilterGalleryStack>(() => initialStack(image, initialDraft));
+  // 겹마다 대화상자 안에서만 쓰는 고정 키. 순서를 바꿔도 행이 다시 만들어지지 않아 누른 버튼의 포커스가 남는다.
+  const [rowKeys, setRowKeys] = useState<readonly number[]>(() => stack.entries.map((_entry, index) => index));
+  const nextRowKey = useRef(stack.entries.length);
+  const [moveFocus, setMoveFocus] = useState<{ readonly key: number; readonly delta: -1 | 1 } | null>(null);
   const [selected, setSelected] = useState<number | null>(() => (stack.entries.length > 0 ? 0 : null));
   const [category, setCategory] = useState<CategoryView>("all");
   const [query, setQuery] = useState("");
@@ -229,6 +233,16 @@ export function StudioFilterGalleryDialog({
     if (!canUseSelectionScope && applicationScope !== "whole") setApplicationScope("whole");
   }, [applicationScope, canUseSelectionScope]);
 
+  // 위·아래로 옮긴 뒤 옮긴 행의 같은 방향 버튼(맨 끝에 닿아 꺼졌으면 반대 방향 버튼)에 포커스를 둔다.
+  useEffect(() => {
+    if (!moveFocus) return;
+    const row = dialogRef.current?.querySelector<HTMLElement>(`[data-gallery-row="${moveFocus.key}"]`);
+    const same = row?.querySelector<HTMLButtonElement>(`[data-gallery-move="${moveFocus.delta}"]`);
+    const other = row?.querySelector<HTMLButtonElement>(`[data-gallery-move="${-moveFocus.delta}"]`);
+    (same && !same.disabled ? same : other)?.focus();
+    setMoveFocus(null);
+  }, [moveFocus]);
+
   const categoryCounts = useMemo(() => {
     const counts = new Map<StudioFilterGalleryCategory, number>();
     for (const effect of STUDIO_FILTER_GALLERY_EFFECTS) counts.set(effect.category, (counts.get(effect.category) ?? 0) + 1);
@@ -249,6 +263,9 @@ export function StudioFilterGalleryDialog({
     if (editingLocked || stackFull) return;
     const entries = [...stack.entries, { id: effect.id, params: defaultStudioFilterGalleryParams(effect) }];
     replaceEntries(entries);
+    const key = nextRowKey.current;
+    nextRowKey.current += 1;
+    setRowKeys((keys) => [...keys, key]);
     setSelected(entries.length - 1);
     setAnnouncement(`${effect.label} 효과를 ${entries.length}번째 겹으로 추가했어요.`);
   };
@@ -272,12 +289,17 @@ export function StudioFilterGalleryDialog({
     const entries = [...stack.entries];
     [entries[index], entries[target]] = [entries[target]!, entries[index]!];
     replaceEntries(entries);
+    const keys = [...rowKeys];
+    [keys[index], keys[target]] = [keys[target]!, keys[index]!];
+    setRowKeys(keys);
+    if (keys[target] !== undefined) setMoveFocus({ key: keys[target], delta });
     setSelected(target);
   };
   const removeEntry = (index: number) => {
     const removed = stack.entries[index];
     const entries = stack.entries.filter((_entry, cursor) => cursor !== index);
     replaceEntries(entries);
+    setRowKeys((keys) => keys.filter((_key, cursor) => cursor !== index));
     setSelected(entries.length === 0 ? null : Math.min(index, entries.length - 1));
     const label = removed ? findStudioFilterGalleryEffect(removed.id)?.label ?? removed.id : "";
     setAnnouncement(`${label} 효과를 뺐어요.`);
@@ -410,8 +432,10 @@ export function StudioFilterGalleryDialog({
                 {stack.entries.map((entry, index) => {
                   const effect = findStudioFilterGalleryEffect(entry.id);
                   const active = isStudioFilterGalleryEntryActive(entry);
+                  const rowKey = rowKeys[index] ?? -1 - index;
+                  const rowLabel = `${index + 1}번째 ${effect?.label ?? entry.id}`;
                   return (
-                    <li key={`${entry.id}-${index}`} className={cn("flex items-center gap-1 rounded-xl border px-1.5 py-1", selected === index ? "border-accent/60 bg-accent-soft" : "border-line bg-card/50")}>
+                    <li key={rowKey} data-gallery-row={rowKey} className={cn("flex items-center gap-1 rounded-xl border px-1.5 py-1", selected === index ? "border-accent/60 bg-accent-soft" : "border-line bg-card/50")}>
                       <button
                         type="button"
                         aria-pressed={entry.enabled !== false}
@@ -431,10 +455,10 @@ export function StudioFilterGalleryDialog({
                         {index + 1}. {effect?.label ?? entry.id}
                         {entry.opacity !== undefined ? <span className="ml-1 text-[0.62rem] font-normal text-fg-3">{Math.round(entry.opacity * 100)}%</span> : null}
                       </button>
-                      <button type="button" aria-label="위로" disabled={editingLocked || index === 0} onClick={() => moveEntry(index, -1)} className={cn("grid size-8 place-items-center rounded-lg text-fg-3 hover:bg-raised disabled:opacity-35", STUDIO_FOCUS_RING)}>
+                      <button type="button" aria-label={`${rowLabel} 위로 이동`} data-gallery-move={-1} disabled={editingLocked || index === 0} onClick={() => moveEntry(index, -1)} className={cn("grid size-8 place-items-center rounded-lg text-fg-3 hover:bg-raised disabled:opacity-35", STUDIO_FOCUS_RING)}>
                         <ArrowUp size={13} aria-hidden />
                       </button>
-                      <button type="button" aria-label="아래로" disabled={editingLocked || index === stack.entries.length - 1} onClick={() => moveEntry(index, 1)} className={cn("grid size-8 place-items-center rounded-lg text-fg-3 hover:bg-raised disabled:opacity-35", STUDIO_FOCUS_RING)}>
+                      <button type="button" aria-label={`${rowLabel} 아래로 이동`} data-gallery-move={1} disabled={editingLocked || index === stack.entries.length - 1} onClick={() => moveEntry(index, 1)} className={cn("grid size-8 place-items-center rounded-lg text-fg-3 hover:bg-raised disabled:opacity-35", STUDIO_FOCUS_RING)}>
                         <ArrowDown size={13} aria-hidden />
                       </button>
                       <button type="button" aria-label={`${effect?.label ?? entry.id} 빼기`} disabled={editingLocked} onClick={() => removeEntry(index)} className={cn("grid size-8 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-bad disabled:opacity-35", STUDIO_FOCUS_RING)}>
