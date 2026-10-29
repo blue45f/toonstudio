@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구매 번들 가상 장소 장식 검수</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #eeeae1; color: #242d29; font-family: sans-serif; }
+      main { max-width: 1100px; margin: auto; padding: 16px; }
+      h1 { font-size: 23px; }
+      nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+      button { min-height: 44px; padding: 8px 12px; cursor: pointer; }
+      .decor-stage { position: relative; height: 640px; width: 100%; border: 1px solid #8c988e; }
+      output { display: block; margin: 10px 0; overflow-wrap: anywhere; }
+      @media (max-width: 600px) { main { padding: 8px; } .decor-stage { height: 620px; } }
+    </style>
+  </head>
+  <body>
+    <div id="bundle-decor-runtime-root"></div>
+    <script type="module" src="./bundle-decor-runtime.tsx"></script>
+  </body>
+</html>

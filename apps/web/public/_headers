@@ -126,6 +126,11 @@
   Cache-Control: public, max-age=0, must-revalidate
   CDN-Cache-Control: no-cache
 
+/assets/3d/environments/bundle-v1/theme-packs.json
+  ! Cache-Control
+  Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: no-cache
+
 /vrm/*
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, HEAD, OPTIONS

@@ -51,6 +51,18 @@ const ledgerRights = {
   attributionRequired: false,
 };
 
+const cc0Slot = () => ({
+  ...slot({...ledgerRights, ledgerPackId: "cbv1-008-cute-park-pack", status: "public-domain", licenseName: "CC0-1.0"}),
+  id: "cbv1-008-cute-park-render-001",
+  path: "assets/cbv1-008-cute-park-render-001/prop.webp",
+  previewPath: "assets/cbv1-008-cute-park-render-001/thumbnail.webp",
+  derivedFromPack: "cbv1-008-cute-park-pack",
+  license: {
+    ...slot(ledgerRights).license, id: "CC0-1.0", provider: "RG Poly", redistributionAllowed: true,
+    url: "https://creativecommons.org/publicdomain/zero/1.0/",
+  },
+});
+
 let host: HTMLDivElement;
 let root: Root;
 
@@ -87,6 +99,17 @@ describe("bundle render panel rights display", () => {
     await act(async () => { card.querySelector("button")!.click(); });
     expect(host.querySelector('[role="dialog"]')!.textContent).toContain("Ledger-Granted License Name");
     expect(host.querySelector('[role="dialog"]')!.textContent).not.toContain("Self-Declared-License-Id");
+    expect(host.textContent).toContain("소품 자체를 다시 배포하거나 파일로 내보낼 수는 없습니다");
+  });
+
+  it.each([false, true])("CC0 소품이 있으면 라이선스별 이용 권리를 안내하고 CC0 재배포를 금지하지 않는다 (혼합 %s)", async (mixed) => {
+    await openPanel(mixed ? [slot(ledgerRights), cc0Slot()] : [cc0Slot()]);
+    expect(host.querySelector('[data-bundle-asset-id="cbv1-008-cute-park-render-001"]')?.textContent).toContain("CC0-1.0");
+    expect(host.textContent).toContain("각 소품 카드의 라이선스를 따릅니다");
+    expect(host.textContent).toContain("CC0 조건에 따라 이용·수정·재배포할 수 있습니다");
+    expect(host.textContent).toContain("원본 3D 모델을 내려받는 동선은 제공하지 않습니다");
+    expect(host.textContent).not.toContain("소품 자체를 다시 배포하거나 파일로 내보낼 수는 없습니다");
+    if (mixed) expect(host.textContent).toContain("Ledger-Granted License Name");
   });
 
   it("lists nothing for a slot without a ledger block and keeps the reviewed-empty notice", async () => {

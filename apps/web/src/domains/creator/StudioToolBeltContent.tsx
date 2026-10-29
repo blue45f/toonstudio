@@ -37,6 +37,7 @@ import type {
 } from "./studio-asset-favorites";
 import type { StudioAsset } from "./studio-asset-library";
 import type { BubbleVariant, TemplateSpec } from "./studio-assets";
+import type { BgScene } from "./studio-bg-scenes";
 import type { BrandKit } from "./studio-brand-kit";
 import type { StudioClip } from "./studio-clips";
 import type { DrawMode, StudioMenu, Tool } from "./studio-editor-tool-model";
@@ -85,15 +86,7 @@ const iconToolBtnTouch = "pointer-coarse:min-w-11 pointer-coarse:justify-center"
 // QUICK_ACTION_HINTS 가 단독 소유한다 — 여기 사본은 죽은 중복이라 제거했다.
 export type StudioToolBeltHintMap = typeof TOOL_BELT_HINTS;
 
-export type StudioBgScene = {
-  id: string;
-  label: string;
-  genre: string;
-  svg?: string;
-  imgSrc?: string;
-  width?: number;
-  height?: number;
-};
+export type StudioBgScene = BgScene;
 
 export type StudioFxAsset = {
   id: string;
@@ -146,6 +139,7 @@ export type FxPickerSection =
   | "overlay";
 
 export interface StudioToolBeltContentHandlers {
+  onSavedLocalAsset?: (asset: StudioAsset) => void;
   /**
    * 선택/그리기 전환의 단일 정본. 진행 중인 획 취소 → 픽셀 도구 disarm(스포이드 포함) →
    * tool/drawMode 커밋을 한 순서로 수행한다. 도구 벨트가 setTool/setDrawMode를 직접 만지면

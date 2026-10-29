@@ -1,4 +1,5 @@
 import type { StudioAsset } from "./studio-asset-library";
+import { createStudioBundleSourceCredit } from "./catalog/studio-bundle-source-credit";
 
 /**
  * Creator Bundle 렌더 소품 전용 배포 모듈.
@@ -7,7 +8,7 @@ import type { StudioAsset } from "./studio-asset-library";
  * (licenseId 타입·deed URL·제공자 허용목록) 번들 에셋을 통과시킬 수 없다. 이 모듈은
  * 같은 검증 강도(sha256·바이트·치수·무결성)를 유지하면서 라이선스 검증을 일반화한다:
  * 허용 라이선스는 코드에 고정하지 않고 팩 매니페스트가 선언한 값(id·제공자·출처 호스트·
- * deed URL)으로 검증한다.
+ * deed URL)으로 검증한다. CC0는 원장의 공개 이용 상태·CC0 이름·공식 deed가 모두 일치할 때만 받는다.
  *
  * 서비스 내 사용 전용 팩이다. 렌더 이미지만 나가고 원본 모델·텍스처 파일은 나가지
  * 않으므로 다운로드 관련 필드·동선은 존재 자체를 허용하지 않고, kind도 렌더 이미지
@@ -24,8 +25,8 @@ export const STUDIO_BUNDLE_DELIVERY_ROOT = "/assets/studio/bundle-renders-v1/";
 const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
 const SHA256 = /^[a-f0-9]{64}$/u;
-/** 이 팩의 에셋이 CC0라고 표기하는 것은 권리 오표기라 명시적으로 거부한다(대소문자 무시: contracts의 알려진 id는 소문자 `cc0-1.0`이다). */
-const MISLABELED_LICENSE_IDS: ReadonlySet<string> = new Set(["cc0-1.0"]);
+const CC0_LICENSE_ID = "cc0-1.0";
+const CC0_DEED_URL = "https://creativecommons.org/publicdomain/zero/1.0/";
 const DOWNLOAD_FIELD_KEYS: readonly string[] = ["original", "download", "downloadUrl", "downloadPath"];
 const RENDER_VARIANTS: ReadonlySet<string> = new Set(["color", "line"]);
 const RIGHTS_STATUSES: readonly string[] = ["licensed", "public-domain"];
@@ -148,7 +149,7 @@ function parseLicenseDeclarations(pack: Record<string, unknown>): ReadonlyMap<st
     const declaration = record(input);
     if (!declaration) throw new TypeError("팩 라이선스 선언 형식이 올바르지 않습니다.");
     const id = requiredText(declaration.id, 80, "팩 라이선스 선언 형식이 올바르지 않습니다.");
-    if (MISLABELED_LICENSE_IDS.has(id.toLowerCase()) || declarations.has(id)) {
+    if (declarations.has(id)) {
       throw new TypeError("팩 라이선스 선언이 중복되거나 올바르지 않습니다.");
     }
     const provider = requiredText(declaration.provider, 80, "팩 라이선스 선언 형식이 올바르지 않습니다.");
@@ -160,6 +161,9 @@ function parseLicenseDeclarations(pack: Record<string, unknown>): ReadonlyMap<st
     if (declaration.deedUrl !== undefined && declaration.deedUrl !== null) {
       parseDeclaredHttpsUrl(declaration.deedUrl, "팩 라이선스 선언의 deed URL이 올바르지 않습니다.");
       deedUrl = declaration.deedUrl as string;
+    }
+    if (id.toLowerCase() === CC0_LICENSE_ID && deedUrl !== CC0_DEED_URL) {
+      throw new TypeError("CC0 라이선스 선언에는 공식 deed URL이 필요합니다.");
     }
     declarations.set(id, Object.freeze({provider, sourceHost, deedUrl}));
   }
@@ -189,16 +193,19 @@ function verifyLicense(
   asset: Record<string, unknown>,
   declarations: ReadonlyMap<string, LicenseDeclaration> | null,
   derived: Map<string, LicenseDeclaration>,
+  rights: StudioBundleAssetRights,
 ): {licenseId: string; licenseUrl: string | null; provider: string; sourceUrl: string} {
   const license = record(asset.license);
   if (!license) throw new TypeError("에셋 라이선스 기록이 없습니다.");
   const licenseId = requiredText(license.id, 80, "에셋 라이선스 식별자가 올바르지 않습니다.");
-  if (MISLABELED_LICENSE_IDS.has(licenseId.toLowerCase())) {
-    throw new TypeError("번들 렌더 팩의 에셋은 CC0로 표기할 수 없습니다.");
+  const cc0 = licenseId.toLowerCase() === CC0_LICENSE_ID;
+  if (cc0 && (rights.status !== "public-domain" || rights.licenseName.toLowerCase() !== CC0_LICENSE_ID)) {
+    throw new TypeError("CC0 표기는 원장의 공개 이용 권리와 라이선스 이름이 일치해야 합니다.");
   }
   const provider = requiredText(license.provider, 80, "에셋 제공자 기록이 올바르지 않습니다.");
   const source = parseDeclaredHttpsUrl(license.sourceUrl, "에셋 출처 URL이 올바르지 않습니다.");
-  if (license.commercialUse !== true || license.redistributionAllowed !== false || license.inServiceOnly !== true) {
+  if (license.commercialUse !== true || license.inServiceOnly !== true
+    || (cc0 ? typeof license.redistributionAllowed !== "boolean" : license.redistributionAllowed !== false)) {
     throw new TypeError("상업 사용·서비스 내 전용 조건을 충족하지 않는 라이선스입니다.");
   }
   if (license.checkedOn !== undefined && license.checkedOn !== null
@@ -209,6 +216,9 @@ function verifyLicense(
   if (license.url !== undefined && license.url !== null) {
     parseDeclaredHttpsUrl(license.url, "라이선스 deed URL이 올바르지 않습니다.");
     licenseUrl = license.url as string;
+  }
+  if (cc0 && licenseUrl !== CC0_DEED_URL) {
+    throw new TypeError("CC0 에셋에는 공식 deed URL이 필요합니다.");
   }
   const facts: LicenseDeclaration = {provider, sourceHost: source.hostname, deedUrl: licenseUrl};
   const declared = declarations?.get(licenseId);
@@ -325,7 +335,7 @@ export function parseStudioBundleCatalog(value: unknown): readonly StudioBundleA
       || !Number.isSafeInteger(asset.bytes) || Number(asset.bytes) <= 0 || Number(asset.bytes) > MAX_IMAGE_BYTES) {
       throw new TypeError("에셋 출처·해시·종류 검증에 실패했습니다.");
     }
-    const license = verifyLicense(asset, declarations, derived);
+    const license = verifyLicense(asset, declarations, derived, rights);
     // 권리 블록은 슬롯 단위라 이미지 파일도 그 슬롯의 폴더 안에 있어야 한다 — 다른 슬롯(닫힌 팩)의 파일을 가리켜 전달하지 못하게 한다.
     studioBundleAssetUrl(slotFilePath(asset.id, asset.path));
     if (asset.previewPath !== undefined) {
@@ -434,6 +444,7 @@ export async function createStudioBundleImageRecord(asset: StudioBundleAsset, si
   let binary = "";
   for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
   return {id: `bundle:${asset.id}`, name: asset.name, dataUrl: `data:image/webp;base64,${btoa(binary)}`,
+    bundleSourceCredit: createStudioBundleSourceCredit(asset, `sha256:${hash}`),
     contentHash: `sha256:${hash}`, width: asset.width, height: asset.height, createdAt: Date.UTC(2026, 9, 20), kind: "imported",
     rights: {sourceKind: "imported", sourceId: asset.id, licenseId: `creator-bundle-ledger:${asset.rights.ledgerPackId}`, licenseLabel: asset.rights.licenseName,
       licenseUrl: asset.licenseUrl, attributionRequired: asset.rights.attributionRequired,

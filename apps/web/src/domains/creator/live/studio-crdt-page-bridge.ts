@@ -434,7 +434,7 @@ export function studioCrdtElementToSceneElement<
       throw new StudioCrdtPageBridgeError("reference-source-missing");
     }
     const referenceProps = { ...record.payload.props };
-    delete referenceProps.elementType;
+    delete referenceProps.elementType; delete referenceProps.bundleSourceCredit;
     const topologyReference = isStudioCrdtTopologyReferencePayload(record.payload);
     const element = {
       ...referenceSource,
@@ -449,15 +449,15 @@ export function studioCrdtElementToSceneElement<
       } : {}),
     } as TElement & { groupId?: string };
     if (!topologyReference) {
-      // The realtime envelope is authoritative for the entire reference edit allowlist: a remote
-      // removal propagates as an *absent* key (publisher unset, concurrent LWW, history undo), so
+      // 번들 출처는 hash 검증된 descriptor가 소유하고, 나머지 allowlist는 실시간 참조가 소유한다.
+      // A remote removal propagates as an *absent* key (publisher unset, concurrent LWW, history undo), so
       // any allowlisted key the envelope no longer carries must be deleted from the merge or the
       // stale local/descriptor value silently survives on collaborators. The allowlist is exactly
       // the key set the current envelope schema version admits; rich local-only metadata outside
       // it (vrmScene, decodedWidth, …) stays, and topology references — whose envelope never
       // carries allowlist props — keep their local body untouched above.
       for (const key of STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS) {
-        if (!Object.hasOwn(referenceProps, key)) {
+        if (key !== "bundleSourceCredit" && !Object.hasOwn(referenceProps, key)) {
           delete (element as Record<string, unknown>)[key];
         }
       }

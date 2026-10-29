@@ -2,6 +2,7 @@
 // V12 제품 기본 권위는 SQLite manifest + OPFS SHA-256 CAS이며, 아래 IndexedDB 구현은
 // 사용자가 명시적으로 선택하는 legacy import/test seam에서만 열린다.
 
+import { studioBundleSourceCreditProperties, type StudioBundleSourceCredit } from "./catalog/studio-bundle-source-credit";
 import {
   canonicalizeStudioAssetContentHash,
   STUDIO_ASSET_DATA_URL_MAX_CHARS,
@@ -36,6 +37,7 @@ export interface StudioAssetRightsMetadata {
 }
 
 export interface StudioAssetSaveInput {
+  bundleSourceCredit?: StudioBundleSourceCredit;
   name: string;
   dataUrl: string;
   width: number;
@@ -46,6 +48,7 @@ export interface StudioAssetSaveInput {
 }
 
 export interface StudioAsset {
+  bundleSourceCredit?: StudioBundleSourceCredit;
   id: string;
   name: string;
   dataUrl: string;
@@ -123,6 +126,7 @@ export function createAssetRecord(
     createdAt: now,
     ...(input.kind ? { kind: input.kind } : {}),
     ...(input.rights ? { rights: input.rights } : {}),
+    ...studioBundleSourceCreditProperties(input),
   };
 }
 

@@ -35,10 +35,10 @@ function writeUint32(bytes: Uint8Array, offset: number, value: number): void {
   new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(offset, value, true);
 }
 
-function validGlb(): Uint8Array {
+function validGlb(sceneName?: string): Uint8Array {
   const encodedJson = new TextEncoder().encode(JSON.stringify({
     asset: { version: "2.0" },
-    scenes: [{}],
+    scenes: [sceneName ? { name: sceneName } : {}],
   }));
   const json = new Uint8Array(Math.ceil(encodedJson.byteLength / 4) * 4);
   json.fill(0x20);
@@ -120,6 +120,204 @@ function stubFetchRouter(glbBytes: Uint8Array): void {
 
 beforeEach(() => {
   resetStudioBg3dBundleThemePacksCache();
+});
+
+function changingFixture(suffix: string) {
+  const raw = rawThemePacks();
+  const id = `cbv1-ingest-cache-${suffix}`;
+  const original = (raw.assets as Record<string, unknown>[])[0];
+  raw.assets = [{ ...original, id }];
+  (raw.packs as Record<string, unknown>[])[0] = { ...(raw.packs as Record<string, unknown>[])[0], placeable: 1 };
+  raw.totals = { packs: 1, placeableAssets: 1, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
+  let bytes = GLB;
+  const fetcher = vi.fn(async (url: RequestInfo | URL) => String(url).includes("theme-packs.json")
+    ? new Response(JSON.stringify(raw)) : new Response(Uint8Array.from(bytes)));
+  vi.stubGlobal("fetch", fetcher);
+  return { raw, id, fetcher, setBytes: (next: Uint8Array) => { bytes = next; } };
+}
+
+function fixtureRecord(...[input, options]: Parameters<StudioBg3dBundleRecordPreparer>): Bg3dVerifiedStoredRecord {
+  return { id: options.idFactory?.(), contentHash: input.expectedSha256, rights: input.rights } as unknown as Bg3dVerifiedStoredRecord;
+}
+
+function deferred<T>() {
+  let finish: ((value: T) => void) | undefined;
+  const pending = new Promise<T>((resolve) => { finish = resolve; });
+  return { pending, resolve: (value: T) => { if (!finish) throw new Error("지연 fixture가 없습니다."); finish(value); } };
+}
+
+describe("같은 ID의 현재 출처·본문·권리와 캐시 정합", () => {
+  it("다른 응답이 전역 색인을 바꿔도 반환된 같은 스냅샷의 에셋·팩 권리를 해석한다", async () => {
+    const fixture = changingFixture("snapshot");
+    const newerRaw = structuredClone(fixture.raw);
+    const pack = (newerRaw.packs as Record<string, unknown>[])[0];
+    newerRaw.packs = [{ ...pack, catalogIds: ["cbv1-998-other"], ingestPackIds: ["other-pack"], placeable: 0 }, {
+      ...pack, title: "다음 스냅샷 팩", rights: { ...TEST_PACK_RIGHTS, licenseName: "다음 라이선스", commercialUse: false },
+    }];
+    newerRaw.assets = (newerRaw.assets as Record<string, unknown>[]).map((asset) => ({ ...asset, pack: 1, sha256: SHA_2, path: "test-pack/changed.glb" }));
+    newerRaw.totals = { packs: 2, placeableAssets: 1, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
+    const loadData = async () => {
+      const first = await loadStudioBg3dBundleThemePacks({ fetcher: async () => new Response(JSON.stringify(fixture.raw)) });
+      await loadStudioBg3dBundleThemePacks({ fetcher: async () => new Response(JSON.stringify(newerRaw)) });
+      return first;
+    };
+    const byId = await resolveStudioBg3dBundleRecordSource(fixture.id, { loadData });
+    const byHash = await resolveStudioBg3dBundleRecordSourceByHash(`sha256:${SHA_1}`, { loadData });
+    for (const source of [byId, byHash]) {
+      expect(source).toMatchObject({ id: fixture.id, fileName: "one.glb", sha256: `sha256:${SHA_1}`,
+        rights: { licenseName: TEST_PACK_LICENSE_NAME, commercialUse: true } });
+    }
+    expect(findStudioBg3dBundleAsset(fixture.id)?.sha256).toBe(`sha256:${SHA_2}`);
+  });
+
+  it("직전 목록에서 철회됐던 ID도 현재 목록을 다시 읽어 재허용을 반영한다", async () => {
+    const fixture = changingFixture("renew");
+    const originalAssets = fixture.raw.assets;
+    const originalPacks = fixture.raw.packs;
+    const originalTotals = fixture.raw.totals;
+    await loadStudioBg3dBundleThemePacks();
+    fixture.raw.assets = [];
+    fixture.raw.packs = (originalPacks as Record<string, unknown>[]).map((pack) => ({ ...pack, placeable: 0 }));
+    fixture.raw.totals = { packs: 1, placeableAssets: 0, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
+    await loadStudioBg3dBundleThemePacks();
+    expect(findStudioBg3dBundleAsset(fixture.id)).toBeNull();
+    fixture.raw.assets = originalAssets;
+    fixture.raw.packs = originalPacks;
+    fixture.raw.totals = originalTotals;
+    expect((await resolveStudioBg3dBundleRecordSource(fixture.id))?.id).toBe(fixture.id);
+    expect(fixture.fetcher).toHaveBeenCalledTimes(3);
+  });
+
+  it("메타데이터가 갱신되면 같은 바이트의 이전 권리 레코드를 재사용하지 않는다", async () => {
+    const fixture = changingFixture("rights");
+    const prepare = vi.fn<StudioBg3dBundleRecordPreparer>(async (...args) => fixtureRecord(...args));
+    const first = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    const restrictive = { serve: "allow", status: "licensed", licenseName: "갱신된 팩 라이선스", commercialUse: false, attributionRequired: true };
+    (fixture.raw.packs as Record<string, unknown>[])[0] = { ...(fixture.raw.packs as Record<string, unknown>[])[0], rights: restrictive };
+    const second = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(second).not.toBe(first);
+    expect(second?.rights).toMatchObject({ commercialUse: false, attributionRequired: true, licenseName: restrictive.licenseName });
+  });
+
+  it.each(["hash", "bytes", "path", "owner"] as const)("%s만 달라져도 이전 검증 레코드를 현재 소스로 반환하지 않는다", async (field) => {
+    const fixture = changingFixture(`single-${field}`);
+    const prepare = vi.fn<StudioBg3dBundleRecordPreparer>(async (...args) => fixtureRecord(...args));
+    const first = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    const assets = fixture.raw.assets as Record<string, unknown>[];
+    if (field === "hash") assets[0] = { ...assets[0], sha256: SHA_2 };
+    if (field === "bytes") {
+      const replacement = validGlb("different byte declaration");
+      fixture.setBytes(replacement); assets[0] = { ...assets[0], bytes: replacement.byteLength };
+    }
+    if (field === "path") assets[0] = { ...assets[0], path: "test-pack/renamed.glb" };
+    if (field === "owner") {
+      const packs = fixture.raw.packs as Record<string, unknown>[];
+      packs[0] = { ...packs[0], catalogIds: ["cbv1-999-changed-owner"] };
+    }
+    const second = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(second).not.toBe(first);
+  });
+
+  it("바이트 응답도 같은 ID의 다른 요청 URL에서 재사용하지 않는다", async () => {
+    const fixture = changingFixture("url");
+    await loadStudioBg3dBundleThemePacks();
+    const asset = findStudioBg3dBundleAsset(fixture.id);
+    if (!asset) throw new Error("해석할 에셋이 없습니다.");
+    const fetcher = vi.fn(async () => ({ bytes: GLB, mimeType: "model/gltf-binary" as const }));
+    await loadStudioBg3dBundleAssetBytes(asset, "/first.glb", { fetcher });
+    await loadStudioBg3dBundleAssetBytes(asset, "/second.glb", { fetcher });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    releaseStudioBg3dBundleAssetBytes(asset.id);
+  });
+
+  it("같은 ID의 본문 SHA·크기와 경로 교체는 이전 바이트·레코드를 재사용하지 않는다", async () => {
+    const fixture = changingFixture("body");
+    const prepare = vi.fn<StudioBg3dBundleRecordPreparer>(async (...args) => fixtureRecord(...args));
+    const first = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    const replacement = validGlb("replacement");
+    fixture.setBytes(replacement);
+    (fixture.raw.assets as Record<string, unknown>[])[0] = {
+      ...(fixture.raw.assets as Record<string, unknown>[])[0], sha256: SHA_2, bytes: replacement.byteLength, path: "test-pack/replacement.glb",
+    };
+    const second = await loadStudioBg3dBundleThemePackRecordByHash(`sha256:${SHA_2}`, undefined, "worker", prepare);
+    expect(second).not.toBe(first);
+    expect(second?.contentHash).toBe(`sha256:${SHA_2}`);
+    expect(prepare).toHaveBeenCalledTimes(2);
+    const input = prepare.mock.calls[1]?.[0];
+    expect(input?.file.name).toBe("replacement.glb");
+    expect(input && new Uint8Array(await input.file.arrayBuffer())).toEqual(replacement);
+  });
+
+  it("이전 준비가 늦게 끝나도 새 바이트 캐시를 지우거나 낡은 레코드를 반환하지 않는다", async () => {
+    const fixture = changingFixture("race");
+    const older = deferred<Bg3dVerifiedStoredRecord>();
+    const newer = deferred<Bg3dVerifiedStoredRecord>();
+    const prepare = vi.fn<StudioBg3dBundleRecordPreparer>()
+      .mockImplementationOnce(() => older.pending).mockImplementationOnce(() => newer.pending);
+    const first = loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    const firstOutcome = first.catch((error: unknown) => error);
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalledTimes(1));
+    const replacement = validGlb("new race source");
+    fixture.setBytes(replacement);
+    (fixture.raw.assets as Record<string, unknown>[])[0] = { ...(fixture.raw.assets as Record<string, unknown>[])[0], sha256: SHA_2, bytes: replacement.byteLength };
+    const second = loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalledTimes(2));
+    const oldArgs = prepare.mock.calls[0]; const newArgs = prepare.mock.calls[1];
+    if (!oldArgs || !newArgs) throw new Error("준비 호출이 없습니다.");
+    older.resolve(fixtureRecord(...oldArgs));
+    expect(await firstOutcome).toBeInstanceOf(TypeError);
+    const asset = findStudioBg3dBundleAsset(fixture.id);
+    if (!asset) throw new Error("교체한 에셋이 없습니다.");
+    const unexpectedFetch = vi.fn(async () => ({ bytes: replacement, mimeType: "model/gltf-binary" as const }));
+    await loadStudioBg3dBundleAssetBytes(asset, `/assets/studio/bundle-v2/${SHA_2}.glb`, { fetcher: unexpectedFetch });
+    expect(unexpectedFetch).not.toHaveBeenCalled();
+    const currentRecord = fixtureRecord(...newArgs);
+    newer.resolve(currentRecord);
+    expect(await second).toBe(currentRecord);
+    expect(await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare)).toBe(currentRecord);
+    expect(prepare).toHaveBeenCalledTimes(2);
+  });
+
+  it("목록에서 철회되거나 재설정된 동안 완료된 준비는 레코드로 반환하지 않는다", async () => {
+    for (const mode of ["withdraw", "reset"] as const) {
+      resetStudioBg3dBundleThemePacksCache();
+      const fixture = changingFixture(mode);
+      const result = deferred<Bg3dVerifiedStoredRecord>();
+      const prepare = vi.fn<StudioBg3dBundleRecordPreparer>(() => result.pending);
+      const pending = loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+      const outcome = pending.catch((error: unknown) => error);
+      await vi.waitFor(() => expect(prepare).toHaveBeenCalledTimes(1));
+      if (mode === "withdraw") {
+        fixture.raw.assets = [];
+        (fixture.raw.packs as Record<string, unknown>[])[0] = { ...(fixture.raw.packs as Record<string, unknown>[])[0], placeable: 0 };
+        fixture.raw.totals = { packs: 1, placeableAssets: 0, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
+        await loadStudioBg3dBundleThemePacks();
+      } else resetStudioBg3dBundleThemePacksCache();
+      const args = prepare.mock.calls[0];
+      if (!args) throw new Error("준비 호출이 없습니다.");
+      result.resolve(fixtureRecord(...args));
+      expect(await outcome).toBeInstanceOf(TypeError);
+    }
+  });
+
+  it("공개 release 후 같은 본문을 새로 요청하면 이전 소스 release가 새 세대를 지우지 않는다", async () => {
+    const fixture = changingFixture("release");
+    const source = await resolveStudioBg3dBundleRecordSource(fixture.id);
+    if (!source) throw new Error("해석할 소스가 없습니다.");
+    await source.loadSource();
+    releaseStudioBg3dBundleAssetBytes(fixture.id);
+    const asset = findStudioBg3dBundleAsset(fixture.id);
+    if (!asset) throw new Error("해석할 에셋이 없습니다.");
+    const url = `/assets/studio/bundle-v2/${SHA_1}.glb`;
+    await loadStudioBg3dBundleAssetBytes(asset, url);
+    source.releaseSource();
+    const unexpectedFetch = vi.fn(async () => ({ bytes: GLB, mimeType: "model/gltf-binary" as const }));
+    await loadStudioBg3dBundleAssetBytes(asset, url, { fetcher: unexpectedFetch });
+    expect(unexpectedFetch).not.toHaveBeenCalled();
+    releaseStudioBg3dBundleAssetBytes(fixture.id);
+  });
 });
 
 afterEach(() => {

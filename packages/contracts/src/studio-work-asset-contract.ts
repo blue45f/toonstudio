@@ -1,7 +1,13 @@
 import { z } from "zod";
 
+import { StudioBundleSourceCreditSchema } from "./studio-bundle-source-credit";
 import { StudioLiveAdjustmentMetadataSchema } from "./studio-live-adjustment-contract";
 import { StudioWorkAssetSmartFiltersSchema } from "./studio-smart-filter-stack-contract";
+
+import type { StudioWorkAssetStructuredEditValue } from "./studio-work-asset-structured-edit-value";
+
+export type { StudioWorkAssetStructuredEditValue } from "./studio-work-asset-structured-edit-value";
+export { hasValidStudioBundleSceneCredit } from "./studio-bundle-source-credit";
 
 export { StudioWorkAssetSmartFiltersSchema } from "./studio-smart-filter-stack-contract";
 
@@ -109,6 +115,7 @@ export const STUDIO_WORK_ASSET_SCALAR_FILTER_RANGES = {
 } as const;
 
 export const STUDIO_WORK_ASSET_STRUCTURED_EDIT_KEYS = [
+  "bundleSourceCredit",
   "blurFx",
   "lensBlur",
   "fieldIrisBlur",
@@ -377,32 +384,14 @@ export const StudioWorkAssetEdgeAwareDenoiseSchema = z
   })
   .strict();
 
-export type StudioWorkAssetStructuredEditValue =
-  | z.infer<typeof StudioWorkAssetBlurFxSchema>
-  | z.infer<typeof StudioWorkAssetLensBlurSchema>
-  | z.infer<typeof StudioWorkAssetFieldIrisBlurSchema>
-  | z.infer<typeof StudioWorkAssetTiltShiftBlurSchema>
-  | z.infer<typeof StudioWorkAssetSelectiveGaussianBlurSchema>
-  | z.infer<typeof StudioWorkAssetTileableBlurSchema>
-  | z.infer<typeof StudioWorkAssetDifferenceOfGaussiansSchema>
-  | z.infer<typeof StudioWorkAssetDustScratchesSchema>
-  | z.infer<typeof StudioWorkAssetColorToAlphaSchema>
-  | z.infer<typeof StudioWorkAssetBorderEffectSchema>
-  | z.infer<typeof StudioWorkAssetCurveSchema>
-  | z.infer<typeof StudioWorkAssetCurveChannelsSchema>
-  | z.infer<typeof StudioWorkAssetEdgeAwareDenoiseSchema>
-  | z.infer<typeof StudioWorkAssetJpegArtifactReductionSchema>
-  | z.infer<typeof StudioWorkAssetLineCleanupSchema>
-  | z.infer<typeof StudioWorkAssetScreentoneRemovalSchema>
-  | z.infer<typeof StudioWorkAssetSmartFiltersSchema>
-  | z.infer<typeof StudioLiveAdjustmentMetadataSchema>;
-
 /** Parses and clones one structured reference edit through its exact bounded wire schema. */
 export function parseStudioWorkAssetStructuredEditValue(
   key: StudioWorkAssetStructuredEditKey,
   value: unknown
 ): StudioWorkAssetStructuredEditValue {
   switch (key) {
+    case "bundleSourceCredit":
+      return StudioBundleSourceCreditSchema.parse(value);
     case "blurFx":
       return StudioWorkAssetBlurFxSchema.parse(value);
     case "lensBlur":
@@ -497,6 +486,7 @@ export const StudioWorkAssetElementSchema = z
     screentoneRemoval: StudioWorkAssetScreentoneRemovalSchema.optional(),
     smartFilters: StudioWorkAssetSmartFiltersSchema.optional(),
     adjustmentLayer: StudioLiveAdjustmentMetadataSchema.optional(),
+    bundleSourceCredit: StudioBundleSourceCreditSchema.optional(),
     ...StudioWorkAssetScalarFiltersSchema.shape,
   })
   .strict()
@@ -572,6 +562,9 @@ export const StudioWorkAssetManifestSchema = z
         code: "custom",
         message: "에셋 manifest와 요소 설명의 식별자가 일치하지 않습니다.",
       });
+    }
+    if (value.descriptor.element.bundleSourceCredit && value.descriptor.element.bundleSourceCredit.contentHash !== `sha256:${value.sha256}`) {
+      context.addIssue({ code: "custom", path: ["sha256"], message: "번들 출처와 manifest 이미지 바이트의 콘텐츠 해시가 다릅니다." });
     }
     if (value.byteSize > STUDIO_WORK_ASSET_MAX_BYTES_BY_TYPE[value.elementType]) {
       context.addIssue({

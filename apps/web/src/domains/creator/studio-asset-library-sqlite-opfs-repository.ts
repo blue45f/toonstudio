@@ -1,3 +1,4 @@
+import type { StudioAssetManifestEntry } from "./live/studio-asset-library-manifest-entry";
 /**
  * V12 local authority for user-authored Studio assets.
  *
@@ -19,6 +20,7 @@ import {
   STUDIO_ASSET_DATA_URL_MAX_CHARS,
 } from "./studio-asset-library";
 import { acquireStudioLocalDatabase } from "./studio-local-database-runtime";
+import { studioBundleSourceCreditProperties } from "./catalog/studio-bundle-source-credit";
 import {
   createStudioOpfsAssetStore,
   type StudioOpfsAssetStore,
@@ -48,6 +50,8 @@ import {
   type StudioAssetLibraryOperationCode,
   type StudioAssetLibraryRepositoryErrorSubcode,
 } from "./studio-asset-library-repository-error";
+
+export type { StudioAssetManifestEntry } from "./live/studio-asset-library-manifest-entry";
 
 export const STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE = "studio-asset-library-v12";
 export const STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY = "manifest-v1";
@@ -97,18 +101,7 @@ export function isStudioAssetLibraryMemoryFallbackError(
     && (error.code === "unavailable" || error.code === "quota-exceeded");
 }
 
-export interface StudioAssetManifestEntry {
-  readonly id: string;
-  readonly name: string;
-  readonly contentHash: StudioAssetContentHash;
-  readonly byteSize: number;
-  readonly mimeType: string;
-  readonly width: number;
-  readonly height: number;
-  readonly createdAt: number;
-  readonly kind: string | null;
-  readonly rights: StudioAssetRightsMetadata;
-}
+
 
 export interface StudioAssetManifestV1 {
   readonly version: typeof MANIFEST_VERSION;
@@ -330,6 +323,7 @@ function canonicalEntry(value: unknown): StudioAssetManifestEntry {
     "createdAt",
     "kind",
     "rights",
+    ...(Object.hasOwn(record, "bundleSourceCredit") ? ["bundleSourceCredit"] : []),
   ])) invalid("entryFields");
   if (typeof record.id !== "string" || !ID_PATTERN.test(record.id)) {
     invalid("entryIdFormat");
@@ -376,6 +370,7 @@ function canonicalEntry(value: unknown): StudioAssetManifestEntry {
     createdAt: record.createdAt as number,
     kind,
     rights: normalizeRights(record.rights, kind ?? undefined),
+    ...studioBundleSourceCreditProperties(record),
   };
 }
 
@@ -466,6 +461,7 @@ function entryToAsset(entry: StudioAssetManifestEntry, dataUrl: string): StudioA
     createdAt: entry.createdAt,
     ...(entry.kind ? { kind: entry.kind } : {}),
     rights: entry.rights,
+    ...studioBundleSourceCreditProperties(entry),
   };
 }
 
@@ -792,6 +788,7 @@ export function createStudioAssetLibrarySqliteOpfsRepository(
           createdAt: record.createdAt,
           kind,
           rights: normalizeRights(input.rights, kind ?? undefined),
+          ...studioBundleSourceCreditProperties(record),
         });
         await verifiedBytes(store, entry);
         const next = await commitManifest(database, store, current, [
