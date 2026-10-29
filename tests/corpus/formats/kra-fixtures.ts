@@ -10,7 +10,65 @@ import { buildFormatZipFixture, type ZipFixtureEntry } from "./krita-bundle-fixt
 
 const encoder = new TextEncoder();
 
-export const KRA_PIXEL_BYTES: Readonly<Record<string, number>> = Object.freeze({ RGBA: 4, RGBA16: 8, GRAYA: 2, GRAYAU16: 4 });
+export const KRA_PIXEL_BYTES: Readonly<Record<string, number>> = Object.freeze({
+  RGBA: 4,
+  RGBA16: 8,
+  GRAYA: 2,
+  GRAYAU16: 4,
+  RGBAF16: 8,
+  RGBAF32: 16,
+  GRAYAF16: 4,
+  GRAYAF32: 8,
+});
+
+// ---------------------------------------------------------------------------
+// 실수 샘플 (시험용 독립 구현: 리더의 halfFloatToNumber와 코드를 공유하지 않는다)
+// ---------------------------------------------------------------------------
+
+function roundHalfEven(value: number): number {
+  const floor = Math.floor(value);
+  const rest = value - floor;
+  if (rest < 0.5) return floor;
+  if (rest > 0.5) return floor + 1;
+  return floor % 2 === 0 ? floor : floor + 1;
+}
+
+/** 수를 IEEE 754 binary16 비트로 바꾼다(가장 가까운 짝수로 반올림, 범위를 넘으면 무한대). */
+export function halfFloatBits(value: number): number {
+  if (Number.isNaN(value)) return 0x7e00;
+  const sign = value < 0 || Object.is(value, -0) ? 0x8000 : 0;
+  const magnitude = Math.abs(value);
+  if (magnitude === Number.POSITIVE_INFINITY) return sign | 0x7c00;
+  if (magnitude === 0) return sign;
+  if (magnitude < 2 ** -14) return sign | roundHalfEven(magnitude * 2 ** 24); // 비정규 수. 올림해 1024가 되면 가장 작은 정규 수의 비트와 같다
+  let exponent = Math.floor(Math.log2(magnitude));
+  if (2 ** exponent > magnitude) exponent -= 1;
+  if (2 ** (exponent + 1) <= magnitude) exponent += 1;
+  let mantissa = roundHalfEven((magnitude / 2 ** exponent - 1) * 1024);
+  if (mantissa === 1024) {
+    mantissa = 0;
+    exponent += 1;
+  }
+  if (exponent > 15) return sign | 0x7c00;
+  return sign | ((exponent + 15) << 10) | mantissa;
+}
+
+/** 샘플 하나의 리틀 엔디언 바이트: 2바이트면 반정밀도, 4바이트면 단정밀도다. */
+export function floatSampleBytes(value: number, bytes: 2 | 4): number[] {
+  if (bytes === 2) {
+    const bits = halfFloatBits(value);
+    return [bits & 0xff, bits >> 8];
+  }
+  const view = new DataView(new ArrayBuffer(4));
+  view.setFloat32(0, value, true);
+  return [view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)];
+}
+
+/** 실수 형식의 네이티브 픽셀 바이트: RGBA는 R, G, B, A 순서, 회색은 회색, 알파 순서의 샘플이다(정수 형식의 B, G, R, A와 다르다). */
+export function kraNativeFloat(colorSpace: string, channels: readonly number[]): number[] {
+  const bytes = colorSpace.endsWith("F16") ? 2 : 4;
+  return channels.flatMap((value) => floatSampleBytes(value, bytes));
+}
 
 // ---------------------------------------------------------------------------
 // 타일 픽셀

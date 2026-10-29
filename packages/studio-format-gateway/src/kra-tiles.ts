@@ -223,7 +223,7 @@ export function decodeKraTile(file: KraTileFile, tile: KraTileRecord): Uint8Arra
 export interface KraAssembleRequest {
   readonly file: KraTileFile;
   readonly format: KraPixelFormat;
-  /** 색 채널 환원 표(`kraColorLut`): 8비트 형식은 256칸, 16비트 형식은 65,536칸. */
+  /** 색 채널 환원 표(`kraColorLut`): 8비트 정수 형식은 256칸, 그 밖의 형식은 65,536칸. */
   readonly lut: Uint8Array;
   /** `.defaultpixel` 파일 내용(인터리브된 기본 픽셀). 없으면 null(투명으로 본다). */
   readonly defaultPixelNative: Uint8Array | null;

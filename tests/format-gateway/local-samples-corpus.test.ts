@@ -16,6 +16,7 @@ import { parseClipContainer } from "../../packages/studio-format-gateway/src/chu
 import { importGimpBrush, importGimpPattern, inspectGimpBrushFormat } from "../../packages/studio-format-gateway/src/gimp-brush";
 import { importGimpBrushPipe } from "../../packages/studio-format-gateway/src/gimp-brush-pipe";
 import { importGimpGeneratedBrush } from "../../packages/studio-format-gateway/src/gimp-generated-brush";
+import { describeKraPixelFormat } from "../../packages/studio-format-gateway/src/kra-colorspace";
 import { importKra, inspectKraSignature } from "../../packages/studio-format-gateway/src/kra-document";
 import { importXcf, inspectXcfHeader } from "../../packages/studio-format-gateway/src/xcf";
 
@@ -294,7 +295,7 @@ function registerKraSamples(): void {
             expect(layer.pixels).toBeNull();
             continue;
           }
-          if (layer.colorSpace !== null && !["RGBA", "RGBA16", "GRAYA", "GRAYAU16"].includes(layer.colorSpace)) continue;
+          if (layer.colorSpace !== null && describeKraPixelFormat(layer.colorSpace) === null) continue;
           if (layer.pixels === null) {
             // 타일이 하나도 없고 기본 픽셀이 투명한 빈 레이어만 픽셀이 없을 수 있다
             expect(layer.tileCount).toBe(0);
