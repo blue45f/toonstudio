@@ -13,6 +13,9 @@ import {
   resolveAsepriteLinkedCel,
 } from "../../packages/studio-format-gateway/src/aseprite-sprite";
 import { parseClipContainer } from "../../packages/studio-format-gateway/src/chunked-sqlite-container";
+import { importGimpBrush, importGimpPattern, inspectGimpBrushFormat } from "../../packages/studio-format-gateway/src/gimp-brush";
+import { importGimpBrushPipe } from "../../packages/studio-format-gateway/src/gimp-brush-pipe";
+import { importGimpGeneratedBrush } from "../../packages/studio-format-gateway/src/gimp-generated-brush";
 import { importXcf, inspectXcfHeader } from "../../packages/studio-format-gateway/src/xcf";
 
 /**
@@ -38,6 +41,7 @@ const XCF_SAMPLES = listSamples(/\.xcf$/i);
 const ASEPRITE_SAMPLES = listSamples(/\.(aseprite|ase)$/i).filter(
   (name) => inspectAsepriteSignature(new Uint8Array(readFileSync(join(SAMPLE_DIR, name)).subarray(0, 256))) === "aseprite",
 );
+const GIMP_BRUSH_SAMPLES = listSamples(/\.(gbr|gih|pat|vbr)$/i);
 /** XCF 읽기 오라클로 쓰는 ImageMagick. 없으면 바이트 대조 테스트는 등록되지 않는다. */
 const IMAGEMAGICK_AVAILABLE = spawnSync("convert", ["-version"]).status === 0;
 const ORACLE_TIMEOUT_MS = 180_000;
@@ -206,6 +210,45 @@ function registerAsepriteSamples(): void {
   });
 }
 
+function registerGimpBrushSamples(): void {
+  describe("GIMP 브러시 계열 로컬 실샘플", () => {
+    for (const name of GIMP_BRUSH_SAMPLES) {
+      it(`${name}: 확장자와 같은 형식으로 판별되고 진단 없이 끝까지 읽힌다`, async () => {
+        const bytes = new Uint8Array(readFileSync(join(SAMPLE_DIR, name)));
+        const extension = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
+
+        expect(inspectGimpBrushFormat(bytes)).toBe(extension);
+        if (extension === "gbr") {
+          const brush = await importGimpBrush(bytes);
+          expect(brush.warnings).toEqual([]);
+          expect(brush.unsupported).toEqual([]);
+          expect(brush.byteLength).toBe(bytes.byteLength);
+          expect(brush.pixels?.length).toBe(brush.width * brush.height * brush.bytesValue);
+        } else if (extension === "pat") {
+          const pattern = await importGimpPattern(bytes);
+          expect(pattern.warnings).toEqual([]);
+          expect(pattern.headerBytes + pattern.pixels.length).toBe(bytes.byteLength);
+          expect(pattern.pixels.length).toBe(pattern.width * pattern.height * pattern.bytesPerPixel);
+        } else if (extension === "gih") {
+          const pipe = await importGimpBrushPipe(bytes);
+          expect(pipe.truncated).toBe(false);
+          expect(pipe.warnings).toEqual([]);
+          expect(pipe.unsupported).toEqual([]);
+          expect(pipe.brushes).toHaveLength(pipe.declaredBrushCount);
+          expect(pipe.parameters.cellCount).toBe(pipe.declaredBrushCount);
+          const last = pipe.brushes.at(-1)!;
+          expect(last.byteOffset + last.byteLength).toBe(bytes.byteLength);
+        } else {
+          const generated = await importGimpGeneratedBrush(bytes);
+          expect(generated.warnings).toEqual([]);
+          expect(generated.radius).toBeGreaterThan(0);
+        }
+      });
+    }
+  });
+}
+
 if (CLIP_SAMPLES.length > 0) registerClipSamples();
 if (XCF_SAMPLES.length > 0) registerXcfSamples();
+if (GIMP_BRUSH_SAMPLES.length > 0) registerGimpBrushSamples();
 if (ASEPRITE_SAMPLES.length > 0) registerAsepriteSamples();
