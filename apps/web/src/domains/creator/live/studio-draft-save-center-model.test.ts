@@ -49,9 +49,9 @@ describe("resolveStudioDraftSaveCenter", () => {
     const model = resolveStudioDraftSaveCenter(input());
 
     expect(model.phase).toBe("saved");
-    expect(model.compactLabel).toBe("서버 r12 확인");
-    expect(model.device.title).toBe("이 탭이 복구 저장 담당");
-    expect(model.server.title).toBe("서버 초안 revision #12");
+    expect(model.compactLabel).toBe("서버 저장 기록 확인");
+    expect(model.device.title).toBe("이 기기 자동 저장");
+    expect(model.server.title).toBe("서버 저장 기록 #12");
   });
 
   it("blocks save while the existing document is still hydrating", () => {
@@ -178,8 +178,40 @@ describe("resolveStudioDraftSaveCenter", () => {
     }));
 
     expect(model.phase).toBe("local-only");
-    expect(model.server.title).toBe("아직 서버 초안 없음");
+    expect(model.compactLabel).toBe("서버에 아직 미저장");
+    expect(model.server.title).toBe("아직 서버에 저장하지 않았어요");
+    expect(model.detail).toContain("지금 서버에 저장");
+    expect(model.detail).toContain("기기 저장만으로는 다른 기기에서 열 수 없어요");
+    expect(model.saveActionLabel).toBe("지금 서버에 저장");
     expect(model.canOpenVersions).toBe(true);
+  });
+
+  it("기존 서버 문서의 기록 조회 중에는 첫 저장이 없는 문서로 안내하지 않는다", () => {
+    const model = resolveStudioDraftSaveCenter(input({
+      hasServerDocument: true,
+      serverRevision: null,
+      serverRevisionLoading: true,
+    }));
+
+    expect(model.phase).toBe("local-only");
+    expect(model.compactLabel).toBe("서버 저장 기록 확인 중");
+    expect(model.detail).not.toContain("첫 저장");
+    expect(model.server.title).toBe("서버 초안 연결됨");
+    expect(model.saveActionLabel).toBe("지금 서버에 저장");
+  });
+
+  it("서버 기록 조회가 끝나도 기록이 없으면 계속 조회 중이라고 안내하지 않는다", () => {
+    const model = resolveStudioDraftSaveCenter(input({
+      hasServerDocument: true,
+      serverRevision: null,
+      serverRevisionLoading: false,
+      serverRevisionError: "서버 기록을 불러오지 못했습니다.",
+    }));
+
+    expect(model.compactLabel).toBe("서버 저장 기록 확인 필요");
+    expect(model.headline).toContain("아직 확인하지 못했어요");
+    expect(model.detail).not.toContain("첫 저장");
+    expect(model.saveActionDisabled).toBe(false);
   });
 });
 
@@ -234,6 +266,7 @@ describe("draft save helpers", () => {
 
 describe("plain-language save and recovery explanations", () => {
   it.each([
+    {},
     { hydrated: false },
     { hydrationFailed: true },
     { localRole: "follower" as const },
@@ -242,8 +275,12 @@ describe("plain-language save and recovery explanations", () => {
     { saving: true },
     { isOnline: false },
     { collaborationSyncPending: true },
+    { hasServerDocument: false, serverRevision: null },
+    { hasServerDocument: true, serverRevision: null, serverRevisionLoading: true },
+    { localRole: null, hasServerDocument: false, serverRevision: null },
   ])("keeps technical terms in diagnostics rather than the explanation: %j", (overrides) => {
     const model = resolveStudioDraftSaveCenter(input(overrides));
+    expect(`${model.compactLabel} ${model.headline} ${model.detail}`).not.toMatch(/revision|체크포인트|하이드레이션|내구|권위|좌표/iu);
     expect(`${model.device.detail} ${model.server.detail}`).not.toMatch(/revision|체크포인트|하이드레이션|내구|권위|좌표/iu);
     expect(model.device.detail.length).toBeGreaterThan(0);
     expect(model.server.detail.length).toBeGreaterThan(0);

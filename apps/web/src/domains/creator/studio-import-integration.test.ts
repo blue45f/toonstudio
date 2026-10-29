@@ -84,6 +84,7 @@ import {
 } from "./studio-project-archive";
 import { resolveStudioPaletteInterchangeErrorFromCause } from "./status-i18n/studio-producer-error-i18n-palette";
 import { resolveStudioProjectArchiveErrorFromCause } from "./status-i18n/studio-producer-error-i18n-project-archive";
+import { resolveStudioVrmLibraryErrorFromCause } from "./status-i18n/studio-producer-error-i18n-vrm-library";
 import { parseStudioProjectFile, serializeStudioProjectFile } from "./studio-project-file";
 import { importPsdFile } from "./studio-psd-import";
 import {
@@ -94,7 +95,7 @@ import {
   STUDIO_REFERENCE_IMPORT_ACCEPT,
 } from "./studio-reference-import";
 import { readStudioZipArchive, StudioZipReaderError } from "./studio-zip-reader";
-import { validateVrmGlbBytes } from "./vrm/vrm-library";
+import { validateVrmGlbBytes, VrmLibraryError, type VrmLibraryErrorCode } from "./vrm/vrm-library";
 
 const encoder = new TextEncoder();
 
@@ -1227,13 +1228,29 @@ describe("VRM 가져오기 검증", () => {
   });
 
   it("VRM 확장 없는 GLB·잘못된 컨테이너를 한국어 오류로 거부한다", () => {
-    expect(() => validateVrmGlbBytes(makeGlb({ asset: { version: "2.0" } })))
-      .toThrow("VRM 확장(VRM 또는 VRMC_vrm)이 없습니다");
-    expect(() => validateVrmGlbBytes(encoder.encode("clearly-not-a-glb-container")))
-      .toThrow("GLB 'glTF' 헤더");
+    // A4 D4(217c9d59): 생산자는 구조화 코드만 방출하고, 표시 문구는 표시 지점
+    // (use-studio-vrm-model-loading)과 같은 리졸버가 해석한다.
+    function expectKoreanRejection(bytes: Uint8Array, code: VrmLibraryErrorCode, text: string): void {
+      let failure: unknown;
+      try {
+        validateVrmGlbBytes(bytes);
+      } catch (error) {
+        failure = error;
+      }
+      expect(failure).toBeInstanceOf(VrmLibraryError);
+      expect((failure as VrmLibraryError).code).toBe(code);
+      expect(resolveStudioVrmLibraryErrorFromCause(failure)).toContain(text);
+    }
+
+    expectKoreanRejection(
+      makeGlb({ asset: { version: "2.0" } }),
+      "glb-vrm-extension-missing",
+      "VRM 확장(VRM 또는 VRMC_vrm)이 없습니다",
+    );
+    expectKoreanRejection(encoder.encode("clearly-not-a-glb-container"), "glb-magic-invalid", "GLB 'glTF' 헤더");
     const truncatedLength = makeGlb({ asset: { version: "2.0" }, extensions: { VRM: {} } });
     new DataView(truncatedLength.buffer).setUint32(8, truncatedLength.byteLength + 8, true);
-    expect(() => validateVrmGlbBytes(truncatedLength)).toThrow("길이 정보");
+    expectKoreanRejection(truncatedLength, "glb-length-mismatch", "길이 정보");
   });
 });
 

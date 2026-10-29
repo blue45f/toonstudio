@@ -28,6 +28,11 @@
 | `docs/reports/`, `docs/evidence/` | 특정 commit·실험의 증거 | 해당 시점의 증거이며 현재 구조 문서가 아님 |
 | `docs/rewrite/` | 과거 재구성 감사·계획 | 역사 자료 |
 | `docs/benchmarks/`, `tests/benchmarks/` | 비교 방법과 결과 | 측정 조건 안에서만 유효 |
+| `docs/studio/` | Studio 설계·제작 기록 (현재 설계와 2026-09 마감·인수·CI 복구 기록이 혼합) | 혼합 — 개별 문서 상단 상태 표기 우선, 현재 표시 문서만 권위 있음 |
+| `docs/features/` | 기능별 현재 구현·정책 (접근성 1단계, Claude AI 보조, 잠재 안료 혼합 등) | 현재 표시 문서만 권위 있음 |
+| `docs/technology/` | 공유 엔지니어링 기록·플레이북 | 참고 자료 — 현재 구조 문서가 아님 |
+| `docs/design/` | UX·디자인 기반과 분석 (2026-09 기반 문서와 2026-10-26/27 분석 포함) | 혼합 — 분석 시점의 기록, 현재 표시 문서만 권위 있음 |
+| `docs/ops/` | 홈페이지 릴리스 기록 1건 (2026-09-12) | 역사 자료 — 신규 운영 문서는 `docs/operations/`로 작성 |
 | `openwiki/` | 빠른 탐색과 설명 | 보조 문서 |
 
 ## 현재 구조를 읽는 순서
@@ -53,8 +58,8 @@ Studio는 다음 문서를 추가로 본다.
 
 Godot의 Studio 3D 적용 가능성 평가(2026-10-15)는 역사 자료다. 2026-10-21 소유자 결정(PR #2354)으로 운영 Godot 섬이 제거돼 ADR-0028 은 Superseded 이고 현재 기능이 아니다. 다음 문서를 추가로 본다.
 
-1. [`reports/godot-3d-evaluation-2026-10-15.md`](reports/godot-3d-evaluation-2026-10-15.md) — 3D 한계 진단, 적용 모드 비교, 측정 해석(`target` 평가 보고서, 2026-10-15 시점)
-2. [`adr/0028-godot-3d-adoption-modes.md`](adr/0028-godot-3d-adoption-modes.md) — 모드별 채택 조건·롤백·공급망(Superseded, 모드 B~D 보류)
+1. `reports/godot-3d-evaluation-2026-10-15.md`(삭제됨 — git 이력에서 확인 가능) — 3D 한계 진단, 적용 모드 비교, 측정 해석(`target` 평가 보고서, 2026-10-15 시점)
+2. `adr/0028-godot-3d-adoption-modes.md`(삭제됨 — git 이력에서 확인 가능) — 모드별 채택 조건·롤백·공급망(Superseded, 모드 B~D 보류)
 3. [`evidence/godot-3d-poc/2026-10-15/README.md`](evidence/godot-3d-poc/2026-10-15/README.md) — 측정 원본 JSON과 읽는 법
 4. [`../tools/godot-3d-poc/README.md`](../tools/godot-3d-poc/README.md) — PoC 재현 순서(운영 연결·배포 없음)
 

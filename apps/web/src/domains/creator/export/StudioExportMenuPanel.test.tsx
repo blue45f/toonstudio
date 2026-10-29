@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
 
 import {
   readStudioExportResolutionDpi,
@@ -77,7 +79,7 @@ describe("StudioExportMenuPanel commercial chrome", () => {
     await loadStudioSvgExportModule();
     const download = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     const capture = vi.fn(async () => []);
-    render(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
+    renderExpandedExportPanel(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
       capturePagesForPreset={capture} exportCurrentPageToSvg={async () => ({
         svg: "<svg/>", skipped: [{ id: "clip", type: "image", mode: "approximated", label: "아래 레이어 클리핑을 보존할 수 없습니다." }],
         fontFamilies: [], caveats: [], elementCount: 1,
@@ -91,7 +93,7 @@ describe("StudioExportMenuPanel commercial chrome", () => {
   it("벡터 질감 예산이 부족해도 외관 보존 저장은 사용자 선택 전 자동 실행하지 않는다", async () => {
     const error = new StudioSvgTextureBudgetError(64 * 1024 * 1024);
     const capture = vi.fn(async () => []);
-    render(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
+    renderExpandedExportPanel(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
       capturePagesForPreset={capture} exportCurrentPageToSvg={async () => { throw error; }} />);
     fireEvent.click(screen.getByRole("button", { name: "SVG (벡터, 현재 페이지)" }));
     expect(await screen.findByText(error.message)).toBeTruthy();
@@ -114,7 +116,7 @@ describe("StudioExportMenuPanel commercial chrome", () => {
     Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:appearance") });
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
     const download = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
-    render(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
+    renderExpandedExportPanel(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
       capturePagesForPreset={capture} exportCurrentPageToSvg={vector} />);
     fireEvent.click(screen.getByRole("button", { name: "SVG (외관 보존, 현재 페이지)" }));
     expect(await screen.findByText(/외관 보존 SVG를 저장했어요/)).toBeTruthy();
@@ -127,7 +129,7 @@ describe("StudioExportMenuPanel commercial chrome", () => {
   it("shows a material SVG budget rejection and permits retry without downloading a partial document", async () => {
     const error = new StudioMaterialBrushSvgBudgetError(64 * 1024 * 1024);
     const download = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
-    render(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
+    renderExpandedExportPanel(<StudioExportMenuPanel {...baseProps} pageCount={1} pageLabels={["1"]}
       capturePagesForPreset={vi.fn(async () => [])} exportCurrentPageToSvg={async () => { throw error; }} />);
     const button = screen.getByRole("button", { name: "SVG (벡터, 현재 페이지)" });
     fireEvent.click(button);
@@ -192,7 +194,7 @@ describe("StudioExportMenuPanel export geometry controls reachability", () => {
   it("applies print geometry presets into inputs and reveals recommend-scale", () => {
     const setExportScale = vi.fn();
     const setExportPresetId = vi.fn();
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         pageCount={1}
@@ -255,7 +257,7 @@ describe("StudioExportMenuPanel export geometry controls reachability", () => {
   });
 
   it("lets DPI/trim/bleed number inputs update package geometry state", () => {
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         pageCount={1}
@@ -358,7 +360,7 @@ describe("StudioExportMenuPanel page-range capture paths", () => {
       indices.map(() => pngCanvas())
     );
 
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         pageCount={4}
@@ -411,7 +413,7 @@ describe("StudioExportMenuPanel page-range capture paths", () => {
       pngCanvas(),
     ]);
 
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         pageCount={3}
@@ -446,7 +448,7 @@ describe("StudioExportMenuPanel page-range capture paths", () => {
 
 describe("StudioExportMenuPanel print resolution honesty", () => {
   it("states the DPI the current scale really delivers and blocks the 300 DPI claim", () => {
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         canvasWidth={720}
@@ -473,7 +475,7 @@ describe("StudioExportMenuPanel print resolution honesty", () => {
 
   it("recommends the exact scale that reaches the target instead of clamping to 3×", () => {
     const setExportScale = vi.fn();
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         canvasWidth={720}
@@ -511,7 +513,7 @@ describe("StudioExportMenuPanel print resolution honesty", () => {
   });
 
   it("publishes the delivered DPI so encoders tag the file with the same number the UI shows", () => {
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         canvasWidth={720}
@@ -531,7 +533,7 @@ describe("StudioExportMenuPanel print resolution honesty", () => {
   });
 
   it("keeps the chosen print geometry across panel unmounts", () => {
-    const first = render(
+    const first = renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         canvasWidth={720}
@@ -547,7 +549,7 @@ describe("StudioExportMenuPanel print resolution honesty", () => {
     // Closing the export menu unmounts the panel — the geometry must not evaporate with it.
     first.unmount();
 
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         canvasWidth={720}

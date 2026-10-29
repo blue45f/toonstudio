@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { getStudioCanvasCapture, resetStudioCanvasCaptureForTests } from "./assist-canvas-capture-registry";
 import { useStudioRasterExportOrchestration } from "../../useStudioRasterExportOrchestration";
 
-describe("내보내기 훅 → Claude 보조 캔버스 캡처 등록", () => {
+describe("내보내기 훅 → AI 보조 캔버스 캡처 등록", () => {
   afterEach(() => {
     cleanup();
     resetStudioCanvasCaptureForTests();

@@ -97,7 +97,7 @@ import {
   runAssistWineBarriqueCheeseJamonChocolatePotStillDirector,
 } from "./assist-alt-text-run";
 
-describe("claude-creator-model-router (Task-Aware Smart Model Router)", () => {
+describe("assist-creator-model-router (Task-Aware Smart Model Router)", () => {
   it("3단계 프로필(fast-inline, creative-production, deep-architecture)을 정의하고 전체 AI 작업을 최적 모델로 매핑한다", () => {
     expect(ASSIST_CREATOR_TASK_PROFILES["fast-inline"].model).toBe("claude-haiku-5-5");
     expect(ASSIST_CREATOR_TASK_PROFILES["creative-production"].model).toBe("claude-sonnet-5-5");

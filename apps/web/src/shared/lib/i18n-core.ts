@@ -76,20 +76,22 @@ const runtimeTranslationSources = new Map<string, string>(
   Object.keys(DICT.en).map((key) => [key, "en"] as const),
 );
 
+/** 사전을 등록하고 기계 번역의 원문으로도 올린다. 등록으로 값이 바뀌었으면 true. */
 export function registerI18nRuntimeSourceEntries(
   locale: string,
   entries: Readonly<Record<string, string>>,
-): void {
+): boolean {
   const normalized = normalizeLocaleCode(locale);
-  if (!normalized) return;
-  registerI18nLocaleEntries(normalized, entries);
+  if (!normalized) return false;
+  const changed = registerI18nLocaleEntries(normalized, entries);
   for (const key of Object.keys(entries)) runtimeTranslationSources.set(key, normalized);
+  return changed;
 }
 
 export function registerI18nEnglishSourceEntries(
   entries: Readonly<Record<string, string>>,
-): void {
-  registerI18nRuntimeSourceEntries("en", entries);
+): boolean {
+  return registerI18nRuntimeSourceEntries("en", entries);
 }
 
 export function getI18nRuntimeTranslationSources(): readonly I18nRuntimeTranslationSource[] {
@@ -177,9 +179,9 @@ export function resolveTranslationForDisplay(
 export function registerI18nLocaleEntries(
   locale: string,
   entries: Readonly<Record<string, string>>,
-): void {
+): boolean {
   const normalized = normalizeLocaleCode(locale);
-  if (!normalized) return;
+  if (!normalized) return false;
 
   const target = DICT[normalized] ?? (DICT[normalized] = {});
   let changed = false;
@@ -188,7 +190,30 @@ export function registerI18nLocaleEntries(
     target[key] = value;
     changed = true;
   }
-  if (!changed) return;
+  return changed;
+}
+
+// 비동기로 도착한 저작 사전(앱·스튜디오 번역 자산)이 로케일마다 몇 번째인지. 번역기는 (로케일, 이 값)마다 하나다.
+// useT가 훅 상태로 읽어야 React Compiler가 번역기 선택을 이 값에도 묶는다(언어 값에만 묶으면 바뀐 사전이 화면에 닿지 않는다).
+// 화면 상태일 뿐이라 언어 저장소(persist)와 따로 둔다.
+const useAuthoredDictionaryEpochs = create<{ readonly epochs: Readonly<Record<string, number>> }>(() => ({ epochs: {} }));
+
+function authoredDictionaryEpoch(normalizedLocale: string): number {
+  return useAuthoredDictionaryEpochs.getState().epochs[normalizedLocale] ?? 0;
+}
+
+/**
+ * 화면을 그린 뒤에 도착한 저작 사전을 등록했음을 알린다. React Compiler는 번역 함수 호출 결과를 번역기 참조에 묶어 기억하므로,
+ * 번역기 참조가 그대로면 사전이 도착한 뒤에도 처음 그린 대체 문구(영어)가 남는다. 사전이 실제로 바뀐 로케일만 번역기 참조를
+ * 한 번 바꿔 기억한 문구를 다시 계산하게 한다. 기계 번역 묶음 같은 일반 갱신은 참조를 그대로 둔다(번역기를 의존성으로 쓰는
+ * effect가 그때마다 다시 돌지 않게).
+ */
+export function markAuthoredI18nDictionaryLoaded(locale: string): void {
+  const normalized = normalizeLocaleCode(locale);
+  if (!normalized) return;
+  useAuthoredDictionaryEpochs.setState((state) => ({
+    epochs: { ...state.epochs, [normalized]: (state.epochs[normalized] ?? 0) + 1 },
+  }));
 }
 
 type TranslationResolver = (
@@ -199,15 +224,18 @@ type TranslationResolver = (
 
 // A translator is part of effect dependencies in data-fetching and OAuth surfaces. Returning a
 // fresh closure from useT() on every render would restart those effects (and can create a render /
-// request loop when an effect updates local state). Cache one resolver per normalized locale so
-// callers get referential stability without coupling the hook to React memoization. Runtime bundle
-// updates remain visible because resolveTranslation reads the bundle map at call time.
-const translationResolvers = new Map<string, TranslationResolver>();
+// request loop when an effect updates local state). Cache one resolver per normalized locale and
+// authored-dictionary epoch so callers get referential stability. Runtime bundle updates remain
+// visible to uncached calls because resolveTranslation reads the bundle map at call time; an authored
+// dictionary that arrives after the first render bumps the epoch once so compiler-memoized labels
+// (keyed on the resolver) are recomputed instead of keeping the fallback text.
+const translationResolvers = new Map<string, { readonly epoch: number; readonly resolver: TranslationResolver }>();
 
-function getTranslationResolver(lang: string): TranslationResolver {
+function getTranslationResolver(lang: string, authoredEpoch?: number): TranslationResolver {
   const normalized = normalizeLocaleCode(lang) || FALLBACK_LANG;
+  const epoch = authoredEpoch ?? authoredDictionaryEpoch(normalized);
   const cached = translationResolvers.get(normalized);
-  if (cached) return cached;
+  if (cached?.epoch === epoch) return cached.resolver;
 
   const resolver: TranslationResolver = (key, fallbackOrValues, fallbackText) => {
     const fallback = typeof fallbackOrValues === "string" ? fallbackOrValues : fallbackText;
@@ -218,7 +246,7 @@ function getTranslationResolver(lang: string): TranslationResolver {
       Object.hasOwn(fallbackOrValues, token) ? String(fallbackOrValues[token]) : placeholder,
     );
   };
-  translationResolvers.set(normalized, resolver);
+  translationResolvers.set(normalized, { epoch, resolver });
   return resolver;
 }
 
@@ -308,13 +336,15 @@ export function getLang(): string {
 export function useT(): TranslationResolver {
   const lang = useI18n((s) => s.lang);
   const translationBundleRevision = useI18n((s) => s.translationBundleRevision);
+  // 사전 도착 차례를 훅 상태로 읽어 번역기 선택의 입력으로 넘긴다. React Compiler는 아래 호출을 입력값에 묶어 기억한다.
+  const authoredEpoch = useAuthoredDictionaryEpochs((s) => s.epochs[normalizeLocaleCode(lang) || FALLBACK_LANG] ?? 0);
   useEffect(() => {
     // Route-owned dictionaries (Studio/Admin) arrive after the app-shell bundle. Re-run the
     // automatic translator when a route registers new source keys so non-English locales are not
     // permanently left with English copies merely because the first app-shell pass already ran.
     void loadRuntimeTranslationBundle(lang);
   }, [lang, translationBundleRevision]);
-  return getTranslationResolver(lang);
+  return getTranslationResolver(lang, authoredEpoch);
 }
 
 /**

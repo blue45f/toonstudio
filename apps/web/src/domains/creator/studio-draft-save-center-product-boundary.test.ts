@@ -81,7 +81,7 @@ describe("draft save center product boundary", () => {
     expect(model).toContain('phase = "server-risk"');
     expect(model).toContain('phase = "offline"');
     expect(model).toContain('phase = "queued"');
-    expect(model).toContain("서버 초안 revision");
+    expect(model).toContain("서버 저장 기록 #");
   });
 
   it("blocks pre-hydration overwrite and resumes the exact pending draft intent", () => {

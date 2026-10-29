@@ -32,7 +32,7 @@ export function ReferenceCreatorDashboard() {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
   const navigate = useNavigate();
   const [idea, setIdea] = useState("");
-  // 통합 입력의 분기: 기본은 만들기(스토리 연구실)이고, 작품 찾기로 바꾸면 카탈로그 검색으로 보낸다.
+  // 만들기는 입력한 아이디어를 이어받는 질문 흐름으로, 작품 찾기는 카탈로그 검색으로 보낸다.
   // 입력한 문장은 모드를 오가도 유지한다.
   const [inputMode, setInputMode] = useState<"create" | "search">("create");
   const searching = inputMode === "search";
@@ -43,7 +43,7 @@ export function ReferenceCreatorDashboard() {
       navigate(text ? `/search?q=${encodeURIComponent(text)}` : "/search");
       return;
     }
-    navigate(text ? `/story-lab?idea=${encodeURIComponent(text)}` : "/story-lab");
+    navigate(text ? `/create?intent=my-story&topic=free-story&idea=${encodeURIComponent(text)}` : "/create?intent=my-story");
   };
   return <div className="reference-dashboard" data-reference-dashboard="true">
     <div data-home-band="hero">

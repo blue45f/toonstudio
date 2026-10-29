@@ -9,6 +9,9 @@ import type { z } from "zod";
 
 type ParseAttempt = { readonly ok: true; readonly value: unknown } | { readonly ok: false };
 
+/** 앞뒤 설명에 `{`가 아주 많아도 탐색이 길어지지 않게 시도하는 후보 수의 상한. */
+const MAX_CANDIDATE_ATTEMPTS = 64;
+
 function tryParse(text: string): ParseAttempt {
   try {
     return { ok: true, value: JSON.parse(text) as unknown };
@@ -54,11 +57,18 @@ export function extractJsonCandidate(text: string): unknown {
     const inner = tryParse(fenced.trim());
     if (inner.ok) return inner.value;
   }
-  for (let start = trimmed.indexOf("{"); start >= 0; start = trimmed.indexOf("{", start + 1)) {
+  // 바깥 객체 단위로 찾는다: 짝이 맞는 블록이 JSON이 아니면 그 안의 중첩 객체를 고르지 않고 블록 뒤에서 다시 찾는다
+  // (바깥 문법이 틀린 답에서 안쪽 객체를 골라 엉뚱한 형식 진단을 붙이지 않게). 짝이 없는 `{`는 건너뛴다.
+  let attempts = 0;
+  for (let start = trimmed.indexOf("{"); start >= 0 && attempts < MAX_CANDIDATE_ATTEMPTS; attempts += 1) {
     const end = matchingBrace(trimmed, start);
-    if (end < 0) return undefined;
+    if (end < 0) {
+      start = trimmed.indexOf("{", start + 1);
+      continue;
+    }
     const sliced = tryParse(trimmed.slice(start, end + 1));
     if (sliced.ok) return sliced.value;
+    start = trimmed.indexOf("{", end + 1);
   }
   return undefined;
 }

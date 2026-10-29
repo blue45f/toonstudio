@@ -68,6 +68,7 @@ const completedText = (content: string): CompletedUserAiText => ({
   connection: {} as CompletedUserAiText["connection"],
   attemptedConnectionIds: [],
   attemptedRouteIds: [],
+  truncated: false,
 });
 
 const initialLanguage = useI18n.getState().lang;
@@ -128,14 +129,14 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     const idea = screen.getByRole("textbox", { name: "아이디어 입력" });
     fireEvent.change(idea, { target: { value: "비 오는 날의 첫사랑" } });
     fireEvent.click(screen.getByRole("button", { name: "시작하기" }));
-    expect(screen.getByLabelText("현재 URL").textContent).toBe(`/story-lab?idea=${encodeURIComponent("비 오는 날의 첫사랑")}`);
+    expect(screen.getByLabelText("현재 URL").textContent).toBe(`/create?intent=my-story&topic=free-story&idea=${encodeURIComponent("비 오는 날의 첫사랑")}`);
     expect(useUi.getState().commandPaletteOpen).toBe(false);
   });
 
-  it("빈 아이디어로 시작하면 쿼리 없이 스토리 연구실로 이동한다", async () => {
+  it("빈 아이디어로 시작하면 이야기 주제를 고르는 화면으로 이동한다", async () => {
     await dashboard();
     fireEvent.click(screen.getByRole("button", { name: "시작하기" }));
-    expect(screen.getByLabelText("현재 URL").textContent).toBe("/story-lab");
+    expect(screen.getByLabelText("현재 URL").textContent).toBe("/create?intent=my-story");
   });
 
   it("여섯 시작 동선이 시작 시트와 실제 작업으로 이동한다", async () => {
@@ -365,7 +366,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(more?.querySelector(".rd-discover")).toBeNull();
   });
 
-  it("모드를 오가도 입력한 문장은 유지되고 만들기로 제출하면 스토리 연구실로 간다", async () => {
+  it("모드를 오가도 입력한 문장은 유지되고 만들기로 제출하면 입력한 아이디어와 함께 질문 흐름으로 간다", async () => {
     await dashboard();
     const idea = screen.getByRole("textbox", { name: "아이디어 입력" });
     fireEvent.change(idea, { target: { value: "비 오는 날의 첫사랑" } });
@@ -374,6 +375,6 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     fireEvent.click(screen.getByRole("button", { name: "이야기 만들기" }));
     expect((screen.getByRole("textbox", { name: "아이디어 입력" }) as HTMLInputElement).value).toBe("비 오는 날의 첫사랑");
     fireEvent.click(screen.getByRole("button", { name: "시작하기" }));
-    expect(screen.getByLabelText("현재 URL").textContent).toBe(`/story-lab?idea=${encodeURIComponent("비 오는 날의 첫사랑")}`);
+    expect(screen.getByLabelText("현재 URL").textContent).toBe(`/create?intent=my-story&topic=free-story&idea=${encodeURIComponent("비 오는 날의 첫사랑")}`);
   });
 });

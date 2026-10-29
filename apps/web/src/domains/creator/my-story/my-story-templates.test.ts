@@ -15,9 +15,10 @@ import {
   resolveMyStoryToneId,
 } from "./my-story-templates";
 
-describe("주제 템플릿 팩 6종", () => {
-  it("회고·가족·동네·경력·안전 수칙·금융 상식 순서로 6종이 있다", () => {
+describe("주제 템플릿 팩 7종", () => {
+  it("자유로운 이야기와 기존 경험 주제 6종이 있다", () => {
     expect(MY_STORY_TEMPLATES.map((template) => template.id)).toEqual([
+      "free-story",
       "retrospective",
       "family",
       "neighborhood",
@@ -87,6 +88,7 @@ describe("주제 템플릿 팩 6종", () => {
   it("회고·가족·경력은 8컷과 4컷, 동네·안전 수칙·금융 상식은 4컷 골격을 가진다", () => {
     const counts = Object.fromEntries(MY_STORY_TEMPLATES.map((template) => [template.id, template.cutCounts]));
     expect(counts).toEqual({
+      "free-story": [4, 8],
       retrospective: [8, 4],
       family: [8, 4],
       neighborhood: [4],

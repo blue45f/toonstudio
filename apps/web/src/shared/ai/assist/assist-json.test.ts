@@ -26,6 +26,20 @@ describe("extractJsonCandidate", () => {
     expect(extractJsonCandidate("형식 {예시} 대신 실제 답: {\"a\": 1}")).toEqual({ a: 1 });
   });
 
+  it("짝이 없는 중괄호를 지나 뒤에 오는 진짜 객체를 찾는다", () => {
+    expect(extractJsonCandidate("예시 { 는 무시하고, 답: {\"a\": 1}")).toEqual({ a: 1 });
+  });
+
+  it("바깥 객체 문법이 틀리면 그 안의 중첩 객체를 답으로 고르지 않는다", () => {
+    expect(extractJsonCandidate("{\"result\": {\"score\": 1}, 깨진 부분}")).toBeUndefined();
+    // 깨진 블록 뒤에 따로 온 완결된 객체는 찾는다.
+    expect(extractJsonCandidate("{\"a\": {\"b\": 1}, oops} 다시: {\"a\": {\"b\": 2}}")).toEqual({ a: { b: 2 } });
+  });
+
+  it("중괄호가 아주 많은 설명에서도 탐색 시도 수에 상한이 있다", () => {
+    expect(extractJsonCandidate("{".repeat(5_000))).toBeUndefined();
+  });
+
   it("JSON을 찾지 못하면 undefined", () => {
     expect(extractJsonCandidate("")).toBeUndefined();
     expect(extractJsonCandidate("지금은 답하기 어려워요.")).toBeUndefined();

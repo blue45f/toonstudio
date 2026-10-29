@@ -9,7 +9,8 @@
  * - 유료 서비스 키는 비용 청구를 확인해야 등록되고, 확인하면 자동 경로에서도 그 키를 먼저 쓴다.
  */
 import { CheckCircle2, CircleAlert, ExternalLink, KeyRound, Plus, Sparkles, Trash2, X } from "lucide-react";
-import { useId, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Link, useInRouterContext } from "react-router-dom";
 
 import {
   AI_KEY_PROVIDER_PICK_ORDER,
@@ -31,7 +32,7 @@ import {
 } from "./ai-quick-key";
 import { probeUserAiConnection } from "./user-ai-connection-probe";
 import { getUserAiSnapshot, setUserAiConfiguration, useUserAi } from "./user-ai-store";
-import { EMPTY_AI_CONNECTION, userAiConnectionApiKeys, type UserAiConnection } from "./user-ai-types";
+import { EMPTY_AI_CONNECTION, userAiConnectionApiKeys, userAiRoutingSettings, type UserAiConnection } from "./user-ai-types";
 
 import type { FreeAiPoolStatus } from "./free-ai-pool-status";
 
@@ -54,8 +55,10 @@ interface RegisterOutcome {
 }
 
 export interface AiQuickKeyPanelProps {
-  /** 서버 상태(ToonStudio AI 준비 여부·고성능 경로 한도). 불러오는 중이면 null. */
+  /** 서버 상태(ToonStudio AI 준비 여부·고성능 경로 한도). 불러오는 중이거나 확인하지 못했으면 null. */
   readonly poolStatus: FreeAiPoolStatus | null;
+  /** 서버 상태를 확인하지 못했다(네트워크·서버 오류). "확인하는 중"을 계속 보여 주지 않기 위해 따로 받는다. */
+  readonly poolCheckFailed?: boolean;
   /** 직접 주소·모델을 넣는 기존 연결 마법사를 연다(키 형식이 목록에 없는 서비스용). */
   readonly onOpenAdvancedWizard: () => void;
 }
@@ -64,19 +67,45 @@ function providerName(id: AiKeyProviderId): string {
   return AI_KEY_PROVIDERS[id].name;
 }
 
-function costBadge(paid: boolean) {
+/** 비용 배지. "확인 필요"는 비용 정책을 다시 정해야 하는 연결이라 자동으로 쓰지 않는다. */
+function costBadge(kind: "paid" | "free" | "unverified") {
+  const tone = kind === "paid"
+    ? "border-warn/35 bg-warn/10 text-warn"
+    : kind === "free"
+      ? "border-good/35 bg-good/10 text-good"
+      : "border-line bg-panel text-fg-3";
   return (
-    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold ${paid ? "border-warn/35 bg-warn/10 text-warn" : "border-good/35 bg-good/10 text-good"}`}>
-      {paid ? "유료" : "무료"}
+    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold ${tone}`}>
+      {kind === "paid" ? "유료" : kind === "free" ? "무료" : "확인 필요"}
     </span>
   );
 }
 
-/** 등록 직전 키 확인. 키가 거절되면 등록하지 않고, 확인을 못 한 경우(브라우저 차단 등)는 등록하되 알린다. */
+function connectionCostKind(connection: Pick<UserAiConnection, "costPolicy">): "paid" | "free" | "unverified" {
+  if (connection.costPolicy === "user-funded-byok") return "paid";
+  return connection.costPolicy === "unverified" ? "unverified" : "free";
+}
+
+/** 모델 목록이 공개라 목록 응답으로 키를 확인할 수 없는 서비스. */
+const PUBLIC_MODEL_LIST_PROVIDERS: ReadonlySet<QuickKeyProviderId> = new Set(["openrouter", "huggingface"]);
+
+/** 라우터 안이면 페이지를 새로 고치지 않고 옮긴다(메모리에만 둔 키가 사라지지 않게). 라우터 밖(시험 등)에서는 일반 링크다. */
+function SettingsLink({ to, className, children }: { readonly to: string; readonly className: string; readonly children: ReactNode }) {
+  return useInRouterContext()
+    ? <Link className={className} to={to}>{children}</Link>
+    : <a className={className} href={to}>{children}</a>;
+}
+
+/**
+ * 등록 직전 키 확인. 키가 거절되면(401·403, 키 없이 부르는 모델 목록에서 400) 등록하지 않는다. 브라우저에서 서비스에
+ * 닿지 못하면 실제 사용 때도 닿지 못하므로 등록하지 않는다(그런 키가 "내 키 먼저" 맨 앞에 있으면 텍스트 AI가 모두 실패한다).
+ * 서비스가 다른 오류로 답해 확인만 못 한 경우는 등록하되 알린다.
+ */
 async function verifyQuickKey(provider: QuickKeyProviderId, key: string): Promise<
   | { readonly status: "verified"; readonly model: string }
   | { readonly status: "unverified"; readonly model: string; readonly reason: string }
   | { readonly status: "rejected" }
+  | { readonly status: "unreachable" }
 > {
   const preset = QUICK_KEY_PRESETS[provider];
   const probe = await probeUserAiConnection(
@@ -90,17 +119,24 @@ async function verifyQuickKey(provider: QuickKeyProviderId, key: string): Promis
     undefined,
     { includeModelIds: true },
   );
-  if (probe.status === "unauthorized") return { status: "rejected" };
+  // Gemini·xAI 등은 잘못된 키에 400으로 답한다. 본문 없는 모델 목록 요청의 400은 키 문제로 본다.
+  if (probe.status === "unauthorized" || (probe.status === "http_error" && probe.httpStatus === 400)) return { status: "rejected" };
+  if (probe.status === "unreachable") return { status: "unreachable" };
   if (probe.status === "ok") {
-    return { status: "verified", model: chooseQuickKeyModel(provider, probe.modelIds ?? null) };
+    const model = chooseQuickKeyModel(provider, probe.modelIds ?? null);
+    // 키 없이도 모델 목록을 주는 서비스는 목록이 와도 키가 맞다는 뜻이 아니다.
+    if (PUBLIC_MODEL_LIST_PROVIDERS.has(provider)) {
+      return { status: "unverified", model, reason: "이 서비스는 키 없이도 모델 목록을 보여 줘서 키를 미리 확인하지 못했어요" };
+    }
+    return { status: "verified", model };
   }
   const reason = probe.status === "http_error"
     ? `서비스가 HTTP ${probe.httpStatus}로 답했어요`
-    : "브라우저에서 서비스에 바로 닿지 못했어요(서비스의 브라우저 접속 제한일 수 있어요)";
+    : "서비스에서 키를 확인하지 못했어요";
   return { status: "unverified", model: preset.model, reason };
 }
 
-export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKeyPanelProps) {
+export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdvancedWizard }: AiQuickKeyPanelProps) {
   const idBase = useId();
   const snapshot = useUserAi();
   const configuration = snapshot.configuration;
@@ -118,6 +154,13 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
   const keyCount = connections.reduce((sum, connection) => sum + userAiConnectionApiKeys(connection).length, 0);
   const premium = poolStatus?.premium;
   const needsPaidConsent = pending.some((item) => item.provider && AI_KEY_PROVIDERS[item.provider].cost === "paid" && item.provider !== "fal");
+  // 동의하면 "유료 키 먼저"가 켜져, 이미 등록했지만 아직 먼저 쓰지 않던 유료 키도 함께 먼저 쓴다. 동의 전에 알린다.
+  const routingNow = userAiRoutingSettings(configuration);
+  const otherPaidNames = routingNow.preferPaidKeys === true
+    ? []
+    : [...new Set(connections
+      .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok")
+      .map((connection) => connection.label))];
   const unresolved = pending.some((item) => item.provider === null);
   const registrable = pending.filter((item) => item.provider && isQuickKeyProvider(item.provider));
   const canRegister = !busy && registrable.length > 0 && !unresolved && (!needsPaidConsent || consent);
@@ -140,7 +183,9 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
           id: sequence.current,
           key,
           candidates: detection.candidates,
-          provider: detection.exact || detection.candidates.length === 1 ? detection.candidates[0] ?? null : null,
+          // 접두어로 확정되는 형식만 바로 정한다. 32자 영숫자·UUID처럼 여러 서비스가 함께 쓰는 형식은 사용자가 고른 뒤에만
+          // 그 서비스로 키를 보낸다(다른 서비스의 비밀값을 엉뚱한 곳으로 보내지 않게).
+          provider: detection.exact ? detection.candidates[0] ?? null : null,
         });
       }
       return next;
@@ -178,6 +223,10 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
         const verification = await verifyQuickKey(provider, item.key);
         if (verification.status === "rejected") {
           results.push({ id: item.id, tone: "error", text: `${name} 키가 거절됐어요. 키가 맞는지, 만료되지 않았는지 확인해 주세요. 등록하지 않았어요.` });
+          continue;
+        }
+        if (verification.status === "unreachable") {
+          results.push({ id: item.id, tone: "error", text: `브라우저에서 ${name}에 연결하지 못해 등록하지 않았어요. 네트워크를 확인한 뒤 다시 시도해 주세요. 이 서비스가 브라우저 접속을 막는다면 다른 서비스 키를 써 주세요.` });
           continue;
         }
         const added = addQuickKey(current, provider, item.key, {
@@ -244,7 +293,9 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
                     ? "무료 AI가 성능 순서로 이어서 처리해요. 로그인만 하면 돼요."
                     : poolStatus
                       ? "지금은 준비 중이에요. 내 키를 등록하면 바로 쓸 수 있어요."
-                      : "상태를 확인하는 중이에요."}
+                      : poolCheckFailed
+                        ? "지금은 상태를 확인하지 못했어요. 잠시 뒤 다시 열거나 내 키를 등록해 주세요."
+                        : "상태를 확인하는 중이에요."}
               </span>
             </span>
           </li>
@@ -319,11 +370,12 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
                   ) : null}
                   {provider === "fal" ? (
                     <span className="text-xs text-fg-3">이미지 생성 키는 연동 키 화면에서 등록해요.</span>
-                  ) : provider ? costBadge(AI_KEY_PROVIDERS[provider].cost === "paid") : null}
+                  ) : provider ? costBadge(AI_KEY_PROVIDERS[provider].cost === "paid" ? "paid" : "free") : null}
                   <button
                     type="button"
                     className={`${ICON_BUTTON} ml-auto`}
                     aria-label={`${maskAiKey(item.key)} 키 빼기`}
+                    disabled={busy}
                     onClick={() => setPending((current) => current.filter((entry) => entry.id !== item.id))}
                   >
                     <X size={16} aria-hidden />
@@ -336,8 +388,11 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
 
         {needsPaidConsent && (
           <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-sm">
-            <input type="checkbox" className="mt-1" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-            <span>유료 서비스 키는 쓸 때마다 내 계정에 비용이 청구될 수 있어요. 등록하면 AI 기능이 이 키를 먼저 써요.</span>
+            <input type="checkbox" className="mt-1" checked={consent} disabled={busy} onChange={(event) => setConsent(event.target.checked)} />
+            <span>
+              유료 서비스 키는 쓸 때마다 내 계정에 비용이 청구될 수 있어요. 등록하면 AI 기능이 이 키를 먼저 써요.
+              {otherPaidNames.length > 0 && ` 이미 등록한 유료 키(${otherPaidNames.join(", ")})도 함께 먼저 써요.`}
+            </span>
           </label>
         )}
 
@@ -348,9 +403,9 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
           <button type="button" className={`${BUTTON} border-transparent text-fg-2 hover:border-line`} onClick={onOpenAdvancedWizard}>
             목록에 없는 서비스 직접 연결
           </button>
-          <a className="inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-accent" href="/settings/api-keys">
+          <SettingsLink className="inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-accent" to="/settings/api-keys">
             이미지·음성 연동 키 <ExternalLink size={14} aria-hidden />
-          </a>
+          </SettingsLink>
         </div>
 
         {outcomes.length > 0 && (
@@ -380,7 +435,7 @@ export function AiQuickKeyPanel({ poolStatus, onOpenAdvancedWizard }: AiQuickKey
                 <li key={connection.id} className="rounded-xl border border-line bg-card/60 p-3" data-ai-registered-connection={provider ?? "custom"}>
                   <div className="flex flex-wrap items-center gap-2">
                     <strong className="text-sm">{provider ? providerName(provider) : connection.label}</strong>
-                    {costBadge(connection.costPolicy === "user-funded-byok")}
+                    {costBadge(connectionCostKind(connection))}
                     <span className="truncate text-xs text-fg-3">{connection.textModel || connection.imageModel}</span>
                     {connection.enabled === false && <span className="text-xs font-semibold text-warn">꺼짐</span>}
                   </div>

@@ -66,7 +66,7 @@ function connectAssist(model = "claude-haiku-5-5") {
   });
 }
 
-describe("claude-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 검증)", () => {
+describe("ai-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 검증)", () => {
   beforeEach(() => {
     lockUserAi(false);
     assistParseMock.mockReset();

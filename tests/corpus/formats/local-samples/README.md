@@ -7,6 +7,8 @@
 | --- | --- | --- |
 | `.clip`, `.lip` | `packages/studio-format-gateway/src/chunked-sqlite-container.ts`의 가정(헤더 필드 순서, 청크 레이아웃, 외부 블록 형태) | `docs/design/chunked-sqlite-container-parser-2026-10-29.md` |
 | `.xcf` | `packages/studio-format-gateway/src/xcf.ts`의 구조·픽셀 디코드 | `docs/design/xcf-reader-public-spec-2026-10-29.md` |
+| `.aseprite`, `.ase` | `packages/studio-format-gateway/src/aseprite-sprite.ts`의 구조·셀·타일셋 디코드 (`.ase` 중 Adobe Swatch Exchange는 서명으로 걸러 낸다) | `docs/design/aseprite-sprite-reader-public-spec-2026-10-29.md` |
+| `.gbr`, `.gih`, `.pat`, `.vbr` | `packages/studio-format-gateway/src/gimp-brush*.ts`, `gimp-generated-brush.ts`의 브러시·파이프·패턴·생성 브러시 읽기 | `docs/design/gimp-brush-formats-reader-public-spec-2026-10-29.md` |
 
 ## 규칙
 
@@ -33,5 +35,12 @@ pnpm exec vitest run tests/format-gateway/local-samples-corpus.test.ts
 - `.xcf` 파일마다 레이어를 하나도 잃지 않았는지, 구조·타일 오류 진단이 없는지, 그룹 부모가 그룹 레이어인지
   확인한다. ImageMagick(`convert`)이 있으면 8비트 RGB·회색 파일은 모든 레이어를 ImageMagick 디코드와 바이트
   단위로 대조한다. ImageMagick 6.9는 인덱스드와 8비트 초과 정밀도를 거부하므로 그런 파일은 대조에서 빠진다.
+- `.aseprite`/`.ase` 파일마다 잘림·구조 진단이 없는지, 모든 셀 픽셀과 타일셋 이미지가 선언 크기대로 해제되는지,
+  링크 셀이 앞 프레임의 실제 셀로 이어지는지, 인덱스드 셀의 인덱스가 팔레트 안에 있는지 확인한다. 이 형식은
+  독립 오라클이 없다(ImageMagick은 Aseprite를 읽지 않는다). 개발 중에는 별도의 독립 구현(표준 라이브러리만 쓰는
+  Python 스크립트)과 셀·타일셋 해시를 대조했으며 그 결과는 설계 문서에 있다.
+- `.gbr`/`.gih`/`.pat`/`.vbr` 파일마다 앞부분으로 판별한 형식이 확장자와 같은지, 진단 없이 끝까지 읽히는지(파이프는 브러시 수와
+  `ncells`가 일치하고 마지막 브러시가 파일 끝에서 끝나는지) 확인한다. 독립 오라클은 없고, 개발 중에는 표준 라이브러리만 쓰는
+  Python 스크립트와 필드·픽셀 해시를 대조했으며 그 결과는 설계 문서에 있다.
 - 형식별로 샘플이 없으면 그 형식의 `describe`와 테스트는 등록되지 않고, 이 디렉터리가 Git에서 무시되는지만
   확인한다.

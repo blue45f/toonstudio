@@ -5,6 +5,7 @@ import { validateUserAiBaseUrl as validateCloudAiBaseUrl } from "./user-ai-types
 import {
   completeUserAiTextDetailed,
   UserAiTransportError,
+  type UserAiTextOptions,
   type UserAiTransportErrorCode,
 } from "./user-ai-transport";
 
@@ -282,7 +283,7 @@ if (typeof globalThis.addEventListener === "function") {
 }
 
 export type UserTextResult =
-  | { ok: true; content: string; model: string; provider: string }
+  | { ok: true; content: string; model: string; provider: string; truncated: boolean }
   | {
       ok: false;
       error: string;
@@ -294,14 +295,16 @@ export async function completeWithUserTextKey(
   system: string,
   user: string,
   signal?: AbortSignal,
+  options?: UserAiTextOptions,
 ): Promise<UserTextResult> {
   try {
-    const result = await completeUserAiTextDetailed(system, user, signal);
+    const result = await completeUserAiTextDetailed(system, user, signal, options);
     return {
       ok: true,
       content: result.content.trim().slice(0, 100_000),
       model: result.connection.textModel.slice(0, 200),
       provider: new URL(result.connection.baseUrl).hostname.slice(0, 120),
+      truncated: result.truncated,
     };
   } catch (error) {
     return {

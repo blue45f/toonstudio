@@ -116,12 +116,14 @@ export interface StudioAiProviderConfig {
   freePool: boolean;
   /** 운영 프리미엄 경로처럼 운영자가 비용을 내고 사용자 크레딧을 차감하지 않는 제공자. */
   sponsored?: boolean;
+  /** 운영 프리미엄 키가 워크스페이스에 묶이지 않았을 때 요청마다 보낼 워크스페이스 ID. */
+  workspaceId?: string;
 }
 
 export const STUDIO_AI_FREE_QUOTA_FAILOVER_REASON = "free_quota_exhausted" as const;
 /** Kept for historical receipts produced by the retired paid-provider test path. */
 export const STUDIO_AI_BILLING_FAILOVER_REASON = "billing_quota_exhausted" as const;
-/** 운영 프리미엄 경로가 추론 전에 한도·결제·혼잡·인증으로 거절돼 무료 풀로 이어 간 경우. */
+/** 운영 프리미엄 경로가 추론 전에 한도·결제·혼잡·인증·설정·요청 형식으로 거절돼 무료 풀로 이어 간 경우. */
 export const STUDIO_AI_PREMIUM_FAILOVER_REASON = "premium_unavailable" as const;
 export type StudioAiFailoverReason =
   | typeof STUDIO_AI_FREE_QUOTA_FAILOVER_REASON
@@ -453,6 +455,7 @@ function providerConfig(id: StudioAiProviderId, env: EnvLike): StudioAiProviderC
       model: premium.model,
       freePool: false,
       sponsored: true,
+      ...(premium.workspaceId ? { workspaceId: premium.workspaceId } : {}),
     };
   }
   if (id === "zai") {
@@ -674,18 +677,20 @@ export function studioAiPremiumErrorType(payload: unknown): string | undefined {
 }
 
 /**
- * 운영 프리미엄 경로가 추론을 시작하기 전에 거절한 경우. 운영 키의 한도(429)·혼잡(529)·결제(402,
- * `billing_error`)·인증/권한(401/403)·모델 없음(404)은 사용자 요청 탓이 아니고 처리되지도 않았으므로
- * 같은 요청을 무료 풀로 이어 보내도 중복 과금이 없다. 5xx·요청 형식 오류(400)는 넘기지 않는다.
+ * 운영 프리미엄 경로가 추론을 시작하기 전에 거절한 경우. 운영 키의 한도(429)·혼잡(529)·결제(402)·인증/권한(401/403)·
+ * 모델 없음(404)·요청 크기(413)와 400(결제 오류, 워크스페이스 지정 누락 같은 운영 키 설정 오류, 구조화 출력 스키마 미지원 같은
+ * 형식 거절)은 처리되지 않았으므로 같은 요청을 무료 풀로 이어 보내도 중복 과금이 없다. 설정·형식 문제로 키 없는 사용자의
+ * 요청까지 실패시키지 않는다. 추론 뒤일 수 있는 5xx는 넘기지 않는다.
  */
-function premiumRejectedBeforeInference(responseStatus: number, payload: unknown): boolean {
+function premiumRejectedBeforeInference(responseStatus: number): boolean {
   return responseStatus === 429
     || responseStatus === 529
     || responseStatus === 402
+    || responseStatus === 400
     || responseStatus === 401
     || responseStatus === 403
     || responseStatus === 404
-    || (responseStatus === 400 && studioAiPremiumErrorType(payload) === "billing_error");
+    || responseStatus === 413;
 }
 
 export function classifyStudioAiProviderFailure(
@@ -694,7 +699,7 @@ export function classifyStudioAiProviderFailure(
   payload?: unknown,
   freePool = STUDIO_AI_FREE_PROVIDER_IDS.includes(provider as StudioAiFreeProviderId),
 ): StudioAiProviderFailureClassification {
-  if (provider === STUDIO_AI_PREMIUM_PROVIDER_ID && premiumRejectedBeforeInference(responseStatus, payload)) {
+  if (provider === STUDIO_AI_PREMIUM_PROVIDER_ID && premiumRejectedBeforeInference(responseStatus)) {
     return {
       kind: STUDIO_AI_PREMIUM_FAILOVER_REASON,
       billingFailoverEligible: true,

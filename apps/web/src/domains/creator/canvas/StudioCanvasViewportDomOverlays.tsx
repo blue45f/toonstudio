@@ -258,12 +258,12 @@ export function StudioCanvasViewportDomOverlays({
               data-studio-vello-unavailable="true"
               className="absolute inset-x-4 top-4 z-[30] rounded-md border border-bad/50 bg-panel/95 px-4 py-3 text-sm font-medium text-bad shadow-lg"
             >
-              <strong className="block">{t("studio.brushCanvasStatus.canvas.gpuPrepareFailed", "GPU 문서 표시를 준비하지 못했습니다.")}</strong>
+              <strong className="block">{t("studio.brushCanvasStatus.canvas.gpuPrepareFailed", "작업 화면을 표시하지 못했어요")}</strong>
               {velloHubAuthority.visibleCanvasCount === 1
-                ? t("studio.brushCanvasStatus.canvas.gpuKeptFrame", "GPU 문서 렌더러를 계속 사용할 수 없어 마지막 정확 프레임을 유지했습니다. 다른 렌더러로 자동 전환하지 않았습니다.")
-                : t("studio.brushCanvasStatus.canvas.gpuNotSwitched", "GPU 문서 렌더러를 사용할 수 없어 가속 문서 표면으로 전환하지 않았습니다. 같은 작업을 다른 엔진으로 재실행하지 않았습니다.")}
+                ? t("studio.brushCanvasStatus.canvas.gpuKeptFrame", "화면을 업데이트하지 못해 마지막으로 표시한 그림을 유지하고 있어요. 아래 버튼으로 다시 시도해 주세요.")
+                : t("studio.brushCanvasStatus.canvas.gpuNotSwitched", "이 브라우저에서 작업 화면을 열지 못했어요. 아래 버튼으로 다시 시도해 주세요.")}
               <button type="button" className="mt-2 min-h-11 rounded-md border border-current px-3 focus-visible:outline focus-visible:outline-2"
-                onClick={() => setRendererAttempt((value) => value + 1)}>같은 GPU 엔진 다시 준비</button>
+                onClick={() => setRendererAttempt((value) => value + 1)}>{t("studio.brushCanvasStatus.canvas.gpuRetry", "작업 화면 다시 열기")}</button>
             </div>
           ) : null}
           <StudioPixiSceneOverlayHost

@@ -63,7 +63,7 @@ function connectAssist(model = "claude-haiku-5-5"): void {
   });
 }
 
-describe("claude-webtoon-production-assist (신규 4대 웹툰 AI 보조 엔진 검증)", () => {
+describe("ai-webtoon-production-assist (신규 4대 웹툰 AI 보조 엔진 검증)", () => {
   beforeEach(() => {
     lockUserAi(false);
     assistParseMock.mockReset();

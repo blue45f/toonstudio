@@ -1,6 +1,7 @@
 import { STUDIO_I18N_NAMESPACES } from "@/shared/lib/i18n-asset-manifest";
 import {
   getLang,
+  markAuthoredI18nDictionaryLoaded,
   registerI18nEnglishSourceEntries,
   registerI18nLocaleEntries,
   triggerTranslationBundleUpdate,
@@ -198,17 +199,18 @@ export async function loadStudioI18nNamespaces(
   }
 
   if (Object.keys(merged).length > 0) {
-    if (assetLocale === "en") {
-      registerI18nEnglishSourceEntries(merged);
-    } else {
-      registerI18nLocaleEntries(assetLocale, merged);
-    }
+    // 화면을 그린 뒤 도착한 사전이면 번역기 참조를 바꿔 기억해 둔 대체 문구를 다시 계산하게 한다.
+    const assetChanged = assetLocale === "en"
+      ? registerI18nEnglishSourceEntries(merged)
+      : registerI18nLocaleEntries(assetLocale, merged);
+    if (assetChanged) markAuthoredI18nDictionaryLoaded(assetLocale);
     const normalizedRequestedLocale = normalizeLocaleCode(requestedLocale);
     if (
       normalizedRequestedLocale
       && normalizedRequestedLocale !== assetLocale
+      && registerI18nLocaleEntries(normalizedRequestedLocale, merged)
     ) {
-      registerI18nLocaleEntries(normalizedRequestedLocale, merged);
+      markAuthoredI18nDictionaryLoaded(normalizedRequestedLocale);
     }
     triggerTranslationBundleUpdate();
   }

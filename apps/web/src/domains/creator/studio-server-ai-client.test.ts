@@ -53,6 +53,31 @@ function configureFreeTextConnection(): void {
   });
 }
 
+function configurePaidTextConnection(routing: { allowPaidFallback: boolean; preferPaidKeys: boolean }): void {
+  setUserAiConfiguration({
+    version: 1,
+    connections: [{
+      id: "test-paid-text",
+      label: "Test paid text provider",
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: "user-paid-key",
+      imageModel: "",
+      textModel: "paid-text-model",
+      imageGenerationPath: "/images/generations",
+      imageEditPath: "/images/edits",
+      chatCompletionsPath: "/chat/completions",
+      costPolicy: "user-funded-byok",
+    }],
+    assignments: {
+      text: "test-paid-text",
+      image: null,
+      inference: null,
+      "three-d": null,
+    },
+    routing: { mode: "automatic", ...routing, managedPoolPriority: 50, serverProviderOrder: [] },
+  });
+}
+
 function input() {
   return {
     task: "composition" as const,
@@ -324,6 +349,109 @@ describe("studio automatic free AI client", () => {
       code: "http_error",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps an earlier 'paid key after free routes' consent behind ToonStudio AI", async () => {
+    configurePaidTextConnection({ allowPaidFallback: true, preferPaidKeys: false });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "ToonStudio AI 결과", provider: "anthropic" },
+    });
+    // 유료 키는 부르지 않았다(서버 경로가 먼저다).
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(urlOf(fetchMock.mock.calls[0]![0]).pathname).toBe("/api/studio-ai/chat");
+  });
+
+  it("uses the paid key as the fallback when ToonStudio AI cannot run", async () => {
+    configurePaidTextConnection({ allowPaidFallback: true, preferPaidKeys: false });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ code: "PREMIUM_AI_UNAVAILABLE", message: "고성능 AI 사용 불가" }, 503);
+      }
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "유료 키 결과", provider: "user" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses a paid key first only after the user chose 'my paid key first'", async () => {
+    configurePaidTextConnection({ allowPaidFallback: true, preferPaidKeys: true });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "유료 키 결과", provider: "user" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("gets a complete answer from ToonStudio AI when the free key's answer hit the output cap", async () => {
+    configureFreeTextConnection();
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "잘린 개인" }, finish_reason: "length" }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "온전한 ToonStudio AI 결과", provider: "anthropic" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns the cut-off free-key answer when ToonStudio AI cannot run either", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ code: "FREE_AI_LOGIN_REQUIRED", message: "로그인 필요" }, 401);
+      }
+      return json({ choices: [{ message: { content: "잘린 개인" }, finish_reason: "length" }] });
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "잘린 개인", provider: "user" },
+    });
+  });
+
+  it("hands off to ToonStudio AI while a rejected key is cooling down instead of failing every request", async () => {
+    configureFreeTextConnection();
+    let serverCalls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        serverCalls += 1;
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ error: "invalid key" }, 401);
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
+    // 두 번째 요청: 키는 인증 오류로 쉬는 중이라 보내지 않고 바로 ToonStudio AI로 간다.
+    await expect(completeStudioServerText({ ...input(), operationId: "composition-00000000-0000-4000-8000-000000000002" }))
+      .resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
+    expect(serverCalls).toBe(2);
   });
 
   it("keeps free-pool failover metadata allowlisted", () => {

@@ -19,7 +19,7 @@ import { QUALITY_PRESET_LABELS_KO, TONE_MAPPINGS, applyQualityPreset } from "../
 import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, RIG_CAPABILITY_IDS, hasBetaFeatures, readBetaFeatures, readExtendedFeatures } from "../../../render/beta-features";
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
 import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS_KO, readSceneFeatures } from "../../../render/scene-features";
-import { applyLabShaperTripoLookToShading, buildLabShaperTripoPipelineSpec, LAB_SHAPER_TRIPO_LOOK_PRESETS, type LabShaperTripoLookId } from "../../../render/shaper-tripo-mcp-bridge";
+import { applyLabShaperGen3dLookToShading, buildLabShaperGen3dPipelineSpec, LAB_SHAPER_GEN3D_LOOK_PRESETS, type LabShaperGen3dLookId } from "../../../render/shaper-gen3d-bridge";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
@@ -91,7 +91,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
 
   // IBL 세기 슬라이더: 드래그 중 로컬 값, 놓을 때 dispatch
   const [iblDraft, setIblDraft] = useState(shading.ibl.intensity);
-  const [tripoLookId, setTripoLookId] = useState<LabShaperTripoLookId>("shaper-cel");
+  const [tripoLookId, setTripoLookId] = useState<LabShaperGen3dLookId>("shaper-cel");
   const [tripoDelight, setTripoDelight] = useState(true);
   const [disableHairInline, setDisableHairInline] = useState(true);
   useEffect(() => {
@@ -422,12 +422,12 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
             data-testid="shaper-tripo-look-select"
             value={tripoLookId}
             onChange={(event) => {
-              const nextId = event.target.value as LabShaperTripoLookId;
+              const nextId = event.target.value as LabShaperGen3dLookId;
               setTripoLookId(nextId);
-              set(applyLabShaperTripoLookToShading(shading, nextId));
+              set(applyLabShaperGen3dLookToShading(shading, nextId));
             }}
           >
-            {LAB_SHAPER_TRIPO_LOOK_PRESETS.map((preset) => (
+            {LAB_SHAPER_GEN3D_LOOK_PRESETS.map((preset) => (
               <option key={preset.id} value={preset.id}>
                 {preset.labelKo}
               </option>
@@ -455,7 +455,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
           />
         </div>
         {(() => {
-          const spec = buildLabShaperTripoPipelineSpec({
+          const spec = buildLabShaperGen3dPipelineSpec({
             lookId: tripoLookId,
             delight: tripoDelight,
             disableHairInline,

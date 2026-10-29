@@ -149,6 +149,42 @@ describe("localStorySeedProvider & createTextAiStorySeedProvider", () => {
     expect(localStorySeedProvider.kind).toBe("local");
   });
 
+  it("설정을 많이 인용한 큰 프로젝트도 서버 경로의 글자 상한 안에 들어가고, 빠진 인용 개수를 알린다", () => {
+    const settingRefs = Array.from({ length: 90 }, (_, index) => ({
+      id: `ref-${index}`,
+      kind: index % 3 === 0 ? ("character" as const) : ("lore" as const),
+      name: `설정 ${index}`,
+      detail: "성격과 동기를 길게 적은 설명. ".repeat(24),
+    }));
+    const prompt = buildStorySeedAiPrompt({
+      genre: "판타지",
+      keywords: ["차원의 열쇠"],
+      protagonist: "주인공 설명 ".repeat(400),
+      settingRefs,
+    });
+    // 서버의 사용자 글 상한(12,000자)보다 여유 있게 작다.
+    expect(prompt.user.length).toBeLessThanOrEqual(10_000);
+    expect(prompt.user).toContain("장르: 판타지");
+    expect(prompt.user).toContain("설정 0(character: ");
+    expect(prompt.user).toMatch(/ 외 \d+개$/u);
+    // 한 인용의 설명은 줄여서 넣는다.
+    expect(prompt.user).not.toContain("성격과 동기를 길게 적은 설명. ".repeat(24));
+  });
+
+  it("글자 상한에서 자를 때 이모지의 절반만 남기지 않아 요청 본문이 깨지지 않는다", () => {
+    const prompt = buildStorySeedAiPrompt({
+      genre: "판타지",
+      keywords: ["차원의 열쇠"],
+      protagonist: `${"가".repeat(998)}😀${"나".repeat(20)}`,
+      settingRefs: [
+        { id: "a", kind: "character", name: `${"이".repeat(78)}😀끝`, detail: `${"가".repeat(198)}😀${"나".repeat(20)}` },
+      ],
+    });
+    expect(prompt.user.isWellFormed()).toBe(true);
+    expect(prompt.user).toContain(`주인공: ${"가".repeat(998)}…`);
+    expect(prompt.user).toContain(`(character: ${"가".repeat(198)}…)`);
+  });
+
   it("AI 프롬프트 생성 및 응답 파싱이 source='ai' 초안으로 병합된다", () => {
     const input = { genre: "판타지", keywords: ["차원의 열쇠"] };
     const prompt = buildStorySeedAiPrompt(input);
@@ -171,6 +207,15 @@ describe("localStorySeedProvider & createTextAiStorySeedProvider", () => {
     expect(parsed?.source).toBe("ai");
     expect(parsed?.goalDraft).toBe("AI 목표 초안");
     expect(parsed?.emotionalArc).toEqual({ from: "불안", to: "각성" });
+  });
+
+  it("AI가 채운 필드가 하나도 없는 응답은 기본 초안을 AI 결과로 꾸미지 않고 읽지 못한 것으로 본다", async () => {
+    const input = { genre: "판타지", keywords: ["차원의 열쇠"] };
+    expect(parseStorySeedAiResponse("{}", input)).toBeNull();
+    expect(parseStorySeedAiResponse(JSON.stringify({ logline: "다른 이름의 필드", goalDraft: "  " }), input)).toBeNull();
+
+    const provider = createTextAiStorySeedProvider(async () => ({ ok: true as const, content: "{\"unknown\": 1}" }));
+    await expect(provider.generate(input)).rejects.toBeInstanceOf(StorySeedAiError);
   });
 
   it("AI 제공자는 통합 AI 응답을 기본 초안 위에 덮어써 완결된 AI 초안을 돌려준다", async () => {
