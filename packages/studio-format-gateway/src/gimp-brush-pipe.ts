@@ -24,6 +24,8 @@ import type { FormatIssue } from "./format-common";
 
 const STRICT_LINE_DECODER = new TextDecoder("utf-8", { fatal: true });
 const LENIENT_LINE_DECODER = new TextDecoder("utf-8");
+/** 차원별 매개변수(`rankN`, `selN`)를 읽는 차원 수의 상한. 적대적 입력의 `dim`이 반복 횟수를 키우지 못하게 한다. */
+const MAX_SCANNED_DIMENSIONS = 16;
 
 export interface GimpBrushPipeParameters {
   /** 둘째 줄에서 브러시 수 뒤에 이어지는 매개변수 문자열 그대로. */
@@ -39,10 +41,16 @@ export interface GimpBrushPipeParameters {
   readonly cols: number | null;
   readonly rows: number | null;
   readonly placement: string | null;
-  /** 차원별 길이(`rank0`, `rank1`, ...). */
-  readonly ranks: readonly number[];
-  /** 차원별 선택 방식(`sel0`, `sel1`, ...). 공개 문서의 예에 있는 단일 키 `selection`도 첫 항목으로 받는다. */
-  readonly selections: readonly string[];
+  /**
+   * 차원별 길이(`rank0`, `rank1`, ...). 인덱스가 차원 번호이고 길이는 `min(dim, 16)`이다. 파일에 없거나 정수가 아닌 값은
+   * 자리를 지켜 `null`로 둔다(건너뛰면 뒤 차원의 값이 앞 차원의 것으로 읽힌다).
+   */
+  readonly ranks: readonly (number | null)[];
+  /**
+   * 차원별 선택 방식(`sel0`, `sel1`, ...). `ranks`와 같이 인덱스가 차원 번호이고 없는 값은 `null`이다. 공개 문서의 예에 있는
+   * 단일 키 `selection`은 0번 차원의 값으로 받는다.
+   */
+  readonly selections: readonly (string | null)[];
 }
 
 export interface GimpBrushPipeImportResult {
@@ -125,14 +133,26 @@ function parseParameters(raw: string, warnings: FormatIssue[]): GimpBrushPipePar
   const dim = numeric("dim");
   const cols = numeric("cols");
   const rows = numeric("rows");
-  const ranks: number[] = [];
-  const selections: string[] = [];
+  const ranks: (number | null)[] = [];
+  const selections: (string | null)[] = [];
+  const absent: string[] = [];
   const dimensions = dim ?? 0;
-  for (let index = 0; index < dimensions && index < 16; index += 1) {
-    const rank = numeric(`rank${index}`);
-    if (rank !== null) ranks.push(rank);
+  if (dimensions > MAX_SCANNED_DIMENSIONS) {
+    warnings.push(
+      issue("metadata", "gimp-pipe-dimension-limit", `차원 수 ${dimensions}가 ${MAX_SCANNED_DIMENSIONS}를 넘어 앞 ${MAX_SCANNED_DIMENSIONS}개 차원만 읽었다`, "pipe.parameters"),
+    );
+  }
+  const scanned = Math.min(dimensions, MAX_SCANNED_DIMENSIONS);
+  for (let index = 0; index < scanned; index += 1) {
+    // 없는 값도 자리를 지켜 null로 둔다. 건너뛰면 뒤 차원의 값이 앞 차원의 것으로 읽힌다.
+    ranks.push(numeric(`rank${index}`));
+    if (entries[`rank${index}`] === undefined) absent.push(`rank${index}`);
     const selection = entries[`sel${index}`] ?? (index === 0 ? entries["selection"] : undefined);
-    if (selection !== undefined) selections.push(selection);
+    selections.push(selection ?? null);
+    if (selection === undefined) absent.push(`sel${index}`);
+  }
+  if (absent.length > 0) {
+    warnings.push(issue("metadata", "gimp-pipe-dimension-incomplete", `차원별 매개변수 ${absent.join(", ")}가 없어 그 자리를 null로 두었다`, "pipe.parameters"));
   }
   return { raw, entries: Object.freeze(entries), cellCount, cellWidth, cellHeight, step, dim, cols, rows, placement: entries["placement"] ?? null, ranks, selections };
 }
@@ -205,9 +225,13 @@ export async function importGimpBrushPipe(
     warnings.push(issue("metadata", "gimp-pipe-ncells-mismatch", `ncells ${parameters.cellCount}가 선언한 브러시 수 ${declared}와 다르다`, "pipe.parameters"));
   }
   if (parameters.dim !== null && parameters.ranks.length === parameters.dim && parameters.dim > 0) {
-    const product = parameters.ranks.reduce((total, rank) => total * rank, 1);
-    if (product !== declared) {
-      warnings.push(issue("metadata", "gimp-pipe-rank-product-mismatch", `차원별 길이의 곱 ${product}가 선언한 브러시 수 ${declared}와 다르다`, "pipe.parameters"));
+    const known = parameters.ranks.filter((rank): rank is number => rank !== null);
+    // 길이를 모르는 차원이 있으면 곱을 알 수 없으므로 비교하지 않는다.
+    if (known.length === parameters.ranks.length) {
+      const product = known.reduce((total, rank) => total * rank, 1);
+      if (product !== declared) {
+        warnings.push(issue("metadata", "gimp-pipe-rank-product-mismatch", `차원별 길이의 곱 ${product}가 선언한 브러시 수 ${declared}와 다르다`, "pipe.parameters"));
+      }
     }
   }
   if (!truncated && offset < bytes.byteLength) {

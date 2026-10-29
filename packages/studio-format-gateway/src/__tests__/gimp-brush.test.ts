@@ -239,7 +239,6 @@ describe("GIMP 패턴(.pat)", () => {
       height: 2,
       bytesPerPixel: bytesValue,
       colorMode,
-      magic: "GPAT",
     });
     expect(result.pixels).toEqual(pixels);
     expect(result.warnings).toEqual([]);
@@ -257,15 +256,19 @@ describe("GIMP 패턴(.pat)", () => {
     expect(Array.from(result.pixels)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it("문서에 적힌 GIMP 매직도 받되 경고한다", async () => {
-    const result = await importGimpPattern(buildPat({ width: 1, height: 1, bytes: 1, pixels: [7], magic: "GIMP" }));
+  it.each([1, 2, 3, 4] as const)(
+    "오래된 문서에 적힌 GIMP 매직(bytes %i)은 실제 파일에 없어 패턴으로 받지 않고 판별도 패턴으로 보지 않는다",
+    async (bytesValue) => {
+      const bytes = buildPat({ width: 1, height: 1, bytes: bytesValue, pixels: new Array(bytesValue).fill(7), magic: "GIMP" });
 
-    expect(result.magic).toBe("GIMP");
-    expect(codes(result.warnings)).toEqual(["gimp-pattern-magic-gimp"]);
-  });
+      expect(await patternFailure(bytes)).toBe("magic-invalid");
+      // 가져오기가 거부하는 것을 판별이 패턴이라고 하면 판별 결과로 함수를 고르는 호출자가 어긋난다.
+      expect(inspectGimpBrushFormat(bytes)).not.toBe("pat");
+    },
+  );
 
   it.each([
-    ["매직이 둘 다 아닌", { magic: "ABCD" }, "magic-invalid"],
+    ["매직이 GPAT가 아닌", { magic: "ABCD" }, "magic-invalid"],
     ["버전 2인", { version: 2 }, "version-unsupported"],
     ["bytes가 5인", { bytes: 5, pixels: new Array(5).fill(0) }, "color-depth-unsupported"],
     ["bytes가 0인", { bytes: 0, pixels: [] }, "color-depth-unsupported"],
@@ -299,6 +302,13 @@ describe("GIMP 브러시 계열 형식 판별", () => {
     expect(inspectGimpBrushFormat(pattern)).toBe("pat");
     expect(inspectGimpBrushFormat(pipe)).toBe("gih");
     expect(inspectGimpBrushFormat(vbr)).toBe("vbr");
+  });
+
+  it.each([1, 2, 3, 4] as const)("가져오기가 받는 패턴(bytes %i)은 판별도 pat이다", async (bytesValue) => {
+    const bytes = buildPat({ width: 2, height: 1, bytes: bytesValue, pixels: new Array(2 * bytesValue).fill(3) });
+
+    expect((await importGimpPattern(bytes)).bytesPerPixel).toBe(bytesValue);
+    expect(inspectGimpBrushFormat(bytes)).toBe("pat");
   });
 
   it("알 수 없는 입력은 unknown이다", () => {

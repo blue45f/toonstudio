@@ -1,9 +1,9 @@
 # GIMP 브러시 계열 읽기 코덱 (.gbr .gih .pat .vbr) (2026-10-29)
 
-- **상태**: `current` — 구현, 합성 단위 테스트 85종, 변이 시험 59종, 실제 GIMP 데이터 파일 76개에 대한 독립 해석기 대조까지 완료. 검증 범위는 3절에 구분해 적었다.
+- **상태**: `current` — 구현, 합성 단위 테스트 98종, 변이 시험 70종, 실제 GIMP 데이터 파일 76개에 대한 독립 해석기 대조까지 완료. 검증 범위는 3절에 구분해 적었다.
 - **작성일**: 2026-10-29
 - **구현 모듈**: [`gimp-brush.ts`](../../packages/studio-format-gateway/src/gimp-brush.ts)(`.gbr`·`.pat`·형식 판별), [`gimp-brush-pipe.ts`](../../packages/studio-format-gateway/src/gimp-brush-pipe.ts)(`.gih`), [`gimp-generated-brush.ts`](../../packages/studio-format-gateway/src/gimp-generated-brush.ts)(`.vbr`), [`gimp-brush-core.ts`](../../packages/studio-format-gateway/src/gimp-brush-core.ts)(공통: 입력, 오류, 한도, 헤더, 브러시 한 개 해석)
-- **테스트**: [`gimp-brush.test.ts`](../../packages/studio-format-gateway/src/__tests__/gimp-brush.test.ts) 52(`.gbr`·`.pat`·판별·손상 입력), [`gimp-brush-pipe.test.ts`](../../packages/studio-format-gateway/src/__tests__/gimp-brush-pipe.test.ts) 21(`.gih`), [`gimp-generated-brush.test.ts`](../../packages/studio-format-gateway/src/__tests__/gimp-generated-brush.test.ts) 12(`.vbr`). 합성 빌더는 [`gimp-brush-fixtures.ts`](../../tests/corpus/formats/gimp-brush-fixtures.ts), 로컬 실샘플 검사는 [`local-samples-corpus.test.ts`](../../tests/format-gateway/local-samples-corpus.test.ts)
+- **테스트**: [`gimp-brush.test.ts`](../../packages/studio-format-gateway/src/__tests__/gimp-brush.test.ts) 59(`.gbr`·`.pat`·판별·손상 입력), [`gimp-brush-pipe.test.ts`](../../packages/studio-format-gateway/src/__tests__/gimp-brush-pipe.test.ts) 27(`.gih`), [`gimp-generated-brush.test.ts`](../../packages/studio-format-gateway/src/__tests__/gimp-generated-brush.test.ts) 12(`.vbr`). 합성 빌더는 [`gimp-brush-fixtures.ts`](../../tests/corpus/formats/gimp-brush-fixtures.ts), 로컬 실샘플 검사는 [`local-samples-corpus.test.ts`](../../tests/format-gateway/local-samples-corpus.test.ts)
 - **관련 문서**: [XCF 읽기 코덱](xcf-reader-public-spec-2026-10-29.md), [Aseprite 읽기 코덱](aseprite-sprite-reader-public-spec-2026-10-29.md)(같은 방식의 선행 사례)
 
 ---
@@ -61,15 +61,15 @@ GIMP 데이터 저장소의 실제 파일 76개(`.gbr` 21, `.gih` 26, `.pat` 20,
 
 | 항목 | 공개 문서 | 실제 파일 | 이 구현 |
 | --- | --- | --- | --- |
-| 패턴 매직 | 오래된 `pat.txt`가 `GIMP`라고 적었다(같은 문서가 "GIMP brush magic number"라고 쓴 복사 오류로 보인다). 현재 개발자 사이트에는 패턴 문서를 찾지 못했다. | 패턴 20개 모두 `GPAT` | `GPAT`를 표준으로 받고 `GIMP`는 경고(`gimp-pattern-magic-gimp`)와 함께 받는다. |
-| 파이프 매개변수 | 예: `ncells:6 step:20 dim:1 cols:3 rows:2 rank0:6 selection:incremental` | `ncells cellwidth cellheight step dim cols rows placement rankN selN`(`sel0:random`) | 키를 가리지 않고 `entries`에 전부 남기고, 차원별 `rankN`/`selN`과 문서의 단일 `selection` 키를 모두 읽는다. |
+| 패턴 매직 | 오래된 `pat.txt`가 `GIMP`라고 적었다(같은 문서가 "GIMP brush magic number"라고 쓴 복사 오류로 보인다). 현재 개발자 사이트에는 패턴 문서를 찾지 못했다. | 패턴 20개 모두 `GPAT` | `GPAT`만 받는다. `GIMP` 매직은 매직이 없는 v1 브러시와 바이트 배치가 같아(이름이 오프셋 20에서 시작한다) 형식 판별로 가를 수 없고 실파일에도 없으므로, 가져오기가 `magic-invalid`로 거부하고 판별도 패턴으로 보지 않는다. 가져오기가 받는 패턴은 항상 판별도 `pat`이다. |
+| 파이프 매개변수 | 예: `ncells:6 step:20 dim:1 cols:3 rows:2 rank0:6 selection:incremental` | `ncells cellwidth cellheight step dim cols rows placement rankN selN`(`sel0:random`) | 키를 가리지 않고 `entries`에 전부 남기고, 차원별 `rankN`/`selN`과 문서의 단일 `selection` 키를 모두 읽는다. 없거나 정수가 아닌 차원 값은 `null`로 자리를 지켜 뒤 차원의 값이 앞 차원으로 밀리지 않게 하고(`gimp-pipe-dimension-incomplete`), 16차원까지만 읽는다(넘으면 `gimp-pipe-dimension-limit`). |
 | 바이트 순서 | 브러시·패턴 문서에 없다 | big-endian | Kaitai 명세와 실표본으로 big-endian을 확정했다. |
 | 이름 종결 | 문서에 없다(길이는 헤더 크기로 정해진다) | 모두 널 종결 | 널이 있으면 거기서 자르고 없어도 읽는다. |
 | 회색 값의 뜻 | 문서에 없다 | 회색 브러시 213개(단독 20 + 파이프 안 193) 중 값이 균일한 1개(1x1 사각, 255)를 뺀 212개에서 205개는 중심 평균이 가장자리 평균보다 높았다. 나머지 7개는 확인하지 않았다(링이나 질감 모양일 수 있다). | 값이 클수록 칠해진다고 **관찰**했으나 변환은 하지 않고 원본 값을 돌려준다. |
 
 ### 3.3 합성 테스트로만 확인한 것
 
-실파일에 한 번도 나오지 않은 경로다: 브러시 v1(매직·간격 없음)과 v3(데이터 형식 식별자), 패턴 bytes 2(회색+알파), 패턴 `GIMP` 매직, `.gih`의 CRLF 헤더·여러 가지 손상, `.vbr`의 CRLF·모르는 모양·지수 표기. 합성 빌더는 리더 코드를 import하지 않지만 같은 사람이 같은 사실로 쓰므로 명세 자체를 잘못 이해한 경우는 잡지 못한다. 그 반증은 3.1의 실파일 검증이 맡는데, 위 경로들은 그 검증 밖에 있다.
+실파일에 한 번도 나오지 않은 경로다: 브러시 v1(매직·간격 없음)과 v3(데이터 형식 식별자), 패턴 bytes 2(회색+알파), `.gih`의 CRLF 헤더·여러 가지 손상, `.vbr`의 CRLF·모르는 모양·지수 표기. 합성 빌더는 리더 코드를 import하지 않지만 같은 사람이 같은 사실로 쓰므로 명세 자체를 잘못 이해한 경우는 잡지 못한다. 그 반증은 3.1의 실파일 검증이 맡는데, 위 경로들은 그 검증 밖에 있다.
 
 ### 3.4 문서에 없어 선택한 것 (미검증)
 
@@ -97,7 +97,7 @@ GIMP 데이터 저장소의 실제 파일 76개(`.gbr` 21, `.gih` 26, `.pat` 20,
 
 ## 5. 진단 코드
 
-`warnings`: `gimp-brush-name-utf8-invalid`, `gimp-brush-name-trailing-bytes`, `gimp-brush-trailing-bytes`, `gimp-pattern-magic-gimp`, `gimp-pattern-trailing-bytes`, `gimp-pipe-header-utf8-invalid`, `gimp-pipe-carriage-return`, `gimp-pipe-parameter-malformed`, `gimp-pipe-parameter-duplicate`, `gimp-pipe-parameter-not-integer`, `gimp-pipe-ncells-mismatch`, `gimp-pipe-rank-product-mismatch`, `gimp-pipe-brush-count-mismatch`, `gimp-pipe-trailing-bytes`, `gimp-vbr-utf8-invalid`, `gimp-vbr-carriage-return`, `gimp-vbr-name-too-long`, `gimp-vbr-shape-unknown`, `gimp-vbr-trailing-lines`.
+`warnings`: `gimp-brush-name-utf8-invalid`, `gimp-brush-name-trailing-bytes`, `gimp-brush-trailing-bytes`, `gimp-pattern-trailing-bytes`, `gimp-pipe-header-utf8-invalid`, `gimp-pipe-carriage-return`, `gimp-pipe-parameter-malformed`, `gimp-pipe-parameter-duplicate`, `gimp-pipe-parameter-not-integer`, `gimp-pipe-dimension-incomplete`, `gimp-pipe-dimension-limit`, `gimp-pipe-ncells-mismatch`, `gimp-pipe-rank-product-mismatch`, `gimp-pipe-brush-count-mismatch`, `gimp-pipe-trailing-bytes`, `gimp-vbr-utf8-invalid`, `gimp-vbr-carriage-return`, `gimp-vbr-name-too-long`, `gimp-vbr-shape-unknown`, `gimp-vbr-trailing-lines`.
 
 `unsupported`: `gimp-brush-v3-data-not-decoded`(v3 본문), `gimp-pipe-brush-invalid`(그 브러시부터 읽지 않음), `gimp-pipe-brush-body-unknown`(본문 크기를 모르는 브러시 뒤를 읽지 않음).
 
@@ -113,16 +113,16 @@ GIMP 데이터 저장소의 실제 파일 76개(`.gbr` 21, `.gih` 26, `.pat` 20,
 | `maxPipeBrushes` | 4,096 | 파이프의 브러시 수 |
 | `maxLineBytes` | 8,192 | 파이프 텍스트 헤더의 한 줄. 생성 브러시(`.vbr`)는 텍스트 전체를 이 값의 16배(131,072바이트)까지만 받는다(올바른 파일은 수백 바이트이며, 줄 수가 입력 크기에 비례해 늘지 못하게 한다). |
 
-헤더가 입력보다 크거나 픽셀이 모자라면 할당 전에 `truncated`로 거부한다. 파이프 매개변수의 차원 수 `dim`이 아무리 커도 `rankN`/`selN`은 16차원까지만 훑는다(적대적 입력이 반복 횟수를 키우지 못하게). 매개변수 객체는 프로토타입이 없는 객체라 `__proto__` 같은 키가 와도 오염되지 않는다.
+헤더가 입력보다 크거나 픽셀이 모자라면 할당 전에 `truncated`로 거부한다. 파이프 매개변수의 차원 수 `dim`이 아무리 커도 `rankN`/`selN`은 16차원까지만 훑고(적대적 입력이 반복 횟수를 키우지 못하게) 넘으면 `gimp-pipe-dimension-limit`로 알린다. 결과 배열은 `min(dim, 16)` 길이다. 매개변수 객체는 프로토타입이 없는 객체라 `__proto__` 같은 키가 와도 오염되지 않는다.
 
 ---
 
 ## 7. 검증
 
-- 단위 테스트 85종: 헤더 필드와 픽셀, 버전 1·2·3, 이름(널 종결·UTF-8 깨짐·종결자 뒤 바이트), 한도 경계(정확히 같은 값은 허용하고 1만 넘으면 거부), 호출자 한도는 낮추기만 가능, 입력 복사, 중단 신호, 형식 판별, 파이프 매개변수(문서 예·실제 형식·다차원·키 누락·반복·프로토타입 오염 시도), 파이프 안 브러시 손상, `.vbr` 숫자 형식과 줄 수.
+- 단위 테스트 98종: 헤더 필드와 픽셀, 버전 1·2·3, 이름(널 종결·UTF-8 깨짐·종결자 뒤 바이트), 한도 경계(정확히 같은 값은 허용하고 1만 넘으면 거부), 호출자 한도는 낮추기만 가능, 입력 복사, 중단 신호, 형식 판별(가져오기가 받는 패턴은 판별도 `pat`), 파이프 매개변수(문서 예·실제 형식·다차원·빠진 차원 값의 자리 보존·16차원 경계·반복·프로토타입 오염 시도), 파이프 안 브러시 손상, `.vbr` 숫자 형식과 줄 수.
 - 손으로 배치한 리터럴 두 개(31바이트 브러시, 32바이트 패턴)가 빌더를 거치지 않고 필드 순서·크기를 확인한다.
 - 손상 입력: 브러시·패턴·파이프를 **모든 길이로 잘라** 형식 오류 외의 예외가 없는지, 바이트 변조(시드 고정, 형식마다 600~800회)에도 `GimpBrushError` 외의 예외가 없는지 확인한다.
-- 변이 시험: 소스에 일부러 버그 59개를 하나씩 넣어(경계 비교 반전, 오프셋·매직·상수 교체, 필드 순서 교체, 논리 연산 교체, 정규식 완화 등) 테스트가 모두 실패하는지 확인했다. 처음에는 5개가 살아남았고(널 종결자 뒤 0 바이트, 너비·높이 중 하나만 0인 헤더의 판별, 숫자로 시작하지 않는 둘째 줄의 판별, 파이프가 정확히 끝난 경우와 깨진 경우의 구분, 둘째 줄 오류의 이유) 그 경계를 직접 검사하는 테스트를 더한 뒤 **59개 전부 잡혔다.** `dim`이 거대한 값일 때 차원을 16개까지만 훑는 방어를 지운 변이는 테스트가 끝나지 않아 시간 초과로 잡혔다. 이 수치는 내가 고른 변이에 대한 것이며 전수 보증이 아니다.
+- 변이 시험: 소스에 일부러 버그 70개를 하나씩 넣어(경계 비교 반전, 오프셋·매직·상수 교체, 필드 순서 교체, 논리 연산 교체, 정규식 완화 등) 테스트가 모두 실패하는지 확인했다. 처음에는 5개가 살아남았고(널 종결자 뒤 0 바이트, 너비·높이 중 하나만 0인 헤더의 판별, 숫자로 시작하지 않는 둘째 줄의 판별, 파이프가 정확히 끝난 경우와 깨진 경우의 구분, 둘째 줄 오류의 이유) 그 경계를 직접 검사하는 테스트를 더했다. 그 뒤 자동 코드 리뷰(Codex)가 지적한 두 결함(`GIMP` 매직 패턴을 가져오기는 받지만 판별은 패턴으로 보지 못하는 불일치, 다차원 파이프에서 앞 차원의 `rankN`/`selN`이 빠지면 뒤 차원의 값이 앞 차원으로 밀리는 것)을 고치고, 각 결함을 되살리는 변이를 포함해 변이를 70개로 늘렸다. **70개 전부 잡혔다.** `dim`이 거대한 값일 때 차원을 16개까지만 훑는 상한을 지운 변이는 약 106초 뒤 시험 실행이 실패로 끝나 잡혔다(반복이 끝나지 않아 메모리를 소진한 것으로 보이며 원인은 따로 확인하지 않았다). 이 수치는 내가 고른 변이에 대한 것이며 전수 보증이 아니다.
 - 실파일 76개: 3.1.
 - `eslint --max-warnings=0`, `tsc -p packages/studio-format-gateway/tsconfig.json --noEmit` 통과.
 

@@ -152,10 +152,73 @@ describe("GIMP 이미지 파이프(.gih)", () => {
   it("키가 비어 있는 토큰은 형식이 틀린 것으로 보고 거대한 차원 수도 곧바로 끝난다", async () => {
     const result = await importGimpBrushPipe(buildGih({ name: "x", parameters: "ncells:1 :novalue dim:4000000000 rank0:1 sel0:random", brushes: [gray(1, 1, "a")] }));
 
-    expect(codes(result.warnings)).toEqual(["gimp-pipe-parameter-malformed"]);
+    expect(codes(result.warnings).sort()).toEqual(["gimp-pipe-dimension-incomplete", "gimp-pipe-dimension-limit", "gimp-pipe-parameter-malformed"]);
     expect(result.parameters.dim).toBe(4_000_000_000);
-    expect(result.parameters.ranks).toEqual([1]);
-    expect(result.parameters.selections).toEqual(["random"]);
+    // 읽는 차원은 16개까지다. 없는 차원은 null로 자리를 지킨다.
+    expect(result.parameters.ranks).toEqual([1, ...new Array(15).fill(null)]);
+    expect(result.parameters.selections).toEqual(["random", ...new Array(15).fill(null)]);
+  });
+
+  describe("차원별 매개변수가 빠진 파이프", () => {
+    const six = () => Array.from({ length: 6 }, (_, index) => gray(1, 1, `b${index}`, index));
+
+    it("앞 차원의 sel이 빠져도 뒤 차원의 값이 앞 차원으로 밀리지 않는다", async () => {
+      const result = await importGimpBrushPipe(buildGih({ name: "x", parameters: "ncells:1 dim:2 rank0:1 rank1:1 sel1:angular", brushes: [gray(1, 1, "a")] }));
+
+      expect(result.parameters.ranks).toEqual([1, 1]);
+      expect(result.parameters.selections).toEqual([null, "angular"]);
+      expect(codes(result.warnings)).toEqual(["gimp-pipe-dimension-incomplete"]);
+      expect(result.warnings[0]!.message).toContain("sel0");
+      expect(result.warnings[0]!.message).not.toContain("rank");
+    });
+
+    it("앞 차원의 rank가 빠져도 자리를 지키고, 길이를 모르는 차원이 있으면 곱을 비교하지 않는다", async () => {
+      // 알려진 rank1(3)만 곱하면 선언한 6과 달라 보이지만, rank0을 모르므로 비교할 수 없다.
+      const result = await importGimpBrushPipe(buildGih({ name: "x", parameters: "ncells:6 dim:2 sel0:random rank1:3 sel1:angular", brushes: six() }));
+
+      expect(result.parameters.ranks).toEqual([null, 3]);
+      expect(result.parameters.selections).toEqual(["random", "angular"]);
+      expect(codes(result.warnings)).toEqual(["gimp-pipe-dimension-incomplete"]);
+      expect(result.warnings[0]!.message).toContain("rank0");
+      expect(result.warnings[0]!.message).not.toContain("sel");
+    });
+
+    it("차원 수만 있고 rank·sel이 하나도 없으면 모두 null이고 빠진 키를 한 번에 알린다", async () => {
+      const result = await importGimpBrushPipe(buildGih({ name: "x", parameters: "ncells:1 dim:2", brushes: [gray(1, 1, "a")] }));
+
+      expect(result.parameters.ranks).toEqual([null, null]);
+      expect(result.parameters.selections).toEqual([null, null]);
+      expect(codes(result.warnings)).toEqual(["gimp-pipe-dimension-incomplete"]);
+      expect(result.warnings[0]!.message).toContain("rank0, sel0, rank1, sel1");
+    });
+
+    it("값이 있지만 정수가 아닌 rank는 빠진 것이 아니라 잘못된 것이라 경고 하나(정수 아님)만 낸다", async () => {
+      const result = await importGimpBrushPipe(buildGih({ name: "x", parameters: "ncells:1 dim:1 rank0:abc sel0:random", brushes: [gray(1, 1, "a")] }));
+
+      expect(result.parameters.ranks).toEqual([null]);
+      expect(codes(result.warnings)).toEqual(["gimp-pipe-parameter-not-integer"]);
+    });
+
+    it("값이 빈 sel0(`sel0:`)도 있는 값이다", async () => {
+      const result = await importGimpBrushPipe(buildGih({ name: "x", parameters: "ncells:1 dim:1 rank0:1 sel0:", brushes: [gray(1, 1, "a")] }));
+
+      expect(result.parameters.selections).toEqual([""]);
+      expect(result.warnings).toEqual([]);
+    });
+
+    it("차원 수가 16이면 모두 읽고 경고하지 않으며 17이면 앞 16개만 읽고 알린다", async () => {
+      const full = Array.from({ length: 16 }, (_, index) => `rank${index}:1 sel${index}:random`).join(" ");
+      const sixteen = await importGimpBrushPipe(buildGih({ name: "x", parameters: `ncells:1 dim:16 ${full}`, brushes: [gray(1, 1, "a")] }));
+      const seventeen = await importGimpBrushPipe(buildGih({ name: "x", parameters: `ncells:1 dim:17 ${full}`, brushes: [gray(1, 1, "a")] }));
+
+      expect(sixteen.parameters.ranks).toHaveLength(16);
+      expect(sixteen.warnings).toEqual([]);
+      expect(seventeen.parameters.ranks).toHaveLength(16);
+      expect(seventeen.parameters.selections).toHaveLength(16);
+      // 읽은 16개 차원은 모두 있으므로 불완전 경고는 없고, 17번째는 읽지 않았다는 알림만 있다.
+      expect(codes(seventeen.warnings)).toEqual(["gimp-pipe-dimension-limit"]);
+      expect(seventeen.warnings[0]!.message).toContain("17");
+    });
   });
 
   it("한도와 같은 개수의 파이프는 읽고 v3 브러시 하나뿐인 파이프는 잘린 것이 아니다", async () => {

@@ -58,8 +58,6 @@ export interface GimpPatternImportResult {
   /** 1(회색), 2(회색+알파), 3(RGB), 4(RGBA). */
   readonly bytesPerPixel: 1 | 2 | 3 | 4;
   readonly colorMode: GimpPatternColorMode;
-  /** 헤더의 매직. 실제 파일은 모두 `GPAT`이고 공개 문서는 `GIMP`라고 적었다. 둘 다 받는다. */
-  readonly magic: "GPAT" | "GIMP";
   readonly headerBytes: number;
   /** 파일에 저장된 그대로의 픽셀(가로 우선). */
   readonly pixels: Uint8Array;
@@ -115,8 +113,10 @@ export async function importGimpPattern(
   const reader = new BigEndianReader(bytes);
   const header = readCommonHeader(reader, 0);
   const magic = reader.u32(20);
-  if (magic !== MAGIC_GPAT && magic !== MAGIC_GIMP) {
-    throw new GimpBrushError(`패턴 매직 0x${magic.toString(16)}가 GPAT도 GIMP도 아니다`, "magic-invalid");
+  // 오래된 문서는 GIMP라고 적었지만 실제 패턴은 모두 GPAT다. GIMP 매직은 매직이 없는 v1 브러시와 바이트 배치가 같아
+  // (이름이 오프셋 20에서 시작한다) 형식 판별로 가를 수 없으므로 패턴으로 받지 않는다.
+  if (magic !== MAGIC_GPAT) {
+    throw new GimpBrushError(`패턴 매직 0x${magic.toString(16)}가 GPAT가 아니다`, "magic-invalid");
   }
   if (header.version !== 1) {
     throw new GimpBrushError(`패턴 버전 ${header.version}를 지원하지 않는다 (1만 안다)`, "version-unsupported");
@@ -126,13 +126,6 @@ export async function importGimpPattern(
   const colorMode = PATTERN_MODES[header.bytesValue];
   if (colorMode === undefined) {
     throw new GimpBrushError(`패턴 bytes 값 ${header.bytesValue}는 1~4가 아니다`, "color-depth-unsupported");
-  }
-  if (magic === MAGIC_GIMP) {
-    warnings.push({
-      scope: "metadata",
-      code: "gimp-pattern-magic-gimp",
-      message: "패턴 매직이 GPAT가 아니라 GIMP다. 문서에는 GIMP라고 적혀 있으나 실제 파일은 GPAT를 쓴다",
-    });
   }
   const name = decodeNameField(bytes.subarray(PATTERN_FIXED_BYTES, header.headerSize), warnings, "pattern");
   const bodyBytes = header.width * header.height * header.bytesValue;
@@ -151,7 +144,6 @@ export async function importGimpPattern(
     height: header.height,
     bytesPerPixel: header.bytesValue as 1 | 2 | 3 | 4,
     colorMode,
-    magic: magic === MAGIC_GPAT ? "GPAT" : "GIMP",
     headerBytes: header.headerSize,
     pixels: bytes.slice(header.headerSize, end),
     warnings,
