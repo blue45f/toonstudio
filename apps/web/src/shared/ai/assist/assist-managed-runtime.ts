@@ -6,7 +6,9 @@
  * Messages 형태로 돌려준다. 브라우저는 BYOK 경로와 같은 규칙(멈춤 사유·Zod 검증)으로 결과를 확인한다.
  *
  * 안전 규칙
- * - 요청마다 새 멱등 키를 쓰고 자동 재시도하지 않는다(서버가 이미 처리했을 수 있다).
+ * - 요청마다 새 멱등 키를 쓰고 같은 요청을 자동으로 다시 보내지 않는다(서버가 이미 처리했을 수 있다).
+ * - 예외는 구조화 출력의 형식 복구 한 번뿐이다: 답이 스키마에 맞지 않으면 앞 답과 검증 문제를 붙인
+ *   새 요청을 한 번 보낸다. 무료 모델이 형식을 조금 어긴 답을 실패로 끝내지 않기 위해서이며 사용자 비용은 없다.
  * - 서버가 받지 않는 매개변수(샘플링·도구·사고 설정·URL 이미지)는 보내기 전에 거르거나 막는다.
  * - 오류는 사용자에게 보여도 안전한 문구로만 바꾼다.
  */
@@ -16,6 +18,7 @@ import { api, isAppApiError } from "@/platform/api";
 
 import { UserAiTransportError } from "../user-ai-transport-error";
 
+import { describeSchemaIssues, extractJsonCandidate } from "./assist-json";
 import { managedAssistModelLabel } from "./assist-route";
 import { assertAssistMessageComplete } from "./assist-stop-reason";
 
@@ -27,6 +30,11 @@ import type { z } from "zod";
 export const MANAGED_ASSIST_TIMEOUT_MS = 135_000;
 /** 서버 계약(`STUDIO_AI_MESSAGES_LIMITS.maxOutputTokens`)과 같은 출력 상한. */
 const MANAGED_MAX_OUTPUT_TOKENS = 16_000;
+/** 서버 계약(`STUDIO_AI_MESSAGES_LIMITS.maxMessages`)의 메시지 수 상한. 형식 복구는 두 개를 더 붙인다. */
+const MANAGED_MAX_MESSAGES = 8;
+/** 형식 복구 요청에 다시 싣는 앞 답의 최대 길이(문자). 긴 답 전체를 다시 보내 요청을 키우지 않는다. */
+const REPAIR_ECHO_MAX_CHARS = 8_000;
+const FORMAT_ERROR_MESSAGE = "AI 응답을 정해진 형식으로 해석하지 못했어요. 다시 시도해 주세요.";
 
 export interface ManagedAssistOptions {
   readonly signal?: AbortSignal;
@@ -228,7 +236,41 @@ export async function runManagedAssistMessage(
   }
 }
 
-/** 관리형 경로의 구조화 출력 호출. 서버가 어느 모델로 처리했든 같은 Zod 스키마로 다시 검증한다. */
+function messageText(message: Anthropic.Message): string {
+  return message.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("");
+}
+
+type StructuredRead<T> =
+  | { readonly ok: true; readonly data: T }
+  | { readonly ok: false; readonly text: string; readonly issues: readonly string[] };
+
+/** 답에서 JSON을 꺼내(앞뒤 설명·코드 펜스 허용) 같은 Zod 스키마로 검증한다. */
+function readStructured<Schema extends z.ZodType>(message: Anthropic.Message, schema: Schema): StructuredRead<z.infer<Schema>> {
+  const text = messageText(message);
+  const candidate = extractJsonCandidate(text);
+  if (candidate === undefined) return { ok: false, text, issues: ["JSON 객체를 찾지 못했어요."] };
+  const result = schema.safeParse(candidate);
+  return result.success
+    ? { ok: true, data: result.data as z.infer<Schema> }
+    : { ok: false, text, issues: describeSchemaIssues(result.error) };
+}
+
+function repairInstruction(issues: readonly string[]): string {
+  return [
+    "앞 답은 정해진 JSON 형식에 맞지 않았어요.",
+    "문제:",
+    ...issues.map((line) => `- ${line}`),
+    "같은 내용으로, 지정된 JSON 스키마를 만족하는 JSON 객체 하나만 다시 출력하세요. 설명·마크다운·코드 펜스는 붙이지 마세요.",
+  ].join("\n");
+}
+
+/**
+ * 관리형 경로의 구조화 출력 호출. 서버가 어느 모델로 처리했든 같은 Zod 스키마로 다시 검증한다.
+ * 답이 스키마에 맞지 않으면 앞 답과 검증 문제를 붙여 한 번만 고쳐 달라고 하고, 그래도 맞지 않으면 형식 오류로 알린다.
+ */
 export async function runManagedAssistParse<Schema extends z.ZodType>(
   params: AssistParseParams,
   schema: Schema,
@@ -239,30 +281,41 @@ export async function runManagedAssistParse<Schema extends z.ZodType>(
     params as Anthropic.MessageCreateParamsNonStreaming,
     { type: "json_schema", schema: format.schema as Record<string, unknown> },
   );
-  let message: Anthropic.Message;
+  const send = async (request: ManagedAssistRequestBody): Promise<Anthropic.Message> => {
+    let message: Anthropic.Message;
+    try {
+      message = managedMessage(await postManaged(request, options));
+    } catch (error) {
+      throw mapManagedAssistError(error, options.signal);
+    }
+    assertAssistMessageComplete(message);
+    return message;
+  };
+
+  const first = await send(body);
+  const firstRead = readStructured(first, schema);
+  if (firstRead.ok) return { message: first, parsed: firstRead.data };
+  if (options.signal?.aborted) throw mapManagedAssistError(null, options.signal);
+  if (body.messages.length + 2 > MANAGED_MAX_MESSAGES) {
+    throw new UserAiTransportError("http-error", FORMAT_ERROR_MESSAGE, 200);
+  }
+
+  let repaired: Anthropic.Message;
   try {
-    message = managedMessage(await postManaged(body, options));
+    repaired = await send({
+      ...body,
+      messages: [
+        ...body.messages,
+        { role: "assistant", content: firstRead.text.trim().slice(0, REPAIR_ECHO_MAX_CHARS) || "(빈 답)" },
+        { role: "user", content: repairInstruction(firstRead.issues) },
+      ],
+    });
   } catch (error) {
-    throw mapManagedAssistError(error, options.signal);
+    if (options.signal?.aborted) throw error;
+    // 복구 요청이 막혀도(한도·서버 형식 검사) 사용자에게는 처음 답의 형식 문제를 알린다.
+    throw new UserAiTransportError("http-error", FORMAT_ERROR_MESSAGE, 200);
   }
-  assertAssistMessageComplete(message);
-  const text = message.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map((block) => block.text)
-    .join("");
-  let candidate: unknown;
-  try {
-    candidate = JSON.parse(text);
-  } catch {
-    candidate = undefined;
-  }
-  const result = candidate === undefined ? null : schema.safeParse(candidate);
-  if (!result?.success) {
-    throw new UserAiTransportError(
-      "http-error",
-      "AI 응답을 정해진 형식으로 해석하지 못했어요. 다시 시도해 주세요.",
-      200,
-    );
-  }
-  return { message, parsed: result.data as z.infer<Schema> };
+  const secondRead = readStructured(repaired, schema);
+  if (secondRead.ok) return { message: repaired, parsed: secondRead.data };
+  throw new UserAiTransportError("http-error", FORMAT_ERROR_MESSAGE, 200);
 }

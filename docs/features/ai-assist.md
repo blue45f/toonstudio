@@ -13,6 +13,7 @@
 - 등록한 Claude 키가 없으면 네 기능과 웹툰 제작 스위트가 **관리형 경로**(`apps/web/src/shared/ai/assist/assist-managed-runtime.ts` → 서버 `POST /studio-ai/messages`)로 실행된다. 서버가 운영 고성능 모델(운영자 비용, 일일 예산) → 비전이 되는 무료 모델 순서로 처리하고, 추론 전 확정 거절에만 다음 모델로 넘긴다. 결과는 BYOK와 같은 Messages 형태라 같은 Zod 스키마로 다시 검증한다.
 - 관리형 경로는 사용자 비용이 없어 세션 예산·사용량 미터를 거치지 않는다. 실행 전 확인은 경로("이 브라우저 → ToonStudio 서버 → 고성능 AI → 무료 AI")와 "무료"를 보여 주고, 실행 단추에서 "(요금 발생)"을 뺀다. 결과 줄의 모델은 "ToonStudio AI (실제 모델)"로 표시해 사용자 청구처럼 보이지 않게 한다. 로그인하지 않았으면 로그인 안내를 보여 준다.
 - 검색 줄 메뉴는 항상 보이고, 허브·메뉴 이름은 "AI 보조"로 바꿨다(75개 로케일 번역 갱신).
+- 관리형 경로의 구조화 출력은 답 앞뒤의 설명·코드 펜스를 걷어 JSON 객체를 꺼낸다. 그래도 스키마에 맞지 않으면 앞 답과 검증 문제(`경로: 이유`)를 붙인 새 요청으로 **한 번만** 고쳐 달라고 하고, 다시 맞지 않으면 형식 오류로 알린다(`assist-json.ts`, `assist-managed-runtime.ts`). 무료 모델이 형식을 조금 어긴 답을 실패로 끝내지 않기 위해서이며 사용자 비용은 없다. 내 키 경로는 모델이 스키마를 강제하므로 지금처럼 자동 재시도하지 않는다.
 - 키 등록은 설정 > AI 첫 화면의 붙여넣기 칸 하나로 끝난다(서비스 자동 인식·키 확인·여러 키). 자세한 동작은 [Cloud-only free-first AI runtime](../operations/free-ai-runtime.md)에 있다.
 - 특정 솔루션 이름을 파일·폴더·식별자에서 뺐다: `shared/ai/claude` → `shared/ai/assist`, `creator/ai/claude` → `creator/ai/assist`, i18n 네임스페이스 `claudeAssist` → `aiAssist`, 이 문서 `claude-ai-assist.md` → `ai-assist.md`. 사용자 Anthropic 키 연결처럼 실제로 Claude를 가리키는 화면 문구, 모델 ID(`claude-…`), 브라우저 저장 키(`toonstudio:claude-budget:v1`)는 그대로 둔다. 아래 1~7절의 파일 이름은 새 이름으로 고쳤다.
 

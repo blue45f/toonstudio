@@ -113,11 +113,79 @@ describe("runManagedAssistParse", () => {
     expect(init.idempotencyKey).toMatch(/^assist-/u);
   });
 
-  it("스키마를 만족하지 않는 응답은 재시도하지 않고 형식 오류로 알린다", async () => {
-    const post = vi.fn(async () => serverMessage(JSON.stringify({ verdict: "좋아요", score: 140 })));
+  it("JSON 앞뒤에 설명이 붙어 와도 객체를 꺼내 검증하고 다시 보내지 않는다", async () => {
+    const post = vi.fn(async () => serverMessage("결과예요.\n```json\n{\"verdict\": \"좋아요\", \"score\": 77}\n```\n참고하세요."));
+
+    const { parsed } = await runManagedAssistParse(
+      { model: "claude-opus-5-5", max_tokens: 800, messages: [{ role: "user", content: "점검해 줘" }] },
+      Schema,
+      { post },
+    );
+
+    expect(parsed).toEqual({ verdict: "좋아요", score: 77 });
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
+  it("스키마에 맞지 않으면 앞 답과 검증 문제를 붙여 한 번만 고쳐 달라고 한다", async () => {
+    const post = vi.fn()
+      .mockResolvedValueOnce(serverMessage(JSON.stringify({ verdict: "좋아요", score: 140 })))
+      .mockResolvedValueOnce(serverMessage(JSON.stringify({ verdict: "좋아요", score: 90 }), "openai/gpt-oss-120b"));
+
+    const { parsed, message } = await runManagedAssistParse(
+      { model: "claude-opus-5-5", max_tokens: 800, messages: [{ role: "user", content: "점검해 줘" }] },
+      Schema,
+      { post },
+    );
+
+    expect(parsed).toEqual({ verdict: "좋아요", score: 90 });
+    expect(message.model).toBe("ToonStudio AI (openai/gpt-oss-120b)");
+    expect(post).toHaveBeenCalledTimes(2);
+    const [repair, init] = post.mock.calls[1] as unknown as [ManagedAssistRequestBody, { idempotencyKey: string }];
+    const [, firstInit] = post.mock.calls[0] as unknown as [ManagedAssistRequestBody, { idempotencyKey: string }];
+    // 같은 요청을 다시 보내는 것이 아니라 앞 답과 문제를 붙인 새 요청이다(멱등 키도 새로 만든다).
+    expect(init.idempotencyKey).not.toBe(firstInit.idempotencyKey);
+    expect(repair.messages).toHaveLength(3);
+    expect(repair.messages[1]).toEqual({ role: "assistant", content: JSON.stringify({ verdict: "좋아요", score: 140 }) });
+    expect(repair.messages[2]?.role).toBe("user");
+    expect(String(repair.messages[2]?.content)).toMatch(/score: /u);
+    expect(repair.output_config?.format?.type).toBe("json_schema");
+  });
+
+  it("고친 답도 맞지 않으면 더 보내지 않고 형식 오류로 알린다", async () => {
+    const post = vi.fn(async () => serverMessage("지금은 답하기 어려워요."));
 
     await expect(runManagedAssistParse(
       { model: "claude-opus-5-5", max_tokens: 800, messages: [{ role: "user", content: "점검해 줘" }] },
+      Schema,
+      { post },
+    )).rejects.toThrow(/정해진 형식으로 해석하지 못했어요/u);
+    expect(post).toHaveBeenCalledTimes(2);
+    const [repair] = post.mock.calls[1] as unknown as [ManagedAssistRequestBody];
+    expect(String(repair.messages[2]?.content)).toMatch(/JSON 객체를 찾지 못했어요/u);
+  });
+
+  it("복구 요청이 서버에서 막혀도 처음 답의 형식 문제로 알린다", async () => {
+    const post = vi.fn()
+      .mockResolvedValueOnce(serverMessage("{\"verdict\": 3}"))
+      .mockRejectedValueOnce(new AppApiError("AI 요청 글이 너무 깁니다.", { kind: "validation", status: 400 }));
+
+    await expect(runManagedAssistParse(
+      { model: "claude-opus-5-5", max_tokens: 800, messages: [{ role: "user", content: "점검해 줘" }] },
+      Schema,
+      { post },
+    )).rejects.toThrow(/정해진 형식으로 해석하지 못했어요/u);
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
+  it("서버 메시지 수 한도를 넘게 되면 고쳐 달라고 하지 않는다", async () => {
+    const post = vi.fn(async () => serverMessage("{}"));
+    const messages = Array.from({ length: 7 }, (_, index) => ({
+      role: index % 2 === 0 ? "user" as const : "assistant" as const,
+      content: `대화 ${index + 1}`,
+    }));
+
+    await expect(runManagedAssistParse(
+      { model: "claude-opus-5-5", max_tokens: 800, messages },
       Schema,
       { post },
     )).rejects.toThrow(/정해진 형식으로 해석하지 못했어요/u);
