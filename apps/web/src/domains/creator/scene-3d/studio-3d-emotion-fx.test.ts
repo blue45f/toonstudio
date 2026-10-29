@@ -1,17 +1,17 @@
 import { describe, it, expect } from "vitest";
 
-import { Studio3DTooningEmotionFxEngine } from "./studio-3d-tooning-emotion-fx";
+import { Studio3DEmotionFxEngine } from "./studio-3d-emotion-fx";
 
-describe("Studio3DTooningEmotionFxEngine", () => {
+describe("Studio3DEmotionFxEngine", () => {
   it("initializes with neutral emotion and empty bubble/emote collections", () => {
-    const engine = new Studio3DTooningEmotionFxEngine();
+    const engine = new Studio3DEmotionFxEngine();
     expect(engine.getActiveEmotion()).toBe("neutral-calm");
     expect(engine.getBubbles().length).toBe(0);
     expect(engine.getEmotes().length).toBe(0);
   });
 
   it("evaluates blendshape weights for joyful and rage presets", () => {
-    const engine = new Studio3DTooningEmotionFxEngine();
+    const engine = new Studio3DEmotionFxEngine();
 
     const joy = engine.evaluateBlendshapeWeights("joy-radiant");
     expect(joy.mouthSmile).toBeGreaterThan(0.9);
@@ -23,7 +23,7 @@ describe("Studio3DTooningEmotionFxEngine", () => {
   });
 
   it("evaluates 3D world-space speech bubble tail vector pointing toward character mouth", () => {
-    const engine = new Studio3DTooningEmotionFxEngine();
+    const engine = new Studio3DEmotionFxEngine();
     const bubble = {
       id: "bubble-1",
       targetCharacterId: "char-1",
@@ -42,7 +42,7 @@ describe("Studio3DTooningEmotionFxEngine", () => {
   });
 
   it("manages 3D emote SFX stickers (sweat drop, anger cross)", () => {
-    const engine = new Studio3DTooningEmotionFxEngine();
+    const engine = new Studio3DEmotionFxEngine();
     engine.addEmote({
       id: "emote-1",
       targetCharacterId: "char-1",

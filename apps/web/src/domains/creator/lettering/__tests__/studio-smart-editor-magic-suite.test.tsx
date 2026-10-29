@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { StudioTooningEditorBubbleCharacterPanel } from "../StudioTooningEditorBubbleCharacterPanel";
+import { StudioSmartBubbleCharacterPanel } from "../StudioSmartBubbleCharacterPanel";
 import {
   buildEdEditableCutSvgPath,
   buildEdMultiAngleCameraPrompt,
@@ -23,7 +23,7 @@ import {
   MG_ASPECT_RATIO_SPECS,
   prepareMgMultiImageRetouchJob,
   snapEdImageFilterValue,
-} from "../studio-tooning-editor-magic-suite";
+} from "../studio-smart-editor-magic-suite";
 
 describe("Tooning Editor (ED) & Tooning Magic (MG) Engine", () => {
   it("defines 9 artboard size presets, 20-page limit, 16 smart character slots, 19 mannequin joints, and 10 fingers", () => {
@@ -147,9 +147,9 @@ describe("Tooning Editor (ED) & Tooning Magic (MG) Engine", () => {
     expect(cutPath).toContain("r=8");
   });
 
-  it("renders StudioTooningEditorBubbleCharacterPanel and switches across bubble, smart character, and editable cut tabs", () => {
+  it("renders StudioSmartBubbleCharacterPanel and switches across bubble, smart character, and editable cut tabs", () => {
     const onInsertBubble = vi.fn();
-    render(<StudioTooningEditorBubbleCharacterPanel onInsertBubble={onInsertBubble} />);
+    render(<StudioSmartBubbleCharacterPanel onInsertBubble={onInsertBubble} />);
 
     expect(screen.getByTestId("tooning-editor-bubble-character-panel")).toBeTruthy();
     expect(screen.getByTestId("ed-procedural-bubble-tab")).toBeTruthy();

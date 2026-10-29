@@ -452,18 +452,18 @@ export function computeTdCameraCompositionTransform(params: {
 }
 
 // 3D Asset Store (`3dasset.tooning.io/kr`) & Scene Templates
-export type Tooning3DAssetCategory = "씬" | "공간" | "요소" | "포즈" | "기타";
+export type CreatorPlus3DAssetCategory = "씬" | "공간" | "요소" | "포즈" | "기타";
 
-export interface Tooning3DAssetStoreItem {
+export interface CreatorPlus3DAssetStoreItem {
   readonly assetId: string;
-  readonly category: Tooning3DAssetCategory;
+  readonly category: CreatorPlus3DAssetCategory;
   readonly titleKo: string;
   readonly tagsKo: readonly string[];
   readonly objectCount: number;
   readonly isFree: boolean;
 }
 
-export const TOONING_3D_ASSET_STORE_CATALOG: readonly Tooning3DAssetStoreItem[] = [
+export const CREATOR_PLUS_3D_ASSET_STORE_CATALOG: readonly CreatorPlus3DAssetStoreItem[] = [
   {
     assetId: "td-asset-scene-palace-banquet",
     category: "씬",

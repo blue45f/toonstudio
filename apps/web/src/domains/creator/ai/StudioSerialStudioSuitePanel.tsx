@@ -1,5 +1,5 @@
 /**
- * StudioGgumtoonSuitePanel.tsx
+ * StudioSerialStudioSuitePanel.tsx
  *
  * https://www.ggumtoon.com/ (꿈툰 - AI 웹툰·웹소설 창작 스튜디오 및 연재·지갑·정산 플랫폼)
  * 전 기능을 툰스튜디오 웹스튜디오 안에서 실행·검증·적용할 수 있는 통합 워크스페이스 패널.
@@ -10,50 +10,50 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  clampGgumtoonSpacerPanelHeight,
-  computeGgumtoonSpacerGradientCoordinates,
-  generateGgumtoonAiNovelEpisode,
-  generateGgumtoonCharacterSheetCandidates,
-  generateGgumtoonSceneImages,
-  generateGgumtoonStyleCandidates,
-  GGUMTOON_OPENAI_SIZES,
-  GGUMTOON_STUDIO_CREDIT_COSTS,
-  GGUMTOON_STYLE_QUICK_PRESETS,
-  runGgumtoonSceneInpaint,
-  validateGgumtoonNovelUploadFile,
-  validateGgumtoonUploadedWebtoonImage,
-  type GgumtoonDetectedCharacterCandidate,
-  type GgumtoonOpenAiSizeId,
-  type GgumtoonSceneQualityMode,
-  type GgumtoonSceneTextMode,
-  type GgumtoonStudioSceneItem,
-} from "./ggumtoon-studio-suite";
-import { StudioGgumtoonPlatformSubPanel } from "./StudioGgumtoonPlatformSubPanel";
+  clampSerialStudioSpacerPanelHeight,
+  computeSerialStudioSpacerGradientCoordinates,
+  generateSerialStudioAiNovelEpisode,
+  generateSerialStudioCharacterSheetCandidates,
+  generateSerialStudioSceneImages,
+  generateSerialStudioStyleCandidates,
+  SERIAL_STUDIO_OPENAI_SIZES,
+  SERIAL_STUDIO_CREDIT_COSTS,
+  SERIAL_STUDIO_STYLE_QUICK_PRESETS,
+  runSerialStudioSceneInpaint,
+  validateSerialStudioNovelUploadFile,
+  validateSerialStudioUploadedWebtoonImage,
+  type SerialStudioDetectedCharacterCandidate,
+  type SerialStudioOpenAiSizeId,
+  type SerialStudioSceneQualityMode,
+  type SerialStudioSceneTextMode,
+  type SerialStudioSceneItem,
+} from "./serial-studio-suite";
+import { StudioSerialPlatformSubPanel } from "./StudioSerialPlatformSubPanel";
 
 import { cn } from "@/shared/lib/utils";
 
-export interface StudioGgumtoonSuitePanelProps {
+export interface StudioSerialStudioSuitePanelProps {
   readonly scriptInput?: string;
   readonly onApplyScript?: (nextScript: string) => void;
 }
 
-type GgumtoonWorkspaceTab = "STYLE_CHAR" | "SCENE_INPAINT" | "NOVEL_UPLOAD" | "PLATFORM_ECONOMY";
+type SerialStudioWorkspaceTab = "STYLE_CHAR" | "SCENE_INPAINT" | "NOVEL_UPLOAD" | "PLATFORM_ECONOMY";
 
 const DEFAULT_STYLE_NAME = "로맨스 판타지 시그니처";
 
-export function StudioGgumtoonSuitePanel({
+export function StudioSerialStudioSuitePanel({
   scriptInput = "",
   onApplyScript,
-}: StudioGgumtoonSuitePanelProps): ReactElement {
-  const [activeTab, setActiveTab] = useState<GgumtoonWorkspaceTab>("STYLE_CHAR");
+}: StudioSerialStudioSuitePanelProps): ReactElement {
+  const [activeTab, setActiveTab] = useState<SerialStudioWorkspaceTab>("STYLE_CHAR");
   const [credits, setCredits] = useState<number>(100);
 
   // 1. 스타일 & 캐릭터 시트 상태
-  const [stylePrompt, setStylePrompt] = useState<string>(GGUMTOON_STYLE_QUICK_PRESETS[0]!);
+  const [stylePrompt, setStylePrompt] = useState<string>(SERIAL_STUDIO_STYLE_QUICK_PRESETS[0]!);
   const [styleCandidates, setStyleCandidates] = useState<readonly string[]>([]);
   const [selectedStyleIdx, setSelectedStyleIdx] = useState<number>(0);
   const [isStyleConfirmed, setIsStyleConfirmed] = useState<boolean>(false);
-  const [detectedCharacters, setDetectedCharacters] = useState<readonly GgumtoonDetectedCharacterCandidate[]>([]);
+  const [detectedCharacters, setDetectedCharacters] = useState<readonly SerialStudioDetectedCharacterCandidate[]>([]);
 
   const [charName, setCharName] = useState<string>("김지훈");
   const [charAppearance, setCharAppearance] = useState<string>("검은 단발머리, 붉은 눈동자, 날카로운 인상, 20대 초반 남성");
@@ -62,7 +62,7 @@ export function StudioGgumtoonSuitePanel({
 
   // 2. 장면 생성 · 인페인팅 · 여백 패널 상태
   const [isCuttoonMode, setIsCuttoonMode] = useState<boolean>(false);
-  const [sceneState, setSceneState] = useState<GgumtoonStudioSceneItem>({
+  const [sceneState, setSceneState] = useState<SerialStudioSceneItem>({
     id: "scene-1",
     prompt: scriptInput.trim() || "달빛 아래 두 남녀가 마주보며 서 있는 영화적 클로즈업 장면",
     mode: "normal",
@@ -99,7 +99,7 @@ export function StudioGgumtoonSuitePanel({
 
   const spacerGradientInfo = useMemo(
     () =>
-      computeGgumtoonSpacerGradientCoordinates(600, clampGgumtoonSpacerPanelHeight(spacerHeightInput), {
+      computeSerialStudioSpacerGradientCoordinates(600, clampSerialStudioSpacerPanelHeight(spacerHeightInput), {
         angle: spacerAngleInput,
         colorStart: "#1a1828",
         colorStop: "#7C5CFC",
@@ -109,7 +109,7 @@ export function StudioGgumtoonSuitePanel({
 
   const novelFileValidation = useMemo(
     () =>
-      validateGgumtoonNovelUploadFile({
+      validateSerialStudioNovelUploadFile({
         fileName: uploadFileName,
         byteSize: 240_000,
         extractedText: "가".repeat(Math.max(0, uploadSimCharCount)),
@@ -119,7 +119,7 @@ export function StudioGgumtoonSuitePanel({
 
   const webtoonImageValidation = useMemo(
     () =>
-      validateGgumtoonUploadedWebtoonImage({
+      validateSerialStudioUploadedWebtoonImage({
         fileName: "cut_01.webp",
         naturalWidth: 800,
         naturalHeight: manuscriptHeightPx,
@@ -128,7 +128,7 @@ export function StudioGgumtoonSuitePanel({
   );
 
   const handleGenerateStyle = (isRegeneration: boolean) => {
-    const res = generateGgumtoonStyleCandidates({
+    const res = generateSerialStudioStyleCandidates({
       workId: "work-01",
       genre: "로맨스",
       prompt: stylePrompt,
@@ -145,7 +145,7 @@ export function StudioGgumtoonSuitePanel({
   };
 
   const handleGenerateCharacterSheet = () => {
-    const res = generateGgumtoonCharacterSheetCandidates({
+    const res = generateSerialStudioCharacterSheetCandidates({
       workId: "work-01",
       name: charName,
       appearancePrompt: charAppearance,
@@ -159,7 +159,7 @@ export function StudioGgumtoonSuitePanel({
   };
 
   const handleGenerateScene = () => {
-    const res = generateGgumtoonSceneImages({
+    const res = generateSerialStudioSceneImages({
       scene: sceneState,
       workTitle: "레벨업 연애",
       workGenre: "로맨스",
@@ -183,7 +183,7 @@ export function StudioGgumtoonSuitePanel({
       sceneState.candidateImages?.[sceneState.selectedImageIndex ?? 0] ??
       sceneState.confirmedImageUrl ??
       "https://cdn.toonstudio.local/ggumtoon/scenes/default.webp";
-    const res = runGgumtoonSceneInpaint({
+    const res = runSerialStudioSceneInpaint({
       sceneId: sceneState.id,
       baseImageUrl: baseImg,
       editPrompt: inpaintPrompt,
@@ -197,7 +197,7 @@ export function StudioGgumtoonSuitePanel({
   };
 
   const handleGenerateNovel = () => {
-    const res = generateGgumtoonAiNovelEpisode({
+    const res = generateSerialStudioAiNovelEpisode({
       workTitle: "레벨업 연애",
       genre: "로맨스",
       plotSummary: novelPlot,
@@ -297,8 +297,8 @@ export function StudioGgumtoonSuitePanel({
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1 font-bold text-fg">
                 <Palette size={12} className="text-accent" aria-hidden="true" />
-                웹툰 스타일 레퍼런스 3장 생성 ({GGUMTOON_STUDIO_CREDIT_COSTS.style_generate_initial}크레딧 / 재생성{" "}
-                {GGUMTOON_STUDIO_CREDIT_COSTS.style_regenerate}크레딧)
+                웹툰 스타일 레퍼런스 3장 생성 ({SERIAL_STUDIO_CREDIT_COSTS.style_generate_initial}크레딧 / 재생성{" "}
+                {SERIAL_STUDIO_CREDIT_COSTS.style_regenerate}크레딧)
               </span>
               {isStyleConfirmed ? (
                 <span
@@ -311,7 +311,7 @@ export function StudioGgumtoonSuitePanel({
             </div>
 
             <div className="flex flex-wrap gap-1">
-              {GGUMTOON_STYLE_QUICK_PRESETS.map((preset, idx) => (
+              {SERIAL_STUDIO_STYLE_QUICK_PRESETS.map((preset, idx) => (
                 <button
                   key={preset}
                   type="button"
@@ -400,7 +400,7 @@ export function StudioGgumtoonSuitePanel({
               <span className="inline-flex items-center gap-1 font-bold text-fg">
                 <UserPlus size={12} className="text-accent" aria-hidden="true" />
                 캐릭터 시트 등록 및 재생성 (/api/character/create-sheet ·{" "}
-                {GGUMTOON_STUDIO_CREDIT_COSTS.character_sheet}크레딧)
+                {SERIAL_STUDIO_CREDIT_COSTS.character_sheet}크레딧)
               </span>
               <span className="text-[0.58rem] text-fg-3">3장 후보 동시 생성</span>
             </div>
@@ -442,7 +442,7 @@ export function StudioGgumtoonSuitePanel({
               onClick={handleGenerateCharacterSheet}
               className="w-full rounded bg-accent py-1.5 text-[0.63rem] font-bold text-fg"
             >
-              이미지 3장 생성하기 (크레딧 {GGUMTOON_STUDIO_CREDIT_COSTS.character_sheet}개)
+              이미지 3장 생성하기 (크레딧 {SERIAL_STUDIO_CREDIT_COSTS.character_sheet}개)
             </button>
 
             {charSheetUrls.length > 0 ? (
@@ -499,7 +499,7 @@ export function StudioGgumtoonSuitePanel({
                       onClick={() =>
                         setSceneState((prev) => ({
                           ...prev,
-                          mode: m as GgumtoonSceneQualityMode,
+                          mode: m as SerialStudioSceneQualityMode,
                         }))
                       }
                       className={cn(
@@ -526,7 +526,7 @@ export function StudioGgumtoonSuitePanel({
                       onClick={() =>
                         setSceneState((prev) => ({
                           ...prev,
-                          textMode: tm as GgumtoonSceneTextMode,
+                          textMode: tm as SerialStudioSceneTextMode,
                         }))
                       }
                       className={cn(
@@ -544,7 +544,7 @@ export function StudioGgumtoonSuitePanel({
             </div>
 
             <div className="grid grid-cols-3 gap-1">
-              {GGUMTOON_OPENAI_SIZES.map((sz) => (
+              {SERIAL_STUDIO_OPENAI_SIZES.map((sz) => (
                 <button
                   key={sz.id}
                   type="button"
@@ -553,7 +553,7 @@ export function StudioGgumtoonSuitePanel({
                   onClick={() =>
                     setSceneState((prev) => ({
                       ...prev,
-                      size: sz.id as GgumtoonOpenAiSizeId,
+                      size: sz.id as SerialStudioOpenAiSizeId,
                     }))
                   }
                   className={cn(
@@ -639,7 +639,7 @@ export function StudioGgumtoonSuitePanel({
                 <span className="font-semibold text-fg">
                   + 여백 패널 (클램핑 높이:{" "}
                   <strong data-testid="ggumtoon-spacer-clamped-height">
-                    {clampGgumtoonSpacerPanelHeight(spacerHeightInput)}px
+                    {clampSerialStudioSpacerPanelHeight(spacerHeightInput)}px
                   </strong>
                   )
                 </span>
@@ -776,7 +776,7 @@ export function StudioGgumtoonSuitePanel({
       ) : null}
 
       {/* 탭 4: 플랫폼 경제 · 연재 · 지갑 · 기다무 · 공유 · 뷰어 · 정산 */}
-      {activeTab === "PLATFORM_ECONOMY" ? <StudioGgumtoonPlatformSubPanel /> : null}
+      {activeTab === "PLATFORM_ECONOMY" ? <StudioSerialPlatformSubPanel /> : null}
     </section>
   );
 }

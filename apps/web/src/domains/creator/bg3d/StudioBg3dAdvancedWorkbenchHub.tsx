@@ -23,7 +23,7 @@ import {
   StudioBg3dPlaceSetPackagePanel,
 } from "./StudioBg3dPlaceSetPackagePanel";
 import { StudioBg3dPostProcessVfxPanel } from "./StudioBg3dPostProcessVfxPanel";
-import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
+import { StudioBg3dShaperCharacterStudioPanel } from "./StudioBg3dShaperCharacterStudioPanel";
 import { StudioBg3dSketchUpWorkbenchPanel } from "./StudioBg3dSketchUpWorkbenchPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
@@ -471,7 +471,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
         ) : null}
 
         {activeTab === "shaper-tooning" ? (
-          <StudioBg3dShaperTooningStudioPanel
+          <StudioBg3dShaperCharacterStudioPanel
             disabled={disabled}
             onExportPsd={() => setLastActionSummary("셰이퍼·투닝 8레이어 PSD 내보내기 완료")}
           />

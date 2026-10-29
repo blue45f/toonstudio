@@ -1,12 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect, vi } from "vitest";
 
-import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
+import { StudioBg3dShaperCharacterStudioPanel } from "./StudioBg3dShaperCharacterStudioPanel";
 
-describe("StudioBg3dShaperTooningStudioPanel", () => {
+describe("StudioBg3dShaperCharacterStudioPanel", () => {
   it("renders all 3 studio modes: Shaper Character, Tooning Emotion, Storyboard PSD", () => {
     const markup = renderToStaticMarkup(
-      <StudioBg3dShaperTooningStudioPanel onExportPsd={vi.fn()} />,
+      <StudioBg3dShaperCharacterStudioPanel onExportPsd={vi.fn()} />,
     );
 
     expect(markup).toContain("셰이퍼 캐릭터");
@@ -22,7 +22,7 @@ describe("StudioBg3dShaperTooningStudioPanel", () => {
 
   it("renders properly with disabled flag", () => {
     const markup = renderToStaticMarkup(
-      <StudioBg3dShaperTooningStudioPanel disabled />,
+      <StudioBg3dShaperCharacterStudioPanel disabled />,
     );
 
     expect(markup).toContain("disabled");

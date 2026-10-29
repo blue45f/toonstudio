@@ -13,17 +13,17 @@
  * - 4 Export Formats (`PDF`, `Docx`, `Html` with UTF-8 BOM, `Txt` with UTF-8 BOM) & Explore (`OnlyOne` vs `Multiple` KnowHow)
  */
 
-export type TooningStudioServiceCode = "CM" | "TG" | "TD" | "ED" | "MG" | "DV" | "TB";
+export type CreatorPlusStudioServiceCode = "CM" | "TG" | "TD" | "ED" | "MG" | "DV" | "TB";
 
-export interface TooningServiceDescriptor {
-  readonly code: TooningStudioServiceCode;
+export interface CreatorPlusServiceDescriptor {
+  readonly code: CreatorPlusStudioServiceCode;
   readonly nameKo: string;
   readonly nameEn: string;
   readonly routePath: string;
   readonly summaryKo: string;
 }
 
-export const TOONING_PLUS_SERVICES: readonly TooningServiceDescriptor[] = [
+export const CREATOR_PLUS_SERVICES: readonly CreatorPlusServiceDescriptor[] = [
   {
     code: "CM",
     nameKo: "투닝 플러스 공통 (Common & Credit)",
@@ -75,7 +75,7 @@ export const TOONING_PLUS_SERVICES: readonly TooningServiceDescriptor[] = [
   },
 ] as const;
 
-export const TOONING_CREDIT_COSTS = {
+export const CREATOR_PLUS_CREDIT_COSTS = {
   TG_PROMPT: 3,
   TG_SPLIT_CUT: 3,
   TG_EXPORT_TO_TD_PER_CUT: 5,
@@ -474,7 +474,7 @@ export function generateTgPlotSuggestionAndQuestions(
       `적대자와의 대립 구도가 극대화되도록 반전 클리프행어를 추가해 줄래?`,
       `배경 묘사와 시간대(조명·날씨) 연출 지문을 더 구체적으로 보강해 줄래?`,
     ],
-    creditCost: TOONING_CREDIT_COSTS.TG_PROMPT,
+    creditCost: CREATOR_PLUS_CREDIT_COSTS.TG_PROMPT,
   };
 }
 
@@ -562,7 +562,7 @@ export function splitTgStoryIntoCuts(storyText: string): {
   return {
     cuts,
     markedCanvasText,
-    creditCost: TOONING_CREDIT_COSTS.TG_SPLIT_CUT,
+    creditCost: CREATOR_PLUS_CREDIT_COSTS.TG_SPLIT_CUT,
   };
 }
 
@@ -683,7 +683,7 @@ export function buildTgToTdExportPackage(
       cameraPosition,
       cameraLens,
       lightingPreset,
-      creditCost: TOONING_CREDIT_COSTS.TG_EXPORT_TO_TD_PER_CUT,
+      creditCost: CREATOR_PLUS_CREDIT_COSTS.TG_EXPORT_TO_TD_PER_CUT,
     };
   });
 
@@ -693,7 +693,7 @@ export function buildTgToTdExportPackage(
     storyTitle: storyTitle.trim() || "무제 스토리",
     deepLinkUrl: `/3d-studio?storyId=${cleanId}`,
     totalCuts: tdCuts.length,
-    totalCreditCost: tdCuts.length * TOONING_CREDIT_COSTS.TG_EXPORT_TO_TD_PER_CUT,
+    totalCreditCost: tdCuts.length * CREATOR_PLUS_CREDIT_COSTS.TG_EXPORT_TO_TD_PER_CUT,
     cuts: tdCuts,
   };
 }

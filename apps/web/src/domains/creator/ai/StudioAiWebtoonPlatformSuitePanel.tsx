@@ -17,23 +17,23 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  buildLlamaGenComicV2EpisodeSequence,
-  createMangotoonContentPayload,
+  buildComicGenComicV2EpisodeSequence,
+  createTemplateToonContentPayload,
   estimateGenToonCreditCost,
   evaluateGenToonMerchPrintLayout,
   GENTOON_AI_MODEL_CATALOG,
   GENTOON_REEL_FILTER_PRESETS,
-  MANGOTOON_CHARACTER_PRESETS,
-  MANGOTOON_LIBRARY_TABS,
-  recommendTooningCutFromSentence,
+  TEMPLATE_TOON_CHARACTER_PRESETS,
+  TEMPLATE_TOON_LIBRARY_TABS,
+  recommendCreatorPlusCutFromSentence,
   synthesizeGenToonShortFormReelTimeline,
   type GenToonAiModelId,
   type GenToonCreationMode,
   type GenToonMerchLayoutMode,
   type GenToonReelFilterId,
   type GenToonReelTransitionId,
-  type LlamaGenLayoutModeId,
-  type MangotoonLibraryTabId,
+  type ComicGenLayoutModeId,
+  type TemplateToonLibraryTabId,
 } from "./ai-webtoon-platform-suite";
 import {
   runAssistAmusementCoasterFerrisCampingSkiDirector,
@@ -88,15 +88,15 @@ export function StudioAiWebtoonPlatformSuitePanel({
   const [merchLayoutMode, setMerchLayoutMode] = useState<GenToonMerchLayoutMode>("sheet");
 
   // 2. Mangotoon state
-  const [mangotoonTab, setMangotoonTab] = useState<MangotoonLibraryTabId>("character");
+  const [mangotoonTab, setMangotoonTab] = useState<TemplateToonLibraryTabId>("character");
   const [selectedMgCharacterId, setSelectedMgCharacterId] = useState<string>(
-    MANGOTOON_CHARACTER_PRESETS[0]!.id,
+    TEMPLATE_TOON_CHARACTER_PRESETS[0]!.id,
   );
   const [mgBlurRange, setMgBlurRange] = useState<number>(50);
 
   // 3. LlamaGen state
   const [llamaLayoutMode, setLlamaLayoutMode] =
-    useState<LlamaGenLayoutModeId>("vertical-golden-webtoon");
+    useState<ComicGenLayoutModeId>("vertical-golden-webtoon");
 
   // 4. Tooning sentence state
   const [tooningSentence, setTooningSentence] = useState<string>(
@@ -244,14 +244,14 @@ export function StudioAiWebtoonPlatformSuitePanel({
 
   const activeMgCharacter = useMemo(
     () =>
-      MANGOTOON_CHARACTER_PRESETS.find((c) => c.id === selectedMgCharacterId) ??
-      MANGOTOON_CHARACTER_PRESETS[0]!,
+      TEMPLATE_TOON_CHARACTER_PRESETS.find((c) => c.id === selectedMgCharacterId) ??
+      TEMPLATE_TOON_CHARACTER_PRESETS[0]!,
     [selectedMgCharacterId],
   );
 
   const mgContentSample = useMemo(
     () =>
-      createMangotoonContentPayload({
+      createTemplateToonContentPayload({
         id: "mg-bg-01",
         contentCategory: "background",
         src: "https://toon.mangoboard.net/contents/bg-office.png",
@@ -267,7 +267,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
-    return buildLlamaGenComicV2EpisodeSequence({
+    return buildComicGenComicV2EpisodeSequence({
       artworkId: "llama-ep-01",
       seriesTitle: "서울 네온 시퀀스",
       episodeTitle: "제1화: 황금비 세로 스크롤 콘티",
@@ -278,7 +278,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
   }, [scriptInput, llamaLayoutMode]);
 
   const tooningRec = useMemo(
-    () => recommendTooningCutFromSentence(tooningSentence),
+    () => recommendCreatorPlusCutFromSentence(tooningSentence),
     [tooningSentence],
   );
 
@@ -482,7 +482,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
       {activeTab === "mangotoon" ? (
         <div data-testid="mangotoon-workbench-section" className="space-y-2 text-[0.64rem]">
           <div className="flex flex-wrap gap-1">
-            {MANGOTOON_LIBRARY_TABS.map((tab) => (
+            {TEMPLATE_TOON_LIBRARY_TABS.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
@@ -500,7 +500,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
           </div>
 
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-            {MANGOTOON_CHARACTER_PRESETS.map((charPreset) => (
+            {TEMPLATE_TOON_CHARACTER_PRESETS.map((charPreset) => (
               <button
                 key={charPreset.id}
                 type="button"
@@ -562,7 +562,7 @@ export function StudioAiWebtoonPlatformSuitePanel({
             <select
               aria-label="라마젠 레이아웃 모드"
               value={llamaLayoutMode}
-              onChange={(e) => setLlamaLayoutMode(e.target.value as LlamaGenLayoutModeId)}
+              onChange={(e) => setLlamaLayoutMode(e.target.value as ComicGenLayoutModeId)}
               className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.6rem] text-fg"
             >
               <option value="vertical-golden-webtoon">황금비 세로 스크롤 웹툰 (1.618)</option>

@@ -3,19 +3,19 @@ import { useState } from "react";
 
 import type { CharacterArchetype } from "../scene-3d/studio-3d-shaper-toon-maker";
 import type { CutAspectRatio } from "../scene-3d/studio-3d-storyboard-cut-strip";
-import type { TooningEmotionPreset, EmoteSfxKind } from "../scene-3d/studio-3d-tooning-emotion-fx";
+import type { CreatorPlusEmotionPreset, EmoteSfxKind } from "../scene-3d/studio-3d-emotion-fx";
 
-import { StudioTooning3DStudioInspectorPanel } from "./StudioTooning3DStudioInspectorPanel";
+import { Studio3dCharacterStudioInspectorPanel } from "./Studio3dCharacterStudioInspectorPanel";
 
-export interface StudioBg3dShaperTooningStudioPanelProps {
+export interface StudioBg3dShaperCharacterStudioPanelProps {
   readonly onExportPsd?: () => void;
   readonly disabled?: boolean;
 }
 
-export function StudioBg3dShaperTooningStudioPanel({
+export function StudioBg3dShaperCharacterStudioPanel({
   onExportPsd,
   disabled = false,
-}: StudioBg3dShaperTooningStudioPanelProps) {
+}: StudioBg3dShaperCharacterStudioPanelProps) {
   const [activeTab, setActiveTab] = useState<"shaper" | "tooning" | "storyboard">("shaper");
 
   // Shaper State
@@ -23,7 +23,7 @@ export function StudioBg3dShaperTooningStudioPanel({
   const [isSurfaceInking, setIsSurfaceInking] = useState(false);
 
   // Tooning Emotion & SFX State
-  const [selectedEmotion, setSelectedEmotion] = useState<TooningEmotionPreset>("joy-radiant");
+  const [selectedEmotion, setSelectedEmotion] = useState<CreatorPlusEmotionPreset>("joy-radiant");
   const [bubbleText, setBubbleText] = useState("너… 정말 그럴 생각이야?");
   const [selectedEmote, setSelectedEmote] = useState<EmoteSfxKind>("sweat-drop");
 
@@ -173,7 +173,7 @@ export function StudioBg3dShaperTooningStudioPanel({
                   key={emotion.id}
                   type="button"
                   disabled={disabled}
-                  onClick={() => setSelectedEmotion(emotion.id as TooningEmotionPreset)}
+                  onClick={() => setSelectedEmotion(emotion.id as CreatorPlusEmotionPreset)}
                   className={`rounded-lg border p-1.5 text-center text-[0.68rem] font-semibold transition-all ${
                     selectedEmotion === emotion.id
                       ? "border-accent bg-accent/15 text-accent"
@@ -294,7 +294,7 @@ export function StudioBg3dShaperTooningStudioPanel({
       )}
 
       {/* Tooning 3D Studio (TD) Complete 5-Tab Inspector, 23 Camera Presets & 3D Asset Store */}
-      <StudioTooning3DStudioInspectorPanel disabled={disabled} />
+      <Studio3dCharacterStudioInspectorPanel disabled={disabled} />
     </div>
   );
 }

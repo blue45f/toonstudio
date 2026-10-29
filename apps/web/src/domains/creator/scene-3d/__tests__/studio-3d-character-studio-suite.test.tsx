@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { StudioBg3dShaperTooningStudioPanel } from "../../bg3d/StudioBg3dShaperTooningStudioPanel";
+import { StudioBg3dShaperCharacterStudioPanel } from "../../bg3d/StudioBg3dShaperCharacterStudioPanel";
 import {
   applyTdCharacterStyleAcrossSceneCuts,
   applyTdSceneTemplateWithCharacterMapping,
@@ -21,10 +21,10 @@ import {
   TD_MEDIAPIPE_RETARGET_CONFIG,
   TD_SHOT_SIZE_SPECS,
   TD_STYLE_PART_CATEGORIES,
-  TOONING_3D_ASSET_STORE_CATALOG,
+  CREATOR_PLUS_3D_ASSET_STORE_CATALOG,
   updateTdStylePartPreset,
   type TdFacialExpressionState,
-} from "../studio-3d-tooning-plus-suite";
+} from "../studio-3d-character-studio-suite";
 
 describe("Tooning 3D Studio (TD) & 3D Asset Store Engine", () => {
   it("defines all 21 bone transform sliders (-100 to +100), 7 style parts, 10 primitives, and 23 camera presets", () => {
@@ -39,7 +39,7 @@ describe("Tooning 3D Studio (TD) & 3D Asset Store Engine", () => {
       TD_CAMERA_POSITION_SPECS.length +
       TD_CAMERA_LENS_SPECS.length;
     expect(totalCameraPresets).toBe(23); // 7 + 5 + 8 + 3 = 23
-    expect(TOONING_3D_ASSET_STORE_CATALOG.length).toBeGreaterThanOrEqual(5);
+    expect(CREATOR_PLUS_3D_ASSET_STORE_CATALOG.length).toBeGreaterThanOrEqual(5);
     expect(TD_MEDIAPIPE_RETARGET_CONFIG).toEqual({
       LANDMARK_Z_SCALE: 0.2,
       TORSO_HEMISPHERE_THRESHOLD: 0.2,
@@ -210,8 +210,8 @@ describe("Tooning 3D Studio (TD) & 3D Asset Store Engine", () => {
     expect(templated.characters[0]?.action.presetId).toBe("pose-duel-99");
   });
 
-  it("renders StudioBg3dShaperTooningStudioPanel with the integrated 3D Studio 5-tab inspector", () => {
-    render(<StudioBg3dShaperTooningStudioPanel />);
+  it("renders StudioBg3dShaperCharacterStudioPanel with the integrated 3D Studio 5-tab inspector", () => {
+    render(<StudioBg3dShaperCharacterStudioPanel />);
     expect(screen.getByTestId("tooning-3d-studio-inspector-panel")).toBeTruthy();
     expect(screen.getByTestId("td-body-21-bones-tab")).toBeTruthy();
 

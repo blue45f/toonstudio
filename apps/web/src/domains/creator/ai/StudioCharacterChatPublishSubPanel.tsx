@@ -1,5 +1,5 @@
 /**
- * StudioTooningDeevToonBeSubPanel.tsx
+ * StudioCharacterChatPublishSubPanel.tsx
  *
  * 투닝 플러스 통합 워크스페이스의 DV(디브 AI 캐릭터 6단계·로어북·17종 챗 모드·5종 대화중 이미지 재생성) 및
  * TB(툰비 웹툰 700px/5MB/50MB 원고 검증기·10종 작가 크레딧·웹소설 15,000자 검증 및 뷰어) 전용 서브 패널.
@@ -27,17 +27,17 @@ import {
   type TbNovelFontSizeCode,
   type TbNovelViewerMode,
   type TbUserWorkRoleType,
-} from "./tooning-deev-toonbe-suite";
+} from "./character-chat-publish-suite";
 
-export interface StudioTooningDeevToonBeSubPanelProps {
+export interface StudioCharacterChatPublishSubPanelProps {
   readonly mode: "DV" | "TB";
   readonly novelSampleText: string;
 }
 
-export function StudioTooningDeevToonBeSubPanel({
+export function StudioCharacterChatPublishSubPanel({
   mode,
   novelSampleText,
-}: StudioTooningDeevToonBeSubPanelProps): ReactElement {
+}: StudioCharacterChatPublishSubPanelProps): ReactElement {
   // DV State
   const [dvStep, setDvStep] = useState<DvCharacterWizardStep>("Lorebook");
   const [dvChatMode, setDvChatMode] = useState<ShChatMode>("ClaudeSonnet4_6");

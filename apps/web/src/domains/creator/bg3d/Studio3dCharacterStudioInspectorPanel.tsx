@@ -1,5 +1,5 @@
 /**
- * StudioTooning3DStudioInspectorPanel.tsx
+ * Studio3dCharacterStudioInspectorPanel.tsx
  *
  * Tooning 3D Studio (TD) 5-탭 캐릭터 인스펙터(스타일 7파츠·체형 21본 슬라이더·액션 타임라인/웹캠 트래킹·
  * 비대칭 5영역 표정 및 3×3 시선 그리드·북마크) + 23종 카메라 구도 프리셋 + 10종 3D 기본 도형 +
@@ -26,7 +26,7 @@ import {
   TD_MEDIAPIPE_RETARGET_CONFIG,
   TD_SHOT_SIZE_SPECS,
   TD_STYLE_PART_CATEGORIES,
-  TOONING_3D_ASSET_STORE_CATALOG,
+  CREATOR_PLUS_3D_ASSET_STORE_CATALOG,
   updateTdStylePartPreset,
   type TdActionControlState,
   type TdBoneSliderKey,
@@ -40,18 +40,18 @@ import {
   type TdSceneTemplateApplyScope,
   type TdShotSizePreset,
   type TdStylePartSlotConfig,
-  type Tooning3DAssetCategory,
-} from "../scene-3d/studio-3d-tooning-plus-suite";
+  type CreatorPlus3DAssetCategory,
+} from "../scene-3d/studio-3d-character-studio-suite";
 
-export interface StudioTooning3DStudioInspectorPanelProps {
+export interface Studio3dCharacterStudioInspectorPanelProps {
   readonly disabled?: boolean;
 }
 
 type InspectorTabId = "style" | "body21" | "action" | "expression" | "camera23" | "assetStore";
 
-export function StudioTooning3DStudioInspectorPanel({
+export function Studio3dCharacterStudioInspectorPanel({
   disabled = false,
-}: StudioTooning3DStudioInspectorPanelProps): ReactElement {
+}: Studio3dCharacterStudioInspectorPanelProps): ReactElement {
   const [inspectorTab, setInspectorTab] = useState<InspectorTabId>("body21");
   const [boneGroup, setBoneGroup] = useState<"머리·목" | "상체" | "팔·손" | "하체·발">("상체");
   const [bodyBones, setBodyBones] = useState(createDefaultTdBodyBoneValues);
@@ -99,7 +99,7 @@ export function StudioTooning3DStudioInspectorPanel({
   const [isCameraLocked, setIsCameraLocked] = useState(false);
   const [selectedPrimitive, setSelectedPrimitive] = useState<TdElementPrimitiveType>("Box");
 
-  const [assetCategory, setAssetCategory] = useState<Tooning3DAssetCategory>("씬");
+  const [assetCategory, setAssetCategory] = useState<CreatorPlus3DAssetCategory>("씬");
   const [templateScope, setTemplateScope] = useState<TdSceneTemplateApplyScope>("Both");
   const [bookmarks, setBookmarks] = useState<readonly TdCharacterBookmark[]>([
     {
@@ -131,7 +131,7 @@ export function StudioTooning3DStudioInspectorPanel({
   );
 
   const filteredAssets = useMemo(
-    () => TOONING_3D_ASSET_STORE_CATALOG.filter((item) => item.category === assetCategory),
+    () => CREATOR_PLUS_3D_ASSET_STORE_CATALOG.filter((item) => item.category === assetCategory),
     [assetCategory],
   );
 

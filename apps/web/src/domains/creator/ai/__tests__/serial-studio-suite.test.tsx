@@ -2,61 +2,61 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { StudioGgumtoonSuitePanel } from "../StudioGgumtoonSuitePanel";
+import { StudioSerialStudioSuitePanel } from "../StudioSerialStudioSuitePanel";
 import {
-  buildGgumtoonCrossAdaptationBanner,
-  calculateGgumtoonCreatorSettlement,
-  computeGgumtoonCoinChargeOrder,
-  computeGgumtoonWeeklyCoinConsumptionMetrics,
-  evaluateGgumtoonAttendanceCycle,
-  evaluateGgumtoonShareRewardProgress,
-  formatGgumtoonWaitFreeRemaining,
-  GGUMTOON_ADMIN_MODULES,
-  GGUMTOON_CREDIT_PURCHASE_PLANS,
-  GGUMTOON_NOVEL_FONT_SIZES,
-  GGUMTOON_NOVEL_VIEWER_THEMES,
-  GGUMTOON_SETTLEMENT_BANKS,
-  GGUMTOON_SHARE_EVENT_MAX_COINS,
-  GGUMTOON_SUBSCRIPTION_TIERS,
-  GGUMTOON_WEB_COIN_PLANS,
-  resolveGgumtoonEpisodeAccess,
-  shouldTriggerGgumtoonAutoLike,
-  translateGgumtoonEpisodeTextBoxes,
-  validateGgumtoonSettlementRegistration,
-} from "../ggumtoon-platform-economy";
+  buildSerialStudioCrossAdaptationBanner,
+  calculateSerialStudioCreatorSettlement,
+  computeSerialStudioCoinChargeOrder,
+  computeSerialStudioWeeklyCoinConsumptionMetrics,
+  evaluateSerialStudioAttendanceCycle,
+  evaluateSerialStudioShareRewardProgress,
+  formatSerialStudioWaitFreeRemaining,
+  SERIAL_STUDIO_ADMIN_MODULES,
+  SERIAL_STUDIO_CREDIT_PURCHASE_PLANS,
+  SERIAL_STUDIO_NOVEL_FONT_SIZES,
+  SERIAL_STUDIO_NOVEL_VIEWER_THEMES,
+  SERIAL_STUDIO_SETTLEMENT_BANKS,
+  SERIAL_STUDIO_SHARE_EVENT_MAX_COINS,
+  SERIAL_STUDIO_SUBSCRIPTION_TIERS,
+  SERIAL_STUDIO_WEB_COIN_PLANS,
+  resolveSerialStudioEpisodeAccess,
+  shouldTriggerSerialStudioAutoLike,
+  translateSerialStudioEpisodeTextBoxes,
+  validateSerialStudioSettlementRegistration,
+} from "../serial-platform-economy";
 import {
-  clampGgumtoonSpacerPanelHeight,
-  computeGgumtoonCoverOrBannerCrop,
-  computeGgumtoonSpacerGradientCoordinates,
-  generateGgumtoonAiNovelEpisode,
-  generateGgumtoonCharacterSheetCandidates,
-  generateGgumtoonSceneImages,
-  generateGgumtoonStyleCandidates,
-  GGUMTOON_GENRES,
-  GGUMTOON_OPENAI_SIZES,
-  GGUMTOON_SERIAL_POLICIES,
-  GGUMTOON_STUDIO_CREDIT_COSTS,
-  GGUMTOON_STYLE_QUICK_PRESETS,
-  GGUMTOON_WEEKDAYS,
-  isGgumtoonEpisodeAutomaticallyFree,
-  runGgumtoonSceneInpaint,
-  validateAndBuildGgumtoonWorkPayload,
-  validateGgumtoonAuthorName,
-  validateGgumtoonNovelUploadFile,
-  validateGgumtoonUploadedWebtoonImage,
-} from "../ggumtoon-studio-suite";
+  clampSerialStudioSpacerPanelHeight,
+  computeSerialStudioCoverOrBannerCrop,
+  computeSerialStudioSpacerGradientCoordinates,
+  generateSerialStudioAiNovelEpisode,
+  generateSerialStudioCharacterSheetCandidates,
+  generateSerialStudioSceneImages,
+  generateSerialStudioStyleCandidates,
+  SERIAL_STUDIO_GENRES,
+  SERIAL_STUDIO_OPENAI_SIZES,
+  SERIAL_STUDIO_SERIAL_POLICIES,
+  SERIAL_STUDIO_CREDIT_COSTS,
+  SERIAL_STUDIO_STYLE_QUICK_PRESETS,
+  SERIAL_STUDIO_WEEKDAYS,
+  isSerialStudioEpisodeAutomaticallyFree,
+  runSerialStudioSceneInpaint,
+  validateAndBuildSerialStudioWorkPayload,
+  validateSerialStudioAuthorName,
+  validateSerialStudioNovelUploadFile,
+  validateSerialStudioUploadedWebtoonImage,
+} from "../serial-studio-suite";
 
 describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
   it("validates author handle and work registration draft with 3:1 banner and 5:7 cover crop math", () => {
-    expect(validateGgumtoonAuthorName("꿈툰작가01", ["기존작가"]).valid).toBe(true);
-    expect(validateGgumtoonAuthorName("A").valid).toBe(false);
-    expect(validateGgumtoonAuthorName("기존작가", ["기존작가"]).status).toBe("taken");
+    expect(validateSerialStudioAuthorName("꿈툰작가01", ["기존작가"]).valid).toBe(true);
+    expect(validateSerialStudioAuthorName("A").valid).toBe(false);
+    expect(validateSerialStudioAuthorName("기존작가", ["기존작가"]).status).toBe("taken");
 
-    expect(GGUMTOON_GENRES).toHaveLength(10);
-    expect(GGUMTOON_WEEKDAYS).toHaveLength(7);
-    expect(GGUMTOON_SERIAL_POLICIES.map((p) => p.creatorSharePercent)).toEqual([40, 60, 80]);
+    expect(SERIAL_STUDIO_GENRES).toHaveLength(10);
+    expect(SERIAL_STUDIO_WEEKDAYS).toHaveLength(7);
+    expect(SERIAL_STUDIO_SERIAL_POLICIES.map((p) => p.creatorSharePercent)).toEqual([40, 60, 80]);
 
-    const bannerCrop = computeGgumtoonCoverOrBannerCrop({
+    const bannerCrop = computeSerialStudioCoverOrBannerCrop({
       role: "banner",
       mediaWidth: 1200,
       mediaHeight: 800,
@@ -68,7 +68,7 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
     expect(bannerCrop.height).toBe(400);
     expect(bannerCrop.aspectRatio).toBe("3:1");
 
-    const coverCrop = computeGgumtoonCoverOrBannerCrop({
+    const coverCrop = computeSerialStudioCoverOrBannerCrop({
       role: "cover",
       mediaWidth: 1000,
       mediaHeight: 1400,
@@ -78,7 +78,7 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
     });
     expect(coverCrop.aspectRatio).toBe("5:7");
 
-    const draftCheck = validateAndBuildGgumtoonWorkPayload({
+    const draftCheck = validateAndBuildSerialStudioWorkPayload({
       type: "webtoon",
       title: "회귀한 황녀의 별빛 검술",
       genres: ["로맨스", "판타지"],
@@ -94,11 +94,11 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
   });
 
   it("generates 3 style candidates (3 credits / 1 credit regen) and auto-detects character definitions", () => {
-    expect(GGUMTOON_STYLE_QUICK_PRESETS).toHaveLength(5);
-    expect(GGUMTOON_STUDIO_CREDIT_COSTS.style_generate_initial).toBe(3);
-    expect(GGUMTOON_STUDIO_CREDIT_COSTS.style_regenerate).toBe(1);
+    expect(SERIAL_STUDIO_STYLE_QUICK_PRESETS).toHaveLength(5);
+    expect(SERIAL_STUDIO_CREDIT_COSTS.style_generate_initial).toBe(3);
+    expect(SERIAL_STUDIO_CREDIT_COSTS.style_regenerate).toBe(1);
 
-    const styleRes = generateGgumtoonStyleCandidates({
+    const styleRes = generateSerialStudioStyleCandidates({
       workId: "work-1",
       genre: "로맨스",
       prompt: "화려한 황궁 회랑의 황녀와 북부 대공 청년",
@@ -111,7 +111,7 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
       expect(styleRes.detectedCharacters).toHaveLength(2);
     }
 
-    const regenRes = generateGgumtoonStyleCandidates({
+    const regenRes = generateSerialStudioStyleCandidates({
       workId: "work-1",
       genre: "로맨스",
       prompt: "화려한 황궁 회랑의 황녀",
@@ -125,7 +125,7 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
   });
 
   it("generates 3 character sheet candidates, scenes (normal 3 / highlight 5 credits), and inpaint 3 candidates (3 credits)", () => {
-    const charRes = generateGgumtoonCharacterSheetCandidates({
+    const charRes = generateSerialStudioCharacterSheetCandidates({
       workId: "work-1",
       name: "강하준",
       appearancePrompt: "은발에 검푸른 제복을 입은 북부 대공",
@@ -137,13 +137,13 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
       expect(charRes.imageUrls).toHaveLength(3);
     }
 
-    expect(GGUMTOON_OPENAI_SIZES.map((s) => s.id)).toEqual([
+    expect(SERIAL_STUDIO_OPENAI_SIZES.map((s) => s.id)).toEqual([
       "1024x1536",
       "1024x1024",
       "1536x1024",
     ]);
 
-    const normalScene = generateGgumtoonSceneImages({
+    const normalScene = generateSerialStudioSceneImages({
       scene: {
         id: "scene-1",
         prompt: "달빛 아래 검을 뽑아드는 강하준",
@@ -173,7 +173,7 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
       expect(normalScene.effectiveReferenceSource).toBe("previous_scene_url");
     }
 
-    const highlightCuttoon = generateGgumtoonSceneImages({
+    const highlightCuttoon = generateSerialStudioSceneImages({
       scene: {
         id: "scene-2",
         prompt: "붉은 마법진이 폭발하는 클라이맥스 결투",
@@ -203,7 +203,7 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
       expect(highlightCuttoon.images).toHaveLength(1);
     }
 
-    const inpaint = runGgumtoonSceneInpaint({
+    const inpaint = runSerialStudioSceneInpaint({
       sceneId: "scene-1",
       baseImageUrl: "https://cdn.toonstudio.local/prev.webp",
       editPrompt: "검 끝에 푸른 오러 광채 추가",
@@ -218,11 +218,11 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
   });
 
   it("clamps spacer textPanel height (80~2000px), computes gradient trigonometry, and enforces episode/upload rules", () => {
-    expect(clampGgumtoonSpacerPanelHeight(20)).toBe(80);
-    expect(clampGgumtoonSpacerPanelHeight(2450)).toBe(2000);
-    expect(clampGgumtoonSpacerPanelHeight(437)).toBe(437);
+    expect(clampSerialStudioSpacerPanelHeight(20)).toBe(80);
+    expect(clampSerialStudioSpacerPanelHeight(2450)).toBe(2000);
+    expect(clampSerialStudioSpacerPanelHeight(437)).toBe(437);
 
-    const endpoints = computeGgumtoonSpacerGradientCoordinates(600, 400, {
+    const endpoints = computeSerialStudioSpacerGradientCoordinates(600, 400, {
       angle: 180,
       colorStart: "#000000",
       colorStop: "#ffffff",
@@ -230,14 +230,14 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
     expect(endpoints.x0).toBeCloseTo(300, 1);
     expect(endpoints.y1).toBeGreaterThan(endpoints.y0);
 
-    expect(isGgumtoonEpisodeAutomaticallyFree(1, "webtoon")).toBe(true);
-    expect(isGgumtoonEpisodeAutomaticallyFree(3, "webtoon")).toBe(true);
-    expect(isGgumtoonEpisodeAutomaticallyFree(4, "webtoon")).toBe(false);
-    expect(isGgumtoonEpisodeAutomaticallyFree(1, "novel")).toBe(true);
-    expect(isGgumtoonEpisodeAutomaticallyFree(2, "novel")).toBe(false);
+    expect(isSerialStudioEpisodeAutomaticallyFree(1, "webtoon")).toBe(true);
+    expect(isSerialStudioEpisodeAutomaticallyFree(3, "webtoon")).toBe(true);
+    expect(isSerialStudioEpisodeAutomaticallyFree(4, "webtoon")).toBe(false);
+    expect(isSerialStudioEpisodeAutomaticallyFree(1, "novel")).toBe(true);
+    expect(isSerialStudioEpisodeAutomaticallyFree(2, "novel")).toBe(false);
 
     expect(
-      validateGgumtoonUploadedWebtoonImage({
+      validateSerialStudioUploadedWebtoonImage({
         fileName: "cut-01.png",
         naturalWidth: 800,
         naturalHeight: 900,
@@ -245,14 +245,14 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
     ).toBe(false);
 
     expect(
-      validateGgumtoonUploadedWebtoonImage({
+      validateSerialStudioUploadedWebtoonImage({
         fileName: "cut-01.png",
         naturalWidth: 800,
         naturalHeight: 1536,
       }).valid,
     ).toBe(true);
 
-    const docxValid = validateGgumtoonNovelUploadFile({
+    const docxValid = validateSerialStudioNovelUploadFile({
       fileName: "ep1.docx",
       byteSize: 1024 * 500,
       extractedText: "가".repeat(6000),
@@ -262,14 +262,14 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
       expect(docxValid.isWithinRecommendedLength).toBe(true);
     }
 
-    const pdfInvalid = validateGgumtoonNovelUploadFile({
+    const pdfInvalid = validateSerialStudioNovelUploadFile({
       fileName: "ep1.pdf",
       byteSize: 1024,
       extractedText: "본문",
     });
     expect(pdfInvalid.valid).toBe(false);
 
-    const novelGen = generateGgumtoonAiNovelEpisode({
+    const novelGen = generateSerialStudioAiNovelEpisode({
       workTitle: "회귀 황녀의 첫 무도회",
       genre: "로맨스",
       plotSummary: "황태자와의 첫 대면과 숨겨진 성검의 각성",
@@ -285,12 +285,12 @@ describe("Ggumtoon AI Creation Studio Engine (ggumtoon-studio-suite)", () => {
 
 describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platform-economy)", () => {
   it("calculates Web Coin first-charge 10% bonus, credit plans, and subscription plans", () => {
-    expect(GGUMTOON_WEB_COIN_PLANS).toHaveLength(4);
-    expect(GGUMTOON_CREDIT_PURCHASE_PLANS).toHaveLength(4);
-    expect(GGUMTOON_SUBSCRIPTION_TIERS).toHaveLength(3);
+    expect(SERIAL_STUDIO_WEB_COIN_PLANS).toHaveLength(4);
+    expect(SERIAL_STUDIO_CREDIT_PURCHASE_PLANS).toHaveLength(4);
+    expect(SERIAL_STUDIO_SUBSCRIPTION_TIERS).toHaveLength(3);
 
-    const firstCharge = computeGgumtoonCoinChargeOrder({
-      plan: GGUMTOON_WEB_COIN_PLANS[0]!,
+    const firstCharge = computeSerialStudioCoinChargeOrder({
+      plan: SERIAL_STUDIO_WEB_COIN_PLANS[0]!,
       hasNeverCharged: true,
       payMethod: "KAKAOPAY",
     });
@@ -298,8 +298,8 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     expect(firstCharge.bonusCoins).toBe(1);
     expect(firstCharge.totalCoinsGranted).toBe(11);
 
-    const repeatCharge = computeGgumtoonCoinChargeOrder({
-      plan: GGUMTOON_WEB_COIN_PLANS[0]!,
+    const repeatCharge = computeSerialStudioCoinChargeOrder({
+      plan: SERIAL_STUDIO_WEB_COIN_PLANS[0]!,
       hasNeverCharged: false,
       payMethod: "CARD",
     });
@@ -308,22 +308,22 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
   });
 
   it("handles 10-day attendance check (days 3, 6, 9, 10 -> 4 free coins) and Kakao share 15-coin cap", () => {
-    const day3 = evaluateGgumtoonAttendanceCycle(3);
+    const day3 = evaluateSerialStudioAttendanceCycle(3);
     expect(day3.coinsEarnedToday).toBe(1);
     expect(day3.totalCoinsFromCycle).toBe(1);
 
-    const day10 = evaluateGgumtoonAttendanceCycle(10);
+    const day10 = evaluateSerialStudioAttendanceCycle(10);
     expect(day10.coinsEarnedToday).toBe(1);
     expect(day10.totalCoinsFromCycle).toBe(4);
 
-    const shareProgress = evaluateGgumtoonShareRewardProgress(20, "work-1", "ep-4");
-    expect(shareProgress.rewardedCoins).toBe(GGUMTOON_SHARE_EVENT_MAX_COINS);
+    const shareProgress = evaluateSerialStudioShareRewardProgress(20, "work-1", "ep-4");
+    expect(shareProgress.rewardedCoins).toBe(SERIAL_STUDIO_SHARE_EVENT_MAX_COINS);
     expect(shareProgress.isMaxReached).toBe(true);
   });
 
   it("evaluates Wait-Free countdown, episode access priority, Auto-Like at 3 paid episodes, and viewer/translation helpers", () => {
     const nowMs = Date.now();
-    const waitCountdown = formatGgumtoonWaitFreeRemaining(
+    const waitCountdown = formatSerialStudioWaitFreeRemaining(
       new Date(nowMs + 125 * 60000).toISOString(),
       nowMs,
       "ko",
@@ -331,7 +331,7 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     expect(waitCountdown.claimable).toBe(false);
     expect(waitCountdown.label).toContain("2시간 5분 후 다음 화 무료");
 
-    const epFree = resolveGgumtoonEpisodeAccess({
+    const epFree = resolveSerialStudioEpisodeAccess({
       episodeIndexZeroBased: 1,
       isEpisodeFreeFlag: true,
       isChallengeWork: false,
@@ -343,7 +343,7 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     });
     expect(epFree.access).toBe("free_first_three");
 
-    const epWaitFree = resolveGgumtoonEpisodeAccess({
+    const epWaitFree = resolveSerialStudioEpisodeAccess({
       episodeIndexZeroBased: 4,
       isEpisodeFreeFlag: false,
       isChallengeWork: false,
@@ -355,7 +355,7 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     });
     expect(epWaitFree.access).toBe("wait_free_claimable");
 
-    const autoLike2 = shouldTriggerGgumtoonAutoLike({
+    const autoLike2 = shouldTriggerSerialStudioAutoLike({
       alreadyLiked: false,
       alreadyAutoLikedInSession: false,
       paidReadEpisodeIds: ["ep-4"],
@@ -363,7 +363,7 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     });
     expect(autoLike2.triggerAutoLike).toBe(false);
 
-    const autoLike3 = shouldTriggerGgumtoonAutoLike({
+    const autoLike3 = shouldTriggerSerialStudioAutoLike({
       alreadyLiked: false,
       alreadyAutoLikedInSession: false,
       paidReadEpisodeIds: ["ep-4", "ep-5"],
@@ -371,15 +371,15 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     });
     expect(autoLike3.triggerAutoLike).toBe(true);
 
-    expect(GGUMTOON_NOVEL_VIEWER_THEMES).toHaveLength(3);
-    expect(GGUMTOON_NOVEL_FONT_SIZES).toEqual({ sm: 14, md: 17, lg: 20 });
+    expect(SERIAL_STUDIO_NOVEL_VIEWER_THEMES).toHaveLength(3);
+    expect(SERIAL_STUDIO_NOVEL_FONT_SIZES).toEqual({ sm: 14, md: 17, lg: 20 });
 
-    const translated = translateGgumtoonEpisodeTextBoxes([
+    const translated = translateSerialStudioEpisodeTextBoxes([
       { id: "tb-1", y: 20, align: "center", fontSize: 17, text: "여기서 물러설 수 없다!" },
     ]);
     expect(translated[0]?.text_en).toContain("[EN]");
 
-    const banner = buildGgumtoonCrossAdaptationBanner({
+    const banner = buildSerialStudioCrossAdaptationBanner({
       currentWorkType: "novel",
       relatedWorkId: "w-1",
       relatedTitle: "별빛 검술",
@@ -388,10 +388,10 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
   });
 
   it("calculates creator settlement with 40/60/80% share, 3.3% withholding tax, and paid-coin-only rule", () => {
-    expect(GGUMTOON_SETTLEMENT_BANKS).toHaveLength(14);
-    expect(GGUMTOON_ADMIN_MODULES).toHaveLength(16);
+    expect(SERIAL_STUDIO_SETTLEMENT_BANKS).toHaveLength(14);
+    expect(SERIAL_STUDIO_ADMIN_MODULES).toHaveLength(16);
 
-    const stmt = calculateGgumtoonCreatorSettlement({
+    const stmt = calculateSerialStudioCreatorSettlement({
       paidCoinsRead: 1000,
       freeMarketingCoinsRead: 350,
       serialType: "regular",
@@ -405,7 +405,7 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     expect(stmt.withholdingTaxKrw).toBe(1980);
     expect(stmt.finalPayoutKrw).toBe(58020);
 
-    const validApp = validateGgumtoonSettlementRegistration({
+    const validApp = validateSerialStudioSettlementRegistration({
       realName: "홍길동",
       bankName: "카카오뱅크",
       accountNumber: "3333-01-2345678",
@@ -415,7 +415,7 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
     });
     expect(validApp.valid).toBe(true);
 
-    const metrics = computeGgumtoonWeeklyCoinConsumptionMetrics({
+    const metrics = computeSerialStudioWeeklyCoinConsumptionMetrics({
       weeklyUsedPaidCoins: 1200,
       weeklyUsedFreeCoins: 300,
       weeklyChargedPaidCoins: 2000,
@@ -425,11 +425,11 @@ describe("Ggumtoon Platform Economy, Viewer & Settlement Engine (ggumtoon-platfo
   });
 });
 
-describe("StudioGgumtoonSuitePanel UI Integration", () => {
+describe("StudioSerialStudioSuitePanel UI Integration", () => {
   it("renders all 4 Ggumtoon tabs and executes interactive workflows", () => {
     const onApplyScript = vi.fn();
     render(
-      <StudioGgumtoonSuitePanel
+      <StudioSerialStudioSuitePanel
         scriptInput="주인공 강하준: 검은 코트의 검사"
         onApplyScript={onApplyScript}
       />,

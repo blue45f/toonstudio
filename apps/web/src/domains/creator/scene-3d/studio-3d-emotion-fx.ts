@@ -7,7 +7,7 @@
  * - 3D comic emote stickers (sweat drop, anger cross, sparkle star, gloom lines)
  */
 
-export type TooningEmotionPreset =
+export type CreatorPlusEmotionPreset =
   | "joy-radiant"
   | "smirk-villain"
   | "cry-grief"
@@ -69,20 +69,20 @@ export interface WorldSpaceEmoteSfx {
   readonly scale: number;
 }
 
-export class Studio3DTooningEmotionFxEngine {
-  private activeEmotion: TooningEmotionPreset = "neutral-calm";
+export class Studio3DEmotionFxEngine {
+  private activeEmotion: CreatorPlusEmotionPreset = "neutral-calm";
   private bubbles: Map<string, WorldSpace3DBubble> = new Map();
   private emotes: Map<string, WorldSpaceEmoteSfx> = new Map();
 
-  constructor(initialEmotion: TooningEmotionPreset = "neutral-calm") {
+  constructor(initialEmotion: CreatorPlusEmotionPreset = "neutral-calm") {
     this.activeEmotion = initialEmotion;
   }
 
-  public getActiveEmotion(): TooningEmotionPreset {
+  public getActiveEmotion(): CreatorPlusEmotionPreset {
     return this.activeEmotion;
   }
 
-  public setEmotion(preset: TooningEmotionPreset): void {
+  public setEmotion(preset: CreatorPlusEmotionPreset): void {
     this.activeEmotion = preset;
   }
 
@@ -113,7 +113,7 @@ export class Studio3DTooningEmotionFxEngine {
   /**
    * Resolves exact facial blendshape weights for the active emotion preset.
    */
-  public evaluateBlendshapeWeights(preset: TooningEmotionPreset = this.activeEmotion): FacialBlendshapeWeights {
+  public evaluateBlendshapeWeights(preset: CreatorPlusEmotionPreset = this.activeEmotion): FacialBlendshapeWeights {
     const base: FacialBlendshapeWeights = {
       eyeBlinkLeft: 0,
       eyeBlinkRight: 0,

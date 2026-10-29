@@ -5,15 +5,15 @@
  * ToonStudio 웹스튜디오 도메인 엔진으로 100% 내재화한 모듈.
  */
 
-export type GgumtoonWorkType = "webtoon" | "novel";
-export type GgumtoonViewMode = "scroll" | "cut";
-export type GgumtoonSerialType = "free" | "regular" | "twice_weekly";
-export type GgumtoonWeekday = "월" | "화" | "수" | "목" | "금" | "토" | "일";
-export type GgumtoonOpenAiSizeId = "1024x1536" | "1024x1024" | "1536x1024";
-export type GgumtoonSceneQualityMode = "normal" | "highlight";
-export type GgumtoonSceneTextMode = "no_text" | "with_text";
+export type SerialStudioWorkType = "webtoon" | "novel";
+export type SerialStudioViewMode = "scroll" | "cut";
+export type SerialStudioSerialType = "free" | "regular" | "twice_weekly";
+export type SerialStudioWeekday = "월" | "화" | "수" | "목" | "금" | "토" | "일";
+export type SerialStudioOpenAiSizeId = "1024x1536" | "1024x1024" | "1536x1024";
+export type SerialStudioSceneQualityMode = "normal" | "highlight";
+export type SerialStudioSceneTextMode = "no_text" | "with_text";
 
-export type GgumtoonGenre =
+export type SerialStudioGenre =
   | "판타지"
   | "로맨스"
   | "액션"
@@ -25,7 +25,7 @@ export type GgumtoonGenre =
   | "코미디"
   | "학원물";
 
-export const GGUMTOON_GENRES: readonly GgumtoonGenre[] = [
+export const SERIAL_STUDIO_GENRES: readonly SerialStudioGenre[] = [
   "판타지",
   "로맨스",
   "액션",
@@ -38,7 +38,7 @@ export const GGUMTOON_GENRES: readonly GgumtoonGenre[] = [
   "학원물",
 ] as const;
 
-export const GGUMTOON_WEEKDAYS: readonly GgumtoonWeekday[] = [
+export const SERIAL_STUDIO_WEEKDAYS: readonly SerialStudioWeekday[] = [
   "월",
   "화",
   "수",
@@ -48,8 +48,8 @@ export const GGUMTOON_WEEKDAYS: readonly GgumtoonWeekday[] = [
   "일",
 ] as const;
 
-export interface GgumtoonOpenAiSizeSpec {
-  readonly id: GgumtoonOpenAiSizeId;
+export interface SerialStudioOpenAiSizeSpec {
+  readonly id: SerialStudioOpenAiSizeId;
   readonly label: string;
   readonly desc: string;
   readonly ratio: "2:3" | "1:1" | "3:2";
@@ -58,14 +58,14 @@ export interface GgumtoonOpenAiSizeSpec {
 }
 
 /** 0n5493b7spg.s.js 모듈 85149에서 관측된 OPENAI_SIZES 정본 */
-export const GGUMTOON_OPENAI_SIZES: readonly GgumtoonOpenAiSizeSpec[] = [
+export const SERIAL_STUDIO_OPENAI_SIZES: readonly SerialStudioOpenAiSizeSpec[] = [
   { id: "1024x1536", label: "세로형", desc: "세로 스크롤 웹툰에 최적", ratio: "2:3", width: 1024, height: 1536 },
   { id: "1024x1024", label: "정방형", desc: "좌우로 넘기는 컷툰에 최적", ratio: "1:1", width: 1024, height: 1024 },
   { id: "1536x1024", label: "와이드", desc: "영화적 장면, 배경 묘사에 최적", ratio: "3:2", width: 1536, height: 1024 },
 ] as const;
 
-export interface GgumtoonSerialPolicySpec {
-  readonly id: GgumtoonSerialType;
+export interface SerialStudioSerialPolicySpec {
+  readonly id: SerialStudioSerialType;
   readonly label: string;
   readonly creatorSharePercent: number;
   readonly platformSharePercent: number;
@@ -76,7 +76,7 @@ export interface GgumtoonSerialPolicySpec {
 }
 
 /** 0-du3dytc8ifq.js 작품 등록 위저드 및 0_qdehbuvn5r3.js 수익 정산에서 관측된 연재 방식 정책 */
-export const GGUMTOON_SERIAL_POLICIES: readonly GgumtoonSerialPolicySpec[] = [
+export const SERIAL_STUDIO_SERIAL_POLICIES: readonly SerialStudioSerialPolicySpec[] = [
   {
     id: "free",
     label: "자유 연재",
@@ -112,7 +112,7 @@ export const GGUMTOON_SERIAL_POLICIES: readonly GgumtoonSerialPolicySpec[] = [
 ] as const;
 
 /** 0-du3dytc8ifq.js 스타일 생성기(O)에서 관측된 5대 빠른 시작 그림체 프리셋 */
-export const GGUMTOON_STYLE_QUICK_PRESETS: readonly string[] = [
+export const SERIAL_STUDIO_STYLE_QUICK_PRESETS: readonly string[] = [
   "밝은 파스텔 색감, 청춘 로맨스, 가느다란 선, 깔끔한 배경",
   "강렬한 색대비, 역동적인 액션, 두꺼운 아웃라인, 선명한 컬러",
   "어둡고 섬세한 공포 분위기, 세밀한 명암, 모노크롬",
@@ -121,7 +121,7 @@ export const GGUMTOON_STYLE_QUICK_PRESETS: readonly string[] = [
 ] as const;
 
 /** 0n5493b7spg.s.js 및 0-du3dytc8ifq.js에서 관측된 크레딧 비용 상수 */
-export const GGUMTOON_STUDIO_CREDIT_COSTS = {
+export const SERIAL_STUDIO_CREDIT_COSTS = {
   novel_generate: 3,
   webtoon_normal: 3,
   webtoon_highlight: 5,
@@ -135,7 +135,7 @@ export const GGUMTOON_STUDIO_CREDIT_COSTS = {
 
 const AUTHOR_NAME_REGEX = /^[가-힣a-zA-Z0-9]{2,12}$/;
 
-export interface GgumtoonAuthorValidationResult {
+export interface SerialStudioAuthorValidationResult {
   readonly valid: boolean;
   readonly normalizedName: string;
   readonly status: "idle" | "invalid" | "available" | "taken";
@@ -143,10 +143,10 @@ export interface GgumtoonAuthorValidationResult {
 }
 
 /** 작가 이름 검증기 (`/api/author/check-name` 및 `eb.test(e)` 규칙: 한글/영문/숫자 2~12자, 변경 불가) */
-export function validateGgumtoonAuthorName(
+export function validateSerialStudioAuthorName(
   rawName: string,
   takenNames: readonly string[] = [],
-): GgumtoonAuthorValidationResult {
+): SerialStudioAuthorValidationResult {
   const trimmed = rawName.trim();
   if (!trimmed) {
     return {
@@ -181,14 +181,14 @@ export function validateGgumtoonAuthorName(
   };
 }
 
-export interface GgumtoonWorkRegistrationDraft {
-  readonly type: GgumtoonWorkType;
+export interface SerialStudioWorkRegistrationDraft {
+  readonly type: SerialStudioWorkType;
   readonly title: string;
   readonly titleEn?: string;
-  readonly genres: readonly GgumtoonGenre[];
-  readonly serialType: GgumtoonSerialType;
-  readonly serialDays: readonly GgumtoonWeekday[];
-  readonly viewMode: GgumtoonViewMode;
+  readonly genres: readonly SerialStudioGenre[];
+  readonly serialType: SerialStudioSerialType;
+  readonly serialDays: readonly SerialStudioWeekday[];
+  readonly viewMode: SerialStudioViewMode;
   readonly description: string;
   readonly agreeAdPromotion: boolean;
   readonly agreeOperationPolicy: boolean;
@@ -197,18 +197,18 @@ export interface GgumtoonWorkRegistrationDraft {
   readonly serialTypeLockedUntil?: string | null;
 }
 
-export interface GgumtoonWorkValidationResult {
+export interface SerialStudioWorkValidationResult {
   readonly valid: boolean;
   readonly errors: readonly string[];
   readonly payload: {
-    readonly type: GgumtoonWorkType;
+    readonly type: SerialStudioWorkType;
     readonly title: string;
     readonly title_en: string | null;
-    readonly genre: GgumtoonGenre;
-    readonly genre_sub: GgumtoonGenre | null;
-    readonly serial_type: GgumtoonSerialType;
+    readonly genre: SerialStudioGenre;
+    readonly genre_sub: SerialStudioGenre | null;
+    readonly serial_type: SerialStudioSerialType;
     readonly serial_day: string | null;
-    readonly view_mode: GgumtoonViewMode;
+    readonly view_mode: SerialStudioViewMode;
     readonly description: string;
     readonly cover_emoji: string;
     readonly cover_bg: string;
@@ -217,11 +217,11 @@ export interface GgumtoonWorkValidationResult {
 }
 
 /** 작품 등록·수정 입력 검증 및 페이로드 생성 (`/api/work/create`, `/api/work/update`) */
-export function validateAndBuildGgumtoonWorkPayload(
-  draft: GgumtoonWorkRegistrationDraft,
+export function validateAndBuildSerialStudioWorkPayload(
+  draft: SerialStudioWorkRegistrationDraft,
   nowIso: string = "2026-10-26T00:00:00.000Z",
-  previousSerialType?: GgumtoonSerialType,
-): GgumtoonWorkValidationResult {
+  previousSerialType?: SerialStudioSerialType,
+): SerialStudioWorkValidationResult {
   const errors: string[] = [];
   const title = draft.title.trim();
 
@@ -283,7 +283,7 @@ export function validateAndBuildGgumtoonWorkPayload(
   };
 }
 
-export interface GgumtoonCropArea {
+export interface SerialStudioCropArea {
   readonly x: number;
   readonly y: number;
   readonly width: number;
@@ -292,7 +292,7 @@ export interface GgumtoonCropArea {
 }
 
 /** 0-du3dytc8ifq.js (reactEasyCrop B/$/q/X 수식) 기반 표지(800×1120) 및 상세 배너(3:1, 800×400) 노출 영역 계산기 */
-export function computeGgumtoonCoverOrBannerCrop(params: {
+export function computeSerialStudioCoverOrBannerCrop(params: {
   readonly role: "cover" | "banner";
   readonly mediaWidth: number;
   readonly mediaHeight: number;
@@ -300,7 +300,7 @@ export function computeGgumtoonCoverOrBannerCrop(params: {
   readonly panY: number;
   readonly zoom: number;
   readonly rotationDeg?: number;
-}): GgumtoonCropArea {
+}): SerialStudioCropArea {
   const zoom = Math.max(1, Math.min(3, params.zoom));
   const rotRad = ((params.rotationDeg ?? 0) * Math.PI) / 180;
   const rotatedW =
@@ -332,26 +332,26 @@ export function computeGgumtoonCoverOrBannerCrop(params: {
   };
 }
 
-export interface GgumtoonDetectedCharacterCandidate {
+export interface SerialStudioDetectedCharacterCandidate {
   readonly appearancePrompt: string;
   readonly faceImageUrl: string | null;
   readonly name: string;
   readonly saved: boolean;
 }
 
-export interface GgumtoonConfirmedStyle {
+export interface SerialStudioConfirmedStyle {
   readonly id: string;
   readonly name: string;
   readonly prompt: string;
   readonly referenceImageUrl: string;
   readonly candidateImages: readonly string[];
-  readonly detectedCharacters: readonly GgumtoonDetectedCharacterCandidate[];
+  readonly detectedCharacters: readonly SerialStudioDetectedCharacterCandidate[];
 }
 
 /** `/api/studio/generate-style` + `/api/studio/detect-characters` 결정론적 시뮬레이션 및 데이터 빌더 */
-export function generateGgumtoonStyleCandidates(params: {
+export function generateSerialStudioStyleCandidates(params: {
   readonly workId: string;
-  readonly genre: GgumtoonGenre;
+  readonly genre: SerialStudioGenre;
   readonly prompt: string;
   readonly currentCredits: number;
   readonly isRegeneration?: boolean;
@@ -363,7 +363,7 @@ export function generateGgumtoonStyleCandidates(params: {
       readonly images: readonly [string, string, string];
       readonly creditsUsed: number;
       readonly creditsRemaining: number;
-      readonly detectedCharacters: readonly GgumtoonDetectedCharacterCandidate[];
+      readonly detectedCharacters: readonly SerialStudioDetectedCharacterCandidate[];
     }
   | {
       readonly ok: false;
@@ -375,8 +375,8 @@ export function generateGgumtoonStyleCandidates(params: {
     return { ok: false, error: "empty_prompt", message: "그림체 설명을 입력해주세요." };
   }
   const cost = params.isRegeneration
-    ? GGUMTOON_STUDIO_CREDIT_COSTS.style_regenerate
-    : GGUMTOON_STUDIO_CREDIT_COSTS.style_generate_initial;
+    ? SERIAL_STUDIO_CREDIT_COSTS.style_regenerate
+    : SERIAL_STUDIO_CREDIT_COSTS.style_generate_initial;
   if (params.currentCredits < cost) {
     return { ok: false, error: "no_credits", message: "크레딧이 부족합니다." };
   }
@@ -389,7 +389,7 @@ export function generateGgumtoonStyleCandidates(params: {
     `https://cdn.toonstudio.local/ggumtoon/styles/${styleId}-cand-3.webp`,
   ];
 
-  const detectedCharacters: GgumtoonDetectedCharacterCandidate[] = [];
+  const detectedCharacters: SerialStudioDetectedCharacterCandidate[] = [];
   if (/여성|소녀|황녀|여주|그녀/.test(cleanPrompt)) {
     detectedCharacters.push({
       appearancePrompt: `${params.genre} 스타일의 여성 캐릭터, ${cleanPrompt.slice(0, 48)}`,
@@ -425,7 +425,7 @@ export function generateGgumtoonStyleCandidates(params: {
   };
 }
 
-export interface GgumtoonCharacterSheetRecord {
+export interface SerialStudioCharacterSheetRecord {
   readonly id: string;
   readonly workId: string;
   readonly name: string;
@@ -436,7 +436,7 @@ export interface GgumtoonCharacterSheetRecord {
 }
 
 /** `/api/character/create-sheet` 및 `/api/character/regenerate-sheet` 캐릭터 시트 3장 생성기 */
-export function generateGgumtoonCharacterSheetCandidates(params: {
+export function generateSerialStudioCharacterSheetCandidates(params: {
   readonly workId: string;
   readonly name: string;
   readonly appearancePrompt: string;
@@ -460,8 +460,8 @@ export function generateGgumtoonCharacterSheetCandidates(params: {
   if (!name || !appearance) {
     return { ok: false, error: "missing_fields", message: "이름과 외모 설명을 입력해주세요." };
   }
-  const cost = params.creditCost ?? GGUMTOON_STUDIO_CREDIT_COSTS.character_sheet;
-  if (params.currentCredits < GGUMTOON_STUDIO_CREDIT_COSTS.character_sheet_min_gate || params.currentCredits < cost) {
+  const cost = params.creditCost ?? SERIAL_STUDIO_CREDIT_COSTS.character_sheet;
+  if (params.currentCredits < SERIAL_STUDIO_CREDIT_COSTS.character_sheet_min_gate || params.currentCredits < cost) {
     return { ok: false, error: "no_credits", message: "크레딧이 부족합니다." };
   }
 
@@ -478,30 +478,30 @@ export function generateGgumtoonCharacterSheetCandidates(params: {
   };
 }
 
-export interface GgumtoonSpacerTextPanelGradient {
+export interface SerialStudioSpacerTextPanelGradient {
   readonly angle: number;
   readonly colorStart: string;
   readonly colorStop: string;
 }
 
-export interface GgumtoonSpacerTextPanel {
+export interface SerialStudioSpacerTextPanel {
   readonly height: number;
   readonly backgroundColor: string;
-  readonly backgroundGradient?: GgumtoonSpacerTextPanelGradient;
+  readonly backgroundGradient?: SerialStudioSpacerTextPanelGradient;
   readonly bubbles: readonly Record<string, unknown>[];
   readonly mergedImageUrl?: string;
 }
 
 /** 여백 패널(textPanel) 높이 클램핑(80~2000px) 및 삼각함수 선형 그라디언트 벡터 계산기 */
-export function clampGgumtoonSpacerPanelHeight(rawHeight: number): number {
+export function clampSerialStudioSpacerPanelHeight(rawHeight: number): number {
   if (!Number.isFinite(rawHeight)) return 240;
   return Math.max(80, Math.min(2000, Math.round(rawHeight)));
 }
 
-export function computeGgumtoonSpacerGradientCoordinates(
+export function computeSerialStudioSpacerGradientCoordinates(
   width: number,
   height: number,
-  gradient: GgumtoonSpacerTextPanelGradient,
+  gradient: SerialStudioSpacerTextPanelGradient,
 ): {
   readonly cssBackground: string;
   readonly x0: number;
@@ -523,12 +523,12 @@ export function computeGgumtoonSpacerGradientCoordinates(
   };
 }
 
-export interface GgumtoonStudioSceneItem {
+export interface SerialStudioSceneItem {
   readonly id: string;
   readonly prompt: string;
-  readonly mode: GgumtoonSceneQualityMode;
-  readonly size: GgumtoonOpenAiSizeId;
-  readonly textMode: GgumtoonSceneTextMode;
+  readonly mode: SerialStudioSceneQualityMode;
+  readonly size: SerialStudioOpenAiSizeId;
+  readonly textMode: SerialStudioSceneTextMode;
   readonly selectedCharacterIds: readonly string[];
   readonly autoReferenceEnabled: boolean;
   readonly customReferenceImageB64: string | null;
@@ -537,21 +537,21 @@ export interface GgumtoonStudioSceneItem {
   readonly savedSceneId: string | null;
   readonly confirmedImageUrl: string | null;
   readonly savedBubbles: readonly Record<string, unknown>[];
-  readonly textPanel: GgumtoonSpacerTextPanel | null;
+  readonly textPanel: SerialStudioSpacerTextPanel | null;
 }
 
 /** 장면 생성기 (`/api/studio/generate-webtoon` 및 자동 레퍼런스 체이닝) */
-export function generateGgumtoonSceneImages(params: {
-  readonly scene: GgumtoonStudioSceneItem;
+export function generateSerialStudioSceneImages(params: {
+  readonly scene: SerialStudioSceneItem;
   readonly workTitle: string;
-  readonly workGenre: GgumtoonGenre;
+  readonly workGenre: SerialStudioGenre;
   readonly isCuttoon: boolean;
   readonly lastConfirmedImageUrl: string | null;
   readonly currentCredits: number;
 }):
   | {
       readonly ok: true;
-      readonly effectiveSize: GgumtoonOpenAiSizeId;
+      readonly effectiveSize: SerialStudioOpenAiSizeId;
       readonly effectiveReferenceSource: "custom_b64" | "previous_scene_url" | "none";
       readonly images: readonly string[];
       readonly creditsUsed: number;
@@ -567,13 +567,13 @@ export function generateGgumtoonSceneImages(params: {
   }
   const cost =
     params.scene.mode === "highlight"
-      ? GGUMTOON_STUDIO_CREDIT_COSTS.webtoon_highlight
-      : GGUMTOON_STUDIO_CREDIT_COSTS.webtoon_normal;
+      ? SERIAL_STUDIO_CREDIT_COSTS.webtoon_highlight
+      : SERIAL_STUDIO_CREDIT_COSTS.webtoon_normal;
   if (params.currentCredits < cost) {
     return { ok: false, error: "no_credits", message: "크레딧이 부족합니다." };
   }
 
-  const effectiveSize: GgumtoonOpenAiSizeId = params.isCuttoon ? "1024x1024" : params.scene.size;
+  const effectiveSize: SerialStudioOpenAiSizeId = params.isCuttoon ? "1024x1024" : params.scene.size;
   const effectiveReferenceSource: "custom_b64" | "previous_scene_url" | "none" =
     params.scene.customReferenceImageB64
       ? "custom_b64"
@@ -599,11 +599,11 @@ export function generateGgumtoonSceneImages(params: {
 }
 
 /** 부분 수정 (인페인팅, `/api/studio/inpaint`) 실행기 — 후보 3장 생성 (3크레딧) */
-export function runGgumtoonSceneInpaint(params: {
+export function runSerialStudioSceneInpaint(params: {
   readonly sceneId: string;
   readonly baseImageUrl: string;
   readonly editPrompt: string;
-  readonly size: GgumtoonOpenAiSizeId;
+  readonly size: SerialStudioOpenAiSizeId;
   readonly currentCredits: number;
 }):
   | {
@@ -620,7 +620,7 @@ export function runGgumtoonSceneInpaint(params: {
   if (!params.baseImageUrl.trim() || !params.editPrompt.trim()) {
     return { ok: false, error: "missing_input", message: "수정할 기준 이미지와 수정할 내용을 입력하세요." };
   }
-  const cost = GGUMTOON_STUDIO_CREDIT_COSTS.inpaint_modify;
+  const cost = SERIAL_STUDIO_CREDIT_COSTS.inpaint_modify;
   if (params.currentCredits < cost) {
     return { ok: false, error: "no_credits", message: "크레딧이 부족합니다." };
   }
@@ -637,9 +637,9 @@ export function runGgumtoonSceneInpaint(params: {
 }
 
 /** 에피소드 회차별 무료/유료 자동 판정 규칙 (`1~3화 자동 무료, 4화부터 유료 고정`) */
-export function isGgumtoonEpisodeAutomaticallyFree(
+export function isSerialStudioEpisodeAutomaticallyFree(
   episodeNumber: number,
-  workType: GgumtoonWorkType = "webtoon",
+  workType: SerialStudioWorkType = "webtoon",
   isChallengeWork: boolean = false,
 ): boolean {
   if (isChallengeWork) return true;
@@ -648,7 +648,7 @@ export function isGgumtoonEpisodeAutomaticallyFree(
 }
 
 /** 직접 업로드 웹툰 원고 이미지 규격 검증기 (`세로 1,120px 이상`) */
-export function validateGgumtoonUploadedWebtoonImage(params: {
+export function validateSerialStudioUploadedWebtoonImage(params: {
   readonly fileName: string;
   readonly naturalWidth: number;
   readonly naturalHeight: number;
@@ -663,7 +663,7 @@ export function validateGgumtoonUploadedWebtoonImage(params: {
 }
 
 /** 웹소설 파일 업로드 검증기 (`TXT, DOCX 파일만 업로드 가능 · 최대 10MB · 권장 5,000~20,000자`) */
-export function validateGgumtoonNovelUploadFile(params: {
+export function validateSerialStudioNovelUploadFile(params: {
   readonly fileName: string;
   readonly byteSize: number;
   readonly extractedText: string;
@@ -699,9 +699,9 @@ export function validateGgumtoonNovelUploadFile(params: {
 }
 
 /** `/api/studio/generate-novel` AI 웹소설 본문 생성기 (3크레딧) */
-export function generateGgumtoonAiNovelEpisode(params: {
+export function generateSerialStudioAiNovelEpisode(params: {
   readonly workTitle: string;
-  readonly genre: GgumtoonGenre;
+  readonly genre: SerialStudioGenre;
   readonly plotSummary: string;
   readonly currentCredits: number;
 }):
@@ -721,7 +721,7 @@ export function generateGgumtoonAiNovelEpisode(params: {
   if (!plot) {
     return { ok: false, error: "empty_plot", message: "줄거리를 입력해주세요." };
   }
-  const cost = GGUMTOON_STUDIO_CREDIT_COSTS.novel_generate;
+  const cost = SERIAL_STUDIO_CREDIT_COSTS.novel_generate;
   if (params.currentCredits < cost) {
     return { ok: false, error: "no_credits", message: "크레딧이 부족합니다." };
   }

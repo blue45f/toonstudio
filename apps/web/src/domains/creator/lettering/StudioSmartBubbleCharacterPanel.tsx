@@ -1,5 +1,5 @@
 /**
- * StudioTooningEditorBubbleCharacterPanel.tsx
+ * StudioSmartBubbleCharacterPanel.tsx
  *
  * Tooning Editor (ED) 절차적 말풍선 생성기(6종 형태 · 7종 감정 · 실시간 SVG 경로 · 2~5개 말풍선 불리언 병합) +
  * 16파츠 모듈형 2D 스마트 캐릭터(정면/측면/후면 · 머리/몸통 각도) + 다각형 가변 컷(editableCut 코너 라운드) &
@@ -23,9 +23,9 @@ import {
   type EdSmartCharacterPartSlot,
   type EdSpeechBubbleEmotionType,
   type EdSpeechBubbleShapeType,
-} from "./studio-tooning-editor-magic-suite";
+} from "./studio-smart-editor-magic-suite";
 
-export interface StudioTooningEditorBubbleCharacterPanelProps {
+export interface StudioSmartBubbleCharacterPanelProps {
   readonly onInsertBubble?: (variant: BubbleVariant) => void;
 }
 
@@ -65,9 +65,9 @@ function mapEdShapeToStudioVariant(shape: EdSpeechBubbleShapeType): BubbleVarian
   }
 }
 
-export function StudioTooningEditorBubbleCharacterPanel({
+export function StudioSmartBubbleCharacterPanel({
   onInsertBubble,
-}: StudioTooningEditorBubbleCharacterPanelProps): ReactElement {
+}: StudioSmartBubbleCharacterPanelProps): ReactElement {
   const [activeSubTab, setActiveSubTab] = useState<"proceduralBubble" | "smartCharacter" | "editableCut">(
     "proceduralBubble",
   );

@@ -1,5 +1,5 @@
 /**
- * StudioGgumtoonBubbleEditorPanel.tsx
+ * StudioBubblePresetEditorPanel.tsx
  *
  * https://www.ggumtoon.com/studio (`0-du3dytc8ifq.js` 내 `BubbleEditor`)의
  * 66종 말풍선(`[57..66, 1..56]`)·3종 효과·40종 한국어 서체(`dreamtoon_fav_fonts` 즐겨찾기)·
@@ -9,38 +9,38 @@ import { Copy, Frame, Redo2, Sparkles, Star, Type, Undo2 } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
 import {
-  buildGgumtoonBubbleTailSvgPath,
-  cloneGgumtoonCanvasObjectWithOffset,
-  computeGgumtoonAlignedObjectPosition,
-  computeGgumtoonClipFramePolygon,
-  createEmptyGgumtoonCanvasHistory,
-  filterGgumtoonBubbleOrEffectTemplates,
-  GGUMTOON_BUBBLE_FONTS,
-  GGUMTOON_CANVAS_ALIGNMENTS,
-  GGUMTOON_CLIP_FRAMES,
-  GGUMTOON_DEFAULT_ITEXT_FONT,
-  partitionGgumtoonFontsByFavorite,
-  pushGgumtoonCanvasHistorySnapshot,
-  redoGgumtoonCanvasHistory,
-  toggleGgumtoonFavoriteFont,
-  undoGgumtoonCanvasHistory,
-  type GgumtoonBubbleTailDirection,
-  type GgumtoonCanvasAlignType,
-  type GgumtoonCanvasLayerObject,
-  type GgumtoonClipFrameType,
-} from "./ggumtoon-bubble-editor-engine";
+  buildSerialStudioBubbleTailSvgPath,
+  cloneSerialStudioCanvasObjectWithOffset,
+  computeSerialStudioAlignedObjectPosition,
+  computeSerialStudioClipFramePolygon,
+  createEmptySerialStudioCanvasHistory,
+  filterSerialStudioBubbleOrEffectTemplates,
+  SERIAL_STUDIO_BUBBLE_FONTS,
+  SERIAL_STUDIO_CANVAS_ALIGNMENTS,
+  SERIAL_STUDIO_CLIP_FRAMES,
+  SERIAL_STUDIO_DEFAULT_ITEXT_FONT,
+  partitionSerialStudioFontsByFavorite,
+  pushSerialStudioCanvasHistorySnapshot,
+  redoSerialStudioCanvasHistory,
+  toggleSerialStudioFavoriteFont,
+  undoSerialStudioCanvasHistory,
+  type SerialStudioBubbleTailDirection,
+  type SerialStudioCanvasAlignType,
+  type SerialStudioCanvasLayerObject,
+  type SerialStudioClipFrameType,
+} from "./bubble-preset-editor-engine";
 
 import type { BubbleVariant } from "../studio-assets";
 
 import { cn } from "@/shared/lib/utils";
 
-export interface StudioGgumtoonBubbleEditorPanelProps {
+export interface StudioBubblePresetEditorPanelProps {
   readonly onInsertBubble?: (variant: BubbleVariant) => void;
 }
 
-export function StudioGgumtoonBubbleEditorPanel({
+export function StudioBubblePresetEditorPanel({
   onInsertBubble,
-}: StudioGgumtoonBubbleEditorPanelProps): ReactElement {
+}: StudioBubblePresetEditorPanelProps): ReactElement {
   const [assetCategory, setAssetCategory] = useState<"bubble" | "effect">("bubble");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<number>(1);
@@ -50,11 +50,11 @@ export function StudioGgumtoonBubbleEditorPanel({
     "ChosunCentennial",
     "MoneygraphyRounded",
   ]);
-  const [selectedFont, setSelectedFont] = useState<string>(GGUMTOON_DEFAULT_ITEXT_FONT);
-  const [clipFrame, setClipFrame] = useState<GgumtoonClipFrameType>("none");
+  const [selectedFont, setSelectedFont] = useState<string>(SERIAL_STUDIO_DEFAULT_ITEXT_FONT);
+  const [clipFrame, setClipFrame] = useState<SerialStudioClipFrameType>("none");
   const [tailDirection, setTailDirection] =
-    useState<GgumtoonBubbleTailDirection>("bottom-left");
-  const [activeLayer, setActiveLayer] = useState<GgumtoonCanvasLayerObject>({
+    useState<SerialStudioBubbleTailDirection>("bottom-left");
+  const [activeLayer, setActiveLayer] = useState<SerialStudioCanvasLayerObject>({
     id: "gt-layer-1",
     dataType: "speech-text",
     left: 220,
@@ -67,34 +67,34 @@ export function StudioGgumtoonBubbleEditorPanel({
     flipX: false,
     flipY: false,
     text: "텍스트를 입력하세요",
-    fontFamily: GGUMTOON_DEFAULT_ITEXT_FONT,
+    fontFamily: SERIAL_STUDIO_DEFAULT_ITEXT_FONT,
     fontSize: 18,
   });
 
   const [historyState, setHistoryState] = useState(() =>
-    createEmptyGgumtoonCanvasHistory(
-      JSON.stringify({ left: 220, top: 430, font: GGUMTOON_DEFAULT_ITEXT_FONT }),
+    createEmptySerialStudioCanvasHistory(
+      JSON.stringify({ left: 220, top: 430, font: SERIAL_STUDIO_DEFAULT_ITEXT_FONT }),
     ),
   );
 
   const filteredTemplates = useMemo(
-    () => filterGgumtoonBubbleOrEffectTemplates(assetCategory, searchQuery),
+    () => filterSerialStudioBubbleOrEffectTemplates(assetCategory, searchQuery),
     [assetCategory, searchQuery],
   );
 
   const partitionedFonts = useMemo(
-    () => partitionGgumtoonFontsByFavorite(favoriteFonts),
+    () => partitionSerialStudioFontsByFavorite(favoriteFonts),
     [favoriteFonts],
   );
 
   const clipPolygon = useMemo(
-    () => computeGgumtoonClipFramePolygon(clipFrame),
+    () => computeSerialStudioClipFramePolygon(clipFrame),
     [clipFrame],
   );
 
   const tailSvgPath = useMemo(
     () =>
-      buildGgumtoonBubbleTailSvgPath({
+      buildSerialStudioBubbleTailSvgPath({
         x: 8,
         y: 6,
         w: 120,
@@ -104,19 +104,19 @@ export function StudioGgumtoonBubbleEditorPanel({
     [tailDirection],
   );
 
-  const handleAlign = (align: GgumtoonCanvasAlignType) => {
-    const pos = computeGgumtoonAlignedObjectPosition({
+  const handleAlign = (align: SerialStudioCanvasAlignType) => {
+    const pos = computeSerialStudioAlignedObjectPosition({
       object: activeLayer,
       align,
     });
-    const nextLayer: GgumtoonCanvasLayerObject = {
+    const nextLayer: SerialStudioCanvasLayerObject = {
       ...activeLayer,
       left: pos.left,
       top: pos.top,
     };
     setActiveLayer(nextLayer);
     setHistoryState((prev) =>
-      pushGgumtoonCanvasHistorySnapshot(
+      pushSerialStudioCanvasHistorySnapshot(
         prev,
         JSON.stringify({
           left: nextLayer.left,
@@ -128,13 +128,13 @@ export function StudioGgumtoonBubbleEditorPanel({
   };
 
   const handleClone = () => {
-    const cloned = cloneGgumtoonCanvasObjectWithOffset(
+    const cloned = cloneSerialStudioCanvasObjectWithOffset(
       activeLayer,
       `gt-layer-${historyState.snapshots.length + 1}`,
     );
     setActiveLayer(cloned);
     setHistoryState((prev) =>
-      pushGgumtoonCanvasHistorySnapshot(
+      pushSerialStudioCanvasHistorySnapshot(
         prev,
         JSON.stringify({
           left: cloned.left,
@@ -146,7 +146,7 @@ export function StudioGgumtoonBubbleEditorPanel({
   };
 
   const handleUndo = () => {
-    const res = undoGgumtoonCanvasHistory(historyState);
+    const res = undoSerialStudioCanvasHistory(historyState);
     setHistoryState(res.state);
     if (res.snapshot) {
       const parsed = JSON.parse(res.snapshot) as {
@@ -164,7 +164,7 @@ export function StudioGgumtoonBubbleEditorPanel({
   };
 
   const handleRedo = () => {
-    const res = redoGgumtoonCanvasHistory(historyState);
+    const res = redoSerialStudioCanvasHistory(historyState);
     setHistoryState(res.state);
     if (res.snapshot) {
       const parsed = JSON.parse(res.snapshot) as {
@@ -281,14 +281,14 @@ export function StudioGgumtoonBubbleEditorPanel({
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-1 text-[0.62rem] font-semibold text-fg">
             <Type size={11} aria-hidden="true" />
-            40종 한국어 서체 ({GGUMTOON_BUBBLE_FONTS.length}종 · ★ 즐겨찾기{" "}
+            40종 한국어 서체 ({SERIAL_STUDIO_BUBBLE_FONTS.length}종 · ★ 즐겨찾기{" "}
             {partitionedFonts.favorites.length}개)
           </span>
           <button
             type="button"
             data-testid="ggumtoon-toggle-fav-font-btn"
             onClick={() =>
-              setFavoriteFonts((prev) => toggleGgumtoonFavoriteFont(prev, selectedFont))
+              setFavoriteFonts((prev) => toggleSerialStudioFavoriteFont(prev, selectedFont))
             }
             className="inline-flex items-center gap-0.5 rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2 hover:bg-raised"
           >
@@ -333,7 +333,7 @@ export function StudioGgumtoonBubbleEditorPanel({
             도형 프레임 ({clipPolygon.length}꼭짓점) & 꼬리
           </span>
           <div className="flex flex-wrap gap-1">
-            {GGUMTOON_CLIP_FRAMES.map((frame) => (
+            {SERIAL_STUDIO_CLIP_FRAMES.map((frame) => (
               <button
                 key={frame.id}
                 type="button"
@@ -388,7 +388,7 @@ export function StudioGgumtoonBubbleEditorPanel({
             위치 정렬 (600px 캔버스) · 복제(+20px)
           </span>
           <div className="grid grid-cols-3 gap-1">
-            {GGUMTOON_CANVAS_ALIGNMENTS.map((align) => (
+            {SERIAL_STUDIO_CANVAS_ALIGNMENTS.map((align) => (
               <button
                 key={align.id}
                 type="button"

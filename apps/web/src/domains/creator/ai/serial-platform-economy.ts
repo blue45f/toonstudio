@@ -6,11 +6,11 @@
  * `0zs~t~wjid82~.js`, `0uhdfyo3fw~s4.js`, `0695ucpa4z0id.js`) 결과를 ToonStudio 도메인 엔진으로 내재화한 모듈.
  */
 
-import type { GgumtoonSerialType, GgumtoonWorkType } from "./ggumtoon-studio-suite";
+import type { SerialStudioSerialType, SerialStudioWorkType } from "./serial-studio-suite";
 
-export type GgumtoonPayMethod = "KAKAOPAY" | "CARD";
+export type SerialStudioPayMethod = "KAKAOPAY" | "CARD";
 
-export interface GgumtoonWebCoinPlan {
+export interface SerialStudioWebCoinPlan {
   readonly coins: number;
   readonly price: number;
 }
@@ -18,14 +18,14 @@ export interface GgumtoonWebCoinPlan {
 /**
  * 0n5493b7spg.s.js (모듈 85149) WEB_COIN_PLANS 정본
  */
-export const GGUMTOON_WEB_COIN_PLANS: readonly GgumtoonWebCoinPlan[] = [
+export const SERIAL_STUDIO_WEB_COIN_PLANS: readonly SerialStudioWebCoinPlan[] = [
   { coins: 10, price: 1000 },
   { coins: 30, price: 3000 },
   { coins: 50, price: 5000 },
   { coins: 100, price: 10000 },
 ] as const;
 
-export interface GgumtoonCreditPurchasePlan {
+export interface SerialStudioCreditPurchasePlan {
   readonly credits: number;
   readonly price: number;
   readonly validityDays: number;
@@ -34,14 +34,14 @@ export interface GgumtoonCreditPurchasePlan {
 /**
  * 0_qdehbuvn5r3.js에서 관측된 AI 크레딧 단건 충전 플랜 (충전일로부터 1년간 사용 가능)
  */
-export const GGUMTOON_CREDIT_PURCHASE_PLANS: readonly GgumtoonCreditPurchasePlan[] = [
+export const SERIAL_STUDIO_CREDIT_PURCHASE_PLANS: readonly SerialStudioCreditPurchasePlan[] = [
   { credits: 50, price: 5000, validityDays: 365 },
   { credits: 100, price: 9900, validityDays: 365 },
   { credits: 300, price: 28000, validityDays: 365 },
   { credits: 500, price: 45000, validityDays: 365 },
 ] as const;
 
-export interface GgumtoonSubscriptionTierSpec {
+export interface SerialStudioSubscriptionTierSpec {
   readonly id: "Standard" | "Pro" | "Ultra";
   readonly monthlyCredits: number;
   readonly monthlyPriceKrw: number;
@@ -52,7 +52,7 @@ export interface GgumtoonSubscriptionTierSpec {
 /**
  * 0w.h9fapc_f97.js (모듈 33499)에서 관측된 월간 구독 플랜 (매월 말일 소멸·이월 불가)
  */
-export const GGUMTOON_SUBSCRIPTION_TIERS: readonly GgumtoonSubscriptionTierSpec[] = [
+export const SERIAL_STUDIO_SUBSCRIPTION_TIERS: readonly SerialStudioSubscriptionTierSpec[] = [
   {
     id: "Standard",
     monthlyCredits: 120,
@@ -76,7 +76,7 @@ export const GGUMTOON_SUBSCRIPTION_TIERS: readonly GgumtoonSubscriptionTierSpec[
   },
 ] as const;
 
-export const GGUMTOON_SIGNUP_BONUSES = {
+export const SERIAL_STUDIO_SIGNUP_BONUSES = {
   readerCoinsKo: 10,
   readerCoinsEn: 30,
   creatorCredits: 100,
@@ -86,20 +86,20 @@ export const GGUMTOON_SIGNUP_BONUSES = {
 /**
  * 꿈(독자 열람 코인) 충전 주문 계산기 (`hasNeverCharged` 첫 충전 10% 추가 지급 규칙 반영)
  */
-export function computeGgumtoonCoinChargeOrder(params: {
-  readonly plan: GgumtoonWebCoinPlan;
+export function computeSerialStudioCoinChargeOrder(params: {
+  readonly plan: SerialStudioWebCoinPlan;
   readonly hasNeverCharged: boolean;
-  readonly payMethod: GgumtoonPayMethod;
+  readonly payMethod: SerialStudioPayMethod;
 }): {
   readonly baseCoins: number;
   readonly bonusCoins: number;
   readonly totalCoinsGranted: number;
   readonly paymentAmountKrw: number;
-  readonly payMethod: GgumtoonPayMethod;
+  readonly payMethod: SerialStudioPayMethod;
   readonly orderName: string;
 } {
   const bonusCoins = params.hasNeverCharged
-    ? Math.floor(params.plan.coins * GGUMTOON_SIGNUP_BONUSES.firstChargeBonusRate)
+    ? Math.floor(params.plan.coins * SERIAL_STUDIO_SIGNUP_BONUSES.firstChargeBonusRate)
     : 0;
   return {
     baseCoins: params.plan.coins,
@@ -111,7 +111,7 @@ export function computeGgumtoonCoinChargeOrder(params: {
   };
 }
 
-export interface GgumtoonAttendanceCycleSummary {
+export interface SerialStudioAttendanceCycleSummary {
   readonly cycleDay: number;
   readonly totalAttendanceDays: number;
   readonly coinsEarnedToday: number;
@@ -125,9 +125,9 @@ export interface GgumtoonAttendanceCycleSummary {
  * - 3·6·9일차에 1꿈씩 지급
  * - 10일차에는 개근 보너스로 또 1꿈 지급 (10일 주기 총 4꿈)
  */
-export function evaluateGgumtoonAttendanceCycle(
+export function evaluateSerialStudioAttendanceCycle(
   totalAttendanceDaysAfterCheck: number,
-): GgumtoonAttendanceCycleSummary {
+): SerialStudioAttendanceCycleSummary {
   const safeTotal = Math.max(1, Math.floor(totalAttendanceDaysAfterCheck));
   const mod = safeTotal % 10;
   const cycleDay = mod === 0 ? 10 : mod;
@@ -168,7 +168,7 @@ export function evaluateGgumtoonAttendanceCycle(
 /**
  * 0rdx-ygp7ub4e.js `g(e, t)` 기다리면 무료 남은 시간 포맷터 정본
  */
-export function formatGgumtoonWaitFreeRemaining(
+export function formatSerialStudioWaitFreeRemaining(
   nextFreeAtIso: string,
   nowMs: number = Date.now(),
   locale: "ko" | "en" = "ko",
@@ -198,7 +198,7 @@ export function formatGgumtoonWaitFreeRemaining(
   };
 }
 
-export type GgumtoonEpisodeAccessOutcome =
+export type SerialStudioEpisodeAccessOutcome =
   | { readonly access: "free_challenge" | "free_first_three" | "free_flag" | "author_owner" | "already_read"; readonly coinsRequired: 0 }
   | { readonly access: "wait_free_claimable"; readonly coinsRequired: 0 }
   | { readonly access: "requires_coin_or_wait"; readonly coinsRequired: number; readonly waitRemainingLabel: string | null }
@@ -207,7 +207,7 @@ export type GgumtoonEpisodeAccessOutcome =
 /**
  * 0gfmlm~a9-5g..js (`ev()` 열람 판정 트리) 정본 구현
  */
-export function resolveGgumtoonEpisodeAccess(params: {
+export function resolveSerialStudioEpisodeAccess(params: {
   readonly episodeIndexZeroBased: number;
   readonly isEpisodeFreeFlag: boolean;
   readonly isChallengeWork: boolean;
@@ -219,7 +219,7 @@ export function resolveGgumtoonEpisodeAccess(params: {
   readonly waitFreeClaimable: boolean;
   readonly waitFreeNextFreeAtIso?: string | null;
   readonly nowMs?: number;
-}): GgumtoonEpisodeAccessOutcome {
+}): SerialStudioEpisodeAccessOutcome {
   if (params.isChallengeWork) {
     return { access: "free_challenge", coinsRequired: 0 };
   }
@@ -242,7 +242,7 @@ export function resolveGgumtoonEpisodeAccess(params: {
   const price = params.episodeCoinPrice ?? 1;
   const waitLabel =
     params.waitFreeApplicable && params.waitFreeNextFreeAtIso
-      ? formatGgumtoonWaitFreeRemaining(
+      ? formatSerialStudioWaitFreeRemaining(
           params.waitFreeNextFreeAtIso,
           params.nowMs,
         ).label
@@ -266,7 +266,7 @@ export function resolveGgumtoonEpisodeAccess(params: {
  * 0gfmlm~a9-5g..js `ew(episodeId, userId, alreadyLiked)`
  * 동일 작품 유료 회차 3회 열람 시 작품 좋아요 및 이메일 업데이트 알림 자동 설정 규칙
  */
-export function shouldTriggerGgumtoonAutoLike(params: {
+export function shouldTriggerSerialStudioAutoLike(params: {
   readonly alreadyLiked: boolean;
   readonly alreadyAutoLikedInSession: boolean;
   readonly paidReadEpisodeIds: readonly string[];
@@ -290,13 +290,13 @@ export function shouldTriggerGgumtoonAutoLike(params: {
   };
 }
 
-export const GGUMTOON_SHARE_EVENT_MAX_COINS = 15;
+export const SERIAL_STUDIO_SHARE_EVENT_MAX_COINS = 15;
 
 /**
  * 0gfmlm~a9-5g..js `b` 컴포넌트 (`/api/share/create`, `/api/share/click`)
  * 에피소드 공유 시 클릭당 1꿈 적립, 이벤트당 최대 15꿈 상한 계산기
  */
-export function evaluateGgumtoonShareRewardProgress(
+export function evaluateSerialStudioShareRewardProgress(
   currentRewardedClicks: number,
   workId: string,
   episodeId: string,
@@ -310,25 +310,25 @@ export function evaluateGgumtoonShareRewardProgress(
 } {
   const clamped = Math.max(
     0,
-    Math.min(GGUMTOON_SHARE_EVENT_MAX_COINS, Math.floor(currentRewardedClicks)),
+    Math.min(SERIAL_STUDIO_SHARE_EVENT_MAX_COINS, Math.floor(currentRewardedClicks)),
   );
-  const isMaxReached = clamped >= GGUMTOON_SHARE_EVENT_MAX_COINS;
+  const isMaxReached = clamped >= SERIAL_STUDIO_SHARE_EVENT_MAX_COINS;
   return {
     rewardedCoins: clamped,
-    maxCoins: GGUMTOON_SHARE_EVENT_MAX_COINS,
+    maxCoins: SERIAL_STUDIO_SHARE_EVENT_MAX_COINS,
     isMaxReached,
     statusText: isMaxReached
       ? "🎉 이벤트 최대 적립 달성!"
-      : `${clamped}/${GGUMTOON_SHARE_EVENT_MAX_COINS}꿈 적립됨`,
+      : `${clamped}/${SERIAL_STUDIO_SHARE_EVENT_MAX_COINS}꿈 적립됨`,
     shareUrl: `https://www.ggumtoon.com/work/${workId}/view?episode=${episodeId}&st=${shareToken}`,
   };
 }
 
-export type GgumtoonNovelViewerThemeId = "dark" | "light" | "sepia";
-export type GgumtoonNovelFontSizeKey = "sm" | "md" | "lg";
+export type SerialStudioNovelViewerThemeId = "dark" | "light" | "sepia";
+export type SerialStudioNovelFontSizeKey = "sm" | "md" | "lg";
 
-export interface GgumtoonNovelViewerThemeSpec {
-  readonly id: GgumtoonNovelViewerThemeId;
+export interface SerialStudioNovelViewerThemeSpec {
+  readonly id: SerialStudioNovelViewerThemeId;
   readonly label: string;
   readonly bg: string;
   readonly text: string;
@@ -339,7 +339,7 @@ export interface GgumtoonNovelViewerThemeSpec {
 /**
  * 0gfmlm~a9-5g..js (오프셋 31300) 웹소설 뷰어 3종 테마(다크·라이트·세피아) 및 3단계 글자 크기(14·17·20px) 정본
  */
-export const GGUMTOON_NOVEL_VIEWER_THEMES: readonly GgumtoonNovelViewerThemeSpec[] = [
+export const SERIAL_STUDIO_NOVEL_VIEWER_THEMES: readonly SerialStudioNovelViewerThemeSpec[] = [
   {
     id: "dark",
     label: "다크",
@@ -366,15 +366,15 @@ export const GGUMTOON_NOVEL_VIEWER_THEMES: readonly GgumtoonNovelViewerThemeSpec
   },
 ] as const;
 
-export const GGUMTOON_NOVEL_FONT_SIZES: Readonly<
-  Record<GgumtoonNovelFontSizeKey, number>
+export const SERIAL_STUDIO_NOVEL_FONT_SIZES: Readonly<
+  Record<SerialStudioNovelFontSizeKey, number>
 > = {
   sm: 14,
   md: 17,
   lg: 20,
 } as const;
 
-export interface GgumtoonViewerTextBox {
+export interface SerialStudioViewerTextBox {
   readonly id: string;
   readonly y: number;
   readonly align: "left" | "center" | "right";
@@ -387,9 +387,9 @@ export interface GgumtoonViewerTextBox {
 /**
  * 0gfmlm~a9-5g..js (`/api/translate-episode`) 뷰어 텍스트 패널 한→영 실시간 번역기
  */
-export function translateGgumtoonEpisodeTextBoxes(
-  textBoxes: readonly GgumtoonViewerTextBox[],
-): readonly GgumtoonViewerTextBox[] {
+export function translateSerialStudioEpisodeTextBoxes(
+  textBoxes: readonly SerialStudioViewerTextBox[],
+): readonly SerialStudioViewerTextBox[] {
   return textBoxes.map((box) => {
     if (box.text_en && box.text_en.trim()) return box;
     const raw = box.text.trim();
@@ -404,7 +404,7 @@ export function translateGgumtoonEpisodeTextBoxes(
 /**
  * 0zs~t~wjid82~.js (`/mypage/settlement`)에서 관측된 14개 정산 지원 은행 목록 정본
  */
-export const GGUMTOON_SETTLEMENT_BANKS: readonly string[] = [
+export const SERIAL_STUDIO_SETTLEMENT_BANKS: readonly string[] = [
   "카카오뱅크",
   "토스뱅크",
   "케이뱅크",
@@ -421,7 +421,7 @@ export const GGUMTOON_SETTLEMENT_BANKS: readonly string[] = [
   "수협은행",
 ] as const;
 
-export interface GgumtoonSettlementRegistrationInput {
+export interface SerialStudioSettlementRegistrationInput {
   readonly realName: string;
   readonly bankName: string;
   readonly accountNumber: string;
@@ -431,8 +431,8 @@ export interface GgumtoonSettlementRegistrationInput {
   readonly agreedPrivacyCollection: boolean;
 }
 
-export function validateGgumtoonSettlementRegistration(
-  input: GgumtoonSettlementRegistrationInput,
+export function validateSerialStudioSettlementRegistration(
+  input: SerialStudioSettlementRegistrationInput,
 ): { readonly valid: boolean; readonly errorMessage: string | null } {
   if (!input.realName.trim()) {
     return { valid: false, errorMessage: "실명을 입력해주세요." };
@@ -452,7 +452,7 @@ export function validateGgumtoonSettlementRegistration(
   return { valid: true, errorMessage: null };
 }
 
-export interface GgumtoonCreatorSettlementBreakdown {
+export interface SerialStudioCreatorSettlementBreakdown {
   readonly totalReadCoins: number;
   readonly excludedFreeMarketingCoins: number;
   readonly eligiblePaidCoins: number;
@@ -474,15 +474,15 @@ export interface GgumtoonCreatorSettlementBreakdown {
  * - 인앱(앱스토어/구글플레이) 결제 비중이 있을 경우 앱스토어 수수료 30% 반영
  * - 일반 개인 창작자는 3.3% 원천징수 후 익월 10일 실지급, 연간 지급액 125만원 이상 시 상·하반기 세무신고 대상
  */
-export function calculateGgumtoonCreatorSettlement(params: {
+export function calculateSerialStudioCreatorSettlement(params: {
   readonly paidCoinsRead: number;
   readonly freeMarketingCoinsRead: number;
-  readonly serialType: GgumtoonSerialType;
+  readonly serialType: SerialStudioSerialType;
   readonly isBusiness?: boolean;
   readonly appChannelRatio?: number;
   readonly coinUnitPriceKrw?: number;
   readonly cumulativeAnnualPayoutKrw?: number;
-}): GgumtoonCreatorSettlementBreakdown {
+}): SerialStudioCreatorSettlementBreakdown {
   const paidCoins = Math.max(0, Math.floor(params.paidCoinsRead));
   const freeCoins = Math.max(0, Math.floor(params.freeMarketingCoinsRead));
   const unitPrice = params.coinUnitPriceKrw ?? 100;
@@ -526,7 +526,7 @@ export function calculateGgumtoonCreatorSettlement(params: {
   };
 }
 
-export interface GgumtoonAdminModuleSpec {
+export interface SerialStudioAdminModuleSpec {
   readonly id: string;
   readonly path: string;
   readonly label: string;
@@ -536,7 +536,7 @@ export interface GgumtoonAdminModuleSpec {
 /**
  * 0uhdfyo3fw~s4.js 및 0695ucpa4z0id.js에서 관측된 꿈툰 어드민 16대 관리 모듈 정본
  */
-export const GGUMTOON_ADMIN_MODULES: readonly GgumtoonAdminModuleSpec[] = [
+export const SERIAL_STUDIO_ADMIN_MODULES: readonly SerialStudioAdminModuleSpec[] = [
   { id: "dashboard", path: "/admin", label: "대시보드", category: "overview" },
   { id: "users", path: "/admin/users", label: "유저 관리", category: "members" },
   { id: "authors", path: "/admin/authors", label: "작가 관리", category: "members" },
@@ -575,7 +575,7 @@ export const GGUMTOON_ADMIN_MODULES: readonly GgumtoonAdminModuleSpec[] = [
   },
 ] as const;
 
-export function computeGgumtoonWeeklyCoinConsumptionMetrics(params: {
+export function computeSerialStudioWeeklyCoinConsumptionMetrics(params: {
   readonly weeklyUsedPaidCoins: number;
   readonly weeklyUsedFreeCoins: number;
   readonly weeklyChargedPaidCoins: number;
@@ -602,9 +602,9 @@ export function computeGgumtoonWeeklyCoinConsumptionMetrics(params: {
   };
 }
 
-export interface GgumtoonCrossAdaptationBanner {
-  readonly sourceType: GgumtoonWorkType;
-  readonly targetType: GgumtoonWorkType;
+export interface SerialStudioCrossAdaptationBanner {
+  readonly sourceType: SerialStudioWorkType;
+  readonly targetType: SerialStudioWorkType;
   readonly targetWorkId: string;
   readonly targetTitle: string;
   readonly badgeText: string;
@@ -614,12 +614,12 @@ export interface GgumtoonCrossAdaptationBanner {
 /**
  * 0gfmlm~a9-5g..js (`adaptedWebtoon`, `novel` 교차 원작·웹툰화 배너 `I`) 빌더
  */
-export function buildGgumtoonCrossAdaptationBanner(params: {
-  readonly currentWorkType: GgumtoonWorkType;
+export function buildSerialStudioCrossAdaptationBanner(params: {
+  readonly currentWorkType: SerialStudioWorkType;
   readonly relatedWorkId: string;
   readonly relatedTitle: string;
-}): GgumtoonCrossAdaptationBanner {
-  const targetType: GgumtoonWorkType =
+}): SerialStudioCrossAdaptationBanner {
+  const targetType: SerialStudioWorkType =
     params.currentWorkType === "novel" ? "webtoon" : "novel";
   return {
     sourceType: params.currentWorkType,

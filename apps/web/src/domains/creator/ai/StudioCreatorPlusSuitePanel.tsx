@@ -1,5 +1,5 @@
 /**
- * StudioTooningPlusSuitePanel.tsx
+ * StudioCreatorPlusSuitePanel.tsx
  *
  * https://plus.tooning.io/ 전 제품군(TG 투닝 스토리 · TD 3D 스튜디오 연동 · ED 투닝 에디터 AI/3D 팝업 ·
  * MG 투닝 매직 B-LoRA/멀티 리터치 · DV 디브 AI 캐릭터/로어북/17모드 챗 · TB 툰비 웹툰 700px 검증기/웹소설 뷰어)을
@@ -35,10 +35,10 @@ import {
   type EdMannequinCameraPreset,
   type MgRetouchModelId,
   type MgStyleSegment,
-} from "../lettering/studio-tooning-editor-magic-suite";
+} from "../lettering/studio-smart-editor-magic-suite";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
-import { StudioTooningDeevToonBeSubPanel } from "./StudioTooningDeevToonBeSubPanel";
+import { StudioCharacterChatPublishSubPanel } from "./StudioCharacterChatPublishSubPanel";
 import {
   addTgConceptInstance,
   buildTgToTdExportPackage,
@@ -53,27 +53,27 @@ import {
   TG_COVER_IMAGE_PRESETS,
   TG_STARTER_PROMPT_SAMPLES,
   TG_SUPPORTED_FONTS,
-  TOONING_PLUS_SERVICES,
+  CREATOR_PLUS_SERVICES,
   updateTgSplitCutDescription,
   type TgAgentCategory,
   type TgConceptEntryInstance,
   type TgFileType,
   type TgSupportedFont,
-} from "./tooning-stories-suite";
+} from "./story-cut-splitter-suite";
 
 import { cn } from "@/shared/lib/utils";
 
-export interface StudioTooningPlusSuitePanelProps {
+export interface StudioCreatorPlusSuitePanelProps {
   readonly scriptInput?: string;
   readonly onApplyScript?: (nextScript: string) => void;
 }
 
 type ActiveServiceTab = "TG" | "ED_MG" | "DV" | "TB";
 
-export function StudioTooningPlusSuitePanel({
+export function StudioCreatorPlusSuitePanel({
   scriptInput = "",
   onApplyScript,
-}: StudioTooningPlusSuitePanelProps): ReactElement {
+}: StudioCreatorPlusSuitePanelProps): ReactElement {
   const [serviceTab, setServiceTab] = useState<ActiveServiceTab>("TG");
 
   // 1. TG (Tooning Stories, Cut Splitter & TG->TD 3D Studio Interlock) State
@@ -187,7 +187,7 @@ export function StudioTooningPlusSuitePanel({
             투닝 플러스 (Tooning Plus) 7대 제품군 통합 워크스페이스
           </strong>
           <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.58rem] font-bold text-accent">
-            {TOONING_PLUS_SERVICES.length}개 서비스 완전 내장
+            {CREATOR_PLUS_SERVICES.length}개 서비스 완전 내장
           </span>
         </div>
 
@@ -639,7 +639,7 @@ export function StudioTooningPlusSuitePanel({
 
       {/* Pillar 3 & 4: DV & TB */}
       {(serviceTab === "DV" || serviceTab === "TB") && (
-        <StudioTooningDeevToonBeSubPanel mode={serviceTab} novelSampleText={tgCanvasText} />
+        <StudioCharacterChatPublishSubPanel mode={serviceTab} novelSampleText={tgCanvasText} />
       )}
     </section>
   );

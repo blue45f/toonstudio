@@ -5,7 +5,7 @@
  * REA 역공학 분석으로 추출한 말풍선·효과·40종 한글 서체·8종 도형 클립 프레임·6방향 정렬·60단계 히스토리 엔진.
  */
 
-export interface GgumtoonBubbleAssetTemplate {
+export interface SerialStudioBubbleAssetTemplate {
   readonly id: number;
   readonly assetNumber: number;
   readonly src: string;
@@ -31,7 +31,7 @@ const BUBBLE_ASSET_ORDER: readonly number[] = [
   ...Array.from({ length: 56 }, (_, idx) => idx + 1),
 ];
 
-export const GGUMTOON_BUBBLE_TEMPLATES: readonly GgumtoonBubbleAssetTemplate[] =
+export const SERIAL_STUDIO_BUBBLE_TEMPLATES: readonly SerialStudioBubbleAssetTemplate[] =
   BUBBLE_ASSET_ORDER.map((assetNumber, idx) => ({
     id: idx + 1,
     assetNumber,
@@ -40,7 +40,7 @@ export const GGUMTOON_BUBBLE_TEMPLATES: readonly GgumtoonBubbleAssetTemplate[] =
     category: "bubble",
   }));
 
-export const GGUMTOON_EFFECT_TEMPLATES: readonly GgumtoonBubbleAssetTemplate[] = [
+export const SERIAL_STUDIO_EFFECT_TEMPLATES: readonly SerialStudioBubbleAssetTemplate[] = [
   "effect-1",
   "effect-2",
   "effect-3",
@@ -52,7 +52,7 @@ export const GGUMTOON_EFFECT_TEMPLATES: readonly GgumtoonBubbleAssetTemplate[] =
   category: "effect",
 }));
 
-export interface GgumtoonBubbleFontSpec {
+export interface SerialStudioBubbleFontSpec {
   readonly family: string;
   readonly label: string;
   readonly group: "nanum" | "google-kr" | "chosun" | "kmu80" | "moneygraphy";
@@ -61,7 +61,7 @@ export interface GgumtoonBubbleFontSpec {
 /**
  * 0-du3dytc8ifq.js (오프셋 28060)에서 관측된 40종 한국어 웹툰·식자 폰트 카탈로그 정본
  */
-export const GGUMTOON_BUBBLE_FONTS: readonly GgumtoonBubbleFontSpec[] = [
+export const SERIAL_STUDIO_BUBBLE_FONTS: readonly SerialStudioBubbleFontSpec[] = [
   { family: "NanumGothic", label: "나눔고딕", group: "nanum" },
   { family: "NanumBarunGothic", label: "나눔바른고딕", group: "nanum" },
   { family: "NanumSquare", label: "나눔스퀘어", group: "nanum" },
@@ -104,15 +104,15 @@ export const GGUMTOON_BUBBLE_FONTS: readonly GgumtoonBubbleFontSpec[] = [
   { family: "MoneygraphyRounded", label: "머니그래피 라운드", group: "moneygraphy" },
 ] as const;
 
-export const GGUMTOON_DEFAULT_CANVAS_FONT = "NanumSquare";
-export const GGUMTOON_DEFAULT_ITEXT_FONT = "NanumGothic";
-export const GGUMTOON_FONT_PRELOAD_SAMPLE_TEXT =
+export const SERIAL_STUDIO_DEFAULT_CANVAS_FONT = "NanumSquare";
+export const SERIAL_STUDIO_DEFAULT_ITEXT_FONT = "NanumGothic";
+export const SERIAL_STUDIO_FONT_PRELOAD_SAMPLE_TEXT =
   "가나다라마바사아자차카타파하텍스트를입력하세요힘꿈웹툰만화력텍";
-export const GGUMTOON_FAV_FONTS_STORAGE_KEY = "dreamtoon_fav_fonts";
-export const GGUMTOON_CANVAS_BASE_WIDTH = 600;
-export const GGUMTOON_MAX_HISTORY_STEPS = 60;
+export const SERIAL_STUDIO_FAV_FONTS_STORAGE_KEY = "dreamtoon_fav_fonts";
+export const SERIAL_STUDIO_CANVAS_BASE_WIDTH = 600;
+export const SERIAL_STUDIO_MAX_HISTORY_STEPS = 60;
 
-export type GgumtoonClipFrameType =
+export type SerialStudioClipFrameType =
   | "none"
   | "circle"
   | "rect"
@@ -123,8 +123,8 @@ export type GgumtoonClipFrameType =
   | "diamond"
   | "star";
 
-export interface GgumtoonClipFrameSpec {
-  readonly id: GgumtoonClipFrameType;
+export interface SerialStudioClipFrameSpec {
+  readonly id: SerialStudioClipFrameType;
   readonly label: string;
   readonly verticesCount: number;
 }
@@ -132,7 +132,7 @@ export interface GgumtoonClipFrameSpec {
 /**
  * 0-du3dytc8ifq.js (오프셋 72100)에서 관측된 삽입 이미지(`custom-image`) 9종 도형 클립 프레임
  */
-export const GGUMTOON_CLIP_FRAMES: readonly GgumtoonClipFrameSpec[] = [
+export const SERIAL_STUDIO_CLIP_FRAMES: readonly SerialStudioClipFrameSpec[] = [
   { id: "none", label: "원본", verticesCount: 4 },
   { id: "circle", label: "원형", verticesCount: 32 },
   { id: "rect", label: "사각형", verticesCount: 4 },
@@ -144,7 +144,7 @@ export const GGUMTOON_CLIP_FRAMES: readonly GgumtoonClipFrameSpec[] = [
   { id: "star", label: "별", verticesCount: 10 },
 ] as const;
 
-export type GgumtoonCanvasAlignType =
+export type SerialStudioCanvasAlignType =
   | "left"
   | "center-h"
   | "right"
@@ -152,12 +152,12 @@ export type GgumtoonCanvasAlignType =
   | "center-v"
   | "bottom";
 
-export interface GgumtoonCanvasAlignSpec {
-  readonly id: GgumtoonCanvasAlignType;
+export interface SerialStudioCanvasAlignSpec {
+  readonly id: SerialStudioCanvasAlignType;
   readonly label: string;
 }
 
-export const GGUMTOON_CANVAS_ALIGNMENTS: readonly GgumtoonCanvasAlignSpec[] = [
+export const SERIAL_STUDIO_CANVAS_ALIGNMENTS: readonly SerialStudioCanvasAlignSpec[] = [
   { id: "left", label: "좌측 정렬" },
   { id: "center-h", label: "가로 중앙" },
   { id: "right", label: "우측 정렬" },
@@ -169,12 +169,12 @@ export const GGUMTOON_CANVAS_ALIGNMENTS: readonly GgumtoonCanvasAlignSpec[] = [
 /**
  * 말풍선·효과 번호 검색 필터 (`$.trim() ? ts.filter(e => e.id.toString().includes(w)) : ts`)
  */
-export function filterGgumtoonBubbleOrEffectTemplates(
+export function filterSerialStudioBubbleOrEffectTemplates(
   category: "bubble" | "effect",
   searchNumberQuery: string,
-): readonly GgumtoonBubbleAssetTemplate[] {
+): readonly SerialStudioBubbleAssetTemplate[] {
   const source =
-    category === "bubble" ? GGUMTOON_BUBBLE_TEMPLATES : GGUMTOON_EFFECT_TEMPLATES;
+    category === "bubble" ? SERIAL_STUDIO_BUBBLE_TEMPLATES : SERIAL_STUDIO_EFFECT_TEMPLATES;
   const trimmed = searchNumberQuery.trim();
   if (!trimmed) return source;
   return source.filter((item) => item.id.toString().includes(trimmed));
@@ -183,7 +183,7 @@ export function filterGgumtoonBubbleOrEffectTemplates(
 /**
  * 즐겨찾기 폰트 토글 및 상단 고정 분할 (`dreamtoon_fav_fonts`)
  */
-export function toggleGgumtoonFavoriteFont(
+export function toggleSerialStudioFavoriteFont(
   favoriteFamilies: readonly string[],
   targetFamily: string,
 ): readonly string[] {
@@ -193,24 +193,24 @@ export function toggleGgumtoonFavoriteFont(
   return [...favoriteFamilies, targetFamily];
 }
 
-export function partitionGgumtoonFontsByFavorite(
+export function partitionSerialStudioFontsByFavorite(
   favoriteFamilies: readonly string[],
 ): {
-  readonly favorites: readonly GgumtoonBubbleFontSpec[];
-  readonly others: readonly GgumtoonBubbleFontSpec[];
+  readonly favorites: readonly SerialStudioBubbleFontSpec[];
+  readonly others: readonly SerialStudioBubbleFontSpec[];
 } {
   const favSet = new Set(favoriteFamilies);
   return {
-    favorites: GGUMTOON_BUBBLE_FONTS.filter((f) => favSet.has(f.family)),
-    others: GGUMTOON_BUBBLE_FONTS.filter((f) => !favSet.has(f.family)),
+    favorites: SERIAL_STUDIO_BUBBLE_FONTS.filter((f) => favSet.has(f.family)),
+    others: SERIAL_STUDIO_BUBBLE_FONTS.filter((f) => !favSet.has(f.family)),
   };
 }
 
 /**
  * 도형 프레임(`clipFrame`) 정다각형/별 꼭짓점 좌표 생성기 (정규화 범위 `-0.5 .. +0.5`)
  */
-export function computeGgumtoonClipFramePolygon(
-  frame: GgumtoonClipFrameType,
+export function computeSerialStudioClipFramePolygon(
+  frame: SerialStudioClipFrameType,
 ): readonly { readonly x: number; readonly y: number }[] {
   switch (frame) {
     case "none":
@@ -262,15 +262,15 @@ export function computeGgumtoonClipFramePolygon(
   }
 }
 
-export type GgumtoonCanvasObjectDataType =
+export type SerialStudioCanvasObjectDataType =
   | "scene-bg"
   | "bubble"
   | "speech-text"
   | "custom-image";
 
-export interface GgumtoonCanvasLayerObject {
+export interface SerialStudioCanvasLayerObject {
   readonly id: string;
-  readonly dataType: GgumtoonCanvasObjectDataType;
+  readonly dataType: SerialStudioCanvasObjectDataType;
   readonly left: number;
   readonly top: number;
   readonly width: number;
@@ -290,22 +290,22 @@ export interface GgumtoonCanvasLayerObject {
   readonly stroke?: string;
   readonly strokeWidth?: number;
   readonly textAlign?: "left" | "center" | "right";
-  readonly clipFrame?: GgumtoonClipFrameType;
+  readonly clipFrame?: SerialStudioClipFrameType;
 }
 
 /**
  * 캔버스 레이어 6방향 위치 정렬 계산기 (`left`, `center-h`, `right`, `top`, `center-v`, `bottom`)
  */
-export function computeGgumtoonAlignedObjectPosition(params: {
+export function computeSerialStudioAlignedObjectPosition(params: {
   readonly object: Pick<
-    GgumtoonCanvasLayerObject,
+    SerialStudioCanvasLayerObject,
     "left" | "top" | "width" | "height" | "scaleX" | "scaleY"
   >;
-  readonly align: GgumtoonCanvasAlignType;
+  readonly align: SerialStudioCanvasAlignType;
   readonly canvasWidth?: number;
   readonly canvasHeight?: number;
 }): { readonly left: number; readonly top: number } {
-  const cw = params.canvasWidth ?? GGUMTOON_CANVAS_BASE_WIDTH;
+  const cw = params.canvasWidth ?? SERIAL_STUDIO_CANVAS_BASE_WIDTH;
   const ch = params.canvasHeight ?? 900;
   const scaledW = params.object.width * params.object.scaleX;
   const scaledH = params.object.height * params.object.scaleY;
@@ -329,10 +329,10 @@ export function computeGgumtoonAlignedObjectPosition(params: {
 /**
  * `Ctrl+D` 복제 시 `+20px` 오프셋 적용 및 `scene-bg` 삭제 방지 규칙
  */
-export function cloneGgumtoonCanvasObjectWithOffset(
-  obj: GgumtoonCanvasLayerObject,
+export function cloneSerialStudioCanvasObjectWithOffset(
+  obj: SerialStudioCanvasLayerObject,
   newId: string,
-): GgumtoonCanvasLayerObject {
+): SerialStudioCanvasLayerObject {
   return {
     ...obj,
     id: newId,
@@ -341,13 +341,13 @@ export function cloneGgumtoonCanvasObjectWithOffset(
   };
 }
 
-export function canDeleteGgumtoonCanvasObject(
-  obj: Pick<GgumtoonCanvasLayerObject, "dataType">,
+export function canDeleteSerialStudioCanvasObject(
+  obj: Pick<SerialStudioCanvasLayerObject, "dataType">,
 ): boolean {
   return obj.dataType !== "scene-bg";
 }
 
-export interface GgumtoonCanvasHistoryState {
+export interface SerialStudioCanvasHistoryState {
   readonly snapshots: readonly string[];
   readonly currentIndex: number;
   readonly canUndo: boolean;
@@ -357,9 +357,9 @@ export interface GgumtoonCanvasHistoryState {
 /**
  * 0-du3dytc8ifq.js `ta`/`ti`/`tn` (60단계 링 버퍼 `r.length > 60 && r.shift()`) 히스토리 상태 머신
  */
-export function createEmptyGgumtoonCanvasHistory(
+export function createEmptySerialStudioCanvasHistory(
   initialSnapshot?: string,
-): GgumtoonCanvasHistoryState {
+): SerialStudioCanvasHistoryState {
   if (!initialSnapshot) {
     return {
       snapshots: [],
@@ -376,13 +376,13 @@ export function createEmptyGgumtoonCanvasHistory(
   };
 }
 
-export function pushGgumtoonCanvasHistorySnapshot(
-  state: GgumtoonCanvasHistoryState,
+export function pushSerialStudioCanvasHistorySnapshot(
+  state: SerialStudioCanvasHistoryState,
   snapshotJson: string,
-): GgumtoonCanvasHistoryState {
+): SerialStudioCanvasHistoryState {
   const nextList = state.snapshots.slice(0, state.currentIndex + 1);
   nextList.push(snapshotJson);
-  while (nextList.length > GGUMTOON_MAX_HISTORY_STEPS) {
+  while (nextList.length > SERIAL_STUDIO_MAX_HISTORY_STEPS) {
     nextList.shift();
   }
   const nextIndex = nextList.length - 1;
@@ -394,10 +394,10 @@ export function pushGgumtoonCanvasHistorySnapshot(
   };
 }
 
-export function undoGgumtoonCanvasHistory(
-  state: GgumtoonCanvasHistoryState,
+export function undoSerialStudioCanvasHistory(
+  state: SerialStudioCanvasHistoryState,
 ): {
-  readonly state: GgumtoonCanvasHistoryState;
+  readonly state: SerialStudioCanvasHistoryState;
   readonly snapshot: string | null;
 } {
   if (state.currentIndex <= 0) {
@@ -415,10 +415,10 @@ export function undoGgumtoonCanvasHistory(
   };
 }
 
-export function redoGgumtoonCanvasHistory(
-  state: GgumtoonCanvasHistoryState,
+export function redoSerialStudioCanvasHistory(
+  state: SerialStudioCanvasHistoryState,
 ): {
-  readonly state: GgumtoonCanvasHistoryState;
+  readonly state: SerialStudioCanvasHistoryState;
   readonly snapshot: string | null;
 } {
   if (state.currentIndex >= state.snapshots.length - 1) {
@@ -436,7 +436,7 @@ export function redoGgumtoonCanvasHistory(
   };
 }
 
-export type GgumtoonBubbleTailDirection =
+export type SerialStudioBubbleTailDirection =
   | "bottom-left"
   | "bottom-right"
   | "top-left"
@@ -447,14 +447,14 @@ export type GgumtoonBubbleTailDirection =
  * 0-du3dytc8ifq.js (함수 `S(e,t,r,s)`, 오프셋 94271)에서 관측된
  * 라운드 말풍선 및 방향별 꼬리(`bottom-left`, `bottom-right`, `top-left`, `top-right`, `none`) SVG Path 생성기
  */
-export function buildGgumtoonBubbleTailSvgPath(params: {
+export function buildSerialStudioBubbleTailSvgPath(params: {
   readonly x: number;
   readonly y: number;
   readonly w: number;
   readonly h: number;
   readonly scaleX?: number;
   readonly scaleY?: number;
-  readonly tail: GgumtoonBubbleTailDirection;
+  readonly tail: SerialStudioBubbleTailDirection;
 }): string {
   const sx = params.scaleX ?? 1;
   const sy = params.scaleY ?? 1;

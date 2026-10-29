@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { StudioTooningPlusSuitePanel } from "../StudioTooningPlusSuitePanel";
+import { StudioCreatorPlusSuitePanel } from "../StudioCreatorPlusSuitePanel";
 import {
   buildDvInChatImageRegenPrompt,
   DV_CHARACTER_WIZARD_STEPS,
@@ -18,7 +18,7 @@ import {
   validateDvMediaTriggerCode,
   validateTbNovelEpisodeContent,
   validateTbWebtoonEpisodeManuscripts,
-} from "../tooning-deev-toonbe-suite";
+} from "../character-chat-publish-suite";
 import {
   addTgConceptInstance,
   buildTgToTdExportPackage,
@@ -38,14 +38,14 @@ import {
   TG_FLOATING_SPLITTER_DIMENSIONS,
   TG_STARTER_PROMPT_SAMPLES,
   TG_SUPPORTED_FONTS,
-  TOONING_CREDIT_COSTS,
-  TOONING_PLUS_SERVICES,
+  CREATOR_PLUS_CREDIT_COSTS,
+  CREATOR_PLUS_SERVICES,
   updateTgSplitCutDescription,
-} from "../tooning-stories-suite";
+} from "../story-cut-splitter-suite";
 
 describe("Tooning Stories (TG) & Cut Splitter & TG->TD Interlock Engine", () => {
   it("exposes all 7 Tooning Plus services and exact credit cost constants", () => {
-    expect(TOONING_PLUS_SERVICES.map((s) => s.code)).toEqual([
+    expect(CREATOR_PLUS_SERVICES.map((s) => s.code)).toEqual([
       "CM",
       "TG",
       "TD",
@@ -54,9 +54,9 @@ describe("Tooning Stories (TG) & Cut Splitter & TG->TD Interlock Engine", () => 
       "DV",
       "TB",
     ]);
-    expect(TOONING_CREDIT_COSTS.TG_PROMPT).toBe(3);
-    expect(TOONING_CREDIT_COSTS.TG_SPLIT_CUT).toBe(3);
-    expect(TOONING_CREDIT_COSTS.TG_EXPORT_TO_TD_PER_CUT).toBe(5);
+    expect(CREATOR_PLUS_CREDIT_COSTS.TG_PROMPT).toBe(3);
+    expect(CREATOR_PLUS_CREDIT_COSTS.TG_SPLIT_CUT).toBe(3);
+    expect(CREATOR_PLUS_CREDIT_COSTS.TG_EXPORT_TO_TD_PER_CUT).toBe(5);
     expect(TG_CANVAS_MAX_CHARS).toBe(8000);
     expect(TG_AUTOSAVE_DEBOUNCE_MS).toBe(3000);
     expect(TG_FLOATING_SPLITTER_DIMENSIONS).toEqual({ widthPx: 360, heightPx: 640 });
@@ -246,9 +246,9 @@ describe("Deev (DV) AI Character/Lorebook & ToonBe (TB) Webtoon/Novel Platform E
     expect(validateTbNovelEpisodeContent("가".repeat(15001)).valid).toBe(false);
   });
 
-  it("renders StudioTooningPlusSuitePanel and switches across TG, ED_MG, DV, and TB tabs interactively", () => {
+  it("renders StudioCreatorPlusSuitePanel and switches across TG, ED_MG, DV, and TB tabs interactively", () => {
     const onApplyScript = vi.fn();
-    render(<StudioTooningPlusSuitePanel scriptInput="[C#1] 첫 컷" onApplyScript={onApplyScript} />);
+    render(<StudioCreatorPlusSuitePanel scriptInput="[C#1] 첫 컷" onApplyScript={onApplyScript} />);
 
     expect(screen.getByTestId("studio-tooning-plus-suite-panel")).toBeTruthy();
     expect(screen.getByTestId("tooning-pillar-tg")).toBeTruthy();

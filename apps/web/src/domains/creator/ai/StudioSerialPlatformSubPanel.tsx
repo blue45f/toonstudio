@@ -1,5 +1,5 @@
 /**
- * StudioGgumtoonPlatformSubPanel.tsx
+ * StudioSerialPlatformSubPanel.tsx
  *
  * https://www.ggumtoon.com/ 의 작가·작품 등록, 연재 방식(자유 40% / 정기 60% / 주2회 80%),
  * 3:1 배너 크롭, 이중 지갑(꿈·크레딧), 10일 출석체크, 기다리면 무료, 카카오 바이럴 공유(최대 15꿈),
@@ -21,59 +21,59 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  buildGgumtoonCrossAdaptationBanner,
-  calculateGgumtoonCreatorSettlement,
-  computeGgumtoonCoinChargeOrder,
-  computeGgumtoonWeeklyCoinConsumptionMetrics,
-  evaluateGgumtoonAttendanceCycle,
-  evaluateGgumtoonShareRewardProgress,
-  GGUMTOON_ADMIN_MODULES,
-  GGUMTOON_CREDIT_PURCHASE_PLANS,
-  GGUMTOON_NOVEL_FONT_SIZES,
-  GGUMTOON_NOVEL_VIEWER_THEMES,
-  GGUMTOON_SETTLEMENT_BANKS,
-  GGUMTOON_SUBSCRIPTION_TIERS,
-  GGUMTOON_WEB_COIN_PLANS,
-  resolveGgumtoonEpisodeAccess,
-  shouldTriggerGgumtoonAutoLike,
-  translateGgumtoonEpisodeTextBoxes,
-  validateGgumtoonSettlementRegistration,
-  type GgumtoonNovelFontSizeKey,
-  type GgumtoonNovelViewerThemeId,
-  type GgumtoonPayMethod,
-} from "./ggumtoon-platform-economy";
+  buildSerialStudioCrossAdaptationBanner,
+  calculateSerialStudioCreatorSettlement,
+  computeSerialStudioCoinChargeOrder,
+  computeSerialStudioWeeklyCoinConsumptionMetrics,
+  evaluateSerialStudioAttendanceCycle,
+  evaluateSerialStudioShareRewardProgress,
+  SERIAL_STUDIO_ADMIN_MODULES,
+  SERIAL_STUDIO_CREDIT_PURCHASE_PLANS,
+  SERIAL_STUDIO_NOVEL_FONT_SIZES,
+  SERIAL_STUDIO_NOVEL_VIEWER_THEMES,
+  SERIAL_STUDIO_SETTLEMENT_BANKS,
+  SERIAL_STUDIO_SUBSCRIPTION_TIERS,
+  SERIAL_STUDIO_WEB_COIN_PLANS,
+  resolveSerialStudioEpisodeAccess,
+  shouldTriggerSerialStudioAutoLike,
+  translateSerialStudioEpisodeTextBoxes,
+  validateSerialStudioSettlementRegistration,
+  type SerialStudioNovelFontSizeKey,
+  type SerialStudioNovelViewerThemeId,
+  type SerialStudioPayMethod,
+} from "./serial-platform-economy";
 import {
-  computeGgumtoonCoverOrBannerCrop,
-  GGUMTOON_GENRES,
-  GGUMTOON_SERIAL_POLICIES,
-  GGUMTOON_WEEKDAYS,
-  isGgumtoonEpisodeAutomaticallyFree,
-  validateAndBuildGgumtoonWorkPayload,
-  validateGgumtoonAuthorName,
-  type GgumtoonGenre,
-  type GgumtoonSerialType,
-  type GgumtoonWeekday,
-} from "./ggumtoon-studio-suite";
+  computeSerialStudioCoverOrBannerCrop,
+  SERIAL_STUDIO_GENRES,
+  SERIAL_STUDIO_SERIAL_POLICIES,
+  SERIAL_STUDIO_WEEKDAYS,
+  isSerialStudioEpisodeAutomaticallyFree,
+  validateAndBuildSerialStudioWorkPayload,
+  validateSerialStudioAuthorName,
+  type SerialStudioGenre,
+  type SerialStudioSerialType,
+  type SerialStudioWeekday,
+} from "./serial-studio-suite";
 
 import { cn } from "@/shared/lib/utils";
 
 const SIMULATED_BASE_MS = 1_793_000_000_000;
 const SIMULATED_NEXT_FREE_ISO = new Date(SIMULATED_BASE_MS + 125 * 60_000).toISOString();
 
-export function StudioGgumtoonPlatformSubPanel(): ReactElement {
+export function StudioSerialPlatformSubPanel(): ReactElement {
   // 1. 작가 핸들 & 작품 등록 상태
   const [authorName, setAuthorName] = useState("꿈툰작가01");
   const [workTitle, setWorkTitle] = useState("레벨업 연애");
-  const [selectedGenre, setSelectedGenre] = useState<GgumtoonGenre>("로맨스");
-  const [serialType, setSerialType] = useState<GgumtoonSerialType>("twice_weekly");
-  const [serialDays, setSerialDays] = useState<readonly GgumtoonWeekday[]>(["수", "토"]);
+  const [selectedGenre, setSelectedGenre] = useState<SerialStudioGenre>("로맨스");
+  const [serialType, setSerialType] = useState<SerialStudioSerialType>("twice_weekly");
+  const [serialDays, setSerialDays] = useState<readonly SerialStudioWeekday[]>(["수", "토"]);
   const [bannerZoom, setBannerZoom] = useState<number>(1.2);
   const [checkEpisodeNum, setCheckEpisodeNum] = useState<number>(4);
 
   // 2. 지갑 · 출석체크 · 공유 · 기다무 상태
   const [coinPlanIdx, setCoinPlanIdx] = useState<number>(1);
   const [hasNeverCharged, setHasNeverCharged] = useState<boolean>(true);
-  const [payMethod, setPayMethod] = useState<GgumtoonPayMethod>("KAKAOPAY");
+  const [payMethod, setPayMethod] = useState<SerialStudioPayMethod>("KAKAOPAY");
   const [attendanceDays, setAttendanceDays] = useState<number>(9);
   const [shareClicks, setShareClicks] = useState<number>(7);
   const [paidReadEpisodeIds, setPaidReadEpisodeIds] = useState<readonly string[]>([
@@ -83,9 +83,9 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
   const [waitFreeClaimable, setWaitFreeClaimable] = useState<boolean>(false);
 
   // 3. 뷰어 테마 · 폰트 크기 · 실시간 한→영 번역
-  const [viewerTheme, setViewerTheme] = useState<GgumtoonNovelViewerThemeId>("dark");
+  const [viewerTheme, setViewerTheme] = useState<SerialStudioNovelViewerThemeId>("dark");
   const [viewerFontSizeKey, setViewerFontSizeKey] =
-    useState<GgumtoonNovelFontSizeKey>("md");
+    useState<SerialStudioNovelFontSizeKey>("md");
   const [isTranslatedEn, setIsTranslatedEn] = useState<boolean>(false);
 
   // 4. 정산 계산기 상태
@@ -93,17 +93,17 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
   const [freeCoinsRead, setFreeCoinsRead] = useState<number>(320);
   const [isBusiness, setIsBusiness] = useState<boolean>(false);
   const [selectedBank, setSelectedBank] = useState<string>(
-    GGUMTOON_SETTLEMENT_BANKS[0]!,
+    SERIAL_STUDIO_SETTLEMENT_BANKS[0]!,
   );
 
   const authorValidation = useMemo(
-    () => validateGgumtoonAuthorName(authorName, ["관리자", "기존작가"]),
+    () => validateSerialStudioAuthorName(authorName, ["관리자", "기존작가"]),
     [authorName],
   );
 
   const workValidation = useMemo(
     () =>
-      validateAndBuildGgumtoonWorkPayload({
+      validateAndBuildSerialStudioWorkPayload({
         type: "webtoon",
         title: workTitle,
         genres: [selectedGenre],
@@ -119,7 +119,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const bannerCrop = useMemo(
     () =>
-      computeGgumtoonCoverOrBannerCrop({
+      computeSerialStudioCoverOrBannerCrop({
         role: "banner",
         mediaWidth: 1536,
         mediaHeight: 1024,
@@ -132,8 +132,8 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const coinChargeOrder = useMemo(
     () =>
-      computeGgumtoonCoinChargeOrder({
-        plan: GGUMTOON_WEB_COIN_PLANS[coinPlanIdx] ?? GGUMTOON_WEB_COIN_PLANS[0]!,
+      computeSerialStudioCoinChargeOrder({
+        plan: SERIAL_STUDIO_WEB_COIN_PLANS[coinPlanIdx] ?? SERIAL_STUDIO_WEB_COIN_PLANS[0]!,
         hasNeverCharged,
         payMethod,
       }),
@@ -141,13 +141,13 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
   );
 
   const attendanceSummary = useMemo(
-    () => evaluateGgumtoonAttendanceCycle(attendanceDays),
+    () => evaluateSerialStudioAttendanceCycle(attendanceDays),
     [attendanceDays],
   );
 
   const shareProgress = useMemo(
     () =>
-      evaluateGgumtoonShareRewardProgress(
+      evaluateSerialStudioShareRewardProgress(
         shareClicks,
         "bda0a3d2-82f7-4e67-a1c5-ae5e6d4334d8",
         "ep-4",
@@ -157,9 +157,9 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const episodeAccess = useMemo(
     () =>
-      resolveGgumtoonEpisodeAccess({
+      resolveSerialStudioEpisodeAccess({
         episodeIndexZeroBased: checkEpisodeNum - 1,
-        isEpisodeFreeFlag: isGgumtoonEpisodeAutomaticallyFree(checkEpisodeNum, "webtoon"),
+        isEpisodeFreeFlag: isSerialStudioEpisodeAutomaticallyFree(checkEpisodeNum, "webtoon"),
         isChallengeWork: false,
         isAuthorOwner: false,
         isAlreadyRead: false,
@@ -174,7 +174,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const autoLikeStatus = useMemo(
     () =>
-      shouldTriggerGgumtoonAutoLike({
+      shouldTriggerSerialStudioAutoLike({
         alreadyLiked: false,
         alreadyAutoLikedInSession: false,
         paidReadEpisodeIds,
@@ -185,7 +185,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const settlementBreakdown = useMemo(
     () =>
-      calculateGgumtoonCreatorSettlement({
+      calculateSerialStudioCreatorSettlement({
         paidCoinsRead,
         freeMarketingCoinsRead: freeCoinsRead,
         serialType,
@@ -197,7 +197,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const settlementFormValid = useMemo(
     () =>
-      validateGgumtoonSettlementRegistration({
+      validateSerialStudioSettlementRegistration({
         realName: "홍길동",
         bankName: selectedBank,
         accountNumber: "3333-01-2345678",
@@ -211,7 +211,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const adminWeeklyMetrics = useMemo(
     () =>
-      computeGgumtoonWeeklyCoinConsumptionMetrics({
+      computeSerialStudioWeeklyCoinConsumptionMetrics({
         weeklyUsedPaidCoins: paidCoinsRead,
         weeklyUsedFreeCoins: freeCoinsRead,
         weeklyChargedPaidCoins: 2400,
@@ -221,12 +221,12 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const translatedBoxes = useMemo(
     () =>
-      translateGgumtoonEpisodeTextBoxes([
+      translateSerialStudioEpisodeTextBoxes([
         {
           id: "tb-1",
           y: 25,
           align: "center",
-          fontSize: GGUMTOON_NOVEL_FONT_SIZES[viewerFontSizeKey],
+          fontSize: SERIAL_STUDIO_NOVEL_FONT_SIZES[viewerFontSizeKey],
           text: "기다렸어. 오늘 밤 모든 진실을 밝히겠어.",
         },
       ]),
@@ -235,7 +235,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
   const crossBanner = useMemo(
     () =>
-      buildGgumtoonCrossAdaptationBanner({
+      buildSerialStudioCrossAdaptationBanner({
         currentWorkType: "novel",
         relatedWorkId: "work-webtoon-01",
         relatedTitle: workTitle || "레벨업 연애",
@@ -244,10 +244,10 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
   );
 
   const activeThemeSpec =
-    GGUMTOON_NOVEL_VIEWER_THEMES.find((t) => t.id === viewerTheme) ??
-    GGUMTOON_NOVEL_VIEWER_THEMES[0]!;
+    SERIAL_STUDIO_NOVEL_VIEWER_THEMES.find((t) => t.id === viewerTheme) ??
+    SERIAL_STUDIO_NOVEL_VIEWER_THEMES[0]!;
 
-  const toggleWeekday = (day: GgumtoonWeekday) => {
+  const toggleWeekday = (day: SerialStudioWeekday) => {
     setSerialDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].slice(-2),
     );
@@ -302,10 +302,10 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
                 <select
                   aria-label="작품 장르 선택"
                   value={selectedGenre}
-                  onChange={(e) => setSelectedGenre(e.target.value as GgumtoonGenre)}
+                  onChange={(e) => setSelectedGenre(e.target.value as SerialStudioGenre)}
                   className="rounded border border-line bg-raised px-1.5 py-1 text-[0.62rem] text-fg"
                 >
-                  {GGUMTOON_GENRES.map((g) => (
+                  {SERIAL_STUDIO_GENRES.map((g) => (
                     <option key={g} value={g}>
                       {g}
                     </option>
@@ -316,7 +316,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
           </div>
 
           <div className="grid grid-cols-3 gap-1">
-            {GGUMTOON_SERIAL_POLICIES.map((pol) => (
+            {SERIAL_STUDIO_SERIAL_POLICIES.map((pol) => (
               <button
                 key={pol.id}
                 type="button"
@@ -345,7 +345,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
           {serialType !== "free" ? (
             <div className="flex flex-wrap items-center gap-1">
               <span className="text-[0.58rem] text-fg-3">연재 요일:</span>
-              {GGUMTOON_WEEKDAYS.map((day) => (
+              {SERIAL_STUDIO_WEEKDAYS.map((day) => (
                 <button
                   key={day}
                   type="button"
@@ -403,7 +403,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
           </div>
 
           <div className="grid grid-cols-4 gap-1">
-            {GGUMTOON_WEB_COIN_PLANS.map((plan, idx) => (
+            {SERIAL_STUDIO_WEB_COIN_PLANS.map((plan, idx) => (
               <button
                 key={plan.coins}
                 type="button"
@@ -470,11 +470,11 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
           <p className="text-[0.56rem] text-fg-3">
             크레딧 단건 충전:{" "}
-            {GGUMTOON_CREDIT_PURCHASE_PLANS.map((p) => `${p.credits}개(₩${p.price.toLocaleString()})`).join(
+            {SERIAL_STUDIO_CREDIT_PURCHASE_PLANS.map((p) => `${p.credits}개(₩${p.price.toLocaleString()})`).join(
               " · ",
             )}{" "}
             / 구독:{" "}
-            {GGUMTOON_SUBSCRIPTION_TIERS.map((t) => `${t.id}(${t.monthlyCredits}개)`).join(" · ")}
+            {SERIAL_STUDIO_SUBSCRIPTION_TIERS.map((t) => `${t.id}(${t.monthlyCredits}개)`).join(" · ")}
           </p>
         </div>
       </div>
@@ -575,7 +575,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex gap-1">
-              {GGUMTOON_NOVEL_VIEWER_THEMES.map((theme) => (
+              {SERIAL_STUDIO_NOVEL_VIEWER_THEMES.map((theme) => (
                 <button
                   key={theme.id}
                   type="button"
@@ -606,7 +606,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
                       : "border-line bg-raised text-fg-2",
                   )}
                 >
-                  가 ({GGUMTOON_NOVEL_FONT_SIZES[sz]}px)
+                  가 ({SERIAL_STUDIO_NOVEL_FONT_SIZES[sz]}px)
                 </button>
               ))}
             </div>
@@ -617,7 +617,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
             style={{
               backgroundColor: activeThemeSpec.bg,
               color: activeThemeSpec.text,
-              fontSize: `${GGUMTOON_NOVEL_FONT_SIZES[viewerFontSizeKey]}px`,
+              fontSize: `${SERIAL_STUDIO_NOVEL_FONT_SIZES[viewerFontSizeKey]}px`,
             }}
             className="rounded-lg border border-line p-2.5 leading-relaxed"
           >
@@ -681,7 +681,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
               onChange={(e) => setSelectedBank(e.target.value)}
               className="w-full rounded border border-line bg-raised px-2 py-1 text-[0.64rem] text-fg"
             >
-              {GGUMTOON_SETTLEMENT_BANKS.map((bank) => (
+              {SERIAL_STUDIO_SETTLEMENT_BANKS.map((bank) => (
                 <option key={bank} value={bank}>
                   {bank}
                 </option>
@@ -718,7 +718,7 @@ export function StudioGgumtoonPlatformSubPanel(): ReactElement {
         </div>
 
         <div className="flex flex-wrap gap-1 pt-0.5">
-          {GGUMTOON_ADMIN_MODULES.map((mod) => (
+          {SERIAL_STUDIO_ADMIN_MODULES.map((mod) => (
             <span
               key={mod.id}
               className="rounded border border-line/60 bg-raised px-1.5 py-0.5 text-[0.54rem] text-fg-3"

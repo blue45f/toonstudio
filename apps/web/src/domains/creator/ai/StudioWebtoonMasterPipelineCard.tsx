@@ -66,8 +66,8 @@ import {
 } from "./studio-webtoon-storyboard-pipeline";
 import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
 import { StudioAiWebtoonPlatformSuitePanel } from "./StudioAiWebtoonPlatformSuitePanel";
-import { StudioGgumtoonSuitePanel } from "./StudioGgumtoonSuitePanel";
-import { StudioTooningPlusSuitePanel } from "./StudioTooningPlusSuitePanel";
+import { StudioSerialStudioSuitePanel } from "./StudioSerialStudioSuitePanel";
+import { StudioCreatorPlusSuitePanel } from "./StudioCreatorPlusSuitePanel";
 import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
 
 import { cn } from "@/shared/lib/utils";
@@ -753,7 +753,7 @@ export function StudioWebtoonMasterPipelineCard({
       />
 
       {/* 투닝 플러스 (Tooning Plus: TG·TD·ED·MG·DV·TB·CM) 전 제품군 통합 워크스페이스 */}
-      <StudioTooningPlusSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
+      <StudioCreatorPlusSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
 
       {/* 4대 카테고리 12대 AI 웹툰·인스타툰 보조 어플 REA 역공학 내재화 통합 워크벤치 */}
       <StudioAiWebtoonEcosystemWorkbenchPanel
@@ -763,7 +763,7 @@ export function StudioWebtoonMasterPipelineCard({
       />
 
       {/* 꿈툰 (Ggumtoon: 스타일·캐릭터·장면·부분수정·여백컷·웹소설·뷰어·지갑·정산) 통합 스튜디오 */}
-      <StudioGgumtoonSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
+      <StudioSerialStudioSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
 
       {/* AI 만화·인스타툰 4대 플랫폼(젠툰·망고툰·라마젠·투닝) 통합 워크스페이스 */}
       <StudioAiWebtoonPlatformSuitePanel scriptInput={scriptInput} onApplyScript={onApplyScript} />
