@@ -48,8 +48,11 @@ describe("virtual studio room catalog", () => {
   });
 
   it("requires a real bounded capacity for direct P2P modules", () => {
+    const p2pHuddle = STUDIO_SPACE_MODULES.find((module) => module.id === "p2p-huddle");
+    if (!p2pHuddle) throw new Error("P2P 허들 모듈이 카탈로그에 없습니다.");
+    expect(p2pHuddle.transport).toBe("p2p-direct");
     const invalid: StudioSpaceModule = {
-      ...STUDIO_SPACE_MODULES[0]!,
+      ...p2pHuddle,
       id: "bad-p2p-room",
       capacity: 25,
     };

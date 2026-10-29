@@ -1,10 +1,11 @@
 import {
   COMPETITOR_BRUSH_QUALITY_REA_EVIDENCE,
   COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE,
+  QUADRATIC_PIGMENT_MODEL,
   evaluateDliSunflowerBristleAndGgxImpasto,
   evaluateLazySimplexAndFlatnessBezier,
-  evaluateMixbox7DLatentPigmentMix,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
+  evaluateQuadraticPigmentMix,
   evaluateSignaturePadCatmullBezierAndAtramentInk,
   evaluateSpectral38BandKubelkaMunkMix,
   evaluateTegakiGhostBufferWashAndBayerTone,
@@ -36,7 +37,7 @@ export interface BrushLabCompetitorQualityBenchReport {
   readonly fluidDivergenceReductionDelta: number;
   readonly ghostWashMudEliminationGain01: number;
   readonly spectral38ChromaPreservationGain01: number;
-  readonly mixbox7DEndpointIdentityError: number;
+  readonly quadraticPigmentEndpointIdentityError: number;
   readonly p5BrushGrownVertexCount: number;
   readonly p5BrushSuperGaussianPressure01: number;
   readonly lazyBrushOutsideDeadZone: boolean;
@@ -253,7 +254,7 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     tintingStrengthB: 1.15,
   });
 
-  const mixbox7d = evaluateMixbox7DLatentPigmentMix(
+  const quadraticPigment = evaluateQuadraticPigmentMix(
     { r: 0.99, g: 0.85, b: 0.02 },
     { r: 0.05, g: 0.14, b: 0.58 },
     0.5,
@@ -301,7 +302,7 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     dli.specularBrdf > 0 &&
     tegaki.mudEliminationGain01 > 0.05 &&
     spectral38.chromaPreservationGain01 > 0.02 &&
-    mixbox7d.endpointIdentityError === 0 &&
+    quadraticPigment.endpointIdentityError === 0 &&
     p5Bleed.grownVertices.length === 16 &&
     lazySimplex.hasMovedOutsideDeadZone &&
     frameReport.hotPathMapAsyncCount === 0 &&
@@ -323,7 +324,7 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     fluidDivergenceReductionDelta,
     ghostWashMudEliminationGain01: tegaki.mudEliminationGain01,
     spectral38ChromaPreservationGain01: spectral38.chromaPreservationGain01,
-    mixbox7DEndpointIdentityError: mixbox7d.endpointIdentityError,
+    quadraticPigmentEndpointIdentityError: quadraticPigment.endpointIdentityError,
     p5BrushGrownVertexCount: p5Bleed.grownVertices.length,
     p5BrushSuperGaussianPressure01: p5Bleed.superGaussianPressure01,
     lazyBrushOutsideDeadZone: lazySimplex.hasMovedOutsideDeadZone,
@@ -347,8 +348,8 @@ export function runMultiEngineBrushMatrixBenchmark(seed = 20261027): readonly Mu
   return [
     {
       engineId: "sumi-webgpu-zero-copy-indirect",
-      engineNameKo: "Sumi 통합 초고속·최고품질 (WebGPU Zero-Copy + 12대 경쟁 엔진 융합)",
-      architectureKindKo: "WebGPU Compute Culling + drawIndirect + RenderBundle + Spectral38/Mixbox7D/GhostWash",
+      engineNameKo: "Sumi 통합 초고속·최고품질 (WebGPU Zero-Copy 비교 항목)",
+      architectureKindKo: "WebGPU Compute Culling + drawIndirect + RenderBundle + Spectral38/GhostWash",
       p50FrameMs: 0.39,
       p95FrameMs: 0.74,
       throughputDabsPerSec: 2_680_000,
@@ -378,9 +379,9 @@ export function runMultiEngineBrushMatrixBenchmark(seed = 20261027): readonly Mu
       promotedToService: true,
     },
     {
-      engineId: "mixbox-7d-latent-polynomial",
-      engineNameKo: "Secret Weapons Mixbox 7차원 잠재 안료 다항식 + 무손실 RGB 잔차",
-      architectureKindKo: "4-Primary Cubic Polynomial + 3-Channel Residual [c0..c3, Δr, Δg, Δb]",
+      engineId: QUADRATIC_PIGMENT_MODEL.id,
+      engineNameKo: "로컬 7채널 이차 안료 실험 모델(원산지 미확인)",
+      architectureKindKo: "4기저 이차 다항식 + RGB 잔차 [c0..c3, Δr, Δg, Δb]",
       p50FrameMs: 0.44,
       p95FrameMs: 0.79,
       throughputDabsPerSec: 2_390_000,
@@ -390,8 +391,8 @@ export function runMultiEngineBrushMatrixBenchmark(seed = 20261027): readonly Mu
       hotPathMapAsyncCount: 0,
       determinismVerified: true,
       compositeScore100: 99.5,
-      optimalRoleKo: "실서비스 끝점 오차 0.000% 무손실 안료 그라데이션·스머지 전용 커널",
-      promotedToService: true,
+      optimalRoleKo: "로컬 혼색 수치 실험용 — 계수 원산지·공식 호환·실측 성능 미확인으로 운영 승격 불가",
+      promotedToService: QUADRATIC_PIGMENT_MODEL.servicePromotionAllowed,
     },
     {
       engineId: "p5brush-hobbs-polygon-bleed-gauss",

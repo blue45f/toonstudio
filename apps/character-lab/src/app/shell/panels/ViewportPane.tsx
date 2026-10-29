@@ -11,7 +11,7 @@ import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
 import { readProjectionPaint } from "../../../render/projection-paint";
 import { readViewportCamera } from "../../../render/viewport-camera";
-import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/viewport-input-style";
+import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/viewport-controls";
 import { clientToRenderPixel, viewportPixelRatio } from "../../../render/viewport-math";
 import { describeEngineStatus } from "../engine-status-text";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";

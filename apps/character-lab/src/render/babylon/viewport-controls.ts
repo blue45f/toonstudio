@@ -9,19 +9,38 @@
  * 장면이 해제되면 리스너도 해제한다.
  */
 import { v3Cross, v3Length, v3Normalize } from "../../shared/math";
-import { getCanvasCameraInputStyle, registerCanvasCameraInputTarget } from "../viewport-input-style";
+import { getCanvasCameraInputStyle, registerCanvasViewportControls } from "../viewport-controls";
 import { clampPanTarget, keyboardOrbitAction, screenPanOffset, wheelZoomRadius } from "../viewport-orbit";
 
 import { fromVector3, toVector3 } from "./convert";
 
 import type { Vec3 } from "../../contracts";
 import type { WorldBounds } from "../camera-framing";
-import type { ShaperCameraStyle } from "../viewport-input-style";
+import type { ShaperCameraStyle, ShaperViewPreset } from "../viewport-controls";
 import type { OrbitLimits } from "../viewport-orbit";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
 
 /** 카메라별 팬 범위(프레이밍이 정한다). 없으면 팬을 묶지 않는다. */
 const panBoundsByCamera = new WeakMap<ArcRotateCamera, WorldBounds>();
+
+/**
+ * SHAPER 뷰포트 직교 시점 단축키(`F`: 정면, `L`: 좌측면, `T`: 상단)를 캔버스에 연결된 카메라 구면각(`alpha`, `beta`)에 즉시 반영한다.
+ */
+function applyCameraShaperViewPreset(camera: ArcRotateCamera, view: ShaperViewPreset): void {
+  if (view === "front") {
+    camera.alpha = Math.PI / 2;
+    camera.beta = Math.PI / 2;
+    return;
+  }
+  if (view === "left") {
+    camera.alpha = Math.PI;
+    camera.beta = Math.PI / 2;
+    return;
+  }
+  const lowerBeta = camera.lowerBetaLimit ?? 0.05;
+  camera.alpha = Math.PI / 2;
+  camera.beta = Math.max(lowerBeta, 0.08);
+}
 
 /** 카메라의 팬 범위를 정한다(scene-builder `applyFraming`이 캐릭터 경계 상자로 부른다). */
 export function setPanBounds(camera: ArcRotateCamera, bounds: WorldBounds): void {
@@ -93,13 +112,6 @@ function resolveMouseDragMode(event: PointerEvent, style: ShaperCameraStyle): Mo
  * 캔버스에 카메라 입력을 붙인다. 반환 함수로 해제한다. `resetView`는 현재 프레이밍을 다시 적용한다(엔진 `setCamera(현재 프레이밍)`).
  */
 export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanvasElement, resetView: () => void): () => void {
-  const unregisterCamera = registerCanvasCameraInputTarget(canvas, camera);
-  camera.attachControl(canvas, true);
-  camera.inputs.removeByType("ArcRotateCameraMouseWheelInput");
-  camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
-  camera.panningSensibility = 0;
-  camera.useNaturalPinchZoom = true;
-
   const pointers = new Map<number, ActivePointer>();
   /** 마우스 드래그 중인 포인터와 동작 모드(팬·궤도·줌) */
   let mouseDrag: { readonly pointerId: number; readonly mode: MouseDragMode } | null = null;
@@ -171,20 +183,12 @@ export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanv
   const onContextMenu = (event: Event): void => event.preventDefault();
   const onDoubleClick = (): void => resetView();
 
-  canvas.addEventListener("pointerdown", onPointerDown);
-  canvas.addEventListener("pointermove", onPointerMove);
-  canvas.addEventListener("pointerup", onPointerEnd);
-  canvas.addEventListener("pointercancel", onPointerEnd);
-  canvas.addEventListener("wheel", onWheel, { passive: false });
-  canvas.addEventListener("keydown", onKeyDown);
-  canvas.addEventListener("contextmenu", onContextMenu);
-  canvas.addEventListener("dblclick", onDoubleClick);
-
   let attached = true;
+  let unregisterControls = (): void => undefined;
+  let removeSceneDisposal = (): void => undefined;
   const detach = (): void => {
     if (!attached) return;
     attached = false;
-    unregisterCamera();
     canvas.removeEventListener("pointerdown", onPointerDown);
     canvas.removeEventListener("pointermove", onPointerMove);
     canvas.removeEventListener("pointerup", onPointerEnd);
@@ -194,8 +198,35 @@ export function attachViewportControls(camera: ArcRotateCamera, canvas: HTMLCanv
     canvas.removeEventListener("contextmenu", onContextMenu);
     canvas.removeEventListener("dblclick", onDoubleClick);
     pointers.clear();
+    removeSceneDisposal();
+    camera.detachControl();
+    unregisterControls();
   };
-  camera.getScene().onDisposeObservable.addOnce(detach);
+  unregisterControls = registerCanvasViewportControls(canvas, {
+    applyViewPreset: (view) => applyCameraShaperViewPreset(camera, view),
+    detach,
+  });
+  try {
+    camera.attachControl(canvas, true);
+    camera.inputs.removeByType("ArcRotateCameraMouseWheelInput");
+    camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
+    camera.panningSensibility = 0;
+    camera.useNaturalPinchZoom = true;
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerEnd);
+    canvas.addEventListener("pointercancel", onPointerEnd);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    canvas.addEventListener("keydown", onKeyDown);
+    canvas.addEventListener("contextmenu", onContextMenu);
+    canvas.addEventListener("dblclick", onDoubleClick);
+    const scene = camera.getScene();
+    const disposalObserver = scene.onDisposeObservable.addOnce(detach);
+    removeSceneDisposal = () => { scene.onDisposeObservable.remove(disposalObserver); };
+  } catch (error) {
+    detach();
+    throw error;
+  }
   return detach;
 }
 

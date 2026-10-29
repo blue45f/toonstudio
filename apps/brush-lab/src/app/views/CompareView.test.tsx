@@ -232,7 +232,7 @@ describe("CompareView", { timeout: 30_000 }, () => {
     expect(engineSummary.textContent).toContain("Rebelle 7 모세관 수채 확산");
     expect(engineSummary.textContent).toContain("SAI / Lazy Nezumi 견인줄");
 
-    // 8종 브러시 엔진 매트릭스 및 8시간 장시간 드로잉(Soak) 벤치마크 대시보드 검증
+    // 로컬 실험 모델을 포함한 12종 비교표와 기존 8시간 Soak 수치를 확인한다.
     const benchDashboard = screen.getByTestId("lab-benchmark-results-dashboard");
     expect(benchDashboard.textContent).toContain("toonstudio-prod-optimal-sumi-wave35");
     expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("Sumi 통합 초고속·최고품질");
@@ -240,7 +240,8 @@ describe("CompareView", { timeout: 30_000 }, () => {
     expect(screen.getByTestId("lab-soak-table-region").textContent).toContain("21,600,000 dabs");
 
     fireEvent.click(screen.getByTestId("lab-Filter-promoted-engines-btn"));
-    expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("11개 표시");
+    expect(screen.getByTestId("lab-multi-engine-table-region").textContent).toContain("10개 표시");
+    expect(screen.queryByTestId("lab-engine-row-quadratic-pigment-7d-local")).toBeNull();
 
     fireEvent.change(screen.getByTestId("lab-wave36-pigment-ratio-slider"), { target: { value: "0.65" } });
     expect(screen.getByTestId("lab-wave36-pigment-ratio-slider").getAttribute("aria-valuetext")).toContain("65%");

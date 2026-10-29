@@ -12,8 +12,7 @@ import {
   trendDigestToMarkdown,
 } from "./research-logic";
 
-import type { SearchProvider } from "./search-provider";
-import type { SearchResult } from "./search-provider";
+import type { SearchProvider, SearchResult } from "./search-provider";
 
 function result(overrides: Partial<SearchResult>): SearchResult {
   return {

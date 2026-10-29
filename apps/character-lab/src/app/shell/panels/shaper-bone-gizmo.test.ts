@@ -70,11 +70,14 @@ describe("shaper-bone-gizmo — 대칭 조작·피벗 모드·골격 연결선·
   });
 
   it("computeVisibleBoneLinks: 화면에 표시된 관절 핸들 사이의 부모-자식 골격 선분을 측면 태그와 함께 생성한다", () => {
-    const rawHandles = skeleton.bones.flatMap<JointDragHandle>((bone, index) => isHumanoidBoneName(bone.name) ? [{
-      bone: bone.name,
-      world: [index * 0.05, 1.0, 0],
-      screen: [200 + index * 10, 300 + index * 5],
-    }] : []);
+    const rawHandles: JointDragHandle[] = skeleton.bones.map((bone, index) => {
+      if (!isHumanoidBoneName(bone.name)) throw new Error("휴머노이드 본 이름이 필요합니다.");
+      return {
+        bone: bone.name,
+        world: [index * 0.05, 1.0, 0],
+        screen: [200 + index * 10, 300 + index * 5],
+      };
+    });
     const handles = visibleHandles(rawHandles, { fingers: false });
     const links = computeVisibleBoneLinks(handles, skeleton);
     expect(links.length).toBeGreaterThanOrEqual(10);

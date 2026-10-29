@@ -1,14 +1,14 @@
 /**
- * @file 12대 경쟁사 브러시 품질 & 피그먼트·수채·스트로크 엔진 REA 역공학 Wave 36 커널
+ * @file Wave 36 분광·수채·스트로크 실험 참조 커널
  *
- * 단일 일괄(Holistic) REA 정적·시맨틱 역공학 증거:
+ * 기존 소스에 기록된 REA 참조 메타데이터(원문 artifact·수치 출처는 이번 변경에서 미확인):
  * - Evidence ID: `ev_67bc361991ffe4c8e6059e8f1cd01cea35062b776097da8e2bcd7ad03c28996b`
  * - Parent Analysis Evidence ID: `ev_5d16af20476c45ab0014d93bd5736dc9a75b6eb088fa7815b702b29752992673`
  * - Root Artifact SHA-256: `50dfa5ce0f73b60934f52ce5e568c027f95ff76b20bc365105529baae3366127`
  * - 대상: 12대 경쟁 브러시 품질 엔진 전체 143개 JS/TS/GLSL 소스 파일
  *   1~6. Wave 35 6대 엔진 (David Li Paint, Pavel WebGL Fluid, Tegaki, SignaturePad, Atrament, Drauu)
  *   7. Spectral.js (`spectral.js` — 38-밴드 380~750nm 파장별 Kubelka-Munk K/S·착색력 Tinting Strength·CIE XYZ/OKLab 물리 혼색)
- *   8. Secret Weapons Mixbox (`mixbox.esm.js` — 7차원 잠재 안료 공간 [c0,c1,c2,c3,Δr,Δg,Δb] 3차 다항식 + RGB 잔차 무손실 복원)
+ *   8. 로컬 7채널 이차 안료 실험 모델(4기저 농도 + RGB 잔차, 원산지·외부 구현 호환성 미확인)
  *   9. Alejandro Campos p5.brush (`fill.js`, `stroke.js`, `wash.js`, `hatch.js` — Tyler Hobbs 다각형 수채 번짐 grow/trim/scatter + 비대칭 초가우시안 필압 곡선)
  *  10. Dulnan LazyBrush (`LazyBrush.ts`, `LazyPoint.ts` — 데드존 반경 R_lazy + 마찰 감쇠 1/(1-f)^1.75 견인줄 보정)
  *  11. Jonas Wagner SimplexNoise (`simplex-noise.ts` — F2=0.5*(√3-1), G2=(3-√3)/6, (0.5-x²-y²)⁴*70 무이음새 절차적 종이 결)
@@ -17,7 +17,15 @@
  *   `visited_ast_nodes: 114706`, `data-flow: 51007`, `object-flow: 7429`, `closure: 4391`, `call-flow: 2555`
  */
 
-import type { Point2D, Rgb } from "../core/types";
+import type { Pt as Point2D, Rgb } from "../core/types";
+
+export {
+  QUADRATIC_PIGMENT_MODEL,
+  evaluateQuadraticPigmentMix,
+  quadraticPigmentLatent7ToRgb,
+  rgbToQuadraticPigmentLatent7,
+} from "../pigment/quadratic-pigment-model";
+export type { QuadraticPigmentLatent7, QuadraticPigmentMixResult } from "../pigment/quadratic-pigment-model";
 
 export const COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE = Object.freeze({
   evidenceId: "ev_67bc361991ffe4c8e6059e8f1cd01cea35062b776097da8e2bcd7ad03c28996b",
@@ -203,134 +211,6 @@ export function evaluateSpectral38BandKubelkaMunkMix(
     },
     spectralReflectance38: reflectance38,
     chromaPreservationGain01: Number(Math.max(0, okC - naiveC).toFixed(4)),
-  };
-}
-
-// ============================================================================
-// 2. Secret Weapons Mixbox 7-D Latent Pigment Space + Polynomial Residual
-// ============================================================================
-
-export type MixboxLatent7 = readonly [number, number, number, number, number, number, number];
-
-export interface Mixbox7DMixResult {
-  readonly latentA: MixboxLatent7;
-  readonly latentB: MixboxLatent7;
-  readonly latentMixed: MixboxLatent7;
-  readonly mixedRgb01: Rgb;
-  readonly endpointIdentityError: number;
-}
-
-function evalPigmentPolynomial4(c0: number, c1: number, c2: number): Rgb {
-  // 4-primary (Cadmium Yellow c0, Quinacridone Magenta c1, Ultramarine Blue c2, Titanium White c3=1-c0-c1-c2)
-  // cubic Kubelka-Munk polynomial approximation
-  const c3 = Math.max(0, 1 - c0 - c1 - c2);
-  const r =
-    0.99 * c0 * c0 +
-    0.52 * c1 * c1 +
-    0.08 * c2 * c2 +
-    0.98 * c3 * c3 +
-    1.85 * c0 * c3 +
-    1.12 * c1 * c3 +
-    0.22 * c2 * c3 +
-    1.62 * c0 * c1 + // Yellow + Magenta -> Vivid Vermilion/Orange
-    0.18 * c0 * c2 +
-    0.34 * c1 * c2;
-  const g =
-    0.92 * c0 * c0 +
-    0.04 * c1 * c1 +
-    0.12 * c2 * c2 +
-    0.98 * c3 * c3 +
-    1.78 * c0 * c3 +
-    0.24 * c1 * c3 +
-    0.42 * c2 * c3 +
-    0.58 * c0 * c1 +
-    1.48 * c0 * c2 + // Yellow + Blue -> Emerald / Sap Green
-    0.06 * c1 * c2;
-  const b =
-    0.03 * c0 * c0 +
-    0.28 * c1 * c1 +
-    0.58 * c2 * c2 +
-    0.98 * c3 * c3 +
-    0.16 * c0 * c3 +
-    0.82 * c1 * c3 +
-    1.38 * c2 * c3 +
-    0.05 * c0 * c1 +
-    0.36 * c0 * c2 +
-    0.96 * c1 * c2; // Magenta + Blue -> Cobalt Violet
-  return { r: clamp01(r), g: clamp01(g), b: clamp01(b) };
-}
-
-export function rgbToMixboxLatent7(rgb: Rgb): MixboxLatent7 {
-  const r = clamp01(rgb.r);
-  const g = clamp01(rgb.g);
-  const b = clamp01(rgb.b);
-  const white = Math.min(r, g, b);
-  const yellow = Math.max(0, Math.min(r, g) - white);
-  const magenta = Math.max(0, r - Math.min(r, g));
-  const blue = Math.max(0, b - white);
-  const sum = yellow + magenta + blue + white + 1e-6;
-  const c0 = yellow / sum;
-  const c1 = magenta / sum;
-  const c2 = blue / sum;
-  const c3 = white / sum;
-  const poly = evalPigmentPolynomial4(c0, c1, c2);
-  // Residual [Δr, Δg, Δb] guarantees exact identity reconstruction at t=0 and t=1
-  const dr = r - poly.r;
-  const dg = g - poly.g;
-  const db = b - poly.b;
-  return [c0, c1, c2, c3, dr, dg, db];
-}
-
-export function mixboxLatent7ToRgb(latent: MixboxLatent7): Rgb {
-  const poly = evalPigmentPolynomial4(latent[0], latent[1], latent[2]);
-  return {
-    r: Number(clamp01(poly.r + latent[4]).toFixed(4)),
-    g: Number(clamp01(poly.g + latent[5]).toFixed(4)),
-    b: Number(clamp01(poly.b + latent[6]).toFixed(4)),
-  };
-}
-
-/**
- * Secret Weapons Mixbox (`mixbox.esm.js`) 역공학:
- * 7차원 잠재 공간(4원색 농도 + 3채널 RGB 잔차) 선형 보간 후 다항식 평가 및 잔차 합산으로
- * 양 끝점(t=0, t=1)에서 오차 0을 보장하면서 중간 혼합(t=0.5)에서 물리 안료 발색을 재현한다.
- */
-export function evaluateMixbox7DLatentPigmentMix(
-  colorA: Rgb,
-  colorB: Rgb,
-  t01: number,
-): Mixbox7DMixResult {
-  const t = clamp01(t01);
-  const latentA = rgbToMixboxLatent7(colorA);
-  const latentB = rgbToMixboxLatent7(colorB);
-  const latentMixed: MixboxLatent7 = [
-    (1 - t) * latentA[0] + t * latentB[0],
-    (1 - t) * latentA[1] + t * latentB[1],
-    (1 - t) * latentA[2] + t * latentB[2],
-    (1 - t) * latentA[3] + t * latentB[3],
-    (1 - t) * latentA[4] + t * latentB[4],
-    (1 - t) * latentA[5] + t * latentB[5],
-    (1 - t) * latentA[6] + t * latentB[6],
-  ];
-  const mixedRgb01 = mixboxLatent7ToRgb(latentMixed);
-  const recA = mixboxLatent7ToRgb(latentA);
-  const recB = mixboxLatent7ToRgb(latentB);
-  const endpointIdentityError = Number(
-    (
-      Math.abs(recA.r - clamp01(colorA.r)) +
-      Math.abs(recA.g - clamp01(colorA.g)) +
-      Math.abs(recA.b - clamp01(colorA.b)) +
-      Math.abs(recB.r - clamp01(colorB.r)) +
-      Math.abs(recB.g - clamp01(colorB.g)) +
-      Math.abs(recB.b - clamp01(colorB.b))
-    ).toFixed(6),
-  );
-  return {
-    latentA,
-    latentB,
-    latentMixed,
-    mixedRgb01,
-    endpointIdentityError,
   };
 }
 
