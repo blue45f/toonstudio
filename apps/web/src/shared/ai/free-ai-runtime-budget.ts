@@ -28,6 +28,7 @@ const AUTH_FAILURE_COOLDOWN_MS = 10 * 60 * 1_000;
 const MAX_RETRY_AFTER_MS = 24 * 60 * 60 * 1_000;
 const BUDGET_LOCK_NAME = "toonstudio:user-ai:runtime-budget";
 const MAX_LEDGER_ENTRIES = 64;
+const KEY_TAG_PATTERN = /^[0-9a-f]{8}$/u;
 
 type FreeAiBlockReason =
   | "daily-request-budget"
@@ -54,6 +55,8 @@ interface FreeAiBudgetEntry {
   /** null means either unblocked or manually blocked when blockedReason is payment-required. */
   blockedUntil: number | null;
   updatedAt: number;
+  /** 이 기록을 쌓은 키의 짧은 표식(`keyTagOf`). 같은 경로 ID를 다른 키가 쓰면 옛 키의 기록을 물려받지 않는다. */
+  keyTag?: string;
 }
 
 interface FreeAiBudgetLedger {
@@ -139,6 +142,7 @@ function cleanEntry(value: unknown): FreeAiBudgetEntry | null {
     blockedReason,
     blockedUntil: blockedReason ? blockedUntil : null,
     updatedAt: finiteNonNegative(source.updatedAt, 9_999_999_999_999),
+    ...(typeof source.keyTag === "string" && KEY_TAG_PATTERN.test(source.keyTag) ? { keyTag: source.keyTag } : {}),
   };
 }
 
@@ -209,7 +213,22 @@ function scopeKey(connection: UserAiConnection): string {
   return `${host}:${routeId}`.slice(0, 220);
 }
 
-function freshEntry(now: number): FreeAiBudgetEntry {
+/**
+ * 경로 ID는 연결·모델·키 ID로 만들어 키 값이 바뀌어도 그대로다(키를 지운 뒤 다른 키를 넣거나, 새로 고침 뒤 다른 키를
+ * 붙여 넣는 경우). 그래서 기록마다 그 키의 짧은 표식을 남겨 다른 키가 옛 키의 사용량·잠금을 물려받지 않게 한다.
+ * 키를 되살릴 수 없는 32비트 FNV-1a 해시이고, 키 값 자체는 저장하지 않는다.
+ */
+function keyTagOf(connection: UserAiConnection): string {
+  const text = `${connection.baseUrl}\n${connection.apiKey}`;
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function freshEntry(now: number, keyTag: string): FreeAiBudgetEntry {
   return {
     day: utcDay(now),
     requests: 0,
@@ -218,6 +237,7 @@ function freshEntry(now: number): FreeAiBudgetEntry {
     blockedReason: null,
     blockedUntil: null,
     updatedAt: now,
+    keyTag,
   };
 }
 
@@ -225,20 +245,22 @@ function currentEntry(
   ledger: FreeAiBudgetLedger,
   key: string,
   now: number,
+  keyTag: string,
 ): FreeAiBudgetEntry {
   const existing = ledger.entries[key];
-  if (!existing) return freshEntry(now);
-  if (existing.day === utcDay(now)) return { ...existing };
+  // 표식이 없는 옛 기록은 지금 키의 것으로 이어 받는다(이 표식을 남기기 전의 기록).
+  if (!existing || (existing.keyTag !== undefined && existing.keyTag !== keyTag)) return freshEntry(now, keyTag);
+  if (existing.day === utcDay(now)) return { ...existing, keyTag };
 
   // A provider asking for payment remains blocked until the user explicitly resets it.
   if (existing.blockedReason === "payment-required") {
     return {
-      ...freshEntry(now),
+      ...freshEntry(now, keyTag),
       blockedReason: "payment-required",
       blockedUntil: null,
     };
   }
-  return freshEntry(now);
+  return freshEntry(now, keyTag);
 }
 
 interface LockManagerLike {
@@ -382,7 +404,7 @@ export async function guardFreeAiRuntimeRequest(
   return withBudgetLock(() => {
     const ledger = readLedger();
     const key = scopeKey(connection);
-    const entry = currentEntry(ledger, key, now);
+    const entry = currentEntry(ledger, key, now, keyTagOf(connection));
     const blocked = blockMessage(entry, now);
     if (blocked) {
       // 최근 인증 오류로 쉬는 연결은 요청을 보내지 않았으므로, 인증 거절과 같은 종류로 알려 다음 키·ToonStudio AI로 넘기게 한다.
@@ -452,7 +474,7 @@ export async function recordFreeAiRuntimeResponse(
     await withBudgetLock(() => {
       const ledger = readLedger();
       const key = scopeKey(connection);
-      const entry = currentEntry(ledger, key, now);
+      const entry = currentEntry(ledger, key, now, keyTagOf(connection));
 
       if (status === 402) {
         entry.blockedReason = "payment-required";
@@ -509,7 +531,7 @@ export function getFreeAiRuntimeBudgetSnapshot(
     };
   }
   const ledger = readLedger();
-  const entry = currentEntry(ledger, scopeKey(connection), now);
+  const entry = currentEntry(ledger, scopeKey(connection), now, keyTagOf(connection));
   if (
     entry.blockedReason !== "payment-required"
     && entry.blockedUntil !== null
@@ -536,8 +558,8 @@ export function getFreeAiRuntimeBudgetSnapshot(
 }
 
 /**
- * 지우거나 키 값이 바뀐 경로의 사용량·잠금 기록을 지운다. 경로 ID는 연결·모델·키 ID로 만들어서, 키를 지운 뒤 새로 넣은 키가
- * 같은 ID를 다시 쓴다. 기록을 남겨 두면 새 키가 옛 키의 인증 대기·결제 잠금에 걸려 한동안 건너뛰어진다.
+ * 사용자가 지웠거나 키 값·주소를 바꾼 경로의 사용량·잠금 기록을 지운다. 결제 잠금 안내("연결을 삭제하고 다시 등록하세요")가
+ * 이 동작에 기댄다. 다른 키가 같은 경로 ID를 이어 쓰는 경우는 기록의 키 표식(`keyTagOf`)이 따로 막는다.
  */
 export function forgetFreeAiRuntimeRoutes(routes: readonly UserAiConnection[]): void {
   if (routes.length === 0) return;

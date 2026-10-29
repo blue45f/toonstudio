@@ -18,6 +18,7 @@ import {
   type UserAiConfiguration,
   type UserAiConnection,
   type UserAiResolvedConnection,
+  type UserAiRoutingSettings,
 } from "./user-ai-types";
 
 interface AiSnapshot {
@@ -74,8 +75,9 @@ export function useUserAi() {
 }
 
 /**
- * 앞 설정과 새 설정 중 한쪽에만 있는 경로(지운 키, 새로 넣은 키, 주소·키 값이 바뀐 경로). 켜고 끄기만 한 경로는 같은
- * 키라서 세지 않는다(끄고 다시 켠다고 하루 사용량·잠금 기록이 비지 않게).
+ * 앞 설정에는 있었지만 새 설정에서 사라진 경로(지운 키, 주소·키 값이 바뀐 경로). 켜고 끄기만 한 경로는 같은 키라서 세지
+ * 않는다(끄고 다시 켠다고 하루 사용량·잠금 기록이 비지 않게). 새로 생긴 경로도 세지 않는다: 새로 고침·잠금 뒤 같은 키를
+ * 다시 붙여 넣으면 같은 경로라 하루 안전 한도가 이어져야 하고, 다른 키라면 기록의 키 표식이 옛 기록을 쓰지 않게 막는다.
  */
 function changedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): UserAiResolvedConnection[] {
   const collect = (configuration: UserAiConfiguration) => {
@@ -95,17 +97,13 @@ function changedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration)
     }
     return routes;
   };
-  const before = collect(previous);
   const after = collect(next);
-  return [
-    ...[...before].filter(([signature]) => !after.has(signature)).map(([, route]) => route),
-    ...[...after].filter(([signature]) => !before.has(signature)).map(([, route]) => route),
-  ];
+  return [...collect(previous)].filter(([signature]) => !after.has(signature)).map(([, route]) => route);
 }
 
 export function setUserAiConfiguration(configuration: UserAiConfiguration) {
   const next = normalizeUserAiConfiguration(configuration);
-  // 같은 경로 ID를 다시 쓰는 새 키가 옛 키의 인증 대기·결제 잠금에 걸리지 않게, 바뀐 경로의 기록을 지운다.
+  // 지운 키·바꾼 키의 경로 기록을 지운다(결제 잠금은 "삭제 후 다시 등록"으로 풀린다).
   forgetFreeAiRuntimeRoutes(changedRoutes(snapshot.configuration, next));
   publish(
     next,
@@ -228,6 +226,32 @@ export function userAiPersonalFirstConnectionsForCapability(
   return userAiAutomaticExternalConnectionsForCapability(capability, configuration).filter((connection) => (
     connection.costPolicy !== "user-funded-byok" || routing.preferPaidKeys === true || routing.mode === "manual"
   ));
+}
+
+/**
+ * 텍스트 AI 요청에서 등록한 내 키와 ToonStudio AI의 순서. 실제 요청(스튜디오 텍스트 AI)과 화면 표시가 이 규칙 하나를 쓴다.
+ * - fixed: "하나만 고정"으로 고른 내 키만 쓰고 ToonStudio AI로 넘기지 않는다.
+ * - first: 내 키를 먼저 쓰고, 한도·인증 오류 등으로 안 되면 ToonStudio AI로 넘긴다.
+ * - after: "내가 정한 순서"에서 ToonStudio AI를 내 키보다 앞에 두었다. 내 키는 ToonStudio AI를 쓸 수 없을 때 쓴다.
+ * - none: 먼저 쓰는 내 키가 없다.
+ */
+export type UserAiTextKeyOrder = "fixed" | "first" | "after" | "none";
+
+export function userAiTextKeyOrderOf(
+  routing: UserAiRoutingSettings,
+  personalFirstRoutes: readonly UserAiResolvedConnection[],
+): UserAiTextKeyOrder {
+  if (personalFirstRoutes.length === 0) return "none";
+  if (routing.mode === "manual") return "fixed";
+  if (routing.mode === "priority" && (personalFirstRoutes[0]?.priority ?? 100) >= routing.managedPoolPriority) return "after";
+  return "first";
+}
+
+export function userAiTextKeyOrder(configuration: UserAiConfiguration = snapshot.configuration): UserAiTextKeyOrder {
+  return userAiTextKeyOrderOf(
+    userAiRoutingSettings(configuration),
+    userAiPersonalFirstConnectionsForCapability("text", configuration),
+  );
 }
 
 export function requireUserAiConnection(

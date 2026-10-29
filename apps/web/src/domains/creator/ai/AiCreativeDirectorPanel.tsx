@@ -19,7 +19,7 @@ import type { LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
-import { userAiAutomaticExternalConnectionsForCapability, useUserAi } from "@/shared/ai/user-ai-store";
+import { userAiAutomaticExternalConnectionsForCapability, useUserAi, type UserAiTextKeyOrder } from "@/shared/ai/user-ai-store";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -29,7 +29,7 @@ import {
   completeStudioServerText,
   getStudioServerAiStatus,
   studioServerAiProviderLabel,
-  studioTextUsesPersonalKeyFirst,
+  studioTextKeyOrder,
   type StudioServerAiProvider,
   type StudioServerAiStatus,
 } from "../studio-server-ai-client";
@@ -106,8 +106,8 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
   const session = useSession();
   const userAi = useUserAi();
   const aiRevision = userAi.revision;
-  // 상태 표시도 실제 요청과 같은 규칙을 따른다: 내 키가 먼저면 "내 키 먼저 사용"으로 적는다.
-  const personalKeyFirst = studioTextUsesPersonalKeyFirst(userAi.configuration);
+  // 상태 표시도 실제 요청과 같은 규칙을 따른다: 내 키가 먼저면 "내 키 먼저 사용", 하나만 고정이면 "고정: 내 키"로 적는다.
+  const keyOrder = studioTextKeyOrder(userAi.configuration);
   const { probe, retry } = useStudioAiStatus();
   const [selectedId, setSelectedId] = useState<AiDirectorSuggestionId>("story-expand");
   // 답변 조절 공통 부품 — 제출 시 시스템 프롬프트 끝에 지시문으로 붙는다(아래 submit 참고).
@@ -263,8 +263,9 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
             </div>
             <DirectorStatusBadge
               availability={availability.state}
-              personalKeyFirst={personalKeyFirst}
-              model={availability.state === "server" ? availability.model : ""}
+              keyOrder={keyOrder}
+              // 내 키가 먼저 답하거나(먼저 사용) 내 키만 쓰면(고정) 서버 모델을 내세우지 않는다.
+              model={availability.state === "server" && (keyOrder === "after" || keyOrder === "none") ? availability.model : ""}
             />
           </div>
 
@@ -482,16 +483,18 @@ function DirectorAnswerBody({ content }: { readonly content: string }) {
   );
 }
 
-function DirectorStatusBadge({ availability, personalKeyFirst, model }: {
+function DirectorStatusBadge({ availability, keyOrder, model }: {
   readonly availability: string;
-  readonly personalKeyFirst: boolean;
+  readonly keyOrder: UserAiTextKeyOrder;
   readonly model: string;
 }) {
   const bt = useBilingual("AiCreativeDirectorPanel.status");
   const label = availability === "server"
-    ? personalKeyFirst
-      ? bt("내 키 먼저 사용", "Your key first")
-      : bt("ToonStudio AI 연결됨", "ToonStudio AI connected")
+    ? keyOrder === "fixed"
+      ? bt("고정: 내 키", "Fixed: your key")
+      : keyOrder === "first"
+        ? bt("내 키 먼저 사용", "Your key first")
+        : bt("ToonStudio AI 연결됨", "ToonStudio AI connected")
     : availability === "personal"
       ? bt("내 키로 요청", "Using your key")
       : availability === "login"

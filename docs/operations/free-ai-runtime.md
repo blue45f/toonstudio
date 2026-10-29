@@ -83,10 +83,11 @@ A connection whose base URL is exactly `https://api.anthropic.com` uses the `ant
 
 The runtime advances only after a definitive pre-inference rejection:
 
-- `401`/`403` for a personal key, allowing the next configured key;
+- `401`/`403` for a personal key, or `400` with an invalid-key body (Gemini `API_KEY_INVALID`, xAI "Incorrect API key"), allowing the next configured key; the `400` case starts the same 10-minute pause as `401`, so a revoked key is not called on every request;
 - `402`/`429` for payment/free-quota/request-quota rejection;
 - Qwen `403/AllocationQuota.FreeTierOnly` and Cloudflare `403/5035` in the shared pool;
-- the app’s own per-route browser safety-budget exhaustion.
+- the app’s own per-route browser safety-budget exhaustion;
+- an empty answer cut at the output cap (`finish_reason: "length"`, common when a reasoning model spends the 1,024-token free cap on thinking): the next personal key is tried, then ToonStudio AI. A paid key that returns such an answer has already been billed, so the request is not sent to another paid key.
 
 Network errors, timeouts, `5xx`, malformed success responses, and parse failures are surfaced immediately. The same request is not sent to another provider because the first provider may already have accepted it.
 
@@ -101,7 +102,7 @@ Network errors, timeouts, `5xx`, malformed success responses, and parse failures
 - `n = 1`, `best_of = 1`, no log-probability expansion, no streaming;
 - only `GET /models` and `POST /chat/completions`.
 
-The budget key includes connection, model, and key profile IDs. It stores counters and timestamps only, never prompts, outputs, or secrets.
+The budget key includes connection, model, and key profile IDs. Those IDs stay the same when a key is replaced, so each entry also keeps a short non-reversible tag of the key it counted (32-bit FNV-1a of the base URL and key). Pasting the same key again after a lock or reload keeps today's counts and pauses; a different key on the same route starts a fresh entry. Deleting a key, or changing its value or address, clears its entry — the documented way to lift a payment lock. It stores counters, timestamps and that tag only, never prompts, outputs, or secrets.
 
 ## Managed cloud media inference
 
@@ -143,6 +144,6 @@ Personal keys remain in memory by default. The encrypted vault stores the normal
 - [ ] Migrations 0114 and 0115 are applied before `STUDIO_AI_ANTHROPIC_API_KEY` is set, and the premium daily limits match the approved operator budget.
 - [ ] No operator key is read from `VITE_` variables or shipped in the browser bundle.
 - [ ] Multiple key/model route order is deterministic.
-- [ ] `401`/`403`/`402`/`429` are the only personal-route automatic advance conditions.
+- [ ] `401`/`403`, `400` with an invalid-key body, `402`/`429`, and an empty cut-off answer are the only personal-route automatic advance conditions.
 - [ ] Network, timeout, `5xx`, parse, and malformed-success failures do not replay.
 - [ ] No secret, prompt, or response is stored in quota ledgers or application logs.

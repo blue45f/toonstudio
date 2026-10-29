@@ -175,12 +175,14 @@ function endpointKey(baseUrl: string): string {
 export function findQuickKeyConnection(
   configuration: UserAiConfiguration,
   provider: QuickKeyProviderId,
+  accept: (connection: UserAiConnection) => boolean = () => true,
 ): UserAiConnection | undefined {
   const preset = QUICK_KEY_PRESETS[provider];
   return configuration.connections.find((item) => (
     sameQuickKeyEndpoint(item, provider)
     && item.costPolicy === preset.costPolicy
     && userAiConnectionModels(item, "text").length > 0
+    && accept(item)
   ));
 }
 
@@ -305,6 +307,18 @@ export function addQuickKey(
     ? { ...routing, allowPaidFallback: true, preferPaidKeys: true }
     : routing;
   const consented = (connection: UserAiConnection): UserAiConnection => (paidConsent ? { ...connection, paidAutoUse: true } : connection);
+  // 자동 사용 동의는 연결마다 남는다. 동의하지 않은 연결(예: AI 보조 카드에서 대화상자용으로 연결한 키)에 이 키를 넣거나
+  // 그 연결을 다시 켜며 동의를 남기면, 사용자가 동의하지 않은 같은 연결의 다른 키까지 자동 경로에서 먼저 쓰여 비용이 생긴다.
+  // 그래서 동의한 유료 키는 이미 동의한 연결에만 더하고, 아니면 그 키만 든 새 연결로 따로 둔다.
+  const sharesUnconsentedKeys = (connection: UserAiConnection, keyId: string | null) => paidConsent
+    && connection.paidAutoUse !== true
+    && (connection.apiKeys?.length ? connection.apiKeys : userAiConnectionApiKeys(connection))
+      .some((entry) => entry.id !== keyId && entry.enabled !== false);
+  const heldConnection = held ? configuration.connections.find((item) => item.id === held.connectionId) : undefined;
+  if (held && heldConnection && sharesUnconsentedKeys(heldConnection, held.keyId)) {
+    // 꺼 둔 이 키를 그 연결에서 빼고(다른 키는 그대로) 아래에서 이 키만 든 동의한 연결을 새로 만든다.
+    return addQuickKey(removeQuickKey(configuration, held.connectionId, held.keyId), provider, key, options);
+  }
   if (held) {
     // 꺼 둔 같은 키를 다시 붙였다: 사용자가 쓰려는 뜻이므로 그 키와 연결을 다시 켠다. 비용 정책·모델·순서는 그대로 둔다.
     const connections = configuration.connections.map((item) => (item.id === held.connectionId
@@ -326,7 +340,11 @@ export function addQuickKey(
       reenabled: true,
     };
   }
-  const existing = findQuickKeyConnection(configuration, provider);
+  const existing = findQuickKeyConnection(
+    configuration,
+    provider,
+    (connection) => !sharesUnconsentedKeys(connection, null),
+  );
 
   if (existing) {
     // 같은 키는 위에서 이미 중복으로 돌려주거나 다시 켰다.
@@ -390,7 +408,9 @@ export function addQuickKey(
 
 /**
  * 키 하나를 지운다. 그 연결에 남은 키가 없으면 연결도 지우고, 지운 연결·키를 가리키던 기능 배정은 비운다
- * (배정이 남아 있으면 보관함 검증에서 설정 전체가 거부된다).
+ * (배정이 남아 있으면 보관함 검증에서 설정 전체가 거부된다). 남은 키가 모두 꺼져 있으면 연결을 지우지 않고 꺼 둔다:
+ * 목록에 따로 보이는 꺼 둔 키를 함께 잃지 않게 한다. 보관함 검증은 연결마다 켜진 키를 하나 요구하므로 남은 첫 키의
+ * 켜짐 표시만 살리고, 연결을 꺼서 어떤 경로에도 쓰이지 않게 한다(그 키를 다시 붙여 넣으면 다시 켜진다).
  */
 export function removeQuickKey(
   configuration: UserAiConfiguration,
@@ -401,7 +421,11 @@ export function removeQuickKey(
   if (!connection) return configuration;
   const keys = connection.apiKeys?.length ? connection.apiKeys : userAiConnectionApiKeys(connection);
   const remaining = keys.filter((item) => item.id !== keyId);
-  const removeConnection = remaining.length === 0 || !remaining.some((item) => item.enabled);
+  const removeConnection = remaining.length === 0;
+  const keepSwitchedOff = !removeConnection && !remaining.some((item) => item.enabled);
+  const keptKeys = keepSwitchedOff
+    ? remaining.map((item, index) => (index === 0 ? { ...item, enabled: true } : item))
+    : remaining;
   const assignments = { ...configuration.assignments };
   const routeAssignments = { ...(configuration.routeAssignments ?? emptyRouteAssignments()) };
   for (const capability of USER_AI_CAPABILITIES) {
@@ -415,7 +439,9 @@ export function removeQuickKey(
     ...configuration,
     connections: removeConnection
       ? configuration.connections.filter((item) => item.id !== connectionId)
-      : configuration.connections.map((item) => (item.id === connectionId ? { ...item, apiKeys: remaining } : item)),
+      : configuration.connections.map((item) => (item.id === connectionId
+        ? { ...item, apiKeys: keptKeys, ...(keepSwitchedOff ? { enabled: false } : {}) }
+        : item)),
     assignments,
     routeAssignments,
   };

@@ -36,6 +36,7 @@ import {
 import { userAiJson } from "./user-ai-transport";
 import {
   EMPTY_AI_CONNECTION,
+  resolvedUserAiRoutes,
   USER_AI_CAPABILITIES,
   userAiConnectionApiKeys,
   userAiConnectionModels,
@@ -489,7 +490,12 @@ function AiSettingsEditor({
         <div className="divide-y divide-line rounded-xl border border-line px-4">
           {orderedConnections.map((connection) => {
             const issue = freeAiConnectionPolicyIssue(connection, connection.textModel ? "text" : undefined);
-            const budget = getFreeAiRuntimeBudgetSnapshot(connection);
+            // 사용 기록은 키·모델 경로마다 쌓인다. 연결 ID로 읽으면 늘 비어 보이므로 켜진 텍스트 경로의 기록을 모아 보여 준다.
+            const routeBudgets = resolvedUserAiRoutes(connection, "text")
+              .map((route) => getFreeAiRuntimeBudgetSnapshot(route))
+              .filter((item) => item.guarded);
+            const openBudgets = routeBudgets.filter((item) => !item.blockedReason);
+            const remainingRequests = openBudgets.reduce((sum, item) => sum + (item.remainingRequests ?? 0), 0);
             const keyCount = userAiConnectionApiKeys(connection).length;
             const modelCount = userAiConnectionModels(connection).length;
             return (
@@ -503,11 +509,11 @@ function AiSettingsEditor({
                   <p className="break-all text-xs text-fg-2">{connection.baseUrl}</p>
                   <p className="mt-1 text-xs text-fg-3">{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "키 ")}{keyCount}{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "개 · 모델 ")}{modelCount}{translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "개 · ")}{USER_AI_COST_POLICY_LABELS[connection.costPolicy]}</p>
                   {issue && <p className="mt-1 text-xs text-bad">{issue}</p>}
-                  {budget.guarded && (
-                    <p className={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "en", "mt-1 text-xs {v0}"), { v0: String(budget.blockedReason ? "text-warn" : "text-fg-3") })}>
-                      {budget.blockedReason
+                  {routeBudgets.length > 0 && (
+                    <p className={formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "en", "mt-1 text-xs {v0}"), { v0: String(openBudgets.length === 0 ? "text-warn" : "text-fg-3") })}>
+                      {openBudgets.length === 0
                         ? translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "이 무료 경로는 한도 또는 보호 정책으로 현재 중지됨")
-                        : formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "오늘 남은 앱 안전 한도 {v0}회"), { v0: String(budget.remainingRequests ?? 0) })}
+                        : formatI18nTemplate(translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "오늘 남은 앱 안전 한도 {v0}회"), { v0: String(remainingRequests) })}
                     </p>
                   )}
                 </div>

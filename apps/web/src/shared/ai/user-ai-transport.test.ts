@@ -354,4 +354,113 @@ describe("managed cloud AI transport", () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  describe("empty answers cut at the output cap", () => {
+    const geminiTwoKeys = (): void => {
+      setUserAiConfiguration({
+        version: 1,
+        connections: [{
+          ...managedConnection,
+          id: "gemini-multi",
+          label: "Gemini multi key",
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+          apiKey: "legacy-key",
+          textModel: "gemini-3.8-flash",
+          costPolicy: "provider-free-tier",
+          apiKeys: [
+            { id: "first", label: "First", apiKey: "key-first", enabled: true, priority: 10 },
+            { id: "second", label: "Second", apiKey: "key-second", enabled: true, priority: 20 },
+          ],
+        }],
+        assignments: { text: "gemini-multi", image: null, inference: null, "three-d": null },
+      });
+    };
+    const answer = (content: string, finishReason = "stop") => new Response(
+      JSON.stringify({ choices: [{ message: { content }, finish_reason: finishReason }] }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+    const bearer = (init?: RequestInit) => new Headers(init?.headers).get("authorization");
+
+    it("tries my next free key when one free key's answer came back empty at the output cap", async () => {
+      geminiTwoKeys();
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
+        bearer(init) === "Bearer key-first" ? answer("", "length") : answer("second key result")
+      ));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeUserAiTextDetailed("system", "user")).resolves.toMatchObject({
+        content: "second key result",
+        connection: { apiKeyProfileId: "second" },
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("reports the empty cut-off answer only after every free key was tried", async () => {
+      geminiTwoKeys();
+      const fetchMock = vi.fn(async () => answer("", "length"));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeUserAiTextDetailed("system", "user")).rejects.toBeInstanceOf(UserAiEmptyTruncatedError);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("never sends the same request to a second paid key after a paid key already billed an empty answer, but still tries free keys", async () => {
+      const paid = (id: string, priority: number, key: string): UserAiConnection => ({
+        ...managedConnection,
+        id,
+        label: id,
+        baseUrl: "https://api.openai.com/v1",
+        apiKey: key,
+        textModel: "paid-model",
+        costPolicy: "user-funded-byok",
+        paidAutoUse: true,
+        priority,
+      });
+      setUserAiConfiguration({
+        version: 1,
+        connections: [
+          paid("paid-a", 10, "key-paid-a"),
+          paid("paid-b", 20, "key-paid-b"),
+          { ...managedConnection, id: "free-c", baseUrl: "https://api.groq.com/openai/v1", apiKey: "key-free-c", costPolicy: "provider-free-tier", priority: 30 },
+        ],
+        assignments: { text: "paid-a", image: null, inference: null, "three-d": null },
+        routing: { mode: "priority", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [] },
+      });
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
+        bearer(init) === "Bearer key-paid-a" ? answer("", "length") : answer(`answer from ${bearer(init) === "Bearer key-free-c" ? "free C" : "paid B"}`)
+      ));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeUserAiTextDetailed("system", "user")).resolves.toMatchObject({
+        content: "answer from free C",
+        connection: { id: "free-c" },
+      });
+      const keysCalled = fetchMock.mock.calls.map(([, init]) => bearer(init));
+      expect(keysCalled).toEqual(["Bearer key-paid-a", "Bearer key-free-c"]);
+    });
+  });
+
+  it("pauses a revoked key answered with HTTP 400 for the same time as a 401, so it is not called on every request", async () => {
+    setUserAiConfiguration({
+      version: 1,
+      connections: [{
+        ...managedConnection,
+        id: "gemini-revoked",
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+        apiKey: "key-revoked",
+        textModel: "gemini-3.8-flash",
+        costPolicy: "provider-free-tier",
+      }],
+      assignments: { text: "gemini-revoked", image: null, inference: null, "three-d": null },
+    });
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify([{
+      error: { code: 400, message: "API key not valid. Please pass a valid API key.", status: "INVALID_ARGUMENT", details: [{ reason: "API_KEY_INVALID" }] },
+    }]), { status: 400 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "authentication" });
+    // 두 번째 요청은 인증 대기 중이라 제공자에 보내지 않고 같은 인증 오류로 끝난다(다음 경로로 넘길 수 있다).
+    await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "authentication" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

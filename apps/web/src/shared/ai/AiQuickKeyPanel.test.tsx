@@ -327,6 +327,62 @@ describe("AiQuickKeyPanel", () => {
     expect(within(flow).getByText(/지금 먼저 쓰는 키가 없어요/u)).toBeTruthy();
   });
 
+  it("'하나만 고정'에서는 고른 키만 쓰고 ToonStudio AI로 넘기지 않는다고 알린다", () => {
+    const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    setUserAiConfiguration({ ...groq.configuration, routing: { ...userAiRoutingSettings(groq.configuration), mode: "manual" } });
+    renderPanel();
+
+    const flow = screen.getByText("지금 AI는 이렇게 동작해요").closest("div") as HTMLElement;
+    expect(within(flow).getByText("“하나만 고정”으로 고른 키만 써요. ToonStudio AI로 넘기지 않아요.")).toBeTruthy();
+    expect(within(flow).getByText(/“하나만 고정”을 쓰는 동안은 쓰지 않아요/u)).toBeTruthy();
+    expect(within(flow).queryByText(/먼저 써요/u)).toBeNull();
+  });
+
+  it("'내가 정한 순서'에서 ToonStudio AI를 앞에 두면 내 키를 그다음에 쓴다고 알린다", () => {
+    const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    setUserAiConfiguration({
+      ...groq.configuration,
+      routing: { ...userAiRoutingSettings(groq.configuration), mode: "priority", managedPoolPriority: 1 },
+    });
+    renderPanel();
+
+    const flow = screen.getByText("지금 AI는 이렇게 동작해요").closest("div") as HTMLElement;
+    expect(within(flow).getByText("“내가 정한 순서”에 따라 ToonStudio AI 다음에 등록한 키 1개를 써요.")).toBeTruthy();
+    expect(within(flow).queryByText("등록한 키 1개를 먼저 써요.")).toBeNull();
+  });
+
+  it("'하나만 고정'으로 다른 키를 고정해 두었으면, 유료 키 동의 문구가 이 키를 먼저 쓴다고 하지 않는다", () => {
+    const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    setUserAiConfiguration({ ...groq.configuration, routing: { ...userAiRoutingSettings(groq.configuration), mode: "manual" } });
+    const { input } = renderPanel();
+    pasteInto(input, `sk-proj-${"p".repeat(48)}`);
+
+    const consent = screen.getByRole("checkbox").closest("label") as HTMLElement;
+    expect(consent.textContent).toContain("지금은 “하나만 고정”이라 고정한 키만 쓰고, 이 키는 고정할 키로 고를 때 써요.");
+    expect(consent.textContent).not.toContain("AI 기능이 이 키를 먼저 써요.");
+  });
+
+  it("대화상자용으로 연결한(동의하지 않은) 같은 서비스 키는 이번 동의로 자동 사용에 들지 않으므로 동의 문구에 적지 않는다", async () => {
+    // AI 보조 카드처럼 비용 동의 없이 연결한 Claude 키.
+    setUserAiConfiguration(addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE).configuration);
+    vi.stubGlobal("fetch", vi.fn(async () => json({ data: [{ id: "claude-opus-5-5" }] })));
+    const { input } = renderPanel();
+    const second = `sk-ant-api03-${"s".repeat(40)}`;
+    pasteInto(input, second);
+
+    const consent = screen.getByRole("checkbox").closest("label") as HTMLElement;
+    expect(consent.textContent).toContain("AI 기능이 이 키를 먼저 써요.");
+    expect(consent.textContent).not.toContain("이미 등록한 유료 키");
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+    await screen.findByText(/키를 확인하고 등록했어요/u);
+
+    // 대화상자용 키의 연결에는 자동 사용 동의가 생기지 않는다.
+    const connections = getUserAiSnapshot().configuration.connections;
+    expect(connections.find((item) => item.apiKey === CLAUDE)?.paidAutoUse).not.toBe(true);
+    expect(connections.find((item) => item.apiKey === second)?.paidAutoUse).toBe(true);
+  });
+
   it("목록에 없는 서비스는 직접 연결 마법사로 보낸다", () => {
     const { onOpenAdvancedWizard } = renderPanel();
     fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));

@@ -15,7 +15,7 @@ import {
   parseStudioServerAiCompletion,
   parseStudioServerAiFailoverMetadata,
   resolveActiveServerAiProviderLabel,
-  studioTextUsesPersonalKeyFirst,
+  studioTextKeyOrder,
 } from "./studio-server-ai-client";
 
 const OPERATION_ID = "composition-00000000-0000-4000-8000-000000000001";
@@ -471,6 +471,49 @@ describe("studio automatic free AI client", () => {
     });
   });
 
+  it("tries my other free key before ToonStudio AI or a paid fallback key when the first free key's answer came back empty", async () => {
+    const free = (id: string, baseUrl: string, apiKey: string) => ({
+      id,
+      label: id,
+      baseUrl,
+      apiKey,
+      imageModel: "",
+      textModel: "text-model",
+      imageGenerationPath: "/images/generations",
+      imageEditPath: "/images/edits",
+      chatCompletionsPath: "/chat/completions",
+      costPolicy: "provider-free-tier" as const,
+    });
+    setUserAiConfiguration({
+      version: 1,
+      connections: [
+        free("gemini-free", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-key"),
+        free("groq-free", "https://api.groq.com/openai/v1", "groq-key"),
+        { ...free("openai-paid", "https://api.openai.com/v1", "paid-key"), costPolicy: "user-funded-byok", paidAutoUse: true },
+      ],
+      assignments: { text: "gemini-free", image: null, inference: null, "three-d": null },
+      routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: false, managedPoolPriority: 50, serverProviderOrder: [] },
+    });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      const url = urlOf(request);
+      if (url.pathname === "/api/studio-ai/chat") return json({ code: "FREE_AI_LOGIN_REQUIRED", message: "로그인 필요" }, 401);
+      if (url.hostname === "generativelanguage.googleapis.com") return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+      if (url.hostname === "api.groq.com") return json({ choices: [{ message: { content: "Groq 결과" }, finish_reason: "stop" }] });
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "Groq 결과", provider: "user" },
+    });
+    // 서버(운영 비용)와 유료 키(사용자 비용)는 부르지 않았다.
+    expect(fetchMock.mock.calls.map(([request]) => urlOf(request).hostname)).toEqual([
+      "generativelanguage.googleapis.com",
+      "api.groq.com",
+    ]);
+  });
+
   it("keeps the empty-cut-off reason from my key when ToonStudio AI is also used up", async () => {
     configureFreeTextConnection();
     vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
@@ -534,14 +577,15 @@ describe("studio automatic free AI client", () => {
 
     withRouting({ mode: "automatic" }, 10);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
-    expect(studioTextUsesPersonalKeyFirst()).toBe(true);
+    expect(studioTextKeyOrder()).toBe("first");
     withRouting({ mode: "priority" }, 10);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
     withRouting({ mode: "priority" }, 90);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: ToonStudio 고성능 AI → 무료 AI");
-    expect(studioTextUsesPersonalKeyFirst()).toBe(false);
+    expect(studioTextKeyOrder()).toBe("after");
     withRouting({ mode: "manual" }, 10);
     expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("고정: 내 키");
+    expect(studioTextKeyOrder()).toBe("fixed");
   });
 
   it("keeps free-pool failover metadata allowlisted", () => {

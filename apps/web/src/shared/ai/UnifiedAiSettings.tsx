@@ -16,7 +16,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   connectionFromFreeAiPreset,
@@ -35,6 +35,7 @@ import { SERVER_PROVIDER_LABELS } from "./unified-ai-provider-labels";
 import {
   getUserAiSnapshot,
   setUserAiConfiguration,
+  userAiConnectionsForCapability,
   useUserAi,
 } from "./user-ai-store";
 import {
@@ -298,11 +299,27 @@ export function UnifiedAiSettings() {
     connection.enabled !== false && connection.costPolicy === "user-funded-byok",
   );
   // 유료 키 자동 사용이 켜져 있어도 자동 사용에 동의하지 않은 유료 키(예: AI 보조 카드에서 연결한 키)는 자동 경로에 들지 않는다.
-  const unconsentedPaidNames = [...new Set(connections
+  // "하나만 고정"에서는 고른 경로만 쓰고 이 동의를 보지 않으므로 이 안내를 띄우지 않는다(대신 고정한 유료 키를 알린다).
+  const unconsentedPaidNames = routing.mode === "manual" ? [] : [...new Set(connections
     .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok" && connection.paidAutoUse !== true)
     .map((connection) => connection.label))];
+  const pinnedPaidNames = routing.mode === "manual"
+    ? [...new Set(USER_AI_CAPABILITIES
+      .flatMap((capability) => userAiConnectionsForCapability(capability, configuration))
+      .filter((route) => route.costPolicy === "user-funded-byok")
+      .map((route) => route.label))]
+    : [];
+  const paidChoiceRef = useRef<HTMLDivElement>(null);
+  const [paidUseAnnouncement, setPaidUseAnnouncement] = useState("");
   const choosePaidUse = (allowPaidFallback: boolean, preferPaidKeys: boolean) => {
     setUserAiConfiguration(withPaidAutoUseChoice(configuration, { allowPaidFallback, preferPaidKeys }));
+  };
+  const includeUnconsentedPaidKeys = () => {
+    const names = unconsentedPaidNames.join(", ");
+    choosePaidUse(true, routing.preferPaidKeys === true);
+    setPaidUseAnnouncement(`자동으로 쓰는 유료 키에 넣었어요: ${names}`);
+    // 누른 버튼은 안내와 함께 사라진다. 포커스를 잃지 않게 지금 고른 선택지로 옮긴다.
+    paidChoiceRef.current?.querySelector<HTMLInputElement>('input[type="radio"]:checked')?.focus({ preventScroll: true });
   };
   const readyCapabilities = new Set(readyConnections.flatMap(capabilityList));
   const managedTextState = pool.mode === "loading"
@@ -647,7 +664,7 @@ export function UnifiedAiSettings() {
                 <p className="mt-1 text-sm leading-6 text-fg-2">Claude·OpenAI처럼 비용이 드는 내 키를 자동 경로에서 쓸지 정해요. 키를 등록하며 비용 청구를 확인하면 그 키에 켜지고, 여기서 고르면 지금 등록한 유료 키 모두에 적용돼요.</p>
               </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="유료 AI 자동 사용">
+            <div ref={paidChoiceRef} className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="유료 AI 자동 사용">
               <label className={`cursor-pointer rounded-xl border p-3 ${!routing.allowPaidFallback ? "border-accent bg-accent/5" : "border-line"}`}>
                 <span className="flex items-start gap-2">
                   <input type="radio" name="paid-ai-use" aria-label="자동으로 사용하지 않음" checked={!routing.allowPaidFallback} onChange={() => choosePaidUse(false, false)} className="mt-1" />
@@ -674,12 +691,18 @@ export function UnifiedAiSettings() {
                 <button
                   type="button"
                   className="min-h-11 rounded-lg px-2 font-semibold text-accent underline underline-offset-2"
-                  onClick={() => choosePaidUse(true, routing.preferPaidKeys === true)}
+                  onClick={includeUnconsentedPaidKeys}
                 >
                   이 키도 자동으로 쓰기
                 </button>
               </p>
             )}
+            {pinnedPaidNames.length > 0 && (
+              <p className="text-xs text-warn" data-paid-pinned="true">
+                {`“하나만 고정”으로 고른 유료 키(${pinnedPaidNames.join(", ")})는 이 설정과 상관없이 요청마다 내 계정에 비용이 청구돼요.`}
+              </p>
+            )}
+            <p className="sr-only" role="status">{paidUseAnnouncement}</p>
           </section>
 
           <section className="grid gap-3 sm:grid-cols-2" aria-label="AI 데이터와 보안 안내">
