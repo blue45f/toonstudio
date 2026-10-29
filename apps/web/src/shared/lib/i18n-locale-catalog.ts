@@ -114,7 +114,7 @@ export const APP_I18N_LOCALE_TRANSLATED_RATIO: Readonly<Record<string, number>> 
   "fa": 0.9771,
   "fi": 0.9748,
   "fil": 0.9597,
-  "fr": 0.9562,
+  "fr": 0.9569,
   "gl": 0.9779,
   "gu": 0.9825,
   "he": 0.981,

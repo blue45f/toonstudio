@@ -9,7 +9,7 @@
   "auth.callback.error.badState": "Neveljavni parameter stanja.",
   "auth.callback.error.noCode": "Manjka avtorizacijska koda.",
   "auth.callback.error.oauthFailed": "Izmenjava OAuth ni uspela.",
-  "auth.callback.error.unsupported": "Nepodpirani ponudnik prijave.",
+  "auth.callback.error.unsupported": "Nepodprt ponudnik prijave.",
   "auth.callback.error.accessDenied": "Prijava je bila preklicana.",
   "auth.callback.error.generic": "Prijava ni uspela. Vrnite se na stran za prijavo in poskusite znova.",
   "auth.callback.error.noUser": "Podatkov o uporabniku ni mogoče preveriti.",

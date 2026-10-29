@@ -7,7 +7,7 @@
   "auth.menu.fallbackName": "Lesandi",
   "auth.callback.message.working": "Ljúka innskráningu…",
   "auth.callback.error.badState": "Ógilt ástandsbreytugildi.",
-  "auth.callback.error.noCode": "Heimildarkóði vantar.",
+  "auth.callback.error.noCode": "Heimildarkóða vantar.",
   "auth.callback.error.oauthFailed": "OAuth-skipti mistókust.",
   "auth.callback.error.unsupported": "Innskráningarveita ekki studd.",
   "auth.callback.error.accessDenied": "Innskráningu var hætt við.",

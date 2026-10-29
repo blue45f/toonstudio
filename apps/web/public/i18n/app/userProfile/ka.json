@@ -11,7 +11,7 @@
   "userProfile.authorFallback": "მომხმარებელი",
   "userProfile.metaTemplate": "{author} პროფილი · {reviews} მიმოხილვები · {works} სამუშაოები · avg რეიტინგი {avg}  ToonStudio.",
   "userProfile.bioFallback": "მკითხველის პროფილი და გამოქვეყნებული ნაშრომები",
-  "userProfile.followHint": "შეგიძლიათ გაჰყვეთ მომხმარებლებს ჩარევის შემდეგ.",
+  "userProfile.followHint": "შეგიძლიათ გაჰყვეთ მომხმარებლებს შესვლის შემდეგ.",
   "userProfile.follow": "მოჰყევი",
   "userProfile.following": "შემდეგი",
   "userProfile.stat.followers": "მიმდევრები",

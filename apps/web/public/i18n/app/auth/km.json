@@ -6,7 +6,7 @@
   "auth.menu.signOut": "ចេញពីគណនី",
   "auth.menu.fallbackName": "អ្នកអាន",
   "auth.callback.message.working": "កំពុងបញ្ចប់ការចូលគណនី…",
-  "auth.callback.error.badState": "ប៉ារ៉ាម៉ែត្រ state មិនត្រឹមត្រូវ។",
+  "auth.callback.error.badState": "ប៉ារ៉ាម៉ែត្រស្ថានភាពមិនត្រឹមត្រូវ។",
   "auth.callback.error.noCode": "បាត់កូដអនុញ្ញាត។",
   "auth.callback.error.oauthFailed": "ការផ្លាស់ប្តូរ OAuth បានបរាជ័យ។",
   "auth.callback.error.unsupported": "អ្នកផ្តល់សេវាចូលគណនីដែលមិនត្រូវបានគាំទ្រ។",

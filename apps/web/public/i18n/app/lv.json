@@ -749,7 +749,7 @@
   "auth.menu.settings": "Iestatījumi",
   "auth.menu.signOut": "Izrakstīties",
   "auth.menu.fallbackName": "Lasītājs",
-  "auth.callback.message.working": "Pabeidz pierakstīšanos…",
+  "auth.callback.message.working": "Pierakstīšanās tiek pabeigta…",
   "auth.callback.error.badState": "Nederīgs stāvokļa parametrs.",
   "auth.callback.error.noCode": "Trūkst autorizācijas koda.",
   "auth.callback.error.oauthFailed": "OAuth apmaiņa neizdevās.",

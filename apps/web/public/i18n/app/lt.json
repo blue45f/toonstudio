@@ -1507,7 +1507,7 @@
   "membership.join.close": "Uždaryti",
   "membership.join.creator": "{name} narystė",
   "membership.join.done": "Atlikta",
-  "membership.join.loginNotice": "Lygius galite naršyti neprisijungę. Prisijungti paprašysime, kai prisijungsite prie narystės.",
+  "membership.join.loginNotice": "Lygius galite naršyti neprisijungę. Prisijungti paprašysime, kai įstosite į narystę.",
   "membership.join.loginToJoin": "Prisijungti ir įstoti",
   "membership.join.price": "{amount}/mėn.",
   "membership.join.priceLabel": "Mėnesinė kaina",

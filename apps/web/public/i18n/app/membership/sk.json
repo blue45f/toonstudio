@@ -26,7 +26,7 @@
   "membership.join.creator": "Členstvo používateľa {name}",
   "membership.join.done": "Hotovo",
   "membership.join.loginNotice": "Úrovne si môžete prezerať bez prihlásenia. Pri pripojení vás požiadame o prihlásenie.",
-  "membership.join.loginToJoin": "Prihlásiť sa na pripojenie",
+  "membership.join.loginToJoin": "Prihláste sa a staňte sa členom",
   "membership.join.price": "{amount}/mesiac",
   "membership.join.priceLabel": "Mesačná cena",
   "membership.join.processing": "Spracúva sa…",

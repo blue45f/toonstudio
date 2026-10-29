@@ -11,7 +11,7 @@
   "userProfile.authorFallback": "Корисник",
   "userProfile.metaTemplate": "{author} профил · {reviews} рецензии · {works} работи · avg рејтинг {avg}  ToonStudio.",
   "userProfile.bioFallback": "Профил на читателите и објавени дела",
-  "userProfile.followHint": "Можете да ги следите корисниците откако ќе се пријавите.",
+  "userProfile.followHint": "Можете да ги следите корисниците откако ќе се најавите.",
   "userProfile.follow": "Следете ги",
   "userProfile.following": "Следувајќи",
   "userProfile.stat.followers": "Следувачи",

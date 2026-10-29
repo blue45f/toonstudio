@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "લૉગિન જરૂરી છે.",
+  "apiError.loginRequired": "સાઇન ઇન કરવું જરૂરી છે.",
   "apiError.adminRequired": "એડમિન પરવાનગીઓ ચકાસી શકાઈ ન હતી.",
   "apiError.adminOnlyPage": "આ પાનું એડમિનિસ્ટ્રેટર્સ સુધી મર્યાદિત છે.",
   "apiError.notFound": "વિનંતી કરેલી વસ્તુ મળી શકી નથી.",

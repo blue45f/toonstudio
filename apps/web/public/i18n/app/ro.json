@@ -732,7 +732,7 @@
   "anchorLab.diff.subjectNotSeparated.both": "Subiectul nu a putut fi separat de fundal în niciuna dintre imagini, așa că au fost comparate imaginile întregi.",
   "anchorLab.diff.subjectNotSeparated.anchor": "Subiectul nu a putut fi separat de fundal în ancoră, așa că au fost comparate imaginile întregi.",
   "anchorLab.diff.subjectNotSeparated.candidate": "Subiectul nu a putut fi separat de fundal în candidat, așa că au fost comparate imaginile întregi.",
-  "apiError.loginRequired": "Este necesar să te conectezi.",
+  "apiError.loginRequired": "Este necesar să vă conectați.",
   "apiError.adminRequired": "Permisiunile administratorului nu au putut fi verificate.",
   "apiError.adminOnlyPage": "Această pagină este rezervată administratorilor.",
   "apiError.notFound": "Elementul solicitat nu a putut fi găsit.",

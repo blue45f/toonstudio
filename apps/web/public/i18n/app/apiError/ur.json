@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "لاگ ان کی ضرورت ہے.",
+  "apiError.loginRequired": "سائن ان کی ضرورت ہے۔",
   "apiError.adminRequired": "ایڈمن اجازتوں کی تصدیق نہیں کی جا سکی۔",
   "apiError.adminOnlyPage": "یہ صفحہ منتظمین تک محدود ہے۔",
   "apiError.notFound": "مطلوبہ شے نہیں مل سکی۔",

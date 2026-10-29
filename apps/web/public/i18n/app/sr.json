@@ -1508,7 +1508,7 @@
   "membership.join.creator": "Чланство код {name}",
   "membership.join.done": "Готово",
   "membership.join.loginNotice": "Нивое можете прегледати без пријаве. Тражићемо да се пријавите када се придружите.",
-  "membership.join.loginToJoin": "Пријави се за придруживање",
+  "membership.join.loginToJoin": "Пријави се да се придружиш",
   "membership.join.price": "{amount}/месечно",
   "membership.join.priceLabel": "Месечна цена",
   "membership.join.processing": "Обрада…",
