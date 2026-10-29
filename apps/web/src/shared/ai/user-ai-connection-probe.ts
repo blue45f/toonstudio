@@ -18,7 +18,12 @@ import {
 export const USER_AI_PROBE_TIMEOUT_MS = 8_000;
 
 export type UserAiConnectionProbeResult =
-  | { readonly status: "ok"; readonly modelCount: number | null }
+  | {
+      readonly status: "ok";
+      readonly modelCount: number | null;
+      /** `includeModelIds`로 요청했을 때만: 응답한 모델 ID(최대 500개). 키 붙여넣기 등록이 기본 모델을 고를 때 쓴다. */
+      readonly modelIds?: readonly string[];
+    }
   | { readonly status: "unauthorized" }
   | { readonly status: "http_error"; readonly httpStatus: number }
   | { readonly status: "unreachable" }
@@ -27,9 +32,12 @@ export type UserAiConnectionProbeResult =
 
 type FetchImpl = (input: string, init?: RequestInit) => Promise<Response>;
 
+const MAX_PROBED_MODEL_IDS = 500;
+
 export async function probeUserAiConnection(
   connection: UserAiConnection,
   fetchImpl: FetchImpl = (input, init) => fetch(input, init),
+  options: { readonly includeModelIds?: boolean } = {},
 ): Promise<UserAiConnectionProbeResult> {
   const key = userAiConnectionApiKeys(connection)[0]?.apiKey.trim();
   if (!key) return { status: "no_key" };
@@ -63,15 +71,23 @@ export async function probeUserAiConnection(
     });
     if (response.ok) {
       let modelCount: number | null = null;
+      let modelIds: string[] | undefined;
       try {
         const body: unknown = await response.json();
         if (typeof body === "object" && body !== null && Array.isArray((body as { data?: unknown }).data)) {
-          modelCount = (body as { data: unknown[] }).data.length;
+          const data = (body as { data: unknown[] }).data;
+          modelCount = data.length;
+          if (options.includeModelIds) {
+            modelIds = data
+              .map((item) => (item && typeof item === "object" ? (item as { id?: unknown }).id : undefined))
+              .filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 300)
+              .slice(0, MAX_PROBED_MODEL_IDS);
+          }
         }
       } catch {
         // 본문이 JSON이 아니어도 200이면 연결 자체는 확인된 것이다.
       }
-      return { status: "ok", modelCount };
+      return modelIds ? { status: "ok", modelCount, modelIds } : { status: "ok", modelCount };
     }
     if (response.status === 401 || response.status === 403) {
       return { status: "unauthorized" };
