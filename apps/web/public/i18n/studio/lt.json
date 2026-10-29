@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepija / Duotonas",
   "studio.mainMenu.item.filter.noise-add": "Pridėti triukšmą",
   "studio.mainMenu.item.filter.last-filter": "Iš naujo atidarykite paskutinį filtrą",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtrų galerija…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Negalite pakeisti spalvų matymo režimo, kai vaizdo perėjimas yra užrakintas.",
   "studio.mainMenu.item.draw.pen": "rašiklis",
   "studio.mainMenu.item.draw.eraser": "trintukas",

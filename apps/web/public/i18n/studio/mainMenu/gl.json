@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duotono",
   "studio.mainMenu.item.filter.noise-add": "Engade ruído",
   "studio.mainMenu.item.filter.last-filter": "Volve abrir o último filtro",
+  "studio.mainMenu.item.filter.filter-gallery": "Galería de filtros…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Non pode cambiar o modo de visión en cor mentres a transición da vista estea bloqueada.",
   "studio.mainMenu.item.draw.pen": "pluma",
   "studio.mainMenu.item.draw.eraser": "goma de borrar",

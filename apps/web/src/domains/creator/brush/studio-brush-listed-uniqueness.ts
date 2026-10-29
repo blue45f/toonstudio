@@ -25,6 +25,21 @@ import { isStudioInkwashFluidBrush } from "./studio-inkwash-fluid-brushes";
 /** Listed paint count immediately before the 2026-09-02 feel-cull wave. */
 export const STUDIO_LISTED_PAINT_PRE_CHANGE_COUNT = 234;
 
+/**
+ * 컬 이후 새로 노출한 "새 엔진" 레인 — 컬 기준선 비교에서 이 목록만큼은 기준선을 넘을 수 있다.
+ *
+ * 컬은 비슷한 결(같은 실행 서명·같은 팁 발자국)의 중복을 걷어 낸 것이다. 여기 오르는 id는 새 해법(새 실행 서명)
+ * 이고, 이 모듈의 고유성 키와 플래너 지문 검사(studio-brush-listed-uniqueness.test.ts)를 그대로 통과해야
+ * 한다 — 중복을 되살리는 통로가 아니다.
+ * 2026-10-29 WP3: 젖은 종이 정착 시뮬레이션 4종(MoXi 먹 번짐 · Curtis 백런 · 입자 침전 · Chu & Tai 갈필).
+ */
+export const STUDIO_LISTED_PAINT_POST_CULL_ENGINE_LANE_IDS: readonly string[] = Object.freeze([
+  "ink-wash--moxi-bake",
+  "watercolor--curtis-bake",
+  "watercolor--granulating-bake",
+  "ink-wash--dry-brush",
+]);
+
 /** Exposure-only drop set from the 2026-09-02 feel-cull. Runtime rows stay registered. */
 export const STUDIO_BRUSH_FEEL_CULL_PRESET_IDS = [
   "fineliner",

@@ -23,6 +23,13 @@ import {
   planStudioWebGpuR8GrainNative,
   StudioWebGpuR8GrainTextureCache,
 } from "./studio-webgpu-r8-grain-native";
+import {
+  createStudioWebGpuPressureToothResponse,
+  packStudioWebGpuPressureToothUniform,
+  studioWebGpuPaperToothForMedium,
+  studioWebGpuPressureLutFromCurveExponent,
+  withStudioWebGpuPressureTooth,
+} from "./studio-webgpu-pressure-tooth";
 
 interface Deferred<Value> {
   readonly promise: Promise<Value>;
@@ -703,7 +710,8 @@ describe("textured RGBA16F WebGPU specialist runtime", () => {
       height: 4,
       depthOrArrayLayers: 1,
     });
-    expect(harness.bindGroupDescriptors[0]!.entries).toHaveLength(5);
+    // binding 0..4: tip/grain textures, samplers, viewport; binding 5: GPU pressure-LUT/tooth uniform.
+    expect(harness.bindGroupDescriptors[0]!.entries).toHaveLength(6);
     expect(harness.passes[0]!.draw).toHaveBeenCalledWith(6, 1, 0, 0);
     expect(harness.passes[0]!.descriptor.colorAttachments[0]).toMatchObject({
       loadOp: "clear",
@@ -1602,5 +1610,94 @@ describe("textured RGBA16F WebGPU specialist runtime", () => {
       deviceEpoch: 1,
       plan: texturedPlan(),
     })).toEqual({ status: "disposed" });
+  });
+});
+
+describe("GPU pressure-LUT and paper-tooth stage (binding 5)", () => {
+  function pressureToothUploads(harness: FakeGpuHarness): Float32Array[] {
+    return harness.writeBuffer.mock.calls
+      .filter((call) => (
+        (call[0] as unknown as { descriptor?: GPUBufferDescriptor }).descriptor?.label
+          === "Studio textured brush pressure-tooth uniform"
+      ))
+      .map((call) => new Float32Array(call[2] as Float32Array));
+  }
+
+  const response = createStudioWebGpuPressureToothResponse({
+    pressureLut: studioWebGpuPressureLutFromCurveExponent(1.8),
+    sizeGain: 0.6,
+    opacityGain: 0.4,
+    flowGain: 0.2,
+    tooth: studioWebGpuPaperToothForMedium("pencil"),
+  });
+  if (!response) throw new Error("test response must be non-identity");
+
+  it("uploads the identity uniform by default and binds it as a vertex+fragment uniform", async () => {
+    const harness = fakeGpuHarness();
+    const target = runtime(harness);
+    const result = await target.execute({ requestSequence: 1, deviceEpoch: 1, plan: texturedPlan() });
+    expect(result.status).toBe("completed");
+    const uploads = pressureToothUploads(harness);
+    // Constructor identity upload + one per execute, written before the instance stream.
+    expect(uploads).toHaveLength(2);
+    for (const upload of uploads) expect([...upload]).toEqual([...packStudioWebGpuPressureToothUniform(null)]);
+    const instance = new Float32Array(harness.uploadedBuffers.at(-1)!.buffer);
+    expect(instance).toHaveLength(STUDIO_ENGINE_WEBGPU_TEXTURED_BRUSH_INSTANCE_FLOATS);
+    const layoutCall = (harness.device.createBindGroupLayout as unknown as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    const layout = layoutCall[0] as GPUBindGroupLayoutDescriptor;
+    expect([...layout.entries].at(-1)).toEqual({ binding: 5, visibility: 3, buffer: { type: "uniform" } });
+    const entry = [...harness.bindGroupDescriptors[0]!.entries].find((candidate) => candidate.binding === 5);
+    const bound = (entry?.resource as GPUBufferBinding).buffer as unknown as { descriptor: GPUBufferDescriptor };
+    expect(bound.descriptor).toMatchObject({ label: "Studio textured brush pressure-tooth uniform", size: 1072 });
+    const shader = harness.shaderDescriptors[0]!.code;
+    expect(shader).toContain("@group(0) @binding(5) var<uniform> studio_pressure_tooth: StudioPressureToothUniform;");
+    expect(shader).toContain("let response = studio_pressure_response(diagnostics.x, color.a);");
+    expect(shader).toContain("output.color = color * response.y;");
+    expect(shader).toContain("let grain_factor = studio_paper_grain_factor(grain_shaped, input.dynamics.y, input.pressure_paper.y);");
+  });
+
+  it("uploads a declared stage and keeps the instance stream byte-identical to the identity plan", async () => {
+    const harness = fakeGpuHarness();
+    const target = runtime(harness);
+    const plain = fingerprinted(texturedPlan());
+    const staged = withStudioWebGpuPressureTooth(plain, response);
+    expect(staged.semanticFingerprint).not.toBe(plain.semanticFingerprint);
+    expect(withStudioWebGpuPressureTooth(staged, null).semanticFingerprint).toBe(plain.semanticFingerprint);
+    expect(Buffer.from(packStudioEngineWebGpuTexturedBrushDabs(staged).buffer)
+      .equals(Buffer.from(packStudioEngineWebGpuTexturedBrushDabs(plain).buffer))).toBe(true);
+
+    const result = await target.execute({ requestSequence: 1, deviceEpoch: 1, plan: staged });
+    expect(result.status).toBe("completed");
+    if (result.status !== "completed") return;
+    expect(result.receipt.sourceFrameFingerprint).toBe(staged.semanticFingerprint);
+    expect([...pressureToothUploads(harness).at(-1)!]).toEqual([...packStudioWebGpuPressureToothUniform(response)]);
+
+    // A later plan without the stage resets the shared uniform to identity.
+    expect((await target.execute({ requestSequence: 2, deviceEpoch: 1, plan: plain })).status).toBe("completed");
+    expect([...pressureToothUploads(harness).at(-1)!]).toEqual([...packStudioWebGpuPressureToothUniform(null)]);
+  });
+
+  it("rejects a non-canonical stage before any GPU mutation", async () => {
+    const harness = fakeGpuHarness();
+    const target = runtime(harness);
+    const initialWrites = harness.writeBuffer.mock.calls.length;
+    const decreasing = Array.from({ length: 256 }, (_, index) => 1 - index / 255);
+    const malformed = [
+      { ...response, pressureLut: decreasing },
+      { ...response, pressureLut: response.pressureLut!.slice(0, 255) },
+      { ...response, sizeGain: 1.5 },
+      { ...response, tooth: { ...response.tooth!, thresholdHeavy: 0.95 } },
+      { ...response, pressureLut: null, tooth: null },
+      { ...response, kind: "other" },
+    ];
+    for (const gpuPressureTooth of malformed) {
+      await expect(target.execute({
+        requestSequence: 1,
+        deviceEpoch: 1,
+        plan: texturedPlan({ gpuPressureTooth } as unknown as Partial<StudioEngineWebGpuTexturedBrushPlan>),
+      })).resolves.toEqual({ status: "rejected", reason: "invalid-frame" });
+    }
+    expect(harness.writeBuffer).toHaveBeenCalledTimes(initialWrites);
+    expect(harness.submitted).not.toHaveBeenCalled();
   });
 });

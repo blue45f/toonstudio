@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepija / Dvotonski",
   "studio.mainMenu.item.filter.noise-add": "Dodajte buku",
   "studio.mainMenu.item.filter.last-filter": "Ponovo otvori zadnji filter",
+  "studio.mainMenu.item.filter.filter-gallery": "Galerija filtera…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Ne možete promijeniti način gledanja u boji dok je prijelaz pogleda zaključan.",
   "studio.mainMenu.item.draw.pen": "olovka",
   "studio.mainMenu.item.draw.eraser": "gumica",

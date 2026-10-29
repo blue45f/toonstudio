@@ -20,6 +20,7 @@ import {
 } from "./studio-filter-pack";
 
 import type { ImageFilterFields } from "../render/studio-konva-filter-fields";
+import type { StudioFilterGalleryStack } from "./gallery/studio-filter-gallery-types";
 
 /** 초기 5개 필터 — 각자 전용 드래프트 모양을 가진 하드코드 종류. */
 export type StudioFilterCoreKind =
@@ -29,8 +30,14 @@ export type StudioFilterCoreKind =
   | "brightness-contrast"
   | "color-curves";
 
+/**
+ * 필터 갤러리 — 여러 효과를 쌓는 비파괴 스택 하나를 편집하는 대화상자 종류. 단일 필터가 아니라서 갤러리 목록·
+ * 필터 카탈로그(STUDIO_FILTER_ALL_KINDS)에는 넣지 않고 메뉴의 별도 행으로만 연다.
+ */
+export type StudioFilterGalleryKind = "filter-gallery";
+
 /** Magma-style top-menu filters. The authored image stays untouched until the dialog is applied. */
-export type StudioFilterKind = StudioFilterCoreKind | StudioFilterPackKind;
+export type StudioFilterKind = StudioFilterCoreKind | StudioFilterPackKind | StudioFilterGalleryKind;
 
 /** 필터 팩 종류의 공용 드래프트 — 파라미터 스키마 기반 값 가방 하나로 표현한다. */
 export type StudioFilterPackDraft = {
@@ -49,6 +56,7 @@ export type StudioFilterDraft =
     }
   | { kind: "brightness-contrast"; brightness: number; contrast: number }
   | { kind: "color-curves"; curve: CurvePoint[]; curveCh: CurveRgbChannels }
+  | { kind: "filter-gallery"; stack: StudioFilterGalleryStack }
   | StudioFilterPackDraft;
 
 /** 다이얼로그가 내보내는 패치 — 기존 필드 + 필터 팩 확장 필드(글리치/비네트). */
@@ -71,6 +79,7 @@ export const STUDIO_FILTER_LABELS: Record<StudioFilterKind, string> = {
   "hue-saturation-brightness": "색조 / 채도 / 밝기",
   "brightness-contrast": "명도 / 대비",
   "color-curves": "색상 커브",
+  "filter-gallery": "필터 갤러리",
   ...STUDIO_FILTER_PACK_LABELS,
 };
 
@@ -83,6 +92,8 @@ export const STUDIO_FILTER_MENU_KINDS: readonly StudioFilterKind[] = [
   "color-curves",
   ...STUDIO_FILTER_PACK_KINDS,
 ];
+
+const EMPTY_FILTER_GALLERY_STACK: StudioFilterGalleryStack = Object.freeze({ version: 1, seed: 1, entries: Object.freeze([]) });
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
@@ -135,6 +146,8 @@ export function createStudioFilterDraft(
         brightness: clamp(Math.round((image.brightness ?? 0) * 100), -80, 80),
         contrast: clamp(Math.round(image.contrast ?? 0), -80, 80),
       };
+    case "filter-gallery":
+      return { kind, stack: image.filterGallery ?? EMPTY_FILTER_GALLERY_STACK };
     case "color-curves":
       return {
         kind,
@@ -194,6 +207,9 @@ export function studioFilterDraftToPatch(draft: StudioFilterDraft): StudioFilter
         brightness: optionalNumber(clamp(draft.brightness, -80, 80) / 100),
         contrast: optionalNumber(clamp(Math.round(draft.contrast), -80, 80)),
       };
+    case "filter-gallery":
+      // 효과가 하나도 없으면 필드를 지워 문서에 빈 스택을 남기지 않는다(정규화·검증은 엔진과 대화상자가 맡는다).
+      return { filterGallery: draft.stack.entries.length > 0 ? draft.stack : undefined };
     case "color-curves": {
       const curve = normalizeCurve(draft.curve);
       const curveCh = normalizeCurveChannels(draft.curveCh);

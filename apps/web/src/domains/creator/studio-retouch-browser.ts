@@ -14,6 +14,9 @@ import type {
   DodgeBurnSettings,
 } from "./studio-dodge-burn";
 
+// 혼색 브러시의 "섞는 방식"(패널이 고른 탭 단위 선택). 호스트는 획을 보낼 때 이 값을 WetMixSettings 에 담는다.
+export { getStudioWetMixModelPreference } from "./brush/studio-wet-mix-model";
+
 export interface StudioRetouchBrowserOptions {
   readonly signal?: AbortSignal;
 }

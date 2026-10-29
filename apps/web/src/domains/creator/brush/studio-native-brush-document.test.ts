@@ -9,7 +9,7 @@ import { parseStudioProjectDocument, serializeStudioProjectDocument } from "../s
 import { planStudioNativeBrushDocumentReplacement, prepareStudioNativeBrushDocumentCommit } from "./studio-native-brush-document-commit";
 import { planStudioNativeBrushDocument, studioNativeBrushSourceRevision } from "./studio-native-brush-document-contract";
 import { renderStudioNativeBrushDocument } from "./studio-native-brush-document-product";
-import { validateNativeBrushDocumentOutput } from "./studio-native-brush-probe-contract";
+import { validateNativeBrushDocumentOutput, validateNativeBrushProbeConfig } from "./studio-native-brush-probe-contract";
 
 import type { DrawEl, El } from "../studio-element-model";
 import type { StudioNativeBrushDocumentState } from "./studio-native-brush-document-commit";
@@ -205,5 +205,42 @@ describe("native brush editor reference adapter", () => {
     const runtime = ports(); const prepared = prepareStudioNativeBrushDocumentFromEditor(target(), {}, runtime)!;
     runtime.history.current = [...runtime.history.current];
     expect(prepared(result())).toBe(false); expect(runtime.commit).not.toHaveBeenCalled();
+  });
+});
+
+describe("native document CC0 MyPaint library brushes", () => {
+  const library = { engine: "libmypaint" as const, style: "mypaint-library" as const, documentWidth: 720, documentHeight: 1000 };
+  it("carries the library brush id into the Worker config and widens the halo by the brush reach", () => {
+    const plain = planStudioNativeBrushDocument(stroke(), options);
+    const splash = planStudioNativeBrushDocument(stroke(), { ...library, mypaintBrushId: "Dieterle/Splash" });
+    expect(splash.config).toMatchObject({ style: "mypaint-library", mypaintBrushId: "Dieterle/Splash" });
+    expect(splash.bounds.width).toBeGreaterThan(plain.bounds.width);
+    const pencil = planStudioNativeBrushDocument(stroke(), { ...library, mypaintBrushId: "classic/pencil" });
+    expect(pencil.config.mypaintBrushId).toBe("classic/pencil");
+  });
+  it("rejects a missing, unknown or empty-surface library brush and a non-libmypaint engine", () => {
+    expect(() => planStudioNativeBrushDocument(stroke(), library)).toThrow(/라이브러리에서 브러시를 고르세요/u);
+    expect(() => planStudioNativeBrushDocument(stroke(), { ...library, mypaintBrushId: "classic/nope" })).toThrow(/고르세요/u);
+    expect(() => planStudioNativeBrushDocument(stroke(), { ...library, mypaintBrushId: "deevad/kneaded_eraser" })).toThrow(/지우개/u);
+    expect(() => planStudioNativeBrushDocument(stroke(), { ...library, engine: "canvaskit", mypaintBrushId: "classic/pencil" }))
+      .toThrow(/libmypaint 엔진에서만/u);
+  });
+  it("validates the probe config so ids never mix with the built-in styles", () => {
+    const base = { size: 12, color: "#123456", seed: 7 };
+    expect(() => validateNativeBrushProbeConfig({ ...base, style: "mypaint-library", mypaintBrushId: "classic/pencil" })).not.toThrow();
+    expect(() => validateNativeBrushProbeConfig({ ...base, style: "mypaint-library" })).toThrow(TypeError);
+    expect(() => validateNativeBrushProbeConfig({ ...base, style: "mypaint-library", mypaintBrushId: "../x" })).toThrow(TypeError);
+    expect(() => validateNativeBrushProbeConfig({ ...base, style: "ink", mypaintBrushId: "classic/pencil" })).toThrow(TypeError);
+  });
+  it("re-plans the library brush at commit time and names the image after it", () => {
+    const source = stroke();
+    const plan = planStudioNativeBrushDocument(source, { ...library, mypaintBrushId: "deevad/2B_pencil" });
+    const accepted: StudioNativeBrushDocumentResult = { sourceElementId: source.id, sourceRevision: plan.sourceRevision,
+      engine: "libmypaint", style: "mypaint-library", mypaintBrushId: "deevad/2B_pencil", seed: 7, bounds: plan.bounds,
+      src: "data:image/png;base64,iVBORw0KGgo=", pngHash: "a".repeat(64) };
+    const planned = planStudioNativeBrushDocumentReplacement(state(source), accepted, () => "raster")!;
+    expect(planned.nextElements.find((element) => element.id === "raster")!.name).toContain("deevad/2B_pencil");
+    // 브러시 id 를 바꾼 결과는 원래 도달 범위로 다시 계획한 경계와 맞지 않아 거부된다.
+    expect(planStudioNativeBrushDocumentReplacement(state(source), { ...accepted, mypaintBrushId: "Dieterle/Splash" }, () => "raster2")).toBeNull();
   });
 });

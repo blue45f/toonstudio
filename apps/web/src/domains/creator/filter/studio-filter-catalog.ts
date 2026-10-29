@@ -45,8 +45,8 @@ export type StudioFilterPreviewKind =
   | "transform";
 
 export type StudioFilterDialogCatalogEntry = StudioFilterCatalogEntry & {
-  /** Dialog kind that can be previewed and applied through StudioFilterDialog. */
-  kind: StudioFilterKind;
+  /** Dialog kind that can be previewed and applied through StudioFilterDialog (the filter gallery stack dialog is not listed). */
+  kind: Exclude<StudioFilterKind, "filter-gallery">;
   /** Original, deterministic CSS preview family. Never references a remote image or asset. */
   preview: StudioFilterPreviewKind;
 };
@@ -664,7 +664,7 @@ export function studioFilterGroupLabel(group: StudioFilterCatalogGroup): string 
 }
 
 type StudioFilterDialogCatalogSource = {
-  kind: StudioFilterKind;
+  kind: Exclude<StudioFilterKind, "filter-gallery">; // 필터 갤러리는 단일 필터 카탈로그 밖의 효과 스택 대화상자다.
   engine?: string;
   preview: StudioFilterPreviewKind;
   fallback?: Omit<StudioFilterCatalogEntry, "engine">;

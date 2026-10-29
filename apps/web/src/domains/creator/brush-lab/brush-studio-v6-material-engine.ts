@@ -180,10 +180,10 @@ export type BrushStudioV6MaterialNodeExecution = "native" | "adapter" | "unavail
 export function brushStudioV6MaterialNodeExecution(
   id: string,
 ): BrushStudioV6MaterialNodeExecution {
-  if (brushStudioV6Topology(id)) return "native";
+  // 명시 배정된 호환 이식(예: Klecks 위상 커널)은 위상 판정보다 먼저 본다 — 영수증의 호환 어댑터 기록과 같은 값을 낸다.
   const execution = brushStudioV6MaterialExecutionForNode(id);
-  if (execution === "native") return "native";
   if (execution === "compatibility-adapter") return "adapter";
+  if (brushStudioV6Topology(id) || execution === "native") return "native";
   return "unavailable";
 }
 

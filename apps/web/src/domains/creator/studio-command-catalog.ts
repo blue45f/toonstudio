@@ -38,6 +38,7 @@ export type {
 const MANUAL_MENU_ID = "help/user-manual";
 const BRUSH_LAB_MENU_ID = "brush/brush-lab";
 const FLOATING_LAYOUT_MENU_ID = "view/floating-layout";
+const FILTER_GALLERY_MENU_ID = "filter/filter-gallery";
 const TRANSPARENT_COLOR_COMMAND_ID: CommandId = "color.toggle-transparent";
 const TRANSPARENT_COLOR_SHORTCUT = "Shift+C";
 const BRUSH_STUDIO_COMMAND_ID: CommandId = "brush.studio";
@@ -151,12 +152,42 @@ const FLOATING_LAYOUT_COMMAND: StudioCommandCatalogEntry = {
   origins: [{ source: "menu", nativeId: FLOATING_LAYOUT_MENU_ID, status: "wired" }],
 };
 
+/**
+ * 필터 ▸ 필터 갤러리. 단일 필터가 아니라 효과 스택 대화상자라 필터 팩 레지스트리 밖의 메뉴 행이고, 기준선에 묶인
+ * base 카탈로그 대신 여기서 선언한다. 메뉴에서는 "마지막 필터" 바로 다음 행이다.
+ */
+const FILTER_GALLERY_COMMAND: StudioCommandCatalogEntry = {
+  id: "filter.filter-gallery",
+  category: "filter",
+  labels: [
+    {
+      locale: "ko",
+      label: "필터 갤러리…",
+      description: "예술 효과·붓 터치·스케치·텍스처·왜곡·렌더 등 효과를 미리 보며 여러 겹 쌓아 비파괴로 적용합니다.",
+    },
+    {
+      locale: "en",
+      label: "Filter Gallery…",
+      description: "Preview and stack artistic, brush-stroke, sketch, texture, distort and render effects non-destructively.",
+    },
+  ],
+  aliases: [
+    { vendor: "photoshop", locale: "en", term: "Filter Gallery" },
+    { vendor: "photoshop", locale: "ko", term: "필터 갤러리" },
+    { vendor: "toonstudio", locale: "ko", term: "효과 갤러리" },
+    { vendor: "toonstudio", locale: "ko", term: "필터 쌓기" },
+  ],
+  helpNodeId: "help/filter/filter-gallery",
+  origins: [{ source: "menu", nativeId: FILTER_GALLERY_MENU_ID, status: "wired" }],
+};
+
 export const STUDIO_COMMAND_CATALOG: readonly StudioCommandCatalogEntry[] =
   Object.freeze([
     ...NORMALIZED_BASE_CATALOG,
     MANUAL_COMMAND,
     BRUSH_LAB_COMMAND,
     FLOATING_LAYOUT_COMMAND,
+    FILTER_GALLERY_COMMAND,
     ...STUDIO_CSP_FILTER_PLUGIN_COMMANDS,
   ]);
 
@@ -166,6 +197,8 @@ export const STUDIO_MENU_ITEM_INVENTORY: readonly string[] = Object.freeze([
     // so the public inventory matches the Help group's rendered order (F4.4).
     if (id === "help/shortcuts") return [id, MANUAL_MENU_ID];
     if (id === "brush/brush-studio") return [id, BRUSH_LAB_MENU_ID];
+    // 필터 갤러리는 마지막 필터 바로 다음에 그려진다(orderStudioFilterMenuItems).
+    if (id === "filter/last-filter") return [id, FILTER_GALLERY_MENU_ID];
     if (id === "view/production-insights") {
       return [id, FLOATING_LAYOUT_MENU_ID];
     }
@@ -181,7 +214,8 @@ export const STUDIO_COMMAND_SOURCES = Object.freeze({
     ...BASE_SOURCES.menu,
     // +3: 매뉴얼·브러시 랩·플로팅 레이아웃 행.
     // 2026-10-29: 필터 ▸ CSP 필터 플러그인 호환 9종(60269e38) 행 추가 (+3 → +12).
-    measuredCount: BASE_SOURCES.menu.measuredCount + 12,
+    // 2026-10-29: 필터 ▸ 필터 갤러리 행 추가 (+12 → +13).
+    measuredCount: BASE_SOURCES.menu.measuredCount + 13,
   },
 });
 
@@ -210,6 +244,7 @@ export function findCatalogEntriesBySource(
   if (nativeId === FLOATING_LAYOUT_MENU_ID) {
     return [...entries, FLOATING_LAYOUT_COMMAND];
   }
+  if (nativeId === FILTER_GALLERY_MENU_ID) return [...entries, FILTER_GALLERY_COMMAND];
   return [
     ...entries,
     ...STUDIO_CSP_FILTER_PLUGIN_COMMANDS.filter((entry) =>
@@ -226,6 +261,7 @@ export function catalogNativeIds(source: StudioCommandSource): string[] {
         MANUAL_MENU_ID,
         BRUSH_LAB_MENU_ID,
         FLOATING_LAYOUT_MENU_ID,
+        FILTER_GALLERY_MENU_ID,
         ...STUDIO_CSP_FILTER_PLUGIN_COMMANDS.flatMap((entry) =>
           entry.origins.map((origin) => origin.nativeId),
         ),

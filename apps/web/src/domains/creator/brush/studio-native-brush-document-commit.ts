@@ -47,14 +47,15 @@ export function planStudioNativeBrushDocumentReplacement(
       || result.src.length > Math.ceil(NATIVE_BRUSH_DOCUMENT_MAX_PNG_BYTES / 3) * 4 + 32
       || !/^[a-f0-9]{64}$/u.test(result.pngHash)) return null;
     const expected = planStudioNativeBrushDocument(source, { engine: result.engine, style: result.style, seed: result.seed,
-      documentWidth: state.documentWidth, documentHeight: state.documentHeight });
+      documentWidth: state.documentWidth, documentHeight: state.documentHeight,
+      ...(result.mypaintBrushId !== undefined ? { mypaintBrushId: result.mypaintBrushId } : {}) });
     if (["x", "y", "width", "height"].some((key) =>
       expected.bounds[key as keyof typeof expected.bounds] !== result.bounds[key as keyof typeof result.bounds])) return null;
     const rasterId = createId();
     if (!rasterId || state.elements.some((element) => element.id === rasterId)) return null;
     const raster: El = {
       id: rasterId, type: "image", src: result.src, ...expected.bounds, rotation: 0,
-      name: `${result.engine} ${result.style} · ${source.name ?? source.brush ?? "선화"}`.slice(0, 180),
+      name: `${result.engine} ${expected.config.mypaintBrushId ?? result.style} · ${source.name ?? source.brush ?? "선화"}`.slice(0, 180),
       opacity: source.opacity ?? 1, lockAspect: true,
       ...(source.groupId ? { groupId: source.groupId } : {}),
       ...(source.noClip !== undefined ? { noClip: source.noClip } : {}),

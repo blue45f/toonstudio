@@ -39,6 +39,7 @@ import {
   Grip,
   History as HistoryIcon,
   Layers,
+  LayoutGrid,
   Maximize2,
   Mountain,
   Paintbrush,
@@ -172,6 +173,21 @@ export function buildStudioFilterMenuItems({
         if (state.lastFilterDraft) {
           editor.openStudioFilter(state.lastFilterDraft.kind, state.lastFilterDraft);
         }
+      },
+    },
+    // 필터 갤러리 — 효과 여러 개를 미리 보며 쌓는 비파괴 스택 대화상자. 단일 필터가 아니라 공유 분류 밖에 두고,
+    // 정렬 뒤에도 마지막 필터 바로 아래에 남는다(orderStudioFilterMenuItems).
+    {
+      id: "filter-gallery",
+      commandId: "filter.filter-gallery",
+      searchActivation: "execute",
+      label: "필터 갤러리…",
+      icon: LayoutGrid,
+      disabled: state.filterDisabled,
+      unavailableReason: filterUnavailableReason,
+      separatorAfter: true,
+      onSelect: () => {
+        editor.openStudioFilter("filter-gallery");
       },
     },
     ...STUDIO_FILTER_CORE_MENU_ROWS.map(({ id, label, icon, shortcut }) => ({

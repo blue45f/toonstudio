@@ -73,7 +73,8 @@ describe("Studio lazy i18n assets", () => {
       // (studio.bg3dScene.*) 91키로 게시했다(2026-10-22). 75개 팩이 모두 같은 키 집합을 가진다.
       // 1_726 → 1_735: 60269e38 이 필터 레지스트리에 더한 CSP 호환 필터 9종의 메뉴 행
       // studio.mainMenu.item.filter.* 9키(2026-10-29). 75개 팩이 모두 같은 키 집합을 가진다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_735);
+      // 1_735 → 1_736: 필터 ▸ 필터 갤러리 메뉴 행 studio.mainMenu.item.filter.filter-gallery 1키(2026-10-29).
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_736);
     }
     // The mobile dock used to hardcode Korean labels; every pack must now carry the keys that
     // replaced them, so an `en` viewport cannot fall back to Korean chrome.

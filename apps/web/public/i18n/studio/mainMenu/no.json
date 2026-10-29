@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Tofarget",
   "studio.mainMenu.item.filter.noise-add": "Legg til støy",
   "studio.mainMenu.item.filter.last-filter": "Åpne siste filter på nytt",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtergalleri…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Du kan ikke endre fargesynsmodus mens visningsovergangen er låst.",
   "studio.mainMenu.item.draw.pen": "penn",
   "studio.mainMenu.item.draw.eraser": "viskelær",

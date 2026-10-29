@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sēpija / Duotone",
   "studio.mainMenu.item.filter.noise-add": "Pievienojiet troksni",
   "studio.mainMenu.item.filter.last-filter": "Atkārtoti atveriet pēdējo filtru",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtru galerija…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Jūs nevarat mainīt krāsu redzes režīmu, kamēr skata pāreja ir bloķēta.",
   "studio.mainMenu.item.draw.pen": "pildspalva",
   "studio.mainMenu.item.draw.eraser": "dzēšgumija",

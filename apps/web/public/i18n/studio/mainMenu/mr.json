@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "सेपिया / ड्युओटोन",
   "studio.mainMenu.item.filter.noise-add": "आवाज जोडा",
   "studio.mainMenu.item.filter.last-filter": "शेवटचे फिल्टर पुन्हा उघडा",
+  "studio.mainMenu.item.filter.filter-gallery": "फिल्टर गॅलरी…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "दृश्य संक्रमण लॉक असताना तुम्ही रंग दृष्टी मोड बदलू शकत नाही.",
   "studio.mainMenu.item.draw.pen": "पेन",
   "studio.mainMenu.item.draw.eraser": "खोडरबर",

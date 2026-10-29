@@ -69,6 +69,17 @@ Mixbox 작동 원리 분석과 독립 구현 방침(2026-10-15, 역사 자료)�
 2. [`../third_party/mixbox/LICENSE-GRANT.md`](../third_party/mixbox/LICENSE-GRANT.md) — 제작사 서면 합의 기록(소유자 작성 대기)
 3. [`features/latent-pigment-mixing.md`](features/latent-pigment-mixing.md) — 독립 구현(잠재 안료 혼합기 `toonstudio-latent-pigment-v1`)의 구조, 안료 선택과 출처, 적합 오차, 성능, 한계, 권리 상태(현재 구현)
 
+CC0 MyPaint 브러시 라이브러리(2026-10-29, 현재 구현)는 다음 문서를 본다.
+
+1. [`features/mypaint-cc0-brush-library.md`](features/mypaint-cc0-brush-library.md) — mypaint-brushes(CC0) 196종을 고정된 libmypaint 1.6.1 WASM 으로 실제 실행하는 선택 획 변환의 변환 규칙, 검증, 레거시 획 경로 한계
+
+필터 갤러리, 젖은 종이 정착 굽기와 브러시·필터 REA 내재화(2026-10-29)는 다음 문서를 본다.
+
+1. [`features/filter-gallery.md`](features/filter-gallery.md) — 효과를 최대 8겹 쌓는 비파괴 필터 갤러리의 저장 형식, 실행 경로(Konva·Worker·예산), 효과 목록과 기능 대응, 한계(현재 구현)
+2. [`features/wet-paper-bake.md`](features/wet-paper-bake.md) — 수채·수묵 젖은 종이 확산 레인 4종(먹 번짐·백런·입자 침전·갈필)의 정착 굽기 실행 경로(Canvas 시분할·SVG PNG), 모델, 상한·결정성, Sumi 이식 범위, 한계(현재 구현)
+3. [`reports/brush-filter-rea-internalization-2026-10-29.md`](reports/brush-filter-rea-internalization-2026-10-29.md) — REA 분석 대상·증거, 프로그램 × 브러시·필터·기능 적용 범위, 이식과 독립 구현의 구분, 확인하지 못한 것(역사 자료)
+4. [`evidence/rea-brush-filter-internalization-20261029.json`](evidence/rea-brush-filter-internalization-20261029.json) — 위 보고서의 REA 증거 원장(증거 ID·원본 해시·통계)
+
 참조 사이트(플로터·1toon) 분석과 도입 결정(2026-10-16, 역사 자료)은 다음 문서를 추가로 본다.
 
 1. [`reports/reference-sites-plotr-1toon-benchmark-2026-10-16.md`](reports/reference-sites-plotr-1toon-benchmark-2026-10-16.md) — 외부 두 사이트의 관찰 기록, 우리 현황 대조 17행, 이번에 한 일과 다음 차례, 확인하지 못한 것

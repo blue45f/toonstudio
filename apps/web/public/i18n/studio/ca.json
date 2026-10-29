@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sèpia / Duoton",
   "studio.mainMenu.item.filter.noise-add": "Afegeix soroll",
   "studio.mainMenu.item.filter.last-filter": "Torneu a obrir l'últim filtre",
+  "studio.mainMenu.item.filter.filter-gallery": "Galeria de filtres…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "No podeu canviar el mode de visió del color mentre la transició de vista està bloquejada.",
   "studio.mainMenu.item.draw.pen": "bolígraf",
   "studio.mainMenu.item.draw.eraser": "goma d'esborrar",

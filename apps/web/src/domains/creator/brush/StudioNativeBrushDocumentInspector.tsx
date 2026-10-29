@@ -3,6 +3,9 @@ import { useT } from "@/shared/lib/i18n";
 
 import "../studio-brush-canvas-status-i18n";
 
+import {
+  STUDIO_MYPAINT_CC0_LIBRARY_PROVENANCE, listStudioMypaintCc0Groups, studioMypaintCc0SurfaceBlockReason,
+} from "./mypaint-library/studio-mypaint-cc0-library-catalog";
 import { prepareStudioNativeBrushDocumentCommit } from "./studio-native-brush-document-commit";
 import { planStudioNativeBrushDocument } from "./studio-native-brush-document-contract";
 import { renderStudioNativeBrushDocument } from "./studio-native-brush-document-product";
@@ -23,11 +26,14 @@ export interface StudioNativeBrushDocumentInspectorProps {
   readonly onPrepare?: StudioNativeBrushDocumentPrepare;
 }
 const CONTROL = "min-h-11 rounded-lg border border-line bg-card px-3 text-sm text-fg disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
+/** 처음 고를 때 보여 줄 칠하기 브러시(David Revoy 연필). */
+const DEFAULT_MYPAINT_BRUSH_ID = "deevad/2B_pencil";
 export default function StudioNativeBrushDocumentInspector(props: StudioNativeBrushDocumentInspectorProps) {
   const t = useT();
   const { selected, documentWidth, documentHeight, pageId, masterEditMode, disabled, onPrepare } = props;
   const [engine, setEngine] = useState<NativeBrushProbeEngine>("libmypaint");
   const [style, setStyle] = useState<NativeBrushProbeStyle>("ink");
+  const [mypaintBrushId, setMypaintBrushId] = useState(DEFAULT_MYPAINT_BRUSH_ID);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const active = useRef<AbortController | null>(null);
@@ -38,14 +44,16 @@ export default function StudioNativeBrushDocumentInspector(props: StudioNativeBr
   const clearPreview = () => { previewRef.current = null; setPreview(null); };
   const releaseSession = () => { session.current?.dispose(); session.current = null; };
   const prepared = useMemo(() => {
-    try { return { plan: planStudioNativeBrushDocument(selected, { engine, style, documentWidth, documentHeight }), error: null }; }
-    catch (error) { return { plan: null, error: error instanceof Error ? error.message : String(error) }; }
-  }, [selected, engine, style, documentWidth, documentHeight]);
+    try {
+      return { plan: planStudioNativeBrushDocument(selected, { engine, style, documentWidth, documentHeight,
+        ...(style === "mypaint-library" ? { mypaintBrushId } : {}) }), error: null };
+    } catch (error) { return { plan: null, error: error instanceof Error ? error.message : String(error) }; }
+  }, [selected, engine, style, mypaintBrushId, documentWidth, documentHeight]);
   useEffect(() => {
     active.current?.abort(); active.current = null; setBusy(false); setStatus("");
     previewRef.current = null; setPreview(null);
     return () => { active.current?.abort(); active.current = null; };
-  }, [selected, pageId, masterEditMode, disabled, engine, style, documentWidth, documentHeight]);
+  }, [selected, pageId, masterEditMode, disabled, engine, style, mypaintBrushId, documentWidth, documentHeight]);
   useEffect(() => {
     session.current?.dispose(); session.current = null;
     return () => { session.current?.dispose(); session.current = null; };
@@ -130,8 +138,23 @@ export default function StudioNativeBrushDocumentInspector(props: StudioNativeBr
         </select>
         <select aria-label="문서 변환 재질" className={CONTROL} value={style} disabled={busy || engine !== "libmypaint"} onChange={(event) => setStyle(event.target.value as NativeBrushProbeStyle)}>
           <option value="ink">잉크</option><option value="wash">워시</option><option value="chalk">초크</option>
+          <option value="mypaint-library">MyPaint 브러시 라이브러리 ({STUDIO_MYPAINT_CC0_LIBRARY_PROVENANCE.brushCount}종)</option>
         </select>
       </div>
+      {engine === "libmypaint" && style === "mypaint-library" && <div className="space-y-1">
+        <select aria-label="MyPaint 라이브러리 브러시" className={`${CONTROL} w-full`} value={mypaintBrushId} disabled={busy}
+          onChange={(event) => setMypaintBrushId(event.target.value)}>
+          {listStudioMypaintCc0Groups().map((group) => <optgroup key={group.id} label={group.label}>
+            {group.brushes.map((brush) => {
+              const blocked = studioMypaintCc0SurfaceBlockReason(brush);
+              return <option key={brush.id} value={brush.id} disabled={blocked !== null} title={blocked ?? undefined}>
+                {blocked ? `${brush.name} · 기존 물감 필요` : brush.name}
+              </option>;
+            })}
+          </optgroup>)}
+        </select>
+        <p className="text-xs text-fg-3">mypaint-brushes(CC0) 원본 설정을 libmypaint 1.6.1 엔진에 그대로 프로그램합니다. 색과 지름만 선택 획의 값으로 바꿉니다. 지우개·문지르기 전용 브러시는 빈 표면에 칠할 물감이 없어 고를 수 없습니다.</p>
+      </div>}
       {engine !== "libmypaint" && <p className="text-xs text-fg-3">CanvasKit·Vello는 같은 필압 윤곽선을 잉크로 렌더링합니다. 워시·초크는 libmypaint에서 선택하세요.</p>}
       <p className="text-xs text-fg-3">원본 크기 그대로 변환합니다. 굵기 1–128px, 입력 8,192점, 획 영역 2048×2048 이내를 지원하며 초과하면 축소하지 않고 중단합니다.</p>
       {prepared.error && <p className="text-xs text-warn">{prepared.error}</p>}
@@ -153,7 +176,7 @@ export default function StudioNativeBrushDocumentInspector(props: StudioNativeBr
         <img alt={`${preview.engine} 선택 획 미리보기`} src={preview.src}
           width={preview.bounds.width} height={preview.bounds.height}
           style={{ maxWidth: "100%", maxHeight: 240, objectFit: "contain", opacity: selected?.opacity ?? 1 }} />
-        <figcaption className="text-xs text-fg-3">{preview.engine} · {preview.style} · {preview.bounds.width}×{preview.bounds.height}px · 문서 적용 전</figcaption>
+        <figcaption className="text-xs text-fg-3">{preview.engine} · {preview.mypaintBrushId ?? preview.style} · {preview.bounds.width}×{preview.bounds.height}px · 문서 적용 전</figcaption>
         <button type="button" className={CONTROL} disabled={busy || disabled || masterEditMode} onClick={applyPreview}>미리보기 적용</button>
       </figure>}
       <p role="status" className="text-xs leading-relaxed text-fg-2">{status}</p>

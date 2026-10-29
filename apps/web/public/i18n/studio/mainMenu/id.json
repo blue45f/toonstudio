@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duoton",
   "studio.mainMenu.item.filter.noise-add": "Tambahkan kebisingan",
   "studio.mainMenu.item.filter.last-filter": "Buka kembali filter terakhir",
+  "studio.mainMenu.item.filter.filter-gallery": "Galeri Filter…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Anda tidak dapat mengubah mode penglihatan warna saat transisi tampilan terkunci.",
   "studio.mainMenu.item.draw.pen": "pena",
   "studio.mainMenu.item.draw.eraser": "penghapus",

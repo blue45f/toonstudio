@@ -1,5 +1,7 @@
 import { isBrushStudioV6ArtistryModel } from "./brush-studio-v6-artistry-catalog";
 import { createBrushStudioV6ArtistryStroke } from "./brush-studio-v6-artistry-engine";
+import { isBrushStudioV6ProceduralModel } from "./brush-studio-v6-procedural-family-catalog";
+import { createBrushStudioV6ProceduralStroke } from "./brush-studio-v6-procedural-family-engine";
 import { brushStudioV6Topology } from "./brush-studio-v6-topology-catalog";
 import type { BrushStudioV6MaterialProgram } from "./brush-studio-v6-material-engine";
 
@@ -33,6 +35,7 @@ export function createBrushStudioV6TopologyStroke(program: BrushStudioV6Material
   const descriptor = brushStudioV6Topology(program.slots.carrier);
   if (!descriptor) return null;
   if (isBrushStudioV6ArtistryModel(descriptor.model)) return createBrushStudioV6ArtistryStroke(program, descriptor.model, step);
+  if (isBrushStudioV6ProceduralModel(descriptor.model)) return createBrushStudioV6ProceduralStroke(program, descriptor.model, step);
   const model = descriptor.model, t = program.tuning;
   const size = clamp(t.size, 1, 240), seed = program.seed | 0;
   const count = model === "spring" ? Math.round(clamp(t.bristleStrands / 4, 2, 32))

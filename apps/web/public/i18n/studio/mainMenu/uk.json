@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Сепія / Дутон",
   "studio.mainMenu.item.filter.noise-add": "Додайте шуму",
   "studio.mainMenu.item.filter.last-filter": "Знову відкрити останній фільтр",
+  "studio.mainMenu.item.filter.filter-gallery": "Галерея фільтрів…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Ви не можете змінити режим кольорового бачення, коли перехід перегляду заблоковано.",
   "studio.mainMenu.item.draw.pen": "перо",
   "studio.mainMenu.item.draw.eraser": "гумка",

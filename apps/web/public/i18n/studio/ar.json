@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "البني الداكن / الثنائي",
   "studio.mainMenu.item.filter.noise-add": "أضف الضوضاء",
   "studio.mainMenu.item.filter.last-filter": "أعد فتح الفلتر الأخير",
+  "studio.mainMenu.item.filter.filter-gallery": "معرض المرشحات…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "لا يمكنك تغيير وضع رؤية الألوان أثناء قفل انتقال العرض.",
   "studio.mainMenu.item.draw.pen": "قلم",
   "studio.mainMenu.item.draw.eraser": "ممحاة",

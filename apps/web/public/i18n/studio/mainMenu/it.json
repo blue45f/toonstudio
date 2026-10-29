@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Seppia/Bicromia",
   "studio.mainMenu.item.filter.noise-add": "Aggiungi rumore",
   "studio.mainMenu.item.filter.last-filter": "Riapri l'ultimo filtro",
+  "studio.mainMenu.item.filter.filter-gallery": "Galleria filtri…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Non è possibile modificare la modalità di visione a colori mentre la transizione della vista è bloccata.",
   "studio.mainMenu.item.draw.pen": "penna",
   "studio.mainMenu.item.draw.eraser": "gomma",

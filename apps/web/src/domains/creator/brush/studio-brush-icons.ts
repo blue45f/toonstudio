@@ -469,6 +469,10 @@ export const STUDIO_BRUSH_ICON_BY_ID: Readonly<Record<string, StudioBrushIconId>
   "pen--croquis-stabilized": "spline",
   "ink-wash--living-bake": "droplets",
   "watercolor--fluid-feather": "droplets",
+  "ink-wash--moxi-bake": "droplets",
+  "watercolor--curtis-bake": "droplets",
+  "watercolor--granulating-bake": "waves",
+  "ink-wash--dry-brush": "brush",
   "brush--bristle-physics": "brush",
   ...STUDIO_PROCEDURAL_BRUSH_ICON_BY_ID,
 };

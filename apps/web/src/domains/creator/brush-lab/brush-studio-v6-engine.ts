@@ -62,7 +62,7 @@ const NODE_SPECS: readonly CompactNode[] = [
   ["pigment-colormix-lab", "pigment", "main", "live", "pigment", "permissive"],
   ["pigment-latent", "pigment", "main", "live", "pigment", "internal"],
 
-  ...BRUSH_STUDIO_V6_TOPOLOGIES.map((entry): CompactNode => [entry.id, "carrier", "main", "live", "carrier", "internal"]),
+  ...BRUSH_STUDIO_V6_TOPOLOGIES.map((entry): CompactNode => [entry.id, "carrier", "main", "live", "carrier", entry.rights ?? "internal"]),
   ["input-pointer-v3", "input", "input-worker", "preview", "input", "internal", ["pressure"]],
   ["motion-direct", "motion", "input-worker", "preview", "motion", "internal"], ["motion-adaptive-ema", "motion", "input-worker", "preview", "motion", "internal"], ["motion-spring", "motion", "input-worker", "preview", "motion", "internal"], ["motion-google-ink", "motion", "wasm-worker", "preview", "motion", "permissive", ["wasm", "predicted-events"]], ["motion-brush-inertia", "motion", "input-worker", "preview", "motion", "internal"], ["motion-lazy-leash", "motion", "input-worker", "preview", "motion", "internal"],
   ["carrier-webgpu-centerline", "carrier", "webgpu", "live", "carrier", "internal", W], ["carrier-perfect-outline", "carrier", "wasm-worker", "live", "carrier", "permissive", A], ["carrier-google-mesh", "carrier", "wasm-worker", "live", "carrier", "permissive", A], ["carrier-webgpu-ribbon", "carrier", "webgpu", "live", "carrier", "internal", T], ["carrier-libmypaint-dabs", "carrier", "wasm-worker", "live", "carrier", "permissive", A], ["carrier-hokusai-dabs", "carrier", "wasm-worker", "live", "carrier", "permissive", A], ["carrier-krita-hairy", "carrier", "wasm-worker", "live", "carrier", "copyleft", A], ["carrier-webgpu-particles", "carrier", "webgpu", "live", "carrier", "internal", W], ["carrier-p5-flow", "carrier", "webgl-worker", "settle", "carrier", "permissive", G],
@@ -97,8 +97,10 @@ const LABELS: Readonly<Record<string, string>> = Object.freeze({
 
 function labelFor(id: string): string { return brushStudioV6Topology(id)?.label ?? brushStudioV7AdvancedSurface(id)?.label ?? LABELS[id] ?? id.replace(/^(deposit|surface|carrier|motion|tip|physics|pattern|finish|pigment|pickup|output)-/u, "").split("-").map((part) => part[0]?.toUpperCase() + part.slice(1)).join(" "); }
 function providerFor(id: string): string {
-  if (brushStudioV6Topology(id)) return "ToonStudio CPU Topology";
-  return brushStudioV6ProviderManifestForNode(id)?.label ?? "Unregistered provider";
+  const manifest = brushStudioV6ProviderManifestForNode(id);
+  // 위상 노드라도 외부 코드 이식으로 명시 배정됐으면(Klecks 등) 그 제공자 이름을 보인다.
+  if (brushStudioV6Topology(id) && (!manifest || manifest.id === "toonstudio-cpu-contact-v2")) return "ToonStudio CPU Topology";
+  return manifest?.label ?? "Unregistered provider";
 }
 function ports(slot: BrushStudioV6Slot): readonly [readonly BrushStudioV6PortType[], readonly BrushStudioV6PortType[]] {
   const map: Record<BrushStudioV6Slot, readonly [readonly BrushStudioV6PortType[], readonly BrushStudioV6PortType[]]> = {

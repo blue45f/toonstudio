@@ -91,7 +91,11 @@ export const STUDIO_MENU_FILTER_GROUP_SPEC: StudioMenuGroupSpec = {
       "filter/normal-map",
       "filter/god-rays",
     ),
-    gap("Filter Gallery"),
+    part(
+      "Filter Gallery",
+      "효과 100여 종을 분류별로 미리 보며 최대 8겹까지 쌓는 비파괴 스택 대화상자다. 이미지 레이어에는 효과 id·매개변수만 저장되고, 페이지·선택 레이어 대상은 다른 필터처럼 새 래스터 레이어로 굽는다.",
+      "filter/filter-gallery",
+    ),
     gap("EffectGraph Editor"),
     gap("Bake/Proxy"),
   ],

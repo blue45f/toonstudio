@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "세피아 / 듀오톤",
   "studio.mainMenu.item.filter.noise-add": "노이즈 추가",
   "studio.mainMenu.item.filter.last-filter": "마지막 필터 다시 열기",
+  "studio.mainMenu.item.filter.filter-gallery": "필터 갤러리…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "보기 변환이 잠긴 동안에는 색각 검수 모드를 바꿀 수 없어요.",
   "studio.mainMenu.item.draw.pen": "펜",
   "studio.mainMenu.item.draw.eraser": "지우개",
