@@ -21,6 +21,7 @@ import {
 } from "../studio-chrome-ui";
 import { StudioBrushCatalogPortal, StudioPublishContextBanner } from "../studio-page-lazy-ui";
 import { StudioWorkModeBar } from "../StudioWorkModeBar";
+import { studioUiDensityAllows } from "../studio-ui-density";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { LazyStudioMenubarContent } from "../studio-page-modal-lazy-boundaries";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -537,10 +538,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
         </StudioToolHintTarget>
       </StudioAppMenubar>
 
-      {/* 단계 작업 모드 바 — 메뉴바 직하, 캔버스 위. 배선이 없으면(workMode/setWorkMode
-          미전달) 스스로 숨는 optional-until-wired 패턴을 따른다. 캔버스 전용·몰입
-          모드에서는 메뉴바와 함께 숨는다. */}
-      {!canvasOnlyMode && !mobileImmersive && workMode && setWorkMode ? (
+      {/* 단계 안내는 밀도 정책을 따르며, 집중 화면에서는 도구와 캔버스를 먼저 보여 준다. */}
+      {!canvasOnlyMode && !mobileImmersive && studioUiDensityAllows(uiDensityMode, "workflow-guide") && workMode && setWorkMode ? (
         <StudioWorkModeBar
           mode={workMode}
           onModeChange={setWorkMode}

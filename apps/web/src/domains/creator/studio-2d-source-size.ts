@@ -1,4 +1,7 @@
 import { createCanvasImageElement } from "./studio-image-placement";
+import { requireStudioBundleSourceCredit, type StudioBundleSourceCredit } from "./catalog/studio-bundle-source-credit";
+
+export { applyStudioBundleSourcePatch, studioBundleFrameBackgroundPatch } from "./catalog/studio-bundle-source-credit";
 
 /** Lightweight placement contract: no image/catalog import in the editor shell. */
 export function studio2dSourceSize(source: { readonly width?: number; readonly height?: number }): { width: number; height: number } {
@@ -13,15 +16,15 @@ export function studio2dSourceSize(source: { readonly width?: number; readonly h
 
 /** Shared by the production editor and browser tests, preserving the existing placement policy. */
 export function createStudio2dCanvasImage(
-  source: { readonly width?: number; readonly height?: number },
+  source: { readonly width?: number; readonly height?: number; readonly bundleSourceCredit?: StudioBundleSourceCredit },
   input: { id: string; src: string; canvasWidth: number; canvasHeight: number },
 ) {
   const size = studio2dSourceSize(source);
-  return createCanvasImageElement({
+  return { ...createCanvasImageElement({
     ...input,
     sourceWidth: size.width,
     sourceHeight: size.height,
     horizontalInset: 0,
     minY: 0,
-  });
+  }), ...(source.bundleSourceCredit ? { bundleSourceCredit: requireStudioBundleSourceCredit(source.bundleSourceCredit) } : {}) };
 }

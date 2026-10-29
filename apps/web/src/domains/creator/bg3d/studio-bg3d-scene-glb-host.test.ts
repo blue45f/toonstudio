@@ -64,6 +64,35 @@ describe("현재 장면 GLB의 lazy host port", () => {
     expect(prepare).not.toHaveBeenCalled(); expect(createObjectUrl).not.toHaveBeenCalled(); expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
   });
 
+  it.each(["renderer", "backend", "opaque-aba"] as const)("lazy import 중 %s 전환은 이전 opaque scope를 actual prepare에 넘기지 않는다", async (boundary) => {
+    const f = await createSceneGlbFixture(false); let originalCurrent = true;
+    const originalGuard = () => originalCurrent; f.host.isMaterialBackendCurrent = originalGuard;
+    const ports = createStudioBg3dSceneGlbHostPorts(f.host), pending = execute(ports);
+    if (boundary === "renderer") f.host.modelRenderer = { isWebGLRenderer: true };
+    if (boundary === "backend") { f.host.modelRenderer = { isWebGPURenderer: true }; f.host.materialBackend = "webgpu"; }
+    if (boundary === "opaque-aba") { originalCurrent = false; f.host.isMaterialBackendCurrent = () => true; }
+    expect(await pending).toMatchObject({ ok: false, code: "source-changed" });
+    expect(prepare).not.toHaveBeenCalled(); expect(createObjectUrl).not.toHaveBeenCalled(); expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+  });
+
+  it("port 생성 후 바뀐 최신 GPU 요청을 실제 source에 전달한다", async () => {
+    const f = await createSceneGlbFixture(false), ports = createStudioBg3dSceneGlbHostPorts(f.host);
+    f.host.modelRenderer = { isWebGPURenderer: true }; f.host.materialBackend = "webgpu";
+    expect(await execute(ports)).toMatchObject({ ok: true });
+    expect(prepare.mock.calls[0][0]).toMatchObject({ materialBackend: "webgpu", rendererEngine: "webgpu" });
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+  });
+
+  it.each([{ renderer: {} }, { renderer: { isWebGLRenderer: true, isWebGPURenderer: true } },
+    { renderer: { isWebGPURenderer: true } }])("알 수 없거나 선언과 다른 실제 renderer는 prepare 없이 명시 실패한다 %j", async ({ renderer }) => {
+    const f = await createSceneGlbFixture(false), ports = createStudioBg3dSceneGlbHostPorts(f.host);
+    f.host.modelRenderer = renderer;
+    expect(await execute(ports)).toMatchObject({ ok: false, code: "unavailable" });
+    expect(prepare).not.toHaveBeenCalled(); expect(createObjectUrl).not.toHaveBeenCalled();
+  });
+
   it("import 대기 중 요청 취소·host unmount는 파일을 만들지 않고 typed 결과로 돌아온다", async () => {
     const f = await createSceneGlbFixture(false), ports = createStudioBg3dSceneGlbHostPorts(f.host), controller = new AbortController();
     const pending = execute(ports, request(controller.signal)); controller.abort();

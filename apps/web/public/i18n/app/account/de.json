@@ -4,7 +4,7 @@
   "account.tabs.profile": "Profil",
   "account.signIn.title": "Anmeldung erforderlich",
   "account.signIn.message": "Bitte melden Sie sich an, um Ihre Beiträge, Aktivitäten und Ihr Profil anzuzeigen.",
-  "account.signIn.cta": "Schreiben Sie sich an .",
+  "account.signIn.cta": "Anmelden",
   "account.posts.errorTitle": "Sie haben Ihre Posten nicht geladen.",
   "account.posts.emptyTitle": "Noch sind keine Werke veröffentlicht worden.",
   "account.posts.emptyMessage": "Schöpfe deinen ersten Titel aus dem Studio.",

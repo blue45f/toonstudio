@@ -94,6 +94,8 @@ export interface StudioBg3dLibraryMutationResult<T> {
   /** Complete set of CAS hashes referenced by nextRaw. */
   readonly nextRefs: readonly StudioOpfsContentHash[];
   readonly result: T;
+  /** 동기 검사이며 오래된 작업이면 throw한다. DB 요청 인계 뒤의 취소를 되돌리지는 않는다. */
+  readonly assertCurrent?: () => void;
 }
 
 export interface StudioBg3dLibrariesAuthority {
@@ -380,6 +382,7 @@ export function createStudioBg3dLibrariesAuthority(
         });
         const mutation = await operation(context);
         throwIfAborted(signal);
+        mutation.assertCurrent?.();
         if (typeof mutation.nextRaw !== "string" || mutation.nextRaw.length === 0) {
           throw authorityError("corrupt", "BG3D 다음 manifest가 비어 있습니다.");
         }
@@ -452,6 +455,8 @@ export function createStudioBg3dLibrariesAuthority(
 
         try {
           throwIfAborted(signal);
+          // owner 보호 뒤 다시 검사하고 await 없이 바로 아래 kvSet 요청으로 인계한다.
+          mutation.assertCurrent?.();
         } catch (cause) {
           await setReconciledOwnerRefs(
             oldRefs,

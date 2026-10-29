@@ -9,6 +9,7 @@ import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
 import { resolveStudioBg3dDeviceQuality } from "./studio-bg3d-device-quality";
 import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb, type StudioBg3dGlbValidationSuccess } from "./studio-bg3d-glb-validation";
 import { admitAndCacheStudioBg3dModel, type StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { createStudioBg3dPrimitiveEditAuthoring } from "./studio-bg3d-primitive-edit-authoring";
 import { writeStudioBg3dPrimitiveEditAuthoringToGlb } from "./studio-bg3d-primitive-edit-authoring-glb";
 import { writeStudioBg3dPrimitiveEditMaterialGlb } from "./studio-bg3d-primitive-edit-material";
@@ -110,6 +111,41 @@ beforeEach(() => {
 afterEach(() => { for (const entry of caches.splice(0)) entry.dispose(); vi.restoreAllMocks(); });
 
 describe("저장 authored model의 재편집 원본 권위", () => {
+  it.each(["webgl", "webgpu"] as const)("%s cache variant를 고정하고 다른 backend의 같은 record는 보존한다", async (backend) => {
+    const f = await fixture();
+    const gpu = { ...f.entry, runtimeVariant: studioBg3dModelRuntimeVariant("webgpu") };
+    f.cache.set(studioBg3dModelCacheKey(f.record.id, "webgpu"), gpu);
+    const host = { ...f.host, materialBackend: backend,
+      modelRenderer: backend === "webgpu" ? { isWebGPURenderer: true } : { isWebGLRenderer: true } };
+    const captured = await captureStudioBg3dAuthoredModelEditSource(host, new AbortController().signal);
+    if (!captured.ok) throw Error(captured.messageKo);
+    expect(captured.snapshot.cache).toBe(backend === "webgpu" ? gpu : f.entry);
+    expect(captured.snapshot.materialBackend).toBe(backend);
+    expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry);
+    expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgpu"))).toBe(gpu);
+  });
+
+  it.each(["missing-stamp", "wrong-stamp", "wrong-record", "raw-alias"] as const)("%s cache는 Blob을 읽기 전에 거부한다", async (kind) => {
+    const f = await fixture(), entry = { ...f.entry }; f.cache.clear();
+    if (kind === "missing-stamp") Object.defineProperty(entry, "runtimeVariant", { value: undefined });
+    if (kind === "wrong-stamp") Object.defineProperty(entry, "runtimeVariant", { value: studioBg3dModelRuntimeVariant("webgpu") });
+    const actual = kind === "wrong-record" ? { ...entry, record: { ...entry.record, id: "another-record" } } : entry;
+    f.cache.set(kind === "raw-alias" ? f.record.id : studioBg3dModelCacheKey(f.record.id, "webgl"), actual);
+    expect(await captureStudioBg3dAuthoredModelEditSource(f.host, new AbortController().signal)).toMatchObject({ ok: false, code: "model-loading" });
+    expect(storage.get).not.toHaveBeenCalled();
+  });
+
+  it("읽기 대기 중 A→B→A의 새 guard가 true여도 시작 guard의 폐기를 보존한다", async () => {
+    const f = await fixture(), waiting = deferred(); let active = true, guard = () => active;
+    const host = { ...f.host, get isMaterialBackendCurrent() { return guard; } };
+    storage.get.mockImplementationOnce(async () => { await waiting.promise; return f.record; });
+    const pending = captureStudioBg3dAuthoredModelEditSource(host, new AbortController().signal);
+    await vi.waitFor(() => expect(storage.get).toHaveBeenCalledOnce());
+    active = false; guard = () => true; waiting.release();
+    expect(await pending).toMatchObject({ ok: false, code: "source-changed" });
+    expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry);
+  });
+
   it.each(["allowed", "service-only", "unknown"] as const)("실제 %s 제한을 가공 가능 snapshot에 보존하고 제한만 바뀌어도 reread에서 거부한다", async (restriction) => {
     const f = await fixture(true, restriction), before = JSON.stringify(f.live.current);
     const captured = await captureStudioBg3dAuthoredModelEditSource(f.host, signal());
@@ -118,7 +154,7 @@ describe("저장 authored model의 재편집 원본 권위", () => {
     records.set(f.record.id, { ...f.record, sourceRestriction: { version: 1,
       modelFileExport: restriction === "service-only" ? "unknown" : "service-only", origin: null, parent: null } });
     expect((await rereadStudioBg3dAuthoredModelEditSource(f.host, captured.snapshot, signal())).ok).toBe(false);
-    expect(JSON.stringify(f.live.current)).toBe(before); expect(f.cache.get(f.record.id)).toBe(f.entry);
+    expect(JSON.stringify(f.live.current)).toBe(before); expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry);
   });
 
   it("legacy cache와 byte row가 같아도 실제 카탈로그/저장 권위의 다른 제한을 누락하지 않는다", async () => {
@@ -127,7 +163,7 @@ describe("저장 authored model의 재편집 원본 권위", () => {
       sourceRestriction: { version: 1, modelFileExport: "service-only", origin: null, parent: null } },
       sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null });
     expect((await captureStudioBg3dAuthoredModelEditSource(f.host, signal())).ok).toBe(false);
-    expect(JSON.stringify(f.live.current)).toBe(before); expect(f.cache.get(f.record.id)).toBe(f.entry);
+    expect(JSON.stringify(f.live.current)).toBe(before); expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry);
   });
 
   it("실제 exporter·GLB reader·verified loader·cache의 다른 instance ID를 hash/권리와 묶어 독립 사본을 발행한다", async () => {
@@ -176,7 +212,7 @@ describe("저장 authored model의 재편집 원본 권위", () => {
     expect(result.snapshot.objectTransformBasis).toBe("current-instance");
     expect(result.snapshot.objectTransform.scale[0]).toBe(f.model.scale[0] * f.k);
     expect(f.live.current.customModels[1]).toBe(other); expect(other.position).toEqual([9, 0, 0]);
-    expect(f.cache.get(f.record.id)).toBe(f.entry); expect(f.entry.root.scale.toArray()).toEqual([f.k, f.k, f.k]);
+    expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry); expect(f.entry.root.scale.toArray()).toEqual([f.k, f.k, f.k]);
   });
 
   it("현재 modelScale*k가 DCC 범위를 벗어나면 잘라 받지 않고 저장 읽기 전에 거부한다", async () => {
@@ -203,7 +239,7 @@ describe("저장 authored model의 재편집 원본 권위", () => {
     }
     storage.get.mockRejectedValueOnce(new Error("OPFS read failed"));
     expect(await captureStudioBg3dAuthoredModelEditSource(f.host, signal())).toMatchObject({ ok: false, code: "read-failed" });
-    expect(f.live.current.customModels[0]).toBe(f.model); expect(f.cache.get(f.record.id)).toBe(f.entry);
+    expect(f.live.current.customModels[0]).toBe(f.model); expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry);
   });
 
   it("표식이 없는 유효 GLB의 거부는 실제 authoring reader에 위임한다", async () => {
@@ -243,7 +279,7 @@ describe("저장 authored model의 재편집 원본 권위", () => {
     if (change === "lock") f.lock();
     if (change === "transform") f.model.position[0] += 1;
     if (change === "color") f.model.materialOverride = createStudioBg3dPrimitiveEditMaterial("#abcdef");
-    if (change === "cache") f.cache.set(f.record.id, { ...f.entry });
+    if (change === "cache") f.cache.set(studioBg3dModelCacheKey(f.record.id, "webgl"), { ...f.entry });
     if (change === "root") Object.defineProperty(f.entry, "root", { value: new Group(), configurable: true });
     if (change === "binding") f.reverse.set(f.attachment.id, "another-storage-id");
     if (change === "record") Object.defineProperty(f.entry, "record", { value: { ...f.record, rights: { ...f.record.rights, attribution: "다른 저작자" } } });
@@ -270,8 +306,8 @@ describe("저장 authored model의 재편집 원본 권위", () => {
     expect(revalidateStudioBg3dAuthoredModelEditSource(f.host, { ...s })).toMatchObject({ ok: false, code: "source-changed" });
     f.live.current = { ...f.live.current, document: { ...f.live.current.document, camera: { ...f.live.current.document.camera, position: [4, 5, 6] } } };
     expect(revalidateStudioBg3dAuthoredModelEditSource(f.host, s).ok).toBe(true);
-    f.cache.set(f.record.id, { ...f.entry }); expect(revalidateStudioBg3dAuthoredModelEditSource(f.host, s).ok).toBe(false);
-    f.cache.set(f.record.id, f.entry); Object.defineProperty(f.entry, "normalizationScale", { value: f.k * 2, configurable: true });
+    f.cache.set(studioBg3dModelCacheKey(f.record.id, "webgl"), { ...f.entry }); expect(revalidateStudioBg3dAuthoredModelEditSource(f.host, s).ok).toBe(false);
+    f.cache.set(studioBg3dModelCacheKey(f.record.id, "webgl"), f.entry); Object.defineProperty(f.entry, "normalizationScale", { value: f.k * 2, configurable: true });
     expect(revalidateStudioBg3dAuthoredModelEditSource(f.host, s).ok).toBe(false);
     Object.defineProperty(f.entry, "normalizationScale", { value: f.k });
     const bytes = Uint8Array.from(f.bytes); bytes[bytes.length - 1] ^= 1;

@@ -315,8 +315,8 @@ export function MyStoryReviewStage({
         <h3 className="text-base font-bold text-fg">{bt("스튜디오에서 이어 만들기", "Continue in the studio")}</h3>
         <p className="mt-1.5 text-sm leading-6 text-fg-2">
           {bt(
-            `열면 컷툰 작품(${draft.cutCount}컷)이 새로 만들어져요. 초안은 대본과 컷 계획으로 들어가고, 대본 화면으로 이동해요. 대본 화면의 ‘컷 계획으로 적용’은 원고를 문장 단위로 다시 나누므로, 컷 구성을 그대로 두려면 누르지 않아도 돼요.`,
-            `Opening creates a new card-comic work (${draft.cutCount} panels). The draft goes into the script and panel plan, and you land on the script view. “Apply as panel plan” there re-splits the text sentence by sentence, so you do not need it to keep this panel layout.`,
+            `새 작품에 대본과 ${draft.cutCount}컷 계획을 저장하고 대본 화면을 열어요. 내용을 확인한 뒤 ‘이어서 그리기’로 원고를 열어 직접 그릴 수 있어요.`,
+            `Save the script and ${draft.cutCount}-panel plan in a new work and open the script view. Review it, then choose “Continue drawing” to open the manuscript and draw.`,
           )}
         </p>
         <p className="mt-1.5 text-sm text-fg-2">

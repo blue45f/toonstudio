@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Đang đăng nhập là cần thiết.",
+  "apiError.loginRequired": "Bạn cần đăng nhập.",
   "apiError.adminRequired": "Các quyền quản trị không thể xác minh được.",
   "apiError.adminOnlyPage": "Trang này chỉ dành cho người quản trị.",
   "apiError.notFound": "Điều kiện yêu cầu không thể được tìm thấy.",

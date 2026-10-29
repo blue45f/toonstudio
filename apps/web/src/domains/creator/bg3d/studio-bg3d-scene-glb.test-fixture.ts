@@ -22,8 +22,10 @@ import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
 import type { StudioBg3dViewportFramingState } from "./studio-bg3d-camera-application";
 import type { StudioBg3dModalSession } from "./studio-bg3d-modal-operation-coordinator";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
+import type { StudioBg3dGlbValidationSuccess } from "./studio-bg3d-glb-validation";
 import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
-import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
+import type { StudioBg3dModelAttachment, StudioBg3dSceneBudgets } from "./studio-bg3d-scene-document-types";
 import type { StudioBg3dSceneGlbExportHost } from "./studio-bg3d-scene-glb-source";
 import type { StudioBg3dLibrariesAuthority, StudioBg3dLibraryBlobReceipt, StudioBg3dLibraryManifestSlot,
   StudioBg3dLibraryMutationContext, StudioBg3dLibraryMutationResult, StudioBg3dLibraryReadSnapshotContext } from "./studio-bg3d-libraries-sqlite-opfs-authority";
@@ -106,8 +108,20 @@ function readOnlySceneModelAuthority() {
   return { authority, setStoredRecord, persistedRecords, authorityReads: reads, mutationAttempts };
 }
 
-/** 캐시 fixture도 실제 도형·exporter·strict validator·verified loader로 만든다. 저장소는 쓰지 않는다. */
-export async function createSceneGlbFixture(withModel = true) {
+async function loadFixtureVariant(record: Bg3dVerifiedStoredRecord, verification: StudioBg3dGlbValidationSuccess,
+  budgets: StudioBg3dSceneBudgets, backend: StudioBg3dMaterialBackend): Promise<StudioBg3dModelRootCacheEntry> {
+  const loaded = await loadVerifiedStudioBg3dGlbWithThree(verification, budgets, { materialBackend: backend });
+  if (!loaded.ok) throw Error(loaded.code);
+  const k = computeAutoFitScale(measureBg3dObjectSize(loaded.root)); loaded.root.scale.setScalar(k);
+  const joints = collectStudioBg3dThreeJoints(loaded.root);
+  return { root: loaded.root, dispose: vi.fn(loaded.dispose), animations: loaded.animations, record, metrics: loaded.metrics,
+    runtimeVariant: studioBg3dModelRuntimeVariant(backend), normalizationScale: k, admittedProfiles: new Set(["desktop"]), joints,
+    morphTargets: collectStudioBg3dThreeMorphTargets(loaded.root), semanticMaterials: classifyStudioBg3dThreeSemanticMaterials(loaded.root),
+    genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints) };
+}
+
+/** 실제 도형·exporter·strict validator·backend별 verified loader를 쓴다. GPU 렌더 또는 저장소 쓰기 증거는 아니다. */
+export async function createSceneGlbFixture(withModel = true, backend: StudioBg3dMaterialBackend = "webgl") {
   const storage = readOnlySceneModelAuthority();
   const base = createDefaultStudioBg3dSceneDocument();
   const primitive: BgPrimitive = { id: "scene-primitive", kind: "box", name: "현재 상자", color: "#8d6378",
@@ -115,6 +129,7 @@ export async function createSceneGlbFixture(withModel = true) {
   const primitives = [primitive], models: BgCustomModelInstance[] = [];
   const cache = new Map<string, StudioBg3dModelRootCacheEntry>(), attachments = new Map<string, StudioBg3dModelAttachment>(), reverse = new Map<string, string>();
   let entry: StudioBg3dModelRootCacheEntry | null = null, record: Bg3dVerifiedStoredRecord | null = null;
+  let verification: StudioBg3dGlbValidationSuccess | null = null;
   if (withModel) {
     const converted = convertStudioBg3dPrimitiveToEditableMesh(primitive); if (!converted.ok) throw Error(converted.detail);
     const exported = exportStudioHybridDccMeshGlb({ assetId: primitive.id, sourceRevision: 1, sourceHash: hashStudioEditableMesh(converted.value.mesh), mesh: converted.value.mesh });
@@ -125,8 +140,7 @@ export async function createSceneGlbFixture(withModel = true) {
     const verified = await validateStudioBg3dGlb(bytes, { profile: "desktop", budgets: DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
       declared: { sha256: contentHash, byteSize: bytes.byteLength, mimeType: "model/gltf-binary" }, cumulative: { usedBytes: 0, maximumBytes: 100 * 1024 * 1024 } });
     if (!verified.ok) throw Error(verified.code);
-    const loaded = await loadVerifiedStudioBg3dGlbWithThree(verified, base.budgets); if (!loaded.ok) throw Error(loaded.code);
-    const k = computeAutoFitScale(measureBg3dObjectSize(loaded.root)); loaded.root.scale.setScalar(k);
+    verification = verified;
     const sourceRestriction = parseStudioBg3dModelSourceRestriction({ version: 1, modelFileExport: "allowed",
       origin: { kind: "studio-generated", recordId: "stored-scene-model", sha256: contentHash }, parent: null });
     if (!sourceRestriction) throw Error("자체 제작 fixture 출처 필요");
@@ -135,12 +149,9 @@ export async function createSceneGlbFixture(withModel = true) {
       mime: "model/gltf-binary", validationVersion: 1, validatedAt: 1, validatorProfile: "desktop", validatorMetrics: verified.metrics,
       rights: { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "시험 원저작자", licenseName: "시험 사용권" }, sourceRestriction };
     storage.setStoredRecord(record);
-    const joints = collectStudioBg3dThreeJoints(loaded.root);
-    entry = { root: loaded.root, dispose: vi.fn(loaded.dispose), animations: loaded.animations, record, metrics: loaded.metrics,
-      normalizationScale: k, admittedProfiles: new Set(["desktop"]), joints, morphTargets: collectStudioBg3dThreeMorphTargets(loaded.root),
-      semanticMaterials: classifyStudioBg3dThreeSemanticMaterials(loaded.root), genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints) };
+    entry = await loadFixtureVariant(record, verified, base.budgets, backend);
     const attachment = createStudioBg3dModelAttachment(record, { attachmentId: "attachment-scene-model" });
-    cache.set(record.id, entry); attachments.set(record.id, attachment); reverse.set(attachment.id, record.id);
+    cache.set(studioBg3dModelCacheKey(record.id, backend), entry); attachments.set(record.id, attachment); reverse.set(attachment.id, record.id);
     models.push({ id: "scene-model", modelId: record.id, name: "현재 모델", position: [4, 1, 2], rotation: [0, 0.2, 0], scale: [0.5, 0.6, 0.7] });
   }
   const adapted = tryAdaptStudioBg3dRuntimeToDocument({ primitives, customModels: models, baseDocument: base, attachmentByStorageModelId: attachments });
@@ -153,16 +164,25 @@ export async function createSceneGlbFixture(withModel = true) {
   const session: { current: StudioBg3dModalSession | null } = { current: studioBg3dModalOperationCoordinator.beginSession() };
   const readFramingState = vi.fn(() => framing.current), replace = vi.fn(), commit = vi.fn();
   const host: MutableSceneGlbHost & { readonly replaceCanonicalDocumentState: typeof replace; readonly commitImmediateHistoryTransition: typeof commit } = {
-    open: true, modelRenderer: {}, physicsRuntimeSourceRef: runtime, modalAssetSessionRef: session, modelRootCacheRef: { current: cache },
+    open: true, modelRenderer: { isWebGLRenderer: backend === "webgl", isWebGPURenderer: backend === "webgpu" }, materialBackend: backend,
+    physicsRuntimeSourceRef: runtime, modalAssetSessionRef: session, modelRootCacheRef: { current: cache },
     attachmentByStorageModelIdRef: { current: attachments }, storageModelIdByAttachmentIdRef: { current: reverse },
     viewportApiRef: { current: { readFramingState } }, captureInFlightRef: { current: false }, cameraLensInteractionLocked: () => false,
     deviceQuality: resolveStudioBg3dDeviceQuality({ document: adapted.value.document, mode: "capture", preference: "desktop",
       signals: { cssWidth: 1600, cssHeight: 900, devicePixelRatio: 1, pointer: "fine", saveData: false, deviceMemoryGb: 8, hardwareConcurrency: 8 } }),
     modelAnimationTimeReadersRef: { current: new Map() }, replaceCanonicalDocumentState: replace, commitImmediateHistoryTransition: commit };
-  fixtures.push({ session, entries: entry ? [entry] : [] });
+  const entries = entry ? [entry] : [];
+  fixtures.push({ session, entries });
+  const addModelVariant = async (requestedBackend: StudioBg3dMaterialBackend) => {
+    if (!record || !verification) throw Error("실제 모델 검증이 있는 fixture가 필요합니다.");
+    const variant = await loadFixtureVariant(record, verification, base.budgets, requestedBackend);
+    entries.push(variant); cache.set(studioBg3dModelCacheKey(record.id, requestedBackend), variant);
+    return variant;
+  };
   const refresh = () => {
     const result = tryAdaptStudioBg3dRuntimeToDocument({ ...runtime.current, baseDocument: runtime.current.document, attachmentByStorageModelId: attachments });
     if (!result.ok) throw Error("fixture 정본 갱신 실패"); runtime.current = { ...runtime.current, document: result.value.document };
   };
-  return { host, runtime, framing, session, primitive, models, cache, attachments, reverse, entry, record, readFramingState, replace, commit, refresh, ...storage };
+  return { host, runtime, framing, session, primitive, models, cache, attachments, reverse, entry, record, backend,
+    addModelVariant, readFramingState, replace, commit, refresh, ...storage };
 }

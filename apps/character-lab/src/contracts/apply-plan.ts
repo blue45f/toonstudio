@@ -8,6 +8,7 @@
 import type { Proportion, ProportionKey } from "./art-style";
 import type { ChannelKey } from "./color-channels";
 import type { AccessoryAnchor, AccessoryInstanceId, AccessoryOffset, HairColor, PartScope, Surface } from "./customization";
+import type { EyeGaze } from "./eye-gaze";
 import type { MaterialPresetId } from "./mesh-data";
 import type { PhysicsProviderId } from "./physics";
 import type { Pose } from "./pose";
@@ -65,6 +66,8 @@ export interface ApplyPlan {
   readonly unsupported: ReadonlyArray<UnsupportedSlot>;
 
   // ---- v3 선택 필드 ----
+  /** 카메라 응시는 엔진의 실제 메인 카메라에서 계산한다. 수동 값은 boneRotations에도 포함한다. */
+  readonly eyeGaze?: EyeGaze;
   /** 파츠 범위 → `shape:<이름>:±` → 가중치 [0,1]. 그 범위 파츠 메시에만 적용한다(체형 morph와 더한다). */
   readonly partMorphWeights?: Readonly<Partial<Record<PartScope, Readonly<Record<string, number>>>>>;
   /** 비례 목표(키트 소스 전용 — 절차 소스는 지오메트리 재생성으로 반영하므로 null). 없거나 null이면 소스 고유 비례. */

@@ -23,6 +23,7 @@ import type { SpecialistArtifact } from "../scene3d/specialists/specialist-contr
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 import type { Bg3dModelAtomicImportDispositionV12 } from "./bg3d-model-library";
 import type { StudioBg3dInplaceToolsContext } from "./studio-bg3d-inplace-tools-context";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 function isSourceHash(value: string): value is `sha256:${string}` {
   return /^sha256:[a-f0-9]{64}$/u.test(value);
@@ -43,15 +44,22 @@ export async function prepareStudioBg3dInplaceDerivative(
   const originalModel = ctx.live.current.customModels.find(
     ({ id }) => id === selected.entityId,
   )!;
-  const originalEntry = ctx.cache.get(originalModel.modelId)!;
+  const backend = resolveStudioBg3dMaterialBackend(ctx), renderer = ctx.renderer, isMaterialBackendCurrent = ctx.isMaterialBackendCurrent;
+  const assertRuntimeCurrent = () => {
+    assertCurrent();
+    const live = getContext();
+    if (isMaterialBackendCurrent?.() === false || live.renderer !== renderer || resolveStudioBg3dMaterialBackend(live) !== backend)
+      throw new Scene3dInplaceError("stale", "모델 캐시가 갱신되어 이전 결과를 적용하지 않았습니다.");
+  };
+  const originalEntry = readStudioBg3dModelCacheEntry(ctx.cache, originalModel.modelId, backend)!;
   const library = await loadStudioBg3dModelLibraryModule();
-  assertCurrent();
+  assertRuntimeCurrent();
   if (originalEntry.record.id !== originalModel.modelId || !isSourceHash(originalEntry.record.contentHash)) {
     throw new Scene3dInplaceError("stale", "선택 모델의 저장 원본 연결이 달라 파생본을 만들지 않았습니다.");
   }
   // 서비스 내 가공은 유지한다. 파생본의 파일 제한은 실제 저장/카탈로그 권위에서 이어받는다.
-  const provenance = await resolveStudioBg3dModelExportProvenance(originalEntry.record, { signal, assertCurrent });
-  assertCurrent();
+  const provenance = await resolveStudioBg3dModelExportProvenance(originalEntry.record, { signal, assertCurrent: assertRuntimeCurrent });
+  assertRuntimeCurrent();
   const policy = deriveStudioBg3dSessionGlbValidationPolicy(
     ctx.live.current.document,
     ctx.quality,
@@ -75,7 +83,7 @@ export async function prepareStudioBg3dInplaceDerivative(
     if (disposition?.created.length) {
       const current = getContext();
       const adopted = !current.isSessionCurrent(session) || disposition.created.some(({ id }) =>
-        current.cache.has(id) || current.attachments.has(id) || current.live.current.customModels.some((model) => model.modelId === id));
+        [...current.cache.values()].some((entry) => entry.record.id === id) || current.attachments.has(id) || current.live.current.customModels.some((model) => model.modelId === id));
       if (adopted) throw new Scene3dInplaceError("persistence", "원본은 유지했습니다. 새 장면이 참조할 수 있는 파생본은 삭제하지 않고 보관함에 남겼습니다.");
     }
     const compensated =
@@ -118,7 +126,7 @@ export async function prepareStudioBg3dInplaceDerivative(
           signal,
         },
       );
-    assertCurrent();
+    assertRuntimeCurrent();
     const record = disposition.records[0];
     if (
       !record ||
@@ -145,12 +153,13 @@ export async function prepareStudioBg3dInplaceDerivative(
         unaffectedModels,
         ctx.attachments,
       ),
-      renderer: ctx.renderer,
+      renderer,
+      materialBackend: backend,
       cache: stagedCache,
       pending: new Map(),
       isActive: () => {
         try {
-          assertCurrent();
+          assertRuntimeCurrent();
           return true;
         } catch {
           return false;
@@ -161,7 +170,7 @@ export async function prepareStudioBg3dInplaceDerivative(
         ownedEntry = value;
       },
     });
-    assertCurrent();
+    assertRuntimeCurrent();
     if (
       entry.metrics.animations ||
       entry.metrics.skins ||
@@ -195,15 +204,15 @@ export async function prepareStudioBg3dInplaceDerivative(
             session,
             async (lease) => {
               lease.throwIfRevoked();
-              assertCurrent();
+              assertRuntimeCurrent();
               await assertStudioBg3dModelExportReceiptCurrent(provenance);
               lease.throwIfRevoked();
-              assertCurrent();
+              assertRuntimeCurrent();
               const persisted = await library.getStoredBg3dModelV12(record.id, {
                 signal: lease.signal,
               });
               lease.throwIfRevoked();
-              assertCurrent();
+              assertRuntimeCurrent();
               if (
                 !persisted ||
                 persisted.contentHash !== record.contentHash ||
@@ -218,12 +227,12 @@ export async function prepareStudioBg3dInplaceDerivative(
               return persisted;
             },
             (persisted) => {
-              assertCurrent();
+              assertRuntimeCurrent();
               const liveContext = getContext();
               const live = liveContext.live.current;
               if (
-                liveContext.cache.has(record.id) &&
-                liveContext.cache.get(record.id) !== entry
+                liveContext.cache.has(studioBg3dModelCacheKey(record.id, backend)) &&
+                readStudioBg3dModelCacheEntry(liveContext.cache, record.id, backend) !== entry
               )
                 throw new Scene3dInplaceError(
                   "stale",
@@ -291,7 +300,7 @@ export async function prepareStudioBg3dInplaceDerivative(
               );
               liveContext.attachments.set(record.id, attachment);
               liveContext.storageIds.set(attachment.id, record.id);
-              liveContext.cache.set(record.id, entry);
+              liveContext.cache.set(studioBg3dModelCacheKey(record.id, backend), entry);
               liveContext.replace({ customModels: models });
               committed = true;
               // UI notification is not the commit authority and cannot roll back a completed transaction.

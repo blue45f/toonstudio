@@ -28,7 +28,7 @@ import {
 import type { StudioBg3dCanonicalDocumentMutation } from "./useStudioBg3dCanonicalDocumentState";
 
 type RecordIdentity = Pick<Bg3dVerifiedStoredRecord, "id" | "contentHash" | "byteSize" | "mime" | "rights" | "sourceRestriction">;
-export type StudioBg3dPrimitiveEditReplacementCache = Pick<StudioBg3dModelRootCacheEntry, "root" | "metrics" | "normalizationScale"> & {
+export type StudioBg3dPrimitiveEditReplacementCache = Pick<StudioBg3dModelRootCacheEntry, "root" | "metrics" | "normalizationScale" | "runtimeVariant"> & {
   readonly record: RecordIdentity;
 };
 

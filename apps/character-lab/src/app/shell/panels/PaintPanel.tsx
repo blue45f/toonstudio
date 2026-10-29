@@ -7,16 +7,15 @@
  * 키트 소스 경고(계약 문서 8.4절, `paint/paint-kit-warning`): 페인트 레이어는 역할 단위 하나인데 헤어·의상·신발·액세서리는 변형(프리셋)마다 UV가 달라
  * 변형을 바꾸면 그림이 어긋난다. 칠하는 것은 막지 않고, 선택한 부위의 경고와 이미 칠한 다른 부위(레시피를 불러온 직후 포함)의 경고를 보인다.
  */
-import { useCallback, useId, useState, useSyncExternalStore } from "react";
+import { useCallback, useId, useSyncExternalStore } from "react";
 
 import { PAINTABLE_PART_ROLES, PART_ROLE_LABELS_KO, isPartRole } from "../../../contracts";
 import { kitPaintWarningKo, kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
+import { isPaintPressureMode } from "../../../paint/paint-pressure";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
-import { computeShaperStrokeWidths } from "../../../paint/uv-stroke";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
 import type { PaintSession, PaintSessionState } from "../../../paint/paint-session";
-import type { ShaperPressureMode } from "../../../paint/uv-stroke";
 
 export interface PaintPanelProps {
   readonly session?: PaintSession;
@@ -59,15 +58,6 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
   const activeKitWarning = kitPaintWarningKo(sourceKind, state.activePart);
   // 이미 칠한 다른 부위 중 변형을 바꾸면 어긋날 수 있는 것(선택한 부위는 위 경고가 이미 말한다)
   const otherKitWarnings = kitPaintWarningsForLayers(sourceKind, [...state.layers.values()]).filter((warning) => warning.part !== state.activePart);
-  const [pressureMode, setPressureMode] = useState<ShaperPressureMode>("fake");
-  const [bodyLineMaskEnabled, setBodyLineMaskEnabled] = useState(true);
-  const sampleWidths = computeShaperStrokeWidths({
-    count: 3,
-    thickness: state.brush.radiusPx,
-    pressureMode,
-    pressures: [0.3, 0.8, 0.4],
-  });
-  const peakWidthPx = Math.max(...sampleWidths);
 
   const onUndo = useCallback(() => {
     dispatch({ type: "history/undo" });
@@ -152,28 +142,30 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
         <label htmlFor={`${ids}-pressure-mode`}>3D 스트로크 필압 모드</label>
         <select
           id={`${ids}-pressure-mode`}
-          value={pressureMode}
+          value={state.pressureMode}
           onChange={(event) => {
             const val = event.target.value;
-            if (val === "fake" || val === "pen") setPressureMode(val);
+            if (isPaintPressureMode(val)) session.setPressureMode(val);
           }}
         >
-          <option value="fake">가상 필압 sin(πt)</option>
-          <option value="pen">타블렛 펜 필압 (2p)</option>
+          <option value="constant">고정 반지름 (기본)</option>
+          <option value="fake">가상 필압 · 양끝 가늘게</option>
+          <option value="pen">타블렛 펜 필압</option>
         </select>
       </div>
       <div className="cl-paint-row">
-        <label htmlFor={`${ids}-body-mask`}>의상 영역 신체 선화 자동 마스킹</label>
+        <label htmlFor={`${ids}-body-mask`}>의상 뒤 신체 페인트 차단</label>
         <input
           id={`${ids}-body-mask`}
           type="checkbox"
-          checked={bodyLineMaskEnabled}
-          onChange={(event) => setBodyLineMaskEnabled(event.target.checked)}
+          checked={state.bodyLineMaskEnabled}
+          onChange={(event) => session.setBodyLineMaskEnabled(event.target.checked)}
         />
       </div>
       <p className="cl-paint-hint" data-testid="shaper-paint-stroke-readout">
-        피크 두께 {peakWidthPx.toFixed(1)} px · 의상 마스킹 {bodyLineMaskEnabled ? "ON" : "OFF"}
+        기준 반지름 {state.brush.radiusPx.toFixed(1)} px · 의상 마스킹 {state.bodyLineMaskEnabled ? "ON" : "OFF"}
       </p>
+      <p className="cl-paint-hint">가상 필압은 스트로크를 끝내면 양끝이 가늘어집니다. 펜 필압은 반지름과 불투명도에 반영됩니다. 의상 마스킹은 포인터 중심의 가림을 검사하며, 큰 UV 브러시의 모든 픽셀이나 모델에서 제거된 몸 표면을 복원하지 않습니다.</p>
       <p className="cl-paint-status">
         {PART_ROLE_LABELS_KO[state.activePart]} 레이어 {activeLayer ? `${activeLayer.width}×${activeLayer.height} · 개정 ${activeLayer.revision}` : "(아직 없음)"}
         {state.strokeActive ? " · 스트로크 진행 중" : ""}

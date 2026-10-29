@@ -25,6 +25,7 @@ import {
   zoomCameraByWheel,
 } from "./testing/null-engine-harness";
 import { createProceduralFixture } from "./testing/procedural-fixture";
+import { applyCanvasShaperViewPreset, getCanvasCameraInputStyle, setCanvasCameraInputStyle } from "./viewport-controls";
 import { WHEEL_ZOOM_PER_NOTCH, resolveOrbitLimits } from "./viewport-orbit";
 
 import type { HumanoidModelData } from "../contracts";
@@ -297,6 +298,66 @@ describe("F-01·H-03 뷰포트 입력", () => {
     expect(resets()).toBe(2);
   });
 
+  it("공개 포트의 세 시점 프리셋은 기존 카메라 각도와 상단 하한을 유지한다", () => {
+    const { camera, canvas } = attached();
+    expect(applyCanvasShaperViewPreset(canvas, "front")).toBe(true);
+    expect(camera.alpha).toBe(Math.PI / 2);
+    expect(camera.beta).toBe(Math.PI / 2);
+    expect(applyCanvasShaperViewPreset(canvas, "left")).toBe(true);
+    expect(camera.alpha).toBe(Math.PI);
+    expect(camera.beta).toBe(Math.PI / 2);
+    camera.lowerBetaLimit = 0.2;
+    expect(applyCanvasShaperViewPreset(canvas, "top")).toBe(true);
+    expect(camera.alpha).toBe(Math.PI / 2);
+    expect(camera.beta).toBe(0.2);
+    camera.lowerBetaLimit = null;
+    applyCanvasShaperViewPreset(canvas, "top");
+    expect(camera.beta).toBe(0.08);
+  });
+
+  it("같은 캔버스 재연결은 이전 입력만 떼고 옛 장면 해제가 새 소유자에 영향을 주지 않는다", () => {
+    const previous = characterScene();
+    const current = characterScene();
+    const canvas = fakeCanvas();
+    let previousResets = 0;
+    let currentResets = 0;
+    setCanvasCameraInputStyle(canvas, "max");
+    const releasePrevious = attachViewportControls(previous.camera, canvas, () => { previousResets += 1; });
+    const releaseCurrent = attachViewportControls(current.camera, canvas, () => { currentResets += 1; });
+    expect(getCanvasCameraInputStyle(canvas)).toBe("max");
+    releasePrevious();
+    previous.dispose();
+    fire(canvas, "dblclick", {});
+    expect(previousResets).toBe(0);
+    expect(currentResets).toBe(1);
+    current.camera.alpha = 0;
+    expect(applyCanvasShaperViewPreset(canvas, "left")).toBe(true);
+    expect(current.camera.alpha).toBe(Math.PI);
+    releaseCurrent();
+    fire(canvas, "dblclick", {});
+    expect(currentResets).toBe(1);
+    expect(applyCanvasShaperViewPreset(canvas, "front")).toBe(false);
+    current.dispose();
+  });
+
+  it("동일 카메라의 재연결에서도 한 입력 이벤트를 한 번만 처리한다", () => {
+    const character = characterScene();
+    const canvas = fakeCanvas();
+    let previousResets = 0;
+    let currentResets = 0;
+    const releasePrevious = attachViewportControls(character.camera, canvas, () => { previousResets += 1; });
+    const releaseCurrent = attachViewportControls(character.camera, canvas, () => { currentResets += 1; });
+    releasePrevious();
+    const radius = character.camera.radius;
+    fire(canvas, "wheel", { deltaY: 100, deltaMode: 0 });
+    expect(character.camera.radius).toBeCloseTo(radius * (1 + WHEEL_ZOOM_PER_NOTCH), 9);
+    fire(canvas, "dblclick", {});
+    expect(previousResets).toBe(0);
+    expect(currentResets).toBe(1);
+    releaseCurrent();
+    expect(applyCanvasShaperViewPreset(canvas, "top")).toBe(false);
+  });
+
   it("장면을 해제하면 입력을 떼고(더 이상 반응하지 않는다) 반환 함수도 멱등이다", () => {
     const owned = createBareNullScene();
     const character = createCharacterScene(owned.engine);
@@ -308,6 +369,7 @@ describe("F-01·H-03 뷰포트 입력", () => {
     character.dispose();
     fire(canvas, "dblclick", {});
     expect(resets).toBe(0);
+    expect(applyCanvasShaperViewPreset(canvas, "front")).toBe(false);
     detach();
     owned.engine.dispose();
   });

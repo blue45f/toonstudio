@@ -11,7 +11,7 @@
  * - MeshUVSpaceRenderer 셰이더는 스키닝·morph를 포함하므로 포즈를 바꾼 표면에도 투영된다(브라우저에서 확인 필요 — docs/parity/render.md).
  * - 투영 방향 기준 뒷면 삼각형은 셰이더가 잘라내므로(법선·투영 방향 내적) 얇은 부위의 반대편은 칠하지 않는다.
  */
-import type { PartRole, Vec3 } from "../contracts";
+import type { CharacterPickOptions, PartRole, Vec3 } from "../contracts";
 
 /** 브러시 비트맵: premultiplied sRGB RGBA8, 정사각, 행 0 = 위 */
 export interface ProjectionBrushBitmap {
@@ -47,7 +47,7 @@ export const PROJECTION_FALLBACK_SCREEN_NDC: readonly [number, number] = [0.05, 
 /** 엔진이 구현하는 투영 페인트 포트(베타가 켜졌을 때만 `projectionPaint()`가 돌려준다) */
 export interface ProjectionPaintPort {
   /** 스트로크 시작: 부위의 UV 공간 렌더 타깃을 레이어 크기로 준비한다. 부위에 메시가 없으면 false. */
-  begin(part: PartRole, layerWidth: number, layerHeight: number): boolean;
+  begin(part: PartRole, layerWidth: number, layerHeight: number, options?: CharacterPickOptions): boolean;
   /** 브러시 비트맵과 반지름(레이어 px)을 정한다. */
   setBrush(bitmap: ProjectionBrushBitmap, radiusPx: number): void;
   /** NDC 위치의 표면에 브러시를 투영한다. 활성 부위 표면이 아니면 hit=false. */

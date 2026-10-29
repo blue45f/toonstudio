@@ -7,7 +7,6 @@ import {
   CircleAlert,
   Cloud,
   ExternalLink,
-  KeyRound,
   Search,
   Settings2,
   ShieldCheck,
@@ -30,6 +29,7 @@ import {
   STUDIO_AI_BYOK_PROVIDER_PRESETS,
 } from "./studio-ai-byok-wizard-adapter";
 import { AiCapabilityStatusBoard } from "./AiCapabilityStatusBoard";
+import { AiQuickKeyPanel } from "./AiQuickKeyPanel";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
 import { SERVER_PROVIDER_LABELS } from "./unified-ai-provider-labels";
 import {
@@ -49,6 +49,7 @@ import {
   userAiConnectionModels,
   userAiRoutingSettings,
   USER_AI_CAPABILITIES,
+  withPaidAutoUseChoice,
   type UserAiCapability,
   type UserAiConfiguration,
   type UserAiConnection,
@@ -83,13 +84,13 @@ const ROUTING_MODES: ReadonlyArray<{
   {
     id: "automatic",
     title: "자동 추천",
-    description: "작업 종류와 사용 가능 여부를 보고 무료 AI부터 자동으로 선택합니다.",
+    description: "등록한 내 키를 먼저 쓰고, 키가 없거나 막히면 ToonStudio AI(고성능 → 무료)로 자동으로 이어서 실행해요.",
     recommended: true,
   },
   {
     id: "priority",
     title: "내가 정한 순서",
-    description: "자동 무료 AI와 내 AI 연결을 정해 둔 순서대로 사용합니다.",
+    description: "ToonStudio AI와 내 키 중 무엇을 먼저 쓸지 직접 정해요.",
   },
   {
     id: "manual",
@@ -192,12 +193,6 @@ function connectionIsReady(connection: UserAiConnection): boolean {
   );
 }
 
-function connectionCostLabel(connection: UserAiConnection): string {
-  if (connection.costPolicy === "user-funded-byok") return "내 계정 과금 가능";
-  if (connection.costPolicy === "unverified") return "비용 정책 확인 필요";
-  return "무료 범위";
-}
-
 function orderedConnections(configuration: UserAiConfiguration): UserAiConnection[] {
   return [...configuration.connections].sort((left, right) =>
     (left.priority ?? 100) - (right.priority ?? 100)
@@ -225,7 +220,7 @@ export interface UnifiedAiSettingsEntryCardProps {
 export function UnifiedAiSettingsEntryCard({
   source = "studio",
   title = "AI 연결과 사용 순서",
-  description = "API 키, 무료 AI와 사용 순서는 통합 설정 한 곳에서 관리해요.",
+  description = "키 없이도 바로 쓰고, 내 키·사용 순서는 AI 설정 한 곳에서 관리해요.",
   className = "",
 }: UnifiedAiSettingsEntryCardProps) {
   const snapshot = useUserAi();
@@ -249,7 +244,7 @@ export function UnifiedAiSettingsEntryCard({
               <p className="mt-0.5 text-xs text-fg-3">
                 {configured > 0
                   ? `내 AI ${configured}개 연결됨 · ${ROUTING_MODES.find((item) => item.id === routing.mode)?.title}`
-                  : "개인 키 없이 자동 무료 AI부터 시작할 수 있어요"}
+                  : "키 없이 ToonStudio AI로 바로 시작할 수 있어요"}
               </p>
             </div>
           </div>
@@ -302,6 +297,13 @@ export function UnifiedAiSettings() {
   const hasPaidConnection = connections.some((connection) =>
     connection.enabled !== false && connection.costPolicy === "user-funded-byok",
   );
+  // 유료 키 자동 사용이 켜져 있어도 자동 사용에 동의하지 않은 유료 키(예: AI 보조 카드에서 연결한 키)는 자동 경로에 들지 않는다.
+  const unconsentedPaidNames = [...new Set(connections
+    .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok" && connection.paidAutoUse !== true)
+    .map((connection) => connection.label))];
+  const choosePaidUse = (allowPaidFallback: boolean, preferPaidKeys: boolean) => {
+    setUserAiConfiguration(withPaidAutoUseChoice(configuration, { allowPaidFallback, preferPaidKeys }));
+  };
   const readyCapabilities = new Set(readyConnections.flatMap(capabilityList));
   const managedTextState = pool.mode === "loading"
     ? "checking" as const
@@ -546,7 +548,7 @@ export function UnifiedAiSettings() {
                 {overallReady ? "AI를 사용할 준비가 되었어요" : "AI 연결을 시작해 볼까요?"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-fg-2">
-                API 키 하나만 연결하면 나머지는 자동으로 설정해요. 모델과 경로 같은 기술 설정은 필요할 때만 열 수 있어요.
+                키 없이도 모든 AI 기능을 바로 쓸 수 있어요. 내 키를 붙여 넣으면 그 키를 먼저 쓰고, 모델·경로 같은 기술 설정은 고급 설정에만 있어요.
               </p>
             </div>
             <div className="grid min-w-[260px] grid-cols-2 gap-2 rounded-2xl border border-line bg-card/60 p-3">
@@ -576,6 +578,55 @@ export function UnifiedAiSettings() {
 
       {view === "start" && (
         <div className="space-y-6">
+          {wizardOpen ? (
+            <ConnectionWizard
+              step={wizardStep}
+              providerSearch={providerSearch}
+              presetResults={presetResults}
+              selectedPreset={selectedPreset}
+              selectedMeta={selectedMeta}
+              label={wizardLabel}
+              baseUrl={wizardBaseUrl}
+              apiKey={wizardApiKey}
+              model={wizardModel}
+              capability={wizardCapability}
+              consent={wizardConsent}
+              showSecret={showWizardSecret}
+              busy={wizardBusy}
+              error={wizardError}
+              result={wizardResult}
+              showEndpointField={showEndpointField}
+              showModelField={showModelField}
+              onClose={closeWizard}
+              onSearchChange={setProviderSearch}
+              onSelectPreset={selectPreset}
+              onApplyByokPreset={selectByokPreset}
+              byokPresets={STUDIO_AI_BYOK_PROVIDER_PRESETS}
+              onBack={() => {
+                setWizardStep("choose");
+                setWizardError("");
+                setWizardApiKey("");
+                setShowWizardSecret(false);
+              }}
+              onLabelChange={setWizardLabel}
+              onBaseUrlChange={setWizardBaseUrl}
+              onApiKeyChange={setWizardApiKey}
+              onModelChange={setWizardModel}
+              onCapabilityChange={(value) => {
+                setWizardCapability(value);
+                setWizardModel("");
+              }}
+              onConsentChange={setWizardConsent}
+              onShowSecretChange={setShowWizardSecret}
+              onSave={() => void saveWizardConnection()}
+            />
+          ) : (
+            <AiQuickKeyPanel
+              poolStatus={pool.mode === "ready" ? pool.status : null}
+              poolCheckFailed={pool.mode === "error"}
+              onOpenAdvancedWizard={openWizard}
+            />
+          )}
           <AiCapabilityStatusBoard
             managedText={managedTextState}
             userText={readyCapabilities.has("text")}
@@ -583,87 +634,6 @@ export function UnifiedAiSettings() {
             userInference={readyCapabilities.has("inference")}
             userThreeD={readyCapabilities.has("three-d")}
           />
-          <section aria-labelledby="my-ai-connections-title" className="space-y-3">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h3 id="my-ai-connections-title" className="text-lg font-bold">내 AI 연결</h3>
-                <p className="mt-1 text-sm text-fg-2">한 번 연결하면 ToonStudio의 글·이미지·영상·3D 기능에서 함께 사용해요.</p>
-              </div>
-              {!wizardOpen && (
-                <button type="button" className={PRIMARY_BUTTON} onClick={openWizard}>
-                  <KeyRound size={16} aria-hidden /> AI 연결하기
-                </button>
-              )}
-            </div>
-
-            {wizardOpen ? (
-              <ConnectionWizard
-                step={wizardStep}
-                providerSearch={providerSearch}
-                presetResults={presetResults}
-                selectedPreset={selectedPreset}
-                selectedMeta={selectedMeta}
-                label={wizardLabel}
-                baseUrl={wizardBaseUrl}
-                apiKey={wizardApiKey}
-                model={wizardModel}
-                capability={wizardCapability}
-                consent={wizardConsent}
-                showSecret={showWizardSecret}
-                busy={wizardBusy}
-                error={wizardError}
-                result={wizardResult}
-                showEndpointField={showEndpointField}
-                showModelField={showModelField}
-                onClose={closeWizard}
-                onSearchChange={setProviderSearch}
-                onSelectPreset={selectPreset}
-                onApplyByokPreset={selectByokPreset}
-                byokPresets={STUDIO_AI_BYOK_PROVIDER_PRESETS}
-                onBack={() => {
-                  setWizardStep("choose");
-                  setWizardError("");
-                  setWizardApiKey("");
-                  setShowWizardSecret(false);
-                }}
-                onLabelChange={setWizardLabel}
-                onBaseUrlChange={setWizardBaseUrl}
-                onApiKeyChange={setWizardApiKey}
-                onModelChange={setWizardModel}
-                onCapabilityChange={(value) => {
-                  setWizardCapability(value);
-                  setWizardModel("");
-                }}
-                onConsentChange={setWizardConsent}
-                onShowSecretChange={setShowWizardSecret}
-                onSave={() => void saveWizardConnection()}
-              />
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {connections.map((connection) => (
-                  <ConnectionSummaryCard
-                    key={connection.id}
-                    connection={connection}
-                    onManage={() => setView("advanced")}
-                  />
-                ))}
-                {!connections.length && (
-                  <div className="md:col-span-2 rounded-2xl border border-dashed border-line bg-panel/30 p-6 text-center">
-                    <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-accent/10 text-accent" aria-hidden>
-                      <Cloud size={22} />
-                    </span>
-                    <h4 className="mt-3 font-bold">아직 연결한 개인 AI가 없어요</h4>
-                    <p className="mx-auto mt-1 max-w-lg text-sm leading-6 text-fg-2">
-                      로그인 상태에서는 자동 무료 AI를 먼저 사용할 수 있고, 내 API 키를 연결하면 선택 폭이 넓어져요.
-                    </p>
-                    <button type="button" className={`${PRIMARY_BUTTON} mt-4`} onClick={openWizard}>
-                      첫 AI 연결하기
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
 
           <RoutingModeSection routingMode={routing.mode} onChange={(mode) => updateRouting({ mode })} />
 
@@ -673,25 +643,43 @@ export function UnifiedAiSettings() {
                 <WalletCards size={19} />
               </span>
               <div>
-                <h3 id="paid-ai-title" className="font-bold">유료 AI 사용</h3>
-                <p className="mt-1 text-sm leading-6 text-fg-2">예상하지 못한 비용이 생기지 않도록 기본값은 자동 사용 안 함이에요.</p>
+                <h3 id="paid-ai-title" className="font-bold">유료 키 자동 사용</h3>
+                <p className="mt-1 text-sm leading-6 text-fg-2">Claude·OpenAI처럼 비용이 드는 내 키를 자동 경로에서 쓸지 정해요. 키를 등록하며 비용 청구를 확인하면 그 키에 켜지고, 여기서 고르면 지금 등록한 유료 키 모두에 적용돼요.</p>
               </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="유료 AI 자동 사용">
+            <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="유료 AI 자동 사용">
               <label className={`cursor-pointer rounded-xl border p-3 ${!routing.allowPaidFallback ? "border-accent bg-accent/5" : "border-line"}`}>
                 <span className="flex items-start gap-2">
-                  <input type="radio" name="paid-ai-use" aria-label="자동으로 사용하지 않음" checked={!routing.allowPaidFallback} onChange={() => updateRouting({ allowPaidFallback: false })} className="mt-1" />
-                  <span><strong className="block text-sm">자동으로 사용하지 않음</strong><span className="mt-1 block text-xs leading-5 text-fg-3">무료 경로가 끝나면 멈추고 알려줘요.</span></span>
+                  <input type="radio" name="paid-ai-use" aria-label="자동으로 사용하지 않음" checked={!routing.allowPaidFallback} onChange={() => choosePaidUse(false, false)} className="mt-1" />
+                  <span><strong className="block text-sm">자동으로 사용하지 않음</strong><span className="mt-1 block text-xs leading-5 text-fg-3">유료 키는 비용을 먼저 보여 주는 AI 보조 대화상자에서만 써요.</span></span>
                 </span>
               </label>
-              <label className={`rounded-xl border p-3 ${routing.allowPaidFallback ? "border-accent bg-accent/5" : "border-line"} ${hasPaidConnection ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}>
+              <label className={`rounded-xl border p-3 ${routing.allowPaidFallback && routing.preferPaidKeys !== true ? "border-accent bg-accent/5" : "border-line"} ${hasPaidConnection ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}>
                 <span className="flex items-start gap-2">
-                  <input type="radio" name="paid-ai-use" aria-label="무료 사용량 소진 후 내 유료 키 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback} onChange={() => updateRouting({ allowPaidFallback: true })} className="mt-1" />
-                  <span><strong className="block text-sm">무료 사용량 소진 후 내 유료 키 사용</strong><span className="mt-1 block text-xs leading-5 text-fg-3">내가 연결한 유료 BYOK 계정에 비용이 청구될 수 있어요.</span></span>
+                  <input type="radio" name="paid-ai-use" aria-label="무료 경로가 끝나면 내 유료 키 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback && routing.preferPaidKeys !== true} onChange={() => choosePaidUse(true, false)} className="mt-1" />
+                  <span><strong className="block text-sm">무료 경로가 끝나면 사용</strong><span className="mt-1 block text-xs leading-5 text-fg-3">내 무료 키와 ToonStudio AI를 먼저 쓰고, 둘 다 안 될 때만 유료 키를 써요.</span></span>
+                </span>
+              </label>
+              <label className={`rounded-xl border p-3 ${routing.allowPaidFallback && routing.preferPaidKeys === true ? "border-accent bg-accent/5" : "border-line"} ${hasPaidConnection ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}>
+                <span className="flex items-start gap-2">
+                  <input type="radio" name="paid-ai-use" aria-label="내 유료 키를 먼저 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback && routing.preferPaidKeys === true} onChange={() => choosePaidUse(true, true)} className="mt-1" />
+                  <span><strong className="block text-sm">내 유료 키를 먼저 사용</strong><span className="mt-1 block text-xs leading-5 text-fg-3">등록한 순서대로 내 키를 먼저 쓰고, 안 될 때 ToonStudio AI로 넘겨요. 내 계정에 비용이 청구돼요.</span></span>
                 </span>
               </label>
             </div>
-            {!hasPaidConnection && <p className="text-xs text-fg-3">유료 사용이 가능한 내 AI 연결을 추가하면 두 번째 옵션을 선택할 수 있어요.</p>}
+            {!hasPaidConnection && <p className="text-xs text-fg-3">유료 서비스 키를 등록하면 나머지 옵션을 고를 수 있어요.</p>}
+            {routing.allowPaidFallback && unconsentedPaidNames.length > 0 && (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3" data-paid-unconsented="true">
+                <span>{`자동으로 쓰지 않는 유료 키: ${unconsentedPaidNames.join(", ")}`}</span>
+                <button
+                  type="button"
+                  className="min-h-11 rounded-lg px-2 font-semibold text-accent underline underline-offset-2"
+                  onClick={() => choosePaidUse(true, routing.preferPaidKeys === true)}
+                >
+                  이 키도 자동으로 쓰기
+                </button>
+              </p>
+            )}
           </section>
 
           <section className="grid gap-3 sm:grid-cols-2" aria-label="AI 데이터와 보안 안내">
@@ -715,11 +703,11 @@ export function UnifiedAiSettings() {
             <section className="space-y-4 rounded-2xl border border-line bg-panel/50 p-5" aria-labelledby="automatic-order-title">
               <div>
                 <h3 id="automatic-order-title" className="font-bold">현재 자동 선택 방식</h3>
-                <p className="mt-1 text-sm leading-6 text-fg-2">무료 AI를 먼저 살펴보고, 명확한 한도 소진이나 키 오류일 때만 안전한 다음 경로로 이동해요.</p>
+                <p className="mt-1 text-sm leading-6 text-fg-2">등록한 내 키를 먼저 쓰고, 명확한 한도 소진이나 키 오류일 때만 ToonStudio AI로 안전하게 넘어가요.</p>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
-                <OrderSummary title="자동 무료 AI" items={poolProviderOrder(pool, routing.serverProviderOrder)} empty="준비된 자동 무료 AI가 없어요" />
-                <OrderSummary title="내 AI 연결" items={connections.filter((item) => item.enabled !== false).map((item) => item.label)} empty="연결된 개인 AI가 없어요" />
+                <OrderSummary title="1. 내 키" items={connections.filter((item) => item.enabled !== false).map((item) => item.label)} empty="등록한 키가 없어 건너뛰어요" />
+                <OrderSummary title="2. ToonStudio AI" items={poolProviderOrder(pool, routing.serverProviderOrder)} empty="ToonStudio AI가 아직 준비되지 않았어요" />
               </div>
               <p className="rounded-xl border border-line bg-card/60 px-3 py-2 text-xs leading-5 text-fg-3">
                 네트워크 오류·시간 초과·서버 오류처럼 결과 생성 여부가 불확실한 경우에는 중복 생성과 중복 과금을 막기 위해 다른 AI로 자동 재전송하지 않아요.
@@ -738,15 +726,15 @@ export function UnifiedAiSettings() {
                   <SimpleChoice
                     name="priority-group"
                     checked={!readyConnections.length || (readyConnections[0]?.priority ?? 100) >= routing.managedPoolPriority}
-                    title="자동 무료 AI 먼저"
-                    description="공용 무료 경로를 먼저 사용하고 내 연결을 다음에 사용해요."
+                    title="ToonStudio AI 먼저"
+                    description="키 없이 쓰는 ToonStudio AI(고성능 → 무료)를 먼저 쓰고 내 키를 다음에 써요."
                     onChange={() => updateRouting({ managedPoolPriority: 1 })}
                   />
                   <SimpleChoice
                     name="priority-group"
                     checked={Boolean(readyConnections.length && (readyConnections[0]?.priority ?? 100) < routing.managedPoolPriority)}
-                    title="내 AI 연결 먼저"
-                    description="내가 등록한 무료·유료 연결을 먼저 사용해요."
+                    title="내 키 먼저"
+                    description="내가 등록한 키를 먼저 쓰고, 막히면 ToonStudio AI로 넘어가요."
                     onChange={() => updateRouting({ managedPoolPriority: 999 })}
                     disabled={!readyConnections.length}
                   />
@@ -851,39 +839,6 @@ function SettingsTab({
     >
       {icon}<span className="hidden sm:inline">{label}</span><span className="sm:hidden">{label.replace("AI ", "")}</span>
     </button>
-  );
-}
-
-function ConnectionSummaryCard({
-  connection,
-  onManage,
-}: {
-  readonly connection: UserAiConnection;
-  readonly onManage: () => void;
-}) {
-  const capabilities = capabilityList(connection);
-  const ready = connection.enabled !== false && connectionIsReady(connection);
-  return (
-    <article className="rounded-2xl border border-line bg-panel/60 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`size-2 rounded-full ${ready ? "bg-good" : "bg-warn"}`} aria-hidden />
-            <h4 className="truncate font-bold">{connection.label}</h4>
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${connection.costPolicy === "user-funded-byok" ? "bg-warn/10 text-warn" : "bg-good/10 text-good"}`}>
-              {connectionCostLabel(connection)}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-fg-2">
-            {capabilities.length ? capabilities.map((capability) => CAPABILITY_LABELS[capability]).join(" · ") : "사용 기능을 설정해 주세요"}
-          </p>
-          <p className="mt-1 text-xs text-fg-3">
-            {ready ? "사용 가능" : connection.enabled === false ? "사용 안 함" : "키·모델 또는 비용 정책 확인 필요"}
-          </p>
-        </div>
-        <button type="button" className={QUIET_BUTTON} onClick={onManage}>관리 <ChevronRight size={15} aria-hidden /></button>
-      </div>
-    </article>
   );
 }
 

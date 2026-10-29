@@ -1,3 +1,5 @@
+import { DEFAULT_STUDIO_UI_DENSITY_MODE, studioUiDensityAllows, type StudioUiDensityMode } from "../studio-ui-density";
+
 /**
  * 하단 페이지 스트립(필름스트립)의 첫 표시 여부.
  *
@@ -7,7 +9,8 @@
  */
 export const STUDIO_PAGE_SEQUENCE_DEFAULT_OPEN_QUERY = "(min-width: 80rem) and (pointer: fine)";
 
-export function studioPageSequenceOpenByDefault(): boolean {
+export function studioPageSequenceOpenByDefault(mode: StudioUiDensityMode = DEFAULT_STUDIO_UI_DENSITY_MODE): boolean {
+  if (!studioUiDensityAllows(mode, "page-strip")) return false;
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   return window.matchMedia(STUDIO_PAGE_SEQUENCE_DEFAULT_OPEN_QUERY).matches;
 }

@@ -14,7 +14,7 @@ import { PAINTABLE_PART_ROLES } from "../contracts";
 
 import { createPaintLayer, mergeUndoTokens } from "./paint-layer";
 
-import type { PaintLayer, PaintUndoToken, PartRole, PickHit } from "../contracts";
+import type { CharacterPickOptions, PaintLayer, PaintUndoToken, PartRole, PickHit } from "../contracts";
 import type { PaintSession } from "./paint-session";
 
 /** 변경된 레이어를 엔진 텍스처로 올린다(`CharacterEngine.updatePaintTexture`). */
@@ -98,7 +98,7 @@ export function normalizePointerPressure(event: PointerPressureSource): number {
 
 export interface PointerPaintPorts {
   /** NDC → 픽 결과(`engine.pick`). 엔진이 없으면 null을 돌려주는 함수를 넘긴다. */
-  readonly pick: (ndcX: number, ndcY: number) => PickHit | null;
+  readonly pick: (ndcX: number, ndcY: number, options?: CharacterPickOptions) => PickHit | null;
   readonly upload: PaintLayerUploader;
   /** 스트로크 종료 시 토큰 1개(`dispatch({ type: "paint/stroke", undoToken })`). */
   readonly commit: (token: PaintUndoToken) => void;
@@ -132,22 +132,29 @@ function isPaintable(role: PartRole): boolean {
   return PAINTABLE_PART_ROLES.includes(role);
 }
 
+export function bodyPaintPickOptions(part: PartRole, maskEnabled: boolean): CharacterPickOptions | undefined {
+  return !maskEnabled && (part === "skin" || part === "head") ? { targetPart: part, ignoreOccludingParts: true } : undefined;
+}
+
 export function createPointerPaintDriver(session: PaintSession, ports: PointerPaintPorts): PointerPaintDriver {
   let active = false;
   let touching = false;
   let dabCount = 0;
   let tokens: PaintUndoToken[] = [];
   let part: PartRole = session.getState().activePart;
+  let pressureMode = session.getState().pressureMode;
 
   const closeSegment = (): void => {
     if (!touching) return;
     const token = session.endStroke();
     if (token) tokens.push(token);
+    if (token && pressureMode === "fake") ports.upload(session.layer(part));
     touching = false;
   };
 
   const hitOnActivePart = (sample: PointerSample): PickHit | null => {
-    const hit = ports.pick(sample.ndcX, sample.ndcY);
+    const options = bodyPaintPickOptions(part, session.getState().bodyLineMaskEnabled);
+    const hit = options ? ports.pick(sample.ndcX, sample.ndcY, options) : ports.pick(sample.ndcX, sample.ndcY);
     if (!hit || hit.role !== part || !isPaintable(hit.role)) return null;
     return hit;
   };
@@ -205,6 +212,7 @@ export function createPointerPaintDriver(session: PaintSession, ports: PointerPa
       if (active) finish(true);
       active = true;
       part = session.getState().activePart;
+      pressureMode = session.getState().pressureMode;
       const hit = hitOnActivePart(sample);
       if (!hit) return false;
       stamp(sample, hit);

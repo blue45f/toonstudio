@@ -1,5 +1,6 @@
 import type * as THREE from "three";
 
+import type { StudioBg3dMaterialBackendRequest } from "./studio-bg3d-model-material-variant";
 import type { StudioBg3dMeshoptDecoder } from "./studio-bg3d-meshopt";
 
 /**
@@ -94,6 +95,7 @@ export interface StudioBg3dModelLoaderFactories {
     | Promise<StudioBg3dLoadingManagerLike>;
   readonly createGLTFLoader?: (
     manager: StudioBg3dLoadingManagerLike | undefined,
+    request?: StudioBg3dMaterialBackendRequest,
   ) => StudioBg3dGltfLoaderLike | Promise<StudioBg3dGltfLoaderLike>;
   readonly createFBXLoader?: (
     manager: StudioBg3dLoadingManagerLike | undefined,
@@ -124,7 +126,7 @@ export type StudioBg3dModelLoadInput =
       readonly name?: string;
     };
 
-export interface StudioBg3dModelLoadOptions {
+export interface StudioBg3dModelLoadOptions extends StudioBg3dMaterialBackendRequest {
   /** input.format보다 우선하는 명시 포맷. */
   readonly format?: StudioBg3dModelFormat;
   /** 의존 파일(.bin·텍스처·.mtl 등) 상대 참조를 붙일 기준 URL. input.baseUrl보다 우선한다. */
@@ -206,9 +208,9 @@ async function defaultLoadMeshoptDecoder(): Promise<StudioBg3dMeshoptDecoder> {
 
 const DEFAULT_FACTORIES: Required<StudioBg3dModelLoaderFactories> = {
   createLoadingManager: defaultCreateLoadingManager,
-  createGLTFLoader: async (manager) => {
-    const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
-    return new GLTFLoader(manager as never) as unknown as StudioBg3dGltfLoaderLike;
+  createGLTFLoader: async (manager, request) => {
+    const { createStudioBg3dGltfLoader } = await import("./studio-bg3d-gltf-loader");
+    return createStudioBg3dGltfLoader({ manager, ...request });
   },
   createFBXLoader: async (manager) => {
     const { FBXLoader } = await import("three/examples/jsm/loaders/FBXLoader.js");
@@ -326,7 +328,9 @@ export async function loadStudioBg3dModelByFormat(
   throwIfAborted(options.signal);
 
   if (format === "glb" || format === "gltf") {
-    const loader = await (factories.createGLTFLoader ?? DEFAULT_FACTORIES.createGLTFLoader)(manager);
+    const loader = factories.createGLTFLoader
+      ? await factories.createGLTFLoader(manager)
+      : await DEFAULT_FACTORIES.createGLTFLoader(manager, { renderer: options.renderer, materialBackend: options.materialBackend });
     await applyMeshoptDecoder(loader, options);
     throwIfAborted(options.signal);
     if ("url" in input) {

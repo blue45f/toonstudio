@@ -1,3 +1,4 @@
+import type { StudioAssetMenuPanelProps } from "./catalog/studio-asset-menu-panel-props";
 // "에셋" 툴바 그룹 팝오버 안에 서브탭 콘텐츠로 얹히는 컴포넌트 — 팝오버 위치·z-index·max-height는
 // 호출부(StudioPage.tsx의 에셋 그룹 wrapper)가 담당한다(2026-07-05 툴바 그룹화로 이관, 자체 wrapper 없음).
 import {
@@ -57,7 +58,7 @@ import type {
   PublishAssetInput,
   SharedAssetCatalogItem,
 } from "@/platform/creator-client";
-import type { ChangeEvent, Dispatch, DragEvent, KeyboardEvent, SetStateAction } from "react";
+import type { Dispatch, DragEvent, KeyboardEvent, SetStateAction } from "react";
 
 import {
   CREATOR_ASSET_LICENSES,
@@ -66,6 +67,8 @@ import {
 } from "@/shared/lib/creator-asset-contract";
 import { cx } from "@/shared/lib/cx";
 import { useT } from "@/shared/lib/i18n";
+
+export type { StudioAssetMenuPanelProps } from "./catalog/studio-asset-menu-panel-props";
 
 export type StudioAssetTab = "mine" | "community";
 export type StudioAssetSortOrder = "newest" | "recent" | "frequency" | "popular" | "name" | "size";
@@ -98,9 +101,11 @@ function localizeText(
 function StudioAssetMarketplacePanels({
   initialView,
   onUseLocalAsset,
+  onSavedLocalAsset,
 }: {
   initialView: StudioCommunityMarketplaceView;
   onUseLocalAsset: StudioAssetMenuPanelProps["onUseLocalAsset"];
+  onSavedLocalAsset: StudioAssetMenuPanelProps["onSavedLocalAsset"];
 }) {
   useEffect(() => {
     preloadStudioAssetMarketplacePanels();
@@ -109,7 +114,7 @@ function StudioAssetMarketplacePanels({
     <Suspense fallback={<StudioAssetMarketplaceLoading />}>
       <div data-studio-asset-marketplace-lazy-boundary="true">
         <LazyStudioCc0AssetLibraryPanel onUseAsset={onUseLocalAsset} />
-        <LazyStudioBundleAssetLibraryPanel onUseAsset={onUseLocalAsset} />
+        <LazyStudioBundleAssetLibraryPanel onUseAsset={onUseLocalAsset} onSavedAsset={onSavedLocalAsset} />
         <LazyStudioOriginalAssetMarketplacePanel onUseAsset={onUseLocalAsset} />
         <LazyStudioCreatorPackMarketplacePanel />
         <LazyStudioCommunityMarketplacePanel
@@ -161,51 +166,7 @@ function StudioAssetMarketplaceLoading() {
   );
 }
 
-export interface StudioAssetMenuPanelProps {
-  assetTab: StudioAssetTab;
-  setAssetTab: Dispatch<SetStateAction<StudioAssetTab>>;
-  communityMarketplaceInitialView?: StudioCommunityMarketplaceView;
-  onUploadAsset: (event: ChangeEvent<HTMLInputElement>) => void;
-  assetPrompt: string;
-  setAssetPrompt: Dispatch<SetStateAction<string>>;
-  assetPromptName: string;
-  setAssetPromptName: Dispatch<SetStateAction<string>>;
-  assetPromptSize: GeneratedAssetSize;
-  setAssetPromptSize: Dispatch<SetStateAction<GeneratedAssetSize>>;
-  assetPromptQuality: GeneratedAssetQuality;
-  setAssetPromptQuality: Dispatch<SetStateAction<GeneratedAssetQuality>>;
-  assetGenerating: boolean;
-  onGenerateAsset: () => void;
-  assetSearchQuery: string;
-  setAssetSearchQuery: Dispatch<SetStateAction<string>>;
-  assetSortOrder: StudioAssetSortOrder;
-  setAssetSortOrder: Dispatch<SetStateAction<StudioAssetSortOrder>>;
-  favoriteState: StudioAssetFavoriteState;
-  favoriteOnly: boolean;
-  setFavoriteOnly: Dispatch<SetStateAction<boolean>>;
-  onToggleFavorite: (id: StudioAssetFavoriteId) => void;
-  assets: StudioAsset[];
-  assetsLoading: boolean;
-  renamingAssetId: string | null;
-  setRenamingAssetId: Dispatch<SetStateAction<string | null>>;
-  renamingAssetName: string;
-  setRenamingAssetName: Dispatch<SetStateAction<string>>;
-  handleRenameAsset: (id: string) => void;
-  onUseLocalAsset: (asset: StudioAsset) => boolean;
-  onShareAsset: (asset: StudioAsset, options: StudioAssetShareOptions) => void;
-  onDeleteAsset: (id: string) => void;
-  publishingId: string | null;
-  shared: SharedAssetCatalogItem[];
-  sharedLoading: boolean;
-  sharedLoadingMore: boolean;
-  sharedHasMore: boolean;
-  sharedError: string | null;
-  loadSharedAssets: () => void;
-  loadMoreSharedAssets: () => void;
-  onUseSharedAsset: (asset: SharedAssetCatalogItem) => void | Promise<void>;
-  onDeleteSharedAsset: (id: string) => void;
-  onReportSharedAsset: (asset: SharedAssetCatalogItem, reason: CreatorAssetReportReason, details: string) => void;
-}
+
 
 function sortLocalAssets(assets: StudioAsset[], query: string, sortOrder: StudioAssetSortOrder): StudioAsset[] {
   let list = assets;
@@ -338,7 +299,7 @@ export function StudioAssetMenuPanel({
   renamingAssetName,
   setRenamingAssetName,
   handleRenameAsset,
-  onUseLocalAsset,
+  onUseLocalAsset, onSavedLocalAsset,
   onShareAsset,
   onDeleteAsset,
   publishingId,
@@ -581,6 +542,7 @@ export function StudioAssetMenuPanel({
       {assetTab === "community" ? (
         <StudioAssetMarketplacePanels
           initialView={communityMarketplaceInitialView}
+          onSavedLocalAsset={onSavedLocalAsset}
           onUseLocalAsset={onUseLocalAsset}
         />
       ) : null}
@@ -1307,7 +1269,7 @@ function RenameAssetInline({
         aria-label={`${asset.name} ${localizeText(t, "새 이름", "studio.assetMenu.renameAssetNewName")}`}
         className={cx(
           TOUCH_CONTROL_CLASS,
-          "w-full min-w-0 rounded-md border border-accent bg-panel px-2 text-[0.62rem] text-fg-1 outline-none"
+          "w-full min-w-0 rounded-md border border-accent bg-panel px-2 text-[0.62rem] text-fg outline-none"
         )}
         // eslint-disable-next-line jsx-a11y/no-autofocus -- inline rename field opens only on user action; focusing it immediately is correct edit-on-demand UX
         autoFocus

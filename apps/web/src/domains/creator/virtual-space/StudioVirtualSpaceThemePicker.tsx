@@ -1,3 +1,4 @@
+import { isStudioOfficeEnvironmentKey, studioOfficeEnvironment, type StudioOfficeEnvironmentKey } from "./studio-virtual-space-office-environments";
 import { Palette } from "lucide-react";
 
 import "./studio-virtual-space-theme-picker.css";
@@ -14,50 +15,56 @@ export interface StudioVirtualSpaceThemePickerProps {
   readonly onChange: (value: StudioSpaceThemeKey) => void;
 }
 
-const NANO_BANANA_SPACE_THEME_ART: Readonly<
-  Record<StudioSpaceThemeKey, { readonly themeUrl: string; readonly castSpriteUrl: string }>
+const ILLUSTRATED_SPACE_THEME_ART: Readonly<
+  Record<Exclude<StudioSpaceThemeKey, StudioOfficeEnvironmentKey>, { readonly themeUrl: string; readonly castSpriteUrl: string }>
 > = {
   "modern-office": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v11/themes/seoul-editorial-hq.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/chief-pd-work.webp",
   },
   "webtoon-atelier": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v11/cast/line-artist-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/line-artist-work.webp",
   },
   "celestial-observatory": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v13/themes/magic-academy-astral-library.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v12/cast/story-writer-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v12/cast/story-writer-work.webp",
   },
   "cinema-screening": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v13/themes/rooftop-sunset-screening-stage.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v11/cast/colorist-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/colorist-work.webp",
   },
   "cozy-wood": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v11/themes/lofi-cat-storyhouse.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-work.webp",
   },
   "neon-night": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v11/themes/cyber-neon-lab.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v11/cast/cgi-director-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/cgi-director-work.webp",
   },
   "garden-terrace": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v11/themes/hanok-botanical-atelier.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v11/cast/colorist-idle.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/colorist-idle.webp",
   },
   library: {
-    themeUrl: "/assets/virtual-studio/nano-banana-v13/themes/abyssal-bioluminescent-worldlab.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v12/cast/story-writer-idle.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/abyssal-bioluminescent-worldlab.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v12/cast/story-writer-idle.webp",
   },
   "sakura-campus": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v12/themes/romance-palace-conservatory.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/line-artist-idle.webp",
   },
   "sunset-harbor": {
-    themeUrl: "/assets/virtual-studio/nano-banana-v13/themes/dolby-sound-dubbing-studio.webp",
-    castSpriteUrl: "/assets/virtual-studio/nano-banana-v12/cast/sound-letterer-work.webp",
+    themeUrl: "/assets/virtual-studio/studio-art-v13/themes/dolby-sound-dubbing-studio.webp",
+    castSpriteUrl: "/assets/virtual-studio/studio-art-v12/cast/sound-letterer-work.webp",
   },
 };
+
+function officeEnvironmentArt(key: StudioOfficeEnvironmentKey) {
+  const environment = studioOfficeEnvironment(key);
+  if (!environment) throw new Error(`Missing office environment: ${key}`);
+  return { themeUrl: environment.previewUrl, castSpriteUrl: environment.castSpriteUrl };
+}
 
 /**
  * 공간 테마 선택 (트랙 H + 2.5D 아이소메트릭 테마·캐릭터 하모니).
@@ -78,7 +85,9 @@ export function StudioVirtualSpaceThemePicker({ value, onChange }: StudioVirtual
       <div className="studio-theme-picker__grid">
         {STUDIO_SPACE_THEMES.map((theme) => {
           const swatch = studioSpaceThemeSwatch(theme);
-          const nanoArt = NANO_BANANA_SPACE_THEME_ART[theme.key];
+          const nanoArt = isStudioOfficeEnvironmentKey(theme.key)
+            ? officeEnvironmentArt(theme.key)
+            : ILLUSTRATED_SPACE_THEME_ART[theme.key];
           const selected = value === theme.key;
           return (
             <button

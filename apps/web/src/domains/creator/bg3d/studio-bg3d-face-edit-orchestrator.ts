@@ -26,6 +26,7 @@ import { acquireStudioBg3dModelReadLeaseV12 } from "./studio-bg3d-model-read-lea
 import type { StudioBg3dModelReadLease, StudioBg3dModelReadLeaseRecordIdentity } from "./studio-bg3d-model-read-lease";
 import { resolveStudioBg3dModelExportProvenance, assertStudioBg3dModelExportReceiptCurrent } from "./studio-bg3d-model-export-provenance";
 import { fingerprintStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import { deleteStudioBg3dOwnedModelCacheEntry, readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 /** 호스트 어댑터는 getter와 위임 메서드에서 현재 참조를 읽는다. */
 export interface StudioBg3dFaceEditOrchestratorHost extends StudioBg3dPrimitiveEditReplacementHost {
@@ -35,6 +36,8 @@ export interface StudioBg3dFaceEditOrchestratorHost extends StudioBg3dPrimitiveE
   readonly storageModelIdByAttachmentIdRef: { readonly current: Map<string, string> };
   readonly deviceQuality: StudioBg3dResolvedDeviceQuality;
   readonly modelRenderer: StudioBg3dKtx2Renderer | null;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   /** 목록 갱신은 정본 교체 권위가 아니며 완료된 적용을 취소하지 않는다. */
   readonly onAssetCommitted?: (record: Bg3dVerifiedStoredRecord) => void | Promise<void>;
 }
@@ -129,6 +132,11 @@ export async function applyStudioBg3dFaceEditOperation(
   signal: AbortSignal,
 ): Promise<StudioBg3dFaceEditApplyResult> {
   let stage: Stage = "source";
+  const renderer = host.modelRenderer, isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+  let materialBackend: StudioBg3dMaterialBackend;
+  try { materialBackend = resolveStudioBg3dMaterialBackend({ renderer, materialBackend: host.materialBackend }); }
+  catch { return { ok: false, code: "stale-source", stage, messageKo: stageMessage(stage), cleanup: "not-created", retainedStorageIds: [] }; }
+  const backendCurrent = () => isMaterialBackendCurrent?.() !== false && host.modelRenderer === renderer && resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) === materialBackend;
   const session = host.modalAssetSessionRef.current;
   if (!session || operation.modalSession !== session || !studioBg3dModalOperationCoordinator.isCurrent(session)) {
     return { ok: false, code: "stale-source", stage, messageKo: stageMessage(stage), cleanup: "not-created", retainedStorageIds: [] };
@@ -152,7 +160,7 @@ export async function applyStudioBg3dFaceEditOperation(
   const sessionCurrent = () => host.modalAssetSessionRef.current === session && studioBg3dModalOperationCoordinator.isCurrent(session);
   const assertSource = () => {
     if (signal.aborted) throw abortError(signal);
-    if (!sessionCurrent()) throw new FaceEditApplyError("stale-source", stageMessage("source"));
+    if (!sessionCurrent() || !backendCurrent()) throw new FaceEditApplyError("stale-source", stageMessage("source"));
     const current = operation.readSource();
     if (!current.ok) throw new FaceEditApplyError("stale-source", current.messageKo);
     return current;
@@ -166,14 +174,14 @@ export async function applyStudioBg3dFaceEditOperation(
       const currentInstalled = installed;
       if (currentInstalled && !uncertainCommit && !referenced(currentInstalled.asset.record.id)) {
         const { cache, attachments, storageIds, asset } = currentInstalled;
-        if (currentInstalled.addedCache && cache.get(asset.record.id) === asset.entry) cache.delete(asset.record.id);
+        if (currentInstalled.addedCache) deleteStudioBg3dOwnedModelCacheEntry(cache, asset.record.id, asset.entry);
         if (currentInstalled.addedAttachment && attachments.get(asset.record.id) === asset.attachment) attachments.delete(asset.record.id);
         if (currentInstalled.addedStorageId && storageIds.get(asset.attachment.id) === asset.record.id) storageIds.delete(asset.attachment.id);
       }
       let resourceFailure = false;
       const entry = ownedEntry;
       const storageId = ownedStorageId;
-      const entryAdopted = entry && storageId && (referenced(storageId) || host.modelRootCacheRef.current.get(storageId) === entry);
+      const entryAdopted = entry && storageId && (referenced(storageId) || [...host.modelRootCacheRef.current.values()].some((value) => value === entry || value.root === entry.root));
       if (entry && !entryAdopted && !uncertainCommit) {
         try { entry.dispose(); } catch { resourceFailure = true; }
       }
@@ -183,7 +191,7 @@ export async function applyStudioBg3dFaceEditOperation(
       }
       const ids = receipt.created.map(({ id }) => id);
       const adopted = !sessionCurrent() || uncertainCommit || ids.some((id) => referenced(id)
-        || host.modelRootCacheRef.current.has(id) || host.attachmentByStorageModelIdRef.current.has(id));
+        || [...host.modelRootCacheRef.current.values()].some((value) => value.record.id === id) || host.attachmentByStorageModelIdRef.current.has(id));
       if (adopted || !library) return { status: "retained", storageIds: ids, resourceFailure };
       try {
         const removed = await library.compensateImportedBg3dModelsIfCreationMatchesV12(receipt);
@@ -265,7 +273,7 @@ export async function applyStudioBg3dFaceEditOperation(
       const attachment = host.attachmentByStorageModelIdRef.current.get(record.id) ?? library.createStudioBg3dModelAttachment(record);
       stage = "admission";
       const entry = await admitAndCacheStudioBg3dModel({ record, document: saved.current.runtime.document,
-        quality: host.deviceQuality, renderer: host.modelRenderer,
+        quality: host.deviceQuality, renderer, materialBackend,
         cumulativeUsedBytes: calculateStudioBg3dPlacedModelBytes(saved.current.runtime.customModels, host.attachmentByStorageModelIdRef.current, record.id),
         cache: new Map(host.modelRootCacheRef.current), pending: new Map(), signal: combined.signal,
         preserveQualityModeOnFailure: true,
@@ -275,6 +283,9 @@ export async function applyStudioBg3dFaceEditOperation(
         },
         onCacheEntryCreated: (id, value) => { ownedStorageId = id; ownedEntry = value; },
       });
+      if (entry.runtimeVariant !== studioBg3dModelRuntimeVariant(materialBackend) || entry.record.id !== record.id) {
+        throw new FaceEditApplyError("stale-source", "편집 모델의 재질 backend와 저장 원본이 현재 작업과 다릅니다.");
+      }
       await rereadCurrent();
       const persisted = await library.getStoredBg3dModelV12(record.id, { signal: combined.signal });
       assertCurrent();
@@ -318,16 +329,18 @@ export async function applyStudioBg3dFaceEditOperation(
       const cache = host.modelRootCacheRef.current;
       const attachments = host.attachmentByStorageModelIdRef.current;
       const storageIds = host.storageModelIdByAttachmentIdRef.current;
-      const existing = cache.get(asset.record.id);
+      const cacheKey = studioBg3dModelCacheKey(asset.record.id, materialBackend);
+      const existing = cache.get(cacheKey);
       if (existing && existing !== asset.entry) throw new FaceEditApplyError("stale-source", "다른 작업이 모델 캐시를 갱신해 이전 결과를 적용하지 않았습니다.");
+      if (existing && readStudioBg3dModelCacheEntry(cache, asset.record.id, materialBackend) !== existing) throw new FaceEditApplyError("stale-source", "현재 재질 backend의 모델 캐시를 확인하지 못했습니다.");
       const nextAttachments = new Map(attachments);
       const nextStorageIds = new Map(storageIds);
       if (!bindModelAttachment({ attachmentByStorageModelId: nextAttachments, storageModelIdByAttachmentId: nextStorageIds }, asset.record, asset.attachment)) {
         throw new FaceEditApplyError("apply-failed", "편집 모델의 정본 연결을 설치하지 못했습니다.");
       }
-      installed = { cache, attachments, storageIds, asset, addedCache: !cache.has(asset.record.id),
+      installed = { cache, attachments, storageIds, asset, addedCache: !cache.has(cacheKey),
         addedAttachment: !attachments.has(asset.record.id), addedStorageId: !storageIds.has(asset.attachment.id) };
-      if (installed.addedCache) cache.set(asset.record.id, asset.entry);
+      if (installed.addedCache) cache.set(cacheKey, asset.entry);
       if (installed.addedAttachment) attachments.set(asset.record.id, asset.attachment);
       if (installed.addedStorageId) storageIds.set(asset.attachment.id, asset.record.id);
       let result;

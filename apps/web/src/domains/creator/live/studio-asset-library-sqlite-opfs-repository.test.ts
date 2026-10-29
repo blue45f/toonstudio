@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
+import { studioBundleCreditFixture } from "../catalog/studio-bundle-source-credit.test-fixture";
+import { studioBundleAssetRights } from "../catalog/studio-bundle-source-credit";
 
 import {
   createStudioAssetLibrarySqliteOpfsRepository,
@@ -145,6 +148,20 @@ describe("Studio asset SQLite manifest + OPFS CAS authority", () => {
     });
     expect(await store.ownerRefs(STUDIO_ASSET_LIBRARY_CAS_OWNER)).toEqual([saved.contentHash]);
     await expect(repository.list()).resolves.toEqual([saved]);
+  });
+
+  it("번들 출처·권리·실제 콘텐츠 해시가 SQLite/OPFS save→read 뒤에도 일치한다", async () => {
+    const { database, repository, fs } = await fixture();
+    const input = saveInput(91);
+    const contentHash = `sha256:${createHash("sha256").update(bytes("payload-91")).digest("hex")}`;
+    const bundleSourceCredit = studioBundleCreditFixture({ contentHash });
+    const saved = await repository.save({ ...input, contentHash, bundleSourceCredit, rights: studioBundleAssetRights(bundleSourceCredit) });
+    expect(saved.bundleSourceCredit).toEqual(bundleSourceCredit);
+    expect(parseStudioAssetManifest(await database.kvGet(STUDIO_ASSET_LIBRARY_SQLITE_NAMESPACE, STUDIO_ASSET_LIBRARY_SQLITE_MANIFEST_KEY)).entries[0]?.bundleSourceCredit).toEqual(bundleSourceCredit);
+    const reopened = await fixture({ database, fs });
+    expect(await reopened.repository.list()).toEqual([saved]);
+    await expect(repository.save({ ...input, contentHash, bundleSourceCredit: { ...bundleSourceCredit, contentHash: `sha256:${"b".repeat(64)}` } })).rejects.toThrow("해시");
+    expect(await repository.list()).toHaveLength(1);
   });
 
   it("offers a pure list snapshot that never reconciles owner refs or sweeps CAS", async () => {

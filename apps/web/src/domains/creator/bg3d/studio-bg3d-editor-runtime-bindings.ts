@@ -685,3 +685,5 @@ export type {
   StudioWebXrSessionState,
   StudioWebXrSupportSnapshot,
 } from "../studio-webxr-session";
+
+export { readStudioBg3dModelCacheEntry, isStudioBg3dOwnedModelCacheEntry, deleteStudioBg3dOwnedModelCacheEntry, deleteStudioBg3dModelCacheVariants } from "./studio-bg3d-model-material-variant";

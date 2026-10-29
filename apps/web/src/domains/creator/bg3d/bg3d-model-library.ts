@@ -2225,7 +2225,10 @@ export async function listBg3dModelLibraryEntriesV12(
 export async function saveBg3dModelThumbnailIfCurrentV12(
   id: string,
   thumbnail: string,
-  options: Bg3dModelThumbnailSaveOptions & Bg3dModelV12StorageOptions = {},
+  options: Bg3dModelThumbnailSaveOptions & Bg3dModelV12StorageOptions & {
+    readonly signal?: AbortSignal;
+    readonly assertCurrent?: () => void;
+  } = {},
 ): Promise<boolean> {
   if (!isSafeBg3dModelStorageId(id)) throw createLibraryError("invalid-file");
   const captureRevision = options.captureRevision
@@ -2238,11 +2241,8 @@ export async function saveBg3dModelThumbnailIfCurrentV12(
     if (!current.records.some((record) => record.id === id)) throw createLibraryError("invalid-file");
     const previous = current.thumbnails.find((candidate) => candidate.id === id);
     if (previous && previous.captureRevision > captureRevision) {
-      return {
-        nextRaw: serializeV12ModelManifest(current),
-        nextRefs: v12ManifestRefs(serializeV12ModelManifest(current)),
-        result: false,
-      };
+      const nextRaw = serializeV12ModelManifest(current);
+      return { nextRaw, nextRefs: v12ManifestRefs(nextRaw), result: false, assertCurrent: options.assertCurrent };
     }
     const ref = await context.putBlob(payload.bytes, payload.mime);
     const next = canonicalV12Manifest({
@@ -2255,14 +2255,14 @@ export async function saveBg3dModelThumbnailIfCurrentV12(
       ],
     });
     const nextRaw = serializeV12ModelManifest(next);
-    return { nextRaw, nextRefs: v12ManifestRefs(nextRaw), result: true };
-  });
+    return { nextRaw, nextRefs: v12ManifestRefs(nextRaw), result: true, assertCurrent: options.assertCurrent };
+  }, options.signal);
 }
 
 export async function saveBg3dModelThumbnailV12(
   id: string,
   thumbnail: string,
-  options: Bg3dModelThumbnailSaveOptions & Bg3dModelV12StorageOptions = {},
+  options: Parameters<typeof saveBg3dModelThumbnailIfCurrentV12>[2] = {},
 ): Promise<void> {
   await saveBg3dModelThumbnailIfCurrentV12(id, thumbnail, options);
 }

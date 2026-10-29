@@ -15,6 +15,7 @@ import { exportStudioBg3dFaceEditAsset } from "./studio-bg3d-face-edit-export";
 import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb } from "./studio-bg3d-glb-validation";
 import { commitStudioBg3dHistoryTransition, resetStudioBg3dCommandHistory, stepStudioBg3dCommandHistory } from "./studio-bg3d-history-command-adapter";
 import { studioBg3dModalOperationCoordinator } from "./studio-bg3d-modal-operation-coordinator";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 import { applyStudioBg3dPrimitiveEditWorkspace } from "./studio-bg3d-primitive-edit-orchestrator";
 import { captureStudioBg3dPrimitiveEditSource } from "./studio-bg3d-primitive-edit-source";
 import { createStudioBg3dPrimitiveEditWorkspace } from "./studio-bg3d-primitive-edit-workspace";
@@ -160,7 +161,7 @@ async function fixture(options: { readonly shared?: boolean; readonly licensed?:
   const primitiveApplied = await applyStudioBg3dPrimitiveEditWorkspace(host, initial.value, primitiveWorkspace, new AbortController().signal);
   if (!primitiveApplied.ok) throw Error(primitiveApplied.messageKo);
   let recordA = records.get(primitiveApplied.storageModelId);
-  const cacheA = cache.get(primitiveApplied.storageModelId), originalAttachment = attachments.get(primitiveApplied.storageModelId);
+  const cacheA = cache.get(studioBg3dModelCacheKey(primitiveApplied.storageModelId, "webgl")), originalAttachment = attachments.get(primitiveApplied.storageModelId);
   if (!recordA || !cacheA || !originalAttachment) throw Error("실제 primitive 적용 원본 A 없음");
   if (options.licensed || options.restriction) {
     if (options.licensed) recordA = { ...recordA, rights: { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "시험 원저작자", licenseName: "시험 사용권" } };
@@ -168,7 +169,7 @@ async function fixture(options: { readonly shared?: boolean; readonly licensed?:
       const { sourceRestriction: _restriction, ...legacy } = recordA; recordA = legacy;
     } else if (options.restriction) recordA = { ...recordA,
       sourceRestriction: { ...readStudioBg3dEffectiveModelSourceRestriction(recordA), modelFileExport: options.restriction } };
-    records.set(recordA.id, recordA); cache.set(recordA.id, { ...cacheA, record: recordA });
+    records.set(recordA.id, recordA); cache.set(studioBg3dModelCacheKey(recordA.id, "webgl"), { ...cacheA, record: recordA });
     attachments.set(recordA.id, createStudioBg3dModelAttachment(recordA, { attachmentId: originalAttachment.id }));
   }
   const before = createStudioBg3dHistorySnapshot(live.current), current = live.current.customModels[0];
@@ -221,8 +222,26 @@ afterEach(async () => {
 });
 
 describe("primitive→authoring A→같은 원본 B orchestration", () => {
+  it("A를 연 뒤 같은 backend로 돌아와도 폐기된 원래 lease의 편집은 저장하지 않는다", async () => {
+    const f = await fixture();
+    let originalLeaseCurrent = true;
+    Object.assign(f.host, { isMaterialBackendCurrent: () => originalLeaseCurrent });
+    const source = await captureStudioBg3dAuthoredModelEditSource(f.host, new AbortController().signal);
+    if (!source.ok) throw new Error(source.messageKo);
+    const prepared = createStudioBg3dAuthoredModelEditWorkspace(source.snapshot);
+    if (!prepared.ok) throw new Error(prepared.messageKo);
+    const workspace = edit(prepared.value, 0.25);
+    originalLeaseCurrent = false;
+    Object.assign(f.host, { isMaterialBackendCurrent: () => true });
+    const result = await applyStudioBg3dAuthoredModelEditWorkspace(f.host, prepared.value, workspace, new AbortController().signal);
+    expect(result).toMatchObject({ ok: false, cleanup: "not-created" });
+    expect(storage.save).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+    expect(createStudioBg3dHistorySnapshot(f.live.current)).toEqual(f.before);
+    expect(f.cache.get(studioBg3dModelCacheKey(f.recordA.id, "webgl"))?.record).toBe(f.recordA);
+  });
+
   it.each([false, true])("공유=%s: 실제 double mesh·현재 배치·색·이름을 보존하고 한 번 Undo/Redo한다", async (shared) => {
-    const f = await fixture({ shared }), sourceMesh = f.context.source.authoring.mesh, oldCache = f.cache.get(f.recordA.id), oldBlob = f.recordA.blob;
+    const f = await fixture({ shared }), sourceMesh = f.context.source.authoring.mesh, oldCache = f.cache.get(studioBg3dModelCacheKey(f.recordA.id, "webgl")), oldBlob = f.recordA.blob;
     const sourceY = Math.max(...sourceMesh.vertices.map(({ position }) => position.y));
     expect(sourceY).toBe(0.5 + 0.12345678901234566);
     expect(sourceMesh.vertices.some(({ position }) => Math.fround(position.y) !== position.y)).toBe(true);
@@ -236,12 +255,12 @@ describe("primitive→authoring A→같은 원본 B orchestration", () => {
     const controller = new AbortController(), result = await applyStudioBg3dAuthoredModelEditWorkspace(f.host, f.context, f.workspace, controller.signal);
     expect(result.ok).toBe(true); if (!result.ok) throw Error(result.messageKo);
     expect(f.commit).toHaveBeenCalledOnce(); expect(f.replace).toHaveBeenCalledOnce(); expect(f.notify).toHaveBeenCalledOnce();
-    const model = f.live.current.customModels[0], nextCache = f.cache.get(result.storageModelId), recordB = records.get(result.storageModelId);
+    const model = f.live.current.customModels[0], nextCache = f.cache.get(studioBg3dModelCacheKey(result.storageModelId, "webgl")), recordB = records.get(result.storageModelId);
     expect(model).toMatchObject({ id: f.context.source.sourceNodeId, modelId: result.storageModelId, name: "현재 재선택한 모델", tags: ["상자", "실내"],
       position: f.context.source.canonicalNode.transform.position, rotation: f.context.source.canonicalNode.transform.rotation,
       materialOverride: createStudioBg3dPrimitiveEditMaterial("#2244aa") });
     expect(model.scale).toEqual(f.context.source.objectTransform.scale.map((value) => value / (nextCache?.normalizationScale ?? Number.NaN)));
-    expect(f.cache.get(f.recordA.id)).toBe(oldCache); expect(records.get(f.recordA.id)?.blob).toBe(oldBlob);
+    expect(f.cache.get(studioBg3dModelCacheKey(f.recordA.id, "webgl"))).toBe(oldCache); expect(records.get(f.recordA.id)?.blob).toBe(oldBlob);
     if (shared) expect(f.live.current.customModels[1]).toBe(f.sibling);
     expect(f.live.current.document.attachments.some(({ id }) => id === f.context.source.attachment.id)).toBe(shared);
     expect(recordB).toBeTruthy(); if (!recordB) throw Error("B 원본 필요");
@@ -406,7 +425,7 @@ describe("primitive→authoring A→같은 원본 B orchestration", () => {
     const f = await fixture(); storage.save.mockImplementation(async (...args) => { const receipt = await save(...args); records.delete(f.recordA.id); return receipt; });
     expect(await applyStudioBg3dAuthoredModelEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal)).toMatchObject({ ok: false, cleanup: "removed" });
     expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled(); expect(leasePort).not.toHaveBeenCalled();
-    expect(storage.compensate.mock.calls[0][0].created.every(({ id }) => id !== f.recordA.id)).toBe(true); expect(f.cache.has(f.recordA.id)).toBe(true);
+    expect(storage.compensate.mock.calls[0][0].created.every(({ id }) => id !== f.recordA.id)).toBe(true); expect(f.cache.has(studioBg3dModelCacheKey(f.recordA.id, "webgl"))).toBe(true);
   });
 
   it("부분 canonical actor 예외는 history/asset 채택 가능성을 추정해 B를 삭제하지 않는다", async () => {

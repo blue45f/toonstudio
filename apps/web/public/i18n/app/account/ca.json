@@ -3,7 +3,7 @@
   "account.tabs.activity": "Activitat",
   "account.tabs.profile": "Perfil",
   "account.signIn.title": "Cal iniciar sessió",
-  "account.signIn.message": "Si us plau, entreu per veure les vostres publicacions, activitat i perfil.",
+  "account.signIn.message": "Si us plau, inicia la sessió per veure les teves publicacions, l'activitat i el perfil.",
   "account.signIn.cta": "Inicia sessió",
   "account.posts.errorTitle": "No s'han pogut carregar les teves publicacions. Torna-ho a provar d'aquí a una estona.",
   "account.posts.emptyTitle": "Encara no s'han publicat obres.",

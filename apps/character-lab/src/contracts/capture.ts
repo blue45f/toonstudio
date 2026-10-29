@@ -54,7 +54,12 @@ export interface CaptureRequest {
   /** 캡처 전 물리 settle 스텝 수(0 = settle 없음) */
   readonly settleSteps: number;
   readonly camera?: CameraFraming;
+  /** PSD 헤어 분리용 기하학적 소유권. lit와 함께 요청하며 기존 색·ID 패스는 바꾸지 않는다. */
+  readonly includeHairOwnership?: boolean;
 }
+
+export type HairLayerSupport = { readonly status: "available" } | { readonly status: "unavailable"; readonly reasonKo: string };
+export type HairOwnership = { readonly status: "available"; readonly raster: CapturedRaster; readonly samples: number; readonly classification: "majority-visible-samples"; readonly limitationsKo: readonly string[] } | { readonly status: "unavailable"; readonly reasonKo: string };
 
 export interface CaptureProvenance {
   readonly backend: EngineBackend | "null";
@@ -71,6 +76,7 @@ export interface CaptureResult {
   readonly height: number;
   readonly passes: Partial<Record<RasterPassId, CapturedRaster>>;
   readonly depth?: CapturedDepth;
+  readonly hairOwnership?: HairOwnership;
   readonly partIdPalette: PartIdPalette;
   readonly provenance: CaptureProvenance;
 }
@@ -110,9 +116,9 @@ export interface ThumbnailEntry {
 }
 
 /** 요청 크기와 패스 수로 readback 바이트 수를 추정(메모리 예산 검사용) */
-export function estimateCaptureBytes(req: Pick<CaptureRequest, "width" | "height" | "passes">): number {
+export function estimateCaptureBytes(req: Pick<CaptureRequest, "width" | "height" | "passes" | "includeHairOwnership">): number {
   const pixels = req.width * req.height;
-  return pixels * 4 * req.passes.length;
+  return pixels * 4 * (req.passes.length + (req.includeHairOwnership ? 1 : 0));
 }
 
 /** 빈(완전 투명) 래스터 */

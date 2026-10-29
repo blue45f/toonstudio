@@ -20,14 +20,14 @@ beforeEach(() => useTheme.setState({ resolvedTheme: "dark" }));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); useTheme.setState({ resolvedTheme: originalTheme }); });
 
 describe("public creative art direction", () => {
-  it.each(["/discover", "/explore", "/ranking", "/search", "/calendar", "/library", "/compare", "/research", "/references", "/insights/resources", "/learn", "/help", "/market", "/make", "/showcase", "/community", "/reviews", "/create", "/about", "/support", "/contact", "/sitemap"])("connects %s to a supported next action", (path) => {
+  it.each(["/discover", "/explore", "/ranking", "/search", "/calendar", "/library", "/compare", "/research", "/references", "/insights/resources", "/learn", "/help", "/market", "/make", "/showcase", "/community", "/reviews", "/about", "/support", "/contact", "/sitemap"])("connects %s to a supported next action", (path) => {
     const direction = siteArtDirection(path);
     expect(direction).not.toBeNull();
     expect(direction?.href).toMatch(/^\/(?:studio(?:\?uiMode=simple)?|research|showcase\/promo)$/u);
     expect(direction?.ko.every(Boolean)).toBe(true);
     expect(direction?.en.every(Boolean)).toBe(true);
   });
-  it.each(["/", "/studio", "/studio/draw", "/studio/projects", "/shaper", "/brush-lab", "/music", "/admin", "/login", "/auth/callback", "/settings", "/my", "/market/checkout", "/market/publish", "/market/manage", "/create/promo", "/create/work/example", "/showcase/series/example", "/fortune", "/play", "/privacy", "/terms", "/unknown"])("does not interrupt %s", (path) => {
+  it.each(["/", "/studio", "/studio/draw", "/studio/projects", "/shaper", "/brush-lab", "/music", "/admin", "/login", "/auth/callback", "/settings", "/my", "/market/checkout", "/market/publish", "/market/manage", "/create", "/CREATE/", "/create/promo", "/create/work/example", "/showcase/series/example", "/fortune", "/play", "/privacy", "/terms", "/unknown"])("does not interrupt %s", (path) => {
     expect(siteArtDirection(path)).toBeNull();
   });
   it("normalizes route boundaries without treating unrelated names as editor paths", () => {
@@ -86,6 +86,10 @@ describe("contextual creation compass", () => {
     expect(result.container.querySelector(".site-creation-compass__image img")?.getAttribute("sizes"))
       .toBe("(max-width: 767px) calc(100vw - 58px), 150px");
     expect(result.container.querySelector("video")).toBeNull();
+  });
+  it.each(["/create", "/create?intent=my-story", "/CREATE/?intent=my-story"])("작품 시작 입력 %s 위에 다른 작업의 홍보를 표시하지 않는다", (path) => {
+    const result = render(<MemoryRouter initialEntries={[path]}><SiteCreationCompass /></MemoryRouter>);
+    expect(result.container.innerHTML).toBe("");
   });
   it("renders nothing on a studio route", () => {
     const result = render(<MemoryRouter initialEntries={["/studio/comic"]}><SiteCreationCompass /></MemoryRouter>);

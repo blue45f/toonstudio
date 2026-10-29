@@ -122,12 +122,16 @@ const CONSUMERS = [
   "StudioProductionBiblePanel.tsx",
   "StudioSelectionToolsPanel.tsx",
   "character-shaper/CharacterShaperInspector.tsx",
+  // 2026-10-23(ff4e8ddc): 헤어 구역을 인스펙터에서 분리했다(원본 헤어 메시 안내 키 1개가 함께 옮겨 감).
+  "character-shaper/CharacterShaperHairInspector.tsx",
   "studio-production/StudioProductionHubPageV2.tsx",
   "layer/StudioLayerNavigator.tsx",
   "StudioMenubarContent.tsx",
   "character-shaper/CharacterShaperReferenceDrawer.tsx",
   "live/StudioLiveCollaborationProvider.tsx",
   "CreateWorkPage.tsx",
+  // 2026-10-27(22b8d72f): 작품 만들기 페이지의 커뮤니티·댓글·인스펙터 섹션을 분리했다(설정 저장·댓글 불러오기 실패 키 2개가 함께 옮겨 감).
+  "publishing/CreateWorkPageSections.tsx",
 ] as const;
 
 /** 이관 전 줄 수(래칫 기준선) — 소비 파일은 이 줄 수를 넘을 수 없다. */
@@ -141,12 +145,14 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "StudioProductionBiblePanel.tsx": 1073,
   "StudioSelectionToolsPanel.tsx": 1506,
   "character-shaper/CharacterShaperInspector.tsx": 1039,
+  "character-shaper/CharacterShaperHairInspector.tsx": 315,
   "studio-production/StudioProductionHubPageV2.tsx": 1216,
   "layer/StudioLayerNavigator.tsx": 2125,
   "StudioMenubarContent.tsx": 2490,
   "character-shaper/CharacterShaperReferenceDrawer.tsx": 972,
   "live/StudioLiveCollaborationProvider.tsx": 1081,
   "CreateWorkPage.tsx": 1107,
+  "publishing/CreateWorkPageSections.tsx": 404,
 };
 
 /**
@@ -164,12 +170,14 @@ const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "StudioProductionBiblePanel.tsx": 0,
   "StudioSelectionToolsPanel.tsx": 0,
   "character-shaper/CharacterShaperInspector.tsx": 0,
+  "character-shaper/CharacterShaperHairInspector.tsx": 0,
   "studio-production/StudioProductionHubPageV2.tsx": 0,
   "layer/StudioLayerNavigator.tsx": 0,
   "StudioMenubarContent.tsx": 0,
   "character-shaper/CharacterShaperReferenceDrawer.tsx": 0,
   "live/StudioLiveCollaborationProvider.tsx": 0,
   "CreateWorkPage.tsx": 0,
+  "publishing/CreateWorkPageSections.tsx": 0,
 };
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));

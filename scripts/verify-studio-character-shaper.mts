@@ -170,6 +170,7 @@ async function mobileChromeBounds(page: Page, exportOpen: boolean) {
       ...(exportOpen ? ["[data-character-export-sheet] select"] : [
         '[aria-label="뷰포트 보기 설정"] button',
         'select[aria-label="부위·방향 확대 검사"]',
+        "[data-character-camera-selects] select",
         "[data-character-quality-trigger]",
       ]),
     ];
@@ -229,6 +230,58 @@ async function mobileChromeBounds(page: Page, exportOpen: boolean) {
     }
     return { width: innerWidth, exportOpen, controls, cameraBarBottom: barBounds?.bottom, canvasTop: canvasBounds?.top, canvasHeight: canvasBounds?.height, violations };
   }, { dialogSelector: DIALOG, exportOpen });
+}
+
+/** 실제 캔버스 바깥에 카메라 도구 공간을 예약하는지 안정된 resize 뒤에 확인한다. */
+async function cameraChromeBounds(page: Page, layout: "desktop" | "tablet") {
+  await page.waitForFunction(({ dialogSelector, layout }) =>
+    document.querySelector(dialogSelector)?.getAttribute("data-character-shaper-layout") === layout,
+  { dialogSelector: DIALOG, layout });
+  await page.waitForTimeout(300);
+  return page.evaluate(async (dialogSelector) => {
+    const root = document.querySelector<HTMLElement>(dialogSelector);
+    const bars = root?.querySelectorAll<HTMLElement>("[data-character-shaper-camera-bar]");
+    const bar = bars?.item(0);
+    const canvas = root?.querySelector<HTMLCanvasElement>("[data-character-shaper-viewport] canvas");
+    if (!root || bars?.length !== 1 || !bar || !canvas) throw new Error("카메라 도구나 캐릭터 캔버스가 없거나 중복되었습니다.");
+    // 크기가 연속 세 프레임 동안 같아야 resize 이후 배치로 판정한다.
+    let previous = "";
+    let stableFrames = 0;
+    for (let frame = 0; frame < 60 && stableFrames < 3; frame++) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const bounds = canvas.getBoundingClientRect();
+      const signature = [bounds.x, bounds.y, bounds.width, bounds.height, bar.getBoundingClientRect().bottom].join(",");
+      stableFrames = signature === previous ? stableFrames + 1 : 0;
+      previous = signature;
+    }
+    if (stableFrames < 3) throw new Error("resize 이후 카메라 도구와 캔버스 크기가 안정되지 않았습니다.");
+    const barBounds = bar.getBoundingClientRect();
+    const canvasBounds = canvas.getBoundingClientRect();
+    const cameraButtons = root.querySelectorAll<HTMLElement>('[aria-label="카메라 프리셋"] button');
+    const cameraSelects = root.querySelectorAll<HTMLElement>("[data-character-camera-selects] select");
+    const violations: string[] = [];
+    const controls = [...cameraButtons, ...cameraSelects].map((control) => {
+      const bounds = control.getBoundingClientRect();
+      if (!bar.contains(control)) violations.push("카메라 조작 도구가 예약된 bar 바깥에 있습니다.");
+      return { name: control.getAttribute("aria-label") || control.textContent?.trim() || control.tagName,
+        x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, bottom: bounds.bottom };
+    });
+    if (cameraButtons.length !== 5 || cameraSelects.length !== 3) {
+      violations.push("카메라 프리셋이나 선택 필드가 없거나 중복되었습니다.");
+    }
+    if (canvasBounds.width <= 0 || canvasBounds.height <= 0) violations.push("캐릭터 캔버스의 면적이 없습니다.");
+    if (barBounds.bottom > canvasBounds.top + 0.5) violations.push("카메라 도구가 캐릭터 캔버스를 가립니다.");
+    for (const control of controls) {
+      if (control.bottom > canvasBounds.top + 0.5) violations.push(`${control.name}: 캐릭터 캔버스를 가립니다.`);
+      if (control.width < 43.5 || control.height < 43.5) violations.push(`${control.name}: 조작 영역이 44px보다 작습니다.`);
+      if (control.x < barBounds.left - 0.5 || control.x + control.width > barBounds.right + 0.5) {
+        violations.push(`${control.name}: 카메라 도구 영역을 벗어납니다.`);
+      }
+    }
+    return { width: innerWidth, layout: root.getAttribute("data-character-shaper-layout"),
+      cameraBarBottom: barBounds.bottom, canvasTop: canvasBounds.top,
+      canvasWidth: canvasBounds.width, canvasHeight: canvasBounds.height, controls, violations };
+  }, DIALOG);
 }
 
 async function downloadedPngStats(page: Page, path: string) {
@@ -388,6 +441,10 @@ async function main(): Promise<void> {
       : /apple|nvidia|amd|intel/iu.test(rendererName) && !/swiftshader|llvmpipe|software/iu.test(rendererName);
     invariant(rendererIdentity.backend === "webgl2" && laneMatches,
       `character fixture requires the declared ${GPU_LANE} WebGL2 lane: ${JSON.stringify(rendererIdentity)}`);
+    const desktopCameraBounds = await cameraChromeBounds(page, "desktop");
+    evidence.desktopCameraBounds = desktopCameraBounds;
+    invariant(desktopCameraBounds.violations.length === 0,
+      `데스크톱 카메라 도구: ${desktopCameraBounds.violations.join("; ")}`);
     await page.screenshot({ path: join(OUT_DIR, "character-desktop.png") });
 
     const before = await viewportStats(page);
@@ -631,6 +688,18 @@ async function main(): Promise<void> {
     evidence.escOrder = escOrder;
     invariant(escOrder.drawerClosed, "Esc did not close the reference drawer");
     invariant(escOrder.dialogStillOpen, "Esc closed the whole workspace while the drawer was open");
+
+    await page.setViewportSize({ width: 1024, height: 900 });
+    const tabletCameraBounds = await cameraChromeBounds(page, "tablet");
+    evidence.tabletCameraBounds = tabletCameraBounds;
+    invariant(tabletCameraBounds.violations.length === 0,
+      `태블릿 카메라 도구: ${tabletCameraBounds.violations.join("; ")}`);
+    await page.screenshot({ path: join(OUT_DIR, "character-tablet.png") });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const restoredDesktopCameraBounds = await cameraChromeBounds(page, "desktop");
+    evidence.restoredDesktopCameraBounds = restoredDesktopCameraBounds;
+    invariant(restoredDesktopCameraBounds.violations.length === 0,
+      `데스크톱 복원 후 카메라 도구: ${restoredDesktopCameraBounds.violations.join("; ")}`);
 
     // Mobile
     const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "ko-KR", isMobile: true, hasTouch: true });

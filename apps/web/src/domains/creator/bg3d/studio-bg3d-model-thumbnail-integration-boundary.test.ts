@@ -101,11 +101,21 @@ describe("Studio BG3D imported-model thumbnail integration boundary", () => {
       'import type { StudioBg3dImportProgress } from "./studio-bg3d-model-import";',
     );
     expect(source).not.toContain("import {\n  convertStudioBg3dModelFilesToGlb,");
+    expect(upload).toMatch(
+      /const ownsImportUi = \(\) => modelImportUiOwners\.get\(modelImportAbortRef\) === importController\s*&& isModalAssetSessionCurrent\(session\);/u,
+    );
     expectInOrder(upload, [
+      "modelImportUiOwners.set(modelImportAbortRef, importController)",
+      "const ownsImportUi = () =>",
+      "const isImportCurrent = () => ownsImportUi() && isMaterialBackendCurrent?.() !== false",
       'modelImportRuntime = await import("./studio-bg3d-model-import")',
-      "if (!isModalAssetSessionCurrent(session))",
+      "if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError()",
       "if (importController.signal.aborted)",
-      "modelImportRuntime.convertStudioBg3dModelFilesToGlb(files,",
+      "skpRun = await beginCurrentStudioBg3dSkpImportRun(() => isImportCurrent() && !importController.signal.aborted)",
+      "const canonicalInputs = await modelImportRuntime.convertStudioBg3dModelFilesToGlb(files,",
+      "if (isImportCurrent() && !importController.signal.aborted) setModelImportProgress(progress)",
+      "if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError()",
+      "const imported = await importVerifiedBg3dModelsAtomically",
     ]);
     expect(upload).toContain(
       "importFailure instanceof modelImportRuntime.StudioBg3dModelImportError",
@@ -117,13 +127,25 @@ describe("Studio BG3D imported-model thumbnail integration boundary", () => {
 
     expectInOrder(upload, [
       "await importVerifiedBg3dModelsAtomically",
+      "if (!isImportCurrent()) {",
+      "const storedRecord = await getStoredBg3dModel(importedRecord.id)",
       "await studioBg3dModalOperationCoordinator.runSceneMutation(",
+      "lease.throwIfRevoked()",
+      "const libraryEntries = await listBg3dModelLibraryEntries()",
+      "lease.throwIfRevoked()",
+      "await admitAndCacheModel({",
+      "isActive: () => isImportCurrent() && lease.isCurrent()",
+      "if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError()",
+      "replaceCanonicalDocumentState({ customModels: nextCustomModels })",
       "uploadCommitted = true",
       "thumbnailCandidates = saved",
       "} finally {",
       "if (!uploadCommitted) cleanupUncommittedUploadCache()",
+      "if (modelImportAbortRef.current === importController)",
+      "if (ownsImportUi())",
       "setIsUploadingModel(false)",
-      "if (uploadCommitted && thumbnailCandidates.length > 0)",
+      "await skpRun?.complete(",
+      "if (uploadCommitted && thumbnailCandidates.length > 0 && isImportCurrent())",
       "startModelThumbnailCaptureBatch(thumbnailCandidates, session)",
     ]);
     expect(upload.indexOf("startModelThumbnailCaptureBatch")).toBeGreaterThan(
@@ -134,13 +156,28 @@ describe("Studio BG3D imported-model thumbnail integration boundary", () => {
   it("passes only the cache-owned root into an isolated handle and always disposes it", () => {
     const capture = functionSource("startModelThumbnailCaptureBatch");
 
-    expect(capture).toContain("const cachedEntry = modelRootCacheRef.current.get(record.id)");
+    expectInOrder(capture, [
+      "const materialBackend = h.materialBackend",
+      "const isMaterialBackendCurrent = h.isMaterialBackendCurrent",
+      'typeof isMaterialBackendCurrent !== "function" || !isMaterialBackendCurrent()',
+      "const batchController = new AbortController()",
+      "isMaterialBackendCurrent() &&",
+      "await loadStudioBg3dModelThumbnailRuntime()",
+      "const cachedEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, record.id, materialBackend)",
+      "cachedRoot: cachedEntry.root",
+      "await thumbnailCaptureController.captureAndStore({",
+      "R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, record.id, materialBackend) === cachedEntry",
+    ]);
+    expect(capture).toContain("modelRendererRef.current === renderer");
+    expect(capture).not.toContain("h.engineRuntime?.plan?.backend");
+    expect(capture.match(/R\.readStudioBg3dModelCacheEntry\([^\n]+, materialBackend\)/gu)).toHaveLength(2);
     expect(capture).toContain("cachedRoot: cachedEntry.root");
     expect(capture).toContain("await thumbnailCaptureController.captureAndStore({");
     expect(capture).toContain("storageModelId: record.id");
     expect(capture).toContain("signal: batchController.signal");
     expect(capture).toContain("} finally {");
-    expect(capture).toContain("modelThumbnailGpuLeaseRef.current?.release()");
+    expect(capture).not.toContain("modelThumbnailGpuLeaseRef.current?.release()");
+    expect(capture).toContain("lease.release()");
     expect(capture).toContain("captureHandle?.dispose()");
     expect(capture).not.toContain("cachedEntry.root.parent");
     expect(capture.match(/listBg3dModelLibraryEntries\(\)/gu)).toHaveLength(1);

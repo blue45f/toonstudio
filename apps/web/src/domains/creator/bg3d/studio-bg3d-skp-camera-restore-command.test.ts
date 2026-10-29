@@ -2,6 +2,7 @@ import { parseSkp } from "openskp";
 import { Euler, Group, Matrix4, Quaternion, Vector3 } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { applyStudioBg3dSkpSourceCamera } from "./studio-bg3d-skp-camera-restore-command";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { extractStudioBg3dSkpSceneManifest } from "./studio-bg3d-skp-scene-manifest";
 import { createStudioBg3dSkpSceneSourceVffBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
 import { studioBg3dSkpGeometryTransform } from "./studio-bg3d-skp-scene-source";
@@ -37,10 +38,10 @@ function fixture(source = availableSource()) {
   });
   const models = [model], primitives: BgPrimitive[] = [];
   const host = {
-    open: true, modelRenderer: {}, addGeneratedParts: vi.fn(() => false as const),
+    open: true, modelRenderer: { isWebGLRenderer: true }, addGeneratedParts: vi.fn(() => false as const),
     selectedIdsRef: { current: new Set([model.id]) }, selectedIds: new Set([model.id]),
     physicsRuntimeSourceRef: { current: { primitives, customModels: models } },
-    modelRootCacheRef: { current: new Map([[model.modelId, { root }]]) },
+    modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(model.modelId, "webgl"), { root, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: model.modelId } }]]) },
     viewportApiRef: { current: { readView: () => camera } },
     cameraLensInteractionLocked: vi.fn(() => false), updateCameraLens: commit,
   };
@@ -57,6 +58,16 @@ function closeTuple(actual: readonly number[], expected: readonly number[]) {
 }
 
 describe("실제 선택 SKP의 파서 평행 카메라 적용", () => {
+  it.each(["opposite-only", "wrong-stamp", "raw-alias"] as const)("%s cache에서는 카메라를 확정하지 않는다", (kind) => {
+    const f = fixture(), entry = f.host.modelRootCacheRef.current.get(studioBg3dModelCacheKey(f.model.modelId, "webgl"));
+    if (!entry) throw Error("fixture cache 없음");
+    f.host.modelRootCacheRef.current.clear();
+    const gpu = { ...entry, runtimeVariant: studioBg3dModelRuntimeVariant("webgpu") };
+    f.host.modelRootCacheRef.current.set(kind === "raw-alias" ? f.model.modelId : studioBg3dModelCacheKey(f.model.modelId, kind === "opposite-only" ? "webgpu" : "webgl"), kind === "raw-alias" ? entry : gpu);
+    expect(applyStudioBg3dSkpSourceCamera(f.host, f.request).ok).toBe(false);
+    expect(f.commit).not.toHaveBeenCalled();
+  });
+
   it("실제 VFF Page의 인치·Z-up을 최종 미터·Y-up으로 변환하고 캐시·인스턴스 역배율을 한 번씩만 적용한다", () => {
     const f = fixture(), before = JSON.stringify(f.source);
     const result = applyStudioBg3dSkpSourceCamera(f.host, f.request);

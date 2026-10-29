@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "መግቢያ ያስፈልጋል።",
+  "apiError.loginRequired": "መግባት ያስፈልጋል።",
   "apiError.adminRequired": "የአስተዳዳሪ ፍቃዶችን ማረጋገጥ አልተቻለም።",
   "apiError.adminOnlyPage": "ይህ ገጽ ለአስተዳዳሪዎች ብቻ የተወሰነ ነው።",
   "apiError.notFound": "የተጠየቀው ዕቃ አልተገኘም።",

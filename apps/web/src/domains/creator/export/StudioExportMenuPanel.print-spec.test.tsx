@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
 
 import { resetStudioExportGeometryDraft } from "./studio-export-geometry-draft";
 import {
@@ -72,7 +74,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("PDF 인쇄 스펙 연결", () => {
   it("기본 상태에서는 인쇄 스펙 세부 조절이 숨겨져 있고 도움말도 없다", () => {
-    render(<StudioExportMenuPanel {...panelProps()} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     const toggle = screen.getByTestId("export-print-spec-enabled") as HTMLInputElement;
     expect(toggle.checked).toBe(false);
     expect(screen.queryByTestId("export-print-spec-bleed")).toBeNull();
@@ -80,7 +82,7 @@ describe("PDF 인쇄 스펙 연결", () => {
   });
 
   it("스펙을 끈 채 PDF를 내보내면 print 옵션이 아예 실리지 않는다 — 기본 경로 불변", async () => {
-    render(<StudioExportMenuPanel {...panelProps()} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     clickPdf();
     await waitFor(() => expect(encoders.pdf).toHaveBeenCalledOnce());
     const arg = (encoders.pdf.mock.calls as unknown as Array<[Record<string, unknown>]>)[0]?.[0] as Record<string, unknown>;
@@ -89,7 +91,7 @@ describe("PDF 인쇄 스펙 연결", () => {
   });
 
   it("켠 채 기본값 그대로면 기본값 옵션 객체가 빌더로 간다", async () => {
-    render(<StudioExportMenuPanel {...panelProps()} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     fireEvent.click(screen.getByTestId("export-print-spec-enabled"));
     clickPdf();
     await waitFor(() => expect(encoders.pdf).toHaveBeenCalledOnce());
@@ -102,7 +104,7 @@ describe("PDF 인쇄 스펙 연결", () => {
   });
 
   it("도련·재단 마크·CMYK·중철을 고르면 네 항목이 그대로 빌더 옵션과 상태 문구로 간다", async () => {
-    render(<StudioExportMenuPanel {...panelProps()} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     fireEvent.click(screen.getByTestId("export-print-spec-enabled"));
     fireEvent.change(screen.getByTestId("export-print-spec-bleed"), { target: { value: "3" } });
     fireEvent.click(screen.getByTestId("export-print-spec-crop-marks"));
@@ -124,7 +126,7 @@ describe("PDF 인쇄 스펙 연결", () => {
   });
 
   it("켰을 때만 정직한 한계 도움말이 보인다", () => {
-    render(<StudioExportMenuPanel {...panelProps()} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     fireEvent.click(screen.getByTestId("export-print-spec-enabled"));
     expect(screen.getByText(/ICC 프로파일 기반 색관리가 아닙니다/u)).toBeTruthy();
     expect(screen.getByText(/재단보다 큰 원본이 없으면 진짜 도련이/u)).toBeTruthy();
@@ -132,7 +134,7 @@ describe("PDF 인쇄 스펙 연결", () => {
   });
 
   it("고른 스펙은 초안에 남아 메뉴를 닫았다 열어도(리마운트) 유지된다", () => {
-    const first = render(<StudioExportMenuPanel {...panelProps()} />);
+    const first = renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     fireEvent.click(screen.getByTestId("export-print-spec-enabled"));
     fireEvent.change(screen.getByTestId("export-print-spec-bleed"), { target: { value: "3" } });
     fireEvent.click(screen.getByTestId("export-print-spec-color-cmyk"));
@@ -144,7 +146,7 @@ describe("PDF 인쇄 스펙 연결", () => {
       imposition: "none",
     });
     first.unmount();
-    render(<StudioExportMenuPanel {...panelProps()} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...panelProps()} />);
     expect((screen.getByTestId("export-print-spec-enabled") as HTMLInputElement).checked).toBe(true);
     expect((screen.getByTestId("export-print-spec-bleed") as HTMLInputElement).value).toBe("3");
     expect(

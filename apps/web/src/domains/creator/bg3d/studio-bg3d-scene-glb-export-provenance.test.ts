@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStudioBg3dModelAttachment, parseV12ModelManifest, readStudioBg3dModelSourceSnapshotV12 } from "./bg3d-model-library";
 import { resetStudioBg3dBundleThemePacksCache, STUDIO_BG3D_BUNDLE_THEME_PACKS_URL } from "./studio-bg3d-bundle-theme-packs";
 import { readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 import { createStudioBg3dSceneGlbArtifact } from "./studio-bg3d-scene-glb-artifact";
 import { exportStudioBg3dCurrentSceneGlb } from "./studio-bg3d-scene-glb-command";
 import { assertStudioBg3dSceneGlbExportProvenanceCurrent, assertStudioBg3dSceneGlbExportProvenanceSource,
@@ -27,7 +28,7 @@ afterEach(() => { disposeSceneGlbFixtures(); resetStudioBg3dBundleThemePacksCach
 function localPolicy(f: Fixture, modelFileExport: StudioBg3dModelSourceRestrictionV1["modelFileExport"]) {
   if (!f.record || !f.entry) throw Error("실제 로컬 모델 필요");
   const record = { ...f.record, sourceRestriction: { ...readStudioBg3dEffectiveModelSourceRestriction(f.record), modelFileExport } };
-  f.setStoredRecord(record); f.cache.set(record.id, { ...f.entry, record });
+  f.setStoredRecord(record); f.cache.set(studioBg3dModelCacheKey(record.id, f.backend), { ...f.entry, record });
   return record;
 }
 function noReads(f: Fixture) {
@@ -117,7 +118,7 @@ describe("현재 표시 장면 GLB의 실제 출처 권위 연결", () => {
   it("동일한 licensed 표시 권리라도 sourceRestriction가 없는 레거시는 allowed로 승격하지 않는다", async () => {
     const f = await createSceneGlbFixture(); if (!f.record || !f.entry) throw Error("실제 모델 필요");
     const legacy = { ...f.record }; Reflect.deleteProperty(legacy, "sourceRestriction");
-    f.setStoredRecord(legacy); f.cache.set(legacy.id, { ...f.entry, record: legacy });
+    f.setStoredRecord(legacy); f.cache.set(studioBg3dModelCacheKey(legacy.id, f.backend), { ...f.entry, record: legacy });
     const source = captureStudioBg3dSceneGlbSource(f.host, signal());
     expect(legacy.rights.status).toBe("licensed"); expect(legacy.rights.commercialUse).toBe(true);
     await expect(prepareStudioBg3dSceneGlbExportProvenance(source, { authority: f.authority })).rejects.toMatchObject({ code: "rights-unavailable" });
@@ -232,8 +233,8 @@ describe("현재 표시 장면 GLB의 실제 출처 권위 연결", () => {
     // cache의 단색·allowed DTO는 출처 권위가 아니다. 자체 제작 바이트를 catalog HTTP 입력으로만 제공한다.
     const cachedRecord = { ...f.record, id, rights };
     const attachment = createStudioBg3dModelAttachment(cachedRecord, { attachmentId: "attachment-scene-model" });
-    f.cache.delete(f.record.id); f.attachments.delete(f.record.id);
-    f.cache.set(id, { ...f.entry, record: cachedRecord }); f.attachments.set(id, attachment); f.reverse.set(attachment.id, id);
+    f.cache.delete(studioBg3dModelCacheKey(f.record.id, f.backend)); f.attachments.delete(f.record.id);
+    f.cache.set(studioBg3dModelCacheKey(id, f.backend), { ...f.entry, record: cachedRecord }); f.attachments.set(id, attachment); f.reverse.set(attachment.id, id);
     f.models[0].modelId = id; f.refresh();
     const snapshot = await readStudioBg3dModelSourceSnapshotV12(id, { authority: f.authority, executionBackend: "direct" });
     expect(snapshot?.sourceKind).toBe("bundle-pack"); expect(snapshot?.catalogIdentity).toBeTruthy();

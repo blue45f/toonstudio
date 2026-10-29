@@ -20,7 +20,7 @@ export interface StudioBg3dSkpCameraRestoreHost extends Omit<StudioBg3dSkpSource
     readonly customModels: readonly (StudioBg3dThreeHierarchyEntity & { readonly modelId: string; readonly name?: string })[];
     readonly primitives: readonly StudioBg3dThreeHierarchyEntity[];
   } };
-  readonly modelRootCacheRef?: { readonly current: ReadonlyMap<string, { readonly root: Object3D }> };
+  readonly modelRootCacheRef?: { readonly current: ReadonlyMap<string, { readonly root: Object3D; readonly runtimeVariant: string; readonly record: { readonly id: string } }> };
   readonly viewportApiRef?: { readonly current: { readView(): StudioBg3dCameraSettings } | null };
   readonly cameraLensInteractionLocked?: () => boolean;
   readonly updateCameraLens?: (patch: (view: StudioBg3dCameraSettings) => Partial<StudioBg3dCameraSettings>) => boolean;

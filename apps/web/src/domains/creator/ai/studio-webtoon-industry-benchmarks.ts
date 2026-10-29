@@ -437,7 +437,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "모바일 스크롤 · 3D 핸드/헤드 리그",
     coreStrengthKo: "모바일(390×844) S-curve 시선 유도, 3D 핸드·헤드 포즈매니악스 연동, 3D LT 윤곽선·그림자 추출",
     toonStudioIntegrationKo:
-      "analyzeMobileScrollEyePath & runClaude3dHandHeadPoseAndLtRigDirector: S-curve 시선 진단 + 3D 손·두상 관절·LT 리그 통합",
+      "analyzeMobileScrollEyePath & runAssist3dHandHeadPoseAndLtRigDirector: S-curve 시선 진단 + 3D 손·두상 관절·LT 리그 통합",
   },
   {
     serviceId: "tooning-plus",
@@ -461,7 +461,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "설정 연속성 · 멀티모드 채색",
     coreStrengthKo: "전후 컷 복장·소품·180도 카메라 축 연속성 감수 및 Webtoon Pop/Watercolor/Anime 멀티모드 채색",
     toonStudioIntegrationKo:
-      "auditContinuityAndForeshadowing & runClaudeStyleTransferAndRelightingDirector: 연속성 감수 + 멀티모드 채색 통합",
+      "auditContinuityAndForeshadowing & runAssistStyleTransferAndRelightingDirector: 연속성 감수 + 멀티모드 채색 통합",
   },
   {
     serviceId: "kuaikan-webtoon-global",
@@ -469,7 +469,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "글로벌 번역 팽창률 · 접근성",
     coreStrengthKo: "다국어 말풍선 번역 팽창률 제어, 세로쓰기(CJK)·가로쓰기 식자 및 스크린리더 대체 텍스트",
     toonStudioIntegrationKo:
-      "ClaudeLocalize & ClaudeAltText: 용어집 기반 다국어 식자 압축(shorter) + 시각장애인용 컷별 내러티브 해설 내장",
+      "AI 대사 번역 & AI 대체 텍스트: 용어집 기반 다국어 식자 압축(shorter) + 시각장애인용 컷별 내러티브 해설 내장",
   },
   {
     serviceId: "cream-aid",
@@ -477,7 +477,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "스케치→벡터 선화 · 4레이어 분리",
     coreStrengthKo: "러프 콘티 스케치를 작가 필압이 살아있는 벡터 선화로 변환(시간 80% 단축) 및 선화/밑색/명암/배경 자동 분리",
     toonStudioIntegrationKo:
-      "runClaudeSketchToLineartLayerSplitter: 외곽·내부 주름 필압(mm) 계층화 + 벡터 교차점 지우개 + 4레이어 PSD/CLIP 분리 사양",
+      "runAssistSketchToLineartLayerSplitter: 외곽·내부 주름 필압(mm) 계층화 + 벡터 교차점 지우개 + 4레이어 PSD/CLIP 분리 사양",
   },
   {
     serviceId: "komiko-ai",
@@ -485,7 +485,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "30+ 화풍 변환 · 3D 리라이팅",
     coreStrengthKo: "OC 캐릭터 유니버스 DB, 30종 이상 화풍 변환(로판 수채화·웹툰 팝·느와르 셀·흑백 스크린톤), AI 리라이팅",
     toonStudioIntegrationKo:
-      "runClaudeStyleTransferAndRelightingDirector: 화풍 프리셋 변환 + 광원 방위각/고도각/색온도 리라이팅 + 선화 보존율 잠금",
+      "runAssistStyleTransferAndRelightingDirector: 화풍 프리셋 변환 + 광원 방위각/고도각/색온도 리라이팅 + 선화 보존율 잠금",
   },
   {
     serviceId: "anifusion",
@@ -493,7 +493,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "패널 그리드 · 캐릭터 LoRA 브리지",
     coreStrengthKo: "패널별 대본→만화 레이아웃 템플릿, FLUX.1/Animagine XL 모델 라우팅, 커스텀 캐릭터 LoRA 고정 및 MCP 브리지",
     toonStudioIntegrationKo:
-      "runClaudeScreenplayBeatAndLoraLockBridge: 패널 그리드 템플릿 + FLUX/Animagine/LoRA 가중치 고정 + MCP/REA 파이프라인 연동",
+      "runAssistScreenplayBeatAndLoraLockBridge: 패널 그리드 템플릿 + FLUX/Animagine/LoRA 가중치 고정 + MCP/REA 파이프라인 연동",
   },
   {
     serviceId: "skyreels-mootion",
@@ -501,7 +501,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "33종 표정 매트릭스 · 사쿠가 모션웹툰",
     coreStrengthKo: "33종 마이크로 표정 매트릭스, 정지 컷→사쿠가(Sakuga) 모션 패스 & 3D 카메라 팬/줌 타임라인, 9:16 숏폼 비디오",
     toonStudioIntegrationKo:
-      "runClaudeSakugaMotionAndFacialMatrixDirector: 33종 안면 근육(AU)·동공 매트릭스 + 카메라 무빙 곡선 + 릴스/쇼츠 키프레임 설계",
+      "runAssistSakugaMotionAndFacialMatrixDirector: 33종 안면 근육(AU)·동공 매트릭스 + 카메라 무빙 곡선 + 릴스/쇼츠 키프레임 설계",
   },
   {
     serviceId: "katalist-ai",
@@ -509,7 +509,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     categoryKo: "시나리오 액션 비트 · 캐스트 앵글 락",
     coreStrengthKo: "시나리오 씬/액션 비트 자동 분해 및 연속 프레임 간 캐스트 포즈·카메라 앵글 일관성 잠금",
     toonStudioIntegrationKo:
-      "runClaudeScreenplayBeatAndLoraLockBridge: 원고 텍스트 원자 단위 액션 비트 분해 + 컷 간 카메라 축·포즈 시드 잠금",
+      "runAssistScreenplayBeatAndLoraLockBridge: 원고 텍스트 원자 단위 액션 비트 분해 + 컷 간 카메라 축·포즈 시드 잠금",
   },
   {
     serviceId: "novelai-v45-director",
@@ -518,7 +518,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "다중 인물 X/Y 공간 좌표 분리 프롬프팅(외모·의상 섞임 방지), 다중 레퍼런스 Vibe Transfer(정보 추출량·강도 슬라이더), Lorebook 설정 주입",
     toonStudioIntegrationKo:
-      "runClaudeNovelAiMultiCharVibeDirector: 인물별 X/Y 바운딩 좌표·상호작용 태그 분리 + Vibe Transfer 가중치 + Lorebook 트리거 결합",
+      "runAssistNovelAiMultiCharVibeDirector: 인물별 X/Y 바운딩 좌표·상호작용 태그 분리 + Vibe Transfer 가중치 + Lorebook 트리거 결합",
   },
   {
     serviceId: "mangaflow-diffsensei",
@@ -527,7 +527,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "Grounding DINO + ArcFace/MagFace 임베딩 기반 다중 컷 얼굴·체형 동일성 감사, MLLM Identity Adapter 보정 및 말풍선 꼬리 벡터 자동 라우팅",
     toonStudioIntegrationKo:
-      "runClaudeMangaFlowIdentityVerificationDirector: 컷별 바운딩 박스·ArcFace 코사인 유사도 산출 + Identity Adapter 가중치 + 말풍선 꼬리 앵커",
+      "runAssistMangaFlowIdentityVerificationDirector: 컷별 바운딩 박스·ArcFace 코사인 유사도 산출 + Identity Adapter 가중치 + 말풍선 꼬리 앵커",
   },
   {
     serviceId: "glimnavi-wisehub",
@@ -536,7 +536,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "한국형 웹툰 기획→콘티→선화→브러시 색상 힌트(Color Hint Stroke) 기반 AI 자동 밑색·명암·하이라이트 레이어 분리 휴먼인더루프 워크플로",
     toonStudioIntegrationKo:
-      "runClaudeGlimnaviColorHintStrokeDirector: 부위별 컬러 힌트 스트로크 좌표·HEX 지정 + 선화 틈새 닫기(Close Gap) + 밑색/셀명암/림라이트 분리",
+      "runAssistGlimnaviColorHintStrokeDirector: 부위별 컬러 힌트 스트로크 좌표·HEX 지정 + 선화 틈새 닫기(Close Gap) + 밑색/셀명암/림라이트 분리",
   },
   {
     serviceId: "snaptoon-acon3d",
@@ -545,7 +545,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "스케치업/블렌더 3D 웹툰 배경 툰셰이더 렌더링, 시간대별 태양광·창문 발광(Window Glow)·블룸·안개 프리셋 및 저장된 카메라 뷰 매칭",
     toonStudioIntegrationKo:
-      "runClaudeSnaptoon3dEnvironmentShaderDirector: 시간대·날씨 프리셋 + 창문 발광/블룸/안개 농도 + ACON3D 공간 카메라 북마크 동기화",
+      "runAssistSnaptoon3dEnvironmentShaderDirector: 시간대·날씨 프리셋 + 창문 발광/블룸/안개 농도 + ACON3D 공간 카메라 북마크 동기화",
   },
   {
     serviceId: "culturetoon-mining5000",
@@ -554,7 +554,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "웹소설·인터뷰·실화 원작의 한국형 세로 스크롤 웹툰 자동 각색, 서사 아키타입(회빙환/영웅서사) 매핑 및 2차 IP(애니·드라마·숏폼) 확장성 진단",
     toonStudioIntegrationKo:
-      "runClaudeNovelAdaptationAndIpExpansionDirector: 산문 문단→웹툰 컷/대사 압축비 진단 + Storyflow 서사 아키타입 + OSMU 2차 IP 확장성 스코어카드",
+      "runAssistNovelAdaptationAndIpExpansionDirector: 산문 문단→웹툰 컷/대사 압축비 진단 + Storyflow 서사 아키타입 + OSMU 2차 IP 확장성 스코어카드",
   },
   {
     serviceId: "tooncrafter-anidoc",
@@ -563,7 +563,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "시작·끝 키프레임 간 비선형 웹툰/애니메이션 중간 동화(In-between) 프레임 보간 및 단일 캐릭터 시트 기반 연속 선화 컬러링 일괄 전파",
     toonStudioIntegrationKo:
-      "runClaudeToonCrafterInbetweenAndStitchDirector: 키프레임 간 인비트윈 보간 궤적·오클루전 마스크 + AniDoc Dense Correspondence 채색 전파",
+      "runAssistToonCrafterInbetweenAndStitchDirector: 키프레임 간 인비트윈 보간 궤적·오클루전 마스크 + AniDoc Dense Correspondence 채색 전파",
   },
   {
     serviceId: "krita-diffusion-comistitch",
@@ -572,7 +572,7 @@ export const WEBTOON_AI_SERVICE_BENCHMARK_MATRIX: readonly WebtoonAiBenchmarkEnt
     coreStrengthKo:
       "영역별(Regional) 인페인팅/아웃페인팅으로 세로 스크롤 무한 캔버스 배경 확장, ControlNet 멀티 스택 보정 및 상업 출판용 무손실 세로 스티칭/슬라이싱",
     toonStudioIntegrationKo:
-      "runClaudeToonCrafterInbetweenAndStitchDirector: 세로 스크롤 상하단 아웃페인팅 + ControlNet 스택 + 말풍선 비절단 안전 슬라이스(Safe Split Y) 산출",
+      "runAssistToonCrafterInbetweenAndStitchDirector: 세로 스크롤 상하단 아웃페인팅 + ControlNet 스택 + 말풍선 비절단 안전 슬라이스(Safe Split Y) 산출",
   },
 ]);
 

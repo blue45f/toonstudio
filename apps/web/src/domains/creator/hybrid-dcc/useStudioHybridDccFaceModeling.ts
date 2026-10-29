@@ -95,7 +95,7 @@ export function useStudioHybridDccFaceModeling(
   const sectionRef = useRef<HTMLElement | null>(null);
   const { workspace, editingDisabled = false } = props;
   const selection = props.componentSelection ?? EMPTY_SELECTION;
-  const sculpting = Boolean(props.onSculptStroke);
+  const sculpting = Boolean(props.onSculptStroke || props.sculptGesture);
 
   const [open, setOpenState] = useState(false);
   const [tool, setToolState] = useState<StudioFaceModelingTool>("push-pull");

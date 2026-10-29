@@ -122,7 +122,8 @@ function parseJson(raw: string | null): unknown {
 }
 
 function normalizeServerAiProvider(value: unknown): StudioServerAiProviderPreference {
-  return value === "gemini"
+  return value === "anthropic"
+    || value === "gemini"
     || value === "qwen"
     || value === "groq"
     || value === "sambanova"

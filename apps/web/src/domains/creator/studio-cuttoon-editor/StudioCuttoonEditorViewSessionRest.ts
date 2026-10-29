@@ -85,7 +85,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   selectedImageMutationLocked: boolean;
   selectedProjectedImageSource: string | null;
   selectedWorkAssetDestructiveEditReason: string | null;
-  serverAiProvider: "auto" | import("../studio-server-ai-client").StudioFreePoolProvider;
+  serverAiProvider: import("../studio-server-ai-client").StudioServerAiProviderPreference;
   serverAiStatus: import("../studio-server-ai-client").StudioServerAiStatus | null;
   serverCurrentRevision: number | undefined;
   serverRevisionError: string | null;
@@ -310,7 +310,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   setStudioCommentPinsHidden: (next: import("react").SetStateAction<boolean>) => void;
   setStudioFilterApplying: (value: import("react").SetStateAction<boolean>) => void;
   setStudioFilterPreview: (value: import("react").SetStateAction<import("../filter/studio-filter-menu").StudioFilterPreview | null>) => void;
-  setStudioFilterSession: (value: import("react").SetStateAction<{ id: number; target: "image"; elementId: string; kind: import("../filter/studio-filter-menu").StudioFilterKind; initialDraft?: import("../filter/studio-filter-menu").StudioFilterDraft; selection?: import("../studio-selection-tools").PixelSelection; } | { id: number; target: "page-composite"; elementId: string; kind: import("../filter/studio-filter-menu").StudioFilterKind; initialDraft?: import("../filter/studio-filter-menu").StudioFilterDraft; image: import("../studio-page-state").ImageEl & import("../studio-page-state").El; plan: import("../render/studio-raster-edit-preparation").StudioEditableRasterCopyPlan; mutationTicket: import("../studio-editor-mutation-safety").StudioEditorMutationTicket; pageId: string; historyIndex: number; } | null>) => void;
+  setStudioFilterSession: (value: import("react").SetStateAction<{ id: number; target: "image"; elementId: string; kind: import("../filter/studio-filter-menu").StudioFilterKind; initialDraft?: import("../filter/studio-filter-menu").StudioFilterDraft; selection?: import("../studio-selection-tools").PixelSelection; } | { id: number; target: "page-composite"; elementId: string; kind: import("../filter/studio-filter-menu").StudioFilterKind; initialDraft?: import("../filter/studio-filter-menu").StudioFilterDraft; image: import("../studio-page-state").ImageEl & import("../studio-page-state").El; plan: import("../render/studio-raster-edit-preparation").StudioEditableRasterCopyPlan; mutationTicket: import("../studio-editor-scope").StudioEditorMutationTicket; pageId: string; historyIndex: number; } | null>) => void;
   setStudioLayerLiftOptions: (value: import("react").SetStateAction<import("../layer/StudioLayerLiftDialog").StudioLayerLiftReviewOptions>) => void;
   setStudioRasterHandoffCandidate: (value: import("react").SetStateAction<import("../render/studio-raster-handoff-authority").StudioRasterHandoffCandidate | null>) => void;
   setSymmetryCenterX: (value: import("react").SetStateAction<number>) => void;
@@ -522,9 +522,9 @@ export type StudioCuttoonEditorViewSessionRest = {
   setWorkMode: (mode: "draw" | "color" | "storyboard" | "all" | "post" | "lettering" | "finish") => void;
   suggestedWorkMode: "draw" | "color" | "storyboard" | "all" | "post" | "lettering" | "finish" | null;
   dismissWorkModeSuggestion: () => void;
-  uiChromeExposure: (region: "toolbar-assets" | "toolbar-cut" | "toolbar-draw" | "toolbar-reference" | "toolbar-scene" | "toolbar-style" | "toolbar-ai" | "toolbar-insert" | "left-panel" | "right-panel" | "page-strip" | "status-rail" | "tool-rail" | "quick-actions") => import("./runtime/studio-work-mode-gating").StudioChromeGateExposure;
+  uiChromeExposure: (region: import("../studio-ui-density").StudioUiChromeRegion) => import("./runtime/studio-work-mode-gating").StudioChromeGateExposure;
   uiAdvancedToolsExpanded: boolean;
-  uiFirstScreenExposure: (region: "toolbar-assets" | "toolbar-cut" | "toolbar-draw" | "toolbar-reference" | "toolbar-scene" | "toolbar-style" | "toolbar-ai" | "toolbar-insert" | "left-panel" | "right-panel" | "page-strip" | "status-rail" | "tool-rail" | "quick-actions") => import("../studio-ui-density").StudioUiFirstScreenExposure;
+  uiFirstScreenExposure: (region: import("../studio-ui-density").StudioUiChromeRegion) => import("../studio-ui-density").StudioUiFirstScreenExposure;
   setUiAdvancedToolsExpanded: (expanded: boolean) => void;
   saveSyncStore: import("../studio-save-sync-signals").StudioSaveSyncSignalStore;
   requestSaveFlush: () => void;

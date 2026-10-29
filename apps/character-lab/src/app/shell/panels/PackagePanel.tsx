@@ -37,13 +37,7 @@ import {
 } from "../../../contracts";
 import { deriveKitCapabilities } from "../../../domains/authored/kit-capability";
 import { compareCapabilities } from "../../../domains/authored/package-capability";
-import {
-  TRIPO3D_CHARACTER_LAB_MCP_ASSETS,
-  VRM_TOOLKIT_MCP_BASELINES,
-  auditGlbAndVrmBudget,
-  parseVrmFromGlb,
-} from "../../../domains/authored/vrm-extension-parser";
-import { evaluateShaperPresetAssetUpdates } from "../../../export/shaper-preset";
+import { parseVrmFromGlb } from "../../../domains/authored/vrm-extension-parser";
 import { presetUnavailableReasonKo } from "../../../state/apply-plan";
 import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState } from "../lab-store-context";
 
@@ -196,23 +190,16 @@ function PackageDetail({ state }: PackageDetailProps) {
   const { plan, detail } = result;
   const { bones, shapeKeys, meshes } = detail.judgement.mappings;
   const quality = plan.manifest.quality;
-  const budgetAudit = auditGlbAndVrmBudget({
-    glbBytesLength: plan.glbBytes,
-    triangles: plan.manifest.capabilities.authoredHair.lodTriangles[0] ?? 12_000,
-    missingRequiredBoneCount: Math.max(0, 15 - bones.required.covered.length),
-  });
   return (
     <div className="cl-package-detail">
       <p className="cl-package-status" role="status">
         {applied === "engine" ? "엔진에 올렸습니다" : "플랜을 등록했습니다(엔진이 준비되면 적용 루프가 올립니다)"} · GLB SHA-256 {shortSha(detail.observedSha256)} 검증 일치 · {plan.glbBytes.toLocaleString("ko-KR")} B
       </p>
       <dl className="cl-package-facts">
-        <dt>품질</dt>
+        <dt>품질(패키지 선언)</dt>
         <dd>
           {quality.score} / 최소 {quality.minimumScore} · {quality.passed ? "통과" : "미통과"}
         </dd>
-        <dt>GLBForge · VRM 예산</dt>
-        <dd data-testid="package-glbforge-vrm-audit">{budgetAudit.summaryKo}</dd>
         <dt>라이선스</dt>
         <dd>{plan.licenseNote}</dd>
         <dt>헤어</dt>
@@ -234,6 +221,7 @@ function PackageDetail({ state }: PackageDetailProps) {
         <dt>VRM 확장(베타 파서)</dt>
         <dd>{vrm ? `${vrm.family} · ${vrm.meta.name ?? "이름 없음"} · 저자 ${vrm.meta.authors.join(", ") || "-"} · 라이선스 ${vrm.meta.licenseName ?? "-"} · humanoid ${Object.keys(vrm.humanoid).length}본 · 표정 ${vrm.expressions.length}개` : vrmNoteKo}</dd>
       </dl>
+      <p className="cl-package-hint">패키지 제공자가 기록한 검수 점수입니다. 파일 크기와 SHA-256은 불러온 데이터로 확인합니다.</p>
       {detail.warnings.length > 0 ? (
         <ul className="cl-package-warnings" aria-label="경고">
           {detail.warnings.map((warning) => (
@@ -592,14 +580,6 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
   const panelKitFailure =
     kitFetch.phase === "failed" && kitSource !== null && !(shownKitFailure?.code === kitFetch.failure.code && shownKitFailure.reasonKo === kitFetch.failure.reasonKo) ? kitFetch.failure : undefined;
   const kitLoading = kitSource !== null && engineReady && applyLoop !== null && !kitSettled && shownKitFailure === undefined;
-  const shaperAssetCheck = evaluateShaperPresetAssetUpdates({
-    appDataPath: "/Presets",
-    assets: [
-      { id: 1, name: source.kind, filename: `${source.kind}.preset`, category: "Source", type: source.kind, version: KIT_CURRENT_VERSION },
-      { id: 2, name: source.kind, filename: `${source.kind}.png`, category: "Source", type: source.kind, version: KIT_CURRENT_VERSION },
-    ],
-    localPresetContentsByPath: { [`/Presets/Source/${source.kind}/${source.kind}.preset`]: `${KIT_CURRENT_VERSION}.0\n{}` },
-  });
 
   return (
     <section className="cl-package-panel" aria-labelledby={`${ids}-title`}>
@@ -611,12 +591,6 @@ export function PackagePanel({ loader = browserPackageLoader, autoLoadIndex = tr
             절차 소스로 돌아가기
           </button>
         ) : null}
-      </p>
-      <p className="cl-package-hint" data-testid="shaper-package-asset-check">
-        SHAPER 에셋 버전 진단 (`CheckAsset` 0x0600028a): 검사 {shaperAssetCheck.length}건 · 진행률 {shaperAssetCheck[shaperAssetCheck.length - 1]?.progressPercent ?? 100}% · 상태 코드 {shaperAssetCheck[0]?.update ?? 0} (v{shaperAssetCheck[0]?.normalizedVersion ?? 1})
-      </p>
-      <p className="cl-package-hint" data-testid="tripo3d-mcp-character-lab-summary">
-        Tripo3D MCP 커스터마이징 파츠 {TRIPO3D_CHARACTER_LAB_MCP_ASSETS.length}종 ({TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.labelKo}: {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.triangles.toLocaleString("ko-KR")} Tri · 파츠 [{TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.customizableParts.join(", ")}] · GLBForge {TRIPO3D_CHARACTER_LAB_MCP_ASSETS[0]?.glbforgeScore}/100) · VRM Toolkit MCP 검증 ({VRM_TOOLKIT_MCP_BASELINES.map((b) => `${b.name} ${b.mappedBones}본/${b.triangles.toLocaleString("ko-KR")} Tri`).join(", ")})
       </p>
       <section className="cl-package-kit" aria-labelledby={`${ids}-kit-title`}>
         <h3 id={`${ids}-kit-title`}>모듈식 키트(기본 소스)</h3>

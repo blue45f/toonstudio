@@ -7,30 +7,30 @@
  *    - 스토리 기반 캐릭터 일관성 유지 4컷/인스타툰/웹툰 자동 분할 및 말풍선 배치
  *    - 1080×1920 30fps 숏폼 릴스(Short-Form Reel) 타임라인 합성기 (module 65576)
  *    - 6분할 스티커 시트(`sheet`)·양면 머그컵(`mug_twin`) 굿즈 인쇄 레이아웃 및 DPI 선명도 판정기 (module 71184)
- * 2. 망고툰 (Mangotoon) / 3. 라마젠 (LlamaGen AI) / 4. 투닝 (Tooning) — `./ai-webtoon-mangotoon-llamagen-suite`
+ * 2. 망고툰 (Mangotoon) / 3. 라마젠 (LlamaGen AI) / 4. 투닝 (Tooning) — `./ai-webtoon-template-comic-suite`
  */
 
 export {
-  MANGOTOON_CHARACTER_PRESETS,
-  MANGOTOON_LIBRARY_TABS,
-  buildLlamaGenComicV2EpisodeSequence,
-  createMangotoonContentPayload,
-  recommendTooningCutFromSentence,
-  type LlamaGenComicV2EpisodeSequence,
-  type LlamaGenComicV2PanelSpec,
-  type LlamaGenLayoutModeId,
-  type LlamaGenPanelGeometry,
-  type LlamaGenPathVertex,
-  type MangotoonCharacterAssetPreset,
-  type MangotoonCharacterGenderBadge,
-  type MangotoonLibraryTabId,
-  type MangotoonLibraryTabSpec,
-  type MangotoonPageCategoryId,
-  type MangotoonPictureContentData,
-  type MangotoonPictureFilterState,
-  type MangotoonTitleCategoryId,
-  type TooningSentenceRecommendation,
-} from "./ai-webtoon-mangotoon-llamagen-suite";
+  TEMPLATE_TOON_CHARACTER_PRESETS,
+  TEMPLATE_TOON_LIBRARY_TABS,
+  buildComicGenComicV2EpisodeSequence,
+  createTemplateToonContentPayload,
+  recommendCreatorPlusCutFromSentence,
+  type ComicGenComicV2EpisodeSequence,
+  type ComicGenComicV2PanelSpec,
+  type ComicGenLayoutModeId,
+  type ComicGenPanelGeometry,
+  type ComicGenPathVertex,
+  type TemplateToonCharacterAssetPreset,
+  type TemplateToonCharacterGenderBadge,
+  type TemplateToonLibraryTabId,
+  type TemplateToonLibraryTabSpec,
+  type TemplateToonPageCategoryId,
+  type TemplateToonPictureContentData,
+  type TemplateToonPictureFilterState,
+  type TemplateToonTitleCategoryId,
+  type CreatorPlusSentenceRecommendation,
+} from "./ai-webtoon-template-comic-suite";
 
 // ============================================================================
 // 1. 젠툰 (GenToon) AI 모델·크레딧·숏폼 릴스·굿즈 프린트 엔진

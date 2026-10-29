@@ -63,6 +63,8 @@ jobs:
             /apps/web/public/assets/3d/ENVIRONMENT_LICENSES.md
             /apps/web/public/assets/studio/cc0-20260906/manifest.json
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
+            /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
             /apps/web/public/assets/virtual-studio/world/default-world.json
             /apps/web/public/assets/virtual-studio/world-v2/characters/pixel-maker/
             /apps/web/public/assets/virtual-studio/living-town-v6/imagegen25-character/
@@ -113,6 +115,15 @@ jobs:
             /apps/web/public/vrm/Victoria_Rubin.vrm
             /apps/web/public/vrm/UnicornPerson.vrm
             /apps/web/public/vrm/MegaAngel.vrm
+
+      # related 회귀가 실제 본문·목록을 검사하는 세 파생 팩만 PR에서 복원한다.
+      - name: 관련 회귀 검사용 번들 파생 이미지 준비
+        if: github.event_name == 'pull_request'
+        run: >-
+          git sparse-checkout add
+          /apps/web/public/assets/studio/bundle-renders-v1/
+          /apps/web/public/assets/studio/bundle-scenes-v1/
+          /apps/web/public/assets/virtual-studio/bundle-decor-v1/
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6

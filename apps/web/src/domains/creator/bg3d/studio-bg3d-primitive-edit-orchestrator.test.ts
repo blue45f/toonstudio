@@ -12,10 +12,12 @@ import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb, type St
 import { commitStudioBg3dHistoryTransition, resetStudioBg3dCommandHistory, type StudioBg3dHistoryCommandRefs } from "./studio-bg3d-history-command-adapter";
 import { studioBg3dModalOperationCoordinator, type StudioBg3dModalSession } from "./studio-bg3d-modal-operation-coordinator";
 import { admitAndCacheStudioBg3dModel, type StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { applyStudioBg3dPrimitiveEditWorkspace, type StudioBg3dPrimitiveEditOrchestratorHost } from "./studio-bg3d-primitive-edit-orchestrator";
-import { captureStudioBg3dPrimitiveEditSource, type StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
+import { captureStudioBg3dPrimitiveEditSource, revalidateStudioBg3dPrimitiveEditSource, type StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
 import { createStudioBg3dPrimitiveEditWorkspace } from "./studio-bg3d-primitive-edit-workspace";
 import { exportStudioBg3dFaceEditAsset } from "./studio-bg3d-face-edit-export";
+import { applyStudioBg3dFaceEditOperation } from "./studio-bg3d-face-edit-orchestrator";
 import { createDefaultStudioBg3dSceneDocument, serializeStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 import { hydrateStudioBg3dDocumentToRuntime, tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
@@ -177,6 +179,42 @@ afterEach(async () => {
 });
 
 describe("원본 primitive 편집의 저장·admission·보상 orchestration", () => {
+  it("적용 실패 rollback은 자기 variant만 떼고 반대 backend의 공유 root·record를 보존한다", async () => {
+    const f = fixture(); let opposite: StudioBg3dModelRootCacheEntry | undefined;
+    const dispose = vi.fn();
+    const result = await applyStudioBg3dFaceEditOperation(f.host, {
+      modalSession: f.context.source.modalSession, sourceNodeId: f.context.source.sourceNodeId,
+      name: f.context.source.canonicalNode.name, rights: { status: "owned", commercialUse: true, attributionRequired: false },
+      readSource: () => revalidateStudioBg3dPrimitiveEditSource(f.host, f.context.source),
+      exportAsset: () => exportStudioBg3dFaceEditAsset(f.context, f.workspace, f.context.source.primitive.color),
+      replaceAsset: (asset) => {
+        const own = f.cache.get(studioBg3dModelCacheKey(asset.storageModelId, "webgl"));
+        if (!own) throw Error("설치된 variant가 없습니다.");
+        const release = own.dispose;
+        vi.spyOn(own, "dispose").mockImplementation(dispose);
+        opposite = { ...own, runtimeVariant: studioBg3dModelRuntimeVariant("webgpu"), dispose: release };
+        f.cache.set(studioBg3dModelCacheKey(asset.storageModelId, "webgpu"), opposite);
+        return { ok: false, messageKo: "의도한 교체 거부" };
+      },
+    }, new AbortController().signal);
+    expect(result).toMatchObject({ ok: false, cleanup: "retained" });
+    expect(f.cache.has(studioBg3dModelCacheKey("derived-model-1", "webgl"))).toBe(false);
+    expect(f.cache.get(studioBg3dModelCacheKey("derived-model-1", "webgpu"))).toBe(opposite);
+    expect(records.has("derived-model-1")).toBe(true); expect(dispose).not.toHaveBeenCalled();
+    expect(storage.compensate).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled();
+  });
+
+  it("저장 대기 중 시작 lease가 폐기되면 새 guard true로 A backend에 돌아와도 적용하지 않는다", async () => {
+    const f = fixture(), waiting = deferred(); let active = true, guard = () => active;
+    const host = { ...f.host, get isMaterialBackendCurrent() { return guard; } };
+    storage.save.mockImplementationOnce(async (items, options) => { await waiting.promise; return save(items, options); });
+    const pending = applyStudioBg3dPrimitiveEditWorkspace(host, f.context, f.workspace, new AbortController().signal);
+    await vi.waitFor(() => expect(storage.save).toHaveBeenCalledOnce());
+    active = false; guard = () => true; waiting.release();
+    expect(await pending).toMatchObject({ ok: false, cleanup: "removed" });
+    expect(f.replace).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled(); expect(f.cache.size).toBe(0);
+  });
+
   it("DB 원본이 없는 primitive도 새 B 하나의 lease를 동기 commit까지 유지한다", async () => {
     const f = fixture(), replace = f.replace.getMockImplementation();
     f.replace.mockImplementation((mutation) => {
@@ -372,12 +410,12 @@ describe("원본 primitive 편집의 저장·admission·보상 orchestration", (
       if (!record) return null;
       other = await admitAndCacheStudioBg3dModel({ record, document: f.live.current.document, quality: f.host.deviceQuality,
         cumulativeUsedBytes: 0, renderer: null, cache: new Map(), pending: new Map(), isActive: () => true, preserveQualityModeOnFailure: true });
-      f.cache.set(id, other);
+      f.cache.set(studioBg3dModelCacheKey(id, "webgl"), other);
       return record;
     });
     const result = await applyStudioBg3dPrimitiveEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal);
     expect(result).toMatchObject({ ok: false, cleanup: "retained" });
-    expect(f.cache.get("derived-model-1")).toBe(other); expect(records.size).toBe(1);
+    expect(f.cache.get(studioBg3dModelCacheKey("derived-model-1", "webgl"))).toBe(other); expect(records.size).toBe(1);
     expect(storage.compensate).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
   });
 
@@ -394,7 +432,7 @@ describe("원본 primitive 편집의 저장·admission·보상 orchestration", (
     const result = await applyStudioBg3dPrimitiveEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal);
     expect(result).toMatchObject({ ok: false, cleanup: "not-created" });
     expect(storage.compensate).not.toHaveBeenCalled(); expect(dispose).not.toHaveBeenCalled();
-    expect(f.cache.get(record.id)).toBe(entry); expect(records.has(record.id)).toBe(true);
+    expect(f.cache.get(studioBg3dModelCacheKey(record.id, "webgl"))).toBe(entry); expect(records.has(record.id)).toBe(true);
   });
 
   it("scene actor 예외는 성공으로 숨기지 않고 history가 참조할 자산을 보존한다", async () => {

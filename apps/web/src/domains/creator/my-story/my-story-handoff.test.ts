@@ -39,7 +39,7 @@ describe("openMyStoryInStudio — 기존 대본·콘티 시작 경로로 전달"
   it("8컷 초안은 컷툰 4:5 세로 8장 프로젝트가 되고 대본 보기(story?view=script)로 향한다", () => {
     const store = storage();
     const result = openMyStoryInStudio(store, fullSession("retrospective"), { locale: "ko", now: FIXTURE_AT });
-    expect(result.href).toBe(`/studio/p/${encodeURIComponent(result.projectId)}/story?view=script`);
+    expect(result.href).toBe(`/studio/p/${encodeURIComponent(result.projectId)}/story?view=script&uiMode=simple`);
     expect(result.beatCount).toBe(8);
 
     const library = readStudioProjectLibrary(store);

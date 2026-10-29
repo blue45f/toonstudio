@@ -8,6 +8,8 @@
  */
 import { failVisible, isLabFailure } from "../../contracts";
 
+import { serializeHandModel } from "./serialized-hand-model";
+
 import type { HandDetectorPort, LoadedModel, PoseDetectorPort, VisionLoaders, VisionModelKey, VisionModelStatus } from "./vision-ports";
 import type { EmbedderPort, LabFailure } from "../../contracts";
 
@@ -56,7 +58,7 @@ export function createVisionSession(deps: VisionSessionDeps): VisionSession {
       case "poseLandmarker":
         return deps.loaders.poseLandmarker();
       case "handLandmarker":
-        return deps.loaders.handLandmarker();
+        return deps.loaders.handLandmarker().then(serializeHandModel);
       default: {
         const exhaustive: never = key;
         return Promise.reject(new Error(`알 수 없는 비전 모델입니다: ${String(exhaustive)}`));

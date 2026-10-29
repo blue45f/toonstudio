@@ -5,6 +5,7 @@
  */
 import { failVisible } from "../../contracts";
 import { sparsifyGlbMorphTargets } from "../glb-sparse-morph";
+import { isPressureOutline } from "../pressure-outline-tag";
 
 import type { SparseMorphReport } from "../glb-sparse-morph";
 import type { CharacterRig } from "./character-rig";
@@ -14,6 +15,7 @@ import type { Scene } from "@babylonjs/core/scene.js";
 const GLB_MAGIC = 0x46546c67;
 
 export function isRigNode(rig: CharacterRig, node: Node): boolean {
+  if (isPressureOutline(node)) return false;
   let cursor: Node | null = node;
   while (cursor) {
     if (cursor === rig.root) return true;

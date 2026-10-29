@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { resolveStudioBg3dBundleRecordSource, studioBg3dBundleAssetRights } from "./studio-bg3d-bundle-asset-loader";
+import { parseStudioBg3dBundleThemePacks, type StudioBg3dBundleThemePacks } from "./studio-bg3d-bundle-theme-packs";
 import {
   STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS,
   getStudioBg3dGenreScenePackBundleLink,
@@ -14,29 +16,22 @@ import {
   STUDIO_BG3D_SCENE_GENRES,
 } from "./studio-bg3d-scene-composition-presets";
 
-interface ThemePacksDocument {
-  readonly inServiceOnly: boolean;
-  readonly downloadable: boolean;
-  readonly themes: readonly { readonly id: string }[];
-  readonly packs: readonly { readonly title: string; readonly placeable: number }[];
-  readonly assets: readonly { readonly id: string; readonly pack: number }[];
-  readonly totals: { readonly placeableAssets: number };
-}
-
-function readThemePacks(): ThemePacksDocument {
+function readThemePacks(): StudioBg3dBundleThemePacks {
   const path = fileURLToPath(
     new URL(
       "../../../../public/assets/3d/environments/bundle-v1/theme-packs.json",
       import.meta.url,
     ),
   );
-  return JSON.parse(readFileSync(path, "utf8")) as ThemePacksDocument;
+  return parseStudioBg3dBundleThemePacks(JSON.parse(readFileSync(path, "utf8")));
 }
 
 describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
-  it("links every G8 pack to a real preset with matching genre and bundle theme", () => {
+  it("검증된 네 번들 팩을 기존 프리셋의 장르·테마에 정확히 연결한다", () => {
     expect(validateStudioBg3dGenreScenePackBundleLinks()).toEqual([]);
-    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.length).toBe(8);
+    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.map(entry => entry.presetId)).toEqual([
+      "fantasy-old-town-arrival", "thriller-corridor-dutch", "scifi-arena-showdown", "thriller-graveyard-vigil",
+    ]);
 
     const presetIds = new Set(STUDIO_BG3D_SCENE_COMPOSITION_PRESETS.map((preset) => preset.id));
     for (const entry of STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS) {
@@ -44,26 +39,31 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
       expect(getStudioBg3dGenreScenePackBundleLink(entry.presetId)).toBe(entry);
     }
     expect(getStudioBg3dGenreScenePackBundleLink("no-such-pack")).toBeUndefined();
-    // 기존 8팩은 번들 연결이 없는 카메라·조명 전용 팩으로 남는다.
+    // 확인되지 않은 번들 연결을 없애도 카메라·조명 프리셋은 유지한다.
     expect(getStudioBg3dGenreScenePackBundleLink("romance-cafe-two-shot")).toBeUndefined();
+    expect(getStudioBg3dGenreScenePackBundleLink("fantasy-forest-shrine")).toBeUndefined();
+    expect(presetIds.has("fantasy-forest-shrine")).toBe(true);
   });
 
-  it("covers the new fantasy and scifi genres with at least three packs each", () => {
+  it("모든 장르·16개 프리셋을 보존하고 검증되지 않은 번들 팩은 연결하지 않는다", () => {
     const genreIds = STUDIO_BG3D_SCENE_GENRES.map((genre) => genre.id);
     expect(genreIds).toContain("fantasy");
     expect(genreIds).toContain("scifi");
-    expect(listStudioBg3dGenreScenePackBundleLinks("fantasy")).toHaveLength(3);
-    expect(listStudioBg3dGenreScenePackBundleLinks("scifi")).toHaveLength(3);
-    expect(listStudioBg3dGenreScenePackBundleLinks(null)).toHaveLength(8);
+    expect(STUDIO_BG3D_SCENE_COMPOSITION_PRESETS).toHaveLength(16);
+    expect(listStudioBg3dGenreScenePackBundleLinks("fantasy")).toHaveLength(1);
+    expect(listStudioBg3dGenreScenePackBundleLinks("thriller")).toHaveLength(2);
+    expect(listStudioBg3dGenreScenePackBundleLinks("scifi")).toHaveLength(1);
+    expect(listStudioBg3dGenreScenePackBundleLinks(null)).toHaveLength(4);
   });
 
-  it("references only assets that really exist in theme-packs.json, with matching pack snapshots", () => {
+  it("네 팩 790개 실물과 대표 ID·테마·현재 권리를 대조하고 철회된 대표는 해석하지 않는다", async () => {
     const document = readThemePacks();
     // 번들 라이선스 구조(서비스 내 사용 전용)가 유지될 때만 연결이 유효하다.
     expect(document.inServiceOnly).toBe(true);
     expect(document.downloadable).toBe(false);
-    // 2026-10-22 임베드 병합·5라운드 재생성+이름변경·신규 팩 후속 병합 기준: 배치 가능 에셋 총량은 14,928개다.
-    expect(document.totals.placeableAssets).toBe(14928);
+    // 현재 카탈로그는 역사 CC0 8팩과 추가 licensed 2팩의 메타데이터를 포함한다.
+    // 장르 연결은 기존 네 CC0 팩 790개를 유지하며 새 팩의 런타임 검증을 주장하지 않는다.
+    expect(document.totals.placeableAssets).toBe(1929);
 
     const themeIds = new Set(document.themes.map((theme) => theme.id));
     const assetById = new Map(document.assets.map((asset) => [asset.id, asset]));
@@ -75,16 +75,61 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
         expect(realPack, `${entry.presetId} pack ${pack.packIndex}`).toBeDefined();
         expect(realPack?.title).toBe(pack.packTitle);
         expect(realPack?.placeable).toBe(pack.placeableCount);
-        expect(pack.sampleAssetIds.length).toBeGreaterThan(0);
+        expect(realPack?.theme).toBe(entry.bundleThemeId);
+        expect(document.assets.filter((asset) => asset.packIndex === pack.packIndex)).toHaveLength(pack.placeableCount);
+        expect(pack.sampleAssetIds).toHaveLength(3);
+        expect(new Set(pack.sampleAssetIds).size).toBe(3);
         for (const assetId of pack.sampleAssetIds) {
           const asset = assetById.get(assetId);
           expect(asset, `${entry.presetId} sample ${assetId}`).toBeDefined();
-          expect(asset?.pack).toBe(pack.packIndex);
+          expect(asset?.packIndex).toBe(pack.packIndex);
+          if (!asset) throw new Error("카탈로그에 대표 에셋이 없습니다.");
+          expect(studioBg3dBundleAssetRights(asset, document)).toEqual({
+            status: "public-domain", licenseName: "CC0-1.0", commercialUse: true, attributionRequired: false,
+          });
+          const source = await resolveStudioBg3dBundleRecordSource(assetId, { loadData: async () => document });
+          expect(source).toMatchObject({ id: assetId, sha256: asset.sha256, byteSize: asset.bytes,
+            rights: { status: "public-domain", licenseName: "CC0-1.0" } });
         }
       }
       linkedPlaceable += entry.totalPlaceable;
     }
-    // 8개 팩이 잇는 배치 가능 에셋 합계 스냅샷(팩 18은 두 팩이 공유해 두 번 센 값).
-    expect(linkedPlaceable).toBe(1740);
+    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.flatMap(link => link.packs.map(pack => pack.packTitle)))
+      .toEqual(["Cute Park Pack", "Cute Dungeon Megapack", "Sci-Fi Arena: Blue Base", "Cute Graveyard"]);
+    const expectedLinkedPacks = [
+      { catalogId: "cbv1-008-cute-park-pack", title: "Cute Park Pack", count: 103 },
+      { catalogId: "cbv1-024-cute-dungeon-megapack", title: "Cute Dungeon Megapack", count: 320 },
+      { catalogId: "cbv1-053-scifi-arena-blue-base", title: "Sci-Fi Arena: Blue Base", count: 114 },
+      { catalogId: "cbv1-014-cute-graveyard", title: "Cute Graveyard", count: 253 },
+    ];
+    const expectedIndices = expectedLinkedPacks.map(({ catalogId, title, count }) => {
+      const index = document.packs.findIndex((pack) => pack.catalogIds.includes(catalogId) && pack.title === title);
+      expect(index, catalogId).toBeGreaterThanOrEqual(0);
+      return [index, count];
+    });
+    expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.flatMap((entry) => entry.packs.map((pack) => [pack.packIndex, pack.placeableCount])))
+      .toEqual(expectedIndices);
+    expect(linkedPlaceable).toBe(790);
+    expect(getStudioBg3dGenreScenePackBundleLink("scifi-arena-showdown")?.packs[0]?.sampleAssetIds)
+      .toContain("cbv1-ingest-local-scifi-blue-base-other-pilarp-1-a-f60ddaf9f6b2");
+    expect(getStudioBg3dGenreScenePackBundleLink("thriller-graveyard-vigil")?.packs[0]?.sampleAssetIds)
+      .toContain("cbv1-ingest-local-cute-graveyard-tombstone-1-8b880b748740");
+    const withdrawnIndices = new Set(["cbv1-053-scifi-arena-blue-base", "cbv1-014-cute-graveyard"].map((catalogId) => {
+      const index = document.packs.findIndex((pack) => pack.catalogIds.includes(catalogId));
+      expect(index, catalogId).toBeGreaterThanOrEqual(0);
+      return index;
+    }));
+    const withdrawn = { ...document,
+      packs: document.packs.map((pack, index) => withdrawnIndices.has(index) ? { ...pack, placeable: 0 } : pack),
+      assets: document.assets.filter((asset) => !withdrawnIndices.has(asset.packIndex)),
+      totals: { ...document.totals, placeableAssets: document.totals.placeableAssets - 367 },
+    };
+    for (const preset of ["scifi-arena-showdown", "thriller-graveyard-vigil"]) {
+      const reference = getStudioBg3dGenreScenePackBundleLink(preset)?.packs[0];
+      expect(reference?.sampleAssetIds).toHaveLength(3);
+      for (const assetId of reference?.sampleAssetIds ?? []) {
+        expect(await resolveStudioBg3dBundleRecordSource(assetId, { loadData: async () => withdrawn })).toBeNull();
+      }
+    }
   });
 });

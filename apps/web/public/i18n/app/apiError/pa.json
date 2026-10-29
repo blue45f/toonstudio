@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ਲਾਗਇਨ ਦੀ ਲੋੜ ਹੈ।",
+  "apiError.loginRequired": "ਲੌਗ ਇਨ ਕਰਨ ਦੀ ਲੋੜ ਹੈ।",
   "apiError.adminRequired": "ਪ੍ਰਸ਼ਾਸਨ ਅਧਿਕਾਰਾਂ ਦੀ ਪੁਸ਼ਟੀ ਨਹੀਂ ਕੀਤੀ ਜਾ ਸਕੀ।",
   "apiError.adminOnlyPage": "ਇਹ ਸਫ਼ਾ ਪ੍ਰਸ਼ਾਸਕਾਂ ਤੱਕ ਸੀਮਿਤ ਹੈ।",
   "apiError.notFound": "ਮੰਗ ਕੀਤੀ ਗਈ ਚੀਜ਼ ਨਹੀਂ ਲੱਭੀ।",

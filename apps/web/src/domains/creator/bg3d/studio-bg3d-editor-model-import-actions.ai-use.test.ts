@@ -6,6 +6,11 @@ import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
 import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
 
 import type { StudioBg3dSkpImportOptions } from "./studio-bg3d-skp-import";
+import type { admitAndCacheStudioBg3dModel } from "./studio-bg3d-model-runtime-admission";
+import type { StudioBg3dModelImportOptions, StudioBg3dImportProgress } from "./studio-bg3d-model-import";
+import type { StudioBg3dSkpImportRun } from "./studio-bg3d-skp-import-run";
+
+type SkpRunModule = Pick<typeof import("./studio-bg3d-skp-import-run"), "beginStudioBg3dSkpImportRun">;
 
 // 가져오기 권리 폼의 AI 사용 표기가 가져오기 액션에서 메타데이터 저장 단계와 이어지는 배선만 확인한다.
 // 변환·검증·장면 배치 자체는 각자의 테스트가 다루므로 여기서는 경계를 가짜로 둔다.
@@ -29,7 +34,15 @@ const runtime = vi.hoisted(() => {
     persistAi: vi.fn(),
     createAttachment: vi.fn(),
     admit: vi.fn(),
+    loadSkpRun: vi.fn<() => Promise<SkpRunModule>>(),
   };
+});
+
+// 실제 await 전후 guard를 사용하고, 모듈 전달 시점만 지연한다.
+vi.mock("./studio-bg3d-skp-import-run-loader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./studio-bg3d-skp-import-run-loader")>();
+  return { ...actual, beginCurrentStudioBg3dSkpImportRun: (isCurrent: () => boolean) =>
+    actual.beginCurrentStudioBg3dSkpImportRun(isCurrent, () => runtime.loadSkpRun()) };
 });
 
 vi.mock("./studio-bg3d-model-import", () => ({
@@ -114,6 +127,8 @@ function harness() {
     genericModelClassifications: new Map(),
     isRestoringScene: false,
     modelRenderer: null,
+    materialBackend: "webgpu" as const,
+    isMaterialBackendCurrent: vi.fn(() => true),
     sceneBaseDocument: {},
     invalidateModelThumbnailCaptures: vi.fn(() => null),
     isModalAssetSessionCurrent: vi.fn(() => true),
@@ -149,6 +164,13 @@ function file(name: string): File {
   return new File([new Uint8Array([1])], name);
 }
 
+function deferred<Value>() {
+  let resolve: (value: Value) => void = () => { throw new Error("대기 작업이 준비되지 않았습니다."); };
+  let reject: (error: Error) => void = () => { throw new Error("대기 작업이 준비되지 않았습니다."); };
+  const promise = new Promise<Value>((complete, fail) => { resolve = complete; reject = fail; });
+  return { promise, resolve, reject };
+}
+
 const AI_RIGHTS = { ...RIGHTS, aiGenerated: "yes", aiTraining: "prohibited" } as const;
 
 beforeEach(() => {
@@ -177,9 +199,100 @@ beforeEach(() => {
   });
   runtime.convert.mockResolvedValue([new Blob([new Uint8Array([1])])]);
   runtime.plan.mockReturnValue(planOf({ format: "glb", primaryPath: "prop.glb" }));
+  runtime.loadSkpRun.mockImplementation(() => import("./studio-bg3d-skp-import-run"));
 });
 
 describe("importModelFiles with AI use chosen on the rights form", () => {
+  it("같은 backend A의 늦은 progress·catch·finally는 B의 controller·UI를 건드리지 않는다", async () => {
+    const h = harness(), first = deferred<Blob[]>(), second = deferred<Blob[]>();
+    const options: StudioBg3dModelImportOptions[] = [];
+    runtime.convert.mockImplementationOnce((_files: unknown, value: StudioBg3dModelImportOptions) => { options.push(value); return first.promise; })
+      .mockImplementationOnce((_files: unknown, value: StudioBg3dModelImportOptions) => { options.push(value); return second.promise; });
+    const actionA = h.actions(), pendingA = actionA.importModelFiles([file("first.glb")], RIGHTS);
+    await vi.waitFor(() => { expect(runtime.convert).toHaveBeenCalledOnce(); });
+    const controllerA = h.context.modelImportAbortRef.current;
+    const pendingB = h.actions().importModelFiles([file("second.glb")], RIGHTS);
+    await vi.waitFor(() => { expect(runtime.convert).toHaveBeenCalledTimes(2); });
+    const progress: StudioBg3dImportProgress = { stage: "reading", completedModels: 0, totalModels: 1, sourceName: "second.glb" };
+    options[1]?.onProgress?.(progress);
+    const controllerB = h.context.modelImportAbortRef.current, progressCalls = h.context.setModelImportProgress.mock.calls.length;
+    expect(h.context.setModelImportProgress).toHaveBeenLastCalledWith(progress);
+    expect(controllerA?.signal.aborted).toBe(true); expect(controllerB).not.toBeNull(); expect(controllerB).not.toBe(controllerA);
+    options[0]?.onProgress?.({ ...progress, sourceName: "first.glb" });
+    first.reject(new runtime.FakeImportError("aborted"));
+    await expect(pendingA).resolves.toBe(false);
+    expect(h.context.modelImportAbortRef.current).toBe(controllerB); expect(controllerB?.signal.aborted).toBe(false);
+    expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(true);
+    expect(h.context.setModelImportProgress).toHaveBeenCalledTimes(progressCalls);
+    second.resolve([new Blob([new Uint8Array([1])])]);
+    await expect(pendingB).resolves.toBe(true);
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(false);
+    expect(h.context.setModelImportProgress).toHaveBeenLastCalledWith(null);
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce();
+    expect(h.context.setError.mock.calls).toEqual([[null], [null]]); expect(runtime.list).toHaveBeenCalledOnce();
+    const completedProgressCalls = h.context.setModelImportProgress.mock.calls.length;
+    options[0]?.onProgress?.({ ...progress, stage: "ready", sourceName: "first.glb" });
+    expect(h.context.setModelImportProgress).toHaveBeenCalledTimes(completedProgressCalls);
+  });
+
+  it.each(["resolve", "reject"] as const)("B 완료 뒤 A의 늦은 library %s가 현재 보관함·상태를 덮지 않는다", async (outcome) => {
+    const h = harness(), firstList = deferred<{ id: string }[]>();
+    runtime.convert.mockRejectedValueOnce(new runtime.FakeImportError("failed"));
+    runtime.list.mockImplementationOnce(() => firstList.promise);
+    const pendingA = h.actions().importModelFiles([file("first.glb")], RIGHTS);
+    await vi.waitFor(() => { expect(runtime.list).toHaveBeenCalledOnce(); });
+    await expect(h.actions().importModelFiles([file("second.glb")], RIGHTS)).resolves.toBe(true);
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    const libraryCalls = h.context.setModelLibrary.mock.calls.length, statusCalls = h.context.setModelLibraryStatus.mock.calls.length;
+    const errorCalls = h.context.setError.mock.calls.length, progressCalls = h.context.setModelImportProgress.mock.calls.length;
+    if (outcome === "resolve") firstList.resolve([{ id: "obsolete-model" }]);
+    else firstList.reject(new Error("obsolete-list-failed"));
+    await expect(pendingA).resolves.toBe(false);
+    expect(h.context.setModelLibrary).toHaveBeenCalledTimes(libraryCalls);
+    expect(h.context.setModelLibraryStatus).toHaveBeenCalledTimes(statusCalls);
+    expect(h.context.setError).toHaveBeenCalledTimes(errorCalls);
+    expect(h.context.setModelImportProgress).toHaveBeenCalledTimes(progressCalls);
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce();
+  });
+
+  it("A의 AI 저장 중 B가 시작·완료해 ref가 다시 null이어도 A의 지연 안내는 부활하지 않는다", async () => {
+    const h = harness(), firstSave = deferred<string>();
+    runtime.persistAi.mockImplementationOnce(() => firstSave.promise);
+    const pendingA = h.actions().importModelFiles([file("first.glb")], AI_RIGHTS);
+    await vi.waitFor(() => { expect(runtime.persistAi).toHaveBeenCalledOnce(); });
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce();
+    await expect(h.actions().importModelFiles([file("second.glb")], RIGHTS)).resolves.toBe(true);
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    const libraryCalls = h.context.setModelLibrary.mock.calls.length, errorCalls = h.context.setError.mock.calls.length;
+    const thumbnailCalls = h.context.startModelThumbnailCaptureBatch.mock.calls.length;
+    firstSave.resolve("saved"); await expect(pendingA).resolves.toBe(true);
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+    expect(h.context.setModelLibrary).toHaveBeenCalledTimes(libraryCalls); expect(h.context.setError).toHaveBeenCalledTimes(errorCalls);
+    expect(h.context.startModelThumbnailCaptureBatch).toHaveBeenCalledTimes(thumbnailCalls);
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledTimes(2);
+  });
+
+  it("가져오기 renderer 요청과 대기 중 fence는 bind 시점 backend를 보존한다", async () => {
+    const h = harness(); let captured: Parameters<typeof admitAndCacheStudioBg3dModel>[0] | undefined;
+    runtime.admit.mockImplementationOnce(async (request: Parameters<typeof admitAndCacheStudioBg3dModel>[0]) => {
+      captured = request;
+      expect(request.materialBackend).toBe("webgpu"); expect(request.isActive()).toBe(true);
+      h.context.isMaterialBackendCurrent.mockReturnValue(false);
+    });
+    await expect(h.actions().importModelFiles([file("prop.glb")], RIGHTS)).resolves.toBe(false);
+    expect(captured?.isActive()).toBe(false);
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled();
+    expect(h.context.setError).toHaveBeenCalledTimes(1); expect(h.context.setError).toHaveBeenCalledWith(null);
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.setIsUploadingModel.mock.calls).toEqual([[true], [false]]);
+    expect(h.context.setModelImportProgress).toHaveBeenLastCalledWith(null);
+    expect(h.context.startModelThumbnailCaptureBatch).not.toHaveBeenCalled();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+  });
+
   it("records the AI use for the imported model after the scene is committed and says so on the status line", async () => {
     const h = harness();
     const committed = await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
@@ -370,5 +483,108 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
 
     expect(runtime.persistAi).not.toHaveBeenCalled();
     expect(h.context.setSurfaceSnapStatus).toHaveBeenLastCalledWith({ tone: "success", message: "AI 사용 표기를 저장했어요." });
+  });
+});
+
+function deferredSkpRuntime() {
+  const complete = vi.fn<StudioBg3dSkpImportRun["complete"]>().mockResolvedValue("skipped");
+  const run: StudioBg3dSkpImportRun = { options: {}, complete };
+  const begin = vi.fn<SkpRunModule["beginStudioBg3dSkpImportRun"]>(() => run);
+  const module: SkpRunModule = { beginStudioBg3dSkpImportRun: begin };
+  return { begin, complete, run, module };
+}
+
+describe("SketchUp 모듈 대기 중 import action의 현재 요청·UI 소유권", () => {
+  it.each(["resolve", "reject"])("backend가 교체된 A의 늦은 load %s는 begin·변환·정본·AI 안내를 시작하지 않는다", async (outcome) => {
+    const h = harness(), gate = deferred<SkpRunModule>(), skp = deferredSkpRuntime();
+    runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
+    runtime.loadSkpRun.mockReturnValueOnce(gate.promise);
+    const pending = h.actions().importModelFiles([file("room.skp")], AI_RIGHTS);
+    await vi.waitFor(() => { expect(runtime.loadSkpRun).toHaveBeenCalledOnce(); });
+    h.context.isMaterialBackendCurrent.mockReturnValue(false);
+    if (outcome === "resolve") gate.resolve(skp.module); else gate.reject(new Error("obsolete-skp-chunk"));
+    await expect(pending).resolves.toBe(false);
+    expect(skp.begin).not.toHaveBeenCalled(); expect(skp.complete).not.toHaveBeenCalled();
+    expect(runtime.convert).not.toHaveBeenCalled(); expect(runtime.importVerified).not.toHaveBeenCalled();
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled();
+    expect(runtime.persist).not.toHaveBeenCalled(); expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled(); expect(h.context.setError.mock.calls).toEqual([[null]]);
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.setIsUploadingModel.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it.each(["resolve", "reject"])("A의 load %s가 늦게 와도 B의 controller·busy·progress·오류 안내를 덮지 않는다", async (outcome) => {
+    const h = harness(), gate = deferred<SkpRunModule>(), skp = deferredSkpRuntime(), conversionB = deferred<Blob[]>();
+    runtime.plan.mockReturnValueOnce(planOf({ format: "skp", primaryPath: "first.skp" }))
+      .mockReturnValueOnce(planOf({ format: "glb", primaryPath: "second.glb" }));
+    runtime.loadSkpRun.mockReturnValueOnce(gate.promise); runtime.convert.mockReturnValueOnce(conversionB.promise);
+    const pendingA = h.actions().importModelFiles([file("first.skp")], AI_RIGHTS);
+    await vi.waitFor(() => { expect(runtime.loadSkpRun).toHaveBeenCalledOnce(); });
+    const controllerA = h.context.modelImportAbortRef.current;
+    const pendingB = h.actions().importModelFiles([file("second.glb")], RIGHTS);
+    await vi.waitFor(() => { expect(runtime.convert).toHaveBeenCalledOnce(); });
+    const controllerB = h.context.modelImportAbortRef.current;
+    expect(controllerA?.signal.aborted).toBe(true); expect(controllerB).not.toBeNull(); expect(controllerB).not.toBe(controllerA);
+    const errorCalls = h.context.setError.mock.calls.length, progressCalls = h.context.setModelImportProgress.mock.calls.length;
+    const busyCalls = h.context.setIsUploadingModel.mock.calls.length;
+    if (outcome === "resolve") gate.resolve(skp.module); else gate.reject(new Error("obsolete-skp-chunk"));
+    await expect(pendingA).resolves.toBe(false);
+    expect(skp.begin).not.toHaveBeenCalled(); expect(skp.complete).not.toHaveBeenCalled();
+    expect(runtime.convert).toHaveBeenCalledOnce(); expect(runtime.importVerified).not.toHaveBeenCalled();
+    expect(h.context.modelImportAbortRef.current).toBe(controllerB); expect(controllerB?.signal.aborted).toBe(false);
+    expect(h.context.setError).toHaveBeenCalledTimes(errorCalls);
+    expect(h.context.setModelImportProgress).toHaveBeenCalledTimes(progressCalls);
+    expect(h.context.setIsUploadingModel).toHaveBeenCalledTimes(busyCalls);
+    expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(true); expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+    conversionB.resolve([new Blob([new Uint8Array([2])])]); await expect(pendingB).resolves.toBe(true);
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce(); expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(false);
+  });
+
+  it.each(["resolve", "reject"])("load 대기 중 사용자 취소와 늦은 %s는 기존 취소 안내·false 반환을 지킨다", async (outcome) => {
+    const h = harness(), gate = deferred<SkpRunModule>(), skp = deferredSkpRuntime(), controller = new AbortController();
+    runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
+    runtime.loadSkpRun.mockReturnValueOnce(gate.promise);
+    const pending = h.actions().importModelFiles([file("room.skp")], AI_RIGHTS, controller.signal);
+    await vi.waitFor(() => { expect(runtime.loadSkpRun).toHaveBeenCalledOnce(); });
+    controller.abort();
+    if (outcome === "resolve") gate.resolve(skp.module); else gate.reject(new Error("cancelled-skp-chunk"));
+    await expect(pending).resolves.toBe(false);
+    expect(skp.begin).not.toHaveBeenCalled(); expect(skp.complete).not.toHaveBeenCalled();
+    expect(runtime.convert).not.toHaveBeenCalled(); expect(runtime.importVerified).not.toHaveBeenCalled();
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled();
+    expect(h.context.setError).toHaveBeenLastCalledWith("3D 모델 가져오기를 취소했습니다. 장면과 라이브러리는 변경하지 않았습니다.");
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled(); expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(h.context.modelImportAbortRef.current).toBeNull(); expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(false);
+    expect(h.context.setModelImportProgress).toHaveBeenLastCalledWith(null);
+  });
+
+  it("현재 요청의 load 완료만 무인자 begin과 변환을 각 한 번 시작한다", async () => {
+    const h = harness(), gate = deferred<SkpRunModule>(), skp = deferredSkpRuntime();
+    runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
+    runtime.loadSkpRun.mockReturnValueOnce(gate.promise);
+    const pending = h.actions().importModelFiles([file("room.skp")], RIGHTS);
+    await vi.waitFor(() => { expect(runtime.loadSkpRun).toHaveBeenCalledOnce(); });
+    expect(skp.begin).not.toHaveBeenCalled(); expect(runtime.convert).not.toHaveBeenCalled();
+    gate.resolve(skp.module); await expect(pending).resolves.toBe(true);
+    expect(skp.begin.mock.calls).toEqual([[]]); expect(runtime.convert).toHaveBeenCalledOnce();
+    const options: unknown = runtime.convert.mock.calls[0]?.[1];
+    expect(options).toMatchObject({ executionBackend: "worker", skp: skp.run.options });
+    expect(skp.complete).toHaveBeenCalledWith(expect.objectContaining({ status: "imported", sourcePaths: ["room.skp"] }));
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce(); expect(h.context.setError.mock.calls).toEqual([[null]]);
+  });
+
+  it("현재 요청의 load 실패도 성공으로 바꾸지 않고 기존 일반 실패 안내와 정리 경로를 유지한다", async () => {
+    const h = harness(), gate = deferred<SkpRunModule>(), skp = deferredSkpRuntime(), failure = new Error("skp-runtime-load-failed");
+    runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
+    runtime.loadSkpRun.mockReturnValueOnce(gate.promise);
+    const pending = h.actions().importModelFiles([file("room.skp")], AI_RIGHTS);
+    await vi.waitFor(() => { expect(runtime.loadSkpRun).toHaveBeenCalledOnce(); });
+    gate.reject(failure); await expect(pending).resolves.toBe(false);
+    expect(failure.message).toBe("skp-runtime-load-failed"); expect(skp.begin).not.toHaveBeenCalled();
+    expect(runtime.convert).not.toHaveBeenCalled(); expect(runtime.importVerified).not.toHaveBeenCalled();
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled(); expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+    expect(h.context.setError).toHaveBeenLastCalledWith(expect.stringContaining("아무 모델도 배치하지 않았습니다"));
+    expect(h.context.modelImportAbortRef.current).toBeNull(); expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(false);
   });
 });

@@ -729,7 +729,7 @@ export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
       const model = customModels.find((m: BgCustomModelInstance) => m.id === id);
       if (!model || isBgObjectTransformBlocked(model)) continue;
       if (model.parentId) continue;
-      const root = modelRootCacheRef.current.get(model.modelId)?.root;
+      const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root;
       const size = root ? measureBg3dObjectSize(root) : ([2, 2, 2] as [number, number, number]);
       const position = groundModelTransform(size, model.position, model.rotation, model.scale);
       updateCustomModelTransform(model.id, { position });
@@ -778,7 +778,7 @@ export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
     for (const model of models) {
       if (transformById.size >= STUDIO_BG3D_SURFACE_SNAP_MAX_MULTI_INPUTS) break;
       if (isBgObjectTransformBlocked(model)) continue;
-      const root = modelRootCacheRef.current.get(model.modelId)?.root;
+      const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root;
       const boundingSize = root
         ? measureBg3dObjectSize(root)
         : ([2, 2, 2] as [number, number, number]);

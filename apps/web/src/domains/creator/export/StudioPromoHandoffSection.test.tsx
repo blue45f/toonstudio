@@ -2,6 +2,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
+
 import { PROMO_DOCUMENT_CUTS_MAX } from "../promo/promo-handoff-contract";
 import { parsePromoDocumentCutBundle } from "../promo/promo-document-cuts";
 import { parsePromoTranslationBundle } from "../promo/promo-translation-drafts";
@@ -312,7 +314,7 @@ describe("내보내기 메뉴 안에서", () => {
   beforeEach(() => resetStudioExportGeometryDraft());
 
   it("검증 다운로드 패키지 아래에 나타나고, 문서 정보가 없으면 만들 수 없다고 말한다", () => {
-    const { unmount } = render(<StudioEnhancedExportMenuPanel {...panelProps()} />);
+    const { unmount } = renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...panelProps()} />);
     const section = document.querySelector("[data-studio-promo-handoff]");
     const verified = document.querySelector("[data-studio-verified-download-package]");
     if (!section || !verified) throw new Error("내보내기 메뉴에 섹션이 없어요.");
@@ -320,14 +322,14 @@ describe("내보내기 메뉴 안에서", () => {
     expect(verified.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(/페이지 1–2 · 컷 3개 · 말풍선 3개/u)).toBeTruthy();
     unmount();
-    render(<StudioEnhancedExportMenuPanel {...panelProps({ dialoguePages: null })} />);
+    renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...panelProps({ dialoguePages: null })} />);
     expect(screen.getByText(/컷과 대사 정보를 받지 못해/u)).toBeTruthy();
   });
 
   it("컷 묶음을 만드는 동안 다른 내보내기와 캡처 잠금을 공유한다", async () => {
     let finishCapture: ((pages: HTMLCanvasElement[]) => void) | undefined;
     const props = panelProps({ capturePagesForIndices: vi.fn(() => new Promise<HTMLCanvasElement[]>((resolve) => { finishCapture = resolve; })) });
-    render(<StudioEnhancedExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "홍보 쇼츠용 컷 묶음 저장" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "컷 묶음 만드는 중" })).toBeTruthy());
     expect(props.capturePagesForIndices).toHaveBeenCalledWith([0, 1]);
@@ -340,7 +342,7 @@ describe("내보내기 메뉴 안에서", () => {
 
   it("검증 다운로드 패키지가 캡처하는 동안에는 컷 묶음 버튼이 잠긴다", async () => {
     const props = panelProps({ capturePagesForIndices: vi.fn(() => new Promise<HTMLCanvasElement[]>(() => undefined)) });
-    render(<StudioEnhancedExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "페이지 ZIP 다운로드" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "홍보 쇼츠용 컷 묶음 저장" }).hasAttribute("disabled")).toBe(true));
     expect(screen.getByRole("button", { name: "번역 초안 JSON 저장" }).hasAttribute("disabled")).toBe(true);

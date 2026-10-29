@@ -24,10 +24,10 @@ const SURFACE_ICONS: Readonly<Record<AiStudioSurfaceId, LucideIcon>> = {
 };
 
 const SURFACE_PREVIEW_IMAGES: Readonly<Record<AiStudioSurfaceId, string>> = {
-  director: "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
-  generate: "/assets/site-experience/nano-banana-site-v1/cards/nb-spatial-stage-640.webp",
-  runtime: "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
-  settings: "/assets/site-experience/nano-banana-site-v1/cards/nb-manage-vault-640.webp",
+  director: "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
+  generate: "/assets/site-experience/site-art-v1/cards/nb-spatial-stage-640.webp",
+  runtime: "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
+  settings: "/assets/site-experience/site-art-v1/cards/nb-manage-vault-640.webp",
 };
 
 const CONDITION_ICONS: Readonly<Record<AiStudioConditionKind, LucideIcon>> = {

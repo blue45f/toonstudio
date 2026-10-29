@@ -9,6 +9,7 @@ import { createStudioBg3dSkpSourceReaderFromHost, inspectStudioBg3dSkpSourceSele
 import { createStudioBg3dWorkbenchInsertionFromHost, type StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 import type { StudioBg3dApplySkpSourceCamera, StudioBg3dSkpCameraRestoreHost } from "./studio-bg3d-skp-camera-restore-types";
 import type { StudioBg3dPrimitiveEditPorts } from "./studio-bg3d-primitive-edit-ports";
+import { resolveStudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 import type { StudioBg3dSceneGlbExportPorts } from "./studio-bg3d-scene-glb-ports";
 
@@ -24,8 +25,14 @@ export interface StudioBg3dWorkbenchHostPorts extends StudioBg3dPrimitiveEditPor
 /** 가변 편집기 호스트의 최신 읽기와 실제 장면 명령을 작업대에 연결한다. */
 export function createStudioBg3dWorkbenchHostPorts(host: StudioBg3dSelectionArrayHost & StudioBg3dSkpCameraRestoreHost): StudioBg3dWorkbenchHostPorts {
   const applySkpCamera: StudioBg3dApplySkpSourceCamera = async (request) => {
+    const renderer = host.modelRenderer, isMaterialBackendCurrent = host.isMaterialBackendCurrent;
     try {
+      const backend = resolveStudioBg3dMaterialBackend({ renderer, materialBackend: host.materialBackend });
+      if (isMaterialBackendCurrent?.() === false) return { ok: false, code: "unavailable", messageKo: "현재 재질 backend를 준비 중입니다." };
       const { applyStudioBg3dSkpSourceCamera } = await import("./studio-bg3d-skp-camera-restore-command");
+      if (isMaterialBackendCurrent?.() === false || host.modelRenderer !== renderer || resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) !== backend) {
+        return { ok: false, code: "selection-changed", messageKo: "카메라 도구를 준비하는 동안 재질 backend가 바뀌었습니다." };
+      }
       return applyStudioBg3dSkpSourceCamera(host, request);
     } catch {
       return { ok: false, code: "unavailable", messageKo: "원본 카메라 도구를 준비하지 못했습니다. 다시 시도하세요." };

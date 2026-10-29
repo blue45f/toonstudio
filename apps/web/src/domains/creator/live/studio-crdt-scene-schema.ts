@@ -1,4 +1,5 @@
 import { parseStudioPsdSource } from "../export/studio-psd-source";
+import { parseStudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
 import {
   boundedString,
   cloneJsonObject,
@@ -143,7 +144,7 @@ export const STUDIO_CRDT_SCENE_ELEMENT_KEYS_BY_TYPE: Record<
   frame: new Set([
     ...COMMON_SCENE_ELEMENT_KEYS,
     "x", "y", "width", "height", "bg", "bgColor", "stroke", "strokeWidth", "dashStyle",
-    "storyBeat", "aiProvenance", "points",
+    "storyBeat", "aiProvenance", "points", "bundleSourceCredit",
   ]),
   focusLines: new Set([
     ...COMMON_SCENE_ELEMENT_KEYS,
@@ -316,6 +317,7 @@ export function validateStudioCrdtSceneElementPayload(
     throw new Error("지원하지 않는 장면 요소 페이로드 버전입니다.");
   }
   const props = cloneJsonObject(payload.props);
+  if ("bundleSourceCredit" in props && (payload.type !== "frame" && payload.type !== "reference" || !parseStudioBundleSourceCredit(props.bundleSourceCredit))) throw new Error("번들 배경 출처 기록이 올바르지 않습니다.");
   const allowedKeys = STUDIO_CRDT_SCENE_ELEMENT_KEYS_BY_TYPE[payload.type];
   for (const key of Object.keys(props)) {
     if (!allowedKeys.has(key)) throw new Error(`${payload.type} 요소의 ${key} 속성은 동기화할 수 없습니다.`);

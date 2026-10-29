@@ -25,7 +25,6 @@ import {
   isCharacterShaperTypingTarget,
   pushCharacterShaperKeyLayer,
   resolveShaperContextKeycapStatusGuide,
-  type ShaperCameraControlStyle,
 } from "../../character-shaper/character-shaper-ui-model";
 import { executeCharacterAuthoringTaskInBrowser } from "../runtime/character-authoring-worker-client";
 import { CharacterGroomPanel } from "./CharacterGroomPanel";
@@ -33,11 +32,12 @@ import { CharacterPoseV3Panel } from "../pose-v3/CharacterPoseV3Panel";
 import { CharacterCanonicalPartsPanel } from "./CharacterCanonicalPartsPanel";
 import { useCharacterPlatformWorkbench } from "./use-character-platform-workbench";
 import { computeShaperRealTabletWidthMultiplier } from "../surface-ink/character-shaper-barycentric-pen-line";
-import {
-  computeShaperAnisotropicOutlineOffset,
-  computeShaperCubicMatCapIntensity,
-  type EyeballHighlightType,
-} from "../render/character-shaper-eyeball-seam-mask";
+import { characterFramedExportSize } from "../../character-shaper/character-shaper-framing";
+import { boundCharacterSemanticCaptureSize } from "../../character-shaper/character-shaper-semantic-psd";
+import { roundExportSize } from "../../vrm/studio-vrm-poser-helpers";
+import { CharacterOutlineControls } from "./CharacterOutlineControls";
+import { useCharacterShaperOutputSettings, useCharacterShaperSessionSettings } from "../../character-shaper/character-shaper-session-settings";
+import { CharacterShaperCameraStyleSelect, CharacterShaperGazeSelect } from "../../character-shaper/CharacterShaperCameraControls";
 
 import type { CharacterSlotKind } from "../../character-shaper/character-shaper-contract";
 import type { CharacterShaperBinding } from "../../character-shaper/character-shaper-ui-contract";
@@ -186,20 +186,14 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   const [savingPreset, setSavingPreset] = useState(false);
   const [runtimeTestStatus, setRuntimeTestStatus] = useState<"idle" | "running" | "passed" | "failed">("idle");
   const [runtimeTestMessage, setRuntimeTestMessage] = useState<string | null>(null);
-  const [shaperMatcapWeight, setShaperMatcapWeight] = useState(0.2);
-  const [shaperOutlineThickness, setShaperOutlineThickness] = useState(0.01);
-  const [shaperEyeballMode, setShaperEyeballMode] = useState<EyeballHighlightType>("cam");
-  const [cameraStyle, setCameraStyle] = useState<ShaperCameraControlStyle>("unity");
-  const [fixEyeballCam, setFixEyeballCam] = useState(true);
-  const [createHairLayer, setCreateHairLayer] = useState(true);
-  const [extractLuminanceOutline, setExtractLuminanceOutline] = useState(true);
+  const { psdOptions, setPsdOptions, exportEdge, framing } = useCharacterShaperOutputSettings();
+  const settings = useCharacterShaperSessionSettings();
+  const { createHairLayer, extractLuminanceOutline } = psdOptions;
   const [vrmLicensePresetId, setVrmLicensePresetId] = useState<VrmUsageConditionMatrix["presetId"]>("webtoon-serial-ready");
   const activeVrmLicense = VRM_LICENSE_PRESETS.find((item) => item.presetId === vrmLicensePresetId) ?? VRM_LICENSE_PRESETS[0]!;
   const vrmLicenseBadges = summarizeVrmUsageMatrix(activeVrmLicense);
   const activeSubRoute = VRM_CHARACTER_SUB_ROUTES.find((route) => route.workbenchTab === tab) ?? VRM_CHARACTER_SUB_ROUTES[0]!;
   const onwardBridges = resolveCreatorPostActionBridgeRoutes(tab === "presets" ? "preset" : tab === "groom" ? "groom" : tab === "pose" ? "pose" : tab === "ink" ? "ink" : "render");
-  const shaperMatcap = computeShaperCubicMatCapIntensity(shaperMatcapWeight);
-  const shaperOutline = computeShaperAnisotropicOutlineOffset({ normal: [0, 0, 1], outlineThickness: shaperOutlineThickness });
   const shaperTabletOverdrive = computeShaperRealTabletWidthMultiplier(1.0, 0.18, true);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [launcherRoot, setLauncherRoot] = useState<HTMLElement | null>(null);
@@ -221,7 +215,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   const shaperContextStatusGuide = resolveShaperContextKeycapStatusGuide({
     tab,
     drawingActive: drawing,
-    cameraStyle,
+    cameraStyle: settings?.cameraStyle,
   });
   const ownerDialogRef = h.dialogRef as RefObject<HTMLElement | null> | undefined;
 
@@ -234,10 +228,11 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
   }, [shellCompact, ownerDialogRef]);
 
   const captureCanvas = h.captureRef?.current?.gl?.domElement as HTMLCanvasElement | undefined;
-  const exportSize = useMemo(() => ({
-    width: Math.max(1, Math.round(captureCanvas?.width || 2048)),
-    height: Math.max(1, Math.round(captureCanvas?.height || 2048)),
-  }), [captureCanvas?.height, captureCanvas?.width]);
+  const captureRect = captureCanvas?.getBoundingClientRect();
+  const displaySize = !captureCanvas ? { width: 2048, height: 2048 } : framing.aspect === "viewport" ? roundExportSize(captureCanvas)
+    : { width: captureRect?.width || captureCanvas.width, height: captureRect?.height || captureCanvas.height };
+  const requestedSize = characterFramedExportSize(Math.max(1, displaySize.width), Math.max(1, displaySize.height), exportEdge, framing.aspect);
+  const exportSize = boundCharacterSemanticCaptureSize(requestedSize.width, requestedSize.height);
   const psdPreflight = useMemo(() => createCharacterExportPreflight({
     format: "psd",
     width: exportSize.width,
@@ -561,25 +556,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
           ))}
         </ul>
       </Section>
-      <Section title="SHAPER Toon · 안구 하이라이트 보정" description="125×(1-w)³ 3차 MatCap 램프와 1.5×0.3 비등방성 외곽선, 4모드 안구 하이라이트를 제어합니다.">
-        <div data-testid="shaper-render-toon-calibration" className="space-y-2 text-[0.68rem] text-fg-2">
-          <label className="block font-semibold">Cubic MatCap 감쇠 (w={shaperMatcapWeight.toFixed(2)}) · 강도 {shaperMatcap.rawIntensity.toFixed(1)}
-            <input aria-label="Cubic MatCap 감쇠" type="range" min="0" max="1" step="0.05" value={shaperMatcapWeight} onChange={(event) => setShaperMatcapWeight(Number(event.currentTarget.value))} className="h-9 w-full accent-accent" />
-          </label>
-          <label className="block font-semibold">비등방성 외곽선 (1.5×0.3) · 유효 돌출 {(shaperOutline.effectiveScale * 1000).toFixed(2)}mm
-            <input aria-label="비등방성 외곽선 두께" type="range" min="0.002" max="0.03" step="0.002" value={shaperOutlineThickness} onChange={(event) => setShaperOutlineThickness(Number(event.currentTarget.value))} className="h-9 w-full accent-accent" />
-          </label>
-          <label className="block space-y-1 font-semibold">
-            <span>안구 하이라이트 추종 모드 (EyeballHighlightType)</span>
-            <select aria-label="안구 하이라이트 추종 모드" value={shaperEyeballMode} onChange={(event) => setShaperEyeballMode(event.currentTarget.value as EyeballHighlightType)} className={cn("min-h-10 w-full rounded-xl border border-line bg-panel px-2.5 text-xs text-fg", STUDIO_FOCUS_RING)}>
-              <option value="cam">카메라 추종 (cam · F10 응시 연동)</option>
-              <option value="light">주광원 추종 (light)</option>
-              <option value="world">월드 천정 고정 (world)</option>
-              <option value="fix">수동 오프셋 고정 (fix)</option>
-            </select>
-          </label>
-        </div>
-      </Section>
+      <CharacterOutlineControls h={h} authoring={workbench.authoring} />
       <Section title="PSD 출력 Preflight" description={`${psdPreflight.width}×${psdPreflight.height} · ${psdPreflight.strategy === "tile-worker" ? "타일 Worker" : "직접 처리"}`}>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-good/10 p-2"><strong className="block text-good">{psdPreflight.plannedCount}</strong><span className="text-[0.62rem] text-fg-3">생성</span></div>
@@ -588,11 +565,11 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         </div>
         <div data-testid="shaper-psd-preflight-options" className="space-y-1.5 rounded-xl border border-line bg-panel/60 p-2 text-[0.64rem] text-fg-2">
           <label className="flex cursor-pointer items-center gap-2">
-            <input type="checkbox" className="size-4 accent-accent" checked={createHairLayer} onChange={(event) => setCreateHairLayer(event.currentTarget.checked)} />
+            <input type="checkbox" className="size-4 accent-accent" checked={createHairLayer} onChange={(event) => setPsdOptions({ ...psdOptions, createHairLayer: event.currentTarget.checked })} />
             <span>헤어 3-레이어 분리 ({psdPreflight.shaperHairThreeLayers?.map((l) => l.psdLayerName).join(" / ") || "비활성"})</span>
           </label>
           <label className="flex cursor-pointer items-center gap-2">
-            <input type="checkbox" className="size-4 accent-accent" checked={extractLuminanceOutline} onChange={(event) => setExtractLuminanceOutline(event.currentTarget.checked)} />
+            <input type="checkbox" className="size-4 accent-accent" checked={extractLuminanceOutline} onChange={(event) => setPsdOptions({ ...psdOptions, extractLuminanceOutline: event.currentTarget.checked })} />
             <span>SHAPER 휘도 반전 선화 추출 ({psdPreflight.shaperLuminanceOutlineFormula ?? "기본 알파"})</span>
           </label>
         </div>
@@ -689,12 +666,8 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
               {bridge.koLabel}
             </a>
           ))}
-          <select aria-label="3D 카메라 조작 스타일" data-testid="workbench-camera-style-select" value={cameraStyle} onChange={(event) => setCameraStyle(event.currentTarget.value as ShaperCameraControlStyle)} className="ml-auto rounded-lg border border-line bg-panel px-1.5 py-0.5 text-[0.6rem] font-semibold text-fg-2">
-            <option value="unity">Unity 카메라</option>
-            <option value="blender">Blender 카메라</option>
-            <option value="max">3ds Max 카메라</option>
-          </select>
-          <button type="button" data-testid="workbench-eyeball-gaze-lock" aria-pressed={fixEyeballCam} onClick={() => setFixEyeballCam((prev) => !prev)} className={cn("rounded-lg border px-1.5 py-0.5 text-[0.6rem] font-semibold", fixEyeballCam ? "border-accent/60 bg-accent-soft text-accent" : "border-line bg-panel text-fg-3")}>F10 응시 {fixEyeballCam ? "ON" : "OFF"}</button>
+          <CharacterShaperCameraStyleSelect workbench disabled={Boolean(h.viewportCameraInteractionLocked || h.isCapturing)} />
+          <CharacterShaperGazeSelect h={h} workbench />
         </nav> : null}
         {drawing ? <div className="flex items-center gap-3 p-3">
           <p className="min-w-0 flex-1 text-[0.68rem] leading-relaxed text-fg-3">캐릭터 표면에 그리세요. 그리기를 종료하면 펜선 도구로 돌아갑니다.</p>

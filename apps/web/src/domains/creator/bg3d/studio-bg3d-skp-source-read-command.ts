@@ -1,4 +1,5 @@
 import type { StudioBg3dSkpSceneSource, StudioBg3dSkpSceneSourceParseResult } from "./studio-bg3d-skp-scene-source";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 export interface StudioBg3dSkpSourceSelection {
   readonly scopeKey: string | null;
@@ -20,6 +21,9 @@ interface LoadedRoot {
 /** 문서 변경 명령 없이 실제 선택·공식 런타임 참조·로드된 자산의 출처만 읽는다. */
 export interface StudioBg3dSkpSourceReadHost {
   readonly open?: boolean;
+  readonly modelRenderer?: unknown;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly selectedIds?: ReadonlySet<string>;
   /** 실제 편집기의 가변 선택 참조를 우선해 오래된 렌더의 selectedIds를 읽지 않는다. */
   readonly selectedIdsRef?: { readonly current: ReadonlySet<string> };
@@ -27,7 +31,7 @@ export interface StudioBg3dSkpSourceReadHost {
     readonly customModels: readonly { readonly id: string; readonly modelId: string; readonly name?: string }[];
     readonly primitives?: readonly { readonly id: string }[];
   } };
-  readonly modelRootCacheRef?: { readonly current: ReadonlyMap<string, { readonly root: LoadedRoot }> };
+  readonly modelRootCacheRef?: { readonly current: ReadonlyMap<string, { readonly root: LoadedRoot; readonly runtimeVariant: string; readonly record: { readonly id: string } }> };
 }
 
 interface ReaderModule {
@@ -64,7 +68,8 @@ export function inspectStudioBg3dSkpSourceSelection(host: StudioBg3dSkpSourceRea
     const target = resolveTarget(host);
     if (!target) return { scopeKey: null, modelName: "", blockedReason: "원본 정보를 볼 3D 모델을 하나만 선택하세요." };
     return { scopeKey: target.scopeKey, modelName: target.modelName,
-      blockedReason: host.modelRootCacheRef?.current.get(target.storageId)?.root ? null : "모델을 불러오는 중입니다. 준비된 뒤 다시 확인하세요." };
+      blockedReason: host.isMaterialBackendCurrent?.() !== false && host.modelRootCacheRef
+        && readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, target.storageId, resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }))?.root ? null : "모델을 불러오는 중입니다. 준비된 뒤 다시 확인하세요." };
   } catch {
     return { scopeKey: null, modelName: "", blockedReason: "현재 모델 정보를 읽지 못했습니다. 다시 확인하세요." };
   }
@@ -74,16 +79,22 @@ export function inspectStudioBg3dSkpSourceSelection(host: StudioBg3dSkpSourceRea
 export function createStudioBg3dSkpSourceReaderFromHost(host: StudioBg3dSkpSourceReadHost, options: ReadOptions = {}): StudioBg3dReadSkpSceneSource {
   return async () => {
     let initial: SelectionTarget | null = null;
+    const renderer = host.modelRenderer, isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+    let backend: StudioBg3dMaterialBackend;
     const sameSelection = () => {
-      try { return initial !== null && resolveTarget(host)?.scopeKey === initial.scopeKey; } catch { return false; }
+      try { return isMaterialBackendCurrent?.() !== false && host.modelRenderer === renderer && resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) === backend
+        && initial !== null && resolveTarget(host)?.scopeKey === initial.scopeKey; } catch { return false; }
     };
     try {
+      backend = resolveStudioBg3dMaterialBackend({ renderer, materialBackend: host.materialBackend });
       initial = resolveTarget(host);
       if (!initial) return failure("selection-unavailable", "원본 정보를 볼 3D 모델을 하나만 선택하세요.");
-      if (!host.modelRootCacheRef?.current.get(initial.storageId)?.root) return failure("model-loading", "모델을 불러오는 중입니다. 준비된 뒤 다시 확인하세요.");
+      const initialEntry = host.modelRootCacheRef ? readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, initial.storageId, backend) : undefined;
+      if (isMaterialBackendCurrent?.() === false || !initialEntry?.root) return failure("model-loading", "모델을 불러오는 중입니다. 준비된 뒤 다시 확인하세요.");
       const reader = await (options.loadReader?.() ?? import("./studio-bg3d-skp-scene-provenance"));
       if (!sameSelection()) return failure("selection-changed", "모델 선택이 바뀌었습니다. 현재 모델의 원본 정보를 다시 확인하세요.");
-      const root = host.modelRootCacheRef?.current.get(initial.storageId)?.root;
+      const currentEntry = host.modelRootCacheRef ? readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, initial.storageId, backend) : undefined;
+      const root = currentEntry?.root;
       if (!root) return failure("model-loading", "모델을 불러오는 중입니다. 준비된 뒤 다시 확인하세요.");
       const result = reader.readStudioBg3dSkpSceneSource(root);
       if (!sameSelection()) return failure("selection-changed", "모델 선택이 바뀌었습니다. 현재 모델의 원본 정보를 다시 확인하세요.");

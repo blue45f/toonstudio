@@ -7,6 +7,7 @@ import type { StudioBg3dExecuteSelectionArray, StudioBg3dSelectionArraySummary }
 import type { StudioBg3dReadSkpSceneSource, StudioBg3dSkpSourceReadResult } from "./studio-bg3d-skp-source-read-command";
 import type { StudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 import { extractStudioBg3dSkpSceneManifest } from "./studio-bg3d-skp-scene-manifest";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { studioBg3dSkpGeometryTransform } from "./studio-bg3d-skp-scene-source";
 import { createStudioBg3dSkpSceneSourceVffBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
 import { createStudioBg3dSkpSourceReaderFromHost, inspectStudioBg3dSkpSourceSelection } from "./studio-bg3d-skp-source-read-command";
@@ -50,7 +51,7 @@ function sourceHost(source: StudioBg3dSkpSceneSource | undefined, suffix = "A") 
   if (source) root.userData.toonstudioSkpSceneSource = source;
   const host = { open: true, selectedIds: new Set([`instance-${suffix}`]),
     physicsRuntimeSourceRef: { current: { customModels: [{ id: `instance-${suffix}`, modelId: `storage-${suffix}`, name: `원본 모델 ${suffix}` }] } },
-    modelRootCacheRef: { current: new Map([[`storage-${suffix}`, { root }]]) } };
+    modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(`storage-${suffix}`, "webgl"), { root, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: `storage-${suffix}` } }]]) } };
   return { read: vi.fn(createStudioBg3dSkpSourceReaderFromHost(host)), selection: inspectStudioBg3dSkpSourceSelection(host) };
 }
 

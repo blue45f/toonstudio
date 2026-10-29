@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "É necessário entrar.",
+  "apiError.loginRequired": "É necessário iniciar sessão.",
   "apiError.adminRequired": "As permissões de administração não foram verificadas.",
   "apiError.adminOnlyPage": "Esta página é restrita aos administradores.",
   "apiError.notFound": "O artigo solicitado não foi encontrado.",

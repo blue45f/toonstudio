@@ -95,12 +95,12 @@ describe("StudioDraftSaveCenter", () => {
     setOnline(true);
     renderCenter();
 
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" }));
 
     expect(screen.getByRole("dialog", { name: "초안 저장 센터" })).not.toBeNull();
     expect(screen.getByText("2단계 자동 보호")).not.toBeNull();
-    expect(screen.getByText("이 탭이 복구 저장 담당")).not.toBeNull();
-    expect(screen.getByText("서버 초안 revision #7")).not.toBeNull();
+    expect(screen.getByText("이 기기 자동 저장")).not.toBeNull();
+    expect(screen.getByText("서버 저장 기록 #7")).not.toBeNull();
     expect(screen.getByText("기기 체크포인트")).not.toBeNull();
     expect(screen.getByText("3개")).not.toBeNull();
     const lastSave = document.querySelector("[data-studio-last-server-save]");
@@ -112,7 +112,7 @@ describe("StudioDraftSaveCenter", () => {
   it("delegates manual save, version history and project backup to existing authorities", async () => {
     setOnline(true);
     const actions = renderCenter();
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" }));
 
     fireEvent.click(screen.getByRole("button", { name: "지금 서버에 저장" }));
     fireEvent.click(screen.getByRole("button", { name: "버전·체크포인트" }));
@@ -121,7 +121,7 @@ describe("StudioDraftSaveCenter", () => {
     await waitFor(() => expect(actions.onSaveDraft).toHaveBeenCalledTimes(1));
     expect(actions.onOpenVersions).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" }));
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 백업" }));
     expect(actions.onExportBackup).toHaveBeenCalledTimes(1);
   });
@@ -201,7 +201,7 @@ describe("StudioDraftSaveCenter", () => {
       .mockResolvedValue(undefined);
     renderCenter({ onSaveDraft });
 
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" }));
     fireEvent.click(screen.getByRole("button", { name: "지금 서버에 저장" }));
 
     // 실패는 숨지 않는다 — 기기 예약과 자동 재저장 약속이 그대로 보인다.
@@ -247,7 +247,7 @@ describe("StudioDraftSaveCenter", () => {
   it("closes with Escape and restores focus to the status trigger", () => {
     setOnline(true);
     renderCenter();
-    const trigger = screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" });
+    const trigger = screen.getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" });
     fireEvent.click(trigger);
     expect(screen.getByRole("dialog", { name: "초안 저장 센터" })).not.toBeNull();
 

@@ -156,11 +156,22 @@ describe("렌더 권리 연동 정합 (CI 판정 · 웹 로더)", () => {
     }
   });
 
-  it("커밋된 렌더 매니페스트는 CI 판정을 통과하고 웹 로더가 전달하는 슬롯이 없다 (전부 초안)", () => {
+  it("커밋된 렌더 매니페스트의 완성 슬롯은 CI·웹 로더가 같은 권리로 전달하고 초안은 제외한다", () => {
     const manifest = JSON.parse(readFileSync(resolve(REPO_ROOT, RENDER_PACK_DIR, RENDER_MANIFEST_FILE), "utf8"));
     const plan = planRenderManifestRights(loadPackRightsLedger(), manifest);
     expect(plan.problems).toEqual([]);
-    expect(parseStudioBundleCatalog(manifest)).toEqual([]);
-    expect(plan.slots.filter((slot) => slot.deliverable)).toEqual([]);
+    const deliverable = plan.slots.filter((slot) => slot.deliverable);
+    const delivered = parseStudioBundleCatalog(manifest);
+    expect(deliverable.length).toBeGreaterThan(0);
+    expect(delivered.map((asset) => asset.id)).toEqual(deliverable.map((slot) => slot.slotId));
+    expect(delivered.every((asset) => asset.visualReviewed && asset.rights.serve === "allow")).toBe(true);
+    for (const asset of delivered) {
+      const slot = deliverable.find((candidate) => candidate.slotId === asset.id);
+      expect(asset.rights).toEqual(slot.expected);
+      expect(asset.sourceModelSha256).toBe(slot.stamped.sourceModelSha256);
+      expect(asset.sha256).toBe(slot.stamped.sha256);
+    }
+    const drafts = plan.slots.filter((slot) => slot.draft);
+    expect(drafts.every((slot) => !slot.deliverable && !delivered.some((asset) => asset.id === slot.slotId))).toBe(true);
   });
 });

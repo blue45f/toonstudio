@@ -6,13 +6,14 @@ import * as THREE from "three";
 import { applyStudioBg3dCc0PbrMapsToStandardMaterial } from "./bg3d/studio-bg3d-cc0-pbr-texture-loader";
 import { applyBg3dFallbackMaterial, loadBg3dCustomModelFromBlob } from "./bg3d/studio-bg3d-custom-model-blob";
 import { restoreStudioBg3dPrimitiveEditDepthBias } from "./bg3d/studio-bg3d-primitive-edit-material-runtime";
-import { loadStudioBg3dMeshoptDecoder } from "./bg3d/studio-bg3d-meshopt";
+import { prepareVerifiedStudioBg3dGltfLoader } from "./bg3d/studio-bg3d-gltf-loader";
+import type { StudioBg3dMaterialBackend } from "./bg3d/studio-bg3d-model-material-variant";
+import { synchronizeStudioMToonMaterialOverride, updateStudioMToonInstanceMaterials } from "./mesh-materials/studio-mtoon-instance-materials";
 import { computeStudioBg3dAutoFitScale, STUDIO_BG3D_AUTO_FIT_TARGET_SIZE } from "./bg3d/studio-bg3d-model-scale-contract";
 
 import type { StudioBg3dGlbValidationSuccess } from "./bg3d/studio-bg3d-glb-validation";
 import type {
   StudioBg3dKtx2Renderer,
-  StudioBg3dKtx2RendererRuntime,
 } from "./bg3d/studio-bg3d-ktx2-renderer-runtime";
 import type {
   StudioBg3dAnimationPlayback,
@@ -987,6 +988,7 @@ export interface StudioBg3dEditableThreeClone {
   readonly poseController: StudioBg3dThreePoseController;
   readonly morphController: StudioBg3dThreeMorphController;
   applyMaterialOverride(override: StudioBg3dMaterialOverride | undefined): void;
+  updateMaterials(deltaSeconds: number): void;
   /** Disposes only instance-owned material clones; geometry and textures remain cache-owned. */
   dispose(): void;
 }
@@ -1009,6 +1011,7 @@ function applyMaterialOverrideToBinding(
   const editable = binding.editable as AdjustableThreeMaterial;
   editable.copy(source);
   if (!override) {
+    synchronizeStudioMToonMaterialOverride(editable);
     editable.needsUpdate = true;
     return;
   }
@@ -1040,6 +1043,7 @@ function applyMaterialOverrideToBinding(
   if (typeof editable.wireframe === "boolean") editable.wireframe = override.wireframe;
   if (override.doubleSided) editable.side = THREE.DoubleSide;
   applyStudioBg3dCc0PbrMapsToStandardMaterial(editable, override);
+  synchronizeStudioMToonMaterialOverride(editable);
   editable.needsUpdate = true;
 }
 
@@ -1055,7 +1059,7 @@ export async function createStudioBg3dEditableThreeClone(
   const morphController = createStudioBg3dThreeMorphController(clone);
   const editableBySource = new Map<THREE.Material, THREE.Material>();
   const bindings: StudioBg3dEditableMaterialBinding[] = [];
-  clone.traverse((object) => {
+  try { clone.traverse((object) => {
     const isRenderable =
       (object as THREE.Mesh).isMesh
       || (object as THREE.Points).isPoints
@@ -1071,6 +1075,7 @@ export async function createStudioBg3dEditableThreeClone(
       let editable = editableBySource.get(source);
       if (!editable) {
         editable = source.clone();
+        try { synchronizeStudioMToonMaterialOverride(editable); } catch (error) { editable.dispose(); throw error; }
         editableBySource.set(source, editable);
         bindings.push({ source, editable });
       }
@@ -1079,7 +1084,10 @@ export async function createStudioBg3dEditableThreeClone(
     renderable.material = Array.isArray(renderable.material)
       ? editableMaterials
       : editableMaterials[0];
-  });
+  }); } catch (error) {
+    for (const { editable } of bindings) editable.dispose();
+    throw error;
+  }
 
   let disposed = false;
   return {
@@ -1087,6 +1095,9 @@ export async function createStudioBg3dEditableThreeClone(
     materialCount: bindings.length,
     poseController,
     morphController,
+    updateMaterials(deltaSeconds) {
+      if (!disposed) updateStudioMToonInstanceMaterials(editableBySource.values(), deltaSeconds);
+    },
     applyMaterialOverride(override) {
       if (disposed) return;
       for (const binding of bindings) applyMaterialOverrideToBinding(binding, override);
@@ -1148,6 +1159,7 @@ export async function loadVerifiedStudioBg3dGlbWithThree(
      * renderer exposes.
      */
     readonly renderer?: StudioBg3dKtx2Renderer | null;
+    readonly materialBackend?: StudioBg3dMaterialBackend;
   } = {},
 ): Promise<StudioBg3dThreeLoadResult> {
   if (!validBudgets(budgets)) return threeFailure("invalid-budgets");
@@ -1163,53 +1175,15 @@ export async function loadVerifiedStudioBg3dGlbWithThree(
     return threeFailure("ktx2-renderer-unavailable");
   }
 
-  let loader: import("three/examples/jsm/loaders/GLTFLoader.js").GLTFLoader;
-  let ktx2Runtime: StudioBg3dKtx2RendererRuntime | null = null;
+  const prepared = await prepareVerifiedStudioBg3dGltfLoader({
+    renderer: options.renderer, materialBackend: options.materialBackend, requiresBasisTextures: verification.requiresBasisTextures,
+  });
+  if (!prepared.ok) return threeFailure(prepared.code);
+  const { loader, ktx2Runtime } = prepared;
   const disposeKtx2Runtime = (): boolean => {
     if (!ktx2Runtime) return true;
-    try {
-      ktx2Runtime.dispose();
-      return true;
-    } catch {
-      return false;
-    }
+    try { ktx2Runtime.dispose(); return true; } catch { return false; }
   };
-  try {
-    const baseLoaderPromise = Promise.all([
-      import("three/examples/jsm/loaders/GLTFLoader.js"),
-      loadStudioBg3dMeshoptDecoder(),
-    ]);
-    // Optional KHR_texture_basisu assets deliberately use their core PNG/JPEG source. Three only
-    // selects that standards-defined fallback when no KTX2Loader is attached.
-    const ktx2RuntimePromise = verification.requiresBasisTextures
-      ? import("./bg3d/studio-bg3d-ktx2-renderer-runtime").then(({ createStudioBg3dKtx2RendererRuntime }) =>
-          createStudioBg3dKtx2RendererRuntime({ renderer: options.renderer as StudioBg3dKtx2Renderer })
-        )
-      : Promise.resolve(null);
-    const [baseLoaderResult, ktx2RuntimeResult] = await Promise.allSettled([
-      baseLoaderPromise,
-      ktx2RuntimePromise,
-    ]);
-    if (ktx2RuntimeResult.status === "fulfilled") ktx2Runtime = ktx2RuntimeResult.value;
-    if (baseLoaderResult.status === "rejected") {
-      disposeKtx2Runtime();
-      return threeFailure("renderer-unavailable");
-    }
-    if (ktx2RuntimeResult.status === "rejected") {
-      const runtimeCode = (ktx2RuntimeResult.reason as { readonly code?: unknown } | null)?.code;
-      return threeFailure(
-        runtimeCode === "renderer-unavailable"
-          ? "ktx2-renderer-unavailable"
-          : "ktx2-runtime-unavailable"
-      );
-    }
-    const [{ GLTFLoader }, meshoptDecoder] = baseLoaderResult.value;
-    loader = new GLTFLoader().setMeshoptDecoder(meshoptDecoder);
-    if (ktx2Runtime) loader.setKTX2Loader(ktx2Runtime.loader);
-  } catch {
-    disposeKtx2Runtime();
-    return threeFailure("renderer-unavailable");
-  }
 
   let parsed: import("three/examples/jsm/loaders/GLTFLoader.js").GLTF;
   try {

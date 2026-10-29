@@ -16,6 +16,7 @@ import type { AccessoryAnchor, AccessoryInstanceId, AccessoryOffset, HairColor, 
 import type { EngineStatus } from "./engine";
 import type { LabFailure } from "./errors";
 import type { ExpressionWeights } from "./expression";
+import type { EyeGaze } from "./eye-gaze";
 import type { RecipeColorKey } from "./mesh-data";
 import type { PaintUndoToken } from "./paint";
 import type { BodyParamKey, FaceParamKey } from "./params";
@@ -49,7 +50,8 @@ export type LabCommand =
       readonly coalesceKey?: string;
     }
   /** IK·관절 드래그·사진 포즈 결과도 이 명령으로 기록한다 */
-  | { readonly type: "pose/set"; readonly pose: Pose; readonly scope: PoseScope; readonly labelKo: string }
+  | { readonly type: "eye-gaze/set"; readonly gaze: EyeGaze; readonly coalesceKey?: string }
+  | { readonly type: "pose/set"; readonly pose: Pose; readonly scope: PoseScope; readonly labelKo: string; readonly coalesceKey?: string; readonly coalesceMode?: "session" }
   | { readonly type: "hand-pose/set"; readonly side: "left" | "right"; readonly presetId: PresetId | null }
   /** 부분 셰이딩(v2 그대로: 지정한 하위 객체를 통째로 바꾼다). look 부분 변경은 `look/set`을 쓴다. */
   | { readonly type: "shading/set"; readonly profile: Partial<ShadingProfile> }

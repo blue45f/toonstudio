@@ -294,6 +294,10 @@ describe("제품 전문가 작업공간의 컷 버전 통합", () => {
     Object.assign(h, { modelRenderer: undefined });
     await expect(
       adapter.applySource(source, null, new AbortController().signal)
+    ).rejects.toThrow(/^표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다\.$/u);
+    const unreadyAdapter = createStudioScene3dCutBg3dHost(h);
+    await expect(
+      unreadyAdapter.applySource(source, null, new AbortController().signal)
     ).rejects.toThrow(/렌더러 준비/u);
     Object.assign(h, { modelRenderer: renderer });
     await expect(

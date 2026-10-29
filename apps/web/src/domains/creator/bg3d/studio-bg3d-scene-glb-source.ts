@@ -1,6 +1,7 @@
 import type { StudioBg3dViewportFramingState } from "./studio-bg3d-camera-application";
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 import type { StudioBg3dModalSession } from "./studio-bg3d-modal-operation-coordinator";
 import { studioBg3dModalOperationCoordinator } from "./studio-bg3d-modal-operation-coordinator";
 import { collectStudioBg3dEffectivelyVisibleEntityIds, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
@@ -21,6 +22,8 @@ export { isStudioBg3dSceneGlbExportAvailable } from "./studio-bg3d-scene-glb-ava
 export interface StudioBg3dSceneGlbExportHost {
   readonly open?: boolean;
   readonly modelRenderer?: unknown;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly isRestoringScene?: boolean;
   readonly isCapturing?: boolean;
   readonly isBatchRenderingShots?: boolean;
@@ -56,6 +59,8 @@ export interface StudioBg3dSceneGlbSource {
   readonly animationTimeSecondsByNodeId: ReadonlyMap<string, number>;
   readonly rendererEngine: "webgl" | "webgpu";
   readonly rendererRefSnapshot: unknown;
+  readonly materialBackend: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly sectionPlane: StudioBg3dSectionPlaneState | null;
 }
 export interface StudioBg3dSceneGlbSourceAsset {
@@ -74,9 +79,6 @@ function rootTransform(entry: StudioBg3dModelRootCacheEntry): string | null {
     || root.scale.toArray().some((value) => !close(value, k)) || [root.quaternion.x, root.quaternion.y, root.quaternion.z].some((value) => !close(value, 0))
     || !close(Math.abs(root.quaternion.w), 1)) return null;
   return JSON.stringify({ position: root.position.toArray(), quaternion: root.quaternion.toArray(), scale: root.scale.toArray(), k });
-}
-function rendererEngine(value: unknown): "webgl" | "webgpu" {
-  return typeof value === "object" && value !== null && "isWebGPURenderer" in value && value.isWebGPURenderer === true ? "webgpu" : "webgl";
 }
 function quaternion(rotation: readonly number[]): readonly number[] {
   const [x, y, z] = rotation.map((value) => value / 2), c1 = Math.cos(x), c2 = Math.cos(y), c3 = Math.cos(z), s1 = Math.sin(x), s2 = Math.sin(y), s3 = Math.sin(z);
@@ -143,6 +145,8 @@ function unavailable(): never { throw new StudioBg3dSceneGlbError("unavailable",
 export function captureStudioBg3dSceneGlbSource(host: StudioBg3dSceneGlbExportHost, signal: AbortSignal): StudioBg3dSceneGlbSource {
   if (signal.aborted) throw new StudioBg3dSceneGlbError("aborted", "장면 GLB 저장을 취소했습니다.");
   if (!isStudioBg3dSceneGlbExportAvailable(host)) unavailable();
+  const rendererRefSnapshot = host.modelRenderer, materialBackend = resolveStudioBg3dMaterialBackend({ renderer: rendererRefSnapshot, materialBackend: host.materialBackend }), isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+  if (isMaterialBackendCurrent?.() === false) unavailable();
   if (host.sharedCharacters?.length) throw new StudioBg3dSceneGlbError("unsupported-scene", "프로젝트에 연결된 캐릭터까지 포함하는 GLB 저장은 아직 준비 중입니다. 장면을 변경하지 않았습니다.");
   const runtime = host.physicsRuntimeSourceRef?.current;
   const session = host.modalAssetSessionRef?.current;
@@ -162,7 +166,7 @@ export function captureStudioBg3dSceneGlbSource(host: StudioBg3dSceneGlbExportHo
     if (node.kind !== "model" || !visible.has(node.id)) continue;
     const attachment = document.attachments.find(({ id }) => id === node.attachmentId);
     const storageId = host.storageModelIdByAttachmentIdRef?.current.get(node.attachmentId);
-    const entry = storageId ? host.modelRootCacheRef?.current.get(storageId) : undefined;
+    const entry = storageId && host.modelRootCacheRef ? readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, storageId, materialBackend) : undefined;
     const binding = storageId ? host.attachmentByStorageModelIdRef?.current.get(storageId) : undefined;
     const rootTransformFingerprint = entry ? rootTransform(entry) : null;
     if (!attachment || !storageId || !entry || !binding || !rootTransformFingerprint || entry.record.id !== storageId
@@ -173,9 +177,11 @@ export function captureStudioBg3dSceneGlbSource(host: StudioBg3dSceneGlbExportHo
     const time = host.modelAnimationTimeReadersRef?.current.get(node.id)?.();
     if (time !== undefined && Number.isFinite(time) && time >= 0) animationTimeSecondsByNodeId.set(node.id, time);
   }
+  if (isMaterialBackendCurrent?.() === false || host.modelRenderer !== rendererRefSnapshot
+    || resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) !== materialBackend) unavailable();
   return Object.freeze({ session, document, canonicalFingerprint, framing: structuredClone(framing),
     policy: deriveStudioBg3dSessionGlbValidationPolicy(document, quality), assets, animationTimeSecondsByNodeId,
-    rendererEngine: rendererEngine(host.modelRenderer), rendererRefSnapshot: host.modelRenderer,
+    rendererEngine: materialBackend, rendererRefSnapshot, materialBackend, isMaterialBackendCurrent,
     sectionPlane: host.sectionPlane ? structuredClone(host.sectionPlane) : null });
 }
 
@@ -186,6 +192,7 @@ export function assertStudioBg3dSceneGlbSourceCurrent(host: StudioBg3dSceneGlbEx
   const current = host.physicsRuntimeSourceRef?.current;
   if (!isStudioBg3dSceneGlbExportAvailable(host) || !current || !quality || host.modalAssetSessionRef?.current !== source.session
     || !studioBg3dModalOperationCoordinator.isCurrent(source.session) || host.modelRenderer !== source.rendererRefSnapshot
+    || source.isMaterialBackendCurrent?.() === false || resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) !== source.materialBackend
     || Boolean(host.sharedCharacters?.length) || canonicalStudioCommandJson(host.sectionPlane ?? null) !== canonicalStudioCommandJson(source.sectionPlane)
     || serializeStudioBg3dSceneDocument(current.document) !== source.canonicalFingerprint
     || JSON.stringify(host.viewportApiRef?.current?.readFramingState()) !== JSON.stringify(source.framing)
@@ -194,7 +201,7 @@ export function assertStudioBg3dSceneGlbSourceCurrent(host: StudioBg3dSceneGlbEx
   }
   assertRuntimeMatchesDocument(host, current, source.document);
   for (const [attachmentId, asset] of source.assets) {
-    if (host.modelRootCacheRef?.current.get(asset.storageId) !== asset.entry || asset.entry.root !== asset.root || recordIdentity(asset.entry) !== asset.recordIdentity
+    if (!host.modelRootCacheRef || readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, asset.storageId, source.materialBackend) !== asset.entry || asset.entry.root !== asset.root || recordIdentity(asset.entry) !== asset.recordIdentity
       || rootTransform(asset.entry) !== asset.rootTransformFingerprint
       || host.storageModelIdByAttachmentIdRef?.current.get(attachmentId) !== asset.storageId
       || JSON.stringify(normalizeStudioBg3dGlbAttachment(host.attachmentByStorageModelIdRef?.current.get(asset.storageId))) !== JSON.stringify(asset.attachment)) {

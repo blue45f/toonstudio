@@ -11,10 +11,10 @@ import {
   resolvePageSimplicityProfile,
   type ContextualSubNavGroup,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
-import { resolveNanoBananaCardMetaForSubNavGroup } from "./site-experience/nano-banana-site-card-meta";
+import { resolveSiteArtCardMetaForSubNavGroup } from "./site-experience/site-art-card-meta";
 
 import "./site-contextual-subnav.css";
-import "./site-experience/nano-banana-site-ui.css";
+import "./site-experience/site-art-ui.css";
 
 export function SiteContextualSubNav({
   pathnameOverride,
@@ -36,12 +36,10 @@ export function SiteContextualSubNav({
 
   const title = isKo ? group.koTitle : group.enTitle;
   const style = { "--subnav-accent": group.accentToken } as CSSProperties;
-  const nbCard = resolveNanoBananaCardMetaForSubNavGroup(group.id);
+  const nbCard = resolveSiteArtCardMetaForSubNavGroup(group.id);
   const simplicity = resolvePageSimplicityProfile(group.id);
   const goalCopy = isKo ? simplicity.koPrimaryGoal : simplicity.enPrimaryGoal;
-  const simplicityBadge = isKo
-    ? `직관도 ${simplicity.simplicityGrade} · 인지부하 -${simplicity.loadReductionPercent}%`
-    : `Clarity ${simplicity.simplicityGrade} · Load -${simplicity.loadReductionPercent}%`;
+  const simplicityBadge = isKo ? "이곳에서 할 수 있는 일" : "What you can do here";
 
   return (
     <nav

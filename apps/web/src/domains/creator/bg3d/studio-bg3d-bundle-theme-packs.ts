@@ -49,6 +49,7 @@ export interface StudioBg3dBundlePackRights {
   readonly licenseName: string;
   readonly commercialUse: boolean;
   readonly attributionRequired: boolean;
+  readonly attribution?: string;
 }
 
 export interface StudioBg3dBundleThemePack {
@@ -130,6 +131,8 @@ export interface StudioBg3dBundleThemePacks {
 const DOWNLOAD_FIELD_KEYS: readonly string[] = ["original", "download", "downloadUrl", "downloadPath"];
 const SHA256 = /^[a-f0-9]{64}$/u;
 const ASSET_ID = /^[a-z0-9-]{1,200}$/u;
+const RIGHTS_EXTERNAL_REFERENCE = /(?:\b(?:blob|data|file|https?):|:\/\/|\bwww\.)/iu;
+const RIGHTS_SENSITIVE_REFERENCE = /(?:\b(?:api[-_ ]?key|access[-_ ]?token|secret|password)\b|(?:^|\s)sk-[A-Za-z0-9_-]{8,})/iu;
 
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -154,6 +157,16 @@ function requiredText(value: unknown, maximum: number, message: string): string 
 function optionalText(value: unknown, maximum: number, message: string): string | null {
   if (value === undefined || value === null) return null;
   return requiredText(value, maximum, message);
+}
+
+/** 검증 레코드와 같은 160자 계약으로 출처를 잘라내거나 정규화해 잃지 않는다. */
+function rightsText(value: unknown, message: string): string {
+  const text = requiredText(value, 640, message);
+  if (/[\p{Cc}\p{Cf}\u2028\u2029]/u.test(text) || Array.from(text).length > 160 || text.normalize("NFKC").trim().replace(/\s+/gu, " ") !== text
+    || !/[\p{L}\p{N}]/u.test(text) || RIGHTS_EXTERNAL_REFERENCE.test(text) || RIGHTS_SENSITIVE_REFERENCE.test(text)) {
+    throw new TypeError(message);
+  }
+  return text;
 }
 
 function count(value: unknown, message: string): number {
@@ -214,12 +227,15 @@ function parsePackRights(value: unknown): StudioBg3dBundlePackRights | null {
     || typeof rights.commercialUse !== "boolean" || typeof rights.attributionRequired !== "boolean") {
     throw new TypeError("테마 팩 권리 표기가 올바르지 않습니다.");
   }
+  const attribution = rights.attributionRequired || rights.attribution !== undefined
+    ? rightsText(rights.attribution, "테마 팩 출처 표기가 올바르지 않습니다.") : undefined;
   return Object.freeze({
     serve: "allow" as const,
     status: rights.status as StudioBg3dBundlePackRightsStatus,
-    licenseName: requiredText(rights.licenseName, 200, "테마 팩 라이선스 이름이 올바르지 않습니다."),
+    licenseName: rightsText(rights.licenseName, "테마 팩 라이선스 이름이 올바르지 않습니다."),
     commercialUse: rights.commercialUse,
     attributionRequired: rights.attributionRequired,
+    ...(attribution === undefined ? {} : { attribution }),
   });
 }
 
@@ -400,8 +416,17 @@ let themePacksPromise: Promise<StudioBg3dBundleThemePacks> | null = null;
 let themePacksLoaded: StudioBg3dBundleThemePacks | null = null;
 let assetById: Map<string, StudioBg3dBundleThemePackAsset> | null = null;
 let assetByHash: Map<string, StudioBg3dBundleThemePackAsset> | null = null;
+let themePacksRevision = 0;
+let themePacksPublicationRevision = 0;
+let themePacksPublicationIdentity: string | null = null;
 
 function indexThemePacks(data: StudioBg3dBundleThemePacks): void {
+  // 같은 내용의 정상 재조회는 유지하고 실제 발행 변경·A→B→A는 구분한다.
+  const identity = JSON.stringify(data);
+  if (identity !== themePacksPublicationIdentity) {
+    themePacksPublicationIdentity = identity;
+    themePacksPublicationRevision += 1;
+  }
   themePacksLoaded = data;
   assetById = new Map(data.assets.map((asset) => [asset.id, asset]));
   assetByHash = new Map(data.assets.map((asset) => [asset.sha256, asset]));
@@ -409,6 +434,9 @@ function indexThemePacks(data: StudioBg3dBundleThemePacks): void {
 
 /** 테스트·재배포 교체용: 캐시를 비운다. */
 export function resetStudioBg3dBundleThemePacksCache(): void {
+  themePacksRevision += 1;
+  themePacksPublicationRevision += 1;
+  themePacksPublicationIdentity = null;
   themePacksPromise = null;
   themePacksLoaded = null;
   assetById = null;
@@ -416,8 +444,8 @@ export function resetStudioBg3dBundleThemePacksCache(): void {
 }
 
 /**
- * 테마 팩 데이터를 한 번만 불러와 캐시한다. 주입된 fetcher는 캐시를 우회해
- * 매번 새로 읽는다 (테스트·명시적 재시도용).
+ * 변경 가능한 권리·배포 메타데이터는 매 호출 재검증한다. 동시에 진행 중인 기본 요청만 공유한다.
+ * 내용 주소 GLB의 바이트 캐시와는 별개이며 실패한 요청은 다음 호출에서 재시도한다.
  */
 export async function loadStudioBg3dBundleThemePacks(options: {
   readonly signal?: AbortSignal;
@@ -425,31 +453,40 @@ export async function loadStudioBg3dBundleThemePacks(options: {
   readonly url?: string;
 } = {}): Promise<StudioBg3dBundleThemePacks> {
   if (!options.fetcher && !options.url && themePacksPromise) return themePacksPromise;
+  const revision = ++themePacksRevision;
   const fetcher: ThemePacksFetch = options.fetcher
     ?? ((input, init) => globalThis.fetch(input, init));
   const pending = (async () => {
     const response = await fetcher(options.url ?? STUDIO_BG3D_BUNDLE_THEME_PACKS_URL, {
-      cache: "force-cache",
+      cache: "no-cache",
       credentials: "same-origin",
       signal: options.signal,
     });
     if (!response.ok) throw new TypeError("테마 팩 데이터를 불러오지 못했습니다.");
     const data = parseStudioBg3dBundleThemePacks(await response.json());
-    indexThemePacks(data);
+    if (revision === themePacksRevision) indexThemePacks(data);
     return data;
   })();
   if (!options.fetcher && !options.url) {
     themePacksPromise = pending;
-    void pending.catch(() => {
-      if (themePacksPromise === pending) themePacksPromise = null;
-    });
   }
+  void pending.then(() => {
+    if (themePacksPromise === pending) themePacksPromise = null;
+  }, () => {
+    if (themePacksPromise === pending) themePacksPromise = null;
+    if (revision === themePacksRevision) resetStudioBg3dBundleThemePacksCache();
+  });
   return pending;
 }
 
 /** 이미 불러온 데이터가 있으면 돌려준다 (동기 조회용). 없으면 null. */
 export function getLoadedStudioBg3dBundleThemePacks(): StudioBg3dBundleThemePacks | null {
   return themePacksLoaded;
+}
+
+/** 동일 내용의 재조회와 구분되는 발행 세대다. 값이 복귀한 ABA도 기존 lease를 무효화한다. */
+export function getStudioBg3dBundleThemePacksPublicationRevision(): number {
+  return themePacksPublicationRevision;
 }
 
 export function findStudioBg3dBundleAsset(assetId: string): StudioBg3dBundleThemePackAsset | null {

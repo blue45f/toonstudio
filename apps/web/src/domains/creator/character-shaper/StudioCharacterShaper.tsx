@@ -25,6 +25,7 @@ import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
 import { StudioVrmPoserDialog } from "../vrm/StudioVrmPoserDialog";
 import { useStudioVrmPoserController } from "../vrm/useStudioVrmPoserController";
 
+import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
 import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 import { useCharacterShaperBinding } from "./useCharacterShaperBinding";
 
@@ -109,33 +110,33 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", ...props }: Omi
 
   if (!open) return null;
 
-  if (advanced) {
-    return (
-      <>
-        <StudioVrmPoserDialog h={h} />
-        {advancedRoot
-          ? createPortal(
-              <button
-                type="button"
-                data-character-shaper-return="true"
-                onClick={() => setAdvanced(false)}
-                className={RETURN_BUTTON_CLASS}
-              >
-                <ArrowLeft size={15} aria-hidden />
-                셰이퍼로 돌아가기
-              </button>,
-              advancedRoot,
-            )
-          : null}
-      </>
-    );
-  }
-
   return (
-    <>
-      <StudioCharacterShaperDialog h={inputHost} binding={binding} outputTarget={outputTarget} onOpenAdvanced={() => setAdvanced(true)} />
-      <CharacterRuntimeThumbnailRecorder h={h} binding={binding} />
-      <CharacterPlatformWorkbench h={inputHost} binding={binding} controller={controller} />
-    </>
+    <CharacterShaperSessionSettingsProvider gazeAvailable={Boolean(h.vrm?.lookAt) && !h.webcamActive} locked={advanced || Boolean(h.isCapturing || h.isSharingPose || h.isThumbnailCapturing)}>
+      {advanced ? (
+        <>
+          <StudioVrmPoserDialog h={h} />
+          {advancedRoot
+            ? createPortal(
+                <button
+                  type="button"
+                  data-character-shaper-return="true"
+                  onClick={() => setAdvanced(false)}
+                  className={RETURN_BUTTON_CLASS}
+                >
+                  <ArrowLeft size={15} aria-hidden />
+                  셰이퍼로 돌아가기
+                </button>,
+                advancedRoot,
+              )
+            : null}
+        </>
+      ) : (
+        <>
+          <StudioCharacterShaperDialog h={inputHost} binding={binding} outputTarget={outputTarget} onOpenAdvanced={() => setAdvanced(true)} />
+          <CharacterRuntimeThumbnailRecorder h={h} binding={binding} />
+          <CharacterPlatformWorkbench h={inputHost} binding={binding} controller={controller} />
+        </>
+      )}
+    </CharacterShaperSessionSettingsProvider>
   );
 }

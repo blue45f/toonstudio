@@ -40,6 +40,7 @@ import {
   userAiConnectionApiKeys,
   userAiConnectionModels,
   userAiRoutingSettings,
+  withPaidAutoUseChoice,
   type UserAiCapability,
   type UserAiConfiguration,
   type UserAiConnection,
@@ -432,7 +433,10 @@ function AiSettingsEditor({
             <input
               type="checkbox"
               checked={routing.allowPaidFallback}
-              onChange={(event) => updateRouting({ allowPaidFallback: event.target.checked })}
+              onChange={(event) => setUserAiConfiguration(withPaidAutoUseChoice(configuration, {
+                allowPaidFallback: event.target.checked,
+                preferPaidKeys: routing.preferPaidKeys === true,
+              }))}
             />
             {translateCurrentStaticSourceText("shared.ai.UnifiedAiSettings", "ko", "무료 경로 소진 후 사용자 결제 BYOK 허용")}</label>
         </div>

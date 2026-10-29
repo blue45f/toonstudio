@@ -6,6 +6,7 @@ import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import { collectStudioBg3dEffectivelyVisibleEntityIds, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
 import { getStoredBg3dModelV12, type Bg3dVerifiedStoredRecord } from "./studio-bg3d-model-library-loader";
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 import { readStudioBg3dPrimitiveEditAuthoringGlb } from "./studio-bg3d-primitive-edit-authoring-glb";
 import type { StudioBg3dPrimitiveEditAuthoringValue } from "./studio-bg3d-primitive-edit-authoring";
 import type { StudioBg3dPrimitiveEditRuntime, StudioBg3dPrimitiveEditSourceHost, StudioBg3dPrimitiveEditSourceSummary } from "./studio-bg3d-primitive-edit-source";
@@ -20,6 +21,9 @@ import { resolveStudioBg3dModelExportProvenance, assertStudioBg3dModelExportRece
 import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 
 export interface StudioBg3dAuthoredModelEditSourceHost extends StudioBg3dPrimitiveEditSourceHost {
+  readonly modelRenderer?: unknown;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, StudioBg3dModelRootCacheEntry> };
   readonly storageModelIdByAttachmentIdRef: { readonly current: ReadonlyMap<string, string> };
 }
@@ -35,6 +39,9 @@ export interface StudioBg3dAuthoredModelEditRecordIdentity {
 }
 
 export interface StudioBg3dAuthoredModelEditSourceSnapshot {
+  readonly materialBackend: StudioBg3dMaterialBackend;
+  readonly rendererRefSnapshot: unknown;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly kind: "authored-model";
   readonly modalSession: object;
   readonly sourceNodeId: string;
@@ -71,6 +78,9 @@ export type StudioBg3dAuthoredModelEditSourceValidation = StudioBg3dAuthoredMode
 };
 
 type Selected = Extract<StudioBg3dAuthoredModelEditSourceValidation, { readonly ok: true }> & {
+  readonly materialBackend: StudioBg3dMaterialBackend;
+  readonly rendererRefSnapshot: unknown;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly attachment: StudioBg3dModelAttachment;
   readonly cache: StudioBg3dModelRootCacheEntry;
   readonly normalizationScale: number;
@@ -112,7 +122,7 @@ function validTransform(model: BgCustomModelInstance): boolean {
 function resolveSelection(host: StudioBg3dAuthoredModelEditSourceHost): StudioBg3dAuthoredModelEditSourceFailure | {
   readonly ok: true; readonly model: BgCustomModelInstance; readonly runtime: StudioBg3dPrimitiveEditRuntime; readonly overrideColor: string | null;
 } {
-  if (!host.open || !host.modalAssetSessionRef.current || host.isPrimitiveEditInteractionLocked()) {
+  if (!host.open || !host.modalAssetSessionRef.current || host.isPrimitiveEditInteractionLocked() || host.isMaterialBackendCurrent?.() === false) {
     return failure("selection-unavailable", "현재 장면의 편집이 잠겨 있습니다. 진행 중인 작업이 끝난 뒤 다시 시도하세요.");
   }
   const runtime = host.physicsRuntimeSourceRef.current, ids = host.selectedIdsRef?.current ?? host.selectedIds;
@@ -189,7 +199,8 @@ function canonicalSelection(host: StudioBg3dAuthoredModelEditSourceHost): Studio
     || JSON.stringify([...(model.tags ?? [])].sort()) !== JSON.stringify([...(node.tags ?? [])].sort())) {
     return failure("invalid-source", "모델의 정본·이름·태그를 손실 없이 확인할 수 없습니다.");
   }
-  const cache = host.modelRootCacheRef.current.get(model.modelId);
+  const materialBackend = resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend });
+  const cache = readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, model.modelId, materialBackend);
   if (!cache) return failure("model-loading", "모델 원본 캐시를 준비 중입니다. 모델이 표시된 뒤 다시 시도하세요.");
   const attachment = normalizeStudioBg3dGlbAttachment(host.attachmentByStorageModelIdRef.current.get(model.modelId));
   const record = cache.record;
@@ -207,7 +218,8 @@ function canonicalSelection(host: StudioBg3dAuthoredModelEditSourceHost): Studio
     normalizeStudioHybridDccObjectTransform({ revision: 1, position: node.transform.position,
       rotationEulerRad: node.transform.rotation, scale: node.transform.scale.map((value) => value * k) });
   } catch { return failure("invalid-source", "현재 모델 배율을 원본 편집 좌표 범위 안에서 보존할 수 없습니다."); }
-  return { ...selected, document: adapted.value.document, node, attachment, cache, normalizationScale: k };
+  return { ...selected, document: adapted.value.document, node, attachment, cache, normalizationScale: k,
+    materialBackend, rendererRefSnapshot: host.modelRenderer, isMaterialBackendCurrent: host.isMaterialBackendCurrent };
 }
 
 function recordIdentity(selected: Selected): StudioBg3dAuthoredModelEditRecordIdentity {
@@ -253,6 +265,8 @@ function assetColorMatches(cache: StudioBg3dModelRootCacheEntry, colorSrgb: stri
 function assertScope(host: StudioBg3dAuthoredModelEditSourceHost, initial: Selected, session: object, signal: AbortSignal,
   identity: StudioBg3dAuthoredModelEditRecordIdentity, root: StudioBg3dModelRootCacheEntry["root"]): Selected {
   if (signal.aborted) reject(failure("aborted", "원본 모델 읽기를 취소했습니다."));
+  if (initial.isMaterialBackendCurrent?.() === false || host.modelRenderer !== initial.rendererRefSnapshot
+    || resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) !== initial.materialBackend) reject(failure("source-changed", "원본을 읽는 동안 재질 backend가 바뀌었습니다."));
   if (host.modalAssetSessionRef.current !== session) reject(failure("session-changed", "편집기 세션이 바뀌어 원본 모델을 사용하지 않았습니다."));
   const current = canonicalSelection(host);
   if (!current.ok) reject(current);
@@ -311,12 +325,17 @@ export async function captureStudioBg3dAuthoredModelEditSource(
 ): Promise<StudioBg3dAuthoredModelEditSourceResult> {
   try {
     if (signal.aborted) return failure("aborted", "원본 모델 읽기를 취소했습니다.");
-    const initial = canonicalSelection(host), session = host.modalAssetSessionRef.current;
-    if (!initial.ok) return initial;
+    const rendererRefSnapshot = host.modelRenderer, materialBackend = resolveStudioBg3dMaterialBackend({ renderer: rendererRefSnapshot, materialBackend: host.materialBackend });
+    const isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+    if (isMaterialBackendCurrent?.() === false) return failure("source-changed", "원본 모델의 재질 backend가 바뀌었습니다.");
+    const selected = canonicalSelection(host), session = host.modalAssetSessionRef.current;
+    if (!selected.ok) return selected;
+    const initial = { ...selected, rendererRefSnapshot, materialBackend, isMaterialBackendCurrent };
     if (!session) return failure("session-changed", "편집기 세션이 바뀌었습니다.");
     const identity = freezeTree(recordIdentity(initial));
     const root = initial.cache.root;
     const fence = () => { assertScope(host, initial, session, signal, identity, root); };
+    fence();
     const bytes = await readBytes(identity, signal, fence);
     fence();
     const parsed = readStudioBg3dPrimitiveEditAuthoringGlb(bytes);
@@ -343,6 +362,7 @@ export async function captureStudioBg3dAuthoredModelEditSource(
       scale: [...initial.model.scale], ...(initial.model.tags ? { tags: [...initial.model.tags] } : {}),
       ...(initial.model.materialOverride ? { materialOverride: { ...initial.model.materialOverride } } : {}) };
     const snapshot: StudioBg3dAuthoredModelEditSourceSnapshot = Object.freeze({ kind: "authored-model", modalSession: session,
+      materialBackend: initial.materialBackend, rendererRefSnapshot: initial.rendererRefSnapshot, isMaterialBackendCurrent: initial.isMaterialBackendCurrent,
       sourceNodeId: model.id, canonicalFingerprint: JSON.stringify(initial.node), model: freezeTree(model), canonicalNode: initial.node,
       authoring: freezeTree(parsed.value), recordIdentity: identity, attachment: initial.attachment,
       cache: initial.cache, cacheRoot: initial.cache.root, normalizationScale: initial.normalizationScale,
@@ -358,6 +378,8 @@ export function revalidateStudioBg3dAuthoredModelEditSource(
 ): StudioBg3dAuthoredModelEditSourceValidation {
   try {
     if (!snapshots.has(snapshot)) return failure("source-changed", "확인되지 않은 원본 모델 사본입니다.");
+    if (snapshot.isMaterialBackendCurrent?.() === false || host.modelRenderer !== snapshot.rendererRefSnapshot
+      || resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) !== snapshot.materialBackend) return failure("source-changed", "편집 중 재질 backend가 바뀌어 원본을 교체하지 않았습니다.");
     if (host.modalAssetSessionRef.current !== snapshot.modalSession) return failure("session-changed", "편집기 세션이 바뀌어 모델을 교체하지 않았습니다.");
     const current = canonicalSelection(host);
     if (!current.ok) return current;

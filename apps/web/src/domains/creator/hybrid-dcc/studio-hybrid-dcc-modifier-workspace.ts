@@ -32,9 +32,9 @@ import {
 } from "./studio-hybrid-dcc-document";
 import {
   hashStudioHybridDccObjectTransform,
+  inverseTransformStudioHybridDccPoint,
   transformStudioHybridDccPoint,
   type StudioHybridDccObjectTransform,
-  type StudioHybridDccVec3Tuple,
 } from "./studio-hybrid-dcc-object-transform";
 import {
   workspaceRedo,
@@ -82,35 +82,6 @@ function finiteNumber(
 
 function booleanValue(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
-}
-
-function inverseTransformStudioHybridDccPoint(
-  point: StudioHybridDccVec3Tuple,
-  transform: StudioHybridDccObjectTransform,
-): StudioHybridDccVec3Tuple {
-  const [rx, ry, rz] = transform.rotationEulerRad;
-  const cx = Math.cos(rx);
-  const sx = Math.sin(rx);
-  const cy = Math.cos(ry);
-  const sy = Math.sin(ry);
-  const cz = Math.cos(rz);
-  const sz = Math.sin(rz);
-  const dx = point[0] - transform.position[0];
-  const dy = point[1] - transform.position[1];
-  const dz = point[2] - transform.position[2];
-
-  // Inverse of Three.js XYZ order: Rx^-1 * Ry^-1 * Rz^-1, then inverse scale.
-  const rzX = cz * dx + sz * dy;
-  const rzY = -sz * dx + cz * dy;
-  const ryX = cy * rzX - sy * dz;
-  const ryZ = sy * rzX + cy * dz;
-  const rxY = cx * rzY + sx * ryZ;
-  const rxZ = -sx * rzY + cx * ryZ;
-  return [
-    ryX / transform.scale[0],
-    rxY / transform.scale[1],
-    rxZ / transform.scale[2],
-  ];
 }
 
 function transformTriangleSoupIntoActiveLocalSpace(
@@ -252,6 +223,7 @@ function defaultModifier(
         id,
         enabled: true,
         thickness: 0.08,
+        offset: 1,
         evenThickness: true,
         rim: true,
       };
@@ -351,6 +323,10 @@ function patchModifier(
       const offset = patch.offset && typeof patch.offset === "object"
         ? patch.offset as Readonly<Record<string, unknown>>
         : {};
+      const relative = patch.relativeOffset && typeof patch.relativeOffset === "object"
+        ? patch.relativeOffset as Readonly<Record<string, unknown>> : {};
+      const relativeBefore = modifier.relativeOffset ?? { x: 1, y: 0, z: 0 };
+      const mode = patch.mode === "linear" || patch.mode === "radial" ? patch.mode : modifier.mode;
       return {
         ...modifier,
         enabled,
@@ -370,6 +346,17 @@ function patchModifier(
           Math.PI * 8,
         ),
         realizeInstances: booleanValue(patch.realizeInstances, modifier.realizeInstances),
+        ...(patch.useConstantOffset !== undefined || modifier.useConstantOffset !== undefined ? {
+          useConstantOffset: mode === "radial" ? true : booleanValue(patch.useConstantOffset, modifier.useConstantOffset ?? true),
+        } : {}),
+        ...(patch.useRelativeOffset !== undefined || modifier.useRelativeOffset !== undefined ? {
+          useRelativeOffset: mode === "linear" && booleanValue(patch.useRelativeOffset, modifier.useRelativeOffset ?? false),
+        } : {}),
+        ...(patch.relativeOffset !== undefined || modifier.relativeOffset !== undefined ? { relativeOffset: {
+          x: finiteNumber(relative.x, relativeBefore.x, -1_000, 1_000),
+          y: finiteNumber(relative.y, relativeBefore.y, -1_000, 1_000),
+          z: finiteNumber(relative.z, relativeBefore.z, -1_000, 1_000),
+        } } : {}),
       };
     }
     case "boolean": {
@@ -407,6 +394,8 @@ function patchModifier(
         thickness: finiteNumber(patch.thickness, modifier.thickness, -10, 10),
         evenThickness: booleanValue(patch.evenThickness, modifier.evenThickness),
         rim: booleanValue(patch.rim, modifier.rim),
+        ...(patch.offset !== undefined || modifier.offset !== undefined
+          ? { offset: finiteNumber(patch.offset, modifier.offset ?? 1, -1_000, 1_000) } : {}),
       };
     case "bevel":
       return {

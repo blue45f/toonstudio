@@ -27,8 +27,8 @@ const STATUS_LABELS: Readonly<Record<StudioProjectGraphStatus, Readonly<Record<"
   loading: { ko: "작품 연결 확인 중", en: "Checking project connection" },
   synced: { ko: "클라우드와 동기화됨", en: "Synced with cloud" },
   cached: { ko: "최근 동기화 상태", en: "Last synced state" },
-  offline: { ko: "오프라인 · 로컬 작업 가능", en: "Offline · local editing available" },
-  "local-only": { ko: "로컬 프로젝트", en: "Local project" },
+  offline: { ko: "오프라인 · 이 기기에서 작업 가능", en: "Offline · editing available on this device" },
+  "local-only": { ko: "이 기기에서 작업 중", en: "Working on this device" },
   error: { ko: "연결 확인 필요", en: "Connection check needed" },
 };
 
@@ -137,8 +137,8 @@ export function StudioProjectGraphContextBar({
           ) : (
             <span className="text-xs text-fg-3">
               {copyLocale === "ko"
-                ? "기존 로컬 저장·복구 권위로 계속 작업합니다. 클라우드 전환 전 원고는 변경하지 않습니다."
-                : "Continue with existing local save and recovery. Pre-migration documents remain unchanged."}
+                ? "이 기기에서 계속 작업할 수 있어요. 저장 상태에서 기기 복구본과 서버 저장 기록을 확인해 주세요."
+                : "You can keep working on this device. Check Save status for device recovery and server save history."}
             </span>
           )}
         </div>

@@ -7,6 +7,7 @@ import { resolveStudioBg3dDeviceQuality } from "../bg3d/studio-bg3d-device-quali
 import { classifyStudioBg3dThreeSemanticMaterials } from "../bg3d/studio-bg3d-three-semantic-materials";
 import type { Bg3dVerifiedStoredRecord } from "../bg3d/studio-bg3d-model-library-loader";
 import type { StudioBg3dModelRootCacheEntry } from "../bg3d/studio-bg3d-model-runtime-admission";
+import { resolveStudioBg3dMaterialBackend, studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant, type StudioBg3dMaterialBackend } from "../bg3d/studio-bg3d-model-material-variant";
 
 function record(index: number): Bg3dVerifiedStoredRecord {
   return {
@@ -25,10 +26,10 @@ function record(index: number): Bg3dVerifiedStoredRecord {
   };
 }
 
-function entry(model: Bg3dVerifiedStoredRecord): StudioBg3dModelRootCacheEntry {
+function entry(model: Bg3dVerifiedStoredRecord, backend: StudioBg3dMaterialBackend = "webgl"): StudioBg3dModelRootCacheEntry {
   const root = new Group();
   return {
-    root, record: model, dispose: vi.fn(), animations: [], admittedProfiles: new Set(["desktop"]),
+    root, record: model, runtimeVariant: studioBg3dModelRuntimeVariant(backend), dispose: vi.fn(), animations: [], admittedProfiles: new Set(["desktop"]),
     admissionPolicyKeys: new Set(["initial"]), joints: [], morphTargets: [], genericHints: {},
     semanticMaterials: classifyStudioBg3dThreeSemanticMaterials(root),
     metrics: { nodes: 1, triangles: 1, drawCalls: 1, materials: 1, lights: 0, animations: 0,
@@ -38,7 +39,7 @@ function entry(model: Bg3dVerifiedStoredRecord): StudioBg3dModelRootCacheEntry {
   };
 }
 
-function fixture(count = 2) {
+function fixture(count = 2, backend: StudioBg3dMaterialBackend = "webgl") {
   const records = Array.from({ length: count }, (_, index) => record(index + 1));
   const attachments: StudioBg3dModelAttachment[] = records.map((model, index) => ({
     id: `attachment-${index + 1}`, name: model.name, mime: model.mime, byteSize: model.byteSize,
@@ -52,11 +53,12 @@ function fixture(count = 2) {
     record: records.find((model) => model.contentHash === hash) ?? null, deletionReceipt: null,
   }));
   const admitModel = vi.fn<NonNullable<StudioScene3dCutAssetPreparation["admitModel"]>>(async (args) => {
-    const existing = args.cache.get(args.record.id);
+    const materialBackend = resolveStudioBg3dMaterialBackend(args), key = studioBg3dModelCacheKey(args.record.id, materialBackend);
+    const existing = args.cache.get(key);
     if (existing) { existing.admissionPolicyKeys?.add("revalidated"); return existing; }
-    const result = entry(args.record);
+    const result = entry(args.record, materialBackend);
     created.push(result);
-    args.cache.set(args.record.id, result);
+    args.cache.set(key, result);
     args.onCacheEntryCreated?.(args.record.id, result);
     return result;
   });
@@ -65,7 +67,7 @@ function fixture(count = 2) {
   const args: StudioScene3dCutAssetPreparation = {
     document, signal: controller.signal,
     quality: resolveStudioBg3dDeviceQuality({ document, mode: "edit", preference: "desktop", signals: { cssWidth: 1280, cssHeight: 720, devicePixelRatio: 1 } }),
-    renderer: null, cache, isCurrent: () => epoch === 1,
+    renderer: null, materialBackend: backend, cache, isCurrent: () => epoch === 1,
     expectedInputRevision: "input:1", readInputRevision: () => revision,
     resolveModel, admitModel,
   };
@@ -150,9 +152,9 @@ describe("컷 원본 모델 준비와 소유권 이전", () => {
   it("기존 GPU cache를 빌려도 확정 전 policy stamp를 바꾸거나 dispose하지 않는다", async () => {
     const value = fixture(1);
     const cached = entry(value.records[0]);
-    value.cache.set("stored:1", cached);
+    value.cache.set(studioBg3dModelCacheKey("stored:1", "webgl"), cached);
     const prepared = await prepareStudioScene3dCutAssets(value.args);
-    expect(value.cache.get("stored:1")).toBe(cached);
+    expect(value.cache.get(studioBg3dModelCacheKey("stored:1", "webgl"))).toBe(cached);
     expect(cached.admissionPolicyKeys).toEqual(new Set(["initial"]));
     prepared.dispose();
     expect(cached.dispose).not.toHaveBeenCalled();
@@ -163,9 +165,9 @@ describe("컷 원본 모델 준비와 소유권 이전", () => {
     const value = fixture(1);
     const prepared = await prepareStudioScene3dCutAssets(value.args);
     const competing = entry(value.records[0]);
-    value.cache.set("stored:1", competing);
+    value.cache.set(studioBg3dModelCacheKey("stored:1", "webgl"), competing);
     expect(() => prepared.commitCache()).toThrow();
-    expect(value.cache.get("stored:1")).toBe(competing);
+    expect(value.cache.get(studioBg3dModelCacheKey("stored:1", "webgl"))).toBe(competing);
     expect(competing.dispose).not.toHaveBeenCalled();
     expect(value.created[0]?.dispose).toHaveBeenCalledTimes(1);
   });
@@ -180,5 +182,44 @@ describe("컷 원본 모델 준비와 소유권 이전", () => {
     expect(() => prepared.commitCache()).toThrow();
     expect(value.cache.size).toBe(0);
     expect(value.created[0]?.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("renderer 생성 전에도 요청 WebGPU variant를 준비하고 WebGL은 건드리지 않으며 저장 ID를 유지한다", async () => {
+    const value = fixture(1, "webgpu"), model = value.records[0];
+    const webgl = entry(model), glKey = studioBg3dModelCacheKey(model.id, "webgl"), gpuKey = studioBg3dModelCacheKey(model.id, "webgpu");
+    value.cache.set(glKey, webgl);
+    const prepared = await prepareStudioScene3dCutAssets(value.args);
+    expect(value.admitModel).toHaveBeenCalledWith(expect.objectContaining({ materialBackend: "webgpu", renderer: null }));
+    expect(value.created).toHaveLength(1); expect(value.cache.has(gpuKey)).toBe(false);
+    prepared.commitCache(); prepared.dispose();
+    expect(value.cache.get(gpuKey)).toBe(value.created[0]); expect(value.cache.get(glKey)).toBe(webgl);
+    expect([...prepared.storageModelIdByAttachmentId]).toEqual([["attachment-1", model.id]]);
+    expect(prepared.attachmentByStorageModelId.has(model.id)).toBe(true);
+    expect(webgl.dispose).not.toHaveBeenCalled(); expect(value.created[0]?.dispose).not.toHaveBeenCalled();
+  });
+
+  it("다른 backend의 동시 cache 설치는 보존하고 자신의 variant만 승격한다", async () => {
+    const value = fixture(1), model = value.records[0], prepared = await prepareStudioScene3dCutAssets(value.args);
+    const gpu = entry(model, "webgpu"), gpuKey = studioBg3dModelCacheKey(model.id, "webgpu");
+    value.cache.set(gpuKey, gpu); prepared.commitCache();
+    expect(value.cache.get(gpuKey)).toBe(gpu); expect(gpu.dispose).not.toHaveBeenCalled();
+    expect(value.cache.get(studioBg3dModelCacheKey(model.id, "webgl"))).toBe(value.created[0]);
+  });
+
+  it("준비 뒤 요청 backend가 바뀌면 이전 variant는 승격하지 않고 private root만 폐기한다", async () => {
+    const value = fixture(1), cached = entry(value.records[0], "webgpu"); let backend: StudioBg3dMaterialBackend = "webgl";
+    const args = { ...value.args, get materialBackend() { return backend; } };
+    const prepared = await prepareStudioScene3dCutAssets(args);
+    value.cache.set(studioBg3dModelCacheKey(value.records[0].id, "webgpu"), cached); backend = "webgpu";
+    expect(() => prepared.commitCache()).toThrow(); expect(value.created[0]?.dispose).toHaveBeenCalledOnce();
+    expect(cached.dispose).not.toHaveBeenCalled(); expect(value.cache.size).toBe(1);
+  });
+
+  it("입력 revision이 같아도 외부 renderer lease가 바뀌면 decode 결과를 폐기한다", async () => {
+    const value = fixture(1); let runtimeCurrent = true;
+    const base = value.admitModel.getMockImplementation(); if (!base) throw new Error("입장 fixture 없음");
+    value.admitModel.mockImplementationOnce(async (args) => { const result = await base(args); runtimeCurrent = false; return result; });
+    await expect(prepareStudioScene3dCutAssets({ ...value.args, isCurrent: () => runtimeCurrent })).rejects.toThrow();
+    expect(value.cache.size).toBe(0); expect(value.created[0]?.dispose).toHaveBeenCalledOnce();
   });
 });

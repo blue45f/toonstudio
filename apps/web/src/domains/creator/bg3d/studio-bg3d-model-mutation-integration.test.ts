@@ -87,11 +87,11 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
       "signal: combinedSignal.signal",
       "if (!lease.isCurrent() || !args.isActive() || !isPolicyCurrent())",
       "loaded.dispose()",
-      "args.cache.set(args.record.id, entry)",
+      "args.cache.set(cacheKey, entry)",
       "combinedSignal.dispose()",
     ]);
     expect(add).toContain(
-      "isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent()",
+      "isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent() && isMaterialBackendCurrent?.() !== false",
     );
     expectInOrder(remove, [
       "async (lease) =>",
@@ -105,10 +105,11 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
   it("runs cheap live-scene admission on every cache hit while caching profile-and-budget attestation", () => {
     const cachedBranch = sourceBetweenIn(
       admissionSource,
-      "const cached = args.cache.get(args.record.id);",
-      "const pending = args.pending.get(args.record.id);",
+      "const cached = args.cache.get(cacheKey);",
+      "const pending = args.pending.get(cacheKey);",
     );
     expectInOrder(cachedBranch, [
+      "if (cached.runtimeVariant !== runtimeVariant)",
       "assertStudioBg3dModelPlacementAdmission({",
       "if (!cached.admissionPolicyKeys?.has(policyKey))",
       "admitStoredBg3dModelForRendering(args.record.id",
@@ -206,7 +207,7 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
       "deleteStoredBg3dModel(storageModelId, { signal: lease.signal })",
       "commitSceneEntityRemoval(plan, { resetHistory: true })",
       "attachmentByStorageModelIdRef.current.delete(id)",
-      "modelRootCacheRef.current.delete(id)",
+      "deleteStudioBg3dModelCacheVariants(modelRootCacheRef.current, id)",
       "authoritativePersistence: true",
     ]);
     expect(handler).not.toContain("removeSceneEntities(removedInstanceIds)");

@@ -105,7 +105,7 @@ export class Office2dRuntime {
   readonly extensions = new Office2dStageExtensions();
   private readonly cameraPan: StudioCameraPanRuntime;
   private readonly physics: Office2dPhysicsWorld;
-  private readonly renderer: Office2dRenderer;
+  readonly renderer: Office2dRenderer;
   private readonly particles = new Office2dParticles();
   private readonly interactions: readonly StudioWorldInteractionDefinition[];
   private readonly portals: readonly StudioWorldPortalDefinition[];
@@ -774,17 +774,20 @@ export class Office2dRuntime {
 
   /** 테스트·디버깅용 읽기 전용 상태. */
   debugState(): {
-    readonly self: StudioVirtualSpacePoint; readonly facing: string; readonly moving: boolean; readonly seated: boolean; readonly peers: number;
+    readonly self: StudioVirtualSpacePoint; readonly facing: string; readonly moving: boolean; readonly seated: boolean; readonly seatId: string | null; readonly peers: number;
     readonly props: readonly StudioVirtualSpacePoint[]; readonly coworkers: readonly { readonly id: string; readonly alpha: number }[]; readonly gesture: string | null;
+    readonly screenToWorld: (screenX: number, screenY: number) => StudioVirtualSpacePoint;
   } {
     return {
       self: { x: this.self.x, y: this.self.y },
       facing: this.self.facing,
       moving: this.self.moving,
       seated: this.self.seat !== null,
+      seatId: this.self.seat?.id ?? null,
       peers: this.peers.size,
       coworkers: this.coworkers.visibleActors().map((actor) => ({ id: actor.id, alpha: actor.alpha })),
       gesture: this.self.gesture?.kind ?? null,
+      screenToWorld: (screenX: number, screenY: number) => this.camera.screenToWorld({ x: screenX, y: screenY }),
       props: this.scene.physicsProps.map((prop) => {
         const body = this.physics.getBody(`prop:${prop.id}`);
         return { x: body?.x ?? prop.x, y: body?.y ?? prop.y };

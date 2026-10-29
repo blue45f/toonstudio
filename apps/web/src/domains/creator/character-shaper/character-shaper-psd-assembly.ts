@@ -3,6 +3,7 @@ import { writePsd, type BlendMode, type Layer, type Psd } from "ag-psd";
 
 import { isEmptyPass } from "./character-shaper-image-math";
 import { partitionCharacterPsdCoverage } from "./character-shaper-psd-coverage";
+import { clearCharacterPsdHairPixels, separateCharacterPsdHair, withoutCharacterPsdHair } from "./character-shaper-psd-hair";
 import { validateCharacterPsdPasses, CHARACTER_PSD_MAX_OUTPUT_BYTES } from "./character-shaper-psd-worker-protocol";
 
 import type { CharacterPsdExportReceipt, CharacterSemanticPass, CharacterSemanticPassId } from "./character-shaper-contract";
@@ -184,9 +185,27 @@ export function buildCharacterSemanticPsd(
 
   const coverage = base
     ? partitionCharacterPsdCoverage(base.rgba, (beauty ?? base).rgba, semanticMasks.map((mask) => mask.rgba)) : null;
-  const flatChildren = semanticMasks.map((mask, index) => rasterLayer(
+  const line = byId.get("line");
+  const shadow = byId.get("shadow");
+  const highlight = byId.get("highlight");
+  const hairIndex = semanticMasks.findIndex((mask) => mask.id === "mask-hair");
+  const ownedHair = coverage?.parts[hairIndex];
+  const requestedHair = options.createHairLayer && flat && ownedHair
+    ? separateCharacterPsdHair({ flat: flat.rgba, ownedHair, shadow: shadow?.rgba, highlight: highlight?.rgba,
+      line: line ? (options.extractLuminanceOutline ? extractShaperPsdOutlineAlpha(line.rgba) : line.rgba) : undefined }) : null;
+  const hair = requestedHair && requestedHair.pixels > 0 ? requestedHair : null;
+  if (options.createHairLayer && !hair) note("mask-hair", "헤어 분리에 필요한 실제 밑색·보이는 헤어 픽셀이 없어 헤어 그룹을 만들지 않았습니다.");
+  if (hair && !shadow) note("shadow", "독립된 음영 패스가 없어 Hair Shadow를 만들지 않았습니다.");
+  if (hair && !line) note("line", "추출할 선화 패스가 없어 Hair Line을 만들지 않았습니다.");
+  if (hair && line) note("line", "Hair Line은 밑색에 이미 포함된 경계를 추출한 참고 레이어이므로 중복 합성을 막기 위해 기본 숨김으로 저장합니다.");
+  const bodyPixels = (rgba: Uint8ClampedArray) => hair ? withoutCharacterPsdHair(rgba, hair.ownership) : rgba;
+  if (hair && coverage) {
+    for (const part of coverage.parts) clearCharacterPsdHairPixels(part, hair.ownership);
+    if (coverage.remainder) clearCharacterPsdHairPixels(coverage.remainder, hair.ownership);
+  }
+  const flatChildren = semanticMasks.flatMap((mask, index) => hair && mask.id === "mask-hair" ? [] : [rasterLayer(
     CHARACTER_SEMANTIC_MASK_LABELS[mask.id], width, height, coverage ? coverage.parts[index] : mask.rgba,
-  ));
+  )]);
   if (coverage?.remainder) {
     flatChildren.push(rasterLayer(semanticMasks.length > 0 ? "미분류 영역" : CHARACTER_PSD_CHILD_NAMES.flatsWhole,
       width, height, coverage.remainder));
@@ -200,7 +219,6 @@ export function buildCharacterSemanticPsd(
   const extractedGroup = (name: string, child: Layer): Layer => ({
     ...group(base ? `${name} (추출 참고 · 기본 숨김)` : name, "normal", [child]), hidden: Boolean(base),
   });
-  const line = byId.get("line");
   if (line) {
     const lineRgba = options.extractLuminanceOutline ? extractShaperPsdOutlineAlpha(line.rgba) : line.rgba;
     children.push(extractedGroup(CHARACTER_PSD_GROUP_NAMES.line,
@@ -211,28 +229,25 @@ export function buildCharacterSemanticPsd(
     children.push(extractedGroup(CHARACTER_PSD_GROUP_NAMES.paint,
       rasterLayer(CHARACTER_PSD_CHILD_NAMES.paint, width, height, paint.rgba)));
   }
-  const hairMask = byId.get("mask-hair");
-  if (options.createHairLayer && hairMask && !isEmptyPass(hairMask.rgba)) {
+  if (hair) {
     colourGroups.push(
       buildShaperHairThreeLayerGroup({
         width,
         height,
-        hairBaseRgba: hairMask.rgba,
-        shadowRgba: byId.get("shadow")?.rgba ?? hairMask.rgba,
-        lineRgba: line ? extractShaperPsdOutlineAlpha(line.rgba) : hairMask.rgba,
+        hairBaseRgba: hair.base,
+        shadowRgba: hair.shadow && !isEmptyPass(hair.shadow) ? hair.shadow : undefined,
+        lineRgba: hair.line && !isEmptyPass(hair.line) ? hair.line : undefined,
       }),
     );
   }
-  const highlight = byId.get("highlight");
   if (highlight) {
     colourGroups.push(group(CHARACTER_PSD_GROUP_NAMES.highlight, "screen", [
-      rasterLayer(CHARACTER_PSD_CHILD_NAMES.highlight, width, height, highlight.rgba),
+      rasterLayer(CHARACTER_PSD_CHILD_NAMES.highlight, width, height, bodyPixels(highlight.rgba)),
     ]));
   }
-  const shadow = byId.get("shadow");
   if (shadow) {
     colourGroups.push(group(CHARACTER_PSD_GROUP_NAMES.shadow, "multiply", [
-      rasterLayer(CHARACTER_PSD_CHILD_NAMES.shadow, width, height, shadow.rgba),
+      rasterLayer(CHARACTER_PSD_CHILD_NAMES.shadow, width, height, bodyPixels(shadow.rgba)),
     ]));
   }
   if (flatChildren.length > 0) {
@@ -320,13 +335,13 @@ export function buildShaperHairThreeLayerGroup(input: {
   readonly width: number;
   readonly height: number;
   readonly hairBaseRgba: Uint8ClampedArray;
-  readonly shadowRgba: Uint8ClampedArray;
-  readonly lineRgba: Uint8ClampedArray;
+  readonly shadowRgba?: Uint8ClampedArray;
+  readonly lineRgba?: Uint8ClampedArray;
 }): Layer {
   const { width, height, hairBaseRgba, shadowRgba, lineRgba } = input;
   return group("헤어 (SHAPER 3-Layer)", "normal", [
-    rasterLayer("Hair Line", width, height, lineRgba, { blendMode: "normal" }),
-    rasterLayer("Hair Shadow", width, height, shadowRgba, { blendMode: "multiply", clipping: true }),
+    ...(lineRgba ? [rasterLayer("Hair Line", width, height, lineRgba, { blendMode: "normal", clipping: true, hidden: true })] : []),
+    ...(shadowRgba ? [rasterLayer("Hair Shadow", width, height, shadowRgba, { blendMode: "multiply", clipping: true })] : []),
     rasterLayer("Hair Base", width, height, hairBaseRgba, { blendMode: "normal" }),
   ]);
 }

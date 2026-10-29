@@ -9,6 +9,7 @@ import { resetStudioBg3dBundleThemePacksCache } from "./studio-bg3d-bundle-theme
 import type { StudioBg3dSceneGlbArtifact } from "./studio-bg3d-scene-glb-artifact";
 import type { StudioBg3dSceneGlbDownloadDependencies } from "./studio-bg3d-scene-glb-command";
 import { readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 // 무거운 artifact 준비만 seam이다. source·최종 fence·Blob·명령 결과와 정리는 실제 구현이다.
 const prepare = vi.hoisted(() => vi.fn<typeof import("./studio-bg3d-scene-glb-artifact")["createStudioBg3dSceneGlbArtifact"]>());
@@ -38,7 +39,7 @@ describe("현재 장면 GLB 다운로드 명령", () => {
     if (!f.record || !f.entry) throw Error("실제 검증 모델 fixture 필요");
     const record = { ...f.record, sourceRestriction: { ...readStudioBg3dEffectiveModelSourceRestriction(f.record), modelFileExport } };
     f.setStoredRecord(record);
-    f.cache.set(record.id, { ...f.entry, record });
+    f.cache.set(studioBg3dModelCacheKey(record.id, f.backend), { ...f.entry, record });
     const deps = { ...dependencies(), provenanceAuthority: f.authority };
     const result = await exportStudioBg3dCurrentSceneGlb(f.host, request(), deps);
     expect(result).toMatchObject({ ok: false, code: modelFileExport === "service-only" ? "rights-restricted" : "rights-unavailable" });

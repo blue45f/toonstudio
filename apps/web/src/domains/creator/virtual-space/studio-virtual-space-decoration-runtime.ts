@@ -248,13 +248,13 @@ export class StudioVirtualDecorationRuntime {
     sprite.setData?.("actorAccessoryKey", customization.accessoryKey);
     const headY = point.y - sprite.displayHeight * sprite.originY;
     const accessorySize = Math.max(24, Math.min(48, sprite.displayHeight * .39));
-    const nanoBananaActive = Boolean(sprite.getData?.("nanoBanana2dActive"));
+    const illustratedActive = Boolean(sprite.getData?.("illustrated2dActive"));
     visual.accessory
       .setFrame(accessory * 4 + DIRECTION_FRAME[facing])
       .setPosition(point.x, headY + sprite.displayHeight * .22)
       .setDisplaySize(accessorySize, accessorySize)
       .setDepth(sprite.depth + 2)
-      .setVisible(accessory > 0 && !nanoBananaActive);
+      .setVisible(accessory > 0 && !illustratedActive);
     const auraColor = AURA_COLOR[customization.auraKey];
     const breath = 1 + Math.sin(time * 0.0042) * 0.06;
     const baseScale = customization.auraKey === "focus" || customization.auraKey === "lotus"

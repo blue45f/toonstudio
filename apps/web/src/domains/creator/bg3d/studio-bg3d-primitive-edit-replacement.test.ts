@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import { createStudioBg3dEditableThreeClone, measureStudioBg3dThreeMetrics } from "../studio-background-3d-model";
 import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { commitStudioBg3dHistoryTransition, resetStudioBg3dCommandHistory, stepStudioBg3dCommandHistory, type StudioBg3dHistoryCommandRefs } from "./studio-bg3d-history-command-adapter";
 import { createDefaultStudioBg3dSceneDocument, STUDIO_BG3D_GLB_MIME } from "./studio-bg3d-scene-document";
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
@@ -38,7 +39,7 @@ function asset(edited = true): StudioBg3dPrimitiveEditReplacementAsset {
     mime: record.mime, source: "upload", rights: record.rights,
   };
   return { record, storageModelId: record.id, attachment,
-    cache: { root, normalizationScale, record, metrics: measured.metrics } };
+    cache: { root, normalizationScale, record, metrics: measured.metrics, runtimeVariant: studioBg3dModelRuntimeVariant("webgl") } };
 }
 
 function fixture(source = box(), admitted = asset()) {
@@ -54,7 +55,7 @@ function fixture(source = box(), admitted = asset()) {
   const selectedIds = { current: new Set([source.id]) };
   const session: { current: object | null } = { current: {} };
   const attachments = new Map([[admitted.storageModelId, admitted.attachment]]);
-  const cache = new Map([[admitted.storageModelId, admitted.cache]]);
+  const cache = new Map([[studioBg3dModelCacheKey(admitted.storageModelId, "webgl"), admitted.cache]]);
   const history: StudioBg3dHistoryCommandRefs = {
     historyRef: { current: [] }, historyIndexRef: { current: -1 }, historyCommandTimelineRef: { current: null },
   };
@@ -168,7 +169,7 @@ describe("primitive 직접 편집의 단일 원본 교체 명령", () => {
 
   it("cache identity·binding·record·실제 metrics 변조를 거부한다", () => {
     for (const mutate of [
-      (f: ReturnType<typeof fixture>) => { f.cache.set(f.admitted.storageModelId, { ...f.admitted.cache }); },
+      (f: ReturnType<typeof fixture>) => { f.cache.set(studioBg3dModelCacheKey(f.admitted.storageModelId, "webgl"), { ...f.admitted.cache }); },
       (f: ReturnType<typeof fixture>) => { f.attachments.delete(f.admitted.storageModelId); },
       (f: ReturnType<typeof fixture>) => { f.attachments.set(f.admitted.storageModelId, { ...f.admitted.attachment, hash: `sha256:${"b".repeat(64)}` }); },
       (f: ReturnType<typeof fixture>) => { f.admitted.cache.root.add(new Mesh(new BoxGeometry(), new MeshStandardMaterial())); },

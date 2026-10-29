@@ -35,12 +35,10 @@ import {
   workspaceDeleteActive,
   workspaceDiagnostics,
   workspaceDuplicateActive,
-  workspaceImportBytes,
   workspaceReconcileSelectionAfterHistory,
   workspaceRedo,
   workspaceSelectAsset,
   workspaceSetAssetVisibility,
-  workspaceSculptActive,
   workspaceUndo,
   type StudioHybridDccWorkspace,
 } from "./studio-hybrid-dcc-workspace";
@@ -52,6 +50,12 @@ import {
 import { StudioHybridDccEnvironmentNotice } from "./StudioHybridDccEnvironmentNotice";
 import { StudioHybridDccIntro, type StudioHybridDccStartKind } from "./StudioHybridDccIntro";
 import { StudioHybridDccViewport } from "./StudioHybridDccViewport";
+import { StudioHybridDccFileTools } from "./StudioHybridDccFileTools";
+import { useStudioHybridDccFileTools } from "./useStudioHybridDccFileTools";
+import { useStudioHybridDccWorkspaceLease } from "./useStudioHybridDccWorkspaceLease";
+import { studioHybridDccHandoffAnnouncement, studioHybridDccToonHandoffNotice } from "./materials/studio-hybrid-dcc-toon-handoff-copy";
+import { useStudioHybridDccNativeImport } from "./native-import/useStudioHybridDccNativeImport";
+import { StudioHybridDccNativeImportStatus } from "./native-import/StudioHybridDccNativeImportStatus";
 import {
   StudioHybridDccExpertTools,
   StudioHybridDccModeTabs,
@@ -60,7 +64,6 @@ import {
 import {
   buildStudioHybridDccExpertToolGroups,
   buildStudioHybridDccQuickTools,
-  STUDIO_HYBRID_DCC_SCULPT_BRUSH_LABELS,
   type StudioHybridDccRunResult,
   type StudioHybridDccToolContext,
 } from "./studio-hybrid-dcc-tool-catalog";
@@ -70,7 +73,9 @@ import { useStudioHybridDccModeLabel } from "./studio-hybrid-dcc-workbench-modes
 
 import type { StudioHybridDccBg3dHandoffResult } from "./studio-hybrid-dcc-bg3d-handoff";
 import type { StudioHybridDccPersistenceReceiptEvidence } from "./studio-hybrid-dcc-persistence";
-import type { StudioSculptBrushKind } from "./studio-hybrid-sculpt-kernel";
+import { StudioHybridDccSculptTools } from "./StudioHybridDccSculptTools";
+import { useStudioHybridDccSculptStroke } from "./useStudioHybridDccSculptStroke";
+import { commitStudioHybridDccSculptStroke } from "./studio-hybrid-dcc-sculpt-stroke-workspace";
 import type { StudioDccWorkbenchMode } from "../studio-workspace-route";
 import {
   PERSISTENCE_TONE_CLASS,
@@ -81,18 +86,9 @@ import {
 
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { friendlyHybridDccAssetName } from "./studio-hybrid-dcc-asset-label";
 
 export type { StudioHybridDccPersistenceStatus };
-
-type BilingualFn = (ko: string, en: string) => string;
-
-/** 장면 목록에 보이는 쉬운 이름. 원본 식별자는 작은 글씨로 따로 보여 준다. */
-function friendlyHybridDccAssetName(bt: BilingualFn, assetId: string, index: number): string {
-  if (/^(?:asset-)?cube(?:-|$)/iu.test(assetId)) return bt("큐브", "Cube");
-  const roomPart = /-part-(\d+)$/u.exec(assetId);
-  if (roomPart) return formatI18nTemplate(bt("방 구성품 {n}", "Room part {n}"), { n: Number(roomPart[1]) });
-  return formatI18nTemplate(bt("오브젝트 {n}", "Object {n}"), { n: index + 1 });
-}
 
 function isStudioHybridDccRunResult(
   value: StudioHybridDccWorkspace | StudioHybridDccRunResult,
@@ -192,7 +188,7 @@ export function StudioHybridDccPanel({
     "준비됨 · 큐브를 추가하거나 모델을 가져와 3D 제작을 시작하세요.",
     "Ready · Add a cube or import a model to start.",
   ));
-  const [busy, setBusy] = useState(false);
+  const [workspaceBusy, setWorkspaceBusy] = useState(false);
   // null = 아직 확인 전. 확인이 끝나면 뷰포트와 상단 안내가 같은 결과를 쓴다.
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const recheckWebgl = () => setWebglSupported(detectStudioHybridDccWebglCapability());
@@ -204,9 +200,8 @@ export function StudioHybridDccPanel({
     onWorkbenchModeChange?.(mode);
   };
   const [modifierError, setModifierError] = useState<string | null>(null);
-  const [sculptBrushKind, setSculptBrushKind] = useState<StudioSculptBrushKind>("inflate");
-  const [sculptDig, setSculptDig] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const sculptScopeRef = useRef<HTMLElement>(null);
   const mountedRef = useRef(true);
   const runGenerationRef = useRef(0);
   const handoffAbortRef = useRef<AbortController | null>(null);
@@ -268,9 +263,11 @@ export function StudioHybridDccPanel({
       | StudioHybridDccWorkspace
       | StudioHybridDccRunResult
       | Promise<StudioHybridDccWorkspace | StudioHybridDccRunResult>,
+    canCommit: () => boolean = () => true,
+    onCommitted?: () => void,
   ) => {
     const generation = ++runGenerationRef.current;
-    setBusy(true);
+    setWorkspaceBusy(true);
     try {
       const result = await fn();
       const raw = isStudioHybridDccRunResult(result) ? result.workspace : result;
@@ -278,21 +275,35 @@ export function StudioHybridDccPanel({
         ? result.selection
         : undefined;
       const next = await workspaceRefreshModifierPreviews(raw);
-      if (!mountedRef.current || generation !== runGenerationRef.current) return;
+      if (!mountedRef.current || generation !== runGenerationRef.current || !canCommit()) return;
       setWs(next);
+      onCommitted?.();
       setComponentSelection((current) => alignHybridDccSelectionToWorkspace(
         requestedSelection ?? current,
         next,
       ));
-      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.lastUvMap?.mode ?? frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.activeAssetId && next.session.state.geometry.records[next.activeAssetId]?.mesh.uvLayer ? bt("면 코너 UV", "Face-corner UVs") : frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
     } catch (error) {
-      if (!mountedRef.current || generation !== runGenerationRef.current) return;
+      if (!mountedRef.current || generation !== runGenerationRef.current || !canCommit()) return;
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runFailed", { label, detail: error instanceof Error ? error.message : String(error) }, "{label} 실패 · {detail}"));
     } finally {
-      if (mountedRef.current && generation === runGenerationRef.current) setBusy(false);
+      if (mountedRef.current && generation === runGenerationRef.current) setWorkspaceBusy(false);
     }
   };
 
+  const sculpt = useStudioHybridDccSculptStroke({
+    workspace: ws, workspaceDocumentId, enabled: workbenchMode === "sculpt", externalBusy: workspaceBusy, scopeRef: sculptScopeRef,
+    commit: async (receipt, isCurrent, onPublished) => {
+      let published = false;
+      await run(bt("브러시 조형", "Sculpt stroke"), () => commitStudioHybridDccSculptStroke(ws, receipt), isCurrent,
+        () => { published = true; onPublished(); });
+      return published;
+    },
+  });
+  const busy = workspaceBusy || sculpt.engaged;
+  const fileTools = useStudioHybridDccFileTools({ workspace: ws, workspaceDocumentId, busy, run });
+  const modelImport = useStudioHybridDccNativeImport({ workspace: ws, workspaceDocumentId, busy, run });
+  const captureWorkspaceLease = useStudioHybridDccWorkspaceLease(ws, workspaceDocumentId, Boolean(onOpenInBackground3D));
   const runModifier = (
     label: string,
     fn: () => StudioHybridDccWorkspace | Promise<StudioHybridDccWorkspace>,
@@ -347,6 +358,9 @@ export function StudioHybridDccPanel({
                 mode: modifier.mode,
                 radialAngleRad: modifier.radialAngleRad,
                 realizeInstances: modifier.realizeInstances,
+                useConstantOffset: modifier.useConstantOffset,
+                useRelativeOffset: modifier.useRelativeOffset,
+                relativeOffset: modifier.relativeOffset,
               };
             case "boolean":
               return {
@@ -370,6 +384,7 @@ export function StudioHybridDccPanel({
                 thickness: modifier.thickness,
                 evenThickness: modifier.evenThickness,
                 rim: modifier.rim,
+                offset: modifier.offset,
               };
             case "bevel":
               return {
@@ -546,32 +561,34 @@ export function StudioHybridDccPanel({
     if (!onOpenInBackground3D || busy) return;
     const generation = ++runGenerationRef.current;
     const controller = new AbortController();
+    const current = captureWorkspaceLease(controller);
     handoffAbortRef.current?.abort();
     handoffAbortRef.current = controller;
-    setBusy(true);
+    setWorkspaceBusy(true);
     try {
       const { handoffStudioHybridDccWorkspaceToBg3d } = await import( "./studio-hybrid-dcc-bg3d-handoff"
       );
+      if (!current()) return;
       const result = await handoffStudioHybridDccWorkspaceToBg3d(ws, {
         signal: controller.signal,
       });
       if (
         controller.signal.aborted ||
         !mountedRef.current ||
-        generation !== runGenerationRef.current
+        generation !== runGenerationRef.current || !current()
       ) return;
-      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.handoffCompleted", { assets: result.assets.length, shots: result.shots.length, losses: result.losses.length }, "3D 배경 편집기로 전달 완료 · 모델 {assets}개 · 컷 {shots}개 · 보존 보고 {losses}개"));
+      setLog(studioHybridDccHandoffAnnouncement(bt, result));
       onOpenInBackground3D(result);
     } catch (error) {
       if (
         controller.signal.aborted ||
         !mountedRef.current ||
-        generation !== runGenerationRef.current
+        generation !== runGenerationRef.current || !current()
       ) return;
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.handoffFailed", { detail: error instanceof Error ? error.message : String(error) }, "3D 배경 편집기 전달 실패 · {detail}"));
     } finally {
       if (handoffAbortRef.current === controller) handoffAbortRef.current = null;
-      if (mountedRef.current && generation === runGenerationRef.current) setBusy(false);
+      if (mountedRef.current && generation === runGenerationRef.current) setWorkspaceBusy(false);
     }
   };
 
@@ -585,10 +602,12 @@ export function StudioHybridDccPanel({
     run,
     runModifier,
     setLog,
+    downloadWorkfile: fileTools.save,
+    downloadObj: fileTools.saveObj,
     pickImportFile: () => fileRef.current?.click(),
     canOpenInBackground3d: Boolean(onOpenInBackground3D),
     openInBackground3d,
-    sculpt: { kind: sculptBrushKind, dig: sculptDig },
+    sculpt: { kind: sculpt.kind, dig: sculpt.carve },
   };
   const quickTools = buildStudioHybridDccQuickTools(workbenchMode, toolContext);
 
@@ -632,6 +651,7 @@ export function StudioHybridDccPanel({
 
   return (
     <section
+      ref={sculptScopeRef}
       className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-canvas/35 px-3 pb-3 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-4 sm:pt-3"
       data-studio-hybrid-dcc-panel="true"
       data-workbench-mode={workbenchMode}
@@ -640,6 +660,8 @@ export function StudioHybridDccPanel({
       <div className="flex flex-wrap items-center gap-2" data-studio-hybrid-dcc-topbar="true">
         <StudioHybridDccModeTabs mode={workbenchMode} onChange={changeWorkbenchMode} />
         <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
+          <StudioHybridDccFileTools model={fileTools} modelFileRef={fileRef} onModelFile={(file) => { void modelImport.open(file); }} />
+          <StudioHybridDccNativeImportStatus model={modelImport} />
           {persistenceStatus && persistenceCopy ? (
             <span
               className={cn(
@@ -717,25 +739,7 @@ export function StudioHybridDccPanel({
       </div>
 
       {webglSupported === false ? <StudioHybridDccEnvironmentNotice onRecheck={recheckWebgl} /> : null}
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".stl,.ply,.dae,.dxf,.off,.3mf,.bvh,.ifc,.obj,.glb,.gltf,.vrm,.fbx,.3dm,.step,.stp"
-        className="sr-only"
-        tabIndex={-1}
-        aria-label={bt("가져올 3D 파일 선택", "Choose a 3D file to import")}
-        data-studio-hybrid-dcc-import="true"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (!file) return;
-          void run(`모델 가져오기 · ${file.name}`, async () => {
-            const buf = new Uint8Array(await file.arrayBuffer());
-            return workspaceImportBytes(ws, file.name, buf);
-          });
-        }}
-      />
+      {onOpenInBackground3D && ws.session.state.materials ? <p role="note" className="text-xs leading-relaxed text-fg-2">{studioHybridDccToonHandoffNotice(bt)}</p> : null}
 
       <div
         className={cn(
@@ -750,6 +754,7 @@ export function StudioHybridDccPanel({
       >
         <div className={cn("order-1 min-w-0 lg:col-start-1 xl:row-start-1", introVisible ? "xl:col-start-1" : "xl:col-start-2")}>
           <StudioHybridDccViewport
+            materialMode={workbenchMode === "material"} workspaceDocumentId={workspaceDocumentId}
             stage={introVisible}
             onEmptyStart={startFromIntro}
             workspace={ws}
@@ -768,22 +773,11 @@ export function StudioHybridDccPanel({
               if (!busy) void run("오브젝트 복제", () => workspaceDuplicateActive(ws));
             }}
             onDeleteSelected={() => { if (!busy) void run("오브젝트 삭제", () => workspaceDeleteActive(ws)); }}
-            onRunWorkspaceEdit={(label, edit) => { if (!busy) void run(label, () => edit(ws, componentSelection)); }}
+            onRunWorkspaceEdit={(label, edit, canCommit) => { if (!busy) void run(label, () => edit(ws, componentSelection), canCommit); }}
             onSelectAsset={selectWorkspaceAsset}
             onSelectComponent={selectMeshComponent}
-            onSculptStroke={workbenchMode === "sculpt" && !busy
-              ? (assetId, localPoint) => {
-                  void run("브러시 조형", () => workspaceSculptActive(ws, {
-                    kind: sculptBrushKind,
-                    center: localPoint,
-                    radius: 0.45,
-                    strength: sculptDig ? -0.2 : 0.2,
-                    ...(sculptBrushKind === "grab" || sculptBrushKind === "snakeHook"
-                      ? { direction: { x: 0, y: 0.15, z: 0 } }
-                      : {}),
-                  }));
-                }
-              : undefined}
+            sculptGesture={workbenchMode === "sculpt" ? sculpt.controller : undefined}
+            sculptPreview={sculpt.preview ?? undefined}
           />
         </div>
 
@@ -799,44 +793,7 @@ export function StudioHybridDccPanel({
             <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
               {bt(modeGuide.description[0], modeGuide.description[1])}
             </p>
-            {workbenchMode === "sculpt" ? (
-              <div
-                role="radiogroup"
-                aria-label={bt("조형 브러시 종류", "Sculpt brush type")}
-                className="mt-3 flex flex-wrap gap-1.5 rounded-xl border border-line/70 bg-canvas/35 p-2"
-              >
-                {(Object.keys(STUDIO_HYBRID_DCC_SCULPT_BRUSH_LABELS) as readonly StudioSculptBrushKind[]).map((kind) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    role="radio"
-                    aria-checked={sculptBrushKind === kind}
-                    onClick={() => setSculptBrushKind(kind)}
-                    className={cn(
-                      "min-h-11 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:pointer-fine:min-h-9",
-                      sculptBrushKind === kind
-                        ? "border-accent bg-accent-soft text-accent"
-                        : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
-                    )}
-                  >
-                    {bt(STUDIO_HYBRID_DCC_SCULPT_BRUSH_LABELS[kind][0], STUDIO_HYBRID_DCC_SCULPT_BRUSH_LABELS[kind][1])}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  aria-pressed={sculptDig}
-                  onClick={() => setSculptDig((current) => !current)}
-                  className={cn(
-                    "min-h-11 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:pointer-fine:min-h-9",
-                    sculptDig
-                      ? "border-warn bg-warn/10 text-warn"
-                      : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
-                  )}
-                >
-                  {sculptDig ? bt("깎기 켜짐", "Carve on") : bt("깎기 꺼짐", "Carve off")}
-                </button>
-              </div>
-            ) : null}
+            {workbenchMode === "sculpt" ? <StudioHybridDccSculptTools model={sculpt} busy={busy} /> : null}
             <StudioHybridDccToolTiles
               mode={workbenchMode}
               tools={quickTools}
@@ -968,7 +925,7 @@ export function StudioHybridDccPanel({
                 ) : null}
                 <div className="rounded-lg border border-line p-2 text-xs leading-relaxed text-fg-2">
                   <p>{bt("권리", "Rights")}: {activeRights ? `${activeRights.license} · ${activeRights.creator}` : bt("미확인", "Unverified")}</p>
-                  <p>UV: {ws.lastUvMap?.mode ?? bt("미생성", "None yet")}</p>
+                  <p>UV: {activeRecord.mesh.uvLayer ? bt("면 코너 UV", "Face-corner UVs") : bt("미생성", "None yet")}</p>
                   <p>
                     {bt("화면용 메시", "Display mesh")}: {activeRecord.renderCache
                       ? bt("비파괴 결과 표시 중", "Showing the non-destructive result")
@@ -1117,7 +1074,7 @@ export function StudioHybridDccPanel({
           data-active={ws.activeAssetId ?? "none"}
           data-shots={ws.bridge.shots.length}
           data-ink={ws.bridge.artistCorrections.deltas.length}
-          data-uv={ws.lastUvMap?.mode ?? ""}
+          data-uv={activeRecord?.mesh.uvLayer ? "corner-uv" : ""}
           data-collab={ws.collab.peers.length}
           data-cloth-step={ws.clothStep}
           data-bom={ws.bom.lines.length}

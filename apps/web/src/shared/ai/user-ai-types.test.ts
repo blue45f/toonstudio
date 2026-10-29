@@ -7,6 +7,7 @@ import {
   userAiRoutingSettings,
   validateUserAiBaseUrl,
   validateUserAiPath,
+  withPaidAutoUseChoice,
 } from "./user-ai-types";
 
 const connection = {
@@ -124,6 +125,57 @@ describe("unified cloud AI configuration", () => {
     })).toThrow(/연결 대상/u);
     expect(() => validateUserAiPath("/jobs/../admin")).toThrow(/상대 경로/u);
     expect(() => validateUserAiPath("//other.example/path")).toThrow(/상대 경로/u);
+  });
+});
+
+describe("유료 키 자동 사용 동의(연결마다)", () => {
+  const paid = (id: string, extra: Record<string, unknown> = {}) => ({
+    ...connection,
+    id,
+    label: id,
+    baseUrl: "https://api.deepseek.com",
+    costPolicy: "user-funded-byok" as const,
+    ...extra,
+  });
+  const noAssignments = { text: null, image: null, inference: null, "three-d": null };
+
+  it("예전 전역 동의는 정규화 때 한 번만, 그때 있던 유료 연결 모두로 옮긴다", () => {
+    const legacy = normalizeUserAiConfiguration({
+      version: 1,
+      connections: [paid("a"), connection],
+      assignments: noAssignments,
+      routing: { allowPaidFallback: true, preferPaidKeys: true },
+    });
+    expect(legacy.connections.find((item) => item.id === "a")?.paidAutoUse).toBe(true);
+    expect(legacy.connections.find((item) => item.id === "personal")?.paidAutoUse).toBeUndefined();
+    expect(legacy.routing?.paidAutoUsePerKey).toBe(true);
+
+    // 그 뒤에 더한 유료 연결(예: AI 보조 카드에서 연결한 키)은 따로 동의해야 자동 경로에 든다.
+    const later = normalizeUserAiConfiguration({ ...legacy, connections: [...legacy.connections, paid("b")] });
+    expect(later.connections.find((item) => item.id === "b")?.paidAutoUse).toBeUndefined();
+    expect(later.connections.find((item) => item.id === "a")?.paidAutoUse).toBe(true);
+  });
+
+  it("전역 동의가 꺼진 예전 설정은 어느 연결에도 동의를 남기지 않는다", () => {
+    const legacy = normalizeUserAiConfiguration({ version: 1, connections: [paid("a")], assignments: noAssignments });
+    expect(legacy.connections[0]?.paidAutoUse).toBeUndefined();
+    expect(legacy.routing?.paidAutoUsePerKey).toBe(true);
+  });
+
+  it("설정에서 고르면 지금 유료 연결 모두에 동의를 남기고, 끄면 모두 지운다", () => {
+    const base = normalizeUserAiConfiguration({
+      version: 1,
+      connections: [paid("a"), paid("b", { paidAutoUse: true }), connection],
+      assignments: noAssignments,
+      routing: { paidAutoUsePerKey: true },
+    });
+    const on = normalizeUserAiConfiguration(withPaidAutoUseChoice(base, { allowPaidFallback: true, preferPaidKeys: true }));
+    expect(on.connections.map((item) => [item.id, item.paidAutoUse === true])).toEqual([["a", true], ["b", true], ["personal", false]]);
+    expect(userAiRoutingSettings(on)).toMatchObject({ allowPaidFallback: true, preferPaidKeys: true });
+
+    const off = normalizeUserAiConfiguration(withPaidAutoUseChoice(on, { allowPaidFallback: false, preferPaidKeys: true }));
+    expect(off.connections.some((item) => item.paidAutoUse === true)).toBe(false);
+    expect(userAiRoutingSettings(off)).toMatchObject({ allowPaidFallback: false, preferPaidKeys: false });
   });
 });
 

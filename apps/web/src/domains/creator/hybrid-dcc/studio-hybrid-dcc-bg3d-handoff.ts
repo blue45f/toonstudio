@@ -1,3 +1,4 @@
+import { collectStudioHybridDccBg3dLosses } from "./studio-hybrid-dcc-bg3d-handoff-losses";
 /**
  * Product handoff from the authoritative Hybrid DCC document to Studio's shipping BG3D editor.
  *
@@ -46,6 +47,7 @@ import {
   exportStudioHybridDccGlbBatch,
   type StudioHybridDccGlbExportExecutionBackend,
 } from "./studio-hybrid-dcc-glb-export-worker-client";
+import { resolveStudioHybridDccExportToonMaterials } from "./materials/studio-hybrid-dcc-toon-export";
 
 import type {
   StudioHybridDccGlbIssue,
@@ -93,6 +95,7 @@ export type StudioHybridDccBg3dLossCode =
   | "artist-ink-retained-in-dcc"
   | "glb-export-loss-retained-in-dcc"
   | "glb-export-warning"
+  | "toon-material-display-fallback"
   | "bridge-object-retained-in-dcc"
   | "base-material-retained-in-dcc";
 
@@ -103,7 +106,7 @@ export interface StudioHybridDccBg3dLossEntry {
   readonly shotId?: string;
   readonly sourceIssueCode?: StudioHybridDccGlbIssue["code"];
   readonly count: number;
-  readonly resolution: "retained-in-authority";
+  readonly resolution: "retained-in-authority" | "material-payload-preserved";
   readonly detail: string;
 }
 
@@ -114,6 +117,7 @@ export interface StudioHybridDccBg3dAssetMapping {
   readonly sourceAuthorityMeshHash: string;
   /** Hash of the exact mesh supplied to the GLB exporter. */
   readonly sourceMeshHash: string;
+  readonly sourceToonMaterialsHash?: string;
   readonly sourceGeometryKind: "authority" | "evaluated-modifier-stack";
   readonly sceneNodeId: string;
   readonly attachmentId: string;
@@ -580,104 +584,6 @@ function materializeProceduralBridgeObjects(
   };
 }
 
-function collectLosses(
-  workspace: StudioHybridDccWorkspace,
-  exports: readonly {
-    readonly assetId: string;
-    readonly issues: readonly StudioHybridDccGlbIssue[];
-  }[],
-  mappedSourceObjectIds: ReadonlySet<string>,
-): StudioHybridDccBg3dLossEntry[] {
-  const losses: StudioHybridDccBg3dLossEntry[] = [];
-  for (const exported of exports) {
-    for (const issue of exported.issues) {
-      losses.push({
-        code: issue.severity === "loss"
-          ? "glb-export-loss-retained-in-dcc"
-          : "glb-export-warning",
-        severity: "warning",
-        assetId: exported.assetId,
-        sourceIssueCode: issue.code,
-        count: 1,
-        resolution: "retained-in-authority",
-        detail: issue.detail,
-      });
-    }
-  }
-  for (const object of workspace.bridge.set.objects) {
-    if (!mappedSourceObjectIds.has(object.id)) {
-      losses.push({
-        code: "bridge-object-retained-in-dcc",
-        severity: "warning",
-        assetId: object.id,
-        count: 1,
-        resolution: "retained-in-authority",
-        detail: "렌더 가능한 Geometry Authority 또는 지원되는 절차형 bridge가 없어 DCC 원본에 보존했습니다.",
-      });
-      continue;
-    }
-    if (
-      workspace.session.state.geometry.records[object.id] &&
-      object.materialId !== "default"
-    ) {
-      losses.push({
-        code: "base-material-retained-in-dcc",
-        severity: "warning",
-        assetId: object.id,
-        count: 1,
-        resolution: "retained-in-authority",
-        detail: `기본 재질 '${safeSceneText(object.materialId, "unknown")}'은 DCC 원본에 보존되고 현재 GLB 파생물에는 베이크하지 않았습니다.`,
-      });
-    }
-  }
-  for (const shot of workspace.bridge.shots) {
-    const transformCount = Object.keys(shot.overrides.transform ?? {}).length;
-    if (transformCount > 0) {
-      losses.push({
-        code: "shot-transform-retained-in-dcc",
-        severity: "warning",
-        shotId: shot.id,
-        count: transformCount,
-        resolution: "retained-in-authority",
-        detail: "컷별 변형은 DCC 원본에 보존되며 현재 BG3D 파생 장면에는 베이크하지 않습니다.",
-      });
-    }
-    const materialCount = Object.keys(shot.overrides.material ?? {}).length;
-    if (materialCount > 0) {
-      losses.push({
-        code: "shot-material-retained-in-dcc",
-        severity: "warning",
-        shotId: shot.id,
-        count: materialCount,
-        resolution: "retained-in-authority",
-        detail: "컷별 재질은 DCC 원본에 보존되며 BG3D Shot 스키마 확장 전까지 전송하지 않습니다.",
-      });
-    }
-    const poseCount = Object.keys(shot.overrides.characterPose ?? {}).length;
-    if (poseCount > 0) {
-      losses.push({
-        code: "shot-character-pose-retained-in-dcc",
-        severity: "warning",
-        shotId: shot.id,
-        count: poseCount,
-        resolution: "retained-in-authority",
-        detail: "캐릭터 포즈 override는 DCC 원본에 보존됩니다.",
-      });
-    }
-  }
-  const inkCount = workspace.bridge.artistCorrections.deltas.length;
-  if (inkCount > 0) {
-    losses.push({
-      code: "artist-ink-retained-in-dcc",
-      severity: "info",
-      count: inkCount,
-      resolution: "retained-in-authority",
-      detail: "작가 선 보정 delta는 DCC linked-ink 원본에 보존되고 GLB 렌더 파생물에는 포함되지 않습니다.",
-    });
-  }
-  return losses;
-}
-
 function captureBridgeShots(
   baseScene: StudioBg3dSceneDocument,
   workspace: StudioHybridDccWorkspace,
@@ -782,12 +688,17 @@ export async function handoffStudioHybridDccWorkspaceToBg3d(
   let exportResults: readonly StudioHybridDccMeshGlbExportResult[];
   try {
     const exportOutcome = records.length > 0
-      ? await exportStudioHybridDccGlbBatch(records.map((record) => ({
-          assetId: record.assetId,
-          mesh: record.mesh,
-          sourceHash: record.meshHash,
-          sourceRevision: record.revision,
-        })), {
+      ? await exportStudioHybridDccGlbBatch(records.map((record) => {
+          // modifier가 없앤 source slot은 전달할 면이 없으므로 실제 derivative의 slot에만 binding한다.
+          const toonMaterials = resolveStudioHybridDccExportToonMaterials(workspace.session.state.materials, record.assetId, new Set(record.mesh.faces.map(({ materialSlot }) => materialSlot)));
+          return {
+            assetId: record.assetId,
+            mesh: record.mesh,
+            sourceHash: record.meshHash,
+            sourceRevision: record.revision,
+            ...(toonMaterials === undefined ? {} : { toonMaterials }),
+          };
+        }), {
           signal: options.signal,
           executionBackend: ports.glbExportExecutionBackend,
         })
@@ -906,6 +817,7 @@ export async function handoffStudioHybridDccWorkspaceToBg3d(
       sourceRevision: record.revision,
       sourceAuthorityMeshHash: record.sourceAuthorityMeshHash,
       sourceMeshHash: record.meshHash,
+      ...(result.report.source.toonMaterialsHash === undefined ? {} : { sourceToonMaterialsHash: result.report.source.toonMaterialsHash }),
       sourceGeometryKind: record.sourceGeometryKind,
       sceneNodeId,
       attachmentId: attachment.id,
@@ -962,13 +874,15 @@ export async function handoffStudioHybridDccWorkspaceToBg3d(
   }
 
   const sourceWorkspaceHash = hashWorkspaceDeliverySource(workspace);
-  const losses = Object.freeze(collectLosses(
+  const losses = Object.freeze(collectStudioHybridDccBg3dLosses(
     workspace,
     exported.map(({ record, result }) => ({
       assetId: record.assetId,
       issues: result.report.issues,
+      ...(result.report.source.toonMaterialsHash === undefined ? {} : { toonMaterialsHash: result.report.source.toonMaterialsHash }),
     })),
     new Set(nodeIdsBySourceObjectId.keys()),
+    safeSceneText,
   ));
   const retainedArtistCorrectionCount = workspace.bridge.artistCorrections.deltas.length;
   const successfulResult: StudioHybridDccBg3dHandoffResult = Object.freeze({

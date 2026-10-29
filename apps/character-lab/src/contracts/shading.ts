@@ -69,7 +69,14 @@ export const recipeLookSchema = lookSchema.superRefine((look, ctx) => {
 });
 
 /** v3 셰이딩 프로파일(look 필수) */
-export const shadingProfileSchema = z.object({ ...shadingShapeV2, look: recipeLookSchema }).strict();
+export const shadingProfileSchema = z.object({
+  ...shadingShapeV2,
+  toon: shadingShapeV2.toon.extend({
+    /** 화면 가로·세로 방향으로 굵기가 다른 hull. 생략한 기존 레시피는 등방성 그대로다. */
+    outlinePressure: z.boolean().optional(),
+  }),
+  look: recipeLookSchema,
+}).strict();
 
 export type ShadingProfile = z.infer<typeof shadingProfileSchema>;
 

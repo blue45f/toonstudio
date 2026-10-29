@@ -504,9 +504,10 @@ describe("Hybrid DCC editable-half-edge GLB exporter", () => {
         { x: 0, y: 0, z: 0 },
         { x: 1, y: 0, z: 0 },
         { x: 1, y: 1, z: 0.25 },
+        { x: 0.5, y: 1.5, z: 0 },
         { x: 0, y: 1, z: 0 },
       ],
-      [[0, 1, 2, 3]],
+      [[0, 1, 2, 3, 4]],
     );
     const nonPlanarResult = exportMesh(nonPlanar, "non-planar");
     expect(nonPlanarResult.ok).toBe(false);

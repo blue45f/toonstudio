@@ -11,7 +11,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 
-
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { Container } from "@/shared/components/section";
@@ -40,6 +39,7 @@ import {
   STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT,
 } from "../studio-project-document-reader";
 import { resolveStudioProjectResumeTarget } from "../studio-project-resume-target";
+import { preserveStudioLaunchDensity, readStudioLaunchDensity } from "../studio-launch-mode";
 import { readStudioReviewHistory } from "../studio-review-history-store";
 import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { StudioProjectDiagnosticsBridge } from "./StudioProjectDiagnosticsBridge";
@@ -55,7 +55,6 @@ import {
   projectViewHref, workHref,
 } from "./studio-project-shell-definitions";
 import "./studio-illustrated-project-surfaces.css";
-
 
 export type StudioProjectSection = StudioProjectSectionId;
 
@@ -217,6 +216,44 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
   const secondaryActions = definition.actions.slice(1);
   const PrimaryActionIcon = primaryAction?.icon ?? SectionIcon;
   const secondaryNavigationActive = section === "assets" || section === "settings";
+  const launchHref = (href: string) => preserveStudioLaunchDensity(href, location.search);
+  const focusedScript = section === "story" && selectedView === "script"
+    && readStudioLaunchDensity(location.search) === "focus";
+  if (focusedScript) {
+    const fullParams = new URLSearchParams(location.search);
+    fullParams.set("uiMode", "full");
+    const [continuePath, continueSearch = ""] = launchHref(headerFacts?.hasResumeDocument ? headerFacts.resumeHref : workHref(displayProjectId)).split("?", 2);
+    const continueParams = new URLSearchParams(continueSearch);
+    continueParams.set("startTool", "draw");
+    return (
+      <Container size="wide" className="py-4 sm:py-6">
+        <header data-studio-project-shell="focused-script" className="rounded-2xl border border-line bg-card p-4 sm:p-5">
+          <Link href="/studio" className="inline-flex min-h-11 items-center text-sm font-semibold text-fg-2 hover:text-accent">{bt("내 작업으로", "Back to My work")}</Link>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="break-words text-sm font-semibold text-fg-2">{projectTitle}</p>
+              <h1 className="mt-1 text-2xl font-black text-fg">{bt("대본 확인하고 이어 그리기", "Review your script and keep drawing")}</h1>
+            </div>
+            <Link
+              href={`${continuePath}?${continueParams.toString()}`}
+              data-studio-project-header-continue="true"
+              className={buttonClass({ size: "lg", className: "gap-2" })}
+            >
+              <Brush size={17} aria-hidden="true" />{bt("이어서 그리기", "Continue drawing")}
+            </Link>
+          </div>
+          <details className="mt-3 rounded-xl border border-line bg-panel/40">
+            <summary className="min-h-11 cursor-pointer px-3 py-2.5 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("프로젝트 메뉴", "Project menu")}</summary>
+            <nav aria-label={bt("프로젝트 주요 단계", "Main project stages")} className="flex flex-wrap gap-2 border-t border-line p-2">
+              {PRIMARY_SECTIONS.map((id) => <Link key={id} href={launchHref(projectSectionHref(displayProjectId, id))} aria-current={id === section ? "page" : undefined} className={buttonClass({ variant: "quiet", className: "min-h-11" })}>{bt(SECTION_DEFINITIONS[id].label.ko, SECTION_DEFINITIONS[id].label.en)}</Link>)}
+            </nav>
+            <Link className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-accent" href={`${projectSectionHref(displayProjectId, "story")}?${fullParams.toString()}`}>{bt("전체 기획 도구 보기", "Show all planning tools")}</Link>
+          </details>
+        </header>
+        <StudioProjectDiagnosticsBridge projectId={displayProjectId} />
+      </Container>
+    );
+  }
 
   return (
     <Container
@@ -254,7 +291,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
           </Link>
           <span aria-hidden="true">/</span>
           <Link
-            href={projectSectionHref(displayProjectId, "overview")}
+            href={launchHref(projectSectionHref(displayProjectId, "overview"))}
             className="min-w-0 max-w-56 truncate font-semibold hover:text-accent"
             title={projectTitle}
           >
@@ -327,7 +364,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
           </div>
           {headerFacts?.hasResumeDocument ? (
             <Link
-              href={headerFacts.resumeHref}
+              href={launchHref(headerFacts.resumeHref)}
               data-studio-project-header-continue="true"
               title={headerFacts.resumeSummary ?? undefined}
               className={buttonClass({ size: "lg", className: "shrink-0 gap-2" })}
@@ -337,7 +374,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             </Link>
           ) : (
             <Link
-              href={workHref(displayProjectId)}
+              href={launchHref(workHref(displayProjectId))}
               data-studio-project-header-continue="true"
               className={buttonClass({ size: "lg", className: "shrink-0 gap-2" })}
             >
@@ -435,7 +472,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
               return (
                 <Link
                   key={id}
-                  href={projectSectionHref(displayProjectId, id)}
+                  href={launchHref(projectSectionHref(displayProjectId, id))}
                   aria-current={active ? "page" : undefined}
                   data-studio-project-primary-section={id}
                   className={cn(
@@ -472,7 +509,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
               return (
                 <Link
                   key={id}
-                  href={projectSectionHref(displayProjectId, id)}
+                  href={launchHref(projectSectionHref(displayProjectId, id))}
                   aria-current={active ? "page" : undefined}
                   data-studio-project-secondary-section={id}
                   className={cn(
@@ -547,7 +584,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
           </div>
           {destination.href ? (
             <Link
-              href={destination.href}
+              href={launchHref(destination.href)}
               className={buttonClass({ variant: "outline", className: "shrink-0 gap-2" })}
             >
               {bt(destination.ctaKo, destination.ctaEn)}
@@ -586,7 +623,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
             </div>
           </div>
           <Link
-            href={primaryAction.href(displayProjectId)}
+            href={launchHref(primaryAction.href(displayProjectId))}
             data-studio-project-primary-action="true"
             className="group mt-3 flex min-h-28 items-center gap-4 rounded-2xl border border-accent/35 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:bg-raised hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:p-5"
           >
@@ -627,7 +664,7 @@ export function StudioProjectShellPage({ section }: { readonly section: StudioPr
                   return (
                     <Link
                       key={item.title.ko}
-                      href={item.href(displayProjectId)}
+                      href={launchHref(item.href(displayProjectId))}
                       className="group flex min-h-16 items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-line bg-panel text-fg-3 group-hover:text-accent">

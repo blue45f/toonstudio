@@ -113,13 +113,14 @@ describe("ExpressionPanel", () => {
     expect(expressionsEqual({ jawOpen: 0.5 }, { jawOpen: 0.4 })).toBe(false);
   });
 
-  it("SHAPER EyeballData 안구 시선·하이라이트 동기화 섹션(EyeballHighlightType 4종·대칭 Yaw 미러링)을 렌더링하고 조작한다", () => {
+  it("안구 엔진이 없으면 시선 제어를 비활성화하고 하이라이트 미지원 경계를 설명한다", () => {
     setup();
-    const section = screen.getByTestId("shaper-expression-headpart-section");
-    expect(section).toBeTruthy();
-    expect(screen.getByTestId("shaper-eyeball-readout").textContent).toContain("좌안 Yaw 12° · 우안 미러 Yaw -12°");
-
-    fireEvent.change(screen.getByLabelText("좌측 안구 수평 시선 (Yaw°)"), { target: { value: "20" } });
-    expect(screen.getByTestId("shaper-eyeball-readout").textContent).toContain("좌안 Yaw 20° · 우안 미러 Yaw -20°");
+    expect(screen.getByTestId("shaper-expression-headpart-section")).toBeTruthy();
+    expect(screen.getByLabelText("카메라 응시").closest("fieldset")?.disabled).toBe(true);
+    expect(screen.getByText(/안구 본을 확인할 렌더 엔진/u)).toBeTruthy();
+    for (const name of ["안구 고정 (fix)", "카메라 추적 (cam)", "조명 반사 (light)", "월드 고정 (world)"]) {
+      expect(screen.getByRole("radio", { name }).closest("fieldset")?.disabled).toBe(true);
+    }
+    expect(screen.getByText(/독립 하이라이트 방향 제어는 현재 렌더러가 지원하지 않습니다/u)).toBeTruthy();
   });
 });

@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { TRIPO3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-tripo3d-customizer-engine";
+import { GEN3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-gen3d-customizer-engine";
 import {
-  STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
-  STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
-} from "../scene-3d/studio-varco3d-character-lab-diorama-catalog";
+  STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_ASSET3D_WEBTOON_PROP_ASSETS,
+} from "../scene-3d/studio-asset3d-character-lab-diorama-catalog";
 import {
   STUDIO_BG3D_REA_COMPETITOR_PROFILES,
   STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG,
-  STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG,
+  STUDIO_BG3D_ASSET3D_GLB_CALIBRATION_CATALOG,
   buildCalibratedTripoBg3dGlbPlacement,
-  buildCalibratedVarcoBg3dGlbPlacement,
+  buildCalibratedAsset3dBg3dGlbPlacement,
   buildTripoBg3dProceduralTwinPrimitives,
-  buildVarco3dDioramaDetailedPrimitives,
-  buildVarco3dPropDetailedPrimitives,
+  buildAsset3dDioramaDetailedPrimitives,
+  buildAsset3dPropDetailedPrimitives,
   resolveReaDioramaSummaryKo,
 } from "./studio-bg3d-rea-webtoon-background-engine";
 
@@ -46,7 +46,7 @@ describe("studio-bg3d-rea-webtoon-background-engine", () => {
   });
 
   it("calibrates all 17 Tripo 3D and 10 VARCO 3D background GLB assets to human-scale meters with base-pivot grounding", () => {
-    const bg3dModels = TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d");
+    const bg3dModels = GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d");
     expect(bg3dModels).toHaveLength(17);
     expect(STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG).toHaveLength(bg3dModels.length);
 
@@ -62,9 +62,9 @@ describe("studio-bg3d-rea-webtoon-background-engine", () => {
       expect(twinPrims.every((p) => p.tags?.includes("tripo3d-bg-kit"))).toBe(true);
     }
 
-    expect(STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG).toHaveLength(10);
-    for (const varcoSpec of STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG) {
-      const placement = buildCalibratedVarcoBg3dGlbPlacement(varcoSpec.assetId);
+    expect(STUDIO_BG3D_ASSET3D_GLB_CALIBRATION_CATALOG).toHaveLength(10);
+    for (const varcoSpec of STUDIO_BG3D_ASSET3D_GLB_CALIBRATION_CATALOG) {
+      const placement = buildCalibratedAsset3dBg3dGlbPlacement(varcoSpec.assetId);
       expect(placement.kind).toBe("glb");
       expect(placement.url).toBe(varcoSpec.url);
       expect(placement.scale[0]).toBeGreaterThanOrEqual(0.9);
@@ -73,10 +73,10 @@ describe("studio-bg3d-rea-webtoon-background-engine", () => {
   });
 
   it("builds multi-part detailed 3D geometry for all 21 VARCO 3D Korean webtoon props while keeping 1 anchor tag per prop", () => {
-    expect(STUDIO_VARCO3D_WEBTOON_PROP_ASSETS).toHaveLength(21);
+    expect(STUDIO_ASSET3D_WEBTOON_PROP_ASSETS).toHaveLength(21);
 
-    for (const prop of STUDIO_VARCO3D_WEBTOON_PROP_ASSETS) {
-      const parts = buildVarco3dPropDetailedPrimitives(prop, [1.5, -0.8]);
+    for (const prop of STUDIO_ASSET3D_WEBTOON_PROP_ASSETS) {
+      const parts = buildAsset3dPropDetailedPrimitives(prop, [1.5, -0.8]);
       expect(parts.length).toBeGreaterThanOrEqual(5);
 
       const anchorItems = parts.filter((item) => item.tags?.includes("varco3d-prop"));
@@ -90,10 +90,10 @@ describe("studio-bg3d-rea-webtoon-background-engine", () => {
   });
 
   it("builds rich architectural cutaway stages for all 22 VARCO 3D isometric dioramas", () => {
-    expect(STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES).toHaveLength(22);
+    expect(STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES).toHaveLength(22);
 
-    for (const diorama of STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES) {
-      const stagePrims = buildVarco3dDioramaDetailedPrimitives(diorama, {
+    for (const diorama of STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES) {
+      const stagePrims = buildAsset3dDioramaDetailedPrimitives(diorama, {
         competitorId: "acon3d-carpenstreet",
       });
       expect(stagePrims.length).toBeGreaterThanOrEqual(14);

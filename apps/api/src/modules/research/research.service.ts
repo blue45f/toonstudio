@@ -40,8 +40,10 @@ import {
 } from "./research-logic";
 import {
   beginResearchCreditCharge,
+  PAID_OPERATIONS_SETTING_STORE,
   ResearchCreditError,
   settleResearchCreditCharge,
+  type PaidOperationsSettingStore,
   type ResearchCreditCharge,
   type ResearchCreditWallet,
 } from "./research-credit-charge";
@@ -51,10 +53,6 @@ import {
   type ResearchCreditPricing,
 } from "./research-credit-meter";
 import { resolvePaidOperationsEnabled } from "../membership-wallet/paid-operations-gate";
-import {
-  PAID_OPERATIONS_SETTING_STORE,
-  type PaidOperationsSettingStore,
-} from "./research-credit-charge";
 import { MembershipWalletService } from "../membership-wallet/membership-wallet.service";
 import type {
   ExistenceCheckDto,

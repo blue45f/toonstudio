@@ -1,3 +1,5 @@
+import { UserAiTransportError } from "./user-ai-transport-error";
+
 import type {
   UserAiCapability,
   UserAiConnection,
@@ -383,7 +385,8 @@ export async function guardFreeAiRuntimeRequest(
     const entry = currentEntry(ledger, key, now);
     const blocked = blockMessage(entry, now);
     if (blocked) {
-      if (entry.blockedReason === "authentication") throw new Error(blocked);
+      // 최근 인증 오류로 쉬는 연결은 요청을 보내지 않았으므로, 인증 거절과 같은 종류로 알려 다음 키·ToonStudio AI로 넘기게 한다.
+      if (entry.blockedReason === "authentication") throw new UserAiTransportError("authentication", blocked);
       throw new FreeAiRuntimeBudgetError(blocked);
     }
     if (entry.blockedUntil !== null && entry.blockedUntil <= now) {
@@ -530,6 +533,24 @@ export function getFreeAiRuntimeBudgetSnapshot(
     blockedUntil: entry.blockedUntil,
     resetsAt: nextUtcDay(now),
   };
+}
+
+/**
+ * 지우거나 키 값이 바뀐 경로의 사용량·잠금 기록을 지운다. 경로 ID는 연결·모델·키 ID로 만들어서, 키를 지운 뒤 새로 넣은 키가
+ * 같은 ID를 다시 쓴다. 기록을 남겨 두면 새 키가 옛 키의 인증 대기·결제 잠금에 걸려 한동안 건너뛰어진다.
+ */
+export function forgetFreeAiRuntimeRoutes(routes: readonly UserAiConnection[]): void {
+  if (routes.length === 0) return;
+  const ledger = readLedger();
+  let changed = false;
+  for (const route of routes) {
+    const key = scopeKey(route);
+    if (key in ledger.entries) {
+      delete ledger.entries[key];
+      changed = true;
+    }
+  }
+  if (changed) writeLedger(ledger);
 }
 
 export function resetFreeAiRuntimeBudget(connection?: UserAiConnection): void {

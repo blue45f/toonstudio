@@ -1,0 +1,83 @@
+{
+  "schema": "toonstudio.creator-bundle-local-ingest.v1",
+  "projection": "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json",
+  "projectionSha256": "ad227c555222e1a6ec93b59c1b4917eac18d9059a213d6f48736bb49ab56cff4",
+  "snapshotGeneratedAt": "2026-10-29T09:32:32.491Z",
+  "copyPolicy": "copy-only-no-hardlinks",
+  "expected": {
+    "files": 1929,
+    "bytes": 1968727612
+  },
+  "packs": [
+    {
+      "catalogId": "cbv1-008-cute-park-pack",
+      "ingestId": "cbv1-ingest-local-cute-park",
+      "librarySource": "01-city/cute-park-pack/models/mixed/gLTF",
+      "files": 103,
+      "bytes": 94403244
+    },
+    {
+      "catalogId": "cbv1-024-cute-dungeon-megapack",
+      "ingestId": "cbv1-ingest-local-cute-dungeon",
+      "librarySource": "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF",
+      "files": 320,
+      "bytes": 196787736
+    },
+    {
+      "catalogId": "cbv1-014-cute-graveyard",
+      "ingestId": "cbv1-ingest-local-cute-graveyard",
+      "librarySource": "05-horror-gothic/cute-graveyard/models/mixed/gLTF",
+      "files": 253,
+      "bytes": 142555424
+    },
+    {
+      "catalogId": "cbv1-076-medieval-weapons",
+      "ingestId": "cbv1-ingest-local-medieval-weapons",
+      "librarySource": "02-medieval-fantasy/free-medieval-weapons-small-low-poly-pack/models/mixed/gLTF",
+      "files": 32,
+      "bytes": 18906768
+    },
+    {
+      "catalogId": "cbv1-053-scifi-arena-blue-base",
+      "ingestId": "cbv1-ingest-local-scifi-blue-base",
+      "librarySource": "06-scifi/sci-fi-arena-blue-base/models/mixed/gLTF",
+      "files": 114,
+      "bytes": 81671064
+    },
+    {
+      "catalogId": "cbv1-081-cartoon-car-megapack",
+      "ingestId": "cbv1-ingest-local-cartoon-car-megapack",
+      "librarySource": "20-vehicles/cartoon-car-megapack/models/mixed/gLTF",
+      "files": 180,
+      "bytes": 302323400
+    },
+    {
+      "catalogId": "cbv1-017-cartoon-cars-2",
+      "ingestId": "cbv1-ingest-local-cartoon-cars-2",
+      "librarySource": "20-vehicles/cartoon-cars-2/models/mixed/Gltf",
+      "files": 453,
+      "bytes": 863451444
+    },
+    {
+      "catalogId": "cbv1-018-army-pack",
+      "ingestId": "cbv1-ingest-local-army-pack",
+      "librarySource": "30-props/army-pack/models/mixed/gLTF",
+      "files": 309,
+      "bytes": 193324500
+    },
+    {
+      "catalogId": "cbv1-012-cemetery-statues",
+      "ingestId": "cbv1-ingest-local-cemetery-statues",
+      "librarySource": "05-horror-gothic/cemetery-statues/models/glb",
+      "files": 50,
+      "bytes": 6424372
+    },
+    {
+      "catalogId": "cbv1-077-small-props-pack",
+      "ingestId": "cbv1-ingest-local-small-props-pack",
+      "librarySource": "02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/gLTF/Props",
+      "files": 115,
+      "bytes": 68879660
+    }
+  ]
+}

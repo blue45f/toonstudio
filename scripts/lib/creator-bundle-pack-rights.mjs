@@ -7,8 +7,8 @@
  * 원칙 — fail-closed:
  *   - 서빙 판정은 원장 한 줄(`serve: "hold" | "allow"`)이다. 기본값은 hold다.
  *   - 원장에 없는 팩, 증빙이 모자란 allow, 잘못된 원장은 전부 hold(또는 오류)로 닫힌다.
- *   - allow는 `ALLOW_EVIDENCE_REQUIREMENTS`가 라이선스 분류별로 요구하는 증빙 종류를
- *     전부 갖춘 팩만 가능하다. 2차 조회 기록(`secondary-lookup`)은 어떤 요구도 채우지 못한다.
+ *   - allow는 기존 분류별 요구 증빙 또는 2026-10-29 소유자의 팩별 상업 이용 확인 경로를 갖춰야 한다.
+ *     소유자 확인은 제작사 허여·CC0로 바꾸지 않는다. 2차 조회 기록은 어느 경로도 채우지 못한다.
  *   - 이 모듈은 어떤 팩을 열지 정하지 않는다. 증빙 제출·서면 확인·최종 개방은 소유자 결정이다.
  *
  * 한계 — 증빙 검사는 형식·일관성 검사다:
@@ -29,6 +29,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
+  ownerCommercialUseEvidenceProblems,
+  ownerCommercialUseGrantProblems,
+} from "./creator-bundle-owner-commercial-use.mjs";
+
+import {
   dateProblem,
   isRecord,
   isSha256,
@@ -39,6 +45,14 @@ import {
   refProblem,
   relativePathProblem,
 } from "./creator-bundle-pack-rights-form.mjs";
+
+export {
+  OWNER_COMMERCIAL_USE_CONFIRMED_AT,
+  OWNER_COMMERCIAL_USE_DECISION_REF,
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
+  OWNER_COMMERCIAL_USE_LICENSE_NAME,
+  OWNER_COMMERCIAL_USE_SCOPE,
+} from "./creator-bundle-owner-commercial-use.mjs";
 
 export {
   WEB_EXTERNAL_REFERENCE_PATTERN,
@@ -55,7 +69,7 @@ export const DEFAULT_PACK_RIGHTS_PATH = resolve(REPO_ROOT, "config/creator-bundl
 /** 원장 팩이 속한 묶음. 생성기의 CATALOG_PACKS / CROWD_PACKS / PENDING_PACKS와 1:1이다. */
 export const PACK_GROUPS = Object.freeze(["pack", "crowd", "pending"]);
 /**
- * 서빙 판정이 실제로 일어나는 묶음. pending은 미수신·보류라 생성기가 serve와 무관하게 pendingPacks로만
+ * 서빙 판정이 실제로 일어나는 묶음. pending은 생성기 편입 대기·보류라 serve와 무관하게 pendingPacks로만
  * 내보내므로 allow가 아무것도 열지 못한다 — 편입(CATALOG_PACKS)하면서 group을 pack으로 옮긴 뒤에야 판정 대상이다.
  */
 export const SERVABLE_GROUPS = Object.freeze(["pack", "crowd"]);
@@ -110,6 +124,7 @@ export const EVIDENCE_KINDS = Object.freeze([
   "itch-page-capture",
   "purchase-receipt",
   "producer-written-confirmation",
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
   "secondary-lookup",
 ]);
 
@@ -118,8 +133,8 @@ export const NON_QUALIFYING_EVIDENCE_KINDS = Object.freeze(["secondary-lookup"])
 
 /**
  * 분류별 allow 요구 증빙(전부 필요). 근거: 2026-10-22 3D 에셋 활용 검토 §3 결론 (3).
- * - 웹 서비스 호스팅·하위 사용자는 EmaceArt 어느 변형도 다루지 않으므로 서면 확인이 필요하다.
- * - 이 표를 약화하는 변경은 코드 변경이라 리뷰와 테스트 갱신을 거친다.
+ * - 기존 제작사 증빙 경로의 표를 보존한다. 웹 서비스 범위 확인은 제작사 허여를 증빙하는 이 경로의 요건이다.
+ * - 2026-10-29 소유자 프로젝트 이용 확인은 별도 대안이며, 표의 producer 요구를 충족했다고 위장하지 않는다.
  */
 export const ALLOW_EVIDENCE_REQUIREMENTS = Object.freeze({
   "cc0-explicit": Object.freeze(["local-license-file"]),
@@ -143,8 +158,8 @@ export const RIGHTS_HOLD_REASON = "rights-hold";
 /**
  * 패널의 "준비 중인 팩" 목록에 원장 hold 때문에 pendingPacks(rights-hold)로 가는 팩(pack·crowd 묶음)마다 그대로
  * 보이는 문구. 사유(제작사 확인·증빙·충돌)와 공개 약속을 드러내지 않도록 모든 hold 팩이 같은 중립 문장을 쓰고,
- * 사유는 holdReason(내부 필드)에만 둔다. pending 묶음 14개의 화면 문구는 생성기의 PENDING_PACKS가 정하며
- * (회수 상태 등 권리와 무관한 사유) 그 팩들의 holdLabel은 화면에 쓰이지 않는다.
+ * 사유는 holdReason(내부 필드)에만 둔다. pending 편입 대기 11개의 화면 문구는 생성기의 PENDING_PACKS가 정하며
+ * (구매 85품목의 로컬 자료 존재와 다른 개념) 그 팩들의 holdLabel은 화면에 쓰이지 않는다.
  */
 export const HOLD_PUBLIC_LABEL = "준비 중이며 공개 시점은 정해지지 않았다.";
 
@@ -255,6 +270,12 @@ function evidenceProblems(evidence, entry, context) {
     if (!nonEmptyText(evidence.source)) problems.push(`${where}: source(출처)가 비어 있습니다.`);
     return problems;
   }
+  if (evidence.kind === OWNER_COMMERCIAL_USE_EVIDENCE_KIND) {
+    return ownerCommercialUseEvidenceProblems(evidence, entry, {
+      today: context.today,
+      purchaseEvidenceValid: (item) => evidenceProblems(item, entry, context).length === 0,
+    });
+  }
   addDateProblem("verifiedAt");
   switch (evidence.kind) {
     case "local-license-file": {
@@ -318,8 +339,8 @@ function evidenceProblems(evidence, entry, context) {
 }
 
 /**
- * grant 블록 점검(문제 문장 배열). attributionRequired=true는 원장 스키마에 attribution 문구 필드가 없어
- * 로더가 권리를 unknown으로 닫아 버리므로, 필드가 생기기 전까지는 받지 않는다.
+ * grant 블록 점검(문제 문장 배열). 표기 의무가 있으면 웹이 같은 값으로 보존할 수 있는 attribution이 필수다.
+ * 소유자 확인도 원본의 표기 의무를 면제하지 않으며 공개 provenance는 소유자 확인으로 구분한다.
  */
 function grantProblems(entry) {
   const grant = entry?.grant;
@@ -331,10 +352,21 @@ function grantProblems(entry) {
   if (typeof grant.commercialUse !== "boolean") problems.push("grant.commercialUse는 boolean이어야 합니다.");
   if (typeof grant.attributionRequired !== "boolean") {
     problems.push("grant.attributionRequired는 boolean이어야 합니다.");
-  } else if (grant.attributionRequired) {
-    problems.push("grant.attributionRequired=true는 지원하지 않습니다 (스키마에 attribution 문구 필드가 없어 로더가 권리를 unknown으로 닫습니다).");
   }
+  if (grant.attributionRequired === true || grant.attribution !== undefined) {
+    const attributionIssue = licenseNameProblem(grant.attribution);
+    if (attributionIssue) problems.push(`grant.attribution이 올바르지 않습니다 — ${attributionIssue}.`);
+  }
+  problems.push(...ownerCommercialUseGrantProblems(entry));
   return problems;
+}
+
+/** 대안은 알려진 팩 분류·정확한 packId·구매 확인·이번 결정 문서·제한된 프로젝트 범위를 함께 요구한다. */
+function hasOwnerEvidence(ledger, entry, now) {
+  if (!requiredEvidenceKinds(entry?.licenseClass)) return false;
+  const context = evidenceContext(ledger, now);
+  return Array.isArray(entry.evidence) && entry.evidence.some((item) => isRecord(item)
+    && item.kind === OWNER_COMMERCIAL_USE_EVIDENCE_KIND && evidenceProblems(item, entry, context).length === 0);
 }
 
 /**
@@ -357,6 +389,7 @@ export function allowEligibilityProblems(ledger, entry, { now } = {}) {
     problems.push(`라이선스 분류 ${String(entry.licenseClass)}에는 allow 요구 증빙이 정의돼 있지 않습니다.`);
     return problems;
   }
+  if (hasOwnerEvidence(ledger, entry, now)) return problems;
   const context = evidenceContext(ledger, now);
   const evidence = Array.isArray(entry.evidence) ? entry.evidence : [];
   for (const kind of required) {
@@ -373,6 +406,7 @@ export function allowEligibilityProblems(ledger, entry, { now } = {}) {
 
 /** allow 자격을 아직 못 채운 증빙 종류. hold 사유 표시와 소유자 안내에 쓴다. */
 export function missingEvidenceKinds(ledger, entry, { now } = {}) {
+  if (isRecord(entry) && hasOwnerEvidence(ledger, entry, now)) return [];
   const required = requiredEvidenceKinds(entry?.licenseClass) ?? [];
   const context = evidenceContext(ledger, now);
   const evidence = Array.isArray(entry?.evidence) ? entry.evidence : [];
@@ -399,6 +433,7 @@ export function packRightsProjection(entry) {
     licenseName: entry.grant.licenseName,
     commercialUse: entry.grant.commercialUse,
     attributionRequired: entry.grant.attributionRequired,
+    ...(entry.grant.attribution === undefined ? {} : { attribution: entry.grant.attribution }),
   };
 }
 
@@ -415,12 +450,16 @@ export function findPackRights(ledger, def) {
  * 렌더 슬롯의 `derivedFromPack`은 공식 번호를 쓰고 그 번호는 항목 16개에서 생성기 번호와 다르므로, 번호 전체를 이어 만든
  * 키로 찾는 findPackRights로는 닿지 않는다. 번호가 문자열이 아니거나 비었거나, 서로 다른 항목 둘 이상이 같은 번호를 주장하면
  * (검증기가 거부하는 원장) 어느 쪽도 고르지 않고 null이다 — 호출자는 hold로 다뤄야 한다. 일치는 정확히 같은 문자열뿐이다.
+ * 생성기·공식 번호가 모두 빈 팩(Food Pack)은 내부 원장 id로만 정확히 찾는다. 번호가 있는 팩에는 이 폴백을 적용하지 않는다.
  */
 export function findPackRightsByCatalogId(ledger, catalogId) {
   if (typeof catalogId !== "string" || catalogId === "") return null;
   const entries = Array.isArray(ledger?.packs) ? ledger.packs : [];
   const owners = entries.filter((entry) => isRecord(entry)
-    && [entry.catalogIds, entry.officialCatalogIds].some((ids) => Array.isArray(ids) && ids.includes(catalogId)));
+    && ([entry.catalogIds, entry.officialCatalogIds].some((ids) => Array.isArray(ids) && ids.includes(catalogId))
+      || (Array.isArray(entry.catalogIds) && entry.catalogIds.length === 0
+        && Array.isArray(entry.officialCatalogIds) && entry.officialCatalogIds.length === 0
+        && entry.id === catalogId)));
   return owners.length === 1 ? owners[0] : null;
 }
 

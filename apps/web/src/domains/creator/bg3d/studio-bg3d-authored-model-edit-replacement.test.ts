@@ -11,6 +11,7 @@ import { resolveStudioBg3dDeviceQuality } from "./studio-bg3d-device-quality";
 import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb } from "./studio-bg3d-glb-validation";
 import { commitStudioBg3dHistoryTransition, resetStudioBg3dCommandHistory, stepStudioBg3dCommandHistory } from "./studio-bg3d-history-command-adapter";
 import { admitAndCacheStudioBg3dModel } from "./studio-bg3d-model-runtime-admission";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { createStudioBg3dPrimitiveEditAuthoring } from "./studio-bg3d-primitive-edit-authoring";
 import { writeStudioBg3dPrimitiveEditAuthoringToGlb } from "./studio-bg3d-primitive-edit-authoring-glb";
 import { writeStudioBg3dPrimitiveEditMaterialGlb } from "./studio-bg3d-primitive-edit-material";
@@ -93,7 +94,7 @@ async function fixture(shared = false, moved = true, nextDistance = 0.5, sourceR
   const sharedModel: BgCustomModelInstance = { ...model, id: "shared-instance", name: "같은 캐시의 독립 인스턴스", position: [9, 0, 0] };
   const customModels = shared ? [model, otherModel, sharedModel] : [model, otherModel];
   const attachments = new Map([[old.record.id, old.attachment], [other.record.id, other.attachment]]);
-  const cache = new Map([[old.record.id, old.entry], [other.record.id, other.entry]]);
+  const cache = new Map([[studioBg3dModelCacheKey(old.record.id, "webgl"), old.entry], [studioBg3dModelCacheKey(other.record.id, "webgl"), other.entry]]);
   const reverse = new Map([[old.attachment.id, old.record.id], [other.attachment.id, other.record.id]]);
   const base = { ...createDefaultStudioBg3dSceneDocument(), meta: { name: "기존 장면", memo: "보존할 정보" },
     shots: [{ id: "cut", name: "유지할 컷", nodeVisibility: [{ nodeId: model.id, visible: false }] }] };
@@ -117,7 +118,7 @@ async function fixture(shared = false, moved = true, nextDistance = 0.5, sourceR
   if (!captured.ok) throw Error(captured.messageKo);
   const source = captured.snapshot, next = await makeAsset("stored-B", nextDistance, source.objectTransform, source.sourceColorSrgb,
     inheritStudioBg3dModelSourceRestriction(old.record));
-  cache.set(next.record.id, next.entry); attachments.set(next.record.id, next.attachment); reverse.set(next.attachment.id, next.record.id);
+  cache.set(studioBg3dModelCacheKey(next.record.id, "webgl"), next.entry); attachments.set(next.record.id, next.attachment); reverse.set(next.attachment.id, next.record.id);
   return { host, source, next, old, other, live, model, otherModel, sharedModel, selected, session, history, replace, commit, cache, attachments, reverse, lock: () => { locked = true; } };
 }
 
@@ -133,12 +134,27 @@ beforeEach(() => {
 afterEach(() => { for (const resource of resources.splice(0)) resource.dispose(); vi.restoreAllMocks(); });
 
 describe("authored model A→B의 같은 node 원본 교체", () => {
+  it.each(["opposite-only", "raw-alias", "wrong-stamp"] as const)("B의 %s 캐시는 실제 WebGL 교체 자산으로 사용하지 않는다", async (mode) => {
+    const f = await fixture();
+    const webglKey = studioBg3dModelCacheKey(f.next.record.id, "webgl");
+    f.cache.delete(webglKey);
+    const opposite = { ...f.next.entry, runtimeVariant: studioBg3dModelRuntimeVariant("webgpu") };
+    const candidate = mode === "wrong-stamp" ? { ...f.next.asset, cache: opposite } : f.next.asset;
+    if (mode === "raw-alias") f.cache.set(f.next.record.id, f.next.entry);
+    else f.cache.set(mode === "wrong-stamp" ? webglKey : studioBg3dModelCacheKey(f.next.record.id, "webgpu"), opposite);
+    const before = createStudioBg3dHistorySnapshot(f.live.current);
+    expect(replaceStudioBg3dAuthoredModelEditSource(f.host, f.source, candidate)).toMatchObject({ ok: false, code: "asset-mismatch" });
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+    expect(createStudioBg3dHistorySnapshot(f.live.current)).toEqual(before);
+    expect(f.cache.get(studioBg3dModelCacheKey(f.old.record.id, "webgl"))).toBe(f.old.entry);
+  });
+
   it.each(["record", "cache", "both"] as const)("service-only A의 새 B %s에 allowed를 맞춰도 history 전에 거부한다", async (changed) => {
     const f = await fixture(false, true, 0.5, { version: 1, modelFileExport: "service-only", origin: null, parent: null });
     const allowed = { ...f.next.record, sourceRestriction: { version: 1 as const, modelFileExport: "allowed" as const,
       origin: { kind: "user-file" as const, recordId: f.next.record.id, sha256: f.next.record.contentHash }, parent: null } };
     const cache = changed === "record" ? f.next.entry : { ...f.next.entry, record: allowed };
-    if (changed !== "record") f.cache.set(f.next.record.id, cache);
+    if (changed !== "record") f.cache.set(studioBg3dModelCacheKey(f.next.record.id, "webgl"), cache);
     const candidate = { ...f.next.asset, record: changed === "cache" ? f.next.record : allowed, cache };
     const before = createStudioBg3dHistorySnapshot(f.live.current);
     expect(replaceStudioBg3dAuthoredModelEditSource(f.host, f.source, candidate)).toMatchObject({ ok: false, code: "asset-mismatch" });
@@ -161,7 +177,7 @@ describe("authored model A→B의 같은 node 원본 교체", () => {
     if (shared) expect(f.live.current.customModels.find(({ id }) => id === f.sharedModel.id)).toBe(f.sharedModel);
     expect(f.live.current.document.attachments.some(({ id }) => id === f.old.attachment.id)).toBe(shared);
     expect(f.live.current.document.attachments.some(({ id }) => id === f.other.attachment.id)).toBe(true);
-    expect(f.attachments.get(f.old.record.id)).toBe(f.old.attachment); expect(f.cache.get(f.old.record.id)).toBe(f.old.entry);
+    expect(f.attachments.get(f.old.record.id)).toBe(f.old.attachment); expect(f.cache.get(studioBg3dModelCacheKey(f.old.record.id, "webgl"))).toBe(f.old.entry);
     expect(records.get(f.old.record.id)?.blob).toBe(oldBlob); expect(f.old.entry.root.scale.toArray()).toEqual(oldCacheScale); expect(dispose).not.toHaveBeenCalled();
     expect(f.selected.current).toBe(selectionIdentity); expect([...selectionIdentity]).toEqual([f.model.id]);
     const after = createStudioBg3dHistorySnapshot(f.live.current);
@@ -205,18 +221,18 @@ describe("authored model A→B의 같은 node 원본 교체", () => {
     const before = createStudioBg3dHistorySnapshot(f.live.current);
     expect(replaceStudioBg3dAuthoredModelEditSource(f.host, f.source, candidate)).toMatchObject({ ok: false, code: "asset-mismatch" });
     expect(f.replace).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled();
-    expect(createStudioBg3dHistorySnapshot(f.live.current)).toEqual(before); expect(f.cache.get(f.old.record.id)).toBe(f.old.entry);
+    expect(createStudioBg3dHistorySnapshot(f.live.current)).toEqual(before); expect(f.cache.get(studioBg3dModelCacheKey(f.old.record.id, "webgl"))).toBe(f.old.entry);
   });
 
   it.each(["scale", "metrics", "material", "normalization"])("새 자산 %s가 현재 범위·예산을 벗어나면 원자적으로 거부한다", async (change) => {
     const f = await fixture(); let candidate = f.next.asset;
     if (change === "scale") {
       const entry = { ...f.next.entry, normalizationScale: 1e-6 }; entry.root.scale.setScalar(1e-6);
-      f.cache.set(f.next.record.id, entry); candidate = { ...candidate, cache: entry };
+      f.cache.set(studioBg3dModelCacheKey(f.next.record.id, "webgl"), entry); candidate = { ...candidate, cache: entry };
     }
     if (change === "metrics") {
       const entry = { ...f.next.entry, metrics: { ...f.next.entry.metrics, triangles: f.next.entry.metrics.triangles + 1 } };
-      f.cache.set(f.next.record.id, entry); candidate = { ...candidate, cache: entry };
+      f.cache.set(studioBg3dModelCacheKey(f.next.record.id, "webgl"), entry); candidate = { ...candidate, cache: entry };
     }
     if (change === "material") f.next.entry.root.traverse((object) => { if (object instanceof Mesh) for (const material of Array.isArray(object.material) ? object.material : [object.material]) material.transparent = true; });
     if (change === "normalization") f.next.entry.root.position.x = 0.1;

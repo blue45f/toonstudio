@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Login diperlukan.",
+  "apiError.loginRequired": "Anda perlu masuk.",
   "apiError.adminRequired": "Izin administrator tidak bisa diverifikasi.",
   "apiError.adminOnlyPage": "Halaman ini terbatas pada administrator.",
   "apiError.notFound": "Barang yang diminta tidak dapat ditemukan.",

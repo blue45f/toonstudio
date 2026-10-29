@@ -4,9 +4,7 @@
  * Studio VRM poser view slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
  * The caller passes one host object; this component destructures the original local names.
  */
-import {
-  OrbitControls,
-} from "@react-three/drei/core/OrbitControls.js";
+import { CharacterShaperOrbitControls } from "../character-shaper/CharacterShaperOrbitControls";
 import {
   Canvas,
   useFrame,
@@ -604,7 +602,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                     <circleGeometry args={[1, 72]} />
                     <meshBasicMaterial color="var(--color-fg-2)" transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} />
                   </mesh>
-                  <OrbitControls
+                  <CharacterShaperOrbitControls lookAt={vrm?.lookAt} gazePaused={Boolean(webcamActive)} captureFrozen={Boolean(isCapturing || isSharingPose || isThumbnailCapturing)}
                     makeDefault
                     enabled={
                       !isViewportHandIkDragging

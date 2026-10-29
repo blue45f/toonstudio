@@ -269,7 +269,7 @@ export function AppShell({
           {enhancedSite ? (
             <Suspense fallback={null}><SiteCreationCompass /></Suspense>
           ) : null}
-          {publicCreativeRoute ? (
+          {publicCreativeRoute && !/^\/create\/*$/iu.test(pathname) ? (
             <Suspense fallback={null}><ActiveProjectContextBridge /></Suspense>
           ) : null}
           <WorkspaceAccountContext.Provider value={<AuthMenuShell />}>

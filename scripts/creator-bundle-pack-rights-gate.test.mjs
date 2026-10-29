@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { test as vitestTest } from "vitest";
 
 import { CATALOG_PACKS, CROWD_PACKS, PENDING_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
+import { registerOwnerCommercialUseTests } from "./lib/creator-bundle-pack-rights-owner-test-cases.mjs";
 import {
   ALLOW_EVIDENCE_REQUIREMENTS,
   allowEligibilityProblems,
@@ -45,6 +46,7 @@ import {
 // allow 게이트(증빙·grant·묶음·신원)의 부정 테스트 모음. 시드·완전성·증빙 재검증은 creator-bundle-pack-rights.test.mjs에 있다.
 // 루트 `vitest run`(scripts/**/*.test.mjs 수집)과 `node --test` 양쪽에서 같은 파일이 돈다.
 const test = process.env.VITEST ? vitestTest : nodeTest;
+registerOwnerCommercialUseTests(test);
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = (relative) => JSON.parse(readFileSync(resolve(REPO_ROOT, relative), "utf8"));
@@ -77,7 +79,7 @@ test("2차 조회 기록만 있는 팩은 allow가 될 수 없다", () => {
   assert.ok(problemsFor(ledger).some((problem) => /Characters 1/u.test(problem) && /itch-page-capture/u.test(problem)));
 });
 
-test("검토 권고 hold 팩은 서면 확인 없이 allow로 바꿀 수 없다", () => {
+test("과거 검토 권고 팩도 소유자·제작사 확인 증빙을 비운 채 allow로 바꿀 수 없다", () => {
   for (const title of REVIEW_RECOMMENDED_HOLD_TITLES) {
     const ledger = cloneLedger();
     flipToAllow(resetToHold(entryOf(ledger, title)));
@@ -400,7 +402,7 @@ test("grant는 필드마다 검증하고 검증을 우회한 서빙 판정·공�
     ["commercialUse 없음", (entry) => { delete entry.grant.commercialUse; }, /grant\.commercialUse/u],
     ["attributionRequired가 문자열", (entry) => { entry.grant.attributionRequired = "no"; }, /grant\.attributionRequired는 boolean/u],
     ["attributionRequired 없음", (entry) => { delete entry.grant.attributionRequired; }, /grant\.attributionRequired는 boolean/u],
-    ["attributionRequired=true는 아직 지원하지 않음", (entry) => { entry.grant.attributionRequired = true; }, /attributionRequired=true는 지원하지 않습니다/u],
+    ["attributionRequired=true인데 출처 문구 없음", (entry) => { entry.grant.attributionRequired = true; }, /grant\.attribution/u],
   ];
   for (const [label, mutate, pattern] of mutations) {
     const { ledger, pirate } = allowPirate();
@@ -565,9 +567,13 @@ test("커밋된 theme-packs.json은 원장과 어긋나지 않는다 — 권리 
 });
 
 test("어긋남 점검은 시드에 열린 팩이 없어도 실제로 어긋남을 가려낸다 (합성 입력)", () => {
+  // 다른 팩의 현재 개방 상태에 묶이지 않게 Pirate Island만 남기고 원장 이전 입력을 만든다.
   const themePacks = readJson(THEME_PACKS_PATH);
+  themePacks.packs = themePacks.packs.filter((pack) => pack.title === "Pirate Island");
+  themePacks.pendingPacks = [];
   const pirateIndex = themePacks.packs.findIndex((pack) => pack.title === "Pirate Island");
   assert.ok(pirateIndex >= 0);
+  delete themePacks.packs[pirateIndex].rights;
   // 원장은 열었는데 theme-packs에 권리 블록이 없다 → 재생성 필요.
   const { ledger, pirate } = allowPirate();
   assert.deepEqual(driftProblems(ledger, themePacks), ["Pirate Island: 원장은 열었는데 theme-packs.json이 재생성되지 않았습니다."]);
@@ -712,7 +718,7 @@ test("검증 CLI는 null 팩 항목에도 스택 트레이스 없이 문제로 �
     // 증빙은 다 갖췄지만 grant가 없는 hold, 알 수 없는 분류의 hold, null 항목을 한 원장에 넣는다.
     const pirate = resetToHold(entryOf(ledger, "Pirate Island"));
     pirate.evidence.push(qualifyingEvidence("itch-page-capture"), qualifyingEvidence("purchase-receipt"));
-    entryOf(ledger, "Farm Land").licenseClass = "made-up-class";
+    resetToHold(entryOf(ledger, "Farm Land")).licenseClass = "made-up-class";
     ledger.packs.push(null);
     const path = join(root, "ledger.json");
     writeFileSync(path, JSON.stringify(ledger));

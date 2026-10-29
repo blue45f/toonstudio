@@ -16,7 +16,7 @@ import {
 import { polygonCentroid, unprojectFromStudioPlanarFrame } from "./studio-hybrid-dcc-face-modeling-geometry";
 import {
   analyzeStudioEditableMeshIntegrity, buildStudioEditableMeshFromFaceSpecs,
-  failStudioFaceModeling, okStudioFaceModeling, readStudioMeshFaceLoops,
+  failStudioFaceModeling, okStudioFaceModeling, readStudioMeshFaceLoops, rejectStudioFaceModelingUvRebuild,
   STUDIO_FACE_MODELING_LIMITS, verifyStudioFaceModelingResult,
   type StudioFaceModelingOutcome, type StudioFaceModelingResult,
 } from "./studio-hybrid-dcc-face-modeling-mesh";
@@ -49,6 +49,8 @@ function prepare(mesh: StudioEditableMesh, faceId: number): StudioFaceModelingRe
   if (mesh.faces.length > STUDIO_FACE_MODELING_LIMITS.maxMeshFaces) {
     return failStudioFaceModeling("mesh-too-large", "the mesh exceeds the interactive face budget");
   }
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const loop = Number.isSafeInteger(faceId) ? context.value.loopById.get(faceId) : undefined;

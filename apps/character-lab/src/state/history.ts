@@ -20,6 +20,8 @@ export interface RecipeHistoryEntry {
   /** epoch ms(coalesce 윈도우 판정) */
   readonly at: number;
   readonly coalesceKey?: string;
+  /** 명시적 연속 입력 세션은 같은 키가 꼭대기에 이어지는 동안 시간 제한 없이 병합한다. */
+  readonly coalesceMode?: "session";
   /** source/set처럼 능력 맵도 함께 바뀌는 명령 */
   readonly capabilities?: { readonly before: SlotCapabilityMap; readonly after: SlotCapabilityMap };
 }
@@ -71,11 +73,14 @@ export function createHistory(limitOrOptions: number | HistoryOptions = HISTORY_
   const coalesceWindowMs = Math.max(0, options.coalesceWindowMs ?? HISTORY_COALESCE_WINDOW_MS);
   const undoStack: HistoryEntry[] = [];
   const redoStack: HistoryEntry[] = [];
+  let coalesceInterrupted = false;
 
   const canCoalesce = (key: string, at: number, windowMs: number = coalesceWindowMs): boolean => {
+    if (coalesceInterrupted) return false;
     const top = undoStack[undoStack.length - 1];
     if (!top || top.kind !== "recipe" || top.coalesceKey === undefined) return false;
     if (top.coalesceKey !== key) return false;
+    if (top.coalesceMode === "session") return true;
     const elapsed = at - top.at;
     return elapsed >= 0 && elapsed <= windowMs;
   };
@@ -85,24 +90,27 @@ export function createHistory(limitOrOptions: number | HistoryOptions = HISTORY_
     coalesceWindowMs,
     push(entry) {
       redoStack.length = 0;
-      if (entry.kind === "recipe" && entry.coalesceKey !== undefined && canCoalesce(entry.coalesceKey, entry.at)) {
-        const top = undoStack[undoStack.length - 1] as RecipeHistoryEntry;
+      const top = undoStack[undoStack.length - 1];
+      if (entry.kind === "recipe" && entry.coalesceKey !== undefined && top?.kind === "recipe" && entry.coalesceMode === top.coalesceMode && canCoalesce(entry.coalesceKey, entry.at)) {
         // param/set·expression/set만 병합 대상이므로 capabilities는 첫 항목의 것을 유지한다.
         const merged: RecipeHistoryEntry = { ...top, after: entry.after, at: entry.at, labelKo: entry.labelKo };
         undoStack[undoStack.length - 1] = merged;
         return "coalesced";
       }
+      coalesceInterrupted = false;
       undoStack.push(entry);
       while (undoStack.length > limit) undoStack.shift();
       return "pushed";
     },
     undo() {
+      coalesceInterrupted = true;
       const entry = undoStack.pop();
       if (!entry) return undefined;
       redoStack.push(entry);
       return entry;
     },
     redo() {
+      coalesceInterrupted = true;
       const entry = redoStack.pop();
       if (!entry) return undefined;
       undoStack.push(entry);

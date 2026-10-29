@@ -7,7 +7,7 @@ import { CountUp, PulseCta, TiltCard } from "@/domains/marketing/PricingPolish";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { HeroBlock, PageShell, SectionContainer } from "@/shared/components/layout";
 import { SectionArt } from "@/shared/components/section-art";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cx } from "@/shared/lib/cx";
 import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
@@ -224,7 +224,7 @@ export function PricingPage() {
         className="mt-6 aspect-[16/4] w-full rounded-2xl border border-line object-cover"
       />
 
-      <NanoBananaSurfaceSpotlight cardId="nb-trust-sanctuary" compact className="mt-6" />
+      <SiteArtSurfaceSpotlight cardId="nb-trust-sanctuary" compact className="mt-6" />
 
       {!MEMBERSHIP_ECONOMY_POLICY.paymentsEnabled ? (
         <p className="mt-8 flex items-start gap-2.5 rounded-2xl border border-line bg-panel p-5 text-sm leading-6 text-fg-2" role="note">

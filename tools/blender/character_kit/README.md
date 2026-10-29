@@ -122,3 +122,9 @@ pnpm exec tsx scripts/verify-character-kit.mjs --root <키트> --base all   # �
 
 T-포즈 상의 참조 이미지(프록시) 만들기: `<venv>/bin/python -I tools/blender/character_kit/proxy_reference.py -- --base-model <출력>/base_model_female.npz --kind shirt|blazer|hoodie|sailor --out <png> --views front,back[,side] --size 1024`
 → `mcp__hyper3d__rodin_create_uploads` + presigned PUT → `rodin_generate`(프롬프트 + `reference_upload_ids`) → `rodin_generate_bang`으로 의상·바지·피부 분리.
+
+### 어깨 전이 후보 (2026-10-28, 검토 중)
+
+`build_base.py --shoulder-blend`는 넓은 harmonic 웨이트 전이·수렴 검사·어깨 국소 LBS/평활을 사용하는 명시적 후보 옵션이다. 기존 기본 변환과 공개 GLB는 그대로다. 넓은 대역은 소유 본 one-hot 초기값에서 변화량 `1e-6`까지 풀고, 미수렴 시 실패한다. 반경 21~28cm에서 기존 웨이트로 부드럽게 되돌려 손·다리 등 원거리 조직의 웨이트를 보존한다.
+
+검토용 `--kit-dir`·`--out-dir`는 별도의 ignored 폴더를 지정한다. 기존 캐시나 공개 키트 경로에 덮어쓰지 않는다. 후보 GLB를 실제로 재import해 정면·뒷면·어깨 회전·상박 거상, 목 이음과 기존/재생성 의상 fit을 확인한 뒤 반입 범위를 정한다. 수치 회귀 통과는 미학 승인이나 공개 키트 전체 호환성 보증이 아니다. 실제 HBM 회귀는 `tests/test_shoulder_blend.py`에서 실행하며, 원천 입력이 없으면 형상 검증이 실행되지 않았음을 skip으로 표시한다.

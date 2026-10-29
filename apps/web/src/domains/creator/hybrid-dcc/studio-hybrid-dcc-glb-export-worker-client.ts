@@ -132,6 +132,7 @@ function hasMatchingProvenance(
     || source.sourceRevision !== manifest.sourceRevision
     || source.sourceHash !== manifest.sourceHash
     || source.meshSchemaRevision !== manifest.meshRevision
+    || source.toonMaterialsHash !== manifest.toonMaterialsHash
   ) return false;
   if (!result.ok) return true;
   return result.metrics.sourceVertexCount === manifest.counts.vertices

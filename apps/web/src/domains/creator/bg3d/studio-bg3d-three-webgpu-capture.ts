@@ -1,5 +1,6 @@
 import { assertStudioBg3dTiledSceneAdmission } from "./studio-bg3d-tiled-scene-admission";
 import { createStudioBg3dTiledCameraSession } from "./studio-bg3d-tiled-session";
+import { beginStudioMToonRasterScope } from "../mesh-materials/studio-mtoon-raster-scope";
 /**
  * Three/WebGPU implementation of the renderer-neutral Studio 3D capture contract.
  *
@@ -23,6 +24,9 @@ import { createStudioBg3dTiledCameraSession } from "./studio-bg3d-tiled-session"
 
 import * as THREE from "three";
 
+import { beginStudioMToonGeometryScope, type StudioMToonGeometryScope } from "../mesh-materials/studio-mtoon-geometry-scope";
+import { createStudioMToonNodeGeometryPass } from "../mesh-materials/studio-mtoon-node-geometry-pass";
+import { studioThreeNodePackDepthToRgba } from "../mesh-materials/studio-three-node-depth-packing";
 import { createStudioScene3dResourcePool } from "../scene3d/studio-scene3d-resource-pool";
 import { registerStudioScene3dResourceOwner } from "../scene3d/studio-scene3d-resource-owner";
 import {
@@ -70,6 +74,8 @@ export const STUDIO_BG3D_THREE_WEBGPU_CAPTURE_IMPLEMENTATION_V3 =
   "studio-three-webgpu-capture-adapter-v3-hdr-mrt-normals";
 export const STUDIO_BG3D_THREE_WEBGPU_CAPTURE_IMPLEMENTATION_V4 =
   "studio-three-webgpu-capture-adapter-v4-tiles-hdr-mrt-normals";
+export const STUDIO_BG3D_THREE_WEBGPU_CAPTURE_IMPLEMENTATION_V5 =
+  "studio-three-webgpu-capture-adapter-v5-mtoon-scope-hdr-mrt-normals";
 
 export interface CreateStudioBg3dThreeWebGpuCaptureAdapterInput {
   readonly renderer: WebGPURenderer;
@@ -106,31 +112,7 @@ function createCaptureTarget(width: number, height: number, depthBuffer: boolean
   return target;
 }
 
-/**
- * Transliteration of Three's `packDepthToRGBA` (`packing.glsl.js`). `modf` has no TSL counterpart,
- * so each step is written as the `floor`/`fract` pair it decomposes to; depth is non-negative here,
- * so `floor` and truncation agree.
- */
 type StudioTslFloatNode = ReturnType<typeof float>;
-
-const packDepthToRgba = /*@__PURE__*/ Fn(([value]: readonly [StudioTslFloatNode]) => {
-  const clamped = value.clamp(0, 1);
-  const scaled = clamped.mul(16_777_216);
-  const alphaFraction = scaled.fract();
-  const afterAlpha = scaled.floor();
-  const blueScaled = afterAlpha.div(256);
-  const blueFraction = blueScaled.fract();
-  const afterBlue = blueScaled.floor();
-  const greenScaled = afterBlue.div(256);
-  const greenFraction = greenScaled.fract();
-  const red = greenScaled.floor();
-  return vec4(
-    red.div(255),
-    greenFraction.mul(256 / 255),
-    blueFraction.mul(256 / 255),
-    alphaFraction,
-  );
-});
 
 function createDepthNodeMaterial(): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial();
@@ -141,7 +123,8 @@ function createDepthNodeMaterial(): MeshBasicNodeMaterial {
   material.fog = false;
   // `fragmentDepth` is Three's window-space fragment depth — the same value `MeshDepthMaterial`
   // packs on the WebGL side, resolved per camera projection by the node graph.
-  material.colorNode = packDepthToRgba(fragmentDepth as unknown as StudioTslFloatNode);
+  // OPAQUE의 alpha=1 처리 뒤에 packed 네 채널을 쓰고 MRT output에도 같은 값을 전달한다.
+  material.outputNode = studioThreeNodePackDepthToRgba(fragmentDepth as unknown as StudioTslFloatNode);
   return material;
 }
 
@@ -407,6 +390,7 @@ function submitDepthCapture(input: {
   readonly width: number;
   readonly height: number;
   readonly resources: CaptureResources;
+  readonly retainGeometryScope: (scope: StudioMToonGeometryScope) => void;
 }): Promise<GeometryCapture> {
   const { renderer, scene, camera, width, height, resources } = input;
   assertCaptureDimensions(width, height, true);
@@ -424,15 +408,19 @@ function submitDepthCapture(input: {
     renderer.autoClear = true;
     renderer.setMRT(resources.geometryMrt);
     renderer.setScissorTest(false);
-    scene.overrideMaterial = resources.depthMaterial;
     scene.background = null;
     renderer.setRenderTarget(target);
     renderer.setClearColor(0xffffff, 1);
-    renderer.render(scene, camera);
-    pending.push(renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height));
-    if (resources.geometryMrt) {
-      pending.push(renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height, 1));
-    }
+    const geometryScope = beginStudioMToonGeometryScope({ scene, backend: "webgpu", fallbackMaterial: resources.depthMaterial,
+      createBodyPass: (source) => createStudioMToonNodeGeometryPass(source, resources.geometryMrt ? "normal-depth" : "depth") });
+    input.retainGeometryScope(geometryScope);
+    geometryScope.submit(() => {
+      renderer.render(scene, camera);
+      pending.push(renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height));
+      if (resources.geometryMrt) {
+        pending.push(renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height, 1));
+      }
+    });
   } catch (error) {
     failed = true;
     failure = error;
@@ -498,6 +486,7 @@ export function createStudioBg3dThreeWebGpuCaptureAdapter(
       () => createCaptureResources(snapshot, renderer.toneMapping));
     let success = false;
     const pending: Promise<Uint8ClampedArray | GeometryCapture>[] = [];
+    const geometryScopes: StudioMToonGeometryScope[] = [];
     let submissionFailed = false;
     let submissionError: unknown;
     try {
@@ -506,7 +495,7 @@ export function createStudioBg3dThreeWebGpuCaptureAdapter(
         pending.push(submitColorCapture({ camera: captureCamera, renderer, request: snapshot, scene, resources: lease.value }));
         if (snapshot.includeDepth) {
           pending.push(submitDepthCapture({ camera: captureCamera, renderer, scene, width: snapshot.width,
-            height: snapshot.height, resources: lease.value }));
+            height: snapshot.height, resources: lease.value, retainGeometryScope: (scope) => { geometryScopes.push(scope); } }));
         }
       } catch (error) {
         submissionFailed = true;
@@ -530,8 +519,9 @@ export function createStudioBg3dThreeWebGpuCaptureAdapter(
       return { width: snapshot.width, height: snapshot.height, rgba: rgba.value,
         ...(depth?.status === "fulfilled" ? depth.value as GeometryCapture : {}) };
     } finally {
-      lease.release(!success);
-      retireCapturePoolIfUnused(renderer, shared);
+      // 기하 제출이 동기 실패해도 앞서 제출한 색 복사까지 끝난 뒤 임시 pass를 정리한다.
+      try { for (const scope of geometryScopes) scope.dispose(); }
+      finally { try { lease.release(!success); } finally { retireCapturePoolIfUnused(renderer, shared); } }
     }
   }
 
@@ -545,7 +535,7 @@ export function createStudioBg3dThreeWebGpuCaptureAdapter(
     backend: "three-webgpu" as const,
     engineId: "three" as const,
     engineVersion: String(THREE.REVISION).toLowerCase(),
-    implementationRevision: STUDIO_BG3D_THREE_WEBGPU_CAPTURE_IMPLEMENTATION_V4,
+    implementationRevision: STUDIO_BG3D_THREE_WEBGPU_CAPTURE_IMPLEMENTATION_V5,
     normalProfile: STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1,
     graphicsApi: "webgpu" as const,
     profileId: STUDIO_BG3D_CAPTURE_PROFILE_RGBA8_DEPTH_V1,
@@ -553,11 +543,16 @@ export function createStudioBg3dThreeWebGpuCaptureAdapter(
       width: renderer.domElement.width,
       height: renderer.domElement.height,
     }),
-    capture,
+    async capture(request: StudioBg3dCaptureRequest) {
+      const scope = beginStudioMToonRasterScope(scene, "webgpu", { registrationPolicy: "registered-only", prepareScene: () => hideStudioBg3dCaptureExcludedObjects(scene) });
+      try { return await scope.submit({ fullHeight: request.height, height: request.height }, () => capture(request)); }
+      finally { scope.dispose(); }
+    },
     createTiledCapture: () => {
       if (renderer.reversedDepthBuffer) throw new Error("Reversed-depth tiled capture is not supported.");
-      assertStudioBg3dTiledSceneAdmission(scene);
-      return createStudioBg3dTiledCameraSession(camera, capture, THREE.WebGPUCoordinateSystem);
+      assertStudioBg3dTiledSceneAdmission(scene, "webgpu");
+      return createStudioBg3dTiledCameraSession(camera, capture, THREE.WebGPUCoordinateSystem,
+        beginStudioMToonRasterScope(scene, "webgpu", { assertSceneCurrent: () => assertStudioBg3dTiledSceneAdmission(scene, "webgpu"), prepareScene: () => hideStudioBg3dCaptureExcludedObjects(scene) }));
     },
     dispose,
   });

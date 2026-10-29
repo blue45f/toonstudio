@@ -31,6 +31,14 @@ function sourceBetween(startMarker: string, endMarker: string): string {
   return sourceBetweenIn(editorSource, startMarker, endMarker);
 }
 
+function expectInOrder(source: string, needles: readonly string[]): void {
+  let previous = -1;
+  for (const needle of needles) {
+    const index = source.indexOf(needle, previous + 1);
+    expect(index, `소유권 처리 순서: ${needle}`).toBeGreaterThan(previous); previous = index;
+  }
+}
+
 describe("Studio BG3D user-template integration boundary", () => {
   it("saves only a lossless canonical runtime adapter document", () => {
     const save = sourceBetween(
@@ -100,16 +108,21 @@ describe("Studio BG3D user-template integration boundary", () => {
 
     expect(cacheAdmission).toContain("readonly onCacheEntryCreated?:");
     expect(cacheAdmission).toContain("args: StudioBg3dModelAdmissionArgs,");
-    const cacheInsert = cacheAdmission.indexOf("args.cache.set(args.record.id, entry)");
+    expect(cacheAdmission).toContain("const cacheKey = studioBg3dModelCacheKey(args.record.id, backend)");
+    const cacheInsert = cacheAdmission.indexOf("args.cache.set(cacheKey, entry)");
     const creationCallback = cacheAdmission.indexOf("args.onCacheEntryCreated?.(args.record.id, entry)");
     expect(cacheInsert).toBeGreaterThanOrEqual(0);
     expect(creationCallback).toBeGreaterThan(cacheInsert);
     expect(apply).not.toContain("cacheIdsBefore");
     expect(apply).toContain("const templateOwnedCacheEntries = new Map<string, ModelRootCacheEntry>()");
-    expect(apply).toContain("onCacheEntryCreated: (storageId, cacheEntry) =>");
-    expect(apply).toContain("physicsRuntimeSourceRef.current.customModels.map((model) => model.modelId)");
+    expect(apply).toContain("onCacheEntryCreated: (storageId: string, cacheEntry: ModelRootCacheEntry) =>");
+    expect(apply).toContain("renderer: modelRenderer, materialBackend");
+    expect(apply).toContain("physicsRuntimeSourceRef.current.customModels.map((model: BgCustomModelInstance) => model.modelId)");
     expect(apply).toContain("if (liveStorageIds.has(storageId)) continue;");
-    expect(apply).toContain("if (modelRootCacheRef.current.get(storageId) !== ownedEntry) continue;");
+    expectInOrder(apply, [
+      "if (!R.isStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)) continue;",
+      "ownedEntry.dispose()", "R.deleteStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)",
+    ]);
     expect(apply).toContain("if (!committed) cleanupUncommittedTemplateCache();");
   });
 
@@ -126,7 +139,10 @@ describe("Studio BG3D user-template integration boundary", () => {
     expect(upload).toContain("onCacheEntryCreated: (storageId, cacheEntry) =>");
     expect(upload).toContain("physicsRuntimeSourceRef.current.customModels.map((model) => model.modelId)");
     expect(upload).toContain("if (liveStorageIds.has(storageId)) continue;");
-    expect(upload).toContain("if (modelRootCacheRef.current.get(storageId) !== ownedEntry) continue;");
+    expectInOrder(upload, [
+      "if (!isStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)) continue;",
+      "ownedEntry.dispose()", "deleteStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)",
+    ]);
     expect(upload).toContain("if (!uploadCommitted) cleanupUncommittedUploadCache();");
   });
 

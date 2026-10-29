@@ -1,4 +1,5 @@
 import { Matrix4, Vector3 } from "three";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 import { isStudioBg3dOrthographicHeight, resolveStudioBg3dCameraDistanceLimits } from "./studio-bg3d-camera-orientation";
 import { resolveStudioBg3dMinimumOrbitDistance } from "./studio-bg3d-camera-application";
 import { readStudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-provenance";
@@ -68,6 +69,8 @@ function pageCamera(page: StudioBg3dSkpManifestPage, metersPerUnit: number, matr
 /** 지연 import가 끝난 뒤에도 최신 선택과 캐시를 다시 읽는다. 일부 Page 상태를 전체 장면 복원으로 취급하지 않는다. */
 export function applyStudioBg3dSkpSourceCamera(host: StudioBg3dSkpCameraRestoreHost, request: StudioBg3dSkpCameraRequest): StudioBg3dSkpCameraResult {
   try {
+    const renderer = host.modelRenderer, backend = resolveStudioBg3dMaterialBackend({ renderer, materialBackend: host.materialBackend }), isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+    const backendCurrent = () => isMaterialBackendCurrent?.() !== false && host.modelRenderer === renderer && resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) === backend;
     if (host.open !== true || !host.cameraLensInteractionLocked || host.cameraLensInteractionLocked() || !host.updateCameraLens || !host.viewportApiRef?.current) {
       return failure("unavailable", "현재 카메라를 변경할 수 없습니다. 진행 중인 작업이 끝난 뒤 다시 시도하세요.");
     }
@@ -76,7 +79,7 @@ export function applyStudioBg3dSkpSourceCamera(host: StudioBg3dSkpCameraRestoreH
     const source = host.physicsRuntimeSourceRef?.current;
     const selectedId = (host.selectedIdsRef?.current ?? host.selectedIds)?.values().next().value;
     const model = source?.customModels.find(({ id }) => id === selectedId);
-    const cached = model ? host.modelRootCacheRef?.current.get(model.modelId) : undefined;
+    const cached = model && host.modelRootCacheRef ? readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, model.modelId, backend) : undefined;
     if (!source || !model || !cached) return failure("source-unavailable", "모델 원본이 아직 준비되지 않았습니다. 준비된 뒤 다시 시도하세요.");
     const parsed = readStudioBg3dSkpSceneSource(cached.root);
     if (!parsed.ok || parsed.value.status !== "available" || parsed.value.geometryTransform.status !== "known") return failure("source-unavailable", "검증된 원본 장면 정보와 좌표 변환을 확인할 수 없습니다.");
@@ -91,6 +94,7 @@ export function applyStudioBg3dSkpSourceCamera(host: StudioBg3dSkpCameraRestoreH
     if (similarityScale(matrix) === null) return failure("unsupported-transform", "비균일 배율·전단·반사 변형의 원본 구도를 평행 카메라로 보존할 수 없습니다.");
     const camera = pageCamera(page, parsed.value.geometryTransform.metersPerSourceUnit, matrix, host.viewportApiRef.current.readView());
     if (!camera) return failure("invalid-camera", "원본 카메라의 위치·방향·화면 높이가 장면의 안전한 범위를 벗어나 적용하지 않았습니다.");
+    if (!backendCurrent()) return failure("source-unavailable", "재질 backend가 바뀌어 이전 원본 구도를 적용하지 않았습니다.");
     if (!host.updateCameraLens(() => camera)) return failure("commit-rejected", "카메라 명령이 거부되어 원본 구도를 적용하지 않았습니다.");
     return { ok: true, camera, pageName: page.name };
   } catch {

@@ -6,9 +6,10 @@ import type {
 import type { StudioBg3dAttachmentRights } from "./studio-bg3d-scene-document";
 import {
   findStudioBg3dBundleAsset,
-  findStudioBg3dBundleAssetByHash,
+  getLoadedStudioBg3dBundleThemePacks,
   isStudioBg3dBundleAssetId,
   loadStudioBg3dBundleThemePacks,
+  STUDIO_BG3D_BUNDLE_ASSET_ID_PREFIX,
   studioBg3dBundleAssetUrl,
   type StudioBg3dBundleThemePackAsset,
   type StudioBg3dBundleThemePacks,
@@ -70,12 +71,35 @@ export function studioBg3dBundleAssetRights(
     status: rights.status,
     commercialUse: rights.commercialUse,
     attributionRequired: rights.attributionRequired,
+    ...(rights.attribution === undefined ? {} : { attribution: rights.attribution }),
     licenseName: rights.licenseName,
   });
 }
 
-const byteCache = new Map<string, Promise<StudioBg3dBundleAssetBytes>>();
-const verifiedRecordPromiseById = new Map<string, Promise<Bg3dVerifiedStoredRecord>>();
+interface SourceCacheEntry<T> {
+  readonly identity: string;
+  readonly pending: Promise<T>;
+}
+
+const byteCache = new Map<string, SourceCacheEntry<StudioBg3dBundleAssetBytes>>();
+const verifiedRecordPromiseById = new Map<string, SourceCacheEntry<Bg3dVerifiedStoredRecord>>();
+const recordSourceIdentity = new WeakMap<StudioBg3dBundleRecordSource, string>();
+
+function byteSourceIdentity(asset: StudioBg3dBundleThemePackAsset, url: string): string {
+  return JSON.stringify([asset.id, asset.sha256, asset.bytes, asset.path, url]);
+}
+
+function recordIdentity(asset: StudioBg3dBundleThemePackAsset, data: StudioBg3dBundleThemePacks): string {
+  const pack = data.packs[asset.packIndex];
+  return JSON.stringify([byteSourceIdentity(asset, studioBg3dBundleAssetUrl(asset, data)),
+    pack?.catalogIds, pack?.ingestPackIds, studioBg3dBundleAssetRights(asset, data)]);
+}
+
+function sourceIsCurrent(id: string, identity: string): boolean {
+  const data = getLoadedStudioBg3dBundleThemePacks();
+  const asset = findStudioBg3dBundleAsset(id);
+  return data !== null && asset !== null && recordIdentity(asset, data) === identity;
+}
 
 function assertGlbHeader(bytes: Uint8Array, byteSize: number): void {
   if (bytes.byteLength !== byteSize) throw new Error("번들 에셋 응답 크기가 테마 팩 메타데이터와 다릅니다.");
@@ -102,16 +126,18 @@ export function loadStudioBg3dBundleAssetBytes(
   url: string,
   options: { readonly signal?: AbortSignal; readonly fetcher?: StudioBg3dBundleAssetBytesFetcher } = {},
 ): Promise<StudioBg3dBundleAssetBytes> {
+  const identity = byteSourceIdentity(asset, url);
   const existing = byteCache.get(asset.id);
-  if (existing) return existing;
+  if (existing?.identity === identity) return existing.pending;
   const fetcher = options.fetcher ?? ((input, init) => fetchAssetBytes(asset, input, init.signal));
   const pending = fetcher(url, { signal: options.signal }).then((loaded) => {
     assertGlbHeader(loaded.bytes, asset.bytes);
     return loaded;
   });
-  byteCache.set(asset.id, pending);
+  const entry = { identity, pending };
+  byteCache.set(asset.id, entry);
   void pending.catch(() => {
-    if (byteCache.get(asset.id) === pending) byteCache.delete(asset.id);
+    if (byteCache.get(asset.id) === entry) byteCache.delete(asset.id);
   });
   return pending;
 }
@@ -125,15 +151,25 @@ function toRecordSource(
   data: StudioBg3dBundleThemePacks,
 ): StudioBg3dBundleRecordSource {
   const url = studioBg3dBundleAssetUrl(asset, data);
-  return {
+  let ownedBytes: SourceCacheEntry<StudioBg3dBundleAssetBytes> | undefined;
+  const source: StudioBg3dBundleRecordSource = {
     id: asset.id,
     fileName: asset.path.split("/").at(-1) ?? asset.id,
     byteSize: asset.bytes,
     sha256: asset.sha256,
     rights: studioBg3dBundleAssetRights(asset, data),
-    loadSource: () => loadStudioBg3dBundleAssetBytes(asset, url),
-    releaseSource: () => releaseStudioBg3dBundleAssetBytes(asset.id),
+    loadSource: () => {
+      const pending = loadStudioBg3dBundleAssetBytes(asset, url);
+      ownedBytes = byteCache.get(asset.id);
+      return pending;
+    },
+    releaseSource: () => {
+      // 이전 요청의 finally가 같은 ID로 교체된 새 바이트 요청을 지우지 않는다.
+      if (ownedBytes && byteCache.get(asset.id) === ownedBytes) byteCache.delete(asset.id);
+    },
   };
+  recordSourceIdentity.set(source, recordIdentity(asset, data));
+  return source;
 }
 
 export interface StudioBg3dBundleResolveOptions {
@@ -160,10 +196,11 @@ export async function resolveStudioBg3dBundleRecordSource(
   id: string,
   options: StudioBg3dBundleResolveOptions = {},
 ): Promise<StudioBg3dBundleRecordSource | null> {
-  if (!isStudioBg3dBundleAssetId(id)) return null;
+  // 이전 목록에서 없던 ID도 재허용·새 편입될 수 있으므로 현재 메타데이터로 대조한다.
+  if (!id.startsWith(STUDIO_BG3D_BUNDLE_ASSET_ID_PREFIX)) return null;
   const data = await loadThemePacksForResolution(options.loadData);
   if (!data) return null;
-  const asset = findStudioBg3dBundleAsset(id);
+  const asset = data.assets.find((candidate) => candidate.id === id);
   return asset ? toRecordSource(asset, data) : null;
 }
 
@@ -173,7 +210,7 @@ export async function resolveStudioBg3dBundleRecordSourceByHash(
 ): Promise<StudioBg3dBundleRecordSource | null> {
   const data = await loadThemePacksForResolution(options.loadData);
   if (!data) return null;
-  const asset = findStudioBg3dBundleAssetByHash(hash);
+  const asset = data.assets.find((candidate) => candidate.sha256 === hash);
   return asset ? toRecordSource(asset, data) : null;
 }
 
@@ -184,9 +221,19 @@ async function loadRecordFromSource(
   executionBackend: Bg3dModelVerificationOptions["executionBackend"],
   prepare: StudioBg3dBundleRecordPreparer,
 ): Promise<Bg3dVerifiedStoredRecord> {
-  let pending = verifiedRecordPromiseById.get(source.id);
-  if (!pending) {
-    pending = source.loadSource().then((loaded) => prepare({
+  const identity = recordSourceIdentity.get(source);
+  if (!identity || !sourceIsCurrent(source.id, identity)) throw new TypeError("번들 에셋의 출처·권리가 변경됐습니다. 목록을 새로 읽어 주세요.");
+  const existing = verifiedRecordPromiseById.get(source.id);
+  if (existing?.identity === identity) {
+    const record = await existing.pending;
+    if (verifiedRecordPromiseById.get(source.id) !== existing || !sourceIsCurrent(source.id, identity)) {
+      throw new TypeError("번들 에셋의 출처·권리가 변경됐습니다. 목록을 새로 읽어 주세요.");
+    }
+    return record;
+  }
+  const pending = source.loadSource().then(async (loaded) => {
+    if (!sourceIsCurrent(source.id, identity)) throw new TypeError("번들 에셋의 출처·권리가 변경됐습니다. 목록을 새로 읽어 주세요.");
+    const record = await prepare({
       file: {
         name: source.fileName,
         size: source.byteSize,
@@ -202,15 +249,20 @@ async function loadRecordFromSource(
       idFactory: () => source.id,
       now: 0,
       executionBackend,
-    }).finally(() => {
-      // 검증된 레코드가 Blob을 소유하므로 배포 바이트는 놓는다 (메모리 이중 보유 방지).
-      source.releaseSource();
-    }));
-    verifiedRecordPromiseById.set(source.id, pending);
-    void pending.catch(() => {
-      if (verifiedRecordPromiseById.get(source.id) === pending) verifiedRecordPromiseById.delete(source.id);
     });
-  }
+    if (verifiedRecordPromiseById.get(source.id) !== entry || !sourceIsCurrent(source.id, identity)) {
+      throw new TypeError("번들 에셋의 출처·권리가 변경됐습니다. 목록을 새로 읽어 주세요.");
+    }
+    return record;
+  }).finally(() => {
+    // 검증된 레코드가 Blob을 소유하므로 배포 바이트는 놓는다 (메모리 이중 보유 방지).
+    source.releaseSource();
+  });
+  const entry: SourceCacheEntry<Bg3dVerifiedStoredRecord> = { identity, pending };
+  verifiedRecordPromiseById.set(source.id, entry);
+  void pending.catch(() => {
+    if (verifiedRecordPromiseById.get(source.id) === entry) verifiedRecordPromiseById.delete(source.id);
+  });
   return pending;
 }
 

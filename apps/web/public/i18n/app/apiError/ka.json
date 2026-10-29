@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ჟჲბჲჟრთვ ეა ჟვ გყპნვ.",
+  "apiError.loginRequired": "საჭიროა შესვლა.",
   "apiError.adminRequired": "ადმინის ნებართვები ვერ შემოწმდა.",
   "apiError.adminOnlyPage": "ეს გვერდი მხოლოდ ადმინისტრატორებისთვისაა შეზღუდული.",
   "apiError.notFound": "მოთხოვნილი ნივთი ვერ იპოვეს.",

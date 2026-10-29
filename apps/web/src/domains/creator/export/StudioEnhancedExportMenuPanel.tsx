@@ -1,8 +1,6 @@
 import {
   Download,
-  PackageCheck,
   RotateCcw,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -28,6 +26,8 @@ import {
   type StudioExportMenuPanelProps,
 } from "./StudioExportMenuPanel";
 import { StudioPromoHandoffSection } from "./StudioPromoHandoffSection";
+import { StudioExportSection } from "./StudioExportSection";
+import { exportMenuText } from "./studio-export-menu-i18n";
 import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 type PackageRunTone = "info" | "good" | "warn";
@@ -224,80 +224,17 @@ export function StudioEnhancedExportMenuPanel(
     <StudioExportMenuPanel
       {...props}
       isExporting={props.isExporting || packageBusy || promoHandoffBusy}
-      renderAdditionalExports={(context) => (
-      <>
-      <PublishSpecAutoOptimizeSection
-        canvasWidth={props.canvasWidth}
-        canvasHeight={props.canvasHeight}
-        exportScale={props.exportScale}
-        exportFormat={props.exportFormat}
-        exportPresetId={props.exportPresetId}
-        exportTitle={props.exportTitle}
-        pageCount={props.pageCount}
-        busy={props.isExporting || packageBusy || promoHandoffBusy}
-        canExport={context.canExport}
-        pageIndices={context.pageIndices}
-        capturePages={context.capturePages}
-      />
+      renderPrimaryExport={(context) => (
       <section
         data-studio-verified-download-package="true"
         aria-labelledby="studio-verified-download-package-title"
-        className="mt-3 rounded-xl border border-accent/25 bg-accent/5 p-2.5"
+        className="mt-2.5 rounded-xl border border-line bg-card/40 p-2.5"
       >
-        <div className="flex items-start gap-2">
-          <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
-            <PackageCheck size={16} aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span
-              id="studio-verified-download-package-title"
-              className="block text-[0.72rem] font-bold text-fg"
-            >
-              검증 다운로드 패키지
-            </span>
-            <span className="mt-0.5 block text-[0.61rem] leading-relaxed text-fg-3">
-              페이지별 이미지와 순서·크기·SHA-256을 기록한 manifest.json을
-              하나의 ZIP으로 저장합니다.
-            </span>
-          </span>
-          <ShieldCheck
-            size={16}
-            className="mt-0.5 shrink-0 text-accent"
-            aria-hidden
-          />
-        </div>
-
-        <div className="mt-2 grid grid-cols-2 gap-1.5 text-[0.61rem]">
-          <span className="rounded-lg border border-line/70 bg-panel/70 px-2 py-1.5 text-fg-3">
-            {context.rangeLabel} · {context.pageIndices.length.toLocaleString("ko-KR")}P
-          </span>
-          <span className="rounded-lg border border-line/70 bg-panel/70 px-2 py-1.5 text-fg-3">
-            {exportFormatLabel(props.exportFormat)} · {props.exportScale}×
-          </span>
-        </div>
-
-        <label className="mt-2 block rounded-lg border border-line/70 bg-panel/70 px-2 py-1.5">
-          <span className="flex items-center justify-between gap-2 text-[0.61rem] font-semibold text-fg-2">
-            <span>손실 압축 품질</span>
-            <span className="tabular-nums text-fg-3">
-              {lossless ? "무손실" : `${qualityPercent}%`}
-            </span>
-          </span>
-          <input
-            type="range"
-            min={40}
-            max={100}
-            step={1}
-            value={qualityPercent}
-            disabled={lossless || packageBusy}
-            onChange={(event) =>
-              setQualityPercent(Number(event.currentTarget.value))
-            }
-            aria-label="검증 패키지 이미지 품질"
-            className="mt-1 h-5 w-full accent-accent disabled:opacity-40"
-          />
-        </label>
-
+        <h3 id="studio-verified-download-package-title" className="text-xs font-semibold text-fg">
+          {exportMenuText(context.pageIndices.length === props.pageCount ? "pagesAll" : "pagesSelected", { count: context.pageIndices.length })}{" "}
+          <span className="ml-2 font-normal text-fg-2">{exportFormatLabel(props.exportFormat)} · ZIP</span>
+        </h3>
+        <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-2">{exportMenuText("pagesHelp")}</p>
         {packageStatus ? (
           <div
             className={`mt-2 rounded-lg border px-2 py-1.5 text-[0.61rem] leading-relaxed ${statusClass}`}
@@ -363,11 +300,53 @@ export function StudioEnhancedExportMenuPanel(
             </button>
           ) : null}
         </div>
-        <p className="mt-1.5 text-[0.57rem] leading-relaxed text-fg-3">
-          기존 PDF·CBZ·웹툰 연합 스크롤은 그대로 유지됩니다. 이 패키지는
-          전달·업로드·장기 보관 전 파일 무결성을 확인해야 할 때 사용하세요.
-        </p>
+        <StudioExportSection id="zip-options" title={exportMenuText("zipOptions")} description={exportMenuText("zipOptionsHelp")}>
+          <p className="text-[0.68rem] leading-relaxed text-fg-2">
+            페이지별 이미지와 순서·크기·SHA-256을 기록한 manifest.json을 하나의 ZIP으로 저장합니다.
+          </p>
+          <p className="mt-1 text-[0.68rem] tabular-nums text-fg-2">
+            {context.rangeLabel} · {exportFormatLabel(props.exportFormat)} · {props.exportScale}×
+          </p>
+        <label className="mt-2 block rounded-lg border border-line/70 bg-panel/70 px-2 py-1.5">
+          <span className="flex items-center justify-between gap-2 text-[0.61rem] font-semibold text-fg-2">
+            <span>손실 압축 품질</span>
+            <span className="tabular-nums text-fg-3">
+              {lossless ? "무손실" : `${qualityPercent}%`}
+            </span>
+          </span>
+          <input
+            type="range"
+            min={40}
+            max={100}
+            step={1}
+            value={qualityPercent}
+            disabled={lossless || packageBusy}
+            onChange={(event) =>
+              setQualityPercent(Number(event.currentTarget.value))
+            }
+            aria-label="검증 패키지 이미지 품질"
+            className="mt-1 h-5 w-full accent-accent disabled:opacity-40"
+          />
+        </label>
+
+        </StudioExportSection>
       </section>
+      )}
+      renderAdditionalExports={(context) => (
+      <>
+      <PublishSpecAutoOptimizeSection
+        canvasWidth={props.canvasWidth}
+        canvasHeight={props.canvasHeight}
+        exportScale={props.exportScale}
+        exportFormat={props.exportFormat}
+        exportPresetId={props.exportPresetId}
+        exportTitle={props.exportTitle}
+        pageCount={props.pageCount}
+        busy={props.isExporting || packageBusy || promoHandoffBusy}
+        canExport={context.canExport}
+        pageIndices={context.pageIndices}
+        capturePages={context.capturePages}
+      />
       <StudioPromoHandoffSection
         context={context}
         pages={props.dialoguePages}

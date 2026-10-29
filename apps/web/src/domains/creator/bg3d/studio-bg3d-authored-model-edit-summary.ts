@@ -1,12 +1,13 @@
 import { STUDIO_BG3D_PRIMITIVE_EDIT_AUTHORING_FORMAT, STUDIO_BG3D_PRIMITIVE_EDIT_AUTHORING_SCENE_KEY } from "./studio-bg3d-primitive-edit-authoring-keys";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 import type { StudioBg3dAuthoredModelEditSourceHost } from "./studio-bg3d-authored-model-edit-source";
 import type { StudioBg3dPrimitiveEditSourceSummary } from "./studio-bg3d-primitive-edit-source";
 
 /** UI는 저장 권위·전체 cache entry를 요구하지 않는다. 실제 SourceHost도 이 좁은 입력을 만족한다. */
 export type StudioBg3dAuthoredModelEditSummaryHost = Pick<StudioBg3dAuthoredModelEditSourceHost,
-  "open" | "selectedIds" | "selectedIdsRef" | "physicsRuntimeSourceRef" | "modalAssetSessionRef" | "isPrimitiveEditInteractionLocked"
-> & { readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, { readonly root: { readonly userData: object } }> } };
+  "open" | "selectedIds" | "selectedIdsRef" | "physicsRuntimeSourceRef" | "modalAssetSessionRef" | "isPrimitiveEditInteractionLocked" | "modelRenderer" | "materialBackend" | "isMaterialBackendCurrent"
+> & { readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, { readonly root: { readonly userData: object }; readonly runtimeVariant: string; readonly record: { readonly id: string } }> } };
 
 function ownValue(object: object, key: string): unknown {
   const descriptor = Object.getOwnPropertyDescriptor(object, key);
@@ -40,7 +41,7 @@ export function summarizeStudioBg3dAuthoredModelEditSource(host: StudioBg3dAutho
     if (model.parentId != null || [...runtime.primitives, ...runtime.customModels].some(({ parentId }) => parentId === model.id)) {
       return blocked("부모·자식 관계가 없는 독립 모델을 선택하세요.");
     }
-    const cache = host.modelRootCacheRef.current.get(model.modelId);
+    const cache = host.isMaterialBackendCurrent?.() === false ? undefined : readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, model.modelId, resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }));
     if (!cache) return blocked("모델 원본 캐시를 준비 중입니다. 모델이 표시된 뒤 다시 시도하세요.");
     if (storedHint(cache.root.userData) === "missing") {
       return blocked("이 기존 GLB에는 보관된 원본 면 편집 데이터가 없어 재편집할 수 없습니다.");

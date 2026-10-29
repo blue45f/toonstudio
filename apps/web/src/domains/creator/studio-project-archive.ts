@@ -1,4 +1,6 @@
+import { collectStudioBundleArchiveAttachments } from "./catalog/studio-bundle-project-archive";
 import { assertStudioPsdSourceArchiveEvidence } from "./export/studio-psd-source-archive";
+import { probableStudioProjectAssetField as probableAssetField, isStudioBundleArchiveMetadata, studioProjectArchiveReferenceMode as documentReferenceMode } from "./studio-project-archive-dependencies";
 import { STUDIO_PSD_SOURCE_MIME, validateStudioPsdSourceBytes } from "./export/studio-psd-source";
 import { z } from "zod";
 
@@ -244,6 +246,7 @@ export interface StudioBg3dProjectArchivePlan {
 export interface StudioProjectArchiveOptions {
   limits?: Partial<StudioProjectArchiveLimits>;
   onProgress?: (progress: StudioPackageArchiveProgress) => void;
+  signal?: AbortSignal;
   /** Fixed before ZIP construction. Browser product callers select `worker`. */
   crc32ExecutionMode?: StudioCrc32ExecutionMode;
 }
@@ -416,12 +419,6 @@ interface BuildContext {
   attachmentCandidates: number;
   processedAttachmentBytes: number;
   references: number;
-}
-
-function documentReferenceMode(
-  reference: StudioProjectArchiveDocumentReference
-): "asset-uri" | "sha256-prefixed" {
-  return reference.mode ?? "asset-uri";
 }
 
 function sha256Prefixed(sha256: string): string {
@@ -1533,10 +1530,7 @@ function setPointer(root: unknown, pointer: string, value: unknown): boolean {
   return true;
 }
 
-function probableAssetField(pointer: string): boolean {
-  const tail = pointer.split("/").at(-1)?.toLowerCase() ?? "";
-  return /(src|url|href|model|audio|reference|texture|file|asset)/u.test(tail);
-}
+
 
 function scanExternalProjectDependencies(
   value: unknown,
@@ -1544,6 +1538,7 @@ function scanExternalProjectDependencies(
   diagnostics: StudioProjectArchiveDiagnostic[],
   coveredPointers: ReadonlySet<string> = new Set(),
 ): void {
+  if (isStudioBundleArchiveMetadata(pointer, value)) return;
   if (typeof value === "string") {
     if (isSelfContainedUri(value) || coveredPointers.has(pointer)) return;
     const probableAsset = probableAssetField(pointer);
@@ -2023,6 +2018,7 @@ export async function buildStudioProjectArchive(
   input: BuildStudioProjectArchiveInput,
   options: StudioProjectArchiveOptions = {}
 ): Promise<BuildStudioProjectArchiveResult> {
+  options.signal?.throwIfAborted();
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     fail("PROJECT_INVALID", "archiveInputInvalid");
   }
@@ -2069,7 +2065,8 @@ export async function buildStudioProjectArchive(
   };
   await extractEmbeddedAssets(canonicalProjectValue, "", context);
 
-  for (const candidate of input.attachments ?? []) {
+  const bundlePlan = await collectStudioBundleArchiveAttachments(canonicalProjectValue, limits, { attachments: input.attachments, signal: options.signal });
+  for (const candidate of [...(input.attachments ?? []), ...bundlePlan.attachments]) {
     if (!isRecord(candidate)
       || !STUDIO_PROJECT_ARCHIVE_ATTACHMENT_KINDS.includes(candidate.kind as StudioProjectArchiveAttachmentKind)) {
       fail("MIME_MISMATCH", "unsupportedKind");
@@ -2123,6 +2120,7 @@ export async function buildStudioProjectArchive(
     }
   }
 
+  bundlePlan.assertSuppliedReferences();
   assertProjectAssetUrisCovered(
     canonicalProjectValue,
     context.pointerOwners,
@@ -2243,7 +2241,7 @@ export async function buildStudioProjectArchive(
   try {
     blob = await buildStudioPackageArchiveBlob(entries, {
       mimeType: STUDIO_PROJECT_ARCHIVE_MIME,
-      crc32ExecutionMode: options.crc32ExecutionMode ?? "worker",
+      crc32ExecutionMode: options.crc32ExecutionMode ?? "worker", signal: options.signal,
       limits: {
         maxFiles: limits.maxAttachments + 2,
         maxEntryBytes: Math.max(limits.maxAttachmentBytes, limits.maxProjectBytes, limits.maxManifestBytes),
@@ -2254,8 +2252,10 @@ export async function buildStudioProjectArchive(
       onProgress: options.onProgress,
     });
   } catch (cause) {
+    options.signal?.throwIfAborted();
     rethrowPackageArchiveError(cause);
   }
+  options.signal?.throwIfAborted();
   return {
     blob,
     manifest,

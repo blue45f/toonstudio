@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StudioToolBeltContentProps } from "./StudioToolBeltContent";
 
 import { StudioAssetLegacyPanel } from "./StudioAssetLegacyPanel";
+import { studioBundleCreditFixture } from "./catalog/studio-bundle-source-credit.test-fixture";
+import { studioBundleAssetRights } from "./catalog/studio-bundle-source-credit";
 
 const mocks = vi.hoisted(() => ({
   panelProps: null as Record<string, unknown> | null,
@@ -117,5 +119,9 @@ describe("StudioAssetLegacyPanel", () => {
 
     expect(addRenderedImage).toHaveBeenCalledWith(asset.dataUrl, 20, 30);
     expect(setMenu).toHaveBeenCalledWith(null);
+    const bundleSourceCredit = studioBundleCreditFixture();
+    const bundleAsset = { ...asset, contentHash: bundleSourceCredit.contentHash, bundleSourceCredit, rights: studioBundleAssetRights(bundleSourceCredit) };
+    onUseLocalAsset?.(bundleAsset);
+    expect(addRenderedImage).toHaveBeenLastCalledWith(asset.dataUrl, 20, 30, undefined, false, { name: asset.name, bundleSourceCredit });
   });
 });

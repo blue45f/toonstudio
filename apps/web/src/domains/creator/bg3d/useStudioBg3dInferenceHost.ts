@@ -23,6 +23,7 @@ import {
   readStudioBg3dInferenceLocalBounds,
 } from "./studio-bg3d-inference-scene";
 import { collectStudioBg3dInferenceDescendantIds } from "./studio-bg3d-inference-sources";
+import { readStudioBg3dModelCacheEntry, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 import { useStudioBg3dInferenceKeyboard } from "./useStudioBg3dInference";
 
 import type { Camera, Object3D } from "three";
@@ -34,6 +35,7 @@ import type { StudioBg3dInferenceVec3 } from "./studio-bg3d-inference-math";
 import type { StudioBg3dInferencePlacementTargetLike } from "./studio-bg3d-inference-placement";
 import type { StudioBg3dInferenceService } from "./studio-bg3d-inference-service";
 import type { StudioBg3dMeasurementDocument } from "./studio-bg3d-measurement";
+import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 
 type V3 = StudioBg3dInferenceVec3;
 
@@ -44,8 +46,9 @@ export interface StudioBg3dInferenceHostInput {
   readonly customModels: readonly BgCustomModelInstance[];
   readonly primitiveObjectsRef: { readonly current: ReadonlyMap<string, Object3D> | null | undefined };
   readonly modelRootCacheRef: {
-    readonly current: ReadonlyMap<string, { readonly root?: Object3D | null }> | null | undefined;
+    readonly current: ReadonlyMap<string, StudioBg3dModelRootCacheEntry> | null | undefined;
   };
+  readonly materialBackend?: StudioBg3dMaterialBackend;
   readonly viewportHostRef: { readonly current: HTMLElement | null };
   readonly measurementActive: boolean;
   readonly measurementStartWorld: V3 | null;
@@ -115,7 +118,8 @@ export function useStudioBg3dInferenceHost(host: StudioBg3dInferenceHostInput): 
           customModels: current.customModels,
           objects: current.primitiveObjectsRef.current ?? null,
           fallbackModelBounds: (instance) => {
-            const root = current.modelRootCacheRef.current?.get(instance.modelId)?.root;
+            const cache = current.modelRootCacheRef.current;
+            const root = cache ? readStudioBg3dModelCacheEntry(cache, instance.modelId, current.materialBackend)?.root : undefined;
             return root ? readStudioBg3dInferenceLocalBounds(root) : null;
           },
         }),
@@ -195,7 +199,7 @@ export function useStudioBg3dInferenceHost(host: StudioBg3dInferenceHostInput): 
   // 세션 중 장면이 바뀌면 색인을 맞춘다 (같은 장면이면 서비스가 재빌드를 건너뛴다).
   useEffect(() => {
     if (service.isActive()) syncScene();
-  }, [host.primitives, host.customModels, guideSources, service, syncScene]);
+  }, [host.primitives, host.customModels, host.materialBackend, guideSources, service, syncScene]);
 
   // 키보드 점 고르기 목록의 기준: 선택한 객체의 월드 위치.
   useEffect(() => {

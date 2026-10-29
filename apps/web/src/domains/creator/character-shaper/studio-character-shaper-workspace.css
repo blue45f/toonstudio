@@ -107,7 +107,7 @@
 }
 [data-character-shaper-layout="mobile"] [data-character-shaper-camera-bar="true"] {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(96px, 30%);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.375rem;
   padding: 0.375rem;
   align-items: center;
@@ -117,7 +117,15 @@
   padding: 0;
   border-radius: 0.75rem;
 }
+[data-character-shaper-layout="mobile"] [data-character-camera-selects="true"] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
 [data-character-shaper-layout="mobile"] [data-character-shaper-camera-bar] select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding-inline: 0.5rem;
   font-size: 0.75rem;
 }

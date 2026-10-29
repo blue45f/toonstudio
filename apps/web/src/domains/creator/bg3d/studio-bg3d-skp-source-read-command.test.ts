@@ -3,6 +3,7 @@ import { Group } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { extractStudioBg3dSkpSceneManifest } from "./studio-bg3d-skp-scene-manifest";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { createStudioBg3dSkpSceneSourceVffBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
 import { studioBg3dSkpGeometryTransform, unavailableStudioBg3dSkpSceneSource, type StudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 import {
@@ -11,6 +12,8 @@ import {
 } from "./studio-bg3d-skp-source-read-command";
 
 type ReaderModule = typeof import("./studio-bg3d-skp-scene-provenance");
+const cacheKey = (id = "asset-a") => studioBg3dModelCacheKey(id, "webgl");
+const cacheEntry = (root: Group) => ({ root, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: "asset-a" } });
 
 function availableSource(): Extract<StudioBg3dSkpSceneSource, { readonly status: "available" }> {
   const bytes = createStudioBg3dSkpSceneSourceVffBytes(), source = new Uint8Array(bytes.length);
@@ -28,7 +31,10 @@ function loadedRoot(source: unknown): Group {
 
 function hostFixture() {
   const source = availableSource(), root = loadedRoot(source), other = loadedRoot(unavailableStudioBg3dSkpSceneSource("parser-unavailable"));
-  const selectedIds = new Set(["instance-a"]), cache = new Map([["asset-a", { root }], ["asset-b", { root: other }]]);
+  const selectedIds = new Set(["instance-a"]), cache = new Map([
+    [studioBg3dModelCacheKey("asset-a", "webgl"), { root, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: "asset-a" } }],
+    [studioBg3dModelCacheKey("asset-b", "webgl"), { root: other, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: "asset-b" } }],
+  ]);
   const host = {
     open: true, selectedIds, selectedIdsRef: { current: selectedIds },
     physicsRuntimeSourceRef: { current: {
@@ -55,6 +61,26 @@ function expectFailure(result: StudioBg3dSkpSourceReadResult, code: string): voi
 }
 
 describe("실제 선택 모델의 SKP 원본 정보 조회", () => {
+  it.each(["webgl", "webgpu"] as const)("%s variant만 읽고 반대 backend 캐시는 유지한다", async (backend) => {
+    const f = hostFixture();
+    const gpu = { ...cacheEntry(f.other), runtimeVariant: studioBg3dModelRuntimeVariant("webgpu") };
+    f.cache.set(studioBg3dModelCacheKey("asset-a", "webgpu"), gpu);
+    const host = { ...f.host, materialBackend: backend,
+      modelRenderer: backend === "webgpu" ? { isWebGPURenderer: true } : { isWebGLRenderer: true } };
+    const output = await createStudioBg3dSkpSourceReaderFromHost(host)();
+    expect(output.ok && output.value.status).toBe(backend === "webgpu" ? "unavailable" : "available");
+    expect(f.cache.get(studioBg3dModelCacheKey("asset-a", "webgpu"))).toBe(gpu);
+  });
+
+  it.each(["missing-stamp", "wrong-stamp", "wrong-record", "raw-alias"] as const)("%s entry는 준비된 원본으로 취급하지 않는다", async (kind) => {
+    const f = hostFixture(), entry = cacheEntry(f.root); f.cache.clear();
+    if (kind === "missing-stamp") Object.defineProperty(entry, "runtimeVariant", { value: undefined });
+    if (kind === "wrong-stamp") entry.runtimeVariant = studioBg3dModelRuntimeVariant("webgpu");
+    if (kind === "wrong-record") entry.record.id = "other-record";
+    f.cache.set(kind === "raw-alias" ? "asset-a" : cacheKey(), entry);
+    expectFailure(await createStudioBg3dSkpSourceReaderFromHost(f.host)(), "model-loading");
+  });
+
   it("하나의 custom model만 검사하고 잠긴 모델도 읽을 수 있다", () => {
     const { host } = hostFixture();
     expect(inspectStudioBg3dSkpSourceSelection(host)).toEqual({ scopeKey: JSON.stringify(["instance-a", "asset-a"]), modelName: "SKP 배경", blockedReason: null });
@@ -110,37 +136,49 @@ describe("실제 선택 모델의 SKP 원본 정보 조회", () => {
 
   it("모듈은 클릭 이후에만 준비하고 로딩 중인 자산은 준비된 뒤 재시도한다", async () => {
     const { host, cache, root } = hostFixture(), actual = await import("./studio-bg3d-skp-scene-provenance"), loadReader = vi.fn(async () => actual);
-    cache.delete("asset-a");
+    cache.delete(cacheKey());
     const command = createStudioBg3dSkpSourceReaderFromHost(host, { loadReader });
     expect(loadReader).not.toHaveBeenCalled();
     expect(inspectStudioBg3dSkpSourceSelection(host)).toMatchObject({ scopeKey: JSON.stringify(["instance-a", "asset-a"]), modelName: "SKP 배경" });
     expect(inspectStudioBg3dSkpSourceSelection(host).blockedReason).not.toBeNull();
     expectFailure(await command(), "model-loading"); expect(loadReader).not.toHaveBeenCalled();
-    cache.set("asset-a", { root });
+    cache.set(cacheKey(), cacheEntry(root));
     expect((await command()).ok).toBe(true); expect(loadReader).toHaveBeenCalledTimes(1);
   });
 
   it("legacy와 unavailable은 실제 상태와 원인을 그대로 전달한다", async () => {
     const { host, cache } = hostFixture();
-    cache.set("asset-a", { root: new Group() });
+    cache.set(cacheKey(), cacheEntry(new Group()));
     expect(await createStudioBg3dSkpSourceReaderFromHost(host)()).toMatchObject({ ok: true, value: { status: "legacy", manifest: null, reason: "not-recorded", geometryTransform: { status: "unknown" } } });
-    cache.set("asset-a", { root: loadedRoot(unavailableStudioBg3dSkpSceneSource("manifest-budget-exceeded")) });
+    cache.set(cacheKey(), cacheEntry(loadedRoot(unavailableStudioBg3dSkpSceneSource("manifest-budget-exceeded"))));
     expect(await createStudioBg3dSkpSourceReaderFromHost(host)()).toMatchObject({ ok: true, value: { status: "unavailable", manifest: null, reason: "manifest-budget-exceeded" } });
   });
 
   it("손상/예산 초과 자료를 legacy나 available로 바꾸지 않는다", async () => {
     const { host, cache, source } = hostFixture();
-    cache.set("asset-a", { root: loadedRoot({ version: 2, status: "available" }) });
+    cache.set(cacheKey(), cacheEntry(loadedRoot({ version: 2, status: "available" })));
     expectFailure(await createStudioBg3dSkpSourceReaderFromHost(host)(), "invalid-source");
     const first = source.manifest.pages.items[0];
     if (!first) throw new Error("fixture missing");
     const pages = Array.from({ length: 257 }, (_, index) => ({ ...first, key: `page:${index}` }));
-    cache.set("asset-a", { root: loadedRoot({ ...source, manifest: { ...source.manifest, pages: { total: 257, stored: 257, sourceTotal: null, items: pages } } }) });
+    cache.set(cacheKey(), cacheEntry(loadedRoot({ ...source, manifest: { ...source.manifest, pages: { total: 257, stored: 257, sourceTotal: null, items: pages } } })));
     expectFailure(await createStudioBg3dSkpSourceReaderFromHost(host)(), "budget-exceeded");
   });
 });
 
 describe("실제 원본 정보 조회: 비동기 선택 경계", () => {
+  it("같은 renderer/backend로 돌아와도 import 전에 캡처한 폐기 guard는 거부한다", async () => {
+    const f = hostFixture(), actual = await import("./studio-bg3d-skp-scene-provenance"), waiting = deferred<ReaderModule>();
+    const renderer = { isWebGLRenderer: true }; let active = true, guard = () => active;
+    const host = { ...f.host, modelRenderer: renderer, get isMaterialBackendCurrent() { return guard; } };
+    const read = vi.fn(actual.readStudioBg3dSkpSceneSource);
+    const command = createStudioBg3dSkpSourceReaderFromHost(host, { loadReader: () => waiting.promise });
+    const pending = command(); active = false; guard = () => true;
+    waiting.resolve({ ...actual, readStudioBg3dSkpSceneSource: read });
+    expectFailure(await pending, "selection-changed"); expect(read).not.toHaveBeenCalled();
+    expect((await createStudioBg3dSkpSourceReaderFromHost(host)()).ok).toBe(true);
+  });
+
   it.each(["instance", "storage", "closed"])("지연 로딩 동안 %s가 바뀌면 이전 모델을 읽지 않는다", async (change) => {
     const { host } = hostFixture(), actual = await import("./studio-bg3d-skp-scene-provenance"), waiting = deferred<ReaderModule>();
     const read = vi.fn(actual.readStudioBg3dSkpSceneSource);
@@ -158,16 +196,16 @@ describe("실제 원본 정보 조회: 비동기 선택 경계", () => {
   it("선택이 같으면 await 뒤의 최신 캐시를 읽는다", async () => {
     const { host, cache, other } = hostFixture(), actual = await import("./studio-bg3d-skp-scene-provenance"), waiting = deferred<ReaderModule>();
     const command = createStudioBg3dSkpSourceReaderFromHost(host, { loadReader: () => waiting.promise });
-    const pending = command(); cache.set("asset-a", { root: other }); waiting.resolve(actual);
+    const pending = command(); cache.set(cacheKey(), cacheEntry(other)); waiting.resolve(actual);
     expect(await pending).toEqual({ ok: true, value: unavailableStudioBg3dSkpSceneSource("parser-unavailable") });
   });
 
   it("await 중 캐시가 사라지면 실패하고 같은 버튼으로 재시도할 수 있다", async () => {
     const { host, cache, root } = hostFixture(), actual = await import("./studio-bg3d-skp-scene-provenance"), waiting = deferred<ReaderModule>();
     const command = createStudioBg3dSkpSourceReaderFromHost(host, { loadReader: () => waiting.promise });
-    const pending = command(); cache.delete("asset-a"); waiting.resolve(actual);
+    const pending = command(); cache.delete(cacheKey()); waiting.resolve(actual);
     expectFailure(await pending, "model-loading");
-    cache.set("asset-a", { root }); expect((await command()).ok).toBe(true);
+    cache.set(cacheKey(), cacheEntry(root)); expect((await command()).ok).toBe(true);
   });
 
   it("모듈 로딩 실패를 메시지로 반환하며 재시도를 막는 rejected Promise를 보관하지 않는다", async () => {

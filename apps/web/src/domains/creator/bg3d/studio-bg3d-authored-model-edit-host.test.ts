@@ -10,6 +10,7 @@ import { inspectStudioGeneric3dRuntimeHints } from "../studio-generic-3d-runtime
 import { hashStudioEditableMesh } from "../studio-editable-half-edge-mesh";
 import { applyStudioBg3dAuthoredModelEditWorkspace } from "./studio-bg3d-authored-model-edit-orchestrator";
 import { resolveStudioBg3dDeviceQuality } from "./studio-bg3d-device-quality";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb } from "./studio-bg3d-glb-validation";
 import { resolveStudioBg3dModelNormalizationScale } from "./studio-bg3d-model-runtime-admission";
 import { createStudioBg3dPrimitiveEditAuthoring } from "./studio-bg3d-primitive-edit-authoring";
@@ -32,7 +33,10 @@ import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edi
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 
 type Library = typeof import("./bg3d-model-library");
-const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>() }));
+const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>(),
+  source: vi.fn<Library["readStudioBg3dModelSourceSnapshotV12"]>() }));
+vi.mock("./bg3d-model-library", async (original) => ({ ...(await original<Library>()),
+  readStudioBg3dModelSourceSnapshotV12: storage.source }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({ getStoredBg3dModelV12: storage.get }));
 vi.mock("./studio-bg3d-authored-model-edit-orchestrator", () => ({ applyStudioBg3dAuthoredModelEditWorkspace: vi.fn() }));
 type MutableHost = { -readonly [Key in keyof StudioBg3dPrimitiveEditEditorHost]: StudioBg3dPrimitiveEditEditorHost[Key] };
@@ -69,23 +73,24 @@ async function fixture() {
   records.set(record.id, record);
   const k = resolveStudioBg3dModelNormalizationScale(record.id, measureBg3dObjectSize(loaded.root)); loaded.root.scale.setScalar(k);
   const joints = collectStudioBg3dThreeJoints(loaded.root);
-  const entry: StudioBg3dModelRootCacheEntry = { ...loaded, record, normalizationScale: k, admittedProfiles: new Set(["desktop"]), joints,
+  const entry: StudioBg3dModelRootCacheEntry = { ...loaded, record, normalizationScale: k, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), admittedProfiles: new Set(["desktop"]), joints,
     morphTargets: collectStudioBg3dThreeMorphTargets(loaded.root), semanticMaterials: classifyStudioBg3dThreeSemanticMaterials(loaded.root),
     genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints) };
   const attachment: StudioBg3dModelAttachment = { id: "source-attachment", name: record.name, hash: record.contentHash, byteSize: record.byteSize,
     mime: record.mime, source: "upload", rights: record.rights };
   const model: BgCustomModelInstance = { id: "current-instance", modelId: record.id, name: "현재 모델", tags: ["실내"],
     position: [7, 0.75, -3.5], rotation: [0.31, 0.2, 0.24], scale: [0.9, 0.3, 1.3], materialOverride: createStudioBg3dPrimitiveEditMaterial("#2244aa") };
-  const cache = new Map([[record.id, entry]]), attachments = new Map([[record.id, attachment]]), reverse = new Map([[attachment.id, record.id]]);
+  const cache = new Map([[studioBg3dModelCacheKey(record.id, "webgl"), entry]]), attachments = new Map([[record.id, attachment]]), reverse = new Map([[attachment.id, record.id]]);
   const adapted = tryAdaptStudioBg3dRuntimeToDocument({ primitives: [], customModels: [model], baseDocument: document, attachmentByStorageModelId: attachments });
   if (!adapted.ok) throw Error("현재 정본 fixture 실패");
   const live: { current: StudioBg3dPrimitiveEditRuntime } = { current: { primitives: [], customModels: [model], document: adapted.value.document } };
   const session = { current: { epoch: 1 } }, selected = { current: new Set([model.id]) };
   const replace = vi.fn<StudioBg3dPrimitiveEditOrchestratorHost["replaceCanonicalDocumentState"]>();
   const commit = vi.fn<StudioBg3dPrimitiveEditOrchestratorHost["commitImmediateHistoryTransition"]>();
+  const renderer = { domElement: globalThis.document.createElement("canvas"), isWebGLRenderer: true, hasFeature: () => false };
   const host: MutableHost = { open: true, selectedIds: new Set(["stale-render"]), selectedIdsRef: selected, physicsRuntimeSourceRef: live,
     modalAssetSessionRef: session, modelRootCacheRef: { current: cache }, attachmentByStorageModelIdRef: { current: attachments },
-    storageModelIdByAttachmentIdRef: { current: reverse }, modelRenderer: { domElement: globalThis.document.createElement("canvas"), isWebGPURenderer: true, hasFeature: () => false },
+    storageModelIdByAttachmentIdRef: { current: reverse }, modelRenderer: renderer,
     deviceQuality: resolveStudioBg3dDeviceQuality({ document, mode: "edit", preference: "desktop",
       signals: { cssWidth: 1440, cssHeight: 900, devicePixelRatio: 1, pointer: "fine", saveData: false, deviceMemoryGb: 8, hardwareConcurrency: 8 } }),
     addGeneratedParts: () => false, replaceCanonicalDocumentState: replace, commitImmediateHistoryTransition: commit };
@@ -112,11 +117,36 @@ beforeEach(() => {
   vi.stubGlobal("ArrayBuffer", Buffer.alloc(0).buffer.constructor);
   vi.stubGlobal("Blob", NativeBlob); vi.stubGlobal("crypto", webcrypto); records.clear();
   storage.get.mockReset().mockImplementation(async (id) => records.get(id) ?? null);
+  storage.source.mockReset().mockImplementation(async (id) => {
+    const record = records.get(id);
+    return record ? { record, sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null } : null;
+  });
   vi.mocked(applyStudioBg3dAuthoredModelEditWorkspace).mockReset().mockResolvedValue({ ok: true, nodeId: "current-instance", storageModelId: "derived-model" });
 });
 afterEach(() => { disposals.splice(0).reverse().forEach((dispose) => dispose()); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("실제 authored model source→workspace의 host 연결", () => {
+  it("캐시와 저장 조회가 있어도 실제 출처 snapshot이 없으면 편집을 열지 않는다", async () => {
+    const f = await fixture();
+    storage.source.mockResolvedValueOnce(null);
+    const before = JSON.stringify(f.live.current);
+    expect(await createStudioBg3dPrimitiveEditHostPorts(f.host).onBeginPrimitiveEdit?.()).toMatchObject({ ok: false });
+    expect(storage.get).toHaveBeenCalledOnce(); expect(storage.source).toHaveBeenCalled();
+    expect(f.cache.get(studioBg3dModelCacheKey(f.record.id, "webgl"))).toBe(f.entry);
+    expect(JSON.stringify(f.live.current)).toBe(before);
+    expect(f.replace).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled();
+  });
+
+  it("첫 lazy import 중 guard가 교체돼도 이전 폐기 guard로 Blob 읽기 전 거부한다", async () => {
+    const f = await fixture(); let active = true, guard = () => active;
+    const host = { ...f.host, get isMaterialBackendCurrent() { return guard; } };
+    const command = createStudioBg3dPrimitiveEditHostPorts(host).onBeginPrimitiveEdit;
+    if (!command) throw Error("begin 없음");
+    const pending = command(); active = false; guard = () => true;
+    expect(await pending).toMatchObject({ ok: false });
+    expect(storage.get).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled(); expect(f.commit).not.toHaveBeenCalled();
+  });
+
   it("얇은 summary는 원본 I/O 없이 실제 cache Scene hint를 읽고 begin은 정확한 현재 model context를 만든다", async () => {
     const f = await fixture(), before = JSON.stringify(f.live.current), selected = f.selected.current;
     const ports = createStudioBg3dPrimitiveEditHostPorts(f.host);
@@ -154,11 +184,11 @@ describe("실제 authored model source→workspace의 host 연결", () => {
     if (change === "transform") f.model.position[0] += 1;
     if (change === "canonical-node") f.live.current = { ...f.live.current, document: { ...f.live.current.document,
       nodes: f.live.current.document.nodes.map((node) => ({ ...node, name: "import 대기 중 새 정본" })) } };
-    if (change === "cache") f.cache.set(f.record.id, { ...f.entry });
+    if (change === "cache") f.cache.set(studioBg3dModelCacheKey(f.record.id, "webgl"), { ...f.entry });
     if (change === "root") Object.defineProperty(f.entry, "root", { value: f.entry.root.clone(true), configurable: true });
     if (change === "model-id") {
       const record = { ...f.record, id: "different-stored-model" }, attachment = { ...f.attachment, id: "different-attachment" };
-      records.set(record.id, record); f.cache.set(record.id, { ...f.entry, record });
+      records.set(record.id, record); f.cache.set(studioBg3dModelCacheKey(record.id, "webgl"), { ...f.entry, record });
       f.attachments.set(record.id, attachment); f.reverse.set(attachment.id, record.id); f.model.modelId = record.id;
       f.live.current = { ...f.live.current, document: { ...f.live.current.document, attachments: [attachment],
         nodes: f.live.current.document.nodes.map((node) => node.kind === "model" ? { ...node, attachmentId: attachment.id } : node) } };
@@ -179,7 +209,7 @@ describe("실제 authored model source→workspace의 host 연결", () => {
     if (change === "session") f.session.current = { epoch: 2 };
     if (change === "selection") f.selected.current = new Set();
     if (change === "port") f.host.attachmentByStorageModelIdRef = undefined;
-    if (change === "cache") f.cache.set(f.record.id, { ...f.entry });
+    if (change === "cache") f.cache.set(studioBg3dModelCacheKey(f.record.id, "webgl"), { ...f.entry });
     if (change === "root") Object.defineProperty(f.entry, "root", { value: f.entry.root.clone(true), configurable: true });
     if (change === "transform") f.model.scale[1] += 0.1;
     if (change === "cancel") controller.abort();

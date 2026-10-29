@@ -7,6 +7,8 @@ import {
   type StudioBundleAsset, type StudioBundleAssetKind,
 } from "./studio-bundle-asset-delivery";
 import { useStudioModalSheet } from "./useStudioModalSheet";
+import { saveStudioBundleToPersonalLibrary } from "./catalog/studio-bundle-personal-library-save";
+import { resolveStudioAssetLibraryErrorFromCause } from "./status-i18n/studio-producer-error-i18n-asset-library";
 
 import type { StudioAsset } from "./studio-asset-library";
 
@@ -25,12 +27,16 @@ function categoryLabel(asset: StudioBundleAsset): string {
 /**
  * Creator Bundle 렌더 소품 패널. CC0 라이브러리와 나란히 노출하되 권리 표기는 분리한다:
  * 이 팩은 서비스 내 사용 전용이라 원본 모델·텍스처를 받는 동선이 없고, 오프라인 렌더한
- * 이미지를 무결성 검증 후 캔버스에 삽입하는 동선만 제공한다. 검수(visualReviewed)를
- * 통과한 항목만 목록에 올린다.
+ * 이미지를 무결성 검증 후 캔버스에 삽입하거나 개인 라이브러리에 보관한다.
+ * 검수(visualReviewed)를 통과한 항목만 목록에 올린다.
  */
-export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset: (asset: StudioAsset) => boolean}) {
+export function StudioBundleAssetLibraryPanel({onUseAsset, onSavedAsset}: {
+  readonly onUseAsset: (asset: StudioAsset) => boolean;
+  readonly onSavedAsset?: (asset: StudioAsset) => void;
+}) {
   const searchId = useId();
   const previewTitleId = useId();
+  const saveStatusId = useId();
   const rootRef = useRef<HTMLDetailsElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -44,6 +50,9 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
   const [inserting, setInserting] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const insertController = useRef<AbortController | null>(null);
+  const saveController = useRef<AbortController | null>(null);
+  const [savingAssetId, setSavingAssetId] = useState<string | null>(null);
+  const [saveResults, setSaveResults] = useState<Readonly<Record<string, {readonly status: "saved" | "error"; readonly message: string}>>>({});
   const debouncedQuery = useDebouncedValue(query, 140);
 
   useEffect(() => {
@@ -60,6 +69,8 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
   useEffect(() => () => {
     insertController.current?.abort();
     insertController.current = null;
+    saveController.current?.abort();
+    saveController.current = null;
   }, []);
 
   function dismissPreview(): void {
@@ -83,6 +94,7 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
     () => (catalog ?? []).filter(isStudioBundleAssetEligibleForSelection),
     [catalog],
   );
+  const hasCc0Assets = eligible.some(asset => asset.rights.status === "public-domain" && asset.licenseId.toLowerCase() === "cc0-1.0");
   const filtered = useMemo(
     () => filterStudioBundleAssets(eligible, debouncedQuery, kind === "all" ? undefined : kind),
     [eligible, debouncedQuery, kind],
@@ -117,11 +129,66 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
   function renderUseButton(asset: StudioBundleAsset) {
     return <button className={`${CONTROL} mt-2 w-full`} type="button" disabled={inserting !== null} onClick={() => {void insert(asset);}}>{inserting === asset.id ? panelStatusText("studio.panelStatus.bundleLibrary.inserting", "검증·삽입 중…") : "캔버스에 삽입"}</button>;
   }
+  async function savePersonalAsset(asset: StudioBundleAsset): Promise<void> {
+    // 상태 갱신 전 같은 버튼을 연속으로 눌러도 한 저장만 시작한다.
+    if (saveController.current) return;
+    const controller = new AbortController();
+    saveController.current = controller;
+    setSavingAssetId(asset.id);
+    setSaveResults(current => {
+      const next = {...current};
+      delete next[asset.id];
+      return next;
+    });
+    try {
+      const record = await createStudioBundleImageRecord(asset, controller.signal);
+      if (controller.signal.aborted) return;
+      const result = await saveStudioBundleToPersonalLibrary(record, controller.signal);
+      if (controller.signal.aborted || saveController.current !== controller) return;
+      let message = result.reused
+        ? panelStatusText("studio.panelStatus.bundleLibrary.personalSave.existing", "이미 저장된 소품입니다. ‘내 에셋’ 탭에서 다시 사용할 수 있습니다.")
+        : panelStatusText("studio.panelStatus.bundleLibrary.personalSave.success", "개인 라이브러리에 저장했습니다. ‘내 에셋’ 탭에서 다시 사용할 수 있습니다.");
+      try { onSavedAsset?.(result.asset); }
+      catch {
+        // 저장은 이미 끝났다. 목록 갱신 실패를 저장 실패로 바꿔 중복 재시도를 유도하지 않는다.
+        message = panelStatusText("studio.panelStatus.bundleLibrary.personalSave.refreshFailed", "개인 라이브러리에 저장했습니다. 소재 서재를 다시 열어 ‘내 에셋’ 탭에서 확인해 주세요.");
+      }
+      if (controller.signal.aborted || saveController.current !== controller) return;
+      setSaveResults(current => ({...current, [asset.id]: {status: "saved", message}}));
+    } catch (error: unknown) {
+      if (!controller.signal.aborted && saveController.current === controller) {
+        const message = resolveStudioAssetLibraryErrorFromCause(error)
+          ?? panelStatusText("studio.panelStatus.bundleLibrary.personalSave.failed", "개인 라이브러리에 저장하지 못했습니다. 저장 공간과 접근 권한을 확인한 뒤 다시 시도해 주세요.");
+        setSaveResults(current => ({...current, [asset.id]: {status: "error", message}}));
+      }
+    } finally {
+      if (saveController.current === controller) {
+        saveController.current = null;
+        setSavingAssetId(null);
+      }
+    }
+  }
+  function renderSaveButton(asset: StudioBundleAsset, surface: "card" | "preview") {
+    const result = saveResults[asset.id];
+    const saving = savingAssetId === asset.id;
+    const statusId = `${saveStatusId}-${surface}-${asset.id}`;
+    const label = saving
+      ? panelStatusText("studio.panelStatus.bundleLibrary.personalSave.saving", "개인 라이브러리에 저장 중…")
+      : result?.status === "saved"
+        ? panelStatusText("studio.panelStatus.bundleLibrary.personalSave.saved", "개인 라이브러리에 저장됨")
+        : result?.status === "error"
+          ? panelStatusText("studio.panelStatus.bundleLibrary.personalSave.retry", "저장 다시 시도")
+          : panelStatusText("studio.panelStatus.bundleLibrary.personalSave.action", "개인 라이브러리에 저장");
+    return <>
+      <button className={`${CONTROL} mt-2 w-full`} type="button" disabled={savingAssetId !== null || result?.status === "saved"} aria-busy={saving} aria-describedby={result ? statusId : undefined} onClick={() => {void savePersonalAsset(asset);}}>{label}</button>
+      {result && <p id={statusId} role={result.status === "error" ? "alert" : "status"} aria-live="polite" className="mt-2 text-xs leading-relaxed text-fg-2">{result.message}</p>}
+    </>;
+  }
   return (
     <details ref={rootRef} className="mb-3 rounded-xl border border-line bg-card/70 p-3" data-studio-bundle-library="true" onToggle={event => {setOpen(event.currentTarget.open); if (!event.currentTarget.open) dismissPreview();}}>
       <summary className="min-h-11 cursor-pointer rounded-md text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">번들 렌더 소품 {catalog === null ? "" : `· ${eligible.length}종`}</summary>
       {open && <div className="mt-2 space-y-3">
-        <p className="text-xs leading-relaxed text-fg-3">구매한 Creator Bundle의 3D 모델을 오프라인 렌더한 투명 소품과 배경입니다. 원본 모델·텍스처 파일은 제공하지 않으며, 렌더 이미지를 검증해 캔버스에 바로 삽입합니다.</p>
+        <p className="text-xs leading-relaxed text-fg-3">구매한 Creator Bundle의 3D 모델을 오프라인 렌더한 투명 소품과 배경입니다. 원본 모델·텍스처 파일은 제공하지 않으며, 렌더 이미지를 검증해 캔버스에 삽입하거나 개인 라이브러리에 저장합니다.</p>
         <label htmlFor={searchId} className="block text-xs font-semibold text-fg-2">에셋 검색</label>
         <input id={searchId} type="search" value={query} placeholder="음식, 주방, 나무, 마을, food…" className={`${CONTROL} w-full`} onChange={event => {setQuery(event.target.value); setPage(0);}} />
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="에셋 종류">{KINDS.map(item => <button key={item.id} type="button" className={`${CONTROL} ${kind === item.id ? "border-accent font-bold text-accent" : ""}`} aria-pressed={kind === item.id} onClick={() => {setKind(item.id); setPage(0);}}>{item.label}</button>)}</div>
@@ -132,18 +199,20 @@ export function StudioBundleAssetLibraryPanel({onUseAsset}: {readonly onUseAsset
             <p role="status" className="text-xs text-fg-3">검색 결과 {filtered.length}종 · {currentPage + 1}/{pages}페이지</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{visible.map(asset => <article key={asset.id} className="min-w-0 rounded-lg border border-line bg-panel p-2" data-bundle-asset-id={asset.id}>
               <button type="button" className="block aspect-square w-full rounded-md bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label={`${asset.name} 확대 미리보기`} onClick={() => setPreview(asset)}><img src={studioBundleAssetUrl(asset.previewPath ?? asset.path)} alt="" loading="lazy" decoding="async" width={384} height={384} className="aspect-square w-full rounded-md object-contain" /></button>
-              <p className="mt-1 break-words text-xs font-semibold text-fg">{asset.name}</p><p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">{categoryLabel(asset)}<br />{asset.width}×{asset.height} · <a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">{asset.provider}</a> · {asset.rights.licenseName}</p>{renderUseButton(asset)}
+              <p className="mt-1 break-words text-xs font-semibold text-fg">{asset.name}</p><p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">{categoryLabel(asset)}<br />{asset.width}×{asset.height} · <a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">{asset.provider}</a> · {asset.rights.licenseName}</p>{renderUseButton(asset)}{renderSaveButton(asset, "card")}
             </article>)}</div>
             {filtered.length === 0 && <p className="py-4 text-center text-xs text-fg-3">{panelStatusText("studio.panelStatus.bundleLibrary.searchEmpty", "검색 결과가 없습니다. 검색어나 종류를 바꿔 주세요.")}</p>}
             {pages > 1 && <nav className="flex items-center justify-between gap-2" aria-label="에셋 페이지"><button type="button" className={CONTROL} disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>이전</button><span className="text-xs text-fg-3">{currentPage + 1} / {pages}</span><button type="button" className={CONTROL} disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>다음</button></nav>}
           </>}
         <p role="status" aria-live="polite" className="text-xs leading-relaxed text-fg-2">{notice}</p>
-        <p className="text-[0.65rem] leading-relaxed text-fg-3">이 소품은 서비스 안에서만 사용할 수 있는 라이선스로 제공됩니다. 캔버스에 삽입한 렌더 이미지는 작품 제작에 쓸 수 있지만, 소품 자체를 다시 배포하거나 파일로 내보낼 수는 없습니다.</p>
+        <p className="text-[0.65rem] leading-relaxed text-fg-3">{hasCc0Assets
+          ? panelStatusText("studio.panelStatus.bundleLibrary.licenseSpecificUsage", "이용 권리는 각 소품 카드의 라이선스를 따릅니다. CC0 소품은 CC0 조건에 따라 이용·수정·재배포할 수 있습니다. 이 라이브러리는 렌더 이미지 삽입을 제공하며 원본 3D 모델을 내려받는 동선은 제공하지 않습니다.")
+          : "이 소품은 서비스 안에서만 사용할 수 있는 라이선스로 제공됩니다. 캔버스에 삽입한 렌더 이미지는 작품 제작에 쓸 수 있지만, 소품 자체를 다시 배포하거나 파일로 내보낼 수는 없습니다."}</p>
       </div>}
       {preview && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-3"><div ref={previewRef} role="dialog" aria-modal="true" aria-labelledby={previewTitleId} tabIndex={-1} className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-xl border border-line bg-panel p-4 shadow-xl">
         <div className="flex items-center justify-between gap-3"><h3 id={previewTitleId} className="text-sm font-bold text-fg">{preview.name}</h3><button type="button" data-autofocus="true" className={CONTROL} onClick={dismissPreview}>닫기</button></div>
         <img src={studioBundleAssetUrl(preview.path)} alt={`${preview.name} 실제 파일 미리보기`} className="mt-3 max-h-[60dvh] w-full rounded-lg bg-raised object-contain" />
-        <p className="mt-2 text-xs leading-relaxed text-fg-2">{categoryLabel(preview)} · {preview.provider} · {preview.rights.licenseName}<br />원본 {preview.width}×{preview.height}px 렌더 이미지입니다. 표시 크기는 화면에 맞춰 축소됩니다.</p>{renderUseButton(preview)}
+        <p className="mt-2 text-xs leading-relaxed text-fg-2">{categoryLabel(preview)} · {preview.provider} · {preview.rights.licenseName}<br />원본 {preview.width}×{preview.height}px 렌더 이미지입니다. 표시 크기는 화면에 맞춰 축소됩니다.</p>{renderUseButton(preview)}{renderSaveButton(preview, "preview")}
         <p role="status" aria-live="polite" className="mt-2 text-xs leading-relaxed text-fg-2">{notice}</p>
       </div></div>}
     </details>

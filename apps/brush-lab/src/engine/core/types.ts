@@ -174,6 +174,13 @@ export interface Pt {
 /** sRGB straight RGBA(각 0..1). */
 export type Rgba = readonly [number, number, number, number];
 
+/** 혼색 참조 모델의 RGB 객체. RGBA 튜플과 구분한다. */
+export interface Rgb {
+  readonly r: number;
+  readonly g: number;
+  readonly b: number;
+}
+
 /**
  * GPU 어댑터 정보(레인 능력 리포트 공용 어휘).
  * `engine/gpu/device.ts`의 `GpuProbeResult["adapterInfo"]`가 이 타입을 재사용한다.

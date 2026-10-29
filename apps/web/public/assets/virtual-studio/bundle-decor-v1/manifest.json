@@ -1,0 +1,146 @@
+{
+  "schema": "toonstudio.virtual-bundle-decor.v1",
+  "version": 1,
+  "sourceManifest": "/assets/studio/bundle-renders-v1/manifest.json",
+  "recipe": {
+    "alphaThreshold": 0,
+    "bbox": "left-top-right-bottom-exclusive",
+    "resized": false,
+    "format": "lossless-webp",
+    "anchor": "bottom-center"
+  },
+  "assets": [
+    {
+      "id": "park-tree",
+      "path": "park-tree.webp",
+      "bytes": 263820,
+      "sha256": "863ccc0172626388ce9706387307a457f23d830589847ca834762a98f3f96c9b",
+      "width": 772,
+      "height": 1073,
+      "trimBbox": [
+        369,
+        220,
+        1141,
+        1293
+      ],
+      "bottomAnchor": [
+        386,
+        1073
+      ],
+      "sourceRenderId": "cbv1-008-tree-1-1",
+      "sourceImagePath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-tree-1-1/prop.webp",
+      "sourceBodySha256": "9742bccbb4f1919b0713e1e4ff68e58e167870dd250dedc69a096f46bf1cf77f",
+      "sourceModelSha256": "dcf0d54806cb3f549e1b3ba01bb21a65c577ec019b2a3e221d92fc318501dae8",
+      "sourceSize": [
+        1536,
+        1536
+      ],
+      "license": {
+        "checkedOn": "2026-10-28",
+        "commercialUse": true,
+        "id": "CC0-1.0",
+        "inServiceOnly": true,
+        "provider": "RG Poly",
+        "redistributionAllowed": true,
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "rights": {
+        "attributionRequired": false,
+        "commercialUse": true,
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain"
+      }
+    },
+    {
+      "id": "park-planter",
+      "path": "park-planter.webp",
+      "bytes": 435964,
+      "sha256": "2c29b61ee1043f846fec76e566160b5b6a8821132d6c006d33273a546e1e3f3f",
+      "width": 1204,
+      "height": 958,
+      "trimBbox": [
+        166,
+        294,
+        1370,
+        1252
+      ],
+      "bottomAnchor": [
+        602,
+        958
+      ],
+      "sourceRenderId": "cbv1-008-bush-1-1",
+      "sourceImagePath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bush-1-1/prop.webp",
+      "sourceBodySha256": "a63bcc58dadb8c6b17a22cd101f34b49f50087dc5b0f6cf4ab840da31e75c761",
+      "sourceModelSha256": "b2ce23189ecea72ed8b721b366f344b7937ebdd608eae49c43808f7ec646fc74",
+      "sourceSize": [
+        1536,
+        1536
+      ],
+      "license": {
+        "checkedOn": "2026-10-28",
+        "commercialUse": true,
+        "id": "CC0-1.0",
+        "inServiceOnly": true,
+        "provider": "RG Poly",
+        "redistributionAllowed": true,
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "rights": {
+        "attributionRequired": false,
+        "commercialUse": true,
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain"
+      }
+    },
+    {
+      "id": "park-flower",
+      "path": "park-flower.webp",
+      "bytes": 95878,
+      "sha256": "5b407f952fd4552b7768355827b387a9c0bd0d7fe2164edee2b8cd7268173f67",
+      "width": 998,
+      "height": 523,
+      "trimBbox": [
+        269,
+        528,
+        1267,
+        1051
+      ],
+      "bottomAnchor": [
+        499,
+        523
+      ],
+      "sourceRenderId": "cbv1-008-flower-1-1",
+      "sourceImagePath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-flower-1-1/prop.webp",
+      "sourceBodySha256": "50f9fe2f5b93773ebde8e9eb53e9652feaa1aa84fe35b8a4f2205d5e8878ec71",
+      "sourceModelSha256": "7745b2d14b444ad02f7ee8785526b5cb2a6b6f5caa43c272990488ddc2fb9b2c",
+      "sourceSize": [
+        1536,
+        1536
+      ],
+      "license": {
+        "checkedOn": "2026-10-28",
+        "commercialUse": true,
+        "id": "CC0-1.0",
+        "inServiceOnly": true,
+        "provider": "RG Poly",
+        "redistributionAllowed": true,
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/"
+      },
+      "rights": {
+        "attributionRequired": false,
+        "commercialUse": true,
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain"
+      }
+    }
+  ]
+}

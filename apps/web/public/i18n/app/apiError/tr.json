@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Giriş gerek.",
+  "apiError.loginRequired": "Giriş yapmanız gerekiyor.",
   "apiError.adminRequired": "Yöneticiler izinleri doğrulanamadı.",
   "apiError.adminOnlyPage": "Bu sayfa yöneticilerle sınırlıdır.",
   "apiError.notFound": "İstediğiniz madde bulunamadı.",

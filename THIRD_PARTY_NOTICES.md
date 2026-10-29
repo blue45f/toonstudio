@@ -123,6 +123,19 @@ release notice generator embeds each of those texts into
 fails if a copy is missing, its permission notice is altered, or this notice
 stops referencing it.
 
+Three drawing-lab modules in `apps/web/src/domains/creator/drawing/` re-implement
+the numeric behavior of npm packages that are already production dependencies
+and therefore already reach the generated release notice with their full MIT
+texts: `studio-fit-curve-schneider.ts` follows `fit-curve` 0.2.0 (Copyright (c)
+2014 Volker Poplawski), `studio-perfect-freehand-stroke.ts` follows
+`perfect-freehand` 1.2.3 (Copyright (c) 2021 Stephen Ruiz Ltd), and
+`studio-rough-sketch-renderer.ts` follows `roughjs` 4.6.6 (Copyright (c) 2019
+Preet Shihn) together with its dependency `hachure-fill` 0.5.2 (Copyright (c)
+2023 Preet Shihn). Each file header names the upstream version and copyright
+holder, and `studio-upstream-parity.test.ts` runs the installed packages next
+to the re-implementations to keep the numeric behavior identical. No
+dependency was added or removed.
+
 The checked-in `studio-hokusai-wasm` wrapper uses a Cargo v4 lockfile and exact
 manifest pins: `hokusai-brush`, `hokusai-core`, and `hokusai-tile-mem` are
 `=0.3.0`, while `wasm-bindgen` is `=0.2.123`. The generated release artifact

@@ -16,6 +16,12 @@
 
 문서가 소스와 다르면 소스를 우선하고 문서를 즉시 갱신한다.
 
+Blender 기능을 자체 웹 도구로 구현하는 근거는 [Blender 동작 분석과 웹 모델링 구현 계약](studio/blender-native-modifier-contracts.md)에 정리한다. 원본 프로그램의 화면 연결과 웹 메시 기능의 구현을 구분한다.
+면 코너 UV·아일랜드 편집과 GLB 전달은 [UV 분석 및 구현 계약](studio/blender-native-uv-contracts.md)의 migration 상태를 따른다.
+UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 계약](studio/blender-native-uv-pack-contracts.md)의 migration 상태를 따른다.
+설치 없이 실제 GLB·OBJ·VRM을 편집 메시로 등록하는 후속 경로는 [웹 모델 가져오기 계약](studio/blender-native-editable-import-contracts.md)에 기록한다.
+슬롯별 툰 재질의 저장·렌더·GLB와 BG3D 표시의 미완성 경계는 [웹 툰 재질 계약](studio/blender-native-toon-material-contracts.md)에 기록한다.
+
 ## 디렉터리 분류
 
 | 경로 | 성격 | 현재 사실의 권위 여부 |
@@ -28,6 +34,11 @@
 | `docs/reports/`, `docs/evidence/` | 특정 commit·실험의 증거 | 해당 시점의 증거이며 현재 구조 문서가 아님 |
 | `docs/rewrite/` | 과거 재구성 감사·계획 | 역사 자료 |
 | `docs/benchmarks/`, `tests/benchmarks/` | 비교 방법과 결과 | 측정 조건 안에서만 유효 |
+| `docs/studio/` | Studio 설계·제작 기록 (현재 설계와 2026-09 마감·인수·CI 복구 기록이 혼합) | 혼합 — 개별 문서 상단 상태 표기 우선, 현재 표시 문서만 권위 있음 |
+| `docs/features/` | 기능별 현재 구현·정책 (접근성 1단계, Claude AI 보조, 잠재 안료 혼합 등) | 현재 표시 문서만 권위 있음 |
+| `docs/technology/` | 공유 엔지니어링 기록·플레이북 | 참고 자료 — 현재 구조 문서가 아님 |
+| `docs/design/` | UX·디자인 기반과 분석 (2026-09 기반 문서와 2026-10-26/27 분석 포함) | 혼합 — 분석 시점의 기록, 현재 표시 문서만 권위 있음 |
+| `docs/ops/` | 홈페이지 릴리스 기록 1건 (2026-09-12) | 역사 자료 — 신규 운영 문서는 `docs/operations/`로 작성 |
 | `openwiki/` | 빠른 탐색과 설명 | 보조 문서 |
 
 ## 현재 구조를 읽는 순서
@@ -53,8 +64,8 @@ Studio는 다음 문서를 추가로 본다.
 
 Godot의 Studio 3D 적용 가능성 평가(2026-10-15)는 역사 자료다. 2026-10-21 소유자 결정(PR #2354)으로 운영 Godot 섬이 제거돼 ADR-0028 은 Superseded 이고 현재 기능이 아니다. 다음 문서를 추가로 본다.
 
-1. [`reports/godot-3d-evaluation-2026-10-15.md`](reports/godot-3d-evaluation-2026-10-15.md) — 3D 한계 진단, 적용 모드 비교, 측정 해석(`target` 평가 보고서, 2026-10-15 시점)
-2. [`adr/0028-godot-3d-adoption-modes.md`](adr/0028-godot-3d-adoption-modes.md) — 모드별 채택 조건·롤백·공급망(Superseded, 모드 B~D 보류)
+1. `reports/godot-3d-evaluation-2026-10-15.md`(삭제됨 — git 이력에서 확인 가능) — 3D 한계 진단, 적용 모드 비교, 측정 해석(`target` 평가 보고서, 2026-10-15 시점)
+2. `adr/0028-godot-3d-adoption-modes.md`(삭제됨 — git 이력에서 확인 가능) — 모드별 채택 조건·롤백·공급망(Superseded, 모드 B~D 보류)
 3. [`evidence/godot-3d-poc/2026-10-15/README.md`](evidence/godot-3d-poc/2026-10-15/README.md) — 측정 원본 JSON과 읽는 법
 4. [`../tools/godot-3d-poc/README.md`](../tools/godot-3d-poc/README.md) — PoC 재현 순서(운영 연결·배포 없음)
 
@@ -89,11 +100,12 @@ onpod.ai 호스팅 이전 평가(2026-10-22, 평가 시점의 기록이며 현�
 
 1. [`features/accessibility-stage1.md`](features/accessibility-stage1.md) — 패널을 열 때마다 하는 axe·키보드 순회·이름/역할 감사의 범위와 방법, 고친 것, 문서화된 예외, 미해결과 확인하지 못한 것(실제 화면 낭독기 낭독은 미확인), 실행 방법과 CI 편입 판단
 
-Claude 사용자 키(BYOK) AI 보조(2026-10-22, 현재 구현 — 병합 전에는 브랜치에만 있다)는 다음 문서를 추가로 본다.
+AI 보조(2026-10-22 도입, 2026-10-29부터 키 없이도 ToonStudio AI로 실행 — 병합 전에는 브랜치에만 있다)는 다음 문서를 추가로 본다.
 
-1. [`features/claude-ai-assist.md`](features/claude-ai-assist.md) — 연결 정책, 아트 디렉터·명령 도우미·번역·대체 텍스트 4종의 입력·출력·비용 상한, 공통 UX 원칙, 구조, 보안, 검증과 하지 못한 것, 새 기능을 더하는 법
+1. [`features/ai-assist.md`](features/ai-assist.md) — 연결 정책, 아트 디렉터·명령 도우미·번역·대체 텍스트 4종의 입력·출력·비용 상한, 공통 UX 원칙, 구조, 보안, 검증과 하지 못한 것, 새 기능을 더하는 법
 2. [`reports/claude-ai-assist-benchmark-2026-10-22.md`](reports/claude-ai-assist-benchmark-2026-10-22.md) — 공개 페이지에서 읽은 경쟁 제품 사실, 설계 판단, 추가 AI 보조 기능 구상 10건(역사 자료)
 3. [`operations/free-ai-runtime.md`](operations/free-ai-runtime.md) — Claude 연결이 기존 BYOK 정책 안에서 어떻게 다뤄지는지(Claude 소절)
+4. [`benchmarks/ai-settings-ux-benchmark-2026-10-29.md`](benchmarks/ai-settings-ux-benchmark-2026-10-29.md) — 키 없이 시작·키 붙여넣기·여러 키·경로 표시를 비슷한 서비스와 비교한 설정 사용성 벤치마크(공개 문서 기반)
 
 ## 문서 상태 표기
 

@@ -4,6 +4,7 @@ import { Folder } from "lucide-react";
 import { STUDIO_RASTER_ASSETS } from "./render/studio-raster-assets";
 
 import { StudioAssetLegacyPanel } from "./StudioAssetLegacyPanel";
+import { insertStudioAssetWithBundleCredit, studioBundleSourceCreditProperties } from "./catalog/studio-bundle-source-credit";
 import { StudioUnifiedAssetWorkspace } from "./StudioUnifiedAssetWorkspace";
 import { CANVAS_W } from "./studio-assets";
 import { BG_SCENES } from "./studio-bg-scenes";
@@ -109,11 +110,7 @@ function routeUnifiedAsset(
         selectionBounds,
       });
       if (!placement) {
-        return handlers.addRenderedImage(
-          item.source.value.dataUrl,
-          item.source.value.width,
-          item.source.value.height,
-        );
+        return insertStudioAssetWithBundleCredit(item.source.value, handlers.addRenderedImage);
       }
       const placed = createCanvasImageElement({
         id: `insert-preview:${item.source.value.id}`,
@@ -131,6 +128,7 @@ function routeUnifiedAsset(
         undefined,
         undefined,
         {
+          ...studioBundleSourceCreditProperties(item.source.value),
           x: placed.x,
           y: placed.y,
           width: placed.width,

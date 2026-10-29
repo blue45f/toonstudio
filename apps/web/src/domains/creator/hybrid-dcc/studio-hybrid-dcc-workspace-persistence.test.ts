@@ -15,15 +15,15 @@ import {
 } from "../studio-editable-half-edge-mesh";
 import { createStudioOpfsMemoryFileSystem } from "../studio-opfs-filesystem";
 import { sha256HexPortable } from "../studio-sha256";
+import { unwrapStudioMeshBox } from "../studio-uv-unwrap-lite";
 
 import {
   createStudioHybridDccComponentSelection,
   mutateStudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
-import {
-  workspaceAddActiveModifier,
-  workspaceRefreshModifierPreviews,
-} from "./studio-hybrid-dcc-modifier-workspace";
+import { workspaceRefreshModifierPreviews } from "./studio-hybrid-dcc-modifier-workspace";
+import { createPreSliceArraySolidifyWorkspace } from "./studio-hybrid-dcc-legacy-modifier-fixture";
+import { hashPreSliceV3Snapshot } from "./document/studio-hybrid-dcc-legacy-snapshot-hash";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddArtistInk,
@@ -299,10 +299,7 @@ async function createPreSliceModifierPreviewFixture(): Promise<{
   readonly bytes: Uint8Array;
   readonly currentWorkspace: StudioHybridDccWorkspace;
 }> {
-  let workspace = createStudioHybridDccWorkspace("legacy-modifier-preview");
-  workspace = workspaceAddUnitCube(workspace, "cube");
-  workspace = await workspaceAddActiveModifier(workspace, "array");
-  workspace = await workspaceAddActiveModifier(workspace, "solidify");
+  let workspace = await createPreSliceArraySolidifyWorkspace();
   // History fidelity is covered by the main legacy fixture. Keep this fixture bounded to the
   // nonempty persisted stack and its disposable evaluated bridge presentation.
   workspace = {
@@ -362,7 +359,9 @@ function buildFullWorkspace(): StudioHybridDccWorkspace {
   });
   workspace = workspaceEnsureShots(workspace, 3);
   workspace = workspaceAddArtistInk(workspace, "shot-2");
+  workspace = workspaceClothStep(workspace);
   workspace = workspaceUvUnwrapActive(workspace, "box");
+  workspace = { ...workspace, lastUvMap: unwrapStudioMeshBox(workspace.session.state.geometry.records["hero-prop"]!.mesh) };
   workspace = workspaceRetargetFromBvhExtras(workspace, [
     "hips",
     "spine",
@@ -372,7 +371,6 @@ function buildFullWorkspace(): StudioHybridDccWorkspace {
   ]);
   workspace = workspaceExportActiveMesh(workspace, "obj");
   workspace = workspaceStepSpring(workspace);
-  workspace = workspaceClothStep(workspace);
   workspace = workspaceSampleIdleClip(workspace, 0.375);
   workspace = workspaceCollabJoin(workspace, "peer-a", "민지");
   workspace = {
@@ -729,6 +727,15 @@ describe("Hybrid DCC workspace OPFS persistence", () => {
 });
 
 describe("Hybrid DCC workspace persistence envelope", () => {
+  it("legacy v3 자산 누락은 공개 오류 클래스의 CORRUPT_PAYLOAD로 거절한다", () => {
+    const { currentWorkspace } = createPreSliceV3WorkspaceFixture();
+    const snapshot = currentWorkspace.session.undoStack[1];
+    if (!snapshot) throw new Error("legacy v3 회귀용 스냅샷이 없습니다.");
+    const run = () => hashPreSliceV3Snapshot({ ...snapshot, assets: [] }, currentWorkspace.session.state);
+    expect(run).toThrow(StudioHybridDccWorkspacePersistenceError);
+    expect(run).toThrow(expectPersistenceError("CORRUPT_PAYLOAD"));
+  });
+
   it("verifies and atomically migrates real pre-slice v3 state, undo and bridge hashes", () => {
     const fixture = createPreSliceV3WorkspaceFixture();
     const persistedLegacy = JSON.parse(

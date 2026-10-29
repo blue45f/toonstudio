@@ -79,6 +79,15 @@ beforeEach(() => { vi.mocked(applyStudioBg3dPrimitiveEditWorkspace).mockReset().
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe("기본 도형 직접 편집의 가변 host adapter", () => {
+  it("backend lease는 live forwarding 함수로 재포장하지 않고 opaque 함수 자체를 노출한다", () => {
+    const f = fixture(); let active = true, guard = () => active;
+    const host = { ...f.host, get isMaterialBackendCurrent() { return guard; } };
+    const adapter = createStudioBg3dPrimitiveEditHost(host), captured = adapter.isMaterialBackendCurrent;
+    active = false; guard = () => true;
+    expect(captured?.()).toBe(false); expect(adapter.isMaterialBackendCurrent).toBe(guard);
+    expect(adapter.isMaterialBackendCurrent?.()).toBe(true);
+  });
+
   it("생성 뒤 교체한 모든 ref·선택·품질·renderer를 호출 시점에 읽는다", () => {
     const first = fixture(), latest = fixture();
     const adapter = createStudioBg3dPrimitiveEditHost(first.host);

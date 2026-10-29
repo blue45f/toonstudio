@@ -14,6 +14,7 @@ import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import type { StudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
+import type { StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 export interface StudioBg3dInplaceToolsContext {
   readonly live: RefObject<StudioBg3dCanonicalDocumentSnapshot>;
@@ -22,6 +23,8 @@ export interface StudioBg3dInplaceToolsContext {
   readonly session: StudioBg3dModalSession | null;
   readonly ready: boolean;
   readonly renderer: StudioBg3dKtx2Renderer | null;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly quality: StudioBg3dResolvedDeviceQuality;
   readonly cache: Map<string, StudioBg3dModelRootCacheEntry>;
   readonly attachments: Map<string, StudioBg3dModelAttachment>;

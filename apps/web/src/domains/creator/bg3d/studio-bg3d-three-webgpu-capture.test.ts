@@ -5,7 +5,7 @@ const tslNode = () => {
   const node: Record<string, unknown> = {};
   const chain = () => node;
   for (const method of [
-    "add", "clamp", "mul", "div", "fract", "floor", "greaterThan", "select", "renderOutput", "toVar",
+    "add", "clamp", "mul", "div", "fract", "floor", "greaterThan", "greaterThanEqual", "select", "renderOutput", "toVar",
   ]) node[method] = chain;
   node.a = node;
   node.rgb = node;
@@ -13,7 +13,10 @@ const tslNode = () => {
 };
 
 vi.mock("three/tsl", () => ({
-  Fn: (body: (args: readonly unknown[]) => unknown) => (...args: readonly unknown[]) => body(args),
+  Fn: (body: (args: readonly unknown[]) => unknown) => {
+    const fn = (...args: readonly unknown[]) => body(args);
+    return Object.assign(fn, { setLayout: () => fn });
+  },
   depth: tslNode(),
   output: tslNode(),
   normalView: tslNode(),
@@ -23,6 +26,10 @@ vi.mock("three/tsl", () => ({
   texture: () => tslNode(),
   vec3: () => tslNode(),
   vec4: () => tslNode(),
+}));
+
+vi.mock("../mesh-materials/studio-mtoon-node-geometry-pass", () => ({
+  createStudioMToonNodeGeometryPass: () => { throw new Error("일반 재질 회귀에서는 툰 기하 factory를 호출하지 않습니다."); },
 }));
 
 const quadRender = vi.hoisted(() => vi.fn());

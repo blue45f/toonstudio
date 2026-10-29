@@ -519,7 +519,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     const currentUsage = calculateStudioBg3dProceduralSceneUsage(
       live.primitives,
       live.customModels,
-      (modelId: string) => modelRootCacheRef.current.get(modelId)?.metrics ?? null,
+      (modelId: string) => R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.metrics ?? null,
     );
     if (!currentUsage) return { ok: false, reason: "invalid-budget" };
 
@@ -898,7 +898,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     );
     if (!model) return null;
     return readStudioBg3dTemplateStaticModelWorldBounds(
-      modelRootCacheRef.current.get(model.modelId)?.root,
+      R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root,
       model,
     );
   };

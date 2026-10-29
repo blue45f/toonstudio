@@ -167,3 +167,14 @@ it("장면 미리보기에서 원본 PNG를 내려받지 않는다", () => {
   expect(backgrounds.every((url) => url.includes("/brand/studio-canvas-previews/") && url.includes(".webp"))).toBe(true);
   expect(backgrounds.some((url) => url.includes("background.png"))).toBe(false);
 });
+
+it("바로 그리기 집중 화면에서는 시작 안내를 접고 사용자가 필요할 때 펼친다", () => {
+  render(<StudioCinematicCanvasWelcome pageKey="quick-drawing" visible initiallyCollapsed />);
+  expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();
+  const open = screen.getByRole("button", { name: /빈 캔버스 · 시작 방법 보기/u });
+  expect(open.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(open);
+  expect(screen.getByRole("heading", { name: HEADING })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "시작 안내 닫기" }));
+  expect(screen.queryByRole("heading", { name: HEADING })).toBeNull();
+});

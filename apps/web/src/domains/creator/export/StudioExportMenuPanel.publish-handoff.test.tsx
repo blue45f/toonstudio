@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
 
 import { StudioExportMenuPanel } from "./StudioExportMenuPanel";
 
@@ -53,7 +55,7 @@ describe("StudioExportMenuPanel publish handoff", () => {
     handoffMocks.prepare.mockResolvedValue({ id: "handoff-ui", sourceWorkId: "work-1" });
     handoffMocks.href.mockReturnValue("/studio/work/work-1/publish?handoff=handoff-ui");
 
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         {...baseProps}
         pageCount={2}

@@ -2,6 +2,7 @@ import { FrontSide, Mesh, MeshStandardMaterial } from "three";
 
 import { checkStudioBg3dThreeBudgets, measureStudioBg3dThreeMetrics } from "../studio-background-3d-model";
 import { normalizeStudioBg3dGlbAttachment } from "./studio-bg3d-scene-document";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 import type { StudioBg3dPrimitiveEditReplacementAsset, StudioBg3dPrimitiveEditReplacementCache } from "./studio-bg3d-primitive-edit-replacement";
 import type { StudioBg3dModelAttachment, StudioBg3dSceneBudgets } from "./studio-bg3d-scene-document-types";
@@ -9,6 +10,9 @@ import type { StudioBg3dModelAttachment, StudioBg3dSceneBudgets } from "./studio
 type RecordIdentity = StudioBg3dPrimitiveEditReplacementAsset["record"];
 type MeasuredMetrics = Extract<ReturnType<typeof measureStudioBg3dThreeMetrics>, { readonly ok: true }>["metrics"];
 export interface StudioBg3dEditReplacementAssetHost {
+  readonly modelRenderer?: unknown;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, StudioBg3dPrimitiveEditReplacementCache> };
   readonly attachmentByStorageModelIdRef: { readonly current: ReadonlyMap<string, StudioBg3dModelAttachment> };
 }
@@ -65,9 +69,12 @@ export function validateStudioBg3dEditReplacementAsset(
   host: StudioBg3dEditReplacementAssetHost, asset: StudioBg3dPrimitiveEditReplacementAsset,
 ): StudioBg3dEditReplacementAssetResult {
   const { record, attachment, cache, storageModelId } = asset;
+    let backend: StudioBg3dMaterialBackend;
+    try { backend = resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }); }
+    catch { return failure("asset-mismatch", "교체 모델의 현재 재질 backend를 확인하지 못했습니다."); }
     const bound = host.attachmentByStorageModelIdRef.current.get(storageModelId);
     const normalizedAttachment = normalizeStudioBg3dGlbAttachment(attachment);
-    if (storageModelId !== record.id || host.modelRootCacheRef.current.get(storageModelId) !== cache
+    if (host.isMaterialBackendCurrent?.() === false || storageModelId !== record.id || readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, storageModelId, backend) !== cache
       || !sameRecord(record, cache.record) || !normalizedAttachment || !bound
       || JSON.stringify(normalizeStudioBg3dGlbAttachment(bound)) !== JSON.stringify(normalizedAttachment) || attachment.id === storageModelId
       || attachment.hash !== record.contentHash || attachment.byteSize !== record.byteSize || attachment.mime !== record.mime

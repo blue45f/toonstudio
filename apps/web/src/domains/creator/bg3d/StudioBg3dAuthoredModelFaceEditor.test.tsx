@@ -10,6 +10,7 @@ import { exportStudioHybridDccMeshGlb } from "../hybrid-dcc/studio-hybrid-dcc-gl
 import { pushPullStudioEditableMeshFaces } from "../hybrid-dcc/studio-hybrid-dcc-face-pushpull";
 import { collectStudioBg3dThreeJoints, collectStudioBg3dThreeMorphTargets, loadVerifiedStudioBg3dGlbWithThree, measureBg3dObjectSize } from "../studio-background-3d-model";
 import { inspectStudioGeneric3dRuntimeHints } from "../studio-generic-3d-runtime-hints";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { hashStudioEditableMesh } from "../studio-editable-half-edge-mesh";
 import { captureStudioBg3dAuthoredModelEditSource } from "./studio-bg3d-authored-model-edit-source";
 import { createStudioBg3dAuthoredModelEditWorkspace } from "./studio-bg3d-authored-model-edit-workspace";
@@ -86,7 +87,7 @@ async function context() {
   records.set(record.id, record);
   const k = resolveStudioBg3dModelNormalizationScale(record.id, measureBg3dObjectSize(loaded.root)); loaded.root.scale.setScalar(k);
   const joints = collectStudioBg3dThreeJoints(loaded.root);
-  const entry: StudioBg3dModelRootCacheEntry = { ...loaded, record, normalizationScale: k, admittedProfiles: new Set(["desktop"]), joints,
+  const entry: StudioBg3dModelRootCacheEntry = { ...loaded, record, normalizationScale: k, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), admittedProfiles: new Set(["desktop"]), joints,
     morphTargets: collectStudioBg3dThreeMorphTargets(loaded.root), semanticMaterials: classifyStudioBg3dThreeSemanticMaterials(loaded.root),
     genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints) };
   const model: BgCustomModelInstance = { id: "current-model-instance", modelId: record.id, name: "이름과 배치를 바꾼 현재 모델", tags: ["실내"],
@@ -99,7 +100,7 @@ async function context() {
   const host: StudioBg3dAuthoredModelEditSourceHost = { open: true, selectedIdsRef: { current: new Set([model.id]) },
     modalAssetSessionRef: { current: {} }, isPrimitiveEditInteractionLocked: () => false,
     physicsRuntimeSourceRef: { current: { primitives: [], customModels: [model], document: canonical.value.document } },
-    modelRootCacheRef: { current: new Map([[record.id, entry]]) }, attachmentByStorageModelIdRef: { current: attachments },
+    modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(record.id, "webgl"), entry]]) }, attachmentByStorageModelIdRef: { current: attachments },
     storageModelIdByAttachmentIdRef: { current: new Map([[attachment.id, record.id]]) } };
   const captured = await captureStudioBg3dAuthoredModelEditSource(host, new AbortController().signal);
   if (!captured.ok) throw Error(captured.messageKo);

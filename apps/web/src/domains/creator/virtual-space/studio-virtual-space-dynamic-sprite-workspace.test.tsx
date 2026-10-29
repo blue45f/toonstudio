@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualSpaceCollaborationHub } from "./StudioVirtualSpaceCollaborationHub";
 import { StudioVirtualSpaceWorkstationLiveModal } from "./StudioVirtualSpaceWorkstationLiveModal";
-import { NANO_BANANA_2D_WORKSTATIONS } from "./studio-virtual-space-nano-banana-2d-runtime";
+import { ILLUSTRATED_2D_WORKSTATIONS } from "./studio-virtual-space-illustrated-2d-runtime";
 import {
   DYNAMIC_CREATOR_SPRITE_CAST,
   DYNAMIC_SPRITE_ACTIONS,
@@ -22,6 +23,8 @@ import {
   triggerWorkspaceFeverAwakening,
   updateCollaboratorSpriteConfig,
 } from "./studio-virtual-space-dynamic-sprite-engine";
+
+afterEach(cleanup);
 
 describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSpriteWorkspace", () => {
   it("defines 8 distinctive small-face (5.5~6.0 head-tall) creator personas, 10 expressions, 10 8-frame actions, and 8 flashy VFX", () => {
@@ -170,7 +173,7 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     cleanup();
     render(
       <StudioVirtualSpaceWorkstationLiveModal
-        station={NANO_BANANA_2D_WORKSTATIONS[0]}
+        station={ILLUSTRATED_2D_WORKSTATIONS[0]}
         onClose={() => undefined}
         onSelectStation={() => undefined}
       />,
@@ -180,5 +183,41 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     fireEvent.click(screen.getByTestId("kanban-advance-cut-18-btn"));
     fireEvent.click(screen.getByTestId("workstation-tab-turntable-sfx"));
     fireEvent.click(screen.getByTestId("sfx-pad-boom-btn"));
+  });
+
+  it("협업 모달은 초점을 가두고 Escape로 닫은 뒤 실행 버튼에 초점을 돌려준다", async () => {
+    const onClose = vi.fn();
+    const station = ILLUSTRATED_2D_WORKSTATIONS[0];
+    function ModalHarness() {
+      const [open, setOpen] = useState(false);
+      return <>
+        <button type="button" onClick={() => setOpen(true)}>협업창 열기</button>
+        {open ? <StudioVirtualSpaceWorkstationLiveModal station={station}
+          onClose={() => { onClose(); setOpen(false); }} onSelectStation={() => undefined} /> : null}
+      </>;
+    }
+    const { container } = render(<ModalHarness />);
+    const opener = screen.getByRole("button", { name: "협업창 열기" });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = screen.getByRole("dialog", { name: station.titleKo });
+    expect(container.contains(dialog)).toBe(false);
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.hasAttribute("aria-describedby")).toBe(false);
+    const firstControl = within(dialog).getByRole("combobox", { name: "워크스테이션 전환" });
+    expect(document.activeElement).toBe(firstControl);
+    const lastControl = within(dialog).getAllByRole("button").at(-1);
+    if (!lastControl) throw new Error("모달 마지막 버튼이 필요합니다.");
+    lastControl.focus();
+    fireEvent.keyDown(lastControl, { key: "Tab", code: "Tab" });
+    expect(document.activeElement).toBe(firstControl);
+    fireEvent.keyDown(firstControl, { key: "Tab", code: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(lastControl);
+    opener.focus();
+    expect(document.activeElement).toBe(lastControl);
+    fireEvent.keyDown(lastControl, { key: "Escape", code: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(opener));
   });
 });

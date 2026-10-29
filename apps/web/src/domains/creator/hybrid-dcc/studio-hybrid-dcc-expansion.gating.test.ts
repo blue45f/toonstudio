@@ -173,18 +173,25 @@ describe("workspace import path", () => {
     const obj = new TextEncoder().encode("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n");
     ws = workspaceImportBytes(ws, "prop.obj", obj);
     expect(ws.lastImportReport).toBeTruthy();
-    // OBJ via grade-A may not always register mesh without mesh adapter path — still report
+    expect(Object.keys(ws.session.state.geometry.records)).toHaveLength(1);
+    expect(ws.session.state.geometry.records[ws.activeAssetId ?? ""]?.mesh.faces).toHaveLength(1);
+    expect(ws.session.undoStack).toHaveLength(1);
     expect(
       (ws.lastImportReport as { sourceHash?: string })?.sourceHash?.startsWith("sha256:"),
     ).toBe(true);
   });
 
-  it("imports real VRM when fixture present", () => {
-    // AvatarSample_A.vrm 은 권리 사유로 저장소에서 제거돼 가드가 항상 건너뛰었다 — CC0 대체 픽스처로 다시 실행한다.
+  it("저장소 VRM을 보고서가 아닌 67개의 실제 편집 메시로 가져온다", () => {
+    // 저장소에 포함된 실제 모델은 누락 시 조용히 건너뛰지 않는다.
     const path = resolve(process.cwd(), "apps/web/public/vrm/Sendagaya_Shino.vrm");
-    if (!existsSync(path)) return;
+    expect(existsSync(path)).toBe(true);
     let ws = createStudioHybridDccWorkspace("vrm-ws");
     ws = workspaceImportBytes(ws, "a.vrm", new Uint8Array(readFileSync(path)));
-    expect(ws.lastImportReport).toBeTruthy();
+    const records = Object.values(ws.session.state.geometry.records);
+    expect(records).toHaveLength(67);
+    expect(records.reduce((sum, record) => sum + record.mesh.vertices.length, 0)).toBe(22967);
+    expect(records.every((record) => record.mesh.uvLayer?.corners.length === record.mesh.halfEdges.length)).toBe(true);
+    expect(ws.session.undoStack).toHaveLength(1);
+    expect(Object.keys(workspaceUndo(ws).session.state.geometry.records)).toHaveLength(0);
   });
 });

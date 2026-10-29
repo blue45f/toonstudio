@@ -24,7 +24,7 @@ import {
   StudioBg3dPlaceSetPackagePanel,
 } from "./StudioBg3dPlaceSetPackagePanel";
 import { StudioBg3dPostProcessVfxPanel } from "./StudioBg3dPostProcessVfxPanel";
-import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
+import { StudioBg3dShaperCharacterStudioPanel } from "./StudioBg3dShaperCharacterStudioPanel";
 import { StudioBg3dSpatialModelerPanel } from "./StudioBg3dSpatialModelerPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
@@ -81,7 +81,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "blender-fantasy-webtoon", labelKo: "블렌더 판타지·NPR·군단", groupKo: "셰이더·재질" },
   { id: "spatial-fx", labelKo: "입체 효과음·말풍선", groupKo: "웹툰 연출" },
   { id: "cut-strip", labelKo: "컷 스트립·연속성", groupKo: "웹툰 연출" },
-  { id: "shaper-tooning", labelKo: "셰이퍼·투닝 스튜디오", groupKo: "웹툰 연출" },
+  { id: "shaper-tooning", labelKo: "셰이퍼·캐릭터 스튜디오", groupKo: "웹툰 연출" },
   { id: "character-animator", labelKo: "등신대·표정·모션", groupKo: "캐릭터·DCC" },
   { id: "cloner", labelKo: "절차적 클로너", groupKo: "캐릭터·DCC" },
   { id: "deformers", labelKo: "디포머·CSG 불리언", groupKo: "캐릭터·DCC" },
@@ -509,9 +509,9 @@ export function StudioBg3dAdvancedWorkbenchHub({
         ) : null}
 
         {activeTab === "shaper-tooning" ? (
-          <StudioBg3dShaperTooningStudioPanel
+          <StudioBg3dShaperCharacterStudioPanel
             disabled={disabled}
-            onExportPsd={() => setLastActionSummary("셰이퍼·투닝 8레이어 PSD 내보내기 완료")}
+            onExportPsd={() => setLastActionSummary("셰이퍼·캐릭터 스튜디오 8레이어 PSD 내보내기 완료")}
           />
         ) : null}
 

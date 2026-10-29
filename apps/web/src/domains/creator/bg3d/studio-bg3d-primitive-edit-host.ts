@@ -9,6 +9,7 @@ import {
 } from "./studio-bg3d-primitive-edit-source";
 import { isStudioBg3dWorkbenchInsertionAvailable, type StudioBg3dWorkbenchInsertionHost } from "./studio-bg3d-workbench-insertion";
 import { summarizeStudioBg3dAuthoredModelEditSource } from "./studio-bg3d-authored-model-edit-summary";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 export type StudioBg3dPrimitiveEditEditorHost = Partial<StudioBg3dPrimitiveEditOrchestratorHost>
   & Omit<StudioBg3dWorkbenchInsertionHost, "modelRenderer" | "physicsRuntimeSourceRef">
@@ -36,6 +37,8 @@ export function createStudioBg3dPrimitiveEditHost(host: StudioBg3dPrimitiveEditE
     get storageModelIdByAttachmentIdRef() { return required(host.storageModelIdByAttachmentIdRef); },
     get deviceQuality() { return required(host.deviceQuality); },
     get modelRenderer() { return host.modelRenderer ?? null; },
+    get materialBackend() { return host.materialBackend; },
+    get isMaterialBackendCurrent() { return host.isMaterialBackendCurrent; },
     isPrimitiveEditInteractionLocked() {
       return !isStudioBg3dWorkbenchInsertionAvailable(host) || host.captureInFlightRef?.current === true
         || host.cameraLensInteractionLocked?.() === true;
@@ -78,8 +81,10 @@ function modelPreparationScope(host: StudioBg3dPrimitiveEditEditorHost) {
   const id = selectedId(host);
   const runtime = host.physicsRuntimeSourceRef?.current;
   const model = runtime?.customModels.find((value) => value.id === id);
-  const cached = model ? host.modelRootCacheRef?.current.get(model.modelId) : undefined;
+  const backend = resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend });
+  const cached = model && host.modelRootCacheRef ? readStudioBg3dModelCacheEntry(host.modelRootCacheRef.current, model.modelId, backend) : undefined;
   return { id, modelJson: JSON.stringify(model), nodeJson: JSON.stringify(runtime?.document.nodes.find((node) => node.id === id)),
+    materialBackend: backend, renderer: host.modelRenderer, isMaterialBackendCurrent: host.isMaterialBackendCurrent,
     cache: cached, root: cached?.root, recordId: cached?.record.id, recordHash: cached?.record.contentHash,
     normalizationScale: cached?.normalizationScale };
 }
@@ -95,50 +100,58 @@ export function createStudioBg3dPrimitiveEditHostPorts(host: StudioBg3dPrimitive
     primitiveEditSelection,
     onBeginPrimitiveEdit: async (requestSignal) => {
       if (!ready(host) || requestSignal?.aborted) return { ok: false, messageKo: UNAVAILABLE };
-      if (hasSelectedModel(host)) {
-        const scope = modelPreparationScope(host);
-        const session = host.modalAssetSessionRef?.current;
-        const signal = requestSignal ?? new AbortController().signal;
-        try {
-          const source = await import("./studio-bg3d-authored-model-edit-source");
-          const latest = modelPreparationScope(host);
-          if (!ready(host) || signal.aborted || latest.id !== scope.id || latest.modelJson !== scope.modelJson
-            || latest.nodeJson !== scope.nodeJson || latest.cache !== scope.cache || latest.root !== scope.root
-            || latest.recordId !== scope.recordId || latest.recordHash !== scope.recordHash
-            || latest.normalizationScale !== scope.normalizationScale || host.modalAssetSessionRef?.current !== session) {
-            return { ok: false, messageKo: CHANGED };
-          }
-          const captured = await source.captureStudioBg3dAuthoredModelEditSource(live, signal);
-          if (!captured.ok) return captured;
-          const { createStudioBg3dAuthoredModelEditWorkspace } = await import("./studio-bg3d-authored-model-edit-workspace");
-          if (!ready(host) || signal.aborted) return { ok: false, messageKo: CHANGED };
-          const current = source.revalidateStudioBg3dAuthoredModelEditSource(live, captured.snapshot);
-          if (!current.ok) return current;
-          const result = createStudioBg3dAuthoredModelEditWorkspace(captured.snapshot);
-          return result.ok ? { ok: true, context: result.value } : result;
-        } catch { return { ok: false, messageKo: "보관된 원본 메시를 여는 중 오류가 발생했습니다. 다시 시도하세요." }; }
-      }
-      const source = captureStudioBg3dPrimitiveEditSource(live);
-      if (!source.ok) return source;
       try {
-        const { createStudioBg3dPrimitiveEditWorkspace } = await import("./studio-bg3d-primitive-edit-workspace");
-        if (!ready(host) || requestSignal?.aborted) return { ok: false, messageKo: UNAVAILABLE };
-        const current = revalidateStudioBg3dPrimitiveEditSource(live, source.snapshot);
-        if (!current.ok) return current;
-        const result = createStudioBg3dPrimitiveEditWorkspace(source.snapshot);
-        return result.ok ? { ok: true, context: result.value } : result;
+        const renderer = host.modelRenderer, backend = resolveStudioBg3dMaterialBackend({ renderer, materialBackend: host.materialBackend }), isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+        const backendCurrent = () => isMaterialBackendCurrent?.() !== false && host.modelRenderer === renderer && resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) === backend;
+        if (!backendCurrent()) return { ok: false, messageKo: CHANGED };
+        if (hasSelectedModel(host)) {
+          const scope = modelPreparationScope(host);
+          const session = host.modalAssetSessionRef?.current;
+          const signal = requestSignal ?? new AbortController().signal;
+          try {
+            const source = await import("./studio-bg3d-authored-model-edit-source");
+            const latest = modelPreparationScope(host);
+            if (!backendCurrent() || !ready(host) || signal.aborted || latest.id !== scope.id || latest.modelJson !== scope.modelJson
+              || latest.nodeJson !== scope.nodeJson || latest.cache !== scope.cache || latest.root !== scope.root
+              || latest.recordId !== scope.recordId || latest.recordHash !== scope.recordHash
+              || latest.normalizationScale !== scope.normalizationScale || host.modalAssetSessionRef?.current !== session) {
+              return { ok: false, messageKo: CHANGED };
+            }
+            const captured = await source.captureStudioBg3dAuthoredModelEditSource(live, signal);
+            if (!captured.ok) return captured;
+            const { createStudioBg3dAuthoredModelEditWorkspace } = await import("./studio-bg3d-authored-model-edit-workspace");
+            if (!backendCurrent() || !ready(host) || signal.aborted) return { ok: false, messageKo: CHANGED };
+            const current = source.revalidateStudioBg3dAuthoredModelEditSource(live, captured.snapshot);
+            if (!current.ok) return current;
+            const result = createStudioBg3dAuthoredModelEditWorkspace(captured.snapshot);
+            return result.ok ? { ok: true, context: result.value } : result;
+          } catch { return { ok: false, messageKo: "보관된 원본 메시를 여는 중 오류가 발생했습니다. 다시 시도하세요." }; }
+        }
+        const source = captureStudioBg3dPrimitiveEditSource(live);
+        if (!source.ok) return source;
+        try {
+          const { createStudioBg3dPrimitiveEditWorkspace } = await import("./studio-bg3d-primitive-edit-workspace");
+          if (!backendCurrent() || !ready(host) || requestSignal?.aborted) return { ok: false, messageKo: UNAVAILABLE };
+          const current = revalidateStudioBg3dPrimitiveEditSource(live, source.snapshot);
+          if (!current.ok) return current;
+          const result = createStudioBg3dPrimitiveEditWorkspace(source.snapshot);
+          return result.ok ? { ok: true, context: result.value } : result;
+        } catch { return { ok: false, messageKo: UNAVAILABLE }; }
       } catch { return { ok: false, messageKo: UNAVAILABLE }; }
     },
     onApplyPrimitiveEdit: async (context, workspace, signal) => {
       if (!ready(host) || signal.aborted) return { ok: false, messageKo: UNAVAILABLE };
       try {
+        const renderer = host.modelRenderer, backend = resolveStudioBg3dMaterialBackend({ renderer, materialBackend: host.materialBackend }), isMaterialBackendCurrent = host.isMaterialBackendCurrent;
+        const backendCurrent = () => isMaterialBackendCurrent?.() !== false && host.modelRenderer === renderer && resolveStudioBg3dMaterialBackend({ renderer: host.modelRenderer, materialBackend: host.materialBackend }) === backend;
+        if (!backendCurrent()) return { ok: false, messageKo: CHANGED };
         if (context.kind === "authored-model") {
           const { applyStudioBg3dAuthoredModelEditWorkspace } = await import("./studio-bg3d-authored-model-edit-orchestrator");
-          if (!ready(host)) return { ok: false, messageKo: UNAVAILABLE };
+          if (!backendCurrent() || !ready(host)) return { ok: false, messageKo: UNAVAILABLE };
           return await applyStudioBg3dAuthoredModelEditWorkspace(live, context, workspace, signal);
         }
         const { applyStudioBg3dPrimitiveEditWorkspace } = await import("./studio-bg3d-primitive-edit-orchestrator");
-        if (!ready(host)) return { ok: false, messageKo: UNAVAILABLE };
+        if (!backendCurrent() || !ready(host)) return { ok: false, messageKo: UNAVAILABLE };
         return await applyStudioBg3dPrimitiveEditWorkspace(live, context, workspace, signal);
       } catch { return { ok: false, messageKo: "면 편집 결과를 반영하지 못했습니다. 원본과 모델 목록을 확인한 뒤 다시 시도하세요." }; }
     },

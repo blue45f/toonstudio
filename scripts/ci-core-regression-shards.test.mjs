@@ -51,6 +51,7 @@ test("semantic sharding keeps expensive domains isolated", () => {
     ["apps/web/src/domains/learn/accessible-webtoon-guide-docs.test.ts", "product"],
     ["apps/web/src/domains/creator/studio-project-creation.test.ts", "studio-foundation"],
     ["apps/web/src/domains/creator/brush/StudioBrushTray.test.tsx", "studio-editing"],
+    ["apps/web/src/domains/creator/live/studio-live-transform-draft-store.test.ts", "studio-editing"],
     ["apps/web/src/domains/creator/bg3d/studio-bg3d-camera-selection.test.ts", "studio-3d"],
     ["apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.test.ts", "studio-character"],
     ["apps/web/src/domains/creator/character-shaper/character-shaper-export.test.ts", "studio-character"],
@@ -267,6 +268,60 @@ test("list mode validates the manifest without installing dependencies", () => {
   assert.match(invalid.stderr, /Unknown CI regression shard/);
 });
 
+test("구매 번들의 출처·저장·아카이브·장식·캐시 회귀는 required shard에서 한 번 실행된다", () => {
+  const execution = executionTargetsByShard();
+  for (const target of [
+    "apps/web/src/domains/creator/catalog/studio-bundle-source-credit.test.ts",
+    "tests/integration/itch-bundle-source-credit.test.ts",
+    "apps/web/src/domains/creator/catalog/studio-bundle-personal-library-save.test.ts",
+    "apps/web/src/domains/creator/catalog/StudioBundleAssetLibraryPanel.save.test.tsx",
+    "apps/web/src/domains/creator/catalog/studio-bundle-backgrounds.test.ts",
+    "apps/web/src/domains/creator/catalog/studio-bundle-project-archive.test.ts",
+    "apps/web/src/domains/creator/virtual-space/studio-virtual-space-bundle-decor.test.ts",
+    "scripts/creator-bundle-decor.test.mjs",
+    "scripts/creator-bundle-scene-catalog.test.mjs",
+    "scripts/creator-bundle-serving-parity.test.mjs",
+    "scripts/rebuild-creator-bundle-local-ingest.test.mjs",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-asset-loader.test.ts",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-theme-packs.test.ts",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-model-resolution.test.ts",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-genre-scene-pack-links.test.ts",
+  ]) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(target), `필수 번들 회귀 누락: ${target}`);
+    const expected = target.includes("/bg3d/") ? "studio-3d" : "studio-foundation";
+    assert.deepEqual(SHARD_NAMES.filter((name) => targetIsCovered(target, execution[name])), [expected], target);
+  }
+});
+
+test("native proof와 실제 보안 패치 회귀는 기존 required Node 명령에서 한 번 실행된다", () => {
+  const execution = executionTargetsByShard();
+  const commands = Object.entries(SHARD_COMMANDS).flatMap(([name, entries]) => entries.map(({ argv }) => ({ name, command: argv.join(" ") })));
+  for (const [file, shard] of [
+    ["scripts/creator-bundle-native-proof.test.mjs", "studio-foundation"],
+    ["scripts/qs-security-compat.test.mjs", "product"],
+    ["scripts/deepmerge-security-compat.test.mjs", "product"],
+  ]) {
+    const owners = commands.filter(({ command }) => command.split(/\s+/u).includes(file));
+    assert.equal(owners.length, 1, `${file}: Node 실행 수가 달라졌습니다.`);
+    assert.equal(owners[0].name, shard, file);
+    assert.match(owners[0].command, /node (?:--experimental-strip-types )?--test /u);
+    assert.ok(SHARD_NAMES.every((name) => !targetIsCovered(file, execution[name])), `${file}: Node와 Vitest shard 중복 실행`);
+  }
+  const proof = readFileSync(new URL("./creator-bundle-native-proof.test.mjs", import.meta.url), "utf8");
+  assert.match(proof, /process\.env\.VITEST \? await import\("vitest"\) : await import\("node:test"\)/u,
+    "related Vitest도 같은 네 회귀를 수집해야 합니다.");
+});
+
+test("live transform 회귀의 이동된 현재 경로를 필수 editing shard에서 실행한다", () => {
+  const selector = "apps/web/src/domains/creator/live/studio-live-transform-*.test.ts";
+  assert.ok(REQUIRED_VITEST_TARGETS.includes(selector));
+  assert.ok(!REQUIRED_VITEST_TARGETS.includes("apps/web/src/domains/creator/studio-live-transform-*.test.ts"));
+  const files = expandGlobTargets([selector]);
+  assert.ok(files.length > 0);
+  const executed = expandGlobTargets(executionTargetsByShard()["studio-editing"]);
+  for (const file of files) assert.equal(executed.filter((target) => target === file).length, 1, file);
+});
+
 
 test("foundation sparse checkout은 전체 기본 래스터 소품 입력을 복원한다", () => {
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -274,6 +329,29 @@ test("foundation sparse checkout은 전체 기본 래스터 소품 입력을 복
   assert.ok(restore, "foundation 입력 복원 단계를 유지해야 합니다.");
   assert.match(restore, /if: matrix.shard == 'studio-foundation'/u);
   assert.match(restore, /(?:^|\s)\/apps\/web\/public\/assets\/studio\/props\/(?:\s|$)/u);
+});
+
+test("가상 오피스 원본·런타임·기존 시트 검증 입력은 소유 foundation shard에만 복원한다", () => {
+  const execution = executionTargetsByShard();
+  for (const target of [
+    "apps/web/src/domains/creator/virtual-space/office2d/office2d-atlas-frames.test.ts",
+    "apps/web/src/domains/creator/virtual-space/studio-virtual-space-office-environments.test.ts",
+  ]) {
+    assert.equal(shardForTarget(target), "studio-foundation", target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => targetIsCovered(target, execution[name])), ["studio-foundation"], target);
+  }
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const restore = workflow.match(/- name: 가상 오피스 원본·런타임 시트와 환경 아트 검증 입력 복원\n([\s\S]*?)(?=\n {6}- name:)/u)?.[1];
+  assert.ok(restore, "실제 아트 파일을 읽는 회귀의 sparse 복원 단계를 유지해야 합니다.");
+  assert.match(restore, /if: matrix.shard == 'studio-foundation'/u);
+  assert.match(restore, /git sparse-checkout add/u);
+  const paths = [...restore.matchAll(/(?:^|\s)(\/apps\/web\/public\/assets\/[A-Za-z0-9/_-]+\/)(?=\s|$)/gu)].map((match) => match[1]);
+  assert.deepEqual(paths.sort(), [
+    "/apps/web/public/assets/virtual-studio/office-cast-v2/",
+    "/apps/web/public/assets/virtual-studio/office-themes-v1/",
+    "/apps/web/public/assets/virtual-studio/toon-office-v1/characters/",
+  ]);
+  for (const path of paths) assert.equal(workflow.split(path).length - 1, 1, `${path}: 다른 shard의 checkout 범위를 넓히지 않습니다.`);
 });
 
 test("제작 공정과 시각적 작업 보드 검증은 필수 product shard에서 한 번만 실행한다", () => {

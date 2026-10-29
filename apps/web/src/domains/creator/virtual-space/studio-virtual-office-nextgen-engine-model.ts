@@ -1,22 +1,22 @@
 /**
- * Next-Gen Virtual Webtoon Studio Engine Simulation Logic (Nano Banana v11 + REA Physics/Audio/UX).
+ * Next-Gen Virtual Webtoon Studio Engine Simulation Logic (Studio Art v11 + REA Physics/Audio/UX).
  */
 
 import {
   DEFAULT_STUDIO_COLLIDERS,
-  NANO_BANANA_V11_CREATOR_PERSONAS,
-  NANO_BANANA_V11_STUDIO_THEMES,
-  NANO_BANANA_V13_CREATOR_EMOTES,
-  NANO_BANANA_V13_STUDIO_PROPS,
+  ILLUSTRATED_V11_CREATOR_PERSONAS,
+  ILLUSTRATED_V11_STUDIO_THEMES,
+  ILLUSTRATED_V13_CREATOR_EMOTES,
+  ILLUSTRATED_V13_STUDIO_PROPS,
   PIPELINE_STAGE_ORDER,
   STUDIO_LIGHTING_MOODS,
   type CharacterSecondaryMotionFrame,
   type CompanionPetFollowerState,
   type CreatorPersonaPose,
-  type NanoBananaCreatorPersonaId,
-  type NanoBananaStudioThemeId,
-  type NanoBananaV13EmoteId,
-  type NanoBananaV13PropId,
+  type IllustratedCreatorPersonaId,
+  type IllustratedStudioThemeId,
+  type IllustratedV13EmoteId,
+  type IllustratedV13PropId,
   type NextGenVirtualStudioEngineState,
   type SpatialAudioEvaluation,
   type StudioColliderBox,
@@ -30,28 +30,28 @@ export * from "./studio-virtual-office-nextgen-engine-data";
 export function createInitialNextGenStudioEngineState(): NextGenVirtualStudioEngineState {
   return {
     activeThemeId: "seoul-editorial-hq",
-    themes: NANO_BANANA_V11_STUDIO_THEMES,
+    themes: ILLUSTRATED_V11_STUDIO_THEMES,
     activePersonaId: "line-artist",
     activePersonaPose: "work",
-    personas: NANO_BANANA_V11_CREATOR_PERSONAS,
+    personas: ILLUSTRATED_V11_CREATOR_PERSONAS,
     themesAtlasUrl:
-      "/assets/virtual-studio/nano-banana-v11/four-studio-themes-atlas.webp",
+      "/assets/virtual-studio/studio-art-v11/four-studio-themes-atlas.webp",
     castCleanAtlasUrl:
-      "/assets/virtual-studio/nano-banana-v11/diverse-creator-cast-clean-atlas.webp",
+      "/assets/virtual-studio/studio-art-v11/diverse-creator-cast-clean-atlas.webp",
     v12ThemesAtlasUrl:
-      "/assets/virtual-studio/nano-banana-v12/genre-studio-themes-atlas.webp",
+      "/assets/virtual-studio/studio-art-v12/genre-studio-themes-atlas.webp",
     v12CastCleanAtlasUrl:
-      "/assets/virtual-studio/nano-banana-v12/specialist-cast-clean-atlas.webp",
+      "/assets/virtual-studio/studio-art-v12/specialist-cast-clean-atlas.webp",
     v13ThemesAtlasUrl:
-      "/assets/virtual-studio/nano-banana-v13/four-more-studio-themes-atlas.webp",
+      "/assets/virtual-studio/studio-art-v13/four-more-studio-themes-atlas.webp",
     v13PropsAtlasUrl:
-      "/assets/virtual-studio/nano-banana-v13/webtoon-props-and-zones-atlas.webp",
+      "/assets/virtual-studio/studio-art-v13/webtoon-props-and-zones-atlas.webp",
     v13EmoteSheetUrl:
-      "/assets/virtual-studio/nano-banana-v13/creator-emote-and-walk-sheet.webp",
+      "/assets/virtual-studio/studio-art-v13/creator-emote-and-walk-sheet.webp",
     activeV13EmoteId: "crunch-flame-focus",
     activeV13PropId: "dual-cintiq-critique-pod",
-    v13Emotes: NANO_BANANA_V13_CREATOR_EMOTES,
-    v13Props: NANO_BANANA_V13_STUDIO_PROPS,
+    v13Emotes: ILLUSTRATED_V13_CREATOR_EMOTES,
+    v13Props: ILLUSTRATED_V13_STUDIO_PROPS,
     lightingMoodId: "daylight-studio",
     deadlineCrunchFeverEnabled: false,
     physics: {
@@ -74,7 +74,7 @@ export function createInitialNextGenStudioEngineState(): NextGenVirtualStudioEng
       vy: 0,
       trailingDistancePx: 36,
       activeSpriteUrl:
-        "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp",
+        "/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-work.webp",
       petNameKo: "나비 & 펜봇 (마스코트 팔로워)",
     },
     waypointPath: [],
@@ -178,9 +178,9 @@ export function createInitialNextGenStudioEngineState(): NextGenVirtualStudioEng
   };
 }
 
-export function selectNanoBananaStudioTheme(
+export function selectIllustratedStudioTheme(
   state: NextGenVirtualStudioEngineState,
-  themeId: NanoBananaStudioThemeId,
+  themeId: IllustratedStudioThemeId,
 ): NextGenVirtualStudioEngineState {
   const theme =
     state.themes.find((item) => item.id === themeId) ?? state.themes[0];
@@ -193,9 +193,9 @@ export function selectNanoBananaStudioTheme(
   );
 }
 
-export function selectNanoBananaCreatorPersona(
+export function selectIllustratedCreatorPersona(
   state: NextGenVirtualStudioEngineState,
-  personaId: NanoBananaCreatorPersonaId,
+  personaId: IllustratedCreatorPersonaId,
   pose: CreatorPersonaPose = state.activePersonaPose,
 ): NextGenVirtualStudioEngineState {
   const persona =
@@ -208,9 +208,9 @@ export function selectNanoBananaCreatorPersona(
   };
 }
 
-export function selectNanoBananaV13Emote(
+export function selectIllustratedV13Emote(
   state: NextGenVirtualStudioEngineState,
-  emoteId: NanoBananaV13EmoteId,
+  emoteId: IllustratedV13EmoteId,
 ): NextGenVirtualStudioEngineState {
   const emote =
     state.v13Emotes.find((item) => item.id === emoteId) ?? state.v13Emotes[0];
@@ -220,9 +220,9 @@ export function selectNanoBananaV13Emote(
   };
 }
 
-export function selectNanoBananaV13Prop(
+export function selectIllustratedV13Prop(
   state: NextGenVirtualStudioEngineState,
-  propId: NanoBananaV13PropId,
+  propId: IllustratedV13PropId,
 ): NextGenVirtualStudioEngineState {
   const prop =
     state.v13Props.find((item) => item.id === propId) ?? state.v13Props[0];
@@ -232,11 +232,11 @@ export function selectNanoBananaV13Prop(
   };
 }
 
-export const NANO_BANANA_V14_WALK_SPRITES = {
-  down: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-down.webp",
-  left: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-left.webp",
-  right: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-right.webp",
-  up: "/assets/virtual-studio/nano-banana-v14/walk/creator-walk-up.webp",
+export const ILLUSTRATED_V14_WALK_SPRITES = {
+  down: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-down.webp",
+  left: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
+  right: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
+  up: "/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp",
 } as const;
 
 export function resolveAvatarDirectionalWalkSprite(
@@ -249,15 +249,15 @@ export function resolveAvatarDirectionalWalkSprite(
   }
   const deg = ((facingAngleRad * 180) / Math.PI + 360) % 360;
   if (deg >= 45 && deg < 135) {
-    return NANO_BANANA_V14_WALK_SPRITES.down;
+    return ILLUSTRATED_V14_WALK_SPRITES.down;
   }
   if (deg >= 135 && deg < 225) {
-    return NANO_BANANA_V14_WALK_SPRITES.left;
+    return ILLUSTRATED_V14_WALK_SPRITES.left;
   }
   if (deg >= 225 && deg < 315) {
-    return NANO_BANANA_V14_WALK_SPRITES.up;
+    return ILLUSTRATED_V14_WALK_SPRITES.up;
   }
-  return NANO_BANANA_V14_WALK_SPRITES.right;
+  return ILLUSTRATED_V14_WALK_SPRITES.right;
 }
 
 export function applyStudioLightingMood(
@@ -427,7 +427,7 @@ export function stepCompanionPetFollowerSpring(
       vy: Math.round(follower.vy * 0.6 * 100) / 100,
       trailingDistancePx: Math.round(dist * 10) / 10,
       activeSpriteUrl:
-        "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-idle.webp",
+        "/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-idle.webp",
     };
   }
 
@@ -446,7 +446,7 @@ export function stepCompanionPetFollowerSpring(
     vy: Math.round((stepY / Math.max(dtSeconds, 0.008)) * 10) / 10,
     trailingDistancePx: Math.round(Math.hypot(leaderX - nx, leaderY - ny) * 10) / 10,
     activeSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp",
+      "/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-work.webp",
   };
 }
 

@@ -44,17 +44,17 @@ import {
   type StudioBg3dWorldBuildResult,
 } from "./studio-bg3d-webtoon-world-shaper";
 import {
-  STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES,
-  STUDIO_VARCO3D_WEBTOON_PROP_ASSETS,
-  evaluateVarco3dDioramaScenePlacement,
-  type StudioVarco3dIsometricDioramaEntry,
-} from "../scene-3d/studio-varco3d-character-lab-diorama-catalog";
-import { TRIPO3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-tripo3d-customizer-engine";
+  STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES,
+  STUDIO_ASSET3D_WEBTOON_PROP_ASSETS,
+  evaluateAsset3dDioramaScenePlacement,
+  type StudioAsset3dIsometricDioramaEntry,
+} from "../scene-3d/studio-asset3d-character-lab-diorama-catalog";
+import { GEN3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-gen3d-customizer-engine";
 import {
   STUDIO_BG3D_REA_COMPETITOR_PROFILES,
   buildTripoBg3dProceduralTwinPrimitives,
-  buildVarco3dDioramaDetailedPrimitives,
-  buildVarco3dPropDetailedPrimitives,
+  buildAsset3dDioramaDetailedPrimitives,
+  buildAsset3dPropDetailedPrimitives,
   getStudioBg3dTripoGlbCalibration,
   toBgPrimitives,
   type StudioBg3dReaCompetitorId,
@@ -129,7 +129,7 @@ type PickerNotice =
     };
 
 function mapVarcoDioramaToWorldUniverseAndMood(
-  diorama: StudioVarco3dIsometricDioramaEntry,
+  diorama: StudioAsset3dIsometricDioramaEntry,
 ): { readonly universeId: StudioBg3dWebtoonUniverseId; readonly moodId: StudioBg3dMoodId } {
   if (diorama.id === "diorama_hospital_room") {
     return { universeId: "medical-drama-ward", moodId: "hospital-clean" };
@@ -181,7 +181,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
   const [moodId, setMoodId] = useState<StudioBg3dMoodId>("daylight");
   const [blendPercent, setBlendPercent] = useState(50);
   const [selectedDioramaId, setSelectedDioramaId] = useState<string>(
-    STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES[0]!.id,
+    STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES[0]!.id,
   );
   const [selectedVarcoPropIds, setSelectedVarcoPropIds] = useState<readonly string[]>([
     "prop_school_desk_chair",
@@ -189,7 +189,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
   ]);
   const [selectedReaCompetitorId, setSelectedReaCompetitorId] =
     useState<StudioBg3dReaCompetitorId>("acon3d-carpenstreet");
-  const bg3dTripoModels = TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d");
+  const bg3dTripoModels = GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d");
   const [selectedTripoBgId, setSelectedTripoBgId] = useState<string>(
     bg3dTripoModels[0]?.id ?? "tripo3d-p2-bg-street-cafe-kit",
   );
@@ -203,7 +203,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
     STUDIO_BG3D_REA_COMPETITOR_PROFILES.find((c) => c.id === selectedReaCompetitorId) ??
     STUDIO_BG3D_REA_COMPETITOR_PROFILES[0]!;
 
-  const selectedDioramaPlan = evaluateVarco3dDioramaScenePlacement({
+  const selectedDioramaPlan = evaluateAsset3dDioramaScenePlacement({
     dioramaId: selectedDioramaId,
     propIds: selectedVarcoPropIds,
   });
@@ -295,7 +295,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
       const anchorX = existingCount > 0 ? existingCount * (world.roomSpec.width / 6) : 0;
 
       // 디오라마 시그니처 건축 디테일 파츠 결합 (varco3d-diorama-detail)
-      const dioramaStageDetailItems = buildVarco3dDioramaDetailedPrimitives(
+      const dioramaStageDetailItems = buildAsset3dDioramaDetailedPrimitives(
         selectedDioramaPlan.diorama,
         { competitorId: selectedReaCompetitorId },
       ).filter((item) => item.tags?.includes("varco3d-diorama-detail"));
@@ -312,7 +312,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
       // 각 한국형 소품을 단일 박스 대신 다중 세부 파츠(Anchor 1개 + 상세 파츠 5~7개)로 생성
       const propPrimitives: BgPrimitive[] = selectedDioramaPlan.props.flatMap((prop, index) => {
         const offsetX = (index - (selectedDioramaPlan.props.length - 1) / 2) * 1.85;
-        const detailedItems = buildVarco3dPropDetailedPrimitives(
+        const detailedItems = buildAsset3dPropDetailedPrimitives(
           prop,
           [anchorX + offsetX, 0.6],
           `varco3d_prop_${existingCount}_${index}`,
@@ -560,7 +560,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
               <label className="block text-[0.6rem] font-semibold text-fg-3">
                 <span className="flex items-center justify-between gap-1.5">
                   <span>
-                    VARCO 3D 아이소메트릭 디오라마 ({STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.length}종)
+                    VARCO 3D 아이소메트릭 디오라마 ({STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES.length}종)
                   </span>
                   <span className="rounded-[4px] bg-[rgba(84,231,250,0.1)] px-[5px] py-[2px] text-[9px] font-semibold leading-none text-[#54e7fa]">
                     FOV {selectedDioramaPlan.diorama.cameraFovDeg}° · {selectedDioramaPlan.diorama.ambientKelvin}K
@@ -574,7 +574,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
                   onChange={(event) => {
                     const nextId = event.target.value;
                     setSelectedDioramaId(nextId);
-                    const diorama = STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.find(
+                    const diorama = STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES.find(
                       (item) => item.id === nextId,
                     );
                     if (diorama) {
@@ -585,7 +585,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
                   }}
                   className="mt-1 w-full rounded border border-line bg-panel px-1.5 py-1 text-[0.62rem] text-fg"
                 >
-                  {STUDIO_VARCO3D_ISOMETRIC_DIORAMA_SCENES.map((scene) => (
+                  {STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES.map((scene) => (
                     <option key={scene.id} value={scene.id}>
                       {scene.labelKo} (FOV {scene.cameraFovDeg}° · {scene.ambientKelvin}K)
                     </option>
@@ -598,7 +598,7 @@ export function StudioBg3dWebtoonBackgroundPicker({
                 role="group"
                 aria-label="VARCO 3D 한국 웹툰 소품 선택"
               >
-                {STUDIO_VARCO3D_WEBTOON_PROP_ASSETS.map((prop) => {
+                {STUDIO_ASSET3D_WEBTOON_PROP_ASSETS.map((prop) => {
                   const active = selectedVarcoPropIds.includes(prop.id);
                   return (
                     <button

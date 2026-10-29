@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createDefaultStudioBg3dSceneDocument, DEFAULT_STUDIO_BG3D_ANIMATION_PLAYBACK, serializeStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import { studioBg3dModalOperationCoordinator } from "./studio-bg3d-modal-operation-coordinator";
+import { readStudioBg3dModelCacheEntry, studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { assertStudioBg3dSceneGlbSourceCurrent, captureStudioBg3dSceneGlbSource, isStudioBg3dSceneGlbExportAvailable } from "./studio-bg3d-scene-glb-source";
 import { createSceneGlbFixture, disposeSceneGlbFixtures } from "./studio-bg3d-scene-glb.test-fixture";
 
@@ -55,10 +56,11 @@ describe("현재 장면 GLB source의 읽기 권위", () => {
   });
 
   const unavailable: readonly Partial<StudioBg3dSceneGlbExportHost>[] = [
+    { modelRenderer: {} }, { materialBackend: "webgpu" },
     { open: false }, { modelRenderer: null }, { isRestoringScene: true }, { isCapturing: true }, { isBatchRenderingShots: true },
     { physicsInteractionLocked: true }, { isUploadingModel: true }, { hasPendingClone: true }, { hasCloneFailure: true },
     { captureInFlightRef: { current: true } }, { cameraLensInteractionLocked: () => true }, { viewportApiRef: { current: null } },
-    { deviceQuality: undefined }, { modelRootCacheRef: undefined }, { attachmentByStorageModelIdRef: undefined },
+    { deviceQuality: undefined }, { modelRootCacheRef: undefined }, { attachmentByStorageModelIdRef: undefined }, { isMaterialBackendCurrent: () => false },
   ];
   it.each(unavailable)("준비되지 않은 host %j는 framing·자산 읽기 전에 중단한다", async (patch) => {
     const f = await createSceneGlbFixture(false); Object.assign(f.host, patch);
@@ -99,7 +101,7 @@ describe("현재 장면 GLB source의 읽기 권위", () => {
     if (kind === "document") f.runtime.current = { ...f.runtime.current, document: { ...f.runtime.current.document, meta: { name: "새 장면" } } };
     if (kind === "framing") f.framing.current = { ...f.framing.current, viewportAspect: 1 };
     if (kind === "session") f.session.current = studioBg3dModalOperationCoordinator.beginSession();
-    if (kind === "cache") f.cache.set(f.record.id, { ...f.entry });
+    if (kind === "cache") f.cache.set(studioBg3dModelCacheKey(f.record.id, f.backend), { ...f.entry });
     if (kind === "root-transform") f.entry.root.scale.x *= 2;
     if (kind === "rights") Object.defineProperty(f.entry, "record", { value: { ...f.record, rights: { ...f.record.rights, attribution: "바뀐 권리" } } });
     rejected(() => assertStudioBg3dSceneGlbSourceCurrent(f.host, source, signal()), "source-changed");
@@ -120,11 +122,69 @@ describe("현재 장면 GLB source의 읽기 권위", () => {
   });
 
   it.each([false, true])("실제 renderer engine=%s를 캡처하고 renderer 교체를 최종 fence에서 거부한다", async (webgpu) => {
-    const f = await createSceneGlbFixture(false); f.host.modelRenderer = { isWebGPURenderer: webgpu };
+    const f = await createSceneGlbFixture(false, webgpu ? "webgpu" : "webgl");
     const source = captureStudioBg3dSceneGlbSource(f.host, signal());
     expect(source.rendererEngine).toBe(webgpu ? "webgpu" : "webgl"); expect(source.rendererRefSnapshot).toBe(f.host.modelRenderer);
-    f.host.modelRenderer = { isWebGPURenderer: webgpu };
+    f.host.modelRenderer = { isWebGLRenderer: !webgpu, isWebGPURenderer: webgpu };
     rejected(() => assertStudioBg3dSceneGlbSourceCurrent(f.host, source, signal()), "source-changed");
+  });
+
+  it.each(["webgl", "webgpu"] as const)("같은 저장 ID의 실제 두 variant 가운데 %s root만 선택한다", async (backend) => {
+    const f = await createSceneGlbFixture(true, backend);
+    if (!f.entry || !f.record) throw Error("실제 모델 필요");
+    const otherBackend = backend === "webgl" ? "webgpu" : "webgl";
+    const other = await f.addModelVariant(otherBackend);
+    expect(other.root).not.toBe(f.entry.root); expect(other.runtimeVariant).not.toBe(f.entry.runtimeVariant);
+    expect(f.cache.size).toBe(2); expect(f.cache.has(f.record.id)).toBe(false);
+    const source = captureStudioBg3dSceneGlbSource(f.host, signal());
+    expect(source.materialBackend).toBe(backend); expect(source.rendererEngine).toBe(backend);
+    expect(source.assets.get("attachment-scene-model")?.entry).toBe(readStudioBg3dModelCacheEntry(f.cache, f.record.id, backend));
+    expect(source.assets.get("attachment-scene-model")?.entry).toBe(f.entry);
+    expect(source.assets.get("attachment-scene-model")?.root).not.toBe(other.root);
+    f.cache.delete(studioBg3dModelCacheKey(f.record.id, otherBackend));
+    expect(() => assertStudioBg3dSceneGlbSourceCurrent(f.host, source, signal())).not.toThrow();
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+  });
+
+  it.each(["missing", "raw-alias", "missing-stamp", "wrong-stamp"] as const)("%s인 요청 variant를 다른 backend 캐시로 대신하지 않는다", async (boundary) => {
+    const f = await createSceneGlbFixture(); if (!f.entry || !f.record) throw Error("실제 모델 필요");
+    const other = await f.addModelVariant("webgpu"), key = studioBg3dModelCacheKey(f.record.id, f.backend);
+    f.cache.delete(key);
+    if (boundary === "raw-alias") f.cache.set(f.record.id, f.entry);
+    if (boundary === "missing-stamp") {
+      const unstamped = { ...f.entry }; Reflect.deleteProperty(unstamped, "runtimeVariant"); f.cache.set(key, unstamped);
+    }
+    if (boundary === "wrong-stamp") f.cache.set(key, { ...f.entry, runtimeVariant: studioBg3dModelRuntimeVariant("webgpu") });
+    rejected(() => captureStudioBg3dSceneGlbSource(f.host, signal()), "asset-invalid");
+    expect(readStudioBg3dModelCacheEntry(f.cache, f.record.id, "webgpu")).toBe(other);
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled(); expect(other.dispose).not.toHaveBeenCalled();
+  });
+
+  it("backend를 생략한 unknown host도 실제 GPU renderer로 variant를 선택한다", async () => {
+    const f = await createSceneGlbFixture(true, "webgpu");
+    await f.addModelVariant("webgl"); f.host.materialBackend = undefined;
+    const source = captureStudioBg3dSceneGlbSource(f.host, signal());
+    expect(source.materialBackend).toBe("webgpu"); expect(source.assets.get("attachment-scene-model")?.entry).toBe(f.entry);
+  });
+
+  it("캡처 뒤 요청 variant의 stamp가 바뀌면 동일 root·저장 record라도 최종 fence에서 거부한다", async () => {
+    const f = await createSceneGlbFixture(); if (!f.entry) throw Error("실제 모델 필요");
+    const source = captureStudioBg3dSceneGlbSource(f.host, signal());
+    Object.defineProperty(f.entry, "runtimeVariant", { value: studioBg3dModelRuntimeVariant("webgpu") });
+    rejected(() => assertStudioBg3dSceneGlbSourceCurrent(f.host, source, signal()), "source-changed");
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+  });
+
+  it("동일 renderer/backend로 돌아와도 이전 opaque lease 함수는 새 true guard로 대체할 수 없다", async () => {
+    const f = await createSceneGlbFixture(false); let originalCurrent = true;
+    const originalGuard = () => originalCurrent; f.host.isMaterialBackendCurrent = originalGuard;
+    const source = captureStudioBg3dSceneGlbSource(f.host, signal());
+    expect(source.isMaterialBackendCurrent).toBe(originalGuard);
+    const renderer = f.host.modelRenderer; originalCurrent = false;
+    f.host.isMaterialBackendCurrent = () => true;
+    expect(f.host.modelRenderer).toBe(renderer); expect(isStudioBg3dSceneGlbExportAvailable(f.host)).toBe(true);
+    rejected(() => assertStudioBg3dSceneGlbSourceCurrent(f.host, source, signal()), "source-changed");
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
   });
 
   it("같은 회전의 2π 표현·권리 property 순서는 source 변경으로 오인하지 않는다", async () => {

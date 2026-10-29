@@ -214,7 +214,14 @@ describe("StudioPage page-composite filter integration boundary", () => {
     }
     visit(open);
 
-    expect(dynamicImports).toEqual(["./render/studio-raster-edit-preparation"]);
+    // 래스터 준비 모듈은 지연 로드한다. 4a59b310(#2494, A4 D4 표시 지점 배선)부터는 계획 실패
+    // 사유(성공 경로)와 준비 오류(catch)를 표시 문구로 바꾸는 리졸버도 Studio 진입 그래프 밖에서
+    // 지연 로드한다 — 픽셀 선택 대상·편집용 래스터 복사본 준비와 같은 배선이다.
+    expect(dynamicImports).toEqual([
+      "./render/studio-raster-edit-preparation",
+      "./status-i18n/studio-producer-error-i18n-exports-raster",
+      "./status-i18n/studio-producer-error-i18n-exports-raster",
+    ]);
     expect(text).toContain(
       'prepareStudioDocumentReplacement("필터 미리보기를 준비", { flushPending: true })',
     );

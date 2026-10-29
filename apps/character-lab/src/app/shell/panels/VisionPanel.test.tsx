@@ -26,7 +26,7 @@ function loadedModel<Port>(key: VisionModelKey, port: Port, disposed?: string[])
   return { key, port, observedSha256: "ab".repeat(32), pinned: key === "imageEmbedder", bytes: 10, license: "Apache-2.0", delegate: "CPU", dispose: () => void disposed?.push(key) };
 }
 
-function fakeLoaders(options: { readonly failEmbedder?: boolean; readonly noPerson?: boolean; readonly calls?: string[]; readonly disposed?: string[] } = {}): VisionLoaders {
+function fakeLoaders(options: { readonly failEmbedder?: boolean; readonly noPerson?: boolean; readonly noHands?: boolean; readonly calls?: string[]; readonly disposed?: string[] } = {}): VisionLoaders {
   const embedder: EmbedderPort = {
     embed: async (image) => {
       const tag = (image as unknown as TaggedImage).tag;
@@ -37,7 +37,7 @@ function fakeLoaders(options: { readonly failEmbedder?: boolean; readonly noPers
     detect: async () => (options.noPerson ? null : { landmarks: toImageLandmarks(tPoseBody()), worldLandmarks: toWorldLandmarks(tPoseBody()) }),
   };
   const handDetector: HandDetectorPort = {
-    detect: async () => [{ reportedHandedness: "Left", score: 0.9, landmarks: fistHandLandmarks(), worldLandmarks: null }],
+    detect: async () => options.noHands ? [] : [{ reportedHandedness: "Left", score: 0.9, landmarks: fistHandLandmarks(), worldLandmarks: null }],
   };
   return {
     imageEmbedder: async () => {
@@ -357,23 +357,73 @@ describe("VisionPanel", () => {
     });
   });
 
-  it("SHAPER BoneAIManager · UIAIPreset 섹션(5모드·512px/512×288 리샘플링·16/24 신뢰 게이트·ChangeFixVector·6부위×3후보)을 렌더링하고 조작한다", () => {
+  it("손 사진은 전신 검출 없이 실제 손 모델만 실행하고 손가락 포즈만 적용한다", async () => {
+    const calls: string[] = [];
+    const dispatched: LabCommand[] = [];
+    const store = createMockLabStore(undefined, command => dispatched.push(command));
     render(
-      <MockLabProvider catalog={catalog}>
-        <VisionPanel deps={fakeDeps(fakeLoaders())} />
+      <MockLabProvider store={store} catalog={catalog}>
+        <VisionPanel deps={fakeDeps(fakeLoaders({ noPerson: true, calls }))} />
       </MockLabProvider>,
     );
-    const section = screen.getByTestId("shaper-vision-ai-section");
-    expect(section).toBeTruthy();
-    expect(screen.getByTestId("shaper-ai-downscale-badge").textContent).toContain("512×288px");
-    expect(screen.getByTestId("shaper-ai-confidence-gate-status").textContent).toContain("게이트 통과 (20/24본");
+    expect(screen.queryByTestId("shaper-ai-preset-grid")).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: "손 포즈" }));
+    selectFile("포즈 사진 파일", "hand-only.png");
+    const apply = await screen.findByRole("button", { name: "오른손 포즈 적용" });
+    expect(calls).toEqual(["handLandmarker"]);
+    expect(document.querySelectorAll("circle.cl-vision-landmark")).toHaveLength(0);
+    expect(document.querySelectorAll("circle.cl-vision-hand-landmark")).toHaveLength(21);
+    expect(screen.queryByRole("button", { name: "포즈 적용" })).toBeNull();
+    fireEvent.click(apply);
+    expect(dispatched).toHaveLength(1);
+    const command = dispatched[0];
+    if (command?.type !== "pose/set") throw new Error("실제 손 포즈 명령이 없습니다.");
+    expect(command.scope).toBe("right-hand");
+    expect(Object.keys(command.pose).sort()).toEqual([...RIGHT_FINGER_BONE_NAMES].sort());
+    expect(command.labelKo).toBe("사진 손 포즈(오른손)");
+  });
 
-    fireEvent.click(screen.getByTestId("shaper-ai-fix-vector-btn"));
-    expect(screen.getByTestId("shaper-ai-fix-vector-btn").textContent).toContain("+90°");
+  it("손만 인식할 때 손이 없으면 전신으로 대체하지 않고 입력 자원을 해제한다", async () => {
+    const calls: string[] = [];
+    const store = createMockLabStore();
+    const releaseSource = vi.fn();
+    const releasePreview = vi.fn();
+    const deps = fakeDeps(fakeLoaders({ noPerson: true, noHands: true, calls }));
+    render(
+      <MockLabProvider store={store} catalog={catalog}>
+        <VisionPanel deps={{ ...deps, decodeImage: async file => ({ ...await deps.decodeImage(file), releaseSource, releasePreview }) }} />
+      </MockLabProvider>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "손 포즈" }));
+    selectFile("포즈 사진 파일", "empty-hand.png");
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("vision-no-hands");
+    expect(calls).toEqual(["handLandmarker"]);
+    expect(store.events.some(event => event.type === "failure" && event.failure.code === "vision-no-hands")).toBe(true);
+    expect(releaseSource).toHaveBeenCalledTimes(1);
+    expect(releasePreview).toHaveBeenCalledTimes(1);
+  });
 
-    const topHeadCard = screen.getByTestId("shaper-ai-preset-card-head-0");
-    expect(topHeadCard.getAttribute("aria-pressed")).toBe("false");
-    fireEvent.click(topHeadCard);
-    expect(topHeadCard.getAttribute("aria-pressed")).toBe("true");
+  it("카메라 손 촬영도 같은 추론 경로를 사용하고 카메라를 닫으면 트랙을 해제한다", async () => {
+    const calls: string[] = [];
+    const dispatched: LabCommand[] = [];
+    const stop = vi.fn();
+    const stream = { getTracks: () => [{ stop }] } as unknown as MediaStream;
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+    const captureVideo = vi.fn(async (): Promise<DecodedImage> => ({ width: 8, height: 6, rgba: solidRgba(8, 200, 180, 160).subarray(0, 192), source: tagged(255), previewUrl: null, label: "카메라 촬영" }));
+    render(
+      <MockLabProvider store={createMockLabStore(undefined, command => dispatched.push(command))} catalog={catalog}>
+        <VisionPanel deps={fakeDeps(fakeLoaders({ noPerson: true, calls }), { openCamera: async () => stream, captureVideo })} />
+      </MockLabProvider>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "손 포즈" }));
+    fireEvent.click(screen.getByRole("button", { name: "카메라 열기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "촬영" }));
+    fireEvent.click(await screen.findByRole("button", { name: "오른손 포즈 적용" }));
+    expect(captureVideo).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(["handLandmarker"]);
+    expect(dispatched[0]).toMatchObject({ type: "pose/set", scope: "right-hand", labelKo: "카메라 손 포즈(오른손)" });
+    fireEvent.click(screen.getByRole("button", { name: "카메라 닫기" }));
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 });

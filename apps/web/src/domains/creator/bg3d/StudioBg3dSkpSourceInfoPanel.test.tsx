@@ -5,6 +5,7 @@ import { Group } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioBg3dSkpSourceInfoPanel } from "./StudioBg3dSkpSourceInfoPanel";
+import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 import { extractStudioBg3dSkpSceneManifest } from "./studio-bg3d-skp-scene-manifest";
 import { studioBg3dSkpGeometryTransform, unavailableStudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 import { createStudioBg3dSkpSceneSourceVffBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
@@ -35,7 +36,7 @@ function host(source?: StudioBg3dSkpSceneSource, suffix = "A") {
   const value = {
     open: true, selectedIds: new Set([`instance-${suffix}`]),
     physicsRuntimeSourceRef: { current: { customModels: [{ id: `instance-${suffix}`, modelId: `storage-${suffix}`, name: `선택 모델 ${suffix}` }], primitives: [] } },
-    modelRootCacheRef: { current: new Map([[`storage-${suffix}`, { root }]]) },
+    modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(`storage-${suffix}`, "webgl"), { root, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: `storage-${suffix}` } }]]) },
   };
   const read = vi.fn(createStudioBg3dSkpSourceReaderFromHost(value));
   return { root, read, context: value, selection: inspectStudioBg3dSkpSourceSelection(value) };
@@ -116,7 +117,7 @@ describe("선택 모델의 실제 SKP 원본 정보 조회", () => {
     expect(screen.getByText("모델을 불러오는 중입니다. 준비된 뒤 다시 확인하세요.")).toBeTruthy();
     fireEvent.click(screen.getByTestId("bg3d-skp-source-read"));
     expect((await screen.findByRole("alert")).textContent).toContain("모델을 불러오는 중");
-    value.context.modelRootCacheRef.current.set("storage-A", { root: value.root });
+    value.context.modelRootCacheRef.current.set(studioBg3dModelCacheKey("storage-A", "webgl"), { root: value.root, runtimeVariant: studioBg3dModelRuntimeVariant("webgl"), record: { id: "storage-A" } });
     fireEvent.click(screen.getByRole("button", { name: "원본 정보 다시 읽기" }));
     await screen.findByText("원근 컷");
     expect(value.read).toHaveBeenCalledTimes(2);

@@ -57,6 +57,8 @@ import {
 import { linkStudioBg3dSkpPlacement } from "./studio-bg3d-skp-sidecar";
 import { resolveStudioBg3dMetricPlacementScale, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
 import { StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
+import { beginCurrentStudioBg3dSkpImportRun } from "./studio-bg3d-skp-import-run-loader";
+import { deleteStudioBg3dModelCacheVariants, deleteStudioBg3dOwnedModelCacheEntry, isStudioBg3dOwnedModelCacheEntry, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type {
@@ -105,6 +107,8 @@ export interface StudioBg3dModelImportActionsContext {
   readonly genericModelClassifications: ReadonlyMap<string, StudioGeneric3dClassification>;
   readonly isRestoringScene: boolean;
   readonly modelRenderer: StudioBg3dKtx2Renderer | null;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly sceneBaseDocument: StudioBg3dSceneDocument;
 
   readonly setCustomModels: Dispatch<SetStateAction<BgCustomModelInstance[]>>;
@@ -158,6 +162,9 @@ export interface StudioBg3dModelImportActions {
   readonly handleDeleteModelFromLibrary: (id: string) => Promise<void>;
 }
 
+// 완료 후 ref가 null이 되어도 이전 요청의 AI 안내·후속 UI 작업이 다시 유효해지지 않게 한다.
+const modelImportUiOwners = new WeakMap<StudioBg3dModelImportActionsContext["modelImportAbortRef"], AbortController>();
+
 /**
  * Binds the verified-import and persistent-delete actions to one explicit editor context. Nothing
  * runs until an action is invoked, so both keep the "read the live render scope at event time"
@@ -182,6 +189,8 @@ export function createStudioBg3dModelImportActions(
     modelImportAbortRef,
     modelLoadPendingRef,
     modelRenderer,
+    materialBackend,
+    isMaterialBackendCurrent,
     modelRootCacheRef,
     physicsRuntimeSourceRef,
     replaceCanonicalDocumentState,
@@ -217,7 +226,7 @@ export function createStudioBg3dModelImportActions(
     rights: NonNullable<Bg3dModelImportItem["rights"]>,
     signal?: AbortSignal,
   ): Promise<boolean> {
-    if (files.length === 0 || signal?.aborted) return false;
+    if (files.length === 0 || signal?.aborted || isMaterialBackendCurrent?.() === false) return false;
     if (placementSessionRef.current.phase === "preview") cancelCustomModelPlacement();
     const session = modalAssetSessionRef.current;
     if (!session || !isModalAssetSessionCurrent(session)) return false;
@@ -230,6 +239,10 @@ export function createStudioBg3dModelImportActions(
     const abortImport = () => importController.abort();
     signal?.addEventListener("abort", abortImport, { once: true });
     modelImportAbortRef.current = importController;
+    modelImportUiOwners.set(modelImportAbortRef, importController);
+    const ownsImportUi = () => modelImportUiOwners.get(modelImportAbortRef) === importController
+      && isModalAssetSessionCurrent(session);
+    const isImportCurrent = () => ownsImportUi() && isMaterialBackendCurrent?.() !== false;
     setIsUploadingModel(true);
     setError(null);
     const uploadOwnedCacheEntries = new Map<string, ModelRootCacheEntry>();
@@ -252,9 +265,9 @@ export function createStudioBg3dModelImportActions(
       );
       for (const [storageId, ownedEntry] of uploadOwnedCacheEntries) {
         if (liveStorageIds.has(storageId)) continue;
-        if (modelRootCacheRef.current.get(storageId) !== ownedEntry) continue;
+        if (!isStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)) continue;
         ownedEntry.dispose();
-        modelRootCacheRef.current.delete(storageId);
+        deleteStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry);
       }
       uploadOwnedCacheEntries.clear();
     };
@@ -277,7 +290,7 @@ export function createStudioBg3dModelImportActions(
         }
       }
       const notice = describeStudioBg3dImportAiUseNotice(status);
-      if (!notice || !isModalAssetSessionCurrent(session)) return;
+      if (!notice || !isImportCurrent()) return;
       if (setSurfaceSnapStatus) setSurfaceSnapStatus(notice);
       else setError(notice.message);
     };
@@ -285,7 +298,7 @@ export function createStudioBg3dModelImportActions(
       const policy = deriveStudioBg3dGlbValidationPolicy(sceneBaseDocument, deviceQuality);
       modelImportRuntime = await import("./studio-bg3d-model-import");
       const loadedModelImportRuntime = modelImportRuntime;
-      if (!isModalAssetSessionCurrent(session)) throw new StudioBg3dStaleModalOperationError();
+      if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError();
       if (importController.signal.aborted) {
         throw new modelImportRuntime.StudioBg3dModelImportError("aborted");
       }
@@ -307,7 +320,7 @@ export function createStudioBg3dModelImportActions(
         importPlan.items.map((item) => (item.format === "skp" ? item.primaryPath : null)),
       );
       if (plannedSkpSourcePaths.some((path) => path !== null)) {
-        skpRun = (await import("./studio-bg3d-skp-import-run")).beginStudioBg3dSkpImportRun({ isCurrent: () => isModalAssetSessionCurrent(session) });
+        skpRun = await beginCurrentStudioBg3dSkpImportRun(() => isImportCurrent() && !importController.signal.aborted);
       }
       const canonicalInputs = await modelImportRuntime.convertStudioBg3dModelFilesToGlb(files, {
         executionBackend: "worker",
@@ -317,11 +330,11 @@ export function createStudioBg3dModelImportActions(
         skp: skpRun?.options,
         onProgress: (progress) => {
           studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-            setModelImportProgress(progress);
+            if (isImportCurrent() && !importController.signal.aborted) setModelImportProgress(progress);
           });
         },
       });
-      if (!isModalAssetSessionCurrent(session)) throw new StudioBg3dStaleModalOperationError();
+      if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError();
       const imported = await importVerifiedBg3dModelsAtomically(
         canonicalInputs.map((file) => ({ file, rights, ingress: { kind: "user-file" as const, modelFileExport: "allowed" as const } })),
         {
@@ -333,7 +346,7 @@ export function createStudioBg3dModelImportActions(
       );
       const saved: Bg3dVerifiedStoredRecord[] = [];
       for (const importedRecord of imported) {
-        if (!isModalAssetSessionCurrent(session)) {
+        if (!isImportCurrent()) {
           throw new StudioBg3dStaleModalOperationError();
         }
         const storedRecord = await getStoredBg3dModel(importedRecord.id);
@@ -402,10 +415,10 @@ export function createStudioBg3dModelImportActions(
               document: sceneBaseDocument,
               quality: deviceQuality,
               cumulativeUsedBytes,
-              renderer: modelRenderer,
+              renderer: modelRenderer, materialBackend,
               cache: modelRootCacheRef.current,
               pending: modelLoadPendingRef.current,
-              isActive: () => isModalAssetSessionCurrent(session) && lease.isCurrent(),
+              isActive: () => isImportCurrent() && lease.isCurrent(),
               signal: lease.signal,
               onCacheEntryCreated: (storageId, cacheEntry) => {
                 uploadOwnedCacheEntries.set(storageId, cacheEntry);
@@ -448,6 +461,7 @@ export function createStudioBg3dModelImportActions(
           nextStorageIdByAttachment,
           placements,
         }) => {
+          if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError();
           const current = physicsRuntimeSourceRef.current;
           const nodeLimit = Math.min(
             STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES,
@@ -500,7 +514,7 @@ export function createStudioBg3dModelImportActions(
     } catch (importFailure) {
       // 저장은 atomic import가 책임지고, 화면 배치는 별도 all-or-none이다. 이번 시도에서 처음 로드한
       // 캐시만 되돌려 기존 장면 인스턴스가 공유 중인 자원은 건드리지 않는다.
-      if (!isModalAssetSessionCurrent(session)) return false;
+      if (!isImportCurrent()) return false;
       skpFailureMessage =
         modelImportRuntime && importFailure instanceof modelImportRuntime.StudioBg3dModelImportError
           ? importFailure.message
@@ -517,21 +531,23 @@ export function createStudioBg3dModelImportActions(
       try {
         const entries = await listBg3dModelLibraryEntries();
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-          setModelLibrary(entries);
+          if (isImportCurrent()) setModelLibrary(entries);
         });
       } catch {
         studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-          setModelLibraryStatus("error");
+          if (isImportCurrent()) setModelLibraryStatus("error");
         });
       }
     } finally {
       signal?.removeEventListener("abort", abortImport);
       if (!uploadCommitted) cleanupUncommittedUploadCache();
-      if (modelImportAbortRef.current === importController) modelImportAbortRef.current = null;
-      studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
-        setModelImportProgress(null);
-        setIsUploadingModel(false);
-      });
+      if (modelImportAbortRef.current === importController) {
+        modelImportAbortRef.current = null;
+        studioBg3dModalOperationCoordinator.commitIfCurrent(session, () => {
+          // backend가 폐기돼도 후속 요청이 없는 자기 작업의 busy 표시는 정리한다.
+          if (ownsImportUi()) { setModelImportProgress(null); setIsUploadingModel(false); }
+        });
+      }
       skpAiUseStatus = (await skpRun?.complete(
         !isModalAssetSessionCurrent(session)
           ? { status: "abandoned" }
@@ -549,7 +565,7 @@ export function createStudioBg3dModelImportActions(
             },
       )) ?? "skipped";
     }
-    if (uploadCommitted && thumbnailCandidates.length > 0) {
+    if (uploadCommitted && thumbnailCandidates.length > 0 && isImportCurrent()) {
       startModelThumbnailCaptureBatch(thumbnailCandidates, session);
     }
     if (uploadCommitted) await saveAndAnnounceImportAiUse();
@@ -618,9 +634,8 @@ export function createStudioBg3dModelImportActions(
           commitSceneEntityRemoval(plan, { resetHistory: true });
           attachmentByStorageModelIdRef.current.delete(id);
           if (attachment) storageModelIdByAttachmentIdRef.current.delete(attachment.id);
-          const cacheEntry = modelRootCacheRef.current.get(id);
-          modelRootCacheRef.current.delete(id);
-          if (cacheEntry) {
+          const cacheEntries = deleteStudioBg3dModelCacheVariants(modelRootCacheRef.current, id);
+          if (cacheEntries.length) {
             let disposed = false;
             let frame = 0;
             let fallback: ReturnType<typeof setTimeout> | null = null;
@@ -629,7 +644,10 @@ export function createStudioBg3dModelImportActions(
               disposed = true;
               if (frame !== 0) cancelAnimationFrame(frame);
               if (fallback !== null) clearTimeout(fallback);
-              cacheEntry.dispose();
+              for (const cacheEntry of cacheEntries) {
+                try { cacheEntry.dispose(); }
+                catch { setError("모델 원본 삭제는 완료했지만 화면 자원을 모두 정리하지 못했습니다."); }
+              }
             };
             // Prefer the next frame so the active render can release references,
             // but guarantee disposal when background-tab rAF is heavily throttled.
