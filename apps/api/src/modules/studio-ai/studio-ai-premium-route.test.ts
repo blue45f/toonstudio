@@ -156,6 +156,31 @@ describe("운영 고성능 경로(키 없는 사용자의 1순위)", () => {
     expect(studioAiPremiumErrorType({ error: { type: "<script>" } })).toBeUndefined();
   });
 
+  it.each([
+    [429, { error: { type: "rate_limit_error", details: { error_code: "enforced_spend_limit_reached" } } }],
+    [400, { error: { type: "invalid_request_error", message: "You have reached your specified API usage limits. Try again next month." } }],
+    [400, { error: { type: "invalid_request_error", message: "You have reached your specified workspace API usage limits. Try again next month." } }],
+    [400, { error: { type: "invalid_request_error", message: "Your credit balance is too low to access the Anthropic API. Please add funds." } }],
+  ])("운영 지출한도·크레딧 부족 HTTP %s를 일반 속도 제한과 구분한다", (status, payload) => {
+    expect(classifyStudioAiProviderFailure("anthropic", status, payload)).toEqual({
+      kind: "premium_budget_exhausted",
+      billingFailoverEligible: true,
+      failoverReason: STUDIO_AI_PREMIUM_FAILOVER_REASON,
+    });
+  });
+
+  it("일반 429·다른 400과 다른 제공자의 오류를 운영 예산 소진으로 오인하지 않는다", () => {
+    expect(classifyStudioAiProviderFailure("anthropic", 429, {
+      error: { type: "rate_limit_error", message: "Too many requests", details: { error_code: "other" } },
+    }).kind).toBe(STUDIO_AI_PREMIUM_FAILOVER_REASON);
+    expect(classifyStudioAiProviderFailure("anthropic", 400, {
+      error: { type: "invalid_request_error", message: "Schema is unsupported" },
+    }).kind).toBe(STUDIO_AI_PREMIUM_FAILOVER_REASON);
+    expect(classifyStudioAiProviderFailure("gemini", 429, {
+      error: { type: "rate_limit_error", details: { error_code: "enforced_spend_limit_reached" } },
+    }).kind).not.toBe("premium_budget_exhausted");
+  });
+
   it("고성능 모델은 긴 사고 시간을 위해 전용 제한 시간을 쓴다", () => {
     expect(resolveStudioAiTimeoutMs("anthropic", {})).toBe(120_000);
     expect(resolveStudioAiTimeoutMs("anthropic", { STUDIO_AI_TIMEOUT_MS: "45000" })).toBe(45_000);

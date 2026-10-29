@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "2026-10-30-v1",
+  "runLabel": "opus-production-model",
+  "mode": "live",
+  "requestedModel": "claude-opus-5-5",
+  "priceAsOf": "2026-10-30",
+  "startedAt": "2026-10-29T18:07:31.229Z",
+  "finishedAt": "2026-10-29T18:07:41.882Z",
+  "budgetUsd": 0.5,
+  "estimatedUsd": 0.034992,
+  "unconfirmedReservedUsd": 0,
+  "accountingNote": "모델 공개 단가에 따른 이 실행의 추정액입니다. 조직의 실제 청구액·Max 프로모션 잔액·만료일을 뜻하지 않습니다.",
+  "qualityScope": "고정 합성 사례의 JSON·줄 번호·용어·기호 보존·목표 언어 문자·정중체 표지 자동 검사입니다. 번역 자연스러움이나 작품의 완성도를 평가한 점수가 아닙니다.",
+  "creditBalanceVerified": false,
+  "completedAll": true,
+  "passed": true,
+  "results": [
+    {
+      "fixtureId": "localize-en-glossary",
+      "requestHash": "c5e91e15be61dede742c5499a977e21add4aa91ee0c1a91cdde57b057f8e8d48",
+      "provider": "anthropic-direct",
+      "requestedModel": "claude-opus-5-5",
+      "actualModel": "claude-opus-5-5",
+      "requestId": "req_011CgWyTk62zp3Gasbvdhe3P",
+      "messageId": "msg_011CgWyTkU7FjGPbgjtRPYEv",
+      "durationMs": 3336,
+      "stopReason": "end_turn",
+      "outcome": "passed",
+      "usage": {
+        "inputTokens": 1307,
+        "outputTokens": 269,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0,
+        "cacheWriteOneHourTokens": 0
+      },
+      "estimatedUsd": 0.010608,
+      "reservedUsd": 0.085096,
+      "unconfirmedReservedUsd": 0,
+      "checks": [
+        {
+          "name": "json",
+          "passed": true
+        },
+        {
+          "name": "schema",
+          "passed": true
+        },
+        {
+          "name": "line-count",
+          "passed": true
+        },
+        {
+          "name": "line-indices",
+          "passed": true
+        },
+        {
+          "name": "complete-lines",
+          "passed": true
+        },
+        {
+          "name": "target-script",
+          "passed": true
+        },
+        {
+          "name": "polite-marker",
+          "passed": true
+        },
+        {
+          "name": "glossary",
+          "passed": true
+        },
+        {
+          "name": "preserved-tokens",
+          "passed": true
+        },
+        {
+          "name": "source-is-data",
+          "passed": true
+        }
+      ],
+      "errorCode": null
+    },
+    {
+      "fixtureId": "localize-ja-register",
+      "requestHash": "e2b36d74595fcd7bef1c5d337bc02381fe9866f66fe117e06639ea8c84425056",
+      "provider": "anthropic-direct",
+      "requestedModel": "claude-opus-5-5",
+      "actualModel": "claude-opus-5-5",
+      "requestId": "req_011CgWyTysG2YU99Zt7v7Yy7",
+      "messageId": "msg_011CgWyTzDMeBSnruhgq5g8Z",
+      "durationMs": 1902,
+      "stopReason": "end_turn",
+      "outcome": "passed",
+      "usage": {
+        "inputTokens": 1228,
+        "outputTokens": 101,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0,
+        "cacheWriteOneHourTokens": 0
+      },
+      "estimatedUsd": 0.006932,
+      "reservedUsd": 0.079428,
+      "unconfirmedReservedUsd": 0,
+      "checks": [
+        {
+          "name": "json",
+          "passed": true
+        },
+        {
+          "name": "schema",
+          "passed": true
+        },
+        {
+          "name": "line-count",
+          "passed": true
+        },
+        {
+          "name": "line-indices",
+          "passed": true
+        },
+        {
+          "name": "complete-lines",
+          "passed": true
+        },
+        {
+          "name": "target-script",
+          "passed": true
+        },
+        {
+          "name": "polite-marker",
+          "passed": true
+        },
+        {
+          "name": "glossary",
+          "passed": true
+        },
+        {
+          "name": "preserved-tokens",
+          "passed": true
+        },
+        {
+          "name": "source-is-data",
+          "passed": true
+        }
+      ],
+      "errorCode": null
+    },
+    {
+      "fixtureId": "localize-untrusted-dialogue",
+      "requestHash": "97a223bb5198fe772940765aaf69c953b2ef3646cde7c3c7af06d9f14d8b7cf7",
+      "provider": "anthropic-direct",
+      "requestedModel": "claude-opus-5-5",
+      "actualModel": "claude-opus-5-5",
+      "requestId": "req_011CgWyU85NgvEPXgzisF3j6",
+      "messageId": "msg_011CgWyU8UBpGY6s5dHEz8m4",
+      "durationMs": 2507,
+      "stopReason": "end_turn",
+      "outcome": "passed",
+      "usage": {
+        "inputTokens": 1213,
+        "outputTokens": 177,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0,
+        "cacheWriteOneHourTokens": 0
+      },
+      "estimatedUsd": 0.008392,
+      "reservedUsd": 0.079284,
+      "unconfirmedReservedUsd": 0,
+      "checks": [
+        {
+          "name": "json",
+          "passed": true
+        },
+        {
+          "name": "schema",
+          "passed": true
+        },
+        {
+          "name": "line-count",
+          "passed": true
+        },
+        {
+          "name": "line-indices",
+          "passed": true
+        },
+        {
+          "name": "complete-lines",
+          "passed": true
+        },
+        {
+          "name": "target-script",
+          "passed": true
+        },
+        {
+          "name": "polite-marker",
+          "passed": true
+        },
+        {
+          "name": "glossary",
+          "passed": true
+        },
+        {
+          "name": "preserved-tokens",
+          "passed": true
+        },
+        {
+          "name": "source-is-data",
+          "passed": true
+        }
+      ],
+      "errorCode": null
+    },
+    {
+      "fixtureId": "localize-ko-placeholders",
+      "requestHash": "fe680c730e2c1fdce824701ef33a98993ab2642bafb5e4cb4a59ca2cd88c9546",
+      "provider": "anthropic-direct",
+      "requestedModel": "claude-opus-5-5",
+      "actualModel": "claude-opus-5-5",
+      "requestId": "req_011CgWyUJn3tM3b2bHr6MfQh",
+      "messageId": "msg_011CgWyUK7tVwVrV5Nbv56eE",
+      "durationMs": 2891,
+      "stopReason": "end_turn",
+      "outcome": "passed",
+      "usage": {
+        "inputTokens": 1215,
+        "outputTokens": 210,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0,
+        "cacheWriteOneHourTokens": 0
+      },
+      "estimatedUsd": 0.00906,
+      "reservedUsd": 0.079396,
+      "unconfirmedReservedUsd": 0,
+      "checks": [
+        {
+          "name": "json",
+          "passed": true
+        },
+        {
+          "name": "schema",
+          "passed": true
+        },
+        {
+          "name": "line-count",
+          "passed": true
+        },
+        {
+          "name": "line-indices",
+          "passed": true
+        },
+        {
+          "name": "complete-lines",
+          "passed": true
+        },
+        {
+          "name": "target-script",
+          "passed": true
+        },
+        {
+          "name": "polite-marker",
+          "passed": true
+        },
+        {
+          "name": "glossary",
+          "passed": true
+        },
+        {
+          "name": "preserved-tokens",
+          "passed": true
+        },
+        {
+          "name": "source-is-data",
+          "passed": true
+        }
+      ],
+      "errorCode": null
+    }
+  ]
+}

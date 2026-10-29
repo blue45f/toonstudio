@@ -1,6 +1,10 @@
 import type { StudioAiProviderPreference } from "./studio-ai.dto";
 import { STUDIO_AI_PREMIUM_MESSAGES_URL } from "./studio-ai-messages-translate";
 import { resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
+import {
+  STUDIO_AI_PREMIUM_FAILOVER_REASON,
+  studioAiPremiumBudgetExhausted,
+} from "./studio-ai-premium-failure";
 
 export const STUDIO_AI_FREE_PROVIDER_IDS = [
   "gemini",
@@ -123,8 +127,7 @@ export interface StudioAiProviderConfig {
 export const STUDIO_AI_FREE_QUOTA_FAILOVER_REASON = "free_quota_exhausted" as const;
 /** Kept for historical receipts produced by the retired paid-provider test path. */
 export const STUDIO_AI_BILLING_FAILOVER_REASON = "billing_quota_exhausted" as const;
-/** 운영 프리미엄 경로가 추론 전에 한도·결제·혼잡·인증·설정·요청 형식으로 거절돼 무료 풀로 이어 간 경우. */
-export const STUDIO_AI_PREMIUM_FAILOVER_REASON = "premium_unavailable" as const;
+export { STUDIO_AI_PREMIUM_FAILOVER_REASON };
 export type StudioAiFailoverReason =
   | typeof STUDIO_AI_FREE_QUOTA_FAILOVER_REASON
   | typeof STUDIO_AI_BILLING_FAILOVER_REASON
@@ -133,6 +136,7 @@ export type StudioAiFailoverReason =
 export type StudioAiProviderFailureKind =
   | StudioAiFailoverReason
   | "rate_limited"
+  | "premium_budget_exhausted"
   | "authentication"
   | "provider_unavailable"
   | "request_rejected";
@@ -699,6 +703,13 @@ export function classifyStudioAiProviderFailure(
   payload?: unknown,
   freePool = STUDIO_AI_FREE_PROVIDER_IDS.includes(provider as StudioAiFreeProviderId),
 ): StudioAiProviderFailureClassification {
+  if (provider === STUDIO_AI_PREMIUM_PROVIDER_ID && studioAiPremiumBudgetExhausted(responseStatus, payload)) {
+    return {
+      kind: "premium_budget_exhausted",
+      billingFailoverEligible: true,
+      failoverReason: STUDIO_AI_PREMIUM_FAILOVER_REASON,
+    };
+  }
   if (provider === STUDIO_AI_PREMIUM_PROVIDER_ID && premiumRejectedBeforeInference(responseStatus)) {
     return {
       kind: STUDIO_AI_PREMIUM_FAILOVER_REASON,

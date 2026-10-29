@@ -38,8 +38,13 @@ describe("assist-webtoon-episodic-doctor", () => {
     const retention = buildDeterministicReaderRetentionReport(sampleInput);
     expect(retention.mode).toBe("reader-retention-simulator");
     expect(retention.source).toBe("deterministic-fallback");
-    expect(retention.predictedEpisodeStarRating).toBeGreaterThanOrEqual(9.0);
-    expect(retention.completionRatePct).toBeGreaterThanOrEqual(80);
+    expect(retention.audienceMetricsAvailable).toBe(false);
+    expect(retention.model).toBe("local-example");
+    expect(retention.predictedEpisodeStarRating).toBe(0);
+    expect(retention.completionRatePct).toBe(0);
+    expect(retention.predictedTopComments.every((comment) => comment.predictedLikes === 0)).toBe(true);
+    expect(retention.cutRetentionCurve.every((cut) => cut.dwellTimeSeconds === 0 && cut.dropOffRiskPct === 0)).toBe(true);
+    expect(retention.cutRetentionCurve.every((cut) => !/\d+(?:\.\d+)?(?:초|%)/u.test(cut.readyRetentionDirectionLine))).toBe(true);
     expect(retention.cutRetentionCurve.length).toBeGreaterThan(0);
     expect(retention.predictedTopComments.length).toBe(3);
 
@@ -61,7 +66,7 @@ describe("assist-webtoon-episodic-doctor", () => {
 
     const linter = buildDeterministicVisualContinuityLinterReport(sampleInput);
     expect(linter.mode).toBe("episodic-visual-continuity-linter");
-    expect(linter.zeroAnimationErrorGuarantee).toBe(true);
+    expect(linter.zeroAnimationErrorGuarantee).toBe(false);
     expect(linter.cutContinuityChecks.length).toBeGreaterThan(0);
 
     const canonVault = buildDeterministicMultiEpisodeCanonVaultReport(sampleInput);
@@ -121,10 +126,15 @@ describe("assist-webtoon-episodic-doctor", () => {
     });
 
     expect(liveRetention.source).toBe("claude-live");
-    expect(liveRetention.predictedEpisodeStarRating).toBe(9.96);
-    expect(liveRetention.completionRatePct).toBe(97);
-    expect(liveRetention.cutRetentionCurve[0]?.dwellTimeSeconds).toBe(4.2);
-    expect(liveRetention.predictedTopComments[0]?.predictedLikes).toBe(4500);
+    expect(liveRetention.audienceMetricsAvailable).toBe(false);
+    expect(liveRetention.predictedEpisodeStarRating).toBe(0);
+    expect(liveRetention.completionRatePct).toBe(0);
+    expect(liveRetention.cutRetentionCurve[0]?.dwellTimeSeconds).toBe(0);
+    expect(liveRetention.predictedTopComments[0]?.predictedLikes).toBe(0);
+    const request = JSON.stringify(parseSpy.mock.calls[0]?.[1]);
+    expect(request).not.toMatch(/네이버웹툰|카카오페이지|쿠아이칸|빅데이터/u);
+    expect(request).toContain("실제 독자 행동이나 플랫폼 통계에 접근할 수 없습니다");
+    expect(liveRetention.cutRetentionCurve[0]?.retentionBoostFixKo).toBe("역광 림라이트를 유지하세요.");
 
     parseSpy.mockRestore();
   });
@@ -187,5 +197,21 @@ describe("assist-webtoon-episodic-doctor", () => {
     expect(crowdFallback.source).toBe("deterministic-fallback");
 
     parseSpy.mockRestore();
+  });
+});
+
+describe("에피소드 실험 경로의 오류 전달", () => {
+  it("fallbackOnError false이면 API 실패를 로컬 예시 성공으로 바꾸지 않는다", async () => {
+    const error = new Error("provider unavailable");
+    const parse = vi.spyOn(assistTransport, "assistParse").mockRejectedValueOnce(error);
+    try {
+      await expect(runAssistWebtoonEpisodicDoctor("reader-retention-simulator", { scriptText: "비가 온다." }, {
+        route: { apiKey: "fixture-key", revision: 1, model: "claude-haiku-5-5" },
+        fallbackOnError: false,
+      })).rejects.toBe(error);
+      expect(parse).toHaveBeenCalledTimes(1);
+    } finally {
+      parse.mockRestore();
+    }
   });
 });

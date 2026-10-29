@@ -1,14 +1,15 @@
 /**
  * Claude 모델 카탈로그와 비용 추정 — 순수 데이터·함수.
  *
- * 모델 ID와 지원 기능은 2026-10-22에 `GET /v1/models`로 직접 확인한 값이고, 단가는 Anthropic이
- * 공개한 1M 토큰당 USD 가격표(2026-10-06 기준)다. 가격은 바뀔 수 있으므로 화면에는 반드시
+ * 모델 ID는 2026-10-30에 `GET /v1/models`로 재확인했고, 단가는 Anthropic이
+ * 공개한 1M 토큰당 USD 가격표(2026-10-30 기준)다.
+ * 출처: https://platform.claude.com/docs/en/about-claude/pricing 가격은 바뀔 수 있으므로 화면에는 반드시
  * "추정"과 기준일을 함께 보여 주고, 실제 청구는 Anthropic 콘솔이 기준이다.
  *
  * 자동으로 더 싼 모델로 바꾸지 않는다(선택한 모델을 조용히 바꾸지 않는 비용 정책).
  * 등급(tier)은 사용자가 고르는 기본 모델의 묶음일 뿐이다.
  */
-export const ASSIST_PRICE_AS_OF = "2026-10-06";
+export const ASSIST_PRICE_AS_OF = "2026-10-30";
 
 export type AssistModelTier = "fast" | "balanced" | "best" | "max" | "legacy";
 
@@ -28,6 +29,7 @@ export interface AssistModelInfo {
     readonly thresholdTokens: number;
     readonly inputUsdPerMTok: number;
     readonly outputUsdPerMTok: number;
+    readonly cacheReadUsdPerMTok?: number;
   };
 }
 
@@ -42,7 +44,8 @@ export const ASSIST_MODEL_CATALOG: readonly AssistModelInfo[] = Object.freeze([
     maxOutputTokens: 128_000,
     inputUsdPerMTok: 0.1,
     outputUsdPerMTok: 0.5,
-    longPrompt: { thresholdTokens: 100_000, inputUsdPerMTok: 0.5, outputUsdPerMTok: 2.5 },
+    cacheReadUsdPerMTok: 0.01,
+    longPrompt: { thresholdTokens: 100_000, inputUsdPerMTok: 0.5, outputUsdPerMTok: 2.5, cacheReadUsdPerMTok: 0.05 },
   },
   {
     id: "claude-sonnet-5-5",
@@ -52,7 +55,7 @@ export const ASSIST_MODEL_CATALOG: readonly AssistModelInfo[] = Object.freeze([
     maxOutputTokens: 128_000,
     inputUsdPerMTok: 2,
     outputUsdPerMTok: 10,
-    cacheReadUsdPerMTok: 0.2,
+    cacheReadUsdPerMTok: 0.1,
   },
   {
     id: "claude-opus-5-5",
@@ -151,7 +154,8 @@ export function estimateAssistCostUsd(
     : undefined;
   const inputRate = longPrompt?.inputUsdPerMTok ?? model.inputUsdPerMTok;
   const outputRate = longPrompt?.outputUsdPerMTok ?? model.outputUsdPerMTok;
-  const cacheReadRate = model.cacheReadUsdPerMTok ?? inputRate * 0.1;
+  const publishedCacheReadRate = longPrompt?.cacheReadUsdPerMTok ?? model.cacheReadUsdPerMTok;
+  const cacheReadRate = publishedCacheReadRate ?? inputRate * 0.1;
   const usd = (
     usage.inputTokens * inputRate
     + usage.cacheReadTokens * cacheReadRate
@@ -160,7 +164,7 @@ export function estimateAssistCostUsd(
   ) / M;
   return {
     usd,
-    approximate: usage.cacheReadTokens > 0 && model.cacheReadUsdPerMTok === undefined,
+    approximate: usage.cacheReadTokens > 0 && publishedCacheReadRate === undefined,
   };
 }
 
