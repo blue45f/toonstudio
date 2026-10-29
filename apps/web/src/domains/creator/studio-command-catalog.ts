@@ -12,6 +12,10 @@ import {
 } from "./studio-command-catalog-base";
 
 import { STUDIO_BRUSH_LABELS } from "./brush/studio-brush-product-model";
+import {
+  STUDIO_CSP_FILTER_PLUGIN_COMMANDS,
+  STUDIO_CSP_FILTER_PLUGIN_MENU_ROWS_AFTER,
+} from "./filter/studio-filter-csp-plugin-commands";
 
 import type { StudioCommandCatalogEntry, StudioCommandSource } from "./studio-command-catalog-base";
 import type { CommandId } from "@toonstudio/studio-command-registry";
@@ -153,6 +157,7 @@ export const STUDIO_COMMAND_CATALOG: readonly StudioCommandCatalogEntry[] =
     MANUAL_COMMAND,
     BRUSH_LAB_COMMAND,
     FLOATING_LAYOUT_COMMAND,
+    ...STUDIO_CSP_FILTER_PLUGIN_COMMANDS,
   ]);
 
 export const STUDIO_MENU_ITEM_INVENTORY: readonly string[] = Object.freeze([
@@ -164,6 +169,8 @@ export const STUDIO_MENU_ITEM_INVENTORY: readonly string[] = Object.freeze([
     if (id === "view/production-insights") {
       return [id, FLOATING_LAYOUT_MENU_ID];
     }
+    const cspFilterRows = STUDIO_CSP_FILTER_PLUGIN_MENU_ROWS_AFTER.get(id);
+    if (cspFilterRows) return [id, ...cspFilterRows];
     return [id];
   }),
 ]);
@@ -172,7 +179,9 @@ export const STUDIO_COMMAND_SOURCES = Object.freeze({
   ...BASE_SOURCES,
   menu: {
     ...BASE_SOURCES.menu,
-    measuredCount: BASE_SOURCES.menu.measuredCount + 3,
+    // +3: 매뉴얼·브러시 랩·플로팅 레이아웃 행.
+    // 2026-10-29: 필터 ▸ CSP 필터 플러그인 호환 9종(60269e38) 행 추가 (+3 → +12).
+    measuredCount: BASE_SOURCES.menu.measuredCount + 12,
   },
 });
 
@@ -201,13 +210,26 @@ export function findCatalogEntriesBySource(
   if (nativeId === FLOATING_LAYOUT_MENU_ID) {
     return [...entries, FLOATING_LAYOUT_COMMAND];
   }
-  return entries;
+  return [
+    ...entries,
+    ...STUDIO_CSP_FILTER_PLUGIN_COMMANDS.filter((entry) =>
+      entry.origins.some((origin) => origin.nativeId === nativeId),
+    ),
+  ];
 }
 
 export function catalogNativeIds(source: StudioCommandSource): string[] {
   const ids = baseNativeIds(source);
   return source === "menu"
-    ? [...ids, MANUAL_MENU_ID, BRUSH_LAB_MENU_ID, FLOATING_LAYOUT_MENU_ID]
+    ? [
+        ...ids,
+        MANUAL_MENU_ID,
+        BRUSH_LAB_MENU_ID,
+        FLOATING_LAYOUT_MENU_ID,
+        ...STUDIO_CSP_FILTER_PLUGIN_COMMANDS.flatMap((entry) =>
+          entry.origins.map((origin) => origin.nativeId),
+        ),
+      ]
     : ids;
 }
 
@@ -219,7 +241,7 @@ export function catalogNativeIds(source: StudioCommandSource): string[] {
  * Exposure inventory layered over the command catalog above (BLUEPRINT §4.2).
  *
  * The catalog already registers every menu row (STUDIO_MENU_ITEM_INVENTORY,
- * 202 rows in this public view) plus the edit-menu, quick-access, radial,
+ * 212 rows in this public view) plus the edit-menu, quick-access, radial,
  * keymap and help lists, and `studio-command-catalog.test.ts` pins that
  * equivalence. What it did not carry is the §4.2 exposure metadata —
  * `tier`, `stage`, `surfaces` — nor an inventory of the three surfaces that
