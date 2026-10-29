@@ -23,6 +23,11 @@
 
 ## 맥락
 
+> **2026-10-29 현재 상태 보충 (`current`)**: 위 정정의 “클래식 2D만 남는다”는 2026-10-23 시점 기록이다.
+> 현재 source에는 `StudioVirtualSpaceThreeCanvas`와 선택형 Three 3D stage가 있다. Godot·Unity 운영 무대 제거 결정은 유지하며,
+> 새 [3D 테마·엔진 검토](../studio/virtual-studio-three-themes-engine-review-20261029.md)는 Chrome/macOS STP를 기준으로 별도 검증한다.
+> 이 보충은 아래 역사적 PoC를 재측정하거나 Godot·Unity를 새로 채택한 결정이 아니다.
+
 요청(2026-10-15)은 "3D 기능이 Godot 없이는 한계를 보이니 Godot 적용을 적극 검토하라"였다. 결론을 정해 두지 않고 (1) 한계를 저장소 증거로 진단하고 (2) 적용 방식 네 가지가 각 한계를 푸는지를
 공식 문서와 PoC 측정으로 확인했다. 자세한 근거와 수치는 [평가 보고서](../reports/godot-3d-evaluation-2026-10-15.md)에 있고 여기에는 결정에 필요한 만큼만 옮긴다.
 

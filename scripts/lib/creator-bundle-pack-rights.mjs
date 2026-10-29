@@ -7,8 +7,8 @@
  * 원칙 — fail-closed:
  *   - 서빙 판정은 원장 한 줄(`serve: "hold" | "allow"`)이다. 기본값은 hold다.
  *   - 원장에 없는 팩, 증빙이 모자란 allow, 잘못된 원장은 전부 hold(또는 오류)로 닫힌다.
- *   - allow는 `ALLOW_EVIDENCE_REQUIREMENTS`가 라이선스 분류별로 요구하는 증빙 종류를
- *     전부 갖춘 팩만 가능하다. 2차 조회 기록(`secondary-lookup`)은 어떤 요구도 채우지 못한다.
+ *   - allow는 기존 분류별 요구 증빙 또는 2026-10-29 소유자의 팩별 상업 이용 확인 경로를 갖춰야 한다.
+ *     소유자 확인은 제작사 허여·CC0로 바꾸지 않는다. 2차 조회 기록은 어느 경로도 채우지 못한다.
  *   - 이 모듈은 어떤 팩을 열지 정하지 않는다. 증빙 제출·서면 확인·최종 개방은 소유자 결정이다.
  *
  * 한계 — 증빙 검사는 형식·일관성 검사다:
@@ -29,6 +29,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
+  ownerCommercialUseEvidenceProblems,
+  ownerCommercialUseGrantProblems,
+} from "./creator-bundle-owner-commercial-use.mjs";
+
+import {
   dateProblem,
   isRecord,
   isSha256,
@@ -39,6 +45,14 @@ import {
   refProblem,
   relativePathProblem,
 } from "./creator-bundle-pack-rights-form.mjs";
+
+export {
+  OWNER_COMMERCIAL_USE_CONFIRMED_AT,
+  OWNER_COMMERCIAL_USE_DECISION_REF,
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
+  OWNER_COMMERCIAL_USE_LICENSE_NAME,
+  OWNER_COMMERCIAL_USE_SCOPE,
+} from "./creator-bundle-owner-commercial-use.mjs";
 
 export {
   WEB_EXTERNAL_REFERENCE_PATTERN,
@@ -110,6 +124,7 @@ export const EVIDENCE_KINDS = Object.freeze([
   "itch-page-capture",
   "purchase-receipt",
   "producer-written-confirmation",
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
   "secondary-lookup",
 ]);
 
@@ -118,8 +133,8 @@ export const NON_QUALIFYING_EVIDENCE_KINDS = Object.freeze(["secondary-lookup"])
 
 /**
  * 분류별 allow 요구 증빙(전부 필요). 근거: 2026-10-22 3D 에셋 활용 검토 §3 결론 (3).
- * - 웹 서비스 호스팅·하위 사용자는 EmaceArt 어느 변형도 다루지 않으므로 서면 확인이 필요하다.
- * - 이 표를 약화하는 변경은 코드 변경이라 리뷰와 테스트 갱신을 거친다.
+ * - 기존 제작사 증빙 경로의 표를 보존한다. 웹 서비스 범위 확인은 제작사 허여를 증빙하는 이 경로의 요건이다.
+ * - 2026-10-29 소유자 프로젝트 이용 확인은 별도 대안이며, 표의 producer 요구를 충족했다고 위장하지 않는다.
  */
 export const ALLOW_EVIDENCE_REQUIREMENTS = Object.freeze({
   "cc0-explicit": Object.freeze(["local-license-file"]),
@@ -255,6 +270,12 @@ function evidenceProblems(evidence, entry, context) {
     if (!nonEmptyText(evidence.source)) problems.push(`${where}: source(출처)가 비어 있습니다.`);
     return problems;
   }
+  if (evidence.kind === OWNER_COMMERCIAL_USE_EVIDENCE_KIND) {
+    return ownerCommercialUseEvidenceProblems(evidence, entry, {
+      today: context.today,
+      purchaseEvidenceValid: (item) => evidenceProblems(item, entry, context).length === 0,
+    });
+  }
   addDateProblem("verifiedAt");
   switch (evidence.kind) {
     case "local-license-file": {
@@ -318,8 +339,8 @@ function evidenceProblems(evidence, entry, context) {
 }
 
 /**
- * grant 블록 점검(문제 문장 배열). attributionRequired=true는 원장 스키마에 attribution 문구 필드가 없어
- * 로더가 권리를 unknown으로 닫아 버리므로, 필드가 생기기 전까지는 받지 않는다.
+ * grant 블록 점검(문제 문장 배열). 표기 의무가 있으면 웹이 같은 값으로 보존할 수 있는 attribution이 필수다.
+ * 소유자 확인도 원본의 표기 의무를 면제하지 않으며 공개 provenance는 소유자 확인으로 구분한다.
  */
 function grantProblems(entry) {
   const grant = entry?.grant;
@@ -331,10 +352,21 @@ function grantProblems(entry) {
   if (typeof grant.commercialUse !== "boolean") problems.push("grant.commercialUse는 boolean이어야 합니다.");
   if (typeof grant.attributionRequired !== "boolean") {
     problems.push("grant.attributionRequired는 boolean이어야 합니다.");
-  } else if (grant.attributionRequired) {
-    problems.push("grant.attributionRequired=true는 지원하지 않습니다 (스키마에 attribution 문구 필드가 없어 로더가 권리를 unknown으로 닫습니다).");
   }
+  if (grant.attributionRequired === true || grant.attribution !== undefined) {
+    const attributionIssue = licenseNameProblem(grant.attribution);
+    if (attributionIssue) problems.push(`grant.attribution이 올바르지 않습니다 — ${attributionIssue}.`);
+  }
+  problems.push(...ownerCommercialUseGrantProblems(entry));
   return problems;
+}
+
+/** 대안은 알려진 팩 분류·정확한 packId·구매 확인·이번 결정 문서·제한된 프로젝트 범위를 함께 요구한다. */
+function hasOwnerEvidence(ledger, entry, now) {
+  if (!requiredEvidenceKinds(entry?.licenseClass)) return false;
+  const context = evidenceContext(ledger, now);
+  return Array.isArray(entry.evidence) && entry.evidence.some((item) => isRecord(item)
+    && item.kind === OWNER_COMMERCIAL_USE_EVIDENCE_KIND && evidenceProblems(item, entry, context).length === 0);
 }
 
 /**
@@ -357,6 +389,7 @@ export function allowEligibilityProblems(ledger, entry, { now } = {}) {
     problems.push(`라이선스 분류 ${String(entry.licenseClass)}에는 allow 요구 증빙이 정의돼 있지 않습니다.`);
     return problems;
   }
+  if (hasOwnerEvidence(ledger, entry, now)) return problems;
   const context = evidenceContext(ledger, now);
   const evidence = Array.isArray(entry.evidence) ? entry.evidence : [];
   for (const kind of required) {
@@ -373,6 +406,7 @@ export function allowEligibilityProblems(ledger, entry, { now } = {}) {
 
 /** allow 자격을 아직 못 채운 증빙 종류. hold 사유 표시와 소유자 안내에 쓴다. */
 export function missingEvidenceKinds(ledger, entry, { now } = {}) {
+  if (isRecord(entry) && hasOwnerEvidence(ledger, entry, now)) return [];
   const required = requiredEvidenceKinds(entry?.licenseClass) ?? [];
   const context = evidenceContext(ledger, now);
   const evidence = Array.isArray(entry?.evidence) ? entry.evidence : [];
@@ -399,6 +433,7 @@ export function packRightsProjection(entry) {
     licenseName: entry.grant.licenseName,
     commercialUse: entry.grant.commercialUse,
     attributionRequired: entry.grant.attributionRequired,
+    ...(entry.grant.attribution === undefined ? {} : { attribution: entry.grant.attribution }),
   };
 }
 

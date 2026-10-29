@@ -15,6 +15,22 @@ const world: StudioVirtualSpaceWorldManifest = {
 };
 
 describe("3D 월드 이동 충돌 계약", () => {
+  it("waypoint 지표 조회는 이동·경로를 바꾸지 않고 취소 후 0을 보고한다", () => {
+    const nav = new StudioThreeWorldNavigation(world);
+    expect(nav.waypointCount).toBe(0);
+    const target = { x: 320, y: 80 };
+    const from = { x: 80, y: 80 };
+    const step = nav.toward(from, target, 0);
+    expect(step.point).toEqual(from);
+    expect(nav.waypointCount).toBeGreaterThan(1);
+    const count = nav.waypointCount;
+    expect(nav.waypointCount).toBe(count);
+    expect(nav.toward(from, target, 0)).toEqual(step);
+    expect(nav.waypointCount).toBe(count);
+    nav.cancel();
+    expect(nav.waypointCount).toBe(0);
+  });
+
   it("키보드·조이스틱은 얇은 벽을 관통하지 않고 빈 축으로 미끄러진다", () => {
     const nav = new StudioThreeWorldNavigation(world);
     expect(nav.directional({ x: 160, y: 100 }, { x: 60, y: 0 })).toEqual({ x: 160, y: 100 });

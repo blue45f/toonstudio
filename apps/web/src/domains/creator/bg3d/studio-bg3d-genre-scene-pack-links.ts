@@ -74,7 +74,7 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
     ]),
     link("thriller-corridor-dutch", "thriller", "medieval-fantasy", [
       {
-        packIndex: 2,
+        packIndex: 4,
         packTitle: "Cute Dungeon Megapack",
         placeableCount: 320,
         sampleAssetIds: [
@@ -86,7 +86,7 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
     ]),
     link("scifi-arena-showdown", "scifi", "sci-fi", [
       {
-        packIndex: 5,
+        packIndex: 20,
         packTitle: "Sci-Fi Arena: Blue Base",
         placeableCount: 114,
         sampleAssetIds: [
@@ -98,7 +98,7 @@ export const STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS: readonly StudioBg3dGenre
     ]),
     link("thriller-graveyard-vigil", "thriller", "horror", [
       {
-        packIndex: 6,
+        packIndex: 24,
         packTitle: "Cute Graveyard",
         placeableCount: 253,
         sampleAssetIds: [

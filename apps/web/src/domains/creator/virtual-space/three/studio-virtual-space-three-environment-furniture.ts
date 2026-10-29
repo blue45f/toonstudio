@@ -1,66 +1,80 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
-import { studioOfficeEnvironment, type StudioOfficeEnvironmentKey } from "../studio-virtual-space-office-environments";
-import { studioSpaceTheme, type StudioSpaceThemeKey } from "../studio-virtual-space-theme";
 import type { StudioVirtualSpaceWorldManifest, StudioWorldRect } from "../studio-virtual-space-world-manifest";
 import { studioThreeGeneratedProps } from "./studio-virtual-space-three-generated-assets";
+import { STUDIO_THREE_FURNITURE_FIXTURES, studioThreeFootprintId, type StudioThreeFurnitureKind } from "./studio-virtual-space-three-furniture-recipes";
+import { studioThreeSurfaceRecipe } from "./studio-virtual-space-three-surface-recipes";
+import type { VirtualThreeLayoutRoleKind, VirtualThreeTheme } from "./themes/virtual-three-theme-types";
 
-type FurnitureKind = "bookshelf" | "console" | "sofa" | "table" | "boundary" | "display";
-interface FurniturePlan {
-  readonly roomId: StudioOfficeEnvironmentKey;
-  readonly sourceColliderIndex: number;
+export interface StudioThreeFurniturePlan {
+  readonly id: string;
+  readonly roomId: string;
+  readonly sourceFootprintId: string;
+  readonly sourceColliderRect: StudioWorldRect;
   readonly rect: StudioWorldRect;
-  readonly kind: FurnitureKind;
+  readonly kind: StudioThreeFurnitureKind;
+  readonly semanticRole: VirtualThreeLayoutRoleKind;
   readonly reservedGeneratedIds: readonly string[];
 }
 
-/** 원화의 북쪽부터 전경까지 배치한 충돌체의 의미. 0번 외부 배경은 가구로 생성하지 않는다. */
-const FURNITURE_KINDS: Readonly<Record<StudioOfficeEnvironmentKey, readonly (FurnitureKind | null)[]>> = {
-  "forest-atelier": [null, "bookshelf", "boundary", "console", "boundary", "boundary", "console"],
-  "orbital-observatory": [null, "console", "console", "sofa", "table", "boundary", "boundary"],
-  "tidal-atelier": [null, "boundary", "sofa", "console", "console", "table", "table", "table", "table", "boundary"],
-};
-
-/** 새 사무실에서 실제 방과 겹치는 큰 가구만 표시한다. 월드 경계와 북쪽 외부 배경은 제외한다. */
-export function studioThreeEnvironmentFurniturePlans(manifest: StudioVirtualSpaceWorldManifest): readonly FurniturePlan[] {
+/** 정본 manifest에 현재 존재하는 footprint만 3D 의미 레시피에 연결한다. */
+export function studioThreeEnvironmentFurniturePlans(manifest: StudioVirtualSpaceWorldManifest): readonly StudioThreeFurniturePlan[] {
   const generated = studioThreeGeneratedProps(manifest);
+  const activeFootprints = new Map(manifest.colliders.map((rect) => [studioThreeFootprintId(rect), rect]));
   return manifest.rooms.flatMap((room) => {
-    const environment = studioOfficeEnvironment(room.id);
-    if (!environment) return [];
-    return environment.colliders.flatMap((collider, sourceColliderIndex) => {
-      const kind = FURNITURE_KINDS[environment.key][sourceColliderIndex];
-      if (!kind || collider.width <= 30 || collider.height <= 30) return [];
-      if (!manifest.colliders.some((active) => active.x === collider.x && active.y === collider.y && active.width === collider.width && active.height === collider.height)) return [];
+    return STUDIO_THREE_FURNITURE_FIXTURES.filter((entry) => entry.roomId === room.id).flatMap((entry) => {
+      const sourceFootprintId = studioThreeFootprintId(entry.footprint);
+      const collider = activeFootprints.get(sourceFootprintId);
+      if (!collider || collider.width <= 30 || collider.height <= 30) return [];
       const x = Math.max(room.x, collider.x), y = Math.max(room.y, collider.y);
       const width = Math.min(room.x + room.width, collider.x + collider.width) - x;
       const height = Math.min(room.y + room.height, collider.y + collider.height) - y;
       if (width <= 0 || height <= 0) return [];
       const rect = { x, y, width, height };
       const reservedGeneratedIds = generated.filter((prop) => prop.x >= x && prop.x <= x + width && prop.y >= y && prop.y <= y + height).map((prop) => prop.id);
-      return [{ roomId: environment.key, sourceColliderIndex, rect, kind: reservedGeneratedIds.length > 0 ? "display" as const : kind, reservedGeneratedIds }];
+      const kind: StudioThreeFurnitureKind = reservedGeneratedIds.length > 0 ? "display" : entry.kind;
+      const semanticRole: VirtualThreeLayoutRoleKind = entry.kind === "bookshelf" ? "storage"
+        : entry.kind === "sofa" ? "seating" : entry.kind === "boundary" ? "botanical" : "workstation";
+      return [{ id: entry.id, roomId: room.id, sourceFootprintId, sourceColliderRect: collider, rect, kind, semanticRole, reservedGeneratedIds }];
     });
   });
 }
 
 /** 실제 책상/서가/소파/식재 구조를 만들어 기존 비보행 footprint를 눈으로도 읽을 수 있게 한다. */
-export function buildStudioThreeEnvironmentFurniture(manifest: StudioVirtualSpaceWorldManifest, theme: StudioSpaceThemeKey, scale: number): readonly THREE.Group[] {
+export function buildStudioThreeEnvironmentFurniture(manifest: StudioVirtualSpaceWorldManifest, theme: VirtualThreeTheme, scale: number): readonly THREE.Group[] {
   const plans = studioThreeEnvironmentFurniturePlans(manifest);
   if (plans.length === 0) return [];
-  const palette = studioSpaceTheme(theme);
-  const wood = new THREE.MeshStandardMaterial({ color: palette.floors.wood.base, roughness: 0.6 });
-  const accent = new THREE.MeshStandardMaterial({ color: palette.decorAccent, roughness: 0.4, metalness: 0.25 });
-  const metal = new THREE.MeshStandardMaterial({ color: palette.wallTints.stone, roughness: 0.32, metalness: 0.65 });
-  const fabric = new THREE.MeshStandardMaterial({ color: palette.floors.carpet.base, roughness: 0.96 });
-  const screen = new THREE.MeshStandardMaterial({ color: 0x152735, emissive: palette.decorAccent, emissiveIntensity: 0.3, roughness: 0.28 });
-  const glass = new THREE.MeshStandardMaterial({ color: palette.decorAccent, transparent: true, opacity: 0.16, roughness: 0.12, metalness: 0.08, depthWrite: false });
-  const foliage = new THREE.MeshStandardMaterial({ color: theme === "orbital-observatory" ? 0x7790b8 : theme === "tidal-atelier" ? 0x3b9b88 : 0x557a45, roughness: 0.92 });
-
+  const createMaterials = (roomId: string) => {
+    const palette = studioThreeSurfaceRecipe(theme, roomId);
+    const finish = theme.kind === "asset-recipe" ? theme.surfacePBR : null;
+    return {
+      wood: new THREE.MeshStandardMaterial({ color: palette.floors.wood.base, roughness: finish?.floor.roughness ?? 0.6, metalness: finish?.floor.metalness ?? 0 }),
+      accent: new THREE.MeshStandardMaterial({ color: palette.decorAccent, roughness: finish?.trim.roughness ?? 0.4, metalness: finish?.trim.metalness ?? 0.25 }),
+      metal: new THREE.MeshStandardMaterial({ color: palette.wallTints.stone, roughness: finish?.wall.roughness ?? 0.32, metalness: finish?.wall.metalness ?? 0.65 }),
+      fabric: new THREE.MeshStandardMaterial({ color: palette.floors.carpet.base, roughness: finish?.floor.roughness ?? 0.96 }),
+      screen: new THREE.MeshStandardMaterial({ color: 0x152735, emissive: palette.decorAccent, emissiveIntensity: 0.3, roughness: 0.28 }),
+      glass: new THREE.MeshStandardMaterial({ color: palette.decorAccent, transparent: true, opacity: 0.16, roughness: 0.12, metalness: 0.08, depthWrite: false }),
+      foliage: new THREE.MeshStandardMaterial({ color: palette.foliage, roughness: 0.92 }),
+    };
+  };
+  const materials = new Map<string, ReturnType<typeof createMaterials>>();
   return plans.map((plan) => {
+    const materialKey = theme.kind === "preserved-baseline" ? plan.roomId : theme.id;
+    let shared = materials.get(materialKey);
+    if (!shared) { shared = createMaterials(plan.roomId); materials.set(materialKey, shared); }
+    const { wood, accent, metal, fabric, screen, glass, foliage } = shared;
     const group = new THREE.Group();
-    group.name = `environment-furniture-${plan.roomId}-${plan.sourceColliderIndex}`;
+    group.name = `environment-furniture-${plan.id}`;
     group.userData.furnitureKind = plan.kind;
-    group.userData.sourceColliderIndex = plan.sourceColliderIndex;
+    group.userData.sourceFootprintId = plan.sourceFootprintId;
+    group.userData.fixtureId = plan.id;
+    group.userData.roomId = plan.roomId;
+    group.userData.semanticRole = plan.semanticRole;
+    group.userData.sourceColliderRect = plan.sourceColliderRect;
+    group.userData.replaceableByThemeAsset = plan.reservedGeneratedIds.length === 0;
+    group.userData.resourceOwner = "world-architecture";
+    group.userData.themeId = theme.id;
     group.userData.colliderRect = plan.rect;
     group.userData.reservedGeneratedIds = plan.reservedGeneratedIds;
     const width = plan.rect.width * scale, depth = plan.rect.height * scale;
