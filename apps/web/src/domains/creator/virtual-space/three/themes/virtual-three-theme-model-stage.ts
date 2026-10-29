@@ -4,6 +4,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { StudioVirtualSpaceWorldManifest } from "../../studio-virtual-space-world-manifest";
 import { createStudioThreeGlbLoader, disposeStudioThreeOwnedModel } from "../studio-virtual-space-three-asset-loader";
 import { loadVirtualThreeThemeModelSource, type VirtualThreeVerifiedThemeModelSource } from "./virtual-three-theme-model-source";
+import { VIRTUAL_THREE_THEME_MODEL_IDS } from "./virtual-three-theme-models";
 import { createVirtualThreeThemePlacementPlanner, virtualThreeThemeModelDisplaySize } from "./virtual-three-theme-placement";
 import type { VirtualThreeAssetRecipeTheme } from "./virtual-three-theme-types";
 
@@ -154,6 +155,8 @@ export async function prepareVirtualThreeThemeModels(options: {
         if (node instanceof THREE.SkinnedMesh) skeletons.add(node.skeleton);
         if (node instanceof THREE.InstancedMesh) instances.add(node);
       });
+      // 지정 차량의 표시 부모만 돌려 차고의 가로 긴 비보행 영역에 배치한다.
+      if (role.kind === "focal-object" && role.modelAssetId === VIRTUAL_THREE_THEME_MODEL_IDS.car) normalization.rotation.y = Math.PI / 2;
       const size = normalize(normalization, virtualThreeThemeModelDisplaySize(role.kind, role.modelAssetId));
       if (role.kind === "tabletop") root.position.copy(tabletopPosition(tables, size, tabletopBounds));
       else {

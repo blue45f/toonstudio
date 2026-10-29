@@ -236,6 +236,74 @@ describe("검증된 private GLB 바이트를 사용하는 테마 stage", () => {
     } finally { stage.dispose(); }
   });
 
+  it("지정 차량은 높이 1.5m와 비율을 보존한 yaw 90도로 차고 여백 안에 배치하며 원본 GLB를 바꾸지 않는다", async () => {
+    // 실제 차량에서 관측한 정규화 경계와 같은 비율의 합성 GLB다. 구매 원본 렌더 검증을 대신하지 않는다.
+    const originalSize: [number, number, number] = [1.664459045722763, 1.5, 3.2884031405284064];
+    const bytes = inlineGlb([{ size: originalSize, includeUv: true }]), source = verifiedSource(MODEL_IDS.car, bytes);
+    const original = await realParse.call(new GLTFLoader(), bytes, ""), scene = new THREE.Scene();
+    const sourceMesh = firstMesh(original.scene), vertices = vertexPositions(sourceMesh.geometry);
+    const index = sourceMesh.geometry.index, uv = sourceMesh.geometry.getAttribute("uv"), material = sourceMesh.material;
+    if (!index || !uv || Array.isArray(material)) throw new Error("차량 합성 GLB의 index·UV·단일 material이 없습니다.");
+    const indices = Array.from(index.array), uvValues = Array.from({ length: uv.count }, (_, vertex) => [uv.getX(vertex), uv.getY(vertex)]).flat();
+    const materialValues = material.toJSON(), footprint = { x: 624, y: 48, width: 720, height: 96 };
+    // 회전 전 깊이는 105px여서 양쪽 12px 여백을 둔 72px 영역에 들어갈 수 없다.
+    expect(originalSize[2] / originalSize[1] * 1.5 * 32).toBeGreaterThan(footprint.height - 24);
+    loadSource.mockResolvedValue(source);
+    vi.spyOn(GLTFLoader.prototype, "parseAsync").mockResolvedValue(original);
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest: { ...manifest, colliders: [footprint] },
+      theme: recipe([role("garage-vehicle", "focal-object", MODEL_IDS.car)]), signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      expect(scene.children).toHaveLength(1);
+      const root = scene.children[0], normalization = root?.children[0];
+      if (!root || !normalization) throw new Error("차량의 표시 부모가 설치되지 않았습니다.");
+      const bounds = new THREE.Box3().setFromObject(root), size = bounds.getSize(new THREE.Vector3()), mesh = firstMesh(root);
+      expect(normalization.rotation.y).toBeCloseTo(Math.PI / 2);
+      expect(size.y).toBeCloseTo(1.5);
+      expect(size.x / size.y).toBeCloseTo(originalSize[2] / originalSize[1]);
+      expect(size.z / size.y).toBeCloseTo(originalSize[0] / originalSize[1]);
+      expect(bounds.min.y).toBeCloseTo(0);
+      expect(bounds.min.x * 32).toBeCloseTo(636);
+      expect(bounds.min.z * 32).toBeCloseTo(60);
+      expect(bounds.min.x * 32).toBeGreaterThanOrEqual(footprint.x + 12 - 1e-6);
+      expect(bounds.max.x * 32).toBeLessThanOrEqual(footprint.x + footprint.width - 12 + 1e-6);
+      expect(bounds.min.z * 32).toBeGreaterThanOrEqual(footprint.y + 12 - 1e-6);
+      expect(bounds.max.z * 32).toBeLessThanOrEqual(footprint.y + footprint.height - 12 + 1e-6);
+      expect(mesh.geometry).toBe(sourceMesh.geometry); expect(mesh.material).toBe(material);
+      expect(vertexPositions(sourceMesh.geometry)).toEqual(vertices);
+      expect(mesh.geometry.index).toBe(index); expect(Array.from(index.array)).toEqual(indices);
+      expect(mesh.geometry.getAttribute("uv")).toBe(uv);
+      expect(Array.from({ length: uv.count }, (_, vertex) => [uv.getX(vertex), uv.getY(vertex)]).flat()).toEqual(uvValues);
+      expect(material.toJSON()).toEqual(materialValues);
+      expect(new Uint8Array(await source.blob.arrayBuffer())).toEqual(new Uint8Array(bytes));
+      expect(original.scene.position.toArray()).toEqual([0, 0, 0]);
+      expect(original.scene.rotation.toArray()).toEqual([0, 0, 0, "XYZ"]);
+      expect(original.scene.scale.toArray()).toEqual([1, 1, 1]);
+      expect(sourceMesh.position.toArray()).toEqual([0, 0, 0]);
+      expect(sourceMesh.rotation.toArray()).toEqual([0, 0, 0, "XYZ"]);
+      expect(sourceMesh.scale.toArray()).toEqual([1, 1, 1]);
+    } finally { stage.dispose(); }
+  });
+
+  it.each([
+    { modelAssetId: MODEL_IDS.car, kind: "accent" },
+    { modelAssetId: MODEL_IDS.car + "-other", kind: "focal-object" },
+  ] as const)("차량 외 모델 또는 차량의 다른 역할은 원래 방향을 유지한다: $modelAssetId/$kind", async ({ modelAssetId, kind }) => {
+    const originalSize: [number, number, number] = [1.664459045722763, 1.5, 3.2884031405284064];
+    const bytes = inlineGlb([{ size: originalSize }]), source = verifiedSource(modelAssetId, bytes), scene = new THREE.Scene();
+    loadSource.mockResolvedValue(source);
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest, theme: recipe([role("unrotated", kind, modelAssetId)]),
+      signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      const root = scene.children[0], normalization = root?.children[0];
+      if (!root || !normalization) throw new Error("원래 방향의 모델이 설치되지 않았습니다.");
+      const size = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3());
+      expect(normalization.rotation.toArray()).toEqual([0, 0, 0, "XYZ"]);
+      expect(size.y).toBeCloseTo(1.5);
+      expect(size.x / size.y).toBeCloseTo(originalSize[0] / originalSize[1]);
+      expect(size.z / size.y).toBeCloseTo(originalSize[2] / originalSize[1]);
+    } finally { stage.dispose(); }
+  });
+
   it("수직 나무는 기존 높이 2.2m와 원본 비율을 유지한다", async () => {
     const originalSize: [number, number, number] = [1.444748193025589, 2.6980645621669228, 0.8963496088981628];
     const source = verifiedSource(MODEL_IDS.parkTree, inlineGlb([{ size: originalSize }])), scene = new THREE.Scene();
