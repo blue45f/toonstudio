@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { readStudioInspectorAsideSurface } from "./read-studio-inspector-aside-source";
+import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
 import { readStudioCuttoonEditorSource } from "./studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 
 
@@ -190,7 +191,10 @@ describe("Studio inspector raster recovery boundary", () => {
     expect(escapeBranch).toContain("if (cancelStudioRasterPreparation())");
     expect(escapeBranch.indexOf("cancelStudioRasterPreparation()"))
       .toBeLessThan(escapeBranch.indexOf("groupResizeRef.current"));
-    expect(escapeBranch).toContain("편집용 래스터 준비를 취소했습니다");
+    // 2026-10-23(4a59b310, A4 D4): 단축키 공지는 구조화 코드로 내고 Host 게시 지점이 같은 한글 원문으로 해석한다.
+    expect(escapeBranch).toContain('announceDrawingShortcut({ code: "rasterPrepCancelled" })');
+    expect(resolveStudioShortcutAnnouncement({ code: "rasterPrepCancelled" }))
+      .toBe("편집용 래스터 준비를 취소했습니다");
 
     const flushStart = preparation.indexOf("flushSync(() => {");
     const finalPreCommitAuthorityGuard = preparation.slice(0, flushStart).lastIndexOf(

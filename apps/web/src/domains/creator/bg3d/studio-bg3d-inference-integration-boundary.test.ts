@@ -77,11 +77,14 @@ describe("추론 통합 경계", () => {
   });
 
   it("에디터 훅은 호스트 훅을 한 번 부르고 서비스를 호스트 백에 노출한다", () => {
-    expect(editorHook.match(/useStudioBg3dInferenceHost\(h\)/gu)).toHaveLength(1);
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 호스트 백 h 를 입력 타입으로 좁히는 단언이 붙었다.
+    const hostCall = "useStudioBg3dInferenceHost(h as unknown as Parameters<typeof useStudioBg3dInferenceHost>[0])";
+    expect(editorHook.split(hostCall)).toHaveLength(2);
+    expect(editorHook.match(/useStudioBg3dInferenceHost\(/gu)).toHaveLength(1);
     for (const name of ["inferenceService", "inferenceDrag", "inferencePointerToolActive", "handleInferenceCameraChange", "pickInferencePoint", "inferPlacementTarget"]) {
       expect(editorHook, name).toContain(`h.${name} =`);
     }
-    expect(editorHook.indexOf("useStudioBg3dInferenceHost(h)")).toBeLessThan(editorHook.indexOf("bindStudioBg3dEditorSceneGraph(h)"));
+    expect(editorHook.indexOf(hostCall)).toBeLessThan(editorHook.indexOf("bindStudioBg3dEditorSceneGraph(h)"));
   });
 
   it("줄자 호스트는 클릭·미리보기를 추론 점으로 치환하고 길이 입력은 치환하지 않는다", () => {

@@ -106,8 +106,9 @@ describe("Studio BG3D user-template integration boundary", () => {
     expect(creationCallback).toBeGreaterThan(cacheInsert);
     expect(apply).not.toContain("cacheIdsBefore");
     expect(apply).toContain("const templateOwnedCacheEntries = new Map<string, ModelRootCacheEntry>()");
-    expect(apply).toContain("onCacheEntryCreated: (storageId, cacheEntry) =>");
-    expect(apply).toContain("physicsRuntimeSourceRef.current.customModels.map((model) => model.modelId)");
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 추출된 배치 호스트의 콜백 매개변수에 타입 주석이 붙었다.
+    expect(apply).toContain("onCacheEntryCreated: (storageId: string, cacheEntry: ModelRootCacheEntry) =>");
+    expect(apply).toContain("physicsRuntimeSourceRef.current.customModels.map((model: BgCustomModelInstance) => model.modelId)");
     expect(apply).toContain("if (liveStorageIds.has(storageId)) continue;");
     expect(apply).toContain("if (modelRootCacheRef.current.get(storageId) !== ownedEntry) continue;");
     expect(apply).toContain("if (!committed) cleanupUncommittedTemplateCache();");
