@@ -100,13 +100,34 @@ ToonStudio는 창작자가 보유한 Clip Studio Paint 문서(`.clip`)와 미리
   선언 길이 불일치(푸터 미독 시 `truncated`), 푸터 누락, 푸터를 읽은 뒤의 길이 불일치(`truncated` 아님),
   Node `Buffer` 입력에서 추출 결과의 메모리 비공유.
 - 합성 픽스처는 이 모듈의 가정(H1–H4)을 그대로 인코딩하므로, 테스트 통과는 **가정이 실제 포맷과 같다는 증거가
-  아니다.** 실제 샘플 검증(U5)은 별도 과제다.
+  아니다.** 실제 샘플 검증(U5)은 아래 5절의 도구로 수행한다.
+- 구조 검사 CLI(`scripts/inspect-chunked-container.mts`) 단위 테스트 8종: 구조 요약(행 내용 비출력), 스키마 판독기
+  미주입, 손상 SQLite의 `schemaError` 보고, JSON 경로 비출력(파일명만), 텍스트 출력, `--no-sqlite`, 사용법 오류
+  (종료 코드 2), 읽기 실패(종료 코드 1).
+  경로 출력과 식별자 인용 누락 두 변이(mutation)를 일부러 넣어 해당 테스트가 실패함을 확인했다.
 
 ---
 
-## 5. 다음 단계와 블로커
+## 5. 실샘플 검증 절차와 블로커
 
-1. **실제 `.clip` 샘플로 H1–H4 검증** — 사용자가 소유하고 저장소에 반입해도 되는 샘플이 필요하다. 반입 시
-   권리·라이선스를 확인하고 `tests/corpus/formats/`의 기존 정책을 따른다.
-2. 검증 후에 SQLite 문서 스키마(레이어 트리)를 `@toonstudio/studio-project-model`의 `LayerGraphV3`로 사상하는
+가정 H1–H4는 사용자가 소유한 실제 `.clip`/`.lip` 파일로만 검증할 수 있다. 샘플이 없는 지금은 도구까지만 준비했다.
+
+1. 샘플을 `tests/corpus/formats/local-samples/`에 둔다. 이 디렉터리는 `README.md`만 추적하고 나머지는 Git이
+   무시한다(`.gitignore`). 본인이 만들었거나 사용 허락을 받은 파일만 둔다.
+2. 구조를 검사한다. 픽셀, 행 내용, 사용자 텍스트는 출력하지 않고 청크 목록, SQLite 테이블·컬럼 이름, 행 수만
+   출력한다. 파일은 SHA-256과 파일명(경로 제외)으로만 식별하므로, 샘플 대신 이 출력만 공유할 수 있다.
+
+   ```bash
+   pnpm exec tsx scripts/inspect-chunked-container.mts tests/corpus/formats/local-samples/<파일>.clip
+   ```
+
+3. 가정을 자동 확인한다. 샘플마다 헤더 판정, `CHNKSQLi`·`CHNKFoot` 존재, 외부 블록 해석, 진단 없음을 단언한다.
+   샘플이 없으면 샘플별 테스트는 만들어지지 않고 로컬 디렉터리의 Git 무시 규칙만 확인한다.
+
+   ```bash
+   pnpm exec vitest run tests/format-gateway/chunked-container-local-corpus.test.ts
+   ```
+
+4. 결과로 H1–H4를 Observed / Assumptions / Unknowns에서 옮기고, 맞지 않는 가정은 파서를 고친다.
+5. 그 뒤에야 SQLite 문서 스키마(레이어 트리)를 `@toonstudio/studio-project-model`의 `LayerGraphV3`로 사상하는
    임포터를 착수한다. 샘플 없이 컬럼명·열거값을 추측해 사상하지 않는다.
