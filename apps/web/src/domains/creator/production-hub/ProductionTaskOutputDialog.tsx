@@ -98,7 +98,7 @@ function ScopeSelection({ source, draft, patch, onVerified, onError, bt }: {
   const toggle = (field: "pageIds" | "frameIds", id: string, checked: boolean) => patch({ [field]: checked ? [...draft[field], id] : draft[field].filter((value) => value !== id) });
   const renewImage = async () => {
     if (!source || !page || renewing || controller.current) return;
-    controller.current?.abort(); const request = new AbortController(); controller.current = request; setRenewing(true);
+    const request = new AbortController(); controller.current = request; setRenewing(true);
     const epoch = generation.current, sourceKey = source.choice.key, pageOrdinal = page.ordinal;
     const sameScope = () => !request.signal.aborted && generation.current === epoch
       && fence.current.source === source && fence.current.key === sourceKey && fence.current.ordinal === pageOrdinal;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { studioReviewPageMappingSchema } from "@toonstudio/studio-project-model";
 import { episodeScope, type ProductionTaskOutputEvidence, type Submission } from "@toonstudio/core/production";
 import type { StudioReviewPreviewRead } from "../project-graph/studio-project-graph-client";
 import { resolveSubmissionVisualReview } from "./production-submission-visual-review";
@@ -93,11 +94,20 @@ describe("명시한 작업 범위와 저장된 capture의 검수 연결", () => 
   });
   it("선택 페이지의 서버 버전·페이지 ID·해시가 바뀐 응답을 거절한다", () => {
     const f = fixture(), pinned = f.source(), good = f.page(1);
-    if (good.mapping.status !== "mapped") throw new Error("검증할 mapping이 없습니다.");
+    const mapping = studioReviewPageMappingSchema.parse(good.mapping);
+    if (mapping.status !== "mapped") throw new Error("검증할 mapping이 없습니다.");
     for (const page of [
       { ...good, sha256: "e".repeat(64) },
-      { ...good, mapping: { ...good.mapping, sourceServerRevision: 8 } },
-      { ...good, mapping: { ...good.mapping, page: { ...good.mapping.page, id: "another-page" } } },
+      { ...good, mapping: { ...mapping, sourceServerRevision: 8 } },
+      { ...good, mapping: { ...mapping, page: { ...mapping.page, id: "another-page" } } },
     ]) expect(() => selectTaskOutputPreviewPages(pinned, [page], true)).toThrow();
   });
+  it.each([{ mapping: null }, { mapping: [] }, { mapping: {} }, { mapping: { status: "mapped" } },
+    { mapping: { status: "unmapped", reason: "legacy-review" } }])(
+    "검증하지 않은 mapping $mapping을 고정 원고 연결로 신뢰하지 않는다", ({ mapping }) => {
+      const f = fixture(), page = { ...f.page(1), mapping };
+      expect(() => selectTaskOutputPreviewPages(f.source(), [page], true))
+        .toThrow("고정한 원고 사용 범위와 페이지 연결이 다릅니다.");
+    },
+  );
 });

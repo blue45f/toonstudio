@@ -18,7 +18,10 @@ export interface StudioScopedSql {
   query<T extends Record<string, unknown>>(statement: SQL): Promise<readonly T[]>;
 }
 export const studioScopedDrizzle = (transaction: DrizzleStudioCrdtTransaction): StudioScopedSql => ({
-  async query<T extends Record<string, unknown>>(statement: SQL) { return (await transaction.execute<T>(statement)).rows; },
+  async query<T extends Record<string, unknown>>(statement: SQL) {
+    // 같은 SQL·T로 요청한 rows이며 Drizzle의 지연 조건부 타입만 이 어댑터 경계에서 연결한다.
+    return (await transaction.execute<T>(statement)).rows as readonly T[];
+  },
 });
 const dialect = new PgDialect();
 export const studioScopedPg = (client: Pick<PoolClient, "query">): StudioScopedSql => ({

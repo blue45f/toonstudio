@@ -22,7 +22,7 @@ export class ProductionTaskOutputError extends Error {
     }[code]);
   }
 }
-const fail = (code: ProductionTaskOutputError["code"]): never => { throw new ProductionTaskOutputError(code); };
+function fail(code: ProductionTaskOutputError["code"]): never { throw new ProductionTaskOutputError(code); }
 const HASH = /^[a-f0-9]{64}$/u;
 const REVISION_DIGEST = /^(?:fnv1a64:[0-9a-f]{16}|sha256:[0-9a-f]{64})$/u;
 const STUDIO_ID = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,159}$/u;

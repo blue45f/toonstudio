@@ -47,10 +47,10 @@ describe("실제 TaskEditor의 업무 산출물별 입력 선택", () => {
   it("같은 Graph capture의 두 실제 제출을 독립적으로 선택·해제하고 선택한 제출만 저장한다", async () => {
     const f = mount(), [a, b] = f.choices;
     if (!(a instanceof HTMLInputElement) || !(b instanceof HTMLInputElement)) throw new Error("두 실제 제출 체크박스가 필요합니다.");
-    const choices = within(screen.getByRole("group", { name: "입력 버전 선택", exact: true }));
+    const choices = within(screen.getByRole("group", { name: "입력 버전 선택" }));
     expect(f.choices).toHaveLength(2);
-    expect(choices.getByRole("checkbox", { name: "첫 장 선화 · 원고 v3 · 1페이지", exact: true })).toBe(a);
-    expect(choices.getByRole("checkbox", { name: "두 번째 장 선화 · 원고 v3 · 2페이지", exact: true })).toBe(b);
+    expect(choices.getByRole("checkbox", { name: "첫 장 선화 · 원고 v3 · 1페이지" })).toBe(a);
+    expect(choices.getByRole("checkbox", { name: "두 번째 장 선화 · 원고 v3 · 2페이지" })).toBe(b);
     expect(screen.getByTitle(`${f.raw.id} · ${f.a.productionSubmissionId}`).textContent).toContain("첫 장 선화");
     expect(a.checked).toBe(true);
     expect(b.checked).toBe(false);
@@ -73,11 +73,11 @@ describe("실제 TaskEditor의 업무 산출물별 입력 선택", () => {
   it("동일한 원본의 legacy raw 핀을 별도로 보존하며 제출 귀속 ID를 소급 생성하지 않는다", async () => {
     const f = mount(true), [raw, a, b] = f.choices;
     if (!(raw instanceof HTMLInputElement) || !(a instanceof HTMLInputElement) || !(b instanceof HTMLInputElement)) throw new Error("legacy와 두 실제 제출 체크박스가 필요합니다.");
-    const choices = within(screen.getByRole("group", { name: "입력 버전 선택", exact: true }));
+    const choices = within(screen.getByRole("group", { name: "입력 버전 선택" }));
     expect(f.choices).toHaveLength(3);
-    expect(choices.getByRole("checkbox", { name: `${f.raw.id} · v3`, exact: true })).toBe(raw);
-    expect(choices.getByRole("checkbox", { name: "첫 장 선화 · 원고 v3 · 1페이지", exact: true })).toBe(a);
-    expect(choices.getByRole("checkbox", { name: "두 번째 장 선화 · 원고 v3 · 2페이지", exact: true })).toBe(b);
+    expect(choices.getByRole("checkbox", { name: `${f.raw.id} · v3` })).toBe(raw);
+    expect(choices.getByRole("checkbox", { name: "첫 장 선화 · 원고 v3 · 1페이지" })).toBe(a);
+    expect(choices.getByRole("checkbox", { name: "두 번째 장 선화 · 원고 v3 · 2페이지" })).toBe(b);
     expect(raw.checked).toBe(true);
     expect(a.checked).toBe(false);
     expect(b.checked).toBe(false);

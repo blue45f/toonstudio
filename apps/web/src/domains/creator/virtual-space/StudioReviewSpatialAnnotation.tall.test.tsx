@@ -11,6 +11,7 @@ function setup(withSavedNote = false) {
   const mapping = deriveStudioReviewPageMapping({ width: 800, pagesList: [{ id: "long-page", canvasH: 16000, elements: [] }] },
     { sourceServerRevision: 7, sourceContentDigest: "a".repeat(64), ordinal: 0, renderWidth: 1600, renderHeight: 32000 });
   if (mapping.status !== "mapped") throw new Error("긴 원고의 고정 mapping fixture가 없습니다.");
+  const mapped = mapping;
   const anchor = createStudioReviewSpatialAnchor(mapping, { kind: "coordinate", x: 160, y: 12000 });
   if (!anchor) throw new Error("하단 의견의 고정 anchor fixture가 없습니다.");
   const notes = withSavedNote ? [{ id: "bottom-note", body: "하단 표정 확인",
@@ -18,7 +19,7 @@ function setup(withSavedNote = false) {
   const choose = vi.fn();
   function Harness() {
     const [selected, setSelected] = useState<StudioReviewAnnotationSelection | null>(null);
-    return <StudioReviewSpatialAnnotation mapping={mapping} sha256={"b".repeat(64)} expiresAt={Date.now() + 30_000} notes={notes}
+    return <StudioReviewSpatialAnnotation mapping={mapped} sha256={"b".repeat(64)} expiresAt={Date.now() + 30_000} notes={notes}
       control={{ selected, disabled: false, onSelect: (value) => { choose(value); setSelected(value); } }}>
       <img alt="긴 고정 원고" src="/long.png" />
     </StudioReviewSpatialAnnotation>;

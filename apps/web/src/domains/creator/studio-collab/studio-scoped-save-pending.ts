@@ -23,7 +23,7 @@ const intentScope = z.object({ ownerId: z.string().min(1).max(512).nullable(), d
 const pendingSchema = z.object({
   version: z.literal(1), actorUserId: identity, workId: identity,
   body: z.object({ baseRevision: z.number().int().min(1).max(2_147_483_647),
-    crdtServerSequence: z.string().regex(/^(?:0|[1-9]\d{0,18})$/u).refine((value) => BigInt(value) <= 9_223_372_036_854_775_807n),
+    crdtServerSequence: z.string().regex(/^(?:0|[1-9]\d{0,18})$/u).refine((value) => BigInt(value) <= BigInt("9223372036854775807")),
     doc: z.record(z.string(), z.unknown()), mutationId: z.uuid(), writeContext: StudioScopedWriteContextSchema,
   }).strict(),
   snapshotDigest: z.string().regex(/^[a-f0-9]{64}$/u), hasExcludedDraft: z.boolean(), intentScope,

@@ -63,19 +63,19 @@ function selectValue(element: HTMLElement): string {
   return element.value;
 }
 async function openNew(f: ReturnType<typeof fixture>) {
-  const button = await screen.findByRole("button", { name: "공정 역할 추가", exact: true });
+  const button = await screen.findByRole("button", { name: "공정 역할 추가" });
   await waitFor(() => expect(button.matches(":disabled")).toBe(false)); fireEvent.click(button);
   const account = screen.getByRole("combobox", { name: "연결할 작품 팀 계정" });
   expect(selectValue(account)).toBe("");
   fireEvent.change(account, { target: { value: COLOR } });
   fireEvent.change(screen.getByRole("combobox", { name: "실제 담당 범위" }), { target: { value: canonicalJson(f.scope) } });
-  fireEvent.change(screen.getByRole("combobox", { name: "공정 역할", exact: true }), { target: { value: "colorist" } });
+  fireEvent.change(screen.getByRole("combobox", { name: "공정 역할" }), { target: { value: "colorist" } });
 }
 async function openExisting(name: string) {
-  const button = await screen.findByRole("button", { name, exact: true });
+  const button = await screen.findByRole("button", { name });
   await waitFor(() => expect(button.matches(":disabled")).toBe(false)); fireEvent.click(button);
 }
-function save() { fireEvent.click(screen.getByRole("button", { name: "공정 역할 저장", exact: true })); }
+function save() { fireEvent.click(screen.getByRole("button", { name: "공정 역할 저장" })); }
 function rejected(status: 403 | 409) {
   return new Error("서버가 변경을 거절했습니다.", { cause: new AppApiError("현재 권한 또는 버전을 확인하세요.", {
     kind: status === 403 ? "forbidden" : "conflict", status,
@@ -171,7 +171,7 @@ describe("실제 작품 팀 계정을 쓰는 공정 역할 관리 UI", () => {
     io.team.mockResolvedValueOnce(f.team).mockRejectedValueOnce(new Error("팀 조회 실패")).mockResolvedValue(f.team);
     render(<ProductionCollaborationRoleEditor aggregate={f.aggregate} canManage execute={execute} />); await openNew(f); save();
     await waitFor(() => expect(screen.getByRole("button", { name: "공정 역할 저장" }).matches(":disabled")).toBe(false));
-    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할", exact: true }))).toBe("colorist");
+    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할" }))).toBe("colorist");
     expect(execute).not.toHaveBeenCalled(); save(); await waitFor(() => expect(execute).toHaveBeenCalledOnce());
   });
   it("실제 403은 재전송을 막고 최신 권한 확인 뒤에만 같은 입력을 다시 검토한다", async () => {
@@ -182,7 +182,7 @@ describe("실제 작품 팀 계정을 쓰는 공정 역할 관리 UI", () => {
     fireEvent.click(screen.getByRole("button", { name: "최신 상태 확인" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "공정 역할 저장" }).matches(":disabled")).toBe(false));
     expect(refresh).toHaveBeenCalledOnce(); expect(execute).toHaveBeenCalledOnce();
-    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할", exact: true }))).toBe("colorist");
+    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할" }))).toBe("colorist");
   });
   it("실제 revision 409는 입력을 보존하며 외부에서 바뀐 역할을 다시 덮지 않는다", async () => {
     const f = fixture(), execute = executor().mockRejectedValue(rejected(409));
@@ -216,7 +216,7 @@ describe("실제 작품 팀 계정을 쓰는 공정 역할 관리 UI", () => {
     expect(execute).toHaveBeenCalledOnce(); expect(execute.mock.calls[0]?.[2]).toEqual({ expectedRevision: f.aggregate.revision });
     const first = configure(execute.mock.calls[0]?.[0]);
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할", exact: true }))).toBe("colorist");
+    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할" }))).toBe("colorist");
     expect(screen.getByRole("button", { name: "공정 역할 저장" }).matches(":disabled")).toBe(false);
     expect(loadProductionCommandRecovery(OWNER, f.aggregate.projectId)).toBeNull();
     const current = { ...f.aggregate, revision: f.aggregate.revision + 1 };
@@ -268,7 +268,7 @@ describe("실제 작품 팀 계정을 쓰는 공정 역할 관리 UI", () => {
     view.rerender(<ProductionCollaborationRoleEditor aggregate={f.aggregate} canManage execute={execute} hasUnconfirmedCommand />);
     await act(async () => preflight.resolve(f.team));
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할", exact: true }))).toBe("colorist");
+    expect(selectValue(screen.getByRole("combobox", { name: "공정 역할" }))).toBe("colorist");
     expect(screen.getByRole("button", { name: "공정 역할 저장" }).matches(":disabled")).toBe(true);
     expect(execute).not.toHaveBeenCalled();
   });

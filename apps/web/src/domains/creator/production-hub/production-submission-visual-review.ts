@@ -197,9 +197,11 @@ const pinnedPreview = z.object({
   expiresAt: z.number().int().positive(), mapping: studioReviewPageMappingSchema,
 }).strict();
 
+export type PinnedSubmissionPreview = z.infer<typeof pinnedPreview>;
+
 export interface PinnedSubmissionPreviewOptions {
   /** 읽기용으로 검증한 중간 목록이다. 검수 완료나 작업 권한을 뜻하지 않는다. */
-  readonly onValidatedPrefix?: (pages: readonly StudioReviewPreviewRead[]) => void;
+  readonly onValidatedPrefix?: (pages: readonly PinnedSubmissionPreview[]) => void;
   readonly signal?: AbortSignal;
 }
 
@@ -242,7 +244,7 @@ async function readPinnedPreviewBatch(source: PinnedSubmissionVisualSource, cont
   }
   if (!sameStudioVirtualSpaceReviewSubject(subject, parseStudioVirtualSpaceReviewSubject(result.subject))
     || result.previews.length < 1 || result.previews.length > 32) throw previewMismatch();
-  const batch: StudioReviewPreviewRead[] = [];
+  const batch: PinnedSubmissionPreview[] = [];
   for (const candidate of result.previews) {
     const parsed = pinnedPreview.safeParse(candidate);
     if (!parsed.success) throw previewMismatch();
@@ -270,10 +272,10 @@ async function readPinnedPreviewBatch(source: PinnedSubmissionVisualSource, cont
 
 /** 전체 조회의 성공·실패는 유지하며, 검증된 중간 목록만 선택적으로 먼저 전달한다. */
 export async function loadPinnedSubmissionPreviews(source: PinnedSubmissionVisualSource,
-  options: PinnedSubmissionPreviewOptions = {}): Promise<readonly StudioReviewPreviewRead[]> {
+  options: PinnedSubmissionPreviewOptions = {}): Promise<readonly PinnedSubmissionPreview[]> {
   checkPreviewCancelled(options.signal);
   const context = pinnedPreviewSource(source), sequence = previewSequence();
-  const pages: StudioReviewPreviewRead[] = [];
+  const pages: PinnedSubmissionPreview[] = [];
   let cursor: string | null = null;
   do {
     const result = await readPinnedPreviewBatch(source, context, sequence, cursor, options.signal);
@@ -288,7 +290,7 @@ export async function loadPinnedSubmissionPreviews(source: PinnedSubmissionVisua
 
 /** 고정 목록의 한 이미지 주소만 갱신한다. 서버가 돌려준 다음 구간은 이어 읽지 않는다. */
 export async function refreshPinnedSubmissionPreview(source: PinnedSubmissionVisualSource, current: StudioReviewPreviewRead,
-  options: Pick<PinnedSubmissionPreviewOptions, "signal"> = {}): Promise<StudioReviewPreviewRead> {
+  options: Pick<PinnedSubmissionPreviewOptions, "signal"> = {}): Promise<PinnedSubmissionPreview> {
   checkPreviewCancelled(options.signal);
   const context = pinnedPreviewSource(source), parsed = pinnedPreview.safeParse(current);
   if (!parsed.success || context.manifest.get(parsed.data.ordinal) !== parsed.data.sha256) throw previewMismatch();

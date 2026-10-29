@@ -1,17 +1,16 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ProductionProjectAggregate, Submission } from "@toonstudio/core/production";
-import type { StudioReviewPreviewRead } from "../project-graph/studio-project-graph-client";
-import type { PinnedSubmissionVisualSource, SubmissionVisualReviewData } from "./production-submission-visual-review";
+import type { PinnedSubmissionPreview, PinnedSubmissionVisualSource, SubmissionVisualReviewData } from "./production-submission-visual-review";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 const ProductionSubmissionWriterRoom = lazy(() => import("./ProductionSubmissionWriterRoom"));
 
 type VisualState = { kind: "loading" } | { kind: "error"; message: string; captureHref?: string | null }
-  | { kind: "ready"; data: SubmissionVisualReviewData; pages: readonly StudioReviewPreviewRead[]; complete: boolean };
+  | { kind: "ready"; data: SubmissionVisualReviewData; pages: readonly PinnedSubmissionPreview[]; complete: boolean };
 type BaselineState = { kind: "idle" } | { kind: "loading"; revisionId: string; sourceKey: string }
   | { kind: "error"; revisionId: string; sourceKey: string; message: string }
-  | { kind: "ready"; revisionId: string; sourceKey: string; pages: readonly StudioReviewPreviewRead[]; complete: boolean };
+  | { kind: "ready"; revisionId: string; sourceKey: string; pages: readonly PinnedSubmissionPreview[]; complete: boolean };
 
 const bindingGenerations = new WeakMap<PinnedSubmissionVisualSource, number>();
 let nextBindingGeneration = 0;
@@ -21,7 +20,7 @@ const previewSourceKey = (source: PinnedSubmissionVisualSource) => {
     source.revision.rootGraphHash, source.review.id, source.outputEvidence ? bindingGenerations.get(source) : null]);
 };
 
-function PinnedImage({ preview, label, canRefresh, onRefresh, onLoaded, selectedFrames = [] }: { readonly preview: StudioReviewPreviewRead | undefined; readonly label: string; readonly canRefresh: boolean;
+function PinnedImage({ preview, label, canRefresh, onRefresh, onLoaded, selectedFrames = [] }: { readonly preview: PinnedSubmissionPreview | undefined; readonly label: string; readonly canRefresh: boolean;
   readonly selectedFrames?: readonly string[];
   readonly onRefresh: () => void; readonly onLoaded: () => void }) {
   const bt = useBilingual("ProductionSubmissionVisualReview");
@@ -145,8 +144,8 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
   const selectedOrdinal = ordinal !== null && ordinals.includes(ordinal) ? ordinal : ordinals[0];
   const currentPage = state.kind === "ready" ? state.pages.find((page) => page.ordinal === selectedOrdinal) : undefined;
   const baselinePage = baselinePages.find((page) => page.ordinal === selectedOrdinal);
-  const imageKey = (source: PinnedSubmissionVisualSource, page: StudioReviewPreviewRead) => `${previewSourceKey(source)}:${page.ordinal}`;
-  const autoRefresh = useCallback((source: PinnedSubmissionVisualSource, page: StudioReviewPreviewRead) => {
+  const imageKey = (source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview) => `${previewSourceKey(source)}:${page.ordinal}`;
+  const autoRefresh = useCallback((source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview) => {
     const sourceKey = previewSourceKey(source);
     const attemptKey = `${sourceKey}:${page.ordinal}`;
     if (autoAttempts.current.has(attemptKey) || autoInFlight.current.has(sourceKey)) return;
@@ -160,7 +159,7 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
       ? refreshPinnedSubmissionPreview(source, page, { signal: controller.signal }) : null)
       .then((updated) => {
         if (!updated || !currentRequest()) return;
-        const replace = (entry: StudioReviewPreviewRead) => entry.ordinal === page.ordinal && entry.sha256 === page.sha256
+        const replace = (entry: PinnedSubmissionPreview) => entry.ordinal === page.ordinal && entry.sha256 === page.sha256
           ? { ...entry, url: updated.url, expiresAt: updated.expiresAt } : entry;
         setState((current) => current.kind === "ready" && current.complete && previewSourceKey(current.data.submission) === sourceKey
           ? { ...current, pages: current.pages.map(replace) } : current);
@@ -180,7 +179,7 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
         if (generation === requestGeneration.current) setAutoRefreshCount((value) => Math.max(0, value - 1));
       });
   }, [bt]);
-  const renderImage = (source: PinnedSubmissionVisualSource, page: StudioReviewPreviewRead | undefined) => {
+  const renderImage = (source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview | undefined) => {
     const complete = state.kind === "ready" && (source.revision.id === state.data.submission.revision.id
       ? state.complete : currentBaselineState?.kind === "ready" && currentBaselineState.complete === true);
     return <PinnedImage key={page ? `${page.url}:${page.expiresAt}` : `${source.revision.id}:missing`}

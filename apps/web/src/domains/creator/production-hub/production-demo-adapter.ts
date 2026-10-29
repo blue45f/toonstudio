@@ -29,6 +29,13 @@ import {
 import type { ProductionClientCommand } from "./production-api";
 import { createProductionDemoProject, PRODUCTION_DEMO_ANCHOR_AT } from "./production-demo";
 import { decisionsForProductionSubmission, plainSubmissionApproval, policyForProductionSubmission } from "./production-review-submission";
+import { registerI18nEnglishSourceEntries, registerI18nLocaleEntries } from "@/shared/lib/i18n";
+
+const TASK_OUTPUT_SERVER_KEY = "productionHub.demo.taskOutputRequiresServer";
+const TASK_OUTPUT_SERVER_KO = "작업물 제출에는 서버의 저장 원고 검증이 필요합니다. 실제 프로젝트에서 제출해 주세요.";
+// 샘플 전용 안내는 해당 화면을 불러올 때 등록해 앱 셸 사전을 늘리지 않는다.
+registerI18nLocaleEntries("ko", { [TASK_OUTPUT_SERVER_KEY]: TASK_OUTPUT_SERVER_KO });
+registerI18nEnglishSourceEntries({ [TASK_OUTPUT_SERVER_KEY]: "Task output submission requires server verification of saved manuscripts. Submit it from a real project." });
 
 /**
  * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
@@ -62,6 +69,8 @@ export function reduceProductionDemoCommand(
 ): ProductionProjectAggregate {
   const base = { ...aggregate, revision: aggregate.revision + 1, updatedAt: new Date().toISOString() };
   switch (command.type) {
+    case "submit-task-output":
+      throw new Error(translate(TASK_OUTPUT_SERVER_KEY, TASK_OUTPUT_SERVER_KO));
     case "upsert-planning-record": {
       const record = command.record;
       switch (record.kind) {

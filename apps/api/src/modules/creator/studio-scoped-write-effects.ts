@@ -34,7 +34,7 @@ export const scopedRecord = (value: unknown): Record<string, unknown> | null => 
 const equal = (left: unknown, right: unknown) => canonicalJson(left) === canonicalJson(right);
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 const boundedId = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,159}$/u.test(value);
-const fail = (code: StudioScopedWriteDeniedError["code"] = "scope"): never => { throw new StudioScopedWriteDeniedError(code); };
+function fail(code: StudioScopedWriteDeniedError["code"] = "scope"): never { throw new StudioScopedWriteDeniedError(code); }
 
 export interface StudioScopedEntityState {
   readonly kind: StudioScopedEntityKind;
@@ -85,6 +85,7 @@ export function projectStudioScopedAuthoringDocument(value: unknown): StudioScop
   for (const pageValue of pagesList) {
     const page = scopedRecord(pageValue);
     if (!page || !boundedId(page.id) || !Array.isArray(page.elements) || pageProperties.has(page.id)) fail("ambiguous");
+    const pageId = page.id;
     const { elements, groups = [], ...properties } = page;
     if (!Array.isArray(groups)) fail("ambiguous");
     pageOrder.push(page.id); pageProperties.set(page.id, properties);
@@ -102,7 +103,7 @@ export function projectStudioScopedAuthoringDocument(value: unknown): StudioScop
       const layerId = boundedId(element.groupId) && groupIds.has(element.groupId) ? element.groupId : "page-root";
       add({ kind: element.type === "draw" ? "stroke" : "element", id: element.id, pageId: page.id, layerId, value: element });
     }
-    entityOrder.set(`${page.id}:groups`, groups.map((value) => { const item = scopedRecord(value); return scopedEntityKey("group", String(item?.id), page.id); }));
+    entityOrder.set(`${page.id}:groups`, groups.map((value) => { const item = scopedRecord(value); return scopedEntityKey("group", String(item?.id), pageId); }));
     entityOrder.set(`${page.id}:elements`, elements.map((value) => { const item = scopedRecord(value); return scopedEntityKey(item?.type === "draw" ? "stroke" : "element", String(item?.id)); }));
   }
   return { entities, entityOrder, pageProperties, pageOrder, globalProperties, surfaceReferences };

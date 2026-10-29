@@ -60,7 +60,7 @@ describe("실제 선택 면의 Follow Me 화면 명령", () => {
     expect(observed.workspace).toBe(original);
     fireEvent.change(screen.getByLabelText("따라 만들기 경로 · X, Y, Z"), { target: { value: "0,0.5,0\n0,2.5,0\n2,2.5,0" } });
     expect(screen.queryByRole("alert")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "적용", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "적용" }));
     expect(ran).toHaveBeenCalledExactlyOnceWith("면 따라 만들기");
     expect(meshHash(observed.workspace)).not.toBe(meshHash(original));
     expect(observed.workspace.session.undoStack).toHaveLength(original.session.undoStack.length + 1);
@@ -71,7 +71,7 @@ describe("실제 선택 면의 Follow Me 화면 명령", () => {
     const field = screen.getByLabelText("따라 만들기 경로 · X, Y, Z");
     fireEvent.change(field, { target: { value: "0,0.5,0\nNaN,2,0" } });
     expect(screen.getByRole("alert").textContent).toContain("경로는 2~64개 점");
-    fireEvent.click(screen.getByRole("button", { name: "적용", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "적용" }));
     expect(ran).not.toHaveBeenCalled();
     fireEvent.change(field, { target: { value: "0,0.5,0\n0,2.5,0\n0,0.5,0" } });
     expect(screen.getByRole("alert")).toBeTruthy();

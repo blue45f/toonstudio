@@ -45,16 +45,15 @@ export function useStudioReviewCaptureHost(bindings: StudioReviewCaptureHostBind
     flush: () => bindings.flushPendingStrokeCommitsRef.current(),
     open: (expectedScope: string, unavailable = false) => {
       if (scopeKey !== expectedScope) return;
-      unavailableOpen.current = unavailable;
-      try {
-        // 완료 전 재개는 기존 intent와 origin을 유지한다.
-        if (!capture.open()) return;
-        const request = studioReviewEditorRequestFromLocation(bindings.workId, bindings.reviewHandoff?.search ?? "");
-        setOrigin({ key: scopeKey, value: request && bindings.studioAuthUserId && bindings.workId
-          ? { actorId: bindings.studioAuthUserId, workId: bindings.workId, request } : null });
-      } finally {
-        unavailableOpen.current = false;
+      // 새 캡처의 비동기 context 조회까지 차단을 유지하며 진행 중 intent의 판정은 바꾸지 않는다.
+      if (["idle", "needs-save", "completed", "cancelled"].includes(capture.getOpenPhase())) {
+        unavailableOpen.current = unavailable;
       }
+      // 완료 전 재개는 기존 intent와 origin을 유지한다.
+      if (!capture.open()) return;
+      const request = studioReviewEditorRequestFromLocation(bindings.workId, bindings.reviewHandoff?.search ?? "");
+      setOrigin({ key: scopeKey, value: request && bindings.studioAuthUserId && bindings.workId
+        ? { actorId: bindings.studioAuthUserId, workId: bindings.workId, request } : null });
     },
   });
   const handlers = useStudioStableHandlers({ open: () => {

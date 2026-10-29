@@ -11,7 +11,7 @@ const uniqueIds = z.array(identity).max(100_000).refine((values) => new Set(valu
 
 export const StudioScopedProductionScopeSchema = z.object({
   kind: z.enum(PRODUCTION_SCOPE_KINDS), id: productionIdentity,
-  ancestors: z.array(z.object({ kind: z.enum(PRODUCTION_SCOPE_KINDS), id: productionIdentity }).strict()).max(8).readonly(),
+  ancestors: z.array(z.object({ kind: z.enum(PRODUCTION_SCOPE_KINDS).exclude(["deliverable"]), id: productionIdentity }).strict()).max(8).readonly(),
 }).strict().refine((value) => { try { assertScopeRef(value); return true; } catch { return false; } });
 
 /** 검수 원고의 위치 표식이다. 이 값 자체는 편집 권한이 아니다. */

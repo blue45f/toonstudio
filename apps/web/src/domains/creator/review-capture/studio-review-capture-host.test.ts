@@ -23,12 +23,12 @@ describe("review capture host authority", () => {
   it("reads the current ticket and synchronous edit refs without waiting for a render", () => {
     const f = fixture();
     expect(studioReviewCaptureHostContext(f.bindings)).toEqual({
-      workId: "work", scopeKey: '["actor","work"]', generation: "[1,2,3]", available: true,
+      workId: "work", scopeKey: '["actor","work"]', sourceGeneration: "[1,2,3]", generation: "[1,2,3]", available: true,
     });
     f.replace({ authScopeKey: "next-actor", workId: "next-work", accessGeneration: 4, documentGeneration: 5 });
     f.bindings.studioRevisionProjectGenerationRef.current = 6;
     expect(studioReviewCaptureHostContext(f.bindings)).toEqual({
-      workId: "next-work", scopeKey: '["next-actor","next-work"]', generation: "[4,5,6]", available: true,
+      workId: "next-work", scopeKey: '["next-actor","next-work"]', sourceGeneration: "[4,5,6]", generation: "[4,5,6]", available: true,
     });
     expect(f.bindings.canApplyStudioMutation).toHaveBeenLastCalledWith({
       authScopeKey: "next-actor", workId: "next-work", accessGeneration: 4, documentGeneration: 5,

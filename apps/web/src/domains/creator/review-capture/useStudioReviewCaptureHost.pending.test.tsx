@@ -23,8 +23,9 @@ vi.mock("../virtual-space/studio-virtual-space-review-producer", () => ({
 }));
 // 실제 Host hook·capture hook·bridge·문서 투영을 사용하고 대화상자만 snapshot 관찰면으로 바꾼다.
 vi.mock("./StudioReviewCaptureDialogMount", () => ({
-  StudioReviewCaptureDialogMount: ({ open, snapshot }: { open: boolean; snapshot: StudioReviewCaptureSnapshot }) => open
-    ? <section role="dialog" aria-label="캡처 상태"><output data-testid="capture-state">{snapshot.phase}:{snapshot.reason}</output></section>
+  StudioReviewCaptureDialogMount: ({ open, snapshot, onClose }: { open: boolean; snapshot: StudioReviewCaptureSnapshot; onClose: () => void }) => open
+    ? <section role="dialog" aria-label="캡처 상태"><output data-testid="capture-state">{snapshot.phase}:{snapshot.reason}</output>
+      <button type="button" onClick={onClose}>캡처 닫기</button></section>
     : null,
 }));
 
@@ -118,7 +119,7 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
     const state = fixture();
     render(<Host state={state} />);
     expect(state.flush).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     // 실제 flushSync가 layout effect의 새 mutation generation까지 publish해야 한다.
     expect(state.flush).toHaveBeenCalledOnce();
     expect(screen.getByTestId("published-ink").textContent).toBe("pending-ink");
@@ -140,7 +141,7 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
     if (gate === "hydration") state.bindings.available = false;
     if (gate === "drawing") state.bindings.drawingRef.current = { id: "active-pointer" };
     render(<Host state={state} />);
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("failed:unavailable"));
     expect(state.flush).not.toHaveBeenCalled();
     expect(api.read).not.toHaveBeenCalled();
@@ -154,7 +155,7 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
     const state = fixture(); state.control.flushSucceeds = false;
     const originalPending = state.pending.current;
     render(<Host state={state} />);
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("failed:unavailable"));
     expect(state.flush).toHaveBeenCalledOnce();
     expect(state.pending.current).toBe(originalPending);
@@ -169,12 +170,35 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
   it("실패한 flush가 pending을 잘못 비워도 서버 원고 조회나 검수본 생성을 허용하지 않는다", async () => {
     const state = fixture(); state.control.flushSucceeds = false; state.control.clearPendingOnFailedFlush = true;
     render(<Host state={state} />);
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("failed:unavailable"));
     expect(state.flush).toHaveBeenCalledOnce();
     expect(state.pending.current).toBeNull();
     expect(api.read).not.toHaveBeenCalled();
     expect(state.snapshotRead).not.toHaveBeenCalled();
+    expect(state.bindings.save).not.toHaveBeenCalled();
+    expect(api.patch).not.toHaveBeenCalled();
+    expect(api.prepare).not.toHaveBeenCalled();
+    expect(api.produce).not.toHaveBeenCalled();
+  });
+
+  it("실패한 진입을 닫고 다시 수동 진입하면 새 flush와 publication을 확인한 뒤 회복한다", async () => {
+    const state = fixture(), originalPending = state.pending.current;
+    state.control.flushSucceeds = false; state.control.clearPendingOnFailedFlush = true;
+    render(<Host state={state} />);
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
+    await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("failed:unavailable"));
+    expect(api.read).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "캡처 닫기" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "캡처 상태" })).toBeNull());
+    state.pending.current = originalPending;
+    state.control.flushSucceeds = true;
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
+    await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("needs-save:not-saved"));
+    expect(state.flush).toHaveBeenCalledTimes(2);
+    expect(state.snapshotRead).toHaveBeenCalledExactlyOnceWith(state.nextSnapshot);
+    expect(state.timeline).toEqual(["published:1", "flush", "flush", "published:2", "read:2", "snapshot:2"]);
+    expect(api.read).toHaveBeenCalledOnce();
     expect(state.bindings.save).not.toHaveBeenCalled();
     expect(api.patch).not.toHaveBeenCalled();
     expect(api.prepare).not.toHaveBeenCalled();
@@ -187,7 +211,7 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
   ])("flush publication 중 $name scope가 바뀌면 새 scope의 캡처를 열거나 조회하지 않는다", async ({ actorId, workId }) => {
     const state = fixture(); state.control.nextIdentity = { actorId, workId };
     render(<Host state={state} />);
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     await act(async () => {});
     expect(state.flush).toHaveBeenCalledOnce();
     expect(state.ticket).toMatchObject({ authScopeKey: actorId, workId });
@@ -232,7 +256,7 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
       projectId: "graph", artifactId: "artifact", expectedHeadRevisionId: "head", expectedHeadRootGraphHash: "b".repeat(64) }));
     api.produce.mockRejectedValueOnce({ ambiguous: true });
     render(<Host state={state} />);
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("uncertain:request-failed"));
     expect(state.flush).not.toHaveBeenCalled();
     expect(api.produce).toHaveBeenCalledOnce();
@@ -240,7 +264,7 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
     expect(originalIntent).toBeDefined(); expect(originalPages).toHaveLength(canvases.length);
     const reads = api.read.mock.calls.length;
     state.pending.current = nextPending;
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     expect(state.flush).not.toHaveBeenCalled();
     expect(state.pending.current).toBe(nextPending);
     expect(screen.getByTestId("capture-state").textContent).toBe("uncertain:request-failed");
@@ -255,22 +279,47 @@ describe("검수 캡처 수동 진입의 pending 획 publication", () => {
     expect(api.patch).not.toHaveBeenCalled();
   });
 
-  it("checking 중 같은 event tick에서 pending을 설정하고 재진입해도 flush나 두 번째 원고 조회를 하지 않는다", async () => {
+  it("원고 조회 전 같은 event tick에서 pending이 생기면 재진입해도 첫 원고 조회부터 차단한다", async () => {
     const state = fixture(); state.control.sameTickPending = state.pending.current; state.pending.current = null;
+    render(<Host state={state} />);
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
+    await waitFor(() => expect(screen.getByTestId("capture-state").textContent).toBe("failed:unavailable"));
+    expect(state.flush).not.toHaveBeenCalled();
+    expect(state.pending.current).toBe(state.control.sameTickPending);
+    expect(api.read).not.toHaveBeenCalled();
+    expect(state.snapshotRead).not.toHaveBeenCalled();
+    expect(api.prepare).not.toHaveBeenCalled();
+    expect(api.produce).not.toHaveBeenCalled();
+    expect(api.cancel).not.toHaveBeenCalled();
+    expect(state.bindings.save).not.toHaveBeenCalled();
+    expect(state.bindings.captureAll).not.toHaveBeenCalled();
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it("이미 시작한 원고 조회 중 pending을 설정하고 재진입해도 flush·두 번째 조회·생성을 하지 않는다", async () => {
+    const state = fixture(), nextPending = state.pending.current; state.pending.current = null;
     let resolveRead: (saved: StudioSharedDocument) => void = () => { throw new Error("원고 조회 Promise가 준비되지 않았습니다."); };
     api.read.mockReturnValue(new Promise<StudioSharedDocument>((resolve) => { resolveRead = resolve; }));
     render(<Host state={state} />);
-    fireEvent.click(screen.getByRole("button", { name: "검수본 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
+    await waitFor(() => expect(api.read).toHaveBeenCalledOnce());
+    state.control.sameTickPending = nextPending;
+    fireEvent.click(screen.getByRole("button", { name: "검수본 열기" }));
     expect(state.flush).not.toHaveBeenCalled();
     expect(state.pending.current).toBe(state.control.sameTickPending);
-    await waitFor(() => expect(api.read).toHaveBeenCalledOnce());
+    expect(api.read).toHaveBeenCalledOnce();
     expect(screen.getByTestId("capture-state").textContent).toBe("checking:");
     expect(api.prepare).not.toHaveBeenCalled();
     expect(api.produce).not.toHaveBeenCalled();
     expect(state.bindings.save).not.toHaveBeenCalled();
     expect(api.patch).not.toHaveBeenCalled();
     await act(async () => { resolveRead(state.initial.saved); });
+    expect(screen.getByTestId("capture-state").textContent).toBe("cancelled:changed");
     expect(api.read).toHaveBeenCalledOnce();
+    expect(state.snapshotRead).not.toHaveBeenCalled();
     expect(api.prepare).not.toHaveBeenCalled();
+    expect(api.produce).not.toHaveBeenCalled();
+    expect(api.cancel).not.toHaveBeenCalled();
+    expect(state.bindings.captureAll).not.toHaveBeenCalled();
   });
 });

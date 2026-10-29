@@ -12,6 +12,8 @@ export interface StudioReviewCaptureContext {
   /** Auth, document and access generations; never a bearer token. */
   readonly scopeKey: string;
   readonly generation: number | string;
+  /** 권한 재확인 중 고정할 편집기 세대이며 purpose 갱신은 포함하지 않는다. */
+  readonly sourceGeneration?: number | string;
   readonly available: boolean;
   readonly sourceRevision?: StudioReviewCaptureSourceRevision;
   readonly writeContext?: StudioScopedWriteContext;
@@ -74,9 +76,13 @@ interface SourcePin {
 class CaptureChangedError extends Error {}
 class CaptureUnavailableError extends Error {}
 
+function sameSourceContext(a: StudioReviewCaptureContext, b: StudioReviewCaptureContext) {
+  return a.workId === b.workId && a.scopeKey === b.scopeKey
+    && (a.sourceGeneration ?? a.generation) === (b.sourceGeneration ?? b.generation)
+    && JSON.stringify(a.sourceRevision) === JSON.stringify(b.sourceRevision);
+}
 function sameContext(a: StudioReviewCaptureContext, b: StudioReviewCaptureContext) {
-  return b.available && a.workId === b.workId && a.scopeKey === b.scopeKey
-    && a.generation === b.generation && JSON.stringify(a.sourceRevision) === JSON.stringify(b.sourceRevision)
+  return b.available && sameSourceContext(a, b) && a.generation === b.generation
     && JSON.stringify(a.writeContext) === JSON.stringify(b.writeContext);
 }
 function retryableRequest(error: unknown) {
@@ -114,8 +120,10 @@ export class StudioReviewCaptureBridge {
     }
   }
   private async readPin(epoch: number, signal: AbortSignal): Promise<SourcePin> {
+    const source = this.dependencies.getContext();
     await this.dependencies.refreshPurpose?.(); this.assertCurrent(epoch);
     const context = this.dependencies.getContext();
+    if (!sameSourceContext(source, context)) throw new CaptureChangedError();
     if (!context.available || !context.workId) throw new CaptureUnavailableError();
     const saved = await this.dependencies.readSaved(context.workId, signal);
     this.assertCurrent(epoch, context);

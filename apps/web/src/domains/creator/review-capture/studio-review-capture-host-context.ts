@@ -50,6 +50,8 @@ export function studioReviewCaptureHostContext(bindings: StudioReviewCaptureHost
   return {
     workId: ticket.workId,
     scopeKey: JSON.stringify([ticket.authScopeKey, ticket.workId]),
+    sourceGeneration: JSON.stringify([ticket.accessGeneration, ticket.documentGeneration,
+      bindings.studioRevisionProjectGenerationRef.current]),
     generation: JSON.stringify([ticket.accessGeneration, ticket.documentGeneration,
       bindings.studioRevisionProjectGenerationRef.current, ...(writeContext ? [writeContext] : [])]),
     available: editable && !pending,

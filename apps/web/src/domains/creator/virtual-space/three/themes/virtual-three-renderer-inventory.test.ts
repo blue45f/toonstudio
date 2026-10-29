@@ -271,7 +271,7 @@ describe("3D renderer의 관측량·보수 상한·명시 정책 예약", () => 
     { channels: ["position", "normal"], slots: 2 },
     { channels: ["position", "color"], slots: 3 },
     { channels: ["position", "normal", "color"], slots: 3 },
-  ])("morph $channels는 고정 $slots RGBA 슬롯의 CPU·GPU를 각각 세고 원본 morph VBO를 만들지 않는다", ({ channels, slots }) => {
+  ] as const)("morph $channels는 고정 $slots RGBA 슬롯의 CPU·GPU를 각각 세고 원본 morph VBO를 만들지 않는다", ({ channels, slots }) => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(9), 3));
     let originalBytes = 9 * 4;

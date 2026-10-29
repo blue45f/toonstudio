@@ -27,7 +27,8 @@ function creditedAssetFixture() {
 describe("실제 Web CRDT와 공유 Authoring 투영", () => {
   it("원격 봉투의 유효한 위조 출처도 불변 descriptor의 출처를 덮지 못한다", () => {
     const f = creditedAssetFixture(), forged = studioBundleCreditFixture({ provider: "위조 봉투 제공자" });
-    const record = f.source.addSceneElement(studioElementToCrdtSceneElement("page-1", { ...f.reference, x: 70, bundleSourceCredit: forged }));
+    const remoteElement = { ...f.reference, x: 70, bundleSourceCredit: forged };
+    const record = f.source.addSceneElement(studioElementToCrdtSceneElement("page-1", remoteElement));
     expect(record.payload.props.bundleSourceCredit).toEqual(forged);
     expect(studioCrdtElementToSceneElement(record, f.reference)).toMatchObject({ x: 70, bundleSourceCredit: f.credit });
     const input = { ...f.snapshot(), referenceSources: f.referenceSources };

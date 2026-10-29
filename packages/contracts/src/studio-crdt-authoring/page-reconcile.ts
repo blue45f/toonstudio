@@ -3,6 +3,7 @@ export interface StudioCrdtCompatibleElement { id: string; type: string }
 export interface StudioCrdtCompatibleLayerGroup { id: string; name: string; hidden?: boolean; locked?: boolean; collapsed?: boolean }
 export interface StudioCrdtCompatibleOrderedPage<T extends StudioCrdtCompatibleElement> {
   id: string; elements: T[]; groups?: StudioCrdtCompatibleLayerGroup[];
+  layerComps?: unknown; colorProof?: unknown;
 }
 export interface StudioCrdtAuthoringRecord { id: string; pageId: string; layerId: string; deleted: boolean; orderIndex: number; payload: object }
 export interface StudioCrdtAuthoringSceneRecord extends StudioCrdtAuthoringRecord {
@@ -204,7 +205,7 @@ function materializeHistoryStroke(record: StudioCrdtStrokeRecord): StudioCrdtCom
 
 function reconcileStudioCrdtPages<
   TElement extends StudioCrdtCompatibleElement,
-  TPage extends StudioCrdtCompatiblePage<TElement>,
+  TPage extends StudioCrdtCompatibleOrderedPage<TElement>,
 >(pages: readonly TPage[], records: readonly StudioCrdtStrokeRecord[]): StudioCrdtPageReconcileResult<TPage> {
   const managedIds = new Set(records.map((record) => record.id));
   const activeByPage = new Map<string, StudioCrdtStrokeRecord[]>();

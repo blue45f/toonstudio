@@ -27,8 +27,9 @@ function Fixture() {
   const [selection, setSelection] = useState<StudioEditorCommentSelection | null>(null);
   const [dirty, setDirty] = useState(false), rejectPage = useRef(false);
   const drawingRef = useRef<unknown>(null), pendingStrokeCommitsRef = useRef<unknown>(null);
+  const flushPendingStrokeCommitsRef = useRef(() => !pendingStrokeCommitsRef.current);
   const bindings = { ...authority, studioAuthUserId: "actor", workId: "work", available: true,
-    drawingRef, pendingStrokeCommitsRef, getSnapshot: () => fixture.snapshot,
+    drawingRef, pendingStrokeCommitsRef, flushPendingStrokeCommitsRef, getSnapshot: () => fixture.snapshot,
     canvasWidth: 800, isDurableMask: () => false,
     save: async () => { throw new Error("Handoff must never save"); },
     captureAll: async () => { throw new Error("Handoff must never capture"); },

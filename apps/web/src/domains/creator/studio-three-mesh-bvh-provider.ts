@@ -1317,6 +1317,10 @@ type ThreeNamespace = typeof import("three");
 type ThreeMeshBvhModule = typeof import("three-mesh-bvh");
 type ThreeBufferGeometry = import("three").BufferGeometry;
 type MeshBvh = InstanceType<ThreeMeshBvhModule["MeshBVH"]>;
+type ThreeGeometryBoundsTreeOwner = {
+  boundsTree?: unknown; // 외부 트리는 메서드를 호출하지 않고 소유권만 비교한다.
+  disposeBoundsTree?: () => void;
+};
 
 function createThreeMeshBvhRuntime(
   three: ThreeNamespace,
@@ -1366,11 +1370,9 @@ function createThreeMeshBvhRuntime(
     },
     build(geometryValue, options) {
       aborted(options.signal);
-      const geometry = geometryValue as ThreeBufferGeometry & {
-        boundsTree?: MeshBvh;
-        disposeBoundsTree?: () => void;
-      };
-      if (options.attachToGeometry && geometry.boundsTree) {
+      const geometry = geometryValue as ThreeBufferGeometry;
+      const owner: ThreeGeometryBoundsTreeOwner = geometry;
+      if (options.attachToGeometry && owner.boundsTree) {
         throw new Error("Geometry already owns a bounds tree.");
       }
       const boundsTree = new module.MeshBVH(geometry, {
@@ -1384,7 +1386,7 @@ function createThreeMeshBvhRuntime(
           aborted(options.signal);
         },
       });
-      if (options.attachToGeometry) geometry.boundsTree = boundsTree;
+      if (options.attachToGeometry) owner.boundsTree = boundsTree;
       return boundsTree;
     },
     raycastFirst(boundsTreeValue, ray) {
@@ -1531,20 +1533,18 @@ function createThreeMeshBvhRuntime(
     },
     disposeBoundsTree(boundsTreeValue, geometryValue, attachedToGeometry) {
       const boundsTree = boundsTreeValue as MeshBvh;
-      const geometry = geometryValue as ThreeBufferGeometry & {
-        boundsTree?: MeshBvh | null;
-        disposeBoundsTree?: () => void;
-      };
+      const geometry = geometryValue as ThreeBufferGeometry;
+      const owner: ThreeGeometryBoundsTreeOwner = geometry;
       if (
         attachedToGeometry
-        && geometry.boundsTree === boundsTree
-        && typeof geometry.disposeBoundsTree === "function"
+        && owner.boundsTree === boundsTree
+        && typeof owner.disposeBoundsTree === "function"
       ) {
-        geometry.disposeBoundsTree();
+        owner.disposeBoundsTree();
         return;
       }
-      if (attachedToGeometry && geometry.boundsTree === boundsTree) {
-        delete geometry.boundsTree;
+      if (attachedToGeometry && owner.boundsTree === boundsTree) {
+        delete owner.boundsTree;
       }
     },
     disposeGeometry(geometry) {

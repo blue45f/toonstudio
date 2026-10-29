@@ -66,6 +66,40 @@ describe("Studio review capture bridge", () => {
     f.deps.refreshPurpose = vi.fn(async () => { throw new Error("배정이 회수됐습니다."); }); await f.bridge.start();
     expect(f.deps.readSaved).not.toHaveBeenCalled(); expect(f.deps.captureAll).not.toHaveBeenCalled(); expect(f.deps.produce).not.toHaveBeenCalled();
   });
+  it("같은 원고·편집기 세대의 정상 purpose 갱신은 새 권한 context로 첫 캡처를 시작한다", async () => {
+    const f = fixture(), writeContext = { version: 1 as const, policyVersion: 2, grantIds: ["renewed-grant"], creations: [], restorations: [] };
+    f.context({ available: false, sourceGeneration: 1, generation: "expired-purpose" });
+    f.source({ role: "viewer", capabilities: { view: true, edit: false }, access: "view" });
+    f.deps.refreshPurpose = vi.fn(async () => {
+      f.context({ available: true, generation: "renewed-purpose", writeContext });
+    });
+    await f.bridge.start();
+    expect(f.bridge.getSnapshot().phase).toBe("completed");
+    expect(f.deps.prepare).toHaveBeenCalledWith(expect.objectContaining({ writeContext }), expect.any(AbortSignal));
+    expect(f.deps.produce).toHaveBeenCalledWith(expect.objectContaining({ writeContext }), f.pngs, expect.any(AbortSignal), expect.any(Function));
+    expect(f.deps.refreshPurpose).toHaveBeenCalledTimes(2);
+  });
+  it.each([
+    { name: "계정", patch: { scopeKey: "other-user:work" } },
+    { name: "작품", patch: { workId: "other-work" } },
+    { name: "제출 원본", patch: { sourceRevision: { artifactId: "other-artifact", revisionId: "other-revision", rootGraphHash: "a".repeat(64) } } },
+    { name: "편집기 세대", patch: { sourceGeneration: 2, generation: 2 } },
+  ])("purpose 재확인 중 $name 전환은 첫 원고 조회부터 차단한다", async ({ patch }) => {
+    const f = fixture(), refreshed = deferred<void>();
+    f.context({ sourceGeneration: 1 });
+    f.deps.refreshPurpose = vi.fn(() => refreshed.promise);
+    const start = f.bridge.start();
+    f.context(patch);
+    refreshed.resolve(undefined);
+    await start;
+    expect(f.bridge.getSnapshot()).toMatchObject({ phase: "cancelled", reason: "changed" });
+    expect(f.deps.readSaved).not.toHaveBeenCalled();
+    expect(f.deps.projectRuntime).not.toHaveBeenCalled();
+    expect(f.deps.prepare).not.toHaveBeenCalled();
+    expect(f.deps.captureAll).not.toHaveBeenCalled();
+    expect(f.deps.produce).not.toHaveBeenCalled();
+    expect(f.deps.cancelRemote).not.toHaveBeenCalled();
+  });
   it("지정된 제출 원본 tuple을 준비 요청과 재시도에 고정한다", async () => {
     const f = fixture();
     const sourceRevision = { artifactId: "source-artifact", revisionId: "submitted", rootGraphHash: f.subject.rootGraphHash };

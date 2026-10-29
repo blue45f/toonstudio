@@ -9,7 +9,8 @@ describe("PSD 개별 레이어의 실제 컷 경계", () => {
     const value = { save: vi.fn(), restore: vi.fn(), setTransform: vi.fn(), beginPath: vi.fn(),
       moveTo: vi.fn(), lineTo: vi.fn(), rect: vi.fn(), closePath: vi.fn(), fill: vi.fn(), drawImage: vi.fn(),
       globalAlpha: 0.5, globalCompositeOperation: "source-over", fillStyle: "#fff" };
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(value as unknown as CanvasRenderingContext2D);
+    const getContext = ((contextId: string) => contextId === "2d" ? value : null) as HTMLCanvasElement["getContext"];
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(getContext);
     return value;
   }
   it("캡처 원점과 출력 배율로 원고의 다각형 경계를 되살린다", () => {
