@@ -33,6 +33,8 @@ export function evaluateReviewApproval(
   policy: ReviewPolicy,
   decisions: readonly ReviewDecision[],
 ): ApprovalEvaluation {
+  const laneCounts = new Map<ReviewLane, number>();
+  for (const lane of policy.lanes) laneCounts.set(lane.lane, (laneCounts.get(lane.lane) ?? 0) + 1);
   const latestByLaneAndAssignment = new Map<string, ReviewDecision>();
   for (const decision of decisions) {
     const key = `${decision.lane}:${decision.assignmentId}`;
@@ -44,7 +46,7 @@ export function evaluateReviewApproval(
 
   const results: ApprovalLaneEvaluation[] = policy.lanes.map((lanePolicy) => {
     const laneDecisions = [...latestByLaneAndAssignment.values()].filter(
-      (decision) => decision.lane === lanePolicy.lane,
+      (decision) => decision.lane === lanePolicy.lane && lanePolicy.eligibleAssignmentIds.includes(decision.assignmentId),
     );
     const approvals = laneDecisions.filter((decision) =>
       decision.value === "approve" || decision.value === "approve-with-conditions").length;
@@ -60,7 +62,7 @@ export function evaluateReviewApproval(
     const changeRequestedBy = laneDecisions.filter(
       (decision) => decision.value === "request-changes",
     ).map((decision) => decision.assignmentId);
-    const approved = approvals >= lanePolicy.quorum
+    const approved = laneCounts.get(lanePolicy.lane) === 1 && approvals >= lanePolicy.quorum
       && missingRequired.length === 0
       && vetoedBy.length === 0
       && changeRequestedBy.length === 0;
@@ -75,7 +77,7 @@ export function evaluateReviewApproval(
     });
   });
   const blockingLanes = results
-    .filter((result) => !result.approved && policy.lanes.find((lane) => lane.lane === result.lane)?.blocksPublication)
+    .filter((result, index) => !result.approved && policy.lanes[index]?.blocksPublication)
     .map((result) => result.lane as ReviewLane);
   return Object.freeze({
     approved: results.every((result) => result.approved),
@@ -89,7 +91,9 @@ export function validateReviewDecision(
   decision: ReviewDecision,
 ): readonly string[] {
   const issues: string[] = [];
-  const lane = policy.lanes.find((entry) => entry.lane === decision.lane);
+  const lanes = policy.lanes.filter((entry) => entry.lane === decision.lane);
+  if (lanes.length > 1) return Object.freeze(["duplicate-review-lane"]);
+  const lane = lanes[0];
   if (!lane) return Object.freeze(["unknown-review-lane"]);
   if (!lane.eligibleAssignmentIds.includes(decision.assignmentId)) issues.push("reviewer-not-eligible");
   if (decision.value === "veto") {

@@ -466,6 +466,40 @@ describe.skipIf(!url)("실제 일반 가입·쿠키·PostgreSQL 협업 HTTP", ()
     expect(final.submissions.find((entry) => entry.id === partialFirst.id)?.status).toBe("in-review");
     expect(final.tasks.find((entry) => entry.id === finished.id)?.status).toBe("approved");
   }, 60_000);
+  it("중복 검수 영역 등록과 기존 모호한 정책의 새 승인은 HTTP에서 전체 저장 없이 거절한다", async () => {
+    const initial = (await project()).aggregate;
+    const policy = initial.reviewPolicies.find((entry) => entry.id === "http-review-policy");
+    const submission = initial.submissions.find((entry) => entry.id === "http-line-submission-2");
+    const lane = policy?.lanes[0];
+    if (!policy || !submission || !lane) throw new Error("기존 검수 정책·제출본 fixture가 없습니다.");
+    const duplicate = { ...policy, lanes: [lane, { ...lane, eligibleAssignmentIds: ["http-line-author"], requiredAssignmentIds: [] }] };
+    const reject = async (value: Record<string, unknown>, actor = owner()) => {
+      const before = await project(), mutationId = randomUUID();
+      expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: actor.cookie,
+        body: { command: value, expectedRevision: before.aggregate.revision, mutationId } })).status).toBe(400);
+      expect(await project()).toEqual(before);
+      const receipt = await h.pool.query('SELECT count(*)::int AS count FROM production_project_mutation_receipt WHERE "projectId"=$1 AND "mutationId"=$2', [projectId, mutationId]);
+      expect(receipt.rows[0].count).toBe(0);
+    };
+    await reject({ type: "upsert-review-policy", policy: duplicate });
+    expect((await command({ type: "record-review-decision", policyId: policy.id, decision: {
+      id: "http-legacy-policy-vote", reviewRoundId: submission.id, lane: lane.lane, assignmentId: "http-editor-reviewer",
+      value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: new Date().toISOString(),
+    } }, editor())).status).toBe(201);
+    const valid = (await project()).aggregate;
+    // 과거 저장될 수 있었던 중복 정책만 격리 DB fixture로 복원한다. 제품 API로 삽입한 것으로 표시하지 않는다.
+    const legacy = { ...valid, reviewPolicies: valid.reviewPolicies.map((entry) => entry.id === policy.id ? duplicate : entry) };
+    const update = await h.pool.query('UPDATE production_project SET aggregate=$1::jsonb WHERE id=$2 AND revision=$3', [JSON.stringify(legacy), projectId, valid.revision]);
+    expect(update.rowCount).toBe(1);
+    try {
+      await reject({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+      expect((await project()).aggregate.reviewDecisions).toEqual(valid.reviewDecisions);
+    } finally {
+      const restored = await h.pool.query('UPDATE production_project SET aggregate=$1::jsonb WHERE id=$2 AND revision=$3', [JSON.stringify(valid), projectId, valid.revision]);
+      expect(restored.rowCount).toBe(1);
+    }
+    expect((await project()).aggregate).toEqual(valid);
+  });
   it("독립된 제작자와 검수자가 여덟 공정을 완주하고 재작업 이전 승인을 재사용하지 않는다", async () => {
     const initial = (await project()).aggregate;
     const ownerRole = initial.assignments.find((entry) => entry.id === "http-line-author");
