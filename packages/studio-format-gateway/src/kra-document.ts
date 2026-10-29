@@ -3,10 +3,12 @@
  * @description Krita 문서(`.kra`/`.krz`) 읽기 코덱: ZIP 컨테이너, `maindoc.xml`, 레이어·마스크 트리, 래스터 레이어 픽셀
  *              (RGBA8로 환원), 합성 이미지·미리보기·ICC 프로파일 원본, 진단.
  *
- * 범위는 읽기다. 레이어 합성, 블렌드 모드 계산, 마스크 적용, 필터·복제·벡터 레이어 실행, 색 변환(ICC), 애니메이션,
- * 쓰기는 하지 않는다. 읽지 않은 레이어·마스크·색 공간은 조용히 버리지 않고 `unsupported`에 이유와 위치를 남긴다. 문서 수준의
- * 부속 항목(`documentinfo.xml`, `animation/index.xml`, 레이어별 `.icc`, ICC 외의 `annotations/*`)은 읽지 않으며 진단도 하지
- * 않는다. 원본 파일의 바이트는 호출자가 가지고 있고, 결과는 길이와 SHA-256만 담는다.
+ * 범위는 읽기다. 레이어 합성, 블렌드 모드 계산, 필터·복제·벡터 레이어 실행, 색 변환(ICC), 애니메이션, 쓰기는 하지 않는다.
+ * 마스크는 값(`.pixelselection`)을 읽어 `KraMask.values`에 담고, 투명도 마스크를 레이어 알파에 곱하는 일은 순수 함수
+ * `applyKraTransparencyMasks`가 한다(`layer.pixels`는 마스크를 적용하지 않은 레이어 자체의 픽셀이다). 읽지 않은 레이어·마스크·색
+ * 공간은 조용히 버리지 않고 `unsupported`에 이유와 위치를 남긴다. 문서 수준의 부속 항목(`documentinfo.xml`,
+ * `animation/index.xml`, 레이어별 `.icc`, ICC 외의 `annotations/*`)은 읽지 않으며 진단도 하지 않는다. 원본 파일의 바이트는
+ * 호출자가 가지고 있고, 결과는 길이와 SHA-256만 담는다.
  *
  * 출처와 증거 수준
  * - 컨테이너와 `maindoc.xml` 구조, 타일 파일 배치, 색 공간별 픽셀 배치는 Krita 5.2.2를 블랙박스로 실행해 만든 문서
@@ -39,8 +41,9 @@ import {
 } from "./kra-colorspace";
 import { clipForMessage, KraIssueList } from "./kra-issues";
 import { parseKraMaindoc } from "./kra-maindoc";
-import { flattenKraNodes, type KraLayerDraft } from "./kra-nodes";
-import { assembleKraLayer, KraTileError, parseKraTileFile } from "./kra-tiles";
+import { hasKraMaskValues } from "./kra-masks";
+import { flattenKraNodes, type KraLayerDraft, type KraMaskDraft } from "./kra-nodes";
+import { assembleKraLayer, assembleKraMask, KraTileError, parseKraTileFile } from "./kra-tiles";
 import { KRA_LIMITS, KraError } from "./kra-types";
 import { openRasterSha256Hex } from "./openraster";
 
@@ -52,12 +55,20 @@ import type {
   KraImportResult,
   KraLayer,
   KraLimits,
+  KraMask,
   KraSignature,
 } from "./kra-types";
 
 export type * from "./kra-types";
 export { KRA_LIMITS, KraError } from "./kra-types";
 export { KRA_OBSERVED_COMPOSITE_OPS, isObservedKraCompositeOp } from "./kra-composite-ops";
+export {
+  applyKraTransparencyMasks,
+  KRA_MASK_APPLY_MAX_PIXEL_OPS,
+  type KraMaskApplyOptions,
+  type KraMaskApplyResult,
+  type KraMaskedPixels,
+} from "./kra-masks";
 
 const KRA_MIMETYPE = "application/x-krita";
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -356,6 +367,19 @@ function isSafeLayerFilename(name: string): boolean {
   return true;
 }
 
+/**
+ * 출력 버퍼는 만들기 전에 전체 예산에 청구한다. 깨진 레이어·마스크도 예산을 쓰므로 버퍼만 만들고 버리는 파일로 시간을 끌 수 없다.
+ * 청구는 환불하지 않는다.
+ */
+function reserveOutput(ctx: DecodeContext): (bytes: number) => void {
+  return (bytes) => {
+    if (ctx.decodedBytes + bytes > ctx.limits.maxDecodedBytes) {
+      throw new KraTileError(`전체 출력 ${ctx.decodedBytes + bytes}바이트가 예산 ${ctx.limits.maxDecodedBytes}를 넘는다`, "limit");
+    }
+    ctx.decodedBytes += bytes;
+  };
+}
+
 async function decodeRasterLayer(ctx: DecodeContext, draft: KraLayerDraft): Promise<LayerPixels> {
   const { archive, image, limits, unsupported } = ctx;
   const where = `layer[${draft.index}]`;
@@ -460,13 +484,7 @@ async function decodeRasterLayer(ctx: DecodeContext, draft: KraLayerDraft): Prom
       canvasHeight: image.height,
       limits,
       checkpoint: () => throwIfAborted(ctx.signal),
-      // 출력 버퍼는 만들기 전에 전체 예산에 청구한다. 깨진 레이어도 예산을 쓰므로 버퍼만 만들고 버리는 파일로 시간을 끌 수 없다.
-      reserve: (bytes) => {
-        if (ctx.decodedBytes + bytes > limits.maxDecodedBytes) {
-          throw new KraTileError(`전체 출력 ${ctx.decodedBytes + bytes}바이트가 예산 ${limits.maxDecodedBytes}를 넘는다`, "limit");
-        }
-        ctx.decodedBytes += bytes;
-      },
+      reserve: reserveOutput(ctx),
     });
     return { extent: result.extent, defaultPixel: result.defaultPixel, tileCount: file.tiles.length, pixels: result.pixels };
   } catch (cause) {
@@ -480,6 +498,122 @@ async function decodeRasterLayer(ctx: DecodeContext, draft: KraLayerDraft): Prom
     );
     return NO_PIXELS;
   }
+}
+
+// ---------------------------------------------------------------------------
+// 마스크 값
+// ---------------------------------------------------------------------------
+
+interface MaskValues {
+  readonly extent: KraExtent | null;
+  readonly defaultValue: number | null;
+  readonly tileCount: number;
+  readonly values: Uint8Array | null;
+}
+
+const NO_MASK_VALUES: MaskValues = Object.freeze({ extent: null, defaultValue: null, tileCount: 0, values: null });
+/** 빈 선택: 타일 없이 어디서나 0. */
+const EMPTY_MASK_VALUES: MaskValues = Object.freeze({ extent: null, defaultValue: 0, tileCount: 0, values: null });
+
+/**
+ * 마스크의 값 파일(`<filename>.pixelselection`)과 기본값(`….defaultpixel`)을 읽는다. 둘 중 하나라도 없거나 깨졌으면 값을 알 수 없다고
+ * 보고한다. 예외는 값 항목이 둘 다 없는 투명도 마스크 하나뿐이다: 선택을 한 번도 주지 않은 새 마스크가 이렇게 저장되고, Krita가 그 문서를
+ * 다시 열면 빈 선택(전부 0)으로 읽어 레이어를 숨기는 것을 관찰했다(설계 문서 3.1절). 이 경우만 같은 값으로 해석하고 경고한다.
+ */
+async function decodeMaskValues(ctx: DecodeContext, layer: KraLayerDraft, mask: KraMaskDraft, maskIndex: number): Promise<MaskValues> {
+  if (!hasKraMaskValues(mask.nodeType) || !mask.placementValid) return NO_MASK_VALUES;
+  const { archive, image, limits, unsupported } = ctx;
+  const where = `layer[${layer.index}].masks[${maskIndex}]`;
+  const label = `"${clipForMessage(mask.name)}"`;
+  if (mask.filename === null) {
+    unsupported.add("resource", "kra-mask-data-missing", `마스크 ${label}에 filename 속성이 없어 값을 읽지 않는다`, where);
+    return NO_MASK_VALUES;
+  }
+  if (!isSafeLayerFilename(mask.filename)) {
+    unsupported.add("resource", "kra-mask-filename-invalid", `마스크 ${label}의 filename "${clipForMessage(mask.filename)}"가 안전하지 않아 값을 읽지 않는다`, where);
+    return NO_MASK_VALUES;
+  }
+  const valuesPath = `${image.name}/layers/${mask.filename}.pixelselection`;
+  const entry = archive.getEntry(valuesPath);
+  const defaultEntry = archive.getEntry(`${valuesPath}.defaultpixel`);
+  if (mask.nodeType === "transparencymask" && entry === undefined && defaultEntry === undefined) {
+    ctx.warnings.add(
+      "resource",
+      "kra-mask-data-missing",
+      `마스크 ${label}의 값 항목이 없어 Krita가 읽는 대로 빈 선택(어디서나 0)으로 보았다: 이 마스크가 보이면 레이어가 전부 숨는다`,
+      where,
+    );
+    return EMPTY_MASK_VALUES;
+  }
+  if (entry === undefined || entry.directory || defaultEntry === undefined || defaultEntry.directory) {
+    unsupported.add(
+      "resource",
+      "kra-mask-data-missing",
+      `마스크 ${label}의 값 항목 ${clipForMessage(valuesPath, 120)} 또는 그 .defaultpixel이 ZIP에 없다 (선택을 한 번도 만들지 않은 마스크이거나 파일이 깨졌다)`,
+      where,
+    );
+    return NO_MASK_VALUES;
+  }
+  // 레이어와 같이 같은 항목을 되풀이해 해제시키는 파일은 읽지 않는다.
+  if (ctx.readPaths.has(valuesPath)) {
+    unsupported.add("resource", "kra-mask-data-shared", `마스크 ${label}의 값 항목 ${clipForMessage(valuesPath, 120)}를 앞선 노드가 이미 썼다`, where);
+    return NO_MASK_VALUES;
+  }
+  ctx.readPaths.add(valuesPath);
+  if (defaultEntry.uncompressedBytes !== 1) {
+    unsupported.add("resource", "kra-mask-decode-failed", `마스크 ${label}의 .defaultpixel ${defaultEntry.uncompressedBytes}바이트가 1바이트가 아니다`, where);
+    return NO_MASK_VALUES;
+  }
+  let tileBytes: Uint8Array;
+  let defaultBytes: Uint8Array;
+  try {
+    tileBytes = await archive.readEntry(entry, { signal: ctx.signal });
+    defaultBytes = await archive.readEntry(defaultEntry, { signal: ctx.signal });
+  } catch (cause) {
+    unsupported.add("resource", "kra-mask-read-failed", `마스크 ${label}의 값을 읽지 못했다: ${describeReadFailure(cause)}`, where);
+    return NO_MASK_VALUES;
+  }
+  try {
+    const file = parseKraTileFile(tileBytes, limits);
+    if (file.trailingBytes > 0) {
+      ctx.warnings.add("container", "kra-tile-trailing-bytes", `마스크 ${label}의 값 파일 끝에 해석하지 않은 ${file.trailingBytes}바이트가 남았다`, where);
+    }
+    const defaultValue = defaultBytes[0]!;
+    const result = assembleKraMask({
+      file,
+      defaultValue,
+      offsetX: mask.offsetX,
+      offsetY: mask.offsetY,
+      limits,
+      checkpoint: () => throwIfAborted(ctx.signal),
+      reserve: reserveOutput(ctx),
+    });
+    return { extent: result.extent, defaultValue, tileCount: file.tiles.length, values: result.values };
+  } catch (cause) {
+    if (!(cause instanceof KraTileError)) throw cause;
+    unsupported.add(
+      "resource",
+      cause.code === "limit" ? "kra-mask-limit-exceeded" : "kra-mask-decode-failed",
+      `마스크 ${label}: ${cause.message}`,
+      where,
+    );
+    return NO_MASK_VALUES;
+  }
+}
+
+function completeMask(draft: KraMaskDraft, values: MaskValues): KraMask {
+  return {
+    nodeType: draft.nodeType,
+    name: draft.name,
+    uuid: draft.uuid,
+    visible: draft.visible,
+    locked: draft.locked,
+    filename: draft.filename,
+    offsetX: draft.offsetX,
+    offsetY: draft.offsetY,
+    attributes: draft.attributes,
+    ...values,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -555,16 +689,28 @@ export async function importKra(source: Blob | Uint8Array | ArrayBuffer, options
   };
   const layers: KraLayer[] = [];
   let lastYield = now();
-  for (const draft of drafts) {
+  // 압축하지 않은 항목과 메모리 입력만으로는 마이크로태스크가 이어져 중단 신호가 영원히 실행되지 못한다. 일정 시간마다 양보한다.
+  const pause = async (): Promise<void> => {
     throwIfAborted(opts.signal);
-    // 압축하지 않은 항목과 메모리 입력만으로는 마이크로태스크가 이어져 중단 신호가 영원히 실행되지 못한다. 일정 시간마다 양보한다.
     if (now() - lastYield >= YIELD_INTERVAL_MS) {
       await yieldToEventLoop();
       lastYield = now();
       throwIfAborted(opts.signal);
     }
-    const pixels = decodePixels && draft.kind === "raster" && !placementInvalid.has(draft.index) ? await decodeRasterLayer(ctx, draft) : NO_PIXELS;
-    layers.push({ ...draft, ...pixels });
+  };
+  // 레이어 픽셀을 모두 먼저 풀고 마스크 값은 그 뒤에 푼다. 둘이 같은 출력 예산을 쓰므로, 앞선 노드의 마스크가 뒤쪽 레이어의 픽셀을 밀어내지 않게 한다.
+  const layerPixels: LayerPixels[] = [];
+  for (const draft of drafts) {
+    await pause();
+    layerPixels.push(decodePixels && draft.kind === "raster" && !placementInvalid.has(draft.index) ? await decodeRasterLayer(ctx, draft) : NO_PIXELS);
+  }
+  for (const [position, draft] of drafts.entries()) {
+    const masks: KraMask[] = [];
+    for (const [maskIndex, maskDraft] of draft.masks.entries()) {
+      await pause();
+      masks.push(completeMask(maskDraft, decodePixels ? await decodeMaskValues(ctx, draft, maskDraft, maskIndex) : NO_MASK_VALUES));
+    }
+    layers.push({ ...draft, ...layerPixels[position]!, masks });
   }
 
   const mergedImagePng = await readOptionalAsset(archive, "mergedimage.png", "합성 이미지(mergedimage.png)", true, warnings, opts.signal);

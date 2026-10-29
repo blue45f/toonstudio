@@ -17,7 +17,7 @@ import { importGimpBrush, importGimpPattern, inspectGimpBrushFormat } from "../.
 import { importGimpBrushPipe } from "../../packages/studio-format-gateway/src/gimp-brush-pipe";
 import { importGimpGeneratedBrush } from "../../packages/studio-format-gateway/src/gimp-generated-brush";
 import { describeKraPixelFormat } from "../../packages/studio-format-gateway/src/kra-colorspace";
-import { importKra, inspectKraSignature } from "../../packages/studio-format-gateway/src/kra-document";
+import { applyKraTransparencyMasks, importKra, inspectKraSignature } from "../../packages/studio-format-gateway/src/kra-document";
 import { importXcf, inspectXcfHeader } from "../../packages/studio-format-gateway/src/xcf";
 
 /**
@@ -265,6 +265,14 @@ function registerKraSamples(): void {
       "kra-layer-decode-failed",
       "kra-layer-limit-exceeded",
       "kra-layer-offset-invalid",
+      // 마스크 값 파일(.pixelselection)이 깨졌거나 한도를 넘었다. 값 항목이 없는 마스크(kra-mask-data-missing)는 선택을 한 번도 만들지
+      // 않은 정상 문서일 수 있어 구조 오류로 보지 않는다.
+      "kra-mask-data-shared",
+      "kra-mask-filename-invalid",
+      "kra-mask-read-failed",
+      "kra-mask-decode-failed",
+      "kra-mask-limit-exceeded",
+      "kra-mask-offset-invalid",
     ];
     // 관찰한 Krita 5.2.2 파일의 가정(첫 항목 mimetype, 타일 파일 끝, .defaultpixel, 속성 형식)이 실제 파일에서 깨졌다는 신호.
     const STRUCTURAL_WARNINGS = [
@@ -290,6 +298,22 @@ function registerKraSamples(): void {
           if (layer.parentIndex !== null) {
             expect(layer.parentIndex).toBeLessThan(layer.index);
             expect(result.layers[layer.parentIndex]?.kind).toBe("group");
+          }
+          for (const mask of layer.masks) {
+            if (mask.values !== null) {
+              expect(mask.extent).not.toBeNull();
+              expect(mask.values.length).toBe(mask.extent!.width * mask.extent!.height);
+              expect(mask.defaultValue).not.toBeNull();
+            }
+            if (mask.defaultValue !== null) {
+              expect(mask.defaultValue).toBeGreaterThanOrEqual(0);
+              expect(mask.defaultValue).toBeLessThanOrEqual(255);
+            }
+          }
+          if (layer.masks.length > 0) {
+            const masked = applyKraTransparencyMasks(layer);
+            if (masked.status === "applied") expect(masked.pixels.length).toBe(layer.pixels!.length);
+            else expect(["no-pixels", "mask-unreadable"]).toContain(masked.status);
           }
           if (layer.kind !== "raster") {
             expect(layer.pixels).toBeNull();

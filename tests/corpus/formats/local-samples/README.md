@@ -9,7 +9,7 @@
 | `.xcf` | `packages/studio-format-gateway/src/xcf.ts`의 구조·픽셀 디코드 | `docs/design/xcf-reader-public-spec-2026-10-29.md` |
 | `.aseprite`, `.ase` | `packages/studio-format-gateway/src/aseprite-sprite.ts`의 구조·셀·타일셋 디코드 (`.ase` 중 Adobe Swatch Exchange는 서명으로 걸러 낸다) | `docs/design/aseprite-sprite-reader-public-spec-2026-10-29.md` |
 | `.gbr`, `.gih`, `.pat`, `.vbr` | `packages/studio-format-gateway/src/gimp-brush*.ts`, `gimp-generated-brush.ts`의 브러시·파이프·패턴·생성 브러시 읽기 | `docs/design/gimp-brush-formats-reader-public-spec-2026-10-29.md` |
-| `.kra`, `.krz` | `packages/studio-format-gateway/src/kra-*.ts`의 컨테이너·`maindoc.xml`·타일(LZF)·색 공간 읽기 | `docs/design/krita-kra-reader-observed-2026-10-29.md` |
+| `.kra`, `.krz` | `packages/studio-format-gateway/src/kra-*.ts`의 컨테이너·`maindoc.xml`·타일(LZF)·색 공간·마스크 값 읽기 | `docs/design/krita-kra-reader-observed-2026-10-29.md` |
 
 ## 규칙
 
@@ -45,7 +45,9 @@ pnpm exec vitest run tests/format-gateway/local-samples-corpus.test.ts
   Python 스크립트와 필드·픽셀 해시를 대조했으며 그 결과는 설계 문서에 있다.
 - `.kra`/`.krz` 파일마다 구조 진단(레이어 데이터 누락·타일 해제 실패·한도 초과·잘못된 오프셋, 타일 파일 끝 잔여 바이트)이 없는지,
   그룹 부모가 앞선 그룹 레이어인지, 지원하는 색 공간(RGBA·RGBA16·GRAYA·GRAYAU16과 실수형 RGBAF16·RGBAF32·GRAYAF16·GRAYAF32)의 래스터 레이어 픽셀 수가 범위와 맞는지 확인한다.
-  마스크·복제·필터 레이어 같은 의미 손실은 `unsupported`로 보고될 뿐 실패가 아니다. 픽셀 값은 Krita가 읽어 준 정답과 대조하는
+  마스크 값(`.pixelselection`)을 읽은 경우 값 크기가 범위와 맞고 기본값이 0~255인지, 마스크 값 항목이 깨지거나 한도를 넘지 않았는지 확인한다
+  (값 항목이 없는 마스크는 선택을 한 번도 만들지 않은 정상 문서일 수 있어 실패가 아니다).
+  마스크 적용·복제·필터 레이어 같은 의미 손실은 `unsupported`로 보고될 뿐 실패가 아니다. 픽셀 값은 Krita가 읽어 준 정답과 대조하는
   `tests/corpus/formats/krita-oracle/`의 도구로 따로 검증한다(Krita 5.2.x를 직접 돌려 코퍼스를 만든다).
 - 형식별로 샘플이 없으면 그 형식의 `describe`와 테스트는 등록되지 않고, 이 디렉터리가 Git에서 무시되는지만
   확인한다.

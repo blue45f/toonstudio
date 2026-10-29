@@ -319,3 +319,74 @@ export function assembleKraLayer(request: KraAssembleRequest): KraAssembleResult
   }
   return { extent: { x: minX, y: minY, width, height }, pixels, defaultPixel };
 }
+
+export interface KraMaskAssembleRequest {
+  readonly file: KraTileFile;
+  /** `.pixelselection.defaultpixel`의 값(0~255). 타일이 없는 곳의 값이다. */
+  readonly defaultValue: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
+  readonly limits: KraLimits;
+  /** 타일 몇 개마다 호출한다. 중단 신호를 확인하는 용도다. */
+  readonly checkpoint?: () => void;
+  /** 출력 버퍼를 만들기 직전에 바이트 수를 알린다(`KraAssembleRequest.reserve`와 같다). */
+  readonly reserve?: (bytes: number) => void;
+}
+
+export interface KraMaskAssembleResult {
+  readonly extent: KraExtent | null;
+  readonly values: Uint8Array | null;
+}
+
+/**
+ * 마스크 타일(픽셀 1바이트)을 이미지 좌표의 값 버퍼 하나로 조립한다. 버퍼는 타일 사각형의 합집합을 덮고 타일이 없는 곳은 기본값이다.
+ * 타일이 하나도 없으면 값 버퍼 없이 기본값만 의미가 있다.
+ */
+export function assembleKraMask(request: KraMaskAssembleRequest): KraMaskAssembleResult {
+  const { file, offsetX, offsetY, limits } = request;
+  if (file.pixelBytes !== 1) throw new KraTileError(`마스크 타일 헤더의 픽셀 크기 ${file.pixelBytes}가 1이 아니다`, "pixel-size");
+  if (file.tiles.length === 0) return { extent: null, values: null };
+  for (const tile of file.tiles) validateKraTileRecord(file, tile);
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const tile of file.tiles) {
+    minX = Math.min(minX, tile.x + offsetX);
+    minY = Math.min(minY, tile.y + offsetY);
+    maxX = Math.max(maxX, tile.x + offsetX + file.tileWidth);
+    maxY = Math.max(maxY, tile.y + offsetY + file.tileHeight);
+  }
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width * height > limits.maxLayerPixels) {
+    throw new KraTileError(`마스크 출력 ${width}x${height}픽셀이 한도 ${limits.maxLayerPixels}를 넘는다`, "limit");
+  }
+  request.reserve?.(width * height);
+  let values: Uint8Array;
+  try {
+    values = new Uint8Array(width * height);
+  } catch (error) {
+    if (error instanceof RangeError) throw new KraTileError(`마스크 출력 ${width}x${height}픽셀의 버퍼를 만들 수 없다 (메모리 부족)`, "limit");
+    throw error;
+  }
+  if (request.defaultValue !== 0) values.fill(request.defaultValue);
+
+  let sinceCheckpoint = 0;
+  for (const tile of file.tiles) {
+    // 픽셀이 1바이트라 바이트 평면 배치와 픽셀 순서 배치가 같다.
+    const raw = decodeKraTile(file, tile);
+    const left = tile.x + offsetX - minX;
+    const top = tile.y + offsetY - minY;
+    for (let row = 0; row < file.tileHeight; row += 1) {
+      values.set(raw.subarray(row * file.tileWidth, (row + 1) * file.tileWidth), (top + row) * width + left);
+    }
+    sinceCheckpoint += 1;
+    if (sinceCheckpoint >= 64) {
+      sinceCheckpoint = 0;
+      request.checkpoint?.();
+    }
+  }
+  return { extent: { x: minX, y: minY, width, height }, values };
+}
