@@ -19,6 +19,8 @@ import {
   importStudioCspToolBytes,
   studioBrushPackImportNotes,
 } from "./brush/studio-brush-pack-import";
+import { StudioBrushPackPreserveOnlyError } from "./brush/studio-brush-pack-import-types";
+import { resolveStudioBrushPackErrorFromCause } from "./status-i18n/studio-producer-error-i18n-brush";
 import {
   createBrowserCspSutSqliteReader,
   type StudioCspSutSqliteWorkerLike,
@@ -188,9 +190,14 @@ describe("external creative formats → V12 SQLite brush catalog", () => {
     );
     expect(result.brushes).toHaveLength(0);
     expect(result.preservation?.status).toBe("preserve-only");
-    await expect(commitStudioBrushPackImport(result, product.repository)).rejects.toThrow(
-      "보존 판정",
+    // 2026-10-22(7540734d, A4 D4 R14): 생산자는 preserveOnly 코드로 던지고 표시 지점이 같은 한글 문구로 해석한다.
+    const rejected = await commitStudioBrushPackImport(result, product.repository).then(
+      () => null,
+      (cause: unknown) => cause,
     );
+    expect(rejected).toBeInstanceOf(StudioBrushPackPreserveOnlyError);
+    expect(rejected).toMatchObject({ code: "preserveOnly" });
+    expect(resolveStudioBrushPackErrorFromCause(rejected)).toContain("보존 판정");
     expect(putMany).not.toHaveBeenCalled();
     expect(await product.repository.query({ limit: CSP_TOOL_FILE_LIMITS.maxRows })).toMatchObject({
       items: [],

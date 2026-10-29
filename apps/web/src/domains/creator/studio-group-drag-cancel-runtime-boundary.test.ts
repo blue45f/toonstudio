@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
 import { readStudioCuttoonEditorSource } from "./studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 
 const pageSource = readStudioCuttoonEditorSource();
@@ -65,8 +66,11 @@ describe("Studio group drag cancellation runtime boundary", () => {
     expect(internalGroupEscape).toBeGreaterThan(dragCancel);
     expect(ordinarySelectionClear).toBeGreaterThan(dragCancel);
     expect(source.slice(dragCancel, drawingCancel)).toContain("e.preventDefault()");
+    // 2026-10-23(4a59b310, A4 D4): 단축키 공지는 구조화 코드로 내고 Host 게시 지점이 같은 한글 원문으로 해석한다.
     expect(source.slice(dragCancel, drawingCancel)).toContain(
-      "그룹 이동을 취소했습니다",
+      'announceDrawingShortcut({ code: "groupMoveCancelled" })',
     );
+    expect(resolveStudioShortcutAnnouncement({ code: "groupMoveCancelled" }))
+      .toBe("그룹 이동을 취소했습니다");
   });
 });
