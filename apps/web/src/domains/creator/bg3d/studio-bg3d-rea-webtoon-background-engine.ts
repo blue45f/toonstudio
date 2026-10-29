@@ -244,7 +244,7 @@ export const STUDIO_BG3D_REA_COMPETITOR_PROFILES: readonly StudioBg3dReaCompetit
     },
     {
       id: "sketchup-webtoon-warehouse",
-      serviceNameKo: "스케치업 웹툰 표준 (단면 커팅·휴먼 스케일 체계)",
+      serviceNameKo: "단면·인체 비례 배경 프리셋",
       vendorOrOrigin: "SketchUp Webtoon Workflow",
       evidenceKind: "workflow-architecture-synthesis",
       coreStrengthKo: "1.70m 웹툰 캐릭터 기준 건축 비례(문 2.1m, 책상 0.75m, 계단 0.18m)와 단면 플레인",

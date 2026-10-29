@@ -165,7 +165,7 @@ function ResultCard({
             {entry.sourceName}
           </h4>
           <p className="break-words text-fg-2 [overflow-wrap:anywhere]">
-            {imported ? "SketchUp 변환 보고서 · 가져옴" : t("studio.bg3dPanelStatus.skpImport.importFailedWithReason", { reason: entry.reason ?? "" }, "가져오지 못함 · {reason}")}
+            {imported ? t("studio.bg3dPanelStatus.skpImport.importedReport", "SKP 변환 보고서 · 가져옴") : t("studio.bg3dPanelStatus.skpImport.importFailedWithReason", { reason: entry.reason ?? "" }, "가져오지 못함 · {reason}")}
           </p>
         </div>
         <button
@@ -239,6 +239,7 @@ export function StudioBg3dSkpImportPanel({
 }: {
   readonly session?: StudioBg3dSkpImportSession;
 }) {
+  const t = useT();
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   useEffect(() => session.registerHost(), [session]);
   const { activity, question, results } = snapshot;
@@ -255,7 +256,7 @@ export function StudioBg3dSkpImportPanel({
     <div ref={rootRef} tabIndex={-1} className={cx("mt-2 space-y-2", FOCUS_RING)}>
       <details className="rounded-xl border border-line bg-card/60 px-3 py-2 text-xs leading-relaxed text-fg-3">
         <summary className={cx("min-h-11 cursor-pointer py-2 font-bold text-fg-2 sm:min-h-9", FOCUS_RING)}>
-          SketchUp(.skp) 가져오기 안내
+          {t("studio.bg3dPanelStatus.skpImport.guideTitle", "SKP 파일 가져오기 안내")}
         </summary>
         <p className="pb-1">{STUDIO_BG3D_SKP_SUPPORT_SUMMARY}</p>
         <p className="pb-1"><StudioBg3dSkpSidecarScopeNote /></p>
@@ -287,7 +288,7 @@ export function StudioBg3dSkpImportPanel({
       ) : null}
 
       {results.length > 0 ? (
-        <section aria-label="SketchUp 변환 결과" className="space-y-2">
+        <section aria-label={t("studio.bg3dPanelStatus.skpImport.resultsLabel", "SKP 변환 결과")} className="space-y-2">
           {results.map((entry) => (
             <ResultCard key={entry.id} entry={entry} onDismiss={session.dismissResult} />
           ))}

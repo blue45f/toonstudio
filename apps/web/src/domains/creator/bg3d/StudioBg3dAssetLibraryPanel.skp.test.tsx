@@ -74,7 +74,7 @@ describe("StudioBg3dAssetLibraryPanel with SketchUp import", () => {
   it("mounts the SketchUp guide and tells the import that a screen is present to answer the unit question", () => {
     expect(studioBg3dSkpImportSession.hasHost()).toBe(false);
     const view = render(<StudioBg3dAssetLibraryPanel {...panelProps()} />);
-    expect(screen.getByText("SketchUp(.skp) 가져오기 안내")).toBeTruthy();
+    expect(screen.getByText("SKP 파일 가져오기 안내")).toBeTruthy();
     expect(studioBg3dSkpImportSession.hasHost()).toBe(true);
     view.unmount();
     expect(studioBg3dSkpImportSession.hasHost()).toBe(false);
@@ -82,7 +82,7 @@ describe("StudioBg3dAssetLibraryPanel with SketchUp import", () => {
 
   it("shows the conversion result that the shared store publishes, without any prop from the host", () => {
     render(<StudioBg3dAssetLibraryPanel {...panelProps()} />);
-    expect(screen.queryByRole("region", { name: "SketchUp 변환 결과" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "SKP 변환 결과" })).toBeNull();
     act(() => {
       studioBg3dSkpImportSession.publishResults([{
         sourceName: "room.skp",
@@ -92,14 +92,14 @@ describe("StudioBg3dAssetLibraryPanel with SketchUp import", () => {
         metadata: "saved",
       }]);
     });
-    const results = screen.getByRole("region", { name: "SketchUp 변환 결과" });
+    const results = screen.getByRole("region", { name: "SKP 변환 결과" });
     expect(within(results).getByRole("article", { name: "room.skp" })).toBeTruthy();
   });
 
   it("keeps the other-format guidance honest about what the SketchUp conversion does and does not do", () => {
     render(<StudioBg3dAssetLibraryPanel {...panelProps()} />);
     const text = document.body.textContent ?? "";
-    expect(text).toContain("SketchUp .skp 파일도 브라우저 안에서 GLB로 변환해 가져오며");
+    expect(text).toContain("SKP(.skp) 파일도 브라우저 안에서 GLB로 변환해 가져오며");
     // 예전 안내가 약속하던 문구("일부 레거시 .skp는 변환에 실패할 수 있는데")는 오류 안내가 대신하므로 남기지 않는다.
     expect(text).not.toContain("일부 레거시 .skp는 변환에 실패할 수 있는데");
   });

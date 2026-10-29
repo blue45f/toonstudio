@@ -475,8 +475,8 @@ export function StudioBg3dAssetLibraryPanel({
         </div>
       </details>
       <p className="mt-2 rounded-xl border border-line bg-card/60 px-3 py-2 text-xs leading-relaxed text-fg-3">
-        SketchUp에서 내보낸 DAE·OBJ를 포함해 GLB·glTF·FBX·STL·PLY·3DS를 지원합니다. glTF의 BIN/텍스처나 OBJ의 MTL/텍스처도 함께 선택하세요.
-        SketchUp .skp 파일도 브라우저 안에서 GLB로 변환해 가져오며, 변환된 모델은 기존 단계 추출(선화·음영·밑색) 파이프라인을 그대로 탑니다. 지원 범위와 한계는 아래 안내를 확인하세요.
+        DAE·OBJ를 포함해 GLB·glTF·FBX·STL·PLY·3DS를 지원합니다. glTF의 BIN/텍스처나 OBJ의 MTL/텍스처도 함께 선택하세요.
+        SKP(.skp) 파일도 브라우저 안에서 GLB로 변환해 가져오며, 변환된 모델은 기존 단계 추출(선화·음영·밑색) 파이프라인을 그대로 탑니다. 지원 범위와 한계는 아래 안내를 확인하세요.
         외부 네트워크 참조 없이 자체 포함 GLB로 변환하고, Worker에서 SHA-256·파일 구조와 기기별
         삼각형/텍스처 예산을 검사한 뒤 로컬 라이브러리에 저장합니다. Meshopt 압축은 별도 WASM
         Worker에서 풀며 디코딩 후 메모리도 같은 기기 예산으로 제한합니다. KTX2/Basis 텍스처는
