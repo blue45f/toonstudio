@@ -1,5 +1,5 @@
 /**
- * claude-webtoon-storyboard-assist.ts
+ * ai-webtoon-storyboard-assist.ts
  *
  * Claude Messages API(구조화 출력 `assistParse`)와 로컬 결정적 마스터 파이프라인을 결합한
  * 웹툰 스토리보드·대사·아트디렉팅·다국어 식자 통합 AI 보조 도우미 모듈.

@@ -11,7 +11,7 @@ export interface AssistModelOption {
   readonly label: string;
 }
 
-/** 등급별 기본 모델 4개. 이름은 화면 언어를 따르고 모델 ID는 `claude-models`의 값 그대로다. */
+/** 등급별 기본 모델 4개. 이름은 화면 언어를 따르고 모델 ID는 `assist-models`의 값 그대로다. */
 export function useAssistTierOptions(): readonly AssistModelOption[] {
   const t = useT();
   return useMemo(() => [

@@ -59,7 +59,14 @@ export interface UserAiRouteAssignment {
 
 export interface UserAiRoutingSettings {
   mode: UserAiRoutingMode;
+  /** 내 유료 키를 자동 경로에서 써도 된다. 기본은 무료 경로(내 무료 키·ToonStudio AI)가 끝난 뒤에만 쓴다. */
   allowPaidFallback: boolean;
+  /**
+   * 내 유료 키를 무료 경로보다 먼저 쓴다(내 키 먼저). 사용자가 유료 키를 등록하며 "먼저 쓴다"에 동의했거나 설정에서
+   * 골랐을 때만 켜진다. allowPaidFallback이 꺼져 있으면 의미가 없다. 예전의 "무료 소진 뒤 유료 키" 동의는 이 값이 없는 채로 남는다.
+   * 저장된 예전 설정에는 없으므로 선택 항목이고, 정규화한 설정에는 늘 들어 있다.
+   */
+  preferPaidKeys?: boolean;
   managedPoolPriority: number;
   serverProviderOrder: UserAiServerProviderId[];
 }
@@ -106,6 +113,7 @@ export const USER_AI_CAPABILITIES: readonly UserAiCapability[] = ["text", "image
 export const DEFAULT_USER_AI_ROUTING: UserAiRoutingSettings = Object.freeze({
   mode: "automatic",
   allowPaidFallback: false,
+  preferPaidKeys: false,
   managedPoolPriority: 50,
   serverProviderOrder: [...USER_AI_SERVER_PROVIDER_IDS],
 });
@@ -347,9 +355,11 @@ function normalizeRouting(value: unknown): UserAiRoutingSettings {
     ? source.serverProviderOrder.filter((item): item is UserAiServerProviderId =>
         typeof item === "string" && USER_AI_SERVER_PROVIDER_IDS.includes(item as UserAiServerProviderId))
     : [];
+  const allowPaidFallback = source.allowPaidFallback === true;
   return {
     mode,
-    allowPaidFallback: source.allowPaidFallback === true,
+    allowPaidFallback,
+    preferPaidKeys: allowPaidFallback && source.preferPaidKeys === true,
     managedPoolPriority: integerPriority(source.managedPoolPriority, 50),
     serverProviderOrder: [...new Set([...requestedOrder, ...USER_AI_SERVER_PROVIDER_IDS])],
   };

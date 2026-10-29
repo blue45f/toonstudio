@@ -150,7 +150,7 @@ export function StudioCommandSearchHost({
 
   return (
     <>
-      {/* 모바일은 검색 트리거를 숨기지만 Claude 보조 입구는 남긴다. 연결이 없으면 아무것도 그리지 않아 빈 줄(empty:hidden)이 보이지 않는다. */}
+      {/* 모바일은 검색 트리거를 숨기지만 AI 보조 입구는 남긴다. 입구는 키가 없어도 늘 보이고(ToonStudio AI), 지연 로드되는 동안에는 빈 줄(empty:hidden)이 보이지 않는다. */}
       {hideTrigger && !trailing ? (
         <div className="flex min-w-0 items-center justify-end border-b border-line px-1 empty:hidden" data-ai-assist-mobile-row="true">
           <AiAssistLauncher />

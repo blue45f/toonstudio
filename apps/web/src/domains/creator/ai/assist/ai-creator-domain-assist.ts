@@ -1,5 +1,5 @@
 /**
- * claude-creator-domain-assist.ts
+ * ai-creator-domain-assist.ts
  *
  * Phase 3 크리에이터 핵심 도메인(캐릭터 캐논 · 프롬프트 증강 · 2D 셀 음영/조명 · 말투 지문 OOC 교정)
  * Claude 구조화 출력(`assistParse`) 및 로컬 결정적 폴백 통합 엔진.

@@ -1,5 +1,5 @@
 /**
- * claude-competitor-full-suite-schemas.ts
+ * assist-competitor-full-suite-schemas.ts
  *
  * Phase 5 REA(reverse-engineer-anything) 경쟁사 벤치마크 5대 AI 엔진의
  * Zod 구조화 출력 스키마, 타입 정의 및 로컬 결정적(Deterministic) 폴백 빌더.

@@ -22,6 +22,11 @@ export interface StudioAiPremiumConfig {
   /** 보조 기능 요청이 고를 수 있는 모델. 기본 모델은 항상 포함된다. */
   allowedModels: readonly string[];
   limits: StudioAiPremiumLimits;
+  /**
+   * 워크스페이스에 묶이지 않은 키(조직 전체 키)가 요청마다 지정해야 하는 워크스페이스 ID(`anthropic-workspace-id`).
+   * 워크스페이스 안에서 만든 키는 필요 없다. 형식이 맞지 않으면 보내지 않는다.
+   */
+  workspaceId: string | null;
 }
 
 export const DEFAULT_STUDIO_AI_PREMIUM_MODEL = "claude-opus-5-5";
@@ -36,6 +41,7 @@ export const DEFAULT_STUDIO_AI_PREMIUM_LIMITS: StudioAiPremiumLimits = Object.fr
   globalDailyTokens: 3_000_000,
 });
 const PREMIUM_MODEL_ID_PATTERN = /^claude-[a-z0-9][a-z0-9.-]{1,78}$/u;
+const PREMIUM_WORKSPACE_ID_PATTERN = /^wrkspc_[A-Za-z0-9]{6,64}$/u;
 
 function boundedLimit(raw: string | undefined, fallback: number, maximum: number): number {
   if (raw === undefined || raw.trim() === "") return fallback;
@@ -59,6 +65,7 @@ export function resolveStudioAiPremiumConfig(env: EnvLike = process.env): Studio
     .map((value) => value.trim().toLowerCase())
     .filter(isStudioAiPremiumModelId);
   const allowedModels = [...new Set([model, ...(listed.length > 0 ? listed : DEFAULT_STUDIO_AI_PREMIUM_ALLOWED_MODELS)])];
+  const workspaceId = env.STUDIO_AI_ANTHROPIC_WORKSPACE_ID?.trim() ?? "";
   return {
     configured,
     automatic: configured && env.STUDIO_AI_PREMIUM_AUTO?.trim().toLowerCase() !== "false",
@@ -81,5 +88,6 @@ export function resolveStudioAiPremiumConfig(env: EnvLike = process.env): Studio
         1_000_000_000,
       ),
     },
+    workspaceId: PREMIUM_WORKSPACE_ID_PATTERN.test(workspaceId) ? workspaceId : null,
   };
 }

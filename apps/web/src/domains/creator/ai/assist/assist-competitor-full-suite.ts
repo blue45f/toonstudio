@@ -1,5 +1,5 @@
 /**
- * claude-competitor-full-suite.ts
+ * assist-competitor-full-suite.ts
  *
  * REA(reverse-engineer-anything) 정적/의무 원장 분석 및 2025~2026 글로벌·국내 웹툰 AI 경쟁사 벤치마크를 통해
  * 도출된 7대 핵심 프로덕션 & 웹툰 일관성(Webtoon Consistency) AI 엔진:

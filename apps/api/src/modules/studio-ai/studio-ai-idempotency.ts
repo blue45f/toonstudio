@@ -74,9 +74,17 @@ export function studioAiCanonicalRequestHash(input: StudioAiChatDto): Uint8Array
  * 보조 기능 요청의 정규 해시. 스키마가 검증한 값만 고정 순서 튜플로 묶으므로 같은 요청은 같은 해시가 되고,
  * 이미지·프롬프트 원문은 DB에 남지 않는다(해시만 영수증에 기록된다).
  */
-export function studioAiCanonicalMessagesRequestHash(input: StudioAiMessagesRequest): Uint8Array<ArrayBuffer> {
+/**
+ * 보조 기능 요청의 영수증 해시. 같은 내용으로 "다시 실행"해 새 결과를 받는 것이 정상 동작이므로 멱등 키를 함께 넣는다 —
+ * 같은 키로 다시 보낸 요청만 같은 요청으로 보고(자동 재전송 방지), 새 키의 같은 내용은 막지 않는다.
+ */
+export function studioAiCanonicalMessagesRequestHash(
+  input: StudioAiMessagesRequest,
+  idempotencyKey: string,
+): Uint8Array<ArrayBuffer> {
   return digestCanonicalTuple([
-    "toonstudio-studio-ai-messages-v1",
+    "toonstudio-studio-ai-messages-v2",
+    idempotencyKey,
     input.model ?? "",
     input.max_tokens,
     input.system ?? null,

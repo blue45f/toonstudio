@@ -45,9 +45,9 @@ import {
 import { StudioPoseFirstRunGuide } from "./StudioPoseFirstRunGuide";
 import { StudioPoseLibraryCard } from "./StudioPoseLibraryCard";
 import {
-  TRIPO3D_MCP_GENERATED_MODELS,
-  TRIPO_TEXT_TO_MOTION_PRESETS,
-} from "./studio-tripo3d-ecosystem-engine";
+  GEN3D_MCP_GENERATED_MODELS,
+  GEN3D_TEXT_TO_MOTION_PRESETS,
+} from "./studio-gen3d-ecosystem-engine";
 import { StudioWebtoonPoseFavoritesShare } from "./StudioWebtoonPosePresetGrid";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
@@ -273,7 +273,7 @@ export function StudioMannequinPoseSection({
           <span className="text-[0.62rem] text-fg-3">클릭 시 데생 인형 포즈 즉시 반영</span>
         </div>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Tripo Text-to-Motion 액션 프리셋">
-          {TRIPO_TEXT_TO_MOTION_PRESETS.map((motion) => (
+          {GEN3D_TEXT_TO_MOTION_PRESETS.map((motion) => (
             <button
               key={motion.id}
               type="button"
@@ -294,7 +294,7 @@ export function StudioMannequinPoseSection({
           className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line/50 pt-1.5"
         >
           <span className="text-[0.62rem] font-semibold text-fg-3">Tripo3D MCP 캘리브레이션 GLB:</span>
-          {TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin").map((model) => (
+          {GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin").map((model) => (
             <button
               key={model.id}
               type="button"

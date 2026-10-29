@@ -179,6 +179,19 @@ export function userAiAutomaticExternalConnectionsForCapability(
   ));
 }
 
+/**
+ * "내 키 먼저"에 들어가는 연결: 무료 키는 늘, 유료 키는 사용자가 유료 키를 먼저 쓰기로 골랐을 때(또는 수동 모드)만.
+ * 나머지 유료 키는 무료 경로(ToonStudio AI 포함)가 끝난 뒤의 대체 경로로 남는다.
+ */
+export function userAiPersonalFirstConnectionsForCapability(
+  capability: UserAiCapability,
+): UserAiResolvedConnection[] {
+  const routing = userAiRoutingSettings(snapshot.configuration);
+  return userAiAutomaticExternalConnectionsForCapability(capability).filter((connection) => (
+    connection.costPolicy !== "user-funded-byok" || routing.preferPaidKeys === true || routing.mode === "manual"
+  ));
+}
+
 export function requireUserAiConnection(
   capability: UserAiCapability,
 ): UserAiResolvedConnection {

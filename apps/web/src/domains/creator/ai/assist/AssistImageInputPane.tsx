@@ -41,7 +41,7 @@ export interface AssistImageInputPaneProps {
 
 /**
  * 이미지 입력 구역: 올리기(선택·끌어놓기·클립보드 버튼, 스튜디오 안에서는 캔버스에서 가져오기) → 보낼 이미지 미리보기(원본·전송 크기) → 바꾸기·지우기 →
- * 긴 이미지의 구간 고르기. 오류와 클립보드 안내를 한곳에서 알려 줘서 이미지를 받는 모든 Claude 보조가 같은 경험을 준다.
+ * 긴 이미지의 구간 고르기. 오류와 클립보드 안내를 한곳에서 알려 줘서 이미지를 받는 모든 AI 보조가 같은 경험을 준다.
  */
 export function AssistImageInputPane({ image, running, renderPreview, belowPreview }: AssistImageInputPaneProps) {
   const t = useT();

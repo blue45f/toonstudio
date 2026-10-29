@@ -11,13 +11,17 @@ server-backed Studio AI 경로는 cloud-only, free-first, fail-closed다. Postgr
 - 설정: `studio-ai-premium-config.ts`. `STUDIO_AI_ANTHROPIC_API_KEY`(서버 전용), `STUDIO_AI_ANTHROPIC_MODEL`
   (기본 `claude-opus-5-5`), `STUDIO_AI_PREMIUM_AUTO`, `STUDIO_AI_PREMIUM_ALLOWED_MODELS`, 일일 예산
   `STUDIO_AI_PREMIUM_USER_DAILY_REQUEST_LIMIT`(30)·`STUDIO_AI_PREMIUM_GLOBAL_DAILY_REQUEST_LIMIT`(400)·
-  `STUDIO_AI_PREMIUM_GLOBAL_DAILY_TOKEN_LIMIT`(3,000,000), `STUDIO_AI_ANTHROPIC_TIMEOUT_MS`(최대 120초).
+  `STUDIO_AI_PREMIUM_GLOBAL_DAILY_TOKEN_LIMIT`(3,000,000), `STUDIO_AI_ANTHROPIC_TIMEOUT_MS`(최대 120초),
+  `STUDIO_AI_ANTHROPIC_WORKSPACE_ID`(워크스페이스에 묶이지 않은 키만, `anthropic-workspace-id` 헤더로 보낸다).
 - 비용: 운영자 부담(`sponsored`)이라 사용자 크레딧을 차감하지 않는다. 예산은 원장을 UTC 하루 단위로 세어
   (`studio-ai-premium-budget.repository.ts`, 한 번의 CTE 조회) 지키고, 예산·원장 준비를 확인하지 못하면
   운영 경로를 후보에서 빼고 무료 pool로 간다(fail-closed). 마이그레이션 0114(원장 provider 제약·색인)가
-  먼저 적용돼야 열린다.
-- 전환: 429·529·402·401·403·404·400 `billing_error`처럼 추론 전 확정 거절만 같은 요청을 무료 pool로
-  넘긴다(`premium_unavailable`). 5xx·시간 초과·형식 오류는 재전송하지 않는다.
+  먼저 적용돼야 열린다. 서버 측 대체가 돌면 거절한 시도도 따로 과금되므로 원장·쿼터·예산은 `usage.iterations`를
+  모두 더해 센다(맨 위 `usage`보다 적게 세지 않는다). 예산을 다 썼는데 받을 무료 제공자가 없으면
+  `503 FREE_AI_POOL_UNAVAILABLE`이 아니라 `429 FREE_AI_POOL_EXHAUSTED`(오늘 한도 소진)로 알린다.
+- 전환: 429·529·402·400(결제 오류, 워크스페이스 지정 누락 같은 운영 키 설정 오류, 구조화 출력 스키마 미지원 같은
+  요청 거절)·401·403·404·413처럼 추론 전 확정 거절만 같은 요청을 무료 pool로 넘긴다(`premium_unavailable`).
+  5xx·시간 초과·깨진 응답은 재전송하지 않는다. 원인별로 10분에 한 번 상태·오류 종류만 경고 로그로 남긴다.
 - 요청 형태: 샘플링 매개변수 없이 작업별 `effort`, 사고 여유분(4,000토큰), 서버 측 모델 대체를 싣는다.
 
 ### 보조 기능 `POST /studio-ai/messages`

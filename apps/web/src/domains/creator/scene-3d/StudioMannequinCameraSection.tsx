@@ -12,7 +12,7 @@ import type { ReactElement } from "react";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
 import type { StudioMannequinCameraPreset, StudioMannequinProjection } from "./studio-mannequin-scene";
-import { BLEND_AI_SCALE_GUIDES, VRM_FRAMING_PRESETS } from "./studio-tripo3d-ecosystem-engine";
+import { BLEND_AI_SCALE_GUIDES, VRM_FRAMING_PRESETS } from "./studio-gen3d-ecosystem-engine";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 

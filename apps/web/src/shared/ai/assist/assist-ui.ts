@@ -1,4 +1,4 @@
-/** Claude 어시스트 화면이 함께 쓰는 입력·버튼 스타일(통합 AI 설정과 같은 토큰). */
+/** AI 보조 화면이 함께 쓰는 입력·버튼 스타일(통합 AI 설정과 같은 토큰). */
 export const ASSIST_INPUT =
   "min-h-11 w-full rounded-xl border border-line bg-panel px-3 py-2 text-sm text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 

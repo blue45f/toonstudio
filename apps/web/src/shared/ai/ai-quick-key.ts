@@ -7,10 +7,13 @@
  */
 import { ASSIST_DEFAULT_MODEL_ID } from "./assist/assist-models";
 import { ANTHROPIC_API_ORIGIN, isAnthropicBaseUrl } from "./assist/assist-protocol";
+import { freeAiConnectionPolicyIssue } from "./free-ai-policy";
 import {
   EMPTY_AI_CONNECTION,
   USER_AI_CAPABILITIES,
+  resolvedUserAiRoutes,
   userAiConnectionApiKeys,
+  userAiConnectionModels,
   userAiRoutingSettings,
   type UserAiCapability,
   type UserAiConfiguration,
@@ -164,14 +167,22 @@ function endpointKey(baseUrl: string): string {
   }
 }
 
-/** 이 서비스로 이미 만든 연결(주소 기준). Claude는 공식 호스트면 같은 연결로 본다. */
+/**
+ * 이 서비스로 이미 만든, 키를 더 쌓아도 되는 연결(주소 기준). Claude는 공식 호스트면 같은 연결로 본다.
+ * 주소가 같아도 비용 정책이 다르거나(옛 설정에서 가져온 "재확인 필요" 연결 등) 텍스트 모델이 없는(이미지 전용)
+ * 연결에 키를 붙이면 텍스트 AI에 쓰이지 않으므로, 그런 연결은 고르지 않고 새 연결을 만들게 한다.
+ */
 export function findQuickKeyConnection(
   configuration: UserAiConfiguration,
   provider: QuickKeyProviderId,
 ): UserAiConnection | undefined {
-  if (provider === "anthropic") return configuration.connections.find((item) => isAnthropicBaseUrl(item.baseUrl));
-  const target = endpointKey(QUICK_KEY_PRESETS[provider].baseUrl);
-  return configuration.connections.find((item) => endpointKey(item.baseUrl) === target);
+  const preset = QUICK_KEY_PRESETS[provider];
+  const target = endpointKey(preset.baseUrl);
+  return configuration.connections.find((item) => (
+    (provider === "anthropic" ? isAnthropicBaseUrl(item.baseUrl) : endpointKey(item.baseUrl) === target)
+    && item.costPolicy === preset.costPolicy
+    && userAiConnectionModels(item, "text").length > 0
+  ));
 }
 
 /** 연결 주소로 어느 서비스인지 되짚는다(목록 표시용). 모르는 주소면 null. */
@@ -181,6 +192,13 @@ export function quickKeyProviderOf(connection: Pick<UserAiConnection, "baseUrl">
   const match = (Object.keys(QUICK_KEY_PRESETS) as QuickKeyProviderId[])
     .find((id) => endpointKey(QUICK_KEY_PRESETS[id].baseUrl) === target);
   return match ?? null;
+}
+
+/** 지금 텍스트에 배정된 연결이 실제로 텍스트 AI 경로를 하나라도 내는지. */
+function assignedTextUsable(configuration: UserAiConfiguration): boolean {
+  const assigned = configuration.connections.find((item) => item.id === configuration.assignments.text);
+  if (!assigned) return false;
+  return resolvedUserAiRoutes(assigned, "text").some((route) => freeAiConnectionPolicyIssue(route, "text") === null);
 }
 
 export const QUICK_KEY_MAX_KEYS_PER_SERVICE = 12;
@@ -224,8 +242,9 @@ export function addQuickKey(
   const info = AI_KEY_PROVIDERS[provider];
   const existing = findQuickKeyConnection(configuration, provider);
   const routing = userAiRoutingSettings(configuration);
+  // 유료 키를 "먼저 쓴다"에 동의하고 등록했다: 자동 경로에서 무료 경로보다 먼저 쓴다(동의 문구가 그렇게 알린다).
   const nextRouting = info.cost === "paid" && options.allowPaid
-    ? { ...routing, allowPaidFallback: true }
+    ? { ...routing, allowPaidFallback: true, preferPaidKeys: true }
     : routing;
 
   if (existing) {
@@ -279,7 +298,8 @@ export function addQuickKey(
   };
   const assignments = { ...configuration.assignments };
   const routeAssignments = { ...(configuration.routeAssignments ?? emptyRouteAssignments()) };
-  if (!assignments.text) {
+  // 텍스트 배정이 비었거나, 배정된 연결이 텍스트에 쓰일 수 없으면(재확인 필요·이미지 전용 등) 새 연결로 바꾼다.
+  if (!assignedTextUsable(configuration)) {
     assignments.text = id;
     routeAssignments.text = { connectionId: id, apiKeyId: null, modelId: null };
   }

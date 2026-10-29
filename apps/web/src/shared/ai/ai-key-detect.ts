@@ -119,20 +119,23 @@ export function normalizePastedAiKey(raw: string): string {
 }
 
 // `OPENAI_API_KEY=sk-...`·`export GROQ_API_KEY="gsk_..."`처럼 환경 변수 줄을 통째로 붙여도 값만 쓴다.
+// Windows의 `set NAME=값`·PowerShell `$env:NAME="값"`·JSON `"NAME": "값",`과 값 뒤의 ` # 메모`도 받는다.
 // fal의 "키 ID:비밀"(UUID 형식)은 이름 규칙(문자로 시작, 하이픈 없음)에 걸리지 않는다.
-const ENV_ASSIGNMENT = /^(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*[=:]\s*(\S+)\s*$/u;
+const ENV_ASSIGNMENT = /^(?:export\s+|set\s+|\$env:)?["']?[A-Za-z_][A-Za-z0-9_]*["']?\s*[=:]\s*(\S+?)\s*(?:\s#.*)?$/iu;
+// 공백으로 나눈 줄(예: `setx NAME 값`)에서 환경 변수 이름 자체는 키로 보지 않는다.
+const ENV_NAME_TOKEN = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/u;
 
 /** 여러 키를 한 번에 붙여 넣은 글을 키 목록으로 나눈다(줄바꿈·공백·쉼표 구분, 환경 변수 줄은 값만, 중복 제거). */
 export function splitPastedAiKeys(raw: string): string[] {
   const keys: string[] = [];
   for (const line of raw.split(/\r?\n/u)) {
     const trimmed = line.trim();
-    if (!trimmed) continue;
+    if (!trimmed || trimmed.startsWith("#")) continue;
     const assignment = ENV_ASSIGNMENT.exec(trimmed);
     const tokens = assignment ? [assignment[1]!] : trimmed.split(/[\s,;]+/u);
     for (const token of tokens) {
       const key = normalizePastedAiKey(token);
-      if (key) keys.push(key);
+      if (key && !ENV_NAME_TOKEN.test(key)) keys.push(key);
     }
   }
   return [...new Set(keys)];

@@ -38,7 +38,7 @@ function createSampleVoiceFingerprint() {
   return fp;
 }
 
-describe("claude-writer-and-plot-assist", () => {
+describe("ai-writer-and-plot-assist", () => {
   it("7단계 Writer's Room AI가 라우트 미설정 시 결정적 로컬 초안을 반환하고, 라우트 연결 시 Claude 응답을 파싱한다", async () => {
     const fallbackPremise = await runAssistWriterRoomStageDraft(
       {

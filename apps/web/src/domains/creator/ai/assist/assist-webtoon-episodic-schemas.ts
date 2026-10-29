@@ -1,5 +1,5 @@
 /**
- * claude-webtoon-episodic-schemas.ts
+ * assist-webtoon-episodic-schemas.ts
  *
  * Phase 2 차세대 웹툰 에피소드 프로덕션 AI 보조 엔진 4종:
  * 1. 독자 스크롤 체류·이탈 구간 & 베스트 댓글·별점 예측 시뮬레이터 (`reader-retention-simulator`)
