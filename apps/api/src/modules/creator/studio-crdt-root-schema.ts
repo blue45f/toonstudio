@@ -26,7 +26,7 @@ import {
   STUDIO_WORK_ASSET_TYPES,
   StudioWorkAssetElementSchema,
   parseStudioWorkAssetStructuredEditValue,
-  studioWorkAssetReferenceKey,
+  studioWorkAssetReferenceKey, hasValidStudioBundleSceneCredit,
 } from "@toonstudio/contracts/studio-work-asset-contract";
 
 import type { StudioBrushR8TextureGrainSource } from "@toonstudio/contracts/studio-brush-r8-grain-asset-contract";
@@ -400,7 +400,7 @@ const STUDIO_CRDT_SCENE_KEYS_BY_TYPE = {
   frame: new Set([
     ...STUDIO_CRDT_COMMON_SCENE_KEYS,
     "x", "y", "width", "height", "bg", "bgColor", "stroke", "strokeWidth", "dashStyle",
-    "storyBeat", "aiProvenance", "points",
+    "storyBeat", "aiProvenance", "points", "bundleSourceCredit",
   ]),
   focusLines: new Set([
     ...STUDIO_CRDT_COMMON_SCENE_KEYS,
@@ -2221,7 +2221,7 @@ function validateSceneElementRoot(id: string, record: Y.Map<unknown>): boolean {
     return false;
   }
   const props = readReservedProperties(record, STUDIO_CRDT_SCENE_KEYS_BY_TYPE[type], metadataKeys);
-  if (!props) return false;
+  if (!props || !hasValidStudioBundleSceneCredit(type, props, record)) return false;
   for (const key of STUDIO_CRDT_REQUIRED_SCENE_KEYS[type]) {
     if (!(key in props)) return false;
   }

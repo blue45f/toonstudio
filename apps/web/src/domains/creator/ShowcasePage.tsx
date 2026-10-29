@@ -16,13 +16,13 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { SHOWCASE_COLLABORATION_TRACKS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 
 const SHOWCASE_TRACK_IMAGES: Readonly<Record<string, string>> = {
-  "portfolio-curation": "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp",
-  "team-recruiting": "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp",
-  "contest-pitch": "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
+  "portfolio-curation": "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp",
+  "team-recruiting": "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp",
+  "contest-pitch": "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
 };
 
 export function ShowcasePage() {
@@ -39,7 +39,7 @@ export function ShowcasePage() {
     <Container size="wide" className="py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/showcase" className="mb-5" />
       <ShowcaseSpotlight />
-      <NanoBananaSurfaceSpotlight cardId="nb-showcase-premiere" compact className="mt-6" />
+      <SiteArtSurfaceSpotlight cardId="nb-showcase-premiere" compact className="mt-6" />
 
       <section
         aria-label={bt("크리에이터 쇼케이스 · 협업 · 공모 트랙", "Creator showcase, collaboration & contest tracks")}
@@ -69,7 +69,7 @@ export function ShowcasePage() {
                 <span
                   aria-hidden="true"
                   className="mb-3 block h-24 w-full rounded-lg border border-line/60 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${SHOWCASE_TRACK_IMAGES[track.id] ?? "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp"})` }}
+                  style={{ backgroundImage: `url(${SHOWCASE_TRACK_IMAGES[track.id] ?? "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp"})` }}
                 />
                 <span className="inline-block rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
                   {track.badge}

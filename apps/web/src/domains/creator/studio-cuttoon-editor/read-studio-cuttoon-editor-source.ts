@@ -47,6 +47,7 @@ export function readStudioPageCompositionSource(): string {
     resolve(baseDir, "./studio-cuttoon-bg3d-insert.ts"),
     resolve(baseDir, "./studio-cuttoon-advanced-fill-run.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
+    resolve(baseDir, "../canvas/studio-canvas-viewport-input.ts"),
     // The route-layering refactor (984251d8c) moved host wiring into these runtimes. A scan that
     // reads only the page and the host now stops short of the code it is asserting on.
     resolve(baseDir, "./runtime/useStudioCollaborationAccessRuntime.ts"),
@@ -151,6 +152,7 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "./runtime/useStudioUnifiedHistoryJournal.ts"),
     resolve(baseDir, "./runtime/useStudioVectorOperationRuntime.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
+    resolve(baseDir, "../canvas/studio-canvas-viewport-input.ts"),
     resolve(baseDir, "../StudioPage.tsx"),
     resolve(baseDir, "../studio-page-vector-ops.ts"),
     resolve(baseDir, "../ai/studio-scenario-image-generation.ts"),

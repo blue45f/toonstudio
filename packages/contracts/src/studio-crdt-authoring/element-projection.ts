@@ -62,13 +62,13 @@ export function projectStudioCrdtSceneElement(record: StudioCrdtAuthoringSceneRe
     ...(!record.payload.props.groupId && record.layerId !== "page-root" ? { groupId: record.layerId } : {}) };
   const elementType = record.payload.props.elementType;
   if (!referenceSource || referenceSource.id !== record.id || referenceSource.type !== elementType) fail("자산 원본 본문을 확인할 수 없습니다.");
-  const referenceProps = { ...record.payload.props }; delete referenceProps.elementType;
+  const referenceProps = { ...record.payload.props }; delete referenceProps.elementType; delete referenceProps.bundleSourceCredit;
   const topology = isStudioCrdtProjectionTopologyReference(record.payload);
   const result: StudioCrdtProjectedElement = { ...referenceSource, ...referenceProps, id: record.id, type: referenceSource.type };
   if (!topology) {
     if (!(STUDIO_WORK_ASSET_TYPES as readonly string[]).includes(referenceSource.type)) fail("지원하지 않는 자산 참조입니다.");
     result.src = studioWorkAssetSourceUri({ assetId: record.id, elementType: referenceSource.type as typeof STUDIO_WORK_ASSET_TYPES[number] });
-    for (const key of STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS) if (!Object.hasOwn(referenceProps, key)) delete result[key];
+    for (const key of STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS) if (key !== "bundleSourceCredit" && !Object.hasOwn(referenceProps, key)) delete result[key];
   }
   if (record.layerId === "page-root") delete result.groupId; else result.groupId = record.layerId;
   return result;

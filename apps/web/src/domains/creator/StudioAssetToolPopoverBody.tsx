@@ -20,6 +20,7 @@ import { Suspense } from "react";
 import { StudioSceneTemplateBrowser } from "./catalog/studio-catalog-lazy-ui";
 import { StudioCharmBarToggleButton } from "./charm/StudioCharmBarControls";
 import { completeStudioAssetInsertion } from "./studio-asset-insertion-outcome";
+import { insertStudioAssetWithBundleCredit } from "./catalog/studio-bundle-source-credit";
 import { CANVAS_W, TEMPLATES, groupTemplates } from "./studio-assets";
 import { svgToDataUrl } from "./studio-characters";
 import { StudioMenuPopoverHeader, StudioMenuSubtabs } from "./studio-chrome-ui";
@@ -181,7 +182,7 @@ export function StudioAssetToolPopoverBody({
     onReportSharedAsset,
     onGenerateAsset,
     onShareAsset,
-    onUploadAsset,
+    onUploadAsset, onSavedLocalAsset,
     onUseSharedAsset,
     removeEmeresUnderlays,
     saveSelectionAsClip,
@@ -693,7 +694,7 @@ export function StudioAssetToolPopoverBody({
                     assetTab={assetTab}
                     setAssetTab={setAssetTab}
                     communityMarketplaceInitialView={communityMarketplaceInitialView}
-                    onUploadAsset={onUploadAsset}
+                    onUploadAsset={onUploadAsset} onSavedLocalAsset={onSavedLocalAsset}
                     assetPrompt={assetPrompt}
                     setAssetPrompt={setAssetPrompt}
                     assetPromptName={assetPromptName}
@@ -720,7 +721,7 @@ export function StudioAssetToolPopoverBody({
                     setRenamingAssetName={setRenamingAssetName}
                     handleRenameAsset={handleRenameAsset}
                     onUseLocalAsset={(asset) => completeStudioAssetInsertion(
-                      () => addRenderedImage(asset.dataUrl, asset.width, asset.height),
+                      () => insertStudioAssetWithBundleCredit(asset, addRenderedImage),
                       () => setMenu(null)
                     )}
                     onShareAsset={onShareAsset}

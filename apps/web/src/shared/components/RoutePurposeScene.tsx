@@ -33,7 +33,7 @@ import type {
 } from "@/shared/lib/site-route-visual";
 
 import "./route-purpose-scene.css";
-import "./site-experience/nano-banana-site-ui.css";
+import "./site-experience/site-art-ui.css";
 
 const ROUTE_STAGE_PILLS: Record<SiteRouteVisualKind, readonly [string, string, string]> = {
   workflow: ["nb-workflow-bridge", "STAGE 00 · 통합 창작 동선", "STAGE 00 · WORKFLOW COMPASS"],

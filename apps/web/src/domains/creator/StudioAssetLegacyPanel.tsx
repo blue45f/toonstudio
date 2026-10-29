@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { completeStudioAssetInsertion } from "./studio-asset-insertion-outcome";
+import { insertStudioAssetWithBundleCredit } from "./catalog/studio-bundle-source-credit";
 import {
   StudioAssetMenuPanel,
 } from "./studio-page-lazy-ui";
@@ -64,7 +65,7 @@ export function StudioAssetLegacyPanel({
     onGenerateAsset,
     onReportSharedAsset,
     onShareAsset,
-    onUploadAsset,
+    onUploadAsset, onSavedLocalAsset,
     onUseSharedAsset,
     toggleAssetFavorite,
   } = toolBelt.stableHandlers;
@@ -75,7 +76,7 @@ export function StudioAssetLegacyPanel({
         assetTab={assetTab}
         setAssetTab={setAssetTab}
         communityMarketplaceInitialView={communityMarketplaceInitialView}
-        onUploadAsset={onUploadAsset}
+        onUploadAsset={onUploadAsset} onSavedLocalAsset={onSavedLocalAsset}
         assetPrompt={assetPrompt}
         setAssetPrompt={setAssetPrompt}
         assetPromptName={assetPromptName}
@@ -102,7 +103,7 @@ export function StudioAssetLegacyPanel({
         setRenamingAssetName={setRenamingAssetName}
         handleRenameAsset={handleRenameAsset}
         onUseLocalAsset={(asset: StudioAsset) => completeStudioAssetInsertion(
-          () => addRenderedImage(asset.dataUrl, asset.width, asset.height),
+          () => insertStudioAssetWithBundleCredit(asset, addRenderedImage),
           () => setMenu(null),
         )}
         onShareAsset={onShareAsset}

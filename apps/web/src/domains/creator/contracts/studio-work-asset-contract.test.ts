@@ -196,6 +196,7 @@ describe("studio work asset wire contract", () => {
     }, { assetId: "asset-1", elementType: "image" });
 
     expect(STUDIO_WORK_ASSET_STRUCTURED_EDIT_KEYS).toEqual([
+      "bundleSourceCredit",
       "blurFx",
       "lensBlur",
       "fieldIrisBlur",

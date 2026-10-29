@@ -13,7 +13,7 @@ import { RankingMethod } from "@/shared/components/ranking-method";
 import { Container } from "@/shared/components/section";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { PLATFORM_LIST } from "@/shared/lib/platforms";
 import { RANK_AXES, type RankAxis } from "@/shared/lib/ranking";
@@ -96,7 +96,7 @@ export function RankingPage() {
         }
       />
 
-      <NanoBananaSurfaceSpotlight cardId="nb-ranking-constellation" compact className="mb-5" />
+      <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" compact className="mb-5" />
 
       <div
         role="group"

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
 import { materializeStudioAuthoringFromCrdt, readStudioCrdtScopedRecords } from "@toonstudio/contracts/studio-crdt-authoring";
+import { StudioWorkAssetDescriptorSchema, studioWorkAssetSourceUri } from "@toonstudio/contracts/studio-work-asset-contract";
+import { studioBundleCreditFixture } from "../catalog/studio-bundle-source-credit.test-fixture";
 import { StudioCrdtDocument } from "./studio-crdt-document";
-import { reconcileStudioCrdtSceneGraphPages, studioDrawElementToCrdtStroke, studioPageToCrdtPage, type StudioCrdtCompatibleElement } from "./studio-crdt-page-bridge";
+import { reconcileStudioCrdtSceneGraphPages, studioCrdtElementToSceneElement, studioDrawElementToCrdtStroke, studioElementToCrdtSceneElement, studioPageToCrdtPage, type StudioCrdtCompatibleElement } from "./studio-crdt-page-bridge";
 
 function fixture() {
   const source = new StudioCrdtDocument();
@@ -13,7 +15,46 @@ function fixture() {
   return { source, pages, baseline, snapshot };
 }
 
+function creditedAssetFixture() {
+  const f = fixture(), credit = studioBundleCreditFixture();
+  const descriptor = StudioWorkAssetDescriptorSchema.parse({ version: 1, element: {
+    id: "credited-image", type: "image", x: 10, y: 20, width: 30, height: 40, rotation: 0, bundleSourceCredit: credit,
+  } });
+  const reference = { ...descriptor.element, src: studioWorkAssetSourceUri({ assetId: descriptor.element.id, elementType: descriptor.element.type }) };
+  return { ...f, credit, reference, referenceSources: new Map([[reference.id, reference]]) };
+}
+
 describe("실제 Web CRDT와 공유 Authoring 투영", () => {
+  it("원격 봉투의 유효한 위조 출처도 불변 descriptor의 출처를 덮지 못한다", () => {
+    const f = creditedAssetFixture(), forged = studioBundleCreditFixture({ provider: "위조 봉투 제공자" });
+    const record = f.source.addSceneElement(studioElementToCrdtSceneElement("page-1", { ...f.reference, x: 70, bundleSourceCredit: forged }));
+    expect(record.payload.props.bundleSourceCredit).toEqual(forged);
+    expect(studioCrdtElementToSceneElement(record, f.reference)).toMatchObject({ x: 70, bundleSourceCredit: f.credit });
+    const input = { ...f.snapshot(), referenceSources: f.referenceSources };
+    expect(materializeStudioAuthoringFromCrdt(input)).toMatchObject({ pagesList: [
+      { id: "page-1", elements: [{ id: f.reference.id, x: 70, bundleSourceCredit: f.credit }] }, { id: "page-2", elements: [] },
+    ] });
+    expect(readStudioCrdtScopedRecords(input).find((entry) => entry.id === f.reference.id)?.value)
+      .toMatchObject({ x: 70, bundleSourceCredit: f.credit });
+    expect(f.reference.bundleSourceCredit).toEqual(f.credit);
+    input.doc.destroy(); f.source.destroy();
+  });
+  it("원격 봉투가 출처를 명시 unset해도 불변 descriptor의 출처를 보존한다", () => {
+    const f = creditedAssetFixture();
+    const initial = f.source.addSceneElement(studioElementToCrdtSceneElement("page-1", f.reference));
+    expect(initial.payload.props.bundleSourceCredit).toEqual(f.credit);
+    const record = f.source.patchSceneElement(f.reference.id, { set: { x: 80 }, unset: ["bundleSourceCredit"] });
+    expect(record.payload.props).not.toHaveProperty("bundleSourceCredit");
+    expect(studioCrdtElementToSceneElement(record, f.reference)).toMatchObject({ x: 80, bundleSourceCredit: f.credit });
+    const input = { ...f.snapshot(), referenceSources: f.referenceSources };
+    expect(materializeStudioAuthoringFromCrdt(input)).toMatchObject({ pagesList: [
+      { id: "page-1", elements: [{ id: f.reference.id, x: 80, bundleSourceCredit: f.credit }] }, { id: "page-2", elements: [] },
+    ] });
+    expect(readStudioCrdtScopedRecords(input).find((entry) => entry.id === f.reference.id)?.value)
+      .toMatchObject({ x: 80, bundleSourceCredit: f.credit });
+    expect(f.reference.bundleSourceCredit).toEqual(f.credit);
+    input.doc.destroy(); f.source.destroy();
+  });
   it("다른 페이지의 최신 획과 opaque 본문을 Web과 같은 결과로 보존한다", () => {
     const f = fixture(), image = { id: "opaque-image", type: "image", src: "opfs://원본", vrmScene: { futureOriginal: [1, 2, 3] } };
     f.pages[0]!.elements.push(image);

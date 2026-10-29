@@ -1,5 +1,6 @@
 import {
   DICT,
+  markAuthoredI18nDictionaryLoaded,
   registerI18nLocaleEntries,
   FALLBACK_LANG,
   triggerTranslationBundleUpdate,
@@ -239,9 +240,10 @@ export function registerAppI18nLocaleDictionary(
   const normalizedRequested =
     normalizeLocaleCode(requestedLocale) || normalizedAsset;
 
-  registerI18nLocaleEntries(normalizedAsset, dictionary);
-  if (normalizedRequested !== normalizedAsset) {
-    registerI18nLocaleEntries(normalizedRequested, dictionary);
+  // 화면을 그린 뒤 도착한 사전이면 번역기 참조를 바꿔, 기억해 둔 대체 문구를 새 사전으로 다시 계산하게 한다.
+  if (registerI18nLocaleEntries(normalizedAsset, dictionary)) markAuthoredI18nDictionaryLoaded(normalizedAsset);
+  if (normalizedRequested !== normalizedAsset && registerI18nLocaleEntries(normalizedRequested, dictionary)) {
+    markAuthoredI18nDictionaryLoaded(normalizedRequested);
   }
 
   return recordAppLocaleStatus({
@@ -418,8 +420,10 @@ export async function loadStudioAssetIfAvailable(
       const merged: Record<string, string> = {};
       for (const part of parts) if (part) Object.assign(merged, part);
       if (Object.keys(merged).length > 0) {
-        registerI18nLocaleEntries(assetLocale, merged);
-        if (assetLocale !== normalized) registerI18nLocaleEntries(normalized, merged);
+        if (registerI18nLocaleEntries(assetLocale, merged)) markAuthoredI18nDictionaryLoaded(assetLocale);
+        if (assetLocale !== normalized && registerI18nLocaleEntries(normalized, merged)) {
+          markAuthoredI18nDictionaryLoaded(normalized);
+        }
         triggerTranslationBundleUpdate();
       }
     } catch {

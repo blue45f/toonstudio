@@ -30,12 +30,56 @@ function renderReview(entry: string, publish: CampusObjectPublisher | null = nul
   );
 }
 
+function renderStory(entry: string) {
+  return render(
+    <MemoryRouter initialEntries={[entry]}>
+      <CampusObjectPublisherContext.Provider value={null}>
+        <LocationProbe />
+        <Routes>
+          <Route path="/studio/p/:projectId/story" element={<StudioProjectShellPage section="story" />} />
+          <Route path="/studio/p/:projectId/production" element={<StudioProjectShellPage section="production" />} />
+        </Routes>
+      </CampusObjectPublisherContext.Provider>
+    </MemoryRouter>,
+  );
+}
+
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
 });
 
 describe("StudioProjectShellPage integration", () => {
+  it("질문형 시작에서 선택한 집중 화면을 대본·제작·원고 이동까지 유지한다", async () => {
+    createStudioProject(window.localStorage, { id: "project-1", title: "내 이야기", kind: "webtoon" });
+    createStudioProjectDocument(window.localStorage, "project-1", {
+      id: "doc-1",
+      title: "1화",
+      kind: "webtoon",
+    });
+    const view = renderStory("/studio/p/project-1/story?view=script&uiMode=simple");
+
+    const continueLink = screen.getByRole("link", { name: /이어서 그리기|Continue drawing/u });
+    expect(continueLink.getAttribute("href")).toContain("/studio/p/project-1/d/doc-1");
+    expect(continueLink.getAttribute("href")).toContain("resume=latest");
+    expect(continueLink.getAttribute("href")).toContain("uiMode=simple");
+
+    expect(view.container.querySelector('[data-studio-project-shell="focused-script"]')).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: /프로젝트 주요 단계|Main project stages/u }).closest("details")?.open).toBe(false);
+    fireEvent.click(screen.getByText(/프로젝트 메뉴|Project menu/u));
+    expect(screen.getByRole("link", { name: /전체 기획 도구 보기|Show all planning tools/u }).getAttribute("href"))
+      .toBe("/studio/p/project-1/story?view=script&uiMode=full");
+    const navigation = screen.getByRole("navigation", { name: /프로젝트 주요 단계|Main project stages/u });
+    fireEvent.click(within(navigation).getByRole("link", { name: /제작|Production/u }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toBe(
+        "/studio/p/project-1/production?uiMode=simple&view=board",
+      );
+    });
+    expect(view.container.querySelector("[data-studio-project-primary-action]")?.getAttribute("href"))
+      .toBe("/studio/work/project-1/canvas?uiMode=simple");
+  });
+
   it("renders a selected project view and links to its real version owner", () => {
     const view = renderReview("/studio/p/project-1/review?view=versions");
     expect(view.container.querySelector("[data-studio-project-view=versions]")).toBeTruthy();

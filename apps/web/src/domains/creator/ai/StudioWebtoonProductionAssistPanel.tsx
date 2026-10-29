@@ -28,13 +28,13 @@ import {
   buildLocalScrollPaceSilentBeatRhythmReport,
   buildLocalSubsurfaceScatteringTearSpecularLockReport,
   buildLocalTattooStigmaUvTopologyLockReport,
-  runClaudeCollarTieLapelNecklineLockDirector,
-  runClaudeCompanionFamiliarScaleLockDirector,
-  runClaudeInteriorRoomGeographyLockDirector,
-  runClaudeScrollPaceSilentBeatRhythmDirector,
-  runClaudeSubsurfaceScatteringTearSpecularLockDirector,
-  runClaudeTattooStigmaUvTopologyLockDirector,
-} from "./claude/claude-phase6-ecosystem-suite";
+  runAssistCollarTieLapelNecklineLockDirector,
+  runAssistCompanionFamiliarScaleLockDirector,
+  runAssistInteriorRoomGeographyLockDirector,
+  runAssistScrollPaceSilentBeatRhythmDirector,
+  runAssistSubsurfaceScatteringTearSpecularLockDirector,
+  runAssistTattooStigmaUvTopologyLockDirector,
+} from "./assist/assist-phase6-ecosystem-suite";
 import {
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
@@ -42,21 +42,21 @@ import {
   buildDeterministicMultiCharacterWardrobeReport,
   buildDeterministicScrollEyePathReport,
   buildDeterministicWeatherTimeProgressionReport,
-  runClaudeActingSfxChoreographer,
-  runClaudeColorScriptDirector,
-  runClaudeContinuityForeshadowAuditor,
-  runClaudeMultiCharacterWardrobeUniformDirector,
-  runClaudeScrollEyePathDoctor,
-  runClaudeWeatherTimeProgressionContinuityDirector,
-  type ClaudeActingSfxChoreographyView,
-  type ClaudeColorScriptView,
-  type ClaudeContinuityForeshadowView,
-  type ClaudeMultiCharacterWardrobeView,
-  type ClaudeScrollEyePathView,
-  type ClaudeWeatherTimeProgressionView,
+  runAssistActingSfxChoreographer,
+  runAssistColorScriptDirector,
+  runAssistContinuityForeshadowAuditor,
+  runAssistMultiCharacterWardrobeUniformDirector,
+  runAssistScrollEyePathDoctor,
+  runAssistWeatherTimeProgressionContinuityDirector,
+  type AssistActingSfxChoreographyView,
+  type AssistColorScriptView,
+  type AssistContinuityForeshadowView,
+  type AssistMultiCharacterWardrobeView,
+  type AssistScrollEyePathView,
+  type AssistWeatherTimeProgressionView,
   type WebtoonProductionAssistInput,
   type WebtoonProductionAssistMode,
-} from "./claude/claude-webtoon-production-assist";
+} from "./assist/ai-webtoon-production-assist";
 import {
   evaluateWebtoonAiCompetitorParity,
   WEBTOON_AI_SERVICE_BENCHMARK_MATRIX,
@@ -78,22 +78,22 @@ const PRODUCTION_ASSIST_TABS: readonly {
   {
     id: "scroll-eyepath",
     labelKo: "모바일 스크롤 시선·데드존 닥터",
-    benchmarkBadgeKo: "클립스튜디오 EX · 네이버웹툰",
+    benchmarkBadgeKo: "모바일 세로 스크롤 기준",
   },
   {
     id: "color-script",
     labelKo: "컬러 스크립트 · 4레이어 조명",
-    benchmarkBadgeKo: "다쉬툰 스튜디오 · 리얼드로우",
+    benchmarkBadgeKo: "시간대·조명 연출 기준",
   },
   {
     id: "continuity-foreshadow",
     labelKo: "설정 연속성 · 복선 회수 감수",
-    benchmarkBadgeKo: "오노마AI 페뷸레이터 · 라마젠",
+    benchmarkBadgeKo: "설정·복선 연속성 기준",
   },
   {
     id: "acting-sfx",
     labelKo: "다각도 연기 · SFX 오케스트레이터",
-    benchmarkBadgeKo: "라이언로켓 젠버스 · 투닝 플러스",
+    benchmarkBadgeKo: "다각도 연기·SFX 기준",
   },
   {
     id: "multi-character-wardrobe-lock",
@@ -133,17 +133,17 @@ export function StudioWebtoonProductionAssistPanel({
   const [activeMode, setActiveMode] = useState<WebtoonProductionAssistMode>("scroll-eyepath");
   const [isRunningClaude, setIsRunningClaude] = useState(false);
 
-  const [liveScrollView, setLiveScrollView] = useState<ClaudeScrollEyePathView | null>(null);
-  const [liveColorView, setLiveColorView] = useState<ClaudeColorScriptView | null>(null);
+  const [liveScrollView, setLiveScrollView] = useState<AssistScrollEyePathView | null>(null);
+  const [liveColorView, setLiveColorView] = useState<AssistColorScriptView | null>(null);
   const [liveContinuityView, setLiveContinuityView] =
-    useState<ClaudeContinuityForeshadowView | null>(null);
-  const [liveActingView, setLiveActingView] = useState<ClaudeActingSfxChoreographyView | null>(
+    useState<AssistContinuityForeshadowView | null>(null);
+  const [liveActingView, setLiveActingView] = useState<AssistActingSfxChoreographyView | null>(
     null,
   );
   const [liveWardrobeView, setLiveWardrobeView] =
-    useState<ClaudeMultiCharacterWardrobeView | null>(null);
+    useState<AssistMultiCharacterWardrobeView | null>(null);
   const [liveWeatherView, setLiveWeatherView] =
-    useState<ClaudeWeatherTimeProgressionView | null>(null);
+    useState<AssistWeatherTimeProgressionView | null>(null);
 
   const assistInput: WebtoonProductionAssistInput = useMemo(
     () => ({
@@ -232,22 +232,22 @@ export function StudioWebtoonProductionAssistPanel({
     setIsRunningClaude(true);
     try {
       if (activeMode === "scroll-eyepath") {
-        const res = await runClaudeScrollEyePathDoctor(assistInput);
+        const res = await runAssistScrollEyePathDoctor(assistInput);
         setLiveScrollView(res);
       } else if (activeMode === "color-script") {
-        const res = await runClaudeColorScriptDirector(assistInput);
+        const res = await runAssistColorScriptDirector(assistInput);
         setLiveColorView(res);
       } else if (activeMode === "continuity-foreshadow") {
-        const res = await runClaudeContinuityForeshadowAuditor(assistInput);
+        const res = await runAssistContinuityForeshadowAuditor(assistInput);
         setLiveContinuityView(res);
       } else if (activeMode === "acting-sfx") {
-        const res = await runClaudeActingSfxChoreographer(assistInput);
+        const res = await runAssistActingSfxChoreographer(assistInput);
         setLiveActingView(res);
       } else if (activeMode === "multi-character-wardrobe-lock") {
-        const res = await runClaudeMultiCharacterWardrobeUniformDirector(assistInput);
+        const res = await runAssistMultiCharacterWardrobeUniformDirector(assistInput);
         setLiveWardrobeView(res);
       } else {
-        const res = await runClaudeWeatherTimeProgressionContinuityDirector(assistInput);
+        const res = await runAssistWeatherTimeProgressionContinuityDirector(assistInput);
         setLiveWeatherView(res);
       }
     } finally {
@@ -367,7 +367,7 @@ export function StudioWebtoonProductionAssistPanel({
         >
           엔진 상태:{" "}
           <strong className="text-accent">
-            {currentActiveSource === "claude-live" ? "Claude API 실시간" : "로컬 하이브리드"}
+            {currentActiveSource === "claude-live" ? "AI 실시간" : "로컬 하이브리드"}
           </strong>{" "}
           ({currentActiveModel})
         </span>
@@ -384,7 +384,7 @@ export function StudioWebtoonProductionAssistPanel({
             )}
           >
             <Wand2 size={10} aria-hidden="true" />
-            {isRunningClaude ? "Claude AI 감수 중..." : "Claude AI 실시간 감수 실행"}
+            {isRunningClaude ? "AI 감수 중..." : "AI 실시간 감수 실행"}
           </button>
           <button
             type="button"
@@ -536,7 +536,7 @@ export function StudioWebtoonProductionAssistPanel({
           <div className="flex flex-wrap items-center justify-between gap-1">
             <span className="inline-flex items-center gap-1 font-bold text-fg">
               <Volume2 size={12} className="text-accent" aria-hidden="true" />
-              젠버스 다각도 캐릭터 시트 & 투닝 SFX 오케스트레이션
+              다각도 캐릭터 시트 & SFX 오케스트레이션
             </span>
           </div>
           <p className="text-fg-2">{currentActingView.genvasConsistencySummaryKo}</p>
@@ -649,7 +649,7 @@ export function StudioWebtoonProductionAssistPanel({
             type="button"
             data-testid="wave15-collar-tie-lock-btn"
             onClick={async () => {
-              const env = await runClaudeCollarTieLapelNecklineLockDirector(assistInput);
+              const env = await runAssistCollarTieLapelNecklineLockDirector(assistInput);
               const line = env.report.readyNecklineGuardLine || buildLocalCollarTieLapelNecklineLockReport(assistInput).readyNecklineGuardLine;
               onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
             }}
@@ -661,7 +661,7 @@ export function StudioWebtoonProductionAssistPanel({
             type="button"
             data-testid="wave15-tattoo-stigma-uv-btn"
             onClick={async () => {
-              const env = await runClaudeTattooStigmaUvTopologyLockDirector(assistInput);
+              const env = await runAssistTattooStigmaUvTopologyLockDirector(assistInput);
               const line = env.report.readyStigmaUvGuardLine || buildLocalTattooStigmaUvTopologyLockReport(assistInput).readyStigmaUvGuardLine;
               onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
             }}
@@ -673,7 +673,7 @@ export function StudioWebtoonProductionAssistPanel({
             type="button"
             data-testid="wave15-companion-scale-btn"
             onClick={async () => {
-              const env = await runClaudeCompanionFamiliarScaleLockDirector(assistInput);
+              const env = await runAssistCompanionFamiliarScaleLockDirector(assistInput);
               const line = env.report.readyCompanionGuardLine || buildLocalCompanionFamiliarScaleLockReport(assistInput).readyCompanionGuardLine;
               onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
             }}
@@ -685,7 +685,7 @@ export function StudioWebtoonProductionAssistPanel({
             type="button"
             data-testid="wave15-interior-geography-btn"
             onClick={async () => {
-              const env = await runClaudeInteriorRoomGeographyLockDirector(assistInput);
+              const env = await runAssistInteriorRoomGeographyLockDirector(assistInput);
               const line = env.report.readyRoomGeographyGuardLine || buildLocalInteriorRoomGeographyLockReport(assistInput).readyRoomGeographyGuardLine;
               onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
             }}
@@ -697,7 +697,7 @@ export function StudioWebtoonProductionAssistPanel({
             type="button"
             data-testid="wave15-silent-beat-rhythm-btn"
             onClick={async () => {
-              const env = await runClaudeScrollPaceSilentBeatRhythmDirector(assistInput);
+              const env = await runAssistScrollPaceSilentBeatRhythmDirector(assistInput);
               const line = env.report.readySilentBeatGuardLine || buildLocalScrollPaceSilentBeatRhythmReport(assistInput).readySilentBeatGuardLine;
               onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
             }}
@@ -709,7 +709,7 @@ export function StudioWebtoonProductionAssistPanel({
             type="button"
             data-testid="wave15-sss-tear-specular-btn"
             onClick={async () => {
-              const env = await runClaudeSubsurfaceScatteringTearSpecularLockDirector(assistInput);
+              const env = await runAssistSubsurfaceScatteringTearSpecularLockDirector(assistInput);
               const line = env.report.readySssTearGuardLine || buildLocalSubsurfaceScatteringTearSpecularLockReport(assistInput).readySssTearGuardLine;
               onApplyScript(scriptInput.trim() ? `${scriptInput.trim()}\n${line}` : line);
             }}

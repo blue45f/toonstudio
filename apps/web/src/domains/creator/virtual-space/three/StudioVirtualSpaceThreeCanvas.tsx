@@ -3,7 +3,6 @@ import * as THREE from "three";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import { CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
   STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS,
   StudioZoneChangeTracker,
@@ -26,7 +25,7 @@ import {
   studioWorldRoomAt,
   studioWorldSpawn,
 } from "../studio-virtual-space-world-manifest";
-import { StudioVirtualSpaceNanoBananaStageHud } from "../StudioVirtualSpaceNanoBananaStageHud";
+import { StudioVirtualSpaceIllustratedStageHud } from "../StudioVirtualSpaceIllustratedStageHud";
 import {
   applyStudioLightingPresetToScene,
   createStudioThreeChromePostPipeline,
@@ -41,7 +40,6 @@ import {
   type StudioThreeLightingPreset,
 } from "./studio-virtual-space-three-dioramas";
 import {
-  buildStudioThreeCampusArchitecture,
   createStylized3DCharacterNode,
   facingToYawRadians,
   loadStudioThreeAssets,
@@ -50,6 +48,9 @@ import {
   worldToThree,
   type StudioThreeActorNode,
 } from "./studio-virtual-space-three-scene";
+import { buildStudioThreeWorldArchitecture, studioThreeRoomSigns } from "./studio-virtual-space-three-world-layout";
+import { StudioThreeWorldNavigation } from "./studio-virtual-space-three-navigation";
+import { studioThreeThemeLightingPreset } from "./studio-virtual-space-three-surface-art";
 
 const NPC_COLORS = [0x6366f1, 0xec4899, 0x06b6d4, 0xf59e0b, 0x10b981, 0x8b5cf6, 0x3b82f6, 0x14b8a6] as const;
 
@@ -77,8 +78,8 @@ export function StudioVirtualSpaceThreeCanvas({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
   const [overlays, setOverlays] = useState<readonly ProjectedOverlayItem[]>([]);
-  const defaultPreset: StudioThreeLightingPreset =
-    spaceTheme === "neon-night" ? "night" : spaceTheme === "celestial-observatory" ? "studio" : "day";
+  const [assetFailureCount, setAssetFailureCount] = useState(0);
+  const defaultPreset = studioThreeThemeLightingPreset(spaceTheme);
   const [lightingPreset, setLightingPreset] = useState<StudioThreeLightingPreset>(defaultPreset);
   const applyLightingRef = useRef<((preset: StudioThreeLightingPreset) => void) | null>(null);
   const resetCameraRef = useRef<(() => void) | null>(null);
@@ -94,8 +95,7 @@ export function StudioVirtualSpaceThreeCanvas({
   callbacksRef.current = callbacks;
 
   useEffect(() => {
-    const nextPreset: StudioThreeLightingPreset =
-      spaceTheme === "neon-night" ? "night" : spaceTheme === "celestial-observatory" ? "studio" : "day";
+    const nextPreset = studioThreeThemeLightingPreset(spaceTheme);
     setLightingPreset(nextPreset);
     applyLightingRef.current?.(nextPreset);
   }, [spaceTheme]);
@@ -110,6 +110,7 @@ export function StudioVirtualSpaceThreeCanvas({
     if (!container || !canvasMount) return undefined;
 
     let disposed = false;
+    setAssetFailureCount(0);
     callbacksRef.current.onEngineStatusChange?.("loading");
 
     const scene = new THREE.Scene();
@@ -150,12 +151,16 @@ export function StudioVirtualSpaceThreeCanvas({
     applyLightingRef.current = syncLighting;
     syncLighting(defaultPreset);
 
-    const { floorMesh, waterMeshes, workstationRings } = buildStudioThreeCampusArchitecture(scene);
+    const architecture = buildStudioThreeWorldArchitecture(scene, manifest, spaceTheme);
+    const { floorMesh, waterMeshes, workstationRings } = architecture;
+    const roomSigns = studioThreeRoomSigns(manifest);
 
     const actorNodes = new Map<string, StudioThreeActorNode>();
-    const spawnPoint = snapshotRef.current.self.x > 0 || snapshotRef.current.self.y > 0
+    const navigation = new StudioThreeWorldNavigation(manifest);
+    const requestedSpawn = snapshotRef.current.self.x > 0 || snapshotRef.current.self.y > 0
       ? { x: snapshotRef.current.self.x, y: snapshotRef.current.self.y }
       : studioWorldSpawn(manifest).point;
+    const spawnPoint = navigation.resolveTarget(requestedSpawn) ?? requestedSpawn;
 
     const selfNode = createStylized3DCharacterNode("self", 0x4f46e5, true);
     const selfPos3 = worldToThree(spawnPoint, 0);
@@ -169,13 +174,13 @@ export function StudioVirtualSpaceThreeCanvas({
     camera.lookAt(selfPos3.x, 1.05, selfPos3.z - 0.9);
 
     const npcDefinitions = manifest.npcs ?? [];
-    CAMPUS_NPCS.forEach((npc, index) => {
+    npcDefinitions.forEach((npc, index) => {
       const node = createStylized3DCharacterNode(npc.id, NPC_COLORS[index % NPC_COLORS.length] ?? 0x6366f1, false);
       const pos3 = worldToThree(npc.point, 0);
       node.group.position.copy(pos3);
       node.targetX = pos3.x;
       node.targetZ = pos3.z;
-      node.currentYaw = facingToYawRadians(npc.facing);
+      node.currentYaw = facingToYawRadians(npc.facing ?? "down");
       node.targetYaw = node.currentYaw;
       node.group.rotation.y = node.currentYaw;
       scene.add(node.group);
@@ -190,7 +195,7 @@ export function StudioVirtualSpaceThreeCanvas({
     destMarker.visible = false;
     scene.add(destMarker);
 
-    const reloadActorVrm = loadStudioThreeAssets(scene, actorNodes, () => disposed, snapshotRef.current.self.avatarIndex);
+    const reloadActorVrm = loadStudioThreeAssets(scene, actorNodes, () => disposed, snapshotRef.current.self.avatarIndex, manifest, () => setAssetFailureCount((count) => count + 1));
     reloadActorVrmRef.current = reloadActorVrm;
 
     const keysDown = new Set<string>();
@@ -221,7 +226,7 @@ export function StudioVirtualSpaceThreeCanvas({
           destMarker.visible = true;
         }
       } else {
-        const npc = CAMPUS_NPCS.find((item) => item.id === targetId);
+        const npc = npcDefinitions.find((item) => item.id === targetId);
         const def = npcDefinitions.find((item) => item.id === targetId);
         if (!npc || !def) return;
         const npcInteract = studioNpcInteraction(manifest, def);
@@ -277,7 +282,7 @@ export function StudioVirtualSpaceThreeCanvas({
       const hit = raycaster.intersectObject(floorMesh, false)[0];
       if (hit) {
         const clamped = clampStudioWorldPoint(manifest, threeToWorld({ x: hit.point.x, z: hit.point.z }));
-        const clickedTarget = findClickedWorldTarget(clamped, studioWorldInteractions(manifest), CAMPUS_NPCS);
+        const clickedTarget = findClickedWorldTarget(clamped, studioWorldInteractions(manifest), npcDefinitions);
         if (clickedTarget) {
           triggerOverlayTargetRef.current?.(clickedTarget.kind, clickedTarget.id);
         } else {
@@ -312,6 +317,7 @@ export function StudioVirtualSpaceThreeCanvas({
     window.addEventListener("resize", handleResize);
 
     callbacksRef.current.onEngineStatusChange?.("ready");
+    architecture.loadDeferredArt(() => setAssetFailureCount((count) => count + 1));
     const initialZone = zoneTracker.next(currentPoint);
     if (initialZone) callbacksRef.current.onZoneChange?.(initialZone);
 
@@ -321,7 +327,10 @@ export function StudioVirtualSpaceThreeCanvas({
     let animFrameId = 0;
 
     const snapPlayerAndCamera = (target: StudioVirtualSpacePoint) => {
-      currentPoint = target;
+      const destination = navigation.resolveTarget(target);
+      if (!destination) return;
+      currentPoint = destination;
+      navigation.cancel();
       moveDestination = null;
       pendingAutoInteract = null;
       destMarker.visible = false;
@@ -341,6 +350,7 @@ export function StudioVirtualSpaceThreeCanvas({
 
       const dt = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
       lastTime = now;
+      reloadActorVrm.update(dt);
 
       const teleport = bridge.consumeTeleport();
       if (teleport) snapPlayerAndCamera(clampStudioWorldPoint(manifest, teleport));
@@ -389,32 +399,20 @@ export function StudioVirtualSpaceThreeCanvas({
         moveDestination = null;
         pendingAutoInteract = null;
         destMarker.visible = false;
-        currentPoint = clampStudioWorldPoint(manifest, {
-          x: currentPoint.x + nx * speedPxPerSec * dt,
-          y: currentPoint.y + ny * speedPxPerSec * dt,
-        });
+        const next = navigation.directional(currentPoint, { x: nx * speedPxPerSec * dt, y: ny * speedPxPerSec * dt });
+        moving = Math.hypot(next.x - currentPoint.x, next.y - currentPoint.y) > 0.001;
+        currentPoint = next;
         currentFacing = studioFacingToward(nx, ny);
         selfNode.targetYaw = Math.atan2(nx, ny);
-        moving = true;
       } else if (moveDestination) {
-        const dx = moveDestination.x - currentPoint.x;
-        const dy = moveDestination.y - currentPoint.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist <= 6) {
-          currentPoint = moveDestination;
+        const step = navigation.toward(currentPoint, moveDestination, speedPxPerSec * dt);
+        const dx = step.point.x - currentPoint.x, dy = step.point.y - currentPoint.y;
+        currentPoint = step.point;
+        moving = step.moving;
+        if (moving) { currentFacing = studioFacingToward(dx, dy); selfNode.targetYaw = Math.atan2(dx, dy); }
+        if (step.arrived) {
           moveDestination = null;
           destMarker.visible = false;
-        } else {
-          const step = Math.min(dist, speedPxPerSec * dt);
-          const nx = dx / dist;
-          const ny = dy / dist;
-          currentPoint = clampStudioWorldPoint(manifest, {
-            x: currentPoint.x + nx * step,
-            y: currentPoint.y + ny * step,
-          });
-          currentFacing = studioFacingToward(nx, ny);
-          selfNode.targetYaw = Math.atan2(nx, ny);
-          moving = true;
         }
       }
 
@@ -448,7 +446,7 @@ export function StudioVirtualSpaceThreeCanvas({
       }
 
       // NPC 시선 및 절차적 호흡/걸음 모션 업데이트 (원거리 구역 외곽 NPC 스키닝 컬링 포함)
-      for (const npc of CAMPUS_NPCS) {
+      for (const npc of npcDefinitions) {
         const node = actorNodes.get(npc.id);
         if (!node) continue;
         const gapPx = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
@@ -456,7 +454,7 @@ export function StudioVirtualSpaceThreeCanvas({
         if (!node.group.visible) continue;
         node.targetYaw = gapPx < 240
           ? Math.atan2(currentPoint.x - npc.point.x, currentPoint.y - npc.point.y)
-          : facingToYawRadians(npc.facing);
+          : facingToYawRadians(npc.facing ?? "down");
         node.currentYaw = shortestAngleLerp(node.currentYaw, node.targetYaw, 0.14);
         node.group.rotation.y = node.currentYaw;
       }
@@ -539,7 +537,7 @@ export function StudioVirtualSpaceThreeCanvas({
       }
 
       const nearbyNpcs: StudioVirtualSpaceNearbyNpc[] = [];
-      for (const npc of CAMPUS_NPCS) {
+      for (const npc of npcDefinitions) {
         const dist = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
         if (dist <= STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS) {
           const def = npcDefinitions.find((item) => item.id === npc.id);
@@ -654,7 +652,7 @@ export function StudioVirtualSpaceThreeCanvas({
           }
         }
 
-        for (const npc of CAMPUS_NPCS) {
+        for (const npc of npcDefinitions) {
           const dist = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
           if (dist > 640) continue;
           const node = actorNodes.get(npc.id);
@@ -676,14 +674,12 @@ export function StudioVirtualSpaceThreeCanvas({
           }
         }
 
-        for (const zone of CAMPUS_ZONES) {
-          const zx = (zone.tiles.column + zone.tiles.width / 2) * 64;
-          const zy = zone.tiles.row * 64 + 32;
-          if (Math.hypot(zx - currentPoint.x, zy - currentPoint.y) > 920) continue;
-          const signPos = projectPoint(worldToThree({ x: zx, y: zy }, zone.walls.length > 0 ? 2.95 : 1.55));
+        for (const zone of roomSigns) {
+          if (Math.hypot(zone.x - currentPoint.x, zone.y - currentPoint.y) > 920) continue;
+          const signPos = projectPoint(worldToThree(zone, zone.heightMeters));
           if (signPos.visible) {
             const roomDef = manifest.rooms?.find((room) => room.id === zone.roomId);
-            projected.push({ id: `zone:${zone.roomId}`, label: zone.signEn, sublabel: isEn ? (roomDef?.labelEn ?? zone.signEn) : (roomDef?.labelKo ?? zone.signEn), kind: "zone", x: signPos.x, y: signPos.y });
+            projected.push({ id: `zone:${zone.roomId}`, label: zone.label, sublabel: isEn ? (roomDef?.labelEn ?? zone.label) : (roomDef?.labelKo ?? zone.label), kind: "zone", x: signPos.x, y: signPos.y });
           }
         }
 
@@ -709,6 +705,8 @@ export function StudioVirtualSpaceThreeCanvas({
       renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
       renderer.domElement.removeEventListener("wheel", handleWheel);
       bridge.setFocusHandler(null);
+      reloadActorVrm.dispose();
+      architecture.dispose();
       postPipeline.dispose();
       hdriController.dispose();
       renderer.dispose();
@@ -724,6 +722,7 @@ export function StudioVirtualSpaceThreeCanvas({
       style={{ position: "relative", width: "100%", height: "100%", outline: "none" }}
     >
       <div ref={canvasMountRef} className="studio-vspace-three-canvas-mount" style={{ position: "absolute", inset: 0, zIndex: 1 }} />
+      {assetFailureCount > 0 ? <p role="status" style={{ position: "absolute", left: 16, top: 48, zIndex: 3 }}>{bt("일부 3D 장비를 불러오지 못했어요. 다른 장비와 공간은 계속 이용할 수 있어요.", "Some 3D equipment could not load. Other equipment and rooms are still available.")}</p> : null}
       <div
         className="studio-vspace-three-lighting-hud"
         style={{ position: "absolute", right: 76, bottom: 16, zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 8px", borderRadius: 999, background: "rgba(15, 23, 42, 0.84)", border: "1px solid rgba(148, 163, 184, 0.32)", backdropFilter: "blur(10px)" }}
@@ -750,7 +749,7 @@ export function StudioVirtualSpaceThreeCanvas({
           {bt("시점 리셋 [C]", "Reset View [C]")}
         </button>
       </div>
-      <StudioVirtualSpaceNanoBananaStageHud />
+      <StudioVirtualSpaceIllustratedStageHud />
       <div className="studio-vspace-three-overlays" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 2 }}>
         {overlays.map((item) => {
           const isInteractive = (item.kind === "workstation" || item.kind === "npc") && Boolean(item.targetId);

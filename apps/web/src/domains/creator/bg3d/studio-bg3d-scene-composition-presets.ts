@@ -264,6 +264,7 @@ export const STUDIO_BG3D_SCENE_COMPOSITION_PRESETS: readonly StudioBg3dSceneComp
       descriptionKo: "화면을 기울여 불안감을 만드는 달빛 복도 구도.",
       descriptionEn: "A tilted moonlit corridor framing that builds unease.",
       lightingPresetId: "night",
+      bundleThemeId: "medieval-fantasy",
       target: [0, 1.2, 0],
       azimuthDeg: 0,
       elevationDeg: 4,

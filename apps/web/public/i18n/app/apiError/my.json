@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ဝင်ရောက်ရန် လိုအပ်ပါတယ်။",
+  "apiError.loginRequired": "အကောင့်ဝင်ရန် လိုအပ်ပါသည်။",
   "apiError.adminRequired": "Admin ခွင့်ပြုချက်တွေကို စစ်ဆေးလို့မရခဲ့ဘူး။",
   "apiError.adminOnlyPage": "ဤစာမျက်နှာသည် အုပ်ချုပ်ရေးမှူးများအတွက်သာ သက်ဆိုင်သည်။",
   "apiError.notFound": "တောင်းဆိုထားသော ပစ္စည်းကို ရှာမတွေ့နိုင်ပါ။",

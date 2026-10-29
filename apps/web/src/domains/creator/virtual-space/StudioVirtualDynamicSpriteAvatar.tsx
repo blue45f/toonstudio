@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { NanoBananaCreatorPersonaId } from "./studio-virtual-office-nextgen-engine-data";
+import type { IllustratedCreatorPersonaId } from "./studio-virtual-office-nextgen-engine-data";
 import {
   computeDynamicSpriteFrameKinematics,
   getDynamicCreatorPersonaSpec,
@@ -13,7 +13,7 @@ import {
 } from "./studio-virtual-space-dynamic-sprite-engine";
 
 export interface StudioVirtualDynamicSpriteAvatarProps {
-  readonly personaId: NanoBananaCreatorPersonaId;
+  readonly personaId: IllustratedCreatorPersonaId;
   readonly actionId: DynamicSpriteActionId;
   readonly expressionId: DynamicSpriteExpressionId;
   readonly vfxId: DynamicSpriteVfxId;
@@ -200,7 +200,7 @@ export function StudioVirtualDynamicSpriteAvatar({
 }
 
 export interface StudioVirtualDynamicSpriteSheetStripProps {
-  readonly personaId: NanoBananaCreatorPersonaId;
+  readonly personaId: IllustratedCreatorPersonaId;
   readonly actionId: DynamicSpriteActionId;
   readonly expressionId: DynamicSpriteExpressionId;
   readonly vfxId: DynamicSpriteVfxId;

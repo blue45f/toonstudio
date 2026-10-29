@@ -1,0 +1,317 @@
+{
+  "schemaVersion": "toonstudio.rea.virtual-office-refresh/1.0",
+  "capturedOn": "2026-10-28",
+  "status": "current-observation-and-limited-static-analysis",
+  "methodology": "REA list_browser_targets → inspect_web_page → export_evidence_bundle → export_web_scripts → analyze_javascript_application(선택 소스)",
+  "targetCount": 7,
+  "totalCapturedScripts": 938,
+  "retainedEvidenceRecords": 32,
+  "limitations": [
+    "7종 공개 페이지와 로드된 클라이언트 스크립트만 현재 재관측함. 기존 40종 목록 전체 재분석 완료를 뜻하지 않음.",
+    "수집 JS는 Git ignore된 .qa에만 보관하며 제품 코드로 복사하지 않음.",
+    "대형 AST 일부는 60000ms per-source 제한에 도달해 partial Evidence를 보존함. 더 작은 source 범위와 semantic node 제한 1000으로 별도 분석한 결과도 기록함.",
+    "네이티브 바이너리 분석 불필요. Hopper 미사용, 필요 시 Ghidra만 사용."
+  ],
+  "platforms": [
+    {
+      "id": "workadventure",
+      "origin": "https://play.workadventu.re",
+      "captureEvidenceId": "ev_c1b50f90a42be16300092b201ecf0a266cd18446f0b5688f7a82c8cdd5752d0a",
+      "exportEvidenceId": "ev_3b91e7746d92331c99bc15fdda66d1376baf14b3eb224b38f9bd12734c96dee8",
+      "scriptsCaptured": 7,
+      "exportedBytes": 9515,
+      "artifactSha256": "2c3f0544515abf87f6034ef4cd9447be901b218c60d52e26badd4974ffba2d78",
+      "ast": {
+        "status": "selected-sources-only",
+        "evidenceId": "ev_c23f7e60dc96d994473fd8fbd6180bb8a937ed6b3d5409cf9798b3a573bcc135",
+        "parentEvidenceId": "ev_7a7691ad3c52511109bf0152b4a5156ccd61f2b062fd842bc83aac5f3ce76bda",
+        "statistics": {
+          "relevant_files": 7,
+          "nested_asar_containers": 0,
+          "text_bytes_read": 1972,
+          "invalid_utf8_files": 0,
+          "parsed_javascript_files": 1,
+          "skipped_javascript_files": 0,
+          "visited_ast_nodes": 296,
+          "findings": 1,
+          "modules": 0,
+          "parse_failures": 0
+        },
+        "selectedSourcePaths": [
+          "isolated/source-1-7ab4860ebe0756268c4b3d87ccea9189c5bc199b58d677db3949c34e630064a7.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음."
+      },
+      "sourceDigests": [
+        {
+          "path": "isolated/source-1-7ab4860ebe0756268c4b3d87ccea9189c5bc199b58d677db3949c34e630064a7.js",
+          "sha256": "a457340e32f17735dc252a316ffb65bab4e4d69ad8be3c16d7a9ee2fcf6a0c55",
+          "bytes": 1972
+        }
+      ]
+    },
+    {
+      "id": "gather",
+      "origin": "https://app.gather.town",
+      "captureEvidenceId": "ev_9ab86d363bd54608503206c8d3fee014f969cf56393058a01d3cdd1ef8149835",
+      "exportEvidenceId": "ev_d775c969dc58325c91557848195b7801c06439aa1f399f1730a72cc144e5cb04",
+      "scriptsCaptured": 15,
+      "exportedBytes": 10030343,
+      "artifactSha256": null,
+      "ast": {
+        "status": "partial-timeout",
+        "evidenceId": "ev_67052e05fd77b61eed7de6b862392d311a7ec01e49762256255781aed9879b5e",
+        "parentEvidenceId": null,
+        "statistics": null,
+        "selectedSourcePaths": [
+          "origins/42f5c976b87810c0e0ba004fb6e7e52a033f387c830665c76a076523273a4b54/bundle.91ff4c3541de3f18d4d4.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음.",
+        "recovery": {
+          "status": "selected-sources-only",
+          "evidenceId": "ev_625ac9282073e73e823d79a15bd0186f74170d50e9f6bcef4fb69fa62c9c3087",
+          "parentEvidenceId": "ev_f9283baa2f9537843b53a1110f93456380ca33026926a623ce805549c2a9e25e",
+          "statistics": {
+            "relevant_files": 15,
+            "nested_asar_containers": 0,
+            "text_bytes_read": 34351,
+            "invalid_utf8_files": 0,
+            "parsed_javascript_files": 1,
+            "skipped_javascript_files": 0,
+            "visited_ast_nodes": 8762,
+            "findings": 159,
+            "modules": 17,
+            "parse_failures": 0
+          },
+          "semanticNodeLimit": 1000,
+          "sourcePaths": [
+            "origins/42f5c976b87810c0e0ba004fb6e7e52a033f387c830665c76a076523273a4b54/bundle.95caa53174c7722e35eb.js"
+          ]
+        }
+      },
+      "sourceDigests": [
+        {
+          "path": "origins/42f5c976b87810c0e0ba004fb6e7e52a033f387c830665c76a076523273a4b54/bundle.91ff4c3541de3f18d4d4.js",
+          "sha256": "b7d7f4a126e825b4c8d4a95e0776755b9052ba9f64bae1f7fa47e94a2e4c23b2",
+          "bytes": 3281852
+        }
+      ]
+    },
+    {
+      "id": "zep",
+      "origin": "https://zep.us",
+      "captureEvidenceId": "ev_2ec3084ac6320e212ad02937897e2de064e5fba46ef6326db99f90b87df8bbfe",
+      "exportEvidenceId": "ev_0e7afa29e85db55093071d7f24e61e549d76373fc74223eb5edbf38ee4995875",
+      "scriptsCaptured": 17,
+      "exportedBytes": 4174896,
+      "artifactSha256": null,
+      "ast": {
+        "status": "partial-timeout",
+        "evidenceId": "ev_422b63f775796a0c387793440bfdc5292b771650ac4a7c5d7d3b7892027069e0",
+        "parentEvidenceId": null,
+        "statistics": null,
+        "selectedSourcePaths": [
+          "isolated/source-14-a2761e3b2626549f9c1a22630a128dd3372cb2a2414b11e8d61f8d6db388e966.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음.",
+        "recovery": {
+          "status": "partial-timeout",
+          "evidenceId": "ev_b9fb65e72bf9add33d9a49e40df365295815cbfff66567264cbbe7029f02092b",
+          "parentEvidenceId": null,
+          "statistics": null,
+          "semanticNodeLimit": 1000,
+          "sourcePaths": [
+            "isolated/source-14-a2761e3b2626549f9c1a22630a128dd3372cb2a2414b11e8d61f8d6db388e966.js"
+          ]
+        }
+      },
+      "sourceDigests": [
+        {
+          "path": "isolated/source-14-a2761e3b2626549f9c1a22630a128dd3372cb2a2414b11e8d61f8d6db388e966.js",
+          "sha256": "b4115d7dd4dbf0f991619f1934570b0a5bdc1e35e66934a73ead25cfadb92411",
+          "bytes": 1628209
+        }
+      ]
+    },
+    {
+      "id": "ovice",
+      "origin": "https://app.ovice.com",
+      "captureEvidenceId": "ev_0a9657d27c833be8906dc93df25a90d8079e2f74abde593bbd4620b92748c0b1",
+      "exportEvidenceId": "ev_cd4734bf08151c7db07313f00dc2188512c388db7dbeef8828908c6ac19827b8",
+      "scriptsCaptured": 20,
+      "exportedBytes": 8907406,
+      "artifactSha256": null,
+      "ast": {
+        "status": "partial-timeout",
+        "evidenceId": "ev_7c6f2c801454d96d05776ebc9a805b999313be5086338c6ca4445c30006ca3e8",
+        "parentEvidenceId": null,
+        "statistics": null,
+        "selectedSourcePaths": [
+          "origins/6282b61163197faa91883ec006b7b6a6860a4a7433e4b224edad142841704c34/assets/openspace-v2-De91LKT5.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음.",
+        "recovery": {
+          "status": "selected-sources-only",
+          "evidenceId": "ev_5f3768ca899079ea08283edd4299a14cd39c25d950164217dd9259b8f427369c",
+          "parentEvidenceId": "ev_f65947df59aa55065b647b998d6d63d5d42b0453dbab7662937b54df2c41ab36",
+          "statistics": {
+            "relevant_files": 20,
+            "nested_asar_containers": 0,
+            "text_bytes_read": 878974,
+            "invalid_utf8_files": 0,
+            "parsed_javascript_files": 1,
+            "skipped_javascript_files": 0,
+            "visited_ast_nodes": 217094,
+            "findings": 111,
+            "modules": 0,
+            "parse_failures": 0
+          },
+          "semanticNodeLimit": 1000,
+          "sourcePaths": [
+            "origins/6282b61163197faa91883ec006b7b6a6860a4a7433e4b224edad142841704c34/assets/openspace-v2-De91LKT5.js"
+          ]
+        }
+      },
+      "sourceDigests": [
+        {
+          "path": "origins/6282b61163197faa91883ec006b7b6a6860a4a7433e4b224edad142841704c34/assets/openspace-v2-De91LKT5.js",
+          "sha256": "b3fc3fd3b346e33c31a5ab72c42af9cbf06ba1732d2346a3d6d71c781cc010e8",
+          "bytes": 878974
+        }
+      ]
+    },
+    {
+      "id": "kumospace",
+      "origin": "https://www.kumospace.com",
+      "captureEvidenceId": "ev_8d60c7cb34e709f2da2e9cb1430f9d910f45ff8320669a837942de12140ef510",
+      "exportEvidenceId": "ev_8e4a25d7dfb57eb2297ba996558124c514b76582eeed1de79fa756f9d74c7004",
+      "scriptsCaptured": 69,
+      "exportedBytes": 8358229,
+      "artifactSha256": "26debcebea148422d518d65e333a430bf0eca37d8fb2419e78ff6562863321bc",
+      "ast": {
+        "status": "selected-sources-only",
+        "evidenceId": "ev_9bf7678cee846639d3772446cc1d22b8fe251a2b9637170e557f53dc8c57ee48",
+        "parentEvidenceId": "ev_7250ce222c1ebf27a5e3eb46bff33269c7e1b09100ea915d6003b183e4a78416",
+        "statistics": {
+          "relevant_files": 69,
+          "nested_asar_containers": 0,
+          "text_bytes_read": 132415,
+          "invalid_utf8_files": 0,
+          "parsed_javascript_files": 1,
+          "skipped_javascript_files": 0,
+          "visited_ast_nodes": 29597,
+          "findings": 271,
+          "modules": 0,
+          "parse_failures": 0
+        },
+        "selectedSourcePaths": [
+          "origins/6017229b9bbedbbeb7f58bdce478b96d87a639d6623f1df964e2100bc8bf053e/assets/SharedSettingsModal-Bgo8ja3V.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음."
+      },
+      "sourceDigests": [
+        {
+          "path": "origins/6017229b9bbedbbeb7f58bdce478b96d87a639d6623f1df964e2100bc8bf053e/assets/SharedSettingsModal-Bgo8ja3V.js",
+          "sha256": "464dbfbfab09e45d318c5f8607036b349d71263c4d7e4f4ab06e72aa4016eebb",
+          "bytes": 132415
+        }
+      ]
+    },
+    {
+      "id": "sowork",
+      "origin": "https://app.sowork.com",
+      "captureEvidenceId": "ev_723896de106dc3961b0cc34ab747eda27c495577d8553c82d55f67de1e0edd82",
+      "exportEvidenceId": "ev_ef2a66ce81874d587bd28ba44199cd02d6ee542148d496cbf5ede3c4b8fced30",
+      "scriptsCaptured": 805,
+      "exportedBytes": 18977930,
+      "artifactSha256": null,
+      "ast": {
+        "status": "partial-timeout",
+        "evidenceId": "ev_ba1f489da98e301a52ce46c6339fef69754172e5dc4abd1ba2984058333331f7",
+        "parentEvidenceId": null,
+        "statistics": null,
+        "selectedSourcePaths": [
+          "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/WorldFpsLimiter-RpIcvwVR.js",
+          "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/isInputActionMovement-DHDaIU03.js",
+          "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/inWorldMetadata-D7Oz4nvJ.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음.",
+        "recovery": {
+          "status": "selected-sources-only",
+          "evidenceId": "ev_3f8485665daa523a4a50b83a8b47e1f31d540a8b537cebc57ceb3af68f0d6e27",
+          "parentEvidenceId": "ev_7d4579e9e50258637f9983ae0bf5466ea42279a10b4ea0da6fd1cd965e5d5dd8",
+          "statistics": {
+            "relevant_files": 805,
+            "nested_asar_containers": 0,
+            "text_bytes_read": 1354,
+            "invalid_utf8_files": 0,
+            "parsed_javascript_files": 1,
+            "skipped_javascript_files": 0,
+            "visited_ast_nodes": 434,
+            "findings": 29,
+            "modules": 0,
+            "parse_failures": 0
+          },
+          "semanticNodeLimit": 1000,
+          "sourcePaths": [
+            "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/WorldFpsLimiter-RpIcvwVR.js"
+          ]
+        }
+      },
+      "sourceDigests": [
+        {
+          "path": "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/WorldFpsLimiter-RpIcvwVR.js",
+          "sha256": "dc4f1fbaf0237463dad7acb960caba48f16be7605fafb75b94fd24829fa5dea3",
+          "bytes": 1354
+        },
+        {
+          "path": "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/isInputActionMovement-DHDaIU03.js",
+          "sha256": "f838903de8e26f64cbd8324887677dd48cebdb3677c450abe6e4ad1f0a7c7355",
+          "bytes": 137426
+        },
+        {
+          "path": "origins/87e490bcc2095b73cdd7297263f90110020fd59b7ccba60085563e7a591f61ae/static/js/inWorldMetadata-D7Oz4nvJ.js",
+          "sha256": "240ef38eea6782090f377c4bfacac1cb4ea5a1df18bce567bd9d70ea34f3efe7",
+          "bytes": 169324
+        }
+      ]
+    },
+    {
+      "id": "teamflow",
+      "origin": "https://app.teamflowhq.com",
+      "captureEvidenceId": "ev_b0d435467505782f53ab6443b319c4d9d1bf47f2588acd54357c85d369ba3b4a",
+      "exportEvidenceId": "ev_29957c963d05a0e66c064cc738b849134191ce58151dbfd1f99b8bba1b2284bd",
+      "scriptsCaptured": 5,
+      "exportedBytes": 3759,
+      "artifactSha256": "97a6ce6ae5aedca92d685c9568bef07885425cfedeb273e72378748956030863",
+      "ast": {
+        "status": "selected-sources-only",
+        "evidenceId": "ev_bb044be7b8a5cc9d5ee49df8b1d8c0dd20c3877b387746420e5f3cdbfe93945e",
+        "parentEvidenceId": "ev_3c34fe328cab1a44a7596b299b1091d2fecf77391fcc42052a409845fbc730ca",
+        "statistics": {
+          "relevant_files": 5,
+          "nested_asar_containers": 0,
+          "text_bytes_read": 1299,
+          "invalid_utf8_files": 0,
+          "parsed_javascript_files": 1,
+          "skipped_javascript_files": 0,
+          "visited_ast_nodes": 257,
+          "findings": 0,
+          "modules": 0,
+          "parse_failures": 0
+        },
+        "selectedSourcePaths": [
+          "isolated/source-1-db6807fa63db69af5618988b679d79b44054435a54f3eff8176be3eea37408cc.js"
+        ],
+        "limitation": "선택한 공개 클라이언트 소스만 정적 분석. 로그인 이후 기능 활성화, 서버 계약과 전체 애플리케이션 동작은 확인하지 않음."
+      },
+      "sourceDigests": [
+        {
+          "path": "isolated/source-1-db6807fa63db69af5618988b679d79b44054435a54f3eff8176be3eea37408cc.js",
+          "sha256": "bd6af299fc01745f3515ba59916e80af20cbba90304ddd5e84030809d4a882b5",
+          "bytes": 1299
+        }
+      ]
+    }
+  ]
+}

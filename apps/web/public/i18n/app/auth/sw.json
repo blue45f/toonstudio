@@ -5,7 +5,7 @@
   "auth.menu.settings": "Mipangilio",
   "auth.menu.signOut": "Toka",
   "auth.menu.fallbackName": "Msomaji",
-  "auth.callback.message.working": "Kukamilisha kuingia...",
+  "auth.callback.message.working": "Inakamilisha kuingia…",
   "auth.callback.error.badState": "Paramita ya hali si sahihi.",
   "auth.callback.error.noCode": "Nambari ya idhini inakosekana.",
   "auth.callback.error.oauthFailed": "Kubadilishana kwa OAuth kumeshindwa.",

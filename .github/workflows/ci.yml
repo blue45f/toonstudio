@@ -46,6 +46,9 @@ jobs:
             /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
             /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
+            /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
             !/apps/web/public/vrm/
             !/artifacts/
             !/docs/
@@ -136,6 +139,8 @@ jobs:
             /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
             /apps/web/public/assets/3d/environments/authored-v1/manifest.json
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
+            /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
             !/apps/web/public/vrm/
             !/artifacts/
             !/docs/
@@ -223,6 +228,8 @@ jobs:
             /apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json
             /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
+            /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
             !/apps/web/public/vrm/
             /apps/web/public/vrm/sample.vrm
             !/artifacts/
@@ -255,9 +262,24 @@ jobs:
       - name: Restore Virtual Studio art for foundation regressions
         if: matrix.shard == 'studio-foundation'
         run: git sparse-checkout add /apps/web/public/assets/virtual-studio/production-v2/ /apps/web/public/assets/virtual-studio/living-world/ /apps/web/public/assets/virtual-studio/drawn-characters-v1/ /apps/web/public/assets/virtual-studio/ambient-audio/ /apps/web/public/assets/virtual-studio/npc-cast-v1/ /apps/web/public/assets/virtual-studio/npc-cast-v2/ /apps/web/public/assets/virtual-studio/npc-cast-v3/ /apps/web/public/assets/virtual-studio/npc-cast-v4/ /apps/web/public/assets/virtual-studio/characters-lpc-v1/ /apps/web/public/assets/virtual-studio/portraits-v1/ /apps/web/public/assets/virtual-studio/art-v4/ /apps/web/public/assets/virtual-studio/art-v4-manifest.json /apps/web/public/assets/virtual-studio/style-packs/ /apps/web/public/assets/virtual-studio/style-packs-v5/ /apps/web/public/assets/virtual-studio/living-town-v6/ /apps/web/public/assets/virtual-studio/imagegen25-v7/ /apps/web/public/assets/virtual-studio/experience-v8/ /apps/web/public/assets/virtual-studio/cinematic-v9/ /apps/web/public/assets/virtual-studio/world-v2/ /apps/web/public/assets/studio/props/
+      - name: 가상 오피스 원본·런타임 시트와 환경 아트 검증 입력 복원
+        if: matrix.shard == 'studio-foundation'
+        run: >-
+          git sparse-checkout add
+          /apps/web/public/assets/virtual-studio/office-cast-v2/
+          /apps/web/public/assets/virtual-studio/office-themes-v1/
+          /apps/web/public/assets/virtual-studio/toon-office-v1/characters/
       - name: 드로잉 일러스트 원본 무결성 검사용 파일 준비
         if: matrix.shard == 'studio-foundation'
         run: git sparse-checkout add /apps/web/public/assets/studio/illustration-20260926/
+      # 번들 권리·배경·장식 회귀가 실제 WebP 본문과 파일 목록을 대조한다. 원본 3D 모델은 받지 않는다.
+      - name: 번들 소재 회귀 검사용 파생 이미지 준비
+        if: matrix.shard == 'studio-foundation'
+        run: >-
+          git sparse-checkout add
+          /apps/web/public/assets/studio/bundle-renders-v1/
+          /apps/web/public/assets/studio/bundle-scenes-v1/
+          /apps/web/public/assets/virtual-studio/bundle-decor-v1/
       - name: Restore generated BG3D pack for studio-3d regressions
         if: matrix.shard == 'studio-3d'
         run: git sparse-checkout add /apps/web/public/assets/3d/environments/authored-v1/

@@ -1,4 +1,4 @@
-import { userAiWireProtocol } from "./claude/claude-protocol";
+import { userAiWireProtocol } from "./assist/assist-protocol";
 import { assertFreeAiConnection } from "./free-ai-policy";
 import { readBoundedResponseBytes } from "./user-ai-bounded-read";
 import {
@@ -14,6 +14,7 @@ import {
   userAiAutomaticExternalConnectionsForCapability,
 } from "./user-ai-store";
 import {
+  UserAiEmptyTruncatedError,
   UserAiTransportError,
   type UserAiTransportErrorCode,
 } from "./user-ai-transport-error";
@@ -35,7 +36,15 @@ export interface UserAiRequestOptions {
   connection?: UserAiResolvedConnection;
 }
 
-export { UserAiTransportError, type UserAiTransportErrorCode };
+export { UserAiEmptyTruncatedError, UserAiTransportError, type UserAiTransportErrorCode };
+
+/** 잘못됐거나 폐기된 키에 400으로 답하는 공급자(Gemini의 API_KEY_INVALID, xAI의 Incorrect API key)를 알아본다. */
+const INVALID_API_KEY_PATTERN = /API_KEY_INVALID|API key not valid|API key expired|incorrect api key|invalid api key/iu;
+
+function invalidApiKeyResponse(bytes: Uint8Array | null): boolean {
+  if (!bytes || bytes.byteLength === 0) return false;
+  return INVALID_API_KEY_PATTERN.test(new TextDecoder().decode(bytes.subarray(0, 16_384)));
+}
 
 export function isUserAiQuotaExhaustion(error: unknown): boolean {
   return error instanceof FreeAiRuntimeBudgetError
@@ -71,8 +80,8 @@ export async function userAiFetch(
   // Claude 연결은 Messages API로 번역해 보내고 OpenAI 형식 응답으로 돌려준다(호출자 변경 없음).
   // 번역·SDK 계층은 Claude 연결을 실제로 쓰는 순간에만 내려받는다(앱 첫 로드·스튜디오 진입 번들에 싣지 않는다).
   if (userAiWireProtocol(connection) === "anthropic-messages") {
-    const { claudeBridgedResponse } = await import("./claude/claude-transport");
-    return claudeBridgedResponse(
+    const { assistBridgedResponse } = await import("./assist/assist-transport");
+    return assistBridgedResponse(
       capability,
       validatedPath,
       method,
@@ -153,7 +162,8 @@ export async function userAiFetch(
           response.status,
         );
       }
-      if (response.status === 401 || response.status === 403) {
+      // Gemini·xAI는 잘못됐거나 폐기된 키에 401이 아니라 400으로 답한다. 키 오류로 보고 다음 키·경로로 넘긴다.
+      if (response.status === 401 || response.status === 403 || (response.status === 400 && invalidApiKeyResponse(bytes))) {
         throw new UserAiTransportError(
           "authentication",
           `개인 무료 API 키 인증에 실패했습니다 (HTTP ${response.status}).`,
@@ -205,17 +215,25 @@ export interface CompletedUserAiText {
   connection: UserAiResolvedConnection;
   attemptedConnectionIds: string[];
   attemptedRouteIds: string[];
+  /** 출력 상한에 걸려 답이 잘렸다(`finish_reason: "length"`). 무료 키 안전 상한(출력 1,024토큰)에서 흔하다. */
+  truncated: boolean;
+}
+
+export interface UserAiTextOptions {
+  /** 이번에 시도할 연결. 없으면 자동 경로의 모든 연결(유료 키는 허용했을 때만)을 쓴다. */
+  readonly connections?: readonly UserAiResolvedConnection[];
 }
 
 export async function completeUserAiTextDetailed(
   system: string,
   user: string,
   signal?: AbortSignal,
+  options: UserAiTextOptions = {},
 ): Promise<CompletedUserAiText> {
   if (!user.trim() || user.length + system.length > 64_000) {
     throw new Error("프롬프트는 비어 있지 않은 64,000자 이하여야 합니다.");
   }
-  const candidates = userAiAutomaticExternalConnectionsForCapability("text");
+  const candidates = options.connections ?? userAiAutomaticExternalConnectionsForCapability("text");
   if (candidates.length === 0) {
     throw new UserAiTransportError(
       "not-configured",
@@ -232,7 +250,7 @@ export async function completeUserAiTextDetailed(
     attemptedRouteIds.push(connection.routeId);
     try {
       const result = await userAiJson<{
-        choices?: Array<{ message?: { content?: unknown } }>;
+        choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
       }>(
         "text",
         connection.chatCompletionsPath,
@@ -252,6 +270,9 @@ export async function completeUserAiTextDetailed(
         },
       );
       const content = result.choices?.[0]?.message?.content;
+      if (result.choices?.[0]?.finish_reason === "length" && (typeof content !== "string" || !content.trim())) {
+        throw new UserAiEmptyTruncatedError();
+      }
       if (typeof content !== "string" || !content.trim() || content.length > 100_000) {
         throw new Error("AI 텍스트 결과를 확인하지 못했습니다.");
       }
@@ -262,6 +283,7 @@ export async function completeUserAiTextDetailed(
         connection,
         attemptedConnectionIds,
         attemptedRouteIds,
+        truncated: result.choices?.[0]?.finish_reason === "length",
       };
     } catch (error) {
       const quotaExhaustion = isUserAiQuotaExhaustion(error);

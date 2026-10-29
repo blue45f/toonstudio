@@ -41,7 +41,7 @@ import {
   STUDIO_EXTERNAL_3D_TRIPO_DEFAULT_MODEL,
   planStudioExternal3dIntake,
 } from "../scene-3d/studio-external-3d-intake";
-import { TRIPO3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-tripo3d-ecosystem-engine";
+import { GEN3D_MCP_GENERATED_MODELS } from "../scene-3d/studio-gen3d-ecosystem-engine";
 import { getStudioBg3dTripoGlbCalibration } from "./studio-bg3d-rea-webtoon-background-engine";
 import {
   StudioScene3dDocumentCommandError,
@@ -108,7 +108,7 @@ export function StudioBg3dVrmHybridDccPanel({
   );
   const [externalKind, setExternalKind] = useState<"character" | "garment" | "prop">("prop");
   const bg3dTripoModels = useMemo(
-    () => TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d"),
+    () => GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d"),
     [],
   );
   const [selectedBg3dModelId, setSelectedBg3dModelId] = useState<string>(

@@ -33,6 +33,11 @@
       "import": "./src/catalog/index.ts",
       "default": "./src/catalog/index.ts"
     },
+    "./search-pagination": {
+      "types": "./src/search-pagination.ts",
+      "import": "./src/search-pagination.ts",
+      "default": "./src/search-pagination.ts"
+    },
     "./fx": {
       "types": "./src/fx/index.ts",
       "import": "./src/fx/index.ts",
@@ -52,6 +57,11 @@
       "types": "./src/production/index.ts",
       "import": "./src/production/index.ts",
       "default": "./src/production/index.ts"
+    },
+    "./production/scope": {
+      "types": "./src/production/scope.ts",
+      "import": "./src/production/scope.ts",
+      "default": "./src/production/scope.ts"
     },
     "./infrastructure-fabric": {
       "types": "./src/infrastructure-fabric.ts",

@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   COMPETITOR_BRUSH_QUALITY_REA_EVIDENCE,
   COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE,
+  QUADRATIC_PIGMENT_MODEL,
   evaluateDliSunflowerBristleAndGgxImpasto,
   evaluateLazySimplexAndFlatnessBezier,
-  evaluateMixbox7DLatentPigmentMix,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
+  evaluateQuadraticPigmentMix,
   evaluateSignaturePadCatmullBezierAndAtramentInk,
   evaluateSpectral38BandKubelkaMunkMix,
   evaluateTegakiGhostBufferWashAndBayerTone,
@@ -145,7 +146,7 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(report.promotionGatePassed).toBe(true);
   });
 
-  it("12종 브러시 엔진 비교 매트릭스와 Wave 36(Spectral 38밴드·Mixbox 7D·p5.brush·LazyBrush·Simplex·Points-on-Curve, 143파일) 및 8시간 장시간 드로잉(Soak) 벤치마크에서 최적 실서비스 구성을 자동 도출한다", () => {
+  it("12종 브러시 엔진 비교 매트릭스와 Wave 36(Spectral 38밴드·로컬 이차 안료 7D·p5.brush·LazyBrush·Simplex·Points-on-Curve, 143파일) 및 8시간 장시간 드로잉(Soak) 벤치마크에서 최적 실서비스 구성을 자동 도출한다", () => {
     expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.relevantFiles).toBe(143);
     expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.parsedJavaScriptFiles).toBe(143);
     expect(COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE.notExaminedCount).toBe(0);
@@ -161,13 +162,13 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(spec38.spectralReflectance38).toHaveLength(38);
     expect(spec38.chromaPreservationGain01).toBeGreaterThan(0.02);
 
-    const mb7d = evaluateMixbox7DLatentPigmentMix(
+    const quadratic7d = evaluateQuadraticPigmentMix(
       { r: 0.99, g: 0.85, b: 0.02 },
       { r: 0.05, g: 0.14, b: 0.58 },
       0.5,
     );
-    expect(mb7d.endpointIdentityError).toBe(0);
-    expect(mb7d.mixedRgb01.g).toBeGreaterThan(mb7d.mixedRgb01.r);
+    expect(quadratic7d.endpointIdentityError).toBe(0);
+    expect(quadratic7d.mixedRgb01.g).toBeGreaterThan(quadratic7d.mixedRgb01.r);
 
     const p5Bleed = evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure({
       basePolygon: [
@@ -209,6 +210,13 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(matrix[0]?.determinismVerified).toBe(true);
     expect(matrix[0]?.compositeScore100).toBeGreaterThanOrEqual(99.8);
     expect(matrix[0]?.promotedToService).toBe(true);
+    const localModel = matrix.find((row) => row.engineId === QUADRATIC_PIGMENT_MODEL.id);
+    expect(localModel?.promotedToService).toBe(false);
+    expect(localModel?.compositeScore100).toBe(99.5);
+    expect(localModel?.p50FrameMs).toBe(0.44);
+    expect(localModel?.p95FrameMs).toBe(0.79);
+    expect(localModel?.throughputDabsPerSec).toBe(2_390_000);
+    expect(localModel?.optimalRoleKo).toContain("운영 승격 불가");
 
     const soak = runLongDurationDrawingSoakBenchmark();
     expect(soak).toHaveLength(5);

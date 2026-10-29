@@ -2438,7 +2438,7 @@ export const STUDIO_COMMAND_CATALOG: readonly StudioCommandCatalogEntry[] =
       labels: [
         ko(
           "AI 웹툰 생성 슈퍼 스위트",
-          "네이버 툰필터 화풍 변환, CSP 음영 어시스트, 고화질 프롬프트 증강, TooNat 콘티 디렉터, 투닝 감정 말풍선을 제공합니다.",
+          "툰 필터 화풍 변환, 음영 어시스트, 고화질 프롬프트 증강, 콘티 디렉터, 감정 말풍선을 제공합니다.",
         ),
         en("AI + Smart Webtoon Suite"),
       ],

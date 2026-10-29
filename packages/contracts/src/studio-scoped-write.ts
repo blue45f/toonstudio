@@ -1,4 +1,4 @@
-import { assertScopeRef, PRODUCTION_SCOPE_KINDS } from "@toonstudio/core/production";
+import { assertScopeRef, PRODUCTION_SCOPE_KINDS } from "@toonstudio/core/production/scope";
 import { z } from "zod";
 
 const identity = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,159}$/u);

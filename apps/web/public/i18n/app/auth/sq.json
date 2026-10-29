@@ -19,5 +19,5 @@
   "auth.callback.message.doneDemo": "Identifikimi demo përfundoi. Ridrejtimi së shpejti.",
   "auth.callback.demo.message": "Jeni identifikuar me një llogari demo. Disa funksione mund të jenë të kufizuara.",
   "auth.callback.backToLogin": "Kthehu te identifikimi",
-  "auth.callback.slowHelp": "Kjo po zgjat më shumë se zakonisht. Nëse ky ekran mbetet, kthehu te identifikimi dhe provo sërish."
+  "auth.callback.slowHelp": "Kjo po zgjat më shumë se zakonisht. Nëse ky ekran mbetet, kthehuni te identifikimi dhe provoni sërish."
 }

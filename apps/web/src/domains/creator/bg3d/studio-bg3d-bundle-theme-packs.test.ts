@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL,
@@ -180,6 +180,95 @@ describe("parseStudioBg3dBundleThemePacks", () => {
 describe("loadStudioBg3dBundleThemePacks + lookups", () => {
   beforeEach(() => {
     resetStudioBg3dBundleThemePacksCache();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetStudioBg3dBundleThemePacksCache();
+  });
+
+  it("동시 요청만 합치고 다음 호출은 변경된 권리·목록을 HTTP 재검증한다", async () => {
+    let resolveFirst: ((value: Response) => void) | undefined;
+    const firstResponse = new Promise<Response>((resolve) => { resolveFirst = resolve; });
+    const refreshed = mutate((raw) => {
+      (raw.assets as Record<string, unknown>[])[0] = { ...(raw.assets as Record<string, unknown>[])[0], sha256: SHA_B };
+    });
+    const fetcher = vi.fn().mockReturnValueOnce(firstResponse)
+      .mockResolvedValueOnce(new Response(JSON.stringify(refreshed)));
+    vi.stubGlobal("fetch", fetcher);
+    const first = loadStudioBg3dBundleThemePacks();
+    const concurrent = loadStudioBg3dBundleThemePacks();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    resolveFirst?.(new Response(JSON.stringify(validRawThemePacks())));
+    await Promise.all([first, concurrent]);
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)).not.toBeNull();
+    await loadStudioBg3dBundleThemePacks();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[1]?.[1]).toMatchObject({ cache: "no-cache", credentials: "same-origin" });
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)).toBeNull();
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_B}`)).not.toBeNull();
+  });
+
+  it("갱신 실패는 이전 권리 조회를 비우고 다음 호출에서 네트워크 재시도를 허용한다", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(validRawThemePacks())))
+      .mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce(new Response(JSON.stringify(validRawThemePacks())));
+    vi.stubGlobal("fetch", fetcher);
+    await loadStudioBg3dBundleThemePacks();
+    await expect(loadStudioBg3dBundleThemePacks()).rejects.toThrow("network unavailable");
+    expect(findStudioBg3dBundleAsset("cbv1-ingest-test-001")).toBeNull();
+    await loadStudioBg3dBundleThemePacks();
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(findStudioBg3dBundleAsset("cbv1-ingest-test-001")).not.toBeNull();
+  });
+
+  it("초기화 전에 시작한 성공 응답이 나중에 와도 새 색인을 덮어쓰지 않는다", async () => {
+    let finish: ((value: Response) => void) | undefined;
+    const olderResponse = new Promise<Response>((resolve) => { finish = resolve; });
+    const newerRaw = mutate((raw) => {
+      (raw.assets as Record<string, unknown>[])[0] = { ...(raw.assets as Record<string, unknown>[])[0], sha256: SHA_B };
+    });
+    const fetcher = vi.fn().mockReturnValueOnce(olderResponse).mockResolvedValueOnce(new Response(JSON.stringify(newerRaw)));
+    vi.stubGlobal("fetch", fetcher);
+    const older = loadStudioBg3dBundleThemePacks();
+    resetStudioBg3dBundleThemePacksCache();
+    await loadStudioBg3dBundleThemePacks();
+    finish?.(new Response(JSON.stringify(validRawThemePacks())));
+    expect((await older).assets[0]?.sha256).toBe(`sha256:${SHA_A}`);
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)).toBeNull();
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_B}`)).not.toBeNull();
+  });
+
+  it("동시 주입 요청은 캐시를 우회하고 오래된 기본 요청 실패가 새 색인을 비우지 않는다", async () => {
+    let reject: ((error: Error) => void) | undefined;
+    const olderResponse = new Promise<Response>((_resolve, rejectPromise) => { reject = rejectPromise; });
+    const defaultFetcher = vi.fn().mockReturnValueOnce(olderResponse)
+      .mockResolvedValueOnce(new Response(JSON.stringify(validRawThemePacks())));
+    vi.stubGlobal("fetch", defaultFetcher);
+    const older = loadStudioBg3dBundleThemePacks();
+    const outcome = older.catch((error: unknown) => error);
+    const newerRaw = mutate((raw) => {
+      (raw.assets as Record<string, unknown>[])[0] = { ...(raw.assets as Record<string, unknown>[])[0], sha256: SHA_B };
+    });
+    const injected = vi.fn(async () => new Response(JSON.stringify(newerRaw)));
+    await loadStudioBg3dBundleThemePacks({ url: "/current-theme-packs.json", fetcher: injected });
+    expect(injected).toHaveBeenCalledWith("/current-theme-packs.json", expect.objectContaining({ cache: "no-cache", credentials: "same-origin" }));
+    expect(defaultFetcher).toHaveBeenCalledTimes(1);
+    reject?.(new Error("older request failed"));
+    expect(await outcome).toBeInstanceOf(Error);
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_B}`)).not.toBeNull();
+    await loadStudioBg3dBundleThemePacks();
+    expect(defaultFetcher).toHaveBeenCalledTimes(2);
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)).not.toBeNull();
+  });
+
+  it("가장 나중에 시작한 주입 요청이 실패해도 이전 권리를 남기거나 실패를 캐시하지 않는다", async () => {
+    await loadStudioBg3dBundleThemePacks({ fetcher: async () => new Response(JSON.stringify(validRawThemePacks())) });
+    await expect(loadStudioBg3dBundleThemePacks({ fetcher: async () => { throw new Error("latest request failed"); } })).rejects.toThrow("latest request failed");
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)).toBeNull();
+    const retry = vi.fn(async () => new Response(JSON.stringify(validRawThemePacks())));
+    await loadStudioBg3dBundleThemePacks({ fetcher: retry });
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(findStudioBg3dBundleAssetByHash(`sha256:${SHA_A}`)).not.toBeNull();
   });
 
   it("resolves assets by id and hash only after a load, with prefix fallback before it", async () => {

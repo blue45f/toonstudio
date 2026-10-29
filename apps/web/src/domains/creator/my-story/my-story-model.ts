@@ -97,6 +97,7 @@ export function isMyStoryCutCount(value: unknown): value is MyStoryCutCount {
 }
 
 export const MY_STORY_TEMPLATE_IDS = [
+  "free-story",
   "retrospective",
   "family",
   "neighborhood",
@@ -117,6 +118,7 @@ export function isMyStoryTemplateId(value: unknown): value is MyStoryTemplateId 
  */
 export const MY_STORY_TOPIC_TITLES: Readonly<Record<MyStoryTemplateId, { readonly ko: string; readonly en: string }>> =
   Object.freeze({
+    "free-story": { ko: "자유로운 이야기", en: "Any story" },
     retrospective: { ko: "회고", en: "Looking back" },
     family: { ko: "가족", en: "Family" },
     neighborhood: { ko: "동네", en: "Neighborhood" },

@@ -36,7 +36,7 @@ import { studioPoseSettleScaleY } from "./studio-virtual-space-sprite-smoothing"
 import { STUDIO_ACTOR_EXPRESSION_PRESENTATION } from "./studio-virtual-space-scene-art-runtime";
 import type { StudioFrameRegistry } from "./studio-virtual-space-frame-registration";
 import { studioEffectiveGaitStride } from "./studio-virtual-space-locomotion-presentation";
-import { resolveNanoBanana2dActorTexture } from "./studio-virtual-space-nano-banana-2d-runtime";
+import { resolveIllustrated2dActorTexture } from "./studio-virtual-space-illustrated-2d-runtime";
 import { studioGaitFrame } from "./studio-virtual-space-presentation";
 import type { StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import type {
@@ -134,29 +134,29 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
         .setData("visualMotionState", nextState).setData("visualStateStartedAt", scene.time.now);
     }
     sprite.setData("faceTextureUsed", false);
-    const nanoBanana = resolveNanoBanana2dActorTexture(scene.textures, {
+    const illustratedArt = resolveIllustrated2dActorTexture(scene.textures, {
       owner: owner || "",
       skinKey: skin.key,
       facing: nextFacing,
       state: nextState,
       nowMs: scene.time.now,
     });
-    if (nanoBanana) {
+    if (illustratedArt) {
       if (sprite.anims.isPlaying) sprite.stop();
       sprite.setData("actionKey", null).setData("poseTextureUsed", false);
-      if (sprite.texture.key !== nanoBanana.textureKey) {
-        sprite.setTexture(nanoBanana.textureKey);
+      if (sprite.texture.key !== illustratedArt.textureKey) {
+        sprite.setTexture(illustratedArt.textureKey);
       }
       if (typeof sprite.setFlipX === "function") {
-        sprite.setFlipX(nanoBanana.flipX);
+        sprite.setFlipX(illustratedArt.flipX);
       }
-      sprite.setData("framePresentation", nanoBanana.presentation).setData("nanoBanana2dActive", true);
+      sprite.setData("framePresentation", illustratedArt.presentation).setData("illustrated2dActive", true);
       updateDisplaySize(sprite);
       return;
     }
-    if (sprite.getData("nanoBanana2dActive") && typeof sprite.setFlipX === "function") {
+    if (sprite.getData("illustrated2dActive") && typeof sprite.setFlipX === "function") {
       sprite.setFlipX(false);
-      sprite.setData("nanoBanana2dActive", false);
+      sprite.setData("illustrated2dActive", false);
     }
     const action = studioCharacterActionClip(skin, nextFacing, nextState);
     const actionKey = action ? studioCharacterActionTextureKey(skin, nextFacing, nextState) : null;

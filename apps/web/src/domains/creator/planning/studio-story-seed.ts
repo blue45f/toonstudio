@@ -427,18 +427,50 @@ export const localStorySeedProvider: StorySeedProvider = {
   generate: (input) => Promise.resolve(buildLocalStorySeed(input)),
 };
 
-export interface StorySeedAiEndpointSettings {
-  readonly baseUrl: string;
-  readonly apiKey: string;
-  readonly textModel?: string;
-  readonly chatCompletionsPath?: string;
+/**
+ * 키 없는 서버 경로는 사용자 글을 12,000자까지 받는다. 설정을 많이 인용한 큰 프로젝트도 그 안에 여유 있게
+ * 들어가도록 사용자 글 전체를 이 길이로 묶고, 인용 설정은 설명을 줄인 뒤 남은 자리만큼만 넣는다.
+ */
+const STORY_SEED_PROMPT_MAX_CHARS = 10_000;
+const STORY_SEED_FIELD_MAX_CHARS = 1_000;
+const STORY_SEED_REF_NAME_MAX_CHARS = 80;
+const STORY_SEED_REF_DETAIL_MAX_CHARS = 200;
+
+function clipForPrompt(text: string, max: number): string {
+  if (text.length <= max) return text;
+  let head = text.slice(0, max - 1);
+  // 이모지 같은 서로게이트 쌍의 앞쪽 절반만 남으면 요청 JSON이 깨져 공급자가 400으로 거절한다. 그 절반도 뺀다.
+  const last = head.charCodeAt(head.length - 1);
+  if (last >= 0xd800 && last <= 0xdbff) head = head.slice(0, -1);
+  return `${head}…`;
+}
+
+/** 남은 자리에 들어가는 인용 설정만 넣고, 빠진 개수는 "외 N개"로 알린다. */
+function storySeedRefsLine(refs: readonly StorySeedSettingRef[], budget: number): string | null {
+  if (refs.length === 0) return null;
+  const prefix = "인용 설정: ";
+  // "외 N개" 표기 자리를 먼저 빼 둔다.
+  let remaining = budget - prefix.length - 12;
+  const parts: string[] = [];
+  for (const ref of refs) {
+    const detail = ref.detail?.trim();
+    const part = `${clipForPrompt(ref.name.trim(), STORY_SEED_REF_NAME_MAX_CHARS)}(${ref.kind}${
+      detail ? `: ${clipForPrompt(detail, STORY_SEED_REF_DETAIL_MAX_CHARS)}` : ""
+    })`;
+    const cost = part.length + (parts.length > 0 ? 2 : 0);
+    if (cost > remaining) break;
+    parts.push(part);
+    remaining -= cost;
+  }
+  if (parts.length === 0) return null;
+  const omitted = refs.length - parts.length;
+  return `${prefix}${parts.join(", ")}${omitted > 0 ? ` 외 ${omitted}개` : ""}`;
 }
 
 export function buildStorySeedAiPrompt(input: StorySeedInput): {
   readonly system: string;
   readonly user: string;
 } {
-  const genre = input.genre.trim();
   const keywords = normalizeKeywords(input.keywords);
   const refs = input.settingRefs ?? [];
   const system = [
@@ -447,20 +479,16 @@ export function buildStorySeedAiPrompt(input: StorySeedInput): {
     "다른 설명이나 마크다운 없이 반드시 아래 필드를 가진 JSON만 반환하세요:",
     '{"loglineCandidates":["후보1","후보2","후보3"],"goalDraft":"...","synopsisDraft":"...","openingHookDraft":"...","coreConflictDraft":"...","turningPointScaffold":["전환1","전환2","전환3"],"cliffhangerDraft":"...","emotionalArc":{"from":"...","to":"..."},"expansionProposals":["제안1","제안2","제안3"]}',
   ].join("\n");
-  const user = [
-    `장르: ${genre}`,
-    `키워드: ${keywords.length > 0 ? keywords.join(", ") : "장르 기본"}`,
-    ...(input.tone?.trim() ? [`분위기: ${input.tone.trim()}`] : []),
-    ...(input.protagonist?.trim() ? [`주인공: ${input.protagonist.trim()}`] : []),
-    ...(input.stage?.trim() ? [`무대: ${input.stage.trim()}`] : []),
-    ...(refs.length > 0
-      ? [
-          `인용 설정: ${refs
-            .map((r) => `${r.name}(${r.kind}${r.detail?.trim() ? `: ${r.detail.trim()}` : ""})`)
-            .join(", ")}`,
-        ]
-      : []),
+  const field = (value: string | undefined) => clipForPrompt(value?.trim() ?? "", STORY_SEED_FIELD_MAX_CHARS);
+  const head = [
+    `장르: ${field(input.genre)}`,
+    `키워드: ${keywords.length > 0 ? clipForPrompt(keywords.join(", "), STORY_SEED_FIELD_MAX_CHARS) : "장르 기본"}`,
+    ...(input.tone?.trim() ? [`분위기: ${field(input.tone)}`] : []),
+    ...(input.protagonist?.trim() ? [`주인공: ${field(input.protagonist)}`] : []),
+    ...(input.stage?.trim() ? [`무대: ${field(input.stage)}`] : []),
   ].join("\n");
+  const refsLine = storySeedRefsLine(refs, STORY_SEED_PROMPT_MAX_CHARS - head.length - 1);
+  const user = refsLine ? `${head}\n${refsLine}` : head;
   return { system, user };
 }
 
@@ -498,6 +526,22 @@ export function parseStorySeedAiResponse(
     parsed.emotionalArc && typeof parsed.emotionalArc === "object" && !Array.isArray(parsed.emotionalArc)
       ? (parsed.emotionalArc as Record<string, unknown>)
       : null;
+
+  // AI가 실제로 채운 필드가 하나도 없으면 기본 초안을 AI 결과로 보여 주게 되므로 읽지 못한 것으로 본다.
+  const usableText = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+  const usableList = (value: unknown) => Array.isArray(value) && value.some(usableText);
+  const aiProvidedAnyField = [
+    usableList(parsed.loglineCandidates),
+    usableText(parsed.goalDraft),
+    usableText(parsed.synopsisDraft),
+    usableText(parsed.openingHookDraft),
+    usableText(parsed.coreConflictDraft),
+    usableList(parsed.turningPointScaffold),
+    usableText(parsed.cliffhangerDraft),
+    usableText(emotionalRaw?.from) || usableText(emotionalRaw?.to),
+    usableList(parsed.expansionProposals),
+  ].some(Boolean);
+  if (!aiProvidedAnyField) return null;
 
   return Object.freeze({
     ...base,
@@ -538,90 +582,37 @@ export function parseStorySeedAiResponse(
   });
 }
 
-export function createAiStorySeedProvider(
-  endpoint?: StorySeedAiEndpointSettings,
-  fetchImpl: typeof fetch = fetch,
-): StorySeedProvider {
+/** 텍스트 AI를 한 번 부른다. 성공하면 응답 글, 실패하면 사용자에게 보여 줄 이유를 돌려준다. */
+export type StorySeedTextCompletion = (prompt: {
+  readonly system: string;
+  readonly user: string;
+}) => Promise<{ readonly ok: true; readonly content: string } | { readonly ok: false; readonly error: string }>;
+
+/** AI 확장이 결과를 내지 못했다. 규칙 기반 초안을 AI 결과처럼 꾸미지 않고 이유와 함께 알린다. */
+export class StorySeedAiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StorySeedAiError";
+  }
+}
+
+/**
+ * 통합 AI 경로(등록한 내 키 → ToonStudio AI 순)로 씨앗 초안을 확장하는 제공자.
+ * 응답은 장르 키트로 만든 기본 초안 위에 덮어써(빈 필드는 기본값 유지) 항상 완결된 초안을 돌려준다.
+ * AI가 답하지 못하거나 형식을 읽지 못하면 `StorySeedAiError`를 던져, 화면이 기본 제안으로 만들지를 사용자에게 맡긴다.
+ */
+export function createTextAiStorySeedProvider(complete: StorySeedTextCompletion): StorySeedProvider {
   return {
     kind: "ai",
     async generate(input: StorySeedInput): Promise<StorySeedDraft | null> {
-      const localFallback = buildLocalStorySeed(input);
-      if (!localFallback) return null;
-      const apiKey = endpoint?.apiKey?.trim() || "";
-      if (!apiKey) {
-        return Object.freeze({ ...localFallback, source: "ai" as const });
+      if (!buildLocalStorySeed(input)) return null;
+      const result = await complete(buildStorySeedAiPrompt(input));
+      if (!result.ok) throw new StorySeedAiError(result.error);
+      const parsed = parseStorySeedAiResponse(result.content, input);
+      if (!parsed) {
+        throw new StorySeedAiError("AI 응답을 씨앗 초안 형식으로 읽지 못했어요. 다시 시도하거나 기본 제안으로 만들어 보세요.");
       }
-      const isAnthropic =
-        Boolean(endpoint?.baseUrl?.includes("anthropic.com")) || apiKey.startsWith("sk-ant-");
-      const baseUrl =
-        endpoint?.baseUrl?.trim() ||
-        (isAnthropic ? "https://api.anthropic.com" : "https://models.github.ai/inference");
-      const path =
-        endpoint?.chatCompletionsPath?.trim() ||
-        (isAnthropic ? "/v1/messages" : "/chat/completions");
-      const url = isAnthropic
-        ? `${baseUrl.replace(/\/+$/u, "")}/v1/messages`
-        : `${baseUrl.replace(/\/+$/u, "")}/${path.replace(/^\/+/u, "")}`;
-      const prompt = buildStorySeedAiPrompt(input);
-      try {
-        const res = await fetchImpl(
-          url,
-          isAnthropic
-            ? {
-                method: "POST",
-                headers: {
-                  "x-api-key": apiKey,
-                  "anthropic-version": "2023-06-01",
-                  "anthropic-dangerous-direct-browser-access": "true",
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model:
-                    endpoint?.textModel?.trim().startsWith("claude-")
-                      ? endpoint.textModel.trim()
-                      : "claude-haiku-5-5",
-                  system: prompt.system,
-                  messages: [{ role: "user", content: prompt.user }],
-                  max_tokens: 2048,
-                  output_config: { effort: "low" },
-                }),
-              }
-            : {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${apiKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model: endpoint?.textModel?.trim() || "openai/gpt-4o-mini",
-                  messages: [
-                    { role: "system", content: prompt.system },
-                    { role: "user", content: prompt.user },
-                  ],
-                  temperature: 0.7,
-                  max_tokens: 900,
-                }),
-              },
-        );
-        if (!res.ok) {
-          return Object.freeze({ ...localFallback, source: "ai" as const });
-        }
-        const payload = (await res.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-          content?: Array<{ type?: string; text?: string }>;
-        };
-        const content =
-          payload.choices?.[0]?.message?.content ??
-          payload.content
-            ?.filter((b) => b?.type === "text" && typeof b.text === "string")
-            .map((b) => b.text)
-            .join("") ??
-          "";
-        return parseStorySeedAiResponse(content, input)
-          ?? Object.freeze({ ...localFallback, source: "ai" as const });
-      } catch {
-        return Object.freeze({ ...localFallback, source: "ai" as const });
-      }
+      return parsed;
     },
   };
 }

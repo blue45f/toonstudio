@@ -3,6 +3,7 @@ import {
   FALLBACK_CHAIN,
   getLang,
   getLocaleCandidates,
+  markAuthoredI18nDictionaryLoaded,
   registerI18nEnglishSourceEntries,
   registerI18nLocaleEntries,
   resolveTranslationForDisplay,
@@ -127,8 +128,11 @@ export async function loadAdminI18nLocale(
       if (dictionary) Object.assign(merged, dictionary);
     }
     if (Object.keys(merged).length > 0) {
-      registerI18nLocaleEntries(assetLocale, merged);
-      if (normalized !== assetLocale) registerI18nLocaleEntries(normalized, merged);
+      // 화면을 그린 뒤 도착한 사전이면 번역기 참조를 바꿔 기억해 둔 대체 문구를 다시 계산하게 한다.
+      if (registerI18nLocaleEntries(assetLocale, merged)) markAuthoredI18nDictionaryLoaded(assetLocale);
+      if (normalized !== assetLocale && registerI18nLocaleEntries(normalized, merged)) {
+        markAuthoredI18nDictionaryLoaded(normalized);
+      }
       useI18n.setState((state) => ({
         translationBundleRevision: state.translationBundleRevision + 1,
       }));

@@ -30,7 +30,26 @@ export const STUDIO_LAUNCH_DENSITY_BY_UI_MODE: Readonly<
 export function readStudioLaunchDensity(search: string): StudioLaunchDensity | null {
   const values = new URLSearchParams(search).getAll("uiMode");
   if (values.length !== 1) return null;
-  return STUDIO_LAUNCH_DENSITY_BY_UI_MODE[values[0]] ?? null;
+  return Object.hasOwn(STUDIO_LAUNCH_DENSITY_BY_UI_MODE, values[0])
+    ? STUDIO_LAUNCH_DENSITY_BY_UI_MODE[values[0]]
+    : null;
+}
+
+/** 프로젝트 단계를 옮겨도 명시한 화면 모드만 전달한다. 대상 주소의 선택은 우선한다. */
+export function preserveStudioLaunchDensity(href: string, search: string): string {
+  if (!href.startsWith("/studio/") || readStudioLaunchDensity(search) === null) return href;
+  const uiMode = new URLSearchParams(search).get("uiMode");
+  if (!uiMode) return href;
+  const hashIndex = href.indexOf("#");
+  const hash = hashIndex < 0 ? "" : href.slice(hashIndex);
+  const target = hashIndex < 0 ? href : href.slice(0, hashIndex);
+  const queryIndex = target.indexOf("?");
+  const pathname = queryIndex < 0 ? target : target.slice(0, queryIndex);
+  const params = new URLSearchParams(queryIndex < 0 ? "" : target.slice(queryIndex + 1));
+  if (params.has("uiMode")) return href;
+  // basic/standard를 simple로 정규화하면 집중 모드로 바뀌므로 검증한 별칭을 그대로 쓴다.
+  params.set("uiMode", uiMode);
+  return `${pathname}?${params.toString()}${hash}`;
 }
 
 /** Explicit launch intent wins once, without overwriting the user's remembered tool. */

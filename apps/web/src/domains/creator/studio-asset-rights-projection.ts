@@ -1,4 +1,5 @@
 import { panelImportRightsAssetId, parsePanelImportRights } from "./panel-detect/panel-import-rights";
+import { requireStudioBundleSourceCredit, studioBundleCreditMatchesSource } from "./catalog/studio-bundle-source-credit";
 
 import type { StudioAssetRightsUsageInput } from "./studio-asset-rights-manifest";
 import type { El } from "./studio-element-model";
@@ -13,6 +14,19 @@ function imageUsage(
   element: Extract<El, { type: "image" }>
 ): StudioAssetRightsUsageInput {
   const placement = { pageId, elementId: element.id };
+  if (element.bundleSourceCredit !== undefined && studioBundleCreditMatchesSource(element.bundleSourceCredit, element.src, element.id)) {
+    const credit = requireStudioBundleSourceCredit(element.bundleSourceCredit);
+    return {
+      ...placement, assetId: `bundle:${credit.assetId}`, assetVersion: credit.contentHash,
+      source: { kind: "external", id: credit.sourceUrl },
+      licenseId: credit.status === "public-domain" ? "cc0-1.0" : "custom",
+      licenseLabel: credit.licenseName, licenseUrl: credit.licenseUrl,
+      attributionRequired: credit.attributionRequired, attributionText: `${credit.provider} — ${credit.sourceUrl}`,
+      commercialUse: credit.commercialUse, aiTraining: "unknown",
+      redistribution: credit.status === "public-domain" ? "allowed" : "prohibited",
+      expiresAt: null, scope: ["current-work", "commercial-publication"],
+    };
+  }
   const community = element.communityAssetCredit;
   if (community) {
     return {
@@ -130,7 +144,8 @@ export function projectStudioAssetRightsUsages(
 ): StudioAssetRightsUsageInput[] {
   return pages.flatMap((page) =>
     page.elements.flatMap((element) =>
-      element.type === "image" ? [imageUsage(page.id, element)] : []
+      element.type === "image" ? [imageUsage(page.id, element)] : element.type === "frame" && element.bundleSourceCredit
+        ? [imageUsage(page.id, { ...element, type: "image", src: element.bg ?? "", rotation: 0 })] : []
     )
   );
 }

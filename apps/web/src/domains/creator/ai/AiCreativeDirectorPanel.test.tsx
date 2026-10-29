@@ -10,12 +10,14 @@ const mocks = vi.hoisted(() => ({
   status: vi.fn(),
   complete: vi.fn(),
   signedIn: false,
+  personalKeyFirst: false,
 }));
 
 vi.mock("../studio-server-ai-client", () => ({
   getStudioServerAiStatus: mocks.status,
   completeStudioServerText: mocks.complete,
   studioServerAiProviderLabel: (provider: string) => `label:${provider}`,
+  studioTextUsesPersonalKeyFirst: () => mocks.personalKeyFirst,
 }));
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
@@ -43,6 +45,7 @@ const configuredStatus = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.signedIn = false;
+  mocks.personalKeyFirst = false;
 });
 
 afterEach(cleanup);
@@ -72,7 +75,7 @@ describe("AiCreativeDirectorPanel", () => {
     mocks.complete.mockResolvedValue({ ok: true, data: { content: "1화: 우산 아래의 만남", provider: "gemini", model: "gemini-flash" } });
     renderPanel();
 
-    expect(await screen.findByText("자동 무료 AI 연결됨")).toBeTruthy();
+    expect(await screen.findByText("ToonStudio AI 연결됨")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "예시 넣기" }));
     fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
 
@@ -91,13 +94,22 @@ describe("AiCreativeDirectorPanel", () => {
     mocks.complete.mockResolvedValue({ ok: false, code: "free_exhausted", error: "무료 한도가 모두 소진됐어요." });
     renderPanel();
 
-    await screen.findByText("자동 무료 AI 연결됨");
+    await screen.findByText("ToonStudio AI 연결됨");
     fireEvent.change(screen.getByLabelText(/요청 내용/u), { target: { value: "서아린, 17세" } });
     fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
 
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText("무료 한도가 모두 소진됐어요.")).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole("heading", { name: /루나의 제안/u })).toBeNull());
+  });
+
+  it("says the registered key is used first when it runs before ToonStudio AI", async () => {
+    mocks.status.mockResolvedValue(configuredStatus);
+    mocks.personalKeyFirst = true;
+    renderPanel();
+
+    expect(await screen.findByText("내 키 먼저 사용")).toBeTruthy();
+    expect(screen.queryByText("ToonStudio AI 연결됨")).toBeNull();
   });
 
   it("asks guests to sign in when the free pool requires an account", async () => {

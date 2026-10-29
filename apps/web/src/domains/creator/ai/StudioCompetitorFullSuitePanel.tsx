@@ -38,28 +38,28 @@ import {
   buildLocalSpeechBubbleTailOcclusionLock,
   buildLocalStyleTransferAndRelighting,
   buildLocalTurnaroundOrthographicSheetLock,
-  runClaude3dHandHeadPoseAndLtRigDirector,
-  runClaudeActionWeaponMotionArcDirector,
-  runClaudeBackgroundPerspectivePropScaleDirector,
-  runClaudeSakugaMotionAndFacialMatrixDirector,
-  runClaudeScreenplayBeatAndLoraLockBridge,
-  runClaudeSketchToLineartLayerSplitter,
-  runClaudeSpeechBubbleTailOcclusionDirector,
-  runClaudeStyleTransferAndRelightingDirector,
-  runClaudeTurnaroundOrthographicSheetDirector,
-  type Claude3dHandHeadRigReport,
-  type ClaudeActionWeaponMotionArcReport,
-  type ClaudeBackgroundPerspectiveReport,
-  type ClaudeSakugaMotionReport,
-  type ClaudeScreenplayLoraBridgeReport,
-  type ClaudeSketchToLineartReport,
-  type ClaudeSpeechBubbleTailOcclusionReport,
-  type ClaudeStyleTransferReport,
-  type ClaudeTurnaroundOrthographicReport,
+  runAssist3dHandHeadPoseAndLtRigDirector,
+  runAssistActionWeaponMotionArcDirector,
+  runAssistBackgroundPerspectivePropScaleDirector,
+  runAssistSakugaMotionAndFacialMatrixDirector,
+  runAssistScreenplayBeatAndLoraLockBridge,
+  runAssistSketchToLineartLayerSplitter,
+  runAssistSpeechBubbleTailOcclusionDirector,
+  runAssistStyleTransferAndRelightingDirector,
+  runAssistTurnaroundOrthographicSheetDirector,
+  type Assist3dHandHeadRigReport,
+  type AssistActionWeaponMotionArcReport,
+  type AssistBackgroundPerspectiveReport,
+  type AssistSakugaMotionReport,
+  type AssistScreenplayLoraBridgeReport,
+  type AssistSketchToLineartReport,
+  type AssistSpeechBubbleTailOcclusionReport,
+  type AssistStyleTransferReport,
+  type AssistTurnaroundOrthographicReport,
   type CompetitorEngineExecutionMeta,
   type WebtoonStyleTransferPresetId,
-} from "./claude/claude-competitor-full-suite";
-import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
+} from "./assist/assist-competitor-full-suite";
+import type { WebtoonProductionAssistInput } from "./assist/assist-webtoon-production-schemas";
 import { StudioPhase6EcosystemSuitePanel } from "./StudioPhase6EcosystemSuitePanel";
 import { StudioRea15PlatformsWorkbenchPanel } from "./StudioRea15PlatformsWorkbenchPanel";
 
@@ -153,23 +153,23 @@ export function StudioCompetitorFullSuitePanel({
   const [isRunning, setIsRunning] = useState(false);
 
   const [lineartMeta, setLineartMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeSketchToLineartReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistSketchToLineartReport> | null>(null);
   const [styleMeta, setStyleMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeStyleTransferReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistStyleTransferReport> | null>(null);
   const [sakugaMeta, setSakugaMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeSakugaMotionReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistSakugaMotionReport> | null>(null);
   const [rigMeta, setRigMeta] =
-    useState<CompetitorEngineExecutionMeta<Claude3dHandHeadRigReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<Assist3dHandHeadRigReport> | null>(null);
   const [bridgeMeta, setBridgeMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeScreenplayLoraBridgeReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistScreenplayLoraBridgeReport> | null>(null);
   const [turnaroundMeta, setTurnaroundMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeTurnaroundOrthographicReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistTurnaroundOrthographicReport> | null>(null);
   const [perspectiveMeta, setPerspectiveMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeBackgroundPerspectiveReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistBackgroundPerspectiveReport> | null>(null);
   const [bubbleOcclusionMeta, setBubbleOcclusionMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeSpeechBubbleTailOcclusionReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistSpeechBubbleTailOcclusionReport> | null>(null);
   const [motionArcMeta, setMotionArcMeta] =
-    useState<CompetitorEngineExecutionMeta<ClaudeActionWeaponMotionArcReport> | null>(null);
+    useState<CompetitorEngineExecutionMeta<AssistActionWeaponMotionArcReport> | null>(null);
 
   const localLineart = useMemo(
     () => buildLocalSketchToLineartLayerSplit(assistInput),
@@ -241,27 +241,27 @@ export function StudioCompetitorFullSuitePanel({
     setIsRunning(true);
     try {
       if (activeTab === "aid-lineart-splitter") {
-        setLineartMeta(await runClaudeSketchToLineartLayerSplitter(assistInput));
+        setLineartMeta(await runAssistSketchToLineartLayerSplitter(assistInput));
       } else if (activeTab === "komiko-style-relighting") {
         setStyleMeta(
-          await runClaudeStyleTransferAndRelightingDirector(assistInput, {
+          await runAssistStyleTransferAndRelightingDirector(assistInput, {
             preferredPreset: selectedStylePreset,
           }),
         );
       } else if (activeTab === "skyreels-sakuga-motion") {
-        setSakugaMeta(await runClaudeSakugaMotionAndFacialMatrixDirector(assistInput));
+        setSakugaMeta(await runAssistSakugaMotionAndFacialMatrixDirector(assistInput));
       } else if (activeTab === "csp5-3d-hand-head-lt") {
-        setRigMeta(await runClaude3dHandHeadPoseAndLtRigDirector(assistInput));
+        setRigMeta(await runAssist3dHandHeadPoseAndLtRigDirector(assistInput));
       } else if (activeTab === "katalist-anifusion-lora") {
-        setBridgeMeta(await runClaudeScreenplayBeatAndLoraLockBridge(assistInput));
+        setBridgeMeta(await runAssistScreenplayBeatAndLoraLockBridge(assistInput));
       } else if (activeTab === "turnaround-orthographic-sheet") {
-        setTurnaroundMeta(await runClaudeTurnaroundOrthographicSheetDirector(assistInput));
+        setTurnaroundMeta(await runAssistTurnaroundOrthographicSheetDirector(assistInput));
       } else if (activeTab === "background-perspective-scale") {
-        setPerspectiveMeta(await runClaudeBackgroundPerspectivePropScaleDirector(assistInput));
+        setPerspectiveMeta(await runAssistBackgroundPerspectivePropScaleDirector(assistInput));
       } else if (activeTab === "speech-bubble-tail-occlusion") {
-        setBubbleOcclusionMeta(await runClaudeSpeechBubbleTailOcclusionDirector(assistInput));
+        setBubbleOcclusionMeta(await runAssistSpeechBubbleTailOcclusionDirector(assistInput));
       } else {
-        setMotionArcMeta(await runClaudeActionWeaponMotionArcDirector(assistInput));
+        setMotionArcMeta(await runAssistActionWeaponMotionArcDirector(assistInput));
       }
     } finally {
       setIsRunning(false);

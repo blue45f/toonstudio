@@ -180,7 +180,7 @@ export function openMyStoryInStudio(
 
     return Object.freeze({
       projectId,
-      href: studioProjectSectionHref(projectId, "story", "script"),
+      href: `${studioProjectSectionHref(projectId, "story", "script")}&uiMode=simple`,
       beatCount: beats.length,
     });
   } catch (cause) {

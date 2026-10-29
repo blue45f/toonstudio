@@ -6,11 +6,11 @@ import {
 } from "./studio-virtual-space-place-catalog";
 
 describe("Virtual Studio place catalog", () => {
-  it("binds every place to a bundled ImageGen 2.5 preview and existing room", () => {
+  it("각 장소를 실제 번들 미리보기와 룸 식별자에 연결한다", () => {
     expect(STUDIO_VIRTUAL_PLACES.length).toBeGreaterThanOrEqual(12);
     expect(new Set(STUDIO_VIRTUAL_PLACES.map((item) => item.id)).size).toBe(STUDIO_VIRTUAL_PLACES.length);
     for (const place of STUDIO_VIRTUAL_PLACES) {
-      expect(place.previewUrl).toMatch(/^\/assets\/virtual-studio\/(imagegen25-v7\/places\/[a-z0-9-]+\.webp|toon-office-v1\/hq-preview\.webp)$/u);
+      expect(place.previewUrl).toMatch(/^\/assets\/virtual-studio\/(imagegen25-v7\/places\/[a-z0-9-]+\.webp|toon-office-v1\/hq-preview\.webp|office-themes-v1\/(forest-atelier|orbital-observatory|tidal-atelier)\.png)$/u);
       expect(place.roomId.length).toBeGreaterThan(0);
     }
   });

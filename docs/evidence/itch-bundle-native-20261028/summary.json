@@ -1,0 +1,1143 @@
+{
+  "schema": "toonstudio.creator-bundle-native-proof.v1",
+  "status": "ok",
+  "stage": "proof-complete",
+  "scope": "로컬 SHA URL 응답 · 실제 prepareVerifiedBg3dModelRecord · 모바일 Worker 전수 · 실제 Three 로더/2m 정규화 대표 검수. 운영 배포/실제 모바일 GPU 성능 검증은 아님.",
+  "lane": "hardware",
+  "browserVersion": "156.0.8078.4",
+  "browserBinary": "Google Chrome for Testing",
+  "browserGpuFlags": [
+    "--enable-unsafe-swiftshader",
+    "--headless",
+    "--enable-unsafe-swiftshader"
+  ],
+  "reusedValidation": {
+    "evidence": "전수 모바일 Worker 성공 증거",
+    "validated": 1764,
+    "sourceCatalogSha256": "d48538cf7f5a2ca9210447a4afee654ce4bdf624558e755c9cf25af3c6c145b2",
+    "summarySha256": "621c5da7269968f277f37c9771a4b11d6592978063ca10bd4ccea21d54357daa",
+    "rowsSha256": "d3ebf867e063fc10b1b8f68a43a836d7ab99351f9d6f10ec8669288a12f12fd7",
+    "priorWorker": {
+      "requests": 1780,
+      "responses": 1780,
+      "rejected": 0,
+      "profileErrors": 0,
+      "errors": [],
+      "urls": [
+        "/src/domains/creator/bg3d/studio-bg3d-glb-validation.worker.ts"
+      ]
+    }
+  },
+  "catalogSha256": "d48538cf7f5a2ca9210447a4afee654ce4bdf624558e755c9cf25af3c6c145b2",
+  "assets": 1764,
+  "bytes": 1893423580,
+  "validated": 1764,
+  "failures": [],
+  "worker": {
+    "requests": 16,
+    "responses": 16,
+    "rejected": 0,
+    "profileErrors": 0,
+    "errors": [],
+    "urls": [
+      "/src/domains/creator/bg3d/studio-bg3d-glb-validation.worker.ts"
+    ]
+  },
+  "wrongHash": {
+    "message": "3D 모델의 무결성 정보가 실제 파일과 다릅니다. 신뢰할 수 있는 원본을 다시 등록해 주세요.",
+    "code": "hash-mismatch",
+    "validationCode": "undefined"
+  },
+  "renders": [
+    {
+      "id": "cbv1-ingest-local-cute-park-bench-1-1-fd595aaee762",
+      "packIndex": 1,
+      "title": "Cute Park Pack",
+      "sha256": "sha256:fd595aaee76239496994f165d27387ee8b80d4734eff4d89b7c0de59d1294e18",
+      "bytes": 671364,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 1.0523845797942755,
+      "sourceSize": [
+        1.9004459381103516,
+        1.1713596123152001,
+        1.0145421028137207
+      ],
+      "normalizedSize": [
+        2,
+        1.2327207933943174,
+        1.067688464553218
+      ],
+      "camera": {
+        "position": [
+          2.5271702036114227,
+          2.421481970705318,
+          3.104809107294033
+        ],
+        "target": [
+          0,
+          0.6163603966971587,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            -0.17065087675131638,
+            -0.06859175005222068,
+            0.9966267804965534
+          ],
+          [
+            -0.5003944607212306,
+            -0.2834033787839831,
+            0.9960698107656274
+          ],
+          [
+            -0.18763594529404704,
+            0.5656414909009427,
+            0.9962711320576177
+          ],
+          [
+            -0.5588696620542706,
+            0.43613941846368565,
+            0.9955871619043744
+          ],
+          [
+            0.5449653458228921,
+            -0.42528855142431476,
+            0.9957019268345085
+          ],
+          [
+            0.25874337960212945,
+            -0.7799997530832407,
+            0.9947822214921545
+          ],
+          [
+            0.6150509237873136,
+            0.34834020679266076,
+            0.9951234470067586
+          ],
+          [
+            0.2999053548345748,
+            0.12054454995923315,
+            0.9939203355246001
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 5,
+        "triangles": 2880,
+        "drawCalls": 3,
+        "materials": 3,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 17466,
+        "estimatedDecodedGeometryBytes": 111424,
+        "textures": 1,
+        "textureBytes": 5592404,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 75804,
+      "shaderErrors": [],
+      "screenshot": "01-cbv1-008-cute-park-pack.png",
+      "screenshotSha256": "bd42edebf6b32d56a182cd3a435598c2c0df7621fe3b2463f0aa41dd5661fe83",
+      "screenshotBytes": 83165
+    },
+    {
+      "id": "cbv1-ingest-local-cute-dungeon-chair-1-576db609c1ae",
+      "packIndex": 2,
+      "title": "Cute Dungeon Megapack",
+      "sha256": "sha256:576db609c1aecfc28e5eafc536b766d2e3efa1ea5d55e639a0fcd9b7125c4216",
+      "bytes": 620752,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 2.1131957776601955,
+      "sourceSize": [
+        0.5402821004390717,
+        0.9464338425919392,
+        0.4873300939798355
+      ],
+      "normalizedSize": [
+        1.1417218533932278,
+        2,
+        1.0298238969249347
+      ],
+      "camera": {
+        "position": [
+          2.784429672694444,
+          2.988878337638888,
+          3.4208707407388874
+        ],
+        "target": [
+          0,
+          1,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            -0.04314036784248018,
+            -0.29292215076467104,
+            0.9968338774036539
+          ],
+          [
+            -0.3207435454117941,
+            -0.5166925243449486,
+            0.9963638216262023
+          ],
+          [
+            -0.050067302938088004,
+            0.6942269944462932,
+            0.9962933847637572
+          ],
+          [
+            -0.38078238967415,
+            0.5922208117260529,
+            0.9956457372870512
+          ],
+          [
+            0.31643068730848856,
+            -0.49213630560286314,
+            0.9964154048286944
+          ],
+          [
+            0.05625319550539172,
+            -0.779999811293994,
+            0.9958107139493675
+          ],
+          [
+            0.37471905853768667,
+            0.6036428138481272,
+            0.9957182567231876
+          ],
+          [
+            0.06863541642452262,
+            0.46603297104719726,
+            0.994844558040586
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 5,
+        "triangles": 432,
+        "drawCalls": 3,
+        "materials": 3,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 3990,
+        "estimatedDecodedGeometryBytes": 31328,
+        "textures": 1,
+        "textureBytes": 5592404,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 52901,
+      "shaderErrors": [],
+      "screenshot": "02-cbv1-024-cute-dungeon-megapack.png",
+      "screenshotSha256": "a0b8dd3cd57d6a1a52bd7aab7b5b8c58245c67b17f6200809844c532da4ea16f",
+      "screenshotBytes": 37670
+    },
+    {
+      "id": "cbv1-ingest-local-cute-graveyard-tombstone-1-8b880b748740",
+      "packIndex": 6,
+      "title": "Cute Graveyard",
+      "sha256": "sha256:8b880b7487401841102b10a41501c30ecaa3dc37857f471418124b96809fc0dd",
+      "bytes": 590424,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 2.2728927800309897,
+      "sourceSize": [
+        0.2612468749284744,
+        0.8799359202384949,
+        0.689256489276886
+      ],
+      "normalizedSize": [
+        0.5937861358305885,
+        1.9999999999999998,
+        1.5666060980669414
+      ],
+      "camera": {
+        "position": [
+          2.8339064280090573,
+          3.0242188771493264,
+          3.481656468696841
+        ],
+        "target": [
+          0,
+          0.9999999999999999,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            0.09496548758354731,
+            -0.2802800484491909,
+            0.9968994594884899
+          ],
+          [
+            -0.31874110874733197,
+            -0.635830253585849,
+            0.9961613126583363
+          ],
+          [
+            0.10987013747552582,
+            0.6866022598163964,
+            0.996381442889482
+          ],
+          [
+            -0.3821816056844431,
+            0.5195601153309435,
+            0.9953574703115722
+          ],
+          [
+            0.2760507644663501,
+            -0.3752796180927509,
+            0.996702233807882
+          ],
+          [
+            -0.12481564121905862,
+            -0.7799999462140271,
+            0.9958620063998097
+          ],
+          [
+            0.3224000159937314,
+            0.6431291047803767,
+            0.9961149513476664
+          ],
+          [
+            -0.15189882640327132,
+            0.44831245020701516,
+            0.9949207203192171
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 4,
+        "triangles": 434,
+        "drawCalls": 1,
+        "materials": 1,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 3264,
+        "estimatedDecodedGeometryBytes": 23532,
+        "textures": 1,
+        "textureBytes": 5592404,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 84545,
+      "shaderErrors": [],
+      "screenshot": "03-cbv1-014-cute-graveyard.png",
+      "screenshotSha256": "3780baf334826823e2fdd8cb976963d0663dc27c01084d8e3aa5e7a557eb8297",
+      "screenshotBytes": 48376
+    },
+    {
+      "id": "cbv1-ingest-local-medieval-weapons-battleaxe-1-1-a-d1e94e3a757b",
+      "packIndex": 10,
+      "title": "Medieval Weapons",
+      "sha256": "sha256:d1e94e3a757bd5ce8651fbe7e66e2c96cd34bac85db87363c29494b960f72394",
+      "bytes": 574880,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 2.220013954798679,
+      "sourceSize": [
+        0.10323746129870415,
+        0.9008952379226685,
+        0.36855387687683105
+      ],
+      "normalizedSize": [
+        0.22918860474111175,
+        2,
+        0.8181947497617192
+      ],
+      "camera": {
+        "position": [
+          2.3286154057292547,
+          2.6632967183780387,
+          2.8608703556102264
+        ],
+        "target": [
+          0,
+          1,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            0.07665790923996078,
+            -0.45346793899681564,
+            0.9960439019966036
+          ],
+          [
+            -0.1785692404213567,
+            -0.6943280483877599,
+            0.9954760954822989
+          ],
+          [
+            0.09245041949461859,
+            0.7799998675607004,
+            0.995187688503821
+          ],
+          [
+            -0.2215936196256408,
+            0.6902248104330685,
+            0.9943379155841908
+          ],
+          [
+            0.16153239737275857,
+            -0.5031447590583524,
+            0.9959267932644347
+          ],
+          [
+            -0.08993219565173845,
+            -0.7587537307159796,
+            0.995324217605107
+          ],
+          [
+            0.19594759674449452,
+            0.7619000456788904,
+            0.9950163632050418
+          ],
+          [
+            -0.11247166143938453,
+            0.6653232916751478,
+            0.9941022082844666
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 4,
+        "triangles": 396,
+        "drawCalls": 2,
+        "materials": 2,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 2652,
+        "estimatedDecodedGeometryBytes": 17992,
+        "textures": 1,
+        "textureBytes": 5592404,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 24344,
+      "shaderErrors": [],
+      "screenshot": "04-cbv1-076-medieval-weapons.png",
+      "screenshotSha256": "b5ea2682602f2f52c88ed5c9bb5b6a3440911f4da4925f0f51c09c0d04ade18f",
+      "screenshotBytes": 42096
+    },
+    {
+      "id": "cbv1-ingest-local-scifi-blue-base-other-pilarp-1-a-f60ddaf9f6b2",
+      "packIndex": 5,
+      "title": "Sci-Fi Arena: Blue Base",
+      "sha256": "sha256:f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163",
+      "bytes": 573372,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 0.8995895376611239,
+      "sourceSize": [
+        0.5192944705486298,
+        2.2232361719099956,
+        0.5192950367927551
+      ],
+      "normalizedSize": [
+        0.46715187267082,
+        2,
+        0.46715238205811094
+      ],
+      "camera": {
+        "position": [
+          2.306883831051377,
+          2.6477741650366977,
+          2.8341715638631197
+        ],
+        "target": [
+          0,
+          1,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            -0.015555287859904303,
+            -0.47787642717402984,
+            0.9959616585944694
+          ],
+          [
+            -0.16307798401829593,
+            -0.6123830534649801,
+            0.9956427121354343
+          ],
+          [
+            -0.01883666741374194,
+            0.7799998767785534,
+            0.9950675785498119
+          ],
+          [
+            -0.20066463369252646,
+            0.7309669425949887,
+            0.9945923316363782
+          ],
+          [
+            0.16082633565380464,
+            -0.5858468066762055,
+            0.9957056357413766
+          ],
+          [
+            0.01781719448153761,
+            -0.7377849380087512,
+            0.9953453551342627
+          ],
+          [
+            0.19726625552324106,
+            0.7407653009088743,
+            0.9946873012649131
+          ],
+          [
+            0.02225848608057384,
+            0.6838064263603475,
+            0.9941352329505734
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 4,
+        "triangles": 328,
+        "drawCalls": 2,
+        "materials": 2,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 2349,
+        "estimatedDecodedGeometryBytes": 16528,
+        "textures": 1,
+        "textureBytes": 5592404,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 21239,
+      "shaderErrors": [],
+      "screenshot": "05-cbv1-053-scifi-arena-blue-base.png",
+      "screenshotSha256": "ffaa58f0746026cbba5ecf949cb0e9691bfeba3776e3475e6f455bb2393c8ec1",
+      "screenshotBytes": 35040
+    },
+    {
+      "id": "cbv1-ingest-local-cartoon-car-megapack-other-policecar-39ea62be2520",
+      "packIndex": 11,
+      "title": "Cartoon Car Megapack",
+      "sha256": "sha256:39ea62be252085458fb172c5688ab61380a3f0bc36003c5aa443e9a1b5695493",
+      "bytes": 1687604,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 0.8196736336807118,
+      "sourceSize": [
+        1.02604079246521,
+        1.141752876341343,
+        2.439995527267456
+      ],
+      "normalizedSize": [
+        0.8410185846645957,
+        0.9358647289161129,
+        2
+      ],
+      "camera": {
+        "position": [
+          2.266336700385318,
+          2.086744293304712,
+          2.784356517616247
+        ],
+        "target": [
+          0,
+          0.46793236445805647,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            0.13084687686884688,
+            0.0007666461261840528,
+            0.9962622739011364
+          ],
+          [
+            -0.5689142060195201,
+            -0.5041050540267024,
+            0.9947432421956859
+          ],
+          [
+            0.14156826758526037,
+            0.5285789665788921,
+            0.9959396210759437
+          ],
+          [
+            -0.635621331987563,
+            0.19199307054598475,
+            0.9941034164352213
+          ],
+          [
+            0.4537790579717015,
+            -0.13706656826167657,
+            0.9958475684964645
+          ],
+          [
+            -0.20890580396189468,
+            -0.7799997545636967,
+            0.9939131445741421
+          ],
+          [
+            0.49523458104393986,
+            0.43881881062481504,
+            0.9954499451362878
+          ],
+          [
+            -0.2376394614120168,
+            -0.0013923555294522516,
+            0.9930484250615689
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 17,
+        "triangles": 1764,
+        "drawCalls": 11,
+        "materials": 5,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 12423,
+        "estimatedDecodedGeometryBytes": 85664,
+        "textures": 2,
+        "textureBytes": 11184808,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 70683,
+      "shaderErrors": [],
+      "screenshot": "06-cbv1-081-cartoon-car-megapack.png",
+      "screenshotSha256": "0863249a9e21ad3f10d4f29b98b5f5ecaa5b9bd5e95dfb02a310af5522e662cd",
+      "screenshotBytes": 68953
+    },
+    {
+      "id": "cbv1-ingest-local-cartoon-cars-2-car-ambulance-mc-1-b-61e753d3e92a",
+      "packIndex": 12,
+      "title": "Cartoon Cars 2",
+      "sha256": "sha256:61e753d3e92a547ca0712812dc63f781204361263b62597b25d91d9fef5b74fb",
+      "bytes": 2019008,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 0.489417721471722,
+      "sourceSize": [
+        1.9992734789848328,
+        2.1481611132621765,
+        4.086488723754883
+      ],
+      "normalizedSize": [
+        0.9784798706835995,
+        1.0513481174069321,
+        2
+      ],
+      "camera": {
+        "position": [
+          2.4264399147403246,
+          2.2588454263751263,
+          2.9810547523952557
+        ],
+        "target": [
+          0,
+          0.5256740587034661,
+          0
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            0.10118650793368497,
+            -0.017926779382398655,
+            0.9965103316556225
+          ],
+          [
+            -0.5494042738737941,
+            -0.4863675171832166,
+            0.9952082950662472
+          ],
+          [
+            0.1099517252907876,
+            0.5384508879035981,
+            0.9961907147324139
+          ],
+          [
+            -0.6158207657614266,
+            0.23345354837259286,
+            0.9946048544407073
+          ],
+          [
+            0.45316932790392517,
+            -0.1717934722158747,
+            0.9960826573570636
+          ],
+          [
+            -0.15927607673268296,
+            -0.7799999928304969,
+            0.9943921401158549
+          ],
+          [
+            0.49741926733992897,
+            0.4403470914949416,
+            0.9956806154789929
+          ],
+          [
+            -0.18213055997680208,
+            0.032267289722426776,
+            0.9935587689262532
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 17,
+        "triangles": 9697,
+        "drawCalls": 11,
+        "materials": 4,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 62610,
+        "estimatedDecodedGeometryBytes": 415718,
+        "textures": 2,
+        "textureBytes": 11184808,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 69396,
+      "shaderErrors": [],
+      "screenshot": "07-cbv1-017-cartoon-cars-2.png",
+      "screenshotSha256": "8c5925eef90c1e169ba017ca555a117d363c0678fcd231c9d265795d17a70414",
+      "screenshotBytes": 92903
+    },
+    {
+      "id": "cbv1-ingest-local-army-pack-heli-1-b-3e41441afa97",
+      "packIndex": 13,
+      "title": "Army Pack",
+      "sha256": "sha256:3e41441afa9731b01b7c89eb9320e2362cbd042f387ee1cebc430bc2b01105ec",
+      "bytes": 851896,
+      "backend": {
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+      },
+      "scale": 0.17654599825348302,
+      "sourceSize": [
+        7.652314901351929,
+        3.3168174244859188,
+        11.328492403030396
+      ],
+      "normalizedSize": [
+        1.3509855732091798,
+        0.5855708432304131,
+        2
+      ],
+      "camera": {
+        "position": [
+          2.191866279260321,
+          1.858404192515436,
+          2.6928642859483944
+        ],
+        "target": [
+          5.551115123125783e-17,
+          0.29278542161520654,
+          -5.551115123125783e-17
+        ],
+        "fov": 38,
+        "corners": [
+          [
+            0.046548520267548195,
+            0.13129718063928994,
+            0.9962194355397079
+          ],
+          [
+            -0.6968177058763065,
+            -0.33010183087640443,
+            0.994660631478182
+          ],
+          [
+            0.04889045497111492,
+            0.4619506858528997,
+            0.9960191656097693
+          ],
+          [
+            -0.7465851127535256,
+            0.1063305232578062,
+            0.9942650028938465
+          ],
+          [
+            0.592385269016158,
+            -0.0843689949728468,
+            0.9954908225559618
+          ],
+          [
+            -0.08255111842576644,
+            -0.7799998138130959,
+            0.9931406828316294
+          ],
+          [
+            0.6279722557518008,
+            0.29748783593632183,
+            0.99520792195763
+          ],
+          [
+            -0.09021495667565554,
+            -0.2544650054379334,
+            0.9924853117202883
+          ]
+        ]
+      },
+      "materials": [
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        },
+        {
+          "type": "MeshStandardMaterial",
+          "color": "ffffff",
+          "maps": [
+            "map"
+          ]
+        }
+      ],
+      "metrics": {
+        "nodes": 4,
+        "triangles": 5882,
+        "drawCalls": 3,
+        "materials": 1,
+        "lights": 0,
+        "animations": 0,
+        "animationChannels": 0,
+        "animationKeyframes": 0,
+        "animationValues": 0,
+        "skins": 0,
+        "joints": 0,
+        "morphTargets": 0,
+        "accessorElements": 43076,
+        "estimatedDecodedGeometryBytes": 291796,
+        "textures": 1,
+        "textureBytes": 5592404,
+        "maxTextureDimension": 1024
+      },
+      "foregroundPixels": 21108,
+      "shaderErrors": [],
+      "screenshot": "08-cbv1-018-army-pack.png",
+      "screenshotSha256": "a96839f164740c295be95b4806961b8bfbecc539ad31377dcbf5c25bdff9da1a",
+      "screenshotBytes": 43047
+    }
+  ],
+  "problems": [],
+  "rawModelsPublished": false,
+  "recordedAt": "2026-10-28T14:39:32.599Z",
+  "browserBinaryVerifiedAgainstDeclaredExecutable": true,
+  "validationRowsFile": "native-validation.json",
+  "validationRowsSha256": "d3ebf867e063fc10b1b8f68a43a836d7ab99351f9d6f10ec8669288a12f12fd7"
+}

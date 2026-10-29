@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ورود لازم است",
+  "apiError.loginRequired": "ورود لازم است.",
   "apiError.adminRequired": "اجازه های مدیر نمی توانستند تایید شوند.",
   "apiError.adminOnlyPage": "این صفحه فقط برای مدیران محدود شده است.",
   "apiError.notFound": "ماده مورد نظر پیدا نشد.",

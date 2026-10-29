@@ -683,6 +683,20 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
 
   // 예제·샘플 원고 시딩: 라이브러리 진입 시 레거시 형식 자동저장 기록을 빈 슬롯에만 심고, 연습 사본은 버튼을 눌렀을 때
   // 새 사본의 문서 id 슬롯에 한 번 쓴다. 제품 자동저장 정본은 OPFS/SQLite 이고 브라우저 단독 기록은 복구가 막힌다.
+
+  // 2026-10-29 CI 복구 검토: 가상 스튜디오 HUD(c2b7d489·0a00569c)·2D 사무실(40179e94)·일러스트 무대 HUD가 더한
+  // 화면 설정 8건. 상태 배지·동행 펫·상태 모자·작업 앱 표시는 닫힌 열거형, 근접 설정은 불리언과 효과음 열거형,
+  // 사무실은 내 지정석 id 와 음소거 여부만 담는다. 읽을 때 허용 목록이나 기본값으로 되돌리고(일러스트 무대의 걷기
+  // 방향·방·이모트는 없을 때 기본값만 채운다), 저장이 막히면 메모리 상태만 유지한다. 월드·작품 데이터는 담지 않는다.
+  // 일러스트 무대 키의 예전 이름은 2581998a 가 사용자 선택을 보존하려고 일부러 남겼다.
+  allow("apps/web/src/domains/creator/virtual-space/StudioVirtualSpaceIllustratedStageHud.tsx", "local-storage-write", '"toonspectrum:nano-banana-studio-selection:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/hud/space-dock-model.ts", "local-storage-write", '"toonspectrum:virtual-space-status-urgency:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/hud/space-dock-model.ts", "local-storage-write", '"toonspectrum:virtual-space-companion:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/hud/space-dock-model.ts", "local-storage-write", '"toonspectrum:virtual-space-proximity-prefs:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/hud/space-dock-model.ts", "local-storage-write", '"toonspectrum:virtual-space-status-hat:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/hud/space-dock-model.ts", "local-storage-write", '"toonspectrum:virtual-space-active-dcc:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts", "local-storage-write", '"toonstudio:office2d:my-seat-v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts", "local-storage-write", '"toonstudio:office2d:sound-muted-v1"', 1, UI_ONLY, UI_PROOF),
 ]);
 
 function allowanceId(value: Pick<BrowserKvFinding | BrowserKvAllowance, "file" | "kind" | "key">) {

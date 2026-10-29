@@ -443,6 +443,69 @@ test("static regression checkout retains all imported 3D manifests but excludes 
   } finally { rmSync(scratch, { recursive: true, force: true }); }
 });
 
+test("번들 sparse checkout은 작은 manifest와 실제 회귀가 읽는 래스터만 복원한다", () => {
+  const roots = ["studio/bundle-renders-v1", "studio/bundle-scenes-v1", "virtual-studio/bundle-decor-v1"];
+  const prefix = "apps/web/public/assets/";
+  const manifests = roots.map((root) => `${prefix}${root}/manifest.json`);
+  const [renders, scenes, decor] = manifests.map((file) => JSON.parse(readFileSync(join(repoRoot, file), "utf8")));
+  const rasters = [
+    ...renders.assets.filter((asset) => typeof asset.sha256 === "string")
+      .flatMap((asset) => [asset.path, asset.previewPath].map((path) => `${prefix}${roots[0]}/${path}`)),
+    ...scenes.assets.flatMap((asset) => [asset.src, asset.previewSrc].map((path) => `apps/web/public${path}`)),
+    ...decor.assets.map((asset) => `${prefix}${roots[2]}/${asset.path}`),
+  ];
+  assert.equal(new Set(rasters).size, rasters.length);
+  const metadata = ["3d/environments/bundle-v1/theme-packs.json", "virtual-studio/bundle-v1/manifest.json"].map((path) => prefix + path);
+  for (const file of [...manifests, ...metadata, ...rasters]) {
+    assert.match(file, /^apps\/web\/public\/assets\/[A-Za-z0-9_/-]+\.(?:json|webp)$/u,
+      `임시 Git fixture 밖의 경로는 허용하지 않습니다: ${file}`);
+  }
+  const excluded = ["studio/bundle-v2/private-model.glb", "studio/unrelated/large.webp", "3d/unrelated/model.glb"].map((path) => prefix + path);
+  const restore = job("static").split(/(?=^ {6}- )/mu).find((step) => step.includes("번들 소재 회귀 검사용 파생 이미지 준비"));
+  assert.ok(restore);
+  assert.match(restore, /^ {8}if: matrix\.shard == 'studio-foundation'$/mu);
+  const restoreArgs = restore.match(/git sparse-checkout add\n((?: {10}\/[^\n]+\n)+)/u)?.[1].trim().split(/\s+/u);
+  assert.deepEqual(restoreArgs, roots.map((root) => `/${prefix}${root}/`));
+  const scratch = mkdtempSync(join(tmpdir(), "core-bundle-sparse-"));
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: scratch, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  const apply = (block) => {
+    const patterns = block.match(/sparse-checkout: \|\n((?: {12}[^\n]*\n)+)/u)?.[1];
+    assert.ok(patterns);
+    writeFileSync(join(scratch, ".git/info/sparse-checkout"), patterns.replace(/^ {12}/gmu, ""));
+    git("read-tree", "-mu", "HEAD");
+  };
+  try {
+    git("init", "--quiet");
+    for (const file of [...manifests, ...metadata, ...rasters, ...excluded, "package.json"]) {
+      mkdirSync(dirname(join(scratch, file)), { recursive: true }); writeFileSync(join(scratch, file), "fixture\n");
+    }
+    git("add", ".");
+    git("-c", "user.name=CI Test", "-c", "user.email=ci@example.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture");
+    git("config", "core.sparseCheckout", "true"); git("config", "core.sparseCheckoutCone", "false");
+    for (const lane of ["lint", "typecheck", "static"]) {
+      apply(job(lane));
+      for (const file of manifests) assert.ok(existsSync(join(scratch, file)), `${lane}: manifest 누락 ${file}`);
+      for (const file of rasters) assert.equal(existsSync(join(scratch, file)), false, `${lane}: 무관한 래스터 다운로드 ${file}`);
+    }
+    git("sparse-checkout", "add", ...restoreArgs);
+    for (const file of [...manifests, ...metadata, ...rasters]) assert.ok(existsSync(join(scratch, file)), `foundation 입력 누락 ${file}`);
+    const focused = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
+    apply(focused);
+    for (const file of rasters) assert.equal(existsSync(join(scratch, file)), false, `manual smoke의 불필요한 번들 본문 ${file}`);
+    const relatedRestore = focused.split(/(?=^ {6}- )/mu).find((step) => step.includes("관련 회귀 검사용 번들 파생 이미지 준비"));
+    assert.ok(relatedRestore);
+    assert.match(relatedRestore, /^ {8}if: github\.event_name == 'pull_request'$/mu);
+    const relatedArgs = relatedRestore.match(/git sparse-checkout add\n((?: {10}\/[^\n]+\n)+)/u)?.[1].trim().split(/\s+/u);
+    assert.deepEqual(relatedArgs, restoreArgs);
+    git("sparse-checkout", "add", ...relatedArgs);
+    for (const file of [...manifests, ...metadata, ...rasters]) assert.ok(existsSync(join(scratch, file)), `related 테스트 입력 누락 ${file}`);
+    for (const file of excluded) assert.equal(existsSync(join(scratch, file)), false, `무관한 모델·래스터 복원 ${file}`);
+  } finally { rmSync(scratch, { recursive: true, force: true }); }
+});
+
 test("production build verifies Virtual Studio art after the single existing build", () => {
   const build = job("build");
   const buildAt = build.indexOf("pnpm run build:bundle");

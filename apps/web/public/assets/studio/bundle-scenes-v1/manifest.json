@@ -1,0 +1,376 @@
+{
+  "schema": "toonstudio.creator-bundle-scene-catalog.v1",
+  "assets": [
+    {
+      "id": "cbv1-scene-park-garden",
+      "label": "공원의 정원 산책길",
+      "title": "공원의 정원 산책길",
+      "genre": "daily",
+      "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-park-garden.webp",
+      "previewSrc": "/assets/studio/bundle-scenes-v1/cbv1-scene-park-garden-preview.webp",
+      "width": 2048,
+      "height": 1152,
+      "previewBytes": 93288,
+      "previewSha256": "5129141d4b2a54fde303262ad5816aee0967e3cfc9ba95cf2c4a022add614dc0",
+      "bytes": 1206290,
+      "sha256": "1fb2c546c8b8da258d1dfbba567e1bad3ba383644513385527e7c86e687aa423",
+      "tags": [
+        "번들",
+        "3D 렌더",
+        "로우폴리",
+        "공원의 정원 산책길"
+      ],
+      "environment": "실외",
+      "timeOfDay": "낮",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-10-28",
+        "notes": [
+          "CC0 모델을 배치한 완성 장면 렌더. 원본 모델의 로우폴리 스타일을 유지합니다."
+        ]
+      },
+      "provenance": {
+        "kind": "creator-bundle-cc0",
+        "licenseStatus": "cc0-verified",
+        "licenseId": "CC0-1.0",
+        "provider": "RG Poly",
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "checkedOn": "2026-10-28",
+        "recipeId": "cbv1-scene-park-garden"
+      },
+      "rights": {
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "serve": "allow",
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "sourceRecipeSha256": "2bac4b3ac2e9b2439ddd6502c96758ac4f35d27bc32d3e980e778b1d3326e1cd",
+      "sourceModels": [
+        {
+          "assetId": "cbv1-008-tree-1-1",
+          "sha256": "dcf0d54806cb3f549e1b3ba01bb21a65c577ec019b2a3e221d92fc318501dae8"
+        },
+        {
+          "assetId": "cbv1-008-tree-1-2",
+          "sha256": "212d21db6d3bd8b2c89437399165e4f106a41e29601a0e2221c891c59512189c"
+        },
+        {
+          "assetId": "cbv1-008-tree-2-1",
+          "sha256": "50fdf2ca7fb505f6fa57b908de1b231d99ea7e46b098849ac978b5a41604b640"
+        },
+        {
+          "assetId": "cbv1-008-tree-2-2",
+          "sha256": "c8f2d4ef4805f990d102f93dcc842a170ac8c398327d48a598735a58e6e2c426"
+        },
+        {
+          "assetId": "cbv1-008-bench-1-1",
+          "sha256": "fd595aaee76239496994f165d27387ee8b80d4734eff4d89b7c0de59d1294e18"
+        },
+        {
+          "assetId": "cbv1-008-bench-1-2",
+          "sha256": "73fc43424657701e4560694593a819f0eee9b2e5cf4dfa43efc16a6c28ea2181"
+        },
+        {
+          "assetId": "cbv1-008-streetlamp-1-1",
+          "sha256": "ebc6a9024f571ad9b665283a3b3a18e7a6d5362744c68c654afef7e3a90befef"
+        },
+        {
+          "assetId": "cbv1-008-streetlamp-1-2",
+          "sha256": "762c7c8308bb6c8e91dd7a138cb4eddc7433d43a2dfa76bb2552bb20fbbec76a"
+        },
+        {
+          "assetId": "cbv1-008-bush-1-1",
+          "sha256": "b2ce23189ecea72ed8b721b366f344b7937ebdd608eae49c43808f7ec646fc74"
+        },
+        {
+          "assetId": "cbv1-008-bush-2-1",
+          "sha256": "d1f4d7e45a16aa7d2caf122afbe343abfbba5cf66fd5ffe01bff465e87d9e2e1"
+        },
+        {
+          "assetId": "cbv1-008-flower-1-1",
+          "sha256": "7745b2d14b444ad02f7ee8785526b5cb2a6b6f5caa43c272990488ddc2fb9b2c"
+        },
+        {
+          "assetId": "cbv1-008-flower-1-4",
+          "sha256": "73f5964778aa76a667f00c526cfcf0c00d8fbe43e99118a6620fa7f775bfd73c"
+        },
+        {
+          "assetId": "cbv1-008-flower-1-3",
+          "sha256": "0d8e2ca86d55a8959e470e70f1aab4b390804e1659ebfc240795f5bc22d73df5"
+        }
+      ],
+      "mediaType": "image/webp",
+      "style": "stylized-low-poly",
+      "legacySrc": null,
+      "sourceManifest": "bundle-scenes-v1/manifest.json"
+    },
+    {
+      "id": "cbv1-scene-dungeon-study",
+      "label": "판타지 성의 서재",
+      "title": "판타지 성의 서재",
+      "genre": "fantasy",
+      "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-dungeon-study.webp",
+      "previewSrc": "/assets/studio/bundle-scenes-v1/cbv1-scene-dungeon-study-preview.webp",
+      "width": 2048,
+      "height": 1152,
+      "previewBytes": 122302,
+      "previewSha256": "b3b958b96c66d44ae4d397e15f0f576fcc6f88fcb2e195a7dda9f03ef4c30df8",
+      "bytes": 1487364,
+      "sha256": "ddfa9da3cc44a2d8684af8d4ab1a08bb51f1772909a8d99b52428daa6c0dfba5",
+      "tags": [
+        "번들",
+        "3D 렌더",
+        "로우폴리",
+        "판타지 성의 서재"
+      ],
+      "environment": "실내",
+      "timeOfDay": "낮",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-10-28",
+        "notes": [
+          "CC0 모델을 배치한 완성 장면 렌더. 원본 모델의 로우폴리 스타일을 유지합니다."
+        ]
+      },
+      "provenance": {
+        "kind": "creator-bundle-cc0",
+        "licenseStatus": "cc0-verified",
+        "licenseId": "CC0-1.0",
+        "provider": "RG Poly",
+        "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+        "checkedOn": "2026-10-28",
+        "recipeId": "cbv1-scene-dungeon-study"
+      },
+      "rights": {
+        "ledgerPackId": "cbv1-024-cute-dungeon-megapack",
+        "serve": "allow",
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "sourceRecipeSha256": "cf46aeec6b33c4a9dfc127b1fda39590c71d023fc85b4af7e32a8f3433c75f71",
+      "sourceModels": [
+        {
+          "assetId": "cbv1-024-wardrobe-1",
+          "sha256": "b8e4d737160e8c419db86db1fb4cca38f33927427ff432199a1ea719a9402b1d"
+        },
+        {
+          "assetId": "cbv1-024-wardrobe-2",
+          "sha256": "d5643c9da55fb133697a28c53213f4f6f1094649ad7e578c940283ea01721eab"
+        },
+        {
+          "assetId": "cbv1-024-shelf-long-1",
+          "sha256": "32823a2a3c285a8d24f8690ec361e39442a25071bc5edfe622e86f5d02db01d8"
+        },
+        {
+          "assetId": "cbv1-024-table-1",
+          "sha256": "be5614aa91943edcb1e3437f51c390df5ee1b7c889bdb042e93a2c46b42b830e"
+        },
+        {
+          "assetId": "cbv1-024-chair-1",
+          "sha256": "576db609c1aecfc28e5eafc536b766d2e3efa1ea5d55e639a0fcd9b7125c4216"
+        },
+        {
+          "assetId": "cbv1-024-stool-1",
+          "sha256": "80779adf56d8025271d50d89d0b55ab2da62342f0a62871459abb754c791195c"
+        },
+        {
+          "assetId": "cbv1-024-barrel-1-1",
+          "sha256": "6ff3fd331b741ceb1a9ed08a012fbfb66f675ce12b25cc6548a7248841370cc8"
+        },
+        {
+          "assetId": "cbv1-024-chest-1",
+          "sha256": "839b382c0a103e8c4e8ba02bf58f92168e15f7756bfbc6be315bcb93f693e677"
+        },
+        {
+          "assetId": "cbv1-024-book-1-1",
+          "sha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19"
+        },
+        {
+          "assetId": "cbv1-024-book-2-1",
+          "sha256": "2c43966f76c3e552e60647118878f690288938339324be0d92954331306a031a"
+        },
+        {
+          "assetId": "cbv1-024-candleholder-1-1",
+          "sha256": "62967281c0ff35d4bca2dbff6165a8717e5ea64dd233c254987b75498196cf3e"
+        },
+        {
+          "assetId": "cbv1-024-potion-1-1",
+          "sha256": "5184a057f739ed8a1d2b17669673432b38854b633c6e188ce741d738ca910d13"
+        },
+        {
+          "assetId": "cbv1-024-book-3-1",
+          "sha256": "d5ff52f5d4793967c5bdfc34748f530ad72b8649794c735ab76c505ac41945c4"
+        },
+        {
+          "assetId": "cbv1-024-book-1-1",
+          "sha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19"
+        },
+        {
+          "assetId": "cbv1-024-book-3-1",
+          "sha256": "d5ff52f5d4793967c5bdfc34748f530ad72b8649794c735ab76c505ac41945c4"
+        },
+        {
+          "assetId": "cbv1-024-book-1-1",
+          "sha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19"
+        },
+        {
+          "assetId": "cbv1-024-book-3-1",
+          "sha256": "d5ff52f5d4793967c5bdfc34748f530ad72b8649794c735ab76c505ac41945c4"
+        },
+        {
+          "assetId": "cbv1-024-book-1-1",
+          "sha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19"
+        },
+        {
+          "assetId": "cbv1-024-book-3-1",
+          "sha256": "d5ff52f5d4793967c5bdfc34748f530ad72b8649794c735ab76c505ac41945c4"
+        },
+        {
+          "assetId": "cbv1-024-book-1-1",
+          "sha256": "a389b1385290a48827fc1b1f6a805fe4e4aadb4f0f4823a00942846a01e64a19"
+        }
+      ],
+      "mediaType": "image/webp",
+      "style": "stylized-low-poly",
+      "legacySrc": null,
+      "sourceManifest": "bundle-scenes-v1/manifest.json"
+    },
+    {
+      "id": "cbv1-scene-blue-base-gateway",
+      "label": "SF 기지의 에너지 관문",
+      "title": "SF 기지의 에너지 관문",
+      "genre": "sf",
+      "src": "/assets/studio/bundle-scenes-v1/cbv1-scene-blue-base-gateway.webp",
+      "previewSrc": "/assets/studio/bundle-scenes-v1/cbv1-scene-blue-base-gateway-preview.webp",
+      "width": 2048,
+      "height": 1152,
+      "previewBytes": 120404,
+      "previewSha256": "67cf88ae38b0bc5fb98908cc64bfb5d882d08d39b91013908a863360d4dbb27e",
+      "bytes": 1397052,
+      "sha256": "e89d4653a4772524c7c0f96b00f32d371a24a63104dcf4fe3f04c817326ac479",
+      "tags": [
+        "번들",
+        "3D 렌더",
+        "로우폴리",
+        "SF 기지의 에너지 관문"
+      ],
+      "environment": "실외",
+      "timeOfDay": "낮",
+      "containsPeople": false,
+      "containsText": false,
+      "recommended": true,
+      "review": {
+        "method": "full-image",
+        "status": "usable",
+        "reviewedAt": "2026-10-28",
+        "notes": [
+          "CC0 모델을 배치한 완성 장면 렌더. 원본 모델의 로우폴리 스타일을 유지합니다."
+        ]
+      },
+      "provenance": {
+        "kind": "creator-bundle-cc0",
+        "licenseStatus": "cc0-verified",
+        "licenseId": "CC0-1.0",
+        "provider": "RG Poly",
+        "sourceUrl": "https://rg-poly.itch.io/sci-fi-arena-blue-base",
+        "checkedOn": "2026-10-28",
+        "recipeId": "cbv1-scene-blue-base-gateway"
+      },
+      "rights": {
+        "ledgerPackId": "cbv1-053-scifi-arena-blue-base",
+        "serve": "allow",
+        "status": "public-domain",
+        "licenseName": "CC0-1.0",
+        "commercialUse": true,
+        "attributionRequired": false
+      },
+      "sourceRecipeSha256": "32fed802175cb2044ff59379e7057050f26d8bab97d38f984a070d80ecda19b8",
+      "sourceModels": [
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-wallp-1-2-a",
+          "sha256": "b76911c23b0ed7d1a297bc1e8daca154bda4613f37e3b8eb261db272e2d7d650"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-pilarp-1-a",
+          "sha256": "f60ddaf9f6b2bb56df9083044850c356d5825cc7e4867c2c1915e4f3cf58e163"
+        },
+        {
+          "assetId": "cbv1-053-wallp-barier",
+          "sha256": "7a683953d5746d1accec4068f6bfdb345ddad9ac01a99e1007b66b893d694e6a"
+        },
+        {
+          "assetId": "cbv1-053-barierp-4-a",
+          "sha256": "075512669bbf9c5f65043741a2f69401bf92330988b4dd00eeb184a54ca08248"
+        },
+        {
+          "assetId": "cbv1-053-barierp-4-a",
+          "sha256": "075512669bbf9c5f65043741a2f69401bf92330988b4dd00eeb184a54ca08248"
+        },
+        {
+          "assetId": "cbv1-053-tilep-prop-4-a",
+          "sha256": "5f68a0587a1d45219fdc077c54659e1ccf221af26603b0bdba75de83d2c876bc"
+        },
+        {
+          "assetId": "cbv1-053-ball-p-a",
+          "sha256": "35c5f6b6915f7186cd3b1f38c6068d60555f0e1050f4073478856517274cc2e3"
+        },
+        {
+          "assetId": "cbv1-053-rampp-1-a",
+          "sha256": "f6348290cc8e679c60fd40b3b17b5b9f4b55a8db1ddf4361047be93fd1f660aa"
+        },
+        {
+          "assetId": "cbv1-053-rampp-2-b",
+          "sha256": "36ee08428768b1e8404aed9eb4a352e3aadebed2b0560feaec8a6d76181c1fd0"
+        },
+        {
+          "assetId": "cbv1-053-rampp-2-b",
+          "sha256": "36ee08428768b1e8404aed9eb4a352e3aadebed2b0560feaec8a6d76181c1fd0"
+        }
+      ],
+      "mediaType": "image/webp",
+      "style": "stylized-low-poly",
+      "legacySrc": null,
+      "sourceManifest": "bundle-scenes-v1/manifest.json"
+    }
+  ]
+}

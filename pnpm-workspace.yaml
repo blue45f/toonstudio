@@ -116,7 +116,10 @@ overrides:
   'body-parser@>=1.0.0 <1.20.9': 1.20.9
   'body-parser@>=2.0.0 <2.4.0': 2.4.0
   'zod@<4.6.6': 4.6.7
-  'qs@>=6.0.0 <6.16.0': 6.16.0
+  # GHSA-6pq8-jhm2-2vcw: comma 배열의 non-callable toString DoS를 고친 공식 패치만 적용한다.
+  'qs@>=6.0.0 <6.16.1': 6.16.1
+  # 공식 수정 릴리스가 없는 결과 객체 프로토타입 오염을 자체 속성 쓰기로 막는다. 원본·변경·제거 조건은 patches/deepmerge에 기록한다.
+  'deepmerge@>=4.2.0 <=4.3.1': 'file:patches/deepmerge'
   '@xmldom/xmldom@>=0.7.0 <0.8.15': 0.8.15
   'fflate@>=0.6.0 <0.6.11': 0.6.11
   'tsx@4.22.3>esbuild': 0.28.1

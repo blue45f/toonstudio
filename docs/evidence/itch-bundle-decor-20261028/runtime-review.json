@@ -1,0 +1,107 @@
+{
+  "scope": "actual-place-manifest-and-StudioOffice2dCanvas",
+  "cases": [
+    {
+      "place": "garden",
+      "width": 1100,
+      "uniqueDecorImages": 2,
+      "imageRequests": 2,
+      "drawCounts": {
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-tree.webp": 110,
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-flower.webp": 110
+      },
+      "moved": true,
+      "workstationSelected": true,
+      "horizontalOverflow": false,
+      "overviewScreenshot": "garden-1100-overview.png",
+      "overviewSha256": "e758db6236360d8efc04ce251f8e2a3331747caa8a8e04617659771cd43810f6"
+    },
+    {
+      "place": "tree-library",
+      "width": 1100,
+      "uniqueDecorImages": 2,
+      "imageRequests": 2,
+      "drawCounts": {
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-tree.webp": 103,
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-planter.webp": 103
+      },
+      "moved": true,
+      "workstationSelected": true,
+      "horizontalOverflow": false,
+      "overviewScreenshot": "tree-library-1100-overview.png",
+      "overviewSha256": "2ba762ec8b0ea48e7014adc28077582566e57f603efa77c8b707b62c7784b958"
+    },
+    {
+      "place": "creator-cafe",
+      "width": 1100,
+      "uniqueDecorImages": 2,
+      "imageRequests": 2,
+      "drawCounts": {
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-planter.webp": 104,
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-flower.webp": 104
+      },
+      "moved": true,
+      "workstationSelected": true,
+      "horizontalOverflow": false,
+      "overviewScreenshot": "creator-cafe-1100-overview.png",
+      "overviewSha256": "b2a4795101637e5ef362c8b2c42a1da033bbe512f4e9e2b8a65a3a2827d473a2"
+    },
+    {
+      "place": "garden",
+      "width": 390,
+      "uniqueDecorImages": 2,
+      "imageRequests": 2,
+      "drawCounts": {
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-tree.webp": 108,
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-flower.webp": 108
+      },
+      "moved": true,
+      "workstationSelected": true,
+      "horizontalOverflow": false,
+      "overviewScreenshot": "garden-390-overview.png",
+      "overviewSha256": "15e81ec5fdb43ac02dcf07a3f00d72fdfe087b6558cc3fe298e9b76e97f9704b"
+    },
+    {
+      "place": "tree-library",
+      "width": 390,
+      "uniqueDecorImages": 2,
+      "imageRequests": 2,
+      "drawCounts": {
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-tree.webp": 106,
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-planter.webp": 106
+      },
+      "moved": true,
+      "workstationSelected": true,
+      "horizontalOverflow": false,
+      "overviewScreenshot": "tree-library-390-overview.png",
+      "overviewSha256": "1e75f01a428242e5c4f708ab5516331a0bd71c312bdb1dc906d4c48f3fb5fbd8"
+    },
+    {
+      "place": "creator-cafe",
+      "width": 390,
+      "uniqueDecorImages": 2,
+      "imageRequests": 2,
+      "drawCounts": {
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-planter.webp": 102,
+        "http://127.0.0.1:5192/assets/virtual-studio/bundle-decor-v1/park-flower.webp": 102
+      },
+      "moved": true,
+      "workstationSelected": true,
+      "horizontalOverflow": false,
+      "overviewScreenshot": "creator-cafe-390-overview.png",
+      "overviewSha256": "0b261c8fa08388707a67327634f72d83fcd9b79feac10af22f98f382f62625a4"
+    }
+  ],
+  "errors": [],
+  "databasePersistenceVerified": false,
+  "visualReview": {
+    "reviewedOn": "2026-10-28",
+    "status": "reviewed-foreground-decor",
+    "notes": [
+      "실제 알파 bbox crop과 바닥 anchor를 확인한 뒤 전경 바닥·화단에 재배치했다.",
+      "기존 장소 손그림 배경과 low-poly 소품의 화풍 차이를 숨기지 않고 소수 장식으로 제한했다.",
+      "HQ·사용자 custom 장식 경로는 변경하지 않았다.",
+      "장소 이동·충돌·작업대 선택은 원래 계약을 보존한다."
+    ]
+  }
+}

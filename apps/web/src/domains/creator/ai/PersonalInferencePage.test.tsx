@@ -35,6 +35,7 @@ vi.mock("../studio-server-ai-client", () => ({
   getStudioServerAiStatus: vi.fn().mockRejectedValue(new Error("offline")),
   completeStudioServerText: vi.fn(),
   studioServerAiProviderLabel: (provider: string) => provider,
+  studioTextUsesPersonalKeyFirst: () => false,
 }));
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({

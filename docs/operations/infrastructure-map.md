@@ -1,10 +1,10 @@
 # ToonStudio 인프라 지도
 
 - 문서 상태: **current** — 2026-10-23 컷오버를 마쳤다(Core API·DB가 onpod 서울에서 운영 트래픽을 받는다). 행마다 `current`(지금 동작·검증), `migration`(진행 중), `target`(승인 대기), `legacy exception`(퇴역 예정), `retired`(삭제됨)를 따로 적는다.
-- 최종 갱신: 2026-10-23 (KST 05:25)
+- 최종 갱신: 2026-10-29 (운영 상태·DB 원장·Cloudflare CLI 인증 재확인)
 - 목적: 에이전트와 사람이 "무엇이 어디서 어떤 비용으로 도는지, 비밀값은 어디에 있는지, 어떻게 다시 만드는지"를 한 곳에서 본다. 이 문서는 정책을 바꾸지 않는다. 정책 정본은 루트 `AGENTS.md` 8·9절, 배포 절차는 `DEPLOY.md`다.
 - 갱신 의무: 공급자·자원·도메인·비밀 저장 위치·연결 경로를 바꾸는 변경은 **같은 변경에서 이 문서를 고친다**. 날짜와 증거 표기를 함께 바꾼다.
-- 증거 표기: **[직접]** 2026-10-22 이 Mac에서 직접 실행해 확인 · **[벤더]** 벤더 매뉴얼의 서술(저장소가 검증하지 않음) · **[저장소]** 저장소 파일 · **미확인**.
+- 증거 표기: **[직접]** 이 Mac에서 조회하거나 실행해 확인. 별도 날짜가 없는 기존 기록은 2026-10-22 기준이며, 이후 조회는 항목에 날짜를 적는다 · **[벤더]** 벤더 매뉴얼의 서술(저장소가 검증하지 않음) · **[저장소]** 저장소 파일 · **미확인**.
 - 비밀값은 이 문서에 쓰지 않는다. 키 **이름**과 저장 위치만 적는다(`AGENTS.md` 9절).
 
 ## 0. 에이전트 시작 체크리스트
@@ -20,13 +20,13 @@
 | 구성요소 | 위치 | 요금 | 상태 | 비고 |
 | --- | --- | --- | --- | --- |
 | 도메인 `toonstudio.cloud` | Cloudflare DNS(네임서버 `elsa`·`tom`) | 도메인 갱신비 | current | 소유자가 유지하기로 한 유일한 기존 자원(2026-10-22). `api.` 하위 레코드는 없다. 퇴역 Vercel을 가리키는 `origin.` CNAME과 Vercel 팀의 도메인 등록이 남아 있다(8절) [직접] |
-| 웹 정적 + 엣지 게이트웨이 | Cloudflare Static Assets + Worker `toonspectrum-web`(`deploy/cloudflare-static`) | 무료 | current | 버전 `8d9e24ee`(main `38847c624`). onpod 정적으로 옮길 수 없다(7.1절) |
-| 대형 에셋·미디어 | Cloudflare R2 `toonspectrum-public-assets` | 무료 한도 | current | 25 MiB 초과 파일과, PR #2431부터 3D·캐릭터·텍스처 미디어 약 7,160개(3 GB). Static Assets 파일 수 한도(배포당 20,000개) 때문에 옮겼다. 경로는 그대로이고 Worker가 R2에서 내준다(`deploy/cloudflare-static/README.md`). onpod 버킷은 GB당 과금이라 쓰지 않는다 |
+| 웹 정적 + 엣지 게이트웨이 | Cloudflare Static Assets + Worker `toonspectrum-web`(`deploy/cloudflare-static`) | 무료 | current | 2026-10-29 조회: 활성 버전 `4670c23c-f464-45d9-b34d-c747612d5790`, 트래픽 100%, Workers Free. 원격 버전의 Git SHA는 annotation에 없어 미확인이다. `CORE_API_ORIGIN`은 `https://toonstudio-api.onpod.ai`다. onpod 정적으로 옮길 수 없다(7.1절) [직접] |
+| 대형 에셋·미디어 | Cloudflare R2 `toonspectrum-public-assets` | 무료 한도 | current | 2026-10-29 REST 목록 조회: 7,258개·3,556,610,099 B. 현재 청구 기간 대시보드는 $0.00이다. 25 MiB 초과 파일과 PR #2431부터 이관한 3D·캐릭터·텍스처를 보관한다. Static Assets 파일 수 한도(배포당 20,000개) 때문에 옮겼다. 경로는 그대로이고 Worker가 R2에서 내준다(`deploy/cloudflare-static/README.md`). onpod 버킷은 GB당 과금이라 쓰지 않는다 [직접] |
 | 실시간 조정 | Cloudflare Worker + Durable Objects, `realtime.toonstudio.cloud`(`deploy/cloudflare-realtime`) | 무료 | current | 방 단위 단일 기록자 의미를 onpod 무료 앱이 대신하지 못한다 |
 | 트래픽 분석 | Cloudflare Worker `toonspectrum-analytics` + D1(`TRAFFIC_ANALYTICS_STORE=d1`) | 무료 | current | Core API가 RPC로 기록한다. onpod DB에는 분석 표가 없다(7.2절) |
 | apex 리다이렉트 | Cloudflare Worker(`deploy/cloudflare-apex-redirect`) | 무료 | current | |
-| **Core API** | onpod 앱 `toonstudio-api`, 서울, 무료 티어 | 0원 | **current** — 2026-10-23 05:14 KST 컷오버. 준비성 200(단일 소유자 옵트인, 7.3절) | `https://toonstudio-api.onpod.ai`. 이미지 `ghcr.io/blue45f/toonspectrum-core-api:4df6d16929171afb25fe866a009febf8a16ea9eb` |
-| **PostgreSQL 원장** | onpod DB `toonstudio-db`, 서울, dev 플랜, PG 17.10 | 0원 | **current** — 스키마 113개 적용·검증 12/12 | 단일 소유자 역할(7.2절) |
+| **Core API** | onpod 앱 `toonstudio-api`, 서울, 무료 티어 | 0원 | **current** — 2026-10-23 05:14 KST 컷오버. 2026-10-29 조회에서도 running·free·single이며 always-on은 꺼져 있다. 준비성 200(단일 소유자 옵트인, 7.3절) | `https://toonstudio-api.onpod.ai`. 현재 이미지 `onpod://toonspectrum-core-api:5294fcc693284c38563ed7773748bbd0b7b2822e` [직접] |
+| **PostgreSQL 원장** | onpod DB `toonstudio-db`, 서울, dev 플랜, PG 17 | 0원 | **current** — 2026-10-29 읽기 전용 검증: migration 113개 체크섬 113/113 일치, adoption marker 포함 원장 114행·문제 0건 | 단일 소유자 역할(7.2절). 과거 이관 검증 12/12와 이번 읽기 전용 검증을 구분한다 [직접] |
 | Core API (구) | Render 무료 `toonspectrum-core-api`(싱가포르) | — | **retired** — 2026-10-23 05:22 KST 삭제 | 2026-10-22 19:21 KST부터 DB 인증 실패(28P01)로 재시작을 반복했다. 삭제 전 환경변수 106개를 로컬에 백업했다(5절) [직접] |
 | Render 검증용 정적 사이트 19개 | `toonstudio-*-20260909` | — | **retired** — 2026-10-23 04:09 KST 삭제 | 2026-09-09 CI·레이어 검증 산출물. 저장소 참조 없음 [직접] |
 | studio-live | Render `toonspectrum-studio-live` | — | 없음 | `render.yaml`에 선언만 있고 Render에 만든 적이 없다 [직접] |
@@ -99,7 +99,11 @@
 
 기존 키(모두 이름만): `B2_APPLICATION_KEY`·`B2_APPLICATION_KEY_ID`, `BACKEND_UPSTASH_QSTASH_AUTH_TOKEN`·`BACKEND_UPSTASH_QSTASH_PUBLISH_TOKEN`, `UPSTASH_COORDINATION_REST_TOKEN`, `CLOUDFLARE_WORKERS_AI_API_TOKEN`, `SUPABASE_ANON_KEY`·`SUPABASE_OBJECT_STORAGE_SERVICE_ROLE_KEY`(Supabase가 일시정지라 사실상 휴면), `NEON_DATABASE_URL`·`DATABASE_URL`(Neon, legacy), `VITE_KAKAO_JAVASCRIPT_KEY`, `MOBILE_QA_*_PASSWORD`. 다른 로컬 파일: `.env.local`(`STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN` 등), `.env.mobile-qa.local`, `.env.production.local`.
 
-셸 환경: `wrangler`는 셸에 설정된 `CLOUDFLARE_API_TOKEN`으로 인증한다(Account API Token, 2026-10-22 `wrangler whoami`로 확인). 값의 출처는 로컬 셸 설정이며 저장소 밖이다. Render CLI와 `gh`도 로그인되어 있다 [직접].
+현재 로컬 Cloudflare 배포 인증(2026-10-29): 사용자가 계정 조회·Worker 배포/수정·로그인 유지를 허용한 뒤 Wrangler 기본 프로파일의 OAuth 로그인을 복구했다. `wrangler whoami`, Worker 배포 목록, R2 REST 목록 조회가 통과했다. scope는 `account:read`, `user:read`, `workers:write`, `workers_scripts:write`, `offline_access`다. 자격증명은 Wrangler의 암호화 파일 `~/Library/Preferences/.wrangler/config/default.enc`(권한 0600)와 macOS Keychain(`service=wrangler`, `account=default`)에 보관한다. 토큰 값을 별도 파일로 복사하지 않는다 [직접].
+
+이전 셸의 `CLOUDFLARE_API_TOKEN`·`CLOUDFLARE_API_KEY` 등은 부모 환경에서 변경하지 않았다. OAuth 명령은 자식 환경에서 `CLOUDFLARE_API_TOKEN`, `CF_API_TOKEN`, `CLOUDFLARE_API_KEY`, `CF_API_KEY`, `CLOUDFLARE_EMAIL`, `CF_EMAIL`을 제외하고 `--env-file /dev/null`을 지정한다. 이 설정이 없으면 셸·dotenv 인증이 OAuth보다 먼저 선택될 수 있다. Cloudflare MCP 연결의 자격증명은 이번 CLI 복구와 별개다. GitHub CLI의 저장소 로그인도 GHCR 패키지 업로드 권한을 뜻하지 않는다 [직접: 2026-10-29].
+
+주의: 공식 `wrangler auth token --json`은 비밀값을 출력하며 기본 로그 파일에도 기록한다. 외부 배포 도구에서 사용할 때는 자식의 `WRANGLER_WRITE_LOGS=false`, `WRANGLER_LOG=log`를 지정하고 stdout·stderr를 메모리에서만 처리한다. 실패 응답이나 JSON 파싱 오류 원문도 출력하지 않는다. 원격 Worker 시크릿·운영 환경변수·DNS는 이 로컬 인증 복구에서 변경하지 않았다.
 
 ### 5.1 원격에만 있던 값 — 2026-10-23 확보 완료
 

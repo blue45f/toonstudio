@@ -183,6 +183,7 @@ interface PipelineHandle {
   entryPoint: string;
   kind: "compute" | "render";
   layout: MockPipelineLayout | null;
+  layoutLabel: string | null;
   getBindGroupLayout(index: number): GPUBindGroupLayout;
 }
 
@@ -377,6 +378,7 @@ export function createMockGpu(options: MockGpuOptions = {}): MockGpu {
       entryPoint,
       kind,
       layout,
+      layoutLabel: layout?.label ?? null,
       getBindGroupLayout(index: number): GPUBindGroupLayout {
         return { label: `${label}.auto${index}` } as unknown as GPUBindGroupLayout;
       },

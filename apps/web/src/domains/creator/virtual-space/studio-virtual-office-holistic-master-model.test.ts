@@ -2,20 +2,20 @@ import { describe, expect, it } from "vitest";
 
 import {
   HOLISTIC_40_VIRTUAL_OFFICE_PLATFORMS,
-  NANO_BANANA_V10_CHARACTER_FRAMES,
-  NANO_BANANA_V10_DECOR_PROPS,
+  ILLUSTRATED_V10_CHARACTER_FRAMES,
+  ILLUSTRATED_V10_DECOR_PROPS,
   VIRTUAL_OFFICE_WAVE5_REA_EVIDENCE_LEDGER,
   advancePresentationSlideDeck,
   createInitialHolisticMasterState,
   evaluateCalendarAutoPresenceAtMinute,
   filterHolistic40Platforms,
-  getActiveNanoBananaCharacterFrame,
-  selectNanoBananaCharacterFrame,
+  getActiveIllustratedCharacterFrame,
+  selectIllustratedCharacterFrame,
   setCreatorPresentationMode,
   setKrispTranslationLocale,
   toggleFloatingPipAlwaysOnTop,
   toggleKrispBvcNoiseCancellation,
-  toggleNanoBananaDecorPropPlacement,
+  toggleIllustratedDecorPropPlacement,
 } from "./studio-virtual-office-holistic-master-model";
 
 describe("studio-virtual-office-holistic-master-model", () => {
@@ -85,21 +85,21 @@ describe("studio-virtual-office-holistic-master-model", () => {
     expect(inCritique.calendarSync.scheduledBlocks[2]?.roomUnlocked).toBe(true);
   });
 
-  it("manages Nano Banana v10 high-DPI studio theme props and 8-frame RGBA character sprites", () => {
+  it("manages Studio Art v10 high-DPI studio theme props and 8-frame RGBA character sprites", () => {
     let state = createInitialHolisticMasterState();
-    expect(NANO_BANANA_V10_DECOR_PROPS).toHaveLength(5);
-    expect(NANO_BANANA_V10_CHARACTER_FRAMES).toHaveLength(8);
-    expect(getActiveNanoBananaCharacterFrame(state).id).toBe("drawing-down");
+    expect(ILLUSTRATED_V10_DECOR_PROPS).toHaveLength(5);
+    expect(ILLUSTRATED_V10_CHARACTER_FRAMES).toHaveLength(8);
+    expect(getActiveIllustratedCharacterFrame(state).id).toBe("drawing-down");
 
-    state = selectNanoBananaCharacterFrame(state, "left", "idle");
-    const activeLeftIdle = getActiveNanoBananaCharacterFrame(state);
+    state = selectIllustratedCharacterFrame(state, "left", "idle");
+    const activeLeftIdle = getActiveIllustratedCharacterFrame(state);
     expect(activeLeftIdle.id).toBe("idle-left");
     expect(activeLeftIdle.mirroredForDirectionConsistency).toBe(true);
 
-    expect(state.nanoBananaStudioPack.equippedDecorPropIds).toContain("cintiq-drawing-desk");
-    state = toggleNanoBananaDecorPropPlacement(state, "biophilic-planter-set");
-    expect(state.nanoBananaStudioPack.equippedDecorPropIds).toContain("biophilic-planter-set");
-    state = toggleNanoBananaDecorPropPlacement(state, "cintiq-drawing-desk");
-    expect(state.nanoBananaStudioPack.equippedDecorPropIds).not.toContain("cintiq-drawing-desk");
+    expect(state.illustratedStudioPack.equippedDecorPropIds).toContain("cintiq-drawing-desk");
+    state = toggleIllustratedDecorPropPlacement(state, "biophilic-planter-set");
+    expect(state.illustratedStudioPack.equippedDecorPropIds).toContain("biophilic-planter-set");
+    state = toggleIllustratedDecorPropPlacement(state, "cintiq-drawing-desk");
+    expect(state.illustratedStudioPack.equippedDecorPropIds).not.toContain("cintiq-drawing-desk");
   });
 });

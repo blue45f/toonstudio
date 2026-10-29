@@ -24,7 +24,7 @@ const DIRECTIONS = {
 /** Public browsing only: never promote another task inside an editor, form or reader. */
 export function siteArtDirection(pathname: string): SiteArtDirection | null {
   const path = trimTrailingSlashes(pathname).toLowerCase() || "/";
-  if (!supportsSiteExperience(path) || path === "/") return null;
+  if (!supportsSiteExperience(path) || path === "/" || path === "/create") return null;
   if (/^\/(?:me|my|settings|login|register|auth|play|fortune|terms|privacy|copyright)(?:\/|$)/u.test(path)) return null;
   if (/^\/market\/(?:publish|manage|checkout|library|wishlist)(?:\/|$)/u.test(path)
     || /^\/(?:create|showcase)\/(?:promo|work|series)(?:\/|$)/u.test(path)
@@ -33,7 +33,7 @@ export function siteArtDirection(pathname: string): SiteArtDirection | null {
   if (/^\/(?:research|references|insights)(?:\/|$)/u.test(path)) return DIRECTIONS.research;
   if (/^\/market(?:\/|$)/u.test(path)) return DIRECTIONS.market;
   if (path === "/make" || ["/about", "/support", "/contact", "/sitemap"].includes(path)) return DIRECTIONS.create;
-  if (/^\/(?:showcase|community|reviews|pencafe|opportunities)(?:\/|$)/u.test(path) || path === "/create" || path === "/create/challenges") return DIRECTIONS.share;
+  if (/^\/(?:showcase|community|reviews|pencafe|opportunities)(?:\/|$)/u.test(path) || path === "/create/challenges") return DIRECTIONS.share;
   return nextExperienceDestinations(path).length > 0 ? DIRECTIONS.discover : null;
 }
 

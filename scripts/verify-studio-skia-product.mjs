@@ -33,6 +33,11 @@ try {
     if (await button.isVisible()) await button.click({ timeout: 1500 }).catch(() => undefined);
   }
   await page.keyboard.press('Escape');
+  // 새 문서의 시작 안내에서 실제 사용자가 고르는 그리기 동작을 먼저 완료한다.
+  const startDrawing = page.locator('[data-canvas-start-mode="draw"]');
+  await startDrawing.waitFor({ state: 'visible', timeout: 15000 });
+  await startDrawing.click();
+  await expect(page.locator('[data-studio-cinematic-canvas-welcome="true"]')).toHaveCount(0);
   const pen = page.locator('[data-studio-rail-tool-id="pen"]');
   await expect(pen).toBeEnabled({ timeout: 45000 }); await pen.click();
   await page.locator('[data-studio-brush-active-pill]').waitFor({ timeout: 30000 });
@@ -42,6 +47,8 @@ try {
     const y = bounds.y + 150 + index * 35;
     await page.mouse.move(bounds.x + bounds.width * 0.3, y); await page.mouse.down();
     await page.mouse.move(bounds.x + bounds.width * 0.5, y + 30, { steps: 12 }); await page.mouse.up();
+    // 실제 획이 표시된 뒤 다음 획을 그려 초기 렌더러 준비와 입력을 경합시키지 않는다.
+    await gpuReady(index + 1);
   }
   await page.mouse.move(20, 20); await gpuReady(3);
   await expect(page.locator('[data-studio-skia-document-surface]')).toHaveAttribute(
@@ -58,7 +65,10 @@ try {
   await expect(host).toHaveAttribute('data-studio-konva-document-shadow', 'unmounted');
   const selectRail = page.locator('[data-studio-rail-tool-id="select"]');
   if (await selectRail.isVisible()) await selectRail.click(); else await viewTool('select');
-  await page.mouse.click(bounds.x + bounds.width * 0.4, bounds.y + 165);
+  // 선택 도구로 바뀌면 도구 옵션 높이도 달라지므로 현재 캔버스 위치에서 같은 획을 선택한다.
+  const selectionBounds = await page.locator('.konvajs-content').boundingBox();
+  assert(selectionBounds, '선택 도구의 실제 캔버스 위치를 확인하지 못했습니다');
+  await page.mouse.click(selectionBounds.x + selectionBounds.width * 0.4, selectionBounds.y + 165);
   await expect(page.locator('[data-studio-selection-badge="true"]')).toBeVisible();
   await gpuReady(3);
   await expect(host).toHaveAttribute('data-studio-konva-document-shadow', 'unmounted');
@@ -85,7 +95,13 @@ try {
   await page.keyboard.press('ControlOrMeta+Shift+z'); await gpuReady(3);
   report.checks.push('Existing document Undo/Redo remains authoritative and the GPU display follows its restored source');
   await page.screenshot({ path: path.join(output, 'restored-document.png') });
-  const beforeLossPixels = await page.locator('[data-studio-skia-document-surface]').evaluate(canvas => canvas.toDataURL());
+  const surface = page.locator('[data-studio-skia-document-surface]');
+  const beforeLossPixels = await surface.evaluate(canvas => canvas.toDataURL());
+  await fs.writeFile(path.join(output, 'before-recovery.png'), Buffer.from(beforeLossPixels.split(',')[1], 'base64'));
+  report.recovery = await surface.evaluate(canvas => ({
+    width: canvas.width, height: canvas.height,
+    context: canvas.getContext('webgl2')?.getContextAttributes(),
+  }));
   await page.locator('[data-studio-skia-document-surface]').evaluate(canvas => {
     const extension = canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context');
     if (!extension) throw new Error('GPU context-loss injection is unavailable');
@@ -96,9 +112,18 @@ try {
   });
   await expect(page.locator('[data-studio-vello-unavailable="true"]')).toBeVisible();
   await expect(page.locator('[data-studio-skia-document-surface]')).toHaveCSS('visibility', 'hidden');
-  await page.getByRole('button', { name: '같은 GPU 엔진 다시 준비', exact: true }).click();
+  await page.getByRole('button', { name: '작업 화면 다시 열기', exact: true }).click();
   await gpuReady(3);
-  const recoveredPixels = await page.locator('[data-studio-skia-document-surface]').evaluate(canvas => canvas.toDataURL());
+  const immediatePixels = await surface.evaluate(canvas => canvas.toDataURL());
+  await fs.writeFile(path.join(output, 'immediate-recovery.png'), Buffer.from(immediatePixels.split(',')[1], 'base64'));
+  report.recovery.waitedForRecoveredFrame = immediatePixels !== beforeLossPixels;
+  // 복구 메타데이터가 먼저 보일 수 있으므로 새 GPU 프레임까지 기다린다. 픽셀 동일성은 그대로 요구한다.
+  await expect.poll(() => surface.evaluate(canvas => canvas.toDataURL()), {
+    timeout: 45000, intervals: [16, 50, 100, 250],
+    message: '명시적 GPU 복구가 원본과 동일한 픽셀을 다시 표시해야 합니다',
+  }).toBe(beforeLossPixels);
+  const recoveredPixels = await surface.evaluate(canvas => canvas.toDataURL());
+  await fs.writeFile(path.join(output, 'after-recovery.png'), Buffer.from(recoveredPixels.split(',')[1], 'base64'));
   assert(recoveredPixels === beforeLossPixels, 'Explicit same-engine recovery changed the document pixels');
   await expect(page.locator('[data-studio-vello-unavailable="true"]')).toHaveCount(0);
   report.checks.push('Real GPU context loss shows recovery UI; explicit retry restores one same-engine surface and exact document pixels');

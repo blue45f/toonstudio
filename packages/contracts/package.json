@@ -157,6 +157,11 @@
       "import": "./src/studio-raster-asset-contract.ts",
       "default": "./src/studio-raster-asset-contract.ts"
     },
+    "./studio-bundle-source-credit": {
+      "types": "./src/studio-bundle-source-credit.ts",
+      "import": "./src/studio-bundle-source-credit.ts",
+      "default": "./src/studio-bundle-source-credit.ts"
+    },
     "./studio-work-asset-contract": {
       "types": "./src/studio-work-asset-contract.ts",
       "import": "./src/studio-work-asset-contract.ts",
@@ -291,6 +296,16 @@
       "types": "./src/studio-crdt-authoring.ts",
       "import": "./src/studio-crdt-authoring.ts",
       "default": "./src/studio-crdt-authoring.ts"
+    },
+    "./studio-crdt-authoring/page-reconcile": {
+      "types": "./src/studio-crdt-authoring/page-reconcile.ts",
+      "import": "./src/studio-crdt-authoring/page-reconcile.ts",
+      "default": "./src/studio-crdt-authoring/page-reconcile.ts"
+    },
+    "./studio-crdt-authoring/element-projection": {
+      "types": "./src/studio-crdt-authoring/element-projection.ts",
+      "import": "./src/studio-crdt-authoring/element-projection.ts",
+      "default": "./src/studio-crdt-authoring/element-projection.ts"
     },
     "./studio-writer-room": {
       "types": "./src/studio-writer-room.ts",

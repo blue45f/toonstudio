@@ -4,6 +4,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { bindStudioCameraGestures } from "../studio-virtual-space-camera-pan";
 import type { StudioVirtualSpaceZoneChange } from "../studio-virtual-space-engine-events";
+import { studioWorldRoomAt } from "../studio-virtual-space-world-manifest";
 import {
   studioWorldMayTakeFocus,
   studioWorldShouldReclaimFocus,
@@ -11,19 +12,37 @@ import {
   type StudioVirtualSpacePhaserCanvasProps,
 } from "../studio-virtual-space-phaser-canvas-model";
 import { isToonHqManifest } from "./hq/toon-hq-manifest";
+import {
+  ILLUSTRATED_2D_WORKSTATIONS,
+  subscribeIllustrated2dVfxBurst,
+  subscribeIllustratedWorkstationModal,
+} from "../studio-virtual-space-illustrated-2d-runtime";
+import { StudioVirtualSpaceWorkstationLiveModal } from "../StudioVirtualSpaceWorkstationLiveModal";
 import { office2dCharacterForAvatarSkin } from "./office2d-avatar-role";
+import { createOffice2dAvatarProfileSource } from "./office2d-avatar-appearance";
+import {
+  office2dBackdropAssetUrls,
+  resolveOffice2dSchematicClickTarget,
+  resolveOffice2dWorkstation,
+} from "./office2d-backdrop-art";
 import { office2dBaseZoom } from "./office2d-camera";
 import { Office2dResolutionGovernor } from "./office2d-quality";
 import { office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
 import { Office2dRuntime, type Office2dRuntimeCallbacks, type Office2dStageProps } from "./office2d-runtime";
+import {
+  findOffice2dQuickEmote,
+  playOffice2dSpatialCue,
+  readOffice2dClaimedSeatId,
+  readOffice2dSoundMuted,
+  writeOffice2dClaimedSeatId,
+  writeOffice2dSoundMuted,
+} from "./office2d-stage-extensions";
 import type { Office2dDrawable, Office2dRendererHost } from "./office2d-renderer";
 import {
-  OFFICE2D_CHARACTERS,
   Office2dSpriteStore,
   office2dBrowserImageLoader,
-  office2dCharacterUrl,
   office2dObjectUrl,
-  office2dWorkSheetUrl,
+  office2dActorAssetPlan,
 } from "./office2d-sprite-catalog";
 import { StudioOffice2dPipelineRail } from "./StudioOffice2dPipelineRail";
 import "./studio-office2d.css";
@@ -52,11 +71,90 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
   const bt = useBilingual("StudioOffice2dCanvas");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const runtimeRef = useRef<Office2dRuntime | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [schematicMode, setSchematicMode] = useState(false);
+  const [claimedSeatId, setClaimedSeatId] = useState<string>(() => readOffice2dClaimedSeatId());
+  const [soundMuted, setSoundMuted] = useState<boolean>(() => readOffice2dSoundMuted());
+  const [workstationModalOpen, setWorkstationModalOpen] = useState(false);
+  const [selectedWorkstationId, setSelectedWorkstationId] = useState<string | null>(null);
   const latest = useRef(props);
   latest.current = props;
+  // 오래 사는 키보드·포인터 이펙트가 최신 상태를 읽도록 ref로도 들고 있는다(stale closure 방지).
+  const roomIdRef = useRef<string | null>(null);
+  roomIdRef.current = roomId;
+  const soundMutedRef = useRef(soundMuted);
+  soundMutedRef.current = soundMuted;
+  const claimedSeatIdRef = useRef(claimedSeatId);
+  claimedSeatIdRef.current = claimedSeatId;
   const hq = isToonHqManifest(manifest);
+
+  useEffect(() => {
+    if (runtimeRef.current) {
+      runtimeRef.current.extensions.schematicMode = schematicMode;
+    }
+  }, [schematicMode]);
+
+  useEffect(() => {
+    writeOffice2dClaimedSeatId(claimedSeatId);
+    if (runtimeRef.current) {
+      runtimeRef.current.extensions.claimedSeatId = claimedSeatId;
+    }
+  }, [claimedSeatId]);
+
+  useEffect(() => {
+    writeOffice2dSoundMuted(soundMuted);
+  }, [soundMuted]);
+
+  /**
+   * 내 지정석 동작(SoWork SetMyWorkSpotModal + Gather AssignedDesk). 다른 좌석에 앉아 있으면 그 좌석을 지정석으로 바꾸고,
+   * 그 밖에는 지정석으로 걸어가거나(같은 방·가까움) 순간 이동한다(먼 방). 런타임 착석 판정이 도착 후 자동으로 앉힌다.
+   */
+  const myDeskActionRef = useRef<() => void>(() => undefined);
+  myDeskActionRef.current = () => {
+    const rt = runtimeRef.current;
+    if (!rt) return;
+    const scene = office2dSceneFor(manifest);
+    const selfState = rt.debugState();
+    const lang = documentLanguage();
+    const currentClaim = claimedSeatIdRef.current;
+    if (selfState.seatId && selfState.seatId !== currentClaim) {
+      setClaimedSeatId(selfState.seatId);
+      rt.extensions.pushComicBurst(lang === "en" ? "📌 MY DESK SAVED!" : "📌 내 지정석 등록!", "#c084fc", selfState.self.x, selfState.self.y - 52);
+      playOffice2dSpatialCue("desk-claim", { muted: soundMutedRef.current, roomId: roomIdRef.current });
+      bridge.focusWorld();
+      return;
+    }
+    const targetSeat = scene.seats.find((seat) => seat.id === currentClaim) ?? null;
+    if (!targetSeat || selfState.seatId === targetSeat.id) {
+      bridge.focusWorld();
+      return;
+    }
+    bridge.requestMove(targetSeat.anchor);
+    rt.extensions.pushComicBurst(lang === "en" ? "🚀 TO MY DESK!" : "🚀 내 자리로!", "#38bdf8", selfState.self.x, selfState.self.y - 52);
+    playOffice2dSpatialCue("seat-sit", { muted: soundMutedRef.current, roomId: studioWorldRoomAt(manifest, targetSeat.anchor) });
+    bridge.focusWorld();
+  };
+  const handleMyDeskAction = () => myDeskActionRef.current();
+
+  useEffect(() => {
+    const unsubModal = subscribeIllustratedWorkstationModal((stationId) => {
+      setSelectedWorkstationId(stationId);
+      setWorkstationModalOpen(true);
+    });
+    const unsubVfx = subscribeIllustrated2dVfxBurst((ev) => {
+      const rt = runtimeRef.current;
+      if (!rt) return;
+      const selfPoint = rt.debugState().self;
+      const hex = `#${(ev.color & 0xffffff).toString(16).padStart(6, "0")}`;
+      rt.extensions.pushComicBurst(ev.label, hex, ev.worldX ?? selfPoint.x, (ev.worldY ?? selfPoint.y) - 48);
+    });
+    return () => {
+      unsubModal();
+      unsubVfx();
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -75,7 +173,9 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     let disposed = false;
     let frameId = 0;
     const store = new Office2dSpriteStore<HTMLImageElement>(office2dBrowserImageLoader);
+    const avatarProfileSource = createOffice2dAvatarProfileSource();
     const host: Office2dRendererHost = {
+      selfAvatarProfile: avatarProfileSource.get,
       createSurface(width, height) {
         const surface = document.createElement("canvas");
         surface.width = width;
@@ -97,6 +197,11 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
         onCancelFollow: current.onCancelFollow,
         onPortal: current.onPortal,
         onZoneChange: (zone: StudioVirtualSpaceZoneChange) => {
+          const previousRoomId = roomIdRef.current;
+          if (previousRoomId && previousRoomId !== zone.roomId) {
+            playOffice2dSpatialCue("room-enter", { muted: soundMutedRef.current, roomId: zone.roomId });
+          }
+          roomIdRef.current = zone.roomId;
           setRoomId(zone.roomId);
           current.onZoneChange?.(zone);
         },
@@ -137,6 +242,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       getReducedMotion: prefersReducedMotion,
       getAvatarCharacter: office2dCharacterForAvatarSkin,
     });
+    runtimeRef.current = runtime;
 
     // 프레임이 떨어지면 캔버스 픽셀 배율을 한 단계씩 낮추고 여유가 생기면 되돌린다(Kumospace 품질 단계와 같은 취지).
     const governor = new Office2dResolutionGovernor(window.devicePixelRatio || 1);
@@ -160,6 +266,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     window.addEventListener("resize", resize);
 
     bridge.setFocusHandler(() => canvas.focus({ preventScroll: true }));
+    const scene = office2dSceneFor(manifest);
     const handleKeyDown = (event: KeyboardEvent) => {
       const active = document.activeElement;
       const reclaim = studioWorldShouldReclaimFocus({
@@ -173,6 +280,18 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       if (reclaim) canvas.focus({ preventScroll: true });
       else if (!studioWorldMayTakeFocus(active, container)) return;
       if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
+      // 1~6: 이모트 전송은 페이지 이모트 키맵이 맡고, 여기서는 웹툰 의성어 팝업과 짧은 효과음만 덧붙인다(WA EmoteStore 즐겨찾기 슬롯).
+      const quickEmote = findOffice2dQuickEmote(event.code);
+      if (quickEmote && !event.repeat) {
+        const selfPt = runtime.debugState().self;
+        runtime.extensions.pushComicBurst(documentLanguage() === "en" ? quickEmote.sfxEn : quickEmote.sfxKo, quickEmote.color, selfPt.x, selfPt.y - 48);
+        playOffice2dSpatialCue("emote", { muted: soundMutedRef.current, roomId: roomIdRef.current });
+        return;
+      }
+      if (event.code === "KeyH" && !event.repeat) {
+        myDeskActionRef.current();
+        return;
+      }
       if (!WORLD_KEY_CODES.has(event.code)) return;
       if (PREVENT_DEFAULT_CODES.has(event.code)) event.preventDefault();
       if (!event.repeat) runtime.keyDown(event.code);
@@ -224,7 +343,25 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       pointerStart = null;
       if (dragged) return;
       const rect = canvas.getBoundingClientRect();
-      runtime.tap(event.clientX - rect.left, event.clientY - rect.top);
+      const localX = event.clientX - rect.left;
+      const localY = event.clientY - rect.top;
+      if (runtime.extensions.schematicMode) {
+        const worldPt = runtime.debugState().screenToWorld(localX, localY);
+        const schematicTarget = resolveOffice2dSchematicClickTarget(scene, worldPt);
+        if (schematicTarget) {
+          bridge.requestMove(schematicTarget.point);
+          const lang = documentLanguage();
+          runtime.extensions.pushComicBurst(
+            lang === "en" ? "🗺️ WARP TO ZONE!" : "🗺️ 평면도 이동!",
+            "#38bdf8",
+            schematicTarget.point.x,
+            schematicTarget.point.y - 36,
+          );
+          playOffice2dSpatialCue("schematic", { muted: soundMutedRef.current, roomId: schematicTarget.roomId });
+          return;
+        }
+      }
+      runtime.tap(localX, localY);
     };
     const handlePointerCancel = () => {
       pointerStart = null;
@@ -234,15 +371,18 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     canvas.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("pointercancel", handlePointerCancel);
 
-    const scene = office2dSceneFor(manifest);
+    const actorAssets = office2dActorAssetPlan(office2dCharacterForAvatarSkin(latest.current.snapshot.self.avatarIndex, selfIdentity));
     const urls = [
       ...office2dSceneSpriteKeys(scene).map(office2dObjectUrl),
-      ...OFFICE2D_CHARACTERS.map(office2dCharacterUrl),
+      ...actorAssets.critical,
       ...scene.objects.flatMap((object) => (object.imageUrl ? [object.imageUrl] : [])),
       ...(scene.backgroundUrl ? [scene.backgroundUrl] : []),
     ];
-    // 작업 자세 시트(착석 작업·제스처)는 첫 화면에 꼭 필요하지 않아 준비 뒤에 이어 받는다. 그 전에는 보행 시트로 대신 그린다.
-    const deferredUrls = OFFICE2D_CHARACTERS.map(office2dWorkSheetUrl);
+    // 작업 자세 시트(착석 작업·제스처)와 고해상도 룸 배경 원화는 첫 화면 이후 이어 받으며, 도착 시 바닥 캐시를 다시 굽는다.
+    const deferredUrls = [
+      ...actorAssets.deferred,
+      ...office2dBackdropAssetUrls(),
+    ];
     let last = performance.now();
     let running = false;
     let ready = false;
@@ -284,17 +424,20 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("blur", handleWindowBlur);
-    void store.loadAll(urls, ASSET_TIMEOUT_MS).then(() => {
+    const refreshFloor = () => { if (!disposed) runtime.renderer.invalidateFloor(); };
+    void store.loadAll(urls, ASSET_TIMEOUT_MS, refreshFloor).then(() => {
       if (disposed) return;
       runtime.start();
       ready = true;
       emitStatus("ready");
       startLoop();
-      void store.loadAll(deferredUrls, ASSET_TIMEOUT_MS * 2);
+      void store.loadAll(deferredUrls, ASSET_TIMEOUT_MS * 2, refreshFloor);
     });
 
     return () => {
       disposed = true;
+      avatarProfileSource.dispose();
+      runtimeRef.current = null;
       stopLoop();
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleWindowFocus);
@@ -313,8 +456,13 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     };
   }, [bridge, manifest, selfIdentity]);
 
+  const activeWorkstation =
+    (selectedWorkstationId
+      ? ILLUSTRATED_2D_WORKSTATIONS.find((s) => s.id === selectedWorkstationId)
+      : null) ?? resolveOffice2dWorkstation(roomId);
+
   return (
-    <div ref={containerRef} className="studio-office2d" data-office2d-stage={status} data-office2d-world={hq ? "toon-hq" : "generic"}>
+    <div ref={containerRef} className="studio-office2d" data-office2d-stage={status} data-office2d-world={hq ? "toon-hq" : "generic"} data-office2d-schematic={schematicMode || undefined}>
       <canvas
         ref={canvasRef}
         className="studio-office2d__canvas"
@@ -330,7 +478,59 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       {status === "error" ? (
         <p className="studio-office2d__loading" role="alert">{bt("이 브라우저에서 2D 화면을 그릴 수 없어요. 새로고침하거나 다른 브라우저를 써 주세요.", "This browser cannot draw the 2D view. Reload or try another browser.")}</p>
       ) : null}
-      {hq && status === "ready" ? <StudioOffice2dPipelineRail currentRoomId={roomId} bridge={bridge} /> : null}
+      {hq && status === "ready" ? (
+        <StudioOffice2dPipelineRail
+          currentRoomId={roomId}
+          bridge={bridge}
+          schematicMode={schematicMode}
+          soundMuted={soundMuted}
+          onMyDeskAction={handleMyDeskAction}
+          onToggleSchematic={() => {
+            playOffice2dSpatialCue("schematic", { muted: soundMuted, roomId });
+            setSchematicMode((prev) => !prev);
+          }}
+          onToggleSound={() => {
+            // 켜는 순간 지금 방의 화음을 한 번 들려줘 소리가 켜졌음을 바로 알 수 있게 한다.
+            if (soundMuted) playOffice2dSpatialCue("room-enter", { muted: false, roomId });
+            setSoundMuted(!soundMuted);
+          }}
+          onOpenWorkstation={() => {
+            setSelectedWorkstationId(null);
+            setWorkstationModalOpen(true);
+          }}
+        />
+      ) : null}
+      {schematicMode && status === "ready" ? (
+        <div
+          className="studio-office2d-schematic-banner"
+          data-testid="office2d-schematic-banner"
+          data-space-interactive="true"
+        >
+          <span>
+            {bt(
+              "🗺️ 평면도 오버뷰 · 방이나 좌석 마커를 클릭하면 그곳으로 이동합니다",
+              "🗺️ Schematic Overview · Click any room or seat marker to move there",
+            )}
+          </span>
+          <button
+            type="button"
+            className="studio-office2d-schematic-banner__close"
+            onClick={() => setSchematicMode(false)}
+          >
+            {bt("닫기", "Close")}
+          </button>
+        </div>
+      ) : null}
+      {workstationModalOpen && activeWorkstation ? (
+        <StudioVirtualSpaceWorkstationLiveModal
+          station={activeWorkstation}
+          onClose={() => {
+            setWorkstationModalOpen(false);
+            bridge.focusWorld();
+          }}
+          onSelectStation={(stationId) => setSelectedWorkstationId(stationId)}
+        />
+      ) : null}
     </div>
   );
 }

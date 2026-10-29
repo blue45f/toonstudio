@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
 
 import { resetStudioExportGeometryDraft } from "./studio-export-geometry-draft";
 import { StudioEnhancedExportMenuPanel } from "./StudioEnhancedExportMenuPanel";
@@ -76,7 +78,7 @@ describe("selective delivery from the export menu", () => {
   ] as const)("sends only the selected pages to %s", async (_name, buttonName, encoder) => {
     const pages = [canvas(0), canvas(2), canvas(4)];
     const props = panelProps({ capturePagesForIndices: vi.fn(async () => pages) });
-    render(<StudioExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...props} />);
     selectPages("5, 1, 3, 3");
     expect(screen.getByText("페이지 1, 3, 5 · 3P")).toBeTruthy();
     expect(screen.getByText("선택 3P · 통과")).toBeTruthy();
@@ -94,7 +96,7 @@ describe("selective delivery from the export menu", () => {
 
   it("blocks all package paths for invalid selections and restores whole-document export with 전체", () => {
     const props = panelProps();
-    render(<StudioExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...props} />);
     selectPages("1, 6");
     expect(screen.getByText("선택 0P · 차단")).toBeTruthy();
     expect(screen.getByRole("textbox", { name: "내보내기 페이지 직접 지정" }).getAttribute("aria-invalid")).toBe("true");
@@ -114,7 +116,7 @@ describe("selective delivery from the export menu", () => {
       capturePagesForIndices: mode === "indices" ? vi.fn(async () => [canvas(0)]) : undefined,
       capturePagesForPreset: vi.fn(async () => [canvas(0), canvas(1), canvas(2), canvas(3)]),
     });
-    render(<StudioExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...props} />);
     selectPages("1, 5");
     fireEvent.click(screen.getByRole("button", { name: "CBZ · 2P" }));
     await waitFor(() => expect(screen.getByText(/페이지 캡처가 완료되지 않았습니다/u)).toBeTruthy());
@@ -125,7 +127,7 @@ describe("selective delivery from the export menu", () => {
   it("slices fallback capture in document order without encoding omitted pages", async () => {
     const pages = Array.from({ length: 5 }, (_, index) => canvas(index));
     const props = panelProps({ capturePagesForIndices: undefined, capturePagesForPreset: vi.fn(async () => pages) });
-    render(<StudioExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioExportMenuPanel {...props} />);
     selectPages("5, 1, 3");
     fireEvent.click(screen.getByRole("button", { name: /^PDF \(/u }));
     await waitFor(() => expect(encoders.pdf).toHaveBeenCalledWith(expect.objectContaining({ pages: [pages[0], pages[2], pages[4]] })));
@@ -134,7 +136,7 @@ describe("selective delivery from the export menu", () => {
 
   it("keeps verified ZIP in the menu and preserves selected source indices in its manifest", async () => {
     const props = panelProps();
-    render(<StudioEnhancedExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...props} />);
     selectPages("5, 1, 3");
     const section = document.querySelector("[data-studio-verified-download-package]");
     expect(section?.closest("[data-studio-export-menu-panel]")).toBeTruthy();
@@ -154,7 +156,7 @@ describe("selective delivery from the export menu", () => {
   it("shares the capture lock between verified ZIP and the other export formats", async () => {
     let finishCapture: ((pages: HTMLCanvasElement[]) => void) | undefined;
     const props = panelProps({ capturePagesForIndices: vi.fn(() => new Promise<HTMLCanvasElement[]>((resolve) => { finishCapture = resolve; })) });
-    render(<StudioEnhancedExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...props} />);
     selectPages("1, 3, 5");
     fireEvent.click(screen.getByRole("button", { name: "페이지 ZIP 다운로드" }));
     expect(screen.getByRole("button", { name: "CBZ · 3P" }).hasAttribute("disabled")).toBe(true);
@@ -169,7 +171,7 @@ describe("selective delivery from the export menu", () => {
 
   it("blocks verified ZIP when its shared preflight rejects the page selection", () => {
     const props = panelProps();
-    render(<StudioEnhancedExportMenuPanel {...props} />);
+    renderExpandedExportPanel(<StudioEnhancedExportMenuPanel {...props} />);
     selectPages("1, 6");
     const download = screen.getByRole("button", { name: "페이지 ZIP 다운로드" });
     expect(download.hasAttribute("disabled")).toBe(true);

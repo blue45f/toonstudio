@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ການເຂົ້າສູ່ລະບົບແມ່ນ ຈໍາ ເປັນ.",
+  "apiError.loginRequired": "ຈຳເປັນຕ້ອງເຂົ້າສູ່ລະບົບ.",
   "apiError.adminRequired": "ການອະນຸຍາດຜູ້ບໍລິຫານບໍ່ສາມາດກວດສອບໄດ້.",
   "apiError.adminOnlyPage": "ຫນ້າ ນີ້ຖືກ ຈໍາ ກັດ ສໍາ ລັບຜູ້ບໍລິຫານ.",
   "apiError.notFound": "ລາຍການທີ່ຕ້ອງການບໍ່ໄດ້ພົບເຫັນ.",

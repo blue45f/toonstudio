@@ -9,11 +9,13 @@
  */
 import type { StudioBuildPlacedFixture } from "../studio-virtual-space-build-mode-vitality";
 import type { StudioVirtualDecorationState } from "../studio-virtual-space-customization";
-import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
+import type { StudioVirtualAvatarProfile, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import type { StudioSpaceThemeKey } from "../studio-virtual-space-theme";
 import type { StudioTileEffectDefinition } from "../studio-virtual-space-tile-effects";
 import { office2dActorBob, office2dActorFrame, office2dActorOpacity, type Office2dActor } from "./office2d-actors";
 import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot } from "./office2d-actor-geometry";
+import { paintOffice2dAvatarAccessory } from "./office2d-avatar-appearance";
+import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-atlas-frames";
 import type { Office2dCamera } from "./office2d-camera";
 import { office2dSignAlpha, type Office2dLabelBox } from "./office2d-label-layout";
 import { drawOffice2dKeycap, drawOffice2dOverlay, planOffice2dOverlay, type Office2dOverlayPlan } from "./office2d-overlay";
@@ -38,10 +40,23 @@ import {
   office2dCharacterUrl,
   office2dObjectUrl,
   office2dWorkSheetUrl,
+  office2dLegacyCharacterUrl,
+  office2dLegacyWorkSheetUrl,
   type Office2dImageSource,
   type Office2dSpriteKey,
 } from "./office2d-sprite-catalog";
 import { office2dOutsideColor, type Office2dStageExtensions } from "./office2d-stage-extensions";
+import {
+  computeOffice2dObjectOcclusion,
+  findOffice2dActionableObjectAhead,
+  paintOffice2dComicBursts,
+  paintOffice2dDoorwayAndSeatPreview,
+  paintOffice2dNorthWallArtMural,
+  paintOffice2dRoomAmbientEffects,
+  paintOffice2dRoomFloorBackdrops,
+  paintOffice2dSchematicOverlay,
+  type Office2dComicBurst,
+} from "./office2d-backdrop-art";
 import {
   paintOffice2dActorSpatialAura,
   paintOffice2dFloorDetails,
@@ -60,6 +75,8 @@ export interface Office2dRendererHost {
   /** 바닥 청크용 오프스크린 표면. 만들 수 없으면 null(매 프레임 직접 그린다). */
   createSurface(width: number, height: number): Office2dSurface | null;
   image(url: string): Office2dDrawable | null;
+  /** 기존 사용자 꾸미기 저장소의 캐시. 원격 동료에게 로컬 선택을 적용하지 않는다. */
+  selfAvatarProfile?(): StudioVirtualAvatarProfile | null;
 }
 
 export interface Office2dPropVisual {
@@ -102,6 +119,8 @@ export interface Office2dRenderFrame {
   readonly decorations?: StudioVirtualDecorationState | undefined;
   readonly activeObjectStates?: ReadonlyMap<string, { readonly stateKey: string; readonly changedAt: number }> | undefined;
   readonly extensions?: Office2dStageExtensions | undefined;
+  readonly schematicMode?: boolean | undefined;
+  readonly comicBursts?: readonly Office2dComicBurst[] | undefined;
 }
 
 const CHUNK = 512;
@@ -118,6 +137,7 @@ interface SortEntry {
 export class Office2dRenderer {
   private chunks = new Map<string, Office2dSurface | null>();
   private chunkScale = 0;
+  private chunkTheme: StudioSpaceThemeKey | null | undefined = undefined;
   private readonly interactionObjects: ReadonlyMap<string, Office2dSceneObject>;
   private readonly roomStep: ReadonlyMap<string, number | null>;
 
@@ -145,7 +165,8 @@ export class Office2dRenderer {
     const visible = camera.visibleRect(96);
     // 이름표 자리를 먼저 정해(측정만) 겹치는 벽 명판을 흐리게 그릴 수 있게 한다.
     const overlay = planOffice2dOverlay(ctx, frame);
-    this.drawFloor(ctx, visible, scale, frame.language);
+    this.drawFloor(ctx, visible, scale, frame.language, frame.spaceTheme);
+    paintOffice2dRoomAmbientEffects(ctx, this.scene, visible, frame.time, frame.reducedMotion, (url) => this.host.image(url));
     frame.extensions?.drawFloorTileEffects(ctx, frame.tileEffects, visible, frame.time, frame.reducedMotion);
     this.drawPortals(ctx, frame);
     this.drawShadows(ctx, frame, visible);
@@ -161,14 +182,31 @@ export class Office2dRenderer {
     this.drawGuides(ctx, frame);
     frame.particles.draw(ctx);
     this.drawLighting(ctx, frame, visible);
+    if (frame.schematicMode ?? frame.extensions?.schematicMode) {
+      paintOffice2dSchematicOverlay(
+        ctx,
+        this.scene,
+        frame.actors,
+        frame.selfId,
+        frame.language,
+        frame.extensions?.claimedSeatId ?? null,
+      );
+    }
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     this.drawOverlay(ctx, frame, overlay);
   }
 
-  private drawFloor(ctx: Office2dCanvas2D, visible: ReturnType<Office2dCamera["visibleRect"]>, scale: number, language: "ko" | "en" = "ko"): void {
+  private drawFloor(
+    ctx: Office2dCanvas2D,
+    visible: ReturnType<Office2dCamera["visibleRect"]>,
+    scale: number,
+    language: "ko" | "en" = "ko",
+    spaceTheme?: StudioSpaceThemeKey | null,
+  ): void {
     const bucket = Math.max(1, Math.min(2.5, Math.ceil(scale * 2) / 2));
-    if (bucket !== this.chunkScale) {
+    if (bucket !== this.chunkScale || spaceTheme !== this.chunkTheme) {
       this.chunkScale = bucket;
+      this.chunkTheme = spaceTheme;
       this.chunks = new Map();
     }
     const x0 = Math.max(0, Math.floor(visible.minX / CHUNK));
@@ -177,13 +215,13 @@ export class Office2dRenderer {
     const y1 = Math.min(Math.ceil(this.scene.height / CHUNK) - 1, Math.floor(visible.maxY / CHUNK));
     for (let cy = y0; cy <= y1; cy += 1) {
       for (let cx = x0; cx <= x1; cx += 1) {
-        const key = `${cx}:${cy}:${language}`;
+        const key = `${cx}:${cy}:${language}:${spaceTheme ?? "default"}`;
         let surface = this.chunks.get(key);
         if (surface === undefined) {
           surface = this.host.createSurface(Math.ceil(CHUNK * bucket), Math.ceil(CHUNK * bucket));
           if (surface) {
             surface.context.setTransform(bucket, 0, 0, bucket, -cx * CHUNK * bucket, -cy * CHUNK * bucket);
-            this.paintFloorArea(surface.context, cx * CHUNK, cy * CHUNK, language);
+            this.paintFloorArea(surface.context, cx * CHUNK, cy * CHUNK, language, spaceTheme);
           }
           this.chunks.set(key, surface);
         }
@@ -193,14 +231,20 @@ export class Office2dRenderer {
           ctx.beginPath();
           ctx.rect(cx * CHUNK, cy * CHUNK, CHUNK, CHUNK);
           ctx.clip();
-          this.paintFloorArea(ctx, cx * CHUNK, cy * CHUNK, language);
+          this.paintFloorArea(ctx, cx * CHUNK, cy * CHUNK, language, spaceTheme);
           ctx.restore();
         }
       }
     }
   }
 
-  private paintFloorArea(ctx: Office2dCanvas2D, originX: number, originY: number, language: "ko" | "en" = "ko"): void {
+  private paintFloorArea(
+    ctx: Office2dCanvas2D,
+    originX: number,
+    originY: number,
+    language: "ko" | "en" = "ko",
+    spaceTheme?: StudioSpaceThemeKey | null,
+  ): void {
     ctx.fillStyle = OUTSIDE;
     ctx.fillRect(originX, originY, CHUNK, CHUNK);
     const intersects = (rect: { x: number; y: number; width: number; height: number }) =>
@@ -208,6 +252,7 @@ export class Office2dRenderer {
     const background = this.scene.backgroundUrl ? this.host.image(this.scene.backgroundUrl) : null;
     if (background) ctx.drawImage(background, 0, 0, this.scene.width, this.scene.height);
     else for (const floor of this.scene.floors) if (intersects(floor)) paintOffice2dFloor(ctx, floor);
+    paintOffice2dRoomFloorBackdrops(ctx, this.scene, originX, originY, CHUNK, (url) => this.host.image(url), spaceTheme);
     for (const object of this.scene.objects) {
       if (object.layer !== "floor") continue;
       this.drawObjectSprite(ctx, object.sprite, object.imageUrl, object.x, object.y, object.width, object.height, object.tone, object.flip);
@@ -319,7 +364,6 @@ export class Office2dRenderer {
 
   private drawSorted(ctx: Office2dCanvas2D, frame: Office2dRenderFrame, visible: ReturnType<Office2dCamera["visibleRect"]>, labelBoxes: readonly Office2dLabelBox[]): void {
     const entries: SortEntry[] = [];
-    const self = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
     for (const wall of this.scene.walls) {
       if (wall.side !== "north" || wall.x > visible.maxX || wall.x + wall.width < visible.minX || wall.y > visible.maxY || wall.y + wall.height < visible.minY) continue;
       entries.push({ y: wall.y + wall.height, draw: () => this.drawNorthWall(ctx, wall, frame, labelBoxes) });
@@ -328,9 +372,9 @@ export class Office2dRenderer {
     for (const object of this.scene.objects) {
       if (object.layer !== "y-sort" || !inside(object, visible, 240)) continue;
       entries.push({ y: object.y, draw: () => {
-        const covering = self !== null && !self.seat && object.footprint !== null
-          && self.y < object.y - 4 && Math.abs(self.x - object.x) < object.width / 2 && self.y > object.y - this.spriteSize(object.sprite, object.imageUrl, object.width, object.height).height;
-        if (covering) ctx.globalAlpha = 0.55;
+        const expectedHeight = this.spriteSize(object.sprite, object.imageUrl, object.width, object.height).height;
+        const occlusion = computeOffice2dObjectOcclusion(object, expectedHeight, frame.actors);
+        if (occlusion.occluded) ctx.globalAlpha = occlusion.alpha;
         const drawnHeight = this.drawObjectSprite(ctx, object.sprite, object.imageUrl, object.x, object.y, object.width, object.height, object.tone, object.flip);
         paintOffice2dObjectLiveOverlay(ctx, object, drawnHeight, frame, occupiedSeats);
         ctx.globalAlpha = 1;
@@ -366,6 +410,7 @@ export class Office2dRenderer {
   private drawNorthWall(ctx: Office2dCanvas2D, wall: Office2dWall, frame: Office2dRenderFrame, labelBoxes: readonly Office2dLabelBox[]): void {
     const language = frame.language;
     paintOffice2dNorthWall(ctx, wall);
+    paintOffice2dNorthWallArtMural(ctx, wall, (url) => this.host.image(url), frame.time, frame.reducedMotion);
     const faceTop = wall.y + 12;
     const faceBottom = wall.y + wall.height - 8;
     for (const decor of wall.decor) {
@@ -437,11 +482,16 @@ export class Office2dRenderer {
   private drawActor(ctx: Office2dCanvas2D, actor: Office2dActor, frame: Office2dRenderFrame): void {
     const opacity = office2dActorOpacity(actor, frame.now) * (actor.id === frame.selfId && frame.ghost ? 0.5 : 1);
     if (opacity <= 0.01) return;
+    const avatarProfile = actor.id === frame.selfId ? this.host.selfAvatarProfile?.() : null;
     const pose = office2dPoseFrame(actor, frame.time, frame.now, frame.reducedMotion);
-    const workImage = pose.sheet === "work" ? this.host.image(office2dWorkSheetUrl(actor.character)) : null;
-    const walkImage = workImage ? null : this.host.image(office2dCharacterUrl(actor.character));
-    // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
     const walkFrame = pose.sheet === "walk" ? pose : office2dActorFrame(actor);
+    const workCandidate = pose.sheet === "work" ? this.host.image(office2dWorkSheetUrl(actor.character)) : null;
+    const generatedWorkImage = workCandidate && office2dAtlasImageMatches(actor.character, "work", pose.row, pose.col, workCandidate) ? workCandidate : null;
+    const workImage = generatedWorkImage ?? (pose.sheet === "work" ? this.host.image(office2dLegacyWorkSheetUrl(actor.character)) : null);
+    const walkCandidate = workImage ? null : this.host.image(office2dCharacterUrl(actor.character));
+    const generatedWalkImage = walkCandidate && office2dAtlasImageMatches(actor.character, "walk", walkFrame.row, walkFrame.col, walkCandidate) ? walkCandidate : null;
+    const walkImage = generatedWalkImage ?? (workImage ? null : this.host.image(office2dLegacyCharacterUrl(actor.character)));
+    // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
     const bob = office2dActorBob(actor, frame.time, frame.reducedMotion);
     const seated = actor.seat !== null;
     const foot = office2dActorFoot(actor);
@@ -452,7 +502,7 @@ export class Office2dRenderer {
     ctx.globalAlpha = opacity;
     paintOffice2dActorSpatialAura(ctx, actor, frame, frame.actors);
     if (actor.id === frame.selfId && !seated) {
-      ctx.strokeStyle = actor.accent;
+      ctx.strokeStyle = avatarProfile?.accent ?? actor.accent;
       ctx.lineWidth = 2;
       ctx.globalAlpha = opacity * (frame.reducedMotion ? 0.7 : 0.55 + Math.sin(frame.time * 3) * 0.2);
       ctx.beginPath();
@@ -468,54 +518,57 @@ export class Office2dRenderer {
       ctx.stroke();
     }
     const anchorY = footY + bob.offsetY;
-    const cellW = OFFICE2D_CHARACTER_CELL.width;
-    const cellH = OFFICE2D_CHARACTER_CELL.height;
-    if (workImage) {
-      // 뒤를 보고 의자에 앉은 자세는 좌판 아래로 발이 삐져나오지 않도록 엉덩이 하단(셀 높이의 80%)까지만 그린다.
-      const workCrop = seated && actor.seat?.facing === "up" ? 0.8 : 1;
-      ctx.drawImage(
-        workImage,
-        pose.col * cellW,
-        pose.row * cellH,
-        cellW,
-        cellH * workCrop,
-        footX - width / 2,
-        anchorY - height * FOOT_RATIO,
-        width,
-        height * workCrop,
-      );
-    } else if (walkImage) {
-      const sx = walkFrame.col * cellW;
-      const sy = walkFrame.row * cellH;
-      // 보행 시트로 앉은 모습을 대신할 때는 다리 아랫부분을 잘라 의자에 앉은 듯 보이게 한다(예전 방식).
-      const crop = seated ? 0.92 : 1;
-      const drawHeight = height * (seated ? 0.9 * crop : 1);
-      if (!seated && Math.abs(bob.tiltRad) > 1e-4) {
-        ctx.save();
-        ctx.translate(footX, anchorY);
-        ctx.rotate(bob.tiltRad);
-        ctx.drawImage(walkImage, sx, sy, cellW, cellH, -width / 2, -height * FOOT_RATIO, width, height);
-        ctx.restore();
-      } else {
-        ctx.drawImage(walkImage, sx, sy, cellW, cellH * crop, footX - width / 2, anchorY - height * FOOT_RATIO * (seated ? 0.9 : 1), width, drawHeight);
-      }
+    const image = workImage ?? walkImage;
+    const drawHeight = seated && !workImage ? height * 0.9 : height;
+    const tilt = !seated && !workImage ? bob.tiltRad : 0;
+    let accessoryOffset = { x: 0, y: 0 };
+    if (image) {
+      // 작업 자세의 80%, 보행 착석 폴백의 92% 자르기는 기존 논리셀 계약을 유지한다.
+      const crop = workImage ? (seated && actor.seat?.facing === "up" ? 0.8 : 1) : seated ? 0.92 : 1;
+      const selected = workImage ? pose : walkFrame;
+      const drawFrame = office2dAtlasDrawFrame(actor.character, workImage ? "work" : "walk", selected.row, selected.col, image, crop,
+        Boolean(workImage ? generatedWorkImage : generatedWalkImage));
+      accessoryOffset = drawFrame.accessoryOffset;
+      const source = drawFrame.source, target = drawFrame.destination;
+      ctx.save();
+      ctx.translate(footX, anchorY);
+      ctx.rotate(tilt);
+      ctx.drawImage(image, source.x, source.y, source.width, source.height,
+        -width / 2 + target.x / 128 * width, -drawHeight * FOOT_RATIO + target.y / 192 * drawHeight,
+        target.width / 128 * width, target.height / 192 * drawHeight);
+      ctx.restore();
     } else {
       paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, actor.facing, actor.stride / 10);
     }
+    if (avatarProfile) paintOffice2dAvatarAccessory(ctx, avatarProfile, {
+      facing: actor.seat?.facing ?? actor.facing, footX, footY: anchorY, width,
+      height: drawHeight, tiltRad: tilt, offset: accessoryOffset,
+    });
     ctx.globalAlpha = 1;
   }
 
   private drawGuides(ctx: Office2dCanvas2D, frame: Office2dRenderFrame): void {
-    if (frame.nearbyInteractionId) {
-      const object = this.interactionObjects.get(frame.nearbyInteractionId);
-      if (object) {
-        const footprint = object.footprint ?? { x: object.x - object.width / 2, y: object.y - 24, width: object.width, height: 24 };
-        const pulse = frame.reducedMotion ? 0.8 : 0.65 + Math.sin(frame.time * 5) * 0.25;
-        ctx.strokeStyle = `rgba(255, 210, 120, ${pulse})`;
-        ctx.lineWidth = 3;
-        office2dRoundRect(ctx, footprint.x - 8, footprint.y - 6, footprint.width + 16, footprint.height + 14, 10);
-        ctx.stroke();
-      }
+    const self = frame.actors.find((actor) => actor.id === frame.selfId) ?? null;
+    const occupiedSeats = new Set(frame.actors.flatMap((actor) => (actor.seat ? [actor.seat.id] : [])));
+    paintOffice2dDoorwayAndSeatPreview(
+      ctx,
+      this.scene,
+      self,
+      occupiedSeats,
+      frame.time,
+      frame.language,
+      frame.extensions?.claimedSeatId ?? null,
+    );
+    const activeObject =
+      (frame.nearbyInteractionId ? this.interactionObjects.get(frame.nearbyInteractionId) : null) ??
+      (self ? findOffice2dActionableObjectAhead(this.scene.objects, self) : null);
+    if (activeObject) {
+      const footprint = activeObject.footprint ?? { x: activeObject.x - activeObject.width / 2, y: activeObject.y - 24, width: activeObject.width, height: 24 };
+      const pulse = frame.reducedMotion ? 0.8 : 0.65 + Math.sin(frame.time * 5) * 0.25;
+      ctx.strokeStyle = `rgba(255, 210, 120, ${pulse})`;
+      ctx.lineWidth = 3;
+      office2dRoundRect(ctx, footprint.x - 8, footprint.y - 6, footprint.width + 16, footprint.height + 14, 10);
+      ctx.stroke();
     }
     if (frame.destination) {
       const t = frame.reducedMotion ? 0.5 : (frame.time * 1.6) % 1;
@@ -525,7 +578,6 @@ export class Office2dRenderer {
       ctx.ellipse(frame.destination.x, frame.destination.y, 8 + t * 10, (8 + t * 10) * 0.45, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-    const self = frame.actors.find((actor) => actor.id === frame.selfId);
     if (frame.locateTarget && self) {
       ctx.save();
       ctx.setLineDash([10, 8]);
@@ -587,6 +639,7 @@ export class Office2dRenderer {
       }
     }
     drawOffice2dOverlay(ctx, overlay, frame);
+    paintOffice2dComicBursts(ctx, frame.camera, frame.comicBursts ?? frame.extensions?.comicBursts ?? [], frame.now, frame.reducedMotion);
   }
 }
 

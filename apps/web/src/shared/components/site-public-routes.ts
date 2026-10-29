@@ -10,7 +10,7 @@ const PUBLIC_PAGES = new Set([
   "/", "/brand-film", "/product-tour", "/promo-library", "/ir", "/ir/present", "/features", "/events", "/membership", "/pricing", "/references", "/collaborate", "/collaborate/positions", "/collaborate/gallery", "/creators", "/about", "/about/studio", "/about/workflow", "/about/technology", "/about/technology/architecture", "/about/technology/libraries", "/about/technology/story", "/about/technology/playbook", "/about/technology/guides", "/about/technology/references", "/about/technology/field-notes", "/about/technology/deck", "/about/technology/videos", "/about/technology/licenses", "/about/technology/glossary", "/about/technology/atlas", "/about/principles", "/about/data", "/about/crawler", "/contact", "/business", "/support-us", "/support-creators", "/creator-support", "/support", "/help", "/status", "/sitemap", "/install",
   "/discover", "/discover/works", "/search", "/explore", "/ranking", "/recommend",
   "/calendar", "/compare", "/random", "/tags", "/authors", "/insights", "/insights/resources", "/news", "/guide",
-  "/research", "/research/catalog", "/research/assets", "/research/open-creation", "/research/packs", "/research/books", "/research/3d-assets", "/research/material-assets", "/research/space-assets", "/research/vam", "/research/rijksmuseum", "/research/fonts", "/research/creatures", "/research/music-metadata", "/research/archive", "/research/weather-light", "/research/open-data", "/references", "/now", "/opportunities", "/story-lab",
+  "/research", "/research/catalog", "/research/assets", "/research/open-creation", "/research/packs", "/research/books", "/research/3d-assets", "/research/material-assets", "/research/space-assets", "/research/vam", "/research/rijksmuseum", "/research/fonts", "/research/creatures", "/research/music-metadata", "/research/archive", "/research/weather-light", "/research/open-data", "/now", "/opportunities", "/story-lab",
   "/learn", "/learn/recipes", "/learn/glossary", "/learn/studio", "/learn/process", "/learn/careers", "/learn/education", "/learn/accessibility", "/learn/resources", "/learn/classroom", "/learn/trace", "/learn/classes", "/learn/contract-checklist",
   "/ecosystem/education", "/ecosystem/collaboration", "/ecosystem/fandom", "/ecosystem/library",
   "/market", "/market/browse", "/market/fit", "/market/compare",
@@ -48,11 +48,11 @@ export function isPublicCreativeRoute(pathname: string): boolean {
     || PUBLIC_DETAIL_ROUTES.some((route) => route.test(normalized));
 }
 
-/** 정책 읽기와 전체화면 발표는 공개 셸을 유지하되 창작 홍보와 다음 작업 제안은 덧붙이지 않는다. */
+/** 시작·정책·발표 화면은 공개 셸을 유지하되 다른 작업의 홍보를 덧붙이지 않는다. */
 export function supportsPublicSiteOnwardJourney(pathname: string): boolean {
   const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   return normalized !== "/"
-    && !["/terms", "/privacy", "/copyright", "/ir/present"].includes(normalized)
+    && !["/create", "/terms", "/privacy", "/copyright", "/ir/present"].includes(normalized)
     && isPublicCreativeRoute(normalized);
 }
 

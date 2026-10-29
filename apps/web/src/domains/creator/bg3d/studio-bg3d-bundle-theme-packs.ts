@@ -400,6 +400,7 @@ let themePacksPromise: Promise<StudioBg3dBundleThemePacks> | null = null;
 let themePacksLoaded: StudioBg3dBundleThemePacks | null = null;
 let assetById: Map<string, StudioBg3dBundleThemePackAsset> | null = null;
 let assetByHash: Map<string, StudioBg3dBundleThemePackAsset> | null = null;
+let themePacksRevision = 0;
 
 function indexThemePacks(data: StudioBg3dBundleThemePacks): void {
   themePacksLoaded = data;
@@ -409,6 +410,7 @@ function indexThemePacks(data: StudioBg3dBundleThemePacks): void {
 
 /** 테스트·재배포 교체용: 캐시를 비운다. */
 export function resetStudioBg3dBundleThemePacksCache(): void {
+  themePacksRevision += 1;
   themePacksPromise = null;
   themePacksLoaded = null;
   assetById = null;
@@ -416,8 +418,8 @@ export function resetStudioBg3dBundleThemePacksCache(): void {
 }
 
 /**
- * 테마 팩 데이터를 한 번만 불러와 캐시한다. 주입된 fetcher는 캐시를 우회해
- * 매번 새로 읽는다 (테스트·명시적 재시도용).
+ * 변경 가능한 권리·배포 메타데이터는 매 호출 재검증한다. 동시에 진행 중인 기본 요청만 공유한다.
+ * 내용 주소 GLB의 바이트 캐시와는 별개이며 실패한 요청은 다음 호출에서 재시도한다.
  */
 export async function loadStudioBg3dBundleThemePacks(options: {
   readonly signal?: AbortSignal;
@@ -425,25 +427,29 @@ export async function loadStudioBg3dBundleThemePacks(options: {
   readonly url?: string;
 } = {}): Promise<StudioBg3dBundleThemePacks> {
   if (!options.fetcher && !options.url && themePacksPromise) return themePacksPromise;
+  const revision = ++themePacksRevision;
   const fetcher: ThemePacksFetch = options.fetcher
     ?? ((input, init) => globalThis.fetch(input, init));
   const pending = (async () => {
     const response = await fetcher(options.url ?? STUDIO_BG3D_BUNDLE_THEME_PACKS_URL, {
-      cache: "force-cache",
+      cache: "no-cache",
       credentials: "same-origin",
       signal: options.signal,
     });
     if (!response.ok) throw new TypeError("테마 팩 데이터를 불러오지 못했습니다.");
     const data = parseStudioBg3dBundleThemePacks(await response.json());
-    indexThemePacks(data);
+    if (revision === themePacksRevision) indexThemePacks(data);
     return data;
   })();
   if (!options.fetcher && !options.url) {
     themePacksPromise = pending;
-    void pending.catch(() => {
-      if (themePacksPromise === pending) themePacksPromise = null;
-    });
   }
+  void pending.then(() => {
+    if (themePacksPromise === pending) themePacksPromise = null;
+  }, () => {
+    if (themePacksPromise === pending) themePacksPromise = null;
+    if (revision === themePacksRevision) resetStudioBg3dBundleThemePacksCache();
+  });
   return pending;
 }
 

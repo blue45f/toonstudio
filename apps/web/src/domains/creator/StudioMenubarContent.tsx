@@ -1864,7 +1864,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                       setExportTransparent={setExportTransparent}
                       setExportPresetId={setExportPresetId}
                       setWatermark={setWatermark}
-                      onCopyToClipboard={handleCopyToClipboard}
+                      onCopyToClipboard={handleCopyToClipboard} onDownloadCurrentPage={handleDownload}
                     />
                   </Suspense>,
                   document.body

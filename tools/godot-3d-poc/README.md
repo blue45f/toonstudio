@@ -4,7 +4,7 @@
   운영 중인 Godot 섬(가상스튜디오 `godot-space`, `/play`, `/cuts`)과 `tools/play-godot`·`tools/cuts-godot`는 이 도구와 별개이며 이 도구가 바꾸지 않는다.
   **2026-10-23 정정**: 그 섬과 두 빌드 도구는 2026-10-21 PR #2354 로 제거됐고 ADR-0028 은 Superseded 다. 이 도구는 역사 측정 재현용으로만 남아 있다.
 - 날짜: 2026-10-15
-- 근거 문서: [ADR-0028](../../docs/adr/0028-godot-3d-adoption-modes.md)(적용 모드 제안), [평가 보고서](../../docs/reports/godot-3d-evaluation-2026-10-15.md),
+- 근거 문서: ADR-0028(삭제됨 — git 이력에서 확인 가능)(적용 모드 제안), 평가 보고서(삭제됨 — git 이력에서 확인 가능),
   [측정 증거](../../docs/evidence/godot-3d-poc/2026-10-15/README.md)
 - 위치 근거: [ADR-0026](../../docs/adr/0026-labs-experimental-apps-engine-selection-and-promotion.md)의 실험 규칙(운영 배포 없음, 제품 소스 import 없음, 소프트웨어 렌더러 결과를 성능 증거로 쓰지 않음)을 따른다.
   pnpm workspace 앱이 아니고 `tools/README.md`의 규칙(제품 애플리케이션은 runtime에서 tool source를 import하지 않는다)을 지킨다.
@@ -25,7 +25,7 @@ Godot 4.4.1 웹 export(GL Compatibility = WebGL2)로 다음이 실제로 되는�
 | 빌드타임 도구(모드 B)용 렌더 가능 여부 프로브: `--headless` 와 Xvfb + Mesa 비교 | `native/render_probe.gd`, `native/probe-render.sh` |
 | 같은 glTF 확장 픽스처를 네이티브 `--headless`·Xvfb에서 열어 웹 결과와 대조 | `native/ext_probe.gd`, `native/probe-ext.sh` |
 
-하지 않는 것: 운영 앱 연결, 편집 기능(선택·기즈모·undo), VRM 휴머노이드/스프링본, 물리·클로스, 실GPU·모바일 측정. 이 항목들은 [보고서](../../docs/reports/godot-3d-evaluation-2026-10-15.md)의 "미검증"에 따로 적었다.
+하지 않는 것: 운영 앱 연결, 편집 기능(선택·기즈모·undo), VRM 휴머노이드/스프링본, 물리·클로스, 실GPU·모바일 측정. 이 항목들은 보고서(삭제됨 — git 이력에서 확인 가능)의 "미검증"에 따로 적었다.
 
 ## 구성
 
@@ -147,7 +147,7 @@ python3 -I tools/godot-3d-poc/scripts/remote-template-members.py <tpz URL> <새 
 ## 공급망과 라이선스
 
 - Godot Engine은 MIT 라이선스다(공식: <https://godotengine.org/license/>, <https://docs.godotengine.org/en/4.4/about/complying_with_licenses.html>, 2026-10-15 확인).
-  배포물에는 라이선스 전문과 서드파티 고지를 사용자가 볼 수 있게 두어야 한다. 이 PoC는 배포하지 않으므로 해당 사항이 없지만, 운영 채택 시에는 [ADR-0028](../../docs/adr/0028-godot-3d-adoption-modes.md)의 조건이 된다.
+  배포물에는 라이선스 전문과 서드파티 고지를 사용자가 볼 수 있게 두어야 한다. 이 PoC는 배포하지 않으므로 해당 사항이 없지만, 운영 채택 시에는 ADR-0028(삭제됨 — git 이력에서 확인 가능)의 조건이 된다.
 - 바이너리는 모두 공식 릴리스(<https://github.com/godotengine/godot/releases/tag/4.4.1-stable>)에서만 받는다. `checksums/SHA512-SUMS.4.4.1-stable.txt`는 같은 릴리스의 `SHA512-SUMS.txt`에서 옮긴 두 항목이고,
   `fetch-engine.sh`가 다운로드 직후 `sha512sum -c`로 검증한다. 검증 실패 시 추출하지 않는다.
 - 산출 wasm은 공식 `web_nothreads_release` 템플릿 그대로이며 엔진 코드를 고치지 않았다. 사용자 정의 HTML 셸은 공식 4.4.1 `godot.html` 템플릿 뼈대에 계측 훅과 단독 실행용 호스트 기본 구현을 더한 것이라,

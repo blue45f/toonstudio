@@ -736,19 +736,18 @@ export function bindStudioCuttoonStagePointersRelease(
         }
         drawingRef.current = sealCausalPostCorrectionState(drawingRef.current);
       }
-      const liveStroke = drawingRef.current as DrawEl;
-      authoritativeLiveStroke = liveStroke;
+      authoritativeLiveStroke = drawingRef.current as DrawEl;
       // release/coalesced sample과 stabilizer endpoint를 live surface에 동기적으로 반영한다.
       // clearDraftPreview가 예약 rAF를 취소하기 전에 이 호출이 반드시 완료되어야 한다.
-      flushDirectLiveDraftNow(liveStroke);
+      flushDirectLiveDraftNow(authoritativeLiveStroke);
       if (gpuLiveInkPinnedRef.current) {
         // Keep canonical/input geometry local while the exact terminal GPU request is pending.
         // Cancelling the scheduled suffix also prevents its post-paint timer from racing the
         // receipt watchdog; StudioPage publishes the completed CRDT record only after acceptance.
-        drawingCrdtPublisherRef.current.cancel(liveStroke.id);
+        drawingCrdtPublisherRef.current.cancel(authoritativeLiveStroke.id);
         selectedGpuFinalCrdtFlushDeferred = true;
       } else {
-        drawingCrdtPublisherRef.current.flush(liveStroke.id);
+        drawingCrdtPublisherRef.current.flush(authoritativeLiveStroke.id);
       }
     }
     // Shapes do not append freehand suffixes, but their deferred begin must still precede the

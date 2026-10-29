@@ -1,3 +1,4 @@
+import { studioOfficeEnvironment } from "./studio-virtual-space-office-environments";
 import { DoorOpen, LockKeyhole, Network, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -31,7 +32,7 @@ const privacyCopy = {
   public: ["공개", "Public"],
 } as const;
 
-const NANO_BANANA_SPACE_MODULE_PREVIEWS: Readonly<
+const ILLUSTRATED_SPACE_MODULE_PREVIEWS: Readonly<
   Record<
     string,
     {
@@ -42,75 +43,75 @@ const NANO_BANANA_SPACE_MODULE_PREVIEWS: Readonly<
 > = {
   "p2p-huddle": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v11/themes/seoul-editorial-hq.webp",
+      "/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-work.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/chief-pd-work.webp",
   },
   "p2p-whiteboard": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v13/props/dual-cintiq-critique-pod.webp",
+      "/assets/virtual-studio/studio-art-v13/props/dual-cintiq-critique-pod.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/line-artist-work.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/line-artist-work.webp",
   },
   "work-session-room": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v14/rooms/global-ip-pitch-boardroom.webp",
+      "/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/cgi-director-work.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/cgi-director-work.webp",
   },
   "interview-waiting": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v14/rooms/recruit-interview-conservatory.webp",
+      "/assets/virtual-studio/studio-art-v14/rooms/recruit-interview-conservatory.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v12/cast/story-writer-idle.webp",
+      "/assets/virtual-studio/studio-art-v12/cast/story-writer-idle.webp",
   },
   "interview-room": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v12/themes/romance-palace-conservatory.webp",
+      "/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/chief-pd-idle.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/chief-pd-idle.webp",
   },
   "quiet-lounge": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v11/themes/lofi-cat-storyhouse.webp",
+      "/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-idle.webp",
+      "/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-idle.webp",
   },
   "tarot-table": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v14/rooms/tarot-story-oracle-pavilion.webp",
+      "/assets/virtual-studio/studio-art-v14/rooms/tarot-story-oracle-pavilion.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v12/cast/story-writer-work.webp",
+      "/assets/virtual-studio/studio-art-v12/cast/story-writer-work.webp",
   },
   "saju-room": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v11/themes/hanok-botanical-atelier.webp",
+      "/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/colorist-idle.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/colorist-idle.webp",
   },
   arcade: {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v14/rooms/retro-arcade-gacha-lounge.webp",
+      "/assets/virtual-studio/studio-art-v14/rooms/retro-arcade-gacha-lounge.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v12/cast/action-mocap-actor-work.webp",
+      "/assets/virtual-studio/studio-art-v12/cast/action-mocap-actor-work.webp",
   },
   "theme-storyboard-room": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v12/themes/brooklyn-indie-comics-loft.webp",
+      "/assets/virtual-studio/studio-art-v12/themes/brooklyn-indie-comics-loft.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/line-artist-idle.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/line-artist-idle.webp",
   },
   "theme-recording-booth": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v13/themes/dolby-sound-dubbing-studio.webp",
+      "/assets/virtual-studio/studio-art-v13/themes/dolby-sound-dubbing-studio.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v12/cast/sound-letterer-work.webp",
+      "/assets/virtual-studio/studio-art-v12/cast/sound-letterer-work.webp",
   },
   "theme-gallery": {
     roomPreviewUrl:
-      "/assets/virtual-studio/nano-banana-v13/themes/rooftop-sunset-screening-stage.webp",
+      "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
     hostSpriteUrl:
-      "/assets/virtual-studio/nano-banana-v11/cast/colorist-work.webp",
+      "/assets/virtual-studio/studio-art-v11/cast/colorist-work.webp",
   },
 };
 export function StudioVirtualSpaceRoomCatalog({
@@ -197,7 +198,8 @@ function ModuleCard({
 }) {
   const bt = useBilingual(`StudioSpaceModule.${module.id}`);
   const [privacyKo, privacyEn] = privacyCopy[module.privacy];
-  const visual = NANO_BANANA_SPACE_MODULE_PREVIEWS[module.id];
+  const environment = studioOfficeEnvironment(module.id);
+  const visual = environment ? { roomPreviewUrl: environment.previewUrl, hostSpriteUrl: environment.castSpriteUrl } : ILLUSTRATED_SPACE_MODULE_PREVIEWS[module.id];
   const content = <>
     {visual ? (
       <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg border border-line bg-panel" aria-hidden="true">

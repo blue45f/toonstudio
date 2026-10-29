@@ -1,38 +1,17 @@
 import type { ReviewDecision, ReviewPolicy } from "./review-types";
 import type { RevisionRef } from "./revision";
 import type { ProductionRisk, ProductionRiskAssessment, ProductionRiskPolicy, ProductionRiskResponse, ProductionRiskSignal } from "./risk-types";
+import type { ScopeRef } from "./scope";
 import type { Submission } from "./submission";
 
+export { PRODUCTION_SCOPE_KINDS } from "./scope";
+export type { ProductionScopeKind, ScopeRef, ScopeAncestorRef } from "./scope";
 export type { Submission } from "./submission";
 export type { RevisionRef } from "./revision";
 export type { ReviewPolicyLane, ReviewPolicy, ReviewDecisionValue, ReviewDecision, ApprovalEvaluation, ApprovalLaneEvaluation } from "./review-types";
 
 export const PRODUCTION_MODEL_VERSION = 2 as const;
 export const PRODUCTION_RISK_MODEL_VERSION = 2 as const;
-
-export const PRODUCTION_SCOPE_KINDS = [
-  "project",
-  "season",
-  "episode",
-  "scene",
-  "scroll-segment",
-  "cut",
-  "layer-group",
-  "asset",
-  "deliverable",
-] as const;
-export type ProductionScopeKind = (typeof PRODUCTION_SCOPE_KINDS)[number];
-
-export interface ScopeRef {
-  readonly kind: ProductionScopeKind;
-  readonly id: string;
-  readonly ancestors: readonly ScopeAncestorRef[];
-}
-
-export interface ScopeAncestorRef {
-  readonly kind: Exclude<ProductionScopeKind, "deliverable">;
-  readonly id: string;
-}
 
 export type ProductionLineage = "narrative" | "visual" | "integrated";
 

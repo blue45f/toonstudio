@@ -1,5 +1,6 @@
 import type { StudioBrushEngineProgramSet } from "../brush/studio-brush-engine-program-set";
-import { createStudioCrdtPageReconciler, projectStudioCrdtDrawStroke, projectStudioCrdtSceneElement, projectStudioCrdtLayerGroup } from "@toonstudio/contracts/studio-crdt-authoring";
+import { createStudioCrdtPageReconciler } from "@toonstudio/contracts/studio-crdt-authoring/page-reconcile";
+import { projectStudioCrdtDrawStroke, projectStudioCrdtSceneElement, projectStudioCrdtLayerGroup } from "@toonstudio/contracts/studio-crdt-authoring/element-projection";
 import { hasValidStudioBrushEngineProgramExtension, STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "../../../shared/lib/studio-brush-material-program-contract";
 import {
   isStudioDynamicBrushMinimumDiameterRatio,

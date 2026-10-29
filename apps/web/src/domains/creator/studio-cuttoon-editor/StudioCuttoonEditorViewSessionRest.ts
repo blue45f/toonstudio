@@ -85,7 +85,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   selectedImageMutationLocked: boolean;
   selectedProjectedImageSource: string | null;
   selectedWorkAssetDestructiveEditReason: string | null;
-  serverAiProvider: "auto" | import("../studio-server-ai-client").StudioFreePoolProvider;
+  serverAiProvider: import("../studio-server-ai-client").StudioServerAiProviderPreference;
   serverAiStatus: import("../studio-server-ai-client").StudioServerAiStatus | null;
   serverCurrentRevision: number | undefined;
   serverRevisionError: string | null;
@@ -522,9 +522,9 @@ export type StudioCuttoonEditorViewSessionRest = {
   setWorkMode: (mode: "draw" | "color" | "storyboard" | "all" | "post" | "lettering" | "finish") => void;
   suggestedWorkMode: "draw" | "color" | "storyboard" | "all" | "post" | "lettering" | "finish" | null;
   dismissWorkModeSuggestion: () => void;
-  uiChromeExposure: (region: "toolbar-assets" | "toolbar-cut" | "toolbar-draw" | "toolbar-reference" | "toolbar-scene" | "toolbar-style" | "toolbar-ai" | "toolbar-insert" | "left-panel" | "right-panel" | "page-strip" | "status-rail" | "tool-rail" | "quick-actions") => import("./runtime/studio-work-mode-gating").StudioChromeGateExposure;
+  uiChromeExposure: (region: import("../studio-ui-density").StudioUiChromeRegion) => import("./runtime/studio-work-mode-gating").StudioChromeGateExposure;
   uiAdvancedToolsExpanded: boolean;
-  uiFirstScreenExposure: (region: "toolbar-assets" | "toolbar-cut" | "toolbar-draw" | "toolbar-reference" | "toolbar-scene" | "toolbar-style" | "toolbar-ai" | "toolbar-insert" | "left-panel" | "right-panel" | "page-strip" | "status-rail" | "tool-rail" | "quick-actions") => import("../studio-ui-density").StudioUiFirstScreenExposure;
+  uiFirstScreenExposure: (region: import("../studio-ui-density").StudioUiChromeRegion) => import("../studio-ui-density").StudioUiFirstScreenExposure;
   setUiAdvancedToolsExpanded: (expanded: boolean) => void;
   saveSyncStore: import("../studio-save-sync-signals").StudioSaveSyncSignalStore;
   requestSaveFlush: () => void;

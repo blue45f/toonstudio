@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { studioVirtualCampusManifest } from "../studio-virtual-space-campus-world";
 import { SpaceMinimap } from "./SpaceMinimap";
+import { spaceMinimapPeerTarget } from "./space-minimap-labels";
 
 afterEach(cleanup);
 
@@ -74,5 +75,27 @@ describe("SpaceMinimap quick travel", () => {
       currentRoomId={null} variant="mini" onMoveTo={vi.fn()} />);
     expect(container.querySelector(".space-minimap__peer-initial")).toBeNull();
     expect(container.querySelector(".space-minimap__peer")).not.toBeNull();
+  });
+
+  it("동료 클러스터의 실제 더블클릭 순서에서 오프셋 목적지 이동을 한 번만 요청한다", () => {
+    const onMoveTo = vi.fn();
+    const people = [
+      { id: "peer-1", name: "민지", point: { x: 900, y: 700 } },
+      { id: "peer-2", name: "현우", point: { x: 912, y: 708 } },
+    ];
+    const { container } = render(<SpaceMinimap manifest={campus} self={{ x: 448, y: 540 }} people={people}
+      currentRoomId={null} variant="mini" onMoveTo={onMoveTo} />);
+    const initial = container.querySelector(".space-minimap__peer-initial");
+    expect(initial?.textContent).toBe("+2");
+    const pin = container.querySelector(".space-minimap__peer-pin");
+    expect(pin).not.toBeNull();
+    const surface = screen.getByRole("button", { name: "지도에서 걸어갈 곳 선택" });
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 400, 300));
+    if (!pin) throw new Error("동료 클러스터 핀이 필요합니다.");
+    fireEvent.click(pin, { detail: 1, clientX: 100, clientY: 100 });
+    fireEvent.click(pin, { detail: 2, clientX: 100, clientY: 100 });
+    expect(onMoveTo).not.toHaveBeenCalled();
+    fireEvent.doubleClick(pin, { detail: 2, clientX: 100, clientY: 100 });
+    expect(onMoveTo).toHaveBeenCalledExactlyOnceWith(spaceMinimapPeerTarget({ x: 906, y: 704 }, "peer-1"));
   });
 });

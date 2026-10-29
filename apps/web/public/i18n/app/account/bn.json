@@ -3,7 +3,7 @@
   "account.tabs.activity": "কার্যকলাপ",
   "account.tabs.profile": "প্রোফাইল",
   "account.signIn.title": "সাইন ইন করতে হবে",
-  "account.signIn.message": "আপনার পোস্ট, ক্রিয়াকলাপ এবং প্রোফাইল দেখতে দয়া করে লগইন করুন।",
+  "account.signIn.message": "আপনার পোস্ট, ক্রিয়াকলাপ এবং প্রোফাইল দেখতে দয়া করে সাইন ইন করুন।",
   "account.signIn.cta": "সাইন ইন করুন",
   "account.posts.errorTitle": "আপনার পোস্ট লোড করতে ব্যর্থ।",
   "account.posts.emptyTitle": "এখনো কোনো কাজ পোস্ট করা হয়নি।",

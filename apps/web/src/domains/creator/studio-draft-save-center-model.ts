@@ -170,7 +170,7 @@ function deviceSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
   if (input.localRole === "leader") {
     return {
       tone: "success",
-      title: "이 탭이 복구 저장 담당",
+      title: "이 기기 자동 저장",
       detail: "이 탭이 변경 내용을 이 기기에 보관합니다.",
     };
   }
@@ -178,7 +178,7 @@ function deviceSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
   if (input.localRole === "follower") {
     return {
       tone: "warning",
-      title: "다른 탭이 복구 저장 담당",
+      title: "다른 탭에서 기기에 저장 중",
       detail: "먼저 연 탭에서 저장합니다. 그 탭을 닫으면 이어받습니다.",
     };
   }
@@ -269,7 +269,7 @@ function serverSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
   if (input.hasServerDocument && revision !== null) {
     return {
       tone: "success",
-      title: `서버 초안 revision #${revision}`,
+      title: `서버 저장 기록 #${revision}`,
       detail: input.lastServerSaveAt === null
         ? "서버에 저장한 기록이 있어요."
         : `마지막으로 확인한 서버 저장: ${formatStudioDraftSaveTime(input.lastServerSaveAt)}`,
@@ -286,7 +286,7 @@ function serverSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
 
   return {
     tone: "neutral",
-    title: "아직 서버 초안 없음",
+    title: "아직 서버에 저장하지 않았어요",
     detail: "지금 저장하면 계정에 첫 기록을 남깁니다.",
   };
 }
@@ -319,7 +319,7 @@ export function resolveStudioDraftSaveCenter(
     phase = "local-risk";
     tone = "danger";
     compactLabel = "복구 저장 확인";
-    headline = "이 기기 복구 경로를 확인해 주세요";
+    headline = "이 기기에 작업을 보관할 수 있는지 확인해 주세요";
     detail = device.detail;
   } else if (!input.hydrated) {
     phase = "loading";
@@ -378,23 +378,29 @@ export function resolveStudioDraftSaveCenter(
   } else if (input.hasServerDocument && serverRevision !== null) {
     phase = "saved";
     tone = "success";
-    compactLabel = `서버 r${serverRevision} 확인`;
-    headline = "이 기기 복구와 서버 revision을 각각 확인할 수 있어요";
+    compactLabel = "서버 저장 기록 확인";
+    headline = "서버에 저장한 기록이 있어요";
     detail = input.lastServerSaveAt === null
-      ? `서버 revision #${serverRevision}이 확인됐습니다.`
-      : `서버 revision #${serverRevision} · ${formatStudioDraftSaveTime(input.lastServerSaveAt)}`;
+      ? `저장 기록 #${serverRevision}을 확인했어요. 최신 변경 내용은 ‘지금 서버에 저장’으로 남길 수 있어요.`
+      : `저장 기록 #${serverRevision} · ${formatStudioDraftSaveTime(input.lastServerSaveAt)}`;
   } else if (input.localRole !== null) {
     phase = "local-only";
     tone = "neutral";
-    compactLabel = "기기에 자동 보호 중";
-    headline = "현재 작업은 이 기기 복구 경로가 먼저 보호해요";
-    detail = "첫 서버 저장을 만들면 revision 기록과 다른 기기 복원이 시작됩니다.";
+    compactLabel = input.hasServerDocument
+      ? input.serverRevisionLoading ? "서버 저장 기록 확인 중" : "서버 저장 기록 확인 필요"
+      : "서버에 아직 미저장";
+    headline = input.hasServerDocument
+      ? "서버 저장 기록을 아직 확인하지 못했어요"
+      : "다른 기기에서도 이어 하려면 서버에 저장해 주세요";
+    detail = input.hasServerDocument
+      ? "이 기기의 복구 상태와 서버의 저장 기록은 따로 확인할 수 있어요."
+      : "‘지금 서버에 저장’을 누르면 계정에 첫 저장 기록이 만들어져요. 기기 저장만으로는 다른 기기에서 열 수 없어요.";
   } else {
     phase = "preparing";
     tone = "neutral";
     compactLabel = "저장 준비 중";
-    headline = "저장 권위를 확인하고 있어요";
-    detail = "문서별 로컬 저장 담당과 서버 revision을 확인하는 동안 작업을 계속할 수 있습니다.";
+    headline = "이 기기와 서버의 저장 상태를 확인하고 있어요";
+    detail = "작업을 계속할 수 있어요. 저장 준비가 끝나면 상태를 알려드릴게요.";
   }
 
   const actionableServerConflict = serverConflict

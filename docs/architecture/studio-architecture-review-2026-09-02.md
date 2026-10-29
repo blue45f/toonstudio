@@ -12,7 +12,7 @@
 - 관련 결정: [ADR-0019](../adr/0019-renderer-role-ledger-single-authority.md),
   [ADR-0020](../adr/0020-editor-client-ui-command-boundary.md),
   [ADR-0021](../adr/0021-stroke-budget-myb-disposition-execution-profiles.md),
-  로드맵 [architecture-review-roadmap-2026-09-02](../rewrite/architecture-review-roadmap-2026-09-02.md)
+  로드맵 architecture-review-roadmap-2026-09-02(삭제됨 — git 이력에서 확인 가능)
 
 ## A. 주장 검증 대장
 
@@ -70,7 +70,7 @@
 
 `studio-project-model` 분리, `apps/studio-web` 이동, 런타임 소유자 7종 분해, WebGPU shadow
 compositor, OPFS command journal + tile shard, BrushGraph V2, Konva 권위 제거 —
-[architecture-review-roadmap-2026-09-02](../rewrite/architecture-review-roadmap-2026-09-02.md).
+architecture-review-roadmap-2026-09-02(삭제됨 — git 이력에서 확인 가능).
 
 ---
 

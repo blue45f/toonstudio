@@ -20,7 +20,7 @@ import { StudioVirtualSpaceEntryCodePanel, type StudioEntryCodeEntryResult } fro
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioLpcCreditsNotice } from "./lpc/StudioLpcCreditsNotice";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
-import { StudioVirtualSpaceNanoBananaLobbyShowcase } from "./StudioVirtualSpaceNanoBananaStageHud";
+import { StudioVirtualSpaceIllustratedLobbyShowcase } from "./StudioVirtualSpaceIllustratedStageHud";
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
 import {
   STUDIO_VIRTUAL_SPACE_NICKNAME_MAX_GRAPHEMES,
@@ -276,7 +276,7 @@ export function StudioVirtualSpaceEntryLobby({
           </div>
           {/* LPC 픽셀 캐릭터도 이 전체 목록에서 고른다. 고르는 자리에서 바로 출처·라이선스 전문(CREDITS.md)에 닿도록 꾸미기 탭과 같은 크레딧 표면을 캐릭터 선택 바로 아래에 둔다. */}
           <StudioLpcCreditsNotice />
-          {!onboarding ? <StudioVirtualSpaceNanoBananaLobbyShowcase /> : null}
+          {!onboarding ? <StudioVirtualSpaceIllustratedLobbyShowcase /> : null}
         </> : null}
 
         {!onboarding && !guestMode ? <details className="space-lobby__advanced" open={advancedOpen}

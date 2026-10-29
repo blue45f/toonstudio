@@ -32,7 +32,7 @@ import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionCreateProjectEntry } from "./ProductionCreateProjectEntry";
 import { ProductionLandingBackdropBadge, ProductionLandingBackdropMedia } from "./ProductionLandingBackdrop";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
 import { ProductionMetric, ProductionPill, ProductionSampleBadge, type ProductionTone } from "./production-ui";
@@ -564,7 +564,7 @@ export function ProductionLandingPage() {
           </div>
         </header>
 
-        <NanoBananaSurfaceSpotlight cardId="nb-production-control" compact className="mt-6" />
+        <SiteArtSurfaceSpotlight cardId="nb-production-control" compact className="mt-6" />
 
         {userId ? (
           <PortfolioSection

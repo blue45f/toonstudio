@@ -125,6 +125,58 @@
   background: var(--color-accent);
 }
 
+.studio-office2d-pipeline__item--tool::before {
+  width: 1px !important;
+  height: 18px !important;
+  margin: 0 4px !important;
+  background: var(--space-border, var(--color-line)) !important;
+}
+
+.studio-office2d-pipeline__step--action,
+.studio-office2d-pipeline__step--desk,
+.studio-office2d-pipeline__step--schematic,
+.studio-office2d-pipeline__step--sound {
+  padding: 4px 10px;
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--space-border, var(--color-line)));
+  background: color-mix(in srgb, var(--color-accent-soft) 55%, transparent);
+}
+
+.studio-office2d-pipeline__step--schematic[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-card);
+  background: var(--color-accent);
+}
+
+.studio-office2d-schematic-banner {
+  position: absolute;
+  top: calc(var(--space-safe-top, 0px) + 64px);
+  left: 50%;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 60%, var(--space-border, var(--color-line)));
+  border-radius: 999px;
+  color: var(--color-fg);
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+  box-shadow: var(--space-shadow, 0 10px 30px color-mix(in srgb, var(--color-fg) 18%, transparent));
+  backdrop-filter: blur(12px);
+  font: 700 0.78rem/1.2 var(--font-sans);
+  white-space: nowrap;
+}
+
+.studio-office2d-schematic-banner__close {
+  padding: 3px 9px;
+  border: 1px solid var(--space-border, var(--color-line));
+  border-radius: 999px;
+  color: var(--color-fg);
+  background: var(--color-panel, var(--color-card));
+  font: 700 0.72rem/1 var(--font-sans);
+  cursor: pointer;
+}
+
 /* 위치 칩·지도와 겹치지 않도록 중간 폭에서는 한 줄 아래로 내린다. 1200px 이상이면 이름까지 모두 들어간다. */
 @media (max-width: 1559px) {
   .studio-office2d-pipeline {

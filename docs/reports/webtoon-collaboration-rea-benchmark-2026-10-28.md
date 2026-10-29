@@ -597,7 +597,7 @@ WriterRoom의 콘티 적용 버튼은 실제 페이지 생성·저장으로 연�
 
 ## 30. 실제 Web 전체 회귀와 메인 통합의 구조 보정
 
-상태: **migration — 2026-10-30 경로·migration 번호 보정본의 Web·정적 재검증 통과 후 정상 커밋 훅의 lint 21건 보완 완료, 보완본 재검증·main 통합 전**.
+상태: **migration — 경로·migration 번호 보정과 정상 훅 보완 당시의 실행 이력. 2026-10-30 정상 기능 커밋과 최신 메인 통합 후보는 31절에 기록한다**.
 
 고정 대본 Reader의 첫 실제 실행은 잘못된 Graph project ID를 가진 transport fixture가 strict 검수 링크 검사를 통과하지 못해 중단됐다. 실제 Graph schema와 원고 선택 producer의 식별 계약에 맞는 로컬 정상 fixture를 사용하고, Reader는 링크를 Promise의 오류 처리 안에서 먼저 검증하도록 고쳤다. 잘못된 pin은 명시 오류로 수집하며 본문이나 고정 검수 링크를 그리지 않는 음성 회귀를 추가했다. 기존 7단계·60컷·여러 문단·고정 tuple·계정 전환 후 늦은 응답 검사는 유지했다. strict parser·공용 transport fixture·API를 완화하지 않았다.
 
@@ -616,3 +616,66 @@ WriterRoom의 콘티 적용 버튼은 실제 페이지 생성·저장으로 연�
 실제 UI 인증·60컷 입력·서버 저장·제작 프로젝트 생성과 C9 원시 계측의 임시 실행 소스는 준비 단계다. 신규 G2 UI driver와 C9 관측기는 위 9파일 구문 검사에 포함하지 않았고 아직 실행하지 않았다. 로컬 관측을 운영 사용자의 INP나 모집단 percentile로 해석하지 않는다. Event Timing의 16ms 관측 하한과 INP의 페이지 생명주기 범위는 [Chrome의 공식 INP 설명](https://web.dev/articles/inp)을 따른다. 실제 production artifact·서버 데이터·이미지 bytes·현재 권한·기능 완료를 함께 검증하기 전에는 C9 완료나 시장 최상위 성능을 선언하지 않는다.
 
 메인 통합의 다음 필수 증거는 통합 보정본의 기존 32파일 회귀·정적·타입·하네스·구조 검사, 실제 계정 권한·REST 경계의 로컬 PostgreSQL 통합 검사, 정상 커밋과 원격 필수 CI·PR·main 병합이다. 운영 배포는 이번 범위에서 제외한다. 4UID·60컷과 원시 성능 관측은 대표 팀을 모르는 상황에서 이 작업이 선택한 통제 검증 계획이며, 사용자가 별도로 지정한 인원 수·성능 SLO가 아니다. 실제 3계정 API 권한 검사와 아직 실행하지 않은 4계정 브라우저·운영 성능·사람의 현장 결과를 각각 구분해 기록한다. 준비 소스를 실행 결과로 승격하거나 새 계측 프레임워크의 완성을 main 병합의 추가 요건으로 삼지 않는다.
+
+## 31. 정상 기능 커밋과 최신 메인 통합 후보
+
+상태: **migration — 2026-10-30 기능 커밋 생성, 최신 메인의 충돌 소스 해결 후 통합 검증·merge commit·PR·main 병합 전**.
+
+담당 역할 선택을 같은 파일의 최상위 React 컴포넌트로 분리했다. 이 컴포넌트는 표시 문자열과
+선택 ID·옵션·선택 callback만 받고 실제 선택 이벤트의 시각을 부모로 전달한다. 부모의 역할
+조회·미래 역할 예약·시작 시각 올림·종료 시각 설정과 서버 권한은 유지한다. 화면을 연 뒤
+5분 후 선택하고 30초 뒤 제출해도 선택한 기간을 다시 쓰지 않는 회귀를 추가했다.
+이 344입력의 targeted ESLint와 Panel 6개 시험은 **exit 0, timeout 없음, 5.125초**였고
+입력·변경 목록이 전후 같으며 실행 process group 종료를 확인했다.
+
+이어 실제 정상 훅의 하네스·lockfile·298개 JS/TS ESLint·307개 파일 Secretlint가 통과했다.
+**exit 0, timeout 없음, 5.072초**로 기능 커밋
+`e0ab2920aba059bf64c15d5f1a636817582c6d80`을 생성하고 clean 상태를 확인했다.
+훅이 정리한 21파일은 실제 backup Git object와 커밋을 읽기 대조했다. import·type import·
+공백 정리와 import 뒤로의 DTO 선언 이동이며, 함수·schema·권한·fixture·단언 변경은 없었다.
+입력 내용의 해시는 훅 전후 달라졌으므로 이를 동일 소스 실행으로 기록하지 않는다.
+
+정상 fetch로 확인한 메인은 `9d6c15cd5c4fe8e374a1255dc1398eae3549d509`였다.
+`--no-ff --no-commit` 병합은 원고 bridge·source ratchet·DB 원장에서 충돌했고, 각 행동을
+대조해 소스를 해결했다. 메인의 자산 descriptor 출처를 원격 CRDT가 덮거나 unset하지 않는
+두 동작은 Web/API 공용 projector에 옮겼다. 담당 `frameClipId`와 무손실 원고 투영도 유지한다.
+유효한 형식의 위조 출처와 명시적 unset을 실제 Y 문서에 적용하는 회귀 2개를 추가했으며,
+일반 위치 변경은 계속 반영하도록 확인한다. 이 통합 후 회귀는 아직 실행 전이다.
+
+DB 원장은 메인의 AI 0114·0115와 이번 0116·0117을 순서대로 보존한다. 테스트 기대는 실제
+117개 migration·마지막 0117·bootstrap marker 포함 118행에 맞췄고 기존 음성 검사는 유지했다.
+메인의 `reservedTokens`·`anthropic`·관련 check/index와 원고 strokes·scoped schema도 보존했다.
+같은 파일 계수 규칙을 native 목록에 적용한 통합 후보는 DB 170, Core 148, Creator 직하 2,506이다.
+DB의 정확한 추가 3개와 기존 순수 Production 모듈 6개·회귀 3개의 소비·분해 근거를
+`ARCHITECTURE.md`에 기록하고 해당 두 상한만 맞췄다. 실제 source-layout 검사 통과를 뜻하지 않는다.
+
+Git index의 충돌 해결 표시는 다음 정상 staging에서 처리해야 하며 merge commit은 아직 없다.
+통합 후보의 관련 Web/API 회귀·migration 계약·하네스·타입·구조·실제 로컬 DB 검사와 정상
+merge commit·원격 필수 CI·PR·main 병합이 남아 있다. 후속 메인이 추가되면 같은 정상 병합으로
+보존한다. 운영 배포·운영 DB·환경변수·결제 변경은 수행하지 않았다.
+
+## 32. 통합 회귀 통과와 Studio 정적 의존 경계 보완
+
+상태: **migration — 2026-10-30 통합 후보의 기능·계약 검사 통과, 마지막 진입 그래프 실패를 좁은 공개 경로로 보완한 뒤 재검증 전**.
+
+기능 커밋 `e0ab2920aba059bf64c15d5f1a636817582c6d80`과 메인
+`9d6c15cd5c4fe8e374a1255dc1398eae3549d509`의 539입력 통합 후보에서 **Web 42파일·340 tests**가
+통과했다(exit 0, 47.908초). 기존 API 11파일·84 tests도 통과했다(exit 0, 10.577초).
+각 실행의 입력·변경 목록·HEAD는 전후 같고 소유 process group 종료를 확인했다.
+
+DB 계약 3파일을 Node로 호출한 첫 실행은 runner 선택 오류로 실패했다. 원본 실패 기록을 보존하고
+소스 수정 없이 올바른 Vitest로 실행한 결과 **DB 3파일·134 tests**가 통과했다(exit 0, 2.671초).
+CI의 별도 Node 계약 4파일·51 cases도 정상 종료했다(exit 0, 1.391초). 이후 변경 파일 lint·
+Secretlint·하네스 구조·문서·source-layout·앱 경계·파일 크기는 통과했지만 전체 architecture 명령은
+마지막 Studio 정적 진입 그래프에서 실패했다(exit 1, 12.966초). 이 결과를 전체 구조 검사 통과로
+표시하지 않는다.
+
+당시 그래프는 허용 20,282,953바이트에 대해 20,623,779바이트였다. wire schema가 범위 검증에
+필요한 두 값 때문에 전체 Production 진입점을 불러왔고, 두 Web 소비자가 작은 원고 함수 대신
+전체 Authoring 진입점을 사용했다. 기존 `scope.ts`에 동일 범위 상수·타입을 모으고 기존 타입
+진입점의 재수출을 보존했다. Core scope와 contracts의 기존 page reconcile·element projection
+파일에 좁은 공개 경로를 연결하고 실제 소비 import만 바꿨다. 동기 schema 검증·함수 본문·권한·
+기간·출처 처리는 유지하며 새 source 파일과 예산 증가는 없다.
+
+이 import 보완 전 539입력의 통과 결과는 당시 후보의 증거로 보존한다. 보완 후 그래프의 실제
+감소·관련 회귀·정상 merge commit과 최신 메인 통합은 다음 검증에서 확인해야 한다.

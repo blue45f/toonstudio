@@ -1,6 +1,6 @@
 # Godot 3D PoC 측정 증거 (2026-10-15)
 
-- 문서 상태: `current` — 2026-10-15에 수행한 측정의 원본 기록이다(역사 문서). 해석과 결론은 [평가 보고서](../../../reports/godot-3d-evaluation-2026-10-15.md)와 [ADR-0028](../../../adr/0028-godot-3d-adoption-modes.md)에 있다.
+- 문서 상태: `current` — 2026-10-15에 수행한 측정의 원본 기록이다(역사 문서). 해석과 결론은 평가 보고서(삭제됨 — git 이력에서 확인 가능)와 ADR-0028(삭제됨 — git 이력에서 확인 가능)에 있다.
 - 생성 도구: [`tools/godot-3d-poc`](../../../../tools/godot-3d-poc/README.md)의 `measure/run.mjs`, `measure/parity.mjs`, `measure/coep-probe.mjs`, `native/run-native.sh`, `native/probe-render.sh`, `native/probe-ext.sh`.
 - 표로 보기: `node tools/godot-3d-poc/measure/summarize.mjs docs/evidence/godot-3d-poc/2026-10-15/results-4.4.1-*.json` (여러 파일을 주면 스위트 단위로 합치고 뒤의 파일이 같은 스위트를 덮어쓴다)
 

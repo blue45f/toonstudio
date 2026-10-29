@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as freeAiPoolStatus from "./free-ai-pool-status";
 import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration } from "./user-ai-store";
-import { EMPTY_AI_CONNECTION, type UserAiConnection } from "./user-ai-types";
+import { EMPTY_AI_CONNECTION, userAiRoutingSettings, type UserAiConnection } from "./user-ai-types";
 import { UnifiedAiSettings, UnifiedAiSettingsEntryCard } from "./UnifiedAiSettings";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -60,11 +60,41 @@ describe("UnifiedAiSettings guided setup", () => {
     vi.restoreAllMocks();
   });
 
+  it("applies the paid-key choice to every paid key and offers to include a paid key connected without consent", async () => {
+    const paid = (id: string, label: string, paidAutoUse?: boolean): UserAiConnection => ({
+      ...textConnection(id, label, 20),
+      baseUrl: "https://api.deepseek.com",
+      textModel: "deepseek-chat",
+      costPolicy: "user-funded-byok",
+      models: [{ id: `model-${id}`, label: "deepseek-chat", model: "deepseek-chat", capability: "text", enabled: true, priority: 10 }],
+      ...(paidAutoUse ? { paidAutoUse } : {}),
+    });
+    setUserAiConfiguration({
+      version: 1,
+      connections: [paid("consented", "동의한 유료 키", true), paid("dialog-only", "대화상자용 유료 키")],
+      assignments: { text: "consented", image: null, inference: null, "three-d": null },
+      routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [], paidAutoUsePerKey: true },
+    });
+    render(<UnifiedAiSettings />);
+
+    // 동의하지 않은 유료 키는 자동으로 쓰지 않는다고 알리고, 한 번에 포함할 수 있게 한다.
+    expect(await screen.findByText("자동으로 쓰지 않는 유료 키: 대화상자용 유료 키")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "이 키도 자동으로 쓰기" }));
+    expect(getUserAiSnapshot().configuration.connections.every((item) => item.paidAutoUse === true)).toBe(true);
+    expect(screen.queryByText(/자동으로 쓰지 않는 유료 키/u)).toBeNull();
+
+    // "자동으로 사용하지 않음"은 모든 유료 키의 동의를 지운다.
+    fireEvent.click(screen.getByRole("radio", { name: "자동으로 사용하지 않음" }));
+    const off = getUserAiSnapshot().configuration;
+    expect(off.connections.some((item) => item.paidAutoUse === true)).toBe(false);
+    expect(userAiRoutingSettings(off)).toMatchObject({ allowPaidFallback: false, preferPaidKeys: false });
+  });
+
   it("shows the beginner flow first and keeps technical controls behind advanced settings", async () => {
     render(<UnifiedAiSettings />);
 
     expect(screen.getByRole("tab", { name: "시작하기" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("button", { name: "AI 연결하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" })).toBeTruthy();
     expect(await screen.findByText("AI를 사용할 준비가 되었어요")).toBeTruthy();
     expect(screen.queryByText("API 키 프로필")).toBeNull();
     expect(screen.queryByText("공개 HTTPS API baseURL")).toBeNull();
@@ -83,7 +113,7 @@ describe("UnifiedAiSettings guided setup", () => {
   it("connects an OpenRouter key with one guided action and assigns it to text work", async () => {
     render(<UnifiedAiSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "AI 연결하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-or-test-key" } });
     fireEvent.click(screen.getByRole("checkbox"));
@@ -109,7 +139,7 @@ describe("UnifiedAiSettings guided setup", () => {
     })));
     render(<UnifiedAiSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "AI 연결하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "invalid-key" } });
     fireEvent.click(screen.getByRole("checkbox"));
@@ -126,7 +156,7 @@ describe("UnifiedAiSettings guided setup", () => {
     })));
     render(<UnifiedAiSettings />);
 
-    fireEvent.click(screen.getByRole("button", { name: "AI 연결하기" }));
+    fireEvent.click(screen.getByRole("button", { name: "목록에 없는 서비스 직접 연결" }));
     fireEvent.click(screen.getByRole("button", { name: /OpenRouter/ }));
     fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "quota-limited-key" } });
     fireEvent.click(screen.getByRole("checkbox"));
@@ -159,7 +189,7 @@ describe("UnifiedAiSettings guided setup", () => {
 
     const link = screen.getByRole("link", { name: /AI 설정 열기/ });
     expect(link.getAttribute("href")).toBe("/settings/ai?source=studio");
-    expect(screen.getByText("개인 키 없이 자동 무료 AI부터 시작할 수 있어요")).toBeTruthy();
+    expect(screen.getByText("키 없이 ToonStudio AI로 바로 시작할 수 있어요")).toBeTruthy();
     expect(document.body.textContent).not.toContain("sk-");
   });
 });

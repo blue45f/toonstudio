@@ -2343,11 +2343,9 @@ button.space-location__pulse:hover {
   opacity: 0;
   pointer-events: none;
 }
-/* 모바일·가로형 화면에서 하단 NPC 상호작용 프롬프트가 이미 떠 있으면 화면 중앙을 가리는 중복 NPC 근접 카드를 접는다(팀원 카드는 유지). */
-@media (max-width: 1023.98px), (max-height: 520px) {
-  .space-hud:has(.space-interact-prompt[data-target-kind="npc"]) .space-proximity__card[data-kind="npc"] {
-    display: none;
-  }
+/* 하단 NPC 상호작용 프롬프트(E)가 이미 떠 있으면 화면 상단 중앙을 가리는 중복 NPC 근접 카드를 접는다(팀원 카드는 유지). */
+.space-hud:has(.space-interact-prompt[data-target-kind="npc"]) .space-proximity__card[data-kind="npc"] {
+  display: none;
 }
 
 /* 가로로 누운 휴대폰(높이 520px 이하): 상하 여백과 조이스틱·도크 높이를 압축해 2D 스튜디오 시야를 넓힌다. */
