@@ -8,26 +8,26 @@ import {
   reduceStudioAppMenuOpenUpdate,
   reduceStudioMenuSession,
   type StudioMenuSessionState,
-} from "./studio-menu-session-model";
+} from "../../studio-menu-session-model";
 import {
   useStudioPageWorkspacePersistence,
   type StudioPageWorkspacePersistenceContext,
-} from "./studio-page-workspace-persistence";
+} from "../../studio-page-workspace-persistence";
 import {
   createStudioWorkspaceDefaultState,
   studioWorkspaceOwnerScope,
   type StudioWorkspaceLoadResult,
-} from "./studio-workspaces";
+} from "../../studio-workspaces";
 import type {
   StudioWorkspacePersistenceRuntime,
   StudioWorkspaceRuntimeHydrationResult,
-} from "./studio-workspace-sqlite-runtime";
+} from "../../studio-workspace-sqlite-runtime";
 
 const { createRuntime } = vi.hoisted(() => ({ createRuntime: vi.fn() }));
-vi.mock("./studio-workspace-sqlite-runtime", () => ({
+vi.mock("../../studio-workspace-sqlite-runtime", () => ({
   createStudioWorkspacePersistenceRuntime: createRuntime,
 }));
-vi.mock("./studio-legacy-editor-runtime-helpers", () => ({
+vi.mock("../../studio-legacy-editor-runtime-helpers", () => ({
   acquireProductStudioUiPreferencesRepository: vi.fn(),
 }));
 
