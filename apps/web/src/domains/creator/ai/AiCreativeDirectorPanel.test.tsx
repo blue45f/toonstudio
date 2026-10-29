@@ -10,14 +10,14 @@ const mocks = vi.hoisted(() => ({
   status: vi.fn(),
   complete: vi.fn(),
   signedIn: false,
-  personalKeyFirst: false,
+  keyOrder: "none" as "fixed" | "first" | "after" | "none",
 }));
 
 vi.mock("../studio-server-ai-client", () => ({
   getStudioServerAiStatus: mocks.status,
   completeStudioServerText: mocks.complete,
   studioServerAiProviderLabel: (provider: string) => `label:${provider}`,
-  studioTextUsesPersonalKeyFirst: () => mocks.personalKeyFirst,
+  studioTextKeyOrder: () => mocks.keyOrder,
 }));
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({
@@ -45,7 +45,7 @@ const configuredStatus = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.signedIn = false;
-  mocks.personalKeyFirst = false;
+  mocks.keyOrder = "none";
 });
 
 afterEach(cleanup);
@@ -105,11 +105,33 @@ describe("AiCreativeDirectorPanel", () => {
 
   it("says the registered key is used first when it runs before ToonStudio AI", async () => {
     mocks.status.mockResolvedValue(configuredStatus);
-    mocks.personalKeyFirst = true;
+    mocks.keyOrder = "first";
     renderPanel();
 
-    expect(await screen.findByText("내 키 먼저 사용")).toBeTruthy();
+    const badge = await screen.findByText("내 키 먼저 사용");
     expect(screen.queryByText("ToonStudio AI 연결됨")).toBeNull();
+    // 내 키가 먼저 답하므로 서버 모델을 배지 설명으로 내세우지 않는다.
+    expect(badge.closest("[title]")).toBeNull();
+  });
+
+  it("says only the fixed key is used in the single fixed mode, which never hands off to ToonStudio AI", async () => {
+    mocks.status.mockResolvedValue(configuredStatus);
+    mocks.keyOrder = "fixed";
+    renderPanel();
+
+    const badge = await screen.findByText("고정: 내 키");
+    expect(screen.queryByText("내 키 먼저 사용")).toBeNull();
+    expect(screen.queryByText("ToonStudio AI 연결됨")).toBeNull();
+    expect(badge.closest("[title]")).toBeNull();
+  });
+
+  it("keeps the ToonStudio AI badge and its model when the custom order puts ToonStudio AI before my keys", async () => {
+    mocks.status.mockResolvedValue(configuredStatus);
+    mocks.keyOrder = "after";
+    renderPanel();
+
+    const badge = await screen.findByText("ToonStudio AI 연결됨");
+    expect(badge.closest("[title]")?.getAttribute("title")).toBe("gemini-flash");
   });
 
   it("asks guests to sign in when the free pool requires an account", async () => {

@@ -10,7 +10,7 @@
  *
  * 출처와 증거 수준
  * - 컨테이너와 `maindoc.xml` 구조, 타일 파일 배치, 색 공간별 픽셀 배치는 Krita 5.2.2를 블랙박스로 실행해 만든 문서
- *   51개를 관찰하고, 알려진 픽셀을 넣어 저장한 뒤 Krita 자신의 `pixelData` 읽기와 대조해 확정했다(자세한 근거·검증
+ *   61개를 관찰하고, 알려진 픽셀을 넣어 저장한 뒤 Krita 자신의 `pixelData` 읽기와 대조해 확정했다(자세한 근거·검증
  *   결과는 `docs/design/krita-kra-reader-observed-2026-10-29.md`). Krita 소스(GPL)는 읽지 않았고 실행 파일에서 코드를
  *   꺼내지 않았다. 타일 헤더 필드 이름은 KDE 커뮤니티 위키의 공개 설명(CC BY-SA 4.0)을 참고했으며 문구는 복사하지 않았다.
  * - 관찰한 것(Observed)과 합성 파일만으로 확인한 것(Assumed), 확인하지 못한 것(Unknown)은 설계 문서의 표로 구분한다.
@@ -32,6 +32,7 @@ import {
 import {
   classifyKraProfileTransfer,
   describeKraPixelFormat,
+  KRA_SUPPORTED_COLOR_SPACES,
   kraColorLut,
   kraProfileLooksSrgb,
   type KraProfileTransfer,
@@ -373,7 +374,7 @@ async function decodeRasterLayer(ctx: DecodeContext, draft: KraLayerDraft): Prom
     unsupported.add(
       "semantic",
       "kra-colorspace-unsupported",
-      `레이어 ${label}의 색 공간 ${clipForMessage(colorSpaceName)}은(는) RGBA8로 환원하지 않는다 (RGBA·RGBA16·GRAYA·GRAYAU16만 읽는다)`,
+      `레이어 ${label}의 색 공간 ${clipForMessage(colorSpaceName)}은(는) RGBA8로 환원하지 않는다 (${KRA_SUPPORTED_COLOR_SPACES.join("·")}만 읽는다)`,
       where,
     );
     return NO_PIXELS;
@@ -425,12 +426,13 @@ async function decodeRasterLayer(ctx: DecodeContext, draft: KraLayerDraft): Prom
       where,
     );
   }
-  if (format.depth === 16 && !transfer.recognized && !ctx.transferNoted) {
+  if (format.depth !== 8 && !transfer.recognized && !ctx.transferNoted) {
     ctx.transferNoted = true;
+    const samples = format.sample === "float" ? `${format.depth}비트 실수` : `${format.depth}비트`;
     ctx.warnings.add(
       "semantic",
       "kra-profile-transfer-assumed",
-      `프로파일 ${image.profileName === null ? "(없음)" : `"${clipForMessage(image.profileName)}"`}에서 전달 함수를 알 수 없어 16비트 값을 sRGB 감마로 가정해 8비트로 줄였다`,
+      `프로파일 ${image.profileName === null ? "(없음)" : `"${clipForMessage(image.profileName)}"`}에서 전달 함수를 알 수 없어 ${samples} 값을 sRGB 감마로 가정해 8비트로 줄였다`,
     );
   }
   if (!ctx.primariesNoted && !ctx.profileLooksSrgb) {

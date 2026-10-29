@@ -15,12 +15,13 @@ Krita는 GPL 응용 프로그램이다. 이 도구는 Krita를 **블랙박스로
 | `gen_corpus.py` | `d01`~`d07`: 기본 문서, 타일, 그룹, 블렌드 모드 후보, 색 공간 15종, 마스크·복제·필터·벡터·파일 레이어, `.krz`. 문서마다 `*.truth.json`을 함께 쓴다 |
 | `gen_corpus2.py` | `d08` 잡음(비압축 타일), `d09` 블렌드 id 후보 87종, `d10` 원본 PNG(`in/`)를 가져와 색 공간을 바꿔 저장 |
 | `gen_corpus3.py` | `d11` 모든 지원 색 공간의 비압축 타일, `d12` 옮긴 레이어(오프셋·음수 좌표·캔버스 밖), `d13` 8비트 정수 문서 + 선형(`g10`) 프로파일(정답은 같은 내용을 Krita가 `srgbtrc`로 변환한 값) |
+| `gen_corpus4.py` | `d14` 실수형(F16·F32) RGBA·GRAYA 문서 10개: 선형(`g10`)·sRGB 감마(`srgbtrc`) 프로파일, 알파가 변하는 문서(`-alpha`). 레이어 하나(`P`)의 합성 결과가 곧 그 레이어가 되게 만들어서 Krita가 저장한 `mergedimage.png`를 정답 렌더로 쓴다. Krita가 한 프로세스에서 여러 문서를 만들면 비정상 종료한 적이 있어 문서마다 따로 실행한다(`KRA_ONLY=문서 이름`) |
 | `gen_names.py` | `n00`~`n06` 특이한 이미지 이름(한글, 공백, `..`, 탭, 큰따옴표, 앞뒤 공백, 300자). `..`·탭(`n02`, `n03`)만 안전하지 않아 거부되고 나머지는 읽힌다 |
 | `in/*.png` | 합성 입력 이미지(사용자 콘텐츠 아님) |
 | `kra_ref.py` | 표준 라이브러리만 쓰는 독립 타일 해석기(LZF 포함). 구현과 코드를 공유하지 않는다 |
 | `png_dec.py` | 표준 라이브러리만 쓰는 8비트 PNG 해석기(원본 PNG 정답용) |
 | `dump-importer.mts` | 코퍼스를 `importKra`로 읽어 JSON으로 덤프한다 |
-| `compare_importer.py` | 덤프를 정답(`*.truth.json`)과 대조한다. 16비트 → 8비트 환원식과 프로파일 선형 판정은 이 파일이 따로 다시 쓴다. `d13`은 Krita의 색 변환(lcms)과 최대 1단계 차이(알파는 정확히 일치)를 허용한다 |
+| `compare_importer.py` | 덤프를 정답(`*.truth.json`)과 대조한다. 16비트 정수·16/32비트 실수 → 8비트 환원식과 프로파일 선형 판정은 이 파일이 따로 다시 쓴다. `d13`은 Krita의 색 변환(lcms)과 최대 1단계 차이(알파는 정확히 일치)를 허용한다. `d14`는 (1) Krita가 읽어 준 네이티브 바이트에 환원식을 적용한 값과 정확히 같고 (2) Krita가 저장한 합성 이미지와 1단계 이내로 같아야 한다 |
 | `export_vectors.py` | 코퍼스에서 타일 페이로드 몇 개를 뽑아 `tests/corpus/formats/kra-real-tile-vectors.ts`(알려진 정답 벡터)를 만든다 |
 
 ## 실행
@@ -46,6 +47,10 @@ for fn in d08_noise d09_blend2 d10_from_png; do
   KRA_ONLY=$fn xvfb-run -a -s "-screen 0 1280x1024x24" kritarunner -s gen_corpus2
 done
 xvfb-run -a -s "-screen 0 1280x1024x24" kritarunner -s gen_corpus3
+for n in d14-float-rgba16-g10 d14-float-rgba32-g10 d14-float-gray16 d14-float-gray32 d14-float-rgba16-srgbtrc d14-float-rgba32-srgbtrc \
+  d14-float-rgba16-alpha d14-float-rgba32-alpha d14-float-gray16-alpha d14-float-gray32-alpha; do
+  KRA_ONLY=$n xvfb-run -a -s "-screen 0 1280x1024x24" kritarunner -s gen_corpus4
+done
 xvfb-run -a -s "-screen 0 1280x1024x24" kritarunner -s gen_names
 ```
 
@@ -71,5 +76,6 @@ python3 -I tests/corpus/formats/krita-oracle/export_vectors.py "$KRA_OUT" tests/
 ## 한계
 
 - 5.2.2 한 버전만 관찰했다. 다른 버전의 차이는 모른다.
-- `float` 형식(F16/F32), CMYK, Lab, XYZ, YCbCr 문서는 코퍼스에 있지만 코덱이 픽셀을 환원하지 않으므로 대조는 "건너뜀 + `unsupported` 진단 확인"까지만 한다.
+- CMYK, Lab, XYZ, YCbCr 문서는 코퍼스에 있지만 코덱이 픽셀을 환원하지 않으므로(ICC 색 변환이 필요하다) 대조는 "건너뜀 + `unsupported` 진단 확인"까지만 한다.
+- 실수형은 Krita가 한 가지 값(`pixelData`)만 읽어 줄 뿐 8비트 변환을 직접 해 주지 않아서(색 공간 변환 API가 이 환경에서 비정상 종료했다), 8비트 정답은 합성 이미지(`mergedimage.png`)에서 얻고 그 비교는 1단계 이내로 한다.
 - 합성 문서만 쓴다. 사용자의 실제 `.kra`는 `tests/corpus/formats/local-samples/`에 두고 `tests/format-gateway/local-samples-corpus.test.ts`로 구조만 검사한다.

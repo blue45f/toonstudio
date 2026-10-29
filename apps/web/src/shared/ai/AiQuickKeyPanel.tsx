@@ -23,7 +23,6 @@ import {
 import {
   addQuickKey,
   chooseQuickKeyModel,
-  findQuickKeyConnection,
   isQuickKeyProvider,
   isQuickKeyRegistered,
   QUICK_KEY_PRESETS,
@@ -32,8 +31,20 @@ import {
   type QuickKeyProviderId,
 } from "./ai-quick-key";
 import { probeUserAiConnection } from "./user-ai-connection-probe";
-import { getUserAiSnapshot, setUserAiConfiguration, useUserAi, userAiPersonalFirstConnectionsForCapability } from "./user-ai-store";
-import { EMPTY_AI_CONNECTION, userAiConnectionApiKeys, userAiRoutingSettings, type UserAiConnection } from "./user-ai-types";
+import {
+  getUserAiSnapshot,
+  setUserAiConfiguration,
+  useUserAi,
+  userAiPersonalFirstConnectionsForCapability,
+  userAiTextKeyOrder,
+} from "./user-ai-store";
+import {
+  EMPTY_AI_CONNECTION,
+  userAiConnectionApiKeys,
+  type UserAiConfiguration,
+  type UserAiConnection,
+  type UserAiResolvedConnection,
+} from "./user-ai-types";
 
 import type { FreeAiPoolStatus } from "./free-ai-pool-status";
 
@@ -137,6 +148,32 @@ async function verifyQuickKey(provider: QuickKeyProviderId, key: string): Promis
   return { status: "unverified", model: preset.model, reason };
 }
 
+/** 경로 목록에서 서로 다른 키(연결+키) 수를 세는 식별자. 같은 키의 모델별 경로는 한 키로 센다. */
+function routeKeyId(route: UserAiResolvedConnection): string {
+  return `${route.id}\n${route.apiKeyProfileId}`;
+}
+
+function distinctKeys(routes: readonly UserAiResolvedConnection[]): Set<string> {
+  return new Set(routes.map(routeKeyId));
+}
+
+/** 붙여 넣은 키를 비용 동의와 함께 등록하면 설정이 어떻게 되는지(화면 안내용, 저장하지 않는다). 등록할 수 없는 키는 건너뛴다. */
+function previewRegistration(
+  configuration: UserAiConfiguration,
+  keys: readonly PendingKey[],
+): UserAiConfiguration {
+  let preview = configuration;
+  for (const item of keys) {
+    if (!item.provider || !isQuickKeyProvider(item.provider)) continue;
+    try {
+      preview = addQuickKey(preview, item.provider, item.key, { allowPaid: true }).configuration;
+    } catch {
+      // 키·연결 수 상한에 걸린 키는 등록 때도 실패하므로 안내에서도 뺀다.
+    }
+  }
+  return preview;
+}
+
 /** 연결에 저장된 키 전부(꺼 둔 키 포함). 옛 형식 연결은 기본 키 하나로 본다. */
 function allKeysOf(connection: UserAiConnection) {
   return connection.apiKeys?.length ? connection.apiKeys : userAiConnectionApiKeys(connection);
@@ -158,22 +195,28 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
     [configuration.connections],
   );
   const keyCount = connections.reduce((sum, connection) => sum + allKeysOf(connection).length, 0);
-  // 실제로 ToonStudio AI보다 먼저 쓰는 텍스트 키 수. 꺼 둔 키·연결, 먼저 쓰기로 하지 않은 유료 키, 이미지 전용 키는 빼고 센다.
-  const firstKeyCount = new Set(
-    userAiPersonalFirstConnectionsForCapability("text", configuration).map((route) => `${route.id}\n${route.apiKeyProfileId}`),
-  ).size;
+  // 텍스트 요청에서 내 키와 ToonStudio AI의 실제 순서(요청과 같은 규칙). 센 키는 꺼 둔 키·연결, 먼저 쓰기로 하지 않은
+  // 유료 키, 이미지 전용 키를 뺀, ToonStudio AI 앞(또는 고정·내가 정한 순서의 자리)에서 쓰는 텍스트 키다.
+  const keyOrder = userAiTextKeyOrder(configuration);
+  const firstNow = distinctKeys(userAiPersonalFirstConnectionsForCapability("text", configuration));
   const premium = poolStatus?.premium;
   const needsPaidConsent = pending.some((item) => item.provider && AI_KEY_PROVIDERS[item.provider].cost === "paid" && item.provider !== "fal");
-  // 동의하면 "유료 키 먼저"가 켜져, 자동 사용에 이미 동의했지만 아직 먼저 쓰지 않던 유료 키도 함께 먼저 쓴다. 동의 전에 알린다.
-  // 동의하지 않은 유료 키(예: AI 보조 카드에서 연결한 키)는 이번 동의로 바뀌지 않으므로 적지 않는다.
-  const routingNow = userAiRoutingSettings(configuration);
-  const otherPaidNames = routingNow.preferPaidKeys === true
-    ? []
-    : [...new Set(connections
-      .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok" && connection.paidAutoUse === true)
-      .map((connection) => connection.label))];
   const unresolved = pending.some((item) => item.provider === null);
   const registrable = pending.filter((item) => item.provider && isQuickKeyProvider(item.provider));
+  // 동의하고 등록했을 때의 설정을 미리 만들어(저장하지 않는다), 동의로 실제로 바뀌는 것만 알린다: 이 키를 쓰는 자리와,
+  // 이번 동의로 새로 먼저 쓰이게 되는 다른 유료 키(자동 사용에 이미 동의했지만 아직 먼저 쓰지 않던 키).
+  const consentPreview = needsPaidConsent ? previewRegistration(configuration, registrable) : null;
+  const consentKeyOrder = consentPreview ? userAiTextKeyOrder(consentPreview) : keyOrder;
+  const pastedKeys = new Set(registrable.map((item) => item.key));
+  const firstAfterConsent = consentPreview ? userAiPersonalFirstConnectionsForCapability("text", consentPreview) : [];
+  const otherPaidNames = [...new Set(firstAfterConsent
+    .filter((route) => route.costPolicy === "user-funded-byok" && !pastedKeys.has(route.apiKey) && !firstNow.has(routeKeyId(route)))
+    .map((route) => route.label))];
+  // 동의 문구의 "이 키"는 붙여 넣은 유료 키다. 함께 붙인 무료 키가 고정되는 경우를 유료 키 고정으로 알리지 않는다.
+  const paidPastedKeys = new Set(registrable
+    .filter((item) => item.provider && AI_KEY_PROVIDERS[item.provider].cost === "paid")
+    .map((item) => item.key));
+  const pastedKeyPinned = firstAfterConsent.some((route) => paidPastedKeys.has(route.apiKey));
   const canRegister = !busy && registrable.length > 0 && !unresolved && (!needsPaidConsent || consent);
 
   const addPending = (raw: string) => {
@@ -236,7 +279,6 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
         const provider = item.provider;
         if (!provider || !isQuickKeyProvider(provider)) continue;
         const name = providerName(provider);
-        const existing = findQuickKeyConnection(current, provider);
         const verification = await verifyQuickKey(provider, item.key);
         if (verification.status === "rejected") {
           results.push({ id: item.id, tone: "error", text: `${name} 키가 거절됐어요. 키가 맞는지, 만료되지 않았는지 확인해 주세요. 등록하지 않았어요.` });
@@ -247,8 +289,8 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           continue;
         }
         const added = addQuickKey(current, provider, item.key, {
-          // 이미 있는 연결은 사용자가 고른 모델을 그대로 두고 키만 더한다.
-          model: existing ? undefined : verification.model,
+          // 확인한 모델은 새 연결을 만들 때만 쓰인다. 이미 있는 연결은 사용자가 고른 모델을 그대로 두고 키만 더한다.
+          model: verification.model,
           allowPaid: consent,
         });
         current = added.configuration;
@@ -298,11 +340,15 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
             <span className="min-w-0">
               <strong className="block text-sm">내 키</strong>
               <span className="mt-0.5 block text-xs leading-5 text-fg-3">
-                {firstKeyCount > 0
-                  ? `등록한 키 ${firstKeyCount}개를 먼저 써요.`
-                  : keyCount > 0
-                    ? "지금 먼저 쓰는 키가 없어요. 아래 목록에서 키 상태를 확인해 주세요."
-                    : "등록한 키가 없으면 건너뛰어요."}
+                {keyOrder === "fixed"
+                  ? "“하나만 고정”으로 고른 키만 써요. ToonStudio AI로 넘기지 않아요."
+                  : keyOrder === "first"
+                    ? `등록한 키 ${firstNow.size}개를 먼저 써요.`
+                    : keyOrder === "after"
+                      ? `“내가 정한 순서”에 따라 ToonStudio AI 다음에 등록한 키 ${firstNow.size}개를 써요.`
+                      : keyCount > 0
+                        ? "지금 먼저 쓰는 키가 없어요. 아래 목록에서 키 상태를 확인해 주세요."
+                        : "등록한 키가 없으면 건너뛰어요."}
               </span>
             </span>
           </li>
@@ -313,15 +359,17 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
             <span className="min-w-0">
               <strong className="block text-sm">ToonStudio AI <span className="font-semibold text-good">· 키·비용 없이</span></strong>
               <span className="mt-0.5 block text-xs leading-5 text-fg-3">
-                {premium?.configured
-                  ? `고성능 AI(하루 ${premium.userDailyRequestLimit}회까지) → 무료 AI 순서로 이어서 처리해요. 로그인만 하면 돼요.`
-                  : poolStatus?.configured
-                    ? "무료 AI가 성능 순서로 이어서 처리해요. 로그인만 하면 돼요."
-                    : poolStatus
-                      ? "지금은 준비 중이에요. 내 키를 등록하면 바로 쓸 수 있어요."
-                      : poolCheckFailed
-                        ? "지금은 상태를 확인하지 못했어요. 잠시 뒤 다시 열거나 내 키를 등록해 주세요."
-                        : "상태를 확인하는 중이에요."}
+                {keyOrder === "fixed"
+                  ? "“하나만 고정”을 쓰는 동안은 쓰지 않아요. 고정을 풀면 키 없이도 바로 써요."
+                  : premium?.configured
+                    ? `고성능 AI(하루 ${premium.userDailyRequestLimit}회까지) → 무료 AI 순서로 이어서 처리해요. 로그인만 하면 돼요.`
+                    : poolStatus?.configured
+                      ? "무료 AI가 성능 순서로 이어서 처리해요. 로그인만 하면 돼요."
+                      : poolStatus
+                        ? "지금은 준비 중이에요. 내 키를 등록하면 바로 쓸 수 있어요."
+                        : poolCheckFailed
+                          ? "지금은 상태를 확인하지 못했어요. 잠시 뒤 다시 열거나 내 키를 등록해 주세요."
+                          : "상태를 확인하는 중이에요."}
               </span>
             </span>
           </li>
@@ -418,7 +466,14 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
             <input type="checkbox" className="mt-1" checked={consent} disabled={busy} onChange={(event) => setConsent(event.target.checked)} />
             <span>
               유료 서비스 키는 쓸 때마다 내 계정에 비용이 청구될 수 있어요. 등록하면 아래 설정의 유료 키 자동 사용이
-              &ldquo;내 유료 키를 먼저 사용&rdquo;으로 바뀌어, AI 기능이 이 키를 먼저 써요.
+              &ldquo;내 유료 키를 먼저 사용&rdquo;으로 바뀌어,
+              {consentKeyOrder === "fixed"
+                ? pastedKeyPinned
+                  ? " “하나만 고정”으로 이 키를 써요."
+                  : " 지금은 “하나만 고정”이라 고정한 키만 쓰고, 이 키는 고정할 키로 고를 때 써요."
+                : consentKeyOrder === "after"
+                  ? " “내가 정한 순서”에 따라 ToonStudio AI 다음에 이 키를 써요."
+                  : " AI 기능이 이 키를 먼저 써요."}
               {otherPaidNames.length > 0 && ` 이미 등록한 유료 키(${otherPaidNames.join(", ")})도 함께 먼저 써요.`}
               {" 설정에서 언제든 바꿀 수 있어요."}
             </span>
@@ -482,7 +537,8 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                         <button
                           type="button"
                           className={`${ICON_BUTTON} ml-auto`}
-                          aria-label={`${provider ? providerName(provider) : connection.label} ${key.label} 삭제`}
+                          // 같은 서비스 연결이 둘이면 키 이름이 겹칠 수 있다(동의 분리). 옆에 보이는 가린 키로 구별한다.
+                          aria-label={`${provider ? providerName(provider) : connection.label} ${key.label} ${maskAiKey(key.apiKey)} 삭제`}
                           onClick={() => removeKey(connection, key.id)}
                         >
                           <Trash2 size={15} aria-hidden />

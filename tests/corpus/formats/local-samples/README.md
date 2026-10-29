@@ -44,7 +44,7 @@ pnpm exec vitest run tests/format-gateway/local-samples-corpus.test.ts
   `ncells`가 일치하고 마지막 브러시가 파일 끝에서 끝나는지) 확인한다. 독립 오라클은 없고, 개발 중에는 표준 라이브러리만 쓰는
   Python 스크립트와 필드·픽셀 해시를 대조했으며 그 결과는 설계 문서에 있다.
 - `.kra`/`.krz` 파일마다 구조 진단(레이어 데이터 누락·타일 해제 실패·한도 초과·잘못된 오프셋, 타일 파일 끝 잔여 바이트)이 없는지,
-  그룹 부모가 앞선 그룹 레이어인지, 지원하는 색 공간(RGBA·RGBA16·GRAYA·GRAYAU16)의 래스터 레이어 픽셀 수가 범위와 맞는지 확인한다.
+  그룹 부모가 앞선 그룹 레이어인지, 지원하는 색 공간(RGBA·RGBA16·GRAYA·GRAYAU16과 실수형 RGBAF16·RGBAF32·GRAYAF16·GRAYAF32)의 래스터 레이어 픽셀 수가 범위와 맞는지 확인한다.
   마스크·복제·필터 레이어 같은 의미 손실은 `unsupported`로 보고될 뿐 실패가 아니다. 픽셀 값은 Krita가 읽어 준 정답과 대조하는
   `tests/corpus/formats/krita-oracle/`의 도구로 따로 검증한다(Krita 5.2.x를 직접 돌려 코퍼스를 만든다).
 - 형식별로 샘플이 없으면 그 형식의 `describe`와 테스트는 등록되지 않고, 이 디렉터리가 Git에서 무시되는지만

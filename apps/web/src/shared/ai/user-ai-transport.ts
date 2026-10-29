@@ -163,7 +163,10 @@ export async function userAiFetch(
         );
       }
       // Gemini·xAI는 잘못됐거나 폐기된 키에 401이 아니라 400으로 답한다. 키 오류로 보고 다음 키·경로로 넘긴다.
-      if (response.status === 401 || response.status === 403 || (response.status === 400 && invalidApiKeyResponse(bytes))) {
+      const invalidKey = response.status === 400 && invalidApiKeyResponse(bytes);
+      // 401과 같은 인증 대기를 건다. 걸지 않으면 폐기된 키를 요청마다 다시 불러 하루 안전 한도만 깎는다.
+      if (invalidKey) await recordFreeAiRuntimeResponse(connection, 401, response.headers);
+      if (response.status === 401 || response.status === 403 || invalidKey) {
         throw new UserAiTransportError(
           "authentication",
           `개인 무료 API 키 인증에 실패했습니다 (HTTP ${response.status}).`,
@@ -245,7 +248,12 @@ export async function completeUserAiTextDetailed(
   const attemptedRouteIds: string[] = [];
   let lastSafeFailoverError: unknown;
   let sawQuotaExhaustion = false;
+  // 출력 상한에 걸린 빈 답. 다음 키를 마저 써 보고, 모두 안 되면 이 이유로 알린다(호출 쪽은 ToonStudio AI로 넘긴다).
+  let emptyTruncated: UserAiEmptyTruncatedError | null = null;
+  // 유료 키가 빈 답을 냈다면 이미 비용이 청구됐다. 같은 요청을 다른 유료 키로 다시 보내지 않는다(무료 키는 계속 쓴다).
+  let paidAnswerBilled = false;
   for (const connection of candidates) {
+    if (paidAnswerBilled && connection.costPolicy === "user-funded-byok") continue;
     attemptedConnectionIds.push(connection.id);
     attemptedRouteIds.push(connection.routeId);
     try {
@@ -286,6 +294,15 @@ export async function completeUserAiTextDetailed(
         truncated: result.choices?.[0]?.finish_reason === "length",
       };
     } catch (error) {
+      if (error instanceof UserAiEmptyTruncatedError) {
+        emptyTruncated = error;
+        paidAnswerBilled ||= connection.costPolicy === "user-funded-byok";
+        continue;
+      }
+      // 빈 잘린 답 뒤에 다음 키가 추론 전에 4xx로 거절했다(예: Groq 413, 분당 토큰 초과): 그 키만 건너뛰고, 모두 안 되면
+      // 아래에서 빈 답을 이유로 알려 호출 쪽이 ToonStudio AI로 넘기게 한다. 5xx·네트워크 오류·시간 초과는 제공자가
+      // 이미 받았을 수 있으므로 재전송 금지 규칙대로 바로 멈춘다(인증·한도 4xx는 아래 기존 분기가 다룬다).
+      if (emptyTruncated && rejectedBeforeInference(error)) continue;
       const quotaExhaustion = isUserAiQuotaExhaustion(error);
       const safeAuthenticationFailover = error instanceof UserAiTransportError
         && error.code === "authentication";
@@ -295,6 +312,7 @@ export async function completeUserAiTextDetailed(
     }
   }
 
+  if (emptyTruncated) throw emptyTruncated;
   if (!sawQuotaExhaustion && lastSafeFailoverError instanceof UserAiTransportError) {
     throw lastSafeFailoverError;
   }
@@ -316,6 +334,15 @@ export async function completeUserAiText(
 function isSafeUserAiRouteFailover(error: unknown): boolean {
   return isUserAiQuotaExhaustion(error)
     || (error instanceof UserAiTransportError && error.code === "authentication");
+}
+
+/** 제공자가 요청을 처리하기 전에 4xx로 거절했다(요청 크기·형식·모델 없음 등). 인증·한도 4xx는 따로 분류된다. */
+function rejectedBeforeInference(error: unknown): boolean {
+  return error instanceof UserAiTransportError
+    && error.code === "http-error"
+    && error.status !== undefined
+    && error.status >= 400
+    && error.status < 500;
 }
 
 function cloneFormData(source: FormData): FormData {

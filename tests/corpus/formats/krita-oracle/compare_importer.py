@@ -1,8 +1,8 @@
 # importKra 결과(dump-importer.mts가 만든 JSON)를 Krita가 저장 직전에 읽어 준 정답(*.truth.json)과 대조한다.
 # 표준 라이브러리만 쓴다. 사용법: python3 -I compare_importer.py <코퍼스 디렉터리> <덤프 디렉터리>
 #
-# 정답은 이 스크립트가 만든 값이 아니라 Krita가 읽어 준 값이다(Node.pixelData, 원본 PNG 등). 16비트 값의 8비트 환원식만
-# 이 파일이 다시 쓴다(importer와 독립 구현이라 표 구현 오류를 가려낸다).
+# 정답은 이 스크립트가 만든 값이 아니라 Krita가 읽어 준 값이다(Node.pixelData, 원본 PNG, Krita가 저장한 합성 이미지 등). 16비트 정수와
+# 16·32비트 실수 값의 8비트 환원식만 이 파일이 다시 쓴다(importer와 독립 구현이라 표 구현 오류를 가려낸다).
 import base64
 import glob
 import hashlib
@@ -10,6 +10,7 @@ import json
 import math
 import os
 import re
+import struct
 import sys
 import zipfile
 
@@ -26,8 +27,11 @@ API_TO_FILE_TYPE = {
     'clonelayer': 'clonelayer', 'filelayer': 'filelayer',
 }  # 채우기 레이어는 만들다가 Krita가 종료되어 파일을 관찰하지 못했으므로 대응표에 없다
 MASK_TYPES = {'transparencymask', 'selectionmask', 'filtermask', 'colorizemask', 'transformmask'}
-# colorspacename -> (모델, 비트 깊이, 픽셀 바이트). importer가 RGBA8로 환원하는 형식만 있다.
-FORMATS = {'RGBA': ('rgb', 8, 4), 'RGBA16': ('rgb', 16, 8), 'GRAYA': ('gray', 8, 2), 'GRAYAU16': ('gray', 16, 4)}
+# colorspacename -> (모델, 비트 깊이, 픽셀 바이트, 샘플 종류). importer가 RGBA8로 환원하는 형식만 있다.
+FORMATS = {
+    'RGBA': ('rgb', 8, 4, 'int'), 'RGBA16': ('rgb', 16, 8, 'int'), 'GRAYA': ('gray', 8, 2, 'int'), 'GRAYAU16': ('gray', 16, 4, 'int'),
+    'RGBAF16': ('rgb', 16, 8, 'float'), 'RGBAF32': ('rgb', 32, 16, 'float'), 'GRAYAF16': ('gray', 16, 4, 'float'), 'GRAYAF32': ('gray', 32, 8, 'float'),
+}
 
 
 def oetf(value):
@@ -38,8 +42,36 @@ def reduce16(value, linear):
     return int(math.floor(255 * oetf(value / 65535) + 0.5)) if linear else int(math.floor(value / 257 + 0.5))
 
 
-def native_to_rgba8(model, depth, native, linear):
-    """Krita 네이티브 픽셀(B,G,R,A 또는 회색,알파; 16비트는 리틀 엔디언)을 직선 RGBA8로 바꾼다."""
+def quantize16(value):
+    """실수 샘플을 16비트 정수로: 0~1로 자르고(음수·NaN은 0) 65535를 곱해 반올림한다."""
+    if not value > 0:
+        return 0
+    if value >= 1:
+        return 65535
+    return int(math.floor(value * 65535 + 0.5))
+
+
+def float_to_rgba8(model, depth, native, linear):
+    """실수 형식의 네이티브 픽셀(R,G,B,A 또는 회색,알파; 리틀 엔디언 반정밀도·단정밀도)을 직선 RGBA8로 바꾼다."""
+    fmt, size = ('<e', 2) if depth == 16 else ('<f', 4)
+    values = [struct.unpack_from(fmt, native, index * size)[0] for index in range(len(native) // size)]
+
+    def color(value):
+        return reduce16(quantize16(value), linear)
+
+    def alpha(value):
+        return int(math.floor(quantize16(value) / 257 + 0.5))
+
+    if model == 'rgb':
+        return bytes((color(values[0]), color(values[1]), color(values[2]), alpha(values[3])))
+    gray = color(values[0])
+    return bytes((gray, gray, gray, alpha(values[1])))
+
+
+def native_to_rgba8(model, depth, native, linear, kind='int'):
+    """Krita 네이티브 픽셀(정수는 B,G,R,A 또는 회색,알파; 16비트는 리틀 엔디언)을 직선 RGBA8로 바꾼다."""
+    if kind == 'float':
+        return float_to_rgba8(model, depth, native, linear)
     if (model, depth) == ('rgb', 8):
         return bytes((native[2], native[1], native[0], native[3]))
     if (model, depth) == ('gray', 8):
@@ -94,14 +126,14 @@ def layer_pixel(layer, pixels, x, y):
     return bytes(layer['defaultPixel'])
 
 
-def compare_window(report, tag, layer, model, depth, psize, window, native_window, linear, counter):
+def compare_window(report, tag, layer, model, depth, psize, window, native_window, linear, counter, kind='int'):
     wx, wy, ww, wh = window
     pixels = base64.b64decode(layer['pixelsB64']) if layer['pixelsB64'] is not None else None
     mismatches = 0
     for j in range(wh):
         for i in range(ww):
             got = layer_pixel(layer, pixels, wx + i, wy + j)
-            expected = native_to_rgba8(model, depth, native_window[(j * ww + i) * psize:(j * ww + i + 1) * psize], linear)
+            expected = native_to_rgba8(model, depth, native_window[(j * ww + i) * psize:(j * ww + i + 1) * psize], linear, kind)
             setattr(report, counter, getattr(report, counter) + 1)
             if got != expected:
                 mismatches += 1
@@ -111,7 +143,33 @@ def compare_window(report, tag, layer, model, depth, psize, window, native_windo
         report.bad('%s: 픽셀 %d개 불일치' % (tag, mismatches))
 
 
-def check_special(report, stem, truth, dump):
+def check_float_against_render(report, stem, layer, corpus):
+    """Krita가 저장한 합성 이미지(mergedimage.png)와 importer가 읽은 레이어 픽셀을 대조한다. 레이어가 합성 결과 그대로이도록 만든 문서만
+    쓴다. 색과 알파 모두 1단계 이내여야 한다(Krita의 변환과 이 환원식이 정수 반올림에서 갈릴 수 있는 폭). 알파 0인 픽셀은 색을 보지 않는다."""
+    archive = zipfile.ZipFile(os.path.join(corpus, stem + '.kra'))
+    width, height, rows = png_dec.decode_png(archive.read('mergedimage.png'))
+    pixels = base64.b64decode(layer['pixelsB64'])
+    worst = 0
+    off_by_one = 0
+    bad = 0
+    for y in range(height):
+        for x in range(width):
+            got = layer_pixel(layer, pixels, x, y)
+            expected = rows[y][x * 4:x * 4 + 4]
+            if got[3] == 0 and expected[3] == 0:
+                continue
+            diff = max(abs(a - b) for a, b in zip(got, expected))
+            worst = max(worst, diff)
+            if diff == 1:
+                off_by_one += 1
+            if diff > 1:
+                bad += 1
+    print('  %s: Krita 합성 이미지와 최대 %d단계 차이(1단계 차이 픽셀 %d개)' % (stem, worst, off_by_one))
+    if bad:
+        report.bad('%s: Krita가 그린 합성 이미지와 1단계를 넘게 다른 픽셀 %d개' % (stem, bad))
+
+
+def check_special(report, stem, truth, dump, corpus):
     """트리 구조가 없는 정답(잡음, 블렌드 후보, PNG 원본, 비압축 타일 문서)."""
     layers = dump['layers']
     linear = is_linear(dump['image']['profileName'])
@@ -156,6 +214,15 @@ def check_special(report, stem, truth, dump):
                 report.special_pixels += 1
         if mismatches:
             report.bad('%s: Krita가 변환한 sRGB 값과 1단계를 넘게 다른 픽셀 %d개' % (stem, mismatches))
+    elif stem.startswith('d14-'):
+        info = truth['doc']
+        model = 'rgb' if info['colorModel'] == 'RGBA' else 'gray'
+        depth = 16 if info['colorDepth'] == 'F16' else 32
+        layer = [l for l in layers if l['name'] == 'P'][0]
+        # (1) 환원식과 정확히 같다: 네이티브 바이트는 Krita가 읽어 준 pixelData다
+        compare_window(report, stem, layer, model, depth, truth['pixelSize'], truth['window'], base64.b64decode(truth['layers']['P']), linear, 'special_pixels', 'float')
+        # (2) Krita가 그린 합성 이미지와 1단계 이내로 같다
+        check_float_against_render(report, stem, layer, corpus)
     elif stem.startswith('d10-'):
         width, height, rows = png_dec.decode_png(open(os.path.join(HERE, 'in', truth['source']), 'rb').read())
         if dump['image']['width'] != width or dump['image']['height'] != height:
@@ -238,14 +305,14 @@ def check_tree(report, stem, truth, dump, corpus):
             if not any(u['code'] == 'kra-colorspace-unsupported' and u.get('path') == expected_path for u in dump['unsupported']):
                 report.bad('%s: 지원하지 않는 색 공간 %s인데 unsupported 진단이 없다' % (tag, color_space))
             continue
-        model, depth, psize = FORMATS[color_space]
+        model, depth, psize, kind = FORMATS[color_space]
         if node['pixelSize'] != psize:
             report.bad('%s: 픽셀 크기' % tag)
             continue
         if layer['defaultPixel'] is None:
             report.bad('%s: 기본 픽셀이 없다' % tag)
             continue
-        compare_window(report, tag, layer, model, depth, psize, node['window'], base64.b64decode(node['windowPixelsB64']), linear, 'window_pixels')
+        compare_window(report, tag, layer, model, depth, psize, node['window'], base64.b64decode(node['windowPixelsB64']), linear, 'window_pixels', kind)
 
 
 def main():
@@ -263,7 +330,7 @@ def main():
         if 'tree' in truth:
             check_tree(report, stem, truth, dump, corpus)
         else:
-            check_special(report, stem, truth, dump)
+            check_special(report, stem, truth, dump, corpus)
 
     # 관찰 목록(kra-composite-ops.ts)은 코퍼스에서 저장된 id의 집합과 같아야 한다.
     source = open(COMPOSITE_OPS_SOURCE, encoding='utf-8').read()
