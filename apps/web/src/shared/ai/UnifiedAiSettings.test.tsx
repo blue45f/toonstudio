@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as freeAiPoolStatus from "./free-ai-pool-status";
-import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration } from "./user-ai-store";
+import { guardFreeAiRuntimeRequest, resetFreeAiRuntimeBudget } from "./free-ai-runtime-budget";
+import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration, userAiConnectionsForCapability } from "./user-ai-store";
 import { EMPTY_AI_CONNECTION, userAiRoutingSettings, type UserAiConnection } from "./user-ai-types";
 import { UnifiedAiSettings, UnifiedAiSettingsEntryCard } from "./UnifiedAiSettings";
 
@@ -79,15 +80,74 @@ describe("UnifiedAiSettings guided setup", () => {
 
     // 동의하지 않은 유료 키는 자동으로 쓰지 않는다고 알리고, 한 번에 포함할 수 있게 한다.
     expect(await screen.findByText("자동으로 쓰지 않는 유료 키: 대화상자용 유료 키")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "이 키도 자동으로 쓰기" }));
+    const include = screen.getByRole("button", { name: "이 키도 자동으로 쓰기" });
+    include.focus();
+    fireEvent.click(include);
     expect(getUserAiSnapshot().configuration.connections.every((item) => item.paidAutoUse === true)).toBe(true);
     expect(screen.queryByText(/자동으로 쓰지 않는 유료 키/u)).toBeNull();
+    // 버튼이 사라져도 포커스를 잃지 않고(지금 고른 선택지로 옮긴다), 결과를 알림 영역으로 알린다.
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "내 유료 키를 먼저 사용" }));
+    const announcement = screen.getByText("자동으로 쓰는 유료 키에 넣었어요: 대화상자용 유료 키");
+    expect(announcement.getAttribute("role")).toBe("status");
 
     // "자동으로 사용하지 않음"은 모든 유료 키의 동의를 지운다.
     fireEvent.click(screen.getByRole("radio", { name: "자동으로 사용하지 않음" }));
     const off = getUserAiSnapshot().configuration;
     expect(off.connections.some((item) => item.paidAutoUse === true)).toBe(false);
     expect(userAiRoutingSettings(off)).toMatchObject({ allowPaidFallback: false, preferPaidKeys: false });
+    // 지난 결과("넣었어요")가 알림 영역에 남아 지금 상태와 어긋나지 않는다.
+    expect(announcement.textContent).toBe("");
+
+    // 다시 "먼저 사용"을 고르고 대화상자용 키를 다시 연결하면(AI 보조 카드에서 삭제 후 연결) 같은 안내가 다시 나온다.
+    fireEvent.click(screen.getByRole("radio", { name: "내 유료 키를 먼저 사용" }));
+    act(() => {
+      const current = getUserAiSnapshot().configuration;
+      setUserAiConfiguration({
+        ...current,
+        connections: [...current.connections.filter((item) => item.id !== "dialog-only"), paid("dialog-only", "대화상자용 유료 키")],
+      });
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "이 키도 자동으로 쓰기" }));
+    // 같은 문구라도 알림 영역에 새로 써지므로 화면 읽기 프로그램이 다시 읽는다.
+    expect(announcement.textContent).toBe("자동으로 쓰는 유료 키에 넣었어요: 대화상자용 유료 키");
+  });
+
+  it("in the single fixed mode, does not list the fixed paid key as unused and says it is billed on every request", async () => {
+    setUserAiConfiguration({
+      version: 1,
+      connections: [{
+        ...textConnection("claude-fixed", "Claude (Anthropic)", 10),
+        baseUrl: "https://api.deepseek.com",
+        textModel: "deepseek-chat",
+        costPolicy: "user-funded-byok",
+        models: [{ id: "model-claude-fixed", label: "deepseek-chat", model: "deepseek-chat", capability: "text", enabled: true, priority: 10 }],
+      }],
+      assignments: { text: "claude-fixed", image: null, inference: null, "three-d": null },
+      routing: { mode: "manual", allowPaidFallback: true, preferPaidKeys: false, managedPoolPriority: 50, serverProviderOrder: [], paidAutoUsePerKey: true },
+    });
+    render(<UnifiedAiSettings />);
+
+    expect(await screen.findByText("“하나만 고정”으로 고른 유료 키(Claude (Anthropic))는 이 설정과 상관없이 요청마다 내 계정에 비용이 청구돼요.")).toBeTruthy();
+    expect(screen.queryByText(/자동으로 쓰지 않는 유료 키/u)).toBeNull();
+    expect(screen.queryByRole("button", { name: "이 키도 자동으로 쓰기" })).toBeNull();
+  });
+
+  it("shows today's real remaining app safety limit for a free connection, read from its key routes", async () => {
+    resetFreeAiRuntimeBudget();
+    setUserAiConfiguration({
+      version: 1,
+      connections: [textConnection("free-a", "무료 연결", 10)],
+      assignments: { text: "free-a", image: null, inference: null, "three-d": null },
+    });
+    const route = userAiConnectionsForCapability("text")[0]!;
+    for (let index = 0; index < 3; index += 1) {
+      await guardFreeAiRuntimeRequest(route, "text", "/models", "GET", undefined);
+    }
+    render(<UnifiedAiSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "고급 설정" }));
+
+    expect(await screen.findByText("오늘 남은 앱 안전 한도 22회", {}, { timeout: 10_000 })).toBeTruthy();
+    resetFreeAiRuntimeBudget();
   });
 
   it("shows the beginner flow first and keeps technical controls behind advanced settings", async () => {

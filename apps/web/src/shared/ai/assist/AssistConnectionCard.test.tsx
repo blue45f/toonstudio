@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { addQuickKey } from "../ai-quick-key";
 import { lockUserAi, getUserAiSnapshot, setUserAiConfiguration } from "../user-ai-store";
 import { EMPTY_AI_CONNECTION, userAiRoutingSettings, type UserAiConnection } from "../user-ai-types";
 
@@ -241,6 +242,27 @@ describe("AssistConnectionCard", () => {
     expect(next?.apiKeys?.map((item) => item.id)).toEqual(["key-1", "key-2"]);
     expect(next?.apiKey).toBe(FAKE_KEY);
     expect(screen.getByText(/^연결됨 · claude-sonnet-5-5$/)).toBeTruthy();
+  });
+
+  it("keeps showing and changing its own connection when a consented Claude key from the key panel is a separate connection", async () => {
+    render(<AssistConnectionCard />);
+    await connect();
+    // 키 붙여넣기에서 자동 사용에 동의하고 등록한 다른 Claude 키는 동의 분리 때문에 따로 연결로 들어간다.
+    const consentedKey = `sk-ant-api03-${"q".repeat(40)}`;
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "anthropic", consentedKey, { allowPaid: true }).configuration);
+    const byId = (id: string) => getUserAiSnapshot().configuration.connections.find((item) => item.id === id);
+    expect(byId("claude-byok-2")).toMatchObject({ paidAutoUse: true, apiKey: consentedKey });
+
+    for (const next of ["claude-sonnet-5-5", "claude-future-9"]) {
+      fireEvent.change(screen.getByLabelText("기본 모델"), { target: { value: next } });
+      expect(byId("claude-byok")?.textModel).toBe(next);
+      expect(screen.getByText(`연결됨 · ${next}`)).toBeTruthy();
+    }
+    // 자동 경로에서 쓰는, 동의한 키의 모델은 그대로다.
+    expect(byId("claude-byok-2")?.textModel).toBe("claude-opus-5-5");
+
+    fireEvent.click(screen.getByRole("button", { name: "연결 삭제" }));
+    expect(getUserAiSnapshot().configuration.connections.map((item) => item.id)).toEqual(["claude-byok-2"]);
   });
 
   it("does not save anything when Anthropic rejects the key", async () => {

@@ -96,9 +96,13 @@ function emptyRouteAssignments(): Record<UserAiCapability, UserAiRouteAssignment
 }
 
 function withConnection(configuration: UserAiConfiguration, next: UserAiConnection): UserAiConfiguration {
+  // 이미 있는 연결은 제자리에서 바꾼다. 끝으로 옮기면 다른 화면의 목록 순서와 "첫 Claude 연결"이 바뀐다.
+  const exists = configuration.connections.some((item) => item.id === next.id);
   return {
     ...configuration,
-    connections: [...configuration.connections.filter((item) => item.id !== next.id), next],
+    connections: exists
+      ? configuration.connections.map((item) => (item.id === next.id ? next : item))
+      : [...configuration.connections, next],
   };
 }
 
@@ -139,10 +143,12 @@ export function AssistConnectionCard() {
   const snapshot = useUserAi();
   const usage = useAssistUsage();
 
-  const connection = useMemo(
-    () => snapshot.configuration.connections.find((item) => isAnthropicBaseUrl(item.baseUrl)),
-    [snapshot.configuration],
-  );
+  // 이 카드가 만든 연결을 먼저 가리킨다. 키 붙여넣기에서 자동 사용에 동의한 Claude 키는 따로 연결로 들어가므로
+  // (ai-quick-key의 동의 분리), 첫 Anthropic 연결을 고르면 모델 변경·삭제·기본 지정이 그 연결에 적용될 수 있다.
+  const connection = useMemo(() => {
+    const anthropic = snapshot.configuration.connections.filter((item) => isAnthropicBaseUrl(item.baseUrl));
+    return anthropic.find((item) => item.id === ASSIST_CONNECTION_ID) ?? anthropic[0];
+  }, [snapshot.configuration]);
   const isDefault = Boolean(
     connection
       && snapshot.configuration.assignments.text === connection.id

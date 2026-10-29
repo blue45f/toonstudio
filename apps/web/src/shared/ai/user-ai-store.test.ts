@@ -2,7 +2,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { addQuickKey, removeQuickKey } from "./ai-quick-key";
-import { getFreeAiRuntimeBudgetSnapshot, guardFreeAiRuntimeRequest, resetFreeAiRuntimeBudget } from "./free-ai-runtime-budget";
+import {
+  FREE_AI_RUNTIME_BUDGET_STORAGE_KEY,
+  getFreeAiRuntimeBudgetSnapshot,
+  guardFreeAiRuntimeRequest,
+  MANAGED_FREE_DAILY_REQUEST_LIMIT,
+  recordFreeAiRuntimeResponse,
+  resetFreeAiRuntimeBudget,
+} from "./free-ai-runtime-budget";
 import {
   getUserAiSnapshot,
   lockUserAi,
@@ -12,7 +19,7 @@ import {
 } from "./user-ai-store";
 import { EMPTY_AI_CONFIGURATION } from "./user-ai-types";
 
-import type { UserAiResolvedConnection } from "./user-ai-types";
+import type { UserAiConfiguration, UserAiResolvedConnection } from "./user-ai-types";
 
 // 실제 키가 아니라 형식만 맞춘 가짜 값이다.
 const OLD_KEY = `gsk_${"o".repeat(52)}`;
@@ -24,7 +31,14 @@ function textRoute(): UserAiResolvedConnection {
   return route;
 }
 
-async function useOnce(route: UserAiResolvedConnection) {
+/** 이 설정에서 그 키를 쓰는 텍스트 경로. */
+function routeOfKey(configuration: UserAiConfiguration, apiKey: string): UserAiResolvedConnection {
+  const route = userAiConnectionsForCapability("text", configuration).find((item) => item.apiKey === apiKey);
+  if (!route) throw new Error("그 키의 텍스트 경로가 없어요.");
+  return route;
+}
+
+async function spendOnce(route: UserAiResolvedConnection) {
   await guardFreeAiRuntimeRequest(route, "text", "/models", "GET", undefined);
 }
 
@@ -44,7 +58,7 @@ describe("setUserAiConfiguration — 경로 사용 기록 정리", () => {
     const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
     setUserAiConfiguration(first.configuration);
     const oldRoute = textRoute();
-    await useOnce(oldRoute);
+    await spendOnce(oldRoute);
     expect(getFreeAiRuntimeBudgetSnapshot(oldRoute).requests).toBe(1);
 
     setUserAiConfiguration(removeQuickKey(getUserAiSnapshot().configuration, first.connectionId, first.keyId));
@@ -61,7 +75,7 @@ describe("setUserAiConfiguration — 경로 사용 기록 정리", () => {
     const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
     setUserAiConfiguration(first.configuration);
     const route = textRoute();
-    await useOnce(route);
+    await spendOnce(route);
 
     const current = getUserAiSnapshot().configuration;
     setUserAiConfiguration({ ...current, connections: current.connections.map((item) => ({ ...item, enabled: false })) });
@@ -71,11 +85,147 @@ describe("setUserAiConfiguration — 경로 사용 기록 정리", () => {
     expect(getFreeAiRuntimeBudgetSnapshot(textRoute()).requests).toBe(1);
   });
 
+  it("잠금·새로 고침 뒤 같은 키를 다시 붙여 넣으면 같은 경로라서 하루 안전 한도 기록이 이어진다", async () => {
+    setUserAiConfiguration(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration);
+    const route = textRoute();
+    for (let index = 0; index < 3; index += 1) await spendOnce(route);
+    await recordFreeAiRuntimeResponse(route, 429, new Headers());
+
+    // 기본 보관은 메모리 전용이라, 잠그거나 새로 고치면 설정이 비고 키를 다시 붙여 넣는다.
+    lockUserAi(false);
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", OLD_KEY).configuration);
+
+    const again = textRoute();
+    expect(again.routeId).toBe(route.routeId);
+    expect(getFreeAiRuntimeBudgetSnapshot(again)).toMatchObject({ requests: 3, blockedReason: "rate-limit" });
+  });
+
+  it("잠금·새로 고침 뒤 다른 키를 붙여 넣으면 같은 경로 ID라도 옛 키의 기록(결제 잠금 포함)을 물려받지 않는다", async () => {
+    setUserAiConfiguration(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration);
+    const oldRoute = textRoute();
+    await spendOnce(oldRoute);
+    await recordFreeAiRuntimeResponse(oldRoute, 402, new Headers());
+    expect(getFreeAiRuntimeBudgetSnapshot(oldRoute).blockedReason).toBe("payment-required");
+
+    lockUserAi(false);
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", NEW_KEY).configuration);
+
+    const newRoute = textRoute();
+    expect(newRoute.routeId).toBe(oldRoute.routeId);
+    expect(getFreeAiRuntimeBudgetSnapshot(newRoute)).toMatchObject({ requests: 0, blockedReason: null });
+    // 새 키로 요청을 보내면 그 키의 기록으로 새로 시작한다(옛 키의 결제 잠금에 걸리지 않는다).
+    await expect(guardFreeAiRuntimeRequest(newRoute, "text", "/models", "GET", undefined)).resolves.toMatchObject({ guarded: true });
+  });
+
+  it("같은 세션에서 키를 지우고 같은 키를 다시 등록하면 안내대로 결제 잠금이 풀린다", async () => {
+    const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
+    setUserAiConfiguration(first.configuration);
+    const route = textRoute();
+    await recordFreeAiRuntimeResponse(route, 402, new Headers());
+
+    setUserAiConfiguration(removeQuickKey(getUserAiSnapshot().configuration, first.connectionId, first.keyId));
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", OLD_KEY).configuration);
+
+    expect(getFreeAiRuntimeBudgetSnapshot(textRoute()).blockedReason).toBeNull();
+  });
+
+  it("기록에는 키를 구별하는 짧은 표식만 남기고 키 값은 저장하지 않는다", async () => {
+    setUserAiConfiguration(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration);
+    await spendOnce(textRoute());
+
+    const stored = localStorage.getItem(FREE_AI_RUNTIME_BUDGET_STORAGE_KEY) ?? "";
+    expect(stored).not.toContain(OLD_KEY);
+    expect(stored).not.toContain(OLD_KEY.slice(-8));
+    expect(stored).toMatch(/"keyTag":"[0-9a-f]{8}"/u);
+  });
+
+  it("두 탭에 서로 다른 키를 붙여 경로 ID가 같아도 서로의 기록을 덮어쓰지 않는다(키마다 하루 한도·결제 잠금 유지)", async () => {
+    // 메모리 전용 탭은 빈 설정에서 시작하므로, 탭마다 붙인 키가 모두 quick-groq:text-1:key-1이 된다. 기록은 두 탭이 함께 쓴다.
+    const tabA = routeOfKey(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration, OLD_KEY);
+    const tabB = routeOfKey(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", NEW_KEY).configuration, NEW_KEY);
+    expect(tabB.routeId).toBe(tabA.routeId);
+
+    for (let index = 0; index < MANAGED_FREE_DAILY_REQUEST_LIMIT; index += 1) {
+      await spendOnce(tabA);
+      await spendOnce(tabB);
+    }
+    await expect(spendOnce(tabA)).rejects.toThrow(/안전 한도/u);
+    await expect(spendOnce(tabB)).rejects.toThrow(/안전 한도/u);
+
+    resetFreeAiRuntimeBudget();
+    await recordFreeAiRuntimeResponse(tabA, 402, new Headers());
+    await spendOnce(tabB);
+    expect(getFreeAiRuntimeBudgetSnapshot(tabA).blockedReason).toBe("payment-required");
+    await expect(spendOnce(tabA)).rejects.toThrow(/결제를 요구/u);
+  });
+
+  it("새로 고친 뒤 키를 다른 순서로 다시 붙여도 키마다 오늘 기록과 잠금이 이어진다", async () => {
+    const both = addQuickKey(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration, "groq", NEW_KEY).configuration;
+    setUserAiConfiguration(both);
+    const oldRoute = routeOfKey(both, OLD_KEY);
+    const newRoute = routeOfKey(both, NEW_KEY);
+    for (let index = 0; index < 3; index += 1) await spendOnce(newRoute);
+    await recordFreeAiRuntimeResponse(newRoute, 429, new Headers());
+    await recordFreeAiRuntimeResponse(oldRoute, 402, new Headers());
+
+    // 잠그거나 새로 고치면 설정이 빈다. 이번에는 새 키를 먼저 붙여 두 키의 자리(key-1·key-2)가 바뀐다.
+    lockUserAi(false);
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", NEW_KEY).configuration);
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", OLD_KEY).configuration);
+
+    const current = getUserAiSnapshot().configuration;
+    expect(routeOfKey(current, NEW_KEY).routeId).toBe(oldRoute.routeId);
+    expect(getFreeAiRuntimeBudgetSnapshot(routeOfKey(current, NEW_KEY))).toMatchObject({ requests: 3, blockedReason: "rate-limit" });
+    expect(getFreeAiRuntimeBudgetSnapshot(routeOfKey(current, OLD_KEY)).blockedReason).toBe("payment-required");
+  });
+
+  it("표식 없는 옛 기록(이전 버전)은 오늘 횟수만 이어 받고, 키에 묶인 결제 잠금은 다른 키에 걸지 않는다", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(FREE_AI_RUNTIME_BUDGET_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      entries: {
+        "api.groq.com:quick-groq:text-1:key-1": {
+          day: today,
+          requests: 7,
+          reservedTokens: 0,
+          quotaFailures: 0,
+          blockedReason: "payment-required",
+          blockedUntil: null,
+          updatedAt: Date.now(),
+        },
+      },
+    }));
+
+    setUserAiConfiguration(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", NEW_KEY).configuration);
+    const route = textRoute();
+    expect(route.routeId).toBe("quick-groq:text-1:key-1");
+    await expect(guardFreeAiRuntimeRequest(route, "text", "/models", "GET", undefined)).resolves.toMatchObject({ guarded: true });
+    expect(getFreeAiRuntimeBudgetSnapshot(route)).toMatchObject({ requests: 8, blockedReason: null });
+
+    // 그 옛 기록이 이 키의 것이었다면 제공자가 다시 402로 답하고, 이번에는 이 키의 표식과 함께 잠근다.
+    await recordFreeAiRuntimeResponse(route, 402, new Headers());
+    expect(getFreeAiRuntimeBudgetSnapshot(route).blockedReason).toBe("payment-required");
+  });
+
+  it("같은 키를 쓰는 다른 연결이 남아 있으면, 한 연결을 지워도 그 키의 결제 잠금은 풀리지 않는다", async () => {
+    const quick = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
+    const quickConnection = quick.configuration.connections[0]!;
+    // 고급 설정에서 같은 주소·모델·키로 만든 연결.
+    const copy = { ...quickConnection, id: "groq-advanced", label: "Groq 고급", priority: 90 };
+    setUserAiConfiguration({ ...quick.configuration, connections: [quickConnection, copy] });
+    await recordFreeAiRuntimeResponse(textRoute(), 402, new Headers());
+
+    setUserAiConfiguration(removeQuickKey(getUserAiSnapshot().configuration, quick.connectionId, quick.keyId));
+    const remaining = textRoute();
+    expect(remaining.id).toBe("groq-advanced");
+    expect(getFreeAiRuntimeBudgetSnapshot(remaining).blockedReason).toBe("payment-required");
+  });
+
   it("다른 경로의 기록은 건드리지 않는다", async () => {
     const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
     setUserAiConfiguration(groq.configuration);
     const groqRoute = textRoute();
-    await useOnce(groqRoute);
+    await spendOnce(groqRoute);
 
     // 다른 서비스 키를 더해도 기존 경로 기록은 남는다.
     setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "gemini", `AIza${"G".repeat(35)}`).configuration);
