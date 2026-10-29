@@ -38,6 +38,11 @@ function clampPoint(point: StudioReviewPenPoint, pageWidth: number, pageHeight: 
   };
 }
 
+/** 새 획의 기본 굵기는 원고 길이 대신 짧은 변을 기준으로 한다. */
+export function studioReviewPenDefaultWidth(page: { readonly width: number; readonly height: number }): number {
+  return Math.min(page.width, page.height) * 0.004;
+}
+
 /**
  * 원시 포인터 점들을 스트로크로 정규화한다. 점이 2개 미만이면 null.
  * 페이지 범위로 클램프하고, 연속 중복점을 제거한다.
@@ -63,7 +68,7 @@ export function normalizeStudioReviewPenStroke(
   if (points.length < 2) return null;
   const width = Number.isFinite(input.width) && (input.width as number) > 0
     ? (input.width as number)
-    : Math.max(page.width, page.height) * 0.004;
+    : studioReviewPenDefaultWidth(page);
   return Object.freeze({
     id: input.id,
     points: Object.freeze(points),
