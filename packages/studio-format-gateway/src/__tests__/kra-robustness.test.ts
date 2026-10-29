@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildKraFixtureDetailed,
+  buildKraMaskTileFile,
   buildKraTileFile,
   kraTilePayload,
   noiseTile,
@@ -10,9 +11,9 @@ import {
 } from "../../../../tests/corpus/formats/kra-fixtures";
 import { buildFormatZipFixture } from "../../../../tests/corpus/formats/krita-bundle-fixtures";
 import { describeKraPixelFormat, kraReduceLut } from "../kra-colorspace";
-import { importKra } from "../kra-document";
+import { applyKraTransparencyMasks, importKra } from "../kra-document";
 import { parseKraMaindoc } from "../kra-maindoc";
-import { assembleKraLayer, decodeKraTile, KraTileError, parseKraTileFile } from "../kra-tiles";
+import { assembleKraLayer, assembleKraMask, decodeKraTile, KraTileError, parseKraTileFile } from "../kra-tiles";
 import { KRA_LIMITS, KraError } from "../kra-types";
 
 /** 결정적 난수(mulberry32). */
@@ -79,6 +80,18 @@ function runTilePipeline(bytes: Uint8Array): void {
   }
 }
 
+/** 마스크 값 파일 전체를 읽는 경로. KraTileError 외의 예외는 모두 결함이다. */
+function runMaskPipeline(bytes: Uint8Array): void {
+  try {
+    const limits = { ...KRA_LIMITS, maxLayerPixels: 300_000 };
+    const file = parseKraTileFile(bytes, limits);
+    assembleKraMask({ file, defaultValue: 7, offsetX: 5, offsetY: -3, limits });
+    for (const tile of file.tiles) decodeKraTile(file, tile);
+  } catch (error) {
+    if (!(error instanceof KraTileError)) throw error;
+  }
+}
+
 describe("손상 입력에서도 정해진 오류만 던진다", () => {
   const tileFile = buildKraTileFile({
     pixelBytes: 4,
@@ -96,6 +109,74 @@ describe("손상 입력에서도 정해진 오류만 던진다", () => {
   it("타일 파일의 무작위 변조 4000건에서 KraTileError 외의 예외가 없다", () => {
     const next = random(20_261_029);
     for (let round = 0; round < 4000; round += 1) runTilePipeline(corrupt(tileFile, next));
+  });
+
+  describe("마스크 값 경로", () => {
+    const maskFile = buildKraMaskTileFile([
+      { x: 0, y: 0, values: (x, y) => (x * 3 + y * 5) & 0xff },
+      { x: 64, y: 0, values: noiseTile(1, 2) },
+      { x: -64, y: 64, values: () => 200 },
+    ]);
+
+    it("마스크 값 파일을 어느 길이에서 잘라도 KraTileError만 난다", () => {
+      for (let length = 0; length <= maskFile.length; length += 1) runMaskPipeline(maskFile.subarray(0, length));
+    });
+
+    it("마스크 값 파일의 무작위 변조 4000건에서 KraTileError 외의 예외가 없다", () => {
+      const next = random(20_261_030);
+      for (let round = 0; round < 4000; round += 1) runMaskPipeline(corrupt(maskFile, next));
+    });
+
+    it("마스크 항목(값 파일, 기본값, maindoc, 레이어 데이터)을 변조하고 ZIP을 다시 만든 600건에서 정해진 오류만 나고 적용 결과가 일관된다", async () => {
+      const detailed = buildKraFixtureDetailed({
+        layers: [
+          {
+            name: "a",
+            tileFile,
+            masks: [
+              { nodetype: "transparencymask", name: "top", valuesFile: maskFile, attrs: { x: "10", y: "-4" } },
+              { nodetype: "transparencymask", name: "low", valuesFile: buildKraMaskTileFile([{ x: 0, y: 0, values: () => 128 }]), defaultValue: Uint8Array.of(255) },
+              { nodetype: "selectionmask", name: "sel", valuesFile: maskFile },
+              { nodetype: "transparencymask", name: "empty" },
+            ],
+          },
+          { nodetype: "grouplayer", name: "g", masks: [{ nodetype: "transparencymask", name: "gm", valuesFile: maskFile }], children: [{ name: "b", tileFile }] },
+        ],
+      });
+      const next = random(5_150);
+      let maskDiagnostics = 0;
+      let applied = 0;
+      let unreadable = 0;
+      let rejected = 0;
+      for (let round = 0; round < 600; round += 1) {
+        const target = Math.floor(next() * detailed.entries.length);
+        const entries = detailed.entries.map((entry, index) =>
+          index === target ? { ...entry, data: corrupt(entry.data ?? new Uint8Array(), next), method: 0 as const } : { ...entry, method: 0 as const },
+        );
+        try {
+          const result = await importKra(buildFormatZipFixture(entries));
+          if (result.unsupported.some((issue) => issue.code.startsWith("kra-mask-") && issue.code !== "kra-mask-unsupported")) maskDiagnostics += 1;
+          for (const layer of result.layers) {
+            const outcome = applyKraTransparencyMasks(layer);
+            if (outcome.status === "applied") {
+              applied += 1;
+              expect(outcome.pixels.length).toBe(layer.pixels!.length);
+            } else if (outcome.status === "mask-unreadable") {
+              unreadable += 1;
+              expect(layer.masks[outcome.maskIndex]!.defaultValue).toBeNull();
+            }
+          }
+        } catch (error) {
+          if (!(error instanceof KraError)) throw error;
+          rejected += 1;
+        }
+      }
+      // 마스크 코드에 실제로 닿았다는 증거
+      expect(maskDiagnostics).toBeGreaterThan(10);
+      expect(applied).toBeGreaterThan(100);
+      expect(unreadable).toBeGreaterThan(5);
+      expect(rejected).toBeLessThan(300);
+    });
   });
 
   it("maindoc.xml의 무작위 변조 1500건에서 KraError 외의 예외가 없다", () => {

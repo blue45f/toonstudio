@@ -92,9 +92,64 @@ describe("노드 트리 펼치기", () => {
     ]);
     expect(drafts[0]!.masks[0]!.attributes["filename"]).toBe("mask3");
     expect(unsupported.map((u) => [u.code, u.scope, u.path])).toEqual([
-      ["kra-mask-unsupported", "semantic", "layer[0]"],
-      ["kra-mask-unsupported", "semantic", "layer[0]"],
+      ["kra-mask-unsupported", "semantic", "layer[0].masks[0]"],
+      ["kra-mask-unsupported", "semantic", "layer[0].masks[1]"],
     ]);
+  });
+
+  it("마스크의 x·y 오프셋을 읽고, 값 파일을 가진 마스크가 틀린 값을 가지면 마스크 하나당 진단 하나로 이름과 함께 알린다", () => {
+    const { drafts, unsupported } = flatten(`<layers>
+      <layer name="base" nodetype="paintlayer"><masks>
+        <mask name="ok" nodetype="transparencymask" x="-10" y="7"/>
+        <mask name="none" nodetype="transparencymask"/>
+        <mask name="bad-x" nodetype="transparencymask" x="abc" y="3"/>
+        <mask name="bad-both" nodetype="selectionmask" x="1.5" y="9999999999"/>
+        <mask name="bad-y" nodetype="filtermask" x="2" y="-"/>
+      </masks></layer>
+    </layers>`);
+    expect(drafts[0]!.masks.map((m) => [m.name, m.offsetX, m.offsetY, m.placementValid])).toEqual([
+      ["ok", -10, 7, true],
+      ["none", 0, 0, true],
+      ["bad-x", 0, 3, false],
+      ["bad-both", 0, 0, false],
+      ["bad-y", 2, 0, false],
+    ]);
+    const offset = unsupported.filter((u) => u.code === "kra-mask-offset-invalid");
+    expect(offset.map((u) => [u.scope, u.path])).toEqual([
+      ["semantic", "layer[0].masks[2]"],
+      ["semantic", "layer[0].masks[3]"],
+      ["semantic", "layer[0].masks[4]"],
+    ]);
+    expect(offset[0]!.message).toContain('"bad-x"');
+    expect(offset[0]!.message).toContain('x="abc"');
+    expect(offset[0]!.message).not.toContain("y=");
+    expect(offset[1]!.message).toContain('x="1.5", y="9999999999"');
+    expect(offset[2]!.message).toContain('y="-"');
+    expect(offset[2]!.message).not.toContain("x=");
+    expect(offset[2]!.message).toContain("이 마스크의 값을 배치하지 않는다");
+  });
+
+  it("값 파일이 없는 마스크의 틀린 오프셋은 진단 없이 0으로 보고, 속성 경고는 마스크 경로를 단다", () => {
+    const { drafts, unsupported, warnings } = flatten(`<layers>
+      <layer name="base" nodetype="paintlayer"><masks>
+        <mask name="cm" nodetype="colorizemask" x="zz" y="4" visible="maybe"/>
+        <mask name="xm" nodetype="transformmask" x="1" y="1e3"/>
+      </masks></layer>
+    </layers>`);
+    expect(drafts[0]!.masks.map((m) => [m.offsetX, m.offsetY])).toEqual([
+      [0, 4],
+      [1, 0],
+    ]);
+    expect(codes(unsupported)).toEqual(["kra-mask-unsupported", "kra-mask-unsupported"]);
+    expect(warnings.map((w) => [w.code, w.path])).toEqual([["kra-attribute-invalid", "layer[0].masks[0]"]]);
+  });
+
+  it("마스크 진단은 여러 레이어에서도 레이어 인덱스와 마스크 인덱스를 함께 단다", () => {
+    const { unsupported } = flatten(`<layers>
+      <layer name="a" nodetype="paintlayer"/>
+      <layer name="b" nodetype="paintlayer"><masks><mask name="m0" nodetype="colorizemask"/><mask name="m1" nodetype="colorizemask"/></masks></layer>
+    </layers>`);
+    expect(unsupported.map((u) => u.path)).toEqual(["layer[1].masks[0]", "layer[1].masks[1]"]);
   });
 
   it("불투명도는 0~255 정수를 0~1로 환산하고 범위 밖은 가까운 끝으로 맞춘다", () => {

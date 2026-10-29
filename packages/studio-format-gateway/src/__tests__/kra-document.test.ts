@@ -133,19 +133,28 @@ describe("importKra: 문서 구조", () => {
     expect(result.layers[0]).toMatchObject({ offsetX: -10, offsetY: 20, extent: { x: -74, y: 20, width: 64, height: 64 } });
   });
 
-  it("마스크와 지원하지 않는 레이어 종류는 속성만 읽고 unsupported에 남긴다", async () => {
+  it("마스크와 지원하지 않는 레이어 종류는 unsupported에 남긴다 (값 항목이 없는 투명도 마스크는 Krita처럼 빈 선택으로 보고 경고한다)", async () => {
     const result = await importKra(
       buildKraFixture({
         layers: [
           { nodetype: "clonelayer", name: "clone", attrs: { clonefrom: "base" } },
-          { name: "base", tileFile: paint(0, 0, [1, 2, 3, 255]), masks: [{ nodetype: "transparencymask", name: "tm" }] },
+          { name: "base", tileFile: paint(0, 0, [1, 2, 3, 255]), masks: [{ nodetype: "colorizemask", name: "cm" }, { nodetype: "transparencymask", name: "tm" }] },
         ],
       }),
     );
-    expect(codes(result.unsupported)).toEqual(["kra-node-unsupported", "kra-mask-unsupported"]);
+    expect(result.unsupported.map((issue) => [issue.code, issue.path])).toEqual([
+      ["kra-node-unsupported", "layer[0]"],
+      ["kra-mask-unsupported", "layer[1].masks[0]"],
+      ["kra-mask-unsupported", "layer[1].masks[1]"],
+    ]);
+    expect(result.warnings.map((issue) => [issue.code, issue.scope, issue.path])).toEqual([["kra-mask-data-missing", "resource", "layer[1].masks[1]"]]);
+    expect(result.warnings[0]!.message).toContain("빈 선택");
     expect(result.layers[0]).toMatchObject({ kind: "other", nodeType: "clonelayer", pixels: null });
     expect(result.layers[0]!.attributes["clonefrom"]).toBe("base");
-    expect(result.layers[1]!.masks).toHaveLength(1);
+    expect(result.layers[1]!.masks.map((mask) => [mask.nodeType, mask.name, mask.values, mask.extent, mask.defaultValue, mask.tileCount])).toEqual([
+      ["colorizemask", "cm", null, null, null, 0],
+      ["transparencymask", "tm", null, null, 0, 0],
+    ]);
     expect(result.layers[1]!.pixels).not.toBeNull();
   });
 
@@ -812,6 +821,36 @@ describe("importKra: 출력 예산과 중단", () => {
     }
   });
 
+  // 시계를 직접 움직여 결정적으로 확인한다: 첫 레이어를 읽는 동안 시계가 `elapsed`ms 가고 그 뒤로는 멈춘다.
+  // 25ms 이상(경계 포함)이면 다음 노드 앞에서 딱 한 번 양보하고 양보 시각을 되돌려 이어지는 노드마다 양보하지 않는다. 25ms 미만이면 양보하지 않는다.
+  it.each([
+    [24, 0],
+    [25, 1],
+    [1000, 1],
+  ])("첫 레이어를 읽는 동안 시계가 %dms 가면 이벤트 루프에 %d번 양보한다", async (elapsed, expectedYields) => {
+    let clock = 0;
+    const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => clock);
+    const timeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    try {
+      const { inflateRawSync } = await import("node:zlib");
+      let advanced = false;
+      const inflateRaw: KraImportOptions["inflateRaw"] = async (compressed, context) => {
+        if (!advanced && context.path.includes("/layers/")) {
+          advanced = true;
+          clock += elapsed;
+        }
+        return new Uint8Array(inflateRawSync(compressed));
+      };
+      const bytes = buildKraFixture({ layers: Array.from({ length: 6 }, (_, index) => ({ name: `l${index}`, tileFile: paint(0, 0, [1, 2, 3, 255]) })) });
+      const result = await importKra(bytes, { inflateRaw });
+      expect(result.layers).toHaveLength(6);
+      expect(timeoutSpy.mock.calls.filter(([, delay]) => delay === 0)).toHaveLength(expectedYields);
+    } finally {
+      nowSpy.mockRestore();
+      timeoutSpy.mockRestore();
+    }
+  });
+
   it("타일 64개마다 중단 신호를 확인한다", async () => {
     const countReads = async (tiles: number): Promise<number> => {
       let reads = 0;
@@ -834,6 +873,66 @@ describe("importKra: 출력 예산과 중단", () => {
     expect((await countReads(129)) - base).toBe(2);
     expect((await countReads(63)) - base).toBe(0);
   });
+
+  // 노드와 마스크를 지날 때마다 중단 신호를 한 번씩 읽는다. 시계를 멈춰 양보가 끼어들지 않게 하고, 노드나 마스크를 더한 문서와의 읽기 횟수 차이를 센다.
+  it("노드와 마스크마다 중단 신호를 한 번씩 확인한다", async () => {
+    const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => 0);
+    try {
+      const countReads = async (groups: number, masks: number): Promise<number> => {
+        let reads = 0;
+        const signal = {
+          get aborted() {
+            reads += 1;
+            return false;
+          },
+        } as unknown as AbortSignal;
+        const layers = Array.from({ length: groups }, (_, index) => ({
+          nodetype: "grouplayer",
+          name: `g${index}`,
+          ...(index === 0 ? { masks: Array.from({ length: masks }, (_, mask) => ({ nodetype: "colorizemask", name: `m${mask}` })) } : {}),
+        }));
+        await importKra(buildKraFixture({ layers }), { signal });
+        return reads;
+      };
+      const base = await countReads(1, 0);
+      expect((await countReads(6, 0)) - base).toBe(5);
+      expect((await countReads(1, 7)) - base).toBe(7);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  // 양보는 이벤트 루프를 한 바퀴 돌리는 동안 신호가 바뀔 수 있으므로, 돌아온 직후 한 번 더 확인한다. 시계가 25ms 가서 양보한 문서는 가지 않은 문서보다 딱 한 번 더 읽는다.
+  it("양보에서 돌아온 뒤 중단 신호를 한 번 더 확인한다", async () => {
+    const { inflateRawSync } = await import("node:zlib");
+    const readsFor = async (elapsed: number): Promise<number> => {
+      let clock = 0;
+      const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => clock);
+      try {
+        let reads = 0;
+        const signal = {
+          get aborted() {
+            reads += 1;
+            return false;
+          },
+        } as unknown as AbortSignal;
+        let advanced = false;
+        const inflateRaw: KraImportOptions["inflateRaw"] = async (compressed, context) => {
+          if (!advanced && context.path.includes("/layers/")) {
+            advanced = true;
+            clock += elapsed;
+          }
+          return new Uint8Array(inflateRawSync(compressed));
+        };
+        const layers = Array.from({ length: 3 }, (_, index) => ({ name: `l${index}`, tileFile: paint(0, 0, [1, 2, 3, 255]) }));
+        await importKra(buildKraFixture({ layers }), { signal, inflateRaw });
+        return reads;
+      } finally {
+        nowSpy.mockRestore();
+      }
+    };
+    expect(await readsFor(25)).toBe((await readsFor(24)) + 1);
+  });
 });
 
 describe("importKra: 한도", () => {
@@ -847,7 +946,7 @@ describe("importKra: 한도", () => {
       maxCanvasDimension: 262_144,
       maxTileSide: 1_024,
       maxPixelBytes: 32,
-      maxTilesPerLayer: 1_048_576,
+      maxTilesPerLayer: 65_536,
       maxLayerPixels: 67_108_864,
       maxDecodedBytes: 1_073_741_824,
       maxIssues: 500,

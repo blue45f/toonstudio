@@ -44,11 +44,17 @@ export interface KraLimits {
   readonly maxTileSide: number;
   /** 픽셀 하나의 최대 바이트 수(RGBA 32비트 실수가 16이다). */
   readonly maxPixelBytes: number;
-  /** 레이어 하나의 최대 타일 수. */
+  /**
+   * 레이어 하나(마스크 값 파일 하나)의 최대 타일 수. 64x64 타일이면 `maxLayerPixels` 안에서 16,384개가 최대이고, 1x1 같은 작은 타일로 수백만 개를
+   * 적은 파일이 파서를 몇 초씩 붙잡는 것을 막는다.
+   */
   readonly maxTilesPerLayer: number;
-  /** 레이어 하나의 RGBA8 출력 최대 픽셀 수. 넘으면 그 레이어의 픽셀은 디코드하지 않는다. */
+  /** 레이어 하나(또는 마스크 하나)의 출력 최대 픽셀 수. 넘으면 그 레이어의 픽셀(그 마스크의 값)은 디코드하지 않는다. */
   readonly maxLayerPixels: number;
-  /** 모든 레이어를 합친 RGBA8 출력의 최대 바이트. 넘으면 이후 레이어의 픽셀은 디코드하지 않는다. */
+  /**
+   * 모든 레이어의 RGBA8 출력과 모든 마스크 값(1바이트/픽셀)을 합친 최대 바이트. 레이어 픽셀을 모두 먼저 풀고 마스크 값은 그 뒤에 풀어서 마스크가
+   * 레이어의 몫을 줄이지 않는다. 넘으면 그 시점 이후의 디코드를 하지 않는다(레이어가 예산을 다 썼다면 모든 마스크의 값).
+   */
   readonly maxDecodedBytes: number;
   /** 진단 목록 하나의 최대 길이(적대적 입력이 목록을 부풀리지 못하게 한다). */
   readonly maxIssues: number;
@@ -61,7 +67,7 @@ export const KRA_LIMITS: KraLimits = Object.freeze({
   maxCanvasDimension: 262_144,
   maxTileSide: 1_024,
   maxPixelBytes: 32,
-  maxTilesPerLayer: 1_048_576,
+  maxTilesPerLayer: 65_536,
   maxLayerPixels: 67_108_864,
   maxDecodedBytes: 1_073_741_824,
   maxIssues: 500,
@@ -96,8 +102,27 @@ export interface KraMask {
   readonly visible: boolean;
   readonly locked: boolean;
   readonly filename: string | null;
+  /** 마스크 원점의 이미지 좌표(`x`, `y` 속성). 타일 좌표는 마스크 로컬이다. */
+  readonly offsetX: number;
+  readonly offsetY: number;
   /** 원본 속성 전부(문서에 없는 키 포함). */
   readonly attributes: Readonly<Record<string, string>>;
+  /** `values`가 덮는 이미지 좌표 사각형(타일 사각형의 합집합). 타일이 없거나 값을 읽지 않았으면 null. */
+  readonly extent: KraExtent | null;
+  /**
+   * 타일이 없는 곳의 마스크 값(0~255, `.pixelselection.defaultpixel`). 선택을 뒤집은 마스크는 255다. 값을 읽지 않았거나 읽지 못했으면
+   * null이고, 이때 마스크의 값은 알 수 없다. 예외는 값 항목이 둘 다 없는 투명도 마스크 하나다: 선택을 한 번도 주지 않은 새 마스크이고 Krita가
+   * 그 문서를 다시 열면 빈 선택으로 읽으므로 0(타일 없음)으로 해석한다(`kra-mask-data-missing` 경고).
+   */
+  readonly defaultValue: number | null;
+  /** 값 파일(`.pixelselection`)에 든 타일 수. 읽지 않았거나 읽지 못했으면 0. */
+  readonly tileCount: number;
+  /**
+   * `extent`를 채운 마스크 값(0~255), 가로 우선, 너비 * 높이 바이트. 타일이 없는 곳은 `defaultValue`다. 값은 투명도 마스크에서 레이어
+   * 알파에 곱해지는 정도, 선택 마스크에서 선택 정도, 필터 마스크에서 필터가 적용되는 정도다. 타일이 없거나, 값을 읽지 않았거나(마스크
+   * 종류가 값 파일을 갖지 않거나 `decodePixels`가 false), 읽지 못했으면 null.
+   */
+  readonly values: Uint8Array | null;
 }
 
 export interface KraLayer {

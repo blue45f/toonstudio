@@ -207,8 +207,17 @@ describe("타일 파일 파서", () => {
   });
 
   it("선언한 타일 수보다 데이터가 적으면 레코드 오류다 (큰 선언으로 시간을 끌 수 없다)", () => {
-    const file = buildKraTileFile({ pixelBytes: 4, tiles: [], declaredCount: 1_000_000 });
+    const file = buildKraTileFile({ pixelBytes: 4, tiles: [], declaredCount: 65_536 });
     expect(failureOf(() => parseKraTileFile(file, limits))).toBe("record");
+  });
+
+  it("기본 한도는 64x64 타일의 실제 최대(16,384개)보다 넉넉하되 작은 타일 수백만 개로 파서를 붙잡는 선언은 막는다", () => {
+    expect(limits.maxTilesPerLayer).toBe(65_536);
+    expect(limits.maxTilesPerLayer).toBeGreaterThanOrEqual(limits.maxLayerPixels / (64 * 64));
+    const over = buildKraTileFile({ pixelBytes: 4, tiles: [], declaredCount: 65_537 });
+    expect(failureOf(() => parseKraTileFile(over, limits))).toBe("limit");
+    const huge = buildKraTileFile({ pixelBytes: 4, tiles: [], declaredCount: 1_048_576 });
+    expect(failureOf(() => parseKraTileFile(huge, limits))).toBe("limit");
   });
 
   it.each([
