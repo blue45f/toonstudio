@@ -221,6 +221,28 @@ describe("setUserAiConfiguration — 경로 사용 기록 정리", () => {
     expect(getFreeAiRuntimeBudgetSnapshot(remaining).blockedReason).toBe("payment-required");
   });
 
+  it.each(["unverified", "switched-off"] as const)(
+    "같은 키를 든 다른 연결이 %s이면 그 연결은 기록을 쓰지 않으므로, 삭제 후 다시 등록하면 결제 잠금이 풀린다",
+    async (variant) => {
+      const quick = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
+      const quickConnection = quick.configuration.connections[0]!;
+      // 옛 설정에서 가져온 "재확인 필요" 연결, 또는 고급 설정에서 만들어 꺼 둔 같은 키·모델의 연결.
+      const duplicate = variant === "unverified"
+        ? { ...quickConnection, id: "groq-migrated", label: "옛 설정", costPolicy: "unverified" as const, priority: 90 }
+        : { ...quickConnection, id: "groq-advanced", label: "Groq 고급", enabled: false, priority: 90 };
+      setUserAiConfiguration({ ...quick.configuration, connections: [quickConnection, duplicate] });
+      await recordFreeAiRuntimeResponse(textRoute(), 402, new Headers());
+
+      setUserAiConfiguration(removeQuickKey(getUserAiSnapshot().configuration, quick.connectionId, quick.keyId));
+      setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", OLD_KEY).configuration);
+
+      const again = textRoute();
+      expect(again.apiKey).toBe(OLD_KEY);
+      expect(getFreeAiRuntimeBudgetSnapshot(again).blockedReason).toBeNull();
+      await expect(guardFreeAiRuntimeRequest(again, "text", "/models", "GET", undefined)).resolves.toMatchObject({ guarded: true });
+    },
+  );
+
   it("다른 경로의 기록은 건드리지 않는다", async () => {
     const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
     setUserAiConfiguration(groq.configuration);

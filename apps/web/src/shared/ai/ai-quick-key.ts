@@ -279,6 +279,26 @@ function emptyRouteAssignments(): Record<UserAiCapability, UserAiRouteAssignment
   return { text: null, image: null, inference: null, "three-d": null };
 }
 
+/**
+ * 이 연결에서 꺼진 키를 고른 기능 배정은 키 선택만 비운다(연결·모델 선택은 그대로 둔다). 비우지 않으면 보관함 검증이
+ * 설정 전체를 거부한다. 꺼 둔 연결을 키 등록으로 다시 켜며 다른 키를 끈 뒤(switchedOffKeys)에 쓴다: 그러면 그 배정은
+ * 연결의 켜진 키, 곧 이번에 붙인 키를 쓴다.
+ */
+function releaseSwitchedOffKeyPins(configuration: UserAiConfiguration, connectionId: string): UserAiConfiguration {
+  const connection = configuration.connections.find((item) => item.id === connectionId);
+  const enabledKeyIds = new Set((connection ? userAiConnectionApiKeys(connection) : []).map((item) => item.id));
+  const routeAssignments = { ...(configuration.routeAssignments ?? emptyRouteAssignments()) };
+  let changed = false;
+  for (const capability of USER_AI_CAPABILITIES) {
+    const route = routeAssignments[capability];
+    if (route?.connectionId === connectionId && route.apiKeyId && !enabledKeyIds.has(route.apiKeyId)) {
+      routeAssignments[capability] = { ...route, apiKeyId: null };
+      changed = true;
+    }
+  }
+  return changed ? { ...configuration, routeAssignments } : configuration;
+}
+
 function assignText(configuration: UserAiConfiguration, connectionId: string): UserAiConfiguration {
   return {
     ...configuration,
@@ -344,7 +364,7 @@ export function addQuickKey(
             : {}),
         })
       : item));
-    const next = { ...configuration, connections, routing: nextRouting };
+    const next = releaseSwitchedOffKeyPins({ ...configuration, connections, routing: nextRouting }, held.connectionId);
     // 새 연결을 만들 때와 같이, 텍스트 배정이 비었거나 쓰일 수 없으면 다시 켠 연결로 바꾼다.
     return {
       configuration: assignedTextUsable(next) ? next : assignText(next, held.connectionId),
@@ -366,7 +386,10 @@ export function addQuickKey(
     if (keys.length >= QUICK_KEY_MAX_KEYS_PER_SERVICE) {
       throw new Error(`${info.name}에는 키를 ${QUICK_KEY_MAX_KEYS_PER_SERVICE}개까지 등록할 수 있어요.`);
     }
-    const keyId = uniqueId(`key-${keys.length + 1}`, new Set(keys.map((item) => item.id)));
+    // 키를 지운 뒤 같은 번호를 다시 쓰면 남은 키와 이름이 겹친다("키 2"가 둘). 쓰지 않은 다음 번호를 쓴다.
+    let keyNumber = keys.length + 1;
+    while (keys.some((item) => item.id === `key-${keyNumber}` || item.label === `키 ${keyNumber}`)) keyNumber += 1;
+    const keyId = `key-${keyNumber}`;
     const lastPriority = keys.reduce((max, item) => Math.max(max, item.priority), 0);
     // 꺼 둔 연결에 키를 더하면 연결을 다시 켜되, 이번에 붙인 키만 켠다(switchedOffKeys 참고).
     const updated: UserAiConnection = consented({
@@ -374,15 +397,15 @@ export function addQuickKey(
       enabled: true,
       apiKeys: [
         ...(existing.enabled === false ? switchedOffKeys(keys) : keys),
-        { id: keyId, label: `키 ${keys.length + 1}`, apiKey: key, enabled: true, priority: Math.min(999, lastPriority + 10) },
+        { id: keyId, label: `키 ${keyNumber}`, apiKey: key, enabled: true, priority: Math.min(999, lastPriority + 10) },
       ],
     });
     return {
-      configuration: {
+      configuration: releaseSwitchedOffKeyPins({
         ...configuration,
         connections: configuration.connections.map((item) => (item.id === existing.id ? updated : item)),
         routing: nextRouting,
-      },
+      }, existing.id),
       connectionId: existing.id,
       keyId,
       duplicate: false,

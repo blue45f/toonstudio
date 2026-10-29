@@ -561,21 +561,24 @@ describe("studio automatic free AI client", () => {
       expect(calls(fetchMock)).toEqual(["generativelanguage.googleapis.com", "api.groq.com", "/api/studio-ai/chat"]);
     });
 
-    it("does not resend the request anywhere when my other key fails with a 5xx (the provider may already have it)", async () => {
-      configureGeminiAndGroq();
-      const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
-        const url = urlOf(request);
-        if (url.pathname === "/api/studio-ai/chat") {
-          return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
-        }
-        if (url.hostname === "generativelanguage.googleapis.com") return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
-        return json({ error: { message: "unavailable" } }, 503);
-      });
-      vi.stubGlobal("fetch", fetchMock);
+    it.each([503, 408])(
+      "does not resend the request anywhere when my other key fails with HTTP %i (the provider may already have run it)",
+      async (status) => {
+        configureGeminiAndGroq();
+        const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+          const url = urlOf(request);
+          if (url.pathname === "/api/studio-ai/chat") {
+            return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+          }
+          if (url.hostname === "generativelanguage.googleapis.com") return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+          return json({ error: { message: "timed out or unavailable" } }, status);
+        });
+        vi.stubGlobal("fetch", fetchMock);
 
-      await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: false, code: "http_error" });
-      expect(calls(fetchMock)).toEqual(["generativelanguage.googleapis.com", "api.groq.com"]);
-    });
+        await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: false, code: "http_error" });
+        expect(calls(fetchMock)).toEqual(["generativelanguage.googleapis.com", "api.groq.com"]);
+      },
+    );
   });
 
   it("keeps the empty-cut-off reason from my key when ToonStudio AI is also used up", async () => {
