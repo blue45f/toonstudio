@@ -171,6 +171,20 @@ describe("localStorySeedProvider & createTextAiStorySeedProvider", () => {
     expect(prompt.user).not.toContain("성격과 동기를 길게 적은 설명. ".repeat(24));
   });
 
+  it("글자 상한에서 자를 때 이모지의 절반만 남기지 않아 요청 본문이 깨지지 않는다", () => {
+    const prompt = buildStorySeedAiPrompt({
+      genre: "판타지",
+      keywords: ["차원의 열쇠"],
+      protagonist: `${"가".repeat(998)}😀${"나".repeat(20)}`,
+      settingRefs: [
+        { id: "a", kind: "character", name: `${"이".repeat(78)}😀끝`, detail: `${"가".repeat(198)}😀${"나".repeat(20)}` },
+      ],
+    });
+    expect(prompt.user.isWellFormed()).toBe(true);
+    expect(prompt.user).toContain(`주인공: ${"가".repeat(998)}…`);
+    expect(prompt.user).toContain(`(character: ${"가".repeat(198)}…)`);
+  });
+
   it("AI 프롬프트 생성 및 응답 파싱이 source='ai' 초안으로 병합된다", () => {
     const input = { genre: "판타지", keywords: ["차원의 열쇠"] };
     const prompt = buildStorySeedAiPrompt(input);

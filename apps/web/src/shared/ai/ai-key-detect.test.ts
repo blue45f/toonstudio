@@ -139,6 +139,26 @@ describe("addQuickKey / removeQuickKey", () => {
     expect(findQuickKeyConnection(normalized, "openrouter")?.id).toBe(added.connectionId);
   });
 
+  it("같은 주소에 유료 BYOK로 정해 둔 키를 다시 붙여 넣으면 중복으로 보고, 무료 정책 연결을 새로 만들지 않는다", () => {
+    const base = addQuickKey(EMPTY_AI_CONFIGURATION, "gemini", GEMINI);
+    // 고급 설정에서 같은 Gemini 주소의 연결을 "사용자 결제 BYOK"로 바꿔 둔 상태.
+    const paid = normalizeUserAiConfiguration({
+      ...base.configuration,
+      connections: base.configuration.connections.map((item) => ({ ...item, costPolicy: "user-funded-byok" as const })),
+    });
+
+    const again = addQuickKey(paid, "gemini", GEMINI);
+    expect(again.duplicate).toBe(true);
+    expect(again.connectionId).toBe(base.connectionId);
+    expect(again.configuration).toBe(paid);
+
+    // 다른 새 키는 무료 정책 연결로 따로 등록한다.
+    const other = addQuickKey(paid, "gemini", `AIza${"B".repeat(35)}`);
+    expect(other.duplicate).toBe(false);
+    expect(normalizeUserAiConfiguration(other.configuration).connections.find((item) => item.id === other.connectionId)?.costPolicy)
+      .toBe("provider-free-tier");
+  });
+
   it("텍스트에 쓰이는 기존 배정은 다른 서비스 키를 더해도 그대로 둔다", () => {
     const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
     const second = addQuickKey(first.configuration, "gemini", GEMINI);
