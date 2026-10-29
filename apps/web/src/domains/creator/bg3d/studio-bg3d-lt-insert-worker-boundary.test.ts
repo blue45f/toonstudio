@@ -144,8 +144,9 @@ describe("Studio BG3D interactive LT Worker boundary", () => {
     expect(insert).toContain("camera: captureFrameCameraSettings");
     expect(insert).toContain("width: rendered.width");
     expect(insert).toContain("height: rendered.height");
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 추출된 호스트의 콜백 매개변수에 타입 주석이 붙었다.
     expect(insert).toContain(
-      "createRuntime: ({ backend, canvas, capabilities, settings }) =>",
+      "createRuntime: ({ backend, canvas, capabilities, settings }: any) =>",
     );
     expect(insert).toContain(
       "capabilities !== STUDIO_BG3D_MAGIC_OBJECT_ID_RUNTIME_CAPABILITIES",
