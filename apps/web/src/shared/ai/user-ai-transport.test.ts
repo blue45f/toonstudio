@@ -438,16 +438,19 @@ describe("managed cloud AI transport", () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it("stops at a 5xx after an empty answer, because the provider may already have received the request", async () => {
-      geminiKeys(3);
-      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
-        bearer(init) === "Bearer key-first" ? answer("", "length") : failure(503)
-      ));
-      vi.stubGlobal("fetch", fetchMock);
+    it.each([503, 408, 409])(
+      "stops at HTTP %i after an empty answer, because the provider may already have received or run the request",
+      async (status) => {
+        geminiKeys(3);
+        const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
+          bearer(init) === "Bearer key-first" ? answer("", "length") : failure(status)
+        ));
+        vi.stubGlobal("fetch", fetchMock);
 
-      await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "http-error", status: 503 });
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-    });
+        await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "http-error", status });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+      },
+    );
 
     it("never sends the same request to a second paid key after a paid key already billed an empty answer, but still tries free keys", async () => {
       const paid = (id: string, priority: number, key: string): UserAiConnection => ({
