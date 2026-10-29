@@ -32,25 +32,25 @@ import {
   buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
   buildDeterministicVisualContinuityLinterReport,
-  runClaudeBg3dLightingAssetDirector,
-  runClaudeBgmAudioToonCuesheet,
-  runClaudeCharacterOocRadar,
-  runClaudeCrowdDepthFogLockDirector,
-  runClaudeFootwearStrideLockDirector,
-  runClaudeMultiEpisodeCanonVault,
-  runClaudeReaderRetentionSimulator,
-  runClaudeVisualContinuityLinter,
-  type ClaudeBg3dLightingAssetView,
-  type ClaudeBgmAudioToonView,
-  type ClaudeCharacterOocRadarView,
-  type ClaudeCrowdDepthFogLockView,
-  type ClaudeFootwearStrideLockView,
-  type ClaudeMultiEpisodeCanonVaultView,
-  type ClaudeReaderRetentionView,
-  type ClaudeVisualContinuityLinterView,
+  runAssistBg3dLightingAssetDirector,
+  runAssistBgmAudioToonCuesheet,
+  runAssistCharacterOocRadar,
+  runAssistCrowdDepthFogLockDirector,
+  runAssistFootwearStrideLockDirector,
+  runAssistMultiEpisodeCanonVault,
+  runAssistReaderRetentionSimulator,
+  runAssistVisualContinuityLinter,
+  type AssistBg3dLightingAssetView,
+  type AssistBgmAudioToonView,
+  type AssistCharacterOocRadarView,
+  type AssistCrowdDepthFogLockView,
+  type AssistFootwearStrideLockView,
+  type AssistMultiEpisodeCanonVaultView,
+  type AssistReaderRetentionView,
+  type AssistVisualContinuityLinterView,
   type WebtoonEpisodicDoctorMode,
-} from "./claude/claude-webtoon-episodic-doctor";
-import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
+} from "./assist/assist-webtoon-episodic-doctor";
+import type { WebtoonProductionAssistInput } from "./assist/assist-webtoon-production-schemas";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -116,18 +116,18 @@ export function StudioWebtoonEpisodicDoctorPanel({
   const [isRunningClaude, setIsRunningClaude] = useState(false);
 
   const [liveRetentionView, setLiveRetentionView] =
-    useState<ClaudeReaderRetentionView | null>(null);
-  const [liveOocView, setLiveOocView] = useState<ClaudeCharacterOocRadarView | null>(null);
-  const [liveBg3dView, setLiveBg3dView] = useState<ClaudeBg3dLightingAssetView | null>(null);
-  const [liveBgmView, setLiveBgmView] = useState<ClaudeBgmAudioToonView | null>(null);
+    useState<AssistReaderRetentionView | null>(null);
+  const [liveOocView, setLiveOocView] = useState<AssistCharacterOocRadarView | null>(null);
+  const [liveBg3dView, setLiveBg3dView] = useState<AssistBg3dLightingAssetView | null>(null);
+  const [liveBgmView, setLiveBgmView] = useState<AssistBgmAudioToonView | null>(null);
   const [liveLinterView, setLiveLinterView] =
-    useState<ClaudeVisualContinuityLinterView | null>(null);
+    useState<AssistVisualContinuityLinterView | null>(null);
   const [liveCanonVaultView, setLiveCanonVaultView] =
-    useState<ClaudeMultiEpisodeCanonVaultView | null>(null);
+    useState<AssistMultiEpisodeCanonVaultView | null>(null);
   const [liveFootwearView, setLiveFootwearView] =
-    useState<ClaudeFootwearStrideLockView | null>(null);
+    useState<AssistFootwearStrideLockView | null>(null);
   const [liveCrowdDepthView, setLiveCrowdDepthView] =
-    useState<ClaudeCrowdDepthFogLockView | null>(null);
+    useState<AssistCrowdDepthFogLockView | null>(null);
 
   const retentionView = useMemo(
     () => liveRetentionView ?? buildDeterministicReaderRetentionReport(assistInput),
@@ -167,21 +167,21 @@ export function StudioWebtoonEpisodicDoctorPanel({
     setIsRunningClaude(true);
     try {
       if (activeMode === "reader-retention-simulator") {
-        setLiveRetentionView(await runClaudeReaderRetentionSimulator(assistInput));
+        setLiveRetentionView(await runAssistReaderRetentionSimulator(assistInput));
       } else if (activeMode === "character-ooc-radar") {
-        setLiveOocView(await runClaudeCharacterOocRadar(assistInput));
+        setLiveOocView(await runAssistCharacterOocRadar(assistInput));
       } else if (activeMode === "bg3d-lighting-asset-director") {
-        setLiveBg3dView(await runClaudeBg3dLightingAssetDirector(assistInput));
+        setLiveBg3dView(await runAssistBg3dLightingAssetDirector(assistInput));
       } else if (activeMode === "bgm-audiotoon-cuesheet") {
-        setLiveBgmView(await runClaudeBgmAudioToonCuesheet(assistInput));
+        setLiveBgmView(await runAssistBgmAudioToonCuesheet(assistInput));
       } else if (activeMode === "episodic-visual-continuity-linter") {
-        setLiveLinterView(await runClaudeVisualContinuityLinter(assistInput));
+        setLiveLinterView(await runAssistVisualContinuityLinter(assistInput));
       } else if (activeMode === "multi-episode-canon-memory-vault") {
-        setLiveCanonVaultView(await runClaudeMultiEpisodeCanonVault(assistInput));
+        setLiveCanonVaultView(await runAssistMultiEpisodeCanonVault(assistInput));
       } else if (activeMode === "episodic-footwear-floor-contact-stride-lock") {
-        setLiveFootwearView(await runClaudeFootwearStrideLockDirector(assistInput));
+        setLiveFootwearView(await runAssistFootwearStrideLockDirector(assistInput));
       } else {
-        setLiveCrowdDepthView(await runClaudeCrowdDepthFogLockDirector(assistInput));
+        setLiveCrowdDepthView(await runAssistCrowdDepthFogLockDirector(assistInput));
       }
     } finally {
       setIsRunningClaude(false);

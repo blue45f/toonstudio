@@ -27,15 +27,15 @@ import {
   type GenToonStyleFamilyId,
 } from "./all-in-one-webtoon-accelerator-suite";
 import {
-  runClaudeArcheryFencingCombatStanceCueDirector,
-  runClaudeAviationCockpitZeroGSubmarineDirector,
-  runClaudeBotanicalFloraBlacksmithAlchemyDirector,
-  runClaudeCourtroomTrialPrisonHandcuffDirector,
-  runClaudeEsportsHudGamerPeripheralsDirector,
-  runClaudeHeavyMachinerySignboardTaxErpDirector,
-  runClaudeKpopStageChoreoLightstickIemDirector,
-  runClaudeOrchestraPianoGuitarTeaCalligraphyDirector,
-} from "./claude/claude-feature-cost-cap";
+  runAssistArcheryFencingCombatStanceCueDirector,
+  runAssistAviationCockpitZeroGSubmarineDirector,
+  runAssistBotanicalFloraBlacksmithAlchemyDirector,
+  runAssistCourtroomTrialPrisonHandcuffDirector,
+  runAssistEsportsHudGamerPeripheralsDirector,
+  runAssistHeavyMachinerySignboardTaxErpDirector,
+  runAssistKpopStageChoreoLightstickIemDirector,
+  runAssistOrchestraPianoGuitarTeaCalligraphyDirector,
+} from "./assist/assist-feature-cost-cap";
 import {
   buildDeterministicBinauralSpatialAudioFoleyLufsView,
   buildDeterministicBreathFrostSmokePlumeLockView,
@@ -43,13 +43,13 @@ import {
   buildDeterministicGazeSaccadePupilHighlightLockView,
   buildDeterministicImpactDebrisCraterPersistenceLockView,
   buildDeterministicWetFabricRainTranslucencyLockView,
-  runClaudeBinauralSpatialAudioFoleyLufsDirector,
-  runClaudeBreathFrostSmokePlumeLockDirector,
-  runClaudeCastShadowSundialAzimuthLockDirector,
-  runClaudeGazeSaccadePupilHighlightLockDirector,
-  runClaudeImpactDebrisCraterPersistenceLockDirector,
-  runClaudeWetFabricRainTranslucencyLockDirector,
-} from "./claude/claude-n7-and-llm-runners";
+  runAssistBinauralSpatialAudioFoleyLufsDirector,
+  runAssistBreathFrostSmokePlumeLockDirector,
+  runAssistCastShadowSundialAzimuthLockDirector,
+  runAssistGazeSaccadePupilHighlightLockDirector,
+  runAssistImpactDebrisCraterPersistenceLockDirector,
+  runAssistWetFabricRainTranslucencyLockDirector,
+} from "./assist/assist-n7-and-llm-runners";
 import {
   DEFAULT_NAVER_AI_PAINTER_HINTS,
   runAidStudioPipeline,
@@ -128,14 +128,14 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
     setWave39Loading(true);
     const seed = { episodeTitle: "01화", genre: storyGenre, scriptSummary: scriptInput.trim() || `${storyGenre} 클라이맥스` };
     const map: Record<typeof kind, () => Promise<string>> = {
-      esports: async () => { const r = await runClaudeEsportsHudGamerPeripheralsDirector(seed); return `[e스포츠/장비 · ${r.model}] ${r.data.mobaHudKillfeedMinimapRuleKo} / ${r.data.keyboardWasdAndMouseGripRuleKo}`; },
-      court: async () => { const r = await runClaudeCourtroomTrialPrisonHandcuffDirector(seed); return `[한국법정/수갑 · ${r.model}] ${r.data.koreanCourtroomSeatLayoutRuleKo} / ${r.data.handcuffKeyholeAndBodycamRuleKo}`; },
-      kpop: async () => { const r = await runClaudeKpopStageChoreoLightstickIemDirector(seed); return `[K-POP무대/응원봉 · ${r.model}] ${r.data.customIemLoopAndCheekMicRuleKo} / ${r.data.lightstickOceanAndDmxLaserRuleKo}`; },
-      aero: async () => { const r = await runClaudeAviationCockpitZeroGSubmarineDirector(seed); return `[항공/무중력/잠수함 · ${r.model}] ${r.data.airlinerAndFighterAfterburnerKo} / ${r.data.zeroGravityHairAndDropletSphereKo}`; },
-      martial: async () => { const r = await runClaudeArcheryFencingCombatStanceCueDirector(seed); return `[국궁양궁/펜싱/복싱 · ${r.model}] ${r.data.gakgungThumbVsRecurveDrawRuleKo} / ${r.data.fencingTargetAndBoxingStanceKo}`; },
-      arts: async () => { const r = await runClaudeOrchestraPianoGuitarTeaCalligraphyDirector(seed); return `[피아노/다도/서예 · ${r.model}] ${r.data.piano88KeyGuitarDrumRuleKo} / ${r.data.teaCeremonyAndSommelierEtiquetteKo}`; },
-      botany: async () => { const r = await runClaudeBotanicalFloraBlacksmithAlchemyDirector(seed); return `[식물/대장간/연금술 · ${r.model}] ${r.data.cherryBlossomNotchAndBambooHollowKo} / ${r.data.blacksmithAnvilQuenchAndTailorKo}`; },
-      erp: async () => { const r = await runClaudeHeavyMachinerySignboardTaxErpDirector(seed); return `[중장비/간판/세무ERP · ${r.model}] ${r.data.neonElectrodeAndSignboardOrthoKo} / ${r.data.passportCurrencyAndWebtoonTaxErpKo}`; },
+      esports: async () => { const r = await runAssistEsportsHudGamerPeripheralsDirector(seed); return `[e스포츠/장비 · ${r.model}] ${r.data.mobaHudKillfeedMinimapRuleKo} / ${r.data.keyboardWasdAndMouseGripRuleKo}`; },
+      court: async () => { const r = await runAssistCourtroomTrialPrisonHandcuffDirector(seed); return `[한국법정/수갑 · ${r.model}] ${r.data.koreanCourtroomSeatLayoutRuleKo} / ${r.data.handcuffKeyholeAndBodycamRuleKo}`; },
+      kpop: async () => { const r = await runAssistKpopStageChoreoLightstickIemDirector(seed); return `[K-POP무대/응원봉 · ${r.model}] ${r.data.customIemLoopAndCheekMicRuleKo} / ${r.data.lightstickOceanAndDmxLaserRuleKo}`; },
+      aero: async () => { const r = await runAssistAviationCockpitZeroGSubmarineDirector(seed); return `[항공/무중력/잠수함 · ${r.model}] ${r.data.airlinerAndFighterAfterburnerKo} / ${r.data.zeroGravityHairAndDropletSphereKo}`; },
+      martial: async () => { const r = await runAssistArcheryFencingCombatStanceCueDirector(seed); return `[국궁양궁/펜싱/복싱 · ${r.model}] ${r.data.gakgungThumbVsRecurveDrawRuleKo} / ${r.data.fencingTargetAndBoxingStanceKo}`; },
+      arts: async () => { const r = await runAssistOrchestraPianoGuitarTeaCalligraphyDirector(seed); return `[피아노/다도/서예 · ${r.model}] ${r.data.piano88KeyGuitarDrumRuleKo} / ${r.data.teaCeremonyAndSommelierEtiquetteKo}`; },
+      botany: async () => { const r = await runAssistBotanicalFloraBlacksmithAlchemyDirector(seed); return `[식물/대장간/연금술 · ${r.model}] ${r.data.cherryBlossomNotchAndBambooHollowKo} / ${r.data.blacksmithAnvilQuenchAndTailorKo}`; },
+      erp: async () => { const r = await runAssistHeavyMachinerySignboardTaxErpDirector(seed); return `[중장비/간판/세무ERP · ${r.model}] ${r.data.neonElectrodeAndSignboardOrthoKo} / ${r.data.passportCurrencyAndWebtoonTaxErpKo}`; },
     };
     try {
       setWave39SummaryKo(await map[kind]());
@@ -151,22 +151,22 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
     const seed = scriptInput.trim() || `${storyGenre} 클라이맥스 전투 및 감정 대치 씬`;
     try {
       if (kind === "gaze") {
-        const res = await runClaudeGazeSaccadePupilHighlightLockDirector(seed);
+        const res = await runAssistGazeSaccadePupilHighlightLockDirector(seed);
         setWave21SummaryKo(`[동공/시선 · ${res.model}] ${res.catchlightClockHour}시 캐치라이트 · ${res.binocularVergenceRuleKo}`);
       } else if (kind === "plume") {
-        const res = await runClaudeBreathFrostSmokePlumeLockDirector(seed);
+        const res = await runAssistBreathFrostSmokePlumeLockDirector(seed);
         setWave21SummaryKo(`[입김/연기 플룸 · ${res.model}] 풍향 ${res.windDriftAngleDeg}° · ${res.opacityDecayRuleKo}`);
       } else if (kind === "wet") {
-        const res = await runClaudeWetFabricRainTranslucencyLockDirector(seed);
+        const res = await runAssistWetFabricRainTranslucencyLockDirector(seed);
         setWave21SummaryKo(`[젖은 의상/투과도 · ${res.model}] 수분 ${res.wetnessStagePct}% · ${res.irreversibleDryingGuardKo}`);
       } else if (kind === "shadow") {
-        const res = await runClaudeCastShadowSundialAzimuthLockDirector(seed);
+        const res = await runAssistCastShadowSundialAzimuthLockDirector(seed);
         setWave21SummaryKo(`[태양각/바닥그림자 · ${res.model}] 방위각 ${res.solarAzimuthDeg}°/고도 ${res.solarElevationDeg}° · ${res.shadowLengthMultiplier}`);
       } else if (kind === "crater") {
-        const res = await runClaudeImpactDebrisCraterPersistenceLockDirector(seed);
+        const res = await runAssistImpactDebrisCraterPersistenceLockDirector(seed);
         setWave21SummaryKo(`[파괴 크레이터 지속 · ${res.model}] 직경 ${res.craterDiameterCm}cm / 균열 ${res.radialCrackBranchCount}갈래 · ${res.backgroundResetPreventionKo}`);
       } else {
-        const res = await runClaudeBinauralSpatialAudioFoleyLufsDirector(seed);
+        const res = await runAssistBinauralSpatialAudioFoleyLufsDirector(seed);
         setWave21SummaryKo(`[3D 바이노럴 폴리 · ${res.model}] 더킹 ${res.dialogueSidechainDuckingDb}dB / ${res.targetIntegratedLufs} LUFS · ${res.binauralPanningMapKo}`);
       }
     } catch {

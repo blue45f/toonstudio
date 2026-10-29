@@ -23,34 +23,34 @@ import type { CharacterVoiceArchetype } from "../lettering/studio-dialogue-sugge
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector,
-  runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector,
-  runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector,
-  runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector,
-  runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector,
-  runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector,
-  runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector,
-  runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector,
-  runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector,
-  runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector,
-  runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector,
-  runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector,
-  runClaudePipeOrganPedalHarpAccordionBagpipeDirector,
-  runClaudeToonstudio1140HyperSynthesisLegalOstDirector,
-  runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector,
-  runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector,
-} from "./claude/claude-localize";
+  runAssist3dgsNerfControlnet4FacsSfx3dSaccadeDirector,
+  runAssistBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector,
+  runAssistCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector,
+  runAssistDavyLampRickshawDivingDressSwitchboardSundialDirector,
+  runAssistEnigmaMorseDarkroomLetterpressPhonographDirector,
+  runAssistF1KerbWrcRollcageSkydivingSurfingYachtDirector,
+  runAssistGlassblowingLuthierDiamondLoupeShoemakerDirector,
+  runAssistHahoeMaskLianpuKabukiTogaThuribleDirector,
+  runAssistJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector,
+  runAssistJongmyoGayageumGeomungoDaegeumJangguDirector,
+  runAssistMarshallerLighthouseAntarcticObservatoryClockDirector,
+  runAssistOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector,
+  runAssistPipeOrganPedalHarpAccordionBagpipeDirector,
+  runAssistToonstudio1140HyperSynthesisLegalOstDirector,
+  runAssistToonstudio1200GrandMillenniumSimulpubChromaDirector,
+  runAssistWineBarriqueCheeseJamonChocolatePotStillDirector,
+} from "./assist/assist-localize";
 import {
   buildDeterministicHandPropGripLock,
   buildDeterministicPanelBorderGutterLock,
   buildDeterministicStoryboardAssistFallback,
-  runClaudeHandPropGripAnatomyDirector,
-  runClaudePanelBorderGutterTensionDirector,
-  runClaudeWebtoonStoryboardAssist,
-  type ClaudeHandPropGripLockView,
-  type ClaudePanelBorderGutterLockView,
-  type ClaudeStoryboardAssistView,
-} from "./claude/claude-webtoon-storyboard-assist";
+  runAssistHandPropGripAnatomyDirector,
+  runAssistPanelBorderGutterTensionDirector,
+  runAiWebtoonStoryboardAssist,
+  type AssistHandPropGripLockView,
+  type AssistPanelBorderGutterLockView,
+  type AiStoryboardAssistView,
+} from "./assist/ai-webtoon-storyboard-assist";
 import type { StoryboardArtistStyleBinding } from "./studio-ai-storyboard-director";
 import { PANEL_CARD_CLASS } from "./studio-ai-super-suite-options";
 import {
@@ -204,18 +204,18 @@ export function StudioWebtoonMasterPipelineCard({
 
   const exportBundle = useMemo(() => buildGlobalKWebtoonExportBundle(masterOutput), [masterOutput]);
 
-  const [claudeAssistOverride, setClaudeAssistOverride] = useState<ClaudeStoryboardAssistView | null>(
+  const [aiAssistOverride, setAiAssistOverride] = useState<AiStoryboardAssistView | null>(
     null,
   );
-  const [borderGutterLock, setBorderGutterLock] = useState<ClaudePanelBorderGutterLockView>(() =>
+  const [borderGutterLock, setBorderGutterLock] = useState<AssistPanelBorderGutterLockView>(() =>
     buildDeterministicPanelBorderGutterLock({ sceneSummaryKo: coreConflict || "클라이맥스 결투 컷" }),
   );
-  const [handPropGripLock, setHandPropGripLock] = useState<ClaudeHandPropGripLockView>(() =>
+  const [handPropGripLock, setHandPropGripLock] = useState<AssistHandPropGripLockView>(() =>
     buildDeterministicHandPropGripLock({ characterName: "서진", propNameKo: "청류검(장검)" }),
   );
-  const [isRunningClaudeAssist, setIsRunningClaudeAssist] = useState(false);
+  const [isRunningAiAssist, setIsRunningAiAssist] = useState(false);
 
-  const defaultClaudeAssist = useMemo(
+  const defaultAiAssist = useMemo(
     () =>
       buildDeterministicStoryboardAssistFallback({
         scriptText: scriptInput,
@@ -236,13 +236,13 @@ export function StudioWebtoonMasterPipelineCard({
     ],
   );
 
-  const activeClaudeAssist = claudeAssistOverride ?? defaultClaudeAssist;
+  const activeAiAssist = aiAssistOverride ?? defaultAiAssist;
 
   const handleRunClaudeStoryboardAssist = async (): Promise<void> => {
-    setIsRunningClaudeAssist(true);
+    setIsRunningAiAssist(true);
     try {
       const [res, nextBorder, nextGrip] = await Promise.all([
-        runClaudeWebtoonStoryboardAssist({
+        runAiWebtoonStoryboardAssist({
           scriptText: scriptInput,
           genre: storyGenre,
           coreConflict,
@@ -251,22 +251,22 @@ export function StudioWebtoonMasterPipelineCard({
           artistLabel: activeArtistStyle?.artistLabel,
           triggerWord: activeArtistStyle?.triggerWord,
         }),
-        runClaudePanelBorderGutterTensionDirector({
+        runAssistPanelBorderGutterTensionDirector({
           sceneSummaryKo: coreConflict || "클라이맥스 결투 시퀀스",
           cutCount: 3,
           peakTensionCutIndex: 2,
         }),
-        runClaudeHandPropGripAnatomyDirector({
+        runAssistHandPropGripAnatomyDirector({
           characterName: "서진",
           propNameKo: "청류검(장검)",
           dominantHand: "right-hand",
         }),
       ]);
-      setClaudeAssistOverride(res);
+      setAiAssistOverride(res);
       setBorderGutterLock(nextBorder);
       setHandPropGripLock(nextGrip);
     } finally {
-      setIsRunningClaudeAssist(false);
+      setIsRunningAiAssist(false);
     }
   };
 
@@ -622,14 +622,14 @@ export function StudioWebtoonMasterPipelineCard({
         <div className="flex flex-wrap items-center justify-between gap-1.5">
           <span className="inline-flex items-center gap-1 font-bold text-fg">
             <Sparkles size={12} className="text-accent" aria-hidden="true" />
-            AI 수석 PD 코칭 ({activeClaudeAssist.source === "claude-live" ? "AI 실시간" : "로컬 하이브리드"} · 모델:{" "}
-            {activeClaudeAssist.model})
+            AI 수석 PD 코칭 ({activeAiAssist.source === "claude-live" ? "AI 실시간" : "로컬 하이브리드"} · 모델:{" "}
+            {activeAiAssist.model})
           </span>
           <div className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               data-testid="run-claude-storyboard-assist-btn"
-              disabled={isRunningClaudeAssist}
+              disabled={isRunningAiAssist}
               onClick={() => void handleRunClaudeStoryboardAssist()}
               className={cn(
                 "inline-flex items-center gap-1 rounded border border-accent bg-accent-soft px-2 py-0.5 text-[0.6rem] font-bold text-accent hover:bg-raised disabled:opacity-50",
@@ -638,13 +638,13 @@ export function StudioWebtoonMasterPipelineCard({
               )}
             >
               <Wand2 size={10} aria-hidden="true" />
-              {isRunningClaudeAssist ? "AI 분석 중..." : "AI 수석 PD 코칭 실행"}
+              {isRunningAiAssist ? "AI 분석 중..." : "AI 수석 PD 코칭 실행"}
             </button>
             <button
               type="button"
               data-testid="apply-claude-cliffhanger-btn"
               onClick={() => {
-                const nextLine = `주인공: "${activeClaudeAssist.cliffhangerHookLine}" (클리프행어 훅)`;
+                const nextLine = `주인공: "${activeAiAssist.cliffhangerHookLine}" (클리프행어 훅)`;
                 const combined = scriptInput.trim()
                   ? `${scriptInput.trim()}\n${nextLine}`
                   : nextLine;
@@ -660,19 +660,19 @@ export function StudioWebtoonMasterPipelineCard({
             </button>
           </div>
         </div>
-        <p data-testid="claude-assist-cliffhanger-line" className="font-semibold text-accent">
-          추천 엔딩 대사: &ldquo;{activeClaudeAssist.cliffhangerHookLine}&rdquo;
+        <p data-testid="ai-assist-cliffhanger-line" className="font-semibold text-accent">
+          추천 엔딩 대사: &ldquo;{activeAiAssist.cliffhangerHookLine}&rdquo;
         </p>
-        {activeClaudeAssist.subtextDialogueUpgrade[0] ? (
+        {activeAiAssist.subtextDialogueUpgrade[0] ? (
           <p className="text-fg-2">
-            서브텍스트 대사: [{activeClaudeAssist.subtextDialogueUpgrade[0].speaker}]{" "}
-            {activeClaudeAssist.subtextDialogueUpgrade[0].line} (
-            {activeClaudeAssist.subtextDialogueUpgrade[0].subtextNote})
+            서브텍스트 대사: [{activeAiAssist.subtextDialogueUpgrade[0].speaker}]{" "}
+            {activeAiAssist.subtextDialogueUpgrade[0].line} (
+            {activeAiAssist.subtextDialogueUpgrade[0].subtextNote})
           </p>
         ) : null}
         <p className="text-[0.59rem] text-fg-3">
-          카메라: {activeClaudeAssist.cutDirectingNotes[0]?.poseAndCameraNote ?? "50mm 표준 렌즈"} · 현지화:{" "}
-          {activeClaudeAssist.globalLocalizationNotes[0] ?? "번역 팽창률 여유 확보"}
+          카메라: {activeAiAssist.cutDirectingNotes[0]?.poseAndCameraNote ?? "50mm 표준 렌즈"} · 현지화:{" "}
+          {activeAiAssist.globalLocalizationNotes[0] ?? "번역 팽창률 여유 확보"}
         </p>
         <div
           data-testid="storyboard-border-grip-consistency-strip"
@@ -696,14 +696,14 @@ export function StudioWebtoonMasterPipelineCard({
           <span className="font-semibold text-accent">Wave 57~59 (1,140대 플랫폼 · 188태스크):</span>
           {(
             [
-              ["국악·종묘제례악", () => runClaudeJongmyoGayageumGeomungoDaegeumJangguDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "국악" }).then((r) => onApplyScript(`${scriptInput}\n[국악고증] ${r.data.gayageum12AnjokAndGeomungoSuldaeKo}`))],
-              ["하회탈·경극·토가", () => runClaudeHahoeMaskLianpuKabukiTogaThuribleDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "가면극" }).then((r) => onApplyScript(`${scriptInput}\n[가면/토가] ${r.data.hahoeSplitChinAndPekingLianpuColorKo}`))],
-              ["오르간·하프·백파이프", () => runClaudePipeOrganPedalHarpAccordionBagpipeDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "악기" }).then((r) => onApplyScript(`${scriptInput}\n[클래식악기] ${r.data.pedalHarp47StringRedCBlueFRightShoulderKo}`))],
-              ["F1·WRC·서핑·요트", () => runClaudeF1KerbWrcRollcageSkydivingSurfingYachtDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "레이싱" }).then((r) => onApplyScript(`${scriptInput}\n[익스트림스포츠] ${r.data.f1ApexKerbTireCompoundAndWrcRollcageKo}`))],
-              ["마샬러·등대·시계탑", () => runClaudeMarshallerLighthouseAntarcticObservatoryClockDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "등대" }).then((r) => onApplyScript(`${scriptInput}\n[특수시설] ${r.data.observatoryDomeSlitAndClockTowerEscapementKo}`))],
-              ["유리·루시어·보석루페", () => runClaudeGlassblowingLuthierDiamondLoupeShoemakerDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "공예" }).then((r) => onApplyScript(`${scriptInput}\n[명장공예] ${r.data.gemologist10xLoupeAtEyeAndLockingTweezersKo}`))],
-              ["3DGS·NeRF·FACS·시선", () => runClaude3dgsNerfControlnet4FacsSfx3dSaccadeDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "3DGS" }).then((r) => onApplyScript(`${scriptInput}\n[3DGS/FACS] ${r.data.controlnet4WayMixerAndFacsDuchenneSmileKo}`))],
-              ["1140대하이퍼·독소조항", () => runClaudeToonstudio1140HyperSynthesisLegalOstDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "하이퍼" }).then((r) => onApplyScript(`${scriptInput}\n[1140하이퍼] ${r.data.unfairContractLegalScannerAndBirthdayCafeSpecKo}`))],
+              ["국악·종묘제례악", () => runAssistJongmyoGayageumGeomungoDaegeumJangguDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "국악" }).then((r) => onApplyScript(`${scriptInput}\n[국악고증] ${r.data.gayageum12AnjokAndGeomungoSuldaeKo}`))],
+              ["하회탈·경극·토가", () => runAssistHahoeMaskLianpuKabukiTogaThuribleDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "가면극" }).then((r) => onApplyScript(`${scriptInput}\n[가면/토가] ${r.data.hahoeSplitChinAndPekingLianpuColorKo}`))],
+              ["오르간·하프·백파이프", () => runAssistPipeOrganPedalHarpAccordionBagpipeDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "악기" }).then((r) => onApplyScript(`${scriptInput}\n[클래식악기] ${r.data.pedalHarp47StringRedCBlueFRightShoulderKo}`))],
+              ["F1·WRC·서핑·요트", () => runAssistF1KerbWrcRollcageSkydivingSurfingYachtDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "레이싱" }).then((r) => onApplyScript(`${scriptInput}\n[익스트림스포츠] ${r.data.f1ApexKerbTireCompoundAndWrcRollcageKo}`))],
+              ["마샬러·등대·시계탑", () => runAssistMarshallerLighthouseAntarcticObservatoryClockDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "등대" }).then((r) => onApplyScript(`${scriptInput}\n[특수시설] ${r.data.observatoryDomeSlitAndClockTowerEscapementKo}`))],
+              ["유리·루시어·보석루페", () => runAssistGlassblowingLuthierDiamondLoupeShoemakerDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "공예" }).then((r) => onApplyScript(`${scriptInput}\n[명장공예] ${r.data.gemologist10xLoupeAtEyeAndLockingTweezersKo}`))],
+              ["3DGS·NeRF·FACS·시선", () => runAssist3dgsNerfControlnet4FacsSfx3dSaccadeDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "3DGS" }).then((r) => onApplyScript(`${scriptInput}\n[3DGS/FACS] ${r.data.controlnet4WayMixerAndFacsDuchenneSmileKo}`))],
+              ["1140대하이퍼·독소조항", () => runAssistToonstudio1140HyperSynthesisLegalOstDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "하이퍼" }).then((r) => onApplyScript(`${scriptInput}\n[1140하이퍼] ${r.data.unfairContractLegalScannerAndBirthdayCafeSpecKo}`))],
             ] as const
           ).map(([label, act]) => (
             <button
@@ -723,14 +723,14 @@ export function StudioWebtoonMasterPipelineCard({
           <span className="font-semibold text-accent">Wave 60~62 (1,200대 플랫폼 · 196태스크):</span>
           {(
             [
-              ["에니그마·암실·활판", () => runClaudeEnigmaMorseDarkroomLetterpressPhonographDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "에니그마" }).then((r) => onApplyScript(`${scriptInput}\n[근대통신/인쇄] ${r.data.trenchPeriscopeAndEnigma3RotorPlugboardKo}`))],
-              ["4굴뚝여객선·복엽기", () => runClaudeOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "여객선" }).then((r) => onApplyScript(`${scriptInput}\n[근대교통] ${r.data.airshipMooringMastAndOceanLiner4thDummyFunnelKo}`))],
-              ["안전등·인력거·잠수모", () => runClaudeDavyLampRickshawDivingDressSwitchboardSundialDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "탄광" }).then((r) => onApplyScript(`${scriptInput}\n[근대소품] ${r.data.divingDress12BoltSwitchboardPatchAndSundialGnomonKo}`))],
-              ["장독대·한지·나전칠기", () => runClaudeJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "전통공예" }).then((r) => onApplyScript(`${scriptInput}\n[전통발효/공예] ${r.data.jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo}`))],
-              ["와인배럴·하몽·증류기", () => runClaudeWineBarriqueCheeseJamonChocolatePotStillDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "양조" }).then((r) => onApplyScript(`${scriptInput}\n[미식/양조] ${r.data.oakWineBarrique225LAndParmigianoSoundingHammerKo}`))],
-              ["방패연·씨름샅바·택견", () => runClaudeBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "민속" }).then((r) => onApplyScript(`${scriptInput}\n[민속/무예] ${r.data.danoSwingStandingWaitAndSsireumSatbaRightLoopKo}`))],
-              ["1000화패러독스·SFX복원", () => runClaudeCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "패러독스" }).then((r) => onApplyScript(`${scriptInput}\n[패러독스/SFX] ${r.data.multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo}`))],
-              ["1200밀레니엄·4:4:4무손실", () => runClaudeToonstudio1200GrandMillenniumSimulpubChromaDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "밀레니엄" }).then((r) => onApplyScript(`${scriptInput}\n[1200밀레니엄] ${r.data.simulpub6PlatformRoyaltySplitAndChroma444LosslessKo}`))],
+              ["에니그마·암실·활판", () => runAssistEnigmaMorseDarkroomLetterpressPhonographDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "에니그마" }).then((r) => onApplyScript(`${scriptInput}\n[근대통신/인쇄] ${r.data.trenchPeriscopeAndEnigma3RotorPlugboardKo}`))],
+              ["4굴뚝여객선·복엽기", () => runAssistOceanLiner4FunnelStreetcarBiplaneSemaphoreDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "여객선" }).then((r) => onApplyScript(`${scriptInput}\n[근대교통] ${r.data.airshipMooringMastAndOceanLiner4thDummyFunnelKo}`))],
+              ["안전등·인력거·잠수모", () => runAssistDavyLampRickshawDivingDressSwitchboardSundialDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "탄광" }).then((r) => onApplyScript(`${scriptInput}\n[근대소품] ${r.data.divingDress12BoltSwitchboardPatchAndSundialGnomonKo}`))],
+              ["장독대·한지·나전칠기", () => runAssistJangdokdaeKimjangHanjiOnggiNajeonchilgiDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "전통공예" }).then((r) => onApplyScript(`${scriptInput}\n[전통발효/공예] ${r.data.jangdokdaeMejuStrawRopeAndKimjangBuriedOnggiKo}`))],
+              ["와인배럴·하몽·증류기", () => runAssistWineBarriqueCheeseJamonChocolatePotStillDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "양조" }).then((r) => onApplyScript(`${scriptInput}\n[미식/양조] ${r.data.oakWineBarrique225LAndParmigianoSoundingHammerKo}`))],
+              ["방패연·씨름샅바·택견", () => runAssistBangpaeyeonSsireumSatbaTaekkyeonMaedeupDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "민속" }).then((r) => onApplyScript(`${scriptInput}\n[민속/무예] ${r.data.danoSwingStandingWaitAndSsireumSatbaRightLoopKo}`))],
+              ["1000화패러독스·SFX복원", () => runAssistCrossover1000EpParadoxWrinkleBakerSfxRedrawDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "패러독스" }).then((r) => onApplyScript(`${scriptInput}\n[패러독스/SFX] ${r.data.multiStudioCrossoverBridgeAnd1000EpParadoxSolverKo}`))],
+              ["1200밀레니엄·4:4:4무손실", () => runAssistToonstudio1200GrandMillenniumSimulpubChromaDirector({ episodeTitle: "1화", genre: storyGenre, scriptSummary: scriptInput || "밀레니엄" }).then((r) => onApplyScript(`${scriptInput}\n[1200밀레니엄] ${r.data.simulpub6PlatformRoyaltySplitAndChroma444LosslessKo}`))],
             ] as const
           ).map(([label, act]) => (
             <button key={label} type="button" onClick={() => void act()} className="rounded border border-line bg-panel px-1.5 py-0.5 text-fg-2 hover:border-accent hover:text-accent">

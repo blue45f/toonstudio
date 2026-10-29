@@ -5,8 +5,8 @@
  * 순수 함수만 둔다: 설정 객체를 받아 새 설정을 돌려주고, 저장·네트워크·키 기록은 하지 않는다.
  * 실제 키 확인(모델 목록 조회)은 화면 쪽(`AiQuickKeyPanel`)이 등록 직전에 한다.
  */
-import { CLAUDE_DEFAULT_MODEL_ID } from "./claude/claude-models";
-import { ANTHROPIC_API_ORIGIN, isAnthropicBaseUrl } from "./claude/claude-protocol";
+import { ASSIST_DEFAULT_MODEL_ID } from "./assist/assist-models";
+import { ANTHROPIC_API_ORIGIN, isAnthropicBaseUrl } from "./assist/assist-protocol";
 import {
   EMPTY_AI_CONNECTION,
   USER_AI_CAPABILITIES,
@@ -41,8 +41,8 @@ export const QUICK_KEY_PRESETS: Readonly<Record<QuickKeyProviderId, QuickKeyPres
   anthropic: {
     connectionId: "claude-byok",
     baseUrl: ANTHROPIC_API_ORIGIN,
-    model: CLAUDE_DEFAULT_MODEL_ID,
-    preferredModels: [CLAUDE_DEFAULT_MODEL_ID],
+    model: ASSIST_DEFAULT_MODEL_ID,
+    preferredModels: [ASSIST_DEFAULT_MODEL_ID],
     fixedModel: true,
     costPolicy: "user-funded-byok",
   },

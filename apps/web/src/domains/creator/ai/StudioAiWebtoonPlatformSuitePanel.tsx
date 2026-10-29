@@ -36,15 +36,15 @@ import {
   type MangotoonLibraryTabId,
 } from "./ai-webtoon-platform-suite";
 import {
-  runClaudeAmusementCoasterFerrisCampingSkiDirector,
-  runClaudeChemistryMicroscopeCentrifugeAstronomyDirector,
-  runClaudeDentalOphthalmologyXrayMarkerDirector,
-  runClaudeEquestrianFalconryHorologyGemstoneDirector,
-  runClaudeFilmSetClapperboardBroadcastSwitchDirector,
-  runClaudeHourglassCandleScaleBookGutterPaywallDirector,
-  runClaudeRotaryPhoneTurntableCameraInstantDirector,
-  runClaudeSchoolCsatOmrTcgDiceMahjongDirector,
-} from "./claude/claude-alt-text";
+  runAssistAmusementCoasterFerrisCampingSkiDirector,
+  runAssistChemistryMicroscopeCentrifugeAstronomyDirector,
+  runAssistDentalOphthalmologyXrayMarkerDirector,
+  runAssistEquestrianFalconryHorologyGemstoneDirector,
+  runAssistFilmSetClapperboardBroadcastSwitchDirector,
+  runAssistHourglassCandleScaleBookGutterPaywallDirector,
+  runAssistRotaryPhoneTurntableCameraInstantDirector,
+  runAssistSchoolCsatOmrTcgDiceMahjongDirector,
+} from "./assist/assist-alt-text";
 import {
   buildDeterministicBraidPonytailAccessoryKnotLockView,
   buildDeterministicCapeCloakHemLiningFlutterLockView,
@@ -52,13 +52,13 @@ import {
   buildDeterministicMultiPlaneParallaxBokehLockView,
   buildDeterministicPropScreenUiHologramLockView,
   buildDeterministicSwordHiltGuardScabbardLockView,
-  runClaudeBraidPonytailAccessoryKnotLockDirector,
-  runClaudeCapeCloakHemLiningFlutterLockDirector,
-  runClaudeCharacterAgeFlashbackProportionLockDirector,
-  runClaudeMultiPlaneParallaxBokehLockDirector,
-  runClaudePropScreenUiHologramLockDirector,
-  runClaudeSwordHiltGuardScabbardLockDirector,
-} from "./claude/claude-creator-domain-assist";
+  runAssistBraidPonytailAccessoryKnotLockDirector,
+  runAssistCapeCloakHemLiningFlutterLockDirector,
+  runAssistCharacterAgeFlashbackProportionLockDirector,
+  runAssistMultiPlaneParallaxBokehLockDirector,
+  runAssistPropScreenUiHologramLockDirector,
+  runAssistSwordHiltGuardScabbardLockDirector,
+} from "./assist/ai-creator-domain-assist";
 import { PANEL_CARD_CLASS } from "./studio-ai-super-suite-options";
 
 import { cn } from "@/shared/lib/utils";
@@ -119,14 +119,14 @@ export function StudioAiWebtoonPlatformSuitePanel({
     setWave42Loading(true);
     const seed = { episodeTitle: "01화", genre: "현대 판타지", scriptSummary: scriptInput.trim() || tooningSentence };
     const map: Record<typeof kind, () => Promise<string>> = {
-      dental: async () => { const r = await runClaudeDentalOphthalmologyXrayMarkerDirector(seed); return `[치과/X-ray/AED · ${r.model}] ${r.data.xrayLeadMarkerAndCastSlingKo} / ${r.data.ambulanceStretcherAndAedPaddleKo}`; },
-      retro: async () => { const r = await runClaudeRotaryPhoneTurntableCameraInstantDirector(seed); return `[다이얼/턴테이블/카메라 · ${r.model}] ${r.data.vinylTurntableTonearmAndCassetteKo} / ${r.data.slrAdvanceLeverAndPolaroidBorderKo}`; },
-      lab: async () => { const r = await runClaudeChemistryMicroscopeCentrifugeAstronomyDirector(seed); return `[화학/현미경/망원경 · ${r.model}] ${r.data.buretteMeniscusAndFumeHoodRuleKo} / ${r.data.microscopeObjectiveAndCentrifugeKo}`; },
-      horology: async () => { const r = await runClaudeEquestrianFalconryHorologyGemstoneDirector(seed); return `[승마/시계기어/보석 · ${r.model}] ${r.data.stirrupBallOfFootAndFalconryKo} / ${r.data.watchGearMeshRotationRuleKo}`; },
-      filmset: async () => { const r = await runClaudeFilmSetClapperboardBroadcastSwitchDirector(seed); return `[촬영슬레이트/부조정실 · ${r.model}] ${r.data.clapperboardSlateAndBoomMicRuleKo} / ${r.data.switcherPreviewProgramTallyKo}`; },
-      campus: async () => { const r = await runClaudeSchoolCsatOmrTcgDiceMahjongDirector(seed); return `[수능OMR/TCG/마작 · ${r.model}] ${r.data.koreanCsatOmrAndMortarboardRuleKo} / ${r.data.tcgPlaymatTapAndDiceOppositeSumKo}`; },
-      coaster: async () => { const r = await runClaudeAmusementCoasterFerrisCampingSkiDirector(seed); return `[롤러코스터/관람차/스키 · ${r.model}] ${r.data.rollercoasterUpstopAndFerrisGondolaKo} / ${r.data.skiSnowboardStanceAndBasketRuleKo}`; },
-      paywall: async () => { const r = await runClaudeHourglassCandleScaleBookGutterPaywallDirector(seed); return `[모래시계/촛불/쿠키전환 · ${r.model}] ${r.data.hourglassReposeAndCandleVerticalFlameKo} / ${r.data.bookGutterCurveAndPaywallCliffhangerKo}`; },
+      dental: async () => { const r = await runAssistDentalOphthalmologyXrayMarkerDirector(seed); return `[치과/X-ray/AED · ${r.model}] ${r.data.xrayLeadMarkerAndCastSlingKo} / ${r.data.ambulanceStretcherAndAedPaddleKo}`; },
+      retro: async () => { const r = await runAssistRotaryPhoneTurntableCameraInstantDirector(seed); return `[다이얼/턴테이블/카메라 · ${r.model}] ${r.data.vinylTurntableTonearmAndCassetteKo} / ${r.data.slrAdvanceLeverAndPolaroidBorderKo}`; },
+      lab: async () => { const r = await runAssistChemistryMicroscopeCentrifugeAstronomyDirector(seed); return `[화학/현미경/망원경 · ${r.model}] ${r.data.buretteMeniscusAndFumeHoodRuleKo} / ${r.data.microscopeObjectiveAndCentrifugeKo}`; },
+      horology: async () => { const r = await runAssistEquestrianFalconryHorologyGemstoneDirector(seed); return `[승마/시계기어/보석 · ${r.model}] ${r.data.stirrupBallOfFootAndFalconryKo} / ${r.data.watchGearMeshRotationRuleKo}`; },
+      filmset: async () => { const r = await runAssistFilmSetClapperboardBroadcastSwitchDirector(seed); return `[촬영슬레이트/부조정실 · ${r.model}] ${r.data.clapperboardSlateAndBoomMicRuleKo} / ${r.data.switcherPreviewProgramTallyKo}`; },
+      campus: async () => { const r = await runAssistSchoolCsatOmrTcgDiceMahjongDirector(seed); return `[수능OMR/TCG/마작 · ${r.model}] ${r.data.koreanCsatOmrAndMortarboardRuleKo} / ${r.data.tcgPlaymatTapAndDiceOppositeSumKo}`; },
+      coaster: async () => { const r = await runAssistAmusementCoasterFerrisCampingSkiDirector(seed); return `[롤러코스터/관람차/스키 · ${r.model}] ${r.data.rollercoasterUpstopAndFerrisGondolaKo} / ${r.data.skiSnowboardStanceAndBasketRuleKo}`; },
+      paywall: async () => { const r = await runAssistHourglassCandleScaleBookGutterPaywallDirector(seed); return `[모래시계/촛불/쿠키전환 · ${r.model}] ${r.data.hourglassReposeAndCandleVerticalFlameKo} / ${r.data.bookGutterCurveAndPaywallCliffhangerKo}`; },
     };
     try {
       setWave42SummaryKo(await map[kind]());
@@ -142,22 +142,22 @@ export function StudioAiWebtoonPlatformSuitePanel({
     const seed = scriptInput.trim() || tooningSentence;
     try {
       if (kind === "screen") {
-        const res = await runClaudePropScreenUiHologramLockDirector(seed);
+        const res = await runAssistPropScreenUiHologramLockDirector(seed);
         setWave18SummaryKo(`[UI/홀로그램 · ${res.model}] ${res.uiDeviceType} · ${res.clockAndBatteryBadgeRuleKo}`);
       } else if (kind === "braid") {
-        const res = await runClaudeBraidPonytailAccessoryKnotLockDirector(seed);
+        const res = await runAssistBraidPonytailAccessoryKnotLockDirector(seed);
         setWave18SummaryKo(`[땋은머리/리본 · ${res.model}] ${res.braidSegmentCount}마디 · ${res.accessorySideRuleKo}`);
       } else if (kind === "cape") {
-        const res = await runClaudeCapeCloakHemLiningFlutterLockDirector(seed);
+        const res = await runAssistCapeCloakHemLiningFlutterLockDirector(seed);
         setWave18SummaryKo(`[망토 겉/안감 · ${res.model}] 겉감 ${res.outerFabricHex} / 안감 ${res.innerLiningHex} · ${res.windFlutterPhaseRuleKo}`);
       } else if (kind === "sword") {
-        const res = await runClaudeSwordHiltGuardScabbardLockDirector(seed);
+        const res = await runAssistSwordHiltGuardScabbardLockDirector(seed);
         setWave18SummaryKo(`[도검 코등이/칼집 · ${res.model}] ${res.weaponNameAndClassKo} · ${res.scabbardWearingSideRuleKo}`);
       } else if (kind === "age") {
-        const res = await runClaudeCharacterAgeFlashbackProportionLockDirector(seed);
+        const res = await runAssistCharacterAgeFlashbackProportionLockDirector(seed);
         setWave18SummaryKo(`[연령대/회상 비례 · ${res.model}] ${res.childhoodHeadRatio} → ${res.adultCurrentHeadRatio} · ${res.scarAndMarkTimelineRuleKo}`);
       } else {
-        const res = await runClaudeMultiPlaneParallaxBokehLockDirector(seed);
+        const res = await runAssistMultiPlaneParallaxBokehLockDirector(seed);
         setWave18SummaryKo(`[3평면 DoF/보케 · ${res.model}] 전경 ${res.foregroundBlurRadiusPx}px / 원경 ${res.backgroundBokehRadiusPx}px · ${res.virtualLensMmAndFStop}`);
       }
     } catch {

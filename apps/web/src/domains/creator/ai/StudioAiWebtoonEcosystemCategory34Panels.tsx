@@ -11,31 +11,31 @@ import { useMemo, useState, type ReactElement } from "react";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
 import {
-  runClaudeAcrylicStandPhotocardDielineDirector, runClaudeCulinaryKnifeGripPlatingSteamDirector,
-  runClaudeEastAsianPalaceDancheongBracketDirector, runClaudeFirearmTacticalSlideEjectionLockDirector,
-  runClaudeMartialArtsQigongMeridianTrajectoryDirector, runClaudeMedicalIcuVitalMonitorSterileDirector,
-  runClaudeReaderCommentSentimentCatharsisDirector, runClaudeTraditionalClothingCollarGoreumLockDirector,
-} from "./claude/claude-art-director";
+  runAssistAcrylicStandPhotocardDielineDirector, runAssistCulinaryKnifeGripPlatingSteamDirector,
+  runAssistEastAsianPalaceDancheongBracketDirector, runAssistFirearmTacticalSlideEjectionLockDirector,
+  runAssistMartialArtsQigongMeridianTrajectoryDirector, runAssistMedicalIcuVitalMonitorSterileDirector,
+  runAssistReaderCommentSentimentCatharsisDirector, runAssistTraditionalClothingCollarGoreumLockDirector,
+} from "./assist/assist-art-director";
 import {
-  runClaudeAnamorphicFisheyeLensOpticsDirector, runClaudeAnimeSettei3ToneModelSheetDirector,
-  runClaudeAudiotoonAdrTactileErgonomicsDirector, runClaudeCastleClockwiseStairCarriageWaltzDirector,
-  runClaudeCyberpunkProstheticMechaTacticalDirector, runClaudeDrapery7FoldsMaterialBrdfDirector,
-  runClaudeEmoticon24PackChibiSpecDirector, runClaudeForensicLuminolAutopsySceneDirector,
-  runClaudeGachaSsrSplashRpgSkillCutsceneDirector, runClaudeGlobalIpMgRsRoyaltyWaterfallDirector,
-  runClaudeHunterGateRaidPartyInventoryDirector, runClaudeKoreanUrbanEverydayGeographyDirector,
-  runClaudeLockedRoomAlibiCipherArchaeologyDirector, runClaudeLunarPhaseStarSkyLockDirector,
-  runClaudeOttLiveActionShowrunnerBibleDirector, runClaudePocketWatchIiiiChessBadukBoardDirector,
-  runClaudeQuadrupedCreatureWingAnatomyDirector, runClaudeRofanCorsetSashSignetEtiquetteDirector,
-  runClaudeScreentoneMoireGpenHierarchyDirector, runClaudeShamanGutExorcismTalismanDirector,
-  runClaudeSportsBiomechanicsGaitGripDirector, runClaudeThaiVietnameseArabicRtlShapingDirector,
-  runClaudeVehicleCockpitSeatbeltDrivetrainDirector, runClaudeVtuberArkit52VnSpriteMerchDirector,
-} from "./claude/claude-localize";
+  runAssistAnamorphicFisheyeLensOpticsDirector, runAssistAnimeSettei3ToneModelSheetDirector,
+  runAssistAudiotoonAdrTactileErgonomicsDirector, runAssistCastleClockwiseStairCarriageWaltzDirector,
+  runAssistCyberpunkProstheticMechaTacticalDirector, runAssistDrapery7FoldsMaterialBrdfDirector,
+  runAssistEmoticon24PackChibiSpecDirector, runAssistForensicLuminolAutopsySceneDirector,
+  runAssistGachaSsrSplashRpgSkillCutsceneDirector, runAssistGlobalIpMgRsRoyaltyWaterfallDirector,
+  runAssistHunterGateRaidPartyInventoryDirector, runAssistKoreanUrbanEverydayGeographyDirector,
+  runAssistLockedRoomAlibiCipherArchaeologyDirector, runAssistLunarPhaseStarSkyLockDirector,
+  runAssistOttLiveActionShowrunnerBibleDirector, runAssistPocketWatchIiiiChessBadukBoardDirector,
+  runAssistQuadrupedCreatureWingAnatomyDirector, runAssistRofanCorsetSashSignetEtiquetteDirector,
+  runAssistScreentoneMoireGpenHierarchyDirector, runAssistShamanGutExorcismTalismanDirector,
+  runAssistSportsBiomechanicsGaitGripDirector, runAssistThaiVietnameseArabicRtlShapingDirector,
+  runAssistVehicleCockpitSeatbeltDrivetrainDirector, runAssistVtuberArkit52VnSpriteMerchDirector,
+} from "./assist/assist-localize";
 import {
-  runClaudeEyetrackScrollVelocityAoiDirector, runClaudeFastenerOverlapBeltBuckleLockDirector,
-  runClaudeHeraldryCrestEmblemGeometryLockDirector, runClaudeMusicalInstrumentFingeringLockDirector,
-  runClaudeSpeedlineImpactFrameFocusLockDirector, runClaudeTankobonPrintBleedCmykProofDirector,
-  runClaudeVariableFontBalloonDiamondCopyfitDirector, runClaudeWoundBandageHealingTimelineLockDirector,
-} from "./claude/claude-webtoon-production-assist";
+  runAssistEyetrackScrollVelocityAoiDirector, runAssistFastenerOverlapBeltBuckleLockDirector,
+  runAssistHeraldryCrestEmblemGeometryLockDirector, runAssistMusicalInstrumentFingeringLockDirector,
+  runAssistSpeedlineImpactFrameFocusLockDirector, runAssistTankobonPrintBleedCmykProofDirector,
+  runAssistVariableFontBalloonDiamondCopyfitDirector, runAssistWoundBandageHealingTimelineLockDirector,
+} from "./assist/ai-webtoon-production-assist";
 import {
   buildMidjourneyStableDiffusionConceptPlan, buildPhotoshopFireflyGenerativePlan,
   FILMORA_WEBTOON_FILTER_PRESETS, runCanvaInstatoonCarouselPipeline,
@@ -76,35 +76,35 @@ export function StudioAiWebtoonCategory3Panel({
       cutCount: 4,
     };
     if (toolId === "fastener") {
-      const res = await runClaudeFastenerOverlapBeltBuckleLockDirector(input);
+      const res = await runAssistFastenerOverlapBeltBuckleLockDirector(input);
       setWave24Badge(`${res.model} · 여밈일관성 ${res.data.fastenerLockScore}점`);
       setWave24Summary(`${res.data.placketOverlapRuleKo} | 단추 ${res.data.buttonCount}개 | ${res.data.mirrorFlipGuardKo}`);
     } else if (toolId === "speedline") {
-      const res = await runClaudeSpeedlineImpactFrameFocusLockDirector(input);
+      const res = await runAssistSpeedlineImpactFrameFocusLockDirector(input);
       setWave24Badge(`${res.model} · 타격초점 ${res.data.focusLockScore}점`);
       setWave24Summary(`${res.data.vanishingApexNormalizedXY} | 보호반경 ${res.data.innerClearRadiusPx}px | ${res.data.impactFrameInversionRuleKo}`);
     } else if (toolId === "wound") {
-      const res = await runClaudeWoundBandageHealingTimelineLockDirector(input);
+      const res = await runAssistWoundBandageHealingTimelineLockDirector(input);
       setWave24Badge(`${res.model} · 부상타임라인 ${res.data.medicalContinuityScore}점`);
       setWave24Summary(`${res.data.anatomicalLandmarkKo} | ${res.data.healingStageProgressionKo}`);
     } else if (toolId === "heraldry") {
-      const res = await runClaudeHeraldryCrestEmblemGeometryLockDirector(input);
+      const res = await runAssistHeraldryCrestEmblemGeometryLockDirector(input);
       setWave24Badge(`${res.model} · 문장기하학 ${res.data.crestGeometryScore}점`);
       setWave24Summary(`${res.data.motifRatioSpecKo} | ${res.data.metallicFoilBevelRuleKo}`);
     } else if (toolId === "instrument") {
-      const res = await runClaudeMusicalInstrumentFingeringLockDirector(input);
+      const res = await runAssistMusicalInstrumentFingeringLockDirector(input);
       setWave24Badge(`${res.model} · 악기운지 ${res.data.instrumentAccuracyScore}점`);
       setWave24Summary(`${res.data.instrumentAndStringCountKo} | ${res.data.leftHandFingeringPositionKo}`);
     } else if (toolId === "diamond-font") {
-      const res = await runClaudeVariableFontBalloonDiamondCopyfitDirector(input);
+      const res = await runAssistVariableFontBalloonDiamondCopyfitDirector(input);
       setWave24Badge(`${res.model} · 마름모식자 ${res.data.diamondCopyfitScore}점`);
       setWave24Summary(`wght ${res.data.fontWeightWght} / wdth ${res.data.fontWidthWdthPct}% | 줄글자수 [${res.data.lineLengthsCharCount.join(",")}] | ${res.data.widowOrphanPreventionNoteKo}`);
     } else if (toolId === "tankobon") {
-      const res = await runClaudeTankobonPrintBleedCmykProofDirector(input);
+      const res = await runAssistTankobonPrintBleedCmykProofDirector(input);
       setWave24Badge(`${res.model} · 단행본인쇄 ${res.data.printReadinessScore}점`);
       setWave24Summary(`${res.data.trimAndBleedSpecMmKo} | TAC ${res.data.maxTotalAreaCoverageTacPct}% | ${res.data.scrollToPageReflowStrategyKo}`);
     } else {
-      const res = await runClaudeEyetrackScrollVelocityAoiDirector(input);
+      const res = await runAssistEyetrackScrollVelocityAoiDirector(input);
       setWave24Badge(`${res.model} · 시선트래킹 ${res.data.eyePathSmoothnessScore}점`);
       setWave24Summary(`체류 ${res.data.averageDwellTimeMsPerCut}ms · 사카드 ${res.data.saccadeJumpAngleDeg}° | ${res.data.aoiHeatmapOptimizationKo}`);
     }
@@ -340,35 +340,35 @@ export function StudioAiWebtoonCategory4Panel({
       scriptSummary: "주인공이 결전지에서 장비를 점검하고 마지막 일격을 준비한다.",
     };
     if (toolId === "goreum") {
-      const res = await runClaudeTraditionalClothingCollarGoreumLockDirector(input);
+      const res = await runAssistTraditionalClothingCollarGoreumLockDirector(input);
       setWave27Badge(`${res.model} · 전통복식여밈 ${res.data.collarLockScore}점`);
       setWave27Summary(`${res.data.overlapDirectionRuleKo} | ${res.data.knotLoopSideKo}`);
     } else if (toolId === "firearm") {
-      const res = await runClaudeFirearmTacticalSlideEjectionLockDirector(input);
+      const res = await runAssistFirearmTacticalSlideEjectionLockDirector(input);
       setWave27Badge(`${res.model} · 전술총기고증 ${res.data.tacticalAccuracyScore}점`);
       setWave27Summary(`${res.data.ejectionPortSideKo} | ${res.data.triggerDisciplineRuleKo}`);
     } else if (toolId === "qigong") {
-      const res = await runClaudeMartialArtsQigongMeridianTrajectoryDirector(input);
+      const res = await runAssistMartialArtsQigongMeridianTrajectoryDirector(input);
       setWave27Badge(`${res.model} · 무협기혈검결 ${res.data.qigongContinuityScore}점`);
       setWave27Summary(`${res.data.meridianPathwayKo} | ${res.data.swordFingerMudraKo}`);
     } else if (toolId === "icu") {
-      const res = await runClaudeMedicalIcuVitalMonitorSterileDirector(input);
+      const res = await runAssistMedicalIcuVitalMonitorSterileDirector(input);
       setWave27Badge(`${res.model} · 중환자실고증 ${res.data.medicalAccuracyScore}점`);
       setWave27Summary(`${res.data.vitalMonitorReadoutKo} | ${res.data.sterileFieldRuleKo}`);
     } else if (toolId === "culinary") {
-      const res = await runClaudeCulinaryKnifeGripPlatingSteamDirector(input);
+      const res = await runAssistCulinaryKnifeGripPlatingSteamDirector(input);
       setWave27Badge(`${res.model} · 셰프나이프그립 ${res.data.culinaryAccuracyScore}점`);
       setWave27Summary(`${res.data.knifeAndGuideHandGripKo} | ${res.data.platingAndSauceGeometryKo}`);
     } else if (toolId === "acrylic") {
-      const res = await runClaudeAcrylicStandPhotocardDielineDirector(input);
+      const res = await runAssistAcrylicStandPhotocardDielineDirector(input);
       setWave27Badge(`${res.model} · 아크릴굿즈칼선 ${res.data.merchReadinessScore}점`);
       setWave27Summary(`${res.data.acrylicCutlineAndWhitePlateKo} | ${res.data.baseSlotToleranceMmKo}`);
     } else if (toolId === "dancheong") {
-      const res = await runClaudeEastAsianPalaceDancheongBracketDirector(input);
+      const res = await runAssistEastAsianPalaceDancheongBracketDirector(input);
       setWave27Badge(`${res.model} · 궁궐단청공포 ${res.data.architecturalIntegrityScore}점`);
       setWave27Summary(`${res.data.bracketGongpoStructureKo} | ${res.data.dancheongPaletteHexRuleKo}`);
     } else {
-      const res = await runClaudeReaderCommentSentimentCatharsisDirector(input);
+      const res = await runAssistReaderCommentSentimentCatharsisDirector(input);
       setWave27Badge(`${res.model} · 예상별점 ${res.data.predictedRatingScore}`);
       setWave27Summary(`${res.data.frustrationToCatharsisRatioKo} | ${res.data.predictedTopCommentKo}`);
     }
@@ -382,35 +382,35 @@ export function StudioAiWebtoonCategory4Panel({
       scriptSummary: "초승달 밤 옥탑방 결전 이후 글로벌 연재와 애니메이션·OTT 드라마화가 진행된다.",
     };
     if (toolId === "lunar") {
-      const res = await runClaudeLunarPhaseStarSkyLockDirector(input);
+      const res = await runAssistLunarPhaseStarSkyLockDirector(input);
       setWave27Badge(`${res.model} · 천문달위상 ${res.data.skyIntegrityScore}점`);
       setWave27Summary(`${res.data.lunarPhaseAndLitSideKo} | ${res.data.darkLimbStarOcclusionGuardKo}`);
     } else if (toolId === "emoticon") {
-      const res = await runClaudeEmoticon24PackChibiSpecDirector(input);
+      const res = await runAssistEmoticon24PackChibiSpecDirector(input);
       setWave27Badge(`${res.model} · 이모티콘24종 ${res.data.emoticonPackReadinessScore}점`);
       setWave27Summary(`${res.data.chibiHeadRatioAndCanvasSpecKo} | ${res.data.darkModeStrokeVisibilityKo}`);
     } else if (toolId === "creature") {
-      const res = await runClaudeQuadrupedCreatureWingAnatomyDirector(input);
+      const res = await runAssistQuadrupedCreatureWingAnatomyDirector(input);
       setWave27Badge(`${res.model} · 신수해부학 ${res.data.creatureAnatomyScore}점`);
       setWave27Summary(`${res.data.hindlimbHockAndCarpusRuleKo} | ${res.data.wingFingerPatagiumFoldKo}`);
     } else if (toolId === "k-urban") {
-      const res = await runClaudeKoreanUrbanEverydayGeographyDirector(input);
+      const res = await runAssistKoreanUrbanEverydayGeographyDirector(input);
       setWave27Badge(`${res.model} · 한국일상고증 ${res.data.urbanRealismScore}점`);
       setWave27Summary(`${res.data.subwayAndClassroomLayoutKo} | ${res.data.convenienceStoreAndRooftopKo}`);
     } else if (toolId === "rtl-thai") {
-      const res = await runClaudeThaiVietnameseArabicRtlShapingDirector(input);
+      const res = await runAssistThaiVietnameseArabicRtlShapingDirector(input);
       setWave27Badge(`${res.model} · 글로벌식자 ${res.data.shapingIntegrityScore}점`);
       setWave27Summary(`${res.data.thaiVietStackedDiacriticRuleKo} | ${res.data.asymmetricCharacterGuardKo}`);
     } else if (toolId === "settei") {
-      const res = await runClaudeAnimeSettei3ToneModelSheetDirector(input);
+      const res = await runAssistAnimeSettei3ToneModelSheetDirector(input);
       setWave27Badge(`${res.model} · 애니색지정표 ${res.data.setteiConversionScore}점`);
       setWave27Summary(`${res.data.skinThreeToneHexSpecKo} | ${res.data.colorTraceLineRuleKo}`);
     } else if (toolId === "ott-bible") {
-      const res = await runClaudeOttLiveActionShowrunnerBibleDirector(input);
+      const res = await runAssistOttLiveActionShowrunnerBibleDirector(input);
       setWave27Badge(`${res.model} · OTT8부작바이블 ${res.data.adaptationFeasibilityScore}점`);
       setWave27Summary(`${res.data.eightEpisodeCliffhangerArcKo} | ${res.data.locationConsolidationPlanKo}`);
     } else {
-      const res = await runClaudeGlobalIpMgRsRoyaltyWaterfallDirector(input);
+      const res = await runAssistGlobalIpMgRsRoyaltyWaterfallDirector(input);
       setWave27Badge(`${res.model} · MG/RS정산안전 ${res.data.contractSafetyScore}점`);
       setWave27Summary(`${res.data.mgDeductionMethodComparisonKo} | ${res.data.netRevenueShareWaterfallKo}`);
     }
@@ -424,35 +424,35 @@ export function StudioAiWebtoonCategory4Panel({
       scriptSummary: "아나모픽 야간 추격전 후 벨벳 망토를 휘날리며 궁극기 컷신으로 보스를 격파한다.",
     };
     if (toolId === "vehicle") {
-      const res = await runClaudeVehicleCockpitSeatbeltDrivetrainDirector(input);
+      const res = await runAssistVehicleCockpitSeatbeltDrivetrainDirector(input);
       setWave27Badge(`${res.model} · 차량좌우핸들·구동계 ${res.data.vehicleContinuityScore}점`);
       setWave27Summary(`${res.data.lhdRhdSteeringAndShifterRuleKo} | ${res.data.seatbeltDiagonalStrapRuleKo}`);
     } else if (toolId === "screentone") {
-      const res = await runClaudeScreentoneMoireGpenHierarchyDirector(input);
+      const res = await runAssistScreentoneMoireGpenHierarchyDirector(input);
       setWave27Badge(`${res.model} · 망점모아레·G펜위계 ${res.data.inkingIntegrityScore}점`);
       setWave27Summary(`${res.data.screentoneLpiAndAngleRuleKo} | ${res.data.gpenThreeTierLineWeightKo}`);
     } else if (toolId === "lens") {
-      const res = await runClaudeAnamorphicFisheyeLensOpticsDirector(input);
+      const res = await runAssistAnamorphicFisheyeLensOpticsDirector(input);
       setWave27Badge(`${res.model} · 시네마틱렌즈광학 ${res.data.lensOpticsScore}점`);
       setWave27Summary(`${res.data.anamorphicBokehAndFlareKo} | ${res.data.dutchTiltAndSplitDiopterKo}`);
     } else if (toolId === "drapery") {
-      const res = await runClaudeDrapery7FoldsMaterialBrdfDirector(input);
+      const res = await runAssistDrapery7FoldsMaterialBrdfDirector(input);
       setWave27Badge(`${res.model} · 7대주름·벨벳BRDF ${res.data.fabricPhysicsScore}점`);
       setWave27Summary(`${res.data.hogarthFoldTensionOriginKo} | ${res.data.velvetAndSilkBrdfSpecKo}`);
     } else if (toolId === "biomech") {
-      const res = await runClaudeSportsBiomechanicsGaitGripDirector(input);
+      const res = await runAssistSportsBiomechanicsGaitGripDirector(input);
       setWave27Badge(`${res.model} · 스포츠인체역학 ${res.data.biomechanicsScore}점`);
       setWave27Summary(`${res.data.contraLateralSprintGaitKo} | ${res.data.ballSportsGripAndReleaseKo}`);
     } else if (toolId === "vtuber") {
-      const res = await runClaudeVtuberArkit52VnSpriteMerchDirector(input);
+      const res = await runAssistVtuberArkit52VnSpriteMerchDirector(input);
       setWave27Badge(`${res.model} · 버튜버·캔배지 ${res.data.ipAssetReadinessScore}점`);
       setWave27Summary(`${res.data.vtuberArkitBlendshapeSpecKo} | ${res.data.canBadgeAndLenticularSpecKo}`);
     } else if (toolId === "gacha-rpg") {
-      const res = await runClaudeGachaSsrSplashRpgSkillCutsceneDirector(input);
+      const res = await runAssistGachaSsrSplashRpgSkillCutsceneDirector(input);
       setWave27Badge(`${res.model} · SSR스플래시·궁극기 ${res.data.gameAdaptationScore}점`);
       setWave27Summary(`${res.data.fivePlaneSplashArtParallaxKo} | ${res.data.ultimateSkillCutsceneCameraKo}`);
     } else {
-      const res = await runClaudeAudiotoonAdrTactileErgonomicsDirector(input);
+      const res = await runAssistAudiotoonAdrTactileErgonomicsDirector(input);
       setWave27Badge(`${res.model} · ADR대본·촉각점자·손목보호 ${res.data.productionAccessibilityScore}점`);
       setWave27Summary(`${res.data.adrTimecodeAndBreathCueKo} | ${res.data.artistWristStrokeBudgetKo}`);
     }
@@ -466,35 +466,35 @@ export function StudioAiWebtoonCategory4Panel({
       scriptSummary: "황궁 무도회 밀실 사건 현장에서 루미놀 혈흔과 회중시계 암호를 해독한다.",
     };
     if (toolId === "rofan-etiquette") {
-      const res = await runClaudeRofanCorsetSashSignetEtiquetteDirector(input);
+      const res = await runAssistRofanCorsetSashSignetEtiquetteDirector(input);
       setWave27Badge(`${res.model} · 로판복식·에티켓 ${res.data.aristocracyEtiquetteScore}점`);
       setWave27Summary(`${res.data.corsetBuskAndOrderSashRuleKo} | ${res.data.teacupAndStemwareHoldRuleKo}`);
     } else if (toolId === "watch-chess") {
-      const res = await runClaudePocketWatchIiiiChessBadukBoardDirector(input);
+      const res = await runAssistPocketWatchIiiiChessBadukBoardDirector(input);
       setWave27Badge(`${res.model} · 시계IIII·체스바둑 ${res.data.propPrecisionScore}점`);
       setWave27Summary(`${res.data.romanWatchDialFourRuleKo} | ${res.data.chessWhiteOnRightAndQueenKo}`);
     } else if (toolId === "castle-waltz") {
-      const res = await runClaudeCastleClockwiseStairCarriageWaltzDirector(input);
+      const res = await runAssistCastleClockwiseStairCarriageWaltzDirector(input);
       setWave27Badge(`${res.model} · 성탑계단·마차·왈츠 ${res.data.historicalStagingScore}점`);
       setWave27Summary(`${res.data.spiralStairAndPortcullisKo} | ${res.data.waltzClosedFrameHandRuleKo}`);
     } else if (toolId === "hunter-raid") {
-      const res = await runClaudeHunterGateRaidPartyInventoryDirector(input);
+      const res = await runAssistHunterGateRaidPartyInventoryDirector(input);
       setWave27Badge(`${res.model} · 게이트·5인레이드·포션 ${res.data.dungeonContinuityScore}점`);
       setWave27Summary(`${res.data.fiveManRaidSpatialFormationKo} | ${res.data.subspaceRippleAndPotionMeniscusKo}`);
     } else if (toolId === "cyber-nvg") {
-      const res = await runClaudeCyberpunkProstheticMechaTacticalDirector(input);
+      const res = await runAssistCyberpunkProstheticMechaTacticalDirector(input);
       setWave27Badge(`${res.model} · 의체·강화복·4안야투경 ${res.data.sciFiTacticalScore}점`);
       setWave27Summary(`${res.data.pauldronClearanceAndMechaCockpitKo} | ${res.data.plateCarrierMagAndQuadNvgKo}`);
     } else if (toolId === "shaman-occult") {
-      const res = await runClaudeShamanGutExorcismTalismanDirector(input);
+      const res = await runAssistShamanGutExorcismTalismanDirector(input);
       setWave27Badge(`${res.model} · 무속방울부채·구마부적 ${res.data.occultAuthenticityScore}점`);
       setWave27Summary(`${res.data.shamanBellAndFanHandRuleKo} | ${res.data.exorcismStoleAndCrucifixRuleKo}`);
     } else if (toolId === "forensic-luminol") {
-      const res = await runClaudeForensicLuminolAutopsySceneDirector(input);
+      const res = await runAssistForensicLuminolAutopsySceneDirector(input);
       setWave27Badge(`${res.model} · 루미놀청백광·취조거울 ${res.data.forensicRigorScore}점`);
       setWave27Summary(`${res.data.luminolBlueGlowAndEvidenceTentKo} | ${res.data.interrogationMirrorLightingRuleKo}`);
     } else {
-      const res = await runClaudeLockedRoomAlibiCipherArchaeologyDirector(input);
+      const res = await runAssistLockedRoomAlibiCipherArchaeologyDirector(input);
       setWave27Badge(`${res.model} · 밀실평면도·암호·UV감정 ${res.data.mysteryLogicScore}점`);
       setWave27Summary(`${res.data.lockedRoomFloorplanAndSightlineKo} | ${res.data.corkboardRedYarnAndCipherRuleKo}`);
     }

@@ -10,9 +10,9 @@ import { ImagePlus, Link2, Shapes, Sparkles, Trash2, UserRound } from "lucide-re
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
-  runClaudeCharacterCanonArchitect,
+  runAssistCharacterCanonArchitect,
   type CharacterCanonArchitectView,
-} from "../claude/claude-creator-domain-assist";
+} from "../assist/ai-creator-domain-assist";
 import { aiStatusText } from "../studio-ai-status-i18n";
 import { cn } from "@/shared/lib/utils";
 
@@ -99,7 +99,7 @@ export function StudioCharacterCanonEditor({
         .split(/[,，\n]/u)
         .map((t) => t.trim())
         .filter(Boolean);
-      const view = await runClaudeCharacterCanonArchitect({
+      const view = await runAssistCharacterCanonArchitect({
         name: name.trim() || "유진",
         roughNotes: [appearance.trim(), outfit.trim()].filter(Boolean).join(" / "),
         existingTags,

@@ -1,4 +1,4 @@
-import { userAiWireProtocol } from "./claude/claude-protocol";
+import { userAiWireProtocol } from "./assist/assist-protocol";
 import { assertFreeAiConnection } from "./free-ai-policy";
 import { readBoundedResponseBytes } from "./user-ai-bounded-read";
 import {
@@ -71,8 +71,8 @@ export async function userAiFetch(
   // Claude 연결은 Messages API로 번역해 보내고 OpenAI 형식 응답으로 돌려준다(호출자 변경 없음).
   // 번역·SDK 계층은 Claude 연결을 실제로 쓰는 순간에만 내려받는다(앱 첫 로드·스튜디오 진입 번들에 싣지 않는다).
   if (userAiWireProtocol(connection) === "anthropic-messages") {
-    const { claudeBridgedResponse } = await import("./claude/claude-transport");
-    return claudeBridgedResponse(
+    const { assistBridgedResponse } = await import("./assist/assist-transport");
+    return assistBridgedResponse(
       capability,
       validatedPath,
       method,

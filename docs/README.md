@@ -91,7 +91,7 @@ onpod.ai 호스팅 이전 평가(2026-10-22, 평가 시점의 기록이며 현�
 
 Claude 사용자 키(BYOK) AI 보조(2026-10-22, 현재 구현 — 병합 전에는 브랜치에만 있다)는 다음 문서를 추가로 본다.
 
-1. [`features/claude-ai-assist.md`](features/claude-ai-assist.md) — 연결 정책, 아트 디렉터·명령 도우미·번역·대체 텍스트 4종의 입력·출력·비용 상한, 공통 UX 원칙, 구조, 보안, 검증과 하지 못한 것, 새 기능을 더하는 법
+1. [`features/ai-assist.md`](features/ai-assist.md) — 연결 정책, 아트 디렉터·명령 도우미·번역·대체 텍스트 4종의 입력·출력·비용 상한, 공통 UX 원칙, 구조, 보안, 검증과 하지 못한 것, 새 기능을 더하는 법
 2. [`reports/claude-ai-assist-benchmark-2026-10-22.md`](reports/claude-ai-assist-benchmark-2026-10-22.md) — 공개 페이지에서 읽은 경쟁 제품 사실, 설계 판단, 추가 AI 보조 기능 구상 10건(역사 자료)
 3. [`operations/free-ai-runtime.md`](operations/free-ai-runtime.md) — Claude 연결이 기존 BYOK 정책 안에서 어떻게 다뤄지는지(Claude 소절)
 

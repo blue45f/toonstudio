@@ -452,7 +452,7 @@ describe("StudioAiSuperSuiteModal — 고도화 콘티 디렉터 (그림체·스
     expect(scriptTextarea.value.split("\n").length).toBeGreaterThanOrEqual(4);
 
     expect(screen.getByTestId("claude-storyboard-assist-panel")).toBeTruthy();
-    expect(screen.getByTestId("claude-assist-cliffhanger-line").textContent).toContain("추천 엔딩 대사:");
+    expect(screen.getByTestId("ai-assist-cliffhanger-line").textContent).toContain("추천 엔딩 대사:");
     fireEvent.click(screen.getByTestId("apply-claude-cliffhanger-btn"));
     expect(scriptTextarea.value).toContain("(클리프행어 훅)");
   });
