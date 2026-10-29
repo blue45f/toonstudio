@@ -3,6 +3,9 @@ type StudioBg3dModelLibraryModule = typeof import("./bg3d-model-library");
 export type Bg3dModelImportItem = import("./bg3d-model-library").Bg3dModelImportItem;
 export type Bg3dModelLibraryEntry = import("./bg3d-model-library").Bg3dModelLibraryEntry;
 export type Bg3dVerifiedStoredRecord = import("./bg3d-model-library").Bg3dVerifiedStoredRecord;
+export type Bg3dModelImportIngress = import("./bg3d-model-library").Bg3dModelImportIngress;
+export type Bg3dModelImportSourceReceipt = import("./bg3d-model-library").Bg3dModelImportSourceReceipt;
+export type StudioBg3dModelSourceSnapshot = import("./bg3d-model-library").StudioBg3dModelSourceSnapshot;
 
 let studioBg3dModelLibraryModulePromise: Promise<StudioBg3dModelLibraryModule> | null = null;
 
@@ -46,6 +49,12 @@ export async function getStoredBg3dModelV12(
 ): Promise<Awaited<ReturnType<StudioBg3dModelLibraryModule["getStoredBg3dModelV12"]>>> {
   const library = await loadStudioBg3dModelLibraryModule();
   return library.getStoredBg3dModelV12(...args);
+}
+export async function readStudioBg3dModelSourceSnapshotV12(
+  ...args: Parameters<StudioBg3dModelLibraryModule["readStudioBg3dModelSourceSnapshotV12"]>
+): Promise<Awaited<ReturnType<StudioBg3dModelLibraryModule["readStudioBg3dModelSourceSnapshotV12"]>>> {
+  const library = await loadStudioBg3dModelLibraryModule();
+  return library.readStudioBg3dModelSourceSnapshotV12(...args);
 }
 
 export async function getStoredBg3dModelByHashV12(

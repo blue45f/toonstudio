@@ -109,6 +109,9 @@ describe("SKP conversion Worker module graph", () => {
       "studio-bg3d-skp-preflight.ts",
       "studio-bg3d-skp-report-builder.ts",
       "studio-bg3d-skp-report-constants.ts",
+      // 원본 장면 추출과 availability·좌표 권위 계약은 Worker에서도 생성한다. 외부 런타임 의존성은 없다.
+      "studio-bg3d-skp-scene-manifest.ts",
+      "studio-bg3d-skp-scene-source.ts",
       "studio-bg3d-skp-unit.ts",
       "studio-bg3d-skp-worker-protocol.ts",
       "studio-bg3d-skp-worker-runtime.ts",

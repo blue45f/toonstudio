@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { attachStudioBg3dEditorPlacementHost } from "./studio-bg3d-editor-placement-host";
 import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from "./studio-bg3d-model-cache.test-fixture";
@@ -7,10 +7,19 @@ import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 import { createStudioBg3dPlacementSession, transitionStudioBg3dPlacementSession } from "./studio-bg3d-placement-session";
 import type { admitAndCacheStudioBg3dModel, StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 
+type ReadMetadata = typeof import("./studio-bg3d-asset-metadata-store").getStudioBg3dAssetMetadata;
+const readMetadata = vi.hoisted(() => vi.fn<ReadMetadata>());
+vi.mock("./studio-bg3d-asset-metadata-store", async (importOriginal) => ({
+  ...await importOriginal<typeof import("./studio-bg3d-asset-metadata-store")>(),
+  getStudioBg3dAssetMetadata: readMetadata,
+}));
 vi.mock("./studio-bg3d-editor-runtime-bindings", async () => ({ ...await import("./studio-bg3d-model-material-variant") }));
+beforeEach(() => { readMetadata.mockReset().mockResolvedValue(null); });
+
 type Admission = Parameters<typeof admitAndCacheStudioBg3dModel>[0];
 interface Lease { readonly signal: AbortSignal; isCurrent(): boolean; throwIfRevoked(): void }
 interface Host extends Record<string, unknown> {
+  isMaterialBackendCurrent: () => boolean;
   ensureModelRootCached?: (id: string, session: unknown, current: () => boolean, signal: AbortSignal) => Promise<unknown>;
   addCustomModelToScene?: (id: string) => Promise<void>;
   applyUserTemplate?: (entry: unknown) => Promise<void>;
@@ -78,6 +87,7 @@ describe("실제 배치·템플릿 호스트의 material backend fence", () => {
     try {
       await value.h.addCustomModelToScene?.(value.record.id);
       expect(value.admit).toHaveBeenCalledOnce(); expect(value.admit.mock.calls[0]?.[0].materialBackend).toBe("webgpu");
+      expect(readMetadata).toHaveBeenCalledWith(value.record.contentHash);
       expect(value.preview).toHaveBeenCalledWith(expect.objectContaining({ modelId: value.record.id, size: [1, 1, 1] }));
     } finally { value.dispose(); }
   });
@@ -88,6 +98,24 @@ describe("실제 배치·템플릿 호스트의 material backend fence", () => {
       await expect(value.h.ensureModelRootCached?.(value.record.id, {}, () => true, new AbortController().signal)).rejects.toThrow();
       expect(value.bind).not.toHaveBeenCalled();
     } finally { value.dispose(); }
+  });
+  it("메타데이터 대기 중 원래 backend 권위가 폐기되면 새 true 함수로 바뀌어도 첨부나 미리보기를 공개하지 않는다", async () => {
+    const value = harness(), capturedGuard = value.h.isMaterialBackendCurrent;
+    let releaseMetadata: (metadata: Awaited<ReturnType<ReadMetadata>>) => void = () => { throw new Error("메타데이터 대기를 준비하지 못했습니다."); };
+    let markMetadataStarted: () => void = () => { throw new Error("메타데이터 조회 시작을 준비하지 못했습니다."); };
+    const metadataPending = new Promise<Awaited<ReturnType<ReadMetadata>>>((resolve) => { releaseMetadata = resolve; });
+    const metadataStarted = new Promise<void>((resolve) => { markMetadataStarted = resolve; });
+    readMetadata.mockImplementationOnce(() => { markMetadataStarted(); return metadataPending; });
+    const pending = value.h.addCustomModelToScene?.(value.record.id);
+    try {
+      await metadataStarted;
+      expect(value.admit).toHaveBeenCalledOnce(); expect(readMetadata).toHaveBeenCalledWith(value.record.contentHash);
+      value.changeBackend();
+      expect(capturedGuard()).toBe(false); expect(value.h.isMaterialBackendCurrent()).toBe(true);
+      releaseMetadata(null); await pending;
+      expect(value.bind).not.toHaveBeenCalled(); expect(value.preview).not.toHaveBeenCalled();
+      expect(value.replacement).not.toHaveBeenCalled(); expect(value.h.setGenericModelSourceFormats).not.toHaveBeenCalled();
+    } finally { releaseMetadata(null); await pending; value.dispose(); }
   });
   it("cache 준비 뒤 commit 직전 renderer가 바뀌면 배치 미리보기를 공개하지 않는다", async () => {
     const value = harness(); value.beforeCommit(value.changeBackend);

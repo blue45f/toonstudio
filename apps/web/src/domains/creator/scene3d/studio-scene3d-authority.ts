@@ -317,9 +317,31 @@ function sameVec3(left: readonly number[], right: readonly number[], epsilon = 1
 function projectBg3dPresentation(
   source: StudioBg3dSceneDocument,
   document: StudioScene3dDocumentV1,
-): Pick<StudioBg3dSceneDocument, "camera" | "render" | "background" | "lighting" | "output"> {
+): Pick<StudioBg3dSceneDocument, "camera" | "shots" | "activeShotId" | "render" | "background" | "lighting" | "output"> {
   const camera = document.cameras.find((entry) => entry.id === document.activeCameraId)
     ?? document.cameras[0]!;
+  // 활성 shot의 명시 높이·zoom도 해당 source override에서 읽는다. 카메라 이름은 식별에 쓰지 않는다.
+  const shot = source.shots?.find((entry) => `camera:shot:${entry.id}` === camera.id);
+  if (camera.id !== "camera:main" && !shot) throw new Error("Scene3D camera has no matching BG3D source camera");
+  const sourceCamera = shot?.camera ? { ...source.camera, ...shot.camera } : source.camera;
+  const sourceZoom = sourceCamera.zoom ?? 1;
+  const originalHeight = sourceCamera.orthographicHeight;
+  const zoom = originalHeight === undefined
+    ? camera.projection === "orthographic" ? 5 / Math.max(0.001, camera.orthoScale) : 1
+    : sourceZoom;
+  const height = originalHeight === undefined ? undefined
+    : camera.orthoScale === originalHeight / sourceZoom ? originalHeight : camera.orthoScale * sourceZoom;
+  const projectedCamera = Object.freeze({
+    position: Object.freeze([...camera.position] as [number, number, number]),
+    target: Object.freeze([...camera.target] as [number, number, number]),
+    fovDegrees: studioBg3dFocalLengthToFovDegrees(camera.focalLengthMm),
+    projection: camera.projection,
+    zoom,
+    ...(height === undefined ? {} : { orthographicHeight: height }),
+    lensShift: Object.freeze([...camera.lensShift] as [number, number]),
+    nearClip: camera.near,
+    up: Object.freeze([...camera.up] as [number, number, number]),
+  });
   const key = document.lights.find((light) => light.id === "light:key");
   const fill = document.lights.find((light) => light.id === "light:fill");
   const lightDirection = (light: typeof key, fallback: StudioBg3dVec3): StudioBg3dVec3 => {
@@ -342,16 +364,9 @@ function projectBg3dPresentation(
         ? "color"
         : source.background.mode;
   return {
-    camera: Object.freeze({
-      position: Object.freeze([...camera.position] as [number, number, number]),
-      target: Object.freeze([...camera.target] as [number, number, number]),
-      fovDegrees: studioBg3dFocalLengthToFovDegrees(camera.focalLengthMm),
-      projection: camera.projection,
-      zoom: camera.projection === "orthographic" ? 5 / Math.max(0.001, camera.orthoScale) : 1,
-      lensShift: Object.freeze([...camera.lensShift] as [number, number]),
-      nearClip: camera.near,
-      up: Object.freeze([...camera.up] as [number, number, number]),
-    }),
+    camera: shot ? source.camera : projectedCamera,
+    ...(shot ? { shots: source.shots?.map((entry) => entry.id === shot.id ? { ...entry, camera: projectedCamera } : entry) } : {}),
+    activeShotId: shot?.id,
     render: Object.freeze({
       ...source.render,
       antialias: document.render.antialiasing !== "none",
@@ -534,6 +549,11 @@ export function projectStudioScene3dAuthorityToSources(
     ...presentation,
     nodes,
   });
+  if ((presentation.camera.orthographicHeight !== undefined && bg3d.camera.orthographicHeight !== presentation.camera.orthographicHeight)
+    || presentation.shots?.some((shot) => shot.camera?.orthographicHeight !== undefined
+      && bg3d.shots?.find((entry) => entry.id === shot.id)?.camera?.orthographicHeight !== shot.camera.orthographicHeight)) {
+    throw new Error("Scene3D orthographic height cannot be represented by the BG3D camera");
+  }
   return Object.freeze({
     bg3d,
     characterTransformRequests: Object.freeze(characterTransformRequests),

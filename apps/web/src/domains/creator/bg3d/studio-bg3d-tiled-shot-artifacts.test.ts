@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_BG3D_CAPTURE_PROFILE_RGBA8_DEPTH_V1 } from "./studio-bg3d-capture-adapter";
+import { acquireStudioBg3dCaptureEnvironmentReceipt, assertStudioBg3dCaptureEnvironmentCurrent,
+  attachStudioBg3dCaptureEnvironmentReceipt, publishStudioBg3dCaptureEnvironment } from "./studio-bg3d-capture-environment-receipt";
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 import { STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES } from "./studio-bg3d-shot-batch";
 import { buildStudioBg3dTiledImages } from "./studio-bg3d-tiled-artifact-client";
@@ -45,11 +47,60 @@ function input(): Parameters<typeof buildStudioBg3dTiledShotArtifacts>[0] {
 const png = new Blob([new Uint8Array(57)], { type: "image/png" });
 const result = { images: [{ pass: "beauty" as const, png }], skipped: [] };
 
+function deferred<T>() {
+  let complete: ((value: T) => void) | undefined;
+  const promise = new Promise<T>((resolve) => { complete = resolve; });
+  return { promise, resolve(value: T) {
+    if (!complete) throw new Error("지연 입력이 아직 준비되지 않았습니다.");
+    complete(value);
+  } };
+}
+
 beforeEach(() => {
   vi.mocked(buildStudioBg3dTiledImages).mockReset().mockResolvedValue(result);
 });
 
 describe("타일 컷 artifact의 취소와 누적 예산", () => {
+  it("타일 PNG 완료 대기 중 환경이 바뀌면 최종 artifact로 인계하지 않는다", async () => {
+    const scene = {}, renderer = {};
+    const owner = publishStudioBg3dCaptureEnvironment(scene, renderer, {
+      fingerprint: "tile-A", ready: Promise.resolve(true), isApplied: () => true,
+    });
+    const receipt = await acquireStudioBg3dCaptureEnvironmentReceipt(scene, renderer);
+    const output = { images: [...result.images], skipped: [] };
+    attachStudioBg3dCaptureEnvironmentReceipt(output, receipt);
+    const finished = deferred<typeof output>();
+    vi.mocked(buildStudioBg3dTiledImages).mockImplementationOnce(() => finished.promise);
+    const pending = buildStudioBg3dTiledShotArtifacts({ ...input(), expectedEnvironmentFingerprint: "tile-A" });
+    const rejected = expect(pending).rejects.toMatchObject({ code: "superseded" });
+    const replacement = publishStudioBg3dCaptureEnvironment(scene, renderer, {
+      fingerprint: "tile-B", ready: Promise.resolve(true), isApplied: () => true,
+    });
+    try {
+      finished.resolve(output);
+      await rejected;
+      expect(output.images[0]?.png).toBe(png);
+    } finally { replacement.dispose(); owner.dispose(); }
+  });
+
+  it("타일 result의 영수증을 shot artifact에 승계하고 expected 의도도 보존한다", async () => {
+    const scene = {}, renderer = {};
+    const owner = publishStudioBg3dCaptureEnvironment(scene, renderer, {
+      fingerprint: "tile-current", ready: Promise.resolve(true), isApplied: () => true,
+    });
+    try {
+      const receipt = await acquireStudioBg3dCaptureEnvironmentReceipt(scene, renderer);
+      const output = { images: [...result.images], skipped: [] };
+      attachStudioBg3dCaptureEnvironmentReceipt(output, receipt);
+      vi.mocked(buildStudioBg3dTiledImages).mockResolvedValueOnce(output);
+      const artifacts = await buildStudioBg3dTiledShotArtifacts({ ...input(), expectedEnvironmentFingerprint: "tile-current" });
+      expect(() => assertStudioBg3dCaptureEnvironmentCurrent(artifacts, "tile-current")).not.toThrow();
+      expect(() => assertStudioBg3dCaptureEnvironmentCurrent(artifacts, "different-document")).toThrow(expect.objectContaining({ code: "fingerprint-mismatch" }));
+      owner.dispose();
+      expect(() => assertStudioBg3dCaptureEnvironmentCurrent(artifacts)).toThrow(expect.objectContaining({ code: "disposed" }));
+    } finally { owner.dispose(); }
+  });
+
   it.each([Number.NaN, Number.POSITIVE_INFINITY, -1, 1.5, STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES + 1])(
     "누적 예산 %s가 잘못되면 GPU와 Worker 실행 전에 거부한다",
     async (committedArtifactBytes) => {

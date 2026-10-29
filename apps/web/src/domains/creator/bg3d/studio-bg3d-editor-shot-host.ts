@@ -359,8 +359,8 @@ export function attachStudioBg3dEditorShotHost(h: Record<string, any>) {
   h.previewCameraLens = previewCameraLens;
   function updateCameraLens(
     patch: (view: StudioBg3dCameraSettings) => Partial<StudioBg3dCameraSettings>,
-  ): void {
-    if (cameraLensInteractionLocked()) return;
+  ): boolean {
+    if (cameraLensInteractionLocked()) return false;
     finishCameraLensGesture();
     const liveView = viewportApiRef.current?.readView() ?? sceneBaseDocument.camera;
     const nextDocument = canonicalSceneDocument({
@@ -369,9 +369,9 @@ export function attachStudioBg3dEditorShotHost(h: Record<string, any>) {
     });
     if (!nextDocument) {
       setError("카메라 렌즈 설정을 장면 원본에 안전하게 적용하지 못했습니다.");
-      return;
+      return false;
     }
-    commitCameraLensView(liveView, nextDocument);
+    return commitCameraLensView(liveView, nextDocument);
   }
   h.updateCameraLens = updateCameraLens;
   function applyTwoPointPerspective() {

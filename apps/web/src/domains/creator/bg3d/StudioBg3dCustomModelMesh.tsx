@@ -22,6 +22,7 @@ import {
   resolveStudioBg3dAnimationTime,
 } from "./studio-bg3d-animation-time";
 import { projectStudioBg3dLodDiameterCssPx } from "./studio-bg3d-lod-selection";
+import { createStudioBg3dPrimitiveEditLineArtAdapter } from "./studio-bg3d-primitive-edit-material-runtime";
 import { isBgObjectVisible } from "./studio-bg3d-object-ops";
 import { synchronizeStudioBg3dRootMatrix } from "./studio-bg3d-render-optimization";
 import {
@@ -38,6 +39,7 @@ interface BgCustomModelMeshProps {
   animations: readonly THREE.AnimationClip[];
   selected: boolean;
   capturing: boolean;
+  lineArt?: boolean;
   targetFps: number;
   lodBias: number;
   onSelect: (id: string, isMulti: boolean) => void;
@@ -73,7 +75,7 @@ function studioBg3dMatricesDiffer(
   );
 }
 
-export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, capturing, targetFps, lodBias, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, registerAnimationTime, registerRigBake, onAnimationComplete, onCloneStatus, children }: BgCustomModelMeshProps) {
+export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, capturing, lineArt, targetFps, lodBias, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, registerAnimationTime, registerRigBake, onAnimationComplete, onCloneStatus, children }: BgCustomModelMeshProps) {
   // Geometry/textures stay cache-owned, while each render instance owns cloned materials so its
   // adjustments cannot leak into sibling placements or the verified source cache.
   const [editableClone, setEditableClone] = useState<StudioBg3dEditableThreeClone | null>(null);
@@ -137,6 +139,12 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
     };
   }, [cachedRoot, instance.id]);
 
+  useLayoutEffect(() => {
+    if (!editableClone) return;
+    const adapter = createStudioBg3dPrimitiveEditLineArtAdapter(editableClone.root);
+    adapter.setEnabled(lineArt === true);
+    return () => adapter.dispose();
+  }, [editableClone, lineArt]);
   useEffect(() => () => editableClone?.dispose(), [editableClone]);
   useEffect(() => {
     lastConstraintWorldMatrixRef.current = null;

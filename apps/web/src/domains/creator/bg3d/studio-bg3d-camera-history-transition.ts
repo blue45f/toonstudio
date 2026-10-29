@@ -5,6 +5,14 @@ export interface StudioBg3dPendingCameraTarget {
   current: StudioBg3dCameraSettings | null;
 }
 
+/** 새 복원·투영 전환 의도가 없을 때만 내려가는 뷰포트의 실제 시점을 다음 마운트에 넘긴다. */
+export function rememberStudioBg3dCameraBeforeViewportRemount(
+  previousViewport: Pick<BgViewportApi, "readView"> | null,
+  pendingTarget: StudioBg3dPendingCameraTarget,
+): void {
+  if (previousViewport && pendingTarget.current === null) pendingTarget.current = previousViewport.readView();
+}
+
 /**
  * A controlled range already owns the canonical value that produced its preview. On pointer/key
  * release R3F may still expose the previous frame, so the latest gesture value must win without

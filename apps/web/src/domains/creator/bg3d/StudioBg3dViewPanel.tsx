@@ -161,7 +161,21 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
     <StudioBg3dProSuiteRuntimeContext.Provider value={runtime}>
       <StudioBg3dWebglRecoveryNotice hidden={props.hidden} />
       <StudioBg3dViewPanelContent {...props} />
-      <StudioBg3dSpatialStoryboardLauncher hidden={props.hidden} />
+      <StudioBg3dSpatialStoryboardLauncher
+        hidden={props.hidden}
+        disabled={disabled}
+        onInsertScenePrimitives={props.onInsertScenePrimitives}
+        arraySelection={props.arraySelection}
+        onExecuteSelectionArray={props.onExecuteSelectionArray}
+        skpSourceSelection={props.skpSourceSelection}
+        onReadSkpSceneSource={props.onReadSkpSceneSource}
+        onApplySkpSourceCamera={props.onApplySkpSourceCamera}
+        primitiveEditSelection={props.primitiveEditSelection}
+        onBeginPrimitiveEdit={props.onBeginPrimitiveEdit}
+        onApplyPrimitiveEdit={props.onApplyPrimitiveEdit}
+        sceneGlbExportUnavailableReason={props.sceneGlbExportUnavailableReason}
+        onExportCurrentSceneGlb={props.onExportCurrentSceneGlb}
+      />
     </StudioBg3dProSuiteRuntimeContext.Provider>
   );
 }

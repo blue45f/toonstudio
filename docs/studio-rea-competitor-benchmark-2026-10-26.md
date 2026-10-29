@@ -1,5 +1,7 @@
 # ToonStudio 경쟁사 바이너리 역공학(REA) 정밀 벤치마크 및 전 기능 통합 보고서 (2026-10-26)
 
+> 2026-10-28 재검증: 아래 SketchUp 분석은 호환 파서·계산 커널·예제 패널과 실제 사용자 장면 통합을 구분해 읽어야 한다. 현재 연결 범위와 미확정 영역은 [재검증 보고서](reports/sketchup-rea-integration-2026-10-28.md)를 따른다.
+
 - 상태: **역사 자료 / 검증 증거 (현재 구현 동기화)**
 - 작성일: **2026-10-26**
 - 정적 분석 증거 번들: [`docs/evidence/rea-competitor-benchmark-20261026.json`](evidence/rea-competitor-benchmark-20261026.json)

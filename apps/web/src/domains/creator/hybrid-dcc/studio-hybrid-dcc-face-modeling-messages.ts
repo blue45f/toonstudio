@@ -29,6 +29,8 @@ export function studioFaceModelingToolLabel(bt: StudioFaceModelingBilingual, too
       return bt("오프셋", "Offset");
     case "draw":
       return bt("면 그리기", "Draw face");
+    case "follow-me":
+      return bt("따라 만들기", "Follow Me");
   }
 }
 
@@ -43,6 +45,8 @@ export function studioFaceModelingRunLabel(tool: StudioFaceModelingTool): string
       return "면 오프셋";
     case "draw":
       return "면 그리기";
+    case "follow-me":
+      return "면 따라 만들기";
   }
 }
 
@@ -68,6 +72,11 @@ export function studioFaceModelingToolSummary(bt: StudioFaceModelingBilingual, t
         "한 면 안쪽에 점을 찍어 닫힌 볼록 도형을 그리면 면이 도형과 그 둘레 면으로 나뉩니다.",
         "Click points inside one face to draw a closed convex shape; the face is split into the shape and the faces around it.",
       );
+    case "follow-me":
+      return bt(
+        "선택한 면을 연결된 경로를 따라 늘립니다. 경로는 면 중심에서 시작해 먼저 면 바깥 법선 방향으로 나가야 합니다.",
+        "Sweeps the selected face along a connected path. Start at the face centre and move outward along its normal first.",
+      );
   }
 }
 
@@ -81,7 +90,7 @@ export function studioFaceModelingDirectionLabel(
 /** 거리칸 아래의 안내: 부호 규칙과 허용 범위를 항상 보여 준다. */
 export function describeStudioFaceModelingDistanceHint(
   bt: StudioFaceModelingBilingual,
-  tool: Exclude<StudioFaceModelingTool, "draw">,
+  tool: Exclude<StudioFaceModelingTool, "draw" | "follow-me">,
   allowed: StudioFaceModelingDistanceBounds | null,
 ): string {
   if (tool === "push-pull") {
@@ -206,6 +215,7 @@ export function describeStudioFaceModelingFailure(
         failure.maxDistance,
       );
     case "degenerate-input":
+      if (tool === "follow-me") return bt("경로의 점이 너무 가깝거나 구간이 되돌아갑니다. 점 간격과 방향을 바꿔 주세요.", "Path points are too close or a segment turns back. Change the spacing and direction.");
       return tool === "draw"
         ? bt(
           "점이 서로 너무 가깝거나 일직선 위에 있어 면을 만들 수 없습니다. 점을 더 띄우세요.",
@@ -227,6 +237,7 @@ export function describeStudioFaceModelingFailure(
         "This mesh does not meet the closed-solid rules face modeling needs. Check the mesh or select another object.",
       );
     case "invalid-parameter":
+      if (tool === "follow-me") return bt("첫 점을 면 중심에 맞추고 첫 구간을 면 바깥 법선 방향으로 지정하세요. 모든 좌표는 유효한 숫자여야 합니다.", "Start at the face centre and point the first segment outward along its normal. Every coordinate must be a valid number.");
       return formatI18nTemplate(
         bt(
           "값이 도구가 받을 수 있는 범위(0.0001 ~ {max} m) 밖입니다.",
@@ -284,6 +295,7 @@ export function describeStudioFaceModelingFailure(
         "The selection no longer matches the current mesh. Select the face again.",
       );
     case "self-intersection":
+      if (tool === "follow-me") return bt("경로 또는 늘어난 단면이 서로 교차합니다. 경로를 벌리거나 경유점의 순서를 바꿔 주세요.", "The path or swept profiles intersect. Spread the path out or change the waypoint order.");
       return bt(
         "그린 선이 서로 교차하거나 닿습니다. 도형이 자기 자신과 겹치지 않게 점을 지우거나 순서를 바꾸세요.",
         "The outline crosses or touches itself. Remove a point or change the order so it does not overlap.",
@@ -324,6 +336,7 @@ export function describeStudioFaceModelingFailure(
           "The surrounding coplanar region is too complex (holes or a non-convex outline) for this operation. Select another face.",
         );
     case "would-collide":
+      if (tool === "follow-me") return bt("늘어난 단면이 기존 모델과 겹치거나 관통합니다. 경로를 모델 바깥으로 옮겨 주세요.", "The swept profile overlaps or passes through the existing model. Move the path outside the model.");
       return causeWithLimit(
         bt,
         {

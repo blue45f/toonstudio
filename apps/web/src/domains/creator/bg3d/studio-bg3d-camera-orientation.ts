@@ -17,6 +17,25 @@ export interface StudioBg3dCameraOrientationLike {
 export const STUDIO_BG3D_CAMERA_DEFAULT_NEAR_CLIP = 0.1;
 export const STUDIO_BG3D_CAMERA_MIN_NEAR_CLIP = 0.01;
 export const STUDIO_BG3D_CAMERA_MAX_NEAR_CLIP = 50;
+/** 기존 화면 맞춤의 길이 해상도·절두체 상한을 공유한다. 범위 밖 원본은 보정하지 않고 거부한다. */
+export const STUDIO_BG3D_CAMERA_MIN_ORTHOGRAPHIC_HEIGHT = 1e-6;
+export const STUDIO_BG3D_CAMERA_MAX_ORTHOGRAPHIC_HEIGHT = 100_000;
+
+export function isStudioBg3dOrthographicHeight(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value)
+    && value >= STUDIO_BG3D_CAMERA_MIN_ORTHOGRAPHIC_HEIGHT && value <= STUDIO_BG3D_CAMERA_MAX_ORTHOGRAPHIC_HEIGHT;
+}
+
+export class StudioBg3dCameraHeightValidationError extends RangeError {
+  constructor() { super("Invalid Studio orthographic base height."); this.name = "StudioBg3dCameraHeightValidationError"; }
+}
+
+/** 선택 필드의 부재는 그대로 둔다. 입력된 잘못된 높이를 legacy/default로 바꾸지 않는다. */
+export function readStudioBg3dOrthographicHeightField(value: Readonly<Record<string, unknown>>): { readonly orthographicHeight?: number } {
+  if (!Object.hasOwn(value, "orthographicHeight")) return {};
+  if (!isStudioBg3dOrthographicHeight(value.orthographicHeight)) throw new StudioBg3dCameraHeightValidationError();
+  return { orthographicHeight: value.orthographicHeight };
+}
 
 /** Bounded depth/orbit limits derived from the authored camera instead of a small fixed scene. */
 export function resolveStudioBg3dCameraDistanceLimits(

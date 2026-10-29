@@ -484,7 +484,7 @@ export function StudioRea39ExtendedTabPanels({
         </div>
       ) : null}
 
-      {/* 탭 14: SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze */}
+      {/* 탭 14: 공간 모델러 · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze */}
       {activeTab === "sketchup-blender-petalica-magma-recraft" ? (
         <div
           data-testid="rea15-panel-sketchup-blender-petalica-magma-recraft"
@@ -493,7 +493,7 @@ export function StudioRea39ExtendedTabPanels({
           <div className="flex items-center justify-between font-bold text-fg">
             <span className="inline-flex items-center gap-1">
               <Wrench className="size-3 text-accent" aria-hidden="true" />
-              SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 협업 · Recraft SVG · Cara Glaze
+              공간 모델러 · Blender Grease Pencil · Petalica 채색 · Magma 협업 · Recraft SVG · Cara Glaze
             </span>
             <span className="text-accent">
               Petalica {currentSketchupStudio.petalicaAndOpenArtColorStudio.petalicaModelStyle} ·
@@ -505,7 +505,7 @@ export function StudioRea39ExtendedTabPanels({
 
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
             <div className="rounded border border-line bg-card p-1.5 text-[0.55rem]">
-              <div className="font-bold text-fg">SketchUp 3D & Blender Grease Pencil</div>
+              <div className="font-bold text-fg">공간 모델러 & Blender Grease Pencil</div>
               <div className="text-fg-2">
                 {currentSketchupStudio.sketchupAndGreasePencil3d.warehouseDynamicComponentKo}
               </div>

@@ -5,6 +5,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { BgCustomModelInstance, BgPrimitive, StudioBg3dLayerListItem, StudioToolHintSpec } from "./studio-bg3d-editor-runtime-bindings";
+import { shouldRenderStudioBg3dPrimitiveEditLineArtIndividually } from "./studio-bg3d-primitive-edit-material-runtime";
 import { resolveStudioBg3dFocusSelection } from "./studio-bg3d-camera-selection";
 import { isStudioBg3dTagHidden, projectStudioBg3dTagVisibility, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
 
@@ -533,6 +534,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
     const cacheEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend);
     if (
       !cacheEntry || unbatchableModelIds.has(model.modelId) || !isBgObjectVisible(model) ||
+      shouldRenderStudioBg3dPrimitiveEditLineArtIndividually(cacheEntry.root, lineArtPreview) ||
       selectedIds.has(model.id) || (sceneHierarchy.parentById.get(model.id) ?? null) !== null ||
       (sceneHierarchy.childrenByParent.get(model.id)?.length ?? 0) > 0 ||
       model.materialOverride !== undefined || model.modelTexturePaint !== undefined || model.animation !== undefined || model.pose !== undefined ||

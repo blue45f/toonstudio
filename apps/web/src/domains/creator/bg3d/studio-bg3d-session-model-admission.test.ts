@@ -1,4 +1,4 @@
-import { Group } from "three";
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -6,6 +6,7 @@ import {
   getStudio3dAssetQualityMode,
   getStudio3dAssetQualitySnapshot,
   resetStudio3dAssetQualityMode,
+  subscribeStudio3dAssetQuality,
 } from "../studio-3d-asset-quality-session";
 
 import { resolveStudioBg3dDeviceQuality } from "./studio-bg3d-device-quality";
@@ -15,6 +16,7 @@ import {
   type StudioBg3dModelRootCacheEntry,
 } from "./studio-bg3d-model-runtime-admission";
 import { createDefaultStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
+import { deriveStudioBg3dSessionGlbValidationPolicy } from "./studio-bg3d-session-glb-policy";
 import { deleteStudioBg3dModelCacheVariants, deleteStudioBg3dOwnedModelCacheEntry, isStudioBg3dOwnedModelCacheEntry, readStudioBg3dModelCacheEntry, studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio-bg3d-model-material-variant";
 
 import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
@@ -72,6 +74,15 @@ beforeEach(() => {
 afterEach(() => resetStudio3dAssetQualityMode());
 
 describe("session model admission and cache authorization", () => {
+  it("일반 업로드의 2m 정규화를 유지하고 역배율에 사용할 실제 캐시 배율을 기록한다", async () => {
+    const loaded = loadedModel();
+    loaded.root.add(new Mesh(new BoxGeometry(20, 12, 8), new MeshBasicMaterial()));
+    mocks.load.mockResolvedValue(loaded);
+    const entry = await admitAndCacheStudioBg3dModel(context());
+    expect(entry.normalizationScale).toBe(0.1);
+    expect(entry.root.scale.toArray()).toEqual([0.1, 0.1, 0.1]);
+  });
+
   it("이전 scope의 같은 backend pending이 취소되면 유효한 새 요청은 한 번만 이어서 준비한다", async () => {
     const args = context(), oldLoaded = loadedModel(), gate = Promise.withResolvers<ReturnType<typeof loadedModel>>(); let oldCurrent = true;
     mocks.load.mockReturnValueOnce(gate.promise);
@@ -242,25 +253,100 @@ describe("session model admission and cache authorization", () => {
     expect(getStudio3dAssetQualitySnapshot()).toEqual({ mode: "auto", notice: null });
   });
 
-  it("returns to automatic mode after a genuine high-quality load failure", async () => {
-    mocks.load.mockRejectedValue(new Error("GPU allocation failed"));
-    enableStudio3dHighAssetQuality();
-    await expect(admitAndCacheStudioBg3dModel(context())).rejects.toThrow("GPU allocation failed");
-    expect(getStudio3dAssetQualityMode()).toBe("auto");
-    expect(getStudio3dAssetQualitySnapshot().notice).toContain("경량본으로 다시 가져오세요");
-  });
+  it.each(["검증", "디코딩"].flatMap((stage) => [undefined, true, false].map((preserve) => ({ stage, preserve }))))(
+    "$stage 실패 시 이전 옵션 $preserve와 무관하게 원래 오류·전역 품질·기존 원본과 캐시를 보존한다",
+    async ({ stage, preserve }) => {
+      const args = context();
+      const existing = await admitAndCacheStudioBg3dModel({ ...args, record: { ...args.record, id: "unrelated-model" } });
+      mocks.admit.mockClear();
+      mocks.load.mockClear();
+      const original = structuredClone({ record: args.record, document: args.document, quality: args.quality });
+      const error = new Error("GPU allocation failed");
+      if (stage === "검증") mocks.admit.mockRejectedValue(error);
+      else mocks.load.mockRejectedValue(error);
+      enableStudio3dHighAssetQuality();
+      const before = getStudio3dAssetQualitySnapshot();
+      const onQualityChange = vi.fn();
+      const unsubscribe = subscribeStudio3dAssetQuality(onQualityChange);
+      try {
+        await expect(admitAndCacheStudioBg3dModel({ ...args,
+          ...(preserve === undefined ? {} : { preserveQualityModeOnFailure: preserve }),
+        })).rejects.toBe(error);
+        expect(getStudio3dAssetQualitySnapshot()).toBe(before);
+        expect(onQualityChange).not.toHaveBeenCalled();
+        expect({ record: args.record, document: args.document, quality: args.quality }).toEqual(original);
+        expect(args.cache).toEqual(new Map([[studioBg3dModelCacheKey("unrelated-model", "webgl"), existing]]));
+        expect(existing.dispose).not.toHaveBeenCalled();
+        expect(args.pending.size).toBe(0);
+        expect(mocks.admit).toHaveBeenCalledOnce();
+        expect(mocks.load).toHaveBeenCalledTimes(stage === "검증" ? 0 : 1);
+      } finally { unsubscribe(); }
+    },
+  );
 
   it.each([
-    ["AbortError", () => new DOMException("cancelled", "AbortError")],
-    ["worker cancellation", () => Object.assign(new Error("cancelled"), { code: "aborted" })],
-    ["stale operation", () => new StudioBg3dStaleModalOperationError()],
-  ] as const)("does not reset a high-quality session for %s", async (_name, errorFactory) => {
-    const error = errorFactory();
-    mocks.admit.mockRejectedValue(error);
+    { name: "AbortError", errorFactory: () => new DOMException("cancelled", "AbortError") },
+    { name: "Worker 취소", errorFactory: () => Object.assign(new Error("cancelled"), { code: "aborted" }) },
+    { name: "stale 작업", errorFactory: () => new StudioBg3dStaleModalOperationError() },
+  ].flatMap((failure) => [undefined, true, false].map((preserve) => ({ ...failure, preserve }))))(
+    "$name 취소는 이전 옵션 $preserve와 무관하게 오류와 품질 snapshot을 보존한다",
+    async ({ errorFactory, preserve }) => {
+      const args = context();
+      const error = errorFactory();
+      mocks.admit.mockRejectedValue(error);
+      enableStudio3dHighAssetQuality();
+      const snapshot = getStudio3dAssetQualitySnapshot();
+      await expect(admitAndCacheStudioBg3dModel({ ...args,
+        ...(preserve === undefined ? {} : { preserveQualityModeOnFailure: preserve }),
+      })).rejects.toBe(error);
+      expect(getStudio3dAssetQualitySnapshot()).toBe(snapshot);
+      expect(args.cache.size).toBe(0);
+      expect(args.pending.size).toBe(0);
+      expect(mocks.load).not.toHaveBeenCalled();
+    },
+  );
+
+  it("고품질 캐시의 실제 삼각형 cap 초과는 품질·원본·권리를 바꾸지 않고 거부한다", async () => {
+    const args = context();
+    const entry = await admitAndCacheStudioBg3dModel(args);
     enableStudio3dHighAssetQuality();
-    const snapshot = getStudio3dAssetQualitySnapshot();
-    await expect(admitAndCacheStudioBg3dModel(context())).rejects.toBe(error);
-    expect(getStudio3dAssetQualitySnapshot()).toBe(snapshot);
+    const policy = deriveStudioBg3dSessionGlbValidationPolicy(args.document, args.quality);
+    const cap = policy.budgets[policy.profile].complexity.maxTriangles;
+    const oversized = { ...entry, metrics: { ...entry.metrics, triangles: cap + 1 } };
+    args.cache.set(studioBg3dModelCacheKey(args.record.id, "webgl"), oversized);
+    mocks.admit.mockClear();
+    mocks.load.mockClear();
+    const before = getStudio3dAssetQualitySnapshot();
+    const original = structuredClone({ record: args.record, document: args.document, quality: args.quality });
+    await expect(admitAndCacheStudioBg3dModel(args)).rejects.toMatchObject({ code: "triangle-budget-exceeded" });
+    expect(getStudio3dAssetQualitySnapshot()).toBe(before);
+    expect(deriveStudioBg3dSessionGlbValidationPolicy(args.document, args.quality)).toEqual(policy);
+    expect({ record: args.record, document: args.document, quality: args.quality }).toEqual(original);
+    expect(readStudioBg3dModelCacheEntry(args.cache, args.record.id, "webgl")).toBe(oversized);
+    expect(entry.dispose).not.toHaveBeenCalled();
+    expect(args.pending.size).toBe(0);
+    expect(mocks.admit).not.toHaveBeenCalled();
+    expect(mocks.load).not.toHaveBeenCalled();
+  });
+
+  it("디코딩 중 선택 세션이 stale이면 개인 root만 정리하고 고품질 선택을 유지한다", async () => {
+    const args = context();
+    const decode = deferred<ReturnType<typeof loadedModel>>();
+    const loaded = loadedModel();
+    let active = true;
+    mocks.load.mockReturnValue(decode.promise);
+    enableStudio3dHighAssetQuality();
+    const before = getStudio3dAssetQualitySnapshot();
+    const loading = admitAndCacheStudioBg3dModel({ ...args, isActive: () => active });
+    const rejection = expect(loading).rejects.toBeInstanceOf(StudioBg3dStaleModalOperationError);
+    await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledOnce());
+    active = false;
+    decode.resolve(loaded);
+    await rejection;
+    expect(loaded.dispose).toHaveBeenCalledOnce();
+    expect(getStudio3dAssetQualitySnapshot()).toBe(before);
+    expect(args.cache.size).toBe(0);
+    expect(args.pending.size).toBe(0);
   });
 
   it("does not reset a high-quality session for an already-aborted request", async () => {

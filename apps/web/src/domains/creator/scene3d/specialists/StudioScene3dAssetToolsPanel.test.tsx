@@ -88,6 +88,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 describe("artist-facing specialist tools", () => {
@@ -207,6 +208,49 @@ async function runSelected(bridge: Scene3dInplaceToolsBridge) {
   return screen.findByRole("button", { name: "compress.glb 선택 객체에 적용" });
 }
 describe("selected object processing UI", () => {
+  it("선택 모델 파생본은 클릭 시 actual source guard 완료 후에만 URL과 download를 만든다", async () => {
+    const f = inplaceFixture(); const pending = deferred<void>();
+    const guard = vi.fn<NonNullable<Scene3dInplaceToolsBridge["assertSourceFileExportAllowed"]>>(() => pending.promise);
+    f.bridge.assertSourceFileExportAllowed = guard;
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    await runSelected(f.bridge);
+    expect(createUrl).not.toHaveBeenCalled(); expect(screen.queryByRole("link", { name: "compress.glb" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "compress.glb 파일로 저장" }));
+    expect(guard).toHaveBeenCalledExactlyOnceWith(f.input, expect.any(AbortSignal));
+    expect(createUrl).not.toHaveBeenCalled(); expect(click).not.toHaveBeenCalled();
+    await act(async () => pending.resolve());
+    expect(createUrl).toHaveBeenCalledOnce(); expect(click).toHaveBeenCalledOnce();
+    expect(revokeUrl).toHaveBeenCalledExactlyOnceWith("blob:fixture");
+  });
+  it.each(["service-only", "unknown", "missing"] as const)("%s 파일 저장 거부 후에도 preview와 장면 적용을 유지한다", async (kind) => {
+    const f = inplaceFixture();
+    if (kind !== "missing") f.bridge.assertSourceFileExportAllowed = vi.fn(async () => { throw new Error("모델 파일 저장 제한"); });
+    const apply = await runSelected(f.bridge);
+    fireEvent.click(screen.getByRole("button", { name: "compress.glb 파일로 저장" }));
+    expect((await screen.findByRole("alert")).textContent).toContain(kind === "missing" ? "저장 조건" : "파일 저장 제한");
+    expect(createUrl).not.toHaveBeenCalled(); expect(await screen.findByText("가공 결과 렌더링")).toBeDefined();
+    fireEvent.click(apply); await screen.findByText(/선택 객체에 적용했습니다/);
+    expect(f.bridge.apply).toHaveBeenCalledOnce();
+  });
+  it.each(["cancel", "unmount", "host-change"] as const)("%s 뒤 늦은 파일 허가는 URL을 만들지 않는다", async (action) => {
+    const f = inplaceFixture(); const pending = deferred<void>();
+    const guard = vi.fn<NonNullable<Scene3dInplaceToolsBridge["assertSourceFileExportAllowed"]>>(() => pending.promise);
+    f.bridge.assertSourceFileExportAllowed = guard;
+    vi.mocked(runScene3dSpecialistInWorker).mockResolvedValue(result);
+    const view = render(<StudioScene3dAssetToolsPanel inplaceTools={f.bridge} />);
+    fireEvent.click(screen.getByRole("button", { name: "선택 모델에서 원본 가져오기" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Meshopt 압축" }).hasAttribute("disabled")).toBe(false));
+    fireEvent.click(screen.getByRole("button", { name: "Meshopt 압축" }));
+    fireEvent.click(await screen.findByRole("button", { name: "compress.glb 파일로 저장" }));
+    const signal = guard.mock.calls[0]?.[1];
+    if (!signal) throw new Error("다운로드 취소 signal이 없습니다.");
+    if (action === "cancel") fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    else if (action === "unmount") view.unmount();
+    else view.rerender(<StudioScene3dAssetToolsPanel inplaceTools={{ ...f.bridge }} />);
+    if (action !== "host-change") expect(signal.aborted).toBe(true);
+    await act(async () => pending.resolve());
+    expect(createUrl).not.toHaveBeenCalled();
+  });
   it("processes the selected source and applies the reviewed artifact without file input/download", async () => {
     const f = inplaceFixture(); const apply = await runSelected(f.bridge);
     expect(f.bridge.captureSelection).toHaveBeenCalledOnce();

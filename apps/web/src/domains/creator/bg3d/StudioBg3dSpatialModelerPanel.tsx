@@ -1,3 +1,4 @@
+import { useT } from "@/shared/lib/i18n";
 import {
   Box,
   Compass,
@@ -45,9 +46,14 @@ import {
   solveSketchUpFourPinHomography,
   type SketchUpStyleConfig,
 } from "./studio-bg3d-sketchup-styles-uv-engine";
-import type { BgPrimitive } from "../studio-background-3d-metadata";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import { StudioBg3dSceneGlbExportPanel } from "./StudioBg3dSceneGlbExportPanel";
+import { StudioBg3dPrimitiveEditLauncher } from "./StudioBg3dPrimitiveEditLauncher";
+import { StudioBg3dSelectionArrayPanel } from "./StudioBg3dSelectionArrayPanel";
+import { StudioBg3dSkpSourceInfoPanel } from "./StudioBg3dSkpSourceInfoPanel";
+import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
-import { StudioBg3dSketchUpFullSections } from "./StudioBg3dSketchUpFullSections";
+import { StudioBg3dSpatialModelerSections } from "./StudioBg3dSpatialModelerSections";
 import {
   restoreStudioBg3dSkpAnnotationsAndGuides,
   restoreStudioBg3dSkpInstancedHierarchy,
@@ -55,14 +61,13 @@ import {
   restoreStudioBg3dSkpTags,
 } from "./studio-bg3d-skp-full-scene-restorer";
 
-export interface StudioBg3dSketchUpWorkbenchPanelProps {
+export interface StudioBg3dSpatialModelerPanelProps extends StudioBg3dWorkbenchHostPorts {
   readonly disabled?: boolean;
   readonly onApplyStyle?: (style: SketchUpStyleConfig) => void;
   readonly onApplyShadowSolar?: (azimuthDeg: number, altitudeDeg: number, colorTempK: number) => void;
   readonly onExecuteArray?: (token: string, placements: readonly SketchUpArrayPlacement[]) => void;
   readonly onRestoreSkpScenes?: (restoredShotCount: number, tagCount: number) => void;
   readonly onExportCadFormat?: (format: SketchUpExportFormat, byteSize: number) => void;
-  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
   readonly onApplySceneCamera?: (camera: StudioBg3dCameraSettings, labelKo: string) => void;
 }
 
@@ -124,7 +129,7 @@ const EXPORT_FORMAT_OPTIONS: readonly (readonly [SketchUpExportFormat, string])[
   ["instanced-glb", ".glb (Instanced)"],
 ]);
 
-export function StudioBg3dSketchUpWorkbenchPanel({
+export function StudioBg3dSpatialModelerPanel({
   disabled = false,
   onApplyStyle,
   onApplyShadowSolar,
@@ -132,8 +137,19 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   onRestoreSkpScenes,
   onExportCadFormat,
   onInsertScenePrimitives,
+  arraySelection,
+  onExecuteSelectionArray,
+  skpSourceSelection,
+  onReadSkpSceneSource,
+  onApplySkpSourceCamera,
+  primitiveEditSelection,
+  onBeginPrimitiveEdit,
+  onApplyPrimitiveEdit,
+  sceneGlbExportUnavailableReason,
+  onExportCurrentSceneGlb,
   onApplySceneCamera,
-}: StudioBg3dSketchUpWorkbenchPanelProps): React.JSX.Element {
+}: StudioBg3dSpatialModelerPanelProps): React.JSX.Element {
+  const t = useT();
   const vcbInputId = useId();
   const protractorInputId = useId();
 
@@ -143,7 +159,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   const [vcbArrayText, setVcbArrayText] = useState<string>("*4");
   const [arrayModeKind, setArrayModeKind] = useState<"linear" | "radial">("linear");
   const [statusBanner, setStatusBanner] = useState<string>(
-    "SketchUp 전 기능 엔진 준비 완료 (OpenSKP + Direct Modeling + Styles + Solar Shadow)",
+    t("studio.bg3d.architecture.readyIntro", "치수와 위치를 정해 건축 요소를 현재 배경에 배치하세요."),
   );
   const [protractorText, setProtractorText] = useState<string>("6:12");
   const [sectionOffsetMeters, setSectionOffsetMeters] = useState<number>(0);
@@ -272,7 +288,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
       setStatusBanner(parsedArrayCmd.messageKo);
       return;
     }
-    setStatusBanner(`${parsedArrayCmd.messageKo} (${arrayPlacements.length}개 인스턴스 배치 완료)`);
+    setStatusBanner(`${parsedArrayCmd.messageKo} (${arrayPlacements.length}개 예제 위치 계산)`);
     onExecuteArray?.(parsedArrayCmd.normalizedToken, arrayPlacements);
   };
 
@@ -287,21 +303,21 @@ export function StudioBg3dSketchUpWorkbenchPanel({
 
   const handleRestoreScenesAndTags = () => {
     setStatusBanner(
-      `SKP 장면 ${restoredShots.length}개(카메라·직교투영·숨김 태그), 태그 ${restoredTags.length}개, 다이나믹 컴포넌트 ${restoredHierarchy.dynamicComponents.length}개 복원 완료`,
+      `SKP 장면 ${restoredShots.length}개(카메라·직교투영·숨김 태그), 태그 ${restoredTags.length}개, 다이나믹 컴포넌트 ${restoredHierarchy.dynamicComponents.length}개 예제 복원 계산`,
     );
     onRestoreSkpScenes?.(restoredShots.length, restoredTags.length);
   };
 
   const handleStyleSelect = (style: SketchUpStyleConfig) => {
     setSelectedStyleId(style.id);
-    setStatusBanner(`SketchUp 스타일 적용: ${style.labelKo}`);
+    setStatusBanner(`공간 모델러 스타일 적용: ${style.labelKo}`);
     onApplyStyle?.(style);
   };
 
   const handleApplyShadow = () => {
     const { solar } = shadowResult;
     setStatusBanner(
-      `태양광 스터디 적용: 방위각 ${solar.solarAzimuthDeg.toFixed(1)}° / 고도 ${solar.solarAltitudeDeg.toFixed(1)}° (${solar.colorTemperatureK}K)`,
+      `태양광 스터디 예제 계산: 방위각 ${solar.solarAzimuthDeg.toFixed(1)}° / 고도 ${solar.solarAltitudeDeg.toFixed(1)}° (${solar.colorTemperatureK}K)`,
     );
     onApplyShadowSolar?.(solar.solarAzimuthDeg, solar.solarAltitudeDeg, solar.colorTemperatureK);
   };
@@ -309,7 +325,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
   const handleRunExport = async () => {
     const artifact = await exportSketchUpSceneToMultiCadFormat(
       {
-        modelName: "toonstudio_sketchup_set",
+        modelName: "toonstudio_spatial_modeler_set",
         unit: "m",
         tags: restoredTags,
         boxes: [
@@ -323,19 +339,19 @@ export function StudioBg3dSketchUpWorkbenchPanel({
     );
     const summary = `${artifact.fileName} (${artifact.byteSize.toLocaleString("ko-KR")} B, ${artifact.mimeType}) 생성 완료`;
     setLastExportSummary(summary);
-    setStatusBanner(`내보내기 완료: ${summary}`);
+    setStatusBanner(`CAD 예제 생성: ${summary}`);
     onExportCadFormat?.(artifact.format, artifact.byteSize);
   };
 
   return (
-    <div data-testid="bg3d-sketchup-workbench-panel" className="flex flex-col gap-3 p-3 text-xs text-fg">
+    <div data-testid="bg3d-spatial-modeler-panel" className="flex flex-col gap-3 p-3 text-xs text-fg">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
         <div className="flex items-center gap-1.5 font-bold text-fg">
           <Box className="size-4 text-accent" aria-hidden />
-          <span>SketchUp 전 기능 마스터 스튜디오 (OpenSKP + Direct Modeling)</span>
+          <span>{t("studio.bg3d.architecture.workbench", "공간 모델러")}</span>
         </div>
         <span
-          data-testid="sketchup-workbench-status"
+          data-testid="spatial-modeler-workbench-status"
           role="status"
           aria-live="polite"
           className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.65rem] font-semibold text-accent"
@@ -344,9 +360,25 @@ export function StudioBg3dSketchUpWorkbenchPanel({
         </span>
       </header>
 
-      {/* Mutually exclusive `<details name="sketchup-workbench-accordion">` per `search-hidden-content` */}
+      <StudioBg3dSceneGlbExportPanel disabled={disabled} sceneGlbExportUnavailableReason={sceneGlbExportUnavailableReason} onExportCurrentSceneGlb={onExportCurrentSceneGlb} />
+      <StudioBg3dSkpSourceInfoPanel selection={skpSourceSelection} onReadSource={onReadSkpSceneSource} onApplyCamera={onApplySkpSourceCamera} cameraDisabled={disabled} />
+      <StudioBg3dPrimitiveEditLauncher disabled={disabled} primitiveEditSelection={primitiveEditSelection} onBeginPrimitiveEdit={onBeginPrimitiveEdit} onApplyPrimitiveEdit={onApplyPrimitiveEdit} />
+      <StudioBg3dArchitecturalModelingPanel
+        disabled={disabled}
+        onStatusChange={setStatusBanner}
+        onInsertScenePrimitives={onInsertScenePrimitives}
+      />
+      <StudioBg3dSelectionArrayPanel
+        disabled={disabled}
+        selection={arraySelection}
+        onExecuteSelectionArray={onExecuteSelectionArray}
+      />
+      <details className="rounded-xl border border-line p-2.5" data-testid="spatial-modeler-example-tools">
+        <summary className="cursor-pointer font-semibold">{t("studio.bg3d.architecture.examples", "모델링 예제 · 계산 미리보기")}</summary>
+        <p className="my-2 text-fg-2">{t("studio.bg3d.architecture.exampleScope", "아래 복원·배열·작도·태양광·CAD 도구는 내장 예제로 계산합니다. 현재 선택한 모델을 편집하거나 내보내지 않습니다. 지형·솔리드 결과는 배치 버튼으로 장면에 추가할 수 있습니다.")}</p>
+      {/* 예제 아코디언은 하나씩 펼쳐 숨겨진 내용 검색과 조작을 돕는다. */}
       <div className="space-y-2">
-        <details name="sketchup-workbench-accordion" open className="rounded-xl border border-line bg-card p-2.5">
+        <details name="spatial-modeler-workbench-accordion" open className="rounded-xl border border-line bg-card p-2.5">
           <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
             <span className="inline-flex items-center gap-1.5">
               <Layers className="size-3.5 text-accent" aria-hidden />
@@ -393,7 +425,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
             <button
               type="button"
               disabled={disabled}
-              data-testid="sketchup-restore-scenes-btn"
+              data-testid="spatial-modeler-restore-scenes-btn"
               onClick={handleRestoreScenesAndTags}
               className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90 disabled:opacity-45"
             >
@@ -403,11 +435,11 @@ export function StudioBg3dSketchUpWorkbenchPanel({
           </div>
         </details>
 
-        <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+        <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
           <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
             <span className="inline-flex items-center gap-1.5">
               <Grid className="size-3.5 text-accent" aria-hidden />
-              2. 직접 모델링 커널 (Push/Pull 개구부 관통 · Offset · Follow Me · VCB 배열)
+              2. 직접 모델링 (면 밀기·당기기 · 윤곽 간격 · 경로 돌출 · 수치 배열)
             </span>
             <span className="font-mono text-[0.62rem] text-fg-3">
               {pushPullPreview.holeCut ? "관통 개구부(Hole Cut)" : "일반 돌출"} · FollowMe {followMePreview.mesh.triangleCount} tris
@@ -457,7 +489,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
                   className="mt-1.5 w-full accent-accent"
                 />
                 <p className="mt-1 text-[0.62rem] text-fg-3">
-                  원래 넓이 {offsetPreview.areaOriginal}㎡ → 오프셋 넓이 {offsetPreview.areaOffset}㎡ (Follow Me 둘레 {followMePreview.pathLengthMeters}m)
+                  원래 넓이 {offsetPreview.areaOriginal}㎡ → 오프셋 넓이 {offsetPreview.areaOffset}㎡ (돌출 경로 둘레 {followMePreview.pathLengthMeters}m)
                 </p>
               </div>
             </div>
@@ -488,7 +520,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
                   id={vcbInputId}
                   type="text"
                   disabled={disabled}
-                  data-testid="sketchup-vcb-array-input"
+                  data-testid="spatial-modeler-vcb-array-input"
                   value={vcbArrayText}
                   onChange={(e) => setVcbArrayText(e.target.value)}
                   onKeyDown={handleVcbKeyDown}
@@ -498,7 +530,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
                 <button
                   type="submit"
                   disabled={disabled}
-                  data-testid="sketchup-vcb-array-submit"
+                  data-testid="spatial-modeler-vcb-array-submit"
                   className="rounded-lg bg-accent px-3 py-1 text-xs font-bold text-on-accent hover:bg-accent/90"
                 >
                   배열 실행
@@ -511,7 +543,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
           </div>
         </details>
 
-        <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+        <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
           <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
             <span className="inline-flex items-center gap-1.5">
               <Ruler className="size-3.5 text-accent" aria-hidden />
@@ -578,7 +610,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
           </div>
         </details>
 
-        <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+        <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
           <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
             <span className="inline-flex items-center gap-1.5">
               <Eye className="size-3.5 text-accent" aria-hidden />
@@ -594,7 +626,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
                   key={preset.id}
                   type="button"
                   disabled={disabled}
-                  data-testid={`sketchup-style-btn-${preset.id}`}
+                  data-testid={`spatial-modeler-style-btn-${preset.id}`}
                   onClick={() => handleStyleSelect(preset)}
                   className={`rounded-lg border p-2 text-left transition-colors ${
                     selectedStyleId === preset.id
@@ -636,7 +668,7 @@ export function StudioBg3dSketchUpWorkbenchPanel({
           </div>
         </details>
 
-        <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+        <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
           <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
             <span className="inline-flex items-center gap-1.5">
               <Sun className="size-3.5 text-accent" aria-hidden />
@@ -695,12 +727,12 @@ export function StudioBg3dSketchUpWorkbenchPanel({
             <button
               type="button"
               disabled={disabled}
-              data-testid="sketchup-apply-shadow-btn"
+              data-testid="spatial-modeler-apply-shadow-btn"
               onClick={handleApplyShadow}
               className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
             >
               <Sun className="size-3.5" aria-hidden />
-              <span>현재 장면에 SketchUp 천문 태양광·그림자 농도 적용</span>
+              <span>현재 장면에 천문 태양광·그림자 농도 적용</span>
             </button>
 
             <div className="rounded-lg border border-line bg-panel p-2">
@@ -726,15 +758,15 @@ export function StudioBg3dSketchUpWorkbenchPanel({
                 <button
                   type="button"
                   disabled={disabled}
-                  data-testid="sketchup-export-cad-btn"
+                  data-testid="spatial-modeler-export-cad-btn"
                   onClick={() => void handleRunExport()}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
                 >
                   <Download className="size-3.5" aria-hidden />
-                  <span>선택 포맷({exportFormat.toUpperCase()})으로 장면 내보내기</span>
+                  <span>선택 포맷({exportFormat.toUpperCase()})으로 예제 생성</span>
                 </button>
                 {lastExportSummary ? (
-                  <span data-testid="sketchup-export-summary" className="font-mono text-[0.62rem] text-good">
+                  <span data-testid="spatial-modeler-export-summary" className="font-mono text-[0.62rem] text-good">
                     {lastExportSummary}
                   </span>
                 ) : null}
@@ -743,15 +775,16 @@ export function StudioBg3dSketchUpWorkbenchPanel({
           </div>
         </details>
 
-        <StudioBg3dSketchUpFullSections
+        <StudioBg3dSpatialModelerSections
           disabled={disabled}
           onStatusChange={setStatusBanner}
           onInsertScenePrimitives={onInsertScenePrimitives}
           onApplySceneCamera={onApplySceneCamera}
         />
       </div>
+      </details>
     </div>
   );
 }
 
-export default StudioBg3dSketchUpWorkbenchPanel;
+export default StudioBg3dSpatialModelerPanel;

@@ -23,6 +23,7 @@ import {
   planStudioHybridDccFaceModeling,
   previewStudioHybridDccFaceModeling,
   studioHybridDccFaceDrawingGuide,
+  studioHybridDccFaceFollowMeGuide,
   studioHybridDccFaceModelingRange,
   type StudioFaceModelingRequest,
 } from "./studio-hybrid-dcc-face-modeling-workspace";
@@ -261,6 +262,7 @@ const REQUESTS: readonly (readonly [string, StudioFaceModelingRequest])[] = [
   ["안쪽 테두리", { tool: "inset", distance: 0.1 }],
   ["안쪽 오프셋", { tool: "offset", distance: 0.1, direction: "inward" }],
   ["면 그리기", { tool: "draw", points: SQUARE }],
+  ["따라 만들기", { tool: "follow-me", path: [{ x: 0, y: 0.5, z: 0 }, { x: 0, y: 2.5, z: 0 }, { x: 2, y: 2.5, z: 0 }] }],
 ];
 
 /** 정식 UV codec과 geometry command로 모든 코너가 연결된 실제 권위 레이어를 등록한다. */
@@ -321,6 +323,7 @@ const UV_UNSAFE_REQUESTS: readonly (readonly [string, StudioFaceModelingRequest]
   ["안쪽 테두리", { tool: "inset", distance: 0.05 }],
   ["안쪽 오프셋", { tool: "offset", distance: 0.05, direction: "inward" }],
   ["바깥 오프셋", { tool: "offset", distance: 0.05, direction: "outward" }],
+  ["따라 만들기", { tool: "follow-me", path: [{ x: 0, y: 0.5, z: 0 }, { x: 0, y: 1.5, z: 0 }] }],
 ];
 
 describe("UV를 재매핑하지 않는 면 재조립의 공개 작업공간 경계", () => {
@@ -345,8 +348,9 @@ describe("UV를 재매핑하지 않는 면 재조립의 공개 작업공간 경�
       commandCount: workspace.session.state.commandCount, undo: workspace.session.undoStack,
       redo: workspace.session.redoStack, journal: serializeStudioCommandJournal(workspace.session.journal) };
     const guide = request.tool === "draw" ? studioHybridDccFaceDrawingGuide(workspace, selection)
-      : studioHybridDccFaceModelingRange(workspace, selection, request.tool,
-        request.tool === "offset" ? request.direction : "inward");
+      : request.tool === "follow-me" ? studioHybridDccFaceFollowMeGuide(workspace, selection)
+        : studioHybridDccFaceModelingRange(workspace, selection, request.tool,
+          request.tool === "offset" ? request.direction : "inward");
     expectFailure(guide, "unsupported-uv");
     expectFailure(planStudioHybridDccFaceModeling(workspace, selection, request), "unsupported-uv");
     expectFailure(previewStudioHybridDccFaceModeling(workspace, selection, request), "unsupported-uv");

@@ -710,21 +710,22 @@ export function buildSketchUpArchitecturalComponentPrimitives(
     case "roof-hip":
     case "roof-hanok": {
       const isHanok = params.kind === "roof-hanok";
-      labelKo =
-        params.kind === "roof-gable"
-          ? "박공 지붕 (Gable Roof)"
-          : params.kind === "roof-hip"
-            ? "모임 지붕 (Hip Roof)"
-            : "전통 한옥 팔작 처마 지붕";
+      const isHip = params.kind === "roof-hip";
+      labelKo = params.kind === "roof-gable" ? "박공 지붕 (Gable Roof)"
+        : isHip ? "모임 지붕 (Hip Roof)" : "전통 한옥 팔작 처마 지붕";
+      // 실제 삼각기둥은 Y축 기둥이고 단면은 X=±√3/4, Z=-1/4~1/2다.
+      // X축 -90° 회전 후 용마루를 Z축에 놓고 본체 치수와 처마 높이 2.4m를 보존한다.
       primitives.push(
         makePrim(
           "skp-arch-roof-main",
           `${params.kind}_Main`,
-          params.kind === "roof-hip" ? "pyramid" : "triangularPrism",
-          [0, round3(h * 0.5 + 2.4), 0],
-          [round3(w), round3(h), round3(d)],
+          isHip ? "pyramid" : "triangularPrism",
+          [0, round3((isHip ? h * 0.5 : h / 3) + 2.4), 0],
+          isHip ? [round3(w), round3(h), round3(d)]
+            : [round3((2 * w) / Math.sqrt(3)), round3(d), round3((4 * h) / 3)],
           isHanok ? "#495057" : "#a87b5c",
           "Arch_Roof",
+          isHip ? [0, 0, 0] : [-Math.PI / 2, 0, 0],
         ),
       );
       if (isHanok) {

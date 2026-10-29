@@ -124,6 +124,9 @@ export function StudioBg3dEnginePanel({
               뷰포트를 열지 않으며, 다른 엔진은 여기서 직접 선택해야 합니다.
               {inApp.isInApp ? ` 지금은 ${inApp.label}에서 열려 있습니다.` : ""}
             </p>
+            <p className="mt-1 text-[0.72rem] leading-relaxed text-fg-3">
+              {t("studio.bg3d.engine.browserSupport", "고급 3D 작업은 최신 Chrome을 권장합니다. Safari의 지원 범위는 기능별 품질·성능 검증 후 안내합니다.")}
+            </p>
           </div>
         </div>
 

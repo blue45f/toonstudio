@@ -35,6 +35,8 @@ export function StudioScene3dAssetToolsPanel({
   const generation = useRef(0);
   const selectedSource = useRef<Scene3dSelectedAssetInput | null>(null);
   const resultSource = useRef<Scene3dSelectedAssetInput | null>(null);
+  const currentHost = useRef({ disabled, inplaceTools });
+  currentHost.current = { disabled, inplaceTools };
   const [appliedName, setAppliedName] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [secondName, setSecondName] = useState("");
@@ -85,11 +87,11 @@ export function StudioScene3dAssetToolsPanel({
   }, [disabled]);
   useEffect(() => {
     const urls =
-      result?.artifacts.map((artifact) =>
+      !resultSource.current ? result?.artifacts.map((artifact) =>
         URL.createObjectURL(
           new Blob([artifact.bytes], { type: artifact.mime }),
         ),
-      ) ?? [];
+      ) ?? [] : [];
     setLinks(urls);
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [result]);
@@ -170,6 +172,41 @@ export function StudioScene3dAssetToolsPanel({
       if (ticket === generation.current) setAppliedName(artifact.name);
     } catch (error) { if (ticket === generation.current) setError(error instanceof Error ? error.message : "The scene was not updated."); }
     finally { if (ticket === generation.current) { active.current = null; setBusy(false); } }
+  }
+  async function downloadDerivative(artifact: SpecialistArtifact) {
+    const input = resultSource.current;
+    if (!input || busy || disabled) return;
+    const bridge = inplaceTools;
+    const ticket = ++generation.current;
+    const controller = new AbortController();
+    active.current?.abort(); active.current = controller;
+    setActivity("read-source"); setBusy(true); setError(null);
+    let url: string | null = null;
+    try {
+      // 원본을 확인하지 못하는 이전 브리지에서도 서비스 내 가공과 적용은 계속 허용한다.
+      if (!bridge?.assertSourceFileExportAllowed) throw new Error(t(
+        "선택 모델의 파일 저장 조건을 확인하지 못했습니다. 서비스 내 가공과 적용은 계속할 수 있습니다.",
+        "The selected model's file export conditions could not be verified. Processing and applying it in the service remain available.",
+      ));
+      await bridge.assertSourceFileExportAllowed(input, controller.signal);
+      if (ticket !== generation.current || controller.signal.aborted || resultSource.current !== input
+        || currentHost.current.disabled || currentHost.current.inplaceTools !== bridge) return;
+      url = URL.createObjectURL(new Blob([artifact.bytes], { type: artifact.mime }));
+      const anchor = document.createElement("a");
+      anchor.href = url; anchor.download = artifact.name;
+      document.body.appendChild(anchor);
+      try { anchor.click(); } finally { anchor.remove(); }
+    } catch (error) {
+      if (ticket === generation.current) setError(controller.signal.aborted
+        ? t("작업을 취소했습니다.", "The job was cancelled.")
+        : error instanceof Error ? error.message : t("모델 파일을 저장하지 못했습니다.", "The model file could not be saved."));
+    } finally {
+      if (url !== null) {
+        try { URL.revokeObjectURL(url); }
+        catch { console.warn("모델 파일 임시 주소 정리를 확인하지 못했습니다."); }
+      }
+      if (ticket === generation.current) { active.current = null; setBusy(false); }
+    }
   }
   async function run(options: SpecialistOptions) {
     if (!source.current || busy || disabled) return;
@@ -581,13 +618,15 @@ export function StudioScene3dAssetToolsPanel({
               key={artifact.name}
               className="flex flex-wrap items-center gap-2 rounded border border-line p-2 text-xs"
             >
-              <a
+              {resultSource.current ? <button type="button" className={BUTTON} disabled={disabled || busy}
+                aria-label={`${artifact.name} ${t("파일로 저장", "Save to file")}`}
+                onClick={() => void downloadDerivative(artifact)}>{artifact.name}</button> : <a
                 href={links[index]}
                 download={artifact.name}
                 className="min-h-11 content-center font-semibold underline"
               >
                 {artifact.name}
-              </a>
+              </a>}
               <span>
                 {formatNumber(artifact.bytes.length)} B
                 {artifact.stats

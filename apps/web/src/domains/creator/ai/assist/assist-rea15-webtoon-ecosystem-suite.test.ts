@@ -598,8 +598,11 @@ describe("assist-rea15-webtoon-ecosystem-suite (Phase 7 100대 웹툰 AI 플랫�
     expect(live.report.live2dAndSpine2dRig.spine2dIkConstraints).toHaveLength(4);
   });
 
-  it("14. SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 멀티협업 · Recraft/Cara 보호 스튜디오(Sonnet 5.5)를 검증한다", async () => {
+  it("14. 공간 모델러 · Blender Grease Pencil · Petalica 채색 · Magma 멀티협업 · Recraft/Cara 보호 스튜디오(Sonnet 5.5)를 검증한다", async () => {
     const local = buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(SAMPLE_INPUT);
+    expect(local.hybridStudioExecutiveSummaryKo.startsWith("공간 모델러의")).toBe(true);
+    expect(local.hybridStudioExecutiveSummaryKo).toContain("제작 계획 예시");
+    expect(local.hybridStudioExecutiveSummaryKo).toContain("SketchUp Dynamic Components");
     expect(local.sketchupAndGreasePencil3d.greasePencilStrokeLayers).toHaveLength(4);
     expect(local.petalicaAndOpenArtColorStudio.petalicaModelStyle).toBe("Satsuki");
     expect(local.magmaRecraftCaraProduction.noAiMetaTagEnabled).toBe(true);

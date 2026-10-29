@@ -4,6 +4,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { createStudioBg3dSceneKeyboardHandler } from "./studio-bg3d-scene-keyboard";
 
 export function useStudioBg3dEditorEffects(h: Record<string, any>) {
   const {
@@ -679,48 +680,12 @@ export function useStudioBg3dEditorEffects(h: Record<string, any>) {
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
-      if (typing) return;
-      if (captureInFlightRef.current) return;
-      if (
-        webXrSessionStateRef.current.status !== "idle" &&
-        webXrSessionStateRef.current.status !== "error"
-      ) return;
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        if (
-          !isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current) &&
-          selectedIdsRef.current.size > 0
-        ) {
-          e.preventDefault();
-          deleteSelectedRef.current();
-        }
-        return;
-      }
-      if (e.metaKey || e.ctrlKey) {
-        const key = e.key.toLowerCase();
-        if (key === "z") {
-          e.preventDefault();
-          if (e.shiftKey) redoRef.current();
-          else undoRef.current();
-        } else if (key === "y") {
-          e.preventDefault();
-          redoRef.current();
-        }
-        return;
-      }
-      const lower = e.key.toLowerCase();
-      if (lower === "t" || lower === "r" || lower === "s") {
-        if (measurementActiveRef.current) {
-          cancelMeasurement("변형 도구로 전환해 줄자 측정을 취소했습니다.");
-        }
-        if (lower === "t") setTransformMode("translate");
-        else if (lower === "r") setTransformMode("rotate");
-        else setTransformMode("scale");
-      }
-    };
+    const onKey = createStudioBg3dSceneKeyboardHandler({
+      captureInFlightRef, webXrSessionStateRef, physicsPhaseRef, selectedIdsRef, measurementActiveRef,
+      deleteSelected: () => deleteSelectedRef.current(),
+      undo: () => undoRef.current(), redo: () => redoRef.current(),
+      cancelMeasurement, setTransformMode,
+    });
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);

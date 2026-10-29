@@ -7,6 +7,7 @@ import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { Bg3dModelLibraryEntry, Bg3dTemplateLibraryEntry, BgCompositeCategory, BgPanelTab, BgSceneTemplateCategory, BgViewportApi, CaptureState, LtEditorSection, LtUserPresetLibraryStatus, LtUserPresetNotice, ModelRootCacheEntry, ModelThumbnailGpuLease, StudioBg3dBabylonDiagnosticState, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress, StudioBg3dLtPresetPayload, StudioBg3dMeasurementDocument, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dModalSession, StudioBg3dModelAttachment, StudioBg3dModelThumbnailCaptureController, StudioBg3dPhysicsGravityPreset, StudioBg3dPhysicsPhase, StudioBg3dPhysicsSession, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dPhysicsTransformSample, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dRigBakeReader, StudioBg3dRigSelectionState, StudioBg3dRoomSpec, StudioBg3dSectionPlaneState, StudioBg3dSharedCharacterCaptureAuthorityInput, StudioBg3dShotBatchPass, StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBg3dSnapSettings, StudioBg3dSunRigConfig, StudioBg3dWorldMeasurement, StudioGeneric3dClassification, StudioGeneric3dControlMode, StudioGeneric3dSourceFormat, StudioWebXrSessionController, StudioWebXrSessionState, StudioWebXrSupportSnapshot, TransformModeId, TransformSpace, ViewEditorSection } from "./studio-bg3d-editor-runtime-bindings";
 import type { StudioBg3dHistoryCommandTimeline } from "./studio-bg3d-history-command-adapter";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
+import { rememberStudioBg3dCameraBeforeViewportRemount } from "./studio-bg3d-camera-history-transition";
 import { useStudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
 
 export function useStudioBg3dEditorState(props: Record<string, any>) {
@@ -103,8 +104,6 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
   const sharedCharacterCaptureAuthorityPayloadKeyRef = useRef<string | null>(null);
   const sharedCharacterCaptureAuthorityRevisionRef = useRef(0);
   const sharedCharacterCaptureStatusFenceRef = useRef(sharedCharacterStatuses);
-
-
 
   const {
     primitives,
@@ -439,6 +438,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
 
 
   const handleViewportReady = useCallback((api: BgViewportApi | null) => {
+    if (api === null) rememberStudioBg3dCameraBeforeViewportRemount(viewportApiRef.current, pendingInitialCameraRef);
     viewportApiRef.current = api;
     const pendingView = pendingInitialCameraRef.current;
     if (api && pendingView) {

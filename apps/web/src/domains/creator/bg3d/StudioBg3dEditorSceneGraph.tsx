@@ -5,22 +5,26 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import {
-  applyStudioBg3dLensShiftToThreeCamera,
   resolveStudioBg3dMinimumOrbitDistance,
 } from "./studio-bg3d-camera-application";
+import { createStudioBg3dCameraMountUpdater } from "./studio-bg3d-camera-mount";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dInferenceController } from "./StudioBg3dInferenceController";
 import { StudioBg3dInferenceOverlay } from "./StudioBg3dInferenceOverlay";
 import { StudioBg3dHdriEnvironment } from "./StudioBg3dHdriEnvironment";
+import { StudioBg3dCaptureEnvironmentAuthority } from "./StudioBg3dCaptureEnvironmentAuthority";
+import { createStudioBg3dCaptureEnvironmentIntent } from "./studio-bg3d-capture-environment-intent";
 import {
   isStudioBg3dHdriEnvironmentActive,
   resolveStudioBg3dEnvironmentSettings,
 } from "./studio-bg3d-hdri-environment";
+import { resolveStudioBg3dOrthographicPlanes } from "./studio-bg3d-orthographic-frustum";
+import { StudioBg3dAttachedTransformControls } from "./StudioBg3dAttachedTransformControls";
 
 export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera,
-    TransformControls, View, Canvas, useThree,
+    View, Canvas, useThree,
     Aperture, Boxes, Camera, ChevronDown,
     CircleDashed, Copy, Crosshair, Eye,
     EyeOff, Globe, Hexagon, Home,
@@ -302,6 +306,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
         animations={R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, instance.modelId, h.engineRuntime?.plan?.backend)?.animations ?? EMPTY_THREE_ANIMATION_CLIPS}
         selected={selectedIds.has(id)}
         capturing={isCapturing}
+        lineArt={lineArtPreview}
         targetFps={deviceQuality.targetFps}
         lodBias={deviceQuality.lodBias}
         onSelect={selectSceneEntity}
@@ -341,9 +346,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       onGrounding={updateSharedCharacterGrounding}
     />
   );
-  const renderedEnvironmentSettings = resolveStudioBg3dEnvironmentSettings(
-    sceneBaseDocument.lighting,
-  );
+  const renderedEnvironmentSettings = resolveStudioBg3dEnvironmentSettings(sceneBaseDocument.lighting);
   const hdriEnvironmentActive = isStudioBg3dHdriEnvironmentActive(renderedEnvironmentSettings);
   // 품질 프로파일 판정과 같은 기준: 모바일 프로파일이면 1k, 아니면 2k HDRI를 씁니다.
   const hdriFileTier = deviceQuality.profile === "mobile" ? "1k" : "2k";
@@ -356,22 +359,22 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
           : getSkyPreset(renderedSkyPresetId).clearColor}
         alpha={immersiveStagePlan?.mode === "immersive-ar" ? 0 : 1}
       />
+      <StudioBg3dCaptureEnvironmentAuthority intent={createStudioBg3dCaptureEnvironmentIntent({ settings: renderedEnvironmentSettings, fileTier: hdriFileTier, skyPresetId: renderedSkyPresetId, panoramaRotationDegrees: renderedPanoramaRotation, immersiveAr: immersiveStagePlan?.mode === "immersive-ar" })}>
       {immersiveStagePlan?.mode !== "immersive-ar" ? (
         <Fragment>
           <StudioBg3dScenePanorama
             presetId={renderedSkyPresetId}
             rotationDegrees={renderedPanoramaRotation}
-            environmentOwner={hdriEnvironmentActive ? "hdri" : "panorama"}
+            environmentOwner={hdriEnvironmentActive ? "hdri" : "panorama"} backgroundOwner={hdriEnvironmentActive && renderedEnvironmentSettings.useAsBackground ? "hdri" : "panorama"}
           />
           <StudioBg3dSceneFog background={renderedBackgroundSettings} />
         </Fragment>
       ) : null}
-      {immersiveStagePlan?.mode !== "immersive-ar" && hdriEnvironmentActive ? (
         <StudioBg3dHdriEnvironment
           settings={renderedEnvironmentSettings}
-          fileTier={hdriFileTier}
+          fileTier={hdriFileTier} enabled={immersiveStagePlan?.mode !== "immersive-ar"}
         />
-      ) : null}
+      </StudioBg3dCaptureEnvironmentAuthority>
       <ambientLight
         color={sceneBaseDocument.lighting.ambientColor}
         intensity={sceneBaseDocument.lighting.ambientIntensity}
@@ -456,7 +459,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       effectivelyVisibleLayerIds.has(firstSelectedId) &&
       primitiveObjectsRef.current.get(firstSelectedId) ? (
         <group ref={registerStudioBg3dCaptureExcludedObject}>
-          <TransformControls
+          <StudioBg3dAttachedTransformControls
             object={primitiveObjectsRef.current.get(firstSelectedId)}
             mode={transformMode}
             space={transformSpace}
@@ -499,17 +502,21 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       ) : null}
     </Fragment>
   );
-  const applyLensShift = (c: R.THREE.PerspectiveCamera | R.THREE.OrthographicCamera) => {
-    c.near = mainCameraNearClip;
-    c.up.set(mainCameraUp[0], mainCameraUp[1], mainCameraUp[2]);
-    applyStudioBg3dLensShiftToThreeCamera(c, sceneBaseDocument.camera.lensShift);
-    c.updateProjectionMatrix();
-  };
+  const mainViewportSize = mainViewTrackRef.current?.getBoundingClientRect() ?? viewportBoxSize;
+  const mainOrthographicHeight = sceneBaseDocument.camera.orthographicHeight;
+  const mainOrthographicPlanes = mainOrthographicHeight !== undefined
+    ? resolveStudioBg3dOrthographicPlanes(mainOrthographicHeight, mainViewportSize) : null;
+  const applyLensShift = createStudioBg3dCameraMountUpdater(() => ({
+    view: h.sceneBaseDocument.camera,
+    viewport: h.mainViewTrackRef?.current?.getBoundingClientRect() ?? h.viewportBoxSize,
+  }));
   const mainCameraNode = isMainOrtho ? (
     <OrthographicCamera
       makeDefault
       position={[...sceneBaseDocument.camera.position] as [number, number, number]}
       zoom={sceneBaseDocument.camera.zoom ?? 1}
+      manual={mainOrthographicHeight !== undefined}
+      {...(mainOrthographicPlanes ?? {})}
       near={mainCameraNearClip}
       far={mainCameraFarClip}
       onUpdate={applyLensShift}

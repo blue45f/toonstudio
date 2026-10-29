@@ -475,7 +475,7 @@ export function createInitialHolisticMasterState(): StudioVirtualOfficeHolisticM
       {
         creatorId: "cr-bg",
         creatorName: "최윤아 (3D 배경)",
-        roleKo: "스케치업·블렌더 후보정",
+        roleKo: "공간 모델러·블렌더 후보정",
         completedCutsKo: "황궁 연회장 3D 라이팅 프리셋 4종 배포",
         inProgressCutsKo: "C22 복도 추격전 카메라 화각 매칭",
         blockerKo: "C25 창문 스테인드글라스 텍스처 에셋 공동 사용권 시트 1개 추가 필요",

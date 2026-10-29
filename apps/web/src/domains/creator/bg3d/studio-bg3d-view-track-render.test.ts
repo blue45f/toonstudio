@@ -10,6 +10,7 @@ import {
 } from "./studio-bg3d-view-track-render";
 
 import type { StudioBg3dViewRenderer } from "./studio-bg3d-view-track-render";
+import { recordStudioBg3dCameraOrthographicHeight } from "./studio-bg3d-orthographic-frustum";
 
 function domRect(left: number, top: number, width: number, height: number): DOMRect {
   return new DOMRect(left, top, width, height);
@@ -33,6 +34,19 @@ function createRenderer(canvasRect: DOMRect) {
 }
 
 describe("Studio BG3D View 그리기", () => {
+  it("명시한 높이는 실제 트랙 렌더에서도 zoom 전 세로 범위를 유지한다", () => {
+    const { renderer } = createRenderer(domRect(0, 0, 1200, 900));
+    const camera = new OrthographicCamera(-400, 400, 200, -200);
+    camera.zoom = 2;
+    recordStudioBg3dCameraOrthographicHeight(camera, 8);
+    for (const [width, height, expectedWidth] of [[800, 400, 16], [400, 800, 4], [1200, 900, 32 / 3]]) {
+      drawStudioBg3dView(renderer, camera, new Scene(), { left: 0, bottom: 0, width, height, isOffscreen: false });
+      expect(camera.right - camera.left).toBeCloseTo(expectedWidth);
+      expect(camera.top - camera.bottom).toBe(8);
+      expect((camera.top - camera.bottom) / camera.zoom).toBe(4);
+      expect(camera.projectionMatrix.elements[5]).toBeCloseTo(0.5);
+    }
+  });
   it("정밀 편집 배치의 트랙을 그린다: 캔버스 상대 viewport·scissor, 카메라 비율, 상태 복구", () => {
     const canvas = domRect(316, 590, 677.109375, 380);
     const track = domRect(315, 589, 679.109375, 382);

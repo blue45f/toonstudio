@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "fixture": {
+    "fileName": "native-camera-golden.skp",
+    "byteLength": 5377,
+    "sha256": "dd4fdf607bc04de725b98b8c5c40daf7d37cea4232986870b6f3c5541a8f737e",
+    "sourceVersion": "{27.0.267}"
+  },
+  "provenance": {
+    "createdOn": "2026-10-29",
+    "createdBy": "ToonStudio 개발용 자체 제작",
+    "creationMethod": "공식 SketchUp C API의 SUModelCreate로 새 모델 생성; 원본 template 입력 없음",
+    "nativeApiVersion": [
+      15,
+      0
+    ],
+    "saveAndReloadVerified": true,
+    "modelReleaseResult": 0,
+    "terminateCompleted": true,
+    "includedContent": "직접 만든 삼각형 하나와 Scene 카메라 세 개; SDK·원본 template 바이너리 없음"
+  },
+  "nativeGroundTruth": {
+    "scope": "SDK 저장 전과 저장 파일 재읽기 뒤 활성 투영 getter가 SU_ERROR_NONE(0)으로 확인한 값만 기록",
+    "units": "inch",
+    "displayUnits": "Inches",
+    "geometry": {
+      "sourceFaceCount": 1,
+      "verticesInches": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          100,
+          0,
+          0
+        ],
+        [
+          0,
+          100,
+          0
+        ]
+      ]
+    },
+    "orientation": {
+      "eyeInches": [
+        0,
+        0,
+        500
+      ],
+      "targetInches": [
+        10,
+        20,
+        30
+      ],
+      "upInput": [
+        0,
+        0,
+        1
+      ],
+      "upSdkNormalized": [
+        0.44670832633455754,
+        0.8934166526691151,
+        0.04752216237601676
+      ]
+    },
+    "scenes": [
+      {
+        "name": "native-vertical-fov35-aspect1_5",
+        "projection": "perspective",
+        "fovDegrees": 35,
+        "fovIsHeight": true,
+        "aspectRatio": 1.5
+      },
+      {
+        "name": "native-horizontal-fov35-aspect1_5",
+        "projection": "perspective",
+        "fovDegrees": 35,
+        "fovIsHeight": false,
+        "aspectRatio": 1.5
+      },
+      {
+        "name": "native-orthographic-height144",
+        "projection": "orthographic",
+        "orthoHeightInches": 144,
+        "aspectRatio": 1.5
+      }
+    ],
+    "inactiveGetters": {
+      "perspectiveOrthoHeight": "SU_ERROR_NO_DATA(9); 파서의 비활성 값은 golden으로 인증하지 않음",
+      "orthographicFov": "SU_ERROR_NO_DATA(9); 파서의 비활성 값은 golden으로 인증하지 않음"
+    }
+  },
+  "parserCoverage": {
+    "name": "openskp",
+    "version": "1.3.0",
+    "notExposed": [
+      "pages.fovIsHeight",
+      "pages.aspectRatio"
+    ],
+    "manifestFovBasis": "not-exposed",
+    "requiredDiagnostic": "camera-fov-basis-not-exposed",
+    "fieldPresence": "parser-values-may-include-defaults"
+  },
+  "convertedGeometry": {
+    "units": "metre",
+    "axisMapping": "x,z,-y",
+    "metresPerSourceUnit": 0.0254,
+    "verticesMetres": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        2.54,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        -2.54
+      ]
+    ],
+    "boundsMin": [
+      0,
+      0,
+      -2.54
+    ],
+    "boundsMax": [
+      2.54,
+      0,
+      0
+    ]
+  },
+  "limitations": [
+    "SketchUp UI의 렌더 이미지 동등성을 검증한 fixture가 아님",
+    "meter-display UnitsOptions는 설정하지 않았으며 원본 좌표 단위는 inch",
+    "원근 FOV 축과 aspect는 native GT에 존재하지만 현 파서는 노출하지 않음",
+    "기존 loader timeout·저장 실패 실험과 성공한 신규 저장/재읽기를 구분하며 실패 원인을 단정하지 않음"
+  ]
+}

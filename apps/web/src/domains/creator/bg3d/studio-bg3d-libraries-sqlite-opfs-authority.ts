@@ -82,6 +82,12 @@ export interface StudioBg3dLibraryMutationContext {
   getBlob(receipt: StudioBg3dLibraryBlobReceipt): Promise<Uint8Array>;
 }
 
+/** 기존 V12 writer와 같은 잠금 안에서 읽으며 manifest·CAS를 수정할 수 없다. */
+export interface StudioBg3dLibraryReadSnapshotContext {
+  readonly currentRaw: string | null;
+  getBlob(receipt: StudioBg3dLibraryBlobReceipt): Promise<Uint8Array>;
+}
+
 export interface StudioBg3dLibraryMutationResult<T> {
   /** Strict canonical JSON validated by the domain adapter before returning it. */
   readonly nextRaw: string;
@@ -95,6 +101,12 @@ export interface StudioBg3dLibraryMutationResult<T> {
 export interface StudioBg3dLibrariesAuthority {
   readManifest(slot: StudioBg3dLibraryManifestSlot): Promise<string | null>;
   readBlob(receipt: StudioBg3dLibraryBlobReceipt): Promise<Uint8Array>;
+  /** callback이 끝날 때까지 동일 origin의 V12 writer를 대기시킨다. 구형 권위에는 없을 수 있다. */
+  withReadSnapshot?<T>(
+    slot: StudioBg3dLibraryManifestSlot,
+    read: (context: StudioBg3dLibraryReadSnapshotContext) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T>;
   mutate<T>(
     slot: StudioBg3dLibraryManifestSlot,
     currentRefs: (raw: string | null) => readonly StudioOpfsContentHash[],
@@ -302,6 +314,26 @@ export function createStudioBg3dLibrariesAuthority(
     async readBlob(receipt: StudioBg3dLibraryBlobReceipt) {
       const { assets } = await resources();
       return verifiedBlob(assets, receipt);
+    },
+
+    withReadSnapshot<T>(slot: StudioBg3dLibraryManifestSlot,
+      read: (context: StudioBg3dLibraryReadSnapshotContext) => Promise<T>, signal?: AbortSignal) {
+      if (!crossRealmExclusive) return Promise.reject(authorityError("storage-unavailable", "Web Locks가 없어 모델 원본 읽기를 보호할 수 없습니다."));
+      return inRealmExclusive(() => crossRealmExclusive(async () => {
+        throwIfAborted(signal);
+        const { database, assets } = await resources();
+        throwIfAborted(signal);
+        const currentRaw = await database.kvGet(STUDIO_BG3D_LIBRARIES_SQLITE_NAMESPACE, STUDIO_BG3D_LIBRARY_MANIFEST_KEYS[slot]);
+        throwIfAborted(signal);
+        const value = await read(Object.freeze({ currentRaw, async getBlob(receipt: StudioBg3dLibraryBlobReceipt) {
+          throwIfAborted(signal);
+          const bytes = await verifiedBlob(assets, receipt);
+          throwIfAborted(signal);
+          return bytes;
+        } }));
+        throwIfAborted(signal);
+        return value;
+      }));
     },
 
     mutate<T>(

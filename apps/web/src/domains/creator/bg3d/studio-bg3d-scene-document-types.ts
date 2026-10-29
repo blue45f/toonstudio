@@ -285,6 +285,8 @@ export interface StudioBg3dCameraSettings {
   readonly fovDegrees: number;
   readonly projection?: "perspective" | "orthographic";
   readonly zoom?: number;
+  /** zoom 전 장면 단위 세로 높이. 부재는 기존 픽셀 절두체이며 원근 카메라에서는 보존만 한다. */
+  readonly orthographicHeight?: number;
   readonly lensShift?: readonly [number, number];
   /** Positive scene-unit near plane. Absent only on canonical pre-Camera-vNext v3 documents. */
   readonly nearClip?: number;
@@ -461,10 +463,9 @@ export interface StudioBg3dModelAttachment {
   readonly hash: string;
   readonly rights: StudioBg3dAttachmentRights;
   readonly source: StudioBg3dAttachmentSource;
-  /**
-   * Optional generic (non-VRM) workflow classification / source-format block.
-   * Sanitized via `studio-generic-3d-workflow-metadata` on parse; omitted when unknown.
-   */
+  /** 새 원본 미터 배치의 출처 정책. 기존 인스턴스의 저장된 scale은 바꾸지 않는다. */
+  readonly metricPolicy?: import("./studio-bg3d-model-metric-policy").StudioBg3dModelMetricPolicy;
+  /** 일반 3D 워크플로 분류·원본 형식. 파싱할 수 없는 값은 생략한다. */
   readonly generic3dWorkflow?: StudioGeneric3dWorkflowMetadataRecord;
 }
 
@@ -651,6 +652,7 @@ export interface StudioBg3dShotCameraOverride {
   readonly fovDegrees?: number;
   readonly projection?: "perspective" | "orthographic";
   readonly zoom?: number;
+  readonly orthographicHeight?: number;
   readonly lensShift?: readonly [number, number];
   readonly nearClip?: number;
   readonly up?: StudioBg3dVec3;

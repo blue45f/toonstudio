@@ -15,10 +15,6 @@ import {
   attachStudioGeneric3dWorkflowMetadata,
   parseStudioGeneric3dWorkflowMetadata,
 } from "../studio-generic-3d-workflow-metadata";
-import {
-  getStudio3dAssetQualityMode,
-  resetStudio3dAssetQualityMode,
-} from "../studio-3d-asset-quality-session";
 
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
 import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
@@ -61,6 +57,7 @@ export type StudioBg3dModelRootCacheEntry = Pick<
   readonly record: Bg3dVerifiedStoredRecord;
   readonly runtimeVariant: string;
   readonly metrics: StudioBg3dThreeLoadSuccess["metrics"];
+  readonly normalizationScale?: number;
   readonly admittedProfiles: Set<StudioBg3dResolvedDeviceQuality["profile"]>;
   /** Lazily initialized for legacy cache fixtures; profile-only stamps are not authorization. */
   admissionPolicyKeys?: Set<string>;
@@ -173,6 +170,8 @@ type StudioBg3dModelAdmissionArgs = {
   readonly pending: Map<string, Promise<StudioBg3dModelRootCacheEntry>>;
   readonly isActive: () => boolean;
   readonly signal?: AbortSignal;
+  /** @deprecated 이전 호출 타입 호환용이다. 실패 시 선택한 품질을 항상 보존하며 이 값은 읽지 않는다. */
+  readonly preserveQualityModeOnFailure?: boolean;
   /** Called only by the invocation that actually installs a newly decoded cache entry. */
   readonly onCacheEntryCreated?: (
     storageId: string,
@@ -185,25 +184,7 @@ export async function admitAndCacheStudioBg3dModel(
   args: StudioBg3dModelAdmissionArgs,
 ): Promise<StudioBg3dModelRootCacheEntry> {
   resolveStudioBg3dMaterialBackend(args);
-  const requestedHighQuality = getStudio3dAssetQualityMode() === "high";
-  try {
-    return await admitAndCacheStudioBg3dModelInternal(args);
-  } catch (error) {
-    const cancelled = error instanceof StudioBg3dStaleModalOperationError
-      || (typeof error === "object" && error !== null && (
-        ("name" in error && error.name === "AbortError")
-        || ("code" in error && error.code === "aborted")
-      ));
-    if (
-      requestedHighQuality && getStudio3dAssetQualityMode() === "high"
-      && !cancelled && !args.signal?.aborted && args.isActive()
-    ) {
-      resetStudio3dAssetQualityMode(
-        "고품질 모델을 불러오지 못해 자동 모드로 돌아왔습니다. 경량본으로 다시 가져오세요.",
-      );
-    }
-    throw error;
-  }
+  return admitAndCacheStudioBg3dModelInternal(args);
 }
 
 async function admitAndCacheStudioBg3dModelInternal(
@@ -305,10 +286,11 @@ async function admitAndCacheStudioBg3dModelInternal(
           renderer: args.renderer,
           qualityBudget: args.quality.textureScale,
         });
-        loaded.root.scale.setScalar(resolveStudioBg3dModelNormalizationScale(
+        const normalizationScale = resolveStudioBg3dModelNormalizationScale(
           args.record.id,
           measureBg3dObjectSize(loaded.root),
-        ));
+        );
+        loaded.root.scale.setScalar(normalizationScale);
         if (!lease.isCurrent() || !args.isActive() || !isPolicyCurrent()) {
           loaded.dispose();
           lease.throwIfRevoked();
@@ -322,6 +304,7 @@ async function admitAndCacheStudioBg3dModelInternal(
           record: args.record,
           runtimeVariant,
           metrics: loaded.metrics,
+          normalizationScale,
           admittedProfiles: new Set([policy.profile]),
           admissionPolicyKeys: new Set([policyKey]),
           joints,

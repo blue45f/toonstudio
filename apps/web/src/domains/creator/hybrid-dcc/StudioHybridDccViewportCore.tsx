@@ -65,6 +65,7 @@ import {
 } from "./StudioHybridDccViewportParts";
 import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewportInteractionBar";
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
+import { DEFAULT_STUDIO_HYBRID_DCC_VIEWPORT_DESCRIPTION } from "./studio-hybrid-dcc-viewport-description";
 import { StudioHybridDccSurfaceMaterial } from "./materials/StudioHybridDccSurfaceMaterial";
 import type { StudioHybridDccToonMaterialPreview } from "./materials/studio-hybrid-dcc-toon-projection";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportAssetSnapshot } from "./studio-hybrid-dcc-viewport-snapshot";
@@ -116,6 +117,7 @@ export interface StudioHybridDccViewportProps {
   readonly onComponentSelectionError?: (message: string) => void;
   /** Keeps camera inspection available while preventing stale edits during async engine work. */
   readonly editingDisabled?: boolean;
+  readonly interactionDescription?: string;
   /** UV 작업은 원본 코너를 검사하므로 수정자 캐시 대신 편집 메시를 표시한다. */
   readonly uvChecker?: boolean;
   readonly toonPreview?: StudioHybridDccToonMaterialPreview;
@@ -674,6 +676,7 @@ export function StudioHybridDccViewport({
   onDuplicateSelected,
   onSelectComponent,
   editingDisabled = false,
+  interactionDescription = DEFAULT_STUDIO_HYBRID_DCC_VIEWPORT_DESCRIPTION,
   uvChecker = false,
   toonPreview,
   sculptPreview,
@@ -913,18 +916,13 @@ export function StudioHybridDccViewport({
       data-frame-revision={frameRevision}
     >
       <p id={descriptionId} className="sr-only">
-        마우스 왼쪽 드래그로 회전하고, 오른쪽 드래그로 이동하며, 휠로 확대하거나 축소합니다.
-        선택 오브젝트는 G 이동, R 회전, S 크기 조절 기즈모로 편집합니다.
-        Shift와 D는 선택 오브젝트 복제, Delete는 되돌릴 수 있는 삭제입니다.
-        숫자 1, 2, 3, 4는 꼭짓점, 모서리, 면, 오브젝트 선택 모드입니다.
-        숫자 키패드 1, 3, 7은 정면, 우측, 상단, Ctrl 조합은 반대편 보기입니다.
-        키패드 5는 투영 전환, /는 선택 격리, Home은 전체, F 또는 마침표는 선택 화면 맞춤입니다.
-        캔버스에서 Shift+Tab은 스냅 전환, Esc는 진행 중인 변형 취소입니다.
+        {interactionDescription}
       </p>
 
       {detectedWebgl === true && (snapshot.assets.length > 0 || snapshot.errors.length === 0) ? (
         <StudioHybridDccCanvasBoundary>
           <Canvas
+            role="group"
             aria-label="편집 메시 3D 렌더"
             aria-describedby={descriptionId}
             tabIndex={0}
@@ -1284,7 +1282,7 @@ export function StudioHybridDccViewport({
 
       {snapshot.assets.length > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-2 p-2 sm:p-3">
-          <div className="pointer-events-auto flex max-w-[min(72%,34rem)] gap-1 overflow-x-auto rounded-xl border border-line bg-panel/95 p-1 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]" aria-label="뷰포트 에셋">
+          <div role="group" className="pointer-events-auto flex max-w-[min(72%,34rem)] gap-1 overflow-x-auto rounded-xl border border-line bg-panel/95 p-1 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]" aria-label="뷰포트 에셋">
             {renderedAssets.map((asset) => {
               const selected = asset.assetId === selectedAssetId;
               return (

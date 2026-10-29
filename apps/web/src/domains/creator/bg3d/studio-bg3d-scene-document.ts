@@ -5,7 +5,6 @@
  * credentials are deliberately outside this schema. Model binaries are resolved by attachment id
  * at the runtime boundary; this document stores only bounded GLB metadata and scene intent.
  */
-
 import {
   attachStudioGeneric3dWorkflowMetadata,
   parseStudioGeneric3dWorkflowMetadata,
@@ -23,6 +22,7 @@ import {
   isStudioBg3dCameraUpVectorValid,
   normalizeStudioBg3dCameraUpVector,
   resolveStudioBg3dCameraUpVector,
+  readStudioBg3dOrthographicHeightField, StudioBg3dCameraHeightValidationError,
 } from "./studio-bg3d-camera-orientation";
 import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
 import {
@@ -204,7 +204,6 @@ export {
   type StudioBg3dTwoBoneIkConstraint,
   type StudioBg3dVec3,
 } from "./studio-bg3d-scene-document-types";
-
 
 const DEFAULT_ROTATION: StudioBg3dVec3 = [0, 0, 0];
 const DEFAULT_SCALE: StudioBg3dVec3 = [1, 1, 1];
@@ -474,6 +473,7 @@ function normalizeCamera(value: unknown): StudioBg3dCameraSettings {
     fovDegrees: boundedNumber(candidate.fovDegrees, 50, 10, 120),
     projection: candidate.projection === "orthographic" ? "orthographic" : "perspective",
     zoom: boundedNumber(candidate.zoom, 1, 0.1, 100),
+    ...readStudioBg3dOrthographicHeightField(candidate),
   };
   if (Array.isArray(candidate.lensShift) && candidate.lensShift.length === 2 && typeof candidate.lensShift[0] === "number" && typeof candidate.lensShift[1] === "number") {
     result.lensShift = [boundedNumber(candidate.lensShift[0], 0, -2, 2), boundedNumber(candidate.lensShift[1], 0, -2, 2)] as readonly [number, number];
@@ -673,7 +673,7 @@ function normalizeOutput(value: unknown): StudioBg3dOutputSettings {
 
 function normalizeShotCameraOverride(value: unknown): StudioBg3dShotCameraOverride {
   const candidate = isRecord(value) ? value : {};
-  const result: Record<string, unknown> = {};
+  const result: Record<string, unknown> = { ...readStudioBg3dOrthographicHeightField(candidate) };
   if (hasOwn(candidate, "position")) {
     result.position = normalizedVec3(
       candidate.position,
@@ -1008,7 +1008,6 @@ function normalizeRights(value: unknown): StudioBg3dAttachmentRights | null {
     ...(licenseName ? { licenseName } : {}),
   };
 }
-
 function normalizeAttachment(value: unknown): StudioBg3dModelAttachment | null {
   if (!isRecord(value)) return null;
   const id = normalizedId(value.id);
@@ -1039,6 +1038,7 @@ function normalizeAttachment(value: unknown): StudioBg3dModelAttachment | null {
     byteSize: value.byteSize,
     hash: value.hash.toLowerCase(),
     rights,
+    ...(value.metricPolicy === "authored-metres" ? { metricPolicy: value.metricPolicy } : {}),
     source: value.source as StudioBg3dAttachmentSource,
   };
   // Fail closed: corrupt/unknown workflow blocks are dropped; valid v1 fields re-attach sanitized.
@@ -1052,7 +1052,6 @@ function normalizeAttachment(value: unknown): StudioBg3dModelAttachment | null {
     ...(workflow.sourceFormat ? { sourceFormat: workflow.sourceFormat } : {}),
   });
 }
-
 function normalizeAttachments(
   value: unknown,
   maxModelBytes: number
@@ -1442,7 +1441,6 @@ function canonicalDocumentByteLength(document: StudioBg3dSceneDocument): number 
   return utf8ByteLength(JSON.stringify(document));
 }
 
-
 function normalizeDecodedCurrentDocument(
   value: unknown,
   rootMode: "lenient" | "strict" = "lenient",
@@ -1506,6 +1504,7 @@ function normalizeDecodedCurrentDocument(
     if (rootMode === "strict" && !jsonStructuresEqual(withoutRedundantSuppressionFields(value), normalized)) return null;
     return deepFreeze(normalized);
   } catch (cause) {
+    if (cause instanceof StudioBg3dCameraHeightValidationError && rootMode === "strict") return null;
     if (cause instanceof StudioBg3dSceneDocumentBudgetError && budgetFailureMode === "null") {
       return null;
     }
@@ -1688,7 +1687,7 @@ function migrateDecodedSchemaV2Document(value: unknown): StudioBg3dSceneDocument
     !hasCompleteRootShapeForVersion(value, STUDIO_BG3D_SCHEMA_V2_SCENE_DOCUMENT_VERSION) ||
     (isRecord(value.camera) && (
       hasOwn(value.camera, "nearClip") ||
-      hasOwn(value.camera, "up")
+      hasOwn(value.camera, "up") || hasOwn(value.camera, "orthographicHeight")
     )) ||
     hasOwn(value, "shots") ||
     hasOwn(value, "activeShotId") ||
@@ -1710,7 +1709,7 @@ function migrateDecodedSchemaV1Document(value: unknown): StudioBg3dSceneDocument
     !hasCompleteRootShapeForVersion(value, STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION) ||
     (isRecord(value.camera) && (
       hasOwn(value.camera, "nearClip") ||
-      hasOwn(value.camera, "up")
+      hasOwn(value.camera, "up") || hasOwn(value.camera, "orthographicHeight")
     )) ||
     hasOwn(value, "shots") ||
     hasOwn(value, "activeShotId") ||
@@ -1761,7 +1760,7 @@ function migrateDecodedSchemaPanoramaDocument(
   if (
     value.version !== STUDIO_BG3D_SCENE_DOCUMENT_VERSION &&
     isRecord(value.camera) &&
-    (hasOwn(value.camera, "nearClip") || hasOwn(value.camera, "up"))
+    (hasOwn(value.camera, "nearClip") || hasOwn(value.camera, "up") || hasOwn(value.camera, "orthographicHeight"))
   ) {
     return null;
   }

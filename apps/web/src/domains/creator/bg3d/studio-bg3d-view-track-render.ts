@@ -1,6 +1,7 @@
 import { Color } from "three";
 
 import { placeStudioBg3dViewTrack } from "./studio-bg3d-view-track-geometry";
+import { resizeStudioBg3dAuthoredOrthographicFrustum } from "./studio-bg3d-orthographic-frustum";
 
 import type { Camera, Object3D, OrthographicCamera, PerspectiveCamera } from "three";
 
@@ -38,7 +39,9 @@ export function placeStudioBg3dViewOnRenderer(
 function applyViewport(renderer: StudioBg3dViewRenderer, camera: Camera, placement: StudioBg3dViewPlacement): boolean {
   const { left, bottom, width, height } = placement;
   if (isOrthographic(camera)) {
-    if (!camera.manual) {
+    if (resizeStudioBg3dAuthoredOrthographicFrustum(camera, { width, height })) {
+      // 명시한 월드 높이는 유지하고 현재 트랙의 종횡비만 반영한다.
+    } else if (!camera.manual) {
       if (camera.left !== width / -2 || camera.right !== width / 2
         || camera.top !== height / 2 || camera.bottom !== height / -2) {
         Object.assign(camera, { left: width / -2, right: width / 2, top: height / 2, bottom: height / -2 });

@@ -23,7 +23,7 @@ const ROLE_OPTIONS: readonly {
 }[] = Object.freeze([
   { id: "ink", labelKo: "선화·펜선 어시 (Inking)", labelEn: "Line Art & Inking" },
   { id: "color", labelKo: "밑색·명암·채색 (Coloring)", labelEn: "Flats & Shading" },
-  { id: "background", labelKo: "3D·배경 스케치업 (Background)", labelEn: "3D & Backgrounds" },
+  { id: "background", labelKo: "3D·배경 (Background)", labelEn: "3D & Backgrounds" },
   { id: "story", labelKo: "각색·콘티 연출 (Storyboard)", labelEn: "Storyboard & Story" },
   { id: "lettering", labelKo: "식자·효과음 타이포 (Lettering)", labelEn: "Lettering & SFX" },
 ]);

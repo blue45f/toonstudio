@@ -28,6 +28,7 @@ import {
 } from "./studio-bg3d-skp-contract";
 import { parseStudioBg3dSkpImportReport } from "./studio-bg3d-skp-import-report";
 import { preflightStudioBg3dSkpSource } from "./studio-bg3d-skp-preflight";
+import { parseStudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 import {
   STUDIO_BG3D_SKP_WORKER_PROTOCOL_VERSION,
   isStudioBg3dSkpWorkerResponse,
@@ -209,11 +210,12 @@ function convertInWorker(
         return;
       }
       const report = parseStudioBg3dSkpImportReport(response.report);
-      if (!report) {
+      const sceneSource = parseStudioBg3dSkpSceneSource(response.sceneSource);
+      if (!report || !sceneSource.ok) {
         onProtocolFailure();
         return;
       }
-      finish(() => { resolve({ glb: new Uint8Array(response.glb), report }); });
+      finish(() => { resolve({ glb: new Uint8Array(response.glb), report, sceneSource: sceneSource.value }); });
     }
 
     if (signal?.aborted) {

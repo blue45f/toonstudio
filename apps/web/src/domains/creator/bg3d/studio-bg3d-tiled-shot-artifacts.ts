@@ -1,3 +1,4 @@
+import { assertStudioBg3dCaptureEnvironmentCurrent, inheritStudioBg3dCaptureEnvironmentReceipt } from "./studio-bg3d-capture-environment-receipt";
 import { buildStudioBg3dTiledImages } from "./studio-bg3d-tiled-artifact-client";
 import { STUDIO_BG3D_SHOT_BATCH_MAX_TOTAL_BYTES } from "./studio-bg3d-shot-batch";
 import {
@@ -18,6 +19,7 @@ export async function buildStudioBg3dTiledShotArtifacts(
     };
     readonly adapter: StudioBg3dCaptureAdapter;
     readonly includeNormals: boolean;
+    readonly expectedEnvironmentFingerprint?: string;
     readonly assertCurrent: () => void | Promise<void>;
     readonly onProgress?: (completed: number, total: number) => void;
   },
@@ -38,10 +40,12 @@ export async function buildStudioBg3dTiledShotArtifacts(
     includeNormals: input.includeNormals,
     background: shot.capture.background,
     signal: input.signal,
+    expectedEnvironmentFingerprint: input.expectedEnvironmentFingerprint,
     assertCurrent: input.assertCurrent,
     onProgress: input.onProgress,
   });
   assertStudioBg3dShotArtifactActive(input.signal);
+  assertStudioBg3dCaptureEnvironmentCurrent(result, input.expectedEnvironmentFingerprint);
   const artifactBytes = result.images.reduce(
     (sum, image) => sum + image.png.size,
     0,
@@ -53,7 +57,7 @@ export async function buildStudioBg3dTiledShotArtifacts(
     throw new RangeError(
       "컷 PNG 합계가 브라우저 배치 메모리 예산을 벗어났습니다.",
     );
-  return {
+  const artifacts: StudioBg3dShotArtifactPipelineResult = {
     artifactBytes,
     images: result.images.map((image) => ({
       ...image,
@@ -76,4 +80,6 @@ export async function buildStudioBg3dTiledShotArtifacts(
       ? [{ shotId: shot.shotId, shotName: shot.shotName, reason: "budget" }]
       : [],
   };
+  inheritStudioBg3dCaptureEnvironmentReceipt(artifacts, result);
+  return artifacts;
 }
