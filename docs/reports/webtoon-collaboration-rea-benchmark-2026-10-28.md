@@ -407,3 +407,34 @@ main 배포물 2,525,429바이트의 SHA-256은 `44c1542b26ba4db7b26bde274b80a0d
 원문 객체에는 method·url 두 필드로 된 선언 107개가 있다. 조회 51·부분 변경 28·생성형 21·삭제형 7개다. 스냅샷의 상태·확정·공개 범위·텍스트 공정 확인, 프로젝트 공정, 사용자와 공정 연결, 역할 목록, 공정 template, 작업공간 공정과 버전 목록을 별도 선언으로 관찰했다. 본문·query·header·응답 DTO, 허용 상태·역할 값, 접근 제어, 확정 조건·원자성·중복 처리, 버전 비교 UI와 주석 연결은 해당 객체에 없어 미확인이다. 메서드 이름이 성공적인 생성·변경을 보증하지 않는다.
 
 제한된 분석의 parent Evidence는 `ev_69dc23d2cf56c1c65b3251b84ad0ee4e275fd589491e9f0c9e90534f445a163c`, summary는 `ev_0ead2a021e6f4b6404964c56f726023904ed30dc43ae51b8ecb5d7a553bb63b7`이며 최종 원장은 4 records다. 공개 capture의 응답 바이트는 브라우저 API가 노출한 결과로 wire 바이트·원래 transaction과의 동일성을 보증하지 않는다. 로그인 뒤 서버 권한·다중 계정 실행·성능·시장 순위는 이 근거로 주장하지 않는다. 16절 수정은 ToonStudio 자체 결함 재현과 테스트에 근거한다.
+
+## 18. 검수 입력 안내·영역별 정족수·직접 링크 복귀 보강
+
+상태: **migration — 2026-10-29, 추가 결함 재현과 수정**. 16절의 서버 검사를 화면의 승인 계획에도 연결했다. 선행 입력이 바뀐 제출본의 의견은 계속 기록하되 자동 승인 명령을 계획하지 않는다. 명시적 확정은 이유를 알리며 차단하고, 화면에 입력 갱신 안내와 인계 작업함 링크를 표시한다. 작업 설정을 새 입력으로 바꿔도 제출본 자신의 고정 입력으로 판단한다. 이 판별은 Core helper를 API와 Web이 함께 사용한다. 수정 전 새 회귀 9개 중 6개가 실패했고 정상·수정 요청 3개는 통과했다.
+
+같은 이름의 검수 lane을 서로 다른 적격자로 중복 등록하면 첫 lane의 R 승인 한 표가 S만 적격인 둘째 lane에도 집계되는 결함을 실제 Service·DTO에서 재현했다. 새 정책 입력은 중복 lane을 거절하며, 기존 중복 정책도 새 결정·승인을 허용하지 않는다. 각 lane의 적격자만 승인·veto·수정 요청에 집계한다. 과거 정책과 의견을 삭제하지 않고 무관한 편집을 허용한다. 같은 사용자의 복수 역할을 금지하거나 독립 계정 수·본인 승인 정책을 새로 정의한 변경은 아니다.
+
+직접 검수 링크는 탭을 숨겼다 돌아올 때 같은 페이지의 이미지 요청이 다시 실행되지 않아 빈 화면이 남았고, 숨김 순간 진행 중이던 이미지 요청도 취소하지 않았다. 수정 전 component 회귀 11개 중 이 두 경로가 실패했다. 숨김에서는 요청을 중단하고 objectURL을 폐기하며, 복귀 후 최신 권한 확인이 성공해야 같은 페이지를 다시 요청한다. visibility와 focus 요청이 겹쳐도 복원 의도를 유지하고, 일반 focus·lease 갱신은 기존 이미지를 중복 다운로드하지 않는다. 권한 회수·대상 URL 변경 뒤 이전 이미지는 표시하지 않는다.
+
+| 실제 검증 | 결과와 범위 |
+| --- | --- |
+| 관련 단위 전체 묶음 | 단일 worker 12 suites·158 tests 통과, 실제 exit 0. 관련 제품·테스트 파일의 실행 전후 SHA-256 동일 |
+| 직접 링크 component | 위 묶음에 14개 포함. 초기 7개와 복원·취소·중첩·권한 회수·대상 변경·불필요 다운로드 방지 7개. 이미지 API와 objectURL 경계를 대체한 jsdom 검증이며 실제 PNG decode·브라우저 visibility 실행은 아님 |
+| 실제 일반 Auth·쿠키·CSRF·PostgreSQL HTTP | 새 loopback 테스트 DB의 27 tests 통과, skip 0, 실제 exit 0. 16절 회귀와 중복 정책 등록·기존 정책 새 승인 거절 포함 |
+| HTTP 원자성·이력 | 거절 전후 전체 프로젝트 GET 동일·해당 실패 mutation receipt 0행. 과거 중복 정책은 격리 PG fixture로만 복원해 검사하고 유효 aggregate를 정확히 되돌림 |
+| 정적 검사 | 변경 파일 scoped ESLint·Secretlint와 diff 검사 통과. 기존 대형 DTO는 1,220행 유지 |
+
+HTTP 실행은 Core workflow/review·DTO·API guard·관련 테스트의 시작·종료 hash를 대조했다. 소유 PostgreSQL 정상 정지·상태 코드 3·listener 부재·임시 비밀 파일과 정지한 테스트 DB 파일 삭제를 확인했다. 현재 후보의 Web 코드도 바뀌었으므로 15절의 이전 Canvas 실행과 전체 제품 코드가 같다고 표시하지 않는다. 새 경고의 실제 브라우저 화면·전체 타입·전체 하네스·production build·정상 push·원격 CI는 별도 미실행이며 조정한 검사 순서를 기다린다.
+
+## 19. Kitsu/Zou 공개 소스의 권한·공정 계약 추가 대조
+
+상태: **current — 2026-10-29의 고정 commit 정적 관찰**, 운영 서버 실행은 **미확인**이다. 공식 upstream의 Kitsu `9e83e18a2ccf2d171836be5d2db295378843d53e`와 Zou `fb38353e633ef87976ab390eadddaa223c4295a5`에서 작은 소스 네 개·27,024바이트를 별도 보관하고 Git blob SHA-1·SHA-256·출처·AGPLv3 LICENSE를 기록했다. 제품에 원문을 복제하거나 외부 코드를 실행하지 않았다.
+
+- [Kitsu 상태 선택](https://github.com/cgwire/kitsu/blob/9e83e18a2ccf2d171836be5d2db295378843d53e/src/store/modules/taskstatus.js): 역할과 프로젝트에 따라 선택 가능한 상태를 구분한다. 클라이언트 표시와 서버 인가를 같은 증거로 보지 않는다.
+- [Kitsu 공정 자동화](https://github.com/cgwire/kitsu/blob/9e83e18a2ccf2d171836be5d2db295378843d53e/src/store/modules/statusautomation.js): 공정 유형 우선순위에 따른 자동화 선택 제한을 관찰했다. 가져오지 않은 helper와 실제 자동 실행은 미확인이다.
+- [Zou 댓글 권한](https://github.com/cgwire/zou/blob/fb38353e633ef87976ab390eadddaa223c4295a5/zou/app/blueprints/comments/resources.py): task action 권한이 없더라도 언급받은 사용자의 댓글을 허용하는 좁은 경로에서는 현재 상태를 그대로 유지해야 한다. 프로젝트 역할·상태 검사와 비관리자의 대리 작성 필드 제한도 source로 관찰했다.
+- [Zou 자동화 모델](https://github.com/cgwire/zou/blob/fb38353e633ef87976ab390eadddaa223c4295a5/zou/app/models/status_automation.py): 공정·상태 trigger와 다음 상태·이전 revision 가져오기 설정을 구분한다. 실제 revision 선정·기존 결과 보존 구현은 해당 모델 밖이라 미확인이다.
+
+JavaScript 두 파일 9,597바이트만 REA의 inert 정적 분석으로 선택했다. parent Evidence는 `ev_f8be899fd90cc2b658d87ce70ae49d1b282a223fcf1c7b596c7a6b02fd080abe`, summary는 `ev_c530b562355eeed356860b8f95d8e0d02614c875c98e83814530bfba7809e9ee`다. 2 sources·1,263 AST nodes·parse 실패 0이며 generic findings 26개는 취약점 수가 아니다. graph partial·semantic unknown·미확인 관계 388개를 유지한다. Python 두 파일은 JavaScript 분석 대상으로 바꾸거나 실행하지 않았다.
+
+댓글 참여와 상태 변경 권한의 분리, 공정 자동화와 불변 revision 입력 고정은 서로 다른 계약이다. 이 공개 소스의 선언만으로 경쟁 제품 운영 동작이나 ToonStudio 대비 우열을 판정하지 않는다. 18절의 수정은 ToonStudio 자체의 실제 실패와 회귀·HTTP 결과에 근거한다. C9 production 성능·긴 실제 원고의 정밀 검수·C10 제작팀 납품 파일럿은 계속 남아 있다.
