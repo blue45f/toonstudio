@@ -13,6 +13,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // 이 계약이 지키는 파일들 (창작 게시판 + 스튜디오 공용 패널 프리미티브)
 const GUARDED_FILES = [
   "CreateWorkPage.tsx",
+  // 2026-10-27(30a4a87a·22b8d72f): 작품 페이지의 하위 섹션(댓글 스레드 포함)을 이 파일로 분리했다.
+  "publishing/CreateWorkPageSections.tsx",
   "CreateGalleryPage.tsx",
   "CreateSeriesPage.tsx",
   "CreateChallengesPage.tsx",
@@ -99,12 +101,13 @@ describe("창작 화면 a11y 계약", () => {
   it("폼 컨트롤이 접근 가능한 이름(aria-label 또는 label 연결)을 가진다", () => {
     // 작품 페이지는 댓글 작성기를 공용 스레드 컴포넌트에 위임한다. 호출자가 번역된 이름을
     // 전달하고 실제 textarea owner가 그 값을 접근 가능한 이름으로 연결하는 양쪽 경계를 지킨다.
-    const workPage = readGuarded("CreateWorkPage.tsx");
+    const workPageSections = readGuarded("publishing/CreateWorkPageSections.tsx");
     const commentComposer = readFileSync(
       join(HERE, "../../shared/components/comments/threaded-comment-section.tsx"),
       "utf-8",
     );
-    expect(workPage).toContain(
+    expect(workPageSections).toContain("<ThreadedCommentSection");
+    expect(workPageSections).toContain(
       'placeholder={translateCurrentStaticSourceText("domains.creator.CreateWorkPage", "ko", "응원의 한마디를 남겨 보세요.")}',
     );
     expect(commentComposer).toContain("aria-label={placeholder}");
