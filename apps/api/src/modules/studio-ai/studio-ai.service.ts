@@ -577,7 +577,7 @@ export class StudioAiService {
     }
     const identity = {
       userKeyHash: studioAiUserIdempotencyKeyHash(userId, idempotencyKey),
-      requestHash: studioAiCanonicalMessagesRequestHash(input),
+      requestHash: studioAiCanonicalMessagesRequestHash(input, idempotencyKey),
     };
     const providers = studioAiMessagesCandidates(input, await this.premiumAllowed(userId, "auto"));
     if (providers.length === 0) {
