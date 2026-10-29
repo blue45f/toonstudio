@@ -794,6 +794,9 @@ P1 종료 시 작가는 단순 소품과 배경 세트를 외부 Blender/SketchU
 7. VRM 0.x/1.0 meta, humanoid validation, thumbnail, license/permission UI,
 8. GLB/VRM export, 재수입 golden corpus, source hash와 geometry/material/rig loss report.
 
+2026-10-29 진행: 2(표정 편집·커스텀 표정 바인딩), 4 중 헤어 흔들림 조율, 7(메타·이용 조건·썸네일)을 생성 VRM 경로에 더했다
+([설계서](design/vrm-studio-parity-analysis-20261029.md)). 나머지 항목과 VRM 0.x 내보내기는 그대로 남아 있다.
+
 이 여덟 항목과 실제 브라우저 저장·재로드·export/reimport 증거가 없으면 “VRM Studio 대체 완료”라고 표현하지 않는다. 현재 UI의 `체형` 탭은 raw/skinned VRM bone TRS를 안전 범위에서 비파괴 조절하며 normalized pose rig와 원본 geometry/skin buffer를 변경하지 않는 단계다.
 
 ### 7.5 P3–P5: Blender급 깊이를 향한 후속 단계
