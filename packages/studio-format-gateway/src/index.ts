@@ -6,6 +6,7 @@ export * from "./svg";
 export * from "./kpp";
 export * from "./krita-bundle";
 export * from "./csp-sut";
+export * from "./chunked-sqlite-container";
 export * from "./csp-cls";
 export * from "./csp-pep-3dp";
 export * from "./csp-laf-sgs-spws";
@@ -20,6 +21,8 @@ export * from "./csp-lippreview-tos-scan-skshaper";
 export * from "./csp-tgcxs-certmdul-mobile-companion";
 export * from "./csp-urml-puppet-story-animation-roku";
 export * from "./openraster";
+export * from "./xcf";
+export * from "./xcf-layer-modes";
 export * from "./artcraft-suite-formats";
 
 export * from "./compatibility-report";

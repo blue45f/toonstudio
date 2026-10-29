@@ -1,10 +1,30 @@
 /**
- * Wave 25: REA 정적·시맨틱 역공학 기반 프리핸드 가변 폭 윤곽(perfect-freehand),
- * 수작업 스케치 이중선·7종 해칭 채우기(rough.js), Ramer-Douglas-Peucker 폴리라인 단순화(simplify-js),
- * OMT R-Tree 공간 색인(rbush) 클린룸 엔진.
+ * Wave 25: 프리핸드 가변 폭 윤곽(perfect-freehand), 수작업 스케치 이중선·해칭 채우기(rough.js),
+ * Ramer-Douglas-Peucker 폴리라인 단순화(simplify-js), 사각형 겹침 공간 질의(rbush).
  *
- * 기준일: 2026-10-26
+ * 수치 대조 상태(2026-10-29, `__tests__/studio-upstream-parity.test.ts`가 설치된 업스트림을 직접 실행):
+ * - 윤곽: `studio-perfect-freehand-stroke.ts`가 perfect-freehand 1.2.3과 좌표까지 같다.
+ * - 스케치: `studio-rough-sketch-renderer.ts`가 roughjs 4.6.6의 선·이중선·해칭 6종과 같다. dots 채움은
+ *   업스트림이 `Math.random()`을 써서 재현할 수 없어 이 모듈의 자체 설계를 그대로 쓴다.
+ * - 단순화: simplify-js 1.2.4와 점열이 같다.
+ * - 공간 질의: rbush 4.0.1과 결과 집합·트리 높이가 같지만 R-트리를 만들지 않고 선형으로 훑는다.
+ *
+ * 기준일: 2026-10-26 (수치 대조 반영 2026-10-29)
  */
+
+import {
+  getPerfectFreehandOutlinePoints,
+  getPerfectFreehandStrokePoints,
+  type PerfectFreehandOptions,
+} from "./studio-perfect-freehand-stroke";
+import {
+  ROUGH_SKETCH_DEFAULT_OPTIONS,
+  roughSketchFillPolygon,
+  roughSketchLinearPath,
+  type RoughSketchFillStyle,
+  type RoughSketchOp,
+  type RoughSketchOptions,
+} from "./studio-rough-sketch-renderer";
 
 export interface FreehandStrokePoint2D {
   readonly x: number;
@@ -242,35 +262,9 @@ export const FREEHAND_ROUGH_BRUSH_PRESETS: readonly FreehandRoughBrushPreset[] =
   preset("rough-solid-marker", "Rough 솔리드 마커", "rough-js", 15, 0.2, 0.5, false, 0, 0, false, false, 1.1, 0.9, "solid", -41, 4),
 ] as const;
 
-const RATE_OF_PRESSURE_CHANGE = 0.275;
-
 function clamp(v: number, lo: number, hi: number): number {
   if (!Number.isFinite(v)) return lo;
   return Math.max(lo, Math.min(hi, v));
-}
-
-function easeOutQuad(t: number): number {
-  const c = clamp(t, 0, 1);
-  return c * (2 - c);
-}
-
-function easeOutCubic(t: number): number {
-  const c = clamp(t, 0, 1) - 1;
-  return c * c * c + 1;
-}
-
-function rotatePointAround(
-  px: number,
-  py: number,
-  cx: number,
-  cy: number,
-  angleRad: number,
-): { readonly x: number; readonly y: number } {
-  const s = Math.sin(angleRad);
-  const c = Math.cos(angleRad);
-  const dx = px - cx;
-  const dy = py - cy;
-  return { x: cx + dx * c - dy * s, y: cy + dx * s + dy * c };
 }
 
 export interface PerfectFreehandStrokeOutlineResult {
@@ -282,7 +276,11 @@ export interface PerfectFreehandStrokeOutlineResult {
 }
 
 /**
- * `steveruizok/perfect-freehand` 역공학 가변 폭 프리핸드 윤곽 다각형 및 이차 베지어 중점 SVG 경로 합성기.
+ * 프리셋의 크기·세선화·스트림라인·테이퍼·캡을 perfect-freehand 1.2.3과 같은 수치의 윤곽 생성기에 넘겨
+ * 가변 폭 윤곽 다각형과 이차 베지어 중점 SVG 경로를 만든다. 입력은 완성된 스트로크로 본다(`last: true`).
+ *
+ * `totalLengthPx`는 스트림라인을 거친 스트로크 점의 누적 길이, `averageRadiusPx`는 윤곽에 쓴 반지름의
+ * 평균이다.
  */
 export function synthesizePerfectFreehandStrokeOutline(params: {
   readonly presetId?: FreehandRoughPresetId;
@@ -296,110 +294,33 @@ export function synthesizePerfectFreehandStrokeOutline(params: {
     return { presetId: active.id, outlinePoints: [], svgPolygonPath: "", totalLengthPx: 0, averageRadiusPx: 0 };
   }
 
-  const streamlineFactor = 0.15 + (1 - clamp(active.streamline, 0, 1)) * 0.85;
-  interface StrokeSample {
-    x: number;
-    y: number;
-    pressure: number;
-    vx: number;
-    vy: number;
-    distance: number;
-    runningLength: number;
-  }
-  const samples: StrokeSample[] = [
-    { x: raw[0]!.x, y: raw[0]!.y, pressure: clamp(raw[0]!.pressure01 ?? 0.5, 0.05, 1), vx: 1, vy: 0, distance: 0, runningLength: 0 },
-  ];
-
-  let totalLengthPx = 0;
-  for (let i = 1; i < raw.length; i += 1) {
-    const prev = samples[samples.length - 1]!;
-    const curr = raw[i]!;
-    const sx = prev.x + (curr.x - prev.x) * streamlineFactor;
-    const sy = prev.y + (curr.y - prev.y) * streamlineFactor;
-    const dist = Math.hypot(sx - prev.x, sy - prev.y);
-    if (dist < 1e-3 && i < raw.length - 1) continue;
-    totalLengthPx += dist;
-    const vx = dist > 1e-5 ? (prev.x - sx) / dist : prev.vx;
-    const vy = dist > 1e-5 ? (prev.y - sy) / dist : prev.vy;
-    prev.vx = vx;
-    prev.vy = vy;
-    samples.push({ x: sx, y: sy, pressure: clamp(curr.pressure01 ?? 0.5, 0.05, 1), vx, vy, distance: dist, runningLength: totalLengthPx });
-  }
-
-  const leftPts: { x: number; y: number }[] = [];
-  const rightPts: { x: number; y: number }[] = [];
-  let prevPressure = samples[0]!.pressure;
+  const options: PerfectFreehandOptions = {
+    size: active.sizePx,
+    thinning: active.thinning,
+    smoothing: active.smoothing,
+    streamline: active.streamline,
+    simulatePressure: active.simulatePressure,
+    start: { cap: active.capStartRound, taper: active.taperStartPx > 0 ? active.taperStartPx : false },
+    end: { cap: active.capEndRound, taper: active.taperEndPx > 0 ? active.taperEndPx : false },
+    last: true,
+  };
+  const strokePoints = getPerfectFreehandStrokePoints(
+    raw.map((p) => ({
+      x: p.x,
+      y: p.y,
+      pressure: p.pressure01 === undefined ? undefined : clamp(p.pressure01, 0, 1),
+    })),
+    options,
+  );
   let radiusSum = 0;
-  let lastRadius = active.sizePx * 0.5;
+  let radiusCount = 0;
+  const outlinePoints = getPerfectFreehandOutlinePoints(strokePoints, options, {
+    onRadius: (radius) => {
+      radiusSum += radius;
+      radiusCount += 1;
+    },
+  }).map(([x, y]) => ({ x, y }));
 
-  for (let i = 0; i < samples.length; i += 1) {
-    const pt = samples[i]!;
-    let p = pt.pressure;
-    if (active.simulatePressure) {
-      const sp = Math.min(1, pt.distance / Math.max(1, active.sizePx));
-      p = Math.min(1, prevPressure + (Math.min(1, 1 - sp) - prevPressure) * (sp * RATE_OF_PRESSURE_CHANGE));
-      prevPressure = p;
-    }
-    const baseRadius = Math.max(0.25, active.sizePx * clamp(0.5 - active.thinning * (0.5 - p), 0.05, 1));
-    const ts = active.taperStartPx > 0 ? easeOutQuad(Math.min(1, pt.runningLength / active.taperStartPx)) : 1;
-    const te = active.taperEndPx > 0 ? easeOutCubic(Math.min(1, (totalLengthPx - pt.runningLength) / active.taperEndPx)) : 1;
-    const radius = Math.max(0.15, baseRadius * Math.min(ts, te));
-    if (i === samples.length - 1) lastRadius = radius;
-    radiusSum += radius;
-
-    const nextPt = samples[Math.min(samples.length - 1, i + 1)]!;
-    const dot = pt.vx * nextPt.vx + pt.vy * nextPt.vy;
-    const nx = -pt.vy;
-    const ny = pt.vx;
-
-    if (i > 0 && i < samples.length - 1 && dot < 0) {
-      const offX = nx * radius;
-      const offY = ny * radius;
-      for (let step = 0; step <= 13; step += 1) {
-        const t = step / 13;
-        leftPts.push(rotatePointAround(pt.x - offX, pt.y - offY, pt.x, pt.y, Math.PI * t));
-        rightPts.push(rotatePointAround(pt.x + offX, pt.y + offY, pt.x, pt.y, -Math.PI * t));
-      }
-    } else {
-      leftPts.push({ x: pt.x - nx * radius, y: pt.y - ny * radius });
-      rightPts.push({ x: pt.x + nx * radius, y: pt.y + ny * radius });
-    }
-  }
-
-  const firstLeft = leftPts[0]!;
-  const firstRight = rightPts[0]!;
-  const startCap: { x: number; y: number }[] = [];
-  if (active.taperStartPx > 0) {
-    startCap.push({ x: samples[0]!.x, y: samples[0]!.y });
-  } else if (active.capStartRound) {
-    const cx = (firstLeft.x + firstRight.x) * 0.5;
-    const cy = (firstLeft.y + firstRight.y) * 0.5;
-    for (let step = 1; step <= 13; step += 1) {
-      startCap.push(rotatePointAround(firstRight.x, firstRight.y, cx, cy, Math.PI * (step / 13)));
-    }
-  } else {
-    const dx = firstLeft.x - firstRight.x;
-    const dy = firstLeft.y - firstRight.y;
-    startCap.push({ x: firstRight.x - dy * 0.5, y: firstRight.y + dx * 0.5 }, { x: firstLeft.x - dy * 0.5, y: firstLeft.y + dx * 0.5 });
-  }
-
-  const lastSample = samples[samples.length - 1]!;
-  const endCap: { x: number; y: number }[] = [];
-  const endNx = -lastSample.vy;
-  const endNy = lastSample.vx;
-  if (active.taperEndPx > 0) {
-    endCap.push({ x: lastSample.x, y: lastSample.y });
-  } else if (active.capEndRound) {
-    const startX = lastSample.x - endNx * lastRadius;
-    const startY = lastSample.y - endNy * lastRadius;
-    for (let step = 1; step < 29; step += 1) {
-      endCap.push(rotatePointAround(startX, startY, lastSample.x, lastSample.y, Math.PI * 3 * (step / 29)));
-    }
-  } else {
-    endCap.push({ x: lastSample.x - endNx * lastRadius, y: lastSample.y - endNy * lastRadius }, { x: lastSample.x + endNx * lastRadius, y: lastSample.y + endNy * lastRadius });
-  }
-
-  const outlinePoints = [...leftPts, ...endCap, ...rightPts.slice().reverse(), ...startCap];
   const pathParts: string[] = [];
   if (outlinePoints.length >= 2) {
     const p0 = outlinePoints[0]!;
@@ -417,13 +338,15 @@ export function synthesizePerfectFreehandStrokeOutline(params: {
     presetId: active.id,
     outlinePoints,
     svgPolygonPath: pathParts.join(" "),
-    totalLengthPx: Math.round(totalLengthPx * 100) / 100,
-    averageRadiusPx: Math.round((radiusSum / Math.max(1, samples.length)) * 100) / 100,
+    totalLengthPx: Math.round((strokePoints[strokePoints.length - 1]?.runningLength ?? 0) * 100) / 100,
+    averageRadiusPx: Math.round((radiusSum / Math.max(1, radiusCount)) * 100) / 100,
   };
 }
 
 /**
- * `rough-stuff/rough` Park-Miller Lehmer LCG PRNG (`seed = Math.imul(48271, seed) & 0x7fffffff`).
+ * roughjs `Random`과 같은 Park-Miller Lehmer 난수(`seed = Math.imul(48271, seed)`의 하위 31비트).
+ * 양의 정수 시드에서 업스트림 수열과 같다(대조 테스트가 시드 여러 개로 100만 번 비교). 시드 0은 업스트림이
+ * `Math.random()`으로 넘어가지만 여기서는 고정 시드로 바꿔 결과를 재현 가능하게 둔다.
  */
 export class RoughLehmerPrng {
   private seed: number;
@@ -465,86 +388,65 @@ export interface RoughSketchySynthesisResult {
   readonly presetId: FreehandRoughPresetId;
   readonly fillStyle: RoughFillStyle;
   readonly doubleLineBeziers: readonly RoughCubicBezierPass[];
+  /** 거칠게 만들기 전의 직선 선분. dots는 점 대신 짧은 대각선, solid는 다각형 변이다. */
   readonly hachureSegments: readonly RoughHachureSegment[];
+  /** 해칭 채움을 거칠게 그린 곡선(roughjs `fillSketch` 연산). dots·solid는 비어 있다. */
+  readonly fillSketchBeziers: readonly RoughCubicBezierPass[];
   readonly svgStrokePath: string;
 }
 
-function generateRoughSingleLinePass(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  roughness: number,
-  bowing: number,
-  maxRandomnessOffset: number,
-  divergePoint: number,
-  moveGain: number,
-  prng: RoughLehmerPrng,
-): RoughCubicBezierPass {
-  const lenSq = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-  const len = Math.sqrt(lenSq);
-  const damping = len < 200 ? 1 : len > 500 ? 0.4 : -0.0016668 * len + 1.233334;
-  let maxOff = maxRandomnessOffset;
-  if (maxOff * maxOff * 100 > lenSq) maxOff = len / 10;
-  const halfOff = maxOff * 0.5;
-  const bowX = (bowing * maxRandomnessOffset * (y2 - y1)) / 200;
-  const bowY = (bowing * maxRandomnessOffset * (x1 - x2)) / 200;
-  const off = () => prng.offset(-halfOff, halfOff, roughness * damping);
-
-  return {
-    x0: x1 + off() * moveGain,
-    y0: y1 + off() * moveGain,
-    cp1x: bowX + x1 + (x2 - x1) * divergePoint + off(),
-    cp1y: bowY + y1 + (y2 - y1) * divergePoint + off(),
-    cp2x: bowX + x1 + 2 * (x2 - x1) * divergePoint + off(),
-    cp2y: bowY + y1 + 2 * (y2 - y1) * divergePoint + off(),
-    x1: x2 + off(),
-    y1: y2 + off(),
-  };
+function opsToBezierPasses(ops: readonly RoughSketchOp[]): RoughCubicBezierPass[] {
+  const passes: RoughCubicBezierPass[] = [];
+  let start: readonly [number, number] | null = null;
+  for (const op of ops) {
+    if (op.op === "move") {
+      start = [op.data[0]!, op.data[1]!];
+    } else if (op.op === "bcurveTo" && start) {
+      passes.push({
+        x0: start[0],
+        y0: start[1],
+        cp1x: op.data[0]!,
+        cp1y: op.data[1]!,
+        cp2x: op.data[2]!,
+        cp2y: op.data[3]!,
+        x1: op.data[4]!,
+        y1: op.data[5]!,
+      });
+    }
+  }
+  return passes;
 }
 
-function scanlinePolygonHachureLines(
-  polygon: readonly { readonly x: number; readonly y: number }[],
-  angleDeg: number,
-  gapPx: number,
-): RoughHachureSegment[] {
-  if (polygon.length < 3) return [];
-  const rotRad = ((angleDeg + 90) * Math.PI) / 180;
-  const rotated = polygon.map((p) => rotatePointAround(p.x, p.y, 0, 0, rotRad));
-  const edges: { ymin: number; ymax: number; x: number; islope: number }[] = [];
-  for (let i = 0; i < rotated.length; i += 1) {
-    const p1 = rotated[i]!;
-    const p2 = rotated[(i + 1) % rotated.length]!;
-    if (Math.abs(p1.y - p2.y) < 1e-4) continue;
-    const ymin = Math.min(p1.y, p2.y);
-    const ymax = Math.max(p1.y, p2.y);
-    edges.push({ ymin, ymax, x: ymin === p1.y ? p1.x : p2.x, islope: (p2.x - p1.x) / (p2.y - p1.y) });
-  }
-  if (edges.length === 0) return [];
-  edges.sort((a, b) => (a.ymin !== b.ymin ? a.ymin - b.ymin : a.x - b.x));
+function solidFillEdges(ops: readonly RoughSketchOp[]): RoughHachureSegment[] {
+  const pts = ops.map((op) => ({ x: op.data[0]!, y: op.data[1]! }));
+  if (pts.length < 2) return [];
+  return pts.map((p, i) => {
+    const q = pts[(i + 1) % pts.length]!;
+    return { x1: p.x, y1: p.y, x2: q.x, y2: q.y };
+  });
+}
 
-  const minY = edges[0]!.ymin;
-  const maxY = edges.reduce((acc, e) => Math.max(acc, e.ymax), minY);
-  const step = Math.max(1.5, gapPx);
-  const lines: RoughHachureSegment[] = [];
-
-  for (let y = minY; y <= maxY; y += step) {
-    const xs: number[] = [];
-    for (const e of edges) {
-      if (y >= e.ymin && y < e.ymax) xs.push(e.x + (y - e.ymin) * e.islope);
-    }
-    xs.sort((a, b) => a - b);
-    for (let k = 0; k + 1 < xs.length; k += 2) {
-      const a = rotatePointAround(xs[k]!, y, 0, 0, -rotRad);
-      const b = rotatePointAround(xs[k + 1]!, y, 0, 0, -rotRad);
-      lines.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+function dotTickSegments(baseLines: readonly RoughHachureSegment[], gapPx: number): RoughHachureSegment[] {
+  const ticks: RoughHachureSegment[] = [];
+  for (const seg of baseLines) {
+    const len = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
+    const count = Math.max(1, Math.floor(len / gapPx));
+    for (let c = 0; c < count; c += 1) {
+      const t = (c + 0.5) / count;
+      const cx = seg.x1 + (seg.x2 - seg.x1) * t;
+      const cy = seg.y1 + (seg.y2 - seg.y1) * t;
+      ticks.push({ x1: cx - 0.8, y1: cy - 0.8, x2: cx + 0.8, y2: cy + 0.8 });
     }
   }
-  return lines;
+  return ticks;
 }
 
 /**
- * `rough-stuff/rough` 이중선(doubleLine) 3차 베지어 오프셋 및 7종 해칭 합성기.
+ * 스트로크를 roughjs 이중선으로 거칠게 그리고, 다각형을 프리셋의 채움 방식으로 채운다.
+ *
+ * 난수는 roughjs `RoughGenerator.polygon`과 같은 순서로 쓴다(외곽선 먼저, 채움 나중). 해칭 6종은 같은
+ * 시드·옵션에서 roughjs와 연산 좌표가 같다. dots는 업스트림이 `Math.random()`과 타원 연산을 써서 재현할
+ * 수 없으므로, 같은 해칭 선분 위에 일정 간격으로 짧은 대각선을 놓는 자체 설계다.
  */
 export function synthesizeRoughSketchyStrokeAndHachureFill(params: {
   readonly presetId?: FreehandRoughPresetId;
@@ -556,67 +458,41 @@ export function synthesizeRoughSketchyStrokeAndHachureFill(params: {
     FREEHAND_ROUGH_BRUSH_PRESETS.find((item) => item.id === params.presetId) ??
     FREEHAND_ROUGH_BRUSH_PRESETS[3]!;
   const prng = new RoughLehmerPrng(params.seed ?? 20261026);
+  const options: RoughSketchOptions = {
+    ...ROUGH_SKETCH_DEFAULT_OPTIONS,
+    roughness: active.roughness,
+    bowing: active.bowing,
+    hachureAngle: active.hachureAngleDeg,
+    hachureGap: active.hachureGapPx,
+  };
   const pts = params.strokePoints.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
-  const doubleLineBeziers: RoughCubicBezierPass[] = [];
-  for (let i = 0; i + 1 < pts.length; i += 1) {
-    const a = pts[i]!;
-    const b = pts[i + 1]!;
-    doubleLineBeziers.push(
-      generateRoughSingleLinePass(a.x, a.y, b.x, b.y, active.roughness, active.bowing, 2.2, 0.2 + prng.next() * 0.2, 1.0, prng),
-      generateRoughSingleLinePass(a.x, a.y, b.x, b.y, active.roughness, active.bowing, 2.2, 0.2 + prng.next() * 0.2, 0.5, prng),
-    );
-  }
+  const strokeSet = roughSketchLinearPath(
+    pts.map((p): [number, number] => [p.x, p.y]),
+    false,
+    options,
+    prng,
+  );
+  const doubleLineBeziers = opsToBezierPasses(strokeSet.ops);
 
   const polygon =
     params.fillPolygon && params.fillPolygon.length >= 3
       ? params.fillPolygon
       : [{ x: 120, y: 8 }, { x: 158, y: 8 }, { x: 158, y: 36 }, { x: 120, y: 36 }];
-  const baseLines = scanlinePolygonHachureLines(polygon, active.hachureAngleDeg, active.hachureGapPx);
-  const hachureSegments: RoughHachureSegment[] = [];
+  const polygonPoints = polygon.map((p): [number, number] => [p.x, p.y]);
 
-  if (active.fillStyle === "hachure" || active.fillStyle === "solid") {
-    hachureSegments.push(...baseLines);
-  } else if (active.fillStyle === "zigzag") {
-    for (let i = 0; i < baseLines.length; i += 1) {
-      const seg = baseLines[i]!;
-      hachureSegments.push(seg);
-      if (i + 1 < baseLines.length) {
-        const next = baseLines[i + 1]!;
-        hachureSegments.push(i % 2 === 0 ? { x1: seg.x2, y1: seg.y2, x2: next.x2, y2: next.y2 } : { x1: seg.x1, y1: seg.y1, x2: next.x1, y2: next.y1 });
-      }
-    }
-  } else if (active.fillStyle === "cross-hatch") {
-    hachureSegments.push(...baseLines, ...scanlinePolygonHachureLines(polygon, active.hachureAngleDeg + 90, active.hachureGapPx));
-  } else if (active.fillStyle === "dots") {
-    for (const seg of baseLines) {
-      const len = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
-      const count = Math.max(1, Math.floor(len / active.hachureGapPx));
-      for (let c = 0; c < count; c += 1) {
-        const t = (c + 0.5) / count;
-        const cx = seg.x1 + (seg.x2 - seg.x1) * t;
-        const cy = seg.y1 + (seg.y2 - seg.y1) * t;
-        hachureSegments.push({ x1: cx - 0.8, y1: cy - 0.8, x2: cx + 0.8, y2: cy + 0.8 });
-      }
-    }
-  } else if (active.fillStyle === "dashed") {
-    for (const seg of baseLines) {
-      const len = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
-      const dashLen = Math.max(3, active.hachureGapPx * 1.2);
-      const step = dashLen * 1.75;
-      const count = Math.max(1, Math.floor(len / step));
-      const ux = len > 1e-4 ? (seg.x2 - seg.x1) / len : 1;
-      const uy = len > 1e-4 ? (seg.y2 - seg.y1) / len : 0;
-      for (let c = 0; c < count; c += 1) {
-        const s = c * step;
-        const e = Math.min(len, s + dashLen);
-        hachureSegments.push({ x1: seg.x1 + ux * s, y1: seg.y1 + uy * s, x2: seg.x1 + ux * e, y2: seg.y1 + uy * e });
-      }
-    }
-  } else if (active.fillStyle === "zigzag-line") {
-    for (const seg of baseLines) {
-      const mx = (seg.x1 + seg.x2) * 0.5 + prng.offset(-2.2, 2.2, active.roughness);
-      const my = (seg.y1 + seg.y2) * 0.5 + prng.offset(-2.2, 2.2, active.roughness);
-      hachureSegments.push({ x1: seg.x1, y1: seg.y1, x2: mx, y2: my }, { x1: mx, y1: my, x2: seg.x2, y2: seg.y2 });
+  let hachureSegments: RoughHachureSegment[];
+  let fillSketchBeziers: RoughCubicBezierPass[] = [];
+  if (active.fillStyle === "solid") {
+    hachureSegments = solidFillEdges(roughSketchFillPolygon(polygonPoints, "solid", options, prng).ops);
+  } else {
+    const style: RoughSketchFillStyle = active.fillStyle === "dots" ? "hachure" : active.fillStyle;
+    const fillSet = roughSketchFillPolygon(polygonPoints, style, options, prng);
+    const baseLines = (fillSet.baseSegments ?? []).map(([x1, y1, x2, y2]) => ({ x1, y1, x2, y2 }));
+    if (active.fillStyle === "dots") {
+      hachureSegments = dotTickSegments(baseLines, active.hachureGapPx);
+    } else {
+      hachureSegments = baseLines;
+      fillSketchBeziers = opsToBezierPasses(fillSet.ops);
     }
   }
 
@@ -625,6 +501,7 @@ export function synthesizeRoughSketchyStrokeAndHachureFill(params: {
     fillStyle: active.fillStyle,
     doubleLineBeziers,
     hachureSegments,
+    fillSketchBeziers,
     svgStrokePath: doubleLineBeziers
       .map((b) => `M ${b.x0.toFixed(1)} ${b.y0.toFixed(1)} C ${b.cp1x.toFixed(1)} ${b.cp1y.toFixed(1)}, ${b.cp2x.toFixed(1)} ${b.cp2y.toFixed(1)}, ${b.x1.toFixed(1)} ${b.y1.toFixed(1)}`)
       .join(" "),
@@ -652,7 +529,8 @@ function getSqSegDist(p: FreehandStrokePoint2D, p1: FreehandStrokePoint2D, p2: F
 }
 
 /**
- * `mourner/simplify-js` 2단계(방사형 거리 필터 + 재귀 Ramer-Douglas-Peucker) 스트로크 단순화기.
+ * simplify-js 1.2.4와 점열이 같은 2단계(방사형 거리 필터 + 재귀 Ramer-Douglas-Peucker) 스트로크 단순화기.
+ * 기본 허용오차만 다르다(업스트림 1px, 여기 1.5px). 대조할 때는 허용오차를 명시한다.
  */
 export function simplifyStrokePolylineRdp(
   points: readonly FreehandStrokePoint2D[],
@@ -711,7 +589,11 @@ export interface SpatialStrokeBoxItem {
 }
 
 /**
- * `mourner/rbush` OMT Bulk-Loaded 2D 공간 인덱스 쿼리.
+ * 사각형 겹침 질의. rbush 4.0.1과 결과 집합(경계가 닿는 경우 포함)과 트리 높이가 같다.
+ *
+ * R-트리를 만들지 않는다. `minX` 순으로 정렬한 뒤 모든 항목을 한 번씩 검사하므로 질의 한 번이 항목 수에
+ * 비례한다. `matchedIds` 순서도 rbush의 순회 순서가 아니라 `minX`, `minY` 순이다. 항목이 많거나 질의가
+ * 잦으면 `studio-engine-scene-spatial-index.ts`처럼 rbush를 직접 쓴다.
  */
 export function queryStrokeSpatialRTreeBBox(params: {
   readonly items: readonly SpatialStrokeBoxItem[];
