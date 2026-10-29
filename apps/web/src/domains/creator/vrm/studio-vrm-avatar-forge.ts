@@ -146,6 +146,7 @@ export type AvatarForgeFaceAccent = {
   intensity: number;
 };
 
+type AvatarForgeAuthoringJson = null | boolean | number | string | readonly AvatarForgeAuthoringJson[] | { readonly [key: string]: AvatarForgeAuthoringJson }; // 장면 문서 StudioVrmCanonicalData 와 같은 JSON 모양(코어는 장면 문서를 가져오지 않는다)
 export type AvatarForgeState = {
   version: typeof AVATAR_FORGE_VERSION;
   presetId?: string;
@@ -171,6 +172,7 @@ export type AvatarForgeState = {
   legacyHipWidth?: number;
   hair: AvatarForgeHairParams;
   faceAccents?: AvatarForgeFaceAccent[];
+  authoring?: { readonly [key: string]: AvatarForgeAuthoringJson }; // 생성 VRM 전용 표정·흔들림 원본(JSON 으로만 들어온다: 장면 문서·JSON.parse·검증된 설정). 보관만 하고 readAvatarForgeVrmAuthoring 로 읽는다.
 };
 
 export type AvatarForgeNumericLimit = {
@@ -473,6 +475,7 @@ const BODY_PRESET_IDS = new Set<AvatarForgeBodyPresetId>(
   AVATAR_FORGE_BODY_PRESETS.map((option) => option.id),
 );
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const ACCENT_INTENSITY_LIMIT: AvatarForgeNumericLimit = { label: "강도", min: 0, max: 1, step: 0.01 };
 
 function clampNumber(value: unknown, limit: AvatarForgeNumericLimit, fallback: number) {
   const numeric = typeof value === "number" ? value : Number(value);
@@ -682,13 +685,10 @@ export function sanitizeAvatarForgeState(raw: unknown): AvatarForgeState {
         id: fallback.id,
         enabled: entry.enabled === true,
         color: color(entry.color, fallback.color),
-        intensity: clampNumber(
-          entry.intensity,
-          { label: "강도", min: 0, max: 1, step: 0.01 },
-          fallback.intensity
-        ),
+        intensity: clampNumber(entry.intensity, ACCENT_INTENSITY_LIMIT, fallback.intensity),
       };
     }),
+    ...(isRecord(source.authoring) ? { authoring: source.authoring as NonNullable<AvatarForgeState["authoring"]> } : {}),
   };
 }
 

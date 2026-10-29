@@ -1,3 +1,4 @@
+import { StudioVrmExportError } from "./studio-vrm-export-error";
 import {
   inspectGeneratedVrmHumanoid,
   reloadGeneratedVrmAsHumanoid,
@@ -6,6 +7,7 @@ import {
   createStudioVrmGenerateRecipe,
   exportStudioVrmFromGenerateRecipe,
   type StudioVrmGenerateRecipe,
+  type StudioVrmGenerateRecipeInput,
 } from "./studio-vrm-generate-recipe";
 
 export const STUDIO_VRM_GENERATE_UNAVAILABLE_CODE = "vrm_generate_mcp_unavailable" as const;
@@ -78,11 +80,7 @@ export function resolveStudioVrmGenerateMcpHost(
 }
 
 export async function generateStudioVrmCharacter(
-  input: {
-    readonly presetId?: string | null;
-    readonly state?: unknown;
-    readonly allowDefaultPreset?: boolean;
-  } = {},
+  input: StudioVrmGenerateRecipeInput = {},
   dependencies: {
     readonly host?: StudioVrmGenerateMcpHost;
   } = {},
@@ -116,11 +114,13 @@ export async function generateStudioVrmCharacter(
       vrmVersion: inspection.vrmVersion,
       isCompleteHumanoid: inspection.isCompleteHumanoid,
     };
-  } catch {
+  } catch (error) {
     return {
       status: "unavailable",
       code: STUDIO_VRM_GENERATE_UNAVAILABLE_CODE,
-      message: STUDIO_VRM_GENERATE_UNAVAILABLE_MESSAGE,
+      // 내보내기 검증이 거절했다면(아바타 정보·썸네일 등) 고정 한글 문구로 그 이유를 알린다.
+      // 호스트 연결 장애만 연결 안내로 묶는다.
+      message: error instanceof StudioVrmExportError ? error.message : STUDIO_VRM_GENERATE_UNAVAILABLE_MESSAGE,
       hostId: host.id,
     };
   }
