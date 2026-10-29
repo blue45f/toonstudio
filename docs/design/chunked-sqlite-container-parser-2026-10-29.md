@@ -125,7 +125,7 @@ ToonStudio는 창작자가 보유한 Clip Studio Paint 문서(`.clip`)와 미리
    샘플이 없으면 샘플별 테스트는 만들어지지 않고 로컬 디렉터리의 Git 무시 규칙만 확인한다.
 
    ```bash
-   pnpm exec vitest run tests/format-gateway/chunked-container-local-corpus.test.ts
+   pnpm exec vitest run tests/format-gateway/local-samples-corpus.test.ts
    ```
 
 4. 결과로 H1–H4를 Observed / Assumptions / Unknowns에서 옮기고, 맞지 않는 가정은 파서를 고친다.

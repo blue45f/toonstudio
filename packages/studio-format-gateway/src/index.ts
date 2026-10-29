@@ -21,6 +21,8 @@ export * from "./csp-lippreview-tos-scan-skshaper";
 export * from "./csp-tgcxs-certmdul-mobile-companion";
 export * from "./csp-urml-puppet-story-animation-roku";
 export * from "./openraster";
+export * from "./xcf";
+export * from "./xcf-layer-modes";
 export * from "./artcraft-suite-formats";
 
 export * from "./compatibility-report";
