@@ -253,3 +253,68 @@ describe("필터 갤러리 · 노이즈·흐림 계열 의미", () => {
     expect(output.data[(4 * 9 + 4) * 4]!).toBeLessThan(200);
   });
 });
+
+describe("필터 갤러리 · 색·노이즈 리뷰 회귀", () => {
+  it("레티넥스는 투명 픽셀의 숨은 색이 바뀌어도 보이는 결과가 같다", () => {
+    const make = (hidden: number): StudioFilterGalleryImage => {
+      const image = solid(48, 48, [hidden, hidden, hidden, 0]);
+      for (let y = 12; y < 36; y += 1) {
+        for (let x = 12; x < 36; x += 1) image.data.set([90 + ((x * 7 + y * 3) % 60), 120, 150 - ((x + y) % 40), 255], (y * 48 + x) * 4);
+      }
+      return image;
+    };
+    const black = run(byId("color.retinex"), undefined, make(0));
+    const white = run(byId("color.retinex"), undefined, make(255));
+    for (let offset = 0; offset < black.data.length; offset += 4) {
+      if (black.data[offset + 3] === 0) continue;
+      expect([white.data[offset], white.data[offset + 1], white.data[offset + 2]]).toEqual([black.data[offset], black.data[offset + 1], black.data[offset + 2]]);
+    }
+  });
+
+  it("중앙값 자르기는 너비가 표본 간격의 배수여도 표본 열 사이의 좁은 그림을 놓치지 않는다", () => {
+    // 512×512 는 예전 평면 간격(4)이 너비를 나눠 x ≡ 0 (mod 4) 열만 뽑혔다. x = 1..3 의 빨간 기둥은 팔레트가 비었다.
+    const image = solid(512, 512, [0, 0, 0, 0]);
+    for (let y = 0; y < 512; y += 1) for (let x = 1; x <= 3; x += 1) image.data.set([230, 20, 30, 255], (y * 512 + x) * 4);
+    const palette = medianCutPalette(image, 4);
+    expect(palette).not.toBeNull();
+    expect(Array.from(palette!.slice(0, 3))).toEqual([230, 20, 30]);
+  });
+
+  it("HSV 노이즈는 무채색 바탕에 한 색(빨강)만 입히지 않는다", () => {
+    const output = run(byId("noise.hsv-noise"), { holdness: 2, hue: 8, saturation: 60, value: 0 }, solid(64, 64, [200, 200, 200, 255]));
+    let red = 0, green = 0, blue = 0;
+    for (let offset = 0; offset < output.data.length; offset += 4) {
+      const [r, g, b] = [output.data[offset]!, output.data[offset + 1]!, output.data[offset + 2]!];
+      if (r > g && r > b) red += 1; else if (g > r && g > b) green += 1; else if (b > r && b > g) blue += 1;
+    }
+    expect(green).toBeGreaterThan(200);
+    expect(blue).toBeGreaterThan(200);
+    expect(red).toBeGreaterThan(200);
+  });
+
+  it("던지기는 여러 회차에서도 던진 색의 채널이 고르기 확률에 묶이지 않는다", () => {
+    const output = run(byId("noise.hurl"), { randomization: 20, repeat: 3 }, solid(128, 128, [128, 128, 128, 255]));
+    const hurled = [0, 0, 0].map(() => [] as number[]);
+    for (let offset = 0; offset < output.data.length; offset += 4) {
+      if (output.data[offset] === 128 && output.data[offset + 1] === 128 && output.data[offset + 2] === 128) continue;
+      for (let channel = 0; channel < 3; channel += 1) hurled[channel]!.push(output.data[offset + channel]!);
+    }
+    for (const values of hurled) {
+      const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+      expect(Math.abs(mean - 127.5)).toBeLessThan(8);
+    }
+  });
+
+  it("고르기는 많은 회차에서도 이웃을 한쪽으로만 고르지 않는다", () => {
+    const image = solid(64, 64, [0, 0, 0, 255]);
+    for (let y = 0; y < 64; y += 1) for (let x = 0; x < 64; x += 1) image.data.set([x * 4, y * 4, 0, 255], (y * 64 + x) * 4);
+    const output = run(byId("noise.pick"), { randomization: 50, repeat: 8 }, image);
+    let shiftX = 0, shiftY = 0;
+    for (let offset = 0; offset < output.data.length; offset += 4) {
+      shiftX += output.data[offset]! - image.data[offset]!;
+      shiftY += output.data[offset + 1]! - image.data[offset + 1]!;
+    }
+    expect(Math.abs(shiftX / 4096)).toBeLessThan(0.5);
+    expect(Math.abs(shiftY / 4096)).toBeLessThan(0.5);
+  });
+});

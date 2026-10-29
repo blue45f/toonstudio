@@ -122,17 +122,20 @@ function paletteQuantizer(palette: Float32Array): Quantizer {
 }
 
 /**
- * Heckbert 중앙값 자르기. 보이는 픽셀을 최대 65,536개 표본으로 모은 뒤, "범위 × 개수"가 가장 큰 상자를 가장 긴 축의
+ * Heckbert 중앙값 자르기. 보이는 픽셀을 약 65,536개 표본으로 모은 뒤, "범위 × 개수"가 가장 큰 상자를 가장 긴 축의
  * 중앙값에서 둘로 나누기를 원하는 색 수가 될 때까지 되풀이하고, 상자마다 평균색을 팔레트로 쓴다. 보이는 픽셀이 없으면 null.
+ * 표본은 가로·세로 같은 간격의 격자에서 행마다 시작 열을 바꿔 고른다 — 평면 색인을 일정 간격으로 고르면 너비가 간격의
+ * 배수일 때 같은 열만 뽑혀 그 사이의 색(세로 막대, 좁은 그림)이 팔레트에서 빠진다.
  */
 export function medianCutPalette(image: StudioFilterGalleryImage, colors: number): Float32Array | null {
   const { width, height, data } = image;
-  const total = width * height;
-  const stride = Math.max(1, Math.floor(total / 65536));
+  const step = Math.max(1, Math.floor(Math.sqrt((width * height) / 65536)));
   const samples: number[] = [];
-  for (let index = 0; index < total; index += stride) {
-    const offset = index * 4;
-    if (data[offset + 3]! >= VISIBLE_ALPHA) samples.push(data[offset]!, data[offset + 1]!, data[offset + 2]!);
+  for (let y = 0, row = 0; y < height; y += step, row += 1) {
+    for (let x = (row * 5) % step; x < width; x += step) {
+      const offset = (y * width + x) * 4;
+      if (data[offset + 3]! >= VISIBLE_ALPHA) samples.push(data[offset]!, data[offset + 1]!, data[offset + 2]!);
+    }
   }
   const sampleCount = samples.length / 3;
   if (sampleCount === 0) return null;
@@ -539,13 +542,27 @@ const retinex: StudioFilterGalleryEffectDef = {
     }
     const result = [new Float32Array(count), new Float32Array(count), new Float32Array(count)] as const;
     const blurred = new Float32Array(count);
-    for (let channel = 0; channel < 3; channel += 1) {
-      const output = result[channel];
-      for (const radius of radii) {
-        for (let index = 0; index < count; index += 1) blurred[index] = data[index * 4 + channel]!;
+    // 둘레(surround)는 알파로 가중한 평균이다 — 투명 픽셀의 숨은 색이 보이는 픽셀 근처로 새어 테두리가 밝아지지 않게 한다.
+    // 완전히 불투명한 이미지는 가중치가 모두 1 이라 가중 없이 같은 결과를 낸다.
+    let opaque = true;
+    for (let index = 0; index < count && opaque; index += 1) opaque = data[index * 4 + 3] === 255;
+    const coverage = opaque ? null : new Float32Array(count);
+    for (const radius of radii) {
+      if (coverage) {
+        for (let index = 0; index < count; index += 1) coverage[index] = data[index * 4 + 3]! / 255;
+        gaussianPlane(coverage, width, height, radius);
+      }
+      for (let channel = 0; channel < 3; channel += 1) {
+        const output = result[channel];
+        for (let index = 0; index < count; index += 1) {
+          blurred[index] = coverage ? (data[index * 4 + channel]! * data[index * 4 + 3]!) / 255 : data[index * 4 + channel]!;
+        }
         gaussianPlane(blurred, width, height, radius);
         for (let index = 0; index < count; index += 1) {
-          output[index] = output[index]! + (Math.log1p(data[index * 4 + channel]!) - Math.log1p(blurred[index]!)) / radii.length;
+          const value = data[index * 4 + channel]!;
+          const weight = coverage ? coverage[index]! : 1;
+          const surround = !coverage ? blurred[index]! : weight > 1e-6 ? blurred[index]! / weight : value;
+          output[index] = output[index]! + (Math.log1p(value) - Math.log1p(surround)) / radii.length;
         }
       }
     }

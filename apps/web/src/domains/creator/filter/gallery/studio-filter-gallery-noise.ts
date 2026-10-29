@@ -41,7 +41,8 @@ const hurl: StudioFilterGalleryEffectDef = {
     for (let pass = 0; pass < repeat; pass += 1) {
       const seed = context.seed ^ (0x1f2e3d4c + pass * 977);
       for (let index = 0; index < pixels; index += 1) {
-        if (hash2(index, pass, seed) >= chance) continue;
+        // 고르기 해시는 색 채널 해시(1·2·3)와 겹치지 않는 0 번 줄을 쓴다(시드가 이미 회차마다 다르다).
+        if (hash2(index, 0, seed) >= chance) continue;
         const offset = index * 4;
         data[offset] = hash2(index, 1, seed) * 256;
         data[offset + 1] = hash2(index, 2, seed) * 256;
@@ -68,7 +69,8 @@ const pick: StudioFilterGalleryEffectDef = {
       for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
           const index = y * width + x;
-          if (hash2(index, pass, seed) >= chance) continue;
+          // 고르기 해시(0 번 줄)와 이웃 선택 해시(7 번 줄)를 나눠, 고른 픽셀의 이웃 선택이 한쪽으로 치우치지 않게 한다.
+          if (hash2(index, 0, seed) >= chance) continue;
           const choice = Math.floor(hash2(index, 7, seed) * 9);
           const sx = clamp(x + (choice % 3) - 1, 0, width - 1), sy = clamp(y + Math.floor(choice / 3) - 1, 0, height - 1);
           const from = (sy * width + sx) * 4, to = index * 4;
@@ -139,7 +141,10 @@ const hsvNoise: StudioFilterGalleryEffectDef = {
     const { data } = image;
     for (let offset = 0; offset < data.length; offset += 4) {
       rgbToHsv(data[offset]!, data[offset + 1]!, data[offset + 2]!, hsv);
-      const hue = hsv[0]! + jitter() * hueRange;
+      // 무채색(채도 0)은 색상이 정해지지 않아 rgbToHsv 가 빨강(0)을 낸다. 시드 고정 난수 색상으로 시작해야 회색·흰 바탕의
+      // 채도 흔들림이 한 색(분홍)으로 쏠리지 않는다(GEGL HSV 노이즈와 같은 처리).
+      const baseHue = hsv[1]! > 0 ? hsv[0]! : random();
+      const hue = baseHue + jitter() * hueRange;
       const saturation = hsv[1]! + jitter() * saturationRange;
       const value = hsv[2]! + jitter() * valueRange;
       hsvToRgb(hue, saturation, value, rgb);
