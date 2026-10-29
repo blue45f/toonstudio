@@ -16,22 +16,13 @@ import { z } from "zod";
 import { assistModelSupportsEffort } from "@/shared/ai/assist/assist-models";
 import { cleanMultilineTextDetailed, cleanSingleLineText, cleanSingleLineTextDetailed } from "@/shared/ai/assist/assist-text";
 
+import { LOCALIZE_LANGUAGES, type LocalizeLanguageId } from "./assist-localize-languages";
+
 import type { AssistEffortDepth } from "@/shared/ai/assist/assist-effort-presets";
 import type Anthropic from "@anthropic-ai/sdk";
 
-export const LOCALIZE_LANGUAGES = Object.freeze([
-  { id: "ko", name: "한국어", english: "Korean" },
-  { id: "en", name: "English", english: "English" },
-  { id: "ja", name: "日本語", english: "Japanese" },
-  { id: "zh-Hans", name: "简体中文", english: "Simplified Chinese" },
-  { id: "zh-Hant", name: "繁體中文", english: "Traditional Chinese" },
-  { id: "es", name: "Español", english: "Spanish" },
-  { id: "fr", name: "Français", english: "French" },
-  { id: "vi", name: "Tiếng Việt", english: "Vietnamese" },
-  { id: "th", name: "ไทย", english: "Thai" },
-  { id: "id", name: "Bahasa Indonesia", english: "Indonesian" },
-] as const);
-export type LocalizeLanguageId = (typeof LOCALIZE_LANGUAGES)[number]["id"];
+// 언어 목록은 순환 import를 피하려고 잎 모듈에 둔다(assist-localize-languages 설명 참고). 기존 import 경로는 그대로 쓴다.
+export { LOCALIZE_LANGUAGES, type LocalizeLanguageId };
 
 export type LocalizeTone = "keep" | "polite" | "casual";
 export type LocalizeBudget = "none" | "comfortable" | "tight";
