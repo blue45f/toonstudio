@@ -77,4 +77,3 @@ export function projectStudioThreeOverlays(input: StudioThreeOverlayProjection):
   }
   return resolveOverlayCollisions(projected);
 }
-
