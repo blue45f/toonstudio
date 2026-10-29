@@ -60,7 +60,7 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-phase6-ecosystem-suite (Phase 6 글로벌·국내 20대 웹툰 AI 생태계 6대 엔진)", () => {
+describe("assist-phase6-ecosystem-suite (Phase 6 글로벌·국내 20대 웹툰 AI 생태계 6대 엔진)", () => {
   it("1. NovelAI V4.5/V5 다중 캐릭터 X/Y 공간 좌표 분리 & Vibe Transfer 로컬·Claude 실행을 검증한다", async () => {
     const local = buildLocalNovelAiMultiCharVibeReport(SAMPLE_INPUT);
     expect(local.attributeBleedingZeroGuarantee).toBe(true);

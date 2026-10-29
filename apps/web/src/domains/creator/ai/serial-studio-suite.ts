@@ -1,5 +1,5 @@
 /**
- * ggumtoon-studio-suite.ts
+ * serial-studio-suite.ts
  *
  * https://www.ggumtoon.com/ (꿈툰 - AI 웹툰·웹소설 창작 스튜디오 `/studio`) REA 역공학 분석 결과를
  * ToonStudio 웹스튜디오 도메인 엔진으로 100% 내재화한 모듈.

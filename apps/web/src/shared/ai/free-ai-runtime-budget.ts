@@ -1,3 +1,5 @@
+import { UserAiTransportError } from "./user-ai-transport-error";
+
 import type {
   UserAiCapability,
   UserAiConnection,
@@ -383,7 +385,8 @@ export async function guardFreeAiRuntimeRequest(
     const entry = currentEntry(ledger, key, now);
     const blocked = blockMessage(entry, now);
     if (blocked) {
-      if (entry.blockedReason === "authentication") throw new Error(blocked);
+      // 최근 인증 오류로 쉬는 연결은 요청을 보내지 않았으므로, 인증 거절과 같은 종류로 알려 다음 키·ToonStudio AI로 넘기게 한다.
+      if (entry.blockedReason === "authentication") throw new UserAiTransportError("authentication", blocked);
       throw new FreeAiRuntimeBudgetError(blocked);
     }
     if (entry.blockedUntil !== null && entry.blockedUntil <= now) {

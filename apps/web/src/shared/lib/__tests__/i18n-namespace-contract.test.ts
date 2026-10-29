@@ -108,7 +108,7 @@ const GUARDED_NEW_SURFACE_FILES = [
   "apps/web/src/domains/creator/anchor-consistency/ui/AnchorSetPanel.tsx",
   "apps/web/src/domains/creator/anchor-consistency/ui/AnchorShotPanel.tsx",
   "apps/web/src/domains/creator/anchor-consistency/ui/AnchorSlotCard.tsx",
-  // Claude 보조(aiAssist 네임스페이스) 연결 카드·예산·실행 전 확인·AI 보조 대화상자. 화면 문구는 키로만 쓰고, 사용자가 쓴 대사·메모·
+  // AI 보조(aiAssist 네임스페이스) 연결 카드·예산·실행 전 확인·AI 보조 대화상자. 화면 문구는 키로만 쓰고, 사용자가 쓴 대사·메모·
   // 이미지 이름은 번역 원문이 아니라 {자리표시} 값으로만 넘긴다.
   "apps/web/src/shared/ai/assist/AssistBudgetEditor.tsx",
   "apps/web/src/shared/ai/assist/AssistBudgetMeter.tsx",

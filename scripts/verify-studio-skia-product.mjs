@@ -96,7 +96,7 @@ try {
   });
   await expect(page.locator('[data-studio-vello-unavailable="true"]')).toBeVisible();
   await expect(page.locator('[data-studio-skia-document-surface]')).toHaveCSS('visibility', 'hidden');
-  await page.getByRole('button', { name: '같은 GPU 엔진 다시 준비', exact: true }).click();
+  await page.getByRole('button', { name: '작업 화면 다시 열기', exact: true }).click();
   await gpuReady(3);
   const recoveredPixels = await page.locator('[data-studio-skia-document-surface]').evaluate(canvas => canvas.toDataURL());
   assert(recoveredPixels === beforeLossPixels, 'Explicit same-engine recovery changed the document pixels');

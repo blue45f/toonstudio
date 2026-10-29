@@ -1,4 +1,4 @@
-import { activeTags, TITLES } from "../../../../packages/core/src/catalog/catalog-store";
+import { activeTags, TITLES } from "@toonstudio/core/catalog";
 
 import type { PlatformId, Title } from "@toonstudio/contracts/types";
 

@@ -226,6 +226,55 @@ describe("runManagedAssistMessage", () => {
 
     expect(message.model).toBe(managedAssistModelLabel("gemini-2.5-flash"));
   });
+
+  it("같은 탭의 관리형 요청은 서버의 사용자당 단일 처리에 막히지 않게 차례로 보낸다", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const post = vi.fn(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight -= 1;
+      return serverMessage("결과");
+    });
+    const params = { model: "claude-opus-5-5", max_tokens: 100, messages: [{ role: "user" as const, content: "hi" }] };
+
+    await Promise.all([
+      runManagedAssistMessage(params, { post }),
+      runManagedAssistMessage(params, { post }),
+      runManagedAssistMessage(params, { post }),
+    ]);
+
+    expect(post).toHaveBeenCalledTimes(3);
+    expect(maxInFlight).toBe(1);
+  });
+
+  it("차례를 기다리던 요청을 취소하면 바로 끝나고, 뒤 요청은 앞 요청이 끝난 뒤에 간다", async () => {
+    let releaseFirst!: () => void;
+    const order: string[] = [];
+    const post = vi.fn(async (body: ManagedAssistRequestBody) => {
+      const label = String(body.messages[0]?.content);
+      order.push(`start:${label}`);
+      if (label === "first") await new Promise<void>((resolve) => { releaseFirst = resolve; });
+      order.push(`end:${label}`);
+      return serverMessage(label);
+    });
+    const request = (content: string) => ({ model: "claude-opus-5-5", max_tokens: 100, messages: [{ role: "user" as const, content }] });
+    const controller = new AbortController();
+
+    const first = runManagedAssistMessage(request("first"), { post });
+    const second = runManagedAssistMessage(request("second"), { post, signal: controller.signal });
+    const third = runManagedAssistMessage(request("third"), { post });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    controller.abort();
+    await expect(second).rejects.toThrow(/취소/u);
+    expect(order).toEqual(["start:first"]);
+
+    releaseFirst();
+    await first;
+    await third;
+    expect(order).toEqual(["start:first", "end:first", "start:third", "end:third"]);
+  });
 });
 
 describe("mapManagedAssistError", () => {

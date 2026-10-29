@@ -205,17 +205,25 @@ export interface CompletedUserAiText {
   connection: UserAiResolvedConnection;
   attemptedConnectionIds: string[];
   attemptedRouteIds: string[];
+  /** 출력 상한에 걸려 답이 잘렸다(`finish_reason: "length"`). 무료 키 안전 상한(출력 1,024토큰)에서 흔하다. */
+  truncated: boolean;
+}
+
+export interface UserAiTextOptions {
+  /** 이번에 시도할 연결. 없으면 자동 경로의 모든 연결(유료 키는 허용했을 때만)을 쓴다. */
+  readonly connections?: readonly UserAiResolvedConnection[];
 }
 
 export async function completeUserAiTextDetailed(
   system: string,
   user: string,
   signal?: AbortSignal,
+  options: UserAiTextOptions = {},
 ): Promise<CompletedUserAiText> {
   if (!user.trim() || user.length + system.length > 64_000) {
     throw new Error("프롬프트는 비어 있지 않은 64,000자 이하여야 합니다.");
   }
-  const candidates = userAiAutomaticExternalConnectionsForCapability("text");
+  const candidates = options.connections ?? userAiAutomaticExternalConnectionsForCapability("text");
   if (candidates.length === 0) {
     throw new UserAiTransportError(
       "not-configured",
@@ -232,7 +240,7 @@ export async function completeUserAiTextDetailed(
     attemptedRouteIds.push(connection.routeId);
     try {
       const result = await userAiJson<{
-        choices?: Array<{ message?: { content?: unknown } }>;
+        choices?: Array<{ message?: { content?: unknown }; finish_reason?: unknown }>;
       }>(
         "text",
         connection.chatCompletionsPath,
@@ -262,6 +270,7 @@ export async function completeUserAiTextDetailed(
         connection,
         attemptedConnectionIds,
         attemptedRouteIds,
+        truncated: result.choices?.[0]?.finish_reason === "length",
       };
     } catch (error) {
       const quotaExhaustion = isUserAiQuotaExhaustion(error);

@@ -39,7 +39,7 @@ Codex·Claude Desktop·Claude Code·Gemini·Cursor에 `tripo3d`(Blender MCP 16�
   - `balance` / `status` / `wait`: 지갑 잔액 조회 및 2초→5초→10초 적응형 폴링
 - **Core API 프로바이더**: `apps/api/src/modules/studio-ai/studio-tripo3d-provider.ts` (`providerId: "tripo-3d"`, `H3.1-20260901`/`v3.1-20260211`/`P1-20260311`/`P2-20260801` 지원, `Studio3dGenerationService` 통합, STS 이미지 업로드 토큰 발급, 크레딧 소진 코드 `2010`/HTTP `402` 감지, GLB 바이너리 검증)
 - **프론트엔드 3D 워크벤치 · 3D 데생인형 · 캐릭터 랩**:
-  - `apps/web/src/domains/creator/scene-3d/StudioTripo3dCompetitorWorkbench.tsx` 및 `studio-tripo3d-competitor-engine.ts`: Tripo Studio 12-Workspace 허브(`H3.1`, `Smart Mesh P2.0`, `Smart UV`, `Magic Brush`, `Text-to-Motion`), GLBForge 17-Rule 린터 & 2D→3D 웹툰 간판/아크릴/네온 부조 압출기, Meshy 7(`meshy-t2` Smart Topology) & 7종 크리에이티브 랩 굿즈 빌더, Hyper3D Rodin 7-Tool MCP & Deemos BANG 파츠 분해기
+  - `apps/web/src/domains/creator/scene-3d/StudioGen3dFeatureWorkbench.tsx` 및 `studio-gen3d-feature-engine.ts`: Tripo Studio 12-Workspace 허브(`H3.1`, `Smart Mesh P2.0`, `Smart UV`, `Magic Brush`, `Text-to-Motion`), GLBForge 17-Rule 린터 & 2D→3D 웹툰 간판/아크릴/네온 부조 압출기, Meshy 7(`meshy-t2` Smart Topology) & 7종 크리에이티브 랩 굿즈 빌더, Hyper3D Rodin 7-Tool MCP & Deemos BANG 파츠 분해기
   - `apps/web/src/domains/creator/scene-3d/StudioMannequinPoserPanel.tsx`: Tripo 5비율 T/A-Pose 보정, Text-to-Motion 액션 프리셋, VRM 4-View 카메라 프레이밍(`front`, `three_quarter`, `side`, `face`) + 웹툰 앵글, Blend-AI 실측 스케일 기준선(성인 1.75m / 눈높이 1.6m / 방문 2.1m / 책상 0.75m) 및 3점 조명 비율(`3:1:1.5`) 원클릭 동기화
   - `apps/character-lab`: VRM 0.x/1.0 & VRMA 패키지 진단, 4-View 카메라 프레이밍, 포즈/표정 빠른 검색·필터 및 턴어라운드 시트 익스포트 편의성 강화
 

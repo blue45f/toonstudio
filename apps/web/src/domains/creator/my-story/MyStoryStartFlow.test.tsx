@@ -80,7 +80,7 @@ afterEach(() => {
 });
 
 describe("내 이야기 시작 동선 — 주제 선택", () => {
-  it("제목·개인정보 안내와 주제 6종, 시작 버튼을 보여 준다", () => {
+  it("제목·개인정보 안내와 주제 7종, 시작 버튼을 보여 준다", () => {
     renderFlow({ storage: memory() });
     expect(screen.getByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" })).toBeTruthy();
     // 이 기기에만 저장된다는 사실과 실명·가족 안내가 항상 보인다.
@@ -88,6 +88,7 @@ describe("내 이야기 시작 동선 — 주제 선택", () => {
     expect(screen.getByText(/실명·연락처·주소·계좌번호는 적지 않는 게 안전해요/u)).toBeTruthy();
     const topics = screen.getAllByRole("radio");
     expect(topics.map((radio) => radio.closest("label")?.textContent)).toEqual([
+      expect.stringContaining("자유로운 이야기"),
       expect.stringContaining("회고"),
       expect.stringContaining("가족"),
       expect.stringContaining("동네"),
@@ -117,6 +118,18 @@ describe("내 이야기 시작 동선 — 주제 선택", () => {
 });
 
 describe("내 이야기 시작 동선 — 질문형 인터뷰", () => {
+  it("홈의 아이디어를 첫 질문에서 수정할 수 있고 다음·이전 이동 중에도 보존한다", () => {
+    const complete = vi.fn<MyStoryTextCompleter>();
+    renderFlow({ storage: memory(), initialIdea: "달에서 길 잃은 로봇", complete });
+    expect((screen.getByRole("textbox", { name: "어떤 이야기를 만들고 싶나요?" }) as HTMLTextAreaElement).value).toBe("달에서 길 잃은 로봇");
+    type("달에서 서점을 찾는 로봇");
+    click("다음");
+    expect(screen.getByRole("textbox", { name: "누가 등장하나요?" })).toBeTruthy();
+    click("이전");
+    expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("달에서 서점을 찾는 로봇");
+    expect(complete).not.toHaveBeenCalled();
+  });
+
   it("질문을 한 번에 하나씩 보여 주고 입력칸은 질문으로 이름 붙는다", () => {
     renderFlow({ storage: memory(), initialTemplateId: "family" });
     expect(screen.getByText("질문 1 / 8")).toBeTruthy();
@@ -255,6 +268,44 @@ describe("내 이야기 시작 동선 — 임시저장·이어 쓰기", () => {
     expect(screen.getByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" })).toBeTruthy();
     expect(readMyStorySession(storage)?.templateId).toBe("career");
     expect((screen.getByRole("radio", { name: /안전 수칙/u }) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("홈 아이디어가 있어도 이전 기록은 타이머와 화면 이탈에서 보존된다", () => {
+    vi.useFakeTimers();
+    const storage = memory();
+    const saved = fullSession("career");
+    writeMyStorySession(storage, saved);
+    const view = renderFlow({ storage, initialIdea: "새로운 상상 이야기" });
+    expect(screen.getByRole("button", { name: "새 아이디어로 시작" })).toBeTruthy();
+    flushAutosave();
+    expect(readMyStorySession(storage)).toEqual(saved);
+    view.unmount();
+    expect(readMyStorySession(storage)).toEqual(saved);
+  });
+
+  it("새 아이디어로 시작을 직접 선택한 뒤에만 기존 임시 답변을 대체한다", () => {
+    vi.useFakeTimers();
+    const storage = memory();
+    writeMyStorySession(storage, fullSession("career"));
+    renderFlow({ storage, initialIdea: "새로운 상상 이야기" });
+    click("새 아이디어로 시작");
+    expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe("새로운 상상 이야기");
+    flushAutosave();
+    expect(readMyStorySession(storage)?.templateId).toBe("free-story");
+    expect(readMyStorySession(storage)?.answers).toEqual({ event: "새로운 상상 이야기" });
+  });
+
+  it("새 아이디어 대신 이어 쓰기를 고르면 저장된 답변에 아이디어를 섞지 않는다", () => {
+    vi.useFakeTimers();
+    const storage = memory();
+    const saved = fullSession("career");
+    writeMyStorySession(storage, saved);
+    renderFlow({ storage, initialIdea: "새로운 상상 이야기" });
+    click("이어서 쓰기");
+    flushAutosave();
+    expect(screen.getByRole("heading", { name: "초안 미리보기" })).toBeTruthy();
+    expect(readMyStorySession(storage)).toEqual(saved);
+    expect(screen.queryByText("새로운 상상 이야기")).toBeNull();
   });
 
   it("저장된 진행이 있을 때 다른 주제를 눌러 보기만 하면 저장본을 덮어쓰지 않고, 돌아와 이어 쓸 수 있다", () => {
@@ -397,7 +448,7 @@ describe("내 이야기 시작 동선 — 스튜디오에서 열기", () => {
     const project = projects[0];
     expect(project?.title).toBe("안전 수칙 한 컷 교육");
     expect(screen.getByTestId("location").textContent).toBe(
-      `/studio/p/${encodeURIComponent(project?.id ?? "")}/story?view=script`,
+      `/studio/p/${encodeURIComponent(project?.id ?? "")}/story?view=script&uiMode=simple`,
     );
     const raw = storage.getItem(storyDevelopmentStorageKey(project?.id ?? ""));
     expect(raw).toContain("출입 전에 안전모를 확인한다");
@@ -427,7 +478,7 @@ describe("내 이야기 시작 동선 — 스튜디오에서 열기", () => {
 
     failStory = false;
     click("다시 시도");
-    expect(screen.getByTestId("location").textContent).toMatch(/\/story\?view=script$/u);
+    expect(screen.getByTestId("location").textContent).toMatch(/\/story\?view=script&uiMode=simple$/u);
   });
 
   it("저장소를 쓸 수 없으면 작품을 만들 수 없다고 알린다", () => {

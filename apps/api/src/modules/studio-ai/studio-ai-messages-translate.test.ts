@@ -48,6 +48,11 @@ describe("studio-ai-messages-translate", () => {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": STUDIO_AI_PREMIUM_SERVER_FALLBACK_BETA,
     });
+    expect(studioAiPremiumRequestHeaders("server-key", body!)).not.toHaveProperty("anthropic-workspace-id");
+    expect(studioAiPremiumRequestHeaders("server-key", body!, "wrkspc_01ABCdef234")).toMatchObject({
+      "x-api-key": "server-key",
+      "anthropic-workspace-id": "wrkspc_01ABCdef234",
+    });
   });
 
   it("빈 메시지는 요청을 만들지 않는다", () => {
@@ -87,6 +92,7 @@ describe("studio-ai-messages-translate", () => {
       outputTokens: 4,
       cacheReadTokens: 3,
       cacheWriteTokens: 0,
+      billed: { inputTokens: 12, outputTokens: 4, cacheReadTokens: 3, cacheWriteTokens: 0 },
     });
     expect(parsePremiumMessagesResponse({})).toEqual({
       ok: false,
@@ -94,6 +100,39 @@ describe("studio-ai-messages-translate", () => {
     });
     expect(parsePremiumMessagesResponse({ content: [], usage: { input_tokens: -1, output_tokens: 1 } }))
       .toEqual({ ok: false, reason: "invalid_response" });
+  });
+
+  it("서버 측 대체가 돌면 거절한 시도까지 usage.iterations를 더해 과금 토큰으로 센다(맨 위 usage는 답을 낸 시도만)", () => {
+    const parsed = parsePremiumMessagesResponse({
+      model: "claude-opus-4-8",
+      stop_reason: "end_turn",
+      content: [
+        { type: "fallback", from: { model: "claude-opus-5-5" }, to: { model: "claude-opus-4-8" }, trigger: { type: "refusal", category: "cyber" } },
+        { type: "text", text: "대체 모델의 답" },
+      ],
+      usage: {
+        input_tokens: 9_000,
+        output_tokens: 1_500,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+        iterations: [
+          { type: "message", model: "claude-opus-5-5", input_tokens: 9_000, output_tokens: 3_800, cache_read_input_tokens: 200, cache_creation_input_tokens: 0 },
+          { type: "fallback_message", model: "claude-opus-4-8", input_tokens: 9_000, output_tokens: 1_500, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        ],
+      },
+    });
+    expect(parsed).toMatchObject({
+      ok: true,
+      text: "대체 모델의 답",
+      inputTokens: 9_000,
+      outputTokens: 1_500,
+      billed: { inputTokens: 18_000, outputTokens: 5_300, cacheReadTokens: 200, cacheWriteTokens: 0 },
+    });
+    // 시도별 기록이 비었거나 형식이 틀려도 맨 위 값보다 적게 세지 않는다.
+    expect(parsePremiumMessagesResponse({
+      content: [{ type: "text", text: "답" }],
+      usage: { input_tokens: 10, output_tokens: 2, iterations: [null, { input_tokens: "x" }] },
+    })).toMatchObject({ billed: { inputTokens: 10, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 } });
   });
 
   it("보조 기능 요청은 범위 지시를 시스템 맨 앞에 두고 블록·구조화 출력 형식을 그대로 싣는다", () => {

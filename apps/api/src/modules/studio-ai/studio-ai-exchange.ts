@@ -27,6 +27,7 @@ import {
   studioAiPremiumRequestHeaders,
   type StudioAiNormalizedMessage,
   type StudioAiPremiumEffort,
+  type StudioAiPremiumTokenCounts,
 } from "./studio-ai-messages-translate";
 import { studioAiMessagesHasImages, type StudioAiMessagesRequest } from "./studio-ai-messages.dto";
 import { resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
@@ -177,18 +178,14 @@ function freeChatUsage(payload: ProviderPayload): StudioAiTokenUsage {
   };
 }
 
-function premiumUsage(parsed: {
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-}): StudioAiTokenUsage {
-  // 캐시 읽기·쓰기 토큰도 입력으로 처리된 양이므로 쿼터·원장에는 합쳐서 센다.
-  const prompt = parsed.inputTokens + parsed.cacheReadTokens + parsed.cacheWriteTokens;
+function premiumUsage(parsed: { readonly billed: StudioAiPremiumTokenCounts }): StudioAiTokenUsage {
+  // 서버 측 대체로 거절한 시도까지 과금된 양을 센다. 캐시 읽기·쓰기 토큰도 입력으로 처리된 양이므로 합친다.
+  const billed = parsed.billed;
+  const prompt = billed.inputTokens + billed.cacheReadTokens + billed.cacheWriteTokens;
   return {
     promptTokens: recordedTokenCount(prompt),
-    completionTokens: recordedTokenCount(parsed.outputTokens),
-    totalTokens: recordedTokenCount(prompt + parsed.outputTokens),
+    completionTokens: recordedTokenCount(billed.outputTokens),
+    totalTokens: recordedTokenCount(prompt + billed.outputTokens),
   };
 }
 
@@ -306,7 +303,10 @@ function parseFreeMessagesPayload(
   if (stopReason === "other") {
     return exchangeFailure("provider_error", new BadGatewayException(INCOMPLETE_RESPONSE_MESSAGE), usage);
   }
-  const raw = choice?.message?.content;
+  // 안전 필터에 걸린 응답은 본문이 null이거나 아예 없을 때가 많다. 빈 응답(다시 시도)이 아니라 거절로 돌려줘
+  // 브라우저가 거절 사유를 보여 주게 한다(텍스트 작업 경로와 같은 판정).
+  const content = choice?.message?.content;
+  const raw = stopReason === "refusal" && typeof content !== "string" ? "" : content;
   if (typeof raw !== "string" || (stopReason === "end_turn" && raw.trim().length === 0)) {
     return exchangeFailure("provider_error", new BadGatewayException(EMPTY_RESPONSE_MESSAGE), usage);
   }
@@ -421,7 +421,7 @@ export function buildStudioAiChatExchange(
           maxTokens: spec.maxTokens + STUDIO_AI_PREMIUM_THINKING_HEADROOM_TOKENS,
           effort: spec.premiumEffort,
         });
-        return body ? { headers: studioAiPremiumRequestHeaders(provider.apiKey, body), body } : null;
+        return body ? { headers: studioAiPremiumRequestHeaders(provider.apiKey, body, provider.workspaceId), body } : null;
       }
       return {
         headers: {
@@ -490,7 +490,7 @@ export function buildStudioAiMessagesExchange(
     request: (provider) => {
       if (provider.id === STUDIO_AI_PREMIUM_PROVIDER_ID) {
         const body = buildPremiumMessagesRequest(input, { model: provider.model, scope: CREATOR_SCOPE });
-        return { headers: studioAiPremiumRequestHeaders(provider.apiKey, body), body };
+        return { headers: studioAiPremiumRequestHeaders(provider.apiKey, body, provider.workspaceId), body };
       }
       return {
         headers: {

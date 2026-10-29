@@ -427,11 +427,50 @@ export const localStorySeedProvider: StorySeedProvider = {
   generate: (input) => Promise.resolve(buildLocalStorySeed(input)),
 };
 
+/**
+ * 키 없는 서버 경로는 사용자 글을 12,000자까지 받는다. 설정을 많이 인용한 큰 프로젝트도 그 안에 여유 있게
+ * 들어가도록 사용자 글 전체를 이 길이로 묶고, 인용 설정은 설명을 줄인 뒤 남은 자리만큼만 넣는다.
+ */
+const STORY_SEED_PROMPT_MAX_CHARS = 10_000;
+const STORY_SEED_FIELD_MAX_CHARS = 1_000;
+const STORY_SEED_REF_NAME_MAX_CHARS = 80;
+const STORY_SEED_REF_DETAIL_MAX_CHARS = 200;
+
+function clipForPrompt(text: string, max: number): string {
+  if (text.length <= max) return text;
+  let head = text.slice(0, max - 1);
+  // 이모지 같은 서로게이트 쌍의 앞쪽 절반만 남으면 요청 JSON이 깨져 공급자가 400으로 거절한다. 그 절반도 뺀다.
+  const last = head.charCodeAt(head.length - 1);
+  if (last >= 0xd800 && last <= 0xdbff) head = head.slice(0, -1);
+  return `${head}…`;
+}
+
+/** 남은 자리에 들어가는 인용 설정만 넣고, 빠진 개수는 "외 N개"로 알린다. */
+function storySeedRefsLine(refs: readonly StorySeedSettingRef[], budget: number): string | null {
+  if (refs.length === 0) return null;
+  const prefix = "인용 설정: ";
+  // "외 N개" 표기 자리를 먼저 빼 둔다.
+  let remaining = budget - prefix.length - 12;
+  const parts: string[] = [];
+  for (const ref of refs) {
+    const detail = ref.detail?.trim();
+    const part = `${clipForPrompt(ref.name.trim(), STORY_SEED_REF_NAME_MAX_CHARS)}(${ref.kind}${
+      detail ? `: ${clipForPrompt(detail, STORY_SEED_REF_DETAIL_MAX_CHARS)}` : ""
+    })`;
+    const cost = part.length + (parts.length > 0 ? 2 : 0);
+    if (cost > remaining) break;
+    parts.push(part);
+    remaining -= cost;
+  }
+  if (parts.length === 0) return null;
+  const omitted = refs.length - parts.length;
+  return `${prefix}${parts.join(", ")}${omitted > 0 ? ` 외 ${omitted}개` : ""}`;
+}
+
 export function buildStorySeedAiPrompt(input: StorySeedInput): {
   readonly system: string;
   readonly user: string;
 } {
-  const genre = input.genre.trim();
   const keywords = normalizeKeywords(input.keywords);
   const refs = input.settingRefs ?? [];
   const system = [
@@ -440,20 +479,16 @@ export function buildStorySeedAiPrompt(input: StorySeedInput): {
     "다른 설명이나 마크다운 없이 반드시 아래 필드를 가진 JSON만 반환하세요:",
     '{"loglineCandidates":["후보1","후보2","후보3"],"goalDraft":"...","synopsisDraft":"...","openingHookDraft":"...","coreConflictDraft":"...","turningPointScaffold":["전환1","전환2","전환3"],"cliffhangerDraft":"...","emotionalArc":{"from":"...","to":"..."},"expansionProposals":["제안1","제안2","제안3"]}',
   ].join("\n");
-  const user = [
-    `장르: ${genre}`,
-    `키워드: ${keywords.length > 0 ? keywords.join(", ") : "장르 기본"}`,
-    ...(input.tone?.trim() ? [`분위기: ${input.tone.trim()}`] : []),
-    ...(input.protagonist?.trim() ? [`주인공: ${input.protagonist.trim()}`] : []),
-    ...(input.stage?.trim() ? [`무대: ${input.stage.trim()}`] : []),
-    ...(refs.length > 0
-      ? [
-          `인용 설정: ${refs
-            .map((r) => `${r.name}(${r.kind}${r.detail?.trim() ? `: ${r.detail.trim()}` : ""})`)
-            .join(", ")}`,
-        ]
-      : []),
+  const field = (value: string | undefined) => clipForPrompt(value?.trim() ?? "", STORY_SEED_FIELD_MAX_CHARS);
+  const head = [
+    `장르: ${field(input.genre)}`,
+    `키워드: ${keywords.length > 0 ? clipForPrompt(keywords.join(", "), STORY_SEED_FIELD_MAX_CHARS) : "장르 기본"}`,
+    ...(input.tone?.trim() ? [`분위기: ${field(input.tone)}`] : []),
+    ...(input.protagonist?.trim() ? [`주인공: ${field(input.protagonist)}`] : []),
+    ...(input.stage?.trim() ? [`무대: ${field(input.stage)}`] : []),
   ].join("\n");
+  const refsLine = storySeedRefsLine(refs, STORY_SEED_PROMPT_MAX_CHARS - head.length - 1);
+  const user = refsLine ? `${head}\n${refsLine}` : head;
   return { system, user };
 }
 
@@ -491,6 +526,22 @@ export function parseStorySeedAiResponse(
     parsed.emotionalArc && typeof parsed.emotionalArc === "object" && !Array.isArray(parsed.emotionalArc)
       ? (parsed.emotionalArc as Record<string, unknown>)
       : null;
+
+  // AI가 실제로 채운 필드가 하나도 없으면 기본 초안을 AI 결과로 보여 주게 되므로 읽지 못한 것으로 본다.
+  const usableText = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+  const usableList = (value: unknown) => Array.isArray(value) && value.some(usableText);
+  const aiProvidedAnyField = [
+    usableList(parsed.loglineCandidates),
+    usableText(parsed.goalDraft),
+    usableText(parsed.synopsisDraft),
+    usableText(parsed.openingHookDraft),
+    usableText(parsed.coreConflictDraft),
+    usableList(parsed.turningPointScaffold),
+    usableText(parsed.cliffhangerDraft),
+    usableText(emotionalRaw?.from) || usableText(emotionalRaw?.to),
+    usableList(parsed.expansionProposals),
+  ].some(Boolean);
+  if (!aiProvidedAnyField) return null;
 
   return Object.freeze({
     ...base,

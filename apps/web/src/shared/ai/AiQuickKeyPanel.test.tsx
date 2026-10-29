@@ -57,6 +57,16 @@ describe("AiQuickKeyPanel", () => {
     expect(within(flow).getByText(/고성능 AI\(하루 30회까지\) → 무료 AI/u)).toBeTruthy();
   });
 
+  it("서버 상태를 확인하지 못하면 '확인하는 중'에 머물지 않고 다음 행동을 알려 준다", () => {
+    const { rerender } = render(<AiQuickKeyPanel poolStatus={null} onOpenAdvancedWizard={vi.fn()} />);
+    const flow = screen.getByText("지금 AI는 이렇게 동작해요").closest("div") as HTMLElement;
+    expect(within(flow).getByText("상태를 확인하는 중이에요.")).toBeTruthy();
+
+    rerender(<AiQuickKeyPanel poolStatus={null} poolCheckFailed onOpenAdvancedWizard={vi.fn()} />);
+    expect(within(flow).queryByText("상태를 확인하는 중이에요.")).toBeNull();
+    expect(within(flow).getByText(/지금은 상태를 확인하지 못했어요/u)).toBeTruthy();
+  });
+
   it("여러 키를 한 번에 붙여 넣으면 서비스를 알아보고 입력란에는 남기지 않는다", () => {
     const { input } = renderPanel();
     pasteInto(input, `${GEMINI}\n${GROQ}`);
@@ -106,7 +116,7 @@ describe("AiQuickKeyPanel", () => {
     expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
   });
 
-  it("브라우저에서 확인하지 못한 키는 등록하되 그 사실을 알린다", async () => {
+  it("브라우저에서 서비스에 닿지 못한 키는 등록하지 않는다(실제 사용 때도 닿지 못해 텍스트 AI 전체를 막는다)", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => {
       throw new TypeError("Failed to fetch");
     }));
@@ -114,8 +124,37 @@ describe("AiQuickKeyPanel", () => {
     pasteInto(input, GROQ);
     fireEvent.click(screen.getByRole("button", { name: "등록" }));
 
-    expect(await screen.findByText(/Groq 키를 등록했어요\. 브라우저에서 서비스에 바로 닿지 못했어요/u)).toBeTruthy();
+    expect(await screen.findByText(/브라우저에서 Groq에 연결하지 못해 등록하지 않았어요/u)).toBeTruthy();
+    expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
+  });
+
+  it("서비스가 다른 오류로 답해 확인만 못 한 키는 등록하되 그 사실을 알린다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "unavailable" }, 503)));
+    const { input } = renderPanel();
+    pasteInto(input, GROQ);
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+
+    expect(await screen.findByText(/Groq 키를 등록했어요\. 서비스가 HTTP 503로 답했어요/u)).toBeTruthy();
     expect(getUserAiSnapshot().configuration.connections[0]?.textModel).toBe("openai/gpt-oss-120b");
+  });
+
+  it("모델 목록 요청에 400으로 답한 키(Gemini·xAI의 잘못된 키)는 거절된 키로 보고 등록하지 않는다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: { message: "API key not valid" } }, 400)));
+    const { input } = renderPanel();
+    pasteInto(input, GEMINI);
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+
+    expect(await screen.findByText(/Google Gemini 키가 거절됐어요/u)).toBeTruthy();
+    expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
+  });
+
+  it("여러 서비스가 함께 쓰는 형식(32자 영숫자)은 서비스를 고르기 전까지 어느 곳으로도 보내지 않는다", () => {
+    const { input } = renderPanel();
+    pasteInto(input, "abcdEFGH1234abcdEFGH1234abcdEFGH");
+
+    const pending = screen.getByRole("list", { name: "등록할 키" });
+    expect(within(pending).getByText("어느 서비스 키인가요?")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "등록" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("유료 서비스 키는 비용 청구를 확인해야 등록할 수 있다", () => {
@@ -127,6 +166,18 @@ describe("AiQuickKeyPanel", () => {
     expect(register.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox"));
     expect(register.disabled).toBe(false);
+  });
+
+  it("유료 키를 '먼저 쓴다'에 동의하고 등록하면 유료 키 먼저가 켜지고, 함께 먼저 쓰게 될 기존 유료 키를 미리 알린다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ data: [{ id: "claude-opus-5-5" }] })));
+    const { input } = renderPanel();
+    pasteInto(input, CLAUDE);
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+    await screen.findByText(/키를 확인하고 등록했어요/u);
+    const routing = userAiRoutingSettings(getUserAiSnapshot().configuration);
+    expect(routing.allowPaidFallback).toBe(true);
+    expect(routing.preferPaidKeys).toBe(true);
   });
 
   it("형식이 겹치는 키는 서비스를 고르기 전까지 등록하지 않는다", () => {

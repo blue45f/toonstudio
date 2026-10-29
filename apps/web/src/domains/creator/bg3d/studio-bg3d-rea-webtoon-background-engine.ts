@@ -21,9 +21,9 @@
  */
 
 import {
-  TRIPO3D_MCP_GENERATED_MODELS,
-  type Tripo3dMcpGeneratedModelEntry,
-} from "../scene-3d/studio-tripo3d-customizer-engine";
+  GEN3D_MCP_GENERATED_MODELS,
+  type Gen3dMcpGeneratedModelEntry,
+} from "../scene-3d/studio-gen3d-customizer-engine";
 import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
 
 export type Bg3dPrimitiveShape = BgPrimitiveKind;
@@ -61,15 +61,15 @@ export interface Bg3dGlbItem {
 }
 
 export {
-  STUDIO_BG3D_VARCO_GLB_CALIBRATION_CATALOG,
-  buildCalibratedVarcoBg3dGlbPlacement,
-  buildVarco3dDioramaDetailedPrimitives,
-  buildVarco3dPropDetailedPrimitives,
-  getStudioBg3dVarcoGlbCalibration,
+  STUDIO_BG3D_ASSET3D_GLB_CALIBRATION_CATALOG,
+  buildCalibratedAsset3dBg3dGlbPlacement,
+  buildAsset3dDioramaDetailedPrimitives,
+  buildAsset3dPropDetailedPrimitives,
+  getStudioBg3dAsset3dGlbCalibration,
   resolveReaDioramaSummaryKo,
-  resolveVarcoBg3dGlbIdForDiorama,
-  type StudioBg3dVarcoGlbCalibrationSpec,
-} from "./studio-bg3d-varco-detailed-builders";
+  resolveAsset3dBg3dGlbIdForDiorama,
+  type StudioBg3dAsset3dGlbCalibrationSpec,
+} from "./studio-bg3d-prop-diorama-builders";
 
 export function toBgPrimitives(items: readonly Bg3dPrimitiveItem[]): BgPrimitive[] {
   return items.map((item) => ({
@@ -528,7 +528,7 @@ const BASE_TRIPO_GLB_CALIBRATIONS: Readonly<
 
 export const STUDIO_BG3D_TRIPO_GLB_CALIBRATION_CATALOG: readonly StudioBg3dTripoGlbCalibrationSpec[] =
   Object.freeze(
-    TRIPO3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").map((model): StudioBg3dTripoGlbCalibrationSpec => {
+    GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").map((model): StudioBg3dTripoGlbCalibrationSpec => {
       const override = BASE_TRIPO_GLB_CALIBRATIONS[model.id];
       if (override) {
         return {
@@ -573,7 +573,7 @@ export function buildCalibratedTripoBg3dGlbPlacement(
   },
 ): Bg3dGlbItem {
   const spec = getStudioBg3dTripoGlbCalibration(modelId);
-  const modelEntry: Tripo3dMcpGeneratedModelEntry | undefined = TRIPO3D_MCP_GENERATED_MODELS.find(
+  const modelEntry: Gen3dMcpGeneratedModelEntry | undefined = GEN3D_MCP_GENERATED_MODELS.find(
     (m) => m.id === spec.modelId,
   );
   const mult = Math.max(0.25, Math.min(3.0, options?.scaleMultiplier ?? 1));
@@ -649,8 +649,8 @@ export function buildTripoBg3dProceduralTwinPrimitives(
   },
 ): readonly Bg3dPrimitiveItem[] {
   const model =
-    TRIPO3D_MCP_GENERATED_MODELS.find((m) => m.id === modelId && m.domain === "bg3d") ??
-    TRIPO3D_MCP_GENERATED_MODELS.find((m) => m.domain === "bg3d")!;
+    GEN3D_MCP_GENERATED_MODELS.find((m) => m.id === modelId && m.domain === "bg3d") ??
+    GEN3D_MCP_GENERATED_MODELS.find((m) => m.domain === "bg3d")!;
   const cal = getStudioBg3dTripoGlbCalibration(model.id);
   const [ax, az] = options?.anchorXZ ?? [cal.recommendedAnchorPosition[0], cal.recommendedAnchorPosition[2]];
   const enabledSet = new Set(

@@ -5,7 +5,7 @@ import {
   InMemoryStudioAiPremiumBudgetStore,
   studioAiPremiumBudgetAllows,
 } from "./studio-ai-premium-budget";
-import { PostgresStudioAiPremiumBudgetStore } from "./studio-ai-premium-budget.repository";
+import { PostgresStudioAiPremiumBudgetStore, STUDIO_AI_PREMIUM_UNKNOWN_USAGE_TOKENS } from "./studio-ai-premium-budget.repository";
 import { DEFAULT_STUDIO_AI_PREMIUM_LIMITS, resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
 import {
   classifyStudioAiProviderFailure,
@@ -108,8 +108,28 @@ describe("운영 고성능 경로(키 없는 사용자의 1순위)", () => {
     expect(resolveStudioAiPremiumConfig({ STUDIO_AI_ANTHROPIC_MODEL: "gpt-5" }).model).toBe("claude-opus-5-5");
   });
 
-  it("추론 전 거절(한도·혼잡·결제·인증·모델 없음)만 무료 풀로 넘기고 5xx·형식 오류는 넘기지 않는다", () => {
-    for (const status of [429, 529, 402, 401, 403, 404]) {
+  it("워크스페이스에 묶이지 않은 운영 키는 형식이 맞는 워크스페이스 ID를 요청 헤더로 함께 보낸다", () => {
+    expect(resolveStudioAiPremiumConfig({ STUDIO_AI_ANTHROPIC_API_KEY: "k" }).workspaceId).toBeNull();
+    expect(resolveStudioAiPremiumConfig({
+      STUDIO_AI_ANTHROPIC_API_KEY: "k",
+      STUDIO_AI_ANTHROPIC_WORKSPACE_ID: " wrkspc_01ABCdef234 ",
+    }).workspaceId).toBe("wrkspc_01ABCdef234");
+    // 헤더에 실을 수 없는 값은 버린다(잘못 넣은 키·공백·다른 형식).
+    for (const value of ["default", "wrkspc_", "sk-ant-api03-x", "wrkspc_01 bad", "wrkspc_01\nX-Evil: 1"]) {
+      expect(resolveStudioAiPremiumConfig({ STUDIO_AI_ANTHROPIC_API_KEY: "k", STUDIO_AI_ANTHROPIC_WORKSPACE_ID: value }).workspaceId).toBeNull();
+    }
+    const [premium] = resolveStudioAiProviders("auto", {
+      NODE_ENV: "production",
+      STUDIO_AI_ANTHROPIC_API_KEY: "premium-server-key",
+      STUDIO_AI_ANTHROPIC_WORKSPACE_ID: "wrkspc_01ABCdef234",
+    });
+    expect(premium).toMatchObject({ id: "anthropic", workspaceId: "wrkspc_01ABCdef234" });
+    expect(resolveStudioAiProviders("auto", { NODE_ENV: "production", STUDIO_AI_ANTHROPIC_API_KEY: "premium-server-key" })[0])
+      .not.toHaveProperty("workspaceId");
+  });
+
+  it("추론 전 거절(한도·혼잡·결제·인증·모델 없음·설정·형식)은 무료 풀로 넘기고 5xx는 넘기지 않는다", () => {
+    for (const status of [429, 529, 402, 400, 401, 403, 404, 413]) {
       expect(classifyStudioAiProviderFailure("anthropic", status)).toMatchObject({
         kind: STUDIO_AI_PREMIUM_FAILOVER_REASON,
         billingFailoverEligible: true,
@@ -120,10 +140,11 @@ describe("운영 고성능 경로(키 없는 사용자의 1순위)", () => {
       type: "error",
       error: { type: "billing_error", message: "redacted" },
     })).toMatchObject({ kind: STUDIO_AI_PREMIUM_FAILOVER_REASON, billingFailoverEligible: true });
+    // 워크스페이스에 묶이지 않은 운영 키(워크스페이스 지정 누락)나 지원하지 않는 스키마도 추론 전 거절이라 비용 없이 이어 간다.
     expect(classifyStudioAiProviderFailure("anthropic", 400, {
       type: "error",
       error: { type: "invalid_request_error", message: "redacted" },
-    })).toMatchObject({ billingFailoverEligible: false });
+    })).toMatchObject({ kind: STUDIO_AI_PREMIUM_FAILOVER_REASON, billingFailoverEligible: true });
     expect(classifyStudioAiProviderFailure("anthropic", 500)).toMatchObject({
       kind: "provider_unavailable",
       billingFailoverEligible: false,
@@ -191,7 +212,10 @@ describe("운영 고성능 경로 일일 예산", () => {
     const [sql, values] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("studio_ai_usage_provider_check");
     expect(sql).toContain("ledger.provider = $3");
-    expect(values).toEqual(["user-1", "'anthropic'", "anthropic"]);
+    expect(values).toEqual(["user-1", "'anthropic'", "anthropic", STUDIO_AI_PREMIUM_UNKNOWN_USAGE_TOKENS]);
+    // 사용량을 모르는 호출은 0이 아니라 보수적인 추정치로 센다(추론 전 거절만 0).
+    expect(sql).toContain("WHEN ledger.status = 'provider_rate_limited' THEN 0");
+    expect(sql).toContain("ELSE $4::integer");
   });
 
   it("행이 없거나 값이 이상하면 원장이 준비되지 않은 것으로 본다", async () => {

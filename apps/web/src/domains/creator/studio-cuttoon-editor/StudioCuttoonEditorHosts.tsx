@@ -51,7 +51,7 @@ export function StudioCuttoonEditorHosts(s: StudioCuttoonEditorViewSession) {
     {/* 파괴적 명령 승인 표면. body 로 포털되므로 위치는 자유롭지만, 스튜디오 셸 안에 두어
         스튜디오가 살아 있는 동안에만 seam 을 소유하게 한다. */}
     <StudioDestructiveConfirmHost />
-    {/* Claude 보조 대화상자. 열림 상태가 저장소에 있어 AI 허브(도구 팝오버)가 닫혀도 대화상자는 남는다. */}
+    {/* AI 보조 대화상자. 열림 상태가 저장소에 있어 AI 허브(도구 팝오버)가 닫혀도 대화상자는 남는다. */}
     <AiAssistDialogHostEntry />
     <StudioVrmProjectArchiveAttestationHost />
     <StudioImportHandoffHost

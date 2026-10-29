@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   parseStudioAiIdempotencyKey,
   STUDIO_AI_IDEMPOTENCY_RECEIPT_RETENTION_MS,
+  studioAiCanonicalMessagesRequestHash,
   studioAiCanonicalRequestHash,
   studioAiUserIdempotencyKeyHash,
 } from "./studio-ai-idempotency";
 
+import type { StudioAiMessagesRequest } from "./studio-ai-messages.dto";
 import type { StudioAiChatDto } from "./studio-ai.dto";
 
 const input = {
@@ -57,5 +59,17 @@ describe("Studio AI durable idempotency identity", () => {
     expect(base).not.toEqual(studioAiCanonicalRequestHash({ ...input, provider: "deepseek" }));
     expect(base).not.toEqual(studioAiCanonicalRequestHash({ ...input, user: "다른 장면" }));
     expect(base).toHaveLength(32);
+  });
+
+  it("treats a re-run of the same assist request with a new key as a new request, but keeps same-key replays identical", () => {
+    const messages = {
+      max_tokens: 800,
+      messages: [{ role: "user", content: "이 컷의 구도를 점검해 줘" }],
+    } as StudioAiMessagesRequest;
+    const first = studioAiCanonicalMessagesRequestHash(messages, "assist-run-1");
+    expect(studioAiCanonicalMessagesRequestHash(messages, "assist-run-1")).toEqual(first);
+    expect(studioAiCanonicalMessagesRequestHash(messages, "assist-run-2")).not.toEqual(first);
+    expect(studioAiCanonicalMessagesRequestHash({ ...messages, max_tokens: 900 }, "assist-run-1")).not.toEqual(first);
+    expect(first).toHaveLength(32);
   });
 });

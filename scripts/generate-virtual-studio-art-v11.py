@@ -18,10 +18,11 @@ from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT_DIR = Path("/Users/hjunkim/.gemini/antigravity/brain/a3aadbfb-b6d6-4b51-a023-0e2c67ea0300")
+# ARTIFACT_DIR은 저장소 밖(원본 이미지를 만든 작업 폴더)이라 그 안의 파일 이름은 바꾸지 않는다(바꾸면 원본을 찾지 못한다).
 OUT_DIR = REPO_ROOT / "apps/web/public/assets/virtual-studio/studio-art-v11"
 
-THEMES_SRC = ARTIFACT_DIR / "illustrated_v11_four_studio_themes_atlas_png_1793044119359.jpg"
-CAST_SRC = ARTIFACT_DIR / "illustrated_v11_diverse_creator_cast_sheet_png_1793044138827.jpg"
+THEMES_SRC = ARTIFACT_DIR / "nano_banana_v11_four_studio_themes_atlas_png_1793044119359.jpg"
+CAST_SRC = ARTIFACT_DIR / "nano_banana_v11_diverse_creator_cast_sheet_png_1793044138827.jpg"
 
 
 def sha256_of(path: Path) -> str:
@@ -190,7 +191,7 @@ def main() -> None:
     )
 
     # Also save PNG copy in artifact dir for visual embedding in artifact markdown
-    clean_atlas.save(ARTIFACT_DIR / "illustrated_v11_diverse_creator_cast_clean_atlas.png", "PNG")
+    clean_atlas.save(ARTIFACT_DIR / "nano_banana_v11_diverse_creator_cast_clean_atlas.png", "PNG")
 
     manifest_payload = {
         "packId": "studio-art-v11",

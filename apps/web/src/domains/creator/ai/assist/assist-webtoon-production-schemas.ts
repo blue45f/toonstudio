@@ -1,5 +1,5 @@
 /**
- * claude-webtoon-production-schemas.ts
+ * assist-webtoon-production-schemas.ts
  *
  * 국내외 8대 웹툰 AI 제작 소프트웨어 벤치마크 기반 신규 AI 보조 엔진 4종의
  * Zod 구조화 출력 스키마, 뷰 타입 및 로컬 결정적(Deterministic) 폴백 빌더.

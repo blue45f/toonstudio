@@ -22,11 +22,6 @@ import {
   type StudioAiPromptLibraryEntry,
 } from "./studio-ai-prompt-library";
 import {
-  loadPromptLibraryEntries,
-  savePromptLibraryEntries,
-  type StudioAiPromptLibraryStore,
-} from "./studio-ai-prompt-library-storage";
-import {
   createPartialRetryRequest,
   type StudioAiPartialRetryRequest,
 } from "./studio-ai-partial-retry";
@@ -35,6 +30,7 @@ import {
   moveRetryRegionSelection,
   startRetryRegionSelection,
 } from "./studio-ai-retry-region";
+import { useStudioAiPromptLibrary } from "./useStudioAiPromptLibrary";
 
 const SECTION =
   "space-y-2 rounded-xl border border-line bg-panel/50 p-3";
@@ -43,15 +39,6 @@ const INPUT =
   "w-full rounded-lg border border-line bg-panel px-2.5 py-2 text-[0.68rem] text-fg outline-none placeholder:text-fg-3 focus:border-accent disabled:opacity-60";
 const SMALL_BUTTON =
   "inline-flex min-h-9 items-center justify-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[0.68rem] font-semibold text-fg hover:border-accent/40 disabled:opacity-50";
-
-function localLibraryStore(): StudioAiPromptLibraryStore | null {
-  try {
-    if (typeof globalThis.localStorage === "undefined") return null;
-    return globalThis.localStorage;
-  } catch {
-    return null;
-  }
-}
 
 export function StudioAiColorizeExtras({
   wiring,
@@ -73,34 +60,29 @@ export function StudioAiColorizeExtras({
   const session = wiring.candidateSession;
   const candidates = session.candidates;
 
-  // 프롬프트 라이브러리 (Web Storage, 키 toonstudio.ai.prompt-library.v1).
-  const [library, setLibrary] = useState<readonly StudioAiPromptLibraryEntry[]>(
-    () => {
-      const store = localLibraryStore();
-      return store ? loadPromptLibraryEntries(store) : [];
-    },
-  );
+  // 프롬프트 라이브러리 (Studio 로컬 DB — useStudioAiPromptLibrary).
+  const promptLibrary = useStudioAiPromptLibrary();
+  const library = promptLibrary.entries;
   const [libraryNotice, setLibraryNotice] = useState<string | null>(null);
-  const persistLibrary = (entries: readonly StudioAiPromptLibraryEntry[]) => {
-    setLibrary(entries);
-    const store = localLibraryStore();
-    if (store && !savePromptLibraryEntries(store, entries)) {
-      setLibraryNotice("라이브러리 저장에 실패했어요. 저장 공간을 확인해 주세요.");
-    } else {
-      setLibraryNotice(null);
-    }
-  };
   const saveCurrentPrompt = () => {
-    const result = addPromptLibraryEntry(library, { text: prompt, kind: "prompt" });
-    persistLibrary(result.entries);
+    const input = { text: prompt, kind: "prompt" } as const;
+    const { added } = addPromptLibraryEntry(library, input);
+    promptLibrary.apply((entries, now) => addPromptLibraryEntry(entries, input, now).entries);
     setLibraryNotice(
-      result.added ? "프롬프트를 라이브러리에 저장했어요." : "이미 있는 프롬프트라 사용 시각만 갱신했어요.",
+      added ? "프롬프트를 라이브러리에 저장했어요." : "이미 있는 프롬프트라 사용 시각만 갱신했어요.",
     );
   };
   const selectLibraryEntry = (entry: StudioAiPromptLibraryEntry) => {
     onPromptChange(entry.text);
-    persistLibrary(touchPromptLibraryEntry(library, entry.id));
+    promptLibrary.apply((entries, now) => touchPromptLibraryEntry(entries, entry.id, now));
   };
+  const removeLibraryEntry = (entryId: string) => {
+    promptLibrary.apply((entries) => removePromptLibraryEntry(entries, entryId));
+    setLibraryNotice(null);
+  };
+  const libraryStatusNotice = promptLibrary.persistenceState === "error"
+    ? "이 기기에 라이브러리를 저장하지 못했어요. 이 화면을 닫으면 사라져요."
+    : libraryNotice;
 
   // 맥락 노트 편집 (쉼표 구분 입력 → 배열).
   const note = wiring.contextNote;
@@ -281,7 +263,9 @@ export function StudioAiColorizeExtras({
           </button>
         </div>
         {listPromptLibraryEntries(library).length === 0 ? (
-          <p className="text-[0.62rem] leading-relaxed text-fg-3">저장된 프롬프트가 없어요.</p>
+          <p className="text-[0.62rem] leading-relaxed text-fg-3">
+            {promptLibrary.persistenceState === "loading" ? "라이브러리를 불러오는 중이에요." : "저장된 프롬프트가 없어요."}
+          </p>
         ) : (
           <ul className="space-y-1">
             {listPromptLibraryEntries(library).slice(0, 10).map((entry) => (
@@ -289,14 +273,14 @@ export function StudioAiColorizeExtras({
                 <button type="button" className="min-w-0 flex-1 truncate rounded-lg border border-line bg-card px-2 py-1.5 text-left text-[0.62rem] text-fg-2 hover:border-accent/40" onClick={() => selectLibraryEntry(entry)} title={entry.text}>
                   {entry.text}
                 </button>
-                <button type="button" className="shrink-0 rounded-lg border border-line px-2 py-1.5 text-[0.62rem] text-fg-3 hover:text-fg" aria-label="라이브러리에서 삭제" onClick={() => persistLibrary(removePromptLibraryEntry(library, entry.id))}>
+                <button type="button" className="shrink-0 rounded-lg border border-line px-2 py-1.5 text-[0.62rem] text-fg-3 hover:text-fg" aria-label="라이브러리에서 삭제" onClick={() => removeLibraryEntry(entry.id)}>
                   삭제
                 </button>
               </li>
             ))}
           </ul>
         )}
-        {libraryNotice ? <p className="text-[0.62rem] text-fg-2" role="status">{libraryNotice}</p> : null}
+        {libraryStatusNotice ? <p className="text-[0.62rem] text-fg-2" role="status">{libraryStatusNotice}</p> : null}
       </section>
 
       {/* 7. 참조 첨부 */}

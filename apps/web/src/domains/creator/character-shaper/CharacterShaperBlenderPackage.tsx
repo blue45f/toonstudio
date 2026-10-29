@@ -6,7 +6,7 @@ import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import { prepareBlenderCharacterPackage } from "../vrm/studio-vrm-blender-package-import";
 
-import { evaluateVrmTripoShaperPreflight } from "./character-shaper-tripo-mcp";
+import { evaluateVrmGen3dShaperPreflight } from "./character-shaper-gen3d-bridge";
 
 import type { BlenderPackagePreview } from "../vrm/studio-vrm-blender-package-import";
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
@@ -130,7 +130,7 @@ export function CharacterShaperBlenderPackage({ h, disabled = false }: Character
           : r3c04StatusText("studio.r3c04Status.shaper.blender.empty", "아직 불러온 패키지가 없습니다.")}
       </p>
       {(() => {
-        const preflight = evaluateVrmTripoShaperPreflight({
+        const preflight = evaluateVrmGen3dShaperPreflight({
           humanoidReady: h.status === "ready" && Boolean(h.vrm),
           materialCount: Math.max(4, (h.costumeMeshes?.length ?? 0) + 6),
           tripoDelightApplied: true,

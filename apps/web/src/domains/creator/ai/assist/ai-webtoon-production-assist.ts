@@ -1,5 +1,5 @@
 /**
- * claude-webtoon-production-assist.ts
+ * ai-webtoon-production-assist.ts
  *
  * 국내외 8대 웹툰 AI 제작 소프트웨어 벤치마크 기반 신규 AI 보조 엔진 4종:
  * 1. 모바일 스크롤 시선 유도(Eye-Path S-Curve) · 엄지 데드존 닥터 (클립스튜디오 EX & 네이버웹툰 Cut Doctor 벤치마크)

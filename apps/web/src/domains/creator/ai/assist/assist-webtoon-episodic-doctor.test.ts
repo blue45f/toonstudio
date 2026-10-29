@@ -22,7 +22,7 @@ import {
 
 import * as assistTransport from "@/shared/ai/assist/assist-transport";
 
-describe("claude-webtoon-episodic-doctor", () => {
+describe("assist-webtoon-episodic-doctor", () => {
   const sampleInput = {
     genre: "판타지",
     coreConflict: "봉인된 기억의 각성과 황실의 배신",

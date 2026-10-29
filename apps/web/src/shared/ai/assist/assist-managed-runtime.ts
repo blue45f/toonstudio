@@ -174,7 +174,8 @@ function managedMessage(value: unknown): Anthropic.Message {
 
 const LOGIN_MESSAGE = "로그인하면 ToonStudio AI를 키 없이 바로 쓸 수 있어요. 로그인하거나 설정 > AI에서 내 API 키를 연결해 주세요.";
 const UNAVAILABLE_MESSAGE = "ToonStudio AI가 아직 준비되지 않았어요. 잠시 후 다시 시도하거나 설정 > AI에서 내 API 키를 연결해 주세요.";
-const EXHAUSTED_MESSAGE = "오늘 쓸 수 있는 ToonStudio AI 사용량을 모두 썼어요. 내일(UTC 자정 이후) 다시 쓰거나 설정 > AI에서 내 API 키를 연결해 주세요.";
+// 서버는 오늘 한도를 다 쓴 경우와 무료 제공자가 잠시 요청을 제한한 경우에 같은 코드를 보낸다. 둘 다 맞는 문구를 쓴다.
+const EXHAUSTED_MESSAGE = "ToonStudio AI 사용 한도에 닿았어요. 잠시 뒤 다시 시도해 보고, 계속되면 오늘 한도를 다 쓴 것이라 UTC 자정 이후 다시 쓰거나 설정 > AI에서 내 API 키를 연결해 주세요.";
 const CANCELLED_MESSAGE = "AI 요청이 취소되거나 제한 시간을 초과했습니다. 앱은 같은 요청을 자동 재전송하지 않습니다.";
 
 /** 서버 오류를 기존 보조 기능 오류 모델로 바꾼다. 코드에 따라 화면이 로그인·설정 안내를 고른다. */
@@ -208,18 +209,48 @@ export function mapManagedAssistError(error: unknown, signal?: AbortSignal): Err
     : new Error("ToonStudio AI 요청 중 알 수 없는 오류가 발생했어요.");
 }
 
+let managedQueueTail: Promise<unknown> = Promise.resolve();
+
+/** 앞 요청이 끝나기를 기다린다. 기다리는 동안 취소되면 바로 끝낸다(앞 요청은 그대로 둔다). */
+function waitForManagedTurn(previous: Promise<unknown>, signal?: AbortSignal): Promise<void> {
+  const settled = previous.then(() => undefined, () => undefined);
+  if (!signal) return settled;
+  signal.throwIfAborted();
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason ?? new DOMException("aborted", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    void settled.then(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    });
+  });
+}
+
+/**
+ * 서버는 사용자당 한 번에 하나의 AI 요청만 받는다(동시에 보내면 429 "이미 처리 중"). 같은 탭에서 여러 보조 기능을
+ * 함께 실행해도 실패하지 않게 관리형 요청을 차례로 보낸다. 다음 차례는 앞 요청과 이 요청이 모두 끝난 뒤다.
+ */
+function inManagedQueue<T>(signal: AbortSignal | undefined, task: () => Promise<T>): Promise<T> {
+  const previous = managedQueueTail;
+  const run = waitForManagedTurn(previous, signal).then(task);
+  managedQueueTail = Promise.allSettled([previous, run]);
+  return run;
+}
+
 async function postManaged(
   body: ManagedAssistRequestBody,
   options: ManagedAssistOptions,
 ): Promise<unknown> {
-  const idempotencyKey = newIdempotencyKey();
-  if (options.post) return options.post(body, { signal: options.signal, idempotencyKey });
-  return api.post<unknown>("/studio-ai/messages", body, {
-    ...(options.signal ? { signal: options.signal } : {}),
-    headers: { "Idempotency-Key": idempotencyKey },
-    timeout: MANAGED_ASSIST_TIMEOUT_MS,
-    totalTimeout: MANAGED_ASSIST_TIMEOUT_MS + 5_000,
-    errorMessage: "ToonStudio AI 요청을 처리하지 못했어요.",
+  return inManagedQueue(options.signal, () => {
+    const idempotencyKey = newIdempotencyKey();
+    if (options.post) return options.post(body, { signal: options.signal, idempotencyKey });
+    return api.post<unknown>("/studio-ai/messages", body, {
+      ...(options.signal ? { signal: options.signal } : {}),
+      headers: { "Idempotency-Key": idempotencyKey },
+      timeout: MANAGED_ASSIST_TIMEOUT_MS,
+      totalTimeout: MANAGED_ASSIST_TIMEOUT_MS + 5_000,
+      errorMessage: "ToonStudio AI 요청을 처리하지 못했어요.",
+    });
   });
 }
 

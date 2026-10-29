@@ -1,4 +1,4 @@
-import { Copy, FileImage, FileText, Layers, Loader2, Scissors, Send } from "lucide-react";
+import { FileImage, FileText, Layers, Loader2, Scissors, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -6,7 +6,7 @@ import {
   publishStudioExportResolutionDpi,
 } from "../render/studio-raster-resolution-metadata";
 import { CONTACT_SHEET_PAGE_PRESETS, contactSheetResultMessage, DEFAULT_CONTACT_SHEET_COLUMNS, DEFAULT_CONTACT_SHEET_ROWS, exportContactSheetPdf } from "../studio-pdf-contact-sheet";
-import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark";
+import type { WatermarkSettings } from "../studio-watermark";
 import { resolveStudioCbzWarning, resolveStudioInterchangeExportErrorMessage, resolveStudioOpenRasterWarning } from "./studio-interchange-display-message";
 import { StudioContactSheetPanel } from "../StudioContactSheetPanel";
 import { frozenStatusText } from "../studio-frozen-status-i18n";
@@ -20,12 +20,8 @@ import {
   preloadStudioSvgExportModule,
 } from "./studio-document-export-loaders";
 import {
-  EXPORT_FORMATS,
-  EXPORT_SCALES,
-  canCopyImageToClipboard,
   canvasToBlob,
   downloadBlob,
-  exportFormatLabel,
   exportQuality,
   type ExportFormat,
 } from "./studio-export";
@@ -91,6 +87,10 @@ import type { StudioVectorPdfExportResult } from "./studio-vector-pdf-product";
 import type { StudioWillV1PageExportResult } from "./studio-will-v1-export-bridge";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 
+import { StudioExportBasicOptions } from "./StudioExportBasicOptions";
+import { StudioExportSection } from "./StudioExportSection";
+import { exportMenuText } from "./studio-export-menu-i18n";
+
 import { cx } from "@/shared/lib/cx";
 import { formatNumber } from "@toonstudio/core/format";
 
@@ -150,6 +150,8 @@ export interface StudioExportMenuPanelProps {
   setExportPresetId: Dispatch<SetStateAction<string | null>>;
   setWatermark: (next: WatermarkSettings) => void;
   onCopyToClipboard: () => void;
+  /** 툴바와 같은 현재 페이지 다운로드 경로(형식·배율·워터마크 계약 유지). */
+  onDownloadCurrentPage?: () => void;
   /**
    * 규격 슬라이스용 페이지 캡처 — 현재 페이지("current") 또는 전체 페이지("all")를
    * 내보내기 배율·색보정 합성으로 캡처해 페이지 순서대로 반환한다. 워터마크는 여기서
@@ -194,6 +196,7 @@ export interface StudioExportMenuPanelProps {
   /** SPA host가 제공하면 전체 새로고침 없이 게시 명령 센터로 이동한다. */
   onNavigateToPublish?: (href: string) => void;
   /** Additional delivery formats share this panel's selection, preflight, and capture lock. */
+  renderPrimaryExport?: (context: StudioExportMenuPackageContext) => ReactNode;
   renderAdditionalExports?: (context: StudioExportMenuPackageContext) => ReactNode;
 }
 
@@ -220,6 +223,7 @@ export function StudioExportMenuPanel({
   setExportPresetId,
   setWatermark,
   onCopyToClipboard,
+  onDownloadCurrentPage,
   capturePagesForPreset,
   capturePagesForIndices,
   exportPresetSlicesFromDocument,
@@ -232,6 +236,7 @@ export function StudioExportMenuPanel({
   sourceWorkId = null,
   onNavigateToPublish,
   renderAdditionalExports,
+  renderPrimaryExport,
 }: StudioExportMenuPanelProps) {
   // 규격 슬라이스 실행 상태 — 캡처·저장이 비동기라 패널 안에서 진행/결과를 안내한다.
   const [presetBusy, setPresetBusy] = useState(false);
@@ -1019,91 +1024,40 @@ export function StudioExportMenuPanel({
     }
   }
 
+  const packageContext: StudioExportMenuPackageContext = {
+    pageIndices: packagePreflight.pageIndices,
+    canExport: packagePreflight.canExport,
+    busy: isExporting || publishHandoffBusy || presetBusy || pdfBusy || svgBusy || psdBusy || openRasterBusy || contactBusy || archiveBusy !== null || vectorPdfBusy,
+    rangeLabel: exportRangeLabel,
+    capturePages: captureMultiPageExportCanvases,
+  };
+
   // Always fixed (never absolute): menubar uses overflow-x-auto which clips absolute
   // children to the chrome row — File → 내보내기 then looked like a dead click.
   return (
     <div
       data-studio-export-menu-panel="true"
-      className="fixed inset-x-2 top-12 z-[100] max-h-[calc(100dvh-4rem)] w-auto overflow-y-auto rounded-xl border border-line bg-panel p-3 shadow-2xl sm:inset-x-auto sm:right-3 sm:w-72"
+      className="fixed inset-x-2 top-12 z-[100] max-h-[calc(100dvh-4rem)] w-auto overflow-y-auto rounded-xl border border-line bg-panel p-3 shadow-2xl sm:inset-x-auto sm:right-3 sm:w-80"
     >
-      <div
-        data-studio-publish-handoff-action="true"
-        className="mb-2.5 rounded-xl border border-accent/35 bg-accent-soft/45 p-2.5"
+      <StudioExportBasicOptions
+        canvasWidth={canvasWidth} canvasHeight={canvasHeight}
+        exportScale={exportScale} exportFormat={exportFormat} exportTransparent={exportTransparent}
+        watermark={watermark} isExporting={isExporting} busy={packageContext.busy}
+        setExportScale={setExportScale} setExportFormat={setExportFormat}
+        setExportTransparent={setExportTransparent} setExportPresetId={setExportPresetId}
+        setWatermark={setWatermark} onCopyToClipboard={onCopyToClipboard}
+        onDownloadCurrentPage={onDownloadCurrentPage}
       >
-        <div className="flex items-start gap-2">
-          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-on-accent shadow-sm">
-            <Send size={15} aria-hidden />
-          </span>
-          <span className="min-w-0">
-            <strong className="block text-xs text-fg">게시 화면으로 바로 보내기</strong>
-            <span className="mt-0.5 block text-[0.62rem] leading-snug text-fg-2">
-              선택한 페이지를 로컬 보관함에 안전하게 준비하고 제목과 순서를 유지해 게시 명령 센터로 이동합니다.
-            </span>
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => void preparePublishingHandoff()}
-          disabled={
-            !packagePreflight.canExport || publishHandoffBusy || presetBusy || pdfBusy ||
-            vectorPdfBusy || svgBusy || psdBusy || openRasterBusy || archiveBusy !== null ||
-            contactBusy || isExporting
-          }
-          className="mt-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent shadow-sm transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {publishHandoffBusy ? (
-            <Loader2 size={14} className="animate-spin" aria-hidden />
-          ) : (
-            <Send size={14} aria-hidden />
-          )}
-          {publishHandoffBusy ? frozenStatusText("studio.frozenStatus.export.handoffBusyButton", "게시 원고 준비 중...") : `선택 ${exportRangeCount}페이지 보내기`}
-        </button>
-        {publishHandoffStatus ? (
-          <p
-            role="status"
-            aria-live="polite"
-            className={cx(
-              "mt-2 rounded-md px-2 py-1.5 text-[0.62rem] leading-snug",
-              publishHandoffStatus.tone === "good"
-                ? "bg-good/10 text-good"
-                : publishHandoffStatus.tone === "warn"
-                  ? "bg-warn/10 text-warn"
-                  : "bg-card/70 text-fg-2",
-            )}
-          >
-            {publishHandoffStatus.text}
-          </p>
-        ) : null}
-      </div>
+        {renderPrimaryExport?.(packageContext)}
+      </StudioExportBasicOptions>
+      <p className="mt-2 text-[10px] tabular-nums text-fg-3">
+        출력 폭 {formatNumber(outW)}px
+        {quality !== undefined ? ` · 품질 ${Math.round(quality * 100)}%` : ""}
+      </p>
 
-      <div className="mb-2.5">
-        <span className="mb-1 block text-xs font-semibold text-fg-2">플랫폼 규격</span>
-        <div className="flex flex-wrap gap-1">
-          {EXPORT_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => {
-                setExportPresetId(preset.id);
-                setPresetStatus(null);
-                if (!preset.allowedFormats.includes(exportFormat)) setExportFormat(preset.recommendedFormat);
-                if (preset.width > 0) setExportScale(recommendScale(canvasWidth, preset));
-              }}
-              aria-pressed={exportPresetId === preset.id}
-              title={preset.note}
-              className={cx(
-                "h-7 rounded-lg border px-2 text-[0.68rem] font-semibold transition-colors",
-                exportPresetId === preset.id
-                  ? "border-accent bg-accent-soft text-fg"
-                  : "border-line bg-card text-fg-2 hover:bg-raised"
-              )}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+      <StudioExportSection id="range" title={exportMenuText("range")}
+        description={exportMenuText("rangeHelp", { range: exportRangeLabel })}
+        defaultOpen={!packagePreflight.canExport && nonPrintDpiErrors.length > 0}>
       <div
         data-studio-export-package-preflight="true"
         className="mb-2.5 space-y-1.5 rounded-lg border border-line/70 bg-card/40 p-2"
@@ -1238,6 +1192,31 @@ export function StudioExportMenuPanel({
         <p className="text-[0.62rem] leading-snug text-fg-2" aria-live="polite">
           {exportRangeLabel} · {exportRangeCount}P
         </p>
+        {!packagePreflight.canExport && nonPrintDpiErrors.length > 0 ? (
+          <div role="alert" className="space-y-0.5 rounded-md bg-warn/10 px-2 py-1.5">
+            {nonPrintDpiErrors.map((issue) => (
+              <p key={issue.code} className="text-[0.62rem] leading-snug text-warn">
+                {issue.message}
+              </p>
+            ))}
+          </div>
+        ) : !packagePreflight.canExport ? null : packagePreflight.warnings[0] ? (
+          <p role="status" className="rounded-md bg-raised/50 px-2 py-1.5 text-[0.62rem] leading-snug text-fg-2">
+            {packagePreflight.warnings[0].message}
+          </p>
+        ) : (
+          <p role="status" className="rounded-md bg-good/10 px-2 py-1.5 text-[0.62rem] leading-snug text-good">
+            {packagePreflight.pageIndices.length}페이지 범위가 유효합니다
+            {packagePreflight.dialogueTxt
+              ? ` · 대사 ${packagePreflight.dialogueTxt.cueCount}개`
+              : ""}
+            .
+          </p>
+        )}
+      </div>
+      </StudioExportSection>
+      <StudioExportSection id="print" title={exportMenuText("print")} description={exportMenuText("printHelp")}
+        defaultOpen={Boolean(printPlan?.issue || pdfPrintOptions || bookPrintRequest)}>
         <div className="space-y-1.5 border-t border-line/50 pt-1.5">
           <span className="block text-[0.62rem] font-semibold text-fg-2">인쇄 지오메트리</span>
           <div className="flex flex-wrap gap-1" role="group" aria-label="지오메트리 프리셋">
@@ -1417,186 +1396,75 @@ export function StudioExportMenuPanel({
             </button>
           ) : null}
         </div>
-        {!packagePreflight.canExport && nonPrintDpiErrors.length > 0 ? (
-          <div role="alert" className="space-y-0.5 rounded-md bg-warn/10 px-2 py-1.5">
-            {nonPrintDpiErrors.map((issue) => (
-              <p key={issue.code} className="text-[0.62rem] leading-snug text-warn">
-                {issue.message}
-              </p>
-            ))}
-          </div>
-        ) : !packagePreflight.canExport ? null : packagePreflight.warnings[0] ? (
-          <p role="status" className="rounded-md bg-raised/50 px-2 py-1.5 text-[0.62rem] leading-snug text-fg-2">
-            {packagePreflight.warnings[0].message}
-          </p>
-        ) : (
-          <p role="status" className="rounded-md bg-good/10 px-2 py-1.5 text-[0.62rem] leading-snug text-good">
-            {packagePreflight.pageIndices.length}페이지 범위가 유효합니다
-            {packagePreflight.dialogueTxt
-              ? ` · 대사 ${packagePreflight.dialogueTxt.cueCount}개`
-              : ""}
-            .
-          </p>
-        )}
-        {dialoguePages ? (
-          <label className="flex min-h-10 cursor-pointer items-center gap-2 text-[0.66rem] text-fg-2">
-            <input
-              type="checkbox"
-              checked={includeDialogueTxt}
-              onChange={(event) => setIncludeDialogueTxt(event.target.checked)}
-              className="accent-accent"
-            />
-            대사 TXT 포함(범위 내 · 검수 필수 시 체크)
-          </label>
-        ) : null}
-        <button
-          type="button"
-          onClick={exportDialogueTxtPackage}
-          disabled={!dialoguePages || !packagePreflight.canExport || !packagePreflight.dialogueTxt}
-          className="flex h-11 w-full items-center justify-center gap-1 rounded-lg border border-line bg-card text-[0.68rem] font-semibold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
-          title="선택한 페이지 범위의 대사를 TXT로 저장합니다"
-        >
-          <FileText size={13} aria-hidden /> 대사 TXT 내보내기
-          {packagePreflight.dialogueTxt
-            ? ` · ${packagePreflight.dialogueTxt.cueCount}개`
-            : ""}
-        </button>
-        {packageStatus ? (
-          <p
-            role="status"
-            className={cx(
-              "rounded-md px-2 py-1.5 text-[0.62rem] leading-snug",
-              packageStatus.tone === "good" ? "bg-good/10 text-good" : "bg-warn/10 text-warn"
-            )}
-          >
-            {packageStatus.text}
-          </p>
-        ) : null}
-      </div>
+      {/* 단행본 인쇄 스펙 — 켤 때만 PDF가 인쇄용 빌더(도련·재단 마크·CMYK·중철 스프레드)를 탄다. */}
+      <StudioExportPrintSpecSection pdfPrintSpec={pdfPrintSpec} setPdfPrintSpec={setPdfPrintSpec} />
 
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-fg-2">배율</span>
-        <div className="flex items-center gap-1">
-          {EXPORT_SCALES.map((scale) => (
-            <button
-              key={scale}
-              type="button"
-              onClick={() => {
-                setExportScale(scale);
-                setExportPresetId(null);
-              }}
-              aria-pressed={exportScale === scale}
-              className={cx(
-                "h-7 rounded-lg border px-2.5 text-xs font-semibold transition-colors",
-                exportScale === scale ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"
-              )}
-            >
-              {scale}×
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* 단행본 조판 — 판형을 고르면 재단·도련·안전 박스가 판형 기준인 인쇄용 PDF를 만든다. */}
+      <StudioExportBookLayoutSection
+        bookLayoutSpec={bookLayoutSpec}
+        setBookLayoutSpec={setBookLayoutSpec}
+      />
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-fg-2">포맷</span>
-        <div className="flex items-center gap-1">
-          {EXPORT_FORMATS.map((format) => (
-            <button
-              key={format}
-              type="button"
-              onClick={() => setExportFormat(format)}
-              aria-pressed={exportFormat === format}
-              className={cx(
-                "h-7 rounded-lg border px-2.5 text-xs font-semibold transition-colors",
-                exportFormat === format ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:bg-raised"
-              )}
-            >
-              {exportFormatLabel(format)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <label
-        className={cx(
-          "mt-2.5 flex items-center gap-1.5 text-xs",
-          exportFormat === "jpg" ? "cursor-not-allowed text-fg-3 opacity-50" : "cursor-pointer text-fg-2"
-        )}
-        title={exportFormat === "jpg" ? frozenStatusText("studio.frozenStatus.export.jpgNoTransparency", "JPG는 투명도를 지원하지 않아요") : "배경 없이 투명하게 내보내기"}
+      {/* 선택 범위 페이지 → PDF 한 파일 — JPG(품질 92%)로 담는 규격 무관 백업·제출·공유용. */}
+      <button
+        type="button"
+        onClick={() => void runPdfExport()}
+        disabled={!packagePreflight.canExport || openRasterBusy || pdfBusy || presetBusy || psdBusy || svgBusy || isExporting || contactBusy || (archiveBusy !== null || vectorPdfBusy)}
+        className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50"
+        title={`${exportRangeLabel}(${exportRangeCount}장)를 JPG로 담은 PDF 한 파일로 저장`}
       >
-        <input
-          type="checkbox"
-          checked={exportTransparent && exportFormat !== "jpg"}
-          disabled={exportFormat === "jpg"}
-          onChange={(event) => setExportTransparent(event.target.checked)}
-          className="size-3.5 cursor-pointer accent-[var(--color-accent)] disabled:cursor-not-allowed"
-        />
-        투명 배경 (PNG·WebP)
-      </label>
-
-      <div className="mt-2.5 border-t border-line pt-2.5">
-        <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-fg-2">
-          <input
-            type="checkbox"
-            checked={watermark.enabled}
-            onChange={(event) => setWatermark({ ...watermark, enabled: event.target.checked })}
-            className="size-3.5 cursor-pointer accent-[var(--color-accent)]"
-          />
-          서명·워터마크
-        </label>
-        {watermark.enabled && (
-          <div className="mt-1.5 space-y-1.5">
-            <input
-              type="text"
-              value={watermark.text}
-              onChange={(event) => setWatermark({ ...watermark, text: event.target.value })}
-              placeholder="© 작가명 / @아이디"
-              maxLength={60}
-              className="w-full rounded-lg border border-line bg-card px-2 py-1 text-xs text-fg outline-none focus:border-accent/50"
-            />
-            <div className="flex items-center gap-1.5">
-              <select
-                value={watermark.position}
-                onChange={(event) =>
-                  setWatermark({ ...watermark, position: event.target.value as WatermarkSettings["position"] })
-                }
-                className="h-7 flex-1 rounded-lg border border-line bg-card px-1.5 text-[0.7rem] text-fg outline-none focus:border-accent/50"
-                aria-label="워터마크 위치"
-              >
-                {WATERMARK_POSITIONS.map((position) => (
-                  <option key={position.id} value={position.id}>
-                    {position.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="range"
-                min={0.15}
-                max={1}
-                step={0.05}
-                value={watermark.opacity}
-                onChange={(event) => setWatermark({ ...watermark, opacity: Number(event.target.value) })}
-                className="h-1 w-16 cursor-pointer accent-[var(--color-accent)]"
-                title="워터마크 투명도"
-                aria-label="워터마크 투명도"
-              />
-            </div>
-          </div>
+        <FileText size={13} />{" "}
+        {exportRangeIsPartial
+          ? `PDF (${exportRangeLabel} · ${exportRangeCount}장)`
+          : `PDF (전체 ${pageCount}페이지)`}
+      </button>
+      <p
+        aria-live="polite"
+        className={cx(
+          pdfStatus ? "mt-1.5 rounded-md border px-2 py-1 text-[10px] leading-snug" : "sr-only",
+          pdfStatus?.tone === "info" && "border-line bg-card text-fg-3",
+          pdfStatus?.tone === "good" && "border-good/40 bg-good/10 text-good",
+          pdfStatus?.tone === "warn" && "border-warn/40 bg-warn/10 text-warn"
         )}
-      </div>
+      >
+        {pdfStatus?.text}
+      </p>
 
-      {canCopyImageToClipboard() && (
+      {exportCurrentPageToVectorPdf ? (
         <button
           type="button"
-          onClick={onCopyToClipboard}
-          disabled={isExporting}
-          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised disabled:opacity-50"
-          title="현재 페이지를 클립보드에 이미지로 복사 (붙여넣기로 바로 사용)"
+          onClick={() => void runVectorPdfExport()}
+          disabled={vectorPdfBusy || isExporting}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/35 bg-accent-soft/20 py-1.5 text-xs font-semibold text-fg-2 disabled:opacity-50"
+          title="현재 화면을 보존하고 지원되는 펜 선화를 PDF 벡터 패스로 함께 기록"
         >
-          <Copy size={13} /> 클립보드로 복사
+          <FileText size={13} aria-hidden /> PDF 1.7 · 벡터 선화
         </button>
-      )}
+      ) : null}
+      {vectorPdfStatus ? (
+        <p aria-live="polite" className="mt-1.5 rounded-md border border-line px-2 py-1 text-[10px] leading-snug text-fg-3">
+          {vectorPdfStatus.text}
+        </p>
+      ) : null}
 
+      <StudioContactSheetPanel
+        columns={contactColumns}
+        rows={contactRows}
+        pagePresetId={contactPagePresetId}
+        showLabels={contactShowLabels}
+        pageCount={exportRangeCount}
+        busy={contactBusy}
+        disabled={!packagePreflight.canExport || openRasterBusy || pdfBusy || presetBusy || psdBusy || svgBusy || isExporting || (archiveBusy !== null || vectorPdfBusy)}
+        status={contactStatus}
+        setColumns={setContactColumns}
+        setRows={setContactRows}
+        setPagePresetId={setContactPagePresetId}
+        setShowLabels={setContactShowLabels}
+        onExport={() => void runContactSheetExport()}
+      />
+
+      </StudioExportSection>
+      <StudioExportSection id="exchange" title={exportMenuText("exchange")} description={exportMenuText("exchangeHelp")}>
       {exportCurrentPageToRasterInterchange && (
         <StudioExportOpenRasterSection
           openRasterFormat={openRasterFormat}
@@ -1705,73 +1573,6 @@ export function StudioExportMenuPanel({
         </p>
       </section>
 
-      {/* 단행본 인쇄 스펙 — 켤 때만 PDF가 인쇄용 빌더(도련·재단 마크·CMYK·중철 스프레드)를 탄다. */}
-      <StudioExportPrintSpecSection pdfPrintSpec={pdfPrintSpec} setPdfPrintSpec={setPdfPrintSpec} />
-
-      {/* 단행본 조판 — 판형을 고르면 재단·도련·안전 박스가 판형 기준인 인쇄용 PDF를 만든다. */}
-      <StudioExportBookLayoutSection
-        bookLayoutSpec={bookLayoutSpec}
-        setBookLayoutSpec={setBookLayoutSpec}
-      />
-
-      {/* 선택 범위 페이지 → PDF 한 파일 — JPG(품질 92%)로 담는 규격 무관 백업·제출·공유용. */}
-      <button
-        type="button"
-        onClick={() => void runPdfExport()}
-        disabled={!packagePreflight.canExport || openRasterBusy || pdfBusy || presetBusy || psdBusy || svgBusy || isExporting || contactBusy || (archiveBusy !== null || vectorPdfBusy)}
-        className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50"
-        title={`${exportRangeLabel}(${exportRangeCount}장)를 JPG로 담은 PDF 한 파일로 저장`}
-      >
-        <FileText size={13} />{" "}
-        {exportRangeIsPartial
-          ? `PDF (${exportRangeLabel} · ${exportRangeCount}장)`
-          : `PDF (전체 ${pageCount}페이지)`}
-      </button>
-      <p
-        aria-live="polite"
-        className={cx(
-          pdfStatus ? "mt-1.5 rounded-md border px-2 py-1 text-[10px] leading-snug" : "sr-only",
-          pdfStatus?.tone === "info" && "border-line bg-card text-fg-3",
-          pdfStatus?.tone === "good" && "border-good/40 bg-good/10 text-good",
-          pdfStatus?.tone === "warn" && "border-warn/40 bg-warn/10 text-warn"
-        )}
-      >
-        {pdfStatus?.text}
-      </p>
-
-      {exportCurrentPageToVectorPdf ? (
-        <button
-          type="button"
-          onClick={() => void runVectorPdfExport()}
-          disabled={vectorPdfBusy || isExporting}
-          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/35 bg-accent-soft/20 py-1.5 text-xs font-semibold text-fg-2 disabled:opacity-50"
-          title="현재 화면을 보존하고 지원되는 펜 선화를 PDF 벡터 패스로 함께 기록"
-        >
-          <FileText size={13} aria-hidden /> PDF 1.7 · 벡터 선화
-        </button>
-      ) : null}
-      {vectorPdfStatus ? (
-        <p aria-live="polite" className="mt-1.5 rounded-md border border-line px-2 py-1 text-[10px] leading-snug text-fg-3">
-          {vectorPdfStatus.text}
-        </p>
-      ) : null}
-
-      <StudioContactSheetPanel
-        columns={contactColumns}
-        rows={contactRows}
-        pagePresetId={contactPagePresetId}
-        showLabels={contactShowLabels}
-        pageCount={exportRangeCount}
-        busy={contactBusy}
-        disabled={!packagePreflight.canExport || openRasterBusy || pdfBusy || presetBusy || psdBusy || svgBusy || isExporting || (archiveBusy !== null || vectorPdfBusy)}
-        status={contactStatus}
-        setColumns={setContactColumns}
-        setRows={setContactRows}
-        setPagePresetId={setContactPagePresetId}
-        setShowLabels={setContactShowLabels}
-        onExport={() => void runContactSheetExport()}
-      />
-
       {/* 현재 페이지 → 벡터 SVG — 도형·말풍선·텍스트를 벡터로 보존(픽셀 필터·톤 등 일부는 스킵 고지). */}
       {exportCurrentPageToSvg && (
         <>
@@ -1848,10 +1649,85 @@ export function StudioExportMenuPanel({
         </>
       )}
 
-      <p className="mt-2 text-[10px] tabular-nums text-fg-3">
-        출력 폭 {formatNumber(outW)}px
-        {quality !== undefined ? ` · 품질 ${Math.round(quality * 100)}%` : ""}
-      </p>
+      </StudioExportSection>
+      <StudioExportSection id="publish" title={exportMenuText("publish")} description={exportMenuText("publishHelp")}>
+      <div
+        data-studio-publish-handoff-action="true"
+        className="mb-2.5 rounded-xl border border-accent/35 bg-accent-soft/45 p-2.5"
+      >
+        <div className="flex items-start gap-2">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-on-accent shadow-sm">
+            <Send size={15} aria-hidden />
+          </span>
+          <span className="min-w-0">
+            <strong className="block text-xs text-fg">게시 화면으로 바로 보내기</strong>
+            <span className="mt-0.5 block text-[0.62rem] leading-snug text-fg-2">
+              선택한 페이지를 로컬 보관함에 안전하게 준비하고 제목과 순서를 유지해 게시 명령 센터로 이동합니다.
+            </span>
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => void preparePublishingHandoff()}
+          disabled={
+            !packagePreflight.canExport || publishHandoffBusy || presetBusy || pdfBusy ||
+            vectorPdfBusy || svgBusy || psdBusy || openRasterBusy || archiveBusy !== null ||
+            contactBusy || isExporting
+          }
+          className="mt-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent shadow-sm transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {publishHandoffBusy ? (
+            <Loader2 size={14} className="animate-spin" aria-hidden />
+          ) : (
+            <Send size={14} aria-hidden />
+          )}
+          {publishHandoffBusy ? frozenStatusText("studio.frozenStatus.export.handoffBusyButton", "게시 원고 준비 중...") : `선택 ${exportRangeCount}페이지 보내기`}
+        </button>
+        {publishHandoffStatus ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className={cx(
+              "mt-2 rounded-md px-2 py-1.5 text-[0.62rem] leading-snug",
+              publishHandoffStatus.tone === "good"
+                ? "bg-good/10 text-good"
+                : publishHandoffStatus.tone === "warn"
+                  ? "bg-warn/10 text-warn"
+                  : "bg-card/70 text-fg-2",
+            )}
+          >
+            {publishHandoffStatus.text}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mb-2.5">
+        <span className="mb-1 block text-xs font-semibold text-fg-2">플랫폼 규격</span>
+        <div className="flex flex-wrap gap-1">
+          {EXPORT_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => {
+                setExportPresetId(preset.id);
+                setPresetStatus(null);
+                if (!preset.allowedFormats.includes(exportFormat)) setExportFormat(preset.recommendedFormat);
+                if (preset.width > 0) setExportScale(recommendScale(canvasWidth, preset));
+              }}
+              aria-pressed={exportPresetId === preset.id}
+              title={preset.note}
+              className={cx(
+                "h-7 rounded-lg border px-2 text-[0.68rem] font-semibold transition-colors",
+                exportPresetId === preset.id
+                  ? "border-accent bg-accent-soft text-fg"
+                  : "border-line bg-card text-fg-2 hover:bg-raised"
+              )}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {selectedPreset && validation && (
         <div className="mt-2 space-y-1">
@@ -1920,13 +1796,45 @@ export function StudioExportMenuPanel({
           </p>
         </div>
       )}
-      {renderAdditionalExports?.({
-        pageIndices: packagePreflight.pageIndices,
-        canExport: packagePreflight.canExport,
-        busy: isExporting || presetBusy || pdfBusy || svgBusy || psdBusy || openRasterBusy || contactBusy || (archiveBusy !== null || vectorPdfBusy),
-        rangeLabel: exportRangeLabel,
-        capturePages: captureMultiPageExportCanvases,
-      })}
+      <div className="mt-2 space-y-1.5">
+        {dialoguePages ? (
+          <label className="flex min-h-10 cursor-pointer items-center gap-2 text-[0.66rem] text-fg-2">
+            <input
+              type="checkbox"
+              checked={includeDialogueTxt}
+              onChange={(event) => setIncludeDialogueTxt(event.target.checked)}
+              className="accent-accent"
+            />
+            대사 TXT 포함(범위 내 · 검수 필수 시 체크)
+          </label>
+        ) : null}
+        <button
+          type="button"
+          onClick={exportDialogueTxtPackage}
+          disabled={!dialoguePages || !packagePreflight.canExport || !packagePreflight.dialogueTxt}
+          className="flex h-11 w-full items-center justify-center gap-1 rounded-lg border border-line bg-card text-[0.68rem] font-semibold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
+          title="선택한 페이지 범위의 대사를 TXT로 저장합니다"
+        >
+          <FileText size={13} aria-hidden /> 대사 TXT 내보내기
+          {packagePreflight.dialogueTxt
+            ? ` · ${packagePreflight.dialogueTxt.cueCount}개`
+            : ""}
+        </button>
+        {packageStatus ? (
+          <p
+            role="status"
+            className={cx(
+              "rounded-md px-2 py-1.5 text-[0.62rem] leading-snug",
+              packageStatus.tone === "good" ? "bg-good/10 text-good" : "bg-warn/10 text-warn"
+            )}
+          >
+            {packageStatus.text}
+          </p>
+        ) : null}
+      </div>
+
+        {renderAdditionalExports?.(packageContext)}
+      </StudioExportSection>
     </div>
   );
 }

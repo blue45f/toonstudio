@@ -1,5 +1,5 @@
 /**
- * claude-n7-and-llm-runners.ts
+ * assist-n7-and-llm-runners.ts
  *
  * `origin/main`에서 병합된 9종 순수 LLM 프롬프트·파서 모듈을 보조 기능 경로(등록한 키, 없으면 ToonStudio AI
  * 관리형 경로) 및 `assistCreate`와 연결하는 실시간 실행기:
