@@ -151,6 +151,34 @@ describe("runManagedAssistParse", () => {
     expect(repair.output_config?.format?.type).toBe("json_schema");
   });
 
+  it("끝이 잘린 답 안의 중첩 객체를 답으로 쓰지 않고, 복구 요청에 바깥 문법 문제를 싣는다", async () => {
+    const post = vi.fn()
+      .mockResolvedValueOnce(serverMessage("{\"verdict\": \"좋아요\", \"detail\": {\"score\": 5}"))
+      .mockResolvedValueOnce(serverMessage(JSON.stringify({ verdict: "좋아요", score: 90 })));
+
+    const { parsed } = await runManagedAssistParse(
+      { model: "claude-opus-5-5", max_tokens: 800, messages: [{ role: "user", content: "점검해 줘" }] },
+      Schema,
+      { post },
+    );
+    expect(parsed).toEqual({ verdict: "좋아요", score: 90 });
+    const [repair] = post.mock.calls[1] as unknown as [ManagedAssistRequestBody];
+    const instruction = String(repair.messages[2]?.content);
+    expect(instruction).toMatch(/JSON 문법이 맞지 않아요/u);
+    expect(instruction).not.toMatch(/verdict: /u);
+  });
+
+  it("설명 속 짝 없는 괄호 뒤의 진짜 답이 스키마를 통과하면 복구 요청 없이 쓴다", async () => {
+    const post = vi.fn(async () => serverMessage("예시 { 는 무시하고, 답: {\"verdict\": \"좋아요\", \"score\": 90}"));
+    const { parsed } = await runManagedAssistParse(
+      { model: "claude-opus-5-5", max_tokens: 800, messages: [{ role: "user", content: "점검해 줘" }] },
+      Schema,
+      { post },
+    );
+    expect(parsed).toEqual({ verdict: "좋아요", score: 90 });
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
   it("고친 답도 맞지 않으면 더 보내지 않고 형식 오류로 알린다", async () => {
     const post = vi.fn(async () => serverMessage("지금은 답하기 어려워요."));
 
