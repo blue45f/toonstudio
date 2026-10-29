@@ -16,6 +16,7 @@ import { parseClipContainer } from "../../packages/studio-format-gateway/src/chu
 import { importGimpBrush, importGimpPattern, inspectGimpBrushFormat } from "../../packages/studio-format-gateway/src/gimp-brush";
 import { importGimpBrushPipe } from "../../packages/studio-format-gateway/src/gimp-brush-pipe";
 import { importGimpGeneratedBrush } from "../../packages/studio-format-gateway/src/gimp-generated-brush";
+import { importKra, inspectKraSignature } from "../../packages/studio-format-gateway/src/kra-document";
 import { importXcf, inspectXcfHeader } from "../../packages/studio-format-gateway/src/xcf";
 
 /**
@@ -42,6 +43,10 @@ const ASEPRITE_SAMPLES = listSamples(/\.(aseprite|ase)$/i).filter(
   (name) => inspectAsepriteSignature(new Uint8Array(readFileSync(join(SAMPLE_DIR, name)).subarray(0, 256))) === "aseprite",
 );
 const GIMP_BRUSH_SAMPLES = listSamples(/\.(gbr|gih|pat|vbr)$/i);
+/** `.kra`와 `.krz`는 둘 다 Krita 문서다. 서명이 Krita가 아닌 파일은 건너뛴다. */
+const KRA_SAMPLES = listSamples(/\.(kra|krz)$/i).filter(
+  (name) => inspectKraSignature(new Uint8Array(readFileSync(join(SAMPLE_DIR, name)).subarray(0, 256))) === "kra",
+);
 /** XCF 읽기 오라클로 쓰는 ImageMagick. 없으면 바이트 대조 테스트는 등록되지 않는다. */
 const IMAGEMAGICK_AVAILABLE = spawnSync("convert", ["-version"]).status === 0;
 const ORACLE_TIMEOUT_MS = 180_000;
@@ -248,7 +253,64 @@ function registerGimpBrushSamples(): void {
   });
 }
 
+function registerKraSamples(): void {
+  describe("Krita 문서 로컬 실샘플", () => {
+    // 구조 오류를 뜻하는 진단. 마스크·복제 레이어 같은 의미 손실(kra-mask-unsupported 등)과 새 Krita의 합성 연산 id는 허용한다.
+    const STRUCTURAL_UNSUPPORTED = [
+      "kra-layer-data-missing",
+      "kra-layer-data-shared",
+      "kra-layer-filename-invalid",
+      "kra-layer-read-failed",
+      "kra-layer-decode-failed",
+      "kra-layer-limit-exceeded",
+      "kra-layer-offset-invalid",
+    ];
+    // 관찰한 Krita 5.2.2 파일의 가정(첫 항목 mimetype, 타일 파일 끝, .defaultpixel, 속성 형식)이 실제 파일에서 깨졌다는 신호.
+    const STRUCTURAL_WARNINGS = [
+      "kra-attribute-invalid",
+      "kra-default-pixel-missing",
+      "kra-mimetype-missing",
+      "kra-mimetype-not-first",
+      "kra-mimetype-unexpected",
+      "kra-png-signature-invalid",
+      "kra-resource-read-failed",
+      "kra-tile-trailing-bytes",
+    ];
+
+    for (const name of KRA_SAMPLES) {
+      it(`${name}: 구조 진단 없이 읽히고 래스터 레이어 픽셀이 선언 크기와 맞는다`, async () => {
+        const bytes = new Uint8Array(readFileSync(join(SAMPLE_DIR, name)));
+        const result = await importKra(bytes);
+
+        expect(codes(result.unsupported).filter((code) => STRUCTURAL_UNSUPPORTED.includes(code))).toEqual([]);
+        expect(codes(result.warnings).filter((code) => STRUCTURAL_WARNINGS.includes(code))).toEqual([]);
+        expect(result.layers.length).toBeGreaterThan(0);
+        for (const layer of result.layers) {
+          if (layer.parentIndex !== null) {
+            expect(layer.parentIndex).toBeLessThan(layer.index);
+            expect(result.layers[layer.parentIndex]?.kind).toBe("group");
+          }
+          if (layer.kind !== "raster") {
+            expect(layer.pixels).toBeNull();
+            continue;
+          }
+          if (layer.colorSpace !== null && !["RGBA", "RGBA16", "GRAYA", "GRAYAU16"].includes(layer.colorSpace)) continue;
+          if (layer.pixels === null) {
+            // 타일이 하나도 없고 기본 픽셀이 투명한 빈 레이어만 픽셀이 없을 수 있다
+            expect(layer.tileCount).toBe(0);
+            expect(layer.defaultPixel?.[3]).toBe(0);
+          } else {
+            expect(layer.extent).not.toBeNull();
+            expect(layer.pixels.length).toBe(layer.extent!.width * layer.extent!.height * 4);
+          }
+        }
+      });
+    }
+  });
+}
+
 if (CLIP_SAMPLES.length > 0) registerClipSamples();
 if (XCF_SAMPLES.length > 0) registerXcfSamples();
 if (GIMP_BRUSH_SAMPLES.length > 0) registerGimpBrushSamples();
 if (ASEPRITE_SAMPLES.length > 0) registerAsepriteSamples();
+if (KRA_SAMPLES.length > 0) registerKraSamples();

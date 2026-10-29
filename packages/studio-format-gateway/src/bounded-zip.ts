@@ -9,6 +9,10 @@
  * every extracted payload with CRC-32. Stored entries and raw-DEFLATE entries are supported.
  */
 
+import { equalBytes, validateZipPath, ZipPathRejection, type FormatZipPathPolicy, type ValidatedZipPath } from "./bounded-zip-path";
+
+export type { FormatZipPathPolicy } from "./bounded-zip-path";
+
 const ZIP_LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50;
 const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
 const ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
@@ -26,9 +30,6 @@ const ZIP_DEFLATE_OPTION_FLAGS = 0x0006;
 const ZIP_STORE_METHOD = 0;
 const ZIP_DEFLATE_METHOD = 8;
 const ZIP64_EXTRA_FIELD_ID = 0x0001;
-const WINDOWS_RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu;
-const UNSAFE_PATH_CHARACTER = /[<>:"|?*\\]/u;
-const UNSAFE_BIDI_CHARACTER = /[\u202a-\u202e\u2066-\u2069]/u;
 
 export const FORMAT_ZIP_READER_LIMITS = Object.freeze({
   maxArchiveBytes: 520_000_000,
@@ -70,6 +71,8 @@ export type FormatZipInflateRawAdapter = (
 export interface FormatZipReaderOptions {
   /** Callers may lower, but never raise, the fixed browser-safety limits. */
   limits?: Partial<FormatZipReaderLimits>;
+  /** Defaults to `portable`. Use `memory` only when entries are never written to a file system. */
+  pathPolicy?: FormatZipPathPolicy;
   /** Raw-DEFLATE adapter for runtimes without DecompressionStream("deflate-raw"). */
   inflateRaw?: FormatZipInflateRawAdapter;
   signal?: AbortSignal;
@@ -146,12 +149,6 @@ interface ByteReader {
   read(offset: number, length: number, signal?: AbortSignal): Promise<Uint8Array>;
 }
 
-interface ValidatedPath {
-  path: string;
-  comparisonKey: string;
-  directory: boolean;
-}
-
 interface CentralEntry extends FormatZipEntry {
   flags: number;
   versionNeeded: number;
@@ -167,7 +164,6 @@ interface LocatedEocd {
 }
 
 const textDecoder = new TextDecoder("utf-8", { fatal: true });
-const textEncoder = new TextEncoder();
 
 const crc32Table = (() => {
   const table = new Uint32Array(256);
@@ -326,77 +322,13 @@ function uint32(view: DataView, offset: number): number {
   return view.getUint32(offset, true);
 }
 
-function hasUnpairedSurrogate(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.charCodeAt(index);
-    if (code >= 0xd800 && code <= 0xdbff) {
-      const next = value.charCodeAt(index + 1);
-      if (!(next >= 0xdc00 && next <= 0xdfff)) return true;
-      index += 1;
-    } else if (code >= 0xdc00 && code <= 0xdfff) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function decodeAndValidatePath(bytes: Uint8Array, maxPathBytes: number): ValidatedPath {
-  if (bytes.byteLength === 0 || bytes.byteLength > maxPathBytes) {
-    throw zipError("PATH_INVALID", "ZIP 경로 길이가 허용 범위를 벗어났습니다.");
-  }
-  let decoded: string;
+function decodeAndValidatePath(bytes: Uint8Array, maxPathBytes: number, policy: FormatZipPathPolicy): ValidatedZipPath {
   try {
-    decoded = textDecoder.decode(bytes);
-  } catch {
-    throw zipError("PATH_INVALID", "ZIP 경로가 올바른 UTF-8이 아닙니다.");
+    return validateZipPath(bytes, maxPathBytes, policy);
+  } catch (error) {
+    if (error instanceof ZipPathRejection) throw zipError("PATH_INVALID", error.message, error.path);
+    throw error;
   }
-  if (hasUnpairedSurrogate(decoded) || !equalBytes(textEncoder.encode(decoded), bytes)) {
-    throw zipError("PATH_INVALID", "ZIP 경로의 Unicode 인코딩이 정규적이지 않습니다.");
-  }
-  const normalized = decoded.normalize("NFKC");
-  if (normalized !== decoded) {
-    throw zipError("PATH_INVALID", "ZIP 경로는 NFKC 정규형이어야 합니다.", decoded);
-  }
-
-  const directory = decoded.endsWith("/");
-  const pathWithoutDirectorySlash = directory ? decoded.slice(0, -1) : decoded;
-  if (
-    pathWithoutDirectorySlash.length === 0 ||
-    decoded.startsWith("/") ||
-    decoded.startsWith("//") ||
-    /^[A-Za-z]:/u.test(decoded) ||
-    UNSAFE_PATH_CHARACTER.test(decoded) ||
-    UNSAFE_BIDI_CHARACTER.test(decoded) ||
-    [...decoded].some((character) => {
-      const code = character.codePointAt(0) ?? 0;
-      return code <= 31 || code === 127;
-    })
-  ) {
-    throw zipError("PATH_INVALID", "ZIP 경로에 절대 경로 또는 안전하지 않은 문자가 있습니다.", decoded);
-  }
-
-  for (const segment of pathWithoutDirectorySlash.split("/")) {
-    if (
-      segment.length === 0 ||
-      segment === "." ||
-      segment === ".." ||
-      segment.trim() !== segment ||
-      /[. ]$/u.test(segment) ||
-      WINDOWS_RESERVED_NAME.test(segment)
-    ) {
-      throw zipError("PATH_INVALID", "ZIP 경로에 안전하지 않은 구간이 있습니다.", decoded);
-    }
-  }
-
-  return { path: decoded, comparisonKey: decoded.toLowerCase(), directory };
-}
-
-function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
-  if (left.byteLength !== right.byteLength) return false;
-  for (let index = 0; index < left.byteLength; index += 1) {
-    if (left[index] !== right[index]) return false;
-  }
-  return true;
 }
 
 function validateExtraFields(bytes: Uint8Array, path?: string): void {
@@ -556,6 +488,7 @@ async function parseCentralDirectory(
   reader: ByteReader,
   eocd: LocatedEocd,
   limits: FormatZipReaderLimits,
+  policy: FormatZipPathPolicy,
   signal?: AbortSignal
 ): Promise<CentralEntry[]> {
   const bytes = await reader.read(eocd.centralOffset, eocd.centralBytes, signal);
@@ -613,7 +546,7 @@ async function parseCentralDirectory(
       offset + ZIP_CENTRAL_HEADER_BYTES,
       offset + ZIP_CENTRAL_HEADER_BYTES + pathBytesLength
     );
-    const path = decodeAndValidatePath(pathBytes, limits.maxPathBytes);
+    const path = decodeAndValidatePath(pathBytes, limits.maxPathBytes, policy);
     validateFlags(flags, method, path.path);
     const pathKey = path.directory
       ? path.comparisonKey.slice(0, -1)
@@ -816,6 +749,10 @@ export async function readFormatZipArchive(
   options: FormatZipReaderOptions = {}
 ): Promise<FormatZipArchive> {
   const limits = resolveLimits(options.limits);
+  const policy = options.pathPolicy ?? "portable";
+  if (policy !== "portable" && policy !== "memory") {
+    throw zipError("LIMIT_INVALID", "pathPolicy는 portable 또는 memory여야 합니다.");
+  }
   throwIfAborted(options.signal);
   const reader = createByteReader(source);
   if (!Number.isSafeInteger(reader.size) || reader.size < 0) {
@@ -826,7 +763,7 @@ export async function readFormatZipArchive(
   }
 
   const eocd = await locateEocd(reader, limits, options.signal);
-  const centralEntries = await parseCentralDirectory(reader, eocd, limits, options.signal);
+  const centralEntries = await parseCentralDirectory(reader, eocd, limits, policy, options.signal);
   const localEntries = await validateLocalRecords(
     reader,
     centralEntries,
