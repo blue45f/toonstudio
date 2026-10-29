@@ -95,6 +95,9 @@ function count(value: unknown, optional = false): number | null {
 
 export function readExperimentUsage(raw: unknown): ExperimentUsage | null {
   if (!record(raw)) return null;
+  // iteration별 비용 합산은 지원하지 않으므로 최상위 사용량만으로 추정액을 만들지 않는다.
+  const iterations = raw.iterations;
+  if (iterations !== undefined && iterations !== null && (!Array.isArray(iterations) || iterations.length > 0)) return null;
   const inputTokens = count(raw.input_tokens);
   const outputTokens = count(raw.output_tokens);
   const cacheReadTokens = count(raw.cache_read_input_tokens, true);

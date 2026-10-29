@@ -155,6 +155,33 @@ describe("Studio AI 실험 비용·실행 경계", () => {
     expect(report.unconfirmedReservedUsd).toBeGreaterThan(0);
   });
 
+  it("iteration 사용량은 최대 비용 예약을 유지하고 후속 요청을 중단한다", async () => {
+    const first = buildExperimentPlan(MODEL)[0];
+    if (!first) throw new Error("fixture가 없습니다.");
+    const execute = vi.fn(async () => response(0, {
+      usage: {
+        input_tokens: 100,
+        output_tokens: 50,
+        iterations: [
+          { type: "compaction", input_tokens: 1000, output_tokens: 250 },
+          { type: "message", model: MODEL, input_tokens: 100, output_tokens: 50 },
+        ],
+      },
+    }));
+    const report = await runExperiments(OPTIONS, execute);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(report.results).toHaveLength(1);
+    expect(report.results[0]).toMatchObject({
+      outcome: "invalid-usage", usage: null, estimatedUsd: null,
+      reservedUsd: first.reservedUsd, unconfirmedReservedUsd: first.reservedUsd,
+      errorCode: "cost-unconfirmed",
+    });
+    expect(report.estimatedUsd).toBe(0);
+    expect(report.unconfirmedReservedUsd).toBe(first.reservedUsd);
+    expect(report.completedAll).toBe(false);
+    expect(report.passed).toBe(false);
+  });
+
   it("응답 모델의 단가가 없으면 계속 호출하지 않는다", async () => {
     const execute = vi.fn(async () => response(0, { model: "unpriced-model" }));
     const report = await runExperiments(OPTIONS, execute);
@@ -198,6 +225,24 @@ describe("Studio AI 실험 비용·실행 경계", () => {
 describe("Studio AI 실험 사용량·객관 검증", () => {
   it.each([{ input_tokens: -1, output_tokens: 1 }, { input_tokens: "10", output_tokens: 1 }, { input_tokens: 1, output_tokens: Number.NaN }, { input_tokens: 1 }])("손상된 사용량을 거절한다", (usage) => {
     expect(readExperimentUsage(usage)).toBeNull();
+  });
+
+  it("iteration 내역이 없거나 null 또는 빈 배열이면 단일 응답 사용량을 허용한다", () => {
+    const usage = { input_tokens: 100, output_tokens: 50 };
+    const expected = { inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0, cacheWriteOneHourTokens: 0 };
+    expect(readExperimentUsage(usage)).toEqual(expected);
+    expect(readExperimentUsage({ ...usage, iterations: null })).toEqual(expected);
+    expect(readExperimentUsage({ ...usage, iterations: [] })).toEqual(expected);
+  });
+
+  it.each([
+    { label: "일반 메시지 한 건", iterations: [{ type: "message", model: MODEL, input_tokens: 100, output_tokens: 50 }] },
+    { label: "compaction 한 건", iterations: [{ type: "compaction", input_tokens: 1000, output_tokens: 250 }] },
+    { label: "객체", iterations: {} },
+    { label: "문자열", iterations: "invalid" },
+    { label: "숫자", iterations: 0 },
+  ])("지원하지 않는 iterations $label 사용량을 거절한다", ({ iterations }) => {
+    expect(readExperimentUsage({ input_tokens: 100, output_tokens: 50, iterations })).toBeNull();
   });
 
   it("캐시 생성 TTL별 합계가 총량과 맞아야 한다", () => {
