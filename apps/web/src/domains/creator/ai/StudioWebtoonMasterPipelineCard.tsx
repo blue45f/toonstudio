@@ -614,7 +614,7 @@ export function StudioWebtoonMasterPipelineCard({
         </div>
       </details>
 
-      {/* Claude AI 수석 PD 스토리보드·대사 서브텍스트·4레이어 실시간 코칭 */}
+      {/* AI 수석 PD 스토리보드·대사 서브텍스트·4레이어 실시간 코칭 */}
       <div
         data-testid="claude-storyboard-assist-panel"
         className="flex flex-col gap-1.5 rounded-lg border border-accent bg-card p-2.5 text-[0.62rem]"
@@ -622,7 +622,7 @@ export function StudioWebtoonMasterPipelineCard({
         <div className="flex flex-wrap items-center justify-between gap-1.5">
           <span className="inline-flex items-center gap-1 font-bold text-fg">
             <Sparkles size={12} className="text-accent" aria-hidden="true" />
-            Claude AI 수석 PD 코칭 ({activeClaudeAssist.source === "claude-live" ? "Claude API 실시간" : "로컬 하이브리드"} · 모델:{" "}
+            AI 수석 PD 코칭 ({activeClaudeAssist.source === "claude-live" ? "AI 실시간" : "로컬 하이브리드"} · 모델:{" "}
             {activeClaudeAssist.model})
           </span>
           <div className="flex flex-wrap items-center gap-1">
@@ -638,7 +638,7 @@ export function StudioWebtoonMasterPipelineCard({
               )}
             >
               <Wand2 size={10} aria-hidden="true" />
-              {isRunningClaudeAssist ? "Claude 분석 중..." : "Claude AI 수석 PD 코칭 실행"}
+              {isRunningClaudeAssist ? "AI 분석 중..." : "AI 수석 PD 코칭 실행"}
             </button>
             <button
               type="button"

@@ -402,7 +402,7 @@ export function StudioRea15PlatformsWorkbenchPanel({
             실행 소스:{" "}
             <strong className="text-fg">
               {activeEnvelope.source === "claude-live"
-                ? `Claude Live (${activeEnvelope.modelUsed})`
+                ? `AI 실시간 (${activeEnvelope.modelUsed})`
                 : `결정적 로컬 엔진 (${activeEnvelope.routedModel} 라우팅 규격)`}
             </strong>
           </span>

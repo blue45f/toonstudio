@@ -81,7 +81,7 @@ async function executeEngineFusionAssist<TSchema extends z.ZodTypeAny>(params: {
       modelUsed: "local-deterministic",
       usage: EMPTY_CLAUDE_TOKEN_USAGE,
       estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude API 경로가 없어 결정적 도메인 엔진 결과를 사용했습니다.",
+      fallbackReason: "사용할 수 있는 AI 경로가 없어 결정적 도메인 엔진 결과를 사용했습니다.",
     };
     return makeFusionEnvelope(fallbackReport, "local-fallback", meta);
   }

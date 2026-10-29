@@ -223,7 +223,7 @@ export function StudioWebtoonEpisodicDoctorPanel({
             className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[0.58rem] font-semibold text-accent"
           >
             {activeSource === "claude-live"
-              ? "Claude 실시간 시뮬레이션 완료"
+              ? "AI 실시간 시뮬레이션 완료"
               : "하이브리드 즉시 시뮬레이션"}
           </span>
           <button
@@ -238,7 +238,7 @@ export function StudioWebtoonEpisodicDoctorPanel({
             )}
           >
             <Wand2 className="h-3 w-3" aria-hidden="true" />
-            {isRunningClaude ? "Claude 정밀 시뮬레이션 중..." : "현재 탭 Claude 실시간 시뮬레이션"}
+            {isRunningClaude ? "AI 정밀 시뮬레이션 중..." : "현재 탭 AI 실시간 시뮬레이션"}
           </button>
         </div>
       </div>

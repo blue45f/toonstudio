@@ -198,7 +198,7 @@ async function executeCompetitorEngine<T>(params: {
       modelUsed: requestedModel,
       usage: EMPTY_CLAUDE_TOKEN_USAGE,
       estimatedCostUsd: 0,
-      fallbackReason: err instanceof Error ? err.message : "Claude API 호출 실패",
+      fallbackReason: err instanceof Error ? err.message : "AI 호출 실패",
     };
   }
 }

@@ -131,7 +131,7 @@ async function executePhase6EcosystemEngine<TSchema extends z.ZodTypeAny>(params
       modelUsed: "local-deterministic",
       usage: EMPTY_CLAUDE_TOKEN_USAGE,
       estimatedCostUsd: 0,
-      fallbackReason: "활성 Claude API 경로가 없어 결정적 로컬 폴백 엔진을 사용했습니다.",
+      fallbackReason: "사용할 수 있는 AI 경로가 없어 결정적 로컬 폴백 엔진을 사용했습니다.",
     };
     return makeEnvelope(fallbackReport, "local-fallback", meta);
   }

@@ -343,7 +343,7 @@ export function StudioPhase6EcosystemSuitePanel({
           <span>
             실행 소스:{" "}
             <strong className="text-fg">
-              {activeEnvelope.source === "claude-live" ? "Claude Live API" : "로컬 결정적 폴백"}
+              {activeEnvelope.source === "claude-live" ? "AI 실시간" : "로컬 결정적 폴백"}
             </strong>{" "}
             · 프로필: <code>{activeEnvelope.taskProfile}</code> · 모델:{" "}
             <code>{activeEnvelope.modelUsed}</code>

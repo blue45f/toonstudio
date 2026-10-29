@@ -116,7 +116,7 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
     expect(onApplyScript).toHaveBeenCalledTimes(1);
     expect(onApplyScript.mock.calls[0]?.[0]).toContain("[연기:");
 
-    // Claude AI 실시간 감수 실행
+    // AI 실시간 감수 실행
     claudeParseMock.mockResolvedValueOnce({
       message: {
         model: "claude-haiku-5-5",
@@ -155,7 +155,7 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
     fireEvent.click(screen.getByTestId("run-claude-production-assist-btn"));
     await waitFor(() => {
       expect(screen.getByTestId("production-assist-engine-status").textContent).toContain(
-        "Claude API 실시간",
+        "AI 실시간",
       );
     });
   });

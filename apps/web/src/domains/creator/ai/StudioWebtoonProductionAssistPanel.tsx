@@ -367,7 +367,7 @@ export function StudioWebtoonProductionAssistPanel({
         >
           엔진 상태:{" "}
           <strong className="text-accent">
-            {currentActiveSource === "claude-live" ? "Claude API 실시간" : "로컬 하이브리드"}
+            {currentActiveSource === "claude-live" ? "AI 실시간" : "로컬 하이브리드"}
           </strong>{" "}
           ({currentActiveModel})
         </span>
@@ -384,7 +384,7 @@ export function StudioWebtoonProductionAssistPanel({
             )}
           >
             <Wand2 size={10} aria-hidden="true" />
-            {isRunningClaude ? "Claude AI 감수 중..." : "Claude AI 실시간 감수 실행"}
+            {isRunningClaude ? "AI 감수 중..." : "AI 실시간 감수 실행"}
           </button>
           <button
             type="button"

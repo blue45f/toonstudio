@@ -159,8 +159,8 @@ export function StudioCharacterCanonEditor({
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-accent/25 bg-accent/5 px-3 py-2">
         <span className="text-xs font-semibold text-fg-2">
           {bt(
-            "젠버스(Genvas) 벤치마크: 캐릭터 이름이나 짧은 키워드만 적어도 Claude AI가 컷 간 일관성 유지용 외모·의상·시드 태그를 설계합니다.",
-            "Genvas benchmark: Enter a character name or brief keywords and let Claude AI draft consistent appearance, outfit, and seed lock tags.",
+            "캐릭터 이름이나 짧은 키워드만 적어도 AI가 컷마다 같은 얼굴을 유지하도록 외모·의상·시드 태그를 설계합니다.",
+            "Enter a character name or a few keywords and AI drafts the appearance, outfit, and seed lock tags that keep the character consistent across cuts.",
           )}
         </span>
         <button
@@ -172,8 +172,8 @@ export function StudioCharacterCanonEditor({
         >
           <Sparkles size={13} aria-hidden />
           {aiDrafting
-            ? bt("Claude 캐논 설계 중...", "Drafting with Claude...")
-            : bt("Claude AI로 외모·의상·태그 자동 완성", "Auto-fill Canon with Claude AI")}
+            ? bt("AI 캐논 설계 중...", "Drafting with AI...")
+            : bt("AI로 외모·의상·태그 자동 완성", "Auto-fill canon with AI")}
         </button>
       </div>
       {aiCanonInsight ? (
