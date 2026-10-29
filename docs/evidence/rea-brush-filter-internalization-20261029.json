@@ -77,7 +77,7 @@
         "Stam 1999 안정 유체 구조다. 습식 굽기의 속도장 설계 입력으로 쓸 수 있다."
       ],
       "unknowns": [],
-      "internalization": "개념 참고(코드 미사용)."
+      "internalization": "개념 참고(코드 미사용). 젖은 종이 굽기(보고서 8절)의 설계 입력."
     },
     {
       "id": "stony-su-ink",
@@ -133,13 +133,16 @@
         }
       ],
       "observedFacts": [
-        "brush.js·sweeps.js·tools/fit.js·tools/gestures.js 로 붓 쓸기(sweep)와 제스처 맞춤을 나눈다."
+        "brush.js·sweeps.js·tools/fit.js·tools/gestures.js 로 붓 쓸기(sweep)와 제스처 맞춤을 나눈다.",
+        "소스 직접 열람(커밋 89b8c443b51da133fb7885de1f90e23efddbfb79): public/sumi.js 의 buildBristleTexture(강모·다발 지도)·equalize(히스토그램 평활화)·pnoise(주기 1D 값 노이즈)와 FS_DAB 셰이더의 갈필 문턱 수식."
       ],
       "inferences": [
         "수묵 획의 쓸기 모델은 습식 굽기 작업 단위의 참고 대상이다."
       ],
-      "unknowns": [],
-      "internalization": "보고서 8절(습식 굽기 작업 단위) 참고."
+      "unknowns": [
+        "업스트림 LICENSE 의 저작권 줄이 템플릿 자리 표시자(Copyright (c) 2026 YOUR NAME)라 실제 저작권자 이름을 확인하지 못했다."
+      ],
+      "internalization": "강모·다발 지도와 갈필 문턱 수식을 출처 고지와 함께 이식(apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-bristle.ts, third_party/sumi/). dab 현 정규화·물 MAX 블렌딩·섬유 결 노이즈·Beer–Lambert 합성 선택은 개념만 참고. 보고서 8절."
     },
     {
       "id": "andrewvoirol-watercolor-workbook",
@@ -170,7 +173,7 @@
         "증발·고착 단계가 수채 가장자리 짙어짐을 만든다(Curtis 1997 의 edge darkening 과 같은 역할)."
       ],
       "unknowns": [],
-      "internalization": "셰이더 단계 분할을 설계 참고로만 썼다."
+      "internalization": "셰이더 단계 분할을 설계 참고로만 썼다(코드 미사용). 젖은 종이 굽기(보고서 8절)."
     },
     {
       "id": "klecks",
@@ -301,6 +304,18 @@
     {
       "path": "apps/web/src/domains/creator/filter/gallery/",
       "kind": "independent-implementation (공개 알고리즘·공개 메뉴 기능 대응)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-bristle.ts",
+      "kind": "ported-code (MIT, Sumi 89b8c443)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush/wet-paper/",
+      "kind": "independent-implementation (MoXi·Curtis·Chu & Tai 논문, studio-wet-paper-bristle.ts 제외)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/export/studio-svg-export-watercolor.ts",
+      "kind": "independent-implementation"
     }
   ]
 }
