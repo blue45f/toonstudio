@@ -157,6 +157,11 @@
       "import": "./src/studio-raster-asset-contract.ts",
       "default": "./src/studio-raster-asset-contract.ts"
     },
+    "./studio-bundle-source-credit": {
+      "types": "./src/studio-bundle-source-credit.ts",
+      "import": "./src/studio-bundle-source-credit.ts",
+      "default": "./src/studio-bundle-source-credit.ts"
+    },
     "./studio-work-asset-contract": {
       "types": "./src/studio-work-asset-contract.ts",
       "import": "./src/studio-work-asset-contract.ts",

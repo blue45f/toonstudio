@@ -1,0 +1,24 @@
+{
+  "name": "deepmerge",
+  "version": "4.3.1+toonstudio.1",
+  "private": true,
+  "description": "ToonStudio 보안 백포트: deepmerge 4.3.1의 결과 객체 프로토타입 오염 방지. 원본 해시와 제거 조건은 UPSTREAM.json·README.md 참조.",
+  "license": "MIT",
+  "homepage": "https://github.com/TehShrike/deepmerge",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/TehShrike/deepmerge.git"
+  },
+  "main": "dist/cjs.js",
+  "types": "index.d.ts",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "files": [
+    "dist",
+    "index.d.ts",
+    "license.txt",
+    "UPSTREAM.json",
+    "README.md"
+  ]
+}

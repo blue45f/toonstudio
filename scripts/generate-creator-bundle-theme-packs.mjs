@@ -100,9 +100,11 @@ const ALLOWED_REQUIRED_EXTENSIONS = new Set([
 export const CATALOG_PACKS = [
   // 도시
   { catalogIds: ["cbv1-001-cartoon-city-massive-pack"], title: "Cartoon City Massive Pack", creator: "RG Poly", theme: "city", category: "environment", ingest: ["cbv1-ingest-001-001-city"] },
+  { catalogIds: ["cbv1-008-cute-park-pack"], title: "Cute Park Pack", creator: "RG Poly", theme: "city", category: "environment", ingest: ["cbv1-ingest-local-cute-park"], note: "2026-10-28 로컬 수신분을 2D 렌더 소재로 검증하고 자기완결 GLB를 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-004-old-town-courtyards"], title: "Old Town — Courtyards", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-250-oldtownenvironmentcourtyardslite-2026-08-20", "cbv1-ingest-409-old-town-environment-courtyards-blend"], presetSource: ["cbv1-ingest-409-old-town-environment-courtyards-blend"] },
   { catalogIds: ["cbv1-005-harboria-victorian-town"], title: "Harboria — Victorian Town", creator: "EmaceArt", theme: "city", category: "environment", ingest: ["cbv1-ingest-002-005-harboria-full", "cbv1-ingest-394-harboria-blend"], presetSource: ["cbv1-ingest-394-harboria-blend"], note: "FBX 원본 회수는 끝났고 배치 가능 에셋은 blend 변형의 병합 GLB뿐이다. 나머지는 GLB 변환 후 채워진다." },
-  // 중세·판타지 — 021·022/023은 회수 종결·확정 승격으로 편입 (2026-10-21 최종 재생성). 020/024는 미수신, 063은 귀속 판정 유지로 pending.
+  // 중세·판타지 — 021·022/023은 회수 종결·확정 승격으로 편입. 024는 2026-10-28 2D 렌더용 수신 검증 후 편입했다.
+  { catalogIds: ["cbv1-024-cute-dungeon-megapack"], title: "Cute Dungeon Megapack", creator: "RG Poly", theme: "medieval-fantasy", category: "environment", ingest: ["cbv1-ingest-local-cute-dungeon"], note: "2026-10-28 로컬 수신분을 2D 렌더 소재로 검증하고 자기완결 GLB를 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-021-slavica-medieval-village"], title: "Slavica — Slavic Medieval Village", creator: "EmaceArt", theme: "medieval-fantasy", category: "environment", ingest: ["cbv1-ingest-005-021-slavica-full"], note: "FBX 원본 회수는 끝났고, GLB 변환 후 에셋이 채워진다." },
   { catalogIds: ["cbv1-022-low-poly-medieval-village", "cbv1-023-medieval-megapack-low-poly"], title: "Medieval Village / Megapack", creator: "RG Poly", theme: "medieval-fantasy", category: "environment", ingest: ["cbv1-ingest-006-022-medieval-godot"] },
   // 자연
@@ -121,10 +123,12 @@ export const CATALOG_PACKS = [
   { catalogIds: ["cbv1-065-free-analog-memory-rooms"], title: "FREE Analog Memory — 80s/90s CRT VHS Rooms", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-011-80s-store"], presetSource: ["cbv1-ingest-011-80s-store"] },
   { catalogIds: ["cbv1-071-pixeldrift-metro-free"], title: "PixelDrift: Metro — FREE", creator: "EmaceArt", theme: "interior", category: "environment", ingest: ["cbv1-ingest-257-pixelart-ea01-metro-2-v1", "cbv1-ingest-258-pixelart-ea01-metro-v11-2-v2", "cbv1-ingest-260-pixeldriftmetrofree"] },
   // SF
+  { catalogIds: ["cbv1-053-scifi-arena-blue-base"], title: "Sci-Fi Arena: Blue Base", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-local-scifi-blue-base"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 114개를 대조해 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-050-scifi-arena-1"], title: "Sci-Fi Arena: 1", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-280-sci-fi-arena-pack-2022-3-6f1"] },
   { catalogIds: ["cbv1-051-scifi-arena-2"], title: "Sci-Fi Arena: 2", creator: "RG Poly", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-279-sci-fi-arena-pack-2-2022-3-6f1"] },
   { catalogIds: ["cbv1-046-cosmokit-planets"], title: "CosmoKit — Stylized Low Poly Planets", creator: "EmaceArt", theme: "sci-fi", category: "environment", ingest: ["cbv1-ingest-046-cosmokitstylizedlowpolyplanets", "cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"], presetSource: ["cbv1-ingest-333-cosmokit-low-poly-planet-pack-blend"] },
   // 공포
+  { catalogIds: ["cbv1-014-cute-graveyard"], title: "Cute Graveyard", creator: "RG Poly", theme: "horror", category: "environment", ingest: ["cbv1-ingest-local-cute-graveyard"], note: "2026-10-28 공식 CC0 증빙과 로컬 수신분의 자기완결 GLB 253개를 대조해 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-006-polyvania-burton-horror-town"], title: "Polyvania — Burton Horror Town", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-411-polyvania-blend"], note: "blend 원본만 수신돼 있어 GLB 변환 후 에셋이 채워진다." },
   { catalogIds: ["cbv1-011-necropolyy-graveyard"], title: "NecroPOLY — Stylized Graveyard", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-221-lowpolycemeterykitnecropolygravesmodule-2026-09-", "cbv1-ingest-247-necropolytombkit", "cbv1-ingest-401-low-poly-cemetery-kit-necropoly-tombs-module-god", "cbv1-ingest-400-low-poly-cemetery-kit-necropoly-tombs-module-ble"], presetSource: ["cbv1-ingest-400-low-poly-cemetery-kit-necropoly-tombs-module-ble"] },
   { catalogIds: ["cbv1-013-graves-kit"], title: "Graves Kit", creator: "EmaceArt", theme: "horror", category: "environment", ingest: ["cbv1-ingest-246-necropolygravekit", "cbv1-ingest-399-low-poly-cemetery-grave-kit-with-lods-godot", "cbv1-ingest-398-low-poly-cemetery-grave-kit-with-lods-blend"], presetSource: ["cbv1-ingest-398-low-poly-cemetery-grave-kit-with-lods-blend"] },
@@ -147,9 +151,12 @@ export const CATALOG_PACKS = [
   { catalogIds: ["cbv1-045-food-packaging"], title: "Low Poly Food Packaging", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-222-lowpolyfoodandpackaging"] },
   { catalogIds: [], title: "Food Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-154-food-pack"], note: "카탈로그 번호는 정본 카탈로그에서 확인되지 않아 비워 뒀다." },
   { catalogIds: ["cbv1-067-fences-and-walls"], title: "Fences and Walls", creator: "EmaceArt", theme: null, category: "prop", ingest: ["cbv1-ingest-151-fences-and-walls-glb"] },
-  { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-329-weapons"], note: "Weapons 폴더 귀속은 추정 판정(STATUS §2)이다." },
+  { catalogIds: ["cbv1-076-medieval-weapons"], title: "Medieval Weapons", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-medieval-weapons"], note: "2026-10-28 수신 기록·공식 Weapons.zip의 32 Models 표기와 로컬 자기완결 GLB 32개를 대조해 귀속을 확정하고 새 인제스션 입력에 등록했다. 과거 추정 매핑 cbv1-ingest-329-weapons는 사용하지 않으며 3D 모델 서빙·배포는 수행하지 않았다." },
   { catalogIds: ["cbv1-019-blasters-rg"], title: "Blasters RG", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-028-blasters-rg"] },
   { catalogIds: ["cbv1-074-blasters-free"], title: "Blasters Free", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-027-blasters-free"] },
+  { catalogIds: ["cbv1-081-cartoon-car-megapack"], title: "Cartoon Car Megapack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-cartoon-car-megapack"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 180개를 대조해 새 인제스션 입력에 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
+  { catalogIds: ["cbv1-017-cartoon-cars-2"], title: "Cartoon Cars 2", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-cartoon-cars-2"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 453개를 대조했다. 외부 텍스처를 참조하는 Godot 사본은 제외하고 Gltf 실물만 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
+  { catalogIds: ["cbv1-018-army-pack"], title: "Army Pack", creator: "RG Poly", theme: null, category: "prop", ingest: ["cbv1-ingest-local-army-pack"], note: "2026-10-28 공식 CC0 증빙과 로컬 자기완결 GLB 309개를 대조했다. 외부 텍스처를 참조하는 Godot 사본은 제외하고 gLTF 실물만 등록했다. 3D 모델 서빙·배포는 수행하지 않았다." },
 ];
 
 /** 배경 군중 (렌더 전용 — bg3d 장면에 직접 배치하지 않고 오프라인 렌더 소재로만 쓴다). */
@@ -164,20 +171,17 @@ export const CROWD_PACKS = [
 
 /** 확정 데이터에 넣지 않는 팩과 사유 (패널의 "준비 중" 표기용). */
 export const PENDING_PACKS = [
-  { catalogIds: ["cbv1-043-rewind-memory-80s-90s-rooms"], title: "Rewind Memory — 80s/90s Rooms", reason: "retrieval-partial", reasonLabel: "무료판만 수신돼 있고 본편은 대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-069-gravefield-cemetery-kit"], title: "Gravefield Cemetery Kit — Dark Corners", reason: "retrieval-partial", reasonLabel: "확장 일부만 수신돼 있다." },
-  { catalogIds: ["cbv1-070-ps1-psx-alone-in-the-dusk"], title: "PS1 PSX Alone in the DUSK", reason: "retrieval-partial", reasonLabel: "glTF판 회수가 남았다." },
+  { catalogIds: ["cbv1-043-rewind-memory-80s-90s-rooms"], title: "Rewind Memory — 80s/90s Rooms", reason: "retrieval-partial", reasonLabel: "로컬 보유 자료와 완전한 3D 입력의 대조가 남았다." },
+  { catalogIds: ["cbv1-069-gravefield-cemetery-kit"], title: "Gravefield Cemetery Kit — Dark Corners", reason: "retrieval-partial", reasonLabel: "로컬 보유 자료와 완전한 3D 입력의 대조가 남았다." },
+  { catalogIds: ["cbv1-070-ps1-psx-alone-in-the-dusk"], title: "PS1 PSX Alone in the DUSK", reason: "retrieval-partial", reasonLabel: "로컬 보유 자료와 완전한 3D 입력의 대조가 남았다." },
   { catalogIds: ["cbv1-025-backroad-bridges"], title: "Backroad Bridges — Stylized Modular", reason: "attribution-unconfirmed", reasonLabel: "수신분이 추정 귀속이라 확정 후 편입한다." },
   { catalogIds: ["cbv1-063-free-fantasy-medieval-houses"], title: "Free Fantasy Medieval Houses", reason: "attribution-unconfirmed", reasonLabel: "수신 blend의 내용이 Slavica 무료판과 겹쳐 귀속 확정 후 편입한다." },
-  { catalogIds: ["cbv1-008-cute-park-pack"], title: "Cute Park Pack", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-014-cute-graveyard"], title: "Cute Graveyard", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-020-viking-world-stylized"], title: "Viking World - Stylized", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-024-cute-dungeon-megapack"], title: "Cute Dungeon Megapack", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-036-desert-canyon"], title: "Desert Canyon", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-052-scifi-arena-cargo", "cbv1-053-scifi-arena-blue-base"], title: "Sci-Fi Arena: Cargo / Blue Base", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-054-low-poly-asia-pack"], title: "Low Poly Asia Pack", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-079-free-stylized-medieval-village-urp"], title: "Free Stylized Medieval Village — Unity URP", reason: "unreceived", reasonLabel: "대형 파일 회수가 남았다." },
-  { catalogIds: ["cbv1-016-cars", "cbv1-017-cars-megapack", "cbv1-081-car-megapack", "cbv1-018-army-pack"], title: "차량·군사 팩", reason: "deferred-category", reasonLabel: "웹툰 배경 수요 대비 후순위로 보류한다 (2026-10-20 활용 계획)." },
+  { catalogIds: ["cbv1-020-viking-world-stylized"], title: "Viking World - Stylized", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
+  { catalogIds: ["cbv1-036-desert-canyon"], title: "Desert Canyon", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
+  { catalogIds: ["cbv1-052-scifi-arena-cargo"], title: "Sci-Fi Arena: Cargo", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
+  { catalogIds: ["cbv1-054-low-poly-asia-pack"], title: "Low Poly Asia Pack", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
+  { catalogIds: ["cbv1-079-free-stylized-medieval-village-urp"], title: "Free Stylized Medieval Village — Unity URP", reason: "runtime-unverified", reasonLabel: "로컬 자료는 확인됐으며 3D 변환·재질·런타임 검증이 남았다." },
+  { catalogIds: ["cbv1-016-cars"], title: "Cartoon Cars 1", reason: "deferred-category", reasonLabel: "웹툰 배경 수요 대비 후순위로 보류한다 (2026-10-20 활용 계획)." },
 ];
 
 /* ── GLB 메트릭 실측 ─────────────────────────────────────────────────────── */
@@ -389,7 +393,10 @@ export function buildThemePacks({ manifestV2, themesDoc, assetRoot, ledger, onEr
       twinCovered,
       deferred,
       rights: packRightsProjection(decision.entry),
-      ...(def.note ? { note: def.note } : {}),
+      ...(def.note ? { note: def.note }
+        : def.ingest.every((id) => !assetsByPack.has(id))
+          ? { note: "현재 인제스션 입력에 모델이 없어 3D 서빙을 검증하지 않았다." }
+          : {}),
     });
   }
 

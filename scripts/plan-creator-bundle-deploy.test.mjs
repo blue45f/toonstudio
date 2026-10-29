@@ -535,11 +535,16 @@ test("생성기 팩 정의의 인제스션 폴더가 서로 겹치면 계획을 
   });
 });
 
-test("커밋된 theme-packs.json으로 계획할 때 팩 하나를 열면: 증빙 없는 allow는 원장 단계에서 닫히고, 증빙을 갖춘 allow는 권리 블록이 재생성될 때까지 rights-drift로 제외된다", () => {
+test("권리 블록이 없는 이전 theme-packs로 계획하면: 증빙 없는 allow는 원장 단계에서 닫히고, 증빙을 갖춘 allow는 재생성될 때까지 rights-drift로 제외된다", () => {
   const themePacks = JSON.parse(readFileSync(
     join(REPO_ROOT, "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json"),
     "utf8",
   ));
+  const piratePack = themePacks.packs.find((pack) => pack.title === "Pirate Island");
+  assert.ok(piratePack);
+  delete piratePack.rights;
+  themePacks.packs = [piratePack];
+  themePacks.assets = [assetEntry("cbv1-ingest-pirate-fixture", 0, `${piratePack.ingestPackIds[0]}/native/fixture.glb`, SELF_CONTAINED)];
   const assetRoot = join(tmpdir(), "bundle-v2-plan-test-no-such-asset-root");
   const unproven = cloneLedger();
   flipToAllow(resetToHold(entryOf(unproven, "Pirate Island")));

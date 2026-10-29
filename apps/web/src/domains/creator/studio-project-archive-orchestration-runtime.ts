@@ -1,3 +1,4 @@
+import { summarizeStudioProjectArchiveAttachments } from "./studio-project-archive-dependencies";
 import { sanitizeStudioPublishFileStem } from "./studio-publish-package";
 
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
@@ -100,33 +101,6 @@ export function assertCompleteStudioVrmProjectArchive(
     result.missing.length,
     diagnosticSummary,
   );
-}
-
-function measureStudioProjectArchiveAttachment(
-  attachment: { readonly data: Blob | Uint8Array | ArrayBuffer },
-): number {
-  const { data } = attachment;
-  let byteSize: number;
-  if (data instanceof Uint8Array || data instanceof ArrayBuffer) byteSize = data.byteLength;
-  else if (typeof Blob !== "undefined" && data instanceof Blob) byteSize = data.size;
-  else throw new Error("portable archive attachment의 byte 크기를 확인할 수 없습니다.");
-  if (!Number.isSafeInteger(byteSize) || byteSize < 0) {
-    throw new Error("portable archive attachment의 byte 크기가 올바르지 않습니다.");
-  }
-  return byteSize;
-}
-
-function summarizeStudioProjectArchiveAttachments(
-  attachments: readonly { readonly data: Blob | Uint8Array | ArrayBuffer }[],
-): { readonly bytes: number; readonly count: number } {
-  let bytes = 0;
-  for (const attachment of attachments) {
-    bytes += measureStudioProjectArchiveAttachment(attachment);
-    if (!Number.isSafeInteger(bytes)) {
-      throw new Error("portable archive attachment byte 합계를 안전하게 계산할 수 없습니다.");
-    }
-  }
-  return Object.freeze({ bytes, count: attachments.length });
 }
 
 export interface StudioProjectArchiveOrchestrationInput {
@@ -461,7 +435,10 @@ export function createStudioProjectArchiveOrchestration({
           canonicalProject: project,
           limits: isMobile ? MOBILE_PROJECT_ARCHIVE_LIMITS : undefined,
         });
+      const { prepareStudioBundleWorkAssetArchiveExport } = await import("./catalog/studio-bundle-project-archive");
+      const bundleWorkAttachments = await prepareStudioBundleWorkAssetArchiveExport({ project, workId, signal: archiveExportController.signal, limits: isMobile ? MOBILE_PROJECT_ARCHIVE_LIMITS : undefined });
       const preparedAttachments = [
+        ...bundleWorkAttachments,
         ...referenceArchive.attachments,
         ...vrmArchive.attachments,
         ...texturePaintAttachments,
@@ -486,6 +463,7 @@ export function createStudioProjectArchiveOrchestration({
       const result = await buildStudioProjectArchiveWithVerifiedBg3dModels({
         project: linked3dProject,
         attachments: [
+          ...bundleWorkAttachments,
           ...psdAttachments,
           ...referenceArchive.attachments,
           ...vrmArchive.attachments,
@@ -494,7 +472,7 @@ export function createStudioProjectArchiveOrchestration({
         ],
       }, {
         limits: isMobile ? MOBILE_PROJECT_ARCHIVE_LIMITS : undefined,
-        crc32ExecutionMode: "worker",
+        crc32ExecutionMode: "worker", signal: archiveExportController.signal,
       });
       const downloadVrmFingerprint = JSON.stringify(
         collectStudioVrmProjectArchiveReferences(currentStudioProjectSnapshot()).map(

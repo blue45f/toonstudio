@@ -82,10 +82,10 @@ function main(argv) {
     for (const problem of problems.slice(0, 30)) console.log(`  문제: ${problem}`);
     if (problems.length > 30) console.log(`  … 외 ${problems.length - 30}건`);
     for (const hold of holds) {
-      // pending 묶음은 미수신이라 serve를 allow로 바꿔도 열리지 않는다(검증기가 거부한다). 편입 뒤에 소유자가 정한다.
+      // pending 11개는 생성기 편입 대기다. 구매 85품목의 로컬 자료 존재와 별개이며 편입 전 allow는 검증기가 거부한다.
       // grant는 열 때 소유자가 채우므로 "증빙 충족"은 열 준비가 끝났다는 뜻이 아니다.
       let ready = "증빙 충족 — 소유자가 grant를 채워 열 수 있음";
-      if (hold.group === "pending") ready = "증빙 충족 — 단 미수신(인제스션·CATALOG_PACKS 편입 전)이라 편입한 뒤에야 소유자가 열 수 있음";
+      if (hold.group === "pending") ready = "증빙 충족 — 단 편입 대기(인제스션·CATALOG_PACKS 편입 전)이며 구매 자료 존재와 별개이므로 편입 뒤에야 서빙 판정 가능";
       if (requiredEvidenceKinds(hold.licenseClass) === null) ready = "라이선스 분류를 알 수 없어 열 수 없음";
       const need = hold.missing.length === 0 ? ready : `부족: ${hold.missing.join(", ")}`;
       console.log(`  hold [${hold.group}] ${hold.title} (${hold.licenseClass})${hold.reviewRecommendedHold ? " ★검토 권고 hold" : ""} — ${need}`);

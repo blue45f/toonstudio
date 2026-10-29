@@ -1,12 +1,12 @@
+import { STUDIO_BUNDLE_BG_SCENES } from "./catalog/studio-bundle-backgrounds";
+import type { StudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
 import { isRecommendedStudio2dScene } from "./studio-2d-asset-quality";
 import cc0SceneManifest from "./studio-2d-cc0-scene-manifest.json";
 import { GENERATED_GPT25_BG_SCENES } from "./studio-2d-generated-backgrounds";
 import { STUDIO_ILLUSTRATION_BG_SCENES } from "./catalog/studio-illustration-pack";
-
 // 창작 스튜디오 — 장르 전면 배경 씬(풀캔버스 배경 이미지로 삽입).
 // 720×1080 세로 캔버스에 맞춘 자체 벡터 SVG 배경. 라이선스 이슈 없는 순수 원본 벡터만 사용
 // (외부 아트/이모지/<image>/base64 래스터 없음). 레이어드 linearGradient + 단순 실루엣/도형.
-
 export interface BgScene {
   id: string;
   label: string;
@@ -15,8 +15,8 @@ export interface BgScene {
   imgSrc?: string;
   width?: number;
   height?: number;
+  bundleSourceCredit?: StudioBundleSourceCredit;
 }
-
 // 공통 viewBox. 모든 씬은 720×1080 풀캔버스 기준.
 const W = 720;
 const H = 1080;
@@ -748,6 +748,7 @@ export const BG_SCENES: BgScene[] = [
   ...CURATED_CC0_BG_SCENES,
   ...GENERATED_GPT25_BG_SCENES,
   ...STUDIO_ILLUSTRATION_BG_SCENES,
+  ...STUDIO_BUNDLE_BG_SCENES,
   ...VECTOR_BG_SCENES,
 ];
 
@@ -756,7 +757,6 @@ export const ALL_BG_SCENES: readonly BgScene[] = Object.freeze([
   ...BG_SCENES,
   ...BG_SCENE_COMPATIBILITY_LIBRARY,
 ]);
-
 
 // ── 장르 분류 통일 + 표시 우선순위 ──────────────────────────
 // BG_SCENES(영문 genre)와 BG_SCENES_EXTRA(한글 genre) 표기를 한 체계로 정규화하고

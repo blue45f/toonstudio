@@ -139,13 +139,13 @@ describe("studio-bg3d-scene-composition-presets", () => {
     expect(listStudioBg3dSceneCompositionPresets("scifi")).toHaveLength(3);
     expect(listStudioBg3dSceneCompositionPresets("thriller")).toHaveLength(3);
     expect(listStudioBg3dSceneCompositionPresets("daily")).toHaveLength(3);
-    // G8 팩은 번들 테마를 참조하고, 기존 팩은 참조가 없다.
+    // G8 팩과 Dungeon 소재를 연결한 기존 복도 프리셋이 번들 테마를 참조한다.
     const withBundle = STUDIO_BG3D_SCENE_COMPOSITION_PRESETS.filter(
       (preset) => preset.bundleThemeId !== undefined,
     );
-    expect(withBundle).toHaveLength(8);
+    expect(withBundle).toHaveLength(9);
     expect(new Set(withBundle.map((preset) => preset.bundleThemeId))).toEqual(
-      new Set(["nature", "city", "swamp", "sci-fi", "horror", "interior"]),
+      new Set(["nature", "city", "swamp", "sci-fi", "horror", "interior", "medieval-fantasy"]),
     );
     // 새 팩도 원자 적용·resolve 왕복 계약을 그대로 지킨다.
     for (const preset of withBundle) {

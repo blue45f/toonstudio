@@ -1,0 +1,52 @@
+{
+  "expected": 178,
+  "imageContract": {
+    "successes": 178,
+    "failures": 0,
+    "text": "검사 완료 · 178/178개 확인 · 성공 178개 · 실패 0개"
+  },
+  "insertions": [
+    {
+      "id": "cbv1-008-bench-1-1",
+      "text": "소재\n벤치 · Bench 1 1\nID\nbundle:cbv1-008-bench-1-1\n실제 크기\n1536 × 1536px\n보이는 픽셀\n676,401\n투명 픽셀\n1,682,895\n콘텐츠 해시\nsha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49\n라이선스\nCC0-1.0\n권리 확인\n확인됨\n출처\nRG Poly — https://rg-poly.itch.io/cute-park-pack"
+    },
+    {
+      "id": "cbv1-024-potion-1-1",
+      "text": "소재\n물약 병 · Potion 1 1\nID\nbundle:cbv1-024-potion-1-1\n실제 크기\n1536 × 1536px\n보이는 픽셀\n397,775\n투명 픽셀\n1,961,521\n콘텐츠 해시\nsha256:5001f97482dc063c225838d06f1d13098c2bce4c92027682bce1c8a377424fea\n라이선스\nCC0-1.0\n권리 확인\n확인됨\n출처\nRG Poly — https://rg-poly.itch.io/cute-dungeon-megapack"
+    },
+    {
+      "id": "cbv1-008-bench-1-1",
+      "text": "소재\n벤치 · Bench 1 1\nID\nbundle:cbv1-008-bench-1-1\n실제 크기\n1536 × 1536px\n보이는 픽셀\n676,401\n투명 픽셀\n1,682,895\n콘텐츠 해시\nsha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49\n라이선스\nCC0-1.0\n권리 확인\n확인됨\n출처\nRG Poly — https://rg-poly.itch.io/cute-park-pack"
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "desktop-library.png",
+    "mobile-canvas.png"
+  ],
+  "databasePersistenceVerified": true,
+  "localPersistence": {
+    "id": "48ef9aaa-4436-489a-9d07-86bb8eca9344",
+    "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+    "bundleSourceCredit": {
+      "schema": "toonstudio.bundle-source-credit.v1",
+      "assetId": "cbv1-008-bench-1-1",
+      "ledgerPackId": "cbv1-008-cute-park-pack",
+      "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+      "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "provider": "RG Poly",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseName": "CC0-1.0",
+      "serve": "allow",
+      "status": "public-domain",
+      "commercialUse": true,
+      "attributionRequired": false
+    }
+  },
+  "manifestSha256": "f41b18a9031822dcf58e5c7ab48c5e098e56bd4cfe0cea37950e73113c0bac8c",
+  "verifiedOn": "2026-10-29",
+  "publicFiles": 357,
+  "publicBytes": 80948537
+}
