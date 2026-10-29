@@ -261,8 +261,17 @@ export function hsvToRgb(hue: number, saturation: number, value: number, out: Fl
   const h = ((hue % 1) + 1) % 1 * 6, s = clamp01(saturation), v = clamp01(value);
   const sector = Math.floor(h), fraction = h - sector;
   const p = v * (1 - s), q = v * (1 - s * fraction), t = v * (1 - s * (1 - fraction));
-  const rgb = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][sector % 6]!;
-  out[0] = rgb[0]! * 255; out[1] = rgb[1]! * 255; out[2] = rgb[2]! * 255;
+  // 픽셀 루프에서 부르므로 배열을 만들지 않고 구간별로 바로 쓴다.
+  let red: number, green: number, blue: number;
+  switch (sector % 6) {
+    case 0: red = v; green = t; blue = p; break;
+    case 1: red = q; green = v; blue = p; break;
+    case 2: red = p; green = v; blue = t; break;
+    case 3: red = p; green = q; blue = v; break;
+    case 4: red = t; green = p; blue = v; break;
+    default: red = v; green = p; blue = q; break;
+  }
+  out[0] = red * 255; out[1] = green * 255; out[2] = blue * 255;
 }
 
 /** RGB(0~255) → HSL(h 0~1, s 0~1, l 0~1). */

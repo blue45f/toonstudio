@@ -9,8 +9,11 @@ import { STUDIO_FILTER_GALLERY_ARTISTIC_EFFECTS } from "./studio-filter-gallery-
 import { STUDIO_FILTER_GALLERY_ARTISTIC_EXTRA_EFFECTS } from "./studio-filter-gallery-artistic-extra";
 import { STUDIO_FILTER_GALLERY_BRUSH_STROKES_EFFECTS } from "./studio-filter-gallery-brush-strokes";
 import { STUDIO_FILTER_GALLERY_COLOR_EFFECTS } from "./studio-filter-gallery-color";
+import { STUDIO_FILTER_GALLERY_DISTORT_EFFECTS } from "./studio-filter-gallery-distort";
 import { STUDIO_FILTER_GALLERY_DECOR_EFFECTS, STUDIO_FILTER_GALLERY_LIGHT_EFFECTS } from "./studio-filter-gallery-light-decor";
+import { STUDIO_FILTER_GALLERY_EDGE_EFFECTS, STUDIO_FILTER_GALLERY_MAP_EFFECTS } from "./studio-filter-gallery-map-edge";
 import { STUDIO_FILTER_GALLERY_BLUR_EFFECTS, STUDIO_FILTER_GALLERY_NOISE_EFFECTS } from "./studio-filter-gallery-noise";
+import { STUDIO_FILTER_GALLERY_PIXELATE_EFFECTS } from "./studio-filter-gallery-pixelate";
 import { STUDIO_FILTER_GALLERY_RENDER_EFFECTS } from "./studio-filter-gallery-render";
 import { STUDIO_FILTER_GALLERY_SKETCH_EFFECTS } from "./studio-filter-gallery-sketch";
 import { STUDIO_FILTER_GALLERY_STYLIZE_EFFECTS } from "./studio-filter-gallery-stylize";
@@ -37,12 +40,16 @@ const FAMILIES: readonly (readonly StudioFilterGalleryEffectDef[])[] = [
   STUDIO_FILTER_GALLERY_SKETCH_EFFECTS,
   STUDIO_FILTER_GALLERY_TEXTURE_EFFECTS,
   STUDIO_FILTER_GALLERY_STYLIZE_EFFECTS,
+  STUDIO_FILTER_GALLERY_DISTORT_EFFECTS,
+  STUDIO_FILTER_GALLERY_PIXELATE_EFFECTS,
   STUDIO_FILTER_GALLERY_RENDER_EFFECTS,
   STUDIO_FILTER_GALLERY_NOISE_EFFECTS,
   STUDIO_FILTER_GALLERY_BLUR_EFFECTS,
   STUDIO_FILTER_GALLERY_COLOR_EFFECTS,
+  STUDIO_FILTER_GALLERY_EDGE_EFFECTS,
   STUDIO_FILTER_GALLERY_LIGHT_EFFECTS,
   STUDIO_FILTER_GALLERY_DECOR_EFFECTS,
+  STUDIO_FILTER_GALLERY_MAP_EFFECTS,
 ];
 
 const CATEGORY_ORDER = new Map<string, number>(STUDIO_FILTER_GALLERY_CATEGORIES.map((category, index) => [category, index]));
