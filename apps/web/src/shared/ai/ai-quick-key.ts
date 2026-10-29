@@ -177,12 +177,37 @@ export function findQuickKeyConnection(
   provider: QuickKeyProviderId,
 ): UserAiConnection | undefined {
   const preset = QUICK_KEY_PRESETS[provider];
-  const target = endpointKey(preset.baseUrl);
   return configuration.connections.find((item) => (
-    (provider === "anthropic" ? isAnthropicBaseUrl(item.baseUrl) : endpointKey(item.baseUrl) === target)
+    sameQuickKeyEndpoint(item, provider)
     && item.costPolicy === preset.costPolicy
     && userAiConnectionModels(item, "text").length > 0
   ));
+}
+
+function sameQuickKeyEndpoint(connection: Pick<UserAiConnection, "baseUrl">, provider: QuickKeyProviderId): boolean {
+  return provider === "anthropic"
+    ? isAnthropicBaseUrl(connection.baseUrl)
+    : endpointKey(connection.baseUrl) === endpointKey(QUICK_KEY_PRESETS[provider].baseUrl);
+}
+
+/**
+ * 같은 주소에서 텍스트에 쓰이는 연결이 이미 이 키를 갖고 있는지. 비용 정책이 달라도(예: 사용자가 유료 BYOK로 정해 둔
+ * 키) 같은 키로 본다. 그래야 유료로 정해 둔 키가 무료 정책 연결로 다시 등록돼 자동 경로에 들어가지 않는다.
+ * "재확인 필요"·이미지 전용 연결의 키는 텍스트에 쓰이지 않으므로 세지 않는다(다시 붙이면 쓰이는 연결을 만든다).
+ */
+function findHeldQuickKey(
+  configuration: UserAiConfiguration,
+  provider: QuickKeyProviderId,
+  key: string,
+): { readonly connectionId: string; readonly keyId: string } | null {
+  for (const item of configuration.connections) {
+    if (!sameQuickKeyEndpoint(item, provider) || item.costPolicy === "unverified") continue;
+    if (userAiConnectionModels(item, "text").length === 0) continue;
+    const keys = item.apiKeys?.length ? item.apiKeys : userAiConnectionApiKeys(item);
+    const same = keys.find((entry) => entry.apiKey === key);
+    if (same) return { connectionId: item.id, keyId: same.id };
+  }
+  return null;
 }
 
 /** 연결 주소로 어느 서비스인지 되짚는다(목록 표시용). 모르는 주소면 null. */
@@ -240,6 +265,8 @@ export function addQuickKey(
   if (!key) throw new Error("API 키를 입력해 주세요.");
   const preset = QUICK_KEY_PRESETS[provider];
   const info = AI_KEY_PROVIDERS[provider];
+  const held = findHeldQuickKey(configuration, provider, key);
+  if (held) return { configuration, connectionId: held.connectionId, keyId: held.keyId, duplicate: true };
   const existing = findQuickKeyConnection(configuration, provider);
   const routing = userAiRoutingSettings(configuration);
   // 유료 키를 "먼저 쓴다"에 동의하고 등록했다: 자동 경로에서 무료 경로보다 먼저 쓴다(동의 문구가 그렇게 알린다).
@@ -248,9 +275,8 @@ export function addQuickKey(
     : routing;
 
   if (existing) {
+    // 같은 키는 위 findHeldQuickKey가 이미 중복으로 돌려줬다.
     const keys = existing.apiKeys?.length ? existing.apiKeys : userAiConnectionApiKeys(existing);
-    const same = keys.find((item) => item.apiKey === key);
-    if (same) return { configuration, connectionId: existing.id, keyId: same.id, duplicate: true };
     if (keys.length >= QUICK_KEY_MAX_KEYS_PER_SERVICE) {
       throw new Error(`${info.name}에는 키를 ${QUICK_KEY_MAX_KEYS_PER_SERVICE}개까지 등록할 수 있어요.`);
     }

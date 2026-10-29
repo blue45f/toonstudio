@@ -437,7 +437,12 @@ const STORY_SEED_REF_NAME_MAX_CHARS = 80;
 const STORY_SEED_REF_DETAIL_MAX_CHARS = 200;
 
 function clipForPrompt(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+  if (text.length <= max) return text;
+  let head = text.slice(0, max - 1);
+  // 이모지 같은 서로게이트 쌍의 앞쪽 절반만 남으면 요청 JSON이 깨져 공급자가 400으로 거절한다. 그 절반도 뺀다.
+  const last = head.charCodeAt(head.length - 1);
+  if (last >= 0xd800 && last <= 0xdbff) head = head.slice(0, -1);
+  return `${head}…`;
 }
 
 /** 남은 자리에 들어가는 인용 설정만 넣고, 빠진 개수는 "외 N개"로 알린다. */
