@@ -7,6 +7,7 @@ import {
   buildKraFixtureDetailed,
   buildKraTileFile,
   fakePng,
+  kraNativeFloat,
   kraNativeRgba,
   kraTilePayload,
   patternTile,
@@ -235,10 +236,89 @@ describe("importKra: 색 공간과 프로파일", () => {
     expect(result.image.profileName).toBeNull();
   });
 
-  it.each(["RGBAF16", "RGBAF32", "CMYKA", "LABA", "XYZA16", "YCBCRA8"])("%s 레이어는 픽셀을 읽지 않고 unsupported에 남긴다", async (colorSpace) => {
+  // 실수 형식(RGBAF16·RGBAF32·GRAYAF16·GRAYAF32)은 R, G, B, A(회색은 회색, 알파) 순서의 부동소수 샘플이고, 값은 프로파일의 전달 함수 아래 0~1이다
+  describe.each([
+    ["RGBAF16", 8, [0.5, 0.25, 1, 0.75], [188, 137, 255, 191], [128, 64, 255, 191]],
+    ["RGBAF32", 16, [0.5, 0.25, 1, 0.75], [188, 137, 255, 191], [128, 64, 255, 191]],
+    ["GRAYAF16", 4, [0.5, 0.25], [188, 188, 188, 64], [128, 128, 128, 64]],
+    ["GRAYAF32", 8, [0.5, 0.25], [188, 188, 188, 64], [128, 128, 128, 64]],
+  ] as const)("%s 문서", (colorSpace, pixelBytes, channels, linearRgba, gammaRgba) => {
+    const layerFor = (value: readonly number[]) => ({
+      name: "float",
+      tileFile: buildKraTileFile({ pixelBytes, tiles: [{ x: 0, y: 0, payload: kraTilePayload(solidTile(kraNativeFloat(colorSpace, value)), pixelBytes) }] }),
+      defaultPixel: new Uint8Array(pixelBytes),
+    });
+
+    it("선형(g10) 프로파일은 sRGB 전달 함수를 거치고 알파는 거치지 않는다", async () => {
+      const result = await importKra(buildKraFixture({ colorSpace, profile: "sRGB-elle-V2-g10.icc", layers: [layerFor(channels)] }));
+      expect(result.unsupported).toEqual([]);
+      expect(result.warnings).toEqual([]);
+      expect(Array.from(result.layers[0]!.pixels!.subarray(0, 4))).toEqual(linearRgba);
+    });
+
+    it("sRGB 감마(srgbtrc) 프로파일은 값을 그대로 8비트로 줄인다", async () => {
+      const result = await importKra(buildKraFixture({ colorSpace, profile: "sRGB-elle-V2-srgbtrc.icc", layers: [layerFor(channels)] }));
+      expect(Array.from(result.layers[0]!.pixels!.subarray(0, 4))).toEqual(gammaRgba);
+    });
+
+    it("전달 함수를 알 수 없는 프로파일은 sRGB 감마로 가정하고 한 번만 경고한다", async () => {
+      const result = await importKra(buildKraFixture({ colorSpace, profile: "Weird-Profile.icc", layers: [layerFor(channels), { ...layerFor(channels), name: "again" }] }));
+      expect(codes(result.warnings)).toEqual(["kra-profile-transfer-assumed", "kra-profile-primaries-unconverted"]);
+      expect(result.warnings[0]!.message).toContain(`${colorSpace.endsWith("F16") ? 16 : 32}비트 실수`);
+      expect(Array.from(result.layers[0]!.pixels!.subarray(0, 4))).toEqual(gammaRgba);
+    });
+
+    it(".defaultpixel도 실수 형식으로 읽어 타일이 덮지 않은 곳을 채운다", async () => {
+      const all = colorSpace.startsWith("RGBA") ? [1, 0.5, 0, 1] : [1, 1];
+      const result = await importKra(
+        buildKraFixture({
+          colorSpace,
+          profile: "sRGB-elle-V2-srgbtrc.icc",
+          width: 128,
+          height: 64,
+          layers: [{ ...layerFor(channels), defaultPixel: Uint8Array.from(kraNativeFloat(colorSpace, all)) }],
+        }),
+      );
+      const layer = result.layers[0]!;
+      expect(layer.extent).toEqual({ x: 0, y: 0, width: 128, height: 64 });
+      const fill = colorSpace.startsWith("RGBA") ? [255, 128, 0, 255] : [255, 255, 255, 255];
+      expect(layer.defaultPixel).toEqual(fill);
+      expect(Array.from(layer.pixels!.subarray(100 * 4, 100 * 4 + 4))).toEqual(fill); // 타일(0~63열) 밖
+      expect(Array.from(layer.pixels!.subarray(0, 4))).toEqual(gammaRgba);
+    });
+  });
+
+  it("이미지가 8비트여도 레이어의 실수 색 공간을 따르고, 전달 함수는 이미지 프로파일로 가정했다고 한 번 경고한다", async () => {
+    const tile = solidTile(kraNativeFloat("RGBAF32", [0.5, 0.5, 0.5, 1]));
+    const layer = (name: string) => ({
+      name,
+      attrs: { colorspacename: "RGBAF32" },
+      tileFile: buildKraTileFile({ pixelBytes: 16, tiles: [{ x: 0, y: 0, payload: kraTilePayload(tile, 16) }] }),
+      defaultPixel: new Uint8Array(16),
+    });
+    const result = await importKra(buildKraFixture({ colorSpace: "RGBA", profile: "sRGB-elle-V2-g10.icc", layers: [layer("one"), layer("two")] }));
+    expect(codes(result.warnings)).toEqual(["kra-layer-colorspace-differs"]);
+    expect(Array.from(result.layers[0]!.pixels!.subarray(0, 4))).toEqual([188, 188, 188, 255]);
+    expect(result.layers.map((entry) => entry.colorSpace)).toEqual(["RGBAF32", "RGBAF32"]);
+  });
+
+  it("타일 헤더의 픽셀 크기가 실수 형식과 다르면 그 레이어만 포기한다", async () => {
+    // RGBAF32는 16바이트인데 RGBAF16 크기(8바이트) 타일 파일
+    const result = await importKra(
+      buildKraFixture({
+        colorSpace: "RGBAF32",
+        layers: [{ name: "wrong", tileFile: buildKraTileFile({ pixelBytes: 8, tiles: [{ x: 0, y: 0, payload: kraTilePayload(solidTile(new Array<number>(8).fill(0)), 8) }] }), defaultPixel: new Uint8Array(16) }],
+      }),
+    );
+    expect(codes(result.unsupported)).toEqual(["kra-layer-decode-failed"]);
+    expect(result.layers[0]!.pixels).toBeNull();
+  });
+
+  it.each(["CMYKA", "LABA", "XYZA16", "XYZAF32", "YCBCRA8"])("%s 레이어는 픽셀을 읽지 않고 unsupported에 남긴다", async (colorSpace) => {
     const result = await importKra(buildKraFixture({ colorSpace, layers: [{ name: "a", tileFile: paint(0, 0, [1, 2, 3, 255]) }] }));
     expect(codes(result.unsupported)).toEqual(["kra-colorspace-unsupported"]);
     expect(result.unsupported[0]).toMatchObject({ scope: "semantic", path: "layer[0]" });
+    expect(result.unsupported[0]!.message).toContain("(RGBA·RGBA16·GRAYA·GRAYAU16·RGBAF16·RGBAF32·GRAYAF16·GRAYAF32만 읽는다)");
     expect(result.layers[0]).toMatchObject({ colorSpace, pixels: null, extent: null, tileCount: 0 });
   });
 
