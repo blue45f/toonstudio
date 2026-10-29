@@ -419,16 +419,22 @@ export function wetMixStroke(
         depG = mixed.g;
         depB = mixed.b;
       } else if (rybMix) {
+        // RGB→RYB([1−g, 1−r, 1−b])는 Gossett–Chen 큐브의 역변환이 아니라 왕복하면 색이 바뀐다. 잠재 안료 경로처럼
+        // RGB 선형 혼합에 "RYB 혼합 − 두 끝점 왕복값의 선형 혼합"만큼의 차이를 더해, 혼색율 0·1 과 같은 색끼리 섞기에서는
+        // 원래 색이 그대로 나오게 한다. 끝점에서 바이트가 정확하도록 a·(1−w) + b·w 꼴로 섞는다.
+        const keep = 1 - wetness;
         const paintRyb = studioFluidPaintRgbToRyb(paintR / 255, paintG / 255, paintB / 255);
         const wellRyb = studioFluidPaintRgbToRyb(wellR / 255, wellG / 255, wellB / 255);
         const mixed = studioFluidPaintRybToRgb(
-          paintRyb[0] + (wellRyb[0] - paintRyb[0]) * wetness,
-          paintRyb[1] + (wellRyb[1] - paintRyb[1]) * wetness,
-          paintRyb[2] + (wellRyb[2] - paintRyb[2]) * wetness,
+          paintRyb[0] * keep + wellRyb[0] * wetness,
+          paintRyb[1] * keep + wellRyb[1] * wetness,
+          paintRyb[2] * keep + wellRyb[2] * wetness,
         );
-        depR = mixed[0] * 255;
-        depG = mixed[1] * 255;
-        depB = mixed[2] * 255;
+        const paintBack = studioFluidPaintRybToRgb(paintRyb[0], paintRyb[1], paintRyb[2]);
+        const wellBack = studioFluidPaintRybToRgb(wellRyb[0], wellRyb[1], wellRyb[2]);
+        depR = clampChannel(paintR * keep + wellR * wetness + (mixed[0] - (paintBack[0] * keep + wellBack[0] * wetness)) * 255);
+        depG = clampChannel(paintG * keep + wellG * wetness + (mixed[1] - (paintBack[1] * keep + wellBack[1] * wetness)) * 255);
+        depB = clampChannel(paintB * keep + wellB * wetness + (mixed[2] - (paintBack[2] * keep + wellBack[2] * wetness)) * 255);
       } else if (latentDeposit !== null) {
         // 혼색율 = 머금은 색 쪽 비율. 0 이면 현재 색, 1 이면 머금은 색이 그대로 돌아온다(표 경로의 무손실 끝점).
         mixSrgb8LatentPigmentTableInto(paintR, paintG, paintB, wellR, wellG, wellB, wetness, latentDeposit);
