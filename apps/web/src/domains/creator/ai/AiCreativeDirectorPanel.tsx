@@ -29,6 +29,7 @@ import {
   completeStudioServerText,
   getStudioServerAiStatus,
   studioServerAiProviderLabel,
+  studioTextUsesPersonalKeyFirst,
   type StudioServerAiProvider,
   type StudioServerAiStatus,
 } from "../studio-server-ai-client";
@@ -96,14 +97,17 @@ function useStudioAiStatus() {
 }
 
 /**
- * AI 크리에이티브 디렉터 Luna. 제안 종류를 고르고 아이디어를 적으면 실제 무료 AI 경로로 요청한다.
- * 서버 무료 AI와 개인 무료 키가 모두 없으면 요청 버튼을 막고, 같은 일을 AI 없이 이어갈 도구로 안내한다.
+ * AI 크리에이티브 디렉터 Luna. 제안 종류를 고르고 아이디어를 적으면 실제 AI 경로(등록한 내 키 → ToonStudio AI)로 요청한다.
+ * ToonStudio AI와 내 키를 모두 쓸 수 없으면 요청 버튼을 막고, 같은 일을 AI 없이 이어갈 도구로 안내한다.
  */
 export function AiCreativeDirectorPanel({ className }: { readonly className?: string }) {
   const bt = useBilingual("AiCreativeDirectorPanel");
   const language = useI18n((state) => state.lang);
   const session = useSession();
-  const aiRevision = useUserAi().revision;
+  const userAi = useUserAi();
+  const aiRevision = userAi.revision;
+  // 상태 표시도 실제 요청과 같은 규칙을 따른다: 내 키가 먼저면 "내 키 먼저 사용"으로 적는다.
+  const personalKeyFirst = studioTextUsesPersonalKeyFirst(userAi.configuration);
   const { probe, retry } = useStudioAiStatus();
   const [selectedId, setSelectedId] = useState<AiDirectorSuggestionId>("story-expand");
   // 답변 조절 공통 부품 — 제출 시 시스템 프롬프트 끝에 지시문으로 붙는다(아래 submit 참고).
@@ -257,7 +261,11 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
                 {bt("무엇을 함께 만들까요?", "What shall we make together?")}
               </h2>
             </div>
-            <DirectorStatusBadge availability={availability.state} model={availability.state === "server" ? availability.model : ""} />
+            <DirectorStatusBadge
+              availability={availability.state}
+              personalKeyFirst={personalKeyFirst}
+              model={availability.state === "server" ? availability.model : ""}
+            />
           </div>
 
           <ul className="mt-4 grid gap-2 sm:grid-cols-2" aria-label={bt("제안 목록", "Suggestions")}>
@@ -474,12 +482,18 @@ function DirectorAnswerBody({ content }: { readonly content: string }) {
   );
 }
 
-function DirectorStatusBadge({ availability, model }: { readonly availability: string; readonly model: string }) {
+function DirectorStatusBadge({ availability, personalKeyFirst, model }: {
+  readonly availability: string;
+  readonly personalKeyFirst: boolean;
+  readonly model: string;
+}) {
   const bt = useBilingual("AiCreativeDirectorPanel.status");
   const label = availability === "server"
-    ? bt("자동 무료 AI 연결됨", "Free AI connected")
+    ? personalKeyFirst
+      ? bt("내 키 먼저 사용", "Your key first")
+      : bt("ToonStudio AI 연결됨", "ToonStudio AI connected")
     : availability === "personal"
-      ? bt("내 무료 키로 요청", "Using your free key")
+      ? bt("내 키로 요청", "Using your key")
       : availability === "login"
         ? bt("로그인하면 사용 가능", "Sign in to use")
         : availability === "checking"

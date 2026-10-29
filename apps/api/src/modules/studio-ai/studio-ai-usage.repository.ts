@@ -1,5 +1,6 @@
 import { dbPool } from "../../platform/database";
 
+import { STUDIO_AI_PREMIUM_PROVIDER_ID } from "./studio-ai-provider";
 import { studioAiQuotaTokenCharge } from "./studio-ai-usage";
 
 import type {
@@ -94,6 +95,20 @@ INSERT INTO studio_ai_usage_ledger (
   "startedAt", "finishedAt", "createdAt"
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+`;
+
+/**
+ * 운영 고성능 경로 행은 보수적 예약량도 남긴다. 사용량을 모르는 호출을 예산이 이 값으로 세기 위해서다.
+ * 이 열(마이그레이션 0115)이 있어야 고성능 경로가 열리므로(예산 질의의 준비 확인) 이 SQL은 열이 있을 때만 쓰인다.
+ * 다른 제공자 행은 열이 없는 DB에서도 그대로 기록되도록 위 SQL을 쓴다.
+ */
+const INSERT_PREMIUM_LEDGER_SQL = `
+INSERT INTO studio_ai_usage_ledger (
+  "userId", task, provider, model, "attemptCount", status,
+  "promptTokens", "completionTokens", "totalTokens", "reservedTokens",
+  "startedAt", "finishedAt", "createdAt"
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $12, $10, $11, CURRENT_TIMESTAMP)
 `;
 
 function requireNonNegativeSafeInteger(value: number, label: string): void {
@@ -191,7 +206,7 @@ export class PostgresStudioAiUsageStore implements StudioAiUsageStore {
       if (userSettled.rowCount !== 1) {
         throw new Error("Studio AI quota reservation was not available for finalization.");
       }
-      await client.query(INSERT_LEDGER_SQL, [
+      const ledgerValues = [
         input.userId,
         input.task,
         input.provider,
@@ -203,7 +218,10 @@ export class PostgresStudioAiUsageStore implements StudioAiUsageStore {
         input.usage.totalTokens ?? null,
         input.startedAt,
         input.finishedAt,
-      ]);
+      ];
+      await (input.provider === STUDIO_AI_PREMIUM_PROVIDER_ID
+        ? client.query(INSERT_PREMIUM_LEDGER_SQL, [...ledgerValues, input.reservedTokens])
+        : client.query(INSERT_LEDGER_SQL, ledgerValues));
       await client.query("COMMIT");
     } catch (error) {
       try {

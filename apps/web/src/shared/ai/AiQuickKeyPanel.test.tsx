@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AiQuickKeyPanel } from "./AiQuickKeyPanel";
-import { getUserAiSnapshot, lockUserAi } from "./user-ai-store";
-import { userAiRoutingSettings } from "./user-ai-types";
+import { addQuickKey } from "./ai-quick-key";
+import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration } from "./user-ai-store";
+import { EMPTY_AI_CONFIGURATION, userAiRoutingSettings } from "./user-ai-types";
 
 import type { FreeAiPoolStatus } from "./free-ai-pool-status";
 
@@ -164,8 +165,30 @@ describe("AiQuickKeyPanel", () => {
     const register = screen.getByRole("button", { name: "등록" }) as HTMLButtonElement;
     expect(within(screen.getByRole("list", { name: "등록할 키" })).getByText("유료")).toBeTruthy();
     expect(register.disabled).toBe(true);
+    // 동의하면 바뀌는 설정과 되돌리는 곳을 함께 알린다.
+    const consent = screen.getByRole("checkbox").closest("label") as HTMLElement;
+    expect(consent.textContent).toContain("“내 유료 키를 먼저 사용”으로 바뀌어");
+    expect(consent.textContent).toContain("설정에서 언제든 바꿀 수 있어요.");
     fireEvent.click(screen.getByRole("checkbox"));
     expect(register.disabled).toBe(false);
+  });
+
+  it("키를 확인하는 동안에는 서비스 선택을 바꿀 수 없다", async () => {
+    let release: (response: Response) => void = () => {};
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => {
+      release = resolve;
+    })));
+    const { input } = renderPanel();
+    // SiliconFlow·OpenAI가 함께 쓰는 형식이라 서비스를 고른 뒤에도 선택 목록이 남는다.
+    pasteInto(input, `sk-${"q".repeat(44)}`);
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "siliconflow" } });
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+
+    await screen.findByRole("button", { name: "키 확인 중…" });
+    expect((screen.getByRole("combobox") as HTMLSelectElement).disabled).toBe(true);
+    release(json({ data: [{ id: "Qwen/Qwen3-235B-A22B" }] }));
+    await screen.findByText(/SiliconFlow 키를 (확인하고 )?등록했어요/u);
   });
 
   it("유료 키를 '먼저 쓴다'에 동의하고 등록하면 유료 키 먼저가 켜지고, 함께 먼저 쓰게 될 기존 유료 키를 미리 알린다", async () => {
@@ -180,6 +203,22 @@ describe("AiQuickKeyPanel", () => {
     expect(routing.preferPaidKeys).toBe(true);
   });
 
+  it("유료 키 동의 문구는 이번 동의로 순서가 바뀌는(이미 자동 사용에 동의한) 유료 키만 함께 알린다", () => {
+    // Claude는 "무료 경로가 끝나면 사용"으로 동의해 두었고, DeepSeek은 동의 없이(대화상자용으로) 연결해 둔 상태.
+    const claude = addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE, { allowPaid: true });
+    const deepseek = addQuickKey(claude.configuration, "deepseek", `sk-${"d".repeat(32)}`);
+    setUserAiConfiguration({
+      ...deepseek.configuration,
+      routing: { ...userAiRoutingSettings(deepseek.configuration), preferPaidKeys: false },
+    });
+    const { input } = renderPanel();
+    pasteInto(input, `sk-proj-${"p".repeat(48)}`);
+
+    const consent = screen.getByRole("checkbox").closest("label") as HTMLElement;
+    expect(consent.textContent).toContain("이미 등록한 유료 키(Claude)도 함께 먼저 써요.");
+    expect(consent.textContent).not.toContain("DeepSeek");
+  });
+
   it("형식이 겹치는 키는 서비스를 고르기 전까지 등록하지 않는다", () => {
     const { input } = renderPanel();
     pasteInto(input, `sk-${"a1".repeat(16)}`);
@@ -191,6 +230,14 @@ describe("AiQuickKeyPanel", () => {
     expect(register.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox"));
     expect(register.disabled).toBe(false);
+  });
+
+  it("결과 알림은 처음부터 있는 알림 영역 안의 목록으로 보여 준다", () => {
+    const { input } = renderPanel();
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("");
+    pasteInto(input, "hello");
+    expect(within(within(status).getByRole("list")).getByRole("listitem").textContent).toMatch(/API 키로 보이지 않아요/u);
   });
 
   it("키로 보이지 않는 글은 받지 않고 이유를 알린다", () => {
@@ -211,6 +258,73 @@ describe("AiQuickKeyPanel", () => {
 
     expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
     expect(screen.queryByRole("list", { name: "등록한 키" })).toBeNull();
+  });
+
+  it("이미 등록한 키를 다시 붙여 넣으면 확인 요청 없이 바로 알리고, 새 키만 목록에 넣는다", async () => {
+    const fetchMock = vi.fn(async () => json({ data: [{ id: "openai/gpt-oss-120b" }] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { input } = renderPanel();
+    pasteInto(input, GROQ);
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+    await screen.findByText("Groq 키를 확인하고 등록했어요.");
+    const calls = fetchMock.mock.calls.length;
+
+    pasteInto(input, GROQ);
+    expect(screen.getByText("이미 등록한 키예요. 다시 등록하지 않아도 돼요.")).toBeTruthy();
+    expect(screen.queryByRole("list", { name: "등록할 키" })).toBeNull();
+
+    pasteInto(input, `${GROQ}\n${GEMINI}`);
+    expect(screen.getByText("이미 등록한 키 1개는 빼고 목록에 넣었어요.")).toBeTruthy();
+    const pending = screen.getByRole("list", { name: "등록할 키" });
+    expect(within(pending).getByText("Google Gemini 키예요")).toBeTruthy();
+    expect(within(pending).queryByText("Groq 키예요")).toBeNull();
+    // 붙여 넣기만으로는 공급자에 아무것도 보내지 않는다.
+    expect(fetchMock.mock.calls.length).toBe(calls);
+  });
+
+  it("꺼 둔 키를 다시 붙여 넣으면 목록에 넣고, 등록하면 새로 만들지 않고 다시 켠다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ data: [{ id: "openai/gpt-oss-120b" }] })));
+    const { input } = renderPanel();
+    pasteInto(input, GROQ);
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+    await screen.findByText("Groq 키를 확인하고 등록했어요.");
+    // 고급 설정에서 이 연결을 꺼 둔 상태.
+    const registered = getUserAiSnapshot().configuration;
+    act(() => {
+      setUserAiConfiguration({ ...registered, connections: registered.connections.map((item) => ({ ...item, enabled: false })) });
+    });
+    // 꺼 둔 키는 먼저 쓰는 키로 세지 않고, 목록에는 꺼짐으로 남는다.
+    const flow = screen.getByText("지금 AI는 이렇게 동작해요").closest("div") as HTMLElement;
+    expect(within(flow).getByText(/지금 먼저 쓰는 키가 없어요/u)).toBeTruthy();
+    expect(within(screen.getByRole("list", { name: "등록한 키" })).getByText("꺼짐")).toBeTruthy();
+
+    pasteInto(input, GROQ);
+    expect(screen.queryByText("이미 등록한 키예요. 다시 등록하지 않아도 돼요.")).toBeNull();
+    expect(within(screen.getByRole("list", { name: "등록할 키" })).getByText("Groq 키예요")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+    await screen.findByText("꺼 두었던 Groq 키를 확인하고 다시 켰어요.");
+    const connections = getUserAiSnapshot().configuration.connections;
+    expect(connections).toHaveLength(1);
+    expect(connections[0]?.enabled).toBe(true);
+    expect(within(flow).getByText("등록한 키 1개를 먼저 써요.")).toBeTruthy();
+  });
+
+  it("먼저 쓰기로 하지 않은 유료 키는 '먼저 쓰는 키'로 세지 않는다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ data: [{ id: "claude-opus-5-5" }] })));
+    const { input } = renderPanel();
+    pasteInto(input, CLAUDE);
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+    await screen.findByText(/키를 확인하고 등록했어요/u);
+    const flow = screen.getByText("지금 AI는 이렇게 동작해요").closest("div") as HTMLElement;
+    expect(within(flow).getByText("등록한 키 1개를 먼저 써요.")).toBeTruthy();
+
+    // 설정에서 "무료 경로가 끝나면 사용"으로 바꾸면 이 유료 키는 ToonStudio AI 다음에 쓴다.
+    const current = getUserAiSnapshot().configuration;
+    act(() => {
+      setUserAiConfiguration({ ...current, routing: { ...userAiRoutingSettings(current), preferPaidKeys: false } });
+    });
+    expect(within(flow).getByText(/지금 먼저 쓰는 키가 없어요/u)).toBeTruthy();
   });
 
   it("목록에 없는 서비스는 직접 연결 마법사로 보낸다", () => {

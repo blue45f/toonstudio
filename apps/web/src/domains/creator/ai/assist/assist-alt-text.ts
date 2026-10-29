@@ -30,7 +30,7 @@ import { toAssistTokenUsage, type AssistTokenUsage } from "@/shared/ai/assist/as
 
 import { resolveCreatorTaskModelRoute, type AssistCreatorTaskId } from "./assist-creator-model-router";
 import { estimateStructuredCostCapUsd } from "./assist-feature-cost-cap";
-import { LOCALIZE_LANGUAGES, type LocalizeLanguageId } from "./assist-localize";
+import { LOCALIZE_LANGUAGES, type LocalizeLanguageId } from "./assist-localize-languages";
 
 import type { ArtDirectorImageInput } from "./assist-art-director";
 
