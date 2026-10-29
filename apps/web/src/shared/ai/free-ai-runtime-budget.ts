@@ -535,6 +535,24 @@ export function getFreeAiRuntimeBudgetSnapshot(
   };
 }
 
+/**
+ * 지우거나 키 값이 바뀐 경로의 사용량·잠금 기록을 지운다. 경로 ID는 연결·모델·키 ID로 만들어서, 키를 지운 뒤 새로 넣은 키가
+ * 같은 ID를 다시 쓴다. 기록을 남겨 두면 새 키가 옛 키의 인증 대기·결제 잠금에 걸려 한동안 건너뛰어진다.
+ */
+export function forgetFreeAiRuntimeRoutes(routes: readonly UserAiConnection[]): void {
+  if (routes.length === 0) return;
+  const ledger = readLedger();
+  let changed = false;
+  for (const route of routes) {
+    const key = scopeKey(route);
+    if (key in ledger.entries) {
+      delete ledger.entries[key];
+      changed = true;
+    }
+  }
+  if (changed) writeLedger(ledger);
+}
+
 export function resetFreeAiRuntimeBudget(connection?: UserAiConnection): void {
   const ledger = readLedger();
   if (connection) {

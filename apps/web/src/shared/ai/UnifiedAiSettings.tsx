@@ -49,6 +49,7 @@ import {
   userAiConnectionModels,
   userAiRoutingSettings,
   USER_AI_CAPABILITIES,
+  withPaidAutoUseChoice,
   type UserAiCapability,
   type UserAiConfiguration,
   type UserAiConnection,
@@ -296,6 +297,13 @@ export function UnifiedAiSettings() {
   const hasPaidConnection = connections.some((connection) =>
     connection.enabled !== false && connection.costPolicy === "user-funded-byok",
   );
+  // 유료 키 자동 사용이 켜져 있어도 자동 사용에 동의하지 않은 유료 키(예: AI 보조 카드에서 연결한 키)는 자동 경로에 들지 않는다.
+  const unconsentedPaidNames = [...new Set(connections
+    .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok" && connection.paidAutoUse !== true)
+    .map((connection) => connection.label))];
+  const choosePaidUse = (allowPaidFallback: boolean, preferPaidKeys: boolean) => {
+    setUserAiConfiguration(withPaidAutoUseChoice(configuration, { allowPaidFallback, preferPaidKeys }));
+  };
   const readyCapabilities = new Set(readyConnections.flatMap(capabilityList));
   const managedTextState = pool.mode === "loading"
     ? "checking" as const
@@ -636,30 +644,42 @@ export function UnifiedAiSettings() {
               </span>
               <div>
                 <h3 id="paid-ai-title" className="font-bold">유료 키 자동 사용</h3>
-                <p className="mt-1 text-sm leading-6 text-fg-2">Claude·OpenAI처럼 비용이 드는 내 키를 자동 경로에서 쓸지 정해요. 키를 등록하며 비용 청구를 확인하면 켜져요.</p>
+                <p className="mt-1 text-sm leading-6 text-fg-2">Claude·OpenAI처럼 비용이 드는 내 키를 자동 경로에서 쓸지 정해요. 키를 등록하며 비용 청구를 확인하면 그 키에 켜지고, 여기서 고르면 지금 등록한 유료 키 모두에 적용돼요.</p>
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="유료 AI 자동 사용">
               <label className={`cursor-pointer rounded-xl border p-3 ${!routing.allowPaidFallback ? "border-accent bg-accent/5" : "border-line"}`}>
                 <span className="flex items-start gap-2">
-                  <input type="radio" name="paid-ai-use" aria-label="자동으로 사용하지 않음" checked={!routing.allowPaidFallback} onChange={() => updateRouting({ allowPaidFallback: false, preferPaidKeys: false })} className="mt-1" />
+                  <input type="radio" name="paid-ai-use" aria-label="자동으로 사용하지 않음" checked={!routing.allowPaidFallback} onChange={() => choosePaidUse(false, false)} className="mt-1" />
                   <span><strong className="block text-sm">자동으로 사용하지 않음</strong><span className="mt-1 block text-xs leading-5 text-fg-3">유료 키는 비용을 먼저 보여 주는 AI 보조 대화상자에서만 써요.</span></span>
                 </span>
               </label>
               <label className={`rounded-xl border p-3 ${routing.allowPaidFallback && routing.preferPaidKeys !== true ? "border-accent bg-accent/5" : "border-line"} ${hasPaidConnection ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}>
                 <span className="flex items-start gap-2">
-                  <input type="radio" name="paid-ai-use" aria-label="무료 경로가 끝나면 내 유료 키 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback && routing.preferPaidKeys !== true} onChange={() => updateRouting({ allowPaidFallback: true, preferPaidKeys: false })} className="mt-1" />
+                  <input type="radio" name="paid-ai-use" aria-label="무료 경로가 끝나면 내 유료 키 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback && routing.preferPaidKeys !== true} onChange={() => choosePaidUse(true, false)} className="mt-1" />
                   <span><strong className="block text-sm">무료 경로가 끝나면 사용</strong><span className="mt-1 block text-xs leading-5 text-fg-3">내 무료 키와 ToonStudio AI를 먼저 쓰고, 둘 다 안 될 때만 유료 키를 써요.</span></span>
                 </span>
               </label>
               <label className={`rounded-xl border p-3 ${routing.allowPaidFallback && routing.preferPaidKeys === true ? "border-accent bg-accent/5" : "border-line"} ${hasPaidConnection ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}>
                 <span className="flex items-start gap-2">
-                  <input type="radio" name="paid-ai-use" aria-label="내 유료 키를 먼저 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback && routing.preferPaidKeys === true} onChange={() => updateRouting({ allowPaidFallback: true, preferPaidKeys: true })} className="mt-1" />
+                  <input type="radio" name="paid-ai-use" aria-label="내 유료 키를 먼저 사용" disabled={!hasPaidConnection} checked={routing.allowPaidFallback && routing.preferPaidKeys === true} onChange={() => choosePaidUse(true, true)} className="mt-1" />
                   <span><strong className="block text-sm">내 유료 키를 먼저 사용</strong><span className="mt-1 block text-xs leading-5 text-fg-3">등록한 순서대로 내 키를 먼저 쓰고, 안 될 때 ToonStudio AI로 넘겨요. 내 계정에 비용이 청구돼요.</span></span>
                 </span>
               </label>
             </div>
             {!hasPaidConnection && <p className="text-xs text-fg-3">유료 서비스 키를 등록하면 나머지 옵션을 고를 수 있어요.</p>}
+            {routing.allowPaidFallback && unconsentedPaidNames.length > 0 && (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3" data-paid-unconsented="true">
+                <span>{`자동으로 쓰지 않는 유료 키: ${unconsentedPaidNames.join(", ")}`}</span>
+                <button
+                  type="button"
+                  className="min-h-11 rounded-lg px-2 font-semibold text-accent underline underline-offset-2"
+                  onClick={() => choosePaidUse(true, routing.preferPaidKeys === true)}
+                >
+                  이 키도 자동으로 쓰기
+                </button>
+              </p>
+            )}
           </section>
 
           <section className="grid gap-3 sm:grid-cols-2" aria-label="AI 데이터와 보안 안내">

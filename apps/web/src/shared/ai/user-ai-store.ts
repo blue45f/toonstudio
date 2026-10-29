@@ -2,11 +2,13 @@ import { useSyncExternalStore } from "react";
 
 import { decryptUserAiVault, encryptUserAiVault } from "./user-ai-crypto";
 import { freeAiConnectionPolicyIssue } from "./free-ai-policy";
+import { forgetFreeAiRuntimeRoutes } from "./free-ai-runtime-budget";
 import {
   EMPTY_AI_CONFIGURATION,
   EMPTY_AI_CONNECTION,
   normalizeUserAiConfiguration,
   resolvedUserAiRoutes,
+  USER_AI_CAPABILITIES,
   userAiConnectionApiKeys,
   userAiConnectionModels,
   userAiRoutingSettings,
@@ -71,9 +73,42 @@ export function useUserAi() {
   );
 }
 
+/**
+ * 앞 설정과 새 설정 중 한쪽에만 있는 경로(지운 키, 새로 넣은 키, 주소·키 값이 바뀐 경로). 켜고 끄기만 한 경로는 같은
+ * 키라서 세지 않는다(끄고 다시 켠다고 하루 사용량·잠금 기록이 비지 않게).
+ */
+function changedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): UserAiResolvedConnection[] {
+  const collect = (configuration: UserAiConfiguration) => {
+    const routes = new Map<string, UserAiResolvedConnection>();
+    for (const connection of configuration.connections) {
+      const everyRoute: UserAiConnection = {
+        ...connection,
+        enabled: true,
+        apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
+        models: connection.models?.map((item) => ({ ...item, enabled: true })),
+      };
+      for (const capability of USER_AI_CAPABILITIES) {
+        for (const route of resolvedUserAiRoutes(everyRoute, capability)) {
+          routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
+        }
+      }
+    }
+    return routes;
+  };
+  const before = collect(previous);
+  const after = collect(next);
+  return [
+    ...[...before].filter(([signature]) => !after.has(signature)).map(([, route]) => route),
+    ...[...after].filter(([signature]) => !before.has(signature)).map(([, route]) => route),
+  ];
+}
+
 export function setUserAiConfiguration(configuration: UserAiConfiguration) {
+  const next = normalizeUserAiConfiguration(configuration);
+  // 같은 경로 ID를 다시 쓰는 새 키가 옛 키의 인증 대기·결제 잠금에 걸리지 않게, 바뀐 경로의 기록을 지운다.
+  forgetFreeAiRuntimeRoutes(changedRoutes(snapshot.configuration, next));
   publish(
-    normalizeUserAiConfiguration(configuration),
+    next,
     "클라우드 AI 라우팅을 메모리에 적용했습니다. 암호화 저장 전에는 디스크에 키를 기록하지 않습니다.",
     false,
   );
@@ -137,8 +172,8 @@ function validRoutes(
 /** Returns cloud routes in the selected automatic, priority, or manual order. */
 export function userAiConnectionsForCapability(
   capability: UserAiCapability,
+  configuration: UserAiConfiguration = snapshot.configuration,
 ): UserAiResolvedConnection[] {
-  const configuration = snapshot.configuration;
   const routing = userAiRoutingSettings(configuration);
   const assigned = assignedRoute(configuration, capability);
   if (routing.mode === "manual") return assigned ? [assigned] : [];
@@ -163,18 +198,20 @@ export function userAiConnection(
 
 /**
  * Automatic personal-cloud fallback. Free routes are always eligible; explicitly billed BYOK
- * routes join the chain only after the user enables paid fallback. Manual mode uses one exact route.
+ * routes join the chain only after the user enables paid fallback and consented for that connection
+ * (`paidAutoUse`). Manual mode uses one exact route.
  */
 export function userAiAutomaticExternalConnectionsForCapability(
   capability: UserAiCapability,
+  configuration: UserAiConfiguration = snapshot.configuration,
 ): UserAiResolvedConnection[] {
-  const configuration = snapshot.configuration;
   const routing = userAiRoutingSettings(configuration);
-  return userAiConnectionsForCapability(capability).filter((connection) => (
+  return userAiConnectionsForCapability(capability, configuration).filter((connection) => (
     connection.costPolicy === "provider-free-tier"
     || connection.costPolicy === "openrouter-free"
+    // 유료 연결은 "하나만 고정"으로 직접 골랐거나, 유료 키 자동 사용이 켜져 있고 이 연결에 동의했을 때만 쓴다.
     || (connection.costPolicy === "user-funded-byok" && (
-      routing.allowPaidFallback || routing.mode === "manual"
+      routing.mode === "manual" || (routing.allowPaidFallback && connection.paidAutoUse === true)
     ))
   ));
 }
@@ -185,9 +222,10 @@ export function userAiAutomaticExternalConnectionsForCapability(
  */
 export function userAiPersonalFirstConnectionsForCapability(
   capability: UserAiCapability,
+  configuration: UserAiConfiguration = snapshot.configuration,
 ): UserAiResolvedConnection[] {
-  const routing = userAiRoutingSettings(snapshot.configuration);
-  return userAiAutomaticExternalConnectionsForCapability(capability).filter((connection) => (
+  const routing = userAiRoutingSettings(configuration);
+  return userAiAutomaticExternalConnectionsForCapability(capability, configuration).filter((connection) => (
     connection.costPolicy !== "user-funded-byok" || routing.preferPaidKeys === true || routing.mode === "manual"
   ));
 }
