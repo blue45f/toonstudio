@@ -7,7 +7,7 @@
 import { Undo2 } from "lucide-react";
 import { Suspense } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { studioHybridDccHandoffAnnouncement } from "../studio-3d-handoff-copy";
+import { studioHybridDccHandoffAnnouncement } from "../studio-3d-ui/studio-3d-handoff-copy";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "../studio-chrome-ui";
 import { STUDIO_INTERCHANGE_IMPORT_PLACEMENT_CHOICES, STUDIO_WILL_V1_IMPORT_PLACEMENT_CHOICES } from "../studio-page-editor-runtime-contracts";
 import {
