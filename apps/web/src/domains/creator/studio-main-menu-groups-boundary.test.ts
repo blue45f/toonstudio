@@ -37,6 +37,10 @@ const CATALOGUE_MODULE_LINE_BUDGETS = {
   "./studio-main-menu-group-spec-coverage.ts": 120,
   // Help's §15.3 rows. Its notes carry what each surface actually measures.
   "./studio-main-menu-group-spec-help.ts": 120,
+  // Filter 의 §15.3 행. Filter 메뉴는 레지스트리 종류마다 행을 만들어 귀속 목록이 필터 카탈로그를
+  // 따라 자란다. 공유 표의 상한을 올리는 대신 이 그룹을 떼어 냈다(creator 루트가 파일 수 예산에
+  // 닿아 있어 filter/ 아래).
+  "./filter/studio-main-menu-group-spec-filter.ts": 120,
   // Wave E: which module answers for which §15.3 group. Imports + one table.
   "./studio-main-menu-item-routing.ts": 160,
   // Host contract for the "open a surface that already ships" rows, and its
