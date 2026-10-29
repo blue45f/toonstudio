@@ -1,6 +1,8 @@
 import { BRUSH_STUDIO_V6_TOPOLOGIES } from "./brush-studio-v6-topology-catalog";
+import { isBrushStudioV6ProceduralModel } from "./brush-studio-v6-procedural-family-catalog";
 import { BRUSH_STUDIO_V6_CORE_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-core";
 import { BRUSH_STUDIO_V6_MIXBOX_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-mixbox";
+import { BRUSH_STUDIO_V6_PROCEDURAL_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-procedural";
 import { BRUSH_STUDIO_V6_SHOWCASE_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-showcase";
 import { BRUSH_STUDIO_V7_MATERIAL_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-material-v7";
 import { BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-material-v7-advanced";
@@ -18,7 +20,8 @@ export const BRUSH_STUDIO_V6_RECIPE_SEEDS = Object.freeze([
   ...BRUSH_STUDIO_V8_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V6_TEXTURE_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V6_MIXBOX_RECIPE_SEEDS,
-  ...BRUSH_STUDIO_V6_TOPOLOGIES.map((entry) => defineBrushStudioV6RecipeSeed(
+  // 절차 계열은 모델별 도포 재료가 달라 전용 시드 파일(recipe-catalog-procedural)이 레시피를 만든다.
+  ...BRUSH_STUDIO_V6_TOPOLOGIES.filter((entry) => !isBrushStudioV6ProceduralModel(entry.model)).map((entry) => defineBrushStudioV6RecipeSeed(
     entry.recipeId,
     entry.label,
     entry.group ?? "획 구조·물리",
@@ -33,4 +36,5 @@ export const BRUSH_STUDIO_V6_RECIPE_SEEDS = Object.freeze([
       tuning: entry.tuning,
     },
   )),
+  ...BRUSH_STUDIO_V6_PROCEDURAL_RECIPE_SEEDS,
 ]);
