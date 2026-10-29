@@ -205,6 +205,7 @@ export function createStudioHokusaiLiveCanonicalTransaction(input: Readonly<{
     | "lockAspect"
     | "name"
     | "noClip"
+    | "frameClipId"
   > = Object.freeze({
     id: input.canonicalImageId,
     type: "image",
@@ -219,6 +220,7 @@ export function createStudioHokusaiLiveCanonicalTransaction(input: Readonly<{
     hokusaiLiveReceipt: documentReceipt,
     ...(source.groupId ? { groupId: source.groupId } : {}),
     ...(source.noClip !== undefined ? { noClip: source.noClip } : {}),
+    ...(source.frameClipId ? { frameClipId: source.frameClipId } : {}),
     ...(source.blendMode ? { blendMode: source.blendMode } : {}),
     ...(source.clipBelow !== undefined ? { clipBelow: source.clipBelow } : {}),
     ...(source.alphaLocked !== undefined ? { alphaLocked: source.alphaLocked } : {}),

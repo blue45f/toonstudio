@@ -6,7 +6,7 @@ import { EMPTY_STUDIO_REVIEW_CAPTURE, encodeStudioReviewCapturePng, StudioReview
   type StudioReviewCaptureBridgeDependencies, type StudioReviewCaptureSnapshot } from "./studio-review-capture-bridge";
 
 type HostBindings = Pick<StudioReviewCaptureBridgeDependencies,
-  "getContext" | "projectRuntime" | "save" | "captureAll">;
+  "getContext" | "projectRuntime" | "save" | "captureAll" | "refreshPurpose">;
 interface CaptureOwner { readonly key: string; readonly bridge: StudioReviewCaptureBridge; readonly unsubscribe: () => void }
 
 export function useStudioReviewCapture(scopeKey: string, bindings: HostBindings) {
@@ -15,6 +15,10 @@ export function useStudioReviewCapture(scopeKey: string, bindings: HostBindings)
     key: scopeKey, open: false, snapshot: EMPTY_STUDIO_REVIEW_CAPTURE,
   }));
   const handlers = useStudioStableHandlers(bindings);
+  const getOpenPhase = useCallback(() => {
+    const owner = current.current;
+    return owner?.key === scopeKey ? owner.bridge.getSnapshot().phase : "idle";
+  }, [scopeKey]);
   const open = useCallback(() => {
     let owner = current.current;
     let created = false;
@@ -86,7 +90,7 @@ export function useStudioReviewCapture(scopeKey: string, bindings: HostBindings)
     const timer = window.setInterval(() => current.current?.bridge.checkScope(), 150);
     return () => window.clearInterval(timer);
   }, []);
-  return { open, retry, save, close,
+  return { open, retry, save, close, getOpenPhase,
     visible: view.key === scopeKey && view.open,
     snapshot: view.key === scopeKey ? view.snapshot : EMPTY_STUDIO_REVIEW_CAPTURE };
 }

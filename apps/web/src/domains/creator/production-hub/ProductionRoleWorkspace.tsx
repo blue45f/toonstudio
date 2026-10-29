@@ -1,13 +1,8 @@
 import {
-  AlertTriangle,
-  ArrowRight,
-  BadgeCheck,
   BookOpenText,
   Boxes,
   Building2,
   CalendarClock,
-  CheckCircle2,
-  CircleDashed,
   ClipboardCheck,
   Clock3,
   GitBranch,
@@ -27,17 +22,15 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
   PRODUCTION_DEPARTMENTS,  PRODUCTION_ROLE_LABELS,
   WEBTOON_PRODUCTION_PIPELINE,
   buildProductionRoleWorkcellBoard,
-  eligibleAssignmentsForTask,
   inferProductionTaskDepartment,
   productionDepartment,
-  transitionProductionTask,
   type ProductionDepartmentKey,
   type ProductionProjectAggregate,
   type ProductionRoleWorkcell,
@@ -48,11 +41,13 @@ import {
 } from "@toonstudio/core/production";
 
 import type { ProductionClientCommand } from "./production-api";
+import { ProductionRoleTaskInspector } from "./ProductionRoleTaskInspector";
+import { buildProductionRoleDispatch } from "./production-role-dispatch";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
-import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 export type ProductionRoleLens = "story" | "art" | "producer";
 type WorkspaceView = "workcells" | "pipeline" | "crew";
@@ -307,307 +302,6 @@ function TaskCard({
         ) : null}
       </div>
     </button>
-  );
-}
-interface PrimaryTaskAction {
-  readonly label: string;
-  readonly target: ProductionTaskStatus;
-}
-
-function primaryTaskAction(task: ProductionTask): PrimaryTaskAction | null {
-  switch (task.status) {
-    case "draft":
-    case "needs-input":
-    case "blocked":
-    case "paused":
-      return { label: "입력 준비 완료", target: "ready" };
-    case "ready":
-      return { label: "작업 시작", target: "in-progress" };
-    case "in-progress":
-      return { label: "검수 요청", target: "internal-review" };
-    case "internal-review":
-    case "external-review":
-    case "conditionally-approved":
-      return { label: "승인 처리", target: "approved" };
-    case "changes-requested":
-      return { label: "수정 작업 시작", target: "in-progress" };
-    case "approved":
-      return { label: "공정 완료", target: "done" };
-    default:
-      return null;
-  }
-}
-
-function taskActionEnabled(action: PrimaryTaskAction, gate: ProductionTaskGate): boolean {
-  if (action.target === "ready" || action.target === "in-progress") {
-    return gate.blockers.length === 0;
-  }
-  if (action.target === "internal-review") return gate.canRequestReview;
-  if (action.target === "approved") return gate.canApprove;
-  if (action.target === "done") return !gate.missingDeliverable;
-  return true;
-}
-function uniqueAssignmentOptions(
-  eligible: readonly RoleAssignment[],
-  currentIds: readonly string[],
-  assignments: readonly RoleAssignment[],
-): readonly RoleAssignment[] {
-  const byId = new Map(eligible.map((assignment) => [assignment.id, assignment]));
-  for (const assignmentId of currentIds) {
-    const assignment = assignments.find((entry) => entry.id === assignmentId);
-    if (assignment) byId.set(assignment.id, assignment);
-  }
-  return [...byId.values()];
-}
-
-function TaskInspector({
-  aggregate,
-  task,
-  gate,
-  canEdit,
-  execute,
-  at,
-}: {
-  readonly aggregate: ProductionProjectAggregate;
-  readonly task: ProductionTask;
-  readonly gate: ProductionTaskGate;
-  readonly canEdit: boolean;
-  readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
-  readonly at: string;
-}) {
-  const [actionError, setActionError] = useState<string | null>(null);
-  useEffect(() => setActionError(null), [task.id]);
-  const departmentKey = gate.departmentKey;
-  const department = departmentKey ? productionDepartment(departmentKey) : null;
-  const primaryAction = primaryTaskAction(task);
-  const ownerOptions = uniqueAssignmentOptions(
-    eligibleAssignmentsForTask({
-      task,
-      assignments: aggregate.assignments,
-      departmentKey,
-      kind: "owner",
-      at,
-    }),
-    task.assignmentIds,
-    aggregate.assignments,
-  );
-  const reviewerOptions = uniqueAssignmentOptions(
-    eligibleAssignmentsForTask({
-      task,
-      assignments: aggregate.assignments,
-      departmentKey,
-      kind: "reviewer",
-      at,
-    }),
-    task.reviewerAssignmentIds,
-    aggregate.assignments,
-  );
-  const dependencyTasks = task.dependencyTaskIds.map((taskId) =>
-    aggregate.tasks.find((entry) => entry.id === taskId) ?? null);
-
-  const saveTask = async (next: ProductionTask, message: string) => {
-    setActionError(null);
-    await execute({ type: "upsert-task", task: next }, message);
-  };
-
-  const changePrimaryAssignment = async (
-    kind: "owner" | "reviewer",
-    assignmentId: string,
-  ) => {    const values = kind === "owner" ? task.assignmentIds : task.reviewerAssignmentIds;
-    const rest = values.slice(1).filter((value) => value !== assignmentId);
-    const nextValues = assignmentId ? [assignmentId, ...rest] : rest;
-    await saveTask(
-      kind === "owner"
-        ? { ...task, assignmentIds: nextValues }
-        : { ...task, reviewerAssignmentIds: nextValues },
-      kind === "owner" ? "주 담당자를 변경했습니다." : "주 검수자를 변경했습니다.",
-    );
-  };
-
-  const runTransition = async (target: ProductionTaskStatus) => {
-    setActionError(null);
-    try {
-      const completed = aggregate.tasks
-        .filter((entry) => COMPLETED_DEPENDENCY_STATUSES.has(entry.status))
-        .map((entry) => entry.id);
-      const next = transitionProductionTask(task, target, completed);
-      await saveTask(next, `${STATUS_LABELS[target]} 상태로 이동했습니다.`);
-    } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : frozenStatus5Text("studio.frozenStatus5.role.transitionFailed", "작업 상태를 변경하지 못했습니다."));
-    }
-  };
-
-  const canBlock = [
-    "needs-input",
-    "ready",
-    "in-progress",
-    "internal-review",
-    "external-review",
-    "conditionally-approved",
-  ].includes(task.status);
-  const canRequestChanges = REVIEW_STATUSES.has(task.status);
-
-  return (
-    <aside className="rounded-2xl border border-line bg-card p-4 xl:sticky xl:top-4 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[0.6875rem] font-black uppercase tracking-[0.12em] text-accent">
-            {department?.label ?? task.processKey} · {scopeLabel(task)}
-          </p>
-          <h2 className="mt-1 text-lg font-black leading-6 text-fg">{task.title}</h2>
-        </div>
-        <Pill tone={statusTone(task.status)}>{STATUS_LABELS[task.status]}</Pill>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-fg-3">입력 정본</p>
-          <p className="mt-1 font-black text-fg">{task.inputRevisionRefs.length}</p>
-        </div>
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-fg-3">산출물</p>
-          <p className="mt-1 font-black text-fg">{task.outputDeliverableIds.length}</p>
-        </div>
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-fg-3">선행 작업</p>
-          <p className="mt-1 font-black text-fg">
-            {dependencyTasks.filter((entry) => entry && COMPLETED_DEPENDENCY_STATUSES.has(entry.status)).length}/{dependencyTasks.length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-line bg-panel p-3">
-          <p className="text-fg-3">예상 공수</p>
-          <p className="mt-1 font-black text-fg">{task.estimateHours?.likely ?? "—"}h</p>
-        </div>
-      </div>
-      {(gate.blockers.length > 0 || gate.warnings.length > 0) ? (
-        <section className="mt-4 space-y-2" aria-label="작업 게이트">
-          {gate.blockers.map((message) => (
-            <div key={message} className="flex gap-2 rounded-xl border border-bad/30 bg-bad/10 p-3 text-xs leading-5 text-fg">
-              <LockKeyhole className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
-              <span>{message}</span>
-            </div>
-          ))}
-          {gate.warnings.map((message) => (
-            <div key={message} className="flex gap-2 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs leading-5 text-fg">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />
-              <span>{message}</span>
-            </div>
-          ))}
-        </section>
-      ) : (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-good/30 bg-good/10 p-3 text-xs font-semibold text-fg">
-          <CheckCircle2 className="size-4 text-good" aria-hidden="true" /> 다음 공정으로 이동할 준비가 됐습니다.
-        </div>
-      )}
-
-      <section className="mt-4 space-y-3" aria-label="담당자 배정">
-        <label className="block text-xs font-bold text-fg">
-          주 담당자
-          <select
-            aria-label={`${task.title} 주 담당자`}
-            value={task.assignmentIds[0] ?? ""}
-            onChange={(event) => void changePrimaryAssignment("owner", event.target.value)}
-            disabled={!canEdit}
-            className="mt-1.5 min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-xs font-semibold text-fg outline-none focus:border-accent"
-          >
-            <option value="">담당자 미정</option>
-            {ownerOptions.map((assignment) => (
-              <option key={assignment.id} value={assignment.id}>
-                {assignmentLabel(aggregate, assignment.id)} · {PRODUCTION_ROLE_LABELS[assignment.roleType]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-xs font-bold text-fg">
-          주 검수자
-          <select
-            aria-label={`${task.title} 주 검수자`}
-            value={task.reviewerAssignmentIds[0] ?? ""}
-            onChange={(event) => void changePrimaryAssignment("reviewer", event.target.value)}
-            disabled={!canEdit}
-            className="mt-1.5 min-h-10 w-full rounded-xl border border-line bg-panel px-3 text-xs font-semibold text-fg outline-none focus:border-accent"
-          >
-            <option value="">검수자 미정</option>
-            {reviewerOptions.map((assignment) => (
-              <option key={assignment.id} value={assignment.id}>
-                {assignmentLabel(aggregate, assignment.id)} · {PRODUCTION_ROLE_LABELS[assignment.roleType]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
-
-      {dependencyTasks.length > 0 ? (
-        <section className="mt-5">
-          <h3 className="text-xs font-black text-fg">선행 인수인계</h3>
-          <div className="mt-2 space-y-2">
-            {dependencyTasks.map((dependency, index) => (
-              <div key={task.dependencyTaskIds[index]} className="flex items-center gap-2 rounded-xl border border-line bg-panel p-2.5">
-                {dependency && COMPLETED_DEPENDENCY_STATUSES.has(dependency.status)
-                  ? <CheckCircle2 className="size-4 shrink-0 text-good" aria-label="완료" />
-                  : <CircleDashed className="size-4 shrink-0 text-warn" aria-label="대기" />}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-fg">{dependency?.title ?? task.dependencyTaskIds[index]}</p>
-                  <p className="mt-0.5 text-[0.6875rem] text-fg-3">
-                    {dependency ? STATUS_LABELS[dependency.status] : frozenStatus5Text("studio.frozenStatus5.role.taskNotFound", "작업을 찾을 수 없음")}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="mt-5">
-        <h3 className="text-xs font-black text-fg">완료 기준</h3>
-        <ul className="mt-2 space-y-1.5">
-          {task.completionCriteria.map((criterion) => (
-            <li key={criterion} className="flex gap-2 rounded-lg bg-panel px-3 py-2 text-xs leading-5 text-fg-2">
-              <BadgeCheck className="mt-0.5 size-3.5 shrink-0 text-accent" aria-hidden="true" />
-              <span>{criterion}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-      {actionError ? (
-        <div role="alert" className="mt-4 rounded-xl border border-bad/30 bg-bad/10 p-3 text-xs leading-5 text-fg">
-          {actionError}
-        </div>
-      ) : null}
-
-      <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
-        {primaryAction ? (
-          <button
-            type="button"
-            className={buttonClass({ size: "sm" })}
-            disabled={!canEdit || !taskActionEnabled(primaryAction, gate)}
-            onClick={() => void runTransition(primaryAction.target)}
-          >
-            {primaryAction.label} <ArrowRight className="size-4" aria-hidden="true" />
-          </button>
-        ) : null}
-        {canRequestChanges ? (
-          <button
-            type="button"
-            className={buttonClass({ variant: "outline", size: "sm" })}
-            disabled={!canEdit}
-            onClick={() => void runTransition("changes-requested")}
-          >
-            수정 요청
-          </button>
-        ) : null}
-        {canBlock ? (
-          <button
-            type="button"
-            className={buttonClass({ variant: "ghost", size: "sm" })}
-            disabled={!canEdit}
-            onClick={() => void runTransition("blocked")}
-          >
-            차단 처리
-          </button>
-        ) : null}
-      </div>
-    </aside>
   );
 }
 export function ProductionCrewCoverage({
@@ -912,6 +606,7 @@ export function ProductionRoleWorkspace({
   readonly canEdit: boolean;
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
 }) {
+  const bt = useBilingual("ProductionRoleWorkspace");
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTaskId = searchParams.get("task");
   const [view, setView] = useState<WorkspaceView>("workcells");
@@ -985,30 +680,33 @@ export function ProductionRoleWorkspace({
     task.status === "blocked" || (board.taskGates[task.id]?.blockers.length ?? 0) > 0).length;
   const reviewCount = episodeTasks.filter((task) => REVIEW_STATUSES.has(task.status)).length;
   const activeCellCount = board.workcells.filter((entry) => entry.openTaskCount > 0).length;
-  const autoAssignable = useMemo(() => visibleTasks.flatMap((task) => {
-    if (task.assignmentIds.length > 0) return [];
-    const departmentKey = inferProductionTaskDepartment(task, aggregate.assignments);
-    const assignment = eligibleAssignmentsForTask({
-      task,
-      assignments: aggregate.assignments,
-      departmentKey,
-      kind: "owner",
-      at,
-    })[0];
-    return assignment ? [{ task, assignment }] : [];
-  }), [aggregate.assignments, at, visibleTasks]);
-
+  const autoAssignable = useMemo(() => buildProductionRoleDispatch(aggregate, visibleTasks, at), [aggregate, at, visibleTasks]);
+  const assigning = useRef(false);
+  const [assignmentBusy, setAssignmentBusy] = useState(false);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const autoAssign = async () => {
-    for (const candidate of autoAssignable) {
-      await execute({
-        type: "upsert-task",
-        task: { ...candidate.task, assignmentIds: [candidate.assignment.id] },
-      }, `${autoAssignable.length}개 미배정 작업을 직군에 맞게 배치했습니다.`);
+    if (!canEdit || assigning.current || !autoAssignable.length) return;
+    const currentPlan = buildProductionRoleDispatch(aggregate, visibleTasks, new Date().toISOString());
+    if (!currentPlan.length) {
+      setAssignmentError(bt("현재 배정 가능한 담당자가 없습니다. 역할과 계약 기간을 확인해 주세요.", "No eligible assignee is currently available. Check roles and assignment dates."));
+      return;
     }
+    assigning.current = true;
+    setAssignmentBusy(true);
+    setAssignmentError(null);
+    try {
+      await execute({ type: "upsert-task-batch",
+        tasks: currentPlan.map(({ task, assignmentId }) => ({ ...task, assignmentIds: [assignmentId] })),
+        expectedTasks: currentPlan.map(({ task }) => task),
+      }, bt(`${currentPlan.length}개 미배정 작업을 역할·업무량에 맞게 배치했습니다.`, `Assigned ${currentPlan.length} tasks by role and workload.`));
+    } catch (cause) {
+      setAssignmentError(cause instanceof Error ? cause.message : bt("담당 배정을 저장하지 못했습니다. 다시 시도해 주세요.", "Could not save assignments. Try again."));
+    } finally { assigning.current = false; setAssignmentBusy(false); }
   };
 
   return (
     <div className="space-y-4">
+      {assignmentError ? <p role="alert" className="rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm text-fg">{assignmentError}</p> : null}
       <section className="overflow-hidden rounded-3xl border border-line bg-card">
         <div className="relative p-5 sm:p-6">
           <div className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-accent/10 blur-3xl" />
@@ -1031,10 +729,10 @@ export function ProductionRoleWorkspace({
                 <button
                   type="button"
                   className={buttonClass({ variant: "outline", size: "sm" })}
-                  disabled={!canEdit}
+                  disabled={!canEdit || assignmentBusy}
                   onClick={() => void autoAssign()}
                 >
-                  <UserCheck className="size-4" aria-hidden="true" /> 미배정 자동 배치 {autoAssignable.length}
+                  <UserCheck className="size-4" aria-hidden="true" /> {bt("업무량에 맞춰 배치", "Assign by workload")} {autoAssignable.length}
                 </button>
               ) : null}
               <Pill tone={board.coverageGapDepartmentKeys.length > 0 ? "warning" : "success"}>
@@ -1123,7 +821,8 @@ export function ProductionRoleWorkspace({
             onSelectTask={selectTask}
           />
           {selectedTask && selectedGate ? (
-            <TaskInspector
+            <ProductionRoleTaskInspector
+              key={`${aggregate.projectId}:${selectedTask.id}`}
               aggregate={aggregate}
               task={selectedTask}
               gate={selectedGate}
@@ -1195,7 +894,8 @@ export function ProductionRoleWorkspace({
             </div>
           </section>
           {selectedTask && selectedGate ? (
-            <TaskInspector
+            <ProductionRoleTaskInspector
+              key={`${aggregate.projectId}:${selectedTask.id}`}
               aggregate={aggregate}
               task={selectedTask}
               gate={selectedGate}

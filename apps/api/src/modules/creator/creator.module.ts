@@ -1,5 +1,9 @@
 import { StudioHandoffEnvelopeController, StudioHandoffEnvelopeService } from "./studio-handoff-envelope.controller";
 import { StudioHandoffEnvelopeRepository } from "./studio-handoff-envelope.repository";
+import { StudioScopedWriteController, StudioScopedWriteService } from "./studio-scoped-write.controller";
+import { StudioScopedWriteRepository } from "./studio-scoped-write.repository";
+import { StudioWriterRoomCaptureController } from "./studio-writer-room-capture.controller";
+import { StudioWriterRoomCaptureRepository } from "./studio-writer-room-capture.repository";
 import { Module } from "@nestjs/common";
 import { StudioLiveAcousticBinding } from "./studio-live-acoustic-binding";
 
@@ -93,6 +97,8 @@ const privateObjectStorageModule =
     StudioProductionController,
     StudioReviewTaskCompletionController,
     StudioHandoffEnvelopeController,
+    StudioScopedWriteController,
+    StudioWriterRoomCaptureController,
     StudioTeamCommentController,
     StudioVoiceIcePolicyController,
     StudioWorkAssetController,
@@ -128,6 +134,9 @@ const privateObjectStorageModule =
     StudioReviewTaskCompletionService,
     StudioHandoffEnvelopeService,
     StudioHandoffEnvelopeRepository,
+    StudioScopedWriteRepository,
+    StudioWriterRoomCaptureRepository,
+    StudioScopedWriteService,
     StudioReviewTaskCompletionRepository,
     StudioTeamCommentLivePublisher,
     StudioTeamCommentService,

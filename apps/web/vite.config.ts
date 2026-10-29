@@ -674,6 +674,8 @@ export default defineConfig(({ command, mode }) => ({
             "react/jsx-dev-runtime",
             // React Router's browser entry pulls in its CommonJS cookie helper.
             "react-router-dom",
+            // 아이콘 배럴의 수천 개 개별 요청이 검증 화면 진입을 지연하지 않게 한다.
+            "lucide-react",
             // QRCode's browser entry is CommonJS; prebundle it for the manuscript acceptance harness.
             "qrcode",
           ],

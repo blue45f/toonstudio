@@ -1,6 +1,7 @@
 import { createHash, webcrypto } from "node:crypto";
 import { inflateSync } from "node:zlib";
 
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import {
   BadRequestException,
   ConflictException,
@@ -417,7 +418,7 @@ export class StudioRasterAssetService {
     actorUserId: string,
     workId: string,
     assetId: string,
-    file: StudioRasterAssetUploadFile | undefined
+    file: StudioRasterAssetUploadFile | undefined, writeContext?: StudioScopedWriteContext
   ): Promise<StudioRasterAssetManifest> {
     if (!isStudioRasterAssetAdmissionOptedIn(
       process.env.STUDIO_RASTER_ASSET_ADMISSION
@@ -448,6 +449,7 @@ export class StudioRasterAssetService {
         workId,
         assetId,
         ...admitted,
+        ...(writeContext ? { writeContext } : {}),
       })
     ));
   }

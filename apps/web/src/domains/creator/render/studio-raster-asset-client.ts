@@ -1,5 +1,7 @@
 import type { StudioRasterAssetReference } from "@/shared/lib/studio-crdt-raster-ops";
 
+import { appendStudioScopedAssetContext } from "../studio-collab/studio-scoped-asset-context";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import {
   STUDIO_RASTER_ASSET_MAX_BYTES,
   StudioRasterAssetManifestSchema,
@@ -153,7 +155,7 @@ export async function uploadStudioRasterAsset(
   workId: string,
   referenceValue: StudioRasterAssetReference,
   bytesValue: Uint8Array,
-  signal?: AbortSignal
+  signal?: AbortSignal, writeContext?: StudioScopedWriteContext
 ): Promise<StudioRasterAssetReference> {
   const reference = parseStudioRasterStoredReference(referenceValue);
   const bytes = Uint8Array.from(bytesValue);
@@ -170,6 +172,7 @@ export async function uploadStudioRasterAsset(
     );
   }
   const form = new FormData();
+  appendStudioScopedAssetContext(form, writeContext);
   form.append(
     "file",
     new Blob([bytes], { type: reference.mediaType }),

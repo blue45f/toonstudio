@@ -273,6 +273,8 @@ export function hasCanonicalRendererSignificantR8Grain(
 }
 
 export function validatePayload(payload: StudioCrdtDrawStrokePayload, allowEmpty: boolean): void {
+  const frameClipId = payload.extensions?.frameClipId;
+  if (frameClipId !== undefined && (!exactText(frameClipId, 160))) throw new Error("원고 컷 클립 ID가 올바르지 않습니다.");
   if (
     !isStudioCrdtStrokePayloadVersion(payload.version)
     || payload.type !== "draw"

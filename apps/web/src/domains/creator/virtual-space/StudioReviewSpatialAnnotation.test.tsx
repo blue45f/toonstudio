@@ -22,6 +22,18 @@ function setup(disabled = false) {
 const mode = (value: string) => fireEvent.change(screen.getByLabelText("위치 방식"), { target: { value } });
 const apply = () => fireEvent.click(screen.getByRole("button", { name: "이 위치에 의견 연결" }));
 describe("source-mapped spatial placement", () => {
+  it.each(["pen", "coordinate", "region"])("%s 배치 중 원고 이미지의 기본 드래그가 포인터 입력을 취소하지 않게 한다", (placement) => {
+    setup(); mode(placement);
+    const event = new MouseEvent("dragstart", { bubbles: true, cancelable: true });
+    fireEvent(screen.getByRole("img"), event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+  it("위치 배치를 사용하지 않을 때는 원고 이미지의 기본 드래그를 유지한다", () => {
+    setup();
+    const event = new MouseEvent("dragstart", { bubbles: true, cancelable: true });
+    fireEvent(screen.getByRole("img"), event);
+    expect(event.defaultPrevented).toBe(false);
+  });
   it("requires explicit page, cut and object selection and preserves their authoring IDs", () => {
     const { choose } = setup(); expect(choose).not.toHaveBeenCalled(); apply();
     expect(choose.mock.lastCall?.[0].anchor).toMatchObject({ kind: "page", source: { pageId: "page-a", pageOrdinal: 0 } });

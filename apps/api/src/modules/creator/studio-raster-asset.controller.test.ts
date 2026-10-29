@@ -54,7 +54,7 @@ describe("StudioRasterAssetController", () => {
       file,
       "editor"
     )).resolves.toEqual({ assetId: sha256 });
-    expect(service.upload).toHaveBeenCalledWith("editor", "work-1", sha256, file);
+    expect(service.upload).toHaveBeenCalledWith("editor", "work-1", sha256, file, undefined);
   });
 
   it("validates and forwards an exact immutable cleanup receipt", async () => {

@@ -1,397 +1,167 @@
-import { useMemo, useState } from "react";
-import { CheckCircle2, GitBranch, Inbox, ShieldAlert, Sparkles } from "lucide-react";
+import { ArrowRight, ClipboardCheck, LoaderCircle, Play, UserRound } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import type { ProductionProjectAggregate, ProductionTaskStatus } from "@toonstudio/core/production";
+
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
-import { ProductionPill, ProductionSectionCard } from "./production-ui";
-import {
-  type CanvasStageBranch,
-  DEFAULT_CANVAS_STAGE_BRANCHES,
-  DEFAULT_DIVISION_HANDOFF_PACKETS,
-  DEFAULT_DIVISION_TRIAGE_ASKS,
-  type DivisionHandoffPacket,
-  type DivisionTriageAskItem,
-  evaluateHandoffPreflightGate,
-  getDivisionStageSpec,
-  type HandoffGateStatus,
-  simulateStageBranchMerge,
-  type TriageAskState,
-  WEBTOON_DIVISION_STAGES,
-} from "./production-division-handoff-triage-model";
+import type { ProductionClientCommand } from "./production-api";
+import { buildDivisionHandoffQueue, divisionQueueCandidateMatches, type DivisionQueueFilter } from "./production-division-handoff-queue";
+import { previewProductionBoardMove } from "./production-board-move-preview";
+import { productionAssignmentName, productionProcessLabel, submissionStatusLabel, taskStatusLabel } from "./production-labels";
+import { ProductionEmptyState, ProductionPill, ProductionSectionCard } from "./production-ui";
 
 export interface ProductionDivisionHandoffTriageSuiteProps {
+  readonly aggregate: ProductionProjectAggregate;
+  readonly episodeId: string | null;
   readonly episodeLabel: string;
+  readonly canEdit: boolean;
+  readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
 }
 
-function gatePillTone(status: HandoffGateStatus): "success" | "warning" | "danger" {
-  if (status === "ready-for-handoff") return "success";
-  if (status === "triage-required") return "warning";
-  return "danger";
+function actionLabel(status: ProductionTaskStatus, bt: (ko: string, en: string) => string): string {
+  if (status === "ready") return bt("인계 준비로 이동", "Mark ready for handoff");
+  if (status === "in-progress") return bt("작업 시작·재개", "Start or resume work");
+  if (status === "internal-review") return bt("내부 검수로 전달", "Send to internal review");
+  return bt("승인본 인계 완료", "Complete approved handoff");
 }
 
-function gateStatusText(
-  status: HandoffGateStatus,
-  bt: (ko: string, en: string) => string,
-): string {
-  if (status === "ready-for-handoff") return bt("인계 준비 완료 (Ready)", "Ready for Handoff");
-  if (status === "triage-required") return bt("트리아지 검토 필요", "Triage Required");
-  return bt("규격·필수 게이트 차단", "Blocked by Spec Gate");
+export function ProductionDivisionHandoffTriageSuite(props: ProductionDivisionHandoffTriageSuiteProps) {
+  return <DivisionHandoffQueue key={`${props.aggregate.projectId}:${props.episodeId ?? "all"}`} {...props} />;
 }
 
-export function ProductionDivisionHandoffTriageSuite({
-  episodeLabel,
-}: ProductionDivisionHandoffTriageSuiteProps) {
-  const bt = useBilingual("ProductionDivisionHandoffTriageSuite");
-  const [packets, setPackets] = useState<readonly DivisionHandoffPacket[]>(DEFAULT_DIVISION_HANDOFF_PACKETS);
-  const [selectedPacketId, setSelectedPacketId] = useState<string>(DEFAULT_DIVISION_HANDOFF_PACKETS[1]?.id ?? DEFAULT_DIVISION_HANDOFF_PACKETS[0].id);
-  const [asks, setAsks] = useState<readonly DivisionTriageAskItem[]>(DEFAULT_DIVISION_TRIAGE_ASKS);
-  const [branches, setBranches] = useState<readonly CanvasStageBranch[]>(DEFAULT_CANVAS_STAGE_BRANCHES);
-
-  const evaluations = useMemo(
-    () => packets.map((packet) => ({ packet, evaluation: evaluateHandoffPreflightGate(packet) })),
-    [packets],
-  );
-
-  const selectedEntry = useMemo(
-    () => evaluations.find((entry) => entry.packet.id === selectedPacketId) ?? evaluations[0],
-    [evaluations, selectedPacketId],
-  );
-
-  const mergeSimulation = useMemo(
-    () => simulateStageBranchMerge(branches),
-    [branches],
-  );
-
-  const handleToggleChecklist = (packetId: string, checkId: string) => {
-    setPackets((prev) =>
-      prev.map((pkt) => {
-        if (pkt.id !== packetId) return pkt;
-        return {
-          ...pkt,
-          checklist: pkt.checklist.map((item) =>
-            item.id === checkId ? { ...item, passed: !item.passed } : item,
-          ),
-        };
-      }),
-    );
+function DivisionHandoffQueue({ aggregate, episodeId, episodeLabel, canEdit, execute }: ProductionDivisionHandoffTriageSuiteProps) {
+  const bt = useBilingual("ProductionDivisionHandoffQueue");
+  const [filter, setFilter] = useState<DivisionQueueFilter>("all");
+  const [query, setQuery] = useState("");
+  const [limit, setLimit] = useState(20);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const busy = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const entries = useMemo(() => buildDivisionHandoffQueue(aggregate, episodeId, new Date().toISOString()), [aggregate, episodeId]);
+  const filters = [
+    { id: "all", label: bt("전체", "All") },
+    { id: "actionable", label: bt("다음 단계 확인", "Check next steps") },
+    { id: "blocked", label: bt("차단·누락", "Blocked or missing info") },
+    { id: "review", label: bt("검수 대기", "In review") },
+  ] as const;
+  const filterCounts = useMemo(() => {
+    const counts: Record<DivisionQueueFilter, number> = { all: entries.length, actionable: 0, blocked: 0, review: 0 };
+    for (const entry of entries) {
+      if (divisionQueueCandidateMatches(entry, "actionable")) counts.actionable += 1;
+      if (divisionQueueCandidateMatches(entry, "blocked")) counts.blocked += 1;
+      if (divisionQueueCandidateMatches(entry, "review")) counts.review += 1;
+    }
+    return counts;
+  }, [entries]);
+  const words = query.normalize("NFKC").toLocaleLowerCase().trim().split(/\s+/u);
+  const matches = entries.filter((entry) => divisionQueueCandidateMatches(entry, filter) && words.every((word) =>
+    `${entry.task.title} ${productionProcessLabel(aggregate, entry.task.processKey, bt)} ${entry.task.assignmentIds.map((id) => productionAssignmentName(aggregate, id)).join(" ")}`.normalize("NFKC").toLocaleLowerCase().includes(word)));
+  const move = async (id: string) => {
+    if (!canEdit || busy.current) return;
+    const entry = entries.find((item) => item.task.id === id);
+    if (!entry?.action) return;
+    const preview = previewProductionBoardMove(aggregate, [id], entry.action.target, new Date().toISOString());
+    if (!preview.allowed) { setError(preview.reason); return; }
+    busy.current = true; setPendingId(id); setError(null); setNotice(null);
+    try {
+      const message = bt(`${entry.task.title}: ${actionLabel(entry.action.target, bt)} 완료`, `${entry.task.title}: ${actionLabel(entry.action.target, bt)} completed`);
+      await execute({ type: "transition-task-batch", transitions: preview.transitions }, message);
+      if (mounted.current) setNotice(message);
+    } catch (cause) {
+      if (mounted.current) setError(cause instanceof Error ? cause.message : bt("저장하지 못했습니다. 현재 작업 상태를 확인한 뒤 다시 시도하세요.", "Could not save. Check the current task state and try again."));
+    } finally {
+      busy.current = false;
+      if (mounted.current) setPendingId(null);
+    }
   };
-
-  const handleAutoFixPacketSpec = (packetId: string) => {
-    setPackets((prev) =>
-      prev.map((pkt) => {
-        if (pkt.id !== packetId) return pkt;
-        return {
-          ...pkt,
-          completedCuts: pkt.totalCuts,
-          canvasWidthPx: Math.max(1440, pkt.canvasWidthPx),
-          dpi: Math.max(350, pkt.dpi),
-          layerConflictCount: 0,
-          checklist: pkt.checklist.map((item) => ({ ...item, passed: true })),
-        };
-      }),
-    );
-  };
-
-  const handleAdvanceAskState = (askId: string) => {
-    const nextOrder: Record<TriageAskState, TriageAskState> = {
-      "intake-triage": "accepted-in-cycle",
-      "accepted-in-cycle": "resolved-merged",
-      "resolved-merged": "intake-triage",
-    };
-    setAsks((prev) =>
-      prev.map((ask) => (ask.id === askId ? { ...ask, state: nextOrder[ask.state] } : ask)),
-    );
-  };
-
-  const handleResolveBranchConflicts = () => {
-    setBranches((prev) =>
-      prev.map((branch) => ({
-        ...branch,
-        conflictingLayers: [],
-        readyForStage: true,
-      })),
-    );
-  };
-
-  const readyCount = evaluations.filter((entry) => entry.evaluation.gateStatus === "ready-for-handoff").length;
-  const openTriageCount = asks.filter((ask) => ask.state !== "resolved-merged").length;
-
-  return (
-    <ProductionSectionCard
-      title={bt(
-        `8단계 분업 배턴 인계 게이트 · 트리아지 인박스 · 브랜치 병합 (${episodeLabel})`,
-        `8-Stage Division Handoff Gate · Triage Inbox · Branch Merge (${episodeLabel})`,
-      )}
-      description={bt(
-        "Linear(/intake · /asks · SLA)와 Figma(Ready for Next Stage · Branch & Merge) 아키텍처를 웹툰 8대 분업 공정에 결합한 프리플라이트 인계 워크벤치입니다.",
-        "Preflight handoff workbench combining Linear (/intake, /asks, SLA) and Figma (Ready for Stage, Branch & Merge) across the 8 webtoon division-of-labor stages.",
-      )}
-      action={(
-        <div className="flex flex-wrap items-center gap-1.5">
-          <ProductionPill tone={readyCount === evaluations.length ? "success" : "warning"}>
-            {bt(`인계 패킷 ${readyCount}/${evaluations.length} 통과`, `${readyCount}/${evaluations.length} Packets Ready`)}
-          </ProductionPill>
-          <ProductionPill tone={openTriageCount === 0 ? "success" : "danger"}>
-            {bt(`미해결 Asks ${openTriageCount}건`, `${openTriageCount} Open Asks`)}
-          </ProductionPill>
-        </div>
-      )}
-    >
-      {/* 8-Stage Division Pipeline Ribbon */}
-      <div className="rounded-xl border border-line bg-panel p-3">
-        <p className="text-xs font-bold text-fg">
-          {bt("웹툰 8대 분업 공정 표준 레이어 계약 (Stage-Gate Spec)", "Webtoon 8-Stage Division Pipeline & Required Layer Contract")}
-        </p>
-        <div className="mt-2.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {WEBTOON_DIVISION_STAGES.map((stage) => (
-            <div key={stage.key} className="rounded-lg border border-line bg-raised p-2.5">
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-bold text-fg">{bt(stage.labelKo, stage.labelEn)}</span>
-                <span className="rounded bg-panel px-1.5 py-0.5 text-[0.65rem] font-semibold text-fg-3">
-                  SLA {stage.defaultSlaHours}h
-                </span>
-              </div>
-              <p className="mt-0.5 text-[0.6875rem] text-fg-3">{bt(stage.ownerRoleKo, stage.ownerRoleEn)}</p>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {stage.requiredLayers.map((layer) => (
-                  <code key={layer} className="rounded bg-panel px-1.5 py-0.5 text-[0.625rem] text-fg-2">
-                    {layer}
-                  </code>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+  return <ProductionSectionCard
+    title={bt(`분업 인계 작업함 · ${episodeLabel}`, `Division handoff queue · ${episodeLabel}`)}
+    description={bt("담당자, 선행 작업, 고정 입력 버전과 제출본을 확인하고 다음 공정으로 넘깁니다. 승인은 연결된 검수에서 기록합니다.", "Check owners, dependencies, pinned inputs and submissions before handing work on. Record approvals in the linked review.")}
+    action={<ProductionPill tone="neutral">{bt(`작업 ${entries.length}개`, `${entries.length} tasks`)}</ProductionPill>}
+  >
+    <div data-testid="division-handoff-queue" className="min-w-0 space-y-4">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={bt("인계 작업 필터", "Handoff task filters")}>
+        {filters.map((item) => <button key={item.id} type="button" aria-label={`${item.label} ${filterCounts[item.id]}`} aria-pressed={filter === item.id} onClick={() => { setFilter(item.id); setLimit(20); }}
+          className={buttonClass({ variant: filter === item.id ? "solid" : "outline", className: "min-h-11 gap-2" })}>
+          {item.label}<span className="tabular-nums">{filterCounts[item.id]}</span>
+        </button>)}
       </div>
-
-      {/* Handoff Packets Table + Active Packet Preflight Gate */}
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <div
-          role="region"
-          aria-labelledby="division-handoff-packet-table-caption"
-          className="overflow-x-auto rounded-xl border border-line bg-panel"
-        >
-          <table className="w-full border-collapse text-left text-xs">
-            <caption id="division-handoff-packet-table-caption" className="sr-only">
-              {bt("공정 간 인계 패킷 목록 및 프리플라이트 준비율", "Inter-stage handoff packets and preflight readiness")}
-            </caption>
-            <thead className="sticky top-0 z-10 border-b border-line bg-raised text-[0.6875rem] text-fg-3">
-              <tr>
-                <th scope="col" className="px-3 py-2.5 font-semibold">{bt("배턴 구간", "Stage Handoff")}</th>
-                <th scope="col" className="px-3 py-2.5 font-semibold">{bt("컷 범위", "Cut Scope")}</th>
-                <th scope="col" className="px-3 py-2.5 font-semibold">{bt("캔버스 규격", "Canvas Spec")}</th>
-                <th scope="col" className="px-3 py-2.5 font-semibold">{bt("준비율", "Readiness")}</th>
-                <th scope="col" className="px-3 py-2.5 font-semibold">{bt("게이트 상태", "Gate Status")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {evaluations.map(({ packet, evaluation }) => {
-                const fromSpec = getDivisionStageSpec(packet.fromStage);
-                const toSpec = getDivisionStageSpec(packet.toStage);
-                const isSelected = packet.id === selectedEntry.packet.id;
-                return (
-                  <tr
-                    key={packet.id}
-                    onClick={() => setSelectedPacketId(packet.id)}
-                    className={cn(
-                      "cursor-pointer transition-colors hover:bg-raised/70",
-                      isSelected && "bg-accent/10",
-                    )}
-                  >
-                    <th scope="row" className="px-3 py-2.5 font-bold text-fg">
-                      <div>{bt(fromSpec.labelKo, fromSpec.labelEn)} → {bt(toSpec.labelKo, toSpec.labelEn)}</div>
-                      <div className="mt-0.5 font-mono text-[0.65rem] font-normal text-fg-3">{packet.branchName}</div>
-                    </th>
-                    <td className="px-3 py-2.5 text-fg-2">
-                      <div>{packet.cutRangeLabel}</div>
-                      <div className="text-[0.6875rem] text-fg-3">
-                        {packet.completedCuts}/{packet.totalCuts} ({evaluation.cutCompletionPct}%)
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-fg-2">
-                      {packet.canvasWidthPx}px · {packet.dpi}DPI
-                    </td>
-                    <td className="px-3 py-2.5 font-bold text-fg">{evaluation.readinessScore}%</td>
-                    <td className="px-3 py-2.5">
-                      <ProductionPill tone={gatePillTone(evaluation.gateStatus)}>
-                        {gateStatusText(evaluation.gateStatus, bt)}
-                      </ProductionPill>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Selected Packet Inspector */}
-        {selectedEntry ? (
-          <div className="rounded-xl border border-line bg-panel p-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-bold text-fg">
-                  {bt("선택된 인계 패킷 프리플라이트 검수", "Selected Packet Preflight Inspector")}
-                </p>
-                <p className="mt-0.5 font-mono text-[0.6875rem] text-fg-3">
-                  {selectedEntry.packet.branchName} · SLA {selectedEntry.packet.slaRemainingHours}h
+      <p className="text-xs text-fg-3">{bt("다음 단계 확인에는 이동 전 점검할 작업이 모입니다. 실제 이동 가능 여부는 각 작업의 조건으로 확인합니다.", "Check next steps lists tasks to inspect before moving. Each task's requirements determine whether it can move.")}</p>
+      <label className="block text-xs font-semibold text-fg-2">
+        {bt("작업·공정·담당자 검색", "Search tasks, processes or owners")}
+        <input value={query} onChange={(event) => { setQuery(event.target.value); setLimit(20); }} className="mt-1 block min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent" />
+      </label>
+      {!canEdit ? <p className="text-xs text-fg-2">{bt("조회 권한으로 열었습니다. 인계 상태 변경에는 프로젝트 편집 권한이 필요합니다.", "Opened with view access. Project edit permission is required to move work.")}</p> : null}
+      {error ? <p role="alert" className="rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm text-fg">{error}</p> : null}
+      {notice ? <p role="status" className="rounded-xl border border-good/30 bg-good/10 p-3 text-sm text-fg">{notice}</p> : null}
+      {matches.length ? <ul className="space-y-3">
+        {matches.slice(0, limit).map((entry) => {
+          const { task, action } = entry;
+          const incomplete = entry.dependencies.filter((dependency) => !dependency.complete);
+          const taskHref = new URLSearchParams({ openTask: task.id });
+          if (entry.episodeId) taskHref.set("boardEpisode", entry.episodeId);
+          const boardHref = `/production/projects/${encodeURIComponent(aggregate.projectId)}/production?${taskHref.toString()}`;
+          const reviewQuery = new URLSearchParams({ task: task.id });
+          if (entry.episodeId) reviewQuery.set("episode", entry.episodeId);
+          const reviewHref = `/production/projects/${encodeURIComponent(aggregate.projectId)}/review?${reviewQuery.toString()}`;
+          const inReview = divisionQueueCandidateMatches(entry, "review");
+          return <li key={task.id} data-testid={`division-task-${task.id}`} className={cn("min-w-0 rounded-2xl border bg-panel p-4", incomplete.length || task.status === "blocked" ? "border-warn/40" : "border-line")}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-accent">{productionProcessLabel(aggregate, task.processKey, bt)}</p>
+                <h3 className="mt-1 break-words text-sm font-bold text-fg"><Link to={boardHref} className="outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent">{task.title}</Link></h3>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-fg-2"><UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+                  {entry.activeAssignmentIds.length ? entry.activeAssignmentIds.map((id) => productionAssignmentName(aggregate, id)).join(" · ") : bt("유효한 담당자 배정 필요", "Assign an eligible owner")}
                 </p>
               </div>
-              <button
-                type="button"
-                className={buttonClass({ size: "sm", variant: "outline" })}
-                onClick={() => handleAutoFixPacketSpec(selectedEntry.packet.id)}
-              >
-                <Sparkles className="mr-1.5 size-3.5" aria-hidden="true" />
-                {bt("규격·체크리스트 일괄 충족", "Satisfy All Preflight Checks")}
-              </button>
+              <ProductionPill tone={task.status === "done" ? "success" : inReview ? "accent" : "neutral"}>{taskStatusLabel(task.status, bt)}</ProductionPill>
             </div>
-
-            <div className="mt-3 space-y-1.5">
-              {selectedEntry.packet.checklist.map((item) => (
-                <label
-                  key={item.id}
-                  className="flex cursor-pointer items-start gap-2 rounded-lg border border-line bg-raised p-2 text-xs text-fg"
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.passed}
-                    onChange={() => handleToggleChecklist(selectedEntry.packet.id, item.id)}
-                    className="mt-0.5 size-4 rounded border-line"
-                  />
-                  <span className="flex-1 leading-4">
-                    {bt(item.labelKo, item.labelEn)}
-                    {item.mandatory ? (
-                      <span className="ml-1.5 rounded bg-bad/15 px-1.5 py-0.5 text-[0.625rem] font-semibold text-bad">
-                        {bt("필수", "Mandatory")}
-                      </span>
-                    ) : null}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {selectedEntry.evaluation.blockersKo.length > 0 ? (
-              <div className="mt-3 space-y-1.5" role="status" aria-live="polite">
-                {selectedEntry.evaluation.blockersKo.map((blockerKo, idx) => (
-                  <p
-                    key={blockerKo}
-                    className="flex items-start gap-2 rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-fg"
-                  >
-                    <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-bad" aria-hidden="true" />
-                    <span>{bt(blockerKo, selectedEntry.evaluation.blockersEn[idx] ?? blockerKo)}</span>
-                  </p>
-                ))}
+            <div className="mt-3 grid gap-3 text-xs md:grid-cols-2">
+              <div className="rounded-xl border border-line bg-card p-3">
+                <p className="font-bold text-fg">{bt("받을 작업과 고정 입력", "Upstream work and pinned inputs")}</p>
+                {entry.dependencies.length ? <ul className="mt-2 space-y-1.5">{entry.dependencies.map((dependency) => <li key={dependency.id}>
+                  {dependency.task ? <Link to={`/production/projects/${encodeURIComponent(aggregate.projectId)}/production?openTask=${encodeURIComponent(dependency.id)}`} className="inline-flex min-h-11 items-center gap-1.5 break-words text-fg-2 outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent">
+                    <span aria-hidden="true">{dependency.complete ? "✓" : "→"}</span>{dependency.task.title} · {taskStatusLabel(dependency.task.status, bt)}
+                    {!dependency.complete && ["approved", "done"].includes(dependency.task.status) ? <span className="text-warn">{bt("최신 승인본 확인 필요", "Check current approved outputs")}</span> : null}
+                  </Link> : <p className="break-all text-bad">{bt("선행 작업을 찾을 수 없습니다", "Upstream task not found")}: {dependency.id}</p>}
+                </li>)}</ul> : <p className="mt-2 text-fg-3">{bt("지정된 선행 작업 없음", "No upstream tasks specified")}</p>}
+                <p className="mt-2 text-fg-2">{bt(`고정 입력 ${task.inputRevisionRefs.length}개`, `${task.inputRevisionRefs.length} pinned inputs`)}</p>
+                {task.inputRevisionRefs.map((revision) => <p key={`${revision.id}:${revision.revision}:${revision.digest}`} className="mt-1 break-all font-mono text-[0.6875rem] text-fg-3">{revision.id} · r{revision.revision} · {revision.digest.slice(0, 12)}</p>)}
+                {task.inputRevisionRefs.length > 0 && !entry.inputVersionsCurrent ? <p className="mt-2 text-warn">{bt("고정 입력이 선행 공정의 최신 승인본과 다릅니다. 작업 상세에서 입력 버전을 확인하세요.", "Pinned inputs differ from the upstream approved version. Check input versions in task details.")}</p> : null}
+                {entry.uncheckedCount ? <p className="mt-2 text-warn">{bt(`미완료 체크 항목 ${entry.uncheckedCount}개`, `${entry.uncheckedCount} unchecked items`)}</p> : null}
               </div>
-            ) : (
-              <p className="mt-3 flex items-center gap-2 rounded-lg border border-good/30 bg-good/10 p-2.5 text-xs font-semibold text-fg">
-                <CheckCircle2 className="size-4 shrink-0 text-good" aria-hidden="true" />
-                {bt(
-                  "모든 필수 레이어·해상도·폐곡선 검수를 통과하여 후속 공정으로 즉시 배턴을 넘길 수 있습니다.",
-                  "All mandatory layer, resolution, and closed-gap checks passed; ready for immediate downstream handoff.",
-                )}
-              </p>
-            )}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Linear Triage (/intake, /asks) + Figma Stage Branch Merge */}
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-line bg-panel p-3.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Inbox className="size-4 text-accent" aria-hidden="true" />
-              <p className="text-xs font-bold text-fg">
-                {bt("공정 간 역방향 수정 요청 인박스 (Linear /intake · /asks)", "Cross-Stage Triage & Asks Queue (Linear /intake · /asks)")}
-              </p>
+              <div className="rounded-xl border border-line bg-card p-3">
+                <p className="font-bold text-fg">{bt("넘길 제출본과 검수 담당", "Deliverables and reviewers")}</p>
+                {entry.outputs.length ? <ul className="mt-2 space-y-2">{entry.outputs.map((output) => <li key={output.id} className="break-words text-fg-2">
+                  <p>{output.deliverable?.type ?? output.id} {output.deliverable ? `· ${output.deliverable.expectedFormat}` : bt("· 산출물 연결 확인 필요", "· Check deliverable link")}</p>
+                  <p className="mt-1 text-fg-3">{output.current ? `r${output.current.revisionRef.revision} · ${submissionStatusLabel(output.current.status, bt)}` : bt("현재 제출본 없음", "No current submission")}</p>
+                  {output.approved ? <p className="mt-1 text-good">{bt(`마지막 승인본 r${output.approved.revisionRef.revision}`, `Last approved r${output.approved.revisionRef.revision}`)}</p> : null}
+                  {output.approved && output.current?.id !== output.approved.id ? <p className="mt-1 text-warn">{bt("현재 제출본은 승인본과 다릅니다.", "The current submission differs from the approved one.")}</p> : null}
+                </li>)}</ul> : <p className="mt-2 text-fg-3">{bt("연결된 산출물 없음", "No linked deliverables")}</p>}
+                <p className="mt-2 text-fg-2">{entry.activeReviewerIds.length ? entry.activeReviewerIds.map((id) => productionAssignmentName(aggregate, id)).join(" · ") : bt("유효한 검수자 미배정", "No eligible reviewer assigned")}</p>
+                {task.dueAt ? <p className="mt-2 text-fg-3">{bt("마감", "Due")}: <time dateTime={task.dueAt}>{new Date(task.dueAt).toLocaleString()}</time></p> : null}
+              </div>
             </div>
-            <ProductionPill tone="neutral">{bt(`총 ${asks.length}건`, `${asks.length} Total`)}</ProductionPill>
-          </div>
-          <div className="mt-2.5 space-y-2">
-            {asks.map((ask) => {
-              const fromSpec = getDivisionStageSpec(ask.fromStage);
-              const toSpec = getDivisionStageSpec(ask.toStage);
-              return (
-                <div key={ask.id} className="rounded-lg border border-line bg-raised p-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-[0.6875rem] font-bold text-accent">{ask.code}</span>
-                      <ProductionPill tone={ask.priority === "urgent" ? "danger" : ask.priority === "high" ? "warning" : "neutral"}>
-                        {ask.priority.toUpperCase()}
-                      </ProductionPill>
-                      <span className="text-[0.6875rem] text-fg-3">
-                        {bt(fromSpec.labelKo, fromSpec.labelEn)} → {bt(toSpec.labelKo, toSpec.labelEn)}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className={buttonClass({ size: "sm", variant: "outline" })}
-                      onClick={() => handleAdvanceAskState(ask.id)}
-                    >
-                      {ask.state === "intake-triage"
-                        ? bt("사이클 수락", "Accept into Cycle")
-                        : ask.state === "accepted-in-cycle"
-                          ? bt("해결·병합 완료", "Mark Resolved")
-                          : bt("완료됨 (재오픈)", "Resolved (Reopen)")}
-                    </button>
-                  </div>
-                  <p className="mt-1.5 text-xs font-semibold text-fg">{bt(ask.titleKo, ask.titleEn)}</p>
-                  <p className="mt-1 text-[0.6875rem] text-fg-3">
-                    {bt("대상 컷", "Target cuts")}: {ask.cutNumbers.map((c) => `C${String(c).padStart(3, "0")}`).join(", ")} ·{" "}
-                    {bt("담당", "Assignee")}: {ask.assigneeName} · SLA {ask.slaHoursLeft}h
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-line bg-panel p-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <GitBranch className="size-4 text-accent" aria-hidden="true" />
-              <p className="text-xs font-bold text-fg">
-                {bt("캔버스 작업 브랜치 병합 시뮬레이터 (Figma Branch & Merge)", "Canvas Stage Branch & Merge Simulator")}
-              </p>
+            {action && !action.preview.allowed ? <p className="mt-3 rounded-lg border border-warn/30 bg-warn/10 p-2.5 text-xs text-fg">{action.preview.reason}</p> : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {action ? <button type="button" disabled={!canEdit || pendingId !== null || !action.preview.allowed} onClick={() => void move(task.id)} className={buttonClass({ className: "min-h-11 gap-1.5" })}>
+                {pendingId === task.id ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Play className="size-3.5" aria-hidden="true" />}
+                {actionLabel(action.target, bt)}
+              </button> : null}
+              {inReview ? <Link to={reviewHref} className={buttonClass({ variant: "outline", className: "min-h-11 gap-1.5" })}><ClipboardCheck className="size-4" aria-hidden="true" />{bt("제출본 검수 열기", "Open submission review")}</Link> : null}
+              <Link to={boardHref} className={buttonClass({ variant: "outline", className: "min-h-11 gap-1.5" })}>{bt("작업 상세·배정", "Task details and assignments")}<ArrowRight className="size-3.5" aria-hidden="true" /></Link>
             </div>
-            <button
-              type="button"
-              className={buttonClass({ size: "sm", variant: "outline" })}
-              onClick={handleResolveBranchConflicts}
-            >
-              {bt("레이어 충돌 해소 및 Ready 전환", "Resolve Layer Conflicts & Mark Ready")}
-            </button>
-          </div>
-          <p className="mt-1.5 text-xs text-fg-2">
-            {bt(mergeSimulation.summaryKo, mergeSimulation.summaryEn)}
-          </p>
-          <div className="mt-2.5 space-y-2">
-            {branches.map((branch) => {
-              const stageSpec = getDivisionStageSpec(branch.stageKey);
-              return (
-                <div key={branch.id} className="rounded-lg border border-line bg-raised p-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-1.5">
-                    <span className="font-mono text-xs font-bold text-fg">{branch.branchName}</span>
-                    <ProductionPill tone={branch.readyForStage && branch.conflictingLayers.length === 0 ? "success" : "warning"}>
-                      {branch.readyForStage && branch.conflictingLayers.length === 0
-                        ? bt("Ready for Stage (병합 가능)", "Ready for Stage")
-                        : bt(`레이어 충돌 ${branch.conflictingLayers.length}건`, `${branch.conflictingLayers.length} Layer Conflict(s)`)}
-                    </ProductionPill>
-                  </div>
-                  <p className="mt-1 text-[0.6875rem] text-fg-3">
-                    {bt(stageSpec.labelKo, stageSpec.labelEn)} · {branch.authorName} · {branch.baseRevision} → {branch.headRevision} ({branch.modifiedCuts} cuts)
-                  </p>
-                  {branch.conflictingLayers.length > 0 ? (
-                    <p className="mt-1 text-[0.6875rem] font-semibold text-bad">
-                      {bt("충돌 레이어", "Conflicting layers")}: {branch.conflictingLayers.join(", ")}
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </ProductionSectionCard>
-  );
+          </li>;
+        })}
+      </ul> : <ProductionEmptyState title={entries.length ? bt("조건에 맞는 작업이 없습니다", "No matching tasks") : bt("분업 작업을 만들어 주세요", "Create division tasks")}
+        description={entries.length ? bt("다른 필터를 선택하거나 검색어를 지워 주세요.", "Choose another filter or clear the search.") : bt("공정 보드에서 회차 작업을 만들고 담당자와 입력 버전을 연결하면 인계 상태가 여기에 표시됩니다.", "Create episode tasks on the process board, then connect owners and input revisions to see handoff status here.")}
+        action={<Link to={`/production/projects/${encodeURIComponent(aggregate.projectId)}/production`} className={buttonClass({ variant: "outline", className: "min-h-11" })}>{bt("공정 보드 열기", "Open process board")}</Link>} />}
+      {matches.length > limit ? <button type="button" onClick={() => setLimit((value) => value + 20)} className={buttonClass({ variant: "outline", className: "min-h-11 w-full" })}>{bt(`작업 더 보기 · ${Math.min(limit, matches.length)}/${matches.length}`, `Show more tasks · ${Math.min(limit, matches.length)}/${matches.length}`)}</button> : null}
+    </div>
+  </ProductionSectionCard>;
 }

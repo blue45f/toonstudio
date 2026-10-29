@@ -29,6 +29,11 @@
       "import": "./src/graph/work-session.ts",
       "default": "./src/graph/work-session.ts"
     },
+    "./frame-clip": {
+      "types": "./src/frame-clip.ts",
+      "import": "./src/frame-clip.ts",
+      "default": "./src/frame-clip.ts"
+    },
     "./work-session-evidence": {
       "types": "./src/graph/work-session-evidence.ts",
       "import": "./src/graph/work-session-evidence.ts",
@@ -78,6 +83,7 @@
   },
   "typesVersions": {
     "*": {
+      "frame-clip": ["src/frame-clip.ts"],
       "work-session": [
         "src/graph/work-session.ts"
       ],

@@ -1,17 +1,37 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { ProductionProjectPage } from "./ProductionHubPage";
 import { createProductionDemoProject } from "./production-demo";
+import type { ScopeRef } from "@toonstudio/core/production";
 import { useApp } from "@/shared/lib/store";
 
 const mocks = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn() }));
 vi.mock("./production-api", async (load) => ({ ...await load<typeof import("./production-api")>(),
   getProductionProject: (...args: unknown[]) => mocks.load(...args), executeProductionCommand: (...args: unknown[]) => mocks.save(...args) }));
 vi.mock("@/platform/me-client", () => ({ getMyProfile: async () => { throw new Error("profile unavailable"); } }));
-const project = { aggregate: { ...createProductionDemoProject(), projectId: "actual-route-project" },
-  access: { view: true, comment: true, edit: true, manage: true, owner: true, role: "owner" } };
+const original = createProductionDemoProject();
+const actualProjectId = "actual-route-project";
+const ownerPartyId = original.assignments.find((assignment) => assignment.roleType === "producer")?.partyId;
+const scopeForProject = (scope: ScopeRef): ScopeRef => ({ ...scope,
+  id: scope.kind === "project" ? actualProjectId : scope.id,
+  ancestors: scope.ancestors.map((ancestor) => ancestor.kind === "project" ? { ...ancestor, id: actualProjectId } : ancestor),
+});
+const project = { aggregate: { ...original, projectId: actualProjectId,
+  parties: original.parties.map((party) => party.id === ownerPartyId ? { ...party, accountUserId: "local-test-owner" } : party),
+  assignments: original.assignments.map((assignment) => ({ ...assignment, projectId: actualProjectId, scope: scopeForProject(assignment.scope) })),
+  tasks: original.tasks.map((task) => ({ ...task, projectId: actualProjectId, scope: scopeForProject(task.scope) })),
+  episodes: original.episodes.map((episode) => ({ ...episode, projectId: actualProjectId })),
+  handoffs: original.handoffs.map((handoff) => ({ ...handoff, projectId: actualProjectId })),
+  clarifications: original.clarifications.map((thread) => ({ ...thread, scope: scopeForProject(thread.scope) })),
+  deliverables: original.deliverables.map((deliverable) => ({ ...deliverable, projectId: actualProjectId, scope: scopeForProject(deliverable.scope) })),
+  submissions: original.submissions.map((submission) => ({ ...submission, projectId: actualProjectId })),
+  reviewPolicies: original.reviewPolicies.map((policy) => ({ ...policy, projectId: actualProjectId, scope: scopeForProject(policy.scope) })),
+}, access: { view: true, comment: true, edit: true, manage: true, owner: true, role: "owner" } };
+
+// 실제 지연 모듈의 최초 변환을 기다려 저장 계약 검증을 컴파일 시간과 분리한다.
+beforeAll(async () => { await import("./ProductionReviewSurface"); });
 beforeEach(() => { vi.clearAllMocks(); useApp.setState({ userId: "local-test-owner" }); mocks.load.mockResolvedValue(project); });
 afterEach(() => { cleanup(); useApp.setState({ userId: null }); });
 function mount() {

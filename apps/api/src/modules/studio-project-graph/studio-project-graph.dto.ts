@@ -9,6 +9,7 @@ import {
   isoTimestampSchema,
   revisionKindSchema,
   reviewAnchorSchema,
+  reviewPenStrokesSchema,
   reviewPolicyExpectationSchema,
   scopeRefSchema,
   sha256Schema,
@@ -266,11 +267,17 @@ export const CreateStudioReviewCommentSchema = z
     anchor: reviewAnchorSchema,
     body: HumanTextSchema.max(20_000),
     severity: z.enum(["required", "recommended", "note"]),
+    strokes: reviewPenStrokesSchema.optional(),
     assigneeIds: z.array(studioEntityIdSchema).max(64)
       .refine((ids) => new Set(ids).size === ids.length, "assigneeIds must contain unique user IDs").default([]),
     dueAt: isoTimestampSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((comment, context) => {
+    if (comment.strokes?.length && (comment.anchor.kind !== "region" || !comment.anchor.source)) {
+      context.addIssue({ code: "custom", path: ["strokes"], message: "펜 첨삭은 저장 원고의 출처가 확인된 영역에만 연결할 수 있습니다." });
+    }
+  });
 export class CreateStudioReviewCommentDto extends createZodDto(
   CreateStudioReviewCommentSchema,
 ) {}

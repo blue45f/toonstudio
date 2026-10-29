@@ -12,6 +12,7 @@ describe("review capture host authority", () => {
       studioAuthUserId: "actor", workId: "work", available: true,
       editorMountedRef: { current: true }, studioRevisionProjectGenerationRef: { current: 3 },
       drawingRef: { current: null as unknown }, pendingStrokeCommitsRef: { current: null as unknown },
+      flushPendingStrokeCommitsRef: { current: vi.fn(() => true) },
       captureStudioMutationTicket: () => ticket, canApplyStudioMutation: vi.fn(() => true),
       getSnapshot: () => { throw new Error("Context checks must not read or capture the document"); },
       canvasWidth: 800, isDurableMask: () => false,

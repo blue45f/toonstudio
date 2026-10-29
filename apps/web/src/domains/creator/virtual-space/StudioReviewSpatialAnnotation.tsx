@@ -2,8 +2,9 @@ import { useId, useRef, useState, type ReactNode, type PointerEvent } from "reac
 import { createStudioReviewSpatialAnchor, validateStudioReviewSpatialAnchor, type ReviewAnchor, type StudioReviewMappedPage, type StudioReviewSpatialAnchor,
   type StudioReviewSpatialSelection } from "@toonstudio/studio-project-model";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { StudioReviewImageViewport } from "./StudioReviewImageViewport";
 import { normalizeStudioReviewPenStroke, serializeStudioReviewPenStrokes, studioReviewPenStrokeBounds,
-  STUDIO_REVIEW_PEN_COLORS, STUDIO_REVIEW_PEN_DEFAULT_COLOR, type StudioReviewPenPoint, type StudioReviewPenStroke } from "./studio-review-pen-model";
+  studioReviewPenDefaultWidth, STUDIO_REVIEW_PEN_COLORS, STUDIO_REVIEW_PEN_DEFAULT_COLOR, type StudioReviewPenPoint, type StudioReviewPenStroke } from "./studio-review-pen-model";
 
 export interface StudioReviewAnnotationSelection {
   readonly anchor: StudioReviewSpatialAnchor;
@@ -48,9 +49,11 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
   const [start, setStart] = useState<{ x: number; y: number; pointerId: number } | null>(null);
   const [error, setError] = useState("");
   const [highlighted, setHighlighted] = useState<ReviewAnchor | null>(null);
+  const [focusRequest, setFocusRequest] = useState(0);
   const [strokes, setStrokes] = useState<readonly StudioReviewPenStroke[]>([]);
   const [penColor, setPenColor] = useState<string>(STUDIO_REVIEW_PEN_DEFAULT_COLOR);
   const [penDraft, setPenDraft] = useState<{ pointerId: number; points: readonly StudioReviewPenPoint[] } | null>(null);
+  const [panning, setPanning] = useState(false);
   const strokeSeq = useRef(0);
   const { page } = mapping;
   const chosen = control.selected?.sha256 === sha256 && control.selected.anchor.source.pageOrdinal === page.ordinal ? control.selected : null;
@@ -59,6 +62,11 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
   const highlightedNote = highlighted ? pageNotes.find((note) => note.anchor === highlighted) : undefined;
   const overlayStrokes = highlightedNote?.strokes?.length ? highlightedNote.strokes : chosen?.strokes ?? [];
   const frame = page.frames.find((value) => value.id === selected?.source?.frameId);
+  const focusBounds = highlighted?.kind === "panel" ? frame?.bounds
+    : highlighted?.x !== undefined && highlighted.y !== undefined ? highlighted : null;
+  const focusPoint = focusBounds && focusBounds.x !== undefined && focusBounds.y !== undefined
+    ? { x: (focusBounds.x + (focusBounds.width ?? 0) / 2) / page.width,
+      y: (focusBounds.y + (focusBounds.height ?? 0) / 2) / page.height, request: focusRequest } : undefined;
   const clear = () => { setStart(null); setPenDraft(null); setStrokes([]); setError(""); setHighlighted(null); control.onSelect(null); };
   const choose = (selection: StudioReviewSpatialSelection) => {
     if (control.disabled || expiresAt <= Date.now()) return;
@@ -94,10 +102,20 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
     if (rect.width <= 0 || rect.height <= 0 || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return null;
     return { x: (event.clientX - rect.left) / rect.width * page.width, y: (event.clientY - rect.top) / rect.height * page.height };
   };
+  const cancelGesture = () => { setStart(null); setPenDraft(null); };
   return <section className="mt-4 rounded-xl border border-line p-3" aria-label={bt(`${page.ordinal + 1}페이지 의견 위치`, `Page ${page.ordinal + 1} annotation placement`)}>
-    <div className="relative mx-auto" style={{ width: `min(100%, ${70 * page.renderWidth / page.renderHeight}vh)`, touchAction: mode === "coordinate" || mode === "region" || mode === "pen" ? "none" : "auto" }}
+    <StudioReviewImageViewport renderWidth={page.renderWidth} renderHeight={page.renderHeight}
+      label={bt(`${page.ordinal + 1}페이지 원고 이동 영역`, `Page ${page.ordinal + 1} manuscript viewport`)}
+      onViewChange={cancelGesture} focusPoint={focusPoint} panning={panning} actions={editable ? <button type="button" aria-pressed={panning} className={controlClass}
+        onClick={() => { cancelGesture(); setPanning((value) => !value); }}>
+        {panning ? bt("펜·위치 입력으로 돌아가기", "Return to annotation") : bt("원고 이동", "Pan manuscript")}
+      </button> : null}>
+    <div className="relative" style={{ touchAction: !panning && (mode === "coordinate" || mode === "region" || mode === "pen") ? "none" : "auto" }}
+      onDragStart={(event) => {
+        if (editable && !control.disabled && !panning && (mode === "coordinate" || mode === "region" || mode === "pen")) event.preventDefault();
+      }}
       onPointerDown={(event) => {
-        if (control.disabled || event.button !== 0) return;
+        if (control.disabled || panning || event.button !== 0) return;
         if (mode === "pen") {
           const value = point(event); if (!value) return;
           event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -109,13 +127,13 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
         const value = point(event); if (!value) return;
         event.currentTarget.setPointerCapture?.(event.pointerId); setStart({ ...value, pointerId: event.pointerId });
       }} onPointerMove={(event) => {
-        if (mode !== "pen" || !penDraft || penDraft.pointerId !== event.pointerId) return;
+        if (panning || mode !== "pen" || !penDraft || penDraft.pointerId !== event.pointerId) return;
         const value = point(event); if (!value) return;
         const last = penDraft.points[penDraft.points.length - 1];
         if (last && Math.hypot(value.x - last.x, value.y - last.y) < 2) return;
         setPenDraft({ pointerId: penDraft.pointerId, points: [...penDraft.points, value] });
       }} onPointerUp={(event) => {
-        if (control.disabled) return;
+        if (control.disabled || panning) return;
         if (mode === "pen") {
           if (!penDraft || penDraft.pointerId !== event.pointerId) return;
           setPenDraft(null); event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -135,7 +153,7 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
       {(() => {
         const live = overlayStrokes.length ? overlayStrokes : strokes;
         const draft = penDraft && penDraft.points.length >= 2
-          ? [{ id: "pen-draft", points: penDraft.points, color: penColor, width: Math.max(page.width, page.height) * 0.004 }]
+          ? [{ id: "pen-draft", points: penDraft.points, color: penColor, width: studioReviewPenDefaultWidth(page) }]
           : [];
         const visible = [...live, ...draft];
         if (!visible.length) return null;
@@ -145,17 +163,18 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
         </svg>;
       })()}
       {selected ? <svg className="pointer-events-none absolute inset-0 h-full w-full text-accent" viewBox={`0 0 ${page.width} ${page.height}`} preserveAspectRatio="none" aria-hidden="true">
-        {selected.kind === "page" ? <rect x="0" y="0" width={page.width} height={page.height} fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.008} />
-          : selected.kind === "coordinate" ? <circle cx={selected.x} cy={selected.y} r={Math.max(page.width, page.height) * 0.008} fill="currentColor" stroke="white" strokeWidth={Math.max(page.width, page.height) * 0.002} />
-          : selected.kind === "region" ? <rect x={selected.x} y={selected.y} width={selected.width} height={selected.height} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.004} />
-            : frame ? frame.polygon ? <polygon points={frame.polygon.map((value) => `${value.x},${value.y}`).join(" ")} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.004} />
-              : <rect {...frame.bounds} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.max(page.width, page.height) * 0.004} /> : null}
+        {selected.kind === "page" ? <rect x="0" y="0" width={page.width} height={page.height} fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth={Math.min(page.width, page.height) * 0.008} />
+          : selected.kind === "coordinate" ? <circle cx={selected.x} cy={selected.y} r={Math.min(page.width, page.height) * 0.008} fill="currentColor" stroke="var(--color-card)" strokeWidth={Math.min(page.width, page.height) * 0.002} />
+          : selected.kind === "region" ? <rect x={selected.x} y={selected.y} width={selected.width} height={selected.height} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.min(page.width, page.height) * 0.004} />
+            : frame ? frame.polygon ? <polygon points={frame.polygon.map((value) => `${value.x},${value.y}`).join(" ")} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.min(page.width, page.height) * 0.004} />
+              : <rect {...frame.bounds} fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth={Math.min(page.width, page.height) * 0.004} /> : null}
       </svg> : null}
     </div>
+    </StudioReviewImageViewport>
     {editable ? <fieldset disabled={control.disabled} className="mt-3 space-y-3">
       <legend className="font-semibold">{bt("의견을 남길 위치", "Where to leave a note")}</legend>
       <label className="flex flex-wrap items-center gap-2" htmlFor={`${id}-mode`}>{bt("위치 방식", "Placement")}
-        <select id={`${id}-mode`} className={controlClass} value={mode} onChange={(event) => { clear(); setMode(event.target.value as Mode); }}>
+        <select id={`${id}-mode`} className={controlClass} value={mode} onChange={(event) => { clear(); setPanning(false); setMode(event.target.value as Mode); }}>
           <option value="page">{bt("이 페이지", "This page")}</option><option value="panel">{bt("컷", "Cut")}</option>
           <option value="object">{bt("요소", "Object")}</option><option value="coordinate">{bt("점", "Point")}</option><option value="region">{bt("영역", "Region")}</option>
           <option value="pen">{bt("펜(빨간펜)", "Pen (red pen)")}</option>
@@ -200,7 +219,7 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
       <button type="button" className={controlClass} disabled={mode === "panel" && !frameId || mode === "object" && !elementId || mode === "pen" && !strokes.length} onClick={apply}>{bt("이 위치에 의견 연결", "Attach note to this location")}</button>
     </fieldset> : null}
     {pageNotes.length ? <ol className="mt-3 space-y-2" aria-label={bt("이 페이지의 위치 의견", "Notes attached to this page")}>{pageNotes.map((note, index) => <li key={note.id} className="rounded-lg border border-line p-2 text-sm">
-      <button type="button" className="min-h-11 text-left underline" onClick={() => setHighlighted(note.anchor)}>{bt(`의견 ${index + 1} 위치 보기`, `Show note ${index + 1} location`)} · <StudioReviewAnnotationLocation anchor={note.anchor} mapping={mapping} />{note.strokes?.length ? ` · ${bt(`펜 획 ${note.strokes.length}개`, `${note.strokes.length} pen strokes`)}` : ""}</button>
+      <button type="button" className="min-h-11 text-left underline" onClick={() => { cancelGesture(); setHighlighted(note.anchor); setFocusRequest((value) => value + 1); }}>{bt(`의견 ${index + 1} 위치 보기`, `Show note ${index + 1} location`)} · <StudioReviewAnnotationLocation anchor={note.anchor} mapping={mapping} />{note.strokes?.length ? ` · ${bt(`펜 획 ${note.strokes.length}개`, `${note.strokes.length} pen strokes`)}` : ""}</button>
       <p className="whitespace-pre-wrap break-words">{note.body}</p>
     </li>)}</ol> : null}
     {error ? <p role="alert" className="mt-2 text-sm">{error}</p> : null}

@@ -9,7 +9,7 @@ import { EMPTY_STUDIO_REVIEW_CAPTURE, type StudioReviewCaptureSnapshot } from ".
 import type { StudioReviewCaptureOrigin } from "./StudioReviewCaptureReturnLink";
 
 const io = vi.hoisted(() => ({ open: vi.fn(), save: vi.fn(), retry: vi.fn(), close: vi.fn(), snapshot: null as StudioReviewCaptureSnapshot | null }));
-vi.mock("../review-capture/useStudioReviewCapture", () => ({ useStudioReviewCapture: () => ({ ...io, visible: true, snapshot: io.snapshot ?? EMPTY_STUDIO_REVIEW_CAPTURE }) }));
+vi.mock("../review-capture/useStudioReviewCapture", () => ({ useStudioReviewCapture: () => ({ ...io, getOpenPhase: () => io.snapshot?.phase ?? "idle", visible: true, snapshot: io.snapshot ?? EMPTY_STUDIO_REVIEW_CAPTURE }) }));
 vi.mock("../review-handoff/StudioReviewEditorHandoffMount", () => ({ StudioReviewEditorHandoffMount: () => null }));
 vi.mock("../review-capture/StudioReviewCaptureDialogMount", () => ({ StudioReviewCaptureDialogMount: ({ origin, snapshot }: { origin: StudioReviewCaptureOrigin | null; snapshot: StudioReviewCaptureSnapshot }) => <output data-testid="origin" data-phase={snapshot.phase}>{JSON.stringify(origin)}</output> }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); io.snapshot = null; });
@@ -17,6 +17,7 @@ const f = reviewEditorFixture(() => "a".repeat(64));
 function Host({ commentId = "comment", actor = "actor", workId = "work" }: { commentId?: string; actor?: string; workId?: string }) {
   const bindings: StudioReviewCaptureHostBindings = { studioAuthUserId: actor, workId, available: true, editorMountedRef: { current: true },
     studioRevisionProjectGenerationRef: { current: 1 }, drawingRef: { current: null }, pendingStrokeCommitsRef: { current: null },
+    flushPendingStrokeCommitsRef: { current: vi.fn(() => true) },
     captureStudioMutationTicket: () => ({ authScopeKey: actor, workId, accessGeneration: 1, documentGeneration: 1 }),
     canApplyStudioMutation: () => true, getSnapshot: () => f.snapshot, canvasWidth: 800, isDurableMask: () => false, save: async () => {}, captureAll: async () => [] };
   const capture = useStudioReviewCaptureHost({ ...bindings, reviewHandoff: {

@@ -1,7 +1,7 @@
 # 모듈형 모노레포 목표
 
 - 상태: **마이그레이션 목표**
-- 최종 갱신: **2026-10-26**
+- 최종 갱신: **2026-10-30**
 
 이 문서는 현재 상태와 목표 상태를 구분한다. 목표 항목을 이미 완료된 사실로 표현하지 않는다.
 
@@ -105,6 +105,14 @@ Web/API가 같은 구현을 실제로 소비하는 경우에만 별도 focused p
 2026-10-26 기준 API -> Web 직접 소스 참조(`apiToWeb`), Web `shared -> domains` 역참조(`webSharedToDomain`), Web 도메인 간 deep import(`webCrossDomainDeepImport`), 소스 파일 선두 `// @ts-nocheck` 지시문(`tsNoCheck`)은 모두 0건을 달성해 0으로 고정했다. 남은 주요 부채 상한은
 Creator 최상위 직접 파일 2,504, Web Admin 파일 57, API `server` 파일 28, API `platform/http` 파일 13, API `platform/adapters` 파일 78, API `platform/database` 파일 165, `packages/core` 파일 139, `lint:strict` 경고 예산(`lintStrictMaxWarnings`) 2,189이다.
 온보딩과 Studio 번역 로더는 Creator가 소유하고, 공용 읽기 요청 수명주기는 Web platform이 소유한다.
+
+상태: **migration — 2026-10-30 협업 통합 후보**. 이 후보의 정본 원장은 Creator 직하 2,506을
+유지하고, DB는 기존 main의 167파일과 원고 획·편집 정책 SQL 2개 및 canonical schema 1개를
+함께 보존해 170으로 맞춘다. Core는 기존 Production 공개 경계의 순수 모듈 6개와 회귀 3개가
+추가돼 148이 된다. 모듈의 실제 Web·API 소비와 대형 타입 분해 근거는 `ARCHITECTURE.md`의
+ratchet 설명에 기록한다. 이 두 증가분만 원장에 반영하며 최종 구조·경계 검증은 아직 남아 있다.
+2026-10-26 수치는 당시 이력으로 보존한다.
+
 Admin 화면을 독립 앱으로 이전하는 작업과 나머지 Creator capability 정리는 마이그레이션 중이다. Web·Admin의 `shared -> domains` 역참조, 도메인 간 deep import, `// @ts-nocheck`, Admin과 package의 신규 교차 앱
 결합은 0으로 고정한다.
 

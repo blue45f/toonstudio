@@ -456,7 +456,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           canvasRotation={canvasRotation}
           canvasH={canvasH}
           canvasOnlyMode={canvasOnlyMode}
-          canvasInteractionBlocked={canvasInteractionBlocked}
+          canvasInteractionBlocked={canvasInteractionBlocked && !s.scopedCanvasDrawingAvailable}
           canvasScrollViewport={scrollPos}
           scrollViewportStore={scrollViewportStore}
           hardCanvasInteractionBlock={hardCanvasInteractionBlock}
@@ -765,7 +765,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
             tool === "draw"
             && isStudioBrushCursorMode(drawMode)
             && !canvasOnlyMode
-            && !canvasInteractionBlocked
+            && (!canvasInteractionBlocked || s.scopedCanvasDrawingAvailable === true)
             && !isExporting
             && !colorWheelOpen
           }

@@ -16,6 +16,7 @@ import {
 } from "./studio-crdt-protocol";
 
 import type { StudioLiveRoom } from "./studio-live-collaboration-room";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 export type StudioCrdtFailureDisposition = "retryable" | "permanent";
 
@@ -179,11 +180,13 @@ export function shouldRetainNonAuthoritativePendingUpdate(options: {
 export function tryCoalescePendingCrdtUpdate(
   tail: CoalesceablePendingCrdtUpdate | undefined,
   incomingUpdate: Uint8Array,
-  canCoalesce: boolean
+  canCoalesce: boolean,
+  incomingWriteContext?: StudioScopedWriteContext,
 ): tail is CoalesceablePendingCrdtUpdate {
   if (
     !canCoalesce ||
     !tail ||
+    tail.request.writeContext !== undefined || incomingWriteContext !== undefined ||
     tail.attempts > 0 ||
     tail.localBroadcasted ||
     tail.inFlight ||

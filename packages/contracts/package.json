@@ -287,6 +287,31 @@
       "import": "./src/studio-crdt-raster-document-contract.ts",
       "default": "./src/studio-crdt-raster-document-contract.ts"
     },
+    "./studio-scoped-write": {
+      "types": "./src/studio-scoped-write.ts",
+      "import": "./src/studio-scoped-write.ts",
+      "default": "./src/studio-scoped-write.ts"
+    },
+    "./studio-crdt-authoring": {
+      "types": "./src/studio-crdt-authoring.ts",
+      "import": "./src/studio-crdt-authoring.ts",
+      "default": "./src/studio-crdt-authoring.ts"
+    },
+    "./studio-crdt-authoring/page-reconcile": {
+      "types": "./src/studio-crdt-authoring/page-reconcile.ts",
+      "import": "./src/studio-crdt-authoring/page-reconcile.ts",
+      "default": "./src/studio-crdt-authoring/page-reconcile.ts"
+    },
+    "./studio-crdt-authoring/element-projection": {
+      "types": "./src/studio-crdt-authoring/element-projection.ts",
+      "import": "./src/studio-crdt-authoring/element-projection.ts",
+      "default": "./src/studio-crdt-authoring/element-projection.ts"
+    },
+    "./studio-writer-room": {
+      "types": "./src/studio-writer-room.ts",
+      "import": "./src/studio-writer-room.ts",
+      "default": "./src/studio-writer-room.ts"
+    },
     "./studio-codec-provider-contract": {
       "types": "./src/studio-codec-provider-contract.ts",
       "import": "./src/studio-codec-provider-contract.ts",

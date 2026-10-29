@@ -365,7 +365,7 @@ const STUDIO_CRDT_COMMON_SCENE_KEYS = [
   "opacity",
   "blendMode",
   "lockAspect",
-  "groupId",
+  "groupId", "frameClipId",
   "clipBelow",
   "alphaLocked",
   "maskSrc",
@@ -412,8 +412,7 @@ const STUDIO_CRDT_SCENE_KEYS_BY_TYPE = {
     "x", "y", "width", "height", "lineCount", "direction", "stroke", "strokeWidth",
     "noise", "rotation",
   ]),
-  // Wire-only topology and bounded edit state for admitted image/VRM/3D bodies. Source bytes stay
-  // in work-scoped private storage; this record owns placement, filters, page/layer, and tombstone.
+  // 원본은 작품 저장소가 소유한다. wire는 배치·효과·페이지/레이어·삭제의 bounded 상태만 소유한다.
   reference: new Set([
     "elementType",
     ...STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS,
@@ -481,7 +480,6 @@ const STUDIO_CRDT_PAPER_SURFACE_KEYS = new Set(["kind", "seed"]);
 const STUDIO_CRDT_PAPER_SURFACE_MAX_SEED = 0xffff_ffff;
 
 const STUDIO_CRDT_LAYER_GROUP_KEYS = new Set(["name", "hidden", "locked"]);
-
 export function isBoundedStudioCrdtId(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0 || value.length > 160) return false;
   for (const character of value) {
@@ -1772,6 +1770,7 @@ function isValidStudioWorkAssetReferenceCandidate(
   if (property === "rotation") return finiteNumberInRange(value, -360_000, 360_000);
   if (property === "opacity") return finiteNumberInRange(value, 0, 1);
   if (property === "filterMaskSurfaceId") return isStudioFilterMaskSurfaceId(value);
+  if (property === "frameClipId") return isBoundedStudioCrdtId(value);
   if (property === "filterMaskEnabled") return typeof value === "boolean";
   if (STUDIO_WORK_ASSET_BOOLEAN_EDIT_KEY_SET.has(property)) return typeof value === "boolean";
   if (STUDIO_WORK_ASSET_STRUCTURED_EDIT_KEY_SET.has(property)) {
@@ -1895,7 +1894,7 @@ function readReservedProperties(
       if (value) unset.add(property);
       continue;
     }
-    if (!isBoundedJsonValue(value)) return null;
+    if (!isBoundedJsonValue(value) || (property === "frameClipId" && !isBoundedStudioCrdtId(value))) return null;
     if (prefix === "base:") baseline[property] = value;
     else properties[property] = value;
   }
@@ -2782,6 +2781,7 @@ function validateStrokeRoot(id: string, record: Y.Map<unknown>): boolean {
     && !Array.isArray(extensionsValue)
     ? extensionsValue as Record<string, unknown>
     : undefined;
+  if (extensions && Object.hasOwn(extensions, "frameClipId") && !isBoundedStudioCrdtId(extensions.frameClipId)) return false;
   const brushDynamicsValue = record.get("brushDynamics");
   const brushDynamics = brushDynamicsValue !== null
     && typeof brushDynamicsValue === "object"

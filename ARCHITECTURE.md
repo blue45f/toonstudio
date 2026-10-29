@@ -1,7 +1,7 @@
 # ToonStudio 아키텍처
 
 - 상태: **현재 구조 + 진행 중인 마이그레이션**
-- 최종 갱신: **2026-10-26**
+- 최종 갱신: **2026-10-30**
 - 적용 범위: 저장소 구조, 애플리케이션 경계, 공유 패키지, 테스트·도구·문서 소유권
 
 ## 1. 권위 순서
@@ -268,14 +268,33 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | Web `shared -> domains` | 0 |
 | 소스 파일 `// @ts-nocheck` | 0 |
 | Web cross-domain deep import | 0 |
-| Creator domain 최상위 직접 파일 | 2,504 |
+| Creator domain 최상위 직접 파일 | 2,506 |
 | Web에 남은 Admin 파일 | 57 |
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 165 |
-| `packages/core` 파일 | 139 |
+| API `platform/database` 파일 | 170 |
+| `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
+
+2026-10-30 협업 통합 후보의 DB 상한 170은 메인의 기존 167파일에 원고 획의 불변 migration
+`0116_studio_review_comment_pen_strokes.sql`, 담당 편집 정책·영수증 migration
+`0117_studio_scoped_write_policy.sql`, 정본 `schema/studio-scoped-write.schema.ts` 세 파일을 더한 값이다.
+기존 AI migration 0114·0115와 해당 Drizzle 정의도 함께 보존한다.
+
+Core의 139→148은 기존 공개 진입점 `@toonstudio/core/production` 아래의 순수 모듈 6개
+(`review-policy`, `review-types`, `revision`, `submission`, `task-output-contract`, `task-output`)와
+회귀 3개(`review-policy.test`, `studio-revision-coverage.test`, `task-output.test`)에 한정된다.
+Web의 역할·검수·제출 화면과 API의 정책 검증·원자적 제출이 같은 모델을 소비한다. 기존 대형
+`types.ts`는 범위 모델까지 분해한 뒤 1,558줄에서 1,471줄로 줄었고 공개 re-export를 유지한다.
+새 모듈은 React·NestJS·DB·네트워크 구현을 소유하지 않는다. 이 수치는 여유 파일을 더하지 않은
+통합 후보의 구조 계약이며, 실제 source-layout·경계 검사와 최종 병합 결과는 별도로 검증한다.
+Creator 직하 상한은 2,506으로 유지하고 신규 제한 편집·대본 모듈은 기존 capability 폴더에 둔다.
+
+Studio의 동기 wire 검증은 `@toonstudio/core/production/scope`의 기존 범위 상수·타입·검증
+함수만 사용한다. 원고 변환과 객체 식별자는 contracts의 `studio-crdt-authoring/page-reconcile`·
+`studio-crdt-authoring/element-projection` 공개 경로에서 같은 함수를 직접 소비한다. 전체 Production
+진입점과 전체 Authoring 진입점은 기존 소비자를 위해 유지하며, 새 공개 경로는 기존 파일에 연결한다.
 
 다음 항목은 0으로 고정한다.
 

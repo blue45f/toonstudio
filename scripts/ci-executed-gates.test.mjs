@@ -159,6 +159,7 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   assert.ok(migrationFiles.includes("0088_studio_review_delivery.sql"));
   assert.ok(migrationFiles.includes("0090_studio_review_voice_note.sql"));
   assert.ok(migrationFiles.includes("0091_creator_work_publication_media.sql"));
+  assert.ok(migrationFiles.includes("0116_studio_review_comment_pen_strokes.sql"));
   assert.ok(!migrationFiles.includes("0084_studio_pinned_review_share.sql"));
   for (const migration of migrationFiles) {
     assert.ok(
@@ -169,6 +170,16 @@ test("review database invariants execute with real PostgreSQL and the accepted g
 
   for (const suite of CORE_DATABASE_VITEST_TARGETS) {
     assert.ok(database.includes(suite), `Missing real database suite: ${suite}`);
+  }
+  for (const suite of [
+    "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
+    "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
+  ]) {
+    assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(suite), `고정 원고·첨삭·실제 인증 DB 검증의 소유 누락: ${suite}`);
+    assert.ok(database.includes(suite), `보호된 실제 DB job의 검증 누락: ${suite}`);
   }
   assert.ok(REQUIRED_CORE_GATES.includes("database"), "database failures must block protected core");
 });

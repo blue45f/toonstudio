@@ -6,7 +6,7 @@ import type { StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-rev
 import { useStudioPinnedReviewPreviews } from "./use-studio-pinned-review-previews";
 import { StudioReviewSpatialAnnotation, type StudioReviewAnnotationControl, type StudioReviewAnnotationNote } from "./StudioReviewSpatialAnnotation";
 
-export function StudioReviewImage({ preview, label, className = "max-h-[70vh] w-full rounded-lg object-contain", figureClassName = "mt-3" }: {
+export function StudioReviewImage({ preview, label, className = "block h-auto w-full rounded-lg", figureClassName = "mt-3" }: {
   readonly preview: StudioVirtualSpaceReviewPreview; readonly label: string; readonly className?: string;
   readonly figureClassName?: string;
 }) {
@@ -51,7 +51,12 @@ export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, note
           control={annotation ?? { selected: null, onSelect: () => undefined, disabled: true }} editable={!!annotation} notes={notes}>
           <StudioReviewImage preview={preview} label={bt(`검수 미리보기 ${preview.ordinal + 1}`, `Review preview ${preview.ordinal + 1}`)} className="block h-auto w-full rounded-lg" figureClassName="" />
         </StudioReviewSpatialAnnotation>
-        : <div key={`${preview.ordinal}:${preview.sha256}`}><StudioReviewImage preview={preview} label={bt(`검수 미리보기 ${preview.ordinal + 1}`, `Review preview ${preview.ordinal + 1}`)} />
+        : <div key={`${preview.ordinal}:${preview.sha256}`}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 매핑 없는 원고도 키보드로 전체 길이를 읽을 수 있어야 한다. */}
+          <div tabIndex={0} role="region" aria-label={bt(`${preview.ordinal + 1}페이지 원고 이동 영역`, `Page ${preview.ordinal + 1} manuscript viewport`)}
+            className="max-h-[70dvh] overflow-auto overscroll-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            <StudioReviewImage preview={preview} label={bt(`검수 미리보기 ${preview.ordinal + 1}`, `Review preview ${preview.ordinal + 1}`)} />
+          </div>
           {annotation ? <p className="mt-2 text-sm text-fg-2">{bt("이 검수본은 페이지·컷 위치를 확인할 수 없어 전체 검수 의견으로 남깁니다.", "This snapshot has no verified page or cut mapping. Leave a note on the whole review.")}</p> : null}
         </div>)}
       {cursor ? <button type="button" className="min-h-11 px-3" disabled={annotation?.disabled} onClick={() => changePage(null)}>{bt("처음부터 보기", "Back to first previews")}</button> : null}

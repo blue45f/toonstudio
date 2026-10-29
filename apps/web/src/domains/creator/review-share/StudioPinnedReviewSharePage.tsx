@@ -13,6 +13,7 @@ import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { StudioReviewImageViewport } from "../virtual-space/StudioReviewImageViewport";
 import {
   loadPinnedReviewSharePage,
   submitPinnedReviewShareFeedback,
@@ -70,6 +71,7 @@ function PinnedReviewUnavailable({ message, canRetry, onRetry }: {
 }
 
 export function StudioPinnedReviewSharePage() {
+  const bt = useBilingual("StudioPinnedReviewSharePage");
   const { shareId } = useParams<{ shareId?: string }>();
   const { hash } = useLocation();
   const token = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash).get("token") ?? "";
@@ -78,6 +80,7 @@ export function StudioPinnedReviewSharePage() {
   const [view, setView] = useState<PinnedShareView | null>(null);
   const [selectedOrdinal, setSelectedOrdinal] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageReloadTick, setImageReloadTick] = useState(0);
   const [loading, setLoading] = useState(true);
   const [imageLoading, setImageLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -86,10 +89,15 @@ export function StudioPinnedReviewSharePage() {
   const [reviewerName, setReviewerName] = useState("");
   const [body, setBody] = useState("");
   const generation = useRef<object>({});
+  const authorityRequest = useRef(0);
+  const imageAuthority = useRef<object | null>(null);
+  const resumeImageAfterVerification = useRef(false);
+  const imageRequest = useRef<AbortController | null>(null);
   const feedbackAttempt = useRef<{ fingerprint: string; id: string } | null>(null);
 
   const refresh = useCallback(async (retainPage = false) => {
     const own = generation.current;
+    const request = ++authorityRequest.current;
     if (!access || document.visibilityState === "hidden") {
       setLoading(false);
       if (!access) setError(creatorSub2StatusText("studio.creatorSub2.status.reviewShare.invalidLink", "검토 링크가 올바르지 않습니다."));
@@ -98,37 +106,51 @@ export function StudioPinnedReviewSharePage() {
     setLoading(true); setError(null);
     try {
       const next = await viewPinnedReviewShare(access);
-      if (own !== generation.current) return;
+      if (own !== generation.current || request !== authorityRequest.current) return;
       setView(next);
+      imageAuthority.current = own;
       setSelectedOrdinal((current) => retainPage && current !== null && next.pages.some((page) => page.ordinal === current)
         ? current : next.pages[0]?.ordinal ?? null);
+      if (resumeImageAfterVerification.current) {
+        resumeImageAfterVerification.current = false;
+        setImageReloadTick((current) => current + 1);
+      }
     } catch (cause) {
-      if (own === generation.current) {
+      if (own === generation.current && request === authorityRequest.current) {
+        imageRequest.current?.abort();
+        imageAuthority.current = null;
+        setImageUrl((current) => { if (current) URL.revokeObjectURL(current); return null; });
         setView(null);
-        setError(await getApiErrorMessage(cause, creatorSub2StatusText("studio.creatorSub2.status.reviewShare.linkExpired", "링크가 만료되었거나 접근이 철회되었습니다.")));
+        const message = await getApiErrorMessage(cause, creatorSub2StatusText("studio.creatorSub2.status.reviewShare.linkExpired", "링크가 만료되었거나 접근이 철회되었습니다."));
+        if (own === generation.current && request === authorityRequest.current) setError(message);
       }
     } finally {
-      if (own === generation.current) setLoading(false);
+      if (own === generation.current && request === authorityRequest.current) setLoading(false);
     }
   }, [access]);
 
   useEffect(() => {
     generation.current = {};
     feedbackAttempt.current = null;
+    imageRequest.current?.abort();
+    imageAuthority.current = null;
+    resumeImageAfterVerification.current = false;
     setView(null); setSelectedOrdinal(null); setImageUrl(null); setError(null); setNotice(null); setLoading(true);
     void refresh();
     const focus = () => { void refresh(true); };
     const visibility = () => {
       if (document.visibilityState === "hidden") {
-        generation.current = {}; setImageUrl((current) => { if (current) URL.revokeObjectURL(current); return null; });
+        generation.current = {}; imageRequest.current?.abort(); imageAuthority.current = null;
+        setImageUrl((current) => { if (current) URL.revokeObjectURL(current); return null; });
       } else {
-        generation.current = {}; void refresh(true);
+        generation.current = {}; resumeImageAfterVerification.current = true; void refresh(true);
       }
     };
     globalThis.addEventListener("focus", focus);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       generation.current = {};
+      imageRequest.current?.abort();
       globalThis.removeEventListener("focus", focus);
       document.removeEventListener("visibilitychange", visibility);
     };
@@ -137,17 +159,17 @@ export function StudioPinnedReviewSharePage() {
   useEffect(() => {
     if (!view) return;
     const delay = Math.max(1_000, Date.parse(view.leaseExpiresAt) - Date.now() - 1_000);
-    const timer = setTimeout(() => { generation.current = {}; void refresh(true); }, delay);
+    const timer = setTimeout(() => { void refresh(true); }, delay);
     return () => clearTimeout(timer);
   }, [refresh, view]);
-
-  const [imageReloadTick, setImageReloadTick] = useState(0);
 
   useEffect(() => {
     const own = generation.current;
     const controller = new AbortController();
+    imageRequest.current = controller;
     setImageUrl((current) => { if (current) URL.revokeObjectURL(current); return null; });
-    if (!access || selectedOrdinal === null || document.visibilityState === "hidden") return () => controller.abort();
+    // 복귀한 화면은 같은 페이지라도 새 권한 확인이 끝난 세대에서만 이미지를 읽는다.
+    if (!access || selectedOrdinal === null || imageAuthority.current !== own || document.visibilityState === "hidden") return () => controller.abort();
     setImageLoading(true); setError(null);
     void loadPinnedReviewSharePage(access, selectedOrdinal, controller.signal)
       .then((blob) => {
@@ -156,7 +178,8 @@ export function StudioPinnedReviewSharePage() {
       })
       .catch(async (cause) => {
         if (own !== generation.current || controller.signal.aborted) return;
-        setError(await getApiErrorMessage(cause, creatorSub2StatusText("studio.creatorSub2.status.reviewShare.imageLoadFailed", "선택한 검수 이미지를 불러오지 못했습니다.")));
+        const message = await getApiErrorMessage(cause, creatorSub2StatusText("studio.creatorSub2.status.reviewShare.imageLoadFailed", "선택한 검수 이미지를 불러오지 못했습니다."));
+        if (own === generation.current && !controller.signal.aborted) setError(message);
       })
       .finally(() => { if (own === generation.current && !controller.signal.aborted) setImageLoading(false); });
     return () => controller.abort();
@@ -252,9 +275,18 @@ export function StudioPinnedReviewSharePage() {
               onClick={() => setSelectedOrdinal(view.pages[currentIndex + 1]!.ordinal)} aria-label="다음 페이지">다음<ChevronRight className="size-4" aria-hidden="true" /></button>
           </div>
         </div>
-        <div className="relative mt-4 flex min-h-[18rem] items-center justify-center overflow-auto rounded-2xl border border-line bg-panel p-2 sm:min-h-[32rem]">
+        <div className="relative mt-4 min-h-[18rem] rounded-2xl border border-line bg-panel p-2 sm:min-h-[32rem]">
           {imageLoading ? <p className="flex items-center gap-2 text-sm" role="status"><LoaderCircle className="size-4 animate-spin" aria-hidden="true" />{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.imageChecking", "이미지 확인 중…")}</p> : null}
-          {imageUrl ? <img src={imageUrl} alt={`${(currentPage?.ordinal ?? 0) + 1}페이지 고정 검수 이미지`} className="max-h-[75dvh] max-w-full object-contain" /> : null}
+          {currentPage ? <StudioReviewImageViewport key={`${view.revisionFingerprint}:${currentPage.ordinal}:${currentPage.sha256}`}
+            renderWidth={currentPage.width} renderHeight={currentPage.height}
+            label={bt(`${currentPage.ordinal + 1}페이지 검수 이미지 이동 영역`, `Page ${currentPage.ordinal + 1} review image viewport`)}>
+            <div className="relative">
+              {imageUrl ? <img src={imageUrl} alt={`${currentPage.ordinal + 1}페이지 고정 검수 이미지`} className="block h-auto w-full max-w-none" /> : null}
+              {view.watermark && imageUrl ? <div className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden" aria-hidden="true">
+                <span className="rotate-[-22deg] select-none text-5xl font-black tracking-[0.3em] text-fg/10 sm:text-7xl">REVIEW</span>
+              </div> : null}
+            </div>
+          </StudioReviewImageViewport> : null}
           {!imageLoading && !imageUrl && view.pages.length === 0 ? (
             <p className="p-6 text-center text-sm text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.pagesEmpty", "아직 등록된 검수 페이지가 없습니다.")}</p>
           ) : null}
@@ -270,9 +302,6 @@ export function StudioPinnedReviewSharePage() {
               </button>
             </div>
           ) : null}
-          {view.watermark && imageUrl ? <div className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden" aria-hidden="true">
-            <span className="rotate-[-22deg] select-none text-5xl font-black tracking-[0.3em] text-fg/10 sm:text-7xl">REVIEW</span>
-          </div> : null}
         </div>
         <div className="mt-3 flex flex-wrap gap-2" aria-label="페이지 선택">
           {view.pages.map((page) => <button key={page.ordinal} type="button" className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm", page.ordinal === selectedOrdinal ? "border-accent bg-accent-soft text-accent" : "border-line")}

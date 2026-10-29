@@ -706,11 +706,7 @@ export class CreatorService {
     const {
       baseRevision,
       crdtServerSequence,
-      title,
-      description,
-      cover,
-      tags,
-      titleId,
+      title, description, cover, tags, titleId,
       pages,
       doc,
       status,
@@ -732,7 +728,8 @@ export class CreatorService {
           workId,
           baseRevision,
           BigInt(crdtServerSequence),
-          patch
+          patch, validated.writeContext && validated.mutationId
+            ? { writeContext: validated.writeContext, mutationId: validated.mutationId } : undefined
         )
       )
     );

@@ -57,6 +57,7 @@ interface ProductionManagementWorkspaceProps {
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
   readonly executeRecovery?: (command: ProductionClientCommand, message: string) => Promise<void>;
   readonly canEdit: boolean;
+  readonly actorUserId?: string | null;
   readonly now?: Date;
 }
 
@@ -300,6 +301,7 @@ export function ProductionManagementWorkspace({
   execute,
   executeRecovery = execute,
   canEdit,
+  actorUserId = null,
   now,
 }: ProductionManagementWorkspaceProps) {
   const bt = useBilingual("ProductionManagementWorkspace.activity");
@@ -439,6 +441,7 @@ export function ProductionManagementWorkspace({
         execute={execute}
         canEdit={canEdit}
         roleLens={roleLens}
+        actorUserId={actorUserId}
       />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">

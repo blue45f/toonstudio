@@ -26,6 +26,7 @@ import {
   collabEventsFromCommentThreads,
   type CollabNotificationEvent,
 } from "./collab-notification-model";
+import { buildTaskReviewPath } from "./review-request-model";
 
 /* ------------------------------------------------------------------ */
 /* 딥링크 조립 (호스트 라우터 기준 문자열)                                */
@@ -35,22 +36,14 @@ function projectBase(projectId: string): string {
   return `/production/projects/${encodeURIComponent(projectId)}`;
 }
 
-function episodeRoomHref(projectId: string, episodeId: string): string {
-  return `${projectBase(projectId)}/episodes/${encodeURIComponent(episodeId)}`;
-}
-
-function compareReviewHref(projectId: string, episodeId: string): string {
-  return `${episodeRoomHref(projectId, episodeId)}?roomView=compare`;
-}
-
 function surfaceHref(projectId: string, surface: "review" | "handoff" | "episodes" | "overview"): string {
   return `${projectBase(projectId)}/${surface}`;
 }
 
 /** 받은 검수함 항목의 목적지 — review-request-model.reviewInboxItemHref와 같은 규칙. */
 function personalInboxItemHref(item: CollabPersonalInboxItemInput): string {
-  if (item.bucket === "review" && item.episodeId) {
-    return compareReviewHref(item.projectId, item.episodeId);
+  if (item.bucket === "review") {
+    return buildTaskReviewPath(item.projectId, item.taskId, item.episodeId);
   }
   return `${projectBase(item.projectId)}/production?task=${encodeURIComponent(item.taskId)}`;
 }

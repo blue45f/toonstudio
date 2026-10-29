@@ -5,6 +5,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioDrawingAppBar } from "./StudioDrawingAppBar";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+import { bindStudioScopedWriteAuthority } from "../studio-collab/studio-scoped-write-authority";
+import { createStudioScopedWriteFixture } from "../studio-collab/studio-scoped-write.test-fixture";
+import { createStudioScopedHistory } from "../studio-collab/studio-scoped-history";
+import { admitStudioScopedDrawStart, admitStudioScopedPagesCommit } from "../studio-collab/studio-scoped-write-mutation";
+import { resolveStudioEditAvailability } from "../studio-edit-controls";
+import { StudioCrdtDocument } from "../live/studio-crdt-document";
+import { studioDrawElementToCrdtStroke, studioPageToCrdtPage } from "../live/studio-crdt-page-bridge";
+import { publishStudioCrdtSceneGraphDiff } from "../live/studio-crdt-scene-publisher";
+import type { PageState } from "../studio-page-state";
 
 afterEach(() => {
   cleanup();
@@ -79,6 +88,42 @@ function renderAppBar(session: StudioCuttoonEditorViewSession) {
 }
 
 describe("StudioDrawingAppBar", () => {
+  it("실제 담당 획의 버튼 Undo·Redo가 전역 잠금을 유지하며 동일 CRDT ID를 삭제·복원한다", () => {
+    const f = createStudioScopedWriteFixture(), owner = { current: { locked: true } }, document = new StudioCrdtDocument();
+    const unbind = bindStudioScopedWriteAuthority(owner, f.authority), reportError = vi.fn();
+    const page: PageState = { id: "page-1", elements: [], bg: "#ffffff", bgGrad: null, canvasH: 1000 };
+    let index = 1;
+    try {
+      f.choose();
+      const stroke = admitStudioScopedDrawStart(owner, page.id, page.elements, { id: "real-pointer-id", type: "draw", mode: "pen", kind: "freehand", points: [10, 20, 30, 40], stroke: "#000000", strokeWidth: 3 });
+      const next: PageState[] = [{ ...page, elements: [stroke] }], history = [[page], next];
+      expect(admitStudioScopedPagesCommit({ owner, previous: [page], next, reportError, lockMessage: () => "잠금" })).toBe(true);
+      document.addPage(studioPageToCrdtPage(page)); document.addStroke(studioDrawElementToCrdtStroke(page.id, stroke));
+      const original = f.authority.captureWriteContext();
+      const controller = createStudioScopedHistory({ owner, getHistory: () => history, getIndex: () => index, getPending: () => [], flushPending: () => true,
+        blocked: () => false, entryKind: () => "pages", reportError, publish: (previous, after) => { publishStudioCrdtSceneGraphDiff(document, previous, after, { registerNewDraws: false }); return true; },
+        onApplied: (_direction, _pages, nextIndex) => { index = nextIndex; } });
+      const ui = () => {
+        const availability = resolveStudioEditAvailability({ historyIndex: index, historyLength: history.length, documentEmpty: !history[index]?.[0]?.elements.length,
+          hasElementSelection: false, hasSingleElementSelection: false, hasPixelSelection: false, hasPixelEditing: false, pixelBusy: false, selectedImage: false,
+          rasterRetouchTargetAvailable: false, interactionLocked: false, mutationLocked: true, selectedContentMutationLocked: true, masterEditMode: false,
+          scopedHistoryAvailability: { undo: controller.canUndo(), redo: controller.canRedo() } });
+        return <MemoryRouter><StudioDrawingAppBar session={createMockSession({ menuEditUndoDisabled: availability.undoDisabled, menuEditRedoDisabled: availability.redoDisabled,
+          undo: () => { controller.undo(); }, redo: () => { controller.redo(); } })} /></MemoryRouter>;
+      };
+      const view = render(ui());
+      expect(screen.getByRole("button", { name: "실행 취소" }).matches(":disabled")).toBe(false);
+      fireEvent.click(screen.getByRole("button", { name: "실행 취소" }));
+      expect(index).toBe(0); expect(document.getStroke("real-pointer-id", true)?.deleted).toBe(true);
+      f.authority.captureWriteContext(); view.rerender(ui());
+      expect(screen.getByRole("button", { name: "다시 실행" }).matches(":disabled")).toBe(false);
+      fireEvent.click(screen.getByRole("button", { name: "다시 실행" }));
+      expect(index).toBe(1); expect(document.getStroke("real-pointer-id")?.id).toBe("real-pointer-id");
+      expect(f.authority.captureWriteContext()).toMatchObject({ creations: [], restorations: [{ kind: "stroke", id: "real-pointer-id", targetId: "target-1" }] });
+      expect(original.creations[0]?.id).toBe("real-pointer-id"); expect(owner.current.locked).toBe(true); expect(reportError).not.toHaveBeenCalled();
+      f.expire(); view.rerender(ui()); expect(screen.getByRole("button", { name: "실행 취소" }).matches(":disabled")).toBe(true);
+    } finally { unbind(); document.destroy(); }
+  });
   it("클립스튜디오(CSP) 2× 우위 검증 메타데이터, 컨테이너 쿼리(inline-size), 다기종 폼팩터 속성을 노출한다", () => {
     const session = createMockSession({ isMobile: false });
     const { container } = renderAppBar(session);

@@ -287,6 +287,14 @@ describe("studio work asset client", () => {
     expect(String(form.get("descriptor"))).not.toContain("data:");
   });
 
+  it("현재 업로드 purpose를 별도 JSON field로 보내며 파일과 descriptor는 보존한다", async () => {
+    const writeContext = { version: 1 as const, policyVersion: 1, grantIds: ["grant"], creations: [], restorations: [] };
+    const bytes = Uint8Array.of(1, 2); put.mockResolvedValueOnce(jsonResponse(await manifest(bytes)));
+    await uploadStudioWorkAsset("work / 1", reference, descriptor, new Blob([bytes], { type: "image/png" }), undefined, writeContext);
+    const form = (put.mock.calls[0]?.[1] as { body: FormData }).body;
+    expect(JSON.parse(String(form.get("writeContext")))).toEqual(writeContext); expect(form.get("descriptor")).toBe(JSON.stringify(descriptor));
+  });
+
   it("uploads a receipt-bound layer-lift pair through one ordered multipart request", async () => {
     const fixture = await layerLiftUploadFixture();
     put.mockResolvedValueOnce(jsonResponse(fixture.receipt));

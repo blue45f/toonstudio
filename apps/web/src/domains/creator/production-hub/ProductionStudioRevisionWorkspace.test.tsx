@@ -18,6 +18,7 @@ function renderWorkspace(options: { readonly canEdit?: boolean } = {}) {
         execute={execute}
         canEdit={options.canEdit ?? true}
         roleLens="producer"
+        actorUserId="demo-editor"
       />
     </MemoryRouter>,
   );
@@ -49,7 +50,7 @@ describe("ProductionStudioRevisionWorkspace", () => {
         documentRole: "thumbnail",
         deliverableId: "deliverable-thumbnail-12",
         submissionId: "submission-thumbnail-12-r2",
-        linkedByAssignmentId: expect.any(String),
+        linkedByAssignmentId: "assignment-editor",
         status: "submitted",
       }),
     }, expect.stringContaining("콘티"));

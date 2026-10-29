@@ -1,7 +1,9 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { useLocation } from "react-router-dom";
 
 import { supportsPwaInstallPrompts } from "@/shared/components/site-public-routes";
+import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { getPwaInstallSnapshot } from "@/shared/lib/pwa-install-store";
 
 import {
@@ -15,21 +17,76 @@ interface DialogProps {
   readonly trigger: "visit-count" | "offline-detected" | "manual" | null;
 }
 
-const ShowcaseDialog = lazy(() =>
-  import("./PwaInstallShowcase").then((module) => ({
-    default: module.PwaInstallShowcase,
-  })),
-);
+function DeferredShowcase({ open, ...props }: DialogProps & { readonly open: boolean }) {
+  const bt = useBilingual("PwaInstallShowcaseHost");
+  const [Dialog, setDialog] = useState<ComponentType<DialogProps> | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [requested, setRequested] = useState(false);
+  const [online, setOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
 
-function LazyShowcase(props: DialogProps) {
+  useEffect(() => {
+    const syncConnection = () => {
+      setOnline(navigator.onLine);
+      if (navigator.onLine) setFailed(false);
+    };
+    window.addEventListener("online", syncConnection);
+    window.addEventListener("offline", syncConnection);
+    return () => {
+      window.removeEventListener("online", syncConnection);
+      window.removeEventListener("offline", syncConnection);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open || !online || Dialog) return;
+    let cancelled = false;
+    // 비필수 설치 안내의 청크 실패는 현재 원고의 전역 새로고침으로 전파하지 않는다.
+    import("./PwaInstallShowcase").then(
+      (module) => {
+        if (!cancelled) setDialog(() => module.PwaInstallShowcase);
+      },
+      () => {
+        if (!cancelled) setFailed(true);
+      },
+    );
+    return () => { cancelled = true; };
+  }, [open, online, Dialog, attempt]);
+
+  const close = () => {
+    setRequested(false);
+    props.onClose();
+  };
+  if (!open) return null;
+  if (Dialog && (props.trigger !== "offline-detected" || requested)) {
+    return <Dialog {...props} onClose={close} onInstalled={() => { setRequested(false); props.onInstalled(); }} />;
+  }
+  const offline = !online && !Dialog;
   return (
-    <Suspense fallback={null}>
-      <ShowcaseDialog
-        onClose={props.onClose}
-        onInstalled={props.onInstalled}
-        trigger={props.trigger}
-      />
-    </Suspense>
+    <aside role={failed ? "alert" : "status"} aria-label={bt("앱 설치 안내", "App installation guide")}
+      className="fixed bottom-4 right-4 z-40 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-line bg-panel p-4 text-sm text-fg shadow-xl">
+      <p className="font-bold">{failed
+        ? bt("설치 안내를 불러오지 못했어요.", "The installation guide could not be loaded.")
+        : offline ? bt("연결이 돌아오면 설치 안내를 불러올게요.", "The installation guide will load when you reconnect.")
+          : Dialog ? bt("설치 안내를 열 수 있어요.", "The installation guide is ready.")
+            : bt("설치 안내를 불러오는 중…", "Loading the installation guide…")}</p>
+      <p className="mt-2 text-xs leading-5 text-fg-2">{bt(
+        "현재 작업 화면은 그대로 사용할 수 있어요. 설치 안내는 작업을 마친 뒤 확인해도 됩니다.",
+        "Your current work surface remains available. You can check the installation guide after finishing your work.",
+      )}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {Dialog ? <button type="button" className={buttonClass({ variant: "outline", className: "min-h-11" })}
+          onClick={() => setRequested(true)}>{bt("설치 안내 보기", "Open installation guide")}</button>
+          : failed || offline ? <button type="button" disabled={!online}
+            className={buttonClass({ variant: "outline", className: "min-h-11" })}
+            onClick={() => { setFailed(false); setAttempt((value) => value + 1); }}>
+            {bt("다시 시도", "Try again")}
+          </button> : null}
+        <button type="button" className={buttonClass({ variant: "ghost", className: "min-h-11" })} onClick={close}>
+          {bt("설치 안내 닫기", "Close installation guide")}
+        </button>
+      </div>
+    </aside>
   );
 }
 
@@ -101,6 +158,6 @@ export function PwaInstallShowcaseHost() {
     };
   }, [scheduler, promptsBlocked]);
 
-  if (promptsBlocked || !open) return null;
-  return <LazyShowcase onClose={close} onInstalled={handleInstalled} trigger={trigger} />;
+  if (promptsBlocked) return null;
+  return <DeferredShowcase open={open} onClose={close} onInstalled={handleInstalled} trigger={trigger} />;
 }

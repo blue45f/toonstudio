@@ -1,9 +1,15 @@
+import { scopeContains } from "./scope";
+import { sameProductionRevision } from "./revision";
+
 import type {
   EpisodeCollaboration,
   EpisodeCollaborationState,
+  Deliverable,
   ProductionTask,
   ProductionTaskStatus,
+  ProductionProjectAggregate,
   RevisionRef,
+  Submission,
 } from "./types";
 
 const EPISODE_TRANSITIONS: Readonly<Record<EpisodeCollaborationState, readonly EpisodeCollaborationState[]>> = Object.freeze({
@@ -96,6 +102,145 @@ const TASK_TRANSITIONS: Readonly<Record<ProductionTaskStatus, readonly Productio
   "out-of-scope": [],
 });
 
+interface ProductionTaskWorkflowLookup {
+  readonly tasks: ReadonlyMap<string, ProductionTask>;
+  readonly deliverables: ReadonlyMap<string, Deliverable>;
+  readonly submissions: ReadonlyMap<string, readonly Submission[]>;
+  readonly approvedSubmissionIds: ReadonlyMap<string, ReadonlySet<string | null>>;
+  readonly currentSubmissions: Map<ProductionTask, readonly Submission[] | null>;
+}
+
+/** 같은 불변 aggregate 스냅샷의 반복 판정에서만 조회 인덱스와 제출본 검증을 재사용한다. */
+export function createProductionTaskWorkflowReader(
+  aggregate: Pick<ProductionProjectAggregate, "tasks" | "deliverables" | "submissions">,
+) {
+  const tasks = new Map<string, ProductionTask>();
+  const deliverables = new Map<string, Deliverable>();
+  const submissions = new Map<string, Submission[]>();
+  const approvedSubmissionIds = new Map<string, Set<string | null>>();
+  // 기존 find의 첫 일치 및 some의 전체 일치 의미를 중복 ID가 있어도 보존한다.
+  for (const task of aggregate.tasks) if (!tasks.has(task.id)) tasks.set(task.id, task);
+  for (const deliverable of aggregate.deliverables) {
+    if (!deliverables.has(deliverable.id)) deliverables.set(deliverable.id, deliverable);
+    const approved = approvedSubmissionIds.get(deliverable.id) ?? new Set<string | null>();
+    approved.add(deliverable.approvedSubmissionId);
+    approvedSubmissionIds.set(deliverable.id, approved);
+  }
+  for (const submission of aggregate.submissions) {
+    const matching = submissions.get(submission.id) ?? [];
+    matching.push(submission);
+    submissions.set(submission.id, matching);
+  }
+  const lookup: ProductionTaskWorkflowLookup = { tasks, deliverables, submissions, approvedSubmissionIds, currentSubmissions: new Map() };
+  return Object.freeze({
+    hasCurrentApprovedOutputs: (task: ProductionTask) => taskHasCurrentApprovedOutputs(task, aggregate, lookup),
+    hasCurrentReviewOutputs: (task: ProductionTask) => taskHasCurrentReviewOutputs(task, aggregate, lookup),
+    hasCurrentDependencyInputs: (task: ProductionTask) => taskHasCurrentDependencyInputs(task, aggregate, lookup),
+  });
+}
+
+/** 모든 출력이 현재 승인본이며 이 작업의 고정 입력으로 제작되었는지 확인한다. */
+function currentProductionTaskSubmissions(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "submissions">,
+  lookup?: ProductionTaskWorkflowLookup,
+): readonly Submission[] | null {
+  if (lookup?.currentSubmissions.has(task)) return lookup.currentSubmissions.get(task) ?? null;
+  const submissions = readCurrentProductionTaskSubmissions(task, aggregate, lookup);
+  lookup?.currentSubmissions.set(task, submissions);
+  return submissions;
+}
+
+function readCurrentProductionTaskSubmissions(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "submissions">,
+  lookup?: ProductionTaskWorkflowLookup,
+): readonly Submission[] | null {
+  if (task.inputRevisionRefs.length === 0 || task.outputDeliverableIds.length === 0) return null;
+  const submissions: Submission[] = [];
+  for (const id of task.outputDeliverableIds) {
+    const deliverable = lookup ? lookup.deliverables.get(id) : aggregate.deliverables.find((entry) => entry.id === id);
+    if (!deliverable?.currentSubmissionId || deliverable.projectId !== task.projectId) return null;
+    const candidates = lookup ? lookup.submissions.get(deliverable.currentSubmissionId) ?? [] : aggregate.submissions;
+    const submission = candidates.find((entry) => entry.id === deliverable.currentSubmissionId
+      && entry.projectId === task.projectId && entry.deliverableId === id);
+    if (!submission || !task.inputRevisionRefs.every((input) => submission.inputRevisionRefs.some((revision) =>
+      sameProductionRevision(revision, input)))) return null;
+    submissions.push(submission);
+  }
+  return submissions;
+}
+
+export function productionTaskHasCurrentApprovedOutputs(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "submissions">,
+): boolean {
+  return taskHasCurrentApprovedOutputs(task, aggregate);
+}
+
+function taskHasCurrentApprovedOutputs(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "submissions">,
+  lookup?: ProductionTaskWorkflowLookup,
+): boolean {
+  const submissions = currentProductionTaskSubmissions(task, aggregate, lookup);
+  return submissions != null && submissions.every((submission) => submission.status === "approved"
+    && (lookup ? lookup.approvedSubmissionIds.get(submission.deliverableId)?.has(submission.id)
+      : aggregate.deliverables.some((entry) => entry.id === submission.deliverableId && entry.approvedSubmissionId === submission.id)));
+}
+
+/** 검수 요청은 고정 입력에 대응하는 실제 현재 제출본을 대상으로 한다. */
+export function productionTaskHasCurrentReviewOutputs(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "submissions">,
+): boolean {
+  return taskHasCurrentReviewOutputs(task, aggregate);
+}
+
+function taskHasCurrentReviewOutputs(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "deliverables" | "submissions">,
+  lookup?: ProductionTaskWorkflowLookup,
+): boolean {
+  const submissions = currentProductionTaskSubmissions(task, aggregate, lookup);
+  return submissions != null && submissions.every((submission) => ["submitted", "in-review", "approved"].includes(submission.status));
+}
+
+/** 선행 공정의 현재 승인 출력 revision이 후속 작업 입력에 고정되어야 한다. */
+export function productionTaskHasCurrentDependencyInputs(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "tasks" | "deliverables" | "submissions">,
+): boolean {
+  return taskHasCurrentDependencyInputs(task, aggregate);
+}
+
+/** 새 제출본 승인은 작업의 현재 설정 대신 그 제출본이 실제 사용한 입력을 대조한다. */
+export function productionSubmissionStaleDependencyTasks(
+  aggregate: Pick<ProductionProjectAggregate, "tasks" | "deliverables" | "submissions">,
+  submission: Pick<Submission, "deliverableId" | "inputRevisionRefs">,
+): readonly ProductionTask[] {
+  const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId);
+  if (!deliverable) return [];
+  return aggregate.tasks.filter((task) => task.outputDeliverableIds.includes(deliverable.id)
+    && scopeContains(task.scope, deliverable.scope)
+    && !taskHasCurrentDependencyInputs({ ...task, inputRevisionRefs: submission.inputRevisionRefs }, aggregate));
+}
+
+function taskHasCurrentDependencyInputs(
+  task: ProductionTask,
+  aggregate: Pick<ProductionProjectAggregate, "tasks" | "deliverables" | "submissions">,
+  lookup?: ProductionTaskWorkflowLookup,
+): boolean {
+  return task.dependencyTaskIds.every((id) => {
+    const dependency = lookup ? lookup.tasks.get(id) : aggregate.tasks.find((entry) => entry.id === id);
+    if (!dependency || !["approved", "done"].includes(dependency.status)
+      || !taskHasCurrentApprovedOutputs(dependency, aggregate, lookup)) return false;
+    const submissions = currentProductionTaskSubmissions(dependency, aggregate, lookup);
+    return submissions != null && submissions.every((submission) => task.inputRevisionRefs.some((input) =>
+      sameProductionRevision(input, submission.revisionRef)));
+  });
+}
+
 export function transitionProductionTask(
   task: ProductionTask,
   target: ProductionTaskStatus,
@@ -140,4 +285,25 @@ export function detectTaskDependencyCycles(tasks: readonly ProductionTask[]): re
   };
   for (const task of tasks) visit(task.id);
   return Object.freeze(cycles.map((cycle) => Object.freeze(cycle)));
+}
+
+/** 제출본 검수 결과와 연결 작업 상태를 하나의 aggregate 변경으로 기록한다. */
+export function applyProductionSubmissionReviewToTasks(
+  aggregate: ProductionProjectAggregate,
+  submission: Submission,
+  at: string,
+): ProductionProjectAggregate {
+  if (submission.status !== "approved" && submission.status !== "changes-requested") return aggregate;
+  const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId);
+  if (!deliverable) return aggregate;
+  return { ...aggregate, tasks: aggregate.tasks.map((task) => {
+    if (!task.outputDeliverableIds.includes(deliverable.id) || !scopeContains(task.scope, deliverable.scope)
+      || deliverable.currentSubmissionId !== submission.id) return task;
+    if (submission.status === "changes-requested" && ["internal-review", "external-review", "conditionally-approved", "approved"].includes(task.status)) {
+      return { ...transitionProductionTask(task, "changes-requested", []), statusChangedAt: at, completedAt: null };
+    }
+    if (!["internal-review", "external-review", "conditionally-approved"].includes(task.status)
+      || !productionTaskHasCurrentApprovedOutputs(task, aggregate)) return task;
+    return { ...transitionProductionTask(task, "approved", []), statusChangedAt: at, completedAt: task.completedAt ?? at };
+  }) };
 }

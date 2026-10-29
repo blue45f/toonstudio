@@ -14,6 +14,15 @@
  */
 
 import { and, asc, eq, gt, sql } from "drizzle-orm";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
+import { assertStudioScopedWriteReplay } from "./studio-scoped-write-replay";
+import { canonicalJson } from "@toonstudio/studio-project-model";
+import { studioCrdtWorkAdvisoryLockQuery } from "./studio-crdt.repository";
+import { loadStudioScopedCrdtAuthority } from "./studio-scoped-crdt-authority";
+import { admitStudioScopedLiveOp } from "./studio-scoped-live-op-write";
+import { StudioScopedWriteDeniedError } from "./studio-scoped-write-effects";
+import { authorizeStudioScopedWrite, lockStudioScopedWork, loadStudioScopedReceipt, persistStudioScopedCreations,
+  recordStudioScopedReceipt, studioScopedDrizzle, studioScopedRequestHash } from "./studio-scoped-write-store";
 
 import {
   creatorWorkOpLogs,
@@ -44,6 +53,7 @@ async function withStudioLiveOpWorkMutationLock<T>(
   workId: string,
   operation: () => Promise<T>
 ): Promise<T> {
+  await transaction.execute(studioCrdtWorkAdvisoryLockQuery(workId));
   await transaction.execute(studioLiveOpWorkAdvisoryLockQuery(workId));
   return operation();
 }
@@ -57,10 +67,14 @@ export class DrizzleStudioLiveOpLogStore implements StudioLiveOpLogStore {
   async appendOp(
     workId: string,
     op: StudioLiveOp,
-    actorUserId: string
+    actorUserId: string, writeContext?: StudioScopedWriteContext
   ): Promise<StudioLiveOpAppendResult> {
     return db.transaction((transaction) =>
       withStudioLiveOpWorkMutationLock(transaction, workId, async () => {
+        const query = studioScopedDrizzle(transaction), work = await lockStudioScopedWork(query, workId, actorUserId);
+        const authorization = await authorizeStudioScopedWrite(query, work, writeContext);
+        const requestHash = studioScopedRequestHash({ op, writeContext: writeContext ?? null });
+        const scopedReceipt = authorization.context ? await loadStudioScopedReceipt(query, work, "op", op.opId, requestHash) : null;
         const [existing] = await transaction
           .select()
           .from(creatorWorkOpLogs)
@@ -68,7 +82,18 @@ export class DrizzleStudioLiveOpLogStore implements StudioLiveOpLogStore {
             and(eq(creatorWorkOpLogs.workId, workId), eq(creatorWorkOpLogs.opId, op.opId))
           )
           .limit(1);
-        if (existing) return { inserted: false, op: storedOp(existing) };
+        if (existing) {
+          assertStudioScopedWriteReplay(authorization, scopedReceipt);
+          if (existing.actorUserId !== actorUserId || canonicalJson(existing.op) !== canonicalJson(op)) throw new StudioScopedWriteDeniedError("context");
+          return { inserted: false, op: storedOp(existing) };
+        }
+        let admission: ReturnType<typeof admitStudioScopedLiveOp>;
+        if (authorization.context) {
+          const authority = await loadStudioScopedCrdtAuthority(transaction, workId, work.document);
+          const durable = await transaction.select().from(creatorWorkOpLogs).where(eq(creatorWorkOpLogs.workId, workId)).orderBy(asc(creatorWorkOpLogs.sequence));
+          admission = admitStudioScopedLiveOp(authorization, authority.state, durable.map(storedOp), op);
+          if (!admission) throw new StudioScopedWriteDeniedError("ambiguous");
+        }
 
         const [inserted] = await transaction
           .insert(creatorWorkOpLogs)
@@ -95,8 +120,13 @@ export class DrizzleStudioLiveOpLogStore implements StudioLiveOpLogStore {
             )
             .limit(1);
           if (!conflicting) throw new Error("studio op log record disappeared");
+          assertStudioScopedWriteReplay(authorization, authorization.context
+            ? await loadStudioScopedReceipt(query, work, "op", op.opId, requestHash) : null);
+          if (conflicting.actorUserId !== actorUserId || canonicalJson(conflicting.op) !== canonicalJson(op)) throw new StudioScopedWriteDeniedError("context");
           return { inserted: false, op: storedOp(conflicting) };
         }
+        if (admission) await persistStudioScopedCreations(query, authorization, admission.created);
+        await recordStudioScopedReceipt(query, authorization, "op", op.opId, requestHash, admission?.targetIds ?? [], { sequence: inserted.sequence.toString() });
         return { inserted: true, op: storedOp(inserted) };
       })
     );

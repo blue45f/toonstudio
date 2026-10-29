@@ -13,10 +13,13 @@ import {
   ShieldAlert,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
-  evaluateReviewApproval,
+  episodeScope, projectScope,
+  scopeContains,
+  productionSubmissionBlockingClarifications,
+  productionSubmissionStaleDependencyTasks,
   type ClarificationThread,
   type CutPlan,
   type ProductionProjectAggregate,
@@ -27,7 +30,12 @@ import {
   type ScopeRef,
 } from "@toonstudio/core/production";
 
+import { decisionsForProductionSubmission, planProductionSubmissionApproval, planProductionSubmissionReview, plainSubmissionApproval, policyForProductionSubmission, resolveProductionReviewTarget, type SubmissionReviewStep } from "./production-review-submission";
+
 import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
+import { ProductionSubmissionVisualReview } from "./ProductionSubmissionVisualReview";
+import { productionReviewActorAssignments } from "./production-review-actor";
+import { useProductionReviewClock } from "./use-production-review-clock";
 import type { ProductionClientCommand } from "./production-api";
 import { reviewLaneLabel, roleTypeLabel, submissionStatusLabel } from "./production-labels";
 
@@ -45,6 +53,10 @@ export interface ProductionReviewWorkspaceProps {
   readonly execute: ExecuteCommand;
   readonly canEdit: boolean;
   readonly roleLens: ProductionRoleLens;
+  readonly targetTaskId?: string;
+  readonly preferredEpisodeId?: string;
+  readonly viewerAssignmentIds?: readonly string[];
+  readonly viewerUserId?: string | null;
 }
 
 const REVIEW_MODE: readonly { readonly id: ReviewMode; readonly label: string; readonly icon: typeof Eye }[] = [
@@ -178,18 +190,24 @@ function ReviewPanel({
 }
 
 export function ProductionReviewWorkspace(props: ProductionReviewWorkspaceProps) {
-  return <ProductionReviewWorkspaceForProject key={props.aggregate.projectId} {...props} />;
+  return <ProductionReviewWorkspaceForProject key={JSON.stringify([props.aggregate.projectId, props.targetTaskId ?? "all", props.preferredEpisodeId ?? "default", props.viewerUserId])} {...props} />;
 }
 function ProductionReviewWorkspaceForProject({
   aggregate,
   execute,
   canEdit,
   roleLens,
+  targetTaskId,
+  preferredEpisodeId,
+  viewerAssignmentIds,
+  viewerUserId,
 }: ProductionReviewWorkspaceProps) {
   const t = useT();
   const episodes = aggregate.episodes.filter((episode) => episode.state !== "cancelled");
-  const preferredEpisodeId = aggregate.reviewPolicies.find((policy) => policy.scope.kind === "episode")?.scope.id;
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState(preferredEpisodeId ?? episodes[0]?.episodeId ?? "");
+  const target = resolveProductionReviewTarget(aggregate, targetTaskId, preferredEpisodeId);
+  const defaultEpisodeId = preferredEpisodeId ?? aggregate.reviewPolicies.find((policy) => policy.scope.kind === "episode")?.scope.id ?? episodes[0]?.episodeId ?? "";
+  const [episodeChoice, setSelectedEpisodeId] = useState(defaultEpisodeId);
+  const selectedEpisodeId = target.targeted ? target.episodeId ?? "" : episodes.some((episode) => episode.episodeId === episodeChoice) ? episodeChoice : episodes[0]?.episodeId ?? "";
   const [mode, setMode] = useState<ReviewMode>("vertical");
   const [selectedCutId, setSelectedCutId] = useState<string | null>(null);
   const bt = useBilingual("ProductionReviewWorkspace.triage");
@@ -204,17 +222,9 @@ function ProductionReviewWorkspaceForProject({
   const sending = useRef(false);
   const [pending, setPending] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [requestNotice, setRequestNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!episodes.some((episode) => episode.episodeId === selectedEpisodeId)) {
-      setSelectedEpisodeId(episodes[0]?.episodeId ?? "");
-    }
-  }, [episodes, selectedEpisodeId]);
-
-  const cuts = useMemo(
-    () => latestCuts(aggregate.cutPlans).filter((cut) => cut.episodeId === selectedEpisodeId),
-    [aggregate.cutPlans, selectedEpisodeId],
-  );
+  const cuts = latestCuts(aggregate.cutPlans).filter((cut) => cut.episodeId === selectedEpisodeId);
   useEffect(() => {
     if (!selectedCutId || !cuts.some((cut) => cut.cutId === selectedCutId)) setSelectedCutId(cuts[0]?.cutId ?? null);
   }, [cuts, selectedCutId]);
@@ -226,28 +236,33 @@ function ProductionReviewWorkspaceForProject({
   const handoff = aggregate.handoffs.find((entry) => entry.episodeId === selectedEpisodeId && !["superseded", "cancelled"].includes(entry.status)) ?? null;
   const clarifications = handoff ? aggregate.clarifications.filter((entry) => entry.handoffId === handoff.id && ["open", "answered"].includes(entry.status)) : [];
   const changeRequests = aggregate.changeRequests.filter((entry) => entry.episodeId === selectedEpisodeId && !["completed", "cancelled", "rejected"].includes(entry.status));
-  const policy = aggregate.reviewPolicies.find((entry) => entry.scope.id === selectedEpisodeId) ?? null;
-  const episodeDecisions = aggregate.reviewDecisions.filter((entry) => entry.evidenceScopeRefs.some((scope) =>
-    (scope.kind === "episode" && scope.id === selectedEpisodeId) || scope.ancestors.some((ancestor) => ancestor.kind === "episode" && ancestor.id === selectedEpisodeId)))
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
-  const reviewRoundId = episodeDecisions.find((entry) => policy?.lanes.some((lane) => lane.lane === entry.lane))?.reviewRoundId
-    ?? `${selectedEpisodeId}-review-round-1`;
-  const decisions = episodeDecisions.filter((entry) => entry.reviewRoundId === reviewRoundId);
-  const evaluation = policy ? evaluateReviewApproval(policy, decisions) : null;
-  const assignment = lensAssignment(aggregate, roleLens);
-  const answerOwner = oppositeAnswerOwner(aggregate, roleLens);
-
   const deliverableIds = aggregate.deliverables
-    .filter((deliverable) => deliverable.scope.id === selectedEpisodeId || deliverable.scope.ancestors.some((ancestor) => ancestor.id === selectedEpisodeId))
+    .filter((deliverable) => deliverable.projectId === aggregate.projectId && (deliverable.scope.id === selectedEpisodeId || deliverable.scope.ancestors.some((ancestor) => ancestor.kind === "episode" && ancestor.id === selectedEpisodeId)))
     .map((deliverable) => deliverable.id);
-  const submissions = aggregate.submissions.filter((submission) => deliverableIds.includes(submission.deliverableId));
-  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string>("");
-  useEffect(() => {
-    if (!submissions.some((submission) => submission.id === selectedSubmissionId)) {
-      setSelectedSubmissionId(submissions[0]?.id ?? "");
-    }
-  }, [selectedSubmissionId, submissions]);
-  const submission = submissions.find((entry) => entry.id === selectedSubmissionId) ?? submissions[0] ?? null;
+  const submissions = target.targeted ? target.submissions : aggregate.submissions.filter((candidate) => candidate.projectId === aggregate.projectId && deliverableIds.includes(candidate.deliverableId));
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const defaultSubmission = submissions.find((candidate) => aggregate.deliverables.some((deliverable) => deliverable.id === candidate.deliverableId && deliverable.currentSubmissionId === candidate.id)) ?? submissions[0] ?? null;
+  const submission = selectedSubmissionId === "" ? null : submissions.find((candidate) => candidate.id === selectedSubmissionId) ?? defaultSubmission;
+  const selectedDeliverable = aggregate.deliverables.find((candidate) => candidate.id === submission?.deliverableId) ?? null;
+  const reviewScope = selectedDeliverable?.scope ?? target.task?.scope ?? (selectedEpisodeId ? episodeScope(aggregate.projectId, selectedEpisodeId) : projectScope(aggregate.projectId));
+  const policy = policyForProductionSubmission(aggregate, submission) ?? aggregate.reviewPolicies.filter((candidate) => reviewScope
+    ? scopeContains(candidate.scope, reviewScope) : candidate.scope.kind === "episode" && candidate.scope.id === selectedEpisodeId)[0] ?? null;
+  const at = useProductionReviewClock(aggregate.assignments);
+  const actorAssignments = productionReviewActorAssignments(aggregate, reviewScope, viewerUserId, viewerAssignmentIds, at);
+  const preferredAssignment = lensAssignment({ ...aggregate, assignments: actorAssignments }, roleLens);
+  const canDecide = (id: string) => policy?.lanes.some((lane) => lane.eligibleAssignmentIds.includes(id));
+  const reviewAssignments = actorAssignments.filter((candidate) => canDecide(candidate.id));
+  const assignmentScope = JSON.stringify([aggregate.projectId, selectedEpisodeId, submission?.id, policy?.id, viewerUserId]);
+  const [assignmentChoice, chooseAssignment] = useState<{ readonly scope: string; readonly id: string } | null>(null);
+  const assignment = assignmentChoice?.scope === assignmentScope
+    ? reviewAssignments.find((candidate) => candidate.id === assignmentChoice.id) ?? null
+    : preferredAssignment && canDecide(preferredAssignment.id) ? preferredAssignment : reviewAssignments[0] ?? preferredAssignment;
+  const answerOwner = oppositeAnswerOwner(aggregate, roleLens);
+  const decisions = submission && policy ? decisionsForProductionSubmission(aggregate, submission, policy, at) : [];
+  const evaluation = policy && submission ? plainSubmissionApproval(policy, decisions) : null;
+  const submissionBlockers = submission ? productionSubmissionBlockingClarifications(aggregate, submission) : [];
+  const staleInputTasks = submission ? productionSubmissionStaleDependencyTasks(aggregate, submission) : [];
+  const canReviewSubmission = !target.issue && submission != null && selectedDeliverable?.currentSubmissionId === submission.id && ["submitted", "in-review"].includes(submission.status);
 
   const issueCountForCut = (cut: CutPlan): number => {
     const directClarifications = clarifications.filter((entry) => entry.scope.id === cut.cutId || entry.scope.id === cut.sceneId).length;
@@ -266,34 +281,59 @@ function ProductionReviewWorkspaceForProject({
   });
   const runAction = async (command: ProductionClientCommand, message: string): Promise<boolean> => {
     if (sending.current) return false;
-    sending.current = true; setPending(true); setRequestError(null);
+    sending.current = true; setPending(true); setRequestError(null); setRequestNotice(null);
     try { await execute(command, message); return true; }
     catch (cause) { setRequestError(cause instanceof Error ? cause.message : bt("저장하지 못했습니다. 입력 내용을 유지했습니다.", "Could not save. Your input was preserved.")); return false; }
     finally { sending.current = false; setPending(false); }
   };
+  const stepLabel = (stage: SubmissionReviewStep["stage"]): string => {
+    if (stage === "start-review") return bt("검수 시작", "Start review");
+    if (stage === "record-decision") return bt("검수 결정 기록", "Record review decision");
+    if (stage === "request-changes") return bt("수정 요청 반영", "Apply change request");
+    return bt("제출본 승인 확정", "Confirm submission approval");
+  };
+  const runReviewSteps = async (steps: readonly SubmissionReviewStep[]) => {
+    if (sending.current) return;
+    sending.current = true; setPending(true); setRequestError(null); setRequestNotice(null);
+    const completed: string[] = [];
+    try {
+      for (const step of steps) {
+        const label = stepLabel(step.stage);
+        await execute(step.command, bt(`${label}을 저장했습니다.`, `${label} saved.`));
+        completed.push(label);
+      }
+      setRequestNotice(bt(`${completed.join(" · ")} 저장 완료`, `${completed.join(" · ")} saved`));
+    } catch (cause) {
+      const detail = cause instanceof Error ? cause.message : bt("저장 응답을 확인하지 못했습니다.", "The save response could not be confirmed.");
+      setRequestError(completed.length
+        ? bt(`${completed.join(" · ")}까지 저장됐습니다. 이후 단계를 완료하지 못했습니다. 현재 제출본 상태를 확인한 뒤 다시 진행하세요. ${detail}`, `${completed.join(" · ")} was saved. A later step did not complete. Check the current submission before continuing. ${detail}`)
+        : detail);
+    } finally { sending.current = false; setPending(false); }
+  };
   const recordDecision = async (lane: ReviewLane, value: ReviewDecisionValue) => {
-    if (!policy || !assignment || !canEdit) return;
+    if (!policy || !assignment || !canEdit || !canReviewSubmission || !submission || !selectedDeliverable) return;
     const rule = policy.lanes.find((entry) => entry.lane === lane);
     if (!rule || !rule.eligibleAssignmentIds.includes(assignment.id)) return;
-    const scope = selectedCut ? cutScope(aggregate, selectedCut) : policy.scope;
+    if (!productionReviewActorAssignments(aggregate, selectedDeliverable.scope, viewerUserId, viewerAssignmentIds, new Date().toISOString()).some((entry) => entry.id === assignment.id)) {
+      setRequestError(bt("선택한 내 검수 역할의 현재 범위·기간을 다시 확인하세요.", "Recheck the current scope and dates of your selected review assignment.")); return;
+    }
     const decision: ReviewDecision = {
-      id: uniqueId("review-decision"),
-      reviewRoundId,
-      lane,
-      assignmentId: assignment.id,
-      value,
+      id: uniqueId("review-decision"), reviewRoundId: submission.id, lane, assignmentId: assignment.id, value,
       reasonCode: value === "approve" ? "reviewed-against-canonical-intent" : "revision-required",
-      evidenceScopeRefs: [scope],
-      conditions: value === "request-changes" ? [bt("선택한 컷의 검수 의견을 반영한 새 수정본 제출", "Submit a new revision that reflects the selected cut's review notes")] : [],
+      evidenceScopeRefs: [selectedDeliverable.scope],
+      conditions: value === "request-changes" ? [bt("선택한 제출본의 검수 의견을 반영한 새 수정본 제출", "Submit a new revision that addresses this submission's review notes")] : [],
       createdAt: new Date().toISOString(),
     };
-    const laneName = reviewLaneLabel(lane, bt);
-    await runAction(
-      { type: "record-review-decision", policyId: policy.id, decision },
-      value === "approve"
-        ? bt(`${laneName} 검토에 승인 결정을 기록했습니다.`, `Recorded an approval for ${laneName} review.`)
-        : bt(`${laneName} 검토에 수정 요청을 기록했습니다.`, `Recorded a change request for ${laneName} review.`),
-    );
+    try { await runReviewSteps(planProductionSubmissionReview(aggregate, submission, policy, decision, decision.createdAt)); }
+    catch (cause) { setRequestError(cause instanceof Error ? cause.message : bt("검수 조건을 다시 확인하세요.", "Check the review requirements again.")); }
+  };
+  const finalizeSubmission = async () => {
+    if (!canEdit || !submission || !policy || !assignment) return;
+    if (!selectedDeliverable || !productionReviewActorAssignments(aggregate, selectedDeliverable.scope, viewerUserId, viewerAssignmentIds, new Date().toISOString()).some((entry) => entry.id === assignment.id)) {
+      setRequestError(bt("선택한 내 검수 역할의 현재 범위·기간을 다시 확인하세요.", "Recheck the current scope and dates of your selected review assignment.")); return;
+    }
+    try { await runReviewSteps([planProductionSubmissionApproval(aggregate, submission, policy, assignment.id, new Date().toISOString())]); }
+    catch (cause) { setRequestError(cause instanceof Error ? cause.message : bt("승인 조건을 다시 확인하세요.", "Check the approval requirements again.")); }
   };
 
   const addClarification = async () => {
@@ -321,6 +361,8 @@ function ProductionReviewWorkspaceForProject({
   };
 
   const eligibleLanes = policy?.lanes.filter((lane) => assignment && lane.eligibleAssignmentIds.includes(assignment.id)) ?? [];
+  const manuscriptVersionLabel = submission?.sourceEvidence?.version === 1
+    ? bt(`원고 v${submission.revisionRef.revision}`, `Manuscript v${submission.revisionRef.revision}`) : null;
 
   return (
     <section className="overflow-hidden rounded-3xl border border-line bg-card shadow-sm" data-production-review-workspace aria-busy={pending}>
@@ -332,14 +374,20 @@ function ProductionReviewWorkspaceForProject({
             <p className="mt-1 text-xs leading-5 text-fg-2">{bt("컷 계획·제출본 정보를 확인하고 컷 위치에 질문을 남깁니다. 계획 도식은 실제 원고 이미지나 픽셀 차이가 아닙니다.", "Check cut plans and submissions, and leave questions on a cut. Plan diagrams are not real pages or pixel diffs.")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="rounded-xl border border-line bg-card px-3 py-2 text-xs text-fg-2">회차 <select aria-label="검수 회차" disabled={pending} value={selectedEpisodeId} onChange={(event) => setSelectedEpisodeId(event.target.value)} className="ml-2 bg-transparent font-semibold text-fg outline-none">{episodes.map((episode) => <option key={episode.episodeId} value={episode.episodeId}>{episodeOptionLabel(aggregate, episode.episodeId, bt)}</option>)}</select></label>
-            <label className="rounded-xl border border-line bg-card px-3 py-2 text-xs text-fg-2">제출본 <select aria-label="검수 제출본" disabled={pending} value={selectedSubmissionId} onChange={(event) => setSelectedSubmissionId(event.target.value)} className="ml-2 max-w-44 bg-transparent font-semibold text-fg outline-none"><option value="">{bt("제출본 없음", "No submission")}</option>{submissions.map((entry) => <option key={entry.id} value={entry.id}>{bt(`${entry.revisionRef.revision}차 제출본 · ${submissionStatusLabel(entry.status, bt)}`, `Revision ${entry.revisionRef.revision} · ${submissionStatusLabel(entry.status, bt)}`)}</option>)}</select></label>
+            <label className="rounded-xl border border-line bg-card px-3 py-2 text-xs text-fg-2">회차 <select aria-label="검수 회차" disabled={pending || target.targeted} value={selectedEpisodeId} onChange={(event) => { setSelectedEpisodeId(event.target.value); setSelectedSubmissionId(null); }} className="ml-2 bg-transparent font-semibold text-fg outline-none">{!selectedEpisodeId ? <option value="">{bt("대상 회차 없음", "No target episode")}</option> : null}{episodes.map((episode) => <option key={episode.episodeId} value={episode.episodeId}>{episodeOptionLabel(aggregate, episode.episodeId, bt)}</option>)}</select></label>
+            <label className="rounded-xl border border-line bg-card px-3 py-2 text-xs text-fg-2">제출본 <select aria-label="검수 제출본" disabled={pending} value={submission?.id ?? ""} onChange={(event) => setSelectedSubmissionId(event.target.value)} className="ml-2 max-w-44 bg-transparent font-semibold text-fg outline-none"><option value="">{bt("제출본 없음", "No submission")}</option>{submissions.map((entry) => <option key={entry.id} value={entry.id}>{entry.sourceEvidence?.version === 1 ? bt(`원고 v${entry.revisionRef.revision} · ${submissionStatusLabel(entry.status, bt)}`, `Manuscript v${entry.revisionRef.revision} · ${submissionStatusLabel(entry.status, bt)}`) : bt(`${entry.revisionRef.revision}차 제출본 · ${submissionStatusLabel(entry.status, bt)}`, `Revision ${entry.revisionRef.revision} · ${submissionStatusLabel(entry.status, bt)}`)}</option>)}</select></label>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex max-w-full overflow-x-auto rounded-xl border border-line bg-card p-1" role="group" aria-label="검수 비교 방식">{REVIEW_MODE.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)} className={cn("inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-accent", mode === id ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised")}><Icon className="size-3.5" aria-hidden="true" />{label}</button>)}</div>
-          <div className="flex flex-wrap gap-2"><Pill tone={submission?.status === "approved" ? "good" : submission ? "warn" : "neutral"}>{submission ? bt(`${submissionStatusLabel(submission.status, bt)} · ${submission.revisionRef.revision}차`, `${submissionStatusLabel(submission.status, bt)} · rev. ${submission.revisionRef.revision}`) : bt("제출본 없음", "No submission")}</Pill><Pill tone={evaluation?.approved ? "good" : "warn"}>{evaluation?.approved ? bt("검수 통과", "Review passed") : bt(`승인 대기 ${evaluation?.blockingLanes.length ?? 0}개 영역`, `${evaluation?.blockingLanes.length ?? 0} areas awaiting approval`)}</Pill><Pill>{assignment ? assignmentBadge(partyLabel(aggregate, assignment.id), assignment.publicCreditRole ?? roleTypeLabel(assignment.roleType, bt)) : bt("담당 역할 배정 없음", "No assigned role")}</Pill></div>
+          <div className="flex flex-wrap gap-2"><Pill tone={submission?.status === "approved" ? "good" : submission ? "warn" : "neutral"}>{submission ? manuscriptVersionLabel ? `${submissionStatusLabel(submission.status, bt)} · ${manuscriptVersionLabel}` : bt(`${submissionStatusLabel(submission.status, bt)} · ${submission.revisionRef.revision}차`, `${submissionStatusLabel(submission.status, bt)} · rev. ${submission.revisionRef.revision}`) : bt("제출본 없음", "No submission")}</Pill><Pill tone={evaluation?.approved && !staleInputTasks.length ? "good" : "warn"}>{staleInputTasks.length ? bt("입력 갱신 필요", "Input update required") : evaluation?.approved ? bt("검수 통과", "Review passed") : bt(`승인 대기 ${evaluation?.blockingLanes.length ?? 0}개 영역`, `${evaluation?.blockingLanes.length ?? 0} areas awaiting approval`)}</Pill><Pill>{assignment ? assignmentBadge(partyLabel(aggregate, assignment.id), assignment.publicCreditRole ?? roleTypeLabel(assignment.roleType, bt)) : bt("담당 역할 배정 없음", "No assigned role")}</Pill></div>
         </div>
+        {target.targeted ? <div className="mt-3 rounded-xl border border-accent/30 bg-accent-soft p-3 text-xs text-fg">
+          <p className="font-bold">{target.task ? bt(`선택한 작업 · ${target.task.title}`, `Selected task · ${target.task.title}`) : bt("선택한 작업을 찾을 수 없습니다.", "The selected task could not be found.")}</p>
+          {target.issue ? <p className="mt-1">{bt("링크의 작업·회차가 현재 프로젝트와 일치하지 않습니다. 작업 보드에서 검수 대상을 다시 열어 주세요.", "The linked task or episode does not match this project. Reopen the review from the task board.")}</p>
+            : !submissions.length ? <p className="mt-1">{bt("이 작업에 연결된 현재 제출본이 없습니다. 산출물과 고정 제출본을 연결한 뒤 검수하세요.", "This task has no linked current submission. Connect a deliverable and a pinned submission before reviewing.")}</p> : null}
+        </div> : null}
+        {requestNotice ? <p role="status" className="mt-3 rounded-xl border border-good/30 bg-good/10 p-3 text-sm">{requestNotice}</p> : null}
         {requestError ? <p role="alert" className="mt-3 rounded-xl border border-bad/30 bg-bad/10 p-3 text-sm">{requestError}</p> : null}
       </header>
 
@@ -347,6 +395,8 @@ function ProductionReviewWorkspaceForProject({
       <div className="border-b border-line p-4">
         <EpisodeStageHandoffSection aggregate={aggregate} episodeId={selectedEpisodeId} targetStage="review" />
       </div>
+
+      {submission ? <ProductionSubmissionVisualReview aggregate={aggregate} submission={submission} /> : null}
 
       <div className="grid min-h-[46rem] xl:grid-cols-[13rem_minmax(0,1fr)_21rem]">
         <aside className="border-b border-line bg-panel/70 p-3 xl:border-b-0 xl:border-r" aria-label="검수 컷 목록">
@@ -374,7 +424,7 @@ function ProductionReviewWorkspaceForProject({
             <div className="mx-auto max-w-4xl">
               {mode === "vertical" ? <div className="mx-auto max-w-md rounded-[2rem] border border-line bg-card p-3 shadow-lg"><div className="mb-3 flex items-center justify-between rounded-xl bg-raised px-3 py-2 text-[0.6875rem] text-fg-2"><span className="inline-flex items-center gap-1"><ScanLine className="size-3.5" />세로 독자뷰</span><span>{episodePlan?.targetScrollHeightPx.toLocaleString("ko-KR") ?? "—"}px 목표</span></div><div className="space-y-4 bg-canvas p-2">{cuts.map((cut) => <ReviewPanel key={cut.cutId} cut={cut} selected={selectedCutId === cut.cutId} issues={issueCountForCut(cut)} revisionLabel={bt(`계획 ${cut.revision}차`, `Plan v${cut.revision}`)} onSelect={() => setSelectedCutId(cut.cutId)} />)}</div></div> : null}
 
-              {mode === "compare" ? <div className="grid gap-4 lg:grid-cols-2"><div><div className="mb-2 flex items-center justify-between"><p className="text-xs font-black text-fg">{bt("기준본", "Baseline")}</p><Pill>{bt("콘티·썸네일 기준", "Storyboard baseline")}</Pill></div><div className="space-y-3 rounded-2xl border border-line bg-card p-3">{cuts.map((cut) => <ReviewPanel key={`base-${cut.cutId}`} cut={cut} selected={selectedCutId === cut.cutId} issues={0} muted revisionLabel={bt(`기준 ${Math.max(1, cut.revision - 1)}차`, `Base v${Math.max(1, cut.revision - 1)}`)} onSelect={() => setSelectedCutId(cut.cutId)} />)}</div></div><div><div className="mb-2 flex items-center justify-between"><p className="text-xs font-black text-fg">{bt("제출본", "Submission")}</p><Pill tone="accent">{submission ? bt(`${submission.revisionRef.revision}차`, `Rev. ${submission.revisionRef.revision}`) : bt("미제출", "Not submitted")}</Pill></div><div className="space-y-3 rounded-2xl border border-accent/30 bg-accent-soft/35 p-3">{cuts.map((cut) => <ReviewPanel key={`head-${cut.cutId}`} cut={cut} selected={selectedCutId === cut.cutId} issues={issueCountForCut(cut)} revisionLabel={submission ? bt(`제출 ${submission.revisionRef.revision}차`, `Submitted v${submission.revisionRef.revision}`) : bt(`계획 ${cut.revision}차`, `Plan v${cut.revision}`)} onSelect={() => setSelectedCutId(cut.cutId)} />)}</div></div></div> : null}
+              {mode === "compare" ? <div className="grid gap-4 lg:grid-cols-2"><div><div className="mb-2 flex items-center justify-between"><p className="text-xs font-black text-fg">{bt("기준본", "Baseline")}</p><Pill>{bt("콘티·썸네일 기준", "Storyboard baseline")}</Pill></div><div className="space-y-3 rounded-2xl border border-line bg-card p-3">{cuts.map((cut) => <ReviewPanel key={`base-${cut.cutId}`} cut={cut} selected={selectedCutId === cut.cutId} issues={0} muted revisionLabel={bt(`기준 ${Math.max(1, cut.revision - 1)}차`, `Base v${Math.max(1, cut.revision - 1)}`)} onSelect={() => setSelectedCutId(cut.cutId)} />)}</div></div><div><div className="mb-2 flex items-center justify-between"><p className="text-xs font-black text-fg">{bt("제출본", "Submission")}</p><Pill tone="accent">{manuscriptVersionLabel ?? (submission ? bt(`${submission.revisionRef.revision}차`, `Rev. ${submission.revisionRef.revision}`) : bt("미제출", "Not submitted"))}</Pill></div><div className="space-y-3 rounded-2xl border border-accent/30 bg-accent-soft/35 p-3">{cuts.map((cut) => <ReviewPanel key={`head-${cut.cutId}`} cut={cut} selected={selectedCutId === cut.cutId} issues={issueCountForCut(cut)} revisionLabel={manuscriptVersionLabel ?? (submission ? bt(`제출 ${submission.revisionRef.revision}차`, `Submitted v${submission.revisionRef.revision}`) : bt(`계획 ${cut.revision}차`, `Plan v${cut.revision}`))} onSelect={() => setSelectedCutId(cut.cutId)} />)}</div></div></div> : null}
 
               {mode === "overlay" && selectedCut ? <div className="mx-auto max-w-lg"><div className="mb-2 flex items-center justify-between"><p className="text-xs font-black text-fg">{bt("선택 컷 겹쳐 보기", "Selected cut overlay")}</p><Pill tone="accent">{bt("계획 도식", "Plan diagram")}</Pill></div><div className="relative overflow-hidden rounded-2xl border border-line bg-card p-3"><ReviewPanel cut={selectedCut} selected issues={issueCountForCut(selectedCut)} revisionLabel={bt("제출본", "Submission")} onSelect={() => undefined} /><div className="pointer-events-none absolute inset-3 translate-x-2 translate-y-1 rounded-xl border-2 border-dashed border-warn/70 bg-warn/10 mix-blend-multiply dark:mix-blend-screen" /><div className="pointer-events-none absolute left-[18%] top-[22%] rounded-full border-2 border-bad bg-card/90 px-2 py-1 text-[0.6875rem] font-black text-bad">{bt("주석 위치 예시", "Annotation example")}</div><div className="pointer-events-none absolute bottom-[27%] right-[15%] rounded-full border-2 border-accent bg-card/90 px-2 py-1 text-[0.6875rem] font-black text-accent">{bt("계획 정보", "Plan details")}</div></div><p className="mt-3 text-center text-xs leading-5 text-fg-2">{bt("실제 원고 이미지 비교가 연결되기 전에는 계획·제출본 정보와 주석 범위만 비교합니다.", "Until real page images are connected, this compares plan and submission details and annotation areas only.")}</p></div> : null}
             </div>
@@ -385,14 +435,28 @@ function ProductionReviewWorkspaceForProject({
           <div className="space-y-4">
             <section className="rounded-2xl border border-line bg-card p-3">
               <div className="flex items-center gap-2"><BadgeCheck className="size-4 text-accent" aria-hidden="true" /><h3 className="text-xs font-black text-fg">{bt("승인 영역", "Approval areas")}</h3></div>
+              <label className="mt-3 block text-xs font-semibold">{bt("내 검수 역할", "My review assignment")}<select className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm" disabled={pending || !canEdit || reviewAssignments.length === 0} value={reviewAssignments.some((entry) => entry.id === assignment?.id) ? assignment?.id ?? "" : ""} onChange={(event) => chooseAssignment({ scope: assignmentScope, id: event.target.value })}>
+                <option value="">{bt("내 유효한 검수 역할 선택", "Select your eligible review assignment")}</option>{reviewAssignments.map((entry) => <option key={entry.id} value={entry.id}>{partyLabel(aggregate, entry.id)} · {roleTypeLabel(entry.roleType, bt)}</option>)}</select></label>
+              {policy ? <p className="mt-2 text-xs text-fg-2">{policy.quorumBasis === "accounts" ? bt("서버가 확인한 서로 다른 계정 인원으로 정족수를 계산합니다. 계정 증명이 없는 기존 승인은 재확인이 필요합니다.", "Quorum counts distinct server-verified accounts. Older approvals without account evidence require renewed review.") : bt("기존 역할표 기준 정책입니다. 같은 사람의 여러 역할이 여러 표가 될 수 있습니다.", "This legacy policy counts assignment votes, which may include multiple roles held by one person.")}</p> : null}
               <div className="mt-3 space-y-2">
                 {policy?.lanes.map((lane) => {
                   const result = evaluation?.laneResults.find((entry) => entry.lane === lane.lane);
                   const eligible = Boolean(assignment && lane.eligibleAssignmentIds.includes(assignment.id));
-                  return <div key={lane.lane} className="rounded-xl border border-line bg-panel p-2.5"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-fg">{reviewLaneLabel(lane.lane, bt)}</span><Pill tone={result?.approved ? "good" : result?.vetoedByAssignmentIds.length ? "bad" : "warn"}>{result?.approved ? "승인" : `${result?.approvals ?? 0}/${result?.requiredApprovals ?? lane.quorum}`}</Pill></div><p className="mt-1 text-[0.6875rem] text-fg-3">{lane.blocksPublication ? bt("공개 전 필수", "Required before publishing") : bt("권고", "Advisory")} · {eligible ? bt("내 역할로 결정 가능", "You can decide") : bt("내 역할은 보기만", "View only for your role")}</p>{eligible ? <div className="mt-2 grid grid-cols-2 gap-1.5"><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={pending || !canEdit} onClick={() => void recordDecision(lane.lane, "approve")}><CheckCircle2 className="size-3.5" />승인</button><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={pending || !canEdit} onClick={() => void recordDecision(lane.lane, "request-changes")}><XCircle className="size-3.5" />수정</button></div> : null}</div>;
+                  return <div key={lane.lane} className="rounded-xl border border-line bg-panel p-2.5"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-fg">{reviewLaneLabel(lane.lane, bt)}</span><Pill tone={result?.approved ? "good" : result?.vetoedByAssignmentIds.length ? "bad" : "warn"}>{result?.approved ? "승인" : `${result?.approvals ?? 0}/${result?.requiredApprovals ?? lane.quorum}`}</Pill></div><p className="mt-1 text-[0.6875rem] text-fg-3">{lane.blocksPublication ? bt("공개 전 필수", "Required before publishing") : bt("권고", "Advisory")} · {eligible ? bt("내 역할로 결정 가능", "You can decide") : bt("내 역할은 보기만", "View only for your role")}</p>{eligible ? <div className="mt-2 grid grid-cols-2 gap-1.5"><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={pending || !canEdit || !canReviewSubmission} onClick={() => void recordDecision(lane.lane, "approve")}><CheckCircle2 className="size-3.5" />승인</button><button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={pending || !canEdit || !canReviewSubmission} onClick={() => void recordDecision(lane.lane, "request-changes")}><XCircle className="size-3.5" />수정</button></div> : null}</div>;
                 })}
                 {!policy ? <p className="rounded-xl border border-dashed border-line p-3 text-xs text-fg-3">{t("productionHub.review.emptyPolicy", "이 회차의 검수 정책이 없습니다.")}</p> : null}
               </div>
+              {!canReviewSubmission ? <p className="mt-3 text-xs text-fg-2">{bt("현재 제출 또는 검수 중인 고정 버전을 선택해야 결정을 기록할 수 있습니다.", "Select the pinned current submitted or in-review version to record a decision.")}</p> : null}
+              {submissionBlockers.length ? <div className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs text-fg">
+                <p>{bt(`진행을 막는 질문 ${submissionBlockers.length}개를 해결해야 제출본 승인을 확정할 수 있습니다.`, `Resolve ${submissionBlockers.length} blocking questions before confirming approval.`)}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-4">{submissionBlockers.slice(0, 3).map((thread) => <li key={thread.id}>{thread.question}</li>)}</ul>
+                <a href={selectedEpisodeId ? `/production/projects/${encodeURIComponent(aggregate.projectId)}/episodes/${encodeURIComponent(selectedEpisodeId)}` : `/production/projects/${encodeURIComponent(aggregate.projectId)}/handoff`} className={cn(buttonClass({ variant: "outline", className: "min-h-11" }), "mt-2")}>{bt("인계 질문 확인·답변", "Review handoff questions")}</a>
+              </div> : null}
+              {staleInputTasks.length ? <div role="alert" className="mt-3 rounded-xl border border-warn/30 bg-warn/10 p-3 text-xs text-fg">
+                <p>{bt("선행 입력이 바뀌었습니다. 현재 승인된 선행 입력으로 새 제출본을 준비해야 승인할 수 있습니다. 기존 검수 의견은 유지됩니다.", "Upstream inputs changed. Prepare a new submission from the current approved inputs before confirming approval. Existing review decisions are preserved.")}</p>
+                <a href={`/production/projects/${encodeURIComponent(aggregate.projectId)}/handoff`} className={cn(buttonClass({ variant: "outline", className: "min-h-11" }), "mt-2")}>{bt("인계 작업함에서 입력 확인", "Check inputs in handoff queue")}</a>
+              </div> : null}
+              {canReviewSubmission && submission?.status === "in-review" && evaluation?.approved && assignment && decisions.some((decision) => decision.assignmentId === assignment.id && decision.value === "approve") ? <button type="button" className={cn(buttonClass({ className: "min-h-11" }), "mt-3 w-full")} disabled={pending || !canEdit || submissionBlockers.length > 0 || staleInputTasks.length > 0} onClick={() => void finalizeSubmission()}>{bt("제출본 승인 확정", "Confirm submission approval")}</button> : null}
               {eligibleLanes.length === 0 && policy ? <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/10 p-2.5 text-[0.6875rem] leading-5 text-fg-2"><ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-warn" />{t("productionHub.review.noApprovalPermission", "현재 역할에는 이 회차의 승인 권한이 없습니다.")}</div> : null}
             </section>
 

@@ -33,5 +33,6 @@ export const ProductionRevisionRefSchema = z.object({
   revision: z.number().int().min(1).max(2_147_483_647),
   digest: DigestSchema,
   createdAt: IsoDateTimeSchema,
+  productionSubmissionId: IdentitySchema.optional(),
 }).strict();
 

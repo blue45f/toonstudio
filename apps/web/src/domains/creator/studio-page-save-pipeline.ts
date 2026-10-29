@@ -1,4 +1,5 @@
 import { flushSync } from "react-dom";
+import type { StudioScopedPageSaveBindings } from "./studio-collab/studio-scoped-page-save-pipeline";
 
 import { projectStudioFilterMaskElementsForServerSave, projectStudioFilterMaskPagesForServerSave } from "./filter/studio-filter-mask-surface-projection";
 import {
@@ -71,6 +72,7 @@ export interface StudioPageSaveSharedDocumentScope {
  * 뒤 stale 저장 경쟁이 재발한다.
  */
 export interface StudioPageSavePipelineDeps {
+  readonly scopedWrite?: StudioScopedPageSaveBindings;
   // ── 인증·라우트 scope
   readonly studioAuthUserId: string | null;
   readonly workId: string | null;
@@ -193,12 +195,7 @@ export interface StudioPageSavePipelineDeps {
 
 /**
  * StudioPage handleSave 의 저장 오케스트레이션 본체 — StudioPage.tsx 에서 추출(2026-08, B-09).
- * 스냅샷/preflight/export 는 export/studio-publish-package-export.ts, 커밋 엔진은
- * studio-cuttoon-editor/studio-deferred-stroke-commit.ts 로 먼저 나갔고, 여기는 순서 계약만
- * 남는다: preflight → 이전 저장 abort → CRDT 승인 장벽(10s) → 페이지 캡처 → DTO 빌드 →
- * 공유/직접/연결형 3D 전송 → 내구 오토세이브 tombstone → navigate. 모든 단계 사이의
- * saveScopeStillCurrent()·canApplyStudioMutation(ticket, { allowDuringSave: true }) 가드와
- * revision fencing(수신 revision = baseRevision + 1 검증)은 원본 동작 그대로다.
+ * preflight → CRDT 승인 → 캡처 → DTO → 전송 → 내구 ACK 순서와 기존 세대·revision 가드를 유지한다.
  */
 export async function runStudioPageSavePipeline(
   status: "published" | "draft",
@@ -310,6 +307,7 @@ export async function runStudioPageSavePipeline(
     );
     return;
   }
+  if (sharedDocument && deps.scopedWrite?.authority && await (await import("./studio-collab/studio-scoped-page-save-pipeline")).runStudioScopedSaveOrPending(status, deps)) return;
   if (collaborationDocumentLocked) {
     setError(collaborationLockMessage());
     return;

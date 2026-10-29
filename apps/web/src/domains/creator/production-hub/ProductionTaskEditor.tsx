@@ -6,9 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   episodeScope,
   projectScope,
+  productionRevisionKey,
+  sameProductionRevision,
   type ProductionProjectAggregate,
   type ProductionTask,
   type ProductionTaskStatus,
+  type RevisionRef,
 } from "@toonstudio/core/production";
 import { boardChecklistProgress, boardDueBadge } from "./board/board-card-model";
 import { ProductionTaskBriefEditor } from "./ProductionTaskBriefEditor";
@@ -93,10 +96,28 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
   const revisions = [
     ...new Map(
       [...draft.inputRevisionRefs, ...aggregate.submissions.map((submission) => submission.revisionRef)].map(
-        (ref) => [`${ref.id}:${ref.revision}`, ref],
+        (ref) => [productionRevisionKey(ref), ref],
       ),
     ).values(),
   ];
+  const revisionLabel = (ref: RevisionRef): string => {
+    const raw = `${ref.id} · v${ref.revision}`;
+    if (!ref.productionSubmissionId) return raw;
+    const submission = aggregate.submissions.find((entry) => entry.id === ref.productionSubmissionId
+      && entry.projectId === aggregate.projectId && sameProductionRevision(entry.revisionRef, ref));
+    if (!submission) return raw;
+    const evidence = submission.sourceEvidence;
+    const sourceTask = aggregate.tasks.find((entry) => entry.id === evidence?.taskId && entry.projectId === aggregate.projectId);
+    const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId && entry.projectId === aggregate.projectId);
+    const name = sourceTask?.title.trim() || deliverable?.type.trim() || bt("제출 원고", "Submitted manuscript");
+    if (!evidence) return `${name} · ${bt(`원고 v${ref.revision}`, `Manuscript v${ref.revision}`)} · ${submission.submittedAt}`;
+    const pages = evidence.pages.slice(0, 4).map((page) => page.ordinal + 1).join(", ") + (evidence.pages.length > 4 ? "…" : "");
+    const selection = evidence.selectionMode === "document" ? bt("전체 문서", "Whole document")
+      : evidence.selectionMode === "frames"
+        ? bt(`${pages}페이지 · 선택 ${evidence.pages.reduce((count, page) => count + page.frameIds.length, 0)}컷`, `Pages ${pages} · ${evidence.pages.reduce((count, page) => count + page.frameIds.length, 0)} selected frames`)
+        : bt(`${pages}페이지`, `Pages ${pages}`);
+    return `${name} · ${bt(`원고 v${ref.revision}`, `Manuscript v${ref.revision}`)} · ${selection}`;
+  };
   const criteria = draft.completionCriteria.map((value) => value.trim()).filter(Boolean);
   const issues = [
     !draft.title.trim() ? "작업 제목을 입력하세요." : "",
@@ -403,13 +424,13 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
                 <div className="max-h-56 overflow-y-auto">
                   {revisions.map((ref) => (
                     <label
-                      key={`${ref.id}:${ref.revision}`}
+                      key={productionRevisionKey(ref)}
                       className="flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs hover:bg-raised"
                     >
                       <input
                         type="checkbox"
                         checked={draft.inputRevisionRefs.some(
-                          (entry) => entry.id === ref.id && entry.revision === ref.revision,
+                          (entry) => sameProductionRevision(entry, ref),
                         )}
                         className="size-4 shrink-0"
                         onChange={(event) =>
@@ -417,13 +438,13 @@ export function ProductionTaskEditor({ aggregate, task, isNew, canEdit, execute,
                             inputRevisionRefs: event.target.checked
                               ? [...draft.inputRevisionRefs, ref]
                               : draft.inputRevisionRefs.filter(
-                                  (entry) => entry.id !== ref.id || entry.revision !== ref.revision,
+                                  (entry) => !sameProductionRevision(entry, ref),
                                 ),
                           })
                         }
                       />
-                      <span className="break-all">
-                        {ref.id} · v{ref.revision}
+                      <span className="break-all" title={ref.productionSubmissionId ? `${ref.id} · ${ref.productionSubmissionId}` : undefined}>
+                        {revisionLabel(ref)}
                       </span>
                     </label>
                   ))}

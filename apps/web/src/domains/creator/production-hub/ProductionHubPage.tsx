@@ -1,35 +1,15 @@
 import "../studio-shell/creator-workflow-surfaces.css";
-import { ChevronDown, Gauge, RefreshCw } from "lucide-react";
-import { useState } from "react";
-import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
+import { Suspense } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
-import { ProductionProcurementSurface, ProductionRightsSurface } from "./ProductionCommercialSurfaces";
-import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
-import { ProductionActivityWorkspace } from "./ProductionActivityWorkspace";
-import { ProductionEpisodeOperationsWorkspace } from "./ProductionEpisodeOperationsWorkspace";
-import { ProductionHandoffSurface } from "./ProductionHandoffSurface";
-import { ProductionManagementWorkspace } from "./ProductionManagementWorkspace";
-import { ProductionManuscriptWorkspace } from "./ProductionManuscriptWorkspace";
-import { ProductionOperationsControlWorkspace } from "./ProductionOperationsControlWorkspace";
-import { AggregatePreSerializationBufferPanel } from "./PreSerializationBufferPanel";
-import { ProductionOverviewCoverStage } from "./ProductionOverviewCoverStage";
-import { ProductionPlanningSurface } from "./ProductionPlanningSurface";
-import { ProductionProjectDashboard } from "./ProductionProjectDashboard";
 import { ProductionProjectHeader } from "./ProductionProjectHeader";
 import { ProductionProjectNav } from "./ProductionProjectNav";
-import { ProductionReviewSurface } from "./ProductionReviewSurface";
-import { ProductionRoleWorkspace } from "./ProductionRoleWorkspace";
 import { ProductionSampleJourneyGuide } from "./ProductionSampleJourneyGuide";
-import { ProductionScheduleWorkspace } from "./ProductionScheduleWorkspace";
 import { ProductionSessionStatus } from "./ProductionSessionStatus";
-import { ProductionStudioRevisionBridgePanel } from "./ProductionStudioRevisionBridgePanel";
 import { ProductionSurfaceHeader } from "./ProductionSurfaceHeader";
-import { ProductionTeamSurface } from "./ProductionTeamSurface";
-import { ProductionWorkBoard } from "./ProductionWorkBoard";
-import type { ProductionClientCommand } from "./production-api";
-import type { ProductionProjectAccess } from "./production-dashboard-api";
 import { productionDemoAdapter } from "./production-demo-adapter";
 import type { ProductionProjectSurface } from "./production-project-surfaces";
 import { usePreferredRoleLens } from "./use-preferred-role-lens";
@@ -38,124 +18,40 @@ import { useProductionProjectSession } from "./use-production-project-session";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { SitePageArt } from "@/domains/legal/public/site-page-art";
-import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { ProductionProjectLoading } from "./ProductionProjectLoading";
+import type { ProductionSurfaceProps as SurfaceProps } from "./production-surface-props";
+
 export type { ProductionProjectSurface } from "./production-project-surfaces";
-export { ProductionEpisodeRoomPage } from "./ProductionEpisodeRoomPage";
 
-type ExecuteCommand = (command: ProductionClientCommand, message: string) => Promise<void>;
+const OverviewSurface = lazyRetry(() => import("./ProductionOverviewSurface").then((module) => ({ default: module.ProductionOverviewSurface })), "ProductionOverviewSurface");
+const BoardSurface = lazyRetry(() => import("./ProductionBoardSurface").then((module) => ({ default: module.ProductionBoardSurface })), "ProductionBoardSurface");
+const ProductionPlanningSurface = lazyRetry(() => import("./ProductionPlanningSurface").then((module) => ({ default: module.ProductionPlanningSurface })), "ProductionPlanningSurface");
+const ProductionEpisodeOperationsWorkspace = lazyRetry(() => import("./ProductionEpisodeOperationsWorkspace").then((module) => ({ default: module.ProductionEpisodeOperationsWorkspace })), "ProductionEpisodeOperationsWorkspace");
+const ProductionManuscriptWorkspace = lazyRetry(() => import("./ProductionManuscriptWorkspace").then((module) => ({ default: module.ProductionManuscriptWorkspace })), "ProductionManuscriptWorkspace");
+const ProductionScheduleWorkspace = lazyRetry(() => import("./ProductionScheduleWorkspace").then((module) => ({ default: module.ProductionScheduleWorkspace })), "ProductionScheduleWorkspace");
+const ProductionOperationsControlWorkspace = lazyRetry(() => import("./ProductionOperationsControlWorkspace").then((module) => ({ default: module.ProductionOperationsControlWorkspace })), "ProductionOperationsControlWorkspace");
+const ProductionHandoffSurface = lazyRetry(() => import("./ProductionHandoffSurface").then((module) => ({ default: module.ProductionHandoffSurface })), "ProductionHandoffSurface");
+const ProductionReviewSurface = lazyRetry(() => import("./ProductionReviewSurface").then((module) => ({ default: module.ProductionReviewSurface })), "ProductionReviewSurface");
+const ProductionActivityWorkspace = lazyRetry(() => import("./ProductionActivityWorkspace").then((module) => ({ default: module.ProductionActivityWorkspace })), "ProductionActivityWorkspace");
+const ProductionProcurementSurface = lazyRetry(() => import("./ProductionCommercialSurfaces").then((module) => ({ default: module.ProductionProcurementSurface })), "ProductionProcurementSurface");
+const ProductionRightsSurface = lazyRetry(() => import("./ProductionCommercialSurfaces").then((module) => ({ default: module.ProductionRightsSurface })), "ProductionRightsSurface");
+const ProductionTeamSurface = lazyRetry(() => import("./ProductionTeamSurface").then((module) => ({ default: module.ProductionTeamSurface })), "ProductionTeamSurface");
+const ProductionOverviewCoverStage = lazyRetry(() => import("./ProductionOverviewCoverStage").then((module) => ({ default: module.ProductionOverviewCoverStage })), "ProductionOverviewCoverStage");
+const EpisodeRoomPage = lazyRetry(() => import("./ProductionEpisodeRoomPage").then((module) => ({ default: module.ProductionEpisodeRoomPage })), "ProductionEpisodeRoomPage");
 
-interface SurfaceProps {
-  readonly aggregate: ProductionProjectAggregate;
-  readonly access: ProductionProjectAccess;
-  readonly roleLens: CreatorRoleLens;
-  readonly execute: ExecuteCommand;
-  readonly executeStrict: ExecuteCommand;
-  readonly isDemo: boolean;
-  readonly viewerAssignmentIds: readonly string[];
-  readonly viewerUserId: string | null;
+export function ProductionEpisodeRoomPage() {
+  return <Suspense fallback={<ProductionProjectLoading />}><EpisodeRoomPage /></Suspense>;
 }
 
 function viewerAssignmentIdsFor(aggregate: ProductionProjectAggregate, userId: string | null): readonly string[] {
   if (!userId) return [];
   const partyIds = new Set(aggregate.parties.filter((party) => party.accountUserId === userId).map((party) => party.id));
   return aggregate.assignments.filter((assignment) => partyIds.has(assignment.partyId)).map((assignment) => assignment.id);
-}
-
-/**
- * 개요: 네 가지 판단(진행률·마감 임박 회차·내 할 일·최근 피드백)을 보여 준다.
- * 표지 무대는 여기 두지 않고 페이지 컬럼 맨 위(가이드·표면 헤더보다 앞)에
- * 세운다 — 이 안에 두면 무대가 첫 화면 폴드 아래로 밀려 표지가 잘렸다.
- * 위험 미리 보기·복구 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
- */
-function OverviewSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
-  const bt = useBilingual("ProductionOverviewSurface");
-  const [detailOpen, setDetailOpen] = useState(false);
-  return (
-    <div className="space-y-4">
-      <ProductionProjectDashboard aggregate={aggregate} roleLens={roleLens} viewerAssignmentIds={viewerAssignmentIds} />
-      <AggregatePreSerializationBufferPanel aggregate={aggregate} roleLens={roleLens} />
-      <details
-        className="group rounded-2xl border border-line bg-card"
-        onToggle={(event) => setDetailOpen(event.currentTarget.open)}
-      >
-        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
-          <span className="flex min-w-0 items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Gauge className="size-4" aria-hidden="true" /></span>
-            <span className="min-w-0">
-              <span className="block text-sm font-black text-fg">{bt("운영 자세히 보기", "Operations detail")}</span>
-              <span className="block truncate text-xs text-fg-3">{bt("건강 점수 근거·위험 미리 보기·복구 계획·담당자 추천·팀 작업량", "Health score evidence, risk outlook, recovery plans, assignee suggestions, workload")}</span>
-            </span>
-          </span>
-          <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-        </summary>
-        {detailOpen ? (
-          <div className="space-y-4 border-t border-line p-4">
-            <ProductionManagementWorkspace aggregate={aggregate} roleLens={roleLens} execute={execute} executeRecovery={executeStrict} canEdit={access.edit} />
-            <ProductionStudioRevisionBridgePanel aggregate={aggregate} execute={execute} canEdit={access.edit} enabled={!isDemo} />
-          </div>
-        ) : null}
-      </details>
-    </div>
-  );
-}
-
-function BoardSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
-  const bt = useBilingual("ProductionBoardSurface");
-  const [params, setParams] = useSearchParams();
-  // 단계 인계: 인계 화면의 "다음 공정 열기" 딥링크(boardEpisode)가 실은 진입에서는
-  // 콘티 시작 화면 상단에 앞 단계(기획) 산출을 자동 인용한다. 회차 맥락이 없는
-  // 일반 보드 진입에서는 마운트하지 않는다(지어낸 회차 인용 방지).
-  const boardEpisodeId = params.get("boardEpisode");
-  const boardEpisode = boardEpisodeId
-    ? aggregate.episodes.find((episode) => episode.episodeId === boardEpisodeId) ?? null
-    : null;
-  const roleView = params.get("productionView") === "roles" || (params.has("task") && params.get("productionView") !== "board");
-  const views = [
-    { id: "board", label: bt("팀 공정 보드", "Team board"), active: !roleView },
-    { id: "roles", label: bt("역할별 작업", "Role workspace"), active: roleView },
-  ] as const;
-  return (
-    <div className="min-w-0 space-y-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label={bt("제작 작업 공간 선택", "Choose a workspace")}>
-        {views.map((view) => (
-          <button
-            key={view.id}
-            type="button"
-            aria-pressed={view.active}
-            className={buttonClass({ variant: view.active ? "solid" : "outline", className: "min-h-11" })}
-            onClick={() => setParams((previous) => {
-              const next = new URLSearchParams(previous);
-              next.set("productionView", view.id);
-              return next;
-            })}
-          >
-            {view.label}
-          </button>
-        ))}
-      </div>
-      {boardEpisode ? (
-        <EpisodeStageHandoffSection aggregate={aggregate} episodeId={boardEpisode.episodeId} targetStage="storyboard" />
-      ) : null}
-      {roleView
-        ? <ProductionRoleWorkspace aggregate={aggregate} execute={execute} canEdit={access.edit} roleLens={roleLens} />
-        : (
-          <ProductionWorkBoard
-            key={aggregate.projectId}
-            aggregate={aggregate}
-            execute={executeStrict}
-            canEdit={access.edit}
-            canManage={access.manage}
-            viewerAssignmentIds={viewerAssignmentIds}
-            roleLens={roleLens}
-            persistOrder={!isDemo}
-          />
-        )}
-    </div>
-  );
 }
 
 function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface: ProductionProjectSurface }) {
@@ -168,26 +64,14 @@ function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface
     case "production": return <BoardSurface {...props} />;
     case "schedule": return <ProductionScheduleWorkspace aggregate={aggregate} execute={execute} canEdit={access.edit} />;
     case "control": return <ProductionOperationsControlWorkspace aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canManage={access.manage} />;
-    case "handoff": return <ProductionHandoffSurface aggregate={aggregate} roleLens={roleLens} execute={execute} canEdit={access.edit} isDemo={isDemo} />;
-    case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} roleLens={roleLens} />;
+    case "handoff": return <ProductionHandoffSurface aggregate={aggregate} roleLens={roleLens} execute={executeStrict} canEdit={access.edit} isDemo={isDemo} />;
+    case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canReview={access.comment || access.edit} canManage={access.manage} refresh={props.refresh} roleLens={roleLens} isDemo={isDemo} />;
     case "activity": return <ProductionActivityWorkspace aggregate={aggregate} viewerUserId={props.viewerUserId} viewerAssignmentIds={props.viewerAssignmentIds} versionActivityEnabled={!isDemo} />;
     case "procurement": return <ProductionProcurementSurface aggregate={aggregate} />;
     case "rights": return <ProductionRightsSurface aggregate={aggregate} />;
-    case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} execute={execute} />;
+    case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} execute={execute} executeStrict={executeStrict}
+      refresh={props.refresh} hasUnconfirmedCommand={props.hasUnconfirmedCommand} isDemo={isDemo} />;
   }
-}
-
-function ProjectLoading() {
-  const bt = useBilingual("ProductionProjectPage");
-  return (
-    <div data-route-pending="production-project" className="min-h-dvh bg-canvas p-6 text-fg" role="status">
-      <div className="mx-auto max-w-5xl animate-pulse space-y-3 rounded-3xl border border-line bg-card p-8 motion-reduce:animate-none">
-        <div className="h-4 w-40 rounded bg-raised" />
-        <div className="h-8 w-72 rounded bg-raised" />
-        <p className="text-sm text-fg-2">{bt("제작 프로젝트를 불러오는 중…", "Loading the production project…")}</p>
-      </div>
-    </div>
-  );
 }
 
 function ProjectError({ message, refreshing, onRefresh }: { readonly message: string; readonly refreshing: boolean; readonly onRefresh: () => void }) {
@@ -227,7 +111,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   const bt = useBilingual("ProductionProjectPage");
 
   if (!projectId) return <Navigate to="/production" replace />;
-  if (project.loading) return <ProjectLoading />;
+  if (project.loading) return <ProductionProjectLoading />;
   if (project.error || !project.aggregate) {
     return (
       <ProjectError
@@ -253,11 +137,12 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
           ) : null}
           {surface === "overview" && aggregate.coverImageUrl ? (
             <div className="mb-4">
-              <ProductionOverviewCoverStage aggregate={aggregate} />
+              <Suspense fallback={<ProductionProjectLoading />}><ProductionOverviewCoverStage aggregate={aggregate} /></Suspense>
             </div>
           ) : null}
           {project.isDemo ? <ProductionSampleJourneyGuide location={surface} /> : null}
           <ProductionSurfaceHeader aggregate={aggregate} surface={surface} />
+          <Suspense fallback={<ProductionProjectLoading />}>
           <SurfaceContent
             surface={surface}
             aggregate={aggregate}
@@ -265,10 +150,13 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
             roleLens={roleLens}
             execute={project.execute}
             executeStrict={project.executeStrict}
+            refresh={project.refresh}
+            hasUnconfirmedCommand={project.hasUnconfirmedCommand}
             isDemo={project.isDemo}
             viewerAssignmentIds={viewerAssignmentIdsFor(aggregate, actorId)}
             viewerUserId={actorId}
           />
+          </Suspense>
         </div>
       </div>
     </div>
