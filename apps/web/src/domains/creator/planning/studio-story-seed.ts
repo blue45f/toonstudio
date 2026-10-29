@@ -492,6 +492,22 @@ export function parseStorySeedAiResponse(
       ? (parsed.emotionalArc as Record<string, unknown>)
       : null;
 
+  // AI가 실제로 채운 필드가 하나도 없으면 기본 초안을 AI 결과로 보여 주게 되므로 읽지 못한 것으로 본다.
+  const usableText = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+  const usableList = (value: unknown) => Array.isArray(value) && value.some(usableText);
+  const aiProvidedAnyField = [
+    usableList(parsed.loglineCandidates),
+    usableText(parsed.goalDraft),
+    usableText(parsed.synopsisDraft),
+    usableText(parsed.openingHookDraft),
+    usableText(parsed.coreConflictDraft),
+    usableList(parsed.turningPointScaffold),
+    usableText(parsed.cliffhangerDraft),
+    usableText(emotionalRaw?.from) || usableText(emotionalRaw?.to),
+    usableList(parsed.expansionProposals),
+  ].some(Boolean);
+  if (!aiProvidedAnyField) return null;
+
   return Object.freeze({
     ...base,
     loglineCandidates: asThreeTuple(parsed.loglineCandidates, base.loglineCandidates),

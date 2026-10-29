@@ -173,6 +173,15 @@ describe("localStorySeedProvider & createTextAiStorySeedProvider", () => {
     expect(parsed?.emotionalArc).toEqual({ from: "불안", to: "각성" });
   });
 
+  it("AI가 채운 필드가 하나도 없는 응답은 기본 초안을 AI 결과로 꾸미지 않고 읽지 못한 것으로 본다", async () => {
+    const input = { genre: "판타지", keywords: ["차원의 열쇠"] };
+    expect(parseStorySeedAiResponse("{}", input)).toBeNull();
+    expect(parseStorySeedAiResponse(JSON.stringify({ logline: "다른 이름의 필드", goalDraft: "  " }), input)).toBeNull();
+
+    const provider = createTextAiStorySeedProvider(async () => ({ ok: true as const, content: "{\"unknown\": 1}" }));
+    await expect(provider.generate(input)).rejects.toBeInstanceOf(StorySeedAiError);
+  });
+
   it("AI 제공자는 통합 AI 응답을 기본 초안 위에 덮어써 완결된 AI 초안을 돌려준다", async () => {
     const complete = vi.fn<StorySeedTextCompletion>(async () => ({
       ok: true as const,
