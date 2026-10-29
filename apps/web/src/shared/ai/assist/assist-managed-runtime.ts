@@ -208,18 +208,48 @@ export function mapManagedAssistError(error: unknown, signal?: AbortSignal): Err
     : new Error("ToonStudio AI 요청 중 알 수 없는 오류가 발생했어요.");
 }
 
+let managedQueueTail: Promise<unknown> = Promise.resolve();
+
+/** 앞 요청이 끝나기를 기다린다. 기다리는 동안 취소되면 바로 끝낸다(앞 요청은 그대로 둔다). */
+function waitForManagedTurn(previous: Promise<unknown>, signal?: AbortSignal): Promise<void> {
+  const settled = previous.then(() => undefined, () => undefined);
+  if (!signal) return settled;
+  signal.throwIfAborted();
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason ?? new DOMException("aborted", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    void settled.then(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    });
+  });
+}
+
+/**
+ * 서버는 사용자당 한 번에 하나의 AI 요청만 받는다(동시에 보내면 429 "이미 처리 중"). 같은 탭에서 여러 보조 기능을
+ * 함께 실행해도 실패하지 않게 관리형 요청을 차례로 보낸다. 다음 차례는 앞 요청과 이 요청이 모두 끝난 뒤다.
+ */
+function inManagedQueue<T>(signal: AbortSignal | undefined, task: () => Promise<T>): Promise<T> {
+  const previous = managedQueueTail;
+  const run = waitForManagedTurn(previous, signal).then(task);
+  managedQueueTail = Promise.allSettled([previous, run]);
+  return run;
+}
+
 async function postManaged(
   body: ManagedAssistRequestBody,
   options: ManagedAssistOptions,
 ): Promise<unknown> {
-  const idempotencyKey = newIdempotencyKey();
-  if (options.post) return options.post(body, { signal: options.signal, idempotencyKey });
-  return api.post<unknown>("/studio-ai/messages", body, {
-    ...(options.signal ? { signal: options.signal } : {}),
-    headers: { "Idempotency-Key": idempotencyKey },
-    timeout: MANAGED_ASSIST_TIMEOUT_MS,
-    totalTimeout: MANAGED_ASSIST_TIMEOUT_MS + 5_000,
-    errorMessage: "ToonStudio AI 요청을 처리하지 못했어요.",
+  return inManagedQueue(options.signal, () => {
+    const idempotencyKey = newIdempotencyKey();
+    if (options.post) return options.post(body, { signal: options.signal, idempotencyKey });
+    return api.post<unknown>("/studio-ai/messages", body, {
+      ...(options.signal ? { signal: options.signal } : {}),
+      headers: { "Idempotency-Key": idempotencyKey },
+      timeout: MANAGED_ASSIST_TIMEOUT_MS,
+      totalTimeout: MANAGED_ASSIST_TIMEOUT_MS + 5_000,
+      errorMessage: "ToonStudio AI 요청을 처리하지 못했어요.",
+    });
   });
 }
 
