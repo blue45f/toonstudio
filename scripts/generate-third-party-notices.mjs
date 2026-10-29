@@ -485,7 +485,7 @@ export const EMBEDDED_FIRST_PARTY_PORT_NOTICES = Object.freeze([
   }),
   Object.freeze({
     label:
-      "Klecks brush tip kernel re-implementations — src/domains/creator/studio-oss-brush-kernels.ts — MIT",
+      "Klecks brush kernel re-implementations — src/domains/creator/studio-oss-brush-kernels.ts, apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts — MIT",
     licensePath: join(REPOSITORY_ROOT, "third_party", "klecks", "LICENSE"),
     upstream: "https://github.com/bitbof/klecks/blob/main/LICENSE",
     requiredMarkers: Object.freeze([
@@ -1973,6 +1973,7 @@ function validateRepositoryPolicy() {
     "studio-gpu-bristle-wgsl.ts",
     "studio-croquis-capsule-pen-v1.ts",
     "studio-oss-brush-kernels.ts",
+    "brush-studio-v6-procedural-klecks-kernels.ts",
     "dist/legal/THIRD_PARTY_NOTICES.generated.md",
     "crates/studio-engine-vello/THIRD_PARTY_INVENTORY.json",
     "crates/studio-engine-vello/pkg/THIRD_PARTY_LICENSES.txt",
