@@ -1,5 +1,6 @@
 import { canonicalJson, isoTimestampSchema, scopeRefSchema, sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
 import { z } from "zod";
+import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
 import { api, apiPath, httpStatus } from "@/platform/api";
 import { parseStudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-review-subject";
 import { studioReviewCaptureSourceRevisionSchema } from "../review-capture/studio-review-capture-source";
@@ -10,7 +11,7 @@ const inputSchema = z.object({ intentId: studioEntityIdSchema, workId: studioEnt
   sourceServerRevision: z.number().int().positive().max(2_147_483_647), sourceContentDigest: sha256Schema,
   pageCount: z.number().int().positive().max(100_000), title: z.string().trim().min(1).max(240),
   deviceId: studioEntityIdSchema, createdAt: isoTimestampSchema,
-  sourceRevision: studioReviewCaptureSourceRevisionSchema.optional() }).strict();
+  sourceRevision: studioReviewCaptureSourceRevisionSchema.optional(), writeContext: StudioScopedWriteContextSchema.optional() }).strict();
 const intentSchema = inputSchema.extend({ projectId: studioEntityIdSchema, artifactId: studioEntityIdSchema,
   expectedHeadRevisionId: studioEntityIdSchema, expectedHeadRootGraphHash: sha256Schema,
   sourceRevisionScope: scopeRefSchema.optional() }).strict();

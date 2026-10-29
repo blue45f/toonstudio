@@ -1,5 +1,5 @@
 import { AlertTriangle, ArrowRight, CheckCircle2, LockKeyhole } from "lucide-react";
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   PRODUCTION_ROLE_LABELS,
@@ -21,6 +21,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 const REVIEW = new Set<ProductionTaskStatus>(["internal-review", "external-review", "conditionally-approved"]);
 const CLOSED = new Set<ProductionTaskStatus>(["approved", "done", "cancelled", "out-of-scope"]);
+const ProductionTaskOutputEntry = lazy(() => import("./ProductionTaskOutputEntry"));
 
 function nextAction(status: ProductionTaskStatus): { ko: string; en: string; target: ProductionTaskStatus } | null {
   if (["draft", "needs-input", "blocked", "paused"].includes(status))
@@ -141,6 +142,7 @@ export function ProductionRoleTaskInspector({ aggregate, task, gate, canEdit, ex
       </section>
       {error ? <p role="alert" className="mt-4 rounded-xl border border-bad/30 bg-bad/10 p-3 text-xs leading-5 text-fg">{error}</p> : null}
       <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
+        <Suspense fallback={null}><ProductionTaskOutputEntry aggregate={aggregate} task={task} canEdit={canEdit} execute={execute} /></Suspense>
         {REVIEW.has(task.status) ? <Link to={reviewHref} className={buttonClass({ size: "sm" })}>{bt("고정 제출본 검수", "Review pinned submission")}<ArrowRight className="size-4" aria-hidden="true" /></Link> : null}
         {action ? <button type="button" disabled={!canEdit || busy || !preview?.allowed || !gateReady}
           className={buttonClass({ size: "sm" })} onClick={() => transition(action.target)}>{bt(action.ko, action.en)}<ArrowRight className="size-4" aria-hidden="true" /></button> : null}

@@ -6,7 +6,7 @@ import { EMPTY_STUDIO_REVIEW_CAPTURE, encodeStudioReviewCapturePng, StudioReview
   type StudioReviewCaptureBridgeDependencies, type StudioReviewCaptureSnapshot } from "./studio-review-capture-bridge";
 
 type HostBindings = Pick<StudioReviewCaptureBridgeDependencies,
-  "getContext" | "projectRuntime" | "save" | "captureAll">;
+  "getContext" | "projectRuntime" | "save" | "captureAll" | "refreshPurpose">;
 interface CaptureOwner { readonly key: string; readonly bridge: StudioReviewCaptureBridge; readonly unsubscribe: () => void }
 
 export function useStudioReviewCapture(scopeKey: string, bindings: HostBindings) {

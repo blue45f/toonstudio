@@ -30,6 +30,7 @@ import {
 import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
+import { ProductionCreateProjectEntry } from "./ProductionCreateProjectEntry";
 import { ProductionLandingBackdropBadge, ProductionLandingBackdropMedia } from "./ProductionLandingBackdrop";
 import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
@@ -544,6 +545,7 @@ export function ProductionLandingPage() {
                 <Link className={buttonClass({ variant: "outline", size: "lg" })} to="/create">
                   {bt("작품 시작하기", "Start a work")}
                 </Link>
+                {userId ? <ProductionCreateProjectEntry key={userId} actorId={userId} /> : null}
                 <Link className={buttonClass({ variant: "ghost", size: "lg" })} to="/team/people">
                   {bt("사람·권한", "People & roles")}
                 </Link>

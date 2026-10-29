@@ -2,6 +2,8 @@ import { BadRequestException, ConflictException, ForbiddenException } from "@nes
 import { isDeepStrictEqual } from "node:util";
 import {
   activeAssignments,
+  currentProductionReviewDecisions,
+  eligibleProductionReviewAssignments,
   evaluateReviewApproval,
   productionScopeDepth,
   productionTaskHasCurrentApprovedOutputs,
@@ -97,8 +99,8 @@ export function assertProductionSubmissionApproval(
   const policy = aggregate.reviewPolicies.filter((entry) => scopeContains(entry.scope, deliverable.scope))
     .sort((left, right) => productionScopeDepth(right.scope) - productionScopeDepth(left.scope))[0];
   if (!policy || policy.lanes.length === 0) throw new BadRequestException("산출물 범위의 필수 검수 정책이 필요합니다.");
-  const active = activeAssignments(aggregate.assignments, at).filter((entry) => entry.status === "active");
-  const eligible = new Set(active.filter((entry) => scopeContains(entry.scope, deliverable.scope)).map((entry) => entry.id));
+  const active = eligibleProductionReviewAssignments(aggregate, deliverable.scope, at);
+  const eligible = new Set(active.map((entry) => entry.id));
   const latest = new Map<string, ReviewDecision>();
   for (const entry of aggregate.reviewDecisions.filter((entry) => entry.reviewRoundId === submission.id
     && eligible.has(entry.assignmentId) && validateReviewDecision(policy, entry).length === 0)) {
@@ -106,11 +108,11 @@ export function assertProductionSubmissionApproval(
     const previous = latest.get(key);
     if (!previous || Date.parse(entry.createdAt) >= Date.parse(previous.createdAt)) latest.set(key, entry);
   }
-  const decisions = [...latest.values()];
+  const decisions = currentProductionReviewDecisions(aggregate, policy, deliverable.scope, [...latest.values()], at);
   const approval = evaluateReviewApproval(policy, decisions.map((entry) => entry.value === "approve-with-conditions"
     ? { ...entry, value: "request-changes" as const } : entry));
   if (!approval.approved) throw new BadRequestException({ message: "이 제출본의 필수 검수 승인을 완료하세요.", approval });
-  const actorPartyIds = new Set(aggregate.parties.filter((party) => party.accountUserId === actorUserId).map((party) => party.id));
+  const actorPartyIds = new Set(aggregate.parties.filter((party) => party.status === "active" && party.accountUserId === actorUserId).map((party) => party.id));
   const actorAssignmentIds = new Set(active.filter((entry) => actorPartyIds.has(entry.partyId)).map((entry) => entry.id));
   if (!decisions.some((entry) => actorAssignmentIds.has(entry.assignmentId) && entry.value === "approve")) {
     throw new ForbiddenException("이 제출본을 승인한 검수자만 승인을 확정할 수 있습니다.");
@@ -133,10 +135,16 @@ export function assertProductionSubmissionActor(
     assertProductionSubmissionApproval(aggregate, submission, actorUserId, at);
     return;
   }
-  const partyIds = new Set(aggregate.parties.filter((party) => party.accountUserId === actorUserId).map((party) => party.id));
+  const partyIds = new Set(aggregate.parties.filter((party) => party.status === "active" && party.accountUserId === actorUserId).map((party) => party.id));
   const assignments = activeAssignments(aggregate.assignments, at).filter((entry) => entry.status === "active" && partyIds.has(entry.partyId));
-  if (assignments.some((entry) => entry.id === submission.submittedByAssignmentId)) return;
   const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId);
+  const ownAssignment = assignments.find((entry) => entry.id === submission.submittedByAssignmentId);
+  if (ownAssignment) {
+    if (!current && deliverable && !scopeContains(ownAssignment.scope, deliverable.scope)) {
+      throw new ForbiddenException("새 제출은 산출물 범위를 포함하는 현재 계정의 활성 역할로 등록하세요.");
+    }
+    return;
+  }
   const policy = deliverable && aggregate.reviewPolicies.filter((entry) => scopeContains(entry.scope, deliverable.scope))
     .sort((left, right) => productionScopeDepth(right.scope) - productionScopeDepth(left.scope))[0];
   if (current && deliverable && policy && ["in-review", "changes-requested"].includes(submission.status)
@@ -165,6 +173,9 @@ export function applyProductionReviewDecision(
   if (aggregate.reviewDecisions.some((entry) => entry.id === decision.id)) {
     throw new ConflictException("이미 기록된 검수 결정은 바꿀 수 없습니다. 새 결정 ID로 기록하세요.");
   }
+  if (decision.reviewerAccountUserId !== undefined && decision.reviewerAccountUserId !== actorUserId) {
+    throw new ForbiddenException("검수 계정 식별자는 현재 로그인 계정과 일치해야 합니다.");
+  }
   const submission = aggregate.submissions.find((entry) => entry.id === decision.reviewRoundId);
   const deliverable = submission && aggregate.deliverables.find((entry) => entry.id === submission.deliverableId);
   if (submission && (!deliverable || deliverable.currentSubmissionId !== submission.id || submission.status !== "in-review")) {
@@ -172,16 +183,17 @@ export function applyProductionReviewDecision(
   }
   const scope = deliverable?.scope ?? policy.scope;
   if (!scopeContains(policy.scope, scope)) throw new BadRequestException("검수 정책 범위와 제출본이 일치하지 않습니다.");
-  const partyIds = new Set(aggregate.parties.filter((party) => party.accountUserId === actorUserId).map((party) => party.id));
-  const actor = activeAssignments(aggregate.assignments, at).some((entry) => entry.status === "active"
-    && entry.id === decision.assignmentId && partyIds.has(entry.partyId) && scopeContains(entry.scope, scope));
+  const partyIds = new Set(aggregate.parties.filter((party) => party.status === "active" && party.accountUserId === actorUserId).map((party) => party.id));
+  const actor = eligibleProductionReviewAssignments(aggregate, scope, at)
+    .some((entry) => entry.id === decision.assignmentId && partyIds.has(entry.partyId));
   if (!actor) throw new ForbiddenException("현재 사용자의 활성 검수 역할과 대상 범위로만 결정을 기록할 수 있습니다.");
-  const stored = { ...decision, createdAt: at };
+  const stored = { ...decision, reviewerAccountUserId: actorUserId, createdAt: at };
   const issues = validateReviewDecision(policy, stored);
   if (issues.length) throw new BadRequestException({ message: "검수 결정을 기록할 수 없습니다.", issues });
   const reviewDecisions = [...aggregate.reviewDecisions, stored];
   return {
     aggregate: { ...aggregate, reviewDecisions },
-    derived: { approval: evaluateReviewApproval(policy, reviewDecisions.filter((entry) => entry.reviewRoundId === decision.reviewRoundId)) },
+    derived: { approval: evaluateReviewApproval(policy, currentProductionReviewDecisions(aggregate, policy, scope,
+      reviewDecisions.filter((entry) => entry.reviewRoundId === decision.reviewRoundId), at)) },
   };
 }

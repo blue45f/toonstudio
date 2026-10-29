@@ -1,8 +1,10 @@
-import { studioReviewTaskReferenceSchema } from "@toonstudio/studio-project-model";
+import { sql } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import type { PoolClient } from "pg";
 
 import { studioReviewPreviewCompleteSchema, studioReviewPreviewDigest, studioReviewPreviewIntentKey,
   studioReviewPreviewIntentSchema } from "./studio-review-preview-producer.contract";
+import { studioReviewCaptureSubjectSchema } from "./studio-review-capture-subject";
 
 const record = (value: unknown): Record<string, unknown> | null => value !== null && typeof value === "object" && !Array.isArray(value)
   ? value as Record<string, unknown> : null;
@@ -32,7 +34,7 @@ export function studioReviewCaptureFromOperation(operation: unknown, pin: Studio
 /** Verify actual immutable database rows, never revision-name prefixes or client timestamps alone. */
 export function studioReviewResolutionCaptureFromRows(value: unknown) {
   const row = record(value), capture = record(row?.capture), receipt = record(row?.receipt);
-  const pin = studioReviewTaskReferenceSchema.shape.subject.safeParse(row?.pin);
+  const pin = studioReviewCaptureSubjectSchema.safeParse(row?.pin);
   if (!row || !capture || !receipt || !pin.success) return null;
   const proof = studioReviewCaptureFromOperation(capture.operation, pin.data, receipt);
   if (!proof) return null;
@@ -71,9 +73,8 @@ export function studioReviewResolutionCaptureFromRows(value: unknown) {
 
 /** Call after the original comment's edit ACL and review lock. These rows are immutable;
  * taking a second review update lock would introduce opposite-direction resolution deadlocks. */
-export async function loadStudioReviewResolutionCaptures(client: PoolClient, artifactId: string, reviewIds: readonly string[], boundSourceOnly = false) {
-  const result = await client.query(
-    `SELECT jsonb_build_object('schemaVersion',1,'workId',project."workId",'projectId',artifact."projectId",
+export function studioReviewResolutionCaptureQuery(artifactId: string, reviewIds: readonly string[], boundSourceOnly = false) {
+  return sql`SELECT jsonb_build_object('schemaVersion',1,'workId',project."workId",'projectId',artifact."projectId",
         'artifactId',artifact.id,'reviewId',review.id,'revisionId',snapshot.id,'rootGraphHash',snapshot."rootGraphHash") AS pin,
       to_jsonb(snapshot) AS snapshot, to_jsonb(submission) AS submission, to_jsonb(checkpoint) AS checkpoint,
       to_jsonb(base) AS base, to_jsonb(capture) AS capture, to_jsonb(receipt) AS receipt,
@@ -93,7 +94,15 @@ export async function loadStudioReviewResolutionCaptures(client: PoolClient, art
      LEFT JOIN studio_revision_parent submission_edge ON submission_edge."revisionId"=submission.id AND submission_edge.ordinal=0
      LEFT JOIN studio_revision checkpoint ON checkpoint.id=submission_edge."parentRevisionId"
      LEFT JOIN studio_revision base ON base.id=capture."baseRevisionId"
-     WHERE artifact.id=$1 AND review.id=ANY($2::text[])
-       AND (NOT $3::boolean OR capture.operation->'payload'->'intent'->'sourceRevision' IS NOT NULL)`, [artifactId, reviewIds, boundSourceOnly]);
+     WHERE artifact.id=${artifactId} AND review.id=ANY(${sql.param(reviewIds)}::text[])
+       AND (NOT ${boundSourceOnly}::boolean OR capture.operation->'payload'->'intent'->'sourceRevision' IS NOT NULL)`;
+}
+
+const captureDialect = new PgDialect();
+
+/** pg와 Drizzle이 같은 증명 쿼리를 쓰며 연결·transaction은 호출자가 유지한다. */
+export async function loadStudioReviewResolutionCaptures(client: PoolClient, artifactId: string, reviewIds: readonly string[], boundSourceOnly = false) {
+  const query = captureDialect.sqlToQuery(studioReviewResolutionCaptureQuery(artifactId, reviewIds, boundSourceOnly));
+  const result = await client.query(query.sql, query.params);
   return result.rows.map(studioReviewResolutionCaptureFromRows);
 }

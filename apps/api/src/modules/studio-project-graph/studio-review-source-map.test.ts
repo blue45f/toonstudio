@@ -46,10 +46,11 @@ describe("server source-map attestation", () => {
   });
 });
 
-function resolutionRows() {
+function resolutionRows(projectId = intent.projectId) {
   const sequence = 11;
-  const subject = { ...pin, schemaVersion: 1, reviewId: `review-${key}`, revisionId: `review-snapshot-${key}` };
-  const payload = { ...operation.payload, previews: [{ ordinal: 0, sha256: hash }, { ordinal: 1, sha256: secondHash }] };
+  const capturedIntent = { ...intent, projectId };
+  const subject = { ...pin, projectId, schemaVersion: 1, reviewId: `review-${key}`, revisionId: `review-snapshot-${key}` };
+  const payload = { ...operation.payload, intent: capturedIntent, previews: [{ ordinal: 0, sha256: hash }, { ordinal: 1, sha256: secondHash }] };
   const revision = (id: string, kind: string) => ({ id, kind, artifactId: pin.artifactId, rootGraphHash: digest,
     operationFirst: sequence, operationLast: sequence, createdBy: "owner", deviceId: intent.deviceId });
   return { pin: subject,
@@ -57,7 +58,8 @@ function resolutionRows() {
       resultRevisionId: subject.revisionId, actorUserId: "owner", deviceId: intent.deviceId, commandType: "review.snapshot-create",
       payloadHash: studioReviewPreviewDigest(payload), operation: { ...operation, type: "review.snapshot-create", payload } },
     receipt: { ...receipt, artifactId: pin.artifactId, resultRevisionId: subject.revisionId,
-      requestHash: studioReviewPreviewDigest({ intent, pages: payload.previews }), response: { ...receipt.response, subject } },
+      requestHash: studioReviewPreviewDigest({ intent: capturedIntent, pages: payload.previews }),
+      response: { ...receipt.response, subject, fingerprint: studioReviewPreviewDigest(capturedIntent) } },
     snapshot: revision(subject.revisionId, "review-snapshot"), submission: revision(`review-submission-${key}`, "submission"),
     checkpoint: revision(`review-checkpoint-${key}`, "checkpoint"),
     base: { id: intent.expectedHeadRevisionId, artifactId: pin.artifactId, rootGraphHash: intent.expectedHeadRootGraphHash },
@@ -67,6 +69,12 @@ function resolutionRows() {
 }
 
 describe("server capture resolution lineage", () => {
+  it("실제 Graph 캡처의 slash·at 프로젝트도 영수증과 전체 chain을 함께 검증한다", () => {
+    const rows = resolutionRows("graph/project@one");
+    expect(studioReviewResolutionCaptureFromRows(rows)).toEqual({ subject: rows.pin, submissionId: rows.submission.id,
+      sourceServerRevision: 7, sequence: 11 });
+    expect(studioReviewResolutionCaptureFromRows({ ...rows, pin: { ...rows.pin, projectId: "graph/other@one" } })).toBeNull();
+  });
   it("attests a captured document, completed receipt and exact three-revision graph without using createdAt", () => {
     const rows = resolutionRows();
     expect(studioReviewResolutionCaptureFromRows(rows)).toEqual({ subject: rows.pin, submissionId: rows.submission.id,

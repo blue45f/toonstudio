@@ -5,12 +5,13 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { ProductionProjectLoading } from "./ProductionProjectLoading";
 import type { ProductionSurfaceProps as SurfaceProps } from "./production-surface-props";
+import { ProductionTaskOutputRefreshContext } from "./production-task-output-refresh-context";
 
 const EpisodeStageHandoffSection = lazyRetry(() => import("./EpisodeStageHandoffSection").then((module) => ({ default: module.EpisodeStageHandoffSection })), "EpisodeStageHandoffSection");
 const ProductionRoleWorkspace = lazyRetry(() => import("./ProductionRoleWorkspace").then((module) => ({ default: module.ProductionRoleWorkspace })), "ProductionRoleWorkspace");
 const ProductionWorkBoard = lazyRetry(() => import("./ProductionWorkBoard").then((module) => ({ default: module.ProductionWorkBoard })), "ProductionWorkBoard");
 
-export function ProductionBoardSurface({ aggregate, access, roleLens, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
+export function ProductionBoardSurface({ aggregate, access, roleLens, executeStrict, refresh, isDemo, viewerAssignmentIds }: SurfaceProps) {
   const bt = useBilingual("ProductionBoardSurface");
   const [params, setParams] = useSearchParams();
   // 단계 인계: 인계 화면의 "다음 공정 열기" 딥링크(boardEpisode)가 실은 진입에서는
@@ -26,7 +27,7 @@ export function ProductionBoardSurface({ aggregate, access, roleLens, executeStr
     { id: "roles", label: bt("역할별 작업", "Role workspace"), active: roleView },
   ] as const;
   return (
-    <div className="min-w-0 space-y-4">
+    <ProductionTaskOutputRefreshContext.Provider value={refresh ?? null}><div className="min-w-0 space-y-4">
       <div className="flex flex-wrap gap-2" role="group" aria-label={bt("제작 작업 공간 선택", "Choose a workspace")}>
         {views.map((view) => (
           <button
@@ -63,6 +64,6 @@ export function ProductionBoardSurface({ aggregate, access, roleLens, executeStr
           />
         )}
       </Suspense>
-    </div>
+    </div></ProductionTaskOutputRefreshContext.Provider>
   );
 }

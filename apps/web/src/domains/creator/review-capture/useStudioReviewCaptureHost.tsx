@@ -10,6 +10,7 @@ import type { StudioReviewCaptureOrigin } from "../review-resolution/StudioRevie
 import { useStudioStableHandlers } from "../studio-stable-handlers";
 import { studioReviewCaptureHostAdmission, studioReviewCaptureHostContext, type StudioReviewCaptureHostBindings } from "./studio-review-capture-host-context";
 import { studioReviewCaptureSourceFromSearch, studioReviewCaptureSourceReturnHref } from "./studio-review-capture-source";
+import { studioScopedWriteAuthority } from "../studio-collab/studio-scoped-write-authority";
 
 export { studioReviewCaptureHostContext } from "./studio-review-capture-host-context";
 
@@ -20,6 +21,11 @@ export function useStudioReviewCaptureHost(bindings: StudioReviewCaptureHostBind
   const [origin, setOrigin] = useState<{ key: string; value: StudioReviewCaptureOrigin | null } | null>(null);
   const unavailableOpen = useRef(false);
   const capture = useStudioReviewCapture(scopeKey, {
+    refreshPurpose: async () => {
+      if (!bindings.available && bindings.scopedAvailable && bindings.collaborationAccessRef) {
+        await studioScopedWriteAuthority(bindings.collaborationAccessRef)?.refresh();
+      }
+    },
     getContext: () => {
       const context = studioReviewCaptureHostContext(bindings);
       return { ...context, available: context.available && !unavailableOpen.current,

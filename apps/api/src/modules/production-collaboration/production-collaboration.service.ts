@@ -1,6 +1,8 @@
 import { validateProductionWorkflowMutation } from "@toonstudio/contracts/production-workflow";
 import { applyProductionWorkflowCommand } from "./production-workflow-command";
-import { applyProductionReviewDecision, assertProductionSubmissionActor, assertProductionTaskMutationSafety } from "./production-approval-command";
+import { applyProductionReviewDecision, assertProductionTaskMutationSafety } from "./production-approval-command";
+import { applyProductionSubmissionCommand } from "./production-submission-command";
+import { applyProductionReviewPolicyCommand } from "./production-review-policy-command";
 import { productionTaskBatchPreconditions } from "./production-task-batch-concurrency";
 import { isDeepStrictEqual } from "node:util";
 import { verifyProductionAutomationCommand } from "./production-automation-verification";
@@ -17,9 +19,6 @@ import {
 } from "@nestjs/common";
 import {
   analyzeProductionChangeImpact,
-  applyProductionStudioRevisionLink,
-  applyProductionSubmissionReviewToTasks,
-  applySubmissionToDeliverable,
   commitProductionAggregate,
   createImmutableScopePackage,
   createScopePackageAddendum,
@@ -31,7 +30,6 @@ import {
   evaluateAutomationRule,
   evaluateHandoffReadiness,
   evaluateProductionRisks,
-  evaluateProductionStudioRevisionCoverage,
   evaluateReleaseReadiness,
   evaluateReviewApproval,
   resolveDecisionAuthority,
@@ -63,12 +61,9 @@ import {
   validateCreativeBranch,
   validateCreativeMergeRequest,
   validateCreativeCharter,
-  validateDeliverable,
   validateScenePlan,
   validateSeasonPlan,
   validateSeriesMaster,
-  validateSubmission,
-  validateProductionStudioRevisionLink,
   type CompensationPlan,
   type ContributionRecord,
   type CreditManifest,
@@ -77,6 +72,7 @@ import {
   type ExternalReviewResponse,
   type ProductionOperationsRecord,
   type ProductionProjectAggregate,
+  type ProductionTaskOutputCaptures,
   type ProductionRisk,
   type ProductionRiskSignal,
   type RightsInterest,
@@ -218,6 +214,8 @@ function eventTarget(command: ProductionCommand): { type: string; id: string } {
       return { type: "deliverable", id: command.deliverable.id };
     case "upsert-submission":
       return { type: "submission", id: command.submission.id };
+    case "submit-task-output":
+      return { type: "submission", id: command.submissionId };
     case "upsert-studio-revision-link":
       return { type: "studio-revision-link", id: command.link.id };
     case "upsert-review-policy":
@@ -277,6 +275,7 @@ function eventTarget(command: ProductionCommand): { type: string; id: string } {
 }
 
 function commandCapability(command: ProductionCommand): "comment" | "edit" | "manage" {
+  if (command.type === "submit-task-output") return "edit";
   if (command.type === "record-review-decision") return "comment";
   if (command.type === "upsert-submission" && ["in-review", "changes-requested", "approved"].includes(command.submission.status)) return "comment";
   if (command.type === "transition-risk-response" && command.toStatus === "approved") return "manage";
@@ -856,6 +855,7 @@ function applyCommand(
   command: ProductionCommand,
   actorUserId: string,
   at: string,
+  taskOutputCaptures?: ProductionTaskOutputCaptures,
 ): { aggregate: ProductionProjectAggregate; derived?: unknown } {
   switch (command.type) {
     case "upsert-planning-record":
@@ -997,88 +997,13 @@ function applyCommand(
         },
       };
     }
-    case "upsert-deliverable": {
-      assertProjectIdentity(aggregate, command.deliverable);
-      const current = aggregate.deliverables.find((entry) => entry.id === command.deliverable.id) ?? null;
-      const issues = [...validateDeliverable(command.deliverable, aggregate.projectId, current)];
-      if (current?.approvedSubmissionId && (
-        current.scope.kind !== command.deliverable.scope.kind
-        || current.scope.id !== command.deliverable.scope.id
-        || current.type !== command.deliverable.type
-        || current.expectedFormat !== command.deliverable.expectedFormat
-      )) {
-        issues.push("approved-deliverable-contract-mutated");
-      }
-      if (issues.length > 0) {
-        throw new BadRequestException({ message: "산출물 정의를 저장할 수 없습니다.", issues });
-      }
-      return {
-        aggregate: {
-          ...aggregate,
-          deliverables: upsertById(aggregate.deliverables, command.deliverable),
-        },
-      };
-    }
-    case "upsert-submission": {
-      assertProjectIdentity(aggregate, command.submission);
-      const deliverable = aggregate.deliverables.find((entry) => entry.id === command.submission.deliverableId) ?? null;
-      const current = aggregate.submissions.find((entry) => entry.id === command.submission.id) ?? null;
-      assertProductionSubmissionActor(aggregate, command.submission, actorUserId, at);
-      const issues = validateSubmission({
-        submission: command.submission,
-        current,
-        deliverable,
-        activeAssignmentIds: aggregate.assignments
-          .filter((assignment) => assignment.status === "active")
-          .map((assignment) => assignment.id),
-      });
-      if (issues.length > 0) {
-        throw new BadRequestException({ message: "제출본을 저장할 수 없습니다.", issues });
-      }
-      if (!deliverable) throw new BadRequestException("제출본의 산출물을 찾을 수 없습니다.");
-      return {
-        aggregate: applyProductionSubmissionReviewToTasks({
-          ...aggregate,
-          submissions: upsertById(aggregate.submissions, command.submission),
-          deliverables: upsertById(
-            aggregate.deliverables,
-            applySubmissionToDeliverable(deliverable, command.submission),
-          ),
-        }, command.submission, at),
-      };
-    }
-    case "upsert-studio-revision-link": {
-      assertProjectIdentity(aggregate, command.link);
-      assertAssignmentCanAct(aggregate, actorUserId, command.link.linkedByAssignmentId);
-      const issues = validateProductionStudioRevisionLink({
-        aggregate,
-        link: command.link,
-      });
-      if (issues.length > 0) {
-        throw new BadRequestException({
-          message: "Studio 원고 revision을 제작 산출물에 연결할 수 없습니다.",
-          issues,
-        });
-      }
-      const next = applyProductionStudioRevisionLink(aggregate, command.link);
-      return {
-        aggregate: next,
-        derived: command.link.episodeId
-          ? {
-              coverage: evaluateProductionStudioRevisionCoverage(next, command.link.episodeId),
-            }
-          : undefined,
-      };
-    }
-    case "upsert-review-policy": {
-      assertProjectIdentity(aggregate, command.policy);
-      return {
-        aggregate: {
-          ...aggregate,
-          reviewPolicies: upsertById(aggregate.reviewPolicies, command.policy),
-        },
-      };
-    }
+    case "upsert-deliverable":
+    case "upsert-submission":
+    case "upsert-studio-revision-link":
+    case "submit-task-output":
+      return applyProductionSubmissionCommand(aggregate, command, actorUserId, at, taskOutputCaptures);
+    case "upsert-review-policy":
+      return applyProductionReviewPolicyCommand(aggregate, command.policy, at);
     case "record-review-decision": {
       return applyProductionReviewDecision(aggregate, command.policyId, command.decision, actorUserId, at);
     }
@@ -2002,7 +1927,10 @@ export class ProductionCollaborationService {
       requestDigest,
       requiredCapability: commandCapability(input.command),
       taskBatchPreconditions,
-      mutate: (current, access) => {
+      taskOutputSources: input.command.type === "submit-task-output"
+        ? { output: input.command.source, command: input.command, ...(input.command.inputs.mode === "initial-capture" ? { initial: input.command.inputs.source } : {}) }
+        : undefined,
+      mutate: (current, access, taskOutputCaptures) => {
         if (input.command.type === "upsert-operations-record" && input.command.record.kind === "saved-view") {
           const id = input.command.record.value.id;
           const previous = current.savedViews?.find((view) => view.id === id);
@@ -2010,7 +1938,7 @@ export class ProductionCollaborationService {
         }
         const beforeDigest = stableProductionFingerprint(current);
         const at = new Date().toISOString();
-        const mutation = applyCommand(current, input.command, actorUserId, at);
+        const mutation = applyCommand(current, input.command, actorUserId, at, taskOutputCaptures);
         assertProductionTaskMutationSafety(current, mutation.aggregate, at);
         const workflowIssues = validateProductionWorkflowMutation(current, mutation.aggregate, at);
         if (workflowIssues.length) throw new BadRequestException({ message: "공정 운영 조건을 충족하지 못했습니다.", issues: workflowIssues });

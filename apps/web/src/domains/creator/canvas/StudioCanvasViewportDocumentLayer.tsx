@@ -6,7 +6,8 @@ import { StudioLiveAdjustmentGroup } from "./StudioLiveAdjustmentGroup";
 import { Fragment, Suspense, useLayoutEffect, type ReactNode } from "react";
 import { Group, Shape } from "react-konva/lib/ReactKonvaCore";
 
-import { BlendIsolationGroup } from "../BlendIsolationGroup";
+import { studioFrameClip } from "@toonstudio/studio-project-model/frame-clip";
+import { StudioPanelClipGroup } from "./StudioPanelClipGroup";
 import {
   isStudioBrushEraserAliasId,
   studioBrushAliasEffectiveDiameter,
@@ -266,9 +267,8 @@ export function StudioCanvasViewportDocumentLayer({
                     };
                 // 패널 내부 콘텐츠 클리핑(들어간 패널 영역). 아래 레이어 클리핑 마스크는 ClipMaskGroup이 알파로 처리한다.
                 const panelClip = el.noClip ? null : resolvePanel(el);
-                const clip = panelClip
-                  ? { x: panelClip.x, y: panelClip.y, width: panelClip.width, height: panelClip.height }
-                  : null;
+                if (!el.noClip && el.frameClipId !== undefined && !panelClip) return null;
+                const clip = panelClip ? studioFrameClip(panelClip) : null;
                 const wrapRenderInteraction = (node: ReactNode) =>
                   isNonInteractiveRender ? (
                     <Group
@@ -303,22 +303,8 @@ export function StudioCanvasViewportDocumentLayer({
                         JSON.stringify(elBounds(el)),
                       ].join("|")
                     : "";
-                  const clippedNode = isolatedComposite ? (
-                    <BlendIsolationGroup
-                      key={el.id}
-                      cacheKey={blendCacheKey}
-                      composite={composite}
-                      {...(clip ? { clip } : {})}
-                    >
-                      {node}
-                    </BlendIsolationGroup>
-                  ) : clip ? (
-                    <Group key={el.id} clipX={clip.x} clipY={clip.y} clipWidth={clip.width} clipHeight={clip.height}>
-                      {node}
-                    </Group>
-                  ) : (
-                    node
-                  );
+                  const clippedNode = <StudioPanelClipGroup key={el.id} isolated={isolatedComposite}
+                    composite={composite} cacheKey={blendCacheKey} clip={clip}>{node}</StudioPanelClipGroup>;
                   return wrapRenderInteraction(clippedNode);
                 };
                 if (el.type === "image") {
@@ -375,6 +361,7 @@ export function StudioCanvasViewportDocumentLayer({
                   const autoFitFrames =
                     !isGroupDragMember &&
                     !isCanvasGroupDragActive(el.id) &&
+                    el.frameClipId === undefined &&
                     autoFitFrameCandidates.length > 0 &&
                     isEligibleForPanelAutoFit({
                       rotation: el.rotation,

@@ -65,11 +65,12 @@ function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface
     case "schedule": return <ProductionScheduleWorkspace aggregate={aggregate} execute={execute} canEdit={access.edit} />;
     case "control": return <ProductionOperationsControlWorkspace aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canManage={access.manage} />;
     case "handoff": return <ProductionHandoffSurface aggregate={aggregate} roleLens={roleLens} execute={executeStrict} canEdit={access.edit} isDemo={isDemo} />;
-    case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canReview={access.comment || access.edit} roleLens={roleLens} isDemo={isDemo} />;
+    case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canReview={access.comment || access.edit} canManage={access.manage} refresh={props.refresh} roleLens={roleLens} isDemo={isDemo} />;
     case "activity": return <ProductionActivityWorkspace aggregate={aggregate} viewerUserId={props.viewerUserId} viewerAssignmentIds={props.viewerAssignmentIds} versionActivityEnabled={!isDemo} />;
     case "procurement": return <ProductionProcurementSurface aggregate={aggregate} />;
     case "rights": return <ProductionRightsSurface aggregate={aggregate} />;
-    case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} execute={execute} isDemo={isDemo} />;
+    case "settings": return <ProductionTeamSurface aggregate={aggregate} access={access} execute={execute} executeStrict={executeStrict}
+      refresh={props.refresh} hasUnconfirmedCommand={props.hasUnconfirmedCommand} isDemo={isDemo} />;
   }
 }
 
@@ -149,6 +150,8 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
             roleLens={roleLens}
             execute={project.execute}
             executeStrict={project.executeStrict}
+            refresh={project.refresh}
+            hasUnconfirmedCommand={project.hasUnconfirmedCommand}
             isDemo={project.isDemo}
             viewerAssignmentIds={viewerAssignmentIdsFor(aggregate, actorId)}
             viewerUserId={actorId}

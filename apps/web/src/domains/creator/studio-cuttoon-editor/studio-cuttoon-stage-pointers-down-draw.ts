@@ -5,6 +5,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { flushSync } from "react-dom";
+import { admitStudioScopedDrawStart, assertStudioScopedDrawContinuation } from "../studio-collab/studio-scoped-write-mutation";
 
 import { resolveStudioCapturedBrushDynamicsPresetId } from "../brush/studio-brush-dynamics";
 import {
@@ -352,6 +353,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
     ...args
   ) => api.updateBrushCursor(...args);
   function tryStageDownDraw(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>, stagePointerEvent: PointerEvent, replayPosition?: { x: number; y: number }) {
+    if (collaborationAccessRef?.current.locked && !h.scopedDrawAllowed?.()) return;
     if (tool === "draw") {
       const pointerSample = e.evt as PointerEvent;
       const penButtonPolicy = getStudioPenButtonPolicySnapshot();
@@ -614,6 +616,8 @@ export function bindStudioCuttoonStagePointersDownDraw(
         endLiveResourceEdit();
         return;
       }
+      try { next = admitStudioScopedDrawStart(collaborationAccessRef, activePage.id, activePage.elements, next); }
+      catch (cause) { discardDrawingPointerSession(); endLiveResourceEdit(); setError(cause instanceof Error ? cause.message : "담당 범위의 획을 시작하지 못했습니다."); return; }
       drawingImmediateCausalInputRef.current = causalInputPlan.quantizeImmediately;
       drawingThinLineInkInputRef.current = shouldFilterStudioThinLineInkInput({
         brushId: next.brush,
@@ -696,6 +700,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
       isometricAxisRayRef.current = null; // 새 스트로크마다 아이소메트릭 축 락도 다시 잡는다.
       advancedRulerSnapRef.current = null;
       const beginAdmittedCollaboration = (admittedStroke: DrawEl): void => {
+        assertStudioScopedDrawContinuation(collaborationAccessRef, admittedStroke.id);
         drawingGesturePreviewPublisherRef.current.begin({
           pageId: activePage.id,
           documentGeneration: collaborationAccessRef.current.documentGeneration,
@@ -715,7 +720,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
               ) {
                 throw new Error("실시간 협업 문서가 획 시작 전에 변경되었습니다.");
               }
-              crdtDocument.beginStroke(crdtStroke);
+              assertStudioScopedDrawContinuation(collaborationAccessRef, admittedStroke.id); crdtDocument.beginStroke(crdtStroke);
             });
           } catch (cause) {
             drawingCrdtPublisherRef.current.cancel(admittedStroke.id);

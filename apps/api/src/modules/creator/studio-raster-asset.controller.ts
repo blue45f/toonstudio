@@ -1,5 +1,6 @@
 import {
   Controller,
+  Body,
   Delete,
   ForbiddenException,
   Get,
@@ -24,6 +25,7 @@ import { StudioRasterAssetUploadGuard } from "./studio-asset-upload.guard";
 import {
   DeleteStudioRasterAssetQueryDto,
   StudioRasterAssetParamsDto,
+  UploadStudioRasterAssetDto,
 } from "./studio-raster-asset.dto";
 import { StudioRasterAssetService } from "./studio-raster-asset.service";
 
@@ -48,21 +50,22 @@ export class StudioRasterAssetController {
     limits: {
       fileSize: STUDIO_RASTER_ASSET_MAX_BYTES,
       files: 1,
-      fields: 0,
+      fields: 1,
       fieldNameSize: 64,
-      parts: 1,
+      fieldSize: 48 * 1_024, parts: 2,
     },
   }))
   async upload(
     @Param(new ZodValidationPipe(StudioRasterAssetParamsDto)) params: StudioRasterAssetParamsDto,
     @UploadedFile() file: StudioRasterAssetUploadFile | undefined,
-    @Headers("x-user-id") userId?: string
+    @Headers("x-user-id") userId?: string,
+    @Body(new ZodValidationPipe(UploadStudioRasterAssetDto)) body?: UploadStudioRasterAssetDto
   ) {
     return this.service.upload(
       authenticatedUserId(userId),
       params.id,
       params.assetId,
-      file
+      file, body?.writeContext
     );
   }
 

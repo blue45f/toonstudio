@@ -6,8 +6,11 @@ import { Link } from "react-router-dom";
 import { ProductionIntegrationsPanel } from "./ProductionIntegrationsPanel";
 import type { ProductionClientCommand } from "./production-api";
 import { ProductionProjectCoverSettings } from "./ProductionProjectCoverSettings";
+import { ProductionScopedWriteSection } from "./ProductionScopedWriteSection";
+import { ProductionCollaborationRoleSection } from "./ProductionCollaborationRoleSection";
 import { ProductionCrewCoverage } from "./ProductionRoleWorkspace";
 import type { ProductionProjectAccess } from "./production-dashboard-api";
+import type { ProductionCommandExecutor } from "./production-command-execution";
 import { assignmentStatusLabel, projectAccessRoleLabel, roleTypeLabel, type BilingualLabel } from "./production-labels";
 import { ProductionAvatar, ProductionPill, ProductionSectionCard } from "./production-ui";
 
@@ -21,8 +24,8 @@ const ACCESS_GUIDE: readonly { readonly role: AccessRole; readonly icon: typeof 
   { role: "owner", icon: ShieldCheck, can: { ko: "모든 설정·권한과 프로젝트 연결을 책임집니다.", en: "Owns every setting, permission and link." } },
   { role: "admin", icon: Settings2, can: { ko: "공정 설정, 팀 보기 저장, 참여자 배정을 관리합니다.", en: "Manages workflow, shared views and assignments." } },
   { role: "editor", icon: PenLine, can: { ko: "작업을 만들고 상태를 옮기며 원고를 고칩니다.", en: "Creates tasks, moves status and edits pages." } },
-  { role: "commenter", icon: MessageSquare, can: { ko: "원고를 고치지 않고 코멘트와 질문만 남깁니다.", en: "Leaves comments and questions without editing." } },
-  { role: "viewer", icon: Eye, can: { ko: "진행 상황과 원고를 열람만 합니다.", en: "Can only view progress and pages." } },
+  { role: "commenter", icon: MessageSquare, can: { ko: "코멘트와 질문을 남깁니다. 별도 배정한 담당 범위는 원고를 편집할 수 있습니다.", en: "Leaves comments and questions. Explicitly assigned manuscript ranges can be edited." } },
+  { role: "viewer", icon: Eye, can: { ko: "진행 상황과 원고를 열람합니다. 별도 배정한 담당 범위는 원고를 편집할 수 있습니다.", en: "Views progress and manuscripts. Explicitly assigned manuscript ranges can be edited." } },
 ];
 
 const SAFETY_RULES: readonly BilingualLabel[] = [
@@ -38,11 +41,17 @@ export function ProductionTeamSurface({
   aggregate,
   access,
   execute,
+  executeStrict,
+  refresh,
+  hasUnconfirmedCommand = false,
   isDemo = false,
 }: {
   readonly aggregate: ProductionProjectAggregate;
   readonly access: ProductionProjectAccess;
   readonly execute?: (command: ProductionClientCommand, message: string) => Promise<void>;
+  readonly executeStrict?: ProductionCommandExecutor;
+  readonly refresh?: () => Promise<void>;
+  readonly hasUnconfirmedCommand?: boolean;
   readonly isDemo?: boolean;
 }) {
   const bt = useBilingual("ProductionTeamSurface");
@@ -69,6 +78,9 @@ export function ProductionTeamSurface({
   return (
     <div className="space-y-4">
       <ProductionProjectCoverSettings aggregate={aggregate} execute={execute} canEdit={access.edit} />
+      {!isDemo && access.manage && executeStrict ? <ProductionCollaborationRoleSection aggregate={aggregate} canManage={access.manage}
+        execute={executeStrict} refresh={refresh} hasUnconfirmedCommand={hasUnconfirmedCommand} /> : null}
+      {!isDemo && aggregate.projectId !== "sample-project" && access.manage ? <ProductionScopedWriteSection aggregate={aggregate} /> : null}
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <ProductionSectionCard
           title={bt("참여자와 담당 역할", "Members and assigned roles")}

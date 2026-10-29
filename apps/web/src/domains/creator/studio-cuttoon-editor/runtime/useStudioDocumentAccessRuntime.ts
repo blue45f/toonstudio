@@ -15,6 +15,7 @@ import { useStudioDraftCollaborationRuntime } from "./useStudioDraftCollaboratio
 import { useStudioDocumentMutationSetter } from "./useStudioDocumentMutationSetter";
 import { useStudioLayerLiftRuntime } from "./useStudioLayerLiftRuntime";
 import { useStudioMutationAuthorityRuntime } from "./useStudioMutationAuthorityRuntime";
+import { useStudioScopedWriteRuntime } from "./useStudioScopedWriteRuntime";
 
 import type { StudioCrdtDocument } from "../../live/studio-crdt-document";
 import type { StudioCrdtSceneGraphRuntime } from "../../live/StudioLiveCollaborationProvider";
@@ -121,6 +122,9 @@ export function useStudioDocumentAccessRuntime({
     workId,
   });
   const layerLiftRuntime = useStudioLayerLiftRuntime();
+  const scopedWriteRuntime = useStudioScopedWriteRuntime({ actorId: studioAuthUserId, workId, accessRef: mutationRuntime.collaborationAccessRef,
+    canMutate: !collaborationRuntime.documentReloadRequired && !collaborationRuntime.sourceHydrationPending && !collaborationRuntime.workHydrationFailed
+      && !collaborationRuntime.collaborationDocumentUnavailable && collaborationRuntime.studioCrdtDocumentReady && collaborationRuntime.studioLiveEditsDurablyProtected });
   const setScenarioImageReferenceDocument = useStudioDocumentMutationSetter(
     scenarioImageReferenceDocument,
     setScenarioImageReferenceDocumentState,
@@ -132,6 +136,7 @@ export function useStudioDocumentAccessRuntime({
     ...draftRuntime,
     ...layerLiftRuntime,
     ...mutationRuntime,
+    scopedWriteRuntime,
     autosaveKey,
     checkpointKey,
     loggedIn: Boolean(studioAuthUserId),

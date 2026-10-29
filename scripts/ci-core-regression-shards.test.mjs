@@ -125,8 +125,66 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   assert.deepEqual([...staticOnly, ...routed].sort(), [...all].sort());
   assert.equal(new Set([...staticOnly, ...routed]).size, all.length);
   assert.ok(routed.every((file) => file.endsWith(".integration.test.ts")));
+  for (const suite of [
+    "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
+  ]) {
+    assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(suite), `실제 DB 검증 소유 목록에서 누락: ${suite}`);
+    assert.ok(routed.includes(suite), `DB 없는 product 실행에서 분리하지 않은 실제 DB 시험: ${suite}`);
+    assert.ok(!staticOnly.includes(suite), `정적 시험에서 실제 DB 검증을 대신 실행할 수 없습니다: ${suite}`);
+  }
   for (const name of SHARD_NAMES.filter((name) => name !== "product")) {
     assert.ok(!buildShardVitestArgs(expandGlobTargets(executionTargetsByShard()[name])).includes("--exclude"));
+  }
+});
+
+test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에서 실행한다", () => {
+  const selectors = expandGlobTargets(executionTargetsByShard().product);
+  const executed = resolveRequiredTargets(selectors);
+  const args = buildShardVitestArgs(selectors);
+  const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  for (const target of [
+    "apps/api/src/modules/creator/studio-scoped-crdt-reference-sources.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-crdt-write.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-live-op-write.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write-effects.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write-input.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write-purpose.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write-replay.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write-store.test.ts",
+    "apps/api/src/modules/creator/studio-scoped-write.repository.test.ts",
+    "apps/api/src/modules/creator/studio-writer-room-capture.repository.test.ts",
+    "apps/api/src/modules/production-collaboration/production-approval-command.test.ts",
+    "apps/api/src/modules/production-collaboration/production-review-policy-command.test.ts",
+    "apps/api/src/modules/production-collaboration/production-review-policy-lanes.test.ts",
+    "apps/api/src/modules/production-collaboration/production-stale-input-approval.test.ts",
+    "apps/api/src/modules/production-collaboration/production-submission-command.test.ts",
+    "apps/api/src/modules/production-collaboration/production-submission-flow.test.ts",
+    "apps/api/src/modules/production-collaboration/production-submission.dto.test.ts",
+    "apps/api/src/modules/production-collaboration/production-task-batch-concurrency.test.ts",
+    "apps/api/src/modules/production-collaboration/production-task-output-repository.test.ts",
+    "apps/api/src/modules/production-collaboration/production-task-output-source.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-project-graph.dto.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-capture-subject.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-comment-store.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-pen-strokes.migration.test.ts",
+    "apps/api/src/modules/studio-project-graph/studio-review-source-map.test.ts",
+    "packages/core/src/production/production.test.ts",
+    "packages/core/src/production/review-policy.test.ts",
+    "packages/core/src/production/role-workflow.test.ts",
+    "packages/core/src/production/studio-revision-coverage.test.ts",
+    "packages/core/src/production/studio-revision.test.ts",
+    "packages/core/src/production/task-output.test.ts",
+  ]) {
+    assert.equal(shardForTarget(target), "product", target);
+    assert.ok(executed.includes(target), `필수 원고 회귀를 실제 실행하지 않는 선택자: ${target}`);
+    assert.ok(!databaseOnly.includes(target), `단위 회귀를 DB lane으로 제외할 수 없습니다: ${target}`);
+  }
+  const foundation = resolveRequiredTargets(expandGlobTargets(executionTargetsByShard()["studio-foundation"]));
+  for (const target of ["packages/studio-project-model/src/__tests__/review-pen-storage.test.ts",
+    "packages/studio-project-model/src/__tests__/review-pen.test.ts"]) {
+    assert.ok(foundation.includes(target), `정본 펜 첨삭 계약의 필수 실행 누락: ${target}`);
   }
 });
 
@@ -278,9 +336,17 @@ test("foundation sparse checkout은 전체 기본 래스터 소품 입력을 복
 
 test("제작 공정과 시각적 작업 보드 검증은 필수 product shard에서 한 번만 실행한다", () => {
   const targets = [
+    "apps/web/src/domains/creator/production-hub/ProductionCollaborationRoleEditor.test.tsx",
+    "apps/web/src/domains/creator/production-hub/ProductionCreateProjectDialog.test.tsx",
     "apps/web/src/domains/creator/production-hub/ProductionWorkBoard.test.tsx",
     "apps/web/src/domains/creator/production-hub/production-bulk-task-edit.test.ts",
+    "apps/web/src/domains/creator/production-hub/production-collaboration-role-model.test.ts",
+    "apps/web/src/domains/creator/production-hub/production-create-api.test.ts",
+    "apps/web/src/domains/creator/production-hub/production-create-command.test.ts",
+    "apps/web/src/domains/creator/production-hub/production-create-pending.test.ts",
+    "apps/web/src/domains/creator/production-hub/production-command-recovery.test.ts",
     "apps/web/src/domains/creator/production-hub/production-workflow-episode-plan.test.ts",
+    "apps/web/src/domains/creator/production-hub/use-production-role-setup-recovery.test.tsx",
     "packages/contracts/src/production-workflow.test.ts",
     "apps/api/src/modules/production-collaboration/production-workflow-command.test.ts",
   ];

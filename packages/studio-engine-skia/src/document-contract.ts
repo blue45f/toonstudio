@@ -101,6 +101,7 @@ export interface SkiaDocumentClip {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  readonly points?: readonly number[];
 }
 export interface SkiaDocumentItem {
   readonly id: string;
@@ -110,7 +111,7 @@ export interface SkiaDocumentItem {
   readonly text?: SkiaDocumentText;
   readonly image?: SkiaDocumentImage;
   readonly panel?: SkiaDocumentPanel;
-  /** Existing document panel semantics: axis-aligned child clip in document coordinates. */
+  /** 컷의 실제 자식 클립: 문서 좌표의 사각형 또는 닫힌 다각형이다. */
   readonly clip?: SkiaDocumentClip;
 }
 export interface SkiaDocumentFrame {

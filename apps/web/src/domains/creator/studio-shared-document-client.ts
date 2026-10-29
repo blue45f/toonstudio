@@ -1,4 +1,5 @@
 import { STUDIO_PROJECT_MAX_PAGES } from "./studio-project-file";
+import { StudioScopedWriteContextSchema, type StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import { STUDIO_TEAM_ROLES, type StudioTeamRole } from "./studio-team-client";
 
 import { api, isHttpError, toApiError } from "@/platform/api";
@@ -112,6 +113,10 @@ export interface StudioSharedDocumentSaveResponse {
   workId: string;
   revision: number;
   updatedAt: string;
+}
+export interface StudioScopedSharedDocumentInput {
+  readonly baseRevision: number; readonly crdtServerSequence: string; readonly doc: Record<string, unknown>;
+  readonly mutationId: string; readonly writeContext: StudioScopedWriteContext;
 }
 
 export interface StudioSharedDocumentRequestScope {
@@ -627,6 +632,26 @@ export async function updateStudioSharedDocument(
   if (!SHARED_DOCUMENT_MUTABLE_FIELDS.some((field) => hasOwn(patch, field))) {
     throw new StudioSharedDocumentInputError("공동 편집자가 저장할 원고 변경 사항이 없습니다.");
   }
+  return patchStudioSharedDocument(workId, patch, signal);
+}
+
+/** 담당 원고 본문만 보낸다. 역할·metadata·게시 상태를 이 목적의 저장에 섞지 않는다. */
+export async function updateStudioScopedSharedDocument(workId: string, input: StudioScopedSharedDocumentInput,
+  signal?: AbortSignal): Promise<StudioSharedDocumentSaveResponse> {
+  if (!exactId(workId) || !isRecord(input) || !hasExactOwnKeys(input, ["baseRevision", "crdtServerSequence", "doc", "mutationId", "writeContext"])
+    || typeof input.mutationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(input.mutationId)) {
+    throw new StudioSharedDocumentInputError("담당 원고 저장의 식별자와 본문을 확인해 주세요.");
+  }
+  const writeContext = StudioScopedWriteContextSchema.safeParse(input.writeContext);
+  if (!writeContext.success || writeContext.data.creations.length || writeContext.data.restorations.length) {
+    throw new StudioSharedDocumentInputError("실시간 승인과 현재 담당 배정을 확인한 뒤 저장해 주세요.");
+  }
+  const patch = normalizeStudioSharedDocumentPatch({ baseRevision: input.baseRevision, crdtServerSequence: input.crdtServerSequence, doc: input.doc });
+  return patchStudioSharedDocument(workId, { ...patch, mutationId: input.mutationId, writeContext: writeContext.data }, signal);
+}
+
+async function patchStudioSharedDocument(workId: string,
+  patch: UpdateStudioSharedDocumentInput & { readonly mutationId?: string; readonly writeContext?: StudioScopedWriteContext }, signal?: AbortSignal) {
   let payload: unknown;
   try {
     payload = await api.patch<unknown>(sharedDocumentPath(workId), patch, { signal });

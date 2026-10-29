@@ -44,6 +44,21 @@ function task(patch: Partial<ProductionTask> = {}): ProductionTask {
 }
 
 describe("제출본 검수와 인계 권위", () => {
+  it.each(["paused", "ended"] as const)("%s 참여자는 활성 역할이 남아 있어도 새 제출·검수 상태 변경·신규 승인에 사용할 수 없다", (status) => {
+    const { aggregate, submission } = fixture();
+    const inactiveOwner = { ...aggregate, parties: aggregate.parties.map((party) => party.id === "owner" ? { ...party, status } : party) };
+    const fresh: Submission = { ...submission, id: "inactive-party-submission", status: "submitted" };
+    expect(() => assertProductionSubmissionActor(inactiveOwner, fresh, "owner-user", at)).toThrow(ForbiddenException);
+    expect(() => assertProductionSubmissionActor(inactiveOwner, { ...submission, status: "in-review" }, "owner-user", at)).toThrow(ForbiddenException);
+    const inactiveReviewer = { ...aggregate, parties: aggregate.parties.map((party) => party.id === "reviewer-party" ? { ...party, status } : party) };
+    expect(() => assertProductionSubmissionApproval(inactiveReviewer, submission, "reviewer-user", at)).toThrow(BadRequestException);
+    const confirmed = { ...inactiveReviewer, submissions: [submission],
+      deliverables: inactiveReviewer.deliverables.map((entry) => ({ ...entry, approvedSubmissionId: submission.id })) };
+    expect(() => assertProductionSubmissionApproval(confirmed, submission, "reviewer-user", at)).not.toThrow();
+    expect(confirmed.submissions[0]).toBe(submission);
+    expect(confirmed.reviewDecisions).toBe(aggregate.reviewDecisions);
+  });
+
   it.each(["future", "expired", "wrong-scope"] as const)("%s 배정은 담당자·검수자에 새로 추가하거나 제작을 시작할 수 없다", (kind) => {
     const { aggregate, assignment } = fixture();
     const invalid = { ...assignment,
@@ -60,6 +75,51 @@ describe("제출본 검수와 인계 권위", () => {
     const previous = { ...before, tasks: [legacy] };
     expect(() => assertProductionTaskMutationSafety(previous, { ...previous, tasks: [{ ...legacy, title: "기존 작업 제목 수정" }] }, at)).not.toThrow();
     expect(() => assertProductionTaskMutationSafety(previous, { ...previous, tasks: [{ ...legacy, status: "in-progress" }] }, at)).toThrow(BadRequestException);
+  });
+  it("새 제출은 자기 활성 역할이라도 산출물 회차를 포함하지 않으면 거절한다", () => {
+    const { aggregate, submission, assignment } = fixture();
+    const fresh: Submission = { ...submission, id: "new-scope-submission", status: "submitted" };
+    const before: ProductionProjectAggregate = { ...aggregate,
+      assignments: aggregate.assignments.map((entry) => entry.id === assignment.id ? { ...entry, scope: episodeScope("p", "e1") } : entry),
+      deliverables: aggregate.deliverables.map((entry) => ({ ...entry, scope: episodeScope("p", "e2"), currentSubmissionId: null })),
+      submissions: [], reviewDecisions: [], tasks: [],
+    };
+    expect(() => assertProductionSubmissionActor(before, fresh, "owner-user", at)).toThrow(ForbiddenException);
+  });
+  it("새 제출의 자기 활성 역할과 산출물이 같은 회차면 허용한다", () => {
+    const { aggregate, submission, assignment } = fixture();
+    const scope = episodeScope("p", "e1");
+    const fresh: Submission = { ...submission, id: "new-same-episode-submission", status: "submitted" };
+    const before: ProductionProjectAggregate = { ...aggregate,
+      assignments: aggregate.assignments.map((entry) => entry.id === assignment.id ? { ...entry, scope } : entry),
+      deliverables: aggregate.deliverables.map((entry) => ({ ...entry, scope, currentSubmissionId: null })),
+      submissions: [], reviewDecisions: [], tasks: [],
+    };
+    expect(() => assertProductionSubmissionActor(before, fresh, "owner-user", at)).not.toThrow();
+  });
+  it.each(["no-task", "unassigned-task", "other-assignee"] as const)(
+    "프로젝트 범위 producer의 새 회차 제출은 %s여도 허용한다", (kind) => {
+      const { aggregate, submission } = fixture();
+      const scope = episodeScope("p", "e2");
+      const fresh: Submission = { ...submission, id: "new-producer-submission", status: "submitted" };
+      const tasks = kind === "no-task" ? [] : [task({ scope, status: "draft",
+        assignmentIds: kind === "unassigned-task" ? [] : ["reviewer"], reviewerAssignmentIds: [] })];
+      const before: ProductionProjectAggregate = { ...aggregate,
+        deliverables: aggregate.deliverables.map((entry) => ({ ...entry, scope, currentSubmissionId: null })),
+        submissions: [], reviewDecisions: [], tasks,
+      };
+      expect(() => assertProductionSubmissionActor(before, fresh, "owner-user", at)).not.toThrow();
+    },
+  );
+  it("기존 귀속 제출의 상태 변경에는 새 제출의 역할 범위를 소급하지 않는다", () => {
+    const { aggregate, submission, assignment } = fixture();
+    const current: Submission = { ...submission, status: "submitted" };
+    const before: ProductionProjectAggregate = { ...aggregate,
+      assignments: aggregate.assignments.map((entry) => entry.id === assignment.id ? { ...entry, scope: episodeScope("p", "e1") } : entry),
+      deliverables: aggregate.deliverables.map((entry) => ({ ...entry, scope: episodeScope("p", "e2") })),
+      submissions: [current], reviewDecisions: [],
+    };
+    expect(() => assertProductionSubmissionActor(before, { ...current, status: "in-review" }, "owner-user", at)).not.toThrow();
   });
   it("현재 인수인계의 open·answered 차단 질문은 승인 전에 해결해야 한다", () => {
     const { aggregate, submission, assignment } = fixture();

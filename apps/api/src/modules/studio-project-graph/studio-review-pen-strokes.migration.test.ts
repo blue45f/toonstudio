@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { studioReviewComments } from "../../platform/database/schema/studio-project-graph.schema";
 
 const migration = readFileSync(new URL(
-  "../../platform/database/migrations/0114_studio_review_comment_pen_strokes.sql", import.meta.url,
+  "../../platform/database/migrations/0116_studio_review_comment_pen_strokes.sql", import.meta.url,
 ), "utf8");
 const executable = migration.split("\n").filter((line) => !line.trimStart().startsWith("--")).join("\n");
 const dialect = new PgDialect();

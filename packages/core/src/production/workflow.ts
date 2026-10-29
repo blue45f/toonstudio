@@ -1,4 +1,5 @@
 import { scopeContains } from "./scope";
+import { sameProductionRevision } from "./revision";
 
 import type {
   EpisodeCollaboration,
@@ -164,8 +165,7 @@ function readCurrentProductionTaskSubmissions(
     const submission = candidates.find((entry) => entry.id === deliverable.currentSubmissionId
       && entry.projectId === task.projectId && entry.deliverableId === id);
     if (!submission || !task.inputRevisionRefs.every((input) => submission.inputRevisionRefs.some((revision) =>
-      revision.id === input.id && revision.digest === input.digest && revision.lineage === input.lineage
-      && revision.revision === input.revision))) return null;
+      sameProductionRevision(revision, input)))) return null;
     submissions.push(submission);
   }
   return submissions;
@@ -237,8 +237,7 @@ function taskHasCurrentDependencyInputs(
       || !taskHasCurrentApprovedOutputs(dependency, aggregate, lookup)) return false;
     const submissions = currentProductionTaskSubmissions(dependency, aggregate, lookup);
     return submissions != null && submissions.every((submission) => task.inputRevisionRefs.some((input) =>
-      input.id === submission.revisionRef.id && input.digest === submission.revisionRef.digest
-      && input.lineage === submission.revisionRef.lineage && input.revision === submission.revisionRef.revision));
+      sameProductionRevision(input, submission.revisionRef)));
   });
 }
 

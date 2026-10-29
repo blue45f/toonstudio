@@ -1,3 +1,6 @@
+import { isValidStudioFrameClip } from "@toonstudio/studio-project-model/frame-clip";
+
+import { clipSkiaDocumentItem } from "./document-clip";
 import { SKIA_DOCUMENT_MAX_BACKING_DIMENSION, SKIA_DOCUMENT_MAX_BACKING_PIXELS } from "./document-contract";
 import {
   createSkiaDocumentFontCache,
@@ -100,8 +103,7 @@ function validateFrame(frame: SkiaDocumentFrame): void {
     if (!item.id || ids.has(item.id) || !item.revision
       || [item.nodes, item.ink, item.text, item.image, item.panel].filter(Boolean).length !== 1) throw new Error("Invalid GPU document item");
     ids.add(item.id);
-    if (item.clip && (Object.values(item.clip).some((value) => !Number.isFinite(value))
-      || item.clip.width <= 0 || item.clip.height <= 0)) throw new Error("Invalid GPU panel clip");
+    if (item.clip && !isValidStudioFrameClip(item.clip)) throw new Error("Invalid GPU panel clip");
     if (item.panel) {
       const panel = item.panel;
       if ([panel.x, panel.y, panel.width, panel.height, panel.strokeWidth, panel.radius].some((value) => !Number.isFinite(value))
@@ -319,11 +321,7 @@ export function createSkiaDocumentRenderer(canvas: HTMLCanvasElement,
             if (item.clip) {
               target.save();
               try {
-                target.clipRect(
-                  [item.clip.x, item.clip.y, item.clip.x + item.clip.width, item.clip.y + item.clip.height],
-                  ck!.ClipOp.Intersect,
-                  true,
-                );
+                clipSkiaDocumentItem(ck!, target, item.clip);
                 renderItem();
               } finally {
                 target.restore();

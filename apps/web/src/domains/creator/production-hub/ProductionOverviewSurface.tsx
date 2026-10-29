@@ -16,7 +16,7 @@ const ProductionStudioRevisionBridgePanel = lazyRetry(() => import("./Production
  * 세운다 — 이 안에 두면 무대가 첫 화면 폴드 아래로 밀려 표지가 잘렸다.
  * 위험 미리 보기·복구 계획·담당자 추천 같은 운영 상세는 펼칠 때만 계산해 그린다.
  */
-export function ProductionOverviewSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds }: SurfaceProps) {
+export function ProductionOverviewSurface({ aggregate, access, roleLens, execute, executeStrict, isDemo, viewerAssignmentIds, viewerUserId }: SurfaceProps) {
   const bt = useBilingual("ProductionOverviewSurface");
   const [detailOpen, setDetailOpen] = useState(false);
   return (
@@ -39,7 +39,7 @@ export function ProductionOverviewSurface({ aggregate, access, roleLens, execute
         </summary>
         {detailOpen ? (
           <Suspense fallback={<ProductionProjectLoading />}><div className="space-y-4 border-t border-line p-4">
-            <ProductionManagementWorkspace aggregate={aggregate} roleLens={roleLens} execute={execute} executeRecovery={executeStrict} canEdit={access.edit} />
+            <ProductionManagementWorkspace aggregate={aggregate} roleLens={roleLens} execute={execute} executeRecovery={executeStrict} canEdit={access.edit} actorUserId={viewerUserId} />
             <ProductionStudioRevisionBridgePanel aggregate={aggregate} execute={execute} canEdit={access.edit} enabled={!isDemo} />
           </div></Suspense>
         ) : null}

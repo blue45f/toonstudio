@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 import {
   BadRequestException,
@@ -602,10 +603,9 @@ export class StudioWorkAssetService {
   }
 
   async uploadLayerLiftBatch(
-    actorUserId: string,
-    workId: string,
+    actorUserId: string, workId: string,
     metadataJson: string,
-    filesValue: StudioWorkAssetLayerLiftUploadFiles | undefined
+    filesValue: StudioWorkAssetLayerLiftUploadFiles | undefined, writeContext?: StudioScopedWriteContext
   ): Promise<StudioWorkAssetLayerLiftBatchReceipt> {
     if (!isStudioWorkAssetAdmissionOptedIn(
       process.env.STUDIO_WORK_ASSET_ADMISSION
@@ -672,9 +672,8 @@ export class StudioWorkAssetService {
       };
     });
 
-    // Authorization is checked before any remote write, then checked again under the repository's
-    // work-row lock when the source/reference rows are committed atomically.
-    await this.run(() => this.repository.assertCanEditWork(actorUserId, workId));
+    // 원격 업로드 전과 원본·참조를 커밋하는 transaction에서 현재 목적 권한을 각각 검사한다.
+    await this.run(() => this.repository.assertCanEditWork(actorUserId, workId, writeContext));
     const storage = await this.requirePrivateObjectStorage();
     const writes: StudioWorkAssetWrite[] = [];
     for (const admittedWrite of admittedWrites) {
@@ -685,12 +684,10 @@ export class StudioWorkAssetService {
         workId,
         admittedWrite.assetId,
       );
-      writes.push({ ...admittedWrite, storageObject });
+      writes.push({ ...admittedWrite, storageObject, ...(writeContext ? { writeContext } : {}) });
     }
 
-    // No repository mutation begins until both role-bound files have passed every binary,
-    // descriptor, digest and dimension check. The repository then persists the pair in one
-    // work-locked transaction.
+    // 두 파일의 검증이 끝난 뒤 한 transaction으로 저장한다. 둘째 파일 실패도 첫 저장을 롤백한다.
     const stored = await this.run(() => this.repository.upsertBatch(actorUserId, writes));
     if (stored.length !== metadata.assets.length) {
       throw new Error("studio work asset layer-lift batch returned an incomplete receipt");
@@ -729,7 +726,7 @@ export class StudioWorkAssetService {
     assetId: string,
     elementType: StudioWorkAssetType,
     descriptorJson: string,
-    file: StudioWorkAssetUploadFile | undefined
+    file: StudioWorkAssetUploadFile | undefined, writeContext?: StudioScopedWriteContext
   ): Promise<StudioWorkAssetManifest> {
     if (!isStudioWorkAssetAdmissionOptedIn(
       process.env.STUDIO_WORK_ASSET_ADMISSION
@@ -748,7 +745,7 @@ export class StudioWorkAssetService {
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : "에셋 파일이 올바르지 않습니다.");
     }
-    await this.run(() => this.repository.assertCanEditWork(actorUserId, workId));
+    await this.run(() => this.repository.assertCanEditWork(actorUserId, workId, writeContext));
     const storage = await this.requirePrivateObjectStorage();
     const { object: storageObject } = await this.resolveStorageObject(
       storage,
@@ -763,6 +760,7 @@ export class StudioWorkAssetService {
       elementType,
       descriptor,
       ...admitted,
+      ...(writeContext ? { writeContext } : {}),
       storageObject,
     }));
   }
@@ -774,7 +772,7 @@ export class StudioWorkAssetService {
     purpose: StudioWorkAssetGeneratedObjectPurpose,
     referenceId: string,
     elementType: StudioWorkAssetType,
-    file: StudioWorkAssetUploadFile | undefined,
+    file: StudioWorkAssetUploadFile | undefined, writeContext?: StudioScopedWriteContext,
   ): Promise<StudioWorkAssetStorageReference> {
     if (!isStudioWorkAssetAdmissionOptedIn(
       process.env.STUDIO_WORK_ASSET_ADMISSION
@@ -793,6 +791,7 @@ export class StudioWorkAssetService {
       actorUserId,
       workId,
       sourceAssetId,
+      writeContext,
     ));
 
     let admitted: AdmittedStudioWorkAssetPayload;
@@ -820,6 +819,7 @@ export class StudioWorkAssetService {
         object: resolved.object,
       },
       resolved.uploaded,
+      writeContext,
     ));
   }
 

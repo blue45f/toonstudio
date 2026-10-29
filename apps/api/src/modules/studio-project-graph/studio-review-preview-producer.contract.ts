@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { canonicalJson, isoTimestampSchema, scopeRefSchema, sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
 import { z } from "zod";
+import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
 
 export const studioReviewCaptureSourceRevisionSchema = z.object({
   artifactId: studioEntityIdSchema, revisionId: studioEntityIdSchema, rootGraphHash: sha256Schema,
@@ -19,6 +20,7 @@ export const studioReviewPreviewCaptureSchema = z.object({
   deviceId: studioEntityIdSchema,
   createdAt: isoTimestampSchema,
   sourceRevision: studioReviewCaptureSourceRevisionSchema.optional(),
+  writeContext: StudioScopedWriteContextSchema.optional(),
 }).strict();
 export const studioReviewPreviewIntentSchema = studioReviewPreviewCaptureSchema.extend({
   projectId: studioEntityIdSchema, artifactId: studioEntityIdSchema,

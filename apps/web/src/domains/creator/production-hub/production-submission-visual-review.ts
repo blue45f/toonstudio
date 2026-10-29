@@ -1,4 +1,5 @@
-import type { ProductionProjectAggregate, RevisionRef, ScopeRef, Submission } from "@toonstudio/core/production";
+import type { ProductionProjectAggregate, ProductionTaskOutputEvidence, RevisionRef, ScopeRef, Submission } from "@toonstudio/core/production";
+import { selectTaskOutputPreviewPages } from "./production-task-output-preview";
 import type { StudioArtifactRecord, StudioProjectRecord, StudioReviewSummary, StudioRevisionRecord } from "../project-graph/studio-project-graph-contract";
 import { getStudioProjectByWork, getStudioReviewPreviews, listStudioArtifactRevisions, listStudioReviews, type StudioReviewPreviewRead } from "../project-graph/studio-project-graph-client";
 import { studioVirtualSpaceReviewHref } from "../virtual-space/studio-virtual-space-review-invitation";
@@ -19,6 +20,8 @@ export interface PinnedSubmissionVisualSource {
   readonly sourceRevisionRef: RevisionRef;
   readonly mapping: "exact" | "captured-source";
   readonly captureHref: string | null;
+  readonly outputEvidence?: ProductionTaskOutputEvidence;
+  readonly comparisonKey?: string;
 }
 
 export class SubmissionVisualReviewCaptureRequired extends Error {
@@ -122,6 +125,7 @@ export function resolveSubmissionVisualReview(
 }
 
 export async function loadSubmissionVisualReview(aggregate: ProductionProjectAggregate, submission: Submission): Promise<SubmissionVisualReviewData> {
+  if (submission.sourceEvidence) return (await import("./production-task-output-visual-review")).loadTaskOutputVisualReview(aggregate, submission);
   const project = await getStudioProjectByWork(aggregate.workId);
   const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId && entry.projectId === aggregate.projectId);
   if (!deliverable || submission.projectId !== aggregate.projectId || project.workId !== aggregate.workId || !project.access.view) {
@@ -199,68 +203,110 @@ export interface PinnedSubmissionPreviewOptions {
   readonly signal?: AbortSignal;
 }
 
-/** 전체 조회의 성공·실패는 유지하며, 검증된 중간 목록만 선택적으로 먼저 전달한다. */
-export async function loadPinnedSubmissionPreviews(source: PinnedSubmissionVisualSource,
-  options: PinnedSubmissionPreviewOptions = {}): Promise<readonly StudioReviewPreviewRead[]> {
+const previewMismatch = () => new Error("고정 원고 버전이 일치하지 않습니다. 제출본 연결을 다시 확인하세요.");
+function checkPreviewCancelled(signal?: AbortSignal) {
+  if (signal?.aborted) throw new DOMException("원고 이미지 조회를 취소했습니다.", "AbortError");
+}
+function pinnedPreviewSource(source: PinnedSubmissionVisualSource) {
   const subject = parseStudioVirtualSpaceReviewSubject({ schemaVersion: 1, projectId: source.projectId, workId: source.workId,
     artifactId: source.artifact.id, reviewId: source.review.id, revisionId: source.revision.id, rootGraphHash: source.revision.rootGraphHash });
-  const mismatch = () => new Error("고정 원고 버전이 일치하지 않습니다. 제출본 연결을 다시 확인하세요.");
   if (!subject || source.artifact.projectId !== subject.projectId || source.revision.artifactId !== subject.artifactId
     || source.review.artifactId !== subject.artifactId || source.review.revisionId !== subject.revisionId
-    || source.sourceRevisionRef.digest !== `sha256:${subject.rootGraphHash}`) throw mismatch();
+    || source.sourceRevisionRef.digest !== `sha256:${subject.rootGraphHash}`) throw previewMismatch();
   const manifest = new Map<number, string>();
   for (const blob of source.revision.blobRefs.filter((entry) => entry.role === "preview")) {
     if (!Number.isSafeInteger(blob.ordinal) || blob.ordinal < 0 || blob.ordinal > 1_000_000
-      || !/^[a-f0-9]{64}$/u.test(blob.sha256) || manifest.has(blob.ordinal)) throw mismatch();
+      || !/^[a-f0-9]{64}$/u.test(blob.sha256) || manifest.has(blob.ordinal)) throw previewMismatch();
     manifest.set(blob.ordinal, blob.sha256);
   }
   if (!manifest.size) throw new Error("이 고정 원고에는 표시 가능한 이미지가 없습니다.");
-  const checkCancelled = () => { if (options.signal?.aborted) throw new DOMException("원고 이미지 조회를 취소했습니다.", "AbortError"); };
+  return { subject, manifest };
+}
+function previewSequence(previousOrdinal = -1, sourceServerRevision: number | undefined = undefined) {
+  return { previousOrdinal, sourceServerRevision, cursors: new Set<string>(), ordinals: new Set<number>(), pageIds: new Set<string>() };
+}
+
+/** 목록과 주소 갱신이 같은 정본·manifest·좌표 검사를 거치도록 한다. */
+async function readPinnedPreviewBatch(source: PinnedSubmissionVisualSource, context: ReturnType<typeof pinnedPreviewSource>,
+  sequence: ReturnType<typeof previewSequence>, cursor: string | null, signal?: AbortSignal) {
+  checkPreviewCancelled(signal);
+  const { subject, manifest } = context;
+  const result = await getStudioReviewPreviews(subject.reviewId, {
+    projectId: subject.projectId, workId: subject.workId, artifactId: subject.artifactId,
+    revisionId: subject.revisionId, rootGraphHash: subject.rootGraphHash,
+  }, cursor);
+  checkPreviewCancelled(signal);
+  if (!result.ok) {
+    if (result.reason === "preview-unavailable") throw new SubmissionVisualReviewCaptureRequired(source.captureHref);
+    throw new Error(result.reason === "version-mismatch" ? "고정 원고 버전이 일치하지 않습니다. 제출본 연결을 다시 확인하세요." : "이 원고의 Studio 검수가 닫혔습니다.");
+  }
+  if (!sameStudioVirtualSpaceReviewSubject(subject, parseStudioVirtualSpaceReviewSubject(result.subject))
+    || result.previews.length < 1 || result.previews.length > 32) throw previewMismatch();
+  const batch: StudioReviewPreviewRead[] = [];
+  for (const candidate of result.previews) {
+    const parsed = pinnedPreview.safeParse(candidate);
+    if (!parsed.success) throw previewMismatch();
+    const preview = parsed.data;
+    if (preview.ordinal <= sequence.previousOrdinal || sequence.ordinals.has(preview.ordinal)
+      || manifest.get(preview.ordinal) !== preview.sha256) throw previewMismatch();
+    if (preview.mapping.status === "mapped") {
+      const mapping = preview.mapping;
+      if (mapping.sourceContentDigest !== subject.rootGraphHash || mapping.page.ordinal !== preview.ordinal
+        || sequence.pageIds.has(mapping.page.id)
+        || (sequence.sourceServerRevision !== undefined && mapping.sourceServerRevision !== sequence.sourceServerRevision)) throw previewMismatch();
+      sequence.sourceServerRevision = mapping.sourceServerRevision; sequence.pageIds.add(mapping.page.id);
+    }
+    sequence.previousOrdinal = preview.ordinal; sequence.ordinals.add(preview.ordinal); batch.push(Object.freeze(preview));
+  }
+  if (result.nextCursor !== null) {
+    const last = batch[batch.length - 1];
+    if (sequence.cursors.has(result.nextCursor)) throw new Error("원고 이미지 목록을 끝까지 확인하지 못했습니다. 다시 불러와 주세요.");
+    if (!previewCursor.safeParse(result.nextCursor).success || !last
+      || result.nextCursor !== `${last.ordinal}.${last.sha256}`) throw previewMismatch();
+    sequence.cursors.add(result.nextCursor);
+  }
+  return { batch: Object.freeze(batch), nextCursor: result.nextCursor };
+}
+
+/** 전체 조회의 성공·실패는 유지하며, 검증된 중간 목록만 선택적으로 먼저 전달한다. */
+export async function loadPinnedSubmissionPreviews(source: PinnedSubmissionVisualSource,
+  options: PinnedSubmissionPreviewOptions = {}): Promise<readonly StudioReviewPreviewRead[]> {
+  checkPreviewCancelled(options.signal);
+  const context = pinnedPreviewSource(source), sequence = previewSequence();
   const pages: StudioReviewPreviewRead[] = [];
-  const cursors = new Set<string>();
-  const ordinals = new Set<number>(), pageIds = new Set<string>();
-  let sourceServerRevision: number | undefined;
-  let previousOrdinal = -1;
   let cursor: string | null = null;
   do {
-    checkCancelled();
-    const result = await getStudioReviewPreviews(subject.reviewId, {
-      projectId: subject.projectId, workId: subject.workId, artifactId: subject.artifactId,
-      revisionId: subject.revisionId, rootGraphHash: subject.rootGraphHash,
-    }, cursor);
-    checkCancelled();
-    if (!result.ok) {
-      if (result.reason === "preview-unavailable") throw new SubmissionVisualReviewCaptureRequired(source.captureHref);
-      throw new Error(result.reason === "version-mismatch" ? "고정 원고 버전이 일치하지 않습니다. 제출본 연결을 다시 확인하세요." : "이 원고의 Studio 검수가 닫혔습니다.");
-    }
-    if (!sameStudioVirtualSpaceReviewSubject(subject, parseStudioVirtualSpaceReviewSubject(result.subject))
-      || result.previews.length < 1 || result.previews.length > 32) throw mismatch();
-    const batch: StudioReviewPreviewRead[] = [];
-    for (const candidate of result.previews) {
-      const parsed = pinnedPreview.safeParse(candidate);
-      if (!parsed.success) throw mismatch();
-      const preview = parsed.data;
-      if (preview.ordinal <= previousOrdinal || ordinals.has(preview.ordinal)
-        || manifest.get(preview.ordinal) !== preview.sha256) throw mismatch();
-      if (preview.mapping.status === "mapped") {
-        const mapping = preview.mapping;
-        if (mapping.sourceContentDigest !== subject.rootGraphHash || mapping.page.ordinal !== preview.ordinal
-          || pageIds.has(mapping.page.id) || (sourceServerRevision !== undefined && mapping.sourceServerRevision !== sourceServerRevision)) throw mismatch();
-        sourceServerRevision = mapping.sourceServerRevision; pageIds.add(mapping.page.id);
-      }
-      previousOrdinal = preview.ordinal; ordinals.add(preview.ordinal); batch.push(Object.freeze(preview));
-    }
+    const result = await readPinnedPreviewBatch(source, context, sequence, cursor, options.signal);
     cursor = result.nextCursor;
-    if (cursor !== null) {
-      const last = batch[batch.length - 1];
-      if (cursors.has(cursor)) throw new Error("원고 이미지 목록을 끝까지 확인하지 못했습니다. 다시 불러와 주세요.");
-      if (!previewCursor.safeParse(cursor).success || !last || cursor !== `${last.ordinal}.${last.sha256}`) throw mismatch();
-      cursors.add(cursor);
-    }
-    pages.push(...batch);
-    checkCancelled();
-    if (cursor !== null) options.onValidatedPrefix?.(Object.freeze([...pages]));
+    pages.push(...result.batch);
+    checkPreviewCancelled(options.signal);
+    if (cursor !== null) options.onValidatedPrefix?.(selectTaskOutputPreviewPages(source, Object.freeze([...pages]), false));
   } while (cursor !== null);
-  if (pages.length !== manifest.size) throw mismatch();
-  return Object.freeze(pages);
+  if (pages.length !== context.manifest.size) throw previewMismatch();
+  return selectTaskOutputPreviewPages(source, Object.freeze(pages), true);
+}
+
+/** 고정 목록의 한 이미지 주소만 갱신한다. 서버가 돌려준 다음 구간은 이어 읽지 않는다. */
+export async function refreshPinnedSubmissionPreview(source: PinnedSubmissionVisualSource, current: StudioReviewPreviewRead,
+  options: Pick<PinnedSubmissionPreviewOptions, "signal"> = {}): Promise<StudioReviewPreviewRead> {
+  checkPreviewCancelled(options.signal);
+  const context = pinnedPreviewSource(source), parsed = pinnedPreview.safeParse(current);
+  if (!parsed.success || context.manifest.get(parsed.data.ordinal) !== parsed.data.sha256) throw previewMismatch();
+  const pinned = parsed.data;
+  if (source.outputEvidence && selectTaskOutputPreviewPages(source, [pinned], false).length !== 1) throw previewMismatch();
+  if (pinned.mapping.status === "mapped" && (pinned.mapping.sourceContentDigest !== context.subject.rootGraphHash
+    || pinned.mapping.page.ordinal !== pinned.ordinal)) throw previewMismatch();
+  const refs = [...context.manifest.entries()].sort(([left], [right]) => left - right);
+  const index = refs.findIndex(([ordinal]) => ordinal === pinned.ordinal);
+  const previous = refs[index - 1];
+  const cursor = previous ? `${previous[0]}.${previous[1]}` : null;
+  const sequence = previewSequence(previous?.[0] ?? -1,
+    pinned.mapping.status === "mapped" ? pinned.mapping.sourceServerRevision : undefined);
+  const { batch } = await readPinnedPreviewBatch(source, context, sequence, cursor, options.signal);
+  const renewed = batch[0];
+  if (!renewed || renewed.ordinal !== pinned.ordinal || renewed.sha256 !== pinned.sha256
+    || renewed.mediaType !== pinned.mediaType || renewed.byteLength !== pinned.byteLength
+    || canonicalJson(renewed.mapping) !== canonicalJson(pinned.mapping)) throw previewMismatch();
+  checkPreviewCancelled(options.signal);
+  return Object.freeze({ ...pinned, url: renewed.url, expiresAt: renewed.expiresAt });
 }

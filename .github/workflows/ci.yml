@@ -401,7 +401,19 @@ jobs:
       - name: Prepare an empty disposable database with real graph constraints
         run: node scripts/prepare-studio-review-test-db.mjs
       - name: Verify review production, immutable history and concurrent decisions
-        run: pnpm exec vitest run --no-file-parallelism apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts
+        run: >-
+          pnpm exec vitest run --no-file-parallelism
+          apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts
+          apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts
+          apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts
+          apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts
+          apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts
 
   core:
     name: core

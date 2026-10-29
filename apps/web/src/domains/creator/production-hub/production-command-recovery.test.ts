@@ -10,6 +10,35 @@ beforeEach(() => window.sessionStorage.clear());
 afterEach(() => { vi.restoreAllMocks(); window.sessionStorage.clear(); });
 
 describe("탭 한정 제작 명령 복구 기록", () => {
+  it("비밀값 없는 참여 역할 원문만 보관하고 헌장·비밀 필드는 허용을 넓히지 않는다", () => {
+    const aggregate = createProductionDemoProject();
+    const command = { type: "configure-collaboration", parties: aggregate.parties, assignments: aggregate.assignments, authorityRules: aggregate.authorityRules };
+    const pending = { ...request(), command };
+    expect(saveProductionCommandRecovery("actor-a", "project-a", pending)).toBe(true);
+    expect(loadProductionCommandRecovery("actor-a", "project-a")).toEqual(pending);
+    expect(saveProductionCommandRecovery("actor-a", "project-a", { ...pending, command: { ...command, charter: {} } })).toBe(false);
+    expect(saveProductionCommandRecovery("actor-a", "project-a", { ...pending, command: { ...command, parties: [{ privateKey: "placeholder" }] } })).toBe(false);
+    expect(loadProductionCommandRecovery("actor-a", "project-a")).toEqual(pending);
+  });
+  it("setItem이 성공해도 같은 원문의 readback이 없으면 복구 보존 성공으로 표시하지 않는다", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+    expect(saveProductionCommandRecovery("actor-a", "project-a", request())).toBe(false);
+  });
+  it("첫 제출의 원래 ID·원고 선택·페이지·입력 정책을 같은 요청으로 복원한다", () => {
+    const command = { type: "submit-task-output", taskId: "task-one", submissionId: "submission-one",
+      submittedByAssignmentId: "assignment-one", documentRole: "thumbnail",
+      source: { subject: { schemaVersion: 1, projectId: "graph-project", workId: "work-one", artifactId: "capture-one",
+        reviewId: "review-one", revisionId: "snapshot-one", rootGraphHash: "a".repeat(64) } },
+      selection: { mode: "pages", pages: [{ pageId: "page-one", ordinal: 0 }] }, inputs: { mode: "current" },
+      target: { kind: "create", deliverableId: "output-one", type: "콘티", expectedFormat: "image/png", completionCriteria: ["구도 확인"] } };
+    const pending = { ...request(), command };
+    expect(saveProductionCommandRecovery("actor-a", "project-a", pending)).toBe(true);
+    expect(loadProductionCommandRecovery("actor-a", "project-a")).toEqual(pending);
+    expect(loadProductionCommandRecovery("actor-b", "project-a")).toBeNull();
+    expect(saveProductionCommandRecovery("actor-a", "project-a", { ...pending,
+      command: { ...command, source: { ...command.source, signedUrl: "https://example.test/image?signature=placeholder" } } })).toBe(false);
+    expect(loadProductionCommandRecovery("actor-a", "project-a")).toEqual(pending);
+  });
   it("원래 요청과 confirmedRevision을 보존하고 다른 계정·프로젝트에는 반환하지 않는다", () => {
     const pending = { ...request(), confirmedRevision: 4 };
     expect(saveProductionCommandRecovery("actor-a", "project-a", pending)).toBe(true);

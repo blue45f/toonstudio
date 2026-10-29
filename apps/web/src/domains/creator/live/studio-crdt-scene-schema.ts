@@ -103,7 +103,7 @@ export function studioCrdtLayerGroupKey(pageId: string, groupId: string): string
 }
 
 const COMMON_SCENE_ELEMENT_KEYS = [
-  "name", "hidden", "locked", "noClip", "opacity", "blendMode", "lockAspect", "groupId",
+  "name", "hidden", "locked", "noClip", "frameClipId", "opacity", "blendMode", "lockAspect", "groupId",
   "clipBelow", "alphaLocked", "maskSrc", "maskEnabled", "layerRole", "layerColor",
   "emeresSourceId", "psdSource", "psdGroupId", "psdFolderPath", "psdRasterSourceId",
 ] as const;
@@ -236,6 +236,7 @@ export function isStudioCrdtImageAuxiliaryReferencePayload(
     keys.some((key) => (
       key !== "elementType" &&
       key !== "hidden" &&
+      key !== "frameClipId" &&
       !(STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS as readonly string[]).includes(key)
     ))
   ) {
@@ -244,6 +245,7 @@ export function isStudioCrdtImageAuxiliaryReferencePayload(
   if (Object.hasOwn(payload.props, "hidden") && typeof payload.props.hidden !== "boolean") {
     return false;
   }
+  if (Object.hasOwn(payload.props, "frameClipId") && !exactIdentifier(payload.props.frameClipId)) return false;
   const filterProps = studioFilterMaskReferenceProps(payload.props);
   return Object.keys(filterProps).length === 0 || isStudioFilterMaskReferenceProps(filterProps);
 }
@@ -405,7 +407,7 @@ export function validateStudioCrdtSceneElementPayload(
   if ("psdSource" in props && !parseStudioPsdSource(props.psdSource)) {
     throw new Error("장면 요소의 PSD 원본 참조가 올바르지 않습니다.");
   }
-  for (const key of ["psdGroupId", "psdRasterSourceId"] as const) {
+  for (const key of ["psdGroupId", "psdRasterSourceId", "frameClipId"] as const) {
     if (key in props && !exactIdentifier(props[key])) throw new Error("PSD 레이어 연결 ID가 올바르지 않습니다.");
   }
   if ("psdFolderPath" in props && (!Array.isArray(props.psdFolderPath) || props.psdFolderPath.length > 64

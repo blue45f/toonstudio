@@ -1,5 +1,6 @@
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
+import { StudioScopedAssetContextSchema } from "./studio-scoped-write-input";
 
 import { StudioWorkAssetTypeSchema } from "@toonstudio/contracts/studio-work-asset-contract";
 
@@ -64,7 +65,7 @@ export const StudioWorkAssetSourceSignedReadQuerySchema = StudioWorkAssetTypeQue
   .strict();
 
 export const UploadStudioWorkAssetGeneratedObjectSchema = z
-  .object({ elementType: StudioWorkAssetTypeSchema })
+  .object({ elementType: StudioWorkAssetTypeSchema, writeContext: StudioScopedAssetContextSchema })
   .strict();
 
 export const DeleteStudioWorkAssetGeneratedObjectQuerySchema = z
@@ -79,6 +80,7 @@ export const UploadStudioWorkAssetSchema = z
   .object({
     elementType: StudioWorkAssetTypeSchema,
     descriptor: z.string().min(2).max(4_096),
+    writeContext: StudioScopedAssetContextSchema,
   })
   .strict();
 
@@ -106,6 +108,7 @@ export class UploadStudioWorkAssetDto extends createZodDto(UploadStudioWorkAsset
 export const UploadStudioWorkAssetLayerLiftBatchSchema = z
   .object({
     metadata: z.string().min(2).max(12_288),
+    writeContext: StudioScopedAssetContextSchema,
   })
   .strict();
 

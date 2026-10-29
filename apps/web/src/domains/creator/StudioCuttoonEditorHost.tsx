@@ -242,6 +242,9 @@ import { useStudioTemplateLayout } from "./template/studio-template-layout-contr
 import { useStudioSelectionTransform } from "./selection/studio-selection-transform-controller";
 import { useStudioQuickComic } from "./comipo/studio-quick-comic-controller";
 import { StudioCuttoonEditorView } from "./studio-cuttoon-editor/StudioCuttoonEditorView";
+import { createStudioScopedHistory, routeStudioCompanionHistory } from "./studio-collab/studio-scoped-history";
+import { canStartStudioScopedDrawing, type StudioScopedCanvasBoundary } from "./studio-collab/studio-scoped-drawing-boundary";
+import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
 import { applyStudioBg3dInsertResult, applyStudioVrmInsertResult } from "./scene-3d/studio-3d-insert-controller";
 import {
   planStudioActiveStrokeUnmountRecovery,
@@ -1876,7 +1879,7 @@ export function StudioCuttoonEditor({
     studioLayerLiftRegistryRef,
     studioLayerLiftRunIdRef,
     studioLiveJam,
-    studioLiveParticipant,
+    studioLiveParticipant, scopedWriteRuntime,
     studioProjectDocumentSessionRef,
     studioProjectDocumentSessionScopeKey,
     studioProjectDocumentSessionScopeRef,
@@ -1907,7 +1910,7 @@ export function StudioCuttoonEditor({
     studioWorkAssetHydrator,
     workId,
   });
-  const { statusNotice, setStatusNotice, offlineSceneNotice } = useStudioEditorStatusNotices(autosaveKey, studioAuthUserId);
+  const { statusNotice, setStatusNotice, offlineSceneNotice } = useStudioEditorStatusNotices(autosaveKey, studioAuthUserId), scopedDraftSaveState = useStudioScopedDraftSaveState(scopedWriteRuntime.authority);
   const {
     pages,
     pagesHi,
@@ -2614,14 +2617,13 @@ export function StudioCuttoonEditor({
     for (const element of elements) map.set(element.id, element);
     return map;
   }, [elements]);
-  // Long-running pixel jobs validate against the latest active elements rather than their render-time
-  // closure, preventing a stale fill result from overwriting an undo, page switch, or source edit.
+  // 비동기 작업은 현재 원고와 잠금 경계를 다시 확인한다.
   const activeElementsRef = useRef(elements);
   activeElementsRef.current = elements;
   const activeGroupsRef = useRef(groups);
   activeGroupsRef.current = groups;
   const activeSurfaceReviewLockedRef = useRef(activeSurfaceReviewLocked);
-  activeSurfaceReviewLockedRef.current = activeSurfaceReviewLocked;
+  activeSurfaceReviewLockedRef.current = activeSurfaceReviewLocked; const scopedCanvasBoundaryRef = useRef<StudioScopedCanvasBoundary>({ pageId: activePage.id, locked: true });
   function isLatestLayerContentMutationLocked(id: string): boolean {
     if (activeSurfaceReviewLockedRef.current) return true;
     const current = activeElementsRef.current.find((element) => element.id === id);
@@ -9279,7 +9281,7 @@ export function StudioCuttoonEditor({
     });
     return pendingCatalogInputRef.current;
   }, []);
-  const catalogInputOwnerScope = JSON.stringify([studioAuthUserId, autosaveKey, activePage.id, masterEditMode]);
+  const catalogInputOwnerScope = JSON.stringify([studioAuthUserId, autosaveKey, activePage.id, masterEditMode, collaborationDocumentLocked ? [scopedWriteRuntime.authority?.targetId, scopedWriteRuntime.authority?.grantId, scopedWriteRuntime.authority?.getEpoch(), collaborationAccessRef.current.accessGeneration] : null]);
   const catalogInputScope = `${catalogInputOwnerScope}:${collaborationAccessRef.current.documentGeneration}`;
   function capturePendingCatalogInput(pointer: PointerEvent, stage: Konva.Stage | null): boolean {
     if (!stage || drawingRef.current) return false;
@@ -9688,6 +9690,7 @@ export function StudioCuttoonEditor({
     || sourceHydrationPending
     || workHydrationFailed
     || collaborationDocumentUnavailable;
+  scopedCanvasBoundaryRef.current = { pageId: activePage.id, locked: masterEditMode || pageEditLocked || !persistLeadershipAllowsDraw || hardCanvasInteractionBlock || timelapseCapturing };
   const canvasInteractionBlocked = isStudioCanvasInteractionBlocked({
     activeSurfaceReviewLocked,
     commentPinArmed,
@@ -13155,8 +13158,8 @@ export function StudioCuttoonEditor({
       selectionLabel: selectedElement ? elementLabel(selectedElement) : null,
       // 사이드카 편집도 되돌릴 수 있는 항목이다 — `pagesHi` 만 보면 방금 고친 로그라인이
       // 되돌릴 수 없는 것처럼 보인다.
-      canUndo: !masterEditMode && !collaborationDocumentLocked && studioHistoryCanUndo,
-      canRedo: !masterEditMode && !collaborationDocumentLocked && studioHistoryCanRedo,
+      canUndo: !masterEditMode && (collaborationDocumentLocked ? scopedHistory.canUndo() : studioHistoryCanUndo),
+      canRedo: !masterEditMode && (collaborationDocumentLocked ? scopedHistory.canRedo() : studioHistoryCanRedo),
       captureAllowed:
         drawingRef.current === null
         && !drawingPointerTransportRef.current?.getSession(),
@@ -17960,8 +17963,14 @@ const puppetWarpArmed =
     mainLayerRef.current?.batchDraw();
   }
 
+  const scopedHistory = createStudioScopedHistory({
+    owner: collaborationAccessRef, getHistory: () => pagesHistoryRef.current, getIndex: () => pagesHiRef.current, getPending: () => pendingStrokeCommitsRef.current?.strokes ?? [],
+    flushPending: () => pendingStrokeCommitsRef.current === null || flushPendingStrokeCommitsRef.current(), blocked: () => scopedCanvasBoundaryRef.current.locked || documentSaveInFlightRef.current || drawingRef.current !== null || hokusaiLiveFinalizingRef.current || livingInkFinalizingRef.current,
+    entryKind: (direction) => (direction === "undo" ? readStudioHistoryJournalUndoEntry : readStudioHistoryJournalRedoEntry)(historyJournalRef.current)?.kind ?? null, publish: publishStudioCrdtHistoryTransition,
+    reportError: setError, onApplied: (direction, next, index) => { resetTransientInkPresentationForHistoryTransition(); recordStudioHistoryUndoRedo(direction, [...next], index); commitStudioHistoryJournal(stepStudioHistoryJournal(historyJournalRef.current, direction)); pagesHiRef.current = index; setPagesHi(index); },
+  });
   function undo() {
-    if (masterEditMode || collaborationDocumentLocked) return;
+    if (masterEditMode) return; if (collaborationDocumentLocked) { scopedHistory.undo(); return; }
     const pendingLivingInkHandoff = livingInkCanonicalHandoffRef.current;
     if (pendingLivingInkHandoff) {
       releaseStudioLivingInkPresentation(pendingLivingInkHandoff.token);
@@ -18112,7 +18121,7 @@ const puppetWarpArmed =
     setPagesHi(nextIndex);
   }
   function redo() {
-    if (masterEditMode || collaborationDocumentLocked) return;
+    if (masterEditMode) return; if (collaborationDocumentLocked) { scopedHistory.redo(); return; }
     const pendingLivingInkHandoff = livingInkCanonicalHandoffRef.current;
     if (pendingLivingInkHandoff) {
       releaseStudioLivingInkPresentation(pendingLivingInkHandoff.token);
@@ -18219,14 +18228,7 @@ const puppetWarpArmed =
     setPagesHi(nextIndex);
   };
   companionHistoryHandlerRef.current = (action) => {
-    if (masterEditMode || collaborationDocumentLocked) return;
-    if (action === "undo") {
-      if (!studioHistoryCanUndo) return;
-      undo();
-      return;
-    }
-    if (!studioHistoryCanRedo) return;
-    redo();
+    routeStudioCompanionHistory({ action, blocked: masterEditMode, canUndo: collaborationDocumentLocked ? scopedHistory.canUndo() : studioHistoryCanUndo, canRedo: collaborationDocumentLocked ? scopedHistory.canRedo() : studioHistoryCanRedo, undo, redo });
   };
   const {
     fitCanvasToViewport,
@@ -18520,7 +18522,7 @@ const puppetWarpArmed =
         clearPaintRetouchStrokePreview,
         clearPolyLassoDraft,
         closeViewToolWithFocus,
-        collaborationDocumentLocked,
+        collaborationDocumentLocked, scopedDraftSaveAvailable: scopedDraftSaveState.available,
         collaborationLockMessage,
         color,
         commentPinArmed,
@@ -22631,9 +22633,7 @@ const puppetWarpArmed =
     }
   }
 
-  // 그림판 — 진행 중 선/도형은 draft 로만 렌더, 끝나면 히스토리에 커밋.
-  // 스테이지를 실제 합성 픽셀 그대로 렌더해 클릭 지점 색을 뽑는다(이미지 요소 하나의 "주요 색상"이
-  // 아니라, 여러 레이어가 겹친 화면 그대로의 정확한 색 — CSP/Photoshop 스포이드와 동일한 개념).
+  // 스테이지의 실제 합성 픽셀에서 색을 읽는다.
   function pickCanvasColorAt(pos: { x: number; y: number }): string | null {
     const stage = stageRef.current;
     if (!stage) return null;
@@ -23478,7 +23478,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     studioPageElementsFromHistory,
     replayPendingCatalogGesture,
   } = bindStudioCuttoonStagePointers({
-    capturePendingCatalogInput,
+    capturePendingCatalogInput, scopedCanvasBoundaryRef, scopedDrawAllowed: () => canStartStudioScopedDrawing(collaborationAccessRef, scopedCanvasBoundaryRef, tool),
     activeCatalogBrush,
     activeGroupId,
     activeGroupIdRef,
@@ -23912,10 +23912,10 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
   finishQueuedStudioDrawingPointerRef.current = stageFinishDrawingPointer;
   useEffect(() => {
     pendingCatalogInputRef.current?.replayReady(activeCatalogBrush.id, catalogInputScope, (gesture) => {
-      if (canvasInteractionBlocked || tool !== "draw") return false;
+      if ((canvasInteractionBlocked && !canStartStudioScopedDrawing(collaborationAccessRef, scopedCanvasBoundaryRef, tool)) || tool !== "draw") return false;
       return replayPendingCatalogGesture(gesture);
     });
-  }, [activeCatalogBrush.id, catalogInputScope, catalogSelectionRevision, canvasInteractionBlocked, tool, replayPendingCatalogGesture]);
+  }, [activeCatalogBrush.id, catalogInputScope, catalogSelectionRevision, canvasInteractionBlocked, collaborationAccessRef, tool, replayPendingCatalogGesture]);
 
 
   function startCanvasEditText(id: string) {
@@ -24220,7 +24220,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
       currentStudioDocumentScopeRef, editorMountedRef,
       captureStudioMutationTicket, canApplyStudioMutation,
       markStudioDocumentChanged, lockStudioMutationsNow, documentSaveInFlightRef,
-      sharedDocument, setSharedDocumentScope, collaborationDocumentLocked,
+      sharedDocument, setSharedDocumentScope, collaborationDocumentLocked, scopedWrite: { authority: scopedWriteRuntime.authority, getSnapshot: currentStudioProjectSnapshot, isDrawing: () => Boolean(drawingRef.current || hokusaiLiveFinalizingRef.current || livingInkFinalizingRef.current) },
       collaborationOperationSyncRequired, collaborationLockMessage,
       studioCrdtAuthoritativeSaveBarrierRef, studioCrdtSceneRuntimeRef,
       studioCrdtDocumentRef, sharedDocumentSaveAbortRef, ownerDetailAbortRef,
@@ -25409,7 +25409,7 @@ function clearSelectionForEdit() {
     reorderDisabled: menuEditReorderDisabled,
     cropLayerDisabled: menuEditCropDisabled,
   } = resolveStudioEditAvailability({
-    historyIndex: pagesHi,
+    historyIndex: pagesHi, scopedHistoryAvailability: collaborationDocumentLocked ? { undo: scopedHistory.canUndo(), redo: scopedHistory.canRedo() } : undefined,
     historyLength: pagesHistory.length,
     pendingCommitAvailable: hasPendingOverlayCommit,
     pendingUndoneAvailable: hasUndonePendingOverlay,
@@ -25681,7 +25681,7 @@ function clearSelectionForEdit() {
           ...studioMainMenuSurfaceState,
           sharedNonOwnerSave: menuSharedNonOwnerSave,
           saving,
-          collaborationDocumentLocked,
+          collaborationDocumentLocked, scopedDraftSaveAvailable: scopedDraftSaveState.available, scopedPendingSaveConfirmation: scopedDraftSaveState.pendingConfirmation,
           hasWorkId: Boolean(workId),
           projectArchiveBusy,
           interchangeImportBusy: interchangeImportBusy || psdImportBusy,
@@ -25830,7 +25830,7 @@ function clearSelectionForEdit() {
     [
       canvasFlipH,
       canvasRotation,
-      collaborationDocumentLocked,
+      collaborationDocumentLocked, scopedDraftSaveState.available, scopedDraftSaveState.pendingConfirmation,
       colorBlindPreview,
       companionRuntimeRef, companionWindowRef, ensureStudioToolsCompanionRuntime,
       isFullscreen,
@@ -25922,7 +25922,7 @@ function clearSelectionForEdit() {
   const quickAccessCommandAvailability: StudioQuickAccessCommandAvailability = {
     undo: !quickActionsDisabledActions.has("undo"),
     redo: !quickActionsDisabledActions.has("redo"),
-    save: !saving && !collaborationDocumentLocked,
+    save: !saving && (!collaborationDocumentLocked || scopedDraftSaveState.available),
     pen: !quickActionsDisabledActions.has("pen"),
     eraser: !quickActionsDisabledActions.has("eraser"),
     fill:
@@ -26294,11 +26294,11 @@ function clearSelectionForEdit() {
   }
 
   const reviewCapture = useStudioReviewCaptureHost({
-    studioAuthUserId, workId, captureStudioMutationTicket, canApplyStudioMutation,
+    studioAuthUserId, workId, captureStudioMutationTicket, canApplyStudioMutation, collaborationAccessRef,
     editorMountedRef, studioRevisionProjectGenerationRef, drawingRef, pendingStrokeCommitsRef, flushPendingStrokeCommitsRef,
     available: loggedIn && workHydrated && !sourceHydrationPending && !documentReloadRequired
       && !collaborationReadOnly && !workHydrationFailed && !workHydrationUnsupportedFormat,
-    getSnapshot: currentStudioProjectSnapshot, canvasWidth: CANVAS_W,
+    getSnapshot: currentStudioProjectSnapshot, canvasWidth: CANVAS_W, scopedAvailable: loggedIn && workHydrated && !sourceHydrationPending && !documentReloadRequired && !workHydrationFailed && !workHydrationUnsupportedFormat,
     isDurableMask: (surfaceId) => (studioCrdtDocumentRef.current?.getRasterOperationLog(surfaceId) ?? null) !== null,
     save: (status) => handleSave(status, { preserveEditor: true }),
     captureAll: () => handleCapturePagesForPreset("all"),
@@ -29437,7 +29437,7 @@ function clearSelectionForEdit() {
       studioLeftToolRailHandlers={studioLeftToolRailHandlers}
       studioLegacyCommentThreadIdSet={studioLegacyCommentThreadIdSet}
       studioLiveJam={studioLiveJam}
-      studioLiveParticipant={studioLiveParticipant}
+      studioLiveParticipant={studioLiveParticipant} scopedWriteRuntime={scopedWriteRuntime} scopedCanvasDrawingAvailable={canStartStudioScopedDrawing(collaborationAccessRef, scopedCanvasBoundaryRef, tool)} scopedSavePendingConfirmation={scopedDraftSaveState.pendingConfirmation}
       studioLiveRoomRef={studioLiveRoomRef}
       studioLiveTransportFactory={studioLiveTransportFactory}
       studioMainMenuGroups={studioMainMenuGroups}
@@ -29528,7 +29528,7 @@ function clearSelectionForEdit() {
       setUiAdvancedToolsExpanded={setUiAdvancedToolsExpanded}
       uiFirstScreenExposure={uiFirstScreenExposure}
       saveSyncStore={saveSyncStore}
-      requestSaveFlush={() => setAutosaveRetryNonce((current) => current + 1)}
+      requestSaveFlush={() => { if (scopedDraftSaveState.pendingConfirmation || (collaborationDocumentLocked && scopedDraftSaveState.available)) void handleSave("draft", { preserveEditor: true }); else setAutosaveRetryNonce((current) => current + 1); }}
       undo={undo}
       undoBrushDelete={undoBrushDelete}
       useVelocityPressure={useVelocityPressure}

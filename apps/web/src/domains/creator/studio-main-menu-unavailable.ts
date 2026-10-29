@@ -15,7 +15,7 @@ function unavailableReasonForDisabledMainMenuItem(
   state: StudioMainMenuBuilderState,
 ): string {
   if (groupId === "file") {
-    if (state.collaborationDocumentLocked) {
+    if (state.collaborationDocumentLocked && !(itemId === "save-draft" && state.scopedDraftSaveAvailable)) {
       return "현재 문서가 협업 잠금 상태라 이 명령을 사용할 수 없습니다.";
     }
     if (itemId === "save-draft" || itemId === "publish") {

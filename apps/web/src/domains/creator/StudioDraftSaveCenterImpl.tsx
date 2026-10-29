@@ -1,3 +1,4 @@
+import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
 import {
   CheckCircle2,
   Cloud,
@@ -23,7 +24,6 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-
 import {
   extractStudioDraftSaveError,
   formatStudioDraftSaveInterval,
@@ -255,7 +255,7 @@ export function StudioDraftSaveCenter({
   onOpenVersions,
   onExportBackup,
 }: StudioDraftSaveCenterProps) {
-  const reliability = useStudioReliabilityStatus();
+  const reliability = useStudioReliabilityStatus(), scopedDraftSaveState = useStudioScopedDraftSaveState(), scopedDraftSaveAvailable = scopedDraftSaveState.available;
   const connectivity = useStudioConnectivity();
   const isOnline = connectivity.serverAvailable;
   const durableSaveIntent = useStudioDurableSaveIntent(saveIntentScope);
@@ -297,7 +297,7 @@ export function StudioDraftSaveCenter({
     observedAt: observedServerSaveAt,
   });
   const hostSaveError = extractStudioDraftSaveError(error);
-  const serverSaveError = manualSaveError ?? hostSaveError;
+  const serverSaveError = manualSaveError ?? hostSaveError ?? scopedDraftSaveState.error;
 
   const input = useMemo<StudioDraftSaveCenterInput>(() => ({
     isOnline,
@@ -307,7 +307,7 @@ export function StudioDraftSaveCenter({
     saving,
     deferredSave,
     durableSaveIntentPending: durableSaveIntent.entry !== null,
-    collaborationLocked: collaborationDocumentLocked,
+    collaborationLocked: collaborationDocumentLocked && !scopedDraftSaveAvailable,
     collaborationSyncPending: collaborationOperationSyncPending,
     localRole: autosaveDocumentLeadership?.role ?? null,
     localBasis: autosaveDocumentLeadership?.basis ?? null,
@@ -325,7 +325,7 @@ export function StudioDraftSaveCenter({
     autosaveDocumentLeadership?.basis,
     autosaveDocumentLeadership?.role,
     checkpointCount,
-    collaborationDocumentLocked,
+    collaborationDocumentLocked, scopedDraftSaveAvailable,
     collaborationOperationSyncPending,
     deferredSave,
     durableSaveIntent.entry,
@@ -394,7 +394,7 @@ export function StudioDraftSaveCenter({
     return cleared;
   }, [outboxWorkId]);
 
-  const invokeSave = useCallback(async (restoreDeferredOnFailure = false): Promise<boolean> => {
+  const invokeSave = useCallback(async (restoreDeferredOnFailure = false, confirmExisting = false): Promise<boolean> => {
     setManualSaveError(null);
     try {
       await Promise.resolve(onSaveDraft());
@@ -402,8 +402,8 @@ export function StudioDraftSaveCenter({
       return true;
     } catch (cause) {
       const serverUnavailable = reportStudioServerRequestFailure(cause);
-      if (restoreDeferredOnFailure || serverUnavailable) queueDeferredSave();
-      setManualSaveError(serverUnavailable ? frozenStatus4Text("studio.frozenStatus4.draft.offlineKept", "서버에 연결할 수 없어 이 기기에 저장 예약을 보관했습니다. 연결이 복구되면 자동으로 다시 저장합니다.") : errorMessage(cause));
+      if (!confirmExisting && (restoreDeferredOnFailure || serverUnavailable)) queueDeferredSave();
+      setManualSaveError(!confirmExisting && serverUnavailable ? frozenStatus4Text("studio.frozenStatus4.draft.offlineKept", "서버에 연결할 수 없어 이 기기에 저장 예약을 보관했습니다. 연결이 복구되면 자동으로 다시 저장합니다.") : errorMessage(cause));
       setOpen(true);
       return false;
     }
@@ -411,11 +411,12 @@ export function StudioDraftSaveCenter({
 
   const requestSave = useCallback(() => {
     if (
-      collaborationDocumentLocked
+      (collaborationDocumentLocked && !scopedDraftSaveAvailable)
       || saving
       || !workHydrated
       || workHydrationFailed
     ) return;
+    if (scopedDraftSaveState.pendingConfirmation) { setManualSaveError(null); void invokeSave(false, true); return; }
     if (!isOnline) {
       setManualSaveError(null);
       queueDeferredSave();
@@ -430,7 +431,7 @@ export function StudioDraftSaveCenter({
     });
   }, [
     clearDeferredSave,
-    collaborationDocumentLocked,
+    collaborationDocumentLocked, scopedDraftSaveAvailable, scopedDraftSaveState.pendingConfirmation,
     deferredSave,
     invokeSave,
     isOnline,
@@ -443,6 +444,7 @@ export function StudioDraftSaveCenter({
   ]);
 
   const handlePrimaryAction = useCallback(() => {
+    if (scopedDraftSaveState.pendingConfirmation) { requestSave(); return; }
     if (model.saveActionDisabled) return;
     if (model.primaryAction === "versions") {
       setOpen(false);
@@ -468,8 +470,7 @@ export function StudioDraftSaveCenter({
       return;
     }
     requestSave();
-  }, [model.primaryAction, model.saveActionDisabled, onContinuePendingSave, onOpenVersions, requestSave]);
-
+  }, [model.primaryAction, model.saveActionDisabled, onContinuePendingSave, onOpenVersions, requestSave, scopedDraftSaveState.pendingConfirmation]);
   const cancelDeferredSave = useCallback(() => {
     if (!clearDeferredSave(true)) return;
     void cancelDurableIntent();
@@ -507,13 +508,12 @@ export function StudioDraftSaveCenter({
       || saving
       || replayInFlightRef.current
       || autosaveDocumentLeadership?.role === "follower"
-      || collaborationDocumentLocked
+      || scopedDraftSaveState.pendingConfirmation || (collaborationDocumentLocked && !scopedDraftSaveState.newSaveAvailable)
       || collaborationOperationSyncPending
       || !workHydrated
       || workHydrationFailed
       || pendingSaveIntent === "draft"
-      // 재생 차단은 호스트가 보고한 오류(수정 충돌 등)만 근거로 한다. 저장 시도 실패가
-      // 스스로 세팅한 manualSaveError까지 가드에 넣으면, 서버 불가로 예약된 지연 저장이
+      // 자동 재생은 호스트 오류만 차단한다. manualSaveError까지 막으면 예약된 저장이
       // "연결이 복구되면 자동으로 다시 저장합니다"라는 안내와 달리 영원히 재생되지 않는
       // 교착이 된다. 서버 불가 실패의 재시도 간격은 연결성 상태(isOnline 전이)가 담당한다.
       || hostSaveError !== null
@@ -528,7 +528,7 @@ export function StudioDraftSaveCenter({
   }, [
     autosaveDocumentLeadership?.role,
     clearDeferredSave,
-    collaborationDocumentLocked,
+    collaborationDocumentLocked, scopedDraftSaveState.pendingConfirmation, scopedDraftSaveState.newSaveAvailable,
     collaborationOperationSyncPending,
     deferredSave,
     hostSaveError,
@@ -777,7 +777,7 @@ export function StudioDraftSaveCenter({
             <button
               type="button"
               onClick={handlePrimaryAction}
-              disabled={model.saveActionDisabled}
+              disabled={scopedDraftSaveState.pendingConfirmation ? saving || !workHydrated || workHydrationFailed : model.saveActionDisabled}
               className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-black text-on-accent shadow-sm hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               {model.primaryAction === "versions" ? (
@@ -789,7 +789,7 @@ export function StudioDraftSaveCenter({
               ) : (
                 <Save className="h-4 w-4" aria-hidden />
               )}
-              {model.saveActionLabel}
+              {scopedDraftSaveState.pendingConfirmation ? "저장 상태 확인" : model.saveActionLabel}
             </button>
 
             <div className="grid grid-cols-2 gap-2">

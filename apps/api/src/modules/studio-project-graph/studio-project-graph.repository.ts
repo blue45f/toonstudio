@@ -18,6 +18,8 @@ import { lockStudioReviewPreviewStorage } from "./studio-review-preview-storage"
 import { studioReviewMappingsFromOperation } from "./studio-review-source-map";
 import { loadStudioReviewResolutionCaptures } from "./studio-review-capture-attestation";
 import { attachStudioReviewCaptureSources } from "./studio-review-capture-source-revision";
+import { authorizeStudioReviewCaptureBootstrap } from "./studio-review-capture-purpose";
+import type { StudioReviewPreviewCapture } from "./studio-review-preview-producer.contract";
 import { mapStudioReviewComment, sameStudioReviewCommentMutation, validateStudioReviewCommentSource,
   type StudioReviewCommentRecord, type StudioReviewCommentRow, type StudioReviewExistingCommentRow } from "./studio-review-comment-store";
 import { dbPool } from "../../platform/database";
@@ -465,15 +467,15 @@ export class StudioProjectGraphRepository {
   async createProject(
     actorUserId: string,
     input: CreateStudioProjectGraph,
-    idempotencyKey: string,
+    idempotencyKey: string, capture?: StudioReviewPreviewCapture,
   ): Promise<StudioProjectCreateResponse> {
-    assertGenericWorldArtifact(input.artifact.id);
-    assertGenericWorkSessionArtifact(input.artifact.id);
+    assertGenericWorldArtifact(input.artifact.id); assertGenericWorkSessionArtifact(input.artifact.id);
     const client = await dbPool.connect();
     const keyHash = studioIdempotencyKeyHash(idempotencyKey);
     const requestHash = studioRequestHash(input);
     try {
       await client.query("BEGIN");
+      if (capture) await authorizeStudioReviewCaptureBootstrap(client, actorUserId, capture, input.projectId, input);
       const receipt = await client.query<{
         requestHash: string;
         response: StudioProjectCreateResponse;
@@ -513,9 +515,8 @@ export class StudioProjectGraphRepository {
       );
       const work = workResult.rows[0];
       if (!work) throw new StudioProjectNotFoundError("work");
-      assertAccess(projectAccess(actorUserId, work), "manage");
+      if (!capture) assertAccess(projectAccess(actorUserId, work), "manage");
       await verifyBlobRefsReady(client, input.initialRevision.blobRefs, input.workId);
-
       await client.query(
         `INSERT INTO studio_project_graph (
            id, "workId", "schemaVersion", "authorityVersion", "ownerUserId"
@@ -603,15 +604,14 @@ export class StudioProjectGraphRepository {
     actorUserId: string,
     projectId: string,
     input: CreateStudioArtifact,
-    idempotencyKey: string,
+    idempotencyKey: string, capture?: StudioReviewPreviewCapture,
   ): Promise<StudioProjectCreateResponse> {
-    assertGenericWorldArtifact(input.artifact.id);
-    assertGenericWorkSessionArtifact(input.artifact.id);
+    assertGenericWorldArtifact(input.artifact.id); assertGenericWorkSessionArtifact(input.artifact.id);
     const client = await dbPool.connect();
-    const keyHash = studioIdempotencyKeyHash(idempotencyKey);
-    const requestHash = studioRequestHash({ projectId, input });
+    const keyHash = studioIdempotencyKeyHash(idempotencyKey), requestHash = studioRequestHash({ projectId, input });
     try {
       await client.query("BEGIN");
+      if (capture) await authorizeStudioReviewCaptureBootstrap(client, actorUserId, capture, projectId, input);
       const accessResult = await loadProjectAccess(
         client,
         actorUserId,
@@ -619,7 +619,7 @@ export class StudioProjectGraphRepository {
         true,
       );
       if (!accessResult) throw new StudioProjectNotFoundError("project");
-      assertAccess(accessResult.access, "edit");
+      if (capture ? accessResult.row.workId !== capture.workId : !accessResult.access.edit) throw new StudioProjectForbiddenError("edit");
       if (input.artifact.scope.projectId !== projectId) {
         throw new StudioRepositoryInvariantError(
           "scope_project_mismatch",

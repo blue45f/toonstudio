@@ -200,7 +200,7 @@ HTTP 테스트는 이 작업에서 만든 `127.0.0.1`의 임시 PostgreSQL과 �
 
 [ftrack Web Player 공식 매뉴얼](https://help.ftrack-studio.backlight.co/hc/en-us/articles/13129964272791-Using-the-ftrack-Review-Web-Player)은 비교 중 피드백 대상과 현재/전체 버전 표시를 설명한다. 해당 매뉴얼의 내용은 공식 web 읽기 근거이며 REA에서는 보안 확인 화면을 관찰했다. SyncSketch 비교 매뉴얼도 보안 확인에 막혔고 Autodesk 경로 두 곳은 페이지 없음·Access Denied였다. 우회하거나 기능 성공으로 계산하지 않았다. 추가 Evidence 6개와 기존 19개를 합쳐 25개를 보존했으며, 공개 본문을 관찰한 도구는 총 7종이다. 외부 제품의 주장과 실제 앱에서 증명한 동작을 분리한다.
 
-PDF 요약·진행자 동기 검토·3D 자산 카메라/UV 검토·실제 팀 C10 검증은 아직 완료하지 않았다. 이 항목을 이번 이미지 비교·서버 공정 테스트의 성과에 포함하지 않는다.
+이 비교 단계에서 고정 Production 제출본의 댓글·의사결정 요약 PDF, 연속 진행자 동기 검토, 다중 계정의 3D 카메라/UV 주석 검토, 실제 팀 C10 검증은 완료하지 않았다. 기존 Studio에는 현재 페이지의 상태·메모·대사를 담는 `review.pdf` 내보내기, 작업 세션의 명시적 발표·10초 간격 따라보기, 자산의 Orbit·와이프·와이어프레임·표준 시점 미리보기가 있다. 이를 앞의 별도 경쟁 축을 완주한 증거로 확대하지 않는다. 원래 C1–C8 합격표의 필수 형식과 이 후속 경쟁 축은 구분한다.
 
 
 ### 85271d246 단계의 검증 기록
@@ -470,3 +470,149 @@ QA 실행기의 최초 시도는 Playwright CommonJS 해석 오류로 브라우�
 부분 표시에서 이미지 읽기가 실패한 경우, 정상 suffix 완료 뒤 기존의 한정된 주소 갱신을 한 번 재개한다. 서버의 visibility lease 상한을 클라이언트 시각에 새로 추정하지 않고 기존 만료·bounded refresh 정책을 보존했다. helper와 component 2 suites·56 tests가 통과했으며, 20절 변경·기존 비교 회귀를 함께 묶은 **10 suites·143 tests**도 단일 worker·실제 exit 0으로 통과했다. 33페이지 정상 지연·invalid suffix·403·명시적 retry·subject 취소·clock 차이·manifest/mapping/cursor 실패를 포함한다. 기존 payload fixture의 잘못된 hash·null mapping·임의 cursor는 실제 서버 계약에 맞게 보완했다.
 
 변경 파일 scoped ESLint·Secretlint·하네스 check·diff 검사를 통과했다. 현재 후보의 전체 하네스·타입·production build·정상 push·원격 CI와 실제 500원고 부하·메모리, C10 제작팀 납품 파일럿은 별도 미완료다. PR 준비 범위를 유지하며 main 병합·운영 DB·배포는 실행하지 않았다.
+
+## 22. 선택 이미지 주소 갱신의 불필요한 전체 조회 재현
+
+상태: **migration — 2026-10-29 수정 전 실패 재현·관련 회귀 130개 통과, 전체 게이트 대기**. 20·21절의 143개 테스트와 Chrome 12조합은 동결 후보 `495c2017ecdb998c7a3573a8e3299b060ff250b4` 기준이다. 아래의 미커밋 제품 변경을 그 통과 기록에 포함하지 않는다.
+
+기존 autoRefresh는 한 이미지의 URL 오류·만료에도 전체 고정 원고 목록을 다시 조회했다. 실제 component→cursor loader→graph client에서 HTTP 응답만 제어한 33페이지 회귀 2개를 새로 실행했다. 제품 두 파일이 HEAD와 바이트로 같고 검사 전후 소스 해시도 같은 상태에서 실제 exit 1이었다. 33번째 이미지 갱신이 직전 manifest cursor 대신 null로 시작했고, 첫 이미지 갱신도 후속 cursor를 따라가 초기 2회와 갱신 2회를 합해 4회 요청했다. 나머지 18개는 이름 필터로 선택하지 않았으며 테스트를 skip하도록 수정하지 않았다.
+
+현재 수정 초안은 원본 preview manifest를 정렬해 대상의 실제 직전 ref를 cursor로 사용한다. 서버는 현재 ACL과 고정 subject를 매 요청 검사하며 기존 keyset cursor를 허용한다. 한 batch의 응답 전체를 기존 목록 조회와 같은 shape·subject·manifest·순번·mapping·cursor 검사에 통과시킨 뒤, 대상의 hash·형식·바이트 크기·canonical mapping까지 원래 값과 같아야 URL·만료 시각만 교체한다. 다음 cursor는 이어 읽지 않는다. 한 요청에서도 서버는 최대 32개 URL을 서명하므로 서버가 한 장만 조회·서명한다고 표현하지 않는다.
+
+전체 metadata 완료 전 갱신 금지, source별 동시 요청 제한, 페이지별 한정 자동 시도, 권한 실패 시 이미지·핀 링크 폐기를 유지한다. 재조회·unmount·비교 기준본 변경에는 AbortSignal과 generation·현재 controller 확인으로 늦은 성공·오류를 폐기한다. 실제 HTTP 소켓 중단을 증명한 것은 아니다. 수정 뒤 helper·component·단일 이미지 갱신의 **3 suites·130 tests가 단일 worker에서 실제 exit 0·skip 0으로 통과**했다. 이전 원고 목록·partial·clock·bounded refresh 회귀와 잘못된 subject·manifest·mapping·cursor, 403·404·network, 취소·늦은 성공/오류, await 중 원본 preview 변조도 포함한다. 명시한 입력 7파일의 검사 전후 해시가 같다. 새 lint·전체 게이트·현재 후보 브라우저와 실제 대형 원고 성능은 아직 미검증이다. 수정 전 원문은 `/tmp/toon-c9-targeted-preview-red.log`와 `-exit.json`, 수정 후 원문은 `/tmp/toon-c9-targeted-preview-first-combined.log`와 `-exit.json`에 보존했다.
+
+## 23. 제작팀 정보 없이 진행할 대표 검증 기준
+
+상태: **target — 2026-10-29 사용자 위임에 따른 검증 프로필 결정**. 사용자가 자료 조사와 판단을 위임해, 실제 제작팀 정보 응답을 더 기다리지 않고 [대표 검증 조건](webtoon-collaboration-representative-validation-2026-10-29.md)을 채택했다. 공식 제작 공정·분업 도구 안내·발행 전 체크리스트를 직접 읽고 근거와 가정을 구분했다.
+
+기본은 독립 계정 4개·회차 60컷·주간 마감·검수 2회이며 전부 검증 설계 가정이다. 겸임한 사람의 업무량 합산, 외주 범위·기간, 선화·배경의 병행과 합류, 독립 검수와 납품을 함께 검사한다. 소수 계정과 확장 스튜디오 변형도 정의했다. 업계 평균·모든 플랫폼의 의무·제품 사용량 제한으로 사용하지 않는다. C1–C10의 원래 합격 조건과 실제 사람의 현장 결과가 미확인이라는 사실은 유지한다.
+
+## 24. 대표 흐름에서 추가 확인한 미완료 경계
+
+상태: **target — 2026-10-29 현재 source 대조와 회귀 초안, 새 실행 결과 없음**.
+
+이 절은 추가 구현 전의 조사 기록이다. 이후 실제 red와 소스 구현의 현재 상태는 25절에 기록한다.
+
+새 제출의 자기 역할 배정이 산출물 범위를 포함하는지 검사하는 회귀 6개를 API 테스트에 추가했다. 범위 밖 새 제출 거절, 같은 회차 허용, 프로젝트 전체 producer의 제출 허용, 기존 제출 상태 변경에 대한 소급 금지를 구분한다. 제품 API 코드는 아직 바꾸지 않았으며 이 6개는 미실행이다. 기존 main이 강제하던 규칙의 회귀라고 주장하지 않고 새 제출의 역할 귀속 검증을 추가하는 목표로 다룬다.
+
+빈 프로젝트는 작업·산출물·제출본 없이 시작하며 현재 워크플로 생성은 입력·출력 ref가 빈 task를 만든다. 등록된 Web 검수 요청은 작업 생성·전환이고, 새 Production 제출본을 생성하는 UI producer는 확인되지 않았다. Studio의 submission revision·캡처와 Production 제출본은 서로 다르며 서버 자동 생성 경로도 확인되지 않았다. 기존 원고 연결 화면은 이미 존재하는 제출본만 연결한다. 개요에서 현재 사용자 ID를 해당 화면까지 전달하지 않는 경로도 확인해, 실제 계정과 계정 미연결 party를 혼동하지 않도록 별도 재현이 필요하다.
+
+따라서 기존 API·fixture로 만든 제출본의 검수 성공을 첫 제출·재제출 UI 완주로 확대하지 않는다. [대표 검증 문서 6·7절](webtoon-collaboration-representative-validation-2026-10-29.md)에 실제 원고 ID의 권한 연결, 모든 쓰기 경로의 검사, 빈 프로젝트의 산출물·작업 연결·새 제출을 한 transaction으로 만드는 좁은 명령, ACK·미확인 쓰기 복구의 구현 기준을 기록했다. 컷별 원고 쓰기 격리와 첫 제출 UI는 아직 구현 완료로 판정하지 않는다.
+
+실제 Overview → Management → Studio 원고 연결 컴포넌트를 유지한 현재 사용자 귀속 회귀 2개도 추가 작성했다. 다른 연결 계정·현재 연결 계정·미연결 외부 party를 함께 두고 정확한 현재 역할 ID를 기대하며, 사용자 ID가 없으면 명령을 보내지 않아야 한다. Overview → Management → Workspace의 사용자 ID 전달과 빈 ID 역할 선택 거절을 소스에 반영했고, 기존 양성 fixture도 연결된 계정·정확한 역할 ID로 교정했다. 이 2개와 API 6개는 미실행 초안이다. API 범위 검사 제품 코드는 아직 바꾸지 않았으며 기존 미리보기 130개 통과에 합산하지 않는다. 첫 제출의 서버 검증에는 별도 namespace의 Graph 원고를 실제 `workId`로 대조하는 같은 transaction의 source proof와, 현재 bridge의 목록 정렬 순위로 대신할 수 없는 revision 번호·lineage 권위를 먼저 정해야 한다.
+
+후속 읽기 조사로 일반 commit·restore의 불변 `studio_operation.sequence`와 완료 영수증을 새 provenance 좌표에 활용할 수 있는 방향을 확인했다. 최초 저장·캡처의 세 단계 원고 연결에는 별도 증명이 필요하고, 클라이언트의 `operationLast`나 연결 없는 저장본을 임의의 최초 버전으로 대체하면 안 된다. lineage는 Graph 원본 재명명이 아닌 명시적인 Production 문서 역할의 업무 투영으로 정의할 수 있다. strict 응답의 버전 호환과 새 정책을 사용하는 selector·reader를 함께 구현하고 기존 참조를 보존해야 한다. 이는 실제 source에 근거한 다음 구현 기준이며, 새 API·저장 계약·전체 UI 완주 검증 완료가 아니다.
+
+실제 Canvas 저장은 CreatorWork 문서·revision을 기록하며 generic Graph artifact 생성·commit의 Web caller는 확인되지 않았다. 실제 capture가 만드는 review artifact도 프로젝트 범위여서 회차 산출물의 현재 이미지 검수 범위를 채우지 못한다. 첫 제출에서는 저장된 capture와 페이지·프레임을 작업에 명시적으로 연결하고 서버가 고정 원고와 mapping을 검사하는 경로부터 이어야 한다. 존재하지 않는 generic 회차 원고를 고르게 하거나 Graph scope를 전역 완화하는 방법으로 이 공백을 숨기지 않는다.
+
+## 25. 실제 캡처를 사용하는 첫 제출 소스 초안과 범위 회귀
+
+상태: **migration — 2026-10-29 미커밋 소스, API 권한 21개·순수 Core 54개 통과, 나머지 경계·통합 검증 대기**.
+
+2026-10-29 후속 사용자 확인으로 최종 작업 범위는 **검증 후 main 병합까지**다. 이전 PR 준비 전용 제한은 이 지시로 대체됐다. 운영 배포·운영 DB·시크릿·DNS 변경은 하지 않는다. 아래 구현은 아직 검증·커밋·PR 통합 전이므로 병합 완료로 기록하지 않는다.
+
+`submit-task-output` 계약·순수 Core·공개 DTO·서비스·repository·작업 상세/단일 카드 진입 UI를 연결하는 초안을 작성했다. UI는 실제 저장된 검수 캡처의 전체 페이지 목록을 검증하고 원고 이미지와 페이지·프레임을 명시적으로 선택한다. 작업의 최초 기준 원고, 현재 고정 입력, 선행 작업의 최신 승인 출력은 별도로 고른다. 산출물 정의·작업 출력 연결·새 제출·현재/승인 포인터·원고 사용 근거를 기존 단일 transaction·strict CAS·mutation 영수증 경계 안에서 함께 구성한다.
+
+서버 초안은 현재 소유권·멤버십을 잠근 뒤 같은 transaction에서 캡처의 공유 증명 쿼리, 완료 영수증, 원본 checkpoint→submission→review snapshot chain, 이미지 manifest·검사 상태·작품 객체 소유와 saved page/frame mapping을 대조한다. 별도 DB 연결의 사전 조회나 클라이언트가 보낸 원고 사용 근거를 신뢰하지 않는다. 기존 pg 경로와 새 Drizzle 경로가 동일한 parameterized 증명 쿼리를 공유하도록 추출했고, 배열 인자는 `sql.param`으로 유지한다. 실제 PostgreSQL 실행 검증은 아직 필요하다.
+
+새 업무 원고 참조는 실제 snapshot ID·digest와 CreatorWork의 검증된 `sourceServerRevision`을 사용한다. `captureSequence`는 별도 증명 좌표다. 같은 원고의 다른 페이지를 두 작업이 쓰는 경우를 구분하도록 실제 Production 제출 ID인 optional `productionSubmissionId`를 추가했다. 최신 입력·출력·검수 및 불변 검사, 일반 상태 변경의 호환 보존, 업무 원고 조회와 비교 선택에도 이 구분을 연결했다. 새 근거는 `sourceEvidence.version=1`로 저장하며 레거시 참조·원본 Graph scope·이미지 mapping을 덮어쓰지 않는다.
+
+새 제출 뒤 과거 승인 링크만으로 회차 원고가 준비됐다고 표시되거나 같은 역할의 출력 일부만 승인됐는데 역할 전체가 승인된 것으로 집계되는 경로도 보강했다. 현재 제출/승인 포인터와 실제 제출 상태·버전·링크를 모든 해당 산출물에서 확인한다. 과거 링크와 이력은 보존하며 나중에 종료한 담당자의 이미 확정된 승인을 소급 무효화하지 않는다. 이 변경도 아직 실행 검증 전이다.
+
+별도 허용된 API 범위 회귀 1회에서는 6개 선택 중 **1개 실패·5개 통과**, actual exit 1·timeout false·1.896초를 기록했다. 좁은 회차 역할의 신규 범위 밖 제출이 예외 없이 허용됐다. 15개는 `-t` 필터로 미선택됐으며 새 skip을 추가하지 않았다. HEAD는 `495c2017ecdb998c7a3573a8e3299b060ff250b4`, 명시한 19입력 파일의 전후 해시가 같았다. `/tmp/toon-collaboration-submission-scope-red-20261029.log`와 `.json`에 원문을 보존했다. 실패 위치의 source-map 줄 표시는 다른 줄을 가리켰으나 테스트 이름과 예외 미발생 assertion은 해당 신규 회귀였다. 이후 `assertProductionSubmissionActor`에 신규 제출 범위 검사만 추가했다.
+
+별도로 허용된 수정 후 실행 1회에서 같은 API 단일 파일의 **21개 전체가 통과**했다. `--maxWorkers=1 --fileParallelism=false`, actual exit 0·timeout false·2.126초이며 skip은 없다. HEAD는 같은 `495c2017ecdb998c7a3573a8e3299b060ff250b4`이고 수정은 미커밋 상태다. 명시한 19입력 해시와 Git 변경 목록이 전후 동일하며 소유 process group이 남지 않았음을 실행기 기록으로 확인했다. `/tmp/toon-collaboration-submission-scope-green-20261029.log`와 `.json`에 보존했다. 이 결과는 신규 제출 범위와 기존 승인 API의 해당 21개 회귀에 한정하며 아래의 새 첫 제출·UI·DB 기능 통과로 확대하지 않는다.
+
+이후 별도 자원 창의 단일 실행에서 순수 Core `task-output.test.ts`·`studio-revision-coverage.test.ts` **2 suites·54 tests가 전체 통과**했다. 단일 worker·actual exit 0·skip 0·timeout false·2.621초, 같은 HEAD+미커밋 변경 기준이다. 명시한 21입력 해시와 변경 목록이 전후 같고 소유 process group 종료를 기록했다. `/tmp/toon-collaboration-first-output-core-first-20261029.log`와 `.json`을 보존했다. 원자적 후보 생성·입력 귀속 분리·종료 task 거절·현재 출력 전체의 승인 집계에 대한 단위 결과이며, 캡처 증명의 실제 DB 실행과 Web 완주 결과는 아니다.
+
+다음 허용 창에서는 공개 제출 DTO·명령·캡처 증명·저장소 대역·공유 캡처 subject·source mapping의 **6 suites·110 tests가 전체 통과**했다. 단일 worker·actual exit 0·skip 0·timeout false·7.248초이며 시작과 종료 HEAD는 같은 `495c2017ecdb998c7a3573a8e3299b060ff250b4`였다. 명시한 39입력 해시와 변경 목록이 전후 같고 소유 process group 종료를 확인했다. `/tmp/toon-collaboration-first-output-api-first-20261029.log`와 `.json`에 보존했다. 저장소는 DB 대역을 사용했고 실제 DB 주소는 연결 불가능한 loopback으로 고정했으므로 실제 PostgreSQL·HTTP 증거가 아니다. 이 실행 뒤 아래 26절의 정책·제한 편집 소스를 추가하고 있어 현재 전체 후보의 green으로 확대하지 않는다.
+
+새 기능의 Core·DTO·source proof·명령·선택 UI·reader·복구 회귀는 초안 작성 상태다. 기존 130개 통과 이후 공통 reader와 이미지 표시도 변경했으므로 그 결과를 현재 후보의 통과로 사용하지 않는다. 전체 타입·하네스·production build·실제 HTTP/DB·브라우저·성능·현장 완주, 정상 커밋·push·원격 CI·실제 PR 등록은 아직 미완료다. 현재 main 병합·운영 DB·배포는 실행하지 않았다. 사용자 후속 확인에 따라 검증과 정상 PR을 통과한 뒤 main 병합을 진행한다.
+
+후속 독립 소스 검토에서는 기존 프로젝트 생성의 작품→제작 프로젝트 잠금과 새 제출의 반대 순서가 충돌할 수 있음을 확인했다. 새 제출만 잠금 없는 작품 ID 힌트→작품·본인 멤버십 잠금→제작 프로젝트 잠금 후 재조회로 맞추고, 잠근 현재 행의 작품이 힌트와 다르면 중단한다. 힌트를 권한 근거로 쓰지 않으며 현재 ACL·영수증·CAS와 원고 증명 순서를 보존한다. 이는 실제 PostgreSQL 교착 재현·해소 검증 전의 수정이다.
+
+캡처 preview는 공개 Studio ID의 `/`·`@`를 허용하지만 제출 DTO와 공유 캡처 증명이 좁은 댓글·인계 참조 스키마를 재사용하던 불일치도 고쳤다. focused 캡처 subject 계약을 세 경로에서 함께 사용하고, 레거시 댓글·인계 참조 계약은 유지한다. 관련 양성·잘못된 tuple 음성과 잠금/현재 권한/영수증 회귀는 아직 미실행 초안이다.
+
+조건부 승인·승인·완료·취소·범위 밖 작업은 새 제출만으로 승인 포인터를 해제할 수 없도록 Core의 좁은 명령에서 거절한다. 승인 작업은 기존에 허용된 변경 요청 전환을 먼저 수행하고, 종료된 작업은 필요에 따라 후속 작업을 만든다. 작업 상태를 자동으로 바꾸거나 종료 작업에 없는 다시 열기 동작을 있다고 안내하지 않는다. 새 원고의 저장 버전도 제출 차수와 혼동하지 않도록 `원고 vN`으로 표시했다. 이 상태·표시 수정 역시 실행 검증 전이다.
+
+미확인 저장이 session의 원래 영수증으로 복구된 뒤 Dialog가 이미 저장된 제출 ID를 새 mutation으로 다시 생성할 수 있는 소스 결함도 보완했다. 모달 안의 저장 상태 확인을 실제 session refresh에 연결하고, 원래 입력·고정 원고·페이지/프레임·업무 제출 ID·작업 출력 연결이 일치한 실제 aggregate를 확인하면 추가 쓰기 없이 닫는다. 같은 ID만 있고 근거가 모호하면 원래 본문을 보존하고 새 쓰기를 막는다. 배정 표시도 최초 시각 고정 대신 실제 시작·종료 경계와 focus 복귀에서 갱신하며, 같은 계정·작업의 기간 만료나 종료 상태 때문에 열린 초안을 즉시 버리지 않는다. 실제 Dialog·session·API 함수에서 HTTP만 제어한 복구 회귀와 기간 회귀는 작성했으나 아직 실행하지 않았다.
+
+필수 CI의 실행 선택자도 읽기 대조했다. 기존 Graph unit 디렉터리 선택자는 보존하고, 누락된 협업 API·Core·정본 펜 회귀를 명시 목록에 추가했다. 캡처 원본·펜 첨삭·인증 HTTP 통합 3개는 DB 없는 shard에서 제외하고 기존 필수 PostgreSQL job이 실행하도록 양쪽 목록을 맞췄다. runner·timeout·기존 필수 검사는 유지한다. 실행 선택자의 누락·중복을 보호하는 회귀를 작성했으나 CI 등록 변경 자체의 테스트와 원격 CI 실행은 아직 검증 전이다.
+
+main 통합 읽기 감사는 로컬 `origin/main=4fbeadb9a16707efe94d64756d7a0a8cdda4af31`에서 새 migration 충돌을 확인했다. main의 `0114_studio_ai_premium_route_ledger.sql`과 협업 브랜치의 `0114_studio_review_comment_pen_strokes.sql`은 관리 manifest의 같은 순번을 차지한다. 실행기는 번호 중복과 순번 공백을 거절하므로 두 파일을 그대로 합치는 것으로 통합을 완료할 수 없다. main의 기존 migration을 보존하고 미병합 펜 migration을 통합 시점의 다음 빈 번호로 이동하며 manifest·시험 DB 준비·회귀·문서 참조를 함께 맞춰야 한다. 아직 이동·main 통합·운영 DB 적용은 실행하지 않았다. 이 main의 Canvas·CI·번들 출처 변경도 보존한 뒤 최종 후보를 다시 검증해야 한다.
+
+## 26. 빈 프로젝트 검수와 실제 원고 제한 편집의 잔여 구현
+
+상태: **migration — 2026-10-29 실제 소스 경로 감사 후 추가 구현 중, 새 정책·제한 편집 검증 전**. 사용자는 미완료 항목 전체의 구현을 요청했다. 최종 범위는 검증 후 main 병합까지이며 운영 배포·운영 DB 변경은 하지 않는다.
+
+빈 Production aggregate는 검수 정책이 없고, 기존 Web에는 이를 저장하는 실제 producer가 없었다. 기존 검수 요청 폼도 새 작업을 입력·출력 없이 곧바로 `internal-review`로 만들어 현재 서버의 작업 안전 검사에 거절된다. 검수 작업대에는 현재 계정의 역할 ID가 전달되지만, 자기 역할 여러 개 중 하나를 자동 선택해 다른 자격 lane을 선택하기 어려운 공백도 확인했다. 정책 관리 UI, 실제 제출 작업의 합법적인 검수 요청, 자기 역할 선택을 함께 보완하고 있다. 서버의 상태·원고·권한 검사를 낮추는 방법으로 처리하지 않는다.
+
+신규 정책은 독립 계정 인원 기준 정족수를 지원한다. `quorumBasis`가 없는 기존 정책의 역할표 의미는 보존하고, 새 UI 기본값은 계정 기준으로 구성한다. 새 결정의 계정 ID는 서버가 실제 actor로 기록하며, 다른 계정 ID 주장과 기존 결정 ID 덮어쓰기를 거절한다. 계정 기준에서는 같은 계정의 여러 역할을 여러 인원으로 세지 않고, 계정 증명이 없는 과거 표를 임의의 인원으로 추정하지 않는다. 과거 확정 승인 이력은 재작성하지 않는다. 이 계약·UI·회귀는 구현 중이며 새 실행 결과는 아직 없다.
+
+대표 검증 문서 6절의 실제 페이지·프레임 제한 편집은 Production의 역할 배정과 별도 기능이다. 공동 REST 저장, JSON·binary CRDT, 별도 stroke op 저널, generic Graph 생성·commit·restore는 현재 작품 단위 `edit`가 권위이며 원고 사용 근거만으로 제한 편집을 제공하지 않는다. 새 capability와 명시적 귀속 registry, 실제 변경 전후를 검사하는 공통 admission을 모든 durable writer에 연결하는 구현을 진행하고 있다. 기존 전체 editor 권한을 배정표만으로 축소하지 않으며, 제한 권한을 전체 `edit`로 승격하지 않는다.
+
+현재 Authoring 요소에는 영속적인 frame parent ID가 없고 기하 관계·그룹 이름만으로 귀속을 추정하는 경로가 있다. 권한 registry에는 관리자가 실제 저장 ID와 작업·역할을 명시적으로 연결하고, 새 객체는 서버가 실제 생성 diff와 요청의 생성 대상을 대조해 귀속을 기록해야 한다. 공유 raster, 기존 객체의 이동·삭제·귀속 변경, CRDT의 숨은 후보와 뒤늦은 causal activation, opaque 전체 Graph 복원까지 포함해야 한다. 이 연결과 실제 반례 검증이 끝나기 전에는 원고 제한 편집을 완료로 표시하지 않는다.
+
+## 27. 검수 정책 실행과 제한 편집의 추가 연결
+
+상태: **migration — 2026-10-29 소스 구현 중, 최종 후보 검증·병합 전**.
+
+검수 정책의 Core·API 네 파일을 단일 worker로 실제 실행해 59개가 통과했다(actual exit 0, skip 0, 5.394초). 시작·종료 HEAD는 `495c2017ecdb998c7a3573a8e3299b060ff250b4`이고, 명시한 47개 입력의 해시와 변경 목록이 실행 전후 동일했다. 이 결과는 정책·계정 정족수·결정 도용 방지의 단위 검증이며 실제 PostgreSQL이나 Web 완주의 증거가 아니다. 이후 비활성 party의 신규 제출·승인 거절과 제한 편집 코드를 추가했으므로 59개를 현재 전체 후보의 통과 수로 재사용하지 않는다.
+
+검수 Web의 정책 모델·정책 편집기·검수 요청 모델·요청 폼·실제 actor 역할 선택·검수 작업대 여섯 파일도 별도 실행에서 35개가 통과했다(actual exit 0, skip 0, wrapper 8.15초). 같은 HEAD에서 명시한 66개 입력의 해시와 변경 목록이 전후 동일했고 소유 process group 종료를 확인했다. jsdom·대역을 사용한 검증이며 실제 HTTP·DB·독립 브라우저 완주나 이후 제한 편집 코드의 통과로 합산하지 않는다.
+
+제한 편집은 안정적인 원고 객체 귀속과 현재 공정 배정을 분리한다. 최초 등록 task와 원고 근거는 보존하고, grant의 현재 task·assignment·계정·기간·범위를 검사해 선화 완료 후 같은 원고를 다음 공정에 인계할 수 있도록 구성한다. 작업자의 새 객체와 undo 복원은 실제 ID를 현재 target에 명시하며 다른 객체의 귀속을 바꾸는 요청은 허용하지 않는다. 전체 editor의 기존 권한과 제한 작업자의 purpose 권한은 별개로 유지한다.
+
+Production 첫 제출에도 선택적 `writeContext`를 연결했다. 같은 transaction 안에서 공통 작품 잠금, 현재 멤버십·공정·정책, 불변 캡처 chain과 실제 담당 ID를 확인하고 `submission` 목적 영수증을 기록한다. 제한 작업자의 응답 재전송도 현재 권한을 먼저 검사하며, 일반 명령이나 Graph 전체 편집 권한으로 확대하지 않는다. 이 연결과 관련 새 회귀는 실행 전이다.
+
+다각형 컷은 프레임 배경만 다각형이고 자식 클립은 사각형이던 간격을 보완했다. 런타임 중립의 실제 클립 경로를 Konva 일반·격리 합성, Skia, SVG 일반·지우개, PSD 개별 노드 캡처가 함께 소비한다. 로컬 점은 문서 좌표로 한 번만 옮기고, 잘못된 점을 넓은 사각형으로 대체하지 않는다. registry 소유권을 기하로 추정하는 기능은 추가하지 않았다. 새 공용 경로·내보내기·GPU 회귀 초안과 필수 CI 등록을 추가했으며, 실제 렌더 픽셀·전체 게이트 검증은 남아 있다.
+
+후속 실제 브러시 경로에서는 전체 원고 크기의 canonical PNG가 크기 기반 컷 선택을 통과하지 못하는 공백을 확인했다. 명시적 `frameClipId`로 실제 컷 경로를 연결해 원본 PNG의 크기·해상도·바이트를 유지하며, 자동 맞춤으로 파생 이미지를 재축소하지 않는다. 이 필드는 registry의 소유권이나 현재 grant를 대신하지 않는다. 다른 페이지에서 같은 레이어 ID를 사용하는 경우도 실제 `(pageId, groupId)` 복합 식별자로 구분하고 원래 ID는 보존한다. 해당 클라이언트·서버·회귀의 최종 실행은 남아 있다.
+
+WriterRoom의 콘티 적용 버튼은 실제 페이지 생성·저장으로 연결돼 있다. 다만 `story` 역할로 선택한 저장 캡처를 검수할 때 고정 `sourceSnapshot.writerRoom` 본문을 읽는 화면이 없어 순수 대본은 빈 페이지 이미지에 머무를 수 있다. 기존 최초 제출 producer를 유지하면서 같은 불변 캡처의 원고·영수증·해시를 검증한 고정 본문 reader를 추가하는 범위로 보완한다. 현재 편집 중인 대본이나 최신 원고로 대체하지 않는다. 이 보완은 대표 검증의 기획·대본 단계에 포함하며, 새 댓글 anchor나 검수 권한 완화로 해결하지 않는다.
+
+## 28. 소스 동결 후보와 실제 다각형 회귀 결과
+
+상태: **migration — 2026-10-29 추가 소스 구현 종료, 종합 검증·main 통합 전**. 제한 편집의 관리·모든 영속 writer·Canvas 입력·같은 ID의 자기 Undo/Redo·초안 저장·캡처·제출, 고정 WriterRoom reader와 마지막 응답 유실 복구 소스를 동결 후보로 모았다. 신규 C2 API·Web·실제 HTTP producer suite는 아직 실행 전이다.
+
+다각형 관련 여섯 파일의 첫 실제 실행은 67개 중 66개 통과·1개 실패였다(actual exit 1, skip 0, 6.443초). 실패는 새 전체 크기 PNG fixture에 `ImageEl.rotation` 필수 값을 빠뜨려 Skia의 기존 유한 숫자 검사가 거절한 것이었다. 제품 guard와 `supported:true`, 원본 크기·실제 clip 단언을 유지하고 fixture를 `rotation:0`·명시적인 `El` 타입으로 보정했다. 다음 단일 Skia 파일 실행은 36개 모두 통과했다(actual exit 0, skip 0, 2.577초). 두 실행 모두 HEAD `495c2017ecdb998c7a3573a8e3299b060ff250b4`와 명시한 89개 입력·변경 목록이 전후 동일했고 자기 process group 종료를 확인했다. 보정 파일 외 나머지 88개 입력도 native hash 비교로 같았다. 최초 실패 로그를 그대로 보존했으며, 전체 후보·실제 브라우저 픽셀의 통과로 확대하지 않는다.
+
+저장 결과가 불명확할 때 최초 wire 본문·mutation ID·base revision·CRDT fence·원래 grant를 같은 계정·작품의 SQLite/OPFS 대기에 보존한다. 다시 열기나 reload는 그 원문만 확인하며 새 버전·배정·UUID로 바꾸지 않는다. 서버의 정확한 ACK 뒤에도 다른 로컬 내용이나 부분 저장에서 제외한 초안이 있으면 전체 intent·autosave를 정리하지 않는다. 권한 회수 후에는 검증된 기존 대기 요청의 명시적 상태 확인만 열고 새 저장과 자동 재전송은 허용하지 않는다.
+
+제한 작업자가 전체 editor로 승격된 경우도 원래 성공 영수증을 먼저 읽는다. 현재 계정의 과거 scoped grant 이력이 있는 경우만 복구 확인을 요구하고, 서버가 이력이 없다고 확인한 기존 full 사용자의 저장에 SQLite 의존성을 추가하지 않는다. 정책 준비 상태 unknown과 조회 오류를 이력 없음으로 추정하지 않는다. 정책의 소유 ledger도 검증을 마친 뒤 원자적으로 반영한다. 이 마지막 C8 보완의 단위·실제 DB·브라우저 검증은 다음 동결 후보 검증에서 수행한다.
+
+## 29. 불투명 Y 변경의 실제 회귀와 빈 제작 프로젝트의 시작 경로
+
+상태: **migration — 2026-10-29 생성·역할 UI를 추가하고 보완한 당시의 실행 이력. 후속 실제 통과와 통합 보정의 현재 상태는 30절에 기록한다**.
+
+제한 CRDT 쓰기의 실제 단위 실행에서 미등록 runtime root 변경이 빈 변경으로 승인되는 실패를 재현했다. Yjs의 원격 root는 `AbstractType`일 수 있으며 `toJSON()`이 `undefined`를 반환해 기존 전역 비교에서 사라졌다. 타입을 임의로 선언하지 않고 실제 Item·삭제·중첩·format·경합 후보의 상태를 비교하도록 보완했다. `__proto__` 이름, client 수신 순서와 인접 Item 병합, 정상 담당 ink 채널의 GC, 동일 update 재전송도 구분한다. 공통 validated probe와 실제 서비스 경계에 적용했으며 기존 의미·인과·byte budget과 runtime GC 설정은 유지했다. 명시 291개 입력이 전후 같았던 재실행은 **11 suites·84 tests 통과, exit 0, 9.451초**였다. 시작·종료 HEAD는 `495c2017ecdb998c7a3573a8e3299b060ff250b4`이며 실제 DB·HTTP·브라우저 증거는 아니다.
+
+다음 Web 23파일 실행은 **2 suites 통과·1 suite 실패, 38 tests 통과·1 실패 뒤 중단, exit 1, 4.756초**였다. 보고된 56개 수집과 아직 실행하지 않은 파일을 전체 통과로 계산하지 않는다. 이 실행의 297개 입력과 변경 목록도 전후 같았다. 첫 실패는 성공 경로의 시험 원고 폭 800과 실제 Studio 논리 폭 720의 차이를 부분 저장 보호가 감지한 것이었다. 해당 suite의 성공 fixture만 실제 폭으로 맞추고, 실제 폭 차이가 있을 때 기기 ACK·전체 초안 정리를 하지 않는 음성 회귀를 추가했다. 공용 검수 fixture와 제품 보호, 원래 성공 기대는 유지했다. 이 보정 이후의 새 Web 실행은 아직 수행하지 않았다.
+
+실제 UI 흐름을 대조하면서 저장된 작품의 Production 프로젝트 생성과 계정이 연결된 참여자·공정 역할 설정이 API에만 있고 Web producer는 없는 시작 경계를 추가로 확인했다. 저장된 자기 작품을 선택해 현재 owner 권한으로 명시적으로 프로젝트를 만들고, 관리자가 실제 작품 초대를 수락한 계정에 역할·범위·기간을 배정하는 화면을 연결했다. 생성 원문·ID는 기존 SQLite에 readback 확인 후 보존하며, 역할 설정은 기존 원문 복구 queue를 사용한다. 전체 역할 배열은 읽었던 revision에 고정해 대기 중 다른 변경을 새 revision으로 덮지 않는다. 기존 당사자·계약·크레딧·결정권·헌장과 원고 ACL을 보존하며, 프리셋 체험이나 작품 저장에 자동 생성 side effect를 넣지 않는다. 이 새 UI와 관련 회귀는 소스 반영 상태이며 실행·브라우저 완료로 표시하지 않는다.
+
+새 화면을 포함한 Web 31파일 첫 검증은 역할 Editor 시험의 미등록 DOM matcher에서 중단됐다. 실제 결과는 1통과·1실패 후 중단이며 나머지 선택 파일은 미실행이다. 기존 저장소의 native DOM 단언으로 시험 파일만 보정했다. 독립 소스 검토에서는 새 역할 명령의 미확인 원문이 reload 첫 GET 뒤 focus·online·visibility·30초 timer·BroadcastChannel에서 자동 POST되는 경로를 확인했다. 원래 요청이 서버에 도달하지 않았던 경우 이 POST는 단순 조회를 넘어 실제 역할을 변경하므로, 화면이 약속한 명시적 저장 상태 확인과 맞지 않는다. 역할 명령에 한해 자동 갱신은 최신 GET과 이미 확인된 ACK의 버전 검증을 계속 수행하고 미확인 원문을 보존한다. 원문 재전송은 기존 저장 상태 확인 버튼에서 동일 본문·UUID·기준 버전으로만 수행한다. 다른 명령의 기존 복구 계약과 서버 idempotency·CAS는 유지했다. 이 보완과 자동 갱신 5경로 회귀는 재검증 전이다.
+
+최종 범위는 검증 후 main 병합까지다. 전체 타입·하네스·architecture·production build·실제 로컬 DB·독립 계정 UI·C9 원시 성능·C10 사람의 현장 결과, 정상 커밋·원격 CI·PR·main 통합은 별도 증거로 확인한다. 운영 배포·운영 DB·환경변수·DNS·결제 변경은 수행하지 않았다.
+
+## 30. 실제 Web 전체 회귀와 메인 통합의 구조 보정
+
+상태: **migration — 2026-10-30 경로·migration 번호 보정본의 Web·정적 재검증 통과 후 정상 커밋 훅의 lint 21건 보완 완료, 보완본 재검증·main 통합 전**.
+
+고정 대본 Reader의 첫 실제 실행은 잘못된 Graph project ID를 가진 transport fixture가 strict 검수 링크 검사를 통과하지 못해 중단됐다. 실제 Graph schema와 원고 선택 producer의 식별 계약에 맞는 로컬 정상 fixture를 사용하고, Reader는 링크를 Promise의 오류 처리 안에서 먼저 검증하도록 고쳤다. 잘못된 pin은 명시 오류로 수집하며 본문이나 고정 검수 링크를 그리지 않는 음성 회귀를 추가했다. 기존 7단계·60컷·여러 문단·고정 tuple·계정 전환 후 늦은 응답 검사는 유지했다. strict parser·공용 transport fixture·API를 완화하지 않았다.
+
+이 보완까지 포함한 323개 입력의 실제 실행은 **32파일·236 tests 통과, actual exit 0, timeout 없음, 29.911초**였다. HEAD는 `495c2017ecdb998c7a3573a8e3299b060ff250b4`이며 입력·변경 목록이 전후 같고 실행 process group 종료를 확인했다. 이 결과는 HTTP를 mock한 Web 회귀와 순수 계약 시험이며 실제 DB나 독립 브라우저 4계정의 제작 완주를 증명하지 않는다.
+
+같은 입력의 후속 정적 실행은 QA MJS 9파일의 `node --check`가 모두 통과했고, CI Node 계약 46개 중 44개 통과·2개 실패였다. 실제 exit 1, timeout 없음, 1.277초이며 입력과 실행기 전후 해시가 같고 process group 종료를 확인했다. 두 실패는 실제로 `creator/live/`에 있는 transform 회귀 13개를 과거 creator 직하 glob으로 찾던 필수 선택자의 경로 오류였다. 테스트를 삭제하거나 필수 실행 검사를 낮추지 않고 실제 경로로 고쳤다. 이 변경의 재실행은 아직 수행하지 않았다.
+
+메인의 creator 직하 파일 예산을 유지하기 위해 새 제한 편집 모듈 25개를 기존 `studio-collab/`으로, 고정 대본 capture client와 시험 2개를 기존 `writer-room/`으로 옮겼다. 내부·외부 import, type import, mock, dynamic import와 CI 필수 Web 선택자 11개를 함께 갱신했다. root facade나 예산 증가는 추가하지 않았고, 기존 oversize 소비자의 줄 수도 유지했다. 앞의 32파일 통과는 이동 전 입력의 이력이며 이동 후 통과로 재사용하지 않는다.
+
+메인의 AI migration 0114·0115와 번호가 충돌하지 않도록 이 변경의 펜 원고 migration을 `0116_studio_review_comment_pen_strokes.sql`, 담당 범위 정책 migration을 `0117_studio_scoped_write_policy.sql`로 옮겼다. SQL 2개의 내용은 번호 변경 전후 SHA256이 같고 manifest·시험 DB 준비·현재 실행 source의 참조를 갱신했다. 앞선 이력이 사용한 0114·0115 이름은 당시 실행의 기록으로 보존한다. 현재 작업 브랜치에 없는 메인의 AI migration은 정상 main 통합에서 함께 보존해야 하며, 원격 DB에는 적용하지 않았다.
+
+위 경로·번호 보정 뒤 명시 341개 입력으로 다시 실행한 Web 검증은 **32파일·236 tests 통과, actual exit 0, timeout 없음, 27.830초**였다. 별도 정적 검증도 **QA MJS 9파일 구문 검사와 CI Node 계약 46개 모두 통과, actual exit 0, timeout 없음, 1.275초**였다. 두 실행의 HEAD는 `495c2017ecdb998c7a3573a8e3299b060ff250b4`였고 각 입력·변경 목록이 전후 같으며 실행 process group 종료를 확인했다. 앞의 정적 실패와 이동 전 결과도 당시 이력으로 보존한다.
+
+다음 정상 기능 커밋은 실제 pre-commit의 ESLint 오류 21건으로 중단됐다(actual exit 1, timeout 없음, 23.836초). 하네스·lockfile 검사는 통과했지만, lint-staged가 변경을 원복했으며 기능 커밋이나 main 병합은 생성되지 않았다. 누락된 hook 의존성·시각 snapshot·cleanup 세대 fence, 제어 문자 정규식 표기·오류 cause·미사용 식별자를 최소 보완했다. 기간 snapshot은 기존 `studio-collab/`의 공용 훅을 사용해 Studio에서 Production 화면의 eager import가 늘지 않도록 했다. 실제 저장·제출 직전의 현재 시각·계정·서버 권한 검사와 원문·ACK 경계는 유지한다. 이 lint 보완 뒤에는 소스가 달라졌으므로 앞의 Web·정적 통과를 보완본의 통과로 재사용하지 않는다. 정상 훅과 영향 회귀의 재검증은 아직 실행 전이다.
+
+실제 UI 인증·60컷 입력·서버 저장·제작 프로젝트 생성과 C9 원시 계측의 임시 실행 소스는 준비 단계다. 신규 G2 UI driver와 C9 관측기는 위 9파일 구문 검사에 포함하지 않았고 아직 실행하지 않았다. 로컬 관측을 운영 사용자의 INP나 모집단 percentile로 해석하지 않는다. Event Timing의 16ms 관측 하한과 INP의 페이지 생명주기 범위는 [Chrome의 공식 INP 설명](https://web.dev/articles/inp)을 따른다. 실제 production artifact·서버 데이터·이미지 bytes·현재 권한·기능 완료를 함께 검증하기 전에는 C9 완료나 시장 최상위 성능을 선언하지 않는다.
+
+메인 통합의 다음 필수 증거는 통합 보정본의 기존 32파일 회귀·정적·타입·하네스·구조 검사, 실제 계정 권한·REST 경계의 로컬 PostgreSQL 통합 검사, 정상 커밋과 원격 필수 CI·PR·main 병합이다. 운영 배포는 이번 범위에서 제외한다. 4UID·60컷과 원시 성능 관측은 대표 팀을 모르는 상황에서 이 작업이 선택한 통제 검증 계획이며, 사용자가 별도로 지정한 인원 수·성능 SLO가 아니다. 실제 3계정 API 권한 검사와 아직 실행하지 않은 4계정 브라우저·운영 성능·사람의 현장 결과를 각각 구분해 기록한다. 준비 소스를 실행 결과로 승격하거나 새 계측 프레임워크의 완성을 main 병합의 추가 요건으로 삼지 않는다.

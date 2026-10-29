@@ -1,5 +1,7 @@
 import {
   inferProductionTaskDepartment,
+  productionStudioDocumentRoleLineage,
+  sameProductionRevision,
   type ProductionDepartmentKey,
   type ProductionProjectAggregate,
   type ProductionTask,
@@ -191,7 +193,9 @@ function findExactCandidate(
     const match = candidates.find((candidate) =>
       candidate.revisionRef.id === ref.id
       && candidate.revisionRef.digest === ref.digest
-      && candidate.revisionRef.lineage === ref.lineage);
+      && candidate.revisionRef.lineage === ref.lineage
+      && (ref.productionSubmissionId || candidate.revisionRef.productionSubmissionId
+        ? sameProductionRevision(candidate.revisionRef, ref) : true));
     if (match) return match;
   }
   return null;
@@ -215,7 +219,7 @@ function recommendedCandidate(
   const acceptedKinds = DEPARTMENT_ARTIFACT_KINDS[department];
   return candidates
     .filter((candidate) =>
-      acceptedKinds.includes(candidate.artifactKind)
+      !candidate.revisionRef.productionSubmissionId && acceptedKinds.includes(candidate.artifactKind)
       && artifactMatchesScope(candidate, task.scope))
     .sort((left, right) =>
       acceptedKinds.indexOf(left.artifactKind) - acceptedKinds.indexOf(right.artifactKind)
@@ -309,7 +313,22 @@ export function auditProductionStudioRevisionBindings(
   revisionsByArtifact: Readonly<Record<string, readonly StudioProjectRevisionRecord[]>>,
   translate: ProductionRevisionBridgeTranslate = defaultTranslate,
 ): ProductionStudioRevisionAudit {
-  const candidates = createStudioRevisionCandidates(project, revisionsByArtifact);
+  const raw = createStudioRevisionCandidates(project, revisionsByArtifact);
+  const bound = source.workId !== project.workId ? [] : source.submissions.flatMap((submission): StudioRevisionCandidate[] => {
+    const evidence = submission.sourceEvidence, ref = submission.revisionRef;
+    if (!evidence || evidence.version !== 1 || evidence.kind !== "studio-review-capture"
+      || ref.productionSubmissionId !== submission.id || ref.id !== evidence.subject.revisionId
+      || ref.digest !== `sha256:${evidence.subject.rootGraphHash}` || ref.revision !== evidence.sourceServerRevision
+      || ref.lineage !== productionStudioDocumentRoleLineage(evidence.documentRole)
+      || evidence.subject.workId !== project.workId || evidence.subject.projectId !== project.id) return [];
+    const matches = raw.filter((entry) => entry.artifactId === evidence.subject.artifactId
+      && entry.revision.id === ref.id && entry.revision.artifactId === entry.artifactId
+      && entry.revision.kind === "review-snapshot" && entry.scope.projectId === project.id
+      && entry.revision.rootGraphHash === evidence.subject.rootGraphHash);
+    const candidate = matches[0];
+    return matches.length === 1 && candidate ? [{ ...candidate, revisionRef: ref }] : [];
+  });
+  const candidates = Object.freeze([...raw, ...bound]);
   const tasks = source.tasks.map((task) => taskBinding(source, task, candidates, translate));
   const submissions = source.submissions.map((submission) =>
     submissionBinding(submission, candidates, translate));
@@ -331,7 +350,7 @@ export function pinProductionTaskToStudioRevision(
   candidate: StudioRevisionCandidate,
 ): ProductionTask {
   const existing = task.inputRevisionRefs.filter((revision) =>
-    revision.id !== candidate.revisionRef.id);
+    revision.id !== candidate.revisionRef.id || revision.productionSubmissionId !== candidate.revisionRef.productionSubmissionId);
   const next = [...existing, candidate.revisionRef].sort((left, right) =>
     left.lineage.localeCompare(right.lineage)
     || left.createdAt.localeCompare(right.createdAt)

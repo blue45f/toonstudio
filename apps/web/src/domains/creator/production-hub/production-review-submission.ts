@@ -1,5 +1,7 @@
 import {
   activeAssignments,
+  currentProductionReviewDecisions,
+  eligibleProductionReviewAssignments,
   evaluateReviewApproval,
   productionScopeDepth,
   productionSubmissionBlockingClarifications,
@@ -70,8 +72,8 @@ export function decisionsForProductionSubmission(
   if (!deliverable) return [];
   const eligible = new Set(activeAssignments(aggregate.assignments, at)
     .filter((assignment) => assignment.projectId === aggregate.projectId && scopeContains(assignment.scope, deliverable.scope)).map((assignment) => assignment.id));
-  return aggregate.reviewDecisions.filter((decision) => decision.reviewRoundId === submission.id
-    && eligible.has(decision.assignmentId) && validateReviewDecision(policy, decision).length === 0);
+  return currentProductionReviewDecisions(aggregate, policy, deliverable.scope, aggregate.reviewDecisions.filter((decision) => decision.reviewRoundId === submission.id
+    && eligible.has(decision.assignmentId) && validateReviewDecision(policy, decision).length === 0), at);
 }
 
 export function plainSubmissionApproval(policy: ReviewPolicy, decisions: readonly ReviewDecision[]) {
@@ -107,7 +109,11 @@ export function planProductionSubmissionReview(
   if (policyForProductionSubmission(aggregate, submission)?.id !== policy.id || decision.reviewRoundId !== submission.id) throw new Error("제출본과 검수 정책이 변경되었습니다. 현재 버전에서 다시 확인하세요.");
   const candidate = { ...aggregate, reviewDecisions: [...aggregate.reviewDecisions, decision] };
   const decisions = decisionsForProductionSubmission(candidate, submission, policy, at);
-  if (!decisions.some((entry) => entry.id === decision.id)) throw new Error("현재 범위의 유효한 검수 담당자만 결정을 기록할 수 있습니다.");
+  const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId);
+  const eligible = deliverable && (policy.quorumBasis === "accounts" ? eligibleProductionReviewAssignments(aggregate, deliverable.scope, at)
+    : activeAssignments(aggregate.assignments, at).filter((entry) => entry.status === "active" && entry.projectId === aggregate.projectId && scopeContains(entry.scope, deliverable.scope)));
+  // 새 요청의 계정 stamp는 서버가 기록한다. 자격 검증과 이미 확인된 표의 집계를 구분한다.
+  if (!eligible || !eligible.some((entry) => entry.id === decision.assignmentId) || validateReviewDecision(policy, decision).length) throw new Error("현재 범위의 유효한 검수 담당자만 결정을 기록할 수 있습니다.");
   const steps: SubmissionReviewStep[] = [];
   if (submission.status === "submitted") steps.push({ stage: "start-review", command: { type: "upsert-submission", submission: { ...submission, status: "in-review" } } });
   steps.push({ stage: "record-decision", command: { type: "record-review-decision", policyId: policy.id, decision } });

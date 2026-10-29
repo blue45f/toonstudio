@@ -6,6 +6,7 @@ import { executeProductionCommand, getProductionProject, recoverProductionComman
 import { clearProductionCommandRecoveriesForActor, clearProductionCommandRecovery, loadProductionCommandRecovery, saveProductionCommandRecovery, type PendingProductionCommand } from "./production-command-recovery";
 import { useT } from "@/shared/lib/i18n";
 import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
+import { ProductionCommandRevisionChangedError, type ProductionCommandExecutionOptions } from "./production-command-execution";
 
 import type { ProductionDemoTranslate } from "./production-demo-adapter";
 
@@ -25,6 +26,15 @@ const staleRecoveryReadKey = defineBilingualText("productionHub.session", "stale
 const recoveryStorageFailedKey = defineBilingualText("productionHub.session", "recoveryStorageFailed",
   "이 저장 요청을 새로고침 복구 영역에 보관하지 못했습니다. 결과를 확인할 때까지 이 탭을 유지하세요.",
   "This save could not be preserved for reload recovery. Keep this tab open until its result is confirmed.");
+const roleRecoveryBlockedKey = defineBilingualText("productionHub.session", "roleRecoveryBlocked",
+  "참여 역할 요청을 기기 복구 영역에서 확인하지 못해 전송하지 않았습니다. 원래 입력을 유지하며 저장 상태 확인을 다시 진행하세요.",
+  "The role request was not sent because its recovery record could not be verified. Keep the original input and check its save status again.");
+const roleRevisionChangedKey = defineBilingualText("productionHub.session", "roleRevisionChanged",
+  "참여 역할을 읽은 뒤 프로젝트가 갱신되어 전송하지 않았습니다. 현재 내용을 확인한 뒤 다시 저장하세요.",
+  "The role request was not sent because the project changed after it was read. Review its current state before saving again.");
+const roleManageDeniedKey = defineBilingualText("productionHub.session", "roleManageDenied",
+  "참여 계정과 공정 역할을 관리할 권한이 없습니다.",
+  "You do not have permission to manage participant accounts and production roles.");
 const restoredSaveKey = defineBilingualText("productionHub.session", "restoredSave",
   "응답을 확인하지 못한 이전 저장 요청을 복원했습니다. 현재 권한을 확인했으며, 최신 상태 확인을 눌러 같은 요청의 저장 결과를 확인하세요.",
   "An unconfirmed save was restored and current access was checked. Refresh the project to confirm the result of the same request.");
@@ -92,17 +102,24 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       error: actorId ? null : "로그인 후 제작 프로젝트를 열어 주세요.", notice: null, saveState: "idle" });
     if (!actorId || !projectId) return () => { generation.current += 1; };
     const clearRecovery = () => { unconfirmedWrite.current = null; recoveryStored.current = false; clearProductionCommandRecovery(actorId, projectId); };
-    const refresh = async () => {
+    const refresh = async (explicit = false) => {
       if (!current() || pendingWrites.current > 0) return;
       const sequence = ++reads.current;
       const recovery = unconfirmedWrite.current;
       let recovered = recovery?.confirmedRevision != null;
+      const holdRoleRecovery = !explicit && recovery?.confirmedRevision === null && recovery.command !== null
+        && typeof recovery.command === "object" && "type" in recovery.command && recovery.command.type === "configure-collaboration";
       // 원래 본문·버전·식별자로만 재전송하여 서버 영수증과 정확히 일치시킨다.
       if (recovery) pendingWrites.current += 1;
       setSnapshot((value) => value.scope === scope ? { ...value, refreshing: true } : value);
       try {
-        if (recovery && !checkRestoredAccess && recovery.confirmedRevision == null) {
+        if (recovery && !checkRestoredAccess && !holdRoleRecovery && recovery.confirmedRevision == null) {
           try {
+            if (actorId && recovery.command !== null && typeof recovery.command === "object" && "type" in recovery.command
+              && recovery.command.type === "configure-collaboration") {
+              recoveryStored.current = saveProductionCommandRecovery(actorId, projectId, recovery);
+              if (!recoveryStored.current) throw new Error(translate(roleRecoveryBlockedKey));
+            }
             const response = await recoverProductionCommand(projectId, recovery);
             if (!current()) return;
             if (response.aggregate.projectId !== projectId || response.aggregate.revision <= recovery.expectedRevision) throw new Error("저장 응답의 프로젝트나 버전을 확인하지 못했습니다.");
@@ -124,10 +141,12 @@ export function useProductionProjectSession(projectId: string | undefined, actor
         if (confirmedRevision != null && record.aggregate.revision < confirmedRevision) throw new Error(translate(staleRecoveryReadKey));
         if (authority.current && record.aggregate.revision < authority.current.aggregate.revision) return;
         authority.current = record;
-        if (checkRestoredAccess && recovery && recovery.confirmedRevision === null) {
+        // 자동 갱신은 현재 상태만 읽는다. 역할 원문의 재전송은 명시적인 저장 상태 확인에 한정한다.
+        if ((checkRestoredAccess || holdRoleRecovery) && recovery && recovery.confirmedRevision === null) {
+          const notice = checkRestoredAccess ? translate(restoredSaveKey) : translate(unconfirmedSaveKey);
           checkRestoredAccess = false;
           setSnapshot((value) => ({ ...value, scope, record, loading: false, refreshing: false, error: null,
-            saveState: "error", notice: `${translate(restoredSaveKey)}${recoveryStored.current ? "" : ` ${translate(recoveryStorageFailedKey)}`}` }));
+            saveState: "error", notice: `${notice}${recoveryStored.current ? "" : ` ${translate(recoveryStorageFailedKey)}`}` }));
           return;
         }
         clearRecovery();
@@ -147,7 +166,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
         if (current() && sequence === reads.current) setSnapshot((value) => ({ ...value, refreshing: false }));
       }
     };
-    refreshRef.current = refresh;
+    refreshRef.current = () => refresh(true);
     const warn = (event: BeforeUnloadEvent) => {
       if (!unconfirmedWrite.current || recoveryStored.current) return;
       event.preventDefault(); event.returnValue = "";
@@ -175,7 +194,9 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       channel.current?.close(); channel.current = null;
     };
   }, [scope, projectId, actorId, authRevision, isDemo]);
-  const queueCommand = useCallback((command: ProductionClientCommand, message: string, strict: boolean): Promise<void> => {
+  const queueCommand = useCallback((command: ProductionClientCommand, message: string, strict: boolean, options?: ProductionCommandExecutionOptions): Promise<void> => {
+    const capturedCommand = command.type === "configure-collaboration" ? structuredClone(command) : command;
+    const requestedRevision = options?.expectedRevision;
     const epoch = generation.current, session = getAuthSessionRevision(), batch = queueEpoch.current;
     const current = () => authorityScope.current === scope && generation.current === epoch && getAuthSessionRevision() === session && session === authRevision;
     const run = async () => {
@@ -191,16 +212,29 @@ export function useProductionProjectSession(projectId: string | undefined, actor
         if (strict) throw new Error(t("productionHub.session.noChangePermission", "프로젝트 변경 권한이 없습니다."));
         return;
       }
-      const mutationCommand = structuredClone(command);
+      if (capturedCommand.type === "configure-collaboration" && !record.access.manage) {
+        if (strict) throw new Error(t(roleManageDeniedKey));
+        return;
+      }
+      if (!isDemo && capturedCommand.type === "configure-collaboration"
+        && (!Number.isSafeInteger(requestedRevision) || requestedRevision !== record.aggregate.revision)) {
+        throw new ProductionCommandRevisionChangedError(t(roleRevisionChangedKey));
+      }
+      const mutationCommand = structuredClone(capturedCommand);
       const mutation: PendingProductionCommand = { mutationId: globalThis.crypto.randomUUID(), expectedRevision: record.aggregate.revision, command: mutationCommand, confirmedRevision: null, queuedAt: Date.now() };
       if (!isDemo && actorId && projectId) {
         unconfirmedWrite.current = mutation;
         recoveryStored.current = saveProductionCommandRecovery(actorId, projectId, mutation);
       }
+      if (!isDemo && mutationCommand.type === "configure-collaboration" && !recoveryStored.current) {
+        setSnapshot((value) => ({ ...value, saveState: "error", notice: t(roleRecoveryBlockedKey), refreshing: false }));
+        if (strict) throw new Error(t(roleRecoveryBlockedKey));
+        return;
+      }
       pendingWrites.current += 1; reads.current += 1;
       setSnapshot((value) => ({ ...value, saveState: "saving", notice: !isDemo && !recoveryStored.current ? t(recoveryStorageFailedKey) : null, refreshing: false }));
       try {
-        const next = isDemo ? demo.reduce(record.aggregate, command, demoTranslate)
+        const next = isDemo ? demo.reduce(record.aggregate, capturedCommand, demoTranslate)
           : (await executeProductionCommand(record.aggregate.projectId, mutation.expectedRevision, mutationCommand, mutation.mutationId)).aggregate;
         if (!current()) throw new Error(staleMessage);
         if (next.projectId !== record.aggregate.projectId || next.revision < record.aggregate.revision) throw new Error("저장 응답의 프로젝트나 버전을 확인하지 못했습니다.");
@@ -246,9 +280,10 @@ export function useProductionProjectSession(projectId: string | undefined, actor
     return operation;
   }, [scope, authRevision, isDemo, projectId, actorId, demo, demoTranslate, staleMessage, t]);
   const execute = useCallback((command: ProductionClientCommand, message: string) => queueCommand(command, message, false), [queueCommand]);
-  const executeStrict = useCallback((command: ProductionClientCommand, message: string) => queueCommand(command, message, true), [queueCommand]);
+  const executeStrict = useCallback((command: ProductionClientCommand, message: string, options?: ProductionCommandExecutionOptions) => queueCommand(command, message, true, options), [queueCommand]);
   const refresh = useCallback(() => refreshRef.current(), []);
   return { aggregate: state.record?.aggregate ?? null, access: state.record?.access ?? NO_ACCESS,
     loading: state.loading, error: state.error, saveState: state.saveState, notice: state.notice,
-    refreshing: state.refreshing, refresh, execute, executeStrict, isDemo };
+    refreshing: state.refreshing, refresh, execute, executeStrict, isDemo,
+    hasUnconfirmedCommand: !isDemo && state.scope === scope && unconfirmedWrite.current !== null };
 }

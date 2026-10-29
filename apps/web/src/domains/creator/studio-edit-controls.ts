@@ -137,6 +137,7 @@ export const STUDIO_EDIT_MENU_COMMAND_ORDER: readonly StudioEditMenuCommandId[] 
 ];
 
 export interface StudioEditAvailabilityInput {
+  scopedHistoryAvailability?: { readonly undo: boolean; readonly redo: boolean };
   historyIndex: number;
   historyLength: number;
   /**
@@ -197,16 +198,17 @@ export function resolveStudioEditAvailability(
   input: StudioEditAvailabilityInput
 ): StudioEditAvailability {
   const hasAnySelection = input.hasElementSelection || input.hasPixelSelection;
-  const historyLocked = input.mutationLocked || input.masterEditMode;
+  const historyLocked = input.masterEditMode;
   return {
     undoDisabled:
       historyLocked
-      || (input.historyIndex <= 0 && !input.sidecarUndoAvailable && !input.pendingCommitAvailable),
+      || (input.scopedHistoryAvailability ? !input.scopedHistoryAvailability.undo : input.mutationLocked
+        || (input.historyIndex <= 0 && !input.sidecarUndoAvailable && !input.pendingCommitAvailable)),
     redoDisabled:
       historyLocked
-      || (input.historyIndex >= input.historyLength - 1
+      || (input.scopedHistoryAvailability ? !input.scopedHistoryAvailability.redo : input.mutationLocked || (input.historyIndex >= input.historyLength - 1
         && !input.sidecarRedoAvailable
-        && !input.pendingUndoneAvailable),
+        && !input.pendingUndoneAvailable)),
     cutDisabled: input.mutationLocked || !input.hasElementSelection,
     copyDisabled: input.interactionLocked || !input.hasElementSelection,
     pasteDisabled: input.mutationLocked,

@@ -67,10 +67,10 @@ export class StudioWorkAssetController {
     limits: {
       fileSize: MAX_MULTIPART_LAYER_LIFT_IMAGE_BYTES,
       files: 2,
-      fields: 1,
+      fields: 2,
       fieldNameSize: 64,
-      fieldSize: 12_288,
-      parts: 3,
+      fieldSize: 48 * 1_024,
+      parts: 4,
     },
   }))
   async uploadLayerLiftBatch(
@@ -85,7 +85,7 @@ export class StudioWorkAssetController {
       authenticatedUserId(userId),
       params.id,
       body.metadata,
-      files
+      files, body.writeContext
     );
   }
 
@@ -95,10 +95,10 @@ export class StudioWorkAssetController {
     limits: {
       fileSize: MAX_MULTIPART_ASSET_BYTES,
       files: 1,
-      fields: 2,
+      fields: 3,
       fieldNameSize: 64,
-      fieldSize: 4_096,
-      parts: 3,
+      fieldSize: 48 * 1_024,
+      parts: 4,
     },
   }))
   async upload(
@@ -113,7 +113,7 @@ export class StudioWorkAssetController {
       params.assetId,
       body.elementType,
       body.descriptor,
-      file
+      file, body.writeContext
     );
   }
 
@@ -125,10 +125,10 @@ export class StudioWorkAssetController {
     limits: {
       fileSize: MAX_MULTIPART_ASSET_BYTES,
       files: 1,
-      fields: 1,
+      fields: 2,
       fieldNameSize: 64,
-      fieldSize: 4_096,
-      parts: 2,
+      fieldSize: 48 * 1_024,
+      parts: 3,
     },
   }))
   async uploadGeneratedObject(
@@ -146,7 +146,7 @@ export class StudioWorkAssetController {
       params.purpose,
       params.referenceId,
       body.elementType,
-      file,
+      file, body.writeContext,
     );
   }
 

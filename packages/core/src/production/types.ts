@@ -1,4 +1,11 @@
+import type { ReviewDecision, ReviewPolicy } from "./review-types";
+import type { RevisionRef } from "./revision";
 import type { ProductionRisk, ProductionRiskAssessment, ProductionRiskPolicy, ProductionRiskResponse, ProductionRiskSignal } from "./risk-types";
+import type { Submission } from "./submission";
+
+export type { Submission } from "./submission";
+export type { RevisionRef } from "./revision";
+export type { ReviewPolicyLane, ReviewPolicy, ReviewDecisionValue, ReviewDecision, ApprovalEvaluation, ApprovalLaneEvaluation } from "./review-types";
 
 export const PRODUCTION_MODEL_VERSION = 2 as const;
 export const PRODUCTION_RISK_MODEL_VERSION = 2 as const;
@@ -28,14 +35,6 @@ export interface ScopeAncestorRef {
 }
 
 export type ProductionLineage = "narrative" | "visual" | "integrated";
-
-export interface RevisionRef {
-  readonly id: string;
-  readonly lineage: ProductionLineage;
-  readonly revision: number;
-  readonly digest: string;
-  readonly createdAt: string;
-}
 
 export const PRODUCTION_STUDIO_DOCUMENT_ROLES = [
   "story",
@@ -463,59 +462,6 @@ export interface CreativeMergeRequest {
   readonly createdAt: string;
 }
 
-export interface ReviewPolicyLane {
-  readonly lane: ReviewLane;
-  readonly eligibleAssignmentIds: readonly string[];
-  readonly requiredAssignmentIds: readonly string[];
-  readonly quorum: number;
-  readonly vetoAssignmentIds: readonly string[];
-  readonly blocksPublication: boolean;
-}
-
-export interface ReviewPolicy {
-  readonly id: string;
-  readonly projectId: string;
-  readonly scope: ScopeRef;
-  readonly lanes: readonly ReviewPolicyLane[];
-  readonly responseDueHours: number;
-  readonly expiredReviewAction: "escalate" | "replace-reviewer" | "reschedule";
-}
-
-export type ReviewDecisionValue =
-  | "approve"
-  | "approve-with-conditions"
-  | "request-changes"
-  | "veto"
-  | "abstain";
-
-export interface ReviewDecision {
-  readonly id: string;
-  readonly reviewRoundId: string;
-  readonly lane: ReviewLane;
-  readonly assignmentId: string;
-  readonly value: ReviewDecisionValue;
-  readonly reasonCode: string | null;
-  readonly evidenceScopeRefs: readonly ScopeRef[];
-  readonly conditions: readonly string[];
-  readonly createdAt: string;
-}
-
-export interface ApprovalEvaluation {
-  readonly approved: boolean;
-  readonly blockingLanes: readonly ReviewLane[];
-  readonly laneResults: readonly ApprovalLaneEvaluation[];
-}
-
-export interface ApprovalLaneEvaluation {
-  readonly lane: ReviewLane;
-  readonly approved: boolean;
-  readonly approvals: number;
-  readonly requiredApprovals: number;
-  readonly missingRequiredAssignmentIds: readonly string[];
-  readonly vetoedByAssignmentIds: readonly string[];
-  readonly changeRequestedByAssignmentIds: readonly string[];
-}
-
 export type ProductionTaskStatus =
   | "draft"
   | "needs-input"
@@ -606,18 +552,6 @@ export interface Deliverable {
   readonly completionCriteria: readonly string[];
   readonly currentSubmissionId: string | null;
   readonly approvedSubmissionId: string | null;
-}
-
-export interface Submission {
-  readonly id: string;
-  readonly projectId: string;
-  readonly deliverableId: string;
-  readonly revisionRef: RevisionRef;
-  readonly submittedByAssignmentId: string;
-  readonly submittedAt: string;
-  readonly status: "submitted" | "in-review" | "changes-requested" | "approved" | "superseded";
-  readonly inputRevisionRefs: readonly RevisionRef[];
-  readonly evidenceRefs: readonly string[];
 }
 
 export type ChangeStage =

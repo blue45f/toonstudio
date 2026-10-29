@@ -1,5 +1,6 @@
 import { StudioPsdSourceDownloads } from "./export/StudioPsdSourceDownloads";
 import { StudioDocumentChromeSlot } from "./studio-shell/StudioDocumentChromeSlot";
+import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
 import {
   Bookmark,
   Box,
@@ -1162,10 +1163,9 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   } = stableHandlers;
   const commentsLocked =
     collaborationDocumentLocked && !sharedDocument?.capabilities.view;
-
-  // Composite titles take a shipped translation when the pack has one and fall back to
-  // the catalogue's own language otherwise (same escape hatch the Help group uses).
-  const menuT = useT();
+  const scopedDraftSaveState = useStudioScopedDraftSaveState(), scopedDraftSaveAvailable = scopedDraftSaveState.available;
+  // 복합 제목은 제공된 번역 또는 카탈로그 원문을 사용한다.
+  const menuT = useT(), pendingSaveLabel = menuT("studio.mainMenu.item.file.confirm-pending-save", "저장 상태 확인");
   const compositeMenuLabel = (id: "insert" | "create"): string | undefined => {
     const key = `studio.mainMenu.group.${id}.label`;
     const translated = menuT(key, "");
@@ -1369,17 +1369,17 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
       unavailableReason: frozenStatus3Text("studio.frozenStatus3.menubar.redoUnavailable", "다시 적용할 편집 작업이 아직 없습니다."),
     },
     save: {
-      label: sharedNonOwner ? "공동 저장" : COMMAND_BAR_COMMAND_LABELS.save,
+      label: scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedNonOwner ? "공동 저장" : COMMAND_BAR_COMMAND_LABELS.save,
       // 공유 문서의 "공동 저장"은 파일 메뉴가 이미 쓰는 키를 그대로 재사용한다 — 같은 명령이
       // 메뉴에서와 스트립에서 다른 문구로 번역되면 안 된다.
-      labelKey: sharedNonOwner
+      labelKey: scopedDraftSaveState.pendingConfirmation ? "studio.mainMenu.item.file.confirm-pending-save" : sharedNonOwner
         ? "studio.mainMenu.item.file.save-draft.shared"
         : "studio.commandBar.command.save",
       icon: Save,
       hint: MENUBAR_HINTS.draft,
       run: () => void handleSave("draft"),
-      disabled: saving || collaborationDocumentLocked,
-      unavailableReason: collaborationDocumentLocked
+      disabled: saving || (collaborationDocumentLocked && !scopedDraftSaveAvailable),
+      unavailableReason: collaborationDocumentLocked && !scopedDraftSaveAvailable
         ? collaborationLockMessage()
         : frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요."),
     },
@@ -2390,17 +2390,17 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
           <StudioToolHintTarget
             hint={{
               ...MENUBAR_HINTS.draft,
-              title: sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장",
+              title: scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장",
             }}
-            disabled={saving || collaborationDocumentLocked}
-            unavailableReason={collaborationDocumentLocked ? collaborationLockMessage() : saving ? frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요.") : undefined}
+            disabled={saving || (collaborationDocumentLocked && !scopedDraftSaveAvailable)}
+            unavailableReason={collaborationDocumentLocked && !scopedDraftSaveAvailable ? collaborationLockMessage() : saving ? frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요.") : undefined}
             preferredSide="bottom"
           >
             <button
               type="button"
               onClick={() => handleSave("draft")}
-              disabled={saving || collaborationDocumentLocked}
-              aria-label={sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장"}
+              disabled={saving || (collaborationDocumentLocked && !scopedDraftSaveAvailable)}
+              aria-label={scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장"}
               className={cn(
                 buttonClass({
                   size: "sm",
@@ -2418,7 +2418,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                 <Save size={14} className="hidden max-[429px]:block" aria-hidden />
               )}
               <span className="max-[429px]:sr-only">
-                {sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장"}
+                {scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장"}
               </span>
             </button>
           </StudioToolHintTarget>

@@ -1,4 +1,4 @@
-import { episodeScope, projectScope, scopeContains, scopeIntersects } from "./scope";
+import { episodeScope, isProductionIdentity, projectScope, scopeContains, scopeIntersects } from "./scope";
 
 import type {
   ApprovalEvaluation,
@@ -48,11 +48,13 @@ export function evaluateReviewApproval(
     const laneDecisions = [...latestByLaneAndAssignment.values()].filter(
       (decision) => decision.lane === lanePolicy.lane && lanePolicy.eligibleAssignmentIds.includes(decision.assignmentId),
     );
-    const approvals = laneDecisions.filter((decision) =>
-      decision.value === "approve" || decision.value === "approve-with-conditions").length;
-    const approvedAssignments = new Set(laneDecisions.filter((decision) =>
-      decision.value === "approve" || decision.value === "approve-with-conditions")
-      .map((decision) => decision.assignmentId));
+    const approvedDecisions = laneDecisions.filter((decision) =>
+      (decision.value === "approve" || decision.value === "approve-with-conditions")
+      && (policy.quorumBasis !== "accounts" || isProductionIdentity(decision.reviewerAccountUserId)));
+    const approvals = policy.quorumBasis === "accounts"
+      ? new Set(approvedDecisions.map((decision) => decision.reviewerAccountUserId)).size
+      : approvedDecisions.length;
+    const approvedAssignments = new Set(approvedDecisions.map((decision) => decision.assignmentId));
     const missingRequired = lanePolicy.requiredAssignmentIds.filter(
       (assignmentId) => !approvedAssignments.has(assignmentId),
     );

@@ -1,4 +1,6 @@
 import { scopeContains } from "./scope";
+import { sameSubmissionSourceEvidence } from "./submission";
+import { sameProductionRevision } from "./revision";
 
 import type {
   CreativeBranch,
@@ -155,6 +157,7 @@ export function validateSubmission(input: {
   readonly current?: Submission | null;
   readonly deliverable: Deliverable | null;
   readonly activeAssignmentIds: readonly string[];
+  readonly allowSourceEvidence?: boolean;
 }): readonly string[] {
   const { submission, current, deliverable } = input;
   const issues: string[] = [];
@@ -166,7 +169,16 @@ export function validateSubmission(input: {
   }
   if (submission.inputRevisionRefs.length === 0) issues.push("submission-input-revisions-missing");
   if (submission.revisionRef.revision < 1) issues.push("submission-revision-invalid");
+  if (submission.sourceEvidence && submission.revisionRef.productionSubmissionId !== submission.id) {
+    issues.push("submission-source-evidence-binding-mismatch");
+  }
+  if (!current && submission.sourceEvidence && !input.allowSourceEvidence) {
+    issues.push("submission-source-evidence-server-managed");
+  }
   if (current) {
+    if (!sameSubmissionSourceEvidence(current.sourceEvidence, submission.sourceEvidence)) {
+      issues.push("submission-source-evidence-mutated");
+    }
     if (deliverable.currentSubmissionId !== submission.id && submission.status !== "superseded") {
       issues.push("submission-not-current");
     }
@@ -181,17 +193,12 @@ export function validateSubmission(input: {
       || current.evidenceRefs.some((evidence, index) => submission.evidenceRefs[index] !== evidence))) {
       issues.push("submission-approval-evidence-mutated");
     }
-    if (current.revisionRef.id !== submission.revisionRef.id
-      || current.revisionRef.digest !== submission.revisionRef.digest
-      || current.revisionRef.lineage !== submission.revisionRef.lineage
-      || current.revisionRef.revision !== submission.revisionRef.revision
+    if (!sameProductionRevision(current.revisionRef, submission.revisionRef)
       || current.revisionRef.createdAt !== submission.revisionRef.createdAt
       || current.inputRevisionRefs.length !== submission.inputRevisionRefs.length
       || current.inputRevisionRefs.some((revision, index) => {
         const next = submission.inputRevisionRefs[index];
-        return !next || revision.id !== next.id || revision.digest !== next.digest
-          || revision.lineage !== next.lineage || revision.revision !== next.revision
-          || revision.createdAt !== next.createdAt;
+        return !next || !sameProductionRevision(revision, next) || revision.createdAt !== next.createdAt;
       })) {
       issues.push("submission-content-mutated");
     }

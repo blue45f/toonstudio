@@ -1,7 +1,7 @@
 import { buildProductionWorkflowTasks, canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import "./production-workboard.css";
 import { Filter } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { type ProductionProjectAggregate, type ProductionSavedView, type ProductionTask, type ProductionTaskStatus } from "@toonstudio/core/production";
@@ -89,7 +89,7 @@ const VIEW_KEYS = [
 const FILTER_ONLY_KEYS = ["boardQuery", "boardEpisode", "boardProcess", "boardAssignment", "boardFocus", "boardDue", "boardPriority", "boardArchived"] as const;
 const NO_IDS: readonly string[] = [];
 const PAGE_SIZE = 40;
-
+const ProductionTaskOutputEntry = lazy(() => import("./ProductionTaskOutputEntry"));
 export function ProductionWorkBoard(props: Props) {
   return <ProductionWorkBoardForProject key={props.aggregate.projectId} {...props} />;
 }
@@ -815,7 +815,7 @@ function ProductionWorkBoardForProject({
           </ProductionBoardScroller>
         </>
       )}
-      <BoardToast toast={actions.toast} onDismiss={actions.dismissToast} />
+      <Suspense fallback={null}><ProductionTaskOutputEntry aggregate={aggregate} task={selectedTasks.length === 1 ? selectedTasks[0] : null} canEdit={canEdit} execute={execute} /></Suspense><BoardToast toast={actions.toast} onDismiss={actions.dismissToast} />
       {helpOpen ? <BoardShortcutHelp onClose={() => setHelpOpen(false)} /> : null}
       {bulkTasks ? (
         <ProductionTaskBulkEditor

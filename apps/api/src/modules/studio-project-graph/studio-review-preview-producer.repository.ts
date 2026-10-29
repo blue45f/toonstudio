@@ -6,7 +6,7 @@ import type { PoolClient } from "pg";
 import { dbPool } from "../../platform/database";
 import type { LocatedPrivateObjectReference } from "../../platform/adapters/private-object-storage/private-object-storage.contract";
 import {
-  assertAccess, loadArtifactAccess, projectAccess, StudioProjectGraphRepository,
+  assertAccess, loadArtifactAccess, StudioProjectGraphRepository,
   StudioProjectNotFoundError, StudioRepositoryInvariantError, StudioIdempotencyConflictError,
 } from "./studio-project-graph.repository";
 import type { StudioReviewPreviewSubject } from "./studio-review-preview";
@@ -19,6 +19,8 @@ import {
 import { lockStudioReviewPreviewStorage } from "./studio-review-preview-storage";
 import { studioReviewPageRasterSchema, type StudioReviewPageRaster } from "./studio-review-source-map";
 import { loadStudioReviewCaptureSourceRevision } from "./studio-review-capture-source-revision";
+import { loadStudioReviewCaptureSource } from "./studio-review-capture-purpose";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 export type StudioReviewPreviewCaptureStatus = { readonly status: "pending" | "cancelled" }
   | { readonly status: "completed"; readonly subject: StudioReviewPreviewSubject };
@@ -59,20 +61,9 @@ async function assertPrepared(client: PoolClient, actor: string, intent: StudioR
   if (!prior || canonicalJson(prior) !== canonicalJson(intent)) invariant("preview-intent-unprepared");
 }
 
-async function workSource(client: PoolClient, actor: string, workId: string, lock = false): Promise<SourceRow> {
-  // Membership mutations use this work lock. Read membership in a fresh statement
-  // after acquiring it, so a revocation that won the lock cannot leave a stale JOIN snapshot.
-  if (lock) await client.query('SELECT id FROM creator_work WHERE id=$1 FOR UPDATE', [workId]);
-  const result = await client.query<SourceRow>(
-    `SELECT ''::text AS "projectId", work.id AS "workId", work."userId" AS "ownerUserId",
-       membership.role AS "membershipRole", membership.status AS "membershipStatus", work.revision, work.doc
-     FROM creator_work work LEFT JOIN creator_work_collaborator membership
-       ON membership."workId" = work.id AND membership."userId" = $2
-     WHERE work.id = $1`, [workId, actor]);
-  const row = result.rows[0];
-  if (!row) throw new StudioProjectNotFoundError("work");
-  assertAccess(projectAccess(actor, row), "edit");
-  return row;
+async function workSource(client: PoolClient, actor: string, workId: string, _lock = false,
+  writeContext?: StudioScopedWriteContext): Promise<SourceRow> {
+  return loadStudioReviewCaptureSource(client, actor, workId, writeContext);
 }
 
 function verifySource(row: SourceRow, input: StudioReviewPreviewCapture): void {
@@ -85,7 +76,7 @@ function verifySource(row: SourceRow, input: StudioReviewPreviewCapture): void {
 async function target(client: PoolClient, actor: string, intent: StudioReviewPreviewIntent, checkHead: boolean) {
   const found = await loadArtifactAccess(client, actor, intent.artifactId, true);
   if (!found) throw new StudioProjectNotFoundError("artifact");
-  assertAccess(found.access, "edit");
+  assertAccess(found.access, intent.writeContext ? "view" : "edit");
   if (found.row.workId !== intent.workId || found.row.projectId !== intent.projectId
     || intent.artifactId !== artifactIdFor(intent.workId)) invariant("preview-target-mismatch");
   const head = await client.query<{ rootGraphHash: string; kind: string }>(
@@ -123,7 +114,7 @@ export class StudioReviewPreviewProducerRepository {
   async prepare(actor: string, input: StudioReviewPreviewCapture): Promise<StudioReviewPreviewIntent> {
     const client = await dbPool.connect();
     try {
-      const source = await workSource(client, actor, input.workId);
+      const source = await workSource(client, actor, input.workId, false, input.writeContext);
       const prior = await preparedReceipt(client, actor, input);
       if (prior) { await assertSourceRevision(client, prior, prior.projectId, prior.sourceRevisionScope); return prior; }
       verifySource(source, input);
@@ -140,7 +131,7 @@ export class StudioReviewPreviewProducerRepository {
       if (!(error instanceof StudioProjectNotFoundError) || error.target !== "project") throw error;
       const projectId = `review-project-${studioReviewPreviewDigest(input.workId)}`;
       // The existing bootstrap enforces manageMembers; creating a review never grants access.
-      try { await this.graph.createProject(actor, { projectId, workId: input.workId, ...bootstrap(projectId) }, `review-prepare:${input.intentId}`); }
+      try { await this.graph.createProject(actor, { projectId, workId: input.workId, ...bootstrap(projectId) }, `review-prepare:${input.intentId}`, input); }
       catch (cause) {
         // A concurrent legitimate project bootstrap may have won the unique work binding.
         try { project = await this.graph.getProjectByWork(actor, input.workId); } catch { throw cause; }
@@ -148,7 +139,7 @@ export class StudioReviewPreviewProducerRepository {
       project ??= await this.graph.getProjectByWork(actor, input.workId);
     }
     if (!project.artifacts.some((artifact) => artifact.id === artifactId)) {
-      try { await this.graph.createArtifact(actor, project.id, bootstrap(project.id), `review-artifact:${input.intentId}`); }
+      try { await this.graph.createArtifact(actor, project.id, bootstrap(project.id), `review-artifact:${input.intentId}`, input); }
       catch (error) {
         project = await this.graph.getProjectByWork(actor, input.workId);
         if (!project.artifacts.some((artifact) => artifact.id === artifactId)) throw error;
@@ -161,7 +152,7 @@ export class StudioReviewPreviewProducerRepository {
     const head = revisions.find((revision) => revision.id === artifact.headRevisionId);
     if (!head) invariant("preview-head-version-mismatch");
     return transaction(async (connection) => {
-      const source = await workSource(connection, actor, input.workId, true);
+      const source = await workSource(connection, actor, input.workId, true, input.writeContext);
       const prior = await preparedReceipt(connection, actor, input);
       if (prior) { await assertSourceRevision(connection, prior, prior.projectId, prior.sourceRevisionScope); return prior; }
       const sourceRevisionScope = await assertSourceRevision(connection, input, project.id);
@@ -179,7 +170,7 @@ export class StudioReviewPreviewProducerRepository {
 
   async assertPending(actor: string, intent: StudioReviewPreviewIntent): Promise<void> {
     await transaction(async (client) => {
-      verifySource(await workSource(client, actor, intent.workId, true), intent);
+      verifySource(await workSource(client, actor, intent.workId, true, intent.writeContext), intent);
       await assertSourceRevision(client, intent, intent.projectId, intent.sourceRevisionScope);
       await target(client, actor, intent, true);
       await assertPrepared(client, actor, intent);
@@ -189,7 +180,7 @@ export class StudioReviewPreviewProducerRepository {
 
   async status(actor: string, intent: StudioReviewPreviewIntent): Promise<StudioReviewPreviewCaptureStatus> {
     return transaction(async (client) => {
-      await workSource(client, actor, intent.workId, true);
+      await workSource(client, actor, intent.workId, true, intent.writeContext);
       await target(client, actor, intent, false);
       await assertPrepared(client, actor, intent);
       return await receipt(client, actor, intent) ?? { status: "pending" };
@@ -198,7 +189,7 @@ export class StudioReviewPreviewProducerRepository {
 
   async findPrepared(actor: string, input: StudioReviewPreviewCapture): Promise<StudioReviewPreviewIntent | null> {
     const client = await dbPool.connect();
-    try { await workSource(client, actor, input.workId); return await preparedReceipt(client, actor, input); }
+    try { await workSource(client, actor, input.workId, false, input.writeContext); return await preparedReceipt(client, actor, input); }
     finally { client.release(); }
   }
 
@@ -207,7 +198,7 @@ export class StudioReviewPreviewProducerRepository {
     if (canonical.validator !== STUDIO_REVIEW_PREVIEW_VALIDATOR || studioReviewPreviewDigestBytes(canonical.bytes) !== canonical.sha256
       || object.byteLength !== canonical.bytes.byteLength || object.digest !== `sha256:${canonical.sha256}`) invariant("preview-validation-mismatch");
     await transaction(async (client) => {
-      verifySource(await workSource(client, actor, intent.workId, true), intent);
+      verifySource(await workSource(client, actor, intent.workId, true, intent.writeContext), intent);
       await assertSourceRevision(client, intent, intent.projectId, intent.sourceRevisionScope);
       await target(client, actor, intent, true);
       await assertPrepared(client, actor, intent);
@@ -239,7 +230,7 @@ export class StudioReviewPreviewProducerRepository {
   async complete(actor: string, input: StudioReviewPreviewComplete): Promise<StudioReviewPreviewCaptureStatus> {
     const { intent, pages } = input;
     return transaction(async (client) => {
-      const source = await workSource(client, actor, intent.workId, true);
+      const source = await workSource(client, actor, intent.workId, true, intent.writeContext);
       await assertSourceRevision(client, intent, intent.projectId, intent.sourceRevisionScope);
       const access = await target(client, actor, intent, false);
       await assertPrepared(client, actor, intent);
@@ -319,7 +310,7 @@ export class StudioReviewPreviewProducerRepository {
 
   async cancel(actor: string, intent: StudioReviewPreviewIntent): Promise<StudioReviewPreviewCaptureStatus> {
     return transaction(async (client) => {
-      await workSource(client, actor, intent.workId, true);
+      await workSource(client, actor, intent.workId, true, intent.writeContext);
       const access = await target(client, actor, intent, false);
       await assertPrepared(client, actor, intent);
       const prior = await receipt(client, actor, intent);
@@ -334,7 +325,7 @@ export class StudioReviewPreviewProducerRepository {
   async listCaptureAssets(actor: string, intent: StudioReviewPreviewIntent): Promise<readonly { assetId: string; sha256: string; generated: boolean }[]> {
     const client = await dbPool.connect();
     try {
-      await workSource(client, actor, intent.workId);
+      await workSource(client, actor, intent.workId, false, intent.writeContext);
       const key = studioReviewPreviewIntentKey(actor, intent);
       const result = await client.query<{ assetId: string; sha256: string; generated: boolean }>(
         `SELECT asset."assetId", asset.sha256, EXISTS(SELECT 1 FROM creator_work_asset_storage_reference reference

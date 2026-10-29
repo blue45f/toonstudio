@@ -5,11 +5,11 @@ import { deriveStudioReviewPageMapping } from "@toonstudio/studio-project-model"
 import { api } from "@/platform/api";
 import type { StudioReviewPreviewResult } from "../project-graph/studio-project-graph-client";
 import { ProductionSubmissionVisualReview } from "./ProductionSubmissionVisualReview";
-import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, resolveSubmissionVisualReview, SubmissionVisualReviewCaptureRequired } from "./production-submission-visual-review";
+import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, refreshPinnedSubmissionPreview, resolveSubmissionVisualReview, SubmissionVisualReviewCaptureRequired } from "./production-submission-visual-review";
 import { submissionCaptureVisualFixture, submissionVisualFixture } from "./production-submission-visual-review.test-fixture";
 
 vi.mock("./production-submission-visual-review", async (importOriginal) => ({
-  ...await importOriginal<typeof import("./production-submission-visual-review")>(), loadSubmissionVisualReview: vi.fn(), loadPinnedSubmissionPreviews: vi.fn(),
+  ...await importOriginal<typeof import("./production-submission-visual-review")>(), loadSubmissionVisualReview: vi.fn(), loadPinnedSubmissionPreviews: vi.fn(), refreshPinnedSubmissionPreview: vi.fn(),
 }));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 beforeEach(() => vi.resetAllMocks());
@@ -39,6 +39,7 @@ async function streamingFixture() {
   const f = fixture();
   const real = await vi.importActual<typeof import("./production-submission-visual-review")>("./production-submission-visual-review");
   vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(real.loadPinnedSubmissionPreviews);
+  vi.mocked(refreshPinnedSubmissionPreview).mockImplementation(real.refreshPinnedSubmissionPreview);
   const doc = { width: 800, pagesList: Array.from({ length: 33 }, (_, ordinal) => ({ id: `page-${ordinal}`, canvasH: 1200, elements: [] })) };
   const pages = doc.pagesList.map((_, ordinal) => {
     const mapping = deriveStudioReviewPageMapping(doc, { sourceServerRevision: 7, sourceContentDigest: f.hash, ordinal,
@@ -88,6 +89,83 @@ describe("고정 제출 원고 이미지 패널", () => {
     expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toBe(f.data.submission.reviewHref);
   });
 
+  it("완료한 33번째 이미지만 갱신할 때 직전 manifest cursor의 한 요청으로 기존 목록을 보존한다", async () => {
+    const f = await streamingFixture();
+    let refreshing = false;
+    // 요청한 cursor마다 실제 서버처럼 최대 32개를 돌려준다. 전체 재조회도 정상 응답하므로 요청 낭비만 드러난다.
+    const read = vi.spyOn(api, "get").mockImplementation(async (path) => {
+      const url = new URL(path, "https://unit.test");
+      expect(url.pathname).toBe("/studio-project-graph/reviews/submission-review/previews");
+      for (const key of ["projectId", "workId", "artifactId", "revisionId", "rootGraphHash"] as const) {
+        expect(url.searchParams.get(key)).toBe(f.subject[key]);
+      }
+      const cursor = url.searchParams.get("cursor");
+      if (cursor === null) return f.prefix;
+      if (cursor === f.cursor) return refreshing ? { ...f.suffix,
+        previews: f.suffix.previews.map((page) => ({ ...page, url: `${page.url}?target-refresh=1` })) } : f.suffix;
+      throw new Error("원본 manifest에 없는 cursor 요청입니다.");
+    });
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    await screen.findByRole("link", { name: "이 고정본에 핀 의견 남기기" });
+    expect(read).toHaveBeenCalledTimes(2);
+    fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: "32" } });
+    expect(screen.getByRole("img").getAttribute("src")).toBe(f.pages[32]?.url);
+    refreshing = true;
+    fireEvent.error(screen.getByRole("img"));
+    await waitFor(() => expect(screen.getByRole("img").getAttribute("src")).toBe(`${f.pages[32]?.url}?target-refresh=1`));
+    const refreshPath = read.mock.calls[2]?.[0];
+    if (typeof refreshPath !== "string") throw new Error("이미지 URL 갱신 요청이 없습니다.");
+    const query = new URL(refreshPath, "https://unit.test");
+    expect(query.searchParams.get("cursor")).toBe(f.cursor);
+    for (const key of ["projectId", "workId", "artifactId", "revisionId", "rootGraphHash"] as const) {
+      expect(query.searchParams.get(key)).toBe(f.subject[key]);
+    }
+    expect(read).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole("combobox", { name: "이미지 순번" }).querySelectorAll("option")).toHaveLength(33);
+    expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toBe(f.data.submission.reviewHref);
+    for (const ordinal of [0, 31]) {
+      fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: String(ordinal) } });
+      expect(screen.getByRole("img").getAttribute("src")).toBe(f.pages[ordinal]?.url);
+    }
+    expect(loadSubmissionVisualReview).toHaveBeenCalledOnce();
+  });
+
+  it("완료한 첫 이미지만 갱신할 때 null cursor 한 batch 뒤 멈추고 다른 페이지 URL을 보존한다", async () => {
+    const f = await streamingFixture();
+    let refreshing = false;
+    const renew = (page: (typeof f.pages)[number]) => ({ ...page, url: `${page.url}?first-refresh=1` });
+    const read = vi.spyOn(api, "get").mockImplementation(async (path) => {
+      const url = new URL(path, "https://unit.test");
+      expect(url.pathname).toBe("/studio-project-graph/reviews/submission-review/previews");
+      for (const key of ["projectId", "workId", "artifactId", "revisionId", "rootGraphHash"] as const) {
+        expect(url.searchParams.get(key)).toBe(f.subject[key]);
+      }
+      const cursor = url.searchParams.get("cursor");
+      if (cursor === null) return refreshing ? { ...f.prefix, previews: f.prefix.previews.map(renew) } : f.prefix;
+      if (cursor === f.cursor) return refreshing ? { ...f.suffix, previews: f.suffix.previews.map(renew) } : f.suffix;
+      throw new Error("원본 manifest에 없는 cursor 요청입니다.");
+    });
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    await screen.findByRole("link", { name: "이 고정본에 핀 의견 남기기" });
+    expect(read).toHaveBeenCalledTimes(2);
+    refreshing = true;
+    fireEvent.error(screen.getByRole("img"));
+    await waitFor(() => expect(screen.getByRole("img").getAttribute("src")).toBe(`${f.pages[0]?.url}?first-refresh=1`));
+    const refreshPath = read.mock.calls[2]?.[0];
+    if (typeof refreshPath !== "string") throw new Error("이미지 URL 갱신 요청이 없습니다.");
+    expect(new URL(refreshPath, "https://unit.test").searchParams.get("cursor")).toBeNull();
+    expect(read).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole("combobox", { name: "이미지 순번" }).querySelectorAll("option")).toHaveLength(33);
+    expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toBe(f.data.submission.reviewHref);
+    for (const ordinal of [1, 32]) {
+      fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: String(ordinal) } });
+      expect(screen.getByRole("img").getAttribute("src")).toBe(f.pages[ordinal]?.url);
+    }
+    expect(loadSubmissionVisualReview).toHaveBeenCalledOnce();
+  });
+
   it("후반 페이지 hash가 원본 manifest와 다르면 이미 표시한 prefix와 검수 링크를 폐기한다", async () => {
     const f = await streamingFixture(), pending = deferred<StudioReviewPreviewResult>();
     vi.spyOn(api, "get").mockResolvedValueOnce(f.prefix).mockReturnValueOnce(pending.promise);
@@ -104,14 +182,14 @@ describe("고정 제출 원고 이미지 패널", () => {
     const f = await streamingFixture(), pending = deferred<StudioReviewPreviewResult>();
     const renewed = { ...f.prefix, previews: f.prefix.previews.map((page) => ({ ...page, url: `${page.url}?renewed=1` })) };
     const read = vi.spyOn(api, "get").mockResolvedValueOnce(f.prefix).mockReturnValueOnce(pending.promise)
-      .mockResolvedValueOnce(renewed).mockResolvedValueOnce(f.suffix);
+      .mockResolvedValueOnce(renewed);
     render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
     fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
     fireEvent.error(await screen.findByRole("img"));
     expect(read).toHaveBeenCalledTimes(2);
     await act(async () => { pending.resolve(f.suffix); });
     await waitFor(() => expect(screen.getByRole("img").getAttribute("src")).toBe(`${f.pages[0]?.url}?renewed=1`));
-    expect(read).toHaveBeenCalledTimes(4);
+    expect(read).toHaveBeenCalledTimes(3);
     expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toBe(f.data.submission.reviewHref);
   });
 
@@ -230,27 +308,94 @@ describe("고정 제출 원고 이미지 패널", () => {
   });
   it("이미지 오류는 같은 고정 원고를 한 번 자동 조회하고 교체 URL도 실패하면 멈춘다", async () => {
     const f = fixture();
-    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "expired")]).mockResolvedValueOnce([f.preview(0, "fresh")]);
+    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "expired")]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockResolvedValueOnce(f.preview(0, "fresh"));
     render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
     fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
     fireEvent.error(await screen.findByRole("img"));
     await waitFor(() => expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/fresh/0"));
     fireEvent.error(screen.getByRole("img"));
     expect(screen.getByRole("alert").textContent).toContain("복구되지 않으면");
-    await waitFor(() => expect(loadPinnedSubmissionPreviews).toHaveBeenCalledTimes(2));
+    expect(loadPinnedSubmissionPreviews).toHaveBeenCalledOnce();
+    await waitFor(() => expect(refreshPinnedSubmissionPreview).toHaveBeenCalledOnce());
     expect(loadSubmissionVisualReview).toHaveBeenCalledTimes(1);
   });
   it("완료된 고정본의 이미지 재조회가 접근 오류로 끝나면 이전 이미지와 링크도 폐기한다", async () => {
     const f = fixture();
-    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "current")])
-      .mockRejectedValueOnce(Object.assign(new Error("검수 이미지 접근이 철회되었습니다."), { status: 403 }));
+    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "current")]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockRejectedValueOnce(Object.assign(new Error("검수 이미지 접근이 철회되었습니다."), { status: 403 }));
     render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
     fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
     fireEvent.error(await screen.findByRole("img"));
     await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("접근이 철회"));
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.queryByRole("link", { name: "이 고정본에 핀 의견 남기기" })).toBeNull();
+    expect(loadPinnedSubmissionPreviews).toHaveBeenCalledOnce();
+    expect(refreshPinnedSubmissionPreview).toHaveBeenCalledOnce();
+  });
+  it("명시적 전체 새로고침은 진행 중인 한 장 갱신을 취소하고 늦은 URL을 버린다", async () => {
+    const f = fixture(), pending = deferred<Awaited<ReturnType<typeof refreshPinnedSubmissionPreview>>>();
+    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "initial")]).mockResolvedValueOnce([f.preview(0, "manual-refresh")]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockReturnValueOnce(pending.promise);
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    fireEvent.error(await screen.findByRole("img"));
+    await waitFor(() => expect(refreshPinnedSubmissionPreview).toHaveBeenCalledOnce());
+    const signal = vi.mocked(refreshPinnedSubmissionPreview).mock.calls[0]?.[2]?.signal;
+    fireEvent.click(screen.getByRole("button", { name: "이미지 새로고침" }));
+    expect(signal?.aborted).toBe(true);
+    await waitFor(() => expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/manual-refresh/0"));
+    await act(async () => { pending.resolve(f.preview(0, "late-target")); });
+    expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/manual-refresh/0");
+    expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toBe(f.data.submission.reviewHref);
     expect(loadPinnedSubmissionPreviews).toHaveBeenCalledTimes(2);
+  });
+  it("subject 교체는 진행 중인 한 장 갱신을 취소하고 이전 source의 응답을 표시하지 않는다", async () => {
+    const f = fixture(), pending = deferred<Awaited<ReturnType<typeof refreshPinnedSubmissionPreview>>>();
+    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "initial")]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockReturnValueOnce(pending.promise);
+    const view = render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    fireEvent.error(await screen.findByRole("img"));
+    await waitFor(() => expect(refreshPinnedSubmissionPreview).toHaveBeenCalledOnce());
+    const signal = vi.mocked(refreshPinnedSubmissionPreview).mock.calls[0]?.[2]?.signal;
+    view.rerender(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={{ ...f.submission, id: "other-submission" }} />);
+    expect(signal?.aborted).toBe(true);
+    await act(async () => { pending.resolve(f.preview(0, "late-subject")); });
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByRole("button", { name: "제출 원고 이미지 열기" })).toBeTruthy();
+  });
+  it.each(["success", "access-denied"] as const)("기준본 교체는 이전 한 장 갱신의 늦은 %s를 새 기준본에 적용하지 않는다", async (outcome) => {
+    const f = fixture(), pending = deferred<Awaited<ReturnType<typeof refreshPinnedSubmissionPreview>>>();
+    const first = f.data.baselines[0];
+    if (!first) throw new Error("기준본 fixture가 없습니다.");
+    const second = { ...first, sourceRevisionRef: { ...first.sourceRevisionRef, id: "second-input" }, revision: { ...first.revision, id: "second-input" },
+      review: { ...first.review, id: "second-review", revisionId: "second-input" } };
+    vi.mocked(loadSubmissionVisualReview).mockResolvedValue({ ...f.data, baselines: [first, second] });
+    vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async (source) => [f.preview(0, source.revision.id, source.revision.rootGraphHash)]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockReturnValueOnce(pending.promise);
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    await screen.findByRole("img");
+    fireEvent.change(screen.getByRole("combobox", { name: "비교 기준본" }), { target: { value: "input-revision" } });
+    await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
+    const previousImage = screen.getAllByRole("img")[0];
+    if (!previousImage) throw new Error("이전 기준본 이미지가 없습니다.");
+    fireEvent.error(previousImage);
+    await waitFor(() => expect(refreshPinnedSubmissionPreview).toHaveBeenCalledOnce());
+    const signal = vi.mocked(refreshPinnedSubmissionPreview).mock.calls[0]?.[2]?.signal;
+    fireEvent.change(screen.getByRole("combobox", { name: "비교 기준본" }), { target: { value: "second-input" } });
+    expect(signal?.aborted).toBe(true);
+    await waitFor(() => expect(screen.getAllByRole("img")[0]?.getAttribute("src")).toBe("https://preview.test/second-input/0"));
+    await act(async () => {
+      if (outcome === "success") pending.resolve(f.preview(0, "late-input", first.revision.rootGraphHash));
+      else pending.reject(Object.assign(new Error("이전 기준본 접근이 철회되었습니다."), { status: 403 }));
+    });
+    expect(screen.getAllByRole("img").map((image) => image.getAttribute("src"))).toEqual([
+      "https://preview.test/second-input/0", "https://preview.test/submitted-revision/0",
+    ]);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toBe(f.data.submission.reviewHref);
   });
   it("제출본이 바뀌면 늦게 도착한 이전 제출본의 이미지를 표시하지 않는다", async () => {
     const f = fixture();
@@ -304,26 +449,32 @@ describe("고정 제출 원고 이미지 패널", () => {
   });
   it("만료된 다른 순번을 선택하면 원고 메타데이터 재조회 없이 주소를 갱신한다", async () => {
     const f = fixture();
-    vi.mocked(loadSubmissionVisualReview).mockResolvedValue({ ...f.data, submission: { ...f.data.submission,
-      revision: { ...f.data.submission.revision, blobRefs: [0, 1].map((ordinal) => ({ sha256: f.hash, ordinal, role: "preview" as const })) } } });
+    const data = { ...f.data, submission: { ...f.data.submission,
+      revision: { ...f.data.submission.revision, blobRefs: [0, 1].map((ordinal) => ({ sha256: f.hash, ordinal, role: "preview" as const })) } } };
+    vi.mocked(loadSubmissionVisualReview).mockResolvedValue(data);
     const stale = { ...f.preview(1, "expired-page"), expiresAt: Date.now() - 1000 };
-    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "current"), stale])
-      .mockResolvedValueOnce([f.preview(0, "renewed"), f.preview(1, "renewed")]);
+    vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValueOnce([f.preview(0, "current"), stale]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockResolvedValueOnce(f.preview(1, "renewed"));
     render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
     fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
     await screen.findByRole("img");
     fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: "1" } });
     await waitFor(() => expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/renewed/1"));
     expect(loadSubmissionVisualReview).toHaveBeenCalledTimes(1);
-    expect(loadPinnedSubmissionPreviews).toHaveBeenCalledTimes(2);
+    expect(loadPinnedSubmissionPreviews).toHaveBeenCalledOnce();
+    expect(refreshPinnedSubmissionPreview).toHaveBeenCalledWith(data.submission, stale, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: "0" } });
+    expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/current/0");
   });
   it("자동 갱신이 같은 만료 URL을 반환해도 무한 재조회하지 않는다", async () => {
     const f = fixture();
     const expired = { ...f.preview(0, "expired"), expiresAt: Date.now() - 1000 };
     vi.mocked(loadPinnedSubmissionPreviews).mockResolvedValue([expired]);
+    vi.mocked(refreshPinnedSubmissionPreview).mockResolvedValue(expired);
     render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
     fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
-    await waitFor(() => expect(loadPinnedSubmissionPreviews).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(refreshPinnedSubmissionPreview).toHaveBeenCalledOnce());
+    expect(loadPinnedSubmissionPreviews).toHaveBeenCalledOnce();
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getByRole("alert").textContent).toContain("복구되지 않으면");
     expect(loadSubmissionVisualReview).toHaveBeenCalledTimes(1);

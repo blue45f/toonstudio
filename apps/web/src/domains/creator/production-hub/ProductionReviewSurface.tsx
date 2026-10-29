@@ -22,6 +22,7 @@ import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { ProductionReviewPolicyEditor } from "./ProductionReviewPolicyEditor";
 
 const ConsensusPreview = lazyRetry(() => import("./ProductionCreativeReviewConsensusSuite").then((module) => ({ default: module.ProductionCreativeReviewConsensusSuite })), "ProductionReviewConsensusPreview");
 const WalkthroughPreview = lazyRetry(() => import("./ProductionAsyncWalkthroughButlerSuite").then((module) => ({ default: module.ProductionAsyncWalkthroughButlerSuite })), "ProductionReviewWalkthroughPreview");
@@ -35,6 +36,8 @@ export function ProductionReviewSurface({
   execute,
   canEdit,
   canReview,
+  canManage = false,
+  refresh,
   isDemo = false,
   roleLens,
 }: {
@@ -42,6 +45,8 @@ export function ProductionReviewSurface({
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
   readonly canEdit: boolean;
   readonly canReview?: boolean;
+  readonly canManage?: boolean;
+  readonly refresh?: () => Promise<void>;
   readonly isDemo?: boolean;
   readonly roleLens: CreatorRoleLens;
 }) {
@@ -57,7 +62,7 @@ export function ProductionReviewSurface({
     .filter((assignment) => viewerUserId && aggregate.parties.some((party) => party.id === assignment.partyId && party.accountUserId === viewerUserId))
     .map((assignment) => assignment.id);
   const workspace = <ProductionReviewWorkspace aggregate={aggregate} execute={execute} canEdit={canReview ?? canEdit} roleLens={roleLens}
-    targetTaskId={targetTaskId} preferredEpisodeId={preferredEpisodeId} viewerAssignmentIds={viewerAssignmentIds} />;
+    targetTaskId={targetTaskId} preferredEpisodeId={preferredEpisodeId} viewerAssignmentIds={viewerAssignmentIds} viewerUserId={aggregate.projectId === "sample-project" ? undefined : viewerUserId} />;
   const [now] = useState(() => Date.now());
   const queue = aggregate.episodes
     .map((episode) => {
@@ -75,7 +80,8 @@ export function ProductionReviewSurface({
   return (
     <div className="space-y-4">
       {targetTaskId !== undefined ? workspace : null}
-      <ProductionReviewRequestForm aggregate={aggregate} execute={execute} canEdit={canEdit} />
+      <ProductionReviewPolicyEditor aggregate={aggregate} canManage={canManage} execute={execute} refresh={refresh} />
+      <ProductionReviewRequestForm aggregate={aggregate} execute={execute} canEdit={canEdit} refresh={refresh} />
 
       <ProductionSectionCard
         title={bt("검수할 회차", "Episodes to review")}

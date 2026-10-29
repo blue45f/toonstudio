@@ -324,7 +324,7 @@ if (process.env.CI && !connection) {
 
   it.each([false, true])("추가형 migration이 이전 빈 댓글/기존 댓글 상태(existing=%s)와 재적용을 보존한다", async (existing) => {
     const f = await capture(), input = note(f), schema = `pen_migration_${randomUUID().replaceAll("-", "")}`;
-    const sql = await readFile(new URL("../../platform/database/migrations/0114_studio_review_comment_pen_strokes.sql", import.meta.url), "utf8");
+    const sql = await readFile(new URL("../../platform/database/migrations/0116_studio_review_comment_pen_strokes.sql", import.meta.url), "utf8");
     const client = await pool.connect();
     try {
       await client.query(`CREATE SCHEMA "${schema}"`);

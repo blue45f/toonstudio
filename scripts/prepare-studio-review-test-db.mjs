@@ -42,7 +42,8 @@ try {
     "0088_studio_review_delivery.sql",
     "0090_studio_review_voice_note.sql",
     "0091_creator_work_publication_media.sql",
-    "0114_studio_review_comment_pen_strokes.sql",
+    "0116_studio_review_comment_pen_strokes.sql",
+    "0117_studio_scoped_write_policy.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }

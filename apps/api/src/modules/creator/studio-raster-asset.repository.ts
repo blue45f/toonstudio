@@ -1,5 +1,7 @@
 import { and, count, eq, inArray, sql } from "drizzle-orm";
 import * as Y from "yjs";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
+import { authorizeStudioScopedAssetPurpose } from "./studio-scoped-asset-purpose";
 
 import { readStudioCrdtRasterDocument } from "@toonstudio/contracts/studio-crdt-raster-document-contract";
 import {
@@ -81,6 +83,7 @@ export class StudioRasterAssetReferencedError extends Error {
 }
 
 export interface StudioRasterAssetWrite {
+  writeContext?: StudioScopedWriteContext;
   workId: string;
   assetId: string;
   sha256: string;
@@ -330,7 +333,7 @@ export class DrizzleStudioRasterAssetRepository implements StudioRasterAssetRepo
     input: StudioRasterAssetWrite
   ): Promise<StudioRasterAssetManifest> {
     return db.transaction(async (transaction) => {
-      await requireAccess(transaction, actorUserId, input.workId, "edit", true);
+      await authorizeStudioScopedAssetPurpose(transaction, actorUserId, input.workId, input.writeContext);
       const [existing] = await transaction
         .select()
         .from(creatorWorkRasterAssets)
