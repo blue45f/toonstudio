@@ -14,6 +14,7 @@ import {
   getStudioServerAiStatus,
   parseStudioServerAiCompletion,
   parseStudioServerAiFailoverMetadata,
+  resolveActiveServerAiProviderLabel,
 } from "./studio-server-ai-client";
 
 const OPERATION_ID = "composition-00000000-0000-4000-8000-000000000001";
@@ -452,6 +453,92 @@ describe("studio automatic free AI client", () => {
     await expect(completeStudioServerText({ ...input(), operationId: "composition-00000000-0000-4000-8000-000000000002" }))
       .resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
     expect(serverCalls).toBe(2);
+  });
+
+  it("hands off to ToonStudio AI when a reasoning free model used the whole output cap and left no text", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "온전한 ToonStudio AI 결과", provider: "anthropic" },
+    });
+  });
+
+  it("keeps the empty-cut-off reason from my key when ToonStudio AI is also used up", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ code: "FREE_AI_POOL_EXHAUSTED", message: "오늘 무료 AI 한도를 모두 썼어요." }, 429);
+      }
+      return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+    }));
+
+    const result = await completeStudioServerText(input());
+    expect(result).toMatchObject({ ok: false, code: "http_error" });
+    expect(result.ok ? "" : result.error).toMatch(/출력 한도에 걸려 비어 있어요/u);
+  });
+
+  it("hands off to ToonStudio AI when a revoked key is answered with HTTP 400 API_KEY_INVALID", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ error: { message: "API key not valid. Please pass a valid API key.", details: [{ reason: "API_KEY_INVALID" }] } }, 400);
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
+  });
+
+  it("shows the server's 'try again shortly' message, not quota exhaustion, when the premium route is briefly unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({
+      code: "PREMIUM_AI_UNAVAILABLE",
+      message: "ToonStudio 고성능 AI를 지금 쓸 수 없어요. 잠시 후 다시 시도하거나 통합 AI 설정에서 내 API 키를 연결하세요.",
+    }, 503)));
+
+    const result = await completeStudioServerText(input());
+    expect(result).toMatchObject({ ok: false, code: "http_error" });
+    expect(result.ok ? "" : result.error).toMatch(/지금 쓸 수 없어요/u);
+  });
+
+  it("labels the route in the same order the request actually takes in every routing mode", () => {
+    const status = {
+      configured: true,
+      providers: [{ id: "anthropic", label: "ToonStudio 고성능 AI", model: "claude-opus-5-5", configured: true }],
+    } as unknown as Parameters<typeof resolveActiveServerAiProviderLabel>[1];
+    const withRouting = (routing: Record<string, unknown>, priority: number) => setUserAiConfiguration({
+      version: 1,
+      connections: [{
+        id: "test-free-text",
+        label: "Test free text provider",
+        baseUrl: "https://api.groq.com/openai/v1",
+        apiKey: "user-secret-key",
+        imageModel: "",
+        textModel: "text-model",
+        imageGenerationPath: "/images/generations",
+        imageEditPath: "/images/edits",
+        chatCompletionsPath: "/chat/completions",
+        costPolicy: "provider-free-tier",
+        priority,
+      }],
+      assignments: { text: "test-free-text", image: null, inference: null, "three-d": null },
+      routing: { allowPaidFallback: false, managedPoolPriority: 50, serverProviderOrder: [], ...routing } as never,
+    });
+
+    withRouting({ mode: "automatic" }, 10);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
+    withRouting({ mode: "priority" }, 10);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
+    withRouting({ mode: "priority" }, 90);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: ToonStudio 고성능 AI → 무료 AI");
+    withRouting({ mode: "manual" }, 10);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("고정: 내 키");
   });
 
   it("keeps free-pool failover metadata allowlisted", () => {

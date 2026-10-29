@@ -88,9 +88,9 @@ function collectCalls(): Array<{ key: string; fallback: string; file: string }> 
 }
 
 describe("studio.aiError 사전 (T1~T3 등록 모듈)", () => {
-  it("ko/en 키 집합이 일치하고 118키다", () => {
+  it("ko/en 키 집합이 일치하고 119키다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(AI_ERROR_KEYS);
-    expect(AI_ERROR_KEYS).toHaveLength(118);
+    expect(AI_ERROR_KEYS).toHaveLength(119);
     expect(AI_ERROR_KEYS.every((key) => key.startsWith("studio.aiError."))).toBe(true);
   });
 
@@ -102,12 +102,12 @@ describe("studio.aiError 사전 (T1~T3 등록 모듈)", () => {
     }
   });
 
-  it("네임스페이스 구간이 트랜치 파일과 대응한다 (client 39·reference 13·wizard 2·server 6·fal 22·personal 17·threed 19)", () => {
+  it("네임스페이스 구간이 트랜치 파일과 대응한다 (client 39·reference 13·wizard 2·server 7·fal 22·personal 17·threed 19)", () => {
     const count = (prefix: string) => AI_ERROR_KEYS.filter((key) => key.startsWith(prefix)).length;
     expect(count("studio.aiError.client.")).toBe(39);
     expect(count("studio.aiError.reference.")).toBe(13);
     expect(count("studio.aiError.wizard.")).toBe(2);
-    expect(count("studio.aiError.server.")).toBe(6);
+    expect(count("studio.aiError.server.")).toBe(7);
     expect(count("studio.aiError.fal.")).toBe(22);
     expect(count("studio.aiError.personal.")).toBe(17);
     expect(count("studio.aiError.threed.")).toBe(19);

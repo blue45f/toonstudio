@@ -14,6 +14,7 @@ import {
   userAiAutomaticExternalConnectionsForCapability,
 } from "./user-ai-store";
 import {
+  UserAiEmptyTruncatedError,
   UserAiTransportError,
   type UserAiTransportErrorCode,
 } from "./user-ai-transport-error";
@@ -35,7 +36,15 @@ export interface UserAiRequestOptions {
   connection?: UserAiResolvedConnection;
 }
 
-export { UserAiTransportError, type UserAiTransportErrorCode };
+export { UserAiEmptyTruncatedError, UserAiTransportError, type UserAiTransportErrorCode };
+
+/** 잘못됐거나 폐기된 키에 400으로 답하는 공급자(Gemini의 API_KEY_INVALID, xAI의 Incorrect API key)를 알아본다. */
+const INVALID_API_KEY_PATTERN = /API_KEY_INVALID|API key not valid|API key expired|incorrect api key|invalid api key/iu;
+
+function invalidApiKeyResponse(bytes: Uint8Array | null): boolean {
+  if (!bytes || bytes.byteLength === 0) return false;
+  return INVALID_API_KEY_PATTERN.test(new TextDecoder().decode(bytes.subarray(0, 16_384)));
+}
 
 export function isUserAiQuotaExhaustion(error: unknown): boolean {
   return error instanceof FreeAiRuntimeBudgetError
@@ -153,7 +162,8 @@ export async function userAiFetch(
           response.status,
         );
       }
-      if (response.status === 401 || response.status === 403) {
+      // Gemini·xAI는 잘못됐거나 폐기된 키에 401이 아니라 400으로 답한다. 키 오류로 보고 다음 키·경로로 넘긴다.
+      if (response.status === 401 || response.status === 403 || (response.status === 400 && invalidApiKeyResponse(bytes))) {
         throw new UserAiTransportError(
           "authentication",
           `개인 무료 API 키 인증에 실패했습니다 (HTTP ${response.status}).`,
@@ -260,6 +270,9 @@ export async function completeUserAiTextDetailed(
         },
       );
       const content = result.choices?.[0]?.message?.content;
+      if (result.choices?.[0]?.finish_reason === "length" && (typeof content !== "string" || !content.trim())) {
+        throw new UserAiEmptyTruncatedError();
+      }
       if (typeof content !== "string" || !content.trim() || content.length > 100_000) {
         throw new Error("AI 텍스트 결과를 확인하지 못했습니다.");
       }
