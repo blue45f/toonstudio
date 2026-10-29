@@ -676,6 +676,13 @@ export function rgbToLatentPigment(rgb01: LatentPigmentRgb): LatentPigment {
   return result;
 }
 
+/** 표 굽기용: 역변환 캐시를 거치지 않고 농도만 풀어 `out`(길이 4 이상)에 쓴다. 입력 검증은 rgbToLatentPigment 와 같다. */
+export function solveLatentPigmentConcentrationsInto(rgb01: LatentPigmentRgb, out: Float32Array | Float64Array): void {
+  const model = getRuntime();
+  solveConcentrations(model, readRgb(rgb01, "RGB"));
+  for (let index = 0; index < VARIABLES; index += 1) out[index] = model.scratch.best[index];
+}
+
 /** 잠재 색을 RGB(감마 인코딩 sRGB, 0~1)로 바꾼다. `자른 다항식 색 + 잔차`를 0~1로 자른다. */
 export function latentPigmentToRgb(latent: LatentPigment): LatentPigmentRgb {
   const checked = readLatent(latent, "잠재 색");
