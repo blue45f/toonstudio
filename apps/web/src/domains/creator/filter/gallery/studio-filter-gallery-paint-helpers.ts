@@ -149,13 +149,22 @@ export function boxBlur(
 }
 
 /**
- * 박스 3회 가우시안 근사(제자리). kernel-utils 의 gaussianPlane 과 같은 반지름 규약(상자 반지름 round(r/√3),
- * 최소 1)이다. 상자 필터는 가로·세로가 서로 바뀌어도 같으므로 가로 3회 → 세로 3회로 묶어 돈다.
+ * 박스 3회 가우시안 근사(제자리). kernel-utils 의 gaussianPlane 과 같은 반지름 규약(상자 반지름 r/√3, 최소 1,
+ * 소수 부분은 이웃한 두 정수 상자 결과를 섞는다)이다. 상자 필터는 가로·세로가 서로 바뀌어도 같으므로 가로 3회 →
+ * 세로 3회로 묶어 돈다.
  */
 export function gaussianBlur(plane: Float32Array, width: number, height: number, radius: number, scratch?: Float32Array): void {
   if (!(radius >= 0.5) || width <= 0 || height <= 0) return;
-  const r = Math.max(1, Math.round(radius / Math.sqrt(3)));
+  const box = Math.max(1, radius / Math.sqrt(3)), lower = Math.floor(box), fraction = box - lower;
   const buffer = scratch ?? new Float32Array(plane.length);
+  const upper = fraction > 1e-3 ? plane.slice() : null;
+  boxGaussian(plane, width, height, lower, buffer);
+  if (!upper) return;
+  boxGaussian(upper, width, height, lower + 1, buffer);
+  for (let index = 0; index < plane.length; index += 1) plane[index] += (upper[index] - plane[index]) * fraction;
+}
+
+function boxGaussian(plane: Float32Array, width: number, height: number, r: number, buffer: Float32Array): void {
   for (let pass = 0; pass < 3; pass += 1) boxRows(plane, width, height, r, r, 1 / (2 * r + 1));
   for (let pass = 0; pass < 3; pass += 1) boxColumns(plane, width, height, r, r, 1 / (2 * r + 1), buffer);
 }
@@ -511,6 +520,30 @@ export function kuwahara(
     }
   }
   return out;
+}
+
+/**
+ * 반지름이 소수인 쿠와하라. 쿠와하라 창은 정수 반지름이라 이웃한 두 정수 반지름 결과를 소수 부분만큼 섞는다 —
+ * 반지름을 반올림하면 슬라이더 여러 칸이 같은 결과를 냈다. 작업량은 소수 부분이 있을 때 두 배다.
+ */
+export function kuwaharaFractional(
+  colors: ColorPlanes,
+  weight: Float32Array,
+  width: number,
+  height: number,
+  radius: number,
+  hardness: number,
+): ColorPlanes {
+  const r = Math.max(1, radius), lower = Math.floor(r), fraction = r - lower;
+  const low = kuwahara(colors, weight, width, height, lower, hardness);
+  if (fraction <= 1e-3) return low;
+  const high = kuwahara(colors, weight, width, height, lower + 1, hardness);
+  for (let index = 0; index < low.red.length; index += 1) {
+    low.red[index] += (high.red[index] - low.red[index]) * fraction;
+    low.green[index] += (high.green[index] - low.green[index]) * fraction;
+    low.blue[index] += (high.blue[index] - low.blue[index]) * fraction;
+  }
+  return low;
 }
 
 // ── 붓결 노이즈 ──────────────────────────────────────────────────
