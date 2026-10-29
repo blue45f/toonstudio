@@ -13,7 +13,7 @@
   "auth.callback.error.accessDenied": "Přihlášení bylo zrušeno.",
   "auth.callback.error.generic": "Přihlášení se nezdařilo. Vraťte se na přihlašovací stránku a zkuste to znovu.",
   "auth.callback.error.noUser": "Údaje uživatele nelze ověřit.",
-  "auth.callback.error.invalidAccess": "Neplatný přístup",
+  "auth.callback.error.invalidAccess": "Neplatný přístup.",
   "auth.callback.error.failed": "Při přihlášení došlo k chybě.",
   "auth.callback.message.done": "Přihlášení dokončeno. Za chvíli budete přesměrováni.",
   "auth.callback.message.doneDemo": "Ukázkové přihlášení dokončeno. Za chvíli budete přesměrováni.",

@@ -26,7 +26,7 @@ import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/l
 import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { Container, Section } from "@/shared/components/section";
@@ -267,7 +267,7 @@ export function DiscoverHubPage() {
         <CatalogSnapshotLine snapshot={home.data} loading={home.loading} onArt={!showSpotlight} />
       </SitePageHeader>
 
-      <NanoBananaSurfaceSpotlight cardId="nb-discover-spotlight" compact className="mt-5" />
+      <SiteArtSurfaceSpotlight cardId="nb-discover-spotlight" compact className="mt-5" />
 
       <section
         aria-label={bt("연재 트랙 스위처", "Serialization track switcher")}
@@ -319,14 +319,14 @@ export function DiscoverHubPage() {
               <img
                 src={
                   activeTrack.id === "originals"
-                    ? "/assets/site-experience/nano-banana-site-v1/cards/nb-ranking-constellation-640.webp"
+                    ? "/assets/site-experience/site-art-v1/cards/nb-ranking-constellation-640.webp"
                     : activeTrack.id === "canvas"
-                      ? "/assets/site-experience/nano-banana-site-v1/cards/nb-community-plaza-640.webp"
+                      ? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"
                       : activeTrack.id === "wait-free"
-                        ? "/assets/site-experience/nano-banana-site-v1/cards/nb-library-archive-640.webp"
+                        ? "/assets/site-experience/site-art-v1/cards/nb-library-archive-640.webp"
                         : activeTrack.id === "cuts-short"
-                          ? "/assets/site-experience/nano-banana-site-v1/cards/nb-showcase-premiere-640.webp"
-                          : "/assets/site-experience/nano-banana-site-v1/cards/nb-discover-spotlight-640.webp"
+                          ? "/assets/site-experience/site-art-v1/cards/nb-showcase-premiere-640.webp"
+                          : "/assets/site-experience/site-art-v1/cards/nb-discover-spotlight-640.webp"
                 }
                 alt=""
                 aria-hidden="true"

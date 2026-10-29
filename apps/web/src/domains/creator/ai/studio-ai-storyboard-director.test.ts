@@ -1,10 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import {
-  GITHUB_MODELS_INFERENCE_BASE_URL,
-  loadEffectiveStudioAiSettings,
-  resolveStudioDefaultEnvAiSettings,
-} from "./studio-ai-settings";
+import { loadEffectiveStudioAiSettings } from "./studio-ai-settings";
 import {
   analyzeRoughSketchIntent,
   bindLoraJobAsArtistStyle,
@@ -243,35 +239,17 @@ describe("StudioAiStoryboardDirector", () => {
     expect(svgPaths[0]?.d).toContain("M ");
   });
 
-  it("resolves default environment AI token when BYOK session storage is empty", () => {
-    const resolved = resolveStudioDefaultEnvAiSettings({
-      GITHUB_MODELS_API_KEY: "ghp_unit_test_token_value",
-    });
-    expect(resolved.baseUrl).toBe(GITHUB_MODELS_INFERENCE_BASE_URL);
-    expect(resolved.apiKey).toBe("ghp_unit_test_token_value");
-
-    const effectiveWithEnv = loadEffectiveStudioAiSettings(null, null, {
-      GITHUB_MODELS_API_KEY: "ghp_unit_test_token_value",
-    });
-    expect(effectiveWithEnv.source).toBe("env-default");
-    expect(effectiveWithEnv.settings.apiKey).toBe("ghp_unit_test_token_value");
-
-    const effectiveFallback = loadEffectiveStudioAiSettings(null, null, {});
-    expect(effectiveFallback.source).toBe("unconfigured");
-
-    const anthropicResolved = resolveStudioDefaultEnvAiSettings({
-      ANTHROPIC_API_KEY: "test_anthropic_default_token",
-    });
-    expect(anthropicResolved.baseUrl).toBe("https://api.anthropic.com");
-    expect(anthropicResolved.textModel).toBe("claude-opus-5-5");
-    expect(anthropicResolved.apiKey).toBe("test_anthropic_default_token");
-
-    const effectiveAnthropic = loadEffectiveStudioAiSettings(null, null, {
-      VITE_STUDIO_DEFAULT_ANTHROPIC_KEY: "test_vite_anthropic_default_token",
-    });
-    expect(effectiveAnthropic.source).toBe("env-default");
-    expect(effectiveAnthropic.settings.baseUrl).toBe("https://api.anthropic.com");
-    expect(effectiveAnthropic.settings.textModel).toBe("claude-opus-5-5");
+  it("never reads operator AI keys from browser-bundled environment variables", () => {
+    // 키 없는 사용자는 서버의 ToonStudio AI 경로를 쓴다. VITE_* 값은 번들에 실려 모든 방문자에게 보이므로 읽지 않는다.
+    vi.stubEnv("VITE_STUDIO_DEFAULT_ANTHROPIC_KEY", "test_vite_anthropic_default_token");
+    vi.stubEnv("VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY", "ghp_unit_test_token_value");
+    try {
+      const effective = loadEffectiveStudioAiSettings(null, null);
+      expect(effective.source).toBe("unconfigured");
+      expect(effective.settings.apiKey).toBe("");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

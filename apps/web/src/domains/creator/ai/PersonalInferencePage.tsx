@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 
 import { useUnifiedAiAuxSettings } from "@/shared/ai/unified-ai-settings";
 import { Container } from "@/shared/components/section";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -52,7 +52,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       ko: "원작 소설이나 기획 메모에서 회차별 클리프행어와 대사 호흡을 정리해 스토리랩 보드로 바로 넘깁니다.",
       en: "Turns story notes or novel chapters into episodic cliffhangers and dialogue pacing for Story Lab.",
     },
-    image: "/assets/site-experience/nano-banana-site-v1/cards/nb-planning-storylab-640.webp",
+    image: "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
     href: "/story-lab",
     cta: { ko: "스토리랩에서 열기", en: "Open in Story Lab" },
   },
@@ -65,7 +65,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       ko: "대사가 몰리는 구간을 감지하고 감정 고조 컷 직전 여백과 말풍선 읽기 순서를 제안합니다.",
       en: "Detects dialogue-heavy zones and suggests scroll whitespace and balloon reading order before climax cuts.",
     },
-    image: "/assets/site-experience/nano-banana-site-v1/cards/nb-workflow-bridge-640.webp",
+    image: "/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp",
     href: "/studio?lane=blank",
     cta: { ko: "콘티 캔버스 열기", en: "Open Storyboard Canvas" },
   },
@@ -78,7 +78,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       ko: "캐릭터 파츠별 컬러 팔레트를 유지하면서 닫히지 않은 선화 틈을 보정해 밑색과 그림자 레이어를 분리합니다.",
       en: "Preserves character color sheets while sealing line gaps and separating flat colors from shadow layers.",
     },
-    image: "/assets/site-experience/nano-banana-site-v1/cards/nb-create-canvas-640.webp",
+    image: "/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp",
     href: "/studio",
     cta: { ko: "작화 스튜디오 열기", en: "Open Drawing Studio" },
   },
@@ -91,7 +91,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       ko: "복잡한 실내·거리 3D 세트의 카메라 화각과 역광을 맞춘 뒤 웹툰 선화·음영 톤으로 자연스럽게 변환합니다.",
       en: "Matches lens FOV and rim lighting on 3D stages, then converts captures into webtoon line and cel tones.",
     },
-    image: "/assets/site-experience/nano-banana-site-v1/cards/nb-spatial-stage-640.webp",
+    image: "/assets/site-experience/site-art-v1/cards/nb-spatial-stage-640.webp",
     href: "/studio/generate",
     cta: { ko: "생성 실험실 열기", en: "Open Generative Lab" },
   },
@@ -104,7 +104,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       ko: "내 원고의 선 굵기·채도·시대 배경에 어울리는 3D 소품과 효과음 세트를 추천하고 라이선스를 검증합니다.",
       en: "Recommends 3D props and SFX sets that match your manuscript's line weight and palette with license checks.",
     },
-    image: "/assets/site-experience/nano-banana-site-v1/cards/nb-market-atelier-640.webp",
+    image: "/assets/site-experience/site-art-v1/cards/nb-market-atelier-640.webp",
     href: "/market",
     cta: { ko: "소재 아틀리에 열기", en: "Open Asset Atelier" },
   },
@@ -117,7 +117,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       ko: "연재 업로드 전 레이어 누락·해상도·식자 가독성을 점검하고 핵심 컷으로 숏폼 홍보 영상을 조합합니다.",
       en: "Checks uncolored gaps, resolution, and lettering legibility before upload, and builds short promo reels.",
     },
-    image: "/assets/site-experience/nano-banana-site-v1/cards/nb-production-control-640.webp",
+    image: "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
     href: "/studio/ops",
     cta: { ko: "프로덕션 관제 열기", en: "Open Production Ops" },
   },
@@ -159,7 +159,7 @@ export function PersonalInferencePage() {
           introMotif="spark"
         />
 
-        <NanoBananaSurfaceSpotlight cardId="nb-create-canvas" defaultLensId="recipe" compact />
+        <SiteArtSurfaceSpotlight cardId="nb-create-canvas" defaultLensId="recipe" compact />
 
         <AiCreativeDirectorPanel />
 

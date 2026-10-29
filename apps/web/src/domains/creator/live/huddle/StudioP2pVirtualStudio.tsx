@@ -60,7 +60,7 @@ const ZONE_META: Record<StudioP2pSpaceZoneId, { icon: LucideIcon; image: string;
   lounge: { icon: MessageCircle, image: "/assets/studio/cc0-20260906/assets/polyhaven-background-wooden-lounge/background.webp", href: "/community", ko: "작업 사이 가볍게 대화하고 아이디어를 나눕니다." },
   assets: { icon: Boxes, image: "/brand/atelier-materials-640.webp", href: "/studio/assets", ko: "배경·브러시·캐릭터·3D 에셋을 찾습니다." },
   drawing: { icon: Brush, image: "/assets/studio/backgrounds/webtoon_creator_room.png", href: "/studio", ko: "원고와 캔버스의 실제 제작 작업으로 이동합니다." },
-  review: { icon: ClipboardCheck, image: "/assets/virtual-studio/nano-banana-v14/rooms/global-ip-pitch-boardroom.webp", href: "/production", ko: "코멘트·수정 요청·승인 흐름을 확인합니다." },
+  review: { icon: ClipboardCheck, image: "/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp", href: "/production", ko: "코멘트·수정 요청·승인 흐름을 확인합니다." },
   assistant: { icon: Handshake, image: "/brand/atelier-process-640.webp", href: "/collaborate", ko: "어시스트·외주 인력을 배정하고 작업을 넘깁니다." },
 };
 

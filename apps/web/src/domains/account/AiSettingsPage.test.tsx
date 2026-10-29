@@ -12,8 +12,8 @@ vi.mock("@/shared/ai/UnifiedAiSettings", () => ({
   UnifiedAiSettings: () => <div data-testid="unified-ai-settings" />,
 }));
 
-vi.mock("@/shared/ai/claude/ClaudeConnectionCard", () => ({
-  ClaudeConnectionCard: () => <div data-testid="claude-connection-card" />,
+vi.mock("@/shared/ai/assist/AssistConnectionCard", () => ({
+  AssistConnectionCard: () => <div data-testid="claude-connection-card" />,
 }));
 
 vi.mock("@/shared/seo/use-document-title", () => ({

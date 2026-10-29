@@ -9,11 +9,17 @@ import { aiErrorText } from "./ai/studio-ai-error-i18n";
 
 export type StudioServerAiTask = "assistant" | "composition" | "scenario" | "translation" | "dialogue" | "palette";
 export type StudioFreePoolProvider = "gemini" | "qwen" | "groq" | "sambanova" | "zai" | "mistral" | "cloudflare" | "openrouter" | "siliconflow" | "deepseek";
-export type StudioServerAiProvider = StudioFreePoolProvider | "user";
-export type StudioServerAiProviderPreference = "auto" | StudioFreePoolProvider;
-export type StudioServerAiFailoverReason = "free_quota_exhausted" | "billing_quota_exhausted";
+/** 키 없는 사용자의 1순위인 운영 고성능 경로(운영자 비용, 사용자 비용 없음). */
+export type StudioPremiumProvider = "anthropic";
+export type StudioServerAiProvider = StudioPremiumProvider | StudioFreePoolProvider | "user";
+export type StudioServerAiProviderPreference = "auto" | StudioPremiumProvider | StudioFreePoolProvider;
+export type StudioServerAiFailoverReason = "free_quota_exhausted" | "billing_quota_exhausted" | "premium_unavailable";
+
+/** 서버의 고성능 경로 제한 시간(120초)보다 길게 기다려, 이미 처리된 결과를 브라우저가 먼저 끊지 않게 한다. */
+export const STUDIO_SERVER_AI_TIMEOUT_MS = 135_000;
 
 const LABELS: Record<StudioServerAiProvider, string> = {
+  anthropic: "ToonStudio 고성능 AI",
   gemini: "Gemini 무료",
   qwen: "Qwen 베이징 무료 할당량",
   groq: "Groq 무료",
@@ -77,6 +83,9 @@ export function resolveActiveServerAiProviderLabel(
   status: Pick<StudioServerAiStatus, "configured" | "providers"> | null,
 ): string {
   if (preference === "auto") {
+    if (status?.providers?.some((provider) => provider.id === "anthropic" && provider.configured)) {
+      return "자동: ToonStudio 고성능 AI → 무료 AI";
+    }
     return status?.configured ? "자동 무료 AI" : "자동 무료 AI → 내 무료 키";
   }
   return status?.providers?.find((provider) => provider.id === preference)?.label ?? "선택한 무료 AI";
@@ -206,7 +215,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function provider(value: unknown): StudioServerAiProvider | undefined {
-  return value === "gemini"
+  return value === "anthropic"
+    || value === "gemini"
     || value === "qwen"
     || value === "groq"
     || value === "sambanova"
@@ -237,7 +247,7 @@ function count(value: unknown): number | undefined {
 }
 
 function failoverReason(value: unknown): StudioServerAiFailoverReason | undefined {
-  return value === "free_quota_exhausted" || value === "billing_quota_exhausted"
+  return value === "free_quota_exhausted" || value === "billing_quota_exhausted" || value === "premium_unavailable"
     ? value
     : undefined;
 }
@@ -321,35 +331,47 @@ function exhaustedMessage(): string {
   return aiErrorText("studio.aiError.server.poolExhausted", "현재 사용할 수 있는 자동 무료 AI와 개인 무료 키의 한도가 모두 소진됐어요. 통합 AI 설정에서 다른 무료 경로를 연결하거나 한도가 갱신된 뒤 다시 시도해 주세요.");
 }
 
+interface PersonalTextAttempt {
+  readonly result: StudioServerAiResult<StudioServerAiCompletion>;
+  /** 모든 내 키가 인증에서 거절됐다. 추론 전 확정 거절이라 다음 경로로 넘겨도 중복 생성이 없다. */
+  readonly authenticationRejected: boolean;
+}
+
+async function attemptPersonalText(
+  input: { system: string; user: string },
+  operationId: string,
+  signal?: AbortSignal,
+): Promise<PersonalTextAttempt> {
+  const result = await completeWithUserTextKey(input.system, input.user, signal);
+  if (!result.ok) {
+    if (["not-configured", "quota-exhausted", "all-free-exhausted"].includes(result.code)) {
+      return { result: { ok: false, code: "free_exhausted", error: exhaustedMessage() }, authenticationRejected: false };
+    }
+    return {
+      result: { ok: false, code: "http_error", error: result.error },
+      authenticationRejected: result.code === "authentication",
+    };
+  }
+  return {
+    result: {
+      ok: true,
+      data: {
+        content: result.content,
+        provider: "user",
+        model: result.model,
+        requestId: `byok:${operationId}`.slice(0, 240),
+      },
+    },
+    authenticationRejected: false,
+  };
+}
+
 async function completeWithPersonalFreeAi(
   input: { system: string; user: string },
   operationId: string,
   signal?: AbortSignal,
 ): Promise<StudioServerAiResult<StudioServerAiCompletion>> {
-  const result = await completeWithUserTextKey(input.system, input.user, signal);
-  if (!result.ok) {
-    if (["not-configured", "quota-exhausted", "all-free-exhausted"].includes(result.code)) {
-      return {
-        ok: false,
-        code: "free_exhausted",
-        error: exhaustedMessage(),
-      };
-    }
-    return {
-      ok: false,
-      code: "http_error",
-      error: result.error,
-    };
-  }
-  return {
-    ok: true,
-    data: {
-      content: result.content,
-      provider: "user",
-      model: result.model,
-      requestId: `byok:${operationId}`.slice(0, 240),
-    },
-  };
+  return (await attemptPersonalText(input, operationId, signal)).result;
 }
 
 export async function completeStudioServerText(
@@ -372,18 +394,25 @@ export async function completeStudioServerText(
   const routing = userAiRoutingSettings(configuration);
   const personalRoutes = userAiAutomaticExternalConnectionsForCapability("text");
   const explicitServerProvider = input.provider && input.provider !== "auto";
+  // 등록한 내 키가 있으면 내 키를 먼저 쓴다(자동·고정 모드). 내 키가 없거나 확정적으로 거절되면
+  // ToonStudio AI(운영 고성능 → 무료 순)로 간다. "내가 정한 순서"에서는 사용자가 정한 앞뒤를 따른다.
   const personalFirst = !explicitServerProvider && personalRoutes.length > 0 && (
-    routing.mode === "manual"
-    || (routing.mode === "priority"
-      && (personalRoutes[0]?.priority ?? 100) < routing.managedPoolPriority)
+    routing.mode !== "priority"
+    || (personalRoutes[0]?.priority ?? 100) < routing.managedPoolPriority
   );
   let personalAttempted = false;
+  // 자동 모드에서 내 키가 인증에서 거절돼 ToonStudio AI로 넘겼다면, 그쪽도 쓸 수 없을 때는
+  // 사용자가 고칠 수 있는 내 키 오류를 알린다(일반 소진 문구로 덮지 않는다).
+  let personalRejection: StudioServerAiResult<StudioServerAiCompletion> | null = null;
   if (personalFirst) {
     personalAttempted = true;
-    const personalResult = await completeWithPersonalFreeAi(input, operationId, signal);
-    if (routing.mode === "manual" || personalResult.ok || personalResult.code !== "free_exhausted") {
-      return personalResult;
-    }
+    const attempt = await attemptPersonalText(input, operationId, signal);
+    const handOff = !attempt.result.ok && (
+      attempt.result.code === "free_exhausted"
+      || (routing.mode === "automatic" && attempt.authenticationRejected)
+    );
+    if (routing.mode === "manual" || !handOff) return attempt.result;
+    if (attempt.authenticationRejected) personalRejection = attempt.result;
   }
   const request = {
     ...requestInput,
@@ -393,6 +422,8 @@ export async function completeStudioServerText(
     const raw = await api.post<unknown>("/studio-ai/chat", request, {
       signal,
       headers: { "Idempotency-Key": operationId },
+      timeout: STUDIO_SERVER_AI_TIMEOUT_MS,
+      totalTimeout: STUDIO_SERVER_AI_TIMEOUT_MS + 5_000,
     });
     const data = parseStudioServerAiCompletion(raw);
     return data
@@ -401,6 +432,7 @@ export async function completeStudioServerText(
   } catch (error) {
     const code = httpErrorCode(error);
     if (code === "FREE_AI_LOGIN_REQUIRED") {
+      if (personalRejection) return personalRejection;
       if (!personalAttempted && personalRoutes.length > 0) {
         const personalResult = await completeWithPersonalFreeAi(input, operationId, signal);
         if (personalResult.ok || personalResult.code !== "free_exhausted") return personalResult;
@@ -408,6 +440,7 @@ export async function completeStudioServerText(
       return { ok: false, code: "login_required", error: loginRequiredMessage() };
     }
     if (code && PERSONAL_FALLBACK_CODES.has(code)) {
+      if (personalRejection) return personalRejection;
       return personalAttempted || personalRoutes.length === 0
         ? { ok: false, code: "free_exhausted", error: exhaustedMessage() }
         : completeWithPersonalFreeAi(input, operationId, signal);

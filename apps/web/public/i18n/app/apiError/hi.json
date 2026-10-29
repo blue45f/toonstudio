@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "लॉगिन की आवश्यकता है।",
+  "apiError.loginRequired": "साइन इन करना आवश्यक है।",
   "apiError.adminRequired": "प्रशासक अनुमतियां सत्यापित नहीं की जा सकी।",
   "apiError.adminOnlyPage": "यह पृष्ठ प्रशासकों तक ही सीमित है।",
   "apiError.notFound": "अनुरोधित वस्तु नहीं मिली।",

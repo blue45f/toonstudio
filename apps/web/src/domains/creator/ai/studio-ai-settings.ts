@@ -122,114 +122,7 @@ export function isStudioAiConfigured(settings: StudioAiSettings): boolean {
   return settings.baseUrl.trim().length > 0 && settings.apiKey.trim().length > 0;
 }
 
-export const ANTHROPIC_API_BASE_URL = "https://api.anthropic.com";
-export const ANTHROPIC_DEFAULT_TEXT_MODEL = "claude-opus-5-5";
-export const GITHUB_MODELS_INFERENCE_BASE_URL = "https://models.github.ai/inference";
-export const GITHUB_MODELS_DEFAULT_TEXT_MODEL = "openai/gpt-4o-mini";
-
-const DEFAULT_ANTHROPIC_ENV_TOKEN_KEYS = [
-  "VITE_STUDIO_DEFAULT_ANTHROPIC_KEY",
-  "VITE_ANTHROPIC_API_KEY",
-  "ANTHROPIC_API_KEY",
-  "CLAUDE_API_KEY",
-] as const;
-
-const DEFAULT_GITHUB_ENV_TOKEN_KEYS = [
-  "VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY",
-  "STUDIO_AI_FREE_GITHUB_MODELS_API_KEY",
-  "GITHUB_MODELS_API_KEY",
-  "GITHUB_PERSONAL_ACCESS_TOKEN",
-  "GITHUB_TOKEN",
-] as const;
-
-const DEFAULT_ENV_TOKEN_KEYS = [
-  ...DEFAULT_ANTHROPIC_ENV_TOKEN_KEYS,
-  ...DEFAULT_GITHUB_ENV_TOKEN_KEYS,
-] as const;
-
-function readRuntimeEnvMap(
-  envOverride?: Readonly<Record<string, string | undefined>>,
-): Readonly<Record<string, string | undefined>> {
-  if (envOverride) return envOverride;
-  const merged: Record<string, string | undefined> = {};
-  try {
-    const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-    if (proc?.env) Object.assign(merged, proc.env);
-  } catch {
-    // 브라우저 런타임에서 process 미정의 시 무시
-  }
-  try {
-    const metaEnv = (import.meta as unknown as { env?: Record<string, unknown> }).env;
-    if (metaEnv && typeof metaEnv === "object") {
-      for (const [k, v] of Object.entries(metaEnv)) {
-        if (typeof v === "string") merged[k] = v;
-      }
-    }
-  } catch {
-    // 무시
-  }
-  return merged;
-}
-
-/**
- * 로컬/환경변수(.env.infrastructure.local, .env.local 등)에 기본 세팅된
- * Anthropic Claude API 키 또는 GitHub Models 토큰을 읽는다. 키 원문은 외부 로그로 출력하지 않는다.
- */
-export function readStudioDefaultEnvToken(
-  envOverride?: Readonly<Record<string, string | undefined>>,
-): string {
-  const env = readRuntimeEnvMap(envOverride);
-  for (const key of DEFAULT_ENV_TOKEN_KEYS) {
-    const candidate = env[key]?.trim();
-    if (candidate) return candidate;
-  }
-  return "";
-}
-
-/**
- * BYOK 수동 입력이 없어도 환경변수 기본 토큰이 세팅되어 있으면
- * Anthropic Claude Messages API(우선) 또는 GitHub Models 엔드포인트로 즉시 동작하는 기본 설정을 만든다.
- */
-export function resolveStudioDefaultEnvAiSettings(
-  envOverride?: Readonly<Record<string, string | undefined>>,
-): StudioAiSettings {
-  const env = readRuntimeEnvMap(envOverride);
-  const token = readStudioDefaultEnvToken(env);
-  if (!token) return { ...STUDIO_AI_DEFAULT_SETTINGS };
-
-  const hasAnthropicKey =
-    token.startsWith("sk-ant-") ||
-    DEFAULT_ANTHROPIC_ENV_TOKEN_KEYS.some((key) => Boolean(env[key]?.trim()));
-
-  if (hasAnthropicKey) {
-    const customBaseUrl = env["VITE_STUDIO_DEFAULT_AI_BASE_URL"]?.trim();
-    const customModel = env["VITE_STUDIO_DEFAULT_AI_TEXT_MODEL"]?.trim();
-    const resolvedBaseUrl =
-      customBaseUrl && customBaseUrl.toLowerCase().includes("anthropic")
-        ? customBaseUrl
-        : ANTHROPIC_API_BASE_URL;
-    return {
-      ...STUDIO_AI_DEFAULT_SETTINGS,
-      baseUrl: resolvedBaseUrl,
-      apiKey: token,
-      textModel: customModel && customModel.startsWith("claude-")
-        ? customModel
-        : ANTHROPIC_DEFAULT_TEXT_MODEL,
-      chatCompletionsPath: "/v1/messages",
-    };
-  }
-
-  const baseUrl = env["VITE_STUDIO_DEFAULT_AI_BASE_URL"]?.trim() || GITHUB_MODELS_INFERENCE_BASE_URL;
-  const textModel = env["VITE_STUDIO_DEFAULT_AI_TEXT_MODEL"]?.trim() || GITHUB_MODELS_DEFAULT_TEXT_MODEL;
-  return {
-    ...STUDIO_AI_DEFAULT_SETTINGS,
-    baseUrl,
-    apiKey: token,
-    textModel,
-  };
-}
-
-export type StudioEffectiveAiSettingsSource = "byok-session" | "env-default" | "unconfigured";
+export type StudioEffectiveAiSettingsSource = "byok-session" | "unconfigured";
 
 export interface StudioEffectiveAiSettingsResolution {
   readonly settings: StudioAiSettings;
@@ -237,22 +130,16 @@ export interface StudioEffectiveAiSettingsResolution {
 }
 
 /**
- * 현재 탭의 BYOK 세션 설정을 우선 확인하고, 비어 있으면 환경변수 기본 토큰(Anthropic Claude 또는 GitHub Models)으로
- * 자동 폴백해 BYOK 수동 등록 없이도 기본 동작하도록 한다.
+ * 현재 탭의 BYOK 세션 설정을 확인한다. 운영 키를 브라우저 번들 환경변수(VITE_*)에서 읽는 폴백은 두지 않는다 —
+ * 그런 키는 모든 방문자에게 그대로 노출된다. 키가 없는 사용자는 서버의 ToonStudio AI 경로(운영 고성능 → 무료 순)를 쓴다.
  */
 export function loadEffectiveStudioAiSettings(
   sessionStorage?: StudioAiStorage | null,
   legacyPersistentStorage?: StudioAiStorage | null,
-  envOverride?: Readonly<Record<string, string | undefined>>,
 ): StudioEffectiveAiSettingsResolution {
   const sessionSettings = loadStudioAiSessionSettings(sessionStorage, legacyPersistentStorage);
-  if (isStudioAiConfigured(sessionSettings)) {
-    return { settings: sessionSettings, source: "byok-session" };
-  }
-  const envSettings = resolveStudioDefaultEnvAiSettings(envOverride);
-  if (isStudioAiConfigured(envSettings)) {
-    return { settings: envSettings, source: "env-default" };
-  }
-  return { settings: sessionSettings, source: "unconfigured" };
+  return isStudioAiConfigured(sessionSettings)
+    ? { settings: sessionSettings, source: "byok-session" }
+    : { settings: sessionSettings, source: "unconfigured" };
 }
 

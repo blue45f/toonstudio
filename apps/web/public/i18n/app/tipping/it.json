@@ -11,7 +11,7 @@
   "tipping.dialog.episode": "{episode}",
   "tipping.dialog.invalidAmount": "Inserisci un importo tra {min} e {max}.",
   "tipping.dialog.loginNotice": "Puoi scegliere un importo e scrivere un messaggio senza accedere. Ti chiederemo di accedere quando invii la mancia.",
-  "tipping.dialog.loginToTip": "Accedi per inviare",
+  "tipping.dialog.loginToTip": "Accedi per inviare una mancia",
   "tipping.dialog.messageLabel": "Messaggio di supporto (facoltativo)",
   "tipping.dialog.messagePlaceholder": "Lascia un messaggio per il creatore",
   "tipping.dialog.processing": "Elaborazione della mancia…",

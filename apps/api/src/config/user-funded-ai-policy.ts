@@ -29,6 +29,15 @@ export function rejectUnavailableFreeAiPool(): void {
   });
 }
 
+/**
+ * 서버 텍스트·보조 기능 경로가 열려 있는지. 공유 무료 풀이 켜져 있거나, 운영 프리미엄 키가 있으면
+ * 키 없는 사용자도 서버 AI를 쓸 수 있다. 둘 다 없으면 기존과 같은 안내로 거절한다.
+ */
+export function rejectUnavailableServerAi(premiumConfigured: boolean): void {
+  if (premiumConfigured) return;
+  rejectUnavailableFreeAiPool();
+}
+
 export function rejectOperatorFundedAi(): void {
   if (operatorAiFundingEnabled()) return;
   throw new ServiceUnavailableException({
