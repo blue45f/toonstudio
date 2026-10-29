@@ -238,7 +238,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       return undefined;
     }
     const driver = createSwitchingPaintDriver(paint, {
-      pick: (ndcX, ndcY) => engine.pick(ndcX, ndcY),
+      pick: (ndcX, ndcY, options) => options ? engine.pick(ndcX, ndcY, options) : engine.pick(ndcX, ndcY),
       upload: (layer) => engine.updatePaintTexture(layer),
       commit: (undoToken) => dispatch({ type: "paint/stroke", undoToken }),
       projection: () => readProjectionPaint(engine),

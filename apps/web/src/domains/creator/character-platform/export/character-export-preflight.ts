@@ -23,6 +23,7 @@ export interface CharacterExportPreflightWarning {
     | "compatibility-limited"
     | "high-memory"
     | "surface-paint-empty"
+    | "hair-split-conditional"
     | "transparent-background";
   readonly message: string;
 }
@@ -249,6 +250,12 @@ export function createCharacterExportPreflight(
   if (input.transparent) {
     warnings.push({ code: "transparent-background", message: "배경은 투명 알파로 저장됩니다." });
   }
+  const hairPass = passes.find((entry) => entry.pass === "mask-hair");
+  if (input.format === "psd" && input.createHairLayer !== false) {
+    warnings.push({ code: "hair-split-conditional", message: hairPass?.status === "skipped"
+      ? `헤어 분리 생략: ${hairPass.reason}`
+      : "실제 밑색과 보이는 헤어 영역이 있을 때만 Base·Shadow를 분리합니다. 없는 패스는 생략하며 추출 Line은 중복 합성을 막도록 기본 숨김입니다." });
+  }
 
   return Object.freeze({
     format: input.format,
@@ -264,7 +271,7 @@ export function createCharacterExportPreflight(
     skippedCount,
     compatibility,
     warnings: Object.freeze(warnings),
-    shaperHairThreeLayers: input.format === "psd" && input.createHairLayer !== false
+    shaperHairThreeLayers: input.format === "psd" && input.createHairLayer !== false && hairPass?.status !== "skipped"
       ? planShaperHairThreeLayerSplit(true)
       : Object.freeze([]),
     shaperLuminanceOutlineFormula: input.extractLuminanceOutline !== false ? "a = 1 - r" : undefined,
@@ -321,7 +328,7 @@ export function planShaperHairThreeLayerSplit(
       layerId: "hair-line",
       psdLayerName: "Hair Line",
       blendMode: "normal",
-      clippingMaskToBase: false,
+      clippingMaskToBase: true,
     },
   ]);
 }

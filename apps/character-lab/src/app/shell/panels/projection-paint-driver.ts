@@ -16,13 +16,15 @@
  *  - 투영 뒷면·UV 섬 경계·스키닝된 표면 결과는 실제 GPU에서만 확인된다(브라우저 미검증 항목은 docs/parity/render.md).
  */
 import { PAINT_TILE_SIZE } from "../../../contracts";
-import { createPointerPaintDriver } from "../../../paint/paint-bridge";
+import { bodyPaintPickOptions, createPointerPaintDriver } from "../../../paint/paint-bridge";
 import { MAX_BRUSH_RADIUS_PX, MIN_BRUSH_RADIUS_PX, compositePixelLinear, dabMask, tileExtent } from "../../../paint/paint-layer";
+import { pressureBrush } from "../../../paint/paint-pressure";
 import { PROJECTION_FALLBACK_SCREEN_NDC, overlayHasPaint, premultipliedPixel, unpremultiplyPixel } from "../../../render/projection-paint";
 import { parseHex, srgbToLinear } from "../../../shared/color";
 
 import type { BrushSettings, PaintLayer, PaintUndoToken, PaintUndoTile, PartRole } from "../../../contracts";
 import type { PaintLayerUploader, PointerPaintDriver, PointerPaintPorts, PointerSample } from "../../../paint/paint-bridge";
+import type { PaintPressureMode } from "../../../paint/paint-pressure";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ProjectionBrushBitmap, ProjectionOverlay, ProjectionPaintPort } from "../../../render/projection-paint";
 
@@ -127,17 +129,28 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
   let last: { readonly x: number; readonly y: number } | null = null;
   let screenSize: readonly [number, number] = PROJECTION_FALLBACK_SCREEN_NDC;
   const bitmaps = new Map<string, ProjectionBrushBitmap>();
+  const samples: PointerSample[] = [];
+  let pressureMode: PaintPressureMode = "constant";
+  let strokeBrush = session.getState().brush;
+  let pickOptions: ReturnType<typeof bodyPaintPickOptions>;
 
-  const stampAt = (x: number, y: number, pressure: number): boolean => {
-    const brush = session.getState().brush;
-    const bitmap = brushBitmapFor(brush, pressure);
-    const cached = bitmaps.get(bitmap.key) ?? bitmap;
-    bitmaps.set(cached.key, cached);
+  const stampAt = (x: number, y: number, pressure: number, progress?: number): boolean => {
+    const mode = pressureMode === "fake" && progress === undefined ? "constant" : pressureMode;
+    const brush = pressureBrush(strokeBrush, mode, pressure, progress);
+    if (brush.radiusPx <= 1e-6) return false;
+    const alphaPressure = pressureMode === "fake" ? 1 : pressure;
+    const key = `${brush.radiusPx}|${brush.color}|${brush.hardness}|${brush.opacity}|${alphaPressure}`;
+    const cached = bitmaps.get(key) ?? brushBitmapFor(brush, alphaPressure);
+    if (bitmaps.size >= 128) bitmaps.clear();
+    bitmaps.set(key, cached);
     port.setBrush(cached, brush.radiusPx);
     const outcome = port.stamp(x, y);
     if (!outcome.hit) return false;
+    if (progress === undefined) {
+      if (pressureMode === "fake") samples.push({ ndcX: x, ndcY: y, pressure });
+      dabCount += 1;
+    }
     screenSize = outcome.screenSizeNdc;
-    dabCount += 1;
     return true;
   };
 
@@ -149,8 +162,15 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
     bitmaps.clear();
   };
 
-  const finalize = async (): Promise<void> => {
+  const finalize = async (recorded: readonly PointerSample[]): Promise<void> => {
     try {
+      if (pressureMode === "fake" && recorded.length > 2) {
+        port.cancel();
+        const layer = session.layer(part);
+        const ready = pickOptions ? port.begin(part, layer.width, layer.height, pickOptions) : port.begin(part, layer.width, layer.height);
+        if (!ready) throw new Error("가상 필압 경로를 재생할 투영 표면이 없습니다.");
+        recorded.forEach((sample, index) => stampAt(sample.ndcX, sample.ndcY, sample.pressure, index / (recorded.length - 1)));
+      }
       const overlay = await port.flush();
       if (!overlay) return;
       const layer = session.layer(overlay.part);
@@ -165,6 +185,7 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
       port.cancel();
       ports.notify?.(`투영 페인트 결과를 레이어에 반영하지 못했습니다: ${failureText(error)}`);
     } finally {
+      bitmaps.clear();
       shared.finalizing = false;
     }
   };
@@ -187,8 +208,13 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
         return false;
       }
       part = session.getState().activePart;
+      pressureMode = session.getState().pressureMode;
+      strokeBrush = session.getState().brush;
+      samples.length = 0;
+      pickOptions = bodyPaintPickOptions(part, session.getState().bodyLineMaskEnabled);
       const layer = session.layer(part);
-      if (!port.begin(part, layer.width, layer.height)) {
+      const ready = pickOptions ? port.begin(part, layer.width, layer.height, pickOptions) : port.begin(part, layer.width, layer.height);
+      if (!ready) {
         ports.notify?.("투영 페인트: 이 부위에 칠할 메시가 없습니다.");
         return false;
       }
@@ -220,17 +246,19 @@ export function createProjectionStrokeDriver(session: PaintSession, port: Projec
     up() {
       if (!active) return null;
       const painted = dabCount > 0;
+      const recorded = samples.splice(0);
       reset();
       if (!painted) {
         port.cancel();
         return null;
       }
       shared.finalizing = true;
-      void finalize();
+      void finalize(recorded);
       return null;
     },
     cancel() {
       if (!active) return;
+      samples.length = 0;
       reset();
       port.cancel();
     },

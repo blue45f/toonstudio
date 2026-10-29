@@ -1,5 +1,9 @@
 # character-lab 패리티 — humanoid 영역(절차 파라메트릭 휴머노이드·ParamPanel)
 
+2026-10-29 ParamPanel 재검토: 어깨 너비·엉덩이를 별도의 근육·체지방과 의상 90% 감쇠로 환산하던 표시를 제거했다.
+실제 명령·플랜은 `param:shoulderWidth:+`·`param:hip:+`이며 별도 근육·체지방 morph나 의상 감쇠의 렌더 소비는 없다.
+실제 store 조작으로 두 native 파라미터의 적용 계획을 확인한다(`ParamPanel.test.tsx`). 독립 근육·체지방 조절은 미구현이다.
+
 상태: **current** (2026-10-01, humanoid 작업자 작성). core가 `docs/shaper-parity-checklist.md`로 집계하기 전의 단일 소스이며 열 구조는 체크리스트와 같다.
 모든 로직은 순수 TS(`src/domains/humanoid/**`)이고 `@babylonjs/*`·DOM·난수(`Math.random`)를 쓰지 않으므로 Node vitest로 검증했다.
 이 컨테이너에는 GPU가 없어 실제 렌더에서의 모습(셰이딩·GPU 스키닝·morph 텍스처)은 '브라우저 검증' 열에 **미검증**으로 둔다.

@@ -174,6 +174,18 @@
     position: static; display: block; font-size: 10px; font-weight: 650; line-height: 1.1; white-space: nowrap;
   }
 }
+/* 낮거나 좁은 세로 화면은 8개 도구를 두 열로 배치해 뷰포트 아래 출력 버튼을 덮지 않는다. */
+@media (min-height: 720px) and (max-height: 860px), (min-height: 720px) and (max-width: 380px) {
+  [data-studio-3d-reference][data-character-shaper-layout="mobile"]:not([data-character-shaper-landscape]):has([data-character-shaper-sheet="collapsed"]) {
+    --character-gesture-guide-right: 130px;
+  }
+  [data-studio-3d-reference][data-character-shaper-layout="mobile"]:not([data-character-shaper-landscape]):has([data-character-shaper-sheet="collapsed"]) [data-character-shaper-hud] > [role="group"] {
+    display: grid; grid-template-columns: repeat(2, 54px); inset-block-start: 56px; width: 112px;
+  }
+  [data-studio-3d-reference][data-character-shaper-layout="mobile"]:not([data-character-shaper-landscape]):has([data-character-shaper-sheet="collapsed"]) [data-character-shaper-hud] > [role="group"] > button {
+    min-height: 44px;
+  }
+}
 [data-character-hud-label] { display: none; }
 /* 배경 배치와 고급 포저도 같은 패널·도구 톤을 공유하되 카메라/도킹 레이아웃은 유지한다. */
 [data-studio-3d-reference] [data-bg3d-workspace-header] { background: linear-gradient(115deg, var(--color-canvas), var(--color-panel)); }
@@ -299,7 +311,7 @@
 
 /* 터치 첫 사용 조작 안내. 오른쪽 세로 도구를 가리지 않도록 왼쪽 영역에 띄운다. */
 .character-gesture-guide {
-  position: absolute; inset: auto 72px 12px 10px; z-index: 32; max-height: calc(100% - 20px); overflow-y: auto;
+  position: absolute; inset: auto var(--character-gesture-guide-right, 72px) 12px 10px; z-index: 32; max-height: calc(100% - 20px); overflow-y: auto;
   padding: 12px; border: 1px solid var(--color-line-strong); border-radius: 14px;
   background: color-mix(in srgb, var(--color-panel) 95%, transparent); box-shadow: 0 16px 40px color-mix(in srgb, var(--color-canvas) 60%, transparent);
   color: var(--color-fg); backdrop-filter: blur(6px);

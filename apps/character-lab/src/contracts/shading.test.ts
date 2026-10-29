@@ -48,6 +48,15 @@ describe("contracts/shading v3", () => {
     expect(v2Style.look).toEqual(LOOK_V2_IDENTITY);
   });
 
+  it("비등방 hull 설정은 v3에서만 선택 저장하며 기존 레시피에 기본값을 주입하지 않는다", () => {
+    const custom = mergeShadingProfile(DEFAULT_SHADING, { toon: { outlinePressure: true } });
+    expect(shadingProfileSchema.parse(custom).toon.outlinePressure).toBe(true);
+    expect(shadingProfileSchema.parse(DEFAULT_SHADING).toon).not.toHaveProperty("outlinePressure");
+    expect(shadingProfileSchemaV2.safeParse({ ...v2Profile(), toon: custom.toon }).success).toBe(false);
+    expect(shadingProfileSchema.safeParse({ ...custom, toon: { ...custom.toon, outlinePressure: "true" } }).success).toBe(false);
+    expect(applyQualityPreset(custom, "hero").toon.outlinePressure).toBe(true);
+  });
+
   it("applyQualityPreset은 look을 유지한다", () => {
     const custom = mergeShadingProfile(DEFAULT_SHADING, { look: { rim: { strength: 0.3 } } });
     expect(applyQualityPreset(custom, "hero").look).toBe(custom.look);

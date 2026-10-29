@@ -327,7 +327,7 @@ def ring_distance_csr(ptr: np.ndarray, idx: np.ndarray, count: int, sources: np.
 FEMALE_EYE_CENTER_Y = 1.5325
 
 
-def load_context(npz_path: str | Path, contract_path: str | Path, base_id: str = "female", style: Any = None) -> Context:
+def load_context(npz_path: str | Path, contract_path: str | Path, base_id: str = "female", style: Any = None, shoulder_blend: bool = False) -> Context:
     """HBM npz에서 리그·스킨·T-포즈·정합·체형 필드를 준비한다(약 2초).
 
     남성 HBM 머리는 여성 머리와 같은 모양에 4.6 cm 높게 놓여 있다. 얼굴·입 안·눈썹·관절 상수가 여성 절대 좌표라 눈 중심 높이가 여성과 같아지도록
@@ -354,9 +354,9 @@ def load_context(npz_path: str | Path, contract_path: str | Path, base_id: str =
     landmarks.check_complete(joints_a, contract.joints)
     rig = rigmod.build_rig(joints_a, contract.joints, contract.parents)
     groups = skin.finger_vertex_groups(body, landmarks.LEFT_FINGER_SETS, landmarks.RIGHT_FINGER_SETS)
-    skin_idx, skin_val, _ = skin.compute_weights(body, rig, head_mask, groups)
+    skin_idx, skin_val, _ = skin.compute_weights(body, rig, head_mask, groups, shoulder_blend=shoulder_blend)
     ptr, idx = skin.vertex_adjacency(body.faces, len(body.positions))
-    t_pos = skin.convert_to_t_pose(body.positions, skin_idx, skin_val, rig, ptr, idx)
+    t_pos = skin.convert_to_t_pose(body.positions, skin_idx, skin_val, rig, ptr, idx, shoulder_blend=shoulder_blend)
     head_vertices_all = np.unique(body.faces[head_mask].ravel())
     t_pos = relax_arm_transition(t_pos, body.positions, rig, ptr, idx, head_vertices_all)
     timings["rig_skin_tpose"] = time.time() - t0
@@ -1510,7 +1510,7 @@ class QuantizedGlbWriter(glbwriter.GlbWriter):
         quantized = np.clip(np.rint(np.asarray(delta, dtype=np.float64) * QUANT_SCALE), -32767, 32767).astype(np.int16)
         count = int(quantized.shape[0])
         nonzero = np.flatnonzero(np.any(quantized != 0, axis=1))
-        accessor: dict[str, Any] = {"componentType": _SHORT, "normalized": True, "count": count, "type": "VEC3"}
+        accessor: dict[str, Any] = {"componentType": _SHORT, "normalized": True, "count": count, "type": "VEC3", "min": quantized.min(axis=0).tolist(), "max": quantized.max(axis=0).tolist()}
         if nonzero.size == 0:
             pass
         elif nonzero.size / max(count, 1) < sparse_threshold:

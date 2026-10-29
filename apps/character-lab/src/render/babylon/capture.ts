@@ -24,10 +24,12 @@ import { projectAabb } from "../synthetic-projection";
 import { acquireCaptureTarget, readCaptureTarget } from "./capture-targets";
 import { computeRigBounds, rigVisibleMeshes } from "./character-rig";
 import { fromVector3 } from "./convert";
+import { prepareHairOwnership } from "./hair-ownership";
 
-import type { CameraFraming, CaptureProvenance, CaptureRequest, CaptureResult, CapturedDepth, CapturedRaster, RasterPassId, RenderPassId } from "../../contracts";
+import type { CameraFraming, CaptureProvenance, CaptureRequest, CaptureResult, CapturedDepth, CapturedRaster, HairOwnership, RasterPassId, RenderPassId } from "../../contracts";
 import type { ReadbackLane, SyntheticBox } from "../readback";
 import type { CharacterRig, RigPart } from "./character-rig";
+import type { PreparedHairOwnership } from "./hair-ownership";
 import type { CharacterScene } from "./scene-builder";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera.js";
 import type { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator.js";
@@ -61,6 +63,8 @@ export interface CaptureDeps {
   readonly shadow: ShadowGenerator | null;
   /** toon·hull일 때 outline 셸 포함 */
   readonly includeOutlines: boolean;
+  /** 런타임 역방향 hull. lit에만 포함하고 밑색·ID·법선·깊이에는 넣지 않는다. */
+  readonly pressureOutlines?: () => readonly Mesh[];
   /** 패스 셰이더 컴파일 완료를 기다릴지(GPU 레인 true, NullEngine은 컴파일하지 않으므로 false) */
   readonly waitForShaders: boolean;
   /** 컴파일 대기 상한(ms) 덮어쓰기. 기본 `CAPTURE_COMPILE_TIMEOUT_MS`. 테스트가 시간 초과 경로를 짧게 검증한다. */
@@ -69,7 +73,7 @@ export interface CaptureDeps {
   readonly now: number;
 }
 
-function validateRequest(deps: CaptureDeps, width: number, height: number, passes: readonly RenderPassId[]): void {
+function validateRequest(deps: CaptureDeps, width: number, height: number, passes: readonly RenderPassId[], includeHairOwnership = false): void {
   const maxSize = deps.scene.getEngine().getCaps().maxTextureSize;
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
     throw failVisible("capture-size-invalid", `캡처 크기는 1 이상 정수여야 합니다(${width}×${height}).`, undefined, deps.now);
@@ -77,7 +81,7 @@ function validateRequest(deps: CaptureDeps, width: number, height: number, passe
   if (width > maxSize || height > maxSize) {
     throw failVisible("capture-size-exceeds-texture", `캡처 크기 ${width}×${height}가 엔진 최대 텍스처 ${maxSize}px를 넘습니다.`, undefined, deps.now);
   }
-  const bytes = estimateCaptureBytes({ width, height, passes });
+  const bytes = estimateCaptureBytes({ width, height, passes, includeHairOwnership });
   if (bytes > CAPTURE_BYTE_BUDGET) {
     throw failVisible("capture-too-large", `캡처 readback ${Math.round(bytes / 1048576)}MiB가 예산 ${CAPTURE_BYTE_BUDGET / 1048576}MiB를 넘습니다. 해상도나 패스 수를 줄이세요.`, undefined, deps.now);
   }
@@ -121,6 +125,16 @@ export function withScatteringOff<T>(rig: CharacterRig, enabled: boolean, fn: ()
   }
 }
 
+/** 캡처 lit는 카메라 후처리 없이 직접 색을 쓴다. 준비와 draw를 같은 변종으로 맞추고 뷰포트 설정은 동기 구간 뒤 복원한다. */
+function withCaptureProcessing<T>(deps: CaptureDeps, lit: boolean, fn: () => T): T {
+  if (!lit) return fn();
+  const configuration = deps.scene.imageProcessingConfiguration;
+  const previous = configuration.applyByPostProcess;
+  configuration.applyByPostProcess = false;
+  try { return withScatteringOff(deps.rig, true, fn); }
+  finally { configuration.applyByPostProcess = previous; }
+}
+
 /**
  * 준비 검사 한 번(동기 구간)에 쓰는 시간 상한(ms). 새 셰이더 변종을 만드는 `isReady`는 JS 전처리가 무거워(개발 서버에서 변종 하나 20~60 ms)
  * 여러 재질을 한 태스크에 몰면 수백 ms long task가 된다(실측 2026-10-23: 카드 1회 620~811 ms). 상한을 넘으면 나머지는 다음 폴링에서 검사한다.
@@ -133,7 +147,26 @@ function yieldToMainThread(): Promise<void> {
   });
 }
 
-async function ensureReady(deps: CaptureDeps, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean): Promise<void> {
+function materialReady(mesh: Mesh, material: Material, nativeOutlines: boolean): boolean {
+  // 이전 셰이더로 그릴 수 있다는 hot-swap 성공은 현재 캡처 변종의 준비 완료가 아니다.
+  const hotSwapping = material.allowShaderHotSwapping;
+  material.allowShaderHotSwapping = false;
+  try {
+    const instances = mesh.hasThinInstances || mesh.instances.length > 0;
+    // Babylon 9.31의 실제 Mesh.render와 같은 저장 위치를 검사한다. material.isReady만 호출하면 기본 wrapper만 준비되고 RTT 서브메시는 빠진다.
+    const ready = material._storeEffectOnSubMeshes
+      ? (mesh.subMeshes ?? []).every((subMesh) => material.isReadyForSubMesh(mesh, subMesh, instances))
+      : material.isReady(mesh, instances);
+    if (!ready) return false;
+    if (nativeOutlines && (mesh.renderOutline || mesh.renderOverlay)) {
+      const renderer = mesh.getScene().getOutlineRenderer();
+      if (!(mesh.subMeshes ?? []).every((subMesh) => renderer.isReady(subMesh, instances))) return false;
+    }
+    return true;
+  } finally { material.allowShaderHotSwapping = hotSwapping; }
+}
+
+async function ensureReady(deps: CaptureDeps, rtt: RenderTargetTexture, pairs: ReadonlyArray<readonly [Mesh, Material]>, scatteringOff: boolean, shadow?: RenderTargetTexture | null): Promise<void> {
   if (!deps.waitForShaders) return;
   // forceCompilationAsync는 임시 서브메시로 컴파일해 실제 렌더 변종과 어긋날 수 있다 → 실제 isReady를 폴링한다(material-readiness.ts).
   // lit 패스는 SSS 없는 변종으로 그리므로 그 변종의 준비 여부를 본다(검사 호출이 변종 컴파일을 시작시킨다).
@@ -145,32 +178,38 @@ async function ensureReady(deps: CaptureDeps, pairs: ReadonlyArray<readonly [Mes
   const ready = pairs.map(() => false);
   let cursor = 0;
   let pending = pairs.length;
-  const sweep = (): boolean =>
-    withScatteringOff(deps.rig, scatteringOff, () => {
+  const sweep = (): boolean => {
+    const engine = deps.scene.getEngine();
+    const previousPass = engine.currentRenderPassId;
+    engine.currentRenderPassId = rtt.renderPassId;
+    try { return withCaptureProcessing(deps, scatteringOff, () => {
+      // 첫 장면 프레임 전에도 CSM의 실제 패스·투명도 변종을 준비한다. 준비 검사는 그림자 draw를 제출하지 않는다.
+      const shadowReady = !shadow || shadow.isReadyForRendering();
       const started = performance.now();
       // 1) 아직 준비되지 않은 쌍을 시간 상한 안에서 차례로 검사한다(상한을 넘으면 다음 폴링이 이어서 본다).
       for (let step = 0; step < pairs.length; step += 1) {
         const index = (cursor + step) % pairs.length;
         const pair = pairs[index];
         if (ready[index] || !pair) continue;
-        ready[index] = pair[1].isReady(pair[0]);
+        ready[index] = materialReady(pair[0], pair[1], scatteringOff);
         if (performance.now() - started > READINESS_SLICE_MS) {
           cursor = (index + 1) % pairs.length;
           break;
         }
       }
-      pending = ready.reduce((count, value) => count + (value ? 0 : 1), 0);
+      pending = ready.reduce((count, value) => count + (value ? 0 : 1), shadowReady ? 0 : 1);
       if (pending > 0) return false;
       // 2) 모두 한 번씩 준비됐으면 같은 동기 구간에서 전체를 다시 확인한다(그사이 dirty가 된 재질을 놓치지 않는다).
       for (let index = 0; index < pairs.length; index += 1) {
         const pair = pairs[index];
-        if (pair && !pair[1].isReady(pair[0])) {
+        if (pair && !materialReady(pair[0], pair[1], scatteringOff)) {
           ready[index] = false;
           pending += 1;
         }
       }
       return pending === 0;
-    });
+    }); } finally { engine.currentRenderPassId = previousPass; }
+  };
   const result = await waitUntilReady([sweep], { timeoutMs });
   if (!result.ready) {
     throw failVisible(
@@ -221,6 +260,27 @@ interface PassRenderResult {
   readonly bytes: Uint8Array | Uint8ClampedArray | null;
   /** readback이 없을 때(NullEngine) 일시 적용 구간 안에서 만든 합성 상자 */
   readonly boxes: SyntheticBox[] | null;
+  readonly hairOwnership?: HairOwnership;
+}
+
+/** 비주선 패스에는 Babylon의 암묵적인 hull·edge·overlay 드로도 넣지 않는다. 동기 RTT 제출 직후 복원한다. */
+export function withNativeOutlinesOff<T>(meshes: readonly Mesh[], off: boolean, draw: () => T): T {
+  if (!off) return draw();
+  const restore = meshes.map((mesh) => {
+    const outline = mesh.renderOutline;
+    const overlay = mesh.renderOverlay;
+    const edges = mesh.edgesRenderer;
+    const edgesEnabled = edges?.isEnabled;
+    mesh.renderOutline = false;
+    mesh.renderOverlay = false;
+    if (edges) edges.isEnabled = false;
+    return () => {
+      mesh.renderOutline = outline;
+      mesh.renderOverlay = overlay;
+      if (edges && edgesEnabled !== undefined) edges.isEnabled = edgesEnabled;
+    };
+  });
+  try { return draw(); } finally { restore.forEach((undo) => undo()); }
 }
 
 /** 일시 적용 구간(썸네일): before는 렌더 직전, after는 readPixels 호출 직후에 동기 호출된다. */
@@ -229,14 +289,22 @@ export interface CaptureAround {
   after(): void;
 }
 
-async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: () => readonly Mesh[], around: CaptureAround | undefined): Promise<PassRenderResult> {
+async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: RenderPassId, width: number, height: number, frame: (pass: RenderPassId) => readonly Mesh[], around: CaptureAround | undefined, ownership?: PreparedHairOwnership): Promise<PassRenderResult> {
   const multisample = pass === "flat" || pass === "lit";
   const engine = deps.scene.getEngine();
+  // 수동 renderFrame의 swapchain 명령은 첫 await 전에 제출한다. 다음 이벤트 루프에서 그리기 표면이 만료될 수 있다.
+  if (engine.isWebGPU) engine.flushFramebuffer();
   const samples = multisample ? Math.max(1, Math.min(4, engine.getCaps().maxMSAASamples || 1)) : 1;
   // 작은 타깃(썸네일)은 장면별 풀에서 재사용한다(renderPassId 누적 방지, capture-targets.ts).
   const lease = acquireCaptureTarget(deps.scene, pass, width, height, samples);
   const rtt = lease.rtt;
-  let meshes: readonly Mesh[] = [];
+  const overridden = new Set<Mesh>();
+  const setOverride = (mesh: Mesh, material: Material | null): void => {
+    const override = material && material !== mesh.material ? material : undefined;
+    // setMaterialForRendering은 같은 값으로 불러도 RTT draw cache를 지운다. 준비된 wrapper를 렌더 직전에 지우지 않는다.
+    if (mesh.getMaterialForRenderPass(rtt.renderPassId) !== override) rtt.setMaterialForRendering(mesh, override);
+    if (override) overridden.add(mesh);
+  };
   try {
     rtt.activeCamera = camera;
     rtt.ignoreCameraViewport = true;
@@ -251,18 +319,25 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
         if (material) compilePairs.push([mesh, material]);
       }
     }
-    await ensureReady(deps, compilePairs, pass === "lit");
+    if (pass === "lit") {
+      for (const mesh of deps.pressureOutlines?.() ?? []) if (mesh.material) compilePairs.push([mesh, mesh.material]);
+    }
+    for (const [mesh, material] of compilePairs) setOverride(mesh, material);
+    await ensureReady(deps, rtt, compilePairs, pass === "lit", pass === "lit" && deps.scene.shadowsEnabled && deps.character.keyLight.shadowEnabled ? deps.shadow?.getShadowMap() : undefined);
+    // 준비 대기 동안 RAF가 만든 명령도 포함해 제출한다. 캡처 카메라·재질의 버퍼 변경과 같은 제출 묶음에 섞지 않는다.
+    if (engine.isWebGPU) engine.flushFramebuffer();
 
     // (2) 동기 구간: 일시 적용 → 프레이밍·렌더 목록 → 렌더 → readPixels 호출 → 복원
     around?.before();
     let pending: ReturnType<RenderTargetTexture["readPixels"]> = null;
+    let pendingOwnership: Promise<HairOwnership> | undefined;
     let boxes: SyntheticBox[] | null = null;
     try {
-      meshes = frame();
+      const meshes = [...frame(pass), ...(pass === "lit" ? deps.pressureOutlines?.() ?? [] : [])];
       rtt.renderList = [...meshes];
       for (const mesh of meshes) {
         const material = passMaterialFor(deps, camera, pass, partOfMesh(deps, mesh), mesh);
-        if (material && material !== mesh.material) rtt.setMaterialForRendering(mesh, material);
+        setOverride(mesh, material);
       }
       if (pass === "lit" && deps.shadow) {
         try {
@@ -271,21 +346,27 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
           // 그림자 맵 갱신 실패는 lit 캡처를 막지 않는다(이전 프레임 그림자 사용).
         }
       }
-      withScatteringOff(deps.rig, pass === "lit", () => rtt.render(false, false));
+      withNativeOutlinesOff(meshes, pass !== "lit", () => withCaptureProcessing(deps, pass === "lit", () => rtt.render(false, false)));
       // WebGL2는 PBO 비동기 readback으로 읽기 명령만 제출한다(GPU 완료를 메인 스레드에서 기다리지 않는다, capture-targets.ts).
       pending = readCaptureTarget(engine, rtt, width, height);
+      // readPixels는 WebGPU 명령도 실제 제출한다. 원래 native outline UBO를 제출한 뒤 같은 포즈·동기 구간에서 owner 색을 쓴다.
+      pendingOwnership = ownership?.submit();
       if (pending === null) boxes = syntheticBoxes(deps, camera, width, height);
     } finally {
       around?.after();
     }
 
     // (3) 비동기 구간: GPU readback 대기(이 동안 뷰포트는 복원된 상태를 그린다)
-    const buffer = pending ? await pending : null;
-    if (buffer === null) return { bytes: null, boxes };
-    if (buffer instanceof Uint8Array || buffer instanceof Uint8ClampedArray) return { bytes: buffer, boxes: null };
+    const [readback, ownershipReadback] = await Promise.allSettled([pending, pendingOwnership] as const);
+    if (readback.status === "rejected") throw readback.reason;
+    if (ownershipReadback.status === "rejected") throw ownershipReadback.reason;
+    const buffer = readback.value;
+    const extra = ownershipReadback.value ? { hairOwnership: ownershipReadback.value } : {};
+    if (buffer === null) return { bytes: null, boxes, ...extra };
+    if (buffer instanceof Uint8Array || buffer instanceof Uint8ClampedArray) return { bytes: buffer, boxes: null, ...extra };
     throw failVisible("capture-readback-type", `RTT readback 타입이 RGBA8이 아닙니다(${buffer.constructor.name}).`, undefined, deps.now);
   } finally {
-    for (const mesh of meshes) rtt.setMaterialForRendering(mesh, undefined);
+    for (const mesh of overridden) rtt.setMaterialForRendering(mesh, undefined);
     lease.release();
   }
 }
@@ -297,12 +378,14 @@ export interface CaptureFrameOptions {
   readonly framing: CameraFraming;
   /** 일시 적용 구간(단일 패스 전용: 썸네일). 주면 passes는 정확히 1개여야 한다. */
   readonly around?: CaptureAround;
+  readonly ownership?: PreparedHairOwnership;
 }
 
 export interface CaptureFrameResult {
   readonly passes: Partial<Record<RasterPassId, CapturedRaster>>;
   readonly depth?: CapturedDepth;
   readonly synthetic: boolean;
+  readonly hairOwnership?: HairOwnership;
 }
 
 /** 패스 집합을 한 번에 그려 규약 래스터로 돌려준다(엔진 renderPasses·renderThumbnail 공용). */
@@ -314,20 +397,22 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
   }
   const camera = deps.character.captureCamera;
   /** 프레이밍은 렌더 직전(일시 적용 뒤)에 계산한다: 플랜의 가시성·포즈가 bounds에 반영되도록. */
-  const frame = (): readonly Mesh[] => {
+  const frame = (pass: RenderPassId): readonly Mesh[] => {
     deps.character.applyFraming(camera, options.framing, computeRigBounds(deps.rig), width / height);
     camera.getViewMatrix(true);
     camera.getProjectionMatrix(true);
-    return rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines });
+    return rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines && pass === "lit" });
   };
   const passes: Partial<Record<RasterPassId, CapturedRaster>> = {};
   let depth: CapturedDepth | undefined;
+  let hairOwnership: HairOwnership | undefined;
   let synthetic = false;
   let lateBoxes: SyntheticBox[] | null = null;
   const flipY = RTT_READBACK_FLIP_Y[deps.lane];
   const premultiplied = RTT_READBACK_PREMULTIPLIED[deps.lane];
   for (const pass of options.passes) {
-    const rendered = await renderPass(deps, camera, pass, width, height, frame, options.around);
+    const rendered = await renderPass(deps, camera, pass, width, height, frame, options.around, pass === "lit" ? options.ownership : undefined);
+    if (rendered.hairOwnership) hairOwnership = rendered.hairOwnership;
     if (rendered.bytes === null) {
       synthetic = true;
       // 일시 적용 구간 안에서 만든 상자가 있으면 그것을, 없으면(비동기 readback이 뒤늦게 null) 현재 상태로 만든다.
@@ -343,21 +428,27 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
       passes[pass] = toCapturedRaster(rendered.bytes, width, height, { flipY, premultiplied: premultiplied && (pass === "flat" || pass === "lit") });
     }
   }
-  return depth ? { passes, depth, synthetic } : { passes, synthetic };
+  return { passes, synthetic, ...(depth ? { depth } : {}), ...(hairOwnership ? { hairOwnership } : {}) };
 }
 
 export async function capturePasses(deps: CaptureDeps, req: CaptureRequest, framing: CameraFraming): Promise<CaptureResult> {
-  const frame = await captureFrame(deps, { width: req.width, height: req.height, passes: req.passes, framing });
-  const backend: CaptureProvenance["backend"] = deps.lane;
-  return {
-    profile: CAPTURE_PROFILE_ID,
-    width: req.width,
-    height: req.height,
-    passes: frame.passes,
-    ...(frame.depth ? { depth: frame.depth } : {}),
-    partIdPalette: deps.rig.partIdPalette,
-    provenance: { ...deps.provenance, backend, synthetic: frame.synthetic, settleSteps: req.settleSteps },
-  };
+  validateRequest(deps, req.width, req.height, req.passes, req.includeHairOwnership);
+  if (req.includeHairOwnership && !req.passes.includes("lit")) throw failVisible("capture-hair-requires-lit", "헤어 소유권은 같은 포즈의 lit 패스와 함께 요청해야 합니다.", undefined, deps.now);
+  const ownership = req.includeHairOwnership ? await prepareHairOwnership(deps, req.width, req.height, (rtt, pairs) => ensureReady(deps, rtt, pairs, true)) : undefined;
+  try {
+    const frame = await captureFrame(deps, { width: req.width, height: req.height, passes: req.passes, framing, ...(ownership ? { ownership } : {}) });
+    const backend: CaptureProvenance["backend"] = deps.lane;
+    return {
+      profile: CAPTURE_PROFILE_ID,
+      width: req.width,
+      height: req.height,
+      passes: frame.passes,
+      ...(frame.depth ? { depth: frame.depth } : {}),
+      ...(frame.hairOwnership ? { hairOwnership: frame.hairOwnership } : {}),
+      partIdPalette: deps.rig.partIdPalette,
+      provenance: { ...deps.provenance, backend, synthetic: frame.synthetic, settleSteps: req.settleSteps },
+    };
+  } finally { ownership?.dispose(); }
 }
 
 export async function captureThumbnail(deps: CaptureDeps, size: number, framing: CameraFraming, around?: CaptureAround): Promise<CapturedRaster> {

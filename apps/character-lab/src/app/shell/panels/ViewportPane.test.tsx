@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createReferenceSkeleton } from "../../../animation/reference-skeleton";
 import { computeWorldTransforms } from "../../../animation/skeleton-fk";
 import { DEFAULT_FRAMING, failVisible } from "../../../contracts";
+import { readPixel } from "../../../paint/paint-layer";
 import { createPaintSession } from "../../../paint/paint-session";
 import { projectToPixel } from "../../../render/viewport-math";
 import { v3Length, v3Sub } from "../../../shared/math";
@@ -642,6 +643,29 @@ describe("모델 위 드로잉", () => {
     // 되돌림 업로드로 레이어가 비어 있다
     expect(engine.paintUploads.length).toBeGreaterThan(uploadsBefore);
     expect(session.layer("skin").rgba.every((value) => value === 0)).toBe(true);
+  });
+
+  it("실제 PointerEvent의 펜 압력이 공유 세션 픽셀·업로드를 바꾸고 undo가 복원된다", () => {
+    const results: Array<{ alpha: number; offCenter: number; painted: number }> = [];
+    for (const pressure of [0.25, 1]) {
+      const engine = createTestEngine({ pick: () => HIT });
+      const session = createPaintSession({ layerSize: 64, pressureMode: "pen", brush: { radiusPx: 8, hardness: 1, opacity: 1 } });
+      const view = renderPane({ engine, ui: createUiStateStore({ drawingMode: true }), paintSession: session });
+      fireEvent.pointerDown(drawLayer(), { clientX: 200, clientY: 100, pointerId: 1, pointerType: "pen", pressure, button: 0 });
+      fireEvent.pointerUp(drawLayer(), { clientX: 200, clientY: 100, pointerId: 1 });
+      const layer = session.layer("skin");
+      const center = { x: Math.floor(HIT.uv[0] * 64), y: Math.floor(HIT.uv[1] * 64) };
+      results.push({ alpha: readPixel(layer, center.x, center.y)[3], offCenter: readPixel(layer, center.x, center.y + 7)[3], painted: layer.rgba.filter((value, index) => index % 4 === 3 && value > 0).length });
+      expect(engine.paintUploads.at(-1)?.rgba).toBe(layer.rgba);
+      const command = view.dispatched[0];
+      if (command?.type !== "paint/stroke") throw new Error("페인트 undo 토큰 없음");
+      session.applyToken(command.undoToken);
+      expect(layer.rgba.every((value) => value === 0)).toBe(true);
+      view.unmount();
+    }
+    expect(results[0]).toMatchObject({ alpha: 64, offCenter: 0 });
+    expect(results[1]).toMatchObject({ alpha: 255, offCenter: 255 });
+    expect(results[1]?.painted ?? 0).toBeGreaterThan((results[0]?.painted ?? 0) * 4);
   });
 
   it("활성 부위가 아닌 표면이나 빈 공간에서 시작하면 칠하지 않고 안내한다", () => {

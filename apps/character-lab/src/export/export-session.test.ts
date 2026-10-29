@@ -69,6 +69,19 @@ describe("exportTransparentPng", () => {
 });
 
 describe("exportLayeredPsd", () => {
+  it("지원 정보와 실제 소유권 마스크를 모두 확인하고 미지원에서는 캡처하지 않는다", async () => {
+    const engine = createMockEngine();
+    engine.psdHairLayers = () => ({ status: "unavailable", reasonKo: "BLEND 분리 미지원" });
+    const options = { width: 24, height: 24, includeIdMasks: false, includeReferencePasses: false, splitHairLayers: true };
+    const unsupported = await exportLayeredPsd(engine, [], options);
+    expect(unsupported).toMatchObject({ ok: false, failure: { code: "psd-hair-ownership-unavailable" } });
+    expect(engine.calls).toHaveLength(0);
+    engine.psdHairLayers = () => ({ status: "available" });
+    const missing = await exportLayeredPsd(engine, [], options);
+    expect(missing).toMatchObject({ ok: false, failure: { code: "psd-hair-ownership-unavailable" } });
+    expect(engine.calls.find(call => call.method === "renderPasses")?.args[0]).toMatchObject({ includeHairOwnership: true });
+  });
+
   it("5개 패스를 캡처해 PSD 바이트와 레이어 영수증을 돌려준다", async () => {
     const engine = createMockEngine({ partIdPalette: { 1: { role: "skin", labelKo: "피부" } } });
     const result = await exportLayeredPsd(engine, [], { width: 24, height: 24, includeIdMasks: true, includeReferencePasses: true });

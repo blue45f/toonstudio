@@ -281,11 +281,19 @@ describe("ParamPanel — 요약·사유", () => {
     expect(describeParamValue(-0.3, ["작게", "크게"])).toBe("-0.30 · 작게");
   });
 
-  it("SHAPER 신체(100%)·의상(90%) 블렌드쉐입 가중치 요약 줄을 표시한다", () => {
-    setup({ recipe: recipeWith({ body: { shoulderWidth: 1, hip: 1 } }) });
-    expect(screen.getByTestId("param-shaper-blend-weights").textContent).toContain(
-      "SHAPER 블렌드쉐입 가중치: 신체 근육 100% · 체지방 100% (의상 감쇠 90% / 90%)",
-    );
+  it("어깨·엉덩이는 실제 파라미터로 계획하고 별개의 근육·체지방·의상 감쇠로 표시하지 않는다", () => {
+    const store = createLabStore({
+      catalog: createPresetCatalog([]),
+      initial: { capabilities: ALL_AVAILABLE_CAPABILITIES },
+      now: steadyClock(),
+    });
+    render(<MockLabProvider store={store}><ParamPanel /></MockLabProvider>);
+    fireEvent.change(slider("어깨 너비"), { target: { value: "1" } });
+    fireEvent.change(slider("엉덩이"), { target: { value: "1" } });
+    expect(store.getState().recipe.body).toEqual({ shoulderWidth: 1, hip: 1 });
+    expect(store.getPlan().morphWeights).toMatchObject({ "param:shoulderWidth:+": 1, "param:hip:+": 1 });
+    expect(Object.keys(store.getPlan().morphWeights).filter((key) => /muscle|fat|costume/iu.test(key))).toEqual([]);
+    expect(screen.queryByText(/신체 근육|체지방|의상 감쇠/u)).toBeNull();
   });
 
   it("VARCO 3D 웹툰 세계관 셰이퍼 프리셋(8종) 클릭 시 recipe/load를 디스패치하고 소품 바인딩과 HDRI 프리뷰를 갱신한다", () => {

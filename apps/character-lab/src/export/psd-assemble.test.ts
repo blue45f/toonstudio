@@ -1,8 +1,9 @@
 import { readPsd } from "ag-psd";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { allocatePartIdsByRole, rolePartId } from "../contracts";
 import { installPsdCanvasStub } from "../testing/psd-canvas-stub";
-import { captureResultFixture, rasterEquals } from "../testing/raster-fixtures";
+import { captureResultFixture, fillRaster, idPassRaster, pixelAt, rasterEquals } from "../testing/raster-fixtures";
 
 import { PSD_MIME, assemblePsd, toAgPsd } from "./psd-assemble";
 import { planCharacterPsd } from "./psd-plan";
@@ -98,5 +99,56 @@ describe("assemblePsd", () => {
     expect(reference?.blendMode).toBe("pass through");
     expect(reference?.children?.[0]?.imageData?.width).toBe(16);
     expect(reference?.children?.[0]?.name).toBe("깊이");
+  });
+
+  it("실제 PSD 왕복에서 본체의 clipping 체인과 반투명 알파가 보존된다", () => {
+    const flat = fillRaster(2, 1, (x) => [100, 140, 180, x === 0 ? 64 : 128]);
+    const lit = fillRaster(2, 1, (x) => [60, 180, 120, x === 0 ? 64 : 96]);
+    const result = planCharacterPsd(captureResultFixture({ width: 2, height: 1, passes: { flat, lit } }), [], { includeIdMasks: false, includeReferencePasses: false, lineArt: { alphaEdges: false, idEdges: false, lumaEdges: false, depthThreshold: 0, normalAngleDeg: 0 } });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    const psd = readPsd(assemblePsd(result.plan), { useImageData: true });
+    expect(find(psd.children, "밑색")?.clipping ?? false).toBe(false);
+    for (const name of ["음영", "하이라이트", "주선"]) expect(find(psd.children, name)?.clipping, name).toBe(true);
+    for (let x = 0; x < 2; x += 1) {
+      let alpha = 0;
+      for (const layer of psd.children ?? []) {
+        if (layer.hidden || layer.children || layer.clipping) continue;
+        const sourceAlpha = pixelAt(rasterOf(layer), x, 0)[3] / 255 * (layer.opacity ?? 1);
+        alpha = sourceAlpha + alpha * (1 - sourceAlpha);
+      }
+      expect(alpha * 255).toBe(pixelAt(lit, x, 0)[3]);
+    }
+  });
+
+  it("실제 PSD 왕복에서도 헤어 알파 분리·음영/주선 clipping·반투명 밑색이 보존된다", () => {
+    const roles = ["skin", "hair", "hair-accessory", "skin"] as const;
+    const flat = fillRaster(4, 2, (x) => [80, 140, 190, x === 1 ? 64 : x === 2 ? 128 : 255]);
+    const lit = fillRaster(4, 2, (x) => [150, 90, 220, x === 1 ? 64 : x === 2 ? 128 : 255]);
+    const capture = captureResultFixture({ width: 4, height: 2, partIdPalette: allocatePartIdsByRole(roles.map((role) => ({ role }))), passes: { flat, lit, "part-id": idPassRaster(4, 2, (x) => rolePartId(roles[x] ?? "skin")) } });
+    const result = planCharacterPsd(capture, [], { includeIdMasks: false, includeReferencePasses: false, splitHairLayers: true });
+    if (!result.ok) throw new Error(result.failure.reasonKo);
+    const psd = readPsd(new Uint8Array(assemblePsd(result.plan)).buffer, { useImageData: true, skipThumbnail: true });
+    const hair = find(psd.children, "헤어 분리");
+    expect(hair?.children?.map((layer) => layer.name)).toEqual(["헤어 밑색", "헤어 음영", "헤어 주선"]);
+    expect(find(psd.children, "헤어 밑색")?.clipping ?? false).toBe(false);
+    expect(find(psd.children, "헤어 음영")?.clipping).toBe(true);
+    expect(find(psd.children, "헤어 주선")?.clipping).toBe(true);
+    expect(pixelAt(rasterOf(find(psd.children, "헤어 밑색")), 1, 0)[3]).toBe(64);
+    expect(pixelAt(rasterOf(find(psd.children, "헤어 밑색")), 2, 0)[3]).toBe(128);
+    for (const name of ["밑색", "음영", "하이라이트", "주선"]) {
+      const raster = rasterOf(find(psd.children, name));
+      expect(pixelAt(raster, 1, 0), name).toEqual([0, 0, 0, 0]);
+      expect(pixelAt(raster, 2, 0), name).toEqual([0, 0, 0, 0]);
+    }
+    expect(pixelAt(rasterOf(find(psd.children, "밑색")), 0, 0)).toEqual(pixelAt(flat, 0, 0));
+    const composite = rasterOf({ imageData: psd.imageData });
+    for (let x = 0; x < 4; x += 1) {
+      const expected = pixelAt(lit, x, 0);
+      const actual = pixelAt(composite, x, 0);
+      expect(actual[3]).toBe(expected[3]);
+      // PSD 합성 미리보기의 8bit matte 왕복은 반투명 RGB에 255/alpha 양자화 오차가 있다.
+      const tolerance = Math.ceil(255 / expected[3]);
+      for (let channel = 0; channel < 3; channel += 1) expect(Math.abs((actual[channel] ?? 0) - (expected[channel] ?? 0))).toBeLessThanOrEqual(tolerance);
+    }
   });
 });
