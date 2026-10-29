@@ -62,7 +62,7 @@ export async function saveStudioScopedRestDocument(input: {
       if (requirements.length) assertStudioLinked3dPassAssetRows({ workId: input.workId, requirements,
         rows: await unit.findStudioLinked3dPassAssets(input.workId, requirements.map((requirement) => requirement.assetId)) });
       // 이 primitive는 검증한 authorization과 같은 transaction 안에만 존재한다. boolean 우회 입력은 없다.
-      const updated = await transaction.execute<{ revision: number; updatedAt: Date } & Record<string, unknown>>(sql`
+      const updated = await transaction.execute<{ revision: number; updatedAt: string } & Record<string, unknown>>(sql`
         UPDATE ${creatorWorks} SET doc=${JSON.stringify(input.patch.doc)}::jsonb,revision=revision+1,"updatedAt"=${work.now}::timestamptz
         WHERE id=${input.workId} AND revision=${input.baseRevision} AND revision<${CREATOR_WORK_REVISION_MAX}
           AND EXISTS (SELECT 1 FROM creator_work_collaborator member WHERE member."workId"=${input.workId}
@@ -72,7 +72,7 @@ export async function saveStudioScopedRestDocument(input: {
       const row = updated.rows[0];
       if (updated.rows.length !== 1 || !row) throw new ConflictException("편집 권한 또는 원고가 변경됐습니다.");
       const response = savedSchema.parse({ workId: input.workId, revision: row.revision,
-        updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : row.updatedAt });
+        updatedAt: z.date().parse(creatorWorks.updatedAt.mapFromDriverValue(row.updatedAt)).toISOString() });
       await unit.appendWorkRevision(input.workId, response.revision, createCreatorWorkRevisionSnapshot({ ...current, doc: input.patch.doc }), new Date(work.now));
       const cutoff = creatorWorkRevisionRetentionCutoff(response.revision);
       if (cutoff !== null) await unit.deleteWorkRevisionsThrough(input.workId, cutoff);

@@ -1367,6 +1367,7 @@ export class CreatorService {
               : "팀 요청 내용이 올바르지 않습니다."
         );
       }
+      if (operationName === "save_shared_document" && error instanceof HttpException) throw error;
       const errorType =
         error instanceof Error ? error.name.replace(/[^A-Za-z0-9_$.-]/g, "?").slice(0, 80) : typeof error;
       const sanitizedTrace =

@@ -1,11 +1,12 @@
-import { BadRequestException, HttpException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, NotFoundException } from "@nestjs/common";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CreatorCollaborationForbiddenError, CreatorCollaborationRepository,
+  CreatorCollaborationRevisionConflictError } from "./creator-collaboration.repository";
 import { CreatorService } from "./creator.service";
 
 import type { CreatorDraftCollaborationRepository } from "./creator-draft-collaboration.repository";
-import type { CreatorCollaborationRepository } from "./creator-collaboration.repository";
 import type { StudioWorkAssetService } from "./studio-work-asset.service";
 
 const server = vi.hoisted(() => ({
@@ -37,9 +38,9 @@ function connectionFailure(): Error {
   return Object.assign(new Error("connect ECONNREFUSED 10.1.2.3:5432"), { code: "ECONNREFUSED" });
 }
 
-function service(): CreatorService {
+function service(collaboration = new CreatorCollaborationRepository()): CreatorService {
   return new CreatorService(
-    {} as unknown as CreatorCollaborationRepository,
+    collaboration,
     {} as unknown as CreatorDraftCollaborationRepository,
     { deleteGeneratedObjectsForWork: vi.fn().mockResolvedValue(undefined) } as unknown as StudioWorkAssetService,
   );
@@ -130,5 +131,66 @@ describe("CreatorService 오류 메시지 노출 경계", () => {
     const error = await rejection(service().listWorkReleases("missing"));
     expect(error).toBeInstanceOf(NotFoundException);
     expect((error as NotFoundException).message).toBe("작품 릴리스를 찾을 수 없습니다.");
+  });
+});
+
+
+describe("CreatorService 공동 문서 저장 오류 경계", () => {
+  const document = { pagesList: [] };
+  const writeContext = { version: 1 as const, policyVersion: 1, grantIds: ["grant"], creations: [], restorations: [] };
+  const body = { baseRevision: 1, crdtServerSequence: "0", doc: document,
+    mutationId: "00000000-0000-4000-8000-000000000001", writeContext };
+
+  it.each([
+    { status: 403, error: new ForbiddenException({ code: "studio_scoped_scope", message: "담당 범위 밖의 원고는 저장할 수 없습니다." }) },
+    { status: 409, error: new ConflictException({ code: "creator_crdt_sequence_conflict", currentCrdtServerSequence: "4", message: "최신 팀 편집을 동기화하세요." }) },
+    { status: 400, error: new BadRequestException({ code: "studio_scoped_document_only", message: "담당 원고는 문서 저장을 사용하세요." }) },
+  ])("공동 저장의 신뢰된 HTTP $status 상태와 구조화 응답을 그대로 보존한다", async ({ status, error: original }) => {
+    const repository = new CreatorCollaborationRepository();
+    const save = vi.spyOn(repository, "saveSharedDocument").mockRejectedValue(original);
+    const error = await rejection(service(repository).saveSharedWorkDocument("user-1", "work-1", body));
+    expect(error).toBe(original);
+    if (!(error instanceof HttpException)) throw new Error("공동 저장의 HTTP 오류가 필요합니다.");
+    expect(error.getStatus()).toBe(status);
+    expect(error.getResponse()).toEqual(original.getResponse());
+    expect(save).toHaveBeenCalledExactlyOnceWith("user-1", "work-1", 1, BigInt(0), { doc: document },
+      { mutationId: body.mutationId, writeContext });
+  });
+
+  it.each([
+    { error: new CreatorCollaborationForbiddenError("document_edit_denied"), status: 403 },
+    { error: new CreatorCollaborationRevisionConflictError(3), status: 409 },
+  ])("기존 공동 저장 도메인 오류는 종전 HTTP $status 변환을 유지한다", async ({ error: original, status }) => {
+    const repository = new CreatorCollaborationRepository();
+    vi.spyOn(repository, "saveSharedDocument").mockRejectedValue(original);
+    const error = await rejection(service(repository).saveSharedWorkDocument("user-1", "work-1", body));
+    expect(error).not.toBe(original);
+    if (!(error instanceof HttpException)) throw new Error("기존 도메인 오류의 HTTP 변환이 필요합니다.");
+    expect(error.getStatus()).toBe(status);
+    if (status === 409) expect(error.getResponse()).toMatchObject({ code: "creator_work_revision_conflict", currentRevision: 3 });
+    else expect(error.message).toBe("이 작품의 원본 문서를 저장할 권한이 없습니다.");
+  });
+
+  it.each([driverFailure, connectionFailure])("공동 저장의 미확인 DB 오류는 공개 정보가 제한된 503으로 유지한다", async (makeError) => {
+    const repository = new CreatorCollaborationRepository(), original = makeError();
+    vi.spyOn(repository, "saveSharedDocument").mockRejectedValue(original);
+    const error = await rejection(service(repository).saveSharedWorkDocument("user-1", "work-1", body));
+    if (!(error instanceof HttpException)) throw new Error("미확인 공동 저장 오류의 503 응답이 필요합니다.");
+    expect(error.getStatus()).toBe(503);
+    const visible = clientVisibleText(error);
+    expect(visible).not.toContain("Failed query");
+    expect(visible).not.toContain(SECRET_PARAM);
+    expect(visible).not.toContain("10.1.2.3");
+    expect(visible).not.toContain("ECONNREFUSED");
+  });
+
+  it("다른 공동 작업 operation의 기존 HTTP 예외 분류는 확대하지 않는다", async () => {
+    const repository = new CreatorCollaborationRepository();
+    const original = new ForbiddenException({ code: "unrelated-private-code", message: "다른 작업의 상세 오류" });
+    vi.spyOn(repository, "getSharedDocument").mockRejectedValue(original);
+    const error = await rejection(service(repository).getSharedWorkDocument("user-1", "work-1"));
+    if (!(error instanceof HttpException)) throw new Error("다른 공동 작업의 기존 503 응답이 필요합니다.");
+    expect(error.getStatus()).toBe(503);
+    expect(clientVisibleText(error)).not.toContain("unrelated-private-code");
   });
 });

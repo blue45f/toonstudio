@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import { BadRequestException } from "@nestjs/common";
 import { createProductionProjectAggregate, type ProductionProjectAggregate } from "@toonstudio/core/production";
+import { canonicalJson } from "@toonstudio/studio-project-model";
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,6 +54,7 @@ function fakeTransaction(options: {
 } = {}) {
   const events: string[] = [];
   const conditions: { table: unknown; lock: string | null; condition: SQL }[] = [];
+  const inserts: { table: unknown; values: Row }[] = [];
   const hint = options.hint ?? aggregate(), current = options.current ?? aggregate();
   const transaction = {
     select: (selection: Row) => {
@@ -82,11 +85,11 @@ function fakeTransaction(options: {
     update: () => ({ set: (patch: Row) => ({ where: () => ({ returning: async () => {
       events.push("project:write"); return [{ revision: patch.revision }];
     } }) }) }),
-    insert: () => ({ values: async () => { events.push("append:write"); } }),
+    insert: (table: unknown) => ({ values: async (values: Row) => { inserts.push({ table, values }); events.push("append:write"); } }),
   };
   doubles.transaction.mockImplementation(async (callback: (value: typeof transaction) => Promise<unknown>) => callback(transaction));
   doubles.captures.mockImplementation(async () => { events.push("capture:verify"); return captures; });
-  return { events, conditions, transaction };
+  return { events, conditions, transaction, inserts };
 }
 
 function input(expectedRevision = 0) {
@@ -119,12 +122,59 @@ describe("새 작업 원고 제출 저장소의 잠금·현재 권한·재전송
     const request = limitedInput();
     const f = fakeTransaction({ access: { ownerUserId: "different-owner", membershipRole: "viewer", membershipStatus: "active" } });
     await new ProductionCollaborationRepository().mutateProject(request);
+    const requestHash = createHash("sha256").update(canonicalJson({ projectId: request.projectId,
+      expectedRevision: request.expectedRevision, command: request.taskOutputSources.command })).digest("hex");
+    expect(requestHash).toMatch(/^[a-f0-9]{64}$/u);
     expect(doubles.lockOutput).toHaveBeenCalledWith(f.transaction, "work-1", "owner-user");
     expect(doubles.inspectOutput).toHaveBeenCalledWith(f.transaction, expect.anything(), request.taskOutputSources.command,
-      captures, "mutation-1", "digest-1");
+      captures, "mutation-1", requestHash);
     expect(request.mutate).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ view: true, edit: false }), captures);
-    expect(doubles.recordOutput).toHaveBeenCalledWith(f.transaction, expect.anything(), "mutation-1", "digest-1",
+    expect(doubles.recordOutput).toHaveBeenCalledWith(f.transaction, expect.anything(), "mutation-1", requestHash,
       ["target-1"], expect.objectContaining({ aggregate: expect.objectContaining({ revision: 1 }) }));
+    expect(f.inserts.find((entry) => entry.table === productionProjectMutationReceipts)?.values.requestDigest).toBe(request.requestDigest);
+  });
+
+  it("같은 제한 제출 원문은 stale revision 재시도에도 같은 SHA-256으로 영수증을 읽고 다시 기록하지 않는다", async () => {
+    const request = { ...limitedInput(), requestDigest: "fnv1a64:0123456789abcdef" };
+    const access = { ownerUserId: "different-owner", membershipRole: "viewer", membershipStatus: "active" };
+    const first = fakeTransaction({ access }), repository = new ProductionCollaborationRepository();
+    const response = await repository.mutateProject(request);
+    const requestHash: unknown = doubles.inspectOutput.mock.calls[0]?.[5];
+    if (typeof requestHash !== "string") throw new Error("제한 제출의 요청 해시가 없습니다.");
+    expect(requestHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(first.inserts.find((entry) => entry.table === productionProjectMutationReceipts)?.values.requestDigest).toBe(request.requestDigest);
+    const retry = fakeTransaction({ access, current: aggregate("work-1", 2),
+      receipt: { requestDigest: request.requestDigest, response } });
+    doubles.inspectOutput.mockResolvedValueOnce({ targetIds: ["target-1"], receipt: {
+      actorUserId: request.actorUserId, requestHash, policyVersion: 1, targetIds: ["target-1"], response,
+    } });
+    expect(await repository.mutateProject(request)).toBe(response);
+    expect(doubles.inspectOutput.mock.calls[1]?.[5]).toBe(requestHash);
+    expect(doubles.recordOutput).toHaveBeenCalledOnce();
+    expect(request.mutate).toHaveBeenCalledOnce();
+    expect(retry.events).not.toContain("project:write");
+    expect(retry.inserts).toEqual([]);
+  });
+
+  it("기존 Production digest가 같아도 실제 제출 명령이 다르면 제한 영수증 해시는 달라진다", async () => {
+    const request = { ...limitedInput(), requestDigest: "fnv1a64:0123456789abcdef" };
+    const access = { ownerUserId: "different-owner", membershipRole: "viewer", membershipStatus: "active" };
+    const repository = new ProductionCollaborationRepository();
+    fakeTransaction({ access });
+    await repository.mutateProject(request);
+    const firstHash: unknown = doubles.inspectOutput.mock.calls[0]?.[5];
+    const changed = { ...request, mutationId: "mutation-2", taskOutputSources: { ...request.taskOutputSources,
+      command: { ...request.taskOutputSources.command, submissionId: "submission-2" } } };
+    const second = fakeTransaction({ access });
+    await repository.mutateProject(changed);
+    const changedHash: unknown = doubles.inspectOutput.mock.calls[1]?.[5];
+    expect(typeof firstHash).toBe("string");
+    expect(typeof changedHash).toBe("string");
+    expect(firstHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(changedHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(changedHash).not.toBe(firstHash);
+    expect(doubles.recordOutput.mock.calls[1]?.[3]).toBe(changedHash);
+    expect(second.inserts.find((entry) => entry.table === productionProjectMutationReceipts)?.values.requestDigest).toBe(request.requestDigest);
   });
 
   it("현재 배정 검증 실패는 이전 성공 영수증으로 우회할 수 없다", async () => {

@@ -13,6 +13,7 @@ import {
   productionProjects,
 } from "../../platform/database";
 import { resolveCreatorCollaborationAccess } from "../creator/creator-collaboration.policy";
+import { studioScopedRequestHash } from "../creator/studio-scoped-write-store";
 import { matchesProductionTaskBatchPreconditions, type ProductionTaskBatchPreconditions } from "./production-task-batch-concurrency";
 import { getVerifiedProductionTaskOutputCaptures } from "./production-task-output-source";
 import { authorizeProductionTaskOutput, inspectScopedProductionTaskOutput, lockProductionTaskOutputWork,
@@ -477,12 +478,14 @@ export class ProductionCollaborationRepository {
       if (requiredCapability === "manage" && !access.manage) {
         throw new ProductionProjectForbiddenError("manage");
       }
+      const scopedRequestHash = studioScopedRequestHash({ projectId: input.projectId,
+        expectedRevision: input.expectedRevision, command: outputCommand });
       // 제한 제출은 캐시된 응답도 현재 담당 범위와 실제 원고를 확인한 뒤 반환한다.
       let taskOutputCaptures = limitedOutput && input.taskOutputSources
         ? await getVerifiedProductionTaskOutputCaptures(transaction, currentAggregate, input.taskOutputSources) : undefined;
       const scopedOutput = limitedOutput && outputCommand && taskOutputCaptures
         ? await inspectScopedProductionTaskOutput(transaction, limitedOutput, outputCommand, taskOutputCaptures,
-          input.mutationId, input.requestDigest) : null;
+          input.mutationId, scopedRequestHash) : null;
 
       const receiptRows = await transaction
         .select({
@@ -570,7 +573,7 @@ export class ProductionCollaborationRepository {
         response,
       });
       if (limitedOutput && scopedOutput) await recordScopedProductionTaskOutput(transaction, limitedOutput,
-        input.mutationId, input.requestDigest, scopedOutput.targetIds, response);
+        input.mutationId, scopedRequestHash, scopedOutput.targetIds, response);
       return response;
     });
   }

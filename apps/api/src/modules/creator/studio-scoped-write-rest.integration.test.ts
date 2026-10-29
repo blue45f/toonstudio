@@ -75,7 +75,7 @@ withPostgres("담당 원고 저장의 실제 PostgreSQL 권한·영수증·동�
 
   it("이미 성공한 요청은 회수 후 같은 actor/body에 ACK만 재현하며 새 쓰기를 하지 않는다", async () => {
     const { input, workId } = await fixture(), saved = await save(input);
-    await pool.query('UPDATE creator_work_scoped_write_policy SET "policyVersion"=2,grants=jsonb_set(grants,\'{0,revokedAt}\',to_jsonb(now()::text)) WHERE "workId"=$1', [workId]);
+    await pool.query('UPDATE creator_work_scoped_write_policy SET "policyVersion"=2,grants=jsonb_set(grants,\'{0,revokedAt}\',to_jsonb(now())) WHERE "workId"=$1', [workId]);
     expect(await save(input)).toEqual(saved);
     await expect(save({ ...input, baseRevision: 4, scoped: { ...input.scoped, mutationId: randomUUID() } })).rejects.toMatchObject({ status: 409 });
     expect((await pool.query('SELECT revision FROM creator_work WHERE id=$1', [workId])).rows[0]?.revision).toBe(4);
@@ -84,7 +84,7 @@ withPostgres("담당 원고 저장의 실제 PostgreSQL 권한·영수증·동�
   it.each(["editor", "admin"])("scoped ACK 유실 뒤 %s 승격돼도 같은 원문 영수증을 먼저 재현한다", async (role) => {
     const { input, workId } = await fixture(), saved = await save(input);
     await pool.query('UPDATE creator_work_collaborator SET role=$3 WHERE "workId"=$1 AND "userId"=$2', [workId, input.actorUserId, role]);
-    await pool.query('UPDATE creator_work_scoped_write_policy SET "policyVersion"=2,grants=jsonb_set(grants,\'{0,revokedAt}\',to_jsonb(now()::text)) WHERE "workId"=$1', [workId]);
+    await pool.query('UPDATE creator_work_scoped_write_policy SET "policyVersion"=2,grants=jsonb_set(grants,\'{0,revokedAt}\',to_jsonb(now())) WHERE "workId"=$1', [workId]);
     expect(await save(input)).toEqual(saved);
     // 새 mutation은 scoped 권한을 확대하지 않고 기존 full 저장 경로로 넘긴다.
     expect(await save({ ...input, scoped: { ...input.scoped, mutationId: randomUUID() } })).toBeNull();

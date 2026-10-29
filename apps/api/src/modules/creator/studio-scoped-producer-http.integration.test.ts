@@ -1,7 +1,8 @@
 import "reflect-metadata";
-import type { INestApplication } from "@nestjs/common";
+import type { INestApplication, LoggerService } from "@nestjs/common";
 import type { AddressInfo } from "node:net";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import type { Pool } from "pg";
 import { Image, encodePng } from "image-js";
 import * as Y from "yjs";
@@ -15,6 +16,7 @@ import type { z } from "zod";
 import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 import type { PrivateObjectStoragePort } from "../../platform/adapters/private-object-storage/private-object-storage.port";
 import type { StudioCrdtService } from "./studio-crdt.service";
+import type { CreatorCollaborationInvitation, CreatorCollaborationInvitationResponse } from "./creator-collaboration.repository";
 import { hasValidStudioCrdtRootSchema } from "./studio-crdt-root-schema";
 import { studioReviewPreviewDigest, type StudioReviewPreviewCapture,
   type StudioReviewPreviewIntent } from "../studio-project-graph/studio-review-preview-producer.contract";
@@ -120,11 +122,23 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
     for (const [member, memberRole] of [[viewer(), "viewer"], [commenter(), "commenter"]] as const) {
       const invited = await h.request<Team>(`/creator/works/${workId}/team`, { cookie: owner().cookie, body: { userId: member.id, role: memberRole } });
       expect(invited.status).toBe(201);
-      const invitationId = invited.body.members.find((entry) => entry.userId === member.id)?.invitationId;
-      if (!invitationId) throw new Error("공개 팀 초대 ID가 없습니다.");
-      expect((await h.request(`/creator/works/${workId}/team/invitations/respond`, {
-        cookie: member.cookie, body: { action: "accept", invitationId },
-      })).status).toBe(201);
+      const pendingMember = invited.body.members.find((entry) => entry.userId === member.id);
+      expect(pendingMember).toMatchObject({ userId: member.id, role: memberRole, status: "pending" });
+      expect(pendingMember).not.toHaveProperty("invitationId");
+      const inbox = await h.request<CreatorCollaborationInvitation[]>("/creator/team/invitations?limit=50", {
+        method: "GET", cookie: member.cookie,
+      });
+      expect(inbox.status).toBe(200);
+      const pendingInvitations = inbox.body.filter((entry) => entry.workId === workId);
+      expect(pendingInvitations).toHaveLength(1);
+      const invitation = pendingInvitations[0];
+      if (!invitation) throw new Error("초대받은 계정의 공개 inbox에 현재 작품 초대가 없습니다.");
+      expect(invitation.role).toBe(memberRole);
+      const accepted = await h.request<CreatorCollaborationInvitationResponse>(`/creator/works/${workId}/team/invitations/respond`, {
+        cookie: member.cookie, body: { action: "accept", invitationId: invitation.invitationId },
+      });
+      expect(accepted.status).toBe(201);
+      expect(accepted.body).toEqual({ workId, role: memberRole, status: "active" });
     }
     const made = await h.request<Project>("/production/projects", { cookie: owner().cookie, body: { projectId, workId,
       title: "공개 API 제작 프로젝트", collaborationModel: "studio-production", ownerPartyId: "owner-party",
@@ -186,7 +200,16 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
       if (!projected || typeof projected !== "object" || Array.isArray(projected)) throw new Error("공용 원고 투영 실패");
       const body = saveBody({ ...current, crdtServerSequence: applied.serverSequence }, f.context, projected as Record<string, unknown>);
       const saved = await h.request<Saved>(`/creator/works/${f.workId}/team/document`, { method: "PATCH", cookie: f.actor.cookie, body });
-      expect(saved.status).toBe(200); expect(saved.body.revision).toBe(current.revision + 1);
+      const errorBody: unknown = saved.body;
+      const errorCode = errorBody !== null && typeof errorBody === "object" && !Array.isArray(errorBody)
+        ? Reflect.get(errorBody, "code") : undefined;
+      const errorMessage = errorBody !== null && typeof errorBody === "object" && !Array.isArray(errorBody)
+        ? Reflect.get(errorBody, "message") : undefined;
+      const publicError = { ...(typeof errorCode === "string" ? { code: errorCode.slice(0, 160) } : {}),
+        ...(typeof errorMessage === "string" ? { message: errorMessage.slice(0, 500) } : {}) };
+      expect(saved.status, `팀 원고 저장 응답: ${JSON.stringify(publicError)}`).toBe(200);
+      expect(saved.body.revision).toBe(current.revision + 1);
+      expect(new Date(saved.body.updatedAt).toISOString()).toBe(saved.body.updatedAt);
       return { request, body, saved: saved.body, serverSequence: applied.serverSequence };
     } finally { doc.destroy(); }
   }
@@ -208,7 +231,14 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
     const currentProject = await project(f.projectId), submissionBody = { expectedRevision: currentProject.aggregate.revision, mutationId: randomUUID(), command: submitted };
     const submissionRoute = `/production/projects/${f.projectId}/commands`;
     const result = await h.request<Project>(submissionRoute, { cookie: f.actor.cookie, body: submissionBody });
-    expect(result.status).toBe(201);
+    const submissionError: unknown = result.body;
+    const submissionCode = submissionError !== null && typeof submissionError === "object" && !Array.isArray(submissionError)
+      ? Reflect.get(submissionError, "code") : undefined;
+    const submissionMessage = submissionError !== null && typeof submissionError === "object" && !Array.isArray(submissionError)
+      ? Reflect.get(submissionError, "message") : undefined;
+    const publicSubmissionError = { ...(typeof submissionCode === "string" ? { code: submissionCode.slice(0, 160) } : {}),
+      ...(typeof submissionMessage === "string" ? { message: submissionMessage.slice(0, 500) } : {}) };
+    expect(result.status, `작업물 제출 응답: ${JSON.stringify(publicSubmissionError)}`).toBe(201);
     const retried = await h.request<Project>(submissionRoute, { cookie: f.actor.cookie, body: submissionBody });
     expect(retried.status).toBe(201); expect(retried.body).toEqual(result.body);
     const output = result.body.aggregate.submissions.find((entry) => entry.id === submitted.submissionId);
@@ -459,7 +489,33 @@ async function createHarness(connectionString: string, workIds: string[]) {
         { provide: ProductionCollaborationService, useValue: new ProductionCollaborationService(new ProductionCollaborationRepository()) },
         { provide: StudioReviewPreviewProducerService, useValue: preview }, { provide: CrdtService, useValue: realtime }] })
     class IntegrationModule {}
-    app = await NestFactory.create(IntegrationModule, { logger: false, bodyParser: false });
+    const repositoryRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
+    const diagnosticLogger: LoggerService = {
+      log: () => undefined, warn: () => undefined, debug: () => undefined,
+      verbose: () => undefined, fatal: () => undefined,
+      error(message: unknown, ...details: unknown[]) {
+        const unexpectedError = message instanceof Error ? message : undefined;
+        const causeType = unexpectedError ? unexpectedError.name.replace(/[^A-Za-z0-9_$.-]/gu, "?").slice(0, 80) : typeof message === "string"
+          ? /^Creator collaboration save_shared_document failed for work=.*; cause=([A-Za-z0-9_$?.-]{1,80})$/u.exec(message)?.[1]
+          : undefined;
+        if (!causeType) return;
+        const frames = new Set<string>();
+        for (const detail of unexpectedError ? [unexpectedError.stack] : details) {
+          if (typeof detail !== "string") continue;
+          for (const line of detail.split("\n")) {
+            if (!/^\s+at\s/u.test(line)) continue;
+            const rootIndex = line.indexOf(repositoryRoot);
+            if (rootIndex < 0) continue;
+            const frame = /^((?:apps|packages|scripts)\/[A-Za-z0-9_./-]+\.[cm]?[jt]sx?:[1-9]\d*):[1-9]\d*\)?$/u
+              .exec(line.slice(rootIndex + repositoryRoot.length))?.[1];
+            if (frame && !frame.includes("/node_modules/") && frames.size < 12) frames.add(frame);
+          }
+        }
+        const marker = unexpectedError ? "SCOPED_SUBMISSION_FAILURE" : "SCOPED_SAVE_FAILURE";
+        process.stderr.write(`[${marker}] ${JSON.stringify({ causeType, frames: [...frames] })}\n`);
+      },
+    };
+    app = await NestFactory.create(IntegrationModule, { logger: diagnosticLogger, bodyParser: false });
     app.use(sessionAuth); app.use(createCsrfProtectionMiddleware({ NODE_ENV: "test", API_CORS_ALLOWED_ORIGINS: "http://127.0.0.1:5199" }));
     app.use(json({ limit: "2mb" })); app.setGlobalPrefix("api"); await app.listen(0, "127.0.0.1");
     const address = app.getHttpServer().address() as AddressInfo, base = `http://127.0.0.1:${address.port}`;
