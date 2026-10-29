@@ -8,10 +8,10 @@ import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from 
 import { formatShaperInputStyleGuide } from "../../../export/recipe-file";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
-import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/babylon/viewport-controls";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
 import { readProjectionPaint } from "../../../render/projection-paint";
 import { readViewportCamera } from "../../../render/viewport-camera";
+import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/viewport-controls";
 import { clientToRenderPixel, viewportPixelRatio } from "../../../render/viewport-math";
 import { describeEngineStatus } from "../engine-status-text";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, test } from "vitest";
 
@@ -518,7 +519,12 @@ describe("bootstrap SQL and repository contract", () => {
 describe("deterministic Drizzle base schema provisioning", () => {
   test("derives the provisioning schema entries from the live Drizzle config", () => {
     const schemaPaths = resolveDrizzleSchemaPaths();
-    expect(schemaPaths).toHaveLength(8);
+    expect(schemaPaths).toHaveLength(11);
+    expect(schemaPaths).toEqual(expect.arrayContaining([
+      "../apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",
+      "../apps/api/src/platform/database/studio-crdt-raster-checkpoint.schema.ts",
+      "../apps/api/src/platform/database/studio-raster-asset.schema.ts",
+    ].map((schemaPath) => fileURLToPath(new URL(schemaPath, import.meta.url)))));
     expect(schemaPaths[0]).toMatch(
       /apps\/api\/src\/platform\/database\/schema\/index\.ts$/u,
     );
