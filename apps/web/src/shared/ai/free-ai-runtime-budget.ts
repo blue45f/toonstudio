@@ -261,6 +261,11 @@ function keyTagOf(connection: UserAiConnection): string {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
+/** 경로가 쓰는 기록 칸 이름. 같은 칸을 쓰는 경로(같은 주소·모델·키)를 한 번만 셀 때 쓴다. 키 값은 들어 있지 않다. */
+export function freeAiRuntimeBudgetEntryId(connection: UserAiConnection): string {
+  return ledgerScope(connection).key;
+}
+
 function freshEntry(now: number, keyTag: string): FreeAiBudgetEntry {
   return {
     day: utcDay(now),
@@ -607,14 +612,15 @@ export function getFreeAiRuntimeBudgetSnapshot(
 
 /**
  * 사용자가 지웠거나 키 값·주소를 바꾼 경로의 사용량·잠금 기록을 지운다. 결제 잠금 안내("연결을 삭제하고 다시 등록하세요")가
- * 이 동작에 기댄다. 남은 경로(`kept`)가 같은 칸(같은 주소·모델·키)을 쓰면 그 키는 아직 쓰이므로 기록을 남긴다.
+ * 이 동작에 기댄다. 남은 경로(`kept`, 호출 쪽이 실제로 요청을 보낼 수 있는 경로만 넘긴다) 가운데 이 기록을 쓰는 무료 경로가
+ * 같은 칸(같은 주소·모델·키)을 쓰면 그 키는 아직 쓰이므로 기록을 남긴다.
  */
 export function forgetFreeAiRuntimeRoutes(
   routes: readonly UserAiConnection[],
   kept: readonly UserAiConnection[] = [],
 ): void {
   if (routes.length === 0) return;
-  const keptKeys = new Set(kept.map((route) => ledgerScope(route).key));
+  const keptKeys = new Set(kept.filter(isManagedFreeConnection).map((route) => ledgerScope(route).key));
   const ledger = readLedger();
   let changed = false;
   for (const route of routes) {

@@ -150,6 +150,33 @@ describe("UnifiedAiSettings guided setup", () => {
     resetFreeAiRuntimeBudget();
   });
 
+  it("counts a safety record once when two key profiles of one connection hold the same key", async () => {
+    resetFreeAiRuntimeBudget();
+    const connection = textConnection("free-a", "무료 연결", 10);
+    setUserAiConfiguration({
+      version: 1,
+      connections: [{
+        ...connection,
+        apiKeys: [
+          ...(connection.apiKeys ?? []),
+          { id: "key-free-a-copy", label: "같은 키", apiKey: "key-free-a", enabled: true, priority: 20 },
+        ],
+      }],
+      assignments: { text: "free-a", image: null, inference: null, "three-d": null },
+    });
+    const routes = userAiConnectionsForCapability("text");
+    expect(routes).toHaveLength(2);
+    for (let index = 0; index < 3; index += 1) {
+      await guardFreeAiRuntimeRequest(routes[0]!, "text", "/models", "GET", undefined);
+    }
+    render(<UnifiedAiSettings />);
+    fireEvent.click(screen.getByRole("tab", { name: "고급 설정" }));
+
+    // 두 경로가 같은 기록을 쓰므로 22회다(44회가 아니다).
+    expect(await screen.findByText("오늘 남은 앱 안전 한도 22회", {}, { timeout: 10_000 })).toBeTruthy();
+    resetFreeAiRuntimeBudget();
+  });
+
   it("shows the beginner flow first and keeps technical controls behind advanced settings", async () => {
     render(<UnifiedAiSettings />);
 

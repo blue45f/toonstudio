@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AiQuickKeyPanel } from "./AiQuickKeyPanel";
 import { addQuickKey } from "./ai-quick-key";
-import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration } from "./user-ai-store";
+import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration, userAiConnectionsForCapability } from "./user-ai-store";
 import { EMPTY_AI_CONFIGURATION, userAiRoutingSettings, withPaidAutoUseChoice } from "./user-ai-types";
 
 import type { FreeAiPoolStatus } from "./free-ai-pool-status";
@@ -414,6 +414,25 @@ describe("AiQuickKeyPanel", () => {
     const connections = getUserAiSnapshot().configuration.connections;
     expect(connections.find((item) => item.apiKey === CLAUDE)?.paidAutoUse).not.toBe(true);
     expect(connections.find((item) => item.apiKey === second)?.paidAutoUse).toBe(true);
+  });
+
+  it("'하나만 고정'으로 고정한 키의 연결을 꺼 둔 뒤 같은 서비스 키를 붙여도 등록되고, 고정 경로가 붙인 키를 쓴다", async () => {
+    const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    const connection = groq.configuration.connections[0]!;
+    setUserAiConfiguration({
+      ...groq.configuration,
+      connections: [{ ...connection, enabled: false }],
+      routeAssignments: { ...groq.configuration.routeAssignments!, text: { connectionId: connection.id, apiKeyId: "key-1", modelId: "text-1" } },
+      routing: { ...userAiRoutingSettings(groq.configuration), mode: "manual" },
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => json({ data: [] })));
+    const { input } = renderPanel();
+    const second = `gsk_${"q".repeat(52)}`;
+    pasteInto(input, second);
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+
+    await screen.findByText("Groq 키를 확인하고 등록했어요.");
+    expect(userAiConnectionsForCapability("text").map((route) => route.apiKey)).toEqual([second]);
   });
 
   it("목록에 없는 서비스는 직접 연결 마법사로 보낸다", () => {

@@ -115,6 +115,7 @@ describe("Studio BG3D user-template integration boundary", () => {
     expect(creationCallback).toBeGreaterThan(cacheInsert);
     expect(apply).not.toContain("cacheIdsBefore");
     expect(apply).toContain("const templateOwnedCacheEntries = new Map<string, ModelRootCacheEntry>()");
+    // 배치 호스트의 타입 있는 콜백과 현재 렌더러·재질 백엔드 전달을 함께 검증한다.
     expect(apply).toContain("onCacheEntryCreated: (storageId: string, cacheEntry: ModelRootCacheEntry) =>");
     expect(apply).toContain("renderer: modelRenderer, materialBackend");
     expect(apply).toContain("physicsRuntimeSourceRef.current.customModels.map((model: BgCustomModelInstance) => model.modelId)");

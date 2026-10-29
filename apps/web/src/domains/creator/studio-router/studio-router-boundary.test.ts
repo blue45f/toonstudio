@@ -135,8 +135,15 @@ describe("Studio router bundle boundaries", () => {
     // The route reads document identity from the layout instead of re-parsing the URL.
     expect(dccWorkbenchNavigationSource).toContain("useStudioDocumentLayout()");
     expect(dccWorkbenchRouteSource).not.toContain("useSearchParams");
-    expect(dccWorkbenchSurfaceSource).not.toContain("resolveStudioDccRouteAccess");
+    // 순수 판정기는 내비게이션 모듈에 한 번 정의하며 훅·표면은 주입된 결과만 소비한다.
+    expect(dccWorkbenchNavigationSource.match(/resolveStudioDccRouteAccess\(/gu)).toHaveLength(1);
     expect(dccWorkbenchNavigationSource).toContain("export function resolveStudioDccRouteAccess(");
+    expect(
+      dccWorkbenchNavigationSource.slice(
+        dccWorkbenchNavigationSource.indexOf("export function useStudioDccWorkbenchNavigation("),
+      ),
+    ).not.toContain("resolveStudioDccRouteAccess");
+    expect(dccWorkbenchSurfaceSource).not.toContain("resolveStudioDccRouteAccess");
     // 표면 컴포넌트는 권한 결과만 소비하고, Host는 순수 판정기에 현재 편집 권위를 연결한다.
     expect(legacyEditorSource).toContain("resolveStudioDccRouteAccess({");
     const accessStart = legacyEditorSource.indexOf("const hybridDccRouteAccess = resolveStudioDccRouteAccess({");

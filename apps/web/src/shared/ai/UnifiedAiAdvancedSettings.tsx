@@ -5,7 +5,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { aiSharedStatusText } from "./ai-status-i18n";
-import { getFreeAiRuntimeBudgetSnapshot } from "./free-ai-runtime-budget";
+import { freeAiRuntimeBudgetEntryId, getFreeAiRuntimeBudgetSnapshot } from "./free-ai-runtime-budget";
 import { getFreeAiPoolStatus, type FreeAiPoolStatus } from "./free-ai-pool-status";
 import {
   connectionFromFreeAiPreset,
@@ -490,8 +490,10 @@ function AiSettingsEditor({
         <div className="divide-y divide-line rounded-xl border border-line px-4">
           {orderedConnections.map((connection) => {
             const issue = freeAiConnectionPolicyIssue(connection, connection.textModel ? "text" : undefined);
-            // 사용 기록은 키·모델 경로마다 쌓인다. 연결 ID로 읽으면 늘 비어 보이므로 켜진 텍스트 경로의 기록을 모아 보여 준다.
-            const routeBudgets = resolvedUserAiRoutes(connection, "text")
+            // 사용 기록은 주소·모델·키마다 쌓인다. 연결 ID로 읽으면 늘 비어 보이므로 켜진 텍스트 경로의 기록을 모아 보여 준다.
+            // 같은 키나 같은 모델을 두 번 넣은 경로는 같은 기록을 쓰므로 한 번만 센다.
+            const routeBudgets = [...new Map(resolvedUserAiRoutes(connection, "text")
+              .map((route) => [freeAiRuntimeBudgetEntryId(route), route] as const)).values()]
               .map((route) => getFreeAiRuntimeBudgetSnapshot(route))
               .filter((item) => item.guarded);
             const openBudgets = routeBudgets.filter((item) => !item.blockedReason);

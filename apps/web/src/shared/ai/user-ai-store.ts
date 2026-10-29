@@ -96,12 +96,17 @@ function everyRoute(configuration: UserAiConfiguration): Map<string, UserAiResol
 /**
  * 앞 설정에는 있었지만 새 설정에서 사라진 경로(지운 키, 주소·키 값이 바뀐 경로)의 사용 기록을 지운다. 새로 생긴 경로의
  * 기록은 지우지 않는다: 새로 고침·잠금 뒤 같은 키를 다시 붙여 넣으면 하루 안전 한도가 이어져야 한다(기록은 키마다 따로
- * 쌓이므로 다른 키는 새 기록으로 시작한다). 남은 경로가 같은 키를 쓰면 기록 모듈이 그 기록을 남긴다.
+ * 쌓이므로 다른 키는 새 기록으로 시작한다). 그 기록을 실제로 쓰는 경로(켜져 있고 정책 검사를 통과한 텍스트 경로)가 같은
+ * 키로 남아 있으면 기록 모듈이 그 기록을 남긴다. 꺼 둔 연결이나 "재확인 필요" 연결이 같은 키를 들고 있다고 남기면,
+ * 결제 잠금 안내의 "삭제 후 다시 등록"이 듣지 않는다.
  */
 function forgetRemovedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): void {
   const after = everyRoute(next);
   const removed = [...everyRoute(previous)].filter(([signature]) => !after.has(signature)).map(([, route]) => route);
-  forgetFreeAiRuntimeRoutes(removed, [...after.values()]);
+  const live = next.connections
+    .flatMap((connection) => resolvedUserAiRoutes(connection, "text"))
+    .filter((route) => freeAiConnectionPolicyIssue(route, "text") === null);
+  forgetFreeAiRuntimeRoutes(removed, live);
 }
 
 export function setUserAiConfiguration(configuration: UserAiConfiguration) {
