@@ -17,8 +17,12 @@
 | 서면 합의 식별자 | 미기재 | 소유자 작성 대기: [`third_party/mixbox/LICENSE-GRANT.md`](../../third_party/mixbox/LICENSE-GRANT.md) |
 | 특허 | 미확인 | 이 작업에서 확인하지 못했다(10장) |
 | 상업 배포 전 법무 확인 | 열림 | 10장 |
+| 표 고속 경로(RGB→농도 33³ 표, 첫 사용 때 굽기) | current, Node 검증 | `pigment/latent-pigment-table.ts`, 14장 |
+| WGSL·GLSL ES 3.0 셰이더 모듈과 TS 재현 | current, Node 검증(구문 해석·산술 재현). **실기기 GPU 픽셀 미검증** | `pigment/latent-pigment-shaders.ts`, `pigment/latent-pigment-shader-mirror.ts`, 14장 |
+| 제품 캔버스 혼색: 혼색 브러시 `latent-pigment` 방식과 섞는 방식 선택 UI | current, 단위·컴포넌트 시험. 브라우저 화면 미검증 | `brush/studio-wet-mix.ts`, `StudioWetMixPanel.tsx`, 14.5장 |
+| 제품 GPU 렌더러에서 잠재 안료 셰이더 사용 | target(미연결) | 14.6장 |
 
-Mixbox(`mixbox-js-v2`)의 비상업 경계, 기존 동작, 기존 시험은 바꾸지 않았다. 새 런타임 의존성, 새 정적 데이터 표, 새 동적 import(따라서 새 lazy chunk), DB 마이그레이션은 없다. 번들 확인 범위는 7장에 적었다.
+Mixbox(`mixbox-js-v2`)의 비상업 경계, 기존 동작, 기존 시험은 바꾸지 않았다. 새 런타임 의존성, 새 정적 데이터 표, 새 동적 import(따라서 새 lazy chunk), DB 마이그레이션은 없다. 번들 확인 범위는 7장에 적었다. 2026-10-29 표 고속 경로(14장)도 커밋한 데이터 파일 없이 첫 사용 때 메모리에서 굽는다.
 
 ## 2. 구조
 
@@ -200,7 +204,7 @@ pnpm exec vitest run apps/web/src/domains/creator/brush-lab/pigment scripts/gene
 5. **접힌 면**: 다항식의 상이 접혀 있어 같은 색에 농도 해가 여럿일 수 있다. 시작점 2개로 색역 안 색 2만 개 중 1개(오차 5e-4)를 놓쳤다. 입력이 접힘 경계를 넘는 곳에서는 농도가 갑자기 달라질 수 있다. 왕복은 잔차가 보정하므로 안전하지만 다른 색과 섞은 결과는 그 경계에서 달라질 수 있다.
 6. **sRGB 경계**: 채널이 0이나 1인 색은 경계로 정규화되어 표시 오차 8e-3(약 2/255) 이내로 풀린다(누설 클램프의 결과).
 7. **알파·선형 RGB**: 지원하지 않는다.
-8. **성능**: 풀이가 한 호출에 수십 마이크로초이므로 도장마다 부르는 경로에는 쓰지 않는다.
+8. **성능**: 반복 풀이는 한 호출에 수십 마이크로초이므로 도장마다 부르는 경로에는 쓰지 않는다. 도장마다 섞어야 하는 혼색 브러시는 14장의 표 고속 경로(혼합 1건 약 0.7µs)를 쓴다.
 9. **다른 구현과의 차이**: 아래 11장의 참고 수치처럼 보색에 가까운 쌍에서 결과가 크게 다를 수 있다. 어느 쪽이 실제 물감에 가까운지는 판정하지 않았다.
 
 ## 10. 라이선스·권리 상태
@@ -259,3 +263,78 @@ pnpm exec tsx scripts/dev/compare-latent-pigment-with-mixbox.mts
 - 새 시험 파일 5개는 필수 CI 목록(`scripts/ci-required-vitest-targets.txt`)에 넣지 않았다. 그 목록의 줄 수를 발표 자료 시험(`engineering-talk-deck-content.test.ts`)이 단언하므로 목록과 발표 자료 수치를 함께 갱신해야 하며, 이 변경의 범위를 넘는다. 전체 `pnpm test`(`vitest run`)에는 포함된다.
 - 브라우저 벤치마크 하니스(`apps/web/tools/browser-harnesses/brush-pigment-benchmark.ts`)에는 새 제공자를 더하지 않았다.
 - 브라우저 화면 검증과 실제 획에서의 시각 확인은 별도 UI/UX 단계에서 한다(이 변경은 컴포넌트·순수 로직 시험으로 접근성 이름과 선택 상태까지만 증명했다).
+
+## 14. GPU·표 고속 경로 (2026-10-29)
+
+이 장은 반복 풀이 혼합기를 제품의 캔버스 혼색에 쓸 수 있게 만든 표 고속 경로, 같은 표를 쓰는 WGSL·GLSL ES 3.0 셰이더 모듈, 그 산술의 TS 재현을 설명한다. **검증 상태: Node 에서만 검증했다(구문 해석·산술 재현·단위 시험). 이 컨테이너에는 GPU 가 없어 실기기 GPU 픽셀은 검증하지 않았다.**
+
+### 14.1 표 굽기
+
+- `bakeLatentPigmentTable(N)`이 sRGB 격자 N³ 점마다 반복 풀이(`solveLatentPigmentConcentrationsInto`, 역변환 캐시를 거치지 않는 같은 풀이)를 실행해 농도 4개를 Float32 로 담는다. 같은 N 이면 비트 단위로 같다(시험). 격자점 값은 `rgbToLatentPigment`의 농도를 f32 로 반올림한 값과 정확히 같다.
+- 기본 단일 표 `getLatentPigmentTable()`은 모듈을 불러올 때가 아니라 첫 호출 때 한 번 굽는다(시험: 불러온 직후 `isLatentPigmentTableBaked() === false`). 커밋한 데이터 파일은 없다.
+- 배치: `concentrations[((b·N + g)·N + r)·4 + k]`(R 이 가장 빠른 축). 그대로 rgba32float 3D 텍스처(x=R, y=G, z=B)로 올린다. N=33 이면 35,937점, 575KB.
+- **N=33 을 고른 이유**(2026-10-29 측정, Node v24.22.2, Intel Xeon 2.80GHz 4코어, 부하 평균 0.4~0.7, 고정 시드 임의 색 쌍 3,000개 × 임의 비율, 반복 풀이 혼합 대비 채널 최대 오차, 1/255 단위):
+
+| N | 굽기 시간 | 평균 | p50 | p90 | p99 | 최대 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 17 | 142ms | 0.23 | 0.04 | 0.41 | 4.49 | 14.64 |
+| 25 | 267ms | 0.14 | 0.01 | 0.20 | 2.80 | 13.56 |
+| **33** | **685ms** | **0.10** | **0.01** | **0.12** | **2.29** | **14.53** |
+| 41 | 1,385ms | 0.09 | 0.00 | 0.08 | 1.73 | 13.30 |
+
+  최대 오차는 N 과 거의 무관하다. 다항식 상이 접힌 면(9장 5번)에서 반복 풀이가 고르는 해와 표가 보간한 농도가 다르기 때문이다. p99 는 N=33 에서 2.3/255 로 충분히 작고 굽기 시간은 1초 안이다. 성능 기록 시험(`latent-pigment-table.test.ts`)이 실행마다 굽기 시간을 다시 찍는다(이 작업의 실행: 717ms).
+
+### 14.2 CPU 고속 경로
+
+- 조회: 농도를 표에서 삼선형 보간(x→y→z, `a·(1−t) + b·t`)하고, 잔차는 `입력 − clamp01(다항식(조회 농도))`로 **정확히 다시 계산**한다. 그래서 반복 풀이 모듈의 `latentPigmentToRgb`에 넘기면 입력 색이 그대로 돌아온다(임의 색 2,000개의 왕복 오차 0, 시험 상한 1e-12, 8비트 오차 0). 농도→색 다항식 평가는 반복 풀이 모듈과 항·연산 순서가 같아 비트 단위로 같다(시험).
+- 혼합: 농도와 잔차를 가중 평균한 뒤 `clamp01(clamp01(다항식) + 잔차)`. 두 색(`mixRgbLatentPigmentTable`), N색(`mixRgbLatentPigmentsTable`, 가중치 규칙은 `mixRgbPigments`와 같다), 0~255 할당 없는 핫 경로(`mixSrgb8LatentPigmentTableInto`, NaN·범위 밖은 예외 대신 자른다).
+- 반복 풀이와의 일치(시험이 지키는 명시 허용치): 고정 시드 600쌍에서 평균 0.5/255, p99 4/255, 최대 20/255 미만. 이 작업의 실행값은 평균 0.090, p50 0.008, p99 3.055, 최대 7.994.
+- 연속성: 표 경로는 입력 색에 대해 연속이다. 1/256 간격으로 입력을 움직일 때 출력 변화/입력 변화의 최댓값이 표 경로 1.72, 반복 풀이 15.9 였다(60개 선분 × 256걸음, 개발 중 측정). 시험은 표 경로가 3 미만임을 단언한다.
+- 방향성: 노랑+파랑은 선형 RGB 평균보다 초록 쪽, 흰색+빨강은 분홍, 빨강+노랑은 주황 쪽(반복 풀이 시험과 같은 색, 시험).
+- 성능(같은 측정 조건): 핫 경로 혼합 약 142만 건/초(0.7µs/건), 검증 API 약 60만 건/초, 반복 풀이 `mixRgbPigments` 약 1.9만 건/초. 시험 실행값: 표 1,399,570건/초, 반복 풀이 17,505건/초. 시험은 느슨한 상한만 단언한다.
+
+### 14.3 셰이더 모듈
+
+`buildLatentPigmentWgsl({ group, binding, tableSize })`와 `buildLatentPigmentGlsl({ tableLayout, samplerName, tableSize })`가 같은 함수 집합을 만든다.
+
+| 함수 | 뜻 |
+| --- | --- |
+| `latent_pigment_polynomial(c)` | 농도 4개 → 다항식 값(자르기 전). 20항을 항 순서대로 펼친 식 |
+| `latent_pigment_table_concentrations(rgb)` | 표 텍셀 8개(textureLoad/texelFetch)의 수동 삼선형 보간 |
+| `latent_pigment_from_rgb(rgb)` | 표 농도 + 셰이더 안에서 다시 계산한 잔차(구조체 `LatentPigment`) |
+| `latent_pigment_to_rgb(latent)` | `clamp(clamp(다항식) + 잔차)` |
+| `latent_pigment_mix_latent(a, b, t)` / `latent_pigment_mix(a, b, t)` | 잠재 공간 보간(감마 인코딩 sRGB 입력) |
+| `latent_pigment_mix_rgba(a, b, t)` | 직선 알파. 색 비율은 알파로 가중(`b.a·t / 알파 합`)하고 알파는 선형 보간한다. 투명한 쪽 안료는 섞이지 않는다 |
+| `latent_pigment_srgb_to_linear` / `latent_pigment_linear_to_srgb` | 표준 sRGB 전달함수 |
+| `latent_pigment_mix_linear(_rgba)` | 선형 sRGB 입력(예: scene-linear 작업면)을 감마 인코딩해 섞고 되돌린다 |
+
+- 계수 주입: 20항 × 3채널 계수를 `latent-pigment-model.generated.ts`에서 읽어 셰이더 리터럴로 펼친다(JS 왕복 표기 그대로, 정수 모양이면 `.0`). 모델을 다시 생성하면 셰이더 문자열도 따라간다. 시험이 각 줄을 다시 읽어 생성 계수와 같음을 확인한다. 생성 문자열은 ASCII 만 쓴다.
+- 표: WebGPU 는 `texture_3d<f32>`(rgba32float, 바인드 레이아웃 sampleType `unfilterable-float`, viewDimension `3d`), 업로드 서술은 `latentPigmentWebGpuTableUpload(table)`(bytesPerRow = N·16, rowsPerImage = N). WebGL2 는 RGBA32F `highp sampler3D`(기본) 또는 너비 N·N × 높이 N 의 2D 아틀라스(`packLatentPigmentTableAtlas2d`, 텍셀 (r + b·N, g)). 필터링 없는 형식과 texelFetch 를 쓰므로 하드웨어 필터 정밀도(보통 8비트 분율)에 기대지 않는다.
+- GLSL 은 `#version` 줄을 넣지 않고 모든 부동소수 선언에 `highp`를 붙였다(기본 정밀도에 기대지 않는다).
+
+### 14.4 검증 방법과 결과
+
+| 항목 | 방법 | 결과 |
+| --- | --- | --- |
+| WGSL 구문·식별자 | `wesl` 링커(`link`)로 모듈 + 모든 함수를 부르는 compute 진입점을 해석(`latent-pigment-shaders.test.ts`). 문법 오류를 넣은 음성 대조가 실패함도 확인 | 통과 |
+| WGSL 타입 검사(저장소 밖) | 스크래치 디렉터리에서 naga 30.0.1(`wgsl-in`)로 해석·`Validator`(ValidationFlags::all) 검증. 저장소와 CI 에는 넣지 않았다 | 통과(함수 11개, 진입점 1개). 타입 오류를 넣은 음성 대조는 거부 |
+| GLSL ES 3.0 | 해석기가 없어 구조 시험(선언 순서·중복·괄호 짝·highp·표 배치). 저장소 밖에서 같은 함수 본문을 naga GLSL 450 프론트엔드로 검사(버전 줄·분리 텍스처/샘플러·정밀도 한정자만 기계적으로 바꿈) | 구조 시험 통과, naga 검사 3D·2D 아틀라스 모두 통과. ES 전용 규칙의 실제 드라이버 컴파일은 미검증 |
+| 산술 | TS 재현(`latent-pigment-shader-mirror.ts`)이 셰이더와 같은 순서로 모든 중간값을 f32 로 반올림. CPU 표 경로와 2e-5 안, f64 다항식과 2e-6 안, 왕복 8비트 무손실, 끝점 보존, 반복 풀이 대비 표 경로와 같은 허용치 | 통과 |
+| 실기기 GPU 픽셀 | — | **미검증**. GPU 는 FMA·pow 근사로 재현과 마지막 비트가 다를 수 있다 |
+
+### 14.5 제품 연결: 혼색 브러시
+
+- `brush/studio-wet-mix.ts`의 `mixModel`에 `latent-pigment`를 더했다. 도장마다 `혼색 = 섞는 방식(현재 색, 머금은 색, 혼색율)`의 섞는 방식으로 표 고속 경로를 부른다(스트로크당 버퍼 1개, 도장마다 할당 없음). 혼색율 0 은 현재 색, 1 은 머금은 색이 그대로 나온다(시험: lerp 와 바이트 단위로 같음 / 평평한 바닥 불변).
+- 표는 리터치 Worker 안에서 첫 `latent-pigment` 획 때 굽는다(시험: 다른 방식만 쓰면 굽지 않음). Worker 가 유휴 45초 뒤 정리되면 다음 잠재 안료 획에서 다시 굽는다(이 환경에서 약 0.7초, 느린 기기에서는 더 길 수 있다). 기본 실행 경로는 Worker 라 굽기가 화면 스레드를 막지 않는다.
+- `StudioWetMixPanel.tsx`에 "섞는 방식" 칩 묶음(네이티브 버튼, `aria-pressed`)을 더했다: RGB 평균(기본, `lerp`) · 분광 물감(`spectral-wgm`) · 잠재 안료(`latent-pigment`) · 빨노파 색상환(`ryb`). 선택된 방식의 설명을 한 줄로 보여 준다. **기본값은 그대로 `lerp`다.**
+- 선택은 탭 단위 메모리 상태(`brush/studio-wet-mix-model.ts`)다. 호스트는 획을 Worker 로 보낼 때 이 값을 `mixModel`에 담는다. 반경·혼색율 같은 다른 혼색 설정처럼 문서·브러시에 저장하지 않는다.
+- 리터치 Worker 프로토콜은 네 방식을 모두 받는다. 이전에는 코어가 지원하던 `ryb`를 프로토콜이 거부했다(이번에 함께 고쳤다).
+- 문지르기(스머지)에는 적용하지 않았다. 스머지는 픽셀마다 RGBA 보간이라 픽셀마다 잠재 안료 혼합을 하면 CPU 비용이 도장당 수천 배로 늘기 때문이다.
+
+### 14.6 한계와 열린 항목
+
+- 셰이더 모듈은 아직 어느 제품 GPU 렌더러도 쓰지 않는다(target). 캔버스 혼색을 GPU 로 옮기려면 목적지를 읽는 혼색 패스(바닥 텍스처 표본화)가 필요하고, 그 패스와 실기기 픽셀 검증은 별도 작업이다.
+- 표 근사는 접힌 면 근처에서 반복 풀이와 최대 약 8~15/255 다를 수 있다(14.1·14.2의 최대값). 대신 연속이다.
+- GLSL ES 3.0 의 실제 드라이버 컴파일·WebGL2 업로드(RGBA32F 3D 텍스처)는 브라우저에서 확인하지 않았다.
+- 브라우저 화면(패널 칩 배치, 터치 크기)과 실제 획의 시각 확인은 별도 UI/UX 단계에서 한다.
+- 새 시험 파일(`latent-pigment-table.test.ts`, `latent-pigment-shaders.test.ts`, `brush/studio-wet-mix-latent.test.ts`, `brush/studio-wet-mix-model.test.ts`)은 필수 CI 목록(`scripts/ci-required-vitest-targets.txt`)에 넣지 않았다(13장과 같은 이유). 전체 `pnpm test`에는 포함된다.
