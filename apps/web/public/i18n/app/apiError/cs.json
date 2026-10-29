@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Je vyžadováno přihlášení",
+  "apiError.loginRequired": "Je vyžadováno přihlášení.",
   "apiError.adminRequired": "Oprávnění správce se nepodařilo ověřit.",
   "apiError.adminOnlyPage": "Tato stránka je vyhrazena správcům.",
   "apiError.notFound": "Požadovaná položka nebyla nalezena.",

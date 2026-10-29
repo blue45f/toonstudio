@@ -4,17 +4,17 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  buildLlamaGenComicV2EpisodeSequence,
+  buildComicGenComicV2EpisodeSequence,
   calculateGenToonAutoCutDurationSec,
-  createMangotoonContentPayload,
+  createTemplateToonContentPayload,
   estimateGenToonCreditCost,
   evaluateGenToonMerchPrintLayout,
   GENTOON_AI_MODEL_CATALOG,
   GENTOON_STICKER_SHEET_6_SLOTS,
   GENTOON_TIER_CREDITS,
-  MANGOTOON_CHARACTER_PRESETS,
-  MANGOTOON_LIBRARY_TABS,
-  recommendTooningCutFromSentence,
+  TEMPLATE_TOON_CHARACTER_PRESETS,
+  TEMPLATE_TOON_LIBRARY_TABS,
+  recommendCreatorPlusCutFromSentence,
   synthesizeGenToonShortFormReelTimeline,
 } from "./ai-webtoon-platform-suite";
 import { StudioAiWebtoonEcosystemWorkbenchPanel } from "./StudioAiWebtoonEcosystemWorkbenchPanel";
@@ -128,10 +128,10 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
   });
 
   it("Mangotoon 7개 라이브러리 탭과 createContentData 스키마를 정확히 생성한다", () => {
-    expect(MANGOTOON_LIBRARY_TABS).toHaveLength(7);
-    expect(MANGOTOON_CHARACTER_PRESETS.length).toBeGreaterThanOrEqual(3);
+    expect(TEMPLATE_TOON_LIBRARY_TABS).toHaveLength(7);
+    expect(TEMPLATE_TOON_CHARACTER_PRESETS.length).toBeGreaterThanOrEqual(3);
 
-    const titleData = createMangotoonContentPayload({
+    const titleData = createTemplateToonContentPayload({
       id: "t-1",
       contentCategory: "title",
       src: "https://toon.mangoboard.net/title-01.svg",
@@ -143,7 +143,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(titleData.width).toBe(400);
     expect(titleData.height).toBe(200);
 
-    const propData = createMangotoonContentPayload({
+    const propData = createTemplateToonContentPayload({
       id: "p-1",
       contentCategory: "props",
       src: "https://toon.mangoboard.net/prop-coffee.svg",
@@ -155,7 +155,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
     expect(propData.interactWithCharacter).toBe(true);
     expect(propData.height).toBe(400);
 
-    const bgData = createMangotoonContentPayload({
+    const bgData = createTemplateToonContentPayload({
       id: "bg-1",
       contentCategory: "background",
       src: "https://toon.mangoboard.net/bg-school.png",
@@ -169,7 +169,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
   });
 
   it("LlamaGen AI 황금비(1.618) 세로 스크롤 웹툰 스트립과 ComicV2 연속성 시퀀스를 생성한다", () => {
-    const seq = buildLlamaGenComicV2EpisodeSequence({
+    const seq = buildComicGenComicV2EpisodeSequence({
       artworkId: "art-101",
       seriesTitle: "황금비 연대기",
       episodeTitle: "1화",
@@ -187,7 +187,7 @@ describe("ai-webtoon-platform-suite (GenToon · Mangotoon · LlamaGen · Tooning
   });
 
   it("Tooning 문장 기반 캐릭터 표정·포즈·배경·말풍선을 문맥에 맞게 추천한다", () => {
-    const rec = recommendTooningCutFromSentence(
+    const rec = recommendCreatorPlusCutFromSentence(
       "학교 교실에서 보이스피싱 위험 문자를 절대 클릭하지 마세요!",
     );
     expect(rec.recommendedEmotion).toContain("놀람");

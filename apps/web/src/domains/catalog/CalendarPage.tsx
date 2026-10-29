@@ -10,7 +10,7 @@ import { MiniPoster } from "@/shared/components/rank-row";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { NanoBananaSurfaceSpotlight } from "@/shared/components/site-experience/NanoBananaSurfaceSpotlight";
+import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { RatingInline } from "@/shared/components/ui/stars";
@@ -383,7 +383,7 @@ export function CalendarPage() {
         </details>
       </header>
 
-      <NanoBananaSurfaceSpotlight cardId="nb-ranking-constellation" defaultLensId="workflow" compact className="mb-5" />
+      <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" defaultLensId="workflow" compact className="mb-5" />
 
       {/* "오늘 연재" 최상단 하이라이트 밴드 — 스크롤해도 고정(sticky)되어 오늘 분량을 놓치지 않는다 */}
       {!loading && !error && (

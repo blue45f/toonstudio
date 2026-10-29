@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "การเข้าใช้งานต้อง",
+  "apiError.loginRequired": "ต้องเข้าสู่ระบบ",
   "apiError.adminRequired": "การอนุญาตผู้บริหารไม่สามารถตรวจสอบได้",
   "apiError.adminOnlyPage": "หน้านี้มีส่วนจํากัดสําหรับผู้บริหาร",
   "apiError.notFound": "สินค้าที่ต้องการไม่ได้พบ",

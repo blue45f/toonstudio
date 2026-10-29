@@ -15,8 +15,8 @@
   "auth.callback.error.noUser": "Колдонуучунун маалыматтарын текшере албайбыз.",
   "auth.callback.error.invalidAccess": "Жараксыз кирүү.",
   "auth.callback.error.failed": "Кирүү учурунда ката кетти.",
-  "auth.callback.message.done": "Кирүү аяктады. Азыр багытталат.",
-  "auth.callback.message.doneDemo": "Демо кирүү аяктады. Азыр багытталат.",
+  "auth.callback.message.done": "Кирүү аяктады. Бир аздан кийин кайра багытталасыз.",
+  "auth.callback.message.doneDemo": "Демо кирүү аяктады. Бир аздан кийин кайра багытталасыз.",
   "auth.callback.demo.message": "Демо эсеп менен киргендиктен, айрым өзгөчөлүктөр чектелүү болушу мүмкүн.",
   "auth.callback.backToLogin": "Кирүүгө кайтуу",
   "auth.callback.slowHelp": "Бул адаттагыдан узагыраак созулууда. Бул экран кала берсе, кирүүгө кайтып, кайра аракет кылыңыз."

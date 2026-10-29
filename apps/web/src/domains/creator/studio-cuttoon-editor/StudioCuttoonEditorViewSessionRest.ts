@@ -85,7 +85,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   selectedImageMutationLocked: boolean;
   selectedProjectedImageSource: string | null;
   selectedWorkAssetDestructiveEditReason: string | null;
-  serverAiProvider: "auto" | import("../studio-server-ai-client").StudioFreePoolProvider;
+  serverAiProvider: import("../studio-server-ai-client").StudioServerAiProviderPreference;
   serverAiStatus: import("../studio-server-ai-client").StudioServerAiStatus | null;
   serverCurrentRevision: number | undefined;
   serverRevisionError: string | null;

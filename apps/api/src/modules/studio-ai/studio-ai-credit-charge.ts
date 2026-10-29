@@ -50,6 +50,8 @@ export type StudioAiCreditTask =
 
 export interface StudioAiCreditProviderLike {
   freePool: boolean;
+  /** 운영 프리미엄 경로처럼 운영자가 비용을 내는 제공자. 사용자 크레딧을 차감하지 않는다. */
+  sponsored?: boolean;
 }
 
 export interface StudioAiCreditWallet {
@@ -76,11 +78,11 @@ export function studioAiCreditFeatureForTask(
   return task === "translation" ? "ai.translation" : "ai.text.generate";
 }
 
-/** 후보 중 운영자 부담 제공자가 하나라도 있으면 예약 대상이다. */
+/** 후보 중 사용자 크레딧으로 내는 제공자(무료 풀도, 운영 후원도 아닌 경로)가 하나라도 있으면 예약 대상이다. */
 export function shouldChargeStudioAiCredits(
   providers: readonly StudioAiCreditProviderLike[],
 ): boolean {
-  return providers.some((provider) => !provider.freePool);
+  return providers.some((provider) => !provider.freePool && provider.sponsored !== true);
 }
 
 export function studioAiCreditIdempotencyKey(

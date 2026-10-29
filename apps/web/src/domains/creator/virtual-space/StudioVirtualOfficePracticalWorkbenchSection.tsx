@@ -591,7 +591,7 @@ export function StudioVirtualOfficePracticalWorkbenchSection({
             ) : null}
           </div>
 
-          {/* 4. Nano Banana v13 Interactive Studio Props & Creator Dynamic Emotes */}
+          {/* 4. Studio Art v13 Interactive Studio Props & Creator Dynamic Emotes */}
           <div className="mt-2.5 border-t border-line pt-2.5">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="rounded border border-line bg-panel p-2">

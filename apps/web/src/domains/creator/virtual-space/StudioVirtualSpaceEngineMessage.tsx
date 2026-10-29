@@ -1,6 +1,6 @@
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import { StudioVirtualSpaceNanoBananaStageHud } from "./StudioVirtualSpaceNanoBananaStageHud";
+import { StudioVirtualSpaceIllustratedStageHud } from "./StudioVirtualSpaceIllustratedStageHud";
 
 export interface StudioVirtualSpaceEngineMessageProps {
   readonly failure: boolean;
@@ -13,8 +13,8 @@ export interface StudioVirtualSpaceEngineMessageProps {
 }
 
 /**
- * 월드를 여는 동안(또는 열지 못했을 때) 캔버스 위에 보이는 안내 카드 및 2D 나노바나나 HUD.
- * 준비되면 로딩 카드는 숨기고 상단/하단 2.5D 나노바나나 스튜디오 워크벤치 도크만 유지한다.
+ * 월드를 여는 동안(또는 열지 못했을 때) 캔버스 위에 보이는 안내 카드 및 2D 일러스트 HUD.
+ * 준비되면 로딩 카드는 숨기고 상단/하단 2.5D 일러스트 스튜디오 워크벤치 도크만 유지한다.
  */
 export function StudioVirtualSpaceEngineMessage({ failure, ready, loadProgress, slowLoad, onRetry }: StudioVirtualSpaceEngineMessageProps) {
   const bt = useBilingual("StudioVirtualSpacePhaserCanvas");
@@ -30,7 +30,7 @@ export function StudioVirtualSpaceEngineMessage({ failure, ready, loadProgress, 
   }
   return (
     <>
-      <StudioVirtualSpaceNanoBananaStageHud />
+      <StudioVirtualSpaceIllustratedStageHud />
       {ready ? null : (
         <div className="studio-vspace-engine-message" role="status" aria-busy="true">
           <div className="studio-vspace-engine-card">

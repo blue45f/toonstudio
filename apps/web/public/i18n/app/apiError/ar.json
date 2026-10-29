@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "يجب عليك الدخول",
+  "apiError.loginRequired": "يلزم تسجيل الدخول.",
   "apiError.adminRequired": "لم يتم التحقق من إذن الإدارة.",
   "apiError.adminOnlyPage": "هذه الصفحة مقيدة للمديرين.",
   "apiError.notFound": "البند المطلوب لم يتم العثور عليه",

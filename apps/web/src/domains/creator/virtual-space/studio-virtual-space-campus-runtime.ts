@@ -67,7 +67,7 @@ import {
   studioSpaceThemeWallTint,
   type StudioSpaceTheme,
 } from "./studio-virtual-space-theme";
-import { StudioNanoBanana2dCampusRuntime } from "./studio-virtual-space-nano-banana-2d-runtime";
+import { StudioIllustrated2dCampusRuntime } from "./studio-virtual-space-illustrated-2d-runtime";
 import type { StudioCampusScene, StudioCampusSign, StudioCampusWallSegment } from "./studio-virtual-space-campus-world";
 import type { StudioWorldRect } from "./studio-virtual-space-world-manifest";
 
@@ -175,7 +175,7 @@ export class StudioCampusRuntime {
   private readonly lifeFrame: StudioCampusLifeUpdate;
   private readonly buildingLife: StudioBuildingLifeRuntime;
   private readonly buildingLifeFrame: StudioBuildingLifeFrame;
-  private readonly nanoBanana: StudioNanoBanana2dCampusRuntime;
+  private readonly illustratedArt: StudioIllustrated2dCampusRuntime;
   private readonly theme: StudioSpaceTheme | null;
   private lastTime: number | null = null;
   private playerX = -1e6;
@@ -185,7 +185,7 @@ export class StudioCampusRuntime {
   constructor(scene: CampusScene, campus: StudioCampusScene, options: StudioCampusRuntimeOptions) {
     const { style } = options;
     this.theme = options.theme ?? null;
-    this.nanoBanana = new StudioNanoBanana2dCampusRuntime(scene);
+    this.illustratedArt = new StudioIllustrated2dCampusRuntime(scene);
     this.drawIslandRim(scene, style);
     this.drawPlaza(scene, style, options.translate);
     for (const zone of campus.zones) {
@@ -386,7 +386,7 @@ export class StudioCampusRuntime {
     const image = scene.add.image(object.x, object.y, key).setOrigin(0.5, 1)
       .setDisplaySize(object.width, object.height).setDepth(studioCampusObjectDepth(object));
     this.objects.push(image);
-    this.nanoBanana.registerCampusObjectImage(object.id, image, object.width, object.height);
+    this.illustratedArt.registerCampusObjectImage(object.id, image, object.width, object.height);
     if (object.kind === "arcade-cabinet") {
       const near: ProximityTarget = { x: object.x, y: object.y + 30, radius: CAMPUS_PROXIMITY_RADIUS.arcade, level: 0 };
       this.glows.push({ target: image, phase: this.glows.length * 1.7, near });
@@ -545,7 +545,7 @@ export class StudioCampusRuntime {
     life.quality = frame.quality;
     life.stageBoost = this.stage ? this.approach(this.stage) : 0;
     this.life.update(life);
-    this.nanoBanana.update(time, this.playerX, this.playerY, reducedMotion);
+    this.illustratedArt.update(time, this.playerX, this.playerY, reducedMotion);
   }
 
   /** 벽시계 바늘을 실제 현지 시각으로 다시 그린다. 초가 바뀔 때만 그려서 저비용을 유지한다. */
@@ -602,7 +602,7 @@ export class StudioCampusRuntime {
   }
 
   destroy(): void {
-    this.nanoBanana.destroy();
+    this.illustratedArt.destroy();
     this.buildingLife.destroy();
     this.life.destroy();
     for (const object of this.objects.splice(0)) object.destroy();

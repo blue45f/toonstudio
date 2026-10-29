@@ -27,15 +27,15 @@ import {
   type GenToonStyleFamilyId,
 } from "./all-in-one-webtoon-accelerator-suite";
 import {
-  runClaudeArcheryFencingCombatStanceCueDirector,
-  runClaudeAviationCockpitZeroGSubmarineDirector,
-  runClaudeBotanicalFloraBlacksmithAlchemyDirector,
-  runClaudeCourtroomTrialPrisonHandcuffDirector,
-  runClaudeEsportsHudGamerPeripheralsDirector,
-  runClaudeHeavyMachinerySignboardTaxErpDirector,
-  runClaudeKpopStageChoreoLightstickIemDirector,
-  runClaudeOrchestraPianoGuitarTeaCalligraphyDirector,
-} from "./claude/claude-feature-cost-cap";
+  runAssistArcheryFencingCombatStanceCueDirector,
+  runAssistAviationCockpitZeroGSubmarineDirector,
+  runAssistBotanicalFloraBlacksmithAlchemyDirector,
+  runAssistCourtroomTrialPrisonHandcuffDirector,
+  runAssistEsportsHudGamerPeripheralsDirector,
+  runAssistHeavyMachinerySignboardTaxErpDirector,
+  runAssistKpopStageChoreoLightstickIemDirector,
+  runAssistOrchestraPianoGuitarTeaCalligraphyDirector,
+} from "./assist/assist-feature-cost-cap";
 import {
   buildDeterministicBinauralSpatialAudioFoleyLufsView,
   buildDeterministicBreathFrostSmokePlumeLockView,
@@ -43,13 +43,13 @@ import {
   buildDeterministicGazeSaccadePupilHighlightLockView,
   buildDeterministicImpactDebrisCraterPersistenceLockView,
   buildDeterministicWetFabricRainTranslucencyLockView,
-  runClaudeBinauralSpatialAudioFoleyLufsDirector,
-  runClaudeBreathFrostSmokePlumeLockDirector,
-  runClaudeCastShadowSundialAzimuthLockDirector,
-  runClaudeGazeSaccadePupilHighlightLockDirector,
-  runClaudeImpactDebrisCraterPersistenceLockDirector,
-  runClaudeWetFabricRainTranslucencyLockDirector,
-} from "./claude/claude-n7-and-llm-runners";
+  runAssistBinauralSpatialAudioFoleyLufsDirector,
+  runAssistBreathFrostSmokePlumeLockDirector,
+  runAssistCastShadowSundialAzimuthLockDirector,
+  runAssistGazeSaccadePupilHighlightLockDirector,
+  runAssistImpactDebrisCraterPersistenceLockDirector,
+  runAssistWetFabricRainTranslucencyLockDirector,
+} from "./assist/assist-n7-and-llm-runners";
 import {
   DEFAULT_NAVER_AI_PAINTER_HINTS,
   runAidStudioPipeline,
@@ -87,7 +87,7 @@ const CATEGORY_TABS: readonly {
   {
     id: "cat-1-all-in-one",
     badge: "카테고리 1",
-    labelKo: "올인원 가속 (젠툰 · 투닝 · ComicAI · Dashtoon)",
+    labelKo: "올인원 제작 가속 (스토리→만화 · 글로 연출 · 캐릭터 시트 · 출판)",
   },
   {
     id: "cat-2-pro-drawing",
@@ -97,7 +97,7 @@ const CATEGORY_TABS: readonly {
   {
     id: "cat-3-storyboard",
     badge: "카테고리 3",
-    labelKo: "콘티·콘셉트 기획 (LlamaGen · 미드저니/SD · 포토샵 Firefly)",
+    labelKo: "콘티·콘셉트 기획 (세로 스크롤 초안 · 이미지 프롬프트 · 생성형 채우기)",
   },
   {
     id: "cat-4-style-transfer",
@@ -128,14 +128,14 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
     setWave39Loading(true);
     const seed = { episodeTitle: "01화", genre: storyGenre, scriptSummary: scriptInput.trim() || `${storyGenre} 클라이맥스` };
     const map: Record<typeof kind, () => Promise<string>> = {
-      esports: async () => { const r = await runClaudeEsportsHudGamerPeripheralsDirector(seed); return `[e스포츠/장비 · ${r.model}] ${r.data.mobaHudKillfeedMinimapRuleKo} / ${r.data.keyboardWasdAndMouseGripRuleKo}`; },
-      court: async () => { const r = await runClaudeCourtroomTrialPrisonHandcuffDirector(seed); return `[한국법정/수갑 · ${r.model}] ${r.data.koreanCourtroomSeatLayoutRuleKo} / ${r.data.handcuffKeyholeAndBodycamRuleKo}`; },
-      kpop: async () => { const r = await runClaudeKpopStageChoreoLightstickIemDirector(seed); return `[K-POP무대/응원봉 · ${r.model}] ${r.data.customIemLoopAndCheekMicRuleKo} / ${r.data.lightstickOceanAndDmxLaserRuleKo}`; },
-      aero: async () => { const r = await runClaudeAviationCockpitZeroGSubmarineDirector(seed); return `[항공/무중력/잠수함 · ${r.model}] ${r.data.airlinerAndFighterAfterburnerKo} / ${r.data.zeroGravityHairAndDropletSphereKo}`; },
-      martial: async () => { const r = await runClaudeArcheryFencingCombatStanceCueDirector(seed); return `[국궁양궁/펜싱/복싱 · ${r.model}] ${r.data.gakgungThumbVsRecurveDrawRuleKo} / ${r.data.fencingTargetAndBoxingStanceKo}`; },
-      arts: async () => { const r = await runClaudeOrchestraPianoGuitarTeaCalligraphyDirector(seed); return `[피아노/다도/서예 · ${r.model}] ${r.data.piano88KeyGuitarDrumRuleKo} / ${r.data.teaCeremonyAndSommelierEtiquetteKo}`; },
-      botany: async () => { const r = await runClaudeBotanicalFloraBlacksmithAlchemyDirector(seed); return `[식물/대장간/연금술 · ${r.model}] ${r.data.cherryBlossomNotchAndBambooHollowKo} / ${r.data.blacksmithAnvilQuenchAndTailorKo}`; },
-      erp: async () => { const r = await runClaudeHeavyMachinerySignboardTaxErpDirector(seed); return `[중장비/간판/세무ERP · ${r.model}] ${r.data.neonElectrodeAndSignboardOrthoKo} / ${r.data.passportCurrencyAndWebtoonTaxErpKo}`; },
+      esports: async () => { const r = await runAssistEsportsHudGamerPeripheralsDirector(seed); return `[e스포츠/장비 · ${r.model}] ${r.data.mobaHudKillfeedMinimapRuleKo} / ${r.data.keyboardWasdAndMouseGripRuleKo}`; },
+      court: async () => { const r = await runAssistCourtroomTrialPrisonHandcuffDirector(seed); return `[한국법정/수갑 · ${r.model}] ${r.data.koreanCourtroomSeatLayoutRuleKo} / ${r.data.handcuffKeyholeAndBodycamRuleKo}`; },
+      kpop: async () => { const r = await runAssistKpopStageChoreoLightstickIemDirector(seed); return `[K-POP무대/응원봉 · ${r.model}] ${r.data.customIemLoopAndCheekMicRuleKo} / ${r.data.lightstickOceanAndDmxLaserRuleKo}`; },
+      aero: async () => { const r = await runAssistAviationCockpitZeroGSubmarineDirector(seed); return `[항공/무중력/잠수함 · ${r.model}] ${r.data.airlinerAndFighterAfterburnerKo} / ${r.data.zeroGravityHairAndDropletSphereKo}`; },
+      martial: async () => { const r = await runAssistArcheryFencingCombatStanceCueDirector(seed); return `[국궁양궁/펜싱/복싱 · ${r.model}] ${r.data.gakgungThumbVsRecurveDrawRuleKo} / ${r.data.fencingTargetAndBoxingStanceKo}`; },
+      arts: async () => { const r = await runAssistOrchestraPianoGuitarTeaCalligraphyDirector(seed); return `[피아노/다도/서예 · ${r.model}] ${r.data.piano88KeyGuitarDrumRuleKo} / ${r.data.teaCeremonyAndSommelierEtiquetteKo}`; },
+      botany: async () => { const r = await runAssistBotanicalFloraBlacksmithAlchemyDirector(seed); return `[식물/대장간/연금술 · ${r.model}] ${r.data.cherryBlossomNotchAndBambooHollowKo} / ${r.data.blacksmithAnvilQuenchAndTailorKo}`; },
+      erp: async () => { const r = await runAssistHeavyMachinerySignboardTaxErpDirector(seed); return `[중장비/간판/세무ERP · ${r.model}] ${r.data.neonElectrodeAndSignboardOrthoKo} / ${r.data.passportCurrencyAndWebtoonTaxErpKo}`; },
     };
     try {
       setWave39SummaryKo(await map[kind]());
@@ -151,22 +151,22 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
     const seed = scriptInput.trim() || `${storyGenre} 클라이맥스 전투 및 감정 대치 씬`;
     try {
       if (kind === "gaze") {
-        const res = await runClaudeGazeSaccadePupilHighlightLockDirector(seed);
+        const res = await runAssistGazeSaccadePupilHighlightLockDirector(seed);
         setWave21SummaryKo(`[동공/시선 · ${res.model}] ${res.catchlightClockHour}시 캐치라이트 · ${res.binocularVergenceRuleKo}`);
       } else if (kind === "plume") {
-        const res = await runClaudeBreathFrostSmokePlumeLockDirector(seed);
+        const res = await runAssistBreathFrostSmokePlumeLockDirector(seed);
         setWave21SummaryKo(`[입김/연기 플룸 · ${res.model}] 풍향 ${res.windDriftAngleDeg}° · ${res.opacityDecayRuleKo}`);
       } else if (kind === "wet") {
-        const res = await runClaudeWetFabricRainTranslucencyLockDirector(seed);
+        const res = await runAssistWetFabricRainTranslucencyLockDirector(seed);
         setWave21SummaryKo(`[젖은 의상/투과도 · ${res.model}] 수분 ${res.wetnessStagePct}% · ${res.irreversibleDryingGuardKo}`);
       } else if (kind === "shadow") {
-        const res = await runClaudeCastShadowSundialAzimuthLockDirector(seed);
+        const res = await runAssistCastShadowSundialAzimuthLockDirector(seed);
         setWave21SummaryKo(`[태양각/바닥그림자 · ${res.model}] 방위각 ${res.solarAzimuthDeg}°/고도 ${res.solarElevationDeg}° · ${res.shadowLengthMultiplier}`);
       } else if (kind === "crater") {
-        const res = await runClaudeImpactDebrisCraterPersistenceLockDirector(seed);
+        const res = await runAssistImpactDebrisCraterPersistenceLockDirector(seed);
         setWave21SummaryKo(`[파괴 크레이터 지속 · ${res.model}] 직경 ${res.craterDiameterCm}cm / 균열 ${res.radialCrackBranchCount}갈래 · ${res.backgroundResetPreventionKo}`);
       } else {
-        const res = await runClaudeBinauralSpatialAudioFoleyLufsDirector(seed);
+        const res = await runAssistBinauralSpatialAudioFoleyLufsDirector(seed);
         setWave21SummaryKo(`[3D 바이노럴 폴리 · ${res.model}] 더킹 ${res.dialogueSidechainDuckingDb}dB / ${res.targetIntegratedLufs} LUFS · ${res.binauralPanningMapKo}`);
       }
     } catch {
@@ -323,7 +323,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
             <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="inline-flex items-center gap-1 font-bold text-fg">
                 <Wand2 size={12} className="text-accent" aria-hidden="true" />
-                젠툰 (GenToon) Story-to-Comic · 4컷 워크시트 & 소품 연속성 원장 (점수{" "}
+                스토리→만화 · 4컷 워크시트 & 소품 연속성 원장 (점수{" "}
                 {gentoonResult.continuityScore}점)
               </span>
               <button
@@ -345,12 +345,12 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
                   STUDIO_FOCUS_RING,
                 )}
               >
-                젠툰 4컷 워크시트 대본 반영
+                4컷 워크시트 대본 반영
               </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <div className="flex gap-1" role="group" aria-label="젠툰 입력 모드">
+              <div className="flex gap-1" role="group" aria-label="스토리→만화 입력 모드">
                 {(
                   [
                     { id: "anecdote-1600", label: "내 썰 (1,600자)" },
@@ -374,7 +374,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
                 ))}
               </div>
 
-              <div className="flex gap-1" role="group" aria-label="젠툰 포맷 선택">
+              <div className="flex gap-1" role="group" aria-label="스토리→만화 포맷 선택">
                 {(
                   [
                     { id: "vertical-scroll-webtoon", label: "세로 스크롤 웹툰" },
@@ -399,7 +399,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
                 ))}
               </div>
 
-              <div className="flex gap-1" role="group" aria-label="젠툰 종횡비 선택">
+              <div className="flex gap-1" role="group" aria-label="스토리→만화 종횡비 선택">
                 {(["1:1", "4:5", "2:3", "9:16"] as const).map((ratio) => (
                   <button
                     key={ratio}
@@ -421,7 +421,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
               <label className="inline-flex items-center gap-1 text-[0.58rem] text-fg-2">
                 <span>화풍:</span>
                 <select
-                  aria-label="젠툰 화풍 패밀리 선택"
+                  aria-label="스토리→만화 화풍 패밀리 선택"
                   value={gentoonStyleId}
                   onChange={(e) => setGentoonStyleId(e.target.value as GenToonStyleFamilyId)}
                   className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] text-fg"
@@ -437,7 +437,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
               <label className="inline-flex items-center gap-1 text-[0.58rem] text-fg-2">
                 <span>언어(21개국):</span>
                 <select
-                  aria-label="젠툰 다국어 선택"
+                  aria-label="스토리→만화 다국어 선택"
                   value={gentoonLang}
                   onChange={(e) => setGentoonLang(e.target.value as GenToonLanguageCode)}
                   className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] text-fg"
@@ -471,7 +471,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
 
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
             <div className="flex flex-col gap-1 rounded border border-line bg-raised p-2 text-[0.59rem]">
-              <strong className="text-accent">투닝 (Tooning) 글로 캐릭터 연출</strong>
+              <strong className="text-accent">글로 캐릭터 연출</strong>
               <p className="text-fg-2">{tooningResult.autoDirectingSummaryKo}</p>
               {tooningResult.beats[0] ? (
                 <span className="text-fg-3">
@@ -483,7 +483,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
             </div>
 
             <div className="flex flex-col gap-1 rounded border border-line bg-raised p-2 text-[0.59rem]">
-              <strong className="text-accent">ComicAI 4면도 캐릭터 시트 & 연속 컷</strong>
+              <strong className="text-accent">4면도 캐릭터 시트 & 연속 컷</strong>
               <p className="text-fg-2">
                 시드 #{comicAiResult.characterSheet.seedLockNumber} · LoRA{" "}
                 {comicAiResult.characterSheet.loraWeight} ·{" "}
@@ -495,7 +495,7 @@ export function StudioAiWebtoonEcosystemWorkbenchPanel({
             </div>
 
             <div className="flex flex-col gap-1 rounded border border-line bg-raised p-2 text-[0.59rem]">
-              <strong className="text-accent">Dashtoon 올인원 출판 & Frameo 브리지</strong>
+              <strong className="text-accent">올인원 출판 & 영상화 브리지</strong>
               <p className="text-fg-2">
                 출판 경로: <code>{dashtoonResult.publicationManifest.readerRoute}</code> (
                 {dashtoonResult.publicationManifest.sliceSpec.sliceCount}슬라이스)

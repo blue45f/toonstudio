@@ -17,15 +17,15 @@ import {
 } from "lucide-react";
 
 import {
-  NANO_BANANA_V11_CREATOR_PERSONAS,
-  type NanoBananaCreatorPersonaId,
+  ILLUSTRATED_V11_CREATOR_PERSONAS,
+  type IllustratedCreatorPersonaId,
 } from "./studio-virtual-office-nextgen-engine-data";
 import {
-  NANO_BANANA_2D_WORKSTATIONS,
-  NANO_BANANA_V15_ACTION_SPRITES,
-  triggerNanoBanana2dVfxBurst,
-  type NanoBanana2dWorkstationPlacement,
-} from "./studio-virtual-space-nano-banana-2d-runtime";
+  ILLUSTRATED_2D_WORKSTATIONS,
+  ILLUSTRATED_V15_ACTION_SPRITES,
+  triggerIllustrated2dVfxBurst,
+  type Illustrated2dWorkstationPlacement,
+} from "./studio-virtual-space-illustrated-2d-runtime";
 
 export type WorkstationSuiteTab = "redline" | "kanban" | "turntable-sfx";
 
@@ -34,7 +34,7 @@ export interface CutPipelineItem {
   readonly cutNumber: number;
   readonly titleKo: string;
   readonly stage: "storyboard" | "line" | "color" | "bg3d" | "done";
-  readonly assigneeId: NanoBananaCreatorPersonaId;
+  readonly assigneeId: IllustratedCreatorPersonaId;
   readonly verdict: "PASS" | "RETAKE" | "TYPE" | "VFX" | null;
 }
 
@@ -104,7 +104,7 @@ function playProceduralWorkstationSfx(
 }
 
 export interface StudioVirtualSpaceWorkstationLiveModalProps {
-  readonly station: NanoBanana2dWorkstationPlacement;
+  readonly station: Illustrated2dWorkstationPlacement;
   readonly onClose: () => void;
   readonly onSelectStation: (stationId: string) => void;
 }
@@ -139,8 +139,8 @@ export function StudioVirtualSpaceWorkstationLiveModal({
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const partnerPersona =
-    NANO_BANANA_V11_CREATOR_PERSONAS.find((p) => p.id === station.partnerPersonaId) ??
-    NANO_BANANA_V11_CREATOR_PERSONAS[0];
+    ILLUSTRATED_V11_CREATOR_PERSONAS.find((p) => p.id === station.partnerPersonaId) ??
+    ILLUSTRATED_V11_CREATOR_PERSONAS[0];
 
   // Draw base webtoon cut preview whenever layer toggles or station changes
   useEffect(() => {
@@ -272,7 +272,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
   const applyVerdictStamp = (stampLabel: string) => {
     setActiveStamp(stampLabel);
     playProceduralWorkstationSfx("stamp");
-    triggerNanoBanana2dVfxBurst(stampLabel, station.accentColor);
+    triggerIllustrated2dVfxBurst(stampLabel, station.accentColor);
     setCollabLog((prev) => [
       `[실시간 합평] ${station.titleKo}에서 ‘${stampLabel}’ 판정 스탬프를 날인했습니다.`,
       ...prev.slice(0, 5),
@@ -289,7 +289,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
       }),
     );
     playProceduralWorkstationSfx("handoff");
-    triggerNanoBanana2dVfxBurst("컷 공정 인계 완료! ✨", 0x38bdf8);
+    triggerIllustrated2dVfxBurst("컷 공정 인계 완료! ✨", 0x38bdf8);
   };
 
   const triggerWorldSfxBurst = (
@@ -298,7 +298,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
     color: number,
   ) => {
     playProceduralWorkstationSfx(sfxKind);
-    triggerNanoBanana2dVfxBurst(label, color);
+    triggerIllustrated2dVfxBurst(label, color);
     setCollabLog((prev) => [
       `[사운드·특수효과] 2D 스튜디오 전역에 ‘${label}’ 이펙트와 공간 음향을 송출했습니다.`,
       ...prev.slice(0, 5),
@@ -335,7 +335,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-card/80 px-4 py-3">
         <div className="flex items-center gap-3">
           <img
-            src={NANO_BANANA_V15_ACTION_SPRITES["stride-draw"]}
+            src={ILLUSTRATED_V15_ACTION_SPRITES["stride-draw"]}
             alt={station.titleKo}
             className="h-11 w-11 rounded-xl border border-accent bg-panel object-contain p-0.5"
           />
@@ -361,7 +361,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
             onChange={(e) => onSelectStation(e.target.value)}
             className="rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-semibold text-fg"
           >
-            {NANO_BANANA_2D_WORKSTATIONS.map((item) => (
+            {ILLUSTRATED_2D_WORKSTATIONS.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.titleKo}
               </option>
@@ -548,8 +548,8 @@ export function StudioVirtualSpaceWorkstationLiveModal({
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {cuts.map((cut) => {
                   const assignee =
-                    NANO_BANANA_V11_CREATOR_PERSONAS.find((p) => p.id === cut.assigneeId) ??
-                    NANO_BANANA_V11_CREATOR_PERSONAS[0];
+                    ILLUSTRATED_V11_CREATOR_PERSONAS.find((p) => p.id === cut.assigneeId) ??
+                    ILLUSTRATED_V11_CREATOR_PERSONAS[0];
                   return (
                     <div
                       key={cut.id}
@@ -602,7 +602,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                   </strong>
                   <div className="flex items-center gap-3">
                     <img
-                      src={NANO_BANANA_V15_ACTION_SPRITES["bg3d-holo"]}
+                      src={ILLUSTRATED_V15_ACTION_SPRITES["bg3d-holo"]}
                       alt="3D 배경 홀로그램"
                       className="h-16 w-16 rounded-xl border border-line bg-card object-contain p-1"
                     />
@@ -744,12 +744,12 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                   data-testid={`workstation-v15-action-${actionKey}-btn`}
                   onClick={() => {
                     playProceduralWorkstationSfx("handoff");
-                    triggerNanoBanana2dVfxBurst(`${label} 발동! ✨`, station.accentColor, actionKey);
+                    triggerIllustrated2dVfxBurst(`${label} 발동! ✨`, station.accentColor, actionKey);
                   }}
                   className="flex flex-col items-center rounded-lg border border-line bg-panel p-1.5 text-center transition hover:border-accent"
                 >
                   <img
-                    src={NANO_BANANA_V15_ACTION_SPRITES[actionKey]}
+                    src={ILLUSTRATED_V15_ACTION_SPRITES[actionKey]}
                     alt={label}
                     className="h-12 w-12 object-contain"
                   />

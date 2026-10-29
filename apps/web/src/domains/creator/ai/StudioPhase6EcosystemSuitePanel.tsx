@@ -29,7 +29,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
-import { summarizeCreatorModelRouterCatalog } from "./claude/claude-creator-model-router";
+import { summarizeCreatorModelRouterCatalog } from "./assist/assist-creator-model-router";
 import {
   buildLocalAsymmetricCostumePropWoundLedgerReport,
   buildLocalCameraAxisEyelineHeightLockReport,
@@ -41,16 +41,16 @@ import {
   buildLocalNovelAiMultiCharVibeReport,
   buildLocalSnaptoon3dEnvironmentShaderReport,
   buildLocalToonCrafterInbetweenAndStitchReport,
-  runClaudeAsymmetricCostumePropWoundLedgerDirector,
-  runClaudeCameraAxisEyelineHeightLockDirector,
-  runClaudeCrossCutColorScriptAlbedoLockDirector,
-  runClaudeGlimnaviColorHintStrokeDirector,
-  runClaudeMangaFlowIdentityVerificationDirector,
-  runClaudeMicroExpressionActingContinuityDirector,
-  runClaudeNovelAdaptationAndIpExpansionDirector,
-  runClaudeNovelAiMultiCharVibeDirector,
-  runClaudeSnaptoon3dEnvironmentShaderDirector,
-  runClaudeToonCrafterInbetweenAndStitchDirector,
+  runAssistAsymmetricCostumePropWoundLedgerDirector,
+  runAssistCameraAxisEyelineHeightLockDirector,
+  runAssistCrossCutColorScriptAlbedoLockDirector,
+  runAssistGlimnaviColorHintStrokeDirector,
+  runAssistMangaFlowIdentityVerificationDirector,
+  runAssistMicroExpressionActingContinuityDirector,
+  runAssistNovelAdaptationAndIpExpansionDirector,
+  runAssistNovelAiMultiCharVibeDirector,
+  runAssistSnaptoon3dEnvironmentShaderDirector,
+  runAssistToonCrafterInbetweenAndStitchDirector,
   type AsymmetricCostumePropWoundLedgerReport,
   type CameraAxisEyelineHeightLockReport,
   type CrossCutColorScriptAlbedoLockReport,
@@ -62,8 +62,8 @@ import {
   type Phase6EcosystemEnvelope,
   type Snaptoon3dEnvironmentShaderReport,
   type ToonCrafterInbetweenAndStitchReport,
-} from "./claude/claude-phase6-ecosystem-suite";
-import type { WebtoonProductionAssistInput } from "./claude/claude-webtoon-production-schemas";
+} from "./assist/assist-phase6-ecosystem-suite";
+import type { WebtoonProductionAssistInput } from "./assist/assist-webtoon-production-schemas";
 
 export type Phase6EcosystemTabId =
   | "novelai-multi-char-vibe"
@@ -251,25 +251,25 @@ export function StudioPhase6EcosystemSuitePanel({
     setIsRunning(true);
     try {
       if (activeTab === "novelai-multi-char-vibe") {
-        setNovelAiEnv(await runClaudeNovelAiMultiCharVibeDirector(assistInput));
+        setNovelAiEnv(await runAssistNovelAiMultiCharVibeDirector(assistInput));
       } else if (activeTab === "mangaflow-identity-audit") {
-        setMangaFlowEnv(await runClaudeMangaFlowIdentityVerificationDirector(assistInput));
+        setMangaFlowEnv(await runAssistMangaFlowIdentityVerificationDirector(assistInput));
       } else if (activeTab === "glimnavi-color-hint") {
-        setGlimnaviEnv(await runClaudeGlimnaviColorHintStrokeDirector(assistInput));
+        setGlimnaviEnv(await runAssistGlimnaviColorHintStrokeDirector(assistInput));
       } else if (activeTab === "snaptoon-acon3d-shader") {
-        setSnaptoonEnv(await runClaudeSnaptoon3dEnvironmentShaderDirector(assistInput));
+        setSnaptoonEnv(await runAssistSnaptoon3dEnvironmentShaderDirector(assistInput));
       } else if (activeTab === "culturetoon-osmu-adaptation") {
-        setAdaptationEnv(await runClaudeNovelAdaptationAndIpExpansionDirector(assistInput));
+        setAdaptationEnv(await runAssistNovelAdaptationAndIpExpansionDirector(assistInput));
       } else if (activeTab === "tooncrafter-krita-stitch") {
-        setToonCrafterEnv(await runClaudeToonCrafterInbetweenAndStitchDirector(assistInput));
+        setToonCrafterEnv(await runAssistToonCrafterInbetweenAndStitchDirector(assistInput));
       } else if (activeTab === "asymmetric-costume-wound-ledger") {
-        setAsymLedgerEnv(await runClaudeAsymmetricCostumePropWoundLedgerDirector(assistInput));
+        setAsymLedgerEnv(await runAssistAsymmetricCostumePropWoundLedgerDirector(assistInput));
       } else if (activeTab === "camera-axis-eyeline-height-lock") {
-        setCameraAxisEnv(await runClaudeCameraAxisEyelineHeightLockDirector(assistInput));
+        setCameraAxisEnv(await runAssistCameraAxisEyelineHeightLockDirector(assistInput));
       } else if (activeTab === "cross-cut-color-albedo-lock") {
-        setColorAlbedoEnv(await runClaudeCrossCutColorScriptAlbedoLockDirector(assistInput));
+        setColorAlbedoEnv(await runAssistCrossCutColorScriptAlbedoLockDirector(assistInput));
       } else {
-        setMicroExprEnv(await runClaudeMicroExpressionActingContinuityDirector(assistInput));
+        setMicroExprEnv(await runAssistMicroExpressionActingContinuityDirector(assistInput));
       }
     } finally {
       setIsRunning(false);
@@ -343,7 +343,7 @@ export function StudioPhase6EcosystemSuitePanel({
           <span>
             실행 소스:{" "}
             <strong className="text-fg">
-              {activeEnvelope.source === "claude-live" ? "Claude Live API" : "로컬 결정적 폴백"}
+              {activeEnvelope.source === "claude-live" ? "AI 실시간" : "로컬 결정적 폴백"}
             </strong>{" "}
             · 프로필: <code>{activeEnvelope.taskProfile}</code> · 모델:{" "}
             <code>{activeEnvelope.modelUsed}</code>

@@ -11,13 +11,13 @@
   "auth.callback.error.oauthFailed": "O intercambio de OAuth fallou.",
   "auth.callback.error.unsupported": "Provedor de inicio de sesión non admitido.",
   "auth.callback.error.accessDenied": "O inicio de sesión foi cancelado.",
-  "auth.callback.error.generic": "O inicio de sesión fallou.",
+  "auth.callback.error.generic": "O inicio de sesión fallou. Volve á páxina de inicio de sesión e téntao de novo.",
   "auth.callback.error.noUser": "Non se pode verificar a información do usuario.",
   "auth.callback.error.invalidAccess": "Acceso inválido.",
   "auth.callback.error.failed": "Houbo un erro ao iniciar sesión.",
   "auth.callback.message.done": "Inicio de sesión completado, redirixindo en breve.",
-  "auth.callback.message.doneDemo": "Concluído o inicio de sesión da demostración.",
-  "auth.callback.demo.message": "Vostede está rexistrado cunha conta demo.",
+  "auth.callback.message.doneDemo": "Inicio de sesión de demostración completado, redirixindo en breve.",
+  "auth.callback.demo.message": "Iniciaches sesión cunha conta de demostración. Algunhas funcións poden estar limitadas.",
   "auth.callback.backToLogin": "Volver ao inicio de sesión",
   "auth.callback.slowHelp": "Isto está a tardar máis do habitual. Se esta pantalla continúa, volve ao inicio de sesión e téntao de novo."
 }

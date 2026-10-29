@@ -34,6 +34,7 @@ import type { StudioCharacterBibleEntry } from "./studio-character-bible";
 // 이 리뷰 표면은 AI 클라이언트 모듈을 import하지 않는다는 경계 계약(studio-writer-room-review-boundary)이
 // 있어 라벨만 로컬로 둔다. studio-server-ai-client의 StudioServerAiProvider와 동일한 집합을 유지한다.
 const FAILOVER_PROVIDER_LABELS = {
+  anthropic: "ToonStudio 고성능 AI",
   gemini: "Gemini 무료",
   qwen: "Qwen 베이징 무료 할당량",
   groq: "Groq 무료",
@@ -229,7 +230,7 @@ export function StudioWriterRoomSuggestionsPanel({
             <button
               type="button"
               onClick={() => decideVisible("accept")}
-              className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg bg-accent px-2 text-[0.68rem] font-semibold text-on-accent hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg bg-accent px-2 text-[0.68rem] font-semibold text-on-accent hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <CheckCheck size={14} aria-hidden />
               {pending.length > bulkCount ? `앞 ${bulkCount}개 승인` : "모두 승인"}
@@ -292,7 +293,7 @@ export function StudioWriterRoomSuggestionsPanel({
                 <button
                   type="button"
                   onClick={() => decide(suggestion.id, "accept")}
-                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   <Check size={14} aria-hidden /> 승인
                 </button>
@@ -436,7 +437,7 @@ export function StudioWriterRoomCanvasPlanHandoff({
             disabled={effectiveBusy}
             aria-busy={effectiveBusy}
             aria-describedby="writer-room-canvas-plan-title"
-            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-55 sm:w-auto"
+            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-55 sm:w-auto"
           >
             {effectiveBusy ? (
               <LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
@@ -465,7 +466,7 @@ export function StudioWriterRoomCanvasPlanHandoff({
           <ul className="space-y-1 pb-1 text-[0.68rem] leading-relaxed text-fg-2">
             {visibleDiagnostics.map((message, index) => (
               <li key={`${message}-${index}`} className="flex min-w-0 items-start gap-1.5">
-                <CircleDashed size={12} className="mt-0.5 shrink-0 text-fg-4" aria-hidden />
+                <CircleDashed size={12} className="mt-0.5 shrink-0 text-fg-3" aria-hidden />
                 <span className="min-w-0 break-words">{message}</span>
               </li>
             ))}
@@ -590,7 +591,7 @@ export function StudioWriterRoomAiReviewPanel({
             <button
               type="button"
               onClick={onApply}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:flex-none"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:flex-none"
             >
               <Check size={14} aria-hidden /> 검토 후 이 단계에 반영
             </button>

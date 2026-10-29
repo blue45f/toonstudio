@@ -2,6 +2,8 @@
  * ToonStudio 베지어 곡선 피팅·평행 오프셋·Klecks 6종 브러시·Wick 벡터 블롭/갭필·Konva 텐션 스플라인 엔진 (Wave 23).
  */
 
+import { fitCurveSchneider, type FitCurveStats } from "./studio-fit-curve-schneider";
+
 export interface Wave23ReaSemanticEvidenceEntry {
   readonly targetId: string;
   readonly displayName: string;
@@ -119,9 +121,6 @@ const clamp01 = (v: number): number => (!Number.isFinite(v) ? 0 : Math.max(0, Ma
 const clampRange = (v: number, min: number, max: number, fb: number): number =>
   !Number.isFinite(v) ? fb : Math.max(min, Math.min(max, v));
 const sub2D = (a: Point2D, b: Point2D): Point2D => ({ x: a.x - b.x, y: a.y - b.y });
-const add2D = (a: Point2D, b: Point2D): Point2D => ({ x: a.x + b.x, y: a.y + b.y });
-const scale2D = (v: Point2D, s: number): Point2D => ({ x: v.x * s, y: v.y * s });
-const dot2D = (a: Point2D, b: Point2D): number => a.x * b.x + a.y * b.y;
 function normalize2D(v: Point2D): Point2D {
   const len = Math.hypot(v.x, v.y);
   return len <= 1e-9 ? { x: 1, y: 0 } : { x: v.x / len, y: v.y / len };
@@ -169,105 +168,16 @@ function evalCubicBezierDerivative2(seg: SchneiderCubicBezierSegment, t: number)
   };
 }
 
-function chordLengthParameterize(points: readonly Point2D[]): number[] {
-  const u: number[] = [0];
-  for (let i = 1; i < points.length; i += 1) {
-    u.push(u[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
-  }
-  const total = u[u.length - 1];
-  return total <= 1e-9
-    ? points.map((_, idx) => idx / Math.max(1, points.length - 1))
-    : u.map((val) => val / total);
-}
+/** 한 번에 맞추는 점 수의 상한. 넘으면 균등 간격으로 솎아 계산량(최악 O(n²))을 묶는다. */
+export const SCHNEIDER_FIT_MAX_INPUT_POINTS = 4096;
 
-function generateSchneiderBezier(
-  points: readonly Point2D[],
-  uPrime: readonly number[],
-  leftTangent: Point2D,
-  rightTangent: Point2D,
-): SchneiderCubicBezierSegment {
-  const firstPt = points[0];
-  const lastPt = points[points.length - 1];
-  let c00 = 0;
-  let c01 = 0;
-  let c11 = 0;
-  let x0 = 0;
-  let x1 = 0;
-
-  for (let i = 0; i < points.length; i += 1) {
-    const u = uPrime[i];
-    const mt = 1 - u;
-    const a0 = scale2D(leftTangent, 3 * u * mt * mt);
-    const a1 = scale2D(rightTangent, 3 * u * u * mt);
-    c00 += dot2D(a0, a0);
-    c01 += dot2D(a0, a1);
-    c11 += dot2D(a1, a1);
-    const w0 = mt * mt * (1 + 2 * u);
-    const w3 = u * u * (3 - 2 * u);
-    const tmp = {
-      x: points[i].x - (firstPt.x * w0 + lastPt.x * w3),
-      y: points[i].y - (firstPt.y * w0 + lastPt.y * w3),
-    };
-    x0 += dot2D(a0, tmp);
-    x1 += dot2D(a1, tmp);
-  }
-
-  const detC0C1 = c00 * c11 - c01 * c01;
-  const alphaL = Math.abs(detC0C1) < 1e-9 ? 0 : (x0 * c11 - x1 * c01) / detC0C1;
-  const alphaR = Math.abs(detC0C1) < 1e-9 ? 0 : (c00 * x1 - c01 * x0) / detC0C1;
-  const segLength = Math.hypot(lastPt.x - firstPt.x, lastPt.y - firstPt.y);
-  const epsilon = 1e-6 * segLength;
-
-  if (alphaL < epsilon || alphaR < epsilon) {
-    const fb = segLength / 3;
-    return {
-      p0: firstPt,
-      ctrl1: add2D(firstPt, scale2D(leftTangent, fb)),
-      ctrl2: add2D(lastPt, scale2D(rightTangent, fb)),
-      p3: lastPt,
-    };
-  }
-  return {
-    p0: firstPt,
-    ctrl1: add2D(firstPt, scale2D(leftTangent, alphaL)),
-    ctrl2: add2D(lastPt, scale2D(rightTangent, alphaR)),
-    p3: lastPt,
-  };
-}
-
-function computeMaxFitErrorSq(
-  points: readonly Point2D[],
-  bez: SchneiderCubicBezierSegment,
-  u: readonly number[],
-): { readonly maxDistSq: number; readonly splitPoint: number } {
-  let maxDistSq = 0;
-  let splitPoint = Math.max(1, Math.floor(points.length / 2));
-  for (let i = 1; i < points.length - 1; i += 1) {
-    const q = evalCubicBezier(bez, u[i]);
-    const distSq = (q.x - points[i].x) ** 2 + (q.y - points[i].y) ** 2;
-    if (distSq >= maxDistSq) {
-      maxDistSq = distSq;
-      splitPoint = i;
-    }
-  }
-  return { maxDistSq, splitPoint };
-}
-
-function newtonRaphsonReparameterize(
-  points: readonly Point2D[],
-  bez: SchneiderCubicBezierSegment,
-  u: readonly number[],
-): number[] {
-  return points.map((pt, idx) => {
-    const param = u[idx];
-    const diff = sub2D(evalCubicBezier(bez, param), pt);
-    const q1 = evalCubicBezierDerivative1(bez, param);
-    const q2 = evalCubicBezierDerivative2(bez, param);
-    const denom = dot2D(q1, q1) + dot2D(diff, q2);
-    return Math.abs(denom) < 1e-9 ? param : clamp01(param - dot2D(diff, q1) / denom);
-  });
-}
-
+/**
+ * Schneider 곡선 피팅. `fit-curve` 0.2.0과 같은 수치를 내는 `fitCurveSchneider`를 px 단위 허용오차와
+ * SVG 경로 출력으로 감싼다. 같은 점열이면 `fitCurve(points, maxErrorPx ** 2)`와 세그먼트 수·제어점이 같다.
+ *
+ * 래퍼가 더하는 입력 정리: 유한하지 않은 점과 1e-4px 이내 중복 점을 버리고, 허용오차를 0.05~200px로
+ * 조인다. 점이 `SCHNEIDER_FIT_MAX_INPUT_POINTS`를 넘으면 처음과 끝을 지키며 균등하게 솎는다.
+ */
 export function fitSchneiderCubicBezierSpline(
   rawPoints: readonly Point2D[],
   maxErrorPx = 4.0,
@@ -284,58 +194,10 @@ export function fitSchneiderCubicBezierSpline(
     return { segments: [], maxErrorSq: 0, newtonIterations: 0, svgPathData: "" };
   }
 
+  const input = decimateEvenly(filtered, SCHNEIDER_FIT_MAX_INPUT_POINTS);
   const errorSq = clampRange(maxErrorPx, 0.05, 200, 4.0) ** 2;
-  let totalNewtonIterations = 0;
-  let globalMaxErrorSq = 0;
-
-  const fitCubicRecursive = (
-    pts: readonly Point2D[],
-    leftTan: Point2D,
-    rightTan: Point2D,
-    depth: number,
-  ): SchneiderCubicBezierSegment[] => {
-    if (pts.length === 2) {
-      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) / 3;
-      return [{ p0: pts[0], ctrl1: add2D(pts[0], scale2D(leftTan, dist)), ctrl2: add2D(pts[1], scale2D(rightTan, dist)), p3: pts[1] }];
-    }
-    let u = chordLengthParameterize(pts);
-    let bez = generateSchneiderBezier(pts, u, leftTan, rightTan);
-    let { maxDistSq, splitPoint } = computeMaxFitErrorSq(pts, bez, u);
-    if (maxDistSq < errorSq) {
-      globalMaxErrorSq = Math.max(globalMaxErrorSq, maxDistSq);
-      return [bez];
-    }
-    if (maxDistSq < errorSq * 16) {
-      for (let iter = 0; iter < 20; iter += 1) {
-        totalNewtonIterations += 1;
-        u = newtonRaphsonReparameterize(pts, bez, u);
-        bez = generateSchneiderBezier(pts, u, leftTan, rightTan);
-        const evalRes = computeMaxFitErrorSq(pts, bez, u);
-        maxDistSq = evalRes.maxDistSq;
-        splitPoint = evalRes.splitPoint;
-        if (maxDistSq < errorSq) {
-          globalMaxErrorSq = Math.max(globalMaxErrorSq, maxDistSq);
-          return [bez];
-        }
-      }
-    }
-    if (depth >= 8 || pts.length <= 3) {
-      globalMaxErrorSq = Math.max(globalMaxErrorSq, maxDistSq);
-      return [bez];
-    }
-    const centerTangent = normalize2D(sub2D(pts[Math.max(0, splitPoint - 1)], pts[Math.min(pts.length - 1, splitPoint + 1)]));
-    return [
-      ...fitCubicRecursive(pts.slice(0, splitPoint + 1), leftTan, centerTangent, depth + 1),
-      ...fitCubicRecursive(pts.slice(splitPoint), scale2D(centerTangent, -1), rightTan, depth + 1),
-    ];
-  };
-
-  const segments = fitCubicRecursive(
-    filtered,
-    normalize2D(sub2D(filtered[1], filtered[0])),
-    normalize2D(sub2D(filtered[filtered.length - 2], filtered[filtered.length - 1])),
-    0,
-  );
+  const stats: FitCurveStats = { reparameterizations: 0, maxAcceptedErrorSq: 0 };
+  const segments = fitCurveSchneider(input, errorSq, stats);
   const svgPathData =
     segments.length === 0
       ? ""
@@ -346,10 +208,18 @@ export function fitSchneiderCubicBezierSpline(
 
   return {
     segments,
-    maxErrorSq: Math.round(globalMaxErrorSq * 10000) / 10000,
-    newtonIterations: totalNewtonIterations,
+    maxErrorSq: Math.round(stats.maxAcceptedErrorSq * 10000) / 10000,
+    newtonIterations: stats.reparameterizations,
     svgPathData,
   };
+}
+
+function decimateEvenly<T>(items: readonly T[], maxCount: number): readonly T[] {
+  if (items.length <= maxCount) return items;
+  const out: T[] = [];
+  const lastIndex = items.length - 1;
+  for (let i = 0; i < maxCount; i += 1) out.push(items[Math.round((i * lastIndex) / (maxCount - 1))]!);
+  return out;
 }
 
 export interface PomaxBezierOffsetSample {
