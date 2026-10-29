@@ -1,6 +1,21 @@
 # Cloud-only free-first AI runtime
 
-ToonStudio can provide text AI without requiring every user to paste a key. The runtime combines a billing-disabled shared free pool with user-configured cloud API routes and fails closed when no permitted cloud route is available. Local LLMs, localhost gateways, private-network endpoints, browser model downloads, and self-hosted GPU inference are not supported AI execution paths.
+ToonStudio can provide text AI without requiring every user to paste a key. The runtime combines an operator-funded premium route ("ToonStudio AI", budget-capped), a billing-disabled shared free pool and user-configured cloud API routes, and fails closed when no permitted cloud route is available. Local LLMs, localhost gateways, private-network endpoints, browser model downloads, and self-hosted GPU inference are not supported AI execution paths.
+
+Order of use (user decision 2026-10-29): a key the user registered is used first; without one, the server runs **ToonStudio AI** — the operator premium route first, then the shared free pool in quality order.
+
+## Operator premium route (ToonStudio AI, first for keyless users)
+
+`STUDIO_AI_ANTHROPIC_API_KEY` enables provider id `anthropic` (default model `claude-opus-5-5`, `STUDIO_AI_ANTHROPIC_MODEL` to change). It is server-only: never a `VITE_` variable, never in responses or logs.
+
+- **Who pays:** the operator. The route is `sponsored`, so user credits are never charged for it.
+- **Budget:** UTC daily limits read from the usage ledger — per-user requests (`STUDIO_AI_PREMIUM_USER_DAILY_REQUEST_LIMIT`, default 30) and service-wide requests/tokens (`STUDIO_AI_PREMIUM_GLOBAL_DAILY_REQUEST_LIMIT` 400, `STUDIO_AI_PREMIUM_GLOBAL_DAILY_TOKEN_LIMIT` 3,000,000). If the budget or the ledger cannot be read the route stays closed and the request goes straight to the free pool (fail-closed).
+- **Migration first:** apply migration `0114_studio_ai_premium_route_ledger` (ledger provider constraint + budget index) before setting the key; the budget check reports "not ready" and keeps the route closed until it exists.
+- **Failover:** only definitive pre-inference rejections move the same request to the free pool (`premium_unavailable`): 429, 529, 402, 401, 403, 404 and 400 `billing_error`. 5xx, timeouts and malformed responses are not replayed.
+- **Request shape:** no sampling parameters; per-task `effort`, a thinking headroom on the output cap and the server-side model fallback (`fallbacks: "default"`). Timeout `STUDIO_AI_ANTHROPIC_TIMEOUT_MS` (max 120 s); the browser waits 135 s.
+- `STUDIO_AI_PREMIUM_AUTO=false` keeps the key but removes the route from automatic order (explicit selection only). `STUDIO_AI_PREMIUM_ALLOWED_MODELS` lists the models an assist request may ask for.
+
+AI assist features (vision and structured output) use `POST /studio-ai/messages`, a Messages-API subset (text and base64 image blocks, system blocks, JSON-schema output). It runs on the premium route first and, on a definitive rejection, converts the same request for vision-capable free providers (Gemini; Groq with its vision model). The response is always a normalized Messages object, and the browser validates it with the same Zod schema as the BYOK path.
 
 ## Default shared free pool
 
@@ -33,11 +48,11 @@ One connection can store multiple key profiles and multiple model profiles. Each
 
 Three modes are available:
 
-- **Automatic:** shared free pool first, then policy-validated personal free routes in quality order.
+- **Automatic:** registered personal routes first (free-tier routes always; paid BYOK routes once the user confirmed paid use), then ToonStudio AI (operator premium → shared free pool). A personal route hands the request over only on a definitive pre-inference rejection (quota exhaustion, authentication); if ToonStudio AI is also unavailable after an authentication rejection, the user sees the key error rather than a generic exhaustion message.
 - **Priority:** numeric connection/model/key priority is used; the shared free pool has its own priority value.
 - **Manual:** one exact connection/key/model route is selected for each capability.
 
-Paid `user-funded-byok` routes are excluded from automatic and priority fallback until the user explicitly enables paid fallback. Manual selection is treated as explicit consent to use that route.
+Paid `user-funded-byok` routes are excluded from automatic and priority fallback until the user explicitly enables paid use. Registering a paid key through the paste box requires confirming that charges may apply, and that confirmation enables paid use. Manual selection is treated as explicit consent to use that route.
 
 ## Cloud-only endpoint policy
 
@@ -56,7 +71,8 @@ Supported connection policies:
 
 A connection whose base URL is exactly `https://api.anthropic.com` uses the `anthropic-messages` wire protocol instead of the OpenAI-compatible one. The wire protocol is inferred from the host, so no new connection policy exists: it is a `user-funded-byok` connection and follows every rule above.
 
-- Requests go from the browser straight to Anthropic with the user's own key. The ToonStudio API never sees the key or the content, and no operator-funded Claude route exists.
+- Requests go from the browser straight to Anthropic with the user's own key. The ToonStudio API never sees the key or the content.
+- Without a registered Claude key the same features run on the managed route (`POST /studio-ai/messages`, see above). The managed route skips the user budget and usage meter (no user cost), the result model is labelled "ToonStudio AI (<served model>)" so no user cost is estimated, and the dialogs show "무료" with a sign-in hint when the user is signed out.
 - The official SDK (`@anthropic-ai/sdk`) is loaded lazily and is handed only a guarded `fetch`: official origin only, only `POST /v1/messages` and `GET /v1/models?limit=N` are allowed, cookies, site and tracing headers removed, the credential header must equal the user's key, redirects are errors, responses are read up to a cap. The SDK's own telemetry is off. `maxRetries` is `0`: an ambiguous failure is never resent, and the model is never switched automatically.
 - Claude-native features (vision, structured outputs: art director, command helper, translation, alt text) show the processing route, what is sent, an upper bound on the cost and the failure policy before every request, and honour a user-set session budget. The budget is enforced in the transport layer (a request that could exceed it is refused unless the user approved that one request), requests in flight are reserved at their cost cap, and requests that were sent but never returned usage (abort, timeout, unreadable response) are counted at their cap as unconfirmed. See [Claude AI 보조](../features/claude-ai-assist.md).
 - Prices shown in the UI are estimates from the public price table with its reference date; the Anthropic console is the source of truth for billing.
@@ -101,7 +117,7 @@ Only a public HTTPS origin is accepted. HTTP, loopback, private networks, URL cr
 
 `/settings/ai` is the single canonical credential and routing surface. Studio, integration and inference screens render only a secret-free status card that links to this route instead of mounting duplicate editors. The default experience is progressive:
 
-1. **시작하기** — provider choice, one API key, conditional model/endpoint fields, automatic verification and a plain-language paid-fallback choice;
+1. **시작하기** — "how AI runs now" (1. my keys → 2. ToonStudio AI) and a single paste box: the provider is detected from the key format (ambiguous formats ask the user), the key is verified with the provider's model list, and the official endpoint and a default model are filled in. Several keys can be pasted at once; keys of the same provider stack in one connection and are used in turn on quota/authentication rejection. A wizard for unlisted services and the paid-use choice stay on the same view;
 2. **AI 사용 순서** — automatic, user-ordered and exact-manual modes with accessible up/down controls;
 3. **고급 설정** — the existing full connection editor, multiple keys/models, exact paths, runtime tokens and encrypted vault.
 
@@ -122,7 +138,9 @@ Personal keys remain in memory by default. The encrypted vault stores the normal
 - [ ] Every shared account has billing disabled or a provider-side hard free-only boundary.
 - [ ] Every enabled shared provider has `CONFIRMED=true`.
 - [ ] No preset or environment variable points to localhost/private AI infrastructure.
-- [ ] Paid BYOK fallback is disabled by default.
+- [ ] Paid BYOK fallback is disabled by default and only enabled by explicit confirmation.
+- [ ] Migration 0114 is applied before `STUDIO_AI_ANTHROPIC_API_KEY` is set, and the premium daily limits match the approved operator budget.
+- [ ] No operator key is read from `VITE_` variables or shipped in the browser bundle.
 - [ ] Multiple key/model route order is deterministic.
 - [ ] `401`/`403`/`402`/`429` are the only personal-route automatic advance conditions.
 - [ ] Network, timeout, `5xx`, parse, and malformed-success failures do not replay.
