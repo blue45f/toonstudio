@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { MToonNodeMaterial as SdkMToonNodeMaterial } from "@pixiv/three-vrm/nodes";
-import { BoxGeometry, Color, DirectionalLight, Material, PerspectiveCamera, Scene, Texture, WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
+import { BoxGeometry, Color, DataTexture, DirectionalLight, Material, PerspectiveCamera, RGBAFormat, Scene, Texture, WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
 import { float, lights } from "three/tsl";
 import { Mesh, WebGPURenderer, WGSLNodeBuilder } from "three/webgpu";
 import { describe, expect, it } from "vitest";
 
 import { STUDIO_MTOON_NODE_REVISION, StudioMToonNodeMaterial, studioMToonNodeOutlineClipBias, studioMToonNodeScreenScale, studioMToonNodeShading } from "./studio-mtoon-node-material";
 import { readStudioMToonRuntimeIdentity } from "./studio-mtoon-runtime-identity";
+import { createStudioMToonNodeGeometryPass } from "./studio-mtoon-node-geometry-pass";
 
 type ScalarFunction = typeof studioMToonNodeShading | typeof studioMToonNodeScreenScale;
 function object(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
@@ -163,6 +164,75 @@ describe("guarded MToon WebGPU TSL", () => {
     source.outlineWidthFactor = .1; source.color.setRGB(0, 0, 0); source.shadingToonyFactor = .5;
     expect(clone.outlineWidthFactor).toBe(.003); expect(copied.shadingToonyFactor).toBe(1); expect(copied.color).not.toEqual(source.color);
     copied.update(0); expect(readStudioMToonRuntimeIdentity(copied)?.backend).toBe("webgpu");
+  });
+
+  it.each(["clone", "copy"] as const)("실제 SDK %s는 공유 sampler와 그 Source 세대를 보존하고 색·clock만 독립화한다", (operation) => {
+    const source = new StudioMToonNodeMaterial(), destination = new StudioMToonNodeMaterial();
+    const texture = new DataTexture(new Uint8Array([12, 34, 56, 255]), 1, 1, RGBAFormat);
+    const mask = new DataTexture(new Uint8Array([0, 0, 255, 255]), 1, 1, RGBAFormat);
+    const previous = new DataTexture(new Uint8Array([90, 80, 70, 255]), 1, 1, RGBAFormat);
+    const textures = [texture, mask, previous], materials = new Set([source, destination]);
+    let textureDisposals = 0;
+    for (const value of textures) {
+      value.offset.set(.13, -.27); value.repeat.set(.8, 1.2); value.center.set(.2, .3); value.rotation = .4;
+      value.updateMatrix(); value.matrixAutoUpdate = false; value.needsUpdate = true;
+      value.addEventListener("dispose", () => { textureDisposals += 1; });
+    }
+    const sampling = () => textures.map((value) => ({ version: value.version, sourceVersion: value.source.version,
+      matrix: value.matrix.toArray(), offset: value.offset.toArray(), repeat: value.repeat.toArray(),
+      center: value.center.toArray(), rotation: value.rotation, matrixAutoUpdate: value.matrixAutoUpdate }));
+    const sourceObjects = textures.map((value) => value.source), images = textures.map((value) => value.source.data);
+    const slots = ["map", "emissiveMap", "shadeMultiplyTexture", "shadingShiftTexture", "rimMultiplyTexture",
+      "matcapTexture", "outlineWidthMultiplyTexture"] as const;
+    for (const slot of slots) source[slot] = texture;
+    source.normalMap = mask; source.uvAnimationMaskTexture = mask;
+    destination.map = previous; destination.shadeMultiplyTexture = previous;
+    source.color.setRGB(.8, .2, .1); source.shadeColorFactor.setRGB(.1, .2, .4);
+    source.alphaTest = .37; source.flatShading = true;
+    source.uvAnimationScrollXOffset = .3; source.uvAnimationScrollYOffset = .15; source.uvAnimationRotationPhase = -.2;
+    source.uvAnimationScrollXSpeedFactor = .4; source.uvAnimationScrollYSpeedFactor = .2; source.uvAnimationRotationSpeedFactor = .3;
+    const before = sampling(), color = source.color.clone(), shade = source.shadeColorFactor.clone();
+    const sourceClock = [source.uvAnimationScrollXOffset, source.uvAnimationScrollYOffset, source.uvAnimationRotationPhase];
+    try {
+      const target = operation === "clone" ? source.clone() : destination.copy(source); materials.add(target);
+      expect(target).toBeInstanceOf(SdkMToonNodeMaterial);
+      expect(readStudioMToonRuntimeIdentity(target)?.backend).toBe("webgpu");
+      for (const material of [source, target]) {
+        for (const slot of slots) expect(material[slot], slot).toBe(texture);
+        expect(material.normalMap).toBe(mask); expect(material.uvAnimationMaskTexture).toBe(mask);
+        expect([material.uvAnimationScrollXOffset, material.uvAnimationScrollYOffset, material.uvAnimationRotationPhase]).toEqual(sourceClock);
+      }
+      expect(target.color).not.toBe(source.color); expect(target.shadeColorFactor).not.toBe(source.shadeColorFactor);
+      expect(target.normalScale).not.toBe(source.normalScale); expect(target.alphaTest).toBe(.37); expect(target.flatShading).toBe(true);
+      expect(sampling()).toEqual(before);
+      // 실제 geometry pass가 clone/copy된 본체를 받을 때도 sampler snapshot만 소유한다.
+      for (const material of [source, target]) for (const kind of ["depth", "normal-depth"] as const) {
+        const pass = createStudioMToonNodeGeometryPass(material, kind);
+        try {
+          expect(pass.map).not.toBe(texture); expect(pass.map?.source).not.toBe(texture.source);
+          expect(pass.map?.source.data).toBe(texture.source.data); expect(pass.map?.matrix).toEqual(texture.matrix);
+          const passMask: unknown = Reflect.get(pass, "uvAnimationMaskTexture");
+          expect(passMask).toBeInstanceOf(Texture);
+          if (!(passMask instanceof Texture)) throw new Error("기하 pass가 mask snapshot을 생성하지 않았습니다.");
+          expect(passMask).not.toBe(mask); expect(passMask.source).not.toBe(mask.source);
+          expect(passMask.source.data).toBe(mask.source.data); expect(passMask.matrix).toEqual(mask.matrix);
+          expect(Reflect.get(pass, "uvAnimationScrollXOffset")).toBe(sourceClock[0]);
+          expect(Reflect.get(pass, "uvAnimationScrollYOffset")).toBe(sourceClock[1]);
+          expect(Reflect.get(pass, "uvAnimationRotationPhase")).toBe(sourceClock[2]);
+        } finally { pass.dispose(); }
+        expect(sampling()).toEqual(before); expect(textureDisposals).toBe(0);
+      }
+      target.color.setRGB(0, 1, 0); target.shadeColorFactor.setRGB(1, 0, 0); target.normalScale.set(.3, .7);
+      target.update(.5);
+      expect(source.color).toEqual(color); expect(source.shadeColorFactor).toEqual(shade);
+      expect(source.normalScale.toArray()).toEqual([1, 1]);
+      expect([source.uvAnimationScrollXOffset, source.uvAnimationScrollYOffset, source.uvAnimationRotationPhase]).toEqual(sourceClock);
+      expect([target.uvAnimationScrollXOffset, target.uvAnimationScrollYOffset, target.uvAnimationRotationPhase]).not.toEqual(sourceClock);
+      expect(sampling()).toEqual(before);
+      textures.forEach((value, index) => { expect(value.source).toBe(sourceObjects[index]); expect(value.source.data).toBe(images[index]); });
+      target.dispose(); materials.delete(target);
+      expect(textureDisposals).toBe(0); expect(sampling()).toEqual(before);
+    } finally { for (const material of materials) material.dispose(); textures.forEach((value) => value.dispose()); }
   });
 
   it("callback·node 입력을 바꾸면 현재 인스턴스만 미승인으로 바꾸고 변조된 clone도 거부한다", () => {

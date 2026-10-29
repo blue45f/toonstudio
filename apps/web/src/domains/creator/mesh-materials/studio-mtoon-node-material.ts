@@ -1,6 +1,6 @@
 /** 승인된 WebGPU lazy entry 안에서만 사용하는 MToon TSL 보정이다. SDK 3.5.5의 MIT 구현을 따른다. */
 import { MToonLightingModel, MToonNodeMaterial, type MToonNodeMaterialParameters } from "@pixiv/three-vrm/nodes";
-import { WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
+import { Texture, WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
 import { Fn, cameraProjectionMatrix, diffuseColor, float, length, matcapUV, materialReference, mix, modelNormalMatrix, modelViewMatrix,
   materialNormal, modelViewPosition, nodeObject, normalLocal, normalMap, positionLocal, step, transformedNormalView, vec3, vec4 } from "three/tsl";
 import { ConvertNode, NodeMaterial, type Node, type NodeBuilder } from "three/webgpu";
@@ -98,6 +98,22 @@ const sdkVertex = MToonNodeMaterial.prototype.setupVertex, baseVertex = NodeMate
 const sdkNormal = MToonNodeMaterial.prototype.setupNormal;
 const sdkCallbacks = ["setupDiffuseColor", "setupVariants", "setupLighting", "setupOutput", "update"]
   .map((name) => { const method: unknown = Reflect.get(MToonNodeMaterial.prototype, name); return { name, method }; });
+/** SDK가 먼저 공유한 Texture를 기본 NodeMaterial.copy가 self-copy하지 않게 하는 호출 한정 facade다. */
+function textureReferenceCopyTarget<Target extends MToonNodeMaterial>(target: Target): Target {
+  return new Proxy(target, { get(material, property) {
+    const value: unknown = Reflect.get(material, property, material);
+    if (!(value instanceof Texture)) return value;
+    return new Proxy(value, { get(texture, method) {
+      if (method !== "copy") return Reflect.get(texture, method, texture);
+      return (sourceTexture: Texture): Texture => {
+        if (!(sourceTexture instanceof Texture) || !Reflect.set(material, property, sourceTexture, material)) {
+          throw new Error("MToon 복사의 공유 텍스처 참조를 보존하지 못했습니다.");
+        }
+        return sourceTexture;
+      };
+    } });
+  } });
+}
 function plainNodeInputs(material: MToonNodeMaterial): boolean {
   return Object.entries(material).every(([name, value]) => name.startsWith("_") || !name.endsWith("Node") || value == null);
 }
@@ -183,7 +199,7 @@ export class StudioMToonNodeMaterial extends MToonNodeMaterial {
   }
   override copy(source: MToonNodeMaterial): this {
     if (source instanceof StudioMToonNodeMaterial && !readStudioMToonRuntimeIdentity(source)) throw new Error("변조된 MToon 노드 재질을 복제할 수 없습니다.");
-    super.copy(source);
+    super.copy.call(textureReferenceCopyTarget(this), source);
     // Three r186 NodeMaterial.copy는 상속된 alphaTest setter와 내부 _alphaTest를 모두 생략한다.
     this.alphaTest = source.alphaTest;
     this.flatShading = "flatShading" in source && source.flatShading === true;
