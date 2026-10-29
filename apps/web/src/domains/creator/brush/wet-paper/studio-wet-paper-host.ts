@@ -292,6 +292,8 @@ function scheduleSlice(): void {
 function advanceSolveJob(loaded: WetPaperRuntime, job: PendingSolveJob, ready: Set<() => void>): boolean {
   if (!job.seeded) {
     const settings = loaded.normalizeStudioWetPaperBakeSettings(job.request);
+    // 갈필 강모 지도는 처음 만들 때 수십 ms 가 걸려 한 단위씩 나눠 만든다(결과 바이트는 같다).
+    if (settings && settings.program.dryBrush > 0 && !loaded.advanceWetPaperBristleFieldBuild()) return false;
     job.solve = settings ? loaded.createWetPaperSolve(job.dabs, settings) : null;
     job.seeded = true;
     if (job.solve) return false;

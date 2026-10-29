@@ -10,7 +10,12 @@
  * 격자의 바깥 타일 한 겹은 영구 벽이다(깨우지 않고, 그 셀로 가는 흐름은 bounce-back, 모세관·안료 링크는 0).
  * 그래서 처리 대상 셀의 8이웃은 항상 격자 안에 있어 핫 루프에 경계 검사가 없다.
  *
- * 상한(명시적): 셀 수·변 길이·추정 활성 셀 수·dab 침착 작업량. 넘으면 셀 크기(px)를 키워 해상도를 낮춘다.
+ * 마른 시점(`dryStep`)은 한 번도 젖지 않은 셀을 "스텝 0부터 마름"(0)으로 시작한다. 처음 처리될 때 찍으면
+ * 지연 경화가 타일이 깨어난 시점에 따라 달라져 위의 비트 동일성이 깨진다.
+ *
+ * 상한(명시적): 셀 수·변 길이·추정 활성 셀 수·dab 침착 작업량. 넘으면 셀 크기(px)를 키워 해상도를 낮추되,
+ * core dab 이 `minCoreCellsAcross` 셀보다 좁아질 만큼 키워야 하면 격자를 만들지 않는다(null — 호출자는 베이스
+ * 워시를 그린다). 셀보다 가는 dab 은 침착이 셀 중심 표본을 놓쳐 획이 비거나, 셀 단위 물리가 획을 넓힌다.
  * 모든 상태는 Float32Array이고 스텝 안에서는 할당하지 않는다.
  */
 
@@ -34,6 +39,8 @@ export const STUDIO_WET_PAPER_GRID_LIMITS = Object.freeze({
   /** core dab 평균 지름을 가로지르는 목표 셀 수의 상한(프로그램 `cellsAcross`를 이 범위로 묶는다). */
   maxCellsAcross: 24,
   minCellsAcross: 6,
+  /** 상한 때문에 셀을 키울 때 core dab 평균 지름이 지켜야 할 최소 셀 수(셀 하한 1px 이 정한 해상도는 예외). */
+  minCoreCellsAcross: 1.5,
   /** 물이 퍼질 여유(셀). 경계 벽에 닿기 전에 마르도록 둔다. */
   padCells: 10,
 });
@@ -73,15 +80,17 @@ function roundUpToTile(value: number): number {
 
 /**
  * 획 범위와 프로그램 해상도(`cellsAcross`)에서 격자를 정한다. 순수·결정적 함수이며 상한을 넘으면 cellPx를
- * 키운다(최대 12회 반복).
+ * 키운다(최대 12회 반복). core dab 이 `minCoreCellsAcross` 셀보다 좁아지거나 수렴하지 않으면 null 이다.
  */
-export function planWetPaperGrid(extent: WetPaperGridExtent, cellsAcross: number): WetPaperGrid {
+export function planWetPaperGrid(extent: WetPaperGridExtent, cellsAcross: number): WetPaperGrid | null {
   const limits = STUDIO_WET_PAPER_GRID_LIMITS;
   const meanCore = Math.max(0.25, extent.meanCoreRadius);
   const across = clampNumber(cellsAcross, limits.minCellsAcross, limits.maxCellsAcross);
   let cellPx = Math.max(limits.minCellPx, (meanCore * 2) / across);
+  const maxCellPx = Math.max(limits.minCellPx, (meanCore * 2) / limits.minCoreCellsAcross);
   const wetRadius = Math.max(meanCore, extent.maxRadius);
   for (let attempt = 0; attempt < 12; attempt += 1) {
+    if (cellPx > maxCellPx) return null;
     // 바깥 타일 한 겹은 영구 벽(bounce-back)이라 여유에 더한다.
     const padPx = wetRadius * 0.6 + (limits.padCells + WET_PAPER_TILE) * cellPx;
     const spanX = Math.max(1e-3, extent.maxX - extent.minX) + padPx * 2;
@@ -123,20 +132,8 @@ export function planWetPaperGrid(extent: WetPaperGridExtent, cellsAcross: number
     // 반올림 여유를 조금 더 줘서 반복이 짧게 수렴하게 한다.
     cellPx *= growth * 1.02;
   }
-  // 12회 안에 수렴하지 못할 입력(극단 좌표)은 최대 격자에 강제로 맞춘다.
-  const side = limits.maxSide / 2;
-  const span = Math.max(extent.maxX - extent.minX, extent.maxY - extent.minY, 1);
-  const forcedCellPx = clampNumber(span / (side - limits.padCells * 2), limits.minCellPx, Number.MAX_VALUE);
-  return Object.freeze({
-    width: side,
-    height: side,
-    cells: side * side,
-    tilesX: side / WET_PAPER_TILE,
-    tilesY: side / WET_PAPER_TILE,
-    originXPx: (extent.minX + extent.maxX) * 0.5 - (side * forcedCellPx) * 0.5,
-    originYPx: (extent.minY + extent.maxY) * 0.5 - (side * forcedCellPx) * 0.5,
-    cellPx: forcedCellPx,
-  });
+  // 12회 안에 수렴하지 못한 입력(극단 좌표)은 굽지 않는다.
+  return null;
 }
 
 export interface WetPaperState {
@@ -182,7 +179,7 @@ export interface WetPaperState {
    * 물 패스와 안료 패스(모세관 운반)가 같은 값을 읽는다.
    */
   readonly capillaryFlux: Float32Array;
-  /** 마른 시점 스텝(−1 = 젖어 있음). 경화는 다시 젖을 때 지연 적용한다. */
+  /** 마른 시점 스텝(−1 = 젖어 있음, 한 번도 젖지 않은 셀은 0). 경화는 다시 젖을 때 지연 적용한다. */
   readonly dryStep: Int32Array;
   /** 종이: 요철 높이 0..1, 섬유 밀도 0..1, 모세관 용량, 흡수율. */
   readonly height: Float32Array;
@@ -255,7 +252,8 @@ export function createWetPaperState(grid: WetPaperGrid): WetPaperState {
     linkOutF: new Float32Array(cells * WET_PAPER_LINK_CLASSES * WET_PAPER_SPECIES),
     linkOutB: new Float32Array(cells * WET_PAPER_LINK_CLASSES * WET_PAPER_SPECIES),
     capillaryFlux: new Float32Array(cells * WET_PAPER_LINK_CLASSES),
-    dryStep: new Int32Array(cells).fill(-1),
+    // 한 번도 젖지 않은 셀은 스텝 0부터 마른 것으로 본다(모든 셀을 매 스텝 처리한 결과와 같다).
+    dryStep: new Int32Array(cells),
     height,
     fiber: new Float32Array(cells),
     capacity,

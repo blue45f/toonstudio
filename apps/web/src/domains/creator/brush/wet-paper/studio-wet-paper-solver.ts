@@ -94,14 +94,18 @@ export interface WetPaperSolve {
   eventCursor: number;
 }
 
-/** 이벤트에서 솔브를 만든다(테스트가 dab 없이 물리 시나리오를 직접 구성할 때도 쓴다). */
+/**
+ * 이벤트에서 솔브를 만든다(테스트가 dab 없이 물리 시나리오를 직접 구성할 때도 쓴다). 상한 안에서 core dab 을
+ * 셀 몇 개 너비로 풀 수 없는 획(아주 긴 가는 획)은 null — 호출자는 베이스 워시를 그린다.
+ */
 export function createWetPaperSolveFromEvents(
   events: WetPaperDepositEvents,
   programId: StudioWetPaperBakeProgramId,
   program: StudioWetPaperBakeProgram,
   steps: number,
-): WetPaperSolve {
+): WetPaperSolve | null {
   const grid = planWetPaperGrid(events.extent, program.cellsAcross);
+  if (!grid) return null;
   return {
     programId,
     program,
@@ -115,7 +119,7 @@ export function createWetPaperSolveFromEvents(
   };
 }
 
-/** dab 계획 → 솔브. 유한 dab이 없으면 null. */
+/** dab 계획 → 솔브. 유한 dab이 없거나 격자로 풀 수 없으면 null. */
 export function createWetPaperSolve(
   dabs: readonly WetPaperInputDab[],
   settings: StudioWetPaperBakeSettings,
@@ -178,9 +182,10 @@ export function measureWetPaperTotals(state: WetPaperState): { water: number; pi
 }
 
 /**
- * 마감: 남은 부유 안료를 제자리에 앉힌 총 광학 밀도를 만들고, 0이 아닌 영역(+1셀)으로 잘라낸다.
+ * 마감: 남은 부유 안료를 제자리에 앉힌 총 광학 밀도를 만들고, 0이 아닌 영역(+1셀)으로 잘라낸다. 안료가 하나도
+ * 들어가지 않았거나 덮인 셀이 없으면 null 이다(빈 래스터가 베이스 워시를 대신해 획이 사라지지 않게 한다).
  */
-export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeResult {
+export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeResult | null {
   const { state } = solve;
   const { width, height, cells, originXPx, originYPx, cellPx } = state.grid;
   const totals = measureWetPaperTotals(state);
@@ -209,17 +214,11 @@ export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeRes
       }
     }
   }
-  if (maxX < 0) {
-    minX = 0;
-    minY = 0;
-    maxX = 0;
-    maxY = 0;
-  } else {
-    minX = Math.max(0, minX - 1);
-    minY = Math.max(0, minY - 1);
-    maxX = Math.min(width - 1, maxX + 1);
-    maxY = Math.min(height - 1, maxY + 1);
-  }
+  if (maxX < 0 || !(state.pigmentIn > 0)) return null;
+  minX = Math.max(0, minX - 1);
+  minY = Math.max(0, minY - 1);
+  maxX = Math.min(width - 1, maxX + 1);
+  maxY = Math.min(height - 1, maxY + 1);
   const cropWidth = maxX - minX + 1;
   const cropHeight = maxY - minY + 1;
   const density = new Float32Array(cropWidth * cropHeight);
@@ -255,7 +254,7 @@ export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeRes
   });
 }
 
-/** 동기 전체 베이크(캐시 없음). 유한 dab이 없으면 null. */
+/** 동기 전체 베이크(캐시 없음). 유한 dab이 없거나, 격자로 풀 수 없거나, 안료가 들어가지 않으면 null. */
 export function solveStudioWetPaperBakeUncached(
   dabs: readonly WetPaperInputDab[],
   settings: StudioWetPaperBakeSettings,

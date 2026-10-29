@@ -14,15 +14,33 @@ const TWO_PI = 6.283185307179586;
 const PI = 3.141592653589793;
 const HALF_PI = 1.5707963267948966;
 
-/** 2^k (정수 k, |k| ≤ 1074). 곱셈만 쓰므로 모든 엔진에서 같은 값이다. */
-function detPow2(k: number): number {
-  let result = 1;
-  if (k >= 0) {
-    for (let index = 0; index < k; index += 1) result *= 2;
-    return result;
+const POW2_MIN = -1074;
+const POW2_MAX = 1023;
+/**
+ * 2^k 표(k = −1074…1023). 1에서 2·0.5를 거듭 곱해 채우므로(2의 거듭제곱은 정확히 표현된다) 모든 엔진에서 같고,
+ * 예전처럼 호출마다 |k|번 곱한 값과 비트 단위로 같다. 표로 바꾼 까닭: 강모 지도가 지수 −200까지 detExp를 39만 번
+ * 불러 루프만으로 70ms 넘게 걸렸다.
+ */
+const POW2_TABLE = ((): Float64Array => {
+  const table = new Float64Array(POW2_MAX - POW2_MIN + 1);
+  let value = 1;
+  for (let k = 0; k <= POW2_MAX; k += 1) {
+    table[k - POW2_MIN] = value;
+    value *= 2;
   }
-  for (let index = 0; index < -k; index += 1) result *= 0.5;
-  return result;
+  value = 1;
+  for (let k = 0; k >= POW2_MIN; k -= 1) {
+    table[k - POW2_MIN] = value;
+    value *= 0.5;
+  }
+  return table;
+})();
+
+/** 2^k (정수 k). 표 범위 밖은 곱셈 루프의 결과와 같이 +∞ 또는 0이다. */
+function detPow2(k: number): number {
+  if (k > POW2_MAX) return Number.POSITIVE_INFINITY;
+  if (k < POW2_MIN) return 0;
+  return POW2_TABLE[k - POW2_MIN] as number;
 }
 
 /**
