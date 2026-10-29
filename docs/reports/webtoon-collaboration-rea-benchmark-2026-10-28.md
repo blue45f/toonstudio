@@ -379,3 +379,31 @@ QA 조회 도구에서도 별도 결함을 발견했다. `SELECT sequence::text 
 범위는 같은 기기의 Chromium 두 context·Vite development·실제 PostgreSQL·단일 memory Gateway·P2P 비활성·로컬 HTTPS QA adapter다. 단절한 editor의 신규 오프라인 편집은 수행하지 않았으며 동일 요소 충돌·Canvas ACK 유실/중복 replay·서버 재시작·다중 node·WAN·다른 기기/GPU·운영 R2의 성공으로 확대하지 않는다. C9 production 성능과 C10 실제 제작팀 납품 파일럿은 미확인이다.
 
 실행 후 소유 API·TLS·PostgreSQL의 정상 종료와 모든 QA 포트의 listener 부재를 확인했다. 임시 config·인증값·개인키를 삭제하고, 정지·소유권·정확 정본 경로를 확인한 해당 테스트 DB 파일도 정리했다. 이전 실패 ZIP은 수정하지 않고 v3 실행·로더 수정·읽기 전용 후속 검증을 새 증거 묶음으로 보존한다. 전체 하네스·타입·정상 push는 조정한 검사 순서를 기다리며 PR 준비 범위를 유지한다. main 병합·운영 DB·배포는 실행하지 않았다.
+
+## 16. C4 선행 재제출 뒤 후속 승인·완료의 현재 입력 경계
+
+상태: **migration — 2026-10-29, 새 승인·완료 경계 수정과 실제 HTTP 검증**. 선행 A1을 고정한 후속 B1이 이미 검수 중일 때 A2를 제출하면, 기존 구현은 B1의 새 승인과 기존 승인 작업의 새 완료 전환을 허용했다. A2가 아직 미승인인 경우와 새 승인을 마친 경우 모두 재현됐다. 최초 9개 회귀 중 정상 경로 3개는 통과했지만 거절 경로 6개는 실패했다.
+
+새 `approved`·`conditionally-approved`·`done` 전환에서는 변경 후 aggregate의 현재 승인 선행 출력과 작업 입력을 검사한다. 새 제출본 승인에서는 연결 산출물·범위에 해당하는 작업을 찾아 **그 제출본 자신의 고정 입력**을 대조한다. 출력 두 개 중 하나만 승인해 작업 상태가 그대로인 경우와, 작업 입력만 A2로 바꾸고 A1 기반 B1을 승인하는 경우도 거절한다. 작업 전환 검사만 추가한 중간 상태의 부분 승인 2개 실패와 제출본 입력 우회까지 포함한 3개 실패를 별도로 보존했다.
+
+기존 A1·B1 승인과 검수 결정은 이력으로 유지한다. 선행 A2의 제출·승인, 관련 없는 제목 수정, 이미 승인된 제출본의 같은 상태 저장을 허용하며 후속 입력을 자동 교체하거나 이력을 초기화하지 않는다. 현재 입력 검사는 새 승인·완료의 조건이며 과거 aggregate 전체를 항상 최신 상태로 강제하는 검사가 아니다. `changes-requested → A2 입력 고정 → B2 제출·검수·새 승인 → done` 복구도 통과했다.
+
+| 실제 검증 | 결과와 범위 |
+| --- | --- |
+| Service·DTO·Core·승인/배치 회귀 | 단일 worker, 6 suites·92 tests 통과, 실제 exit 0. 새 경계 회귀 17개 포함. 저장 transaction 경계는 메모리 adapter |
+| 일반 Auth·쿠키·CSRF·실제 PostgreSQL HTTP | 새 loopback 테스트 DB에서 1 suite·26 tests 통과, skip 0, 실제 exit 0. 기존 25개와 새 원자성·복구 시나리오 1개 |
+| 새 HTTP 거절 분모 | A2 제출 상태·승인 상태 각각에서 B1 부분 승인, 일반 작업 완료, 배치 완료의 6요청이 400. 매번 전체 GET 결과가 동일하고 해당 mutation receipt는 0행 |
+| 새 HTTP 정상 분모 | 과거 승인·검수 결정·A1 pin 보존, 제목 수정 허용, A2를 고정한 두 출력의 부분 승인→전체 승인→완료 통과 |
+| 정적 검사 | 변경한 API 세 파일의 scoped ESLint·Secretlint, 하네스 doctor/check, diff 공백 검사 통과 |
+
+HTTP 검증 도구의 첫 실행은 잘못 지정한 pnpm 절대 경로 때문에 테스트를 시작하지 못했다. 소유 PostgreSQL과 임시 비밀값을 정리한 뒤 실제 PATH의 pnpm을 사용한 새 격리 DB에서 실행했다. 성공 실행은 제품 파일 세 개의 시작·종료 SHA-256 일치를 확인했고 PostgreSQL 정상 정지·상태 코드 3·임시 비밀 파일과 정지한 소유 DB 파일 삭제를 마쳤다. 운영 DB와 migration은 변경하지 않았다. 새 코드의 전체 하네스·타입·production build·정상 push·원격 CI는 미실행이며, 15절의 이전 소스에서 얻은 Canvas 실행을 이번 API 변경의 재검증으로 표시하지 않는다.
+
+## 17. 크레코 공개 배포물 재수집과 제한된 REA 정적 분석
+
+상태: **current — 2026-10-29의 공개 로그인 전 관찰**, 서버 동작은 **미확인**이다. 정상 공개 페이지를 새 브라우저로 수집한 Evidence `ev_781d1616254c1087a55f1e81b4ed144752aeea4e88954ffd7371b886ee9cf2b0`은 complete·152 events·2 steps·소유 브라우저 종료를 기록했다. 결과 전송 한도 오류 뒤 같은 수집을 반복하지 않고 보존된 원장을 내보냈다. 공개 JS export Evidence는 `ev_80b18269608fe26eba7cf4202335d34676ab9be3561e857dedeb1dce70985820`이다.
+
+main 배포물 2,525,429바이트의 SHA-256은 `44c1542b26ba4db7b26bde274b80a0df78cc909c5abd05cb9c5bf9a5465e222b`로 기존 수집과 같았다. 원문 AST에서 API URL이 포함된 최소 객체 6개를 골라 UTF-16·UTF-8 byte 범위와 원문/괄호 wrapper hash를 기록했다. 외부 코드를 실행하거나 제품에 복사하지 않았다. 선택한 8,885바이트의 REA 분석은 6 sources·987 AST nodes·parse 실패 0이지만 findings·modules는 0, graph partial·semantic unknown이다. 이를 전체 앱 의미 관계 복원이나 실제 요청 성공으로 해석하지 않는다.
+
+원문 객체에는 method·url 두 필드로 된 선언 107개가 있다. 조회 51·부분 변경 28·생성형 21·삭제형 7개다. 스냅샷의 상태·확정·공개 범위·텍스트 공정 확인, 프로젝트 공정, 사용자와 공정 연결, 역할 목록, 공정 template, 작업공간 공정과 버전 목록을 별도 선언으로 관찰했다. 본문·query·header·응답 DTO, 허용 상태·역할 값, 접근 제어, 확정 조건·원자성·중복 처리, 버전 비교 UI와 주석 연결은 해당 객체에 없어 미확인이다. 메서드 이름이 성공적인 생성·변경을 보증하지 않는다.
+
+제한된 분석의 parent Evidence는 `ev_69dc23d2cf56c1c65b3251b84ad0ee4e275fd589491e9f0c9e90534f445a163c`, summary는 `ev_0ead2a021e6f4b6404964c56f726023904ed30dc43ae51b8ecb5d7a553bb63b7`이며 최종 원장은 4 records다. 공개 capture의 응답 바이트는 브라우저 API가 노출한 결과로 wire 바이트·원래 transaction과의 동일성을 보증하지 않는다. 로그인 뒤 서버 권한·다중 계정 실행·성능·시장 순위는 이 근거로 주장하지 않는다. 16절 수정은 ToonStudio 자체 결함 재현과 테스트에 근거한다.

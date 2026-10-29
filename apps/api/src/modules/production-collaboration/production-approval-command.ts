@@ -56,6 +56,7 @@ export function assertProductionTaskMutationSafety(
     }
     if (["approved", "done", "conditionally-approved"].includes(task.status)) {
       if (!productionTaskHasCurrentApprovedOutputs(task, after)) issues.push(`${task.title}: 모든 산출물에 고정 입력이 일치하는 최신 승인 제출본이 있어야 승인·완료할 수 있습니다.`);
+      if (!productionTaskHasCurrentDependencyInputs(task, after)) issues.push(`${task.title}: 선행 공정의 현재 승인 버전을 입력에 고정한 뒤 승인·완료하세요.`);
     }
     if (["internal-review", "external-review"].includes(task.status) && !productionTaskHasCurrentReviewOutputs(task, after)) {
       issues.push(`${task.title}: 검수 요청 전에 고정 입력과 일치하는 현재 제출본을 저장하세요.`);
@@ -87,6 +88,12 @@ export function assertProductionSubmissionApproval(
   if (current?.status !== "in-review" || deliverable.currentSubmissionId !== submission.id) {
     throw new BadRequestException("현재 검수 중인 제출본만 승인할 수 있습니다.");
   }
+  // 작업 입력을 바꿔도 제출본의 고정 입력은 바뀌지 않으므로 새 승인 대상 자체를 대조한다.
+  const staleTasks = aggregate.tasks.filter((task) => task.outputDeliverableIds.includes(deliverable.id)
+    && scopeContains(task.scope, deliverable.scope)
+    && !productionTaskHasCurrentDependencyInputs({ ...task, inputRevisionRefs: submission.inputRevisionRefs }, aggregate));
+  if (staleTasks.length) throw new BadRequestException({ message: "현재 선행 입력과 일치하는 제출본만 새로 승인할 수 있습니다.",
+    issues: staleTasks.map((task) => `${task.title}: 선행 공정의 현재 승인 버전을 입력에 고정한 뒤 승인·완료하세요.`) });
   const blockers = productionSubmissionBlockingClarifications(aggregate, submission);
   if (blockers.length) throw new BadRequestException({ message: "현재 인수인계의 차단 질문을 해결한 뒤 승인하세요.", clarificationIds: blockers.map((entry) => entry.id) });
   const policy = aggregate.reviewPolicies.filter((entry) => scopeContains(entry.scope, deliverable.scope))

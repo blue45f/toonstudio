@@ -368,6 +368,104 @@ describe.skipIf(!url)("실제 일반 가입·쿠키·PostgreSQL 협업 HTTP", ()
     expect((await command({ type: "upsert-submission", submission: { ...revised, status: "approved" } }, editor())).status).toBe(400);
     expect((await project()).aggregate.revision).toBe(reviewingAgain.body.aggregate.revision);
   });
+  it("선행 재제출 뒤 후속 부분 승인·완료는 원자적으로 거절하고 새 입력의 재작업은 완료한다", async () => {
+    const at = new Date().toISOString();
+    const ref = (id: string, digit: string, revision = 1): RevisionRef => ({ id, lineage: "visual", revision,
+      digest: `sha256:${digit.repeat(64)}`, createdAt: at });
+    const source = ref("http-stale-brief", "1"), a1 = ref("http-stale-a1", "2"), a2 = ref("http-stale-a2", "3", 2);
+    async function createTask(id: string, inputs: RevisionRef[], dependencies: string[], outputCount: number) {
+      const outputDeliverableIds = Array.from({ length: outputCount }, (_, index) => `${id}-output-${index}`);
+      for (const outputId of outputDeliverableIds) expect((await command({ type: "upsert-deliverable", deliverable: {
+        id: outputId, projectId, scope: scope(), type: "line-art", expectedFormat: "PNG", completionCriteria: ["검수"],
+        currentSubmissionId: null, approvedSubmissionId: null,
+      } })).status).toBe(201);
+      const task: ProductionTask = { ...taskDraft(id), processKey: dependencies.length ? "joint-proof" : "line-art",
+        assignmentIds: ["http-line-author"], reviewerAssignmentIds: ["http-editor-reviewer"],
+        inputRevisionRefs: inputs, dependencyTaskIds: dependencies, outputDeliverableIds };
+      expect((await command({ type: "upsert-task", task })).status).toBe(201);
+      for (const [fromStatus, toStatus] of [["draft", "ready"], ["ready", "in-progress"]]) {
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: id, fromStatus, toStatus }] })).status).toBe(201);
+      }
+      return task;
+    }
+    async function submit(task: ProductionTask, outputIndex: number, output: RevisionRef): Promise<Submission> {
+      const submission: Submission = { id: `${output.id}-submission-${outputIndex}`, projectId,
+        deliverableId: task.outputDeliverableIds[outputIndex]!, revisionRef: output, inputRevisionRefs: task.inputRevisionRefs,
+        submittedByAssignmentId: "http-line-author", submittedAt: at, status: "submitted", evidenceRefs: ["http-stale-proof"] };
+      expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+      expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+      expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+        id: `${submission.id}-decision`, reviewRoundId: submission.id, lane: "production", assignmentId: "http-editor-reviewer",
+        value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+      } }, editor())).status).toBe(201);
+      return submission;
+    }
+    async function transition(taskId: string, fromStatus: string, toStatus: string) {
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId, fromStatus, toStatus }] })).status).toBe(201);
+    }
+    async function approve(submission: Submission) {
+      const response = await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+      expect(response.status).toBe(201); return response.body.aggregate;
+    }
+    async function rejectAtomically(value: Record<string, unknown>) {
+      const before = await project(), mutationId = randomUUID();
+      const response = await h.request(`/production/projects/${projectId}/commands`, { cookie: editor().cookie,
+        body: { command: value, expectedRevision: before.aggregate.revision, mutationId } });
+      expect(response.status).toBe(400);
+      expect(await project()).toEqual(before);
+      const receipt = await h.pool.query('SELECT count(*)::int AS count FROM production_project_mutation_receipt WHERE "projectId"=$1 AND "mutationId"=$2', [projectId, mutationId]);
+      expect(receipt.rows[0].count).toBe(0);
+    }
+    const upstream = await createTask("http-stale-upstream", [source], [], 1);
+    const firstUpstream = await submit(upstream, 0, a1);
+    await transition(upstream.id, "in-progress", "internal-review");
+    await approve(firstUpstream);
+    const partial = await createTask("http-stale-partial", [a1], [upstream.id], 2);
+    const partialFirst = await submit(partial, 0, ref("http-stale-partial-a", "4"));
+    await submit(partial, 1, ref("http-stale-partial-b", "5"));
+    await transition(partial.id, "in-progress", "internal-review");
+    const finished = await createTask("http-stale-finished", [a1], [upstream.id], 1);
+    const firstFinished = await submit(finished, 0, ref("http-stale-finished-a", "6"));
+    await transition(finished.id, "in-progress", "internal-review");
+    await approve(firstFinished);
+    const nextUpstream: Submission = { ...firstUpstream, id: "http-stale-a2-submission", revisionRef: a2, status: "submitted" };
+    expect((await command({ type: "upsert-submission", submission: nextUpstream })).status).toBe(201);
+    for (const state of ["submitted", "approved"]) {
+      if (state === "approved") {
+        expect((await command({ type: "upsert-submission", submission: { ...nextUpstream, status: "in-review" } }, editor())).status).toBe(201);
+        expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+          id: "http-stale-a2-decision", reviewRoundId: nextUpstream.id, lane: "production", assignmentId: "http-editor-reviewer",
+          value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+        } }, editor())).status).toBe(201);
+        await approve(nextUpstream);
+      }
+      await rejectAtomically({ type: "upsert-submission", submission: { ...partialFirst, status: "approved" } });
+      const currentFinished = (await project()).aggregate.tasks.find((entry) => entry.id === finished.id)!;
+      await rejectAtomically({ type: "upsert-task", task: { ...currentFinished, status: "done" } });
+      await rejectAtomically({ type: "transition-task-batch", transitions: [{ taskId: finished.id, fromStatus: "approved", toStatus: "done" }] });
+    }
+    const history = (await project()).aggregate;
+    expect(history.submissions.find((entry) => entry.id === firstUpstream.id)?.status).toBe("approved");
+    expect(history.submissions.find((entry) => entry.id === firstFinished.id)?.status).toBe("approved");
+    expect(history.reviewDecisions.find((entry) => entry.id === `${partialFirst.id}-decision`)?.value).toBe("approve");
+    expect(history.tasks.find((entry) => entry.id === partial.id)?.inputRevisionRefs).toEqual([a1]);
+    const historicalTask = history.tasks.find((entry) => entry.id === finished.id)!;
+    expect((await command({ type: "upsert-task", task: { ...historicalTask, title: "이전 승인 이력 보존" } })).status).toBe(201);
+    await transition(partial.id, "internal-review", "changes-requested");
+    const rework = { ...(await project()).aggregate.tasks.find((entry) => entry.id === partial.id)!, inputRevisionRefs: [a2] };
+    expect((await command({ type: "upsert-task", task: rework })).status).toBe(201);
+    await transition(partial.id, "changes-requested", "in-progress");
+    const nextFirst = await submit(rework, 0, ref("http-stale-rework-a", "7", 2));
+    const nextSecond = await submit(rework, 1, ref("http-stale-rework-b", "8", 2));
+    await transition(partial.id, "in-progress", "internal-review");
+    expect((await approve(nextFirst)).tasks.find((entry) => entry.id === partial.id)?.status).toBe("internal-review");
+    expect((await approve(nextSecond)).tasks.find((entry) => entry.id === partial.id)?.status).toBe("approved");
+    await transition(partial.id, "approved", "done");
+    const final = (await project()).aggregate;
+    expect(final.tasks.find((entry) => entry.id === partial.id)).toMatchObject({ status: "done", inputRevisionRefs: [a2] });
+    expect(final.submissions.find((entry) => entry.id === partialFirst.id)?.status).toBe("in-review");
+    expect(final.tasks.find((entry) => entry.id === finished.id)?.status).toBe("approved");
+  }, 60_000);
   it("독립된 제작자와 검수자가 여덟 공정을 완주하고 재작업 이전 승인을 재사용하지 않는다", async () => {
     const initial = (await project()).aggregate;
     const ownerRole = initial.assignments.find((entry) => entry.id === "http-line-author");
