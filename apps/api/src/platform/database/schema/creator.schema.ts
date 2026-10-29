@@ -1831,6 +1831,8 @@ export const studioAiUsageLedger = pgTable(
     promptTokens: integer("promptTokens"),
     completionTokens: integer("completionTokens"),
     totalTokens: integer("totalTokens"),
+    // 호출의 보수적 토큰 예약량. 사용량을 모르는 운영 고성능 호출을 예산에서 이 값으로 센다(0115).
+    reservedTokens: integer("reservedTokens"),
     startedAt: timestamp("startedAt", { mode: "date", withTimezone: true }).notNull(),
     finishedAt: timestamp("finishedAt", { mode: "date", withTimezone: true }).notNull(),
     createdAt: timestamp("createdAt", { mode: "date", withTimezone: true }).notNull().defaultNow(),
@@ -1856,6 +1858,7 @@ export const studioAiUsageLedger = pgTable(
     check("studio_ai_usage_prompt_tokens_check", sql`${t.promptTokens} is null or ${t.promptTokens} >= 0`),
     check("studio_ai_usage_completion_tokens_check", sql`${t.completionTokens} is null or ${t.completionTokens} >= 0`),
     check("studio_ai_usage_total_tokens_check", sql`${t.totalTokens} is null or ${t.totalTokens} >= 0`),
+    check("studio_ai_usage_reserved_tokens_check", sql`${t.reservedTokens} is null or ${t.reservedTokens} >= 0`),
     check("studio_ai_usage_timestamps_check", sql`${t.finishedAt} >= ${t.startedAt}`),
   ]
 );

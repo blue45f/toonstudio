@@ -207,6 +207,34 @@ describe("PostgresStudioAiUsageStore", () => {
     expect(userUpdateCall?.[1]).toEqual(["user-1", "2026-07-10", 1_200, 1_200]);
     const ledgerCall = clientQuery.mock.calls.find(([sql]) => String(sql).includes("studio_ai_usage_ledger"));
     expect((ledgerCall?.[1] as unknown[]).slice(6, 9)).toEqual([null, null, null]);
+    // 무료 제공자 행은 예약량 열 없이 기록한다(0115가 적용되지 않은 DB에서도 기록되게).
+    expect(String(ledgerCall?.[0])).not.toContain("reservedTokens");
+  });
+
+  it("records the conservative reservation on premium rows so the premium budget can count unknown usage", async () => {
+    const { pool, clientQuery } = createPool();
+    const store = new PostgresStudioAiUsageStore(pool);
+
+    await store.finalize({
+      userId: "user-1",
+      usageDay: "2026-07-10",
+      reservedTokens: 146_617,
+      task: "assistant",
+      provider: "anthropic",
+      model: "claude-opus-5-5",
+      attemptCount: 1,
+      status: "timeout",
+      usage: {},
+      startedAt: new Date("2026-07-10T00:00:00.000Z"),
+      finishedAt: new Date("2026-07-10T00:02:00.000Z"),
+    });
+
+    const ledgerCall = clientQuery.mock.calls.find(([sql]) => String(sql).includes("studio_ai_usage_ledger"));
+    expect(String(ledgerCall?.[0])).toContain('"totalTokens", "reservedTokens"');
+    expect(String(ledgerCall?.[0])).toContain("$9, $12, $10, $11");
+    const values = ledgerCall?.[1] as unknown[];
+    expect(values.slice(6, 9)).toEqual([null, null, null]);
+    expect(values[11]).toBe(146_617);
   });
 
   it("rolls back and releases the connection if ledger insertion fails", async () => {
