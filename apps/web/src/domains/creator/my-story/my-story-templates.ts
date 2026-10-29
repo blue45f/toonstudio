@@ -1,5 +1,5 @@
 /**
- * 내 이야기 주제 템플릿 팩 6종 — 순수 데이터 모듈.
+ * 내 이야기 주제 템플릿 팩 7종 — 순수 데이터 모듈.
  *
  * 한 팩은 ① 질문 세트(6~8문항) ② 컷 구조 골격(4컷/8컷) ③ 톤 프리셋 ④ 나레이션·말풍선 기본값을
  * 한 덩어리로 묶는다. 이웃 템플릿 카탈로그(studio-template-catalog.ts)처럼 데이터와 조회 함수만
@@ -62,6 +62,48 @@ function skeletons(
     8: eight ? Object.freeze([...eight]) : null,
   });
 }
+
+/** 홈에서 입력한 아이디어도 실제 경험·가족 이야기로 바꾸지 않고 그대로 이어받는다. */
+const FREE_STORY: MyStoryTemplate = {
+  id: "free-story",
+  titleKo: MY_STORY_TOPIC_TITLES["free-story"].ko,
+  titleEn: MY_STORY_TOPIC_TITLES["free-story"].en,
+  summaryKo: "상상한 이야기나 일상의 아이디어를 짧은 웹툰으로 만들어요.",
+  summaryEn: "Turn an imagined story or an everyday idea into a short webtoon.",
+  defaultTitleKo: "나의 새 이야기",
+  defaultTitleEn: "My new story",
+  tags: ["창작", "상상", "일상"],
+  questions: [
+    question("event", ["아이디어", "Idea"], ["어떤 이야기를 만들고 싶나요?", "What story would you like to create?"], ["비 오는 날 고양이가 작은 서점을 찾아오는 이야기", "A cat finds a little bookshop on a rainy day"]),
+    question("who", ["주인공", "Characters"], ["누가 등장하나요?", "Who is in the story?"], ["길 잃은 고양이와 서점 주인", "A lost cat and the bookshop owner"]),
+    question("where", ["장소", "Place"], ["어디에서 펼쳐지는 이야기인가요?", "Where does the story take place?"], ["가상의 동네에 있는 작은 서점", "A small bookshop in an imaginary town"]),
+    question("turn", ["변화", "Turning point"], ["이야기가 달라지는 순간은 무엇인가요?", "What changes the course of the story?"], ["고양이가 오래된 책 속에서 편지를 발견한다", "The cat finds a letter inside an old book"]),
+    question("feeling", ["마음", "Feeling"], ["그때 주인공은 어떤 마음인가요?", "How does the main character feel?"], ["궁금하면서도 조금 두렵다", "Curious and a little afraid"]),
+    question("ending", ["마무리", "Ending"], ["어떻게 마무리하고 싶나요?", "How would you like the story to end?"], ["서점에서 새로운 친구를 만난다", "They find a new friend at the bookshop"]),
+  ],
+  cutCounts: [4, 8],
+  skeletons: skeletons(
+    [
+      cut("open", ["who", "where"]),
+      cut("event", ["event"], "event"),
+      cut("moment", ["turn", "feeling"], "feeling", "turn"),
+      cut("closing", ["ending"], "ending"),
+    ],
+    [
+      cut("place", ["where"], "where"),
+      cut("cast", ["who"]),
+      cut("event", ["event"], "event"),
+      cut("moment", ["turn"], "turn"),
+      cut("feeling", ["feeling"], "feeling"),
+      cut("aftermath", ["turn", "ending"], "ending"),
+      cut("result", ["ending"], "ending"),
+      cut("closing", ["ending", "feeling"], "feeling"),
+    ],
+  ),
+  toneIds: ["steady-record", "warm-memory", "friendly-neighbor"],
+  narration: { position: "top", maxChars: 40 },
+  balloon: { kind: "dialogue", maxChars: 20 },
+};
 
 const RETROSPECTIVE: MyStoryTemplate = {
   id: "retrospective",
@@ -325,6 +367,7 @@ const FINANCE: MyStoryTemplate = {
 
 /** 표시 순서가 곧 선택 화면 순서다. */
 export const MY_STORY_TEMPLATES: readonly MyStoryTemplate[] = Object.freeze([
+  FREE_STORY,
   RETROSPECTIVE,
   FAMILY,
   NEIGHBORHOOD,

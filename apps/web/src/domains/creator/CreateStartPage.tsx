@@ -138,7 +138,7 @@ export function CreateStartPage() {
           {bt("다른 시작 방법 보기", "See other ways to start")}
         </Link>
         <Suspense fallback={<LoadingState variant="skeleton" label={bt("내 이야기 질문을 불러오는 중이에요", "Loading your story questions")} />}>
-          <MyStoryStartFlow initialTemplateId={isMyStoryTemplateId(requestedTopic) ? requestedTopic : null} />
+          <MyStoryStartFlow initialTemplateId={isMyStoryTemplateId(requestedTopic) ? requestedTopic : null} initialIdea={searchParams.get("idea") ?? ""} />
         </Suspense>
       </Container>
     );
@@ -146,7 +146,6 @@ export function CreateStartPage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
-      <SiteContextualSubNav pathnameOverride="/create" className="mb-5" />
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
@@ -157,16 +156,16 @@ export function CreateStartPage() {
           </h1>
           <p className="mt-3 text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
             {bt(
-              "무엇을 먼저 할지만 고르세요 — 이야기부터, 콘티부터, 빈 캔버스, 템플릿에서, 가져오기. 하던 작품은 아래 이어가기에서 바로 열 수 있어요.",
-              "Just choose what comes first — the story, boards, a blank canvas, a template, or an import. Works in progress wait below.",
+              "처음이라면 질문에 답하며 짧은 이야기를 만들어 보세요. 그림부터 시작하거나 하던 작품을 이어갈 수도 있어요.",
+              "Start with a few story questions, begin a drawing, or continue a work below.",
             )}
           </p>
         </div>
         <div role="group" aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")} className="flex flex-wrap gap-1.5">
           {([
-            ["all", "전체 보기", "All views"],
-            ["lanes", "5대 시작 레인", "5 Start Lanes"],
-            ["pipeline", "스토리 · AI 보조", "Story & AI Assist"],
+            ["all", "추천 시작", "Recommended"],
+            ["lanes", "다른 시작 방법", "More ways to start"],
+            ["pipeline", "주제 · 제작 도구", "Topics & tools"],
             ["continue", "이어서 작업", "Continue Work"],
           ] as const).map(([id, ko, en]) => {
             const active = activeSection === id;
@@ -196,7 +195,7 @@ export function CreateStartPage() {
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-extrabold uppercase tracking-wider text-accent">
-            {bt("10초 상황별 맞춤 시작 가이드", "10-Second Quick Start Guide")}
+            {bt("어떻게 시작하고 싶나요?", "How would you like to start?")}
           </p>
           <span className="text-xs text-fg-3">
             {bt("어떤 방식이 맞을지 고민된다면 내 현재 상황을 골라보세요", "Not sure where to begin? Pick what matches you best")}
@@ -222,7 +221,7 @@ export function CreateStartPage() {
               {bt("일단 펜으로 바로 그리고 싶어요", "Just want to start drawing now")}
             </span>
             <span className="mt-1.5 text-[11px] font-semibold text-accent">
-              {bt("하얀 캔버스 즉시 열기 →", "Open blank canvas now →")}
+              {bt("캔버스 설정하고 그리기 →", "Set up a canvas and draw →")}
             </span>
           </Link>
           <Link
@@ -251,6 +250,11 @@ export function CreateStartPage() {
       </section>
 
       {showPipeline ? (
+      <details open={activeSection === "pipeline"} className="mt-6 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg">
+          {bt("주제별 질문과 제작 도구 더 보기", "More story topics and creation tools")}
+        </summary>
+        <SiteContextualSubNav pathnameOverride="/create" className="mt-4" />
       <section
         aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
         data-testid="create-rea-story-pipeline"
@@ -293,11 +297,9 @@ export function CreateStartPage() {
           ))}
         </div>
       </section>
-      ) : null}
 
       <SiteArtSurfaceSpotlight cardId="nb-create-canvas" compact className="mt-6" />
 
-      {showPipeline ? (
       <section
         aria-labelledby="create-start-my-story-title"
         className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:p-6"
@@ -312,8 +314,8 @@ export function CreateStartPage() {
             </h2>
             <p className="mt-1.5 text-sm leading-6 text-fg-2">
               {bt(
-                "무엇을 그릴지 막막하다면 내 경험과 기억부터 적어 보세요. 질문 6~8개에 답하면 4컷·8컷 웹툰 초안이 만들어지고, 답하기 어려운 건 건너뛰어도 돼요.",
-                "If you are unsure what to draw, start by writing down your own experience. Answer 6 to 8 questions to get a 4- or 8-panel webtoon draft, and skip any you would rather not answer.",
+                "상상한 이야기나 내 경험을 적어 보세요. 질문 6~8개에 답하면 4컷·8컷 대본 초안이 만들어져요. 답하기 어려운 건 건너뛰어도 돼요.",
+                "Start from an imagined story or a real experience. Answer 6 to 8 questions for a 4- or 8-panel script draft. You can skip any question.",
               )}
             </p>
             <p className="mt-2 text-xs font-semibold text-fg-3">
@@ -341,10 +343,15 @@ export function CreateStartPage() {
           ))}
         </ul>
       </section>
+      </details>
       ) : null}
 
       {showLanes ? (
-      <StaggerReveal className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
+      <details open={activeSection === "lanes"} className="mt-4 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg">
+          {bt("다른 시작 방법 · 기획, 콘티, 템플릿, 파일", "More ways to start: plans, boards, templates and files")}
+        </summary>
+      <StaggerReveal className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
         <Link href="/studio/new?lane=idea&start=idea" className={CHOICE_CARD_CLASS}>
           <span
             aria-hidden="true"
@@ -465,6 +472,7 @@ export function CreateStartPage() {
           </span>
         </Link>
       </StaggerReveal>
+      </details>
       ) : null}
 
       {showContinue ? (

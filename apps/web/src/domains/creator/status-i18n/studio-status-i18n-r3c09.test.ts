@@ -91,6 +91,7 @@ const BRUSH_CANVAS_STATUS_KEYS = [
   "studio.brushCanvasStatus.canvas.gpuKeptFrame",
   "studio.brushCanvasStatus.canvas.gpuNotSwitched",
   "studio.brushCanvasStatus.canvas.gpuPrepareFailed",
+  "studio.brushCanvasStatus.canvas.gpuRetry",
   "studio.brushCanvasStatus.canvas.noSelectionFit",
   "studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailed",
   "studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle",

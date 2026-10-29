@@ -174,7 +174,7 @@ async function desktopMultitabCheck() {
     );
     await first.bringToFront();
     await first.getByRole('button', {
-      name: '같은 GPU 엔진 다시 준비', exact: true,
+      name: '작업 화면 다시 열기', exact: true,
     }).click();
     await waitForGpu(first, 2);
     report.checks.push(

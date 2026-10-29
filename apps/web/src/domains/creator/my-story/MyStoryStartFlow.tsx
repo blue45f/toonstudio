@@ -25,6 +25,7 @@ import {
   type MyStorySession,
 } from "./my-story-interview";
 import type { MyStoryLocale, MyStoryTemplateId } from "./my-story-model";
+import { createMyStoryLaunchSession } from "./my-story-launch";
 import {
   clearMyStorySession,
   readMyStorySession,
@@ -38,6 +39,8 @@ export type MyStoryFlowStorage = MyStorySessionStorage & MyStoryHandoffStorage;
 export interface MyStoryStartFlowProps {
   /** 주소의 ?topic= 로 넘어온 주제. 이어 쓸 진행이 없을 때만 바로 첫 질문에서 시작한다. */
   readonly initialTemplateId?: MyStoryTemplateId | null;
+  /** 홈에서 적은 아이디어. 이전 저장본이 있으면 사용자가 새로 시작하기를 고른 뒤에만 적용한다. */
+  readonly initialIdea?: string;
   /** 임시저장·작품 생성 저장소. 기본은 이 브라우저의 localStorage(막혀 있으면 null). 테스트가 주입한다. */
   readonly storage?: MyStoryFlowStorage | null;
   /** 텍스트 AI 호출자. 기본은 기존 무료 우선 클라우드 텍스트 AI 경로. */
@@ -82,6 +85,7 @@ function browserStorage(): MyStoryFlowStorage | null {
  */
 export function MyStoryStartFlow({
   initialTemplateId = null,
+  initialIdea = "",
   storage: storageProp,
   complete = completeMyStoryText,
   now = defaultNow,
@@ -99,10 +103,9 @@ export function MyStoryStartFlow({
   });
   const [session, dispatch] = useReducer(myStoryInterviewReducer, undefined, () => {
     const at = now();
-    const empty = createMyStorySession(at);
-    return initialTemplateId && !resumable
-      ? myStoryInterviewReducer(empty, { type: "start", templateId: initialTemplateId, at })
-      : empty;
+    return resumable
+      ? createMyStorySession(at)
+      : createMyStoryLaunchSession(initialTemplateId, initialIdea, at);
   });
   const [interacted, setInteracted] = useState(false);
   const [saveState, setSaveState] = useState<MyStorySaveState>("idle");
@@ -176,6 +179,13 @@ export function MyStoryStartFlow({
     act({ type: "reset" });
   }
 
+  function startFromIdea() {
+    setResumable(null);
+    setSaveState("idle");
+    setOpenError(null);
+    act({ type: "restore", session: createMyStoryLaunchSession(null, initialIdea, now()) });
+  }
+
   function start(templateId: MyStoryTemplateId) {
     // 저장본(resumable)은 첫 답변을 적을 때까지 그대로 둔다 — 주제만 눌러 보고 돌아와도 이어 쓸 수 있다.
     setSaveState("idle");
@@ -216,13 +226,25 @@ export function MyStoryStartFlow({
         </h1>
         <p className="mt-3 text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
           {bt(
-            "도구가 아니라 내 이야기에서 시작해요. 질문에 답하면 4컷·8컷 초안이 만들어지고, 그 초안을 스튜디오에서 이어 그릴 수 있어요.",
-            "Start from your story, not from the tools. Answer a few questions to get a 4- or 8-panel draft that you can keep working on in the studio.",
+            "상상한 이야기나 내 경험을 적어 주세요. 질문에 답하면 4컷·8컷 대본 초안이 만들어져요. 모르는 질문은 건너뛰어도 돼요.",
+            "Write an imagined story or a real experience. Answer a few questions for a 4- or 8-panel script draft. You can skip any question.",
           )}
         </p>
       </header>
 
       <MyStoryPrivacyNotice compact={session.stage !== "pick"} />
+
+      {session.stage === "pick" && resumable && initialIdea.trim() ? (
+        <section aria-label={bt("홈에서 입력한 새 아이디어", "New idea from the home page")} className="rounded-2xl border border-line bg-panel/60 p-4">
+          <p className="text-sm font-semibold text-fg">{initialIdea}</p>
+          <p className="mt-2 text-sm leading-6 text-fg-2">
+            {bt("새 아이디어로 시작하면 이 기기에 임시 저장된 질문 답변을 대체해요. 쓰던 이야기는 아래에서 이어 쓸 수 있어요.", "Starting this idea replaces the answers temporarily saved on this device. You can continue the saved story below.")}
+          </p>
+          <button type="button" onClick={startFromIdea} className="mt-3 min-h-11 rounded-xl bg-accent px-4 font-semibold text-on-accent">
+            {bt("새 아이디어로 시작", "Start this new idea")}
+          </button>
+        </section>
+      ) : null}
 
       {session.stage === "pick" || !template ? (
         <MyStoryPickStage
@@ -241,7 +263,7 @@ export function MyStoryStartFlow({
           session={session}
           template={template}
           question={question}
-          focusOnMount={interacted}
+          focusOnMount={interacted || Boolean(initialIdea.trim())}
           saveState={saveState}
           onAnswer={(text) => act({ type: "answer", slot: question.slot, text })}
           onPrev={() => act({ type: "prev" })}

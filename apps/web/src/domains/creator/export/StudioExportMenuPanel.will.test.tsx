@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
 
 import { STUDIO_WILL_V1_OPC_ASSURANCE } from "../studio-will-v1-opc-interchange";
 
@@ -50,7 +52,7 @@ describe("StudioExportMenuPanel WILL v1 public-spec profile", () => {
       assurance: STUDIO_WILL_V1_OPC_ASSURANCE,
     }));
 
-    render(
+    renderExpandedExportPanel(
       <StrictMode>
         <StudioExportMenuPanel
           canvasWidth={800}

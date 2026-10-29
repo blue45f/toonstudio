@@ -31,7 +31,7 @@ export function MyStoryPickStage({
 }: MyStoryPickStageProps) {
   const bt = useBilingual("MyStoryPickStage");
   const groupId = useId();
-  const [selectedId, setSelectedId] = useState<MyStoryTemplateId>(initialTemplateId ?? "retrospective");
+  const [selectedId, setSelectedId] = useState<MyStoryTemplateId>(initialTemplateId ?? "free-story");
   const selected = myStoryTemplateById(selectedId) ?? MY_STORY_TEMPLATES[0];
   const resumableTemplate = myStoryTemplateById(resumable?.templateId);
   const tone = selected ? MY_STORY_TONES[selected.toneIds[0] ?? "warm-memory"] : null;
