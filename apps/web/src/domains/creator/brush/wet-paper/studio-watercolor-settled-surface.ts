@@ -25,7 +25,7 @@ import { requestStudioWetPaperBake } from "./studio-wet-paper-host";
 
 import type { StudioBrushEngineProgramSet } from "../studio-brush-engine-program-set";
 import type { StudioWetPaperCanvasBake } from "./studio-wet-paper-host";
-import type { StudioWetPaperBakeProgramId } from "./studio-wet-paper-programs";
+import type { StudioWetPaperBakeProgramId } from "./studio-wet-paper-program-ids";
 
 export { drawStudioWetPaperBake } from "./studio-wet-paper-host";
 

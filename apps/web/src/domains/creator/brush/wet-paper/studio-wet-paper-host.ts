@@ -10,19 +10,20 @@
  *   합성은 몇 행씩 전진한다. 동기 베이크(`solveStudioWetPaperBakeUncached`·`compositeStudioWetPaperRaster`,
  *   SVG 내보내기)와 같은 create → advance(1)·N → finish 순서라 조각 나누기는 스케줄만 바꾸고 바이트는 바꾸지
  *   않는다.
- * - 솔버·합성 코드는 `studio-wet-paper-runtime.ts` 동적 import 뒤에 있어 Studio 진입 청크에 실리지 않는다.
+ * - 솔버·합성 코드와 프로그램 표는 `studio-wet-paper-runtime.ts` 동적 import 뒤에 있어 Studio 진입 청크에 실리지
+ *   않는다. 호스트는 요청 키(프로그램 id·시드·정착 게이트)만 정규화하고, 표는 런타임이 붙인다.
  * - 캐시: 베이크 결과(색과 무관한 광학 밀도)를 dab 서명으로, 합성 래스터(캔버스)를 색으로 나눠 보관한다.
  *   결과는 항목 수·총 셀 수, 래스터는 총 픽셀 수 상한이 있는 LRU다. 색만 바뀐 획은 다시 풀지 않고 합성만 한다.
  */
 
-import { normalizeStudioWetPaperBakeSettings } from "./studio-wet-paper-programs";
+import { normalizeStudioWetPaperBakeRequestKey } from "./studio-wet-paper-program-ids";
 
 import type { StudioWetPaperRaster, StudioWetPaperRasterJob } from "./studio-wet-paper-composite";
 import type { WetPaperInputDab } from "./studio-wet-paper-deposit";
 import type {
   StudioWetPaperBakeProgramId,
-  StudioWetPaperBakeSettings,
-} from "./studio-wet-paper-programs";
+  StudioWetPaperBakeRequestKey,
+} from "./studio-wet-paper-program-ids";
 import type { StudioWetPaperBakeResult, WetPaperSolve } from "./studio-wet-paper-solver";
 
 type WetPaperRuntime = typeof import("./studio-wet-paper-runtime");
@@ -60,7 +61,7 @@ interface PendingSolveJob {
   readonly key: string;
   readonly dabs: readonly WetPaperInputDab[];
   readonly signature: Float64Array;
-  readonly settings: StudioWetPaperBakeSettings;
+  readonly request: StudioWetPaperBakeRequestKey;
   /** 처음 요청한 획 색(풀이가 끝나면 이 색으로 곧바로 합성한다). */
   readonly color: string;
   readonly listeners: Set<() => void>;
@@ -141,8 +142,8 @@ function signaturesEqual(left: Float64Array, right: Float64Array): boolean {
   return true;
 }
 
-function cacheKey(settings: StudioWetPaperBakeSettings, count: number, signature: Float64Array): string {
-  return `${settings.programId}|${settings.seed}|${count}|${signatureHash(signature)}`;
+function cacheKey(request: StudioWetPaperBakeRequestKey, count: number, signature: Float64Array): string {
+  return `${request.programId}|${request.seed}|${count}|${signatureHash(signature)}`;
 }
 
 function readEntry(key: string, signature: Float64Array): WetPaperBakeCacheEntry | null {
@@ -290,7 +291,8 @@ function scheduleSlice(): void {
 /** 솔버 작업 한 단위(시드 또는 한 스텝 또는 마감). 이 작업이 끝났으면 true. */
 function advanceSolveJob(loaded: WetPaperRuntime, job: PendingSolveJob, ready: Set<() => void>): boolean {
   if (!job.seeded) {
-    job.solve = loaded.createWetPaperSolve(job.dabs, job.settings);
+    const settings = loaded.normalizeStudioWetPaperBakeSettings(job.request);
+    job.solve = settings ? loaded.createWetPaperSolve(job.dabs, settings) : null;
     job.seeded = true;
     if (job.solve) return false;
   }
@@ -365,15 +367,15 @@ export function requestStudioWetPaperBake(
   renderGeneration = 0,
 ): StudioWetPaperCanvasBake | null {
   void renderGeneration;
-  const settings = normalizeStudioWetPaperBakeSettings({
+  const bakeKey = normalizeStudioWetPaperBakeRequestKey({
     seed: request.seed,
     phase: "settled",
     programId: request.programId,
   });
-  if (!settings || dabs.length === 0 || runtimeFailed) return null;
+  if (!bakeKey || dabs.length === 0 || runtimeFailed) return null;
   if (typeof globalThis.setTimeout !== "function") return null;
   const signature = computeSignature(dabs);
-  const key = cacheKey(settings, dabs.length, signature);
+  const key = cacheKey(bakeKey, dabs.length, signature);
   const entry = readEntry(key, signature);
   if (entry) {
     if (!entry.result) return null;
@@ -394,7 +396,7 @@ export function requestStudioWetPaperBake(
       key,
       dabs,
       signature,
-      settings,
+      request: bakeKey,
       color,
       listeners: new Set([onReady]),
       solve: null,
@@ -424,21 +426,21 @@ export function drawStudioWetPaperBake(
  */
 export function peekStudioWetPaperBakeResult(
   dabs: readonly WetPaperInputDab[],
-  settings: StudioWetPaperBakeSettings,
+  request: StudioWetPaperBakeRequestKey,
 ): StudioWetPaperBakeResult | null | undefined {
   const signature = computeSignature(dabs);
-  const entry = readEntry(cacheKey(settings, dabs.length, signature), signature);
+  const entry = readEntry(cacheKey(request, dabs.length, signature), signature);
   return entry ? entry.result : undefined;
 }
 
 /** 동기 경로가 구운 결과를 같은 캐시에 넣는다(다음 Canvas 정착은 다시 풀지 않는다). */
 export function rememberStudioWetPaperBakeResult(
   dabs: readonly WetPaperInputDab[],
-  settings: StudioWetPaperBakeSettings,
+  request: StudioWetPaperBakeRequestKey,
   result: StudioWetPaperBakeResult | null,
 ): void {
   const signature = computeSignature(dabs);
-  const key = cacheKey(settings, dabs.length, signature);
+  const key = cacheKey(request, dabs.length, signature);
   const pending = solveJobs.get(key);
   const entry = storeEntry(key, signature, result);
   if (!pending) return;

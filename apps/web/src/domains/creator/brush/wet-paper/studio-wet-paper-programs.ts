@@ -11,23 +11,29 @@
  *   마르는 붓의 강모 줄무늬(갈필) 마스크. 강모 지도 생성과 문턱 수식은 Sumi(MIT)에서 이식했다
  *   (`third_party/sumi/README.md`, `studio-wet-paper-bristle.ts`).
  *
- * 이 파일은 정적 import 비용이 작은 "표"만 둔다. 무거운 솔버는 `studio-wet-paper-solver.ts`이고
- * Canvas 경로는 사용자 의도(해당 레인으로 그린 획의 정착) 시점에만 동적 import 한다.
+ * 이 파일은 프로그램 표(물·안료·종이 계수)와 설정 정규화를 둔다. Canvas 경로는 이 표를 솔버와 함께
+ * `studio-wet-paper-runtime.ts` 동적 import 뒤에서만 읽고, 레인 카탈로그·호스트 캐시 키는 가벼운
+ * `studio-wet-paper-program-ids.ts`만 정적으로 가져온다(Studio 진입 그래프에 표가 실리지 않는다).
  */
 
 import { clampNumber, finiteOr } from "./studio-wet-paper-math";
+import { isStudioWetPaperBakeProgramId, normalizeStudioWetPaperBakeRequestKey } from "./studio-wet-paper-program-ids";
 
 import type { StudioPaperPresetIdV1 } from "../studio-paper-media-profile-v1";
+import type {
+  StudioWetPaperBakeProgramId,
+  StudioWetPaperBakeRequestKey,
+  StudioWetPaperBakeSettingsInput,
+} from "./studio-wet-paper-program-ids";
+
+export { STUDIO_WET_PAPER_BAKE_PROGRAM_IDS, isStudioWetPaperBakeProgramId } from "./studio-wet-paper-program-ids";
+export type {
+  StudioWetPaperBakePhase,
+  StudioWetPaperBakeProgramId,
+  StudioWetPaperBakeSettingsInput,
+} from "./studio-wet-paper-program-ids";
 
 export const STUDIO_WET_PAPER_BAKE_VERSION = "studio-wet-paper-bake-v1" as const;
-
-export type StudioWetPaperBakeProgramId =
-  | "moxi-sumi-dispersion"
-  | "curtis-watercolor-backrun"
-  | "curtis-granulating-wash"
-  | "chu-tai-dry-brush";
-
-export type StudioWetPaperBakePhase = "live" | "settled";
 
 /** 안료 한 종(種)의 물성. 한 베이크는 같은 색의 안료 두 종(굵은 입자 + 고운 염료)까지 섞는다. */
 export interface StudioWetPaperPigmentProgram {
@@ -124,12 +130,8 @@ export interface StudioWetPaperBakeProgram {
   readonly grainDetail: number;
 }
 
-export interface StudioWetPaperBakeSettings {
-  /** 획 고정 시드(`watercolorBrushSeedFromKey(element.id)`). 벽시계 값이 아니다. */
-  readonly seed: number;
-  /** 정착 게이트: `"settled"`가 아니면 베이크하지 않는다(fail-closed). */
-  readonly phase: StudioWetPaperBakePhase;
-  readonly programId: StudioWetPaperBakeProgramId;
+/** 요청 키(시드·정착 게이트·프로그램 id)에 프로그램 표를 붙인 설정. */
+export interface StudioWetPaperBakeSettings extends StudioWetPaperBakeRequestKey {
   readonly program: StudioWetPaperBakeProgram;
 }
 
@@ -244,13 +246,6 @@ export const STUDIO_WET_PAPER_BAKE_PROGRAMS: Readonly<
   }),
 });
 
-export const STUDIO_WET_PAPER_BAKE_PROGRAM_IDS: readonly StudioWetPaperBakeProgramId[] =
-  Object.freeze(Object.keys(STUDIO_WET_PAPER_BAKE_PROGRAMS) as StudioWetPaperBakeProgramId[]);
-
-export function isStudioWetPaperBakeProgramId(value: unknown): value is StudioWetPaperBakeProgramId {
-  return typeof value === "string" && Object.hasOwn(STUDIO_WET_PAPER_BAKE_PROGRAMS, value);
-}
-
 /** 알 수 없는 id는 null — 다른 렌더러로 조용히 수렴하지 않는다(fail-closed). */
 export function resolveStudioWetPaperBakeProgram(
   programId: string | null | undefined,
@@ -268,27 +263,16 @@ export const STUDIO_WET_PAPER_BAKE_LIMITS = Object.freeze({
   minSteps: 8,
 });
 
-export interface StudioWetPaperBakeSettingsInput {
-  readonly seed?: number;
-  readonly phase?: string;
-  readonly programId?: string | null;
-}
-
 /**
- * 설정 정규화. 알 수 없는 phase는 live(베이크 안 함)로, 알 수 없는 프로그램은 null로 fail-closed 한다.
+ * 설정 정규화. 알 수 없는 phase는 live(베이크 안 함)로, 알 수 없는 프로그램은 null로 fail-closed 한다
+ * (요청 키 규칙은 `normalizeStudioWetPaperBakeRequestKey`와 같다).
  */
 export function normalizeStudioWetPaperBakeSettings(
   input: StudioWetPaperBakeSettingsInput | null | undefined,
 ): StudioWetPaperBakeSettings | null {
-  const source = input ?? {};
-  const program = resolveStudioWetPaperBakeProgram(source.programId);
-  if (!program || !isStudioWetPaperBakeProgramId(source.programId)) return null;
-  return {
-    seed: Math.floor(finiteOr(source.seed, 1)) | 0,
-    phase: source.phase === "settled" ? "settled" : "live",
-    programId: source.programId,
-    program,
-  };
+  const key = normalizeStudioWetPaperBakeRequestKey(input);
+  if (!key) return null;
+  return { ...key, program: STUDIO_WET_PAPER_BAKE_PROGRAMS[key.programId] };
 }
 
 /** 솔버가 실제로 쓰는 스텝 수(상한 적용). */

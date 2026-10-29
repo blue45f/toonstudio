@@ -8,7 +8,7 @@ import type { StudioLivingInkSettledBakeProgramId } from "../studio-living-ink-s
 import type { StudioPaperPresetIdV1 } from "./studio-paper-media-profile-v1";
 import type { StudioSpectralWgmColorMixProgramId } from "../studio-spectral-wgm-mix-v1";
 import type { StudioWetEdgeBloomProgramId } from "./studio-wet-edge-bloom-v1";
-import type { StudioWetPaperBakeProgramId } from "./wet-paper/studio-wet-paper-programs";
+import type { StudioWetPaperBakeProgramId } from "./wet-paper/studio-wet-paper-program-ids";
 
 export const STUDIO_BRUSH_ENGINE_LANE_CATALOG_VERSION =
   "studio-brush-engine-lane-catalog-v1" as const;

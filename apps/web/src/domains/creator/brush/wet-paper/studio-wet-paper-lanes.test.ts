@@ -185,7 +185,10 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
     const wetPaper = "apps/web/src/domains/creator/brush/wet-paper/";
     expect(closure.has(`${wetPaper}studio-wet-paper-host.ts`)).toBe(true);
     expect(closure.has(`${wetPaper}studio-watercolor-settled-surface.ts`)).toBe(true);
+    expect(closure.has(`${wetPaper}studio-wet-paper-program-ids.ts`)).toBe(true);
     for (const heavy of [
+      "studio-wet-paper-programs.ts",
+      "studio-wet-paper-math.ts",
       "studio-wet-paper-solver.ts",
       "studio-wet-paper-water.ts",
       "studio-wet-paper-pigment.ts",
