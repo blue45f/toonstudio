@@ -7,7 +7,7 @@
  */
 import { useState } from "react";
 
-import { computeShaperMaterialDataUniforms } from "./character-shaper-tripo-mcp";
+import { computeShaperMaterialDataUniforms } from "./character-shaper-gen3d-bridge";
 import { CharacterColorControl } from "./CharacterShaperControls";
 import { InspectorSection } from "./CharacterShaperInspectorParts";
 

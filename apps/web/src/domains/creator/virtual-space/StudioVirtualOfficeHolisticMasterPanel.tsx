@@ -20,16 +20,16 @@ import {
   createInitialHolisticMasterState,
   evaluateCalendarAutoPresenceAtMinute,
   filterHolistic40Platforms,
-  getActiveNanoBananaCharacterFrame,
-  selectNanoBananaCharacterFrame,
+  getActiveIllustratedCharacterFrame,
+  selectIllustratedCharacterFrame,
   setCreatorPresentationMode,
   setKrispTranslationLocale,
   toggleFloatingPipAlwaysOnTop,
   toggleKrispBvcNoiseCancellation,
-  toggleNanoBananaDecorPropPlacement,
+  toggleIllustratedDecorPropPlacement,
   type CreatorPresentationOverlayMode,
-  type NanoBananaCharacterDirection,
-  type NanoBananaCharacterPose,
+  type IllustratedCharacterDirection,
+  type IllustratedCharacterPose,
   type TranslationLocaleCode,
 } from "./studio-virtual-office-holistic-master-model";
 import { StudioVirtualOfficeNextGenEnginePanel } from "./StudioVirtualOfficeNextGenEnginePanel";
@@ -511,7 +511,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
       {(sectionView === "all" || sectionView === "theme-cast") && (
       <section
         className="rounded-xl border border-line bg-card/70 p-4"
-        data-testid="nano-banana-studio-pack-section"
+        data-testid="illustrated-studio-pack-section"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -524,9 +524,9 @@ export function StudioVirtualOfficeHolisticMasterPanel({
             </p>
           </div>
           <span className="rounded-md border border-accent bg-accent-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-accent">
-            장착 프롭 {state.nanoBananaStudioPack.equippedDecorPropIds.length}/
-            {state.nanoBananaStudioPack.props.length}종 · 활성 프레임{" "}
-            {getActiveNanoBananaCharacterFrame(state).id}
+            장착 프롭 {state.illustratedStudioPack.equippedDecorPropIds.length}/
+            {state.illustratedStudioPack.props.length}종 · 활성 프레임{" "}
+            {getActiveIllustratedCharacterFrame(state).id}
           </span>
         </div>
 
@@ -538,15 +538,15 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                 치비 웹툰 크리에이터 4방향×2포즈 RGBA 스프라이트 인스펙터
               </strong>
               <div className="flex gap-1">
-                {(["idle", "drawing"] as const).map((poseKey: NanoBananaCharacterPose) => (
+                {(["idle", "drawing"] as const).map((poseKey: IllustratedCharacterPose) => (
                   <button
                     key={poseKey}
                     type="button"
-                    data-testid={`nano-banana-pose-${poseKey}-btn`}
+                    data-testid={`illustrated-pose-${poseKey}-btn`}
                     onClick={() => {
-                      const next = selectNanoBananaCharacterFrame(
+                      const next = selectIllustratedCharacterFrame(
                         state,
-                        state.nanoBananaStudioPack.activeCharacterDirection,
+                        state.illustratedStudioPack.activeCharacterDirection,
                         poseKey,
                       );
                       setState(next);
@@ -555,7 +555,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                       );
                     }}
                     className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
-                      state.nanoBananaStudioPack.activeCharacterPose === poseKey
+                      state.illustratedStudioPack.activeCharacterPose === poseKey
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-line bg-card text-fg-2"
                     }`}
@@ -574,22 +574,22 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                   { dir: "right", label: "우측 (Right)" },
                   { dir: "up", label: "후면 (Up)" },
                 ] as const
-              ).map(({ dir, label }: { readonly dir: NanoBananaCharacterDirection; readonly label: string }) => (
+              ).map(({ dir, label }: { readonly dir: IllustratedCharacterDirection; readonly label: string }) => (
                 <button
                   key={dir}
                   type="button"
-                  data-testid={`nano-banana-dir-${dir}-btn`}
+                  data-testid={`illustrated-dir-${dir}-btn`}
                   onClick={() => {
-                    const next = selectNanoBananaCharacterFrame(
+                    const next = selectIllustratedCharacterFrame(
                       state,
                       dir,
-                      state.nanoBananaStudioPack.activeCharacterPose,
+                      state.illustratedStudioPack.activeCharacterPose,
                     );
                     setState(next);
                     onBannerChange?.(`캐릭터 방향 전환: ${label}`);
                   }}
                   className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
-                    state.nanoBananaStudioPack.activeCharacterDirection === dir
+                    state.illustratedStudioPack.activeCharacterDirection === dir
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-line bg-card text-fg-2"
                   }`}
@@ -602,19 +602,19 @@ export function StudioVirtualOfficeHolisticMasterPanel({
             <div className="mt-3 grid grid-cols-2 gap-2">
               <figure className="flex flex-col items-center justify-center rounded-lg border border-line bg-card p-2">
                 <img
-                  src={getActiveNanoBananaCharacterFrame(state).assetUrl}
-                  alt={getActiveNanoBananaCharacterFrame(state).labelKo}
-                  data-testid="nano-banana-active-character-img"
+                  src={getActiveIllustratedCharacterFrame(state).assetUrl}
+                  alt={getActiveIllustratedCharacterFrame(state).labelKo}
+                  data-testid="illustrated-active-character-img"
                   className="h-28 w-28 object-contain"
                   loading="lazy"
                 />
                 <figcaption className="mt-1 text-center text-[11px] font-medium text-fg">
-                  {getActiveNanoBananaCharacterFrame(state).labelKo}
+                  {getActiveIllustratedCharacterFrame(state).labelKo}
                 </figcaption>
               </figure>
               <figure className="flex flex-col items-center justify-center rounded-lg border border-line bg-card p-2">
                 <img
-                  src={state.nanoBananaStudioPack.characterCleanAtlasUrl}
+                  src={state.illustratedStudioPack.characterCleanAtlasUrl}
                   alt="4x2 투명 RGBA 캐릭터 아틀라스"
                   className="h-28 w-full object-contain"
                   loading="lazy"
@@ -639,7 +639,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
 
             <div className="mt-2 overflow-hidden rounded-lg border border-line bg-card">
               <img
-                src={state.nanoBananaStudioPack.panoramaAssetUrl}
+                src={state.illustratedStudioPack.panoramaAssetUrl}
                 alt="2.5D 가상 웹툰 스튜디오 플로어 파노라마 테마"
                 className="h-28 w-full object-cover"
                 loading="lazy"
@@ -647,16 +647,16 @@ export function StudioVirtualOfficeHolisticMasterPanel({
             </div>
 
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-              {state.nanoBananaStudioPack.props.map((prop) => {
+              {state.illustratedStudioPack.props.map((prop) => {
                 const equipped =
-                  state.nanoBananaStudioPack.equippedDecorPropIds.includes(prop.id);
+                  state.illustratedStudioPack.equippedDecorPropIds.includes(prop.id);
                 return (
                   <button
                     key={prop.id}
                     type="button"
-                    data-testid={`nano-banana-prop-${prop.id}-btn`}
+                    data-testid={`illustrated-prop-${prop.id}-btn`}
                     onClick={() => {
-                      const next = toggleNanoBananaDecorPropPlacement(state, prop.id);
+                      const next = toggleIllustratedDecorPropPlacement(state, prop.id);
                       setState(next);
                       onBannerChange?.(
                         `스튜디오 프롭 ${equipped ? "해제" : "배치"}: ${prop.labelKo}`,

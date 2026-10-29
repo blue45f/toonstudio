@@ -9,13 +9,13 @@ import { CHARACTER_GENRE_TAG_LABELS } from "./character-shaper-catalog";
 import { countCharacterAvailability, discoverCharacterEntries } from "./character-shaper-discovery";
 import { CharacterSlotPreview } from "./character-shaper-preview";
 import {
-  buildShaperTripoSlotGenerationPlan,
-  diagnoseTripoCreditWalletStatus,
-  SHAPER_TRIPO_GENERATED_GLB_CATALOG,
-  SHAPER_TRIPO_VISUAL_PROFILES,
-  type ShaperTripoGeneratedGlbId,
-  type ShaperTripoVisualStyleId,
-} from "./character-shaper-tripo-mcp";
+  buildShaperGen3dSlotGenerationPlan,
+  diagnoseGen3dCreditWalletStatus,
+  SHAPER_GEN3D_GENERATED_GLB_CATALOG,
+  SHAPER_GEN3D_VISUAL_PROFILES,
+  type ShaperGen3dGeneratedGlbId,
+  type ShaperGen3dVisualStyleId,
+} from "./character-shaper-gen3d-bridge";
 import {
   CHARACTER_HAND_SIDE_OPTIONS,
   CHARACTER_SHELF_COLUMNS,
@@ -68,9 +68,9 @@ function CharacterShaperShelfContent({
   const [collection, setCollection] = useState<CharacterShelfCollection>("all");
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [showExperimentalGarments, setShowExperimentalGarments] = useState(false);
-  const [visualStyleId, setVisualStyleId] = useState<ShaperTripoVisualStyleId>("shaper-cel");
+  const [visualStyleId, setVisualStyleId] = useState<ShaperGen3dVisualStyleId>("shaper-cel");
   const [showTripoPlan, setShowTripoPlan] = useState(false);
-  const [selectedGlbId, setSelectedGlbId] = useState<ShaperTripoGeneratedGlbId | null>(null);
+  const [selectedGlbId, setSelectedGlbId] = useState<ShaperGen3dGeneratedGlbId | null>(null);
   const [draft, setDraft] = useState(query);
   const [syncedQuery, setSyncedQuery] = useState(query);
   const [composing, setComposing] = useState(false);
@@ -281,7 +281,7 @@ function CharacterShaperShelfContent({
             </button>
           </div>
           <div role="group" aria-label="SHAPER 툰 비주얼 프로파일" className="mt-1.5 grid grid-cols-2 gap-1">
-            {SHAPER_TRIPO_VISUAL_PROFILES.map((profile) => (
+            {SHAPER_GEN3D_VISUAL_PROFILES.map((profile) => (
               <button
                 key={profile.id}
                 type="button"
@@ -302,14 +302,14 @@ function CharacterShaperShelfContent({
             ))}
           </div>
           {(() => {
-            const plan = buildShaperTripoSlotGenerationPlan({
+            const plan = buildShaperGen3dSlotGenerationPlan({
               slot,
               prompt: draft || `${slotLabel} webtoon asset`,
               visualStyleId,
             });
-            const walletReport = diagnoseTripoCreditWalletStatus({ slot });
+            const walletReport = diagnoseGen3dCreditWalletStatus({ slot });
             const activeGlb =
-              SHAPER_TRIPO_GENERATED_GLB_CATALOG.find((item) => item.id === selectedGlbId)
+              SHAPER_GEN3D_GENERATED_GLB_CATALOG.find((item) => item.id === selectedGlbId)
               ?? walletReport.fallbackAsset;
             return (
               <>
@@ -325,7 +325,7 @@ function CharacterShaperShelfContent({
                 >
                   <div className="flex items-center justify-between gap-1 text-[0.6rem]">
                     <span className="font-semibold text-fg-2">
-                      Tripo Studio H3.1 &amp; MCP 생성 3D 에셋 (실제 GLB {SHAPER_TRIPO_GENERATED_GLB_CATALOG.length}종)
+                      Tripo Studio H3.1 &amp; MCP 생성 3D 에셋 (실제 GLB {SHAPER_GEN3D_GENERATED_GLB_CATALOG.length}종)
                     </span>
                     <span
                       data-testid="shaper-tripo-wallet-notice"
@@ -336,7 +336,7 @@ function CharacterShaperShelfContent({
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-1">
-                    {SHAPER_TRIPO_GENERATED_GLB_CATALOG.map((asset) => {
+                    {SHAPER_GEN3D_GENERATED_GLB_CATALOG.map((asset) => {
                       const active = asset.id === activeGlb.id;
                       return (
                         <button

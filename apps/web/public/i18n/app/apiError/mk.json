@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Потребен е влез.",
+  "apiError.loginRequired": "Потребна е најава.",
   "apiError.adminRequired": "Дозволите на администраторите не можеа да се потврдат.",
   "apiError.adminOnlyPage": "Оваа страница е ограничена на администраторите.",
   "apiError.notFound": "Не може да се најде бараната стока.",

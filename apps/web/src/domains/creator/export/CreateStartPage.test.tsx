@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -25,6 +25,14 @@ function renderStartSheet(initialEntry: string) {
       <LocationProbe />
     </MemoryRouter>,
   );
+}
+
+function openMoreStartMethods() {
+  fireEvent.click(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일"));
+}
+
+function openMoreTopics() {
+  fireEvent.click(screen.getByText("주제별 질문과 제작 도구 더 보기"));
 }
 
 /** 두 작품을 만들고 연 시각을 고정해 최근 순서를 결정적으로 만든다. */
@@ -52,8 +60,9 @@ afterEach(() => {
 });
 
 describe("CreateStartPage (작품 시작 시트)", () => {
-  it("시작 레인 5개(이야기·콘티·빈 캔버스·템플릿·가져오기)와 이어가기를 한 화면에서 고르게 한다", () => {
+  it("추가 방법을 펼치면 기존 시작 레인 5개와 이어가기를 모두 사용할 수 있다", () => {
     renderStartSheet("/create");
+    openMoreStartMethods();
 
     expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
     // 새 작품 링크는 시작 카드와 이어가기 빈 상태 두 곳에 있을 수 있다 — 전부 같은 정문을 가리킨다.
@@ -148,12 +157,14 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
   });
 
-  it("10초 상황별 맞춤 시작 가이드를 통해 처음 접하는 창작자도 자기 상황에 맞는 진입점으로 이동할 수 있다", () => {
+  it("상황별 시작 가이드를 먼저 보여 주고 제작 도구는 접어 둔다", () => {
     renderStartSheet("/create");
     const guide = screen.getByTestId("create-start-persona-guide");
-    expect(within(guide).getByText("10초 상황별 맞춤 시작 가이드")).toBeTruthy();
+    expect(within(guide).getByText("어떻게 시작하고 싶나요?")).toBeTruthy();
+    expect(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일").closest("details")?.open).toBe(false);
+    expect(screen.getByText("주제별 질문과 제작 도구 더 보기").closest("details")?.open).toBe(false);
     expect(within(guide).getByRole("link", { name: /그림·스토리 모두 처음이에요/ }).getAttribute("href")).toBe("/create?intent=my-story");
-    expect(within(guide).getByRole("link", { name: /일단 펜으로 바로 그리고 싶어요/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
+    expect(within(guide).getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/ }).textContent).toContain("새 캔버스 바로 열기");
   });
 });
 
@@ -166,16 +177,19 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
     await import("../my-story/MyStoryStartFlow");
   }, 60_000);
 
-  it("레인 위에 ‘내 이야기로 시작하기’ 카드와 주제 6종 링크가 있다", () => {
+  it("주제를 펼치면 자유로운 이야기와 기존 주제 6종의 바로가기가 있다", () => {
     renderStartSheet("/create");
+    openMoreTopics();
+    openMoreStartMethods();
 
     const card = screen.getByRole("heading", { name: "내 이야기로 시작하기" }).closest("section");
     expect(card).not.toBeNull();
     const cta = within(card as HTMLElement).getByRole("link", { name: /내 이야기 풀어내기/ });
     expect(cta.getAttribute("href")).toBe("/create?intent=my-story");
     const topics = within(within(card as HTMLElement).getByRole("list", { name: "이야기 주제 바로 고르기" })).getAllByRole("link");
-    expect(topics.map((link) => link.textContent)).toEqual(["회고", "가족", "동네", "경력", "안전 수칙", "금융 상식"]);
+    expect(topics.map((link) => link.textContent)).toEqual(["자유로운 이야기", "회고", "가족", "동네", "경력", "안전 수칙", "금융 상식"]);
     expect(topics.map((link) => link.getAttribute("href"))).toEqual([
+      "/create?intent=my-story&topic=free-story",
       "/create?intent=my-story&topic=retrospective",
       "/create?intent=my-story&topic=family",
       "/create?intent=my-story&topic=neighborhood",
@@ -205,6 +219,19 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
 
     expect(await screen.findByText("질문 1 / 6", undefined, LAZY_FLOW_WAIT)).toBeTruthy();
     expect(screen.getByRole("textbox", { name: /어떤 장소나 상황에서 일어나는 일인가요/ })).toBeTruthy();
+  });
+
+  it("홈 아이디어 쿼리를 첫 질문의 답변으로 전달한다", async () => {
+    const idea = "달에서 길 잃은 로봇";
+    renderStartSheet(`/create?intent=my-story&topic=free-story&idea=${encodeURIComponent(idea)}`);
+    const input = await screen.findByRole("textbox", { name: "어떤 이야기를 만들고 싶나요?" }, LAZY_FLOW_WAIT);
+    expect((input as HTMLTextAreaElement).value).toBe(idea);
+  });
+
+  it("기존 구역 바로가기는 해당 도구를 펼친 상태로 연다", () => {
+    renderStartSheet("/create?section=lanes");
+    expect(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일").closest("details")?.open).toBe(true);
+    expect(screen.getByRole("link", { name: /콘티부터 시작하기/ })).toBeTruthy();
   });
 
   it("모르는 topic은 무시하고 주제 선택 화면을 보여 준다", async () => {

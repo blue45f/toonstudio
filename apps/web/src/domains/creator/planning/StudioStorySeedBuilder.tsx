@@ -15,18 +15,18 @@
  * - 적용 완료: 넣었다는 확인 + 아래 기획 표면에서 이어 쓰라는 안내.
  * - 엣지: 키워드 5개 상한 안내, 미등록 장르는 폴백 키트 안내 문구.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { GENRES } from "@/shared/lib/taxonomy";
 
 import { StudioAiConnectionBadge, StudioAiConnectionNotice } from "../ai/StudioAiConnectionBadge";
-import { loadEffectiveStudioAiSettings } from "../ai/studio-ai-settings";
 
 import {
   buildLocalStorySeed,
-  createAiStorySeedProvider,
+  createTextAiStorySeedProvider,
   localStorySeedProvider,
+  StorySeedAiError,
   storySeedPlanPatch,
   type StorySeedDraft,
   type StorySeedPlanPatch,
@@ -35,6 +35,13 @@ import {
 } from "./studio-story-seed";
 
 const TONE_PRESETS = ["차분하게", "숨 가쁘게", "따뜻하게", "냉혹하게", "유쾌하게"] as const;
+
+/** AI 씨앗 확장: 통합 AI 경로(등록한 내 키 → ToonStudio AI 순)로 보낸다. 기획 화면 첫 로드에 서버 AI 모듈을 싣지 않는다. */
+const textAiStorySeedProvider = createTextAiStorySeedProvider(async (prompt) => {
+  const { completeAutomaticFreeText } = await import("../studio-server-ai-client");
+  const result = await completeAutomaticFreeText(prompt.system, prompt.user);
+  return result.ok ? { ok: true, content: result.data.content } : { ok: false, error: result.error };
+});
 const KEYWORD_LIMIT = 5;
 
 const SETTING_KIND_LABELS: Readonly<Record<StorySeedSettingRef["kind"], string>> = {
@@ -71,6 +78,8 @@ export function StudioStorySeedBuilder({
   const [draft, setDraft] = useState<StorySeedDraft | null>(null);
   const [loglineIndex, setLoglineIndex] = useState<0 | 1 | 2>(0);
   const [errorMessage, setErrorMessage] = useState("");
+  // "다시 시도"는 방금 실패한 쪽(기본 제안·AI 확장)으로 다시 보낸다.
+  const lastProviderRef = useRef<StorySeedProvider>(provider);
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
   // 설정 인용 선택: 기본은 전부 인용, 작가가 뺀 항목만 기억한다.
   // 새 설정이 허브·시트에 생기면 자동으로 인용 목록에 들어온다.
@@ -104,6 +113,7 @@ export function StudioStorySeedBuilder({
   };
 
   const runGenerate = async (useProvider: StorySeedProvider) => {
+    lastProviderRef.current = useProvider;
     setPhase("loading");
     setConfirmOverwrite(false);
     try {
@@ -123,9 +133,11 @@ export function StudioStorySeedBuilder({
       setDraft(result);
       setLoglineIndex(0);
       setPhase("ready");
-    } catch {
+    } catch (error) {
       setErrorMessage(
-        r3c04StatusText("studio.r3c04Status.planning.storySeed.generateFailed", "제안을 만들지 못했어요. 네트워크나 제공자 상태를 확인하거나, 기본 제안으로 만들어 보세요."),
+        error instanceof StorySeedAiError
+          ? error.message
+          : r3c04StatusText("studio.r3c04Status.planning.storySeed.generateFailed", "제안을 만들지 못했어요. 네트워크나 제공자 상태를 확인하거나, 기본 제안으로 만들어 보세요."),
       );
       setPhase("error");
     }
@@ -322,13 +334,7 @@ export function StudioStorySeedBuilder({
           <button
             type="button"
             disabled={genre.trim() === "" || phase === "loading"}
-            onClick={() => {
-              const effective = loadEffectiveStudioAiSettings(
-                typeof window !== "undefined" ? window.sessionStorage : undefined,
-              );
-              const aiProvider = createAiStorySeedProvider(effective.settings);
-              void runGenerate(aiProvider);
-            }}
+            onClick={() => void runGenerate(textAiStorySeedProvider)}
             className="min-h-11 rounded-full border border-accent/40 bg-accent/10 px-4 text-sm font-bold text-accent hover:bg-accent/15 disabled:opacity-40"
           >
             AI 씨앗 확장 만들기
@@ -369,7 +375,7 @@ export function StudioStorySeedBuilder({
             </button>
             <button
               type="button"
-              onClick={() => void runGenerate(provider)}
+              onClick={() => void runGenerate(lastProviderRef.current)}
               className="min-h-9 rounded-full px-3 text-xs text-fg-3"
             >
               {r3c04StatusText("studio.r3c04Status.planning.storySeed.retry", "다시 시도")}

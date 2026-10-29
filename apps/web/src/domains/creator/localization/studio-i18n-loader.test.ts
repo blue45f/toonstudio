@@ -71,7 +71,9 @@ describe("Studio lazy i18n assets", () => {
       // 동기화(sync-i18n-legacy-assets)로 75개 팩이 모두 같은 키 집합을 가진다.
       // 1_635 → 1_726: 3D 배경 편집기의 태그·컴포넌트·장면 정보 화면과 .skp 원본 이름·소재 이름 검색 안내를 전용 네임스페이스
       // (studio.bg3dScene.*) 91키로 게시했다(2026-10-22). 75개 팩이 모두 같은 키 집합을 가진다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_726);
+      // 1_726 → 1_735: 60269e38 이 필터 레지스트리에 더한 CSP 호환 필터 9종의 메뉴 행
+      // studio.mainMenu.item.filter.* 9키(2026-10-29). 75개 팩이 모두 같은 키 집합을 가진다.
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_735);
     }
     // The mobile dock used to hardcode Korean labels; every pack must now carry the keys that
     // replaced them, so an `en` viewport cannot fall back to Korean chrome.

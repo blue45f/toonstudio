@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ಲಾಗಿನ್ ಅಗತ್ಯವಿದೆ.",
+  "apiError.loginRequired": "ಸೈನ್ ಇನ್ ಅಗತ್ಯವಿದೆ.",
   "apiError.adminRequired": "ನಿರ್ವಾಹಕರ ಅನುಮತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
   "apiError.adminOnlyPage": "ಈ ಪುಟವನ್ನು ನಿರ್ವಾಹಕರಿಗೆ ಮಾತ್ರ ಸೀಮಿತಗೊಳಿಸಲಾಗಿದೆ.",
   "apiError.notFound": "ಬೇಡಿಕೆಯ ವಸ್ತು ಕಂಡುಬಂದಿಲ್ಲ.",

@@ -31,6 +31,7 @@ const ALL_REGIONS: readonly StudioUiChromeRegion[] = [
   "left-panel",
   "right-panel",
   "page-strip",
+  "workflow-guide",
   "status-rail",
   "tool-rail",
   "quick-actions",

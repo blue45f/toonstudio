@@ -6,7 +6,7 @@
 
 2026-10-29 사용자 결정은 최상의 품질·기능·성능을 우선하고 Chrome과 **macOS Safari Technology Preview(STP)**를 비교 기준으로 삼는 것이다. Windows/Mac/Android Chrome은 기기별로 확인한다. 정식 Safari와 iOS/iPadOS Safari는 별도 검증 대상으로 남기며 STP 기능의 정식 출시일을 확정하지 않는다.
 
-현재 Three 3D canvas·GLB 장비·10개 캠퍼스 디오라마·VRM 캐릭터가 존재한다. Godot·Unity 운영 무대 제거와 Three 무대의 존재를 구분한다. [ADR-0028](../adr/0028-godot-3d-adoption-modes.md)의 과거 PoC는 이번 소스·기기의 성능 증거가 아니다. [PR #2539](https://github.com/blue45f/toonstudio/pull/2539)의 번들 통합은 병합됐지만 원격 전달·운영 배포는 별도 증거가 필요하다. 종전 allow 16 / hold 49 정책은 2026-10-29 구매자의 상업적 사용 확인과 최대 활용 지시에 따라 확장한다. 기존 CC0 증빙은 보존하고 구매 확인 경로는 `licensed`로 구분한다. [소유자 결정](itch-purchased-commercial-use-owner-decision-20261029.md), [번들 권리 검토](itch-bundle-license-review-20261028.md), [활용 기록](itch-bundle-utilization-20261028.md)
+현재 Three 3D canvas·GLB 장비·10개 캠퍼스 디오라마·VRM 캐릭터가 존재한다. Godot·Unity 운영 무대 제거와 Three 무대의 존재를 구분한다. [역사 PoC 측정 기록](../evidence/godot-3d-poc/2026-10-15/README.md)은 이번 소스·기기의 성능 증거가 아니다. “클래식 2D만 남는다”는 2026-10-23 시점의 역사 기록이며 현재는 선택형 Three 3D stage가 존재한다. Godot·Unity 운영 무대 제거 결정은 유지하며, 이번 보충은 새 엔진 채택이나 과거 PoC의 재측정 결정이 아니다. [PR #2539](https://github.com/blue45f/toonstudio/pull/2539)의 번들 통합은 병합됐지만 원격 전달·운영 배포는 별도 증거가 필요하다. 종전 allow 16 / hold 49 정책은 2026-10-29 구매자의 상업적 사용 확인과 최대 활용 지시에 따라 확장한다. 기존 CC0 증빙은 보존하고 구매 확인 경로는 `licensed`로 구분한다. [소유자 결정](itch-purchased-commercial-use-owner-decision-20261029.md), [번들 권리 검토](itch-bundle-license-review-20261028.md), [활용 기록](itch-bundle-utilization-20261028.md)
 
 ## migration — 2D·3D 경계
 

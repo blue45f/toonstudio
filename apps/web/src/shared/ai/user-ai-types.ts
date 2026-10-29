@@ -59,9 +59,21 @@ export interface UserAiRouteAssignment {
 
 export interface UserAiRoutingSettings {
   mode: UserAiRoutingMode;
+  /** 내 유료 키를 자동 경로에서 써도 된다. 기본은 무료 경로(내 무료 키·ToonStudio AI)가 끝난 뒤에만 쓴다. */
   allowPaidFallback: boolean;
+  /**
+   * 내 유료 키를 무료 경로보다 먼저 쓴다(내 키 먼저). 사용자가 유료 키를 등록하며 "먼저 쓴다"에 동의했거나 설정에서
+   * 골랐을 때만 켜진다. allowPaidFallback이 꺼져 있으면 의미가 없다. 예전의 "무료 소진 뒤 유료 키" 동의는 이 값이 없는 채로 남는다.
+   * 저장된 예전 설정에는 없으므로 선택 항목이고, 정규화한 설정에는 늘 들어 있다.
+   */
+  preferPaidKeys?: boolean;
   managedPoolPriority: number;
   serverProviderOrder: UserAiServerProviderId[];
+  /**
+   * 유료 키 자동 사용 동의를 연결마다(`UserAiConnection.paidAutoUse`) 기록하는 형식인지. 예전 형식(이 값 없음)은 동의가
+   * 전역 값 하나뿐이어서, 정규화 때 한 번만 그때 있던 유료 연결 모두에 동의를 옮긴다.
+   */
+  paidAutoUsePerKey?: boolean;
 }
 
 export interface UserAiConnection {
@@ -82,6 +94,12 @@ export interface UserAiConnection {
   priority?: number;
   apiKeys?: UserAiApiKeyProfile[];
   models?: UserAiModelProfile[];
+  /**
+   * 사용자 결제(`user-funded-byok`) 연결을 자동 경로에서 써도 된다는 이 연결에 대한 동의. 키를 등록하며 비용 청구를
+   * 확인했거나 설정에서 유료 키 자동 사용을 골랐을 때만 켜진다. 전역 `allowPaidFallback`이 켜져 있어도 이 값이 없는
+   * 유료 연결(예: AI 보조 카드에서 대화상자용으로 연결한 키)은 자동 경로에 들어가지 않는다.
+   */
+  paidAutoUse?: boolean;
 }
 
 export interface UserAiResolvedConnection extends UserAiConnection {
@@ -106,8 +124,10 @@ export const USER_AI_CAPABILITIES: readonly UserAiCapability[] = ["text", "image
 export const DEFAULT_USER_AI_ROUTING: UserAiRoutingSettings = Object.freeze({
   mode: "automatic",
   allowPaidFallback: false,
+  preferPaidKeys: false,
   managedPoolPriority: 50,
   serverProviderOrder: [...USER_AI_SERVER_PROVIDER_IDS],
+  paidAutoUsePerKey: true,
 });
 
 const EMPTY_ASSIGNMENTS: Record<UserAiCapability, null> = {
@@ -347,16 +367,40 @@ function normalizeRouting(value: unknown): UserAiRoutingSettings {
     ? source.serverProviderOrder.filter((item): item is UserAiServerProviderId =>
         typeof item === "string" && USER_AI_SERVER_PROVIDER_IDS.includes(item as UserAiServerProviderId))
     : [];
+  const allowPaidFallback = source.allowPaidFallback === true;
   return {
     mode,
-    allowPaidFallback: source.allowPaidFallback === true,
+    allowPaidFallback,
+    preferPaidKeys: allowPaidFallback && source.preferPaidKeys === true,
     managedPoolPriority: integerPriority(source.managedPoolPriority, 50),
     serverProviderOrder: [...new Set([...requestedOrder, ...USER_AI_SERVER_PROVIDER_IDS])],
+    paidAutoUsePerKey: source.paidAutoUsePerKey === true,
   };
 }
 
 export function userAiRoutingSettings(configuration: UserAiConfiguration): UserAiRoutingSettings {
   return normalizeRouting(configuration.routing);
+}
+
+/**
+ * 설정에서 유료 키 자동 사용 방식을 고른 결과. 켜면 지금 등록한 유료 연결 모두에 자동 사용 동의를 남기고, 끄면 모두 지운다.
+ * (키를 등록하며 한 동의는 그 연결에만 남으므로, 나중에 더한 유료 키는 여기서 다시 고르거나 키마다 동의해야 자동 경로에 든다.)
+ */
+export function withPaidAutoUseChoice(
+  configuration: UserAiConfiguration,
+  choice: { readonly allowPaidFallback: boolean; readonly preferPaidKeys: boolean },
+): UserAiConfiguration {
+  return {
+    ...configuration,
+    connections: configuration.connections.map((item) => (item.costPolicy === "user-funded-byok"
+      ? { ...item, paidAutoUse: choice.allowPaidFallback }
+      : item)),
+    routing: {
+      ...userAiRoutingSettings(configuration),
+      allowPaidFallback: choice.allowPaidFallback,
+      preferPaidKeys: choice.allowPaidFallback && choice.preferPaidKeys,
+    },
+  };
 }
 
 function normalizeRouteAssignments(
@@ -436,6 +480,7 @@ export function normalizeUserAiConfiguration(value: unknown): UserAiConfiguratio
       priority: integerPriority(source.priority, 100),
       apiKeys,
       models,
+      ...(source.paidAutoUse === true ? { paidAutoUse: true } : {}),
     };
   });
   if (new Set(connections.map((item) => item.id)).size !== connections.length) {
@@ -450,11 +495,17 @@ export function normalizeUserAiConfiguration(value: unknown): UserAiConfiguratio
     }
     assignments[capability] = id as string | null;
   }
+  const routing = normalizeRouting(raw.routing);
+  // 예전 형식은 유료 키 자동 사용 동의가 전역 값 하나뿐이었다. 켜져 있었다면 그때 있던 유료 연결 모두에 동의를 옮긴다.
+  // 형식 표시(paidAutoUsePerKey)를 함께 남기므로 한 번만 옮긴다. 이후에 더한 유료 연결은 따로 동의해야 자동 경로에 든다.
+  const migratedConnections = routing.paidAutoUsePerKey || !routing.allowPaidFallback
+    ? connections
+    : connections.map((item) => (item.costPolicy === "user-funded-byok" ? { ...item, paidAutoUse: true } : item));
   return {
     version: 1,
-    connections,
+    connections: migratedConnections,
     assignments,
     routeAssignments: normalizeRouteAssignments(raw.routeAssignments, connections, assignments),
-    routing: normalizeRouting(raw.routing),
+    routing: { ...routing, paidAutoUsePerKey: true },
   };
 }

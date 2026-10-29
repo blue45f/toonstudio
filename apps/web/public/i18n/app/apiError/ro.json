@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Este necesar să te conectezi.",
+  "apiError.loginRequired": "Este necesar să vă conectați.",
   "apiError.adminRequired": "Permisiunile administratorului nu au putut fi verificate.",
   "apiError.adminOnlyPage": "Această pagină este rezervată administratorilor.",
   "apiError.notFound": "Elementul solicitat nu a putut fi găsit.",

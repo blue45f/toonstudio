@@ -89,6 +89,9 @@ export const STUDIO_LOCAL_STORAGE_EXACT_KEYS: readonly string[] = Object.freeze(
   "toonstudio.studio.bg3d.lt-presets.v1",
   "toonstudio.studio.bg3d.lt-presets.corrupt.v1",
   "toonstudio.studio.tutorialProgress.v1",
+  // AI 채색 프롬프트 라이브러리의 첫 출시 브라우저 사본. 정본은 이제 Studio 로컬 DB(SQLite/OPFS)이고,
+  // 아직 옮겨지지 않은 기기에서도 파기 때 저장한 프롬프트 문구가 남지 않게 한다.
+  "toonstudio.ai.prompt-library.v1",
 ]);
 
 export interface StudioDataDestructionFlags {

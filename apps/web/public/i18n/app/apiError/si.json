@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "ලොග් වෙන්න ඕන.",
+  "apiError.loginRequired": "පිවිසීම අවශ්‍යයි.",
   "apiError.adminRequired": "පරිපාලක අවසරය සත්‍යාපනය කරන්න බැරිවුණා.",
   "apiError.adminOnlyPage": "මෙම පිටුව පරිපාලකයින් සඳහා සීමා කර ඇත.",
   "apiError.notFound": "ඉල්ලූ භාණ්ඩය සොයාගත නොහැකි විය.",

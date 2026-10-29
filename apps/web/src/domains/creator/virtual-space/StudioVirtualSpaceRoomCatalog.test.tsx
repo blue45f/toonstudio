@@ -77,8 +77,8 @@ describe("StudioVirtualSpaceRoomCatalog", () => {
       const hostSrc = hostImg.getAttribute("src") ?? "";
       const environment = studioOfficeEnvironment(module.id);
       if (environment) expect(roomSrc).toBe(environment.previewUrl);
-      else expect(roomSrc).toContain("/assets/virtual-studio/nano-banana-");
-      expect(hostSrc).toContain("/assets/virtual-studio/nano-banana-");
+      else expect(roomSrc).toContain("/assets/virtual-studio/studio-art-");
+      expect(hostSrc).toContain("/assets/virtual-studio/studio-art-");
       expect(existsSync(resolve(publicDir, `.${roomSrc}`))).toBe(true);
       expect(existsSync(resolve(publicDir, `.${hostSrc}`))).toBe(true);
     }

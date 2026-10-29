@@ -13,10 +13,10 @@ import {
 } from "../studio-virtual-space-phaser-canvas-model";
 import { isToonHqManifest } from "./hq/toon-hq-manifest";
 import {
-  NANO_BANANA_2D_WORKSTATIONS,
-  subscribeNanoBanana2dVfxBurst,
-  subscribeNanoBananaWorkstationModal,
-} from "../studio-virtual-space-nano-banana-2d-runtime";
+  ILLUSTRATED_2D_WORKSTATIONS,
+  subscribeIllustrated2dVfxBurst,
+  subscribeIllustratedWorkstationModal,
+} from "../studio-virtual-space-illustrated-2d-runtime";
 import { StudioVirtualSpaceWorkstationLiveModal } from "../StudioVirtualSpaceWorkstationLiveModal";
 import { office2dCharacterForAvatarSkin } from "./office2d-avatar-role";
 import { createOffice2dAvatarProfileSource } from "./office2d-avatar-appearance";
@@ -139,11 +139,11 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
   const handleMyDeskAction = () => myDeskActionRef.current();
 
   useEffect(() => {
-    const unsubModal = subscribeNanoBananaWorkstationModal((stationId) => {
+    const unsubModal = subscribeIllustratedWorkstationModal((stationId) => {
       setSelectedWorkstationId(stationId);
       setWorkstationModalOpen(true);
     });
-    const unsubVfx = subscribeNanoBanana2dVfxBurst((ev) => {
+    const unsubVfx = subscribeIllustrated2dVfxBurst((ev) => {
       const rt = runtimeRef.current;
       if (!rt) return;
       const selfPoint = rt.debugState().self;
@@ -458,7 +458,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
 
   const activeWorkstation =
     (selectedWorkstationId
-      ? NANO_BANANA_2D_WORKSTATIONS.find((s) => s.id === selectedWorkstationId)
+      ? ILLUSTRATED_2D_WORKSTATIONS.find((s) => s.id === selectedWorkstationId)
       : null) ?? resolveOffice2dWorkstation(roomId);
 
   return (

@@ -1831,6 +1831,7 @@ export const studioAiUsageLedger = pgTable(
     promptTokens: integer("promptTokens"),
     completionTokens: integer("completionTokens"),
     totalTokens: integer("totalTokens"),
+    reservedTokens: integer("reservedTokens"), // 호출의 보수적 예약량(0115). 사용량 모르는 고성능 호출을 예산에서 이 값으로 센다
     startedAt: timestamp("startedAt", { mode: "date", withTimezone: true }).notNull(),
     finishedAt: timestamp("finishedAt", { mode: "date", withTimezone: true }).notNull(),
     createdAt: timestamp("createdAt", { mode: "date", withTimezone: true }).notNull().defaultNow(),
@@ -1838,13 +1839,14 @@ export const studioAiUsageLedger = pgTable(
   (t) => [
     index("idx_studio_ai_usage_user_started").on(t.userId, t.startedAt),
     index("idx_studio_ai_usage_status_started").on(t.status, t.startedAt),
+    index("idx_studio_ai_usage_provider_started").on(t.provider, t.startedAt),
     check(
       "studio_ai_usage_task_check",
       sql`${t.task} in ('assistant', 'composition', 'scenario', 'translation', 'dialogue', 'palette')`
     ),
     check(
       "studio_ai_usage_provider_check",
-      sql`${t.provider} in ('gemini', 'qwen', 'groq', 'sambanova', 'zai', 'mistral', 'cloudflare', 'openrouter', 'siliconflow', 'deepseek')`
+      sql`${t.provider} in ('gemini', 'qwen', 'groq', 'sambanova', 'zai', 'mistral', 'cloudflare', 'openrouter', 'siliconflow', 'deepseek', 'anthropic')`
     ),
     check("studio_ai_usage_model_check", sql`char_length(${t.model}) between 1 and 200`),
     check("studio_ai_usage_attempt_count_check", sql`${t.attemptCount} between 1 and 9`),
@@ -1853,11 +1855,9 @@ export const studioAiUsageLedger = pgTable(
       sql`${t.status} in ('success', 'client_aborted', 'timeout', 'provider_rate_limited', 'provider_error', 'network_error', 'content_filtered')`
     ),
     check("studio_ai_usage_prompt_tokens_check", sql`${t.promptTokens} is null or ${t.promptTokens} >= 0`),
-    check(
-      "studio_ai_usage_completion_tokens_check",
-      sql`${t.completionTokens} is null or ${t.completionTokens} >= 0`
-    ),
+    check("studio_ai_usage_completion_tokens_check", sql`${t.completionTokens} is null or ${t.completionTokens} >= 0`),
     check("studio_ai_usage_total_tokens_check", sql`${t.totalTokens} is null or ${t.totalTokens} >= 0`),
+    check("studio_ai_usage_reserved_tokens_check", sql`${t.reservedTokens} is null or ${t.reservedTokens} >= 0`),
     check("studio_ai_usage_timestamps_check", sql`${t.finishedAt} >= ${t.startedAt}`),
   ]
 );

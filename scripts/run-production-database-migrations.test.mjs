@@ -52,10 +52,10 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(113);
+  expect(manifest).toHaveLength(115);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
-  expect(manifest.at(-1).id).toBe("0113_production_episode_voice_commentary");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(113);
+  expect(manifest.at(-1).id).toBe("0115_studio_ai_usage_ledger_reserved_tokens");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(115);
 });
 
 test("migration directory matches the managed manifest without duplicate sequence numbers", () => {
@@ -283,6 +283,44 @@ test("Studio AI provider expansion supports nine reviewed external free attempts
   }
   expect(sql).toMatch(/^--[\s\S]*BEGIN;[\s\S]*COMMIT;\s*$/u);
   expect(sql).not.toMatch(/DROP\s+(?:TABLE|SCHEMA)/iu);
+});
+
+test("Studio AI premium route migration only widens the provider check and adds a budget index", () => {
+  const migration = loadMigrationManifest().find(
+    ({ id }) => id === "0114_studio_ai_premium_route_ledger",
+  );
+  expect(migration?.id).toBe("0114_studio_ai_premium_route_ledger");
+  const sql = migration?.contents ?? "";
+
+  for (const requiredFragment of [
+    "'gemini', 'qwen', 'groq', 'sambanova', 'zai', 'mistral', 'cloudflare', 'openrouter', 'siliconflow', 'deepseek', 'anthropic'",
+    'VALIDATE CONSTRAINT "studio_ai_usage_provider_check"',
+    'CREATE INDEX IF NOT EXISTS "idx_studio_ai_usage_provider_started"',
+  ]) {
+    expect(sql).toContain(requiredFragment);
+  }
+  expect(sql).toMatch(/^--[\s\S]*BEGIN;[\s\S]*COMMIT;\s*$/u);
+  expect(sql).not.toMatch(/DROP\s+(?:TABLE|SCHEMA|INDEX)/iu);
+  expect(sql).not.toContain("attemptCount");
+});
+
+test("Studio AI ledger reservation migration only adds a nullable non-negative column", () => {
+  const migration = loadMigrationManifest().find(
+    ({ id }) => id === "0115_studio_ai_usage_ledger_reserved_tokens",
+  );
+  expect(migration?.id).toBe("0115_studio_ai_usage_ledger_reserved_tokens");
+  const sql = migration?.contents ?? "";
+
+  for (const requiredFragment of [
+    'ADD COLUMN IF NOT EXISTS "reservedTokens" integer;',
+    'CHECK ("reservedTokens" IS NULL OR "reservedTokens" >= 0) NOT VALID',
+    'VALIDATE CONSTRAINT "studio_ai_usage_reserved_tokens_check"',
+  ]) {
+    expect(sql).toContain(requiredFragment);
+  }
+  expect(sql).toMatch(/^--[\s\S]*BEGIN;[\s\S]*COMMIT;\s*$/u);
+  expect(sql).not.toMatch(/\bDROP\b/iu);
+  expect(sql).not.toMatch(/NOT NULL|SET DEFAULT|\bDEFAULT\b/iu);
 });
 
 test("creator community publishing migration separates immutable releases from discovery state", () => {

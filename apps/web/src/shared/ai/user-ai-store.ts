@@ -1,13 +1,14 @@
 import { useSyncExternalStore } from "react";
 
-import { isAnthropicBaseUrl } from "./claude/claude-protocol";
 import { decryptUserAiVault, encryptUserAiVault } from "./user-ai-crypto";
 import { freeAiConnectionPolicyIssue } from "./free-ai-policy";
+import { forgetFreeAiRuntimeRoutes } from "./free-ai-runtime-budget";
 import {
   EMPTY_AI_CONFIGURATION,
   EMPTY_AI_CONNECTION,
   normalizeUserAiConfiguration,
   resolvedUserAiRoutes,
+  USER_AI_CAPABILITIES,
   userAiConnectionApiKeys,
   userAiConnectionModels,
   userAiRoutingSettings,
@@ -72,9 +73,42 @@ export function useUserAi() {
   );
 }
 
+/**
+ * 앞 설정과 새 설정 중 한쪽에만 있는 경로(지운 키, 새로 넣은 키, 주소·키 값이 바뀐 경로). 켜고 끄기만 한 경로는 같은
+ * 키라서 세지 않는다(끄고 다시 켠다고 하루 사용량·잠금 기록이 비지 않게).
+ */
+function changedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): UserAiResolvedConnection[] {
+  const collect = (configuration: UserAiConfiguration) => {
+    const routes = new Map<string, UserAiResolvedConnection>();
+    for (const connection of configuration.connections) {
+      const everyRoute: UserAiConnection = {
+        ...connection,
+        enabled: true,
+        apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
+        models: connection.models?.map((item) => ({ ...item, enabled: true })),
+      };
+      for (const capability of USER_AI_CAPABILITIES) {
+        for (const route of resolvedUserAiRoutes(everyRoute, capability)) {
+          routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
+        }
+      }
+    }
+    return routes;
+  };
+  const before = collect(previous);
+  const after = collect(next);
+  return [
+    ...[...before].filter(([signature]) => !after.has(signature)).map(([, route]) => route),
+    ...[...after].filter(([signature]) => !before.has(signature)).map(([, route]) => route),
+  ];
+}
+
 export function setUserAiConfiguration(configuration: UserAiConfiguration) {
+  const next = normalizeUserAiConfiguration(configuration);
+  // 같은 경로 ID를 다시 쓰는 새 키가 옛 키의 인증 대기·결제 잠금에 걸리지 않게, 바뀐 경로의 기록을 지운다.
+  forgetFreeAiRuntimeRoutes(changedRoutes(snapshot.configuration, next));
   publish(
-    normalizeUserAiConfiguration(configuration),
+    next,
     "클라우드 AI 라우팅을 메모리에 적용했습니다. 암호화 저장 전에는 디스크에 키를 기록하지 않습니다.",
     false,
   );
@@ -138,8 +172,8 @@ function validRoutes(
 /** Returns cloud routes in the selected automatic, priority, or manual order. */
 export function userAiConnectionsForCapability(
   capability: UserAiCapability,
+  configuration: UserAiConfiguration = snapshot.configuration,
 ): UserAiResolvedConnection[] {
-  const configuration = snapshot.configuration;
   const routing = userAiRoutingSettings(configuration);
   const assigned = assignedRoute(configuration, capability);
   if (routing.mode === "manual") return assigned ? [assigned] : [];
@@ -164,19 +198,35 @@ export function userAiConnection(
 
 /**
  * Automatic personal-cloud fallback. Free routes are always eligible; explicitly billed BYOK
- * routes join the chain only after the user enables paid fallback. Manual mode uses one exact route.
+ * routes join the chain only after the user enables paid fallback and consented for that connection
+ * (`paidAutoUse`). Manual mode uses one exact route.
  */
 export function userAiAutomaticExternalConnectionsForCapability(
   capability: UserAiCapability,
+  configuration: UserAiConfiguration = snapshot.configuration,
 ): UserAiResolvedConnection[] {
-  const configuration = snapshot.configuration;
   const routing = userAiRoutingSettings(configuration);
-  return userAiConnectionsForCapability(capability).filter((connection) => (
+  return userAiConnectionsForCapability(capability, configuration).filter((connection) => (
     connection.costPolicy === "provider-free-tier"
     || connection.costPolicy === "openrouter-free"
+    // 유료 연결은 "하나만 고정"으로 직접 골랐거나, 유료 키 자동 사용이 켜져 있고 이 연결에 동의했을 때만 쓴다.
     || (connection.costPolicy === "user-funded-byok" && (
-      routing.allowPaidFallback || routing.mode === "manual"
+      routing.mode === "manual" || (routing.allowPaidFallback && connection.paidAutoUse === true)
     ))
+  ));
+}
+
+/**
+ * "내 키 먼저"에 들어가는 연결: 무료 키는 늘, 유료 키는 사용자가 유료 키를 먼저 쓰기로 골랐을 때(또는 수동 모드)만.
+ * 나머지 유료 키는 무료 경로(ToonStudio AI 포함)가 끝난 뒤의 대체 경로로 남는다.
+ */
+export function userAiPersonalFirstConnectionsForCapability(
+  capability: UserAiCapability,
+  configuration: UserAiConfiguration = snapshot.configuration,
+): UserAiResolvedConnection[] {
+  const routing = userAiRoutingSettings(configuration);
+  return userAiAutomaticExternalConnectionsForCapability(capability, configuration).filter((connection) => (
+    connection.costPolicy !== "user-funded-byok" || routing.preferPaidKeys === true || routing.mode === "manual"
   ));
 }
 
@@ -323,199 +373,8 @@ export function migrateLegacyUserAi(): boolean {
   return true;
 }
 
-export function readDefaultEnvClaudeToken(): string {
-  const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-  const env = proc?.env ?? {};
-  const metaEnv = (import.meta as { env?: Record<string, unknown> }).env ?? {};
-  const candidates = [
-    metaEnv.VITE_STUDIO_DEFAULT_ANTHROPIC_KEY,
-    metaEnv.VITE_ANTHROPIC_API_KEY,
-    env.VITE_STUDIO_DEFAULT_ANTHROPIC_KEY,
-    env.VITE_ANTHROPIC_API_KEY,
-    env.ANTHROPIC_API_KEY,
-    env.CLAUDE_API_KEY,
-  ];
-  for (const val of candidates) {
-    if (typeof val === "string" && val.trim().length > 0) {
-      return val.trim();
-    }
-  }
-  return "";
-}
-
-function readDefaultEnvUserAiToken(): string {
-  const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-  const env = proc?.env ?? {};
-  const metaEnv = (import.meta as { env?: Record<string, unknown> }).env ?? {};
-  const candidates = [
-    metaEnv.VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY,
-    metaEnv.VITE_STUDIO_DEFAULT_AI_API_KEY,
-    env.VITE_STUDIO_DEFAULT_GITHUB_MODELS_KEY,
-    env.GITHUB_MODELS_API_KEY,
-    env.GITHUB_PERSONAL_ACCESS_TOKEN,
-    env.GITHUB_TOKEN,
-  ];
-  for (const val of candidates) {
-    if (typeof val === "string" && val.trim().length > 0) {
-      return val.trim();
-    }
-  }
-  return "";
-}
-
-export function hasDefaultEnvClaudeKey(explicitToken?: string): boolean {
-  return Boolean((explicitToken ?? readDefaultEnvClaudeToken()).trim());
-}
-
-/**
- * Opt-in helper to hydrate an Anthropic Claude connection (`https://api.anthropic.com`,
- * `claude-opus-5-5` or custom model, `user-funded-byok`) from environment variables
- * (`VITE_ANTHROPIC_API_KEY` / `ANTHROPIC_API_KEY` / `CLAUDE_API_KEY`) when no Claude route is active.
- */
-export function hydrateDefaultEnvClaudeConnection(
-  explicitToken?: string,
-  textModel = "claude-opus-5-5",
-): boolean {
-  const existingClaude = snapshot.configuration.connections.some((conn) =>
-    isAnthropicBaseUrl(conn.baseUrl),
-  );
-  if (existingClaude) {
-    return true;
-  }
-  const token = (explicitToken ?? readDefaultEnvClaudeToken()).trim();
-  if (!token) {
-    return false;
-  }
-  const claudeConnection: UserAiConnection = {
-    ...EMPTY_AI_CONNECTION,
-    id: "env-anthropic-claude",
-    label: "Claude (Anthropic) 로컬 환경변수 연결",
-    baseUrl: "https://api.anthropic.com",
-    apiKey: token,
-    textModel,
-    imageModel: "",
-    costPolicy: "user-funded-byok",
-    priority: 10,
-    apiKeys: undefined,
-    models: undefined,
-  };
-  const nextConnections = [...snapshot.configuration.connections, claudeConnection];
-  const configuration = normalizeUserAiConfiguration({
-    version: 1,
-    connections: nextConnections,
-    assignments: {
-      ...snapshot.configuration.assignments,
-      text: snapshot.configuration.assignments.text ?? "env-anthropic-claude",
-    },
-    routing: {
-      ...userAiRoutingSettings(snapshot.configuration),
-      allowPaidFallback: true,
-    },
-  });
-  publish(
-    configuration,
-    "기본 환경변수(Claude Anthropic) 연결을 메모리에 로드했습니다.",
-    false,
-  );
-  return true;
-}
-
-/**
- * Opt-in helper to hydrate the in-memory UserAiConfiguration from the default environment
- * Anthropic Claude token (`api.anthropic.com`, `claude-haiku-5-5`, `user-funded-byok`)
- * and/or GitHub Models token (`models.github.ai/inference`, `openai/gpt-4o-mini`, `provider-free-tier`)
- * when no connections are configured yet.
- */
-export function hydrateDefaultEnvUserAiConnection(explicitToken?: string): boolean {
-  if (snapshot.configuration.connections.length > 0) {
-    return true;
-  }
-  const rawExplicit = explicitToken?.trim() ?? "";
-  if (rawExplicit.startsWith("sk-ant-")) {
-    return hydrateDefaultEnvClaudeConnection(rawExplicit);
-  }
-  const claudeToken = rawExplicit ? "" : readDefaultEnvClaudeToken();
-  const githubToken = (rawExplicit || readDefaultEnvUserAiToken()).trim();
-  if (!claudeToken && !githubToken) {
-    return false;
-  }
-  const connections: UserAiConnection[] = [];
-  if (claudeToken) {
-    connections.push({
-      ...EMPTY_AI_CONNECTION,
-      id: "env-anthropic-claude",
-      label: "Claude (Anthropic) 로컬 환경변수 연결",
-      baseUrl: "https://api.anthropic.com",
-      apiKey: claudeToken,
-      textModel: "claude-opus-5-5",
-      imageModel: "",
-      costPolicy: "user-funded-byok",
-      priority: 10,
-      apiKeys: undefined,
-      models: undefined,
-    });
-  }
-  if (githubToken) {
-    connections.push({
-      ...EMPTY_AI_CONNECTION,
-      id: "env-github-models",
-      label: "GitHub Models 기본 무료 연결",
-      baseUrl: "https://models.github.ai/inference",
-      apiKey: githubToken,
-      textModel: "openai/gpt-4o-mini",
-      imageModel: "",
-      costPolicy: "provider-free-tier",
-      priority: claudeToken ? 20 : 10,
-      apiKeys: undefined,
-      models: undefined,
-    });
-  }
-  const primaryId = connections[0]?.id ?? null;
-  const configuration = normalizeUserAiConfiguration({
-    version: 1,
-    connections,
-    assignments: {
-      text: primaryId,
-      image: null,
-      inference: null,
-      "three-d": null,
-    },
-    routing: {
-      ...userAiRoutingSettings(snapshot.configuration),
-      allowPaidFallback: Boolean(claudeToken),
-    },
-  });
-  publish(
-    configuration,
-    "기본 환경변수 AI 연결을 메모리에 로드했습니다.",
-    false,
-  );
-  return true;
-}
-
-function isAutomatedTestRuntime(): boolean {
-  try {
-    const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-    if (proc?.env?.VITEST || proc?.env?.NODE_ENV === "test") return true;
-  } catch {
-    // 무시
-  }
-  try {
-    const metaEnv = (import.meta as { env?: Record<string, unknown> }).env;
-    if (metaEnv?.MODE === "test" || metaEnv?.VITEST) return true;
-  } catch {
-    // 무시
-  }
-  return false;
-}
-
-if (!isAutomatedTestRuntime()) {
-  try {
-    hydrateDefaultEnvUserAiConnection();
-  } catch {
-    // 초기화 시 환경변수 하이드레이션 실패는 무시하고 수동 설정 경로를 유지한다.
-  }
-}
+// 운영자 키를 `VITE_*` 환경변수로 브라우저 번들에 넣어 자동 연결하던 경로는 없앴다. 번들에 들어간 키는
+// 모든 방문자에게 노출된다. 키 없는 사용자는 서버가 운영 키로 처리하는 관리형 경로(`managedAssistRoute`)를 쓴다.
 
 if (typeof globalThis.addEventListener === "function") {
   globalThis.addEventListener("storage", (event: StorageEvent) => {

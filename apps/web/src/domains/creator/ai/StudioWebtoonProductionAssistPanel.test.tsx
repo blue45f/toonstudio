@@ -7,15 +7,15 @@ import { EMPTY_AI_CONFIGURATION, EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai
 
 import { StudioWebtoonProductionAssistPanel } from "./StudioWebtoonProductionAssistPanel";
 
-const { claudeParseMock } = vi.hoisted(() => ({
-  claudeParseMock: vi.fn(),
+const { assistParseMock } = vi.hoisted(() => ({
+  assistParseMock: vi.fn(),
 }));
 
-vi.mock("@/shared/ai/claude/claude-transport", () => ({
-  claudeParse: claudeParseMock,
+vi.mock("@/shared/ai/assist/assist-transport", () => ({
+  assistParse: assistParseMock,
 }));
 
-function connectClaude(model = "claude-haiku-5-5"): void {
+function connectAssist(model = "claude-haiku-5-5"): void {
   setUserAiConfiguration({
     ...structuredClone(EMPTY_AI_CONFIGURATION),
     connections: [
@@ -55,7 +55,7 @@ function connectClaude(model = "claude-haiku-5-5"): void {
 describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4대 신규 AI 감수 워크벤치 UI)", () => {
   beforeEach(() => {
     lockUserAi(false);
-    claudeParseMock.mockReset();
+    assistParseMock.mockReset();
   });
 
   afterEach(() => {
@@ -63,7 +63,7 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
   });
 
   it("8대 웹툰 AI 경쟁사 벤치마크 매트릭스와 4대 신규 프로덕션 AI 감수 탭 전환·대본 반영을 수행한다", async () => {
-    connectClaude("claude-haiku-5-5");
+    connectAssist("claude-haiku-5-5");
     const onApplyScript = vi.fn();
 
     render(
@@ -116,8 +116,8 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
     expect(onApplyScript).toHaveBeenCalledTimes(1);
     expect(onApplyScript.mock.calls[0]?.[0]).toContain("[연기:");
 
-    // Claude AI 실시간 감수 실행
-    claudeParseMock.mockResolvedValueOnce({
+    // AI 실시간 감수 실행
+    assistParseMock.mockResolvedValueOnce({
       message: {
         model: "claude-haiku-5-5",
         usage: {
@@ -155,7 +155,7 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
     fireEvent.click(screen.getByTestId("run-claude-production-assist-btn"));
     await waitFor(() => {
       expect(screen.getByTestId("production-assist-engine-status").textContent).toContain(
-        "Claude API 실시간",
+        "AI 실시간",
       );
     });
   });

@@ -1,5 +1,5 @@
 import { isPrivateOrLocalAiHostname } from "./ai-host-policy";
-import { anthropicConnectionIssue, isAnthropicBaseUrl } from "./claude/claude-protocol";
+import { anthropicConnectionIssue, isAnthropicBaseUrl } from "./assist/assist-protocol";
 
 export const USER_AI_COST_POLICIES = [
   "unverified",

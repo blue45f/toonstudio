@@ -14,6 +14,8 @@ import {
   getStudioServerAiStatus,
   parseStudioServerAiCompletion,
   parseStudioServerAiFailoverMetadata,
+  resolveActiveServerAiProviderLabel,
+  studioTextUsesPersonalKeyFirst,
 } from "./studio-server-ai-client";
 
 const OPERATION_ID = "composition-00000000-0000-4000-8000-000000000001";
@@ -50,6 +52,31 @@ function configureFreeTextConnection(): void {
       inference: null,
       "three-d": null,
     },
+  });
+}
+
+function configurePaidTextConnection(routing: { allowPaidFallback: boolean; preferPaidKeys: boolean }): void {
+  setUserAiConfiguration({
+    version: 1,
+    connections: [{
+      id: "test-paid-text",
+      label: "Test paid text provider",
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: "user-paid-key",
+      imageModel: "",
+      textModel: "paid-text-model",
+      imageGenerationPath: "/images/generations",
+      imageEditPath: "/images/edits",
+      chatCompletionsPath: "/chat/completions",
+      costPolicy: "user-funded-byok",
+    }],
+    assignments: {
+      text: "test-paid-text",
+      image: null,
+      inference: null,
+      "three-d": null,
+    },
+    routing: { mode: "automatic", ...routing, managedPoolPriority: 50, serverProviderOrder: [] },
   });
 }
 
@@ -131,7 +158,7 @@ describe("studio automatic free AI client", () => {
     expect(canonicalStudioServerAiOperationId("작업-0000000000000000")).toBeNull();
   });
 
-  it("uses the keyless shared free pool before personal connections", async () => {
+  it("uses the keyless ToonStudio AI route when no personal key is registered", async () => {
     const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
       expect(urlOf(request).pathname).toBe("/api/studio-ai/chat");
       const req = request as Request;
@@ -200,7 +227,7 @@ describe("studio automatic free AI client", () => {
     });
   });
 
-  it("uses an explicitly connected personal free key without forcing login", async () => {
+  it("uses a registered personal key first, without forcing login", async () => {
     configureFreeTextConnection();
     const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
       if (urlOf(request).pathname === "/api/studio-ai/chat") {
@@ -214,19 +241,48 @@ describe("studio automatic free AI client", () => {
       ok: true,
       data: { content: "개인 무료 결과", provider: "user" },
     });
+    // 등록한 키가 먼저라 서버 경로는 부르지 않는다.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands off to ToonStudio AI when the registered key's free quota is exhausted", async () => {
+    configureFreeTextConnection();
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ error: { message: "rate limit", type: "insufficient_quota" } }, 429);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "ToonStudio AI 결과", provider: "anthropic" },
+    });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("uses a personal free key only after shared quota exhaustion", async () => {
+  it("hands off to ToonStudio AI when every registered key is rejected at authentication", async () => {
+    configureFreeTextConnection();
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "gemini", model: "gemini-3.8-flash" });
+      }
+      return json({ error: "invalid key" }, 401);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "ToonStudio AI 결과", provider: "gemini" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the personal key first in its exact request shape", async () => {
     configureFreeTextConnection();
     const fetchMock = vi.fn(async (request: RequestInfo | URL, init?: RequestInit) => {
       const url = urlOf(request);
-      if (url.pathname === "/api/studio-ai/chat") {
-        return json({
-          code: "FREE_AI_POOL_EXHAUSTED",
-          message: "오늘의 자동 무료 AI 사용량이 모두 소진되었습니다.",
-        }, 429);
-      }
       expect(url.toString()).toBe("https://api.groq.com/openai/v1/chat/completions");
       const req = request instanceof Request ? request : new Request(request, init);
       expect(req.headers.get("Authorization")).toBe("Bearer user-secret-key");
@@ -248,7 +304,7 @@ describe("studio automatic free AI client", () => {
         requestId: `byok:${OPERATION_ID}`,
       },
     });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("does not mislabel a personal-key authentication failure as free exhaustion", async () => {
@@ -295,6 +351,197 @@ describe("studio automatic free AI client", () => {
       code: "http_error",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps an earlier 'paid key after free routes' consent behind ToonStudio AI", async () => {
+    configurePaidTextConnection({ allowPaidFallback: true, preferPaidKeys: false });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "ToonStudio AI 결과", provider: "anthropic" },
+    });
+    // 유료 키는 부르지 않았다(서버 경로가 먼저다).
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(urlOf(fetchMock.mock.calls[0]![0]).pathname).toBe("/api/studio-ai/chat");
+  });
+
+  it("uses the paid key as the fallback when ToonStudio AI cannot run", async () => {
+    configurePaidTextConnection({ allowPaidFallback: true, preferPaidKeys: false });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ code: "PREMIUM_AI_UNAVAILABLE", message: "고성능 AI 사용 불가" }, 503);
+      }
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "유료 키 결과", provider: "user" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses a paid key first only after the user chose 'my paid key first'", async () => {
+    configurePaidTextConnection({ allowPaidFallback: true, preferPaidKeys: true });
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "유료 키 결과" } }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "유료 키 결과", provider: "user" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("gets a complete answer from ToonStudio AI when the free key's answer hit the output cap", async () => {
+    configureFreeTextConnection();
+    const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "잘린 개인" }, finish_reason: "length" }] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "온전한 ToonStudio AI 결과", provider: "anthropic" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns the cut-off free-key answer when ToonStudio AI cannot run either", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ code: "FREE_AI_LOGIN_REQUIRED", message: "로그인 필요" }, 401);
+      }
+      return json({ choices: [{ message: { content: "잘린 개인" }, finish_reason: "length" }] });
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "잘린 개인", provider: "user" },
+    });
+  });
+
+  it("hands off to ToonStudio AI while a rejected key is cooling down instead of failing every request", async () => {
+    configureFreeTextConnection();
+    let serverCalls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        serverCalls += 1;
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ error: "invalid key" }, 401);
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
+    // 두 번째 요청: 키는 인증 오류로 쉬는 중이라 보내지 않고 바로 ToonStudio AI로 간다.
+    await expect(completeStudioServerText({ ...input(), operationId: "composition-00000000-0000-4000-8000-000000000002" }))
+      .resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
+    expect(serverCalls).toBe(2);
+  });
+
+  it("hands off to ToonStudio AI when a reasoning free model used the whole output cap and left no text", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({
+      ok: true,
+      data: { content: "온전한 ToonStudio AI 결과", provider: "anthropic" },
+    });
+  });
+
+  it("keeps the empty-cut-off reason from my key when ToonStudio AI is also used up", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ code: "FREE_AI_POOL_EXHAUSTED", message: "오늘 무료 AI 한도를 모두 썼어요." }, 429);
+      }
+      return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+    }));
+
+    const result = await completeStudioServerText(input());
+    expect(result).toMatchObject({ ok: false, code: "http_error" });
+    expect(result.ok ? "" : result.error).toMatch(/출력 한도에 걸려 비어 있어요/u);
+  });
+
+  it("hands off to ToonStudio AI when a revoked key is answered with HTTP 400 API_KEY_INVALID", async () => {
+    configureFreeTextConnection();
+    vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {
+      if (urlOf(request).pathname === "/api/studio-ai/chat") {
+        return json({ content: "ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+      }
+      return json({ error: { message: "API key not valid. Please pass a valid API key.", details: [{ reason: "API_KEY_INVALID" }] } }, 400);
+    }));
+
+    await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: true, data: { provider: "anthropic" } });
+  });
+
+  it("shows the server's 'try again shortly' message, not quota exhaustion, when the premium route is briefly unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({
+      code: "PREMIUM_AI_UNAVAILABLE",
+      message: "ToonStudio 고성능 AI를 지금 쓸 수 없어요. 잠시 후 다시 시도하거나 통합 AI 설정에서 내 API 키를 연결하세요.",
+    }, 503)));
+
+    const result = await completeStudioServerText(input());
+    expect(result).toMatchObject({ ok: false, code: "http_error" });
+    expect(result.ok ? "" : result.error).toMatch(/지금 쓸 수 없어요/u);
+  });
+
+  it("labels the route in the same order the request actually takes in every routing mode", () => {
+    const status = {
+      configured: true,
+      providers: [{ id: "anthropic", label: "ToonStudio 고성능 AI", model: "claude-opus-5-5", configured: true }],
+    } as unknown as Parameters<typeof resolveActiveServerAiProviderLabel>[1];
+    const withRouting = (routing: Record<string, unknown>, priority: number) => setUserAiConfiguration({
+      version: 1,
+      connections: [{
+        id: "test-free-text",
+        label: "Test free text provider",
+        baseUrl: "https://api.groq.com/openai/v1",
+        apiKey: "user-secret-key",
+        imageModel: "",
+        textModel: "text-model",
+        imageGenerationPath: "/images/generations",
+        imageEditPath: "/images/edits",
+        chatCompletionsPath: "/chat/completions",
+        costPolicy: "provider-free-tier",
+        priority,
+      }],
+      assignments: { text: "test-free-text", image: null, inference: null, "three-d": null },
+      routing: { allowPaidFallback: false, managedPoolPriority: 50, serverProviderOrder: [], ...routing } as never,
+    });
+
+    withRouting({ mode: "automatic" }, 10);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
+    expect(studioTextUsesPersonalKeyFirst()).toBe(true);
+    withRouting({ mode: "priority" }, 10);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: 내 키 → ToonStudio 고성능 AI → 무료 AI");
+    withRouting({ mode: "priority" }, 90);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("자동: ToonStudio 고성능 AI → 무료 AI");
+    expect(studioTextUsesPersonalKeyFirst()).toBe(false);
+    withRouting({ mode: "manual" }, 10);
+    expect(resolveActiveServerAiProviderLabel("auto", status)).toBe("고정: 내 키");
   });
 
   it("keeps free-pool failover metadata allowlisted", () => {

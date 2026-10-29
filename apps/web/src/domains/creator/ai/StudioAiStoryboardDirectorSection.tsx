@@ -215,9 +215,7 @@ export function StudioAiStoryboardDirectorSection({
   };
 
   const engineModeBadgeText =
-    effectiveAi.source === "env-default"
-      ? `기본 AI 키 연동됨 (${effectiveAi.settings.baseUrl.includes("anthropic.com") ? "Anthropic Claude" : "GitHub Models"} · BYOK 불필요)`
-      : effectiveAi.source === "byok-session" ? "BYOK 세션 키 연동됨" : "내장 화풍·스토리보드 엔진 활성 (BYOK 불필요)";
+    effectiveAi.source === "byok-session" ? "내 키 연동됨" : "내장 화풍·스토리보드 엔진 활성 (키 없이 사용)";
 
   return (
     <div className="flex flex-col gap-4">

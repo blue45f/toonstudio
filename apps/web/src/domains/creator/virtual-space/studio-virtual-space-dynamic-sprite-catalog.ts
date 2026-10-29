@@ -2,7 +2,7 @@
  * 다채로운 소두(5.5~6등신) 다중 프레임 캐릭터 스프라이트 · 10종 표정 · 10종 역동적 동작 ·
  * 8종 화려한 특수효과(VFX) 및 4대 실무 업무 협업 존 정적 카탈로그·타입 정의.
  */
-import type { NanoBananaCreatorPersonaId } from "./studio-virtual-office-nextgen-engine-data";
+import type { IllustratedCreatorPersonaId } from "./studio-virtual-office-nextgen-engine-data";
 
 export type DynamicSpriteExpressionId =
   | "bright-smile"
@@ -97,7 +97,7 @@ export interface DynamicSpriteVfxSpec {
 }
 
 export interface DynamicCreatorPersonaSpriteSpec {
-  readonly personaId: NanoBananaCreatorPersonaId;
+  readonly personaId: IllustratedCreatorPersonaId;
   readonly characterNameKo: string;
   readonly roleTitleKo: string;
   readonly personalityTraitKo: string;
@@ -155,7 +155,7 @@ export interface DynamicSpriteFrameKinematics {
 }
 
 export interface PracticalCollaboratorLiveUnit {
-  readonly personaId: NanoBananaCreatorPersonaId;
+  readonly personaId: IllustratedCreatorPersonaId;
   readonly zoneId: PracticalCollabZoneId;
   readonly xPct: number;
   readonly yPct: number;
@@ -168,7 +168,7 @@ export interface PracticalCollaboratorLiveUnit {
   readonly dccToolBadge: string;
   readonly taskStatus: PracticalTaskStatus;
   readonly progressPercent: number;
-  readonly pairedWithPersonaId: NanoBananaCreatorPersonaId | null;
+  readonly pairedWithPersonaId: IllustratedCreatorPersonaId | null;
   readonly statusBubbleKo: string;
 }
 
@@ -189,14 +189,14 @@ export interface PracticalCollabZoneSpec {
 export interface PracticalCanvasPinNote {
   readonly id: string;
   readonly zoneId: PracticalCollabZoneId;
-  readonly authorPersonaId: NanoBananaCreatorPersonaId;
+  readonly authorPersonaId: IllustratedCreatorPersonaId;
   readonly targetTaskCode: string;
   readonly noteKo: string;
   readonly resolved: boolean;
 }
 
 export interface PracticalSpriteWorkspaceState {
-  readonly selectedPersonaId: NanoBananaCreatorPersonaId;
+  readonly selectedPersonaId: IllustratedCreatorPersonaId;
   readonly selectedZoneId: PracticalCollabZoneId;
   readonly globalFps: 8 | 12 | 24;
   readonly animationPaused: boolean;
@@ -263,7 +263,7 @@ export const PRACTICAL_COLLAB_ZONES: readonly PracticalCollabZoneSpec[] = [
 ];
 
 export function getDynamicCreatorPersonaSpec(
-  personaId: NanoBananaCreatorPersonaId,
+  personaId: IllustratedCreatorPersonaId,
 ): DynamicCreatorPersonaSpriteSpec {
   return (
     DYNAMIC_CREATOR_SPRITE_CAST.find((item) => item.personaId === personaId) ??

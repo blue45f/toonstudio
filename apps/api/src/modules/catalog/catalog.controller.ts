@@ -16,11 +16,11 @@ import {
 } from "@nestjs/common";
 
 import { buildAffiliateUrl } from "@toonstudio/contracts/affiliate";
-import { coverImagePolicy } from "../../../../../packages/core/src/catalog";
+import { coverImagePolicy } from "@toonstudio/core/catalog";
 import { sanitizeLogValue } from "../../logging/log-safe";
 import { getAppConfig, isAdminUser } from "../../server/app-config";
 
-import { searchParamsFromBody } from "../../../../../packages/core/src/search-pagination";
+import { searchParamsFromBody } from "@toonstudio/core/search-pagination";
 
 import { CatalogService } from "./catalog.service";
 import { resolveAffiliateDestination, resolveCoverFetchUrl } from "./catalog-url-policy";

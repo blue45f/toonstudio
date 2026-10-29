@@ -72,6 +72,7 @@ const CANVAS_SCENE_PRESETS: readonly CanvasScenePreset[] = [
 interface StudioCinematicCanvasWelcomeProps {
   readonly pageKey: string;
   readonly visible: boolean;
+  readonly initiallyCollapsed?: boolean;
   /** 핵심 도구를 화면에서 차례로 안내하는 사용법 따라 하기를 연다. */
   readonly onOpenTutorial?: () => void;
 }
@@ -83,16 +84,19 @@ interface StudioCinematicCanvasWelcomeProps {
 export function StudioCinematicCanvasWelcome({
   pageKey,
   visible,
+  initiallyCollapsed = false,
   onOpenTutorial,
 }: StudioCinematicCanvasWelcomeProps) {
   const bt = useBilingual("StudioCinematicCanvasWelcome");
   const headingId = useId();
   const scenesId = useId();
   const [dismissedPageKey, setDismissedPageKey] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(() => !readStudioCanvasStartDockCollapsed());
+  const [expanded, setExpanded] = useState(() => !initiallyCollapsed && !readStudioCanvasStartDockCollapsed());
   const [scenesOpen, setScenesOpen] = useState(false);
   const shown = visible && dismissedPageKey !== pageKey;
   const dockOpen = shown && expanded;
+
+  useEffect(() => { if (initiallyCollapsed) setExpanded(false); }, [initiallyCollapsed]);
 
   // 펼친 도크가 유일한 시작 안내가 되도록 코치·인스펙터 시작 카드에 알린다.
   useEffect(() => {

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { renderExpandedExportPanel } from "./StudioExportMenuPanel.test-helpers";
 
 import { StudioExportMenuPanel } from "./StudioExportMenuPanel";
 
@@ -46,7 +48,7 @@ describe("StudioExportMenuPanel open raster interchange", () => {
       warnings: [],
       lossy: false,
     });
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         canvasWidth={800}
         canvasHeight={1200}
@@ -91,7 +93,7 @@ describe("StudioExportMenuPanel open raster interchange", () => {
       warnings: ["투명 픽셀을 흰색 배경에 합성했습니다."],
       lossy: true,
     });
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         canvasWidth={2}
         canvasHeight={2}
@@ -126,7 +128,7 @@ describe("StudioExportMenuPanel open raster interchange", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     const capturePagesForPreset = vi.fn(async () => [pngCanvas(), pngCanvas()]);
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         canvasWidth={800}
         canvasHeight={1200}
@@ -164,7 +166,7 @@ describe("StudioExportMenuPanel open raster interchange", () => {
     Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     const capturePagesForPreset = vi.fn(async () => [pngCanvas(24, 36)]);
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         canvasWidth={24}
         canvasHeight={36}
@@ -208,7 +210,7 @@ describe("StudioExportMenuPanel open raster interchange", () => {
       skipped: [{ elementId: "eraser-1", reason: "eraser-semantic-not-representable" as const }],
       conformance: {} as never,
     }));
-    render(
+    renderExpandedExportPanel(
       <StudioExportMenuPanel
         canvasWidth={800}
         canvasHeight={1200}

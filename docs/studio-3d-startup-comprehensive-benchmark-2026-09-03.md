@@ -52,7 +52,7 @@ ToonStudio은 이러한 시장의 혁신 서비스들을 정밀 분석하여, �
   - **3D 모델 위 직접 드로잉 (Surface Inking / Line on Model)**: 3D 캐릭터 메쉬 표면에 옷 주름, 흉터, 표정 선화를 직접 브러시로 펜터치하여 포즈 변화 시에도 텍스처와 함께 추종.
   - **손 포즈 및 얼굴 표정 프리셋**: 주먹, 삿대질, 손가락 하트, 스마트폰 홀드 등 정밀 손가락 관절 포징.
 - **ToonStudio 반영**:
-  - `StudioBg3dShaperTooningStudioPanel` 및 `studio-3d-shaper-toon-maker.ts` 통합.
+  - `StudioBg3dShaperCharacterStudioPanel` 및 `studio-3d-shaper-toon-maker.ts` 통합.
   - 6종 만화 손 그립 아키타입 및 소켓 바인딩 연동.
 
 ---

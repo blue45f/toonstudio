@@ -12,7 +12,7 @@ import type { ReactElement } from "react";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
 import type { StudioMannequinCameraPreset, StudioMannequinProjection } from "./studio-mannequin-scene";
-import { BLEND_AI_SCALE_GUIDES, VRM_FRAMING_PRESETS } from "./studio-tripo3d-ecosystem-engine";
+import { StudioMannequinFramingHud } from "./StudioMannequinFramingHud";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
@@ -218,44 +218,12 @@ export function StudioMannequinCameraSection({
           ))}
         </div>
       </div>
-      <div
-        data-testid="mannequin-vrm-blendai-camera-hud"
-        className="space-y-1.5 rounded-lg border border-line/70 bg-card/80 p-2 text-[0.68rem]"
-      >
-        <div className="font-semibold text-fg">
-          VRM 4-View 카메라 프레이밍 & Blend-AI 실측 스케일 · 3점 조명(3:1:1.5)
-        </div>
-        <div className="flex flex-wrap gap-1" role="group" aria-label="VRM 4-View 프레이밍">
-          {VRM_FRAMING_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              data-testid={`mannequin-vrm-cam-${preset.id}`}
-              onClick={() => onCameraPreset(preset.mannequinAngle)}
-              title={preset.descriptionKo}
-              className="rounded border border-line bg-panel px-2 py-0.5 text-[0.64rem] text-fg-2 transition-colors hover:border-accent hover:bg-accent-soft hover:text-fg"
-            >
-              {preset.labelKo} ({preset.fovDeg}°)
-            </button>
-          ))}
-        </div>
-        <div className="text-[0.62rem] text-fg-3">
-          배경 스케일 기준:{" "}
-          {BLEND_AI_SCALE_GUIDES.map((g) => `${g.labelKo} ${g.meters}m`).join(" · ")} · 조명 비율{" "}
-          <strong>Key:Fill:Rim = 3:1:1.5</strong>
-        </div>
-      </div>
+      <StudioMannequinFramingHud onCameraPreset={onCameraPreset} />
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="투영 방식">
-        <StudioToggleChip
-          active={projection === "perspective"}
-          onClick={() => onProjectionChange("perspective")}
-        >
+        <StudioToggleChip active={projection === "perspective"} onClick={() => onProjectionChange("perspective")}>
           원근
         </StudioToggleChip>
-        <StudioToggleChip
-          active={projection === "orthographic"}
-          onClick={() => onProjectionChange("orthographic")}
-        >
+        <StudioToggleChip active={projection === "orthographic"} onClick={() => onProjectionChange("orthographic")}>
           직교
         </StudioToggleChip>
       </div>

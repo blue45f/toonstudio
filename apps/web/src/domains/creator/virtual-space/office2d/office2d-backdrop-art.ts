@@ -7,9 +7,9 @@ import { STUDIO_OFFICE_ENVIRONMENTS, studioOfficeEnvironment } from "../studio-v
  * WorkAdventure ActionableItem 24px 전방 선택·프리팹 depth 보정, Kumospace 공간 테마)를 통합한다.
  */
 import {
-  NANO_BANANA_2D_WORKSTATIONS,
-  type NanoBanana2dWorkstationPlacement,
-} from "../studio-virtual-space-nano-banana-2d-runtime";
+  ILLUSTRATED_2D_WORKSTATIONS,
+  type Illustrated2dWorkstationPlacement,
+} from "../studio-virtual-space-illustrated-2d-runtime";
 import type { StudioSpaceThemeKey } from "../studio-virtual-space-theme";
 import { TOON_HQ_ROOMS, type ToonHqRoom } from "./hq/toon-hq-blueprint";
 import type { Office2dActor } from "./office2d-actors";
@@ -38,8 +38,8 @@ export interface Office2dRoomArtSpec {
 export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpec>> = Object.freeze({
   "hq-story-room": {
     roomId: "hq-story-room",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v14/rooms/tarot-story-oracle-pavilion.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v10/props/lofi-bookshelf-lounge.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v14/rooms/tarot-story-oracle-pavilion.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v10/props/lofi-bookshelf-lounge.webp",
     workstationId: "nb-cowork-tarot-pavilion",
     badgeKo: "🔮 세계관·콘티 오라클",
     badgeEn: "Story Oracle",
@@ -49,8 +49,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-ink-bay": {
     roomId: "hq-ink-bay",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v11/themes/seoul-editorial-hq.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v13/props/dual-cintiq-critique-pod.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v13/props/dual-cintiq-critique-pod.webp",
     workstationId: "nb-plaza-cintiq-pod",
     badgeKo: "✒️ 듀얼 신티크 펜선 포드",
     badgeEn: "Dual Cintiq Pod",
@@ -60,8 +60,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-color-lab": {
     roomId: "hq-color-lab",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v11/themes/cyber-neon-lab.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v10/props/cintiq-drawing-desk.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v10/props/cintiq-drawing-desk.webp",
     workstationId: "nb-studio-main-cintiq",
     badgeKo: "🎨 HDR 컬러·역광 랩",
     badgeEn: "HDR Color Lab",
@@ -71,8 +71,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-bg3d-lab": {
     roomId: "hq-bg3d-lab",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v13/themes/abyssal-bioluminescent-worldlab.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v13/props/blender-hologram-stage-table.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v13/themes/abyssal-bioluminescent-worldlab.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v13/props/blender-hologram-stage-table.webp",
     workstationId: "nb-plaza-hologram-table",
     badgeKo: "🧊 3D 배경 홀로그램 턴테이블",
     badgeEn: "3D Hologram Stage",
@@ -82,7 +82,7 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-reference-library": {
     roomId: "hq-reference-library",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v13/themes/magic-academy-astral-library.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp",
     workstationId: "nb-cafe-lofi-storyhouse",
     badgeKo: "📚 아스트랄 설정 도서관",
     badgeEn: "Reference Library",
@@ -92,7 +92,7 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-focus-booths": {
     roomId: "hq-focus-booths",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v11/themes/hanok-botanical-atelier.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp",
     workstationId: "nb-studio-main-cintiq",
     badgeKo: "🛡️ 1인 방음 몰입 부스",
     badgeEn: "Silent Focus Pod",
@@ -102,8 +102,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-lettering-desk": {
     roomId: "hq-lettering-desk",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v13/themes/dolby-sound-dubbing-studio.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v13/props/webtoon-sound-foley-booth.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v13/themes/dolby-sound-dubbing-studio.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v13/props/webtoon-sound-foley-booth.webp",
     workstationId: "nb-plaza-foley-booth",
     badgeKo: "🎧 의성어·폴리 사운드 부스",
     badgeEn: "SFX & Lettering",
@@ -113,8 +113,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-review-room": {
     roomId: "hq-review-room",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v13/themes/rooftop-sunset-screening-stage.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v10/props/on-air-critique-booth.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v10/props/on-air-critique-booth.webp",
     workstationId: "nb-plaza-cintiq-pod",
     badgeKo: "🎬 5K 합평 시사회 스크린",
     badgeEn: "5K Review Stage",
@@ -124,7 +124,7 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-war-room": {
     roomId: "hq-war-room",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v12/themes/scifi-orbital-command.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v12/themes/scifi-orbital-command.webp",
     workstationId: "nb-talk-ip-boardroom",
     badgeKo: "📡 마감 칸반 커맨드룸",
     badgeEn: "Deadline Command",
@@ -134,8 +134,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-lobby": {
     roomId: "hq-lobby",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v14/rooms/recruit-interview-conservatory.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v10/props/biophilic-planter-set.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v14/rooms/recruit-interview-conservatory.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v10/props/biophilic-planter-set.webp",
     workstationId: "nb-lobby-recruit-conservatory",
     badgeKo: "🌿 바이오필릭 웰컴 로비",
     badgeEn: "Biophilic Lobby",
@@ -145,8 +145,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-lounge": {
     roomId: "hq-lounge",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v11/themes/lofi-cat-storyhouse.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v13/props/deadline-espresso-cat-lounge.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v13/props/deadline-espresso-cat-lounge.webp",
     workstationId: "nb-plaza-espresso-cat-lounge",
     badgeKo: "☕ 에스프레소 & 캣 라운지",
     badgeEn: "Espresso Cat Lounge",
@@ -156,7 +156,7 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-meeting-room": {
     roomId: "hq-meeting-room",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v14/rooms/global-ip-pitch-boardroom.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp",
     workstationId: "nb-talk-ip-boardroom",
     badgeKo: "🎬 글로벌 IP 피칭 보드룸",
     badgeEn: "IP Pitch Boardroom",
@@ -166,8 +166,8 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
   },
   "hq-publish-desk": {
     roomId: "hq-publish-desk",
-    backdropUrl: "/assets/virtual-studio/nano-banana-v12/themes/brooklyn-indie-comics-loft.webp",
-    propUrl: "/assets/virtual-studio/nano-banana-v10/props/hologram-pedestal.webp",
+    backdropUrl: "/assets/virtual-studio/studio-art-v12/themes/brooklyn-indie-comics-loft.webp",
+    propUrl: "/assets/virtual-studio/studio-art-v10/props/hologram-pedestal.webp",
     workstationId: "nb-game-retro-arcade",
     badgeKo: "🚀 글로벌 연재 송고 데스크",
     badgeEn: "Global Publish Desk",
@@ -178,16 +178,16 @@ export const OFFICE2D_ROOM_ART_SPECS: Readonly<Record<string, Office2dRoomArtSpe
 });
 
 const SPACE_THEME_BACKDROP_URLS: Readonly<Partial<Record<StudioSpaceThemeKey, string>>> = Object.freeze({
-  "webtoon-atelier": "/assets/virtual-studio/nano-banana-v11/themes/seoul-editorial-hq.webp",
-  "modern-office": "/assets/virtual-studio/nano-banana-v14/rooms/global-ip-pitch-boardroom.webp",
-  "cozy-wood": "/assets/virtual-studio/nano-banana-v11/themes/lofi-cat-storyhouse.webp",
-  "neon-night": "/assets/virtual-studio/nano-banana-v11/themes/cyber-neon-lab.webp",
-  "garden-terrace": "/assets/virtual-studio/nano-banana-v12/themes/murim-bamboo-pavilion.webp",
-  "sakura-campus": "/assets/virtual-studio/nano-banana-v12/themes/romance-palace-conservatory.webp",
-  "sunset-harbor": "/assets/virtual-studio/nano-banana-v13/themes/rooftop-sunset-screening-stage.webp",
-  library: "/assets/virtual-studio/nano-banana-v13/themes/magic-academy-astral-library.webp",
-  "celestial-observatory": "/assets/virtual-studio/nano-banana-v12/themes/scifi-orbital-command.webp",
-  "cinema-screening": "/assets/virtual-studio/nano-banana-v13/themes/rooftop-sunset-screening-stage.webp",
+  "webtoon-atelier": "/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
+  "modern-office": "/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp",
+  "cozy-wood": "/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
+  "neon-night": "/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp",
+  "garden-terrace": "/assets/virtual-studio/studio-art-v12/themes/murim-bamboo-pavilion.webp",
+  "sakura-campus": "/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp",
+  "sunset-harbor": "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
+  library: "/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp",
+  "celestial-observatory": "/assets/virtual-studio/studio-art-v12/themes/scifi-orbital-command.webp",
+  "cinema-screening": "/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
 });
 
 /** 지연 로딩할 고해상도 룸 배경·소품 이미지 URL 목록. */
@@ -204,7 +204,7 @@ export function office2dBackdropAssetUrls(): readonly string[] {
 export function resolveOffice2dWorkstation(
   roomId: string | null | undefined,
   objectId?: string | null,
-): NanoBanana2dWorkstationPlacement {
+): Illustrated2dWorkstationPlacement {
   if (objectId) {
     if (objectId.includes("3d")) return findStation("nb-plaza-hologram-table");
     if (objectId.includes("letter") || objectId.includes("foley")) return findStation("nb-plaza-foley-booth");
@@ -217,8 +217,8 @@ export function resolveOffice2dWorkstation(
   return findStation(spec?.workstationId ?? "nb-plaza-cintiq-pod");
 }
 
-function findStation(id: string): NanoBanana2dWorkstationPlacement {
-  return NANO_BANANA_2D_WORKSTATIONS.find((station) => station.id === id) ?? NANO_BANANA_2D_WORKSTATIONS[0]!;
+function findStation(id: string): Illustrated2dWorkstationPlacement {
+  return ILLUSTRATED_2D_WORKSTATIONS.find((station) => station.id === id) ?? ILLUSTRATED_2D_WORKSTATIONS[0]!;
 }
 
 /**

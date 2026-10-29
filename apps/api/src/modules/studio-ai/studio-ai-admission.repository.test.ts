@@ -441,7 +441,7 @@ describe("PostgresStudioAiAdmissionRepository", () => {
     );
     expect(usageChecks.get("studio_ai_usage_task_check")).toContain("'assistant'");
     expect(usageChecks.get("studio_ai_usage_provider_check")).toContain(
-      "'gemini', 'qwen', 'groq', 'sambanova', 'zai', 'mistral', 'cloudflare', 'openrouter', 'siliconflow', 'deepseek'"
+      "'gemini', 'qwen', 'groq', 'sambanova', 'zai', 'mistral', 'cloudflare', 'openrouter', 'siliconflow', 'deepseek', 'anthropic'"
     );
     expect(usageChecks.get("studio_ai_usage_attempt_count_check")).toContain(
       '"attemptCount" between 1 and 9'

@@ -32,9 +32,9 @@ import {
 } from "./studio-hybrid-dcc-document";
 import {
   hashStudioHybridDccObjectTransform,
+  inverseTransformStudioHybridDccPoint,
   transformStudioHybridDccPoint,
   type StudioHybridDccObjectTransform,
-  type StudioHybridDccVec3Tuple,
 } from "./studio-hybrid-dcc-object-transform";
 import {
   workspaceRedo,
@@ -82,35 +82,6 @@ function finiteNumber(
 
 function booleanValue(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
-}
-
-function inverseTransformStudioHybridDccPoint(
-  point: StudioHybridDccVec3Tuple,
-  transform: StudioHybridDccObjectTransform,
-): StudioHybridDccVec3Tuple {
-  const [rx, ry, rz] = transform.rotationEulerRad;
-  const cx = Math.cos(rx);
-  const sx = Math.sin(rx);
-  const cy = Math.cos(ry);
-  const sy = Math.sin(ry);
-  const cz = Math.cos(rz);
-  const sz = Math.sin(rz);
-  const dx = point[0] - transform.position[0];
-  const dy = point[1] - transform.position[1];
-  const dz = point[2] - transform.position[2];
-
-  // Inverse of Three.js XYZ order: Rx^-1 * Ry^-1 * Rz^-1, then inverse scale.
-  const rzX = cz * dx + sz * dy;
-  const rzY = -sz * dx + cz * dy;
-  const ryX = cy * rzX - sy * dz;
-  const ryZ = sy * rzX + cy * dz;
-  const rxY = cx * rzY + sx * ryZ;
-  const rxZ = -sx * rzY + cx * ryZ;
-  return [
-    ryX / transform.scale[0],
-    rxY / transform.scale[1],
-    rxZ / transform.scale[2],
-  ];
 }
 
 function transformTriangleSoupIntoActiveLocalSpace(

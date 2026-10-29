@@ -4,7 +4,9 @@ import { validateUserAiBaseUrl as validateCloudAiBaseUrl } from "./user-ai-types
 
 import {
   completeUserAiTextDetailed,
+  UserAiEmptyTruncatedError,
   UserAiTransportError,
+  type UserAiTextOptions,
   type UserAiTransportErrorCode,
 } from "./user-ai-transport";
 
@@ -282,11 +284,13 @@ if (typeof globalThis.addEventListener === "function") {
 }
 
 export type UserTextResult =
-  | { ok: true; content: string; model: string; provider: string }
+  | { ok: true; content: string; model: string; provider: string; truncated: boolean }
   | {
       ok: false;
       error: string;
       code: UserAiTransportErrorCode | "request-failed";
+      /** 답이 출력 상한에 걸려 보이는 글 없이 끝났다. 더 큰 출력을 주는 다음 경로로 넘길 수 있다. */
+      truncated?: boolean;
     };
 
 /** All legacy callers now use the same free-only runtime guard as the unified settings page. */
@@ -294,14 +298,16 @@ export async function completeWithUserTextKey(
   system: string,
   user: string,
   signal?: AbortSignal,
+  options?: UserAiTextOptions,
 ): Promise<UserTextResult> {
   try {
-    const result = await completeUserAiTextDetailed(system, user, signal);
+    const result = await completeUserAiTextDetailed(system, user, signal, options);
     return {
       ok: true,
       content: result.content.trim().slice(0, 100_000),
       model: result.connection.textModel.slice(0, 200),
       provider: new URL(result.connection.baseUrl).hostname.slice(0, 120),
+      truncated: result.truncated,
     };
   } catch (error) {
     return {
@@ -310,6 +316,7 @@ export async function completeWithUserTextKey(
         ? error.message
         : "무료 AI 제공자에 연결하지 못했습니다.",
       code: error instanceof UserAiTransportError ? error.code : "request-failed",
+      ...(error instanceof UserAiEmptyTruncatedError ? { truncated: true } : {}),
     };
   }
 }

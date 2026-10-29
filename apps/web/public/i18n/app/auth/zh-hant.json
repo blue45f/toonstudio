@@ -11,7 +11,7 @@
   "auth.callback.error.oauthFailed": "OAuth 交換失敗。",
   "auth.callback.error.unsupported": "不支援的登入提供者。",
   "auth.callback.error.accessDenied": "登入已取消。",
-  "auth.callback.error.generic": "登入失敗。",
+  "auth.callback.error.generic": "登入失敗。請返回登入頁並重試。",
   "auth.callback.error.noUser": "無法驗證用戶資訊。",
   "auth.callback.error.invalidAccess": "無效訪問。",
   "auth.callback.error.failed": "登入時發生錯誤。",

@@ -11,7 +11,7 @@
   "tipping.dialog.episode": "{episode}",
   "tipping.dialog.invalidAmount": "Vnesite znesek med {min} in {max}.",
   "tipping.dialog.loginNotice": "Znesek lahko izberete in sporočilo napišete brez prijave. Ob dajanju napitnine vas bomo prosili za prijavo.",
-  "tipping.dialog.loginToTip": "Prijavite se za napitnino",
+  "tipping.dialog.loginToTip": "Prijavite se in dajte napitnino",
   "tipping.dialog.messageLabel": "Sporočilo podpore (neobvezno)",
   "tipping.dialog.messagePlaceholder": "Pustite sporočilo za ustvarjalca",
   "tipping.dialog.processing": "Obdelava vaše napitnine…",

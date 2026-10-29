@@ -5,7 +5,7 @@ import {
   resetFreeAiRuntimeBudget,
 } from "./free-ai-runtime-budget";
 import { lockUserAi, setUserAiConfiguration } from "./user-ai-store";
-import { completeUserAiTextDetailed, userAiFetch } from "./user-ai-transport";
+import { completeUserAiTextDetailed, UserAiEmptyTruncatedError, userAiFetch } from "./user-ai-transport";
 import type { UserAiConnection } from "./user-ai-types";
 
 const managedConnection: UserAiConnection = {
@@ -232,6 +232,53 @@ describe("managed cloud AI transport", () => {
       ],
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("treats a revoked key that the provider answers with HTTP 400 (API_KEY_INVALID) as an authentication failure and moves on", async () => {
+    setUserAiConfiguration({
+      version: 1,
+      connections: [{
+        ...managedConnection,
+        id: "gemini-multi",
+        label: "Gemini multi key",
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+        apiKey: "legacy-key",
+        textModel: "gemini-3.8-flash",
+        costPolicy: "provider-free-tier",
+        priority: 10,
+        apiKeys: [
+          { id: "revoked", label: "Revoked", apiKey: "key-revoked", enabled: true, priority: 10 },
+          { id: "valid", label: "Valid", apiKey: "key-valid", enabled: true, priority: 20 },
+        ],
+      }],
+      assignments: { text: "gemini-multi", image: null, inference: null, "three-d": null },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (new Headers(init?.headers).get("authorization") === "Bearer key-revoked") {
+        return new Response(JSON.stringify([{
+          error: { code: 400, message: "API key not valid. Please pass a valid API key.", status: "INVALID_ARGUMENT", details: [{ reason: "API_KEY_INVALID" }] },
+        }]), { status: 400 });
+      }
+      return new Response(JSON.stringify({ choices: [{ message: { content: "valid key result" } }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }));
+
+    await expect(completeUserAiTextDetailed("system", "user")).resolves.toMatchObject({
+      content: "valid key result",
+      connection: { apiKeyProfileId: "valid" },
+    });
+  });
+
+  it("keeps an ordinary HTTP 400 as a request error and reports an empty answer cut at the output cap separately", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { message: "bad request" } }), { status: 400 })));
+    await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "http-error", status: 400 });
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: "" }, finish_reason: "length" }],
+    }), { status: 200, headers: { "content-type": "application/json" } })));
+    await expect(completeUserAiTextDetailed("system", "user")).rejects.toBeInstanceOf(UserAiEmptyTruncatedError);
   });
 
   it("falls through free providers by quality only after quota exhaustion", async () => {

@@ -16,10 +16,17 @@ describe("shouldShowEntryIntro", () => {
     expect(shouldShowEntryIntro("/studio/work/work-1/publish")).toBe(true);
   });
 
-  it.each(["/", "/ranking", "/create", "/create/work-1"])(
+  it.each(["/", "/ranking", "/create/work-1"])(
     "일반 앱 경로 %s에서는 인트로를 유지한다",
     (pathname) => {
       expect(shouldShowEntryIntro(pathname)).toBe(true);
+    },
+  );
+
+  it.each(["/create", "/create/", "/CREATE///"])(
+    "작품 시작 %s에서는 질문과 시작 행동을 인트로로 가리지 않는다",
+    (pathname) => {
+      expect(shouldShowEntryIntro(pathname, "?intent=my-story")).toBe(false);
     },
   );
 

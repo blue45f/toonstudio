@@ -4,11 +4,11 @@ import {
   renderDynamicCreatorSpriteDataUri,
 } from "./studio-virtual-space-dynamic-sprite-engine";
 import {
-  NANO_BANANA_V11_STUDIO_THEMES,
-  NANO_BANANA_V13_CREATOR_EMOTES,
-  NANO_BANANA_V13_STUDIO_PROPS,
-  type NanoBananaCreatorPersonaId,
-  type NanoBananaV13EmoteId,
+  ILLUSTRATED_V11_STUDIO_THEMES,
+  ILLUSTRATED_V13_CREATOR_EMOTES,
+  ILLUSTRATED_V13_STUDIO_PROPS,
+  type IllustratedCreatorPersonaId,
+  type IllustratedV13EmoteId,
 } from "./studio-virtual-office-nextgen-engine-data";
 import {
   BIOPHILIC_UX_THEME_PRESETS,
@@ -36,7 +36,7 @@ export interface StudioVirtualOfficeSpatialCanvasHudProps {
 
 const SPATIAL_QUICK_COMMANDS_COUNT = 6;
 
-const AVATAR_PERSONA_MAP: Readonly<Record<string, NanoBananaCreatorPersonaId>> = {
+const AVATAR_PERSONA_MAP: Readonly<Record<string, IllustratedCreatorPersonaId>> = {
   "creator-self": "cgi-director",
   "creator-line": "line-artist",
   "creator-pd": "chief-pd",
@@ -50,10 +50,10 @@ export function StudioVirtualOfficeSpatialCanvasHud({
     createDefaultSpatialCanvasHudState(),
   );
   const [floorBackdropUrl, setFloorBackdropUrl] = useState<string>(
-    "/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp",
+    "/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp",
   );
   const [activeSelfEmoteId, setActiveSelfEmoteId] = useState<
-    NanoBananaV13EmoteId | null
+    IllustratedV13EmoteId | null
   >(null);
   const [spriteFrameIdx, setSpriteFrameIdx] = useState(0);
 
@@ -189,7 +189,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             onChange={(e) => {
               const nextUrl = e.target.value;
               setFloorBackdropUrl(nextUrl);
-              const matched = NANO_BANANA_V11_STUDIO_THEMES.find(
+              const matched = ILLUSTRATED_V11_STUDIO_THEMES.find(
                 (t) => t.assetUrl === nextUrl,
               );
               setHudToastKo(
@@ -200,10 +200,10 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             }}
             className="rounded-lg border border-line bg-panel px-2 py-1 text-xs"
           >
-            <option value="/assets/virtual-studio/nano-banana-v10/studio-theme-floor-panorama.webp">
+            <option value="/assets/virtual-studio/studio-art-v10/studio-theme-floor-panorama.webp">
               🏛️ 플래그십 2.5D 파노라마 (v10)
             </option>
-            {NANO_BANANA_V11_STUDIO_THEMES.map((theme) => (
+            {ILLUSTRATED_V11_STUDIO_THEMES.map((theme) => (
               <option key={theme.id} value={theme.assetUrl}>
                 🎨 {theme.titleKo}
               </option>
@@ -258,15 +258,15 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             height="280"
             preserveAspectRatio="xMidYMid slice"
             opacity="0.28"
-            data-testid="spatial-nano-banana-floor-backdrop"
+            data-testid="spatial-illustrated-floor-backdrop"
           />
 
           {/* Clickable Room Zones */}
           {hudState.zones.map((zone, zoneIdx) => {
             const isSelected = hudState.selectedZoneId === zone.zoneId;
             const zoneProp =
-              NANO_BANANA_V13_STUDIO_PROPS[
-                zoneIdx % NANO_BANANA_V13_STUDIO_PROPS.length
+              ILLUSTRATED_V13_STUDIO_PROPS[
+                zoneIdx % ILLUSTRATED_V13_STUDIO_PROPS.length
               ];
             return (
               <g
@@ -370,7 +370,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             data-testid="spatial-companion-mascot-follower"
           >
             <image
-              href="/assets/virtual-studio/nano-banana-v12/cast/studio-cat-mascot-work.webp"
+              href="/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-work.webp"
               x="-16"
               y="-18"
               width="32"
@@ -378,7 +378,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             />
           </g>
 
-          {/* Avatar Tokens with Nano Banana RGBA Chibi Sprites */}
+          {/* Avatar Tokens with Illustrated RGBA Chibi Sprites */}
           {hudState.avatars.map((avatar) => (
             <g
               key={avatar.avatarId}
@@ -524,8 +524,8 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               ⛑️ {hudState.dockFocusHelmetOn ? "초집중 헬멧 착용 중" : "상태 모자"}
             </button>
 
-            {/* Nano Banana v13 Dynamic Emote Quick Buttons */}
-            {NANO_BANANA_V13_CREATOR_EMOTES.map((emote) => {
+            {/* Studio Art v13 Dynamic Emote Quick Buttons */}
+            {ILLUSTRATED_V13_CREATOR_EMOTES.map((emote) => {
               const active = activeSelfEmoteId === emote.id;
               return (
                 <button

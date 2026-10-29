@@ -5,7 +5,7 @@
  * `studio-immersive-workflows`, 사이트 디렉터리·헤더 등이 `/studio/poser`를
  * 가리키나 라우트가 미등록이라 404가 났다. 이 페이지가 실제 포저
  * (`StudioMannequinPoserPanel`, 매직 포저 탭 포함) 및 VARCO 3D 인스펙터 워크벤치
- * (`StudioVarco3dInspectorWorkbench`, 25축 웹툰 세계관 셰이퍼·PBR 브러시·리깅·모션 IK·비교기)를
+ * (`StudioAsset3dInspectorWorkbench`, 25축 웹툰 세계관 셰이퍼·PBR 브러시·리깅·모션 IK·비교기)를
  * 직접 마운트한다.
  *
  * - 닫기 → `/studio`로 복귀.
@@ -34,7 +34,7 @@ import {
   StudioMannequinPoserPanel,
   type StudioMannequinCaptureResult,
 } from "./StudioMannequinPoserPanel";
-import { StudioVarco3dInspectorWorkbench } from "./StudioVarco3dInspectorWorkbench";
+import { StudioAsset3dInspectorWorkbench } from "./StudioAsset3dInspectorWorkbench";
 
 import { toast } from "@/shared/lib/toast-store";
 
@@ -100,7 +100,7 @@ export function StudioPoserPage(): ReactElement {
           data-testid="studio-poser-varco3d-workbench-dock"
           className="relative z-20 mx-auto max-w-5xl px-3 pt-16 pb-2"
         >
-          <StudioVarco3dInspectorWorkbench
+          <StudioAsset3dInspectorWorkbench
             onApplyMannequinBodySliders={(sliders, options) => {
               const nextParams = clampStudioMannequinBodyParams({
                 ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,

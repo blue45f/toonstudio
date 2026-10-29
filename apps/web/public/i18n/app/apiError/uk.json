@@ -1,5 +1,5 @@
 {
-  "apiError.loginRequired": "Замовляється вхід.",
+  "apiError.loginRequired": "Потрібно увійти.",
   "apiError.adminRequired": "Дозволи адміністратора не були перевірені.",
   "apiError.adminOnlyPage": "Ця сторінка обмежена адміністраторами.",
   "apiError.notFound": "Запрохану позицію не знайшли.",
