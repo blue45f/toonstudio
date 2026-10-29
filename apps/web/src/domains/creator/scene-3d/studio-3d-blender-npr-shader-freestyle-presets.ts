@@ -14,7 +14,7 @@ export const BLENDER_NPR_SHADER_PRESETS: readonly BlenderNprShaderPreset[] =
       nameKo: "성기사 황금 판금 갑주 (4단 셀)",
       categoryKo: "갑주·무기 금속",
       descriptionKo:
-        "Blender Toon BSDF(Glossy)와 ShaderToRGB 4단 CONSTANT 컬러램프, Bevel 모서리 하이라이트로 웹툰 판금 갑주의 날카로운 금속 광택을 표현합니다.",
+        "4단 툰 채색과 모서리 하이라이트를 조합한 판금 갑주용 금속 광택 설정입니다.",
       toonComponent: "GLOSSY",
       toonSize: 0.42,
       toonSmooth: 0.06,
@@ -226,7 +226,7 @@ export const BLENDER_FREESTYLE_INK_PRESETS: readonly BlenderFreestyleInkPreset[]
       id: "arcane-blueprint-xray-lineart",
       nameKo: "마법진·투시 차폐 LineArt (Occlusion)",
       descriptionKo:
-        "Blender LineArt `mat_occlusion` 2단계 투시선까지 허용하여 마법 구체 내부 코어나 결계 너머의 구조선을 함께 렌더링합니다.",
+        "가림 단계에 따른 선화 설정으로 마법 구체 내부 코어나 결계 너머의 구조선을 표현하는 프리셋입니다.",
       enabledEdgeTypes: ["SILHOUETTE", "CREASE", "BORDER"],
       creaseAngleDeg: 100,
       suggestiveContourKrEpsilon: 0.1,

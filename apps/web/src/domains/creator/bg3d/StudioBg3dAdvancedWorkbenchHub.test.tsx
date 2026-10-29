@@ -71,7 +71,7 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
       screen.getByTestId("bg3d-blender-light-rig-holy-sword-awakening-halo"),
     );
     expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(
-      "블렌더 광원:",
+      "조명 설정:",
     );
     fireEvent.click(
       screen.getByTestId("bg3d-blender-weapon-imperial-holy-greatsword"),

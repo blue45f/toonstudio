@@ -259,7 +259,7 @@ export function StudioBg3dBlenderFullSections({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <Layers className="size-3.5 text-accent" aria-hidden />
-            6. Blender 5.2 6대 카테고리 모디파이어 스택 & Geometry Nodes 에셋 (`MOD_ARRAY` · `Curve to Tube` · `Scatter`)
+            6. 모디파이어 설정·절차형 배경 프리셋
           </span>
           <span data-testid="bg3d-blender-modifier-readout" className="font-mono text-[0.62rem] text-accent">
             {modEval.summaryKo}
@@ -278,7 +278,7 @@ export function StudioBg3dBlenderFullSections({
               max={12}
               step={1}
               disabled={disabled}
-              aria-label="Blender Array 복제 수"
+              aria-label="배열 복제 수"
               data-testid="bg3d-blender-mod-array-slider"
               value={arrayCount}
               onChange={(e) => setArrayCount(Number(e.target.value))}
@@ -297,7 +297,7 @@ export function StudioBg3dBlenderFullSections({
               max={4}
               step={1}
               disabled={disabled}
-              aria-label="Blender Subsurf 레벨"
+              aria-label="세분화 레벨"
               value={subsurfLevels}
               onChange={(e) => setSubsurfLevels(Number(e.target.value))}
               className="mt-1 w-full accent-accent"
@@ -356,7 +356,7 @@ export function StudioBg3dBlenderFullSections({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <Box className="size-3.5 text-accent" aria-hidden />
-            7. Edit Mesh 오퍼레이터(`_defs_edit_mesh`) & Sculpt(`_defs_sculpt` Dyntopo·Cloth Filter)
+            7. 메시 편집·조형 설정
           </span>
           <span className="font-mono text-[0.62rem] text-fg-2">{editSculptEval.summaryKo}</span>
         </div>
@@ -370,7 +370,7 @@ export function StudioBg3dBlenderFullSections({
               data-testid={`bg3d-blender-editop-${op.id}`}
               onClick={() => {
                 setEditOp(op.id);
-                onStatusChange?.(`Blender Edit Mesh 오퍼레이터: ${op.labelKo}`);
+                onStatusChange?.(`메시 편집 설정: ${op.labelKo}`);
               }}
               className={`rounded border px-2 py-0.5 text-[0.62rem] ${
                 editOp === op.id
@@ -428,7 +428,7 @@ export function StudioBg3dBlenderFullSections({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <PenTool className="size-3.5 text-accent" aria-hidden />
-            8. Grease Pencil v3 레이어 트리·마스크·어니언 스킨 & Freestyle 9대 엣지 세트 (`qi_start`/`qi_end`)
+            8. 3D 선화 레이어·마스크·어니언 스킨 설정
           </span>
           <span data-testid="bg3d-blender-gp3-readout" className="font-mono text-[0.62rem] text-accent">
             {gp3FreestyleEval.summaryKo}
@@ -460,14 +460,14 @@ export function StudioBg3dBlenderFullSections({
         <div className="flex flex-wrap items-center justify-between gap-2 rounded bg-card px-2.5 py-1.5 text-[0.63rem]">
           <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex items-center gap-1">
-              <span>GPv3 레이어: {gp3LayerCount}</span>
+              <span>선화 레이어: {gp3LayerCount}</span>
               <input
                 type="range"
                 min={1}
                 max={12}
                 step={1}
                 disabled={disabled}
-                aria-label="GPv3 레이어 수"
+                aria-label="선화 레이어 수"
                 value={gp3LayerCount}
                 onChange={(e) => setGp3LayerCount(Number(e.target.value))}
                 className="w-20 accent-accent"
@@ -491,7 +491,7 @@ export function StudioBg3dBlenderFullSections({
                 max={6}
                 step={1}
                 disabled={disabled}
-                aria-label="Freestyle Quantitative Invisibility 범위"
+                aria-label="선화 가림 단계 범위"
                 value={qiEnd}
                 onChange={(e) => setQiEnd(Number(e.target.value))}
                 className="w-16 accent-accent"
@@ -563,7 +563,7 @@ export function StudioBg3dBlenderFullSections({
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1 font-semibold text-fg">
               <Waves className="size-3.5 text-accent" aria-hidden />
-              9B. 물리 시뮬레이션 (`RigidBody` · `Cloth` · `Mantaflow`)
+              9B. 강체·천·유체 설정
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 text-[0.62rem]">
@@ -580,7 +580,7 @@ export function StudioBg3dBlenderFullSections({
                       : "border-line bg-card text-fg-2"
                   }`}
                 >
-                  Mantaflow {ft}
+                  유체 {ft}
                 </button>
               ))}
             </div>
@@ -603,7 +603,7 @@ export function StudioBg3dBlenderFullSections({
               max={128}
               step={16}
               disabled={disabled}
-              aria-label="Mantaflow 복셀 분할 해상도"
+              aria-label="유체 복셀 분할 해상도"
               value={fluidDivisions}
               onChange={(e) => setFluidDivisions(Number(e.target.value))}
               className="w-24 accent-accent"
@@ -635,7 +635,7 @@ export function StudioBg3dBlenderFullSections({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <Camera className="size-3.5 text-accent" aria-hidden />
-            10. Blender 5.2 시네마틱 카메라(`PERSP`/`ORTHO`/`PANO` 어안 K0~K4 · 2점 투시 Shift · 보케 조리개) & 배경 세트 빌더
+            10. 시네마틱 카메라 설정·배경 세트
           </span>
           <span className="font-mono text-[0.62rem] text-accent">{cameraEval.summaryKo}</span>
         </div>
@@ -667,7 +667,7 @@ export function StudioBg3dBlenderFullSections({
               max={135}
               step={1}
               disabled={disabled}
-              aria-label="Blender 카메라 초점거리 mm"
+              aria-label="카메라 초점거리 mm"
               value={focalLengthMm}
               onChange={(e) => setFocalLengthMm(Number(e.target.value))}
               className="mt-1.5 w-full accent-accent"
@@ -685,7 +685,7 @@ export function StudioBg3dBlenderFullSections({
               max={0.35}
               step={0.05}
               disabled={disabled}
-              aria-label="Blender 렌즈 수직 시프트"
+              aria-label="렌즈 수직 시프트"
               value={shiftY}
               onChange={(e) => setShiftY(Number(e.target.value))}
               className="mt-2 w-full accent-accent"
@@ -709,7 +709,7 @@ export function StudioBg3dBlenderFullSections({
               max={16}
               step={0.2}
               disabled={disabled}
-              aria-label="Blender 조리개 F-Stop"
+              aria-label="조리개 F-Stop"
               value={fstop}
               onChange={(e) => setFstop(Number(e.target.value))}
               className="mt-2 w-full accent-accent"
@@ -752,7 +752,7 @@ export function StudioBg3dBlenderFullSections({
               className="inline-flex items-center gap-1 rounded border border-accent bg-accent/15 px-2.5 py-1 text-[0.65rem] font-bold text-accent"
             >
               <Camera className="size-3" aria-hidden />
-              <span>현재 3D 뷰포트에 Blender 카메라 적용</span>
+              <span>현재 3D 뷰포트에 카메라 설정 적용</span>
             </button>
 
             <button
@@ -760,7 +760,7 @@ export function StudioBg3dBlenderFullSections({
               disabled={disabled}
               data-testid="bg3d-blender-insert-scene-preset-btn"
               onClick={() => {
-                const msg = `Blender 5.2 배경 세트(${themeScene.labelKo}, ${themeScene.primitives.length}개 요소) 3D 장면 배치 완료`;
+                const msg = `배경 세트(${themeScene.labelKo}, ${themeScene.primitives.length}개 요소) 3D 장면 배치 완료`;
                 onStatusChange?.(msg);
                 onInsertScenePrimitives?.(themeScene.primitives, msg);
               }}

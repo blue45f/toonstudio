@@ -598,7 +598,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                 <div className="space-y-2 rounded-xl border border-line bg-panel p-3">
                   <strong className="flex items-center gap-1.5 text-xs font-bold text-fg">
                     <Film className="h-3.5 w-3.5 text-accent" />
-                    3D 블렌더 배경 턴테이블 & 카메라 화각 제어
+                    3D 배경 턴테이블 · 카메라 화각 제어
                   </strong>
                   <div className="flex items-center gap-3">
                     <img

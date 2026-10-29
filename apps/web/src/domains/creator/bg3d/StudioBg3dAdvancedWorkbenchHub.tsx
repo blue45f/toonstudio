@@ -75,7 +75,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "postprocess-vfx", labelKo: "렌즈·셀 필터", groupKo: "환경·VFX" },
   { id: "halftone-screentone", labelKo: "스크린톤·망점", groupKo: "셰이더·재질" },
   { id: "matcap-studio", labelKo: "MatCap·MToon", groupKo: "셰이더·재질" },
-  { id: "blender-fantasy-webtoon", labelKo: "블렌더 판타지·NPR·군단", groupKo: "셰이더·재질" },
+  { id: "blender-fantasy-webtoon", labelKo: "판타지·툰 렌더링·군중 도구", groupKo: "셰이더·재질" },
   { id: "spatial-fx", labelKo: "입체 효과음·말풍선", groupKo: "웹툰 연출" },
   { id: "cut-strip", labelKo: "컷 스트립·연속성", groupKo: "웹툰 연출" },
   { id: "shaper-tooning", labelKo: "셰이퍼·캐릭터 스튜디오", groupKo: "웹툰 연출" },
@@ -418,10 +418,10 @@ export function StudioBg3dAdvancedWorkbenchHub({
           <StudioBg3dBlenderFantasyWebtoonPanel
             disabled={disabled}
             onApplyLightingRig={(rig, grade) =>
-              setLastActionSummary(`블렌더 광원: ${rig.nameKo} (${grade})`)
+              setLastActionSummary(`조명 설정: ${rig.nameKo} (${grade})`)
             }
             onApplyNprShader={(preset, hex) =>
-              setLastActionSummary(`블렌더 NPR: ${preset.nameKo} (${hex})`)
+              setLastActionSummary(`툰 채색 설정: ${preset.nameKo} (${hex})`)
             }
             onApplyFreestyleInk={(preset, count) => {
               proSuiteRuntime?.onSetLineArtPreview?.(true);

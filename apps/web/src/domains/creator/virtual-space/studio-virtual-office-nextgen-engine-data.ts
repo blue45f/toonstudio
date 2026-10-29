@@ -501,7 +501,7 @@ export const ILLUSTRATED_V13_STUDIO_PROPS: readonly IllustratedV13PropSpec[] = [
   },
   {
     id: "blender-hologram-stage-table",
-    labelKo: "3D 블렌더 홀로그램 스테이지 테이블",
+    labelKo: "3D 홀로그램 스테이지 테이블",
     zoneRoleKo: "배경 투시도 · 성채 에셋 · 카메라 앵글 360° 프리뷰 존",
     interactiveHintKo: "[X]키로 3점 투시 카메라 프리셋 즉시 동기화",
     spriteUrl:

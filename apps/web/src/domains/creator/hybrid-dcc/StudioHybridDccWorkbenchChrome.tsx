@@ -214,7 +214,7 @@ export function StudioHybridDccExpertTools({ groups, busy, hasActiveAsset }: Stu
           {bt("전문가용 전체 도구", "All expert tools")}
           <span className="ml-2 text-xs font-normal text-fg-3">
             {formatI18nTemplate(
-              bt("{v0}개 · Blender·CAD 용어를 아는 분을 위한 목록", "{v0} tools · for people who know Blender and CAD terms"),
+              bt("{v0}개 · 고급 3D 도구 목록", "{v0} tools · advanced 3D tools"),
               { v0: total },
             )}
           </span>

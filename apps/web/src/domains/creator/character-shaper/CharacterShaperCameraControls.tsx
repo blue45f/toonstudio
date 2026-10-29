@@ -80,7 +80,7 @@ export function CharacterShaperCameraStyleSelect({ disabled = false, workbench =
       disabled={disabled || !settings} value={settings?.cameraStyle ?? "unity"}
       onChange={(event) => settings?.setCameraStyle(event.currentTarget.value as ShaperCameraControlStyle)} className={SESSION_SELECT}>
       <option value="unity">{bt("기본 · 우클릭 회전 / 중간 버튼 이동", "Default · right orbit / middle pan")}</option>
-      <option value="blender">{bt("Blender · 중간 버튼 회전", "Blender · middle orbit")}</option>
+      <option value="blender">{bt("중간 버튼 회전", "Middle-button orbit")}</option>
       <option value="max">{bt("3ds Max · Alt+중간 버튼 회전", "3ds Max · Alt+middle orbit")}</option>
     </select>
     {!settings ? <span className="block">{bt("셰이퍼 작업실에서만 조작 방식을 바꿀 수 있습니다.", "Control styles are available in the Shaper workspace.")}</span> : null}

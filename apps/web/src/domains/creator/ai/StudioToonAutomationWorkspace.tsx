@@ -1090,7 +1090,7 @@ export function StudioToonAutomationWorkspace({
                     />
                   </label>
                   <label className="text-xs font-semibold text-fg-2">
-                    Blender 패키지 자산 ID
+                    3D 패키지 자산 ID
                     <input
                       value={document.animation.blenderAssetId}
                       onChange={(event) => patch({
