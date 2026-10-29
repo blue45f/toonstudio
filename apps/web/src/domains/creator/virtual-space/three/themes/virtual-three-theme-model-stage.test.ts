@@ -10,6 +10,7 @@ import { VIRTUAL_THREE_THEME_MODEL_IDS as MODEL_IDS } from "./virtual-three-them
 import { VIRTUAL_THREE_THEMES } from "./virtual-three-theme-catalog";
 import { loadVirtualThreeThemeModelSource, type VirtualThreeVerifiedThemeModelSource } from "./virtual-three-theme-model-source";
 import { prepareVirtualThreeThemeModels } from "./virtual-three-theme-model-stage";
+import { virtualThreeThemeModelDisplaySize } from "./virtual-three-theme-placement";
 import type { VirtualThreeAssetRecipeTheme, VirtualThreeLayoutRole, VirtualThreeLayoutRoleKind } from "./virtual-three-theme-types";
 
 vi.mock("./virtual-three-theme-model-source", () => ({ loadVirtualThreeThemeModelSource: vi.fn() }));
@@ -27,13 +28,14 @@ const manifest: StudioVirtualSpaceWorldManifest = {
 interface BoxSpec {
   readonly size: readonly [number, number, number];
   readonly position?: readonly [number, number, number];
+  readonly includeUv?: boolean;
 }
 /** 네트워크 URI 없는 실제 GLB다. Three의 실제 정점·법선·인덱스를 BIN에 보존한다. */
 function inlineGlb(boxes: readonly BoxSpec[] = [{ size: [1, 2, 1] }]): ArrayBuffer {
   const chunks: Uint8Array[] = [];
   const views: { buffer: number; byteOffset: number; byteLength: number; target: number }[] = [];
   const accessors: { bufferView: number; componentType: number; count: number; type: string; min?: number[]; max?: number[] }[] = [];
-  const meshes: { primitives: { attributes: { POSITION: number; NORMAL: number }; indices: number; material: number }[] }[] = [];
+  const meshes: { primitives: { attributes: { POSITION: number; NORMAL: number; TEXCOORD_0?: number }; indices: number; material: number }[] }[] = [];
   let offset = 0;
   const push = (bytes: Uint8Array, target: number) => {
     const index = views.length;
@@ -60,7 +62,16 @@ function inlineGlb(boxes: readonly BoxSpec[] = [{ size: [1, 2, 1] }]): ArrayBuff
     accessors.push({ bufferView: push(new Uint8Array(normalData.buffer), 34962), componentType: 5126, count: normals.count, type: "VEC3" });
     const indexAccessor = accessors.length;
     accessors.push({ bufferView: push(new Uint8Array(indices.buffer), 34963), componentType: 5123, count: indices.length, type: "SCALAR" });
-    meshes.push({ primitives: [{ attributes: { POSITION: positionAccessor, NORMAL: normalAccessor }, indices: indexAccessor, material: 0 }] });
+    const attributes: { POSITION: number; NORMAL: number; TEXCOORD_0?: number } = { POSITION: positionAccessor, NORMAL: normalAccessor };
+    if (box.includeUv) {
+      const uv = geometry.getAttribute("uv");
+      if (!uv) throw new Error("합성 box geometry에 UV가 없습니다.");
+      const uvData = new Float32Array(uv.count * 2);
+      for (let index = 0; index < uv.count; index += 1) uvData.set([uv.getX(index), uv.getY(index)], index * 2);
+      attributes.TEXCOORD_0 = accessors.length;
+      accessors.push({ bufferView: push(new Uint8Array(uvData.buffer), 34962), componentType: 5126, count: uv.count, type: "VEC2" });
+    }
+    meshes.push({ primitives: [{ attributes, indices: indexAccessor, material: 0 }] });
     geometry.dispose();
   }
   const json = new TextEncoder().encode(JSON.stringify({
@@ -162,6 +173,66 @@ describe("검증된 private GLB 바이트를 사용하는 테마 stage", () => {
       expect(Array.from(sourceMesh.geometry.index?.array ?? [])).toEqual(indices);
       expect(new Uint8Array(await source.blob.arrayBuffer())).toEqual(new Uint8Array(bytes));
       expect(original.scene.scale.toArray()).toEqual([1, 1, 1]);
+    } finally { stage.dispose(); }
+  });
+
+  it("지정 선반판은 높이 1.85m로 폭 53m가 되지 않고 수평 1.85m로 배치하며 합성 GLB의 vertex·index·UV·material을 보존한다", async () => {
+    // 실제 경계만 재현한 합성 box다. 구매 원본 메시·재질·텍스처 검증을 대신하지 않는다.
+    const originalSize: [number, number, number] = [3.006350517, 0.104744673, 0.537821293];
+    const bytes = inlineGlb([{ size: originalSize, includeUv: true }]), source = verifiedSource(MODEL_IDS.dungeonShelf, bytes);
+    const original = await realParse.call(new GLTFLoader(), bytes, ""), scene = new THREE.Scene();
+    const sourceMesh = firstMesh(original.scene), vertices = vertexPositions(sourceMesh.geometry);
+    const index = sourceMesh.geometry.index, uv = sourceMesh.geometry.getAttribute("uv"), material = sourceMesh.material;
+    if (!index || !uv || Array.isArray(material)) throw new Error("선반판 합성 GLB의 index·UV·단일 material이 없습니다.");
+    const indices = Array.from(index.array), uvValues = Array.from({ length: uv.count }, (_, vertex) => [uv.getX(vertex), uv.getY(vertex)]).flat();
+    const materialValues = material.toJSON(), footprint = { x: 100, y: 100, width: 100, height: 100 };
+    expect(originalSize[0] * 1.85 / originalSize[1]).toBeCloseTo(53.098, 3);
+    expect(originalSize[0] * 1.85 / originalSize[1] * 32).toBeGreaterThan(footprint.width);
+    loadSource.mockResolvedValue(source);
+    vi.spyOn(GLTFLoader.prototype, "parseAsync").mockResolvedValue(original);
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest: { ...manifest, colliders: [footprint] },
+      theme: recipe([role("flat-shelf", "storage", MODEL_IDS.dungeonShelf)]), signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      const root = scene.children[0];
+      if (!root) throw new Error("선반판이 설치되지 않았습니다.");
+      const bounds = new THREE.Box3().setFromObject(root), size = bounds.getSize(new THREE.Vector3()), mesh = firstMesh(root);
+      expect(Math.max(size.x, size.z)).toBeCloseTo(1.85);
+      expect(size.y / size.x).toBeCloseTo(originalSize[1] / originalSize[0]);
+      expect(size.z / size.x).toBeCloseTo(originalSize[2] / originalSize[0]);
+      expect(bounds.min.y).toBeCloseTo(0);
+      expect(bounds.min.x * 32).toBeGreaterThanOrEqual(footprint.x);
+      expect(bounds.max.x * 32).toBeLessThanOrEqual(footprint.x + footprint.width);
+      expect(bounds.min.z * 32).toBeGreaterThanOrEqual(footprint.y);
+      expect(bounds.max.z * 32).toBeLessThanOrEqual(footprint.y + footprint.height);
+      expect(mesh.geometry).toBe(sourceMesh.geometry); expect(mesh.material).toBe(material);
+      expect(vertexPositions(sourceMesh.geometry)).toEqual(vertices);
+      expect(mesh.geometry.index).toBe(index);
+      expect(Array.from(index.array)).toEqual(indices);
+      expect(mesh.geometry.getAttribute("uv")).toBe(uv);
+      expect(Array.from({ length: uv.count }, (_, vertex) => [uv.getX(vertex), uv.getY(vertex)]).flat()).toEqual(uvValues);
+      expect(material.toJSON()).toEqual(materialValues);
+      expect(new Uint8Array(await source.blob.arrayBuffer())).toEqual(new Uint8Array(bytes));
+      expect(sourceMesh.scale.toArray()).toEqual([1, 1, 1]);
+      expect(original.scene.scale.toArray()).toEqual([1, 1, 1]);
+      expect(original.scene.position.toArray()).toEqual([0, 0, 0]);
+    } finally { stage.dispose(); }
+  });
+
+  it("다른 storage는 높이 1.85m를 유지하고 지정 선반판도 storage 이외 역할로는 수평 예외를 적용하지 않는다", async () => {
+    const id = MODEL_IDS.dungeonShelf + "-other", source = verifiedSource(id, inlineGlb([{ size: [1, 2, 1] }]));
+    expect(virtualThreeThemeModelDisplaySize("storage", id)).toEqual({ axis: "height", meters: 1.85 });
+    expect(virtualThreeThemeModelDisplaySize("accent", MODEL_IDS.dungeonShelf)).toEqual({ axis: "height", meters: 1.5 });
+    loadSource.mockResolvedValue(source);
+    const scene = new THREE.Scene();
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest, theme: recipe([role("other-storage", "storage", id)]),
+      signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      const root = scene.children[0];
+      if (!root) throw new Error("다른 storage 모델이 설치되지 않았습니다.");
+      const bounds = new THREE.Box3().setFromObject(root), size = bounds.getSize(new THREE.Vector3());
+      expect(size.y).toBeCloseTo(1.85);
+      expect(size.x / size.y).toBeCloseTo(0.5); expect(size.z / size.y).toBeCloseTo(0.5);
+      expect(bounds.min.y).toBeCloseTo(0);
     } finally { stage.dispose(); }
   });
 

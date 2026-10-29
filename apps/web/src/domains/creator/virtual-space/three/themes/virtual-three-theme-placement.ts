@@ -92,13 +92,16 @@ export function virtualThreeThemeModelHeight(kind: VirtualThreeLayoutRoleKind, m
   return 1.5;
 }
 
-/** 납작한 지면용 꽃은 높이가 아닌 수평 크기로 배치한다. 다른 모델의 높이 기준은 유지한다. */
+/** 납작한 지면용 꽃과 지정 선반판은 수평 크기로 배치한다. 다른 모델의 높이 기준은 유지한다. */
 export function virtualThreeThemeModelDisplaySize(kind: VirtualThreeLayoutRoleKind, modelAssetId: string): {
   readonly axis: "height" | "ground-extent";
   readonly meters: number;
 } {
   if (kind === "botanical" && modelAssetId === VIRTUAL_THREE_THEME_MODEL_IDS.parkFlower) {
     return { axis: "ground-extent", meters: 0.45 };
+  }
+  if (kind === "storage" && modelAssetId === VIRTUAL_THREE_THEME_MODEL_IDS.dungeonShelf) {
+    return { axis: "ground-extent", meters: 1.85 };
   }
   return { axis: "height", meters: virtualThreeThemeModelHeight(kind, modelAssetId) };
 }
