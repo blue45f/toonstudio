@@ -209,7 +209,7 @@ describe("Studio ToolBelt content module boundary", () => {
     expect(toolBelt.source).not.toContain('"use no memo"');
   });
 
-  it("preserves all 73 stable handlers without key drift", () => {
+  it("preserves all 76 stable handlers without key drift", () => {
     const page = moduleShape("./StudioCuttoonEditorHost.tsx");
     const toolBelt = moduleShape("./StudioToolBeltContent.tsx");
     const handlerNames = propertyNames(
@@ -225,9 +225,15 @@ describe("Studio ToolBelt content module boundary", () => {
       initializer.arguments[0] as ts.ObjectLiteralExpression
     ).toSorted();
 
-    expect(handlerNames).toHaveLength(75);
-    expect(wiredHandlerNames).toHaveLength(75);
+    // 76 = 75 + 3ef5d97d 가 더한 onSavedLocalAsset. 구매 소재를 개인 라이브러리에 저장한 뒤 호스트가
+    //      loadAssetsList 로 소재 목록을 다시 읽는 선택 핸들러이며, 번들 소재 라이브러리의
+    //      onSavedAsset 으로 내려간다.
+    // 개수는 변경을 알아차리게 하는 래칫이고, 계약 본체는 선언된 핸들러와 호스트가 배선한 핸들러가
+    // 정확히 같다는 아래 동등 단언이다.
+    expect(handlerNames).toHaveLength(76);
+    expect(wiredHandlerNames).toHaveLength(76);
     expect(wiredHandlerNames).toEqual(handlerNames);
+    expect(handlerNames).toContain("onSavedLocalAsset");
     expect(page.source).toContain("studioToolBeltContentHandlers={studioToolBeltContentHandlers}");
   });
 
