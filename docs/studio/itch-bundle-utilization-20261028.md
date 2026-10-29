@@ -2,6 +2,10 @@
 
 상태: **current + migration + target**. 로컬 수신 사실은 아래 `current` 실측을 따른다. 권리 판정은 [팩별 권리 원장](../../config/creator-bundle-pack-rights.json)과 [2026-10-28 권리 검토](./itch-bundle-license-review-20261028.md)가 정본이다. 파생 파일·소비 코드·해시·화면 검증이 모두 확인된 항목만 서비스 적용 완료로 집계한다.
 
+이 문서의 178종 통합·검증 수량은 `e34b3b2dbf253cd08d8b1762fb934149e91d7ee8` 기준 기록이다.
+이후의 Characters 2 정지 참고 이미지 8장 추가와 등록 후 검증 상태는
+[2026-10-29 후속 기록](./itch-characters2-reference-20261029.md)으로 구분한다.
+
 ## current — 구매 목록과 로컬 실물
 
 2026-10-28 로그인된 itch.io 구매 목록을 끝까지 불러와 공용 프로젝트 URL 85개를 확인했다. 구매 영수증·다운로드 권한 링크·이메일·결제 정보는 저장소에 넣지 않는다. 구매 확인은 `local-private:itch-purchase-library-observation-20261028`로 참조하고, 감사 입력에는 공용 프로젝트 URL과 로컬 팩 식별자만 사용한다.

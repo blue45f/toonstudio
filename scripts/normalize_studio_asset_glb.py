@@ -6,6 +6,7 @@ Spec: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
 """
 from __future__ import annotations
 import argparse
+from collections.abc import Callable
 import copy
 import hashlib
 import json
@@ -18,6 +19,7 @@ from studio_asset_curation import safe_file, sha256_file
 LIMIT = 64 * 1024 * 1024
 JSON_CHUNK = 0x4E4F534A
 BIN_CHUNK = 0x004E4942
+NORMALIZER_SOURCE_SHA256 = sha256_file(Path(__file__))
 
 
 def read_glb(data: bytes) -> tuple[dict, bytes]: # NOSONAR python:S3776
@@ -67,12 +69,8 @@ def write_glb(doc: dict, binary: bytes) -> bytes:
             + js + struct.pack('<II', len(padded), BIN_CHUNK) + padded)
 
 
-def normalize(source: Path, destination: Path) -> dict: # NOSONAR python:S3776
-    if destination.exists() or destination.is_symlink():
-        raise ValueError('destination already exists')
-    if source.stat().st_size > LIMIT:
-        raise ValueError('source exceeds pilot budget')
-    original = source.read_bytes()
+def normalize_bytes(original: bytes, resolve_texture: Callable[[str], bytes]) -> tuple[bytes, list[dict]]: # NOSONAR python:S3776
+    """파일을 쓰지 않고 승인된 resolver의 이미지 바이트만 GLB에 내장한다."""
     doc, binary = read_glb(original)
     original_doc = copy.deepcopy(doc)
     original_binary = binary
@@ -86,10 +84,11 @@ def normalize(source: Path, destination: Path) -> dict: # NOSONAR python:S3776
         parsed = urlsplit(uri)
         if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
             raise ValueError('external or data URI not supported by pilot')
-        texture = safe_file(source.parent, unquote(parsed.path))
-        if texture.stat().st_size > 16 * 1024 * 1024:
+        image_bytes = resolve_texture(uri)
+        if not isinstance(image_bytes, bytes):
+            raise ValueError('이미지 resolver는 bytes를 반환해야 합니다.')
+        if len(image_bytes) > 16 * 1024 * 1024:
             raise ValueError('texture too large')
-        image_bytes = texture.read_bytes()
         if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
             mime = 'image/png'
         elif image_bytes.startswith(b'\xff\xd8\xff'):
@@ -115,12 +114,42 @@ def normalize(source: Path, destination: Path) -> dict: # NOSONAR python:S3776
     for key in ('meshes', 'accessors', 'nodes', 'scenes', 'materials', 'textures', 'animations', 'skins'):
         if check_doc.get(key) != original_doc.get(key):
             raise ValueError('geometry or scene metadata changed')
+    for key in original_doc.keys() - {'buffers', 'bufferViews', 'images'}:
+        if check_doc.get(key) != original_doc[key]:
+            raise ValueError('GLB의 원본 메타데이터가 변경됐습니다.')
+    original_views = original_doc.get('bufferViews', [])
+    if check_doc.get('bufferViews', [])[:len(original_views)] != original_views:
+        raise ValueError('GLB의 원본 bufferView가 변경됐습니다.')
+    for key in original_doc['buffers'][0].keys() - {'byteLength'}:
+        if check_doc['buffers'][0].get(key) != original_doc['buffers'][0][key]:
+            raise ValueError('GLB의 원본 buffer 메타데이터가 변경됐습니다.')
+    for before, after in zip(original_doc.get('images', []), check_doc.get('images', []), strict=True):
+        for key in before.keys() - {'uri', 'bufferView', 'mimeType'}:
+            if after.get(key) != before[key]:
+                raise ValueError('GLB의 원본 image 메타데이터가 변경됐습니다.')
     for image in check_doc.get('images', []):
         view_id = image.get('bufferView')
         if type(view_id) is not int or not 0 <= view_id < len(check_doc.get('bufferViews', [])):
             raise ValueError('image missing embedded data')
         if image.get('mimeType') not in {'image/png', 'image/jpeg'}:
             raise ValueError('unsupported embedded image type')
+    return data, embedded
+
+
+def normalize(source: Path, destination: Path) -> dict:
+    if destination.exists() or destination.is_symlink():
+        raise ValueError('destination already exists')
+    if source.stat().st_size > LIMIT:
+        raise ValueError('source exceeds pilot budget')
+    original = source.read_bytes()
+
+    def resolve_texture(uri: str) -> bytes:
+        texture = safe_file(source.parent, unquote(urlsplit(uri).path))
+        if texture.stat().st_size > 16 * 1024 * 1024:
+            raise ValueError('texture too large')
+        return texture.read_bytes()
+
+    data, embedded = normalize_bytes(original, resolve_texture)
     destination.parent.mkdir(parents=True, exist_ok=True)
     with destination.open('xb') as f:
         f.write(data)
