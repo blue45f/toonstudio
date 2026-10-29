@@ -5,6 +5,7 @@ import {
   buildStorySeedAiPrompt,
   createTextAiStorySeedProvider,
   StorySeedAiError,
+  type StorySeedTextCompletion,
   localStorySeedProvider,
   parseStorySeedAiResponse,
   storySeedGenreKit,
@@ -173,7 +174,7 @@ describe("localStorySeedProvider & createTextAiStorySeedProvider", () => {
   });
 
   it("AI 제공자는 통합 AI 응답을 기본 초안 위에 덮어써 완결된 AI 초안을 돌려준다", async () => {
-    const complete = vi.fn(async () => ({
+    const complete = vi.fn<StorySeedTextCompletion>(async () => ({
       ok: true as const,
       content: "```json\n" + JSON.stringify({ goalDraft: "첫눈이 오기 전에 고백한다", loglineCandidates: ["A", "B", "C"] }) + "\n```",
     }));
