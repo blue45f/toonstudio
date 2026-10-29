@@ -9,6 +9,7 @@ export * from "./gimp-generated-brush";
 export * from "./svg";
 export * from "./kpp";
 export * from "./krita-bundle";
+export * from "./kra-document";
 export * from "./csp-sut";
 export * from "./chunked-sqlite-container";
 export * from "./csp-cls";
