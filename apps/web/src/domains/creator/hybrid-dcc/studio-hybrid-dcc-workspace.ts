@@ -4,6 +4,8 @@
  * into one callable surface for UI / companion tooling without React coupling.
  */
 
+import { workspaceUnwrapUvActive } from "./studio-hybrid-dcc-uv-edit";
+
 import { getStudioBg3dRoomPreset, buildStudioBg3dRoomParts } from "../bg3d/studio-bg3d-room-builder";
 import {
   exportStudioMeshByFormat,
@@ -66,12 +68,10 @@ import {
   evaluateStudioGeoNodesStarterGraph,
   type StudioGeoNodesPrimitiveKind,
 } from "../studio-geometry-nodes-workspace-bridge";
-import { importStudioGradeAAsset } from "../studio-grade-a-import-pipeline";
 import {
   bomFromAssetParts,
   type StudioManufacturingBom,
 } from "../studio-manufacturing-bom-lite";
-import { importStudioMeshByExtension } from "../studio-mesh-format-adapters";
 import {
   createStudioMeshModifierStack,
   evaluateStudioMeshModifierStack,
@@ -91,8 +91,6 @@ import { sha256HexPortable } from "../studio-sha256";
 import { createStudioDefaultSolidBooleanBackend } from "../studio-solid-boolean-backend";
 import { packStudioToon3dPackage, type StudioToon3dPackage } from "../studio-toon3d-package";
 import {
-  unwrapStudioMeshBox,
-  unwrapStudioMeshPlanar,
   type StudioUvMap,
 } from "../studio-uv-unwrap-lite";
 
@@ -114,6 +112,7 @@ import {
   type StudioHybridDccSelectionResult,
 } from "./studio-hybrid-dcc-component-selection";
 import { scanStudioHybridDccCorruption } from "./studio-hybrid-dcc-diagnostics";
+import { workspaceImportStudioNativeBytes } from "./native-import/studio-hybrid-dcc-native-import-workspace";
 import {
   createStudioHybridDccSession,
   hybridDccCommitGeometry,
@@ -807,33 +806,7 @@ export function workspaceImportBytes(
   fileName: string,
   bytes: Uint8Array,
 ): StudioHybridDccWorkspace {
-  const meshAdapter = importStudioMeshByExtension(fileName, bytes);
-  if (meshAdapter && meshAdapter.meshes[0]) {
-    const assetId = `import-${fileName.replace(/[^a-zA-Z0-9_-]/gu, "_").slice(0, 40)}`;
-    let session = ws.session;
-    if (!session.state.geometry.records[assetId]) {
-      session = hybridDccRegisterAsset(session, assetId, meshAdapter.meshes[0], {
-        source: fileName,
-        creator: "import",
-        license: "unknown",
-        useScope: "editorial",
-        derivative: "imported",
-      });
-    } else {
-      session = hybridDccCommitGeometry(session, assetId, meshAdapter.meshes[0]);
-    }
-    return {
-      ...synchronizeWorkspaceGeometryAuthority(ws, session),
-      activeAssetId: assetId,
-      lastImportReport: {
-        ...meshAdapter.report,
-        adapterFormat: meshAdapter.format,
-        extras: meshAdapter.extras ?? null,
-      },
-    };
-  }
-  const gradeA = importStudioGradeAAsset({ fileName, bytes });
-  return { ...ws, lastImportReport: gradeA.report };
+  return workspaceImportStudioNativeBytes(ws, fileName, bytes);
 }
 
 export function workspaceLoadRoomPreset(
@@ -997,10 +970,7 @@ export function workspaceUvUnwrapActive(
   ws: StudioHybridDccWorkspace,
   mode: "planar-xy" | "box" = "box",
 ): StudioHybridDccWorkspace {
-  const mesh = workspaceActiveMesh(ws);
-  if (!mesh) throw new Error("no active asset");
-  const uv = mode === "box" ? unwrapStudioMeshBox(mesh) : unwrapStudioMeshPlanar(mesh, "planar-xy");
-  return { ...ws, lastUvMap: uv };
+  return workspaceUnwrapUvActive(ws, mode);
 }
 
 export function workspaceCadProp(
@@ -2894,7 +2864,7 @@ export async function runStudioHybridDccWaveProductLoop(
       collabEpoch: ws.collab.epoch,
       collabOps: ws.collab.ops.length,
       collabConflicts: conflicts.length,
-      uvMode: ws.lastUvMap?.mode ?? null,
+      uvMode: ws.session.state.geometry.records["geo-sphere"]?.mesh.uvLayer ? "box" : null,
       packageHash: pkg.manifest.packageHash,
       documentHasGeo: (pkg.files["document/document.json"] ?? "").includes("geo-sphere")
         || (pkg.files["document/document.json"] ?? "").includes("import-lobby"),

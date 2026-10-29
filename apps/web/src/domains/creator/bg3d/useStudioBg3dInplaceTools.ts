@@ -4,6 +4,7 @@ import { Scene3dInplaceError } from "../scene3d/integration/scene3d-inplace-cont
 import type { Scene3dInplaceSelection } from "../scene3d/integration/scene3d-inplace-controller";
 import type { Scene3dInplaceToolsBridge } from "../scene3d/integration/scene3d-inplace-contract";
 import type { StudioBg3dInplaceToolsContext } from "./studio-bg3d-inplace-tools-context";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 export function readStudioBg3dInplaceSelection(
   ctx: StudioBg3dInplaceToolsContext,
@@ -14,6 +15,7 @@ export function readStudioBg3dInplaceSelection(
     !ctx.renderer ||
     !session ||
     !ctx.isSessionCurrent(session) ||
+    ctx.isMaterialBackendCurrent?.() === false ||
     ctx.isBlocked()
   )
     throw new Scene3dInplaceError(
@@ -59,7 +61,8 @@ export function readStudioBg3dInplaceSelection(
       );
     visited.add(node.id);
   }
-  const entry = ctx.cache.get(model.modelId);
+  const backend = resolveStudioBg3dMaterialBackend(ctx);
+  const entry = readStudioBg3dModelCacheEntry(ctx.cache, model.modelId, backend);
   const attachment = ctx.attachments.get(model.modelId);
   if (
     !entry ||
@@ -94,6 +97,7 @@ export function readStudioBg3dInplaceSelection(
     revisionKey: JSON.stringify([
       session.epoch,
       ctx.selectionEpoch ?? 0,
+      backend,
       live.revision,
       model,
       attachment,
@@ -123,7 +127,7 @@ export function createStudioBg3dInplaceToolsBridge(
         !record ||
         record.contentHash !== selected.sourceSha256 ||
         JSON.stringify(record.rights) !==
-          JSON.stringify(ctx.cache.get(model.modelId)?.record.rights)
+          JSON.stringify(readStudioBg3dModelCacheEntry(ctx.cache, model.modelId, resolveStudioBg3dMaterialBackend(ctx))?.record.rights)
       )
         throw new Scene3dInplaceError("stale", "저장된 원본이 변경되었습니다.");
       return record.blob.arrayBuffer();

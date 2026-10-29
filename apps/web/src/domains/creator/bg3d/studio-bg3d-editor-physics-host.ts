@@ -506,7 +506,7 @@ export function attachStudioBg3dEditorPhysicsHost(h: Record<string, any>) {
     const localWorld = createStudioBg3dPhysicsWorld(adapted.document, selectedIds);
     const modelLocalBoundsByNodeId = new Map<string, NonNullable<ReturnType<typeof measureStudioBg3dPhysicsModelLocalBounds>>>(
       sourceCustomModels.flatMap((model: BgCustomModelInstance) => {
-        const cachedRoot = modelRootCacheRef.current.get(model.modelId)?.root;
+        const cachedRoot = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root;
         const bounds = cachedRoot
           ? measureStudioBg3dPhysicsModelLocalBounds(cachedRoot)
           : null;

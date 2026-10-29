@@ -271,9 +271,10 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
       lastConstraintWorldMatrixRef.current = group.matrixWorld.clone();
     }
   }, [editableClone, instance.animation, instance.constraints, instance.morph, instance.pose]);
-  useFrame(({ clock, camera, size }) => {
+  useFrame(({ clock, camera, size }, deltaSeconds) => {
     const run = animationRunRef.current;
     if (!editableClone) return;
+    editableClone.updateMaterials(deltaSeconds);
     const group = groupRef.current;
     if (!group) return;
     group.updateWorldMatrix(true, false);

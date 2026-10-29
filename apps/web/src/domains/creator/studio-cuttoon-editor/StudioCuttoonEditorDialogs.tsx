@@ -6,6 +6,8 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { Undo2 } from "lucide-react";
 import { Suspense } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { studioHybridDccHandoffAnnouncement } from "../studio-3d-handoff-copy";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "../studio-chrome-ui";
 import { STUDIO_INTERCHANGE_IMPORT_PLACEMENT_CHOICES, STUDIO_WILL_V1_IMPORT_PLACEMENT_CHOICES } from "../studio-page-editor-runtime-contracts";
 import {
@@ -25,6 +27,7 @@ import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
+  const bt = useBilingual("StudioHybridDccPanel");
   const {
     activePage,
     animaticTimelineOpen,
@@ -284,11 +287,7 @@ export function StudioCuttoonEditorDialogs(s: StudioCuttoonEditorViewSession) {
             scheduleHybridDccWorkspacePersistence(workspace);
           }}
           onOpenInBackground3D={(result) => {
-            announceDrawingShortcut(
-              result.losses.length > 0
-                ? `3D 장면을 열었습니다 · 파생 손실 ${result.losses.length}건은 DCC 원본에 보존됨`
-                : `3D 장면을 열었습니다 · ${result.assets.length}개 메시, ${result.shots.length}개 Shot`,
-            );
+            announceDrawingShortcut(studioHybridDccHandoffAnnouncement(bt, result));
             bg3dDccSourceRef.current = {
               sourceDocumentId: result.sourceDocumentId,
               sourceStateHash: result.sourceStateHash,

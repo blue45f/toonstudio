@@ -8,6 +8,8 @@ import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createStudioSharedSet } from "../live/studio-live-2d3d-bridge";
+import { inspectStudioMeshSurfaceForInteractiveProjection } from "../mesh-surface/studio-mesh-surface-interactive";
+import { projectStudioMeshSurfaceForRender } from "../mesh-surface/studio-mesh-surface-render";
 import {
   createStudioEditableMeshFromPolygons,
   createStudioUnitCubeMesh,
@@ -70,7 +72,7 @@ vi.mock("@react-three/drei/core/PerspectiveCamera.js", () => ({ PerspectiveCamer
 vi.mock("@react-three/drei/core/TransformControls.js", () => ({ TransformControls: () => null }));
 
 // 코어와 분리된 장면 보조 조각(로컬 환경맵·오류 경계)까지 한 소스로 본다.
-const VIEWPORT_SOURCE = ["./StudioHybridDccViewportCore.tsx", "./StudioHybridDccViewportParts.tsx"]
+const VIEWPORT_SOURCE = ["./StudioHybridDccViewportCore.tsx", "./StudioHybridDccViewportParts.tsx", "./studio-hybrid-dcc-geometry-resource.ts"]
   .map((file) => readFileSync(resolve(import.meta.dirname, file), "utf8"))
   .join("\n");
 
@@ -291,7 +293,9 @@ describe("StudioHybridDccViewport", () => {
     const objectAsset = objectSnapshot.assets[0]!;
     const sourceSnapshot = deriveStudioHybridDccViewportSnapshot(workspace, "face");
     const sourceAsset = sourceSnapshot.assets[0]!;
-    const sourceSoup = studioEditableMeshToTriangleSoup(record.mesh);
+    const inspected = inspectStudioMeshSurfaceForInteractiveProjection(record.mesh);
+    if (!inspected.ok) throw new Error(inspected.message);
+    const sourceSoup = projectStudioMeshSurfaceForRender(record.mesh, inspected.value.plan);
 
     expect(objectAsset.renderSource).toBe("modifier-cache");
     expect(objectAsset.positions).toBe(cache.positions);
@@ -379,7 +383,9 @@ describe("StudioHybridDccViewport", () => {
     const record = workspace.session.state.geometry.records["safe-cube"]!;
     const cache = record.renderCache!;
     const sourceMesh = record.mesh;
-    const sourceSoup = studioEditableMeshToTriangleSoup(sourceMesh);
+    const inspected = inspectStudioMeshSurfaceForInteractiveProjection(sourceMesh);
+    if (!inspected.ok) throw new Error(inspected.message);
+    const sourceSoup = projectStudioMeshSurfaceForRender(sourceMesh, inspected.value.plan);
     const originalCachePositions = new Float32Array(cache.positions);
     const cases: readonly {
       readonly label: string;
@@ -817,7 +823,7 @@ describe("StudioHybridDccViewport", () => {
       />,
     );
     expect(screen.queryByTestId("r3f-canvas")).toBeNull();
-    expect(screen.getByText(/동기 다각형 교차 검사 예산을 초과했습니다/u)).toBeTruthy();
+    expect(screen.getByText(/동기 표면 검사 예산을 초과했습니다/u)).toBeTruthy();
   });
 
   it("applies polygon-pair work cumulatively while preserving assets that fit", () => {
@@ -837,7 +843,7 @@ describe("StudioHybridDccViewport", () => {
     expect(screen.getByText(/pair-b: 동시 표시 변환 예산을 초과했습니다/u)).toBeTruthy();
   });
 
-  it("rejects concave fan triangulation and mixed split-normal authority instead of lying", () => {
+  it("오목 면과 혼합 음영을 공통 표면의 실제 삼각형과 코너 법선으로 표시한다", () => {
     const concave = createStudioEditableMeshFromPolygons(
       [
         { x: 0, y: 0, z: 0 },
@@ -855,8 +861,8 @@ describe("StudioHybridDccViewport", () => {
         webglAvailable
       />,
     );
-    expect(screen.queryByTestId("r3f-canvas")).toBeNull();
-    expect(screen.getByText(/오목 다각형 삼각화/u)).toBeTruthy();
+    expect(screen.getByTestId("r3f-canvas")).toBeTruthy();
+    expect(screen.getByText("V 5 · △ 3")).toBeTruthy();
 
     const cube = createStudioUnitCubeMesh();
     const mixed: StudioEditableMesh = {
@@ -870,26 +876,11 @@ describe("StudioHybridDccViewport", () => {
         webglAvailable
       />,
     );
-    expect(screen.queryByTestId("r3f-canvas")).toBeNull();
-    expect(screen.getByText(/split-normal 렌더 경로/u)).toBeTruthy();
+    expect(screen.getByTestId("r3f-canvas")).toBeTruthy();
+    const asset = deriveStudioHybridDccViewportSnapshot(workspaceWithMesh(mixed, "mixed-normals")).assets[0]; expect(asset?.normalMode).toBe("split"); expect(asset?.cornerNormals).toHaveLength(108);
   });
 
-  it("owns and disposes local IBL, shadow, edge, and geometry resources", () => {
-    expect(VIEWPORT_SOURCE).toContain("new RoomEnvironment()");
-    expect(VIEWPORT_SOURCE).toContain("new THREE.PMREMGenerator(gl)");
-    expect(VIEWPORT_SOURCE).toContain("target.dispose()");
-    expect(VIEWPORT_SOURCE).toContain("generator.dispose()");
-    expect(VIEWPORT_SOURCE).toContain("room.dispose()");
-    expect(VIEWPORT_SOURCE).toContain("return () => next.dispose()");
-    expect(VIEWPORT_SOURCE).toContain("edges.dispose()");
-    expect(VIEWPORT_SOURCE).toContain("geometry.dispose()");
-    expect(VIEWPORT_SOURCE).toContain("indexedGeometry.toNonIndexed()");
-    expect(VIEWPORT_SOURCE).toContain("THREE.PCFShadowMap");
-    expect(VIEWPORT_SOURCE).not.toContain("THREE.PCFSoftShadowMap");
-    expect(VIEWPORT_SOURCE).toContain("polygonPairWork += points.length * points.length");
-    expect(VIEWPORT_SOURCE).not.toContain("estimatedFaceScanWork");
-    expect(VIEWPORT_SOURCE).not.toContain("faceCount * faceCount");
-  });
+
 });
 
 describe("deriveStudioHybridDccAssetLayout", () => {

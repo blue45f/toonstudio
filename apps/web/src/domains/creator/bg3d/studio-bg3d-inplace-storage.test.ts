@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prepareStudioBg3dInplaceDerivative } from "./studio-bg3d-inplace-storage";
 import { readStudioBg3dInplaceSelection } from "./useStudioBg3dInplaceTools";
@@ -20,6 +19,8 @@ import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-
 import type { SpecialistArtifact } from "../scene3d/specialists/specialist-contract";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
+import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from "./studio-bg3d-model-cache.test-fixture";
+import { studioBg3dModelCacheKey, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
 
 const seam = vi.hoisted(() => ({
   save: vi.fn(),
@@ -54,59 +55,23 @@ vi.mock("./studio-bg3d-modal-operation-coordinator", () => ({
 const sourceHash = `sha256:${"a".repeat(64)}` as const;
 const outputHash = `sha256:${"b".repeat(64)}` as const;
 function record(id: string, hash: string): Bg3dVerifiedStoredRecord {
-  return {
-    id,
-    contentHash: hash,
-    byteSize: 32,
-    mime: "model/gltf-binary",
-    name: id === "storage-original" ? "source.glb" : "derivative.glb",
-    blob: new Blob([new Uint8Array(32)]),
-    rights: {
-      status: "public-domain",
-      commercialUse: true,
-      attributionRequired: false,
-      attribution: "",
-      licenseName: "CC0-1.0",
-    },
-  } as Bg3dVerifiedStoredRecord;
+  return { ...createStudioBg3dCacheTestRecord(id, hash), name: id === "storage-original" ? "source.glb" : "derivative.glb" };
 }
 function entry(
   rec: Bg3dVerifiedStoredRecord,
   rootScale: number,
+  backend: StudioBg3dMaterialBackend = "webgl",
 ): StudioBg3dModelRootCacheEntry {
-  const root = new THREE.Group();
-  root.scale.setScalar(rootScale);
-  return {
-    record: rec,
-    root,
-    dispose: vi.fn(),
-    animations: [],
-    metrics: {
-      nodes: 1,
-      triangles: 12,
-      drawCalls: 1,
-      materials: 1,
-      lights: 0,
-      animations: 0,
-      animationChannels: 0,
-      animationKeyframes: 0,
-      animationValues: 0,
-      skins: 0,
-      joints: 0,
-      morphTargets: 0,
-      accessorElements: 36,
-      estimatedDecodedGeometryBytes: 512,
-      textures: 0,
-      textureBytes: 0,
-      maxTextureDimension: 0,
-    },
-  } as unknown as StudioBg3dModelRootCacheEntry;
+  const result = createStudioBg3dCacheTestEntry(rec, backend);
+  result.root.scale.setScalar(rootScale);
+  return result;
 }
-function fixture() {
+function fixture(backend: StudioBg3dMaterialBackend = "webgl") {
   const original = record("storage-original", sourceHash);
   const derivative = record("storage-derived", outputHash);
-  const sourceEntry = entry(original, 1);
-  const derivedEntry = entry(derivative, 0.25);
+  const sourceEntry = entry(original, 1, backend);
+  const derivedEntry = entry(derivative, 0.25, backend);
+  const sourceKey = studioBg3dModelCacheKey(original.id, backend), derivedKey = studioBg3dModelCacheKey(derivative.id, backend);
   const history: StudioBg3dHistoryCommandRefs = {
     historyRef: { current: [] },
     historyIndexRef: { current: -1 },
@@ -136,13 +101,14 @@ function fixture() {
     selectedIds: new Set([model.id]),
     session: { epoch: 1 },
     ready: true,
-    renderer: {} as StudioBg3dKtx2Renderer,
+    renderer: { [backend === "webgpu" ? "isWebGPURenderer" : "isWebGLRenderer"]: true } as StudioBg3dKtx2Renderer,
+    materialBackend: backend,
     quality: {
       profile: "desktop",
       shadows: true,
       textureScale: 1,
     } as StudioBg3dResolvedDeviceQuality,
-    cache: new Map([[original.id, sourceEntry]]),
+    cache: new Map([[sourceKey, sourceEntry]]),
     attachments: new Map([
       [
         original.id,
@@ -194,7 +160,7 @@ function fixture() {
   seam.get.mockResolvedValue(derivative);
   seam.compensate.mockResolvedValue(true);
   seam.admit.mockImplementation(async (args) => {
-    args.cache.set(derivative.id, derivedEntry);
+    args.cache.set(derivedKey, derivedEntry);
     args.onCacheEntryCreated(derivative.id, derivedEntry);
     return derivedEntry;
   });
@@ -239,6 +205,8 @@ function fixture() {
     selected,
     artifact,
     prepare,
+    sourceKey,
+    derivedKey,
   };
 }
 beforeEach(() => vi.clearAllMocks());
@@ -246,7 +214,7 @@ describe("existing BG3D storage/history derivative bridge", () => {
   it("stages privately, preserves world scale and shared instances, then supports real Undo/Redo and document round trips", async () => {
     const f = fixture();
     const prepared = await f.prepare();
-    expect(f.context.cache.has(f.derivative.id)).toBe(false);
+    expect(f.context.cache.has(f.derivedKey)).toBe(false);
     expect(f.context.live.current.customModels[0]!.modelId).toBe(f.original.id);
     await prepared.commit();
     const models = f.context.live.current.customModels;
@@ -311,7 +279,7 @@ describe("existing BG3D storage/history derivative bridge", () => {
   });
   it("does not dispose a reused global cache entry during compensation", async () => {
     const f = fixture();
-    f.context.cache.set(f.derivative.id, f.derivedEntry);
+    f.context.cache.set(f.derivedKey, f.derivedEntry);
     seam.admit.mockImplementationOnce(async () => f.derivedEntry);
     seam.save.mockResolvedValueOnce({ ...f.disposition, created: [] });
     const prepared = await f.prepare();
@@ -379,6 +347,50 @@ it("retains newly durable bytes after a session change instead of deleting poten
   expect(seam.compensate).not.toHaveBeenCalled(); expect(f.derivedEntry.dispose).toHaveBeenCalledOnce(); expect(f.sourceEntry.dispose).not.toHaveBeenCalled();
 });
 it("does not compensate a newly imported row adopted by another cache owner", async () => {
-  const f = fixture(); const prepared = await f.prepare(); f.context.cache.set(f.derivative.id, entry(f.derivative, 0.25));
+  const f = fixture(); const prepared = await f.prepare(); f.context.cache.set(f.derivedKey, entry(f.derivative, 0.25));
   await expect(prepared.rollback()).rejects.toMatchObject({ code: "persistence" }); expect(seam.compensate).not.toHaveBeenCalled();
+});
+
+it("WebGPU 선택·승격은 해당 variant만 사용하고 DB·장면 모델 ID를 바꾸지 않는다", async () => {
+  const f = fixture("webgpu"), glSource = entry(f.original, 99), glDerived = entry(f.derivative, 99);
+  f.context.cache.set(studioBg3dModelCacheKey(f.original.id, "webgl"), glSource);
+  f.context.cache.set(studioBg3dModelCacheKey(f.derivative.id, "webgl"), glDerived);
+  expect(readStudioBg3dInplaceSelection(f.context).sourceOwner).toBe(f.sourceEntry);
+  const prepared = await f.prepare(); await prepared.commit();
+  expect(seam.admit).toHaveBeenCalledWith(expect.objectContaining({ materialBackend: "webgpu" }));
+  expect(f.context.cache.get(f.derivedKey)).toBe(f.derivedEntry);
+  expect(f.context.cache.get(studioBg3dModelCacheKey(f.derivative.id, "webgl"))).toBe(glDerived);
+  expect(f.context.live.current.customModels[0]).toMatchObject({ modelId: f.derivative.id, scale: [8, 8, 8] });
+  expect(f.context.storageIds.get("attachment-derived")).toBe(f.derivative.id);
+  expect(f.context.cache.has(f.derivative.id)).toBe(false); expect(glSource.dispose).not.toHaveBeenCalled(); expect(glDerived.dispose).not.toHaveBeenCalled();
+});
+
+it.each(["backend", "renderer", "lease"] as const)("준비 후 %s 변경이면 canonical/history/cache 승격 없이 private 결과를 정리한다", async (boundary) => {
+  const f = fixture(); let runtimeCurrent = true;
+  Object.assign(f.context, { isMaterialBackendCurrent: () => runtimeCurrent });
+  const prepared = await f.prepare();
+  if (boundary === "backend") {
+    const gpuSource = entry(f.original, 1, "webgpu");
+    f.context.cache.set(studioBg3dModelCacheKey(f.original.id, "webgpu"), gpuSource);
+    Object.assign(f.context, { materialBackend: "webgpu", renderer: { isWebGPURenderer: true } });
+  } else if (boundary === "renderer") Object.assign(f.context, { renderer: { isWebGLRenderer: true } });
+  else runtimeCurrent = false;
+  await expect(prepared.commit()).rejects.toThrow(); await prepared.rollback();
+  expect(f.context.live.current.customModels[0]?.modelId).toBe(f.original.id);
+  expect(f.history.historyCommandTimelineRef.current).toBeNull(); expect(f.context.cache.has(f.derivedKey)).toBe(false);
+  expect(f.sourceEntry.dispose).not.toHaveBeenCalled(); expect(f.derivedEntry.dispose).toHaveBeenCalledOnce();
+});
+
+it("다른 backend가 채택한 durable 원본은 compensation으로 삭제하지 않는다", async () => {
+  const f = fixture(), prepared = await f.prepare(), adopted = entry(f.derivative, 1, "webgpu");
+  f.context.cache.set(studioBg3dModelCacheKey(f.derivative.id, "webgpu"), adopted);
+  await expect(prepared.rollback()).rejects.toMatchObject({ code: "persistence" });
+  expect(seam.compensate).not.toHaveBeenCalled(); expect(adopted.dispose).not.toHaveBeenCalled(); expect(f.derivedEntry.dispose).toHaveBeenCalledOnce();
+});
+
+it("다른 backend 또는 raw storage ID만 있으면 선택 원본으로 fallback하지 않는다", () => {
+  const f = fixture(); f.context.cache.clear();
+  f.context.cache.set(f.original.id, f.sourceEntry);
+  f.context.cache.set(studioBg3dModelCacheKey(f.original.id, "webgpu"), entry(f.original, 1, "webgpu"));
+  expect(() => readStudioBg3dInplaceSelection(f.context)).toThrow("먼저 불러와야");
 });

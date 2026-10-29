@@ -9,7 +9,6 @@
 import { ContactShadows } from "@react-three/drei/core/ContactShadows.js";
 import { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
 import { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
-import { PerformanceMonitor } from "@react-three/drei/core/PerformanceMonitor.js";
 import { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
 import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
 import {
@@ -34,22 +33,8 @@ import {
   useState,
 } from "react";
 import * as THREE from "three";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import {
-  hashStudioEditableMesh,
-  studioEditableMeshToTriangleSoup,
-  type StudioEditableMesh,
-} from "../studio-editable-half-edge-mesh";
-import {
-  assertRenderCacheIsNotAuthority,
-  type StudioGeometryAuthorityRecord,
-  type StudioRenderMeshCache,
-} from "../studio-geometry-authority";
-
-import {
-  deriveStudioHybridDccAssetLayout,
-  STUDIO_HYBRID_DCC_ASSET_LAYOUT_LIMITS,
-} from "./studio-hybrid-dcc-asset-layout";
 import {
   mapStudioHybridDccRayFaceIndex,
   type StudioHybridDccComponentMode,
@@ -62,7 +47,6 @@ import {
   STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION,
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
-import { STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES, validateStudioHybridDccFanPolygon } from "./studio-hybrid-dcc-polygon-validation";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
@@ -81,19 +65,27 @@ import {
 } from "./StudioHybridDccViewportParts";
 import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewportInteractionBar";
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
+import { StudioHybridDccSurfaceMaterial } from "./materials/StudioHybridDccSurfaceMaterial";
+import type { StudioHybridDccToonMaterialPreview } from "./materials/studio-hybrid-dcc-toon-projection";
+import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportAssetSnapshot } from "./studio-hybrid-dcc-viewport-snapshot";
+import { useStudioHybridDccSculptPointer } from "./useStudioHybridDccSculptPointer";
+import type { StudioSculptGestureController } from "./studio-hybrid-dcc-sculpt-gesture";
+import type { StudioSculptGeometryPreview } from "./studio-hybrid-dcc-sculpt-stroke-session";
+
+import { createStudioHybridDccGeometryResource, type StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 
 import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
+// eslint-disable-next-line react-refresh/only-export-components -- 기존 순수 snapshot 공개 API를 유지한다.
+export { deriveStudioHybridDccViewportSnapshot } from "./studio-hybrid-dcc-viewport-snapshot";
+export type { StudioHybridDccViewportAssetSnapshot, StudioHybridDccViewportSnapshot, StudioHybridDccViewportRenderSource } from "./studio-hybrid-dcc-viewport-snapshot";
+
+export type { StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
 
 export type StudioHybridDccViewportProjection = "perspective" | "orthographic";
 export type StudioHybridDccViewportOverlay = "material" | "material-wire" | "wireframe";
 export type StudioHybridDccTransformMode = "translate" | "rotate" | "scale";
 export type StudioHybridDccTransformSpace = "world" | "local";
 export type StudioHybridDccViewportView = StudioHybridDccStandardView;
-export type StudioHybridDccViewportRenderSource =
-  | "authority-source"
-  | "authority-edit-cage"
-  | "authority-cache-fallback"
-  | "modifier-cache";
 
 export interface StudioHybridDccViewportProps {
   readonly workspace: StudioHybridDccWorkspace;
@@ -124,6 +116,12 @@ export interface StudioHybridDccViewportProps {
   readonly onComponentSelectionError?: (message: string) => void;
   /** Keeps camera inspection available while preventing stale edits during async engine work. */
   readonly editingDisabled?: boolean;
+  /** UV 작업은 원본 코너를 검사하므로 수정자 캐시 대신 편집 메시를 표시한다. */
+  readonly uvChecker?: boolean;
+  readonly toonPreview?: StudioHybridDccToonMaterialPreview;
+  readonly sculptPreview?: StudioSculptGeometryPreview;
+  /** 새 gesture가 있으면 구 point callback을 중복 호출하지 않는다. */
+  readonly sculptGesture?: StudioSculptGestureController;
   /**
    * 활성 조형 브러시. 주어지면 선택 오브젝트 위에서의 포인터 드래그가 로컬 좌표 스트로크로 전달된다.
    */
@@ -149,38 +147,6 @@ export interface StudioHybridDccViewportProps {
   readonly onEmptyStart?: (kind: "cube" | "room" | "import") => void;
 }
 
-export interface StudioHybridDccViewportAssetSnapshot {
-  readonly assetId: string;
-  readonly meshHash: string;
-  readonly meshRevision: number;
-  readonly mesh: StudioEditableMesh;
-  readonly positions: Float32Array;
-  readonly indices: Uint32Array;
-  readonly renderHash: string;
-  readonly renderSource: StudioHybridDccViewportRenderSource;
-  readonly materialId: string;
-  readonly materialColor: `#${string}` | null;
-  readonly position: readonly [number, number, number];
-  readonly rotationEulerRad: readonly [number, number, number];
-  readonly scale: readonly [number, number, number];
-  readonly worldMin: readonly [number, number, number];
-  readonly worldMax: readonly [number, number, number];
-  readonly normalMode: "flat" | "smooth";
-  readonly vertexCount: number;
-  readonly triangleCount: number;
-}
-
-export interface StudioHybridDccViewportSnapshot {
-  readonly assets: readonly StudioHybridDccViewportAssetSnapshot[];
-  readonly errors: readonly { readonly assetId: string; readonly message: string }[];
-  readonly warnings: readonly { readonly assetId: string; readonly message: string }[];
-  readonly center: readonly [number, number, number];
-  readonly radius: number;
-  readonly gridSize: number;
-  readonly signature: string;
-  readonly totalVertices: number;
-  readonly totalTriangles: number;
-}
 
 const STUDIO_HYBRID_DCC_RENDER_PROFILE = Object.freeze({
   colorSpace: THREE.SRGBColorSpace,
@@ -190,14 +156,6 @@ const STUDIO_HYBRID_DCC_RENDER_PROFILE = Object.freeze({
   minDpr: 1,
   maxDpr: 2,
   maxDetailedEdgeTriangles: 120_000,
-  maxSynchronousFacesPerAsset: 120_000,
-  maxSynchronousTrianglesPerAsset: 120_000,
-  maxSynchronousLinearWorkPerAsset: 1_250_000,
-  maxSynchronousPolygonPairWorkPerAsset: 2_000_000,
-  maxSynchronousLinearWorkTotal: 2_000_000,
-  maxSynchronousPolygonPairWorkTotal: 3_000_000,
-  maxSynchronousTrianglesTotal: 180_000,
-  maxFaceLoopVertices: STUDIO_HYBRID_DCC_MAX_FACE_LOOP_VERTICES,
 });
 
 export interface StudioHybridDccRendererProfileTarget {
@@ -210,44 +168,6 @@ export interface StudioHybridDccRendererProfileTarget {
   };
 }
 
-interface StudioHybridDccMeshRenderData {
-  readonly positions: Float32Array;
-  readonly indices: Uint32Array;
-}
-
-interface StudioHybridDccRenderProjection extends StudioHybridDccMeshRenderData {
-  readonly renderHash: string;
-  readonly renderSource: StudioHybridDccViewportRenderSource;
-  readonly validationWork: number;
-}
-
-type StudioHybridDccRenderCacheValidation =
-  | { readonly ok: true; readonly value: StudioHybridDccRenderProjection }
-  | { readonly ok: false; readonly message: string };
-
-interface StudioHybridDccMeshPreflight {
-  readonly faceCount: number;
-  readonly triangleCount: number;
-  readonly normalMode: "flat" | "smooth";
-  /** Exact O(V + H + F + corners) preflight/conversion work proxy. */
-  readonly linearWork: number;
-  /** Safe upper bound for the per-polygon segment-pair checks: Σ(cornerCount²). */
-  readonly polygonPairWork: number;
-}
-
-type StudioHybridDccMeshPreflightResult =
-  | { readonly ok: true; readonly value: StudioHybridDccMeshPreflight }
-  | { readonly ok: false; readonly message: string };
-
-export interface StudioHybridDccGeometryResource {
-  readonly geometry: THREE.BufferGeometry;
-  readonly edges: THREE.EdgesGeometry;
-  readonly edgeDetail: "silhouette" | "bounds";
-  dispose(): void;
-}
-
-const meshRenderDataCache = new WeakMap<StudioEditableMesh, StudioHybridDccMeshRenderData>();
-const meshPreflightCache = new WeakMap<StudioEditableMesh, StudioHybridDccMeshPreflightResult>();
 
 const VIEWPORT_COLORS = Object.freeze({
   background: new THREE.Color().setHSL(0.105, 0.08, 0.105, THREE.SRGBColorSpace),
@@ -275,486 +195,6 @@ function classes(...values: Array<string | false | null | undefined>): string {
   return values.filter(Boolean).join(" ");
 }
 
-function compareCodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function inspectStudioHybridDccMeshForSynchronousProjection(
-  mesh: StudioEditableMesh,
-): StudioHybridDccMeshPreflightResult {
-  const cached = meshPreflightCache.get(mesh);
-  if (cached) return cached;
-  let result: StudioHybridDccMeshPreflightResult;
-  try {
-    const faceCount = mesh.faces.length;
-    if (faceCount === 0) throw new Error("렌더링할 면이 없습니다.");
-    if (faceCount > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousFacesPerAsset) {
-      throw new Error(
-        `동기 변환 면 예산을 초과했습니다 (${faceCount.toLocaleString("en-US")}). `
-          + "대용량 삼각화 worker가 필요합니다.",
-      );
-    }
-    const hasSmoothFaces = mesh.faces.some((face) => face.smooth);
-    const hasFlatFaces = mesh.faces.some((face) => !face.smooth);
-    if (hasSmoothFaces && hasFlatFaces) {
-      throw new Error("혼합 flat/smooth 면에는 split-normal 렌더 경로가 필요합니다.");
-    }
-    if (hasSmoothFaces && (
-      mesh.vertices.some((vertex) => vertex.crease > 0)
-      || mesh.halfEdges.some((halfEdge) => halfEdge.crease > 0)
-    )) {
-      throw new Error("crease가 있는 smooth 메시에는 smoothing-island 렌더 경로가 필요합니다.");
-    }
-    const verticesById = new Map(mesh.vertices.map((vertex) => [vertex.id, vertex]));
-    if (verticesById.size !== mesh.vertices.length) {
-      throw new Error("메시에 중복된 정점 ID가 있습니다.");
-    }
-    if (mesh.vertices.some((vertex) => (
-      !Number.isInteger(vertex.id)
-      || !Number.isFinite(vertex.position.x)
-      || !Number.isFinite(vertex.position.y)
-      || !Number.isFinite(vertex.position.z)
-    ))) {
-      throw new Error("메시에 유효하지 않은 정점 ID 또는 좌표가 있습니다.");
-    }
-    if (new Set(mesh.faces.map((face) => face.id)).size !== mesh.faces.length) {
-      throw new Error("메시에 중복된 면 ID가 있습니다.");
-    }
-    if (mesh.faces.some((face) => !Number.isInteger(face.id))) {
-      throw new Error("메시에 유효하지 않은 면 ID가 있습니다.");
-    }
-    if (mesh.halfEdges.some((halfEdge, index) => halfEdge.id !== index)) {
-      throw new Error("half-edge ID와 저장 인덱스가 일치하지 않습니다.");
-    }
-    const baseLinearWork = mesh.vertices.length + mesh.halfEdges.length + faceCount;
-    if (baseLinearWork > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkPerAsset) {
-      throw new Error("동기 선형 메시 검사 예산을 초과했습니다. 대용량 worker가 필요합니다.");
-    }
-    let triangleCount = 0;
-    let cornerCount = 0;
-    let polygonPairWork = 0;
-    for (const face of mesh.faces) {
-      const points: Array<readonly [number, number, number]> = [];
-      const vertexIds = new Set<number>();
-      const halfEdgeIds = new Set<number>();
-      let halfEdgeId = face.he;
-      while (true) {
-        if (!Number.isInteger(halfEdgeId) || halfEdgeId < 0 || halfEdgeId >= mesh.halfEdges.length) {
-          throw new Error(`면 ${face.id}의 half-edge 연결이 잘못되었습니다.`);
-        }
-        if (halfEdgeIds.has(halfEdgeId)) {
-          if (halfEdgeId === face.he) break;
-          throw new Error(`면 ${face.id}의 half-edge 순환이 닫히지 않습니다.`);
-        }
-        halfEdgeIds.add(halfEdgeId);
-        if (halfEdgeIds.size > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxFaceLoopVertices) {
-          throw new Error(`면 ${face.id}의 꼭짓점 수가 동기 삼각화 예산을 초과했습니다.`);
-        }
-        const halfEdge = mesh.halfEdges[halfEdgeId]!;
-        const previous = mesh.halfEdges[halfEdge.prev];
-        const next = mesh.halfEdges[halfEdge.next];
-        if (halfEdge.face !== face.id || previous?.next !== halfEdgeId || next?.prev !== halfEdgeId) {
-          throw new Error(`면 ${face.id}의 half-edge 양방향 연결이 일치하지 않습니다.`);
-        }
-        const vertex = previous ? verticesById.get(previous.vertex) : undefined;
-        if (!vertex || vertexIds.has(vertex.id)) {
-          throw new Error(`면 ${face.id}에 없거나 중복된 정점이 있습니다.`);
-        }
-        vertexIds.add(vertex.id);
-        points.push([vertex.position.x, vertex.position.y, vertex.position.z]);
-        halfEdgeId = halfEdge.next;
-      }
-      if (points.length < 3) throw new Error(`면 ${face.id}의 정점이 3개보다 적습니다.`);
-      cornerCount += points.length;
-      polygonPairWork += points.length * points.length;
-      if (baseLinearWork + cornerCount
-        > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkPerAsset) {
-        throw new Error("동기 선형 메시 검사 예산을 초과했습니다. 대용량 worker가 필요합니다.");
-      }
-      if (polygonPairWork
-        > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousPolygonPairWorkPerAsset) {
-        throw new Error(
-          "동기 다각형 교차 검사 예산을 초과했습니다. 고차 면을 나누거나 worker를 사용해 주세요.",
-        );
-      }
-      validateStudioHybridDccFanPolygon(points, face.id);
-      triangleCount += points.length - 2;
-      if (triangleCount > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousTrianglesPerAsset) {
-        throw new Error("동기 변환 삼각형 예산을 초과했습니다. 대용량 삼각화 worker가 필요합니다.");
-      }
-    }
-    result = {
-      ok: true,
-      value: {
-        faceCount,
-        triangleCount,
-        normalMode: hasFlatFaces ? "flat" : "smooth",
-        linearWork: baseLinearWork + cornerCount,
-        polygonPairWork,
-      },
-    };
-  } catch (error) {
-    result = {
-      ok: false,
-      message: error instanceof Error ? error.message : "메시 삼각화 사전 검증에 실패했습니다.",
-    };
-  }
-  meshPreflightCache.set(mesh, result);
-  return result;
-}
-
-function meshRenderData(mesh: StudioEditableMesh): StudioHybridDccMeshRenderData {
-  const cached = meshRenderDataCache.get(mesh);
-  if (cached) return cached;
-  const soup = studioEditableMeshToTriangleSoup(mesh);
-  if (soup.indices.length === 0 || soup.indices.length % 3 !== 0) {
-    throw new Error("렌더링할 삼각형 표면이 없습니다.");
-  }
-  const vertexCount = soup.positions.length / 3;
-  for (const index of soup.indices) {
-    if (index >= vertexCount) throw new Error("삼각형 인덱스가 정점 범위를 벗어났습니다.");
-  }
-  const data: StudioHybridDccMeshRenderData = {
-    positions: soup.positions,
-    indices: soup.indices,
-  };
-  meshRenderDataCache.set(mesh, data);
-  return data;
-}
-
-function resolveStudioHybridDccRoomMaterialColor(materialId: string): `#${string}` | null {
-  const match = /^room-color:(#[0-9a-f]{6})$/iu.exec(materialId);
-  const color = match?.[1];
-  return color ? color.toLowerCase() as `#${string}` : null;
-}
-
-function validateStudioHybridDccRenderCache(
-  record: StudioGeometryAuthorityRecord,
-  cache: StudioRenderMeshCache,
-  expectedGeometryHash: string | null,
-): StudioHybridDccRenderCacheValidation {
-  let modifierSourceHash: string;
-  try {
-    modifierSourceHash = hashStudioEditableMesh(record.modifierStack.source);
-  } catch {
-    return {
-      ok: false,
-      message: "변형 스택의 원본 구조를 검증하지 못해 현재 권위 메시로 표시합니다.",
-    };
-  }
-  if (modifierSourceHash !== record.meshHash) {
-    return {
-      ok: false,
-      message: "변형 스택의 원본 해시가 현재 권위 메시와 달라 원본 메시로 표시합니다.",
-    };
-  }
-  if (!expectedGeometryHash) {
-    return {
-      ok: false,
-      message: "공유 장면에 화면용 메시의 provenance가 없어 원본 메시로 표시합니다.",
-    };
-  }
-  if (!/^(?:mesh:[0-9a-f]{8}|mesh:sha256:[0-9a-f]{64}|sha256:[0-9a-f]{64})$/iu.test(cache.derivedFromHash)
-    || cache.derivedFromHash !== expectedGeometryHash) {
-    return {
-      ok: false,
-      message: "화면용 메시의 파생 해시가 현재 장면과 달라 원본 메시로 표시합니다.",
-    };
-  }
-  if (!(cache.positions instanceof Float32Array)
-    || cache.positions.length === 0
-    || cache.positions.length % 3 !== 0) {
-    return {
-      ok: false,
-      message: "화면용 메시의 정점 배열이 잘못되어 원본 메시로 표시합니다.",
-    };
-  }
-  if (!(cache.indices instanceof Uint32Array)
-    || cache.indices.length === 0
-    || cache.indices.length % 3 !== 0) {
-    return {
-      ok: false,
-      message: "화면용 메시의 삼각형 배열이 잘못되어 원본 메시로 표시합니다.",
-    };
-  }
-  const vertexCount = cache.positions.length / 3;
-  const triangleCount = cache.indices.length / 3;
-  if (vertexCount > STUDIO_HYBRID_DCC_ASSET_LAYOUT_LIMITS.maxVerticesPerAsset
-    || triangleCount > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousTrianglesPerAsset) {
-    return {
-      ok: false,
-      message: "화면용 메시가 안전한 동기 표시 예산을 넘어 원본 메시로 표시합니다.",
-    };
-  }
-  const validationWork = cache.positions.length + cache.indices.length;
-  if (validationWork > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkPerAsset) {
-    return {
-      ok: false,
-      message: "화면용 메시 검사 예산을 넘어 원본 메시로 표시합니다.",
-    };
-  }
-  for (const coordinate of cache.positions) {
-    if (!Number.isFinite(coordinate)) {
-      return {
-        ok: false,
-        message: "화면용 메시에 유한하지 않은 좌표가 있어 원본 메시로 표시합니다.",
-      };
-    }
-    if (Math.abs(coordinate) > STUDIO_HYBRID_DCC_ASSET_LAYOUT_LIMITS.maxAbsoluteCoordinate) {
-      return {
-        ok: false,
-        message: "화면용 메시 좌표가 안전 범위를 넘어 원본 메시로 표시합니다.",
-      };
-    }
-  }
-  for (let offset = 0; offset < cache.indices.length; offset += 3) {
-    const a = cache.indices[offset]!;
-    const b = cache.indices[offset + 1]!;
-    const c = cache.indices[offset + 2]!;
-    if (a >= vertexCount || b >= vertexCount || c >= vertexCount) {
-      return {
-        ok: false,
-        message: "화면용 메시 인덱스가 정점 범위를 넘어 원본 메시로 표시합니다.",
-      };
-    }
-    if (a === b || b === c || a === c) {
-      return {
-        ok: false,
-        message: "화면용 메시의 퇴화 삼각형을 감지해 원본 메시로 표시합니다.",
-      };
-    }
-  }
-  if (record.renderCache !== cache || !assertRenderCacheIsNotAuthority(record)) {
-    return {
-      ok: false,
-      message: "화면용 메시의 원본·변형·내용 해시가 현재 권위 상태와 달라 원본 메시로 표시합니다.",
-    };
-  }
-  return {
-    ok: true,
-    value: {
-      positions: cache.positions,
-      indices: cache.indices,
-      renderHash: cache.derivedFromHash,
-      renderSource: "modifier-cache",
-      validationWork,
-    },
-  };
-}
-
-function sourceStudioHybridDccRenderProjection(
-  record: StudioGeometryAuthorityRecord,
-  renderSource: Exclude<StudioHybridDccViewportRenderSource, "modifier-cache">,
-): StudioHybridDccRenderProjection {
-  return {
-    ...meshRenderData(record.mesh),
-    renderHash: record.meshHash,
-    renderSource,
-    validationWork: 0,
-  };
-}
-
-/**
- * Pure renderer projection. Object mode may read a validated disposable modifier cache; component
- * modes always return the source authority cage so ray face indices keep their stable-ID mapping.
- * The workspace and every typed array it owns remain read-only.
- */
-// eslint-disable-next-line react-refresh/only-export-components -- deterministic projection contract
-export function deriveStudioHybridDccViewportSnapshot(
-  workspace: StudioHybridDccWorkspace,
-  selectionMode: StudioHybridDccSelectionMode = "object",
-): StudioHybridDccViewportSnapshot {
-  const sharedObjectById = new Map(workspace.bridge.set.objects.map((object) => [object.id, object]));
-  const records = Object.values(workspace.session.state.geometry.records)
-    .filter((record) => sharedObjectById.get(record.assetId)?.visible !== false)
-    .toSorted((a, b) => compareCodeUnits(a.assetId, b.assetId));
-  const errors: Array<{ readonly assetId: string; readonly message: string }> = [];
-  const warnings: Array<{ readonly assetId: string; readonly message: string }> = [];
-  const boundedRecords = records.slice(0, STUDIO_HYBRID_DCC_ASSET_LAYOUT_LIMITS.maxAssets);
-  for (const record of records.slice(boundedRecords.length)) {
-    errors.push({ assetId: record.assetId, message: "동시 표시 에셋 예산을 초과했습니다." });
-  }
-  const accepted: StudioGeometryAuthorityRecord[] = [];
-  const acceptedByAsset = new Map<string, StudioGeometryAuthorityRecord>();
-  const preflightByAsset = new Map<string, StudioHybridDccMeshPreflight>();
-  const projectionByAsset = new Map<string, StudioHybridDccRenderProjection>();
-  let cumulativeLinearWork = 0;
-  let cumulativePolygonPairWork = 0;
-  let cumulativeTriangles = 0;
-  for (const record of boundedRecords) {
-    const preflight = inspectStudioHybridDccMeshForSynchronousProjection(record.mesh);
-    if (!preflight.ok) {
-      errors.push({ assetId: record.assetId, message: preflight.message });
-      continue;
-    }
-    let projection: StudioHybridDccRenderProjection;
-    try {
-      if (selectionMode === "object" && record.renderCache) {
-        const validated = validateStudioHybridDccRenderCache(
-          record,
-          record.renderCache,
-          sharedObjectById.get(record.assetId)?.geometryHash ?? null,
-        );
-        if (validated.ok) {
-          projection = validated.value;
-        } else {
-          warnings.push({ assetId: record.assetId, message: validated.message });
-          projection = sourceStudioHybridDccRenderProjection(record, "authority-cache-fallback");
-        }
-      } else {
-        projection = sourceStudioHybridDccRenderProjection(
-          record,
-          selectionMode === "object" ? "authority-source" : "authority-edit-cage",
-        );
-      }
-    } catch (error) {
-      errors.push({
-        assetId: record.assetId,
-        message: error instanceof Error ? error.message : "메시 변환에 실패했습니다.",
-      });
-      continue;
-    }
-    const projectionTriangles = projection.indices.length / 3;
-    if (projection.renderSource !== "modifier-cache"
-      && projectionTriangles !== preflight.value.triangleCount) {
-      errors.push({
-        assetId: record.assetId,
-        message: "권위 메시와 파생 삼각형 수가 일치하지 않습니다.",
-      });
-      continue;
-    }
-    const nextLinearWork = cumulativeLinearWork
-      + preflight.value.linearWork
-      + projection.validationWork;
-    const nextPolygonPairWork = cumulativePolygonPairWork + preflight.value.polygonPairWork;
-    const nextTriangles = cumulativeTriangles + projectionTriangles;
-    if (nextLinearWork > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousLinearWorkTotal
-      || nextPolygonPairWork
-        > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousPolygonPairWorkTotal
-      || nextTriangles > STUDIO_HYBRID_DCC_RENDER_PROFILE.maxSynchronousTrianglesTotal) {
-      errors.push({
-        assetId: record.assetId,
-        message: "동시 표시 변환 예산을 초과했습니다. 에셋을 나누거나 대용량 worker 경로를 사용해 주세요.",
-      });
-      continue;
-    }
-    cumulativeLinearWork = nextLinearWork;
-    cumulativePolygonPairWork = nextPolygonPairWork;
-    cumulativeTriangles = nextTriangles;
-    accepted.push(record);
-    acceptedByAsset.set(record.assetId, record);
-    preflightByAsset.set(record.assetId, preflight.value);
-    projectionByAsset.set(record.assetId, projection);
-  }
-  const layout = deriveStudioHybridDccAssetLayout(accepted.map((record) => ({
-    assetId: record.assetId,
-    meshHash: record.meshHash,
-    mesh: record.mesh,
-    transform: workspace.session.state.objectTransforms[record.assetId],
-    presentation: projectionByAsset.get(record.assetId)?.renderSource === "modifier-cache"
-      ? {
-          positions: projectionByAsset.get(record.assetId)!.positions,
-          derivedFromHash: projectionByAsset.get(record.assetId)!.renderHash,
-        }
-      : undefined,
-  })));
-  errors.push(...layout.errors);
-  const assets: StudioHybridDccViewportAssetSnapshot[] = [];
-  for (const item of layout.items) {
-    try {
-      const record = acceptedByAsset.get(item.assetId);
-      const projection = projectionByAsset.get(item.assetId);
-      const preflight = preflightByAsset.get(item.assetId);
-      if (!record || !projection || !preflight) {
-        throw new Error("뷰포트 메시 projection을 찾지 못했습니다.");
-      }
-      if (projection.renderHash !== item.presentationHash) {
-        throw new Error("뷰포트 경계와 화면용 메시의 파생 해시가 일치하지 않습니다.");
-      }
-      const sharedObject = sharedObjectById.get(item.assetId);
-      const materialId = sharedObject?.materialId ?? "default";
-      assets.push({
-        assetId: item.assetId,
-        meshHash: item.meshHash,
-        meshRevision: record.revision,
-        mesh: item.mesh,
-        positions: projection.positions,
-        indices: projection.indices,
-        renderHash: projection.renderHash,
-        renderSource: projection.renderSource,
-        materialId,
-        materialColor: resolveStudioHybridDccRoomMaterialColor(materialId),
-        position: item.position,
-        rotationEulerRad: item.rotationEulerRad,
-        scale: item.scale,
-        worldMin: item.worldMin,
-        worldMax: item.worldMax,
-        normalMode: preflight.normalMode,
-        vertexCount: projection.positions.length / 3,
-        triangleCount: projection.indices.length / 3,
-      });
-    } catch (error) {
-      errors.push({
-        assetId: item.assetId,
-        message: error instanceof Error ? error.message : "메시 변환에 실패했습니다.",
-      });
-    }
-  }
-
-  return {
-    assets,
-    errors,
-    warnings,
-    center: layout.center,
-    radius: layout.radius,
-    gridSize: layout.gridSize,
-    signature: layout.signature,
-    totalVertices: assets.reduce((sum, asset) => sum + asset.vertexCount, 0),
-    totalTriangles: assets.reduce((sum, asset) => sum + asset.triangleCount, 0),
-  };
-}
-
-function createStudioHybridDccGeometryResource(
-  asset: Pick<StudioHybridDccViewportAssetSnapshot, "positions" | "indices" | "normalMode">,
-): StudioHybridDccGeometryResource {
-  const indexedGeometry = new THREE.BufferGeometry();
-  indexedGeometry.setAttribute("position", new THREE.BufferAttribute(asset.positions, 3));
-  indexedGeometry.setIndex(new THREE.BufferAttribute(asset.indices, 1));
-  const geometry = asset.normalMode === "flat"
-    ? indexedGeometry.toNonIndexed()
-    : indexedGeometry;
-  if (geometry !== indexedGeometry) indexedGeometry.dispose();
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  let edgeDetail: StudioHybridDccGeometryResource["edgeDetail"] = "silhouette";
-  let edges: THREE.EdgesGeometry;
-  if (asset.indices.length / 3 <= STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles) {
-    edges = new THREE.EdgesGeometry(geometry, 24);
-  } else {
-    edgeDetail = "bounds";
-    const bounds = geometry.boundingBox;
-    const size = bounds?.getSize(new THREE.Vector3()) ?? new THREE.Vector3(1, 1, 1);
-    const center = bounds?.getCenter(new THREE.Vector3()) ?? new THREE.Vector3();
-    const box = new THREE.BoxGeometry(
-      Math.max(size.x, 1e-5),
-      Math.max(size.y, 1e-5),
-      Math.max(size.z, 1e-5),
-    );
-    box.translate(center.x, center.y, center.z);
-    edges = new THREE.EdgesGeometry(box);
-    box.dispose();
-  }
-  return {
-    geometry,
-    edges,
-    edgeDetail,
-    dispose: () => {
-      edges.dispose();
-      geometry.dispose();
-    },
-  };
-}
 
 function applyStudioHybridDccRendererProfile(
   renderer: StudioHybridDccRendererProfileTarget,
@@ -946,9 +386,11 @@ function StudioHybridDccAssetMesh({
   transformMode,
   transformSpace,
   preferences,
+  uvChecker,
   onDraggingChange,
   onNotice,
   sculptStroke,
+  sculptGesture,
 }: {
   readonly asset: StudioHybridDccViewportAssetSnapshot;
   readonly onCommitTransform?: (
@@ -971,26 +413,31 @@ function StudioHybridDccAssetMesh({
   readonly transformMode: StudioHybridDccTransformMode;
   readonly transformSpace: StudioHybridDccTransformSpace;
   readonly preferences: StudioHybridDccViewportPreferences;
+  readonly uvChecker: boolean;
   readonly onDraggingChange: (dragging: boolean) => void;
   readonly onNotice: (message: string) => void;
   /** 활성화되면 포인터 드래그가 오브젝트 로컬 좌표로 조형 스트로크를 보낸다. */
   readonly sculptStroke?: (localPoint: { x: number; y: number; z: number }) => void;
+  readonly sculptGesture?: StudioSculptGestureController;
 }) {
   const [resource, setResource] = useState<StudioHybridDccGeometryResource | null>(null);
   const objectRef = useRef<THREE.Group>(null);
   const viewportSize = useThree((state) => state.size);
-  const { indices, normalMode, positions } = asset;
+  const { indices, normalMode, positions, cornerUvs, cornerNormals, triangleMaterialSlots } = asset;
+  const sculptPointer = useStudioHybridDccSculptPointer({ assetId: asset.assetId, sourceMesh: asset.mesh,
+    sourceMeshHash: asset.meshHash, sourceMeshRevision: asset.meshRevision, objectRef,
+    controller: sculptGesture, legacyStroke: sculptStroke, onDraggingChange });
 
   useEffect(() => {
-    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions });
+    const next = createStudioHybridDccGeometryResource({ indices, normalMode, positions, cornerUvs, cornerNormals, triangleMaterialSlots }, STUDIO_HYBRID_DCC_RENDER_PROFILE.maxDetailedEdgeTriangles);
     setResource(next);
     return () => next.dispose();
-  }, [indices, normalMode, positions]);
+  }, [indices, normalMode, positions, cornerUvs, cornerNormals, triangleMaterialSlots]);
 
   if (!resource) return null;
   const componentCage = selectionMode !== "object";
   const showMaterial = overlay !== "wireframe";
-  const showWireOverlay = overlay === "material-wire" || componentCage;
+  const showWireOverlay = overlay === "material-wire" || componentCage || (uvChecker && selected);
 
   const object = (
     <group
@@ -1003,23 +450,10 @@ function StudioHybridDccAssetMesh({
         geometry={resource.geometry}
         castShadow
         receiveShadow
-        onPointerDown={(event: ThreeEvent<PointerEvent>) => {
-          const group = objectRef.current;
-          if (!sculptStroke || !group) return;
-          event.stopPropagation();
-          (event.target as Element | null)?.setPointerCapture?.(event.pointerId);
-          sculptStroke(group.worldToLocal(event.point.clone()));
-        }}
-        onPointerMove={(event: ThreeEvent<PointerEvent>) => {
-          const group = objectRef.current;
-          if (!sculptStroke || !group) return;
-          if ((event.nativeEvent.buttons & 1) !== 1) return;
-          event.stopPropagation();
-          sculptStroke(group.worldToLocal(event.point.clone()));
-        }}
+        {...sculptPointer}
         onClick={(event: ThreeEvent<MouseEvent>) => {
           event.stopPropagation();
-          if (editingDisabled) return;
+          if (editingDisabled || sculptGesture || sculptStroke) return;
           if (selectionMode === "object" || !onSelectComponent) {
             onSelect(asset.assetId);
             return;
@@ -1072,24 +506,9 @@ function StudioHybridDccAssetMesh({
           onSelectComponent(asset.assetId, selectionMode, elementId, operation);
         }}
       >
-        {showMaterial ? (
-          <meshPhysicalMaterial
-            color={asset.materialColor
-              ?? (selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
-            roughness={0.62}
-            metalness={0.08}
-            clearcoat={0.12}
-            clearcoatRoughness={0.78}
-            side={THREE.DoubleSide}
-          />
-        ) : (
-          <meshStandardMaterial
-            color={selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire}
-            roughness={0.72}
-            metalness={0.02}
-            wireframe
-          />
-        )}
+        <StudioHybridDccSurfaceMaterial geometry={resource.geometry} slots={resource.materialSlots} bindings={asset.toonMaterials}
+          color={asset.materialColor ?? (selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
+          wireColor={selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire} showMaterial={showMaterial} uvChecker={uvChecker} hasUv={Boolean(cornerUvs)} />
       </mesh>
       {showWireOverlay ? (
         <mesh geometry={resource.geometry} renderOrder={3}>
@@ -1124,7 +543,7 @@ function StudioHybridDccAssetMesh({
       ) : null}
     </group>
   );
-  if (editingDisabled || sculptStroke || !selected || !onCommitTransform || selectionMode !== "object") {
+  if (editingDisabled || sculptGesture || sculptStroke || !selected || !onCommitTransform || selectionMode !== "object") {
     return object;
   }
   return (
@@ -1150,18 +569,6 @@ function StudioHybridDccAssetMesh({
   );
 }
 
-function StudioHybridDccAdaptiveDpr() {
-  const setDpr = useThree((state) => state.setDpr);
-  const devicePixelRatio = typeof window === "undefined" ? 1 : window.devicePixelRatio;
-  return (
-    <PerformanceMonitor
-      flipflops={3}
-      bounds={(refreshRate) => [Math.min(42, refreshRate * 0.72), refreshRate * 0.92]}
-      onChange={({ factor }) => setDpr(resolveStudioHybridDccDpr(devicePixelRatio, 0.58 + factor * 0.42))}
-      onFallback={() => setDpr(STUDIO_HYBRID_DCC_RENDER_PROFILE.minDpr)}
-    />
-  );
-}
 
 function StudioHybridDccWebglLifecycle({
   onContextLostChange,
@@ -1261,6 +668,10 @@ export function StudioHybridDccViewport({
   onDuplicateSelected,
   onSelectComponent,
   editingDisabled = false,
+  uvChecker = false,
+  toonPreview,
+  sculptPreview,
+  sculptGesture,
   onSculptStroke,
   defaultTransformMode = "translate",
   defaultTransformSpace = "world",
@@ -1269,6 +680,7 @@ export function StudioHybridDccViewport({
   stage = false,
   onEmptyStart,
 }: StudioHybridDccViewportProps) {
+  const bt = useBilingual("StudioHybridDccViewport");
   const [uncontrolledProjection, setUncontrolledProjection] =
     useState<StudioHybridDccViewportProjection>(defaultProjection);
   const [uncontrolledOverlay, setUncontrolledOverlay] =
@@ -1302,8 +714,8 @@ export function StudioHybridDccViewport({
   const prefersReducedMotion = usePrefersReducedMotion(reducedMotion);
   const effectiveSelectionMode = componentSelection?.mode ?? "object";
   const snapshot = useMemo(
-    () => deriveStudioHybridDccViewportSnapshot(workspace, effectiveSelectionMode),
-    [workspace, effectiveSelectionMode],
+    () => deriveStudioHybridDccViewportSnapshot(workspace, effectiveSelectionMode, uvChecker || Boolean(sculptGesture || onSculptStroke), toonPreview, sculptPreview),
+    [workspace, effectiveSelectionMode, uvChecker, toonPreview, sculptPreview, sculptGesture, onSculptStroke],
   );
   const isolationMatchesSelection = !workspace.activeAssetId || workspace.activeAssetId === isolatedAssetId;
   const isolatedAsset = isolationMatchesSelection
@@ -1417,7 +829,7 @@ export function StudioHybridDccViewport({
         && !target.closest('[role="application"]')) return;
       const action = resolveStudioHybridDccViewportShortcut(event, {
         textEntry: Boolean(target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="spinbutton"]')),
-        selected: Boolean(selectedAsset), editingDisabled: editingDisabled || Boolean(onSculptStroke),
+        selected: Boolean(selectedAsset), editingDisabled: editingDisabled || Boolean(sculptGesture || onSculptStroke),
         objectMode: effectiveSelectionMode === "object", canTransform: Boolean(onCommitAssetTransform),
         canSelectComponents: Boolean(onComponentSelectionModeChange), canDuplicate: Boolean(onDuplicateSelected),
         canDelete: Boolean(onDeleteSelected), dragging: draggingRef.current,
@@ -1459,7 +871,7 @@ export function StudioHybridDccViewport({
     return () => viewport.removeEventListener("keydown", handleViewportShortcut);
   }, [onCommitAssetTransform, onDeleteSelected, onDuplicateSelected,
     onComponentSelectionModeChange, onProjectionChange, projection, effectiveProjection,
-    selectedAsset, editingDisabled, effectiveSelectionMode, onSculptStroke, isolatedAssetId, setPreferences]);
+    selectedAsset, editingDisabled, effectiveSelectionMode, onSculptStroke, sculptGesture, isolatedAssetId, setPreferences]);
 
   return (
     <>
@@ -1542,6 +954,7 @@ export function StudioHybridDccViewport({
             )}
             <OrbitControls
               makeDefault
+              enabled={!dragging}
               enableDamping={!prefersReducedMotion}
               dampingFactor={0.08}
               enablePan
@@ -1558,7 +971,6 @@ export function StudioHybridDccViewport({
               sceneCenter={snapshot.center}
               sceneRadius={snapshot.radius}
             />
-            <StudioHybridDccAdaptiveDpr />
             <StudioHybridDccLocalEnvironment />
             <StudioHybridDccWebglLifecycle onContextLostChange={setContextLost} />
             <StudioHybridDccLightRig radius={snapshot.radius} />
@@ -1586,9 +998,11 @@ export function StudioHybridDccViewport({
 
             {renderedAssets.map((asset) => (
               <StudioHybridDccAssetMesh
-                key={`${asset.assetId}:${asset.renderHash}:${asset.renderSource}`}
+                key={(sculptGesture || onSculptStroke) && asset.assetId === selectedAssetId
+                  ? `${asset.assetId}:sculpt` : `${asset.assetId}:${asset.renderHash}:${asset.renderSource}`}
                 asset={asset}
                 overlay={effectiveOverlay}
+                uvChecker={uvChecker}
                 selected={asset.assetId === selectedAssetId}
                 onSelect={(assetId) => { if (selectionAllowed()) onSelectAsset(assetId); }}
                 onSelectComponent={onSelectComponent
@@ -1604,6 +1018,7 @@ export function StudioHybridDccViewport({
                 preferences={preferences}
                 onDraggingChange={changeDragging}
                 onNotice={setInteractionNotice}
+                sculptGesture={asset.assetId === selectedAssetId ? sculptGesture : undefined}
                 sculptStroke={onSculptStroke && asset.assetId === selectedAssetId
                   ? (localPoint) => onSculptStroke(asset.assetId, localPoint)
                   : undefined}
@@ -1887,7 +1302,9 @@ export function StudioHybridDccViewport({
                   <span className="block truncate text-[0.7rem] font-semibold">{asset.assetId}</span>
                   <span className="block font-[var(--font-display)] text-[0.62rem] tabular-nums opacity-75">
                     {asset.triangleCount.toLocaleString("ko-KR")} tris · {
-                      asset.renderSource === "modifier-cache"
+                      asset.renderSource === "sculpt-preview"
+                        ? bt("조형 미리보기", "Sculpt preview")
+                        : asset.renderSource === "modifier-cache"
                         ? "변형 결과"
                         : asset.renderSource === "authority-edit-cage"
                           ? "원본 케이지"

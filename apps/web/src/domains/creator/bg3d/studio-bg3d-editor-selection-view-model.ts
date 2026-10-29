@@ -252,7 +252,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h: Record<string, any>) {
   const selectedCustomModel = firstSelectedId ? (customModels.find((m: BgCustomModelInstance) => m.id === firstSelectedId) ?? null) : null;
   const selectedEntity = selectedPrimitive ?? selectedCustomModel;
   const selectedModelCacheEntry = selectedCustomModel
-    ? modelRootCacheRef.current.get(selectedCustomModel.modelId) ?? null
+    ? R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, selectedCustomModel.modelId, h.engineRuntime?.plan?.backend) ?? null
     : null;
   const selectedSemanticMaterials = selectedModelCacheEntry?.semanticMaterials ?? null;
   const selectedSemanticAssignments = selectedSemanticMaterials?.ok
@@ -436,7 +436,7 @@ export function bindStudioBg3dEditorSelectionViewModel(h: Record<string, any>) {
       )
     : null;
   const selectedIkSourceRoot = selectedCustomModel
-    ? modelRootCacheRef.current.get(selectedCustomModel.modelId)?.root
+    ? R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, selectedCustomModel.modelId, h.engineRuntime?.plan?.backend)?.root
     : undefined;
   const selectedIkTransformSupported = !(
     selectedIkSourceRoot && selectedIkWorldMatrix &&

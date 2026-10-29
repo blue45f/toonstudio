@@ -29,6 +29,8 @@ import { createStudioBg3dAssetPlacementPlanner } from "./studio-bg3d-asset-place
 import { readStudioBg3dObjectWorldBounds } from "./studio-bg3d-camera-application";
 import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
 import { probeStudioBg3dNearestWall } from "./studio-bg3d-wall-probe";
+import { readStudioBg3dModelCacheEntry, type StudioBg3dMaterialBackend } from "./studio-bg3d-model-material-variant";
+import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 
 import type * as THREE from "three";
 import type { StudioBg3dAssetPlacementMath, StudioBg3dPlacementBounds } from "./studio-bg3d-asset-placement-recipes";
@@ -75,6 +77,8 @@ export interface StudioBg3dRecipeRunDeps {
 export interface StudioBg3dEditorRecipeHost {
   readonly open: boolean;
   readonly modelRenderer: unknown;
+  readonly materialBackend?: StudioBg3dMaterialBackend;
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly isRestoringScene: boolean;
   readonly isCapturing: boolean;
   readonly isUploadingModel: boolean;
@@ -86,7 +90,7 @@ export interface StudioBg3dEditorRecipeHost {
   readonly physicsRuntimeSourceRef: StudioBg3dCanonicalDocumentState["liveSceneRef"];
   readonly modalAssetSessionRef: { readonly current: StudioBg3dModalSession | null };
   readonly placementSessionRef: { readonly current: { readonly phase: string } };
-  readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, { readonly root: THREE.Object3D }> };
+  readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, StudioBg3dModelRootCacheEntry> };
   readonly primitiveObjectsRef: { readonly current: ReadonlyMap<string, THREE.Object3D> };
   readonly attachmentByStorageModelIdRef: { readonly current: ReadonlyMap<string, StudioBg3dModelAttachment> };
   readonly viewportApiRef: {
@@ -239,14 +243,22 @@ export async function placeStudioBg3dModelWithRecipe(
   h.setError(null);
 
   let placed = false;
+  const renderer = h.modelRenderer, backend = h.materialBackend ?? "webgl";
+  const isMaterialBackendCurrent = h.isMaterialBackendCurrent;
+  const runtimeCurrent = () => isMaterialBackendCurrent?.() !== false && h.modelRenderer === renderer && (h.materialBackend ?? "webgl") === backend;
+  const assertRuntimeCurrent = () => {
+    if (!runtimeCurrent()) throw new deps.StaleModalOperationError();
+  };
   try {
     await deps.modalCoordinator.runSceneMutation(
       session,
       async (lease) => {
         lease.throwIfRevoked();
-        const record = await h.ensureModelRootCached(modelId, session, lease.isCurrent, lease.signal);
+        assertRuntimeCurrent();
+        const record = await h.ensureModelRootCached(modelId, session, () => lease.isCurrent() && runtimeCurrent(), lease.signal);
         lease.throwIfRevoked();
-        const root = h.modelRootCacheRef.current.get(modelId)?.root;
+        assertRuntimeCurrent();
+        const root = readStudioBg3dModelCacheEntry(h.modelRootCacheRef.current, modelId, backend)?.root;
         if (!record || !root) throw new RecipePlacementUnavailableError("model-unavailable");
         root.updateWorldMatrix(true, true);
         const bounds = readStudioBg3dObjectWorldBounds(root);
@@ -254,6 +266,7 @@ export async function placeStudioBg3dModelWithRecipe(
         return { localBounds: { min: bounds.min, max: bounds.max } satisfies StudioBg3dPlacementBounds };
       },
       ({ localBounds }) => {
+        assertRuntimeCurrent();
         // 장면 변경은 직렬로 실행되므로 이 시점의 라이브 장면이 곧 반영 대상이다.
         const runtime = h.physicsRuntimeSourceRef.current;
         if (!h.canAdmitSceneNodes(1)) {

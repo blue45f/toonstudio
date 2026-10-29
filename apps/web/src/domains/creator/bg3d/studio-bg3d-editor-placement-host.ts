@@ -236,7 +236,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     handleViewportReady, resetWebXrPresentationUi, finishWebXrControllerCleanup,
     disposeCurrentWebXrControllerGeneration, disposeWebXrControllerForOpenChange,
     handleWebXrControllerReady, handleWebXrSessionStateChange, historyRef, historyIndexRef,
-    deviceQuality, hasCloneFailure, hasPendingClone, hasPendingSharedCharacter,
+    deviceQuality, materialBackend, isMaterialBackendCurrent, hasCloneFailure, hasPendingClone, hasPendingSharedCharacter,
     hasUnavailableSharedCharacter, physicsInteractionLocked, insertBlocked,
     magicLayerSelectedPrimitive, magicLayerLensShift, magicLayerUnavailableReason,
     shotBatchBlockedReason, transitionPhysicsPhase, commitImmediateHistoryTransition, doUndo,
@@ -329,7 +329,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     signal: AbortSignal,
   ): Promise<Bg3dVerifiedStoredRecord | null> {
     const record = await getStoredBg3dModel(modelId);
-    if (!isOperationCurrent()) throw new StudioBg3dStaleModalOperationError();
+    if (!isOperationCurrent() || isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
     if (!record) return null;
     const existingAttachment = attachmentByStorageModelIdRef.current.get(modelId);
     const sourceFormat =
@@ -362,13 +362,13 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
       document: live.document,
       quality: resolveDeviceQuality(live.document, viewportHostRef.current),
       cumulativeUsedBytes,
-      renderer: modelRenderer,
+      renderer: modelRenderer, materialBackend,
       cache: modelRootCacheRef.current,
       pending: modelLoadPendingRef.current,
-      isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent(),
+      isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent() && isMaterialBackendCurrent?.() !== false,
       signal,
     });
-    if (!isOperationCurrent()) throw new StudioBg3dStaleModalOperationError();
+    if (!isOperationCurrent() || isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
     if (!bindModelAttachment({
       attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
       storageModelIdByAttachmentId: storageModelIdByAttachmentIdRef.current,
@@ -530,7 +530,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           );
           lease.throwIfRevoked();
           if (!record) throw new Error("model-unavailable");
-          const root = modelRootCacheRef.current.get(modelId)?.root;
+          const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.root;
           if (!root) throw new Error("model-unavailable");
           root.updateWorldMatrix(true, true);
           const bounds = new THREE.Box3().setFromObject(root, true);
@@ -556,6 +556,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           };
         },
         ({ record, asset }: { record: Bg3dVerifiedStoredRecord; asset: StudioBg3dPlacementPreviewAsset }) => {
+          if (isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
           if (surfaceSnapArmedRef.current) cancelSurfaceSnap();
           placementTokenSequenceRef.current += 1;
           const initialTarget = viewportApiRef.current?.readView().target ?? [0, 0, 0];
@@ -582,7 +583,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         },
       );
     } catch (modelFailure) {
-      if (!isModalAssetSessionCurrent(session)) return;
+      if (!isModalAssetSessionCurrent(session) || isMaterialBackendCurrent?.() === false) return;
       setError(modelFailure instanceof StudioBg3dThreeOperationError ? modelFailure.message : modelFailure instanceof StudioBg3dModelPlacementAdmissionError ? modelFailure.message : frozenStatus6Text("studio.frozenStatus6.placement.integrityUnknown", "3D 모델의 원본·경계와 무결성을 확인하지 못해 배치 미리보기를 시작하지 않았습니다."));
     }
   }
@@ -606,13 +607,11 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         physicsRuntimeSourceRef.current.customModels.map((model: BgCustomModelInstance) => model.modelId),
       );
       for (const [storageId, ownedEntry] of templateOwnedCacheEntries) {
-        // A later queued operation may already have committed this exact cache entry into the live
-        // scene. Never dispose live geometry, and never delete a replacement installed by another
-        // operation after this template load completed.
+        // 다른 작업에 공개됐거나 교체된 cache는 보존한다.
         if (liveStorageIds.has(storageId)) continue;
-        if (modelRootCacheRef.current.get(storageId) !== ownedEntry) continue;
+        if (!R.isStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)) continue;
         ownedEntry.dispose();
-        modelRootCacheRef.current.delete(storageId);
+        R.deleteStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry);
       }
       templateOwnedCacheEntries.clear();
     };
@@ -673,7 +672,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           );
 
           for (const attachment of instantiated.document.attachments) {
-            if (!isModalAssetSessionCurrent(session) || !lease.isCurrent()) {
+            if (!isModalAssetSessionCurrent(session) || !lease.isCurrent() || isMaterialBackendCurrent?.() === false) {
               throw new StudioBg3dStaleModalOperationError();
             }
             const record = await getStoredBg3dModelByHash(attachment.hash);
@@ -692,10 +691,10 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
               document: destinationDocument,
               quality,
               cumulativeUsedBytes,
-              renderer: modelRenderer,
+              renderer: modelRenderer, materialBackend,
               cache: modelRootCacheRef.current,
               pending: modelLoadPendingRef.current,
-              isActive: () => isModalAssetSessionCurrent(session) && lease.isCurrent(),
+              isActive: () => isModalAssetSessionCurrent(session) && lease.isCurrent() && isMaterialBackendCurrent?.() !== false,
               signal: lease.signal,
               onCacheEntryCreated: (storageId: string, cacheEntry: ModelRootCacheEntry) => {
                 templateOwnedCacheEntries.set(storageId, cacheEntry);
@@ -741,6 +740,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           };
         },
         (prepared: any) => {
+          if (isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
           if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) {
             throw new Error("physics-transient");
           }
@@ -802,7 +802,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         },
       );
     } catch (templateFailure) {
-      if (isModalAssetSessionCurrent(session)) {
+      if (isModalAssetSessionCurrent(session) && isMaterialBackendCurrent?.() !== false) {
         setError(
           templateFailure instanceof Error &&
             templateFailure.message === "template-attachment-missing"

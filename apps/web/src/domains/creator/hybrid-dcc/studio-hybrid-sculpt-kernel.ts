@@ -10,9 +10,13 @@
 import {
   createStudioEditableMeshFromPolygons,
   studioEditableMeshToTriangleSoup,
+  validateStudioEditableMeshSerializableAuthority,
   type StudioEditableMesh,
   type StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
+import { remapStudioMeshUvTriangleSoup } from "../mesh-uv/studio-mesh-uv-triangle-remap";
+import { planStudioMeshSurface } from "../mesh-surface/studio-mesh-surface-plan";
+import { projectStudioMeshSurfaceForRender, type StudioMeshSurfaceRenderProjection } from "../mesh-surface/studio-mesh-surface-render";
 
 export const STUDIO_SCULPT_KERNEL_REVISION = 1 as const;
 
@@ -56,6 +60,40 @@ function soupToMesh(positions: Float32Array, indices: Uint32Array): StudioEditab
   return createStudioEditableMeshFromPolygons(verts, faces);
 }
 
+/** 각 row는 기존 triangle 순서와 triangle 안의 j 순서·중복 기여를 그대로 가진다. */
+function smoothAdjacency(indices: Uint32Array, vertexCount: number) {
+  const offsets = new Uint32Array(vertexCount + 1);
+  let neighbors = new Uint32Array(0);
+  let cursor = new Uint32Array(0);
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let t = 0; t < indices.length; t += 3) {
+      const a = indices[t], b = indices[t + 1], c = indices[t + 2];
+      if (a === undefined || b === undefined || c === undefined) throw new Error("Smooth 원본 삼각형의 코너가 누락됐습니다.");
+      const triangle = [a, b, c];
+      for (const [corner, vertex] of triangle.entries()) {
+        // 이전 includes(i)는 한 triangle을 한 번만 방문했다. 반복 target도 중복 방문하지 않는다.
+        if (triangle.indexOf(vertex) !== corner) continue;
+        for (const neighbor of triangle) {
+          if (neighbor === vertex) continue;
+          if (pass === 0) offsets[vertex + 1] = (offsets[vertex + 1] ?? 0) + 1;
+          else {
+            const write = cursor[vertex];
+            if (write === undefined) throw new Error("Smooth 원본 정점의 이웃 범위를 찾지 못했습니다.");
+            neighbors[write] = neighbor;
+            cursor[vertex] = write + 1;
+          }
+        }
+      }
+    }
+    if (pass === 0) {
+      for (let vertex = 0; vertex < vertexCount; vertex += 1) offsets[vertex + 1] = (offsets[vertex + 1] ?? 0) + (offsets[vertex] ?? 0);
+      neighbors = new Uint32Array(offsets[vertexCount] ?? 0);
+      cursor = offsets.slice(0, vertexCount);
+    }
+  }
+  return { offsets, neighbors };
+}
+
 export function applyStudioSculptStroke(
   mesh: StudioEditableMesh,
   stroke: StudioSculptStroke,
@@ -64,7 +102,15 @@ export function applyStudioSculptStroke(
   if (!(stroke.radius > 0) || !Number.isFinite(stroke.strength)) {
     return { ok: false, detail: "invalid brush" };
   }
-  const soup = studioEditableMeshToTriangleSoup(mesh);
+  if (mesh.uvLayer !== undefined) {
+    const valid = validateStudioEditableMeshSerializableAuthority(mesh);
+    if (!valid.ok) return { ok: false, detail: `UV 원본 메시를 확인할 수 없습니다: ${valid.detail}` };
+  }
+  const surface = planStudioMeshSurface(mesh, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+  if (!surface.ok) return { ok: false, detail: `Sculpt 원본 표면을 확인할 수 없습니다: ${surface.issue.detail}` };
+  let soup: StudioMeshSurfaceRenderProjection;
+  try { soup = projectStudioMeshSurfaceForRender(mesh, surface.value); }
+  catch (error) { return { ok: false, detail: error instanceof Error ? error.message : "Sculpt 원본 표면을 표시할 수 없습니다." }; }
   const positions = new Float32Array(soup.positions);
   const n = positions.length / 3;
   const cx = stroke.center.x;
@@ -106,6 +152,7 @@ export function applyStudioSculptStroke(
 
   const dir = stroke.direction ?? { x: nx, y: ny, z: nz };
   const dl = Math.hypot(dir.x, dir.y, dir.z) || 1;
+  let smoothNeighborhood: ReturnType<typeof smoothAdjacency> | undefined;
 
   for (let i = 0; i < n; i += 1) {
     const m = mask ? (mask[i] ?? 1) : 1;
@@ -144,21 +191,21 @@ export function applyStudioSculptStroke(
         positions[i * 3 + 2] = z - pz * step;
       }
     } else if (stroke.kind === "smooth") {
-      // Laplacian toward neighborhood average (1-ring approx via same face verts)
+      // 첫 실제 smooth 영향에서만 구성한다. 좌표는 이전과 같이 현재 in-place 배열에서 읽는다.
+      smoothNeighborhood ??= smoothAdjacency(soup.indices, n);
       let ax = 0;
       let ay = 0;
       let az = 0;
       let count = 0;
-      for (let t = 0; t < soup.indices.length; t += 3) {
-        const tri = [soup.indices[t]!, soup.indices[t + 1]!, soup.indices[t + 2]!];
-        if (!tri.includes(i)) continue;
-        for (const j of tri) {
-          if (j === i) continue;
-          ax += positions[j * 3]!;
-          ay += positions[j * 3 + 1]!;
-          az += positions[j * 3 + 2]!;
-          count += 1;
-        }
+      const start = smoothNeighborhood.offsets[i] ?? 0;
+      const end = smoothNeighborhood.offsets[i + 1] ?? start;
+      for (let adjacent = start; adjacent < end; adjacent += 1) {
+        const j = smoothNeighborhood.neighbors[adjacent];
+        if (j === undefined) throw new Error("Smooth 원본 이웃 정점이 누락됐습니다.");
+        ax += positions[j * 3]!;
+        ay += positions[j * 3 + 1]!;
+        az += positions[j * 3 + 2]!;
+        count += 1;
       }
       if (count > 0) {
         ax /= count;
@@ -170,7 +217,17 @@ export function applyStudioSculptStroke(
       }
     }
   }
-  return { ok: true, mesh: soupToMesh(positions, soup.indices) };
+  // 실제 위치가 바뀌지 않았다면 원본 polygon·UV 보간·법선과 stable ID도 그대로 둔다.
+  if (positions.every((value, index) => value === soup.positions[index])) return { ok: true, mesh };
+  try {
+    const triangles = soupToMesh(positions, soup.indices);
+    const result = remapStudioMeshUvTriangleSoup(mesh, triangles, soup.indices);
+    const planned = planStudioMeshSurface(result, undefined, { allowCreaseMetadata: true, topologyPolicy: "editable" });
+    if (!planned.ok) return { ok: false, detail: `Sculpt 결과 표면을 표시할 수 없습니다: ${planned.issue.detail}` };
+    return { ok: true, mesh: result };
+  } catch (error) {
+    return { ok: false, detail: error instanceof Error ? error.message : "Sculpt UV 코너 대응을 확인할 수 없습니다." };
+  }
 }
 
 export function createStudioSculptMask(

@@ -6,6 +6,7 @@ import {
 } from "../bg3d/studio-bg3d-model-runtime-admission";
 import { resolveBg3dModelHashV12 } from "../bg3d/studio-bg3d-model-library-loader";
 import { StudioBg3dStaleModalOperationError } from "../bg3d/studio-bg3d-modal-operation-coordinator";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend, studioBg3dModelCacheKey } from "../bg3d/studio-bg3d-model-material-variant";
 import {
   parseStudioBg3dSceneDocument,
   type StudioBg3dModelAttachment,
@@ -19,6 +20,7 @@ export interface StudioScene3dCutAssetPreparation {
   readonly signal: AbortSignal;
   readonly quality: Admission["quality"];
   readonly renderer: Admission["renderer"];
+  readonly materialBackend?: Admission["materialBackend"];
   readonly cache: Map<string, StudioBg3dModelRootCacheEntry>;
   /** 편집 호스트가 캡처한 modal session identity와 컷 작업 epoch를 함께 확인한다. */
   readonly isCurrent: () => boolean;
@@ -42,7 +44,9 @@ export async function prepareStudioScene3dCutAssets(
   args: StudioScene3dCutAssetPreparation,
 ): Promise<StudioScene3dPreparedCutAssets> {
   const { signal, isCurrent, readInputRevision, expectedInputRevision } = args;
-  const current = () => !signal.aborted && isCurrent() && readInputRevision() === expectedInputRevision;
+  const renderer = args.renderer, backend = resolveStudioBg3dMaterialBackend(args);
+  const current = () => !signal.aborted && isCurrent() && readInputRevision() === expectedInputRevision
+    && args.renderer === renderer && resolveStudioBg3dMaterialBackend(args) === backend;
   const assertCurrent = () => {
     signal.throwIfAborted();
     if (!current()) throw new StudioBg3dStaleModalOperationError();
@@ -82,15 +86,15 @@ export async function prepareStudioScene3dCutAssets(
       if (!attachmentMatchesRecord(attachment, record)) throw new Error(`컷 모델 '${attachment.id}'의 해시·크기·권한 참조가 저장된 원본과 다릅니다.`);
       await (args.admitModel ?? admitAndCacheStudioBg3dModel)({
         record, document, quality: args.quality, cumulativeUsedBytes,
-        renderer: args.renderer, cache: stagedCache, pending, isActive: current, signal,
-        onCacheEntryCreated: (id, entry) => { owned.set(id, entry); },
+        renderer, materialBackend: backend, cache: stagedCache, pending, isActive: current, signal,
+        onCacheEntryCreated: (id, entry) => { owned.set(studioBg3dModelCacheKey(id, backend), entry); },
       });
       assertCurrent();
-      if (!stagedCache.has(record.id)) throw new Error("컷 모델 준비 결과가 렌더 캐시에 없습니다.");
+      if (!readStudioBg3dModelCacheEntry(stagedCache, record.id, backend)) throw new Error("컷 모델 준비 결과가 렌더 캐시에 없습니다.");
       if (!bindModelAttachment({ attachmentByStorageModelId, storageModelIdByAttachmentId }, record, attachment)) {
         throw new Error("컷 모델과 원본 첨부의 연결이 충돌했습니다.");
       }
-      preparedIds.add(record.id);
+      preparedIds.add(studioBg3dModelCacheKey(record.id, backend));
       cumulativeUsedBytes += attachment.byteSize;
     }
     assertCurrent();

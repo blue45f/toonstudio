@@ -91,6 +91,12 @@ interface CaptureEncodeIdentity {
   readonly requestId: number;
 }
 
+export interface StudioBg3dModelThumbnailPublicationGuard {
+  readonly signal: AbortSignal;
+  /** 현재 job 전체의 소유권을 동기 검사하고 만료됐으면 throw한다. */
+  readonly assertCurrent: () => void;
+}
+
 export interface StudioBg3dModelThumbnailCaptureDependencies {
   readonly capture?: (
     adapter: StudioBg3dCaptureAdapter,
@@ -111,6 +117,7 @@ export interface StudioBg3dModelThumbnailCaptureDependencies {
     storageModelId: string,
     dataUrl: string,
     captureRevision: number,
+    guard: StudioBg3dModelThumbnailPublicationGuard,
   ) => Promise<boolean>;
   readonly revisionFactory?: () => number;
 }
@@ -226,8 +233,9 @@ async function defaultPersist(
   storageModelId: string,
   dataUrl: string,
   captureRevision: number,
+  guard: StudioBg3dModelThumbnailPublicationGuard,
 ): Promise<boolean> {
-  return saveBg3dModelThumbnailIfCurrent(storageModelId, dataUrl, { captureRevision });
+  return saveBg3dModelThumbnailIfCurrent(storageModelId, dataUrl, { captureRevision, ...guard });
 }
 
 function mapOperationError(error: unknown): StudioBg3dModelThumbnailCaptureError {
@@ -444,8 +452,14 @@ export class StudioBg3dModelThumbnailCaptureController {
     this.#emitProgress(job, "persisting", 0.9);
     let persisted: boolean;
     try {
-      persisted = await this.#persist(job.input.storageModelId, dataUrl, job.captureRevision);
+      persisted = await this.#persist(job.input.storageModelId, dataUrl, job.captureRevision, {
+        signal: job.controller.signal,
+        assertCurrent: () => this.#assertAuthority(job),
+      });
     } catch (cause) {
+      if (cause instanceof StudioBg3dModelThumbnailCaptureError
+        && (cause.code === "stale" || cause.code === "aborted")) throw cause;
+      this.#assertAuthority(job);
       throw new StudioBg3dModelThumbnailCaptureError("persistence-failed", { cause });
     }
     if (!persisted) throw new StudioBg3dModelThumbnailCaptureError("stale");

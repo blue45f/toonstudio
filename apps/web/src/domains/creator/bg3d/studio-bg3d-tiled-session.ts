@@ -12,6 +12,7 @@ import type {
   StudioBg3dCapturedRaster,
 } from "./studio-bg3d-capture-adapter";
 import type { StudioBg3dRasterWindow } from "./studio-bg3d-tile-plan";
+import type { StudioMToonRasterScope } from "../mesh-materials/studio-mtoon-raster-scope";
 
 export interface StudioBg3dTiledCaptureSession {
   readonly profile: typeof STUDIO_BG3D_TILE_PROFILE;
@@ -28,9 +29,13 @@ export function createStudioBg3dTiledCameraSession(
     camera: THREE.Camera,
   ) => Promise<StudioBg3dCapturedRaster>,
   coordinateSystem?: THREE.Camera["coordinateSystem"],
+  materialScope?: StudioMToonRasterScope,
 ): StudioBg3dTiledCaptureSession {
-  const frozen = snapshotStudioBg3dCaptureCamera(camera, coordinateSystem);
-  const tileCamera = snapshotStudioBg3dCaptureCamera(frozen);
+  let frozen: THREE.Camera, tileCamera: THREE.Camera;
+  try {
+    frozen = snapshotStudioBg3dCaptureCamera(camera, coordinateSystem);
+    tileCamera = snapshotStudioBg3dCaptureCamera(frozen);
+  } catch (error) { materialScope?.dispose(); throw error; }
   let closed = false;
   let busy = false;
   return Object.freeze({
@@ -43,24 +48,31 @@ export function createStudioBg3dTiledCameraSession(
         throw new Error(
           "Tiled capture session is closed or already capturing.",
         );
-      assertStudioBg3dRasterWindow(window);
-      if (request.width !== window.width || request.height !== window.height)
-        throw new RangeError("Tile raster does not match the declared window.");
       busy = true;
       try {
+        assertStudioBg3dRasterWindow(window);
+        if (request.width !== window.width || request.height !== window.height)
+          throw new RangeError("Tile raster does not match the declared window.");
         applyStudioBg3dTileProjection(tileCamera, frozen.projectionMatrix, window);
-        const result = await execute(request, tileCamera);
+        // execute는 첫 await 전에 모든 draw/copy를 제출한다. 폭·culling은 기다리기 전에 복원한다.
+        const pending = materialScope ? materialScope.submit(window, () => execute(request, tileCamera)) : execute(request, tileCamera);
+        const result = await pending;
         if (closed)
           throw new Error(
             "Tiled capture session closed before readback completed.",
           );
         return result;
+      } catch (error) {
+        closed = true;
+        throw error;
       } finally {
         busy = false;
+        if (closed) materialScope?.dispose();
       }
     },
     dispose() {
       closed = true;
+      if (!busy) materialScope?.dispose();
     },
   });
 }

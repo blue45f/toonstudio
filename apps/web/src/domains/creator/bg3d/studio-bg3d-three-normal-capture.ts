@@ -1,6 +1,8 @@
 /** WebGL2 reference for the optional view-space geometry-normal capture contract. */
 import * as THREE from "three";
 
+import { beginStudioMToonGeometryScope, type StudioMToonGeometryScope } from "../mesh-materials/studio-mtoon-geometry-scope";
+import { createStudioMToonWebGlGeometryPass } from "../mesh-materials/studio-mtoon-webgl-geometry-pass";
 import { assertStudioBg3dCaptureBudget } from "./studio-bg3d-capture-budget";
 import { hideStudioBg3dDepthExcludedObjects } from "./studio-bg3d-capture-exclusion";
 import { normalizeStudioBg3dRgbaReadback } from "./studio-bg3d-readback-normalize";
@@ -36,6 +38,7 @@ export async function captureStudioBg3dThreeNormals(input: {
   };
   const restoreExcluded = hideStudioBg3dDepthExcludedObjects(scene);
   const packed = new Uint8Array(width * height * 4);
+  let geometryScope: StudioMToonGeometryScope | undefined;
   try {
     let readback: Promise<THREE.TypedArray> | undefined;
     let failed = false;
@@ -49,9 +52,12 @@ export async function captureStudioBg3dThreeNormals(input: {
         renderer.setClearColor(0x000000, 0);
         renderer.clear(true, true, true);
         scene.background = null;
-        scene.overrideMaterial = material;
-        renderer.render(scene, camera);
-        readback = renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height, packed);
+        geometryScope = beginStudioMToonGeometryScope({ scene, backend: "webgl", fallbackMaterial: material,
+          createBodyPass: (source) => createStudioMToonWebGlGeometryPass(source, "normal") });
+        geometryScope.submit(() => {
+          renderer.render(scene, camera);
+          readback = renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height, packed);
+        });
       } finally {
         try {
           scene.background = previous.background;
@@ -77,7 +83,7 @@ export async function captureStudioBg3dThreeNormals(input: {
     if (settled[0]?.status === "rejected") throw settled[0].reason;
     return normalizeStudioBg3dRgbaReadback({ width, height, rgba: packed, flipY: true });
   } finally {
-    material.dispose();
-    target.dispose();
+    try { geometryScope?.dispose(); }
+    finally { try { material.dispose(); } finally { target.dispose(); } }
   }
 }

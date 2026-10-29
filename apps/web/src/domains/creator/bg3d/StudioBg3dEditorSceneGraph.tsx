@@ -298,8 +298,8 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       <BgCustomModelMesh
         key={id}
         instance={instance}
-        cachedRoot={modelRootCacheRef.current.get(instance.modelId)?.root}
-        animations={modelRootCacheRef.current.get(instance.modelId)?.animations ?? EMPTY_THREE_ANIMATION_CLIPS}
+        cachedRoot={R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, instance.modelId, h.engineRuntime?.plan?.backend)?.root}
+        animations={R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, instance.modelId, h.engineRuntime?.plan?.backend)?.animations ?? EMPTY_THREE_ANIMATION_CLIPS}
         selected={selectedIds.has(id)}
         capturing={isCapturing}
         targetFps={deviceQuality.targetFps}

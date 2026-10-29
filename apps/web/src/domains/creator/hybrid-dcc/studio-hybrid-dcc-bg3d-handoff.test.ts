@@ -13,7 +13,9 @@ import {
   type StudioHybridDccBg3dHandoffPorts,
   type StudioHybridDccBg3dPersistRequest,
 } from "./studio-hybrid-dcc-bg3d-handoff";
-import { hybridDccCommitGeometry } from "./studio-hybrid-dcc-document";
+import { hybridDccCommitGeometry, hybridDccSetAssetToonMaterial } from "./studio-hybrid-dcc-document";
+import { createStudioHybridDccDefaultToonMaterial } from "./materials/studio-hybrid-dcc-toon-material";
+import { hashStudioHybridDccToonMaterialSlots } from "./materials/studio-hybrid-dcc-toon-export";
 import { workspaceAddActiveModifier } from "./studio-hybrid-dcc-modifier-workspace";
 import {
   createStudioHybridDccWorkspace,
@@ -58,6 +60,22 @@ function testPorts(
 }
 
 describe("Hybrid DCC → shipping BG3D handoff", () => {
+  it("문서 재질을 실제 batch export로 전달하고 GLB와 handoff source receipt에 같은 재질 hash를 남긴다", async () => {
+    const original = workspaceAddUnitCube(createStudioHybridDccWorkspace("toon-handoff"), "toon-prop");
+    const material = createStudioHybridDccDefaultToonMaterial();
+    const workspace = { ...original, session: hybridDccSetAssetToonMaterial(original.session, "toon-prop", [0], material) };
+    const ports = testPorts(); const result = await handoffStudioHybridDccWorkspaceToBg3d(workspace, { ports });
+    expect(ports.persistAttachments).toHaveBeenCalledTimes(1);
+    const request = ports.persistAttachments.mock.calls[0]?.[0]?.[0]; if (!request) throw new Error("내보낸 GLB가 없습니다.");
+    const view = new DataView(request.bytes.buffer, request.bytes.byteOffset, request.bytes.byteLength);
+    const json: { readonly materials: readonly { readonly extras: { readonly toonSpectrum: { readonly toonMaterial: unknown } } }[] } = JSON.parse(new TextDecoder().decode(request.bytes.subarray(20, 20 + view.getUint32(12, true))));
+    expect(json.materials[0]?.extras.toonSpectrum.toonMaterial).toEqual(material);
+    expect(result.assets[0]?.sourceToonMaterialsHash).toBe(hashStudioHybridDccToonMaterialSlots({ "0": material }));
+    expect(result.losses.filter(({ code }) => code === "toon-material-display-fallback")).toEqual([]);
+    expect(result.losses.some(({ sourceIssueCode }) => sourceIssueCode === "material-slot-metadata-only")).toBe(false);
+    expect(workspace.session.state.geometry.records["toon-prop"]?.meshHash).toBe(original.session.state.geometry.records["toon-prop"]?.meshHash);
+  });
+
   it("fails closed before persistence when the authoritative workspace is empty", async () => {
     const ports = testPorts();
 
@@ -87,6 +105,7 @@ describe("Hybrid DCC → shipping BG3D handoff", () => {
 
     expect(ports.persistAttachments).toHaveBeenCalledTimes(1);
     const requests = ports.persistAttachments.mock.calls[0]?.[0] as readonly StudioHybridDccBg3dPersistRequest[];
+    expect(result.losses.some(({ code }) => code === "toon-material-display-fallback")).toBe(false);
     expect(requests).toHaveLength(2);
     expect(requests.map(({ assetId }) => assetId)).toEqual(["hero-prop", "room-prop"]);
     for (const request of requests) {
@@ -531,6 +550,7 @@ describe("Hybrid DCC → shipping BG3D handoff", () => {
     });
 
     expect(result.assets[0]).toMatchObject({ exportIssueCount: 1 });
+    expect(result.losses.some(({ code }) => code === "toon-material-display-fallback")).toBe(false);
     expect(result.losses).toContainEqual(expect.objectContaining({
       code: "glb-export-loss-retained-in-dcc",
       assetId: "material-prop",

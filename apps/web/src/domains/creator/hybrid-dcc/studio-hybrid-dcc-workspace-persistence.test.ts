@@ -15,15 +15,14 @@ import {
 } from "../studio-editable-half-edge-mesh";
 import { createStudioOpfsMemoryFileSystem } from "../studio-opfs-filesystem";
 import { sha256HexPortable } from "../studio-sha256";
+import { unwrapStudioMeshBox } from "../studio-uv-unwrap-lite";
 
 import {
   createStudioHybridDccComponentSelection,
   mutateStudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
-import {
-  workspaceAddActiveModifier,
-  workspaceRefreshModifierPreviews,
-} from "./studio-hybrid-dcc-modifier-workspace";
+import { workspaceRefreshModifierPreviews } from "./studio-hybrid-dcc-modifier-workspace";
+import { createPreSliceArraySolidifyWorkspace } from "./studio-hybrid-dcc-legacy-modifier-fixture";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddArtistInk,
@@ -299,10 +298,7 @@ async function createPreSliceModifierPreviewFixture(): Promise<{
   readonly bytes: Uint8Array;
   readonly currentWorkspace: StudioHybridDccWorkspace;
 }> {
-  let workspace = createStudioHybridDccWorkspace("legacy-modifier-preview");
-  workspace = workspaceAddUnitCube(workspace, "cube");
-  workspace = await workspaceAddActiveModifier(workspace, "array");
-  workspace = await workspaceAddActiveModifier(workspace, "solidify");
+  let workspace = await createPreSliceArraySolidifyWorkspace();
   // History fidelity is covered by the main legacy fixture. Keep this fixture bounded to the
   // nonempty persisted stack and its disposable evaluated bridge presentation.
   workspace = {
@@ -362,7 +358,9 @@ function buildFullWorkspace(): StudioHybridDccWorkspace {
   });
   workspace = workspaceEnsureShots(workspace, 3);
   workspace = workspaceAddArtistInk(workspace, "shot-2");
+  workspace = workspaceClothStep(workspace);
   workspace = workspaceUvUnwrapActive(workspace, "box");
+  workspace = { ...workspace, lastUvMap: unwrapStudioMeshBox(workspace.session.state.geometry.records["hero-prop"]!.mesh) };
   workspace = workspaceRetargetFromBvhExtras(workspace, [
     "hips",
     "spine",
@@ -372,7 +370,6 @@ function buildFullWorkspace(): StudioHybridDccWorkspace {
   ]);
   workspace = workspaceExportActiveMesh(workspace, "obj");
   workspace = workspaceStepSpring(workspace);
-  workspace = workspaceClothStep(workspace);
   workspace = workspaceSampleIdleClip(workspace, 0.375);
   workspace = workspaceCollabJoin(workspace, "peer-a", "민지");
   workspace = {

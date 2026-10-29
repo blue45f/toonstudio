@@ -27,4 +27,4 @@ export {
   type StudioBg3dWebGpuDeviceLossReason,
   type StudioBg3dWebGpuRendererErrorCode,
 } from "./studio-bg3d-three-webgpu-renderer";
-export { MToonNodeMaterial } from "@pixiv/three-vrm/nodes";
+export { StudioMToonNodeMaterial as MToonNodeMaterial } from "../mesh-materials/studio-mtoon-node-material";

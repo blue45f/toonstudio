@@ -777,13 +777,13 @@ describe("workspace expansion CAD/sculpt/cloth/collab/UV/mirror", () => {
         [
           { x: 0, y: 0, z: 0 },
           { x: 1, y: 0, z: 0 },
-          { x: 1, y: 0.2, z: 1 },
+          { x: 1.2, y: 0.2, z: 0.5 },
+          { x: 1, y: 0, z: 1 },
           { x: 0, y: 0, z: 1 },
         ],
-        [[0, 1, 2, 3]],
+        [[0, 1, 2, 3, 4]],
       ),
     ];
-
     for (const mesh of cases) {
       const hostile = workspaceWithForgedActiveMesh(baseWorkspace, mesh);
       const beforeRecord = hostile.session.state.geometry.records.cloth;
@@ -843,10 +843,10 @@ describe("workspace expansion CAD/sculpt/cloth/collab/UV/mirror", () => {
     expect(ws.revision).toBeGreaterThanOrEqual(3);
     ws = workspaceAddUnitCube(ws, "hero");
     ws = await workspaceMirrorActive(ws);
-    ws = workspaceUvUnwrapActive(ws, "box");
-    expect(ws.lastUvMap?.mode).toBe("box");
-    expect(ws.lastUvMap!.uvs.length).toBeGreaterThan(0);
     ws = workspaceSculptActive(ws, 0.1);
+    ws = workspaceUvUnwrapActive(ws, "box");
+    expect(ws.session.state.geometry.records.hero!.mesh.uvLayer?.revision).toBe(1);
+    expect(ws.session.state.geometry.records.hero!.mesh.uvLayer!.corners.length).toBeGreaterThan(0);
     ws = workspaceCadProp(ws, "cad-1");
     expect(ws.activeAssetId).toBe("cad-1");
     ws = workspaceClothStep(ws);

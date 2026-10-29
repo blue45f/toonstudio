@@ -2,6 +2,8 @@
 
 import * as THREE from "three";
 
+import { beginStudioMToonGeometryScope, type StudioMToonGeometryScope } from "../mesh-materials/studio-mtoon-geometry-scope";
+import { createStudioMToonWebGlGeometryPass } from "../mesh-materials/studio-mtoon-webgl-geometry-pass";
 import { hideStudioBg3dDepthExcludedObjects } from "./studio-bg3d-capture-exclusion";
 import {
   decodeStudioBg3dThreeRgbaDepth,
@@ -70,6 +72,7 @@ export async function captureStudioBg3dThreeDepth(
   depthMaterial.toneMapped = false;
   const packed = new Uint8Array(width * height * 4);
   const restoreDepthExcludedObjects = hideStudioBg3dDepthExcludedObjects(scene);
+  let geometryScope: StudioMToonGeometryScope | undefined;
 
   try {
     let readback: Promise<THREE.TypedArray> | undefined;
@@ -79,7 +82,6 @@ export async function captureStudioBg3dThreeDepth(
       try {
         renderer.xr.enabled = false;
         renderer.autoClear = true;
-        scene.overrideMaterial = depthMaterial;
         renderer.setRenderTarget(target);
         renderer.setScissorTest(false);
         renderer.setClearColor(0xffffff, 1);
@@ -87,11 +89,13 @@ export async function captureStudioBg3dThreeDepth(
         // Equirectangular scene backgrounds are color-only environment decoration. Pin a null
         // background immediately before submission so no full-frame fake depth surface is packed.
         scene.background = null;
-        renderer.render(scene, camera);
-        // Three submits readPixels/fence work synchronously before returning this Promise. Restore
-        // the live R3F renderer immediately so subsequent frames cannot render into the depth target
-        // or through MeshDepthMaterial while the GPU fence is pending.
-        readback = renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height, packed);
+        geometryScope = beginStudioMToonGeometryScope({ scene, backend: "webgl", fallbackMaterial: depthMaterial,
+          createBodyPass: (source) => createStudioMToonWebGlGeometryPass(source, "depth") });
+        geometryScope.submit(() => {
+          renderer.render(scene, camera);
+          // draw/copy가 끝나면 본체·outline slot과 renderer를 첫 await 전에 복원한다.
+          readback = renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height, packed);
+        });
       } finally {
         try {
           scene.overrideMaterial = previousOverrideMaterial;
@@ -120,7 +124,7 @@ export async function captureStudioBg3dThreeDepth(
     if (settled[0]?.status === "rejected") throw settled[0].reason;
     return decodeStudioBg3dThreeRgbaDepth({ width, height, rgba: packed, flipY: true });
   } finally {
-    depthMaterial.dispose();
-    target.dispose();
+    try { geometryScope?.dispose(); }
+    finally { try { depthMaterial.dispose(); } finally { target.dispose(); } }
   }
 }

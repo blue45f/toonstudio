@@ -394,7 +394,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
         break;
       }
       const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
-      const cacheEntry = model ? modelRootCacheRef.current.get(model.modelId) : undefined;
+      const cacheEntry = model ? R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend) : undefined;
       if (
         model && (
           model.animation !== undefined || model.pose !== undefined || model.morph !== undefined ||
@@ -411,7 +411,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
   if (!physicsSelectionUnavailableReason) {
     const unsupportedVisibleModel = customModels.find((model: BgCustomModelInstance) => {
       if (!effectivelyVisibleLayerIds.has(model.id)) return false;
-      const cacheEntry = modelRootCacheRef.current.get(model.modelId);
+      const cacheEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend);
       return model.animation !== undefined || model.pose !== undefined || model.morph !== undefined ||
         model.constraints !== undefined || (cacheEntry?.metrics.skins ?? 0) > 0 ||
         (cacheEntry?.metrics.morphTargets ?? 0) > 0;
@@ -530,7 +530,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
     });
   const batchCandidatesByModelId = new Map<string, BgCustomModelInstance[]>();
   for (const model of renderCustomModels) {
-    const cacheEntry = modelRootCacheRef.current.get(model.modelId);
+    const cacheEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend);
     if (
       !cacheEntry || unbatchableModelIds.has(model.modelId) || !isBgObjectVisible(model) ||
       selectedIds.has(model.id) || (sceneHierarchy.parentById.get(model.id) ?? null) !== null ||
@@ -552,7 +552,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
   }[] = [];
   const batchedNodeIds = new Set<string>();
   for (const [modelId, candidates] of batchCandidatesByModelId) {
-    const sourceRoot = modelRootCacheRef.current.get(modelId)?.root;
+    const sourceRoot = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.root;
     if (!sourceRoot) continue;
     for (let offset = 0; offset < candidates.length; offset += 1_024) {
       const instances = candidates.slice(offset, offset + 1_024);
@@ -587,7 +587,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
       scale: model.scale,
       visible: model.visible,
       localBounds: readStudioBg3dShadowModelLocalBounds(
-        modelRootCacheRef.current.get(model.modelId)?.root,
+        R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root,
       ),
     })),
     ...sharedCharacters.map(createStudioShared3dCharacterShadowEntity),

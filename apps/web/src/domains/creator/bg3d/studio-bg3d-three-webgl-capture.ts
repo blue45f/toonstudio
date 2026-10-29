@@ -1,5 +1,6 @@
 import { assertStudioBg3dTiledSceneAdmission } from "./studio-bg3d-tiled-scene-admission";
 import { createStudioBg3dTiledCameraSession } from "./studio-bg3d-tiled-session";
+import { beginStudioMToonRasterScope } from "../mesh-materials/studio-mtoon-raster-scope";
 /** Three/WebGL implementation of the renderer-neutral Studio 3D capture contract. */
 
 import * as THREE from "three";
@@ -219,8 +220,8 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
     engineId: "three" as const,
     engineVersion: String(THREE.REVISION).toLowerCase(),
     implementationRevision: renderer.extensions?.has("EXT_color_buffer_float")
-      ? "studio-three-webgl-capture-adapter-v4-hdr-normal-tiles"
-      : "studio-three-webgl-capture-adapter-v4-ldr-normal-tiles",
+      ? "studio-three-webgl-capture-adapter-v5-hdr-normal-mtoon-scope"
+      : "studio-three-webgl-capture-adapter-v5-ldr-normal-mtoon-scope",
     normalProfile: STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1,
     graphicsApi: "webgl2" as const,
     profileId: STUDIO_BG3D_CAPTURE_PROFILE_RGBA8_DEPTH_V1,
@@ -228,11 +229,16 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
       width: renderer.domElement.width,
       height: renderer.domElement.height,
     }),
-    capture,
+    async capture(request) {
+      const scope = beginStudioMToonRasterScope(scene, "webgl", { registrationPolicy: "registered-only", prepareScene: () => hideStudioBg3dCaptureExcludedObjects(scene) });
+      try { return await scope.submit({ fullHeight: request.height, height: request.height }, () => capture(request)); }
+      finally { scope.dispose(); }
+    },
     createTiledCapture: () => {
       if (renderer.capabilities?.reversedDepthBuffer) throw new Error("Reversed-depth tiled capture is not supported.");
-      assertStudioBg3dTiledSceneAdmission(scene);
-      return createStudioBg3dTiledCameraSession(camera, capture, THREE.WebGLCoordinateSystem);
+      assertStudioBg3dTiledSceneAdmission(scene, "webgl");
+      return createStudioBg3dTiledCameraSession(camera, capture, THREE.WebGLCoordinateSystem,
+        beginStudioMToonRasterScope(scene, "webgl", { assertSceneCurrent: () => assertStudioBg3dTiledSceneAdmission(scene, "webgl"), prepareScene: () => hideStudioBg3dCaptureExcludedObjects(scene) }));
     },
   });
 }

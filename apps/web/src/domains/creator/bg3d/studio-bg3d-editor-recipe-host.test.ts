@@ -21,6 +21,8 @@ import { CUTAWAY_ROOM_INNER_FACE, buildCutawayRoomScene, hideEveryRoomObject } f
 
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
+import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from "./studio-bg3d-model-cache.test-fixture";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 // 번들 환경 판정은 카탈로그(정적 자산 매니페스트)에 기대므로, 호스트 시험은 같은 규칙의 가짜로 대체한다.
 vi.mock("./studio-bg3d-environment-catalog", () => ({
@@ -70,6 +72,8 @@ interface HostOptions {
 
 function createHost(options: HostOptions = {}) {
   const modelId = options.modelId ?? "model-1";
+  const materialBackend = options.patch?.materialBackend ?? "webgl";
+  const cached = { ...createStudioBg3dCacheTestEntry(createStudioBg3dCacheTestRecord(modelId), materialBackend), root: options.root ?? cornerPivotModel() };
   const session = studioBg3dModalOperationCoordinator.beginSession();
   const document = createDefaultStudioBg3dSceneDocument();
   const live = { revision: 0, primitives: [] as never[], customModels: [] as BgCustomModelInstance[], document };
@@ -82,6 +86,7 @@ function createHost(options: HostOptions = {}) {
   const host = {
     open: true,
     modelRenderer: {},
+    materialBackend,
     isRestoringScene: false,
     isCapturing: false,
     isUploadingModel: false,
@@ -93,7 +98,7 @@ function createHost(options: HostOptions = {}) {
     physicsRuntimeSourceRef: { current: live },
     modalAssetSessionRef: { current: session },
     placementSessionRef: { current: { phase: "idle" } },
-    modelRootCacheRef: { current: new Map([[modelId, { root: options.root ?? cornerPivotModel() }]]) },
+    modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(modelId, materialBackend), cached]]) },
     primitiveObjectsRef: { current: options.sceneObjects ?? new Map<string, THREE.Object3D>() },
     attachmentByStorageModelIdRef: { current: new Map([[modelId, ATTACHMENT]]) },
     viewportApiRef: { current: { readView: () => ({ target: [2, 0.6, 3] as const }) } },
@@ -128,6 +133,36 @@ function createHost(options: HostOptions = {}) {
 }
 
 afterEach(() => vi.restoreAllMocks());
+
+describe("배치 방식의 renderer variant cache 경계", () => {
+  it("WebGPU 요청은 WebGL root의 다른 경계를 빌리지 않고 해당 variant를 배치한다", async () => {
+    const context = createHost({ patch: { materialBackend: "webgpu" } });
+    const unrelated = createStudioBg3dCacheTestEntry(createStudioBg3dCacheTestRecord(context.modelId));
+    unrelated.root.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), MATERIAL));
+    const cache = new Map(context.host.modelRootCacheRef.current);
+    cache.set(studioBg3dModelCacheKey(context.modelId, "webgl"), unrelated);
+    Object.assign(context.host.modelRootCacheRef, { current: cache });
+    await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(true);
+    const bounds = worldBoundsOf(context.live.customModels[0]);
+    expect(bounds.min[1]).toBeCloseTo(0); expect(bounds.center[0]).toBeCloseTo(2); expect(bounds.center[2]).toBeCloseTo(3);
+    expect(unrelated.dispose).not.toHaveBeenCalled();
+  });
+
+  it.each(["backend", "renderer", "lease"] as const)("모델 준비 중 %s 변경은 새 장면·이력을 쓰지 않는다", async (boundary) => {
+    const context = createHost(); let current = true;
+    const ensure: StudioBg3dEditorRecipeHost["ensureModelRootCached"] = async (_modelId, _session, isCurrent) => {
+      expect(isCurrent()).toBe(true);
+      if (boundary === "backend") Object.assign(context.host, { materialBackend: "webgpu" });
+      else if (boundary === "renderer") Object.assign(context.host, { modelRenderer: {} });
+      else current = false;
+      expect(isCurrent()).toBe(false);
+      return { id: context.modelId };
+    };
+    Object.assign(context.host, { ensureModelRootCached: vi.fn(ensure), isMaterialBackendCurrent: () => current });
+    await expect(context.host.placeCustomModelWithRecipe(context.modelId, "floor")).resolves.toBe(false);
+    expect(context.calls.commit).not.toHaveBeenCalled(); expect(context.calls.replace).not.toHaveBeenCalled(); expect(context.live.customModels).toEqual([]);
+  });
+});
 
 describe("attachStudioBg3dEditorRecipeHost — 성공 경로", () => {
   it("바닥에 놓기: 피벗이 모서리인 모델도 경계 아래면이 바닥에, 경계 중심이 카메라 대상 X/Z 에 놓이고 선택된다", async () => {
