@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { decodeStudioMeshUvLayer, hashStudioMeshUvTopology } from "../mesh-uv/studio-mesh-uv-authority";
 import { serializeStudioCommandJournal } from "../studio-command-journal";
-import { createStudioEditableMeshFromPolygons, hashStudioEditableMesh, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { createStudioEditableMeshFromPolygons, hashStudioEditableMesh, serializeStudioEditableMesh, validateStudioEditableMeshSerializableAuthority, type StudioEditableMesh } from "../studio-editable-half-edge-mesh";
 
 import {
   createStudioHybridDccComponentSelection,
@@ -9,7 +10,7 @@ import {
   validateStudioHybridDccComponentSelection,
   type StudioHybridDccComponentSelection,
 } from "./studio-hybrid-dcc-component-selection";
-import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
+import { hybridDccCommitGeometry, hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   analyzeStudioEditableMeshIntegrity,
   STUDIO_FACE_MODELING_LIMITS,
@@ -17,6 +18,7 @@ import {
 } from "./studio-hybrid-dcc-face-modeling-mesh";
 import {
   commitStudioHybridDccFaceModeling,
+  StudioFaceModelingCommitError,
   planStudioHybridDccFaceModeling,
   previewStudioHybridDccFaceModeling,
   studioHybridDccFaceDrawingGuide,
@@ -29,8 +31,10 @@ import {
 } from "./studio-hybrid-dcc-workspace-persistence";
 import {
   createStudioHybridDccWorkspace,
+  synchronizeWorkspaceGeometryAuthority,
   workspaceAddUnitCube,
   workspaceComponentSelectionSource,
+  workspaceImportBytes,
   workspaceRedo,
   workspaceUndo,
   type StudioHybridDccWorkspace,
@@ -85,6 +89,131 @@ const REQUESTS: readonly (readonly [string, StudioFaceModelingRequest])[] = [
   ["안쪽 오프셋", { tool: "offset", distance: 0.1, direction: "inward" }],
   ["면 그리기", { tool: "draw", points: SQUARE }],
 ];
+
+/** 정식 UV codec과 geometry command로 모든 코너가 연결된 실제 권위 레이어를 등록한다. */
+function withUvLayer(workspace: StudioHybridDccWorkspace): StudioHybridDccWorkspace {
+  const assetId = workspace.activeAssetId;
+  const record = assetId ? workspace.session.state.geometry.records[assetId] : undefined;
+  if (!assetId || !record) throw new Error("UV를 연결할 활성 메시가 없습니다.");
+  const mesh = record.mesh;
+  const uvLayer = decodeStudioMeshUvLayer({ revision: 1, topologyHash: hashStudioMeshUvTopology(mesh),
+    corners: mesh.halfEdges.map((edge) => ({ halfEdgeId: edge.id, u: Math.fround(edge.id / 8), v: Math.fround(edge.id / 16) })) }, mesh);
+  return synchronizeWorkspaceGeometryAuthority(workspace, hybridDccCommitGeometry(workspace.session, assetId, { ...mesh, uvLayer }));
+}
+
+describe("면 그리기의 UV 보존 경계", () => {
+  it("실제 OBJ로 가져온 유효 UV 메시의 안내·계획·미리보기·확정을 거부하고 원본과 기록을 지킨다", () => {
+    const vertices = "v -1 -1 0\nv 1 -1 0\nv 1 1 0\nv -1 1 0\n";
+    const bytes = new TextEncoder().encode(`${vertices}vt 0 0\nvt 1 0\nvt 1 1\nvt 0 1\nf 1/1 2/2 3/3 4/4\n`);
+    const workspace = workspaceImportBytes(createStudioHybridDccWorkspace("draw-uv"), "uv-quad.obj", bytes);
+    const assetId = workspace.activeAssetId;
+    if (!assetId) throw new Error("실제 OBJ가 활성 자산으로 등록되지 않았습니다.");
+    const record = workspace.session.state.geometry.records[assetId];
+    if (!record || record.mesh.uvLayer === undefined) throw new Error("실제 OBJ의 코너 UV가 없습니다.");
+    const face = record.mesh.faces[0];
+    if (!face) throw new Error("실제 OBJ의 편집할 면이 없습니다.");
+    expect(validateStudioEditableMeshSerializableAuthority(record.mesh).ok).toBe(true);
+    expect(record.mesh.uvLayer.corners).toHaveLength(record.mesh.halfEdges.length);
+    expect(record.mesh.uvLayer.corners.map(({ u, v }) => [u, v])).toEqual([[0, 0], [1, 0], [1, 1], [0, 1]]);
+    const selection = faceSelection(workspace, [face.id]);
+    const request: StudioFaceModelingRequest = { tool: "draw", points: SQUARE };
+    // 같은 도형의 무UV 입력은 실제 안내와 커널을 통과한다. 잘못된 도형 때문에 거부된 fixture가 아니다.
+    const plain = workspaceImportBytes(createStudioHybridDccWorkspace("draw-no-uv"), "quad.obj",
+      new TextEncoder().encode(`${vertices}f 1 2 3 4\n`));
+    const plainSelection = faceSelection(plain, [face.id]);
+    expect(studioHybridDccFaceDrawingGuide(plain, plainSelection).ok).toBe(true);
+    expect(planStudioHybridDccFaceModeling(plain, plainSelection, request).ok).toBe(true);
+    const before = { session: workspace.session, state: workspace.session.state, mesh: record.mesh,
+      uv: JSON.stringify(record.mesh.uvLayer), serialized: JSON.stringify(serializeStudioEditableMesh(record.mesh)),
+      hash: hashStudioEditableMesh(record.mesh), meshHash: record.meshHash,
+      commandCount: workspace.session.state.commandCount, undo: workspace.session.undoStack,
+      redo: workspace.session.redoStack, journal: serializeStudioCommandJournal(workspace.session.journal) };
+    expectFailure(studioHybridDccFaceDrawingGuide(workspace, selection), "unsupported-uv");
+    expectFailure(planStudioHybridDccFaceModeling(workspace, selection, request), "unsupported-uv");
+    expectFailure(previewStudioHybridDccFaceModeling(workspace, selection, request), "unsupported-uv");
+    expect(() => commitStudioHybridDccFaceModeling(workspace, selection, request)).toThrow(StudioFaceModelingCommitError);
+    expect(workspace.session).toBe(before.session); expect(workspace.session.state).toBe(before.state);
+    expect(workspace.session.state.geometry.records[assetId]).toBe(record); expect(record.mesh).toBe(before.mesh);
+    expect(JSON.stringify(record.mesh.uvLayer)).toBe(before.uv);
+    expect(JSON.stringify(serializeStudioEditableMesh(record.mesh))).toBe(before.serialized);
+    expect(hashStudioEditableMesh(record.mesh)).toBe(before.hash); expect(record.meshHash).toBe(before.meshHash);
+    expect(workspace.session.state.commandCount).toBe(before.commandCount);
+    expect(workspace.session.undoStack).toBe(before.undo); expect(workspace.session.redoStack).toBe(before.redo);
+    expect(serializeStudioCommandJournal(workspace.session.journal)).toBe(before.journal);
+  });
+});
+
+const UV_UNSAFE_REQUESTS: readonly (readonly [string, StudioFaceModelingRequest])[] = [
+  ["면 그리기", { tool: "draw", points: SQUARE }],
+  ["안쪽 테두리", { tool: "inset", distance: 0.05 }],
+  ["안쪽 오프셋", { tool: "offset", distance: 0.05, direction: "inward" }],
+  ["바깥 오프셋", { tool: "offset", distance: 0.05, direction: "outward" }],
+];
+
+describe("UV를 재매핑하지 않는 면 재조립의 공개 작업공간 경계", () => {
+  it.each(UV_UNSAFE_REQUESTS)("%s는 유효 UV의 안내·미리보기·확정을 거부하고 원본과 기록을 지킨다", (_name, request) => {
+    let plain = cubeWorkspace(), faceId = TOP;
+    if (request.tool === "offset" && request.direction === "outward") {
+      const drawn = commitStudioHybridDccFaceModeling(plain, faceSelection(plain, [TOP]), { tool: "draw", points: SQUARE });
+      const inner = drawn.selection?.elementIds[0];
+      if (inner === undefined) throw new Error("바깥 오프셋을 위한 실제 안쪽 면이 없습니다.");
+      plain = drawn.workspace; faceId = inner;
+    }
+    expect(planStudioHybridDccFaceModeling(plain, faceSelection(plain, [faceId]), request).ok).toBe(true);
+    const workspace = withUvLayer(plain), assetId = workspace.activeAssetId;
+    const record = assetId ? workspace.session.state.geometry.records[assetId] : undefined;
+    if (!assetId || !record || record.mesh.uvLayer === undefined) throw new Error("실제 UV 권위 메시가 없습니다.");
+    expect(validateStudioEditableMeshSerializableAuthority(record.mesh).ok).toBe(true);
+    expect(record.mesh.uvLayer.corners).toHaveLength(record.mesh.halfEdges.length);
+    const selection = faceSelection(workspace, [faceId]);
+    const before = { session: workspace.session, state: workspace.session.state, mesh: record.mesh,
+      uv: JSON.stringify(record.mesh.uvLayer), serialized: JSON.stringify(serializeStudioEditableMesh(record.mesh)),
+      hash: hashStudioEditableMesh(record.mesh), meshHash: record.meshHash,
+      commandCount: workspace.session.state.commandCount, undo: workspace.session.undoStack,
+      redo: workspace.session.redoStack, journal: serializeStudioCommandJournal(workspace.session.journal) };
+    const guide = request.tool === "draw" ? studioHybridDccFaceDrawingGuide(workspace, selection)
+      : studioHybridDccFaceModelingRange(workspace, selection, request.tool,
+        request.tool === "offset" ? request.direction : "inward");
+    expectFailure(guide, "unsupported-uv");
+    expectFailure(planStudioHybridDccFaceModeling(workspace, selection, request), "unsupported-uv");
+    expectFailure(previewStudioHybridDccFaceModeling(workspace, selection, request), "unsupported-uv");
+    expect(() => commitStudioHybridDccFaceModeling(workspace, selection, request)).toThrow(StudioFaceModelingCommitError);
+    expect(workspace.session).toBe(before.session); expect(workspace.session.state).toBe(before.state);
+    expect(workspace.session.state.geometry.records[assetId]).toBe(record); expect(record.mesh).toBe(before.mesh);
+    expect(JSON.stringify(record.mesh.uvLayer)).toBe(before.uv);
+    expect(JSON.stringify(serializeStudioEditableMesh(record.mesh))).toBe(before.serialized);
+    expect(hashStudioEditableMesh(record.mesh)).toBe(before.hash); expect(record.meshHash).toBe(before.meshHash);
+    expect(workspace.session.state.commandCount).toBe(before.commandCount);
+    expect(workspace.session.undoStack).toBe(before.undo); expect(workspace.session.redoStack).toBe(before.redo);
+    expect(serializeStudioCommandJournal(workspace.session.journal)).toBe(before.journal);
+  });
+
+  it.each(["stretch", "extrude"] as const)("UV를 보존하는 Push/Pull %s 경로는 계속 확정하고 되돌릴 수 있다", (method) => {
+    let plain = cubeWorkspace(), faceId = TOP;
+    if (method === "extrude") {
+      const drawn = commitStudioHybridDccFaceModeling(plain, faceSelection(plain, [TOP]), { tool: "draw", points: SQUARE });
+      const inner = drawn.selection?.elementIds[0];
+      if (inner === undefined) throw new Error("실제 extrude 면이 없습니다.");
+      plain = drawn.workspace; faceId = inner;
+    }
+    const workspace = withUvLayer(plain), source = workspace.session.state.geometry.records.cube;
+    if (!source || source.mesh.uvLayer === undefined) throw new Error("Push/Pull의 실제 UV 원본이 없습니다.");
+    const beforeUv = JSON.stringify(source.mesh.uvLayer), beforeHash = hashStudioEditableMesh(source.mesh);
+    const selection = faceSelection(workspace, [faceId]);
+    const request: StudioFaceModelingRequest = { tool: "push-pull", distance: method === "stretch" ? 0.25 : -0.2 };
+    const plan = expectOk(planStudioHybridDccFaceModeling(workspace, selection, request));
+    expect(plan.method).toBe(method);
+    const result = commitStudioHybridDccFaceModeling(workspace, selection, request).workspace;
+    const record = result.session.state.geometry.records.cube;
+    if (!record) throw new Error("Push/Pull 결과가 없습니다.");
+    expect(validateStudioEditableMeshSerializableAuthority(record.mesh).ok).toBe(true);
+    expect(record.mesh.uvLayer?.corners).toHaveLength(record.mesh.halfEdges.length);
+    if (method === "stretch") expect(record.mesh.uvLayer).toEqual(source.mesh.uvLayer);
+    expect(JSON.stringify(source.mesh.uvLayer)).toBe(beforeUv); expect(hashStudioEditableMesh(source.mesh)).toBe(beforeHash);
+    const undone = workspaceUndo(result).session.state.geometry.records.cube;
+    expect(undone?.meshHash).toBe(source.meshHash); expect(JSON.stringify(undone?.mesh.uvLayer)).toBe(beforeUv);
+  });
+});
 
 describe("면 모델링 작업공간: 미리보기는 문서를 건드리지 않는다", () => {
   it.each(REQUESTS)("%s 미리보기는 세션·기록·원본 메시를 그대로 둔다", (_name, request) => {

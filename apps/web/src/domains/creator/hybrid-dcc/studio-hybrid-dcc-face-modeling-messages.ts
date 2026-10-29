@@ -298,6 +298,11 @@ export function describeStudioFaceModelingFailure(
         "결과가 3D 화면에서 그릴 수 있는 볼록 평면 면으로 나뉘지 않아 적용하지 않았습니다. 거리를 바꿔 다시 입력하세요.",
         "The result cannot be split into convex planar faces the viewport can draw, so it was not applied. Enter a different distance.",
       );
+    case "unsupported-uv":
+      return bt(
+        "이 메시의 UV 좌표를 보존하기 위해 이 연산을 적용하지 않았습니다. 원본과 UV는 그대로 유지됩니다.",
+        "This operation was not applied to preserve this mesh's UV coordinates. The original model and UVs are unchanged.",
+      );
     case "unsupported-face":
       return bt(
         "이 면은 지원하지 않습니다. 평면이 아니거나 모서리가 너무 짧거나 꼭짓점이 너무 많습니다. 다른 면을 선택하세요.",

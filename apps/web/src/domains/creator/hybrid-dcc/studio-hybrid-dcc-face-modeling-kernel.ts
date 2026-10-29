@@ -44,6 +44,7 @@ import {
   failStudioFaceModeling,
   findRenderableStartCorner,
   okStudioFaceModeling,
+  rejectStudioFaceModelingUvRebuild,
   STUDIO_FACE_MODELING_LIMITS,
   studioFaceCornerPositions,
   type StudioFaceModelingOutcome,
@@ -68,6 +69,8 @@ function insetFaces(
 ): StudioFaceModelingResult<StudioFaceModelingOutcome> {
   const invalid = validateStudioFaceModelingDistance(distance);
   if (invalid) return invalid;
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, faceIds);
@@ -168,6 +171,8 @@ export function studioEditableMeshInsetRange(
   mesh: StudioEditableMesh,
   faceIds: readonly number[],
 ): StudioFaceModelingResult<{ readonly maxDistance: number }> {
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, faceIds);
@@ -429,6 +434,8 @@ export function offsetStudioEditableMeshFace(
   if (direction !== "outward") return failStudioFaceModeling("invalid-parameter", "unknown offset direction");
   const invalid = validateStudioFaceModelingDistance(distance);
   if (invalid) return invalid;
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, [faceId]);
@@ -444,6 +451,8 @@ export function studioEditableMeshOffsetRange(
   faceId: number,
   direction: StudioOffsetDirection,
 ): StudioFaceModelingResult<{ readonly maxDistance: number }> {
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, [faceId]);

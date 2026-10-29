@@ -28,6 +28,7 @@ import {
   failStudioFaceModeling,
   findRenderableStartCorner,
   okStudioFaceModeling,
+  rejectStudioFaceModelingUvRebuild,
   STUDIO_FACE_MODELING_LIMITS,
   type StudioFaceModelingOutcome,
   type StudioFaceModelingResult,
@@ -50,6 +51,8 @@ export function describeStudioEditableMeshFaceForDrawing(
   mesh: StudioEditableMesh,
   faceId: number,
 ): StudioFaceModelingResult<StudioFaceDrawingGuide> {
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, [faceId]);
@@ -77,6 +80,8 @@ export function drawStudioEditableMeshFacePolygon(
   faceId: number,
   points: readonly StudioPlanarPoint[],
 ): StudioFaceModelingResult<StudioFaceModelingOutcome> {
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, [faceId]);
