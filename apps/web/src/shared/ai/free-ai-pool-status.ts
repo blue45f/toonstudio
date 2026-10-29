@@ -1,7 +1,8 @@
 import { api } from "@/platform/api";
 
 export interface FreeAiPoolProviderStatus {
-  id: "gemini" | "qwen" | "groq" | "sambanova" | "zai" | "mistral" | "cloudflare" | "openrouter" | "siliconflow" | "deepseek";
+  /** "anthropic"은 키 없는 사용자의 1순위인 운영 고성능 경로다(운영자 비용, 사용자 비용 없음). */
+  id: "anthropic" | "gemini" | "qwen" | "groq" | "sambanova" | "zai" | "mistral" | "cloudflare" | "openrouter" | "siliconflow" | "deepseek";
   label: string;
   configured: boolean;
   model: string;
@@ -28,10 +29,19 @@ export interface FreeAiPoolStatus {
     default: "auto";
     order: FreeAiPoolProviderStatus["id"][];
     fallback: boolean;
-    fallbackPolicy?: "free_quota_exhausted" | "billing_quota_exhausted";
+    fallbackPolicy?: "free_quota_exhausted" | "billing_quota_exhausted" | "premium_unavailable";
   };
   requiresAuth: boolean;
   freePool?: boolean;
+  /** 자동 경로의 1순위를 운영자가 부담하는지(운영 고성능 경로가 켜져 있으면 true). */
+  operatorFunded?: boolean;
+  /** 운영 고성능 경로 상태. 서버가 키를 갖고 있지 않으면 configured=false다. */
+  premium?: {
+    configured: boolean;
+    automatic: boolean;
+    model: string;
+    userDailyRequestLimit: number;
+  };
   poolCapabilities?: FreeAiPoolCapabilityStatus[];
   settingsHref?: string;
   quota?: {
