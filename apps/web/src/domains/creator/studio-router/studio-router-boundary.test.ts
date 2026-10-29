@@ -135,7 +135,18 @@ describe("Studio router bundle boundaries", () => {
     // The route reads document identity from the layout instead of re-parsing the URL.
     expect(dccWorkbenchNavigationSource).toContain("useStudioDocumentLayout()");
     expect(dccWorkbenchRouteSource).not.toContain("useSearchParams");
-    expect(dccWorkbenchRouteSource).not.toContain("resolveStudioDccRouteAccess");
+    // 2026-10-25(b5302793): 정적 진입 그래프의 hybrid-dcc 도달을 줄이려고 순수 판정 함수
+    // resolveStudioDccRouteAccess 의 정의를 내비게이션 모듈로 옮겼다(hybrid-dcc/studio-dcc-route-access.ts
+    // 는 재내보내기만 남음). 라우트는 여전히 판정하지 않는다: 모듈 안에는 정의 하나뿐 호출이 없고,
+    // 내비게이션 훅과 표면은 주입된 결과(dccRouteAccess)만 소비한다.
+    expect(dccWorkbenchNavigationSource.match(/resolveStudioDccRouteAccess\(/gu)).toHaveLength(1);
+    expect(dccWorkbenchNavigationSource).toContain("export function resolveStudioDccRouteAccess(");
+    expect(
+      dccWorkbenchNavigationSource.slice(
+        dccWorkbenchNavigationSource.indexOf("export function useStudioDccWorkbenchNavigation("),
+      ),
+    ).not.toContain("resolveStudioDccRouteAccess");
+    expect(dccWorkbenchSurfaceSource).not.toContain("resolveStudioDccRouteAccess");
     // The legacy page keeps only the access verdict and the editor-side UI hooks it injects.
     expect(legacyEditorSource).toContain("resolveStudioDccRouteAccess({");
     expect(legacyEditorSource).toContain("useStudioDccWorkbenchNavigation({");

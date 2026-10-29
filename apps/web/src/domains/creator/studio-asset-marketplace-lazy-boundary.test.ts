@@ -15,10 +15,11 @@ const boundarySource = readFileSync(
   ),
   "utf8"
 );
-const loadingFallbackSource = source.slice(
-  source.indexOf("function StudioAssetMarketplaceLoading()"),
-  source.indexOf("export interface StudioAssetMenuPanelProps")
-);
+// 로딩 폴백 함수 본문만 본다. 2026-10-28(3ef5d97d): 끝 표지로 쓰던 Props 인터페이스가
+// catalog/studio-asset-menu-panel-props.ts 로 옮겨 가 -1 이 되면서 파일 끝까지 읽었다 — 함수의 닫는 중괄호로 끝을 잡는다.
+const loadingFallbackStart = source.indexOf("function StudioAssetMarketplaceLoading()");
+const loadingFallbackEnd = source.indexOf("\n}\n", loadingFallbackStart);
+const loadingFallbackSource = source.slice(loadingFallbackStart, loadingFallbackEnd + 2);
 
 describe("Studio asset marketplace lazy boundary", () => {
   it("keeps all marketplace panels out of the initial asset-menu module graph", () => {
@@ -66,6 +67,9 @@ describe("Studio asset marketplace lazy boundary", () => {
     expect(source).toContain('data-studio-asset-marketplace-loading="true"');
     expect(source).toContain('data-studio-asset-marketplace-skeleton-row=');
     expect(source).toContain("motion-reduce:animate-none");
+    expect(loadingFallbackStart).toBeGreaterThanOrEqual(0);
+    expect(loadingFallbackEnd).toBeGreaterThan(loadingFallbackStart);
+    expect(loadingFallbackSource).toContain('data-studio-asset-marketplace-loading="true"');
     expect(loadingFallbackSource).not.toContain("animate-spin");
     expect(loadingFallbackSource).not.toContain("Loader2");
     expect(source).toContain('data-studio-asset-marketplace-lazy-boundary="true"');

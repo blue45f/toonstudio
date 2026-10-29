@@ -90,7 +90,8 @@ describe("Studio BG3D template organizer integration boundary", () => {
     expect(sceneOpsSource).toContain("const duplicateSelectedLinked = () => duplicateSelectedImpl(true);");
     expect(placementSource).toContain("orderStudioBg3dHierarchySelectionRootsFirst(insertedEntities)");
     expect(transformSource).toContain("hasStudioBg3dSelectedAncestor(");
-    expect(transformSource).toContain("(ancestor) => !isBgObjectTransformBlocked(ancestor)");
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 추출된 호스트의 콜백 매개변수에 타입 주석이 붙었다.
+    expect(transformSource).toContain("(ancestor: BgPrimitive | BgCustomModelInstance) => !isBgObjectTransformBlocked(ancestor)");
     expect(transformSource).toContain("p.id !== firstSelectedId && hasSelectedTransformDriverAncestor(p)");
     expect(transformSource).toContain("m.id !== firstSelectedId && hasSelectedTransformDriverAncestor(m)");
     expect(duplicate).toContain("allocateStudioBg3dTemplateInstanceNodeIds({");
@@ -115,9 +116,10 @@ describe("Studio BG3D template organizer integration boundary", () => {
     expect(sidebarSource).toContain("entries={templateLibrary}");
     expect(sidebarSource).toContain("status={templateLibraryStatus}");
     expect(sidebarSource).toContain("notice={templateLibraryNotice}");
-    expect(sidebarSource).toContain("onApply={(entry) => void applyUserTemplate(entry)}");
-    expect(sidebarSource).toContain("onDelete={(id) => void handleDeleteTemplate(id)}");
-    expect(sidebarSource).toContain("setTemplateLibraryLoadRevision((revision) => revision + 1)");
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 사이드바 콜백 매개변수에 타입 주석이 붙었다.
+    expect(sidebarSource).toContain("onApply={(entry: any) => void applyUserTemplate(entry)}");
+    expect(sidebarSource).toContain("onDelete={(id: string) => void handleDeleteTemplate(id)}");
+    expect(sidebarSource).toContain("setTemplateLibraryLoadRevision((revision: number) => revision + 1)");
     expect(sidebarExtrasSource).not.toContain("내 템플릿");
     expect(userTemplatePanelSource).toContain("현재 장면을 내 템플릿으로 저장");
     expect(userTemplatePanelSource).toContain("다시 불러오기");

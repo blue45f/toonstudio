@@ -59,7 +59,8 @@ describe("Studio BG3D staging-studio integration boundary", () => {
     expect(exposureHandler).toContain(
       "if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) return;",
     );
-    expect(exposureHandler).toContain("setSceneBaseDocument((current) =>");
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 추출된 호스트의 콜백 매개변수에 타입 주석이 붙었다.
+    expect(exposureHandler).toContain("setSceneBaseDocument((current: StudioBg3dSceneDocument) =>");
     expect(exposureHandler).toContain("render: { ...current.render, exposure }");
     expect(exposureHandler).toContain("canonicalSceneDocument(candidate) ?? current");
   });

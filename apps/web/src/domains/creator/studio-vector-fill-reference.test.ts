@@ -465,14 +465,21 @@ describe("renderStudioVectorReference generic seam", () => {
       elements: [draw("exact-raster-provider")],
     }, { workerFactory: null });
     vi.stubGlobal("Worker", undefined);
-    vi.stubGlobal("createImageBitmap", undefined);
     vi.stubGlobal("document", undefined);
     try {
+      // 2026-10-23(4a59b310, A4 D4): 이관 전 단언(/Offscreen/·/브라우저/)은 각 공급자의 어느 전제
+      // 조건 실패든 받았다. 오프스크린 공급자는 SVG 디코더(createImageBitmap)를 Worker 보다, 브라우저
+      // 공급자는 document(캔버스)를 Image 보다 먼저 확인하므로 실제로 먼저 걸리는 코드로 본다.
+      // 어느 경우에도 고정된 공급자에서 끝나고 다른 공급자로 넘어가지 않는다.
+      vi.stubGlobal("createImageBitmap", vi.fn());
       await expect(renderPreparedStudioVectorReference(prepared))
         .rejects.toThrow(/offscreenWorkerUnavailable/u);
+      vi.stubGlobal("createImageBitmap", undefined);
+      await expect(renderPreparedStudioVectorReference(prepared))
+        .rejects.toThrow(/offscreenDecoderUnavailable/u);
       await expect(renderPreparedStudioVectorReference(prepared, {
         rasterExecutionBackend: "browser-direct",
-      })).rejects.toThrow(/imageUnavailable/u);
+      })).rejects.toThrow(/canvasUnavailable/u);
     } finally {
       vi.unstubAllGlobals();
     }
