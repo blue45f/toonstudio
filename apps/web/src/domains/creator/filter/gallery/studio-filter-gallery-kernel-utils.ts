@@ -198,7 +198,7 @@ export function sobel(plane: Float32Array, width: number, height: number): Gradi
       const g = plane[yp + xm]!, h = plane[yp + x]!, i = plane[yp + xp]!;
       const sx = (c + 2 * f + i) - (a + 2 * d + g);
       const sy = (g + 2 * h + i) - (a + 2 * b + c);
-      gx[y0 + x] = sx; gy[y0 + x] = sy; magnitude[y0 + x] = Math.hypot(sx, sy);
+      gx[y0 + x] = sx; gy[y0 + x] = sy; magnitude[y0 + x] = Math.sqrt(sx * sx + sy * sy);
     }
   }
   return { gx, gy, magnitude };
