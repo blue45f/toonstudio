@@ -84,9 +84,14 @@ export function resolveActiveServerAiProviderLabel(
   status: Pick<StudioServerAiStatus, "configured" | "providers"> | null,
 ): string {
   if (preference === "auto") {
+    // 실제 순서대로 적는다: 자동 모드에서 등록한 내 키(무료 키·먼저 쓰기로 한 유료 키)가 있으면 그 키가 먼저다.
+    const routing = userAiRoutingSettings(getUserAiSnapshot().configuration);
+    const myKeysFirst = routing.mode === "automatic" && userAiPersonalFirstConnectionsForCapability("text").length > 0;
+    const prefix = myKeysFirst ? "내 키 → " : "";
     if (status?.providers?.some((provider) => provider.id === "anthropic" && provider.configured)) {
-      return "자동: ToonStudio 고성능 AI → 무료 AI";
+      return `자동: ${prefix}ToonStudio 고성능 AI → 무료 AI`;
     }
+    if (myKeysFirst) return status?.configured ? "자동: 내 키 → 무료 AI" : "자동: 내 키";
     return status?.configured ? "자동 무료 AI" : "자동 무료 AI → 내 무료 키";
   }
   return status?.providers?.find((provider) => provider.id === preference)?.label ?? "선택한 무료 AI";
@@ -416,8 +421,8 @@ export async function completeStudioServerText(
       if (!attempt.truncated || routing.mode === "manual" || signal?.aborted) return attempt.result;
       truncatedPersonal = attempt.result;
     } else {
-      const handOff = attempt.result.code === "free_exhausted"
-        || (routing.mode === "automatic" && attempt.authenticationRejected);
+      // 자동·"내가 정한 순서" 모두, 한도 소진이나 모든 키의 인증 거절(추론 전 확정 거절)이면 다음 경로로 넘긴다.
+      const handOff = attempt.result.code === "free_exhausted" || attempt.authenticationRejected;
       if (routing.mode === "manual" || !handOff) return attempt.result;
       if (attempt.authenticationRejected) personalRejection = attempt.result;
     }

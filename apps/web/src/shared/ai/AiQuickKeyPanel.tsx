@@ -9,7 +9,8 @@
  * - 유료 서비스 키는 비용 청구를 확인해야 등록되고, 확인하면 자동 경로에서도 그 키를 먼저 쓴다.
  */
 import { CheckCircle2, CircleAlert, ExternalLink, KeyRound, Plus, Sparkles, Trash2, X } from "lucide-react";
-import { useId, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Link, useInRouterContext } from "react-router-dom";
 
 import {
   AI_KEY_PROVIDER_PICK_ORDER,
@@ -74,6 +75,16 @@ function costBadge(paid: boolean) {
   );
 }
 
+/** 모델 목록이 공개라 목록 응답으로 키를 확인할 수 없는 서비스. */
+const PUBLIC_MODEL_LIST_PROVIDERS: ReadonlySet<QuickKeyProviderId> = new Set(["openrouter", "huggingface"]);
+
+/** 라우터 안이면 페이지를 새로 고치지 않고 옮긴다(메모리에만 둔 키가 사라지지 않게). 라우터 밖(시험 등)에서는 일반 링크다. */
+function SettingsLink({ to, className, children }: { readonly to: string; readonly className: string; readonly children: ReactNode }) {
+  return useInRouterContext()
+    ? <Link className={className} to={to}>{children}</Link>
+    : <a className={className} href={to}>{children}</a>;
+}
+
 /**
  * 등록 직전 키 확인. 키가 거절되면(401·403, 키 없이 부르는 모델 목록에서 400) 등록하지 않는다. 브라우저에서 서비스에
  * 닿지 못하면 실제 사용 때도 닿지 못하므로 등록하지 않는다(그런 키가 "내 키 먼저" 맨 앞에 있으면 텍스트 AI가 모두 실패한다).
@@ -101,7 +112,12 @@ async function verifyQuickKey(provider: QuickKeyProviderId, key: string): Promis
   if (probe.status === "unauthorized" || (probe.status === "http_error" && probe.httpStatus === 400)) return { status: "rejected" };
   if (probe.status === "unreachable") return { status: "unreachable" };
   if (probe.status === "ok") {
-    return { status: "verified", model: chooseQuickKeyModel(provider, probe.modelIds ?? null) };
+    const model = chooseQuickKeyModel(provider, probe.modelIds ?? null);
+    // 키 없이도 모델 목록을 주는 서비스는 목록이 와도 키가 맞다는 뜻이 아니다.
+    if (PUBLIC_MODEL_LIST_PROVIDERS.has(provider)) {
+      return { status: "unverified", model, reason: "이 서비스는 키 없이도 모델 목록을 보여 줘서 키를 미리 확인하지 못했어요" };
+    }
+    return { status: "verified", model };
   }
   const reason = probe.status === "http_error"
     ? `서비스가 HTTP ${probe.httpStatus}로 답했어요`
@@ -348,6 +364,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                     type="button"
                     className={`${ICON_BUTTON} ml-auto`}
                     aria-label={`${maskAiKey(item.key)} 키 빼기`}
+                    disabled={busy}
                     onClick={() => setPending((current) => current.filter((entry) => entry.id !== item.id))}
                   >
                     <X size={16} aria-hidden />
@@ -360,7 +377,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
 
         {needsPaidConsent && (
           <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-sm">
-            <input type="checkbox" className="mt-1" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
+            <input type="checkbox" className="mt-1" checked={consent} disabled={busy} onChange={(event) => setConsent(event.target.checked)} />
             <span>
               유료 서비스 키는 쓸 때마다 내 계정에 비용이 청구될 수 있어요. 등록하면 AI 기능이 이 키를 먼저 써요.
               {otherPaidNames.length > 0 && ` 이미 등록한 유료 키(${otherPaidNames.join(", ")})도 함께 먼저 써요.`}
@@ -375,9 +392,9 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           <button type="button" className={`${BUTTON} border-transparent text-fg-2 hover:border-line`} onClick={onOpenAdvancedWizard}>
             목록에 없는 서비스 직접 연결
           </button>
-          <a className="inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-accent" href="/settings/api-keys">
+          <SettingsLink className="inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-accent" to="/settings/api-keys">
             이미지·음성 연동 키 <ExternalLink size={14} aria-hidden />
-          </a>
+          </SettingsLink>
         </div>
 
         {outcomes.length > 0 && (
