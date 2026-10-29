@@ -321,6 +321,11 @@ const STUDIO_BRUSH_ENGINE_CAPABILITIES: Readonly<
     // 2026-08-13 wave 3: studio-living-ink-settled-bake-v1 정착 베이크 프로그램을 태우는 2개 레인.
     "living-ink-settled-bake": { families: ["watercolor"], previews: ["soft"], tip: "bristle", texture: "wet-edge", dynamics: "watercolor-pressure" },
     "fluid-feather-bake": { families: ["watercolor"], previews: ["soft"], tip: "sponge", texture: "wet-edge", dynamics: "watercolor-pressure" },
+    // 2026-10-29 WP3: brush/wet-paper 정착 시뮬레이션(MoXi · Curtis · 입자 침전 · 갈필)을 태우는 4개 레인.
+    "moxi-wet-paper-bake": { families: ["watercolor"], previews: ["soft"], tip: "soft-diffuse", texture: "wet-edge", dynamics: "watercolor-pressure" },
+    "curtis-wet-paper-bake": { families: ["watercolor"], previews: ["soft"], tip: "sponge", texture: "wet-edge", dynamics: "watercolor-pressure" },
+    "granulating-wet-paper-bake": { families: ["watercolor"], previews: ["soft"], tip: "sponge", texture: "procedural-grain", dynamics: "watercolor-pressure" },
+    "dry-brush-wet-paper-bake": { families: ["watercolor"], previews: ["soft"], tip: "bristle", texture: "procedural-bristle", dynamics: "watercolor-pressure" },
     // 2026-09-01 Stam fluid wash (pointer-start owns the path; ids stay in watercolor family).
     "stam-fluid-pen": { families: ["watercolor"], previews: ["soft"], tip: "soft-diffuse", texture: "wet-edge", dynamics: "watercolor-pressure" },
     "stam-fluid-water": { families: ["watercolor"], previews: ["soft"], tip: "soft-diffuse", texture: "wet-edge", dynamics: "watercolor-pressure" },
