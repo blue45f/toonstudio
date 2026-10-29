@@ -459,10 +459,11 @@ describe("generated third-party notice inventory", () => {
       join("third_party", "dli-paint", "LICENSE"),
       join("third_party", "croquis-js", "LICENSE-MIT"),
       join("third_party", "klecks", "LICENSE"),
+      join("third_party", "sumi", "LICENSE"),
     ]);
 
     const documents = readEmbeddedFirstPartyPortDocuments();
-    expect(documents).toHaveLength(4);
+    expect(documents).toHaveLength(5);
     for (const document of documents) {
       expect(document.text).toContain("Permission is hereby granted");
       expect(document.text).toContain(
@@ -473,6 +474,8 @@ describe("generated third-party notice inventory", () => {
     expect(documents[1].text).toContain("Copyright (c) 2017 David Li");
     expect(documents[2].text).toContain("JongChan Choi");
     expect(documents[3].text).toContain("bitbof");
+    // Sumi 업스트림 LICENSE 는 저작권 줄이 템플릿 자리 표시자("YOUR NAME")라 MIT 머리글로 고정한다.
+    expect(documents[4].text).toContain("MIT License");
 
     const directory = mkdtempSync(
       join(tmpdir(), "toonstudio-embedded-port-license-test-"),
@@ -585,7 +588,10 @@ describe("generated third-party notice inventory", () => {
       );
       expect(notice).toContain("JongChan Choi");
       expect(notice).toContain(
-        "Klecks brush tip kernel re-implementations",
+        "Klecks brush kernel re-implementations",
+      );
+      expect(notice).toContain(
+        "Sumi bristle map + FS_DAB dry-brush threshold port",
       );
     } finally {
       rmSync(directory, { recursive: true, force: true });

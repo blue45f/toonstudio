@@ -471,12 +471,7 @@ export const EMBEDDED_FIRST_PARTY_PORT_NOTICES = Object.freeze([
   Object.freeze({
     label:
       "croquis.js (@disjukr/croquis-js 0.0.3) capsule pen + pulled-string port — src/domains/creator/studio-croquis-capsule-pen-v1.ts — MIT option of (MIT OR Apache-2.0)",
-    licensePath: join(
-      REPOSITORY_ROOT,
-      "third_party",
-      "croquis-js",
-      "LICENSE-MIT",
-    ),
+    licensePath: join(REPOSITORY_ROOT, "third_party", "croquis-js", "LICENSE-MIT"),
     upstream: "https://github.com/disjukr/croquis.js",
     requiredMarkers: Object.freeze([
       "JongChan Choi",
@@ -488,10 +483,13 @@ export const EMBEDDED_FIRST_PARTY_PORT_NOTICES = Object.freeze([
       "Klecks brush kernel re-implementations — src/domains/creator/studio-oss-brush-kernels.ts, apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts — MIT",
     licensePath: join(REPOSITORY_ROOT, "third_party", "klecks", "LICENSE"),
     upstream: "https://github.com/bitbof/klecks/blob/main/LICENSE",
-    requiredMarkers: Object.freeze([
-      "bitbof",
-      "Permission is hereby granted",
-    ]),
+    requiredMarkers: Object.freeze(["bitbof", "Permission is hereby granted"]),
+  }),
+  Object.freeze({
+    label: "Sumi bristle map + FS_DAB dry-brush threshold port — apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-bristle.ts — MIT",
+    licensePath: join(REPOSITORY_ROOT, "third_party", "sumi", "LICENSE"),
+    upstream: "https://github.com/Aureliaar/sumi/blob/89b8c443b51da133fb7885de1f90e23efddbfb79/LICENSE",
+    requiredMarkers: Object.freeze(["MIT License", "Permission is hereby granted"]),
   }),
 ]);
 
@@ -1969,6 +1967,7 @@ function validateRepositoryPolicy() {
     "third_party/dli-paint/LICENSE",
     "third_party/croquis-js/LICENSE-MIT",
     "third_party/klecks/LICENSE",
+    "https://github.com/Aureliaar/sumi", "third_party/sumi/LICENSE", "studio-wet-paper-bristle.ts",
     "studio-impasto-relief-shading-v1.ts",
     "studio-gpu-bristle-wgsl.ts",
     "studio-croquis-capsule-pen-v1.ts",

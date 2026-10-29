@@ -46,6 +46,7 @@ obscure, or claim ownership of these libraries.
 | dli/paint (Fluid Paint) `brush.js` PBD chain + `splat.frag` + `painting.frag` WGSL port | first-party embedded port, no npm artifact | MIT | <https://github.com/dli/paint> |
 | croquis.js capsule pen + pulled-string port | `@disjukr/croquis-js` 0.0.3, first-party embedded port | (MIT OR Apache-2.0), MIT elected | <https://github.com/disjukr/croquis.js> |
 | Klecks brush kernel re-implementations (brush tips + sketchy/chemy procedural brushes) | first-party embedded kernels, no npm artifact | MIT | <https://github.com/bitbof/klecks> |
+| Sumi bristle map + `FS_DAB` dry-brush threshold port | first-party embedded port (upstream `89b8c443`), no npm artifact | MIT | <https://github.com/Aureliaar/sumi> |
 | `mypaint-brushes` brush settings data (196 `.myb`) | `08da4a48a4b63f2e0f3303942d7c21da8479ea9f`, generated data module | CC0-1.0 (`third_party/mypaint-brushes/COPYING`) | <https://github.com/mypaint/mypaint-brushes> |
 
 Some npm archives do not contain a standalone `LICENSE` file even though their
@@ -99,7 +100,7 @@ local deterministic finite-difference fill-compositor patch: it replaces an
 undefined fragment-quad derivative at translucent fill edges while retaining
 the upstream spectral pigment blend, public API, attribution, and license.
 
-Five natural-media modules embed third-party code ported by hand rather than
+Six natural-media modules embed third-party code ported by hand rather than
 resolved from npm: `src/domains/creator/studio-impasto-relief-shading-v1.ts`
 (CPU port of dli/paint `shaders/painting.frag` and its `paint.js` defaults,
 MIT), `src/domains/creator/render/studio-gpu-bristle-wgsl.ts` (WGSL port of
@@ -109,22 +110,34 @@ dli/paint `brush.js` and its six constraint fragment shaders
 `shaders/splat.frag` and `shaders/painting.frag`, MIT),
 `src/domains/creator/studio-croquis-capsule-pen-v1.ts` (re-typed port of
 croquis.js `brush/simple.ts` and `stabilizer/pulled-string.ts`, dual
-`(MIT OR Apache-2.0)` with the MIT option elected), and
+`(MIT OR Apache-2.0)` with the MIT option elected),
 `src/domains/creator/studio-oss-brush-kernels.ts` (clean re-implementations of
 Klecks brush algorithms that closely follow specific upstream functions, MIT;
 the libmypaint `.myb` recipes it also carries are ISC parameter values covered
-by the libmypaint WASM notice above), and
+by the libmypaint WASM notice above),
 `apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts`
 (re-typed ports of Klecks `src/app/script/klecks/brushes/sketchy-brush.ts`
 `SketchyBrush.goLine` and `chemy-brush.ts` `ChemyBrush.goLine`/`drawShape`, MIT,
 Copyright (c) 2026 bitbof; adapted to seeded hash randomness, a 64-point
 history ring, secondary-colour blending instead of canvas readback, and
-capsule-approximated fills). croquis.js declares its SPDX expression
+capsule-approximated fills), and
+`apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-bristle.ts`
+(re-typed port of Sumi `public/sumi.js` `buildBristleTexture`, `equalize` and
+`pnoise` plus the dry-brush threshold expression of its `FS_DAB` shader, MIT,
+upstream commit `89b8c443b51da133fb7885de1f90e23efddbfb79`; adapted to a
+128×512 map with 64 bristles and 6 clumps, deterministic polynomial
+approximations instead of `Math.sin`/`Math.exp`, and `Float32Array` storage
+with a bilinear sampler instead of WebGL textures). The upstream Sumi
+`LICENSE` still carries the template copyright line `Copyright (c) 2026 YOUR
+NAME`; the copy is kept byte-for-byte so the permission notice is not altered,
+and attribution is given by the repository URL above and
+`third_party/sumi/README.md`. croquis.js declares its SPDX expression
 in `package.json` and README but ships no license text file, so the canonical
 MIT text with upstream author attribution is preserved — the same treatment
 given to `@resvg/resvg-wasm` and `onnxruntime-web` above. The verbatim
 permission notices are checked in at `third_party/dli-paint/LICENSE`,
-`third_party/croquis-js/LICENSE-MIT`, and `third_party/klecks/LICENSE`. The
+`third_party/croquis-js/LICENSE-MIT`, `third_party/klecks/LICENSE`, and
+`third_party/sumi/LICENSE`. The
 release notice generator embeds each of those texts into
 `dist/legal/THIRD_PARTY_NOTICES.generated.md`, and `pnpm run audit:licenses`
 fails if a copy is missing, its permission notice is altered, or this notice
