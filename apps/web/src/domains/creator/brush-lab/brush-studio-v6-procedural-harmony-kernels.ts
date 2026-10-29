@@ -112,7 +112,9 @@ function fur(env: ProceduralEnv): ProceduralKernel {
   const guardLength = env.size * Math.sqrt(clamp(env.t.patternScale, 0.1, 4));
   return createLinkKernel(env, { cap: 41, reachRatio: 2.2, mainOpacity: 0,
     before({ c, sink, thin, pressure }) {
-      // 보호털: 곧은 획에서도 털이 보이도록 획 방향의 수직으로 짧은 털 하나를 세운다.
+      // 보호털: 곧은 획에서도 털이 보이도록 획 방향의 수직으로 짧은 털 하나를 세운다. 방향 없는 첫 접점은 수직을 정할 수
+      // 없으므로 건너뛴다(그 접점의 방향 0 은 자리 표시값이다).
+      if (!c.directional) return;
       const side = hash01(c.index, 7, seed ^ 0x6f0d) < 0.5 ? -1 : 1;
       const angle = c.direction + side * Math.PI / 2 + (hash01(c.index, 11, seed ^ 0x6f0d) - 0.5) * jitter * 1.2;
       const length = guardLength * (0.25 + 0.5 * hash01(c.index, 13, seed ^ 0x6f0d)) * (0.5 + 0.5 * pressure);
@@ -158,7 +160,11 @@ function web(env: ProceduralEnv): ProceduralKernel {
     } });
 }
 
-/** 사각형·원이 공유하는 방출 주기·운동량·방향 프레임. 순간이동 간격이면 운동량을 비우고 즉시 방출한다. */
+/**
+ * 사각형·원이 공유하는 방출 주기·운동량·방향 프레임. 순간이동 간격이면 운동량을 비우고 즉시 방출한다.
+ * 방향 없는 접점(획의 첫 접점, 방향 0 은 자리 표시값)은 프레임을 정하지 않는다. 프레임이 아직 없으면 도형을 미루고
+ * 첫 방향 접점이 그 획 방향으로 프레임을 잡아 바로 방출한다(움직임 없는 탭은 도형을 남기지 않는다).
+ */
 function createCadence(env: ProceduralEnv, every: number) {
   const momentum = new ProceduralMomentum();
   let lastEmit = -Infinity, frame = 0, framed = false, hasPrevious = false, previousX = 0, previousY = 0;
@@ -169,8 +175,12 @@ function createCadence(env: ProceduralEnv, every: number) {
       if (hasPrevious && Math.hypot(c.x - previousX, c.y - previousY) > env.size * 4) { momentum.reset(); framed = false; lastEmit = -Infinity; }
       hasPrevious = true; previousX = c.x; previousY = c.y;
       const speed = momentum.update(c.x, c.y, env.step, 0.18);
-      frame = framed ? followAngle(frame, c.direction, 0.35) : c.direction;
-      framed = true;
+      if (c.directional) {
+        frame = framed ? followAngle(frame, c.direction, 0.35) : c.direction;
+        framed = true;
+      } else if (!framed) {
+        return { emit: false, speed, angle: frame };
+      }
       const emit = c.index - lastEmit >= every;
       if (emit) lastEmit = c.index;
       return { emit, speed, angle: frame };
@@ -241,21 +251,32 @@ function ribbon(env: ProceduralEnv): ProceduralKernel {
     (10 + 90 * unit(env.t.friction)) * (0.45 + 0.55 * i / (count - 1) + 0.5 * hash01(i, 5, seed ^ 0x71b0)));
   // 반암시 오일러가 안정하도록(ω·h < 0.5) 부분 단계 수를 획 시작 때 한 번 정한다.
   const substeps = Math.round(clamp(Math.ceil(dt * Math.sqrt(Math.max(...stiffness)) / 0.5), 1, 8));
-  let initialized = false, dabs = 0;
-  const reset = (): void => { initialized = false; dabs = 0; fx.fill(0); fy.fill(0); vx.fill(0); vy.fill(0); };
+  let initialized = false, dabs = 0, hasStart = false, startX = 0, startY = 0;
+  const reset = (): void => {
+    initialized = false; dabs = 0; hasStart = false; startX = 0; startY = 0;
+    fx.fill(0); fy.fill(0); vx.fill(0); vy.fill(0);
+  };
   return {
-    maxPrimitivesPerDab: count * 2 - 1, retainedStateBytes: fx.byteLength * 4 + 32, reset,
+    maxPrimitivesPerDab: count * 2 - 1, retainedStateBytes: fx.byteLength * 4 + 56, reset,
     deposit(c, sink) {
+      // 방향 없는 접점(획의 첫 접점)으로는 단면 방향을 정할 수 없다. 위치만 기억했다가 첫 방향 접점에서 그 자리에 펼친다.
+      if (!c.directional) {
+        if (!initialized) { hasStart = true; startX = c.x; startY = c.y; }
+        return;
+      }
       const pressure = unit(c.pressure), thin = clamp(env.size * 0.012 * (0.5 + 0.5 * pressure), 0.16, 1.6);
       const nx = -Math.sin(c.direction), ny = Math.cos(c.direction), spread = width * (0.35 + 0.65 * pressure);
       const targetX = (i: number): number => c.x + nx * (i / (count - 1) - 0.5) * spread;
       const targetY = (i: number): number => c.y + ny * (i / (count - 1) - 0.5) * spread;
       if (!initialized || Math.hypot(fx[0] - targetX(0), fy[0] - targetY(0)) > env.size * 4) {
-        for (let i = 0; i < count; i++) { fx[i] = targetX(i); fy[i] = targetY(i); vx[i] = 0; vy[i] = 0; }
-        initialized = true; dabs = 0;
-        // 시작·재시작 단면: 리본 폭 전체를 가로지르는 선 하나.
+        // 획 시작이면 기억한 첫 접점 자리에 펼치고(가까울 때만) 이번 접점 쪽으로 이어서 움직인다. 재시작은 이 자리에서 펼친다.
+        const fromStart = !initialized && hasStart && Math.hypot(startX - c.x, startY - c.y) <= env.size * 4;
+        const shiftX = fromStart ? startX - c.x : 0, shiftY = fromStart ? startY - c.y : 0;
+        for (let i = 0; i < count; i++) { fx[i] = targetX(i) + shiftX; fy[i] = targetY(i) + shiftY; vx[i] = 0; vy[i] = 0; }
+        initialized = true; dabs = 0; hasStart = false;
+        // 시작·재시작 단면: 리본 폭 전체를 획 방향의 수직으로 가로지르는 선 하나.
         sink.line(fx[0], fy[0], fx[count - 1], fy[count - 1], thin, 0.5, 0.5);
-        return;
+        if (!fromStart) return;
       }
       const h = dt / substeps, decay = Math.exp(-damping * h), limit = env.size * 8;
       for (let i = 0; i < count; i++) {

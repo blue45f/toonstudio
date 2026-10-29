@@ -7,7 +7,8 @@ import {
   type BrushStudioV6Program, type BrushStudioV6Tuning,
 } from "./brush-studio-v6-engine";
 import { brushStudioV6ProviderManifestForNode } from "./brush-studio-v6-license-profile";
-import { createBrushStudioV6MaterialStroke } from "./brush-studio-v6-material-engine";
+import { brushStudioV6Node } from "./brush-studio-v6-engine";
+import { brushStudioV6MaterialNodeExecution, createBrushStudioV6MaterialStroke } from "./brush-studio-v6-material-engine";
 import {
   brushStudioV6CellGridSize, brushStudioV6HatchingAngle, brushStudioV6HatchingSeparation,
 } from "./brush-studio-v6-procedural-concept-kernels";
@@ -25,12 +26,12 @@ const GOLDEN: Readonly<Record<string, string>> = {
   "harmony-sketchy": "11c09d7bdde068b5e1f04ef357d38222867c62201473afd9713ad7abc3816efd",
   "harmony-shaded": "733f95b5b8b302e57efb978572295f5fa7beef1b6bda31be160bf205f7f33d0e",
   "harmony-chrome": "69a3808bd0596c85722a59326253c6709e69e4e2970b17882d0f8b3a502148ce",
-  "harmony-fur": "bd0ddfc8433979cdbe8bed6cda720af06ad6715a28eb3ae81248dc2368162cc5",
+  "harmony-fur": "bab98d26cf0db2553562f0a9251d64141825a6073c80ef9c05f7cca2a5fa4eda",
   "harmony-longfur": "f9ff6790e0a5d5021a761c3bd83d3686d10cbc01f6535c0e9ab294edde1d9f48",
   "harmony-web": "dcf6c7ab2c07bc77b5185dfd84c3793086abd11182f269b257ecb344b038903c",
-  "harmony-squares": "60a669b3a1aacfea1313f747474b1b53d200701273107887e714d11f9526a506",
-  "harmony-ribbon": "975184ced53c007d87263c7a4b7ee8f8bbb51b392b9c6de55b0b327b34d78c18",
-  "harmony-circles": "28040c91f6929cf5992df883808391a267367fa03cc7367308638c8b79d13364",
+  "harmony-squares": "9e2ba3bc4a240bdc093a6e5abf6cec4bd2fc293d767c22db0631d001f4be35c7",
+  "harmony-ribbon": "37f56e10941bf8334461d5444ea429d1f85b7730bce13d35a9f7d4751bac2539",
+  "harmony-circles": "7f1909b8be93758f14600239fd7d3296082171a2e583b1434e5ceb10c29b5032",
   "harmony-grid": "58e0e6d8f16a5388e658ae3f7ba5b4ede0ef2f99d5393de186a6300a8c3eddee",
   "klecks-sketchy": "d0bbaec06b28cdbe984593d4233bd44a1245007abf5819b11de9cf51f4df0a02",
   "klecks-chemy": "25a416ffdbb9c39f705348c6659fb81635c178e89a6af27ae53f0c3ff96a9cd9",
@@ -143,9 +144,14 @@ describe("절차 브러시 계열 등록과 제품 노출", () => {
         expect(manifest).toMatchObject({ id: "klecks-procedural-port-v1", rights: "permissive", integration: "connected" });
         expect(manifest.license).toContain("MIT");
         expect(entry.rights).toBe("permissive");
+        // Workbench 의 제공자·실행 표기도 영수증과 같은 호환 이식 기록을 따른다(내부 네이티브 커널로 보이지 않는다).
+        expect(brushStudioV6Node(entry.id).provider).toBe(manifest.label);
+        expect(brushStudioV6MaterialNodeExecution(entry.id)).toBe("adapter");
       } else {
         expect(manifest.id, entry.id).toBe("toonstudio-cpu-contact-v2");
         expect(entry.rights).toBeUndefined();
+        expect(brushStudioV6Node(entry.id).provider).toBe("ToonStudio CPU Topology");
+        expect(brushStudioV6MaterialNodeExecution(entry.id)).toBe("native");
       }
     }
   });
@@ -423,5 +429,62 @@ describe("레시피 기본값", () => {
     const program = createBrushStudioV6Program(id), entry = topologyFor(id);
     for (const [key, value] of Object.entries(entry.tuning)) expect(program.tuning[key as keyof BrushStudioV6Tuning], `${id}.${key}`).toBe(value);
     expect(program.slots).toMatchObject({ motion: "motion-direct", carrier: entry.id, surface: "surface-kent", pigment: "pigment-spectral" });
+  });
+});
+
+describe("방향 없는 첫 접점(재료 엔진의 첫 덥 — 방향 0 은 자리 표시값)", () => {
+  /** 첫 접점은 방향 없이, 나머지는 direction 쪽으로 step 간격으로 곧게 나아가는 접점 열. */
+  function straight(program: BrushStudioV6Program, direction: number, count = 24): BrushTopologyContact[] {
+    const step = stepFor(program), size = Math.max(1, Math.min(240, program.tuning.size));
+    return Array.from({ length: count }, (_, index) => ({
+      x: 400 + Math.cos(direction) * step * index, y: 400 + Math.sin(direction) * step * index,
+      pressure: 0.7, direction: index === 0 ? 0 : direction, index, radius: size * 0.36,
+      directional: index > 0, discontinuity: false,
+    }));
+  }
+
+  it.each([["아래", Math.PI / 2], ["왼쪽", Math.PI], ["대각선", -Math.PI / 4]] as const)(
+    "하모니 리본은 %s 방향 획의 시작 단면을 획 시작 자리에 수직으로 긋고 가닥 순서를 뒤집지 않는다", (_label, direction) => {
+      const program = programFor("harmony-ribbon", { patternJitter: 0 });
+      const { dabs } = run(program, straight(program, direction));
+      expect(dabs[0]).toHaveLength(0);
+      const cap = dabs[1]![0]!;
+      expect(parallel(cap.angle, direction + Math.PI / 2)).toBe(true);
+      expect(Math.hypot(cap.x - 400, cap.y - 400)).toBeLessThan(1e-6);
+      // 가닥(불투명도 0.7, mix = i/(n−1))의 끝점은 획 법선 쪽으로 i 순서대로 놓인다(X 자 꼬임 없음).
+      const nx = -Math.sin(direction), ny = Math.cos(direction);
+      for (const dab of dabs.slice(2, 8)) {
+        const along = dab.filter((p) => p.opacity === 0.7).sort((a, b) => a.mix - b.mix)
+          .map((p) => ends(p)[1][0] * nx + ends(p)[1][1] * ny);
+        expect(along.length).toBeGreaterThan(3);
+        for (let i = 1; i < along.length; i++) expect(along[i]!).toBeGreaterThan(along[i - 1]!);
+      }
+    });
+
+  it("하모니 사각형은 첫 방향 접점부터 획 방향으로 돈 사각형만 낸다(0° 에서 따라오지 않는다)", () => {
+    const direction = Math.PI / 4;
+    const program = programFor("harmony-squares", { patternJitter: 0 });
+    const { dabs } = run(program, straight(program, direction));
+    expect(dabs[0]).toHaveLength(0);
+    expect(dabs[1]!.length).toBeGreaterThan(0);
+    for (const edge of dabs.flat()) {
+      const offset = modulo(edge.angle - direction, Math.PI / 2);
+      expect(Math.min(offset, Math.PI / 2 - offset)).toBeLessThan(1e-9);
+    }
+  });
+
+  it("하모니 원은 방향 없는 첫 접점에서 도형을 미루고 첫 방향 접점에서 낸다", () => {
+    const program = programFor("harmony-circles", { patternJitter: 0 });
+    const { dabs } = run(program, straight(program, 0.3));
+    expect(dabs[0]).toHaveLength(0);
+    expect(dabs[1]!.length).toBeGreaterThan(0);
+  });
+
+  it("하모니 털은 방향 없는 첫 접점에 보호털을 세우지 않고, 방향 접점의 보호털은 획에 수직이다", () => {
+    const direction = Math.PI / 2;
+    const program = programFor("harmony-fur", { patternJitter: 0 });
+    const { dabs } = run(program, straight(program, direction));
+    expect(dabs[0]).toHaveLength(0);
+    expect(parallel(dabs[1]![0]!.angle, direction + Math.PI / 2)).toBe(true);
   });
 });

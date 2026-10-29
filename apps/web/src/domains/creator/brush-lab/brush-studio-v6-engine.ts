@@ -97,8 +97,10 @@ const LABELS: Readonly<Record<string, string>> = Object.freeze({
 
 function labelFor(id: string): string { return brushStudioV6Topology(id)?.label ?? brushStudioV7AdvancedSurface(id)?.label ?? LABELS[id] ?? id.replace(/^(deposit|surface|carrier|motion|tip|physics|pattern|finish|pigment|pickup|output)-/u, "").split("-").map((part) => part[0]?.toUpperCase() + part.slice(1)).join(" "); }
 function providerFor(id: string): string {
-  if (brushStudioV6Topology(id)) return "ToonStudio CPU Topology";
-  return brushStudioV6ProviderManifestForNode(id)?.label ?? "Unregistered provider";
+  const manifest = brushStudioV6ProviderManifestForNode(id);
+  // 위상 노드라도 외부 코드 이식으로 명시 배정됐으면(Klecks 등) 그 제공자 이름을 보인다.
+  if (brushStudioV6Topology(id) && (!manifest || manifest.id === "toonstudio-cpu-contact-v2")) return "ToonStudio CPU Topology";
+  return manifest?.label ?? "Unregistered provider";
 }
 function ports(slot: BrushStudioV6Slot): readonly [readonly BrushStudioV6PortType[], readonly BrushStudioV6PortType[]] {
   const map: Record<BrushStudioV6Slot, readonly [readonly BrushStudioV6PortType[], readonly BrushStudioV6PortType[]]> = {
