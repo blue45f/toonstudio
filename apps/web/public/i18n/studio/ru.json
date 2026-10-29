@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Сепия/Дуотон",
   "studio.mainMenu.item.filter.noise-add": "Добавить шум",
   "studio.mainMenu.item.filter.last-filter": "Открыть последний фильтр заново",
+  "studio.mainMenu.item.filter.filter-gallery": "Галерея фильтров…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Вы не можете изменить режим цветового зрения, пока переход вида заблокирован.",
   "studio.mainMenu.item.draw.pen": "ручка",
   "studio.mainMenu.item.draw.eraser": "ластик",

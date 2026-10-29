@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Màu nâu đỏ / Hai tông màu",
   "studio.mainMenu.item.filter.noise-add": "Thêm tiếng ồn",
   "studio.mainMenu.item.filter.last-filter": "Mở lại bộ lọc cuối cùng",
+  "studio.mainMenu.item.filter.filter-gallery": "Thư viện bộ lọc…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Bạn không thể thay đổi chế độ nhìn màu trong khi quá trình chuyển đổi chế độ xem bị khóa.",
   "studio.mainMenu.item.draw.pen": "cây bút",
   "studio.mainMenu.item.draw.eraser": "cục tẩy",

@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Szépia / Duotone",
   "studio.mainMenu.item.filter.noise-add": "Zaj hozzáadása",
   "studio.mainMenu.item.filter.last-filter": "Nyissa meg újra az utolsó szűrőt",
+  "studio.mainMenu.item.filter.filter-gallery": "Szűrőtár…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Ha a nézetátmenet zárolva van, nem módosíthatja a színes látásmódot.",
   "studio.mainMenu.item.draw.pen": "toll",
   "studio.mainMenu.item.draw.eraser": "radír",

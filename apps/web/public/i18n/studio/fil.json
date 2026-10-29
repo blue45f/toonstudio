@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duotono",
   "studio.mainMenu.item.filter.noise-add": "Magdagdag ng ingay",
   "studio.mainMenu.item.filter.last-filter": "Muling buksan ang huling filter",
+  "studio.mainMenu.item.filter.filter-gallery": "Gallery ng Filter…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Hindi mo maaaring baguhin ang color vision mode habang naka-lock ang view transition.",
   "studio.mainMenu.item.draw.pen": "panulat",
   "studio.mainMenu.item.draw.eraser": "pambura",

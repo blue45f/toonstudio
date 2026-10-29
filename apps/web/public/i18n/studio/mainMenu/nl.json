@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duotoon",
   "studio.mainMenu.item.filter.noise-add": "Voeg ruis toe",
   "studio.mainMenu.item.filter.last-filter": "Open het laatste filter opnieuw",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtergalerie…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "U kunt de kleurvisiemodus niet wijzigen terwijl de weergaveovergang is vergrendeld.",
   "studio.mainMenu.item.draw.pen": "pen",
   "studio.mainMenu.item.draw.eraser": "gum",

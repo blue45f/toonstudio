@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duoton",
   "studio.mainMenu.item.filter.noise-add": "Adăugați zgomot",
   "studio.mainMenu.item.filter.last-filter": "Redeschide ultimul filtru",
+  "studio.mainMenu.item.filter.filter-gallery": "Galerie de filtre…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Nu puteți schimba modul de vizualizare a culorilor în timp ce tranziția de vizualizare este blocată.",
   "studio.mainMenu.item.draw.pen": "stilou",
   "studio.mainMenu.item.draw.eraser": "radieră",

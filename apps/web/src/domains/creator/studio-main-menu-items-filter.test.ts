@@ -96,7 +96,7 @@ const BASE_STATE: StudioMainMenuBuilderState = {
 };
 
 /** Rows that open a filter dialog — everything except 마지막 필터 and the two layer adjustments. */
-const NON_FILTER_ROW_IDS = new Set(["last-filter", "levels", "tone-curve"]);
+const NON_FILTER_ROW_IDS = new Set(["last-filter", "filter-gallery", "levels", "tone-curve"]);
 const PURPOSE_ORDERED_KINDS = STUDIO_FILTER_DIALOG_GROUP_ORDER.flatMap((group) =>
   STUDIO_FILTER_DIALOG_CATALOG.filter((entry) => entry.group === group).map((entry) => entry.kind),
 );

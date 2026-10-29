@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "セピア/デュオトーン",
   "studio.mainMenu.item.filter.noise-add": "ノイズを追加する",
   "studio.mainMenu.item.filter.last-filter": "最後のフィルタを再度開く",
+  "studio.mainMenu.item.filter.filter-gallery": "フィルターギャラリー…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "変換がロックされている間は色覚モードを変更できません。",
   "studio.mainMenu.item.draw.pen": "ペン",
   "studio.mainMenu.item.draw.eraser": "消しゴム",

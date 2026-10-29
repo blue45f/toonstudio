@@ -13,18 +13,13 @@ import { Sepia } from "konva/lib/filters/Sepia";
 
 import { inkWashKonvaFilter, normalizeInkWash, isIdentityInkWash } from "../brush/studio-ink-wash";
 import {
-  glitchFxKonvaFilter,
-  isIdentityGlitchFx,
-  isIdentityVignetteFx,
-  normalizeGlitchFx,
-  normalizeVignetteFx,
-  vignetteFxKonvaFilter,
+  activeStudioFilterGalleryStack, serializeStudioFilterGalleryStack, studioFilterGalleryKonvaFilter,
+} from "../filter/gallery/studio-filter-gallery-engine";
+import {
+  glitchFxKonvaFilter, isIdentityGlitchFx, isIdentityVignetteFx, normalizeGlitchFx, normalizeVignetteFx, vignetteFxKonvaFilter,
 } from "../filter/studio-filter-pack";
 import {
-  isIdentityStudioFilterUnionWave,
-  normalizeStudioFilterUnionWave,
-  studioFilterUnionWaveKonvaFilter,
-  type StudioFilterUnionWave,
+  isIdentityStudioFilterUnionWave, normalizeStudioFilterUnionWave, studioFilterUnionWaveKonvaFilter, type StudioFilterUnionWave,
 } from "../filter/studio-filter-union-wave";
 import {
   listEnabledStudioAdjustmentOperations,
@@ -660,6 +655,7 @@ export function registerStudioKonvaFilters(konva: KonvaLike): void {
   F.GlitchFx = glitchFxKonvaFilter;
   F.VignetteFx = vignetteFxKonvaFilter;
   F.FilterUnionWave = studioFilterUnionWaveKonvaFilter;
+  F.FilterGallery = studioFilterGalleryKonvaFilter;
 }
 
 /** 활성 보정이 하나라도 있으면 true (캐시 on/off 판단용). */
@@ -713,6 +709,7 @@ export function hasActiveImageFilters(el: ImageFilterFields): boolean {
     hasActiveGlitchFx(el) ||
     hasActiveVignetteFx(el) ||
     activeFilterUnionWave(el) !== null ||
+    activeStudioFilterGalleryStack(el) !== null ||
     hasActiveSmartFilterProgram(el) ||
     hasActiveColorToAlpha(el) ||
     isActiveNumber(el.saturation) ||
@@ -1196,6 +1193,9 @@ export function buildImageFilters(
     attrs.vignetteRoundness = vf.roundness;
     attrs.vignetteFeather = vf.feather;
   }
+  // 필터 갤러리 — 다른 보정이 모두 끝난 결과 위에 쌓는 양식화 스택(테두리 직전). attrs 는 직렬화 문자열 하나다.
+  const filterGallery = activeStudioFilterGalleryStack(el);
+  if (filterGallery) { filters.push(F.FilterGallery!); attrs.filterGallery = serializeStudioFilterGalleryStack(filterGallery); }
   let cachePad = 0;
   if (hasActiveOutline(el)) {
     filters.push(F.Outline!);

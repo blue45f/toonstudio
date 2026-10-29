@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Seepia / Duuotone",
   "studio.mainMenu.item.filter.noise-add": "Lisää melua",
   "studio.mainMenu.item.filter.last-filter": "Avaa viimeinen suodatin uudelleen",
+  "studio.mainMenu.item.filter.filter-gallery": "Suodingalleria…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Et voi vaihtaa värikuvatilaa, kun näkymän siirtymä on lukittu.",
   "studio.mainMenu.item.draw.pen": "kynä",
   "studio.mainMenu.item.draw.eraser": "pyyhekumi",

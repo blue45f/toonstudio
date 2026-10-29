@@ -664,7 +664,7 @@ export function studioFilterGroupLabel(group: StudioFilterCatalogGroup): string 
 }
 
 type StudioFilterDialogCatalogSource = {
-  kind: StudioFilterKind;
+  kind: Exclude<StudioFilterKind, "filter-gallery">; // 필터 갤러리는 단일 필터 카탈로그 밖의 효과 스택 대화상자다.
   engine?: string;
   preview: StudioFilterPreviewKind;
   fallback?: Omit<StudioFilterCatalogEntry, "engine">;

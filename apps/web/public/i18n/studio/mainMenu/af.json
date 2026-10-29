@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duotoon",
   "studio.mainMenu.item.filter.noise-add": "Voeg geraas by",
   "studio.mainMenu.item.filter.last-filter": "Heropen laaste filter",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtergalery…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Jy kan nie kleurvisiemodus verander terwyl die aansigoorgang gesluit is nie.",
   "studio.mainMenu.item.draw.pen": "pen",
   "studio.mainMenu.item.draw.eraser": "uitveër",

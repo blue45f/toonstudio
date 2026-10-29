@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / To-tone",
   "studio.mainMenu.item.filter.noise-add": "Tilføj støj",
   "studio.mainMenu.item.filter.last-filter": "Åbn sidste filter igen",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtergalleri…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Du kan ikke ændre farvesynstilstand, mens visningsovergangen er låst.",
   "studio.mainMenu.item.draw.pen": "pen",
   "studio.mainMenu.item.draw.eraser": "viskelæder",

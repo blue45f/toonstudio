@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "Сепиа / Дуотоне",
   "studio.mainMenu.item.filter.noise-add": "Додајте буку",
   "studio.mainMenu.item.filter.last-filter": "Поново отворите последњи филтер",
+  "studio.mainMenu.item.filter.filter-gallery": "Галерија филтера…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Не можете да промените режим вида у боји док је прелаз погледа закључан.",
   "studio.mainMenu.item.draw.pen": "перо",
   "studio.mainMenu.item.draw.eraser": "гумица",

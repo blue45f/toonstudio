@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "Sepia / Duoton",
   "studio.mainMenu.item.filter.noise-add": "Lägg till brus",
   "studio.mainMenu.item.filter.last-filter": "Öppna det sista filtret igen",
+  "studio.mainMenu.item.filter.filter-gallery": "Filtergalleri…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "Du kan inte ändra färgseendeläge medan vyövergången är låst.",
   "studio.mainMenu.item.draw.pen": "penna",
   "studio.mainMenu.item.draw.eraser": "suddgummi",

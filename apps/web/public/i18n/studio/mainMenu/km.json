@@ -202,6 +202,7 @@
   "studio.mainMenu.item.filter.duotone": "សេពីយ៉ា / ឌូអូតូន",
   "studio.mainMenu.item.filter.noise-add": "បន្ថែមសំលេងរំខាន",
   "studio.mainMenu.item.filter.last-filter": "បើកតម្រងចុងក្រោយឡើងវិញ",
+  "studio.mainMenu.item.filter.filter-gallery": "វិចិត្រសាលតម្រង…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "អ្នក​មិន​អាច​ផ្លាស់ប្ដូរ​ទម្រង់​ទិដ្ឋភាព​ពណ៌​បាន​ទេ ខណៈ​ពេល​ដែល​ការ​ផ្លាស់ប្ដូរ​ទិដ្ឋភាព​ត្រូវ​បាន​ចាក់សោ។",
   "studio.mainMenu.item.draw.pen": "ប៊ិច",
   "studio.mainMenu.item.draw.eraser": "ជ័រលុប",

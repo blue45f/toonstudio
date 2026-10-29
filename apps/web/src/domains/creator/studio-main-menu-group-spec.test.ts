@@ -176,14 +176,16 @@ describe("§15.3 menu group spec", () => {
     // The command bar wave moved Window ▸ Action Bar from absent to partial: the
     // menubar strip is user-configurable (8 slots) with a visibility toggle, but
     // drag reordering and separators are still missing, so it is not "present".
+    // 2026-10-29: 필터 갤러리 대화상자(filter/filter-gallery)가 Filter ▸ Filter Gallery 를 absent → partial 로
+    // 옮겼다. 효과 스택·미리보기는 있지만 겹별 썸네일 미리보기와 사용자 프리셋 저장은 아직 없다.
     expect(studioMenuSpecCoverageSummary()).toEqual({
       specGroups: 17,
       groupsWithItems: 17,
       emptyGroupIds: [],
       specRows: 137,
       rowsPresent: 39,
-      rowsPartial: 37,
-      rowsAbsent: 61,
+      rowsPartial: 38,
+      rowsAbsent: 60,
       // 2026-08-20: CSP 경계 효과(layer/border-effect)도 §15.3 행이 없어 extras(37 → 38).
       // 2026-08-27: View 중복이던 검수·미리보기 3종과 창 그룹의 앱 설정 두 번째
       // 진입점 extras 를 제거했다(40 → 36) — 단일 행은 Animation/Comic 그룹과
@@ -251,8 +253,9 @@ describe("§15.3 menu group spec", () => {
     expect(missing).not.toContain("Animation ▸ Timeline");
     expect(missing).not.toContain("Collaboration ▸ Share/Permission");
     expect(missing).not.toContain("Comic & Story ▸ Animatic");
-    expect(missing).toContain("Filter ▸ Filter Gallery");
     expect(missing).toContain("Animation ▸ State Machine");
+    // 필터 갤러리 대화상자(효과 스택)가 이 행을 부분 구현으로 닫았다.
+    expect(missing).not.toContain("Filter ▸ Filter Gallery");
     // Wave D closed these three partially, so they must no longer read as absent.
     expect(missing).not.toContain("Layer ▸ Mask/Clipping");
     expect(missing).not.toContain("Transform ▸ Scale/Rotate/Skew/Perspective");

@@ -1032,6 +1032,7 @@
   "studio.mainMenu.item.filter.duotone": "ເຊເປຍ / ດູໂອໂທນ",
   "studio.mainMenu.item.filter.noise-add": "ເພີ່ມສິ່ງລົບກວນ",
   "studio.mainMenu.item.filter.last-filter": "ເປີດຕົວກັ່ນຕອງຫຼ້າສຸດຄືນໃໝ່",
+  "studio.mainMenu.item.filter.filter-gallery": "ຄັງຕົວກອງ…",
   "studio.mainMenu.item.filter.color-vision.unavailable": "ທ່ານບໍ່ສາມາດປ່ຽນໂໝດວິໄສທັດສີໄດ້ ໃນຂະນະທີ່ການປ່ຽນມຸມມອງຖືກລັອກ.",
   "studio.mainMenu.item.draw.pen": "ປາກກາ",
   "studio.mainMenu.item.draw.eraser": "ຢາງລົບ",
