@@ -3,7 +3,7 @@ import { StrictMode } from "react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readStudioProjectLibrary } from "../studio-project-library-store";
+import { createStudioProject, readStudioProjectLibrary } from "../studio-project-library-store";
 import { readStudioProjectDocuments } from "../studio-project-document-store";
 import { StudioQuickStart } from "./StudioQuickStart";
 
@@ -61,4 +61,33 @@ describe("StudioQuickStart", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start drawing" }));
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);
   });
+});
+
+it("시작 화면 카드도 한 번의 클릭으로 새 그림을 열고 기존 작품을 보존한다", () => {
+  const existing = createStudioProject(window.localStorage, { id: "existing", title: "이어 그릴 작품", kind: "webtoon" });
+  render(<StrictMode><MemoryRouter initialEntries={["/create"]}>
+    <StudioQuickStart locale="ko" presentation="drawing-card" /><LocationProbe />
+  </MemoryRouter></StrictMode>);
+  const button = screen.getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/u });
+  button.focus();
+  expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);
+  fireEvent.click(button);
+  fireEvent.click(button);
+  const projects = readStudioProjectLibrary(window.localStorage).projects;
+  expect(projects).toHaveLength(2);
+  expect(projects.find((project) => project.id === existing.id)).toEqual(existing);
+  const next = projects.find((project) => project.id !== existing.id);
+  expect(next).toMatchObject({ kind: "illustration", templateId: "quick-sketch" });
+  expect(screen.getByLabelText("location").textContent).toContain("uiMode=focus&startTool=draw");
+});
+
+
+it("시작 카드에서 선택한 언어를 새 프로젝트에 보존한다", () => {
+  render(<StrictMode><MemoryRouter initialEntries={["/create"]}>
+    <StudioQuickStart locale="ja" presentation="drawing-card" /><LocationProbe />
+  </MemoryRouter></StrictMode>);
+  fireEvent.click(screen.getByRole("button"));
+  const projects = readStudioProjectLibrary(window.localStorage).projects;
+  expect(projects).toHaveLength(1);
+  expect(projects[0]?.primaryLocale).toBe("ja");
 });
