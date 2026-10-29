@@ -234,6 +234,28 @@ export function buildKraTileFile(options: KraTileFileOptions): Uint8Array {
   return out;
 }
 
+export interface KraMaskTile {
+  /** 마스크 로컬 픽셀 좌표(64의 배수). */
+  readonly x: number;
+  readonly y: number;
+  /** 타일의 값 4096개(행 우선)나 (타일 안 x, y) → 값 함수. */
+  readonly values: Uint8Array | ((x: number, y: number) => number);
+}
+
+/** 마스크 타일 파일(`PIXELSIZE 1`). 픽셀이 1바이트라 평면 배치와 픽셀 순서 배치가 같다. */
+export function buildKraMaskTileFile(tiles: readonly KraMaskTile[], mode: "auto" | "lzf" | "raw" = "auto"): Uint8Array {
+  return buildKraTileFile({
+    pixelBytes: 1,
+    tiles: tiles.map((tile) => {
+      const values =
+        typeof tile.values === "function"
+          ? Uint8Array.from({ length: 64 * 64 }, (_, index) => (tile.values as (x: number, y: number) => number)(index % 64, Math.floor(index / 64)) & 0xff)
+          : tile.values;
+      return { x: tile.x, y: tile.y, payload: kraTilePayload(values, 1, mode) };
+    }),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 문서
 // ---------------------------------------------------------------------------
@@ -242,6 +264,10 @@ export interface KraFixtureMask {
   readonly nodetype: string;
   readonly name: string;
   readonly attrs?: Readonly<Record<string, string | null>>;
+  /** `<filename>.pixelselection` 내용(마스크 타일 파일). 생략하면 값 항목을 만들지 않는다. */
+  readonly valuesFile?: Uint8Array;
+  /** `….pixelselection.defaultpixel` 내용. `valuesFile`이 있을 때 생략하면 `[0]`, null이면 항목을 만들지 않는다. */
+  readonly defaultValue?: Uint8Array | null;
 }
 
 export interface KraFixtureLayer {
@@ -358,7 +384,7 @@ export function buildKraFixtureDetailed(options: KraFixtureOptions): KraBuiltFix
       const masks = layer.masks.map((mask) => {
         const maskNumber = nextFile;
         nextFile += 1;
-        const maskAttributes = attributeText({
+        const attributes: Record<string, string | null> = {
           x: "0",
           y: "0",
           intimeline: "0",
@@ -370,8 +396,19 @@ export function buildKraFixtureDetailed(options: KraFixtureOptions): KraBuiltFix
           filename: `mask${maskNumber}`,
           uuid: `{00000000-0000-4000-8000-${String(maskNumber).padStart(12, "0")}}`,
           ...mask.attrs,
-        });
-        return `${indent}  <mask ${maskAttributes}/>`;
+        };
+        if (mask.valuesFile !== undefined) {
+          const dataName = attributes["filename"] ?? `mask${maskNumber}`;
+          layerEntries.push({ path: `${imageName}/layers/${dataName}.pixelselection`, data: mask.valuesFile, method: 8 });
+          if (mask.defaultValue !== null) {
+            layerEntries.push({
+              path: `${imageName}/layers/${dataName}.pixelselection.defaultpixel`,
+              data: mask.defaultValue ?? Uint8Array.of(0),
+              method: 8,
+            });
+          }
+        }
+        return `${indent}  <mask ${attributeText(attributes)}/>`;
       });
       inner.push(`${indent} <masks>`, ...masks, `${indent} </masks>`);
     }

@@ -4,17 +4,26 @@
  *
  * 속성 이름과 값 형식은 Krita 5.2.2 산출물을 관찰한 사실이다: 불리언은 `"0"`/`"1"`, `opacity`는 0~255 정수,
  * `nodetype`은 `paintlayer`·`grouplayer`·`clonelayer`·`shapelayer`·`filelayer`·`adjustmentlayer`(필터 레이어)이고
- * 마스크는 `transparencymask`·`selectionmask`·`filtermask`·`colorizemask`·`transformmask`다. 속성이 없을 때의
- * 기본값(보임, 잠금 없음, 불투명)은 관찰한 적이 없는 가정이다.
+ * 마스크는 `transparencymask`·`selectionmask`·`filtermask`·`colorizemask`·`transformmask`다. 마스크도 레이어처럼 `x`·`y` 오프셋을
+ * 갖는다(마스크 노드를 옮기면 0이 아니게 되고, 값 파일의 타일 좌표는 마스크 로컬이다). 속성이 없을 때의 기본값(보임, 잠금 없음,
+ * 불투명)은 관찰한 적이 없는 가정이다.
  */
 
 import { isObservedKraCompositeOp } from "./kra-composite-ops";
 import { clipForMessage, type KraIssueList } from "./kra-issues";
+import { hasKraMaskValues } from "./kra-masks";
 
 import type { KraMaindocNode } from "./kra-maindoc";
 import type { KraLayer, KraMask, KraNodeKind } from "./kra-types";
 
-export type KraLayerDraft = Omit<KraLayer, "extent" | "defaultPixel" | "tileCount" | "pixels">;
+/** 값을 읽기 전의 마스크. `x`·`y`가 올바르지 않으면 `placementValid`가 false이고 값을 배치하지 않는다. */
+export interface KraMaskDraft extends Omit<KraMask, "extent" | "defaultValue" | "tileCount" | "values"> {
+  readonly placementValid: boolean;
+}
+
+export interface KraLayerDraft extends Omit<KraLayer, "extent" | "defaultPixel" | "tileCount" | "pixels" | "masks"> {
+  readonly masks: readonly KraMaskDraft[];
+}
 
 export interface KraNodeIssues {
   readonly warnings: KraIssueList;
@@ -58,21 +67,53 @@ function readInteger(
   return value;
 }
 
+/** 오프셋 문자열을 정수로. 속성이 없으면 0, 정수가 아니거나 ±2^31을 넘으면 null이다. */
+function parseOffset(raw: string | undefined): number | null {
+  if (raw === undefined) return 0;
+  const value = /^-?\d+$/u.test(raw) ? Number(raw) : Number.NaN;
+  return Number.isSafeInteger(value) && Math.abs(value) <= OFFSET_LIMIT ? value : null;
+}
+
 /** 오프셋은 값이 틀리면 null이다. 엉뚱한 곳에 그리느니 그 레이어의 픽셀을 배치하지 않는다. */
 function readOffset(attributes: Readonly<Record<string, string>>, key: string, issues: KraNodeIssues, where: string): number | null {
   const raw = attributes[key];
-  if (raw === undefined) return 0;
-  const value = /^-?\d+$/u.test(raw) ? Number(raw) : Number.NaN;
-  if (!Number.isSafeInteger(value) || Math.abs(value) > OFFSET_LIMIT) {
+  const value = parseOffset(raw);
+  if (value === null) {
     issues.unsupported.add(
       "semantic",
       "kra-layer-offset-invalid",
-      `${key}="${clipForMessage(raw)}"가 ±${OFFSET_LIMIT} 범위의 정수가 아니라 이 레이어의 픽셀을 배치하지 않는다`,
+      `${key}="${clipForMessage(raw ?? "")}"가 ±${OFFSET_LIMIT} 범위의 정수가 아니라 이 레이어의 픽셀을 배치하지 않는다`,
       where,
     );
-    return null;
   }
   return value;
+}
+
+/**
+ * 마스크의 오프셋. 값 파일을 가진 마스크(`strict`)는 `x`·`y` 중 틀린 것이 있으면 마스크 하나당 진단 하나를 남기고 값을 배치하지 않는다. 값 파일이
+ * 없는 마스크는 읽을 값이 없으므로 진단 없이 틀린 값을 0으로 본다.
+ */
+function readMaskOffsets(
+  attributes: Readonly<Record<string, string>>,
+  issues: KraNodeIssues,
+  where: string,
+  subject: string,
+  strict: boolean,
+): { readonly x: number; readonly y: number; readonly valid: boolean } {
+  const x = parseOffset(attributes["x"]);
+  const y = parseOffset(attributes["y"]);
+  if (strict && (x === null || y === null)) {
+    const invalid = (["x", "y"] as const)
+      .filter((key) => parseOffset(attributes[key]) === null)
+      .map((key) => `${key}="${clipForMessage(attributes[key] ?? "")}"`);
+    issues.unsupported.add(
+      "semantic",
+      "kra-mask-offset-invalid",
+      `${subject}의 ${invalid.join(", ")}가 ±${OFFSET_LIMIT} 범위의 정수가 아니라 이 마스크의 값을 배치하지 않는다`,
+      where,
+    );
+  }
+  return { x: x ?? 0, y: y ?? 0, valid: x !== null && y !== null };
 }
 
 /** 불투명도는 0~255 정수로 적히지만 소수 표기도 받아 반올림한다. 범위를 벗어나면 가까운 끝으로 맞춘다. */
@@ -96,16 +137,19 @@ function kindOf(nodeType: string): KraNodeKind {
   return "other";
 }
 
-function toMask(node: KraMaindocNode, issues: KraNodeIssues, where: string): KraMask {
+function toMask(node: KraMaindocNode, issues: KraNodeIssues, where: string): KraMaskDraft {
   const attributes = node.attributes;
   const nodeType = attributes["nodetype"] ?? "";
   const name = attributes["name"] ?? "";
+  const subject = `마스크 "${clipForMessage(name)}"(${clipForMessage(nodeType) || "종류 없음"})`;
+  const hasValues = hasKraMaskValues(nodeType);
   issues.unsupported.add(
     "semantic",
     "kra-mask-unsupported",
-    `마스크 "${clipForMessage(name)}"(${clipForMessage(nodeType) || "종류 없음"})는 속성만 읽고 적용하지 않는다`,
+    hasValues ? `${subject}는 레이어 픽셀에 적용하지 않는다` : `${subject}는 속성만 읽고 적용하지 않는다`,
     where,
   );
+  const offsets = readMaskOffsets(attributes, issues, where, subject, hasValues);
   return {
     nodeType,
     name,
@@ -113,6 +157,9 @@ function toMask(node: KraMaindocNode, issues: KraNodeIssues, where: string): Kra
     visible: readFlag(attributes, "visible", true, issues, where),
     locked: readFlag(attributes, "locked", false, issues, where),
     filename: attributes["filename"] ?? null,
+    offsetX: offsets.x,
+    offsetY: offsets.y,
+    placementValid: offsets.valid,
     attributes,
   };
 }
@@ -154,7 +201,7 @@ export function flattenKraNodes(nodes: readonly KraMaindocNode[], issues: KraNod
       const offsetY = readOffset(attributes, "y", issues, where);
       if (offsetX === null || offsetY === null) placementInvalid.add(index);
       const effectiveVisible = parentVisible && visible;
-      const masks = node.masks.map((mask) => toMask(mask, issues, where));
+      const masks = node.masks.map((mask, maskIndex) => toMask(mask, issues, `${where}.masks[${maskIndex}]`));
       drafts.push({
         index,
         parentIndex,
