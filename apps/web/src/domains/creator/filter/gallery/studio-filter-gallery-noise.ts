@@ -16,9 +16,12 @@ const RANDOMIZATION: StudioFilterGalleryParamSpec = {
 };
 const REPEAT: StudioFilterGalleryParamSpec = { key: "repeat", label: "반복", control: "slider", min: 1, max: 10, step: 1, default: 1 };
 
-function randomizationParams(params: StudioFilterGalleryParams): { readonly chance: number; readonly repeat: number } {
+/** 던지기는 픽셀을 완전히 새 색으로 바꿔 50%면 그림이 묻히므로 기본값을 낮게 둔다. */
+const HURL_RANDOMIZATION: StudioFilterGalleryParamSpec = { ...RANDOMIZATION, default: 20 };
+
+function randomizationParams(params: StudioFilterGalleryParams, fallback = 50): { readonly chance: number; readonly repeat: number } {
   return {
-    chance: numberParam(params, "randomization", 50, 1, 100) / 100,
+    chance: numberParam(params, "randomization", fallback, 1, 100) / 100,
     repeat: Math.round(numberParam(params, "repeat", 1, 1, 10)),
   };
 }
@@ -29,10 +32,10 @@ const hurl: StudioFilterGalleryEffectDef = {
   label: "던지기",
   description: "고른 비율만큼의 픽셀을 완전히 무작위한 색으로 바꿉니다.",
   references: ["GIMP · 던지기(Hurl)"],
-  params: [RANDOMIZATION, REPEAT],
+  params: [HURL_RANDOMIZATION, REPEAT],
   cost: 1,
   apply(image, params, context) {
-    const { chance, repeat } = randomizationParams(params);
+    const { chance, repeat } = randomizationParams(params, 20);
     const { data } = image;
     const pixels = image.width * image.height;
     for (let pass = 0; pass < repeat; pass += 1) {

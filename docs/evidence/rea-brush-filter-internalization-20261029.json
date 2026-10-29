@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "benchmarkDate": "2026-10-29",
+  "title": "ToonStudio REA 브러시·필터·습식 매체 라이브러리 역공학과 내재화 증거 번들(Mixbox·습식 잉크 데모·Klecks·MyPaint·Photopea)",
+  "methodology": {
+    "tool": "reverse-engineer-anything (rea-agents 6.8.0, MIT)",
+    "analysisScope": "javascript-application-analysis (소스 디렉터리), browser-scenario-capture + web-script-export + web-bundle-analysis (Photopea). 네이티브 대상이 없어 Ghidra 는 실행하지 않았다.",
+    "epistemicSeparation": [
+      "observedFacts",
+      "inferences",
+      "unknowns"
+    ],
+    "licensePolicy": "ADR-0026: CC BY-NC·GPL·무라이선스 원본은 코드 미사용, MIT/ISC/CC0 는 출처 고지 후 이식"
+  },
+  "targets": [
+    {
+      "id": "mixbox-npm-2.0.0",
+      "name": "Mixbox (npm mixbox@2.0.0, scrtwpns)",
+      "license": "CC-BY-NC-4.0",
+      "version": "2.0.0",
+      "artifacts": [
+        {
+          "role": "javascript-application-analysis",
+          "path": "scratch/rea-out/mixbox-npm.json",
+          "sha256": "f300953ca6375ebc22251aeae3089a2b10843bad2292115dd0371ccb65898f88",
+          "evidence_id": "ev_7df8efb82d43a4e6aa8302b471bacd6b726d0feac9aa19f5a6674ac40b4b99d2",
+          "root_artifact_sha256": "c68dbce0f12dc7ddb504c1a2df25df5516d7d729c16588b4b520380b1d2b23c1",
+          "summary": {
+            "relevant_files": 3,
+            "parsed_javascript_files": 2,
+            "text_bytes_read": 351477,
+            "visited_ast_nodes": 12195,
+            "findings": 1,
+            "parse_failures": 0
+          }
+        }
+      ],
+      "observedFacts": [
+        "잠재 표현은 7개 수(안료 농도 4개 + RGB 잔차 3개)이고, 잠재→RGB 는 3차 20항 다항식이다.",
+        "RGB→잠재는 64³ 격자 LUT(512×512 RGBA8 PNG, 8×8 타일)를 조회한다.",
+        "셰이더 도우미는 GLSL 용이며 잠재를 mat3 로 다룬다. 상류 패키지에 WGSL·WASM 경로는 없다."
+      ],
+      "inferences": [
+        "LUT 와 다항식 계수는 CC BY-NC 저작물이라 상업 제품 코드에 넣을 수 없다."
+      ],
+      "unknowns": [
+        "상류 C++ 구현과 저장소 독립 구현의 차분 실행은 외부 빌드 거부로 하지 못했다."
+      ],
+      "internalization": "독립 구현 toonstudio-latent-pigment-v1(기존) 위에 33³ 표 고속 경로·WGSL/GLSL 셰이더·혼색 방식 선택을 새로 만들었다. 상류 코드·LUT·계수는 쓰지 않았다."
+    },
+    {
+      "id": "volcomix-ink-drop",
+      "name": "volcomix/ink-drop (WebGL2 잉크 낙하 유체)",
+      "license": "MIT",
+      "version": "0.0.0",
+      "artifacts": [
+        {
+          "role": "javascript-application-analysis",
+          "path": "scratch/rea-out/volcomix_ink-drop.json",
+          "sha256": "dd4c574c443e0be8403aa7811d0ddc83b1898d20acab6397fc53ad51481b094c",
+          "evidence_id": "ev_4fc4f4c454d9144aa2589a1e730880dfd87e10c1d636e747268adbf7368b63e0",
+          "root_artifact_sha256": "cab371f81c81388fb5b6c4411dbfd50f4148f41617eb9bd3aae0396d9c3f58fc",
+          "summary": {
+            "relevant_files": 28,
+            "parsed_javascript_files": 25,
+            "text_bytes_read": 24256,
+            "visited_ast_nodes": 2784,
+            "findings": 125,
+            "parse_failures": 0
+          }
+        }
+      ],
+      "observedFacts": [
+        "셰이더 단계: advect, divergence, jacobi(압력), gradient(감산), vorticity·vorticityForce(소용돌이 구속), splat, dye, 입자 렌더."
+      ],
+      "inferences": [
+        "Stam 1999 안정 유체 구조다. 습식 굽기의 속도장 설계 입력으로 쓸 수 있다."
+      ],
+      "unknowns": [],
+      "internalization": "개념 참고(코드 미사용)."
+    },
+    {
+      "id": "stony-su-ink",
+      "name": "stony-su/ink (잉크 번짐 데모)",
+      "license": "NONE",
+      "version": "unversioned",
+      "artifacts": [
+        {
+          "role": "javascript-application-analysis",
+          "path": "scratch/rea-out/stony-su_ink.json",
+          "sha256": "4c6d166fddca7e1aab951c2466d80da6dc0b1829967051d9920a332526a65305",
+          "evidence_id": "ev_388a40346b370ea0b44ab63d2a3583c0ded713dac3badc244a90f450f1094c9f",
+          "root_artifact_sha256": "382b05618e3338d0cf3091da728d9cd3edb17b1422b23e6c2aed9528bad846a4",
+          "summary": {
+            "relevant_files": 2,
+            "parsed_javascript_files": 1,
+            "text_bytes_read": 79257,
+            "visited_ast_nodes": 10969,
+            "findings": 31,
+            "parse_failures": 0
+          }
+        }
+      ],
+      "observedFacts": [
+        "단일 app.js 로 된 잉크 번짐 데모다."
+      ],
+      "inferences": [
+        "라이선스가 없어 저작권 기본값(모든 권리 유보)으로 보고 코드를 쓰지 않는다."
+      ],
+      "unknowns": [],
+      "internalization": "구조 관찰만 했다(코드 미사용)."
+    },
+    {
+      "id": "aureliaar-sumi",
+      "name": "Aureliaar/sumi (수묵 붓 획)",
+      "license": "MIT",
+      "version": "0.1.0",
+      "artifacts": [
+        {
+          "role": "javascript-application-analysis",
+          "path": "scratch/rea-out/Aureliaar_sumi.json",
+          "sha256": "96293b5da701d8f0bfd36da65148f5c078fd943bb822c27b2fec5add1322984b",
+          "evidence_id": "ev_7f67be77b8e24dd745b8f743a148694221e205c6ef0a5bbcd711d15d84dc479a",
+          "root_artifact_sha256": "c5c7ac11fd01252e3d64db896db1ac1c288d018160e321dc9d1a36b523e8fed4",
+          "summary": {
+            "relevant_files": 12,
+            "parsed_javascript_files": 6,
+            "text_bytes_read": 394561,
+            "visited_ast_nodes": 64978,
+            "findings": 9,
+            "parse_failures": 0
+          }
+        }
+      ],
+      "observedFacts": [
+        "brush.js·sweeps.js·tools/fit.js·tools/gestures.js 로 붓 쓸기(sweep)와 제스처 맞춤을 나눈다."
+      ],
+      "inferences": [
+        "수묵 획의 쓸기 모델은 습식 굽기 작업 단위의 참고 대상이다."
+      ],
+      "unknowns": [],
+      "internalization": "보고서 8절(습식 굽기 작업 단위) 참고."
+    },
+    {
+      "id": "andrewvoirol-watercolor-workbook",
+      "name": "AndrewVoirol/watercolor-workbook (watercolor-zen-webgpu)",
+      "license": "MIT",
+      "version": "1.0.0",
+      "artifacts": [
+        {
+          "role": "javascript-application-analysis",
+          "path": "scratch/rea-out/AndrewVoirol_watercolor-workbook.json",
+          "sha256": "e40d3702843fe87911e41df9a29db8d7608fa3731b9d4a42ca7f42d04eefc687",
+          "evidence_id": "ev_28cd7153f46a2a085ea6bea6278855384063d9f1e4c374f80050aa107dccf7c8",
+          "root_artifact_sha256": "9f330c8f3d16563cbb38e039328e964ee409bd1bd4116ca1abcc191be85e3424",
+          "summary": {
+            "relevant_files": 74,
+            "parsed_javascript_files": 64,
+            "text_bytes_read": 594585,
+            "visited_ast_nodes": 71339,
+            "findings": 365,
+            "parse_failures": 1
+          }
+        }
+      ],
+      "observedFacts": [
+        "WebGPU WGSL 계산 단계: bristle_physics, advect, capillary_diffusion, brush_inject, render_km, project, evaporate_pinning, parchment_gen."
+      ],
+      "inferences": [
+        "증발·고착 단계가 수채 가장자리 짙어짐을 만든다(Curtis 1997 의 edge darkening 과 같은 역할)."
+      ],
+      "unknowns": [],
+      "internalization": "셰이더 단계 분할을 설계 참고로만 썼다."
+    },
+    {
+      "id": "klecks",
+      "name": "bitbof/klecks (웹 페인팅 앱)",
+      "license": "MIT",
+      "version": "main",
+      "artifacts": [
+        {
+          "role": "javascript-application-analysis",
+          "path": "scratch/rea-out/klecks.json",
+          "sha256": "970451cf711f54b282a5bb30e5b1cbfb5a54d549fd849d38cdebf89bfc5cd122",
+          "evidence_id": "ev_10b7dd72f304528c29844e76258e22100601af077a0168aba78769b23a36b5c4",
+          "root_artifact_sha256": "66184dfee9483191dabd343c8f1be4418e568c744ac139794a3d81a443121583",
+          "summary": {
+            "relevant_files": 374,
+            "parsed_javascript_files": 369,
+            "text_bytes_read": 2198927,
+            "visited_ast_nodes": 260347,
+            "findings": 3707,
+            "parse_failures": 1
+          }
+        }
+      ],
+      "observedFacts": [
+        "sketchy-brush.ts 의 SketchyBrush.goLine 은 거리² < 4000·scale² 이고 rand > 거리²/(2000·scale²) 인 지난 점과 선을 잇고 양 끝을 30% 줄인다.",
+        "chemy-brush.ts 는 제스처 경로를 닫힌 다각형으로 채우고 X·Y 대칭과 distort 를 지원한다."
+      ],
+      "inferences": [
+        "sketchy 연결 규칙은 Harmony sketchy 의 공개 설명과 같아 법무 확인이 필요하다."
+      ],
+      "unknowns": [
+        "Klecks 파일에 Harmony 출처 표기가 없어 MIT 가 그 파일을 실제로 덮는지 확인하지 못했다."
+      ],
+      "internalization": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts (MIT 이식, 고지 등록)."
+    },
+    {
+      "id": "photopea",
+      "name": "Photopea (웹 편집기)",
+      "license": "PROPRIETARY",
+      "version": "live-web-2026-10-29",
+      "artifacts": [
+        {
+          "role": "browser-scenario-capture",
+          "path": "scratch/rea-out/photopea-scenario.json",
+          "sha256": "456cf7a79c8ea3fedf417e932018e082b1f9b9c304d49532bfed88704043e317",
+          "evidence_id": "ev_2ae262de19308b80baa370189e20e149cd048c7bb1f5970ed84ebd023e2bd5b8",
+          "completeness": "incomplete"
+        },
+        {
+          "role": "exported-web-scripts",
+          "path": "scratch/rea-out/photopea-export.json",
+          "sha256": "0921afef1182aac605d886a1cf80d91d245c9e35e9e305dd755c3f2067d675c5",
+          "evidence_id": "ev_1f39b01cc671d175d351b07c4d16390cc427a05c79ca4a622529fafd9fa63384"
+        },
+        {
+          "role": "web-bundle-analysis",
+          "path": "scratch/rea-out/photopea-bundle.json",
+          "sha256": "c1ca5b7e07f0ea7d49eebf1da2ad6c0ef9547a2f09c03e3dcaed13849a1b2bc2",
+          "evidence_id": "ev_db81a764c2bf67f0f683ea44015d8fe4012813407721130cec6a15b823522e6d",
+          "summary": {
+            "scripts_observed": 1,
+            "scripts_analyzed": 1,
+            "visited_ast_nodes": 365
+          }
+        }
+      ],
+      "observedFacts": [
+        "시나리오 캡처는 incomplete 로 끝났고 첫 화면 로더 스크립트 1개만 분석됐다."
+      ],
+      "inferences": [
+        "필터 이름·동작이 Photoshop 공개 메뉴와 같아 기능 대응은 Photoshop 표로 다뤘다."
+      ],
+      "unknowns": [
+        "편집기 본 번들을 캡처하지 못해 Photopea 고유 구현은 미확인이다."
+      ],
+      "internalization": "없음(미확인)."
+    },
+    {
+      "id": "libmypaint-1.6.1",
+      "name": "mypaint/libmypaint 1.6.1 + mypaint/mypaint-brushes",
+      "license": "ISC + CC0-1.0",
+      "version": "1.6.1",
+      "artifacts": [
+        {
+          "role": "source-reading",
+          "path": "scratch/targets/libmypaint, scratch/targets/mypaint-brushes",
+          "note": "C 소스와 .myb 를 직접 읽었다. 네이티브 바이너리가 아니라 REA Ghidra 분석 대상이 아니다."
+        }
+      ],
+      "observedFacts": [
+        "1.6.1 의 mypaint_brush_stroke_to 는 레거시 경로다(paint_mode·posterize 없음).",
+        "mypaint-brushes 는 .myb v3 196종이다."
+      ],
+      "inferences": [],
+      "unknowns": [],
+      "internalization": "apps/web/src/domains/creator/brush/mypaint-library/* (196종 실제 WASM 변환), packages/studio-brush-platform/src/libmypaint.ts (primeAtFirstSample)."
+    }
+  ],
+  "internalizedModules": [
+    {
+      "path": "apps/web/src/domains/creator/brush/mypaint-library/",
+      "kind": "ported-data (CC0)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts",
+      "kind": "ported-code (MIT, Klecks)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-harmony-kernels.ts",
+      "kind": "independent-implementation (Harmony 개념)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-concept-kernels.ts",
+      "kind": "independent-implementation (Krita 매뉴얼 개념)"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-table.ts",
+      "kind": "independent-implementation"
+    },
+    {
+      "path": "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-shaders.ts",
+      "kind": "independent-implementation"
+    },
+    {
+      "path": "apps/web/src/domains/creator/render/studio-webgpu-pressure-tooth.ts",
+      "kind": "independent-implementation"
+    },
+    {
+      "path": "apps/web/src/domains/creator/filter/gallery/",
+      "kind": "independent-implementation (공개 알고리즘·공개 메뉴 기능 대응)"
+    }
+  ]
+}
