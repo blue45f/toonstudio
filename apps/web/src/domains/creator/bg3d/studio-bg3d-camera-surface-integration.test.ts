@@ -119,7 +119,7 @@ describe("Studio BG3D Camera vNext and surface snap integration", () => {
 
     expect(registration).toContain("const current = primitiveObjectsRef.current.get(id) ?? null");
     expect(registration).toContain("if (current === obj) return");
-    expect(registration).toContain("setRefTick((n) => n + 1)");
+    expect(registration).toContain("setRefTick((n: number) => n + 1)");
     expect(registration).toContain("}, [primitiveObjectsRef, setRefTick])");
   });
 
@@ -221,7 +221,7 @@ describe("Studio BG3D Camera vNext and surface snap integration", () => {
   it("does not reinterpret floating camera or surface controls as empty-scene clicks", () => {
     expect(source.match(/data-bg3d-viewport-control="true"/gu)).toHaveLength(3);
     expect(source).toContain('placementSession.phase === "preview"');
-    const missed = sourceBetween("onPointerMissed={(event) => {", "</Canvas>");
+    const missed = sourceBetween("onPointerMissed={(event: MouseEvent) => {", "</Canvas>");
     expectInOrder(missed, [
       "isStudioBg3dViewportControlTarget(event.target)",
       "surfaceSnapArmedRef.current",
