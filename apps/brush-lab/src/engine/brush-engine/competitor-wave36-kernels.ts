@@ -17,7 +17,7 @@
  *   `visited_ast_nodes: 114706`, `data-flow: 51007`, `object-flow: 7429`, `closure: 4391`, `call-flow: 2555`
  */
 
-import type { Point2D, Rgb } from "../core/types";
+import type { Pt as Point2D, Rgb } from "../core/types";
 
 export {
   QUADRATIC_PIGMENT_MODEL,
