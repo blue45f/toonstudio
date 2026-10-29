@@ -1,6 +1,6 @@
+import { sameProductionRevision } from "./revision";
 import { scopeContains } from "./scope";
 import { sameSubmissionSourceEvidence } from "./submission";
-import { sameProductionRevision } from "./revision";
 
 import type {
   CreativeBranch,

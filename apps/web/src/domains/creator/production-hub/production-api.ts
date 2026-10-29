@@ -54,9 +54,10 @@ import type {
 
 import type { ProductionProjectAccess } from "./production-dashboard-api";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
-export type SubmitProductionTaskOutputClientCommand = SubmitProductionTaskOutputCommand & { readonly writeContext?: StudioScopedWriteContext };
 
 import { api, apiPath } from "@/platform/api";
+
+export type SubmitProductionTaskOutputClientCommand = SubmitProductionTaskOutputCommand & { readonly writeContext?: StudioScopedWriteContext };
 
 export type ProductionPlanningRecord =
   | { readonly kind: "project-brief"; readonly value: ProjectBrief }

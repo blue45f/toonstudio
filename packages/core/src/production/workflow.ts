@@ -1,5 +1,5 @@
-import { scopeContains } from "./scope";
 import { sameProductionRevision } from "./revision";
+import { scopeContains } from "./scope";
 
 import type {
   EpisodeCollaboration,
