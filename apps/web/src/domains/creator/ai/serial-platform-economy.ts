@@ -1,5 +1,5 @@
 /**
- * ggumtoon-platform-economy.ts
+ * serial-platform-economy.ts
  *
  * https://www.ggumtoon.com/ (꿈툰 플랫폼: 지갑·출석체크·기다무·바이럴 공유·뷰어·정산·어드민)
  * REA 역공학 분석(`0n5493b7spg.s.js`, `0_qdehbuvn5r3.js`, `0rdx-ygp7ub4e.js`, `0gfmlm~a9-5g..js`,

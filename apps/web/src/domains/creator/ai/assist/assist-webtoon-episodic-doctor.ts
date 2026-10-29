@@ -1,5 +1,5 @@
 /**
- * claude-webtoon-episodic-doctor.ts
+ * assist-webtoon-episodic-doctor.ts
  *
  * Phase 2 차세대 웹툰 에피소드 프로덕션 AI 보조 엔진 4종:
  * 1. 독자 스크롤 체류·이탈 구간 & 베스트 댓글·별점 예측 시뮬레이터 (네이버웹툰·카카오페이지·쿠아이칸 데이터 벤치마크)

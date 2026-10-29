@@ -1,5 +1,5 @@
 /**
- * ggumtoon-bubble-editor-engine.ts
+ * bubble-preset-editor-engine.ts
  *
  * https://www.ggumtoon.com/studio (`0-du3dytc8ifq.js` 내 `BubbleEditor` 및 `087envq-b9~k8.js` Fabric.js 연동)
  * REA 역공학 분석으로 추출한 말풍선·효과·40종 한글 서체·8종 도형 클립 프레임·6방향 정렬·60단계 히스토리 엔진.

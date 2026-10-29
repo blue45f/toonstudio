@@ -1,5 +1,5 @@
 /**
- * ai-webtoon-mangotoon-llamagen-suite.ts
+ * ai-webtoon-template-comic-suite.ts
  *
  * AI 만화·인스타툰 플랫폼 내재화 엔진 (파트 2):
  * - 망고툰 (Mangotoon, https://toon.mangoboard.net/) 7대 라이브러리 탭·표정×동작 매트릭스·createContentData 스키마

@@ -9,7 +9,7 @@ import { AssistArtDirectorResult } from "./AssistArtDirectorResult";
 import { AssistCommandPlanResult } from "./AssistCommandPlanResult";
 import { AssistLocalizeResult } from "./AssistLocalizeResult";
 
-describe("claude-dialogs-webtoon-upgrades", () => {
+describe("assist-dialogs-webtoon-upgrades", () => {
   it("AssistArtDirectorResult가 리얼드로우 4레이어 공정 배지와 요약 카드를 표시한다", () => {
     render(
       <AssistArtDirectorResult

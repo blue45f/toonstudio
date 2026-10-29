@@ -21,7 +21,7 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-creator-engine-fusion-assist (REA 발굴 도메인 엔진 4대 AI 융합 어시스턴트)", () => {
+describe("ai-creator-engine-fusion-assist (REA 발굴 도메인 엔진 4대 AI 융합 어시스턴트)", () => {
   it("1. Lettering Fusion: MQM 현지화 QA & 말풍선 넘침 무손실 카피피팅 어시스턴트를 검증한다", async () => {
     const pages = [
       {

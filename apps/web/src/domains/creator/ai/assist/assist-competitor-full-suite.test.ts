@@ -62,7 +62,7 @@ const TEST_ROUTE = {
   model: "claude-opus-5-5",
 };
 
-describe("claude-competitor-full-suite (5대 신규 경쟁사 벤치마크 엔진)", () => {
+describe("assist-competitor-full-suite (5대 신규 경쟁사 벤치마크 엔진)", () => {
   it("1. 크림 AiD & CSP 5.0 스케치→벡터 선화 & 4레이어 분리 로컬·Claude 실행을 검증한다", async () => {
     const local = buildLocalSketchToLineartLayerSplit(SAMPLE_INPUT);
     expect(local.inkingTimeReductionEstPct).toBeGreaterThanOrEqual(75);

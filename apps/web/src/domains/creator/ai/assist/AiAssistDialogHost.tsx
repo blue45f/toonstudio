@@ -1,5 +1,5 @@
 /**
- * 열린 Claude 보조 대화상자 하나를 그린다(`AiAssistDialogHostEntry`가 지연 로드). 대화상자는 처음 열 때만 내려받는다.
+ * 열린 AI 보조 대화상자 하나를 그린다(`AiAssistDialogHostEntry`가 지연 로드). 대화상자는 처음 열 때만 내려받는다.
  */
 import { Suspense } from "react";
 
