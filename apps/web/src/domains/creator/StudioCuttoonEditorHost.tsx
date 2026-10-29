@@ -2804,7 +2804,7 @@ export function StudioCuttoonEditor({
     collaborationOperationSyncPending,
     documentReloadRequired,
     expectsSharedDocument,
-    liveRoom: isRealtimeTeamSession,
+    liveRoom: joinedStudioLiveJam,
     liveRoomEditAuthorityReady: Boolean(
       isRealtimeTeamSession
       && studioLiveParticipant?.role === "editor"

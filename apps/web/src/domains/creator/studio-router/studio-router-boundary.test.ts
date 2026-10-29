@@ -135,9 +135,19 @@ describe("Studio router bundle boundaries", () => {
     // The route reads document identity from the layout instead of re-parsing the URL.
     expect(dccWorkbenchNavigationSource).toContain("useStudioDocumentLayout()");
     expect(dccWorkbenchRouteSource).not.toContain("useSearchParams");
-    expect(dccWorkbenchRouteSource).not.toContain("resolveStudioDccRouteAccess");
-    // The legacy page keeps only the access verdict and the editor-side UI hooks it injects.
+    expect(dccWorkbenchSurfaceSource).not.toContain("resolveStudioDccRouteAccess");
+    expect(dccWorkbenchNavigationSource).toContain("export function resolveStudioDccRouteAccess(");
+    // 표면 컴포넌트는 권한 결과만 소비하고, Host는 순수 판정기에 현재 편집 권위를 연결한다.
     expect(legacyEditorSource).toContain("resolveStudioDccRouteAccess({");
+    const accessStart = legacyEditorSource.indexOf("const hybridDccRouteAccess = resolveStudioDccRouteAccess({");
+    const accessEnd = legacyEditorSource.indexOf("\n  });", accessStart);
+    expect(accessStart).toBeGreaterThanOrEqual(0);
+    expect(accessEnd).toBeGreaterThan(accessStart);
+    const accessBinding = legacyEditorSource.slice(accessStart, accessEnd);
+    expect(accessBinding).toContain("liveRoom: joinedStudioLiveJam,");
+    expect(accessBinding).not.toContain("liveRoom: isRealtimeTeamSession,");
+    expect(accessBinding).toContain('studioLiveParticipant?.role === "editor"');
+    expect(accessBinding).toContain("&& studioCrdtOperationSyncReady");
     expect(legacyEditorSource).toContain("useStudioDccWorkbenchNavigation({");
     expect(legacyEditorSource).toContain("<StudioDccWorkbenchRoute");
   });
