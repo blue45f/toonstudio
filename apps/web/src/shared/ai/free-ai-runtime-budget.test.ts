@@ -370,6 +370,36 @@ describe("free AI runtime budget guard", () => {
     )).resolves.toMatchObject({ guarded: true });
   });
 
+  it("keeps the entry it just wrote, and payment locks, when the ledger is full of stale entries", async () => {
+    const earlier = NOW - 3 * 24 * 60 * 60_000;
+    const locked: UserAiConnection = { ...managedConnection, id: "locked", apiKey: "locked-key" };
+    await recordFreeAiRuntimeResponse(locked, 402, new Headers(), earlier);
+    const stored = JSON.parse(globalThis.localStorage.getItem(FREE_AI_RUNTIME_BUDGET_STORAGE_KEY) ?? "{}") as {
+      entries: Record<string, unknown>;
+    };
+    for (let index = 0; index < 80; index += 1) {
+      stored.entries[`stale.example:route-${index}`] = {
+        day: "2026-09-01",
+        requests: 3,
+        reservedTokens: 0,
+        quotaFailures: 0,
+        blockedReason: null,
+        blockedUntil: null,
+        updatedAt: earlier - index - 1,
+      };
+    }
+    globalThis.localStorage.setItem(FREE_AI_RUNTIME_BUDGET_STORAGE_KEY, JSON.stringify(stored));
+
+    await guardFreeAiRuntimeRequest(managedConnection, "text", "/models", "GET", undefined, NOW);
+
+    expect(getFreeAiRuntimeBudgetSnapshot(managedConnection, NOW).requests).toBe(1);
+    await expect(guardFreeAiRuntimeRequest(locked, "text", "/models", "GET", undefined, NOW)).rejects.toThrow(/결제를 요구/u);
+    const kept = JSON.parse(globalThis.localStorage.getItem(FREE_AI_RUNTIME_BUDGET_STORAGE_KEY) ?? "{}") as {
+      entries: Record<string, unknown>;
+    };
+    expect(Object.keys(kept.entries)).toHaveLength(64);
+  });
+
   it("rejects streaming and oversized managed requests before network I/O", async () => {
     await expect(guardFreeAiRuntimeRequest(
       managedConnection,

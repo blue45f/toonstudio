@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { readStudioCanvasViewportStack } from "./canvas/read-studio-canvas-viewport-stack";
+import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
 import { readStudioCuttoonEditorSource } from "./studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 import { STUDIO_GROUP_SELECTION_OVERLAY_NAME } from "./studio-selection-chrome-mirror";
 
@@ -265,8 +266,9 @@ describe("Studio PPT-style group convenience boundary", () => {
     expect(dragEndSource).toContain(
       "pendingCommittedGroupDrawResetRef.current = {",
     );
+    // 2026-10-25(b5302793): @ts-nocheck·any 정리로 콜백 매개변수에 타입 주석이 붙었다.
     expect(dragEndSource).toContain(
-      '(id) => elementById.get(id)?.type === "draw"',
+      '(id: string) => elementById.get(id)?.type === "draw"',
     );
     expect(dragEndSource).toContain("sourceElements: elements");
     expect(dragEndSource).toContain("pageId: currentPageIdRef.current");
@@ -467,7 +469,10 @@ describe("Studio PPT-style group convenience boundary", () => {
     expect(enterSource).toContain("completeSelectedGroupId()");
     expect(enterSource).toContain("planGroupEnter");
     expect(pageSource).toContain("if (enterCompleteSelectedGroup()) e.preventDefault()");
-    expect(pageSource).toContain("그룹 내부 편집 종료 · 그룹 전체 선택");
+    // 2026-10-23(4a59b310, A4 D4): 단축키 공지는 구조화 코드로 내고 Host 게시 지점이 같은 한글 원문으로 해석한다.
+    expect(pageSource).toContain('announceDrawingShortcut({ code: "groupEditEnded" })');
+    expect(resolveStudioShortcutAnnouncement({ code: "groupEditEnded" }))
+      .toBe("그룹 내부 편집 종료 · 그룹 전체 선택");
   });
 
   it("keeps Layer Navigator group commands on the canonical Page handlers", () => {

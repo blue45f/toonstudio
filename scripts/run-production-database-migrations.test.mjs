@@ -318,6 +318,8 @@ test("Studio AI ledger reservation migration only adds a nullable non-negative c
   ]) {
     expect(sql).toContain(requiredFragment);
   }
+  // 빈 DB 부트스트랩은 같은 제약을 선언한 현재 Drizzle 스키마를 먼저 만든 뒤 마이그레이션을 다시 적용하므로, 없을 때만 더한다.
+  expect(sql).toMatch(/IF NOT EXISTS \(\s*SELECT 1\s*FROM pg_constraint\s*WHERE conname = 'studio_ai_usage_reserved_tokens_check'\s*AND conrelid = 'studio_ai_usage_ledger'::regclass\s*\) THEN\s*ALTER TABLE "studio_ai_usage_ledger"\s*ADD CONSTRAINT "studio_ai_usage_reserved_tokens_check"/u);
   expect(sql).toMatch(/^--[\s\S]*BEGIN;[\s\S]*COMMIT;\s*$/u);
   expect(sql).not.toMatch(/\bDROP\b/iu);
   expect(sql).not.toMatch(/NOT NULL|SET DEFAULT|\bDEFAULT\b/iu);

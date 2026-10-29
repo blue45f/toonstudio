@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { detectAiKeyProvider, maskAiKey, normalizePastedAiKey, splitPastedAiKeys } from "./ai-key-detect";
 import { addQuickKey, chooseQuickKeyModel, findQuickKeyConnection, isQuickKeyRegistered, quickKeyProviderOf, removeQuickKey } from "./ai-quick-key";
+import { userAiConnectionsForCapability, userAiPersonalFirstConnectionsForCapability } from "./user-ai-store";
 import { EMPTY_AI_CONFIGURATION, normalizeUserAiConfiguration, userAiRoutingSettings } from "./user-ai-types";
 
 // 실제 키가 아니라 형식만 맞춘 가짜 값이다.
@@ -229,6 +230,205 @@ describe("addQuickKey / removeQuickKey", () => {
     // 사용자가 정해 둔 유료 BYOK 정책은 바꾸지 않는다.
     expect(normalized.connections[0]).toMatchObject({ enabled: true, costPolicy: "user-funded-byok" });
     expect(normalized.assignments.text).toBe(base.connectionId);
+  });
+
+  it("동의한 유료 키는 동의하지 않은 같은 서비스 연결(AI 보조 카드의 키 등)에 섞지 않고 그 키만 든 연결로 둔다", () => {
+    // 비용 동의 없이 연결한 Claude 키(대화상자 전용).
+    const dialogOnly = addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE);
+    const consentedKey = `sk-ant-api03-${"q".repeat(40)}`;
+    const consented = addQuickKey(dialogOnly.configuration, "anthropic", consentedKey, { allowPaid: true });
+
+    expect(consented.connectionId).not.toBe(dialogOnly.connectionId);
+    const normalized = normalizeUserAiConfiguration(consented.configuration);
+    const dialog = normalized.connections.find((item) => item.id === dialogOnly.connectionId);
+    expect(dialog?.paidAutoUse).toBeUndefined();
+    expect(dialog?.apiKeys?.map((item) => item.apiKey)).toEqual([CLAUDE]);
+    expect(normalized.connections.find((item) => item.id === consented.connectionId)).toMatchObject({ paidAutoUse: true, apiKey: consentedKey });
+    // 자동 경로에서 먼저 쓰는 유료 키는 이번에 동의한 키 하나뿐이다(대화상자용 키는 비용이 생기지 않는다).
+    expect(userAiPersonalFirstConnectionsForCapability("text", normalized).map((route) => route.apiKey)).toEqual([consentedKey]);
+
+    // 이미 동의한 연결이 있으면 그 연결의 키 목록에 쌓는다.
+    const third = addQuickKey(consented.configuration, "anthropic", `sk-ant-api03-${"r".repeat(40)}`, { allowPaid: true });
+    expect(third.connectionId).toBe(consented.connectionId);
+  });
+
+  it("동의하지 않은 연결에서 꺼 둔 유료 키를 동의와 함께 다시 붙이면, 같은 연결의 다른 키는 그대로 두고 그 키만 따로 켠다", () => {
+    const openaiA = `sk-proj-${"a".repeat(48)}`;
+    const openaiB = `sk-proj-${"b".repeat(48)}`;
+    const first = addQuickKey(EMPTY_AI_CONFIGURATION, "openai", openaiA, { allowPaid: true });
+    const both = addQuickKey(first.configuration, "openai", openaiB, { allowPaid: true });
+    // 사용자가 B 키를 끄고, 유료 키 자동 사용도 꺼 두었다(동의 철회).
+    const optedOut = normalizeUserAiConfiguration({
+      ...both.configuration,
+      connections: both.configuration.connections.map((item) => ({
+        ...item,
+        paidAutoUse: false,
+        apiKeys: item.apiKeys?.map((entry) => (entry.apiKey === openaiB ? { ...entry, enabled: false } : entry)),
+      })),
+      routing: { ...userAiRoutingSettings(both.configuration), allowPaidFallback: false, preferPaidKeys: false },
+    });
+
+    const revived = addQuickKey(optedOut, "openai", openaiB, { allowPaid: true });
+    expect(revived.connectionId).not.toBe(first.connectionId);
+    const normalized = normalizeUserAiConfiguration(revived.configuration);
+    const old = normalized.connections.find((item) => item.id === first.connectionId);
+    expect(old?.paidAutoUse).toBeUndefined();
+    expect(old?.apiKeys?.map((item) => item.apiKey)).toEqual([openaiA]);
+    expect(userAiPersonalFirstConnectionsForCapability("text", normalized).map((route) => route.apiKey)).toEqual([openaiB]);
+  });
+
+  it("켜진 마지막 키를 지워도 꺼 둔 키는 잃지 않고, 그 연결을 꺼 둔 채로 남긴다", () => {
+    const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    const offKey = `gsk_${"x".repeat(52)}`;
+    const second = addQuickKey(first.configuration, "groq", offKey);
+    const withOffKey = normalizeUserAiConfiguration({
+      ...second.configuration,
+      connections: second.configuration.connections.map((item) => ({
+        ...item,
+        apiKeys: item.apiKeys?.map((entry) => (entry.apiKey === offKey ? { ...entry, enabled: false } : entry)),
+      })),
+    });
+
+    const removed = normalizeUserAiConfiguration(removeQuickKey(withOffKey, first.connectionId, first.keyId));
+    expect(removed.connections).toHaveLength(1);
+    expect(removed.connections[0]).toMatchObject({ enabled: false });
+    expect(removed.connections[0]?.apiKeys?.map((item) => item.apiKey)).toEqual([offKey]);
+    // 꺼 둔 연결이라 어떤 경로에도 쓰이지 않는다. 그 키를 다시 붙이면 다시 켠다.
+    expect(userAiPersonalFirstConnectionsForCapability("text", removed)).toEqual([]);
+    expect(addQuickKey(removed, "groq", offKey)).toMatchObject({ reenabled: true, connectionId: first.connectionId });
+  });
+
+  describe("켜진 마지막 키를 지운 뒤 같은 서비스 키를 붙여도 사용자가 꺼 둔 키는 쓰이지 않는다", () => {
+    const K2 = `gsk_${"x".repeat(52)}`;
+    const K3 = `gsk_${"w".repeat(52)}`;
+
+    /** keys를 한 연결에 차례로 등록하고, offKeys는 고급 설정에서 키마다 꺼 둔 상태로 만든다. */
+    function registered(
+      provider: "groq" | "openai",
+      keys: readonly string[],
+      offKeys: readonly string[],
+      allowPaid = false,
+    ) {
+      let configuration = EMPTY_AI_CONFIGURATION;
+      for (const key of keys) configuration = addQuickKey(configuration, provider, key, { allowPaid }).configuration;
+      const connection = configuration.connections[0];
+      if (!connection) throw new Error("연결이 없어요.");
+      return {
+        connectionId: connection.id,
+        keyIdOf: (key: string) => connection.apiKeys?.find((item) => item.apiKey === key)?.id ?? "",
+        configuration: normalizeUserAiConfiguration({
+          ...configuration,
+          connections: configuration.connections.map((item) => ({
+            ...item,
+            apiKeys: item.apiKeys?.map((entry) => (offKeys.includes(entry.apiKey) ? { ...entry, enabled: false } : entry)),
+          })),
+        }),
+      };
+    }
+
+    const textKeys = (configuration: Parameters<typeof normalizeUserAiConfiguration>[0]) => {
+      const normalized = normalizeUserAiConfiguration(configuration);
+      return {
+        routes: userAiConnectionsForCapability("text", normalized).map((route) => route.apiKey),
+        first: userAiPersonalFirstConnectionsForCapability("text", normalized).map((route) => route.apiKey),
+      };
+    };
+
+    it("(무료) 지운 키를 다시 등록하거나 새 키를 붙이면, 붙인 키만 켜지고 꺼 둔 키는 꺼진 채로 남는다", () => {
+      const groq = registered("groq", [GROQ, K2], [K2]);
+      const removed = removeQuickKey(groq.configuration, groq.connectionId, groq.keyIdOf(GROQ));
+
+      for (const pasted of [GROQ, K3]) {
+        const added = addQuickKey(removed, "groq", pasted);
+        expect(added.connectionId).toBe(groq.connectionId);
+        expect(textKeys(added.configuration)).toEqual({ routes: [pasted], first: [pasted] });
+        const kept = normalizeUserAiConfiguration(added.configuration).connections[0]?.apiKeys;
+        expect(kept?.find((item) => item.apiKey === K2)?.enabled).toBe(false);
+      }
+    });
+
+    it("(유료) 동의한 연결에서 지운 뒤 새 키를 동의와 함께 붙이면 그 키만 먼저 쓰고, 꺼 둔 키에는 청구되지 않는다", () => {
+      const openaiA = `sk-proj-${"a".repeat(48)}`;
+      const openaiB = `sk-proj-${"b".repeat(48)}`;
+      const openaiC = `sk-proj-${"c".repeat(48)}`;
+      const openai = registered("openai", [openaiA, openaiB], [openaiB], true);
+      const removed = removeQuickKey(openai.configuration, openai.connectionId, openai.keyIdOf(openaiA));
+
+      const added = addQuickKey(removed, "openai", openaiC, { allowPaid: true });
+      expect(textKeys(added.configuration)).toEqual({ routes: [openaiC], first: [openaiC] });
+    });
+
+    it("꺼 둔 다른 키를 다시 붙이면 그 키만 켜진다", () => {
+      const groq = registered("groq", [GROQ, K2, K3], [K2, K3]);
+      const removed = removeQuickKey(groq.configuration, groq.connectionId, groq.keyIdOf(GROQ));
+
+      const revived = addQuickKey(removed, "groq", K3);
+      expect(revived).toMatchObject({ reenabled: true, connectionId: groq.connectionId });
+      expect(textKeys(revived.configuration)).toEqual({ routes: [K3], first: [K3] });
+    });
+
+    it("연결을 끄지 않고 키만 꺼 둔 연결에 새 키를 붙이면 다른 키의 켜짐 상태는 그대로 둔다", () => {
+      const groq = registered("groq", [GROQ, K2], [K2]);
+
+      const added = addQuickKey(groq.configuration, "groq", K3);
+      expect(textKeys(added.configuration).routes).toEqual([GROQ, K3]);
+    });
+  });
+
+  describe("꺼 둔 연결을 키 등록으로 다시 켤 때 기능 배정이 고정한 키", () => {
+    const K2 = `gsk_${"x".repeat(52)}`;
+
+    /** keys를 한 연결에 등록하고, "하나만 고정"으로 텍스트를 pinnedKey에 고정한 뒤 연결을 끈다(고급 설정의 연결 활성 해제). */
+    function pinnedAndSwitchedOff(provider: "groq" | "openai", keys: readonly string[], pinnedKey: string, allowPaid = false) {
+      let configuration = EMPTY_AI_CONFIGURATION;
+      for (const key of keys) configuration = addQuickKey(configuration, provider, key, { allowPaid }).configuration;
+      const connection = configuration.connections[0];
+      const pinnedKeyId = connection?.apiKeys?.find((item) => item.apiKey === pinnedKey)?.id;
+      if (!connection || !pinnedKeyId) throw new Error("고정할 키가 없어요.");
+      return normalizeUserAiConfiguration({
+        ...configuration,
+        connections: configuration.connections.map((item) => ({ ...item, enabled: false })),
+        assignments: { ...configuration.assignments, text: connection.id },
+        routeAssignments: {
+          ...configuration.routeAssignments!,
+          text: { connectionId: connection.id, apiKeyId: pinnedKeyId, modelId: "text-1" },
+        },
+        routing: { ...userAiRoutingSettings(configuration), mode: "manual" },
+      });
+    }
+
+    const pinnedRouteKeys = (configuration: Parameters<typeof normalizeUserAiConfiguration>[0]) =>
+      userAiConnectionsForCapability("text", normalizeUserAiConfiguration(configuration)).map((route) => route.apiKey);
+
+    it("새 키를 붙이면 꺼진 키에 걸린 고정을 풀고 붙인 키를 쓴다(보관함 검증이 설정을 거부하지 않는다)", () => {
+      const added = addQuickKey(pinnedAndSwitchedOff("groq", [GROQ], GROQ), "groq", K2);
+      expect(added.configuration.routeAssignments?.text).toMatchObject({ apiKeyId: null, modelId: "text-1" });
+      expect(pinnedRouteKeys(added.configuration)).toEqual([K2]);
+    });
+
+    it("고정하지 않은 꺼진 키를 다시 붙이면 고정했던 키는 꺼지고 고정 경로는 다시 붙인 키를 쓴다", () => {
+      const revived = addQuickKey(pinnedAndSwitchedOff("groq", [GROQ, K2], K2), "groq", GROQ);
+      expect(revived.reenabled).toBe(true);
+      expect(pinnedRouteKeys(revived.configuration)).toEqual([GROQ]);
+    });
+
+    it("동의한 유료 연결을 고정해 둔 채 꺼 두었다가 새 유료 키를 동의와 함께 붙여도 등록되고, 고정 경로가 그 키를 쓴다", () => {
+      const openaiA = `sk-proj-${"a".repeat(48)}`;
+      const openaiC = `sk-proj-${"c".repeat(48)}`;
+      const added = addQuickKey(pinnedAndSwitchedOff("openai", [openaiA], openaiA, true), "openai", openaiC, { allowPaid: true });
+      expect(pinnedRouteKeys(added.configuration)).toEqual([openaiC]);
+    });
+  });
+
+  it("키를 지운 뒤 더한 키는 남은 키와 이름·ID가 겹치지 않는 다음 번호를 받는다", () => {
+    const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    const second = addQuickKey(first.configuration, "groq", `gsk_${"y".repeat(52)}`);
+    const removed = removeQuickKey(second.configuration, first.connectionId, first.keyId);
+    const third = addQuickKey(removed, "groq", `gsk_${"z".repeat(52)}`);
+
+    const keys = normalizeUserAiConfiguration(third.configuration).connections[0]?.apiKeys;
+    expect(keys?.map((item) => [item.id, item.label])).toEqual([["key-2", "키 2"], ["key-3", "키 3"]]);
+    expect(third.keyId).toBe("key-3");
   });
 
   it("마지막 키를 지우면 연결과 그 연결을 가리키던 배정도 함께 지운다", () => {

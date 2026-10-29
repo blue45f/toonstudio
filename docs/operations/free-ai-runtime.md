@@ -83,10 +83,11 @@ A connection whose base URL is exactly `https://api.anthropic.com` uses the `ant
 
 The runtime advances only after a definitive pre-inference rejection:
 
-- `401`/`403` for a personal key, allowing the next configured key;
+- `401`/`403` for a personal key, or `400` with an invalid-key body (Gemini `API_KEY_INVALID`, xAI "Incorrect API key"), allowing the next configured key; the `400` case starts the same 10-minute pause as `401`, so a revoked key is not called on every request;
 - `402`/`429` for payment/free-quota/request-quota rejection;
 - Qwen `403/AllocationQuota.FreeTierOnly` and Cloudflare `403/5035` in the shared pool;
-- the app’s own per-route browser safety-budget exhaustion.
+- the app’s own per-route browser safety-budget exhaustion;
+- an empty answer cut at the output cap (`finish_reason: "length"`, common when a reasoning model spends the 1,024-token free cap on thinking): the next personal key is tried, then ToonStudio AI. A paid key that returns such an answer has already been billed, so the request is not sent to another paid key. After such an answer, a later key that definitively rejects the request before processing it (`400`, `404`, `405`, `410`, `413`, `415`, `422`; for example Groq `413` over its per-minute token cap) is skipped too; if no key answers, the request still goes to ToonStudio AI. `408`, `409` and `499` are not in that list: OpenRouter, for example, answers `408` when the upstream model timed out while generating, so the timeout rule below applies.
 
 Network errors, timeouts, `5xx`, malformed success responses, and parse failures are surfaced immediately. The same request is not sent to another provider because the first provider may already have accepted it.
 
@@ -101,7 +102,9 @@ Network errors, timeouts, `5xx`, malformed success responses, and parse failures
 - `n = 1`, `best_of = 1`, no log-probability expansion, no streaming;
 - only `GET /models` and `POST /chat/completions`.
 
-The budget key includes connection, model, and key profile IDs. It stores counters and timestamps only, never prompts, outputs, or secrets.
+Each budget entry belongs to one key and model: its name is the provider host, the model name, and a short non-reversible tag of the key (32-bit FNV-1a of the base URL and key). Connection, model-profile and key-profile IDs (`quick-groq:text-1:key-1`) are not part of it, because they follow registration order: after a reload another key can get the same IDs, and the same key can land in another slot. So two tabs with different keys never overwrite each other's counts or locks, and pasting a key again after a lock or reload keeps its counts and pauses in whatever slot it lands. Deleting a key, or changing its value or address, clears its entry — the documented way to lift a payment lock — unless another switched-on connection that passes the free-route policy still uses the same key and model. A switched-off or "재확인 필요" (unverified) connection holding the same key does not keep the entry. Adding, changing or deleting an image, inference or 3D model profile never touches an entry, because the ledger only counts text routes. This comparison covers every text route of every connection, including switched-off keys and models and routes beyond the first 64 per connection that requests use. So deleting a key whose route lies past that limit still clears its entry, and adding a text model profile ahead of the others never counts an unchanged key's route as removed.
+
+Entries written before the tag became part of the name (`host:routeId`) are read once for the route that wrote them. A tagged entry is used only by the same key. An untagged entry's counts for the current UTC day are kept, so the daily cap still holds. Its payment, authentication and rate-limit locks are dropped, because the key they belonged to is unknown; if it was the same key, the provider's next `402`/`401`/`429` locks it again. When the ledger exceeds 64 entries, entries from past days without a payment lock go first, then the least recently used. The entry just written is never dropped. The ledger stores counters, timestamps and the tag only, never prompts, outputs, or secrets.
 
 ## Managed cloud media inference
 
@@ -143,6 +146,6 @@ Personal keys remain in memory by default. The encrypted vault stores the normal
 - [ ] Migrations 0114 and 0115 are applied before `STUDIO_AI_ANTHROPIC_API_KEY` is set, and the premium daily limits match the approved operator budget.
 - [ ] No operator key is read from `VITE_` variables or shipped in the browser bundle.
 - [ ] Multiple key/model route order is deterministic.
-- [ ] `401`/`403`/`402`/`429` are the only personal-route automatic advance conditions.
+- [ ] `401`/`403`, `400` with an invalid-key body, `402`/`429`, and an empty cut-off answer (plus, after one, a later `400`/`404`/`405`/`410`/`413`/`415`/`422`) are the only personal-route automatic advance conditions.
 - [ ] Network, timeout, `5xx`, parse, and malformed-success failures do not replay.
 - [ ] No secret, prompt, or response is stored in quota ledgers or application logs.

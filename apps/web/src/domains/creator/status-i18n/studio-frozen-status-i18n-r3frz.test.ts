@@ -46,6 +46,8 @@ const CONSUMERS = [
   "StudioReferencePanel.tsx",
   "brush/StudioBrushLibraryPanel.tsx",
   "export/StudioExportMenuPanel.tsx",
+  // 2026-10-29(e04aeaed): 내보내기 기본 옵션을 메뉴 패널에서 분리했다(JPG 투명도 안내 키 1개가 함께 옮겨 감).
+  "export/StudioExportBasicOptions.tsx",
   "export/studio-interchange-display-message.ts",
 ] as const;
 const MIGRATED_FILES = CONSUMERS;
@@ -57,6 +59,7 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "StudioReferencePanel.tsx": 2352,
   "brush/StudioBrushLibraryPanel.tsx": 1328,
   "export/StudioExportMenuPanel.tsx": 1941,
+  "export/StudioExportBasicOptions.tsx": 116,
   "export/studio-interchange-display-message.ts": 26,
 };
 

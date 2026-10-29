@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { addQuickKey } from "../ai-quick-key";
 import { lockUserAi, getUserAiSnapshot, setUserAiConfiguration } from "../user-ai-store";
-import { EMPTY_AI_CONNECTION, userAiRoutingSettings, type UserAiConnection } from "../user-ai-types";
+import { EMPTY_AI_CONNECTION, userAiRoutingSettings, withPaidAutoUseChoice, type UserAiConnection } from "../user-ai-types";
 
 import { AssistConnectionCard } from "./AssistConnectionCard";
 import { resetAssistBudgetForTests } from "./assist-budget";
+import { resolveUserAssistRoute } from "./assist-route";
 import { recordAssistUsage, resetAssistUsage } from "./assist-usage-meter";
 
 import type { AssistModelListing } from "./assist-runtime";
@@ -241,6 +243,52 @@ describe("AssistConnectionCard", () => {
     expect(next?.apiKeys?.map((item) => item.id)).toEqual(["key-1", "key-2"]);
     expect(next?.apiKey).toBe(FAKE_KEY);
     expect(screen.getByText(/^연결됨 · claude-sonnet-5-5$/)).toBeTruthy();
+  });
+
+  it("keeps showing and changing its own connection when a consented Claude key from the key panel is a separate connection", async () => {
+    render(<AssistConnectionCard />);
+    await connect();
+    // 키 붙여넣기에서 자동 사용에 동의하고 등록한 다른 Claude 키는 동의 분리 때문에 따로 연결로 들어간다.
+    const consentedKey = `sk-ant-api03-${"q".repeat(40)}`;
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "anthropic", consentedKey, { allowPaid: true }).configuration);
+    const byId = (id: string) => getUserAiSnapshot().configuration.connections.find((item) => item.id === id);
+    expect(byId("claude-byok-2")).toMatchObject({ paidAutoUse: true, apiKey: consentedKey });
+
+    for (const next of ["claude-sonnet-5-5", "claude-future-9"]) {
+      fireEvent.change(screen.getByLabelText("기본 모델"), { target: { value: next } });
+      expect(byId("claude-byok")?.textModel).toBe(next);
+      expect(screen.getByText(`연결됨 · ${next}`)).toBeTruthy();
+    }
+    // 자동 경로에서 쓰는, 동의한 키의 모델은 그대로다.
+    expect(byId("claude-byok-2")?.textModel).toBe("claude-opus-5-5");
+
+    fireEvent.click(screen.getByRole("button", { name: "연결 삭제" }));
+    expect(getUserAiSnapshot().configuration.connections.map((item) => item.id)).toEqual(["claude-byok-2"]);
+  });
+
+  it("follows the connection the AI assist dialog really uses, even when an auto-use key later takes the claude-byok id", async () => {
+    render(<AssistConnectionCard />);
+    await connect();
+    const keyB = `sk-ant-api03-${"b".repeat(40)}`;
+    const keyC = `sk-ant-api03-${"z".repeat(40)}`;
+    const byId = (id: string) => getUserAiSnapshot().configuration.connections.find((item) => item.id === id);
+    // B: 키 붙여넣기에서 동의와 함께 등록(따로 연결) → 자동 사용 끔(B의 동의도 지워진다) → 카드에서 A 삭제.
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "anthropic", keyB, { allowPaid: true }).configuration);
+    setUserAiConfiguration(withPaidAutoUseChoice(getUserAiSnapshot().configuration, { allowPaidFallback: false, preferPaidKeys: false }));
+    fireEvent.click(screen.getByRole("button", { name: "연결 삭제" }));
+    // C: 다시 동의와 함께 붙이면 비어 있는 claude-byok ID를 받는다. 대화상자는 우선순위가 앞선 B를 쓴다.
+    setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "anthropic", keyC, { allowPaid: true }).configuration);
+    expect(byId("claude-byok")?.apiKey).toBe(keyC);
+    expect(resolveUserAssistRoute()?.connectionId).toBe("claude-byok-2");
+
+    fireEvent.change(screen.getByLabelText("기본 모델"), { target: { value: "claude-sonnet-5-5" } });
+    expect(byId("claude-byok-2")?.textModel).toBe("claude-sonnet-5-5");
+    // 자동 사용 키(C)의 모델은 그대로다.
+    expect(byId("claude-byok")?.textModel).toBe("claude-opus-5-5");
+    expect(screen.getByText("연결됨 · claude-sonnet-5-5")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "연결 삭제" }));
+    expect(getUserAiSnapshot().configuration.connections.map((item) => item.id)).toEqual(["claude-byok"]);
   });
 
   it("does not save anything when Anthropic rejects the key", async () => {

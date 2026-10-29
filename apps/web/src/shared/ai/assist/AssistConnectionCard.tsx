@@ -32,6 +32,7 @@ import {
 
 import { ASSIST_DEFAULT_MODEL_ID, ASSIST_PRICE_AS_OF, assistModelInfo } from "./assist-models";
 import { ANTHROPIC_API_ORIGIN, isAnthropicBaseUrl } from "./assist-protocol";
+import { resolveUserAssistRoute } from "./assist-route";
 import { listAssistModelsForKey } from "./assist-transport";
 import {
   ASSIST_BUTTON,
@@ -96,9 +97,13 @@ function emptyRouteAssignments(): Record<UserAiCapability, UserAiRouteAssignment
 }
 
 function withConnection(configuration: UserAiConfiguration, next: UserAiConnection): UserAiConfiguration {
+  // 이미 있는 연결은 제자리에서 바꾼다. 끝으로 옮기면 다른 화면의 목록 순서와 "첫 Claude 연결"이 바뀐다.
+  const exists = configuration.connections.some((item) => item.id === next.id);
   return {
     ...configuration,
-    connections: [...configuration.connections.filter((item) => item.id !== next.id), next],
+    connections: exists
+      ? configuration.connections.map((item) => (item.id === next.id ? next : item))
+      : [...configuration.connections, next],
   };
 }
 
@@ -139,10 +144,16 @@ export function AssistConnectionCard() {
   const snapshot = useUserAi();
   const usage = useAssistUsage();
 
-  const connection = useMemo(
-    () => snapshot.configuration.connections.find((item) => isAnthropicBaseUrl(item.baseUrl)),
-    [snapshot.configuration],
-  );
+  // AI 보조 대화상자가 실제로 쓰는 Claude 연결을 가리킨다(없으면 이 카드가 만드는 연결, 그다음 첫 Claude 연결).
+  // 키 붙여넣기에서 자동 사용에 동의한 Claude 키는 따로 연결로 들어가고(ai-quick-key의 동의 분리) 같은 ID를 받을 수도
+  // 있으므로, ID나 목록 순서로 고르면 모델 변경·삭제·기본 지정이 대화상자가 쓰지 않는 자동 사용 연결에 적용될 수 있다.
+  const connection = useMemo(() => {
+    const anthropic = snapshot.configuration.connections.filter((item) => isAnthropicBaseUrl(item.baseUrl));
+    const dialogConnectionId = resolveUserAssistRoute(snapshot)?.connectionId;
+    return anthropic.find((item) => item.id === dialogConnectionId)
+      ?? anthropic.find((item) => item.id === ASSIST_CONNECTION_ID)
+      ?? anthropic[0];
+  }, [snapshot]);
   const isDefault = Boolean(
     connection
       && snapshot.configuration.assignments.text === connection.id

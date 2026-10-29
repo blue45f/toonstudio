@@ -8,7 +8,6 @@ import {
   EMPTY_AI_CONNECTION,
   normalizeUserAiConfiguration,
   resolvedUserAiRoutes,
-  USER_AI_CAPABILITIES,
   userAiConnectionApiKeys,
   userAiConnectionModels,
   userAiRoutingSettings,
@@ -18,6 +17,7 @@ import {
   type UserAiConfiguration,
   type UserAiConnection,
   type UserAiResolvedConnection,
+  type UserAiRoutingSettings,
 } from "./user-ai-types";
 
 interface AiSnapshot {
@@ -74,39 +74,48 @@ export function useUserAi() {
 }
 
 /**
- * 앞 설정과 새 설정 중 한쪽에만 있는 경로(지운 키, 새로 넣은 키, 주소·키 값이 바뀐 경로). 켜고 끄기만 한 경로는 같은
- * 키라서 세지 않는다(끄고 다시 켠다고 하루 사용량·잠금 기록이 비지 않게).
+ * 설정의 모든 텍스트 경로(끈 키·모델·연결 포함). 켜고 끄기만 한 경로는 같은 키라서 사라진 것으로 세지 않는다.
+ * 안전 한도 기록은 텍스트 경로만 쓴다. 이미지·추론·3D 경로는 연결의 텍스트 모델 이름을 물려받아 같은 기록 칸을
+ * 가리키므로, 함께 세면 쓰지 않던 이미지 모델 하나를 지워도 텍스트 키의 기록(결제 잠금·하루 횟수)이 지워진다.
+ * 요청용 64개 제한 없이 모두 센다. 제한에 걸리면 64번째 뒤 경로의 키를 지워도 사라진 것으로 세지 않고(잠금이 남는다),
+ * 앞 순위에 모델을 더하면 그대로 둔 키의 경로가 밀려나 사라진 것으로 센다(잠금이 지워진다). 연결당 최대 32×12개다.
  */
-function changedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): UserAiResolvedConnection[] {
-  const collect = (configuration: UserAiConfiguration) => {
-    const routes = new Map<string, UserAiResolvedConnection>();
-    for (const connection of configuration.connections) {
-      const everyRoute: UserAiConnection = {
-        ...connection,
-        enabled: true,
-        apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
-        models: connection.models?.map((item) => ({ ...item, enabled: true })),
-      };
-      for (const capability of USER_AI_CAPABILITIES) {
-        for (const route of resolvedUserAiRoutes(everyRoute, capability)) {
-          routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
-        }
-      }
+function everyRoute(configuration: UserAiConfiguration): Map<string, UserAiResolvedConnection> {
+  const routes = new Map<string, UserAiResolvedConnection>();
+  for (const connection of configuration.connections) {
+    const switchedOn: UserAiConnection = {
+      ...connection,
+      enabled: true,
+      apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
+      models: connection.models?.map((item) => ({ ...item, enabled: true })),
+    };
+    for (const route of resolvedUserAiRoutes(switchedOn, "text", Number.POSITIVE_INFINITY)) {
+      routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
     }
-    return routes;
-  };
-  const before = collect(previous);
-  const after = collect(next);
-  return [
-    ...[...before].filter(([signature]) => !after.has(signature)).map(([, route]) => route),
-    ...[...after].filter(([signature]) => !before.has(signature)).map(([, route]) => route),
-  ];
+  }
+  return routes;
+}
+
+/**
+ * 앞 설정에는 있었지만 새 설정에서 사라진 경로(지운 키, 주소·키 값이 바뀐 경로)의 사용 기록을 지운다. 새로 생긴 경로의
+ * 기록은 지우지 않는다: 새로 고침·잠금 뒤 같은 키를 다시 붙여 넣으면 하루 안전 한도가 이어져야 한다(기록은 키마다 따로
+ * 쌓이므로 다른 키는 새 기록으로 시작한다). 그 기록을 실제로 쓰는 경로(켜져 있고 정책 검사를 통과한 텍스트 경로)가 같은
+ * 키로 남아 있으면 기록 모듈이 그 기록을 남긴다. 꺼 둔 연결이나 "재확인 필요" 연결이 같은 키를 들고 있다고 남기면,
+ * 결제 잠금 안내의 "삭제 후 다시 등록"이 듣지 않는다.
+ */
+function forgetRemovedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): void {
+  const after = everyRoute(next);
+  const removed = [...everyRoute(previous)].filter(([signature]) => !after.has(signature)).map(([, route]) => route);
+  const live = next.connections
+    .flatMap((connection) => resolvedUserAiRoutes(connection, "text"))
+    .filter((route) => freeAiConnectionPolicyIssue(route, "text") === null);
+  forgetFreeAiRuntimeRoutes(removed, live);
 }
 
 export function setUserAiConfiguration(configuration: UserAiConfiguration) {
   const next = normalizeUserAiConfiguration(configuration);
-  // 같은 경로 ID를 다시 쓰는 새 키가 옛 키의 인증 대기·결제 잠금에 걸리지 않게, 바뀐 경로의 기록을 지운다.
-  forgetFreeAiRuntimeRoutes(changedRoutes(snapshot.configuration, next));
+  // 지운 키·바꾼 키의 경로 기록을 지운다(결제 잠금은 "삭제 후 다시 등록"으로 풀린다).
+  forgetRemovedRoutes(snapshot.configuration, next);
   publish(
     next,
     "클라우드 AI 라우팅을 메모리에 적용했습니다. 암호화 저장 전에는 디스크에 키를 기록하지 않습니다.",
@@ -228,6 +237,32 @@ export function userAiPersonalFirstConnectionsForCapability(
   return userAiAutomaticExternalConnectionsForCapability(capability, configuration).filter((connection) => (
     connection.costPolicy !== "user-funded-byok" || routing.preferPaidKeys === true || routing.mode === "manual"
   ));
+}
+
+/**
+ * 텍스트 AI 요청에서 등록한 내 키와 ToonStudio AI의 순서. 실제 요청(스튜디오 텍스트 AI)과 화면 표시가 이 규칙 하나를 쓴다.
+ * - fixed: "하나만 고정"으로 고른 내 키만 쓰고 ToonStudio AI로 넘기지 않는다.
+ * - first: 내 키를 먼저 쓰고, 한도·인증 오류 등으로 안 되면 ToonStudio AI로 넘긴다.
+ * - after: "내가 정한 순서"에서 ToonStudio AI를 내 키보다 앞에 두었다. 내 키는 ToonStudio AI를 쓸 수 없을 때 쓴다.
+ * - none: 먼저 쓰는 내 키가 없다.
+ */
+export type UserAiTextKeyOrder = "fixed" | "first" | "after" | "none";
+
+export function userAiTextKeyOrderOf(
+  routing: UserAiRoutingSettings,
+  personalFirstRoutes: readonly UserAiResolvedConnection[],
+): UserAiTextKeyOrder {
+  if (personalFirstRoutes.length === 0) return "none";
+  if (routing.mode === "manual") return "fixed";
+  if (routing.mode === "priority" && (personalFirstRoutes[0]?.priority ?? 100) >= routing.managedPoolPriority) return "after";
+  return "first";
+}
+
+export function userAiTextKeyOrder(configuration: UserAiConfiguration = snapshot.configuration): UserAiTextKeyOrder {
+  return userAiTextKeyOrderOf(
+    userAiRoutingSettings(configuration),
+    userAiPersonalFirstConnectionsForCapability("text", configuration),
+  );
 }
 
 export function requireUserAiConnection(

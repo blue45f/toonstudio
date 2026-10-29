@@ -4,6 +4,9 @@ import {
   getUserAiSnapshot,
   userAiAutomaticExternalConnectionsForCapability,
   userAiPersonalFirstConnectionsForCapability,
+  userAiTextKeyOrder,
+  userAiTextKeyOrderOf,
+  type UserAiTextKeyOrder,
 } from "@/shared/ai/user-ai-store";
 import { userAiRoutingSettings, type UserAiResolvedConnection } from "@/shared/ai/user-ai-types";
 import { aiErrorText } from "./ai/studio-ai-error-i18n";
@@ -79,26 +82,9 @@ export type StudioServerAiStatus = {
   };
 };
 
-/**
- * 텍스트 AI가 내 키를 ToonStudio AI보다 먼저 쓰는지. 실제 경로(completeStudioServerText)와 표시가 같은 규칙을 쓴다.
- * "내가 정한 순서"에서는 맨 앞 내 키가 ToonStudio AI보다 앞에 있을 때만 먼저 쓴다.
- */
-function personalRoutesRunFirst(
-  routing: ReturnType<typeof userAiRoutingSettings>,
-  personalFirstRoutes: readonly UserAiResolvedConnection[],
-): boolean {
-  return personalFirstRoutes.length > 0 && (
-    routing.mode !== "priority"
-    || (personalFirstRoutes[0]?.priority ?? 100) < routing.managedPoolPriority
-  );
-}
-
-/** 텍스트 AI 요청이 ToonStudio AI보다 등록한 내 키를 먼저 쓰는지. completeStudioServerText와 같은 규칙이다(화면 표시용). */
-export function studioTextUsesPersonalKeyFirst(configuration = getUserAiSnapshot().configuration): boolean {
-  return personalRoutesRunFirst(
-    userAiRoutingSettings(configuration),
-    userAiPersonalFirstConnectionsForCapability("text", configuration),
-  );
+/** 텍스트 AI 요청에서 내 키와 ToonStudio AI의 순서(화면 표시용). completeStudioServerText와 같은 규칙이다. */
+export function studioTextKeyOrder(configuration = getUserAiSnapshot().configuration): UserAiTextKeyOrder {
+  return userAiTextKeyOrder(configuration);
 }
 
 export function resolveActiveServerAiProviderLabel(
@@ -107,11 +93,10 @@ export function resolveActiveServerAiProviderLabel(
 ): string {
   if (preference === "auto") {
     // 실제 순서대로 적는다(completeStudioServerText와 같은 규칙): 내 키(무료 키·먼저 쓰기로 한 유료 키)가 먼저면 앞에 적는다.
-    const routing = userAiRoutingSettings(getUserAiSnapshot().configuration);
-    const personalFirstRoutes = userAiPersonalFirstConnectionsForCapability("text");
+    const keyOrder = userAiTextKeyOrder();
     // "하나만 고정"은 고른 내 키만 쓰고 다른 경로로 넘어가지 않는다.
-    if (routing.mode === "manual" && personalFirstRoutes.length > 0) return "고정: 내 키";
-    const myKeysFirst = personalRoutesRunFirst(routing, personalFirstRoutes);
+    if (keyOrder === "fixed") return "고정: 내 키";
+    const myKeysFirst = keyOrder === "first";
     const prefix = myKeysFirst ? "내 키 → " : "";
     if (status?.providers?.some((provider) => provider.id === "anthropic" && provider.configured)) {
       return `자동: ${prefix}ToonStudio 고성능 AI → 무료 AI`;
@@ -430,7 +415,8 @@ export async function completeStudioServerText(
   // 등록한 내 키가 있으면 내 키를 먼저 쓴다(자동·고정 모드). 내 키가 없거나 확정적으로 거절되면
   // ToonStudio AI(운영 고성능 → 무료 순)로 간다. "내가 정한 순서"에서는 사용자가 정한 앞뒤를 따른다.
   // "무료 경로가 끝나면 유료 키"에 동의한 유료 키는 ToonStudio AI 다음의 대체 경로로만 쓴다.
-  const personalFirst = !explicitServerProvider && personalRoutesRunFirst(routing, personalFirstRoutes);
+  const keyOrder = userAiTextKeyOrderOf(routing, personalFirstRoutes);
+  const personalFirst = !explicitServerProvider && (keyOrder === "first" || keyOrder === "fixed");
   const attemptedRouteIds = new Set<string>();
   // 자동 모드에서 내 키가 인증에서 거절됐거나 출력 상한에 걸린 빈 답을 내 ToonStudio AI로 넘겼다면, 그쪽도 쓸 수 없을 때는
   // 사용자가 손쓸 수 있는 내 키 쪽 이유를 알린다(일반 소진 문구로 덮지 않는다).
