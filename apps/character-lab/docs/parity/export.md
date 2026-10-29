@@ -116,7 +116,7 @@
 | 투영 드라이버 반지름·알파, 가상 필압 재생, 선택 부위 pick 옵션 | `projection-paint-driver.test.ts`의 실제 overlay 합성·단일 undo | 미검증 | 모의 포트는 GPU 셰이더·실제 투영 픽셀을 검증하지 않는다 |
 | 셰이더 준비 대기 중 각 dab 브러시 비트맵 보존 | `babylon-projection-brush-queue.test.ts`의 업로드 브러시 바이트 재생 | 미검증 | 가변 GPU 텍스처 참조 대신 비트맵을 큐에 저장한다 |
 
-카메라 조작 설정·F/L/T 시점 연결은 `render/viewport-input-style.ts`의 엔진 중립 포트를 거치게 옮겼다. 앱이 Babylon 내부 모듈을 직접 가져오던 경계 위반을 제거하고, 실제 카메라 각도 변경·재연결·해제를 `viewport-input-style.test.ts`로 검증한다.
+카메라 조작 설정·F/L/T 시점 연결은 `render/viewport-controls.ts`의 엔진 중립 포트를 거친다. 앱이 Babylon 내부 모듈을 직접 가져오던 경계 위반을 제거하고, 포트의 등록·해제는 `viewport-controls.test.ts`, 실제 카메라 각도 변경·재연결·장면 해제는 `babylon-responsiveness.test.ts`의 회귀로 확인한다. 최신 main 통합에서 중복 입력 포트를 제거하고 이전 입력 소유자와 새 소유자의 수명 관리를 같은 포트로 모았다.
 
 ## 10. PSD 알파·외곽선 소유권 보존 — 2026-10-29
 
