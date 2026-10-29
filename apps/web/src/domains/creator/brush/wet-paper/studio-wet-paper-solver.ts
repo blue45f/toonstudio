@@ -5,7 +5,7 @@
  * 증발) → (4) 안료 패스(수송 + 흡착·탈착 + 경화) → (5) 버퍼 교환. 스텝 수는 프로그램이 정한 고정값이고
  * (잔차 기반 종료 없음), 마감에서 남은 부유 안료를 제자리에 앉힌다(정착 = 마른 상태).
  *
- * 동기 베이크(`solveStudioWetPaperBakeSync`)와 시분할 작업(`studio-wet-paper-host.ts`)은 정확히 같은
+ * 동기 베이크(`solveStudioWetPaperBakeUncached`)와 시분할 작업(`studio-wet-paper-host.ts`)은 정확히 같은
  * create → advance(1)·N → finish 순서를 밟으므로 시분할은 스케줄만 바꾸고 바이트는 바꾸지 않는다.
  * 결정성: 시드 해시와 정확한 반올림 연산만 쓴다(`Math.random`·`Date.now` 없음, 결과 경로에 초월 함수 없음).
  */

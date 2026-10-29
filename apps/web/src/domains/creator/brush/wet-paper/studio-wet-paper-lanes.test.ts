@@ -193,6 +193,7 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
       "studio-wet-paper-bristle.ts",
       "studio-wet-paper-composite.ts",
       "studio-wet-paper-runtime.ts",
+      "studio-wet-paper-lbm-wgsl.ts",
     ]) {
       expect(closure.has(`${wetPaper}${heavy}`), heavy).toBe(false);
     }
