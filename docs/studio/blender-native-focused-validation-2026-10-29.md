@@ -3,6 +3,8 @@
 상태: **current — 범위별 실제 실행 기록**, **migration — 후속 소스 수정·남은 검증**을 구분한다.
 기록일: **2026-10-29**. 전체 기능·전체 저장소·브라우저 검증 완료 기록이 아니다.
 
+기존 실행 단락은 각 입력 시점의 역사적 snapshot이다. 현재 통합 상태는 마지막 2026-10-30 갱신을 따른다.
+
 ## current — 허용된 집중 검사 1회
 
 - 작업트리: `/Users/hjunkim/.codex/worktrees/blender-native-bg3d-toon/toonstudio`
@@ -220,3 +222,31 @@ source 병합 단계의 근거는 `/tmp/toonstudio-native-source-integration-71j
 새 후보에는 의존성을 설치하지 않았고 commit·hook·테스트·TSC·build·push·PR·main 병합·운영 쓰기를 실행하지 않았다.
 앞의 46개·50개 및 독립 Boolean 결과를 이 새 후보의 통과로 대신하지 않는다. 정상 의존성 준비와 hook,
 전체 하네스·관련 회귀·브라우저/GPU/출력 검증은 후속 실행에서 확인한다.
+
+## current — 2026-10-30 통합 소스와 검증 경계
+
+Native·Bundle·Shaper를 포함한 통합 소스는
+`4ef92d7c0ce54e8f7eb8cfd479e106d4b9057fae`까지 정상 커밋된 상태다.
+이 문서 앞부분의 `3a17`·미커밋·실행 전·source 병합 단계 설명은 각각 명시한 입력과 실행 당시의 역사적 snapshot이다.
+이를 현재 통합 소스의 미커밋 상태나 현재 실행 대기 항목으로 해석하지 않는다.
+
+이 SHA의 실제 하드웨어 GPU 실행은 입력 불변·소유 프로세스 잔여 0을 기록했다.
+재질·기하 의미 제어군 **10개가 모두 통과**했고, WebGL·WebGPU의 256px masked 제어군은
+RGBA·depth·normal 및 실제 Worker PNG 3종 비교 차이가 모두 0이다.
+그러나 4K 색상 전체 비교는 WebGL **5픽셀**, WebGPU **2픽셀**, 최대 채널 차이 **246**으로
+**실패**했다. 타일 경계 차이 0과 전체 픽셀 일치 실패를 구분하며 허용오차를 상향하지 않는다.
+독립 Basic body 제어군도 WebGL 4픽셀·WebGPU 1픽셀 차이가 있어 MToon·외곽선만의 문제로 단정하지 않는다.
+정확한 GPU 원인과 이전 main 대비 회귀 여부는 아직 입증되지 않았다.
+
+원본 GPU 결과는 `/tmp/toonstudio-union-mtoon-tile-receipt-MjpDFs/result.json`, SHA-256은
+`e741953ec41772f80d5d3f5080985c4bfa9ba106d0adeb40a00d4f9c807894b2`다.
+작은 correctness 제어군은 실제 편집 동선·장기 성능·STP·모든 GPU의 통과 근거가 아니다.
+
+기존 실제 Native UI 실행은 `7f92d704ba405628d19d6548555ca90393e1d79d`에서
+프로젝트 메뉴 진입 대기 시간 초과로 종료했고 완료 check는 0개였다.
+모델 가져오기·툰 적용·UV pack·Sculpt·작업파일 저장/재열기 통과를 주장하지 않는다.
+새 통합 HEAD와 새 빌드가 일치하는 실제 제품 UI 검증은 남아 있다.
+GLB 가져오기·요소 변형 preview·BG3D 전달·PNG ZIP·실제 4K 치수는 별도 미검증 범위다.
+
+현재 정상 커밋과 최신 main 통합·새 build 검증·push·PR·main 병합은 각각 다른 단계다.
+후속 실행과 원격 상태가 확인되기 전에는 완료로 합산하지 않는다. 이번 범위에서 운영 배포는 하지 않는다.
