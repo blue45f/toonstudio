@@ -6,6 +6,7 @@ import { workspaceUnwrapUvActive } from "../hybrid-dcc/studio-hybrid-dcc-uv-edit
 import { createStudioHybridDccWorkspace, workspaceAddUnitCube } from "../hybrid-dcc/studio-hybrid-dcc-workspace";
 import { decodeStudioHybridDccWorkfile, encodeStudioHybridDccWorkfile } from "../hybrid-dcc/studio-hybrid-dcc-workfile";
 import { hashStudioEditableMesh, serializeStudioEditableMesh } from "../studio-editable-half-edge-mesh";
+import { serializeStudioMeshModifierStack } from "../studio-mesh-modifier-stack";
 import { hashStudioMeshUvLayer } from "./studio-mesh-uv-authority";
 
 interface GltfUvOutput {
@@ -31,27 +32,53 @@ function uvStream(bytes: Uint8Array): readonly number[] {
 describe("UV 모디파이어의 실제 작업공간 전달", () => {
   it("Array 미리보기·적용·단일 undo/redo·작업파일 재진입이 UV 정본을 함께 유지한다", async () => {
     const original = workspaceUnwrapUvActive(workspaceAddUnitCube(createStudioHybridDccWorkspace("uv-array-apply"), "cube"));
-    const originalRecord = original.session.state.geometry.records.cube!;
+    const originalRecord = original.session.state.geometry.records.cube;
+    if (!originalRecord) throw new Error("Array 원본 메시가 없습니다.");
     const originalSnapshot = serializeStudioEditableMesh(originalRecord.mesh);
+    const originalUvs = originalRecord.mesh.uvLayer;
+    if (!originalUvs) throw new Error("Array 원본 UV가 없습니다.");
+    const copies = 3;
     const preview = await workspaceAddActiveModifier(original, "array");
-    expect(preview.session.state.geometry.records.cube!.mesh).toBe(originalRecord.mesh);
-    const previewHash = preview.session.state.geometry.records.cube!.renderCache!.derivedFromHash;
+    const previewRecord = preview.session.state.geometry.records.cube;
+    if (!previewRecord?.renderCache) throw new Error("Array 미리보기 캐시가 없습니다.");
+    expect(previewRecord.mesh).toBe(originalRecord.mesh);
+    expect(previewRecord.modifierStack.modifiers).toHaveLength(1);
+    expect(previewRecord.modifierStack.modifiers[0]).toMatchObject({ kind: "array", count: copies, realizeInstances: true });
+    const previewStack = serializeStudioMeshModifierStack(previewRecord.modifierStack);
+    const previewHash = previewRecord.renderCache.derivedFromHash;
+    // 정본은 quad 코너 24×3개이며 렌더 삼각형 인덱스는 36×3개다.
+    expect(previewRecord.renderCache.indices).toHaveLength(108);
     const beforeApply = preview.session.state.commandCount;
     const applied = await workspaceApplyActiveModifierStack(preview);
-    const appliedRecord = applied.session.state.geometry.records.cube!;
+    const appliedRecord = applied.session.state.geometry.records.cube;
+    if (!appliedRecord) throw new Error("Array 적용 후 메시가 없습니다.");
     expect(applied.session.state.commandCount).toBe(beforeApply + 1);
     expect(appliedRecord.modifierStack.modifiers).toEqual([]);
     expect(appliedRecord.meshHash).toBe(previewHash);
-    expect(appliedRecord.mesh.uvLayer?.corners.length).toBe(108);
-    expect(appliedRecord.mesh.uvLayer!.topologyHash).not.toBe(originalRecord.mesh.uvLayer!.topologyHash);
+    const appliedUvs = appliedRecord.mesh.uvLayer;
+    if (!appliedUvs) throw new Error("Array 적용 후 UV가 없습니다.");
+    expect(appliedRecord.mesh.vertices).toHaveLength(originalRecord.mesh.vertices.length * copies);
+    expect(appliedRecord.mesh.faces).toHaveLength(originalRecord.mesh.faces.length * copies);
+    expect(appliedRecord.mesh.halfEdges).toHaveLength(originalRecord.mesh.halfEdges.length * copies);
+    expect(appliedUvs.corners).toHaveLength(originalUvs.corners.length * copies);
+    expect(appliedUvs.corners).toHaveLength(appliedRecord.mesh.halfEdges.length);
+    expect(appliedUvs.corners).toEqual(Array.from({ length: copies }, (_, copy) => originalUvs.corners.map(({ halfEdgeId, u, v }) => ({
+      halfEdgeId: copy * originalUvs.corners.length + halfEdgeId, u, v,
+    }))).flat());
+    expect(appliedUvs.topologyHash).not.toBe(originalUvs.topologyHash);
     expect(hashStudioEditableMesh(appliedRecord.mesh)).toBe(appliedRecord.meshHash);
     const undone = await workspaceUndoWithModifierPreviews(applied);
-    expect(undone.session.state.geometry.records.cube!.mesh.uvLayer).toEqual(originalRecord.mesh.uvLayer);
-    expect(undone.session.state.geometry.records.cube!.modifierStack.modifiers).toHaveLength(1);
+    const undoneRecord = undone.session.state.geometry.records.cube;
+    if (!undoneRecord) throw new Error("Array 실행 취소 후 메시가 없습니다.");
+    expect(undoneRecord.mesh.uvLayer).toEqual(originalRecord.mesh.uvLayer);
+    expect(serializeStudioMeshModifierStack(undoneRecord.modifierStack)).toEqual(previewStack);
     const redone = await workspaceRedoWithModifierPreviews(undone);
-    expect(redone.session.state.geometry.records.cube!.meshHash).toBe(appliedRecord.meshHash);
+    expect(redone.session.state.geometry.records.cube?.meshHash).toBe(appliedRecord.meshHash);
     const imported = decodeStudioHybridDccWorkfile(encodeStudioHybridDccWorkfile(redone), { documentId: "uv-array-import" });
-    expect(hashStudioMeshUvLayer(imported.session.state.geometry.records.cube!.mesh.uvLayer!)).toBe(hashStudioMeshUvLayer(appliedRecord.mesh.uvLayer!));
+    const importedRecord = imported.session.state.geometry.records.cube;
+    if (!importedRecord?.mesh.uvLayer) throw new Error("작업파일 복원 후 UV가 없습니다.");
+    expect(hashStudioMeshUvLayer(importedRecord.mesh.uvLayer)).toBe(hashStudioMeshUvLayer(appliedUvs));
+    expect(serializeStudioEditableMesh(importedRecord.mesh)).toEqual(serializeStudioEditableMesh(appliedRecord.mesh));
     expect(serializeStudioEditableMesh(originalRecord.mesh)).toEqual(originalSnapshot);
   });
 
