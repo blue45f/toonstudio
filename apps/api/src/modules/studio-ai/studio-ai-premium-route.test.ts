@@ -6,10 +6,9 @@ import {
   studioAiPremiumBudgetAllows,
 } from "./studio-ai-premium-budget";
 import { PostgresStudioAiPremiumBudgetStore } from "./studio-ai-premium-budget.repository";
+import { DEFAULT_STUDIO_AI_PREMIUM_LIMITS, resolveStudioAiPremiumConfig } from "./studio-ai-premium-config";
 import {
   classifyStudioAiProviderFailure,
-  DEFAULT_STUDIO_AI_PREMIUM_LIMITS,
-  resolveStudioAiPremiumConfig,
   resolveStudioAiProviderCandidates,
   resolveStudioAiProviders,
   resolveStudioAiTimeoutMs,

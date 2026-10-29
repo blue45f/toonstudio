@@ -1,4 +1,4 @@
-import type { StudioAiPremiumLimits } from "./studio-ai-provider";
+import type { StudioAiPremiumLimits } from "./studio-ai-premium-config";
 
 /**
  * 운영 프리미엄 경로의 일일 예산 판정. 운영자 키로 실행하는 요청이 하루(UTC) 사용자 요청 수·서비스 전체 요청 수·

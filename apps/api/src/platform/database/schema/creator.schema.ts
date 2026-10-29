@@ -1854,10 +1854,7 @@ export const studioAiUsageLedger = pgTable(
       sql`${t.status} in ('success', 'client_aborted', 'timeout', 'provider_rate_limited', 'provider_error', 'network_error', 'content_filtered')`
     ),
     check("studio_ai_usage_prompt_tokens_check", sql`${t.promptTokens} is null or ${t.promptTokens} >= 0`),
-    check(
-      "studio_ai_usage_completion_tokens_check",
-      sql`${t.completionTokens} is null or ${t.completionTokens} >= 0`
-    ),
+    check("studio_ai_usage_completion_tokens_check", sql`${t.completionTokens} is null or ${t.completionTokens} >= 0`),
     check("studio_ai_usage_total_tokens_check", sql`${t.totalTokens} is null or ${t.totalTokens} >= 0`),
     check("studio_ai_usage_timestamps_check", sql`${t.finishedAt} >= ${t.startedAt}`),
   ]
