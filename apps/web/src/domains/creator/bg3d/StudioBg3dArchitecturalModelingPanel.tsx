@@ -112,7 +112,7 @@ export function StudioBg3dArchitecturalModelingPanel({
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3" role="group" aria-label={t("studio.bg3d.architecture.kindLabel", "건축 요소 종류")}>
         {COMPONENT_OPTIONS.map((option) => (
           <button key={option.id} type="button" disabled={disabled} aria-pressed={kind === option.id}
-            data-testid={`sketchup-arch-kind-${option.id}`} onClick={() => setKind(option.id)}
+            data-testid={`spatial-modeler-arch-kind-${option.id}`} onClick={() => setKind(option.id)}
             className={`min-h-11 rounded-lg border px-2 py-1.5 text-left text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${kind === option.id ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-panel text-fg-2"}`}>
             {t(`studio.bg3d.architecture.kind.${option.id}`, option.labelKo)}
           </button>
@@ -141,7 +141,7 @@ export function StudioBg3dArchitecturalModelingPanel({
       {!usesCount ? <p id={`${inputId}-count-unused`} className="text-xs text-fg-2">{t("studio.bg3d.architecture.countUnused", "분할 수는 계단 단수와 열주 회랑 경간에만 사용합니다. 선택한 건축 요소에는 적용하지 않습니다.")}</p> : null}
       {validationError ? <p id={`${inputId}-error`} role="alert" className="text-xs text-danger">{validationError}</p> : null}
       {!onInsertScenePrimitives ? <p className="text-xs text-fg-2">{t("studio.bg3d.architecture.noScene", "3D 배경 편집기에서 장면을 열면 건축 요소를 배치할 수 있습니다.")}</p> : null}
-      <button type="button" data-testid="sketchup-arch-insert-scene-btn"
+      <button type="button" data-testid="spatial-modeler-arch-insert-scene-btn"
         disabled={disabled || !onInsertScenePrimitives || Boolean(validationError)} onClick={insert}
         className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
         <Plus className="size-4" aria-hidden />{t("studio.bg3d.architecture.insert", "현재 3D 장면에 건축 요소 배치")}{result ? t("studio.bg3d.architecture.elementCount", { count: result.primitiveCount }, " ({count}개)") : ""}

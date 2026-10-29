@@ -1,7 +1,10 @@
 import * as THREE from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prepareStudioBg3dInplaceDerivative } from "./studio-bg3d-inplace-storage";
-import { readStudioBg3dInplaceSelection } from "./useStudioBg3dInplaceTools";
+import { createStudioBg3dInplaceToolsBridge, readStudioBg3dInplaceSelection } from "./useStudioBg3dInplaceTools";
+import { digestScene3dBytes } from "../scene3d/integration/scene3d-inplace-controller";
+import { fingerprintStudioBg3dModelSourceRestriction, inheritStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   parseStudioBg3dSceneDocument,
@@ -12,7 +15,7 @@ import {
   stepStudioBg3dCommandHistory,
 } from "./studio-bg3d-history-command-adapter";
 import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
-import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
+import { hydrateStudioBg3dDocumentToRuntime, tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
 import type { StudioBg3dHistoryCommandRefs } from "./studio-bg3d-history-command-adapter";
 import type { StudioBg3dInplaceToolsContext } from "./studio-bg3d-inplace-tools-context";
 import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
@@ -27,14 +30,20 @@ const seam = vi.hoisted(() => ({
   compensate: vi.fn(),
   admit: vi.fn(),
   mutation: vi.fn(),
+  readSource: vi.fn<typeof import("./bg3d-model-library").readStudioBg3dModelSourceSnapshotV12>(),
+}));
+vi.mock("./bg3d-model-library", async (original) => ({
+  ...(await original<typeof import("./bg3d-model-library")>()),
+  readStudioBg3dModelSourceSnapshotV12: seam.readSource,
 }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({
+  getStoredBg3dModelV12: seam.get,
   loadStudioBg3dModelLibraryModule: async () => ({
     importVerifiedBg3dModelsAtomicallyWithDispositionV12: seam.save,
     getStoredBg3dModelV12: seam.get,
     compensateImportedBg3dModelsIfCreationMatchesV12: seam.compensate,
     createStudioBg3dModelAttachment: (record: Bg3dVerifiedStoredRecord) => ({
-      id: "attachment-derived",
+      id: `attachment-${crypto.randomUUID()}`,
       name: record.name,
       hash: record.contentHash,
       byteSize: record.byteSize,
@@ -102,9 +111,14 @@ function entry(
     },
   } as unknown as StudioBg3dModelRootCacheEntry;
 }
-function fixture() {
-  const original = record("storage-original", sourceHash);
+function fixture(sourceRestriction?: StudioBg3dModelSourceRestrictionV1) {
+  const original = { ...record("storage-original", sourceHash), ...(sourceRestriction ? { sourceRestriction } : {}) };
   const derivative = record("storage-derived", outputHash);
+  const stored = new Map([[original.id, original], [derivative.id, derivative]]);
+  seam.readSource.mockImplementation(async (id) => {
+    const actual = stored.get(id);
+    return actual ? { record: actual, sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null } : null;
+  });
   const sourceEntry = entry(original, 1);
   const derivedEntry = entry(derivative, 0.25);
   const history: StudioBg3dHistoryCommandRefs = {
@@ -239,10 +253,94 @@ function fixture() {
     selected,
     artifact,
     prepare,
+    stored,
   };
 }
 beforeEach(() => vi.clearAllMocks());
 describe("existing BG3D storage/history derivative bridge", () => {
+  it("service-only 출처도 가공·적용하되 실제 제한 receipt를 파생 저장에 넘긴다", async () => {
+    const f = fixture({ version: 1, modelFileExport: "service-only", origin: null, parent: null });
+    const prepared = await f.prepare();
+    expect(seam.save).toHaveBeenCalledWith([expect.objectContaining({ sourceReceipt: {
+      sourceRecordId: f.original.id, sourceContentHash: sourceHash,
+      sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(f.original)),
+    } })], expect.anything());
+    expect(seam.save.mock.calls[0]?.[0]?.[0]?.ingress).toBeUndefined();
+    await prepared.commit();
+    expect(f.context.live.current.customModels[0]?.modelId).toBe(f.derivative.id);
+    expect(f.sourceEntry.dispose).not.toHaveBeenCalled();
+  });
+  it("파생 준비 뒤 실제 원본 제한이 바뀌면 정본·history 변경 없이 정확히 보상한다", async () => {
+    const f = fixture(); const prepared = await f.prepare();
+    f.stored.set(f.original.id, { ...f.original,
+      sourceRestriction: { version: 1, modelFileExport: "service-only", origin: null, parent: null } });
+    await expect(prepared.commit()).rejects.toMatchObject({ code: "source-changed" });
+    await prepared.rollback();
+    expect(f.history.historyCommandTimelineRef.current).toBeNull();
+    expect(f.context.live.current.customModels[0]?.modelId).toBe(f.original.id);
+    expect(seam.compensate).toHaveBeenCalledExactlyOnceWith(f.disposition);
+  });
+  it("장면 저장·복원 뒤 파생본을 다시 가공해도 durable 출처와 직접 부모를 이어받는다", async () => {
+    const f = fixture({ version: 1, modelFileExport: "service-only",
+      origin: { kind: "bundle-pack", recordId: "bundle-original", sha256: sourceHash }, parent: null });
+    const derivativeB = { ...f.derivative, sourceRestriction: inheritStudioBg3dModelSourceRestriction(f.original) };
+    const derivativeC: Bg3dVerifiedStoredRecord = { ...f.derivative, id: "storage-third", contentHash: `sha256:${"c".repeat(64)}`,
+      sourceRestriction: inheritStudioBg3dModelSourceRestriction(derivativeB) };
+    const stage = (record: Bg3dVerifiedStoredRecord, k: number) => {
+      const staged = entry(record, k);
+      f.stored.set(record.id, record);
+      seam.save.mockResolvedValueOnce({ records: [record], created: [{ id: record.id, contentHash: record.contentHash }], removedDeletions: [] });
+      seam.get.mockResolvedValue(record);
+      seam.admit.mockImplementationOnce(async (args) => {
+        args.cache.set(record.id, staged); args.onCacheEntryCreated(record.id, staged); return staged;
+      });
+    };
+    stage(derivativeB, 0.25);
+    const first = await f.prepare(); await first.commit();
+    const projected = tryAdaptStudioBg3dRuntimeToDocument({ ...f.context.live.current,
+      baseDocument: f.context.live.current.document, attachmentByStorageModelId: f.context.attachments });
+    if (!projected.ok) throw new Error("장면을 정본으로 변환하지 못했습니다.");
+    const json = serializeStudioBg3dSceneDocument(projected.value.document);
+    if (!json) throw new Error("장면을 저장하지 못했습니다.");
+    const document = parseStudioBg3dSceneDocument(json);
+    if (!document) throw new Error("장면을 복원하지 못했습니다.");
+    expect(json).not.toContain("sourceRestriction");
+    // 프로젝트는 portable attachment만 보관하고, 재개 후 실제 저장 원본이 제한 권위다.
+    const restored = hydrateStudioBg3dDocumentToRuntime({ document, storageModelIdByAttachmentId: f.context.storageIds });
+    expect(restored.customModels).toHaveLength(2);
+    f.context.live.current = { ...f.context.live.current, document, customModels: restored.customModels, primitives: restored.primitives };
+    const selectionB = readStudioBg3dInplaceSelection(f.context);
+    const guardB = () => {
+      if (readStudioBg3dInplaceSelection(f.context).revisionKey !== selectionB.revisionKey) throw new Error("stale");
+    };
+    stage(derivativeC, 0.5);
+    const second = await prepareStudioBg3dInplaceDerivative(() => f.context, selectionB,
+      { ...f.artifact, sha256: derivativeC.contentHash }, "test.second-derivative", guardB);
+    await second.commit();
+    expect(seam.save.mock.calls[1]?.[0]).toEqual([expect.objectContaining({ sourceReceipt: {
+      sourceRecordId: derivativeB.id, sourceContentHash: derivativeB.contentHash,
+      sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(derivativeB.sourceRestriction),
+    } })]);
+    expect(f.context.cache.get(derivativeC.id)?.record.sourceRestriction).toEqual({ version: 1, modelFileExport: "service-only",
+      origin: f.original.sourceRestriction?.origin, parent: { recordId: derivativeB.id, sha256: derivativeB.contentHash } });
+    expect(f.context.live.current.customModels[0]?.modelId).toBe(derivativeC.id);
+    expect(f.context.live.current.customModels[1]?.modelId).toBe(f.original.id);
+    expect(f.sourceEntry.dispose).not.toHaveBeenCalled();
+  });
+  it("적용 직전 파생 row의 제한이 달라지면 캐시 metadata를 허가로 사용하지 않는다", async () => {
+    const f = fixture(); const prepared = await f.prepare();
+    seam.get.mockResolvedValueOnce({ ...f.derivative,
+      sourceRestriction: { version: 1, modelFileExport: "service-only", origin: null, parent: null } });
+    await expect(prepared.commit()).rejects.toMatchObject({ code: "persistence" });
+    await prepared.rollback();
+    expect(f.history.historyCommandTimelineRef.current).toBeNull();
+    expect(f.sourceEntry.dispose).not.toHaveBeenCalled();
+  });
+  it("다른 저장 ID의 캐시는 같은 bytes여도 선택 원본으로 취급하지 않는다", () => {
+    const f = fixture(); f.context.cache.set(f.original.id, entry({ ...f.original, id: "different-source" }, 1));
+    expect(() => readStudioBg3dInplaceSelection(f.context)).toThrow("원본");
+    expect(seam.save).not.toHaveBeenCalled();
+  });
   it("stages privately, preserves world scale and shared instances, then supports real Undo/Redo and document round trips", async () => {
     const f = fixture();
     const prepared = await f.prepare();
@@ -381,4 +479,47 @@ it("retains newly durable bytes after a session change instead of deleting poten
 it("does not compensate a newly imported row adopted by another cache owner", async () => {
   const f = fixture(); const prepared = await f.prepare(); f.context.cache.set(f.derivative.id, entry(f.derivative, 0.25));
   await expect(prepared.rollback()).rejects.toMatchObject({ code: "persistence" }); expect(seam.compensate).not.toHaveBeenCalled();
+});
+
+async function captureExportSource(modelFileExport: StudioBg3dModelSourceRestrictionV1["modelFileExport"]) {
+  const hash = await digestScene3dBytes(new Uint8Array(32));
+  const contentHash = `sha256:${hash.slice(7)}` as const;
+  const f = fixture({ version: 1, modelFileExport, origin: modelFileExport === "allowed"
+    ? { kind: "user-file", recordId: "storage-original", sha256: contentHash } : null, parent: null });
+  const actual: Bg3dVerifiedStoredRecord = { ...f.original, contentHash };
+  f.context.cache.set(actual.id, entry(actual, 1)); f.stored.set(actual.id, actual);
+  const attachment = f.context.attachments.get(actual.id);
+  if (!attachment) throw new Error("원본 첨부가 없습니다.");
+  f.context.attachments.set(actual.id, { ...attachment, hash: actual.contentHash });
+  seam.get.mockImplementation(async (id: string) => f.stored.get(id) ?? null);
+  const bridge = createStudioBg3dInplaceToolsBridge(() => f.context);
+  const input = await bridge.captureSelection();
+  const guard = bridge.assertSourceFileExportAllowed;
+  if (!guard) throw new Error("파일 저장 guard가 없습니다.");
+  return { ...f, actual, bridge, input, guard };
+}
+describe("실제 출처 receipt를 쓰는 선택 원본 파일 저장", () => {
+  it.each(["service-only", "unknown"] as const)("%s 원본은 읽고 가공할 수 있지만 raw 파일 허가는 주지 않는다", async (restriction) => {
+    const f = await captureExportSource(restriction);
+    expect(f.input.source.byteLength).toBe(32);
+    await expect(f.guard(f.input)).rejects.toMatchObject({ code: restriction === "service-only" ? "rights-restricted" : "rights-unavailable" });
+    expect(f.history.historyCommandTimelineRef.current).toBeNull(); expect(seam.save).not.toHaveBeenCalled();
+  });
+  it("actual allowed 원본만 허가하며 복사한 binding은 허가 객체로 받지 않는다", async () => {
+    const f = await captureExportSource("allowed");
+    await expect(f.guard(f.input)).resolves.toBeUndefined();
+    await expect(f.guard({ ...f.input })).rejects.toMatchObject({ code: "unavailable" });
+    expect(f.context.live.current.customModels[0]?.modelId).toBe(f.actual.id);
+  });
+  it("읽기 이후 제한 변경·실제 row 삭제·취소를 저장 클릭 시 다시 확인한다", async () => {
+    const f = await captureExportSource("allowed");
+    f.stored.set(f.actual.id, { ...f.actual,
+      sourceRestriction: { version: 1, modelFileExport: "service-only", origin: null, parent: null } });
+    await expect(f.guard(f.input)).rejects.toMatchObject({ code: "source-changed" });
+    f.stored.delete(f.actual.id);
+    await expect(f.guard(f.input)).rejects.toMatchObject({ code: "source-changed" });
+    const cancelled = new AbortController(); cancelled.abort();
+    await expect(f.guard(f.input, cancelled.signal)).rejects.toMatchObject({ code: "cancelled" });
+    expect(f.history.historyCommandTimelineRef.current).toBeNull();
+  });
 });

@@ -1,9 +1,13 @@
 import { panelStatusText } from "./studio-panel-status-i18n-r3c06";
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+import { getStudioBg3dWebglRecoverySnapshot, STUDIO_BG3D_WEBGL_RECOVERY_EVENT } from "./bg3d/studio-bg3d-webgl-context-recovery";
+import type { StudioBg3dWebglRecoveryPhase } from "./bg3d/studio-bg3d-webgl-context-recovery";
 
 import {
   enableStudio3dHighAssetQuality,
-  getStudio3dAssetQualityMode,
   getStudio3dAssetQualityServerSnapshot,
   getStudio3dAssetQualitySnapshot,
   initializeStudio3dAssetQualitySession,
@@ -16,14 +20,17 @@ interface Studio3dAssetQualityPanelProps {
   readonly disabled: boolean;
   readonly emptyScene: boolean;
   readonly deviceLostMessage?: string | null;
+  /** 실제 BG3D renderer의 canvas만 복구 이벤트의 소유자로 인정한다. */
+  readonly ownerCanvas?: HTMLCanvasElement | null;
   readonly onBeforeEnable: () => Promise<boolean>;
 }
 
 const BUTTON = "min-h-11 rounded-lg border border-line bg-card px-3 py-2 text-xs font-semibold text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Studio3dAssetQualityPanel({
-  active, disabled, emptyScene, deviceLostMessage, onBeforeEnable,
+  active, disabled, emptyScene, deviceLostMessage, ownerCanvas, onBeforeEnable,
 }: Studio3dAssetQualityPanelProps) {
+  const copy = useBilingual("scene3d-asset-quality-preservation");
   const headingId = useId();
   const { mode, notice } = useSyncExternalStore(
     subscribeStudio3dAssetQuality,
@@ -34,51 +41,69 @@ export function Studio3dAssetQualityPanel({
   const [acknowledged, setAcknowledged] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recoveryPhase, setRecoveryPhase] = useState<StudioBg3dWebglRecoveryPhase | null>(null);
   const generation = useRef(0);
+  const recoveryUnavailable = recoveryPhase === "lost" || recoveryPhase === "degraded" || recoveryPhase === "failed";
+  const gpuUnavailable = Boolean(deviceLostMessage) || recoveryUnavailable;
 
-  useEffect(() => {
+  const cancelPending = useCallback(() => {
     generation.current += 1;
-    if (!active) {
-      setSaving(false);
-      setConfirming(false);
-      setAcknowledged(false);
-      resetStudio3dAssetQualityMode();
-      return;
-    }
-    initializeStudio3dAssetQualitySession();
-    function onContextLost(): void {
-      generation.current += 1;
-      setSaving(false);
-      setConfirming(false);
-      setAcknowledged(false);
-      resetStudio3dAssetQualityMode(panelStatusText("studio.panelStatus.assetQuality3d.gpuContextLost", "GPU 연결이 끊겨 자동 모드로 돌아왔습니다. 저장한 장면 사본을 보존하고, 무거운 원본은 경량본으로 다시 가져오세요."));
-    }
-    document.addEventListener("webglcontextlost", onContextLost, true);
-    return () => {
-      generation.current += 1;
-      document.removeEventListener("webglcontextlost", onContextLost, true);
-      if (getStudio3dAssetQualityMode() === "high") resetStudio3dAssetQualityMode();
-    };
-  }, [active]);
+    setSaving(false);
+    setConfirming(false);
+    setAcknowledged(false);
+  }, []);
 
-  useEffect(() => {
-    if (active && deviceLostMessage) {
-      generation.current += 1;
-      setSaving(false);
-      setConfirming(false);
-      setAcknowledged(false);
-      resetStudio3dAssetQualityMode(panelStatusText("studio.panelStatus.assetQuality3d.gpuDeviceError", "GPU 장치 오류가 발생해 자동 모드로 돌아왔습니다. 장면 사본을 유지하고 경량본으로 다시 가져오세요."));
+  // commit 직후 늦은 Promise가 완료되어도 닫힌 패널·이전 renderer의 설정을 확정하지 않는다.
+  useLayoutEffect(() => {
+    cancelPending();
+    setRecoveryPhase(null);
+    setError(null);
+    // 초기 page의 legacy auto만 초기화하며, 같은 page의 remount는 선택한 high를 보존한다.
+    if (active) initializeStudio3dAssetQualitySession();
+    return () => { generation.current += 1; };
+  }, [active, ownerCanvas, cancelPending]);
+
+  useLayoutEffect(() => {
+    if (!active || !ownerCanvas) return;
+    const canvas = ownerCanvas;
+    function applyPhase(phase: StudioBg3dWebglRecoveryPhase): void {
+      setRecoveryPhase(phase);
+      if (phase === "lost" || phase === "failed" || phase === "degraded") {
+        cancelPending();
+        setError(null);
+      }
     }
-  }, [active, deviceLostMessage]);
+    function onRecovery(event: Event): void {
+      if (!(event instanceof CustomEvent)) return;
+      const detail: unknown = event.detail;
+      if (typeof detail !== "object" || detail === null || !("owner" in detail)
+        || detail.owner !== canvas || !("snapshot" in detail)) return;
+      // 과거 controller의 알림·dispose가 새 owner의 현재 상태를 덮지 못하게 권위에서 다시 읽는다.
+      const current = getStudioBg3dWebglRecoverySnapshot(canvas);
+      if (current) applyPhase(current.phase);
+      else if (detail.snapshot === null) applyPhase("lost");
+    }
+    window.addEventListener(STUDIO_BG3D_WEBGL_RECOVERY_EVENT, onRecovery);
+    const current = getStudioBg3dWebglRecoverySnapshot(canvas);
+    if (current) applyPhase(current.phase);
+    return () => window.removeEventListener(STUDIO_BG3D_WEBGL_RECOVERY_EVENT, onRecovery);
+  }, [active, ownerCanvas, cancelPending]);
+
+  useLayoutEffect(() => {
+    if (!active || !deviceLostMessage) return;
+    cancelPending();
+    setError(null);
+  }, [active, deviceLostMessage, cancelPending]);
 
   async function enableAfterCheckpoint(): Promise<void> {
-    if (!active || disabled || saving || !acknowledged || deviceLostMessage) return;
+    if (!active || disabled || saving || !acknowledged || gpuUnavailable) return;
     const token = ++generation.current;
+    const selection = getStudio3dAssetQualitySnapshot();
     setSaving(true);
     setError(null);
     try {
       const saved = emptyScene || await onBeforeEnable();
-      if (generation.current !== token) return;
+      if (generation.current !== token || getStudio3dAssetQualitySnapshot() !== selection) return;
       if (!saved) {
         setError(panelStatusText("studio.panelStatus.assetQuality3d.checkpointIncomplete", "장면 사본 저장을 완료하지 못해 자동 모드를 유지했습니다. 저장 공간과 장면 상태를 확인해 주세요."));
         return;
@@ -107,7 +132,7 @@ export function Studio3dAssetQualityPanel({
           resetStudio3dAssetQualityMode(panelStatusText("studio.panelStatus.assetQuality3d.backToAuto", "자동 모드로 돌아왔습니다. 다음 모델 불러오기부터 안전 한도를 적용합니다."));
           setConfirming(false); setAcknowledged(false); setError(null);
         }}>자동 · 기본</button>
-        <button type="button" className={BUTTON} aria-pressed={mode === "high"} disabled={!active || disabled || saving || Boolean(deviceLostMessage) || mode === "high"} onClick={() => {
+        <button type="button" className={BUTTON} aria-pressed={mode === "high"} disabled={!active || disabled || saving || gpuUnavailable || mode === "high"} onClick={() => {
           setConfirming(true); setAcknowledged(false); setError(null);
         }}>고품질 · 현재 실행만</button>
       </div>
@@ -121,11 +146,15 @@ export function Studio3dAssetQualityPanel({
           <input type="checkbox" className="mt-1" checked={acknowledged} disabled={saving} onChange={event => setAcknowledged(event.target.checked)} />
           <span>기기 메모리 부족으로 페이지가 종료될 수 있으며, 새로고침 후 자동 모드로 시작한다는 점을 확인했습니다.</span>
         </label>
-        <button type="button" className={`${BUTTON} w-full`} disabled={!acknowledged || disabled || saving || !active || Boolean(deviceLostMessage)} onClick={() => { void enableAfterCheckpoint(); }}>
+        <button type="button" className={`${BUTTON} w-full`} disabled={!acknowledged || disabled || saving || !active || gpuUnavailable} onClick={() => { void enableAfterCheckpoint(); }}>
           {saving ? panelStatusText("studio.panelStatus.assetQuality3d.savingCheckpoint", "장면 사본 저장 중") : emptyScene ? "확인 후 고품질 사용" : "장면 사본 저장 후 고품질 사용"}
         </button>
       </div>}
       {error && <p role="alert" className="text-xs leading-relaxed text-fg-2">{error}</p>}
+      {active && gpuUnavailable && <p role="alert" className="text-xs leading-relaxed text-fg-2">
+        {deviceLostMessage ?? copy("GPU 연결이 끊겨 화면 복구를 기다리고 있습니다.", "The GPU connection was lost. Waiting for viewport recovery.")}
+        {" "}{copy("선택한 메모리 모드는 유지하며, 화면 복구 전에는 고품질 허용을 새로 켜지 않습니다.", "The selected memory mode is preserved. High-quality admission cannot be newly enabled before viewport recovery.")}
+      </p>}
       {notice && <p role="status" className="text-xs leading-relaxed text-fg-2">{notice}</p>}
       <p className="text-[0.65rem] leading-relaxed text-fg-3">
         새로 불러오는 배경 3D 모델부터 적용합니다. 이미 배치한 원본을 자동 삭제·교체하지 않으며, 자동 모드 전환만으로 현재 메모리가 즉시 줄어들지는 않습니다.

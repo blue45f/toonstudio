@@ -15,6 +15,9 @@ import {
 } from "./studio-bg3d-scene-document";
 import type { StudioBg3dAttachmentRights, StudioBg3dModelAttachment, StudioBg3dModelNode, StudioBg3dSceneDocument } from "./studio-bg3d-scene-document-types";
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
+import { fingerprintStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import { resolveStudioBg3dModelExportProvenance, assertStudioBg3dModelExportReceiptCurrent } from "./studio-bg3d-model-export-provenance";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 
 export interface StudioBg3dAuthoredModelEditSourceHost extends StudioBg3dPrimitiveEditSourceHost {
   readonly modelRootCacheRef: { readonly current: ReadonlyMap<string, StudioBg3dModelRootCacheEntry> };
@@ -28,6 +31,7 @@ export interface StudioBg3dAuthoredModelEditRecordIdentity {
   readonly byteSize: number;
   readonly mime: typeof STUDIO_BG3D_GLB_MIME;
   readonly rights: StudioBg3dAttachmentRights;
+  readonly sourceRestriction?: StudioBg3dModelSourceRestrictionV1;
 }
 
 export interface StudioBg3dAuthoredModelEditSourceSnapshot {
@@ -209,12 +213,17 @@ function canonicalSelection(host: StudioBg3dAuthoredModelEditSourceHost): Studio
 function recordIdentity(selected: Selected): StudioBg3dAuthoredModelEditRecordIdentity {
   const record = selected.cache.record;
   return { storageModelId: selected.model.modelId, attachmentId: selected.attachment.id, contentHash: record.contentHash,
-    byteSize: record.byteSize, mime: record.mime, rights: { ...record.rights } };
+    byteSize: record.byteSize, mime: record.mime, rights: { ...record.rights },
+    sourceRestriction: readStudioBg3dEffectiveModelSourceRestriction(record) };
 }
 
 function identityMatches(record: Bg3dVerifiedStoredRecord, identity: StudioBg3dAuthoredModelEditRecordIdentity): boolean {
-  return record.id === identity.storageModelId && record.contentHash === identity.contentHash && record.byteSize === identity.byteSize
-    && record.mime === identity.mime && sameRights(record.rights, identity.rights);
+  try {
+    return record.id === identity.storageModelId && record.contentHash === identity.contentHash && record.byteSize === identity.byteSize
+      && record.mime === identity.mime && sameRights(record.rights, identity.rights)
+      && fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record))
+        === fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(identity));
+  } catch { return false; }
 }
 
 function freezeTree<T>(value: T): T {
@@ -264,6 +273,12 @@ async function readBytes(identity: StudioBg3dAuthoredModelEditRecordIdentity, si
     || (record.blob.type !== "" && record.blob.type !== identity.mime)) {
     reject(failure("asset-mismatch", "읽은 모델의 해시·크기·권리 정보가 현재 원본과 다릅니다."));
   }
+  const provenance = await resolveStudioBg3dModelExportProvenance(record, { signal, assertCurrent: fence });
+  fence();
+  if (fingerprintStudioBg3dModelSourceRestriction(provenance.sourceRestriction)
+    !== fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(identity))) {
+    reject(failure("asset-mismatch", "실제 저장 원본의 파일 제한이 편집 원본과 다릅니다."));
+  }
   const bytes = new Uint8Array(await record.blob.arrayBuffer());
   fence();
   if (bytes.byteLength !== identity.byteSize) reject(failure("asset-mismatch", "모델 원본 바이트 크기가 저장 정보와 다릅니다."));
@@ -271,6 +286,8 @@ async function readBytes(identity: StudioBg3dAuthoredModelEditRecordIdentity, si
   fence();
   const hash = `sha256:${Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("")}`;
   if (hash !== identity.contentHash) reject(failure("asset-mismatch", "실제 모델 원본 바이트의 SHA-256이 저장한 원본과 다릅니다."));
+  await assertStudioBg3dModelExportReceiptCurrent(provenance);
+  fence();
   return bytes;
 }
 

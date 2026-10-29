@@ -7,8 +7,11 @@ const BUTTON =
   "min-h-11 min-w-11 rounded-md border border-line bg-card px-3 py-2 text-xs text-fg hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50";
 export function StudioScene3dCutPanel({
   session,
+  preferredExpanded,
 }: {
   readonly session: StudioScene3dCutSession;
+  /** 사용자 선택 전의 권장 상태다. 생략한 기존 소비자는 펼쳐진 상태를 유지한다. */
+  readonly preferredExpanded?: boolean;
 }) {
   const t = useBilingual("scene3d-cut-versions");
   const state = useSyncExternalStore(
@@ -24,6 +27,8 @@ export function StudioScene3dCutPanel({
   const [updateScene, setUpdateScene] = useState(true);
   const [characters, setCharacters] = useState<Set<string>>(new Set());
   const [json, setJson] = useState("");
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const expanded = userExpanded ?? preferredExpanded ?? true;
   const backupUrl = useRef<string | null>(null);
   useEffect(() => {
     if (session.read().phase === "loading") void session.restore();
@@ -55,11 +60,34 @@ export function StudioScene3dCutPanel({
   return (
     <details
       className="shrink-0 border-b border-line bg-panel text-fg"
-      open
+      open={expanded}
+      onToggle={preferredExpanded === undefined ? undefined : (event) => {
+        if (event.target !== event.currentTarget) return;
+        const next = event.currentTarget.open;
+        // 첫 activation 전의 prop-only toggle은 사용자 선택으로 기록하지 않는다.
+        setUserExpanded((previous) => previous === null ? previous : next);
+      }}
       data-testid="scene3d-cut-panel"
     >
-      <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-semibold">
-        {t("컷 버전 · 원본 고정", "Cut versions · pinned sources")}
+      <summary
+        className="min-h-11 cursor-pointer px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+        onClick={preferredExpanded === undefined ? undefined : (event) => {
+          if (event.defaultPrevented) return;
+          const details = event.currentTarget.parentElement;
+          // 기본 toggle 전에 현재 open prop을 고정해 resize가 뒤늦게 사용자 선택을 덮지 않게 한다.
+          if (details instanceof HTMLDetailsElement) {
+            const baseline = details.open;
+            setUserExpanded((previous) => previous ?? baseline);
+          }
+        }}
+      >
+        <span>{t("컷 버전 · 원본 고정", "Cut versions · pinned sources")}</span>
+        <span data-testid="scene3d-cut-summary-state" aria-live={expanded ? "off" : "polite"} className="ml-2 inline-flex flex-wrap gap-1 text-xs font-normal text-fg-2">
+          <span>{t("고정한 컷", "Pinned cuts")} {cuts.length}</span>
+          {state.dirty && <span>· {t("저장하지 않은 변경", "Unsaved changes")}</span>}
+          {busy && <span>· {t("작업 중", "Working")}</span>}
+          {state.phase === "error" && <span>· {t("확인 필요", "Needs attention")}</span>}
+        </span>
       </summary>
       <div className="max-h-[55vh] space-y-3 overflow-auto p-3">
         <p className="text-xs text-fg-2">

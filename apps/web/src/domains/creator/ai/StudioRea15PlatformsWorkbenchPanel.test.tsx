@@ -87,9 +87,13 @@ describe("StudioRea15PlatformsWorkbenchPanel (Phase 7 15대 웹툰 AI 플랫폼 
     fireEvent.click(screen.getByTestId("rea15-tab-runway-luma-pika-viggle-live2d-spine"));
     expect(screen.getByTestId("rea15-panel-runway-luma-pika-viggle-live2d-spine")).toBeDefined();
 
-    // 탭 14: SketchUp · Blender · Petalica · Magma · Recraft
+    // 탭 14: 공간 모델러 · Blender · Petalica · Magma · Recraft — 내부 탭 ID는 유지한다.
     fireEvent.click(screen.getByTestId("rea15-tab-sketchup-blender-petalica-magma-recraft"));
-    expect(screen.getByTestId("rea15-panel-sketchup-blender-petalica-magma-recraft")).toBeDefined();
+    expect(screen.getByTestId("rea15-panel-sketchup-blender-petalica-magma-recraft").textContent).toContain("공간 모델러");
+    fireEvent.click(screen.getByTestId("run-rea15-active-tab-btn"));
+    await waitFor(() => {
+      expect(appendedLines.some((line) => line.startsWith("[공간 모델러·Blender·Petalica·Magma·Recraft"))).toBe(true);
+    });
 
     // 탭 15: Tapas · Tappytoon · RIDI · Postype · Sudowrite · Novelcrafter
     fireEvent.click(screen.getByTestId("rea15-tab-tapas-tappytoon-ridi-postype-sudowrite-novelcrafter"));

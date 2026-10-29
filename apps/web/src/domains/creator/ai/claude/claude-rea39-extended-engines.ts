@@ -550,7 +550,7 @@ export async function runRunwayLumaPikaViggleLive2dSpineMotionAssist(
 }
 
 /* ============================================================================
- * 14. Wave 6: SketchUp 3D · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터
+ * 14. Wave 6: 공간 모델러 · Blender Grease Pencil · Petalica 채색 · Magma 30인 협업 · Recraft SVG · Cara Glaze 디렉터
  * ============================================================================ */
 
 export function buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(
@@ -561,10 +561,10 @@ export function buildLocalSketchupBlenderPetalicaMagmaRecraftStudioReport(
   const genre = cleanSingleLineText(input.genre ?? "판타지 액션", 40) || "판타지 액션";
 
   return {
-    hybridStudioExecutiveSummaryKo: `SketchUp 3D Warehouse 동적 배경 컴포넌트·은선 추출, Blender Grease Pencil 3.0 3D 카메라 공간 2D 작화, Pixiv Petalica Paint(Satsuki 셀채색)·OpenArt·Playground AI 스티커 합성, Magma 30인 실시간 분업 캔버스, Recraft V3 CanvasKit 순수 SVG 문양 벡터, 그리고 Cara Glaze/NoAI 창작자 보호를 결합한 ${genre} 하이브리드 스튜디오 사양입니다.`,
+    hybridStudioExecutiveSummaryKo: `공간 모델러의 제작 계획 예시입니다. SketchUp Dynamic Components·3D Warehouse의 동적 배경·은선 기능을 참고하고, Blender Grease Pencil 3.0 3D 카메라 공간 2D 작화, Pixiv Petalica Paint(Satsuki 셀채색)·OpenArt·Playground AI 스티커 합성, Magma 30인 실시간 분업 캔버스, Recraft V3 CanvasKit 순수 SVG 문양 벡터, Cara Glaze/NoAI 창작자 보호를 결합하는 ${genre} 하이브리드 스튜디오 사양을 제안합니다.`,
     sketchupAndGreasePencil3d: {
       warehouseDynamicComponentKo:
-        "황궁 대신전 아치형 성문 & 스테인드글라스 채광창 (SketchUp Dynamic Door/Window Hinge 0°~115°)",
+        "황궁 대신전 아치형 성문 & 스테인드글라스 채광창 설계 예시 (SketchUp Dynamic Components 참고; 문·창문 힌지 0°~115°)",
       hiddenLineStyleAndShadowTime: "Hidden Line 1.2px + Shadow Study 17:45 Sunset (Azimuth 248°, Altitude 16°)",
       greasePencilStrokeLayers: [
         "GP_01_3D_Perspective_Guide",
@@ -607,9 +607,9 @@ export async function runSketchupBlenderPetalicaMagmaRecraftStudioAssist(
     input,
     options,
     systemPromptKo:
-      "당신은 SketchUp 3D Warehouse(동적 구성요소·은선), Blender Grease Pencil 3.0(3D 공간 2D 작화), Pixiv Petalica Paint(Tanpopo/Satsuki/Canna 자동 채색)·ComicsMaker·OpenArt·Playground AI, Magma(30인 동시 협업 캔버스), Recraft V3(Skia CanvasKit SVG 벡터), Cara(Glaze 적대적 워터마킹·NoAI 보호) 통합 프로덕션 디렉터입니다. JSON 스키마에 맞춰 응답하세요.",
+      "당신은 공간 모델러의 제작 계획을 제안하는 통합 프로덕션 디렉터입니다. SketchUp Dynamic Components·3D Warehouse(동적 구성요소·은선), Blender Grease Pencil 3.0(3D 공간 2D 작화), Pixiv Petalica Paint(Tanpopo/Satsuki/Canna 자동 채색)·ComicsMaker·OpenArt·Playground AI, Magma(30인 동시 협업 캔버스), Recraft V3(Skia CanvasKit SVG 벡터), Cara(Glaze 적대적 워터마킹·NoAI 보호)를 참고하세요. 외부 제품의 참고 기능과 공간 모델러에서 실제 확인한 구현 범위를 구분하고, 제안만으로 기능이 실행·완료됐다고 서술하지 마세요. JSON 스키마에 맞춰 응답하세요.",
     userDirectiveKo:
-      "현재 장면을 위한 SketchUp 3D/Blender Grease Pencil 레이어 설계, Petalica/OpenArt/Playground 채색·스티커 사양, 그리고 Magma 분업 역할·Recraft SVG 벡터·Cara Glaze 원화 보호 파이프라인을 생성하세요.",
+      "현재 장면을 위한 공간 모델러/Blender Grease Pencil 레이어 설계, Petalica/OpenArt/Playground 채색·스티커 사양, 그리고 Magma 분업 역할·Recraft SVG 벡터·Cara Glaze 원화 보호 파이프라인을 생성하세요.",
     schema: SketchupBlenderPetalicaMagmaRecraftStudioSchema,
     fallbackReport,
   });
@@ -761,7 +761,7 @@ export const REA15_TABS: readonly {
   { id: "niji-pixai-civitai-lora-sref", labelKo: "Niji V6 (--sref/--cref) · LoRA 스택 · Picrew 파츠", badgeKo: "Niji · Civitai · PixAI · Picrew", tierBadgeKo: "Sonnet 5.5" },
   { id: "tripo-meshy-heroforge-suno-osmu", labelKo: "3D 프롭/미니어처 · Suno OST · ElevenLabs · MANGA Plus", badgeKo: "Tripo3D · Suno · ElevenLabs · OSMU", tierBadgeKo: "Opus 5.5" },
   { id: "runway-luma-pika-viggle-live2d-spine", labelKo: "모션 브러시 · 키프레임 모핑 · JST-2 · Live2D/Spine 2D", badgeKo: "Runway · Luma · Pika · Viggle · Live2D · Spine", tierBadgeKo: "Opus 5.5" },
-  { id: "sketchup-blender-petalica-magma-recraft", labelKo: "SketchUp/Grease Pencil · Petalica · Magma 협업 · Recraft SVG", badgeKo: "SketchUp · Blender · Petalica · Magma · Recraft", tierBadgeKo: "Sonnet 5.5" },
+  { id: "sketchup-blender-petalica-magma-recraft", labelKo: "공간 모델러/Grease Pencil · Petalica · Magma 협업 · Recraft SVG", badgeKo: "공간 모델러 · Blender · Petalica · Magma · Recraft", tierBadgeKo: "Sonnet 5.5" },
   { id: "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter", labelKo: "Tapas/Tappytoon/리디/포스타입 · Sudowrite/Novelcrafter 코덱스", badgeKo: "Tapas · Tappytoon · RIDI · Sudowrite · Novelcrafter", tierBadgeKo: "Opus 5.5" },
   { id: "mixamo-marvelous-coolors-noonnu-blambot-toonboom-eagle", labelKo: "Mixamo/Marvelous 3D · Coolors · 눈누/Blambot · ToonBoom/Eagle", badgeKo: "Mixamo · Marvelous · Coolors · 눈누 · ToonBoom · Eagle", tierBadgeKo: "Sonnet 5.5" },
 ];

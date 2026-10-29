@@ -13,6 +13,8 @@ import { studioBg3dModalOperationCoordinator } from "./studio-bg3d-modal-operati
 import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
 import { STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS } from "./studio-bg3d-scene-document";
+import { resolveStudioBg3dModelExportProvenance, assertStudioBg3dModelExportReceiptCurrent } from "./studio-bg3d-model-export-provenance";
+import { fingerprintStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
 import type {
   Scene3dInplacePrepared,
   Scene3dInplaceSelection,
@@ -21,6 +23,10 @@ import type { SpecialistArtifact } from "../scene3d/specialists/specialist-contr
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 import type { Bg3dModelAtomicImportDispositionV12 } from "./bg3d-model-library";
 import type { StudioBg3dInplaceToolsContext } from "./studio-bg3d-inplace-tools-context";
+
+function isSourceHash(value: string): value is `sha256:${string}` {
+  return /^sha256:[a-f0-9]{64}$/u.test(value);
+}
 
 /** Existing SQLite/OPFS CAS + exact-disposition compensation. No new persistence authority. */
 export async function prepareStudioBg3dInplaceDerivative(
@@ -39,6 +45,12 @@ export async function prepareStudioBg3dInplaceDerivative(
   )!;
   const originalEntry = ctx.cache.get(originalModel.modelId)!;
   const library = await loadStudioBg3dModelLibraryModule();
+  assertCurrent();
+  if (originalEntry.record.id !== originalModel.modelId || !isSourceHash(originalEntry.record.contentHash)) {
+    throw new Scene3dInplaceError("stale", "선택 모델의 저장 원본 연결이 달라 파생본을 만들지 않았습니다.");
+  }
+  // 서비스 내 가공은 유지한다. 파생본의 파일 제한은 실제 저장/카탈로그 권위에서 이어받는다.
+  const provenance = await resolveStudioBg3dModelExportProvenance(originalEntry.record, { signal, assertCurrent });
   assertCurrent();
   const policy = deriveStudioBg3dSessionGlbValidationPolicy(
     ctx.live.current.document,
@@ -92,6 +104,11 @@ export async function prepareStudioBg3dInplaceDerivative(
             }),
             rights: originalEntry.record.rights,
             expectedSha256: artifact.sha256,
+            sourceReceipt: {
+              sourceRecordId: originalEntry.record.id,
+              sourceContentHash: originalEntry.record.contentHash,
+              sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(provenance.sourceRestriction),
+            },
           },
         ],
         {
@@ -179,6 +196,9 @@ export async function prepareStudioBg3dInplaceDerivative(
             async (lease) => {
               lease.throwIfRevoked();
               assertCurrent();
+              await assertStudioBg3dModelExportReceiptCurrent(provenance);
+              lease.throwIfRevoked();
+              assertCurrent();
               const persisted = await library.getStoredBg3dModelV12(record.id, {
                 signal: lease.signal,
               });
@@ -187,7 +207,9 @@ export async function prepareStudioBg3dInplaceDerivative(
               if (
                 !persisted ||
                 persisted.contentHash !== record.contentHash ||
-                persisted.byteSize !== record.byteSize
+                persisted.byteSize !== record.byteSize ||
+                fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(persisted))
+                  !== fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record))
               )
                 throw new Scene3dInplaceError(
                   "persistence",

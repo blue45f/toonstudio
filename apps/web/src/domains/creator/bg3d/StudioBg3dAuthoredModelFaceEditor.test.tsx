@@ -36,7 +36,8 @@ import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-typ
 import type { StudioBg3dPrimitiveFaceApplyResult, StudioBg3dPrimitiveFaceEditorProps } from "./StudioBg3dPrimitiveFaceEditor";
 
 type Library = typeof import("./bg3d-model-library");
-const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>() }));
+const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>(), source: vi.fn<Library["readStudioBg3dModelSourceSnapshotV12"]>() }));
+vi.mock("./bg3d-model-library", async (original) => ({ ...(await original<Library>()), readStudioBg3dModelSourceSnapshotV12: storage.source }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({ getStoredBg3dModelV12: storage.get }));
 vi.mock("../hybrid-dcc/StudioHybridDccViewportCore", () => ({
   StudioHybridDccViewport: (props: StudioHybridDccViewportProps) => {
@@ -137,6 +138,10 @@ beforeEach(() => {
   // 실제 WebCrypto의 결과와 jsdom 검증기의 ArrayBuffer realm을 맞춘다. digest·validator는 대체하지 않는다.
   vi.stubGlobal("ArrayBuffer", Buffer.alloc(0).buffer.constructor); vi.stubGlobal("Blob", NativeBlob); vi.stubGlobal("crypto", webcrypto);
   records.clear(); storage.get.mockReset().mockImplementation(async (id) => records.get(id) ?? null);
+  storage.source.mockReset().mockImplementation(async (id) => {
+    const record = records.get(id);
+    return record ? { record, sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null } : null;
+  });
   const rectangle = new DOMRect(0, 0, 120, 30);
   const rectangles: DOMRectList = { 0: rectangle, length: 1, item: (index) => index === 0 ? rectangle : null,
     [Symbol.iterator]: () => [rectangle][Symbol.iterator]() };

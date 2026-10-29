@@ -4,6 +4,8 @@ import { STUDIO_BG3D_GLB_MAX_BYTES, STUDIO_BG3D_GLB_MIME_TYPE } from "./studio-b
 import { getStudioBg3dLibrariesAuthority } from "./studio-bg3d-libraries-sqlite-opfs-authority";
 import type { StudioBg3dLibrariesAuthority, StudioBg3dLibraryReadSnapshotContext } from "./studio-bg3d-libraries-sqlite-opfs-authority";
 import type { StudioBg3dAttachmentRights } from "./studio-bg3d-scene-document-types";
+import { fingerprintStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 
 export interface StudioBg3dModelReadLeaseRecordIdentity {
   readonly id: string;
@@ -11,6 +13,7 @@ export interface StudioBg3dModelReadLeaseRecordIdentity {
   readonly byteSize: number;
   readonly mime: string;
   readonly rights: StudioBg3dAttachmentRights;
+  readonly sourceRestriction?: StudioBg3dModelSourceRestrictionV1;
 }
 export interface StudioBg3dModelReadLease {
   isCurrent(): boolean;
@@ -29,7 +32,7 @@ const MESSAGES: Readonly<Record<StudioBg3dModelReadLeaseErrorCode, string>> = {
   aborted: "모델 원본 검증 또는 장면 반영이 취소되어 읽기 잠금을 해제했습니다.",
   "unsupported-authority": "현재 저장소는 모델 원본을 함께 보호하는 읽기를 지원하지 않아 장면을 교체하지 않았습니다.",
   "invalid-record": "함께 확인할 모델 원본의 ID·해시·크기 정보가 올바르지 않습니다.",
-  "record-changed": "저장된 모델 원본 또는 새 파생본의 연결·권리·바이트가 바뀌어 장면을 교체하지 않았습니다.",
+  "record-changed": "저장된 모델 원본 또는 새 파생본의 연결·권리·출처 제한·바이트가 바뀌어 장면을 교체하지 않았습니다.",
   "read-failed": "모델 원본을 같은 저장 snapshot에서 확인하지 못해 장면을 교체하지 않았습니다.",
 };
 class ReadLeaseFailure extends Error {
@@ -48,7 +51,9 @@ function identityCopy(expected: readonly StudioBg3dModelReadLeaseRecordIdentity[
     if (!item || !isSafeBg3dModelStorageId(item.id) || !/^sha256:[a-f0-9]{64}$/u.test(item.contentHash)
       || !Number.isSafeInteger(item.byteSize) || item.byteSize <= 0 || item.byteSize > STUDIO_BG3D_GLB_MAX_BYTES
       || item.mime !== STUDIO_BG3D_GLB_MIME_TYPE || !item.rights) throw new ReadLeaseFailure("invalid-record");
-    return { id: item.id, contentHash: item.contentHash, byteSize: item.byteSize, mime: item.mime, rights: { ...item.rights } };
+    const sourceRestriction = readStudioBg3dEffectiveModelSourceRestriction(item);
+    return { id: item.id, contentHash: item.contentHash, byteSize: item.byteSize, mime: item.mime, rights: { ...item.rights },
+      ...(Object.hasOwn(item, "sourceRestriction") ? { sourceRestriction } : {}) };
   });
   if (new Set(result.map(({ id }) => id)).size !== result.length) throw new ReadLeaseFailure("invalid-record");
   return result;
@@ -60,7 +65,9 @@ async function verifySnapshot(context: StudioBg3dLibraryReadSnapshotContext,
     assertCurrent();
     const record = manifest.records.find(({ id }) => id === expected.id);
     if (!record || record.contentHash !== expected.contentHash || record.byteSize !== expected.byteSize
-      || record.mime !== expected.mime || !sameRights(record.rights, expected.rights)) throw new ReadLeaseFailure("record-changed");
+      || record.mime !== expected.mime || !sameRights(record.rights, expected.rights)
+      || fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record))
+        !== fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(expected))) throw new ReadLeaseFailure("record-changed");
     const bytes = await context.getBlob(record.blobRef);
     assertCurrent();
     if (!(bytes instanceof Uint8Array) || bytes.byteLength !== expected.byteSize) throw new ReadLeaseFailure("record-changed");

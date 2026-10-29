@@ -25,7 +25,7 @@ import {
 } from "./StudioBg3dPlaceSetPackagePanel";
 import { StudioBg3dPostProcessVfxPanel } from "./StudioBg3dPostProcessVfxPanel";
 import { StudioBg3dShaperTooningStudioPanel } from "./StudioBg3dShaperTooningStudioPanel";
-import { StudioBg3dSketchUpWorkbenchPanel } from "./StudioBg3dSketchUpWorkbenchPanel";
+import { StudioBg3dSpatialModelerPanel } from "./StudioBg3dSpatialModelerPanel";
 import { StudioBg3dSpatialFxPanel } from "./StudioBg3dSpatialFxPanel";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
@@ -60,7 +60,7 @@ export type StudioBg3dWorkbenchTabId =
   | "place-set-package"
   | "postprocess-vfx"
   | "shaper-tooning"
-  | "sketchup-studio"
+  | "spatial-modeler"
   | "spatial-fx"
   | "spatial-webtoon"
   | "virtual-space-collab"
@@ -86,7 +86,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "cloner", labelKo: "절차적 클로너", groupKo: "캐릭터·DCC" },
   { id: "deformers", labelKo: "디포머·CSG 불리언", groupKo: "캐릭터·DCC" },
   { id: "dynamic-components", labelKo: "다이나믹 컴포넌트", groupKo: "캐릭터·DCC" },
-  { id: "sketchup-studio", labelKo: "배경 건축 · SketchUp", groupKo: "캐릭터·DCC" },
+  { id: "spatial-modeler", labelKo: "공간 모델러", groupKo: "캐릭터·DCC" },
   { id: "dcc-pipeline", labelKo: "DCC·도시·렌즈·품질", groupKo: "캐릭터·DCC" },
   { id: "vrm-hybrid-dcc", labelKo: "VRM·아바타·하이브리드 DCC", groupKo: "캐릭터·DCC" },
   { id: "place-set-package", labelKo: "장소 세트 정본", groupKo: "세트·XR" },
@@ -191,6 +191,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
   primitiveEditSelection,
   onBeginPrimitiveEdit,
   onApplyPrimitiveEdit,
+  sceneGlbExportUnavailableReason,
+  onExportCurrentSceneGlb,
   onApplySceneCamera,
   onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
@@ -562,14 +564,14 @@ export function StudioBg3dAdvancedWorkbenchHub({
           />
         ) : null}
 
-        {activeTab === "sketchup-studio" ? (
-          <StudioBg3dSketchUpWorkbenchPanel
+        {activeTab === "spatial-modeler" ? (
+          <StudioBg3dSpatialModelerPanel
             disabled={disabled}
             onApplyStyle={(style) => {
               if (style.faceStyle === "hidden-line") {
                 proSuiteRuntime?.onSetLineArtPreview?.(true);
               }
-              setLastActionSummary(`SketchUp 스타일: ${style.labelKo}`);
+              setLastActionSummary(`공간 모델러 스타일: ${style.labelKo}`);
             }}
             onApplyShadowSolar={(az, alt, k) =>
               setLastActionSummary(`태양광 예제 계산: 방위 ${az.toFixed(1)}° / 고도 ${alt.toFixed(1)}° (${k}K)`)
@@ -591,6 +593,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
             primitiveEditSelection={primitiveEditSelection}
             onBeginPrimitiveEdit={onBeginPrimitiveEdit}
             onApplyPrimitiveEdit={onApplyPrimitiveEdit}
+              sceneGlbExportUnavailableReason={sceneGlbExportUnavailableReason}
+              onExportCurrentSceneGlb={onExportCurrentSceneGlb}
             onExecuteSelectionArray={onExecuteSelectionArray ? handleExecuteSelectionArray : undefined}
             onApplySceneCamera={handleApplySceneCamera}
           />

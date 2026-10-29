@@ -234,6 +234,8 @@ describe("원본 primitive 편집의 저장·admission·보상 orchestration", (
     const result = await applying;
     expect(result.ok).toBe(true);
     expect(storage.save.mock.calls[0]?.[1]).toMatchObject({ executionBackend: "worker", profile: "desktop" });
+    expect(storage.save.mock.calls[0]?.[0][0]).toMatchObject({ ingress: { kind: "studio-generated", modelFileExport: "allowed" } });
+    expect(storage.save.mock.calls[0]?.[0][0]).not.toHaveProperty("sourceReceipt");
     expect(storage.get).toHaveBeenCalledOnce(); expect(storage.compensate).not.toHaveBeenCalled();
     expect(f.live.current.primitives).toHaveLength(0);
     expect(f.live.current.customModels[0]).toMatchObject({ id: "source-box", position: [2.25, 0.75, -3.5], scale: [1.125, 0.37499999999999994, 1.375] });

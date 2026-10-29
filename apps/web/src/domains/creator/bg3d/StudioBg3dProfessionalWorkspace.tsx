@@ -1,5 +1,6 @@
 
 import { isValidElement, useEffect, useRef, useState } from "react";
+import { useIsMobile } from "@/shared/hooks/use-media-query";
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
 
 import type {
@@ -71,6 +72,7 @@ export function StudioBg3dProfessionalWorkspace({
   inspector,
   scopeKey = null,
 }: StudioBg3dProfessionalWorkspaceProps) {
+  const isMobile = useIsMobile();
   const canonicalStorageKey = studioBg3dProfessionalWorkspaceStorageKey(scopeKey);
   const [layout, setLayout] = useState(() =>
     readStudioBg3dProfessionalWorkspaceLayout(browserStorage(), scopeKey));
@@ -204,8 +206,8 @@ export function StudioBg3dProfessionalWorkspace({
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {isValidElement<{ h?: unknown }>(viewport) && Boolean(viewport.props.h) && <StudioScene3dBg3dCutPanel host={viewport.props.h} />}
+    <div data-bg3d-professional-workspace="true" className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {isValidElement<{ h?: unknown }>(viewport) && Boolean(viewport.props.h) && <StudioScene3dBg3dCutPanel host={viewport.props.h} preferredExpanded={!isMobile} />}
       <div
         className="hidden min-h-10 shrink-0 items-center gap-1.5 border-b border-line bg-panel/90 px-2 xl:flex"
         role="toolbar"
@@ -268,6 +270,7 @@ export function StudioBg3dProfessionalWorkspace({
         </aside>
         {layout.outlinerVisible ? renderSeparator("outliner") : null}
         <div
+          data-bg3d-professional-viewport="true"
           className="contents xl:flex xl:min-h-0 xl:min-w-0 xl:flex-1"
           style={{ order: "var(--studio-bg3d-viewport-order)" }}
         >
@@ -275,6 +278,7 @@ export function StudioBg3dProfessionalWorkspace({
         </div>
         {layout.inspectorVisible ? renderSeparator("inspector") : null}
         <div
+          data-bg3d-professional-inspector="true"
           className={`${layout.inspectorVisible ? "contents xl:flex" : "contents xl:hidden"} xl:min-h-0 xl:shrink-0 xl:overflow-hidden xl:w-[var(--studio-bg3d-inspector-width)]`}
           style={{ order: "var(--studio-bg3d-inspector-order)" }}
         >

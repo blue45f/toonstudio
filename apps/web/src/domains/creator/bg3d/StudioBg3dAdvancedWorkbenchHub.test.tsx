@@ -31,7 +31,7 @@ const ALL_WORKBENCH_TAB_IDS: readonly StudioBg3dWorkbenchTabId[] = [
   "place-set-package",
   "postprocess-vfx",
   "shaper-tooning",
-  "sketchup-studio",
+  "spatial-modeler",
   "spatial-fx",
   "spatial-webtoon",
   "virtual-space-collab",
@@ -197,40 +197,40 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     }
   });
 
-  it("SketchUp 3D(Sandbox·Solid Tools·Match Photo·건축 컴포넌트) 및 Blender 5.2(모디파이어·GPv3·물리·카메라)의 3D 장면 배치·카메라·선화 연동이 동작한다", () => {
+  it("공간 모델러의 지형·솔리드·사진 투시·건축 요소와 Blender 도구의 장면 배치·카메라·선화 연동이 동작한다", () => {
     const insertedBatches: number[] = [];
     const appliedFovs: number[] = [];
     const lineArtStates: boolean[] = [];
 
     render(
       <StudioBg3dAdvancedWorkbenchHub
-        defaultTab="sketchup-studio"
+        defaultTab="spatial-modeler"
         onInsertScenePrimitives={(prims) => { insertedBatches.push(prims.length); return true; }}
         onApplySceneCamera={(cam) => appliedFovs.push(cam.fovDegrees)}
         onSyncSceneLineArt={(enabled) => lineArtStates.push(enabled)}
       />,
     );
 
-    // SketchUp 3D: Sandbox 지형 배치, Solid Tools 배치, Match Photo 카메라 적용, 건축 컴포넌트 배치, LayOut SVG
-    fireEvent.click(screen.getByTestId("sketchup-sandbox-insert-scene-btn"));
+    // 공간 모델러: 지형·솔리드·건축 요소 배치, 사진 투시 카메라 적용, 벡터 단면도 생성
+    fireEvent.click(screen.getByTestId("spatial-modeler-sandbox-insert-scene-btn"));
     expect(insertedBatches.length).toBe(1);
     expect(insertedBatches[0]).toBeGreaterThan(5);
 
-    fireEvent.click(screen.getByTestId("sketchup-solid-op-split"));
-    fireEvent.click(screen.getByTestId("sketchup-solid-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-solid-op-split"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-solid-insert-scene-btn"));
     expect(insertedBatches.length).toBe(2);
     expect(insertedBatches[1]).toBe(3);
 
-    fireEvent.click(screen.getByTestId("sketchup-match-photo-apply-camera-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-match-photo-apply-camera-btn"));
     expect(appliedFovs.length).toBe(1);
 
-    fireEvent.click(screen.getByTestId("sketchup-arch-kind-roof-hanok"));
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-kind-roof-hanok"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insertedBatches.length).toBe(3);
 
-    fireEvent.click(screen.getByTestId("sketchup-layout-svg-export-btn"));
-    expect(screen.getByTestId("sketchup-layout-svg-summary").textContent).toContain(
-      "LayOut 벡터 단면 SVG",
+    fireEvent.click(screen.getByTestId("spatial-modeler-layout-svg-export-btn"));
+    expect(screen.getByTestId("spatial-modeler-layout-svg-summary").textContent).toContain(
+      "벡터 단면 SVG",
     );
 
     // Blender 5.2: 모디파이어 생성물 배치, GPv3/Freestyle 선화 동기화, 물리 도메인 배치, 시네마틱 카메라 적용, 배경 세트 배치
@@ -252,25 +252,25 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     expect(insertedBatches.length).toBe(6);
   });
   it("장면에서 거부된 도형은 배치 수와 성공 안내에 반영하지 않는다", () => {
-    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" onInsertScenePrimitives={() => false} />);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" onInsertScenePrimitives={() => false} />);
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
     expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain("배치하지 못했습니다");
-    expect(screen.getByTestId("sketchup-workbench-status").textContent).not.toContain("배치 완료");
+    expect(screen.getByTestId("spatial-modeler-workbench-status").textContent).not.toContain("배치 완료");
   });
 
   it("장면 연결이 없으면 건축 요소 배치를 사용할 수 없다", () => {
-    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" />);
-    expect(screen.getByTestId("sketchup-arch-insert-scene-btn")).toHaveProperty("disabled", true);
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" />);
+    expect(screen.getByTestId("spatial-modeler-arch-insert-scene-btn")).toHaveProperty("disabled", true);
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
   });
 
-  it("선택 요약과 배열 명령을 실제 SketchUp 패널로 전달하고 성공 결과만 Hub 배치 수에 누적한다", () => {
+  it("선택 요약과 배열 명령을 실제 공간 모델러 패널로 전달하고 성공 결과만 Hub 배치 수에 누적한다", () => {
     const execute = vi.fn<StudioBg3dExecuteSelectionArray>()
       .mockReturnValueOnce({ ok: true, addedNodeCount: 4, copyCount: 2, selectedNodeCount: 2, normalizedToken: "*2" })
       .mockReturnValueOnce({ ok: false, code: "selection-unavailable", messageKo: "선택이 변경되어 반복 배치하지 못했습니다." })
       .mockReturnValueOnce({ ok: true, addedNodeCount: 2, copyCount: 1, selectedNodeCount: 2, normalizedToken: "*1" });
-    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio"
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler"
       arraySelection={{ selectedPrimitiveCount: 2, availableNodeCount: 50, blockedReason: null }} onExecuteSelectionArray={execute} />);
     expect(screen.getByTestId("bg3d-selection-array-panel")).toBeTruthy();
     expect(screen.getByTestId("bg3d-array-selection-summary").textContent).toContain("선택 도형 2개");
@@ -296,11 +296,11 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     const selection: StudioBg3dSelectionArraySummary = {
       selectedPrimitiveCount: 2, availableNodeCount: 50, blockedReason: "외부 모델을 포함한 선택은 반복 배치할 수 없습니다.",
     };
-    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" arraySelection={selection} onExecuteSelectionArray={execute} />);
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" arraySelection={selection} onExecuteSelectionArray={execute} />);
     expect(screen.getByTestId("bg3d-array-selection-blocked").textContent).toBe(selection.blockedReason);
     expect(screen.getByTestId("bg3d-array-execute")).toHaveProperty("disabled", true);
     fireEvent.click(screen.getByTestId("bg3d-array-execute"));
-    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" disabled
+    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" disabled
       arraySelection={{ selectedPrimitiveCount: 1, availableNodeCount: 50, blockedReason: null }} onExecuteSelectionArray={execute} />);
     expect(screen.getByTestId("bg3d-array-selection-summary").textContent).toContain("선택 도형 1개");
     expect(screen.getByTestId("bg3d-array-execute")).toHaveProperty("disabled", true);
@@ -309,14 +309,14 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     expect(screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent).toContain("3D 배치 0개");
   });
 
-  it("Hub→실제 SketchUp 패널→원본 정보 버튼으로 검증된 자산 정보를 읽고 기존 3D 배치 수를 바꾸지 않는다", async () => {
+  it("Hub→실제 공간 모델러 패널→원본 정보 버튼으로 검증된 자산 정보를 읽고 기존 3D 배치 수를 바꾸지 않는다", async () => {
     const source = sourceHost(actualSkpSource());
     const insert = vi.fn(() => true);
-    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" onInsertScenePrimitives={insert}
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" onInsertScenePrimitives={insert}
       skpSourceSelection={source.selection} onReadSkpSceneSource={source.read} />);
     expect(source.read).not.toHaveBeenCalled();
     expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert).toHaveBeenCalledTimes(1);
     const countBefore = screen.getByTestId("bg3d-workbench-dcc-compat-badge").textContent;
     const actionBefore = screen.getByTestId("bg3d-workbench-last-action").textContent;
@@ -334,12 +334,12 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
 
   it("Hub 편집이 잠겨도 원본 조회는 허용하며 기존 배치 버튼 잠금은 유지한다", async () => {
     const source = sourceHost(actualSkpSource()), insert = vi.fn(() => true);
-    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" disabled onInsertScenePrimitives={insert}
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" disabled onInsertScenePrimitives={insert}
       skpSourceSelection={source.selection} onReadSkpSceneSource={source.read} />);
-    expect(screen.getByTestId("sketchup-arch-insert-scene-btn")).toHaveProperty("disabled", true);
-    expect(screen.getByTestId("sketchup-sandbox-insert-scene-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("spatial-modeler-arch-insert-scene-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByTestId("spatial-modeler-sandbox-insert-scene-btn")).toHaveProperty("disabled", true);
     expect(screen.getByTestId("bg3d-skp-source-read")).toHaveProperty("disabled", false);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     fireEvent.click(screen.getByTestId("bg3d-skp-source-read"));
     await screen.findByTestId("bg3d-skp-source-available");
     expect(source.read).toHaveBeenCalledTimes(1); expect(insert).not.toHaveBeenCalled();
@@ -351,9 +351,9 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     const pending = deferred<StudioBg3dSkpSourceReadResult>();
     const oldResult = await first.read();
     const delayed = vi.fn<StudioBg3dReadSkpSceneSource>(() => pending.promise);
-    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={first.selection} onReadSkpSceneSource={delayed} />);
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" skpSourceSelection={first.selection} onReadSkpSceneSource={delayed} />);
     fireEvent.click(screen.getByTestId("bg3d-skp-source-read")); expect(delayed).toHaveBeenCalledTimes(1);
-    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={next.selection} onReadSkpSceneSource={next.read} />);
+    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" skpSourceSelection={next.selection} onReadSkpSceneSource={next.read} />);
     expect(screen.getByTestId("bg3d-skp-source-model").textContent).toContain("원본 모델 B");
     expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
     expect(next.read).not.toHaveBeenCalled();
@@ -369,9 +369,9 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
 
   it("기존 선택에 표시한 원본 결과도 새 scope로 바뀌는 즉시 지운다", async () => {
     const first = sourceHost(actualSkpSource()), next = sourceHost(undefined, "B");
-    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={first.selection} onReadSkpSceneSource={first.read} />);
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" skpSourceSelection={first.selection} onReadSkpSceneSource={first.read} />);
     fireEvent.click(screen.getByTestId("bg3d-skp-source-read")); await screen.findByTestId("bg3d-skp-source-available");
-    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="sketchup-studio" skpSourceSelection={next.selection} onReadSkpSceneSource={next.read} />);
+    view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="spatial-modeler" skpSourceSelection={next.selection} onReadSkpSceneSource={next.read} />);
     expect(screen.queryByTestId("bg3d-skp-source-available")).toBeNull();
     expect(screen.queryByText("원근 컷")).toBeNull();
     expect(next.read).not.toHaveBeenCalled();

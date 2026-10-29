@@ -34,6 +34,8 @@ export interface Scene3dInplaceToolsBridge {
     readonly reason: string | null;
   };
   captureSelection(signal?: AbortSignal): Promise<Scene3dSelectedAssetInput>;
+  /** 선택한 저장 원본의 실제 출처를 파일 인계 직전에 재확인한다. 가공/적용 권한과는 별개다. */
+  assertSourceFileExportAllowed?(input: Scene3dSelectedAssetInput, signal?: AbortSignal): Promise<void>;
   apply(
     input: Scene3dSelectedAssetInput,
     result: SpecialistResult,

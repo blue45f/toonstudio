@@ -43,7 +43,7 @@ Worker 응답의 `sceneSource`는 메인 스레드에서 다시 검증하고 최
 원본 문자열 합은 128KiB, 직렬화 manifest는 256KiB로 제한한다.
 순환 참조·희소 배열·접근자·비유한 값·잘못된 정의 참조와 구조를 검증하며 임의 실행 메서드를 호출하지 않는다.
 
-실제 편집기에서 3D 모델 하나를 선택한 뒤 `시점·스토리보드 → 고급 작업대 → SketchUp`의
+실제 편집기에서 3D 모델 하나를 선택한 뒤 `보기 → 공간 모델러 열기 → 공간 모델러`의
 `SKP 원본 정보 읽기`로 카메라·태그 목록과 파서 기록 수를 확인하고 검증된 JSON을 내려받는다.
 조회는 문서·Undo·선택 상태를 바꾸지 않는다. 모델 로딩·조회 실패는 재시도할 수 있고,
 조회 도중 선택이 바뀌면 이전 모델의 결과를 새 선택에 표시하지 않는다.
@@ -95,7 +95,7 @@ Page의 `fovBasis`와 저장 상태 플래그는 파서가 노출하지 않으�
 ## 사용자 흐름
 
 1. 자산 라이브러리 패널의 "이용 권리 기록"에서 출처·라이선스를 먼저 기록한다. `.skp`도 다른 형식과 **같은 권리 관문**을 거치며(새 관문 없음) 3D Warehouse 이용 약관 안내가 이 영역에 표시된다.
-2. 파일을 고르면 패널 아래 SketchUp 영역에 진행 단계(1/6 파일 확인 … 6/6 GLB 만들기)와 실행 위치(별도 Worker / 화면 스레드)가 표시된다. "가져오기 취소"로 중단할 수 있다.
+2. 파일을 고르면 패널 아래 SKP 가져오기 영역에 진행 단계(1/6 파일 확인 … 6/6 GLB 만들기)와 실행 위치(별도 Worker / 화면 스레드)가 표시된다. "가져오기 취소"로 중단할 수 있다.
 3. 변환 후 모델의 가장 긴 변이 **0.01m 미만(수 mm)** 이거나 **1,000m 이상(수 km)** 이면 "모델 크기를 확인해 주세요" 질문이 나타난다. 모델을 만든 단위(m·cm·mm·inch)를 고르면 그 단위로 크기를 다시 맞춘다(고르는 시점은 라이브러리에 저장되기 전이다). 크기가 정상이면 묻지 않는다.
 4. 가져오기가 끝나면 변환 보고서 카드가 남는다: 적용 단위와 배율, 크기, 삼각형·정점·재질·텍스처 수, 컴포넌트·태그·장면 이름, 경고, 자산 정보 저장 결과. 가져오지 못한 경우에도 변환은 됐다면 사유와 함께 카드가 남고, 빈 장면(`skp-empty-scene`)처럼 보고서를 만들 수 있었던 거절도 `empty-scene` 경고·이름과 함께 카드로 남는다(여러 파일을 함께 가져오다 실패하면 모두 저장되지 않으며 카드가 그 사실을 밝힌다).
 
@@ -235,16 +235,16 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 
 **한계:** 이름은 보고서가 목록당 16개까지만 저장한다. 이름 기록은 .skp를 가져온 기기의 메타데이터 저장소에만 있어 다른 기기에서는 "이름 기록이 없어요"로 보인다. 컴포넌트 참조 자동 연결은 가져와 배치하는 순간에만 하고, 라이브러리에서 나중에 놓은 소재는 자동으로 묶이지 않는다. 이름은 파일 안의 믿을 수 없는 글자라 화면에는 글자로만 그리고, 문서에 옮길 때는 태그·메모 규칙(주소·자격 증명 모양·제어 문자 거절)을 다시 통과해야 한다.
 
-### SketchUp 마스터 스튜디오 워크벤치 및 전체 장면 복원기 (2026-10-26)
+### 공간 모델러 작업대와 예제 커널 (2026-10-26 모듈 기록)
 
 > 2026-10-29 재검증: 아래 모듈 목록은 커널·예제의 존재를 설명하며 실제 SKP 가져오기에서 전체 장면이
 > 복원된다는 뜻이 아니다. 실제 import는 재질별 world-baked 형상을 단일 GLB 모델로 반입한다.
 > `full-scene-restorer`의 Page·태그·계층·주석 입력은 현재 작업대의 고정 예제에서만 호출되고,
 > CAD 내보내기도 고정 상자 예제의 계산이다. 실제 장면에 연결한 건축·선택 배열은
-> [배경 건축 도구](sketchup-background-modeling.md), 남은 전체 요구는
+> [공간 모델러](spatial-modeler.md), 남은 전체 요구는
 > [기능·검증 원장](sketchup-feature-coverage.md)을 따른다.
 
-기본 에셋 라이브러리 가져오기(`skpImport` 보고서 v1)의 안정 계약을 변경하지 않고, 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`의 `sketchup-studio` 탭)와 전용 모듈을 통해 SketchUp의 고급 모델링·복원·내보내기 기능을 별도 제공한다(상세 REA 역공학 근거: [`docs/studio-rea-competitor-benchmark-2026-10-26.md`](../studio-rea-competitor-benchmark-2026-10-26.md)).
+기본 에셋 라이브러리 가져오기(`skpImport` 보고서 v1)의 안정 계약을 변경하지 않고, 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`의 `spatial-modeler` 탭)와 전용 모듈을 통해 공간 모델러의 모델링·복원·내보내기 작업대를 제공한다(상세 REA 역공학 근거: [`docs/studio-rea-competitor-benchmark-2026-10-26.md`](../studio-rea-competitor-benchmark-2026-10-26.md)).
 
 | 모듈 | 주요 제공 기능 |
 | --- | --- |
@@ -253,7 +253,8 @@ OpenSKP 1.3.0 README와 소스에서 확인한 사실에 맞춘다.
 | `studio-bg3d-sketchup-guides-sections-dimensions.ts` | 줄자(`ConstructionLine` `±1e30` 무한 센티넬 클리핑 및 유한 가이드, `ConstructionPoint`), 각도기(`rise:run` 물매·각도 파서), 3D 치수선(`Dimension` 보조선·`<>` 동적 치수 치환), 3D 지시선 텍스트(`TextEntity`), 단면 평면(`SectionPlane` 메쉬 삼각형 절단선 및 단면 채움 Poché 면적) |
 | `studio-bg3d-sketchup-styles-uv-engine.ts` | `.skp` `D307` 엣지 플래그(`0x01` hidden, `0x08` soft, `0x10` smooth) 디코딩, 6대 면 스타일(`wireframe`, `hidden-line`, `shaded`, `shaded-with-textures`, `monochrome`, `xray`) 및 엣지 모디파이어, 4-Pin 사영 호모그래피(`uvTransform` 3×3 행렬·`uvProjected`·`faceUvBasis`) UV 매핑 |
 | `studio-bg3d-sketchup-shadow-and-exporter.ts` | 위도·경도·Solar North·날짜·시각·Light/Dark 슬라이더 기반 태양 고도·방위각 계산기(`ShadowInfo`) 및 OpenSKP `SkpBuilder.toBytes()` 네이티브 `.skp` v17 빌더 + `.dxf`·`.ifc`·`.obj`/`.mtl`·`.stl`·`.ply`·`instanced-glb` 다중 CAD 익스포터 |
-| `StudioBg3dSketchUpWorkbenchPanel.tsx` | 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`) 내 SketchUp 마스터 스튜디오 통합 UI 패널 |
+| `StudioBg3dSpatialModelerPanel.tsx` | 3D 전문가 워크벤치 허브(`StudioBg3dAdvancedWorkbenchHub.tsx`) 내 공간 모델러 통합 UI 패널 |
+| `StudioBg3dSpatialModelerSections.tsx` | 공간 모델러의 모델링 예제·계산 미리보기 영역 |
 
 ## 권리·출처·법적 고지
 

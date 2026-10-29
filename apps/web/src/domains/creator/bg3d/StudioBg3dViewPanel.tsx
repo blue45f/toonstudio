@@ -173,6 +173,8 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
         primitiveEditSelection={props.primitiveEditSelection}
         onBeginPrimitiveEdit={props.onBeginPrimitiveEdit}
         onApplyPrimitiveEdit={props.onApplyPrimitiveEdit}
+        sceneGlbExportUnavailableReason={props.sceneGlbExportUnavailableReason}
+        onExportCurrentSceneGlb={props.onExportCurrentSceneGlb}
       />
     </StudioBg3dProSuiteRuntimeContext.Provider>
   );

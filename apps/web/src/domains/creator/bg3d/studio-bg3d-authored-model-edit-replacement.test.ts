@@ -18,6 +18,8 @@ import { convertStudioBg3dPrimitiveToEditableMesh } from "./studio-bg3d-primitiv
 import { createStudioBg3dPrimitiveEditMaterial } from "./studio-bg3d-primitive-edit-replacement";
 import { createDefaultStudioBg3dSceneDocument, STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES } from "./studio-bg3d-scene-document";
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
+import { inheritStudioBg3dModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
@@ -32,14 +34,17 @@ import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edi
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 
 type Library = typeof import("./bg3d-model-library");
-const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>(), admit: vi.fn<Library["admitStoredBg3dModelForRenderingV12"]>() }));
+const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>(), admit: vi.fn<Library["admitStoredBg3dModelForRenderingV12"]>(),
+  source: vi.fn<Library["readStudioBg3dModelSourceSnapshotV12"]>() }));
+vi.mock("./bg3d-model-library", async (original) => ({ ...(await original<Library>()), readStudioBg3dModelSourceSnapshotV12: storage.source }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({ getStoredBg3dModelV12: storage.get, admitStoredBg3dModelForRenderingV12: storage.admit }));
 const records = new Map<string, Bg3dVerifiedStoredRecord>(), verifications = new Map<string, StudioBg3dGlbValidationSuccess>();
 const resources: StudioBg3dModelRootCacheEntry[] = [];
 const HISTORICAL: StudioHybridDccObjectTransform = { revision: 1, position: [2.25, 0.75, -3.5], rotationEulerRad: [0.31, -0.63, 0.24], scale: [1.8, 0.6, 2.2] };
 const RIGHTS: Bg3dVerifiedStoredRecord["rights"] = { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "원저작자", licenseName: "시험 사용권" };
 
-async function makeAsset(id: string, distance: number, transform = HISTORICAL, colorSrgb = "#c9a876") {
+async function makeAsset(id: string, distance: number, transform = HISTORICAL, colorSrgb = "#c9a876",
+  sourceRestriction?: StudioBg3dModelSourceRestrictionV1) {
   const converted = convertStudioBg3dPrimitiveToEditableMesh({ id: "actual-original-box", kind: "box" });
   if (!converted.ok) throw Error(converted.detail);
   const edited = distance === 0 ? null : pushPullStudioEditableMeshFaces(converted.value.mesh, [2], distance);
@@ -60,7 +65,8 @@ async function makeAsset(id: string, distance: number, transform = HISTORICAL, c
   if (!verification.ok) throw Error(verification.code);
   const record: Bg3dVerifiedStoredRecord = { id, storageVersion: 2, name: `${id}.glb`, format: "glb", blob: new Blob([bytes], { type: "model/gltf-binary" }),
     thumbnail: null, createdAt: 1, updatedAt: 1, contentHash, byteSize: bytes.byteLength, mime: "model/gltf-binary", validationVersion: 1,
-    validatedAt: 1, validatorProfile: "desktop", validatorMetrics: verification.metrics, rights: { ...RIGHTS } };
+    validatedAt: 1, validatorProfile: "desktop", validatorMetrics: verification.metrics, rights: { ...RIGHTS },
+    ...(sourceRestriction ? { sourceRestriction } : {}) };
   records.set(id, record); verifications.set(id, verification);
   const document = createDefaultStudioBg3dSceneDocument();
   const quality = resolveStudioBg3dDeviceQuality({ document, mode: "edit", preference: "desktop",
@@ -74,8 +80,8 @@ async function makeAsset(id: string, distance: number, transform = HISTORICAL, c
   return { record, attachment, entry, asset, bytes };
 }
 
-async function fixture(shared = false, moved = true, nextDistance = 0.5) {
-  const old = await makeAsset("stored-A", 0.25), other = await makeAsset("stored-C", 0);
+async function fixture(shared = false, moved = true, nextDistance = 0.5, sourceRestriction?: StudioBg3dModelSourceRestrictionV1) {
+  const old = await makeAsset("stored-A", 0.25, HISTORICAL, "#c9a876", sourceRestriction), other = await makeAsset("stored-C", 0);
   const k = old.entry.normalizationScale;
   if (!k) throw Error("실제 normalization 없음");
   const model: BgCustomModelInstance = { id: "same-node", modelId: old.record.id, name: "현재 원본 이름", tags: ["상자", "실내"], visible: true, locked: false, parentId: null,
@@ -109,7 +115,8 @@ async function fixture(shared = false, moved = true, nextDistance = 0.5) {
     isPrimitiveEditInteractionLocked: () => locked, replaceCanonicalDocumentState: replace, commitImmediateHistoryTransition: commit };
   const captured = await captureStudioBg3dAuthoredModelEditSource(host, new AbortController().signal);
   if (!captured.ok) throw Error(captured.messageKo);
-  const source = captured.snapshot, next = await makeAsset("stored-B", nextDistance, source.objectTransform, source.sourceColorSrgb);
+  const source = captured.snapshot, next = await makeAsset("stored-B", nextDistance, source.objectTransform, source.sourceColorSrgb,
+    inheritStudioBg3dModelSourceRestriction(old.record));
   cache.set(next.record.id, next.entry); attachments.set(next.record.id, next.attachment); reverse.set(next.attachment.id, next.record.id);
   return { host, source, next, old, other, live, model, otherModel, sharedModel, selected, session, history, replace, commit, cache, attachments, reverse, lock: () => { locked = true; } };
 }
@@ -117,11 +124,27 @@ async function fixture(shared = false, moved = true, nextDistance = 0.5) {
 beforeEach(() => {
   records.clear(); verifications.clear();
   storage.get.mockReset().mockImplementation(async (id) => records.get(id) ?? null);
+  storage.source.mockReset().mockImplementation(async (id) => {
+    const record = records.get(id);
+    return record ? { record, sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null } : null;
+  });
   storage.admit.mockReset().mockImplementation(async (id) => { const value = verifications.get(id); if (!value) throw Error("검증 원본 없음"); return value; });
 });
 afterEach(() => { for (const resource of resources.splice(0)) resource.dispose(); vi.restoreAllMocks(); });
 
 describe("authored model A→B의 같은 node 원본 교체", () => {
+  it.each(["record", "cache", "both"] as const)("service-only A의 새 B %s에 allowed를 맞춰도 history 전에 거부한다", async (changed) => {
+    const f = await fixture(false, true, 0.5, { version: 1, modelFileExport: "service-only", origin: null, parent: null });
+    const allowed = { ...f.next.record, sourceRestriction: { version: 1 as const, modelFileExport: "allowed" as const,
+      origin: { kind: "user-file" as const, recordId: f.next.record.id, sha256: f.next.record.contentHash }, parent: null } };
+    const cache = changed === "record" ? f.next.entry : { ...f.next.entry, record: allowed };
+    if (changed !== "record") f.cache.set(f.next.record.id, cache);
+    const candidate = { ...f.next.asset, record: changed === "cache" ? f.next.record : allowed, cache };
+    const before = createStudioBg3dHistorySnapshot(f.live.current);
+    expect(replaceStudioBg3dAuthoredModelEditSource(f.host, f.source, candidate)).toMatchObject({ ok: false, code: "asset-mismatch" });
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+    expect(createStudioBg3dHistorySnapshot(f.live.current)).toEqual(before);
+  });
   it.each([false, true])("공유=%s: 같은 ID·현재 canonical TRS·단색을 보존하고 실제 history로 한 번씩 Undo/Redo한다", async (shared) => {
     const f = await fixture(shared), before = createStudioBg3dHistorySnapshot(f.live.current), selectionIdentity = f.selected.current;
     const oldBlob = f.old.record.blob, oldCacheScale = f.old.entry.root.scale.toArray();

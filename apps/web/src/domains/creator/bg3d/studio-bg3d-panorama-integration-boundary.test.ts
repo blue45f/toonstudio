@@ -43,7 +43,11 @@ describe("Studio BG3D procedural panorama integration boundary", () => {
     const tabType = background3dSource.slice(tabTypeStart, tabTypeEnd);
 
     expect(background3dSource).toContain("<StudioBg3dScenePanorama");
-    expect(panoramaComponentSource).toContain("[invalidate, presetId, rotationDegrees]");
+    expect(background3dSource).toContain("<StudioBg3dCaptureEnvironmentAuthority intent={createStudioBg3dCaptureEnvironmentIntent(");
+    expect(background3dSource).toContain('fileTier={hdriFileTier} enabled={immersiveStagePlan?.mode !== "immersive-ar"}');
+    expect(panoramaComponentSource).toContain("[backgroundOwner, environmentOwner, invalidate, presetId, rotationDegrees, scene]");
+    expect(background3dSource).toContain('backgroundOwner={hdriEnvironmentActive && renderedEnvironmentSettings.useAsBackground ? "hdri" : "panorama"}');
+    expect(panoramaComponentSource).toContain('ownsBackground: backgroundOwner === "panorama"');
     expect(viewStart).toBeGreaterThanOrEqual(0);
     expect(viewEnd).toBeGreaterThan(viewStart);
     expect(viewControls).toContain('id="bg3d-panorama-rotation"');

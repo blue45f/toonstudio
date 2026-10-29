@@ -307,7 +307,7 @@ export function createStudioBg3dModelImportActions(
         importPlan.items.map((item) => (item.format === "skp" ? item.primaryPath : null)),
       );
       if (plannedSkpSourcePaths.some((path) => path !== null)) {
-        skpRun = (await import("./studio-bg3d-skp-import-run")).beginStudioBg3dSkpImportRun();
+        skpRun = (await import("./studio-bg3d-skp-import-run")).beginStudioBg3dSkpImportRun({ isCurrent: () => isModalAssetSessionCurrent(session) });
       }
       const canonicalInputs = await modelImportRuntime.convertStudioBg3dModelFilesToGlb(files, {
         executionBackend: "worker",
@@ -323,7 +323,7 @@ export function createStudioBg3dModelImportActions(
       });
       if (!isModalAssetSessionCurrent(session)) throw new StudioBg3dStaleModalOperationError();
       const imported = await importVerifiedBg3dModelsAtomically(
-        canonicalInputs.map((file) => ({ file, rights })),
+        canonicalInputs.map((file) => ({ file, rights, ingress: { kind: "user-file" as const, modelFileExport: "allowed" as const } })),
         {
           executionBackend: "worker",
           profile: policy.profile,

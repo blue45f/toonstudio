@@ -579,7 +579,7 @@ export function parseSketchUpArrayInput(raw: unknown): SketchUpParsedArrayComman
     mode: null,
     count: 0,
     normalizedToken: trimmed,
-    messageKo: "올바른 스케치업 배열 문법이 아닙니다. '*3', '3x'(외부 반복) 또는 '/4'(내부 등분) 형식으로 입력하세요.",
+    messageKo: "올바른 배열 문법이 아닙니다. '*3', '3x'(외부 반복) 또는 '/4'(내부 등분) 형식으로 입력하세요.",
   });
 }
 

@@ -4,6 +4,8 @@ import * as THREE from "three";
 
 import { getSkyPreset, normalizePanoramaRotationDegrees } from "../studio-background-3d-sky";
 
+import { claimStudioBg3dEnvironmentSlots } from "./studio-bg3d-environment-slot-owner";
+
 import type { StudioBg3dSkyPresetId } from "./studio-bg3d-scene-document";
 
 export const STUDIO_BG3D_PANORAMA_WIDTH = 512;
@@ -30,14 +32,18 @@ export interface StudioBg3dProceduralPanoramaPixels {
 export interface StudioBg3dProceduralPanoramaOptions {
   /**
    * 기본 true: 마운트 동안 `scene.environment`도 절차 텍스처가 소유합니다.
-   * false면 environment의 저장·설정·복원을 건너뛰고 background만 소유합니다.
+   * false면 environment의 저장·설정·복원을 건너뜁니다.
    * 실제 HDRI 바인딩(StudioBg3dHdriEnvironment)이 환경을 맡을 때 사용합니다.
    */
   readonly ownsEnvironment?: boolean;
+  /** 기본 true. HDRI가 보이는 배경도 맡으면 false로 두어 배경 슬롯을 건드리지 않습니다. */
+  readonly ownsBackground?: boolean;
 }
 
 export interface StudioBg3dProceduralPanoramaBinding {
   readonly texture: THREE.DataTexture | null;
+  /** 정상 blank(null) 적용과 설치 실패를 구분한다. 슬롯 소유권도 매번 다시 확인한다. */
+  readonly isApplied: () => boolean;
   readonly setRotation: (rotationDegrees: number) => void;
   readonly dispose: () => void;
 }
@@ -252,12 +258,7 @@ export function createStudioBg3dProceduralPanoramaTexture(
   return texture;
 }
 
-/**
- * Owns one scene background + PBR environment texture and restores prior scene state on teardown.
- * The same deterministic local panorama now lights metallic/roughness materials instead of acting
- * as a decorative backdrop only. Three derives its renderer-local PMREM cache; the source texture
- * remains the sole resource owned and disposed by this binding.
- */
+/** 슬롯별 소유권으로 로컬 파노라마를 연결하며, 직접 만든 텍스처만 해제한다. */
 export function mountStudioBg3dProceduralPanorama(
   scene: THREE.Scene,
   presetId: StudioBg3dSkyPresetId,
@@ -265,48 +266,59 @@ export function mountStudioBg3dProceduralPanorama(
   options: StudioBg3dProceduralPanoramaOptions = {},
 ): StudioBg3dProceduralPanoramaBinding {
   const ownsEnvironment = options.ownsEnvironment ?? true;
-  const previousBackground = scene.background;
-  const previousRotation = scene.backgroundRotation.clone();
-  const previousEnvironment = scene.environment;
-  const previousEnvironmentRotation = scene.environmentRotation.clone();
-  const texture = createStudioBg3dProceduralPanoramaTexture(presetId);
-  const mountedBackground = texture;
-  const mountedEnvironment = texture;
+  const ownsBackground = options.ownsBackground ?? true;
+  if (!ownsEnvironment && !ownsBackground) {
+    return Object.freeze({ texture: null, isApplied: () => true, setRotation: () => {}, dispose: () => {} });
+  }
+  const owner = claimStudioBg3dEnvironmentSlots(scene, { environment: ownsEnvironment, background: ownsBackground });
+  let texture: THREE.DataTexture | null = null;
   let disposed = false;
-
-  scene.background = mountedBackground;
-  if (ownsEnvironment) {
-    scene.environment = mountedEnvironment;
+  let installed = false;
+  const rotation = (nextRotationDegrees: number) => {
+    const yaw = THREE.MathUtils.degToRad(
+      normalizePanoramaRotationDegrees(nextRotationDegrees),
+    );
+    return new THREE.Euler(0, yaw, 0);
+  };
+  const environmentIntensity = scene.environmentIntensity, backgroundIntensity = scene.backgroundIntensity;
+  let requestedRotation = rotation(rotationDegrees);
+  try {
+    texture = createStudioBg3dProceduralPanoramaTexture(presetId);
+    // 파노라마는 기존 세기를 유지한다. 슬롯별 복원 권위는 owner가 보관한다.
+    installed = owner.install({
+      ...(ownsEnvironment ? { environment: { value: texture, intensity: environmentIntensity, rotation: requestedRotation } } : {}),
+      ...(ownsBackground ? { background: { value: texture, intensity: backgroundIntensity, rotation: requestedRotation } } : {}),
+    });
+    if (!installed) {
+      owner.dispose({ retireValues: texture ? [texture] : [] });
+      texture?.dispose();
+      return Object.freeze({ texture: null, isApplied: () => false, setRotation: () => {}, dispose: () => {} });
+    }
+  } catch (error) {
+    owner.dispose({ retireValues: texture ? [texture] : [] });
+    texture?.dispose();
+    throw error;
   }
 
   const setRotation = (nextRotationDegrees: number) => {
     if (disposed) return;
-    const yaw = THREE.MathUtils.degToRad(
-      normalizePanoramaRotationDegrees(nextRotationDegrees),
-    );
-    if (scene.background === mountedBackground) {
-      scene.backgroundRotation.set(0, yaw, 0);
-    }
-    if (scene.environment === mountedEnvironment) {
-      scene.environmentRotation.set(0, yaw, 0);
-    }
+    const next = rotation(nextRotationDegrees);
+    requestedRotation = next;
+    // 한 슬롯을 새 소유자에게 넘겨도 남아 있는 자기 슬롯의 회전은 계속 적용한다.
+    if (ownsBackground) owner.update("background", { rotation: next });
+    if (ownsEnvironment) owner.update("environment", { rotation: next });
   };
-  setRotation(rotationDegrees);
 
   return Object.freeze({
     texture,
+    isApplied: () => installed && !disposed && owner.isCurrent()
+      && (!ownsEnvironment || (scene.environment === texture && scene.environmentIntensity === environmentIntensity && scene.environmentRotation.equals(requestedRotation)))
+      && (!ownsBackground || (scene.background === texture && scene.backgroundIntensity === backgroundIntensity && scene.backgroundRotation.equals(requestedRotation))),
     setRotation,
     dispose: () => {
       if (disposed) return;
       disposed = true;
-      if (scene.background === mountedBackground) {
-        scene.background = previousBackground;
-        scene.backgroundRotation.copy(previousRotation);
-      }
-      if (ownsEnvironment && scene.environment === mountedEnvironment) {
-        scene.environment = previousEnvironment;
-        scene.environmentRotation.copy(previousEnvironmentRotation);
-      }
+      owner.dispose({ retireValues: texture ? [texture] : [] });
       texture?.dispose();
     },
   });

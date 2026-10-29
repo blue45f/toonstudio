@@ -15,10 +15,6 @@ import {
   attachStudioGeneric3dWorkflowMetadata,
   parseStudioGeneric3dWorkflowMetadata,
 } from "../studio-generic-3d-workflow-metadata";
-import {
-  getStudio3dAssetQualityMode,
-  resetStudio3dAssetQualityMode,
-} from "../studio-3d-asset-quality-session";
 
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
 import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
@@ -171,7 +167,7 @@ type StudioBg3dModelAdmissionArgs = {
   readonly pending: Map<string, Promise<StudioBg3dModelRootCacheEntry>>;
   readonly isActive: () => boolean;
   readonly signal?: AbortSignal;
-  /** 편집 파생물의 실패는 사용자가 선택한 기존 자산 품질 모드를 바꾸지 않는다. */
+  /** @deprecated 이전 호출 타입 호환용이다. 실패 시 선택한 품질을 항상 보존하며 이 값은 읽지 않는다. */
   readonly preserveQualityModeOnFailure?: boolean;
   /** Called only by the invocation that actually installs a newly decoded cache entry. */
   readonly onCacheEntryCreated?: (
@@ -183,25 +179,7 @@ type StudioBg3dModelAdmissionArgs = {
 export async function admitAndCacheStudioBg3dModel(
   args: StudioBg3dModelAdmissionArgs,
 ): Promise<StudioBg3dModelRootCacheEntry> {
-  const requestedHighQuality = getStudio3dAssetQualityMode() === "high";
-  try {
-    return await admitAndCacheStudioBg3dModelInternal(args);
-  } catch (error) {
-    const cancelled = error instanceof StudioBg3dStaleModalOperationError
-      || (typeof error === "object" && error !== null && (
-        ("name" in error && error.name === "AbortError")
-        || ("code" in error && error.code === "aborted")
-      ));
-    if (
-      args.preserveQualityModeOnFailure !== true && requestedHighQuality && getStudio3dAssetQualityMode() === "high"
-      && !cancelled && !args.signal?.aborted && args.isActive()
-    ) {
-      resetStudio3dAssetQualityMode(
-        "고품질 모델을 불러오지 못해 자동 모드로 돌아왔습니다. 경량본으로 다시 가져오세요.",
-      );
-    }
-    throw error;
-  }
+  return admitAndCacheStudioBg3dModelInternal(args);
 }
 
 async function admitAndCacheStudioBg3dModelInternal(

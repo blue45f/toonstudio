@@ -12,6 +12,8 @@ import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dInferenceController } from "./StudioBg3dInferenceController";
 import { StudioBg3dInferenceOverlay } from "./StudioBg3dInferenceOverlay";
 import { StudioBg3dHdriEnvironment } from "./StudioBg3dHdriEnvironment";
+import { StudioBg3dCaptureEnvironmentAuthority } from "./StudioBg3dCaptureEnvironmentAuthority";
+import { createStudioBg3dCaptureEnvironmentIntent } from "./studio-bg3d-capture-environment-intent";
 import {
   isStudioBg3dHdriEnvironmentActive,
   resolveStudioBg3dEnvironmentSettings,
@@ -344,9 +346,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       onGrounding={updateSharedCharacterGrounding}
     />
   );
-  const renderedEnvironmentSettings = resolveStudioBg3dEnvironmentSettings(
-    sceneBaseDocument.lighting,
-  );
+  const renderedEnvironmentSettings = resolveStudioBg3dEnvironmentSettings(sceneBaseDocument.lighting);
   const hdriEnvironmentActive = isStudioBg3dHdriEnvironmentActive(renderedEnvironmentSettings);
   // 품질 프로파일 판정과 같은 기준: 모바일 프로파일이면 1k, 아니면 2k HDRI를 씁니다.
   const hdriFileTier = deviceQuality.profile === "mobile" ? "1k" : "2k";
@@ -359,22 +359,22 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
           : getSkyPreset(renderedSkyPresetId).clearColor}
         alpha={immersiveStagePlan?.mode === "immersive-ar" ? 0 : 1}
       />
+      <StudioBg3dCaptureEnvironmentAuthority intent={createStudioBg3dCaptureEnvironmentIntent({ settings: renderedEnvironmentSettings, fileTier: hdriFileTier, skyPresetId: renderedSkyPresetId, panoramaRotationDegrees: renderedPanoramaRotation, immersiveAr: immersiveStagePlan?.mode === "immersive-ar" })}>
       {immersiveStagePlan?.mode !== "immersive-ar" ? (
         <Fragment>
           <StudioBg3dScenePanorama
             presetId={renderedSkyPresetId}
             rotationDegrees={renderedPanoramaRotation}
-            environmentOwner={hdriEnvironmentActive ? "hdri" : "panorama"}
+            environmentOwner={hdriEnvironmentActive ? "hdri" : "panorama"} backgroundOwner={hdriEnvironmentActive && renderedEnvironmentSettings.useAsBackground ? "hdri" : "panorama"}
           />
           <StudioBg3dSceneFog background={renderedBackgroundSettings} />
         </Fragment>
       ) : null}
-      {immersiveStagePlan?.mode !== "immersive-ar" && hdriEnvironmentActive ? (
         <StudioBg3dHdriEnvironment
           settings={renderedEnvironmentSettings}
-          fileTier={hdriFileTier}
+          fileTier={hdriFileTier} enabled={immersiveStagePlan?.mode !== "immersive-ar"}
         />
-      ) : null}
+      </StudioBg3dCaptureEnvironmentAuthority>
       <ambientLight
         color={sceneBaseDocument.lighting.ambientColor}
         intensity={sceneBaseDocument.lighting.ambientIntensity}

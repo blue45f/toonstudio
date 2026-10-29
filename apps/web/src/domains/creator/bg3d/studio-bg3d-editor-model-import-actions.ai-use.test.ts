@@ -239,6 +239,7 @@ describe("importModelFiles with AI use chosen on the rights form", () => {
     await h.actions().importModelFiles([file("prop.glb")], AI_RIGHTS);
     const items: unknown = runtime.importVerified.mock.calls[0]?.[0];
     expect(items).toMatchObject([{ rights: { status: "owned", commercialUse: true } }]);
+    expect(items).toMatchObject([{ ingress: { kind: "user-file", modelFileExport: "allowed" } }]);
   });
 
   it("tells the user with an error status, after the model is placed, when the AI use could not be saved", async () => {

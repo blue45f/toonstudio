@@ -65,6 +65,56 @@
   [data-studio-bg3d-workspace][data-studio-3d-keyboard-open="true"] [data-bg3d-mobile-guidance] { display: none; }
 }
 
+/*
+ * 좁은 전문가 화면은 바깥 세로 스크롤에서 컷·도구·footer를 보존한다.
+ * 44dvh와 열린 컷 패널이 inspector의 본문 높이를 0으로 만들지 않게 행은 내용에 맞춰 쌓는다.
+ * 기존 터치 가로 화면의 두 열 배치는 아래 규칙을 그대로 사용한다.
+ */
+@media (max-width: 599px), (max-width: 1023px) and (orientation: portrait) {
+  [data-studio-bg3d-workspace] [data-bg3d-professional-workspace] {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-padding-top: 4.75rem;
+    scroll-padding-bottom: 5.5rem;
+  }
+  [data-bg3d-professional-workspace] > [data-studio-bg3d-workspace-layout="dockable-v2"] {
+    flex: none;
+    grid-template-rows: auto minmax(20rem, auto);
+  }
+  [data-bg3d-professional-viewport] > section {
+    overflow: visible;
+  }
+  [data-bg3d-professional-viewport] [data-bg3d-viewport-frame] {
+    height: clamp(338px, 44dvh, 480px);
+    min-height: 338px;
+    max-height: none;
+  }
+  [data-bg3d-professional-inspector] > [data-offered-3d-commands] {
+    min-height: 20rem;
+    overflow: visible;
+  }
+  [data-bg3d-professional-inspector] #bg3d-panel-body {
+    flex: none;
+    min-height: 12rem;
+    overflow: visible;
+  }
+  [data-bg3d-professional-inspector] > [data-offered-3d-commands] > [role="tablist"] {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+  }
+  [data-bg3d-professional-inspector] > [data-offered-3d-commands] > footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 45;
+    background: var(--color-panel);
+  }
+  [data-bg3d-professional-workspace] > [data-testid="scene3d-cut-panel"] > div {
+    max-height: min(55vh, max(8rem, calc(var(--studio-3d-viewport-height, 100dvh) - 12rem)));
+  }
+}
+
 /* 폭이 태블릿 구간에 들어가도 짧은 터치 가로 화면에서는 모델과 도구를 나란히 둔다. */
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) and (min-width: 600px) and (max-width: 1023px) {
   [data-studio-bg3d-workspace] [data-bg3d-workspace-header] {

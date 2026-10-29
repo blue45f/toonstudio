@@ -6,6 +6,8 @@ import { revalidateStudioBg3dAuthoredModelEditSource } from "./studio-bg3d-autho
 import { STUDIO_BG3D_GLB_MAX_BYTES, STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS, STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES,
   STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES, serializeStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
+import { fingerprintStudioBg3dModelSourceRestriction, inheritStudioBg3dModelSourceRestriction,
+  readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
 
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { StudioBg3dAuthoredModelEditSourceFailure, StudioBg3dAuthoredModelEditSourceHost, StudioBg3dAuthoredModelEditSourceSnapshot } from "./studio-bg3d-authored-model-edit-source";
@@ -46,8 +48,17 @@ export function replaceStudioBg3dAuthoredModelEditSource(
   let candidate: StudioBg3dPrimitiveEditRuntime;
   try {
     const { record, cache, attachment, storageModelId } = asset;
+    const parent = { id: source.recordIdentity.storageModelId,
+      contentHash: source.recordIdentity.contentHash,
+      ...(source.recordIdentity.sourceRestriction ? { sourceRestriction: source.recordIdentity.sourceRestriction } : {}) };
+    const expectedRestriction = record.id === parent.id && record.contentHash === parent.contentHash
+      ? readStudioBg3dEffectiveModelSourceRestriction(parent) : inheritStudioBg3dModelSourceRestriction(parent);
     if (storageModelId === current.model.modelId || host.storageModelIdByAttachmentIdRef.current.get(attachment.id) !== storageModelId
-      || !sameRights(record.rights, source.recordIdentity.rights)) {
+      || !sameRights(record.rights, source.recordIdentity.rights)
+      || fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record))
+        !== fingerprintStudioBg3dModelSourceRestriction(expectedRestriction)
+      || fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(cache.record))
+        !== fingerprintStudioBg3dModelSourceRestriction(expectedRestriction)) {
       return failure("asset-mismatch", "새 편집 모델의 저장 연결·권리가 원본과 다르거나 교체할 새 원본이 없습니다.");
     }
     const validated = validateStudioBg3dEditReplacementAsset(host, asset);

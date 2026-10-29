@@ -22,6 +22,8 @@ import { createStudioBg3dPrimitiveEditMaterial } from "./studio-bg3d-primitive-e
 import { readStudioBg3dPrimitiveEditAuthoringGlb } from "./studio-bg3d-primitive-edit-authoring-glb";
 import { createDefaultStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
+import { fingerprintStudioBg3dModelSourceRestriction, inheritStudioBg3dModelSourceRestriction,
+  readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
 
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
@@ -34,13 +36,17 @@ import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-
 import type { StudioBg3dModelReadLease, StudioBg3dModelReadLeaseErrorCode, StudioBg3dModelReadLeaseRecordIdentity } from "./studio-bg3d-model-read-lease";
 import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 
 type Library = typeof import("./bg3d-model-library");
 type AcquireReadLease = typeof import("./studio-bg3d-model-read-lease")["acquireStudioBg3dModelReadLeaseV12"];
 const leaseFailureCodes: readonly StudioBg3dModelReadLeaseErrorCode[] = ["unsupported-authority", "read-failed"];
 const storage = vi.hoisted(() => ({ save: vi.fn<Library["importVerifiedBg3dModelsAtomicallyWithDispositionV12"]>(),
   compensate: vi.fn<Library["compensateImportedBg3dModelsIfCreationMatchesV12"]>(), get: vi.fn<Library["getStoredBg3dModelV12"]>(),
-  attach: vi.fn<Library["createStudioBg3dModelAttachment"]>(), admit: vi.fn<Library["admitStoredBg3dModelForRenderingV12"]>() }));
+  attach: vi.fn<Library["createStudioBg3dModelAttachment"]>(), admit: vi.fn<Library["admitStoredBg3dModelForRenderingV12"]>(),
+  source: vi.fn<Library["readStudioBg3dModelSourceSnapshotV12"]>() }));
+vi.mock("./bg3d-model-library", async (original) => ({ ...(await original<Library>()),
+  readStudioBg3dModelSourceSnapshotV12: storage.source }));
 const leasePort = vi.hoisted(() => vi.fn<AcquireReadLease>());
 vi.mock("./studio-bg3d-model-read-lease", () => ({ acquireStudioBg3dModelReadLeaseV12: leasePort }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({
@@ -73,9 +79,22 @@ const save: Library["importVerifiedBg3dModelsAtomicallyWithDispositionV12"] = as
     cumulative: { usedBytes: options.cumulativeUsedBytes ?? 0, maximumBytes: options.maximumCumulativeBytes ?? 100 * 1024 * 1024 } });
   if (!verification.ok) throw Error(verification.code);
   const existing = [...records.values()].find((record) => record.contentHash === verification.verifiedSha256);
-  const record: Bg3dVerifiedStoredRecord = existing ?? { id: `authored-model-${++sequence}`, storageVersion: 2, name: input.file.name, format: "glb", blob: input.file,
+  const id = existing?.id ?? `authored-model-${++sequence}`;
+  let sourceRestriction: StudioBg3dModelSourceRestrictionV1;
+  if (input.sourceReceipt) {
+    const source = records.get(input.sourceReceipt.sourceRecordId);
+    if (!source || source.contentHash !== input.sourceReceipt.sourceContentHash
+      || fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(source)) !== input.sourceReceipt.sourceRestrictionFingerprint) {
+      throw new Error("파생 원본 출처 seam이 현재 실제 row와 다릅니다.");
+    }
+    sourceRestriction = inheritStudioBg3dModelSourceRestriction(source);
+  } else if (input.ingress?.kind === "studio-generated") {
+    sourceRestriction = { version: 1, modelFileExport: input.ingress.modelFileExport,
+      origin: { kind: "studio-generated", recordId: id, sha256: verification.verifiedSha256 }, parent: null };
+  } else sourceRestriction = { version: 1, modelFileExport: "unknown", origin: null, parent: null };
+  const record: Bg3dVerifiedStoredRecord = existing ?? { id, storageVersion: 2, name: input.file.name, format: "glb", blob: input.file,
     thumbnail: null, createdAt: 1, updatedAt: 1, contentHash: verification.verifiedSha256, byteSize: bytes.byteLength, mime: "model/gltf-binary", validationVersion: 1,
-    validatedAt: 1, validatorProfile: options.profile ?? "desktop", validatorMetrics: verification.metrics, rights: normalizeBg3dModelRights(input.rights) };
+    validatedAt: 1, validatorProfile: options.profile ?? "desktop", validatorMetrics: verification.metrics, rights: normalizeBg3dModelRights(input.rights), sourceRestriction };
   records.set(record.id, record); verifications.set(record.id, verification);
   return { kind: "toonstudio-bg3d-model-atomic-import", version: 1, manifestRevision: ++manifestRevision,
     records: [record], created: existing ? [] : [{ id: record.id, contentHash: record.contentHash }], removedDeletions: [] };
@@ -86,7 +105,11 @@ const acquire: AcquireReadLease = async (expected, options) => {
   for (const identity of expected) {
     const record = records.get(identity.id);
     if (!record || record.contentHash !== identity.contentHash || record.byteSize !== identity.byteSize || record.mime !== identity.mime
-      || JSON.stringify(record.rights) !== JSON.stringify(identity.rights)) return { ok: false, code: "record-changed", messageKo: "저장 원본이 바뀌었습니다." };
+      || JSON.stringify(record.rights) !== JSON.stringify(identity.rights)
+      || fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record))
+        !== fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(identity))) {
+      return { ok: false, code: "record-changed", messageKo: "저장 원본 또는 파일 제한이 바뀌었습니다." };
+    }
   }
   let current = true;
   const waitForRelease = releaseGate;
@@ -97,7 +120,8 @@ const acquire: AcquireReadLease = async (expected, options) => {
   return { ok: true, lease };
 };
 function identity(record: Bg3dVerifiedStoredRecord): StudioBg3dModelReadLeaseRecordIdentity {
-  return { id: record.id, contentHash: record.contentHash, byteSize: record.byteSize, mime: record.mime, rights: record.rights };
+  return { id: record.id, contentHash: record.contentHash, byteSize: record.byteSize, mime: record.mime, rights: record.rights,
+    sourceRestriction: readStudioBg3dEffectiveModelSourceRestriction(record) };
 }
 function edit(context: StudioBg3dFaceEditWorkspaceBase, distance: number) {
   const source = workspaceComponentSelectionSource(context.workspace);
@@ -107,7 +131,8 @@ function edit(context: StudioBg3dFaceEditWorkspaceBase, distance: number) {
   return commitStudioHybridDccFaceModeling(context.workspace, selected.value, { tool: "push-pull", distance }).workspace;
 }
 
-async function fixture(options: { readonly shared?: boolean; readonly licensed?: boolean; readonly moved?: boolean } = {}) {
+async function fixture(options: { readonly shared?: boolean; readonly licensed?: boolean; readonly moved?: boolean;
+  readonly restriction?: "service-only" | "unknown" | "legacy" } = {}) {
   const session = { current: studioBg3dModalOperationCoordinator.beginSession() }, document = createDefaultStudioBg3dSceneDocument();
   const live: { current: StudioBg3dPrimitiveEditRuntime } = { current: { primitives: [{ id: "source-box", kind: "box", name: "실제 원본 상자", color: "#c9a876",
     position: [2.25, 0.75, -3.5], rotation: [0.31, -0.63, 0.24], scale: [1.8, 0.6, 2.2] }], customModels: [], document } };
@@ -137,8 +162,12 @@ async function fixture(options: { readonly shared?: boolean; readonly licensed?:
   let recordA = records.get(primitiveApplied.storageModelId);
   const cacheA = cache.get(primitiveApplied.storageModelId), originalAttachment = attachments.get(primitiveApplied.storageModelId);
   if (!recordA || !cacheA || !originalAttachment) throw Error("실제 primitive 적용 원본 A 없음");
-  if (options.licensed) {
-    recordA = { ...recordA, rights: { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "시험 원저작자", licenseName: "시험 사용권" } };
+  if (options.licensed || options.restriction) {
+    if (options.licensed) recordA = { ...recordA, rights: { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "시험 원저작자", licenseName: "시험 사용권" } };
+    if (options.restriction === "legacy") {
+      const { sourceRestriction: _restriction, ...legacy } = recordA; recordA = legacy;
+    } else if (options.restriction) recordA = { ...recordA,
+      sourceRestriction: { ...readStudioBg3dEffectiveModelSourceRestriction(recordA), modelFileExport: options.restriction } };
     records.set(recordA.id, recordA); cache.set(recordA.id, { ...cacheA, record: recordA });
     attachments.set(recordA.id, createStudioBg3dModelAttachment(recordA, { attachmentId: originalAttachment.id }));
   }
@@ -168,6 +197,10 @@ beforeEach(() => {
   records.clear(); verifications.clear(); heldLeases.length = 0; events.length = 0; releaseGate = null; sequence = 0; manifestRevision = 0;
   storage.save.mockReset().mockImplementation(save);
   storage.get.mockReset().mockImplementation(async (id) => records.get(id) ?? null);
+  storage.source.mockReset().mockImplementation(async (id) => {
+    const record = records.get(id);
+    return record ? { record, sourceKind: "local-library", manifestRevision, catalogIdentity: null } : null;
+  });
   storage.admit.mockReset().mockImplementation(async (id) => { const value = verifications.get(id); if (!value) throw Error("실제 검증 결과 없음"); return value; });
   storage.attach.mockReset().mockImplementation((record) => createStudioBg3dModelAttachment(record, { attachmentId: `attachment-${record.id}` }));
   storage.compensate.mockReset().mockImplementation(async (receipt) => {
@@ -220,7 +253,7 @@ describe("primitive→authoring A→같은 원본 B orchestration", () => {
     if (!exported.ok) throw Error(exported.messageKo);
     const item = storage.save.mock.calls[0][0][0]; if (!("file" in item)) throw Error("실제 File 필요");
     expect(new Uint8Array(await item.file.arrayBuffer())).toEqual(exported.bytes);
-    expect(leasePort).toHaveBeenCalledExactlyOnceWith([identity(f.recordA), identity(recordB)], { signals: [controller.signal, expect.any(AbortSignal)] });
+    expect(leasePort).toHaveBeenCalledExactlyOnceWith([identity(f.recordA), expect.objectContaining(identity(recordB))], { signals: [controller.signal, expect.any(AbortSignal)] });
     const signals = leasePort.mock.calls[0][1].signals;
     expect(signals[0]).not.toBe(signals[1]); expect(signals[1]).not.toBe(storage.save.mock.calls[0][1]?.signal);
     expect(heldLeases[0].isCurrent).toHaveBeenCalled(); expect(events.indexOf("lease-current")).toBeLessThan(events.indexOf("history"));
@@ -245,7 +278,25 @@ describe("primitive→authoring A→같은 원본 B orchestration", () => {
     expect(record?.rights).toEqual(f.recordA.rights); expect(record?.rights.status).toBe("licensed");
     const item = storage.save.mock.calls[0][0][0]; if (!("file" in item)) throw Error("실제 File 필요");
     expect(item.rights).toEqual(f.recordA.rights);
+    expect(item.ingress).toBeUndefined();
+    expect(item.sourceReceipt).toEqual({ sourceRecordId: f.recordA.id, sourceContentHash: f.recordA.contentHash,
+      sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(f.recordA)) });
+    expect(record?.sourceRestriction).toEqual(inheritStudioBg3dModelSourceRestriction(f.recordA));
     expect(leasePort.mock.calls[0][0].map(({ rights }) => rights)).toEqual([f.recordA.rights, f.recordA.rights]);
+  });
+
+  it.each(["service-only", "unknown", "legacy"] as const)("%s stored 원본 재편집은 허가 상승 없이 B를 저장·적용한다", async (restriction) => {
+    const f = await fixture({ restriction, shared: true });
+    const applied = await applyStudioBg3dAuthoredModelEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal);
+    expect(applied.ok).toBe(true); if (!applied.ok) throw new Error(applied.messageKo);
+    const derived = records.get(applied.storageModelId);
+    expect(derived?.sourceRestriction).toEqual(inheritStudioBg3dModelSourceRestriction(f.recordA));
+    expect(derived?.sourceRestriction?.modelFileExport).toBe(restriction === "service-only" ? "service-only" : "unknown");
+    expect(records.get(f.recordA.id)).toBe(f.recordA);
+    expect(f.live.current.customModels.find((node) => node.id === f.sibling.id)).toEqual(f.sibling);
+    const item = storage.save.mock.calls[0]?.[0][0];
+    if (!item || !("file" in item)) throw new Error("실제 파생 File 입력이 없습니다.");
+    expect(item.ingress).toBeUndefined(); expect(item.sourceReceipt?.sourceRecordId).toBe(f.recordA.id);
   });
 
   it("실제 lock release 완료를 기다린 뒤에만 목록 notification을 시작한다", async () => {
@@ -282,6 +333,22 @@ describe("primitive→authoring A→같은 원본 B orchestration", () => {
     expect(receipt.created[0].contentHash).toBe(storage.save.mock.results[0].type === "return" ? (await storage.save.mock.results[0].value).records[0].contentHash : "unreachable");
     expect(records.has(f.recordA.id)).toBe(true); expect(f.cache.size).toBe(1);
     expect(records.size).toBe(which === "A" ? 1 : 2);
+  });
+
+  it.each(["A", "B"] as const)("held lease 획득 직전 %s의 restriction만 바뀌면 history 없이 중단하고 다른 저장 revision을 보존한다", async (which) => {
+    const f = await fixture();
+    leasePort.mockImplementation(async (expected, options) => {
+      const target = records.get(expected[which === "A" ? 0 : 1]?.id ?? "");
+      if (!target) throw new Error("lease 대상 실제 원본이 없습니다.");
+      records.set(target.id, { ...target, sourceRestriction: { ...readStudioBg3dEffectiveModelSourceRestriction(target), modelFileExport: "service-only" } });
+      manifestRevision += 1;
+      return acquire(expected, options);
+    });
+    storage.compensate.mockResolvedValueOnce(false);
+    const result = await applyStudioBg3dAuthoredModelEditWorkspace(f.host, f.context, f.workspace, new AbortController().signal);
+    expect(result).toMatchObject({ ok: false, cleanup: "retained" });
+    expect(f.commit).not.toHaveBeenCalled(); expect(f.replace).not.toHaveBeenCalled();
+    expect(storage.compensate).toHaveBeenCalledOnce(); expect(records.has(f.recordA.id)).toBe(true);
   });
 
   it.each(leaseFailureCodes)("lease %s 실패는 실제 새 B만 보상하고 history를 만들지 않는다", async (code) => {

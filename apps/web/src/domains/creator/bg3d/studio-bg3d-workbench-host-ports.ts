@@ -10,7 +10,9 @@ import { createStudioBg3dWorkbenchInsertionFromHost, type StudioBg3dInsertSceneP
 import type { StudioBg3dApplySkpSourceCamera, StudioBg3dSkpCameraRestoreHost } from "./studio-bg3d-skp-camera-restore-types";
 import type { StudioBg3dPrimitiveEditPorts } from "./studio-bg3d-primitive-edit-ports";
 
-export interface StudioBg3dWorkbenchHostPorts extends StudioBg3dPrimitiveEditPorts {
+import type { StudioBg3dSceneGlbExportPorts } from "./studio-bg3d-scene-glb-ports";
+
+export interface StudioBg3dWorkbenchHostPorts extends StudioBg3dPrimitiveEditPorts, StudioBg3dSceneGlbExportPorts {
   readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
   readonly arraySelection?: StudioBg3dSelectionArraySummary;
   readonly onExecuteSelectionArray?: StudioBg3dExecuteSelectionArray;

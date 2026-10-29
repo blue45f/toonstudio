@@ -18,6 +18,8 @@ import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edi
 import { createDefaultStudioBg3dSceneDocument, DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE, serializeStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 import { hydrateStudioBg3dDocumentToRuntime, tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
+import { readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
 import {
   captureStudioBg3dAuthoredModelEditSource, inspectStudioBg3dAuthoredModelEditSource,
   rereadStudioBg3dAuthoredModelEditSource, revalidateStudioBg3dAuthoredModelEditSource,
@@ -25,7 +27,9 @@ import {
 } from "./studio-bg3d-authored-model-edit-source";
 
 type Library = typeof import("./bg3d-model-library");
-const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>(), admit: vi.fn<Library["admitStoredBg3dModelForRenderingV12"]>() }));
+const storage = vi.hoisted(() => ({ get: vi.fn<Library["getStoredBg3dModelV12"]>(), admit: vi.fn<Library["admitStoredBg3dModelForRenderingV12"]>(),
+  source: vi.fn<Library["readStudioBg3dModelSourceSnapshotV12"]>() }));
+vi.mock("./bg3d-model-library", async (original) => ({ ...(await original<Library>()), readStudioBg3dModelSourceSnapshotV12: storage.source }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({ getStoredBg3dModelV12: storage.get, admitStoredBg3dModelForRenderingV12: storage.admit }));
 const records = new Map<string, Bg3dVerifiedStoredRecord>();
 const verifications = new Map<string, StudioBg3dGlbValidationSuccess>();
@@ -33,7 +37,7 @@ const caches: StudioBg3dModelRootCacheEntry[] = [];
 const HISTORICAL: StudioHybridDccObjectTransform = { revision: 1, position: [2.25, 0.75, -3.5], rotationEulerRad: [0.31, -0.63, 0.24], scale: [1.8, 0.6, 2.2] };
 const signal = () => new AbortController().signal;
 
-async function fixture(withAuthoring = true) {
+async function fixture(withAuthoring = true, modelFileExport?: StudioBg3dModelSourceRestrictionV1["modelFileExport"]) {
   const primitive = { id: "historical-box", kind: "box", name: "역사 원본", color: "#c9a876",
     position: HISTORICAL.position, rotation: HISTORICAL.rotationEulerRad, scale: HISTORICAL.scale };
   const converted = convertStudioBg3dPrimitiveToEditableMesh(primitive);
@@ -57,7 +61,9 @@ async function fixture(withAuthoring = true) {
   const record: Bg3dVerifiedStoredRecord = { id: "stored-authored", storageVersion: 2, name: "편집 상자.glb", format: "glb", blob: new Blob([bytes], { type: "model/gltf-binary" }),
     thumbnail: null, createdAt: 1, updatedAt: 1, contentHash: hash, byteSize: bytes.byteLength, mime: "model/gltf-binary", validationVersion: 1,
     validatedAt: 1, validatorProfile: "desktop", validatorMetrics: verification.metrics,
-    rights: { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "원저작자", licenseName: "시험 사용권" } };
+    rights: { status: "licensed", commercialUse: true, attributionRequired: true, attribution: "원저작자", licenseName: "시험 사용권" },
+    ...(modelFileExport ? { sourceRestriction: { version: 1 as const, modelFileExport, origin: modelFileExport === "allowed"
+      ? { kind: "user-file" as const, recordId: "stored-authored", sha256: hash } : null, parent: null } } : {}) };
   records.set(record.id, record); verifications.set(record.id, verification);
   const attachment: StudioBg3dModelAttachment = { id: "attachment-authored", name: record.name, hash: record.contentHash,
     byteSize: record.byteSize, mime: record.mime, source: "upload", rights: record.rights };
@@ -95,11 +101,35 @@ function deferred() {
 beforeEach(() => {
   records.clear(); verifications.clear();
   storage.get.mockReset().mockImplementation(async (id) => records.get(id) ?? null);
+  storage.source.mockReset().mockImplementation(async (id) => {
+    const record = records.get(id);
+    return record ? { record, sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null } : null;
+  });
   storage.admit.mockReset().mockImplementation(async (id) => { const value = verifications.get(id); if (!value) throw Error("검증 원본 없음"); return value; });
 });
 afterEach(() => { for (const entry of caches.splice(0)) entry.dispose(); vi.restoreAllMocks(); });
 
 describe("저장 authored model의 재편집 원본 권위", () => {
+  it.each(["allowed", "service-only", "unknown"] as const)("실제 %s 제한을 가공 가능 snapshot에 보존하고 제한만 바뀌어도 reread에서 거부한다", async (restriction) => {
+    const f = await fixture(true, restriction), before = JSON.stringify(f.live.current);
+    const captured = await captureStudioBg3dAuthoredModelEditSource(f.host, signal());
+    expect(captured.ok).toBe(true); if (!captured.ok) throw new Error(captured.messageKo);
+    expect(captured.snapshot.recordIdentity.sourceRestriction).toEqual(f.record.sourceRestriction);
+    records.set(f.record.id, { ...f.record, sourceRestriction: { version: 1,
+      modelFileExport: restriction === "service-only" ? "unknown" : "service-only", origin: null, parent: null } });
+    expect((await rereadStudioBg3dAuthoredModelEditSource(f.host, captured.snapshot, signal())).ok).toBe(false);
+    expect(JSON.stringify(f.live.current)).toBe(before); expect(f.cache.get(f.record.id)).toBe(f.entry);
+  });
+
+  it("legacy cache와 byte row가 같아도 실제 카탈로그/저장 권위의 다른 제한을 누락하지 않는다", async () => {
+    const f = await fixture(), before = JSON.stringify(f.live.current);
+    storage.source.mockResolvedValue({ record: { ...f.record,
+      sourceRestriction: { version: 1, modelFileExport: "service-only", origin: null, parent: null } },
+      sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null });
+    expect((await captureStudioBg3dAuthoredModelEditSource(f.host, signal())).ok).toBe(false);
+    expect(JSON.stringify(f.live.current)).toBe(before); expect(f.cache.get(f.record.id)).toBe(f.entry);
+  });
+
   it("실제 exporter·GLB reader·verified loader·cache의 다른 instance ID를 hash/권리와 묶어 독립 사본을 발행한다", async () => {
     const f = await fixture();
     expect(inspectStudioBg3dAuthoredModelEditSource(f.host)).toEqual({ nodeId: f.model.id, name: f.model.name, blockedReason: null });
@@ -111,13 +141,15 @@ describe("저장 authored model의 재편집 원본 권위", () => {
     expect(s.kind).toBe("authored-model"); expect(s.sourceNodeId).not.toBe(s.authoring.envelope.source.assetId);
     expect(hashStudioEditableMesh(s.authoring.mesh)).toBe(hashStudioEditableMesh(f.mesh));
     expect(s.recordIdentity).toEqual({ storageModelId: f.record.id, attachmentId: f.attachment.id, contentHash: f.record.contentHash,
-      byteSize: f.record.byteSize, mime: f.record.mime, rights: f.record.rights });
+      byteSize: f.record.byteSize, mime: f.record.mime, rights: f.record.rights,
+      sourceRestriction: readStudioBg3dEffectiveModelSourceRestriction(f.record) });
     expect(s.cache).toBe(f.entry); expect(s.cacheRoot).toBe(f.entry.root); expect(s.normalizationScale).toBe(f.k);
     expect(s.objectTransformBasis).toBe("historical-exact"); expect(s.objectTransform).toEqual(HISTORICAL);
     expect(s.sourceColorSrgb).toBe("#2244aa"); expect(s.authoring.envelope.sourceMaterialAtExport.colorSrgb).toBe("#c9a876");
     expect(s.model).not.toBe(f.model); expect(s.model.position).not.toBe(f.model.position);
     for (const value of [s.model, s.model.position, s.model.materialOverride, s.authoring, s.authoring.mesh.vertices,
-      s.authoring.mesh.vertices[0], s.authoring.envelope.mesh, s.objectTransform, s.recordIdentity.rights]) expect(Object.isFrozen(value)).toBe(true);
+      s.authoring.mesh.vertices[0], s.authoring.envelope.mesh, s.objectTransform, s.recordIdentity.rights,
+      s.recordIdentity.sourceRestriction]) expect(Object.isFrozen(value)).toBe(true);
     expect(Object.isFrozen(f.entry)).toBe(false); expect(Object.isFrozen(f.entry.root)).toBe(false);
     expect(revalidateStudioBg3dAuthoredModelEditSource(f.host, s).ok).toBe(true);
     expect((await rereadStudioBg3dAuthoredModelEditSource(f.host, s, signal())).ok).toBe(true);

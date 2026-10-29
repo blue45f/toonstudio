@@ -4,6 +4,8 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { createStudioBg3dCaptureDocumentEnvironmentFingerprint } from "./studio-bg3d-capture-document-environment";
+import { assertStudioBg3dCaptureEnvironmentCurrent } from "./studio-bg3d-capture-environment-receipt";
 import type { CaptureState, StudioBg3dCaptureAdapter, StudioBg3dSceneDocument } from "./studio-bg3d-editor-runtime-bindings";
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -415,6 +417,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
       return;
     }
     const adapted = adaptation.value;
+    const expectedEnvironmentFingerprint = createStudioBg3dCaptureDocumentEnvironmentFingerprint(adapted.document, deviceQuality.profile);
     if (
       adapted.diagnostics.length > 0 ||
       adapted.omittedDiagnosticCount > 0 ||
@@ -467,7 +470,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
         height: 320,
         background: studioBg3dCaptureBackgroundRequestFromSnapshot(backgroundSnapshot),
         includeDepth: false,
-      });
+      }, { expectedEnvironmentFingerprint });
       if (!componentActiveRef.current || captureRef.current.adapter !== captureAdapter) return;
 
       const canvas = document.createElement("canvas");
@@ -488,6 +491,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
         return;
       }
 
+      assertStudioBg3dCaptureEnvironmentCurrent(captured, expectedEnvironmentFingerprint);
       await saveAsset({
         name: "내 3D 장면",
         dataUrl: hashUrl,
@@ -565,6 +569,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
       return;
     }
     const adapted = adaptation.value;
+    const expectedEnvironmentFingerprint = createStudioBg3dCaptureDocumentEnvironmentFingerprint(adapted.document, deviceQuality.profile);
     if (
       adapted.diagnostics.length > 0 ||
       adapted.omittedDiagnosticCount > 0 ||
@@ -662,6 +667,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
       }, {
         signal: controller.signal,
         timeoutMs: 30_000,
+        expectedEnvironmentFingerprint,
       }).finally(releaseCaptureFrameViewOffset);
       if (
         !isCaptureCurrent() ||
@@ -701,6 +707,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
           profileId: captureAdapter.profileId,
         },
       });
+      assertStudioBg3dCaptureEnvironmentCurrent(captured, expectedEnvironmentFingerprint);
       const accepted = await onUseAsAiMethodReference(handoff);
       if (accepted === false && isCaptureCurrent()) {
         setError("현재 3D 샷을 AI 참조 팩에 추가하지 못했습니다. 편집 잠금과 저장소 상태를 확인해 주세요.");

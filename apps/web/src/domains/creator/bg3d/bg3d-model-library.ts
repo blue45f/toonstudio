@@ -30,6 +30,12 @@ import {
   type StudioBg3dGlbValidationExecutionBackend,
 } from "./studio-bg3d-glb-validation-worker-client";
 import { getStudioBg3dLibrariesAuthority } from "./studio-bg3d-libraries-sqlite-opfs-authority";
+import { assertStudioBg3dModelSourceDedup, attachStudioBg3dModelSourceRestriction, readStudioBg3dModelSourceSnapshot,
+  sameStudioBg3dModelRights as rightsMatch, snapshotStudioBg3dModelSourceImport, studioBg3dModelRecordForManifest as v12RecordForManifest,
+  verifyStudioBg3dPreparedSourceInMutation } from "./studio-bg3d-model-source-storage";
+import { isSafeStudioBg3dModelSourceRestrictionRecordId, parseStudioBg3dModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+import type { StudioBg3dModelSourceRestrictionV1 } from "./studio-bg3d-model-source-restriction";
+import type { Bg3dModelImportIngress, Bg3dModelImportSourceReceipt, StudioBg3dModelSourceSnapshot } from "./studio-bg3d-model-source-storage";
 import { STUDIO_BG3D_CANONICAL_REQUIRED_GLTF_EXTENSIONS } from "./studio-bg3d-meshopt";
 import {
   inspectStudioBg3dModelThumbnailDataUrl,
@@ -49,6 +55,8 @@ import type {
 } from "./studio-bg3d-libraries-sqlite-opfs-authority";
 import type { StudioOpfsContentHash } from "../studio-opfs-asset-store";
 
+export type { Bg3dModelImportIngress, Bg3dModelImportSourceReceipt, StudioBg3dModelSourceSnapshot } from "./studio-bg3d-model-source-storage";
+
 const DB_NAME = "toonstudio-studio-bg3d-model-library";
 export const BG3D_MODEL_LIBRARY_DB_VERSION = 3;
 export const BG3D_MODEL_STORAGE_VERSION = 2 as const;
@@ -65,7 +73,6 @@ const MAX_ATTACHMENT_BASE_NAME_LENGTH = 116;
 const MAX_RIGHTS_TEXT_LENGTH = 160;
 const HASH_PATTERN = /^(?:sha256:)?([a-f0-9]{64})$/iu;
 const SCENE_ATTACHMENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,79}$/u;
-const STORAGE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,79}$/u;
 const EXTERNAL_REFERENCE_PATTERN = /(?:\b(?:blob|data|file|https?):|:\/\/|\bwww\.)/iu;
 const SENSITIVE_REFERENCE_PATTERN =
   /(?:\b(?:api[-_ ]?key|access[-_ ]?token|secret|password)\b|(?:^|\s)sk-[A-Za-z0-9_-]{8,})/iu;
@@ -146,6 +153,7 @@ export interface Bg3dVerifiedStoredRecord {
   readonly validatorProfile: StudioBg3dGlbProfile;
   readonly validatorMetrics: StudioBg3dGlbMetrics;
   readonly rights: StudioBg3dAttachmentRights;
+  readonly sourceRestriction?: StudioBg3dModelSourceRestrictionV1;
 }
 
 export type Bg3dModelStoredRecord = Bg3dLegacyStoredRecord | Bg3dVerifiedStoredRecord;
@@ -226,6 +234,8 @@ export interface Bg3dModelUploadSource {
 export interface Bg3dModelImportItem {
   readonly file: Bg3dModelUploadSource;
   readonly rights?: Partial<StudioBg3dAttachmentRights>;
+  readonly ingress?: Bg3dModelImportIngress;
+  readonly sourceReceipt?: Bg3dModelImportSourceReceipt;
   /** Used by archive/import callers that already have trusted manifest metadata. */
   readonly expectedSha256?: string;
 }
@@ -468,12 +478,7 @@ function isSafeThumbnailCaptureRevision(value: unknown): value is number {
 }
 
 export function isSafeBg3dModelStorageId(value: unknown): value is string {
-  return Boolean(
-    typeof value === "string" &&
-      STORAGE_ID_PATTERN.test(value) &&
-      !FORBIDDEN_SCENE_IDS.has(value.toLowerCase()) &&
-      !SENSITIVE_REFERENCE_PATTERN.test(value),
-  );
+  return isSafeStudioBg3dModelSourceRestrictionRecordId(value);
 }
 
 /**
@@ -561,7 +566,7 @@ export function isVerifiedBg3dModelRecord(value: unknown): value is Bg3dVerified
       (record.validatorProfile === "mobile" || record.validatorProfile === "desktop") &&
       hasSafeMetrics(record.validatorMetrics) &&
       record.validatorMetrics.byteSize === record.byteSize &&
-      hasSafeRights(record.rights),
+      hasSafeRights(record.rights) && (!Object.hasOwn(record, "sourceRestriction") || parseStudioBg3dModelSourceRestriction(record.sourceRestriction) !== null),
   );
 }
 
@@ -866,10 +871,11 @@ function freezeMetrics(metrics: StudioBg3dGlbMetrics): StudioBg3dGlbMetrics {
  */
 async function prepareVerifiedBg3dModelRecordInternal(
   input: Bg3dModelUploadSource | Bg3dModelImportItem,
-  options: Bg3dModelVerificationOptions = {},
+  options: Bg3dModelVerificationOptions & Bg3dModelV12StorageOptions = {},
   alreadyCountedHashes: ReadonlySet<string> = new Set(),
 ): Promise<Bg3dVerifiedStoredRecord> {
   const item = normalizeImportItem(input);
+  const sourceInput = snapshotStudioBg3dModelSourceImport(item), rights = normalizeBg3dModelRights(item.rights);
   throwIfBg3dOperationAborted(options.signal);
   validateUploadMetadata(item.file);
   const declaredByteAdmission = assertDeclaredBg3dModelByteAdmission(
@@ -956,9 +962,10 @@ async function prepareVerifiedBg3dModelRecordInternal(
     validatedAt: now,
     validatorProfile: validation.profile,
     validatorMetrics: freezeMetrics(validation.metrics),
-    rights: normalizeBg3dModelRights(item.rights),
+    rights,
   };
-  return Object.freeze(record);
+  return attachStudioBg3dModelSourceRestriction(Object.freeze(record), sourceInput,
+    (id) => readStudioBg3dModelSourceSnapshotV12(id, options), options.signal);
 }
 
 export async function prepareVerifiedBg3dModelRecord(
@@ -1144,19 +1151,9 @@ export async function legacyResolveBg3dModelHash(
 
 function uniqueVerifiedRecords(records: readonly Bg3dVerifiedStoredRecord[]): Bg3dVerifiedStoredRecord[] {
   const byHash = new Map<string, Bg3dVerifiedStoredRecord>();
-  for (const record of records) if (!byHash.has(record.contentHash)) byHash.set(record.contentHash, record);
+  for (const record of records) { const previous = byHash.get(record.contentHash);
+    if (previous) assertStudioBg3dModelSourceDedup(previous, record); else byHash.set(record.contentHash, record); }
   return [...byHash.values()];
-}
-
-function rightsMatch(
-  left: StudioBg3dAttachmentRights,
-  right: StudioBg3dAttachmentRights,
-): boolean {
-  return left.status === right.status
-    && left.commercialUse === right.commercialUse
-    && left.attributionRequired === right.attributionRequired
-    && left.attribution === right.attribution
-    && left.licenseName === right.licenseName;
 }
 
 async function putVerifiedRecordsAtomically(
@@ -1174,6 +1171,7 @@ async function putVerifiedRecordsAtomically(
     const store = transaction.objectStore(MODEL_STORE);
     const deletionJournal = transaction.objectStore(DELETION_JOURNAL_STORE);
     const results = unique.slice();
+    let sourceFailure: unknown;
     // Recheck within the write transaction to close a concurrent-import dedupe race. Each put is
     // queued synchronously from the IDB success callback; awaiting between get() and put() can make
     // a real browser transaction inactive even though simpler test doubles keep it open.
@@ -1182,6 +1180,8 @@ async function putVerifiedRecordsAtomically(
       lookup.onsuccess = () => {
         if (isVerifiedBg3dModelRecord(lookup.result)) {
           if (rightsMatch(lookup.result.rights, record.rights)) {
+            try { assertStudioBg3dModelSourceDedup(lookup.result, record); }
+            catch (error) { sourceFailure = error; transaction.abort(); return; }
             results[index] = lookup.result;
             deletionJournal.delete(record.contentHash);
           } else {
@@ -1196,7 +1196,7 @@ async function putVerifiedRecordsAtomically(
       };
       lookup.onerror = () => transaction.abort();
     });
-    await done;
+    await done.catch((error: unknown) => { throw sourceFailure ?? error; });
     return results;
   });
 }
@@ -1238,6 +1238,7 @@ export async function legacyImportVerifiedBg3dModelsAtomically(
     if (duplicate && !rightsMatch(duplicate.rights, prepared.rights)) {
       throw createLibraryError("rights-conflict");
     }
+    if (duplicate) assertStudioBg3dModelSourceDedup(duplicate, prepared);
     if (!preparedByHash.has(prepared.contentHash)) {
       if (!duplicate && occupiedStorageIds.has(prepared.id)) {
         throw createLibraryError("storage-id-conflict");
@@ -1621,6 +1622,7 @@ interface Bg3dModelV12StoredRecord {
   readonly validatorProfile: StudioBg3dGlbProfile;
   readonly validatorMetrics: StudioBg3dGlbMetrics;
   readonly rights: StudioBg3dAttachmentRights;
+  readonly sourceRestriction?: StudioBg3dModelSourceRestrictionV1;
   readonly blobRef: StudioBg3dLibraryBlobReceipt;
 }
 
@@ -1677,8 +1679,11 @@ function v12BlobRef(raw: unknown): StudioBg3dLibraryBlobReceipt | null {
 }
 
 function v12ModelRecord(raw: unknown): Bg3dModelV12StoredRecord | null {
-  const value = v12ExactObject(raw, V12_MODEL_RECORD_KEYS);
+  const hasRestriction = raw !== null && typeof raw === "object" && Object.hasOwn(raw, "sourceRestriction");
+  const value = v12ExactObject(raw, hasRestriction ? [...V12_MODEL_RECORD_KEYS, "sourceRestriction"] : V12_MODEL_RECORD_KEYS);
   if (!value) return null;
+  const sourceRestriction = hasRestriction ? parseStudioBg3dModelSourceRestriction(value.sourceRestriction) : null;
+  if (hasRestriction && sourceRestriction === null) return null;
   const blobRef = v12BlobRef(value.blobRef);
   if (
     value.storageVersion !== BG3D_MODEL_STORAGE_VERSION ||
@@ -1720,6 +1725,7 @@ function v12ModelRecord(raw: unknown): Bg3dModelV12StoredRecord | null {
     validatorProfile: value.validatorProfile,
     validatorMetrics: Object.freeze({ ...(value.validatorMetrics as StudioBg3dGlbMetrics) }),
     rights: Object.freeze({ ...(value.rights as StudioBg3dAttachmentRights) }),
+    ...(sourceRestriction ? { sourceRestriction } : {}),
     blobRef,
   };
 }
@@ -1843,29 +1849,6 @@ function v12ManifestRefs(raw: string | null): StudioOpfsContentHash[] {
     ...manifest.thumbnails.map(({ ref }) => ref.hash)].sort();
 }
 
-function v12RecordForManifest(
-  record: Bg3dVerifiedStoredRecord,
-  blobRef: StudioBg3dLibraryBlobReceipt,
-): Bg3dModelV12StoredRecord {
-  return {
-    id: record.id,
-    storageVersion: BG3D_MODEL_STORAGE_VERSION,
-    name: record.name,
-    format: "glb",
-    createdAt: record.createdAt,
-    updatedAt: record.updatedAt,
-    contentHash: record.contentHash,
-    byteSize: record.byteSize,
-    mime: STUDIO_BG3D_GLB_MIME,
-    validationVersion: BG3D_MODEL_VALIDATION_VERSION,
-    validatedAt: record.validatedAt,
-    validatorProfile: record.validatorProfile,
-    validatorMetrics: Object.freeze({ ...record.validatorMetrics }),
-    rights: Object.freeze({ ...record.rights }),
-    blobRef,
-  };
-}
-
 async function hydrateV12ModelRecord(
   record: Bg3dModelV12StoredRecord,
   authority: StudioBg3dLibrariesAuthority,
@@ -1882,6 +1865,12 @@ async function hydrateV12ModelRecord(
 
 function v12Authority(options: Bg3dModelV12StorageOptions): StudioBg3dLibrariesAuthority {
   return options.authority ?? getStudioBg3dLibrariesAuthority();
+}
+/** 정확한 배포 ID는 기존 조회와 같이 우선하며 local source는 잠금 안의 실제 CAS와 결합한다. */
+export async function readStudioBg3dModelSourceSnapshotV12(id: string,
+  options: Bg3dModelV12StorageOptions & Bg3dModelDatabaseOperationOptions = {}): Promise<StudioBg3dModelSourceSnapshot | null> {
+  return readStudioBg3dModelSourceSnapshot(id, { authority: v12Authority(options), parseManifest: parseV12ModelManifest,
+    loadBundled: (sourceId, signal) => loadBundledEnvironmentRecord(sourceId, signal, options.executionBackend) }, options.signal);
 }
 
 function bytesFromThumbnailDataUrl(dataUrl: string): {
@@ -2014,6 +2003,7 @@ export async function importVerifiedBg3dModelsAtomicallyWithDispositionV12(
     if (duplicate && !rightsMatch(duplicate.rights, prepared.rights)) {
       throw createLibraryError("rights-conflict");
     }
+    if (duplicate) assertStudioBg3dModelSourceDedup(duplicate, prepared);
     if (!duplicate && occupiedIds.has(prepared.id)) throw createLibraryError("storage-id-conflict");
     if (!duplicate) occupiedIds.add(prepared.id);
     if (!preparedByHash.has(prepared.contentHash)) preparedByHash.set(prepared.contentHash, prepared);
@@ -2030,9 +2020,11 @@ export async function importVerifiedBg3dModelsAtomicallyWithDispositionV12(
     const emitted = new Map<string, Bg3dVerifiedStoredRecord>();
     const created: Array<{ readonly id: string; readonly contentHash: `sha256:${string}` }> = [];
     for (const prepared of preparedByHash.values()) {
+      await verifyStudioBg3dPreparedSourceInMutation(prepared, current, context, options.signal);
       const duplicate = byHash.get(prepared.contentHash);
       if (duplicate) {
         if (!rightsMatch(duplicate.rights, prepared.rights)) throw createLibraryError("rights-conflict");
+        assertStudioBg3dModelSourceDedup(duplicate, prepared);
         emitted.set(duplicate.contentHash, await hydrateV12ModelRecord(duplicate, authority));
         continue;
       }
@@ -2048,6 +2040,7 @@ export async function importVerifiedBg3dModelsAtomicallyWithDispositionV12(
       emitted.set(stored.contentHash, prepared);
       created.push(Object.freeze({ id: stored.id, contentHash: stored.contentHash }));
     }
+    for (const prepared of preparedByHash.values()) await verifyStudioBg3dPreparedSourceInMutation(prepared, current, context, options.signal);
     const records = [...byId.values()];
     if (
       records.length > BG3D_MODEL_LIBRARY_V12_MAX_ENTRIES ||

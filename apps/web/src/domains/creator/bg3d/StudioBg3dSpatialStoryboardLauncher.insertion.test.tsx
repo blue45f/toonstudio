@@ -17,7 +17,8 @@ const BOX: BgPrimitive = {
 };
 
 vi.mock("./StudioBg3dAdvancedWorkbenchHub", () => ({
-  default: ({ disabled, onInsertScenePrimitives, arraySelection, onExecuteSelectionArray, skpSourceSelection, onReadSkpSceneSource }: {
+  default: ({ defaultTab, disabled, onInsertScenePrimitives, arraySelection, onExecuteSelectionArray, skpSourceSelection, onReadSkpSceneSource }: {
+    readonly defaultTab?: string;
     readonly disabled?: boolean;
     readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
     readonly arraySelection?: StudioBg3dSelectionArraySummary;
@@ -25,6 +26,7 @@ vi.mock("./StudioBg3dAdvancedWorkbenchHub", () => ({
     readonly skpSourceSelection?: StudioBg3dSkpSourceSelection;
     readonly onReadSkpSceneSource?: StudioBg3dReadSkpSceneSource;
   }) => <>
+    <output data-testid="forwarded-workbench-tab">{defaultTab}</output>
     <button type="button" disabled={disabled} onClick={() => onInsertScenePrimitives?.([BOX], "계단 추가")}>생성한 계단 배치</button>
     <p>배열 선택 도형 {arraySelection?.selectedPrimitiveCount ?? 0}개</p>
     <button type="button" disabled={disabled} onClick={() => onExecuteSelectionArray?.({ mode: "linear", token: "*2", delta: [1, 0, 0] })}>
@@ -49,8 +51,10 @@ describe("전문 작업대 지연 진입의 장면 삽입 연결", () => {
     const insert = vi.fn<StudioBg3dInsertScenePrimitives>(() => true);
     const view = render(<StudioBg3dSpatialStoryboardLauncher onInsertScenePrimitives={insert} />);
     expect(screen.queryByRole("button", { name: "생성한 계단 배치" })).toBeNull();
-    fireEvent.click(screen.getByTestId("bg3d-advanced-workbench-launcher-toggle"));
+    fireEvent.click(screen.getByRole("button", { name: "공간 모델러 열기" }));
     const insertButton = await screen.findByRole("button", { name: "생성한 계단 배치" });
+    expect(screen.getByRole("button", { name: "공간 모델러 접기" }).getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("forwarded-workbench-tab").textContent).toBe("spatial-modeler");
     fireEvent.click(insertButton);
     expect(insert).toHaveBeenCalledExactlyOnceWith([BOX], "계단 추가");
 

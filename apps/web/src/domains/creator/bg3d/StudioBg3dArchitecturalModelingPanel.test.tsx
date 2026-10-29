@@ -25,7 +25,7 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     fireEvent.change(screen.getByLabelText("배치 Y (m)"), { target: { value: "2" } });
     fireEvent.change(screen.getByLabelText("배치 Z (m)"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("건축 컴포넌트 분할 수"), { target: { value: "6" } });
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
 
     expect(insert).toHaveBeenCalledTimes(1);
     const primitives = insert.mock.calls[0]?.[0];
@@ -41,8 +41,8 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
 
     expect(screen.getByRole("alert").textContent).toContain("0.8~24");
     expect(screen.getByLabelText("가로 (m)").getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByTestId("sketchup-arch-insert-scene-btn").hasAttribute("disabled")).toBe(true);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    expect(screen.getByTestId("spatial-modeler-arch-insert-scene-btn").hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -51,7 +51,7 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     render(<StudioBg3dArchitecturalModelingPanel onInsertScenePrimitives={insert} />);
     fireEvent.change(screen.getByLabelText("배치 Z (m)"), { target: { value: "1001" } });
     expect(screen.getByRole("alert").textContent).toContain("-1000~1000");
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -62,7 +62,7 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     });
     const onStatusChange = vi.fn();
     render(<StudioBg3dArchitecturalModelingPanel onInsertScenePrimitives={insert} onStatusChange={onStatusChange} />);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("bg3d-architecture-status").textContent).toContain("배치하지 못했습니다");
     expect(onStatusChange.mock.calls[0]?.[0]).not.toContain("배치했습니다");
@@ -70,11 +70,11 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
 
   it("실제 장면 연결이 없거나 편집이 잠겼을 때 배치 버튼을 비활성화한다", () => {
     const { rerender } = render(<StudioBg3dArchitecturalModelingPanel />);
-    expect(screen.getByTestId("sketchup-arch-insert-scene-btn").hasAttribute("disabled")).toBe(true);
+    expect(screen.getByTestId("spatial-modeler-arch-insert-scene-btn").hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("3D 배경 편집기에서 장면을 열면 건축 요소를 배치할 수 있습니다.")).toBeTruthy();
     const insert = vi.fn(() => true);
     rerender(<StudioBg3dArchitecturalModelingPanel disabled onInsertScenePrimitives={insert} />);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -84,9 +84,9 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     const kinds = ["staircase-straight", "staircase-l-landing", "staircase-spiral", "roof-gable", "roof-hip",
       "roof-hanok", "window-bay", "door-arch", "street-colonnade"];
     for (const kind of kinds) {
-      fireEvent.click(screen.getByTestId(`sketchup-arch-kind-${kind}`));
-      expect(screen.getByTestId(`sketchup-arch-kind-${kind}`).getAttribute("aria-pressed")).toBe("true");
-      fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+      fireEvent.click(screen.getByTestId(`spatial-modeler-arch-kind-${kind}`));
+      expect(screen.getByTestId(`spatial-modeler-arch-kind-${kind}`).getAttribute("aria-pressed")).toBe("true");
+      fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     }
     expect(insert).toHaveBeenCalledTimes(9);
     expect(insert.mock.calls.every(([primitives]) => primitives.length > 0
@@ -98,21 +98,21 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     render(<StudioBg3dArchitecturalModelingPanel onInsertScenePrimitives={insert} />);
     fireEvent.change(screen.getByLabelText("깊이 (m)"), { target: { value: "" } });
     expect(screen.getByRole("alert")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("sketchup-arch-kind-staircase-spiral"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-kind-staircase-spiral"));
 
     expect(screen.getByLabelText("깊이 (m)").hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("나선형 계단은 가로를 기준으로 원형 배치하므로 깊이 입력을 사용하지 않습니다.")).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByTestId("sketchup-arch-insert-scene-btn").hasAttribute("disabled")).toBe(false);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    expect(screen.getByTestId("spatial-modeler-arch-insert-scene-btn").hasAttribute("disabled")).toBe(false);
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     const primitives = insert.mock.calls[0]?.[0];
     expect(primitives).toHaveLength(9);
     expect(primitives?.every((primitive) => [...primitive.position, ...primitive.scale].every(Number.isFinite))).toBe(true);
 
-    fireEvent.click(screen.getByTestId("sketchup-arch-kind-staircase-straight"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-kind-staircase-straight"));
     expect(screen.getByLabelText("깊이 (m)").hasAttribute("disabled")).toBe(false);
     expect(screen.getByRole("alert").textContent).toContain("깊이 (m)");
-    expect(screen.getByTestId("sketchup-arch-insert-scene-btn").hasAttribute("disabled")).toBe(true);
+    expect(screen.getByTestId("spatial-modeler-arch-insert-scene-btn").hasAttribute("disabled")).toBe(true);
   });
 
   it("지붕·창호의 미사용 분할 수를 끄고 계단·회랑으로 돌아오면 이전 값을 유지한다", () => {
@@ -121,13 +121,13 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     expect(screen.getByText("치수는 기본 부품과 배치 간격의 기준입니다. 처마·회전 계단을 포함한 전체 외곽 크기는 입력값과 다를 수 있습니다.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("건축 컴포넌트 분할 수"), { target: { value: "11" } });
     for (const kind of ["roof-gable", "roof-hip", "roof-hanok", "window-bay", "door-arch"]) {
-      fireEvent.click(screen.getByTestId(`sketchup-arch-kind-${kind}`));
+      fireEvent.click(screen.getByTestId(`spatial-modeler-arch-kind-${kind}`));
       expect(screen.getByLabelText("건축 컴포넌트 분할 수").hasAttribute("disabled")).toBe(true);
     }
     expect(screen.getByText("분할 수는 계단 단수와 열주 회랑 경간에만 사용합니다. 선택한 건축 요소에는 적용하지 않습니다.")).toBeTruthy();
-    fireEvent.click(screen.getByTestId("sketchup-arch-kind-street-colonnade"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-kind-street-colonnade"));
     expect(screen.getByLabelText("건축 컴포넌트 분할 수").hasAttribute("disabled")).toBe(false);
-    fireEvent.click(screen.getByTestId("sketchup-arch-insert-scene-btn"));
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert.mock.calls[0]?.[0]).toHaveLength(22);
   });
 });

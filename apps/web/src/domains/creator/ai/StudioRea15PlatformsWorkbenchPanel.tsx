@@ -221,7 +221,7 @@ export function StudioRea15PlatformsWorkbenchPanel({
       } else if (activeTab === "sketchup-blender-petalica-magma-recraft") {
         const res = await runSketchupBlenderPetalicaMagmaRecraftStudioAssist(assistInput);
         setSketchupStudioEnv(res);
-        onAppendDirectionLine(`[SketchUp·Blender·Petalica·Magma·Recraft (${res.modelUsed})] ${res.report.hybridStudioExecutiveSummaryKo}`);
+        onAppendDirectionLine(`[공간 모델러·Blender·Petalica·Magma·Recraft (${res.modelUsed})] ${res.report.hybridStudioExecutiveSummaryKo}`);
       } else if (activeTab === "tapas-tappytoon-ridi-postype-sudowrite-novelcrafter") {
         const res = await runTapasTappytoonRidiPostypeSudowriteNovelcrafterAssist(assistInput);
         setTapasCodexEnv(res);

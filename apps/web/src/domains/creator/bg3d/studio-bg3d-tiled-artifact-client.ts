@@ -1,4 +1,6 @@
 import { captureStudioBg3dRaster } from "./studio-bg3d-capture-adapter";
+import { acquireStudioBg3dCaptureEnvironmentForAdapter } from "./studio-bg3d-capture-environment-adapter";
+import { attachStudioBg3dCaptureEnvironmentReceipt } from "./studio-bg3d-capture-environment-receipt";
 import {
   createStudioBg3dTilePlan,
   STUDIO_BG3D_TILE_PROFILE,
@@ -81,6 +83,7 @@ export async function buildStudioBg3dTiledImages(input: {
   readonly includeDepth: boolean;
   readonly includeNormals: boolean;
   readonly signal?: AbortSignal;
+  readonly expectedEnvironmentFingerprint?: string;
   readonly assertCurrent?: () => void | Promise<void>;
   readonly onProgress?: (completed: number, total: number) => void;
   readonly workerFactory?: () => StudioBg3dTiledWorkerLike;
@@ -98,6 +101,10 @@ export async function buildStudioBg3dTiledImages(input: {
   const plan = createStudioBg3dTilePlan(ownedOptions);
   if (!input.adapter.createTiledCapture)
     throw new Error("This renderer does not support exact tiled capture.");
+  const environmentReady = acquireStudioBg3dCaptureEnvironmentForAdapter(input.adapter, input);
+  const environmentReceipt = environmentReady ? await environmentReady : undefined;
+  environmentReceipt?.assertCurrent(input.expectedEnvironmentFingerprint);
+  if (input.signal?.aborted) throw aborted();
   const session = input.adapter.createTiledCapture();
   if (session.profile !== STUDIO_BG3D_TILE_PROFILE) {
     session.dispose();
@@ -122,8 +129,10 @@ export async function buildStudioBg3dTiledImages(input: {
   input.signal?.addEventListener("abort", abort, { once: true });
   const checkpoint = async () => {
     if (stopped || input.signal?.aborted) throw aborted();
+    environmentReceipt?.assertCurrent(input.expectedEnvironmentFingerprint);
     await input.assertCurrent?.();
     if (stopped || input.signal?.aborted) throw aborted();
+    environmentReceipt?.assertCurrent(input.expectedEnvironmentFingerprint);
   };
   try {
     worker = input.workerFactory
@@ -277,6 +286,7 @@ export async function buildStudioBg3dTiledImages(input: {
         throw new Error("PNG header does not match the frozen output plan.");
     }
     await checkpoint();
+    if (environmentReceipt) attachStudioBg3dCaptureEnvironmentReceipt(result, environmentReceipt);
     return result;
   } finally {
     stopped = true;

@@ -20,6 +20,8 @@ export function StudioBg3dSpatialStoryboardLauncher({
   primitiveEditSelection,
   onBeginPrimitiveEdit,
   onApplyPrimitiveEdit,
+  sceneGlbExportUnavailableReason,
+  onExportCurrentSceneGlb,
 }: StudioBg3dWorkbenchHostPorts & {
   readonly hidden?: boolean;
   readonly disabled?: boolean;
@@ -58,14 +60,14 @@ export function StudioBg3dSpatialStoryboardLauncher({
         onClick={() => setWorkbenchExpanded((value) => !value)}
       >
         {workbenchExpanded
-          ? bt("배경 건축 · 3D 도구 접기", "Close background architecture · 3D tools")
-          : bt("배경 건축 · 3D 도구 열기", "Open background architecture · 3D tools")}
+          ? bt("공간 모델러 접기", "Close Spatial Modeler")
+          : bt("공간 모델러 열기", "Open Spatial Modeler")}
       </button>
       <div id={workbenchContentId} hidden={!workbenchExpanded}>
         {workbenchExpanded && !hidden ? (
           <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.spatialStoryboardTools", "3D 스페셜리스트 워크벤치를 불러오는 중이에요.")} />}>
             <AdvancedWorkbenchHub
-              defaultTab="sketchup-studio"
+              defaultTab="spatial-modeler"
               disabled={disabled}
               onInsertScenePrimitives={onInsertScenePrimitives}
               arraySelection={arraySelection}
@@ -76,6 +78,8 @@ export function StudioBg3dSpatialStoryboardLauncher({
               primitiveEditSelection={primitiveEditSelection}
               onBeginPrimitiveEdit={onBeginPrimitiveEdit}
               onApplyPrimitiveEdit={onApplyPrimitiveEdit}
+              sceneGlbExportUnavailableReason={sceneGlbExportUnavailableReason}
+              onExportCurrentSceneGlb={onExportCurrentSceneGlb}
             />
           </Suspense>
         ) : null}

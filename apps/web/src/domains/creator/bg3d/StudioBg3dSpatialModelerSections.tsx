@@ -17,7 +17,7 @@ import {
   type SketchUpSolidOperationKind,
 } from "./studio-bg3d-sketchup-full-engine";
 
-export interface StudioBg3dSketchUpFullSectionsProps {
+export interface StudioBg3dSpatialModelerSectionsProps {
   readonly disabled?: boolean;
   readonly onStatusChange?: (messageKo: string) => void;
   readonly onInsertScenePrimitives?: StudioBg3dInsertScenePrimitives;
@@ -36,12 +36,12 @@ const SOLID_OP_OPTIONS: readonly {
   { id: "split", labelKo: "Split (3분할)" },
 ]);
 
-export function StudioBg3dSketchUpFullSections({
+export function StudioBg3dSpatialModelerSections({
   disabled = false,
   onStatusChange,
   onInsertScenePrimitives,
   onApplySceneCamera,
-}: StudioBg3dSketchUpFullSectionsProps): React.JSX.Element {
+}: StudioBg3dSpatialModelerSectionsProps): React.JSX.Element {
   // 6. Sandbox & Terrain state
   const [smooveRadius, setSmooveRadius] = useState<number>(4.5);
   const [smooveHeight, setSmooveHeight] = useState<number>(1.8);
@@ -163,14 +163,14 @@ export function StudioBg3dSketchUpFullSections({
   return (
     <>
       {/* 6. Sandbox & Terrain */}
-      <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+      <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
         <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
           <span className="inline-flex items-center gap-1.5">
             <Mountain className="size-3.5 text-accent" aria-hidden />
-            6. Sandbox 지형 스튜디오 (From Contours · Smoove · Stamp 부지 · Drape 도로)
+            6. 지형 편집 (등고선 · 융기 · 부지 · 도로 투영)
           </span>
           <span className="font-mono text-[0.62rem] text-fg-3">
-            프리미티브 {terrainPrimitives.length}개 · Drape {terrainGrid.drapedPathPoints3D.length}점
+            프리미티브 {terrainPrimitives.length}개 · 도로 투영 {terrainGrid.drapedPathPoints3D.length}점
           </span>
         </summary>
 
@@ -178,7 +178,7 @@ export function StudioBg3dSketchUpFullSections({
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div className="rounded-lg border border-line bg-panel p-2">
               <div className="flex items-center justify-between font-semibold">
-                <span>Smoove 반경 (m)</span>
+                <span>지형 융기 반경 (m)</span>
                 <span className="font-mono text-accent">{smooveRadius.toFixed(1)}m</span>
               </div>
               <input
@@ -187,8 +187,8 @@ export function StudioBg3dSketchUpFullSections({
                 max="8.0"
                 step="0.5"
                 disabled={disabled}
-                aria-label="Sandbox Smoove 반경"
-                data-testid="sketchup-sandbox-smoove-radius"
+                aria-label="지형 융기 반경"
+                data-testid="spatial-modeler-sandbox-smoove-radius"
                 value={smooveRadius}
                 onChange={(e) => setSmooveRadius(parseFloat(e.target.value))}
                 className="mt-1.5 w-full accent-accent"
@@ -197,7 +197,7 @@ export function StudioBg3dSketchUpFullSections({
 
             <div className="rounded-lg border border-line bg-panel p-2">
               <div className="flex items-center justify-between font-semibold">
-                <span>Smoove 융기 높이 (m)</span>
+                <span>지형 융기 높이 (m)</span>
                 <span className="font-mono text-accent">{smooveHeight.toFixed(1)}m</span>
               </div>
               <input
@@ -206,8 +206,8 @@ export function StudioBg3dSketchUpFullSections({
                 max="3.5"
                 step="0.2"
                 disabled={disabled}
-                aria-label="Sandbox Smoove 융기 높이"
-                data-testid="sketchup-sandbox-smoove-height"
+                aria-label="지형 융기 높이"
+                data-testid="spatial-modeler-sandbox-smoove-height"
                 value={smooveHeight}
                 onChange={(e) => setSmooveHeight(parseFloat(e.target.value))}
                 className="mt-1.5 w-full accent-accent"
@@ -216,7 +216,7 @@ export function StudioBg3dSketchUpFullSections({
 
             <div className="rounded-lg border border-line bg-panel p-2">
               <div className="flex items-center justify-between font-semibold">
-                <span>Stamp 대지 표고 (m)</span>
+                <span>부지 표고 (m)</span>
                 <span className="font-mono text-accent">+{stampElevation.toFixed(1)}m</span>
               </div>
               <input
@@ -225,8 +225,8 @@ export function StudioBg3dSketchUpFullSections({
                 max="3.0"
                 step="0.2"
                 disabled={disabled}
-                aria-label="Sandbox Stamp 대지 표고"
-                data-testid="sketchup-sandbox-stamp-elevation"
+                aria-label="부지 표고"
+                data-testid="spatial-modeler-sandbox-stamp-elevation"
                 value={stampElevation}
                 onChange={(e) => setStampElevation(parseFloat(e.target.value))}
                 className="mt-1.5 w-full accent-accent"
@@ -243,31 +243,31 @@ export function StudioBg3dSketchUpFullSections({
                 onChange={(e) => setIncludeDrapeRoad(e.target.checked)}
                 className="accent-accent"
               />
-              <span>Drape 도로 폴리라인 지형 투영 포함</span>
+              <span>도로 폴리라인의 지형 투영 포함</span>
             </label>
 
             <button
               type="button"
               disabled={disabled || !onInsertScenePrimitives}
-              data-testid="sketchup-sandbox-insert-scene-btn"
+              data-testid="spatial-modeler-sandbox-insert-scene-btn"
               onClick={() => {
-                insertPrimitives(terrainPrimitives, `Sandbox 지형·부지 (${terrainPrimitives.length}개 요소)`);
+                insertPrimitives(terrainPrimitives, `지형·부지 (${terrainPrimitives.length}개 요소)`);
               }}
               className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
             >
               <Sparkles className="size-3.5" aria-hidden />
-              <span>현재 3D 장면에 Sandbox 지형·부지 즉시 배치</span>
+              <span>현재 3D 장면에 지형·부지 즉시 배치</span>
             </button>
           </div>
         </div>
       </details>
 
       {/* 7. Solid Tools & Manifold Solid Inspector */}
-      <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+      <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
         <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
           <span className="inline-flex items-center gap-1.5">
             <Combine className="size-3.5 text-accent" aria-hidden />
-            7. Solid Tools 6대 불리언 연산 & Manifold Solid Inspector²
+            7. 솔리드 불리언 연산 · 수밀성 진단
           </span>
           <span className="font-mono text-[0.62rem] text-fg-3">
             {solidResult.operation.toUpperCase()} · 체적 {solidResult.volumeCubicMeters}㎥ · χ={solidInspectorReport.eulerCharacteristic}
@@ -281,10 +281,10 @@ export function StudioBg3dSketchUpFullSections({
                 key={opt.id}
                 type="button"
                 disabled={disabled}
-                data-testid={`sketchup-solid-op-${opt.id}`}
+                data-testid={`spatial-modeler-solid-op-${opt.id}`}
                 onClick={() => {
                   setSolidOp(opt.id);
-                  onStatusChange?.(`Solid Tools 연산 전환: ${opt.labelKo}`);
+                  onStatusChange?.(`솔리드 연산 전환: ${opt.labelKo}`);
                 }}
                 className={`rounded-lg border px-2.5 py-1.5 text-left text-[0.66rem] ${
                   solidOp === opt.id
@@ -322,7 +322,7 @@ export function StudioBg3dSketchUpFullSections({
 
             <div className="rounded-lg border border-line bg-panel p-2">
               <div className="flex items-center justify-between font-semibold">
-                <span>Solid Inspector² 수밀성 진단</span>
+                <span>솔리드 수밀성 진단</span>
                 <span className="font-mono text-good">
                   {solidInspectorReport.isSolidManifold ? "Manifold OK" : "Auto-Heal 준비"}
                 </span>
@@ -331,7 +331,7 @@ export function StudioBg3dSketchUpFullSections({
               <button
                 type="button"
                 disabled={disabled || !onInsertScenePrimitives}
-                data-testid="sketchup-solid-insert-scene-btn"
+                data-testid="spatial-modeler-solid-insert-scene-btn"
                 onClick={() => {
                   setInspectorStrayEdges(0);
                   insertPrimitives(solidResult.primitives, `솔리드 예제 (${solidResult.labelKo}) ${solidResult.primitives.length}개 바디`);
@@ -347,11 +347,11 @@ export function StudioBg3dSketchUpFullSections({
       </details>
 
       {/* 8. Match Photo 2-VP Camera Calibrator */}
-      <details name="sketchup-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
+      <details name="spatial-modeler-workbench-accordion" className="rounded-xl border border-line bg-card p-2.5">
         <summary className="flex cursor-pointer items-center justify-between font-bold text-fg">
           <span className="inline-flex items-center gap-1.5">
             <Camera className="size-3.5 text-accent" aria-hidden />
-            8. Match Photo (2소실점 사진 투시 역산 카메라 캘리브레이터)
+            8. 사진 투시 맞추기 (2소실점 카메라 보정)
           </span>
           <span className="font-mono text-[0.62rem] text-fg-3">
             {matchPhotoResult.focalLength35mmEquiv}mm · FOV {matchPhotoResult.verticalFovDeg}° · 롤 {matchPhotoResult.horizonTiltDeg}°
@@ -407,7 +407,7 @@ export function StudioBg3dSketchUpFullSections({
                 max="25.0"
                 step="0.5"
                 disabled={disabled}
-                aria-label="Match Photo 기준 거리"
+                aria-label="사진 투시 기준 거리"
                 value={matchTargetDist}
                 onChange={(e) => setMatchTargetDist(parseFloat(e.target.value))}
                 className="mt-1.5 w-full accent-accent"
@@ -422,7 +422,7 @@ export function StudioBg3dSketchUpFullSections({
             <button
               type="button"
               disabled={disabled}
-              data-testid="sketchup-match-photo-apply-camera-btn"
+              data-testid="spatial-modeler-match-photo-apply-camera-btn"
               onClick={() => {
                 onStatusChange?.(matchPhotoResult.summaryKo);
                 onApplySceneCamera?.(matchPhotoResult.cameraSettings, matchPhotoResult.summaryKo);
@@ -430,18 +430,18 @@ export function StudioBg3dSketchUpFullSections({
               className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-on-accent hover:bg-accent/90"
             >
               <Camera className="size-3.5" aria-hidden />
-              <span>현재 3D 뷰포트에 Match Photo 카메라 즉시 적용</span>
+              <span>현재 3D 뷰포트에 사진 투시 카메라 즉시 적용</span>
             </button>
           </div>
         </div>
       </details>
 
       <details className="rounded-xl border border-line bg-card p-2.5">
-        <summary className="cursor-pointer font-bold text-fg">LayOut 벡터 단면도 예제 (SVG)</summary>
+        <summary className="cursor-pointer font-bold text-fg">벡터 단면도 예제 (SVG)</summary>
         <button
           type="button"
           disabled={disabled}
-          data-testid="sketchup-layout-svg-export-btn"
+          data-testid="spatial-modeler-layout-svg-export-btn"
           onClick={() => {
             const res = buildSketchUpLayOutVectorCutawaySvg({
               title: "건축 단면도 예제",
@@ -449,17 +449,17 @@ export function StudioBg3dSketchUpFullSections({
               heightMeters: 3.2,
               sectionElevationMeters: 1.2,
             });
-            const summary = `LayOut 벡터 단면 SVG (${res.byteLength} B) 생성 완료`;
+            const summary = `벡터 단면 SVG (${res.byteLength} B) 생성 완료`;
             setLayoutSvgSummary(summary);
             onStatusChange?.(summary);
           }}
           className="inline-flex items-center gap-1.5 rounded-lg border border-accent bg-accent/10 px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20"
         >
           <FileCode2 className="size-3.5" aria-hidden />
-          <span>LayOut 벡터 단면 SVG 예제 생성</span>
+          <span>벡터 단면 SVG 예제 생성</span>
         </button>
         {layoutSvgSummary ? (
-          <p data-testid="sketchup-layout-svg-summary" className="font-mono text-[0.62rem] text-good">
+          <p data-testid="spatial-modeler-layout-svg-summary" className="font-mono text-[0.62rem] text-good">
             {layoutSvgSummary}
           </p>
         ) : null}

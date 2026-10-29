@@ -10,6 +10,7 @@ import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
 import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 import { createStudioBg3dPrimitiveEditHostPorts } from "./studio-bg3d-primitive-edit-host";
+import { createStudioBg3dSceneGlbHostPorts } from "./studio-bg3d-scene-glb-host";
 
 export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
@@ -433,10 +434,10 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
   return (
     <>
               <Studio3dAssetQualityPanel
-                active={open}
+                active={open} ownerCanvas={modelRenderer?.domElement ?? null}
                 disabled={isCapturing || isRestoringScene || isUploadingModel || isSavingTemplate || Boolean(applyingTemplateId) || physicsInteractionLocked || hasPendingClone || hasCloneFailure}
                 emptyScene={primitives.length === 0 && customModels.length === 0}
-                deviceLostMessage={engineRuntime.deviceLostMessage}
+                deviceLostMessage={engineRuntime.deviceLostMessage ?? (engineRuntime.plan.status !== "available" ? engineRuntime.plan.notice : null)}
                 onBeforeEnable={handleSaveSceneAsTemplate}
               />
               <section hidden={hideOnTab("layers")}>
@@ -504,7 +505,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 onSetCaptureAspectRatio={updateLtExportAspectRatio}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
                 {...createStudioBg3dWorkbenchHostPorts(h)}
-                {...createStudioBg3dPrimitiveEditHostPorts(h)}
+                {...createStudioBg3dPrimitiveEditHostPorts(h)} {...createStudioBg3dSceneGlbHostPorts(h)}
                 aiReferenceBusy={isCapturing}
                 aiReferenceDisabled={
                   insertBlocked || (primitives.length === 0 && customModels.length === 0)
@@ -646,7 +647,6 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 />
               </section>
               </div>
-
               <section
                 hidden={hideOnTab("view")}
                 className="border-t border-line pt-4"

@@ -15,6 +15,8 @@ import {
   studioBg3dCaptureBackgroundRequestFromSnapshot,
   type StudioBg3dCaptureBackgroundSnapshot,
 } from "./studio-bg3d-capture-background";
+import { createStudioBg3dCaptureDocumentEnvironmentFingerprint } from "./studio-bg3d-capture-document-environment";
+import { assertStudioBg3dCaptureEnvironmentCurrent } from "./studio-bg3d-capture-environment-receipt";
 import {
   resolveStudioBg3dDeviceQuality,
   type StudioBg3dDeviceSignals,
@@ -108,7 +110,6 @@ export interface StudioBg3dShotBatchExportRunContext {
   } | null>;
   readonly shotBatchRecoveryStoreRef: RefObject<StudioBg3dShotBatchRecoveryStore | null>;
   readonly viewportApiRef: RefObject<BgViewportApi | null>;
-
   readonly customModels: BgCustomModelInstance[];
   readonly deviceSignals: StudioBg3dDeviceSignals;
   readonly lineArtPreview: boolean;
@@ -121,7 +122,6 @@ export interface StudioBg3dShotBatchExportRunContext {
   readonly shotBatchIncludeContactSheet: boolean;
   readonly shotBatchIncludeLayeredPsd: boolean;
   readonly shotBatchSelectedIds: readonly string[];
-
   readonly setCaptureBackgroundSnapshot: (value: StudioBg3dCaptureBackgroundSnapshot | null) => void;
   readonly setCustomModels: (value: BgCustomModelInstance[]) => void;
   readonly setError: (value: string | null) => void;
@@ -133,7 +133,6 @@ export interface StudioBg3dShotBatchExportRunContext {
   readonly setShotBatchRecoverySummary: (
     value: StudioBg3dShotBatchRecoverySummary | null,
   ) => void;
-
   readonly acquireSharedCharacterCaptureAuthority: () =>
     StudioBg3dSharedCharacterCaptureAuthorityLeaseResult | null;
   readonly readCurrentCanonicalSceneForShot: () => StudioBg3dSceneDocument | null;
@@ -146,7 +145,6 @@ export interface StudioBg3dShotBatchExportRunContext {
     checkpoint: "raster" | "receipt",
   ) => StudioBg3dSharedCharacterCaptureAuthorityVerificationResult | null;
 }
-
 const STUDIO_BG3D_SHOT_CONTACT_SHEET_PASS_PRIORITY: readonly StudioBg3dShotBatchPass[] = [
   "lt-composite",
   "beauty",
@@ -156,7 +154,6 @@ const STUDIO_BG3D_SHOT_CONTACT_SHEET_PASS_PRIORITY: readonly StudioBg3dShotBatch
   "texture-line",
   "depth",
 ];
-
 /**
  * Builds the editor's shot batch render → recovery → archive orchestration over one explicit
  * context. Nothing runs until the returned runner is invoked, so the editor keeps the exact
@@ -574,6 +571,7 @@ export function createStudioBg3dShotBatchExportRunner(
           mode: "capture",
           signals: deviceSignals,
         });
+        const expectedEnvironmentFingerprint = createStudioBg3dCaptureDocumentEnvironmentFingerprint(applied, appliedCaptureQuality.profile);
         if (!captureRef.current.adapter || appliedCaptureQuality.profile !== batchPlan.captureOwner.deviceProfile ||
           studioBg3dBatchOutputPixelBudget(captureRef.current.adapter!, appliedCaptureQuality.maxRenderPixels) !==
             batchPlan.captureOwner.maxPixels ||
@@ -583,7 +581,6 @@ export function createStudioBg3dShotBatchExportRunner(
           appliedCaptureQuality.shadowMapSize !== shot.capture.shadowMapSize) {
           throw new Error("컷별 렌더 품질이 동결된 캡처 계획과 달라졌습니다.");
         }
-
         const previousViewportApi = renderedViewportApi;
         const projectionChanged = renderedProjection !== applied.camera.projection;
         flushSync(() => {
@@ -687,7 +684,7 @@ export function createStudioBg3dShotBatchExportRunner(
                 tileShape: resolveStudioBg3dBatchTileShape(appliedCaptureQuality.maxRenderPixels),
                 adapter: captureAdapter, shot, settings: { line: applied.output.line, tone: applied.output.tone },
                 passes: batchPlan.passes, includeLayeredPsd: shotBatchIncludeLayeredPsd,
-                committedArtifactBytes: accumulatedArtifactBytes, includeNormals, signal: controller.signal,
+                committedArtifactBytes: accumulatedArtifactBytes, includeNormals, signal: controller.signal, expectedEnvironmentFingerprint,
                 assertCurrent: async () => {
                   await waitForStudioBg3dBatchDocumentVisible(document, controller.signal);
                   if (!componentActiveRef.current || controller.signal.aborted || captureRef.current.adapter !== captureAdapter
@@ -715,7 +712,7 @@ export function createStudioBg3dShotBatchExportRunner(
                     batchPlan.passes.includes("normal"))
                   ? { includeNormals: true } : {}),
               },
-              { signal: controller.signal, timeoutMs: 30_000 },
+              { signal: controller.signal, timeoutMs: 30_000, expectedEnvironmentFingerprint },
             );
           } catch (cause) {
             if (
@@ -756,6 +753,7 @@ export function createStudioBg3dShotBatchExportRunner(
           psdFallbacks: shotArtifacts.psdFallbacks,
         });
         await assertRecoveryAccess();
+        assertStudioBg3dCaptureEnvironmentCurrent(shotArtifacts, expectedEnvironmentFingerprint);
         await shotBatchRecoveryStore.completeShot(recoverySession, activeRunToken, {
           images: shotArtifacts.images,
           skippedArtifacts: shotArtifacts.skippedArtifacts,
@@ -765,14 +763,18 @@ export function createStudioBg3dShotBatchExportRunner(
           signal: controller.signal,
           authorizeBeforeCommit: async () => {
             await assertRecoveryAccess();
+            assertStudioBg3dCaptureEnvironmentCurrent(shotArtifacts, expectedEnvironmentFingerprint);
             const authorizedAt = Date.now();
             return {
               authorizedAt,
               expiresAt: authorizedAt +
                 STUDIO_BG3D_SHOT_BATCH_RECOVERY_AUTHORIZATION_RECEIPT_MAX_TTL_MS,
-              isLocallyCurrent: () => componentActiveRef.current && !controller.signal.aborted &&
-                shotBatchAbortRef.current === controller &&
-                shotBatchAuthorizationEpochRef.current === authorizationEpoch,
+              isLocallyCurrent: () => {
+                assertStudioBg3dCaptureEnvironmentCurrent(shotArtifacts, expectedEnvironmentFingerprint);
+                return componentActiveRef.current && !controller.signal.aborted &&
+                  shotBatchAbortRef.current === controller &&
+                  shotBatchAuthorizationEpochRef.current === authorizationEpoch;
+              },
             };
           },
         });
@@ -795,7 +797,6 @@ export function createStudioBg3dShotBatchExportRunner(
           label: shot.shotName,
         });
       }
-
       await assertRecoveryAccess();
       if (images.length === 0) {
         throw new Error("선택한 패스가 모든 컷에서 꺼져 있어 출력 artifact가 없습니다.");
@@ -807,7 +808,6 @@ export function createStudioBg3dShotBatchExportRunner(
         psdFallbacks,
       };
       assertStudioBg3dShotRequestedOutput(requestedOutput);
-
       let contactSheets: StudioBg3dShotBatchContactSheet[] = [];
       let contactSheetFallback: StudioBg3dShotBatchContactSheetFallback | undefined;
       if (batchPlan.includeContactSheet) {

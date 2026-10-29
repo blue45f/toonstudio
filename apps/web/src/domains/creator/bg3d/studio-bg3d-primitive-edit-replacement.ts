@@ -27,7 +27,7 @@ import {
 } from "./studio-bg3d-primitive-edit-source";
 import type { StudioBg3dCanonicalDocumentMutation } from "./useStudioBg3dCanonicalDocumentState";
 
-type RecordIdentity = Pick<Bg3dVerifiedStoredRecord, "id" | "contentHash" | "byteSize" | "mime" | "rights">;
+type RecordIdentity = Pick<Bg3dVerifiedStoredRecord, "id" | "contentHash" | "byteSize" | "mime" | "rights" | "sourceRestriction">;
 export type StudioBg3dPrimitiveEditReplacementCache = Pick<StudioBg3dModelRootCacheEntry, "root" | "metrics" | "normalizationScale"> & {
   readonly record: RecordIdentity;
 };

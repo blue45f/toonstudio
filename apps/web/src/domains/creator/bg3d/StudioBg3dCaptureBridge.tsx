@@ -1,8 +1,11 @@
 import { useThree } from "@react-three/fiber";
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 
+import { registerStudioBg3dCaptureEnvironmentAdapter } from "./studio-bg3d-capture-environment-adapter";
+import { acquireStudioBg3dCaptureEnvironmentReceipt } from "./studio-bg3d-capture-environment-receipt";
 import { loadStudioBg3dThreeWebglCaptureRuntime } from "./studio-bg3d-editor-derivations";
 import {
+  getStudioBg3dWebglRecoverySnapshot,
   installStudioBg3dWebglContextRecovery,
   STUDIO_BG3D_WEBGL_RECOVERY_EVENT,
   type StudioBg3dWebglRecoveryNoticeDetail,
@@ -14,7 +17,6 @@ import type { CaptureState } from "./StudioBackground3DTypes";
 
 interface RecoverableWebglRenderer {
   readonly domElement: HTMLCanvasElement;
-  readonly getPixelRatio?: () => number;
   readonly info?: { reset?: () => void };
   readonly isWebGPURenderer?: boolean;
   readonly renderLists?: { dispose?: () => void };
@@ -36,9 +38,8 @@ export function CaptureBridge({
 }: {
   onCaptureUpdate: (state: CaptureState, cleanupAdapter?: StudioBg3dCaptureAdapter | null) => void;
 }) {
-  const { camera, gl, invalidate, scene, setDpr } = useThree();
+  const { camera, gl, invalidate, scene } = useThree();
   const updateCapture = useEffectEvent(onCaptureUpdate);
-  const degradedRef = useRef(false);
 
   useEffect(() => {
     let disposed = false;
@@ -61,6 +62,13 @@ export function CaptureBridge({
     void loadAdapter.then((created) => {
       if (disposed) { created.dispose?.(); return; }
       adapter = created;
+      registerStudioBg3dCaptureEnvironmentAdapter(created, async (options) => {
+        const assertActive = () => { if (disposed) throw new Error("3D 캡처 환경 소유자가 해제되었습니다."); };
+        assertActive();
+        const receipt = await acquireStudioBg3dCaptureEnvironmentReceipt(scene, gl, options);
+        assertActive();
+        return receipt;
+      });
       updateCapture({ adapter, camera });
     }).catch(() => {
       if (!disposed) updateCapture({ adapter: null, camera: null });
@@ -80,21 +88,10 @@ export function CaptureBridge({
     const canvas = renderer.domElement;
     if (!canvas?.addEventListener) return;
 
-    degradedRef.current = false;
     const controller = installStudioBg3dWebglContextRecovery(canvas, {
       invalidate,
       resetRenderer: () => resetRendererAfterContextRestore(renderer),
       onStateChange: (snapshot: StudioBg3dWebglRecoverySnapshot) => {
-        if (snapshot.degraded && !degradedRef.current) {
-          degradedRef.current = true;
-          const currentDpr = Math.max(1, renderer.getPixelRatio?.() ?? 1);
-          setDpr(
-            Math.max(
-              1,
-              Math.round(currentDpr * 0.75 * 100) / 100,
-            ),
-          );
-        }
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent<StudioBg3dWebglRecoveryNoticeDetail>(
@@ -107,14 +104,14 @@ export function CaptureBridge({
     });
 
     return () => {
-      degradedRef.current = false;
       controller.dispose();
+      if (getStudioBg3dWebglRecoverySnapshot(canvas) !== null) return;
       window.dispatchEvent(new CustomEvent<StudioBg3dWebglRecoveryNoticeDetail>(
         STUDIO_BG3D_WEBGL_RECOVERY_EVENT,
         { detail: { owner: canvas, snapshot: null, retry: () => false } },
       ));
     };
-  }, [gl, invalidate, setDpr]);
+  }, [gl, invalidate]);
 
   return null;
 }

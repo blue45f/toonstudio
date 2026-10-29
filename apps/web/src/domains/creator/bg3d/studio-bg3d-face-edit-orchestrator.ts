@@ -24,6 +24,8 @@ import type { StudioBg3dAttachmentRights, StudioBg3dModelAttachment } from "./st
 import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
 import { acquireStudioBg3dModelReadLeaseV12 } from "./studio-bg3d-model-read-lease";
 import type { StudioBg3dModelReadLease, StudioBg3dModelReadLeaseRecordIdentity } from "./studio-bg3d-model-read-lease";
+import { resolveStudioBg3dModelExportProvenance, assertStudioBg3dModelExportReceiptCurrent } from "./studio-bg3d-model-export-provenance";
+import { fingerprintStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
 
 /** 호스트 어댑터는 getter와 위임 메서드에서 현재 참조를 읽는다. */
 export interface StudioBg3dFaceEditOrchestratorHost extends StudioBg3dPrimitiveEditReplacementHost {
@@ -114,6 +116,10 @@ function abortError(signal: AbortSignal): FaceEditApplyError {
 async function digest(bytes: Uint8Array<ArrayBuffer>): Promise<`sha256:${string}`> {
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
   return `sha256:${Array.from(hash, (value) => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function isSourceHash(value: string): value is `sha256:${string}` {
+  return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
 
 /** 실제 Worker 검증·atomic 저장·admission 뒤 단일 원본 교체를 발행한다. 기존 자산은 덮거나 보상 삭제하지 않는다. */
@@ -225,9 +231,29 @@ export async function applyStudioBg3dFaceEditOperation(
       library = await loadStudioBg3dModelLibraryModule();
       const beforeSave = assertCurrent();
       const policy = beforeSave.policy;
+      let sourceReceipt: import("./bg3d-model-library").Bg3dModelImportSourceReceipt | undefined;
+      if (operation.sourceRecordIdentity) {
+        const expected = operation.sourceRecordIdentity;
+        const source = await library.getStoredBg3dModelV12(expected.id, { signal: combined.signal });
+        assertCurrent();
+        if (!source || source.id !== expected.id || source.contentHash !== expected.contentHash
+          || source.byteSize !== expected.byteSize || source.mime !== expected.mime || !isSourceHash(source.contentHash)) {
+          throw new FaceEditApplyError("stale-source", "파생본을 저장할 실제 모델 원본을 다시 확인하지 못했습니다.");
+        }
+        const provenance = await resolveStudioBg3dModelExportProvenance(source, { signal: combined.signal, assertCurrent });
+        if (fingerprintStudioBg3dModelSourceRestriction(provenance.sourceRestriction)
+          !== fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(expected))) {
+          throw new FaceEditApplyError("stale-source", "편집 원본의 파일 제한이 바뀌어 파생본을 저장하지 않았습니다.");
+        }
+        await assertStudioBg3dModelExportReceiptCurrent(provenance);
+        assertCurrent();
+        sourceReceipt = { sourceRecordId: source.id, sourceContentHash: source.contentHash,
+          sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(provenance.sourceRestriction) };
+      }
       disposition = await library.importVerifiedBg3dModelsAtomicallyWithDispositionV12([{
         file: new File([exported.bytes], `${operation.name} 면 편집.glb`, { type: "model/gltf-binary" }),
         rights: operation.rights, expectedSha256: hash,
+        ...(sourceReceipt ? { sourceReceipt } : { ingress: { kind: "studio-generated", modelFileExport: "allowed" } }),
       }], { executionBackend: "worker", profile: policy.profile, budgets: policy.budgets,
         cumulativeUsedBytes: calculateStudioBg3dPlacedModelBytes(beforeSave.current.runtime.customModels, host.attachmentByStorageModelIdRef.current),
         maximumCumulativeBytes: policy.budgets[policy.profile].complexity.maxModelBytes, signal: combined.signal });
@@ -253,12 +279,14 @@ export async function applyStudioBg3dFaceEditOperation(
       const persisted = await library.getStoredBg3dModelV12(record.id, { signal: combined.signal });
       assertCurrent();
       if (!persisted || persisted.contentHash !== record.contentHash || persisted.byteSize !== record.byteSize
-        || persisted.mime !== record.mime || JSON.stringify(persisted.rights) !== JSON.stringify(record.rights)) {
+        || persisted.mime !== record.mime || JSON.stringify(persisted.rights) !== JSON.stringify(record.rights)
+        || fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(persisted))
+          !== fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record))) {
         throw new FaceEditApplyError("apply-failed", "적용 직전 편집 모델의 저장 상태를 다시 확인하지 못했습니다.");
       }
       const read = await acquireStudioBg3dModelReadLeaseV12([
         ...(operation.sourceRecordIdentity ? [operation.sourceRecordIdentity] : []),
-        { id: record.id, contentHash: record.contentHash, byteSize: record.byteSize, mime: record.mime, rights: record.rights },
+        record,
       ], { signals: [signal, lease.signal] });
       if (!read.ok) throw new FaceEditApplyError("stale-source", read.messageKo);
       heldReadLease = read.lease;

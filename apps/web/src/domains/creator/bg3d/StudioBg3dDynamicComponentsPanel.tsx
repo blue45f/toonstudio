@@ -184,12 +184,12 @@ export function StudioBg3dDynamicComponentsPanel({
         </span>
       </div>
 
-      {/* 기성 웹툰 3D 스케치업 소재 마켓 아키타입 섹션 */}
+      {/* 기성 웹툰 3D 소재 마켓 아키타입 섹션 */}
       <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 font-bold text-fg">
             <Store className="size-3.5 text-accent" />
-            <span>기성 웹툰 스케치업(.skp) 배경 아키타입</span>
+            <span>기성 웹툰 3D 배경 아키타입</span>
           </div>
           <span className="text-[0.62rem] text-fg-3">돈드로우 · 에이콘3D · 텀블벅 · 픽셀 호환</span>
         </div>
@@ -281,7 +281,7 @@ export function StudioBg3dDynamicComponentsPanel({
         <div className="flex flex-col gap-1.5 border-t border-line pt-2">
           <div className="flex items-center justify-between">
             <span className="text-[0.68rem] font-semibold text-fg-2">
-              장면 내 동적 구성 요소 (SketchUp OnClick)
+              장면 내 동적 구성 요소 · 클릭 동작
             </span>
             <div className="flex items-center gap-1">
               <button

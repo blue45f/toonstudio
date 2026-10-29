@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   collectStudioBg3dProjectArchivePlan,
@@ -28,6 +28,21 @@ import type {
   Bg3dVerifiedStoredRecord,
 } from "./bg3d-model-library";
 import type { StudioProjectFile } from "../studio-project-file";
+import { fingerprintStudioBg3dModelSourceRestriction, readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
+
+const sourceAuthority = vi.hoisted(() => ({
+  read: vi.fn<typeof import("./bg3d-model-library").readStudioBg3dModelSourceSnapshotV12>(),
+  byHash: vi.fn<typeof import("./bg3d-model-library").getStoredBg3dModelByHashV12>(),
+}));
+vi.mock("./bg3d-model-library", async (original) => ({
+  ...(await original<typeof import("./bg3d-model-library")>()),
+  readStudioBg3dModelSourceSnapshotV12: sourceAuthority.read,
+  getStoredBg3dModelByHashV12: sourceAuthority.byHash,
+}));
+beforeEach(() => {
+  sourceAuthority.read.mockReset(); sourceAuthority.read.mockResolvedValue(null);
+  sourceAuthority.byHash.mockReset(); sourceAuthority.byHash.mockResolvedValue(null);
+});
 
 const HASH_A = "1".repeat(64);
 const HASH_B = "2".repeat(64);
@@ -122,10 +137,16 @@ function storedRecord(
     validatorProfile: "desktop",
     validatorMetrics: METRICS,
     rights: RIGHTS,
+    sourceRestriction: { version: 1, modelFileExport: "allowed",
+      origin: { kind: "user-file", recordId: privateId, sha256: `sha256:${hash}` }, parent: null },
   };
 }
 
 function exportDependencies(records: ReadonlyMap<string, Bg3dVerifiedStoredRecord>) {
+  sourceAuthority.read.mockImplementation(async (id) => {
+    const record = [...records.values()].find((candidate) => candidate.id === id);
+    return record ? { record, sourceKind: "local-library", manifestRevision: 1, catalogIdentity: null } : null;
+  });
   const verifiedByHash = new Map<string, Uint8Array>();
   const getStoredByHash = vi.fn(async (hash: string) => records.get(hash) ?? null);
   const revalidateStored = vi.fn<StudioBg3dProjectLibraryDependencies["revalidateStored"]>(async (
@@ -203,6 +224,96 @@ function importedResultFor(project: unknown): ImportStudioProjectArchiveResult {
 }
 
 describe("studio BG3D project-library bridge", () => {
+  it.each(["service-only", "unknown"] as const)("%s 원본은 권리 라벨과 관계없이 raw archive를 만들지 않는다", async (modelFileExport) => {
+    const record = { ...storedRecord(HASH_A), sourceRestriction: { version: 1 as const,
+      modelFileExport, origin: null, parent: null } };
+    const deps = exportDependencies(new Map([[HASH_A, record]]));
+    const buildArchive = vi.fn<StudioBg3dProjectLibraryDependencies["buildArchive"]>();
+    await expect(buildStudioProjectArchiveWithVerifiedBg3dModels({ project: projectWithHashes([HASH_A]) }, {},
+      { ...deps, buildArchive })).rejects.toMatchObject({ code: "export-model-restricted" });
+    expect(deps.revalidateStored).not.toHaveBeenCalled(); expect(buildArchive).not.toHaveBeenCalled();
+  });
+
+  it("출처 필드 없는 legacy 원본을 owned 라벨로 허가하지 않는다", async () => {
+    const { sourceRestriction: _restriction, ...legacy } = storedRecord(HASH_A);
+    const deps = exportDependencies(new Map([[HASH_A, legacy]]));
+    await expect(prepareStudioBg3dProjectArchiveAttachments(projectWithHashes([HASH_A]), {}, deps))
+      .rejects.toMatchObject({ code: "export-model-restricted" });
+    expect(deps.revalidateStored).not.toHaveBeenCalled();
+  });
+
+  it("검증 중 실제 출처가 바뀌면 준비한 파일을 builder로 인계하지 않는다", async () => {
+    const record = storedRecord(HASH_A);
+    const records = new Map([[HASH_A, record]]);
+    const deps = exportDependencies(records);
+    const validate = deps.revalidateStored.getMockImplementation();
+    if (!validate) throw new Error("검증 seam이 없습니다.");
+    deps.revalidateStored.mockImplementation(async (...args) => {
+      const result = await validate(...args);
+      records.set(HASH_A, { ...record, sourceRestriction: { version: 1, modelFileExport: "service-only", origin: null, parent: null } });
+      return result;
+    });
+    const buildArchive = vi.fn<StudioBg3dProjectLibraryDependencies["buildArchive"]>();
+    await expect(buildStudioProjectArchiveWithVerifiedBg3dModels({ project: projectWithHashes([HASH_A]) }, {},
+      { ...deps, buildArchive })).rejects.toMatchObject({ code: "export-model-untrusted" });
+    expect(buildArchive).not.toHaveBeenCalled();
+  });
+
+  it("같은 bytes·rights의 실제 로컬 원본이 남아 있으면 archive 메타 대신 actual receipt를 재사용한다", async () => {
+    const record = storedRecord(HASH_A);
+    const deps = exportDependencies(new Map([[HASH_A, record]]));
+    const importAtomically = vi.fn<StudioBg3dProjectLibraryDependencies["importAtomically"]>(async (items) => {
+      const item = items[0];
+      if (!item || !("file" in item)) throw new Error("archive 입력이 없습니다.");
+      expect(item.ingress).toBeUndefined();
+      expect(item.sourceReceipt).toEqual({ sourceRecordId: record.id, sourceContentHash: record.contentHash,
+        sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(readStudioBg3dEffectiveModelSourceRestriction(record)) });
+      return [record];
+    });
+    await installStudioBg3dProjectArchiveModelsAndApply(importedResultFor(projectWithHashes([HASH_A])), async () => "applied", {},
+      { ...deps, importAtomically });
+    expect(importAtomically).toHaveBeenCalledOnce();
+  });
+
+  it("builder 대기 중 actual 출처가 사라지면 이미 만든 Blob도 호출자에게 반환하지 않는다", async () => {
+    const records = new Map([[HASH_A, storedRecord(HASH_A)]]), deps = exportDependencies(records);
+    const buildArchive = vi.fn<StudioBg3dProjectLibraryDependencies["buildArchive"]>(async (input) => {
+      const canonicalProject = collectStudioBg3dProjectArchivePlan(input.project).project;
+      records.clear();
+      return { blob: new Blob(), manifest: manifestForProject(), canonicalProject, canonicalProjectJson: "{}", isSelfContained: true, diagnostics: [] };
+    });
+    await expect(buildStudioProjectArchiveWithVerifiedBg3dModels({ project: projectWithHashes([HASH_A]) }, {}, { ...deps, buildArchive }))
+      .rejects.toMatchObject({ code: "export-model-untrusted" });
+    expect(buildArchive).toHaveBeenCalledOnce();
+  });
+
+  it("실제 두 단계 archive 복원도 현재 service-only row의 same-bytes receipt를 유지한다", async () => {
+    const record = { ...storedRecord(HASH_A), sourceRestriction: { version: 1 as const, modelFileExport: "service-only" as const, origin: null, parent: null } };
+    const deps = exportDependencies(new Map([[HASH_A, record]]));
+    const importAtomicallyWithDisposition = vi.fn<StudioBg3dProjectLibraryDependencies["importAtomicallyWithDisposition"]>(async (items) => {
+      const input = items[0]; if (!input || !("file" in input)) throw new Error("archive 입력이 없습니다.");
+      expect(input.ingress).toBeUndefined();
+      expect(input.sourceReceipt).toEqual({ sourceRecordId: record.id, sourceContentHash: record.contentHash,
+        sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(record.sourceRestriction) });
+      return { kind: "toonstudio-bg3d-model-atomic-import", version: 1, manifestRevision: 1, records: [record], created: [], removedDeletions: [] };
+    });
+    const imported = importedResultFor(projectWithHashes([HASH_A]));
+    const prepared = prepareStudioBg3dProjectArchiveImport(imported, {}, { ...deps, importAtomicallyWithDisposition });
+    expect(deps.getStoredByHash).not.toHaveBeenCalled();
+    const installed = await installPreparedStudioBg3dProjectArchiveModelsAndApply(prepared, imported.project, async () => true, { didApply: (result) => result });
+    expect(installed.records).toEqual([record]); expect(importAtomicallyWithDisposition).toHaveBeenCalledOnce();
+  });
+
+  it("다른 기기에 actual 원본이 없으면 archive unknown으로 가져오며 user-file 허가를 만들지 않는다", async () => {
+    const importAtomically = vi.fn<StudioBg3dProjectLibraryDependencies["importAtomically"]>(async (items) => {
+      const item = items[0];
+      if (!item || !("file" in item)) throw new Error("archive 입력이 없습니다.");
+      expect(item.ingress).toEqual({ kind: "archive" }); expect(item.sourceReceipt).toBeUndefined();
+      return [storedRecord(HASH_A)];
+    });
+    await installStudioBg3dProjectArchiveModelsAndApply(importedResultFor(projectWithHashes([HASH_A])), async () => "applied", {}, { importAtomically });
+    expect(sourceAuthority.read).not.toHaveBeenCalled();
+  });
   it("hash 하나라도 없으면 검증·builder를 시작하지 않고 고정 오류로 실패한다", async () => {
     const project = projectWithHashes([HASH_A, HASH_B]);
     const first = storedRecord(HASH_A);

@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { registerStudioBg3dCaptureEnvironmentAdapter } from "./studio-bg3d-capture-environment-adapter";
+import { acquireStudioBg3dCaptureEnvironmentReceipt, assertStudioBg3dCaptureEnvironmentCurrent,
+  publishStudioBg3dCaptureEnvironment } from "./studio-bg3d-capture-environment-receipt";
 import { buildStudioBg3dTiledImages } from "./studio-bg3d-tiled-artifact-client";
 import { StudioBg3dTiledArtifactProcessor } from "./studio-bg3d-tiled-artifact-processor";
 import {
@@ -36,6 +39,7 @@ class WorkerFixture implements StudioBg3dTiledWorkerLike {
   terminated = false;
   requests: StudioBg3dTiledRequest[] = [];
   intercept: ((request: StudioBg3dTiledRequest) => boolean) | undefined;
+  beforeResult: (() => void) | undefined;
   terminate = vi.fn(() => {
     this.terminated = true;
     void this.processor?.abort();
@@ -61,13 +65,18 @@ class WorkerFixture implements StudioBg3dTiledWorkerLike {
             kind: "ack",
             index: value.index,
           });
-        } else
+        } else {
+          const processor = this.processor;
+          if (!processor) throw new Error("완료 전에 타일 processor가 준비되어야 합니다.");
+          const result = await processor.finish();
+          this.beforeResult?.();
           this.send({
             version: 1,
             id: value.id,
             kind: "result",
-            result: await this.processor!.finish(),
+            result,
           });
+        }
       })
       .catch((error: unknown) =>
         this.send({
@@ -136,6 +145,61 @@ function fixture() {
   return { input, worker, dispose, capture, rgba };
 }
 afterEach(() => vi.useRealTimers());
+describe("타일 세션 전체의 실제 환경 세대", () => {
+  function environment(f: ReturnType<typeof fixture>, ready: PromiseLike<boolean> = Promise.resolve(true)) {
+    const scene = {}, renderer = {};
+    const publish = (promise = Promise.resolve(true)) => publishStudioBg3dCaptureEnvironment(scene, renderer,
+      { fingerprint: "same-hdri-same-texture", ready: promise, isApplied: () => true });
+    const first = publishStudioBg3dCaptureEnvironment(scene, renderer,
+      { fingerprint: "same-hdri-same-texture", ready, isApplied: () => true });
+    registerStudioBg3dCaptureEnvironmentAdapter(f.input.adapter,
+      (options) => acquireStudioBg3dCaptureEnvironmentReceipt(scene, renderer, options));
+    return { first, publish };
+  }
+
+  it("환경 준비 전에는 타일 session과 Worker를 시작하지 않는다", async () => {
+    const f = fixture(), ready = deferred<boolean>(), env = environment(f, ready.promise);
+    const workerFactory = vi.fn(() => f.worker), create = vi.spyOn(f.input.adapter, "createTiledCapture");
+    try {
+      const pending = buildStudioBg3dTiledImages({ ...f.input, workerFactory,
+        expectedEnvironmentFingerprint: "same-hdri-same-texture" });
+      await Promise.resolve();
+      expect(create).not.toHaveBeenCalled(); expect(workerFactory).not.toHaveBeenCalled();
+      ready.resolve(true);
+      const result = await pending;
+      expect(create).toHaveBeenCalledOnce(); expect(f.capture).toHaveBeenCalledTimes(4);
+      expect(() => assertStudioBg3dCaptureEnvironmentCurrent(result, "same-hdri-same-texture")).not.toThrow();
+      const next = env.publish();
+      try { expect(() => assertStudioBg3dCaptureEnvironmentCurrent(result)).toThrow(); }
+      finally { next.dispose(); }
+    } finally { env.first.dispose(); create.mockRestore(); }
+  });
+
+  it("첫 타일 뒤 같은 fingerprint의 새 generation으로 바뀌면 다음 캡처와 finish를 막는다", async () => {
+    const f = fixture(), env = environment(f);
+    let next: ReturnType<typeof env.publish> | undefined;
+    try {
+      await expect(buildStudioBg3dTiledImages({ ...f.input, onProgress: () => { next = env.publish(); } })).rejects.toThrow();
+      expect(f.capture).toHaveBeenCalledOnce();
+      expect(f.worker.requests.some((request) => request.kind === "finish")).toBe(false);
+      expect(f.dispose).toHaveBeenCalledOnce(); expect(f.worker.terminate).toHaveBeenCalledOnce();
+    } finally { env.first.dispose(); next?.dispose(); }
+  });
+
+  it("Worker finish 동안 세대가 바뀌면 PNG 검사 뒤 artifact 인계를 거부한다", async () => {
+    const f = fixture(), env = environment(f), commit = vi.fn();
+    let next: ReturnType<typeof env.publish> | undefined;
+    f.worker.beforeResult = () => { next = env.publish(); };
+    try {
+      await expect(buildStudioBg3dTiledImages(f.input).then(commit)).rejects.toThrow();
+      expect(f.capture).toHaveBeenCalledTimes(4);
+      expect(f.worker.requests.filter((request) => request.kind === "finish")).toHaveLength(1);
+      expect(commit).not.toHaveBeenCalled();
+      expect(f.dispose).toHaveBeenCalledOnce(); expect(f.worker.terminate).toHaveBeenCalledOnce();
+    } finally { env.first.dispose(); next?.dispose(); }
+  });
+});
+
 describe("tiled capture and encoder ownership", () => {
   it("uses one sequential capture and acknowledgement per tile, then releases the session", async () => {
     const f = fixture();
