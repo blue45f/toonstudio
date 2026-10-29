@@ -1,5 +1,5 @@
 import { STUDIO_I18N_NAMESPACES } from "@/shared/lib/i18n-asset-manifest";
-import { registerI18nLocaleEntries, getLocaleCandidates } from "@/shared/lib/i18n";
+import { getLocaleCandidates, markAuthoredI18nDictionaryLoaded, registerI18nLocaleEntries } from "@/shared/lib/i18n";
 
 export const STUDIO_I18N_ASSET_LOCALES = [
   "af",
@@ -187,9 +187,9 @@ export async function loadStudioI18nLocale(
     // Merged in manifest order so the result never depends on response arrival order.
     const merged: Record<string, string> = {};
     for (const dictionary of dictionaries) Object.assign(merged, dictionary);
-    registerI18nLocaleEntries(assetLocale, merged);
-    if (locale !== assetLocale) {
-      registerI18nLocaleEntries(locale, merged);
+    if (registerI18nLocaleEntries(assetLocale, merged)) markAuthoredI18nDictionaryLoaded(assetLocale);
+    if (locale !== assetLocale && registerI18nLocaleEntries(locale, merged)) {
+      markAuthoredI18nDictionaryLoaded(locale);
     }
   })();
 
