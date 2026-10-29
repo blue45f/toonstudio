@@ -74,37 +74,40 @@ export function useUserAi() {
   );
 }
 
-/**
- * 앞 설정에는 있었지만 새 설정에서 사라진 경로(지운 키, 주소·키 값이 바뀐 경로). 켜고 끄기만 한 경로는 같은 키라서 세지
- * 않는다(끄고 다시 켠다고 하루 사용량·잠금 기록이 비지 않게). 새로 생긴 경로도 세지 않는다: 새로 고침·잠금 뒤 같은 키를
- * 다시 붙여 넣으면 같은 경로라 하루 안전 한도가 이어져야 하고, 다른 키라면 기록의 키 표식이 옛 기록을 쓰지 않게 막는다.
- */
-function changedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): UserAiResolvedConnection[] {
-  const collect = (configuration: UserAiConfiguration) => {
-    const routes = new Map<string, UserAiResolvedConnection>();
-    for (const connection of configuration.connections) {
-      const everyRoute: UserAiConnection = {
-        ...connection,
-        enabled: true,
-        apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
-        models: connection.models?.map((item) => ({ ...item, enabled: true })),
-      };
-      for (const capability of USER_AI_CAPABILITIES) {
-        for (const route of resolvedUserAiRoutes(everyRoute, capability)) {
-          routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
-        }
+/** 설정의 모든 경로(끈 키·모델·연결 포함). 켜고 끄기만 한 경로는 같은 키라서 사라진 것으로 세지 않는다. */
+function everyRoute(configuration: UserAiConfiguration): Map<string, UserAiResolvedConnection> {
+  const routes = new Map<string, UserAiResolvedConnection>();
+  for (const connection of configuration.connections) {
+    const switchedOn: UserAiConnection = {
+      ...connection,
+      enabled: true,
+      apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
+      models: connection.models?.map((item) => ({ ...item, enabled: true })),
+    };
+    for (const capability of USER_AI_CAPABILITIES) {
+      for (const route of resolvedUserAiRoutes(switchedOn, capability)) {
+        routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
       }
     }
-    return routes;
-  };
-  const after = collect(next);
-  return [...collect(previous)].filter(([signature]) => !after.has(signature)).map(([, route]) => route);
+  }
+  return routes;
+}
+
+/**
+ * 앞 설정에는 있었지만 새 설정에서 사라진 경로(지운 키, 주소·키 값이 바뀐 경로)의 사용 기록을 지운다. 새로 생긴 경로의
+ * 기록은 지우지 않는다: 새로 고침·잠금 뒤 같은 키를 다시 붙여 넣으면 하루 안전 한도가 이어져야 한다(기록은 키마다 따로
+ * 쌓이므로 다른 키는 새 기록으로 시작한다). 남은 경로가 같은 키를 쓰면 기록 모듈이 그 기록을 남긴다.
+ */
+function forgetRemovedRoutes(previous: UserAiConfiguration, next: UserAiConfiguration): void {
+  const after = everyRoute(next);
+  const removed = [...everyRoute(previous)].filter(([signature]) => !after.has(signature)).map(([, route]) => route);
+  forgetFreeAiRuntimeRoutes(removed, [...after.values()]);
 }
 
 export function setUserAiConfiguration(configuration: UserAiConfiguration) {
   const next = normalizeUserAiConfiguration(configuration);
   // 지운 키·바꾼 키의 경로 기록을 지운다(결제 잠금은 "삭제 후 다시 등록"으로 풀린다).
-  forgetFreeAiRuntimeRoutes(changedRoutes(snapshot.configuration, next));
+  forgetRemovedRoutes(snapshot.configuration, next);
   publish(
     next,
     "클라우드 AI 라우팅을 메모리에 적용했습니다. 암호화 저장 전에는 디스크에 키를 기록하지 않습니다.",

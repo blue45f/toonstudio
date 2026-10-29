@@ -212,7 +212,11 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
   const otherPaidNames = [...new Set(firstAfterConsent
     .filter((route) => route.costPolicy === "user-funded-byok" && !pastedKeys.has(route.apiKey) && !firstNow.has(routeKeyId(route)))
     .map((route) => route.label))];
-  const pastedKeyPinned = firstAfterConsent.some((route) => pastedKeys.has(route.apiKey));
+  // 동의 문구의 "이 키"는 붙여 넣은 유료 키다. 함께 붙인 무료 키가 고정되는 경우를 유료 키 고정으로 알리지 않는다.
+  const paidPastedKeys = new Set(registrable
+    .filter((item) => item.provider && AI_KEY_PROVIDERS[item.provider].cost === "paid")
+    .map((item) => item.key));
+  const pastedKeyPinned = firstAfterConsent.some((route) => paidPastedKeys.has(route.apiKey));
   const canRegister = !busy && registrable.length > 0 && !unresolved && (!needsPaidConsent || consent);
 
   const addPending = (raw: string) => {
@@ -533,7 +537,8 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                         <button
                           type="button"
                           className={`${ICON_BUTTON} ml-auto`}
-                          aria-label={`${provider ? providerName(provider) : connection.label} ${key.label} 삭제`}
+                          // 같은 서비스 연결이 둘이면 키 이름이 겹칠 수 있다(동의 분리). 옆에 보이는 가린 키로 구별한다.
+                          aria-label={`${provider ? providerName(provider) : connection.label} ${key.label} ${maskAiKey(key.apiKey)} 삭제`}
                           onClick={() => removeKey(connection, key.id)}
                         >
                           <Trash2 size={15} aria-hidden />

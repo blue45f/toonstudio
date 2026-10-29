@@ -514,6 +514,70 @@ describe("studio automatic free AI client", () => {
     ]);
   });
 
+  describe("when the first free key's answer came back empty and my other free key fails", () => {
+    const configureGeminiAndGroq = () => {
+      const free = (id: string, baseUrl: string, apiKey: string) => ({
+        id,
+        label: id,
+        baseUrl,
+        apiKey,
+        imageModel: "",
+        textModel: "text-model",
+        imageGenerationPath: "/images/generations",
+        imageEditPath: "/images/edits",
+        chatCompletionsPath: "/chat/completions",
+        costPolicy: "provider-free-tier" as const,
+      });
+      setUserAiConfiguration({
+        version: 1,
+        connections: [
+          free("gemini-free", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-key"),
+          free("groq-free", "https://api.groq.com/openai/v1", "groq-key"),
+        ],
+        assignments: { text: "gemini-free", image: null, inference: null, "three-d": null },
+      });
+    };
+    const calls = (fetchMock: ReturnType<typeof vi.fn>) => fetchMock.mock.calls.map(([request]) => {
+      const url = urlOf(request as RequestInfo | URL);
+      return url.pathname === "/api/studio-ai/chat" ? url.pathname : url.hostname;
+    });
+
+    it("hands off to ToonStudio AI when my other key rejects the request before inference (413 over the per-minute token cap)", async () => {
+      configureGeminiAndGroq();
+      const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+        const url = urlOf(request);
+        if (url.pathname === "/api/studio-ai/chat") {
+          return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+        }
+        if (url.hostname === "generativelanguage.googleapis.com") return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+        return json({ error: { message: "Request too large for model on tokens per minute (TPM)" } }, 413);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeStudioServerText(input())).resolves.toMatchObject({
+        ok: true,
+        data: { content: "온전한 ToonStudio AI 결과", provider: "anthropic" },
+      });
+      expect(calls(fetchMock)).toEqual(["generativelanguage.googleapis.com", "api.groq.com", "/api/studio-ai/chat"]);
+    });
+
+    it("does not resend the request anywhere when my other key fails with a 5xx (the provider may already have it)", async () => {
+      configureGeminiAndGroq();
+      const fetchMock = vi.fn(async (request: RequestInfo | URL) => {
+        const url = urlOf(request);
+        if (url.pathname === "/api/studio-ai/chat") {
+          return json({ content: "온전한 ToonStudio AI 결과", provider: "anthropic", model: "claude-opus-5-5" });
+        }
+        if (url.hostname === "generativelanguage.googleapis.com") return json({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+        return json({ error: { message: "unavailable" } }, 503);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeStudioServerText(input())).resolves.toMatchObject({ ok: false, code: "http_error" });
+      expect(calls(fetchMock)).toEqual(["generativelanguage.googleapis.com", "api.groq.com"]);
+    });
+  });
+
   it("keeps the empty-cut-off reason from my key when ToonStudio AI is also used up", async () => {
     configureFreeTextConnection();
     vi.stubGlobal("fetch", vi.fn(async (request: RequestInfo | URL) => {

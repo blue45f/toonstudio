@@ -310,14 +310,16 @@ export function UnifiedAiSettings() {
       .map((route) => route.label))]
     : [];
   const paidChoiceRef = useRef<HTMLDivElement>(null);
-  const [paidUseAnnouncement, setPaidUseAnnouncement] = useState("");
+  // 결과 알림은 그 누름이 만든 설정에만 붙인다. 설정이 다시 바뀌면(동의 해제, 키 삭제·재연결 등) 알림 영역이 비어
+  // 지난 결과가 남지 않고, 다음 누름에서는 같은 문구도 새로 써져 다시 읽힌다.
+  const [paidUseAnnouncement, setPaidUseAnnouncement] = useState<{ readonly text: string; readonly revision: number } | null>(null);
   const choosePaidUse = (allowPaidFallback: boolean, preferPaidKeys: boolean) => {
     setUserAiConfiguration(withPaidAutoUseChoice(configuration, { allowPaidFallback, preferPaidKeys }));
   };
   const includeUnconsentedPaidKeys = () => {
     const names = unconsentedPaidNames.join(", ");
     choosePaidUse(true, routing.preferPaidKeys === true);
-    setPaidUseAnnouncement(`자동으로 쓰는 유료 키에 넣었어요: ${names}`);
+    setPaidUseAnnouncement({ text: `자동으로 쓰는 유료 키에 넣었어요: ${names}`, revision: getUserAiSnapshot().revision });
     // 누른 버튼은 안내와 함께 사라진다. 포커스를 잃지 않게 지금 고른 선택지로 옮긴다.
     paidChoiceRef.current?.querySelector<HTMLInputElement>('input[type="radio"]:checked')?.focus({ preventScroll: true });
   };
@@ -702,7 +704,7 @@ export function UnifiedAiSettings() {
                 {`“하나만 고정”으로 고른 유료 키(${pinnedPaidNames.join(", ")})는 이 설정과 상관없이 요청마다 내 계정에 비용이 청구돼요.`}
               </p>
             )}
-            <p className="sr-only" role="status">{paidUseAnnouncement}</p>
+            <p className="sr-only" role="status">{paidUseAnnouncement?.revision === snapshot.revision ? paidUseAnnouncement.text : ""}</p>
           </section>
 
           <section className="grid gap-3 sm:grid-cols-2" aria-label="AI 데이터와 보안 안내">

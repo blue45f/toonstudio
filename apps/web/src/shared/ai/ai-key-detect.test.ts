@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { detectAiKeyProvider, maskAiKey, normalizePastedAiKey, splitPastedAiKeys } from "./ai-key-detect";
 import { addQuickKey, chooseQuickKeyModel, findQuickKeyConnection, isQuickKeyRegistered, quickKeyProviderOf, removeQuickKey } from "./ai-quick-key";
-import { userAiPersonalFirstConnectionsForCapability } from "./user-ai-store";
+import { userAiConnectionsForCapability, userAiPersonalFirstConnectionsForCapability } from "./user-ai-store";
 import { EMPTY_AI_CONFIGURATION, normalizeUserAiConfiguration, userAiRoutingSettings } from "./user-ai-types";
 
 // 실제 키가 아니라 형식만 맞춘 가짜 값이다.
@@ -296,6 +296,83 @@ describe("addQuickKey / removeQuickKey", () => {
     // 꺼 둔 연결이라 어떤 경로에도 쓰이지 않는다. 그 키를 다시 붙이면 다시 켠다.
     expect(userAiPersonalFirstConnectionsForCapability("text", removed)).toEqual([]);
     expect(addQuickKey(removed, "groq", offKey)).toMatchObject({ reenabled: true, connectionId: first.connectionId });
+  });
+
+  describe("켜진 마지막 키를 지운 뒤 같은 서비스 키를 붙여도 사용자가 꺼 둔 키는 쓰이지 않는다", () => {
+    const K2 = `gsk_${"x".repeat(52)}`;
+    const K3 = `gsk_${"w".repeat(52)}`;
+
+    /** keys를 한 연결에 차례로 등록하고, offKeys는 고급 설정에서 키마다 꺼 둔 상태로 만든다. */
+    function registered(
+      provider: "groq" | "openai",
+      keys: readonly string[],
+      offKeys: readonly string[],
+      allowPaid = false,
+    ) {
+      let configuration = EMPTY_AI_CONFIGURATION;
+      for (const key of keys) configuration = addQuickKey(configuration, provider, key, { allowPaid }).configuration;
+      const connection = configuration.connections[0];
+      if (!connection) throw new Error("연결이 없어요.");
+      return {
+        connectionId: connection.id,
+        keyIdOf: (key: string) => connection.apiKeys?.find((item) => item.apiKey === key)?.id ?? "",
+        configuration: normalizeUserAiConfiguration({
+          ...configuration,
+          connections: configuration.connections.map((item) => ({
+            ...item,
+            apiKeys: item.apiKeys?.map((entry) => (offKeys.includes(entry.apiKey) ? { ...entry, enabled: false } : entry)),
+          })),
+        }),
+      };
+    }
+
+    const textKeys = (configuration: Parameters<typeof normalizeUserAiConfiguration>[0]) => {
+      const normalized = normalizeUserAiConfiguration(configuration);
+      return {
+        routes: userAiConnectionsForCapability("text", normalized).map((route) => route.apiKey),
+        first: userAiPersonalFirstConnectionsForCapability("text", normalized).map((route) => route.apiKey),
+      };
+    };
+
+    it("(무료) 지운 키를 다시 등록하거나 새 키를 붙이면, 붙인 키만 켜지고 꺼 둔 키는 꺼진 채로 남는다", () => {
+      const groq = registered("groq", [GROQ, K2], [K2]);
+      const removed = removeQuickKey(groq.configuration, groq.connectionId, groq.keyIdOf(GROQ));
+
+      for (const pasted of [GROQ, K3]) {
+        const added = addQuickKey(removed, "groq", pasted);
+        expect(added.connectionId).toBe(groq.connectionId);
+        expect(textKeys(added.configuration)).toEqual({ routes: [pasted], first: [pasted] });
+        const kept = normalizeUserAiConfiguration(added.configuration).connections[0]?.apiKeys;
+        expect(kept?.find((item) => item.apiKey === K2)?.enabled).toBe(false);
+      }
+    });
+
+    it("(유료) 동의한 연결에서 지운 뒤 새 키를 동의와 함께 붙이면 그 키만 먼저 쓰고, 꺼 둔 키에는 청구되지 않는다", () => {
+      const openaiA = `sk-proj-${"a".repeat(48)}`;
+      const openaiB = `sk-proj-${"b".repeat(48)}`;
+      const openaiC = `sk-proj-${"c".repeat(48)}`;
+      const openai = registered("openai", [openaiA, openaiB], [openaiB], true);
+      const removed = removeQuickKey(openai.configuration, openai.connectionId, openai.keyIdOf(openaiA));
+
+      const added = addQuickKey(removed, "openai", openaiC, { allowPaid: true });
+      expect(textKeys(added.configuration)).toEqual({ routes: [openaiC], first: [openaiC] });
+    });
+
+    it("꺼 둔 다른 키를 다시 붙이면 그 키만 켜진다", () => {
+      const groq = registered("groq", [GROQ, K2, K3], [K2, K3]);
+      const removed = removeQuickKey(groq.configuration, groq.connectionId, groq.keyIdOf(GROQ));
+
+      const revived = addQuickKey(removed, "groq", K3);
+      expect(revived).toMatchObject({ reenabled: true, connectionId: groq.connectionId });
+      expect(textKeys(revived.configuration)).toEqual({ routes: [K3], first: [K3] });
+    });
+
+    it("연결을 끄지 않고 키만 꺼 둔 연결에 새 키를 붙이면 다른 키의 켜짐 상태는 그대로 둔다", () => {
+      const groq = registered("groq", [GROQ, K2], [K2]);
+
+      const added = addQuickKey(groq.configuration, "groq", K3);
+      expect(textKeys(added.configuration).routes).toEqual([GROQ, K3]);
+    });
   });
 
   it("마지막 키를 지우면 연결과 그 연결을 가리키던 배정도 함께 지운다", () => {

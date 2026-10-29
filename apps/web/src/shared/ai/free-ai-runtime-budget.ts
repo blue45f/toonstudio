@@ -28,6 +28,7 @@ const AUTH_FAILURE_COOLDOWN_MS = 10 * 60 * 1_000;
 const MAX_RETRY_AFTER_MS = 24 * 60 * 60 * 1_000;
 const BUDGET_LOCK_NAME = "toonstudio:user-ai:runtime-budget";
 const MAX_LEDGER_ENTRIES = 64;
+const LEDGER_KEY_PATTERN = /^[A-Za-z0-9_.:-]{1,220}$/u;
 const KEY_TAG_PATTERN = /^[0-9a-f]{8}$/u;
 
 type FreeAiBlockReason =
@@ -55,7 +56,7 @@ interface FreeAiBudgetEntry {
   /** null means either unblocked or manually blocked when blockedReason is payment-required. */
   blockedUntil: number | null;
   updatedAt: number;
-  /** 이 기록을 쌓은 키의 짧은 표식(`keyTagOf`). 같은 경로 ID를 다른 키가 쓰면 옛 키의 기록을 물려받지 않는다. */
+  /** 이 기록을 쌓은 키의 짧은 표식(`keyTagOf`). 칸 이름에도 들어 있다. 표식이 없으면 칸 이름에 표식을 넣기 전의 옛 기록이다. */
   keyTag?: string;
 }
 
@@ -154,14 +155,27 @@ function cleanLedger(value: unknown): FreeAiBudgetLedger {
   if (source.version !== 1 || !source.entries || typeof source.entries !== "object") {
     return structuredClone(EMPTY_LEDGER);
   }
-  const entries: Record<string, FreeAiBudgetEntry> = {};
+  const entries: Array<[string, FreeAiBudgetEntry]> = [];
   for (const [key, entry] of Object.entries(source.entries as Record<string, unknown>)) {
-    if (!/^[A-Za-z0-9_.:-]{1,220}$/u.test(key)) continue;
+    if (!LEDGER_KEY_PATTERN.test(key)) continue;
     const cleaned = cleanEntry(entry);
-    if (cleaned) entries[key] = cleaned;
-    if (Object.keys(entries).length >= MAX_LEDGER_ENTRIES) break;
+    if (cleaned) entries.push([key, cleaned]);
   }
-  return { version: 1, entries };
+  return { version: 1, entries: Object.fromEntries(keptLedgerEntries(entries)) };
+}
+
+/**
+ * 기록이 상한을 넘으면 아직 쓰이는 기록을 남긴다. 먼저 지난 날짜의 기록(결제 잠금 제외)을 버리고, 그래도 많으면 오래 쓰지
+ * 않은 기록부터 버린다. 방금 쓴 기록을 버리면 그 경로의 하루 한도가 걸리지 않으므로(fail-open) 들어온 순서로 자르지 않는다.
+ */
+function keptLedgerEntries(entries: Array<[string, FreeAiBudgetEntry]>): Array<[string, FreeAiBudgetEntry]> {
+  if (entries.length <= MAX_LEDGER_ENTRIES) return entries;
+  const today = utcDay(entries.reduce((latest, [, entry]) => Math.max(latest, entry.updatedAt), 0));
+  const live = (entry: FreeAiBudgetEntry) => entry.day === today
+    || (entry.blockedReason === "payment-required" && entry.keyTag !== undefined);
+  return [...entries]
+    .sort(([, left], [, right]) => Number(live(right)) - Number(live(left)) || right.updatedAt - left.updatedAt)
+    .slice(0, MAX_LEDGER_ENTRIES);
 }
 
 function browserStorage(): Storage | null {
@@ -200,7 +214,19 @@ function writeLedger(ledger: FreeAiBudgetLedger): void {
   }
 }
 
-function scopeKey(connection: UserAiConnection): string {
+/**
+ * 기록 칸. 주소·실제 모델 이름·키 표식으로 정한다. 연결·모델·키의 자리 ID(`quick-groq:text-1:key-1` 같은 경로 ID)는
+ * 등록 순서로 정해져, 새로 고친 뒤 다른 키가 같은 ID를 받거나 같은 키가 다른 자리로 갈 수 있으므로 칸 이름에 넣지 않는다.
+ * 그래서 탭마다 다른 키를 붙여도 서로의 기록을 덮어쓰지 않고, 같은 키는 어느 자리에 다시 붙여도 오늘 기록을 이어 쓴다.
+ */
+interface LedgerScope {
+  readonly key: string;
+  /** 칸 이름에 키 표식을 넣기 전의 칸(`주소:경로 ID`). 그 기록을 어떻게 이어 받는지는 `legacyEntry`가 정한다. */
+  readonly legacyKey: string;
+  readonly keyTag: string;
+}
+
+function ledgerScope(connection: UserAiConnection): LedgerScope {
   let host = "managed-provider";
   try {
     host = new URL(connection.baseUrl).hostname.toLowerCase();
@@ -210,13 +236,20 @@ function scopeKey(connection: UserAiConnection): string {
   const routeId = "routeId" in connection && typeof connection.routeId === "string"
     ? connection.routeId
     : connection.id;
-  return `${host}:${routeId}`.slice(0, 220);
+  const keyTag = keyTagOf(connection);
+  // 모델 이름의 "/"·":" 등은 칸 이름에 쓸 수 없어 바꾼다. 겹치는 이름은 한도를 함께 쓸 뿐이라 더 엄격한 쪽이다.
+  const model = connection.textModel.replace(/[^A-Za-z0-9_.-]/gu, "_");
+  return {
+    // 표식이 잘리지 않게 앞부분만 자른다(211 + 1 + 8 = 220자).
+    key: `${`${host}:${model}`.slice(0, 211)}:${keyTag}`,
+    legacyKey: `${host}:${routeId}`.slice(0, 220),
+    keyTag,
+  };
 }
 
 /**
- * 경로 ID는 연결·모델·키 ID로 만들어 키 값이 바뀌어도 그대로다(키를 지운 뒤 다른 키를 넣거나, 새로 고침 뒤 다른 키를
- * 붙여 넣는 경우). 그래서 기록마다 그 키의 짧은 표식을 남겨 다른 키가 옛 키의 사용량·잠금을 물려받지 않게 한다.
- * 키를 되살릴 수 없는 32비트 FNV-1a 해시이고, 키 값 자체는 저장하지 않는다.
+ * 키를 구별하는 짧은 표식. 키를 되살릴 수 없는 32비트 FNV-1a 해시이고, 키 값 자체는 저장하지 않는다. 다른 키가 같은
+ * 표식을 얻는 드문 경우에는 두 키가 한도를 함께 쓸 뿐이다(더 엄격한 쪽).
  */
 function keyTagOf(connection: UserAiConnection): string {
   const text = `${connection.baseUrl}\n${connection.apiKey}`;
@@ -241,26 +274,41 @@ function freshEntry(now: number, keyTag: string): FreeAiBudgetEntry {
   };
 }
 
+/**
+ * 칸 이름에 표식을 넣기 전의 옛 칸 기록. 표식이 같은 키의 것이면 그대로 쓰고, 다른 키의 것이면 쓰지 않는다. 표식이 없는
+ * 기록(그 전 버전)은 어느 키의 것인지 알 수 없다: 오늘 횟수·토큰은 하루 한도를 지키려고 이어 받고, 키에 묶인 잠금
+ * (결제·인증·속도 제한)은 다른 키에 걸리지 않게 버린다. 같은 키였다면 다음 402·401·429 응답이 표식과 함께 다시 잠근다.
+ */
+function legacyEntry(ledger: FreeAiBudgetLedger, scope: LedgerScope): FreeAiBudgetEntry | undefined {
+  const entry = ledger.entries[scope.legacyKey];
+  if (!entry || scope.legacyKey === scope.key) return undefined;
+  if (entry.keyTag !== undefined) return entry.keyTag === scope.keyTag ? entry : undefined;
+  const keyBound = entry.blockedReason === "payment-required"
+    || entry.blockedReason === "authentication"
+    || entry.blockedReason === "rate-limit";
+  return keyBound ? { ...entry, quotaFailures: 0, blockedReason: null, blockedUntil: null } : entry;
+}
+
 function currentEntry(
   ledger: FreeAiBudgetLedger,
-  key: string,
+  scope: LedgerScope,
   now: number,
-  keyTag: string,
 ): FreeAiBudgetEntry {
-  const existing = ledger.entries[key];
-  // 표식이 없는 옛 기록은 지금 키의 것으로 이어 받는다(이 표식을 남기기 전의 기록).
-  if (!existing || (existing.keyTag !== undefined && existing.keyTag !== keyTag)) return freshEntry(now, keyTag);
-  if (existing.day === utcDay(now)) return { ...existing, keyTag };
+  const existing = ledger.entries[scope.key] ?? legacyEntry(ledger, scope);
+  if (!existing || (existing.keyTag !== undefined && existing.keyTag !== scope.keyTag)) {
+    return freshEntry(now, scope.keyTag);
+  }
+  if (existing.day === utcDay(now)) return { ...existing, keyTag: scope.keyTag };
 
   // A provider asking for payment remains blocked until the user explicitly resets it.
   if (existing.blockedReason === "payment-required") {
     return {
-      ...freshEntry(now, keyTag),
+      ...freshEntry(now, scope.keyTag),
       blockedReason: "payment-required",
       blockedUntil: null,
     };
   }
-  return freshEntry(now, keyTag);
+  return freshEntry(now, scope.keyTag);
 }
 
 interface LockManagerLike {
@@ -403,8 +451,8 @@ export async function guardFreeAiRuntimeRequest(
 
   return withBudgetLock(() => {
     const ledger = readLedger();
-    const key = scopeKey(connection);
-    const entry = currentEntry(ledger, key, now, keyTagOf(connection));
+    const scope = ledgerScope(connection);
+    const entry = currentEntry(ledger, scope, now);
     const blocked = blockMessage(entry, now);
     if (blocked) {
       // 최근 인증 오류로 쉬는 연결은 요청을 보내지 않았으므로, 인증 거절과 같은 종류로 알려 다음 키·ToonStudio AI로 넘기게 한다.
@@ -420,7 +468,7 @@ export async function guardFreeAiRuntimeRequest(
       entry.blockedReason = "daily-request-budget";
       entry.blockedUntil = nextUtcDay(now);
       entry.updatedAt = now;
-      ledger.entries[key] = entry;
+      ledger.entries[scope.key] = entry;
       writeLedger(ledger);
       throw new FreeAiRuntimeBudgetError(`오늘의 앱 무료 요청 안전 한도에 도달했습니다. ${DAILY_RESET_NOTICE}까지 차단하며 유료 모델로 전환하지 않습니다.`);
     }
@@ -431,7 +479,7 @@ export async function guardFreeAiRuntimeRequest(
       entry.blockedReason = "daily-token-budget";
       entry.blockedUntil = nextUtcDay(now);
       entry.updatedAt = now;
-      ledger.entries[key] = entry;
+      ledger.entries[scope.key] = entry;
       writeLedger(ledger);
       throw new FreeAiRuntimeBudgetError(`오늘의 앱 무료 토큰 예약 한도에 도달했습니다. ${DAILY_RESET_NOTICE}까지 차단하며 유료 모델로 전환하지 않습니다.`);
     }
@@ -439,7 +487,7 @@ export async function guardFreeAiRuntimeRequest(
     entry.requests += 1;
     entry.reservedTokens += prepared.reservedTokens;
     entry.updatedAt = now;
-    ledger.entries[key] = entry;
+    ledger.entries[scope.key] = entry;
     writeLedger(ledger);
     return {
       body: prepared.body,
@@ -473,8 +521,8 @@ export async function recordFreeAiRuntimeResponse(
   try {
     await withBudgetLock(() => {
       const ledger = readLedger();
-      const key = scopeKey(connection);
-      const entry = currentEntry(ledger, key, now, keyTagOf(connection));
+      const scope = ledgerScope(connection);
+      const entry = currentEntry(ledger, scope, now);
 
       if (status === 402) {
         entry.blockedReason = "payment-required";
@@ -503,7 +551,7 @@ export async function recordFreeAiRuntimeResponse(
       }
 
       entry.updatedAt = now;
-      ledger.entries[key] = entry;
+      ledger.entries[scope.key] = entry;
       writeLedger(ledger);
     });
   } catch {
@@ -531,7 +579,7 @@ export function getFreeAiRuntimeBudgetSnapshot(
     };
   }
   const ledger = readLedger();
-  const entry = currentEntry(ledger, scopeKey(connection), now, keyTagOf(connection));
+  const entry = currentEntry(ledger, ledgerScope(connection), now);
   if (
     entry.blockedReason !== "payment-required"
     && entry.blockedUntil !== null
@@ -559,26 +607,39 @@ export function getFreeAiRuntimeBudgetSnapshot(
 
 /**
  * 사용자가 지웠거나 키 값·주소를 바꾼 경로의 사용량·잠금 기록을 지운다. 결제 잠금 안내("연결을 삭제하고 다시 등록하세요")가
- * 이 동작에 기댄다. 다른 키가 같은 경로 ID를 이어 쓰는 경우는 기록의 키 표식(`keyTagOf`)이 따로 막는다.
+ * 이 동작에 기댄다. 남은 경로(`kept`)가 같은 칸(같은 주소·모델·키)을 쓰면 그 키는 아직 쓰이므로 기록을 남긴다.
  */
-export function forgetFreeAiRuntimeRoutes(routes: readonly UserAiConnection[]): void {
+export function forgetFreeAiRuntimeRoutes(
+  routes: readonly UserAiConnection[],
+  kept: readonly UserAiConnection[] = [],
+): void {
   if (routes.length === 0) return;
+  const keptKeys = new Set(kept.map((route) => ledgerScope(route).key));
   const ledger = readLedger();
   let changed = false;
   for (const route of routes) {
-    const key = scopeKey(route);
+    const scope = ledgerScope(route);
+    if (keptKeys.has(scope.key)) continue;
+    changed = forgetScope(ledger, scope) || changed;
+  }
+  if (changed) writeLedger(ledger);
+}
+
+function forgetScope(ledger: FreeAiBudgetLedger, scope: LedgerScope): boolean {
+  let changed = false;
+  for (const key of [scope.key, scope.legacyKey]) {
     if (key in ledger.entries) {
       delete ledger.entries[key];
       changed = true;
     }
   }
-  if (changed) writeLedger(ledger);
+  return changed;
 }
 
 export function resetFreeAiRuntimeBudget(connection?: UserAiConnection): void {
   const ledger = readLedger();
   if (connection) {
-    delete ledger.entries[scopeKey(connection)];
+    forgetScope(ledger, ledgerScope(connection));
     writeLedger(ledger);
     return;
   }

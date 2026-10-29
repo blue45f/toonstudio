@@ -15,6 +15,7 @@ import {
   userAiConnectionApiKeys,
   userAiConnectionModels,
   userAiRoutingSettings,
+  type UserAiApiKeyProfile,
   type UserAiCapability,
   type UserAiConfiguration,
   type UserAiConnection,
@@ -265,6 +266,15 @@ function uniqueId(base: string, taken: ReadonlySet<string>): string {
   throw new Error("연결 ID를 만들지 못했어요.");
 }
 
+/**
+ * 꺼 둔 연결의 키를 모두 끈 목록. 꺼진 연결 안 키의 켜짐 표시는 믿을 수 없다: 켜진 마지막 키를 지울 때 보관함 검증을
+ * 맞추려고 사용자가 꺼 둔 키의 표시를 살렸을 수 있다(removeQuickKey). 그래서 꺼 둔 연결을 키 등록으로 다시 켤 때는
+ * 이번에 붙인 키만 켜고, 나머지 키는 사용자가 고급 설정에서 직접 켜게 둔다.
+ */
+function switchedOffKeys(keys: readonly UserAiApiKeyProfile[]): UserAiApiKeyProfile[] {
+  return keys.map((entry) => ({ ...entry, enabled: false }));
+}
+
 function emptyRouteAssignments(): Record<UserAiCapability, UserAiRouteAssignment | null> {
   return { text: null, image: null, inference: null, "three-d": null };
 }
@@ -321,12 +331,16 @@ export function addQuickKey(
   }
   if (held) {
     // 꺼 둔 같은 키를 다시 붙였다: 사용자가 쓰려는 뜻이므로 그 키와 연결을 다시 켠다. 비용 정책·모델·순서는 그대로 둔다.
+    // 연결이 통째로 꺼져 있었다면 붙인 그 키만 켠다(switchedOffKeys 참고).
     const connections = configuration.connections.map((item) => (item.id === held.connectionId
       ? consented({
           ...item,
           enabled: true,
           ...(item.apiKeys?.length
-            ? { apiKeys: item.apiKeys.map((entry) => (entry.id === held.keyId ? { ...entry, enabled: true } : entry)) }
+            ? {
+                apiKeys: (item.enabled === false ? switchedOffKeys(item.apiKeys) : item.apiKeys)
+                  .map((entry) => (entry.id === held.keyId ? { ...entry, enabled: true } : entry)),
+              }
             : {}),
         })
       : item));
@@ -354,11 +368,12 @@ export function addQuickKey(
     }
     const keyId = uniqueId(`key-${keys.length + 1}`, new Set(keys.map((item) => item.id)));
     const lastPriority = keys.reduce((max, item) => Math.max(max, item.priority), 0);
+    // 꺼 둔 연결에 키를 더하면 연결을 다시 켜되, 이번에 붙인 키만 켠다(switchedOffKeys 참고).
     const updated: UserAiConnection = consented({
       ...existing,
       enabled: true,
       apiKeys: [
-        ...keys,
+        ...(existing.enabled === false ? switchedOffKeys(keys) : keys),
         { id: keyId, label: `키 ${keys.length + 1}`, apiKey: key, enabled: true, priority: Math.min(999, lastPriority + 10) },
       ],
     });
@@ -410,7 +425,8 @@ export function addQuickKey(
  * 키 하나를 지운다. 그 연결에 남은 키가 없으면 연결도 지우고, 지운 연결·키를 가리키던 기능 배정은 비운다
  * (배정이 남아 있으면 보관함 검증에서 설정 전체가 거부된다). 남은 키가 모두 꺼져 있으면 연결을 지우지 않고 꺼 둔다:
  * 목록에 따로 보이는 꺼 둔 키를 함께 잃지 않게 한다. 보관함 검증은 연결마다 켜진 키를 하나 요구하므로 남은 첫 키의
- * 켜짐 표시만 살리고, 연결을 꺼서 어떤 경로에도 쓰이지 않게 한다(그 키를 다시 붙여 넣으면 다시 켜진다).
+ * 켜짐 표시만 살리고 연결을 끈다. 이 연결은 키를 붙여 다시 켜도 붙인 키만 켜지므로(addQuickKey), 살린 표시 때문에
+ * 사용자가 꺼 둔 키가 쓰이지 않는다(고급 설정에서 연결 자체를 다시 켤 때는 같은 화면에 키마다 켜짐 상태가 보인다).
  */
 export function removeQuickKey(
   configuration: UserAiConfiguration,

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as freeAiPoolStatus from "./free-ai-pool-status";
@@ -87,13 +87,29 @@ describe("UnifiedAiSettings guided setup", () => {
     expect(screen.queryByText(/자동으로 쓰지 않는 유료 키/u)).toBeNull();
     // 버튼이 사라져도 포커스를 잃지 않고(지금 고른 선택지로 옮긴다), 결과를 알림 영역으로 알린다.
     expect(document.activeElement).toBe(screen.getByRole("radio", { name: "내 유료 키를 먼저 사용" }));
-    expect(screen.getByText("자동으로 쓰는 유료 키에 넣었어요: 대화상자용 유료 키").getAttribute("role")).toBe("status");
+    const announcement = screen.getByText("자동으로 쓰는 유료 키에 넣었어요: 대화상자용 유료 키");
+    expect(announcement.getAttribute("role")).toBe("status");
 
     // "자동으로 사용하지 않음"은 모든 유료 키의 동의를 지운다.
     fireEvent.click(screen.getByRole("radio", { name: "자동으로 사용하지 않음" }));
     const off = getUserAiSnapshot().configuration;
     expect(off.connections.some((item) => item.paidAutoUse === true)).toBe(false);
     expect(userAiRoutingSettings(off)).toMatchObject({ allowPaidFallback: false, preferPaidKeys: false });
+    // 지난 결과("넣었어요")가 알림 영역에 남아 지금 상태와 어긋나지 않는다.
+    expect(announcement.textContent).toBe("");
+
+    // 다시 "먼저 사용"을 고르고 대화상자용 키를 다시 연결하면(AI 보조 카드에서 삭제 후 연결) 같은 안내가 다시 나온다.
+    fireEvent.click(screen.getByRole("radio", { name: "내 유료 키를 먼저 사용" }));
+    act(() => {
+      const current = getUserAiSnapshot().configuration;
+      setUserAiConfiguration({
+        ...current,
+        connections: [...current.connections.filter((item) => item.id !== "dialog-only"), paid("dialog-only", "대화상자용 유료 키")],
+      });
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "이 키도 자동으로 쓰기" }));
+    // 같은 문구라도 알림 영역에 새로 써지므로 화면 읽기 프로그램이 다시 읽는다.
+    expect(announcement.textContent).toBe("자동으로 쓰는 유료 키에 넣었어요: 대화상자용 유료 키");
   });
 
   it("in the single fixed mode, does not list the fixed paid key as unused and says it is billed on every request", async () => {

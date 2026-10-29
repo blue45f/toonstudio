@@ -356,7 +356,8 @@ describe("managed cloud AI transport", () => {
   });
 
   describe("empty answers cut at the output cap", () => {
-    const geminiTwoKeys = (): void => {
+    const KEY_IDS = ["first", "second", "third"] as const;
+    const geminiKeys = (count = 2): void => {
       setUserAiConfiguration({
         version: 1,
         connections: [{
@@ -367,10 +368,13 @@ describe("managed cloud AI transport", () => {
           apiKey: "legacy-key",
           textModel: "gemini-3.8-flash",
           costPolicy: "provider-free-tier",
-          apiKeys: [
-            { id: "first", label: "First", apiKey: "key-first", enabled: true, priority: 10 },
-            { id: "second", label: "Second", apiKey: "key-second", enabled: true, priority: 20 },
-          ],
+          apiKeys: KEY_IDS.slice(0, count).map((id, index) => ({
+            id,
+            label: id,
+            apiKey: `key-${id}`,
+            enabled: true,
+            priority: (index + 1) * 10,
+          })),
         }],
         assignments: { text: "gemini-multi", image: null, inference: null, "three-d": null },
       });
@@ -379,10 +383,14 @@ describe("managed cloud AI transport", () => {
       JSON.stringify({ choices: [{ message: { content }, finish_reason: finishReason }] }),
       { status: 200, headers: { "content-type": "application/json" } },
     );
+    const failure = (status: number) => new Response(
+      JSON.stringify({ error: { message: status === 413 ? "Request too large for model on tokens per minute (TPM)" : "unavailable" } }),
+      { status, headers: { "content-type": "application/json" } },
+    );
     const bearer = (init?: RequestInit) => new Headers(init?.headers).get("authorization");
 
     it("tries my next free key when one free key's answer came back empty at the output cap", async () => {
-      geminiTwoKeys();
+      geminiKeys();
       const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
         bearer(init) === "Bearer key-first" ? answer("", "length") : answer("second key result")
       ));
@@ -396,11 +404,48 @@ describe("managed cloud AI transport", () => {
     });
 
     it("reports the empty cut-off answer only after every free key was tried", async () => {
-      geminiTwoKeys();
+      geminiKeys();
       const fetchMock = vi.fn(async () => answer("", "length"));
       vi.stubGlobal("fetch", fetchMock);
 
       await expect(completeUserAiTextDetailed("system", "user")).rejects.toBeInstanceOf(UserAiEmptyTruncatedError);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps going when a later key rejects the request before inference with a 4xx (e.g. 413 over the per-minute token cap)", async () => {
+      geminiKeys(3);
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const key = bearer(init);
+        return key === "Bearer key-first" ? answer("", "length") : key === "Bearer key-second" ? failure(413) : answer("third key result");
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeUserAiTextDetailed("system", "user")).resolves.toMatchObject({
+        content: "third key result",
+        connection: { apiKeyProfileId: "third" },
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    });
+
+    it("still reports the empty cut-off answer (so the caller hands off) when every later key rejects the request with a 4xx", async () => {
+      geminiKeys();
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
+        bearer(init) === "Bearer key-first" ? answer("", "length") : failure(413)
+      ));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeUserAiTextDetailed("system", "user")).rejects.toBeInstanceOf(UserAiEmptyTruncatedError);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("stops at a 5xx after an empty answer, because the provider may already have received the request", async () => {
+      geminiKeys(3);
+      const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => (
+        bearer(init) === "Bearer key-first" ? answer("", "length") : failure(503)
+      ));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(completeUserAiTextDetailed("system", "user")).rejects.toMatchObject({ code: "http-error", status: 503 });
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 

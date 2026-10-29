@@ -299,6 +299,10 @@ export async function completeUserAiTextDetailed(
         paidAnswerBilled ||= connection.costPolicy === "user-funded-byok";
         continue;
       }
+      // 빈 잘린 답 뒤에 다음 키가 추론 전에 4xx로 거절했다(예: Groq 413, 분당 토큰 초과): 그 키만 건너뛰고, 모두 안 되면
+      // 아래에서 빈 답을 이유로 알려 호출 쪽이 ToonStudio AI로 넘기게 한다. 5xx·네트워크 오류·시간 초과는 제공자가
+      // 이미 받았을 수 있으므로 재전송 금지 규칙대로 바로 멈춘다(인증·한도 4xx는 아래 기존 분기가 다룬다).
+      if (emptyTruncated && rejectedBeforeInference(error)) continue;
       const quotaExhaustion = isUserAiQuotaExhaustion(error);
       const safeAuthenticationFailover = error instanceof UserAiTransportError
         && error.code === "authentication";
@@ -330,6 +334,15 @@ export async function completeUserAiText(
 function isSafeUserAiRouteFailover(error: unknown): boolean {
   return isUserAiQuotaExhaustion(error)
     || (error instanceof UserAiTransportError && error.code === "authentication");
+}
+
+/** 제공자가 요청을 처리하기 전에 4xx로 거절했다(요청 크기·형식·모델 없음 등). 인증·한도 4xx는 따로 분류된다. */
+function rejectedBeforeInference(error: unknown): boolean {
+  return error instanceof UserAiTransportError
+    && error.code === "http-error"
+    && error.status !== undefined
+    && error.status >= 400
+    && error.status < 500;
 }
 
 function cloneFormData(source: FormData): FormData {

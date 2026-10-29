@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AiQuickKeyPanel } from "./AiQuickKeyPanel";
 import { addQuickKey } from "./ai-quick-key";
 import { getUserAiSnapshot, lockUserAi, setUserAiConfiguration } from "./user-ai-store";
-import { EMPTY_AI_CONFIGURATION, userAiRoutingSettings } from "./user-ai-types";
+import { EMPTY_AI_CONFIGURATION, userAiRoutingSettings, withPaidAutoUseChoice } from "./user-ai-types";
 
 import type { FreeAiPoolStatus } from "./free-ai-pool-status";
 
@@ -13,6 +13,7 @@ import type { FreeAiPoolStatus } from "./free-ai-pool-status";
 const GEMINI = `AIza${"A".repeat(35)}`;
 const GROQ = `gsk_${"b".repeat(52)}`;
 const CLAUDE = `sk-ant-api03-${"c".repeat(40)}`;
+const OPENAI = `sk-proj-${"p".repeat(48)}`;
 
 const POOL: FreeAiPoolStatus = {
   configured: true,
@@ -254,7 +255,7 @@ describe("AiQuickKeyPanel", () => {
     await screen.findByText("Groq 키를 확인하고 등록했어요.");
     expect(userAiRoutingSettings(getUserAiSnapshot().configuration).allowPaidFallback).toBe(false);
 
-    fireEvent.click(screen.getByRole("button", { name: "Groq 키 1 삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "Groq 키 1 gsk_…bbbb 삭제" }));
 
     expect(getUserAiSnapshot().configuration.connections).toHaveLength(0);
     expect(screen.queryByRole("list", { name: "등록한 키" })).toBeNull();
@@ -360,6 +361,38 @@ describe("AiQuickKeyPanel", () => {
     const consent = screen.getByRole("checkbox").closest("label") as HTMLElement;
     expect(consent.textContent).toContain("지금은 “하나만 고정”이라 고정한 키만 쓰고, 이 키는 고정할 키로 고를 때 써요.");
     expect(consent.textContent).not.toContain("AI 기능이 이 키를 먼저 써요.");
+  });
+
+  it("'하나만 고정'인데 고정한 키가 없을 때 무료 키와 유료 키를 함께 붙이면, 유료 키를 고정해 쓴다고 하지 않는다", async () => {
+    setUserAiConfiguration({ ...EMPTY_AI_CONFIGURATION, routing: { ...userAiRoutingSettings(EMPTY_AI_CONFIGURATION), mode: "manual" } });
+    vi.stubGlobal("fetch", vi.fn(async () => json({ data: [] })));
+    const { input } = renderPanel();
+    pasteInto(input, `${GROQ}\n${OPENAI}`);
+
+    // 먼저 붙인 무료 키(Groq)가 고정 키가 되고, 유료 키(OpenAI)는 고정할 키로 고를 때만 쓴다.
+    const consent = screen.getByRole("checkbox").closest("label") as HTMLElement;
+    expect(consent.textContent).toContain("지금은 “하나만 고정”이라 고정한 키만 쓰고, 이 키는 고정할 키로 고를 때 써요.");
+    expect(consent.textContent).not.toContain("“하나만 고정”으로 이 키를 써요.");
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "키 2개 등록" }));
+    await screen.findByText("OpenAI 키를 확인하고 등록했어요.");
+    expect(getUserAiSnapshot().configuration.assignments.text).toBe("quick-groq");
+  });
+
+  it("같은 서비스 연결이 둘이어도(동의 분리) 키 삭제 버튼의 이름이 서로 달라 어느 키를 지우는지 알 수 있다", () => {
+    const openaiA = `sk-proj-${"a".repeat(48)}`;
+    const openaiC = `sk-proj-${"c".repeat(48)}`;
+    // 설정에서 "자동으로 사용하지 않음"을 고르면 동의가 지워지고, 그다음 동의와 함께 붙인 키는 따로 연결로 들어간다.
+    const optedOut = withPaidAutoUseChoice(
+      addQuickKey(EMPTY_AI_CONFIGURATION, "openai", openaiA, { allowPaid: true }).configuration,
+      { allowPaidFallback: false, preferPaidKeys: false },
+    );
+    setUserAiConfiguration(addQuickKey(optedOut, "openai", openaiC, { allowPaid: true }).configuration);
+    renderPanel();
+
+    expect(getUserAiSnapshot().configuration.connections).toHaveLength(2);
+    const names = screen.getAllByRole("button", { name: /삭제$/u }).map((button) => button.getAttribute("aria-label"));
+    expect(names).toEqual(["OpenAI 키 1 sk-p…aaaa 삭제", "OpenAI 키 1 sk-p…cccc 삭제"]);
   });
 
   it("대화상자용으로 연결한(동의하지 않은) 같은 서비스 키는 이번 동의로 자동 사용에 들지 않으므로 동의 문구에 적지 않는다", async () => {
