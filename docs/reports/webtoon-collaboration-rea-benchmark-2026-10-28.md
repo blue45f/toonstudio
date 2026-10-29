@@ -438,3 +438,35 @@ HTTP 실행은 Core workflow/review·DTO·API guard·관련 테스트의 시작�
 JavaScript 두 파일 9,597바이트만 REA의 inert 정적 분석으로 선택했다. parent Evidence는 `ev_f8be899fd90cc2b658d87ce70ae49d1b282a223fcf1c7b596c7a6b02fd080abe`, summary는 `ev_c530b562355eeed356860b8f95d8e0d02614c875c98e83814530bfba7809e9ee`다. 2 sources·1,263 AST nodes·parse 실패 0이며 generic findings 26개는 취약점 수가 아니다. graph partial·semantic unknown·미확인 관계 388개를 유지한다. Python 두 파일은 JavaScript 분석 대상으로 바꾸거나 실행하지 않았다.
 
 댓글 참여와 상태 변경 권한의 분리, 공정 자동화와 불변 revision 입력 고정은 서로 다른 계약이다. 이 공개 소스의 선언만으로 경쟁 제품 운영 동작이나 ToonStudio 대비 우열을 판정하지 않는다. 18절의 수정은 ToonStudio 자체의 실제 실패와 회귀·HTTP 결과에 근거한다. C9 production 성능·긴 실제 원고의 정밀 검수·C10 제작팀 납품 파일럿은 계속 남아 있다.
+
+## 20. 긴 원고의 폭 맞춤·확대·이동과 첨삭 좌표
+
+상태: **migration — 2026-10-29, 긴 테스트 원고의 기본 검수 동작 보강**. 원고 전체 높이를 화면에 맞추던 표시식은 800×16000 이미지에서 데스크톱 폭을 31.5px로 제한했다. 긴 페이지는 폭 맞춤으로 열고 전체 보기·확대·키보드 스크롤을 선택하도록 했다. 기존 비교 뷰의 표시 위치 복원 hook을 재사용하며, 이미지·SVG·pointer handler는 같은 내부 stage에 둔다. 확대와 스크롤 값을 정본 좌표에 저장하거나 scroll offset을 이중 보정하지 않는다.
+
+펜·점·영역 입력과 별개인 이동 도구는 완성한 획을 지우지 않는다. mouse grab·touch·wheel로 이동할 수 있고 배율·스크롤·resize 중 미완성 gesture만 취소한다. 저장 의견의 위치 보기는 해당 원고 위치로 viewport만 이동시키며 새 anchor를 저장하지 않는다. 긴 원고의 새 펜 획 기본 굵기와 표시용 pin·outline은 짧은 변을 기준으로 한다. 기존에 명시한 굵기·75점 획·정본 좌표는 다시 계산하지 않는다. 원본 PNG를 축소 저장하거나 다시 렌더링하지 않았다.
+
+실제 Chrome 156.0.8078.48에서 새 800×16000 RGB8 패턴 PNG를 decode하고, 기준 commit `e3c859e90ba6076a00ae8213fcd5341ad85f3a2f`의 annotation·pen 두 파일과 변경본을 같은 공용 contract·CSS·React로 대조했다. 전체 이전 앱 재현이 아닌 component 비교다. PNG는 429,387바이트이며 SHA-256은 `78e7713f5bc36bad8ed3b12191e1e5a84b9add70e179f5de6aa1eeec9423e3d4`다.
+
+| 실제 브라우저 관찰 | 결과 |
+| --- | --- |
+| 조합 | 기준·변경본 × 1440×900·390×844 × light·dark·contrast, 12개 순차 조합 모두 exit 0 |
+| 최초 표시 폭 | 기준 desktop 31.5px·mobile 29.53125px → 변경본 폭 맞춤 1078px·348px. 원본 natural 크기는 모두 800×16000 |
+| 좌표 | 중간·하단 pointer, 세로 90% 숫자 입력, 변경본의 200% 확대 뒤 source 좌표 확인. 2 CSS px의 오차와 해당 source px 환산값을 별도 기록 |
+| 펜·이동 | 기준·변경본 모두 요청한 pointer sample 75개·정규화 점 75개. 변경본은 3.2px 기본 굵기, 기존 기준은 64px. 변경본의 resize·wheel·touch·mouse grab에서도 선택 JSON 보존 |
+| 키보드·저장 의견 | 변경본 Tab→scroll region→PageDown 실제 이동, 하단 저장 의견 노출. 위치 보기의 새 onSelect 0회 |
+| 종료 뒤 대조 | 12개 종료 DOM의 anchor·75점·굵기를 입력 직후 Node 관찰과 재대조. 명시한 브라우저 입력 파일 22개·단위 검증 파일 19개 hash 동일 |
+| 오류·정리 | 12조합 모두 page error·console error·차단 외부/API 요청 0. 소유 browser/Vite 정상 종료와 5207 listener 부재 확인 |
+
+QA 실행기의 최초 시도는 Playwright CommonJS 해석 오류로 브라우저 시작 전 중단됐다. 다음 시도는 select의 전체 label exact 매칭 때문에 입력 전에 중단됐지만 초기 decode·표시 폭은 관찰했다. 부분 증거를 보존하고 정확히 식별한 소유 headless browser만 정상 종료했으며, Node의 finally에서 서버도 정리했다. 실행기의 CJS·semantic locator를 고친 최종 실행에서 위 12개를 통과했다. 이를 제품 결함 수정 횟수나 자동 재시도 성공으로 바꾸지 않는다.
+
+새 패턴과 source props·저장 의견·선택 JSON은 합성 fixture다. API·DB·일반 계정·댓글 영속 저장·운영 원고·실기기·스크린리더·production p95/메모리 증거가 아니며 `qualified:false`를 유지한다. 실제 Canvas C8 실행은 여전히 15절의 이전 소스를 대상으로 한다.
+
+## 21. 많은 페이지의 검증된 앞부분부터 표시
+
+상태: **migration — 2026-10-29, 전체 목록을 기다리는 UI 경계 보강**. 실제 컴포넌트→실제 cursor loader→실제 graph client에서 HTTP 응답만 제어한 33페이지 회귀는 두 번째 응답을 기다리는 동안 첫 이미지도 표시하지 않아 실제 exit 1이었다. 아직 확인하지 않은 뒷부분을 완전한 검수본으로 취급하지 않으면서, 검증한 앞부분은 먼저 읽도록 바꿨다.
+
+각 batch의 project·work·artifact·review·revision·root hash와 원본 preview manifest의 ordinal·hash 및 응답 mapping tuple을 검사한 뒤 읽기용 prefix를 전달한다. 순번 중복·역행·cursor 순환·다른 원고·잘못된 mapping을 거절한다. 기존 최종 전체 목록 Promise와 오류 경로는 유지한다. 후반 오류·권한 거절이면 앞부분과 관련 링크를 폐기하고, 전체 확인 전에는 핀 작성 링크를 표시하지 않는다. 취소된 세대의 callback·최종 결과와 다음 cursor 시작도 막는다. 이미 시작한 HTTP 소켓의 물리적 취소를 입증한 변경은 아니다.
+
+부분 표시에서 이미지 읽기가 실패한 경우, 정상 suffix 완료 뒤 기존의 한정된 주소 갱신을 한 번 재개한다. 서버의 visibility lease 상한을 클라이언트 시각에 새로 추정하지 않고 기존 만료·bounded refresh 정책을 보존했다. helper와 component 2 suites·56 tests가 통과했으며, 20절 변경·기존 비교 회귀를 함께 묶은 **10 suites·143 tests**도 단일 worker·실제 exit 0으로 통과했다. 33페이지 정상 지연·invalid suffix·403·명시적 retry·subject 취소·clock 차이·manifest/mapping/cursor 실패를 포함한다. 기존 payload fixture의 잘못된 hash·null mapping·임의 cursor는 실제 서버 계약에 맞게 보완했다.
+
+변경 파일 scoped ESLint·Secretlint·하네스 check·diff 검사를 통과했다. 현재 후보의 전체 하네스·타입·production build·정상 push·원격 CI와 실제 500원고 부하·메모리, C10 제작팀 납품 파일럿은 별도 미완료다. PR 준비 범위를 유지하며 main 병합·운영 DB·배포는 실행하지 않았다.
