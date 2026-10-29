@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import type { StudioAiMessagesRequest } from "./studio-ai-messages.dto";
 import type { StudioAiChatDto } from "./studio-ai.dto";
 
 export const STUDIO_AI_IDEMPOTENCY_KEY_MIN_LENGTH = 16;
@@ -66,6 +67,21 @@ export function studioAiCanonicalRequestHash(input: StudioAiChatDto): Uint8Array
     input.promptVersion,
     input.system,
     input.user,
+  ]);
+}
+
+/**
+ * 보조 기능 요청의 정규 해시. 스키마가 검증한 값만 고정 순서 튜플로 묶으므로 같은 요청은 같은 해시가 되고,
+ * 이미지·프롬프트 원문은 DB에 남지 않는다(해시만 영수증에 기록된다).
+ */
+export function studioAiCanonicalMessagesRequestHash(input: StudioAiMessagesRequest): Uint8Array<ArrayBuffer> {
+  return digestCanonicalTuple([
+    "toonstudio-studio-ai-messages-v1",
+    input.model ?? "",
+    input.max_tokens,
+    input.system ?? null,
+    input.messages,
+    input.output_config ?? null,
   ]);
 }
 

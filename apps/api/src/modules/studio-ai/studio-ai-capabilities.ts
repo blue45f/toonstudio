@@ -176,7 +176,8 @@ function cloudflareCapabilityConfig(
 }
 
 function chatCapabilityConfigs(env: EnvLike): StudioAiCapabilityConfig[] {
-  return resolveStudioAiProviders("auto", env)
+  // 무료 풀 능력 목록이므로 운영 프리미엄 경로는 빼고 아홉 무료 제공자를 모두 센다.
+  return resolveStudioAiProviders("auto", env, [], { premiumAllowed: false })
     .filter((provider) => provider.freePool)
     .map((provider) => ({
       provider: provider.id as StudioAiFreeProviderId,
