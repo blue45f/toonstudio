@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { detectAiKeyProvider, maskAiKey, normalizePastedAiKey, splitPastedAiKeys } from "./ai-key-detect";
-import { addQuickKey, chooseQuickKeyModel, findQuickKeyConnection, quickKeyProviderOf, removeQuickKey } from "./ai-quick-key";
+import { addQuickKey, chooseQuickKeyModel, findQuickKeyConnection, isQuickKeyRegistered, quickKeyProviderOf, removeQuickKey } from "./ai-quick-key";
 import { EMPTY_AI_CONFIGURATION, normalizeUserAiConfiguration, userAiRoutingSettings } from "./user-ai-types";
 
 // 실제 키가 아니라 형식만 맞춘 가짜 값이다.
@@ -109,14 +109,20 @@ describe("addQuickKey / removeQuickKey", () => {
     expect(normalized.connections[0]?.apiKeys?.map((item) => item.apiKey)).toEqual([GROQ, secondKey]);
   });
 
-  it("유료 키는 비용 청구를 확인했을 때만 자동 경로에서도 쓰도록 켠다", () => {
+  it("유료 키는 비용 청구를 확인했을 때만 자동 경로에서도 쓰도록 켜고, 동의는 그 키의 연결에만 남긴다", () => {
     const withoutConsent = addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE);
     expect(userAiRoutingSettings(withoutConsent.configuration).allowPaidFallback).toBe(false);
+    expect(findQuickKeyConnection(withoutConsent.configuration, "anthropic")?.paidAutoUse).toBeUndefined();
 
     const withConsent = addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE, { allowPaid: true });
     expect(userAiRoutingSettings(withConsent.configuration).allowPaidFallback).toBe(true);
     const claude = findQuickKeyConnection(withConsent.configuration, "anthropic");
-    expect(claude).toMatchObject({ id: "claude-byok", costPolicy: "user-funded-byok" });
+    expect(claude).toMatchObject({ id: "claude-byok", costPolicy: "user-funded-byok", paidAutoUse: true });
+
+    // 같은 설정에 동의 없이 더한 다른 유료 키에는 동의가 번지지 않는다.
+    const deepseek = addQuickKey(withConsent.configuration, "deepseek", `sk-${"d".repeat(32)}`);
+    expect(normalizeUserAiConfiguration(deepseek.configuration).connections.find((item) => item.id === deepseek.connectionId)?.paidAutoUse)
+      .toBeUndefined();
   });
 
   it("주소가 같아도 재확인이 필요한 옛 연결이나 이미지 전용 연결에는 키를 붙이지 않고, 텍스트에 쓰일 새 연결을 만든다", () => {
@@ -168,6 +174,61 @@ describe("addQuickKey / removeQuickKey", () => {
     const claude = addQuickKey(EMPTY_AI_CONFIGURATION, "anthropic", CLAUDE, { allowPaid: true });
     const withGemini = addQuickKey(claude.configuration, "gemini", GEMINI);
     expect(normalizeUserAiConfiguration(withGemini.configuration).assignments.text).toBe(claude.connectionId);
+  });
+
+  it("텍스트에 쓰이는 연결에 있는 키만 이미 등록한 키로 본다(재확인 필요 연결의 키는 다시 등록할 수 있다)", () => {
+    const added = addQuickKey(EMPTY_AI_CONFIGURATION, "openrouter", OPENROUTER);
+    expect(isQuickKeyRegistered(added.configuration, OPENROUTER)).toBe(true);
+    expect(isQuickKeyRegistered(added.configuration, GROQ)).toBe(false);
+
+    const legacy = normalizeUserAiConfiguration({
+      ...added.configuration,
+      connections: added.configuration.connections.map((item) => ({ ...item, costPolicy: "unverified" as const })),
+    });
+    expect(isQuickKeyRegistered(legacy, OPENROUTER)).toBe(false);
+  });
+
+  it("꺼 둔 같은 키를 다시 붙여 넣으면 새로 만들지 않고 그 키를 다시 켠다", () => {
+    const first = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", GROQ);
+    const otherKey = `gsk_${"z".repeat(52)}`;
+    const second = addQuickKey(first.configuration, "groq", otherKey);
+    // 고급 설정에서 첫 키만 꺼 둔 상태.
+    const keyOff = normalizeUserAiConfiguration({
+      ...second.configuration,
+      connections: second.configuration.connections.map((item) => ({
+        ...item,
+        apiKeys: item.apiKeys?.map((entry) => (entry.id === first.keyId ? { ...entry, enabled: false } : entry)),
+      })),
+    });
+    // 꺼 둔 키는 지금 쓰이지 않으므로 붙여 넣을 때 "이미 등록한 키"로 막지 않는다.
+    expect(isQuickKeyRegistered(keyOff, GROQ)).toBe(false);
+    expect(isQuickKeyRegistered(keyOff, otherKey)).toBe(true);
+
+    const again = addQuickKey(keyOff, "groq", GROQ);
+    expect(again).toMatchObject({ duplicate: false, reenabled: true, connectionId: first.connectionId, keyId: first.keyId });
+    const normalized = normalizeUserAiConfiguration(again.configuration);
+    expect(normalized.connections).toHaveLength(1);
+    expect(normalized.connections[0]?.apiKeys?.map((item) => [item.apiKey, item.enabled])).toEqual([[GROQ, true], [otherKey, true]]);
+    expect(isQuickKeyRegistered(again.configuration, GROQ)).toBe(true);
+  });
+
+  it("연결을 통째로 꺼 둔 키도 다시 붙이면 그 연결을 다시 켜고, 비용 정책은 그대로 두며 텍스트 배정을 되살린다", () => {
+    const base = addQuickKey(EMPTY_AI_CONFIGURATION, "gemini", GEMINI);
+    const off = normalizeUserAiConfiguration({
+      ...base.configuration,
+      connections: base.configuration.connections.map((item) => ({ ...item, enabled: false, costPolicy: "user-funded-byok" as const })),
+      assignments: { ...base.configuration.assignments, text: null },
+      routeAssignments: { ...base.configuration.routeAssignments!, text: null },
+    });
+    expect(isQuickKeyRegistered(off, GEMINI)).toBe(false);
+
+    const revived = addQuickKey(off, "gemini", GEMINI);
+    expect(revived).toMatchObject({ duplicate: false, reenabled: true, connectionId: base.connectionId });
+    const normalized = normalizeUserAiConfiguration(revived.configuration);
+    expect(normalized.connections).toHaveLength(1);
+    // 사용자가 정해 둔 유료 BYOK 정책은 바꾸지 않는다.
+    expect(normalized.connections[0]).toMatchObject({ enabled: true, costPolicy: "user-funded-byok" });
+    expect(normalized.assignments.text).toBe(base.connectionId);
   });
 
   it("마지막 키를 지우면 연결과 그 연결을 가리키던 배정도 함께 지운다", () => {

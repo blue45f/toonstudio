@@ -204,6 +204,7 @@ const VISIBLE_ALL: Readonly<Record<StudioUiChromeRegion, StudioWorkModeExposure>
   "left-panel": "visible",
   "right-panel": "visible",
   "page-strip": "visible",
+  "workflow-guide": "visible",
   "status-rail": "visible",
   "tool-rail": "visible",
   "quick-actions": "visible",

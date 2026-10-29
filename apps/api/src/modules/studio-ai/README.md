@@ -15,9 +15,11 @@ server-backed Studio AI 경로는 cloud-only, free-first, fail-closed다. Postgr
   `STUDIO_AI_ANTHROPIC_WORKSPACE_ID`(워크스페이스에 묶이지 않은 키만, `anthropic-workspace-id` 헤더로 보낸다).
 - 비용: 운영자 부담(`sponsored`)이라 사용자 크레딧을 차감하지 않는다. 예산은 원장을 UTC 하루 단위로 세어
   (`studio-ai-premium-budget.repository.ts`, 한 번의 CTE 조회) 지키고, 예산·원장 준비를 확인하지 못하면
-  운영 경로를 후보에서 빼고 무료 pool로 간다(fail-closed). 마이그레이션 0114(원장 provider 제약·색인)가
-  먼저 적용돼야 열린다. 서버 측 대체가 돌면 거절한 시도도 따로 과금되므로 원장·쿼터·예산은 `usage.iterations`를
-  모두 더해 센다(맨 위 `usage`보다 적게 세지 않는다). 예산을 다 썼는데 받을 무료 제공자가 없으면
+  운영 경로를 후보에서 빼고 무료 pool로 간다(fail-closed). 마이그레이션 0114(원장 provider 제약·색인)와
+  0115(호출별 예약량 열)가 먼저 적용돼야 열린다. 서버 측 대체가 돌면 거절한 시도도 따로 과금되므로 원장·쿼터·예산은 `usage.iterations`를
+  모두 더해 센다(맨 위 `usage`보다 적게 세지 않는다). 사용량을 모르는 호출(시간 초과·연결 끊김·취소)은 0이 아니라
+  그 호출의 보수적 예약량으로 센다. 일반 서버 쿼터가 같은 호출에 매기는 값과 같고, 운영 경로 원장 행의 `reservedTokens`에
+  남긴다. 이 값이 없는 0115 이전 행은 가장 큰 예약량(250,000)으로 센다. 예산을 다 썼는데 받을 무료 제공자가 없으면
   `503 FREE_AI_POOL_UNAVAILABLE`이 아니라 `429 FREE_AI_POOL_EXHAUSTED`(오늘 한도 소진)로 알린다.
 - 전환: 429·529·402·400(결제 오류, 워크스페이스 지정 누락 같은 운영 키 설정 오류, 구조화 출력 스키마 미지원 같은
   요청 거절)·401·403·404·413처럼 추론 전 확정 거절만 같은 요청을 무료 pool로 넘긴다(`premium_unavailable`).

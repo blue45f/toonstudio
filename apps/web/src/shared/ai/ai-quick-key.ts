@@ -194,20 +194,35 @@ function sameQuickKeyEndpoint(connection: Pick<UserAiConnection, "baseUrl">, pro
  * 같은 주소에서 텍스트에 쓰이는 연결이 이미 이 키를 갖고 있는지. 비용 정책이 달라도(예: 사용자가 유료 BYOK로 정해 둔
  * 키) 같은 키로 본다. 그래야 유료로 정해 둔 키가 무료 정책 연결로 다시 등록돼 자동 경로에 들어가지 않는다.
  * "재확인 필요"·이미지 전용 연결의 키는 텍스트에 쓰이지 않으므로 세지 않는다(다시 붙이면 쓰이는 연결을 만든다).
+ * 꺼 둔 키나 꺼 둔 연결의 키도 찾아 `active: false`로 알린다(다시 붙이면 새로 만들지 않고 그 키를 다시 켠다).
  */
 function findHeldQuickKey(
   configuration: UserAiConfiguration,
   provider: QuickKeyProviderId,
   key: string,
-): { readonly connectionId: string; readonly keyId: string } | null {
+): { readonly connectionId: string; readonly keyId: string; readonly active: boolean } | null {
   for (const item of configuration.connections) {
     if (!sameQuickKeyEndpoint(item, provider) || item.costPolicy === "unverified") continue;
     if (userAiConnectionModels(item, "text").length === 0) continue;
     const keys = item.apiKeys?.length ? item.apiKeys : userAiConnectionApiKeys(item);
     const same = keys.find((entry) => entry.apiKey === key);
-    if (same) return { connectionId: item.id, keyId: same.id };
+    if (same) return { connectionId: item.id, keyId: same.id, active: item.enabled !== false && same.enabled !== false };
   }
   return null;
+}
+
+/**
+ * 이 키가 이미 텍스트에 쓰이는 연결에서 켜진 채로 등록돼 있는지(서비스·비용 정책과 상관없이 같은 키 값). 붙여 넣는
+ * 순간 바로 알려 주려고 쓴다. "재확인 필요"·이미지 전용 연결의 키와 꺼 둔 키·연결은 지금 쓰이지 않으므로 세지 않는다
+ * (다시 붙이면 등록 단계에서 그 키를 다시 켜거나 쓰이는 연결을 만든다).
+ */
+export function isQuickKeyRegistered(configuration: UserAiConfiguration, key: string): boolean {
+  return configuration.connections.some((item) => (
+    item.enabled !== false
+    && item.costPolicy !== "unverified"
+    && userAiConnectionModels(item, "text").length > 0
+    && userAiConnectionApiKeys(item).some((entry) => entry.apiKey === key)
+  ));
 }
 
 /** 연결 주소로 어느 서비스인지 되짚는다(목록 표시용). 모르는 주소면 null. */
@@ -233,8 +248,10 @@ export interface QuickKeyAddResult {
   readonly configuration: UserAiConfiguration;
   readonly connectionId: string;
   readonly keyId: string;
-  /** 같은 키가 이미 있어 아무것도 바꾸지 않았다. */
+  /** 같은 키가 이미 켜진 채로 있어 아무것도 바꾸지 않았다. */
   readonly duplicate: boolean;
+  /** 꺼 둔 같은 키(또는 그 키가 든 꺼 둔 연결)를 다시 켰다. 새 키·연결은 만들지 않았다. */
+  readonly reenabled: boolean;
 }
 
 function uniqueId(base: string, taken: ReadonlySet<string>): string {
@@ -248,6 +265,17 @@ function uniqueId(base: string, taken: ReadonlySet<string>): string {
 
 function emptyRouteAssignments(): Record<UserAiCapability, UserAiRouteAssignment | null> {
   return { text: null, image: null, inference: null, "three-d": null };
+}
+
+function assignText(configuration: UserAiConfiguration, connectionId: string): UserAiConfiguration {
+  return {
+    ...configuration,
+    assignments: { ...configuration.assignments, text: connectionId },
+    routeAssignments: {
+      ...(configuration.routeAssignments ?? emptyRouteAssignments()),
+      text: { connectionId, apiKeyId: null, modelId: null },
+    },
+  };
 }
 
 /**
@@ -266,30 +294,56 @@ export function addQuickKey(
   const preset = QUICK_KEY_PRESETS[provider];
   const info = AI_KEY_PROVIDERS[provider];
   const held = findHeldQuickKey(configuration, provider, key);
-  if (held) return { configuration, connectionId: held.connectionId, keyId: held.keyId, duplicate: true };
-  const existing = findQuickKeyConnection(configuration, provider);
+  if (held?.active) {
+    return { configuration, connectionId: held.connectionId, keyId: held.keyId, duplicate: true, reenabled: false };
+  }
   const routing = userAiRoutingSettings(configuration);
   // 유료 키를 "먼저 쓴다"에 동의하고 등록했다: 자동 경로에서 무료 경로보다 먼저 쓴다(동의 문구가 그렇게 알린다).
-  const nextRouting = info.cost === "paid" && options.allowPaid
+  // 동의는 이 키가 든 연결에만 남긴다(다른 유료 연결은 각자 동의해야 자동 경로에 든다).
+  const paidConsent = info.cost === "paid" && options.allowPaid === true;
+  const nextRouting = paidConsent
     ? { ...routing, allowPaidFallback: true, preferPaidKeys: true }
     : routing;
+  const consented = (connection: UserAiConnection): UserAiConnection => (paidConsent ? { ...connection, paidAutoUse: true } : connection);
+  if (held) {
+    // 꺼 둔 같은 키를 다시 붙였다: 사용자가 쓰려는 뜻이므로 그 키와 연결을 다시 켠다. 비용 정책·모델·순서는 그대로 둔다.
+    const connections = configuration.connections.map((item) => (item.id === held.connectionId
+      ? consented({
+          ...item,
+          enabled: true,
+          ...(item.apiKeys?.length
+            ? { apiKeys: item.apiKeys.map((entry) => (entry.id === held.keyId ? { ...entry, enabled: true } : entry)) }
+            : {}),
+        })
+      : item));
+    const next = { ...configuration, connections, routing: nextRouting };
+    // 새 연결을 만들 때와 같이, 텍스트 배정이 비었거나 쓰일 수 없으면 다시 켠 연결로 바꾼다.
+    return {
+      configuration: assignedTextUsable(next) ? next : assignText(next, held.connectionId),
+      connectionId: held.connectionId,
+      keyId: held.keyId,
+      duplicate: false,
+      reenabled: true,
+    };
+  }
+  const existing = findQuickKeyConnection(configuration, provider);
 
   if (existing) {
-    // 같은 키는 위 findHeldQuickKey가 이미 중복으로 돌려줬다.
+    // 같은 키는 위에서 이미 중복으로 돌려주거나 다시 켰다.
     const keys = existing.apiKeys?.length ? existing.apiKeys : userAiConnectionApiKeys(existing);
     if (keys.length >= QUICK_KEY_MAX_KEYS_PER_SERVICE) {
       throw new Error(`${info.name}에는 키를 ${QUICK_KEY_MAX_KEYS_PER_SERVICE}개까지 등록할 수 있어요.`);
     }
     const keyId = uniqueId(`key-${keys.length + 1}`, new Set(keys.map((item) => item.id)));
     const lastPriority = keys.reduce((max, item) => Math.max(max, item.priority), 0);
-    const updated: UserAiConnection = {
+    const updated: UserAiConnection = consented({
       ...existing,
       enabled: true,
       apiKeys: [
         ...keys,
         { id: keyId, label: `키 ${keys.length + 1}`, apiKey: key, enabled: true, priority: Math.min(999, lastPriority + 10) },
       ],
-    };
+    });
     return {
       configuration: {
         ...configuration,
@@ -299,6 +353,7 @@ export function addQuickKey(
       connectionId: existing.id,
       keyId,
       duplicate: false,
+      reenabled: false,
     };
   }
 
@@ -308,7 +363,7 @@ export function addQuickKey(
   const model = (options.model ?? "").trim() || preset.model;
   const id = uniqueId(preset.connectionId, new Set(configuration.connections.map((item) => item.id)));
   const lastPriority = configuration.connections.reduce((max, item) => Math.max(max, item.priority ?? 100), 0);
-  const connection: UserAiConnection = {
+  const connection: UserAiConnection = consented({
     ...structuredClone(EMPTY_AI_CONNECTION),
     id,
     label: info.name,
@@ -321,25 +376,15 @@ export function addQuickKey(
     priority: Math.min(990, Math.max(10, configuration.connections.length ? lastPriority + 10 : 10)),
     apiKeys: [{ id: "key-1", label: "키 1", apiKey: key, enabled: true, priority: 10 }],
     models: [{ id: "text-1", label: model, model, capability: "text", enabled: true, priority: 10 }],
-  };
-  const assignments = { ...configuration.assignments };
-  const routeAssignments = { ...(configuration.routeAssignments ?? emptyRouteAssignments()) };
-  // 텍스트 배정이 비었거나, 배정된 연결이 텍스트에 쓰일 수 없으면(재확인 필요·이미지 전용 등) 새 연결로 바꾼다.
-  if (!assignedTextUsable(configuration)) {
-    assignments.text = id;
-    routeAssignments.text = { connectionId: id, apiKeyId: null, modelId: null };
-  }
+  });
+  const added = { ...configuration, connections: [...configuration.connections, connection], routing: nextRouting };
   return {
-    configuration: {
-      ...configuration,
-      connections: [...configuration.connections, connection],
-      assignments,
-      routeAssignments,
-      routing: nextRouting,
-    },
+    // 텍스트 배정이 비었거나, 배정된 연결이 텍스트에 쓰일 수 없으면(재확인 필요·이미지 전용 등) 새 연결로 바꾼다.
+    configuration: assignedTextUsable(configuration) ? added : assignText(added, id),
     connectionId: id,
     keyId: "key-1",
     duplicate: false,
+    reenabled: false,
   };
 }
 

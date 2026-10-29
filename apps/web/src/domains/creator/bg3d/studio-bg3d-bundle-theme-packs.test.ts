@@ -103,6 +103,7 @@ describe("parseStudioBg3dBundleThemePacks", () => {
       rights.licenseName = "CC0 1.0";
       rights.commercialUse = false;
       rights.attributionRequired = true;
+      rights.attribution = "Test Pack by Tester";
     }));
     expect(data.packs[0]?.rights).toEqual({
       serve: "allow",
@@ -110,7 +111,25 @@ describe("parseStudioBg3dBundleThemePacks", () => {
       licenseName: "CC0 1.0",
       commercialUse: false,
       attributionRequired: true,
+      attribution: "Test Pack by Tester",
     });
+  });
+
+  it.each([undefined, "", "a".repeat(161), " 출처", "출처  제작자", "Tester\u200bCredit", "Tester\u0085Credit", "https://example.invalid", "api key", "ｅｘａｍｐｌｅ"])("출처 의무에 안전한 원문 표기가 없으면 거부한다 (%s)", attribution => {
+    const raw = validRawThemePacks();
+    const packs = raw.packs;
+    if (!Array.isArray(packs)) throw new Error("팩 fixture가 없습니다.");
+    packs[0].rights = { ...packs[0].rights, attributionRequired: true, attribution };
+    expect(() => parseStudioBg3dBundleThemePacks(raw)).toThrow("출처 표기");
+  });
+
+  it("선택적인 출처도 글자를 자르지 않고 그대로 보존한다", () => {
+    const raw = validRawThemePacks();
+    const packs = raw.packs;
+    if (!Array.isArray(packs)) throw new Error("팩 fixture가 없습니다.");
+    const attribution = "출처".repeat(80);
+    packs[0].rights = { ...packs[0].rights, attribution };
+    expect(parseStudioBg3dBundleThemePacks(raw).packs[0]?.rights?.attribution).toBe(attribution);
   });
 
   it("rejects pack rights that are not an allowed, well-formed grant", () => {

@@ -79,14 +79,39 @@ export type StudioServerAiStatus = {
   };
 };
 
+/**
+ * 텍스트 AI가 내 키를 ToonStudio AI보다 먼저 쓰는지. 실제 경로(completeStudioServerText)와 표시가 같은 규칙을 쓴다.
+ * "내가 정한 순서"에서는 맨 앞 내 키가 ToonStudio AI보다 앞에 있을 때만 먼저 쓴다.
+ */
+function personalRoutesRunFirst(
+  routing: ReturnType<typeof userAiRoutingSettings>,
+  personalFirstRoutes: readonly UserAiResolvedConnection[],
+): boolean {
+  return personalFirstRoutes.length > 0 && (
+    routing.mode !== "priority"
+    || (personalFirstRoutes[0]?.priority ?? 100) < routing.managedPoolPriority
+  );
+}
+
+/** 텍스트 AI 요청이 ToonStudio AI보다 등록한 내 키를 먼저 쓰는지. completeStudioServerText와 같은 규칙이다(화면 표시용). */
+export function studioTextUsesPersonalKeyFirst(configuration = getUserAiSnapshot().configuration): boolean {
+  return personalRoutesRunFirst(
+    userAiRoutingSettings(configuration),
+    userAiPersonalFirstConnectionsForCapability("text", configuration),
+  );
+}
+
 export function resolveActiveServerAiProviderLabel(
   preference: StudioServerAiProviderPreference,
   status: Pick<StudioServerAiStatus, "configured" | "providers"> | null,
 ): string {
   if (preference === "auto") {
-    // 실제 순서대로 적는다: 자동 모드에서 등록한 내 키(무료 키·먼저 쓰기로 한 유료 키)가 있으면 그 키가 먼저다.
+    // 실제 순서대로 적는다(completeStudioServerText와 같은 규칙): 내 키(무료 키·먼저 쓰기로 한 유료 키)가 먼저면 앞에 적는다.
     const routing = userAiRoutingSettings(getUserAiSnapshot().configuration);
-    const myKeysFirst = routing.mode === "automatic" && userAiPersonalFirstConnectionsForCapability("text").length > 0;
+    const personalFirstRoutes = userAiPersonalFirstConnectionsForCapability("text");
+    // "하나만 고정"은 고른 내 키만 쓰고 다른 경로로 넘어가지 않는다.
+    if (routing.mode === "manual" && personalFirstRoutes.length > 0) return "고정: 내 키";
+    const myKeysFirst = personalRoutesRunFirst(routing, personalFirstRoutes);
     const prefix = myKeysFirst ? "내 키 → " : "";
     if (status?.providers?.some((provider) => provider.id === "anthropic" && provider.configured)) {
       return `자동: ${prefix}ToonStudio 고성능 AI → 무료 AI`;
@@ -361,7 +386,8 @@ async function attemptPersonalText(
     return {
       result: { ok: false, code: "http_error", error: result.error },
       authenticationRejected: result.code === "authentication",
-      truncated: false,
+      // 답이 출력 상한에 걸려 비었다(추론 모델이 생각에 상한을 다 썼다). 쓸 내용이 없으니 다음 경로로 넘긴다.
+      truncated: result.truncated === true,
     };
   }
   return {
@@ -404,13 +430,10 @@ export async function completeStudioServerText(
   // 등록한 내 키가 있으면 내 키를 먼저 쓴다(자동·고정 모드). 내 키가 없거나 확정적으로 거절되면
   // ToonStudio AI(운영 고성능 → 무료 순)로 간다. "내가 정한 순서"에서는 사용자가 정한 앞뒤를 따른다.
   // "무료 경로가 끝나면 유료 키"에 동의한 유료 키는 ToonStudio AI 다음의 대체 경로로만 쓴다.
-  const personalFirst = !explicitServerProvider && personalFirstRoutes.length > 0 && (
-    routing.mode !== "priority"
-    || (personalFirstRoutes[0]?.priority ?? 100) < routing.managedPoolPriority
-  );
+  const personalFirst = !explicitServerProvider && personalRoutesRunFirst(routing, personalFirstRoutes);
   const attemptedRouteIds = new Set<string>();
-  // 자동 모드에서 내 키가 인증에서 거절돼 ToonStudio AI로 넘겼다면, 그쪽도 쓸 수 없을 때는
-  // 사용자가 고칠 수 있는 내 키 오류를 알린다(일반 소진 문구로 덮지 않는다).
+  // 자동 모드에서 내 키가 인증에서 거절됐거나 출력 상한에 걸린 빈 답을 내 ToonStudio AI로 넘겼다면, 그쪽도 쓸 수 없을 때는
+  // 사용자가 손쓸 수 있는 내 키 쪽 이유를 알린다(일반 소진 문구로 덮지 않는다).
   let personalRejection: StudioServerAiResult<StudioServerAiCompletion> | null = null;
   // 내 무료 키의 답이 출력 상한에 걸려 잘렸으면 ToonStudio AI에서 온전한 답을 받고, 그쪽이 안 되면 잘린 답이라도 돌려준다.
   let truncatedPersonal: StudioServerAiResult<StudioServerAiCompletion> | null = null;
@@ -421,10 +444,10 @@ export async function completeStudioServerText(
       if (!attempt.truncated || routing.mode === "manual" || signal?.aborted) return attempt.result;
       truncatedPersonal = attempt.result;
     } else {
-      // 자동·"내가 정한 순서" 모두, 한도 소진이나 모든 키의 인증 거절(추론 전 확정 거절)이면 다음 경로로 넘긴다.
-      const handOff = attempt.result.code === "free_exhausted" || attempt.authenticationRejected;
+      // 자동·"내가 정한 순서" 모두, 한도 소진·모든 키의 인증 거절(추론 전 확정 거절)·출력 상한에 걸린 빈 답이면 다음 경로로 넘긴다.
+      const handOff = attempt.result.code === "free_exhausted" || attempt.authenticationRejected || attempt.truncated;
       if (routing.mode === "manual" || !handOff) return attempt.result;
-      if (attempt.authenticationRejected) personalRejection = attempt.result;
+      if (attempt.authenticationRejected || attempt.truncated) personalRejection = attempt.result;
     }
   }
   // 서버 경로를 쓸 수 없을 때 아직 쓰지 않은 내 키(대체 경로로 둔 유료 키 포함)로 이어 간다.
@@ -462,6 +485,15 @@ export async function completeStudioServerText(
       const personalResult = await completeWithRemainingPersonal();
       if (personalResult && (personalResult.ok || personalResult.code !== "free_exhausted")) return personalResult;
       if (personalRejection) return personalRejection;
+      // 고성능 경로가 잠시 쓸 수 없을 뿐이면(한도 소진이 아니다) "잠시 후 다시 시도·내 키 연결"을 안내한다.
+      // 503은 공통 오류 문구("일부 온라인 기능…")로 바뀌므로 서버 문구 대신 같은 뜻의 사전 문구를 쓴다.
+      if (code === "PREMIUM_AI_UNAVAILABLE") {
+        return {
+          ok: false,
+          code: "http_error",
+          error: aiErrorText("studio.aiError.server.premiumUnavailable", "ToonStudio 고성능 AI를 지금 쓸 수 없어요. 잠시 후 다시 시도하거나 통합 AI 설정에서 내 API 키를 연결하세요."),
+        };
+      }
       return { ok: false, code: "free_exhausted", error: exhaustedMessage() };
     }
     if (signal?.aborted) {

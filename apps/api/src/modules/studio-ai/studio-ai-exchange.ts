@@ -154,8 +154,11 @@ const MESSAGES_LEDGER_TASK = "assistant" as const;
 
 /** 쿼터 예약에서 이미지 한 장을 세는 보수적 토큰 수(고해상도 입력 상한 근사). */
 const IMAGE_RESERVATION_TOKENS = 5_000;
-/** 보조 기능 요청 한 번의 예약 상한. 한글은 바이트가 토큰보다 많아 바이트 기준 예약이 과하게 커지는 것을 막는다. */
-const MAX_MESSAGES_RESERVATION_TOKENS = 250_000;
+/**
+ * 보조 기능 요청 한 번의 예약 상한. 한글은 바이트가 토큰보다 많아 바이트 기준 예약이 과하게 커지는 것을 막는다.
+ * 일반 작업의 예약은 입력 상한 때문에 이보다 작아서, 모든 고성능 호출 예약의 상한이기도 하다.
+ */
+export const STUDIO_AI_MAX_MESSAGES_RESERVATION_TOKENS = 250_000;
 
 const INCOMPLETE_RESPONSE_MESSAGE = "AI 응답이 완성되기 전에 중단됐어요. 입력을 줄여 다시 시도해 주세요.";
 const EMPTY_RESPONSE_MESSAGE = "AI 응답이 비어 있어요. 다시 시도해 주세요.";
@@ -475,7 +478,7 @@ export function buildStudioAiMessagesExchange(
   }
   const schema = input.output_config?.format?.schema;
   const reservedTokens = Math.min(
-    MAX_MESSAGES_RESERVATION_TOKENS,
+    STUDIO_AI_MAX_MESSAGES_RESERVATION_TOKENS,
     estimateStudioAiTokenReservation({
       systemScope: CREATOR_SCOPE,
       system: schema ? JSON.stringify(schema) : "",

@@ -1,0 +1,11 @@
+.virtual-three-avatar-picker { min-width: 0; margin: 16px 0 0; padding: 0; border: 0; color: var(--color-fg); }
+.virtual-three-avatar-picker legend { margin-block-end: 8px; font-size: 13px; font-weight: 800; }
+.virtual-three-avatar-picker > p { margin: 0 0 12px; color: var(--color-fg-2); font-size: 12px; line-height: 1.6; }
+.virtual-three-avatar-picker__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.virtual-three-avatar-picker button { display: flex; min-width: 0; min-height: 44px; flex-direction: column; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-card); color: var(--color-fg); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.virtual-three-avatar-picker button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+.virtual-three-avatar-picker button[aria-pressed=true] { border-color: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); }
+.virtual-three-avatar-picker img { width: 100%; min-width: 0; aspect-ratio: 1; object-fit: contain; }
+.virtual-three-avatar-picker strong { font-size: 12px; line-height: 1.5; }
+@media (max-width: 520px) { .virtual-three-avatar-picker__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (forced-colors: active) { .virtual-three-avatar-picker button[aria-pressed=true] { outline: 2px solid Highlight; outline-offset: -4px; } }

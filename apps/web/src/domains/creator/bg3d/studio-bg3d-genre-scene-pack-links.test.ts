@@ -61,9 +61,9 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
     // 번들 라이선스 구조(서비스 내 사용 전용)가 유지될 때만 연결이 유효하다.
     expect(document.inServiceOnly).toBe(true);
     expect(document.downloadable).toBe(false);
-    // 2026-10-28 실측한 CC0 8팩의 메타데이터다(기존708개+새4팩1056개).
-    // 장르 프리셋 연결은 기존 두 팩 423개에 Blue Base·Graveyard 367개를 더한다.
-    expect(document.totals.placeableAssets).toBe(1764);
+    // 현재 카탈로그는 역사 CC0 8팩과 추가 licensed 2팩의 메타데이터를 포함한다.
+    // 장르 연결은 기존 네 CC0 팩 790개를 유지하며 새 팩의 런타임 검증을 주장하지 않는다.
+    expect(document.totals.placeableAssets).toBe(1929);
 
     const themeIds = new Set(document.themes.map((theme) => theme.id));
     const assetById = new Map(document.assets.map((asset) => [asset.id, asset]));
@@ -96,16 +96,32 @@ describe("studio-bg3d-genre-scene-pack-links (G8)", () => {
     }
     expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.flatMap(link => link.packs.map(pack => pack.packTitle)))
       .toEqual(["Cute Park Pack", "Cute Dungeon Megapack", "Sci-Fi Arena: Blue Base", "Cute Graveyard"]);
+    const expectedLinkedPacks = [
+      { catalogId: "cbv1-008-cute-park-pack", title: "Cute Park Pack", count: 103 },
+      { catalogId: "cbv1-024-cute-dungeon-megapack", title: "Cute Dungeon Megapack", count: 320 },
+      { catalogId: "cbv1-053-scifi-arena-blue-base", title: "Sci-Fi Arena: Blue Base", count: 114 },
+      { catalogId: "cbv1-014-cute-graveyard", title: "Cute Graveyard", count: 253 },
+    ];
+    const expectedIndices = expectedLinkedPacks.map(({ catalogId, title, count }) => {
+      const index = document.packs.findIndex((pack) => pack.catalogIds.includes(catalogId) && pack.title === title);
+      expect(index, catalogId).toBeGreaterThanOrEqual(0);
+      return [index, count];
+    });
     expect(STUDIO_BG3D_GENRE_SCENE_PACK_BUNDLE_LINKS.flatMap((entry) => entry.packs.map((pack) => [pack.packIndex, pack.placeableCount])))
-      .toEqual([[1, 103], [2, 320], [5, 114], [6, 253]]);
+      .toEqual(expectedIndices);
     expect(linkedPlaceable).toBe(790);
     expect(getStudioBg3dGenreScenePackBundleLink("scifi-arena-showdown")?.packs[0]?.sampleAssetIds)
       .toContain("cbv1-ingest-local-scifi-blue-base-other-pilarp-1-a-f60ddaf9f6b2");
     expect(getStudioBg3dGenreScenePackBundleLink("thriller-graveyard-vigil")?.packs[0]?.sampleAssetIds)
       .toContain("cbv1-ingest-local-cute-graveyard-tombstone-1-8b880b748740");
+    const withdrawnIndices = new Set(["cbv1-053-scifi-arena-blue-base", "cbv1-014-cute-graveyard"].map((catalogId) => {
+      const index = document.packs.findIndex((pack) => pack.catalogIds.includes(catalogId));
+      expect(index, catalogId).toBeGreaterThanOrEqual(0);
+      return index;
+    }));
     const withdrawn = { ...document,
-      packs: document.packs.map((pack, index) => index === 5 || index === 6 ? { ...pack, placeable: 0 } : pack),
-      assets: document.assets.filter((asset) => asset.packIndex !== 5 && asset.packIndex !== 6),
+      packs: document.packs.map((pack, index) => withdrawnIndices.has(index) ? { ...pack, placeable: 0 } : pack),
+      assets: document.assets.filter((asset) => !withdrawnIndices.has(asset.packIndex)),
       totals: { ...document.totals, placeableAssets: document.totals.placeableAssets - 367 },
     };
     for (const preset of ["scifi-arena-showdown", "thriller-graveyard-vigil"]) {

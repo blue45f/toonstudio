@@ -98,6 +98,7 @@ describe("studio ui density policy declaration (BLUEPRINT §4.1)", () => {
       "left-panel": false,
       "right-panel": false,
       "page-strip": false,
+      "workflow-guide": false,
       "status-rail": true,
       "tool-rail": true,
       "quick-actions": true,
@@ -114,6 +115,7 @@ describe("studio ui density policy declaration (BLUEPRINT §4.1)", () => {
       "left-panel": true,
       "right-panel": true,
       "page-strip": true,
+      "workflow-guide": true,
       "status-rail": true,
       "tool-rail": true,
       "quick-actions": true,
@@ -130,6 +132,7 @@ describe("studio ui density policy declaration (BLUEPRINT §4.1)", () => {
       "left-panel": true,
       "right-panel": true,
       "page-strip": true,
+      "workflow-guide": true,
       "status-rail": true,
       "tool-rail": true,
       "quick-actions": true,
@@ -137,7 +140,7 @@ describe("studio ui density policy declaration (BLUEPRINT §4.1)", () => {
   };
 
   it("declares every mode × region cell and judges only through the matrix", () => {
-    expect(STUDIO_UI_CHROME_REGIONS).toHaveLength(14);
+    expect(STUDIO_UI_CHROME_REGIONS).toHaveLength(15);
     for (const mode of STUDIO_UI_DENSITY_MODES) {
       expect(Object.keys(STUDIO_UI_DENSITY_MATRIX[mode]).sort()).toEqual(
         [...STUDIO_UI_CHROME_REGIONS].sort(),
@@ -200,7 +203,7 @@ describe("studio first-screen exposure (complexity diet)", () => {
   it("partitions every chrome region into core or advanced exactly once", () => {
     const all = [...STUDIO_UI_CORE_REGIONS, ...STUDIO_UI_ADVANCED_REGIONS];
     expect(new Set(all).size).toBe(all.length);
-    expect(all).toHaveLength(14);
+    expect(all).toHaveLength(15);
     expect([...all].sort()).toEqual([...STUDIO_UI_CHROME_REGIONS].sort());
     expect(isStudioUiAdvancedRegion("toolbar-ai")).toBe(true);
     expect(isStudioUiAdvancedRegion("toolbar-reference")).toBe(true);
@@ -214,16 +217,16 @@ describe("studio first-screen exposure (complexity diet)", () => {
     for (const region of STUDIO_UI_CORE_REGIONS) {
       expect(studioUiDensityFirstScreenExposure("simple", region)).toBe("visible");
     }
-    // First screen in simple shows the 10 core regions only.
+    // First screen in simple shows the 11 core regions only.
     expect(studioUiDensityFirstScreenVisibleRegions("simple")).toEqual(
       expect.arrayContaining([...STUDIO_UI_CORE_REGIONS]),
     );
-    expect(studioUiDensityFirstScreenVisibleRegions("simple")).toHaveLength(10);
+    expect(studioUiDensityFirstScreenVisibleRegions("simple")).toHaveLength(11);
   });
 
   it("reveals folded clusters after expansion without changing the mode", () => {
     expect(studioUiDensityFirstScreenExposure("simple", "toolbar-scene", true)).toBe("visible");
-    expect(studioUiDensityFirstScreenVisibleRegions("simple", true)).toHaveLength(14);
+    expect(studioUiDensityFirstScreenVisibleRegions("simple", true)).toHaveLength(15);
   });
 
   it("never folds in full and keeps the focus set unchanged", () => {

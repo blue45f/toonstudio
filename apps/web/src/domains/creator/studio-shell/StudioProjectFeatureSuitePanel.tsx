@@ -38,6 +38,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import { StudioStoryDevelopmentPanel } from "./StudioStoryDevelopmentPanel";
+import { updateStudioStoryPlan } from "./studio-story-plan-update";
 import { useStudioProjectFeatureSuite } from "./useStudioProjectFeatureSuite";
 import { useStudioProjectWorkspace } from "./useStudioProjectWorkspace";
 import { formatNumber } from "@toonstudio/core/format";
@@ -216,10 +217,12 @@ function StorySuite({
   projectId,
   locale,
   view,
+  focused = false,
 }: {
   readonly projectId: string;
   readonly locale: "ko" | "en";
   readonly view: string;
+  readonly focused?: boolean;
 }) {
   const bt = useBilingual("studioFeatureSuite.story");
   const suite = useStudioProjectFeatureSuite(projectId, locale);
@@ -278,36 +281,14 @@ function StorySuite({
   const showContinuity = ["overview", "characters", "world", "timeline", "relations", "references"].includes(view);
 
   const applyAdaptationBeats = (beats: readonly StudioStoryBeat[], mode: "replace" | "append") => {
-    suite.update((current) => {
-      if (mode === "replace") {
-        return {
-          ...current,
-          storyBeats: beats.map((beat, order) => ({ ...beat, order })),
-        };
-      }
-      const stamp = Date.now().toString(36);
-      const sceneIds = new Map<string, string>();
-      const appended = beats.map((beat, index) => {
-        const sceneId = sceneIds.get(beat.sceneId)
-          ?? `adaptation-scene:${stamp}:${sceneIds.size + 1}`;
-        sceneIds.set(beat.sceneId, sceneId);
-        return {
-          ...beat,
-          id: `adaptation-beat:${stamp}:${index + 1}`,
-          sceneId,
-          order: current.storyBeats.length + index,
-        };
-      });
-      return { ...current, storyBeats: [...current.storyBeats, ...appended] };
-    });
+    suite.update((current) => ({
+      ...current,
+      storyBeats: updateStudioStoryPlan(current.storyBeats, beats, mode, Date.now().toString(36)),
+    }));
   };
 
-  return (
-    <div className="space-y-5">
-      {showPlanner ? (
-        <StudioStoryDevelopmentPanel projectId={projectId} onApplyBeats={applyAdaptationBeats} />
-      ) : null}
-      <div className="grid gap-5 xl:grid-cols-2">
+  const planningCards = (
+    <div className="grid gap-5 xl:grid-cols-2">
       {showPlanner ? (
         <FeatureCard
           icon={FileText}
@@ -387,7 +368,19 @@ function StorySuite({
           ))}
         </FeatureCard>
       ) : null}
-      </div>
+    </div>
+  );
+  return (
+    <div className="space-y-5">
+      {showPlanner ? <StudioStoryDevelopmentPanel projectId={projectId} focused={focused} currentPanelCount={state.storyBeats.length} onApplyBeats={applyAdaptationBeats} /> : null}
+      {focused ? (
+        <details className="rounded-2xl border border-line bg-card" data-studio-current-panel-plan="true">
+          <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            {bt(`현재 컷 계획 ${state.storyBeats.length}컷 · 내용 확인과 수정`, `Current ${state.storyBeats.length}-panel plan · View and edit`)}
+          </summary>
+          <div className="border-t border-line p-3">{planningCards}</div>
+        </details>
+      ) : planningCards}
     </div>
   );
 }
@@ -756,18 +749,20 @@ export function StudioProjectFeatureSuitePanel({
   section,
   view,
   locale,
+  focusedStory = false,
 }: {
   readonly projectId: string;
   readonly section: StudioProjectSection;
   readonly view: string;
   readonly locale: "ko" | "en";
+  readonly focusedStory?: boolean;
 }) {
   const bt = useBilingual("StudioProjectFeatureSuitePanel");
   if (section === "overview") {
     return <OverviewSuite projectId={projectId} locale={locale} view={view} />;
   }
   if (section === "story" && view !== "localization") {
-    return <StorySuite projectId={projectId} locale={locale} view={view} />;
+    return <StorySuite projectId={projectId} locale={locale} view={view} focused={focusedStory} />;
   }
   if (section === "production") {
     return (

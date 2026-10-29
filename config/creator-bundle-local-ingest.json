@@ -1,12 +1,12 @@
 {
   "schema": "toonstudio.creator-bundle-local-ingest.v1",
   "projection": "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json",
-  "projectionSha256": "d48538cf7f5a2ca9210447a4afee654ce4bdf624558e755c9cf25af3c6c145b2",
-  "snapshotGeneratedAt": "2026-10-28T14:13:13.555666+00:00",
+  "projectionSha256": "ad227c555222e1a6ec93b59c1b4917eac18d9059a213d6f48736bb49ab56cff4",
+  "snapshotGeneratedAt": "2026-10-29T09:32:32.491Z",
   "copyPolicy": "copy-only-no-hardlinks",
   "expected": {
-    "files": 1764,
-    "bytes": 1893423580
+    "files": 1929,
+    "bytes": 1968727612
   },
   "packs": [
     {
@@ -64,6 +64,20 @@
       "librarySource": "30-props/army-pack/models/mixed/gLTF",
       "files": 309,
       "bytes": 193324500
+    },
+    {
+      "catalogId": "cbv1-012-cemetery-statues",
+      "ingestId": "cbv1-ingest-local-cemetery-statues",
+      "librarySource": "05-horror-gothic/cemetery-statues/models/glb",
+      "files": 50,
+      "bytes": 6424372
+    },
+    {
+      "catalogId": "cbv1-077-small-props-pack",
+      "ingestId": "cbv1-ingest-local-small-props-pack",
+      "librarySource": "02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/gLTF/Props",
+      "files": 115,
+      "bytes": 68879660
     }
   ]
 }

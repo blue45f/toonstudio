@@ -25,13 +25,14 @@ import {
   chooseQuickKeyModel,
   findQuickKeyConnection,
   isQuickKeyProvider,
+  isQuickKeyRegistered,
   QUICK_KEY_PRESETS,
   quickKeyProviderOf,
   removeQuickKey,
   type QuickKeyProviderId,
 } from "./ai-quick-key";
 import { probeUserAiConnection } from "./user-ai-connection-probe";
-import { getUserAiSnapshot, setUserAiConfiguration, useUserAi } from "./user-ai-store";
+import { getUserAiSnapshot, setUserAiConfiguration, useUserAi, userAiPersonalFirstConnectionsForCapability } from "./user-ai-store";
 import { EMPTY_AI_CONNECTION, userAiConnectionApiKeys, userAiRoutingSettings, type UserAiConnection } from "./user-ai-types";
 
 import type { FreeAiPoolStatus } from "./free-ai-pool-status";
@@ -136,6 +137,11 @@ async function verifyQuickKey(provider: QuickKeyProviderId, key: string): Promis
   return { status: "unverified", model: preset.model, reason };
 }
 
+/** 연결에 저장된 키 전부(꺼 둔 키 포함). 옛 형식 연결은 기본 키 하나로 본다. */
+function allKeysOf(connection: UserAiConnection) {
+  return connection.apiKeys?.length ? connection.apiKeys : userAiConnectionApiKeys(connection);
+}
+
 export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdvancedWizard }: AiQuickKeyPanelProps) {
   const idBase = useId();
   const snapshot = useUserAi();
@@ -151,27 +157,39 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
     () => [...configuration.connections].sort((left, right) => (left.priority ?? 100) - (right.priority ?? 100)),
     [configuration.connections],
   );
-  const keyCount = connections.reduce((sum, connection) => sum + userAiConnectionApiKeys(connection).length, 0);
+  const keyCount = connections.reduce((sum, connection) => sum + allKeysOf(connection).length, 0);
+  // 실제로 ToonStudio AI보다 먼저 쓰는 텍스트 키 수. 꺼 둔 키·연결, 먼저 쓰기로 하지 않은 유료 키, 이미지 전용 키는 빼고 센다.
+  const firstKeyCount = new Set(
+    userAiPersonalFirstConnectionsForCapability("text", configuration).map((route) => `${route.id}\n${route.apiKeyProfileId}`),
+  ).size;
   const premium = poolStatus?.premium;
   const needsPaidConsent = pending.some((item) => item.provider && AI_KEY_PROVIDERS[item.provider].cost === "paid" && item.provider !== "fal");
-  // 동의하면 "유료 키 먼저"가 켜져, 이미 등록했지만 아직 먼저 쓰지 않던 유료 키도 함께 먼저 쓴다. 동의 전에 알린다.
+  // 동의하면 "유료 키 먼저"가 켜져, 자동 사용에 이미 동의했지만 아직 먼저 쓰지 않던 유료 키도 함께 먼저 쓴다. 동의 전에 알린다.
+  // 동의하지 않은 유료 키(예: AI 보조 카드에서 연결한 키)는 이번 동의로 바뀌지 않으므로 적지 않는다.
   const routingNow = userAiRoutingSettings(configuration);
   const otherPaidNames = routingNow.preferPaidKeys === true
     ? []
     : [...new Set(connections
-      .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok")
+      .filter((connection) => connection.enabled !== false && connection.costPolicy === "user-funded-byok" && connection.paidAutoUse === true)
       .map((connection) => connection.label))];
   const unresolved = pending.some((item) => item.provider === null);
   const registrable = pending.filter((item) => item.provider && isQuickKeyProvider(item.provider));
   const canRegister = !busy && registrable.length > 0 && !unresolved && (!needsPaidConsent || consent);
 
   const addPending = (raw: string) => {
-    const keys = splitPastedAiKeys(raw);
-    if (!keys.length) {
+    const pasted = splitPastedAiKeys(raw);
+    if (!pasted.length) {
       setOutcomes([{ id: -1, tone: "error", text: "API 키로 보이지 않아요. 키 전체를 그대로 붙여 넣어 주세요." }]);
       return;
     }
-    setOutcomes([]);
+    // 이미 등록한 키는 확인 요청을 다시 보내지 않고 바로 알려 준다.
+    const keys = pasted.filter((key) => !isQuickKeyRegistered(configuration, key));
+    const skipped = pasted.length - keys.length;
+    setOutcomes(skipped > 0
+      ? [{ id: -1, tone: "warn", text: keys.length > 0 ? `이미 등록한 키 ${skipped}개는 빼고 목록에 넣었어요.` : "이미 등록한 키예요. 다시 등록하지 않아도 돼요." }]
+      : []);
+    setDraft("");
+    if (!keys.length) return;
     setPending((current) => {
       const known = new Set(current.map((item) => item.key));
       const next = [...current];
@@ -190,7 +208,6 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
       }
       return next;
     });
-    setDraft("");
   };
 
   const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
@@ -237,6 +254,11 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
         current = added.configuration;
         if (added.duplicate) {
           results.push({ id: item.id, tone: "warn", text: `${name} 키는 이미 등록돼 있어요.` });
+        } else if (added.reenabled) {
+          // 꺼 두었던 같은 키라 새로 만들지 않고 다시 켰다.
+          results.push(verification.status === "verified"
+            ? { id: item.id, tone: "ok", text: `꺼 두었던 ${name} 키를 확인하고 다시 켰어요.` }
+            : { id: item.id, tone: "warn", text: `꺼 두었던 ${name} 키를 다시 켰어요. ${verification.reason} — 첫 실행 때 다시 확인돼요.` });
         } else if (verification.status === "verified") {
           results.push({ id: item.id, tone: "ok", text: `${name} 키를 확인하고 등록했어요.` });
         } else {
@@ -276,7 +298,11 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
             <span className="min-w-0">
               <strong className="block text-sm">내 키</strong>
               <span className="mt-0.5 block text-xs leading-5 text-fg-3">
-                {keyCount > 0 ? `등록한 키 ${keyCount}개를 먼저 써요.` : "등록한 키가 없으면 건너뛰어요."}
+                {firstKeyCount > 0
+                  ? `등록한 키 ${firstKeyCount}개를 먼저 써요.`
+                  : keyCount > 0
+                    ? "지금 먼저 쓰는 키가 없어요. 아래 목록에서 키 상태를 확인해 주세요."
+                    : "등록한 키가 없으면 건너뛰어요."}
               </span>
             </span>
           </li>
@@ -320,7 +346,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           <input
             id={`${idBase}-key`}
             type="password"
-            className={INPUT}
+            className={`${INPUT} min-w-0`}
             value={draft}
             autoComplete="off"
             spellCheck={false}
@@ -330,7 +356,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
             onPaste={onPaste}
             onKeyDown={onKeyDown}
           />
-          <button type="button" className={BUTTON} disabled={busy || !draft.trim()} onClick={() => addPending(draft)}>
+          <button type="button" className={`${BUTTON} shrink-0 whitespace-nowrap`} disabled={busy || !draft.trim()} onClick={() => addPending(draft)}>
             <Plus size={16} aria-hidden /> 추가
           </button>
         </div>
@@ -351,6 +377,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                       <select
                         className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
                         value={provider ?? ""}
+                        disabled={busy}
                         onChange={(event) => {
                           const value = event.target.value as AiKeyProviderId;
                           setPending((current) => current.map((entry) => (entry.id === item.id ? { ...entry, provider: value || null } : entry)));
@@ -390,8 +417,10 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-warn/40 bg-warn/10 p-3 text-sm">
             <input type="checkbox" className="mt-1" checked={consent} disabled={busy} onChange={(event) => setConsent(event.target.checked)} />
             <span>
-              유료 서비스 키는 쓸 때마다 내 계정에 비용이 청구될 수 있어요. 등록하면 AI 기능이 이 키를 먼저 써요.
+              유료 서비스 키는 쓸 때마다 내 계정에 비용이 청구될 수 있어요. 등록하면 아래 설정의 유료 키 자동 사용이
+              &ldquo;내 유료 키를 먼저 사용&rdquo;으로 바뀌어, AI 기능이 이 키를 먼저 써요.
               {otherPaidNames.length > 0 && ` 이미 등록한 유료 키(${otherPaidNames.join(", ")})도 함께 먼저 써요.`}
+              {" 설정에서 언제든 바꿀 수 있어요."}
             </span>
           </label>
         )}
@@ -408,19 +437,23 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           </SettingsLink>
         </div>
 
-        {outcomes.length > 0 && (
-          <ul className="mt-3 space-y-1.5" role="status" aria-live="polite">
-            {outcomes.map((outcome) => (
-              <li
-                key={`${outcome.id}-${outcome.text}`}
-                className={`flex items-start gap-2 rounded-xl px-3 py-2 text-sm ${outcome.tone === "ok" ? "bg-good/10 text-good" : outcome.tone === "warn" ? "bg-warn/10 text-fg-2" : "bg-bad/10 text-bad"}`}
-              >
-                {outcome.tone === "ok" ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" aria-hidden /> : <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />}
-                <span>{outcome.text}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* 알림 영역은 늘 두고 안의 목록만 바꾼다: 새로 생긴 live 영역은 화면 읽기 프로그램이 읽지 않을 수 있고,
+            목록 자체에 status 역할을 주면 항목이 목록에서 떨어진다. */}
+        <div role="status" aria-live="polite">
+          {outcomes.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {outcomes.map((outcome) => (
+                <li
+                  key={`${outcome.id}-${outcome.text}`}
+                  className={`flex items-start gap-2 rounded-xl px-3 py-2 text-sm ${outcome.tone === "ok" ? "bg-good/10 text-good" : outcome.tone === "warn" ? "bg-warn/10 text-fg-2" : "bg-bad/10 text-bad"}`}
+                >
+                  {outcome.tone === "ok" ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" aria-hidden /> : <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />}
+                  <span>{outcome.text}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {connections.length > 0 && (
@@ -430,7 +463,8 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
           <ul className="mt-3 space-y-2" aria-labelledby={`${idBase}-registered-title`}>
             {connections.map((connection) => {
               const provider = quickKeyProviderOf(connection);
-              const keys = userAiConnectionApiKeys(connection);
+              // 꺼 둔 키도 보여 줘야 상태를 알고 지울 수 있다.
+              const keys = allKeysOf(connection);
               return (
                 <li key={connection.id} className="rounded-xl border border-line bg-card/60 p-3" data-ai-registered-connection={provider ?? "custom"}>
                   <div className="flex flex-wrap items-center gap-2">
@@ -444,6 +478,7 @@ export function AiQuickKeyPanel({ poolStatus, poolCheckFailed = false, onOpenAdv
                       <li key={key.id} className="flex items-center gap-2 text-xs text-fg-2">
                         <code>{maskAiKey(key.apiKey)}</code>
                         <span className="text-fg-3">{key.label}</span>
+                        {key.enabled === false && <span className="font-semibold text-warn">꺼짐</span>}
                         <button
                           type="button"
                           className={`${ICON_BUTTON} ml-auto`}

@@ -3,7 +3,7 @@
   "version": 1,
   "seededAt": "2026-10-22",
   "defaultServe": "hold",
-  "statement": "팩별 서빙 판정 원장. 기본값은 hold이고, allow는 라이선스 분류별 요구 증빙(scripts/lib/creator-bundle-pack-rights.mjs의 ALLOW_EVIDENCE_REQUIREMENTS)을 모두 갖춘 팩만 가능하다. 어떤 팩을 열지는 저장소 소유자가 증빙을 제출한 뒤 결정한다.",
+  "statement": "팩별 서빙 판정 원장. 기본값은 hold다. allow는 기존 라이선스 분류별 증빙 또는 2026-10-29의 정확한 구매·소유자 상업 사용 확인 대안 요건을 갖춘 pack·crowd에 한한다. 소유자 확인은 ToonStudio 서비스 안 프로젝트 사용 결정이며 제작사 서면·CC0·원본 팩 재배포 허가가 아니다. pending은 권리 거부가 아니라 기술 편입 대기로 구분하고 라이선스 원문·출처와 자동 source credit을 보존한다.",
   "bundle": {
     "store": "itch.io",
     "name": "Creator Bundle: Volume 1",
@@ -887,10 +887,52 @@
         "old-town-courtyards"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-004-old-town-courtyards",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/old-town-environment-courtyards",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-005-harboria-victorian-town",
@@ -907,9 +949,7 @@
         "harboria-victorian-town"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -918,8 +958,51 @@
             "01-city/harboria-victorian-town/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-005-harboria-victorian-town",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/harboria",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-021-slavica-medieval-village",
@@ -936,11 +1019,53 @@
         "slavica-slavic-medieval-village"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "note": "풀팩 라이선스 문서는 없고 무료판 문서(SlavicWorldFree)만 있다. 풀팩 귀속은 itch 캡처로 확정해야 한다."
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-021-slavica-medieval-village",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "note": "풀팩 라이선스 문서는 없고 무료판 문서(SlavicWorldFree)만 있다. 풀팩 귀속은 itch 캡처로 확정해야 한다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/slavica",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "풀팩의 구매 URL·localSlug 연결을 확인했다. 기존 무료판 문서만 있다는 기록과 풀팩/무료판 문서 적용 범위는 그대로 보존하며 선택 모델의 입력을 별도 대조한다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-022-low-poly-medieval-village+cbv1-023-medieval-megapack-low-poly",
@@ -960,9 +1085,7 @@
         "medieval-megapack-low-poly"
       ],
       "licenseClass": "cc0-with-standalone-ban",
-      "serve": "hold",
-      "holdReason": "license-conflict",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -971,11 +1094,58 @@
             "02-medieval-fantasy/medieval-megapack-low-poly/models/mixed/License.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-022-low-poly-medieval-village+cbv1-023-medieval-megapack-low-poly",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
       "reviewRecommendedHold": true,
       "mappingNote": "인제스션 id는 MedievalMegapack_Godot(cbv1-023)에서만 추적된다. 022 쪽은 카탈로그 선언에만 근거한다.",
-      "note": "Medieval Megapack 안 License.txt는 Small Props 팩 템플릿(CC0 표기 + 독립 다운로드 금지)이다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
+      "note": "Medieval Megapack 안 License.txt는 Small Props 팩 템플릿(CC0 표기 + 독립 다운로드 금지)이다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기).",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "license-conflict",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/medieval-village-megapack-low-poly-refreshed-urp",
+            "relation": "direct-owner-purchase-mapping"
+          },
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/medieval-megapack-low-poly",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "022·023의 별도 구매 URL 둘을 보존한다. 기존 인제스션은 023 Godot에서만 추적되므로 022의 source 바이트는 별도 확인한다. 기존 문서 충돌 분류는 그대로 유지한다.",
+        "attributionNote": "로컬 문서의 No Attribution Required 표기와 standalone 제한이 함께 존재하는 사실을 보존한다. 이 원문을 CC0 승격 근거로 삼지 않으며 licensed 소유자 확인 경로와 자동 source credit을 유지한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-028-lumagrove-wonky-woods",
@@ -992,9 +1162,7 @@
         "lumagrove-wonky-woods"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1021,9 +1189,52 @@
             "03-nature/lumagrove-wonky-woods/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-028-lumagrove-wonky-woods",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/lumagrove-wonky-woods-low-poly-nature-asset-pack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-030-nature-megapack-extended",
@@ -1085,9 +1296,7 @@
         "poly-meadows"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1097,8 +1306,51 @@
             "03-nature/poly-meadows/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-031-poly-meadows",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/poly-meadows",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-032-low-poly-tiny-forest",
@@ -1116,9 +1368,7 @@
         "free-lumagrove-lowpoly-tiny-trees-and-rocks"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1127,9 +1377,56 @@
             "03-nature/low-poly-tiny-forest/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-032-low-poly-tiny-forest",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "인제스션 id 중 하나(tiny-forest-free blend)는 FREE LumaGrove(cbv1-064) 폴더에 분류돼 있다. 증빙은 두 폴더의 합집합이다."
+      "mappingNote": "인제스션 id 중 하나(tiny-forest-free blend)는 FREE LumaGrove(cbv1-064) 폴더에 분류돼 있다. 증빙은 두 폴더의 합집합이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/remastered-lowpoly-tiny-trees-and-rocks",
+            "relation": "library-evidence-association"
+          },
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/low-poly-stylized-tiny-forest",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "032 본편과 064 무료판 구매행은 각각 확인됐다. free blend의 064 폴더 귀속을 032 본편 바이트 동일성으로 승격하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-034-natureforge-woodland-forest",
@@ -1146,9 +1443,7 @@
         "natureforge-stylized-woodland-forest-pack"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1158,8 +1453,51 @@
             "03-nature/natureforge-stylized-woodland-forest-pack/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-034-natureforge-woodland-forest",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/nature-essentials-stylized-woodland-environment",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-056-farm-land",
@@ -1221,9 +1559,7 @@
         "l100-rocks-stones-and-cliffs"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1243,9 +1579,52 @@
             "03-nature/l100-rocks-stones-and-cliffs/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-033-rocks-and-stone",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/l100-rocks-stones-and-clifs",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-029-terratoon-tree-pack",
@@ -1262,9 +1641,7 @@
         "terratoon-stylized-tree-pack"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1284,9 +1661,52 @@
             "03-nature/terratoon-stylized-tree-pack/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-029-terratoon-tree-pack",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/terratoon-stylized-tree-pack-low-poly-forest-foliage",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-049-lava-plants",
@@ -1303,9 +1723,7 @@
         "low-poly-lava-plants"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1317,8 +1735,51 @@
             "06-scifi/low-poly-lava-plants/models/gltf/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-049-lava-plants",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/lava-plant",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-042-restaurant-megapack",
@@ -1335,9 +1796,7 @@
         "kitchen-restaurant-megapack"
       ],
       "licenseClass": "proprietary-rg-poly",
-      "serve": "hold",
-      "holdReason": "license-conflict",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1346,10 +1805,53 @@
             "04-interior/kitchen-restaurant-megapack/models/mixed/RG POLY License.odt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-042-restaurant-megapack",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
       "reviewRecommendedHold": true,
-      "note": "로컬 문서 `RG POLY License.odt`는 CC0가 아니다. 모델을 있는 그대로 공개 게시·재배포하는 것을 금지하고 완성 프로젝트의 일부로만 배포를 허용한다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
+      "note": "로컬 문서 `RG POLY License.odt`는 CC0가 아니다. 모델을 있는 그대로 공개 게시·재배포하는 것을 금지하고 완성 프로젝트의 일부로만 배포를 허용한다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기).",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "license-conflict",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/kitchenrestaurant-megapack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "Restaurant ODT의 기존 요약에서 별도 필수 credit 문구를 확정하지 못했다. attributionRequired=false를 제작사의 의무 면제로 해석하지 않으며 원문·출처를 보존하고 자동 source credit을 유지한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-044-pixeldrift-metro",
@@ -1366,9 +1868,7 @@
         "pixeldrift-metro-3d-pixel-art-subway-vr"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1378,8 +1878,51 @@
             "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-044-pixeldrift-metro",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/metro-3d-pixel-art-subway-for-vr",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-065-free-analog-memory-rooms",
@@ -1396,9 +1939,7 @@
         "free-analog-memory-80s-90s-crt-vhs-rooms"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1408,8 +1949,51 @@
             "04-interior/free-analog-memory-80s-90s-crt-vhs-rooms/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-065-free-analog-memory-rooms",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/free-1980-midpoly-retro-rooms-free-low-poly-3d-model",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-071-pixeldrift-metro-free",
@@ -1427,9 +2011,7 @@
         "pixeldrift-metro-3d-pixel-art-subway-vr"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1447,9 +2029,52 @@
             "04-interior/pixeldrift-metro-3d-pixel-art-subway-vr/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-071-pixeldrift-metro-free",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "인제스션 id 3개 중 2개(blend)는 유료 PixelDrift Metro(cbv1-044) 폴더에 분류돼 있다. 증빙은 두 폴더의 합집합이다."
+      "mappingNote": "인제스션 id 3개 중 2개(blend)는 유료 PixelDrift Metro(cbv1-044) 폴더에 분류돼 있다. 증빙은 두 폴더의 합집합이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/pixeldrift-metro-free",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "071 무료판과 044 유료판의 구매행은 각각 확인됐다. 기존 Blend 입력 2개의 044 폴더 분류는 보존하며 두 상품의 입력·문서 적용 범위를 상속하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-050-scifi-arena-1",
@@ -1466,10 +2091,52 @@
         "sci-fi-arena-1"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-050-scifi-arena-1",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/sci-fi-arena-pack-v1-unity-urp",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-051-scifi-arena-2",
@@ -1486,10 +2153,52 @@
         "sci-fi-arena-2"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-051-scifi-arena-2",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/sci-fi-arena-pack-2",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-046-cosmokit-planets",
@@ -1506,9 +2215,7 @@
         "cosmokit-low-poly-planets"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1528,9 +2235,52 @@
             "06-scifi/cosmokit-low-poly-planets/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-046-cosmokit-planets",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/cosmokit-low-poly-planet-pack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-006-polyvania-burton-horror-town",
@@ -1547,10 +2297,52 @@
         "polyvania-burton-horror-town"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-006-polyvania-burton-horror-town",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/polyvania",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-011-necropolyy-graveyard",
@@ -1569,9 +2361,7 @@
         "graves-kit-with-lods"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1600,10 +2390,57 @@
             "05-horror-gothic/graves-kit-with-lods/models/glb/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-011-necropolyy-graveyard",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
       "mappingNote": "서빙 에셋의 원본 3종은 Graves Kit(cbv1-013)·Tombs Module 폴더에서 왔고 necropoly-stylized-graveyard 폴더에서 온 것은 없다. 증빙은 세 폴더의 합집합이다.",
-      "note": "라이선스 문서는 Tombs Module 변형(Godot·glTF)에만 있다. 같은 팩의 나머지 변형에는 문서가 없다."
+      "note": "라이선스 문서는 Tombs Module 변형(Godot·glTF)에만 있다. 같은 팩의 나머지 변형에는 문서가 없다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/low-poly-cemetery-kit-necropoly-tombs-module",
+            "relation": "library-evidence-association"
+          },
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/necropoly-stylized-graveyard",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "011·013·Tombs의 구매 상품은 각각 확인됐지만 기존 011 인제스션의 입력은 013·Tombs에서 왔다. 기존 libraryPacks 합집합은 보존하며 선택한 모델의 원본 owner를 별도로 대조한다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-013-graves-kit",
@@ -1620,9 +2457,7 @@
         "graves-kit-with-lods"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1633,8 +2468,51 @@
             "05-horror-gothic/graves-kit-with-lods/models/glb/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-013-graves-kit",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/low-poly-cemetery-grave-kit-with-lods",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-012-cemetery-statues",
@@ -1651,9 +2529,7 @@
         "cemetery-statues"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1673,9 +2549,52 @@
             "05-horror-gothic/cemetery-statues/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-012-cemetery-statues",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/cemetery-statues",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-015-haunted-grounds",
@@ -1692,9 +2611,7 @@
         "haunted-grounds-halloween-props-and-scene"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1703,8 +2620,51 @@
             "05-horror-gothic/haunted-grounds-halloween-props-and-scene/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-015-haunted-grounds",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/necropoly-hauntedrounds",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-035-pirate-island",
@@ -1766,9 +2726,7 @@
         "voxel-summer"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1786,9 +2744,52 @@
             "03-nature/voxel-summer/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-037-voxel-summer",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/epicvoxel-low-poly-voxel-summer",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-038-aztec-jungle",
@@ -1850,9 +2851,7 @@
         "raft-on-the-desert"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1870,9 +2869,52 @@
             "03-nature/raft-on-the-desert/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-039-raft-on-the-desert",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/raft-on-the-desert",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-040-swamp-builder-nature+cbv1-041-swamp-builder-architecture",
@@ -1892,9 +2934,7 @@
         "swamp-builder-architecture"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1921,9 +2961,56 @@
             "03-nature/swamp-builder-architecture/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-040-swamp-builder-nature+cbv1-041-swamp-builder-architecture",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁 + 재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁 + 재배포 금지) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/swamp-builder",
+            "relation": "direct-owner-purchase-mapping"
+          },
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/swampia",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "Nature·Architecture의 별도 구매 URL 둘과 원래 결합 owner를 보존한다. 변형별 입력·문서 범위를 구분하며 소유자 확인을 제작사 서면으로 기록하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-026-iowa-covered-bridges",
@@ -1940,9 +3027,7 @@
         "iowa-covered-bridges"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -1962,9 +3047,52 @@
             "03-nature/iowa-covered-bridges/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-026-iowa-covered-bridges",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/roadside-tales-iowa-covered-bridges",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-080-free-stylized-asia-megapack-urp",
@@ -1982,11 +3110,53 @@
         "low-poly-asia-pack"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "mappingNote": "서빙 에셋의 원본(Asia+Megapack…URP.unitypackage)은 라이브러리에서 cbv1-054 Low Poly Asia Pack 폴더로 분류돼 있다. 생성기는 이 에셋을 080으로, 054는 미수신 보류로 적고 있어 귀속 확인이 필요하다."
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-080-free-stylized-asia-megapack-urp",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "mappingNote": "서빙 에셋의 원본(Asia+Megapack…URP.unitypackage)은 라이브러리에서 cbv1-054 Low Poly Asia Pack 폴더로 분류돼 있다. 생성기는 이 에셋을 080으로, 054는 미수신 보류로 적고 있어 귀속 확인이 필요하다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/stylized-asia-enviroment-megapack-unity-urp",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "080 무료판과 054 본편의 구매행은 각각 확인됐다. 080으로 선언된 기존 Unity 입력이 054 폴더에 있다는 기록은 유지하며 별도 source 대조 대상이다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-055-winter-atolls-pack",
@@ -2003,9 +3173,7 @@
         "winter-atolls-pack-3d-voxel-environment-kit-mega-pack"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2022,9 +3190,56 @@
             "03-nature/winter-atolls-pack-3d-voxel-environment-kit-mega-pack/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-055-winter-atolls-pack",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/free-voxel-world-winter-editionunitypackage",
+            "relation": "direct-owner-purchase-mapping"
+          },
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/epic-3d-winter-map-for-roblox-and-unity",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "두 공개 구매 URL이 같은 로컬 폴더를 공유한다. 두 상품행을 보존하되 모델·바이트·실제 소비 수를 이중 계상하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-066-modular-bridge",
@@ -2041,9 +3256,7 @@
         "roadside-tales-free-modular-bridge"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2052,8 +3265,51 @@
             "03-nature/roadside-tales-free-modular-bridge/engine/godot/Documentation/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-066-modular-bridge",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/roadside-tales-free-modular-bridge-narrative-pack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-077-small-props-pack",
@@ -2070,9 +3326,7 @@
         "free-medieval-props-small-pack-low-poly"
       ],
       "licenseClass": "cc0-with-standalone-ban",
-      "serve": "hold",
-      "holdReason": "license-conflict",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2081,10 +3335,53 @@
             "02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/License.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-077-small-props-pack",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
       "reviewRecommendedHold": true,
-      "note": "License.txt가 CC0 표기와 '독립 항목으로 다운로드 제공 금지'를 함께 적어 자기모순이다. 공식 카탈로그 이름은 Free Medieval Props — Small Pack Low Poly(cbv1-077)다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기)."
+      "note": "License.txt가 CC0 표기와 '독립 항목으로 다운로드 제공 금지'를 함께 적어 자기모순이다. 공식 카탈로그 이름은 Free Medieval Props — Small Pack Low Poly(cbv1-077)다. 서면 확인 전까지 제외를 권고한다(소유자 결정 대기).",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "license-conflict",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/medieval-props-small-pack-low-poly",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "로컬 문서의 No Attribution Required 표기와 standalone 제한이 함께 존재하는 사실을 보존한다. 이 원문을 CC0 승격 근거로 삼지 않으며 licensed 소유자 확인 경로와 자동 source credit을 유지한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-045-food-packaging",
@@ -2101,9 +3398,7 @@
         "low-poly-food-and-packaging"
       ],
       "licenseClass": "emaceart-local-license",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "serve": "allow",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2123,9 +3418,52 @@
             "30-props/low-poly-food-and-packaging/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-045-food-packaging",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
       ],
-      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다."
+      "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/low-poly-food-packaging-complete-stylized-collection",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "rg-poly-food-pack",
@@ -2179,11 +3517,57 @@
         "modular-fence-narrative-pack-and-spline-tool"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "mappingNote": "서빙 에셋의 원본('Fences and walls glb')은 라이브러리에서 cbv1-027 Modular Fence Narrative Pack 폴더로 분류돼 있다. 귀속 확인이 필요하다."
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-067-fences-and-walls",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "mappingNote": "서빙 에셋의 원본('Fences and walls glb')은 라이브러리에서 cbv1-027 Modular Fence Narrative Pack 폴더로 분류돼 있다. 귀속 확인이 필요하다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/roadside-tales-fences-and-wall-bundle-pack-1-3-lods",
+            "relation": "direct-owner-purchase-mapping"
+          },
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/fences-palisades-and-world-boundaries",
+            "relation": "library-evidence-association"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "067 Fences와 027 Modular Fence/Spline Tool 구매행은 각각 확인됐다. 기존 GLB의 027 증빙 연관과 spline 도구의 제품·입력 귀속을 분리한다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-076-medieval-weapons",
@@ -2239,10 +3623,52 @@
         "blaster-pack"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-019-blasters-rg",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/blasters-pack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-074-blasters-free",
@@ -2259,10 +3685,52 @@
         "free-blaster-pack-mini-edition"
       ],
       "licenseClass": "unstated-rg-poly",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-074-blasters-free",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/free-blaster-pack-mini-edition",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-003-cartoon-characters-1",
@@ -2369,10 +3837,52 @@
         "philipp-stylized-modular-low-poly-character"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-010-philipp-character",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/philipp-stylized-modular-low-poly-character",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-009-victorian-citizens",
@@ -2389,11 +3899,53 @@
         "art-deco-victorian-citizens"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다."
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-009-victorian-citizens",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/art-deco-victorian-citizens-modular-low-poly-characters",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "공개 구매 URL·정식 ID·localSlug 연결은 확인됐다. 기존 note의 부재는 구매가 아니라 ingest ID 부재이며 모델 입력 검증은 별도다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-002-villagers",
@@ -2410,11 +3962,53 @@
         "slavic-medieval-villagers-modular-low-poly-characters"
       ],
       "licenseClass": "unstated-emaceart",
-      "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다."
+      "serve": "allow",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-002-villagers",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "mappingNote": "인제스션 id가 없어 라이브러리 대응은 제목·카탈로그 번호로만 확인했다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/slavic-medieval-villagers-modular-low-poly-characters",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "공개 구매 URL·정식 ID·localSlug 연결은 확인됐다. 기존 ingest ID 부재와 일부 변형의 medium source confidence를 구매 미확인으로 바꾸지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-043-rewind-memory-80s-90s-rooms",
@@ -2432,8 +4026,8 @@
       ],
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2444,8 +4038,51 @@
             "04-interior/rewind-memory-80s-90s-rooms/models/blend/Blend Textures.zip::LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-043-rewind-memory-80s-90s-rooms",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/1990s-retro-game-environments-classic-mid-poly-rooms",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-069-gravefield-cemetery-kit",
@@ -2463,9 +4100,53 @@
       ],
       "licenseClass": "unstated-emaceart",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-069-gravefield-cemetery-kit",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/cemetrydarkcorners",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-070-ps1-psx-alone-in-the-dusk",
@@ -2483,8 +4164,8 @@
       ],
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2494,8 +4175,51 @@
             "05-horror-gothic/ps1-psx-alone-in-the-dusk/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-070-ps1-psx-alone-in-the-dusk",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/alone-in-the-dusk-psx-environment-asset-kit",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-025-backroad-bridges",
@@ -2513,8 +4237,8 @@
       ],
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2524,8 +4248,51 @@
             "03-nature/backroad-bridges-stylized-modular/models/gltf/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-025-backroad-bridges",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/bridges-stylized-modular",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-063-free-fantasy-medieval-houses",
@@ -2543,8 +4310,8 @@
       ],
       "licenseClass": "emaceart-local-license",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
       "evidence": [
         {
           "kind": "local-license-file",
@@ -2554,8 +4321,51 @@
             "02-medieval-fantasy/free-fantasy-medieval-houses/engine/godot/LICENSE.txt"
           ],
           "verifiedAt": "2026-10-22"
+        },
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-063-free-fantasy-medieval-houses",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
         }
-      ]
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://emaceart.itch.io/free-fantasy-medieval-houses-and-props-pack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "기존 원장 요약·검토와 확인한 EmaceArt 원문의 No credit is required 표기를 보존한다. 새 필수 credit을 추가로 단정하지 않고 저작자·상품·파생 출처의 자동 source credit을 계속 유지한다. 이후 확인되는 실제 필수 문구를 지우는 결정은 아니다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-008-cute-park-pack",
@@ -2666,9 +4476,53 @@
       ],
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-020-viking-world-stylized",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/viking-world-stylized-environment",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-024-cute-dungeon-megapack",
@@ -2728,9 +4582,53 @@
       ],
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-036-desert-canyon",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/desert-canyon-stylized-environment",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-052-scifi-arena-cargo",
@@ -2748,10 +4646,54 @@
       ],
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "note": "2026-10-28 Blue Base를 별도 정식 ID의 원장 행으로 분리했다. Cargo의 공식 CC0 표기는 확인했으나 이번 개방 대상에는 포함하지 않는다. 로컬 수신분은 Unity 패키지만 있고 GLB·재질 회수 및 검증이 남아 기존 hold를 유지한다."
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-052-scifi-arena-cargo",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "note": "2026-10-28 Blue Base를 별도 정식 ID의 원장 행으로 분리했다. Cargo의 공식 CC0 표기는 확인했으나 이번 개방 대상에는 포함하지 않는다. 로컬 수신분은 Unity 패키지만 있고 GLB·재질 회수 및 검증이 남아 기존 hold를 유지한다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/sci-fi-battle-arena-cargo",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-053-scifi-arena-blue-base",
@@ -2808,10 +4750,54 @@
       ],
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "mappingNote": "라이브러리에서는 서빙 중인 Asia Megapack(cbv1-080) 원본이 이 팩 폴더에 분류돼 있다. 생성기의 미수신 사유와 어긋나므로 귀속 확인이 필요하다."
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-054-low-poly-asia-pack",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "mappingNote": "라이브러리에서는 서빙 중인 Asia Megapack(cbv1-080) 원본이 이 팩 폴더에 분류돼 있다. 생성기의 미수신 사유와 어긋나므로 귀속 확인이 필요하다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/asia-megapack-low-poly-refreshed-urp-unity",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "separate-source-attribution-review",
+        "sourceAttributionNote": "054와 080의 구매행은 각각 확인됐다. 과거 미수신 설명은 현재 구매 부재가 아니며 기존 080 입력과의 중첩 귀속·기술 편입을 별도 확인한다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-079-free-stylized-medieval-village-urp",
@@ -2829,9 +4815,53 @@
       ],
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": []
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-079-free-stylized-medieval-village-urp",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/stylized-medieval-village-unity-urp",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-016-cars",
@@ -2849,10 +4879,54 @@
       ],
       "licenseClass": "unstated-rg-poly",
       "serve": "hold",
-      "holdReason": "evidence-incomplete",
-      "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
-      "evidence": [],
-      "note": "2026-10-28 Cars 2·Army Pack·Cartoon Car Megapack을 각각 정식 ID의 별도 원장 행으로 분리했다. Cars 1은 이번 개방 대상에 포함하지 않으며 로컬 GLB 464개의 외부 텍스처 참조 해소와 확인이 남아 기존 hold를 유지한다."
+      "holdReason": "technical-intake-pending",
+      "holdLabel": "구매와 소유자의 상업적 프로젝트 사용 확인을 기록했으며, 모델 변환·재질·런타임 편입 검증이 남았다.",
+      "evidence": [
+        {
+          "kind": "purchase-receipt",
+          "ref": "local-private:itch-purchase-library-observation-20261028",
+          "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "owner-commercial-use-confirmation",
+          "packId": "cbv1-016-cars",
+          "scope": "toonstudio-in-service-commercial-project-use",
+          "purchaseRef": "local-private:itch-purchase-library-observation-20261028",
+          "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
+          "confirmedAt": "2026-10-29",
+          "verifiedAt": "2026-10-29"
+        }
+      ],
+      "note": "2026-10-28 Cars 2·Army Pack·Cartoon Car Megapack을 각각 정식 ID의 별도 원장 행으로 분리했다. Cars 1은 이번 개방 대상에 포함하지 않으며 로컬 GLB 464개의 외부 텍스처 참조 해소와 확인이 남아 기존 hold를 유지한다.",
+      "priorServeReview": {
+        "serve": "hold",
+        "holdReason": "evidence-incomplete",
+        "holdLabel": "준비 중이며 공개 시점은 정해지지 않았다.",
+        "recordedBeforeOwnerDecision": "2026-10-29"
+      },
+      "grant": {
+        "status": "licensed",
+        "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+        "commercialUse": true,
+        "attributionRequired": false,
+        "inServiceOnly": true,
+        "downloadable": false,
+        "redistributionAllowed": false
+      },
+      "ownerUseReview": {
+        "reviewedAt": "2026-10-29",
+        "purchaseMappings": [
+          {
+            "publicProjectUrl": "https://rg-poly.itch.io/cars-low-poly-massive-car-pack",
+            "relation": "direct-owner-purchase-mapping"
+          }
+        ],
+        "purchaseMappingBasis": "2026-10-28 구매 관찰과 기존 private 85상품 매트릭스의 공개 URL·정식 ID·localSlug 연결을 읽기 대조했다. 이번에 로그인·실물·해시를 다시 확인하지 않았다.",
+        "sourceAttributionStatus": "purchase-mapped-source-bytes-not-revalidated",
+        "sourceAttributionNote": "구매 상품 연결과 상업적 프로젝트 사용 확인은 모델 입력·재질·바이트 귀속 검증을 대신하지 않는다.",
+        "attributionNote": "현재 기록에서 별도 필수 attribution 문구를 확인하지 못했으며, 원문상 의무가 전혀 없다는 확인이나 제작사 의무 면제가 아니다. 저작자·공개 구매 상품·파생 출처의 자동 source credit을 유지하고 실제 필수 문구가 확인되면 그대로 보존한다.",
+        "decisionNote": "소유자의 2026-10-29 직접 구매·상업 사용 확인을 ToonStudio 서비스 안 프로젝트 사용에 한정해 기록한다. 제작사 서면 허가·CC0·원본 팩 다운로드 또는 재배포 허가가 아니며 기존 licenseClass·licenseTexts·경로·중첩 별칭과 과거 검토 note를 보존한다. 과거의 소유자 결정 대기 권고는 이 결정으로 대체하고 source/기술 미확정은 별도 관리한다."
+      }
     },
     {
       "id": "cbv1-017-cartoon-cars-2",

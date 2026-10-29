@@ -18,7 +18,7 @@ import { api, isAppApiError } from "@/platform/api";
 
 import { UserAiTransportError } from "../user-ai-transport-error";
 
-import { describeSchemaIssues, extractJsonCandidate } from "./assist-json";
+import { describeSchemaIssues, extractJsonCandidates } from "./assist-json";
 import { managedAssistModelLabel } from "./assist-route";
 import { assertAssistMessageComplete } from "./assist-stop-reason";
 
@@ -278,15 +278,23 @@ type StructuredRead<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly text: string; readonly issues: readonly string[] };
 
-/** 답에서 JSON을 꺼내(앞뒤 설명·코드 펜스 허용) 같은 Zod 스키마로 검증한다. */
+/**
+ * 답에서 JSON 후보를 꺼내(앞뒤 설명·코드 펜스 허용) 같은 Zod 스키마로 차례로 검증하고, 처음 통과하는 것을 쓴다.
+ * 통과하는 후보가 없으면 바깥 후보의 스키마 문제를, 바깥 후보도 없으면 바깥 블록의 문법 문제를 복구 요청에 싣는다
+ * (끝이 잘린 답 안의 중첩 객체로 엉뚱한 진단을 하지 않게).
+ */
 function readStructured<Schema extends z.ZodType>(message: Anthropic.Message, schema: Schema): StructuredRead<z.infer<Schema>> {
   const text = messageText(message);
-  const candidate = extractJsonCandidate(text);
-  if (candidate === undefined) return { ok: false, text, issues: ["JSON 객체를 찾지 못했어요."] };
-  const result = schema.safeParse(candidate);
-  return result.success
-    ? { ok: true, data: result.data as z.infer<Schema> }
-    : { ok: false, text, issues: describeSchemaIssues(result.error) };
+  const { candidates, syntaxIssue } = extractJsonCandidates(text);
+  let topLevelIssues: readonly string[] | null = null;
+  for (const candidate of candidates) {
+    const result = schema.safeParse(candidate.value);
+    if (result.success) return { ok: true, data: result.data as z.infer<Schema> };
+    if (candidate.topLevel && !topLevelIssues) topLevelIssues = describeSchemaIssues(result.error);
+  }
+  const issues = topLevelIssues
+    ?? [syntaxIssue ? `JSON 문법이 맞지 않아요(괄호가 닫히지 않았거나 끝이 잘렸어요): ${syntaxIssue}` : "JSON 객체를 찾지 못했어요."];
+  return { ok: false, text, issues };
 }
 
 function repairInstruction(issues: readonly string[]): string {

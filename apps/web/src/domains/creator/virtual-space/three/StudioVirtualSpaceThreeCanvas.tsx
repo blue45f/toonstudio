@@ -16,26 +16,21 @@ import {
   studioFacingToward,
   studioWorldMayTakeFocus,
   WORLD_KEY_CODES,
-  type StudioVirtualSpacePhaserCanvasProps,
 } from "../studio-virtual-space-phaser-canvas-model";
+import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
 import { clampStudioWorldPoint } from "../studio-virtual-space-world-pathfinding";
 import {
   studioWorldInteractions,
   studioWorldPortals,
   studioWorldRoomAt,
   studioWorldSpawn,
+  type StudioWorldInteractionDefinition,
 } from "../studio-virtual-space-world-manifest";
-import { StudioVirtualSpaceIllustratedStageHud } from "../StudioVirtualSpaceIllustratedStageHud";
 import {
   applyStudioLightingPresetToScene,
   createStudioThreeChromePostPipeline,
   createStudioThreeHdriController,
-  DUPLICATE_ARCADE_IDS,
   findClickedWorldTarget,
-  formatParticipantOverlayBadge,
-  getOverlayBadgeStyle,
-  resolveOverlayCollisions,
-  WORKSTATION_ACTION_BADGES,
   type ProjectedOverlayItem,
   type StudioThreeLightingPreset,
 } from "./studio-virtual-space-three-dioramas";
@@ -44,13 +39,22 @@ import {
   facingToYawRadians,
   loadStudioThreeAssets,
   shortestAngleLerp,
+  STUDIO_THREE_SCALE,
   threeToWorld,
   worldToThree,
   type StudioThreeActorNode,
 } from "./studio-virtual-space-three-scene";
-import { buildStudioThreeWorldArchitecture, studioThreeRoomSigns } from "./studio-virtual-space-three-world-layout";
+import { studioThreeRoomSigns } from "./studio-virtual-space-three-world-layout";
 import { StudioThreeWorldNavigation } from "./studio-virtual-space-three-navigation";
 import { studioThreeThemeLightingPreset } from "./studio-virtual-space-three-surface-art";
+import { StudioThreeProximityPublication, StudioThreeRuntimePublication } from "./studio-virtual-space-three-runtime-policy";
+import type { StudioVirtualSpaceThreeStageProps } from "./studio-virtual-space-three-stage-props";
+import { StudioVirtualSpaceThreeHud } from "./StudioVirtualSpaceThreeHud";
+import { projectStudioThreeOverlays } from "./studio-virtual-space-three-hud-projection";
+import { DEFAULT_VIRTUAL_THREE_THEME } from "./themes/virtual-three-theme-catalog";
+import { createVirtualThreeThemeController } from "./themes/virtual-three-theme-controller";
+import type { VirtualThreeTheme } from "./themes/virtual-three-theme-types";
+import { applyVirtualThreeThemeLighting, captureVirtualThreeThemeLightingState } from "./themes/virtual-three-theme-lighting";
 
 const NPC_COLORS = [0x6366f1, 0xec4899, 0x06b6d4, 0xf59e0b, 0x10b981, 0x8b5cf6, 0x3b82f6, 0x14b8a6] as const;
 
@@ -63,7 +67,9 @@ export function StudioVirtualSpaceThreeCanvas({
   snapshot,
   bridge,
   selfDisplayName,
-  spaceTheme = "webtoon-atelier",
+  theme,
+  themeRequestRevision,
+  onThemePreviewChange,
   onRuntimeMetrics,
   onNpcInteract,
   onLocalState,
@@ -73,32 +79,34 @@ export function StudioVirtualSpaceThreeCanvas({
   onZoneChange,
   onNearbyNpcsChange,
   onEngineStatusChange,
-}: StudioVirtualSpacePhaserCanvasProps) {
+}: StudioVirtualSpaceThreeStageProps) {
   const bt = useBilingual("StudioVirtualSpaceThreeCanvas");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
   const [overlays, setOverlays] = useState<readonly ProjectedOverlayItem[]>([]);
   const [assetFailureCount, setAssetFailureCount] = useState(0);
-  const defaultPreset = studioThreeThemeLightingPreset(spaceTheme);
-  const [lightingPreset, setLightingPreset] = useState<StudioThreeLightingPreset>(defaultPreset);
+  const [lightingPreset, setLightingPreset] = useState<StudioThreeLightingPreset>(() => studioThreeThemeLightingPreset(DEFAULT_VIRTUAL_THREE_THEME, manifest));
   const applyLightingRef = useRef<((preset: StudioThreeLightingPreset) => void) | null>(null);
   const resetCameraRef = useRef<(() => void) | null>(null);
   const triggerOverlayTargetRef = useRef<((kind: "workstation" | "npc", targetId: string) => void) | null>(null);
   const reloadActorVrmRef = useRef<((actorId: string, index: number) => void) | null>(null);
+  const selectThemeRef = useRef<((nextTheme: VirtualThreeTheme) => void) | null>(null);
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+  const btRef = useRef(bt);
+  btRef.current = bt;
 
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
   const selfNameRef = useRef(selfDisplayName);
   selfNameRef.current = selfDisplayName;
-  const callbacks = { onRuntimeMetrics, onNpcInteract, onLocalState, onInteract, onNearbyInteractionChange, onPortal, onZoneChange, onNearbyNpcsChange, onEngineStatusChange };
+  const callbacks = { onThemePreviewChange, onRuntimeMetrics, onNpcInteract, onLocalState, onInteract, onNearbyInteractionChange, onPortal, onZoneChange, onNearbyNpcsChange, onEngineStatusChange };
   const callbacksRef = useRef(callbacks);
   callbacksRef.current = callbacks;
 
   useEffect(() => {
-    const nextPreset = studioThreeThemeLightingPreset(spaceTheme);
-    setLightingPreset(nextPreset);
-    applyLightingRef.current?.(nextPreset);
-  }, [spaceTheme]);
+    selectThemeRef.current?.(theme);
+  }, [theme, themeRequestRevision]);
 
   useEffect(() => {
     reloadActorVrmRef.current?.("self", snapshot.self.avatarIndex);
@@ -110,6 +118,7 @@ export function StudioVirtualSpaceThreeCanvas({
     if (!container || !canvasMount) return undefined;
 
     let disposed = false;
+    let failedTextures = 0;
     setAssetFailureCount(0);
     callbacksRef.current.onEngineStatusChange?.("loading");
 
@@ -141,19 +150,25 @@ export function StudioVirtualSpaceThreeCanvas({
     Object.assign(dirLight.shadow.camera, { near: 4, far: 140, left: -48, right: 48, top: 48, bottom: -48 });
     dirLight.shadow.bias = -0.0005;
     scene.add(dirLight);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0);
+    fillLight.castShadow = false;
+    scene.add(fillLight, fillLight.target, dirLight.target);
 
-    const hdriController = createStudioThreeHdriController(renderer, scene, () => disposed);
+    const hdriController = createStudioThreeHdriController(renderer, scene, () => disposed, () => {
+      if (disposed) return;
+      failedTextures += 1;
+      setAssetFailureCount((count) => count + 1);
+    });
     const postPipeline = createStudioThreeChromePostPipeline(renderer, scene, camera, width, height);
+    let currentPreset = studioThreeThemeLightingPreset(DEFAULT_VIRTUAL_THREE_THEME, manifest);
     const syncLighting = (preset: StudioThreeLightingPreset) => {
+      currentPreset = preset;
       applyStudioLightingPresetToScene(preset, scene, renderer, hemiLight, dirLight, postPipeline);
       hdriController.applyPreset(preset);
     };
     applyLightingRef.current = syncLighting;
-    syncLighting(defaultPreset);
-
-    const architecture = buildStudioThreeWorldArchitecture(scene, manifest, spaceTheme);
-    const { floorMesh, waterMeshes, workstationRings } = architecture;
     const roomSigns = studioThreeRoomSigns(manifest);
+    const allInteractions = studioWorldInteractions(manifest);
 
     const actorNodes = new Map<string, StudioThreeActorNode>();
     const navigation = new StudioThreeWorldNavigation(manifest);
@@ -197,6 +212,62 @@ export function StudioVirtualSpaceThreeCanvas({
 
     const reloadActorVrm = loadStudioThreeAssets(scene, actorNodes, () => disposed, snapshotRef.current.self.avatarIndex, manifest, () => setAssetFailureCount((count) => count + 1));
     reloadActorVrmRef.current = reloadActorVrm;
+    const themeController = createVirtualThreeThemeController({
+      scene, manifest, renderer, camera, isDisposed: () => disposed,
+      prepareEnvironment: (nextTheme) => hdriController.preparePreset(studioThreeThemeLightingPreset(nextTheme, manifest)),
+      waitForEnvironment: hdriController.whenIdle,
+      getRenderTargets: hdriController.getRenderTargets,
+      getPendingEnvironmentCount: hdriController.getPendingCount,
+      waitForCoreAssets: reloadActorVrm.whenIdle,
+      getPendingCoreAssetCount: reloadActorVrm.getPendingCount,
+      captureCommitState: () => {
+        const oldPreset = currentPreset;
+        const restore = captureVirtualThreeThemeLightingState({ scene, renderer, lights: { ambient: hemiLight, key: dirLight, fill: fillLight } });
+        return () => { hdriController.applyPreset(oldPreset); restore(); currentPreset = oldPreset; setLightingPreset(oldPreset); };
+      },
+      onPreviewChange: (themeId, preview) => {
+        if (!disposed) callbacksRef.current.onThemePreviewChange?.(themeId, preview);
+      },
+      onCommitted: (committedTheme) => {
+        if (disposed) return;
+        const preset = studioThreeThemeLightingPreset(committedTheme, manifest);
+        syncLighting(preset);
+        applyVirtualThreeThemeLighting(committedTheme, manifest, { ambient: hemiLight, key: dirLight, fill: fillLight });
+        setLightingPreset(preset);
+      },
+      onAssetError: (_url, kind) => {
+        if (disposed) return;
+        if (kind === "texture") failedTextures += 1;
+        setAssetFailureCount((count) => count + 1);
+      },
+    });
+    selectThemeRef.current = themeController.select;
+    themeController.select(DEFAULT_VIRTUAL_THREE_THEME);
+    if (themeRef.current.id !== DEFAULT_VIRTUAL_THREE_THEME.id) themeController.select(themeRef.current);
+    const peerAvatarIndices = new Map<string, number>();
+    let previousPeers: StudioVirtualSpaceSnapshot["peers"] | null = null;
+    const proximity = new StudioThreeProximityPublication<StudioWorldInteractionDefinition, StudioVirtualSpaceNearbyNpc>({
+      interaction: (value) => callbacksRef.current.onNearbyInteractionChange?.(value),
+      npcs: (value) => callbacksRef.current.onNearbyNpcsChange?.(value),
+    });
+    const runtime = new StudioThreeRuntimePublication(
+      (sample) => callbacksRef.current.onRuntimeMetrics?.(sample),
+      () => {
+        let visiblePeerCount = 0, visibleNpcCount = 0;
+        for (const [id, node] of actorNodes) {
+          if (!node.group.visible) continue;
+          if (id.startsWith("peer:")) visiblePeerCount += 1;
+          else if (id !== "self") visibleNpcCount += 1;
+        }
+        return {
+          // 고정 3D 렌더 설정의 호환 태그다. 자동 품질 하향이나 GPU 성능 증명이 아니다.
+          qualityTier: "ultra" as const,
+          peerCount: snapshotRef.current.peers.length, visiblePeerCount,
+          npcCount: npcDefinitions.length, visibleNpcCount,
+          routeWaypoints: navigation.waypointCount, failedTextures,
+        };
+      },
+    );
 
     const keysDown = new Set<string>();
     let currentPoint: StudioVirtualSpacePoint = { ...spawnPoint };
@@ -213,7 +284,6 @@ export function StudioVirtualSpaceThreeCanvas({
     bridge.setFocusHandler(() => renderer.domElement.focus({ preventScroll: true }));
 
     triggerOverlayTargetRef.current = (kind, targetId) => {
-      const allInteractions = studioWorldInteractions(manifest);
       if (kind === "workstation") {
         const target = allInteractions.find((item) => item.id === targetId);
         if (!target) return;
@@ -253,6 +323,8 @@ export function StudioVirtualSpaceThreeCanvas({
 
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
+    const peerPositionTarget = new THREE.Vector3();
+    const cameraPositionTarget = new THREE.Vector3();
     let pointerDownPos: { x: number; y: number } | null = null;
     let orbitDragLastX: number | null = null;
 
@@ -279,10 +351,11 @@ export function StudioVirtualSpaceThreeCanvas({
       if (!rect.width || !rect.height) return;
       pointerNdc.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(pointerNdc, camera);
-      const hit = raycaster.intersectObject(floorMesh, false)[0];
+      const floorMesh = themeController.getArchitecture()?.floorMesh;
+      const hit = floorMesh ? raycaster.intersectObject(floorMesh, false)[0] : undefined;
       if (hit) {
         const clamped = clampStudioWorldPoint(manifest, threeToWorld({ x: hit.point.x, z: hit.point.z }));
-        const clickedTarget = findClickedWorldTarget(clamped, studioWorldInteractions(manifest), npcDefinitions);
+        const clickedTarget = findClickedWorldTarget(clamped, allInteractions, npcDefinitions);
         if (clickedTarget) {
           triggerOverlayTargetRef.current?.(clickedTarget.kind, clickedTarget.id);
         } else {
@@ -317,7 +390,6 @@ export function StudioVirtualSpaceThreeCanvas({
     window.addEventListener("resize", handleResize);
 
     callbacksRef.current.onEngineStatusChange?.("ready");
-    architecture.loadDeferredArt(() => setAssetFailureCount((count) => count + 1));
     const initialZone = zoneTracker.next(currentPoint);
     if (initialZone) callbacksRef.current.onZoneChange?.(initialZone);
 
@@ -351,6 +423,8 @@ export function StudioVirtualSpaceThreeCanvas({
       const dt = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
       lastTime = now;
       reloadActorVrm.update(dt);
+      themeController.update(dt);
+      const architecture = themeController.getArchitecture();
 
       const teleport = bridge.consumeTeleport();
       if (teleport) snapPlayerAndCamera(clampStudioWorldPoint(manifest, teleport));
@@ -417,15 +491,21 @@ export function StudioVirtualSpaceThreeCanvas({
       }
 
       // 로컬 캐릭터 3D 위치·회전·걸음 애니메이션 업데이트
-      const selfThree = worldToThree(currentPoint, 0);
-      selfNode.group.position.x = THREE.MathUtils.lerp(selfNode.group.position.x, selfThree.x, 0.35);
-      selfNode.group.position.z = THREE.MathUtils.lerp(selfNode.group.position.z, selfThree.z, 0.35);
+      selfNode.group.position.x = THREE.MathUtils.lerp(selfNode.group.position.x, currentPoint.x * STUDIO_THREE_SCALE, 0.35);
+      selfNode.group.position.z = THREE.MathUtils.lerp(selfNode.group.position.z, currentPoint.y * STUDIO_THREE_SCALE, 0.35);
       selfNode.currentYaw = shortestAngleLerp(selfNode.currentYaw, selfNode.targetYaw, 0.22);
       selfNode.group.rotation.y = selfNode.currentYaw;
       selfNode.moving = moving;
 
       // 동료(Peers) 3D 노드 동기화
-      for (const peer of snapshotRef.current.peers) {
+      const peers = snapshotRef.current.peers;
+      if (peers !== previousPeers) {
+        const activeIds = new Set(peers.map((peer) => `peer:${peer.participant.sessionId}`));
+        reloadActorVrm.prunePeerActors(activeIds);
+        for (const id of peerAvatarIndices.keys()) if (!activeIds.has(id)) peerAvatarIndices.delete(id);
+        previousPeers = peers;
+      }
+      for (const peer of peers) {
         const peerId = `peer:${peer.participant.sessionId}`;
         let peerNode = actorNodes.get(peerId);
         if (!peerNode) {
@@ -433,9 +513,12 @@ export function StudioVirtualSpaceThreeCanvas({
           peerNode.group.position.copy(worldToThree(peer.state, 0));
           scene.add(peerNode.group);
           actorNodes.set(peerId, peerNode);
+        }
+        if (peerAvatarIndices.get(peerId) !== peer.state.avatarIndex) {
+          peerAvatarIndices.set(peerId, peer.state.avatarIndex);
           reloadActorVrm(peerId, peer.state.avatarIndex);
         }
-        const target3 = worldToThree(peer.state, 0);
+        const target3 = peerPositionTarget.set(peer.state.x * STUDIO_THREE_SCALE, 0, peer.state.y * STUDIO_THREE_SCALE);
         const dx = target3.x - peerNode.group.position.x;
         const dz = target3.z - peerNode.group.position.z;
         peerNode.moving = Math.hypot(dx, dz) > 0.03;
@@ -502,7 +585,7 @@ export function StudioVirtualSpaceThreeCanvas({
         node.vrm?.update(dt);
       }
 
-      waterMeshes.forEach((water, idx) => {
+      architecture?.waterMeshes.forEach((water, idx) => {
         water.position.y = 0.05 + Math.sin(now * 0.002 + idx) * 0.012;
       });
 
@@ -511,7 +594,7 @@ export function StudioVirtualSpaceThreeCanvas({
       const camDist = 12.8 / zoomFactor;
       const camHeight = 10.8 / zoomFactor;
       camera.position.lerp(
-        new THREE.Vector3(
+        cameraPositionTarget.set(
           selfNode.group.position.x + Math.sin(currentCameraYaw) * camDist,
           camHeight,
           selfNode.group.position.z + Math.cos(currentCameraYaw) * camDist,
@@ -527,11 +610,9 @@ export function StudioVirtualSpaceThreeCanvas({
       const zoneChanged = zoneTracker.next(currentPoint);
       if (zoneChanged) callbacksRef.current.onZoneChange?.(zoneChanged);
 
-      const allInteractions = studioWorldInteractions(manifest);
       const closestInteraction = nearestInteraction(allInteractions, currentPoint);
-      callbacksRef.current.onNearbyInteractionChange?.(closestInteraction);
 
-      for (const ringNode of workstationRings) {
+      for (const ringNode of architecture?.workstationRings ?? []) {
         const isActive = closestInteraction?.id === ringNode.id;
         ringNode.group.scale.setScalar(isActive ? 1.12 + Math.sin(now * 0.006) * 0.08 : 1 + Math.sin(now * 0.0025) * 0.025);
       }
@@ -557,7 +638,7 @@ export function StudioVirtualSpaceThreeCanvas({
           }
         }
       }
-      callbacksRef.current.onNearbyNpcsChange?.(nearbyNpcs);
+      proximity.sample(closestInteraction, nearbyNpcs);
 
       if (pendingAutoInteract) {
         if (pendingAutoInteract.kind === "workstation") {
@@ -604,86 +685,17 @@ export function StudioVirtualSpaceThreeCanvas({
       }
 
       postPipeline.render();
+      runtime.frame(now);
 
       if (now - lastOverlaySync >= 90) {
         lastOverlaySync = now;
-        const w = renderer.domElement.clientWidth;
-        const h = renderer.domElement.clientHeight;
-        const isEn = typeof document !== "undefined" && document.documentElement.lang?.startsWith("en");
-        const projected: ProjectedOverlayItem[] = [];
-
-        const projectPoint = (vec: THREE.Vector3): { x: number; y: number; visible: boolean } => {
-          const cloned = vec.clone().project(camera);
-          if (cloned.z < -1 || cloned.z > 1) return { x: 0, y: 0, visible: false };
-          const sx = (cloned.x * 0.5 + 0.5) * w;
-          const sy = (-cloned.y * 0.5 + 0.5) * h;
-          return { x: sx, y: sy, visible: sx >= -60 && sx <= w + 60 && sy >= -40 && sy <= h + 40 };
-        };
-
-        const selfHead = projectPoint(new THREE.Vector3(selfNode.group.position.x, 2.04, selfNode.group.position.z));
-        if (selfHead.visible) {
-          const selfBadge = formatParticipantOverlayBadge(snapshotRef.current.self, Boolean(isEn), "3D 아바타", "3D Avatar");
-          projected.push({
-            id: "self",
-            label: selfNameRef.current || bt("나", "Me"),
-            sublabel: selfBadge.sublabel,
-            kind: "self",
-            x: selfHead.x,
-            y: selfHead.y,
-            accent: selfBadge.accent,
-          });
-        }
-
-        for (const peer of snapshotRef.current.peers) {
-          const peerNode = actorNodes.get(`peer:${peer.participant.sessionId}`);
-          if (!peerNode) continue;
-          const head = projectPoint(new THREE.Vector3(peerNode.group.position.x, 2.04, peerNode.group.position.z));
-          if (head.visible) {
-            const peerBadge = formatParticipantOverlayBadge(peer.state, Boolean(isEn), "동료", "Peer");
-            projected.push({
-              id: `peer:${peer.participant.sessionId}`,
-              label: peer.participant.displayName,
-              sublabel: peerBadge.sublabel,
-              kind: "peer",
-              x: head.x,
-              y: head.y,
-              accent: peerBadge.accent,
-            });
-          }
-        }
-
-        for (const npc of npcDefinitions) {
-          const dist = Math.hypot(npc.point.x - currentPoint.x, npc.point.y - currentPoint.y);
-          if (dist > 640) continue;
-          const node = actorNodes.get(npc.id);
-          const def = npcDefinitions.find((item) => item.id === npc.id);
-          if (!node || !def) continue;
-          const label = studioNpcLabel(def);
-          const head = projectPoint(new THREE.Vector3(node.group.position.x, 2.12, node.group.position.z));
-          if (head.visible) {
-            projected.push({ id: `npc:${npc.id}`, targetId: npc.id, label: isEn ? label.en : label.ko, sublabel: isEn ? "Talk" : "대화", kind: "npc", x: head.x, y: head.y, active: dist <= STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS });
-          }
-        }
-
-        for (const interaction of allInteractions) {
-          if (DUPLICATE_ARCADE_IDS.has(interaction.id) || Math.hypot(interaction.point.x - currentPoint.x, interaction.point.y - currentPoint.y) > 520) continue;
-          const stationPos = projectPoint(worldToThree(interaction.point, 0.92));
-          if (stationPos.visible) {
-            const meta = WORKSTATION_ACTION_BADGES[interaction.action] ?? { ko: "협업 도구", en: "Tool", color: "#6366f1" };
-            projected.push({ id: `workstation:${interaction.id}`, targetId: interaction.id, label: isEn ? interaction.labelEn : interaction.labelKo, sublabel: isEn ? meta.en : meta.ko, kind: "workstation", x: stationPos.x, y: stationPos.y, accent: meta.color, active: closestInteraction?.id === interaction.id });
-          }
-        }
-
-        for (const zone of roomSigns) {
-          if (Math.hypot(zone.x - currentPoint.x, zone.y - currentPoint.y) > 920) continue;
-          const signPos = projectPoint(worldToThree(zone, zone.heightMeters));
-          if (signPos.visible) {
-            const roomDef = manifest.rooms?.find((room) => room.id === zone.roomId);
-            projected.push({ id: `zone:${zone.roomId}`, label: zone.label, sublabel: isEn ? (roomDef?.labelEn ?? zone.label) : (roomDef?.labelKo ?? zone.label), kind: "zone", x: signPos.x, y: signPos.y });
-          }
-        }
-
-        setOverlays(resolveOverlayCollisions(projected));
+        setOverlays(projectStudioThreeOverlays({
+          width: renderer.domElement.clientWidth, height: renderer.domElement.clientHeight,
+          camera, selfNode, actorNodes, snapshot: snapshotRef.current, currentPoint, manifest,
+          allInteractions, roomSigns, closestInteraction,
+          selfLabel: selfNameRef.current || btRef.current("나", "Me"),
+          isEn: document.documentElement.lang.startsWith("en"),
+        }));
       }
     };
 
@@ -695,6 +707,7 @@ export function StudioVirtualSpaceThreeCanvas({
       resetCameraRef.current = null;
       triggerOverlayTargetRef.current = null;
       reloadActorVrmRef.current = null;
+      selectThemeRef.current = null;
       window.cancelAnimationFrame(animFrameId);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -705,13 +718,18 @@ export function StudioVirtualSpaceThreeCanvas({
       renderer.domElement.removeEventListener("contextmenu", handleContextMenu);
       renderer.domElement.removeEventListener("wheel", handleWheel);
       bridge.setFocusHandler(null);
-      reloadActorVrm.dispose();
-      architecture.dispose();
-      postPipeline.dispose();
-      hdriController.dispose();
-      renderer.dispose();
+      destMarker.removeFromParent();
+      const failures: unknown[] = [];
+      for (const release of [
+        () => reloadActorVrm.dispose(), () => themeController.dispose(),
+        () => destGeo.dispose(), () => destMat.dispose(), () => dirLight.dispose(), () => fillLight.dispose(),
+        () => postPipeline.dispose(), () => hdriController.dispose(), () => renderer.dispose(),
+      ]) {
+        try { release(); } catch (error) { failures.push(error); }
+      }
+      if (failures.length) throw new AggregateError(failures, "3D 무대 자원 해제에 실패했습니다.");
     };
-  }, [bridge, manifest, spaceTheme, bt, defaultPreset]);
+  }, [bridge, manifest]);
 
   return (
     <div
@@ -722,64 +740,14 @@ export function StudioVirtualSpaceThreeCanvas({
       style={{ position: "relative", width: "100%", height: "100%", outline: "none" }}
     >
       <div ref={canvasMountRef} className="studio-vspace-three-canvas-mount" style={{ position: "absolute", inset: 0, zIndex: 1 }} />
-      {assetFailureCount > 0 ? <p role="status" style={{ position: "absolute", left: 16, top: 48, zIndex: 3 }}>{bt("일부 3D 장비를 불러오지 못했어요. 다른 장비와 공간은 계속 이용할 수 있어요.", "Some 3D equipment could not load. Other equipment and rooms are still available.")}</p> : null}
-      <div
-        className="studio-vspace-three-lighting-hud"
-        style={{ position: "absolute", right: 76, bottom: 16, zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 8px", borderRadius: 999, background: "rgba(15, 23, 42, 0.84)", border: "1px solid rgba(148, 163, 184, 0.32)", backdropFilter: "blur(10px)" }}
-      >
-        {([
-          { id: "day", ko: "자연광 HDRI", en: "Day HDRI" },
-          { id: "studio", ko: "스튜디오", en: "Studio" },
-          { id: "night", ko: "나이트", en: "Night" },
-        ] as const).map((opt) => (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => { setLightingPreset(opt.id); applyLightingRef.current?.(opt.id); }}
-            style={{ border: "none", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: lightingPreset === opt.id ? "#0f172a" : "#e2e8f0", background: lightingPreset === opt.id ? "#38bdf8" : "transparent" }}
-          >
-            {bt(opt.ko, opt.en)}
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => resetCameraRef.current?.()}
-          style={{ border: "1px solid rgba(148, 163, 184, 0.35)", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: "#bae6fd", background: "rgba(30, 41, 59, 0.72)" }}
-        >
-          {bt("시점 리셋 [C]", "Reset View [C]")}
-        </button>
-      </div>
-      <StudioVirtualSpaceIllustratedStageHud />
-      <div className="studio-vspace-three-overlays" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 2 }}>
-        {overlays.map((item) => {
-          const isInteractive = (item.kind === "workstation" || item.kind === "npc") && Boolean(item.targetId);
-          return (
-            <div
-              key={item.id}
-              data-overlay-kind={item.kind}
-              role={isInteractive ? "button" : undefined}
-              tabIndex={isInteractive ? 0 : undefined}
-              onClick={isInteractive && item.targetId ? (event) => { event.stopPropagation(); triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!); } : undefined}
-              onKeyDown={isInteractive && item.targetId ? (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); triggerOverlayTargetRef.current?.(item.kind as "workstation" | "npc", item.targetId!); } } : undefined}
-              style={getOverlayBadgeStyle(item, isInteractive)}
-            >
-              {item.kind === "self" || item.kind === "peer" ? (
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: item.accent ?? "#38bdf8" }} />
-              ) : item.kind === "npc" ? (
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#a78bfa" }} />
-              ) : item.kind === "workstation" ? (
-                <span style={{ width: 7, height: 7, borderRadius: "2px", background: item.accent ?? "#8b5cf6", boxShadow: `0 0 8px ${item.accent ?? "#8b5cf6"}` }} />
-              ) : null}
-              <span>{item.label}</span>
-              {item.sublabel ? (
-                <span style={{ opacity: item.kind === "workstation" ? 0.92 : 0.78, fontSize: "10px", fontWeight: 700, color: item.kind === "workstation" ? "#bae6fd" : undefined }}>
-                  {item.sublabel}
-                </span>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+      <StudioVirtualSpaceThreeHud
+        overlays={overlays}
+        assetFailureCount={assetFailureCount}
+        lightingPreset={lightingPreset}
+        onLightingPresetChange={(preset) => { setLightingPreset(preset); applyLightingRef.current?.(preset); }}
+        onResetCamera={() => resetCameraRef.current?.()}
+        onTriggerTarget={(kind, targetId) => triggerOverlayTargetRef.current?.(kind, targetId)}
+      />
     </div>
   );
 }

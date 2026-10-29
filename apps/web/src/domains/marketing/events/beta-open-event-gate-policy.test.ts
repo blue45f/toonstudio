@@ -17,6 +17,11 @@ describe("betaOpenEventGateEligible", () => {
     expect(betaOpenEventGateEligible("/brand-film/")).toBe(false);
   });
 
+  it.each(["/create", "/create/", "/CREATE///"])("이야기 입력과 초안 선택 %s를 홍보로 가리지 않는다", (pathname) => {
+    expect(betaOpenEventGateEligible(pathname)).toBe(false);
+    expect(betaOpenEventGateVariant(pathname)).toBeNull();
+  });
+
   it("can still surface the campaign from a public discovery page", () => {
     expect(betaOpenEventGateEligible("/discover")).toBe(true);
   });

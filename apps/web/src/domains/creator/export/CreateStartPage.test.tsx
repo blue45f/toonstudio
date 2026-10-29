@@ -164,7 +164,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일").closest("details")?.open).toBe(false);
     expect(screen.getByText("주제별 질문과 제작 도구 더 보기").closest("details")?.open).toBe(false);
     expect(within(guide).getByRole("link", { name: /그림·스토리 모두 처음이에요/ }).getAttribute("href")).toBe("/create?intent=my-story");
-    expect(within(guide).getByRole("link", { name: /일단 펜으로 바로 그리고 싶어요/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
+    expect(within(guide).getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/ }).textContent).toContain("새 캔버스 바로 열기");
   });
 });
 
