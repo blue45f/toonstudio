@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StudioBg3dGlbMetrics } from "../../../bg3d/studio-bg3d-glb-validation";
 import type { StudioVirtualSpaceWorldManifest } from "../../studio-virtual-space-world-manifest";
+import { VIRTUAL_THREE_THEME_MODEL_IDS as MODEL_IDS } from "./virtual-three-theme-models";
 import { VIRTUAL_THREE_THEMES } from "./virtual-three-theme-catalog";
 import { loadVirtualThreeThemeModelSource, type VirtualThreeVerifiedThemeModelSource } from "./virtual-three-theme-model-source";
 import { prepareVirtualThreeThemeModels } from "./virtual-three-theme-model-stage";
@@ -131,6 +132,55 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("검증된 private GLB 바이트를 사용하는 테마 stage", () => {
+  it("원본 지면 꽃의 낮은 높이가 6m 폭으로 확대되지 않고 수평 0.45m로 배치되며 geometry를 보존한다", async () => {
+    // Flower_1_1의 SHA 고정 원본 accessor/node TRS 경계(2026-10-30 읽기 대조)를 재현한다.
+    // 이 GLB는 합성 치수 fixture이며 원본 메시나 이미지 본문 검증으로 보고하지 않는다.
+    const originalSize: [number, number, number] = [0.3581961989402771, 0.025806039106100798, 0.3581961542367935];
+    const bytes = inlineGlb([{ size: originalSize }]), source = verifiedSource(MODEL_IDS.parkFlower, bytes);
+    const scene = new THREE.Scene(), original = await realParse.call(new GLTFLoader(), bytes, "");
+    const sourceMesh = firstMesh(original.scene), vertices = vertexPositions(sourceMesh.geometry);
+    const indices = Array.from(sourceMesh.geometry.index?.array ?? []);
+    loadSource.mockResolvedValue(source);
+    vi.spyOn(GLTFLoader.prototype, "parseAsync").mockResolvedValue(original);
+    const footprint = { x: 100, y: 100, width: 64, height: 64 };
+    expect(originalSize[0] * 0.45 / originalSize[1] * 32).toBeGreaterThan(footprint.width);
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest: { ...manifest, colliders: [footprint] },
+      theme: recipe([role("ground-flower", "botanical", MODEL_IDS.parkFlower)]), signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      const root = scene.children[0];
+      if (!root) throw new Error("지면 꽃이 설치되지 않았습니다.");
+      const bounds = new THREE.Box3().setFromObject(root), size = bounds.getSize(new THREE.Vector3()), mesh = firstMesh(root);
+      expect(Math.max(size.x, size.z)).toBeCloseTo(0.45);
+      expect(size.y / size.x).toBeCloseTo(originalSize[1] / originalSize[0]);
+      expect(bounds.min.y).toBeCloseTo(0);
+      expect(bounds.min.x * 32).toBeGreaterThanOrEqual(footprint.x);
+      expect(bounds.max.x * 32).toBeLessThanOrEqual(footprint.x + footprint.width);
+      expect(bounds.min.z * 32).toBeGreaterThanOrEqual(footprint.y);
+      expect(bounds.max.z * 32).toBeLessThanOrEqual(footprint.y + footprint.height);
+      expect(mesh.geometry).toBe(sourceMesh.geometry); expect(mesh.material).toBe(sourceMesh.material);
+      expect(vertexPositions(sourceMesh.geometry)).toEqual(vertices);
+      expect(Array.from(sourceMesh.geometry.index?.array ?? [])).toEqual(indices);
+      expect(new Uint8Array(await source.blob.arrayBuffer())).toEqual(new Uint8Array(bytes));
+      expect(original.scene.scale.toArray()).toEqual([1, 1, 1]);
+    } finally { stage.dispose(); }
+  });
+
+  it("수직 나무는 기존 높이 2.2m와 원본 비율을 유지한다", async () => {
+    const originalSize: [number, number, number] = [1.444748193025589, 2.6980645621669228, 0.8963496088981628];
+    const source = verifiedSource(MODEL_IDS.parkTree, inlineGlb([{ size: originalSize }])), scene = new THREE.Scene();
+    loadSource.mockResolvedValue(source);
+    const stage = await prepareVirtualThreeThemeModels({ scene, manifest, theme: recipe([role("tree", "botanical", MODEL_IDS.parkTree)]),
+      signal: new AbortController().signal, onProgress: vi.fn() });
+    try {
+      const root = scene.children[0];
+      if (!root) throw new Error("나무가 설치되지 않았습니다.");
+      const size = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3());
+      expect(size.y).toBeCloseTo(2.2);
+      expect(size.x / size.y).toBeCloseTo(originalSize[0] / originalSize[1]);
+      expect(size.z / size.y).toBeCloseTo(originalSize[2] / originalSize[1]);
+    } finally { stage.dispose(); }
+  });
+
   it("시작 전에 취소된 요청은 검증 source·parser·네트워크를 전혀 열지 않는다", async () => {
     const abort = new AbortController(); abort.abort();
     const parse = vi.spyOn(GLTFLoader.prototype, "parseAsync");

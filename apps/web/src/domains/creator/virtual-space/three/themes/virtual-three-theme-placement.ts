@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { studioWorldInteractions, studioWorldPortals, type StudioVirtualSpaceWorldManifest, type StudioWorldRect } from "../../studio-virtual-space-world-manifest";
 import { isStudioThreeCampusManifest, studioThreeGeneratedProps, studioThreeManifestProps } from "../studio-virtual-space-three-generated-assets";
 import { STUDIO_THREE_PROPS, STUDIO_THREE_SCALE } from "../studio-virtual-space-three-scene";
+import { VIRTUAL_THREE_THEME_MODEL_IDS } from "./virtual-three-theme-models";
 import type { VirtualThreeLayoutRoleKind } from "./virtual-three-theme-types";
 
 interface Footprint extends StudioWorldRect { readonly sourceId: string }
@@ -89,4 +90,15 @@ export function virtualThreeThemeModelHeight(kind: VirtualThreeLayoutRoleKind, m
   if (kind === "storage") return 1.85;
   if (kind === "enclosure") return 1.8;
   return 1.5;
+}
+
+/** 납작한 지면용 꽃은 높이가 아닌 수평 크기로 배치한다. 다른 모델의 높이 기준은 유지한다. */
+export function virtualThreeThemeModelDisplaySize(kind: VirtualThreeLayoutRoleKind, modelAssetId: string): {
+  readonly axis: "height" | "ground-extent";
+  readonly meters: number;
+} {
+  if (kind === "botanical" && modelAssetId === VIRTUAL_THREE_THEME_MODEL_IDS.parkFlower) {
+    return { axis: "ground-extent", meters: 0.45 };
+  }
+  return { axis: "height", meters: virtualThreeThemeModelHeight(kind, modelAssetId) };
 }

@@ -4,7 +4,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { StudioVirtualSpaceWorldManifest } from "../../studio-virtual-space-world-manifest";
 import { createStudioThreeGlbLoader, disposeStudioThreeOwnedModel } from "../studio-virtual-space-three-asset-loader";
 import { loadVirtualThreeThemeModelSource, type VirtualThreeVerifiedThemeModelSource } from "./virtual-three-theme-model-source";
-import { createVirtualThreeThemePlacementPlanner, virtualThreeThemeModelHeight } from "./virtual-three-theme-placement";
+import { createVirtualThreeThemePlacementPlanner, virtualThreeThemeModelDisplaySize } from "./virtual-three-theme-placement";
 import type { VirtualThreeAssetRecipeTheme } from "./virtual-three-theme-types";
 
 export interface VirtualThreeStagedSourceInput {
@@ -29,12 +29,13 @@ interface LoadedSource {
 function assertActive(signal: AbortSignal): void {
   if (signal.aborted) throw new DOMException("3D 테마 준비가 취소됐습니다.", "AbortError");
 }
-function normalize(model: THREE.Object3D, targetHeight: number): THREE.Vector3 {
+function normalize(model: THREE.Object3D, display: ReturnType<typeof virtualThreeThemeModelDisplaySize>): THREE.Vector3 {
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model);
   const size = box.getSize(new THREE.Vector3());
   if (![size.x, size.y, size.z].every((value) => Number.isFinite(value) && value > 0)) throw new TypeError("3D 모델의 실제 경계를 읽을 수 없습니다.");
-  model.scale.multiplyScalar(targetHeight / size.y);
+  const extent = display.axis === "ground-extent" ? Math.max(size.x, size.z) : size.y;
+  model.scale.multiplyScalar(display.meters / extent);
   model.updateMatrixWorld(true);
   box.setFromObject(model);
   const center = box.getCenter(new THREE.Vector3());
@@ -153,7 +154,7 @@ export async function prepareVirtualThreeThemeModels(options: {
         if (node instanceof THREE.SkinnedMesh) skeletons.add(node.skeleton);
         if (node instanceof THREE.InstancedMesh) instances.add(node);
       });
-      const size = normalize(normalization, virtualThreeThemeModelHeight(role.kind, role.modelAssetId));
+      const size = normalize(normalization, virtualThreeThemeModelDisplaySize(role.kind, role.modelAssetId));
       if (role.kind === "tabletop") root.position.copy(tabletopPosition(tables, size, tabletopBounds));
       else {
         const placement = planner.place(size, role.kind);
