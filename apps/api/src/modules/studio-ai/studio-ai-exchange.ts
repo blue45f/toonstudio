@@ -421,7 +421,7 @@ export function buildStudioAiChatExchange(
           maxTokens: spec.maxTokens + STUDIO_AI_PREMIUM_THINKING_HEADROOM_TOKENS,
           effort: spec.premiumEffort,
         });
-        return body ? { headers: studioAiPremiumRequestHeaders(provider.apiKey, body), body } : null;
+        return body ? { headers: studioAiPremiumRequestHeaders(provider.apiKey, body, provider.workspaceId), body } : null;
       }
       return {
         headers: {
@@ -490,7 +490,7 @@ export function buildStudioAiMessagesExchange(
     request: (provider) => {
       if (provider.id === STUDIO_AI_PREMIUM_PROVIDER_ID) {
         const body = buildPremiumMessagesRequest(input, { model: provider.model, scope: CREATOR_SCOPE });
-        return { headers: studioAiPremiumRequestHeaders(provider.apiKey, body), body };
+        return { headers: studioAiPremiumRequestHeaders(provider.apiKey, body, provider.workspaceId), body };
       }
       return {
         headers: {

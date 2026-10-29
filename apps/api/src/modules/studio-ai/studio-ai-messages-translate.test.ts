@@ -48,6 +48,11 @@ describe("studio-ai-messages-translate", () => {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": STUDIO_AI_PREMIUM_SERVER_FALLBACK_BETA,
     });
+    expect(studioAiPremiumRequestHeaders("server-key", body!)).not.toHaveProperty("anthropic-workspace-id");
+    expect(studioAiPremiumRequestHeaders("server-key", body!, "wrkspc_01ABCdef234")).toMatchObject({
+      "x-api-key": "server-key",
+      "anthropic-workspace-id": "wrkspc_01ABCdef234",
+    });
   });
 
   it("빈 메시지는 요청을 만들지 않는다", () => {

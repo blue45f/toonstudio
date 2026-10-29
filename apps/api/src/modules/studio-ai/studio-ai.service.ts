@@ -56,6 +56,7 @@ import {
   STUDIO_AI_FREE_QUOTA_FAILOVER_REASON,
   STUDIO_AI_PREMIUM_FAILOVER_REASON,
   STUDIO_AI_PREMIUM_PROVIDER_ID,
+  studioAiPremiumErrorType,
   studioAiProviderRequestId,
   studioAiProviderStatuses,
 } from "./studio-ai-provider";
@@ -322,6 +323,23 @@ function providerFailure(
     freeQuotaExhausted: false,
     definitivelyRejectedBeforeInference: responseStatus < 500,
   };
+}
+
+const PREMIUM_REJECTION_WARN_INTERVAL_MS = 10 * 60_000;
+const premiumRejectionWarnedAt = new Map<string, number>();
+
+/**
+ * 운영 프리미엄 경로가 추론 전에 거절돼 무료 풀로 넘어갔음을 운영자가 알 수 있게 남긴다(워크스페이스 지정 누락·권한·
+ * 모델 없음·한도 등). 사용자는 무료 풀 결과를 받으므로 조용히 묻히기 쉽다. 같은 원인은 10분에 한 번만 남기고,
+ * 키·요청·응답 본문은 남기지 않는다.
+ */
+function warnPremiumRejectedBeforeInference(status: number, payload: unknown, now = Date.now()): void {
+  const errorType = studioAiPremiumErrorType(payload) ?? "unknown";
+  const key = `${status}:${errorType}`;
+  const last = premiumRejectionWarnedAt.get(key);
+  if (last !== undefined && now - last < PREMIUM_REJECTION_WARN_INTERVAL_MS) return;
+  premiumRejectionWarnedAt.set(key, now);
+  console.warn("[studio-ai] premium route rejected before inference; continuing with the free pool", { status, errorType });
 }
 
 const MAX_PROVIDER_ERROR_BODY_LENGTH = 16_384;
@@ -928,6 +946,9 @@ export class StudioAiService {
           const errorPayload = await safeProviderErrorPayload(response);
           throwIfCancelled();
           const providerError = providerFailure(provider, response.status, errorPayload);
+          if (providerError.failoverReason === STUDIO_AI_PREMIUM_FAILOVER_REASON) {
+            warnPremiumRejectedBeforeInference(response.status, errorPayload);
+          }
           outcomeStatus = providerError.status;
           lastProviderFailure = providerError.exception;
           if (providerError.definitivelyRejectedBeforeInference) {

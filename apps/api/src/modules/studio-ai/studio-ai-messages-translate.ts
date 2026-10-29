@@ -82,16 +82,21 @@ function premiumOutputExtras(
   };
 }
 
-/** 요청 본문에 맞는 Messages API 헤더. 서버 측 대체를 실을 때만 베타 헤더를 붙인다. */
+/**
+ * 요청 본문에 맞는 Messages API 헤더. 서버 측 대체를 실을 때만 베타 헤더를 붙이고, 워크스페이스에 묶이지 않은
+ * 키를 쓰면 운영자가 정한 워크스페이스 ID를 붙인다(없으면 API가 400으로 거절한다).
+ */
 export function studioAiPremiumRequestHeaders(
   apiKey: string,
   body: Pick<StudioAiPremiumRequestBody, "fallbacks">,
+  workspaceId?: string,
 ): Record<string, string> {
   return {
     "x-api-key": apiKey,
     "anthropic-version": STUDIO_AI_PREMIUM_API_VERSION,
     "Content-Type": "application/json",
     ...(body.fallbacks ? { "anthropic-beta": STUDIO_AI_PREMIUM_SERVER_FALLBACK_BETA } : {}),
+    ...(workspaceId ? { "anthropic-workspace-id": workspaceId } : {}),
   };
 }
 
