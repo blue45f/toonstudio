@@ -218,6 +218,15 @@ describe("native document CC0 MyPaint library brushes", () => {
     const pencil = planStudioNativeBrushDocument(stroke(), { ...library, mypaintBrushId: "classic/pencil" });
     expect(pencil.config.mypaintBrushId).toBe("classic/pencil");
   });
+  it("sizes the halo from the stored stroke speed and explains a reach that cannot fit the surface", () => {
+    // 같은 경로라도 저장된 시간이 빠르면 속도 곡선이 있는 브러시의 여백이 넓어진다.
+    const slow = planStudioNativeBrushDocument(stroke({ sampleTimeOffsets: [0, 400, 800] }), { ...library, mypaintBrushId: "experimental/speed_blot" });
+    const fast = planStudioNativeBrushDocument(stroke({ sampleTimeOffsets: [0, 8, 16] }), { ...library, mypaintBrushId: "experimental/speed_blot" });
+    expect(fast.bounds.width).toBeGreaterThan(slow.bounds.width);
+    const wide = stroke({ points: [100, 500, 600, 520, 1_100, 480], strokeWidth: 24 });
+    expect(() => planStudioNativeBrushDocument(wide, { ...library, documentWidth: 4_000, documentHeight: 4_000,
+      mypaintBrushId: "Dieterle/Flight_Feathers" })).toThrow(/Flight Feathers: .*여백 \d+px .*2048px/u);
+  });
   it("rejects a missing, unknown or empty-surface library brush and a non-libmypaint engine", () => {
     expect(() => planStudioNativeBrushDocument(stroke(), library)).toThrow(/라이브러리에서 브러시를 고르세요/u);
     expect(() => planStudioNativeBrushDocument(stroke(), { ...library, mypaintBrushId: "classic/nope" })).toThrow(/고르세요/u);

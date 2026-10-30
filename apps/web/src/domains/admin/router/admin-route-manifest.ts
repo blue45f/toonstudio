@@ -55,7 +55,7 @@ export const ADMIN_ROUTES: readonly AdminRouteDescriptor[] = [
   { id: "supporters", path: "/admin/monetization/supporters", labelKey: "admin.tabs.supporters", icon: "funding", keywords: ["support", "operating cost", "후원", "운영비"] },
   { id: "creatorSupport", path: "/admin/monetization/creator-support", labelKey: "admin.tabs.creatorSupport", icon: "funding", keywords: ["student", "amateur", "creator support", "학생", "아마추어", "창작자 지원"] },
   { id: "campaigns", path: "/admin/monetization/funding", labelKey: "admin.tabs.campaigns", icon: "funding", keywords: ["campaign", "funding", "후원"] },
-  { id: "inquiries", path: "/admin/growth/inquiries", labelKey: "admin.tabs.inquiries", icon: "funding", keywords: ["inquiry", "IR", "partnership", "sponsor", "투자", "제휴", "후원"] },
+  { id: "inquiries", path: "/admin/growth/inquiries", labelKey: "admin.tabs.inquiries", icon: "funding", keywords: ["inquiry", "support", "customer", "chat", "IR", "partnership", "sponsor", "고객", "상담", "채팅", "투자", "제휴", "후원"] },
   { id: "promos", path: "/admin/growth/promotions", labelKey: "admin.tabs.promos", icon: "promotions", keywords: ["promotion", "coupon", "프로모션"] },
   { id: "announcements", path: "/admin/engagement/announcements", labelKey: "admin.tabs.announcements", icon: "announcement", keywords: ["announcement", "notice", "공지"] },
   { id: "ops", path: "/admin/platform/operations", labelKey: "admin.tabs.ops", icon: "operations", keywords: ["operations", "health", "운영", "시스템"] },

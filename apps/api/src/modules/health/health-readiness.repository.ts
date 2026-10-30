@@ -2,6 +2,7 @@ import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "..
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
 
+import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
 
@@ -13,13 +14,7 @@ export const HEALTH_READINESS_REPOSITORY = Symbol(
   "HEALTH_READINESS_REPOSITORY",
 );
 
-/**
- * Every persistent relation declared by the current Drizzle model.
- *
- * Readiness deliberately checks the complete product schema rather than a small "core" subset:
- * a host must not be admitted while login works but Studio, collaboration, comments, AI quotas,
- * marketplace, or another user-visible feature has silently disappeared.
- */
+/** 기능별 영속 릴레이션을 모두 확인해 일부 기능만 빠진 호스트의 준비 완료를 막는다. */
 export const REQUIRED_DATABASE_RELATIONS = [
   "account",
   "account_merge",
@@ -123,11 +118,16 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "creator_work_review_feedback",
   "creator_work_review_link",
   "creator_work_revision",
+  "creator_work_scoped_write_policy",
+  "creator_work_scoped_write_receipt",
   "creator_work_team_comment_activity",
   "creator_work_team_comment_message",
   "creator_work_team_comment_mutation",
   "creator_work_team_comment_read",
   "creator_work_team_comment_thread",
+  "customer_support_ai_attempt",
+  "customer_support_conversation",
+  "customer_support_message",
   "fan_post",
   "fan_post_like",
   "fan_post_reply",
@@ -248,10 +248,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
 
 /**
  * Only cutovers that cannot be proven by a final-looking Drizzle schema use the durable ledger.
- * Most migrations 0018+ are represented by required relations/capabilities below. A release
- * storage cutover such as 0030 is also ledger-fenced because the runtime cannot safely query its
- * new immutable ordinal before that migration. Secondary-index-only migration 0029 stays outside
- * runtime readiness; the strict production capability verifier owns that contract.
+ * 대부분의 0018+ migration은 릴레이션·capability로 증명한다. 불변 ordinal을 쓰는 0030은 원장으로도 보호한다.
+ * 인덱스 전용 0029는 운영 capability 검증기가 확인한다.
  * Likewise 0065-0067 never write this legacy cutover ledger. Their schemas are checked via
  * required product relations and their exact checksums via toonspectrum_ops.deployment_migration.
  * Requiring fabricated legacy rows would permanently reject a correctly migrated database.
@@ -277,6 +275,7 @@ interface DatabasePingRow {
 interface SchemaCatalogRow {
   relationNames: string[] | null;
   adminColumnsReady: boolean;
+  customerSupportAclReady: boolean;
   authUserColumnsReady: boolean;
   authUserConstraintsReady: boolean;
   authUserStatusIndexReady: boolean;
@@ -340,6 +339,7 @@ export class PostgresHealthReadinessRepository
               ARRAY[]::text[]
             ) AS "relationNames",
             ${ADMIN_SCHEMA_COLUMNS_SQL} AS "adminColumnsReady",
+            ${CUSTOMER_SUPPORT_ACL_READY_SQL} AS "customerSupportAclReady",
             NOT EXISTS (
               SELECT 1
               FROM (VALUES

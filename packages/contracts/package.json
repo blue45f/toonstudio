@@ -11,6 +11,11 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
+    "./customer-support": {
+      "types": "./src/customer-support.ts",
+      "import": "./src/customer-support.ts",
+      "default": "./src/customer-support.ts"
+    },
     "./package.json": "./package.json",
     ".": {
       "types": "./src/index.ts",
@@ -306,6 +311,11 @@
       "types": "./src/studio-crdt-authoring/element-projection.ts",
       "import": "./src/studio-crdt-authoring/element-projection.ts",
       "default": "./src/studio-crdt-authoring/element-projection.ts"
+    },
+    "./studio-crdt-authoring/group-key": {
+      "types": "./src/studio-crdt-authoring/group-key.ts",
+      "import": "./src/studio-crdt-authoring/group-key.ts",
+      "default": "./src/studio-crdt-authoring/group-key.ts"
     },
     "./studio-writer-room": {
       "types": "./src/studio-writer-room.ts",

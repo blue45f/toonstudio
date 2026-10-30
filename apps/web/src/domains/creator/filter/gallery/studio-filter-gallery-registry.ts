@@ -157,7 +157,8 @@ export function studioFilterGalleryStackCost(stack: StudioFilterGalleryStack): n
   let total = 0;
   for (const entry of stack.entries) {
     if (!isStudioFilterGalleryEntryActive(entry)) continue;
-    total += findStudioFilterGalleryEffect(entry.id)?.cost ?? 0;
+    const effect = findStudioFilterGalleryEffect(entry.id);
+    if (effect) total += effect.costFor?.(entry.params) ?? effect.cost;
   }
   return total;
 }

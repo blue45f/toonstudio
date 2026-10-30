@@ -31,6 +31,7 @@ export const POSTGRES_INTEGRATION_SUITES = Object.freeze([
   "scripts/bootstrap-runtime-login-gate.integration.test.mjs",
   "apps/api/src/platform/database/admin-schema.integration.test.ts",
   "tests/integration/web-api/shared/lib/__tests__/oauth-runtime.integration.test.ts",
+  "apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts",
   "apps/api/src/modules/health/health-readiness.repository.integration.test.ts",
   "apps/api/src/modules/studio-ai/studio-ai-admission.repository.integration.test.ts",
   "apps/api/src/modules/creator/creator-asset-schema-preflight.integration.test.ts",

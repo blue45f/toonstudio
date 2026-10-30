@@ -45,7 +45,13 @@ const smoothstep = (edge0: number, edge1: number, value: number): number => {
 
 // ── 카툰 ──────────────────────────────────────────────────────────────
 
-const CARTOON_RADIUS = slider("maskRadius", "마스크 반지름", 1, 50, 0.5, 7, "px");
+/**
+ * 좁은 평균은 가장 좁은 흐림(상자 반지름 1 세 번)이고 넓은 평균의 상자 반지름은 max(1, 반지름/√3) 이다. 반지름이 √3 이하면 두 평균이
+ * 같아 δ 가 모든 픽셀에서 0 이 되고(효과 없음), 다음 칸 2 도 두 흐림이 거의 같아 가는 선 그림에서 δ 가 2% 문턱을 넘는 픽셀이 너무
+ * 적어 검정 비율이 듣지 않는다. 그래서 가는 어두운 선이 있는 그림에서 효과와 검정 비율이 함께 듣는 첫 칸 2.5 를 최소값으로 둔다
+ * (매끈한 그림에서는 더 큰 반지름부터 검정 비율이 듣는다).
+ */
+const CARTOON_RADIUS = slider("maskRadius", "마스크 반지름", 2.5, 50, 0.5, 7, "px");
 const CARTOON_BLACK = slider("pctBlack", "검정 비율", 0, 1, 0.01, 0.2);
 /** 상대 어두움 δ(−1~1) 분포를 세는 히스토그램 칸 수. */
 const CARTOON_BINS = 2048;
@@ -176,6 +182,18 @@ const SLIC_SIZE = slider("clusterSize", "덩어리 크기", 4, 64, 1, 16, "px");
 const SLIC_COMPACTNESS = slider("compactness", "조밀도", 1, 40, 1, 10);
 const SLIC_ITERATIONS = slider("iterations", "반복 횟수", 1, 10, 1, 4);
 
+/**
+ * 슈퍼픽셀 작업량(cost 1 단위 ≈ 픽셀당 50ns). Lab 변환·첫 중심·칠하기가 픽셀당 약 115~125ns 이고, 반복마다 군집 창(한 변 최대
+ * 2S + 2)이 이미지를 ((2S + 2)/S)² 번 덮어 창 픽셀마다(중심 갱신 포함) 약 15.5~16.5ns 가 든다. 계수는 256²~1024² 실측(기본값 약
+ * 385~430ns/px, 반복 10·덩어리 4 약 1080~1160ns/px, 부하가 있을 때 약 1250ns/px)을 여유 있게 덮는 값이다. 이미지가 덩어리보다 충분히
+ * 클 때의 상한이라, 이미지가 덩어리 몇 개 크기면(예: 129² 에 덩어리 64) 가장자리 군집이 창을 더 겹쳐 1.1~1.4배까지 넘지만 그런
+ * 이미지는 수십 ms 라 예산 판단에는 영향이 없다.
+ */
+function superpixelCost(params: StudioFilterGalleryParams): number {
+  const size = Math.round(SLIC_SIZE.read(params)), iterations = Math.round(SLIC_ITERATIONS.read(params));
+  return (140 + iterations * 19 * ((2 * size + 2) / size) ** 2) / 50;
+}
+
 /** sRGB 8비트 RGBA 를 CIELAB(D65) 평면 [L, a, b] 로 바꾼다. SLIC 은 지각 색 거리를 쓰므로 Lab 에서 군집한다. */
 function toLab(data: Uint8ClampedArray, count: number): Float32Array {
   const linear = new Float32Array(256);
@@ -224,7 +242,9 @@ const superpixel: StudioFilterGalleryEffectDef = {
   description: "SLIC 군집화로 색과 위치가 가까운 픽셀을 덩어리로 묶어 덩어리마다 평균색으로 칠합니다.",
   references: ["GIMP · 단순 선형 반복 클러스터링(SLIC)"],
   params: [SLIC_SIZE.spec, SLIC_COMPACTNESS.spec, SLIC_ITERATIONS.spec],
-  cost: 3,
+  // 기본값(빈 매개변수는 기본값으로 읽힌다)의 작업량이다.
+  cost: superpixelCost({}),
+  costFor: superpixelCost,
   apply(image, params) {
     const { width, height, data } = image;
     const count = width * height, step = Math.max(1, Math.round(Math.min(SLIC_SIZE.read(params), Math.max(width, height))));

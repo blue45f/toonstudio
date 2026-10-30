@@ -532,12 +532,15 @@ const MAZE_WALL = color("wallColor", "벽 색", "#000000");
 const MAZE_PATH = color("pathColor", "길 색", "#ffffff");
 const OPEN_RIGHT = 1, OPEN_DOWN = 2;
 
-/** cell 과 이웃 next 사이 벽을 튼다. 방마다 오른쪽·아래 통로 비트만 저장한다. */
+/**
+ * cell 과 이웃 next 사이 벽을 튼다. 방마다 오른쪽·아래 통로 비트만 저장한다. 세로 이웃을 먼저 본다: 방이 한 열
+ * (columns === 1)이면 cell ± columns 가 cell ± 1 과 같아 가로부터 보면 세로 통로를 오른쪽 비트로 적어 방이 끊긴다(한 열엔 가로 이웃이 없다).
+ */
 function connect(open: Uint8Array, cell: number, next: number, columns: number): void {
-  if (next === cell + 1) open[cell]! |= OPEN_RIGHT;
-  else if (next === cell - 1) open[next]! |= OPEN_RIGHT;
-  else if (next === cell + columns) open[cell]! |= OPEN_DOWN;
-  else open[next]! |= OPEN_DOWN;
+  if (next === cell + columns) open[cell]! |= OPEN_DOWN;
+  else if (next === cell - columns) open[next]! |= OPEN_DOWN;
+  else if (next === cell + 1) open[cell]! |= OPEN_RIGHT;
+  else open[next]! |= OPEN_RIGHT;
 }
 
 /** state 값이 wanted 인 상하좌우 이웃을 out 에 모으고 개수를 돌려준다. */

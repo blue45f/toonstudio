@@ -142,16 +142,6 @@ registerI18nLocaleEntries("en", {
   "studio.frozenStatus5.bg3dViewport.turntableLoading": "Loading turntable controls.",
 });
 
-// ── ProductionRoleWorkspace
-registerI18nLocaleEntries("ko", {
-  "studio.frozenStatus5.role.transitionFailed": "작업 상태를 변경하지 못했습니다.",
-  "studio.frozenStatus5.role.taskNotFound": "작업을 찾을 수 없음",
-});
-registerI18nLocaleEntries("en", {
-  "studio.frozenStatus5.role.transitionFailed": "Could not change the task status.",
-  "studio.frozenStatus5.role.taskNotFound": "Task not found",
-});
-
 // ── StudioLift3dPage
 registerI18nLocaleEntries("ko", {
   "studio.frozenStatus5.lift.decodeFailed": "이미지를 여는 중 문제가 생겼습니다. 다른 파일로 다시 시도해 주세요.",

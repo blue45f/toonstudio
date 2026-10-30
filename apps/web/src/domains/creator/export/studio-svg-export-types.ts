@@ -237,6 +237,13 @@ export type SvgExportEl =
 
 export type SvgExportTheme = "classic" | "soft" | "vivid";
 
+/**
+ * 젖은 종이 정착 베이크를 SVG 에 싣는 방식. "bake"(기본)는 캐시에 없으면 그 자리에서 굽되 내보내기 한 번의 작업량
+ * 한도 안에서만 굽는다. "base-wash" 는 굽지 않고 베이스 워시를 낸다 — 렌더 경로에서 동기로 부르는 집계·미리보기처럼
+ * 래스터 내용을 쓰지 않는 호출자용이다(굽기는 획 하나에 수백 ms 가 걸린다).
+ */
+export type SvgExportWetPaperBake = "bake" | "base-wash";
+
 export interface SvgExportPageInput {
   width: number;
   height: number;
@@ -246,6 +253,7 @@ export interface SvgExportPageInput {
   elements: readonly SvgExportEl[];
   groups?: readonly LayerGroup[];
   theme?: SvgExportTheme;
+  wetPaperBake?: SvgExportWetPaperBake;
 }
 
 /**
@@ -295,4 +303,7 @@ export interface ExportCtx {
   brushTextureSerializedUtf16Bytes: number;
   r8EmbeddedRgbaBytes: number;
   seq: number;
+  /** 젖은 종이 굽기 방식(없으면 "bake")과 이번 내보내기에서 쓴 굽기 작업량(격자 셀 × 스텝). */
+  wetPaperBake?: SvgExportWetPaperBake;
+  wetPaperCellSteps?: number;
 }

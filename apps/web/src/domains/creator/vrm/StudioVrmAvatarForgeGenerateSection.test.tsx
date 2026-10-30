@@ -5,7 +5,7 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createAvatarForgeState, type AvatarForgeState } from "./studio-vrm-avatar-forge";
-import { readAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
+import { readAvatarForgeVrmAuthoring, withAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import {
   createStudioVrmGenerateExportMetaDraft,
   STUDIO_VRM_THUMBNAIL_MAX_BYTES,
@@ -13,7 +13,7 @@ import {
   studioVrmExportProfileFromDraft,
   type StudioVrmExportProfile,
 } from "./studio-vrm-generate-export-meta";
-import { STUDIO_VRM_HAIR_SWAY_PRESETS } from "./studio-vrm-generate-hair-sway";
+import { STUDIO_VRM_HAIR_SWAY_MAX_CHAINS, STUDIO_VRM_HAIR_SWAY_PRESETS } from "./studio-vrm-generate-hair-sway";
 import { STUDIO_VRM_GENERATE_GENERATOR } from "./studio-vrm-generate-recipe";
 import { StudioVrmAvatarForgeGenerateSection } from "./StudioVrmAvatarForgeGenerateSection";
 
@@ -121,6 +121,42 @@ describe("StudioVrmAvatarForgeGenerateSection hair sway", () => {
     const still = STUDIO_VRM_HAIR_SWAY_PRESETS.find((preset) => preset.id === "still");
     expect(authoringOf(changes.at(-1))?.hairSway?.global).toEqual(still?.params);
     expect(screen.getByRole("button", { name: "앞머리" })).toBeTruthy();
+  });
+
+  it("tunes a single strand from the per-strand chips of a group", () => {
+    const { changes } = renderSection({ state: createAvatarForgeState("hime-noble") });
+    fireEvent.click(screen.getByRole("button", { name: /헤어 흔들림/u }));
+    fireEvent.click(screen.getByRole("button", { name: "앞머리" }));
+    const strands = screen.getByRole("group", { name: "앞머리 가닥별 조율" });
+    fireEvent.click(within(strands).getByRole("button", { name: "앞머리 1번 가닥" }));
+    fireEvent.change(screen.getByRole("slider", { name: "앞머리 1번 가닥 단단함" }), { target: { value: "2" } });
+
+    const hairSway = authoringOf(changes.at(-1))?.hairSway;
+    expect(hairSway?.groups).toBeUndefined();
+    expect(Object.values(hairSway?.chains ?? {})).toEqual([{ stiffness: 2 }]);
+    expect(within(strands).getByRole("button", { name: "앞머리 1번 가닥 (조정됨)" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /헤어 흔들림/u }).textContent).toContain("묶음·가닥 1곳");
+  });
+
+  it("ignores strand tweaks the current hair does not have, so a new tweak still sticks", () => {
+    // 이전 헤어들에서 쌓인 가닥 조정이 상한까지 차 있고, 지금 헤어(히메컷)에는 그 가닥들이 없다.
+    const stale = Object.fromEntries(
+      Array.from({ length: STUDIO_VRM_HAIR_SWAY_MAX_CHAINS }, (_unused, index) => [`aa-${index}`, { gravity: 2 }]),
+    );
+    const { changes } = renderSection({
+      state: withAvatarForgeVrmAuthoring(createAvatarForgeState("hime-noble"), { hairSway: { chains: stale } }),
+    });
+    expect(screen.getByRole("button", { name: /헤어 흔들림/u }).textContent).not.toContain("묶음·가닥");
+
+    fireEvent.click(screen.getByRole("button", { name: /헤어 흔들림/u }));
+    fireEvent.click(screen.getByRole("button", { name: "앞머리" }));
+    const strands = screen.getByRole("group", { name: "앞머리 가닥별 조율" });
+    fireEvent.click(within(strands).getByRole("button", { name: "앞머리 1번 가닥" }));
+    fireEvent.change(screen.getByRole("slider", { name: "앞머리 1번 가닥 단단함" }), { target: { value: "2" } });
+
+    // 쌓인 조정에 밀려 버려지지 않고, 지금 헤어에 없는 가닥의 조정은 함께 걷힌다.
+    expect(Object.values(authoringOf(changes.at(-1))?.hairSway?.chains ?? {})).toEqual([{ stiffness: 2 }]);
+    expect(screen.getByRole("button", { name: /헤어 흔들림/u }).textContent).toContain("묶음·가닥 1곳");
   });
 
   it("offers only the hair groups that actually sway in the generated VRM", () => {

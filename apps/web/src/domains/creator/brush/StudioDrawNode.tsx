@@ -1,4 +1,4 @@
-import { memo, useEffect, useReducer, useRef, useState } from "react";
+import { memo, useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   Arrow,
   Circle as KCircle,
@@ -16,6 +16,7 @@ import {
   STUDIO_GPU_BRISTLE_BRUSH_ID_PREFIX,
   studioGpuBristleOilRequest,
 } from "../render/studio-gpu-bristle-host";
+import { refreshStudioRasterPresentationCaches } from "../render/studio-raster-presentation-cache";
 import {
   buildCalligraphySegments,
   processFreehandPoints,
@@ -199,6 +200,7 @@ import type { StudioPaperSurfaceSettings } from "./studio-paper-granulation-runt
 import type { StudioPatternSpec } from "../studio-pattern-fill";
 import type { StudioPerfectFreehandStroker } from "../studio-perfect-freehand";
 import type { StudioRoughGeneratorHandle } from "../studio-rough-shape";
+import type Konva from "konva";
 
 export { STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT };
 
@@ -409,6 +411,17 @@ export const StudioDrawNode = memo(function StudioDrawNode({
     (generation: number) => (generation + 1) | 0,
     0,
   );
+  // 젖은 종이 요청자(렌더 인스턴스 + 대칭 변형): 같은 획을 고치는 동안 지나간 모양·색의 굽기를 버린다.
+  const bakeRequesterId = useId();
+  const rootGroupRef = useRef<Konva.Group | null>(null);
+  // 정착 베이크가 도착하면 캐시된 조상(블렌드·마스크·조정 그룹)이 베이스 워시 픽셀을 계속 그리지 않게, 가장
+  // 가까운 캐시 소유자부터 다시 만든다(늦게 도착한 이미지와 같은 규칙).
+  useLayoutEffect(() => {
+    const group = rootGroupRef.current;
+    if (livingInkBakeGeneration === 0 || !group) return;
+    refreshStudioRasterPresentationCaches(group);
+    group.getLayer()?.batchDraw();
+  }, [livingInkBakeGeneration]);
   // Opt-in GPU bristle overlay (dli position-based-dynamics chain + per-pixel impasto). The lane
   // advances in a Worker off the render path and this counter is bumped when a result lands, so
   // the compiled (React Compiler) render body re-executes the request and picks up the bitmap.
@@ -608,6 +621,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
 
   return (
     <Group
+      ref={rootGroupRef}
       studioElementId={exposeSceneIdentity ? el.id : undefined}
       globalCompositeOperation={isEraserOperation ? "destination-out" : undefined}
       listening={false}
@@ -1863,6 +1877,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                   color: stroke,
                   onBakeReady: notifyLivingInkBakeReady,
                   bakeGeneration: livingInkBakeGeneration,
+                  requester: `${bakeRequesterId}#${index}`,
                 });
             const dabs = settledSurface?.dabs ?? liveWetWashPlan?.dabs ?? [];
             const wetRibbonPlan = liveWetWashPlan

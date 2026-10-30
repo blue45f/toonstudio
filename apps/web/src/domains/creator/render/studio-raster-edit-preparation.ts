@@ -15,7 +15,7 @@ import {
 import { isEffectivelyHidden, isEffectivelyLocked } from "../studio-layers";
 import { createStudioVectorReferenceSourceBudgetReceipt } from "../studio-vector-reference-source-budget-receipt";
 
-import type { SvgExportResult, SvgExportTheme } from "../export/studio-svg-export";
+import type { SvgExportResult, SvgExportTheme, SvgExportWetPaperBake } from "../export/studio-svg-export-types";
 import type { El, ImageEl } from "../studio-element-model";
 import type { LayerGroup } from "../studio-layers";
 import type {
@@ -773,7 +773,7 @@ interface StudioRasterPreparationAnalysis {
 
 function analyzeStudioRasterPreparationSources(
   input: StudioRasterPreparationSourceSummaryInput,
-  preparedExport?: SvgExportResult,
+  preparedExport?: SvgExportResult, wetPaperBake: SvgExportWetPaperBake = "bake",
 ): StudioRasterPreparationAnalysis {
   const groups = [...(input.groups ?? [])];
   const visible = input.elements.filter((element) => !isEffectivelyHidden(element, groups));
@@ -858,7 +858,7 @@ function analyzeStudioRasterPreparationSources(
     height: input.height,
     elements: svgExportElements(visibleContributing),
     groups,
-    theme: input.theme,
+    theme: input.theme, wetPaperBake,
     transparentBg: !(input.hasPageBackground ?? true),
     bg: input.bg,
     bgGrad: input.bgGrad,
@@ -904,7 +904,7 @@ function analyzeStudioRasterPreparationSources(
 export function summarizeStudioRasterPreparationSources(
   input: StudioRasterPreparationSourceSummaryInput,
 ): StudioRasterPreparationSourceSummary {
-  return analyzeStudioRasterPreparationSources(input).summary;
+  return analyzeStudioRasterPreparationSources(input, undefined, "base-wash").summary; // 집계는 픽셀을 쓰지 않아 굽지 않는다.
 }
 
 /**

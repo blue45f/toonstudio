@@ -1,19 +1,8 @@
 import { expect, test } from "./fixtures/non-studio-test";
-
-import type { Locator } from "@playwright/test";
+import { expectReadableControl } from "./helpers/expect-readable-control";
 
 const backup = { _app: "toonstudio-library", version: 1, ratings: { "isolated-work": 4.5 }, reads: {}, subscriptions: {}, reviews: {}, likedReviews: {}, collections: [] };
 const reference = { id: 'kmas:["id","non-studio-control-fixture"]', title: "검증용 가상 작품", subtitle: "테스트 데이터", writer: "검증용 작가", illustrator: "검증용 작가", publisher: "검증용 출판사", platform: "", genre: "테스트", age: "전체연령", isbn: "", outline: "테스트용 줄거리" };
-
-async function expectReadableSolidControl(locator: Locator): Promise<void> {
-  await expect(locator).toBeVisible();
-  const colors = await locator.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { foreground: style.color, background: style.backgroundColor };
-  });
-  expect(colors.background).not.toBe("rgba(0, 0, 0, 0)");
-  expect(colors.foreground).not.toBe(colors.background);
-}
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
@@ -34,53 +23,58 @@ test("workspace primary controls keep their explicit foreground colors", async (
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.goto("/sitemap");
-  await expectReadableSolidControl(page.getByRole("link", { name: "새 프로젝트", exact: true }));
-  await expectReadableSolidControl(page.getByRole("link", { name: "제보·제안", exact: true }));
+  await expectReadableControl(page.getByRole("link", { name: "새 프로젝트", exact: true }));
+  await expectReadableControl(page.getByRole("link", { name: "제보·제안", exact: true }));
 
   await page.goto("/events");
-  await expectReadableSolidControl(page.getByRole("link", { name: "이벤트 보기", exact: true }));
+  const eventAction = page.locator(".events-hub__hero a.mk-button--primary");
+  await expect(eventAction).toHaveAccessibleName(/\S/u);
+  await expect(eventAction).toHaveAttribute("href", /^\/(?:events\/[^/]+|community\/events)$/u);
+  await expectReadableControl(eventAction);
 
   await page.goto("/events/beta-open");
   const signupButtons = page.getByRole("button", { name: "가입하고 6개월 무료 받기", exact: true });
   await expect(signupButtons).toHaveCount(2);
-  await expectReadableSolidControl(signupButtons.first());
-  await expectReadableSolidControl(signupButtons.last());
+  await expectReadableControl(signupButtons.first());
+  await expectReadableControl(signupButtons.last());
 
   await page.goto("/membership/usage");
-  await expectReadableSolidControl(page.getByRole("link", { name: "설정으로 이동", exact: true }));
+  await expectReadableControl(page.getByRole("button", { name: "로그인하기", exact: true }));
 
   await page.goto("/membership");
-  await expectReadableSolidControl(page.getByRole("link", { name: "내 설정 보기", exact: true }));
+  await expectReadableControl(page.getByRole("link", { name: "요금제 비교 보기", exact: true }));
 
   await page.goto("/about/workflow");
-  await expectReadableSolidControl(page.getByRole("link", { name: "내 작업으로 이동", exact: true }));
+  await expectReadableControl(page.getByRole("link", { name: "내 작업으로 이동", exact: true }));
 
   await page.goto("/accessibility");
-  await expectReadableSolidControl(page.getByRole("button", { name: "포커스 확인 버튼", exact: true }));
+  await expectReadableControl(page.getByRole("button", { name: "포커스 확인 버튼", exact: true }));
 
   await page.goto("/studio/engines");
-  await expectReadableSolidControl(page.getByRole("link", { name: "작업 큐 열기", exact: true }));
+  await expectReadableControl(page.getByRole("link", { name: "작업 큐 열기", exact: true }));
 
   await page.goto("/studio/toolchain");
-  await expectReadableSolidControl(page.getByRole("link", { name: "제작 작업 시작", exact: true }));
+  await expectReadableControl(page.getByRole("link", { name: "제작 작업 시작", exact: true }));
 });
 
 test.describe("mobile campus map keyboard focus", () => {
-  // The spatial campus owns this route and suppresses the marketing overlay.
-  // Disable the optional fixture handler so this round trip observes only the map dialog.
+  // 공간 지도는 Studio 작업실이 소유한다. 선택적 마케팅 닫기 동작을 끄고
+  // 실제 지도 대화상자만 대상으로 키보드 진입·복귀를 확인한다.
   test.use({ dismissBetaEvent: false });
 
   test("campus map opens, closes with Escape and restores keyboard focus", async ({ page }) => {
-    await page.goto("/about");
+    await page.goto("/studio");
+    await expect(page.getByRole("region", { name: "작품 관리", exact: true })).toBeVisible();
     await expect(page.locator('[role="dialog"][aria-labelledby="beta-open-gate-title"]')).toHaveCount(0);
     const trigger = page.getByRole("button", { name: "공간 지도 열기", exact: true });
     const map = page.getByRole("dialog", { name: "창작 세계의 공간 지도", exact: true });
     await trigger.focus();
-    await trigger.click();
+    await page.keyboard.press("Enter");
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
     await expect(map).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(map).toBeHidden();
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await expect(trigger).toBeFocused();
   });
 });
@@ -95,10 +89,16 @@ test("anonymous account gate opens and dismisses login without submitting creden
 
 test("settings preserve preferences and require explicit valid backup replacement", async ({ page }, testInfo) => {
   await page.goto("/settings");
-  const hundred = page.getByRole("button", { name: "100점", exact: true });
+  const scale = page.getByRole("radiogroup", { name: "평점 표시 단위", exact: true });
+  const hundred = scale.getByRole("radio", { name: "100점", exact: true });
   await hundred.click();
+  await expect(hundred).toBeChecked();
   await page.reload();
-  await expect(hundred).toHaveAttribute("aria-pressed", "true");
+  await expect(hundred).toBeChecked();
+  const dataTab = page.getByRole("tab", { name: "내 데이터", exact: true });
+  await dataTab.click();
+  await expect(dataTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("region", { name: "내 데이터", exact: true })).toBeVisible();
   const files = page.getByLabel("서재 백업 파일");
   const initial = await page.evaluate(() => JSON.parse(localStorage.getItem("toonstudio-store") ?? "{}").state?.ratings);
   await files.setInputFiles({ name: "unrelated.json", mimeType: "application/json", buffer: Buffer.from("{}") });

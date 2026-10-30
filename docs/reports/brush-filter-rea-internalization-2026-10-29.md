@@ -25,7 +25,7 @@
 
 | 빈자리(분석 시점) | 이번에 한 일 | 상태 |
 | --- | --- | --- |
-| MyPaint 브러시를 근사 엔진으로만 그림(실제 libmypaint WASM은 이미 있었음) | mypaint-brushes(CC0) 196종을 실제 libmypaint 1.6.1 WASM으로 변환. 표면 요구 분류와 첫 샘플 프라이밍을 더함 | current |
+| MyPaint 브러시를 근사 엔진으로만 그림(실제 libmypaint WASM은 이미 있었음) | mypaint-brushes(CC0) 196종을 실제 libmypaint 1.6.1 WASM으로 변환. 표면 요구 분류와 첫 샘플 프라이밍을 더함. 리뷰 뒤 변환 여백을 곡선 직선 연장·저장된 획 속도·추적 잡음으로 추정하도록 고침 | current |
 | 절차 브러시(이웃 점 연결·털·리본 등)가 없음 | 브러시 스튜디오 V6 위상 커널로 16종을 더함. Harmony 개념 10종은 독립 구현, Klecks sketchy·chemy는 MIT 이식, Krita 매뉴얼 개념 4종 | current |
 | 잠재 안료 혼합이 CPU 반복 풀이뿐이라 획 단위로만 씀 | 33³ 표 고속 경로(약 75배), WGSL·GLSL 셰이더와 TS 재현, 혼색 브러시 "섞는 방식" 선택 | current. 셰이더는 아직 제품 GPU 렌더러에 연결되지 않음 |
 | 필압 곡선·종이 이빨을 셰이더 안에서 평가하지 않음 | 텍스처 브러시 셰이더가 필압 LUT와 이빨 문턱을 직접 평가 | 구현됨, 제품에서는 꺼짐(CPU 기준 렌더러 패리티 조건) |
@@ -58,7 +58,7 @@
 | `Aureliaar/sumi` | MIT | `ev_7f67be77…` (JS 6개, 발견 9) | 붓 쓸기(sweep)·제스처 맞춤 기반 수묵 획, `public/sumi.js` 강모·다발 지도와 `FS_DAB` 갈필 문턱 | 강모·다발 지도와 갈필 문턱을 출처 고지와 함께 이식(`studio-wet-paper-bristle.ts`, 8절) |
 | `AndrewVoirol/watercolor-workbook` (`watercolor-zen-webgpu`) | MIT(package.json) | `ev_28cd7153…` (JS 64개, 발견 365) | WebGPU WGSL 계산 파이프라인: 털 물리, 이류, 모세관 확산, 붓 주입, KM 렌더, 투영, 증발·고착(가장자리 짙어짐), 화선지 생성 | 셰이더 단계 분할을 습식 굽기·GPU 경로 설계에 참고 |
 | `bitbof/klecks` | MIT | `ev_10b7dd72…` (JS 369개, AST 260,347, 발견 3,707) | 브러시(sketchy·chemy·pen·blend·pixel 등), 필터, 레이어 기능 | sketchy·chemy를 출처 고지와 함께 이식(`brush-studio-v6-procedural-klecks-kernels.ts`) |
-| `mypaint/libmypaint` 1.6.1 | ISC | 소스 직접 열람 | 매핑(구간 선형 가산), Knuth ranf, `stroke_to`·덥 계산, 스머지 버킷, 분광 WGM, 1.6.1 `mypaint_brush_stroke_to` 는 레거시 경로(paint_mode·posterize 없음) | 저장소에 고정된 WASM을 그대로 실행. 레거시 경로 한계를 문서화 |
+| `mypaint/libmypaint` 1.6.1 | ISC | 소스 직접 열람 | 매핑(구간 선형 가산, 끝 구간 직선 연장), 속도 지수 평균·추적 잡음 건너뛰기, Knuth ranf, `stroke_to`·덥 계산, 스머지 버킷, 분광 WGM, 1.6.1 `mypaint_brush_stroke_to` 는 레거시 경로(paint_mode·posterize 없음) | 저장소에 고정된 WASM을 그대로 실행. 레거시 경로 한계를 문서화 |
 | `mypaint/mypaint-brushes` | CC0 | 소스 직접 열람 | `.myb` v3 196종 | 196종 전부 변환. 지우개 8·스머지 전용 30·포스터화 1은 표면 요구로 차단 |
 | Photopea | 독점 | `ev_2ae262de…`, `ev_db81a764…`, `ev_1f39b01c…` | 2절 참고 | 고유 구현 [미확인] |
 

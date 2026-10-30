@@ -6,6 +6,7 @@
  * Studio 진입 청크에 솔버 코드가 실리지 않는다. SVG 내보내기(이미 지연 청크)는 솔버를 정적으로 import 한다.
  */
 
+export { advanceWetPaperBristleFieldBuild } from "./studio-wet-paper-bristle";
 export {
   advanceWetPaperSolve,
   createWetPaperSolve,

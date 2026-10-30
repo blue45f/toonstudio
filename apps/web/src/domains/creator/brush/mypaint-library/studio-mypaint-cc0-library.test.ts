@@ -4,6 +4,7 @@ import {
   applyMybSettings, createLibMypaintIncrementalStrokeSession,
 } from "../../../../../../../packages/studio-brush-platform/src/libmypaint";
 import { loadLibMypaint } from "../../../../../../../packages/studio-brush-platform/src/libmypaint/index";
+import { planStudioNativeBrushDocument } from "../studio-native-brush-document-contract";
 import { validateNativeBrushOutputPixels } from "../studio-native-brush-output-validation";
 
 import {
@@ -17,6 +18,7 @@ import {
 } from "./studio-mypaint-cc0-library-program";
 
 import type { LibMypaintRaw } from "../../../../../../../packages/studio-brush-platform/src/libmypaint/index";
+import type { DrawEl } from "../../studio-element-model";
 
 /** libmypaint 1.6.1 brushsettings.json 의 설정 64개와 입력 18개(제품 WASM 과 같은 버전). */
 const SETTINGS_161 = new Set([
@@ -163,34 +165,45 @@ describe("CC0 MyPaint brush programs", () => {
   });
 });
 
+/**
+ * 빠른 획 재현의 기대 결과: 그린 획은 표면 안에 머물고, 표면이 2048px 를 넘는 획은 계획 단계에서 거부된다.
+ * bubble 24px·600px 획과 fur 24px 튕김은 실측 도달이 480·621px 지만, 추정은 곡선마다 최댓값을 동시에 더하고 dab 가장자리를
+ * 반지름 끝까지 보는 기하 상한이라 여백이 1163·1693px 가 되어 거부된다(잘린 결과 대신 미리 알리는 쪽).
+ */
+const FAST_STROKE_OUTCOMES = {
+  rendered: ["experimental/fur@16/96", "experimental/soft@8/40", "experimental/soft@24/40", "experimental/bubble@8/40", "experimental/track@24/20"],
+  rejected: ["experimental/bubble@24/40", "experimental/fur@24/20"],
+};
+
 describe("CC0 MyPaint library on the pinned libmypaint 1.6.1 WASM", () => {
   let lmp: LibMypaintRaw;
   beforeAll(async () => { lmp = await loadLibMypaint(); }, 60_000);
 
   it("renders every paint brush with ink inside its planned halo and blocks the rest honestly", () => {
     const strokeWidth = 160, strokeHeight = 60;
+    // 계획 단계와 같이 그릴 표본의 위치·시간으로 여백을 정한다(속도는 평행 이동과 무관하다).
+    const curve = Array.from({ length: 96 }, (_, index) => {
+      const t = index / 95;
+      return { x: strokeWidth * t, y: 30 + 25 * Math.sin(t * Math.PI * 2), pressure: 0.3 + 0.6 * Math.sin(t * Math.PI), tMs: index * 8 };
+    });
     const outcomes = new Map<string, { inked: boolean; blocked: boolean }>();
     const oversizedAtEight: string[] = [];
     for (const row of STUDIO_MYPAINT_CC0_LIBRARY_ROWS) {
       const brush = findStudioMypaintCc0Brush(row[0])!;
-      // 깃털·물보라 브러시는 반지름의 수백 배까지 닿아, 8px 에서는 계획 표면이 제품 한도 2048px 를 넘는다.
+      // 깃털·물보라·잡음 브러시는 반지름의 수백 배까지 닿아, 8px 에서는 계획 표면이 제품 한도 2048px 를 넘는다.
       // 계획이 자르지 않고 거부하므로 그런 브러시는 2px 로 검증한다.
-      const fits = (diameter: number) => strokeWidth + 2 * studioMypaintCc0Halo(brush, diameter) <= 2048;
+      const fits = (diameter: number) => strokeWidth + 2 * studioMypaintCc0Halo(brush, diameter, curve) <= 2048;
       if (!fits(8)) oversizedAtEight.push(row[0]);
       const diameter = fits(8) ? 8 : 2;
       const program = buildStudioMypaintCc0Program(row, { color: "#204060", diameterPx: diameter });
-      const halo = studioMypaintCc0Halo(brush, diameter);
+      const halo = studioMypaintCc0Halo(brush, diameter, curve);
       const surface = { width: strokeWidth + 2 * halo, height: strokeHeight + 2 * halo };
       const session = createLibMypaintIncrementalStrokeSession(lmp, program.document,
         { ...surface, seed: 7, primeAtFirstSample: true });
       try {
         expect(session.settings.unknownSettings, row[0]).toEqual([]);
         expect(session.settings.unknownInputs, row[0]).toEqual([]);
-        session.append(Array.from({ length: 96 }, (_, index) => {
-          const t = index / 95;
-          return { x: halo + strokeWidth * t, y: halo + 30 + 25 * Math.sin(t * Math.PI * 2),
-            pressure: 0.3 + 0.6 * Math.sin(t * Math.PI), tiltX: 0, tiltY: 0, tMs: index * 8 };
-        }));
+        session.append(curve.map((point) => ({ ...point, x: halo + point.x, y: halo + point.y, tiltX: 0, tiltY: 0 })));
         const frame = session.finish();
         let inked = false;
         for (let offset = 3; offset < frame.length && !inked; offset += 4) inked = frame[offset] !== 0;
@@ -210,6 +223,50 @@ describe("CC0 MyPaint library on the pinned libmypaint 1.6.1 WASM", () => {
     // 빈 표면 브러시는 비어 있어야 한다. 단 포스터화 브러시는 고정된 레거시 획 경로가 일반 칠하기로 그린다.
     expect([...outcomes].filter(([, outcome]) => outcome.blocked && outcome.inked).map(([id]) => id))
       .toEqual(["Dieterle/Posterizer"]);
+  }, 120_000);
+
+  it("plans fast strokes from their stored speed so ink never reaches the surface edge, or rejects them honestly", () => {
+    // 리뷰 재현: 이전 추정(곡선 점 최댓값·고정 속도)은 이 획들에서 여백을 모자라게 잡아 매번 출력 검증에 걸렸다.
+    const sCurve = Array.from({ length: 96 }, (_, index) => {
+      const t = index / 95; // 200×80 S 곡선, 약 700px/s
+      return { x: 200 * t, y: 40 + 40 * Math.sin(t * Math.PI * 2), pressure: 0.2 + 0.8 * Math.sin(t * Math.PI), tMs: index * 8 };
+    });
+    const line = (count: number) => Array.from({ length: count }, (_, index) => ({
+      x: (600 * index) / (count - 1), y: 0, pressure: 0.3 + 0.7 * (index / (count - 1)), tMs: index * 8,
+    }));
+    const cases = [
+      { id: "experimental/fur", diameter: 16, samples: sCurve },
+      ...["experimental/soft", "experimental/bubble"].flatMap((id) => [8, 24].map((diameter) => ({ id, diameter, samples: line(40) }))),
+      ...["experimental/track", "experimental/fur"].map((id) => ({ id, diameter: 24, samples: line(20) })),
+    ];
+    const rendered: string[] = [], rejected: string[] = [];
+    for (const { id, diameter, samples } of cases) {
+      const label = `${id}@${diameter}/${samples.length}`;
+      const source: DrawEl = { id: "fast", type: "draw", kind: "freehand", mode: "pen", brush: "gpen", name: "fast",
+        points: samples.flatMap((sample) => [sample.x + 20_000, sample.y + 20_000]), stroke: "#204060", strokeWidth: diameter,
+        pressures: samples.map((sample) => sample.pressure), sampleTimeOffsets: samples.map((sample) => sample.tMs) };
+      let plan: ReturnType<typeof planStudioNativeBrushDocument>;
+      try {
+        plan = planStudioNativeBrushDocument(source, { engine: "libmypaint", style: "mypaint-library", mypaintBrushId: id,
+          documentWidth: 40_000, documentHeight: 40_000 });
+      } catch (error) {
+        expect(error, label).toBeInstanceOf(RangeError);
+        rejected.push(label);
+        continue;
+      }
+      const program = buildStudioMypaintCc0Program(findStudioMypaintCc0BrushRow(STUDIO_MYPAINT_CC0_LIBRARY_ROWS, id)!,
+        { color: "#204060", diameterPx: diameter });
+      const session = createLibMypaintIncrementalStrokeSession(lmp, program.document,
+        { ...plan.surface, seed: plan.config.seed, primeAtFirstSample: true });
+      try {
+        session.append(plan.samples);
+        const frame = session.finish();
+        expect(() => validateNativeBrushOutputPixels(frame, { x: 0, y: 0, ...plan.surface }, plan.surface, plan.clipEdges), label)
+          .not.toThrow();
+        rendered.push(label);
+      } finally { session.dispose(); }
+    }
+    expect({ rendered, rejected }).toEqual(FAST_STROKE_OUTCOMES);
   }, 120_000);
 
   it("starts slow-tracking brushes at the first sample only when priming is requested", () => {

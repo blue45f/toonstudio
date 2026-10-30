@@ -121,7 +121,10 @@ function paintWith(image: StudioFilterGalleryImage, tone: Float32Array, params: 
 /**
  * 알파 가중 휘도 평면(0~255). 휘도×알파와 알파를 따로 가우시안으로 흐린 뒤 나누므로 투명 픽셀의 RGB 가
  * 이웃으로 번지지 않고, 반대로 투명 픽셀 자리는 이웃 값으로 채워져 기울기 계산이 안전해진다. 흐림 창 안에
- * 불투명 픽셀이 전혀 없는 곳(보이지 않는 완전 투명 영역)은 0 으로 둔다. radius 가 0.5 보다 작으면 흐리지 않는다.
+ * 불투명 픽셀이 전혀 없는 곳(흐림 창보다 먼 완전 투명 영역)은 실루엣에서 바깥으로 한 겹씩 벗겨 나가며 가장 가까운 값으로
+ * 채운다. 그 자리를 0(검정)으로 두면 흐림 창보다 멀리 닿는 뒤 단계(석고 덩어리 흐림, 목탄 번짐, 찢긴 가장자리 표본 이동,
+ * 메모지 층 흐림·요철)가 보이지 않는 검은 영역을 형태로 읽어 보이는 픽셀에 음영·잉크를 남긴다. radius 가 0.5 보다
+ * 작으면 흐리지 않는다.
  */
 export function alphaWeightedLuma(image: StudioFilterGalleryImage, radius: number): Float32Array {
   if (radius < 0.5) return lumaPlane(image);
@@ -135,10 +138,93 @@ export function alphaWeightedLuma(image: StudioFilterGalleryImage, radius: numbe
   }
   gaussianPlane(weight, width, height, radius);
   gaussianPlane(plane, width, height, radius);
+  let uncovered = false;
   for (let index = 0; index < plane.length; index += 1) {
-    plane[index] = weight[index] > 1e-4 ? plane[index] / weight[index] : 0;
+    if (weight[index] > 1e-4) {
+      plane[index] = plane[index] / weight[index];
+    } else {
+      plane[index] = 0;
+      weight[index] = 0;
+      uncovered = true;
+    }
   }
+  if (!uncovered) return plane;
+  // 채움 원천은 흐림 창 안의 투명 테두리(실루엣 바로 바깥으로 연장된 값)다. 불투명한 그림 속은 백만분의 일만 쳐서(덮인 칸
+  // 표시로 0 보다 크게만 둔다), 밝은 속을 어두운 윤곽이 두른 그림 바깥이 속 색으로 밝아지지(후광) 않게 한다.
+  for (let index = 0; index < weight.length; index += 1) weight[index] *= 1.000001 - data[index * 4 + 3] / 255;
+  fillUncovered(plane, weight, width, height);
   return plane;
+}
+
+const DIAGONAL_WEIGHT = Math.SQRT1_2;
+
+/**
+ * weight 가 0 인 칸을 덮인 칸에서 바깥으로 한 겹(8-이웃)씩 벗겨 나가며, 앞 겹까지 채워진 이웃의 가중 평균으로 채운다
+ * (대각 이웃은 1/√2). 한 겹은 동시에 정해 순서에 따르지 않고, 국소적이라 먼 곳의 다른 톤이 섞이지 않으며 그림을 옮기거나
+ * 투명 여백을 늘려도 채움이 그대로다(예전 당기기·밀기 피라미드는 거친 층 평균이 밝은 선 옆 빈칸을 어둡게 했고 2×2
+ * 격자 정렬에 따라 결과가 출렁였다). 덮인 칸 값은 바꾸지 않고 작업량은 픽셀 수에 비례한다. 덮인 칸이 없으면 0 으로 둔다.
+ */
+function fillUncovered(values: Float32Array, weight: Float32Array, width: number, height: number): void {
+  const count = width * height;
+  // 0 빈칸, 1 덮였거나 채워짐, 2 이번 겹 후보.
+  const state = new Uint8Array(count);
+  let filled = 0;
+  for (let index = 0; index < count; index += 1) {
+    if (weight[index] > 0) {
+      state[index] = 1;
+      filled += 1;
+    }
+  }
+  if (filled === 0 || filled === count) return;
+  let frontier = new Int32Array(count);
+  let next = new Int32Array(count);
+  const layerValues = new Float32Array(count);
+  const layerWeights = new Float32Array(count);
+  const enqueueEmptyNeighbours = (index: number, queue: Int32Array, length: number): number => {
+    const x = index % width, y = (index - x) / width;
+    for (let ny = Math.max(0, y - 1); ny <= Math.min(height - 1, y + 1); ny += 1) {
+      for (let nx = Math.max(0, x - 1); nx <= Math.min(width - 1, x + 1); nx += 1) {
+        const neighbour = ny * width + nx;
+        if (state[neighbour] !== 0) continue;
+        state[neighbour] = 2;
+        queue[length] = neighbour;
+        length += 1;
+      }
+    }
+    return length;
+  };
+  let size = 0;
+  for (let index = 0; index < count; index += 1) if (state[index] === 1) size = enqueueEmptyNeighbours(index, frontier, size);
+  while (size > 0) {
+    for (let k = 0; k < size; k += 1) {
+      const index = frontier[k];
+      const x = index % width, y = (index - x) / width;
+      let sum = 0, total = 0, sources = 0;
+      for (let ny = Math.max(0, y - 1); ny <= Math.min(height - 1, y + 1); ny += 1) {
+        for (let nx = Math.max(0, x - 1); nx <= Math.min(width - 1, x + 1); nx += 1) {
+          const neighbour = ny * width + nx;
+          if (state[neighbour] !== 1) continue;
+          const share = weight[neighbour] * (nx === x || ny === y ? 1 : DIAGONAL_WEIGHT);
+          sum += values[neighbour] * share;
+          total += share;
+          sources += 1;
+        }
+      }
+      layerValues[k] = total > 0 ? sum / total : 0;
+      layerWeights[k] = sources > 0 ? total / sources : 0;
+    }
+    for (let k = 0; k < size; k += 1) {
+      const index = frontier[k];
+      values[index] = layerValues[k];
+      // 바깥 겹도 다음 겹의 원천이 되도록 0 보다 큰 무게를 남긴다.
+      weight[index] = layerWeights[k] > 0 ? layerWeights[k] : 1e-12;
+      state[index] = 1;
+    }
+    let nextSize = 0;
+    for (let k = 0; k < size; k += 1) nextSize = enqueueEmptyNeighbours(frontier[k], next, nextSize);
+    [frontier, next] = [next, frontier];
+    size = nextSize;
+  }
 }
 
 /**
@@ -661,10 +747,20 @@ const waterPaper: StudioFilterGalleryEffectDef = {
           // 같은 경로를 따라 백색 잡음을 적분하면(선적분 합성곱) 흐름 방향의 종이 섬유 결이 생긴다.
           grain += hash2(sx, sy, seed + 4);
         }
+        const offset = index * 4;
+        // 표본 무게(알파 합)가 이 픽셀 알파보다 작으면 모자란 만큼 제 색으로 채운다. 짝수 표본 수는 가운데 픽셀을 건너뛰어
+        // 표본이 투명하거나 희미한 가장자리에만 닿을 수 있는데, 그때 거의 불투명한 선이 희미한 픽셀의 양자화된 색으로 통째로
+        // 바뀌지 않고 알파 0↔1 사이에서도 결과가 이어진다. 불투명·균일 알파 입력은 표본 무게가 늘 더 커서 그대로다.
+        const deficit = source[offset + 3] - total;
+        if (deficit > 0) {
+          red += source[offset] * deficit;
+          green += source[offset + 1] * deficit;
+          blue += source[offset + 2] * deficit;
+          total += deficit;
+        }
         if (total <= 0) continue;
         // 섬유 결 + 섬유 길이보다 큰 얼룩(젖은 종이의 물 자국).
         const fibre = 0.92 + 0.16 * valueNoise2(x / (fiber * 1.5), y / (fiber * 1.5), seed + 5) + (grain / steps - 0.5) * fibreContrast;
-        const offset = index * 4;
         data[offset] = ((red / total - 128) * gain + 128 + lift) * fibre;
         data[offset + 1] = ((green / total - 128) * gain + 128 + lift) * fibre;
         data[offset + 2] = ((blue / total - 128) * gain + 128 + lift) * fibre;

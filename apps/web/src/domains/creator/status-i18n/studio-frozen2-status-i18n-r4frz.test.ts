@@ -83,8 +83,9 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
 /**
  * 이관 뒤에도 남는 탐지기 위반 수(실측 고정). 전부 상태 채널이 아닌 부류다:
  * PublishPackage는 표시 prop 라벨 3건, PublicationOperations는 IANA 설명
- * 본문 1건, Hybrid는 생산자 진단 message 필드 3건(throw 채널과 함께 별도
- * 설계 대상). 나머지 파일은 0이어야 한다.
+ * 본문 1건만 남는다. Hybrid의 생산자 진단 message 필드 3건(throw 채널과 함께
+ * 별도 설계 대상)은 2026-10-29(527f64f1)에 studio-hybrid-dcc-viewport-snapshot.ts
+ * 로 옮겨져 이 파일에는 없다. 나머지 파일은 0이어야 한다.
  */
 const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "StudioWorkspaceInterchangeDialog.tsx": 0,
@@ -100,7 +101,7 @@ const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "live/StudioLiveCollaborationPanel.tsx": 0,
   "StudioCommunityMarketplacePanel.tsx": 0,
   "StudioUploadPublish.tsx": 0,
-  "hybrid-dcc/StudioHybridDccViewportCore.tsx": 3,
+  "hybrid-dcc/StudioHybridDccViewportCore.tsx": 0,
 };
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));

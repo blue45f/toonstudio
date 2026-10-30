@@ -1,5 +1,5 @@
 import { StudioScopedWriteContextSchema, StudioScopedWritePolicySchema, type StudioScopedEntityKind, type StudioScopedWriteContext, type StudioScopedWritePolicy, type StudioScopedWriteTarget } from "@toonstudio/contracts/studio-scoped-write";
-import { studioCrdtProjectionGroupKey } from "@toonstudio/contracts/studio-crdt-authoring/element-projection";
+import { studioCrdtProjectionGroupKey } from "@toonstudio/contracts/studio-crdt-authoring/group-key";
 
 export interface StudioScopedWriteFence { readonly authScopeKey: string | null; readonly workId: string | null; readonly accessGeneration: number; readonly documentGeneration: number; readonly scopedMutationReady?: boolean }
 export interface StudioScopedDrawingTicket {

@@ -449,7 +449,7 @@ function buildHairSpringBone(
     ],
     springs: hairRig.chains.map((chain) => {
       const group = studioVrmHairSwayGroupForRole(sway.roleOf.get(chain.id));
-      const tuning = applyStudioVrmHairSway(chain, sway.authoring, group);
+      const tuning = applyStudioVrmHairSway(chain, sway.authoring, group, chain.id);
       return {
         name: `Hair_${chain.id}`,
         colliderGroups: [0, 1],
@@ -478,11 +478,39 @@ function hairSwayRoles(state: AvatarForgeState): ReadonlyMap<string, AvatarForge
   return readAvatarForgeVrmAuthoring(state)?.hairSway ? hairPartRoles(state) : new Map();
 }
 
-/** 이 조형 상태로 만든 VRM 에서 스프링 체인이 실제로 달리는 흔들림 묶음(흔들림 편집의 묶음 탭). */
-export function listStudioVrmGenerateHairSwayGroups(state: AvatarForgeState): readonly StudioVrmHairSwayGroupId[] {
+export type StudioVrmGenerateHairSwayChain = {
+  /** 헤어 리그 체인 id. 가닥별 배율의 키다. */
+  readonly id: string;
+  readonly group: StudioVrmHairSwayGroupId;
+  /** 같은 묶음 안에서 화면 왼쪽(아바타의 오른쪽, -X)부터 센 1 기반 번호. */
+  readonly order: number;
+};
+
+/** 이 조형 상태로 만든 VRM 의 스프링 체인(흔들리는 가닥) 목록. 묶음 순서, 묶음 안에서는 화면 왼쪽부터. */
+export function listStudioVrmGenerateHairSwayChains(state: AvatarForgeState): readonly StudioVrmGenerateHairSwayChain[] {
   const chains = buildStudioVrmHumanoidHairRig(state)?.chains ?? [];
   const roleOf = hairPartRoles(state);
-  const present = new Set(chains.map((chain) => studioVrmHairSwayGroupForRole(roleOf.get(chain.id))));
+  const rows = chains.map((chain) => ({
+    id: chain.id,
+    group: studioVrmHairSwayGroupForRole(roleOf.get(chain.id)),
+    rootX: chain.joints[0]?.worldRest[0] ?? 0,
+  }));
+  const groupRank = new Map(STUDIO_VRM_HAIR_SWAY_GROUPS.map((group, index) => [group.id, index]));
+  rows.sort((left, right) =>
+    (groupRank.get(left.group) ?? 0) - (groupRank.get(right.group) ?? 0)
+    || left.rootX - right.rootX
+    || left.id.localeCompare(right.id, "en"));
+  const counts = new Map<StudioVrmHairSwayGroupId, number>();
+  return rows.map(({ id, group }) => {
+    const order = (counts.get(group) ?? 0) + 1;
+    counts.set(group, order);
+    return { id, group, order };
+  });
+}
+
+/** 이 조형 상태로 만든 VRM 에서 스프링 체인이 실제로 달리는 흔들림 묶음(흔들림 편집의 묶음 탭). */
+export function listStudioVrmGenerateHairSwayGroups(state: AvatarForgeState): readonly StudioVrmHairSwayGroupId[] {
+  const present = new Set(listStudioVrmGenerateHairSwayChains(state).map((chain) => chain.group));
   return STUDIO_VRM_HAIR_SWAY_GROUPS.map((group) => group.id).filter((id) => present.has(id));
 }
 

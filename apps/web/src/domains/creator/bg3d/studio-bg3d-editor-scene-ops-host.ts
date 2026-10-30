@@ -499,7 +499,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     readView: () => viewportApiRef.current?.readView() ?? sceneBaseDocument.camera,
     canAdmitSceneNodes, replace: replaceCanonicalDocumentState, select: setSelectedIds,
     readAttachments: () => attachmentByStorageModelIdRef.current,
-    onPersistenceRejected: () => setError("저장 가능한 장면 용량이나 도형 정보의 범위를 초과해 배치하지 못했습니다."),
+    onPersistenceRejected: () => setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.generatedPartsRejected", "저장 가능한 장면 용량이나 도형 정보의 범위를 초과해 배치하지 못했습니다.")),
     commitHistory: commitImmediateHistoryTransition,
   });
   h.addGeneratedParts = addGeneratedParts;

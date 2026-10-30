@@ -22,7 +22,8 @@ export function StudioIllustrationScenePreview({ summary, label, fallback }: {
         id: `preview-${index}`,
         ...(seed.type === "frame" && seed.bg ? { bg: resolveAssetUrl(seed.bg) } : {}),
       }));
-      const result = exportPageToSvg({ width: summary.width, height: summary.height, elements, theme: "classic" });
+      // 목록 미리보기는 젖은 종이 획을 굽지 않는다(굽기는 획 하나에 수백 ms 가 걸린다).
+      const result = exportPageToSvg({ width: summary.width, height: summary.height, elements, theme: "classic", wetPaperBake: "base-wash" });
       if (active) setRendered({ summary, svg: result.svg });
     }).catch(() => {
       if (active) setRendered({ summary, svg: null });

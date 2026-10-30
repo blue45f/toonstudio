@@ -2,7 +2,7 @@ import {
   findStudioMypaintCc0Brush, studioMypaintCc0Halo, studioMypaintCc0SurfaceBlockReason,
 } from "./mypaint-library/studio-mypaint-cc0-library-catalog";
 import {
-  NATIVE_BRUSH_PROBE_MAX_SAMPLES, nativeBrushProbeEngine,
+  NATIVE_BRUSH_DOCUMENT_MAX_DIMENSION, NATIVE_BRUSH_PROBE_MAX_SAMPLES, nativeBrushProbeEngine,
   validateNativeBrushProbeConfig, validateNativeBrushSurface,
 } from "./studio-native-brush-probe-contract";
 
@@ -110,12 +110,20 @@ export function planStudioNativeBrushDocument(
     maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
   }
   // Conservative native dab/scatter padding. The Worker also rejects any unintended edge contact.
-  // 라이브러리 브러시는 생성기가 추정한 도달 범위(산포·오프셋·반지름 곡선)만큼 여백을 넓힌다.
-  const halo = library ? studioMypaintCc0Halo(library, config.size) : Math.ceil(config.size * 4 + 4);
+  // 라이브러리 브러시는 이 획의 위치·시간으로 계산한 도달 범위(반지름·오프셋 곡선과 속도 지수 평균)만큼 여백을 넓힌다.
+  const halo = library
+    ? studioMypaintCc0Halo(library, config.size, Array.from({ length: count }, (_, i) => ({
+      x: source.points![i * 2]!, y: source.points![i * 2 + 1]!, tMs: source.sampleTimeOffsets?.[i] ?? i * 8,
+    })))
+    : Math.ceil(config.size * 4 + 4);
   const x = Math.max(0, Math.floor(minX - halo)), y = Math.max(0, Math.floor(minY - halo));
   const right = Math.min(documentWidth, Math.ceil(maxX + halo));
   const bottom = Math.min(documentHeight, Math.ceil(maxY + halo));
   const surface = { width: right - x, height: bottom - y };
+  if (library && Math.max(surface.width, surface.height) > NATIVE_BRUSH_DOCUMENT_MAX_DIMENSION) {
+    throw new RangeError(`${library.name}: 이 획의 굵기·속도에서 물감이 닿을 수 있는 여백 ${halo}px 까지 넣으면 변환 표면이 `
+      + `${NATIVE_BRUSH_DOCUMENT_MAX_DIMENSION}px 를 넘습니다. 굵기를 줄이거나 획을 짧게 나눠 다시 시도하세요.`);
+  }
   validateNativeBrushSurface(surface); // Never silently downscale a large source to fit.
   const samples: NativeBrushProbeSample[] = [];
   let lastTime = 0;
