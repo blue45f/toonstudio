@@ -111,7 +111,7 @@ import {
   revokeUserSessions,
 } from "../../server/user-lifecycle";
 import {
-  AUTH_SESSION_COOKIE_NAME,
+  resolveSessionCookieName,
   resolveSessionCookieValue,
   resolveSessionCookieClearOptions,
   resolveSessionCookieOptions,
@@ -1518,7 +1518,7 @@ function clearOAuthPkceVerifierCookie(
 
 function applyAuthSessionCookie(response: Response, token: string): void {
   response.cookie(
-    AUTH_SESSION_COOKIE_NAME,
+    resolveSessionCookieName(),
     token,
     resolveSessionCookieOptions(),
   );
@@ -1526,7 +1526,7 @@ function applyAuthSessionCookie(response: Response, token: string): void {
 
 function clearAuthSessionCookie(response: Response): void {
   response.clearCookie(
-    AUTH_SESSION_COOKIE_NAME,
+    resolveSessionCookieName(),
     resolveSessionCookieClearOptions(),
   );
 }
