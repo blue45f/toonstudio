@@ -89,6 +89,8 @@ const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "scripts/run-production-database-migrations.mjs",
   "scripts/validate-production-database-url.mjs",
   "scripts/verify-production-database-capabilities.mjs",
+  "scripts/customer-support-database-contract.mjs",
+  "apps/api/src/modules/health/health-customer-support-acl.ts",
   "scripts/admin-database-contract.mjs",
   "scripts/creator-hiring-database-contract.mjs",
   "scripts/creator-hiring-automation-database-contract.mjs",

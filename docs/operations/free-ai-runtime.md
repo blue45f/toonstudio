@@ -18,6 +18,10 @@ Order of use (user decision 2026-10-29): a key the user registered is used first
 
 AI assist features (vision and structured output) use `POST /studio-ai/messages`, a Messages-API subset (text and base64 image blocks, system blocks, JSON-schema output). It runs on the premium route first and, on a definitive rejection, converts the same request for vision-capable free providers (Gemini; Groq with its vision model). The response is always a normalized Messages object, and the browser validates it with the same Zod schema as the BYOK path.
 
+### 고객센터의 별도 호출 경로
+
+[AI 고객센터](../features/customer-support.md)는 같은 서버용 Claude 키·모델·워크스페이스 설정을 재사용하되, Studio 요청 원장과 분리된 상담 원장에서 요청·예약 토큰을 집계한다. 고객센터 상한은 사용자 30회·전체 400회·예약 토큰 300만이며 기존 `STUDIO_AI_PREMIUM_*_LIMIT` 설정이 더 낮으면 낮은 값을 따른다. `STUDIO_AI_PREMIUM_AUTO=false`, 한도 0 또는 `CUSTOMER_SUPPORT_AI_ENABLED=false`이면 고객센터 AI를 중지한다. 두 원장의 합산 한도나 조직 전체 잔액을 보장하지 않으므로 동일 키의 총 지출은 조직 지출 설정에서 확인한다. 고객센터는 30초 제한·자동 재시도 없음·무료 풀 자동 전환 없음이며 AI 실패 시 대화를 보존하고 사용자가 재시도 또는 1:1 문의를 선택한다.
+
 ## Default shared free pool
 
 The default quality order is:

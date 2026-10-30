@@ -189,6 +189,42 @@ test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에
   }
 });
 
+test("AI 고객센터·사용자·관리자·권한 회귀는 필수 정적 실행과 실제 DB 실행에서 빠지거나 중복되지 않는다", () => {
+  const execution = executionTargetsByShard();
+  const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
+    const selectors = expandGlobTargets(execution[name]);
+    const args = buildShardVitestArgs(selectors);
+    const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+    return [name, resolveRequiredTargets(selectors).filter((target) => !databaseOnly.includes(target))];
+  }));
+  for (const target of [
+    "apps/api/src/modules/customer-support/customer-support-ai.service.test.ts",
+    "apps/api/src/modules/customer-support/customer-support.service.test.ts",
+    "apps/web/src/domains/legal/CustomerSupportChat.test.tsx",
+    "apps/web/src/domains/legal/SupportPage.test.tsx",
+    "apps/web/src/domains/admin/components/AdminBusinessInquiries.test.tsx",
+    "scripts/customer-support-database-contract.test.mjs",
+  ]) {
+    const owner = shardForTarget(target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), [owner],
+      `고객상담의 필수 정적 시험은 소유 shard에서 정확히 한 번 실행해야 합니다: ${target}`);
+  }
+  assert.ok(REQUIRED_VITEST_TARGETS.includes("apps/api/src/modules/customer-support"),
+    "새 고객상담 API 회귀도 자동 포함되도록 모듈 전체를 선택해야 합니다.");
+  const integration = "apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts";
+  assert.equal(shardForTarget(integration), "product");
+  assert.ok(resolveRequiredTargets(expandGlobTargets(execution.product)).includes(integration),
+    "실제 DB 시험도 API 모듈의 필수 회귀 범위에 포함해야 합니다.");
+  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration));
+  assert.ok(SHARD_NAMES.every((name) => !staticByShard[name].includes(integration)),
+    "DB 없는 shard에서 통합 시험을 skip 성공으로 집계할 수 없습니다.");
+  const databaseRunner = readFileSync(new URL("./run-postgres-integration-tests.mjs", import.meta.url), "utf8");
+  const postgresManifest = databaseRunner.match(/export const POSTGRES_INTEGRATION_SUITES = Object\.freeze\(\[([\s\S]*?)\]\);/u)?.[1];
+  assert.ok(postgresManifest, "실제 PostgreSQL 실행기의 내보낸 시험 목록을 확인해야 합니다.");
+  assert.equal(postgresManifest.split(`"${integration}"`).length - 1, 1,
+    "고객상담 통합 시험은 PostgreSQL 실행기가 정확히 한 번 소유해야 합니다.");
+});
+
 test("분석·분산 저장소의 비DB 테스트는 product shard에서 반드시 실행한다", () => {
   const selectors = expandGlobTargets(executionTargetsByShard().product);
   const executed = resolveRequiredTargets(selectors);

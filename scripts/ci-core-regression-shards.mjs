@@ -22,6 +22,7 @@ const GLOB_PATTERN = /[*?[\]]/u;
 export const CORE_DATABASE_VITEST_TARGETS = Object.freeze([
   "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
   "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
+  "apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts",
   "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts",
