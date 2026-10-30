@@ -88,12 +88,14 @@ export function StudioCharacterCanonEditor({
   const [uploading, setUploading] = useState(false);
   const [aiDrafting, setAiDrafting] = useState(false);
   const [aiCanonInsight, setAiCanonInsight] = useState<CharacterCanonArchitectView | null>(null);
+  const [aiUnavailable, setAiUnavailable] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const renderableReferenceImageSrc = toRenderableReferenceImageSrc(referenceImage, document.baseURI);
 
   const handleRunClaudeCanonArchitect = async () => {
     if (aiDrafting || busy) return;
     setAiDrafting(true);
+    setAiUnavailable(false);
     try {
       const existingTags = tagsText
         .split(/[,，\n]/u)
@@ -104,6 +106,11 @@ export function StudioCharacterCanonEditor({
         roughNotes: [appearance.trim(), outfit.trim()].filter(Boolean).join(" / "),
         existingTags,
       });
+      // AI를 못 쓸 때 돌아오는 예시 문구는 이 캐릭터와 상관없으므로 작가가 쓴 칸을 덮지 않는다.
+      if (view.source !== "claude-live") {
+        setAiUnavailable(true);
+        return;
+      }
       setAppearance(view.appearanceKo);
       setOutfit(view.outfitKo);
       if (view.traitTags.length > 0) {
@@ -176,6 +183,14 @@ export function StudioCharacterCanonEditor({
             : bt("AI로 외모·의상·태그 자동 완성", "Auto-fill canon with AI")}
         </button>
       </div>
+      {aiUnavailable ? (
+        <p data-testid="canon-ai-unavailable-notice" role="status" className="text-xs text-fg-3">
+          {bt(
+            "지금은 AI에 연결하지 못해 입력한 내용을 그대로 두었어요. 잠시 후 다시 시도해 주세요.",
+            "Couldn't reach AI right now, so your entries were left as they are. Please try again shortly.",
+          )}
+        </p>
+      ) : null}
       {aiCanonInsight ? (
         <div
           data-testid="canon-claude-insight-box"
