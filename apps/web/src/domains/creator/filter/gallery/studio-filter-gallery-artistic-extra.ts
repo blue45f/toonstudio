@@ -2,7 +2,9 @@
  * 필터 갤러리 · 예술 효과 추가분 — 카툰, 큐비즘, 슈퍼픽셀(SLIC).
  *
  *   - 카툰: 각 픽셀의 좁은 이웃 평균 휘도를 넓은(마스크 반지름) 이웃 평균과 비교해, 상대적으로 뚜렷이 어두운 곳을 검게 누른다.
- *     문턱은 "가장 어두운 쪽 pctBlack 비율이 완전히 검게 되는" 값으로 이미지마다 정한다.
+ *     문턱은 "가장 어두운 쪽 pctBlack 비율이 완전히 검게 되는" 값으로 이미지마다 정한다(칠할 수 있는 픽셀, 곧 주변보다 2% 넘게
+ *     어두운 픽셀이 기본값 비율보다 적은 그림은 기본값에서 다 칠하도록 늘려 잡고, 다 칠한 뒤 남은 비율은 문턱 아래를 부분적으로
+ *     어둡게 하는 어깨를 넓힌다).
  *   - 큐비즘: 칸마다 무작위로 돌린 사각형을 그 중심의 원본 색으로 칠해, 섞은 순서대로 바탕색 위에 겹친다.
  *   - 슈퍼픽셀: SLIC(Achanta·Shaji·Smith·Lucchi·Fua·Süsstrunk 2012, "SLIC Superpixels Compared to State-of-the-Art
  *     Superpixel Methods"). 격자 간격 S 로 씨앗을 놓고 CIELAB 색 + 위치 5차원 거리로 2S×2S 창 안에서만 k-평균을 반복한 뒤
@@ -52,9 +54,13 @@ const smoothstep = (edge0: number, edge1: number, value: number): number => {
  * (매끈한 그림에서는 더 큰 반지름부터 검정 비율이 듣는다).
  */
 const CARTOON_RADIUS = slider("maskRadius", "마스크 반지름", 2.5, 50, 0.5, 7, "px");
-const CARTOON_BLACK = slider("pctBlack", "검정 비율", 0, 1, 0.01, 0.2);
+/** 검정 비율 기본값. 칠할 수 있는 몫이 이보다 적은 그림은 0~기본값 구간을 칠할 수 있는 픽셀 전체로 늘려 잡는다. */
+const CARTOON_BLACK_DEFAULT = 0.2;
+const CARTOON_BLACK = slider("pctBlack", "검정 비율", 0, 1, 0.01, CARTOON_BLACK_DEFAULT);
 /** 상대 어두움 δ(−1~1) 분포를 세는 히스토그램 칸 수. */
 const CARTOON_BINS = 2048;
+/** 완전히 검게 칠하는 문턱의 하한. 주변보다 이만큼(2%) 어둡지 않은 픽셀은 완전한 검정이 되지 않는다. */
+const CARTOON_FLOOR = 0.02;
 
 /** 알파 가중 흐림 평균 blur(값·α)/blur(α). 투명 픽셀의 의미 없는 값이 섞이지 않는다. */
 function weightedMean(values: Float32Array, weights: Float32Array, width: number, height: number, radius: number): Float32Array {
@@ -96,16 +102,37 @@ const cartoon: StudioFilterGalleryEffectDef = {
       total += 1;
     }
     if (total === 0) return;
-    // 가장 어두운 쪽부터 pctBlack 비율이 완전히 검게 되는 문턱. 주변보다 밝거나 거의 같은 픽셀(δ < 2%)은 칠하지 않는다.
-    let bin = CARTOON_BINS - 1, above = histogram[bin]!;
-    while (bin > 0 && above < fraction * total) {
-      bin -= 1; above += histogram[bin]!;
+    // 칠할 수 있는 픽셀: 문턱으로 쓸 값이 하한(2%)을 넘는 칸에 든 픽셀(주변보다 2% 넘게 어두운 곳). 이 몫은 그림마다 크게
+    // 다르다(512×384 사진형 약 28%, 선화·만화 약 5%).
+    let eligible = 0;
+    for (let bin = CARTOON_BINS - 1; bin >= 0 && (2 * bin) / CARTOON_BINS - 1 > CARTOON_FLOOR; bin -= 1) eligible += histogram[bin]!;
+    // 예전에는 보이는 픽셀의 pctBlack 비율을 칠해, 그 비율이 칠할 수 있는 몫을 넘는 칸이 모두 문턱 하한에 걸려 같은 결과였다
+    // (선화·만화에서 100 칸 중 94~95 칸). 이제 꺾는 점(칠할 수 있는 몫과 기본값 중 큰 쪽)까지는 가장 어두운 쪽부터 완전히
+    // 검게 할 픽셀을 늘리고, 그 위는 문턱 아래를 부분적으로 어둡게 하는 어깨를 [1%, 2%] 에서 [0, 2%] 까지 넓힌다.
+    //   - 몫이 기본값 이상인 그림: 꺾는 점까지 예전처럼 보이는 픽셀의 그 비율을 칠한다(기본값 결과가 예전과 같다).
+    //   - 몫이 기본값보다 적은 그림(예전 기본값에서 이미 다 칠하던 그림): 0~기본값을 칠할 수 있는 픽셀의 0~100% 로 늘려
+    //     기본값에서 예전처럼 다 칠한다.
+    //   - 1 이면 주변보다 조금이라도 어두운 픽셀이 모두 얼마간 어두워진다.
+    const lacking = eligible < CARTOON_BLACK_DEFAULT * total;
+    const pivot = lacking ? CARTOON_BLACK_DEFAULT : eligible / total;
+    let threshold = CARTOON_FLOOR, start: number;
+    if (lacking ? fraction < pivot : fraction * total <= eligible) {
+      // 가장 어두운 쪽부터 target 개가 완전히 검게 되는 문턱. 주변보다 밝거나 거의 같은 픽셀(δ < 2%)은 칠하지 않는다.
+      const target = lacking ? (fraction / pivot) * eligible : fraction * total;
+      let bin = CARTOON_BINS - 1, above = histogram[bin]!;
+      while (bin > 0 && above < target) {
+        bin -= 1; above += histogram[bin]!;
+      }
+      threshold = Math.max(CARTOON_FLOOR, (2 * bin) / CARTOON_BINS - 1);
+      start = 0.5 * threshold;
+    } else {
+      // 여기서는 fraction ≥ pivot 이고 pivot < 1 이다(pivot 이 1 이면 위 갈래로 간다).
+      start = 0.5 * CARTOON_FLOOR * (1 - (fraction - pivot) / (1 - pivot));
     }
-    const threshold = Math.max(0.02, (2 * bin) / CARTOON_BINS - 1);
     for (let index = 0, offset = 0; index < count; index += 1, offset += 4) {
       if (weights[index]! <= 0) continue;
-      // 문턱의 절반부터 서서히 어두워지다 문턱 이상은 완전한 검정(납작한 먹 면)이 된다.
-      const keep = 1 - smoothstep(0.5 * threshold, threshold, darkness[index]!);
+      // 어깨 시작(보통 문턱의 절반)부터 서서히 어두워지다 문턱 이상은 완전한 검정(납작한 먹 면)이 된다.
+      const keep = 1 - smoothstep(start, threshold, darkness[index]!);
       if (keep >= 1) continue;
       data[offset] = data[offset]! * keep;
       data[offset + 1] = data[offset + 1]! * keep;

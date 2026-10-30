@@ -76,6 +76,9 @@ import { useCompareReviewEyedropper } from "./use-compare-review-eyedropper";
 import { useCompareReviewViewport } from "./use-compare-review-viewport";
 import { useProcessCompareBlink } from "./use-process-compare-blink";
 import { useProcessCompareSliderDrag } from "./use-process-compare-slider-drag";
+import { useCompareElementSize as useElementSize } from "./use-compare-element-size";
+import { useVoiceCompareController } from "./use-voice-compare-controller";
+import type { VoiceCompareController } from "./voice-compare-view";
 import "./compare-review.css";
 
 const MODE_ICONS: Record<CompareReviewMode, typeof Columns2> = {
@@ -98,29 +101,6 @@ const SOURCE_BADGE: Readonly<Record<ComparePoolItem["source"]["kind"], { readonl
   page: { ko: "회차", en: "Episode" },
   reference: { ko: "레퍼런스", en: "Reference" },
 };
-
-/**
- * 요소 크기 측정(핀 레이어의 레터박스 보정용). jsdom 등에서는 0을 돌려준다.
- * 첫 값은 요소를 붙이는 안정된 콜백 ref 다 — 다른 ref 와 함께 쓸 때 `.current` 를 소비자가 직접 쓰지 않게 한다.
- */
-function useElementSize<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const attach = useCallback((el: T | null) => {
-    ref.current = el;
-  }, []);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight });
-    update();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return [attach, size] as const;
-}
 
 interface DraftPin {
   readonly poolItemId: string;
@@ -146,6 +126,7 @@ export interface CompareReviewViewerProps {
   /** 프리셋은 소스 해석이 필요해 룸이 소유하고, 뷰어는 버튼만 올린다. */
   readonly onApplyPreset?: (preset: ComparePresetId) => void;
   readonly presetStatus?: string | null;
+  readonly onVoiceCompareControllerChange?: (controller: VoiceCompareController | null) => void;
 }
 
 /**
@@ -166,6 +147,7 @@ export function CompareReviewViewer({
   onPickColor,
   onApplyPreset,
   presetStatus,
+  onVoiceCompareControllerChange,
 }: CompareReviewViewerProps) {
   const bt = useBilingual("CompareReview");
   const viewport = useCompareReviewViewport();
@@ -173,11 +155,12 @@ export function CompareReviewViewer({
   const slider = useProcessCompareSliderDrag();
   const [blinkMs, setBlinkMs] = useState(800);
   const [blinkOn, setBlinkOn] = useState(true);
-  const { phase: blinkPhase, togglePhase: toggleBlinkPhase } = useProcessCompareBlink(
+  const blink = useProcessCompareBlink(
     session.mode === "blink",
     blinkOn,
     blinkMs,
   );
+  const { phase: blinkPhase, togglePhase: toggleBlinkPhase } = blink;
 
   const [eyedropperActive, setEyedropperActive] = useState(false);
   const [picked, setPicked] = useState<{ readonly hex: string; readonly r: number; readonly g: number; readonly b: number; readonly h: number; readonly s: number; readonly v: number; readonly fromLabel: string } | null>(null);
@@ -240,6 +223,9 @@ export function CompareReviewViewer({
   );
 
   const announce = useCallback((message: string) => setLiveMessage(message), []);
+  const voiceReplayError = useVoiceCompareController({ session, onSessionChange, viewport, slider, blink, blinkMs, blinkOn,
+    setBlinkMs, setBlinkOn, focusedPane, setFocusedPane, selectedPinId, setSelectedPinId, comments, announce,
+    onControllerChange: onVoiceCompareControllerChange });
 
   // 핀 작성 폼은 사용자가 이미지를 눌러 연 직후이므로 내용 입력란으로 포커스를 옮긴다.
   // autoFocus 속성 대신 폼이 열린 시점에만 명시적으로 옮긴다(열려 있는 동안 핀 위치만 바뀔 때는 건드리지 않는다).
@@ -381,6 +367,7 @@ export function CompareReviewViewer({
   if (session.pool.length < 2 || paneItems.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-line bg-panel p-6 text-center" data-testid="crv-empty">
+        {voiceReplayError ? <p role="alert" className="mb-3 rounded-xl border border-warn/35 bg-warn/10 p-3 text-sm text-fg">{voiceReplayError}</p> : null}
         <ProcessCompareNoDataArt />
         <p className="mt-2 text-sm font-bold text-fg">{bt("비교할 이미지가 아직 모자랍니다", "Not enough images to compare yet")}</p>
         <p className="mx-auto mt-1 max-w-lg text-xs leading-5 text-fg-2">
@@ -400,6 +387,7 @@ export function CompareReviewViewer({
 
   return (
     <div data-testid="crv-root" className="space-y-3">
+      {voiceReplayError ? <p role="alert" className="rounded-xl border border-warn/35 bg-warn/10 p-3 text-sm text-fg">{voiceReplayError}</p> : null}
       {/* ── 툴바 ── */}
       <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label={bt("비교 검수 도구", "Compare review tools")}>
         <div className="inline-flex rounded-xl border border-line bg-panel p-1" role="group" aria-label={bt("비교 방식", "Compare mode")}>

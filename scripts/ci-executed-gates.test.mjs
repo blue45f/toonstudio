@@ -128,6 +128,60 @@ test("core retains every mandatory quality lane without a bypass", () => {
   assert.ok(job("serial").includes("pnpm run test:perf"));
 });
 
+test("번들 Python 회귀는 foundation에서 고정 wheel을 준비하고 두 필수 패턴을 실패 없이 생략하지 않는다", () => {
+  const steps = job("static").split(/(?=^ {6}- )/mu);
+  const named = (name) => {
+    const matches = steps.filter((step) => step.startsWith(`      - name: ${name}\n`));
+    assert.equal(matches.length, 1, name);
+    assert.match(matches[0], /^ {8}if: matrix\.shard == 'studio-foundation'$/mu);
+    assert.doesNotMatch(matches[0], /continue-on-error|\|\| true/u);
+    return matches[0];
+  };
+  const setup = named("번들 Python 검증 환경 준비");
+  const install = named("번들 Python 검증 의존성 설치");
+  const tests = named("번들 정규화·렌더 Python 회귀 검증");
+  assert.match(setup, /uses: actions\/setup-python@v7\n {8}with:\n {10}python-version: '3\.12'/u);
+  const requirementPath = "scripts/requirements-creator-bundle-verification.txt";
+  const installCommand = `python -m pip install --only-binary=:all: --require-hashes -r ${requirementPath}`;
+  assert.ok(install.includes(`        run: >-\n          ${installCommand}\n`));
+  assert.equal(source.split(installCommand).length - 1, 1);
+  const requirements = readFileSync(join(repoRoot, requirementPath), "utf8");
+  assert.match(requirements, /^Pillow==13\.0\.0 \\$/mu);
+  const hashes = [...requirements.matchAll(/--hash=sha256:([a-f0-9]{64})/gu)].map((match) => match[1]);
+  assert.equal(hashes.length, 82);
+  assert.equal(new Set(hashes).size, hashes.length);
+  const patterns = ["test_creator_bundle*.py", "test_studio_asset_glb.py"];
+  for (const pattern of patterns) {
+    const command = `python -m unittest discover -s scripts/tests -p '${pattern}' -v`;
+    assert.ok(tests.includes(command), pattern);
+    assert.equal(source.split(command).length - 1, 1, pattern);
+  }
+  for (const target of ["test_creator_bundle_render_preparation.py", "test_creator_bundle_publication.py", "test_creator_bundle_renders.py", "test_creator_bundle_scenes.py", "test_studio_asset_glb.py"]) {
+    assert.ok(existsSync(join(repoRoot, "scripts/tests", target)), target);
+  }
+  assert.ok(steps.indexOf(setup) < steps.indexOf(install) && steps.indexOf(install) < steps.indexOf(tests));
+  assert.ok(job("static").indexOf(tests) < job("static").indexOf("Run semantic regression shard"));
+  const run = tests.match(/^ {8}run: \|\n((?: {10}[^\n]*\n)+)/mu)?.[1].replace(/^ {10}/gmu, "");
+  assert.ok(run?.startsWith("set -euo pipefail\n"));
+  const scratch = mkdtempSync(join(tmpdir(), "bundle-python-ci-contract-"));
+  const log = join(scratch, "calls.jsonl");
+  try {
+    writeFileSync(join(scratch, "python"), '#!/usr/bin/env node\nconst fs = require("node:fs");\nfs.appendFileSync(process.env.CALL_LOG, JSON.stringify(process.argv.slice(2)) + "\\n");\nif (process.env.FAIL_PATTERN && process.argv.includes(process.env.FAIL_PATTERN)) process.exit(7);\n', { mode: 0o755 });
+    const env = { ...process.env, PATH: `${scratch}:${process.env.PATH}`, CALL_LOG: log, FAIL_PATTERN: "" };
+    const result = spawnSync("bash", ["-c", run], { cwd: repoRoot, env, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const calls = () => readFileSync(log, "utf8").trim().split("\n").map((line) => JSON.parse(line));
+    const expected = patterns.map((pattern) => ["-m", "unittest", "discover", "-s", "scripts/tests", "-p", pattern, "-v"]);
+    assert.deepEqual(calls(), expected);
+    writeFileSync(log, "");
+    const failed = spawnSync("bash", ["-c", run], { cwd: repoRoot, env: { ...env, FAIL_PATTERN: patterns[0] }, encoding: "utf8" });
+    assert.equal(failed.status, 7);
+    assert.deepEqual(calls(), [expected[0]], "첫 Python 회귀 실패는 다음 명령을 막아야 한다");
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+});
+
 test("protected core aggregates every lane without another checkout", () => {
   assert.ok(job("core").includes(`needs: [${REQUIRED_CORE_GATES.join(", ")}]`));
   assert.ok(job("core").includes("if: ${{ always() && !cancelled() }}"));

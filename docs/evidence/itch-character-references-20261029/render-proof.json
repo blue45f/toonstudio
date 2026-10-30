@@ -1,0 +1,369 @@
+{
+  "schema": "toonstudio.creator-bundle-render-proof.v1",
+  "assets": [
+    {
+      "id": "cbv1-007-ch-2-10-a-mc-front",
+      "sourceModelSha256": "30d7041ab4534f8ec6e5d3fd75b07a152b91652fa9f974ade40d5bb487fd311c",
+      "textureBindings": [],
+      "pngSha256": "5adb87ffcfaf7b209c8f65404edc3b8f0ae0b05d302a190bcef526e5bc30d6f9",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "dd0d2b7bc73e0625959309ff40015834bed2df9805729b943caa24a87584c89e",
+        "renderModelSha256": "30d7041ab4534f8ec6e5d3fd75b07a152b91652fa9f974ade40d5bb487fd311c",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "dd0d2b7bc73e0625959309ff40015834bed2df9805729b943caa24a87584c89e",
+          "preparedModelSha256": "30d7041ab4534f8ec6e5d3fd75b07a152b91652fa9f974ade40d5bb487fd311c",
+          "images": [
+            {
+              "uri": "../../Textures/character_cloths.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/character_cloths.png",
+              "sha256": "7dbc5962e98bafaada47c9546708356184c2b49acb3f90a8f92d671d1c385f27",
+              "bytes": 1315655
+            },
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          0,
+          -1,
+          0.05
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-2-10-a-mc-three-quarter",
+      "sourceModelSha256": "30d7041ab4534f8ec6e5d3fd75b07a152b91652fa9f974ade40d5bb487fd311c",
+      "textureBindings": [],
+      "pngSha256": "8dd5c56d18d5e65d1d9a4b03894e6db3cddbb9bf3761f981861cf5420e538fc0",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "dd0d2b7bc73e0625959309ff40015834bed2df9805729b943caa24a87584c89e",
+        "renderModelSha256": "30d7041ab4534f8ec6e5d3fd75b07a152b91652fa9f974ade40d5bb487fd311c",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "dd0d2b7bc73e0625959309ff40015834bed2df9805729b943caa24a87584c89e",
+          "preparedModelSha256": "30d7041ab4534f8ec6e5d3fd75b07a152b91652fa9f974ade40d5bb487fd311c",
+          "images": [
+            {
+              "uri": "../../Textures/character_cloths.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/character_cloths.png",
+              "sha256": "7dbc5962e98bafaada47c9546708356184c2b49acb3f90a8f92d671d1c385f27",
+              "bytes": 1315655
+            },
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          1,
+          -2,
+          0.08
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-3-1-a-mc-front",
+      "sourceModelSha256": "d62f2925834b0002689b64943bec4a61ed6382af0e866d6610610e5258380420",
+      "textureBindings": [],
+      "pngSha256": "08372b217c1f2e6da72e6ee088582c513239ccf0290c2ed2721ec5e6662e69c2",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "689adbe0c3c90aa437ef79474814ea427e9a20f5ddabf2bd210458f6315272a2",
+        "renderModelSha256": "d62f2925834b0002689b64943bec4a61ed6382af0e866d6610610e5258380420",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "689adbe0c3c90aa437ef79474814ea427e9a20f5ddabf2bd210458f6315272a2",
+          "preparedModelSha256": "d62f2925834b0002689b64943bec4a61ed6382af0e866d6610610e5258380420",
+          "images": [
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          0,
+          -1,
+          0.05
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-3-1-a-mc-three-quarter",
+      "sourceModelSha256": "d62f2925834b0002689b64943bec4a61ed6382af0e866d6610610e5258380420",
+      "textureBindings": [],
+      "pngSha256": "6d9df236676c5944f16ef747e21a24296aa314d2a3abf574edeb6bcdb1ae0720",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "689adbe0c3c90aa437ef79474814ea427e9a20f5ddabf2bd210458f6315272a2",
+        "renderModelSha256": "d62f2925834b0002689b64943bec4a61ed6382af0e866d6610610e5258380420",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "689adbe0c3c90aa437ef79474814ea427e9a20f5ddabf2bd210458f6315272a2",
+          "preparedModelSha256": "d62f2925834b0002689b64943bec4a61ed6382af0e866d6610610e5258380420",
+          "images": [
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          1,
+          -2,
+          0.08
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-4-2-a-mc-front",
+      "sourceModelSha256": "a6fe79a3c3da48241b250a113a1ba55cafff417f945c73402c9083ee614494ba",
+      "textureBindings": [],
+      "pngSha256": "e4f6d8c320d3eccbf2fbea841f92fc0df03ee4098622e56a463b512158e39720",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "190508b405f549c1dd3af9e0ca061e8bd599be84a274fbae6e821bb9f1cfdbb9",
+        "renderModelSha256": "a6fe79a3c3da48241b250a113a1ba55cafff417f945c73402c9083ee614494ba",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "190508b405f549c1dd3af9e0ca061e8bd599be84a274fbae6e821bb9f1cfdbb9",
+          "preparedModelSha256": "a6fe79a3c3da48241b250a113a1ba55cafff417f945c73402c9083ee614494ba",
+          "images": [
+            {
+              "uri": "../../Textures/character_cloths.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/character_cloths.png",
+              "sha256": "7dbc5962e98bafaada47c9546708356184c2b49acb3f90a8f92d671d1c385f27",
+              "bytes": 1315655
+            },
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          0,
+          -1,
+          0.05
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-4-2-a-mc-three-quarter",
+      "sourceModelSha256": "a6fe79a3c3da48241b250a113a1ba55cafff417f945c73402c9083ee614494ba",
+      "textureBindings": [],
+      "pngSha256": "e2f4c8b3f067e816b33f46fe3b041eae3ee51169f6839a1480016132fd9c4a10",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "190508b405f549c1dd3af9e0ca061e8bd599be84a274fbae6e821bb9f1cfdbb9",
+        "renderModelSha256": "a6fe79a3c3da48241b250a113a1ba55cafff417f945c73402c9083ee614494ba",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "190508b405f549c1dd3af9e0ca061e8bd599be84a274fbae6e821bb9f1cfdbb9",
+          "preparedModelSha256": "a6fe79a3c3da48241b250a113a1ba55cafff417f945c73402c9083ee614494ba",
+          "images": [
+            {
+              "uri": "../../Textures/character_cloths.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/character_cloths.png",
+              "sha256": "7dbc5962e98bafaada47c9546708356184c2b49acb3f90a8f92d671d1c385f27",
+              "bytes": 1315655
+            },
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          1,
+          -2,
+          0.08
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-6-10-a-mc-front",
+      "sourceModelSha256": "b5fe7b63839e8becf15f14d0bb34d3926dab8760268f55c767b542a24ff7d22e",
+      "textureBindings": [],
+      "pngSha256": "2c6d8a68c847c7bf60c7bb56c8248895d749aaaf0fe03c97cb910b8eb366314e",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "5da02b9ee29a7873988489039a7a503721dd3141c9ccb48a89c55d7c7963c443",
+        "renderModelSha256": "b5fe7b63839e8becf15f14d0bb34d3926dab8760268f55c767b542a24ff7d22e",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "5da02b9ee29a7873988489039a7a503721dd3141c9ccb48a89c55d7c7963c443",
+          "preparedModelSha256": "b5fe7b63839e8becf15f14d0bb34d3926dab8760268f55c767b542a24ff7d22e",
+          "images": [
+            {
+              "uri": "../../Textures/character_cloths.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/character_cloths.png",
+              "sha256": "7dbc5962e98bafaada47c9546708356184c2b49acb3f90a8f92d671d1c385f27",
+              "bytes": 1315655
+            },
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          0,
+          -1,
+          0.05
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    },
+    {
+      "id": "cbv1-007-ch-6-10-a-mc-three-quarter",
+      "sourceModelSha256": "b5fe7b63839e8becf15f14d0bb34d3926dab8760268f55c767b542a24ff7d22e",
+      "textureBindings": [],
+      "pngSha256": "e765b947648e1a50beb06871ed8dc83790e7d20088ece15f5a3696fc46a63095",
+      "renderInputFingerprint": {
+        "schema": "toonstudio.creator-bundle-render-input.v2",
+        "sourceModelSha256": "5da02b9ee29a7873988489039a7a503721dd3141c9ccb48a89c55d7c7963c443",
+        "renderModelSha256": "b5fe7b63839e8becf15f14d0bb34d3926dab8760268f55c767b542a24ff7d22e",
+        "sourcePreparation": {
+          "kind": "embed-pack-images-v1",
+          "originalModelSha256": "5da02b9ee29a7873988489039a7a503721dd3141c9ccb48a89c55d7c7963c443",
+          "preparedModelSha256": "b5fe7b63839e8becf15f14d0bb34d3926dab8760268f55c767b542a24ff7d22e",
+          "images": [
+            {
+              "uri": "../../Textures/character_cloths.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/character_cloths.png",
+              "sha256": "7dbc5962e98bafaada47c9546708356184c2b49acb3f90a8f92d671d1c385f27",
+              "bytes": 1315655
+            },
+            {
+              "uri": "../../Textures/mafia_atlas.png",
+              "source": "10-characters/cartoon-characters-2/engine/godot/UltimateCreatorPack_Godot/Textures/mafia_atlas.png",
+              "sha256": "141fe1c73737333126847649ce76a3e56cb6e1ba83d105495df2577b104d8e8b",
+              "bytes": 554524
+            }
+          ],
+          "normalizerSha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+          "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46"
+        },
+        "cameraDirection": [
+          1,
+          -2,
+          0.08
+        ],
+        "rigPolicy": "skinned-reference-21-v1",
+        "rendererSha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326"
+      },
+      "rigChecks": {
+        "bodyMeshes": 1,
+        "bones": 21,
+        "vertexGroups": 21,
+        "excludedCustomShapes": [
+          "Icosphere"
+        ]
+      }
+    }
+  ]
+}

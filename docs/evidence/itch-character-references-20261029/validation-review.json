@@ -1,0 +1,179 @@
+{
+  "schema": "toonstudio.creator-bundle-character-validation.v1",
+  "verifiedOn": "2026-10-29",
+  "baselineCommit": "e34b3b2dbf253cd08d8b1762fb934149e91d7ee8",
+  "applicationSourcePackagesApiAndLockUnchangedFromBaseline": true,
+  "python": {
+    "patterns": [
+      "test_creator_bundle*.py",
+      "test_studio_asset_glb.py"
+    ],
+    "executedInOneProcess": true,
+    "tests": 80,
+    "passed": 80,
+    "failed": 0,
+    "durationSeconds": 5.867,
+    "exitCode": 0,
+    "python": "3.12.14",
+    "pillow": "13.0.0"
+  },
+  "node": {
+    "commandPrefix": [
+      "node",
+      "--test",
+      "--test-concurrency=1"
+    ],
+    "files": [
+      "scripts/creator-bundle-pack-rights.test.mjs",
+      "scripts/creator-bundle-pack-rights-gate.test.mjs",
+      "scripts/creator-bundle-pack-rights-form.test.mjs",
+      "scripts/creator-bundle-decor.test.mjs",
+      "scripts/creator-bundle-scene-catalog.test.mjs",
+      "scripts/creator-bundle-render-rights.test.mjs",
+      "scripts/generate-creator-bundle-theme-packs.test.mjs",
+      "scripts/plan-creator-bundle-deploy.test.mjs",
+      "scripts/plan-creator-bundle-deploy-cli.test.mjs",
+      "scripts/rebuild-creator-bundle-local-ingest.test.mjs",
+      "scripts/creator-bundle-native-proof.test.mjs",
+      "scripts/ci-executed-gates.test.mjs"
+    ],
+    "tests": 194,
+    "passed": 194,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 10088.864542,
+    "exitCode": 0,
+    "scope": "번들 권리 170개와 CI 실행 계약 24개; 앞선 부분 실행과 중복 합산하지 않음"
+  },
+  "vitest": {
+    "commandPrefix": [
+      "pnpm",
+      "exec",
+      "vitest",
+      "run"
+    ],
+    "files": [
+      "scripts/creator-bundle-serving-parity.test.mjs",
+      "scripts/creator-bundle-render-rights-parity.test.mjs",
+      "apps/web/src/domains/creator/studio-bundle-asset-delivery.test.ts",
+      "apps/web/src/domains/creator/catalog/studio-bundle-source-credit.test.ts",
+      "tests/integration/itch-bundle-source-credit.test.ts",
+      "apps/web/src/domains/creator/catalog/studio-bundle-personal-library-save.test.ts",
+      "apps/web/src/domains/creator/catalog/StudioBundleAssetLibraryPanel.save.test.tsx",
+      "apps/web/src/domains/creator/catalog/studio-bundle-backgrounds.test.ts",
+      "apps/web/src/domains/creator/virtual-space/studio-virtual-space-bundle-decor.test.ts",
+      "apps/web/src/domains/creator/catalog/studio-bundle-project-archive.test.ts",
+      "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-asset-loader.test.ts",
+      "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-theme-packs.test.ts"
+    ],
+    "flags": [
+      "--maxWorkers=1"
+    ],
+    "testFiles": 12,
+    "tests": 209,
+    "passed": 209,
+    "durationSeconds": 8.74,
+    "exitCode": 0
+  },
+  "formalProducer": {
+    "initialAppendOnlyDryRunExitCode": 0,
+    "initialAppendOnlyPublishExitCode": 0,
+    "correctedDryRunExitCode": 0,
+    "correctedPublishExitCode": 0,
+    "correctedPublishScope": "이 작업에서 추가한 8개 ID만 같은 선택 입력으로 재생성",
+    "selected": 8,
+    "rendered": 8,
+    "blender": "5.2.0 LTS",
+    "blenderBuild": "fbe6228777e7",
+    "remoteUploaded": false
+  },
+  "browser": {
+    "exitCode": 0,
+    "delivered": 186,
+    "totalInsertions": 19,
+    "characters2Desktop": 8,
+    "characters2Mobile": 8,
+    "persistenceCases": 2,
+    "pageErrors": 0,
+    "postRegenerationInputParityVerified": true,
+    "browserRerunAfterRegeneration": false,
+    "details": "runtime-review.json 및 registration-review.json"
+  },
+  "priorFailure": {
+    "nodeTests": 170,
+    "passed": 166,
+    "failed": 4,
+    "exitCode": 1,
+    "error": "ModuleNotFoundError: No module named 'PIL'",
+    "cause": "기존 python3 -S 배경 검증에 새 helper의 top-level Pillow import가 전파됨",
+    "fix": "Pillow import를 실제 PNG 검증 내부로 지연하고 -I -S -B subprocess 회귀 추가",
+    "existingSceneTestsRelaxed": false,
+    "globalDependencyInstalled": false
+  },
+  "smallSourceChecks": {
+    "nodeSyntaxExitCode": 0,
+    "eslintThreeChangedMjsExitCode": 0,
+    "actionlintWorkflowExitCode": 0
+  },
+  "inputFiles": {
+    ".github/workflows/ci.yml": {
+      "sha256": "943860e540e2818a791d2f7eb0f8fb44eecd54243eff55cccf971d5f681734a8",
+      "lines": 484
+    },
+    "config/creator-bundle-render-selection.json": {
+      "sha256": "79fc08d822c838a28a8722b401beba8962cdda54f905d2bf385adfa5b915d6cd",
+      "lines": 2691
+    },
+    "scripts/ci-executed-gates.test.mjs": {
+      "sha256": "f64710a97cd23f4ec6aa5ae90210dbb3ad40592d7af909567b5fe7bd4f532527",
+      "lines": 763
+    },
+    "scripts/creator-bundle-render-rights.test.mjs": {
+      "sha256": "8c0260b3e61c270244623dc4d3c9789f548c2f445d0e4b7418e0726cedd7287f",
+      "lines": 749
+    },
+    "scripts/lib/render-creator-bundle-assets-blender.py": {
+      "sha256": "6abff996a25f10deb6bd2d13f45169607404e2e08ed74cff0dcd9f721c2d0326",
+      "lines": 168
+    },
+    "scripts/normalize_studio_asset_glb.py": {
+      "sha256": "3b95ea2268329fda2c7f225819b732cc99e95011660862651d75a6e71bdd1b94",
+      "lines": 199
+    },
+    "scripts/render-creator-bundle-assets.py": {
+      "sha256": "637f91aee958225993e4fc4b7b9e3ccb06a624117a90c93fdbe0e7407093a90a",
+      "lines": 660
+    },
+    "scripts/tests/test_creator_bundle_renders.py": {
+      "sha256": "a7cdfe20d5618ad72fb0dfbc72525d9345cce39cce8cd2cea386415210e187e1",
+      "lines": 671
+    },
+    "scripts/verify-creator-bundle-renders.mjs": {
+      "sha256": "2025501bc4b4e2cce009051acbb577b9d4f780ff9b9ba4def5fb291fe0129268",
+      "lines": 204
+    },
+    "scripts/lib/creator_bundle_render_preparation.py": {
+      "sha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46",
+      "lines": 236
+    },
+    "scripts/requirements-creator-bundle-verification.txt": {
+      "sha256": "76d0e571da682905352cb017c9a26111a700884d5cddc7350e20b2b3c97d76ff",
+      "lines": 86
+    },
+    "scripts/tests/test_creator_bundle_publication.py": {
+      "sha256": "2c63b94c807308c7f2fd66c143b6afaff38cd1d8bdc78afc29a90213bf6110f5",
+      "lines": 151
+    },
+    "scripts/tests/test_creator_bundle_render_preparation.py": {
+      "sha256": "d8962ae1421f6b58eccaf4a752ed7b03ce8e37b7c24e476013bbf2e3ca3502ea",
+      "lines": 361
+    }
+  },
+  "pending": [
+    "전체 하네스",
+    "새 Web build 및 정적 산출물 대조",
+    "후속 브랜치 정상 push",
+    "원격 PR·필수 CI·병합",
+    "인증 복구·원격 업로드·운영 배포"
+  ]
+}
