@@ -1,3 +1,4 @@
+import { bindConsumerReleaseFixture, consumerReleaseFixture, isConsumerCatalogUrl } from "./studio-bg3d-bundle-release-consumer.test-fixture";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
@@ -90,6 +91,7 @@ function rawThemePacks(): Record<string, unknown> {
 
 function loadFixtureData(): Promise<StudioBg3dBundleThemePacks> {
   return loadStudioBg3dBundleThemePacks({
+    release: null,
     fetcher: async () => ({ ok: true, status: 200, json: async () => rawThemePacks() }),
   });
 }
@@ -105,9 +107,10 @@ function stubGlbFetch(bytes: Uint8Array): void {
 
 /** 테마 팩 데이터와 GLB 바이트를 URL로 구분해 돌려주는 프로덕션형 라우터. */
 function stubFetchRouter(glbBytes: Uint8Array): void {
+  bindConsumerReleaseFixture(rawThemePacks);
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-    if (String(input).includes("theme-packs.json")) {
-      return { ok: true, status: 200, headers: new Headers(), json: async () => rawThemePacks() };
+    if (isConsumerCatalogUrl(String(input))) {
+      return consumerReleaseFixture(rawThemePacks()).catalogResponse();
     }
     return {
       ok: true,
@@ -129,9 +132,10 @@ function changingFixture(suffix: string) {
   raw.assets = [{ ...original, id }];
   (raw.packs as Record<string, unknown>[])[0] = { ...(raw.packs as Record<string, unknown>[])[0], placeable: 1 };
   raw.totals = { packs: 1, placeableAssets: 1, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
+  bindConsumerReleaseFixture(() => raw);
   let bytes = GLB;
-  const fetcher = vi.fn(async (url: RequestInfo | URL) => String(url).includes("theme-packs.json")
-    ? new Response(JSON.stringify(raw)) : new Response(Uint8Array.from(bytes)));
+  const fetcher = vi.fn(async (url: RequestInfo | URL) => isConsumerCatalogUrl(String(url))
+    ? consumerReleaseFixture(raw).catalogResponse() : new Response(Uint8Array.from(bytes)));
   vi.stubGlobal("fetch", fetcher);
   return { raw, id, fetcher, setBytes: (next: Uint8Array) => { bytes = next; } };
 }
@@ -157,8 +161,8 @@ describe("같은 ID의 현재 출처·본문·권리와 캐시 정합", () => {
     newerRaw.assets = (newerRaw.assets as Record<string, unknown>[]).map((asset) => ({ ...asset, pack: 1, sha256: SHA_2, path: "test-pack/changed.glb" }));
     newerRaw.totals = { packs: 2, placeableAssets: 1, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 };
     const loadData = async () => {
-      const first = await loadStudioBg3dBundleThemePacks({ fetcher: async () => new Response(JSON.stringify(fixture.raw)) });
-      await loadStudioBg3dBundleThemePacks({ fetcher: async () => new Response(JSON.stringify(newerRaw)) });
+      const first = await loadStudioBg3dBundleThemePacks({ release: null, fetcher: async () => new Response(JSON.stringify(fixture.raw)) });
+      await loadStudioBg3dBundleThemePacks({ release: null, fetcher: async () => new Response(JSON.stringify(newerRaw)) });
       return first;
     };
     const byId = await resolveStudioBg3dBundleRecordSource(fixture.id, { loadData });
@@ -336,6 +340,7 @@ describe("같은 ID의 현재 출처·본문·권리와 캐시 정합", () => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -528,6 +533,7 @@ describe("studioBg3dBundleAssetRights (팩별 권리 조회)", () => {
     // 같은 값이 레코드 소스의 권리로도 전달된다 (다른 팩의 권리와 섞이지 않는다).
     const source = await resolveStudioBg3dBundleRecordSource("cbv1-ingest-test-002", {
       loadData: () => loadStudioBg3dBundleThemePacks({
+    release: null,
         fetcher: async () => ({ ok: true, status: 200, json: async () => raw }),
       }),
     });
@@ -550,6 +556,7 @@ describe("studioBg3dBundleAssetRights (팩별 권리 조회)", () => {
     // 에셋 조회 색인은 로더(loadStudioBg3dBundleThemePacks)가 채우므로 같은 경로로 불러온다.
     const source = await resolveStudioBg3dBundleRecordSource("cbv1-ingest-test-003", {
       loadData: () => loadStudioBg3dBundleThemePacks({
+    release: null,
         fetcher: async () => ({ ok: true, status: 200, json: async () => multiPackRaw() }),
       }),
     });
@@ -573,7 +580,7 @@ describe("bundle serving URL", () => {
     await source.loadSource();
     const requested = vi.mocked(fetch).mock.calls
       .map(([input]) => String(input))
-      .filter((url) => !url.includes("theme-packs.json"));
+      .filter((url) => !isConsumerCatalogUrl(url));
     expect(requested).toEqual([`/assets/studio/bundle-v2/${SHA_1}.glb`]);
     expect(requested[0]).not.toContain("test-pack");
     expect(requested[0]).not.toContain("one.glb");

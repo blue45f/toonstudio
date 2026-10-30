@@ -4,6 +4,7 @@ import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync,
 import { createHash } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDeepStrictEqual } from "node:util";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { buildThemePacks, CATALOG_PACKS } from "./generate-creator-bundle-theme-packs.mjs";
@@ -152,7 +153,31 @@ export function writeLocalIngest(plan, outputRoot, { copyFile = copyFileSync } =
   } finally { if (!published) rmSync(stage, { recursive: true, force: true }); }
 }
 
+export function dispatchCompositeIngestCli(argv, { readConfig = (path) => JSON.parse(readFileSync(path, "utf8")), invoke = (args) => execFileSync(process.execPath, args, { encoding: "utf8", maxBuffer: 1024 * 1024 }) } = {}) {
+  // 새 계약만 별도 CLI로 분기하며 기존 v1 함수·동기 문자열 반환 규칙은 그대로 둔다.
+  const tokens = new Map();
+  for (let index = 0; index < argv.length; index += 1) {
+    const flag = argv[index];
+    if (tokens.has(flag)) fail(`중복된 인자: ${flag}`);
+    if (["--help", "--check", "--dry-run", "--write"].includes(flag)) { tokens.set(flag, true); continue; }
+    if (!["--library-root", "--input-root", "--output-root", "--config", "--projection", "--pack-rights", "--python"].includes(flag)
+      || !argv[index + 1] || argv[index + 1].startsWith("--")) fail(`알 수 없거나 값이 없는 인자: ${flag}`);
+    tokens.set(flag, argv[++index]);
+  }
+  if (!tokens.has("--help") && (!tokens.has("--library-root")
+    || ["--check", "--dry-run", "--write"].filter((flag) => tokens.has(flag)).length > 1)) fail("--library-root와 서로 겹치지 않는 실행 모드가 필요합니다.");
+  const selectedConfig = tokens.get("--config") ?? DEFAULT_CONFIG;
+  if (!tokens.has("--help") && readConfig(selectedConfig)?.schema === "toonstudio.creator-bundle-composite-ingest.v1") {
+    try {
+      return invoke([join(REPO_ROOT, "scripts/rebuild-creator-bundle-composite-ingest.mjs"), ...argv]).trim();
+    } catch { fail("composite 재현 검사가 실패했습니다. 새 CLI의 --help와 --check --input-root <prepared/input> 경로를 확인하세요."); }
+  }
+  return null;
+}
+
 export function runLocalIngestCli(argv) {
+  const delegated = dispatchCompositeIngestCli(argv);
+  if (delegated !== null) return delegated;
   const options = {};
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
@@ -160,7 +185,7 @@ export function runLocalIngestCli(argv) {
     if (!["--library-root", "--output-root", "--config", "--projection", "--pack-rights"].includes(flag) || !argv[i + 1] || argv[i + 1].startsWith("--") || options[flag]) fail(`알 수 없거나 중복된 인자: ${flag}`);
     options[flag] = argv[++i];
   }
-  if (options["--help"]) return "node scripts/rebuild-creator-bundle-local-ingest.mjs --library-root <dir> [--output-root <new-private-dir>] [--dry-run|--check] [--config <file>] [--projection <file>] [--pack-rights <file>]\n복사만 사용하며 원본·공개 경로는 변경하지 않습니다. --check는 기존 출력을 읽기 전용으로 검증합니다.";
+  if (options["--help"]) return "node scripts/rebuild-creator-bundle-local-ingest.mjs --library-root <dir> [--output-root <new-private-dir>] [--dry-run|--check] [--config <file>] [--projection <file>] [--pack-rights <file>]\n복사만 사용하며 원본·공개 경로는 변경하지 않습니다. --check는 기존 출력을 읽기 전용으로 검증합니다.\ncomposite 설정은 --input-root <prepared/input>이 필요합니다. 기존 --check --output-root <prepared/input> 읽기 별칭도 유지합니다. 새 쓰기는 --input-root와 별도의 --output-root를 지정하세요.";
   if (!options["--library-root"] || (options["--dry-run"] && options["--check"])) fail("--library-root와 서로 겹치지 않는 실행 모드가 필요합니다.");
   const config = JSON.parse(readFileSync(options["--config"] ?? DEFAULT_CONFIG, "utf8")); validateLocalIngestConfig(config);
   const plan = buildLocalIngestPlan({ libraryRoot: options["--library-root"], config, projectionBytes: readFileSync(options["--projection"] ?? join(REPO_ROOT, config.projection)), ledger: loadPackRightsLedger(options["--pack-rights"]) });

@@ -1,3 +1,6 @@
+import { getBuildFixedStudioBg3dBundleRelease, readVerifiedStudioBg3dBundleReleaseJson, requireStudioBg3dBundleRelease,
+  type StudioBg3dBundleReleaseDescriptor, type StudioBg3dBundleResponse } from "./studio-bg3d-bundle-release";
+
 /**
  * Creator Bundle 테마 팩 데이터 소비자.
  *
@@ -15,6 +18,7 @@
  */
 
 export const STUDIO_BG3D_BUNDLE_THEME_PACKS_SCHEMA = "toonstudio.bg3d-bundle-theme-packs.v1" as const;
+/** 옛 명시 URL 호출의 호환 상수다. 새 기본 호출은 빌드 고정 release.catalog.url을 사용한다. */
 export const STUDIO_BG3D_BUNDLE_THEME_PACKS_URL =
   "/assets/3d/environments/bundle-v1/theme-packs.json" as const;
 /** 매니페스트 v2 파일 트리가 서빙되는 루트. 에셋은 이 아래 `<sha256>.glb` 키로 서빙된다. */
@@ -377,6 +381,19 @@ export function parseStudioBg3dBundleThemePacks(value: unknown): StudioBg3dBundl
     });
   });
   const totals = record(root.totals);
+  const parsedTotals = Object.freeze({
+    packs: count(totals?.packs, "테마 팩 합계가 올바르지 않습니다."),
+    placeableAssets: count(totals?.placeableAssets, "테마 팩 합계가 올바르지 않습니다."),
+    presets: count(totals?.presets, "테마 팩 합계가 올바르지 않습니다."),
+    crowdGlbAssets: count(totals?.crowdGlbAssets, "테마 팩 합계가 올바르지 않습니다."),
+    deferredAssets: count(totals?.deferredAssets, "테마 팩 합계가 올바르지 않습니다."),
+  });
+  if (parsedTotals.packs !== packs.length || parsedTotals.placeableAssets !== assets.length
+    || parsedTotals.presets !== presets.length
+    || parsedTotals.crowdGlbAssets !== crowdPacks.reduce((sum, pack) => sum + pack.glbAssets, 0)
+    || parsedTotals.deferredAssets !== packs.reduce((sum, pack) => sum + countStudioBg3dBundlePackDeferred(pack), 0)) {
+    throw new TypeError("테마 팩 합계가 실제 항목과 일치하지 않습니다. 같은 인입 자료로 목록을 다시 생성하세요.");
+  }
   const sourceManifest = record(root.sourceManifest);
   return Object.freeze({
     schema: STUDIO_BG3D_BUNDLE_THEME_PACKS_SCHEMA,
@@ -395,13 +412,7 @@ export function parseStudioBg3dBundleThemePacks(value: unknown): StudioBg3dBundl
     presets: Object.freeze(presets),
     crowdPacks: Object.freeze(crowdPacks),
     pendingPacks: Object.freeze(pendingPacks),
-    totals: Object.freeze({
-      packs: count(totals?.packs, "테마 팩 합계가 올바르지 않습니다."),
-      placeableAssets: count(totals?.placeableAssets, "테마 팩 합계가 올바르지 않습니다."),
-      presets: count(totals?.presets, "테마 팩 합계가 올바르지 않습니다."),
-      crowdGlbAssets: count(totals?.crowdGlbAssets, "테마 팩 합계가 올바르지 않습니다."),
-      deferredAssets: count(totals?.deferredAssets, "테마 팩 합계가 올바르지 않습니다."),
-    }),
+    totals: parsedTotals,
   });
 }
 
@@ -410,9 +421,13 @@ export function parseStudioBg3dBundleThemePacks(value: unknown): StudioBg3dBundl
 type ThemePacksFetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
-) => Promise<Pick<Response, "ok" | "status" | "json">>;
+) => Promise<StudioBg3dBundleResponse>;
 
 let themePacksPromise: Promise<StudioBg3dBundleThemePacks> | null = null;
+let themePacksPendingKey: string | null = null;
+let verifiedReleaseCatalog: { readonly key: string; readonly data: StudioBg3dBundleThemePacks } | null = null;
+// 같은 내용의 catalog라도 각 반환 객체는 자기 빌드의 index만 사용한다. 초기화가 외부 객체의 결합을 지우지 않는다.
+const themePacksReleaseBindings = new WeakMap<StudioBg3dBundleThemePacks, StudioBg3dBundleReleaseDescriptor>();
 let themePacksLoaded: StudioBg3dBundleThemePacks | null = null;
 let assetById: Map<string, StudioBg3dBundleThemePackAsset> | null = null;
 let assetByHash: Map<string, StudioBg3dBundleThemePackAsset> | null = null;
@@ -421,6 +436,7 @@ let themePacksPublicationRevision = 0;
 let themePacksPublicationIdentity: string | null = null;
 
 function indexThemePacks(data: StudioBg3dBundleThemePacks): void {
+  if (themePacksLoaded === data) return;
   // 같은 내용의 정상 재조회는 유지하고 실제 발행 변경·A→B→A는 구분한다.
   const identity = JSON.stringify(data);
   if (identity !== themePacksPublicationIdentity) {
@@ -438,42 +454,75 @@ export function resetStudioBg3dBundleThemePacksCache(): void {
   themePacksPublicationRevision += 1;
   themePacksPublicationIdentity = null;
   themePacksPromise = null;
+  themePacksPendingKey = null;
+  verifiedReleaseCatalog = null;
   themePacksLoaded = null;
   assetById = null;
   assetByHash = null;
 }
 
 /**
- * 변경 가능한 권리·배포 메타데이터는 매 호출 재검증한다. 동시에 진행 중인 기본 요청만 공유한다.
- * 내용 주소 GLB의 바이트 캐시와는 별개이며 실패한 요청은 다음 호출에서 재시도한다.
+ * legacy·주입 포트는 매번 검사한다. 기본 release는 검증한 동결 객체 하나만 내용 주소별로 재사용한다.
+ * 같은 release의 동시 기본 요청만 공유하며 실패·명시 초기화는 검증 캐시도 비운다.
  */
 export async function loadStudioBg3dBundleThemePacks(options: {
   readonly signal?: AbortSignal;
   readonly fetcher?: ThemePacksFetch;
   readonly url?: string;
+  /** null은 명시적인 legacy 호출용이다. fetcher만 주입하면 기본 release 검증을 계속 수행한다. */
+  readonly release?: StudioBg3dBundleReleaseDescriptor | null;
 } = {}): Promise<StudioBg3dBundleThemePacks> {
-  if (!options.fetcher && !options.url && themePacksPromise) return themePacksPromise;
+  let release: StudioBg3dBundleReleaseDescriptor | null;
+  try {
+    release = options.release === null || (options.url !== undefined && options.release === undefined)
+      ? null : requireStudioBg3dBundleRelease(options.release ?? getBuildFixedStudioBg3dBundleRelease());
+    if (release && options.url !== undefined && options.url !== release.catalog.url) {
+      throw new TypeError("catalog URL이 같은 빌드의 release와 다릅니다.");
+    }
+  } catch (error) { resetStudioBg3dBundleThemePacksCache(); throw error; }
+  const url = options.url ?? release?.catalog.url ?? STUDIO_BG3D_BUNDLE_THEME_PACKS_URL;
+  const shared = !options.fetcher && options.url === undefined;
+  const pendingKey = release ? JSON.stringify(release) : `legacy:${url}`;
+  if (shared && themePacksPromise && themePacksPendingKey === pendingKey) return themePacksPromise;
+  if (shared && release && verifiedReleaseCatalog?.key === pendingKey) {
+    options.signal?.throwIfAborted();
+    themePacksRevision += 1;
+    // 다른 발행의 진행 중 응답은 최신 선택을 덮거나 이후 요청에 재사용할 수 없다.
+    themePacksPromise = null;
+    themePacksPendingKey = null;
+    indexThemePacks(verifiedReleaseCatalog.data);
+    return verifiedReleaseCatalog.data;
+  }
   const revision = ++themePacksRevision;
+  themePacksPromise = null;
+  themePacksPendingKey = null;
   const fetcher: ThemePacksFetch = options.fetcher
     ?? ((input, init) => globalThis.fetch(input, init));
   const pending = (async () => {
-    const response = await fetcher(options.url ?? STUDIO_BG3D_BUNDLE_THEME_PACKS_URL, {
-      cache: "no-cache",
+    const response = await fetcher(url, {
+      cache: release ? "force-cache" : "no-cache",
       credentials: "same-origin",
       signal: options.signal,
+      ...(release ? { redirect: "error" as const } : {}),
     });
     if (!response.ok) throw new TypeError("테마 팩 데이터를 불러오지 못했습니다.");
-    const data = parseStudioBg3dBundleThemePacks(await response.json());
-    if (revision === themePacksRevision) indexThemePacks(data);
+    const raw = release ? await readVerifiedStudioBg3dBundleReleaseJson(response, release.catalog, options.signal) : await response.json();
+    const data = parseStudioBg3dBundleThemePacks(raw);
+    if (release) themePacksReleaseBindings.set(data, release);
+    if (revision === themePacksRevision) {
+      indexThemePacks(data);
+      if (shared && release) verifiedReleaseCatalog = { key: pendingKey, data };
+    }
     return data;
   })();
-  if (!options.fetcher && !options.url) {
+  if (shared) {
     themePacksPromise = pending;
+    themePacksPendingKey = pendingKey;
   }
   void pending.then(() => {
-    if (themePacksPromise === pending) themePacksPromise = null;
+    if (themePacksPromise === pending) { themePacksPromise = null; themePacksPendingKey = null; }
   }, () => {
-    if (themePacksPromise === pending) themePacksPromise = null;
+    if (themePacksPromise === pending) { themePacksPromise = null; themePacksPendingKey = null; }
     if (revision === themePacksRevision) resetStudioBg3dBundleThemePacksCache();
   });
   return pending;
@@ -573,18 +622,23 @@ export async function loadStudioBg3dBundleDeployAvailability(
   try {
     const fetcher: ThemePacksFetch = options.fetcher
       ?? ((input, init) => globalThis.fetch(input, init));
-    const response = await fetcher(options.url ?? STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL, {
-      cache: "no-cache",
+    const release = themePacksReleaseBindings.get(data);
+    if (release && options.url !== undefined && options.url !== release.index.url) return "unavailable";
+    const response = await fetcher(release?.index.url ?? options.url ?? STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL, {
+      cache: release ? "force-cache" : "no-cache",
       credentials: "same-origin",
       signal: options.signal,
+      ...(release ? { redirect: "error" as const } : {}),
     });
     if (!response.ok) return "unavailable";
-    const index = record(await response.json());
+    const raw = release ? await readVerifiedStudioBg3dBundleReleaseJson(response, release.index, options.signal) : await response.json();
+    const index = record(raw);
     if (!index || index.schema !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_SCHEMA || index.version !== 1) {
       return "unavailable";
     }
     // 옛 경로형 키로 올라간 인덱스(keyScheme 없음)는 합계가 같아도 sha256 URL의 객체를 가리키지 못한다.
     if (index.keyScheme !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_KEY_SCHEME) return "unavailable";
+    if (release && index.catalogSha256 !== release.catalog.sha256) return "unavailable";
     const expectedBytes = data.assets.reduce((sum, asset) => sum + asset.bytes, 0);
     return index.files === data.totals.placeableAssets && index.bytes === expectedBytes
       ? "available"

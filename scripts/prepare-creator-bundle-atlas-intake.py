@@ -323,7 +323,6 @@ def write_plan(plan):
         manifest.update(inServiceOnly=True, downloadable=False, generatedAt=plan['stamp'], assets=assets,
                         totals={**manifest.get('totals', {}), 'assets': len(assets)})
         proof = {'schema': SCHEMA + '-proof', 'controls': plan['controls'], 'assets': proofs,
-                 'inputFiles': [{'path': str(path), **item['state']} for path, item in plan['states'].items()],
                  'copyPolicy': 'copy-only-no-hardlinks', 'productApplied': False, 'studioRuntimeVerified': False}
         for filename, document in [('manifest-v2.json', manifest), ('preparation-proof.json', proof)]:
             with (stage / filename).open('x', encoding='utf-8') as stream:
@@ -342,6 +341,96 @@ def write_plan(plan):
                 output.rmdir()
 
 
+def verify_derived(plan, derived_root):
+    """자기 소유 임시 파일 한 개씩 재생성하며 검사 대상에는 쓰지 않는다."""
+    assert_current(plan)
+    target = absolute_directory(derived_root)
+    target_states = {}
+    manifest_path, manifest_state = remember(target_states, target, 'manifest-v2.json')
+    manifest = read_json(manifest_path)
+    if (not isinstance(manifest, dict) or manifest.get('kind') != 'toonstudio.asset-bundle.v2'
+            or manifest.get('version') != 2 or manifest.get('inServiceOnly') is not True
+            or manifest.get('downloadable') is not False or not isinstance(manifest.get('assets'), list)
+            or not isinstance(manifest.get('totals'), dict)
+            or type(manifest['totals'].get('assets')) is not int
+            or manifest['totals']['assets'] != len(manifest['assets'])
+            or manifest.get('generatedAt') != plan['stamp']):
+        fail('검사 대상 manifest의 스키마·서비스 전용·날짜·합계 계약이 다릅니다.')
+    actual, ids, paths = {}, set(), set()
+    recipe_sources = {(item['packId'], item['sourcePath']) for item in plan['additions']}
+    recipe_ingests = {item['packId'] for item in plan['additions']}
+    for asset in manifest['assets']:
+        if (not isinstance(asset, dict) or not isinstance(asset.get('id'), str)
+                or not isinstance(asset.get('packId'), str) or not IDENTIFIER.fullmatch(asset['packId'])
+                or not asset['id'].startswith(asset['packId'] + '-')
+                or asset.get('role') != 'runtime' or asset.get('format') != 'glb'
+                or not isinstance(asset.get('files'), list) or len(asset['files']) != 1
+                or not isinstance(asset['files'][0], dict) or asset['files'][0].get('kind') != 'primary'):
+            fail('검사 대상 descriptor의 ID·팩·포맷·primary 계약이 다릅니다.')
+        primary = asset['files'][0]
+        source_path = relative(asset.get('sourcePath'))
+        path = relative(primary.get('path'))
+        key = (asset['packId'], source_path)
+        if (not source_path.endswith('.glb') or path != asset['packId'] + '/native/' + source_path
+                or type(primary.get('bytes')) is not int or primary['bytes'] <= 0
+                or not isinstance(primary.get('sha256'), str) or not SHA.fullmatch(primary['sha256'])):
+            fail('검사 대상 descriptor의 경로·바이트·SHA256 계약이 다릅니다.')
+        if asset['id'] in ids or path in paths or key in actual:
+            fail('검사 대상에 ID·출력 경로 또는 같은 팩의 sourcePath가 중복됩니다.')
+        ids.add(asset['id']); paths.add(path)
+        payload, state = remember(target_states, target, path)
+        if state != {key: primary[key] for key in ('bytes', 'sha256')}:
+            fail('검사 대상 GLB의 바이트·SHA256이 manifest와 다릅니다.')
+        actual[key] = (asset, payload)
+    found_sources = {key for key in actual if key[0] in recipe_ingests}
+    if found_sources != recipe_sources:
+        fail('검사 대상에 recipe 원본이 빠졌거나 같은 ingest의 미등록 원본이 있습니다.')
+    # TMPDIR이 원본·검사 대상 내부를 가리켜도 그 영역에 임시 출력을 만들지 않는다.
+    temporary_parent = absolute_directory(Path(tempfile.gettempdir()).resolve(strict=True))
+    protected = {target, REPO, *(item['root'] for item in plan['states'].values())}
+    if any(temporary_parent.is_relative_to(root) for root in protected):
+        fail('임시 디렉터리가 보호된 입력 안에 있습니다. TMPDIR을 원본·저장소·검사 대상 밖의 실제 디렉터리로 지정하세요.')
+    expected_assets = []
+    with tempfile.TemporaryDirectory(prefix='toonstudio-atlas-verify-', dir=temporary_parent) as directory:
+        temporary_root = Path(directory)
+        owner = temporary_root.stat()
+        for item in plan['additions']:
+            if temporary_root.is_symlink() or temporary_root.stat().st_ino != owner.st_ino:
+                fail('소유 임시 디렉터리가 바뀌어 재생성을 중단합니다.')
+            destination = temporary_root / 'derived.glb'
+            try:
+                original_binding = item['binding']
+                binding = None if original_binding is None else glb.OwnerPackImageBindings(
+                    original_binding.owner_pack_id, original_binding.pack_root,
+                    original_binding.source_relative, dict(original_binding.image_paths))
+                report = glb.normalize(item['source'], destination, owner_pack_images=binding)
+                state = file_state(destination)
+                if report['sourceSha256'] != item['state']['sha256'] or report['normalizedSha256'] != state['sha256']:
+                    fail('재생성한 원본·파생 SHA256이 현재 입력과 다릅니다.')
+                path = item['packId'] + '/native/' + item['sourcePath']
+                suffix = digest((item['sourcePath'] + '\0' + state['sha256']).encode())[:20]
+                expected = {'id': item['packId'] + '-' + suffix, 'packId': item['packId'],
+                            'role': 'runtime', 'format': 'glb', 'sourcePath': item['sourcePath'],
+                            'files': [{'kind': 'primary', 'path': path, **state}]}
+                candidate, payload = actual[(item['packId'], item['sourcePath'])]
+                if candidate != expected or payload.read_bytes() != destination.read_bytes():
+                    fail('검사 대상의 전체 descriptor 또는 GLB 바이트가 원본에서 재생성한 결과와 다릅니다.')
+                expected_assets.append(expected)
+            finally:
+                destination.unlink(missing_ok=True)
+    assert_current(plan)
+    assert_current({'states': target_states})
+    return {'mode': 'verify-derived', 'persistentOutputWritten': False,
+            'summary': {'derivedAssets': len(expected_assets),
+                        'derivedBytes': sum(asset['files'][0]['bytes'] for asset in expected_assets),
+                        'inputUnchanged': True, 'targetUnchanged': True},
+            'controls': copy.deepcopy(plan['controls']), 'targetManifest': manifest_state,
+            # Node 부모의 후속 복사 전후 재대조 전용이다. 일반 로그로 출력하지 않는다.
+            'inputFiles': [{'path': str(path), **plan['states'][path]['state']}
+                           for path in sorted(plan['states'], key=str)],
+            'assets': expected_assets}
+
+
 def main(argv=None):
     class Parser(argparse.ArgumentParser):
         def error(self, message):
@@ -351,18 +440,23 @@ def main(argv=None):
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--output-root')
     parser.add_argument('--existing-root')
+    parser.add_argument('--verify-derived-root', help='--check에서만 지정한 private input의 Atlas 파생본을 원본부터 재생성해 대조한다.')
     parser.add_argument('--pack-rights', default=str(RIGHTS))
     parser.add_argument('--projection', dest='projection_path', default=str(PROJECTION))
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--check', action='store_true', help='입력과 계획만 검사하며 영속 출력을 만들지 않는다.')
     mode.add_argument('--write', action='store_true', help='새 private envelope/input에만 완성된 입력을 게시한다.')
     args = vars(parser.parse_args(argv)); write = args.pop('write'); args.pop('check')
+    verify_root = args.pop('verify_derived_root')
     args['recipe_path'] = args.pop('recipe')
     try:
+        if write and verify_root is not None:
+            fail('--verify-derived-root는 --check와 함께만 사용할 수 있습니다. --write를 제거하고 --check로 실행하세요.')
         if write and not args['output_root']:
             fail('--write에는 --output-root로 새 private 출력 경로를 지정해야 합니다.')
         plan = build_plan(**args)
-        result = write_plan(plan) if write else {**plan['summary'], 'mode': 'check', 'persistentOutputWritten': False}
+        result = verify_derived(plan, verify_root) if verify_root is not None else (
+            write_plan(plan) if write else {**plan['summary'], 'mode': 'check', 'persistentOutputWritten': False})
         print(json.dumps(result, ensure_ascii=False))
         return 0
     except (ValueError, OSError, KeyError, TypeError, AttributeError) as error:

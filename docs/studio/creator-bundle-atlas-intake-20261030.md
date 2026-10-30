@@ -4,7 +4,7 @@
 
 ## 현재 입력과 해결할 문제
 
-Nature Godot판의 `Models/`에는 2026-10-30 헤더 전수 대조 기준 GLB 3,300개가 있으며 모두 `../../Textures/atlas_nature.png`를 참조한다. 파일 수는 고유 형상 수가 아니다. 기존 자기완결 GLB 경로에 원본만 복사하면 텍스처 연결이 깨진다. 공개 Nature 행은 아직 `placeable: 0`이므로 파일을 준비한 수와 서비스에서 선택할 수 있는 수를 구분한다.
+Nature Godot판의 `Models/`에는 2026-10-30 헤더 전수 대조 기준 GLB 3,300개가 있으며 모두 `../../Textures/atlas_nature.png`를 참조한다. 파일 수는 고유 형상 수가 아니다. 기존 자기완결 GLB 경로에 원본만 복사하면 텍스처 연결이 깨진다. 호환용 고정 `theme-packs.json`의 Nature 행은 `placeable: 0`으로 보존하고, 후속 브랜치의 새 내용 주소 카탈로그에는 3,300개를 편입했다. 준비·실제 제품 Worker·화면·운영 완료는 별도로 판정한다.
 
 후속 [준비 설정](../../config/creator-bundle-atlas-intake.json)은 정확한 Nature owner·Godot 팩 루트·`Models` 디렉터리·원문 URI와 PNG 상대경로를 지정한다. `generatedAt`은 재현 가능한 입력 레시피의 시각이며 실제 실행·검수 시각은 별도 영수증으로 기록한다. 다른 팩을 추가할 때도 현재 원장과 공개 투영의 정확한 팩·ingest 관계 및 실제 텍스처 참조를 먼저 대조한다.
 
@@ -37,13 +37,37 @@ python3 scripts/prepare-creator-bundle-atlas-intake.py \
 
 같은 변경 소스로 Nature 전체 3,300개와 기존 1,929개를 새 private 입력에 합치는 준비 명령을 한 번 실행했다. 120초 상한 안의 68.216초에 exit 0으로 끝났고 합계 5,229개·3,985,892,748바이트였다. 기존 descriptor 전체와 준비 소스·HEAD·기존 manifest의 전후 해시는 동일했다. 소유 PID·process group의 잔류 0을 별도 확인했다. 결과 manifest SHA256은 `d1af2c67b6e35e96dfb0c1e2dae658face389b273faff0f5dc34029c2ad9f997`이다.
 
-실행 증거는 로컬 `asset-reviews/itch-characters2-20261029-1xmbfu47/qa/atlas-nature-3300-union-20261030-r1/`의 `receipt.json`, `cleanup-audit.json`, `envelope/input/preparation-proof.json`에 보존한다. `productApplied`와 `studioRuntimeVerified`는 false다. 공개 카탈로그는 아직 기존 1,929개이며 R2와 운영 서비스를 변경하지 않았다.
+실행 증거는 로컬 `asset-reviews/itch-characters2-20261029-1xmbfu47/qa/atlas-nature-3300-union-20261030-r1/`의 `receipt.json`, `cleanup-audit.json`, `envelope/input/preparation-proof.json`에 보존한다. 이 준비 실행의 `productApplied`와 `studioRuntimeVerified`는 false다. 이 뒤의 소스 연결이 과거 준비 영수증의 범위를 바꾸지는 않는다.
+
+파생본의 읽기 재생성 검사를 추가한 Python 소스는 회귀 105개를 통과했다. 기존 93개를 포함한 수이며 별개 성공 수로 합산하지 않는다. 실제 생성기를 private 5,229개 입력에 실행한 검사는 6.504초에 exit 0으로 끝났고, 모든 입력이 인입되고 기존 1,929개 전체 객체가 ID별로 보존됨을 확인했다. 결과 카탈로그 원문 SHA256은 `e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4`다.
 
 ## migration — 재현과 공개 카탈로그 연결
 
-기존 `creator-bundle-local-ingest.json`은 원본을 그대로 복사하는 10팩·1,929개와 현재 공개 projection SHA를 정본으로 사용한다. Nature 파생본의 source ID·SHA·proof sidecar를 이 계약에 억지로 넣지 않는다. 기존 복사 입력과 atlas 파생 입력을 함께 재현·검사하는 명시적인 후속 계약이 필요하다. 공개 projection을 바꿀 때는 기존 에셋을 ID로 묶어 path·bytes·SHA·tris·팩 소속을 보존하고 새 전체 합계와 현재 배포 인덱스를 함께 대조한다.
+기존 `creator-bundle-local-ingest.json`과 고정 카탈로그는 10팩·1,929개의 역사 재현 계약으로 보존한다. 별도 [composite 설정](../../config/creator-bundle-composite-ingest.json)은 Git `4685be49e2c108ad1602fb1851670bdf6eca002d`의 v1 설정·투영을 실제 SHA로 고정하고, 현재 원본 1,929개와 atlas 파생 3,300개를 재생성해 전체 private 입력 및 새 공개 투영과 대조한다. `--check`는 4GB 입력을 다시 복사하지 않는다.
 
-실제 Worker 전수 검사와 Nature 대표 렌더도 다음 범위에 추가해야 한다. 종전 `licensed-20261029`의 기대 팩·대표 선택과 1,929개 증거를 새 5,229개 전체의 성공 증거로 재사용하지 않는다.
+```bash
+node scripts/rebuild-creator-bundle-composite-ingest.mjs \
+  --library-root "$BUNDLE_LIBRARY_ROOT" \
+  --input-root "$BUNDLE_ATLAS_INPUT" \
+  --python python3 \
+  --check
+```
+
+실행 위치는 저장소 루트다. `BUNDLE_LIBRARY_ROOT`에는 실제 원본 라이브러리, `BUNDLE_ATLAS_INPUT`에는 검증된 envelope의 `input/` 절대 경로를 지정한다. 원본만으로 최초 입력을 생성하는 명령과 구분한다. 읽기 검사도 원본·atlas·전체 descriptor·실제 바이트·현재 생성기의 권리/예산 판정·역사 에셋 보존·입력 불변을 확인한다.
+
+2026-10-30 `edbed52dad660b64f440bc0db37ea336f8a73395` 작업트리의 관련 28개 입력을 고정한 실행은 Node 회귀 41개, 실제 private 발행기, 실제 전체 재현을 차례로 통과했다. 전체 164.026초 중 발행 34.141초·재현 125.144초였으며 전후 입력·manifest·proof가 같고 소유 process group 잔류도 0이었다. 이는 이후 앱 연결 코드의 타입·단위·브라우저 검증을 대신하지 않는다. 영수증은 `qa/atlas-release-reproduction-20261030-r1/`에 있다.
+
+## migration — 웹 발행 쌍과 추가 3D 테마
+
+[발행기](../../scripts/publish-creator-bundle-release.mjs)는 카탈로그 원문을 보존한 내용 주소 JSON, 그 카탈로그 SHA를 가진 내용 주소 인덱스, 웹 빌드에 고정하는 descriptor를 private 폴더에 원자적으로 만든다. 새 인덱스 SHA는 `a5e46f6cfbe92a53ab8aedae578a5160e7c5fe9dc9fa87d4e96b16e6fa7b9994`이고 304바이트다. 고유 GLB 객체와 논리 에셋은 이 입력에서 각각 5,229개·3,985,892,748바이트다. 기존 고정 인덱스를 새 합계로 덮는 명령은 실행하지 않았다.
+
+후속 브랜치의 웹 기본 로더는 같은 descriptor의 catalog/index 원문 SHA·bytes와 기존 권리·합계 계약을 함께 검사한다. 검증된 기본 발행 객체 하나만 재사용하고, 명시 legacy/custom 포트는 매번 읽는다. 캐시 초기화·실패는 검증 캐시도 비우며 다른 발행의 늦은 응답이 현재 선택을 덮지 않도록 한다. 이 경로의 단위·타입·실제 UI 검증은 별도 단계다.
+
+숲속 관찰 작업실과 정원 관찰 작업실은 실제 Nature 모델 8개와 기존 작업 장비를 조합하는 새 recipe다. 테마별 고유 source는 5개이고, 반복 배치는 기존 geometry/material/texture 공유 clone 경로를 따른다. 하드웨어 instancing·서로 다른 GLB의 atlas 공유·시각 품질·최고 성능을 검증했다고 주장하지 않는다. 작은 식물의 표시 부모만 정확한 모델 ID·역할에 맞춰 조정하며 원본 vertex·UV·재질은 바꾸지 않는다.
+
+소스의 역사 1,929개 파일 보존만으로 실제 운영의 기존 발행과 같다고 단정할 수 없다. 운영 전 실제 legacy catalog/index 원문·합계·SHA와 롤백 상태를 읽어 비교해야 한다. R2·Worker 쓰기와 운영 배포는 아직 실행하지 않았다.
+
+실제 Worker 전수 검사와 Nature 대표 렌더는 `atlas-20261030` 모드로 별도 실행한다. 기존 10팩과 Nature Lettuce를 합한 대표는 11개다. 종전 `licensed-20261029`의 기대 팩·대표 선택과 1,929개 증거를 새 5,229개 전체의 성공 증거로 재사용하지 않는다. 새 Native 연결도 실제 실행 전 코드이며 아직 Worker·GPU 성공으로 표시하지 않는다.
 
 ## 적용 완료에 필요한 다음 증거
 

@@ -95,6 +95,8 @@ class AtlasIntakeTests(unittest.TestCase):
         self.assertEqual(primary['sha256'], intake.glb.sha256_file(derived))
         self.assertTrue(manifest['inServiceOnly']); self.assertFalse(manifest['downloadable'])
         proof = intake.read_json(root / 'preparation-proof.json')
+        self.assertEqual(set(proof), {'schema', 'controls', 'assets', 'copyPolicy', 'productApplied', 'studioRuntimeVerified'})
+        self.assertNotIn(str(self.root), json.dumps(proof, ensure_ascii=False))
         self.assertEqual(set(proof['controls']), {'recipe', 'rights', 'projection'})
         self.assertEqual(proof['assets'][0]['source']['sha256'], intake.digest(original))
         self.assertFalse(proof['studioRuntimeVerified']); self.assertFalse(proof['productApplied'])
@@ -260,6 +262,184 @@ class AtlasIntakeTests(unittest.TestCase):
         with patch.object(intake.glb, 'normalize', side_effect=normalize):
             with self.assertRaisesRegex(ValueError, '최종 GLB'): intake.write_plan(plan)
         self.assertFalse(self.output.exists())
+
+    def verified_input(self):
+        plan = self.plan()
+        intake.write_plan(plan)
+        return plan, self.output / 'input'
+
+    def rewrite_candidate(self, root, *, change_document=None, change_binary=None):
+        manifest = intake.read_json(root / 'manifest-v2.json')
+        asset = manifest['assets'][0]
+        payload = root / asset['files'][0]['path']
+        doc, binary = intake.glb.read_glb(payload.read_bytes())
+        if change_document is not None:
+            change_document(doc)
+        if change_binary is not None:
+            binary = change_binary(binary)
+        body = intake.glb.write_glb(doc, binary)
+        payload.write_bytes(body)
+        state = intake.file_state(payload)
+        asset['files'][0].update(state)
+        suffix = intake.digest((asset['sourcePath'] + '\0' + state['sha256']).encode())[:20]
+        asset['id'] = asset['packId'] + '-' + suffix
+        (root / 'manifest-v2.json').write_text(json.dumps(manifest), encoding='utf-8')
+
+    def test_derived_verification_rebuilds_descriptors_and_leaves_inputs_unchanged(self):
+        plan, root = self.verified_input()
+        before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
+        result = intake.verify_derived(plan, root)
+        manifest = intake.read_json(root / 'manifest-v2.json')
+        self.assertEqual(result['assets'], manifest['assets'])
+        self.assertEqual(result['mode'], 'verify-derived')
+        self.assertFalse(result['persistentOutputWritten'])
+        self.assertEqual(result['summary'], {'derivedAssets': 1,
+                         'derivedBytes': manifest['assets'][0]['files'][0]['bytes'],
+                         'inputUnchanged': True, 'targetUnchanged': True})
+        self.assertEqual(result['targetManifest'], intake.file_state(root / 'manifest-v2.json'))
+        self.assertEqual(result['controls'], plan['controls'])
+        self.assertEqual(result['inputFiles'], [
+            {'path': str(path), **plan['states'][path]['state']} for path in sorted(plan['states'], key=str)])
+        self.assertEqual(before, {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()})
+
+    def test_derived_verification_removes_each_temporary_model_before_next(self):
+        self.save_glb(self.pack / 'Models/Plants/second.glb')
+        plan, root = self.verified_input()
+        normalizer = intake.glb.normalize
+        destinations = []
+        def normalize(source, destination, **kwargs):
+            self.assertFalse(destination.exists())
+            self.assertEqual(list(destination.parent.iterdir()), [])
+            destinations.append(destination)
+            return normalizer(source, destination, **kwargs)
+        with patch.object(intake.glb, 'normalize', side_effect=normalize):
+            result = intake.verify_derived(plan, root)
+        self.assertEqual(result['summary']['derivedAssets'], 2)
+        self.assertTrue(all(not path.exists() and not path.parent.exists() for path in destinations))
+
+    def test_derived_verification_checks_raw_bin_even_with_matching_candidate_hash(self):
+        plan, root = self.verified_input()
+        self.rewrite_candidate(root, change_binary=lambda binary: b'4321' + binary[4:])
+        with self.assertRaisesRegex(ValueError, '재생성한 결과'):
+            intake.verify_derived(plan, root)
+
+    def test_derived_verification_checks_full_json_even_with_matching_candidate_hash(self):
+        plan, root = self.verified_input()
+        self.rewrite_candidate(root, change_document=lambda doc: doc.update(extras={'changed': True}))
+        with self.assertRaisesRegex(ValueError, '재생성한 결과'):
+            intake.verify_derived(plan, root)
+
+    def test_derived_verification_checks_texture_bytes_even_with_matching_candidate_hash(self):
+        plan, root = self.verified_input()
+        self.rewrite_candidate(root, change_binary=lambda binary: binary[:-1] + bytes([binary[-1] ^ 1]))
+        with self.assertRaisesRegex(ValueError, '재생성한 결과'):
+            intake.verify_derived(plan, root)
+
+    def test_derived_verification_rejects_missing_duplicate_and_extra_recipe_sources(self):
+        plan, root = self.verified_input()
+        original = intake.read_json(root / 'manifest-v2.json')
+        for kind in ['missing', 'duplicate', 'extra']:
+            manifest = copy.deepcopy(original)
+            if kind == 'missing':
+                manifest['assets'].clear()
+            else:
+                asset = copy.deepcopy(manifest['assets'][0])
+                if kind == 'extra':
+                    asset['sourcePath'] = 'Plants/not-in-recipe.glb'
+                    asset['id'] += '-extra'
+                    old_path = asset['files'][0]['path']
+                    asset['files'][0]['path'] = asset['packId'] + '/native/' + asset['sourcePath']
+                    new_file = root / asset['files'][0]['path']
+                    new_file.write_bytes((root / old_path).read_bytes())
+                manifest['assets'].append(asset)
+            manifest['totals']['assets'] = len(manifest['assets'])
+            (root / 'manifest-v2.json').write_text(json.dumps(manifest), encoding='utf-8')
+            with self.subTest(kind=kind), self.assertRaises(ValueError):
+                intake.verify_derived(plan, root)
+
+    def test_derived_verification_rejects_target_manifest_and_payload_symlinks(self):
+        plan, root = self.verified_input()
+        manifest = intake.read_json(root / 'manifest-v2.json')
+        targets = [root / 'manifest-v2.json', root / manifest['assets'][0]['files'][0]['path']]
+        for index, target in enumerate(targets):
+            outside = self.root / ('outside-' + str(index))
+            target.rename(outside)
+            target.symlink_to(outside)
+            with self.subTest(target=target), self.assertRaisesRegex(ValueError, '심볼릭'):
+                intake.verify_derived(plan, root)
+            target.unlink(); outside.rename(target)
+
+    def test_derived_verification_rejects_final_source_texture_control_and_target_drift(self):
+        plan, root = self.verified_input()
+        normalizer = intake.glb.normalize
+        for changed in [self.source, self.image, self.recipe_path, self.rights_path,
+                        self.projection_path, root / 'manifest-v2.json']:
+            original = changed.read_bytes()
+            def normalize(source, destination, **kwargs):
+                result = normalizer(source, destination, **kwargs)
+                changed.write_bytes(original + b' ')
+                return result
+            with self.subTest(changed=changed), patch.object(intake.glb, 'normalize', side_effect=normalize):
+                with self.assertRaises(ValueError): intake.verify_derived(plan, root)
+            changed.write_bytes(original)
+
+    def test_derived_verification_rejects_final_source_list_drift(self):
+        plan, root = self.verified_input()
+        normalizer = intake.glb.normalize
+        def normalize(source, destination, **kwargs):
+            result = normalizer(source, destination, **kwargs)
+            self.save_glb(self.pack / 'Models/Plants/late.glb')
+            return result
+        with patch.object(intake.glb, 'normalize', side_effect=normalize):
+            with self.assertRaisesRegex(ValueError, 'GLB 목록'): intake.verify_derived(plan, root)
+
+    def test_derived_verification_rechecks_payload_already_compared_before_later_model(self):
+        self.save_glb(self.pack / 'Models/Plants/second.glb')
+        plan, root = self.verified_input()
+        first = root / intake.read_json(root / 'manifest-v2.json')['assets'][0]['files'][0]['path']
+        original = first.read_bytes()
+        normalizer = intake.glb.normalize
+        calls = 0
+        def normalize(source, destination, **kwargs):
+            nonlocal calls
+            result = normalizer(source, destination, **kwargs)
+            calls += 1
+            if calls == 2:
+                first.write_bytes(original + b'changed-after-comparison')
+            return result
+        with patch.object(intake.glb, 'normalize', side_effect=normalize):
+            with self.assertRaisesRegex(ValueError, '변경됐습니다'): intake.verify_derived(plan, root)
+
+    def test_derived_verification_cleanup_on_normalization_failure(self):
+        plan, root = self.verified_input()
+        destinations = []
+        def normalize(source, destination, **kwargs):
+            destination.write_bytes(b'partial')
+            destinations.append(destination)
+            raise ValueError('합성 내부화 실패')
+        with patch.object(intake.glb, 'normalize', side_effect=normalize):
+            with self.assertRaisesRegex(ValueError, '합성 내부화 실패'): intake.verify_derived(plan, root)
+        self.assertTrue(all(not path.exists() and not path.parent.exists() for path in destinations))
+        self.assertTrue((root / 'manifest-v2.json').is_file())
+
+    def test_verify_derived_cli_requires_check_and_preserves_normal_check_summary(self):
+        plan, root = self.verified_input()
+        args = ['--recipe', str(self.recipe_path), '--library-root', str(self.library),
+                '--pack-rights', str(self.rights_path), '--projection', str(self.projection_path)]
+        for suffix in [['--check'], ['--check', '--verify-derived-root', str(root)]]:
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout): self.assertEqual(intake.main(args + suffix), 0)
+            result = json.loads(stdout.getvalue())
+            if '--verify-derived-root' not in suffix:
+                self.assertEqual(result, {'existingAssets': 0, 'addedAssets': 1,
+                                         'mode': 'check', 'persistentOutputWritten': False})
+            else:
+                self.assertEqual(result['assets'], intake.read_json(root / 'manifest-v2.json')['assets'])
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(intake.main(args + ['--write', '--verify-derived-root', str(root)]), 2)
+        self.assertIn('--check', stderr.getvalue())
+        self.assertTrue((root / 'manifest-v2.json').is_file())
 
     def test_json_duplicate_keys_and_cli_errors_are_explicit(self):
         self.recipe_path.write_text('{"schema":"first","schema":"second"}', encoding='utf-8')
