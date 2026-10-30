@@ -3,8 +3,10 @@
  *
  * 내보내기는 정의상 정착 상태다. 그래서 Canvas 커밋과 같은 시드·같은 플래너·같은 재질 해석을 거친다.
  * - 젖은 종이 레인(`wetPaperBakeProgramId` 핀): Canvas가 시분할로 굽는 것과 같은 create → advance(1)·N →
- *   finish 순서를 동기로 돌려(이미 구운 결과가 호스트 캐시에 있으면 재사용) Beer–Lambert 래스터를 무손실 PNG
- *   `<image>`로 싣는다. 바이트는 Canvas 래스터와 같다.
+ *   finish 순서를 동기로 돌려 Beer–Lambert 래스터를 무손실 PNG `<image>`로 싣는다. 바이트는 Canvas 래스터와 같다.
+ *   같은 스레드의 호스트 캐시에 결과가 있으면 다시 쓴다(내보내기 Worker 는 매번 새 모듈이라 캐시가 비어 있다).
+ *   내보내기 한 번의 굽기 작업량 한도를 넘는 획, 굽기가 다루지 않는 색(반투명·거의 흰 안료), 그리고
+ *   `wetPaperBake: "base-wash"`(렌더 경로의 집계·미리보기)는 굽지 않고 베이스 워시를 낸다. 한도를 넘은 획은 근사로 알린다.
  * - 그 밖의 레인: 기존 출력 그대로(인과 v2 = 웻 리본 캐리어, 레거시 = 원 dab).
  */
 
@@ -26,19 +28,27 @@ import {
   studioWetRibbonCarrierBatchPathData,
 } from "../brush/studio-wet-ribbon-carrier";
 import { resolveStudioWetPaperBakeProgramIdForBrush } from "../brush/wet-paper/studio-watercolor-settled-surface";
-import { compositeStudioWetPaperRaster } from "../brush/wet-paper/studio-wet-paper-composite";
+import {
+  compositeStudioWetPaperRaster,
+  parseStudioWetPaperPigmentColor,
+} from "../brush/wet-paper/studio-wet-paper-composite";
 import {
   peekStudioWetPaperBakeResult,
   rememberStudioWetPaperBakeResult,
 } from "../brush/wet-paper/studio-wet-paper-host";
 import { normalizeStudioWetPaperBakeSettings } from "../brush/wet-paper/studio-wet-paper-programs";
-import { solveStudioWetPaperBakeUncached } from "../brush/wet-paper/studio-wet-paper-solver";
+import {
+  advanceWetPaperSolve,
+  createWetPaperSolve,
+  finishWetPaperSolve,
+} from "../brush/wet-paper/studio-wet-paper-solver";
 import { processFreehandPoints } from "../studio-brush";
 import {
   DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS,
   planCausalWatercolorBrushDabs,
 } from "../studio-causal-watercolor-brush";
 
+import { addSkip } from "./studio-svg-export-defs";
 import { StudioSvgTextureBudgetError } from "./studio-svg-export-fidelity";
 import { escapeXml, fmt, fmtDabOpacity } from "./studio-svg-export-geometry";
 import {
@@ -78,11 +88,20 @@ function encodeWetPaperRasterPng(raster: StudioWetPaperRaster): Uint8Array | nul
 }
 
 /**
- * 젖은 종이 정착 베이크 한 획. 프로그램이 없거나(다른 레인), 유한 dab이 없거나, 색을 해석할 수 없으면 null
- * (호출자가 베이스 워시를 낸다 — Canvas가 래스터 없이 베이스 워시를 그리는 조건과 같다).
+ * 내보내기 한 번에 젖은 종이 굽기에 쓸 수 있는 작업량(격자 셀 × 스텝). 넘는 획은 굽지 않고 베이스 워시로 내보내고
+ * 근사로 알린다. 문서만으로 정해지는 결정적 한도라 같은 문서는 같은 SVG 를 낸다. 실측 0.13~0.7µs/셀·스텝(획 하나
+ * 0.4~1.1M)이라 이 한도는 개발 기기에서 최악 약 7초로, 느린 기기에서도 내보내기 Worker 시간 한도(30초) 안이다.
+ */
+export const STUDIO_SVG_WET_PAPER_BAKE_CELL_STEP_BUDGET = 10_000_000;
+
+/**
+ * 젖은 종이 정착 베이크 한 획. 프로그램이 없거나(다른 레인), 유한 dab이 없거나, 색을 굽기로 다룰 수 없거나,
+ * 내보내기 작업량 한도를 넘었거나, 굽지 않는 내보내기면 null(호출자가 베이스 워시를 낸다 — Canvas가 래스터 없이
+ * 베이스 워시를 그리는 조건과 같다).
  */
 function serializeWetPaperBake(
   ctx: ExportCtx,
+  el: SvgDrawElLike,
   dabs: readonly StudioBrushAliasWatercolorDab[],
   brush: string,
   runtimeEnginePrograms: StudioBrushEngineProgramSet | null,
@@ -90,13 +109,26 @@ function serializeWetPaperBake(
   stroke: string,
   strokeOpacity: number,
 ): string | null {
+  if (ctx.wetPaperBake === "base-wash") return null;
   const programId = resolveStudioWetPaperBakeProgramIdForBrush(brush, runtimeEnginePrograms);
   if (!programId) return null;
   const settings = normalizeStudioWetPaperBakeSettings({ seed, phase: "settled", programId });
   if (!settings) return null;
+  // 굽기가 다루지 않는 색은 풀기 전에 걸러 작업량을 쓰지 않는다.
+  if (!parseStudioWetPaperPigmentColor(stroke)) return null;
   let result = peekStudioWetPaperBakeResult(dabs, settings);
   if (result === undefined) {
-    result = solveStudioWetPaperBakeUncached(dabs, settings);
+    const solve = createWetPaperSolve(dabs, settings);
+    if (solve) {
+      const work = solve.state.grid.cells * solve.steps;
+      if ((ctx.wetPaperCellSteps ?? 0) + work > STUDIO_SVG_WET_PAPER_BAKE_CELL_STEP_BUDGET) {
+        addSkip(ctx, el, "approximated", { code: "wetPaperBakeBudget" });
+        return null;
+      }
+      ctx.wetPaperCellSteps = (ctx.wetPaperCellSteps ?? 0) + work;
+      advanceWetPaperSolve(solve, solve.steps);
+    }
+    result = solve ? finishWetPaperSolve(solve) : null;
     rememberStudioWetPaperBakeResult(dabs, settings, result);
   }
   if (!result) return null;
@@ -160,7 +192,7 @@ export function serializeStudioSvgWatercolorStroke(
       runtimeEnginePrograms,
     );
     const wetPaper = serializeWetPaperBake(
-      ctx, dabs, brush, runtimeEnginePrograms, watercolorSeed, stroke, strokeOpacity,
+      ctx, el, dabs, brush, runtimeEnginePrograms, watercolorSeed, stroke, strokeOpacity,
     );
     if (wetPaper) return wetPaper;
     const wetRibbonPlan = planStudioWetRibbonCarrier(dabs, {
@@ -192,7 +224,7 @@ export function serializeStudioSvgWatercolorStroke(
   );
   if (dabs.length === 0) return "";
   const wetPaper = serializeWetPaperBake(
-    ctx, dabs, brush, runtimeEnginePrograms, watercolorSeed, stroke, strokeOpacity,
+    ctx, el, dabs, brush, runtimeEnginePrograms, watercolorSeed, stroke, strokeOpacity,
   );
   if (wetPaper) return wetPaper;
   const diffuseId = nextId(ctx, "sw");

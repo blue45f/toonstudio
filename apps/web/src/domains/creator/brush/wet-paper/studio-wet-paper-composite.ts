@@ -59,10 +59,21 @@ export interface StudioWetPaperRaster {
   readonly rgba: Uint8ClampedArray;
 }
 
-/** 제품 색 문법(#rgb, #rrggbb, #rrggbbaa, rgb(), rgba())을 그대로 쓴다. 해석 불가면 null(베이스 워시 유지). */
+/**
+ * 가장 어두운 채널이 이보다 밝은 안료는 흡광이 거의 없어, Beer–Lambert 굽기가 기준 밀도에서도 이 비율보다 옅다.
+ * 흰·파스텔 획이 베이스 워시로는 보이다가 굽고 나면 사라지지 않게 그런 안료는 굽지 않는다.
+ */
+const MIN_PIGMENT_ABSORBANCE_SPAN = 0.2;
+
+/**
+ * 제품 색 문법(#rgb, #rrggbb, #rrggbbaa, rgb(), rgba())을 해석한다. 굽기는 불투명하고 흡광이 있는 안료만 다룬다.
+ * 해석할 수 없는 색, 반투명·투명 색(알파 < 1 — 예전에는 'transparent' 가 검정 안료로 구워졌다), 거의 흰 안료는
+ * null 이다(베이스 워시 유지 — 베이스 워시는 색 알파를 그대로 쓴다).
+ */
 export function parseStudioWetPaperPigmentColor(color: unknown): StudioWetPaperPigmentColor | null {
   const parsed = parseStudioGpuColor(color);
-  if (!parsed) return null;
+  if (!parsed || !(parsed[3] >= 1)) return null;
+  if (1 - Math.min(parsed[0], parsed[1], parsed[2]) < MIN_PIGMENT_ABSORBANCE_SPAN) return null;
   return { red: parsed[0], green: parsed[1], blue: parsed[2] };
 }
 

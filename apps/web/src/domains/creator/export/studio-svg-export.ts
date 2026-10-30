@@ -782,7 +782,7 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
     brushTextureAssetsByAlphaMap: new Map(),
     brushTextureSerializedUtf16Bytes: 0,
     r8EmbeddedRgbaBytes: 0,
-    seq: 0,
+    seq: 0, wetPaperBake: input.wetPaperBake,
   };
   const groups: LayerGroup[] = [...(input.groups ?? [])];
   const backgroundBody: string[] = [];
