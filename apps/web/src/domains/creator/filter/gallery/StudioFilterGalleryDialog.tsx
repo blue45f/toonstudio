@@ -25,6 +25,7 @@ import {
   STUDIO_FILTER_GALLERY_CATEGORIES,
   STUDIO_FILTER_GALLERY_CATEGORY_LABELS,
   STUDIO_FILTER_GALLERY_MAX_ENTRIES,
+  STUDIO_FILTER_GALLERY_WORK_BUDGET,
 } from "./studio-filter-gallery-types";
 
 import type {
@@ -83,11 +84,20 @@ function matchesQuery(effect: StudioFilterGalleryEffectDef, query: string): bool
 /** 다음 시드 — 32비트 선형 합동 한 걸음(무늬 바꾸기 버튼). */
 const nextSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
 
+/** 이 크기(픽셀 수) 이상까지 적용되는 조합은 상한을 따로 알리지 않는다(약 4000×4000). */
+const WORK_LIMIT_NOTICE_PIXELS = 16_000_000;
+
+/**
+ * 작업량 등급과, 작업량 상한(픽셀 수 × cost 합) 안에서 이 조합을 적용할 수 있는 가장 큰 이미지 크기. 상한을 넘는 이미지는
+ * 효과를 건너뛰므로(아무 변화 없음) 미리 알린다.
+ */
 function workLabel(cost: number): string {
   if (cost <= 0) return "효과 없음";
-  if (cost < 10) return "가벼움";
-  if (cost < 40) return "보통";
-  return "무거움 — 큰 이미지는 미리보기가 느리고, 작업량 상한을 넘으면 적용되지 않아요";
+  const weight = cost < 10 ? "가벼움" : cost < 40 ? "보통" : "무거움";
+  const limit = STUDIO_FILTER_GALLERY_WORK_BUDGET / cost;
+  if (limit >= WORK_LIMIT_NOTICE_PIXELS) return weight;
+  const side = Math.floor(Math.sqrt(limit)).toLocaleString("ko-KR");
+  return `${weight} · 약 ${(limit / 1_000_000).toFixed(1)}MP(${side}×${side}px)까지 적용돼요. 더 큰 이미지에서는 적용되지 않아요`;
 }
 
 function ParamControl({

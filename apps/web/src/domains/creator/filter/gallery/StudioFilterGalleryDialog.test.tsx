@@ -102,6 +102,16 @@ describe("필터 갤러리 대화상자", () => {
     expect(onApply.mock.calls[0]![0]).toEqual({ filterGallery: undefined });
   });
 
+  it("작업량 표시가 이 조합을 적용할 수 있는 가장 큰 이미지 크기를 알린다", () => {
+    renderDialog();
+    // 가벼운 효과 하나는 상한이 충분히 커서 등급만 보인다.
+    fireEvent.click(effectButton("명도 반전"));
+    expect(screen.getByText("작업량: 가벼움")).toBeTruthy();
+    // 무거운 겹을 쌓으면 적용되는 가장 큰 크기(MP·정사각 px)를 함께 보인다.
+    for (let index = 0; index < 3; index += 1) fireEvent.click(effectButton("팔레트 나이프"));
+    expect(screen.getByText(/^작업량: .+ · 약 \d+\.\dMP\([\d,]+×[\d,]+px\)까지 적용돼요/u)).toBeTruthy();
+  });
+
   it("검색과 분류로 효과 목록을 좁힌다", () => {
     renderDialog();
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Paint.NET · 디더링" } });
