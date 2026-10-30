@@ -43,10 +43,9 @@ import { ProductionPagePresence } from "./ProductionPagePresence";
 import { useServerPresenceSync } from "./use-server-presence-sync";
 import { ReviewSessionBar } from "./ReviewSessionBar";
 import { useEpisodeVoiceCommentary } from "./use-episode-voice-commentary";
+import { useVoiceCompareBridge } from "./use-voice-compare-bridge";
 import { ReviewVoiceCommentaryPanel } from "./ReviewVoiceCommentaryPanel";
-import {
-  voiceTracksForEpisode,
-} from "./review-voice-commentary-model";
+import { voiceTracksForEpisode, voiceCommentaryPinSummaries } from "./review-voice-commentary-model";
 import {
   deriveSessionPresence,
   endReviewSession,
@@ -485,27 +484,29 @@ function ScopedProductionEpisodeReviewRoom({
     },
   });
 
+  const voiceCompare = useVoiceCompareBridge();
   const {
     voiceTracks,
     voicePanelOpen,
     setVoicePanelOpen,
     voicePinIds,
-    voiceListState,
+    voiceListState, voiceSaveError,
     captureVoiceView,
     applyVoiceView,
-    handleSaveVoiceTrack,
+    handleSaveVoiceTrack, handlePrepareVoicePlayback,
     handleOpenVoicePin,
   } = useEpisodeVoiceCommentary({
     projectId: aggregate.projectId,
     episodeId,
     isDemo,
     tab,
-    comments,
+    comments, compareComments,
     compareItems,
     pageId,
     panelRef,
     programmaticScrollRef,
     setTab,
+    captureCompareView: voiceCompare.capture, applyCompareView: voiceCompare.apply,
   });
 
   const publishOwnLive = useCallback((interacted: boolean) => {
@@ -806,10 +807,7 @@ function ScopedProductionEpisodeReviewRoom({
             : null;
 
   const episodeVoiceTracks = voiceTracksForEpisode(voiceTracks, episodeId);
-  const voicePinSummaries = voicePinIds.flatMap((threadId) => {
-    const thread = comments?.threads.find((candidate) => candidate.id === threadId);
-    return thread ? [{ id: thread.id, body: thread.body, resolved: thread.resolved }] : [];
-  });
+  const voicePinSummaries = voiceCommentaryPinSummaries(voicePinIds, [comments, compareComments]);
 
   const approve = async () => {
     if (lockReason || !approver || approving) return;
@@ -1007,6 +1005,7 @@ function ScopedProductionEpisodeReviewRoom({
                 canEdit={canEdit}
                 onPinGateSummaryChange={handleComparePinGateChange}
                 manuscriptsHref={manuscriptsHref}
+                onVoiceCompareControllerChange={voiceCompare.register}
               />
             </div>
           ) : compareItems.length >= 2 ? (
@@ -1120,14 +1119,15 @@ function ScopedProductionEpisodeReviewRoom({
               episodeId={episodeId}
               tracks={episodeVoiceTracks}
               loading={voiceListState === "loading"}
-              error={voiceListState === "error"
+              error={[voiceSaveError, voiceListState === "error"
                 ? bt("서버에 저장된 해설을 불러오지 못했습니다. 이 탭에서 녹음한 해설은 계속 들을 수 있고, 다시 불러오려면 회차 룸을 새로고침하세요.", "Couldn't load commentary saved on the server. Recordings from this tab still play; reload the episode room to load again.")
-                : null}
+                : null].filter(Boolean).join("\n") || null}
               authorName={selfActorName}
               authorId={selfActorId}
               readOnly={!canEdit}
               captureView={captureVoiceView}
               onSaveTrack={handleSaveVoiceTrack}
+              onPreparePlayback={handlePrepareVoicePlayback}
               onApplyView={applyVoiceView}
               onOpenPin={handleOpenVoicePin}
             />
