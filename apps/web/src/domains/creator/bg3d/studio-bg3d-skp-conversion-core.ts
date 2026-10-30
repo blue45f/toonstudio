@@ -204,12 +204,12 @@ class ConversionRun {
   async checkpoint(): Promise<void> {
     const hooks = this.options.hooks;
     if (hooks?.isCancelled?.()) {
-      throw new StudioBg3dSkpConversionError("skp-cancelled", "SketchUp 변환이 취소되었습니다.", { reason: "aborted" });
+      throw new StudioBg3dSkpConversionError("skp-cancelled", "SKP 변환이 취소되었습니다.", { reason: "aborted" });
     }
     if (this.options.timeoutMs !== undefined && this.elapsedMs() > this.options.timeoutMs) {
       throw new StudioBg3dSkpConversionError(
         "skp-timeout",
-        "SketchUp 변환이 제한 시간을 넘었습니다.",
+        "SKP 변환이 제한 시간을 넘었습니다.",
         { reason: "timeout", detail: { timeoutMs: this.options.timeoutMs } },
       );
     }
