@@ -24,7 +24,7 @@ import {
   CANON_APPEARANCE_MAX,
   CANON_OUTFIT_MAX,
   CANON_TAG_MAX,
-  CANON_TAGS_MAX,
+  normalizeCanonTags,
 } from "../canon/studio-character-canon";
 import {
   StudioAiPromptEnhancer,
@@ -93,23 +93,9 @@ export interface CharacterCanonArchitectView {
   readonly estimatedUsd: number | null;
 }
 
-/**
- * 편집기는 태그 칸을 결과 태그로 통째로 바꾸므로, 작가가 이미 단 태그는 종류와 상관없이 그대로 앞에 두고
- * 새 태그는 겹치지 않는 것만 뒤에 붙인다(저장 상한과 같은 개수·길이).
- */
-function mergeCanonTraitTags(existing: readonly string[], added: readonly string[]): readonly string[] {
-  const merged: string[] = [];
-  const seen = new Set<string>();
-  for (const raw of [...existing, ...added]) {
-    const tag = cleanSingleLineText(raw, CANON_TAG_MAX);
-    const key = tag.toLocaleLowerCase();
-    if (!tag || seen.has(key)) continue;
-    seen.add(key);
-    merged.push(tag);
-    if (merged.length >= CANON_TAGS_MAX) break;
-  }
-  return Object.freeze(merged);
-}
+/** 편집기가 태그 칸을 결과로 통째로 바꾸므로 작가 태그를 종류와 상관없이 앞에 두고 새 태그는 뒤에 붙인다(저장 규칙과 같은 정규화). */
+const mergeCanonTraitTags = (existing: readonly string[], added: readonly string[]): readonly string[] =>
+  Object.freeze(normalizeCanonTags([...existing, ...added].map((tag) => cleanSingleLineText(tag, CANON_TAG_MAX))));
 
 export function buildDeterministicCharacterCanonView(
   input: CharacterCanonArchitectInput,

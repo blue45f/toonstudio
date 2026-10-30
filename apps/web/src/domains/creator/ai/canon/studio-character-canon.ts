@@ -84,7 +84,8 @@ function normalizeText(value: string, max: number): string {
   return value.normalize("NFKC").replace(/\s+/gu, " ").trim().slice(0, max);
 }
 
-function normalizeTags(tags: readonly string[]): string[] {
+/** 저장할 때와 같은 태그 정규화(NFKC·중복 제거·개수와 길이 상한). AI 결과 태그도 같은 규칙을 쓴다. */
+export function normalizeCanonTags(tags: readonly string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const tag of tags) {
@@ -155,7 +156,7 @@ export function buildCharacterCanonSheet(
     name: normalizeText(draft.name, CANON_NAME_MAX),
     appearance: normalizeText(draft.appearance, CANON_APPEARANCE_MAX),
     outfit: normalizeText(draft.outfit, CANON_OUTFIT_MAX),
-    tags: normalizeTags(draft.tags),
+    tags: normalizeCanonTags(draft.tags),
     referenceImage: normalizeReferenceImage(draft.referenceImage),
     referenceSource: isReferenceSource(draft.referenceSource)
       ? draft.referenceSource
@@ -192,7 +193,7 @@ function normalizeSheet(value: unknown): CharacterCanonSheet | null {
       CANON_APPEARANCE_MAX,
     ),
     outfit: normalizeText(String(record.outfit ?? ""), CANON_OUTFIT_MAX),
-    tags: normalizeTags(
+    tags: normalizeCanonTags(
       Array.isArray(record.tags) ? record.tags.map(String) : [],
     ),
     referenceImage: normalizeReferenceImage(
