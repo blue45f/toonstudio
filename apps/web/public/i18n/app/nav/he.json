@@ -10,7 +10,7 @@
   "nav.community": "קהילה",
   "nav.market": "שוק",
   "nav.insights": "סטטיסטיקה",
-  "nav.create": "צור",
+  "nav.create": "יצירה",
   "nav.shaper": "מעצב דמות",
   "nav.library": "ספריה",
   "nav.login": "התחברות",
@@ -21,6 +21,6 @@
   "nav.allMenu": "כל התפריטים",
   "nav.studio": "סטודיו",
   "nav.assets": "נכסים",
-  "nav.creators": "יוצרים",
+  "nav.creators": "גלריית יצירות",
   "nav.discover": "גילוי"
 }

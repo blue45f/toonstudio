@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Платформе за објављивање",
   "home.hero.stats.genres": "Спектар жанрова",
   "home.hero.stats.reviews": "Рецензије читалаца",
-  "home.loadError": "Учитавање података за почетну страницу није успело.",
+  "home.loadError": "Учитавање почетне странице није успело. Покушајте поново касније.",
   "home.creatorTitle": "Од идеје до прве сцене"
 }

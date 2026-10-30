@@ -1,6 +1,6 @@
 {
   "studio.aiToolPopover.title": "AI ఇంటిగ్రేషన్",
-  "studio.aiToolPopover.description": "డ్రాఫ్ట్, స్టాక్ మరియు దృష్టాంతాన్ని కనెక్ట్ చేయండి మరియు లింకింగ్ ట్యాబ్‌లో కీ సెట్టింగ్‌లను నిర్వహించండి.",
+  "studio.aiToolPopover.description": "డ్రాఫ్ట్, స్టాక్ మరియు దృశ్యాన్ని కనెక్ట్ చేయండి, ఇంటిగ్రేషన్ ట్యాబ్‌లో కీ సెట్టింగ్‌లను నిర్వహించండి.",
   "studio.aiToolPopover.menuAria": "AI మెను ప్రాంతం",
   "studio.aiToolPopover.tabAssist": "సహాయం",
   "studio.aiToolPopover.tabAssistTitle": "BYOK నేపథ్యం, పాత్ర, కూర్పు ప్రతిపాదన",
@@ -8,9 +8,9 @@
   "studio.aiToolPopover.tabScenarioDisabled": "మాస్టర్ ఎడిటింగ్ సమయంలో ఉపయోగించబడదు.",
   "studio.aiToolPopover.tabScenarioTitle": "దృశ్య రూపకల్పన",
   "studio.aiToolPopover.tabStock": "స్టాక్",
-  "studio.aiToolPopover.tabStockTitle": "ఉచిత ఫోటోలను అన్‌స్ప్లాష్ చేయండి",
+  "studio.aiToolPopover.tabStockTitle": "Unsplash ఉచిత ఫోటోలు",
   "studio.aiToolPopover.tabIntegrations": "సెట్టింగులు",
-  "studio.aiToolPopover.tabIntegrationsTitle": "API కీ/లింక్ సెట్టింగ్‌లు",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API కీ/ఇంటిగ్రేషన్ సెట్టింగ్‌లు",
   "studio.aiToolPopover.panelLoadingAssist": "AI సహాయక ప్యానెల్‌ని తెరుస్తోంది...",
   "studio.aiToolPopover.panelLoadingStock": "స్టాక్ ఫోటో ప్యానెల్‌ను తెరుస్తోంది...",
   "studio.aiToolPopover.panelLoadingIntegrations": "ఇంటిగ్రేషన్ సెట్టింగ్‌ల ప్యానెల్‌ని తెరుస్తోంది...",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "టెక్స్ట్ AI ప్రొవైడర్",
   "studio.aiToolPopover.serverTextAiProviderAria": "సర్వర్ టెక్స్ట్ AI ప్రొవైడర్",
   "studio.aiToolPopover.serverProviderAuto": "స్వయంచాలక మార్పిడి",
-  "studio.aiToolPopover.serverFallbackMessage": "బ్యాలెన్స్/ప్యాకేజీ పరిమితి ముగిసినప్పుడు, మీరు మరొక ప్రొవైడర్‌కి మారతారు. డబుల్ ఛార్జింగ్‌ను నిరోధించడానికి సాధారణ ఎర్రర్‌లు స్వయంచాలకంగా మళ్లీ పంపబడవు.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "బ్యాలెన్స్/ప్యాకేజీ పరిమితి ముగిసినప్పుడు, మేము మరొక ప్రొవైడర్‌కి మారుస్తాము. డబుల్ ఛార్జింగ్‌ను నిరోధించడానికి సాధారణ ఎర్రర్‌లు స్వయంచాలకంగా మళ్లీ పంపబడవు.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "మాస్టర్ ఎడిటింగ్ సమయంలో ఎపిసోడ్ AI కట్ రూపకల్పనను ఉపయోగించలేరు."
 }

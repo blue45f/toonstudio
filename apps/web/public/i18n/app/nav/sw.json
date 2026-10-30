@@ -1,6 +1,6 @@
 {
   "nav.home": "Nyumbani",
-  "nav.ranking": "Nafasi",
+  "nav.ranking": "Viwango",
   "nav.calendar": "Mfululizo",
   "nav.recommend": "Vilivyopendekezwa",
   "nav.explore": "Gundua",
@@ -21,6 +21,6 @@
   "nav.allMenu": "Menyu yote",
   "nav.studio": "Studio",
   "nav.assets": "Nyenzo",
-  "nav.creators": "Waumbaji",
-  "nav.discover": "Gundua"
+  "nav.creators": "Matunzio ya Ubunifu",
+  "nav.discover": "Gundua hadithi"
 }

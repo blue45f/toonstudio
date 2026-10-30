@@ -11,16 +11,16 @@
   "nav.market": "Markt",
   "nav.insights": "Statistiken",
   "nav.create": "Erstellen",
-  "nav.shaper": "Charakterform",
+  "nav.shaper": "Charakter-Shaper",
   "nav.library": "Bibliothek",
   "nav.login": "Anmelden",
   "nav.search": "Werke, Tools und Menüs durchsuchen",
   "nav.searchOpen": "Einheitliche Suche öffnen (Werke, Tools und Menüs)",
   "nav.quickAccess": "Schneller Zugriff",
-  "nav.menu": "Speisekarte",
+  "nav.menu": "Menü",
   "nav.allMenu": "Alle Menüs",
-  "nav.studio": "Das Studio",
-  "nav.assets": "Vermögenswerte",
-  "nav.creators": "Schöpfer",
-  "nav.discover": "Entdecken"
+  "nav.studio": "Studio",
+  "nav.assets": "Materialien",
+  "nav.creators": "Kreativgalerie",
+  "nav.discover": "Werke entdecken"
 }

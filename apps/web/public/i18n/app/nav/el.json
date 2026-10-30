@@ -1,11 +1,11 @@
 {
   "nav.home": "Αρχική",
   "nav.ranking": "Κατάταξη",
-  "nav.calendar": "Ημερολόγιο",
+  "nav.calendar": "Σειρές",
   "nav.recommend": "Προτάσεις",
   "nav.explore": "Εξερεύνηση",
-  "nav.fortune": "Οροσκόπηση",
-  "nav.play": "Αρκάδα",
+  "nav.fortune": "Ωροσκόπιο",
+  "nav.play": "Παιχνίδια",
   "nav.reviews": "Κριτικές",
   "nav.community": "Κοινότητα",
   "nav.market": "Αγορά",
@@ -17,10 +17,10 @@
   "nav.search": "Αναζήτηση ιστοριών, εργαλείων και μενού",
   "nav.searchOpen": "Άνοιγμα ενοποιημένης αναζήτησης για ιστορίες, εργαλεία και μενού",
   "nav.quickAccess": "Γρήγορη πρόσβαση",
-  "nav.menu": "Εισιτήριο",
+  "nav.menu": "Μενού",
   "nav.allMenu": "Όλο το μενού",
-  "nav.studio": "Το στούντιο",
-  "nav.assets": "Ασφάλεια",
-  "nav.creators": "Δημιουργοί",
-  "nav.discover": "Ανακαλύψτε"
+  "nav.studio": "Στούντιο",
+  "nav.assets": "Υλικά",
+  "nav.creators": "Γκαλερί δημιουργιών",
+  "nav.discover": "Εξερεύνηση έργων"
 }

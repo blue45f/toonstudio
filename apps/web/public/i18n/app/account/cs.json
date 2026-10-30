@@ -27,7 +27,7 @@
   "account.profile.namePlaceholder": "Zobrazované jméno",
   "account.profile.bioLabel": "O sobě",
   "account.profile.bioPlaceholder": "Představte se jednou větou.",
-  "account.profile.bioLength": "{length} /280",
+  "account.profile.bioLength": "{length}/280",
   "account.profile.saveButton": "Uložit profil",
   "account.profile.saving": "Ukládání…",
   "account.profile.saved": "Uloženo",

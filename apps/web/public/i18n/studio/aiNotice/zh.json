@@ -1,9 +1,9 @@
 {
-  "studio.aiNotice.title": "生成 AI 图像指南",
-  "studio.aiNotice.description": "该函数使用生成式 AI (OpenAI) 创建图像。 AI 徽章显示在创建的结果上。",
-  "studio.aiNotice.ruleCopyright": "我们不创造他人的作品、角色或真人的面孔。",
+  "studio.aiNotice.title": "生成式 AI 图像说明",
+  "studio.aiNotice.description": "该功能使用生成式 AI (OpenAI) 创建图像。生成的结果上会显示 AI 徽章。",
+  "studio.aiNotice.ruleCopyright": "请勿生成他人的作品、角色或真实人物的面孔。",
   "studio.aiNotice.ruleAccuracy": "人工智能结果可能不准确或与预期不同。",
-  "studio.aiNotice.ruleResponsibility": "您有责任使用您创建的图像。",
+  "studio.aiNotice.ruleResponsibility": "您需对所创建图像的使用承担责任。",
   "studio.aiNotice.cancel": "取消",
-  "studio.aiNotice.confirm": "我理解，创造"
+  "studio.aiNotice.confirm": "我已了解，开始生成"
 }

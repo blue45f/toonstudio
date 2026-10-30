@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Søg efter titler, skabere og tags",
   "home.hero.rankingButton": "Se samlet rangering",
   "home.hero.studioLink": "Skaberstudio",
-  "home.hero.createLink": "Skabertavle",
+  "home.hero.createLink": "Skaberforum",
   "home.hero.stats.titles": "Titler",
   "home.hero.stats.platforms": "Udgivelsesplatforme",
   "home.hero.stats.genres": "Genre-spektrum",
   "home.hero.stats.reviews": "Læseranmeldelser",
-  "home.loadError": "Forsidens data kunne ikke indlæses.",
+  "home.loadError": "Forsiden kunne ikke indlæses. Prøv igen om lidt.",
   "home.creatorTitle": "Fra en idé til din første scene"
 }

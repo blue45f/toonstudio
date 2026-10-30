@@ -1,6 +1,6 @@
 {
   "apiError.loginRequired": "Inloggning krävs.",
-  "apiError.adminRequired": "Admin-tillstånd kunde inte verifieras.",
+  "apiError.adminRequired": "Administratörsbehörighet kunde inte verifieras.",
   "apiError.adminOnlyPage": "Denna sida är begränsad till administratörer.",
   "apiError.notFound": "Det begärda objektet kunde inte hittas.",
   "apiError.unsupportedType": "Innehållstypen stöds inte.",

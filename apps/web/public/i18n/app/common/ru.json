@@ -5,12 +5,12 @@
   "common.open": "Открыть",
   "common.search": "Поиск",
   "common.retry": "Повторить",
-  "common.retry.short": "Попробуйте",
+  "common.retry.short": "Повторить",
   "common.backToTop": "Вернуться вверх.",
   "common.backToHome": "На главную",
   "common.loading.search": "Поиск...",
-  "common.notFoundWithQuery": "Никаких результатов на \" {query} \".",
+  "common.notFoundWithQuery": "По запросу «{query}» ничего не найдено.",
   "common.openSearch": "Найти в поиске →",
   "common.loading.empty": "Нет данных.",
-  "common.retry.all": "Попробуй еще раз или иди домой."
+  "common.retry.all": "Повторите попытку или вернитесь на главную."
 }

@@ -1,6 +1,6 @@
 {
-  "common.loading": "Kargatzea",
-  "common.loading.short": "Kargatzea",
+  "common.loading": "Kargatzen",
+  "common.loading.short": "Kargatzen",
   "common.close": "Itxi",
   "common.open": "Ireki",
   "common.search": "Bilatu",
@@ -10,7 +10,7 @@
   "common.backToHome": "Joan hasierara",
   "common.loading.search": "Bilatzen…",
   "common.notFoundWithQuery": "Ez dago emaitzarik '{query}' bilaketarako.",
-  "common.openSearch": "Bilatu bilaketan →",
+  "common.openSearch": "Bilatu berriro bilaketa orokorrean →",
   "common.loading.empty": "Ez da daturik itzuli.",
-  "common.retry.all": "Saiatu berriro edo itzuli etxera."
+  "common.retry.all": "Saiatu berriro edo itzuli hasierara."
 }

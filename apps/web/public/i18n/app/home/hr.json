@@ -6,12 +6,12 @@
   "home.hero.description": "Pretražite Naver Webtoon, Series i Kakao Webtoon, a zatim brzo suzite što čitati koristeći signale u stvarnom vremenu i preferencije čitatelja.",
   "home.hero.searchButton": "Pretražite naslove, autore, oznake",
   "home.hero.rankingButton": "Pogledajte jedinstveno rangiranje",
-  "home.hero.studioLink": "Stvoriteljski studio",
+  "home.hero.studioLink": "Studio za autore",
   "home.hero.createLink": "Ploča za autore",
   "home.hero.stats.titles": "Naslovi",
   "home.hero.stats.platforms": "Platforme za objavljivanje",
   "home.hero.stats.genres": "Spektrum žanrova",
   "home.hero.stats.reviews": "Recenzije čitatelja",
-  "home.loadError": "Nije uspjelo učitavanje podataka početne stranice.",
+  "home.loadError": "Učitavanje početne stranice nije uspjelo. Pokušajte ponovno kasnije.",
   "home.creatorTitle": "Od ideje do prve scene"
 }

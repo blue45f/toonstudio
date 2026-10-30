@@ -2,8 +2,8 @@
   "apiError.loginRequired": "ಸೈನ್ ಇನ್ ಅಗತ್ಯವಿದೆ.",
   "apiError.adminRequired": "ನಿರ್ವಾಹಕರ ಅನುಮತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
   "apiError.adminOnlyPage": "ಈ ಪುಟವನ್ನು ನಿರ್ವಾಹಕರಿಗೆ ಮಾತ್ರ ಸೀಮಿತಗೊಳಿಸಲಾಗಿದೆ.",
-  "apiError.notFound": "ಬೇಡಿಕೆಯ ವಸ್ತು ಕಂಡುಬಂದಿಲ್ಲ.",
+  "apiError.notFound": "ವಿನಂತಿಸಿದ ಐಟಂ ಕಂಡುಬಂದಿಲ್ಲ.",
   "apiError.unsupportedType": "ಬೆಂಬಲಿಸದ ವಿಷಯ ಪ್ರಕಾರ.",
   "apiError.inactiveAccount": "ನಿಷ್ಕ್ರಿಯ ಖಾತೆಗಳು ನಿರ್ವಾಹಕ ವೈಶಿಷ್ಟ್ಯಗಳನ್ನು ಬಳಸಲು ಸಾಧ್ಯವಿಲ್ಲ.",
-  "apiError.settlementFailed": "ವಸಾಹತು ಪ್ರಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ."
+  "apiError.settlementFailed": "ಪಾವತಿ ಇತ್ಯರ್ಥ ಪ್ರಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ. ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
 }

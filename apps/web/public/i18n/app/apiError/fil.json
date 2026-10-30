@@ -2,8 +2,8 @@
   "apiError.loginRequired": "Kinakailangan ang pag-sign in.",
   "apiError.adminRequired": "Ang mga pahintulot ng admin ay hindi maaaring suriin.",
   "apiError.adminOnlyPage": "Ang pahinang ito ay limitado sa mga administrador.",
-  "apiError.notFound": "Hindi natagpuan ang hinihiling item.",
+  "apiError.notFound": "Hindi natagpuan ang hinihiling na item.",
   "apiError.unsupportedType": "Hindi suportadong uri ng nilalaman.",
   "apiError.inactiveAccount": "Hindi maaaring gumamit ng mga tampok ng administrador ang mga hindi aktibong account.",
-  "apiError.settlementFailed": "Ang pagproseso ng pagbabayad ay nabigo."
+  "apiError.settlementFailed": "Nabigo ang pagproseso ng pagbabayad. Pakisubukang muli mamaya."
 }

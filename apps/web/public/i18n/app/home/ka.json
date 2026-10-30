@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "და განთქმულ ამბებს,",
+  "home.hero.titleLine1": "გაფანტულ ამბებს,",
   "home.hero.titleShimmer": "ერთი ინდექსი",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "მოძებნეთ Naver Webtoon, Series და Kakao Webtoon, შემდეგ სწრაფად შეამცირეთ რა უნდა წაიკითხოთ რეალურ დროში სიგნალების და მკითხველის პრეფერენციების გამოყენებით.",
-  "home.hero.searchButton": "სათაურების ძიება, შემქმნელები, თარგები",
+  "home.hero.description": "მოძებნეთ ერთდროულად Naver Webtoon-ში, Series-სა და Kakao Webtoon-ში, შემდეგ კი რეალურ დროში სიგნალებისა და მკითხველთა გემოვნების მიხედვით სწრაფად გაფილტრეთ, რა წაიკითხოთ.",
+  "home.hero.searchButton": "სათაურების, შემქმნელების, თეგების ძიება",
   "home.hero.rankingButton": "ნახეთ ერთიანი რეიტინგი",
   "home.hero.studioLink": "შემოქმედის სტუდია",
-  "home.hero.createLink": "დამქმებელი ბორდი",
+  "home.hero.createLink": "შემოქმედის დაფა",
   "home.hero.stats.titles": "სათაურები",
   "home.hero.stats.platforms": "საგამომცემლო პლატფორმები",
   "home.hero.stats.genres": "ჟანრის სპექტრი",
   "home.hero.stats.reviews": "მკითხველთა მიმოხილვები",
-  "home.loadError": "ნვ მჲდა ეა ოპვრთვჟრვ დთბალთრვ.",
-  "home.creatorTitle": "ჲე იდეა ეჲ ოჲეაპა ჟჲპანა რთ"
+  "home.loadError": "მთავარი გვერდის ჩატვირთვა ვერ მოხერხდა. გთხოვთ, ცოტა ხანში სცადოთ თავიდან.",
+  "home.creatorTitle": "იდეიდან პირველ სცენამდე"
 }

@@ -2,8 +2,8 @@
   "apiError.loginRequired": "É necesario iniciar sesión.",
   "apiError.adminRequired": "Non se verificaron os permisos do administrador.",
   "apiError.adminOnlyPage": "Esta páxina está limitada aos administradores.",
-  "apiError.notFound": "O artigo solicitado non se atopou.",
+  "apiError.notFound": "Non se atopou o elemento solicitado.",
   "apiError.unsupportedType": "Tipo de contido non admitido.",
   "apiError.inactiveAccount": "As contas inactivas non poden usar características de administrador.",
-  "apiError.settlementFailed": "O procesamento de liquidación fallou."
+  "apiError.settlementFailed": "Fallou o procesamento da liquidación. Téntao de novo nun momento."
 }

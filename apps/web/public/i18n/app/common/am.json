@@ -7,10 +7,10 @@
   "common.retry": "ዳግም ሞክር",
   "common.retry.short": "ዳግም ሞክር",
   "common.backToTop": "ወደላይ ተመለስ",
-  "common.backToHome": "ወደ ቤት ሂድ",
-  "common.loading.search": "ፍለጋ...",
-  "common.notFoundWithQuery": "ለ ' {query} ' ምንም ውጤቶች አልነበሩም።",
-  "common.openSearch": "በፍለጋ ላይ ያግኙት",
+  "common.backToHome": "ወደ መነሻ ገጽ ሂድ",
+  "common.loading.search": "በመፈለግ ላይ…",
+  "common.notFoundWithQuery": "ለ'{query}' ምንም ውጤት አልተገኘም።",
+  "common.openSearch": "በአጠቃላይ ፍለጋ እንደገና ፈልግ →",
   "common.loading.empty": "ምንም መረጃ አልተመለሰም.",
-  "common.retry.all": "እንደገና ሞክር ወይም ወደ ቤት ተመለስ."
+  "common.retry.all": "እንደገና ሞክር ወይም ወደ መነሻ ገጽ ሂድ።"
 }

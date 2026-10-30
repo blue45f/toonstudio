@@ -4,6 +4,6 @@
   "apiError.adminOnlyPage": "ఈ పేజీ నిర్వాహకులకు మాత్రమే పరిమితం.",
   "apiError.notFound": "అభ్యర్థించిన వస్తువును కనుగొనలేకపోయాము.",
   "apiError.unsupportedType": "మద్దతు లేని కంటెంట్ రకం.",
-  "apiError.inactiveAccount": "క్రియాశీల ఖాతాల నిర్వాహక లక్షణాలను ఉపయోగించలేరు.",
-  "apiError.settlementFailed": "పరిష్కారం ప్రాసెసింగ్ విఫలమైంది."
+  "apiError.inactiveAccount": "నిష్క్రియ ఖాతాలు నిర్వాహక అనుమతులను ఉపయోగించలేవు.",
+  "apiError.settlementFailed": "సెటిల్‌మెంట్ ప్రాసెసింగ్ విఫలమైంది. కొద్దిసేపటి తర్వాత మళ్లీ ప్రయత్నించండి."
 }

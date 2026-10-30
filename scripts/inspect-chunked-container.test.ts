@@ -9,6 +9,8 @@ import { describe, expect, it } from "vitest";
 import {
   encodeClipContainer,
   encodeClipExternalChunkPayload,
+  encodeClipHeadPayload,
+  planClipContainerLayout,
 } from "../packages/studio-format-gateway/src/chunked-sqlite-container";
 
 import {
@@ -42,17 +44,14 @@ function buildSqliteBytes(): Uint8Array {
 }
 
 function buildContainer(): Uint8Array {
+  const exta = encodeClipExternalChunkPayload({ externalId: EXTERNAL_ID, data: Uint8Array.from([1, 2, 3]) });
+  const sqlite = buildSqliteBytes();
+  const layout = planClipContainerLayout([40, exta.byteLength, sqlite.byteLength, 0]);
   return encodeClipContainer({
     chunks: [
-      { label: "Head", payload: new Uint8Array(40) },
-      {
-        label: "CHNKExta",
-        payload: encodeClipExternalChunkPayload({
-          externalId: EXTERNAL_ID,
-          data: Uint8Array.from([1, 2, 3]),
-        }),
-      },
-      { label: "SQLi", payload: buildSqliteBytes() },
+      { label: "Head", payload: encodeClipHeadPayload({ sqliteChunkOffset: layout.headerOffsets[2]!, fileId: Uint8Array.from({ length: 16 }, (_, index) => index + 1) }) },
+      { label: "CHNKExta", payload: exta },
+      { label: "SQLi", payload: sqlite },
       { label: "Foot", payload: new Uint8Array(0) },
     ],
   });
@@ -86,6 +85,8 @@ describe("청크형 SQLite 컨테이너 구조 검사", () => {
     expect(report.headerLayout).toBe("length-then-offset");
     expect(report.truncated).toBe(false);
     expect(report.issues).toEqual([]);
+    expect(report.head).toMatchObject({ version: 256, fileIdLength: 16 });
+    expect(report.head?.sqliteChunkOffset).toBeGreaterThan(0);
     expect(report.chunkTypeCounts).toEqual({ Head: 1, Exta: 1, SQLi: 1, Foot: 1 });
     expect(report.externalBlocks).toMatchObject({
       total: 1,
@@ -162,6 +163,7 @@ describe("청크형 SQLite 컨테이너 구조 검사", () => {
     expect(code).toBe(0);
     const text = out.join("");
     expect(text).toContain("headerLayout=length-then-offset");
+    expect(text).toMatch(/head: version=256 sqliteChunkOffset=\d+ fileIdLength=16/);
     expect(text).toContain("chunks: Head×1 Exta×1 SQLi×1 Foot×1");
     expect(text).toContain("table Layer (2 rows): MainId INTEGER, LayerName TEXT, LayerOpacity INTEGER");
     expect(text).toContain("issues: (없음)");

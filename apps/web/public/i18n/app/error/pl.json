@@ -3,5 +3,5 @@
   "error.chunkRetryFailed": "Odświeżono raz, ale problem nadal występuje. Sprawdź połączenie i spróbuj ponownie.",
   "error.reloadButton": "Wczytaj stronę ponownie",
   "error.goHome": "Przejdź na stronę główną",
-  "error.retryDesc": "Proszę spróbować jeszcze raz lub wrócić na stronę główną."
+  "error.retryDesc": "Spróbuj ponownie lub wróć na stronę główną."
 }

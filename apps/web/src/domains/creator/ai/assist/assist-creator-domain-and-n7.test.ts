@@ -97,6 +97,34 @@ describe("claude-creator-domain-assist & claude-n7-and-llm-runners", () => {
     parseSpy.mockRestore();
   });
 
+  it("캐릭터 캐논은 편집기의 외모·의상 칸을 자르지 않고 보내고, 모델이 빠뜨린 기존 태그도 결과 앞에 그대로 남긴다", async () => {
+    const parseSpy = vi.spyOn(assistTransport, "assistParse").mockResolvedValueOnce({
+      message: { model: "claude-opus-5-5", usage: { input_tokens: 120, output_tokens: 80 } } as never,
+      parsed: {
+        appearanceKo: "20대 초반, 은발 단발, 왼쪽 눈 밑 점",
+        outfitKo: "검은 하이칼라 코트",
+        traitTags: ["은발 단발", "안경"],
+        englishPromptLockTokens: "early twenties, silver bob hair",
+        negativeDriftTokens: "hair color drift, missing mole",
+        speechStyleSummaryKo: "짧은 반말",
+      },
+    });
+    const appearance = "외모".repeat(200);
+    const outfit = "의상".repeat(150);
+    const view = await runAssistCharacterCanonArchitect(
+      { name: "서진", roughNotes: `${appearance} / ${outfit}`, existingTags: ["차분함", "안경", "왼쪽 눈 밑 점"] },
+      { route: { apiKey: "sk-ant-test-key", revision: 1, model: "claude-opus-5-5" } },
+    );
+    const userText = String(parseSpy.mock.calls[0]?.[1]?.messages?.[0]?.content ?? "");
+    // 240자에서 잘리면 의상 칸이 통째로 빠져 다시 실행할 때 지어낸 의상으로 덮인다.
+    expect(userText).toContain(`작가 메모: ${appearance} / ${outfit}`);
+    expect(userText).toContain("기존 태그: 차분함, 안경, 왼쪽 눈 밑 점");
+    expect(view.source).toBe("claude-live");
+    // 편집기는 태그 칸을 이 결과로 바꾸므로 성격 태그('차분함')도 사라지면 안 된다.
+    expect(view.traitTags).toEqual(["차분함", "안경", "왼쪽 눈 밑 점", "은발 단발"]);
+    parseSpy.mockRestore();
+  });
+
   it("N7 3단계 오케스트레이션 및 9종 신규 LLM 프롬프트 실행기가 코드펜스 제거와 안전 폴백을 지원한다", async () => {
     expect(stripJsonCodeFence('```json\n{"cuts":[{"id":"cut-1","summary":"요약"}]}\n```')).toBe(
       '{"cuts":[{"id":"cut-1","summary":"요약"}]}',

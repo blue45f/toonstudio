@@ -6,6 +6,7 @@ import {
   emptyCharacterCanonDocument,
   loadCharacterCanonDocument,
   mergeCharacterCanonDocuments,
+  normalizeCanonTags,
   parseCharacterCanonDocument,
   recordCanonPanelUsage,
   removeCharacterCanonSheet,
@@ -68,6 +69,16 @@ describe("캐릭터 캐논 시트 모델", () => {
     expect(sheet.tags.length).toBeLessThanOrEqual(CANON_TAGS_MAX);
     // 허용되지 않은 스킴의 레퍼런스는 버린다.
     expect(sheet.referenceImage).toBeNull();
+  });
+
+  it("태그는 코드 포인트 기준으로 잘라 이모지를 쪼개지 않고, '# 태그'의 앞 공백도 지워 중복을 없앤다", () => {
+    // 24번째 코드 포인트가 이모지(서로게이트 쌍)인 태그. UTF-16 단위로 자르면 짝 없는 서로게이트가 남는다.
+    const emojiTag = "왼쪽 귀에 초승달 모양 은색 귀걸이를 착용🌙";
+    const [first] = normalizeCanonTags([emojiTag]);
+    expect(first).toBe(emojiTag);
+    // 짝 없는 서로게이트가 있으면 encodeURIComponent가 URIError를 던진다.
+    expect(() => encodeURIComponent(first ?? "")).not.toThrow();
+    expect(normalizeCanonTags(["# 안경", "안경", "  ## 은발 ", "＃은발", "＃ 점"])).toEqual(["안경", "은발", "점"]);
   });
 
   it("서빙을 내린 차단 아바타 썸네일을 레퍼런스로 든 저장본은 레퍼런스 없는 시트로 복구한다", () => {

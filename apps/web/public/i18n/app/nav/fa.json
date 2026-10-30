@@ -1,10 +1,10 @@
 {
   "nav.home": "خانه",
   "nav.ranking": "رتبه‌بندی",
-  "nav.calendar": "تقویم",
+  "nav.calendar": "سریال‌ها",
   "nav.recommend": "پیشنهادها",
   "nav.explore": "کاوش",
-  "nav.fortune": "هراسکوپ",
+  "nav.fortune": "فال",
   "nav.play": "آرکید",
   "nav.reviews": "نظرات",
   "nav.community": "انجمن",
@@ -17,10 +17,10 @@
   "nav.search": "جستجوی داستان‌ها، ابزارها و منوها",
   "nav.searchOpen": "باز کردن جستجوی یکپارچه برای داستان‌ها، ابزارها و منوها",
   "nav.quickAccess": "دسترسی سریع",
-  "nav.menu": "مینیو",
-  "nav.allMenu": "تمام مينيو",
+  "nav.menu": "منو",
+  "nav.allMenu": "همه منوها",
   "nav.studio": "استودیو",
   "nav.assets": "دارایی ها",
   "nav.creators": "سازندگان",
-  "nav.discover": "کشف کنید"
+  "nav.discover": "کشف آثار"
 }

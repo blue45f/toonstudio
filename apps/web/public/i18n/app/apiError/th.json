@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "ต้องเข้าสู่ระบบ",
-  "apiError.adminRequired": "การอนุญาตผู้บริหารไม่สามารถตรวจสอบได้",
-  "apiError.adminOnlyPage": "หน้านี้มีส่วนจํากัดสําหรับผู้บริหาร",
-  "apiError.notFound": "สินค้าที่ต้องการไม่ได้พบ",
-  "apiError.unsupportedType": "ประเภทเนื้อหาที่ไม่ได้สนับสนุน",
-  "apiError.inactiveAccount": "บัญชีที่ไม่ทํางานไม่สามารถใช้คุณสมบัติผู้บริหารได้",
-  "apiError.settlementFailed": "การแก้ไขการเจอกันล้มเหลว"
+  "apiError.adminRequired": "ไม่สามารถยืนยันสิทธิ์ผู้ดูแลระบบได้",
+  "apiError.adminOnlyPage": "หน้านี้สำหรับผู้ดูแลระบบเท่านั้น",
+  "apiError.notFound": "ไม่พบรายการที่ต้องการ",
+  "apiError.unsupportedType": "ไม่รองรับประเภทเนื้อหานี้",
+  "apiError.inactiveAccount": "บัญชีที่ปิดใช้งานไม่สามารถใช้สิทธิ์ผู้ดูแลระบบได้",
+  "apiError.settlementFailed": "การดำเนินการชำระยอดล้มเหลว โปรดลองอีกครั้งในอีกสักครู่"
 }

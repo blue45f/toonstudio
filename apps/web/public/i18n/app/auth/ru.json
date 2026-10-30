@@ -1,5 +1,5 @@
 {
-  "auth.menu.triggerLabel": "Меню счетов",
+  "auth.menu.triggerLabel": "Меню аккаунта",
   "auth.menu.adminPanel": "Консоль администратора",
   "auth.menu.profile": "Мой профиль",
   "auth.menu.settings": "Настройки",
@@ -8,16 +8,16 @@
   "auth.callback.message.working": "Завершение входа…",
   "auth.callback.error.badState": "Недопустимый параметр состояния.",
   "auth.callback.error.noCode": "Отсутствует код авторизации.",
-  "auth.callback.error.oauthFailed": "Не удалось выполнить обмен OAuth.",
+  "auth.callback.error.oauthFailed": "Не удалось завершить вход. Вернитесь на страницу входа и попробуйте снова.",
   "auth.callback.error.unsupported": "Неподдерживаемый способ входа.",
   "auth.callback.error.accessDenied": "Вход отменён.",
   "auth.callback.error.generic": "Не удалось войти. Вернитесь на страницу входа и попробуйте снова.",
   "auth.callback.error.noUser": "Не удалось проверить информацию пользователя.",
   "auth.callback.error.invalidAccess": "Недействительный доступ.",
-  "auth.callback.error.failed": "Во время входа произошла ошибка.",
+  "auth.callback.error.failed": "Произошла ошибка, и вход не удалось завершить. Вернитесь на страницу входа и попробуйте снова.",
   "auth.callback.message.done": "Вход выполнен. Скоро вы будете перенаправлены.",
   "auth.callback.message.doneDemo": "Демо-вход выполнен. Скоро вы будете перенаправлены.",
   "auth.callback.demo.message": "Вы вошли в демо-аккаунт. Некоторые функции могут быть ограничены.",
   "auth.callback.backToLogin": "Назад ко входу",
-  "auth.callback.slowHelp": "Это занимает больше времени, чем обычно. Если этот экран останется, вернитесь ко входу и попробуйте снова."
+  "auth.callback.slowHelp": "Подключение занимает больше времени, чем обычно. Если этот экран не исчезает, вернитесь ко входу и попробуйте снова."
 }

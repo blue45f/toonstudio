@@ -7,10 +7,10 @@
   "common.retry": "Poskusi znova",
   "common.retry.short": "Poskusi znova",
   "common.backToTop": "Nazaj na vrh",
-  "common.backToHome": "Pojdi domov.",
+  "common.backToHome": "Na domačo stran",
   "common.loading.search": "Iskanje…",
   "common.notFoundWithQuery": "Ni rezultatov za '{query}'.",
-  "common.openSearch": "Poiščite v iskanju →",
-  "common.loading.empty": "Ni se vrnilo podatkov.",
-  "common.retry.all": "Poskusi še enkrat ali se vrni domov."
+  "common.openSearch": "Poišči znova v celotnem iskanju →",
+  "common.loading.empty": "Odziv ne vsebuje podatkov.",
+  "common.retry.all": "Poskusi znova ali pojdi na domačo stran."
 }

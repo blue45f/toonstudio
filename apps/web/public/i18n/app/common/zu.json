@@ -8,9 +8,9 @@
   "common.retry.short": "Zama kabusha",
   "common.backToTop": "Buyela phezulu",
   "common.backToHome": "Hamba uye ekhaya",
-  "common.loading.search": "Ukufuna...",
-  "common.notFoundWithQuery": "Azikho imiphumela ye- ' {query} '.",
-  "common.openSearch": "Kuthole Ekusesheni →",
+  "common.loading.search": "Kuyacingwa…",
+  "common.notFoundWithQuery": "Azikho imiphumela ye-'{query}'.",
+  "common.openSearch": "Kuthole futhi ekucingeni okuphelele →",
   "common.loading.empty": "Ayikho idatha ebuyisiwe.",
   "common.retry.all": "Zama futhi noma ubuyele ekhaya."
 }

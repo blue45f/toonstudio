@@ -20,7 +20,7 @@
   "account.activity.stat.collections": "Kolleksiyalar",
   "account.activity.recentReviewsTitle": "Son rəylər",
   "account.activity.recentNoText": "Yalnız qiymətləndirmə",
-  "account.activity.storageHint": "Fəaliyyət bu brauzerdə (daxil olduqda hesabınızda) saxlanılır. Tam siyahı {link} bölməsində mövcuddur.",
+  "account.activity.storageHint": "Fəaliyyət bu brauzerdə (və daxil olduqda hesabınızda) saxlanılır. Tam siyahı {link} bölməsində mövcuddur.",
   "account.profile.photoTitle": "Profil şəkli",
   "account.profile.photoDesc": "Bu şəkil adınızın göstərildiyi yerlərdə, məsələn şərhlərdə və menyularda görünür.",
   "account.profile.nameLabel": "Ad",

@@ -1,16 +1,16 @@
 {
-  "common.loading": "تحميل",
+  "common.loading": "جارٍ التحميل",
   "common.loading.short": "التحميل",
   "common.close": "إغلاق",
   "common.open": "فتح",
   "common.search": "بحث",
   "common.retry": "إعادة المحاولة",
   "common.retry.short": "حاول مرة أخرى",
-  "common.backToTop": "العودة إلى القمة",
+  "common.backToTop": "العودة إلى الأعلى",
   "common.backToHome": "العودة للرئيسية",
-  "common.loading.search": "أبحث...",
+  "common.loading.search": "جارٍ البحث...",
   "common.notFoundWithQuery": "لا توجد نتائج لـ \" {query} \"",
-  "common.openSearch": "ابحث عنه في البحث",
-  "common.loading.empty": "لم يعود أي بيانات",
-  "common.retry.all": "حاول مرة أخرى أو عودي للمنزل"
+  "common.openSearch": "ابحث عنه مجددًا في البحث الشامل →",
+  "common.loading.empty": "بيانات الاستجابة فارغة.",
+  "common.retry.all": "حاول مرة أخرى أو انتقل إلى الصفحة الرئيسية."
 }

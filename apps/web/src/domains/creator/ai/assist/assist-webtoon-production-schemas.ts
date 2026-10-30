@@ -331,6 +331,13 @@ export function clampInt(raw: number, min: number, max: number, fallback: number
   return Math.max(min, Math.min(max, Math.round(raw)));
 }
 
+const EYE_PATH_DIRECTION_LABEL: Readonly<Record<ScrollEyePathCutDiagnosticView["eyePathPattern"], string>> = {
+  "s-curve-optimal": "S자 시선 흐름",
+  "z-zig-zag": "좌우 왕복 시선",
+  "vertical-drop": "위에서 아래로 떨어지는 시선",
+  "stagnant-cluster": "시선이 멈추는 밀집 배치",
+};
+
 export function buildDeterministicScrollEyePathReport(
   input: WebtoonProductionAssistInput = {},
 ): AssistScrollEyePathView {
@@ -367,7 +374,8 @@ export function buildDeterministicScrollEyePathReport(
           ? "하단 18% 엄지 가림 데드존을 피해 두 번째 말풍선을 우상단 대각선(Y: 22~68%)으로 이동하세요."
           : "좌상단 도입 말풍선 → 인물 시선 중심 → 우하단 후속 말풍선으로 S자 시선 궤적이 안정적입니다.",
       directorCoachingKo: `390×844 모바일 뷰포트 기준 ${cut.shotScale}(${cut.cameraAngle}) 후 ${gutterPx}px 세로 여백으로 서스펜스 호흡을 만드세요.`,
-      readyStageDirectionLine: `[스크롤 호흡 ${gutterPx}px · ${pattern}] ${cut.summary}`,
+      // 앱이 그 컷 줄 끝에 [ ]로 붙이는 지문이므로 컷 내용을 되풀이하지 않고, 대본에 남을 글이라 영문 분류값 대신 한국어로 쓴다.
+      readyStageDirectionLine: `${EYE_PATH_DIRECTION_LABEL[pattern]} · 뒤 여백 ${gutterPx}px`,
     });
   });
 

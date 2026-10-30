@@ -7,10 +7,10 @@
   "common.retry": "دوبارہ کوشش کریں",
   "common.retry.short": "دوبارہ کوشش کریں",
   "common.backToTop": "اوپر واپس",
-  "common.backToHome": "گھر جاؤ",
+  "common.backToHome": "ہوم پیج پر جائیں",
   "common.loading.search": "تلاش کر رہا ہے...",
   "common.notFoundWithQuery": "' {query} ' کے نتائج نہیں ملے۔",
-  "common.openSearch": "تلاش میں تلاش کریں →",
+  "common.openSearch": "مکمل تلاش میں دوبارہ ڈھونڈیں →",
   "common.loading.empty": "کوئی ڈیٹا واپس نہیں کیا گیا.",
-  "common.retry.all": "دوبارہ کوشش کریں یا گھر واپس جائیں."
+  "common.retry.all": "دوبارہ کوشش کریں یا ہوم پیج پر جائیں۔"
 }

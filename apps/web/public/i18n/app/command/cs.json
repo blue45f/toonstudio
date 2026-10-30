@@ -18,10 +18,10 @@
   "command.palette.quick.rankingHint": "Žebříček podle 6 os",
   "command.palette.quick.recommendHint": "Na základě vašeho vkusu",
   "command.palette.quick.fortuneHint": "Saju, tarot, kompatibilita",
-  "command.palette.quick.randomHint": "Jeden náhodný název",
+  "command.palette.quick.randomHint": "Jedno náhodné dílo",
   "command.palette.quick.calendarHint": "Vydávání týdně",
   "command.palette.quick.compareHint": "Porovnávejte dvě díla vedle sebe",
   "command.palette.quick.exploreHint": "Prozkoumat spektrum",
   "command.palette.quick.insightsHint": "Informace o trhu z údajů",
-  "command.palette.quick.libraryHint": "Zajímavosti, hodnocení, vkus"
+  "command.palette.quick.libraryHint": "Zájmy, hodnocení, vkus"
 }

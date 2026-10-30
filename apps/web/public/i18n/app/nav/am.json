@@ -11,7 +11,7 @@
   "nav.market": "ገበያ",
   "nav.insights": "ግንዛቤዎች",
   "nav.create": "ፍጠር",
-  "nav.shaper": "የባሕርይ ቅርጸት",
+  "nav.shaper": "ገጸ-ባሕርይ ቀራጭ",
   "nav.library": "ቤተ-መጽሐፍት",
   "nav.login": "ግባ",
   "nav.search": "ታሪኮችን፣ መሳሪያዎችን እና ምናሌዎችን ይፈልጉ",
@@ -20,7 +20,7 @@
   "nav.menu": "ምናሌ",
   "nav.allMenu": "ሁሉም ምናሌ",
   "nav.studio": "ስቱዲዮ",
-  "nav.assets": "ንብረቶች",
+  "nav.assets": "ቁሳቁሶች",
   "nav.creators": "ፈጣሪዎች",
-  "nav.discover": "ይፋ አድርግ"
+  "nav.discover": "ሥራዎችን ዳስስ"
 }

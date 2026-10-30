@@ -5,5 +5,5 @@
   "apiError.notFound": "対象が見つかりませんでした。",
   "apiError.unsupportedType": "サポートされていないコンテンツタイプです。",
   "apiError.inactiveAccount": "非アクティブなアカウントは管理者機能を利用できません。",
-  "apiError.settlementFailed": "精算処理に失敗しました。"
+  "apiError.settlementFailed": "精算処理に失敗しました。しばらくしてからもう一度お試しください。"
 }

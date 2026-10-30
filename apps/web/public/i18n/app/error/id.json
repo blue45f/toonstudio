@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Mengunggah ulang versi terbaru...",
-  "error.chunkRetryFailed": "Aku baru sekali, tapi masalahnya tetap ada.",
-  "error.reloadButton": "memuat ulang halaman",
-  "error.goHome": "Kembalilah ke Rumah",
+  "error.reloading": "Memuat ulang versi terbaru…",
+  "error.chunkRetryFailed": "Sudah mencoba memuat ulang sekali, tetapi masalahnya masih berlanjut. Periksa koneksi jaringan Anda, lalu coba lagi.",
+  "error.reloadButton": "Muat Ulang Halaman",
+  "error.goHome": "Ke Halaman Utama",
   "error.retryDesc": "Silakan coba lagi atau kembali ke halaman utama."
 }

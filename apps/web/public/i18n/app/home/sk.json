@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Publikovacie platformy",
   "home.hero.stats.genres": "Spektrum žánrov",
   "home.hero.stats.reviews": "Recenzie čitateľov",
-  "home.loadError": "Nepodarilo sa načítať údaje domovskej stránky.",
-  "home.creatorTitle": "Od myšlienky až po tvoju prvú scénu"
+  "home.loadError": "Nepodarilo sa načítať domovskú stránku. Skúste to znova neskôr.",
+  "home.creatorTitle": "Od nápadu k prvej scéne"
 }

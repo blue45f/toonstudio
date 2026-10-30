@@ -81,14 +81,17 @@ export const CANON_TAG_MAX = 24;
 export const CANON_USAGE_MAX = 200;
 
 function normalizeText(value: string, max: number): string {
-  return value.normalize("NFKC").replace(/\s+/gu, " ").trim().slice(0, max);
+  // 코드 포인트 기준으로 잘라 이모지 같은 서로게이트 쌍을 반으로 쪼개지 않는다(쪼개지면 AI 요청 본문이 거절될 수 있다).
+  return [...value.normalize("NFKC").replace(/\s+/gu, " ").trim()].slice(0, max).join("").trim();
 }
 
-function normalizeTags(tags: readonly string[]): string[] {
+/** 저장할 때와 같은 태그 정규화(NFKC·중복 제거·개수와 길이 상한). AI 결과 태그도 같은 규칙을 쓴다. */
+export function normalizeCanonTags(tags: readonly string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const tag of tags) {
-    const normalized = normalizeText(tag, CANON_TAG_MAX).replace(/^#+/u, "");
+    // 전각 '＃'도 '#'이 되도록 NFKC를 먼저 하고, 자르기 전에 앞의 '#'·공백을 떼어 '# 안경'과 '안경'을 한 태그로 본다.
+    const normalized = normalizeText(tag.normalize("NFKC").replace(/^[\s#]+/u, ""), CANON_TAG_MAX);
     if (!normalized || seen.has(normalized)) continue;
     seen.add(normalized);
     result.push(normalized);
@@ -155,7 +158,7 @@ export function buildCharacterCanonSheet(
     name: normalizeText(draft.name, CANON_NAME_MAX),
     appearance: normalizeText(draft.appearance, CANON_APPEARANCE_MAX),
     outfit: normalizeText(draft.outfit, CANON_OUTFIT_MAX),
-    tags: normalizeTags(draft.tags),
+    tags: normalizeCanonTags(draft.tags),
     referenceImage: normalizeReferenceImage(draft.referenceImage),
     referenceSource: isReferenceSource(draft.referenceSource)
       ? draft.referenceSource
@@ -192,7 +195,7 @@ function normalizeSheet(value: unknown): CharacterCanonSheet | null {
       CANON_APPEARANCE_MAX,
     ),
     outfit: normalizeText(String(record.outfit ?? ""), CANON_OUTFIT_MAX),
-    tags: normalizeTags(
+    tags: normalizeCanonTags(
       Array.isArray(record.tags) ? record.tags.map(String) : [],
     ),
     referenceImage: normalizeReferenceImage(

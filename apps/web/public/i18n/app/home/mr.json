@@ -3,15 +3,15 @@
   "home.hero.titleLine1": "पसरलेल्या कथा,",
   "home.hero.titleShimmer": "एकच निर्देशांक",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "नेव्हर वेबtoon, सीरीज आणि काकाओ वेबtoon वर शोध घ्या, नंतर रिअल-टाइम सिग्नल आणि वाचकांच्या प्राधान्यांचा वापर करून काय वाचावे ते त्वरीत कमी करा.",
-  "home.hero.searchButton": "शोध शीर्षके, निर्माते, टॅग",
+  "home.hero.description": "नेव्हर वेबटून, सीरीज आणि काकाओ वेबटूनवर एकत्र शोध घ्या आणि रिअल-टाइम सिग्नल व वाचकांच्या आवडीनिवडी वापरून काय वाचायचे ते पटकन निवडा.",
+  "home.hero.searchButton": "शीर्षके, निर्माते, टॅग शोधा",
   "home.hero.rankingButton": "युनिफाइड रँकिंग पहा",
   "home.hero.studioLink": "निर्माता स्टुडिओ",
   "home.hero.createLink": "क्रिएटर बोर्ड",
-  "home.hero.stats.titles": "नावे",
+  "home.hero.stats.titles": "समाविष्ट शीर्षके",
   "home.hero.stats.platforms": "प्रकाशन प्लॅटफॉर्म",
   "home.hero.stats.genres": "शैली स्पेक्ट्रम",
   "home.hero.stats.reviews": "वाचकांची पुनरावलोकने",
-  "home.loadError": "घरातील डेटा लोड करू शकलो नाही.",
-  "home.creatorTitle": "एक कल्पना पासून आपल्या पहिल्या दृश्यापर्यंत"
+  "home.loadError": "होम लोड करता आले नाही. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.",
+  "home.creatorTitle": "एका कल्पनेपासून आपल्या पहिल्या दृश्यापर्यंत"
 }

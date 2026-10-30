@@ -1,17 +1,17 @@
 {
   "studio.aiToolPopover.title": "AI ინტეგრაცია",
-  "studio.aiToolPopover.description": "დააკავშირეთ მონახაზი, მარაგი და სცენარი და მართეთ ძირითადი პარამეტრები დამაკავშირებელ ჩანართში.",
+  "studio.aiToolPopover.description": "დააკავშირეთ მონახაზი, მარაგი და სცენარი, ხოლო გასაღებების პარამეტრები მართეთ ინტეგრაციის ჩანართში.",
   "studio.aiToolPopover.menuAria": "AI მენიუს ზონა",
   "studio.aiToolPopover.tabAssist": "დახმარება",
   "studio.aiToolPopover.tabAssistTitle": "BYOK ფონი, პერსონაჟი, კომპოზიციის წინადადება",
   "studio.aiToolPopover.tabScenario": "სცენარი",
-  "studio.aiToolPopover.tabScenarioDisabled": "არ შეიძლება გამოყენებულ იქნას ძირითადი რედაქტირების დროს.",
+  "studio.aiToolPopover.tabScenarioDisabled": "მასტერის რედაქტირებისას გამოყენება შეუძლებელია",
   "studio.aiToolPopover.tabScenarioTitle": "სცენარის დიზაინი",
   "studio.aiToolPopover.tabStock": "მარაგი",
   "studio.aiToolPopover.tabStockTitle": "Unsplash უფასო ფოტოები",
   "studio.aiToolPopover.tabIntegrations": "პარამეტრები",
-  "studio.aiToolPopover.tabIntegrationsTitle": "API გასაღები/ბმულის პარამეტრები",
-  "studio.aiToolPopover.panelLoadingAssist": "AI Assist პანელის გახსნა...",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API გასაღებები/ინტეგრაციის პარამეტრები",
+  "studio.aiToolPopover.panelLoadingAssist": "AI დახმარების პანელის გახსნა...",
   "studio.aiToolPopover.panelLoadingStock": "საფონდო ფოტო პანელის გახსნა...",
   "studio.aiToolPopover.panelLoadingIntegrations": "ინტეგრაციის პარამეტრების პანელის გახსნა...",
   "studio.aiToolPopover.serverProviderConnected": "{provider} დაკავშირებულია",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "ტექსტური AI პროვაიდერი",
   "studio.aiToolPopover.serverTextAiProviderAria": "სერვერის ტექსტის AI პროვაიდერი",
   "studio.aiToolPopover.serverProviderAuto": "ავტომატური გადართვა",
-  "studio.aiToolPopover.serverFallbackMessage": "როდესაც ბალანსი/პაკეტის ლიმიტი ამოიწურება, თქვენ გადახვალთ სხვა პროვაიდერზე. ზოგადი შეცდომები ავტომატურად არ გაიგზავნება ორმაგი დატენვის თავიდან ასაცილებლად.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "როდესაც ბალანსი/პაკეტის ლიმიტი ამოიწურება, სისტემა სხვა პროვაიდერზე გადაერთვება. ზოგადი შეცდომების დროს მოთხოვნა ავტომატურად ხელახლა არ იგზავნება, რათა თავიდან ავიცილოთ ორმაგი გადახდა.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "მასტერის რედაქტირებისას ეპიზოდის AI კადრების შექმნა მიუწვდომელია."
 }

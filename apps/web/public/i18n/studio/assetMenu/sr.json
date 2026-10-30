@@ -12,7 +12,7 @@
   "studio.assetMenu.aiCreatorRunning": "Креирање АИ средстава",
   "studio.assetMenu.aiCreatorIdle": "Стварање АИ средстава",
   "studio.assetMenu.aiCreatorSubtext": "Направите сопствени материјал са описима",
-  "studio.assetMenu.aiDisclosureLine1": "Креирајте слике помоћу генеративне вештачке интелигенције (ОпенАИ).",
+  "studio.assetMenu.aiDisclosureLine1": "Креирајте слике помоћу генеративне вештачке интелигенције (OpenAI).",
   "studio.assetMenu.aiDisclosureLine2": "Приказана је значка,",
   "studio.assetMenu.aiDisclosureLine3": "Не стварам туђа дела или стварне људе.",
   "studio.assetMenu.promptPlaceholder": "Примери: позадина кишне уличице, магични реквизити, лик са изненађеним изразом лица",

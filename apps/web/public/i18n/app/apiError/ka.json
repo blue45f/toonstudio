@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "საჭიროა შესვლა.",
   "apiError.adminRequired": "ადმინის ნებართვები ვერ შემოწმდა.",
-  "apiError.adminOnlyPage": "ეს გვერდი მხოლოდ ადმინისტრატორებისთვისაა შეზღუდული.",
-  "apiError.notFound": "მოთხოვნილი ნივთი ვერ იპოვეს.",
-  "apiError.unsupportedType": "არარსებობის შინაარსის ტიპი.",
-  "apiError.inactiveAccount": "არაკომპეტენტური ანგარიშები ვერ იყენებენ ადმინისტრატორის მახასიათებლებს.",
-  "apiError.settlementFailed": "ნვ ჟსმჲპგა ოპვრთრთნწრა."
+  "apiError.adminOnlyPage": "ეს გვერდი მხოლოდ ადმინისტრატორებისთვისაა.",
+  "apiError.notFound": "მოთხოვნილი ელემენტი ვერ მოიძებნა.",
+  "apiError.unsupportedType": "შინაარსის ეს ტიპი მხარდაჭერილი არ არის.",
+  "apiError.inactiveAccount": "არააქტიური ანგარიშები ვერ გამოიყენებენ ადმინისტრატორის უფლებებს.",
+  "apiError.settlementFailed": "ანგარიშსწორება ვერ მოხერხდა. გთხოვთ, ცოტა ხანში სცადოთ ხელახლა."
 }

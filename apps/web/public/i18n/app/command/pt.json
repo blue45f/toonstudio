@@ -1,5 +1,5 @@
 {
-  "command.palette.placeholder": "Títulos de busca, criadores e tags...",
+  "command.palette.placeholder": "Pesquise títulos, criadores e tags…",
   "command.palette.label": "Pesquisa",
   "command.palette.group.shortcuts": "Acesso rápido",
   "command.palette.group.recent": "Títulos recentes",
@@ -11,17 +11,17 @@
   "command.palette.quick.random": "Título aleatório",
   "command.palette.quick.calendar": "Calendário de publicação",
   "command.palette.quick.compare": "Comparação de títulos",
-  "command.palette.quick.explore": "Explorar / Géneros",
-  "command.palette.quick.insights": "Painel de tendência",
-  "command.palette.quick.library": "A minha biblioteca .",
-  "command.palette.quick.searchHint": "Títulos, criadores, etiquetas",
+  "command.palette.quick.explore": "Explorar / Gêneros",
+  "command.palette.quick.insights": "Relatório de tendências",
+  "command.palette.quick.library": "Minha biblioteca",
+  "command.palette.quick.searchHint": "Títulos, criadores, tags",
   "command.palette.quick.rankingHint": "Classificação em 6 eixos",
-  "command.palette.quick.recommendHint": "Com base nos teus gostos",
+  "command.palette.quick.recommendHint": "Com base nos seus gostos",
   "command.palette.quick.fortuneHint": "Saju, tarot, compatibilidade",
   "command.palette.quick.randomHint": "Um título aleatório",
   "command.palette.quick.calendarHint": "Publicação semanal",
   "command.palette.quick.compareHint": "Compare duas obras lado a lado",
   "command.palette.quick.exploreHint": "Explorar o espectro",
   "command.palette.quick.insightsHint": "Informações de mercado a partir de dados",
-  "command.palette.quick.libraryHint": "Interesses, classificações, gosto"
+  "command.palette.quick.libraryHint": "Interesses, avaliações, gosto"
 }

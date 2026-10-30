@@ -9,9 +9,9 @@
   "account.posts.emptyTitle": "Encara no s'han publicat obres.",
   "account.posts.emptyMessage": "Crea el teu primer títol des de l'estudi.",
   "account.posts.cta": "Vés a l'estudi",
-  "account.posts.emptyReviewText": "Cap comentari d'aquest usuari.",
+  "account.posts.emptyReviewText": "Aquest usuari no ha escrit cap ressenya.",
   "account.activity.emptyTitle": "Encara no hi ha activitat.",
-  "account.activity.emptyMessage": "Intenta classificar, revisar o guardar títols a la teva biblioteca.",
+  "account.activity.emptyMessage": "Prova de valorar títols, escriure'n ressenyes o desar-los a la teva biblioteca.",
   "account.activity.viewTitlesCta": "Explora els títols",
   "account.activity.stat.reviews": "Ressenyes escrites",
   "account.activity.stat.want": "Vull llegir",
@@ -41,6 +41,6 @@
   "account.profile.loadingError": "No s'ha pogut carregar el perfil. Torna-ho a provar d'aquí a una estona.",
   "account.page.eyebrow": "El meu compte",
   "account.page.title": "El meu perfil",
-  "account.page.subtitle": "Vegeu les vostres publicacions i activitats, i gestioneu els vostres detalls de perfil.",
+  "account.page.subtitle": "Consulta les teves publicacions i la teva activitat, i gestiona el teu perfil.",
   "account.page.tabsAria": "Pestanyes del perfil"
 }

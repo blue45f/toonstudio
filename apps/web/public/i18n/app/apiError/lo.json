@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "ຈຳເປັນຕ້ອງເຂົ້າສູ່ລະບົບ.",
   "apiError.adminRequired": "ການອະນຸຍາດຜູ້ບໍລິຫານບໍ່ສາມາດກວດສອບໄດ້.",
-  "apiError.adminOnlyPage": "ຫນ້າ ນີ້ຖືກ ຈໍາ ກັດ ສໍາ ລັບຜູ້ບໍລິຫານ.",
+  "apiError.adminOnlyPage": "ໜ້ານີ້ສະເພາະສຳລັບຜູ້ບໍລິຫານເທົ່ານັ້ນ.",
   "apiError.notFound": "ລາຍການທີ່ຕ້ອງການບໍ່ໄດ້ພົບເຫັນ.",
-  "apiError.unsupportedType": "ປະເພດເນື້ອຫາທີ່ບໍ່ໄດ້ຮັບການສະ ຫນັບ ສະ ຫນູນ",
-  "apiError.inactiveAccount": "ບັນຊີທີ່ບໍ່ເຄື່ອນໄຫວບໍ່ສາມາດໃຊ້ຄຸນລັກສະນະຜູ້ບໍລິຫານໄດ້.",
+  "apiError.unsupportedType": "ປະເພດເນື້ອຫານີ້ບໍ່ຮອງຮັບ.",
+  "apiError.inactiveAccount": "ບັນຊີທີ່ບໍ່ເຄື່ອນໄຫວບໍ່ສາມາດໃຊ້ສິດຜູ້ບໍລິຫານໄດ້.",
   "apiError.settlementFailed": "ການດຳເນີນການຊຳລະສະສາງລົ້ມເຫຼວ. ກະລຸນາລອງໃໝ່ອີກຄັ້ງໃນອີກບໍ່ດົນ."
 }

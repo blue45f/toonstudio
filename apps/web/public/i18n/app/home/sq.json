@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Kërkoni tituj, krijues, etiketa",
   "home.hero.rankingButton": "Shikoni renditjen e unifikuar",
   "home.hero.studioLink": "Studio e krijuesve",
-  "home.hero.createLink": "Bordi krijues",
+  "home.hero.createLink": "Forumi i krijuesve",
   "home.hero.stats.titles": "Tituj",
   "home.hero.stats.platforms": "Platformat e publikimit",
   "home.hero.stats.genres": "Spektri i zhanreve",
   "home.hero.stats.reviews": "Rishikimet e lexuesve",
-  "home.loadError": "Nuk mund të ngarkoheshin të dhënat e faqes kryesore.",
+  "home.loadError": "Nuk mund të ngarkohej faqja kryesore. Ju lutemi provoni përsëri pas pak.",
   "home.creatorTitle": "Nga një ide në skenën tuaj të parë"
 }

@@ -7,10 +7,10 @@
   "common.retry": "Prøv igjen.",
   "common.retry.short": "Prøv igjen.",
   "common.backToTop": "Tilbake til toppen",
-  "common.backToHome": "Gå hjem.",
+  "common.backToHome": "Til startsiden",
   "common.loading.search": "Søker …",
   "common.notFoundWithQuery": "Ingen resultater for '{query}'.",
   "common.openSearch": "Finn den i søket →",
   "common.loading.empty": "Ingen data ble returnert.",
-  "common.retry.all": "Prøv igjen eller gå hjem."
+  "common.retry.all": "Prøv igjen eller gå til startsiden."
 }

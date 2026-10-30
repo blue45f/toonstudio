@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Cerca títols, creadors, etiquetes",
   "home.hero.rankingButton": "Veure el rànquing unificat",
   "home.hero.studioLink": "Estudi del creador",
-  "home.hero.createLink": "Taula de creadors",
+  "home.hero.createLink": "Tauler de creadors",
   "home.hero.stats.titles": "Títols",
   "home.hero.stats.platforms": "Plataformes de publicació",
-  "home.hero.stats.genres": "Espectre de gènere",
+  "home.hero.stats.genres": "Espectre de gèneres",
   "home.hero.stats.reviews": "Ressenyes dels lectors",
-  "home.loadError": "No s'han pogut carregar les dades de l'inici.",
+  "home.loadError": "No s'ha pogut carregar l'inici. Torna-ho a provar d'aquí a una estona.",
   "home.creatorTitle": "De la idea a la primera escena"
 }

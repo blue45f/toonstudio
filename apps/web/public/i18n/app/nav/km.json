@@ -5,8 +5,8 @@
   "nav.recommend": "ជម្រើស",
   "nav.explore": "រុករក",
   "nav.fortune": "ហោរាសាស្ត្រ",
-  "nav.play": "អាខេដ",
-  "nav.reviews": "ការពិនិត្យ",
+  "nav.play": "កន្លែងលេង",
+  "nav.reviews": "ការវាយតម្លៃ",
   "nav.community": "វេទិកា",
   "nav.market": "ទីផ្សារ",
   "nav.insights": "ស្ថិតិ",
@@ -22,5 +22,5 @@
   "nav.studio": "ស្ទូឌីយោ",
   "nav.assets": "សម្ភារៈ",
   "nav.creators": "អ្នកបង្កើត",
-  "nav.discover": "រកឃើញ"
+  "nav.discover": "រុករកស្នាដៃ"
 }

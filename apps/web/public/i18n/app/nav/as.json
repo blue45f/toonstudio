@@ -6,7 +6,7 @@
   "nav.explore": "অন্বেষণ",
   "nav.fortune": "ৰাশিফল",
   "nav.play": "আৰ্কেড",
-  "nav.reviews": "সমীক্ষা",
+  "nav.reviews": "পৰ্যালোচনা",
   "nav.community": "ফ'ৰাম",
   "nav.market": "বজাৰ",
   "nav.insights": "পৰিসংখ্যা",
@@ -16,11 +16,11 @@
   "nav.login": "ছাইন ইন কৰক",
   "nav.search": "কাহিনী, সঁজুলি আৰু মেনু অনুসন্ধান কৰক",
   "nav.searchOpen": "কাহিনী, সঁজুলি আৰু মেনুৰ বাবে একীকৃত অনুসন্ধান খোলক",
-  "nav.quickAccess": "দ্ৰুত প্ৰৱেশাধিকাৰ",
+  "nav.quickAccess": "দ্ৰুত প্ৰৱেশ",
   "nav.menu": "মেনু",
   "nav.allMenu": "সকলো মেনু",
   "nav.studio": "ষ্টুডিঅ'",
   "nav.assets": "সামগ্ৰী",
-  "nav.creators": "সৃষ্টিকৰ্তাসকল",
-  "nav.discover": "অনুসন্ধান কৰক"
+  "nav.creators": "সৃষ্টি গেলেৰী",
+  "nav.discover": "কাহিনী অন্বেষণ"
 }
