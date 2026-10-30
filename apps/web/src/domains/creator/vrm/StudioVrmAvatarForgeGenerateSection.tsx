@@ -295,7 +295,7 @@ export function StudioVrmAvatarForgeGenerateSection({
   const swayPreset = matchStudioVrmHairSwayPreset(authoring?.hairSway);
   const swayGroups = countStudioVrmHairSwayScopes(authoring?.hairSway) - (authoring?.hairSway?.global ? 1 : 0);
   const swaySummary = `${swayPreset ? STUDIO_VRM_HAIR_SWAY_PRESETS.find((preset) => preset.id === swayPreset)?.label : "직접 조정"}${
-    swayGroups > 0 ? ` · 묶음 ${swayGroups}곳` : ""
+    swayGroups > 0 ? ` · 묶음·가닥 ${swayGroups}곳` : ""
   }`;
 
   return (

@@ -5,7 +5,9 @@
  * 긴 머리는 느슨하게. 이 모듈은 그 자동 값 위에 작가가 얹는 **배율**을 다룬다.
  *
  * VRoid Studio 공개 가이드의 흔들림 설정(헤어 묶음마다 단단함·중력·충돌 반경을 조정)과 같은
- * 작업 흐름을 따르되, 값은 절대값이 아니라 자동 조율에 곱하는 배율이다. 그래야 같은 "찰랑찰랑"
+ * 작업 흐름을 따르되, 값은 절대값이 아니라 자동 조율에 곱하는 배율이다. VRoid Studio 제품 소개가
+ * 밝히듯 흔들림은 헤어 덩어리마다 따로 정할 수 있어야 하므로, 전체 → 묶음 → 가닥(스프링 체인) 세 단계로
+ * 곱한다. 그래야 같은 "찰랑찰랑"
  * 설정에서도 앞머리는 앞머리답게, 롱헤어는 롱헤어답게 흔들린다. 배율이 전부 1 이면 아무것도 바꾸지
  * 않으므로 조정하지 않은 생성 VRM 은 이전과 같다.
  */
@@ -68,7 +70,25 @@ export type StudioVrmHairSwayAuthoring = {
   readonly global?: StudioVrmHairSwayPatch;
   /** 묶음별 추가 배율. 전체 배율과 곱해진다. */
   readonly groups?: Readonly<Partial<Record<StudioVrmHairSwayGroupId, StudioVrmHairSwayPatch>>>;
+  /** 가닥(헤어 리그 체인 id)별 추가 배율. 전체·묶음 배율 위에 한 번 더 곱해진다. */
+  readonly chains?: Readonly<Record<string, StudioVrmHairSwayPatch>>;
 };
+
+/** 조율 범위: 전체, 묶음 하나, 또는 가닥 하나(`chain:<체인 id>`). */
+export type StudioVrmHairSwayScope = "global" | StudioVrmHairSwayGroupId | `chain:${string}`;
+
+/** 가닥별 조정을 둘 수 있는 최대 개수. 생성 헤어는 캐릭터당 체인이 10개 안팎이다. */
+export const STUDIO_VRM_HAIR_SWAY_MAX_CHAINS = 32;
+/** 헤어 리그 체인 id 모양(`bang-blunt-0`, `wolf-nape-center`). 장면 문서의 안전 키 규칙 안쪽이다. */
+const CHAIN_ID_PATTERN = /^[a-z][a-z0-9-]{0,47}$/u;
+
+export function studioVrmHairSwayChainScope(chainId: string): `chain:${string}` {
+  return `chain:${chainId}`;
+}
+
+function chainIdOf(scope: StudioVrmHairSwayScope): string | null {
+  return scope.startsWith("chain:") ? scope.slice("chain:".length) : null;
+}
 
 const NEUTRAL: StudioVrmHairSwayParams = Object.freeze({ stiffness: 1, gravity: 1, drag: 1 });
 const VALUE_PRECISION = 1000;
@@ -102,33 +122,52 @@ export function sanitizeStudioVrmHairSwayAuthoring(raw: unknown): StudioVrmHairS
     }
   }
   const hasGroups = Object.keys(groups).length > 0;
-  if (!global && !hasGroups) return undefined;
-  return { ...(global ? { global } : {}), ...(hasGroups ? { groups } : {}) };
+  const chains: Record<string, StudioVrmHairSwayPatch> = {};
+  if (isRecord(raw.chains)) {
+    // 키를 정렬해 저장 순서와 무관하게 같은 문서가 된다.
+    for (const id of Object.keys(raw.chains).sort()) {
+      if (Object.keys(chains).length >= STUDIO_VRM_HAIR_SWAY_MAX_CHAINS || !CHAIN_ID_PATTERN.test(id)) continue;
+      const patch = sanitizePatch(raw.chains[id]);
+      if (patch) chains[id] = patch;
+    }
+  }
+  const hasChains = Object.keys(chains).length > 0;
+  if (!global && !hasGroups && !hasChains) return undefined;
+  return {
+    ...(global ? { global } : {}),
+    ...(hasGroups ? { groups } : {}),
+    ...(hasChains ? { chains } : {}),
+  };
 }
 
-/** 한 범위(전체 또는 묶음 하나)의 현재 배율. 저장되지 않은 값은 1 이다. */
+/** 한 범위(전체·묶음·가닥)의 현재 배율. 저장되지 않은 값은 1 이다. */
 export function resolveStudioVrmHairSwayScope(
   authoring: StudioVrmHairSwayAuthoring | undefined,
-  scope: "global" | StudioVrmHairSwayGroupId,
+  scope: StudioVrmHairSwayScope,
 ): StudioVrmHairSwayParams {
-  const patch = scope === "global" ? authoring?.global : authoring?.groups?.[scope];
+  const chainId = chainIdOf(scope);
+  const patch = chainId !== null
+    ? authoring?.chains?.[chainId]
+    : scope === "global" ? authoring?.global : authoring?.groups?.[scope as StudioVrmHairSwayGroupId];
   return { ...NEUTRAL, ...patch };
 }
 
 /** 범위 하나의 배율 하나를 바꾼다. */
 export function setStudioVrmHairSwayParam(
   authoring: StudioVrmHairSwayAuthoring | undefined,
-  scope: "global" | StudioVrmHairSwayGroupId,
+  scope: StudioVrmHairSwayScope,
   key: StudioVrmHairSwayParamKey,
   value: number,
 ): StudioVrmHairSwayAuthoring | undefined {
   const current = resolveStudioVrmHairSwayScope(authoring, scope);
   const next = { ...current, [key]: value };
+  const chainId = chainIdOf(scope);
+  if (chainId !== null) return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, chains: { ...authoring?.chains, [chainId]: next } });
   if (scope === "global") return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, global: next });
   return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, groups: { ...authoring?.groups, [scope]: next } });
 }
 
-/** 프리셋을 전체 배율로 적용한다. 묶음별 조정은 작가가 따로 만든 것이라 남긴다. */
+/** 프리셋을 전체 배율로 적용한다. 묶음·가닥별 조정은 작가가 따로 만든 것이라 남긴다. */
 export function applyStudioVrmHairSwayPreset(
   authoring: StudioVrmHairSwayAuthoring | undefined,
   presetId: StudioVrmHairSwayPresetId,
@@ -141,11 +180,17 @@ export function applyStudioVrmHairSwayPreset(
 /** 범위 하나를 자동(1)으로 되돌린다. */
 export function resetStudioVrmHairSwayScope(
   authoring: StudioVrmHairSwayAuthoring | undefined,
-  scope: "global" | StudioVrmHairSwayGroupId,
+  scope: StudioVrmHairSwayScope,
 ): StudioVrmHairSwayAuthoring | undefined {
+  const chainId = chainIdOf(scope);
+  if (chainId !== null) {
+    const chains = { ...authoring?.chains };
+    delete chains[chainId];
+    return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, chains });
+  }
   if (scope === "global") return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, global: undefined });
   const groups = { ...authoring?.groups };
-  delete groups[scope];
+  delete groups[scope as StudioVrmHairSwayGroupId];
   return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, groups });
 }
 
@@ -188,20 +233,22 @@ export type StudioVrmSpringTuning = {
 };
 
 /**
- * 체인 하나의 자동 조율 값에 전체·묶음 배율을 곱한다. VRM 1.0 `dragForce` 는 0~1 이고
+ * 체인 하나의 자동 조율 값에 전체·묶음·가닥 배율을 곱한다. VRM 1.0 `dragForce` 는 0~1 이고
  * 다른 둘은 음수가 될 수 없으므로 범위를 지킨다.
  */
 export function applyStudioVrmHairSway(
   base: StudioVrmSpringTuning,
   authoring: StudioVrmHairSwayAuthoring | undefined,
   group: StudioVrmHairSwayGroupId,
+  chainId?: string,
 ): StudioVrmSpringTuning {
   if (!authoring) return base;
   const global = resolveStudioVrmHairSwayScope(authoring, "global");
   const local = resolveStudioVrmHairSwayScope(authoring, group);
-  const stiffness = global.stiffness * local.stiffness;
-  const gravity = global.gravity * local.gravity;
-  const drag = global.drag * local.drag;
+  const own = chainId === undefined ? NEUTRAL : resolveStudioVrmHairSwayScope(authoring, studioVrmHairSwayChainScope(chainId));
+  const stiffness = global.stiffness * local.stiffness * own.stiffness;
+  const gravity = global.gravity * local.gravity * own.gravity;
+  const drag = global.drag * local.drag * own.drag;
   if (stiffness === 1 && gravity === 1 && drag === 1) return base;
   return {
     stiffness: Math.min(8, Math.max(0, base.stiffness * stiffness)),
@@ -210,7 +257,7 @@ export function applyStudioVrmHairSway(
   };
 }
 
-/** 조정한 범위 수(전체 + 묶음). 패널 요약 배지에 쓴다. */
+/** 조정한 범위 수(전체 + 묶음 + 가닥). 패널 요약 배지에 쓴다. */
 export function countStudioVrmHairSwayScopes(authoring: StudioVrmHairSwayAuthoring | undefined): number {
-  return (authoring?.global ? 1 : 0) + Object.keys(authoring?.groups ?? {}).length;
+  return (authoring?.global ? 1 : 0) + Object.keys(authoring?.groups ?? {}).length + Object.keys(authoring?.chains ?? {}).length;
 }

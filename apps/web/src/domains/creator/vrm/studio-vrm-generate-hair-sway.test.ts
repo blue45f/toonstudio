@@ -9,7 +9,9 @@ import {
   resolveStudioVrmHairSwayScope,
   sanitizeStudioVrmHairSwayAuthoring,
   setStudioVrmHairSwayParam,
+  STUDIO_VRM_HAIR_SWAY_MAX_CHAINS,
   STUDIO_VRM_HAIR_SWAY_PRESETS,
+  studioVrmHairSwayChainScope,
   studioVrmHairSwayGroupForRole,
 } from "./studio-vrm-generate-hair-sway";
 
@@ -75,6 +77,44 @@ describe("hair sway editing helpers", () => {
     expect(resetStudioVrmHairSwayScope(manual, "global")).toBeUndefined();
     const grouped = setStudioVrmHairSwayParam(manual, "side", "drag", 0.5);
     expect(resetStudioVrmHairSwayScope(grouped, "side")).toEqual({ global: { gravity: 1.75 } });
+  });
+
+  it("tunes one strand on top of the global and group multipliers", () => {
+    const strand = studioVrmHairSwayChainScope("bang-blunt-1");
+    let authoring = setStudioVrmHairSwayParam(undefined, "global", "stiffness", 2);
+    authoring = setStudioVrmHairSwayParam(authoring, "bang", "stiffness", 1.5);
+    authoring = setStudioVrmHairSwayParam(authoring, strand, "stiffness", 0.5);
+    expect(authoring?.chains).toEqual({ "bang-blunt-1": { stiffness: 0.5 } });
+    expect(resolveStudioVrmHairSwayScope(authoring, strand)).toEqual({ stiffness: 0.5, gravity: 1, drag: 1 });
+    expect(countStudioVrmHairSwayScopes(authoring)).toBe(3);
+
+    // 같은 묶음의 다른 가닥은 전체 × 묶음만, 고른 가닥은 전체 × 묶음 × 가닥 배율을 받는다.
+    expect(applyStudioVrmHairSway(CHAIN, authoring, "bang", "bang-blunt-0").stiffness).toBeCloseTo(1.2 * 2 * 1.5, 9);
+    expect(applyStudioVrmHairSway(CHAIN, authoring, "bang", "bang-blunt-1").stiffness).toBeCloseTo(1.2 * 2 * 1.5 * 0.5, 9);
+
+    // 프리셋은 가닥 조정을 남기고, 가닥 되돌리기는 그 가닥만 지운다.
+    expect(applyStudioVrmHairSwayPreset(authoring, "calm")?.chains).toEqual(authoring?.chains);
+    expect(resetStudioVrmHairSwayScope(authoring, strand)?.chains).toBeUndefined();
+  });
+
+  it("keeps only well-formed strand ids, in a stable order, up to the cap", () => {
+    const raw = {
+      chains: {
+        "side-right": { drag: 0.5 },
+        "Bang-Upper": { drag: 0.5 },
+        "../escape": { drag: 0.5 },
+        "back-0": { gravity: 1 },
+        "side-left": { stiffness: 2 },
+      },
+    };
+    const sanitized = sanitizeStudioVrmHairSwayAuthoring(raw);
+    expect(Object.keys(sanitized?.chains ?? {})).toEqual(["side-left", "side-right"]);
+
+    const many = Object.fromEntries(
+      Array.from({ length: STUDIO_VRM_HAIR_SWAY_MAX_CHAINS + 5 }, (_unused, index) => [`bang-${index}`, { stiffness: 2 }]),
+    );
+    expect(Object.keys(sanitizeStudioVrmHairSwayAuthoring({ chains: many })?.chains ?? {}))
+      .toHaveLength(STUDIO_VRM_HAIR_SWAY_MAX_CHAINS);
   });
 
   it("ships presets whose values stay inside the slider limits", () => {

@@ -132,6 +132,7 @@ describe("Studio user manual content", () => {
     expect(text).toContain(`최대 ${STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS}개`);
     expect(text).toContain(`${STUDIO_VRM_THUMBNAIL_MAX_BYTES / (1024 * 1024)}MB 이하`);
     expect(text).toContain("실제로 흔들리는 묶음만");
+    expect(text).toContain("한 가닥만 따로");
     expect(text).toContain("시선(lookAt)");
     expect(text).toContain("VRM 퍼블릭 라이선스 1.0");
     expect(STUDIO_VRM_EXPORT_LICENSE_URL).toBe("https://vrm.dev/licenses/1.0/");

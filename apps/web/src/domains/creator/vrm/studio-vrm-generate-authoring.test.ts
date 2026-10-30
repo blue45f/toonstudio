@@ -20,10 +20,15 @@ import {
   STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS,
   type StudioVrmExpressionAuthoring,
 } from "./studio-vrm-generate-expressions";
-import { applyStudioVrmHairSwayPreset, STUDIO_VRM_HAIR_SWAY_GROUP_IDS } from "./studio-vrm-generate-hair-sway";
+import {
+  applyStudioVrmHairSwayPreset,
+  STUDIO_VRM_HAIR_SWAY_GROUP_IDS,
+  STUDIO_VRM_HAIR_SWAY_MAX_CHAINS,
+} from "./studio-vrm-generate-hair-sway";
 import {
   createStudioVrmGenerateRecipe,
   exportStudioVrmFromGenerateRecipe,
+  listStudioVrmGenerateHairSwayChains,
   listStudioVrmGenerateHairSwayGroups,
   STUDIO_VRM_GENERATE_DEFAULT_PRESET_ID,
 } from "./studio-vrm-generate-recipe";
@@ -202,6 +207,23 @@ describe("generate authoring: hair sway", () => {
     expect(after.some((spring) => spring.name.startsWith("Hair_bang-"))).toBe(true);
   });
 
+  it("tunes one strand without touching its siblings, numbering strands from the screen's left", () => {
+    const bangs = listStudioVrmGenerateHairSwayChains(base).filter((chain) => chain.group === "bang");
+    expect(bangs.length).toBeGreaterThan(1);
+    expect(bangs.map((chain) => chain.order)).toEqual(bangs.map((_chain, index) => index + 1));
+    const target = bangs[1];
+    if (!target) throw new Error("expected a second bang strand");
+
+    const tuned = withAvatarForgeVrmAuthoring(base, { hairSway: { chains: { [target.id]: { stiffness: 2 } } } });
+    const before = gltfJson(exportState(base)).extensions.VRMC_springBone?.springs ?? [];
+    const after = gltfJson(exportState(tuned)).extensions.VRMC_springBone?.springs ?? [];
+    after.forEach((spring, index) => {
+      const ratio = spring.joints[0].stiffness / before[index].joints[0].stiffness;
+      expect(ratio, spring.name).toBeCloseTo(spring.name === `Hair_${target.id}` ? 2 : 1, 9);
+    });
+    expect(after.some((spring) => spring.name === `Hair_${target.id}`)).toBe(true);
+  });
+
   it("lists exactly the groups whose multiplier reaches an exported spring", () => {
     // 정수리 번(elegant-bun)·땋은 머리(braid-scholar)·반묶음(halfup-idol)은 파츠 역할과 체인이 갈린다.
     for (const presetId of ["elegant-bun", "braid-scholar", "halfup-idol", "pop-twin"]) {
@@ -317,9 +339,16 @@ describe("generate authoring: persistence", () => {
     const hairSway = {
       global: { stiffness: 2, gravity: 2, drag: 1.2 },
       groups: Object.fromEntries(STUDIO_VRM_HAIR_SWAY_GROUP_IDS.map((id) => [id, { stiffness: 0.5, gravity: 1.5, drag: 0.8 }])),
+      chains: Object.fromEntries(
+        Array.from({ length: STUDIO_VRM_HAIR_SWAY_MAX_CHAINS }, (_unused, index) => [
+          `wavy-inner-left-${index}`,
+          { stiffness: 0.5, gravity: 1.5, drag: 0.8 },
+        ]),
+      ),
     };
     const avatarForge = withAvatarForgeVrmAuthoring(createAvatarForgeState("wave-diva"), { expressions, hairSway });
     expect(readAvatarForgeVrmAuthoring(avatarForge)?.expressions?.custom).toHaveLength(STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS);
+    expect(Object.keys(readAvatarForgeVrmAuthoring(avatarForge)?.hairSway?.chains ?? {})).toHaveLength(STUDIO_VRM_HAIR_SWAY_MAX_CHAINS);
 
     const scene = {
       ...createDefaultStudioVrmSceneDocument(),

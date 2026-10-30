@@ -123,6 +123,21 @@ describe("StudioVrmAvatarForgeGenerateSection hair sway", () => {
     expect(screen.getByRole("button", { name: "앞머리" })).toBeTruthy();
   });
 
+  it("tunes a single strand from the per-strand chips of a group", () => {
+    const { changes } = renderSection({ state: createAvatarForgeState("hime-noble") });
+    fireEvent.click(screen.getByRole("button", { name: /헤어 흔들림/u }));
+    fireEvent.click(screen.getByRole("button", { name: "앞머리" }));
+    const strands = screen.getByRole("group", { name: "앞머리 가닥별 조율" });
+    fireEvent.click(within(strands).getByRole("button", { name: "앞머리 1번 가닥" }));
+    fireEvent.change(screen.getByRole("slider", { name: "앞머리 1번 가닥 단단함" }), { target: { value: "2" } });
+
+    const hairSway = authoringOf(changes.at(-1))?.hairSway;
+    expect(hairSway?.groups).toBeUndefined();
+    expect(Object.values(hairSway?.chains ?? {})).toEqual([{ stiffness: 2 }]);
+    expect(within(strands).getByRole("button", { name: "앞머리 1번 가닥 (조정됨)" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /헤어 흔들림/u }).textContent).toContain("묶음·가닥 1곳");
+  });
+
   it("offers only the hair groups that actually sway in the generated VRM", () => {
     // 정수리 번은 스프링 체인이 없다. 묶음 탭을 주면 배율을 바꿔도 아무것도 달라지지 않는다.
     renderSection({ state: createAvatarForgeState("elegant-bun") });
