@@ -128,17 +128,22 @@ test("공식 optional result_info·marker·cursor를 보존하고 정상 termina
   }
 });
 
-test("pagination 타입 오류와 partial failure를 정상 terminal로 바꾸지 않는다", async () => {
+test("JSON·pagination·partial failure 뒤 같은 adapter에서 목록 GET·완료 PUT을 재전송하지 않는다", async () => {
   const cases = [
     { success: false, result: [], result_info: {} },
     { success: true, result: [], errors: [{ message: TOKEN }] },
     ...[null, [], { is_truncated: "false" }, { cursor: null }, { cursor: 23 }].map((result_info) => ({ success: true, result: [], result_info })),
-  ];
+  ].map((body) => JSON.stringify(body));
+  cases.push(`잘못된 JSON ${TOKEN}`);
+  const f = completion();
   for (const body of cases) {
     let requests = 0;
-    const rest = setup(async () => { requests += 1; return new Response(JSON.stringify(body)); });
+    const rest = setup(async () => { requests += 1; return new Response(body); });
     await assert.rejects(rest.listPage(), (error) => error.code === "LIST_FORMAT" && !error.message.includes(TOKEN));
+    await assert.rejects(rest.listPage(), { code: "ADAPTER_STOPPED" });
+    await assert.rejects(rest.putCompletion(f.descriptor, f.body), { code: "ADAPTER_STOPPED" });
     assert.equal(requests, 1);
+    assert.equal(rest.getRequestStats().requestsStarted, 1);
   }
 });
 
