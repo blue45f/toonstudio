@@ -133,9 +133,23 @@ describe("StudioVrmAvatarForgeGenerateSection hair sway", () => {
 
     const hairSway = authoringOf(changes.at(-1))?.hairSway;
     expect(hairSway?.groups).toBeUndefined();
-    expect(Object.values(hairSway?.chains ?? {})).toEqual([{ stiffness: 2 }]);
+    // 1번 칩은 화면 왼쪽 끝 가닥이다.
+    expect(hairSway?.chains).toEqual({ "bang-blunt-0": { stiffness: 2 } });
     expect(within(strands).getByRole("button", { name: "앞머리 1번 가닥 (조정됨)" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: /헤어 흔들림/u }).textContent).toContain("묶음·가닥 1곳");
+  });
+
+  it("points to strand numbers only for groups that show them", () => {
+    // 포니테일(action-pony)의 묶음은 가닥이 하나라 번호 줄이 없다. 안내도 없는 번호를 가리키지 않아야 한다.
+    renderSection({ state: createAvatarForgeState("action-pony") });
+    fireEvent.click(screen.getByRole("button", { name: /헤어 흔들림/u }));
+    fireEvent.click(screen.getByRole("button", { name: "묶음·땋은 머리" }));
+    expect(screen.queryByRole("group", { name: "묶음·땋은 머리 가닥별 조율" })).toBeNull();
+    expect(screen.queryByText(/가닥 번호를 고르면/u)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "앞머리" }));
+    expect(screen.getByRole("group", { name: "앞머리 가닥별 조율" })).toBeTruthy();
+    expect(screen.getByText(/가닥 번호를 고르면/u)).toBeTruthy();
   });
 
   it("ignores strand tweaks the current hair does not have, so a new tweak still sticks", () => {

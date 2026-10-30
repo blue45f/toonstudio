@@ -3,7 +3,14 @@ import { Box3, Vector3, type Material, type SkinnedMesh } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
-import { createAvatarForgeState, sanitizeAvatarForgeState, type AvatarForgeState } from "./studio-vrm-avatar-forge";
+import {
+  AVATAR_FORGE_BANG_STYLE_OPTIONS,
+  AVATAR_FORGE_HAIR_LIMITS,
+  AVATAR_FORGE_HAIR_STYLE_OPTIONS,
+  createAvatarForgeState,
+  sanitizeAvatarForgeState,
+  type AvatarForgeState,
+} from "./studio-vrm-avatar-forge";
 import { readAvatarForgeVrmAuthoring, withAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import { STUDIO_VRM_EXPORT_LICENSE_URL } from "./studio-vrm-export-vrm-extension";
 import {
@@ -211,6 +218,10 @@ describe("generate authoring: hair sway", () => {
     const bangs = listStudioVrmGenerateHairSwayChains(base).filter((chain) => chain.group === "bang");
     expect(bangs.length).toBeGreaterThan(1);
     expect(bangs.map((chain) => chain.order)).toEqual(bangs.map((_chain, index) => index + 1));
+    // 화면 왼쪽(-X)이 1번이다. 뒷머리는 id 순(hime-back < hime-back-left)과 화면 순이 갈려 정렬 기준이 뿌리 X 인지까지 잡는다.
+    expect(bangs.map((chain) => chain.id)).toEqual(["bang-blunt-0", "bang-blunt-1", "bang-blunt-2", "bang-blunt-3", "bang-blunt-4"]);
+    expect(listStudioVrmGenerateHairSwayChains(base).filter((chain) => chain.group === "back").map((chain) => chain.id))
+      .toEqual(["hime-back-left", "hime-back", "hime-back-right"]);
     const target = bangs[1];
     if (!target) throw new Error("expected a second bang strand");
 
@@ -222,6 +233,26 @@ describe("generate authoring: hair sway", () => {
       expect(ratio, spring.name).toBeCloseTo(spring.name === `Hair_${target.id}` ? 2 : 1, 9);
     });
     expect(after.some((spring) => spring.name === `Hair_${target.id}`)).toBe(true);
+  });
+
+  it("keeps every strand a character can have within the stored strand cap", () => {
+    // 한 캐릭터의 가닥이 저장 상한보다 많으면 상한에 밀린 가닥의 조정이 버려진다. 슬라이더 끝값까지 훑는다
+    // (울프컷 윗머리 레이어처럼 볼륨을 올려야 생기는 가닥이 있다).
+    let most = 0;
+    for (const style of AVATAR_FORGE_HAIR_STYLE_OPTIONS) {
+      for (const bang of AVATAR_FORGE_BANG_STYLE_OPTIONS) {
+        for (const ahoge of [0, 1]) {
+          for (const length of [AVATAR_FORGE_HAIR_LIMITS.length.min, AVATAR_FORGE_HAIR_LIMITS.length.max]) {
+            for (const volume of [AVATAR_FORGE_HAIR_LIMITS.volume.min, AVATAR_FORGE_HAIR_LIMITS.volume.max]) {
+              const hair = { ...base.hair, style: style.id, bangStyle: bang.id, ahoge, length, volume };
+              most = Math.max(most, listStudioVrmGenerateHairSwayChains(sanitizeAvatarForgeState({ ...base, hair })).length);
+            }
+          }
+        }
+      }
+    }
+    expect(most).toBeGreaterThan(1);
+    expect(most).toBeLessThanOrEqual(STUDIO_VRM_HAIR_SWAY_MAX_CHAINS);
   });
 
   it("lists exactly the groups whose multiplier reaches an exported spring", () => {
