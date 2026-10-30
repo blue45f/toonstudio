@@ -4,12 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { ProductionProjectAggregate, ReviewLane } from "@toonstudio/core/production";
 
-import {
-  createEmptyStudioCommentsDocument,
-  normalizeStudioCommentsDocument,
-  serializeStudioCommentsDocument,
-  type StudioCommentsDocument,
-} from "../studio-comments";
+import type { StudioCommentsDocument } from "../studio-comments";
 import { LiveCursorOverlay } from "./LiveCursorOverlay";
 import {
   buildLiveViewState,
@@ -40,10 +35,6 @@ import { CompareReviewRoom } from "./CompareReviewRoom";
 import { EpisodeStageHandoffSection } from "./EpisodeStageHandoffSection";
 import { buildCompareSeedPoolFromProcesses } from "./compare-review-seed-pool";
 import type { ComparePinGateSummary, ComparePoolItem } from "./compare-review-model";
-import {
-  compareSendInboxToPoolItems,
-  consumeCompareSendInbox,
-} from "./compare-send-inbox";
 import { ManuscriptPinFeedbackBridge } from "./ManuscriptPinFeedback";
 import { usePinTaskWorkspaceSync } from "./use-pin-task-workspace-sync";
 import { ProcessCompareViewer } from "./ProcessCompareViewer";
@@ -97,6 +88,9 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
+import { productionReviewLocalScope, productionReviewLocalScopeKey, type ProductionReviewLocalScope } from "./production-review-local-state";
+import { useProductionReviewLocalComments } from "./use-production-review-local-comments";
 
 type RoomTab = "viewer" | "compare";
 
@@ -126,7 +120,14 @@ export interface ProductionEpisodeReviewRoomProps {
  * 회차 룸의 중심: 원고 위에 핀 코멘트를 달고, 공정 버전을 비교하고,
  * 필수 수정이 남아 있으면 승인을 잠그는 흐름을 한 화면에서 보여 준다.
  */
-export function ProductionEpisodeReviewRoom({
+export function ProductionEpisodeReviewRoom(props: ProductionEpisodeReviewRoomProps) {
+  const userId = useAuthActorId();
+  const scope = useMemo(() => productionReviewLocalScope(userId, props.aggregate.projectId, props.aggregate.workId, props.episodeId, props.isDemo),
+    [userId, props.aggregate.projectId, props.aggregate.workId, props.episodeId, props.isDemo]);
+  return <ScopedProductionEpisodeReviewRoom key={productionReviewLocalScopeKey(scope)} {...props} localScope={scope} />;
+}
+function ScopedProductionEpisodeReviewRoom({
+  localScope,
   aggregate,
   episodeId,
   isDemo,
@@ -138,7 +139,7 @@ export function ProductionEpisodeReviewRoom({
   resolveCompareImageUrl,
   previousEpisodePages,
   compareLoadState = "idle",
-}: ProductionEpisodeReviewRoomProps) {
+}: ProductionEpisodeReviewRoomProps & { readonly localScope: ProductionReviewLocalScope }) {
   const bt = useBilingual("ProductionEpisodeReviewRoom");
   // 보기 탭은 주소에 남겨 링크로 공유하거나 새로고침해도 같은 화면을 연다.
   const [params, setParams] = useSearchParams();
@@ -171,23 +172,8 @@ export function ProductionEpisodeReviewRoom({
   const assigneeOptions = useMemo(() => episodeRoomAssigneeOptions(aggregate, bt), [aggregate, bt]);
 
   // 비교 검수(CompareReviewRoom) 전용 댓글 문서. 원고 핀 문서와 분리해 소유하고,
-  // 회차 키로 이 기기에 저장한다(서버 저장 이관은 원고 핀 문서와 같은 패턴의 후속 작업).
-  const compareCommentsKey = `toonstudio.compare-comments.${episodeId}`;
-  const [compareComments, setCompareComments] = useState<StudioCommentsDocument>(() => {
-    if (isDemo || typeof window === "undefined") return createEmptyStudioCommentsDocument();
-    try {
-      const raw = window.localStorage.getItem(compareCommentsKey);
-      return raw ? normalizeStudioCommentsDocument(raw) : createEmptyStudioCommentsDocument();
-    } catch {
-      return createEmptyStudioCommentsDocument();
-    }
-  });
-  useEffect(() => {
-    if (isDemo || typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(compareCommentsKey, serializeStudioCommentsDocument(compareComments));
-    } catch { /* 저장 실패 시 이 세션 안에서만 유지한다 */ }
-  }, [compareComments, compareCommentsKey, isDemo]);
+  // 실제 로그인 계정·작품·프로젝트·회차별 원문을 보존한다. 소유자 없는 기존 키는 건드리지 않는다.
+  const [compareComments, setCompareComments] = useProductionReviewLocalComments(localScope, isDemo);
   const [comparePinGate, setComparePinGate] = useState<ComparePinGateSummary | null>(null);
   const handleComparePinGateChange = useCallback((summary: ComparePinGateSummary) => {
     setComparePinGate((previous) => (previous
@@ -197,26 +183,17 @@ export function ProductionEpisodeReviewRoom({
       ? previous
       : summary);
   }, []);
-  // 에디터 "비교로 보내기" 수신함: 마운트 때 한 번 소비해 풀 씨앗에 합친다(중복 방지 위해 비운다).
-  const [sentCompareItems] = useState<readonly ComparePoolItem[]>(() => {
-    if (isDemo || typeof window === "undefined") return [];
-    try {
-      return compareSendInboxToPoolItems(consumeCompareSendInbox(window.localStorage, aggregate.workId), aggregate.workId);
-    } catch {
-      return [];
-    }
-  });
   const compareActor = approver?.actor ?? { displayName: bt("나", "Me") };
   const compareActorId = approver?.assignmentId ?? viewerAssignmentId ?? "me";
   const compareSeedItems = useMemo<readonly ComparePoolItem[]>(
     () => isDemo
       ? []
-      : [...buildCompareSeedPoolFromProcesses(
+      : buildCompareSeedPoolFromProcesses(
         compareProcesses ?? [],
         resolveCompareImageUrl,
         compareActorId,
-      ), ...sentCompareItems],
-    [isDemo, compareProcesses, resolveCompareImageUrl, compareActorId, sentCompareItems],
+      ),
+    [isDemo, compareProcesses, resolveCompareImageUrl, compareActorId],
   );
   const storyboardProcessId = useMemo(
     () => compareProcesses?.find((process) => process.artifact.kind === "storyboard")?.artifact.id ?? null,
@@ -1018,6 +995,7 @@ export function ProductionEpisodeReviewRoom({
                 </div>
               ) : null}
               <CompareReviewRoom
+                projectId={aggregate.projectId} workId={aggregate.workId} isDemo={isDemo}
                 episodeId={episodeId}
                 seedItems={compareSeedItems}
                 storyboardProcessId={storyboardProcessId}

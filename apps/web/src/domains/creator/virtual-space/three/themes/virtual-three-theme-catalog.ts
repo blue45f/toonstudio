@@ -1,4 +1,5 @@
 import { VIRTUAL_THREE_THEME_MODEL_IDS as M } from './virtual-three-theme-models';
+import { VIRTUAL_THREE_NATURE_THEMES } from './virtual-three-nature-themes';
 import type { VirtualThreeTheme, VirtualThreeAssetRecipeTheme, VirtualThreeAssetRecipeThemeId, VirtualThreePreservedBaselineTheme, VirtualThreeLayoutRole, VirtualThreeLayoutRoleKind } from './virtual-three-theme-types';
 
 /** renderer 초기 선택 전용이다. store의 null/notice를 덮어쓰거나 자동 저장하지 않는다. */
@@ -87,6 +88,7 @@ export const VIRTUAL_THREE_THEMES: readonly VirtualThreeTheme[] = [
       role('cafe-cups', 'tabletop', M.dungeonCup, 4, '탁상용 컵 소품', 'Tabletop cup props'),
       role('cafe-bowls', 'tabletop', M.dungeonBowl, 2, '탁상용 그릇 소품', 'Tabletop bowl props'),
     ]),
+  ...VIRTUAL_THREE_NATURE_THEMES,
 ];
 
 export function findVirtualThreeTheme(id: unknown): VirtualThreeTheme | undefined {

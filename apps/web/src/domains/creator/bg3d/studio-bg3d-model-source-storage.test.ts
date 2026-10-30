@@ -1,3 +1,4 @@
+import { bindConsumerReleaseFixture, consumerReleaseFixture, isConsumerCatalogUrl } from "./studio-bg3d-bundle-release-consumer.test-fixture";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { importVerifiedBg3dModelsAtomicallyWithDispositionV12, parseV12ModelManifest,
   prepareVerifiedBg3dModelRecord, readStudioBg3dModelSourceSnapshotV12 } from "./bg3d-model-library";
@@ -177,8 +178,9 @@ describe("모델 V12 원본 제한의 실제 codec·import·dedup", () => {
         rights: { serve: "allow", ...RIGHTS }, note: null }],
       assets: [{ id, pack: 0, path: "test/pack.glb", bytes: input.size, sha256: sha256.slice(7), tris: 0 }],
       presets: [], crowdPacks: [], pendingPacks: [], totals: { packs: 1, placeableAssets: 1, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 } };
-    vi.stubGlobal("fetch", vi.fn(async (url: RequestInfo | URL) => String(url).includes("theme-packs.json")
-      ? new Response(JSON.stringify(raw)) : new Response(await input.arrayBuffer(), { headers: { "content-type": "model/gltf-binary" } })));
+    bindConsumerReleaseFixture(() => raw);
+    vi.stubGlobal("fetch", vi.fn(async (url: RequestInfo | URL) => isConsumerCatalogUrl(String(url))
+      ? consumerReleaseFixture(raw).catalogResponse() : new Response(await input.arrayBuffer(), { headers: { "content-type": "model/gltf-binary" } })));
     const loaded = await prepareVerifiedBg3dModelRecord({ file: input, rights: RIGHTS,
       ingress: { kind: "bundle-runtime", sourceRecordId: id, sourceContentHash: sha256 } }, { executionBackend: "direct", idFactory: () => id });
     expect(loaded.sourceRestriction).toEqual(restricted(id, sha256));

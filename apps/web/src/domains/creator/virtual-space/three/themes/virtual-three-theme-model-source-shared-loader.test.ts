@@ -1,3 +1,4 @@
+import { bindConsumerReleaseFixture } from "../../../bg3d/studio-bg3d-bundle-release-consumer.test-fixture";
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,7 +8,6 @@ import {
   loadStudioBg3dBundleThemePacks,
   parseStudioBg3dBundleThemePacks,
   resetStudioBg3dBundleThemePacksCache,
-  STUDIO_BG3D_BUNDLE_THEME_PACKS_URL,
   studioBg3dBundleAssetUrl,
   type StudioBg3dBundlePackRights,
 } from "../../../bg3d/studio-bg3d-bundle-theme-packs";
@@ -79,6 +79,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   resetStudioBg3dBundleThemePacksCache();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -89,6 +90,7 @@ describe("실제 catalog·shared loader의 caller 취소 경계", () => {
     const id = `cbv1-ingest-unit-shared-${++sharedSequence}`;
     ports.refs.set(id, { source: "bundle", assetId: id, expectedSha256: HASH, byteLength: GLB.byteLength, catalogId: OWNER });
     const raw = rawCatalog(id);
+    bindConsumerReleaseFixture(() => raw);
     const data = parseStudioBg3dBundleThemePacks(raw);
     const asset = data.assets[0];
     if (!asset) throw new Error("합성 catalog에 모델이 없습니다.");
@@ -99,7 +101,7 @@ describe("실제 catalog·shared loader의 caller 취소 경계", () => {
     const metadataResponses: Response[] = [];
     const fetcher = vi.fn<typeof fetch>(async (input, init) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      if (url === STUDIO_BG3D_BUNDLE_THEME_PACKS_URL) {
+      if (/^\/assets\/3d\/environments\/bundle-v1\/theme-packs\.[a-f0-9]{64}\.json$/u.test(url)) {
         // catalog 재조회마다 JSON 본문 소유권을 새로 만든다. GLB gate를 공유하지 않는다.
         const response = new Response(JSON.stringify(raw), { headers: { "content-type": "application/json" } });
         metadataResponses.push(response);

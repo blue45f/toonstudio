@@ -99,6 +99,8 @@ export interface CloudflareLargeAssetDescriptor {
    * 객체는 R2에서 삭제하기 전까지 계속 서빙된다.
    */
   readonly sameOriginOnly?: boolean;
+  /** 완료 표식은 GET·HEAD만 받으며 CORS 사전 요청으로 공개하지 않는다. */
+  readonly getHeadOnly?: boolean;
   /** R2에 없으면 Static Assets로 폴백하는 미디어 경로(`CLOUDFLARE_R2_MEDIA_PREFIXES`). */
   readonly staticFallback?: boolean;
   /**
@@ -110,7 +112,7 @@ export interface CloudflareLargeAssetDescriptor {
 }
 
 /**
- * Creator Bundle bundle-v2 트리 (bg3d 테마 팩 GLB + 배포 인덱스).
+ * Creator Bundle bundle-v2 트리 (bg3d 테마 팩 GLB + 배포 인덱스·완료 표식).
  * 실물은 Static Assets가 아니라 R2에만 있고 Worker가 바인딩으로 서빙한다.
  * 배포 절차와 객체 규칙(sha256 키, 권리 원장이 allow한 팩만)은
  * scripts/plan-creator-bundle-deploy.mjs가 정본이다. 커밋된
@@ -119,13 +121,26 @@ export interface CloudflareLargeAssetDescriptor {
  *
  * GLB는 소문자 sha256 hex 64자 키(`<sha256>.glb`)만 서빙한다. 원본 폴더·파일명이 든 옛 경로형 키로
  * 올라간 객체가 R2에 있더라도 Worker가 내주지 않는다 (경로형 URL은 이 파이프라인에 매칭되지 않는다).
+ * 완료 표식은 `release-index/<배포 색인 원문 SHA>.json`만 받으며 정적 색인의 존재로 대체하지 않는다.
  */
 export const CLOUDFLARE_BUNDLE_V2_PATH_PREFIX = "/assets/studio/bundle-v2/";
 export const CLOUDFLARE_BUNDLE_V2_INDEX_PATH = "/assets/studio/bundle-v2/manifest.json";
+export const CLOUDFLARE_BUNDLE_V2_RELEASE_INDEX_PATH_PREFIX = "/assets/studio/bundle-v2/release-index/";
 export const CLOUDFLARE_BUNDLE_V2_INDEX_CACHE_CONTROL =
   "public, max-age=300, s-maxage=0";
 const BUNDLE_V2_GLB_PATH_PATTERN =
   /^\/assets\/studio\/bundle-v2\/[a-f0-9]{64}\.glb$/u;
+const BUNDLE_V2_RELEASE_INDEX_PATH_PATTERN =
+  /^\/assets\/studio\/bundle-v2\/release-index\/[a-f0-9]{64}\.json$/u;
+
+/** 인코딩·대소문자 변형도 완료 표식 영역으로 묶어 Static Assets 폴백을 막는다. */
+export function isCloudflareBundleV2ReleaseIndexNamespacePath(pathname: string): boolean {
+  // ASCII namespace만 식별한다. 뒤쪽의 잘못된 % 표기도 정적 폴백의 예외가 되지 않는다.
+  const decoded = pathname.replace(/%([a-f0-9]{2})/giu,
+    (_match: string, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
+  return pathname.toLowerCase().startsWith(CLOUDFLARE_BUNDLE_V2_RELEASE_INDEX_PATH_PREFIX)
+    || decoded.toLowerCase().startsWith(CLOUDFLARE_BUNDLE_V2_RELEASE_INDEX_PATH_PREFIX);
+}
 
 const MODULAR_STREET_SEATING_PATH =
   "/assets/studio/cc0-20260906/assets/polyhaven-modular-street-seating/modular_street_seating.glb";
@@ -161,6 +176,14 @@ export function cloudflareLargeAssetDescriptor(
       contentType: "application/json",
       cacheControl: CLOUDFLARE_BUNDLE_V2_INDEX_CACHE_CONTROL,
       sameOriginOnly: true,
+    };
+  }
+  if (BUNDLE_V2_RELEASE_INDEX_PATH_PATTERN.test(pathname)) {
+    return {
+      contentType: "application/json",
+      cacheControl: CLOUDFLARE_BUNDLE_V2_INDEX_CACHE_CONTROL,
+      sameOriginOnly: true,
+      getHeadOnly: true,
     };
   }
   if (BUNDLE_V2_GLB_PATH_PATTERN.test(pathname)) {

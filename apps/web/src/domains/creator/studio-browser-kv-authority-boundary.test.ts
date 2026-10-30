@@ -5,22 +5,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-type FindingKind =
-  | "durable-storage-write"
-  | "indexeddb-cleanup"
-  | "indexeddb-open"
-  | "indexeddb-wrapper"
-  | "indexeddb-write"
-  | "local-storage-cleanup"
-  | "local-storage-write";
-
-interface BrowserKvFinding {
-  readonly file: string;
-  readonly kind: FindingKind;
-  readonly key: string;
-  readonly line: number;
-  readonly call: string;
-}
+import { compact, finding, type BrowserKvFinding, type FindingKind } from "./__fixtures__/studio-browser-kv-findings";
 
 interface BrowserKvAllowance {
   readonly file: string;
@@ -59,15 +44,16 @@ const EXCLUDED_DIRECTORY_NAMES = new Set([
 const TEST_FILE_PATTERN = /(?:\.boundary)?\.(?:spec|test)\.[cm]?[jt]sx?$/u;
 const DURABLE_AUTHORITY_PATTERN =
   /(?:asset|autosave|bible|brand|brush|calibration|catalog|checkpoint|clip|collab|crdt|document|effect|filter|font|journal|library|mannequin|marketplace|outbox|pack|palette|pose|preset|project|recovery|scene|snapshot|texture|timeline|translation|workspace)/iu;
+// 계정별 검수 초안과 수신함의 주입 Storage 포트도 키 이름에 관계없이 검사한다.
+const REVIEW_LOCAL_STORAGE_PORT_FILES = new Set([
+  "apps/web/src/domains/creator/production-hub/production-review-local-state.ts",
+  "apps/web/src/domains/creator/production-hub/compare-send-inbox.ts",
+]);
 const BROWSER_KV_LEXICAL_SURFACE_PATTERN =
   /\b(?:Dexie|IDBDatabase|IDBFactory|IDBObjectStore|indexedDB|localStorage|openDB|removeItem|sessionStorage|setItem)\b|["'](?:dexie|idb|idb-keyval)["']/u;
 
 function slash(value: string): string {
   return value.replaceAll("\\", "/");
-}
-
-function compact(value: string): string {
-  return value.replace(/\s+/gu, "");
 }
 
 function sourceExtension(file: string): string {
@@ -245,26 +231,9 @@ function isIndexedDbFactoryReceiver(receiver: string, source: string): boolean {
   return /(?:factory|indexedDB|indexedDb)$/u.test(receiver);
 }
 
-function finding(
-  file: string,
-  sourceFile: ts.SourceFile,
-  node: ts.Node,
-  kind: FindingKind,
-  key: string,
-): BrowserKvFinding {
-  return Object.freeze({
-    file,
-    kind,
-    key,
-    line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
-    call: compact(node.getText(sourceFile)),
-  });
-}
-
 /**
- * Static-only authority detector. It deliberately does not execute imported product code.
- * The exported shape is kept inside this test module so fixture cases exercise the exact scanner
- * used for the repository gate.
+ * 제품 코드를 실행하지 않는 정적 권한 경계 검사다. 사례와 저장소 게이트는 이 동일한 검사기를 쓴다.
+ * 결과의 불변 자료형·표현 정규화만 테스트 fixture로 분리한다.
  */
 function analyzeBrowserKvSource(file: string, source: string): readonly BrowserKvFinding[] {
   if (!mayContainBrowserKvAuthority(source)) return Object.freeze([]);
@@ -303,7 +272,8 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
             "sessionStorage",
             sessionStorageAliases,
           )
-          && DURABLE_AUTHORITY_PATTERN.test(`${file}:${key}:${call.receiver}`)
+          && (REVIEW_LOCAL_STORAGE_PORT_FILES.has(file)
+            || DURABLE_AUTHORITY_PATTERN.test(`${file}:${key}:${call.receiver}`))
         ) {
           // Unknown/injected Storage-like receivers remain reviewable. Explicit sessionStorage is
           // tab-scoped and cannot become durable authority, even when its key describes a pose.
@@ -431,6 +401,9 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/studio-page-save-pipeline.ts", "local-storage-cleanup", "autosaveKey", 1, CLEANUP_ONLY, CLEANUP_PROOF),
   allow("apps/web/src/domains/creator/studio-page-save-pipeline.ts", "local-storage-cleanup", "studioLifecycleAutosaveSidecarKey(autosaveKey)", 1, CLEANUP_ONLY, CLEANUP_PROOF),
   allow("apps/web/src/domains/creator/studio-page-save-pipeline.ts", "local-storage-cleanup", "LEGACY_STUDIO_AUTOSAVE_KEY", 1, CLEANUP_ONLY, CLEANUP_PROOF),
+  // 제한 저장도 서버 ACK·현재 계정/세대·동일 원고/intent·후속 intent 부재를 확인한 뒤의 두 미러만 정리한다.
+  allow("apps/web/src/domains/creator/studio-collab/studio-scoped-page-save-pipeline.ts", "local-storage-cleanup", "deps.autosaveKey", 1, CLEANUP_ONLY, "studio-scoped-page-save-pipeline.test.ts가 정확한 서버 ACK 뒤 primary·sidecar 정리와 권한/세대 변경·저장 거절·다른 원고·후속 intent의 보존을 검사한다. 다른 계정/작품과 legacy 키는 모든 case에서 보존하며 이 호출은 쓰기 권위를 만들지 않는다."),
+  allow("apps/web/src/domains/creator/studio-collab/studio-scoped-page-save-pipeline.ts", "local-storage-cleanup", "studioLifecycleAutosaveSidecarKey(deps.autosaveKey)", 1, CLEANUP_ONLY, "studio-scoped-page-save-pipeline.test.ts가 durable intent ACK 실패와 ACK 중 계정/문서/프로젝트 세대 변경 때 primary·sidecar를 보존하고 정상 저장 때만 함께 정리하는지 검사한다. 허용한 key·removeItem 종류·1회 범위 밖은 계속 거절한다."),
   allow("apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx", "local-storage-cleanup", "STUDIO_AI_RECENT_PROMPTS_KEY", 1, CLEANUP_ONLY, CLEANUP_PROOF),
   // Intentional change (2026-08): clipboard remnant cleanup moved with poser state
   // into useStudioVrmPoserState.ts. Same two deletions — only the file changed.
@@ -663,8 +636,8 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
 
   // 검수 도구의 이 기기 한정 작업 상태. 비교 댓글(ProductionEpisodeReviewRoom 주석)과 팀 투표(TeamVotePanel 주석)는
   // 서버 저장이 아직 없는 로컬 전용이라 후속 이관 대상이다 — 승인 기록과 원고 핀 문서는 별개다.
-  allow("apps/web/src/domains/creator/production-hub/CompareReviewRoom.tsx", "local-storage-write", '`toonstudio.compare-review.${episodeId}`', 1, REVIEW_TOOL_LOCAL_STATE, "compare-review-model.test.ts pins the serialize/parse round trip of a compare session and an empty session for broken JSON or another episode; the room restores through parseCompareSession and writes inside try/catch."),
-  allow("apps/web/src/domains/creator/production-hub/ProductionEpisodeReviewRoom.tsx", "local-storage-write", '`toonstudio.compare-comments.${episodeId}`', 1, REVIEW_TOOL_LOCAL_STATE, "studio-comments.test.ts pins serializeStudioCommentsDocument/normalizeStudioCommentsDocument including malformed JSON; the room skips demo data, restores through normalizeStudioCommentsDocument with an empty fallback, writes inside try/catch, and its source comment records server persistence as a follow-up."),
+  allow("apps/web/src/domains/creator/production-hub/production-review-local-state.ts", "durable-storage-write", "key", 1, REVIEW_TOOL_LOCAL_STATE, "production-review-local-state.test.ts와 .react.test.tsx가 실제 로그인 UID·프로젝트·작품·회차별 비교 이미지/댓글 분리, 계정 전환의 메모리 초기화, 잘못된 봉투 거절과 소유자 없는 기존 원문 보존을 검사한다. 기존 세션·댓글 직렬화는 이 로컬 작업 사본 봉투 안에 유지한다."),
+  allow("apps/web/src/domains/creator/production-hub/compare-send-inbox.ts", "durable-storage-write", "compareSendInboxKey(scope)", 1, REVIEW_TOOL_LOCAL_STATE, "compare-send-inbox.test.ts와 production-review-local-state.react.test.tsx가 실제 UID·작품별 격리, stale 쓰기 거절, 초안 저장·재확인 뒤 정확한 전송본만 ACK하고 새 전송·교체본과 저장 실패 원문을 보존하는 경로를 검사한다. 동일 PNG·항목 수 한도와 소유자 없는 기존 원문은 유지한다. 이 개인 로컬 수신함은 서버 원고·승인 기록의 정본이 아니다."),
   allow("apps/web/src/domains/creator/production-hub/ReviewPlaylistPanel.tsx", "local-storage-write", "reviewPlaylistStorageKey(aggregate.projectId)", 1, REVIEW_TOOL_LOCAL_STATE, "review-playlist-model.test.ts pins the serialize/parse round trip, null for broken values, and no verdict restore for a session of another date; approvals are recorded separately through the ReviewDecision command, and the panel only keeps the saved playlist verdicts."),
   allow("apps/web/src/domains/creator/production-hub/ReviewPlaylistPanel.tsx", "local-storage-cleanup", "reviewPlaylistStorageKey(aggregate.projectId)", 1, CLEANUP_ONLY, CLEANUP_PROOF),
   allow("apps/web/src/domains/creator/production-hub/TeamVotePanel.tsx", "local-storage-write", "teamVoteStorageKey(projectId,episodeId)", 1, REVIEW_TOOL_LOCAL_STATE, "team-vote-model.test.ts pins the serialize/parse round trip, rejection of broken JSON, a wrong version, ghost votes, and duplicate session ids, and project/episode key isolation; the panel stops writing while the stored value is broken so it never overwrites unreadable data."),
@@ -792,6 +765,14 @@ describe("Studio browser-KV authority boundary", () => {
         analyzeBrowserKvSource(`fixture-${index}-studio-project.ts`, fixture),
         fixture,
       ).not.toHaveLength(0);
+    }
+  });
+
+  it("검수 초안과 비교 수신함의 주입 저장 포트는 불투명한 키도 검사한다", () => {
+    for (const file of REVIEW_LOCAL_STORAGE_PORT_FILES) {
+      expect(analyzeBrowserKvSource(file, `storage.setItem("opaque", payload);`)).toEqual([
+        expect.objectContaining({ file, kind: "durable-storage-write", key: '"opaque"' }),
+      ]);
     }
   });
 

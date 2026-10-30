@@ -11,6 +11,8 @@ import {
 } from "../../src/domains/creator/bg3d/studio-bg3d-bundle-asset-loader";
 import {
   loadStudioBg3dBundleThemePacks,
+  loadStudioBg3dBundleDeployAvailability,
+  STUDIO_BG3D_BUNDLE_THEME_PACKS_URL,
   studioBg3dBundleAssetUrl,
   type StudioBg3dBundleThemePacks,
 } from "../../src/domains/creator/bg3d/studio-bg3d-bundle-theme-packs";
@@ -205,9 +207,12 @@ async function render(index: number) {
     materials, metrics: loaded.metrics, foregroundPixels: foreground, shaderErrors };
 }
 
-void loadStudioBg3dBundleThemePacks().then((data) => {
+// 옛 검수는 역사 metadata URL을 명시하고 Atlas는 실제 빌드 release 기본 경로를 사용한다.
+const legacyCatalog = new URL(location.href).searchParams.get("catalog") === "legacy";
+void loadStudioBg3dBundleThemePacks(legacyCatalog ? { url: STUDIO_BG3D_BUNDLE_THEME_PACKS_URL } : {}).then(async (data) => {
+  if (!legacyCatalog) assert(await loadStudioBg3dBundleDeployAvailability(data) === "available", "같은 빌드의 catalog/index release 가용성을 확인하지 못했습니다.");
   catalog = data;
   Object.assign(window, { __creatorBundleNative: { validateRange, rejectWrongHash, render } });
-}, (error: unknown) => {
+}).catch((error: unknown) => {
   Object.assign(window, { __creatorBundleNativeError: errorProof(error) });
 });

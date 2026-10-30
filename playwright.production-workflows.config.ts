@@ -15,6 +15,7 @@ export default defineConfig({
     locale: "ko-KR",
     timezoneId: "Asia/Seoul",
     headless: true,
+    serviceWorkers: "block",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },

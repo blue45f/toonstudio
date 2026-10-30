@@ -70,7 +70,7 @@ describe("독립 3D 테마의 실제 Three 광원 adapter", () => {
     expect(lights.key.position.z).toBeCloseTo(center.z);
   });
 
-  it("여섯 실제 recipe의 광량·색온도·방위를 고정 day/studio/night 하나로 뭉개지 않는다", () => {
+  it("여덟 실제 recipe의 광량·색온도·방위를 고정 day/studio/night 하나로 뭉개지 않는다", () => {
     const observed: string[] = [];
     for (const theme of VIRTUAL_THREE_THEMES) {
       if (theme.kind !== "asset-recipe") continue;
@@ -83,8 +83,8 @@ describe("독립 3D 테마의 실제 Three 광원 adapter", () => {
       expect(lights.fill.color.toArray()).toEqual(kelvinToLinearRgb(theme.lighting.fill.temperatureKelvin));
       observed.push(JSON.stringify({ intensity: lights.key.intensity, color: lights.key.color.toArray(), position: lights.key.position.toArray() }));
     }
-    expect(observed).toHaveLength(6);
-    expect(new Set(observed).size).toBe(6);
+    expect(observed).toHaveLength(8);
+    expect(new Set(observed).size).toBe(8);
   });
 
   it("baseline 복귀는 preset이 설정한 색·광량·shadow를 그대로 두고 기존 위치와 꺼진 fill을 복구한다", () => {
