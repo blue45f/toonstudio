@@ -157,32 +157,74 @@ const FRAGMENT_COUNT = slider("count", "사본 수", 2, 16, 1, 4);
 const FRAGMENT_DISTANCE = slider("distance", "거리", 1, 100, 1, 4, "px");
 const FRAGMENT_ROTATION = slider("rotation", "회전", 0, 360, 1, 45, "°");
 
+/** 정수에 아주 가까운 이동(cos·sin 의 부동소수 찌꺼기)을 정수로 붙인다. 그래야 축 방향 사본이 이웃 픽셀을 섞지 않는다. */
+const snapShift = (value: number): number => {
+  const nearest = Math.round(value);
+  return Math.abs(value - nearest) < 1e-9 ? nearest : value;
+};
+
 function applyFragment(image: StudioFilterGalleryImage, params: StudioFilterGalleryParams): void {
   const copies = Math.round(readSlider(params, FRAGMENT_COUNT));
   const distance = readSlider(params, FRAGMENT_DISTANCE);
   const rotation = (readSlider(params, FRAGMENT_ROTATION) * Math.PI) / 180;
   const { width, height, data } = image;
   const source = data.slice();
-  // 사본은 고른 각도로 같은 거리만큼 정수 픽셀 단위로 민다(흐리지 않고 또렷한 겹침). 그림 밖은 가장자리 반복이다.
-  const shiftX = new Int32Array(copies), shiftY = new Int32Array(copies);
+  // 사본은 고른 각도로 같은 거리만큼 민다. 민 거리를 정수 픽셀로 반올림하면 거리·회전 여러 칸이 같은 그림이 되므로(기본값의
+  // 회전 360칸 중 328칸), 소수 위치는 이웃 네 픽셀을 쌍선형 가중치로 읽는다. 정수 이동(회전 0·90·180·270°)은 한 픽셀만 읽어
+  // 예전처럼 또렷하다. 탭마다 가중치 × 알파로 색을 섞어 투명 픽셀의 숨은 RGB 가 새지 않는다. 그림 밖은 가장자리 반복이다.
+  const tapX = new Int32Array(copies * 4), tapY = new Int32Array(copies * 4), tapWeight = new Float64Array(copies * 4);
+  let taps = 0, lowX = 0, highX = 0, lowY = 0, highY = 0;
   for (let copy = 0; copy < copies; copy += 1) {
     const angle = rotation + (copy * 2 * Math.PI) / copies;
-    shiftX[copy] = Math.round(Math.cos(angle) * distance);
-    shiftY[copy] = Math.round(Math.sin(angle) * distance);
+    const shiftX = snapShift(Math.cos(angle) * distance), shiftY = snapShift(Math.sin(angle) * distance);
+    const baseX = Math.floor(shiftX), baseY = Math.floor(shiftY), fractionX = shiftX - baseX, fractionY = shiftY - baseY;
+    for (let corner = 0; corner < 4; corner += 1) {
+      const weight = ((corner & 1) === 0 ? 1 - fractionX : fractionX) * (corner < 2 ? 1 - fractionY : fractionY);
+      if (weight === 0) continue;
+      tapX[taps] = baseX + (corner & 1); tapY[taps] = baseY + (corner >> 1); tapWeight[taps] = weight;
+      lowX = Math.min(lowX, tapX[taps]); highX = Math.max(highX, tapX[taps]); lowY = Math.min(lowY, tapY[taps]); highY = Math.max(highY, tapY[taps]);
+      taps += 1;
+    }
   }
+  // 알파를 곱한 색(정수라 Float32 로 정확하다)을 미리 펴 둔다. 모든 탭이 그림 안인 픽셀은 고정 오프셋으로 읽고, 나머지는
+  // 행마다 한 번 접어 둔 탭 행에 열만 접어 읽는다.
+  const premultiplied = new Float32Array(source.length);
+  for (let offset = 0; offset < source.length; offset += 4) {
+    const opacity = source[offset + 3];
+    premultiplied[offset] = source[offset] * opacity; premultiplied[offset + 1] = source[offset + 1] * opacity;
+    premultiplied[offset + 2] = source[offset + 2] * opacity; premultiplied[offset + 3] = opacity;
+  }
+  const tapOffset = new Int32Array(taps), tapRow = new Int32Array(taps);
+  for (let tap = 0; tap < taps; tap += 1) tapOffset[tap] = (tapY[tap] * width + tapX[tap]) * 4;
+  const insideStart = -lowX, insideEnd = width - highX;
   for (let y = 0; y < height; y += 1) {
+    const insideY = y + lowY >= 0 && y + highY < height;
+    for (let tap = 0; tap < taps; tap += 1) tapRow[tap] = clampIndex(y + tapY[tap], height) * width;
     for (let x = 0; x < width; x += 1) {
-      let red = 0, green = 0, blue = 0, alpha = 0, plainRed = 0, plainGreen = 0, plainBlue = 0;
-      for (let copy = 0; copy < copies; copy += 1) {
-        const from = (clampIndex(y + shiftY[copy], height) * width + clampIndex(x + shiftX[copy], width)) * 4;
-        const weight = source[from + 3];
-        red += source[from] * weight; green += source[from + 1] * weight; blue += source[from + 2] * weight; alpha += weight;
-        plainRed += source[from]; plainGreen += source[from + 1]; plainBlue += source[from + 2];
-      }
       const offset = (y * width + x) * 4;
+      let red = 0, green = 0, blue = 0, alpha = 0;
+      if (insideY && x >= insideStart && x < insideEnd) {
+        for (let tap = 0; tap < taps; tap += 1) {
+          const from = offset + tapOffset[tap], share = tapWeight[tap];
+          red += premultiplied[from] * share; green += premultiplied[from + 1] * share; blue += premultiplied[from + 2] * share;
+          alpha += premultiplied[from + 3] * share;
+        }
+      } else {
+        for (let tap = 0; tap < taps; tap += 1) {
+          const from = (tapRow[tap] + clampIndex(x + tapX[tap], width)) * 4, share = tapWeight[tap];
+          red += premultiplied[from] * share; green += premultiplied[from + 1] * share; blue += premultiplied[from + 2] * share;
+          alpha += premultiplied[from + 3] * share;
+        }
+      }
       if (alpha > 0) {
         data[offset] = red / alpha; data[offset + 1] = green / alpha; data[offset + 2] = blue / alpha;
       } else {
+        // 탭이 모두 투명하면(결과 알파 0) 숨은 색의 단순 평균을 남긴다.
+        let plainRed = 0, plainGreen = 0, plainBlue = 0;
+        for (let tap = 0; tap < taps; tap += 1) {
+          const from = (tapRow[tap] + clampIndex(x + tapX[tap], width)) * 4, share = tapWeight[tap];
+          plainRed += source[from] * share; plainGreen += source[from + 1] * share; plainBlue += source[from + 2] * share;
+        }
         data[offset] = plainRed / copies; data[offset + 1] = plainGreen / copies; data[offset + 2] = plainBlue / copies;
       }
       data[offset + 3] = alpha / copies;
