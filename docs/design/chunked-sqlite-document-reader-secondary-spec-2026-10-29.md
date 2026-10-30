@@ -236,28 +236,28 @@ zlib 해제기(`inflateZlib`)는 `DecompressionStream` 대신 순수 구현이�
 
 **동치로 판정한 생존 변이.** 판정은 코드를 읽은 분석이고, 해제기 34건은 추가로 무작위 차분 시험으로 확인했다: 원본과 변이가 같은 입력에 같은 출력·소비 바이트·DEFLATE 블록 수·오류 코드를 내는지 32,947건에서 대조했고 다른 것이 없었다. 입력은 Node `zlib`이 여러 수준·전략·창 크기로 만든 스트림, 비트 단위 빌더로 만든 고정·동적·저장 블록 스트림, 거기에 비트 뒤집기·자르기·덧붙이기를 가한 것, 출력이 초기 용량 65,536바이트와 131,072바이트 안팎인 스트림과 상한을 출력 길이·그보다 하나 적게 준 경우다. 이 대조가 힘이 있는지 보려고 시험이 이미 검출한 변이 40개를 무작위로 골라 같은 대조를 돌렸고 38개를 다르다고 가려냈다. 나머지 둘은 단위 시험만 아는 관찰로 검출된 것이다(거리 부호 표의 먼 거리 항목은 대조 입력의 거리가 닿지 않고, 버퍼 성장은 결과 바이트에 나타나지 않는다). 그래서 이 대조는 동치 분석을 보강하는 증거이지 증명이 아니다.
 
-| 파일 | 변이(줄) | 동치인 이유 |
+| 파일 | 변이 | 동치인 이유 |
 | --- | --- | --- |
-| `zlib-inflate.ts` | `MAX_CODE_BITS` 15→16(65); 길이 개수·다음 부호·고정 표·코드 길이 배열 크기 +1 또는 −1(89, 109, 133, 141, 264) | 부호 길이는 코드 길이 알파벳이 만들어 0~15라 16번째 칸과 반복에 닿지 않는다. 늘어난 칸은 쓰이지 않고, 줄어든 칸(`+1`)도 15까지의 색인을 덮는다 |
-| `zlib-inflate.ts` | 초기 출력 용량 `1 << 16`의 네 상수(66); 성장 배수 2→3(210) | 출력 버퍼를 언제 몇 번 키우는지만 바뀐다. 결과 바이트와 상한(`maxOutputBytes`)은 용량과 무관하고, 반환 버퍼가 상한을 넘지 않는 것은 용량을 상한으로 자르는 코드와 시험이 따로 보증한다 |
-| `zlib-inflate.ts` | 해독 표 크기 `1 << maxLength`를 `2 <<`로(115) | 위쪽 절반은 `readSymbol`의 색인 마스크(`(1 << bits) - 1`)가 닿지 않는다 |
-| `zlib-inflate.ts` | `symbol < symbolCount`→`<=`(91); `length > maxLength`→`>=`(94); `fill < size`→`<=`(124); `start < byteLength`→`<=`(303) | 한 번 더 도는 반복이 아무것도 바꾸지 않는다: 배열 밖 읽기는 `undefined`라 개수에 반영되지 않고, 배열 밖 쓰기는 무시되며, 같은 값을 다시 대입하고, 빈 구간의 Adler 갱신은 나머지 연산만 한다 |
-| `zlib-inflate.ts` | `bitCount < count`→`<=`(169) | 비트를 한 바이트 더 미리 읽을 뿐이고 `alignToByte`가 완전한 바이트를 입력으로 되돌린다. 오류 판정은 부족한 비트 수로만 한다 |
-| `zlib-inflate.ts` | 빈 거리 표의 크기·비트 수 4건(99) | 이 표에서 심볼을 읽으면 어느 경우든 같은 "잘못된 허프만 부호" 오류가 입력을 더 쓰기 전에 난다 |
-| `zlib-inflate.ts` | `lengthCounts[0] = 0`→`1`(101); `code = 0`→`1`(110); 합산 반복 시작 1→2 또는 0(111) | 정규 부호의 시작 값에 2^길이의 배수가 얹혀도 `reverseBits`가 아래 길이 비트만 쓴다. `lengthCounts[0]`이 0이라 시작을 1이나 2로 옮겨도 첫 걸음이 같은 0이다 |
-| `zlib-inflate.ts` | 고정 표 캐시 조건 `fixedTables === null`→`true`(132); 고정 표의 `allowIncomplete` false→true 2건(139, 141) | 캐시를 없애면 매번 다시 만들 뿐이다. 고정 표는 완전한 부호라 불완전 허용이 쓰이지 않는다 |
-| `zlib-inflate.ts` | 고정 표 채움의 끝 상수 4건 +1(134~137) | 다음 `fill`이 그 칸을 덮어쓰거나 배열 끝에서 잘린다 |
-| `zlib-inflate.ts` | `readBits`의 `count === 0` 조기 반환 제거(177) | 0비트를 읽는 일반 경로도 0을 돌려주고 상태를 바꾸지 않는다 |
-| `chunked-sqlite-blocks.ts` | 초기 색 채움의 `filled < output.byteLength`→`<=`(346) | 끝에서 길이 0인 `copyWithin`을 한 번 더 부를 뿐이다 |
-| `chunked-sqlite-blocks.ts` | `hasContent`를 읽는 바이트 순서 false→true(263) | 0인지 아닌지만 보며, 같은 4바이트는 어느 순서로 읽어도 0일 때만 0이다 |
-| `chunked-sqlite-document.ts` | 타입 위치의 리터럴 `ok: true`, `ok: false` 2건(196, 204) | 타입 선언이라 컴파일 때 지워진다 |
-| `chunked-sqlite-document.ts` | 마스크 `defaultValue: pixels.initial[0] ?? 0`의 대체값 0→1(555) | 마스크 오프스크린의 `initial`은 항상 한 원소라 대체값에 닿지 않는다(`noUncheckedIndexedAccess`가 요구하는 문장) |
-| `chunked-sqlite-document.ts` | 입력이 `Uint8Array`인 분기 제거(149) | `ArrayBuffer` 경로(`new Uint8Array(source.slice(0))`)도 같은 내용의 사본을 만든다. 한 번 더 복사할 뿐이다 |
-| `chunked-sqlite-document.ts` | `subtle !== undefined`→`true`(163) | `subtle`이 없으면 `subtle.digest` 호출이 던지고 바로 아래 `catch`가 순수 구현으로 돌아간다 |
-| `chunked-sqlite-layer-model.ts` | `readClipInteger`의 `typeof value === "bigint"`→`true`(27) | bigint가 아닌 값은 `BigInt(converted) === value`가 항상 거짓이라 어느 쪽이든 null이다 |
-| `chunked-sqlite-layer-model.ts` | 텍스트 셀 바이트 상한 `maxCharacters * 4`→`* 5`(50) | UTF-8은 UTF-16 코드 단위당 최대 3바이트라 4배로 충분하고, 더 읽어도 뒤의 `slice`가 `maxCharacters`에서 자른다 |
+| `zlib-inflate.ts` | `MAX_CODE_BITS` 15→16; `buildDecodeTable`의 길이 개수·다음 부호 배열, `getFixedTables`의 고정 표 배열, `readDynamicTables`의 코드 길이 배열 크기 +1 또는 −1 | 부호 길이는 코드 길이 알파벳이 만들어 0~15라 16번째 칸과 반복에 닿지 않는다. 늘어난 칸은 쓰이지 않고, 줄어든 칸(`+1`)도 15까지의 색인을 덮는다 |
+| `zlib-inflate.ts` | 초기 출력 용량 `INITIAL_GROWTH_BYTES = 1 << 16`의 네 상수; `ensure`의 성장 배수 2→3 | 출력 버퍼를 언제 몇 번 키우는지만 바뀐다. 결과 바이트와 상한(`maxOutputBytes`)은 용량과 무관하고, 반환 버퍼가 상한을 넘지 않는 것은 용량을 상한으로 자르는 코드와 시험이 따로 보증한다 |
+| `zlib-inflate.ts` | `buildDecodeTable`의 표 크기 `1 << maxLength`를 `2 <<`로 | 위쪽 절반은 `readSymbol`의 색인 마스크(`(1 << bits) - 1`)가 닿지 않는다 |
+| `zlib-inflate.ts` | `buildDecodeTable`의 `symbol < symbolCount`→`<=`, `length > maxLength`→`>=`, `fill < size`→`<=`; `adler32`의 `start < byteLength`→`<=` | 한 번 더 도는 반복이 아무것도 바꾸지 않는다: 배열 밖 읽기는 `undefined`라 개수에 반영되지 않고, 배열 밖 쓰기는 무시되며, 같은 값을 다시 대입하고, 빈 구간의 Adler 갱신은 나머지 연산만 한다 |
+| `zlib-inflate.ts` | 비트 버퍼 채우기(`fill`)의 `bitCount < count`→`<=` | 비트를 한 바이트 더 미리 읽을 뿐이고 `alignToByte`가 완전한 바이트를 입력으로 되돌린다. 오류 판정은 부족한 비트 수로만 한다 |
+| `zlib-inflate.ts` | `buildDecodeTable`이 부호가 없는 표에 돌려주는 `{ entries: new Uint16Array(2), bits: 1 }`의 네 상수 | 이 표에서 심볼을 읽으면 어느 경우든 같은 "잘못된 허프만 부호" 오류가 입력을 더 쓰기 전에 난다 |
+| `zlib-inflate.ts` | `buildDecodeTable`의 `lengthCounts[0] = 0`→`1`, `code = 0`→`1`, 다음 부호 합산 반복의 시작 1→2 또는 0 | 정규 부호의 시작 값에 2^길이의 배수가 얹혀도 `reverseBits`가 아래 길이 비트만 쓴다. `lengthCounts[0]`이 0이라 시작을 1이나 2로 옮겨도 첫 걸음이 같은 0이다 |
+| `zlib-inflate.ts` | `getFixedTables`의 캐시 조건 `fixedTables === null`→`true`; 고정 표 둘의 `allowIncomplete` false→true | 캐시를 없애면 매번 다시 만들 뿐이다. 고정 표는 완전한 부호라 불완전 허용이 쓰이지 않는다 |
+| `zlib-inflate.ts` | `getFixedTables`의 `literalLengths.fill(...)` 끝 상수 4건 +1 | 다음 `fill`이 그 칸을 덮어쓰거나 배열 끝에서 잘린다 |
+| `zlib-inflate.ts` | `readBits`의 `count === 0` 조기 반환 제거 | 0비트를 읽는 일반 경로도 0을 돌려주고 상태를 바꾸지 않는다 |
+| `chunked-sqlite-blocks.ts` | `fillWithPattern`의 `filled < output.byteLength`→`<=` | 끝에서 길이 0인 `copyWithin`을 한 번 더 부를 뿐이다 |
+| `chunked-sqlite-blocks.ts` | `parseClipBlockRecords`가 `hasContent`를 읽는 바이트 순서 false→true | 0인지 아닌지만 보며, 같은 4바이트는 어느 순서로 읽어도 0일 때만 0이다 |
+| `chunked-sqlite-document.ts` | `DecodedOffscreen`·`FailedOffscreen` 인터페이스의 리터럴 타입 `ok: true`, `ok: false` 2건 | 타입 선언이라 컴파일 때 지워진다 |
+| `chunked-sqlite-document.ts` | `decodeLayerMasks`의 `defaultValue: pixels.initial[0] ?? 0`의 대체값 0→1 | 마스크 오프스크린의 `initial`은 항상 한 원소라 대체값에 닿지 않는다(`noUncheckedIndexedAccess`가 요구하는 문장) |
+| `chunked-sqlite-document.ts` | `readSourceBytes`의 `source instanceof Uint8Array` 분기 제거 | `ArrayBuffer` 경로(`new Uint8Array(source.slice(0))`)도 같은 내용의 사본을 만든다. 한 번 더 복사할 뿐이다 |
+| `chunked-sqlite-document.ts` | `sha256Hex`의 `subtle !== undefined`→`true` | `subtle`이 없으면 `subtle.digest` 호출이 던지고 바로 아래 `catch`가 순수 구현으로 돌아간다 |
+| `chunked-sqlite-layer-model.ts` | `readClipInteger`의 `typeof value === "bigint"`→`true` | bigint가 아닌 값은 `BigInt(converted) === value`가 항상 거짓이라 어느 쪽이든 null이다 |
+| `chunked-sqlite-layer-model.ts` | `readClipText`의 바이트 상한 `maxCharacters * 4`→`* 5` | UTF-8은 UTF-16 코드 단위당 최대 3바이트라 4배로 충분하고, 더 읽어도 뒤의 `slice`가 `maxCharacters`에서 자른다 |
 
-**분석이 틀렸던 사례.** 해제기의 `while (capacity < needed)`→`<=`(210)를 처음에는 "성장 배수와 같은 종류의 용량 변이"로 보아 동치라고 적었다. 다시 따져 보니 용량이 필요한 크기와 같아지는 순간(`capacity == needed == maxOutputBytes`)에 한 번 더 도는데, 상한에서는 더 자랄 수 없어 **끝나지 않는다**. 초기 용량(65,536바이트)을 처음 넘는 한 걸음이 곧바로 상한에 닿는 입력(출력 65,537바이트, 상한 65,537)에서만 일어나 기존 시험이 놓쳤다. 직접 돌려 무한 반복을 확인하고 그 입력의 시험을 더했다(`zlib-inflate.test.ts`). 동치 판정은 틀릴 수 있으므로, 이 표의 항목도 읽는 사람이 다시 따져 볼 수 있게 이유를 적었다.
+**분석이 틀렸던 사례.** 해제기 `ensure`의 `while (capacity < needed)`→`<=`를 처음에는 "성장 배수와 같은 종류의 용량 변이"로 보아 동치라고 적었다. 다시 따져 보니 용량이 필요한 크기와 같아지는 순간(`capacity == needed == maxOutputBytes`)에 한 번 더 도는데, 상한에서는 더 자랄 수 없어 **끝나지 않는다**. 초기 용량(65,536바이트)을 처음 넘는 한 걸음이 곧바로 상한에 닿는 입력(출력 65,537바이트, 상한 65,537)에서만 일어나 기존 시험이 놓쳤다. 직접 돌려 무한 반복을 확인하고 그 입력의 시험을 더했다(`zlib-inflate.test.ts`). 동치 판정은 틀릴 수 있으므로, 이 표의 항목도 읽는 사람이 다시 따져 볼 수 있게 이유를 적었다.
 
 **한계.** 이 변이들은 시험이 "코드가 우리의 이해대로 동작하는가"를 얼마나 촘촘히 확인하는지를 잴 뿐이다. 이해가 실제 포맷과 같은지는 재지 못한다(위 6절 한계).
 
