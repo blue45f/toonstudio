@@ -333,9 +333,11 @@ export function userAiConnectionModels(
   return sortByPriority(profiles.filter((item) => item.enabled && (!capability || item.capability === capability)));
 }
 
+/** 요청 경로는 연결마다 앞의 64개(`limit`)만 쓴다. 사용 기록 정리처럼 모든 경로를 봐야 하는 곳만 `limit`을 늘린다. */
 export function resolvedUserAiRoutes(
   connection: UserAiConnection,
   capability: UserAiCapability,
+  limit = 64,
 ): UserAiResolvedConnection[] {
   if (connection.enabled === false) return [];
   const keys = userAiConnectionApiKeys(connection);
@@ -352,7 +354,7 @@ export function resolvedUserAiRoutes(
         modelProfileId: model.id,
         routeId: `${connection.id}:${model.id}:${key.id}`,
       });
-      if (routes.length >= 64) return routes;
+      if (routes.length >= limit) return routes;
     }
   }
   return routes;

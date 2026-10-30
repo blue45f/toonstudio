@@ -2,11 +2,13 @@
  * StudioWebtoonEpisodicDoctorPanel.tsx
  *
  * Phase 2 차세대 웹툰 에피소드 AI 디렉터 워크벤치 패널:
- * 1. 독자 스크롤 체류·이탈 구간 & 베스트 댓글·별점 예측 시뮬레이터 (`reader-retention-simulator`)
+ * 1. 대본 기반 독자 관점 연출 제안 (`reader-retention-simulator`)
  * 2. 캐릭터 말투·성격 캐붕(OOC) 레이더 & 3종 서브텍스트 대사 윤색기 (`character-ooc-radar`)
  * 3. 컷별 3D 배경·소품 에셋 배치 & 카메라 렌즈/심도(DoF)/안개 디렉터 (`bg3d-lighting-asset-director`)
  * 4. 웹툰 BGM · 폴리 효과음 · 오디오툰(보이스 드라마) 큐시트 디렉터 (`bgm-audiotoon-cuesheet`)
  */
+import "@/shared/ai/assist/ai-assist-i18n";
+
 import {
   Activity,
   Archive,
@@ -15,11 +17,9 @@ import {
   Music,
   ShieldCheck,
   Sparkles,
-  Star,
-  ThumbsUp,
   Wand2,
 } from "lucide-react";
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
@@ -32,14 +32,7 @@ import {
   buildDeterministicMultiEpisodeCanonVaultReport,
   buildDeterministicReaderRetentionReport,
   buildDeterministicVisualContinuityLinterReport,
-  runAssistBg3dLightingAssetDirector,
-  runAssistBgmAudioToonCuesheet,
-  runAssistCharacterOocRadar,
-  runAssistCrowdDepthFogLockDirector,
-  runAssistFootwearStrideLockDirector,
-  runAssistMultiEpisodeCanonVault,
-  runAssistReaderRetentionSimulator,
-  runAssistVisualContinuityLinter,
+  runAssistWebtoonEpisodicDoctor,
   type AssistBg3dLightingAssetView,
   type AssistBgmAudioToonView,
   type AssistCharacterOocRadarView,
@@ -52,6 +45,9 @@ import {
 } from "./assist/assist-webtoon-episodic-doctor";
 import type { WebtoonProductionAssistInput } from "./assist/assist-webtoon-production-schemas";
 
+import { useAssistTask } from "./assist/use-assist-task";
+
+import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 const EPISODIC_DOCTOR_TABS: readonly {
@@ -61,8 +57,8 @@ const EPISODIC_DOCTOR_TABS: readonly {
 }[] = [
   {
     id: "reader-retention-simulator",
-    labelKo: "독자 이탈 · 댓글 · 별점 예측기",
-    benchmarkBadgeKo: "네이버웹툰 · 쿠아이칸 데이터",
+    labelKo: "",
+    benchmarkBadgeKo: "",
   },
   {
     id: "character-ooc-radar",
@@ -82,7 +78,7 @@ const EPISODIC_DOCTOR_TABS: readonly {
   {
     id: "episodic-visual-continuity-linter",
     labelKo: "컷간 작붕(흉터·검집·부상) 린터",
-    benchmarkBadgeKo: "Opus 5.5 · 좌우반전/작붕 0%",
+    benchmarkBadgeKo: "",
   },
   {
     id: "multi-episode-canon-memory-vault",
@@ -113,7 +109,11 @@ export function StudioWebtoonEpisodicDoctorPanel({
   const [activeMode, setActiveMode] = useState<WebtoonEpisodicDoctorMode>(
     "reader-retention-simulator",
   );
-  const [isRunningClaude, setIsRunningClaude] = useState(false);
+  const t = useT();
+  const task = useAssistTask();
+  const isRunningClaude = task.running;
+  const inputRevision = JSON.stringify(assistInput);
+  const resetTask = task.reset;
 
   const [liveRetentionView, setLiveRetentionView] =
     useState<AssistReaderRetentionView | null>(null);
@@ -162,29 +162,40 @@ export function StudioWebtoonEpisodicDoctorPanel({
     [assistInput, liveCrowdDepthView],
   );
 
+  // 입력이 바뀌면 이전 요청을 취소하고, 이전 대본의 결과가 새 대본에 섞이지 않게 한다.
+  useEffect(() => {
+    resetTask();
+    setLiveRetentionView(null);
+    setLiveOocView(null);
+    setLiveBg3dView(null);
+    setLiveBgmView(null);
+    setLiveLinterView(null);
+    setLiveCanonVaultView(null);
+    setLiveFootwearView(null);
+    setLiveCrowdDepthView(null);
+  }, [inputRevision, resetTask]);
+
   const handleRunLiveClaudeDoctor = async () => {
-    if (isRunningClaude) return;
-    setIsRunningClaude(true);
-    try {
-      if (activeMode === "reader-retention-simulator") {
-        setLiveRetentionView(await runAssistReaderRetentionSimulator(assistInput));
-      } else if (activeMode === "character-ooc-radar") {
-        setLiveOocView(await runAssistCharacterOocRadar(assistInput));
-      } else if (activeMode === "bg3d-lighting-asset-director") {
-        setLiveBg3dView(await runAssistBg3dLightingAssetDirector(assistInput));
-      } else if (activeMode === "bgm-audiotoon-cuesheet") {
-        setLiveBgmView(await runAssistBgmAudioToonCuesheet(assistInput));
-      } else if (activeMode === "episodic-visual-continuity-linter") {
-        setLiveLinterView(await runAssistVisualContinuityLinter(assistInput));
-      } else if (activeMode === "multi-episode-canon-memory-vault") {
-        setLiveCanonVaultView(await runAssistMultiEpisodeCanonVault(assistInput));
-      } else if (activeMode === "episodic-footwear-floor-contact-stride-lock") {
-        setLiveFootwearView(await runAssistFootwearStrideLockDirector(assistInput));
-      } else {
-        setLiveCrowdDepthView(await runAssistCrowdDepthFogLockDirector(assistInput));
-      }
-    } finally {
-      setIsRunningClaude(false);
+    if (task.running) return;
+    const result = await task.start(async (signal) => {
+      const view = await runAssistWebtoonEpisodicDoctor(activeMode, assistInput, {
+        signal,
+        fallbackOnError: false,
+      });
+      // 로컬 예시는 실제 API 실험의 성공으로 취급하지 않는다.
+      if (view.source !== "claude-live") throw new Error(t("aiAssist.episodic.failed"));
+      return view;
+    });
+    if (!result) return;
+    switch (result.mode) {
+      case "reader-retention-simulator": setLiveRetentionView(result); break;
+      case "character-ooc-radar": setLiveOocView(result); break;
+      case "bg3d-lighting-asset-director": setLiveBg3dView(result); break;
+      case "bgm-audiotoon-cuesheet": setLiveBgmView(result); break;
+      case "episodic-visual-continuity-linter": setLiveLinterView(result); break;
+      case "multi-episode-canon-memory-vault": setLiveCanonVaultView(result); break;
+      case "episodic-footwear-floor-contact-stride-lock": setLiveFootwearView(result); break;
+      case "episodic-crowd-silhouette-depth-fog-lock": setLiveCrowdDepthView(result); break;
     }
   };
 
@@ -214,7 +225,7 @@ export function StudioWebtoonEpisodicDoctorPanel({
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
           <span className="text-[0.68rem] font-bold text-fg">
-            차세대 에피소드 AI 디렉터 4종 (독자 체류 예측 · 캐붕 레이더 · 3D 에셋 · 오디오툰 큐시트)
+            {t("aiAssist.episodic.title")}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -223,8 +234,8 @@ export function StudioWebtoonEpisodicDoctorPanel({
             className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[0.58rem] font-semibold text-accent"
           >
             {activeSource === "claude-live"
-              ? "AI 실시간 시뮬레이션 완료"
-              : "하이브리드 즉시 시뮬레이션"}
+              ? t("aiAssist.episodic.liveSource")
+              : t("aiAssist.episodic.localSource")}
           </span>
           <button
             type="button"
@@ -238,10 +249,22 @@ export function StudioWebtoonEpisodicDoctorPanel({
             )}
           >
             <Wand2 className="h-3 w-3" aria-hidden="true" />
-            {isRunningClaude ? "AI 정밀 시뮬레이션 중..." : "현재 탭 AI 실시간 시뮬레이션"}
+            {isRunningClaude ? t("aiAssist.episodic.running") : task.state.status === "error" ? t("aiAssist.episodic.retry") : t("aiAssist.episodic.run")}
           </button>
+          {isRunningClaude ? (
+            <button type="button" onClick={task.stop} className={cn("rounded border border-line px-2 py-1 text-xs", STUDIO_FOCUS_RING)}>
+              {t("aiAssist.common.stop")}
+            </button>
+          ) : null}
         </div>
       </div>
+      <p className="text-xs text-fg-3">{t("aiAssist.episodic.scopeNotice")}</p>
+      {task.state.status === "error" ? (
+        <p role="alert" className="rounded border border-bad/40 bg-bad/10 p-2 text-xs text-bad">{t("aiAssist.episodic.failed")}</p>
+      ) : null}
+      {isRunningClaude || task.state.status === "stopped" ? (
+        <p role="status" className="text-xs text-fg-2">{t(isRunningClaude ? "aiAssist.episodic.running" : "aiAssist.episodic.stopped")}</p>
+      ) : null}
 
       {/* 4종 차세대 에피소드 AI 디렉터 탭 */}
       <div
@@ -257,7 +280,7 @@ export function StudioWebtoonEpisodicDoctorPanel({
               type="button"
               role="tab"
               aria-selected={isSelected}
-              onClick={() => setActiveMode(tab.id)}
+              onClick={() => { task.reset(); setActiveMode(tab.id); }}
               data-testid={`episodic-doctor-tab-${tab.id}`}
               className={cn(
                 "flex flex-col items-start gap-0.5 rounded-lg border px-2.5 py-1.5 text-left transition-colors",
@@ -268,8 +291,8 @@ export function StudioWebtoonEpisodicDoctorPanel({
                 STUDIO_FOCUS_RING,
               )}
             >
-              <span className="text-[0.64rem] font-bold">{tab.labelKo}</span>
-              <span className="text-[0.55rem] text-fg-3">{tab.benchmarkBadgeKo}</span>
+              <span className="text-[0.64rem] font-bold">{tab.id === "reader-retention-simulator" ? t("aiAssist.episodic.readerTab") : tab.labelKo}</span>
+              <span className="text-[0.55rem] text-fg-3">{tab.id === "reader-retention-simulator" ? t("aiAssist.episodic.readerBasis") : tab.id === "episodic-visual-continuity-linter" ? t("aiAssist.episodic.continuityBasis") : tab.benchmarkBadgeKo}</span>
             </button>
           );
         })}
@@ -284,20 +307,9 @@ export function StudioWebtoonEpisodicDoctorPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1 font-bold text-fg">
               <Activity className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              독자 스크롤 완독률 & 예상 별점 시뮬레이션
+              {t("aiAssist.episodic.readerHeading")}
             </span>
-            <div className="flex items-center gap-2">
-              <span
-                data-testid="retention-star-rating"
-                className="inline-flex items-center gap-1 rounded bg-warn/15 px-2 py-0.5 font-bold text-warn"
-              >
-                <Star className="h-3 w-3" aria-hidden="true" />
-                예상 별점 ★{retentionView.predictedEpisodeStarRating.toFixed(2)}
-              </span>
-              <span className="rounded bg-good/15 px-2 py-0.5 font-bold text-good">
-                예상 완독률 {retentionView.completionRatePct}%
-              </span>
-            </div>
+            <span className="text-fg-3">{t("aiAssist.episodic.noMetrics")}</span>
           </div>
           <p className="text-fg-2">{retentionView.scrollVelocitySummaryKo}</p>
           <div className="grid gap-1.5 sm:grid-cols-2">
@@ -308,18 +320,9 @@ export function StudioWebtoonEpisodicDoctorPanel({
               >
                 <div className="flex items-center justify-between gap-1">
                   <span className="font-bold text-fg">
-                    Cut {c.cutNumber} · 체류 {c.dwellTimeSeconds}초
+                    {t("aiAssist.episodic.cutLabel", { cut: c.cutNumber })}
                   </span>
-                  <span
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[0.56rem] font-semibold",
-                      c.dropOffRiskPct >= 12
-                        ? "bg-warn/15 text-warn"
-                        : "bg-good/15 text-good",
-                    )}
-                  >
-                    이탈 위험 {c.dropOffRiskPct}%
-                  </span>
+                  <span className="text-fg-3">{t("aiAssist.episodic.suggestion")}</span>
                 </div>
                 <p className="text-[0.58rem] text-fg-3">{c.dropOffReasonKo}</p>
                 <p className="text-[0.59rem] text-fg-2">{c.retentionBoostFixKo}</p>
@@ -332,14 +335,14 @@ export function StudioWebtoonEpisodicDoctorPanel({
                     STUDIO_FOCUS_RING,
                   )}
                 >
-                  잔존율 보강 지문 삽입
+                  {t("aiAssist.episodic.append")}
                 </button>
               </div>
             ))}
           </div>
           {retentionView.predictedTopComments.length > 0 ? (
             <div className="space-y-1 rounded border border-accent/25 bg-accent/5 p-2">
-              <p className="font-bold text-fg">예상 베스트 댓글 TOP 3 시뮬레이션</p>
+              <p className="font-bold text-fg">{t("aiAssist.episodic.exampleComments")}</p>
               {retentionView.predictedTopComments.map((cmt, idx) => (
                 <div
                   key={`${cmt.personaLabelKo}-${idx}`}
@@ -347,10 +350,6 @@ export function StudioWebtoonEpisodicDoctorPanel({
                 >
                   <span className="text-fg-2">
                     <strong className="text-fg">[{cmt.personaLabelKo}]</strong> {cmt.commentTextKo}
-                  </span>
-                  <span className="inline-flex items-center gap-0.5 font-semibold text-accent">
-                    <ThumbsUp className="h-2.5 w-2.5" aria-hidden="true" />
-                    {cmt.predictedLikes.toLocaleString()}
                   </span>
                 </div>
               ))}
@@ -553,7 +552,7 @@ export function StudioWebtoonEpisodicDoctorPanel({
               컷간 작붕(비대칭 흉터/검집 반전 · 소품 증발 · 부상 초기화 · 그림자 방향) 자동 검출 린터
             </span>
             <span className="rounded bg-good/15 px-2 py-0.5 font-bold text-good">
-              비주얼 연속성 {linterView.visualContinuityScore}점 · 작붕 0% 보장
+              {t("aiAssist.episodic.noGuarantee")}
             </span>
           </div>
           <p className="text-fg-2">{linterView.linterSummaryKo}</p>

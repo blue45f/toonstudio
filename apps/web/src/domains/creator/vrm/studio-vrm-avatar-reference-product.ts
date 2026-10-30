@@ -439,5 +439,7 @@ export function resolveStudioVrmAvatarReferenceAppearanceState(input: {
     ...(current.legacyHipWidth === undefined
       ? { legacyHipWidth: undefined }
       : { legacyHipWidth: current.legacyHipWidth }),
+    // 생성 VRM 전용 표정·흔들림 설정은 외형 추천이 소유하지 않는다. 작가가 만든 값을 그대로 둔다.
+    ...(current.authoring ? { authoring: current.authoring } : {}),
   });
 }

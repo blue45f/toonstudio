@@ -55,17 +55,23 @@ describe("Claude 비용 추정", () => {
       cacheReadTokens: 1_000_000,
       cacheWriteTokens: 1_000_000,
     });
-    // 읽기 $0.20 + 쓰기 $2×1.25
-    expect(cost?.usd).toBeCloseTo(0.2 + 2.5, 6);
+    // 2026-10-30 공식 단가: 읽기 $0.10 + 쓰기 $2×1.25
+    expect(cost?.usd).toBeCloseTo(0.1 + 2.5, 6);
   });
 
-  it("Haiku 5.5는 100K 초과 프롬프트에 상향 단가를 쓰고 캐시 단가는 근사로 표시한다", () => {
+  it("Haiku 5.5는 캐시를 포함한 100K 경계에서 공개 단가를 적용한다", () => {
     const short = estimateAssistCostUsd("claude-haiku-5-5", { ...EMPTY_ASSIST_TOKEN_USAGE, inputTokens: 100_000 });
     const long = estimateAssistCostUsd("claude-haiku-5-5", { ...EMPTY_ASSIST_TOKEN_USAGE, inputTokens: 100_001 });
     expect(short?.usd).toBeCloseTo(0.01, 6);
     expect(long?.usd).toBeCloseTo(0.0500005, 6);
     const cached = estimateAssistCostUsd("claude-haiku-5-5", { ...EMPTY_ASSIST_TOKEN_USAGE, cacheReadTokens: 10 });
-    expect(cached?.approximate).toBe(true);
+    expect(cached?.usd).toBeCloseTo(0.0000001, 10);
+    expect(cached?.approximate).toBe(false);
+    const cachedLong = estimateAssistCostUsd("claude-haiku-5-5", {
+      inputTokens: 0, outputTokens: 0, cacheReadTokens: 100_001, cacheWriteTokens: 0,
+    });
+    expect(cachedLong?.usd).toBeCloseTo(0.00500005, 10);
+    expect(cachedLong?.approximate).toBe(false);
   });
 
   it("모르는 모델은 추정하지 않는다", () => {

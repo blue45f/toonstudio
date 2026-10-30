@@ -26,6 +26,14 @@ import {
 } from "./studio-vrm-avatar-forge";
 import { hexToRgb, hslToRgb, rgbToHsl } from "./studio-vrm-costume";
 import {
+  resolveStudioVrmFaceMorphs,
+  sanitizeStudioVrmExpressionAuthoring,
+  STUDIO_VRM_DEFAULT_FACE_MORPHS,
+  type StudioVrmFaceMorph,
+  type StudioVrmFacePatchId,
+  type StudioVrmFacePatchMorphOp,
+} from "./studio-vrm-generate-expressions";
+import {
   buildStudioVrmHairRig,
   shapeStudioVrmHairRig,
   STUDIO_VRM_HAIR_ANCHOR_JOINT,
@@ -885,8 +893,8 @@ function buildHead(builder: SurfaceBuilder, rig: StudioVrmRig, surface: StudioVr
 /* 얼굴 — 두개골 표면 패치 + 표정 모프                                          */
 /* -------------------------------------------------------------------------- */
 
-/** `eyeline` 은 윗눈꺼풀 선. 이게 없으면 눈이 "고글"처럼 읽힌다(상용 아바타도 별도 재질로 둔다). */
-type FacePatchId = "eye" | "iris" | "glint" | "eyeline" | "brow" | "mouth";
+/** 패치 id·표정 연산·기본 표정 테이블은 studio-vrm-generate-expressions 가 단일 권위다(표정 편집과 공유). */
+type FacePatchId = StudioVrmFacePatchId;
 type FaceGroup = "eyeWhite" | "iris" | "brow" | "mouth";
 
 /**
@@ -910,112 +918,12 @@ type FacePatchParams = {
   readonly worldOffsetX: number;
 };
 
-type PatchMorphOp = {
-  readonly scaleX?: number;
-  readonly scaleY?: number;
-  readonly offsetX?: number;
-  readonly offsetY?: number;
-  readonly worldOffsetX?: number;
-  /** 두개골 세로 반경의 배수로 주는 이동. 피처 자기 크기와 무관하게 얼굴 전체를 기준으로 움직인다. */
-  readonly offsetHeadY?: number;
-  readonly tilt?: number;
-  readonly bow?: number;
-  /** 세로로 줄일 때 위/아래 어느 가장자리를 고정할지. 눈꺼풀이 닫히는 방향을 정한다. */
-  readonly collapse?: "top" | "bottom";
-};
-
-type FaceMorph = {
-  readonly name: string;
-  readonly ops: Partial<Record<FacePatchId, PatchMorphOp>>;
-  /** 지정하면 그쪽 패치에만 적용된다(한쪽 눈 깜빡임). */
-  readonly side?: "left" | "right";
-};
-
 const FACE_PATCH_RINGS = 3;
 const FACE_PATCH_SEGMENTS = 16;
 
-/** 눈 감김 — 아래 눈꺼풀 선까지 눌러 붙인다. */
-const CLOSE_EYE: PatchMorphOp = { collapse: "bottom", scaleY: 0.06 };
-/** 눈이 닫히면 윗눈꺼풀 선도 아래 눈꺼풀까지 함께 내려와야 한 줄로 읽힌다. */
-const CLOSE_EYELINE: PatchMorphOp = { offsetHeadY: -0.36 };
-
-/**
- * VRM 1.0 표정 프리셋과 **이름이 1:1로 같은** 모프 타깃들. 표정 바인딩이
- * `가중치 1로 같은 이름의 타깃 하나`가 되어 익스포터·로더 양쪽에서 읽기 쉽다.
- */
-const FACE_MORPHS: readonly FaceMorph[] = [
-  { name: "blink", ops: { eye: CLOSE_EYE, iris: CLOSE_EYE, glint: CLOSE_EYE, eyeline: CLOSE_EYELINE } },
-  {
-    name: "blinkLeft",
-    side: "left",
-    ops: { eye: CLOSE_EYE, iris: CLOSE_EYE, glint: CLOSE_EYE, eyeline: CLOSE_EYELINE },
-  },
-  {
-    name: "blinkRight",
-    side: "right",
-    ops: { eye: CLOSE_EYE, iris: CLOSE_EYE, glint: CLOSE_EYE, eyeline: CLOSE_EYELINE },
-  },
-  {
-    name: "happy",
-    ops: {
-      eye: { collapse: "bottom", scaleY: 0.3, bow: 0.009 },
-      iris: { collapse: "bottom", scaleY: 0.3, bow: 0.009 },
-      glint: { collapse: "bottom", scaleY: 0.3, bow: 0.009 },
-      eyeline: { offsetHeadY: -0.26, bow: 0.009 },
-      brow: { offsetY: 0.004 },
-      mouth: { scaleX: 1.5, scaleY: 1.5, bow: -0.006 },
-    },
-  },
-  {
-    name: "angry",
-    ops: {
-      brow: { tilt: 0.34, offsetY: -0.008 },
-      eye: { scaleY: 0.82, offsetY: -0.002 },
-      eyeline: { offsetHeadY: -0.03, tilt: 0.1 },
-      mouth: { scaleX: 0.86, bow: 0.004 },
-    },
-  },
-  {
-    name: "sad",
-    ops: {
-      brow: { tilt: -0.3, offsetY: 0.004 },
-      eye: { scaleY: 0.86, offsetY: -0.003 },
-      mouth: { scaleX: 0.9, bow: 0.005 },
-    },
-  },
-  {
-    name: "relaxed",
-    ops: {
-      eye: { collapse: "bottom", scaleY: 0.58 },
-      iris: { collapse: "bottom", scaleY: 0.58 },
-      glint: { collapse: "bottom", scaleY: 0.58 },
-      eyeline: { offsetHeadY: -0.15 },
-      mouth: { scaleX: 1.2, bow: -0.004 },
-    },
-  },
-  {
-    name: "surprised",
-    ops: {
-      eye: { scaleX: 1.1, scaleY: 1.28 },
-      iris: { scaleX: 1.1, scaleY: 1.2 },
-      eyeline: { offsetHeadY: 0.02 },
-      brow: { offsetY: 0.01 },
-      mouth: { scaleX: 0.86, scaleY: 2.4 },
-    },
-  },
-  { name: "aa", ops: { mouth: { scaleX: 0.92, scaleY: 3 } } },
-  { name: "ih", ops: { mouth: { scaleX: 1.4, scaleY: 0.85 } } },
-  { name: "ou", ops: { mouth: { scaleX: 0.62, scaleY: 2 } } },
-  { name: "ee", ops: { mouth: { scaleX: 1.45, scaleY: 1.25 } } },
-  { name: "oh", ops: { mouth: { scaleX: 0.85, scaleY: 2.6 } } },
-  { name: "lookUp", ops: { iris: { offsetY: 0.006 }, glint: { offsetY: 0.006 } } },
-  { name: "lookDown", ops: { iris: { offsetY: -0.006 }, glint: { offsetY: -0.006 } } },
-  { name: "lookLeft", ops: { iris: { worldOffsetX: 0.007 }, glint: { worldOffsetX: 0.007 } } },
-  { name: "lookRight", ops: { iris: { worldOffsetX: -0.007 }, glint: { worldOffsetX: -0.007 } } },
-];
-
+/** 표정을 편집하지 않은 생성 캐릭터의 모프 타깃 이름(= VRM 1.0 표정 프리셋 이름). */
 export const STUDIO_VRM_HUMANOID_MORPH_TARGET_NAMES: readonly string[] = Object.freeze(
-  FACE_MORPHS.map((morph) => morph.name),
+  STUDIO_VRM_DEFAULT_FACE_MORPHS.map((morph) => morph.name),
 );
 
 type FacePatchInstance = {
@@ -1060,7 +968,7 @@ function facePatchPoint(
 
 function morphedParams(
   base: FacePatchParams,
-  op: PatchMorphOp,
+  op: StudioVrmFacePatchMorphOp,
   head: StudioVrmRigHeadFit,
 ): FacePatchParams {
   const radiusX = base.radiusX * (op.scaleX ?? 1);
@@ -1295,13 +1203,15 @@ function buildFaceMorphTargets(
   group: FaceGroup,
   builder: SurfaceBuilder,
   patches: readonly FacePatchInstance[],
+  morphs: readonly StudioVrmFaceMorph[],
 ): StudioVrmExportMorphTarget[] {
   const vertexCount = builder.vertexCount;
-  return FACE_MORPHS.map((morph) => {
+  return morphs.map((morph) => {
     const positions = new Array<number>(vertexCount * 3).fill(0);
     for (const patch of patches) {
       if (patch.group !== group) continue;
-      if (morph.side !== undefined && patch.side !== morph.side) continue;
+      const side = morph.patchSides?.[patch.id] ?? morph.side;
+      if (side !== undefined && patch.side !== side) continue;
       const op = morph.ops[patch.id];
       if (!op) continue;
       const params = morphedParams(patch.base, op, surface.fit);
@@ -1692,16 +1602,12 @@ function hairChainSkin(chain: StudioVrmHairChain, jointBase: number, t: number):
   ];
 }
 
-function buildHair(
+/** 헤어 파츠의 두개골 적합 변환과 그 위에 심은 체인. 메시와 흔들림 묶음 판정이 같은 값을 쓴다. */
+function planHairRig(
   rig: StudioVrmRig,
   state: AvatarForgeState,
-): { readonly builder: SurfaceBuilder; readonly hairRig: StudioVrmHairRig | null } | null {
-  const parts = buildAvatarForgeHairParts(state);
-  if (parts.length === 0) return null;
-
-  const builder = new SurfaceBuilder();
-  const skin = only(rig, "head");
-
+  parts: readonly AvatarForgeHairPart[],
+): { readonly transforms: readonly HairTransform[]; readonly hairRig: StudioVrmHairRig | null } {
   // 가닥마다 두개골 적합까지 끝난 변환을 먼저 확정한다 — 체인 조인트가 그 변환 위에 놓인다.
   // 여기까지는 **조형 스케일 이전** 좌표다.
   const transforms = parts.map((part) =>
@@ -1717,6 +1623,29 @@ function buildHair(
     rig.nodeScale.head ?? [1, 1, 1],
     rig.heightScale,
   );
+  return { transforms, hairRig };
+}
+
+/**
+ * 생성 VRM 헤어의 스프링 체인만 세운다(메시는 굽지 않는다). 흔들림 편집이 **실제로 흔들리는 묶음**만
+ * 보여 줄 때 쓴다 — 정수리에 얹힌 번·짧은 덩어리는 체인이 없어 배율을 걸어도 그대로다.
+ */
+export function buildStudioVrmHumanoidHairRig(state: AvatarForgeState): StudioVrmHairRig | null {
+  const parts = buildAvatarForgeHairParts(state);
+  if (parts.length === 0) return null;
+  return planHairRig(buildStudioVrmRig({ proportions: state.proportions, face: state.face }), state, parts).hairRig;
+}
+
+function buildHair(
+  rig: StudioVrmRig,
+  state: AvatarForgeState,
+): { readonly builder: SurfaceBuilder; readonly hairRig: StudioVrmHairRig | null } | null {
+  const parts = buildAvatarForgeHairParts(state);
+  if (parts.length === 0) return null;
+
+  const builder = new SurfaceBuilder();
+  const skin = only(rig, "head");
+  const { transforms, hairRig } = planHairRig(rig, state, parts);
 
   const jointBase = rig.bones.length;
 
@@ -1963,6 +1892,7 @@ export function buildStudioVrmHumanoidMesh(state: AvatarForgeState): StudioVrmHu
   buildFoot(body, rig, -1, UV.footRight);
 
   const face = buildFacePatches(rig, surface);
+  const morphs = resolveStudioVrmFaceMorphs(sanitizeStudioVrmExpressionAuthoring(state.authoring?.expressions));
   const faceGroups: readonly (readonly [FaceGroup, number])[] = [
     ["eyeWhite", STUDIO_VRM_HUMANOID_MATERIALS.eyeWhite],
     ["iris", STUDIO_VRM_HUMANOID_MATERIALS.iris],
@@ -1983,7 +1913,7 @@ export function buildStudioVrmHumanoidMesh(state: AvatarForgeState): StudioVrmHu
         primitiveOf(
           face.builders[group],
           material,
-          buildFaceMorphTargets(surface, group, face.builders[group], face.patches),
+          buildFaceMorphTargets(surface, group, face.builders[group], face.patches, morphs),
         ),
       ),
     },
@@ -2023,7 +1953,9 @@ export function buildStudioVrmHumanoidMesh(state: AvatarForgeState): StudioVrmHu
     materials: buildMaterials(state),
     parts,
     facePartIndex,
-    morphTargetNames: STUDIO_VRM_HUMANOID_MORPH_TARGET_NAMES,
+    morphTargetNames: morphs === STUDIO_VRM_DEFAULT_FACE_MORPHS
+      ? STUDIO_VRM_HUMANOID_MORPH_TARGET_NAMES
+      : Object.freeze(morphs.map((morph) => morph.name)),
     hairRig: hair?.hairRig ?? null,
   };
 }

@@ -243,6 +243,110 @@ describe("setUserAiConfiguration — 경로 사용 기록 정리", () => {
     },
   );
 
+  it.each(["connection", "key"] as const)(
+    "%s을(를) 꺼 둔 동안 쓰지 않던 이미지 모델 프로필을 지워도 텍스트 키의 결제 잠금은 남는다",
+    async (switchedOff) => {
+      const base = addQuickKey(addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY).configuration, "groq", NEW_KEY).configuration;
+      const connection = base.connections[0]!;
+      // 고급 설정에서 더하고 꺼 둔 이미지 모델 프로필(무료 정책은 텍스트만 허용하므로 꺼 두어야 저장된다).
+      const imageProfile = { id: "image-1", label: "이미지", model: "groq-image", capability: "image" as const, enabled: false, priority: 20 };
+      setUserAiConfiguration({ ...base, connections: [{ ...connection, models: [...(connection.models ?? []), imageProfile] }] });
+      await recordFreeAiRuntimeResponse(routeOfKey(getUserAiSnapshot().configuration, OLD_KEY), 402, new Headers());
+
+      const withLockedKeyOn = (configuration: UserAiConfiguration, on: boolean): UserAiConfiguration => ({
+        ...configuration,
+        connections: configuration.connections.map((item) => (switchedOff === "connection"
+          ? { ...item, enabled: on }
+          : { ...item, apiKeys: item.apiKeys?.map((key) => (key.apiKey === OLD_KEY ? { ...key, enabled: on } : key)) })),
+      });
+      setUserAiConfiguration(withLockedKeyOn(getUserAiSnapshot().configuration, false));
+      // 키와 텍스트 모델은 그대로 두고, 쓰지 않던 이미지 모델 프로필만 지운다.
+      const current = getUserAiSnapshot().configuration;
+      setUserAiConfiguration({
+        ...current,
+        connections: current.connections.map((item) => ({ ...item, models: item.models?.filter((model) => model.id !== "image-1") })),
+      });
+      setUserAiConfiguration(withLockedKeyOn(getUserAiSnapshot().configuration, true));
+
+      const again = routeOfKey(getUserAiSnapshot().configuration, OLD_KEY);
+      expect(getFreeAiRuntimeBudgetSnapshot(again).blockedReason).toBe("payment-required");
+      await expect(guardFreeAiRuntimeRequest(again, "text", "/models", "GET", undefined)).rejects.toThrow(/결제를 요구/u);
+    },
+  );
+
+  /** 같은 Groq 연결에 가짜 키 12개(연결당 최대)를 붙인 설정. */
+  function twelveGroqKeys(): { readonly configuration: UserAiConfiguration; readonly keys: string[] } {
+    const keys = Array.from({ length: 12 }, (_, index) => `gsk_${String.fromCharCode(97 + index).repeat(52)}`);
+    const configuration = keys.reduce((current, key) => addQuickKey(current, "groq", key).configuration, EMPTY_AI_CONFIGURATION);
+    return { configuration, keys };
+  }
+
+  it.each([
+    { withImageProfile: false, image: "없음" },
+    { withImageProfile: true, image: "있음" },
+  ])(
+    "끈 모델까지 세어 연결의 텍스트 경로가 64개를 넘어도, 64번째 뒤 경로의 키를 지우고 다시 등록하면 결제 잠금이 풀린다(끈 이미지 프로필 $image)",
+    async ({ withImageProfile }) => {
+      const { configuration, keys } = twelveGroqKeys();
+      const connection = configuration.connections[0]!;
+      // 끈 텍스트 모델 5개(기본 모델 포함)를 앞에 두고 마지막 텍스트 모델 하나만 켠다. 끈 모델까지 세면
+      // 경로가 60개 + 12개라 켠 모델에서는 키 4까지만 64개 안에 든다.
+      const models = [
+        ...(connection.models ?? []).map((model) => ({ ...model, enabled: false })),
+        ...[200, 300, 400, 500].map((priority) => ({
+          id: `text-${priority}`, label: `끈 모델 ${priority}`, model: `off-model-${priority}`, capability: "text" as const, enabled: false, priority,
+        })),
+        { id: "text-600", label: "켠 모델", model: "llama-3.3-70b-versatile", capability: "text" as const, enabled: true, priority: 600 },
+        ...(withImageProfile
+          ? [{ id: "image-1", label: "이미지", model: "groq-image", capability: "image" as const, enabled: false, priority: 700 }]
+          : []),
+      ];
+      setUserAiConfiguration({ ...configuration, connections: [{ ...connection, models }] });
+      const locked = keys[6]!;
+      await recordFreeAiRuntimeResponse(routeOfKey(getUserAiSnapshot().configuration, locked), 402, new Headers());
+
+      const keyId = getUserAiSnapshot().configuration.connections[0]!.apiKeys!.find((key) => key.apiKey === locked)!.id;
+      setUserAiConfiguration(removeQuickKey(getUserAiSnapshot().configuration, connection.id, keyId));
+      setUserAiConfiguration(addQuickKey(getUserAiSnapshot().configuration, "groq", locked).configuration);
+
+      const again = routeOfKey(getUserAiSnapshot().configuration, locked);
+      expect(again.textModel).toBe("llama-3.3-70b-versatile");
+      expect(getFreeAiRuntimeBudgetSnapshot(again).blockedReason).toBeNull();
+    },
+  );
+
+  it("꺼 둔 연결에 우선순위가 높은 텍스트 모델을 더해 경로가 64개를 넘어도, 그대로 둔 키의 결제 잠금은 남는다", async () => {
+    const { configuration, keys } = twelveGroqKeys();
+    setUserAiConfiguration(configuration);
+    const locked = keys[11]!;
+    await recordFreeAiRuntimeResponse(routeOfKey(getUserAiSnapshot().configuration, locked), 402, new Headers());
+
+    const switched = (current: UserAiConfiguration, on: boolean): UserAiConfiguration => ({
+      ...current,
+      connections: current.connections.map((item) => ({ ...item, enabled: on })),
+    });
+    setUserAiConfiguration(switched(getUserAiSnapshot().configuration, false));
+    // 키와 켠 텍스트 모델은 그대로 두고, 앞 순위에 끈 텍스트 모델 5개만 더한다(끈 모델까지 세면 경로 72개).
+    const current = getUserAiSnapshot().configuration;
+    setUserAiConfiguration({
+      ...current,
+      connections: current.connections.map((item) => ({
+        ...item,
+        models: [
+          ...[1, 2, 3, 4, 5].map((priority) => ({
+            id: `text-first-${priority}`, label: `끈 모델 ${priority}`, model: `off-model-${priority}`, capability: "text" as const, enabled: false, priority,
+          })),
+          ...(item.models ?? []),
+        ],
+      })),
+    });
+    setUserAiConfiguration(switched(getUserAiSnapshot().configuration, true));
+
+    const again = routeOfKey(getUserAiSnapshot().configuration, locked);
+    expect(getFreeAiRuntimeBudgetSnapshot(again).blockedReason).toBe("payment-required");
+    await expect(guardFreeAiRuntimeRequest(again, "text", "/models", "GET", undefined)).rejects.toThrow(/결제를 요구/u);
+  });
+
   it("다른 경로의 기록은 건드리지 않는다", async () => {
     const groq = addQuickKey(EMPTY_AI_CONFIGURATION, "groq", OLD_KEY);
     setUserAiConfiguration(groq.configuration);

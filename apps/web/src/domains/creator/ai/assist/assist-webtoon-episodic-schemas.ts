@@ -69,6 +69,8 @@ export interface AssistReaderRetentionView {
   readonly mode: "reader-retention-simulator";
   readonly source: "claude-live" | "deterministic-fallback";
   readonly model: string;
+  /** 실제 독자 지표는 제공되지 않는다. 숫자 필드는 이전 호출자 호환용 0이며 측정값이 아니다. */
+  readonly audienceMetricsAvailable?: false;
   readonly predictedEpisodeStarRating: number;
   readonly completionRatePct: number;
   readonly scrollVelocitySummaryKo: string;
@@ -402,13 +404,12 @@ export function buildDeterministicReaderRetentionReport(
 
   const cutRetentionCurve = master.enrichedCuts.slice(0, 4).map((item, idx) => {
     const cutNum = item.cutPlan.cutNumber;
-    const isClimax = idx === 2 || item.cutPlan.shotScale === "extreme-close-up";
-    const dwellTimeSeconds = isClimax ? 4.8 : idx === 0 ? 3.4 : 2.9;
-    const dropOffRiskPct = idx === 1 ? 14 : isClimax ? 4 : 7;
+    const dwellTimeSeconds = 0;
+    const dropOffRiskPct = 0;
     const dropOffReasonKo =
       idx === 1
-        ? "설명형 대사 밀도가 높아 모바일 스크롤 가속(Skip) 위험이 있습니다."
-        : "시선 고정점(Focal Point)과 감정 타격감이 명확해 이탈 위험이 낮습니다.";
+        ? "점검 예시: 설명형 대사가 길다면 한 컷에 정보가 몰리는지 확인하세요."
+        : "점검 예시: 시선 고정점과 감정 변화가 다음 컷으로 자연스럽게 이어지는지 확인하세요.";
     const retentionBoostFixKo =
       idx === 1
         ? `말풍선을 2개로 쪼개고 컷 하단에 ${partner}의 미세한 동공 흔들림 인서트를 배치하세요.`
@@ -419,7 +420,7 @@ export function buildDeterministicReaderRetentionReport(
       dropOffRiskPct,
       dropOffReasonKo,
       retentionBoostFixKo,
-      readyRetentionDirectionLine: `[독자 체류 연출 컷 ${cutNum}] 예상 체류 ${dwellTimeSeconds}초(이탈 위험 ${dropOffRiskPct}%) — ${retentionBoostFixKo}`,
+      readyRetentionDirectionLine: `[연출 제안 예시 컷 ${cutNum}] ${retentionBoostFixKo}`,
     });
   });
 
@@ -427,19 +428,19 @@ export function buildDeterministicReaderRetentionReport(
     Object.freeze({
       personaLabelKo: "정주행 과몰입 독자",
       commentTextKo: `와 마지막 컷 ${protagonist} 눈빛 돌변하는 거 소름 돋았네... 다음 화 쿠키 바로 굽습니다`,
-      predictedLikes: 3420,
+      predictedLikes: 0,
       sentimentTone: "hype" as const,
     }),
     Object.freeze({
       personaLabelKo: "떡밥 고고학자",
       commentTextKo: `잠깐만 아까 2컷 배경에 있던 균열 무늬, 1화 프롤로그에서 ${partner}가 숨겼던 유물이랑 똑같지 않음??`,
-      predictedLikes: 1890,
+      predictedLikes: 0,
       sentimentTone: "theory-crafting" as const,
     }),
     Object.freeze({
       personaLabelKo: "감정선 분석러",
       commentTextKo: `${protagonist}랑 ${partner} 입으로는 날 세우는데 시선은 서로 못 떼는 거 진짜 서사 미쳤다...`,
-      predictedLikes: 1120,
+      predictedLikes: 0,
       sentimentTone: "emotional-catharsis" as const,
     }),
   ]);
@@ -447,11 +448,12 @@ export function buildDeterministicReaderRetentionReport(
   return Object.freeze({
     mode: "reader-retention-simulator",
     source: "deterministic-fallback",
-    model: "claude-haiku-5-5",
-    predictedEpisodeStarRating: 9.93,
-    completionRatePct: 94,
+    model: "local-example",
+    audienceMetricsAvailable: false,
+    predictedEpisodeStarRating: 0,
+    completionRatePct: 0,
     scrollVelocitySummaryKo:
-      "도입부 훅(Cut 1) 진입 후 중반 대사 구간(Cut 2)에서 스크롤 속도가 소폭 빨라지나, 클라이맥스 아이컨택과 클리프행어 암전 여백에서 체류 시간이 극대화됩니다.",
+      "로컬 연출 예시입니다. 실제 독자 반응이나 체류시간을 측정한 결과가 아니며, 인물·장면·댓글은 대본과 대조해 고쳐 쓰세요.",
     cutRetentionCurve: Object.freeze(cutRetentionCurve),
     predictedTopComments,
     usage: EMPTY_ASSIST_TOKEN_USAGE,
@@ -502,7 +504,7 @@ export function buildDeterministicCharacterOocRadarReport(
   return Object.freeze({
     mode: "character-ooc-radar",
     source: "deterministic-fallback",
-    model: "claude-haiku-5-5",
+    model: "local-example",
     voiceConsistencyScore: 95,
     relationshipTensionSummaryKo: `${master.fabulatorNarrativeChain.relationshipLabel} 구도에 맞춰 표면 대사와 속뜻(Subtext)의 온도차를 유지했습니다.`,
     dialogueAudits: Object.freeze(dialogueAudits),
@@ -558,7 +560,7 @@ export function buildDeterministicBg3dLightingAssetReport(
   return Object.freeze({
     mode: "bg3d-lighting-asset-director",
     source: "deterministic-fallback",
-    model: "claude-haiku-5-5",
+    model: "local-example",
     spatialSceneSummaryKo:
       "리얼드로우·클립스튜디오 3D 카메라 기준 광각(18~24mm) 공간 압도 컷과 망원(85mm) 아웃포커스 인물 감정 컷을 교차 배치했습니다.",
     recommendedAssetPackKo: `${input.genre ?? "판타지"} 시네마틱 모듈형 3D 배경 키트 + 볼류메트릭 안개/빛기둥(God-Ray) 브러시 세트`,
@@ -619,7 +621,7 @@ export function buildDeterministicBgmAudioToonReport(
   return Object.freeze({
     mode: "bgm-audiotoon-cuesheet",
     source: "deterministic-fallback",
-    model: "claude-haiku-5-5",
+    model: "local-example",
     episodeSoundtrackThemeKo:
       "다크 시네마틱 체임버 오케스트라 & 하이브리드 신스 펄스 (클라이맥스 직전 무음 텐션 드롭 구조)",
     recommendedBpm: 96,
@@ -666,10 +668,10 @@ export function buildDeterministicVisualContinuityLinterReport(
   return Object.freeze({
     mode: "episodic-visual-continuity-linter",
     source: "deterministic-fallback",
-    model: "claude-opus-5-5",
+    model: "local-example",
     visualContinuityScore: 98,
-    zeroAnimationErrorGuarantee: true,
-    linterSummaryKo: `${protagonist}·${partner}의 컷간 좌우 비대칭 복식·흉터 반전(Chirality Flip), 무기 소품 증발, 전투 부상 초기화, 배경-인물 그림자 역방향 충돌 등 4대 웹툰 작붕 요인을 전수 스캔하여 사전 차단했습니다.`,
+    zeroAnimationErrorGuarantee: false,
+    linterSummaryKo: `${protagonist}·${partner}의 컷간 좌우 비대칭 복식·흉터 반전(Chirality Flip), 무기 소품 증발, 전투 부상 초기화, 배경-인물 그림자 역방향 충돌 등을 살펴보는 로컬 점검 예시입니다. 실제 원고를 전수 검사한 결과가 아닙니다.`,
     cutContinuityChecks,
     usage: EMPTY_ASSIST_TOKEN_USAGE,
     estimatedUsd: null,
@@ -712,9 +714,9 @@ export function buildDeterministicMultiEpisodeCanonVaultReport(
   return Object.freeze({
     mode: "multi-episode-canon-memory-vault",
     source: "deterministic-fallback",
-    model: "claude-sonnet-5-5",
+    model: "local-example",
     canonVaultIntegrityScore: 99,
-    serializedArcTimelineKo: `시즌 1 기승전결 타임라인(EP.01~EP.50) 기준 현재 에피소드의 외형 변천사·호칭 매트릭스·미회수 복선(Chekhov's Gun)이 과거 회차 설정과 99% 무결하게 동기화되었습니다.`,
+    serializedArcTimelineKo: `아래 항목은 외형·호칭·복선을 관리하는 로컬 예시입니다. 과거 회차 설정과 실제로 대조한 결과가 아니므로 사용자 캐논과 확인해 주세요.`,
     canonEntries,
     usage: EMPTY_ASSIST_TOKEN_USAGE,
     estimatedUsd: null,
@@ -728,7 +730,7 @@ export function buildDeterministicFootwearStrideLockReport(
   return Object.freeze({
     mode: "episodic-footwear-floor-contact-stride-lock",
     source: "deterministic-fallback",
-    model: "claude-haiku-5-5",
+    model: "local-example",
     footwearIntegrityScore: 97,
     strideSummaryKo: `${protagonist}의 롱부츠 굽 높이(4.5cm)·발목 은장 버클 2개·계단 디딤판(Tread) 수평 접지 각도를 전 컷 고정해 공중 부양 작붕을 차단합니다.`,
     heelHeightCm: 4.5,
@@ -747,7 +749,7 @@ export function buildDeterministicCrowdDepthFogLockReport(
   return Object.freeze({
     mode: "episodic-crowd-silhouette-depth-fog-lock",
     source: "deterministic-fallback",
-    model: "claude-sonnet-5-5",
+    model: "local-example",
     depthHierarchyScore: 98,
     crowdAtmosphereSummaryKo: `전경 주연(${protagonist} 선굵기 1.0x) 대비 중경 엑스트라(0.65x)·원경 군중(0.35x + 대기 안개 45%)을 계층 분리해 시선 분산을 막습니다.`,
     heroLineWeightMultiplier: 1.0,

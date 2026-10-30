@@ -9,6 +9,7 @@ import { EXTRA_POSE_PRESETS, NATURAL_IDLE_POSES, POSER_FINGER_BONES } from "../s
 import { createTwoBoneDefaultPoleTarget } from "../studio-rig-two-bone-ik";
 
 import { STUDIO_VRM_HTML_FALLBACK_ERROR as HTML_FALLBACK_VRM_ERROR } from "./studio-vrm-asset-runtime";
+import { studioVrmCustomExpressionLabel } from "./studio-vrm-generate-expressions";
 import { createStudioVrmHandPose, type StudioVrmHandPoseType } from "./studio-vrm-hand-poses";
 import { EMPTY_STUDIO_VRM_POSE_TRANSLATIONS } from "./studio-vrm-pose-translations";
 import {
@@ -189,7 +190,10 @@ export function getExpressionTone(name: string, vrm: VRM) {
 }
 
 export function formatExpressionLabel(name: string) {
-  return EXPRESSION_LABELS[name] ?? name.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  // 아바타 조형에서 만든 커스텀 표정(윙크·게슴츠레 …)은 키가 ASCII 라 한글 템플릿 라벨로 보여 준다.
+  return EXPRESSION_LABELS[name]
+    ?? studioVrmCustomExpressionLabel(name)
+    ?? name.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function getAvailableExpressionActions(vrm: VRM | null) {

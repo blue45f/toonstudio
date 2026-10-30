@@ -2,7 +2,6 @@ import {
   ArrowRight,
   ArrowRightLeft,
   CircleUserRound,
-  Download,
   Palette,
   PersonStanding,
   RotateCcw,
@@ -10,7 +9,6 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
-  UserPlus,
   WandSparkles,
 } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
@@ -33,17 +31,13 @@ import {
   type AvatarForgeHairParams,
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
+import { carryAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import { resolveStudioVrmAvatarForgeVisualProportionMetrics } from "./studio-vrm-avatar-forge-face-controller";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   applyStudioVrmCharacterVariant,
   listStudioVrmCharacterVariantSummaries,
 } from "./studio-vrm-character-variants";
-import {
-  generateStudioVrmCharacter,
-  type StudioVrmGenerateResult,
-} from "./studio-vrm-generate-mcp";
-import { createStudioVrmGenerateRecipe } from "./studio-vrm-generate-recipe";
 import {
   formatStudioVrmHeadUnits,
   resolveStudioVrmProportionMetrics,
@@ -58,6 +52,7 @@ import {
   describeStudioVrmAvatarForgeState,
   StudioVrmAvatarForgePreview,
 } from "./StudioVrmAvatarForgePreview";
+import { StudioVrmAvatarForgeGenerateSection } from "./StudioVrmAvatarForgeGenerateSection";
 import { StudioVrmForgeRangeControl } from "./StudioVrmForgeRangeControl";
 
 import type { StudioVrmSemanticFaceMorphProfile } from "./studio-vrm-semantic-face-morph";
@@ -214,8 +209,6 @@ export function StudioVrmAvatarForgePanel({
   const [presetQuery, setPresetQuery] = useState("");
   const [presetFilter, setPresetFilter] = useState<ForgePresetFilter>("all");
   const [precisionMode, setPrecisionMode] = useState(false);
-  const [generateResult, setGenerateResult] = useState<StudioVrmGenerateResult | null>(null);
-  const [generateBusy, setGenerateBusy] = useState(false);
   // 헤어 실루엣을 **직접 골랐는지**를 기억한다. 기본값이 이미 "없음"이라 목록에서 "없음"을
   // 눌러도 상태가 그대로여서, 상태 비교만으로는 의도한 민머리를 알아볼 수 없다.
   const [hairStyleChosen, setHairStyleChosen] = useState(false);
@@ -260,12 +253,6 @@ export function StudioVrmAvatarForgePanel({
     emittedSignatureRef.current = JSON.stringify(serializeAvatarForgeState(next));
     onChange(next);
   };
-
-  const previewRecipe = createStudioVrmGenerateRecipe({
-    presetId: state.presetId,
-    state,
-    allowDefaultPreset: !hairStyleChosen,
-  });
 
   const updateFace = <K extends keyof AvatarForgeFaceParams>(key: K, value: AvatarForgeFaceParams[K]) => {
     emit({ ...state, presetId: undefined, face: { ...state.face, [key]: value } });
@@ -509,7 +496,7 @@ export function StudioVrmAvatarForgePanel({
                       aria-label={`${preset.label} 스타일 적용: ${preset.hint}`}
                       onClick={() => {
                         setHairStyleChosen(false);
-                        emit(withAutomaticHairReplacement(createAvatarForgeState(preset.id)));
+                        emit(withAutomaticHairReplacement(carryAvatarForgeVrmAuthoring(createAvatarForgeState(preset.id), state)));
                       }}
                       className={`group min-h-[10.5rem] overflow-hidden rounded-2xl border text-left transition-[border-color,background-color,transform] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40 ${
                         selected
@@ -1116,143 +1103,14 @@ export function StudioVrmAvatarForgePanel({
         ) : null}
       </div>
 
-      <div
-        data-studio-vrm-generate=""
-        className="space-y-2.5 border-t border-line/70 px-3.5 py-3"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-[0.72rem] font-extrabold text-fg">
-              <UserPlus size={14} className="text-accent" aria-hidden />
-              새 VRM 캐릭터
-            </p>
-            <p className="mt-0.5 text-[0.62rem] leading-relaxed text-fg-3">
-              위 프리셋·슬라이더를 레시피로 써서 휴머노이드 VRM을 생성합니다. 불러온 모델을 덮어쓰지 않아요.
-            </p>
-          </div>
-          <span
-            data-studio-vrm-generate-preset={previewRecipe.presetId ?? "custom"}
-            className="shrink-0 rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-bold text-fg-2"
-          >
-            {previewRecipe.label}
-          </span>
-        </div>
-
-        {/* 미리보기는 편집 중인 상태가 아니라 **실제로 생성될 상태**를 보여준다. 아무것도 고르지
-            않았을 때 기본 프리셋이 대신 들어가므로 둘이 갈릴 수 있다. */}
-        <div
-          data-studio-vrm-generate-preview=""
-          className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-xl border border-line bg-card/70 p-2.5"
-        >
-          <span className="block h-20 overflow-hidden rounded-lg border border-line/70 bg-panel/60 px-1">
-            <StudioVrmAvatarForgePreview
-              state={previewRecipe.state}
-              variant="compact"
-              label={`${previewRecipe.label} 생성 결과 미리보기`}
-            />
-          </span>
-          <span className="min-w-0 text-[0.62rem] leading-relaxed text-fg-3">
-            <span className="flex items-center gap-1.5">
-              <span
-                className="size-3 rounded-full border border-line shrink-0"
-                style={{ background: previewRecipe.state.hair.baseColor }}
-                aria-hidden
-              />
-              <span className="truncate text-[0.69rem] font-extrabold text-fg-2">{previewRecipe.label}</span>
-            </span>
-            <span className="mt-0.5 block">{describeStudioVrmAvatarForgeState(previewRecipe.state).face} · {describeStudioVrmAvatarForgeState(previewRecipe.state).hair}</span>
-            <span className="block">{formatStudioVrmHeadUnits(resolveStudioVrmProportionMetrics(previewRecipe.state.proportions).headUnits)} · {describeStudioVrmAvatarForgeState(previewRecipe.state).body}</span>
-            <span className="mt-1 flex items-center gap-1.5">
-              <span
-                aria-hidden
-                className="size-3 shrink-0 rounded-full border border-line/70 shadow-inner"
-                style={{ backgroundColor: previewRecipe.state.hair.baseColor }}
-              />
-              <span className="truncate">헤어 컬러 {previewRecipe.state.hair.baseColor.toUpperCase()}</span>
-            </span>
-          </span>
-        </div>
-
-        {previewRecipe.appliedDefaultPresetId ? (
-          <p
-            data-studio-vrm-generate-default-preset={previewRecipe.appliedDefaultPresetId}
-            className="rounded-xl border border-line bg-raised/60 px-3 py-2 text-[0.66rem] leading-relaxed text-fg-3"
-          >
-            아직 고른 스타일이 없어 기본 스타일 <b className="text-fg-2">{previewRecipe.label}</b>로
-            생성됩니다. 위에서 다른 스타일을 고르거나 슬라이더를 조절하면 그 설정이 그대로 쓰입니다.
-          </p>
-        ) : null}
-
-        {generateResult?.status === "unavailable" ? (
-          <p
-            data-studio-vrm-generate-unavailable=""
-            data-studio-vrm-generate-status="unavailable"
-            role="status"
-            className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-[0.66rem] leading-relaxed text-danger"
-          >
-            {generateResult.message}
-          </p>
-        ) : null}
-
-        {generateResult?.status === "ok" ? (
-          <p
-            data-studio-vrm-generate-status="ok"
-            role="status"
-            className="rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-[0.66rem] text-accent"
-          >
-            {generateResult.recipe.label} VRM을 만들었습니다. 라이브러리에 넣고 뷰포트에서 미리볼 수 있어요.
-          </p>
-        ) : null}
-
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            data-studio-vrm-generate-submit=""
-            disabled={generateBusy}
-            onClick={() => {
-              setGenerateBusy(true);
-              void generateStudioVrmCharacter({
-                presetId: state.presetId,
-                state,
-                allowDefaultPreset: !hairStyleChosen,
-              }).then((result) => {
-                setGenerateResult(result);
-                setGenerateBusy(false);
-                if (result.status !== "ok") return;
-                const file = new File(
-                  [result.bytes],
-                  `${result.recipe.label}.vrm`,
-                  { type: "model/gltf-binary" },
-                );
-                onGeneratedFile?.(file);
-              });
-            }}
-            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-2 text-[0.7rem] font-extrabold text-accent transition-colors hover:bg-accent/15 disabled:opacity-40"
-          >
-            <Sparkles size={14} aria-hidden />
-            {generateBusy ? frozenStatus5Text("studio.frozenStatus5.forge.generating", "생성 중…") : "VRM 생성"}
-          </button>
-          <button
-            type="button"
-            data-studio-vrm-generate-export=""
-            disabled={generateBusy || generateResult?.status !== "ok"}
-            onClick={() => {
-              if (generateResult?.status !== "ok") return;
-              const blob = new Blob([generateResult.bytes], { type: "model/gltf-binary" });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `${generateResult.recipe.label}.vrm`;
-              link.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-2 text-[0.7rem] font-extrabold text-fg-2 transition-colors hover:bg-raised disabled:opacity-40"
-          >
-            <Download size={14} aria-hidden />
-            VRM 내보내기
-          </button>
-        </div>
-      </div>
+      <StudioVrmAvatarForgeGenerateSection
+        state={state}
+        sessionKey={sculptSessionId}
+        allowDefaultPreset={!hairStyleChosen}
+        disabled={disabled}
+        onChange={emit}
+        onGeneratedFile={onGeneratedFile}
+      />
     </section>
   );
 }

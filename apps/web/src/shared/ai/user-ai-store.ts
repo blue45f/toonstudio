@@ -8,7 +8,6 @@ import {
   EMPTY_AI_CONNECTION,
   normalizeUserAiConfiguration,
   resolvedUserAiRoutes,
-  USER_AI_CAPABILITIES,
   userAiConnectionApiKeys,
   userAiConnectionModels,
   userAiRoutingSettings,
@@ -74,7 +73,13 @@ export function useUserAi() {
   );
 }
 
-/** 설정의 모든 경로(끈 키·모델·연결 포함). 켜고 끄기만 한 경로는 같은 키라서 사라진 것으로 세지 않는다. */
+/**
+ * 설정의 모든 텍스트 경로(끈 키·모델·연결 포함). 켜고 끄기만 한 경로는 같은 키라서 사라진 것으로 세지 않는다.
+ * 안전 한도 기록은 텍스트 경로만 쓴다. 이미지·추론·3D 경로는 연결의 텍스트 모델 이름을 물려받아 같은 기록 칸을
+ * 가리키므로, 함께 세면 쓰지 않던 이미지 모델 하나를 지워도 텍스트 키의 기록(결제 잠금·하루 횟수)이 지워진다.
+ * 요청용 64개 제한 없이 모두 센다. 제한에 걸리면 64번째 뒤 경로의 키를 지워도 사라진 것으로 세지 않고(잠금이 남는다),
+ * 앞 순위에 모델을 더하면 그대로 둔 키의 경로가 밀려나 사라진 것으로 센다(잠금이 지워진다). 연결당 최대 32×12개다.
+ */
 function everyRoute(configuration: UserAiConfiguration): Map<string, UserAiResolvedConnection> {
   const routes = new Map<string, UserAiResolvedConnection>();
   for (const connection of configuration.connections) {
@@ -84,10 +89,8 @@ function everyRoute(configuration: UserAiConfiguration): Map<string, UserAiResol
       apiKeys: connection.apiKeys?.map((item) => ({ ...item, enabled: true })),
       models: connection.models?.map((item) => ({ ...item, enabled: true })),
     };
-    for (const capability of USER_AI_CAPABILITIES) {
-      for (const route of resolvedUserAiRoutes(switchedOn, capability)) {
-        routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
-      }
+    for (const route of resolvedUserAiRoutes(switchedOn, "text", Number.POSITIVE_INFINITY)) {
+      routes.set(`${route.baseUrl}\n${route.routeId}\n${route.apiKey}`, route);
     }
   }
   return routes;

@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import { importKra, KraError } from "../../../../packages/studio-format-gateway/src/kra-document";
+import { applyKraTransparencyMasks, importKra, KraError } from "../../../../packages/studio-format-gateway/src/kra-document";
 
 const corpus = process.argv[2]!;
 const outDir = process.argv[3]!;
@@ -29,9 +29,20 @@ for (const name of readdirSync(corpus).sort()) {
         filename: l.filename, visible: l.visible, effectiveVisible: l.effectiveVisible, locked: l.locked, collapsed: l.collapsed,
         passThrough: l.passThrough, opacity: l.opacity, opacityRaw: l.opacityRaw, compositeOp: l.compositeOp, compositeOpKnown: l.compositeOpKnown,
         colorLabel: l.colorLabel, inTimeline: l.inTimeline, offsetX: l.offsetX, offsetY: l.offsetY, colorSpace: l.colorSpace,
-        masks: l.masks.map((m) => ({ nodeType: m.nodeType, name: m.name, uuid: m.uuid, visible: m.visible, locked: m.locked, filename: m.filename })),
+        masks: l.masks.map((m) => ({
+          nodeType: m.nodeType, name: m.name, uuid: m.uuid, visible: m.visible, locked: m.locked, filename: m.filename,
+          offsetX: m.offsetX, offsetY: m.offsetY, extent: m.extent, defaultValue: m.defaultValue, tileCount: m.tileCount,
+          valuesB64: m.values === null ? null : Buffer.from(m.values).toString("base64"),
+        })),
         extent: l.extent, defaultPixel: l.defaultPixel, tileCount: l.tileCount,
         pixelsB64: l.pixels === null ? null : Buffer.from(l.pixels).toString("base64"),
+        // 마스크가 있는 레이어만: 보이는 투명도 마스크를 적용한 결과(status: applied | no-pixels | mask-unreadable)
+        masked: l.masks.length === 0 ? null : (() => {
+          const applied = applyKraTransparencyMasks(l);
+          return applied.status === "applied"
+            ? { status: applied.status, extent: applied.extent, appliedMasks: applied.appliedMasks, pixelsB64: Buffer.from(applied.pixels).toString("base64") }
+            : applied;
+        })(),
       })),
       mergedImagePngSha256: sha(r.mergedImagePng), previewPngSha256: sha(r.previewPng), iccSha256: sha(r.iccProfile),
       warnings: r.warnings, unsupported: r.unsupported, source: r.source,
