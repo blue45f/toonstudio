@@ -395,7 +395,13 @@
       {
         "id": "REA-VRM-05",
         "fact": "VRoid Studio 제품 소개는 헤어 흔들림을 덩어리마다 따로 정한다고 밝힌다. 변경 전 ToonStudio 는 묶음 5종 단위까지만 정할 수 있었다.",
-        "action": "가닥(스프링 체인)별 배율 추가 — 전체 × 묶음 × 가닥, 화면 왼쪽부터 번호, 가닥 하나를 바꾸면 그 스프링만 바뀜"
+        "action": "가닥(스프링 체인)별 배율 추가 — 전체 × 묶음 × 가닥, 화면 왼쪽부터 번호, 가닥 하나를 바꾸면 그 스프링만 바뀜. 가닥 id 는 헤어 파츠마다 달라 지금 헤어에 없는 가닥의 조정은 편집할 때 걷고 요약에서 세지 않음",
+        "chainIdSurvey": {
+          "method": "헤어 스타일 14종 × 앞머리 6종 × 삐침머리 0·1 × 길이 0.55·1·1.7 을 기본 상태와 스타일 프리셋 21종에 적용해 listStudioVrmGenerateHairSwayChains 로 수집",
+          "distinctChainIds": 56,
+          "maxChainsPerCharacter": 11,
+          "storedChainCap": 32
+        }
       },
       {
         "id": "REA-VRM-06",
