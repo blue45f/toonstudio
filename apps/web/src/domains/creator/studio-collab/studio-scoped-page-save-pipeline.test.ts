@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runStudioScopedPageSavePipeline, runStudioScopedSaveOrPending } from "./studio-scoped-page-save-pipeline";
 import { reviewEditorFixture } from "../review-handoff/studio-review-editor-test-fixture";
 import { CANVAS_W } from "../studio-assets";
+import { LEGACY_STUDIO_AUTOSAVE_KEY, studioAutosaveKey, studioLifecycleAutosaveSidecarKey } from "../studio-autosave";
 import type { StudioPageSavePipelineDeps } from "../studio-page-save-pipeline";
 import type { StudioScopedSavePending, StudioScopedSavePendingScope } from "./studio-scoped-save-pending";
 import type { StudioSharedDocument } from "../studio-shared-document-client";
@@ -16,6 +17,16 @@ vi.mock("../studio-durable-save-intent", () => ({ boundStudioSaveIntentOperation
   studioDurableSaveIntentRepository: { load: mocks.load }, acknowledgeStudioDurableSaveIntent: mocks.acknowledge }));
 vi.mock("./studio-scoped-save-pending", async (importOriginal) => ({ ...await importOriginal<typeof import("./studio-scoped-save-pending")>(),
   studioScopedSavePendingRepository: { load: mocks.pendingLoad, remember: mocks.pendingRemember, clear: mocks.pendingClear } }));
+const sidecarKey = studioLifecycleAutosaveSidecarKey("scoped-save-test");
+const unrelatedKeys = [
+  ...[{ userId: "other-actor", workId: "work" }, { userId: "actor", workId: "other-work" }]
+    .flatMap((scope) => { const primary = studioAutosaveKey(scope); return [primary, studioLifecycleAutosaveSidecarKey(primary)]; }),
+  LEGACY_STUDIO_AUTOSAVE_KEY,
+];
+function expectDraftPreserved() {
+  expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+  expect(localStorage.getItem(sidecarKey)).toBe("local-sidecar");
+}
 const context = { version: 1 as const, policyVersion: 1, grantIds: ["grant"], creations: [], restorations: [] };
 const key = (scope: StudioScopedSavePendingScope) => JSON.stringify([scope.actorUserId, scope.workId]);
 const policy = (requiresScopedSaveReconciliation: boolean): StudioScopedWritePolicy => ({ version: 1, workId: "work", policyVersion: 1,
@@ -56,8 +67,13 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
       mocks.pending.delete(key(scope)); return true;
     });
     localStorage.setItem("scoped-save-test", "local-draft");
+    localStorage.setItem(sidecarKey, "local-sidecar");
+    for (const item of unrelatedKeys) localStorage.setItem(item, "unrelated:" + item);
   });
-  afterEach(() => { localStorage.clear(); vi.unstubAllGlobals(); });
+  afterEach(() => {
+    try { for (const item of unrelatedKeys) expect(localStorage.getItem(item)).toBe("unrelated:" + item); }
+    finally { localStorage.clear(); vi.unstubAllGlobals(); }
+  });
   it("새 입력을 hold하고 서버 ACK 뒤에만 doc-only PATCH·기기 저장 ACK·정리를 수행한다", async () => {
     const f = fixture(); await f.run();
     expect(f.timeline).toEqual(["refresh", "hold", "barrier", "refresh", "patch", "release"]);
@@ -69,12 +85,34 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
     expect(rememberedAt).toBeLessThan(sentAt);
     expect(mocks.pending.size).toBe(0);
     expect(f.deps.clearAutosaveDurableAuthority).toHaveBeenCalledTimes(1); expect(localStorage.getItem("scoped-save-test")).toBeNull();
+    expect(localStorage.getItem(sidecarKey)).toBeNull();
     expect(f.deps.documentSaveInFlightRef.current).toBe(false);
+  });
+  it("durable intent ACK 실패는 서버 저장 뒤에도 primary와 sidecar를 지우지 않는다", async () => {
+    const f = fixture(); mocks.acknowledge.mockRejectedValueOnce(new Error("기기 ACK 실패"));
+    await f.run();
+    expect(mocks.patch).toHaveBeenCalledOnce(); expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled();
+    expectDraftPreserved();
+    expect(f.deps.studioLifecycleDurableGenerationRef.current).toBe(0);
+    expect(f.deps.studioLifecycleDurablePendingFingerprintRef.current).toBe("pending");
+  });
+  it.each(["account", "document", "project"] as const)("durable ACK 중 %s 세대 변경은 이전 primary와 sidecar를 정리하지 않는다", async (change) => {
+    const f = fixture();
+    mocks.acknowledge.mockImplementationOnce(async () => {
+      if (change === "account") { f.ticket.authScopeKey = "other"; f.deps.currentStudioDocumentScopeRef.current.authScopeKey = "other"; }
+      else if (change === "document") f.ticket.documentGeneration += 1;
+      else f.deps.studioRevisionProjectGenerationRef.current += 1;
+    });
+    await f.run();
+    expect(mocks.patch).toHaveBeenCalledOnce(); expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled();
+    expectDraftPreserved();
+    expect(f.deps.studioLifecycleDurableGenerationRef.current).toBe(0);
+    expect(f.deps.studioLifecycleDurablePendingFingerprintRef.current).toBe("pending");
   });
   it("서버 승인 장벽 실패는 REST를 시작하지 않고 기기 초안을 보존한다", async () => {
     const f = fixture(); f.barrier.mockRejectedValueOnce(new Error("승인되지 않음")); await f.run();
     expect(mocks.patch).not.toHaveBeenCalled(); expect(mocks.acknowledge).not.toHaveBeenCalled();
-    expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expect(localStorage.getItem("scoped-save-test")).toBe("local-draft"); expect(f.timeline.at(-1)).toBe("release");
+    expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expectDraftPreserved(); expect(f.timeline.at(-1)).toBe("release");
   });
   it("요청 중 문서 세대가 바뀌면 이전 후보를 전송하지 않는다", async () => {
     const f = fixture(); mocks.read.mockImplementationOnce(async () => { f.ticket.documentGeneration++; return f.deps.sharedDocument; }); await f.run();
@@ -82,7 +120,7 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
   });
   it("현재 권한 거절과 응답 불명확 실패는 성공으로 처리하지 않는다", async () => {
     const f = fixture(); mocks.patch.mockRejectedValueOnce(new Error("현재 배정이 회수됐습니다.")); await f.run();
-    expect(mocks.acknowledge).not.toHaveBeenCalled(); expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+    expect(mocks.acknowledge).not.toHaveBeenCalled(); expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expectDraftPreserved();
     expect(mocks.pending.size).toBe(1); expect(mocks.pendingClear).not.toHaveBeenCalled();
   });
   it("요소 저장이 성공해도 제외된 공용·페이지 초안은 전체 ACK·정리로 지우지 않는다", async () => {
@@ -90,7 +128,7 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
     f.deps.scopedWrite.getSnapshot = () => ({ ...snapshot, title: "강등 전 작품 설정 초안", master: { elements: [] },
       pagesList: snapshot.pagesList.map((page, index) => index === 0 ? { ...page, canvasH: 1600 } : page) });
     await f.run(); expect(mocks.patch).toHaveBeenCalledTimes(1); expect(mocks.acknowledge).not.toHaveBeenCalled();
-    expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+    expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expectDraftPreserved();
     expect(f.deps.setSharedDocumentNotice).toHaveBeenCalledWith(expect.stringContaining("이 기기에 보존"));
   });
   it("실제 저장 폭 800과 runtime 폭 720이 다르면 요소 ACK 뒤에도 전체 초안을 보존한다", async () => {
@@ -105,7 +143,7 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
     expect(mocks.pendingRemember.mock.calls[0]?.[1]?.hasExcludedDraft).toBe(true);
     expect(mocks.acknowledge).not.toHaveBeenCalled();
     expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled();
-    expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+    expectDraftPreserved();
     expect(f.deps.setSharedDocumentNotice).toHaveBeenCalledWith(expect.stringContaining("이 기기에 보존"));
   });
   it("게시 상태 변경은 제한 본문 저장으로 우회하지 않는다", async () => {
@@ -144,7 +182,7 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
     const reloaded = fixture(), snapshot = reloaded.deps.scopedWrite.getSnapshot();
     reloaded.deps.scopedWrite.getSnapshot = () => ({ ...snapshot, title: "이후 작품 정보 초안" });
     await reloaded.run(); expect(mocks.pending.size).toBe(0); expect(mocks.acknowledge).not.toHaveBeenCalled();
-    expect(reloaded.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+    expect(reloaded.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled(); expectDraftPreserved();
   });
   it("유효한 ACK가 도착해도 그 사이 계정이 전환됐으면 원문·이전 기기 초안을 유지한다", async () => {
     const f = fixture(); mocks.patch.mockImplementationOnce(async () => {
@@ -165,7 +203,7 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
     expect(mocks.patch).not.toHaveBeenCalled(); expect(first.barrier).not.toHaveBeenCalled();
     const next = fixture(); mocks.pendingRemember.mockRejectedValueOnce(new Error("readback 실패")); await next.run();
     expect(mocks.patch).not.toHaveBeenCalled(); expect(mocks.acknowledge).not.toHaveBeenCalled();
-    expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+    expectDraftPreserved();
   });
   it("확정 ACK를 정리하는 동안 추가된 metadata intent와 초안은 삭제하지 않는다", async () => {
     const f = fixture(); mocks.acknowledge.mockImplementationOnce(async () => {
@@ -173,7 +211,7 @@ describe("제한 저장의 실제 ACK와 초안 보존", () => {
         queuedAt: 1_700_000_000_001, serverRevision: 8 });
     });
     await f.run(); expect(mocks.pending.size).toBe(0); expect(f.deps.clearAutosaveDurableAuthority).not.toHaveBeenCalled();
-    expect(localStorage.getItem("scoped-save-test")).toBe("local-draft");
+    expectDraftPreserved();
   });
   it.each([{ workId: "other", revision: 8 }, { workId: "work", revision: 9 }])("다른 work/revision ACK는 원문을 해제하지 않는다: %j", async (response) => {
     const f = fixture(); mocks.patch.mockResolvedValueOnce({ ...response, updatedAt: "2026-10-29T06:00:00.000Z" }); await f.run();
