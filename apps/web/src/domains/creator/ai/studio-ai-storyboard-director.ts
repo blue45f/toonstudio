@@ -230,9 +230,15 @@ const SPEAKER_DIALOGUE_PATTERN = /^\s*([^:：\n(["“]{1,20})[:：]\s*(.+)$/u;
 const PAREN_NARRATION_PATTERN = /\((?:나레이션|독백|해설|N)[:：]?\s*([^)]+)\)/u;
 const BRACKET_DIRECTIVE_PATTERN = /\[([^\]]+)\]/gu;
 
-/** 대본 줄에서 [ ] 연출 지시를 뺀 본문. 지시는 샷·앵글에만 쓰고 대사·나레이션·말풍선·감정 판정에는 넣지 않는다. */
+/**
+ * 대본 줄에서 [ ] 연출 지시를 뺀 본문. 지시는 샷·앵글에만 쓰고 대사·나레이션·말풍선에는 넣지 않는다.
+ * 따옴표 안의 [ ](시스템창·스킬 이름 대사)는 대사로 남기고, 따옴표 밖에서 시작한 [ ]만 뺀다(그 안의 따옴표도 함께).
+ */
 export function stripBracketDirectives(line: string): string {
-  return line.replace(BRACKET_DIRECTIVE_PATTERN, " ").replace(/\s+/gu, " ").trim();
+  return line
+    .replace(/(["“][^"”]*["”])|\[[^\]]+\]/gu, (_match, quoted?: string) => quoted ?? " ")
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 function visualPromptSource(line: string): string {
@@ -343,12 +349,13 @@ export function analyzeRoughSketchIntent(
 
 const shotAbbreviation = (abbreviation: string): RegExp =>
   new RegExp(`(?<![A-Za-z])${abbreviation}(?![A-Za-z])`, "iu");
+// 표준 복합 약어도 낱말로 읽는다: XCU는 익스트림 클로즈업, MCU·BCU는 클로즈업, ELS·XLS·MLS는 롱 샷.
 const SHOT_ABBREVIATION = {
-  ecu: shotAbbreviation("ECU"),
-  cu: shotAbbreviation("CU"),
+  ecu: shotAbbreviation("(?:E|X)CU"),
+  cu: shotAbbreviation("(?:M|B)?CU"),
   ms: shotAbbreviation("MS"),
   fs: shotAbbreviation("FS"),
-  ls: shotAbbreviation("LS"),
+  ls: shotAbbreviation("(?:E|X|M)?LS"),
 } as const;
 
 function parseExplicitDirectiveOverrides(line: string): {
@@ -574,10 +581,11 @@ export class StudioAiStoryboardDirector {
     const narration = narrationMatch?.[1]?.trim() || undefined;
     const quoteMatch = textLine.match(QUOTED_DIALOGUE_PATTERN);
     const speakerMatch = textLine.match(SPEAKER_DIALOGUE_PATTERN);
-    const speaker = speakerMatch?.[1]?.trim() || undefined;
+    // '카엘: [침묵]'은 지시를 빼면 '카엘:'만 남아 대사가 없지만, 화자는 원래 줄의 카엘이다(이름 칸은 '['를 받지 않는다).
+    const speaker = (speakerMatch ?? line.match(SPEAKER_DIALOGUE_PATTERN))?.[1]?.trim() || undefined;
     const rawSpeakerDialogue = speakerMatch?.[2]?.trim().replace(/^["“]|["”]$/gu, "");
     const dialogue: string | undefined =
-      quoteMatch?.[1]?.trim() || rawSpeakerDialogue;
+      quoteMatch?.[1]?.trim() || rawSpeakerDialogue?.trim() || undefined;
 
     if (ACTION_PATTERN.test(line)) {
       shotScale = "full-shot";

@@ -324,7 +324,12 @@ export function runWebtoonStoryboardMasterPipeline(
   const bubbleMatcher = new StudioAiEmotionBubbleMatcher();
   const enrichedCuts: EnrichedStoryboardCutSpec[] = directingResult.cuts.map((cut, idx) => {
     // 대사·나레이션이 없는 컷은 요약으로 말풍선을 만들므로 [ ] 연출 지시는 빼고 쓴다.
-    const lineText = cut.dialogue ?? cut.narration ?? stripBracketDirectives(cut.summary);
+    // 지시만 있던 '카엘: [침묵]'은 '카엘:'만 남으므로 그 이름표도 지워 말풍선을 만들지 않는다([ ]가 없던 줄은 그대로).
+    const summaryText = stripBracketDirectives(cut.summary);
+    const lineText =
+      cut.dialogue ??
+      cut.narration ??
+      (cut.summary.includes("[") ? summaryText.replace(/^[^:：\n(["“]{1,20}[:：]$/u, "") : summaryText);
     const emotionBubble = bubbleMatcher.match(lineText);
     const mobileBubbles = splitDialogueIntoWebtoonBubbles(lineText);
     const localizedDialogues = buildGlobalLocalizedDialoguePreview(lineText, {

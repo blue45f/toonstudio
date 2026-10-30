@@ -2,19 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   addStudioVrmCustomExpression,
+  checkStudioVrmCustomExpressionName,
   countStudioVrmEditedExpressions,
   isStudioVrmCustomExpressionName,
+  normalizeStudioVrmCustomExpressionName,
   removeStudioVrmCustomExpression,
+  renameStudioVrmCustomExpression,
   resetStudioVrmPresetExpression,
   resolveStudioVrmFaceMorphs,
   sanitizeStudioVrmExpressionAuthoring,
   setStudioVrmCustomExpressionEyeSide,
   setStudioVrmCustomExpressionParam,
   setStudioVrmPresetExpressionParam,
+  STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH,
   STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES,
   STUDIO_VRM_DEFAULT_FACE_MORPHS,
   STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS,
   strongerStudioVrmBlinkOverride,
+  studioVrmCustomExpressionDisplayName,
   studioVrmCustomExpressionLabel,
   studioVrmExpressionOverridePolicy,
   type StudioVrmExpressionAuthoring,
@@ -77,21 +82,48 @@ describe("sanitizeStudioVrmExpressionAuthoring", () => {
     expect(sanitized).toEqual({ presets: { aa: { mouthOpen: 0.5 } } });
   });
 
-  it("accepts only template keys for custom expressions and derives the template from the key", () => {
+  it("keeps valid custom names, trusts a known stored template and derives it from older keys", () => {
     const sanitized = sanitizeStudioVrmExpressionAuthoring({
       custom: [
+        // 다른 템플릿에서 만든 표정을 `wink` 로 이름만 바꾼 경우 — 저장된 템플릿이 정본이다.
         { name: "wink", template: "laugh", delta: { eyeClose: 1 }, eyeSide: "left" },
         { name: "wink", delta: { eyeClose: 0.5 } },
         { name: "happy", delta: { eyeClose: 0.5 } },
         { name: "Wink", delta: {} },
         { name: "unknown", delta: {} },
+        { name: " 놀람", delta: {} },
+        { name: "http:smile", delta: {} },
+        // 이름 바꾸기 전에 저장한 문서는 템플릿 필드가 없어도 키에서 템플릿을 유도한다.
         { name: "wink_2", delta: { mouthOpen: 0.3 }, eyeSide: "up" },
       ],
     });
     expect(sanitized?.custom).toEqual([
-      { name: "wink", template: "wink", delta: { eyeClose: 1 }, eyeSide: "left" },
+      { name: "wink", template: "laugh", delta: { eyeClose: 1 }, eyeSide: "left" },
+      { name: "unknown", template: "mine", delta: {} },
       { name: "wink_2", template: "wink", delta: { mouthOpen: 0.3 } },
     ]);
+  });
+
+  it("names custom expressions with letters, numbers, spaces and _ - . only, apart from VRM presets", () => {
+    expect(normalizeStudioVrmCustomExpressionName("  눈물  글썽\t ")).toBe("눈물 글썽");
+    // 조합형 한글(ᄂ+ᅩ+ᆯ…)은 완성형으로 모아 같은 글자를 같은 이름으로 본다.
+    expect(normalizeStudioVrmCustomExpressionName("놀람")).toBe("놀람");
+    expect(checkStudioVrmCustomExpressionName("놀람 대폭발_2", [])).toBeNull();
+    expect(checkStudioVrmCustomExpressionName("驚き.v2-b", [])).toBeNull();
+    expect(checkStudioVrmCustomExpressionName("--", [])).toBe("empty");
+    expect(checkStudioVrmCustomExpressionName("가".repeat(STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH), [])).toBeNull();
+    expect(checkStudioVrmCustomExpressionName("가".repeat(STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH + 1), []))
+      .toBe("tooLong");
+    // `:`·`/` 가 든 문자열은 장면 문서가 참조로 보고 조형 데이터 전체를 버린다.
+    for (const name of ["http:smile", "a/b", "웃음😀", "tab\there"]) {
+      expect(checkStudioVrmCustomExpressionName(name, []), name).toBe("invalid");
+    }
+    for (const name of ["happy", "Happy", "BLINKLEFT", "neutral", "lookUp"]) {
+      expect(checkStudioVrmCustomExpressionName(name, []), name).toBe("reserved");
+    }
+    expect(checkStudioVrmCustomExpressionName("Smile", ["smile"])).toBe("duplicate");
+    expect(isStudioVrmCustomExpressionName("blinkLeft")).toBe(false);
+    expect(isStudioVrmCustomExpressionName("놀람")).toBe(true);
   });
 
   it("returns undefined for empty or malformed input so the forge state stays key-free", () => {
@@ -221,6 +253,36 @@ describe("expression editing helpers", () => {
     expect(bothEyes?.custom?.[1]?.eyeSide).toBeUndefined();
     const removed = removeStudioVrmCustomExpression(bothEyes, "wink");
     expect(removed?.custom?.map((entry) => entry.name)).toEqual(["wink_2"]);
+  });
+
+  it("renames a custom expression and keeps its shape, or reports why it cannot", () => {
+    const winks = addStudioVrmCustomExpression(addStudioVrmCustomExpression(undefined, "wink").authoring, "wink").authoring;
+    const renamed = renameStudioVrmCustomExpression(winks, "wink_2", "  한쪽 윙크 ");
+    expect(renamed).toMatchObject({ ok: true, name: "한쪽 윙크" });
+    if (!renamed.ok) throw new Error("expected the rename to succeed");
+    expect(renamed.authoring?.custom?.[1]).toEqual({
+      name: "한쪽 윙크",
+      template: "wink",
+      delta: winks?.custom?.[1]?.delta,
+      eyeSide: "left",
+    });
+    // 템플릿 키 그대로면 한글 라벨, 바꾼 이름이면 그 이름 — 남의 템플릿 id 로 바꿔도 라벨을 빌리지 않는다.
+    expect(studioVrmCustomExpressionDisplayName({ name: "wink", template: "wink" })).toBe("윙크");
+    expect(studioVrmCustomExpressionDisplayName({ name: "wink_2", template: "wink" })).toBe("윙크 2");
+    expect(studioVrmCustomExpressionDisplayName({ name: "smug", template: "wink" })).toBe("smug");
+    expect(studioVrmCustomExpressionDisplayName({ name: "한쪽 윙크", template: "wink" })).toBe("한쪽 윙크");
+
+    expect(renameStudioVrmCustomExpression(renamed.authoring, "wink", "한쪽 윙크")).toEqual({ ok: false, issue: "duplicate" });
+    expect(renameStudioVrmCustomExpression(renamed.authoring, "wink", "Surprised")).toEqual({ ok: false, issue: "reserved" });
+    expect(renameStudioVrmCustomExpression(renamed.authoring, "wink", "a:b")).toEqual({ ok: false, issue: "invalid" });
+    // 대소문자만 바꾸는 것은 자기 자신과 겹치는 것이 아니다.
+    expect(renameStudioVrmCustomExpression(renamed.authoring, "wink", "Wink")).toMatchObject({ ok: true, name: "Wink" });
+    // 바꾼 이름도 다음 추가의 번호 매기기에 반영된다.
+    const capitalised = renameStudioVrmCustomExpression(winks, "wink_2", "Wink_3");
+    if (!capitalised.ok) throw new Error("expected the rename to succeed");
+    expect(addStudioVrmCustomExpression(capitalised.authoring, "wink").name).toBe("wink_2");
+    expect(addStudioVrmCustomExpression(addStudioVrmCustomExpression(capitalised.authoring, "wink").authoring, "wink").name)
+      .toBe("wink_4");
   });
 
   it("refuses to add beyond the limit without changing the state", () => {

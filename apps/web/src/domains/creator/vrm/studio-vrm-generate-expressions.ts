@@ -10,8 +10,11 @@
  *    눈썹·눈·입 부위 슬라이더로 조정)과 같은 작업 흐름을 **자체 파라미터 모델**로 재현한다.
  *    슬라이더 값은 기본 표정 위에 얹는 **조정량**이라, 아무것도 움직이지 않으면 기본 테이블을
  *    그대로 돌려준다 — 편집하지 않은 생성 VRM 은 이전과 바이트 단위로 같다.
- *  - 커스텀 표정은 VRM 1.0 `expressions.custom` 으로 나간다. 키는 다른 앱과 섞여도 깨지지 않게
- *    ASCII 템플릿 id 이고, 스튜디오 화면에는 템플릿의 한글 라벨을 보여 준다.
+ *  - 커스텀 표정은 VRM 1.0 `expressions.custom` 으로 나간다. 키는 처음에 ASCII 템플릿 id(두 번째부터
+ *    `_2`)이고, VRoid Studio 처럼 사용자가 다른 앱에 보일 이름으로 바꿀 수 있다. 이름은 장면 문서 저장
+ *    경계를 지나도록 글자·숫자·공백·`_`·`-`·`.` 만 32자까지 쓰고, VRM 프리셋·다른 커스텀 표정과
+ *    대소문자 구분 없이 겹치지 않는다. 화면에는 템플릿 이름 그대로면 템플릿의 한글 라벨을, 바꾼
+ *    이름이면 그 이름을 보여 준다.
  */
 
 /** `eyeline` 은 윗눈꺼풀 선. 이게 없으면 눈이 "고글"처럼 읽힌다(상용 아바타도 별도 재질로 둔다). */
@@ -312,12 +315,17 @@ export const STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES: readonly StudioVrmCustomExp
 const TEMPLATE_BY_ID = new Map<string, StudioVrmCustomExpressionTemplate>(
   STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES.map((template) => [template.id, template]),
 );
+/** 템플릿을 알 수 없는 외부 입력의 표시용 템플릿. 조정량은 저장값을 그대로 쓰므로 모양은 바뀌지 않는다. */
+const MINE_TEMPLATE = STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES[0];
 
 /** 한 캐릭터에 둘 수 있는 커스텀 표정 수. 모프 타깃 하나가 얼굴 정점 전체 델타라 무한정 늘리지 않는다. */
 export const STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS = 12;
 
 export type StudioVrmCustomExpression = {
-  /** VRM `expressions.custom` 의 키. 템플릿 id, 두 번째부터는 `_2` 같은 번호가 붙는다. */
+  /**
+   * VRM `expressions.custom` 의 키이자 모프 타깃 이름. 처음에는 템플릿 id(두 번째부터 `_2` 같은
+   * 번호)이고, {@link renameStudioVrmCustomExpression} 으로 바꿀 수 있다.
+   */
   readonly name: string;
   readonly template: StudioVrmCustomExpressionTemplateId;
   readonly delta: StudioVrmExpressionDelta;
@@ -334,9 +342,50 @@ export type StudioVrmExpressionAuthoring = {
 /* 정규화                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/** 템플릿에서 만든 그대로의 키(`wink`, `wink_2`). 화면 라벨을 템플릿 한글 이름으로 보여 줄지 정한다. */
 const CUSTOM_NAME = /^([a-z]+)(?:_([2-9]|1[0-9]))?$/u;
-/** VRM 1.0 프리셋 이름과 겹치는 커스텀 키는 익스포터가 거부한다. 템플릿 id 는 처음부터 겹치지 않는다. */
-const RESERVED_NAMES = new Set(STUDIO_VRM_DEFAULT_FACE_MORPHS.map((morph) => morph.name).concat("neutral"));
+/**
+ * VRM 1.0 프리셋 이름(기본 표정 17종 + neutral)과 겹치는 커스텀 키는 익스포터가 거부하고 three-vrm 도
+ * 버린다. 대소문자만 다른 이름(`Happy`)은 앱마다 다르게 다뤄질 수 있어 함께 막는다.
+ */
+const RESERVED_NAMES = new Set(
+  STUDIO_VRM_DEFAULT_FACE_MORPHS.map((morph) => morph.name).concat("neutral").map((name) => name.toLowerCase()),
+);
+/** 커스텀 표정 이름의 최대 글자 수(코드 포인트). 포저 칩·다른 앱 목록에서 한눈에 읽히는 길이다. */
+export const STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH = 32;
+/**
+ * 커스텀 표정 이름에 쓸 수 있는 글자. 장면 문서 저장 경계(studio-vrm-scene-document)는 제어 문자나
+ * `http:` 같은 참조 접두사가 든 문자열 하나만 있어도 조형 데이터 전체를 버리므로, 데이터 키와 같은
+ * 집합(글자·숫자·공백·`_`·`-`·`.`)으로 좁혀 `:`·`/` 가 아예 들어오지 못하게 한다.
+ */
+const CUSTOM_NAME_CHARACTERS = /^[\p{L}\p{N}_ .-]+$/u;
+const CUSTOM_NAME_SIGNIFICANT = /[\p{L}\p{N}]/u;
+
+export type StudioVrmCustomExpressionNameIssue = "empty" | "tooLong" | "invalid" | "reserved" | "duplicate";
+
+/** 입력한 이름을 저장할 모양으로 다듬는다. 조합형 한글은 완성형으로 모으고 앞뒤·연속 공백을 정리한다. */
+export function normalizeStudioVrmCustomExpressionName(raw: string): string {
+  return raw.normalize("NFC").trim().replace(/\s+/gu, " ");
+}
+
+/**
+ * 커스텀 표정 이름의 문제를 돌려준다. `taken` 은 **다른** 커스텀 표정의 이름이고 대소문자를 가리지
+ * 않고 비교한다. `name` 은 {@link normalizeStudioVrmCustomExpressionName} 을 거친 값이어야 한다.
+ */
+export function checkStudioVrmCustomExpressionName(
+  name: string,
+  taken: Iterable<string>,
+): StudioVrmCustomExpressionNameIssue | null {
+  if (!CUSTOM_NAME_SIGNIFICANT.test(name)) return "empty";
+  if (Array.from(name).length > STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH) return "tooLong";
+  if (!CUSTOM_NAME_CHARACTERS.test(name)) return "invalid";
+  const folded = name.toLowerCase();
+  if (RESERVED_NAMES.has(folded)) return "reserved";
+  for (const other of taken) {
+    if (other.toLowerCase() === folded) return "duplicate";
+  }
+  return null;
+}
 /** 저장값 안정을 위한 반올림 단위. 슬라이더 한 칸(0.05)보다 충분히 잘다. */
 const VALUE_PRECISION = 1000;
 
@@ -378,17 +427,19 @@ export function sanitizeStudioVrmExpressionAuthoring(raw: unknown): StudioVrmExp
   }
 
   const custom: StudioVrmCustomExpression[] = [];
-  const seen = new Set<string>();
   for (const entry of Array.isArray(raw.custom) ? raw.custom : []) {
     if (custom.length >= STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS) break;
     if (!isRecord(entry) || typeof entry.name !== "string") continue;
-    const match = CUSTOM_NAME.exec(entry.name);
-    const template = match ? TEMPLATE_BY_ID.get(match[1]) : undefined;
-    // 템플릿은 키에서 유도한다. 저장본의 `template` 필드는 표시용 사본이라 믿지 않는다.
-    if (!template || RESERVED_NAMES.has(entry.name) || seen.has(entry.name)) continue;
-    seen.add(entry.name);
+    // 다듬지 않은 이름은 버린다. 다듬어 받아 주면 같은 문서가 저장할 때마다 다른 키로 나간다.
+    const name = entry.name;
+    if (normalizeStudioVrmCustomExpressionName(name) !== name) continue;
+    if (checkStudioVrmCustomExpressionName(name, custom.map((kept) => kept.name)) !== null) continue;
+    // 이름을 바꾼 표정은 저장된 템플릿을 따르고, 이름 바꾸기 전에 저장한 문서는 키에서 템플릿을 유도한다.
+    const template = (typeof entry.template === "string" ? TEMPLATE_BY_ID.get(entry.template) : undefined)
+      ?? TEMPLATE_BY_ID.get(CUSTOM_NAME.exec(name)?.[1] ?? "")
+      ?? MINE_TEMPLATE;
     custom.push({
-      name: entry.name,
+      name,
       template: template.id,
       delta: sanitizeDelta(entry.delta, ALL_PARTS),
       ...(entry.eyeSide === "left" || entry.eyeSide === "right" ? { eyeSide: entry.eyeSide } : {}),
@@ -579,7 +630,7 @@ export function strongerStudioVrmBlinkOverride(
 
 /** 프리셋이 아닌 이름(커스텀 표정)인지. 생성 레시피가 `preset`/`custom` 으로 나눌 때 쓴다. */
 export function isStudioVrmCustomExpressionName(name: string): boolean {
-  return !RESERVED_NAMES.has(name);
+  return !RESERVED_NAMES.has(name.toLowerCase());
 }
 
 /** 커스텀 표정 키의 한글 라벨. 템플릿 키가 아니면 `null`(호출자가 원래 이름을 쓴다). */
@@ -587,6 +638,17 @@ export function studioVrmCustomExpressionLabel(name: string): string | null {
   const match = CUSTOM_NAME.exec(name);
   const template = match ? TEMPLATE_BY_ID.get(match[1]) : undefined;
   if (!match || !template) return null;
+  return match[2] ? `${template.label} ${match[2]}` : template.label;
+}
+
+/**
+ * 편집기에 보일 커스텀 표정 이름. 템플릿에서 만든 키 그대로면 그 템플릿의 한글 라벨, 사용자가 바꾼
+ * 이름이면 그 이름이다 — 다른 템플릿 id 와 같은 이름(`smug`)으로 바꿔도 남의 라벨을 빌려 오지 않는다.
+ */
+export function studioVrmCustomExpressionDisplayName(entry: Pick<StudioVrmCustomExpression, "name" | "template">): string {
+  const match = CUSTOM_NAME.exec(entry.name);
+  const template = TEMPLATE_BY_ID.get(entry.template);
+  if (!match || !template || match[1] !== template.id) return entry.name;
   return match[2] ? `${template.label} ${match[2]}` : template.label;
 }
 
@@ -632,7 +694,8 @@ export function addStudioVrmCustomExpression(
   if (!template || existing.length >= STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS) {
     return { authoring: sanitizeStudioVrmExpressionAuthoring(authoring), name: null };
   }
-  const taken = new Set(existing.map((entry) => entry.name));
+  // 이름을 바꾼 표정이 `Wink` 처럼 대소문자만 다른 키를 쓰고 있을 수 있어 접어서 비교한다.
+  const taken = new Set(existing.map((entry) => entry.name.toLowerCase()));
   let name: string = template.id;
   for (let index = 2; taken.has(name); index += 1) {
     if (index > 19) return { authoring: sanitizeStudioVrmExpressionAuthoring(authoring), name: null };
@@ -689,6 +752,27 @@ export function removeStudioVrmCustomExpression(
   name: string,
 ): StudioVrmExpressionAuthoring | undefined {
   return mapCustom(authoring, name, () => null);
+}
+
+export type StudioVrmCustomExpressionRename =
+  | { readonly ok: true; readonly authoring: StudioVrmExpressionAuthoring | undefined; readonly name: string }
+  | { readonly ok: false; readonly issue: StudioVrmCustomExpressionNameIssue };
+
+/**
+ * 커스텀 표정의 이름(VRM 키)을 바꾼다. 입력은 {@link normalizeStudioVrmCustomExpressionName} 으로
+ * 다듬은 뒤 검사하고, 문제가 있으면 상태를 바꾸지 않고 그 이유를 돌려준다. 같은 이름이면 그대로 둔다.
+ */
+export function renameStudioVrmCustomExpression(
+  authoring: StudioVrmExpressionAuthoring | undefined,
+  name: string,
+  nextRaw: string,
+): StudioVrmCustomExpressionRename {
+  const next = normalizeStudioVrmCustomExpressionName(nextRaw);
+  const others = (authoring?.custom ?? []).filter((entry) => entry.name !== name).map((entry) => entry.name);
+  if (next === name) return { ok: true, authoring: sanitizeStudioVrmExpressionAuthoring(authoring), name };
+  const issue = checkStudioVrmCustomExpressionName(next, others);
+  if (issue) return { ok: false, issue };
+  return { ok: true, authoring: mapCustom(authoring, name, (entry) => ({ ...entry, name: next })), name: next };
 }
 
 /** 편집한 표정 수(프리셋 + 조정한 커스텀). 패널 요약 배지에 쓴다. */
