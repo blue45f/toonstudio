@@ -161,17 +161,21 @@ function ScopedCompareReviewRoom({
 
   // 세션 영속화. 용량 초과 등으로 저장하지 못해도 비교 화면은 유지하고 저장 실패를 알린다.
   useEffect(() => {
-    try {
-      const raw = serializeCompareSession(session);
-      if (!writeProductionReviewLocalState(localScope, "compare-session", raw)
-        || readProductionReviewLocalState(localScope, "compare-session") !== raw) { setLocalSaveFailed(true); return; }
-      setLocalSaveFailed(false);
-      if (isDemo) return;
-      const delivered = incoming.filter((entry) => compareSendInboxEntryInPool(entry, workId, session.pool));
-      if (delivered.length) acknowledgeCompareSendInbox(window.localStorage, localScope, delivered);
-    } catch {
-      setLocalSaveFailed(true);
-    }
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const raw = serializeCompareSession(session);
+        if (!writeProductionReviewLocalState(localScope, "compare-session", raw)
+          || readProductionReviewLocalState(localScope, "compare-session") !== raw) { setLocalSaveFailed(true); return; }
+        const delivered = isDemo ? [] : incoming.filter((entry) => compareSendInboxEntryInPool(entry, workId, session.pool));
+        const acknowledged = delivered.length === 0
+          || await acknowledgeCompareSendInbox(window.localStorage, localScope, delivered, { signal: controller.signal });
+        if (!controller.signal.aborted) setLocalSaveFailed(!acknowledged);
+      } catch {
+        if (!controller.signal.aborted) setLocalSaveFailed(true);
+      }
+    })();
+    return () => controller.abort();
   }, [session, localScope, incoming, workId, isDemo]);
 
   // 비교 핀 게이트 집계를 회차 룸에 통지(내용이 바뀔 때만).
@@ -322,8 +326,8 @@ function ScopedCompareReviewRoom({
     <div className="space-y-3" data-testid="crv-room">
       {localSaveFailed ? <p role="alert" className="rounded-xl border border-warn/35 bg-warn/10 p-3 text-sm text-fg">
         {incoming.length ? bt(
-          "비교는 계속할 수 있지만 기기 저장을 확인하지 못했습니다. 전달 확인 전인 원문은 수신함에 보관됩니다. 저장 확인 전에는 이 화면을 유지해 주세요.",
-          "You can keep comparing, but saving on this device was not confirmed. Transfers awaiting confirmation remain in your inbox. Keep this view open until saving is confirmed.") : bt(
+          "비교는 계속할 수 있지만 기기 저장 또는 전달 확인을 완료하지 못했습니다. 전달 확인 전인 원문은 수신함에 보관됩니다. 저장 확인 전에는 이 화면을 유지해 주세요.",
+          "You can keep comparing, but saving on this device or confirming the transfer did not complete. Transfers awaiting confirmation remain in your inbox. Keep this view open until saving is confirmed.") : bt(
           "비교는 계속할 수 있지만 기기 저장을 확인하지 못했습니다. 저장 상태가 확인될 때까지 이 화면을 유지해 주세요.",
           "You can keep comparing, but saving on this device was not confirmed. Keep this view open until saving is confirmed.")}
       </p> : null}

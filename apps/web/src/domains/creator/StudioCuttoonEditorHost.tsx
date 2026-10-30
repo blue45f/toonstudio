@@ -17049,13 +17049,13 @@ const puppetWarpArmed =
     if (previousSelection) setSelectedId(previousSelection);
     const { writeCompareSendInbox, compareSendInboxScope } = await import("./production-hub/compare-send-inbox");
     if (getAuthUserId() !== ownerUserId) return;
-    const result = writeCompareSendInbox(window.localStorage, compareSendInboxScope(ownerUserId, workId), {
+    const result = await writeCompareSendInbox(window.localStorage, compareSendInboxScope(ownerUserId, workId), {
       id: uid(),
       pageId: activePage.id,
       pageLabel: `에디터 · ${pageDisplayName(activePage, activePageIndex)}`,
       imageUrl: src,
       sentAt: new Date().toISOString(),
-    });
+    }); if (getAuthUserId() !== ownerUserId) return;
     if (result.ok) {
       announceDrawingShortcut("비교 검수로 보냈어요. 회차 룸의 비교 탭 소스 풀에서 확인할 수 있어요.");
     } else if (result.reason === "image-too-large") {

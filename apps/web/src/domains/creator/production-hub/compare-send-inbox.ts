@@ -14,6 +14,8 @@
  * data URL은 로컬 저장소 용량을 지키기 위해 상한을 두고, 넘는 항목은 명시적으로 거부한다.
  */
 
+import { getAuthUserId, listeners, type Session } from "@/domains/auth/public/session/auth-session-state";
+
 import { compareSourceKey, poolItemFromReference, type ComparePoolItem } from "./compare-review-model";
 import { isProductionReviewLocalOwnerCurrent, productionReviewLocalOwner,
   type ProductionReviewLocalOwner } from "./production-review-local-state";
@@ -117,6 +119,63 @@ export interface CompareSendStorage {
   removeItem(key: string): void;
 }
 
+/** 동일 origin의 모든 송신·수신 확인이 같은 범위의 배타 잠금을 공유해야 한다. */
+export interface CompareSendInboxLockProvider {
+  request<T>(name: string, options: { readonly mode: "exclusive"; readonly signal?: AbortSignal },
+    operation: () => T | Promise<T>): Promise<T>;
+}
+export interface CompareSendInboxMutationOptions {
+  readonly signal?: AbortSignal;
+  readonly locks?: CompareSendInboxLockProvider | null;
+}
+
+function snapshotScope(scope: CompareSendInboxScope): CompareSendInboxScope {
+  return { workId: scope.workId, owner: scope.owner.kind === "account"
+    ? { kind: "account", userId: scope.owner.userId } : { kind: "guest", mode: scope.owner.mode } };
+}
+function snapshotEntry(entry: CompareSendInboxEntry): CompareSendInboxEntry {
+  return { id: entry.id, pageId: entry.pageId, pageLabel: entry.pageLabel, imageUrl: entry.imageUrl, sentAt: entry.sentAt };
+}
+
+async function withInboxMutation<T>(scope: CompareSendInboxScope, options: CompareSendInboxMutationOptions,
+  failure: (scopeChanged: boolean) => T, operation: (canMutate: () => boolean, failed: () => T) => T): Promise<T> {
+  const signal = options.signal;
+  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return failure(true);
+  if (signal?.aborted) return failure(false);
+  const controller = new AbortController(), initialUserId = getAuthUserId();
+  let scopeChanged = false;
+  const onSession = (session: Session) => {
+    if ((session?.user.id ?? null) !== initialUserId) {
+      scopeChanged = true;
+      controller.abort();
+    }
+  };
+  const onAbort = () => controller.abort();
+  const canMutate = () => {
+    if (!isProductionReviewLocalOwnerCurrent(scope.owner)) { scopeChanged = true; controller.abort(); }
+    return !controller.signal.aborted && !scopeChanged;
+  };
+  listeners.add(onSession);
+  signal?.addEventListener("abort", onAbort, { once: true });
+  if (signal?.aborted) controller.abort();
+  try {
+    const locks = options.locks !== undefined ? options.locks
+      : typeof navigator !== "undefined" && typeof navigator.locks?.request === "function"
+        ? { request: <R>(name: string, lockOptions: { readonly mode: "exclusive"; readonly signal?: AbortSignal },
+          callback: () => R | Promise<R>) => navigator.locks.request(name, lockOptions, callback) } : null;
+    if (!locks || !canMutate()) return failure(scopeChanged);
+    return await locks.request(compareSendInboxKey(scope), { mode: "exclusive", signal: controller.signal }, () => {
+      if (!canMutate()) return failure(scopeChanged);
+      return operation(canMutate, () => failure(scopeChanged));
+    });
+  } catch {
+    return failure(scopeChanged);
+  } finally {
+    listeners.delete(onSession);
+    signal?.removeEventListener("abort", onAbort);
+  }
+}
+
 function readScopedEntries(raw: string | null, scope: CompareSendInboxScope): CompareSendInboxEntry[] | null {
   if (raw === null) return [];
   const envelope: unknown = JSON.parse(raw);
@@ -129,9 +188,11 @@ function readScopedEntries(raw: string | null, scope: CompareSendInboxScope): Co
   return entries;
 }
 
-function writeScopedEntries(storage: CompareSendStorage, scope: CompareSendInboxScope, entries: readonly CompareSendInboxEntry[]): boolean {
-  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return false;
-  storage.setItem(compareSendInboxKey(scope), JSON.stringify({ version: 1, scope: scopeKey(scope), payload: JSON.stringify(entries) }));
+function writeScopedEntries(storage: CompareSendStorage, scope: CompareSendInboxScope,
+  entries: readonly CompareSendInboxEntry[], canMutate: () => boolean): boolean {
+  const serialized = JSON.stringify({ version: 1, scope: scopeKey(scope), payload: JSON.stringify(entries) });
+  if (!canMutate()) return false;
+  storage.setItem(compareSendInboxKey(scope), serialized);
   return true;
 }
 
@@ -149,16 +210,16 @@ function sameEntry(left: CompareSendInboxEntry, right: CompareSendInboxEntry): b
     && left.imageUrl === right.imageUrl && left.sentAt === right.sentAt;
 }
 
-/** 새 전송본·교체본은 보존한다. localStorage의 탭 사이 읽기와 쓰기는 CAS가 아니다. */
-export function acknowledgeCompareSendInbox(storage: CompareSendStorage, scope: CompareSendInboxScope,
-  delivered: readonly CompareSendInboxEntry[]): boolean {
-  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return false;
-  try {
-    const entries = readScopedEntries(storage.getItem(compareSendInboxKey(scope)), scope);
-    if (entries === null || !isProductionReviewLocalOwnerCurrent(scope.owner)) return false;
-    const remaining = entries.filter((candidate) => !delivered.some((entry) => sameEntry(entry, candidate)));
-    return remaining.length === entries.length || writeScopedEntries(storage, scope, remaining);
-  } catch { return false; }
+/** 송신과 같은 잠금 안에서 정확한 원문만 정리해 새 전송본·교체본을 보존한다. */
+export async function acknowledgeCompareSendInbox(storage: CompareSendStorage, scope: CompareSendInboxScope,
+  delivered: readonly CompareSendInboxEntry[], options: CompareSendInboxMutationOptions = {}): Promise<boolean> {
+  const capturedScope = snapshotScope(scope), capturedDelivered = delivered.map(snapshotEntry);
+  return withInboxMutation(capturedScope, options, () => false, (canMutate) => {
+    const entries = readScopedEntries(storage.getItem(compareSendInboxKey(capturedScope)), capturedScope);
+    if (entries === null || !canMutate()) return false;
+    const remaining = entries.filter((candidate) => !capturedDelivered.some((entry) => sameEntry(entry, candidate)));
+    return remaining.length === entries.length || writeScopedEntries(storage, capturedScope, remaining, canMutate);
+  });
 }
 
 /** 실제 비교 pool이 원래 reference의 이미지·라벨·시각을 보존한 경우에만 전달 확인 대상으로 삼는다. */
@@ -170,35 +231,37 @@ export function compareSendInboxEntryInPool(entry: CompareSendInboxEntry, workId
 }
 
 /** 에디터 측 기록. 저장 실패(용량 등)는 throw하지 않고 결과로 알린다. */
-export function writeCompareSendInbox(
+export async function writeCompareSendInbox(
   storage: CompareSendStorage,
   scope: CompareSendInboxScope,
   entry: CompareSendInboxEntry,
-): AddCompareSendResult | { readonly ok: false; readonly reason: "storage-failed" | "scope-changed" } {
-  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return { ok: false, reason: "scope-changed" };
-  try {
-    const entries = readScopedEntries(storage.getItem(compareSendInboxKey(scope)), scope);
-    if (entries === null) return { ok: false, reason: "storage-failed" };
-    const added = addCompareSendInboxEntry(entries, entry);
-    if (!added.ok) return added;
-    return writeScopedEntries(storage, scope, added.entries) ? added : { ok: false, reason: "scope-changed" };
-  } catch {
-    return { ok: false, reason: "storage-failed" };
-  }
+  options: CompareSendInboxMutationOptions = {},
+): Promise<AddCompareSendResult | { readonly ok: false; readonly reason: "storage-failed" | "scope-changed" }> {
+  const capturedScope = snapshotScope(scope), capturedEntry = snapshotEntry(entry);
+  return withInboxMutation<AddCompareSendResult | { readonly ok: false; readonly reason: "storage-failed" | "scope-changed" }>(
+    capturedScope, options, (changed) => ({ ok: false, reason: changed ? "scope-changed" : "storage-failed" }), (canMutate, failed) => {
+      const entries = readScopedEntries(storage.getItem(compareSendInboxKey(capturedScope)), capturedScope);
+      if (entries === null) return { ok: false, reason: "storage-failed" };
+      if (!canMutate()) return failed();
+      const added = addCompareSendInboxEntry(entries, capturedEntry);
+      if (!added.ok) return added;
+      return writeScopedEntries(storage, capturedScope, added.entries, canMutate) ? added : failed();
+    });
 }
 
 /** 회차 룸 측 소비: 읽고 비운다. 한 번 풀에 들어간 전송본이 다음 방문에 중복되지 않게 한다. */
-export function consumeCompareSendInbox(
+export async function consumeCompareSendInbox(
   storage: CompareSendStorage,
   scope: CompareSendInboxScope,
-): CompareSendInboxEntry[] {
-  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return [];
-  try {
-    const key = compareSendInboxKey(scope), entries = readScopedEntries(storage.getItem(key), scope);
-    if (entries === null || !isProductionReviewLocalOwnerCurrent(scope.owner)) return [];
+  options: CompareSendInboxMutationOptions = {},
+): Promise<CompareSendInboxEntry[]> {
+  const capturedScope = snapshotScope(scope);
+  return withInboxMutation<CompareSendInboxEntry[]>(capturedScope, options, () => [], (canMutate) => {
+    const key = compareSendInboxKey(capturedScope), entries = readScopedEntries(storage.getItem(key), capturedScope);
+    if (entries === null || !canMutate()) return [];
     if (entries.length) {
-      try { storage.removeItem(key); } catch { /* 비우기 실패는 중복 방지가 약해질 뿐 비교를 막지 않는다 */ }
+      try { storage.removeItem(key); } catch { /* 기존 소비 계약대로 원문은 남기고 읽은 항목을 반환한다. */ }
     }
     return entries;
-  } catch { return []; }
+  });
 }

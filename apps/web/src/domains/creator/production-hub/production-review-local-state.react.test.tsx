@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Session } from "@/domains/auth/public/session/auth-session-state";
 import { addStudioCommentThread, createEmptyStudioCommentsDocument } from "../studio-comments";
 import { CompareReviewRoom, type CompareReviewRoomProps } from "./CompareReviewRoom";
+import type { CompareSourcePoolStripProps } from "./CompareSourcePoolStrip";
 import { ProductionEpisodeReviewRoom } from "./ProductionEpisodeReviewRoom";
 import { productionReviewFlowFixture } from "./production-review-flow.test-fixture";
 import { addComparePoolItem, createCompareImageAnchor, createEmptyCompareSession, parseCompareSession, poolItemFromExternal,
@@ -12,15 +14,17 @@ import { addComparePoolItem, createCompareImageAnchor, createEmptyCompareSession
 import { productionReviewLocalScope, productionReviewLocalScopeKey, productionReviewLocalStorageKey, readProductionReviewLocalState, writeProductionReviewLocalState,
   type ProductionReviewLocalScope } from "./production-review-local-state";
 import { compareSendInboxKey, compareSendInboxScope, compareSendInboxToPoolItems, peekCompareSendInbox,
-  writeCompareSendInbox, type CompareSendInboxEntry } from "./compare-send-inbox";
+  writeCompareSendInbox, type CompareSendInboxEntry, type CompareSendInboxLockProvider } from "./compare-send-inbox";
+import { createCompareSendInboxTestLocks } from "./compare-send-inbox-lock.test-fixture";
 import { useProductionReviewLocalComments } from "./use-production-review-local-comments";
 
-const auth = vi.hoisted(() => ({ userId: "account-A" as string | null }));
-vi.mock("@/domains/auth/public/session/auth-session-state", () => ({ getAuthUserId: () => auth.userId }));
+const auth = vi.hoisted(() => ({ userId: "account-A" as string | null, listeners: new Set<(session: Session) => void>() }));
+vi.mock("@/domains/auth/public/session/auth-session-state", () => ({ getAuthUserId: () => auth.userId, listeners: auth.listeners }));
 vi.mock("@/domains/auth/public/session/use-auth-actor-id", () => ({ useAuthActorId: () => auth.userId }));
 vi.mock("./CompareReviewViewer", () => ({ CompareReviewViewer: ({ session }: { readonly session: CompareSession }) =>
   <output data-testid="compare-pool">{session.pool.map((item) => item.label).join(" · ")}</output> }));
-vi.mock("./CompareSourcePoolStrip", () => ({ CompareSourcePoolStrip: () => null }));
+vi.mock("./CompareSourcePoolStrip", () => ({ CompareSourcePoolStrip: ({ items, onRemove, readOnly }: CompareSourcePoolStripProps) =>
+  readOnly ? null : <>{items.map((item) => <button key={item.id} onClick={() => onRemove(item)}>비교 소스 제거 {item.label}</button>)}</> }));
 vi.mock("./ProductionShotGridVersionLineageSuite", () => ({ ProductionShotGridVersionLineageSuite: () => null }));
 vi.mock("./ProductionViewerControlsBar", () => ({ ProductionViewerControlsBar: () => null }));
 vi.mock("./ProductionWebtoonNowPmsSuite", () => ({ ProductionWebtoonNowPmsSuite: () => null }));
@@ -41,13 +45,27 @@ function compareProps(overrides: Partial<CompareReviewRoomProps> = {}): CompareR
     currentActor: { id: "role-A", displayName: "실제 계정과 다른 검수 역할" }, ...overrides };
 }
 const room = (props: CompareReviewRoomProps) => <MemoryRouter><CompareReviewRoom {...props} /></MemoryRouter>;
+const originalLocksDescriptor = Object.getOwnPropertyDescriptor(navigator, "locks");
+let locks: CompareSendInboxLockProvider;
+function publishAuth(userId: string | null): void {
+  auth.userId = userId;
+  const session: Session = userId === null ? null : { user: { id: userId }, token: null };
+  auth.listeners.forEach((listener) => listener(session));
+}
 beforeEach(() => {
   auth.userId = "account-A"; window.localStorage.clear(); vi.stubGlobal("BroadcastChannel", undefined);
+  locks = createCompareSendInboxTestLocks();
+  Object.defineProperty(navigator, "locks", { configurable: true, value: locks });
   vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("단위 검증에서 예상하지 않은 네트워크 요청입니다."))));
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
-  try { expect(globalThis.fetch).not.toHaveBeenCalled(); } finally { vi.restoreAllMocks(); vi.unstubAllGlobals(); }
+  await act(async () => { await Promise.resolve(); });
+  try { expect(globalThis.fetch).not.toHaveBeenCalled(); } finally {
+    vi.restoreAllMocks(); vi.unstubAllGlobals();
+    if (originalLocksDescriptor) Object.defineProperty(navigator, "locks", originalLocksDescriptor);
+    else Reflect.deleteProperty(navigator, "locks");
+  }
 });
 
 describe("비교 검수의 실제 React scope 전환", () => {
@@ -122,10 +140,31 @@ const transfer = (overrides: Partial<CompareSendInboxEntry> = {}): CompareSendIn
 const transferScope = () => compareSendInboxScope("account-A", "work");
 const transferDraftScope = () => productionReviewLocalScope("account-A", "project", "work", "episode");
 
+function deferredVoid() {
+  let accept: (() => void) | undefined;
+  const promise = new Promise<void>((resolve) => { accept = resolve; });
+  return { promise, resolve: () => { if (!accept) throw new Error("대기 Promise가 초기화되지 않았습니다."); accept(); } };
+}
+
+async function holdTransferInbox() {
+  const entered = deferredVoid(), released = deferredVoid(), key = compareSendInboxKey(transferScope());
+  const settled = locks.request(key, { mode: "exclusive" }, async () => { entered.resolve(); await released.promise; });
+  await entered.promise;
+  let finished = false;
+  return { finish: async () => {
+    if (finished) return;
+    finished = true;
+    released.resolve();
+    await settled;
+    // 앞서 대기하던 ACK까지 실제 큐를 통과한 뒤 삭제되지 않았음을 검사한다.
+    await locks.request(key, { mode: "exclusive" }, () => undefined);
+  } };
+}
+
 describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
-  it("실제 회차의 기본 viewer를 열고 떠나도 수신함을 읽거나 지우지 않고 비교 탭을 열 때만 전달 확인한다", () => {
+  it("실제 회차의 기본 viewer를 열고 떠나도 수신함을 읽거나 지우지 않고 비교 탭을 열 때만 전달 확인한다", async () => {
     const fixture = productionReviewFlowFixture(), scope = compareSendInboxScope("account-A", fixture.aggregate.workId);
-    writeCompareSendInbox(window.localStorage, scope, transfer());
+    await writeCompareSendInbox(window.localStorage, scope, transfer());
     const key = compareSendInboxKey(scope), original = window.localStorage.getItem(key);
     const reads = vi.spyOn(Storage.prototype, "getItem");
     const element = <MemoryRouter><ProductionEpisodeReviewRoom aggregate={fixture.aggregate} episodeId={fixture.scope.id}
@@ -138,14 +177,14 @@ describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
     render(element);
     fireEvent.click(screen.getByRole("tab", { name: /버전 비교|Compare versions/u }));
     expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
-    expect(peekCompareSendInbox(window.localStorage, scope)).toEqual([]);
+    await waitFor(() => expect(peekCompareSendInbox(window.localStorage, scope)).toEqual([]));
   });
 
-  it("StrictMode 비교 mount와 실제 unmount/remount는 원본 PNG를 한 번만 합치고 저장 확인 뒤 ACK한다", () => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it("StrictMode 비교 mount와 실제 unmount/remount는 원본 PNG를 한 번만 합치고 저장 확인 뒤 ACK한다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     const props = compareProps({ seedItems: [] }), first = render(<StrictMode>{room(props)}</StrictMode>);
     expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
-    expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([]);
+    await waitFor(() => expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([]));
     const saved = parseCompareSession(readProductionReviewLocalState(transferDraftScope(), "compare-session"), "episode");
     expect(saved.pool).toEqual(compareSendInboxToPoolItems([transfer()], "work"));
     first.unmount(); render(<StrictMode>{room(props)}</StrictMode>);
@@ -153,8 +192,8 @@ describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
     expect(parseCompareSession(readProductionReviewLocalState(transferDraftScope(), "compare-session"), "episode").pool).toHaveLength(1);
   });
 
-  it("기기 저장 실패는 비교 화면과 경고를 유지하고 원문은 남기며 재진입 저장 성공 뒤 경고를 해제한다", () => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it("기기 저장 실패는 비교 화면과 경고를 유지하고 원문은 남기며 재진입 저장 성공 뒤 경고를 해제한다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     const key = productionReviewLocalStorageKey(transferDraftScope(), "compare-session"), originalSet = Storage.prototype.setItem;
     const writes = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, requested, value) {
       if (requested === key) throw new DOMException("저장 공간 부족", "QuotaExceededError");
@@ -168,11 +207,11 @@ describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
     first.unmount(); writes.mockRestore(); render(room(props));
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
-    expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([]);
+    await waitFor(() => expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([]));
   });
 
-  it("저장 직후 같은 원문을 다시 읽지 못하면 수신함을 ACK하지 않고 경고한다", () => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it("저장 직후 같은 원문을 다시 읽지 못하면 수신함을 ACK하지 않고 경고한다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     const key = productionReviewLocalStorageKey(transferDraftScope(), "compare-session");
     const originalSet = Storage.prototype.setItem, originalGet = Storage.prototype.getItem; let written = false;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, requested, value) {
@@ -186,22 +225,24 @@ describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
     expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([transfer()]);
   });
 
-  it.each(["new", "replacement"] as const)("저장 확인 중 도착한 %s 전송본은 이전 원문의 ACK로 지우지 않는다", (kind) => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it.each(["new", "replacement"] as const)("저장 확인 중 도착한 %s 전송본은 이전 원문의 ACK로 지우지 않는다", async (kind) => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     const next = kind === "new" ? transfer({ id: "transfer-2", pageId: "page-2", pageLabel: "새 전송본" })
       : transfer({ imageUrl: "data:image/png;base64,BBBB", pageLabel: "교체 전송본" });
-    const key = productionReviewLocalStorageKey(transferDraftScope(), "compare-session"), originalSet = Storage.prototype.setItem; let added = false;
+    const key = productionReviewLocalStorageKey(transferDraftScope(), "compare-session"), originalSet = Storage.prototype.setItem;
+    let added = false, pendingSend: ReturnType<typeof writeCompareSendInbox> | undefined;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, requested, value) {
       originalSet.call(this, requested, value);
-      if (requested === key && !added) { added = true; writeCompareSendInbox(window.localStorage, transferScope(), next); }
+      if (requested === key && !added) { added = true; pendingSend = writeCompareSendInbox(window.localStorage, transferScope(), next); }
     });
     render(room(compareProps({ seedItems: [] })));
     expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
-    expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([next]);
+    await act(async () => { await pendingSend; });
+    await waitFor(() => expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([next]));
   });
 
-  it("pool이 같은 source ID의 다른 이미지라면 원본 전송을 전달 확인한 것으로 보지 않는다", () => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it("pool이 같은 source ID의 다른 이미지라면 원본 전송을 전달 확인한 것으로 보지 않는다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     const [conflict] = compareSendInboxToPoolItems([transfer({ imageUrl: "data:image/png;base64,BBBB", pageLabel: "다른 이미지" })], "work");
     if (!conflict) throw new Error("같은 source의 충돌 fixture가 없습니다.");
     writeProductionReviewLocalState(transferDraftScope(), "compare-session", serializeCompareSession(addComparePoolItem(createEmptyCompareSession("episode"), conflict)));
@@ -210,8 +251,8 @@ describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
     expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([transfer()]);
   });
 
-  it("저장 중 계정이 바뀌면 A 수신함을 남기고 B에는 표시하지 않으며 A 재진입 때 중복 없이 복원한다", () => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it("저장 중 계정이 바뀌면 A 수신함을 남기고 B에는 표시하지 않으며 A 재진입 때 중복 없이 복원한다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     const key = productionReviewLocalStorageKey(transferDraftScope(), "compare-session"), originalSet = Storage.prototype.setItem; let switched = false;
     const writes = vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, requested, value) {
       originalSet.call(this, requested, value);
@@ -224,14 +265,82 @@ describe("실제 비교 탭의 전송 원문 보존·전달 확인", () => {
     expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([transfer()]);
     view.rerender(room(props));
     expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
-    expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([]);
+    await waitFor(() => expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([]));
     expect(parseCompareSession(readProductionReviewLocalState(transferDraftScope(), "compare-session"), "episode").pool).toHaveLength(1);
   });
 
-  it("샘플 비교는 기존 정책대로 수신함을 읽거나 전달 확인하지 않는다", () => {
-    writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+  it("샘플 비교는 기존 정책대로 수신함을 읽거나 전달 확인하지 않는다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
     render(room(compareProps({ isDemo: true, seedItems: [] })));
     expect(screen.getByTestId("compare-pool").textContent).toBe("");
     expect(peekCompareSendInbox(window.localStorage, transferScope())).toEqual([transfer()]);
+  });
+
+  it.each(["missing-locks", "storage"] as const)("ACK의 %s 실패는 비교 화면과 저장된 초안을 유지하고 원문 보관을 알린다", async (failure) => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+    const key = compareSendInboxKey(transferScope()), original = window.localStorage.getItem(key);
+    if (failure === "missing-locks") Object.defineProperty(navigator, "locks", { configurable: true, value: null });
+    else {
+      const originalSet = Storage.prototype.setItem;
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, requested, value) {
+        if (requested === key) throw new DOMException("ACK 저장 차단", "QuotaExceededError");
+        originalSet.call(this, requested, value);
+      });
+    }
+    render(room(compareProps({ seedItems: [] })));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/기기 저장 또는 전달 확인|saving on this device or confirming/u));
+    expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
+    expect(window.localStorage.getItem(key)).toBe(original);
+    const saved = parseCompareSession(readProductionReviewLocalState(transferDraftScope(), "compare-session"), "episode");
+    expect(saved.pool).toEqual(compareSendInboxToPoolItems([transfer()], "work"));
+  });
+
+  it.each(["account", "account-aba", "unmount", "episode"] as const)("ACK 락 대기 중 %s 전환은 늦은 삭제와 새 화면의 상태 변경을 막는다", async (change) => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+    const key = compareSendInboxKey(transferScope()), original = window.localStorage.getItem(key), held = await holdTransferInbox();
+    let inboxWrites = 0;
+    const nextDraftKey = productionReviewLocalStorageKey(productionReviewLocalScope("account-A", "project", "work", "episode-2"), "compare-session");
+    const originalSet = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, requested, value) {
+      if (requested === key) inboxWrites += 1;
+      // 새 회차도 같은 work 수신함을 읽으므로 새 회차 자신의 ACK는 저장 실패로 막는다.
+      if (change === "episode" && requested === nextDraftKey) throw new DOMException("새 회차 저장 차단", "QuotaExceededError");
+      originalSet.call(this, requested, value);
+    });
+    try {
+      const props = compareProps({ seedItems: [] }), view = render(room(props));
+      expect(screen.getByTestId("compare-pool").textContent).toBe(transfer().pageLabel);
+      if (change === "account") { act(() => publishAuth("account-B")); view.rerender(room(props)); }
+      else if (change === "account-aba") act(() => { publishAuth("account-B"); publishAuth("account-A"); });
+      else if (change === "unmount") view.unmount();
+      else view.rerender(room({ ...props, episodeId: "episode-2" }));
+      await act(held.finish);
+      expect(window.localStorage.getItem(key)).toBe(original);
+      expect(inboxWrites).toBe(0);
+      if (change === "account") {
+        expect(screen.getByTestId("compare-pool").textContent).toBe("");
+        expect(screen.queryByRole("alert")).toBeNull();
+      } else if (change === "unmount") {
+        expect(screen.queryByTestId("crv-room")).toBeNull();
+        expect(screen.queryByRole("alert")).toBeNull();
+      } else {
+        expect(screen.getByRole("alert").textContent).toMatch(/기기 저장|saving on this device/u);
+      }
+    } finally { await act(held.finish); }
+  });
+
+  it("ACK 락 대기 중 현재 session에서 원본을 제거하면 이전 session의 ACK가 수신함을 지우지 않는다", async () => {
+    await writeCompareSendInbox(window.localStorage, transferScope(), transfer());
+    const key = compareSendInboxKey(transferScope()), original = window.localStorage.getItem(key), held = await holdTransferInbox();
+    try {
+      render(room(compareProps({ seedItems: [] })));
+      fireEvent.click(screen.getByRole("button", { name: "비교 소스 제거 " + transfer().pageLabel }));
+      expect(screen.getByTestId("compare-pool").textContent).toBe("");
+      await act(held.finish);
+      expect(window.localStorage.getItem(key)).toBe(original);
+      expect(screen.queryByRole("alert")).toBeNull();
+      const saved = parseCompareSession(readProductionReviewLocalState(transferDraftScope(), "compare-session"), "episode");
+      expect(saved.pool).toEqual([]);
+    } finally { await act(held.finish); }
   });
 });
