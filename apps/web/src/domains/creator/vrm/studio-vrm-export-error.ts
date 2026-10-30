@@ -30,6 +30,7 @@ export type StudioVrmExportErrorCode =
   | "humanoid-node-invalid"
   | "humanoid-node-duplicate"
   | "expression-invalid"
+  | "look-at-invalid"
   | "spring-bone-invalid"
   | "mtoon-invalid"
   // 직렬화
@@ -73,6 +74,7 @@ const MESSAGES: Readonly<Record<StudioVrmExportErrorCode, string>> = Object.free
   "humanoid-node-invalid": "휴머노이드 본이 존재하지 않는 노드를 가리킵니다. 리깅을 다시 확인해 주세요.",
   "humanoid-node-duplicate": "하나의 노드를 여러 휴머노이드 본에 배정할 수 없습니다. 리깅을 정리해 주세요.",
   "expression-invalid": "표정(익스프레션) 설정이 올바르지 않아 VRM으로 내보낼 수 없습니다.",
+  "look-at-invalid": "시선(lookAt) 설정이 올바르지 않아 VRM으로 내보낼 수 없습니다. 눈 본이나 시선 표정을 확인해 주세요.",
   "spring-bone-invalid": "흔들림(스프링 본) 설정이 올바르지 않아 VRM으로 내보낼 수 없습니다.",
   "mtoon-invalid": "MToon 툰 셰이딩 설정값이 허용 범위를 벗어났습니다. 재질 설정을 확인해 주세요.",
   "json-not-serializable": "캐릭터 정보를 VRM 장면 정보로 변환할 수 없습니다. 작업공간을 새로고침해 주세요.",

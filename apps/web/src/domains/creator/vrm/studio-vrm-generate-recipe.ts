@@ -32,7 +32,12 @@ import {
   studioVrmHairRigInverseBindMatrices,
   type StudioVrmHairRig,
 } from "./studio-vrm-hair-rig";
-import { buildStudioVrmHumanoidHairRig, buildStudioVrmHumanoidMesh } from "./studio-vrm-humanoid-mesh";
+import {
+  buildStudioVrmHumanoidHairRig,
+  buildStudioVrmHumanoidMesh,
+  STUDIO_VRM_HUMANOID_MATERIALS,
+  type StudioVrmHumanoidMesh,
+} from "./studio-vrm-humanoid-mesh";
 import { meshClamp } from "./studio-vrm-humanoid-mesh-geometry";
 import {
   STUDIO_VRM_RIG_BONES,
@@ -42,6 +47,7 @@ import {
   type StudioVrmRig,
 } from "./studio-vrm-humanoid-rig";
 
+import type { StudioVrmExportLookAt } from "./studio-vrm-export-look-at";
 import type {
   StudioVrmExportExpression,
   StudioVrmExportExpressionPreset,
@@ -639,6 +645,7 @@ export function buildStudioVrmGenerateAuthoringSnapshot(
     materials: humanoid.materials,
     expressions: { preset, ...(Object.keys(custom).length > 0 ? { custom } : {}) },
     firstPerson,
+    lookAt: generatedLookAt(humanoid),
     ...(hairRig
       ? {
           springBone: buildHairSpringBone(hairRig, rig, firstHairJointNode, hairPivotNode, {
@@ -647,6 +654,44 @@ export function buildStudioVrmGenerateAuthoringSnapshot(
           }),
         }
       : {}),
+  };
+}
+
+/**
+ * 시선 형식의 기본 범위. VRM 1.0 과 three-vrm 이 `expression` 형식에 주는 기본값(90° 에서 가중치 1)과 같다.
+ * 30° 를 보면 시선 표정이 1/3 만큼 걸린다.
+ */
+const GENERATED_LOOK_AT_RANGE = Object.freeze({ inputMaxValue: 90, outputScale: 1 });
+
+/**
+ * 생성 캐릭터의 시선. 눈 본 없이 눈동자 모프(lookUp·lookDown·lookLeft·lookRight)로 시선을 옮기므로
+ * `expression` 형식이다. 원점은 두 눈동자를 감싼 상자의 중심이다. 얼굴은 head 조형 스케일을 받기 전 좌표로
+ * 저작되고 런타임에 head 노드의 스케일을 함께 받으므로, head 조인트와의 차이가 곧 head 로컬 좌표다.
+ */
+function generatedLookAt(humanoid: StudioVrmHumanoidMesh): StudioVrmExportLookAt {
+  const iris = humanoid.parts[humanoid.facePartIndex]?.primitives
+    .find((primitive) => primitive.material === STUDIO_VRM_HUMANOID_MATERIALS.iris);
+  const head = humanoid.rig.worldRest.head;
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  const positions = iris?.positions ?? [];
+  for (let index = 0; index + 2 < positions.length; index += 3) {
+    for (let axis = 0; axis < 3; axis += 1) {
+      min[axis] = Math.min(min[axis], positions[index + axis]);
+      max[axis] = Math.max(max[axis], positions[index + axis]);
+    }
+  }
+  // 눈동자가 없는 얼굴(이론상)은 three-vrm 기본 원점(head 위 6cm)을 쓴다.
+  const offset = positions.length >= 3
+    ? ([0, 1, 2] as const).map((axis) => Math.round(((min[axis] + max[axis]) / 2 - head[axis]) * 1e4) / 1e4)
+    : [0, 0.06, 0];
+  return {
+    type: "expression",
+    offsetFromHeadBone: [offset[0], offset[1], offset[2]],
+    rangeMapHorizontalInner: GENERATED_LOOK_AT_RANGE,
+    rangeMapHorizontalOuter: GENERATED_LOOK_AT_RANGE,
+    rangeMapVerticalDown: GENERATED_LOOK_AT_RANGE,
+    rangeMapVerticalUp: GENERATED_LOOK_AT_RANGE,
   };
 }
 

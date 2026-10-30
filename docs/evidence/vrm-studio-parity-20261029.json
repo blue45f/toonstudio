@@ -4,18 +4,22 @@
   "createdAt": "2026-10-29",
   "baseCommit": "112b5f0750fecd9914faead0dd89f9f814073f54",
   "method": {
-    "reaMcp": "unavailable",
-    "reaMcpNote": "이 클라우드 세션에는 REA(reverse-engineer-anything) MCP 서버가 연결되어 있지 않았고 Ghidra 도 설치되어 있지 않았다. REA 증거 ID(ev_…)는 만들지 않았다.",
+    "rea": "used",
+    "reaNote": "2026-10-30 사용자 허가로 공개 npm 패키지 rea-agents 6.8.0(MIT, github.com/morluto/rea)을 CLI 로 실행했다. 설치 스크립트를 끄고(--ignore-scripts) 격리 디렉터리에 설치했다. 이 세션에는 REA MCP 가 연결되지 않아 같은 도구를 CLI 로 썼다.",
     "productBinary": "not-analyzed",
-    "productBinaryNote": "docs/engines/labs-character-engine-references-2026-10-01.md 5절 10항(독점 제품은 공개 가이드의 워크플로만 재현, 역공학 금지)에 따라 VRoid Studio 실행 파일은 내려받거나 열지 않았다.",
+    "productBinaryNote": "docs/engines/labs-character-engine-references-2026-10-01.md 5절 10항(독점 제품은 공개 가이드의 워크플로만 재현, 역공학 금지)과 REA 면책 조항(라이선스·약관 준수)에 따라 VRoid Studio 실행 파일은 내려받거나 열지 않았다. 네이티브 바이너리를 열지 않았으므로 Ghidra 강제 정책의 적용 대상이 없었다.",
     "substitutes": [
-      "공개 가이드·공지 검색 요약(도움말 본문은 HTTP 403 으로 직접 열람 실패)",
+      "REA 브라우저 캡처: vroid.com 공개 공지(성공), vroid.pixiv.help 도움말(Cloudflare 봇 검증 화면, 우회하지 않음)",
+      "REA 정적 분석: 생성 VRM 을 읽는 MIT 오픈소스 런타임 @pixiv/three-vrm-core·three-vrm-springbone 3.5.5 ES 모듈 빌드",
       "CC0 VRoid Studio 0.8.1 출력 VRM 7종의 GLB JSON 청크 구조 요약(바이너리 청크는 해석하지 않음, Node.js 스크립트)",
-      "저장소 생성 경로 소스·테스트와 설치된 @pixiv/three-vrm 3.5.5(MIT) 로더 계약"
+      "공개 가이드 검색 요약(도움말 본문은 봇 검증으로 직접 열람 실패)",
+      "저장소 생성 경로 소스·테스트"
     ],
     "runtime": {
       "node": "v22.22.0",
-      "threeVrm": "3.5.5"
+      "threeVrm": "3.5.5",
+      "rea": "rea-agents 6.8.0",
+      "chromium": "153.0.8010.12"
     }
   },
   "publicGuides": [
@@ -211,12 +215,16 @@
       "expressions": "프리셋 18종, custom 없음",
       "hairSpring": "체인 길이 자동 조율, 조정 불가",
       "colliders": "몸통 캡슐 1 + 두개골 캡슐 2"
+    },
+    "lookAt": {
+      "vroidCc0": "7종 모두 firstPerson.lookAtTypeName=Bone, firstPersonBoneOffset (0, 0.06, 0), 커브 xRange 90 · yRange 8~16(가로 안쪽 8~8.9, 가로 바깥 12~14.4, 세로 10~16)",
+      "toonStudioBefore": "lookUp·lookDown·lookLeft·lookRight 표정만 있고 VRMC_vrm.lookAt 없음"
     }
   },
   "generatedOutputIdentity": {
-    "note": "편집하지 않은 상태(기본 + 프리셋 21종)의 생성 VRM 바이트 SHA-256. 변경 전 커밋과 변경 후 작업 트리에서 같은 스크립트로 계산했다.",
-    "identical": true,
-    "digests": {
+    "note": "편집하지 않은 상태(기본 + 프리셋 21종)의 생성 VRM 바이트 SHA-256. 시선 정의 추가로 모든 출력이 바뀌었다. 같은 스냅샷에서 lookAt 만 빼고 직렬화한 바이트는 변경 전 커밋의 해시와 22개 모두 같다. 즉 출력 변화는 VRMC_vrm.lookAt 하나다.",
+    "identicalWithoutLookAt": true,
+    "digestsBeforeChange": {
       "default": "191288f3edf7eedf90ffda0dbde475bae01c25ddfb0fba03e077633d6e894bae",
       "natural-short": "191288f3edf7eedf90ffda0dbde475bae01c25ddfb0fba03e077633d6e894bae",
       "soft-bob": "fb0df2ba48c15fb0576ec671b86292635ff41b565767b4ef76af4ee62d074d8f",
@@ -239,15 +247,123 @@
       "wolf-rebel": "dd3638b83ae19d1bdc8f0aae644bca62729a3839c2b037302696cc426a51c577",
       "halfup-idol": "46610991dc3ebdc90600b18e90844396429ae47108bbaf4e93e68b89f98c19e0",
       "pixie-sport": "24029dea986e22dbbc2e5739e6fb3129c2f212827671ae0f813902470303e372"
+    },
+    "digestsAfterLookAt": {
+      "default": "9a9e86806769968063d057f57eeb6291378bdac0af81e2c609dbc4004ccc0ba9",
+      "natural-short": "9a9e86806769968063d057f57eeb6291378bdac0af81e2c609dbc4004ccc0ba9",
+      "soft-bob": "367ce369c53877bb50ae4634d2ecdbfc7c1a37d10e9fe6fcb2f5381e12864f5f",
+      "romance-long": "431cebb05f4e1db277d76a38738700f2efc70b168c4db36c6ea16089532123c4",
+      "action-pony": "b8bcfc786ea99a6ece10225ab54c07487d049c9a8d866f20b098d6184127cb1a",
+      "pop-twin": "83f49a14c43c575b20bd25dd9b762836761714aeddbe52e5bcf29bbb1277d830",
+      "elegant-bun": "22d0089388c7e0a21ebd9945554da444ebaa50ccf2f29b6bf3fcbd8acc92dc62",
+      "androgynous-crop": "1e1a0240ca4889cb08d1a03b240182ba777f1d76c33dba9cd898ab963d2e3830",
+      "silver-senior": "1dfe06fd55fdb651a0548be5ae5dc2485a933345c5b7a788852c20c98050a324",
+      "fiery-long": "3af993e40a233b5c93c5717d069568002836b062c7173fa93a217075258e05a6",
+      "mint-bob": "00af52edc83a7c1ce716d908a087738918731ec445e2fd199600dcc820a8d026",
+      "gold-pony": "e1e7079af1d8ca8a36fd55f0514f73ff9547c5b7c034a508d989906aaa0b6d40",
+      "ink-twin": "14c6b6e49a0a879da096bb17c928847331227c18be40c93334e78500dd8ed546",
+      "sakura-bun": "e7faeba0b420833fd5614c8f85ef8895d3893ab3de0a02143bb8e5966fb81987",
+      "hero-crop": "2eaac836db7510961ce7b9f17de2121488c6fb1e8cc31ac7abf522a1655acb99",
+      "wave-diva": "88d4bada5092dea3a19bf1dffc501856eee163af5a1155097f1ff46f6fc8131b",
+      "braid-scholar": "d7af9f3ab3db8f7a574fd1516f9b9fd5a4e5cf787d68a0799c36b65691767c8d",
+      "twin-braid-village": "969f8f586af023a52bc87cf68217ffda24ecc5922eb85396cec0e357ad5524d2",
+      "hime-noble": "c280dedc1bc7b2da2a4f1a32fb2fa0c051bbbaaea3d2785b88b6fed7ea4c0455",
+      "wolf-rebel": "b5cf08ca805a5087cc158dd279fd08ba865f3f833952c90c3766d8c16e5a7ba7",
+      "halfup-idol": "c27b2b10e1058838ea53cfd38dd57a769157d670c85b39fd4b43ff72ebf78e25",
+      "pixie-sport": "0464dbbd8e82ff0c56ab5bc41cac0aa9f072428d70aa708019ca832be2f60585"
     }
   },
   "ratchets": {
     "studioEagerGraph": "creator/vrm 14/14 (변경 없음)",
     "sourceFileSize": {
       "apps/web/src/domains/creator/vrm/StudioVrmAvatarForgePanel.tsx": "1258 → 1116",
-      "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": "1108 → 1107",
-      "apps/web/src/domains/creator/vrm/studio-vrm-humanoid-mesh.ts": "2029 → 1961"
+      "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": "1108 → 1108",
+      "apps/web/src/domains/creator/vrm/studio-vrm-humanoid-mesh.ts": "2029 → 1961",
+      "apps/web/src/domains/creator/vrm/studio-vrm-export-vrm-extension.ts": "829 → 829",
+      "apps/web/src/domains/creator/vrm/studio-vrm-export-plan.ts": "991 → 990"
     },
     "unconnectedCode": "변경 전 트리와 발견 목록이 같은 807건(기존 기준선 밖 항목), 차이 0건"
+  },
+  "updatedAt": "2026-10-30",
+  "rea": {
+    "evidenceBundlesCommitted": false,
+    "evidenceBundlesNote": "증거 번들(three-vrm-core 18MB 등)은 저장소에 넣지 않았다. 아래 artifactSha256 의 같은 아티팩트에 같은 명령을 다시 실행하면 같은 증거가 재현된다.",
+    "analyses": [
+      {
+        "operation": "analyze_javascript_application",
+        "target": "@pixiv/three-vrm-core 3.5.5 (MIT)",
+        "sourcePath": "lib/three-vrm-core.module.js",
+        "artifactSha256": "097977f468f5d42ac293a1db689df63e6f59f3ac14a17208fb06ed9d53aaa149",
+        "evidenceId": "ev_a3a92d5b466aa8391981f9d0b1b52ccca4d871f38aa79d4708b12c22537c2124",
+        "summaryEvidenceId": "ev_c0a12cee6668ddd97b6d8409f60dcda9fe8c4d9b227365f37adadce639aee095",
+        "statistics": {
+          "visitedAstNodes": 13822,
+          "findings": 66,
+          "semanticNodes": 8497
+        },
+        "locatedCallables": {
+          "expressionLoaderV1": "22945-28818",
+          "expressionImportPerEntry": "24893-28779",
+          "metaLoaderOptions": "108480-108912",
+          "metaLoaderV1": "109421-111697",
+          "metaLoaderV0": "111755-113081",
+          "lookAtLoaderV1": "102557-104188",
+          "lookAtExpressionApplier": "97872-",
+          "lookAtWorldPosition": "89723-"
+        }
+      },
+      {
+        "operation": "analyze_javascript_application",
+        "target": "@pixiv/three-vrm-springbone 3.5.5 (MIT)",
+        "sourcePath": "lib/three-vrm-springbone.module.js",
+        "artifactSha256": "623ea8e044a8112a6e1948d0096e93ca5989c061fa2c834f1853ace9c4bec8c1",
+        "evidenceId": "ev_71590d6f1aa9a70e0b2caa7dfd35a8872c8851952886169a444d4d16f7d2436a",
+        "summaryEvidenceId": "ev_24cca463c2cc6a9faa7dfb1f7af12e8e6d3623dfdb071cb3d89fbfe7bcf4e8f6",
+        "statistics": {
+          "visitedAstNodes": 7201,
+          "findings": 43
+        },
+        "locatedCallables": {
+          "jointSettingsDefaults": "18888-20821",
+          "springBoneLoaderV1": "35392-42306"
+        }
+      },
+      {
+        "operation": "capture_browser_scenario",
+        "target": "https://vroid.com/en/studio/notice/lqLbniPQLCEfU4ZVxadnN",
+        "evidenceId": "ev_a66a0982d8810caafef6a357c389c0e36fe217d3b23a5c32812540cf067b7f1e",
+        "accessibilitySha256": "9f206320133400556b1bc8cf56b1bd010e5ddbd899cc5762d41e5796b2eac953",
+        "observed": "v1.20.0(2023-03-02) VRM1.0 내보내기 추가, VRM0.0 내보내기에서 라이선스가 Other 일 때만 추가 라이선스 정보 URL 입력, 얼굴 메시 없이도 VRM 내보내기"
+      },
+      {
+        "operation": "capture_browser_scenario",
+        "target": "https://vroid.pixiv.help/hc/en-us/articles/900006910023-I-want-to-edit-hair-bounce",
+        "evidenceId": "ev_4342738a358eb1ff79e4b92a6b48f85039e848c0ec30c9b9546a985ef221e38f",
+        "accessibilitySha256": "99d7444861096d65d66052f2edb2a7960419741a906fc3e735450118028a96a0",
+        "observed": "Cloudflare 'Performing security verification' 봇 검증 화면. 본문을 얻지 못했고 우회하지 않았다."
+      }
+    ],
+    "findings": [
+      {
+        "id": "REA-VRM-01",
+        "fact": "VRMC_vrm.lookAt 이 없으면 three-vrm 이 시선을 만들지 않는다. 변경 전 생성 VRM 은 시선 표정 4종만 있고 lookAt 이 없었다.",
+        "action": "expression 형식 lookAt 추가(원점=두 눈동자 가운데, 범위 90°→1)"
+      },
+      {
+        "id": "REA-VRM-02",
+        "fact": "표정 로더는 프리셋 이름 밖의 preset 과 프리셋 이름을 쓴 custom 을 버리고, 모프 바인드는 노드의 모든 프리미티브에 그 모프가 있어야 묶는다.",
+        "action": "커스텀 표정 키(wink 등)가 프리셋 이름과 겹치지 않음을 확인. three-vrm 재적재 테스트에 '표정마다 바인드가 붙고 얼굴 프리미티브 4개를 모두 덮는다' 단언을 추가했다(바인드가 빠지면 표정은 등록돼도 움직이지 않는다)."
+      },
+      {
+        "id": "REA-VRM-03",
+        "fact": "메타 로더는 licenseUrl 이 허용 목록에 없으면 예외를 던지고, 썸네일은 needThumbnailImage 를 켠 뷰어만 images[i].bufferView 로 읽는다.",
+        "action": "licenseUrl 고정, 썸네일을 bufferView 이미지로 넣음. 앱 라이브러리 추출기로도 같은 바이트가 나오는지 테스트 추가"
+      },
+      {
+        "id": "REA-VRM-04",
+        "fact": "스프링본은 이웃한 두 관절을 짝지어 앞 관절의 설정을 쓴다. 관절 1개짜리 스프링은 흔들리지 않는다. 생략값 stiffness 1, dragForce 0.4, gravityPower 0, hitRadius 0.",
+        "action": "생성 VRM 스프링당 관절 4~7개 확인(스타일 프리셋 21종·헤어 스타일 14종), 변경 없음"
+      }
+    ]
   }
 }
