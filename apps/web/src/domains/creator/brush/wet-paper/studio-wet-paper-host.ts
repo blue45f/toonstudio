@@ -14,6 +14,13 @@
  *   않는다. 호스트는 요청 키(프로그램 id·시드·정착 게이트)만 정규화하고, 표는 런타임이 붙인다.
  * - 캐시: 베이크 결과(색과 무관한 광학 밀도)를 dab 서명으로, 합성 래스터(캔버스)를 색으로 나눠 보관한다.
  *   결과는 항목 수·총 셀 수, 래스터는 총 픽셀 수 상한이 있는 LRU다. 색만 바뀐 획은 다시 풀지 않고 합성만 한다.
+ * - 요청자(요소 id·대칭 변형): 같은 요청자가 다른 입력(두께·노드 끌기·색 미리보기)을 요청하면, 아무도 기다리지
+ *   않게 된 이전 작업을 버린다. 그러지 않으면 중간 모양마다 전체 풀이가 줄을 서 마지막 모양이 수십 초 늦었다.
+ * - 핀: 최근(2초) 요청됐거나 막 보관한 결과·래스터와 합성 중인 결과는 소프트 상한 때문에 버리지 않는다. 대칭
+ *   획처럼 한 화면이 상한보다 많이 쓰면 버린 것을 다시 만들고 또 버리는 무한 반복이 생겼다. 하드 상한을 넘으면
+ *   새 것을 보관하지 않고 알리지도 않으며(베이스 워시 유지) 잠시 다시 걸지 않는다.
+ * - 합성과 풀이는 단위마다 번갈아 진행한다(한쪽이 다른 쪽을 굶기지 않는다).
+ * - `waitForStudioWetPaperBakesIdle`: 대기 작업이 모두 끝나면 풀리는 약속(캡처 준비가 기다린다).
  */
 
 import { normalizeStudioWetPaperBakeRequestKey } from "./studio-wet-paper-program-ids";
@@ -55,37 +62,73 @@ interface WetPaperBakeCacheEntry {
   readonly cells: number;
   /** 색 → 합성 캔버스(null = 해석할 수 없는 색이거나 캔버스를 만들 수 없음). */
   readonly rasters: Map<string, StudioWetPaperCanvasBake | null>;
+  /** 마지막 요청 시각(ms)과 색별 래스터 요청 시각 — 핀 판정. */
+  requestedAt: number;
+  readonly rasterRequestedAt: Map<string, number>;
 }
 
-interface PendingSolveJob {
+/** 기다리는 쪽: 리스너와 요청자. 요청자 없이 부른 호출(익명)이 있으면 요청자가 모두 떠나도 작업을 버리지 않는다. */
+interface PendingWaiters {
+  readonly listeners: Set<() => void>;
+  readonly requesters: Set<string>;
+  anonymous: boolean;
+}
+
+interface PendingSolveJob extends PendingWaiters {
   readonly key: string;
   readonly dabs: readonly WetPaperInputDab[];
   readonly signature: Float64Array;
   readonly request: StudioWetPaperBakeRequestKey;
-  /** 처음 요청한 획 색(풀이가 끝나면 이 색으로 곧바로 합성한다). */
+  /** 처음 요청한 획 색(익명 요청자는 풀이가 끝나면 이 색으로 곧바로 합성한다). */
   readonly color: string;
-  readonly listeners: Set<() => void>;
   solve: WetPaperSolve | null;
   seeded: boolean;
 }
 
-interface PendingCompositeJob {
+interface PendingCompositeJob extends PendingWaiters {
   readonly key: string;
   /** 결과 캐시 키(합성 도중 결과가 LRU에서 밀려났는지 확인한다). */
   readonly entryKey: string;
   readonly color: string;
   readonly entry: WetPaperBakeCacheEntry;
-  readonly listeners: Set<() => void>;
   raster: StudioWetPaperRasterJob | null;
   started: boolean;
 }
 
-/** 결과 LRU 상한: 항목 수와 보관 셀 수(셀당 Float32 밀도 + Uint8 덮임 ≈ 5 B → 약 20 MiB). */
-const WET_PAPER_CACHE_MAX_ENTRIES = 48;
-const WET_PAPER_CACHE_MAX_CELLS = 4_000_000;
-/** 래스터(캔버스) 총 픽셀 상한(RGBA8 → 약 24 MiB). 넘으면 가장 오래된 항목의 래스터부터 버린다(다시 합성 가능). */
-const WET_PAPER_RASTER_MAX_PIXELS = 6_000_000;
+/** 요청자(요소·변형)가 마지막으로 요청한 결과 키와 색. */
+interface RequesterState {
+  readonly key: string;
+  readonly color: string;
+}
+
+/** 캐시 상한. 소프트를 넘으면 핀이 아닌 오래된 것부터 버리고, 하드를 넘겨야 하면 새 것을 보관하지 않는다. */
+export interface StudioWetPaperBakeHostLimits {
+  /** 결과 항목 수·보관 셀 수(셀당 Float32 밀도 + Uint8 덮임 ≈ 5 B → 소프트 약 20 MiB). */
+  readonly entrySoftCount: number;
+  readonly entryHardCount: number;
+  readonly cellSoftCount: number;
+  readonly cellHardCount: number;
+  /** 래스터(캔버스) 총 픽셀(RGBA8 → 소프트 약 24 MiB). */
+  readonly rasterSoftPixels: number;
+  readonly rasterHardPixels: number;
+}
+
+/** 하드 상한은 소프트의 2배: 한 화면이 함께 쓰는(핀) 것 때문에 버릴 것이 없을 때 여기까지만 넘친다. */
+const DEFAULT_LIMITS: StudioWetPaperBakeHostLimits = Object.freeze({
+  entrySoftCount: 48,
+  entryHardCount: 96,
+  cellSoftCount: 4_000_000,
+  cellHardCount: 8_000_000,
+  rasterSoftPixels: 6_000_000,
+  rasterHardPixels: 12_000_000,
+});
 const WET_PAPER_MAX_RASTERS_PER_ENTRY = 2;
+/** 이 시간 안에 요청된 결과·래스터는 소프트 상한 때문에 버리지 않는다(한 화면이 함께 쓰는 것). */
+const WET_PAPER_PIN_MS = 2_000;
+/** 하드 상한 때문에 보관을 거절한 키는 이 시간 동안 다시 걸지 않는다(헛도는 작업 방지). */
+const WET_PAPER_REFUSE_MS = 5_000;
+/** 요청자 기록 상한(오래된 것부터 지운다 — 지워진 요청자는 다음 요청에서 새로 시작한다). */
+const WET_PAPER_MAX_REQUESTERS = 2_048;
 /** 조각 예산(ms). 솔버 한 스텝은 보통 1–10 ms라 조각은 예산 + 한 단위 안에서 끝난다. */
 const WET_PAPER_SLICE_BUDGET_MS = 8;
 /** 합성 한 단위의 픽셀 수(행 단위로 올림). 픽셀당 약 0.25 µs라 한 단위 ≈ 4 ms. */
@@ -97,6 +140,12 @@ let bakeCacheCells = 0;
 let rasterPixels = 0;
 const solveJobs = new Map<string, PendingSolveJob>();
 const compositeJobs = new Map<string, PendingCompositeJob>();
+const requesterStates = new Map<string, RequesterState>();
+/** 하드 상한으로 보관을 거절한 결과 키·`결과 키|색`과 그 시각. */
+const refusedAt = new Map<string, number>();
+const idleWaiters = new Set<() => void>();
+let preferComposite = true;
+let limits = DEFAULT_LIMITS;
 let sliceScheduled = false;
 let runtime: WetPaperRuntime | null = null;
 let runtimeLoad: Promise<void> | null = null;
@@ -164,13 +213,35 @@ function rasterArea(bake: StudioWetPaperCanvasBake | null | undefined): number {
 function dropRasters(entry: WetPaperBakeCacheEntry): void {
   for (const bake of entry.rasters.values()) rasterPixels -= rasterArea(bake);
   entry.rasters.clear();
+  entry.rasterRequestedAt.clear();
 }
 
+function dropRaster(entry: WetPaperBakeCacheEntry, color: string): void {
+  rasterPixels -= rasterArea(entry.rasters.get(color));
+  entry.rasters.delete(color);
+  entry.rasterRequestedAt.delete(color);
+}
+
+/** 핀이 아닌(최근 요청되지 않았고 합성 중이 아닌) 오래된 항목부터 소프트 상한 안으로 버린다. */
+function evictEntries(now: number, incomingCells: number): void {
+  const compositing = new Set<WetPaperBakeCacheEntry>();
+  for (const job of compositeJobs.values()) compositing.add(job.entry);
+  for (const [key, entry] of bakeCache) {
+    if (bakeCache.size < limits.entrySoftCount && bakeCacheCells + incomingCells <= limits.cellSoftCount) break;
+    if (now - entry.requestedAt < WET_PAPER_PIN_MS || compositing.has(entry)) continue;
+    bakeCacheCells -= entry.cells;
+    dropRasters(entry);
+    bakeCache.delete(key);
+  }
+}
+
+/** 결과를 보관한다. 핀 때문에 하드 상한을 넘겨야 하면 보관하지 않고 null(잠시 다시 걸지 않는다). */
 function storeEntry(
   key: string,
   signature: Float64Array,
   result: StudioWetPaperBakeResult | null,
-): WetPaperBakeCacheEntry {
+): WetPaperBakeCacheEntry | null {
+  const now = nowMs();
   const existing = bakeCache.get(key);
   if (existing) {
     bakeCache.delete(key);
@@ -178,39 +249,56 @@ function storeEntry(
     dropRasters(existing);
   }
   const cells = result ? result.width * result.height : 0;
-  const entry: WetPaperBakeCacheEntry = { signature, result, cells, rasters: new Map() };
+  evictEntries(now, cells);
+  if (bakeCache.size >= limits.entryHardCount || bakeCacheCells + cells > limits.cellHardCount) {
+    refusedAt.set(key, now);
+    return null;
+  }
+  const entry: WetPaperBakeCacheEntry = {
+    signature, result, cells, rasters: new Map(), requestedAt: now, rasterRequestedAt: new Map(),
+  };
   bakeCache.set(key, entry);
   bakeCacheCells += cells;
-  while (bakeCache.size > WET_PAPER_CACHE_MAX_ENTRIES || bakeCacheCells > WET_PAPER_CACHE_MAX_CELLS) {
-    const oldestKey = bakeCache.keys().next().value;
-    if (oldestKey === undefined || oldestKey === key) break;
-    const oldest = bakeCache.get(oldestKey);
-    if (oldest) {
-      bakeCacheCells -= oldest.cells;
-      dropRasters(oldest);
-    }
-    bakeCache.delete(oldestKey);
-  }
   return entry;
 }
 
-function storeRaster(entry: WetPaperBakeCacheEntry, color: string, bake: StudioWetPaperCanvasBake | null): void {
-  const previous = entry.rasters.get(color);
-  if (previous !== undefined) rasterPixels -= rasterArea(previous);
-  entry.rasters.delete(color);
-  entry.rasters.set(color, bake);
-  rasterPixels += rasterArea(bake);
-  while (entry.rasters.size > WET_PAPER_MAX_RASTERS_PER_ENTRY) {
+/**
+ * 래스터를 보관한다. 핀 때문에 하드 상한을 넘겨야 하면 보관하지 않고 false(잠시 다시 걸지 않는다).
+ * 막 보관한 래스터는 핀이다(알림을 받은 요청자가 다시 렌더해 가져가기 전에 다른 래스터에 밀려나면, 대칭 획처럼
+ * 한 화면이 여럿을 쓸 때 서로 밀어내며 합성을 끝없이 되풀이했다).
+ */
+function storeRaster(
+  entryKey: string,
+  entry: WetPaperBakeCacheEntry,
+  color: string,
+  bake: StudioWetPaperCanvasBake | null,
+): boolean {
+  const now = nowMs();
+  const area = rasterArea(bake);
+  if (entry.rasters.has(color)) dropRaster(entry, color);
+  while (entry.rasters.size >= WET_PAPER_MAX_RASTERS_PER_ENTRY) {
     const oldestColor = entry.rasters.keys().next().value;
     if (oldestColor === undefined) break;
-    rasterPixels -= rasterArea(entry.rasters.get(oldestColor));
-    entry.rasters.delete(oldestColor);
+    dropRaster(entry, oldestColor);
   }
-  // 총 픽셀 상한: 가장 오래 안 쓴 항목의 래스터부터 버린다(지금 넣은 항목은 남긴다).
+  // 총 픽셀 소프트 상한: 다른 항목의 핀이 아닌 래스터부터 오래된 순으로 버린다.
   for (const other of bakeCache.values()) {
-    if (rasterPixels <= WET_PAPER_RASTER_MAX_PIXELS) break;
-    if (other !== entry) dropRasters(other);
+    if (rasterPixels + area <= limits.rasterSoftPixels) break;
+    if (other === entry) continue;
+    for (const otherColor of other.rasters.keys()) {
+      if (rasterPixels + area <= limits.rasterSoftPixels) break;
+      if (now - (other.rasterRequestedAt.get(otherColor) ?? 0) < WET_PAPER_PIN_MS) continue;
+      dropRaster(other, otherColor);
+    }
   }
+  if (rasterPixels + area > limits.rasterHardPixels) {
+    refusedAt.set(`${entryKey}|${color}`, now);
+    return false;
+  }
+  entry.rasters.set(color, bake);
+  entry.rasterRequestedAt.set(color, now);
+  rasterPixels += area;
+  return true;
 }
 
 /** 합성 래스터 → 캔버스. 문서가 없거나(워커·테스트) 2D 컨텍스트가 없으면 null. */
@@ -241,16 +329,24 @@ function finishRaster(raster: StudioWetPaperRaster): StudioWetPaperCanvasBake | 
     : null;
 }
 
+function attachWaiter(waiters: PendingWaiters, listeners: Iterable<() => void>, requesters: Iterable<string>, anonymous: boolean): void {
+  for (const listener of listeners) waiters.listeners.add(listener);
+  for (const requester of requesters) waiters.requesters.add(requester);
+  if (anonymous) waiters.anonymous = true;
+}
+
 function enqueueComposite(
   key: string,
   entry: WetPaperBakeCacheEntry,
   color: string,
   listeners: Iterable<() => void>,
+  requesters: Iterable<string>,
+  anonymous: boolean,
 ): void {
   const compositeKey = `${key}|${color}`;
   const pending = compositeJobs.get(compositeKey);
   if (pending) {
-    for (const listener of listeners) pending.listeners.add(listener);
+    attachWaiter(pending, listeners, requesters, anonymous);
     return;
   }
   compositeJobs.set(compositeKey, {
@@ -259,9 +355,50 @@ function enqueueComposite(
     color,
     entry,
     listeners: new Set(listeners),
+    requesters: new Set(requesters),
+    anonymous,
     raster: null,
     started: false,
   });
+}
+
+/** 요청자가 떠난 작업: 아무도(익명 포함) 기다리지 않으면 버린다. */
+function detachRequester<T extends PendingWaiters>(jobs: Map<string, T>, key: string, requester: string): void {
+  const job = jobs.get(key);
+  if (!job || !job.requesters.delete(requester)) return;
+  if (job.requesters.size === 0 && !job.anonymous) jobs.delete(key);
+}
+
+/** 같은 요청자가 다른 결과·색을 요청하면 이전 대기 작업에서 떼어 낸다(아무도 안 기다리면 버린다). */
+function supersede(requester: string, key: string, color: string): void {
+  const previous = requesterStates.get(requester);
+  requesterStates.delete(requester);
+  requesterStates.set(requester, { key, color });
+  while (requesterStates.size > WET_PAPER_MAX_REQUESTERS) {
+    const oldest = requesterStates.keys().next().value;
+    if (oldest === undefined) break;
+    requesterStates.delete(oldest);
+  }
+  if (!previous) return;
+  if (previous.key !== key) detachRequester(solveJobs, previous.key, requester);
+  if (previous.key !== key || previous.color !== color) {
+    detachRequester(compositeJobs, `${previous.key}|${previous.color}`, requester);
+  }
+}
+
+function recentlyRefused(key: string, now: number): boolean {
+  const at = refusedAt.get(key);
+  if (at === undefined) return false;
+  if (now - at < WET_PAPER_REFUSE_MS) return true;
+  refusedAt.delete(key);
+  return false;
+}
+
+function resolveIdleWaiters(): void {
+  if (solveJobs.size > 0 || compositeJobs.size > 0) return;
+  const waiters = [...idleWaiters];
+  idleWaiters.clear();
+  for (const resolve of waiters) resolve();
 }
 
 function ensureRuntime(): void {
@@ -278,6 +415,7 @@ function ensureRuntime(): void {
       runtimeLoad = null;
       solveJobs.clear();
       compositeJobs.clear();
+      resolveIdleWaiters();
     },
   );
 }
@@ -304,13 +442,29 @@ function advanceSolveJob(loaded: WetPaperRuntime, job: PendingSolveJob, ready: S
   }
   solveJobs.delete(job.key);
   const entry = storeEntry(job.key, job.signature, job.solve ? loaded.finishWetPaperSolve(job.solve) : null);
+  // 하드 상한으로 보관하지 못했으면 알리지 않는다(다시 그려도 같은 거절이라 헛돈다 — 베이스 워시 유지).
+  if (!entry) return true;
   if (entry.result) {
-    // 같은 조각 흐름에서 곧바로 이 색을 합성한다(다시 렌더되기 전에 래스터까지 준비).
-    enqueueComposite(job.key, entry, job.color, job.listeners);
+    enqueueSolvedComposites(job, entry);
   } else {
     for (const listener of job.listeners) ready.add(listener);
   }
   return true;
+}
+
+/** 풀이가 끝난 결과를 기다리는 요청자마다 지금 요청한 색으로 곧바로 합성한다(다시 렌더되기 전에 래스터까지). */
+function enqueueSolvedComposites(job: PendingSolveJob, entry: WetPaperBakeCacheEntry): void {
+  const byColor = new Map<string, string[]>();
+  for (const requester of job.requesters) {
+    const state = requesterStates.get(requester);
+    if (state?.key !== job.key) continue;
+    byColor.set(state.color, [...(byColor.get(state.color) ?? []), requester]);
+  }
+  if (job.anonymous || byColor.size === 0) {
+    enqueueComposite(job.key, entry, job.color, job.listeners, byColor.get(job.color) ?? [], true);
+    byColor.delete(job.color);
+  }
+  for (const [color, requesters] of byColor) enqueueComposite(job.key, entry, color, job.listeners, requesters, false);
 }
 
 /** 합성 작업 한 단위(시작 또는 몇 행 또는 캔버스 마감). 이 작업이 끝났으면 true. */
@@ -326,8 +480,10 @@ function advanceCompositeJob(loaded: WetPaperRuntime, job: PendingCompositeJob, 
   }
   compositeJobs.delete(job.key);
   // 합성하는 사이 결과가 LRU에서 밀려났으면 래스터를 보관하지 않는다(다시 요청하면 처음부터 다시 굽는다).
-  if (bakeCache.get(job.entryKey) === job.entry) {
-    storeRaster(job.entry, job.color, job.raster ? finishRaster(job.raster.raster) : null);
+  // 하드 상한으로 보관하지 못했으면 알리지 않는다(다시 그려도 같은 거절이라 헛돈다).
+  if (bakeCache.get(job.entryKey) === job.entry
+    && !storeRaster(job.entryKey, job.entry, job.color, job.raster ? finishRaster(job.raster.raster) : null)) {
+    return true;
   }
   for (const listener of job.listeners) ready.add(listener);
   return true;
@@ -339,27 +495,29 @@ function runSlice(): void {
   if (!loaded) return;
   const startedAt = nowMs();
   const ready = new Set<() => void>();
-  // 진행 보장: 조각은 예산을 단위마다 먼저 확인하되, 시작한 조각은 최소 한 단위를 실행한다.
+  // 진행 보장: 조각은 예산을 단위마다 먼저 확인하되, 시작한 조각은 최소 한 단위를 실행한다. 합성과 풀이는
+  // 단위마다 번갈아 진행해 어느 쪽도 다른 쪽을 굶기지 않는다.
   let first = true;
   while (first || nowMs() - startedAt < WET_PAPER_SLICE_BUDGET_MS) {
     first = false;
     const composite = compositeJobs.values().next().value;
-    if (composite) {
-      advanceCompositeJob(loaded, composite, ready);
-      continue;
-    }
     const solve = solveJobs.values().next().value;
-    if (!solve) break;
-    advanceSolveJob(loaded, solve, ready);
+    if (!composite && !solve) break;
+    const runComposite = composite !== undefined && (solve === undefined || preferComposite);
+    preferComposite = !preferComposite;
+    if (runComposite) advanceCompositeJob(loaded, composite, ready);
+    else if (solve) advanceSolveJob(loaded, solve, ready);
   }
   // 알림은 예산 밖에서 한다(렌더 예약만 한다).
   for (const listener of ready) listener();
+  resolveIdleWaiters();
   scheduleSlice();
 }
 
 /**
  * 렌더 안전 진입점(StudioDrawNode 수채 커밋 경로). 굽힌 래스터가 이미 있으면 돌려주고, 없으면 시분할 작업을
  * 걸고 null을 돌려준다(호출자는 이번 프레임에 베이스 워시를 그린다). 알 수 없는 프로그램·빈 dab은 null이다.
+ * `requester`(요소 id·변형 번호)를 주면 같은 요청자의 이전 요청 중 아무도 기다리지 않게 된 작업을 버린다.
  */
 export function requestStudioWetPaperBake(
   dabs: readonly WetPaperInputDab[],
@@ -367,8 +525,22 @@ export function requestStudioWetPaperBake(
   color: string,
   onReady: () => void,
   renderGeneration = 0,
+  requester?: string,
 ): StudioWetPaperCanvasBake | null {
   void renderGeneration;
+  const bake = requestBake(dabs, request, color, onReady, requester);
+  // 대체로 이전 작업이 빠져 대기 작업이 하나도 남지 않았으면 기다리는 쪽(캡처 준비)을 깨운다.
+  resolveIdleWaiters();
+  return bake;
+}
+
+function requestBake(
+  dabs: readonly WetPaperInputDab[],
+  request: StudioWetPaperBakeRequest,
+  color: string,
+  onReady: () => void,
+  requester: string | undefined,
+): StudioWetPaperCanvasBake | null {
   const bakeKey = normalizeStudioWetPaperBakeRequestKey({
     seed: request.seed,
     phase: "settled",
@@ -378,20 +550,27 @@ export function requestStudioWetPaperBake(
   if (typeof globalThis.setTimeout !== "function") return null;
   const signature = computeSignature(dabs);
   const key = cacheKey(bakeKey, dabs.length, signature);
+  const now = nowMs();
+  if (requester) supersede(requester, key, color);
+  const requesters = requester ? [requester] : [];
   const entry = readEntry(key, signature);
   if (entry) {
+    entry.requestedAt = now;
     if (!entry.result) return null;
     const cached = entry.rasters.get(color);
     if (cached !== undefined) {
       entry.rasters.delete(color);
       entry.rasters.set(color, cached);
+      entry.rasterRequestedAt.set(color, now);
       return cached;
     }
-    enqueueComposite(key, entry, color, [onReady]);
+    if (recentlyRefused(`${key}|${color}`, now)) return null;
+    enqueueComposite(key, entry, color, [onReady], requesters, !requester);
   } else {
+    if (recentlyRefused(key, now)) return null;
     const pending = solveJobs.get(key);
     if (pending) {
-      pending.listeners.add(onReady);
+      attachWaiter(pending, [onReady], requesters, !requester);
       return null;
     }
     solveJobs.set(key, {
@@ -401,6 +580,8 @@ export function requestStudioWetPaperBake(
       request: bakeKey,
       color,
       listeners: new Set([onReady]),
+      requesters: new Set(requesters),
+      anonymous: !requester,
       solve: null,
       seeded: false,
     });
@@ -408,6 +589,32 @@ export function requestStudioWetPaperBake(
   ensureRuntime();
   scheduleSlice();
   return null;
+}
+
+/**
+ * 대기 중인 굽기·합성이 모두 끝나면(또는 런타임을 불러오지 못하면) 풀리는 약속. 캡처 준비가 커밋 획이 굽힌
+ * 래스터로 그려질 때까지 기다리는 데 쓴다. signal 이 중단되면 거부한다.
+ */
+export function waitForStudioWetPaperBakesIdle(signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) return Promise.reject(signal.reason);
+  if (!studioWetPaperBakesPending()) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = (): void => {
+      idleWaiters.delete(done);
+      reject(signal?.reason);
+    };
+    const done = (): void => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    };
+    idleWaiters.add(done);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+/** 대기 중인 굽기·합성이 있는지(런타임을 불러오지 못했으면 굽지 않으므로 false). */
+export function studioWetPaperBakesPending(): boolean {
+  return !runtimeFailed && (solveJobs.size > 0 || compositeJobs.size > 0);
 }
 
 /** 굽힌 래스터를 요소 로컬 좌표에 그린다(획 불투명도는 globalAlpha로 한 번 곱한다). */
@@ -448,14 +655,15 @@ export function rememberStudioWetPaperBakeResult(
   if (!pending) return;
   // 같은 키의 대기 작업은 동기 결과로 대체한다. 합성이 남았으면 넘기고, 아니면 새 태스크에서 깨운다.
   solveJobs.delete(key);
-  if (entry.result && runtime) {
-    enqueueComposite(key, entry, pending.color, pending.listeners);
+  if (entry?.result && runtime) {
+    enqueueSolvedComposites(pending, entry);
     scheduleSlice();
     return;
   }
   const listeners = [...pending.listeners];
   globalThis.setTimeout(() => {
     for (const listener of listeners) listener();
+    resolveIdleWaiters();
   }, 0);
 }
 
@@ -466,7 +674,16 @@ export function resetStudioWetPaperBakeHostForTests(): void {
   rasterPixels = 0;
   solveJobs.clear();
   compositeJobs.clear();
+  requesterStates.clear();
+  refusedAt.clear();
+  preferComposite = true;
   runtimeFailed = false;
+  resolveIdleWaiters();
+}
+
+/** 테스트 격리: 캐시 상한을 바꾼다(null = 기본값). 바뀐 상한은 다음 보관부터 적용된다. */
+export function setStudioWetPaperBakeHostLimitsForTests(next: Partial<StudioWetPaperBakeHostLimits> | null): void {
+  limits = next ? Object.freeze({ ...DEFAULT_LIMITS, ...next }) : DEFAULT_LIMITS;
 }
 
 /** 테스트 진단: 캐시 항목·셀·래스터 픽셀과 대기 작업 수. */
