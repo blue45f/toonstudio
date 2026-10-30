@@ -1496,7 +1496,7 @@ import { translateNow, useT } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK } from "@/shared/lib/studio-work-asset-contract";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
-import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { getAuthUserId, useSession } from "@/domains/auth/public/session/auth-session-store";
 import { loadStudioWriterRoomRuntime } from "./studio-cuttoon-editor/runtime/loadStudioWriterRoomRuntime";
 import {
   afterInspectorCommit,
@@ -17029,27 +17029,27 @@ const puppetWarpArmed =
     if (!markStudioDocumentChanged()) return;
     updateActivePage({ animTimeline: setKeyframe(animTimeline, trackId, frameIndex, { id: uid(), src }) });
   }
-  // 비교 검수로 보내기 — 현재 페이지 캔버스를 캡처해 workId 키 수신함(compare-send-inbox)에
-  // 넣는다. 회차 룸이 마운트 때 이 수신함을 소비해 비교 풀의 reference 소스로 합친다.
-  // 에디터는 제작 관리의 프로젝트·회차 id를 모르므로 채널은 workId로 정한다(모듈 주석 참고).
+  // 비교 검수로 보내기 — 캡처 시작 계정과 workId의 수신함에 넣고 회차 룸이 같은 소유자 원문만 소비한다.
   async function sendCurrentPageToCompareReview() {
-    if (!workId) {
+    if (!workId || !studioAuthReady) {
       announceDrawingShortcut("작품으로 연결된 뒤에 비교 검수로 보낼 수 있어요.");
       return;
     }
-    const stage = stageRef.current;
-    if (!stage) return;
+    const stage = stageRef.current, ownerUserId = getAuthUserId();
+    if (!stage || ownerUserId !== studioAuthUserId) return;
     const previousSelection = selectedId;
     setSelectedId(null); // Transformer 핸들 캡처 방지(captureAnimFrame와 동일 관행)
     await new Promise((r) => setTimeout(r, 60)); // 재렌더 대기(동일 관행)
+    if (getAuthUserId() !== ownerUserId) return;
     const src = readStageInDocumentView(stage, () => readStudioAuthoritativeStageFrame({
       revokeRasterHandoff: () => revokeStudioRasterHandoffRef.current(),
       drawStage: () => stage.draw(),
       read: () => stage.toDataURL({ pixelRatio: 1 }),
     }), 2);
     if (previousSelection) setSelectedId(previousSelection);
-    const { writeCompareSendInbox } = await import("./production-hub/compare-send-inbox");
-    const result = writeCompareSendInbox(window.localStorage, workId, {
+    const { writeCompareSendInbox, compareSendInboxScope } = await import("./production-hub/compare-send-inbox");
+    if (getAuthUserId() !== ownerUserId) return;
+    const result = writeCompareSendInbox(window.localStorage, compareSendInboxScope(ownerUserId, workId), {
       id: uid(),
       pageId: activePage.id,
       pageLabel: `에디터 · ${pageDisplayName(activePage, activePageIndex)}`,

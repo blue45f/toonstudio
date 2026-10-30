@@ -3,10 +3,10 @@
  *
  * 에디터(StudioCuttoonEditorHost)는 작품(workId)과 현재 페이지는 알지만
  * 제작 관리의 프로젝트·회차 id는 모른다. 반대로 회차 룸은 workId를 안다.
- * 그래서 전송 채널은 workId 키의 로컬 수신함으로 정한다:
+ * 그래서 전송 채널은 실제 로그인 소유자와 workId로 나눈 로컬 수신함으로 정한다:
  *
- *   에디터: 현재 캔버스 캡처(data URL) → addToCompareSendInbox(workId, entry)
- *   회차 룸: 마운트 시 consumeCompareSendInbox(workId) → reference 풀 항목으로 합류 → 비움
+ *   에디터: 현재 캔버스 캡처(data URL) → writeCompareSendInbox(scope, entry)
+ *   비교 탭: peekCompareSendInbox(scope) → 비교 초안 저장·재확인 → 정확한 원문 항목만 ACK
  *
  * 항목은 compare-review-model의 reference 소스로 변환된다(에디터에서 보낸
  * 캔버스는 "레퍼런스"로서 비교 풀에 들어간다는 FLAGSHIP §4의 원래 설계).
@@ -14,9 +14,12 @@
  * data URL은 로컬 저장소 용량을 지키기 위해 상한을 두고, 넘는 항목은 명시적으로 거부한다.
  */
 
-import { poolItemFromReference, type ComparePoolItem } from "./compare-review-model";
+import { compareSourceKey, poolItemFromReference, type ComparePoolItem } from "./compare-review-model";
+import { isProductionReviewLocalOwnerCurrent, productionReviewLocalOwner,
+  type ProductionReviewLocalOwner } from "./production-review-local-state";
 
 export const COMPARE_SEND_INBOX_PREFIX = "toonstudio.compare-send-inbox.";
+const SCOPED_PREFIX = "toonstudio.compare-send-inbox-scoped.v1:";
 /** 수신함에 쌓아 둘 최대 항목 수(오래된 것부터 버려진다). */
 export const COMPARE_SEND_INBOX_LIMIT = 8;
 /** data URL 1건의 최대 길이. 로컬 저장소(통상 5MB) 안에서 안전하게 잡은 값. */
@@ -31,8 +34,18 @@ export interface CompareSendInboxEntry {
   readonly sentAt: string;
 }
 
-export function compareSendInboxKey(workId: string): string {
-  return `${COMPARE_SEND_INBOX_PREFIX}${workId}`;
+export interface CompareSendInboxScope {
+  readonly owner: ProductionReviewLocalOwner;
+  readonly workId: string;
+}
+export function compareSendInboxScope(userId: string | null, workId: string, isDemo = false): CompareSendInboxScope {
+  return { owner: productionReviewLocalOwner(userId, isDemo), workId };
+}
+function scopeKey(scope: CompareSendInboxScope): string {
+  return JSON.stringify([scope.owner.kind, scope.owner.kind === "account" ? scope.owner.userId : scope.owner.mode, scope.workId]);
+}
+export function compareSendInboxKey(scope: CompareSendInboxScope): string {
+  return SCOPED_PREFIX + encodeURIComponent(scopeKey(scope));
 }
 
 /** 에디터 전송 항목이 속할 가상 보드 id. reference 소스의 정체성(boardId::itemId)이 된다. */
@@ -104,31 +117,88 @@ export interface CompareSendStorage {
   removeItem(key: string): void;
 }
 
+function readScopedEntries(raw: string | null, scope: CompareSendInboxScope): CompareSendInboxEntry[] | null {
+  if (raw === null) return [];
+  const envelope: unknown = JSON.parse(raw);
+  if (envelope === null || typeof envelope !== "object" || Array.isArray(envelope)) return null;
+  const value = envelope as Record<string, unknown>;
+  if (value.version !== 1 || value.scope !== scopeKey(scope) || typeof value.payload !== "string") return null;
+  const entries: unknown = JSON.parse(value.payload);
+  if (!Array.isArray(entries) || entries.length > COMPARE_SEND_INBOX_LIMIT || !entries.every(isEntry)
+    || entries.some((entry) => Object.keys(entry).some((key) => !["id", "pageId", "pageLabel", "imageUrl", "sentAt"].includes(key)))) return null;
+  return entries;
+}
+
+function writeScopedEntries(storage: CompareSendStorage, scope: CompareSendInboxScope, entries: readonly CompareSendInboxEntry[]): boolean {
+  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return false;
+  storage.setItem(compareSendInboxKey(scope), JSON.stringify({ version: 1, scope: scopeKey(scope), payload: JSON.stringify(entries) }));
+  return true;
+}
+
+/** 렌더 초기화에서도 읽기만 한다. 전달 확인 전에는 수신함 원문을 건드리지 않는다. */
+export function peekCompareSendInbox(storage: CompareSendStorage, scope: CompareSendInboxScope): CompareSendInboxEntry[] {
+  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return [];
+  try {
+    const entries = readScopedEntries(storage.getItem(compareSendInboxKey(scope)), scope);
+    return isProductionReviewLocalOwnerCurrent(scope.owner) ? entries ?? [] : [];
+  } catch { return []; }
+}
+
+function sameEntry(left: CompareSendInboxEntry, right: CompareSendInboxEntry): boolean {
+  return left.id === right.id && left.pageId === right.pageId && left.pageLabel === right.pageLabel
+    && left.imageUrl === right.imageUrl && left.sentAt === right.sentAt;
+}
+
+/** 새 전송본·교체본은 보존한다. localStorage의 탭 사이 읽기와 쓰기는 CAS가 아니다. */
+export function acknowledgeCompareSendInbox(storage: CompareSendStorage, scope: CompareSendInboxScope,
+  delivered: readonly CompareSendInboxEntry[]): boolean {
+  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return false;
+  try {
+    const entries = readScopedEntries(storage.getItem(compareSendInboxKey(scope)), scope);
+    if (entries === null || !isProductionReviewLocalOwnerCurrent(scope.owner)) return false;
+    const remaining = entries.filter((candidate) => !delivered.some((entry) => sameEntry(entry, candidate)));
+    return remaining.length === entries.length || writeScopedEntries(storage, scope, remaining);
+  } catch { return false; }
+}
+
+/** 실제 비교 pool이 원래 reference의 이미지·라벨·시각을 보존한 경우에만 전달 확인 대상으로 삼는다. */
+export function compareSendInboxEntryInPool(entry: CompareSendInboxEntry, workId: string, pool: readonly ComparePoolItem[]): boolean {
+  const id = compareSourceKey({ kind: "reference", boardId: compareSendBoardId(workId), itemId: entry.id });
+  return pool.some((item) => item.id === id && item.source.kind === "reference" && item.source.boardId === compareSendBoardId(workId)
+    && item.source.itemId === entry.id && item.label === entry.pageLabel && item.imageUrl === entry.imageUrl
+    && item.addedBy === "editor" && item.addedAt === entry.sentAt && item.rightsNote === undefined);
+}
+
 /** 에디터 측 기록. 저장 실패(용량 등)는 throw하지 않고 결과로 알린다. */
 export function writeCompareSendInbox(
   storage: CompareSendStorage,
-  workId: string,
+  scope: CompareSendInboxScope,
   entry: CompareSendInboxEntry,
-): AddCompareSendResult | { readonly ok: false; readonly reason: "storage-failed" } {
-  const added = addCompareSendInboxEntry(parseCompareSendInbox(storage.getItem(compareSendInboxKey(workId))), entry);
-  if (!added.ok) return added;
+): AddCompareSendResult | { readonly ok: false; readonly reason: "storage-failed" | "scope-changed" } {
+  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return { ok: false, reason: "scope-changed" };
   try {
-    storage.setItem(compareSendInboxKey(workId), JSON.stringify(added.entries));
+    const entries = readScopedEntries(storage.getItem(compareSendInboxKey(scope)), scope);
+    if (entries === null) return { ok: false, reason: "storage-failed" };
+    const added = addCompareSendInboxEntry(entries, entry);
+    if (!added.ok) return added;
+    return writeScopedEntries(storage, scope, added.entries) ? added : { ok: false, reason: "scope-changed" };
   } catch {
     return { ok: false, reason: "storage-failed" };
   }
-  return added;
 }
 
 /** 회차 룸 측 소비: 읽고 비운다. 한 번 풀에 들어간 전송본이 다음 방문에 중복되지 않게 한다. */
 export function consumeCompareSendInbox(
   storage: CompareSendStorage,
-  workId: string,
+  scope: CompareSendInboxScope,
 ): CompareSendInboxEntry[] {
-  const key = compareSendInboxKey(workId);
-  const entries = parseCompareSendInbox(storage.getItem(key));
-  if (entries.length) {
-    try { storage.removeItem(key); } catch { /* 비우기 실패는 중복 방지가 약해질 뿐 비교를 막지 않는다 */ }
-  }
-  return entries;
+  if (!isProductionReviewLocalOwnerCurrent(scope.owner)) return [];
+  try {
+    const key = compareSendInboxKey(scope), entries = readScopedEntries(storage.getItem(key), scope);
+    if (entries === null || !isProductionReviewLocalOwnerCurrent(scope.owner)) return [];
+    if (entries.length) {
+      try { storage.removeItem(key); } catch { /* 비우기 실패는 중복 방지가 약해질 뿐 비교를 막지 않는다 */ }
+    }
+    return entries;
+  } catch { return []; }
 }

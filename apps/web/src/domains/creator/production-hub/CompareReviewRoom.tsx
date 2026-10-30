@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
 
 import type { StudioCommentActor, StudioCommentsDocument } from "../studio-comments";
 import { CompareReviewViewer } from "./CompareReviewViewer";
@@ -34,6 +35,9 @@ import {
   type CompareReviewSnapshot,
 } from "./compare-review-snapshot";
 import type { ManuscriptPinAssigneeOption } from "./manuscript-pin-feedback-model";
+import { productionReviewLocalScope, productionReviewLocalScopeKey, readProductionReviewLocalState,
+  writeProductionReviewLocalState, type ProductionReviewLocalScope } from "./production-review-local-state";
+import { acknowledgeCompareSendInbox, compareSendInboxEntryInPool, compareSendInboxToPoolItems, peekCompareSendInbox } from "./compare-send-inbox";
 
 function createAssetId(prefix: string): string {
   if (typeof globalThis.crypto?.randomUUID === "function") return `${prefix}-${globalThis.crypto.randomUUID()}`;
@@ -60,7 +64,10 @@ function urlLabel(url: string): string {
 }
 
 export interface CompareReviewRoomProps {
+  readonly projectId: string;
+  readonly workId: string;
   readonly episodeId: string;
+  readonly isDemo?: boolean;
   /** 풀의 씨앗(버전 소스). 페이지 배선이 닿지 않은 경우 비워 두면 빈 풀로 시작한다. */
   readonly seedItems?: readonly ComparePoolItem[];
   /** 콘티 프리셋이 찾을 콘티 공정의 식별자(revision 소스의 processId). */
@@ -88,10 +95,20 @@ export interface CompareReviewRoomProps {
 
 /**
  * 회차 룸의 "버전 비교" 탭 본체. 소스 풀 + 비교 뷰어 + 핀 게이트 집계를 한곳에서 소유한다.
- * 세션은 회차 단위로 이 기기에 저장된다(1단계 — 서버 계약이 생기면 같은 직렬화 포맷으로 이관).
+ * 세션은 로그인 계정·작품·프로젝트·회차 단위로 이 기기에 저장된다.
  */
-export function CompareReviewRoom({
+export function CompareReviewRoom(props: CompareReviewRoomProps) {
+  const userId = useAuthActorId();
+  const scope = useMemo(() => productionReviewLocalScope(userId, props.projectId, props.workId, props.episodeId, props.isDemo),
+    [userId, props.projectId, props.workId, props.episodeId, props.isDemo]);
+  return <ScopedCompareReviewRoom key={productionReviewLocalScopeKey(scope)} {...props} localScope={scope} />;
+}
+
+function ScopedCompareReviewRoom({
+  localScope,
+  workId,
   episodeId,
+  isDemo = false,
   seedItems = [],
   storyboardProcessId = null,
   previousEpisodePages = [],
@@ -104,27 +121,31 @@ export function CompareReviewRoom({
   onPinGateSummaryChange,
   manuscriptsHref,
   onCreateCompareSnapshot,
-}: CompareReviewRoomProps) {
+}: CompareReviewRoomProps & { readonly localScope: ProductionReviewLocalScope }) {
   const bt = useBilingual("CompareReview");
-  const storageKey = `toonstudio.compare-review.${episodeId}`;
   const actorId = currentActor.id ?? "me";
+  const [incoming] = useState(() => {
+    if (isDemo || typeof window === "undefined") return [];
+    try { return peekCompareSendInbox(window.localStorage, localScope); } catch { return []; }
+  });
 
   const [session, setSession] = useState<CompareSession>(() => {
     let restored = createEmptyCompareSession(episodeId);
     try {
       if (typeof window !== "undefined") {
-        restored = parseCompareSession(window.localStorage.getItem(storageKey), episodeId);
+        restored = parseCompareSession(readProductionReviewLocalState(localScope, "compare-session"), episodeId);
       }
     } catch {
       /* 저장소 접근 실패 시 빈 세션으로 시작 */
     }
-    const withSeeds = addComparePoolItems(restored, seedItems);
+    const withSeeds = addComparePoolItems(addComparePoolItems(restored, seedItems), compareSendInboxToPoolItems(incoming, workId));
     return withSeeds.panes.length >= 2
       ? withSeeds
       : { ...withSeeds, panes: defaultComparePanes(withSeeds.pool) };
   });
   const [pinMode, setPinMode] = useState(false);
   const [snapshotStatus, setSnapshotStatus] = useState<string | null>(null);
+  const [localSaveFailed, setLocalSaveFailed] = useState(false);
   const [poolStatus, setPoolStatus] = useState<ComparePoolStatus>({ state: "idle" });
   const [presetStatus, setPresetStatus] = useState<string | null>(null);
   const presetTimer = useRef<number | null>(null);
@@ -138,14 +159,20 @@ export function CompareReviewRoom({
     });
   }, [seedItems]);
 
-  // 세션 영속화. 저장 실패(용량 초과 등)는 조용히 넘긴다 — 비교가 멈추는 것보다 낫다.
+  // 세션 영속화. 용량 초과 등으로 저장하지 못해도 비교 화면은 유지하고 저장 실패를 알린다.
   useEffect(() => {
     try {
-      window.localStorage.setItem(storageKey, serializeCompareSession(session));
+      const raw = serializeCompareSession(session);
+      if (!writeProductionReviewLocalState(localScope, "compare-session", raw)
+        || readProductionReviewLocalState(localScope, "compare-session") !== raw) { setLocalSaveFailed(true); return; }
+      setLocalSaveFailed(false);
+      if (isDemo) return;
+      const delivered = incoming.filter((entry) => compareSendInboxEntryInPool(entry, workId, session.pool));
+      if (delivered.length) acknowledgeCompareSendInbox(window.localStorage, localScope, delivered);
     } catch {
-      /* noop */
+      setLocalSaveFailed(true);
     }
-  }, [session, storageKey]);
+  }, [session, localScope, incoming, workId, isDemo]);
 
   // 비교 핀 게이트 집계를 회차 룸에 통지(내용이 바뀔 때만).
   const lastSummaryJson = useRef("");
@@ -293,6 +320,13 @@ export function CompareReviewRoom({
 
   return (
     <div className="space-y-3" data-testid="crv-room">
+      {localSaveFailed ? <p role="alert" className="rounded-xl border border-warn/35 bg-warn/10 p-3 text-sm text-fg">
+        {incoming.length ? bt(
+          "비교는 계속할 수 있지만 기기 저장을 확인하지 못했습니다. 전달 확인 전인 원문은 수신함에 보관됩니다. 저장 확인 전에는 이 화면을 유지해 주세요.",
+          "You can keep comparing, but saving on this device was not confirmed. Transfers awaiting confirmation remain in your inbox. Keep this view open until saving is confirmed.") : bt(
+          "비교는 계속할 수 있지만 기기 저장을 확인하지 못했습니다. 저장 상태가 확인될 때까지 이 화면을 유지해 주세요.",
+          "You can keep comparing, but saving on this device was not confirmed. Keep this view open until saving is confirmed.")}
+      </p> : null}
       {!hasRevisionSource && manuscriptsHref ? (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2 text-xs text-fg-2">
           <Columns2 className="size-4 shrink-0 text-accent" aria-hidden="true" />
