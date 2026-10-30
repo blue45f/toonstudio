@@ -21,7 +21,7 @@ import {
   readToggle,
 } from "./studio-filter-gallery-sketch";
 
-import type { StudioFilterGalleryEffectDef } from "./studio-filter-gallery-types";
+import type { StudioFilterGalleryEffectDef, StudioFilterGalleryParams } from "./studio-filter-gallery-types";
 
 // ── 18. 확산 ──
 
@@ -91,6 +91,27 @@ const BLOCK_SIDE_SHADE = [0.92, 0.58, 0.46, 0.8] as const;
 /** 피라미드 면 음영용 빛 벡터(왼쪽 위 + 앞쪽, 정규화). */
 const PYRAMID_LIGHT = [-1 / Math.hypot(1, 1, 1.4), -1 / Math.hypot(1, 1, 1.4), 1.4 / Math.hypot(1, 1, 1.4)] as const;
 
+/** 돌출 기본값(크기 30·깊이 30)의 작업량. 실측은 1 단위도 안 되지만 cost 와 costFor 의 하한으로 둔다. */
+const EXTRUDE_COST = 3;
+
+/**
+ * 돌출 작업량(cost 1 단위 ≈ 픽셀당 50ns). 픽셀당으로 보면 벽 삼각형이 덮는 넓이는 높이/크기, 벽 주사선 수는 높이/크기², 칸마다
+ * 드는 고정 비용(평균색·삼각형 8개·정렬)은 1/크기² 에 비례한다. 높이가 가장 큰 경우는 밝기 기반에 흰 이미지(모든 칸이 깊이만큼 솟음)이고,
+ * 무작위 높이(0~깊이에 고르게)는 그 0.6~0.7 배, 피라미드(칸마다 삼각형 넷)는 블록 벽의 절반쯤이라 여유를 두고 0.75·0.6 을
+ * 곱한다. 계수는 흰 이미지 2048² 실측(ns/px ≈ 35 + 1250/크기² + 높이 × (5/크기 + 22/크기²))이다. 이 효과는 이미지가
+ * 클수록 픽셀당 비용이 오르므로(벽이 캐시를 벗어난다), 하드 예산이 받아들이는 가장 큰 이미지(4096²~5792²)의 칸 크기
+ * 5~12·중간 깊이까지 덮도록 여유를 1.4 배 둔다. 작은 이미지는 솟은 벽이 화면 밖으로 잘리고 캐시에 들어 더 싸다(256² 는
+ * 그 절반 안팎).
+ */
+function extrudeCost(params: StudioFilterGalleryParams): number {
+  const size = Math.max(2, Math.round(readSlider(params, EX_SIZE)));
+  const lift = readSlider(params, EX_DEPTH)
+    * (readSelect(params, EX_DEPTH_MODE) === "level-based" ? 1 : 0.75)
+    * (readSelect(params, EX_TYPE) === "pyramids" ? 0.6 : 1);
+  const nanoseconds = 35 + 1250 / size ** 2 + lift * (5 / size + 22 / size ** 2);
+  return Math.max(EXTRUDE_COST, (nanoseconds * 1.4) / 50);
+}
+
 /** 선분 (ax, ay)–(bx, by) 가 수평선 y 와 만나는 x. 만나지 않으면(수평 선분 포함) NaN. */
 function crossX(ax: number, ay: number, bx: number, by: number, y: number): number {
   if ((ay > y) === (by > y)) return Number.NaN;
@@ -136,7 +157,8 @@ const extrude: StudioFilterGalleryEffectDef = {
   description: "이미지를 격자 칸으로 나눠 화면 중심에서 튀어나온 입체 블록이나 피라미드로 그리며, 그려진 면은 칸 평균 알파를 쓰고 완전 투명 칸은 그리지 않습니다.",
   references: ["Photoshop · 돌출"],
   params: [EX_TYPE, EX_SIZE, EX_DEPTH, EX_DEPTH_MODE, EX_SOLID],
-  cost: 3,
+  cost: EXTRUDE_COST,
+  costFor: extrudeCost,
   apply(image, params, context) {
     const { width, height, data } = image;
     const size = Math.max(2, Math.min(Math.round(readSlider(params, EX_SIZE)), Math.max(width, height)));
@@ -154,7 +176,6 @@ const extrude: StudioFilterGalleryEffectDef = {
     const keys = new Float64Array(count);
     const centerX = width / 2;
     const centerY = height / 2;
-    const maxDistance = Math.hypot(centerX, centerY) + 1;
     for (let cell = 0; cell < count; cell += 1) {
       const column = cell % columns;
       const row = (cell - column) / columns;
@@ -179,9 +200,12 @@ const extrude: StudioFilterGalleryEffectDef = {
       const level = alpha > 0 ? luma(red / alpha, green / alpha, blue / alpha) / 255 : 0;
       const lift = Math.round(depth * (levelBased ? level : hash2(column, row, seed)));
       lifts[cell] = lift;
-      // 화가 알고리즘: 낮은 블록부터, 같은 높이면 중심에서 먼 블록부터 그린다(정렬 키에 칸 번호를 실어 둔다).
-      const distance = Math.hypot((x0 + x1) / 2 - centerX, (y0 + y1) / 2 - centerY) / maxDistance;
-      keys[cell] = (lift * 4096 + 4095 - Math.round(distance * 4095)) * count + cell;
+      // 화가 알고리즘: 시점이 화면 중심 위에 있어 픽셀로 가는 시선은 중심에 가까운 칸을 먼저 지나므로, 높이와 상관없이 가까운
+      // 칸이 먼 칸을 가린다. 그래서 중심에서 먼 칸부터 그린다. 거리는 화면 중심에서 칸 중심까지의 가로·세로 거리 합(2배 단위
+      // 정수)이다. 한 시선이 차례로 지나는 칸은 가로·세로 거리가 줄지 않고 커지므로 이 순서를 지키고, 정수라 칸 번호를 실은
+      // 정렬 키가 반올림 없이 정확하다.
+      const offCenter = Math.abs(x0 + x1 - width) + Math.abs(y0 + y1 - height);
+      keys[cell] = (width + height - offCenter) * count + cell;
     }
     keys.sort();
     // 화면 중심 위의 시점에서 본 원근: 높이 z 인 점은 중심에서 (1 + z / focal) 배 멀어진다.
