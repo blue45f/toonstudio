@@ -92,7 +92,9 @@ export const STUDIO_OFFICE_ENVIRONMENTS: readonly OfficeEnvironment[] = Object.f
       { x: 1220, y: 495, width: 316, height: 110 },
       { x: 520, y: 500, width: 165, height: 80 },
       { x: 685, y: 580, width: 190, height: 80 },
-      { x: 875, y: 660, width: 245, height: 100 },
+      // 2026-10-30 실제 화면에서 상판 위로 보인 발점(889,643)을 막도록 북쪽만 보강한다.
+      // 남쪽 끝 760은 유지하며, 전체 상판의 시각 정합성을 보증하는 조정은 아니다.
+      { x: 875, y: 632, width: 245, height: 128 },
       { x: 985, y: 760, width: 150, height: 120 },
       { x: 0, y: 800, width: 420, height: 224 },
     ],
