@@ -125,7 +125,10 @@ export function appendStageDirectionToCut(scriptText: string, cutNumber: number,
     seen += 1;
     if (seen !== cutNumber) continue;
     const carriageReturn = line.endsWith("\r") ? "\r" : "";
-    lines[index] = `${line.replace(/\s+$/u, "")} [${cleaned}]${carriageReturn}`;
+    const body = line.replace(/\s+$/u, "");
+    // 같은 지문이 이미 붙어 있으면(반영을 두 번 누른 경우) 그대로 둔다.
+    if (body.endsWith(`[${cleaned}]`)) return scriptText;
+    lines[index] = `${body} [${cleaned}]${carriageReturn}`;
     return lines.join("\n");
   }
   return scriptText.trim() ? `${scriptText.trim()}\n${cleaned}` : cleaned;
