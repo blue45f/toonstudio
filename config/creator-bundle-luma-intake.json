@@ -1,0 +1,17 @@
+{
+  "schema": "toonstudio.creator-bundle-atlas-intake.v1",
+  "version": 1,
+  "generatedAt": "2026-10-30T18:00:00.000Z",
+  "packs": [
+    {
+      "catalogId": "cbv1-028-lumagrove-wonky-woods",
+      "ingestId": "cbv1-ingest-231-lumagrovewonkywoods",
+      "packRoot": "03-nature/lumagrove-wonky-woods",
+      "sourceDirectory": "models/gltf",
+      "sourceFormat": "gltf",
+      "imagePaths": {
+        "textures/LumaSolid.png": "models/gltf/textures/LumaSolid.png"
+      }
+    }
+  ]
+}

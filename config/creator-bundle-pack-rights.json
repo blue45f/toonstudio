@@ -2563,6 +2563,13 @@
           "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
           "confirmedAt": "2026-10-29",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://emaceart.itch.io/cemetery-statues",
+          "retrievedAt": "2026-10-30",
+          "ref": "local-private:licensed-render-selection-20261030-r1/cbv1-012-cemetery-statues.html",
+          "verifiedAt": "2026-10-30"
         }
       ],
       "mappingNote": "같은 팩에 상반된 라이선스 문서가 공존한다: 팩 폴더의 LICENSE(독립 파일·다른 팩으로 넘기지 말아 달라는 부탁, 수정본 포함) 대 Blend Textures.zip 안 LICENSE('앱에 포함해 배포'를 명시). 어느 쪽이 우선하는지는 제작사 서면 확인 대상이다.",
@@ -3349,6 +3356,13 @@
           "decisionRef": "docs/studio/itch-purchased-commercial-use-owner-decision-20261029.md",
           "confirmedAt": "2026-10-29",
           "verifiedAt": "2026-10-29"
+        },
+        {
+          "kind": "itch-page-capture",
+          "url": "https://rg-poly.itch.io/medieval-props-small-pack-low-poly",
+          "retrievedAt": "2026-10-30",
+          "ref": "local-private:licensed-render-selection-20261030-r1/cbv1-077-small-props-pack.html",
+          "verifiedAt": "2026-10-30"
         }
       ],
       "reviewRecommendedHold": true,
