@@ -203,7 +203,7 @@ export function searchStudioMarketplace(
 export const STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG: readonly StudioMarketplaceSearchItem[] = Object.freeze([
   Object.freeze({
     id: "skp-archetype-fantasy-imperial-palace",
-    title: "판타지 황실 대성전 & 알현실 3D 스케치업 배경",
+    title: "판타지 황실 대성전 & 알현실 3D 공간 배경",
     description:
       "텀블벅·에이콘3D·픽셀 호환 로맨스판타지 황실 세트. 대형 양개문, 옥좌 비밀 통로, 마법 샹들리에, 발코니 창문 동적 구성 요소(OnClick ANIMATE) 내장.",
     tags: ["판타지 황실", "황실", "로판", "텀블벅", "에이콘3D", "픽셀", "스케치업", "동적컴포넌트"],
@@ -224,7 +224,7 @@ export const STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG: readonly StudioMarketplaceS
   }),
   Object.freeze({
     id: "skp-archetype-modern-high-school-classroom",
-    title: "현대 고등학교 교실 & 복도 3D 스케치업 배경",
+    title: "현대 고등학교 교실 & 복도 3D 공간 배경",
     description:
       "에이콘3D·텀블벅·픽셀 호환 학원물 교실 세트. 복도 미닫이 앞·뒷문, 운동장 미닫이창, 교탁 서랍, 학생 사물함, 천장 형광등 동적 구성 요소 내장.",
     tags: ["현대 고등학교 교실", "고등학교", "교실", "학교", "에이콘3D", "텀블벅", "픽셀", "스케치업", "동적컴포넌트"],
@@ -245,7 +245,7 @@ export const STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG: readonly StudioMarketplaceS
   }),
   Object.freeze({
     id: "skp-archetype-protagonist-studio-apartment",
-    title: "주인공 자취방 원룸 & 오피스텔 3D 스케치업 배경",
+    title: "주인공 자취방 원룸 & 오피스텔 3D 공간 배경",
     description:
       "에이콘3D·픽셀·텀블벅 호환 현대 일상물 자취방 세트. 현관 방화문, 책상 서랍, 붙박이 옷장 도어, 베란다 이중 미닫이창, 독서 스탠드 조명 동적 인터랙션 내장.",
     tags: ["주인공 자취방", "자취방", "원룸", "에이콘3D", "픽셀", "텀블벅", "스케치업", "동적컴포넌트"],
@@ -266,7 +266,7 @@ export const STUDIO_WEBTOON_SKP_MARKETPLACE_CATALOG: readonly StudioMarketplaceS
   }),
   Object.freeze({
     id: "skp-archetype-joseon-dynasty-tavern",
-    title: "조선시대 저막 (주막·객주) 3D 스케치업 배경",
+    title: "조선시대 저막 (주막·객주) 3D 공간 배경",
     description:
       "텀블벅·에이콘3D·픽셀 호환 사극·무협 조선시대 저막 세트. 싸리문 대문, 대청 들어열개 들창, 한식 격자 미닫이 방문, 산수화 병풍, 부엌 찬장 서랍, 처마 초롱불 동적 구성 요소 내장.",
     tags: ["조선시대 저막", "저막", "주막", "조선시대", "사극", "텀블벅", "에이콘3D", "픽셀", "스케치업", "동적컴포넌트"],
