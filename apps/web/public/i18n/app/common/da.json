@@ -12,5 +12,5 @@
   "common.notFoundWithQuery": "Ingen resultater for '{query}'.",
   "common.openSearch": "Find det i Søg →",
   "common.loading.empty": "Ingen data returneret.",
-  "common.retry.all": "Prøv igen eller gå hjem."
+  "common.retry.all": "Prøv igen, eller gå til forsiden."
 }

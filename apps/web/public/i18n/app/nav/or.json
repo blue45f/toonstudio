@@ -1,7 +1,7 @@
 {
-  "nav.home": "ମୁଖ୍ୟ",
-  "nav.ranking": "ର଼୍ୟାଙ୍କିଙ୍ଗ୍",
-  "nav.calendar": "କ୍ୟାଲେଣ୍ଡର",
+  "nav.home": "ମୁଖ୍ୟ ପୃଷ୍ଠା",
+  "nav.ranking": "ର୍ୟାଙ୍କିଙ୍ଗ୍",
+  "nav.calendar": "ଧାରାବାହିକ",
   "nav.recommend": "ସୁପାରିଶ",
   "nav.explore": "ଅନ୍ୱେଷଣ",
   "nav.fortune": "ରାଶିଫଳ",
@@ -20,7 +20,7 @@
   "nav.menu": "ମେନୁ",
   "nav.allMenu": "ସବୁ ମେନୁ",
   "nav.studio": "ଷ୍ଟୁଡିଓ",
-  "nav.assets": "ସମ୍ପତ୍ତି",
+  "nav.assets": "ସାମଗ୍ରୀ",
   "nav.creators": "ନିର୍ମାତା",
-  "nav.discover": "ଜାଣନ୍ତୁ"
+  "nav.discover": "କାହାଣୀ ଅନ୍ୱେଷଣ"
 }

@@ -1,9 +1,9 @@
 {
   "studio.aiNotice.title": "جنریٹیو AI امیج گائیڈ",
-  "studio.aiNotice.description": "یہ فنکشن جنریٹیو AI (اوپن اے آئی) کا استعمال کرتے ہوئے تصاویر بناتا ہے۔ AI بیجز بنائے گئے نتائج پر دکھائے جاتے ہیں۔",
-  "studio.aiNotice.ruleCopyright": "ہم دوسرے لوگوں کے کام، کردار، یا حقیقی لوگوں کے چہرے نہیں بناتے ہیں۔",
+  "studio.aiNotice.description": "یہ فنکشن جنریٹیو AI (OpenAI) کا استعمال کرتے ہوئے تصاویر بناتا ہے۔ بنائے گئے نتائج پر AI بیج دکھایا جاتا ہے۔",
+  "studio.aiNotice.ruleCopyright": "دوسروں کے تخلیقی کام یا کردار، اور حقیقی افراد کے چہرے نہ بنائیں۔",
   "studio.aiNotice.ruleAccuracy": "AI نتائج غلط ہو سکتے ہیں یا اس سے مختلف ہو سکتے ہیں جس کا مقصد تھا۔",
   "studio.aiNotice.ruleResponsibility": "آپ اپنی تخلیق کردہ تصاویر کو استعمال کرنے کے ذمہ دار ہیں۔",
   "studio.aiNotice.cancel": "منسوخ کریں۔",
-  "studio.aiNotice.confirm": "میں سمجھتا ہوں، تخلیق کرتا ہوں۔"
+  "studio.aiNotice.confirm": "سمجھ لیا، تخلیق کریں"
 }

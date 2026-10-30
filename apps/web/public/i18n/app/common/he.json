@@ -10,7 +10,7 @@
   "common.backToHome": "חזרה הביתה",
   "common.loading.search": "מחפש…",
   "common.notFoundWithQuery": "אין תוצאות עבור '{query}'.",
-  "common.openSearch": "מצאו זאת בחיפוש →",
+  "common.openSearch": "מצא זאת שוב בחיפוש המלא →",
   "common.loading.empty": "לא חזרו נתונים.",
-  "common.retry.all": "נסה שוב או תחזור הביתה."
+  "common.retry.all": "נסה שוב או חזור לדף הבית."
 }

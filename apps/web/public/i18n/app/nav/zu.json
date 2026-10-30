@@ -5,8 +5,8 @@
   "nav.recommend": "Okunconyiwe",
   "nav.explore": "Hlola",
   "nav.fortune": "I-Horoscope",
-  "nav.play": "I-Arcade",
-  "nav.reviews": "Izibuyekezo",
+  "nav.play": "Indawo yokudlala",
+  "nav.reviews": "Imibono",
   "nav.community": "Umphakathi",
   "nav.market": "Imakethe",
   "nav.insights": "Izibalo",
@@ -20,7 +20,7 @@
   "nav.menu": "Imenyu",
   "nav.allMenu": "Yonke imenyu",
   "nav.studio": "Isitudiyo",
-  "nav.assets": "Izimpahla",
+  "nav.assets": "Izinsiza zokudala",
   "nav.creators": "Abadali",
   "nav.discover": "Thola"
 }

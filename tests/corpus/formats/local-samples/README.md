@@ -5,7 +5,7 @@
 
 | 확장자 | 검증 대상 | 설계 문서 |
 | --- | --- | --- |
-| `.clip`, `.lip` | `packages/studio-format-gateway/src/chunked-sqlite-container.ts`의 가정(헤더 필드 순서, 청크 레이아웃, 외부 블록 형태) | `docs/design/chunked-sqlite-container-parser-2026-10-29.md` |
+| `.clip`, `.lip` | `packages/studio-format-gateway/src/chunked-sqlite-container.ts`(헤더 필드 순서, 청크 레이아웃, 외부 블록 형태), `chunked-sqlite-blocks.ts`·`zlib-inflate.ts`(픽셀 블록), `chunked-sqlite-document*.ts`·`chunked-sqlite-layer-model.ts`(캔버스·레이어 트리·위치)의 가정. 모두 제3자 공개 명세에서 왔고 실제 파일로 확인한 것이 없다 | `docs/design/chunked-sqlite-container-parser-2026-10-29.md`, `docs/design/chunked-sqlite-document-reader-secondary-spec-2026-10-29.md` |
 | `.xcf` | `packages/studio-format-gateway/src/xcf.ts`의 구조·픽셀 디코드 | `docs/design/xcf-reader-public-spec-2026-10-29.md` |
 | `.aseprite`, `.ase` | `packages/studio-format-gateway/src/aseprite-sprite.ts`의 구조·셀·타일셋 디코드 (`.ase` 중 Adobe Swatch Exchange는 서명으로 걸러 낸다) | `docs/design/aseprite-sprite-reader-public-spec-2026-10-29.md` |
 | `.gbr`, `.gih`, `.pat`, `.vbr` | `packages/studio-format-gateway/src/gimp-brush*.ts`, `gimp-generated-brush.ts`의 브러시·파이프·패턴·생성 브러시 읽기 | `docs/design/gimp-brush-formats-reader-public-spec-2026-10-29.md` |
@@ -15,8 +15,9 @@
 
 - 본인이 만들었거나 사용 허락을 받은 파일만 둔다. 제3자 저작물이나 유료 소재가 든 파일은 두지 않는다.
 - 이 디렉터리의 파일을 커밋하거나 공유하지 않는다. 공유가 필요하면 검사 도구의 구조 출력(JSON)만 공유한다.
-- `.clip`/`.lip` 검사 도구는 구조 정보(청크 목록, SQLite 테이블·컬럼 이름, 행 수)만 출력하고 픽셀, 행 내용,
-  사용자 텍스트는 출력하지 않는다. 파일은 SHA-256과 파일명(경로 제외)으로만 식별한다.
+- `.clip`/`.lip` 검사 도구는 구조 정보(청크 목록, SQLite 테이블·컬럼 이름, 행 수)나 집계(레이어 종류별 개수, 오프셋 관계,
+  진단 코드별 건수)만 출력하고 픽셀, 행 내용, 레이어 이름, 사용자 텍스트는 출력하지 않는다. 파일은 SHA-256과 파일명(경로 제외)으로만
+  식별한다.
 
 ## `.clip`/`.lip` 구조 검사
 
@@ -26,13 +27,28 @@ pnpm exec tsx scripts/inspect-chunked-container.mts tests/corpus/formats/local-s
 
 옵션: `--json`(JSON 배열 출력), `--no-sqlite`(SQLite 스키마를 읽지 않고 헤더 판정만).
 
+## `.clip` 문서 가져오기 요약
+
+```bash
+pnpm exec tsx scripts/inspect-chunked-document.mts tests/corpus/formats/local-samples/<파일>.clip
+```
+
+가져오기를 실행하고 집계만 출력한다: 캔버스 크기 환산 결과, 레이어 종류별 개수, 합성 모드·잠금·표시 비트 분포,
+레이어 오프셋과 렌더 오프셋의 관계, 픽셀을 읽은 레이어 수와 그 범위가 캔버스와 맞는지, 저장된 블록을 실제로 푼 레이어 수
+(`storedBlocks:` 줄. 그림이 있는 문서인데 `layersWithStoredBlocks=0`이면 외부 ID 대조 가정이 어긋나 모든 레이어가 조용히
+투명하게 읽힌 것이다), 미리보기와 캔버스의 가로세로비, 접히기 전의 진단 코드별 건수. 옵션: `--json`. 종료 코드: 0 정상, 1 읽기 실패,
+2 사용법 오류, 3 가져오기 실패.
+
 ## 자동 검증
 
 ```bash
 pnpm exec vitest run tests/format-gateway/local-samples-corpus.test.ts
 ```
 
-- `.clip`/`.lip` 파일마다 설계 문서의 가정 H1–H4가 실제 파일과 맞는지 확인한다.
+- `.clip`/`.lip` 파일마다 컨테이너 가정(헤더 필드 순서·청크 순서·`CHNKHead`·외부 ID 형식)이 실제 파일과 맞는지 확인하고,
+  `CSFCHUNK` 문서는 가져오기를 실행해 레이어 트리 구조 진단이 없는지, 읽지 못한 레이어가 없는지(의도적으로 읽지 않는 종류 제외),
+  읽은 픽셀이 범위와 맞는지, 외부 블록이 있고 픽셀을 읽은 래스터 레이어가 있으면 저장된 블록을 푼 레이어가 하나 이상 있는지,
+  미리보기와 캔버스의 가로세로비가 같은지 확인한다.
 - `.xcf` 파일마다 레이어를 하나도 잃지 않았는지, 구조·타일 오류 진단이 없는지, 그룹 부모가 그룹 레이어인지
   확인한다. ImageMagick(`convert`)이 있으면 8비트 RGB·회색 파일은 모든 레이어를 ImageMagick 디코드와 바이트
   단위로 대조한다. ImageMagick 6.9는 인덱스드와 8비트 초과 정밀도를 거부하므로 그런 파일은 대조에서 빠진다.

@@ -8,9 +8,9 @@
   "common.retry.short": "Riprova",
   "common.backToTop": "Torna in cima.",
   "common.backToHome": "Torna alla home",
-  "common.loading.search": "Cerco...",
-  "common.notFoundWithQuery": "Nessun risultato per ' {query} '.",
-  "common.openSearch": "Trovalo nella ricerca",
+  "common.loading.search": "Ricerca in corso…",
+  "common.notFoundWithQuery": "Nessun risultato per '{query}'.",
+  "common.openSearch": "Cercalo di nuovo nella ricerca globale →",
   "common.loading.empty": "Non sono stati restituiti dati.",
-  "common.retry.all": "Prova di nuovo o torna a casa."
+  "common.retry.all": "Riprova o torna alla home."
 }

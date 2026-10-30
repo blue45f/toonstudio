@@ -6,11 +6,11 @@
   "common.search": "অনুসন্ধান",
   "common.retry": "আবার চেষ্টা করুন",
   "common.retry.short": "আবার চেষ্টা করুন",
-  "common.backToTop": "শীর্ষে ফিরে",
-  "common.backToHome": "বাড়ি যাও",
-  "common.loading.search": "অনুসন্ধান...",
-  "common.notFoundWithQuery": "' {query} ' এর কোন ফলাফল পাওয়া যায়নি।",
+  "common.backToTop": "শীর্ষে ফিরে যান",
+  "common.backToHome": "হোমে যান",
+  "common.loading.search": "অনুসন্ধান করা হচ্ছে…",
+  "common.notFoundWithQuery": "'{query}'-এর কোনো ফলাফল পাওয়া যায়নি।",
   "common.openSearch": "অনুসন্ধানে খুঁজে বের করুন →",
   "common.loading.empty": "কোন তথ্য ফেরত আসেনি।",
-  "common.retry.all": "আবার চেষ্টা করো অথবা বাড়ি ফিরে যাও।"
+  "common.retry.all": "আবার চেষ্টা করুন অথবা হোমে ফিরে যান।"
 }

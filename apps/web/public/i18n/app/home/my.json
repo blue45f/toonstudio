@@ -7,11 +7,11 @@
   "home.hero.searchButton": "လက်ရာများ၊ ဖန်တီးသူများ၊ တဂ်များ ရှာရန်",
   "home.hero.rankingButton": "ပေါင်းစပ် အဆင့်သတ်မှတ်ချက် ကြည့်ရန်",
   "home.hero.studioLink": "ဖန်တီးသူ စတူဒီယို",
-  "home.hero.createLink": "ဖန်တီးသူအဖွဲ့",
-  "home.hero.stats.titles": "ခေါင်းစဉ်များ",
+  "home.hero.createLink": "ဖန်တီးသူ ဆွေးနွေးရာ ဘုတ်",
+  "home.hero.stats.titles": "လက်ရာများ",
   "home.hero.stats.platforms": "ထုတ်ဝေရေး ပလက်ဖောင်းများ",
   "home.hero.stats.genres": "အမျိုးအစား စပက်ထရမ်",
   "home.hero.stats.reviews": "စာဖတ်သူတွေရဲ့ သုံးသပ်ချက်များ",
-  "home.loadError": "အိမ်က ဒေတာကို မတင်နိုင်ခဲ့ဘူး။",
+  "home.loadError": "ပင်မစာမျက်နှာကို မတင်နိုင်ခဲ့ပါ။ ခဏနေမှ ထပ်စမ်းကြည့်ပါ။",
   "home.creatorTitle": "စိတ်ကူးကနေ ပထမဆုံး မြင်ကွင်းအထိ"
 }

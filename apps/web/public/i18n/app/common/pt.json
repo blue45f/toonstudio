@@ -6,11 +6,11 @@
   "common.search": "Buscar",
   "common.retry": "Tentar novamente",
   "common.retry.short": "Tente de novo",
-  "common.backToTop": "De volta ao topo .",
+  "common.backToTop": "Voltar ao topo",
   "common.backToHome": "Ir para o início",
-  "common.loading.search": "Procura...",
-  "common.notFoundWithQuery": "Não houve resultados para ' {query} '.",
-  "common.openSearch": "Encontrá-lo em Busca →",
-  "common.loading.empty": "Não foram devolvidos dados.",
-  "common.retry.all": "Tenta outra vez ou volta para casa."
+  "common.loading.search": "Buscando…",
+  "common.notFoundWithQuery": "Nenhum resultado para '{query}'.",
+  "common.openSearch": "Buscar novamente na busca geral →",
+  "common.loading.empty": "Nenhum dado retornado.",
+  "common.retry.all": "Tente novamente ou volte para o início."
 }

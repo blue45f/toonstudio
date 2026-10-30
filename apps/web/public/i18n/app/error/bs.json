@@ -2,6 +2,6 @@
   "error.reloading": "Ponovno učitavanje najnovije verzije…",
   "error.chunkRetryFailed": "Osvježeno je jednom, ali problem i dalje postoji. Provjerite vezu i pokušajte ponovo.",
   "error.reloadButton": "Ponovo učitaj stranicu",
-  "error.goHome": "Idi kući.",
+  "error.goHome": "Idi na početnu stranicu",
   "error.retryDesc": "Molim vas, pokušajte ponovo ili vratite se na početnu stranicu."
 }

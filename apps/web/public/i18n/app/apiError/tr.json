@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Giriş yapmanız gerekiyor.",
-  "apiError.adminRequired": "Yöneticiler izinleri doğrulanamadı.",
+  "apiError.adminRequired": "Yönetici izinleri doğrulanamadı.",
   "apiError.adminOnlyPage": "Bu sayfa yöneticilerle sınırlıdır.",
-  "apiError.notFound": "İstediğiniz madde bulunamadı.",
+  "apiError.notFound": "İstenen öğe bulunamadı.",
   "apiError.unsupportedType": "Desteklenmeyen içerik tipi.",
-  "apiError.inactiveAccount": "Etkin olmayan hesaplar yöneticiler özelliklerini kullanamaz.",
-  "apiError.settlementFailed": "Hasar işlemleri başarısız oldu."
+  "apiError.inactiveAccount": "Etkin olmayan hesaplar yönetici özelliklerini kullanamaz.",
+  "apiError.settlementFailed": "Hesap kesimi işlemi başarısız oldu. Lütfen biraz sonra tekrar deneyin."
 }

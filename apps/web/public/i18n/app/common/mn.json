@@ -9,8 +9,8 @@
   "common.backToTop": "Дээд тал руу буцах",
   "common.backToHome": "Нүүр хуудас руу очих",
   "common.loading.search": "Хайж байна…",
-  "common.notFoundWithQuery": "'{query}' хайлт олдсонгүй.",
-  "common.openSearch": "Хайлтаас → олоорой",
+  "common.notFoundWithQuery": "'{query}' хайлтын үр дүн олдсонгүй.",
+  "common.openSearch": "Бүх хайлтаас дахин олох →",
   "common.loading.empty": "Өгөгдөл ирсэнгүй.",
-  "common.retry.all": "Дахин оролдох эсвэл нүүр хуудас руу буцаарай."
+  "common.retry.all": "Дахин оролдоорой эсвэл нүүр хуудас руу буцаарай."
 }

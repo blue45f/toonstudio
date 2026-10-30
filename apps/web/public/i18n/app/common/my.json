@@ -1,16 +1,16 @@
 {
-  "common.loading": "တင်သွင်းခြင်း",
-  "common.loading.short": "တင်သွင်းခြင်း",
+  "common.loading": "တင်နေသည်",
+  "common.loading.short": "တင်နေသည်",
   "common.close": "ပိတ်ပါ",
   "common.open": "ဖွင့်ပါ",
   "common.search": "ရှာဖွေပါ",
   "common.retry": "ထပ်ပြီး စမ်းကြည့်ပါ။",
   "common.retry.short": "ထပ်ပြီး စမ်းကြည့်ပါ။",
   "common.backToTop": "အပေါ်ကို ပြန်သွားပါ",
-  "common.backToHome": "အိမ်ပြန်သွားပါ",
+  "common.backToHome": "ပင်မစာမျက်နှာသို့",
   "common.loading.search": "ရှာဖွေနေတာပါ။",
   "common.notFoundWithQuery": "' {query} ' အတွက် ရလဒ်မရှိပါ။",
   "common.openSearch": "ရှာဖွေမှုတွင် ရှာရန် →",
-  "common.loading.empty": "ဒေတာ ပြန်မလာဘူး။",
-  "common.retry.all": "ထပ်ကြိုးစားပါ ဒါမှမဟုတ် အိမ်ပြန်သွားပါ"
+  "common.loading.empty": "တုံ့ပြန်မှုဒေတာ မရှိပါ။",
+  "common.retry.all": "ထပ်မံကြိုးစားပါ သို့မဟုတ် ပင်မစာမျက်နှာသို့ သွားပါ။"
 }

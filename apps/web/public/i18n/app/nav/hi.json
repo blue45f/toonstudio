@@ -2,7 +2,7 @@
   "nav.home": "होम",
   "nav.ranking": "रैंकिंग",
   "nav.calendar": "शेड्यूल",
-  "nav.recommend": "पसंद",
+  "nav.recommend": "सुझाव",
   "nav.explore": "खोजें",
   "nav.fortune": "राशिफल",
   "nav.play": "आर्केड",
@@ -11,8 +11,8 @@
   "nav.market": "मार्केट",
   "nav.insights": "आंकड़े",
   "nav.create": "बनाएं",
-  "nav.shaper": "चरित्र आकृति",
-  "nav.library": "पुस्तकालय",
+  "nav.shaper": "कैरेक्टर शेपर",
+  "nav.library": "मेरी लाइब्रेरी",
   "nav.login": "साइन इन करें",
   "nav.search": "कहानियाँ, टूल्स और मेनू खोजें",
   "nav.searchOpen": "कहानियों, टूल्स और मेनू के लिए एकीकृत खोज खोलें",
@@ -20,7 +20,7 @@
   "nav.menu": "मेनू",
   "nav.allMenu": "सभी मेनू",
   "nav.studio": "स्टूडियो",
-  "nav.assets": "सम्पत्ति",
-  "nav.creators": "रचनाकार",
-  "nav.discover": "खोजें"
+  "nav.assets": "सामग्री",
+  "nav.creators": "रचना गैलरी",
+  "nav.discover": "कहानियाँ एक्सप्लोर करें"
 }

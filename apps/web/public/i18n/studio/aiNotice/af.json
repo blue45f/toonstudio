@@ -1,8 +1,8 @@
 {
-  "studio.aiNotice.title": "Generatiewe AI Beeldgids",
-  "studio.aiNotice.description": "Hierdie funksie skep beelde met behulp van generatiewe AI (OpenAI). KI-kentekens word op die geskep resultate vertoon.",
-  "studio.aiNotice.ruleCopyright": "Ons skep nie ander mense se werke, karakters of gesigte van regte mense nie.",
-  "studio.aiNotice.ruleAccuracy": "KI-resultate kan onakkuraat of verskil van wat bedoel is.",
+  "studio.aiNotice.title": "Kennisgewing oor generatiewe KI-beelde",
+  "studio.aiNotice.description": "Hierdie funksie skep beelde met behulp van generatiewe KI (OpenAI). 'n KI-kenteken word op die geskepte resultate vertoon.",
+  "studio.aiNotice.ruleCopyright": "Moenie ander se kopieregbeskermde werke, karakters of gesigte van regte mense skep nie.",
+  "studio.aiNotice.ruleAccuracy": "KI-resultate kan onakkuraat wees of verskil van wat jy bedoel het.",
   "studio.aiNotice.ruleResponsibility": "Jy is verantwoordelik vir die gebruik van die beelde wat jy skep.",
   "studio.aiNotice.cancel": "Kanselleer",
   "studio.aiNotice.confirm": "Ek verstaan, skep"

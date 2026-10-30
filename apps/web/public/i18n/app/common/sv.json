@@ -1,6 +1,6 @@
 {
   "common.loading": "Laddar",
-  "common.loading.short": "Laddning",
+  "common.loading.short": "Laddar",
   "common.close": "Stäng",
   "common.open": "Öppna",
   "common.search": "Sök",
@@ -12,5 +12,5 @@
   "common.notFoundWithQuery": "Inga resultat för '{query}'.",
   "common.openSearch": "Hitta det via Sök →",
   "common.loading.empty": "Ingen data returnerades.",
-  "common.retry.all": "Försök igen eller gå hem."
+  "common.retry.all": "Försök igen eller gå till startsidan."
 }

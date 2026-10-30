@@ -14,7 +14,7 @@
   "auth.callback.error.generic": "Nepavyko prisijungti. Grįžkite į prisijungimo puslapį ir bandykite dar kartą.",
   "auth.callback.error.noUser": "Nepavyko patvirtinti naudotojo informacijos.",
   "auth.callback.error.invalidAccess": "Neteisinga prieiga.",
-  "auth.callback.error.failed": "Prisijungiant įvyko klaida.",
+  "auth.callback.error.failed": "Įvyko klaida, todėl nepavyko užbaigti prisijungimo. Grįžkite į prisijungimo puslapį ir bandykite dar kartą.",
   "auth.callback.message.done": "Prisijungimas baigtas. Netrukus būsite nukreipti.",
   "auth.callback.message.doneDemo": "Demonstracinis prisijungimas baigtas. Netrukus būsite nukreipti.",
   "auth.callback.demo.message": "Esate prisijungę su demonstracine paskyra. Kai kurios funkcijos gali būti ribojamos.",

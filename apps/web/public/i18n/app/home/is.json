@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Leita að titlum, höfundum, merkjum",
   "home.hero.rankingButton": "Sjá sameinaða röðun",
   "home.hero.studioLink": "Höfundastúdíó",
-  "home.hero.createLink": "Höfundaborð",
+  "home.hero.createLink": "Spjallborð höfunda",
   "home.hero.stats.titles": "Titlar",
   "home.hero.stats.platforms": "Útgáfuvettvangar",
   "home.hero.stats.genres": "Tegundalitróf",
   "home.hero.stats.reviews": "Umsagnir lesenda",
-  "home.loadError": "Ekki tókst að hlaða heimasíðugögnum.",
+  "home.loadError": "Ekki tókst að hlaða heimasíðunni. Reyndu aftur síðar.",
   "home.creatorTitle": "Frá hugmynd að fyrstu senunni þinni"
 }

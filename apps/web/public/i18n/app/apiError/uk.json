@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Потрібно увійти.",
-  "apiError.adminRequired": "Дозволи адміністратора не були перевірені.",
-  "apiError.adminOnlyPage": "Ця сторінка обмежена адміністраторами.",
-  "apiError.notFound": "Запрохану позицію не знайшли.",
-  "apiError.unsupportedType": "Тип контенту, який не підтримується.",
+  "apiError.adminRequired": "Не вдалося перевірити права адміністратора.",
+  "apiError.adminOnlyPage": "Ця сторінка доступна лише адміністраторам.",
+  "apiError.notFound": "Запитаний об'єкт не знайдено.",
+  "apiError.unsupportedType": "Цей тип контенту не підтримується.",
   "apiError.inactiveAccount": "Неактивні облікові записи не можуть використовувати функції адміністратора.",
-  "apiError.settlementFailed": "Процес розрахунку не вдався."
+  "apiError.settlementFailed": "Не вдалося виконати розрахунок. Спробуйте ще раз трохи згодом."
 }

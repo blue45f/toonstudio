@@ -10,8 +10,8 @@
   "home.hero.createLink": "Kūrėjų lenta",
   "home.hero.stats.titles": "Kūriniai",
   "home.hero.stats.platforms": "Publikavimo platformos",
-  "home.hero.stats.genres": "Žanro spektras",
+  "home.hero.stats.genres": "Žanrų spektras",
   "home.hero.stats.reviews": "Skaitytojų atsiliepimai",
-  "home.loadError": "Nepavyko įkelti pagrindinio puslapio duomenų.",
+  "home.loadError": "Nepavyko įkelti pagrindinio puslapio. Bandykite dar kartą vėliau.",
   "home.creatorTitle": "Nuo idėjos iki pirmosios scenos"
 }

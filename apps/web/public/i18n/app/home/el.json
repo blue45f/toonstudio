@@ -1,17 +1,17 @@
 {
-  "home.hero.eyebrow": "ΓΟΥΕΜΠΤΟΥΝ × ΓΟΥΕΜΠΝΟΒΕΛ",
+  "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
   "home.hero.titleLine1": "Διασκορπισμένες ιστορίες,",
-  "home.hero.titleShimmer": "Ένα ενιαίο δείκτη",
+  "home.hero.titleShimmer": "Ένα ενιαίο ευρετήριο",
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Ψάξτε στο Naver Webtoon, Series και Kakao Webtoon, και στη συνέχεια περιορίστε γρήγορα τι να διαβάσετε χρησιμοποιώντας σήματα πραγματικού χρόνου και προτιμήσεις του αναγνώστη.",
-  "home.hero.searchButton": "Αναζήτηση τίτλων, δημιουργών, ετικέτες",
+  "home.hero.searchButton": "Αναζήτηση τίτλων, δημιουργών, ετικετών",
   "home.hero.rankingButton": "Δείτε ενιαία κατάταξη",
-  "home.hero.studioLink": "Σπουδείο δημιουργού",
-  "home.hero.createLink": "Πίνακα δημιουργού",
+  "home.hero.studioLink": "Στούντιο δημιουργού",
+  "home.hero.createLink": "Πίνακας συζητήσεων δημιουργών",
   "home.hero.stats.titles": "Τίτλοι",
   "home.hero.stats.platforms": "Πλατφόρμες εκδόσεων",
-  "home.hero.stats.genres": "Φασματικό φάσμα",
-  "home.hero.stats.reviews": "Εξετάσεις των αναγνώστων",
-  "home.loadError": "Δεν μπόρεσα να φορτώσω τα δεδομένα του σπιτιού.",
-  "home.creatorTitle": "Από μια ιδέα μέχρι την πρώτη σου σκηνή"
+  "home.hero.stats.genres": "Φάσμα ειδών",
+  "home.hero.stats.reviews": "Κριτικές αναγνωστών",
+  "home.loadError": "Δεν ήταν δυνατή η φόρτωση της αρχικής σελίδας. Δοκιμάστε ξανά σε λίγο.",
+  "home.creatorTitle": "Από μια ιδέα στην πρώτη σκηνή"
 }

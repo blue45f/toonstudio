@@ -1,17 +1,17 @@
 {
-  "nav.home": "मुख्य",
+  "nav.home": "मुख्यपृष्ठ",
   "nav.ranking": "रँकिंग",
-  "nav.calendar": "कॅलेंडर",
+  "nav.calendar": "मालिका",
   "nav.recommend": "शिफारस केलेले",
   "nav.explore": "शोधा",
-  "nav.fortune": "राशिचक्र",
+  "nav.fortune": "राशिभविष्य",
   "nav.play": "आर्केड",
   "nav.reviews": "पुनरावलोकने",
   "nav.community": "समुदाय",
   "nav.market": "बाजार",
   "nav.insights": "आकडेवारी",
   "nav.create": "तयार करा",
-  "nav.shaper": "वर्ण आकार",
+  "nav.shaper": "पात्र शेपर",
   "nav.library": "ग्रंथालय",
   "nav.login": "लॉग इन करा",
   "nav.search": "कथा, साधने आणि मेनू शोधा",
@@ -20,7 +20,7 @@
   "nav.menu": "मेनू",
   "nav.allMenu": "सर्व मेनू",
   "nav.studio": "स्टुडिओ",
-  "nav.assets": "मालमत्ता",
+  "nav.assets": "साहित्य",
   "nav.creators": "निर्माते",
-  "nav.discover": "जाणून घ्या"
+  "nav.discover": "कलाकृती शोधा"
 }

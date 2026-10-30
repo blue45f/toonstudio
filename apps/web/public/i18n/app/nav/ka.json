@@ -1,7 +1,7 @@
 {
   "nav.home": "მთავარი",
   "nav.ranking": "რეიტინგი",
-  "nav.calendar": "კალენდარი",
+  "nav.calendar": "სერიები",
   "nav.recommend": "რეკომენდებული",
   "nav.explore": "აღმოაჩინე",
   "nav.fortune": "ჰოროსკოპი",
@@ -20,7 +20,7 @@
   "nav.menu": "მენიუ",
   "nav.allMenu": "ყველა მენიუ",
   "nav.studio": "სტუდია",
-  "nav.assets": "აქტივები",
-  "nav.creators": "მწარმოებლები",
-  "nav.discover": "აღმოაჩინეთ"
+  "nav.assets": "მასალები",
+  "nav.creators": "შემოქმედებითი გალერეა",
+  "nav.discover": "ნამუშევრების დათვალიერება"
 }

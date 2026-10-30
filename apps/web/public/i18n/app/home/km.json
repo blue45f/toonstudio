@@ -7,11 +7,11 @@
   "home.hero.searchButton": "ស្វែងរកចំណងជើង អ្នកបង្កើត ស្លាក",
   "home.hero.rankingButton": "មើលចំណាត់ថ្នាក់រួម",
   "home.hero.studioLink": "ស្ទូឌីយោអ្នកបង្កើត",
-  "home.hero.createLink": "ផ្ទាំងអ្នកបង្កើត",
+  "home.hero.createLink": "ក្ដារប្រកាសអ្នកបង្កើត",
   "home.hero.stats.titles": "ចំណងជើង",
   "home.hero.stats.platforms": "វេទិកាបោះពុម្ពផ្សាយ",
   "home.hero.stats.genres": "វិសាលគមប្រភេទ",
-  "home.hero.stats.reviews": "ការពិនិត្យរបស់អ្នកអាន",
-  "home.loadError": "មិនអាចផ្ទុកទិន្នន័យទំព័រដើមបានទេ។",
+  "home.hero.stats.reviews": "មតិវាយតម្លៃរបស់អ្នកអាន",
+  "home.loadError": "មិនអាចផ្ទុកទំព័រដើមបានទេ។ សូមព្យាយាមម្ដងទៀតក្នុងពេលបន្តិចទៀត។",
   "home.creatorTitle": "ពីគំនិតមួយទៅឈុតដំបូងរបស់អ្នក"
 }

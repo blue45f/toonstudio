@@ -1,10 +1,10 @@
 {
   "home.hero.eyebrow": "ویب ٹون × ویب نوول",
-  "home.hero.titleLine1": "اور (اس کے بعد) وہ (بھی) بہت سی کہانیاں پھیلائے ہوئے ہیں",
+  "home.hero.titleLine1": "بکھری ہوئی کہانیاں،",
   "home.hero.titleShimmer": "ایک ہی اشاریہ",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "نیور ویب ٹون ، سیریز اور کاکاؤ ویب ٹون میں تلاش کریں ، پھر ریئل ٹائم سگنل اور قارئین کی ترجیحات کا استعمال کرتے ہوئے پڑھنے کے لئے کیا ہے اس کو جلدی سے محدود کریں۔",
-  "home.hero.searchButton": "تلاش کے عنوانات، تخلیق کار، ٹیگز",
+  "home.hero.description": "نیور ویب ٹون، سیریز اور کاکاؤ ویب ٹون میں تلاش کریں، اور ریئل ٹائم سگنلز اور قارئین کی پسند کی مدد سے جلدی طے کریں کہ کیا پڑھنا ہے۔",
+  "home.hero.searchButton": "عنوانات، تخلیق کار، ٹیگز تلاش کریں",
   "home.hero.rankingButton": "متحد درجہ بندی دیکھیں",
   "home.hero.studioLink": "تخلیق کار اسٹوڈیو",
   "home.hero.createLink": "تخلیق کار بورڈ",
@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "اشاعت پلیٹ فارم",
   "home.hero.stats.genres": "صنف کی سپیکٹرم",
   "home.hero.stats.reviews": "قارئین کے جائزے",
-  "home.loadError": "گھر کے اعداد و شمار کو لوڈ نہیں کر سکا.",
+  "home.loadError": "ہوم لوڈ نہیں ہو سکا۔ براہ کرم کچھ دیر بعد دوبارہ کوشش کریں۔",
   "home.creatorTitle": "ایک خیال سے آپ کے پہلے منظر تک"
 }

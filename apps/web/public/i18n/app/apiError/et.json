@@ -1,7 +1,7 @@
 {
   "apiError.loginRequired": "Sisselogimine on nõutav.",
-  "apiError.adminRequired": "Admin-luba ei saanud kontrollida.",
-  "apiError.adminOnlyPage": "See leht on piiratud administraatoritega.",
+  "apiError.adminRequired": "Administraatori õigusi ei õnnestunud kontrollida.",
+  "apiError.adminOnlyPage": "See leht on ainult administraatoritele.",
   "apiError.notFound": "Taotletud üksust ei leitud.",
   "apiError.unsupportedType": "Toetamata sisu tüüp.",
   "apiError.inactiveAccount": "Mitteaktiivsed kontod ei saa administraatori funktsioone kasutada.",

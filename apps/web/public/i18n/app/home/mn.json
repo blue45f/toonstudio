@@ -4,7 +4,7 @@
   "home.hero.titleShimmer": "Нэгдсэн индекс",
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Naver Webtoon, Series болон Kakao Webtoon-оос хайж, бодит цагийн дохио болон уншигчдын сонголтоор унших зүйлээ хурдан нарийсгаарай.",
-  "home.hero.searchButton": "Гарчиг, бүтээгч, шошго хайх",
+  "home.hero.searchButton": "Бүтээл, бүтээгч, шошго хайх",
   "home.hero.rankingButton": "Нэгдсэн зэрэглэлийг харах",
   "home.hero.studioLink": "Бүтээгчийн студи",
   "home.hero.createLink": "Бүтээгчийн самбар",
@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Нийтлэх платформууд",
   "home.hero.stats.genres": "Жанрын спектр",
   "home.hero.stats.reviews": "Уншигчдын сэтгэгдэл",
-  "home.loadError": "Нүүр хуудасны өгөгдлийг ачаалж чадсангүй.",
+  "home.loadError": "Нүүр хуудсыг ачаалж чадсангүй. Түр хүлээгээд дахин оролдоно уу.",
   "home.creatorTitle": "Санаанаас эхлээд таны анхны үзэгдэл хүртэл"
 }

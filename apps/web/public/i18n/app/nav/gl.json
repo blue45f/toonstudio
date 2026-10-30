@@ -1,17 +1,17 @@
 {
   "nav.home": "Inicio",
   "nav.ranking": "Clasificación",
-  "nav.calendar": "Calendario",
+  "nav.calendar": "Series",
   "nav.recommend": "Recomendados",
-  "nav.explore": "Explora",
+  "nav.explore": "Explorar",
   "nav.fortune": "Horóscopo",
   "nav.play": "Xogos arcade",
-  "nav.reviews": "Reseñas",
+  "nav.reviews": "Recensións",
   "nav.community": "Comunidade",
   "nav.market": "Mercado",
   "nav.insights": "Estadísticas",
   "nav.create": "Crear",
-  "nav.shaper": "Formador de caracteres",
+  "nav.shaper": "Modelador de personaxes",
   "nav.library": "Biblioteca",
   "nav.login": "Iniciar sesión",
   "nav.search": "Buscar obras, ferramentas e menús",
@@ -20,7 +20,7 @@
   "nav.menu": "Menú",
   "nav.allMenu": "Todos os menús",
   "nav.studio": "Estudio",
-  "nav.assets": "Activos",
+  "nav.assets": "Materiais",
   "nav.creators": "Creadores",
-  "nav.discover": "Descubra"
+  "nav.discover": "Descubrir"
 }

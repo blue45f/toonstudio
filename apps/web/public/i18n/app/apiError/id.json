@@ -2,8 +2,8 @@
   "apiError.loginRequired": "Anda perlu masuk.",
   "apiError.adminRequired": "Izin administrator tidak bisa diverifikasi.",
   "apiError.adminOnlyPage": "Halaman ini terbatas pada administrator.",
-  "apiError.notFound": "Barang yang diminta tidak dapat ditemukan.",
+  "apiError.notFound": "Item yang diminta tidak dapat ditemukan.",
   "apiError.unsupportedType": "Jenis konten yang tidak didukung.",
   "apiError.inactiveAccount": "Akun yang tidak aktif tidak dapat menggunakan fitur administrator.",
-  "apiError.settlementFailed": "Proses penyelesaian gagal."
+  "apiError.settlementFailed": "Proses penyelesaian pembayaran gagal. Silakan coba lagi beberapa saat lagi."
 }

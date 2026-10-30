@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Megjelenési platformok",
   "home.hero.stats.genres": "Műfajspektrum",
   "home.hero.stats.reviews": "Olvasói értékelések",
-  "home.loadError": "Nem sikerült betölteni a főoldal adatait.",
+  "home.loadError": "Nem sikerült betölteni a főoldalt. Próbáld újra egy kicsit később.",
   "home.creatorTitle": "Egy ötlettől az első jelenetedig"
 }

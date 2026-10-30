@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "ورود لازم است.",
-  "apiError.adminRequired": "اجازه های مدیر نمی توانستند تایید شوند.",
+  "apiError.adminRequired": "امکان تأیید دسترسی مدیر وجود ندارد.",
   "apiError.adminOnlyPage": "این صفحه فقط برای مدیران محدود شده است.",
-  "apiError.notFound": "ماده مورد نظر پیدا نشد.",
+  "apiError.notFound": "مورد درخواستی پیدا نشد.",
   "apiError.unsupportedType": "نوع محتوای غیر پشتیبانی شده",
   "apiError.inactiveAccount": "حساب های غیر فعال نمی توانند از ویژگی های مدیر استفاده کنند.",
-  "apiError.settlementFailed": "پردازش تصفیع شکست خورده"
+  "apiError.settlementFailed": "پردازش تسویه ناموفق بود. لطفاً کمی بعد دوباره تلاش کنید."
 }

@@ -1,9 +1,9 @@
 {
   "nav.home": "गृह",
-  "nav.ranking": "वरियता",
+  "nav.ranking": "वरीयता",
   "nav.calendar": "शृङ्खला",
   "nav.recommend": "सिफारिस गरिएको",
-  "nav.explore": "खोज्नुहोस्",
+  "nav.explore": "अन्वेषण",
   "nav.fortune": "राशिफल",
   "nav.play": "आर्केड",
   "nav.reviews": "समीक्षाहरू",
@@ -11,7 +11,7 @@
   "nav.market": "बजार",
   "nav.insights": "तथ्यांक",
   "nav.create": "सिर्जना गर्नुहोस्",
-  "nav.shaper": "चरित्र आकार",
+  "nav.shaper": "क्यारेक्टर शेपर",
   "nav.library": "पुस्तकालय",
   "nav.login": "लग इन गर्नुहोस्",
   "nav.search": "कथाहरू, उपकरणहरू र मेनुहरू खोज्नुहोस्",
@@ -20,7 +20,7 @@
   "nav.menu": "मेनु",
   "nav.allMenu": "सबै मेनु",
   "nav.studio": "स्टुडियो",
-  "nav.assets": "सम्पत्ति",
+  "nav.assets": "सामग्री",
   "nav.creators": "सिर्जनाकर्ताहरू",
   "nav.discover": "पत्ता लगाउनुहोस्"
 }

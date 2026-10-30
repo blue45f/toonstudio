@@ -8,7 +8,7 @@
   "auth.callback.message.working": "መግባቱን በማጠናቀቅ ላይ…",
   "auth.callback.error.badState": "ልክ ያልሆነ ሁኔታ መለኪያ።",
   "auth.callback.error.noCode": "የፍቃድ ኮድ የለም።",
-  "auth.callback.error.oauthFailed": "የOAuth ልውውጥ አልተሳካም። ወደ መግቢያ ገጽ ተመልሰው እንደገና ይሞክሩ።",
+  "auth.callback.error.oauthFailed": "መግባቱን ማጠናቀቅ አልተቻለም። ወደ መግቢያ ገጽ ተመልሰው እንደገና ይሞክሩ።",
   "auth.callback.error.unsupported": "ያልተደገፈ የመግቢያ አቅራቢ።",
   "auth.callback.error.accessDenied": "መግባቱ ተሰርዟል።",
   "auth.callback.error.generic": "መግባት አልተሳካም። ወደ መግቢያ ገጽ ተመልሰው እንደገና ይሞክሩ።",

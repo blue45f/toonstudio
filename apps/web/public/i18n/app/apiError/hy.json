@@ -1,7 +1,7 @@
 {
   "apiError.loginRequired": "Անհրաժեշտ է մուտք գործել:",
   "apiError.adminRequired": "Չհաջողվեց հաստատել ադմինիստրատորի թույլտվությունները։",
-  "apiError.adminOnlyPage": "Այս էջը սահմանափակված է կառավարիչների համար:",
+  "apiError.adminOnlyPage": "Այս էջը հասանելի է միայն ադմինիստրատորներին։",
   "apiError.notFound": "Պահանջվող տարրը չի գտնվել։",
   "apiError.unsupportedType": "Չաջակցվող բովանդակության տեսակ։",
   "apiError.inactiveAccount": "Ոչ ակտիվ հաշիվները չեն կարող օգտագործել ադմինիստրատորի գործառույթները։",

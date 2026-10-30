@@ -2,7 +2,7 @@
   "account.tabs.posts": "Indlæg",
   "account.tabs.activity": "Aktivitet",
   "account.tabs.profile": "Profil",
-  "account.signIn.title": "Log ind påkrævet",
+  "account.signIn.title": "Login påkrævet",
   "account.signIn.message": "Log ind for at se dine indlæg, din aktivitet og din profil.",
   "account.signIn.cta": "Log ind",
   "account.posts.errorTitle": "Dine indlæg kunne ikke indlæses. Prøv igen om et øjeblik.",

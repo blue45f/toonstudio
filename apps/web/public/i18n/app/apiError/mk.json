@@ -2,8 +2,8 @@
   "apiError.loginRequired": "Потребна е најава.",
   "apiError.adminRequired": "Дозволите на администраторите не можеа да се потврдат.",
   "apiError.adminOnlyPage": "Оваа страница е ограничена на администраторите.",
-  "apiError.notFound": "Не може да се најде бараната стока.",
+  "apiError.notFound": "Бараната ставка не може да се најде.",
   "apiError.unsupportedType": "Тип на содржина не поддржан.",
   "apiError.inactiveAccount": "Неактивните сметки не можат да користат функции на администраторот.",
-  "apiError.settlementFailed": "Процесот на уредување не успеа."
+  "apiError.settlementFailed": "Обработката на порамнувањето не успеа. Обидете се повторно малку подоцна."
 }

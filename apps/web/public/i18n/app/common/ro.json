@@ -1,6 +1,6 @@
 {
-  "common.loading": "Încarcare",
-  "common.loading.short": "Încarcare",
+  "common.loading": "Încărcare",
+  "common.loading.short": "Încărcare",
   "common.close": "Închide",
   "common.open": "Deschide",
   "common.search": "Caută",
@@ -10,7 +10,7 @@
   "common.backToHome": "Mergeți la pagina principală",
   "common.loading.search": "Se caută…",
   "common.notFoundWithQuery": "Niciun rezultat pentru „{query}”.",
-  "common.openSearch": "Căutați-l în Căutare →",
+  "common.openSearch": "Căutați din nou în căutarea completă →",
   "common.loading.empty": "Nu au fost returnate date.",
-  "common.retry.all": "Încearcă din nou sau întoarce-te acasă."
+  "common.retry.all": "Încercați din nou sau mergeți la pagina principală."
 }

@@ -1,6 +1,6 @@
 {
   "apiError.loginRequired": "Aanmelding word vereis.",
-  "apiError.adminRequired": "Admin-toestemmings kon nie verifieer word nie.",
+  "apiError.adminRequired": "Administrateurstoestemmings kon nie geverifieer word nie.",
   "apiError.adminOnlyPage": "Hierdie bladsy is beperk tot administrateurs.",
   "apiError.notFound": "Die gevraagde item kon nie gevind word nie.",
   "apiError.unsupportedType": "Inhoudstipe word nie ondersteun nie.",

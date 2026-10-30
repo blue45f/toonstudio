@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Asarlar, ijodkorlar, teglarni qidirish",
   "home.hero.rankingButton": "Birlashgan reytingni koʻrish",
   "home.hero.studioLink": "Ijodkor studiyasi",
-  "home.hero.createLink": "Ijodkorlar taxtasi",
+  "home.hero.createLink": "Ijodkorlar forumi",
   "home.hero.stats.titles": "Asarlar",
   "home.hero.stats.platforms": "Nashr etish platformalari",
   "home.hero.stats.genres": "Janr spektri",
   "home.hero.stats.reviews": "Oʻquvchilarning sharhlari",
-  "home.loadError": "Bosh sahifa maʻlumotlarini yuklab boʻlmadi.",
+  "home.loadError": "Bosh sahifani yuklab boʻlmadi. Birozdan soʻng qayta urinib koʻring.",
   "home.creatorTitle": "Fikrdan birinchi sahnangizga"
 }

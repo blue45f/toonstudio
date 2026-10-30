@@ -1,5 +1,5 @@
 {
-  "auth.menu.triggerLabel": "مینیو حساب",
+  "auth.menu.triggerLabel": "منوی حساب",
   "auth.menu.adminPanel": "کنسول مدیریت",
   "auth.menu.profile": "پروفایل من",
   "auth.menu.settings": "تنظیمات",
@@ -8,16 +8,16 @@
   "auth.callback.message.working": "در حال تکمیل ورود…",
   "auth.callback.error.badState": "پارامتر وضعیت نامعتبر است.",
   "auth.callback.error.noCode": "کد مجوز وجود ندارد.",
-  "auth.callback.error.oauthFailed": "تبادل OAuth ناموفق بود.",
+  "auth.callback.error.oauthFailed": "ورود تکمیل نشد. به صفحه ورود برگردید و دوباره تلاش کنید.",
   "auth.callback.error.unsupported": "ارائه‌دهنده ورود پشتیبانی نمی‌شود.",
   "auth.callback.error.accessDenied": "ورود لغو شد.",
   "auth.callback.error.generic": "ورود ناموفق بود. به صفحه ورود برگردید و دوباره تلاش کنید.",
   "auth.callback.error.noUser": "نمی توان اطلاعات کاربر را تأیید کرد.",
   "auth.callback.error.invalidAccess": "دسترسی نامعتبر.",
-  "auth.callback.error.failed": "هنگام ورود خطایی رخ داد.",
+  "auth.callback.error.failed": "مشکلی پیش آمد و ورود تکمیل نشد. به صفحه ورود برگردید و دوباره تلاش کنید.",
   "auth.callback.message.done": "ورود انجام شد. به‌زودی هدایت می‌شوید.",
   "auth.callback.message.doneDemo": "ورود با حساب دمو انجام شد. به‌زودی هدایت می‌شوید.",
   "auth.callback.demo.message": "شما با یک حساب دمو وارد شده اید. برخی از ویژگی ها ممکن است محدود باشند.",
   "auth.callback.backToLogin": "بازگشت به ورود",
-  "auth.callback.slowHelp": "این بیش از حد معمول طول می‌کشد. اگر این صفحه ماند، به ورود برگردید و دوباره تلاش کنید."
+  "auth.callback.slowHelp": "اتصال بیش از حد معمول طول می‌کشد. اگر این صفحه همچنان نمایش داده شد، به صفحه ورود برگردید و دوباره تلاش کنید."
 }

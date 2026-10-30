@@ -2,7 +2,7 @@
   "command.palette.placeholder": "Cari judul, pencipta, dan tag...",
   "command.palette.label": "Pencarian",
   "command.palette.group.shortcuts": "Akses cepat",
-  "command.palette.group.recent": "Judul terbaru",
+  "command.palette.group.recent": "Judul yang baru dilihat",
   "command.palette.group.results": "Judul",
   "command.palette.quick.search": "Pencarian global",
   "command.palette.quick.ranking": "Peringkat",
@@ -11,8 +11,8 @@
   "command.palette.quick.random": "Judul acak",
   "command.palette.quick.calendar": "Kalender penerbitan",
   "command.palette.quick.compare": "Perbandingan judul",
-  "command.palette.quick.explore": "Menjelajahi / Genre",
-  "command.palette.quick.insights": "Dashboard tren",
+  "command.palette.quick.explore": "Jelajahi / Genre",
+  "command.palette.quick.insights": "Laporan tren",
   "command.palette.quick.library": "Perpustakaanku",
   "command.palette.quick.searchHint": "Judul, pencipta, tag",
   "command.palette.quick.rankingHint": "Peringkat di 6 sumbu",
@@ -20,8 +20,8 @@
   "command.palette.quick.fortuneHint": "Saju, tarot, kompatibilitas",
   "command.palette.quick.randomHint": "Satu judul acak",
   "command.palette.quick.calendarHint": "Penerbitan mingguan",
-  "command.palette.quick.compareHint": "Bandingkan dua karya berdekatan",
-  "command.palette.quick.exploreHint": "Menjelajahi spektrum",
+  "command.palette.quick.compareHint": "Bandingkan dua karya secara berdampingan",
+  "command.palette.quick.exploreHint": "Jelajahi spektrum",
   "command.palette.quick.insightsHint": "Wawasan pasar dari data",
-  "command.palette.quick.libraryHint": "Minat, rating, rasa"
+  "command.palette.quick.libraryHint": "Minat, rating, selera"
 }

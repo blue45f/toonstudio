@@ -3,15 +3,15 @@
   "home.hero.titleLine1": "Ցրված պատմություններ,",
   "home.hero.titleShimmer": "Մեկ միասնական ինդեքս",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Փնտրեք Naver Webtoon, Series, եւ Kakao Webtoon- ի միջոցով, ապա արագ սահմանափակեք այն, ինչ պետք է կարդաք ՝ օգտագործելով իրական ժամանակի ազդանշաններ եւ ընթերցողի նախասիրություններ:",
+  "home.hero.description": "Որոնեք Naver Webtoon-ում, Series-ում և Kakao Webtoon-ում, ապա արագ նեղացրեք ընտրությունը՝ օգտագործելով իրական ժամանակի ազդանշաններն ու ընթերցողների նախասիրությունները։",
   "home.hero.searchButton": "Որոնել վերնագրեր, ստեղծողներ, թեգեր",
   "home.hero.rankingButton": "Նայեք միասնական դասակարգումը",
   "home.hero.studioLink": "Ստեղծողի ստուդիա",
-  "home.hero.createLink": "Ստեղծիչի վահանակ",
-  "home.hero.stats.titles": "Վերնագրեր",
+  "home.hero.createLink": "Ստեղծողների ֆորում",
+  "home.hero.stats.titles": "Ստեղծագործություններ",
   "home.hero.stats.platforms": "Հրապարակման հարթակներ",
   "home.hero.stats.genres": "Ժանրային սպեկտր",
-  "home.hero.stats.reviews": "Ընթերցողների ակնարկներ",
-  "home.loadError": "Չհաջողվեց բեռնել գլխավոր էջի տվյալները։",
-  "home.creatorTitle": "Քո գաղափարից մինչեւ քո առաջին տեսարանը"
+  "home.hero.stats.reviews": "Ընթերցողների կարծիքներ",
+  "home.loadError": "Չհաջողվեց բեռնել գլխավոր էջը։ Խնդրում ենք փորձել մի փոքր ուշ։",
+  "home.creatorTitle": "Գաղափարից մինչև առաջին տեսարան"
 }

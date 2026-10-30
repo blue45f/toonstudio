@@ -3,15 +3,15 @@
   "home.hero.titleLine1": "විසිරී ගිය කතා,",
   "home.hero.titleShimmer": "තනි දර්ශකයක්",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Naver Webtoon, Series සහ Kakao Webtoon හරහා සොයන්න, ඉන්පසු තත්‍ය කාලීන සංඥා සහ පාඨක අභිරුචි භාවිතයෙන් කියවිය යුතු දේ ඉක්මනින් පටු කරන්න.",
-  "home.hero.searchButton": "සෙවුම් මාතෘකා, නිර්මාණකරුවන්, ටැග්",
+  "home.hero.description": "Naver Webtoon, Series සහ Kakao Webtoon හරහා සොයන්න, ඉන්පසු තථ්‍ය කාලීන සංඥා සහ පාඨක අභිරුචි භාවිතයෙන් කියවිය යුතු දේ ඉක්මනින් පටු කරන්න.",
+  "home.hero.searchButton": "කෘති, නිර්මාණකරුවන්, ටැග් සොයන්න",
   "home.hero.rankingButton": "ඒකාබද්ධ ශ්‍රේණිගත කිරීම් බලන්න",
   "home.hero.studioLink": "නිර්මාණකරුවන්ගේ චිත්‍රාගාරය",
   "home.hero.createLink": "නිර්මාණකරුවන්ගේ පුවරුව",
-  "home.hero.stats.titles": "නාමාවලිය",
+  "home.hero.stats.titles": "ඇතුළත් කෘති",
   "home.hero.stats.platforms": "ප්‍රකාශන වේදිකා",
   "home.hero.stats.genres": "ප්‍රභේද වර්ණාවලිය",
   "home.hero.stats.reviews": "පාඨකයන්ගේ සමාලෝචන",
-  "home.loadError": "මුල් පිටු දත්ත පූරණය කළ නොහැකි විය.",
-  "home.creatorTitle": "අදහසක් සිට ඔබේ පළමු දර්ශනය දක්වා"
+  "home.loadError": "මුල් පිටුව පූරණය කළ නොහැකි විය. කරුණාකර ටික වේලාවකින් නැවත උත්සාහ කරන්න.",
+  "home.creatorTitle": "අදහසක සිට ඔබේ පළමු දර්ශනය දක්වා"
 }

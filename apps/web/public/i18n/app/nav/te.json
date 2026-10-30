@@ -1,12 +1,12 @@
 {
   "nav.home": "హోమ్",
   "nav.ranking": "ర్యాంకింగ్",
-  "nav.calendar": "క్యాలెండర్",
-  "nav.recommend": "సిఫార్సు කළవి",
+  "nav.calendar": "ధారావాహికలు",
+  "nav.recommend": "సిఫార్సులు",
   "nav.explore": "అన్వేషించండి",
-  "nav.fortune": "హార్సోస్కోప్",
+  "nav.fortune": "రాశిఫలాలు",
   "nav.play": "ఆర్కేడ్",
-  "nav.reviews": "समीక్షలు",
+  "nav.reviews": "సమీక్షలు",
   "nav.community": "సముదాయం",
   "nav.market": "మార్కెట్",
   "nav.insights": "గణాంకాలు",
@@ -18,9 +18,9 @@
   "nav.searchOpen": "కథలు, సాధనాలు మరియు మెనుల కోసం ఏకీకృత శోధనను తెరవండి",
   "nav.quickAccess": "వేగవంతమైన యాక్సెస్",
   "nav.menu": "మెను",
-  "nav.allMenu": "అన్ని మెను",
+  "nav.allMenu": "పూర్తి మెను",
   "nav.studio": "స్టూడియో",
-  "nav.assets": "ఆస్తులు",
-  "nav.creators": "సృష్టికర్తలు",
-  "nav.discover": "తెలుసుకోండి"
+  "nav.assets": "సామగ్రి",
+  "nav.creators": "సృష్టి గ్యాలరీ",
+  "nav.discover": "కథలను అన్వేషించండి"
 }

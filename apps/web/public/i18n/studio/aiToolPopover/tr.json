@@ -1,16 +1,16 @@
 {
   "studio.aiToolPopover.title": "Yapay zeka entegrasyonu",
-  "studio.aiToolPopover.description": "Taslak, stok ve senaryoyu bağlayın ve bağlantı sekmesinde temel ayarları yönetin.",
+  "studio.aiToolPopover.description": "Taslak, stok ve senaryoyu bağlayın; anahtar ayarlarını entegrasyon sekmesinden yönetin.",
   "studio.aiToolPopover.menuAria": "AI menü alanı",
-  "studio.aiToolPopover.tabAssist": "yardım etmek",
+  "studio.aiToolPopover.tabAssist": "Yardım",
   "studio.aiToolPopover.tabAssistTitle": "BYOK arka plan, karakter, kompozisyon önerisi",
-  "studio.aiToolPopover.tabScenario": "senaryo",
+  "studio.aiToolPopover.tabScenario": "Senaryo",
   "studio.aiToolPopover.tabScenarioDisabled": "Master düzenleme sırasında kullanılamaz.",
   "studio.aiToolPopover.tabScenarioTitle": "senaryo tasarımı",
-  "studio.aiToolPopover.tabStock": "stok",
-  "studio.aiToolPopover.tabStockTitle": "Ücretsiz Fotoğrafları Unsplash",
-  "studio.aiToolPopover.tabIntegrations": "ayarlar",
-  "studio.aiToolPopover.tabIntegrationsTitle": "API anahtarı/bağlantı ayarları",
+  "studio.aiToolPopover.tabStock": "Stok",
+  "studio.aiToolPopover.tabStockTitle": "Unsplash ücretsiz fotoğrafları",
+  "studio.aiToolPopover.tabIntegrations": "Ayarlar",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API anahtarı/entegrasyon ayarları",
   "studio.aiToolPopover.panelLoadingAssist": "AI Yardım paneli açılıyor...",
   "studio.aiToolPopover.panelLoadingStock": "Stok fotoğraf paneli açılıyor...",
   "studio.aiToolPopover.panelLoadingIntegrations": "Entegrasyon ayarları paneli açılıyor...",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Metin Yapay Zeka Sağlayıcısı",
   "studio.aiToolPopover.serverTextAiProviderAria": "Sunucu Metni Yapay Zeka Sağlayıcısı",
   "studio.aiToolPopover.serverProviderAuto": "otomatik geçiş",
-  "studio.aiToolPopover.serverFallbackMessage": "Bakiye/paket limitiniz dolduğunda başka bir sağlayıcıya geçeceksiniz. Çift şarjı önlemek için genel hatalar otomatik olarak yeniden gönderilmez.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "Bakiye/paket limiti dolduğunda başka bir sağlayıcıya geçilir. Çift ücretlendirmeyi önlemek için genel hatalar otomatik olarak yeniden gönderilmez.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Master düzenleme sırasında bölüm için AI kare üretimi kullanılamaz."
 }

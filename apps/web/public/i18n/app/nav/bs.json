@@ -11,7 +11,7 @@
   "nav.market": "Tržište",
   "nav.insights": "Statistika",
   "nav.create": "Kreiraj",
-  "nav.shaper": "Oblikovač karaktera",
+  "nav.shaper": "Oblikovač likova",
   "nav.library": "Biblioteka",
   "nav.login": "Prijavi se",
   "nav.search": "Pretraži priče, alate i menije",
@@ -21,6 +21,6 @@
   "nav.allMenu": "Cijeli meni",
   "nav.studio": "Studio",
   "nav.assets": "Materijali",
-  "nav.creators": "Stvoritelji",
+  "nav.creators": "Kreativna galerija",
   "nav.discover": "Otkrijte"
 }

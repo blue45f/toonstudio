@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Platform penerbitan",
   "home.hero.stats.genres": "Spektrum genre",
   "home.hero.stats.reviews": "Ulasan pembaca",
-  "home.loadError": "Tidak bisa memuat data rumah.",
+  "home.loadError": "Tidak dapat memuat beranda. Silakan coba lagi nanti.",
   "home.creatorTitle": "Dari ide ke adegan pertama Anda"
 }

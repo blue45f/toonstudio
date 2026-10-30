@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Mga kuwento na nag-uulat,",
+  "home.hero.titleLine1": "Mga kuwentong nakakalat,",
   "home.hero.titleShimmer": "Isang solong index",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Maghanap sa pamamagitan ng Naver Webtoon, Series, at Kakao Webtoon, pagkatapos ay mabilis na i-strain down kung ano ang basahin gamit ang mga real-time signal at mga kagustuhan ng mambabasa.",
+  "home.hero.description": "Maghanap sa Naver Webtoon, Series, at Kakao Webtoon, at mabilis na paliitin kung ano ang babasahin gamit ang mga real-time signal at kagustuhan ng mga mambabasa.",
   "home.hero.searchButton": "Paghahanap ng mga pamagat, mga tagalikha, mga tag",
-  "home.hero.rankingButton": "Tingnan ang pinagtibay na ranggo",
+  "home.hero.rankingButton": "Tingnan ang pinagsamang ranggo",
   "home.hero.studioLink": "Studio ng mga tagalikha",
-  "home.hero.createLink": "Puntahan ng tagalikha",
+  "home.hero.createLink": "Board ng mga tagalikha",
   "home.hero.stats.titles": "Mga pamagat",
   "home.hero.stats.platforms": "Mga plataporma ng pag-publish",
   "home.hero.stats.genres": "Mga spectrum ng genre",
   "home.hero.stats.reviews": "Mga pagsusuri ng mga mambabasa",
-  "home.loadError": "Hindi ko na nai-load ang data sa bahay.",
+  "home.loadError": "Hindi ma-load ang home. Pakisubukang muli mamaya.",
   "home.creatorTitle": "Mula sa isang ideya hanggang sa iyong unang eksena"
 }

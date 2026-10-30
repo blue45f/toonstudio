@@ -1,10 +1,10 @@
 {
   "nav.home": "Trang chủ",
   "nav.ranking": "Xếp hạng",
-  "nav.calendar": "Lịch ra",
+  "nav.calendar": "Lịch đăng",
   "nav.recommend": "Gợi ý",
   "nav.explore": "Khám phá",
-  "nav.fortune": "Khí thiên",
+  "nav.fortune": "Tử vi",
   "nav.play": "Khu trò chơi",
   "nav.reviews": "Đánh giá",
   "nav.community": "Cộng đồng",
@@ -16,11 +16,11 @@
   "nav.login": "Đăng nhập",
   "nav.search": "Tìm kiếm tác phẩm, công cụ và menu",
   "nav.searchOpen": "Mở tìm kiếm hợp nhất cho tác phẩm, công cụ và menu",
-  "nav.quickAccess": "Phiên bản nhanh",
+  "nav.quickAccess": "Truy cập nhanh",
   "nav.menu": "Trình đơn",
   "nav.allMenu": "Tất cả menu",
   "nav.studio": "Studio",
-  "nav.assets": "Tài sản",
+  "nav.assets": "Tư liệu",
   "nav.creators": "Các nhà sáng tạo",
-  "nav.discover": "Khám phá"
+  "nav.discover": "Khám phá tác phẩm"
 }
