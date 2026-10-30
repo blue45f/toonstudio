@@ -502,6 +502,16 @@ for (const [viewportName, viewport] of viewports) {
                 result.contrastAuditError = String(error).slice(0, 500);
               }
             }
+            // GPU 초기화 오류나 권한 응답이 캡처 중 늦게 도착할 수 있으므로 최종 화면 상태를 다시 읽는다.
+            // 최초 대기 시간 초과는 그대로 보존해 뒤늦은 DOM 변경이 실패 기록을 지우지 못하게 한다.
+            const finalReadiness = await page.evaluate(inspectAuditRouteReadiness);
+            result.readiness = {
+              ...result.readiness,
+              ...finalReadiness,
+              observedStates: [...new Set([...result.readiness.observedStates, finalReadiness.outcome])],
+            };
+            result.finalPath = finalReadiness.pathname;
+            result.redirected = result.finalPath !== new URL(route, base).pathname;
             const { issues, warnings } = auditReadinessFindings(result.readiness, route);
             if (!result.visibleImagesReady) warnings.push("visible-images-pending");
             if ((result.status ?? 0) >= 400) issues.push(`http-${result.status}`);

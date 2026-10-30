@@ -109,6 +109,18 @@
       "exitCode": 0,
       "evidence": "artifacts/full-ux-audit/resume-20261030/local-leakcheck.log",
       "sha256": "3dcd45271dd5bcaa089a6149f71591204fc5aec4e5b795862358a9a89df20021"
+    },
+    {
+      "name": "audit-portal-final-tests",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/audit-portal-final-tests.log",
+      "sha256": "596c79551da7c6661535bc350ded2ee31bdf32ed6a760e9e48bb84ffa3bdabaa"
+    },
+    {
+      "name": "focused-audit-final",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/focused-audit-final.log",
+      "sha256": "58d00d2b1f3e9ab05eff56d742e6d64e7b0238f35155edce277495d35a821765"
     }
   ],
   "sourceFileSha256": {
@@ -147,11 +159,11 @@
     "e2e/studio-exact-resume.spec.ts": "925aabfa77bdb2b1946284b83e7e6ff7d70243e77de51be9fca99de65c0ea011",
     "e2e/usability-first-session.spec.ts": "e3c4898ef7870904f18d21408f38f53b2c5139b244be4bea5102d0e6be8b4985",
     "playwright.non-studio.config.ts": "46b55c057ac493c7127ce081a79159cdb60c18b0efc3f9761829d93daf7a3e19",
-    "scripts/audit-sitewide-visual-ux.mjs": "fa1859b0b8b7761e12971c9a472da1265d6efd20caae85848778657b1daa50be",
+    "scripts/audit-sitewide-visual-ux.mjs": "af21cd2e65846a7708d2967f0fb6a4631b31b4ddb19c7961d6030dc671ea142a",
     "scripts/lib/sitewide-audit-route-inventory.mjs": "057d4607a611f2042f52c65a29cff30e9b56d42cd218ef44d721579ce665bc15",
     "scripts/lib/sitewide-audit-route-inventory.test.mjs": "c933f1ccbe79716de028a9b2dbd6896d0aee84acc4b87ce4bc869641fe0e0f59",
-    "scripts/lib/sitewide-visual-ux-audit.mjs": "8b4530ba108924bf32614850743ce1453acc7d4e4c4a06568872e620aa056758",
-    "scripts/lib/sitewide-visual-ux-audit.test.mjs": "5d8766bd130ce2e8c7810fb3970daf242276310482a95e66eb565c8428697585",
+    "scripts/lib/sitewide-visual-ux-audit.mjs": "5f711ec1f83ca3381c184ed2792fbe29748958a7855a259c56e6eb7cba18e679",
+    "scripts/lib/sitewide-visual-ux-audit.test.mjs": "4a315789b850685dfc987ddcf5714377d9d17fb476f0f1bb4b65c2fa9351423b",
     "scripts/lib/studio-drawing-readiness.test.ts": "89dc92bb4787adb02f911ee65f3c32a7a8c57e73a48665a516051a5396d95fb8",
     "scripts/lib/studio-drawing-readiness.ts": "df2c4fe3d147b072c21c6dba361c337a978388c330d0b59cd3aaeebf93354bba"
   },
@@ -162,5 +174,13 @@
     "실물 휴대폰·펜·Safari·Firefox 전체 미검증",
     "공개 API 503 fixture 화면 준비성은 해당 기능 성공을 뜻하지 않음",
     "별도의 사용자 집단 평가 또는 SUS 점수 아님"
-  ]
+  ],
+  "focusedObservation": {
+    "observations": 6,
+    "criticalFindings": 0,
+    "authGate": 3,
+    "gpuDegraded": 3,
+    "functionalVerification": "not-performed",
+    "manualContrastReviewStillRequired": true
+  }
 }

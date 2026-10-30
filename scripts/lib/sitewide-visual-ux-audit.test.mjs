@@ -298,3 +298,65 @@ test("관리자 인증 조회의 로딩·오류와 숨겨진 안내를 구분한
   const root = documentFor('<div class="route-stage" data-route-state="ready"><h1>관리 현황</h1><div data-admin-access-state="guest" hidden>이전 안내</div></div>');
   assert.equal(inspectAuditRouteReadiness(root).outcome, "ready");
 });
+
+
+test("3D 전용 경로의 body 포털은 실제 본문이며 그래픽 복구 안내는 제한 상태다", () => {
+  const root = documentFor('<div class="route-stage" data-route-state="ready"></div><div data-testid="studio-bg3d-dialog" role="dialog"><h2>장면 도우미</h2><button data-testid="studio-bg3d-recovery-webgl2">다른 엔진 선택</button></div>');
+  root.defaultView.history.replaceState({}, "", "/studio/bg3d");
+  const result = inspectAuditRouteReadiness(root);
+  assert.equal(result.ownedPortal, "studio-bg3d");
+  assert.equal(result.outcome, "degraded");
+  assert.equal(result.gpuRecoveryVisible, true);
+  assert.equal(result.contentElements, 2);
+  assert.deepEqual(classifyAuditRouteCoverage(result, "/studio/bg3d"), { content: "degraded", functionalVerification: "not-performed" });
+});
+
+test("복구 경고 없는 작업별 3D 포털은 렌더 도달만 보고하고 기능 완료로 올리지 않는다", () => {
+  const root = documentFor('<div class="route-stage" data-route-state="ready"></div><div data-testid="studio-bg3d-dialog"><h2>장면 도우미</h2><button>배치</button></div>');
+  root.defaultView.history.replaceState({}, "", "/studio/work/sample/bg3d");
+  const result = inspectAuditRouteReadiness(root);
+  assert.equal(result.outcome, "ready");
+  assert.equal(result.gpuRecoveryVisible, false);
+  assert.equal(classifyAuditRouteCoverage(result, "/studio/work/sample/bg3d").functionalVerification, "not-performed");
+});
+
+test("다른 경로의 3D 팝업이나 일반 모달을 빈 본문의 대체 증거로 쓰지 않는다", () => {
+  const root = documentFor('<div class="route-stage" data-route-state="ready"></div><div data-testid="studio-bg3d-dialog"><h2>다른 기능</h2></div><div role="dialog"><button>확인</button></div>');
+  assert.equal(inspectAuditRouteReadiness(root).outcome, "empty");
+  root.defaultView.history.replaceState({}, "", "/studio/bg3d");
+  root.querySelector('[data-testid="studio-bg3d-dialog"]').remove();
+  assert.equal(inspectAuditRouteReadiness(root).outcome, "empty");
+});
+
+test("숨은 3D 포털과 이전 렌더 수명 보존 노드는 본문 준비성에 포함하지 않는다", () => {
+  for (const attributes of ['hidden', 'aria-hidden="true"', 'style="display:none"']) {
+    const root = documentFor(`<div class="route-stage" data-route-state="ready"></div><div data-testid="studio-bg3d-dialog" ${attributes}><h2>숨겨진 장면</h2></div>`);
+    root.defaultView.history.replaceState({}, "", "/studio/bg3d");
+    assert.equal(inspectAuditRouteReadiness(root).outcome, "empty");
+  }
+});
+
+test("3D 포털이 보여도 경로 로딩·오류·stage 누락을 감추지 않는다", () => {
+  for (const [stage, expected] of [
+    ['<div class="route-stage" data-route-state="pending"></div>', "pending"],
+    ['<div class="route-stage" data-route-state="error"></div>', "error"],
+    ['', "missing"],
+  ]) {
+    const root = documentFor(`${stage}<div data-testid="studio-bg3d-dialog"><h2>장면</h2></div>`);
+    root.defaultView.history.replaceState({}, "", "/studio/bg3d");
+    assert.equal(inspectAuditRouteReadiness(root).outcome, expected);
+  }
+});
+
+
+test("본문 내부의 3D 화면에서도 늦게 나타난 그래픽 복구 안내를 제한 상태로 갱신한다", () => {
+  const root = documentFor('<div class="route-stage" data-route-state="ready"><div data-testid="studio-bg3d-dialog"><h2>장면</h2></div></div>');
+  root.defaultView.history.replaceState({}, "", "/studio/bg3d");
+  assert.equal(inspectAuditRouteReadiness(root).outcome, "ready");
+  const dialog = root.querySelector('[data-testid="studio-bg3d-dialog"]');
+  dialog.insertAdjacentHTML("beforeend", '<button data-testid="studio-bg3d-recovery-webgpu">다시 시도</button>');
+  const result = inspectAuditRouteReadiness(root);
+  assert.equal(result.ownedPortal, null);
+  assert.equal(result.outcome, "degraded");
+  assert.equal(result.gpuRecoveryVisible, true);
+});

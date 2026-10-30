@@ -20,9 +20,17 @@ export function inspectAuditRouteReadiness(root = document) {
   const developmentErrorOverlay = [...root.querySelectorAll("vite-error-overlay")].some(visible);
   const state = stage?.getAttribute("data-route-state") ?? "missing";
   const readinessSource = stage?.getAttribute("data-route-readiness-source") ?? "none";
-  const count = (selector) => stage
-    ? [...stage.querySelectorAll(selector)].filter(visible).length
-    : 0;
+  // 3D 전용 경로는 본문을 body 포털에 그린다. 다른 경로의 임의 팝업은 본문 증거로 쓰지 않는다.
+  const bg3dRoute = /^\/studio\/(?:work\/[^/]+\/)?bg3d\/?$/u.test(view.location.pathname);
+  const bg3dPortal = bg3dRoute ? root.querySelector('[data-testid="studio-bg3d-dialog"]') : null;
+  const ownedPortal = stage && visible(bg3dPortal) && bg3dPortal.getAttribute("aria-hidden") !== "true"
+    && !stage.contains(bg3dPortal) ? bg3dPortal : null;
+  const scopes = stage ? [stage, ...(ownedPortal ? [ownedPortal] : [])] : [];
+  const elements = (selector) => [...new Set(scopes.flatMap((scope) => [...scope.querySelectorAll(selector)]))];
+  const count = (selector) => elements(selector).filter(visible).length;
+  const gpuRecoveryVisible = bg3dRoute && count(
+    '[data-testid="studio-bg3d-recovery-webgl2"], [data-testid="studio-bg3d-recovery-webgpu"]',
+  ) > 0;
   const adminAccess = stage?.querySelector("[data-admin-access-state]");
   const adminAccessState = visible(adminAccess) ? adminAccess.getAttribute("data-admin-access-state") : null;
   const authGateVisible = adminAccessState === "guest" || adminAccessState === "forbidden";
@@ -34,10 +42,8 @@ export function inspectAuditRouteReadiness(root = document) {
   const recoveryVisible = count("[data-route-recovery]") > 0;
   const skeletons = count(".skeleton, [data-skeleton], [data-testid='skeleton']");
   const ignored = "[data-route-semantic-heading], [data-route-recovery], [data-route-loading-fallback], [data-route-pending], [data-route-chrome], [aria-busy='true'], [aria-hidden='true'], .sr-only, .skeleton, [data-skeleton]";
-  const contentElements = stage
-    ? [...stage.querySelectorAll("h1,h2,h3,a[href],button,input,select,textarea,canvas,img,video,[role='alert'],[role='status']")]
-      .filter((element) => visible(element) && !element.closest(ignored)).length
-    : 0;
+  const contentElements = elements("h1,h2,h3,a[href],button,input,select,textarea,canvas,img,video,[role='alert'],[role='status']")
+    .filter((element) => visible(element) && !element.closest(ignored)).length;
   let outcome = "ready";
   if (developmentErrorOverlay) outcome = "error";
   else if (!stage) outcome = "missing";
@@ -46,7 +52,7 @@ export function inspectAuditRouteReadiness(root = document) {
   else if (pendingMarkers || adminAccessState === "loading" || state === "pending" || stage.getAttribute("aria-busy") === "true") outcome = "pending";
   else if (errorMarkers || adminAccessState === "error" || state === "error") outcome = "error";
   else if (blockedMarkers || authGateVisible || state === "blocked") outcome = "blocked";
-  else if (degradedMarkers || state === "degraded") outcome = "degraded";
+  else if (degradedMarkers || gpuRecoveryVisible || state === "degraded") outcome = "degraded";
   else if (skeletons && contentElements <= 1) outcome = "skeleton";
   else if (state !== "ready" || !contentElements) outcome = "empty";
   return {
@@ -55,6 +61,8 @@ export function inspectAuditRouteReadiness(root = document) {
     readinessSource,
     adminAccessState,
     authGateVisible,
+    ownedPortal: ownedPortal ? "studio-bg3d" : null,
+    gpuRecoveryVisible,
     outcome,
     developmentErrorOverlay,
     loadingFallbacks,
