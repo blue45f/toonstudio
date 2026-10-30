@@ -12,5 +12,5 @@
   "common.notFoundWithQuery": "Няма резултати за \" {query} \".",
   "common.openSearch": "Намерете го в търсенето →",
   "common.loading.empty": "Няма данни.",
-  "common.retry.all": "Опитай отново или се върни към началната страница."
+  "common.retry.all": "Опитайте отново или се върнете към началната страница."
 }

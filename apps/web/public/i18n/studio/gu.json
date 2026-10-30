@@ -1047,7 +1047,7 @@
   "studio.mainMenu.item.brush.import-pack": "બ્રશ આયાત કરો (ABR · MYB · KPP)...",
   "studio.mainMenu.item.ai.ai-assist": "એઆઈ સહાય",
   "studio.mainMenu.item.ai.stock": "સ્ટોક છબીઓ",
-  "studio.mainMenu.item.ai.integrations": "લિંક સેટિંગ્સ",
+  "studio.mainMenu.item.ai.integrations": "એકીકરણ સેટિંગ્સ",
   "studio.mainMenu.group.transform.label": "પરિવર્તન",
   "studio.mainMenu.hint.transform.description": "સ્કેલ, ફેરવો અને પસંદગી અથવા સ્તરને વિકૃત કરો.",
   "studio.mainMenu.item.transform.pixel-transform": "પસંદગીનું પરિવર્તન કરો",

@@ -1047,7 +1047,7 @@
   "studio.mainMenu.item.brush.import-pack": "தூரிகைகளை இறக்குமதி செய் (ABR · MYB · KPP)…",
   "studio.mainMenu.item.ai.ai-assist": "AI உதவி",
   "studio.mainMenu.item.ai.stock": "ஸ்டாக் படங்கள்",
-  "studio.mainMenu.item.ai.integrations": "இணைப்பு அமைப்புகள்",
+  "studio.mainMenu.item.ai.integrations": "ஒருங்கிணைப்பு அமைப்புகள்",
   "studio.mainMenu.group.transform.label": "மாற்றம்",
   "studio.mainMenu.hint.transform.description": "தேர்வு அல்லது அடுக்கின் அளவை மாற்றவும், சுழற்றவும், சிதைக்கவும்.",
   "studio.mainMenu.item.transform.pixel-transform": "தேர்வை உருமாற்று",

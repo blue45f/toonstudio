@@ -217,7 +217,7 @@
   "studio.mainMenu.item.brush.import-pack": "ນຳເຂົ້າແປງ (ABR · MYB · KPP)…",
   "studio.mainMenu.item.ai.ai-assist": "AI ຊ່ວຍ",
   "studio.mainMenu.item.ai.stock": "ຮູບພາບສະຕັອກ",
-  "studio.mainMenu.item.ai.integrations": "ການຕັ້ງຄ່າການເຊື່ອມຕໍ່",
+  "studio.mainMenu.item.ai.integrations": "ການຕັ້ງຄ່າການເຊື່ອມໂຍງ",
   "studio.mainMenu.group.transform.label": "ປ່ຽນແປງ",
   "studio.mainMenu.hint.transform.description": "ປັບຂະໜາດ, ໝູນ ແລະ ບິດເບືອນສ່ວນທີ່ເລືອກ ຫຼື ຊັ້ນ.",
   "studio.mainMenu.item.transform.pixel-transform": "ປ່ຽນຮູບສ່ວນທີ່ເລືອກ",

@@ -1047,7 +1047,7 @@
   "studio.mainMenu.item.brush.import-pack": "ייבוא מברשות (ABR · MYB · KPP)…",
   "studio.mainMenu.item.ai.ai-assist": "סיוע בינה מלאכותית",
   "studio.mainMenu.item.ai.stock": "תמונות מלאי",
-  "studio.mainMenu.item.ai.integrations": "הגדרות קישור",
+  "studio.mainMenu.item.ai.integrations": "הגדרות אינטגרציה",
   "studio.mainMenu.group.transform.label": "שינוי צורה",
   "studio.mainMenu.hint.transform.description": "שינוי גודל, סיבוב ועיוות של הבחירה או השכבה.",
   "studio.mainMenu.item.transform.pixel-transform": "שינוי צורת הבחירה",

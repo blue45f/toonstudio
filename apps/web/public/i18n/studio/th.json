@@ -838,7 +838,7 @@
   "studio.mainMenu.group.view.label": "ดู",
   "studio.mainMenu.group.filter.label": "กรอง",
   "studio.mainMenu.group.draw.label": "การวาดภาพ",
-  "studio.mainMenu.group.ai.label": "เอไอ",
+  "studio.mainMenu.group.ai.label": "AI",
   "studio.mainMenu.item.file.fallbackDescription": "เปิดคำสั่งเมนูไฟล์อย่างรวดเร็วเพื่อจัดการสินทรัพย์และโปรเจ็กต์ของคุณ",
   "studio.mainMenu.item.edit.fallbackDescription": "เมนูแก้ไขมีการควบคุมการเลิกทำ คลิปบอร์ด ลำดับเลเยอร์ และการเลือกทั้งหมดพร้อมกัน",
   "studio.mainMenu.item.insert.fallbackDescription": "จากเมนูแทรก คุณสามารถแทรกเทมเพลต รูปร่าง รูปภาพ ตัวละคร และเนื้อหา 3 มิติลงในฉากได้",

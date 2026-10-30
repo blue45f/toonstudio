@@ -19,9 +19,9 @@
   "tipping.dialog.successBody": "तपाईंको {amount} टिप सर्जकलाई पुर्‍याइयो। धन्यवाद!",
   "tipping.dialog.successTitle": "टिप पुर्‍याइयो!",
   "tipping.dialog.title": "यो एपिसोडलाई टिप दिनुहोस्",
-  "tipping.ranking.emptyBody": "पाठकहरूले तपाईंका एपिसोडहरूलाई टिप दिँदा, एपिसोडअनुसारको वरियता यहाँ देखिनेछ।",
+  "tipping.ranking.emptyBody": "पाठकहरूले तपाईंका एपिसोडहरूलाई टिप दिँदा, एपिसोडअनुसारको वरीयता यहाँ देखिनेछ।",
   "tipping.ranking.emptyTitle": "अझै कुनै टिप प्राप्त भएको छैन",
-  "tipping.ranking.rank": "वरियता {rank}",
+  "tipping.ranking.rank": "वरीयता {rank}",
   "tipping.ranking.stats": "{count} टिपहरू · {supporters} समर्थकहरू",
   "tipping.ranking.title": "एपिसोडअनुसार टिपहरू"
 }

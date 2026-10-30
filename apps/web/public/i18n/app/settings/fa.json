@@ -20,10 +20,10 @@
   "settings.filters.clear.desc": "فیلترهای ذخیره شده را از تمام صفحات حذف کنید.",
   "settings.filters.saved": "ذخیره شد",
   "settings.filters.clearNow": "پاک کردن فیلترها",
-  "settings.age.title": "نمایش نشان بزرگسالان",
+  "settings.age.title": "نمایش جلدهای 19+",
   "settings.age.descriptionVerified": "سن بالای 19 سال تأیید شد",
   "settings.age.descriptionVerifiedWithBirthdate": "سن بالای 19 سال تأیید شد ({date})",
-  "settings.age.description": "با تأیید سن بالای 19 سال از طریق تاریخ تولد، نشان بزرگسالان نمایش داده می‌شود.",
+  "settings.age.description": "با تأیید سن بالای 19 سال از طریق تاریخ تولد، جلد آثار 19+ نمایش داده می‌شود.",
   "settings.age.reset": "لغو تأیید",
   "settings.age.verify": "تأیید سن",
   "settings.data.export": "خروجی گرفتن از پشتیبان کتابخانه",
@@ -49,7 +49,7 @@
   "settings.data.confirmDelete": "بازنشانی همه",
   "settings.data.statsDesc": "آمار بازدید",
   "settings.account.title": "مدیریت حساب · لغو عضویت",
-  "settings.account.desc": "ویرایش پروفایل و لغو عضویت در صفحه اطلاعات من امکان‌پذیر است. با لغو عضویت، اطلاعات ورود شما حذف و نشست شما منقضی می‌شود.",
+  "settings.account.desc": "ویرایش پروفایل و لغو عضویت در صفحه «پروفایل من» امکان‌پذیر است. با لغو عضویت، اطلاعات ورود شما حذف و نشست شما منقضی می‌شود.",
   "settings.account.manage": "مدیریت حساب",
   "settings.account.toProfile": "برو به پروفایل"
 }

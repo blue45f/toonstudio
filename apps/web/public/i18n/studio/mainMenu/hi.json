@@ -217,7 +217,7 @@
   "studio.mainMenu.item.brush.import-pack": "ब्रश आयात करें (ABR · MYB · KPP)...",
   "studio.mainMenu.item.ai.ai-assist": "एआई सहायता",
   "studio.mainMenu.item.ai.stock": "स्टॉक छवियाँ",
-  "studio.mainMenu.item.ai.integrations": "लिंक सेटिंग्स",
+  "studio.mainMenu.item.ai.integrations": "एकीकरण सेटिंग्स",
   "studio.mainMenu.group.transform.label": "परिवर्तन",
   "studio.mainMenu.hint.transform.description": "चयन या परत को मापें, घुमाएं और विकृत करें।",
   "studio.mainMenu.item.transform.pixel-transform": "चयन रूपांतरित करें",

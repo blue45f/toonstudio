@@ -1047,7 +1047,7 @@
   "studio.mainMenu.item.brush.import-pack": "ब्रशहरू आयात गर्नुहोस् (ABR · MYB · KPP)...",
   "studio.mainMenu.item.ai.ai-assist": "एआई सहयोग",
   "studio.mainMenu.item.ai.stock": "स्टक छविहरू",
-  "studio.mainMenu.item.ai.integrations": "लिङ्क सेटिङहरू",
+  "studio.mainMenu.item.ai.integrations": "एकीकरण सेटिङहरू",
   "studio.mainMenu.group.transform.label": "परिवर्तन",
   "studio.mainMenu.hint.transform.description": "चयन क्षेत्र वा तहको आकार बदल्ने, घुमाउने र विकृत गर्ने।",
   "studio.mainMenu.item.transform.pixel-transform": "चयन क्षेत्र रूपान्तरण गर्नुहोस्",

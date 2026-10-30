@@ -2442,7 +2442,7 @@
   "settings.filters.clear.desc": "စာမျက်နှာအားလုံးမှ သိမ်းထားသော စစ်ထုတ်မှုများကို ဖယ်ရှားပါ။",
   "settings.filters.saved": "သိမ်းပြီး",
   "settings.filters.clearNow": "စစ်ထုတ်မှုများ ရှင်းရန်",
-  "settings.age.title": "လူကြီး တံဆိပ် မြင်နိုင်မှု",
+  "settings.age.title": "19+ မျက်နှာဖုံးများ ကြည့်ရှုခြင်း",
   "settings.age.descriptionVerified": "19+ အဖြစ် စစ်ဆေးထားသည်",
   "settings.age.descriptionVerifiedWithBirthdate": "19+ ({date}) အဖြစ် စစ်ဆေးထားသည်",
   "settings.age.description": "မွေးသက္ကရာဇ်ဖြင့် အသက် ၁၉ နှစ်ပြည့်ကြောင်း အတည်ပြုပြီးပါက 19+ မျက်နှာဖုံးများကို မြင်ရပါမည်။",

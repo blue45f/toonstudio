@@ -1047,7 +1047,7 @@
   "studio.mainMenu.item.brush.import-pack": "匯入筆刷 (ABR · MYB · KPP)...",
   "studio.mainMenu.item.ai.ai-assist": "人工智慧輔助",
   "studio.mainMenu.item.ai.stock": "圖庫圖片",
-  "studio.mainMenu.item.ai.integrations": "連結設定",
+  "studio.mainMenu.item.ai.integrations": "整合設定",
   "studio.mainMenu.group.transform.label": "變形",
   "studio.mainMenu.hint.transform.description": "調整選取範圍與圖層的大小、旋轉與扭曲。",
   "studio.mainMenu.item.transform.pixel-transform": "變形選取範圍",
