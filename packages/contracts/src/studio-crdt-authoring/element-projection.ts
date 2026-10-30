@@ -86,8 +86,5 @@ export function isAdmittedStudioCrdtProjectionAsset(element: StudioCrdtCompatibl
   const src: unknown = Reflect.get(element, "src"), reference = typeof src === "string" ? parseStudioWorkAssetSourceUri(src) : null;
   return reference?.assetId === element.id && reference.elementType === element.type;
 }
-export function studioCrdtProjectionGroupKey(pageId: string, id: string): string {
-  if (!pageId || !id || id === "page-root") fail("레이어 그룹 식별자가 올바르지 않습니다.");
-  return `${pageId.length}:${pageId}${id.length}:${id}`;
-}
+export { studioCrdtProjectionGroupKey } from "./group-key";
 function fail(message: string): never { throw new Error(message); }
