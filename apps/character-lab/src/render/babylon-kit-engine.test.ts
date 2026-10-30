@@ -8,7 +8,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, KIT_HIDEABLE_REGION_IDS, rolePartId } from "../contracts";
 import { hexToSrgb01 } from "../shared/color";
@@ -26,6 +27,7 @@ import type { KitFixture, KitFixtureOptions } from "./testing/kit-glb-fixture";
 import type { NullEngineHarness } from "./testing/null-engine-harness";
 import type { Material } from "@babylonjs/core/Materials/material.js";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
 /**
@@ -50,6 +52,7 @@ interface KitEnv {
 const cleanups: Array<() => void> = [];
 
 afterEach(() => {
+  vi.restoreAllMocks();
   while (cleanups.length > 0) cleanups.pop()?.();
 });
 
@@ -314,7 +317,7 @@ describe("키트 틴트(RigPart.tint)", () => {
 // ---------------------------------------------------------------- 외곽선 정책
 
 describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
-  it("키트: 피부·머리와 눈·입 안 계열 역할(안구·홍채·하이라이트·눈썹·속눈썹·치아·혀)은 hull을 켜지 않고 헤어·의상·신발·속옷은 켠다", async () => {
+  it("키트: 머리·눈·입 안·속옷을 제외하고 피부·헤어·의상·신발 hull을 켠다", async () => {
     const env = await bootKit();
     env.h.engine.setShading(toon());
     const parts = env.h.engine.inspectRig()?.parts ?? [];
@@ -324,6 +327,104 @@ describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
     const present = new Set(parts.map((part) => part.role));
     for (const role of KIT_OUTLINE_EXEMPT_ROLES) if (role !== "pupil") expect(present.has(role), role).toBe(true);
     expect(parts.filter((part) => part.renderOutline).map((part) => part.role)).toEqual(["skin", "hair", "top", "bottom", "shoes"]);
+  });
+
+  it("키트 피부의 native hull 깊이만 생략하고 모드·필압 전환과 절차 소스에서는 원본 렌더 경로를 유지한다", async () => {
+    const env = await bootKit();
+    const sizes = vi.spyOn(ShaderMaterial.prototype, "setVector3");
+    const depths = vi.spyOn(ShaderMaterial.prototype, "setFloat");
+    const renderer = env.scene.getOutlineRenderer();
+    // 실제 GPU draw 직전의 readiness만 막는다. 원본 render에 도달했는지는 SDK의 호출로 검증한다.
+    const ready = vi.spyOn(renderer, "isReady").mockReturnValue(false);
+    const depthPass = (mesh: Mesh) => {
+      const subMesh = mesh.subMeshes[0];
+      if (!subMesh) throw new Error("외곽선 검증용 SubMesh 없음");
+      ready.mockClear();
+      env.h.nullEngine.setColorWrite(false);
+      env.h.nullEngine.setDepthWrite(true);
+      try { renderer.render(subMesh, mesh._getInstancesRenderList(subMesh._id), false); }
+      finally { env.h.nullEngine.setColorWrite(true); }
+      return ready.mock.calls.length;
+    };
+    const skinName = partByRole(env, "skin").meshNames[0];
+    const skin = env.scene.getMeshByName(skinName) as Mesh;
+    env.h.engine.setShading(toon());
+    expect(skin.renderOutline).toBe(true);
+    expect(depthPass(skin)).toBe(0);
+    const top = env.scene.getMeshByName(partByRole(env, "top").meshNames[0]) as Mesh;
+    expect(depthPass(top)).toBe(1);
+    for (const shading of [
+      { ...DEFAULT_SHADING, mode: "pbr" } as const,
+      toon({ outline: "none" }), toon({ outline: "edge" }), toon({ outlinePressure: true }),
+    ]) {
+      env.h.engine.setShading(shading);
+      expect(depthPass(skin)).toBe(1);
+    }
+    expect(env.scene.useRightHandedSystem).toBe(true);
+    const firstPressure = env.scene.getMeshByName(`pressure-outline:${skin.name}`);
+    if (!firstPressure?.material) throw new Error("필압 외곽선 proxy 재질 없음");
+    const firstPressureMaterial = firstPressure.material;
+    // 공개 setter의 수신 재질과 인수를 확인한다. NullEngine의 GPU uniform readback 검증은 아니다.
+    for (const [rightHanded, reverseDepth, expectedSkinDepth] of [
+      [true, false, -0.003], [false, false, 0.003], [false, true, 0.003], [true, true, -0.003],
+    ] as const) {
+      env.scene.useRightHandedSystem = rightHanded;
+      env.h.nullEngine.useReverseDepthBuffer = reverseDepth;
+      sizes.mockClear();
+      depths.mockClear();
+      env.h.engine.setShading(toon({ outlinePressure: true }));
+      expect(env.h.nullEngine.useReverseDepthBuffer).toBe(reverseDepth);
+      expect(env.scene.getMeshByName(`pressure-outline:${skin.name}`)).toBe(firstPressure);
+      for (const [source, expectedSize, expectedDepth] of [
+        [skin, [0.003, 0.0006, 0.002], expectedSkinDepth],
+        [top, [0.006, 0.0012, 0.004], 0],
+      ] as const) {
+        const material = env.scene.getMeshByName(`pressure-outline:${source.name}`)?.material;
+        if (!(material instanceof ShaderMaterial)) throw new Error("필압 외곽선 ShaderMaterial 없음");
+        const size = sizes.mock.calls.filter(([name], index) => name === "outlineSize" && sizes.mock.contexts[index] === material).at(-1)?.[1];
+        expect(size).toMatchObject({ x: expect.closeTo(expectedSize[0], 8), y: expect.closeTo(expectedSize[1], 8), z: expect.closeTo(expectedSize[2], 8) });
+        const depth = depths.mock.calls.filter(([name], index) => name === "outlineDepthOffset" && depths.mock.contexts[index] === material).at(-1)?.[1];
+        expect(depth).toBeCloseTo(expectedDepth, 8);
+      }
+    }
+    env.scene.useRightHandedSystem = true;
+    env.h.nullEngine.useReverseDepthBuffer = false;
+    env.h.engine.setShading(toon());
+    expect(firstPressure.isDisposed()).toBe(true);
+    expect(env.scene.getMeshByName(`pressure-outline:${skin.name}`)).toBeNull();
+    expect(depthPass(skin)).toBe(0);
+    sizes.mockClear();
+    depths.mockClear();
+    env.h.engine.setShading(toon({ outlinePressure: true }));
+    const renewedPressure = env.scene.getMeshByName(`pressure-outline:${skin.name}`);
+    const renewedMaterial = renewedPressure?.material;
+    if (!(renewedMaterial instanceof ShaderMaterial)) throw new Error("재생성한 필압 외곽선 ShaderMaterial 없음");
+    expect(renewedPressure).not.toBe(firstPressure);
+    expect(renewedMaterial).not.toBe(firstPressureMaterial);
+    expect(sizes.mock.calls.filter(([name], index) => name === "outlineSize" && sizes.mock.contexts[index] === renewedMaterial).at(-1)?.[1])
+      .toMatchObject({ x: expect.closeTo(0.003, 8), y: expect.closeTo(0.0006, 8), z: expect.closeTo(0.002, 8) });
+    expect(depths.mock.calls.filter(([name], index) => name === "outlineDepthOffset" && depths.mock.contexts[index] === renewedMaterial).at(-1)?.[1])
+      .toBeCloseTo(-0.003, 8);
+    env.h.engine.setShading(toon());
+    expect(depthPass(skin)).toBe(0);
+    await env.h.engine.renderThumbnail({ presetId: "hair/soft-bob", plan: planFor(env), size: 96, framing: DEFAULT_FRAMING, source: { kind: "kit", plan: env.fixture.plan } });
+    expect(skin.renderOutline).toBe(true);
+    expect(depthPass(skin)).toBe(0);
+    await env.h.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
+    const proceduralSkin = env.scene.getMeshByName(partByRole(env, "skin").meshNames[0]) as Mesh;
+    expect(proceduralSkin.renderOutline).toBe(true);
+    expect(depthPass(proceduralSkin)).toBe(1);
+    sizes.mockClear();
+    depths.mockClear();
+    env.h.engine.setShading(toon({ outlinePressure: true }));
+    const proceduralMaterial = env.scene.getMeshByName(`pressure-outline:${proceduralSkin.name}`)?.material;
+    if (!(proceduralMaterial instanceof ShaderMaterial)) throw new Error("절차 소스 필압 외곽선 ShaderMaterial 없음");
+    expect(sizes.mock.calls.filter(([name], index) => name === "outlineSize" && sizes.mock.contexts[index] === proceduralMaterial).at(-1)?.[1])
+      .toMatchObject({ x: expect.closeTo(0.006, 8), y: expect.closeTo(0.0012, 8), z: expect.closeTo(0.004, 8) });
+    expect(depths.mock.calls.filter(([name], index) => name === "outlineDepthOffset" && depths.mock.contexts[index] === proceduralMaterial).at(-1)?.[1]).toBe(0);
+    const wrapped = renderer.render;
+    env.h.dispose();
+    expect(renderer.render).not.toBe(wrapped);
   });
 
   it("키트 hull은 외곽선 렌더러의 깊이 오프셋을 0으로 둔다(꽉 낀 의상·신발을 뚫고 비치는 얼룩 방지), 절차 소스는 Babylon 기본값을 건드리지 않는다", async () => {
