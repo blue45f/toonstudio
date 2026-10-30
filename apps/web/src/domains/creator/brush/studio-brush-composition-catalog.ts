@@ -11,6 +11,7 @@ import {
   type StudioBrushEngineProgramSet,
 } from "./studio-brush-engine-program-set";
 import { compileStudioBrushCompositionRuntimeProgramSet } from "./studio-brush-composition-runtime";
+import { resolveStudioBrushEngineLaneWatercolorMaterial } from "./studio-brush-engine-lane-catalog";
 import { STUDIO_BRUSH_COMPOSITION_NODES_A } from "./studio-brush-composition-nodes-a";
 import { STUDIO_BRUSH_COMPOSITION_NODES_B } from "./studio-brush-composition-nodes-b";
 import {
@@ -93,7 +94,10 @@ export function createStudioBrushCompositionBaseline(
     });
   }
   if (family === "watercolor") {
-    const living = /inkwash|ink-wash|living/u.test(brushId);
+    // 젖은 종이 레인(먹 번짐·갈필)은 id 에 ink-wash 가 있어도 리빙잉크가 아니다. 리빙잉크로 기준을 잡으면 컴포저에서
+    // 무엇을 바꾸든 리빙잉크 덮어쓰기가 저장돼 레인의 젖은 종이 굽기가 조용히 꺼졌다.
+    const wetPaper = Boolean(resolveStudioBrushEngineLaneWatercolorMaterial(brushId)?.wetPaperBakeProgramId);
+    const living = !wetPaper && /inkwash|ink-wash|living/u.test(brushId);
     return completeComposition({
       motion: "adaptive-ema",
       carrier: "webgpu-wet-dabs",
