@@ -295,7 +295,7 @@ curl -sS -H @"$HF" "$A/api/health/capabilities"; rm -f "$HF"
 | onpod 전권 토큰 → 범위·만료 키 | 소유자 결정(`onpod key add`). 계정의 키는 전권·무기한 1개다 | 대기 |
 | 무료 티어 메모리 부족 시 유료 승급 | 비용 승인 | 조건부 |
 | `AGENTS.md` 8절·`deploy/STANDING_APPROVAL.json`에 onpod 단위 반영, `config/free-infrastructure-policy.json` 등록 | 소유자(보호 파일). 이번에는 사실 서술만 고쳤고 상시 승인 범위는 넓히지 않았다 | 대기 |
-| 0093 마이그레이션의 비한정 CREATE(7.2절) 수정 | 소유자 승인된 새 forward 마이그레이션 또는 파일 수정 | 대기 |
+| 0093 마이그레이션의 비한정 CREATE(7.2절) 수정 | 소유자 승인된 새 forward 마이그레이션 또는 파일 수정. [음성 메모 백업·복원 복구 절차](studio-review-voice-note-backup-repair.md) 참조 | 대기 |
 | 운영 DB 마이그레이션·진단 워크플로 대상 | `production-database-migrations.yml`·`health-recovery-diagnostics.yml`이 아직 Neon·Supabase를 가리킨다. onpod용 경로(`deploy/onpod/schema-apply`)로 바꿀지 결정 | 대기 |
 
 ## 9. 변경 이력
