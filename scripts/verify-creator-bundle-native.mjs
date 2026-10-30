@@ -16,7 +16,8 @@ import { WEB_PUBLIC } from "./lib/repo-paths.mjs";
 import { loadPackRightsLedger } from "./lib/creator-bundle-pack-rights.mjs";
 import { createBundleV2DeployPlan } from "./plan-creator-bundle-deploy.mjs";
 import { RELEASE_DESCRIPTOR_PATH, STATIC_URL_PREFIX } from "./publish-creator-bundle-release.mjs";
-import { assertNativeBundleReleaseCurrent, loadNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
+import { assertNativeBundleReleaseCurrent, createNativeBundleReleaseTrace, loadNativeBundleRelease,
+  NATIVE_RELEASE_COMPLETION_PREFIX, prepareNativeBundleReleaseCompletion } from "./lib/creator-bundle-native-release.mjs";
 import { ATLAS_NATIVE_INTAKE, assertPrivateNativeBody, isSupportedNativeIntake, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
 
 const options = {};
@@ -48,8 +49,8 @@ const catalogSha256 = createHash("sha256").update(themeBody).digest("hex");
 const themePacks = JSON.parse(themeBody);
 const ledger = loadPackRightsLedger();
 const releaseBinding = release?.binding;
-const releaseTrace = release ? { catalog: { ...releaseBinding.catalog, requests: 0 },
-  index: { ...releaseBinding.index, requests: 0 }, unexpected: [], descriptorRequests: 0 } : undefined;
+const releaseTrace = release ? createNativeBundleReleaseTrace(releaseBinding) : undefined;
+const completionNonces = new Set();
 const rightsContext = { themePacks, ledger, expectedIntake, catalogSha256, releaseBinding, releaseTrace };
 const rightsProblems = nativeCatalogRightsProblems(rightsContext);
 if (rightsProblems.length) throw new Error(`native 카탈로그/원장 권리 대조 실패: ${rightsProblems.join(" / ")}`);
@@ -162,6 +163,24 @@ try {
       }
       return;
     }
+    if (release && url.pathname.startsWith(NATIVE_RELEASE_COMPLETION_PREFIX)) {
+      const requestTarget = url.pathname + url.search + url.hash;
+      try {
+        const response = prepareNativeBundleReleaseCompletion(release, {
+          requestTarget, method: route.request().method(), usedNonces: completionNonces,
+        });
+        releaseTrace.completion.requests += 1;
+        await route.fulfill({ status: 200, contentType: "application/json", body: response.body,
+          headers: { "cache-control": "no-store", "x-toonstudio-qa-synthetic": "native-release-completion" } });
+        // 실제 fulfil 성공 이후만 응답으로 센다. 이 합성 응답은 실제 R2·운영 증거가 아니다.
+        releaseTrace.completion.responses.push(response.proof);
+      } catch (error) {
+        releaseTrace.unexpected.push(requestTarget);
+        errors.push(`로컬 completion 응답 거부: ${error instanceof Error ? error.message : String(error)}`);
+        await route.abort("failed");
+      }
+      return;
+    }
     if (url.pathname === "/assets/3d/environments/bundle-v1/theme-packs.json") {
       await route.fulfill({ contentType: "application/json", body: themeBody }); return;
     }
@@ -223,6 +242,7 @@ try {
     scope: "로컬 SHA URL 응답 · 실제 prepareVerifiedBg3dModelRecord · 모바일 Worker 전수 · 실제 Three 로더/2m 정규화 대표 검수. 운영 배포/실제 모바일 GPU 성능 검증은 아님.",
     lane, browserVersion: browser?.version(), browserBinary, browserGpuFlags, reusedValidation,
     catalogSha256, expectedIntake, releaseBinding, releaseTrace,
+    ...(release ? { qaSynthetic: true, actualR2Proof: false, productionValidation: false } : {}),
     assets: themePacks.assets.length, bytes: plan.totals.assetBytes, validated: rows.filter((row) => row.ok).length,
     failures: rows.filter((row) => !row.ok), worker, wrongHash, renders, problems, rawModelsPublished: false };
   writeFileSync(join(output, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);

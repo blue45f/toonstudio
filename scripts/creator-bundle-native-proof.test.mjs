@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { assertPrivateNativeBody, ATLAS_NATIVE_INTAKE, ATLAS_NATIVE_PACK, ATLAS_NATIVE_BASE_COUNTS, ATLAS_NATIVE_EXPECTED_MODELS, LICENSED_NATIVE_INTAKE, LICENSED_NATIVE_PACKS, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
 import { packRightsProjection } from "./lib/creator-bundle-pack-rights.mjs";
+import { createNativeBundleReleaseTrace } from "./lib/creator-bundle-native-release.mjs";
 import { FIXTURE_LIBRARY_PACK, fixtureLedger, fixtureLicenseText, ledgerEntry, qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -243,8 +244,13 @@ function atlasFixture() {
     compositeConfigSha256: "f".repeat(64), compositeConfigBytes: 1024,
     catalog: { url: `/assets/3d/environments/bundle-v1/theme-packs.${"c".repeat(64)}.json`, sha256: "c".repeat(64), bytes: 1234 },
     index: { url: `/assets/3d/environments/bundle-v1/deploy-index.${"d".repeat(64)}.json`, sha256: "d".repeat(64), bytes: 234 } };
-  const releaseTrace = { catalog: { ...releaseBinding.catalog, requests: 1 },
-    index: { ...releaseBinding.index, requests: 1 }, unexpected: [], descriptorRequests: 1 };
+  const releaseTrace = createNativeBundleReleaseTrace(releaseBinding);
+  releaseTrace.catalog.requests = 1; releaseTrace.index.requests = 1; releaseTrace.descriptorRequests = 1;
+  const nonce = "00000000-0000-4000-8000-000000000001";
+  releaseTrace.completion.requests = 1;
+  releaseTrace.completion.responses.push({ method: "GET", requestTarget: `${releaseTrace.completion.url}?release-check=${nonce}`,
+    releaseCheckNonce: nonce, status: 200, bodySha256: releaseBinding.index.sha256, bodyBytes: releaseBinding.index.bytes,
+    qaSynthetic: true, actualR2Proof: false, productionValidation: false });
   return { ...sample, themePacks, ledger, assets, rows, representatives, renders,
     expectedIntake: ATLAS_NATIVE_INTAKE, catalogSha256: "c".repeat(64),
     worker: { ...sample.worker, requests: calls, responses: calls }, releaseBinding, releaseTrace };
@@ -294,6 +300,10 @@ test("Atlas 판정은 전수5229 Worker·11대표·현재catalogSHA를 요구하
     (value) => { delete value.catalogSha256; },
     (value) => { delete value.releaseBinding; },
     (value) => { value.releaseTrace.index.requests = 0; },
+    (value) => { delete value.releaseTrace.completion; },
+    (value) => { value.releaseTrace.completion.requests = 0; },
+    (value) => { value.releaseTrace.completion.responses[0].bodySha256 = "f".repeat(64); },
+    (value) => { value.releaseTrace.actualR2Proof = true; },
     (value) => { value.releaseTrace.catalog.sha256 = "f".repeat(64); },
     (value) => { value.releaseTrace.unexpected.push("/assets/3d/environments/bundle-v1/theme-packs.json"); },
     (value) => { value.rows.at(-1).rights.status = "licensed"; },
@@ -310,6 +320,13 @@ test("Atlas 판정은 전수5229 Worker·11대표·현재catalogSHA를 요구하
     themePacks: proof.themePacks, ledger: proof.ledger, expectedIntake: ATLAS_NATIVE_INTAKE,
     releaseBinding: proof.releaseBinding };
   assert.deepEqual(reusableNativeValidationProblems(reusable), []);
+  // catalog/index 전용 과거 Atlas receipt는 새 completion 검사 성공 증거로 재해석하지 않는다.
+  const historicalSummary = structuredClone(summary);
+  delete historicalSummary.releaseTrace.completion;
+  delete historicalSummary.releaseTrace.qaSynthetic;
+  delete historicalSummary.releaseTrace.actualR2Proof;
+  delete historicalSummary.releaseTrace.productionValidation;
+  assert.ok(reusableNativeValidationProblems({ ...reusable, summary: historicalSummary }).length > 0);
   for (const patch of [
     { expectedIntake: LICENSED_NATIVE_INTAKE }, { assets: 1929, validated: 1929 },
     { catalogSha256: "d".repeat(64) },
