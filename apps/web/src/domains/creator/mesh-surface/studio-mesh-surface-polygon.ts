@@ -170,3 +170,83 @@ export function validateStudioHybridDccFanPolygon(
     }
   }
 }
+
+/**
+ * 위상 편집용 사각형 판정. 평면의 단순 오목 quad는 공통 ear 삼각화로 표시할 수 있다.
+ * 비평면 quad는 기존 fan 경계를 그대로 사용하며, child에는 원본 면 방향도 요구한다.
+ */
+export function validateStudioHybridDccQuadPolygon(
+  points: readonly StudioHybridDccPolygonPoint3[],
+  faceId: number,
+  sourceNormal?: StudioHybridDccPolygonPoint3,
+): StudioHybridDccPolygonPoint3 {
+  if (points.length !== 4) throw new Error(`면 ${faceId}는 네 코너의 사각형이어야 합니다.`);
+  if (points.some((point) => point.some((coordinate) => !Number.isFinite(coordinate)))) {
+    throw new Error(`면 ${faceId}에 유효하지 않은 좌표가 있습니다.`);
+  }
+  const anchor = points[0];
+  if (!anchor) throw new Error(`면 ${faceId}의 시작 코너가 없습니다.`);
+  let span = 0;
+  let nx = 0;
+  let ny = 0;
+  let nz = 0;
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+    if (!current || !next) throw new Error(`면 ${faceId}의 코너가 없습니다.`);
+    const ax = current[0] - anchor[0];
+    const ay = current[1] - anchor[1];
+    const az = current[2] - anchor[2];
+    const bx = next[0] - anchor[0];
+    const by = next[1] - anchor[1];
+    const bz = next[2] - anchor[2];
+    // 원점과의 거리에 따른 상쇄를 줄이되 Newell과 같은 유향 면적 벡터를 만든다.
+    nx += ay * bz - az * by;
+    ny += az * bx - ax * bz;
+    nz += ax * by - ay * bx;
+    span = Math.max(span, Math.abs(ax), Math.abs(ay), Math.abs(az));
+    for (let otherIndex = index + 1; otherIndex < points.length; otherIndex += 1) {
+      const other = points[otherIndex];
+      if (!other) throw new Error(`면 ${faceId}의 코너가 없습니다.`);
+      if (Math.hypot(current[0] - other[0], current[1] - other[1], current[2] - other[2]) <= 1e-12) {
+        throw new Error(`면 ${faceId}에 중복되거나 구분할 수 없는 코너가 있습니다.`);
+      }
+    }
+  }
+  const normalLength = Math.hypot(nx, ny, nz);
+  if (!Number.isFinite(normalLength) || normalLength <= 1e-10) {
+    throw new Error(`면 ${faceId}의 면적이 0이거나 불안정합니다.`);
+  }
+  const normal: StudioHybridDccPolygonPoint3 = [nx / normalLength, ny / normalLength, nz / normalLength];
+  const planeTolerance = Math.max(1e-7, span * 1e-5);
+  const nonPlanar = points.some((point) => Math.abs(
+    (point[0] - anchor[0]) * normal[0]
+      + (point[1] - anchor[1]) * normal[1]
+      + (point[2] - anchor[2]) * normal[2],
+  ) > planeTolerance);
+  if (nonPlanar) {
+    validateStudioHybridDccFanPolygon(points, faceId);
+  } else {
+    const projected = projectStudioHybridDccPolygon(points, normal);
+    const a = projected[0];
+    const b = projected[1];
+    const c = projected[2];
+    const d = projected[3];
+    if (!a || !b || !c || !d) throw new Error(`면 ${faceId}의 투영 코너가 없습니다.`);
+    const epsilon = Math.max(1e-10, span * span * 1e-10);
+    const twiceArea = cross2d(a, b, c) + cross2d(a, c, d);
+    if (!Number.isFinite(twiceArea) || Math.abs(twiceArea) <= epsilon) {
+      throw new Error(`면 ${faceId}의 투영 면적이 0입니다.`);
+    }
+    if (segmentsIntersect2d(a, b, c, d, epsilon) || segmentsIntersect2d(b, c, d, a, epsilon)) {
+      throw new Error(`면 ${faceId}는 자기 교차 다각형입니다.`);
+    }
+  }
+  if (sourceNormal) {
+    const alignment = normal[0] * sourceNormal[0] + normal[1] * sourceNormal[1] + normal[2] * sourceNormal[2];
+    if (!Number.isFinite(alignment) || alignment <= 1e-10) {
+      throw new Error(`면 ${faceId}의 절단 자식이 원본 면 방향에 대해 뒤집혔습니다.`);
+    }
+  }
+  return normal;
+}

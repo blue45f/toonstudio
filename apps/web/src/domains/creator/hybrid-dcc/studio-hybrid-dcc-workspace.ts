@@ -5,6 +5,7 @@
  */
 
 import { workspaceUnwrapUvActive } from "./studio-hybrid-dcc-uv-edit";
+import { applyStudioHybridDccLoopCut } from "./studio-hybrid-dcc-loop-cut-workspace";
 
 import { getStudioBg3dRoomPreset, buildStudioBg3dRoomParts } from "../bg3d/studio-bg3d-room-builder";
 import {
@@ -53,7 +54,6 @@ import {
   hashStudioEditableMesh,
   insetStudioEditableMeshFaces,
   knifeStudioEditableMesh,
-  loopCutStudioEditableMesh,
   setStudioEditableMeshCrease,
   setStudioEditableMeshFaceSmooth,
   studioEditableMeshToTriangleSoup,
@@ -645,15 +645,7 @@ export function workspaceLoopCutActive(
   factor = 0.5,
   startHalfEdgeId?: number,
 ): StudioHybridDccWorkspace {
-  const assetId = ws.activeAssetId;
-  if (!assetId) throw new Error("no active asset");
-  const record = ws.session.state.geometry.records[assetId];
-  if (!record) throw new Error(`missing ${assetId}`);
-  const selected = startHalfEdgeId ?? record.mesh.halfEdges[0]?.id;
-  if (selected === undefined) throw new Error("mesh has no edge to cut");
-  const result = loopCutStudioEditableMesh(record.mesh, selected, factor);
-  if (!result.ok) throw new Error(result.detail);
-  return commitWorkspaceActiveMesh(ws, assetId, result.value);
+  return applyStudioHybridDccLoopCut(ws, factor, startHalfEdgeId, commitWorkspaceActiveMesh);
 }
 
 export function workspaceWeldActive(
