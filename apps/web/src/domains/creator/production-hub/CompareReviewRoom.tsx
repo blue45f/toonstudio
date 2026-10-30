@@ -38,6 +38,7 @@ import type { ManuscriptPinAssigneeOption } from "./manuscript-pin-feedback-mode
 import { productionReviewLocalScope, productionReviewLocalScopeKey, readProductionReviewLocalState,
   writeProductionReviewLocalState, type ProductionReviewLocalScope } from "./production-review-local-state";
 import { acknowledgeCompareSendInbox, compareSendInboxEntryInPool, compareSendInboxToPoolItems, peekCompareSendInbox } from "./compare-send-inbox";
+import type { VoiceCompareController } from "./voice-compare-view";
 
 function createAssetId(prefix: string): string {
   if (typeof globalThis.crypto?.randomUUID === "function") return `${prefix}-${globalThis.crypto.randomUUID()}`;
@@ -91,6 +92,7 @@ export interface CompareReviewRoomProps {
    * compareSnapshotJson에 넣거나 buildExternalCompareReviewUrl로 링크에 실는다.
    */
   readonly onCreateCompareSnapshot?: (snapshot: CompareReviewSnapshot) => void;
+  readonly onVoiceCompareControllerChange?: (controller: VoiceCompareController | null) => void;
 }
 
 /**
@@ -121,6 +123,7 @@ function ScopedCompareReviewRoom({
   onPinGateSummaryChange,
   manuscriptsHref,
   onCreateCompareSnapshot,
+  onVoiceCompareControllerChange,
 }: CompareReviewRoomProps & { readonly localScope: ProductionReviewLocalScope }) {
   const bt = useBilingual("CompareReview");
   const actorId = currentActor.id ?? "me";
@@ -392,6 +395,7 @@ function ScopedCompareReviewRoom({
         onPickColor={onPickColor}
         onApplyPreset={handleApplyPreset}
         presetStatus={presetStatus}
+        onVoiceCompareControllerChange={onVoiceCompareControllerChange}
       />
 
       <ProductionViewerControlsBar initialMode="compare" />

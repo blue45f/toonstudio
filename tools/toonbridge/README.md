@@ -58,3 +58,25 @@ pnpm run test:production-toolchain
 
 HTTP 통합 테스트는 임시 loopback port에 실제 service를 띄워 origin 거절, 인증, stream upload,
 child 실행, hash, receipt, download를 검증한다.
+
+## current — 선택적 로컬 Blender 작업의 보존 계약
+
+Blender 어댑터는 사용자가 직접 연결한 로컬 프로그램의 선택적 실행 경로다.
+ToonStudio 웹 편집을 사용하기 위해 Blender 설치나 원격 Blender 서버를 요구하지 않는다.
+
+- 입력 `.blend`를 열기 전에 factory startup과 자동 스크립트 실행 차단을 적용한다.
+  어댑터의 Python 예외는 종료 코드 `42`로 반환해 성공 결과로 처리하지 않는다.
+- 장면 렌더는 저장된 현재 프레임·카메라·해상도와 원본 compositor의 주 이미지를 유지한다.
+  compositor의 별도 파일 출력은 막고, Freestyle의 Python script 모드는 실행 전에 거부한다.
+- GLB 출력은 평가된 메시를 내보내되 Shape Key가 있으면 morph target을 보존한다.
+  이때 함께 보존할 수 없는 모디파이어는 원본을 고치거나 형태를 잃는 대신 구체적인 오류로 알린다.
+- 선화는 카메라·해상도를 유지하면서 별도의 흰 world·표면과 검정 Freestyle 선 집합을 구성한다.
+  기존 compositor·sequencer가 선화 결과를 바꾸지 않게 한다. 원본 `.blend` 파일은 저장하지 않는다.
+
+실제 Blender 검증은 저장소 루트에서 다음과 같이 실행한다. 임시 fixture만 생성·삭제하며
+프레임·해상도·모디파이어·Shape Key·선화 픽셀·실패 종료·원본 파일 보존을 확인한다.
+
+```sh
+blender --background --factory-startup --disable-autoexec --python-exit-code 42 \
+  --python tools/toonbridge/test/blender-adapters.integration.py
+```

@@ -2,13 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { verifySessionToken } from "./server/session";
 import { isSessionAllowed } from "./server/user-lifecycle";
-import { AUTH_SESSION_COOKIE_NAME, resolveSessionCookieValue } from "./session-cookie";
+import { AUTH_SESSION_COOKIE_NAME, resolveSessionCookieName, resolveSessionCookieValue } from "./session-cookie";
 import {
   getSessionAuthenticationPrincipal,
   getSessionAuthenticationSource,
   sessionAuth,
 } from "./session-middleware";
 
+import type { Request } from "express";
+
+function request(headers: Request["headers"]): Request {
+  return { headers } as Request;
+}
 
 vi.mock("./server/session", () => ({
   verifySessionToken: vi.fn(),
@@ -27,7 +32,7 @@ describe("session middleware", () => {
     vi.mocked(isSessionAllowed).mockReset();
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
   it("uses valid x-user-id token first", async () => {
     const next = vi.fn();
@@ -38,7 +43,7 @@ describe("session middleware", () => {
     });
     vi.mocked(isSessionAllowed).mockResolvedValue(true);
 
-    const req = { headers: { "x-user-id": "raw-token" } } as never;
+    const req = request({ "x-user-id": "raw-token" });
     sessionAuth(req, {} as never, next);
     await nextTick();
 
@@ -58,11 +63,7 @@ describe("session middleware", () => {
     );
     vi.mocked(isSessionAllowed).mockResolvedValue(true);
 
-    const req = {
-      headers: {
-        cookie: `${AUTH_SESSION_COOKIE_NAME}=cookie-token`,
-      },
-    } as never;
+    const req = request({ cookie: `${AUTH_SESSION_COOKIE_NAME}=cookie-token` });
     sessionAuth(req, {} as never, next);
     await nextTick();
 
@@ -75,12 +76,41 @@ describe("session middleware", () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
+  it("운영에서는 유효한 토큰이어도 레거시 Domain 쿠키로 인증하지 않는다", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const next = vi.fn();
+    vi.mocked(verifySessionToken).mockReturnValue({
+      userId: "attacker-user", sessionVersion: 1, expiresAt: Date.now() + 1_000,
+    });
+    const req = request({ cookie: `${AUTH_SESSION_COOKIE_NAME}=signed-attacker-token` });
+    sessionAuth(req, {} as never, next);
+    await nextTick();
+    expect(verifySessionToken).not.toHaveBeenCalled();
+    expect(isSessionAllowed).not.toHaveBeenCalled();
+    expect(getSessionAuthenticationPrincipal(req)).toBeNull();
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("운영에서는 선행 레거시 쿠키와 관계없이 __Host- 쿠키의 사용자를 인증한다", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const next = vi.fn();
+    vi.mocked(verifySessionToken).mockReturnValue({
+      userId: "host-user", sessionVersion: 1, expiresAt: Date.now() + 1_000,
+    });
+    vi.mocked(isSessionAllowed).mockResolvedValue(true);
+    const req = request({ cookie: `${AUTH_SESSION_COOKIE_NAME}=attacker-token; ${resolveSessionCookieName()}=host-token` });
+    sessionAuth(req, {} as never, next);
+    await nextTick();
+    expect(verifySessionToken).toHaveBeenCalledExactlyOnceWith("host-token");
+    expect(getSessionAuthenticationPrincipal(req)?.userId).toBe("host-user");
+  });
+
   it("clears auth header when neither header nor cookie are valid", async () => {
     const next = vi.fn();
     vi.mocked(verifySessionToken).mockReturnValue(null);
     vi.mocked(isSessionAllowed).mockResolvedValue(false);
 
-    const req = { headers: {} } as never;
+    const req = request({});
     sessionAuth(req, {} as never, next);
     await nextTick();
 
@@ -100,7 +130,7 @@ describe("session middleware", () => {
     });
     vi.mocked(isSessionAllowed).mockRejectedValue(dependencyError);
 
-    const req = { headers: { cookie: `${AUTH_SESSION_COOKIE_NAME}=cookie-token` } } as never;
+    const req = request({ cookie: `${AUTH_SESSION_COOKIE_NAME}=cookie-token` });
     sessionAuth(req, {} as never, next);
     await nextTick();
 
@@ -123,12 +153,10 @@ describe("session middleware", () => {
     );
     vi.mocked(isSessionAllowed).mockResolvedValue(true);
 
-    const req = {
-      headers: {
-        "x-user-id": "invalid-header-token",
-        cookie: `${AUTH_SESSION_COOKIE_NAME}=cookie-token`,
-      },
-    } as never;
+    const req = request({
+      "x-user-id": "invalid-header-token",
+      cookie: `${AUTH_SESSION_COOKIE_NAME}=cookie-token`,
+    });
     sessionAuth(req, {} as never, next);
     await nextTick();
 
