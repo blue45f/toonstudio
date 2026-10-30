@@ -1,0 +1,32 @@
+{
+  "schema": "toonstudio.creator-bundle-character-visual-review.v1",
+  "reviewedOn": "2026-10-29",
+  "reviewer": "root",
+  "input": "공식 생산자가 로컬 공개 폴더에 등록한 1536px prop.webp 8개를 직접 열어 확인",
+  "prototypeOnly": false,
+  "status": "pass",
+  "checks": [
+    "정면과 3/4 방향이 구분됨",
+    "얼굴·의상·손·신발의 원본 색상과 형태가 식별됨",
+    "리그 표시용 Icosphere가 화면에 노출되지 않음",
+    "팔·발·머리가 프레임에 잘리지 않음",
+    "빈 이미지와 검은 재질 누락이 없음"
+  ],
+  "assetIds": [
+    "cbv1-007-ch-2-10-a-mc-front",
+    "cbv1-007-ch-2-10-a-mc-three-quarter",
+    "cbv1-007-ch-3-1-a-mc-front",
+    "cbv1-007-ch-3-1-a-mc-three-quarter",
+    "cbv1-007-ch-4-2-a-mc-front",
+    "cbv1-007-ch-4-2-a-mc-three-quarter",
+    "cbv1-007-ch-6-10-a-mc-front",
+    "cbv1-007-ch-6-10-a-mc-three-quarter"
+  ],
+  "heldCandidate": {
+    "sourceModel": "CH_1_10_A_MC",
+    "views": ["front", "three-quarter"],
+    "registered": false,
+    "reason": "원본 UV/atlas부터 목과 얼굴·손의 색상이 달라 제작자 의도를 확인하지 않고 재색칠하지 않음"
+  },
+  "scope": "정지 참고 이미지의 시각 검수이며 브라우저 삽입·저장·아바타·애니메이션·성능을 보증하지 않음"
+}

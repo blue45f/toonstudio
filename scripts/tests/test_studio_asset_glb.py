@@ -356,6 +356,51 @@ class OwnerPackImageBindingTests(unittest.TestCase):
                 self.save()
                 self.assert_binding_rejected(replace(self.binding, image_paths={uri: self.texture_relative}))
 
+    def assert_serialized_mutation_rejected(self, mutate, message):
+        original = self.source.read_bytes()
+        writer = n.write_glb
+
+        def corrupt_serialized_output(document, binary):
+            changed_document, changed_binary = mutate(copy.deepcopy(document), binary)
+            return writer(changed_document, changed_binary)
+
+        for mode in ('pure', 'owner-wrapper'):
+            with self.subTest(mode=mode), patch.object(n, 'write_glb', side_effect=corrupt_serialized_output):
+                with self.assertRaisesRegex(ValueError, message):
+                    if mode == 'pure':
+                        n.normalize_bytes(original, lambda uri: self.texture)
+                    else:
+                        n.normalize(self.source, self.out, owner_pack_images=self.binding)
+                self.assertFalse(self.out.exists())
+                self.assertEqual(self.source.read_bytes(), original)
+                self.assertEqual(self.texture_path.read_bytes(), self.texture)
+
+    def test_pure_and_owner_wrapper_reject_new_json_metadata_after_embedding(self):
+        # 원본 key만 순회하는 부분 비교로는 새로 추가된 JSON 필드를 찾지 못한다.
+        for target in ('root', 'buffer', 'image', 'extension'):
+            def add_unapproved_field(document, binary):
+                if target == 'root':
+                    document['unexpectedMetadata'] = {'changed': True}
+                elif target == 'buffer':
+                    document['buffers'][0]['unexpectedMetadata'] = True
+                elif target == 'image':
+                    document['images'][0]['unexpectedMetadata'] = True
+                else:
+                    document['extensions'] = {'UNAPPROVED_extension': {'changed': True}}
+                return document, binary
+
+            with self.subTest(target=target):
+                self.assert_serialized_mutation_rejected(add_unapproved_field, 'GLB JSON')
+
+    def test_pure_and_owner_wrapper_reject_changed_embedded_image_bytes(self):
+        def change_image_byte(document, binary):
+            view = document['bufferViews'][document['images'][0]['bufferView']]
+            changed = bytearray(binary)
+            changed[view['byteOffset'] + view['byteLength'] - 1] ^= 1
+            return document, bytes(changed)
+
+        self.assert_serialized_mutation_rejected(change_image_byte, '텍스처 바이트')
+
 
 if __name__ == '__main__':
     unittest.main()
