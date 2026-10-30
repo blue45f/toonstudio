@@ -50,12 +50,12 @@ function jsonResponse(body, status = 200) {
 
 function oauthCookie(provider, { includePkce = false } = {}) {
   const sameSite = provider === "apple" ? "None" : "Lax";
-  const attributes = `Path=/api/auth/oauth/${provider}; HttpOnly; Secure; SameSite=${sameSite}`;
+  const attributes = `Path=/; HttpOnly; Secure; SameSite=${sameSite}`;
   const values = [
-    `toonstudio-oauth-state-${provider}=signed-state; ${attributes}`,
+    `__Host-toonstudio-oauth-state-${provider}=signed-state; ${attributes}`,
   ];
   if (includePkce) {
-    values.push(`toonstudio-oauth-pkce-${provider}=verifier; ${attributes}`);
+    values.push(`__Host-toonstudio-oauth-pkce-${provider}=verifier; ${attributes}`);
   }
   return values.join(", ");
 }
@@ -203,6 +203,23 @@ describe("social login production verification", () => {
     })).resolves.toBeDefined();
   });
 
+  it.each([
+    ["legacy", (value) => value.replaceAll("__Host-", ""), "missing __Host-toonstudio-oauth-state-github"],
+    ["domain", (value) => `${value}; Domain=toonstudio.cloud`, "must not set Domain"],
+    ["path", (value) => value.replaceAll("Path=/;", "Path=/api/auth/oauth/github;"), "unexpected path"],
+  ])("rejects %s cookie attributes in production", async (_label, transform, message) => {
+    const originalFetch = productionFetch();
+    const fetchImpl = async (...args) => {
+      const response = await originalFetch(...args);
+      if (new URL(String(args[0])).pathname !== "/api/auth/oauth/github/start") return response;
+      const headers = new Headers(response.headers);
+      headers.set("set-cookie", transform(headers.get("set-cookie")));
+      return new Response(null, { status: response.status, headers });
+    };
+    await expect(verifySocialLoginProduction({ origin: ORIGIN, fetchImpl, timeoutMs: 5_000 }))
+      .rejects.toThrow(message);
+  });
+
   it("requires GitHub PKCE and its browser-bound verifier cookie", async () => {
     const missingChallenge = productionFetch({ github: { omitPkce: true } });
     await expect(verifySocialLoginProduction({
@@ -216,7 +233,7 @@ describe("social login production verification", () => {
       origin: ORIGIN,
       fetchImpl: missingCookie,
       timeoutMs: 5_000,
-    })).rejects.toThrow("missing toonstudio-oauth-pkce-github");
+    })).rejects.toThrow("missing __Host-toonstudio-oauth-pkce-github");
   });
 
   it("keeps Kakao email scope disabled until provider approval", async () => {

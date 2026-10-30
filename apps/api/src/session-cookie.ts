@@ -3,11 +3,19 @@ import { SESSION_TOKEN_TTL_MS } from "./server/session";
 import type { CookieOptions } from "express";
 
 const AUTH_SESSION_COOKIE_NAME = "toonstudio-auth-session";
+const PRODUCTION_AUTH_SESSION_COOKIE_NAME = "__Host-toonstudio-auth-session";
 
 export { AUTH_SESSION_COOKIE_NAME };
 
 function isSecureCookieEnabled(): boolean {
   return process.env.NODE_ENV === "production";
+}
+
+/** 운영에서는 하위 도메인이 Domain 쿠키로 인증 값을 덮어쓰지 못하게 한다. */
+export function resolveSessionCookieName(): string {
+  return isSecureCookieEnabled()
+    ? PRODUCTION_AUTH_SESSION_COOKIE_NAME
+    : AUTH_SESSION_COOKIE_NAME;
 }
 
 export function resolveSessionCookieOptions(): CookieOptions {
@@ -34,6 +42,7 @@ export function resolveSessionCookieValue(
   const merged = Array.isArray(cookieHeader)
     ? cookieHeader.join(";")
     : cookieHeader;
+  const cookieName = resolveSessionCookieName();
   const chunks = merged.split(";");
   for (const chunk of chunks) {
     const trimmed = chunk.trim();
@@ -41,7 +50,7 @@ export function resolveSessionCookieValue(
     const separator = trimmed.indexOf("=");
     if (separator <= 0) continue;
     const name = trimmed.slice(0, separator).trim();
-    if (name !== AUTH_SESSION_COOKIE_NAME) continue;
+    if (name !== cookieName) continue;
     return trimmed.slice(separator + 1);
   }
   return null;
