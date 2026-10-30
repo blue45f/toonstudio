@@ -397,16 +397,23 @@
         "fact": "VRoid Studio 제품 소개는 헤어 흔들림을 덩어리마다 따로 정한다고 밝힌다. 변경 전 ToonStudio 는 묶음 5종 단위까지만 정할 수 있었다.",
         "action": "가닥(스프링 체인)별 배율 추가 — 전체 × 묶음 × 가닥, 화면 왼쪽부터 번호, 가닥 하나를 바꾸면 그 스프링만 바뀜. 가닥 id 는 헤어 파츠마다 달라 지금 헤어에 없는 가닥의 조정은 편집할 때 걷고 요약에서 세지 않음",
         "chainIdSurvey": {
-          "method": "헤어 스타일 14종 × 앞머리 6종 × 삐침머리 0·1 × 길이 0.55·1·1.7 을 기본 상태와 스타일 프리셋 21종에 적용해 listStudioVrmGenerateHairSwayChains 로 수집",
-          "distinctChainIds": 56,
-          "maxChainsPerCharacter": 11,
-          "storedChainCap": 32
+          "method": "헤어 스타일 14종 × 앞머리 6종 × 삐침머리 0·1 × 길이 0.55·1·1.7 × 볼륨(그대로·0.72·1·1.45) 을 기본 상태와 스타일 프리셋 21종에 적용해 listStudioVrmGenerateHairSwayChains 로 수집",
+          "distinctChainIds": 57,
+          "maxChainsPerCharacter": 12,
+          "storedChainCap": 32,
+          "volumeDependentChains": "울프컷 윗머리 레이어(wolf-layer)는 볼륨 1.33 이상에서만 체인이 된다(울프컷·일자 앞머리·삐침머리 1 기준 1.32 에서 11개, 1.33 에서 12개)",
+          "correction": "볼륨을 바꾸지 않은 첫 조사(blue45f/toonstudio#2569)는 56종·최대 11개였다. 병합 뒤 리뷰에서 볼륨 끝값을 더해 바로잡았다. 저장 상한 32 는 그대로 충분하며, 슬라이더 끝값 조합 전체에서 한 캐릭터의 가닥 수가 상한 안에 드는지 생성 통합 테스트가 확인한다"
         }
       },
       {
         "id": "REA-VRM-06",
         "fact": "VRoid Studio 이용약관은 소프트웨어의 리버스 엔지니어링·디컴파일·역어셈블·분석을 금지한다.",
         "action": "VRoid Studio 실행 파일은 분석하지 않고 공개 웹 문서와 CC0 출력 파일, 오픈소스 런타임만 분석"
+      },
+      {
+        "id": "REA-VRM-07",
+        "fact": "three-vrm-core 3.5.5 의 VRM 1.0 표정 로더(expressionLoaderV1, 모듈 바이트 22945-28818, ev_a3a92d5b466aa8391981f9d0b1b52ccca4d871f38aa79d4708b12c22537c2124)는 custom 이름이 프리셋 이름과 정확히 같을 때만 경고하고 버리며, 나머지 문자열은 한글을 포함해 그대로 표정 이름으로 쓴다.",
+        "action": "커스텀 표정 이름 바꾸기를 더했다. 앱마다 비교 방식이 다를 수 있어 VRM 프리셋·다른 커스텀 이름과는 대소문자 구분 없이 막는다. 장면 문서 저장 경계는 제어 문자나 http: 같은 참조 접두사가 든 문자열이 하나라도 있으면 조형 데이터 전체를 버리므로, 글자·숫자·공백·_ - . 만 32자까지 받는다. 한글 이름으로 내보낸 VRM 을 three-vrm 으로 다시 읽어 바인드까지 붙는지 테스트로 확인했다."
       }
     ]
   }

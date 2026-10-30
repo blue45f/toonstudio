@@ -83,7 +83,8 @@ describe("Studio VRM visual pose bone boundary", () => {
     expect(source).toContain("applyVrmTwoBoneGrip(");
     expect(source).toContain('if (phase !== "end") return;');
     expect(source).toContain("setCustomBones(nextBones)");
-    // 2026-10-29(0a708efc): 뷰포트 궤도 조작이 CharacterShaperOrbitControls 래퍼로 바뀌었다(props 는 그대로 OrbitControls 로 넘긴다).
+    // 2026-10-29(0a708efc): 뷰포트 궤도 조작이 CharacterShaperOrbitControls 래퍼로 바뀌었다(enabled·enableRotate·autoRotate 는 그대로
+    // OrbitControls 로 넘기고, 셰이퍼 세션에서만 enablePan 을 켠다).
     const orbitControlsStart = source.indexOf("<CharacterShaperOrbitControls");
     const orbitControlsEnd = source.indexOf("</Canvas>", orbitControlsStart);
     const orbitControls = source.slice(orbitControlsStart, orbitControlsEnd);

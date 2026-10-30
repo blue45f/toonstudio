@@ -3,6 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   // 샘플 UI는 API 서버 없이 검사한다. 실제 인증·권한·저장은 별도 PostgreSQL HTTP 통합 검증이 담당한다.
+  // 등록한 fixture 외 API는 프록시나 운영 서버로 전달하지 않는다. 뒤의 구체적 route가 먼저 처리된다.
+  await page.route("**/api/**", (route) => route.fulfill({ status: 404,
+    json: { message: "이 브라우저 fixture 범위에 없는 API입니다." } }));
   await page.route("**/api/auth/session", (route) => route.fulfill({ json: { authenticated: false, user: null } }));
   await page.route("**/api/health/capabilities", (route) => route.fulfill({ json: {
     status: "available", incidentId: null, retryAfterSeconds: null, checkedAt: new Date().toISOString(),
@@ -22,6 +25,11 @@ async function openHandoff(page: Page) {
 
 test("분업 인계 작업함의 실제 검색·차단·보드 연결", async ({ page }) => {
   await openHandoff(page);
+  const unexpectedApi = await page.evaluate(async () => {
+    const response = await fetch("/api/__production_fixture__/unexpected", { method: "POST" });
+    return { status: response.status, body: await response.json() };
+  });
+  expect(unexpectedApi).toEqual({ status: 404, body: { message: "이 브라우저 fixture 범위에 없는 API입니다." } });
   const queue = page.getByTestId("division-handoff-queue");
   await expect(queue).toBeVisible({ timeout: 120_000 });
   await queue.getByRole("textbox", { name: "작업·공정·담당자 검색" }).fill("야간 배경");

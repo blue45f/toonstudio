@@ -180,7 +180,7 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
           <option value="pen">{bt("펜(빨간펜)", "Pen (red pen)")}</option>
         </select>
       </label>
-      {mode === "panel" || mode === "coordinate" || mode === "region" ? <label className="flex flex-wrap items-center gap-2" htmlFor={`${id}-frame`}>{bt("연결할 컷", "Cut to attach")}
+      {mode === "panel" || mode === "coordinate" || mode === "region" || mode === "pen" ? <label className="flex flex-wrap items-center gap-2" htmlFor={`${id}-frame`}>{bt("연결할 컷", "Cut to attach")}
         <select id={`${id}-frame`} className={controlClass} value={frameId} onChange={(event) => { clear(); setFrameId(event.target.value); }}>
           <option value="">{mode === "panel" ? bt("컷을 선택해 주세요", "Choose a cut") : bt("페이지 전체 범위", "Anywhere on this page")}</option>
           {page.frames.map((value, index) => <option key={value.id} value={value.id}>{bt(`컷 ${index + 1}`, `Cut ${index + 1}`)}</option>)}
