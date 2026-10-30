@@ -422,9 +422,12 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       - name: Prepare an empty disposable database with real graph constraints
         run: node scripts/prepare-studio-review-test-db.mjs
+      - name: PostgreSQL 백업·복원 클라이언트 설치
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client-16
       - name: Verify review production, immutable history and concurrent decisions
         run: >-
           pnpm exec vitest run --no-file-parallelism
+          scripts/studio-review-voice-note-backup.integration.test.mjs
           apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts
           apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts
