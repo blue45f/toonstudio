@@ -55,3 +55,5 @@ AI 설정 누락·호출 실패·한도 초과 시 자동 답변을 만들어 �
 재실행 가능한 `e2e/customer-support.spec.ts`의 세 회귀 시나리오도 최종 일괄 실행에서 모두 통과했다(`3 passed`, 1.5분). AI 대화·재전송·상담원 전환·답변 확인·종료, 관리자 답변·권한 해제, 51개 문의의 페이지 이동과 초안 보존을 다룬다. 테마 대비는 애니메이션이 없는 정적 최종 팔레트와 완전히 보이는 제어 요소에서 검사하며, 390px 모바일 레이아웃 검증은 별도로 유지한다. 임시 PostgreSQL과 Vite 서버는 검증 후 종료했다.
 
 main 병합 준비에서는 기존 `0116_studio_review_comment_pen_strokes.sql`·`0117_studio_scoped_write_policy.sql`을 보존하고 고객지원 SQL을 `0118`로 통합했다. migration manifest 118개, bootstrap 원장 119개, PostgreSQL suite 25개를 확인했다. 최신 main 통합 후 DB·정책·준비성 9개 파일의 테스트 249개, 사용자·관리자 테스트 28개, 브라우저 테스트 3개가 통과했다. 기존 main의 scoped-write 표 2개도 준비성·후기 릴레이션 등록에 포함했다.
+
+고객센터 API·사용자·관리자·권한 회귀를 CI 필수 선택 목록에 등록하고, PostgreSQL 시험은 DB 없는 샤드에서 제외해 실제 database 작업이 실행하도록 연결했다. CI와 같은 `studio_review_integration` DB에 전체 스키마·트리거 21개를 준비한 추가 검증에서 DB 시험 17개와 대상 DB 보호 회귀 11개가 통과했다. 로컬의 구분된 `test/testing/ci/integration` 이름만 허용하며 운영 이름·운영 프로세스·원격 DB·연결 우회 매개변수를 차단한다. CI 실행 경로 관련 검사도 52개 통과했다.

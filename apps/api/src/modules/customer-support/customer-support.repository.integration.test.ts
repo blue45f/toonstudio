@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { buildCustomerSupportRuntimeAclSql, buildCustomerSupportRuntimeAclViolationSql } from "../../../../../scripts/customer-support-database-contract.mjs";
+import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "../health/health-customer-support-acl";
 
 import { PostgresCustomerSupportRepository } from "./customer-support.repository";
@@ -13,6 +14,35 @@ const target = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim();
 const describePostgres = target ? describe : describe.skip;
 const role = `support_runtime_${randomUUID().replaceAll("-", "")}`;
 const migrationUrl = new URL("../../platform/database/migrations/0118_customer_support.sql", import.meta.url);
+
+function assertDisposableSupportDatabase(value: string, environment: NodeJS.ProcessEnv = process.env): void {
+  const { databaseName, loopback } = validatePostgresIntegrationUrl(value, { environment });
+  if (!loopback || !/(?:^|[_-])(?:test|testing|ci|integration)(?:$|[_-])/iu.test(databaseName)
+    || /(?:^|[_-])(?:prod|production)(?:$|[_-])/iu.test(databaseName)) {
+    throw new Error("고객상담 통합 테스트에는 폐기 가능한 이름의 로컬 전용 DB만 허용합니다.");
+  }
+}
+
+describe("고객상담 통합 DB 대상 보호", () => {
+  it.each(["studio_review_integration", "toonstudio_support_test", "support-testing", "support_ci"])("명시적인 로컬 테스트 DB %s 를 허용한다", (name) => {
+    expect(() => assertDisposableSupportDatabase(`postgresql://support_ci@127.0.0.1:55432/${name}`, { NODE_ENV: "test" })).not.toThrow();
+  });
+
+  it.each([
+    "postgresql://support_ci@127.0.0.1:55432/postgres",
+    "postgresql://support_ci@127.0.0.1:55432/studio_review",
+    "postgresql://support_ci@127.0.0.1:55432/contest",
+    "postgresql://support_ci@127.0.0.1:55432/production_test",
+    "postgresql://support_ci@db.example.test/studio_review_integration",
+    "postgresql://support_ci@127.0.0.1:55432/support_test?host=db.example.test",
+  ])("일반·운영·원격 DB와 연결 우회 옵션을 거부한다: %s", (value) => {
+    expect(() => assertDisposableSupportDatabase(value, { NODE_ENV: "test" })).toThrow();
+  });
+
+  it("운영 프로세스에서는 로컬 테스트 DB라도 거부한다", () => {
+    expect(() => assertDisposableSupportDatabase("postgresql://support_ci@127.0.0.1:55432/support_test", { NODE_ENV: "production" })).toThrow(/production runtime/u);
+  });
+});
 
 describePostgres("비공개 고객상담 PostgreSQL 권한·순서·AI 예약", () => {
   let owner: Pool;
@@ -24,10 +54,7 @@ describePostgres("비공개 고객상담 PostgreSQL 권한·순서·AI 예약", 
 
   beforeAll(async () => {
     if (!target) throw new Error("고객상담 통합 테스트 DB가 필요합니다.");
-    const url = new URL(target);
-    if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) || !/test/iu.test(url.pathname)) {
-      throw new Error("고객상담 통합 테스트에는 로컬 전용 test DB만 허용합니다.");
-    }
+    assertDisposableSupportDatabase(target);
     owner = new Pool({ connectionString: target, max: 4 });
     await owner.query('CREATE TABLE IF NOT EXISTS public."user" (id text PRIMARY KEY,name text,role text DEFAULT \'user\')');
     migration = await readFile(migrationUrl, "utf8");
