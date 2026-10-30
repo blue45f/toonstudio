@@ -1,13 +1,16 @@
 # 로그인 이후 사용성·인증 복구 고도화 — 2026-10-30
 
-상태: **migration — 원본 최종 14파일과 인증 identity 세대 수정의 소스 통합 완료, 실행 검증 대기**.
-아래의 기존 실행 기록은 각 기록에 명시한 과거 소스의 증거다. 현재 격리 통합 후보의 통과나 운영 반영,
-서비스 전체 100/100 판정으로 사용하지 않는다.
+상태: **migration — 원본 통합과 계정·클라이언트 6파일 82개 및 인증·프로필 UI의 로컬 부분 검증 완료**.
+현재 검증은 명시한 exact 소스와 selector에 한정한다. 과거 실행 기록과 합산하거나 운영 반영,
+서비스 전체 100/100 판정으로 사용하지 않는다. 운영·실물 기기·다중 기기 등 target 범위는 미완료다.
 
-## 2026-10-30 격리 후보의 소스 수정과 검증 경계
+## 2026-10-30 원본 통합 이력과 현재 검증 경계
 
 원본 최종 14파일은 HEAD `c92c256ac7536c8894540271bff5586f4ec38797`의 작업트리에서 별도로 보존했다.
-`codex/ux-final-recovery-20261030`은 이 파일을 정확히 복사한 뒤 최소 수정을 더하는 후보이며 원본 작업트리는 수정하지 않는다.
+`codex/ux-final-recovery-20261030`에서 이 파일과 최소 수정을 보존한 뒤 중단됐던 정상 merge를 완료하고
+현재 main을 정상 merge했다. 문서 갱신 전 HEAD `66d9431dc782c4492d491d1e4c9450ba575d4e57`은
+기존 `c8e7a012…`·`c92c256a…` 계보를 포함하며 tree는 검사 소스 main `7976f797…`과 같다.
+원본 작업트리를 덮어쓰거나 이력을 재작성하지 않았다.
 
 - 초안 저장소의 기존 소유자 identity 세대를 구독해 로그아웃 뒤 같은 계정으로 돌아와도 이전 프로필 폼을 폐기한다.
   두 인증 알림이 한 번의 React 반영으로 합쳐져도 새 서버 조회와 새 초안 범위로 시작한다.
@@ -16,10 +19,10 @@
 - 실제 `SessionProvider`의 인증 발행을 사용하는 회귀를 작성했다. 원격 세션 확인만 대체하며 동일 계정 재로그인 뒤
   이전 폼 폐기, 새 초안 기록·창 닫기 보호·경로 왕복 복구, 늦은 GET/PATCH 차단, 일반 갱신의 초안 보존을 다룬다.
 
-이 소스 수정과 추가 회귀는 **실행 대기**다. 이 단계에서 테스트·TypeScript·harness·빌드·브라우저·설치·서버·후크를 실행하지 않는다.
-허용된 검토는 diff와 `git diff --check`뿐이다. 원본 owner의 후속 기록인 단위 **478개 통과**, **harness 2건 실패**,
-프로필 브라우저 **22개 통과·1개 실패**도 현재 수정본 통과 증거가 아니다. 원본 최종 14파일에서 추가한 13개 회귀 역시
-실행되지 않은 상태로 넘겨받았다. 중앙 검증 순서에서 정확한 소스 SHA와 함께 다시 확인해야 한다.
+2026-10-30 인계 시점에는 원본 추가 13개와 identity 세대 추가 5개가 미실행이었다. 2026-10-31에는
+아래 exact 6파일 전체 82개 검사에 해당 회귀가 포함됐음을 확인했다. 현재 결과는 별도 실행 근거를 따른다.
+원본 owner의 단위 **478개 통과**, **harness 2건 실패**, 프로필 브라우저 **22개 통과·1개 실패**는
+당시 소스의 역사 기록으로 유지하며 이번 실행 수·현재 통과 근거로 합산하지 않는다.
 
 ## 사용자 경험 개선
 
@@ -49,7 +52,51 @@ Google 토큰 로그인·기존 계정 로그인·로그아웃은 응답 헤더�
 
 3D 브라우저 테스트는 현재 카테고리→세부 부위 탐색과 접힌 출력 설정을 실제로 열도록 갱신했다. 선택 표시뿐 아니라 런타임 적용 후 출력 가능 상태를 확인한다. PSD 테스트는 존재하지 않는 밑색·음영을 만들어내라고 기대하던 fixture를 실제 패스로 보완하고, 밑색이 없으면 헤어 그룹이 생기지 않는 반대 검사도 추가했다. 제품 출력 제한을 느슨하게 바꾸지 않았다.
 
-## 이전 소스에서 실제 실행한 검증
+## 2026-10-31 현재 소스의 부분 검증
+
+실행 소스는 main `7976f79761b318be1d7bd39756c5df20d2c94e47`이다. 정확한 6파일을 한 번 실행해
+**82개 통과, 실패·대기·todo 0, 실제 종료 코드 0**을 확인했다. 6.930초가 걸렸고 source/test 10개 핀은
+실행 전후 동일했다. 파일 수는 실제 JSON의 `testResults` 6개를 기준으로 하며, describe를 포함한 suite 수와 구분한다.
+
+| 실제 검사 파일 | 통과 사례 |
+|---|---:|
+| `apps/web/src/domains/account/AccountPage.test.tsx` | 9 |
+| `apps/web/src/domains/account/AccountProfileRecovery.test.tsx` | 19 |
+| `apps/web/src/domains/account/AccountProfileReadRace.test.tsx` | 6 |
+| `apps/web/src/domains/account/account-profile-draft.test.ts` | 14 |
+| `apps/web/src/platform/me-client.test.ts` | 3 |
+| `apps/web/src/platform/me-client.recovery.test.ts` | 31 |
+
+이 파일 전체 검사에는 이전에 미실행으로 인계된 원본 추가 13개와 identity 세대 수정의 추가 5개가 포함된다.
+13개·5개는 당시 인계 기록의 부분집합이며 별도 실행 수나 82개에 더할 수치가 아니다. 결과 JSON SHA-256은
+`9907714222e6bed9c8b697d45f8636c4d0294daedb87b35157c2c805f25f3201`, 실제 종료·소스 불변 receipt SHA-256은
+`195475e744a0df1a1553f6492c4259453620cdd7f424a7c5abf5f5a1f3ad3e27`이다.
+
+#2595의 인증 4파일 65개는 별도 실행 근거다. HEAD `7444b8d9…` 작업트리의 동결한 수정 입력에서 실제 종료 0으로
+실행했으며 source2 핀은 최종 후보 `ea930b3a8e1ff28aa6583aa500b3bc30fd091cf2`와 main `7976f797…`의 해당 바이트와
+같다. 이 결과를 이번 82개와 합산하거나 main 전체 재검사로 표시하지 않는다. `ea930b3a…`의 정상 하네스·push도
+실제 종료 0이며, 이번 문서 수정 이후의 통합 검사는 별도다.
+
+실제 Chrome 검증은 `ea930b3a…`에서 다음 범위로 각각 완료했다.
+
+- 390px·1440px 각각 잘못된 비밀번호의 실제 401·오류 안내·로그인·로그아웃·서버 세션 상태를 확인했다.
+  인증 응답 모의와 자동 재시도는 없다.
+- 같은 두 폭에서 프로필 저장·탭 왕복·키보드 저장·새로고침과 조회/저장 실패 복구를 각 2사례, 총 4사례 확인했다.
+  매 실행 finally에서 기존 프로필을 복원했다.
+- 프로필 장애 경로의 503은 의도적인 모의 응답이다. 실제 서버 장애나 운영 계정 검증을 뜻하지 않으며,
+  이번 4사례를 과거 접근성 6개 조합의 새 실행으로 취급하지 않는다.
+
+UI 완료 receipt SHA-256은 `c641e985f87fa8fe4add85ca0556ff5dbe75cb2955fa5413fceb2f997a8bc50e`이다.
+명령·핀·상대 artifact 경로와 각 SHA는 [verification.json](ux-authenticated-recovery-2026-10-30/verification.json)에
+기록한다. 해당 artifact는 Git에 포함하지 않은 로컬 보존 증거다. 계정값·비밀값·외부 권한 URL은 복사하지 않는다.
+
+#2595의 exact `ea930b3a…`에 대한 원격 CI 21개는 runner 미배정·steps 0과 결제/지출 한도 차단을 확인했다.
+추가 6개 annotation은 runner image 전환 notice다. **호스팅 CI는 실행 전 차단 상태이며 통과가 아니다.**
+이 로컬 부분 검증은 운영 배포·운영 OAuth·실물 GPU/기기·다중 기기 저장/협업·전체 사용성 목표의 완료를 뜻하지 않는다.
+
+## 과거 소스에서 실제 실행한 검증 — historical
+
+아래 수치는 각 과거 소스에만 귀속한다. 현재 82개·인증 65개·프로필 4개와 합산하지 않는다.
 
 | 검증 | 결과 | 경계 |
 |---|---|---|
@@ -65,6 +112,8 @@ Google 토큰 로그인·기존 계정 로그인·로그아웃은 응답 헤더�
 원본 로그의 SHA-256과 실행 결과는 [verification.json](ux-authenticated-recovery-2026-10-30/verification.json)에 기록했다. 브라우저에서 실패 경로만 가로챘으며 성공한 저장·재열기·로그아웃은 격리 PostgreSQL/API를 실제로 통과했다. 운영 계정이나 운영 데이터를 사용하지 않았다.
 
 ## 실패를 숨기지 않은 기록
+
+이 절의 기존 실패·보정은 과거 실행 이력이며 새 부분 검증으로 삭제하거나 성공으로 바꾸지 않는다.
 
 - 인증 무응답·본문 지연·늦은 응답 6개 테스트를 수정 전 실행해 모두 실패함을 확인하고 수정 후 통과했다. 추가 요청 수명/재시도 경계를 포함한 전용 테스트는 11개다. 늦은 401 응답이 타임아웃 이후 세션을 지우지 않는 검사도 추가했다.
 - 서버 프로필 필드가 잘못된 5개 사례를 수정 전 실패로 확인하고 입력 검증 추가 후 통과했다.
@@ -89,14 +138,29 @@ Google 토큰 로그인·기존 계정 로그인·로그아웃은 응답 헤더�
 
 ## 재현
 
-저장소 루트와 설치된 의존성이 전제다.
+저장소 루트와 설치된 의존성이 전제다. 아래는 현재 6파일의 동일 selector이며 출력 경로만 저장소 상대 경로로 적었다.
+실행 순서와 자원 창을 배정받은 뒤 사용한다.
 
-```sh
-pnpm exec vitest run apps/web/src/domains/auth apps/web/src/domains/account \
-  apps/web/src/platform/me-client.test.ts apps/web/src/platform/me-client.recovery.test.ts \
-  apps/web/src/app/entry-intro-policy.test.ts --maxWorkers=2
+~~~sh
+pnpm test:root \
+  apps/web/src/domains/account/AccountPage.test.tsx \
+  apps/web/src/domains/account/AccountProfileRecovery.test.tsx \
+  apps/web/src/domains/account/AccountProfileReadRace.test.tsx \
+  apps/web/src/domains/account/account-profile-draft.test.ts \
+  apps/web/src/platform/me-client.test.ts \
+  apps/web/src/platform/me-client.recovery.test.ts \
+  --maxWorkers=1 --no-file-parallelism --bail=1 \
+  --reporter=default --reporter=json \
+  --outputFile=.git/cleanup-evidence-20261030/ux-history-completion-20261031/sixfiles-result-r1.json
+~~~
+
+추가 통합 하네스와 더 넓은 브라우저 재현은 별도 실행 범위다.
+
+~~~sh
 pnpm harness:verify
 node scripts/local-fullstack/cli.mjs e2e
-```
+~~~
 
-마지막 명령은 loopback 검증 하네스가 준비된 상태에서만 실행한다. 비밀값은 무시된 로컬 env에만 있고 로그·문서·커밋에 포함하지 않는다. 운영 도메인과 계정을 입력하지 않는다.
+마지막 명령은 loopback 검증 하네스가 준비된 상태에서만 실행한다. 문서만 갱신한 이 단계에서는 Node·테스트·하네스를
+새로 실행하지 않았으며, 문서와 통합 후보의 필수 검사는 후속 정상 hooks에서 수행한다. 비밀값은 무시된 로컬 env에만
+두며 로그·문서·커밋에 포함하지 않는다. 운영 도메인과 계정을 입력하지 않는다.
