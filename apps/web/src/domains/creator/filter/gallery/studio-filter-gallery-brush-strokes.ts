@@ -53,26 +53,31 @@ const EDGE_WIDTH = slider("edgeWidth", "가장자리 폭", 1, 14, 2);
 const EDGE_BRIGHTNESS = slider("edgeBrightness", "가장자리 밝기", 0, 50, 38);
 const EDGE_SMOOTHNESS = slider("smoothness", "매끄러움", 1, 15, 5);
 
-/** 분리형 최댓값 필터(정사각 반지름 radius 팽창, 제자리). 세로도 행 순서로 읽는다. */
-function dilatePlane(plane: Float32Array, width: number, height: number, radius: number): void {
-  const r = Math.min(Math.floor(radius), Math.max(width, height));
-  if (r <= 0) return;
+/**
+ * 분리형 최댓값 필터(정사각 팽창, 제자리). 창은 가로·세로 모두 정확히 size 픽셀 [x − before, x + after] 이고, 짝수
+ * 폭은 뒤(오른쪽·아래)를 한 칸 더 본다. 대칭 반지름 floor((size − 1) / 2) 로 줄이면 짝수 폭이 바로 아래 홀수 폭과
+ * 같은 결과를 내 슬라이더 칸 절반이 아무 일도 하지 않는다. 세로도 행 순서로 읽는다.
+ */
+function dilatePlane(plane: Float32Array, width: number, height: number, size: number): void {
+  const span = Math.min(Math.floor(size), 2 * Math.max(width, height) + 1);
+  if (span <= 1) return;
+  const before = Math.floor((span - 1) / 2), after = span - 1 - before;
   const line = new Float32Array(width);
   for (let y = 0; y < height; y += 1) {
     const row = y * width;
     for (let x = 0; x < width; x += 1) {
       let best = plane[row + x];
-      const end = Math.min(width - 1, x + r);
-      for (let k = Math.max(0, x - r); k <= end; k += 1) if (plane[row + k] > best) best = plane[row + k];
+      const end = Math.min(width - 1, x + after);
+      for (let k = Math.max(0, x - before); k <= end; k += 1) if (plane[row + k] > best) best = plane[row + k];
       line[x] = best;
     }
     plane.set(line, row);
   }
   const source = plane.slice();
   for (let y = 0; y < height; y += 1) {
-    const end = Math.min(height - 1, y + r);
+    const end = Math.min(height - 1, y + after);
     line.set(source.subarray(y * width, y * width + width));
-    for (let k = Math.max(0, y - r); k <= end; k += 1) {
+    for (let k = Math.max(0, y - before); k <= end; k += 1) {
       const other = k * width;
       for (let x = 0; x < width; x += 1) if (source[other + x] > line[x]) line[x] = source[other + x];
     }
@@ -99,7 +104,7 @@ const accentedEdges: StudioFilterGalleryEffectDef = {
     const shade = source.luma.slice();
     gaussianBlur(shade, width, height, 0.5 + smoothness * 0.25);
     const magnitude = gradientMagnitude(shade, width, height);
-    dilatePlane(magnitude, width, height, Math.floor((edgeWidth - 1) / 2));
+    dilatePlane(magnitude, width, height, edgeWidth);
     boxBlur(magnitude, width, height, 1);
     // 25 를 기준으로 위는 흰 분필, 아래는 검은 잉크. 기준에서 멀수록 강하게 칠한다.
     const chalk = brightness >= 25;
@@ -221,6 +226,14 @@ const INK_LENGTH = slider("strokeLength", "획 길이", 1, 50, 4);
 const DARK_INTENSITY = slider("darkIntensity", "어두운 강도", 0, 50, 20);
 const LIGHT_INTENSITY = slider("lightIntensity", "밝은 강도", 0, 50, 10);
 
+/**
+ * 윤곽선 가우시안 차의 먼 흐림 반지름. 공용 흐림은 반지름 r 을 상자 반지름 max(1, r/√3) 으로 3회 흐리므로 가까운
+ * 흐림(반지름 1)은 상자 1(σ≈1.41)이고, 이 값은 상자가 정확히 2(σ≈2.45)라 섞기 없이 한 번만 흐린다. 반지름 2.5
+ * (상자 1.44)처럼 상자 2 결과를 일부만 섞으면 차가 완전한 가우시안 차의 44% 로 줄어 중간 대비 경계에 윤곽선이 거의
+ * 생기지 않는다. 대신 높은 대비 경계의 짙은 띠는 예전보다 약 두 배 두껍고 결이 있는 면에도 선이 더 생긴다.
+ */
+const INK_FAR_RADIUS = 2 * Math.sqrt(3);
+
 const inkOutlines: StudioFilterGalleryEffectDef = {
   id: "brush-strokes.ink-outlines",
   category: "brush-strokes",
@@ -237,7 +250,7 @@ const inkOutlines: StudioFilterGalleryEffectDef = {
     const source = readPaintSource(image);
     const near = source.luma.slice(), far = source.luma.slice();
     gaussianBlur(near, width, height, 1);
-    gaussianBlur(far, width, height, 2.5);
+    gaussianBlur(far, width, height, INK_FAR_RADIUS);
     const hatch = streakNoise(width, height, context.seed ^ 0x6d03, "diagonal-down", Math.max(1, Math.round(length / 2)));
     const out = createColorPlanes(width * height);
     for (let index = 0; index < width * height; index += 1) {
