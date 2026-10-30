@@ -8,7 +8,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -16,11 +16,10 @@ import { cn } from "@/shared/lib/utils";
 
 import {
   createStudioProductionJob,
-  mergeStudioProductionJobSnapshot,
-  retainStudioProductionJobs,
   type StudioProductionJob,
 } from "./studio-production-jobs";
 import { openStudioProductionJobRepository } from "./studio-production-job-repository";
+import { useStudioProductionJobRecovery } from "./useStudioProductionJobRecovery";
 import { StudioProductionOptionFields } from "./StudioProductionOptionFields";
 import {
   defaultStudioProductionOperationOptions,
@@ -49,7 +48,6 @@ const STATUS_LABELS: Readonly<Record<StudioProductionJob["status"], { readonly k
 
 const ACTIVE_STATUSES: ReadonlySet<StudioProductionJob["status"]> = new Set(["preparing", "queued", "running"]);
 
-type PersistenceState = "loading" | "durable" | "memory";
 type JobFilter = "all" | "active" | "completed" | "stopped";
 
 function matchesJobFilter(job: StudioProductionJob, filter: JobFilter): boolean {
@@ -85,19 +83,6 @@ function fileDescriptors(files: readonly File[]) {
   }));
 }
 
-function mergeJobList(
-  jobs: readonly StudioProductionJob[],
-  incoming: StudioProductionJob,
-): readonly StudioProductionJob[] {
-  const previous = jobs.find((job) => job.id === incoming.id);
-  const next = previous
-    ? jobs.map((job) => job.id === incoming.id
-      ? mergeStudioProductionJobSnapshot(job, incoming)
-      : job)
-    : [incoming, ...jobs];
-  return retainStudioProductionJobs(next);
-}
-
 export interface StudioProductionJobWorkspaceProps {
   readonly projectId?: string | null;
   readonly profile: StudioToolchainProfileId;
@@ -114,17 +99,19 @@ export function StudioProductionJobWorkspace({
   const bt = useBilingual("StudioProductionJobWorkspace");
   const repository = useMemo(() => openStudioProductionJobRepository(), []);
   const [filter, setFilter] = useState<JobFilter>("all");
-  const [jobs, setJobs] = useState<readonly StudioProductionJob[]>([]);
-  const jobsRef = useRef<readonly StudioProductionJob[]>([]);
-  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const [persistence, setPersistence] = useState<PersistenceState>("loading");
   const [notice, setNotice] = useState<string | null>(null);
+  const {
+    jobs, persistence, ready, signal, isCurrent, applySnapshot, removeRecord, refreshActiveJobs,
+  } = useStudioProductionJobRecovery({
+    projectId, repository, client: connection.client, connected: connection.connected, onNotice: setNotice,
+  });
   const [files, setFiles] = useState<readonly File[]>([]);
   const [toolId, setToolId] = useState("");
   const [operationId, setOperationId] = useState("");
   const [optionsText, setOptionsText] = useState("{}");
   const [optionValues, setOptionValues] = useState<Readonly<Record<string, StudioProductionOptionValue>>>({});
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingScope, setSubmittingScope] = useState<AbortSignal | null>(null);
+  const submitting = signal !== null && submittingScope === signal;
 
   const probeByTool = useMemo(
     () => new Map(connection.probes.map((probe) => [probe.toolId, probe])),
@@ -176,92 +163,17 @@ export function StudioProductionJobWorkspace({
     setOptionsText("{}");
   }, [selectedOperation, selectedTool]);
 
-  useEffect(() => {
-    let cancelled = false;
-    jobsRef.current = Object.freeze([]);
-    setJobs(Object.freeze([]));
-    setPersistence("loading");
-    void repository.load(projectId).then((loaded) => {
-      if (cancelled) return;
-      jobsRef.current = loaded;
-      setJobs(loaded);
-      setPersistence("durable");
-    }).catch((cause) => {
-      if (cancelled) return;
-      setPersistence("memory");
-      setNotice(`SQLite/OPFS 작업 이력을 열지 못해 이 탭에만 보관합니다: ${cause instanceof Error ? cause.message : String(cause)}`);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, repository]);
-
-  const commitJobs = useCallback(async (
-    next: readonly StudioProductionJob[],
-  ): Promise<void> => {
-    const retained = retainStudioProductionJobs(next);
-    jobsRef.current = retained;
-    setJobs(retained);
-    if (persistence === "memory") return;
-    const saveAttempt = saveQueueRef.current.then(() =>
-      repository.save(retained, projectId)
-    );
-    saveQueueRef.current = saveAttempt.catch(() => undefined);
-    try {
-      await saveAttempt;
-      setPersistence("durable");
-    } catch (cause) {
-      setPersistence("memory");
-      setNotice(`작업 이력을 영구 저장하지 못해 이 탭에만 유지합니다: ${cause instanceof Error ? cause.message : String(cause)}`);
-    }
-  }, [persistence, projectId, repository]);
-
-  const applySnapshot = useCallback(async (
-    snapshot: StudioProductionJob,
-  ): Promise<void> => {
-    await commitJobs(mergeJobList(jobsRef.current, snapshot));
-  }, [commitJobs]);
-
-  const refreshActiveJobs = useCallback(async (): Promise<void> => {
-    if (!connection.client) return;
-    const currentJobs = jobsRef.current;
-    const active = currentJobs.filter((job) => ACTIVE_STATUSES.has(job.status));
-    if (active.length === 0) return;
-    const snapshots = await Promise.all(active.map(async (job) => {
-      try {
-        return await connection.client?.getJob(job.remoteId ?? job.id) ?? job;
-      } catch {
-        return job;
-      }
-    }));
-    const latestJobs = jobsRef.current;
-    let next = latestJobs;
-    for (const snapshot of snapshots) next = mergeJobList(next, snapshot);
-    if (JSON.stringify(next) !== JSON.stringify(latestJobs)) await commitJobs(next);
-  }, [commitJobs, connection.client]);
-
-  useEffect(() => {
-    if (!connection.client || !jobs.some((job) => ACTIVE_STATUSES.has(job.status))) {
-      return;
-    }
-    let disposed = false;
-    const run = () => {
-      if (!disposed) void refreshActiveJobs();
-    };
-    run();
-    const interval = globalThis.setInterval(run, 1_500);
-    return () => {
-      disposed = true;
-      globalThis.clearInterval(interval);
-    };
-  }, [connection.client, jobs, refreshActiveJobs]);
+  const reportError = useCallback((cause: unknown) => {
+    if (isCurrent()) setNotice(cause instanceof Error ? cause.message : String(cause));
+  }, [isCurrent]);
 
   const createJob = useCallback(async (): Promise<void> => {
+    if (!isCurrent()) return;
     if (!connection.client || !selectedTool || !selectedOperation) {
       throw new Error("연결된 실행 가능한 도구를 선택하세요.");
     }
     if (files.length === 0) throw new Error("입력 파일을 하나 이상 선택하세요.");
-    setSubmitting(true);
+    setSubmittingScope(signal);
     setNotice(null);
     try {
       let parsedOptions: unknown;
@@ -291,8 +203,8 @@ export function StudioProductionJobWorkspace({
         inputs: fileDescriptors(files),
         options: mergedOptions,
       });
-      let remote = await connection.client.createJob(local);
-      await commitJobs(mergeJobList(jobsRef.current, remote));
+      let remote = await connection.client.createJob(local, signal ?? undefined);
+      if (!await applySnapshot(remote)) return;
       for (const [index, file] of files.entries()) {
         const input = remote.inputs[index];
         if (!input) throw new Error("실행기가 입력 슬롯을 보존하지 않았습니다.");
@@ -300,11 +212,12 @@ export function StudioProductionJobWorkspace({
           remote.remoteId ?? remote.id,
           input,
           file,
+          signal ?? undefined,
         );
-        await commitJobs(mergeJobList(jobsRef.current, remote));
+        if (!await applySnapshot(remote)) return;
       }
-      remote = await connection.client.startJob(remote.remoteId ?? remote.id);
-      await commitJobs(mergeJobList(jobsRef.current, remote));
+      remote = await connection.client.startJob(remote.remoteId ?? remote.id, signal ?? undefined);
+      if (!await applySnapshot(remote)) return;
       setFiles([]);
       setOptionsText("{}");
       setOptionValues(defaultStudioProductionOperationOptions(
@@ -313,45 +226,49 @@ export function StudioProductionJobWorkspace({
       ));
       setNotice(`${selectedTool.name} · ${selectedOperation.name} 작업을 시작했습니다.`);
     } finally {
-      setSubmitting(false);
+      if (isCurrent()) setSubmittingScope(null);
     }
   }, [
-    commitJobs,
+    applySnapshot,
     connection.client,
     files,
+    isCurrent,
     optionValues,
     optionsText,
     profile,
     projectId,
     selectedOperation,
     selectedTool,
+    signal,
   ]);
 
   const cancelJob = useCallback(async (job: StudioProductionJob): Promise<void> => {
+    if (!isCurrent()) return;
     if (!connection.client) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.toolchain.jobWorkspace.runnerNotConnected", "로컬 실행기에 연결되어 있지 않습니다."));
-    const snapshot = await connection.client.cancelJob(job.remoteId ?? job.id);
-    await applySnapshot(snapshot);
-  }, [applySnapshot, connection.client]);
+    const snapshot = await connection.client.cancelJob(job.remoteId ?? job.id, signal ?? undefined);
+    await applySnapshot(snapshot, job);
+  }, [applySnapshot, connection.client, isCurrent, signal]);
 
   const removeJob = useCallback(async (job: StudioProductionJob): Promise<void> => {
-    const next = jobsRef.current.filter((entry) => entry.id !== job.id);
-    await commitJobs(next);
-  }, [commitJobs]);
+    await removeRecord(job.id);
+  }, [removeRecord]);
 
   const downloadOutput = useCallback(async (
     job: StudioProductionJob,
     outputId: string,
     name: string,
   ): Promise<void> => {
+    if (!isCurrent()) return;
     if (!connection.client) throw new Error(creatorSub2StatusText("studio.creatorSub2.status.toolchain.jobWorkspace.runnerNotConnected", "로컬 실행기에 연결되어 있지 않습니다."));
-    const blob = await connection.client.downloadOutput(job.remoteId ?? job.id, outputId);
+    const blob = await connection.client.downloadOutput(job.remoteId ?? job.id, outputId, signal ?? undefined);
+    if (!isCurrent()) return;
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = href;
     anchor.download = name;
     anchor.click();
     globalThis.setTimeout(() => URL.revokeObjectURL(href), 30_000);
-  }, [connection.client]);
+  }, [connection.client, isCurrent, signal]);
 
   const visibleJobs = jobs.filter((job) => matchesJobFilter(job, filter));
   const filterCounts: Readonly<Record<JobFilter, number>> = {
@@ -405,7 +322,7 @@ export function StudioProductionJobWorkspace({
           className="rounded-2xl border border-line bg-panel/70 p-4 shadow-sm sm:p-5"
           onSubmit={(event) => {
             event.preventDefault();
-            void createJob().catch((cause) => setNotice(cause instanceof Error ? cause.message : String(cause)));
+            void createJob().catch(reportError);
           }}
         >
           <ol className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label={bt("작업 준비 순서", "Job checklist")}>
@@ -521,7 +438,7 @@ export function StudioProductionJobWorkspace({
             </p>
             <button
               type="submit"
-              disabled={submitting || !connection.connected || !selectedTool || !selectedOperation || files.length === 0}
+              disabled={submitting || !ready || !connection.connected || !selectedTool || !selectedOperation || files.length === 0}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? <LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Play size={17} aria-hidden="true" />}
@@ -591,7 +508,7 @@ export function StudioProductionJobWorkspace({
                   {canCancel ? (
                     <button
                       type="button"
-                      onClick={() => void cancelJob(job).catch((cause) => setNotice(cause instanceof Error ? cause.message : String(cause)))}
+                      onClick={() => void cancelJob(job).catch(reportError)}
                       disabled={!connection.connected}
                       className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3 text-xs font-bold text-fg-3 hover:border-bad/40 hover:text-bad disabled:opacity-40"
                     >
@@ -639,7 +556,7 @@ export function StudioProductionJobWorkspace({
                     <button
                       key={output.id}
                       type="button"
-                      onClick={() => void downloadOutput(job, output.id, output.name).catch((cause) => setNotice(cause instanceof Error ? cause.message : String(cause)))}
+                      onClick={() => void downloadOutput(job, output.id, output.name).catch(reportError)}
                       disabled={!connection.connected}
                       className="flex min-h-11 items-center gap-3 rounded-xl border border-line bg-panel px-3 text-left hover:border-accent/45 disabled:opacity-40"
                     >
