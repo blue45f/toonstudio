@@ -230,7 +230,7 @@ function AdminAuthorizedRouter({ routeId }: { routeId: AdminRouteId }) {
 
   if (gate.kind !== "admin" || !uid) {
     return (
-      <div className="min-h-[100dvh] bg-canvas px-4 py-20 text-fg">
+      <div data-admin-access-state={gate.kind} className="min-h-[100dvh] bg-canvas px-4 py-20 text-fg">
         <div className="mx-auto max-w-xl rounded-2xl border border-line bg-card p-6">
           <AdminGateFallback gate={gate} />
           {gate.kind !== "loading" ? (

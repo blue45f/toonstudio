@@ -171,16 +171,38 @@ export const MOBILE_PANEL_STEPS: readonly PanelStep[] = [
     id: "first-run",
     label: "첫 화면 — 모바일 편집 안내와 시작 도크",
     open: async (page) => {
-      await expect(page.getByRole("complementary", { name: "모바일 편집 안내" })).toBeVisible();
+      const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
+      await expect(notice).toBeVisible();
+      await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "false");
+      await expect(notice).toHaveAttribute("data-studio-mobile-notice-expanded", "false");
     },
     close: async (page) => {
-      await page.getByRole("button", { name: "이해했어요", exact: true }).click();
-      await expect(page.getByRole("complementary", { name: "모바일 편집 안내" })).toBeHidden();
+      const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
+      await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).click();
+      await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "true");
+      await expect(notice.getByRole("button", { name: "기기 안내", exact: true })).toBeFocused();
       const dock = page.locator(START_DOCK);
       if (await dock.isVisible()) {
         await dock.getByRole("button", { name: "시작 안내 닫기" }).click();
         await expect(dock).toBeHidden();
       }
+    },
+  },
+  {
+    id: "device-guide",
+    label: "기기 안내 — 가능한 작업과 제한 상세",
+    open: async (page) => {
+      const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
+      await notice.getByRole("button", { name: "기기 안내", exact: true }).click();
+      await expect(notice).toHaveAttribute("data-studio-mobile-notice-expanded", "true");
+      await expect(notice.getByRole("heading", { name: "지금 할 수 있어요", exact: true })).toBeVisible();
+      await expect(notice.getByRole("heading", { name: "이 기기에서는 안 돼요", exact: true })).toBeVisible();
+    },
+    close: async (page) => {
+      const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
+      await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).click();
+      await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "true");
+      await expect(notice.getByRole("button", { name: "기기 안내", exact: true })).toBeFocused();
     },
   },
   {
