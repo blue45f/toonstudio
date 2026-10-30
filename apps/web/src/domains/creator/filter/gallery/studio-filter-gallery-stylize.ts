@@ -8,8 +8,8 @@
  * - 타일의 "투명" 채우기: 타일이 원본 알파를 함께 옮기고 빈 틈은 알파 0 이 된다.
  */
 import { clamp, hash2, luma, lumaPlane, sobel } from "./studio-filter-gallery-kernel-utils";
+import { alphaWeightedLuma } from "./studio-filter-gallery-sketch";
 import {
-  alphaWeightedLuma,
   paramChoices,
   paramColor,
   paramSelect,
@@ -19,7 +19,7 @@ import {
   readSelect,
   readSlider,
   readToggle,
-} from "./studio-filter-gallery-sketch";
+} from "./studio-filter-gallery-param-specs";
 
 import type { StudioFilterGalleryEffectDef, StudioFilterGalleryParams } from "./studio-filter-gallery-types";
 

@@ -8,8 +8,8 @@
  * 스타일화 분류는 `studio-filter-gallery-stylize.ts` 에 있다.
  */
 import { clamp, hash2, luma, valueNoise2 } from "./studio-filter-gallery-kernel-utils";
+import { alphaWeightedLuma } from "./studio-filter-gallery-sketch";
 import {
-  alphaWeightedLuma,
   paramChoices,
   paramSelect,
   paramSlider,
@@ -17,7 +17,7 @@ import {
   readSelect,
   readSlider,
   readToggle,
-} from "./studio-filter-gallery-sketch";
+} from "./studio-filter-gallery-param-specs";
 import {
   STUDIO_FILTER_GALLERY_LIGHT_OPTIONS,
   STUDIO_FILTER_GALLERY_TEXTURE_OPTIONS,
