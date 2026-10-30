@@ -102,6 +102,33 @@ describe("필터 갤러리 대화상자", () => {
     expect(onApply.mock.calls[0]![0]).toEqual({ filterGallery: undefined });
   });
 
+  it("대화상자 안 결과 미리보기 창이 계산할 수 없는 경우를 캔버스 미리보기로 안내한다", () => {
+    renderDialog();
+    const preview = screen.getByRole("region", { name: "결과 미리보기" });
+    // 크기를 모르는 대상은 계산하지 않고, 비교·실제 크기 단추도 끈다.
+    expect(within(preview).getByText(/미리볼 크기를 알 수 없어요/u)).toBeTruthy();
+    expect((within(preview).getByRole("button", { name: /원본 비교/u }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(preview).getByRole("button", { name: /실제 크기/u }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+    // 캔버스가 필터를 끄는 크기(16M 픽셀 초과)는 그 사실을 알린다.
+    renderDialog({ image: { width: 5000, height: 4000 }, imageSrc: "data:image/png;base64,AAAA" });
+    expect(screen.getByText(/이미지가 커서\(5000×4000px\)/u)).toBeTruthy();
+    cleanup();
+    // 크기는 알지만 원본 주소가 없으면 그렇게 알린다.
+    renderDialog({ image: { width: 320, height: 200 } });
+    expect(screen.getByText(/미리볼 원본이 없어요/u)).toBeTruthy();
+  });
+
+  it("캔버스 미리보기 켜기·끄기는 따로 이름이 붙어 있다", async () => {
+    const { onPreview } = renderDialog();
+    fireEvent.click(effectButton("명도 반전"));
+    const toggle = screen.getByRole("button", { name: /캔버스 미리보기/u });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    await waitFor(() => expect(onPreview).toHaveBeenLastCalledWith(null));
+  });
+
   it("작업량 표시가 이 조합을 적용할 수 있는 가장 큰 이미지 크기를 알린다", () => {
     renderDialog();
     // 가벼운 효과 하나는 상한이 충분히 커서 등급만 보인다.

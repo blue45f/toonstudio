@@ -9,7 +9,8 @@
 | 영역 | 상태 | 근거 |
 | --- | --- | --- |
 | 메뉴 행·명령(`filter.filter-gallery`)·75개 언어 문구 | current | `studio-main-menu-items-filter.ts`, `studio-command-catalog.ts`, `apps/web/public/i18n/studio/**` |
-| 대화상자(분류·검색, 최대 8겹, 겹별 표시·순서·불투명도·매개변수, 무늬 바꾸기, 선택 안/밖 적용) | current | `filter/gallery/StudioFilterGalleryDialog.tsx`(지연 로드 `studio-filter-gallery-lazy.ts`) |
+| 대화상자(분류·검색, 최대 8겹, 겹별 표시·순서·불투명도·매개변수, 무늬 바꾸기, 선택 안/밖 적용, 작업량 상한 안내) | current | `filter/gallery/StudioFilterGalleryDialog.tsx`(지연 로드 `studio-filter-gallery-lazy.ts`) |
+| 대화상자 안 결과 미리보기(캔버스와 같은 계산, 원본 비교, 맞춤·실제 크기) | current | `filter/gallery/StudioFilterGalleryPreview.tsx`, `…-preview.ts` |
 | 저장 형식 `filterGallery`(효과 id·매개변수만) | current | `filter/gallery/studio-filter-gallery-types.ts`, `render/studio-konva-filter-fields.ts` |
 | 정규화·예산·실행 | current | `filter/gallery/studio-filter-gallery-registry.ts`, `…-engine.ts` |
 | Konva 캐시 필터·이미지 필터 Worker 실행 | current | `render/studio-konva-filters.ts`(`F.FilterGallery`), `studio-image-filter-worker-client.ts` |
@@ -28,8 +29,18 @@
   - 겹마다 켜기·끄기, 위·아래 이동, 빼기, 불투명도(0~100%), 매개변수를 고친다.
   - "무늬 바꾸기"는 스택 시드를 바꿔 무작위 무늬가 있는 효과의 결과를 다시 뽑는다.
 - **미리보기**
-  - 값이 바뀔 때마다 `{ filterGallery }` 패치로 캔버스에 바로 그린다.
+  - 캔버스 미리보기: 값이 바뀔 때마다 `{ filterGallery }` 패치로 캔버스에 바로 그린다. "캔버스 미리보기" 단추로 켜고 끈다.
   - 실제 필터 엔진이 같은 커널을 실행하므로, 미리보기와 적용 결과가 같다.
+  - 대화상자 안 결과 미리보기: 대화상자가 넓어 캔버스를 대부분 가리므로 대화상자 안에도 결과를 보인다(넓은 화면은 왼쪽 열,
+    좁은 화면은 위 띠).
+    - 캔버스와 같은 계산이다. 요소의 문서 크기(반올림한 너비×높이)로 원본을 그리고(뒤집기 포함), 요소 필드 위에 초안
+      스택을 얹어 이미지 필터 Worker 상주 세션으로 계산한다. 커널의 크기 매개변수가 이미지 px 단위라 축소본으로 계산하지
+      않는다. 요소의 다른 필터도 캔버스처럼 함께 적용된다.
+    - 계산은 마지막 변경 120ms 뒤 한 번에 하나씩 돌고, 도는 동안 바뀐 값은 마지막 것만 남겨 이어 돌린다.
+    - "원본 비교"로 원본을, "실제 크기"로 1:1 픽셀을 스크롤해 본다.
+    - 캔버스가 필터를 끄는 크기(16M 픽셀 초과)는 계산하지 않고, 작업량 상한을 넘는 스택은 빠진 결과라고 알린다. 원본을
+      읽을 수 없으면(출처 제한 등) 캔버스 미리보기로 확인하라고 알린다.
+  - 작업량 표시는 이 조합을 적용할 수 있는 가장 큰 이미지 크기(MP·정사각 px)를 함께 보인다(약 4000×4000 이상이면 등급만).
 - **적용**
   - 이미지 대상은 요소에 `filterGallery` 필드를 저장한다(비파괴). 다시 열면 겹마다 고칠 수 있다.
   - 효과를 모두 빼고 적용하면 필드를 지운다.
@@ -265,7 +276,8 @@ interface StudioFilterGalleryStack {
   - 사용자 프리셋 저장·공유
   - 보정 레이어(smart filter) 스택 편입
   - 효과별 GPU 경로
-- 실브라우저 시각 확인을 하지 않았다(jsdom 대화상자 시험과 Node 픽셀 시험만 했다).
+- 실브라우저(Playwright·Chromium, 게스트 `/studio/canvas`, 1440×900)에서 페이지 합성 대상으로 대화상자를 열어 효과를 쌓고
+  대화상자 안 결과 미리보기(맞춤·실제 크기·원본 비교)와 작업량 안내를 확인했다. 효과별 모양은 Node 픽셀 시험으로 확인한다.
 
 ## 6. 검증
 
