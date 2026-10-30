@@ -22,6 +22,16 @@ import type { StudioFilterGalleryImage, StudioFilterGalleryStack } from "./studi
  */
 export const STUDIO_FILTER_GALLERY_DIRECT_BUDGET = 512 * 1024;
 
+/** 갤러리의 동기 실행 한도를 넘는 요청은 같은 Worker 경로로만 계산한다. */
+export class StudioFilterGalleryWorkerRequiredError extends Error {
+  readonly code = "STUDIO_FILTER_GALLERY_WORKER_REQUIRED";
+
+  constructor() {
+    super("이 필터 갤러리 작업량은 CPU Worker가 필요합니다.");
+    this.name = "StudioFilterGalleryWorkerRequiredError";
+  }
+}
+
 export type StudioFilterGalleryRunResult = "applied" | "inactive" | "over-budget";
 
 /** 활성 효과가 하나라도 있는 정규화 스택. 없으면 null. */

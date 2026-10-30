@@ -1,4 +1,4 @@
-import { studioFilterGalleryRequiresWorker } from "./filter/gallery/studio-filter-gallery-engine";
+import { StudioFilterGalleryWorkerRequiredError, studioFilterGalleryRequiresWorker } from "./filter/gallery/studio-filter-gallery-engine";
 import { applyImageFilters, buildImageFilters, registerStudioKonvaFilters, type KonvaLike } from "./render/studio-konva-filters";
 import { listEnabledStudioAdjustmentOperations, normalizeStudioAdjustmentFilterOperations } from "./studio-adjustment-stack";
 import { StudioAdvancedBlurWorkerRequiredError, studioAdvancedBlurRequiresWorker } from "./studio-advanced-blur-filters";
@@ -260,36 +260,23 @@ function runImageFilterDirect(
   signal: AbortSignal | undefined,
 ): StudioImageFilterWorkerClientResult {
   throwIfAborted(signal);
-  if (
-    studioAdvancedBlurRequiresWorker(
-      request.el,
-      request.imageData.width,
-      request.imageData.height,
-    )
-  ) {
+  const { el, imageData } = request;
+  const { width, height } = imageData;
+  if (studioAdvancedBlurRequiresWorker(el, width, height)) {
     throw new StudioAdvancedBlurWorkerRequiredError();
   }
-  if (
-    studioProfessionalFilterRequiresWorker(
-      request.el,
-      request.imageData.width,
-      request.imageData.height,
-    )
-  ) {
+  if (studioProfessionalFilterRequiresWorker(el, width, height)) {
     throw new StudioProfessionalFilterWorkerRequiredError();
   }
-  if (
-    studioToneArtifactRequiresWorker(
-      request.el,
-      request.imageData.width,
-      request.imageData.height,
-    )
-  ) {
+  if (studioToneArtifactRequiresWorker(el, width, height)) {
     throw new StudioToneArtifactWorkerRequiredError();
   }
-  const { filters, attrs } = buildImageFilters(request.el, directFilterRegistry);
-  applyImageFilters(request.imageData, filters, attrs);
-  return { execution: "direct", imageData: request.imageData };
+  if (studioFilterGalleryRequiresWorker(el, width, height)) {
+    throw new StudioFilterGalleryWorkerRequiredError();
+  }
+  const { filters, attrs } = buildImageFilters(el, directFilterRegistry);
+  applyImageFilters(imageData, filters, attrs);
+  return { execution: "direct", imageData };
 }
 
 function deserializeWorkerError(response: { readonly error?: unknown }): Error {

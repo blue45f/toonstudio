@@ -43,6 +43,7 @@ import type {
 import type { ImageFilterFields } from "../../render/studio-konva-filter-fields";
 import type { StudioFilterApplicationScope } from "../StudioFilterDialog";
 import type { StudioFilterDraft, StudioFilterKind } from "../studio-filter-menu";
+import type { FilterMaskLike } from "../studio-filter-mask";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -53,7 +54,7 @@ type FilterPatch = Partial<ImageFilterFields>;
  * 대상 이미지 요소. 필터 필드에 더해 문서 크기·뒤집기가 있으면 대화상자 안 미리보기를 캔버스와 같은 크기로 계산한다
  * (세션은 이미지 요소를 그대로 넘긴다).
  */
-export type StudioFilterGalleryDialogImage = ImageFilterFields & {
+export type StudioFilterGalleryDialogImage = ImageFilterFields & FilterMaskLike & {
   readonly width?: number;
   readonly height?: number;
   readonly flipped?: boolean;
@@ -393,6 +394,7 @@ export function StudioFilterGalleryDialog({
             flipped={image.flipped === true}
             flippedY={image.flippedY === true}
             fields={previewFields}
+            filterMask={image}
             className="md:col-span-2 lg:col-span-1"
           />
           <section aria-label="효과 찾기" className="flex min-h-0 flex-col gap-2 border-b border-line p-3 md:border-b-0 md:border-r">
