@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildCustomerSupportCapabilitySql } from "./customer-support-database-contract.mjs";
 import { buildProductionOperationsRuntimeAclViolationSql } from "./production-operations-database-contract.mjs";
 
 import { createHash } from "node:crypto";
@@ -57,6 +58,7 @@ const EXPECTED_SPECIAL_CAPABILITIES = Object.freeze([
   "commentActivityReanchorReady",
   "commentMutationMessageNullable",
   "commentMutationReanchorReady",
+  "customerSupportAclReady",
   "marketplaceCloudLibraryAclReady",
   "marketplaceCloudLibraryTriggerReady",
   "marketplacePackageModerationAclReady",
@@ -315,10 +317,7 @@ export function loadHealthReadinessContract(
   sourcePath = HEALTH_READINESS_SOURCE,
 ) {
   const source = readFileSync(sourcePath, "utf8");
-  const relationNames = extractQuotedValues(
-    source,
-    "REQUIRED_DATABASE_RELATIONS",
-  );
+  const relationNames = extractQuotedValues(source, "REQUIRED_DATABASE_RELATIONS");
   const migrationIds = extractQuotedValues(
     source,
     "REQUIRED_DATABASE_MIGRATIONS",
@@ -387,6 +386,7 @@ export function buildProductionCapabilityVerificationSql(
     .join(",\n          ");
 
   return `
+${buildCustomerSupportCapabilitySql(runtimeDatabaseRole)}
 ${buildProductionOperationCapabilitySql(runtimeDatabaseRole)}
 ${buildHiringCapabilitySql(runtimeDatabaseRole)}
 ${buildHiringAutomationCapabilitySql(runtimeDatabaseRole)}

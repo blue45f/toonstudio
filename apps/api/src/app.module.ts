@@ -8,6 +8,7 @@ import { ApiHttpInfrastructureModule } from "./runtime/api-http-infrastructure.m
 import { AdminModule } from "./modules/admin/admin.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BusinessInquiryModule } from "./modules/business-inquiry/business-inquiry.module";
+import { CustomerSupportModule } from "./modules/customer-support/customer-support.module";
 import { StudioVirtualSpaceDecorationModule } from "./modules/studio-virtual-space-decoration/studio-virtual-space-decoration.module";
 import { StudioProjectLibraryModule } from "./modules/studio-project-library/studio-project-library.module";
 import { StudioVirtualSpaceBookingModule } from "./modules/studio-virtual-space-booking/studio-virtual-space-booking.module";
@@ -73,6 +74,7 @@ const studioRealtimeTicketModule =
     CreatorAnalyticsModule,
     FeedbackModule,
     BusinessInquiryModule,
+    CustomerSupportModule,
     StudioVirtualSpaceDecorationModule,
     StudioProjectLibraryModule,
     StudioVirtualSpaceBookingModule,

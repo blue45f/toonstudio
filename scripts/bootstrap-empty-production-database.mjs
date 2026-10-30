@@ -82,6 +82,8 @@ const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "scripts/run-production-database-migrations.mjs",
   "scripts/validate-production-database-url.mjs",
   "scripts/verify-production-database-capabilities.mjs",
+  "scripts/customer-support-database-contract.mjs",
+  "apps/api/src/modules/health/health-customer-support-acl.ts",
   "scripts/admin-database-contract.mjs",
   "scripts/creator-hiring-database-contract.mjs",
   "scripts/creator-hiring-automation-database-contract.mjs",
@@ -951,14 +953,7 @@ function runDrizzleKitGenerate({ configPath, drizzleKitBinary, outDirectory }) {
   return readFileSync(join(outDirectory, sqlFiles[0]), "utf8");
 }
 
-/**
- * Provisioning must not depend on live database introspection. `drizzle-kit
- * push` diffs the schema against whatever state the target happens to be in,
- * applies statements non-atomically, and reports some failures only in its
- * output text while exiting zero. Generating the from-empty DDL instead makes
- * the statement list a pure function of the reviewed schema files: it can be
- * regenerated to prove determinism and applied inside a single transaction.
- */
+/** live DB introspection 없이 정본 스키마로 빈 DB용 DDL을 생성해 결정성과 원자적 적용을 보장한다. */
 function generateCurrentSchemaDdl() {
   const drizzleKitBinary = resolve(REPOSITORY_ROOT, DRIZZLE_KIT_BINARY_PATH);
   if (!existsSync(drizzleKitBinary)) {

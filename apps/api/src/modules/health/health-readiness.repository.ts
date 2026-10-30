@@ -2,6 +2,7 @@ import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "..
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
 
+import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
 
@@ -13,13 +14,7 @@ export const HEALTH_READINESS_REPOSITORY = Symbol(
   "HEALTH_READINESS_REPOSITORY",
 );
 
-/**
- * Every persistent relation declared by the current Drizzle model.
- *
- * Readiness deliberately checks the complete product schema rather than a small "core" subset:
- * a host must not be admitted while login works but Studio, collaboration, comments, AI quotas,
- * marketplace, or another user-visible feature has silently disappeared.
- */
+/** 기능별 영속 릴레이션을 모두 확인해 일부 기능만 빠진 호스트의 준비 완료를 막는다. */
 export const REQUIRED_DATABASE_RELATIONS = [
   "account",
   "account_merge",
@@ -128,6 +123,9 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "creator_work_team_comment_mutation",
   "creator_work_team_comment_read",
   "creator_work_team_comment_thread",
+  "customer_support_ai_attempt",
+  "customer_support_conversation",
+  "customer_support_message",
   "fan_post",
   "fan_post_like",
   "fan_post_reply",
@@ -277,6 +275,7 @@ interface DatabasePingRow {
 interface SchemaCatalogRow {
   relationNames: string[] | null;
   adminColumnsReady: boolean;
+  customerSupportAclReady: boolean;
   authUserColumnsReady: boolean;
   authUserConstraintsReady: boolean;
   authUserStatusIndexReady: boolean;
@@ -340,6 +339,7 @@ export class PostgresHealthReadinessRepository
               ARRAY[]::text[]
             ) AS "relationNames",
             ${ADMIN_SCHEMA_COLUMNS_SQL} AS "adminColumnsReady",
+            ${CUSTOMER_SUPPORT_ACL_READY_SQL} AS "customerSupportAclReady",
             NOT EXISTS (
               SELECT 1
               FROM (VALUES

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { buildCustomerSupportRuntimeAclSql, buildCustomerSupportCapabilitySql } from "./customer-support-database-contract.mjs";
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 import { buildProductionOperationRuntimeAclSql, buildProductionOperationCapabilitySql } from "./production-operation-database-contract.mjs";
 import { buildStudioVirtualSpaceRuntimeAclSql, buildStudioVirtualSpaceCapabilitySql } from "./studio-virtual-space-database-contract.mjs";
@@ -44,7 +45,6 @@ const ADOPTION_MARKER_ID = "__managed_history_through_0019__";
 const LEDGER_RELATION = "toonspectrum_ops.deployment_migration";
 const LOCK_RELATION = "toonspectrum_ops.deployment_migration_lock";
 const REPAIR_LOCK_STALE_AFTER = "60 minutes";
-// 릴레이션 분류표는 줄 수 래칫 때문에 형제 모듈에 있다. 공개 이름은 그대로 유지한다.
 export { POST_BASELINE_RELATIONS };
 
 const MODE_CONFIRMATIONS = Object.freeze({
@@ -3663,8 +3663,8 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
       ledger = readLedger(databaseUrl);
     }
 
-    // Normalize dynamic-role ACLs on every run. This also repairs providers that do not preserve
-    // ALTER DEFAULT PRIVILEGES across independently owned migration and application roles.
+    psql(databaseUrl, buildCustomerSupportRuntimeAclSql(runtimeDatabaseRole));
+    psql(databaseUrl, buildCustomerSupportCapabilitySql(runtimeDatabaseRole));
     psql(databaseUrl, buildAuthRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildTrafficAnalyticsRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildCreatorRoleWorkspaceRuntimeAclSql(runtimeDatabaseRole));
