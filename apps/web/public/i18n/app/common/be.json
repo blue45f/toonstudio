@@ -10,7 +10,7 @@
   "common.backToHome": "На галоўную",
   "common.loading.search": "Пошук…",
   "common.notFoundWithQuery": "Няма вынікаў для '{query}'.",
-  "common.openSearch": "Знайдзіце яго ў пошуку →",
+  "common.openSearch": "Шукаць зноў у агульным пошуку →",
   "common.loading.empty": "Даныя не вернуты.",
-  "common.retry.all": "Паспрабуйце яшчэ раз або вяртайцеся дадому."
+  "common.retry.all": "Паспрабуйце яшчэ раз або перайдзіце на галоўную."
 }

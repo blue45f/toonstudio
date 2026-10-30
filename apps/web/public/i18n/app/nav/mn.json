@@ -11,7 +11,7 @@
   "nav.market": "Зах зээл",
   "nav.insights": "Статистик",
   "nav.create": "Үүсгэх",
-  "nav.shaper": "Character Shaper",
+  "nav.shaper": "Дүр хэлбэржүүлэгч",
   "nav.library": "Номын сан",
   "nav.login": "Нэвтрэх",
   "nav.search": "Түүх, хэрэгсэл болон цэс хайх",
@@ -22,5 +22,5 @@
   "nav.studio": "Студи",
   "nav.assets": "Материалууд",
   "nav.creators": "Бүтээгчид",
-  "nav.discover": "Нээх"
+  "nav.discover": "Бүтээл үзэх"
 }

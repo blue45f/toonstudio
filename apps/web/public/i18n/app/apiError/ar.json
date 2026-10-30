@@ -3,7 +3,7 @@
   "apiError.adminRequired": "لم يتم التحقق من إذن الإدارة.",
   "apiError.adminOnlyPage": "هذه الصفحة مقيدة للمديرين.",
   "apiError.notFound": "البند المطلوب لم يتم العثور عليه",
-  "apiError.unsupportedType": "نوع المحتوى غير المدعوم",
-  "apiError.inactiveAccount": "الحسابات غير النشطة لا يمكن استخدام ميزات المدير.",
-  "apiError.settlementFailed": "فشلت عملية التسوية"
+  "apiError.unsupportedType": "نوع المحتوى غير مدعوم.",
+  "apiError.inactiveAccount": "لا يمكن للحسابات غير النشطة استخدام صلاحيات المدير.",
+  "apiError.settlementFailed": "فشلت عملية التسوية. يُرجى المحاولة مرة أخرى بعد قليل."
 }

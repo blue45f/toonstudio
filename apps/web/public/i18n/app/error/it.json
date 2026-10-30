@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Ricarga l'ultima versione...",
-  "error.chunkRetryFailed": "Una volta aggiornato, ma il problema persiste.",
-  "error.reloadButton": "Ricarga pagina",
-  "error.goHome": "Torna a casa",
+  "error.reloading": "Ricaricamento dell'ultima versione in corso...",
+  "error.chunkRetryFailed": "Abbiamo provato ad aggiornare una volta, ma il problema persiste. Controlla la connessione di rete e riprova.",
+  "error.reloadButton": "Ricarica pagina",
+  "error.goHome": "Vai alla pagina iniziale",
   "error.retryDesc": "Si prega di riprovare o di tornare alla pagina iniziale."
 }

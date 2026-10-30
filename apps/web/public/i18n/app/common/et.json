@@ -10,7 +10,7 @@
   "common.backToHome": "Mine avalehele",
   "common.loading.search": "Otsimine…",
   "common.notFoundWithQuery": "{query} kohta ei ole tulemusi.",
-  "common.openSearch": "Leia otsingute kaudu →",
+  "common.openSearch": "Otsi uuesti üldotsingust →",
   "common.loading.empty": "Andmeid ei tagastatud.",
-  "common.retry.all": "Proovi uuesti või mine koju."
+  "common.retry.all": "Proovi uuesti või mine avalehele."
 }

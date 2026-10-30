@@ -1,7 +1,7 @@
 {
   "error.reloading": "Inapakia upya toleo la hivi karibuni…",
-  "error.chunkRetryFailed": "Imesasishwa mara moja, lakini tatizo linaendelea. Tafadhali angalia muunganisho wako na ujaribu tena.",
+  "error.chunkRetryFailed": "Tumejaribu kupakia upya mara moja, lakini tatizo linaendelea. Tafadhali angalia muunganisho wako na ujaribu tena.",
   "error.reloadButton": "Pakia upya ukurasa",
   "error.goHome": "Nenda Nyumbani",
-  "error.retryDesc": "Tafadhali jaribu tena au urudi kwenye ukurasa wa kwanza."
+  "error.retryDesc": "Tafadhali jaribu tena au urudi kwenye ukurasa wa nyumbani."
 }

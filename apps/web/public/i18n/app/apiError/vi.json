@@ -2,8 +2,8 @@
   "apiError.loginRequired": "Bạn cần đăng nhập.",
   "apiError.adminRequired": "Các quyền quản trị không thể xác minh được.",
   "apiError.adminOnlyPage": "Trang này chỉ dành cho người quản trị.",
-  "apiError.notFound": "Điều kiện yêu cầu không thể được tìm thấy.",
+  "apiError.notFound": "Không tìm thấy mục được yêu cầu.",
   "apiError.unsupportedType": "Loại nội dung không được hỗ trợ.",
   "apiError.inactiveAccount": "Tài khoản không hoạt động không thể sử dụng các tính năng quản trị viên.",
-  "apiError.settlementFailed": "Việc xử lý giải pháp đã thất bại."
+  "apiError.settlementFailed": "Xử lý quyết toán thất bại. Vui lòng thử lại sau giây lát."
 }

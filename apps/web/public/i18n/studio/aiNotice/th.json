@@ -1,9 +1,9 @@
 {
-  "studio.aiNotice.title": "คู่มือรูปภาพ AI เจนเนอเรชั่น",
+  "studio.aiNotice.title": "ข้อควรทราบเกี่ยวกับภาพจาก Generative AI",
   "studio.aiNotice.description": "ฟังก์ชันนี้สร้างภาพโดยใช้ generative AI (OpenAI) ป้าย AI จะแสดงบนผลลัพธ์ที่สร้างขึ้น",
-  "studio.aiNotice.ruleCopyright": "เราไม่สร้างผลงาน ตัวละคร หรือใบหน้าของผู้อื่น",
+  "studio.aiNotice.ruleCopyright": "โปรดอย่าสร้างผลงานหรือตัวละครที่มีลิขสิทธิ์ของผู้อื่น หรือใบหน้าของบุคคลที่มีอยู่จริง",
   "studio.aiNotice.ruleAccuracy": "ผลลัพธ์ของ AI อาจไม่ถูกต้องหรือแตกต่างจากที่ตั้งใจไว้",
   "studio.aiNotice.ruleResponsibility": "คุณมีหน้าที่รับผิดชอบในการใช้ภาพที่คุณสร้างขึ้น",
   "studio.aiNotice.cancel": "ยกเลิก",
-  "studio.aiNotice.confirm": "ฉันเข้าใจสร้าง"
+  "studio.aiNotice.confirm": "เข้าใจแล้ว สร้างเลย"
 }

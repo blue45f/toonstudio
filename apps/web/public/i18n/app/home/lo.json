@@ -8,10 +8,10 @@
   "home.hero.rankingButton": "ເບິ່ງການຈັດອັນດັບລວມ",
   "home.hero.studioLink": "ສະຕູດິໂອຜູ້ສ້າງ",
   "home.hero.createLink": "ກະດານຜູ້ສ້າງ",
-  "home.hero.stats.titles": "ຫົວຂໍ້",
-  "home.hero.stats.platforms": "ເວທີການພິມ",
-  "home.hero.stats.genres": "ສະເປັກຕຣຳປະເພດ",
-  "home.hero.stats.reviews": "ການທົບທວນຄືນຂອງຜູ້ອ່ານ",
-  "home.loadError": "ບໍ່ສາມາດໂຫຼດຂໍ້ມູນໜ້າຫຼັກໄດ້.",
+  "home.hero.stats.titles": "ຜົນງານທີ່ລວບລວມ",
+  "home.hero.stats.platforms": "ແພລັດຟອມລົງຕອນ",
+  "home.hero.stats.genres": "ຄວາມຫຼາກຫຼາຍຂອງປະເພດ",
+  "home.hero.stats.reviews": "ຣີວິວຈາກຜູ້ອ່ານ",
+  "home.loadError": "ບໍ່ສາມາດໂຫຼດໜ້າຫຼັກໄດ້. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ.",
   "home.creatorTitle": "ຈາກຄວາມຄິດຈົນເຖິງພາບທີທໍາອິດຂອງທ່ານ"
 }

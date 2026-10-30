@@ -1,16 +1,16 @@
 {
-  "common.loading": "சுமை",
-  "common.loading.short": "சுமை",
+  "common.loading": "ஏற்றுகிறது",
+  "common.loading.short": "ஏற்றுகிறது",
   "common.close": "மூடுக",
   "common.open": "திறக்க",
   "common.search": "தேடுக",
   "common.retry": "மீண்டும் முயற்சி",
   "common.retry.short": "மீண்டும் முயற்சி",
-  "common.backToTop": "மேல் திரும்ப",
-  "common.backToHome": "வீட்டுக்கு போ",
-  "common.loading.search": "தேடுவது...",
-  "common.notFoundWithQuery": "' {query} ' க்கான முடிவுகள் இல்லை.",
-  "common.openSearch": "தேடுதல் →",
+  "common.backToTop": "மேலே செல்",
+  "common.backToHome": "முகப்புக்குச் செல்",
+  "common.loading.search": "தேடுகிறது…",
+  "common.notFoundWithQuery": "'{query}'க்கான முடிவுகள் இல்லை.",
+  "common.openSearch": "முழு தேடலில் மீண்டும் கண்டறியவும் →",
   "common.loading.empty": "எந்த தரவும் திருப்பி அனுப்பப்படவில்லை.",
-  "common.retry.all": "மீண்டும் முயற்சி செய்யுங்கள் அல்லது வீட்டிற்குச் செல்லுங்கள்."
+  "common.retry.all": "மீண்டும் முயற்சி செய்யுங்கள் அல்லது முகப்புப் பக்கத்திற்குச் செல்லுங்கள்."
 }

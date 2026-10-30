@@ -1,11 +1,11 @@
 {
   "nav.home": "Ana Sayfa",
   "nav.ranking": "Sıralama",
-  "nav.calendar": "Takvim",
+  "nav.calendar": "Seriler",
   "nav.recommend": "Seçimler",
   "nav.explore": "Keşfet",
   "nav.fortune": "Horoskop",
-  "nav.play": "Arkade",
+  "nav.play": "Oyun Alanı",
   "nav.reviews": "Yorumlar",
   "nav.community": "Topluluk",
   "nav.market": "Pazar",
@@ -21,6 +21,6 @@
   "nav.allMenu": "Tüm menü",
   "nav.studio": "Stüdyo",
   "nav.assets": "Varlıklar",
-  "nav.creators": "Yaratıcılar",
-  "nav.discover": "Bul"
+  "nav.creators": "Eser Galerisi",
+  "nav.discover": "Eserleri Keşfet"
 }

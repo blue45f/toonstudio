@@ -3,5 +3,5 @@
   "error.chunkRetryFailed": "U rifreskua një herë, por problemi vazhdon. Kontrolloni lidhjen tuaj dhe provoni sërish.",
   "error.reloadButton": "Rifresko faqen",
   "error.goHome": "Shko në faqen kryesore",
-  "error.retryDesc": "Provo sërish ose kthehu në faqen kryesore."
+  "error.retryDesc": "Provoni sërish ose kthehuni në faqen kryesore."
 }

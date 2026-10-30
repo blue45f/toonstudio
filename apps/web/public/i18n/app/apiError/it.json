@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "È necessario accedere.",
-  "apiError.adminRequired": "Le autorizzazioni degli amministratori non sono state verificate.",
+  "apiError.adminRequired": "Impossibile verificare le autorizzazioni di amministratore.",
   "apiError.adminOnlyPage": "Questa pagina è limitata agli amministratori.",
-  "apiError.notFound": "L'articolo richiesto non è stato trovato.",
+  "apiError.notFound": "L'elemento richiesto non è stato trovato.",
   "apiError.unsupportedType": "Tipo di contenuto non supportato.",
   "apiError.inactiveAccount": "Gli account inattivi non possono utilizzare le funzionalità di amministratore.",
-  "apiError.settlementFailed": "Il processo di liquidazione è fallito."
+  "apiError.settlementFailed": "Elaborazione della liquidazione non riuscita. Riprova tra qualche istante."
 }

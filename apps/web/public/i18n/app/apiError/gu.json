@@ -5,5 +5,5 @@
   "apiError.notFound": "વિનંતી કરેલી વસ્તુ મળી શકી નથી.",
   "apiError.unsupportedType": "અસમર્થિત સામગ્રી પ્રકાર.",
   "apiError.inactiveAccount": "નિષ્ક્રિય એકાઉન્ટ્સ એડમિનિસ્ટ્રેટર સુવિધાઓનો ઉપયોગ કરી શકતા નથી.",
-  "apiError.settlementFailed": "સમાધાન પ્રક્રિયા નિષ્ફળ ગઈ."
+  "apiError.settlementFailed": "સેટલમેન્ટ પ્રક્રિયા નિષ્ફળ ગઈ. કૃપા કરીને થોડી વાર પછી ફરી પ્રયાસ કરો."
 }

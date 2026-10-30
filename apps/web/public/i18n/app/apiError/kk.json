@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Кіру қажет.",
-  "apiError.adminRequired": "Админ рұқсаттарын тексеру мүмкін емес.",
+  "apiError.adminRequired": "Әкімші рұқсаттарын тексеру мүмкін емес.",
   "apiError.adminOnlyPage": "Бұл бет тек әкімшілерге арналған.",
   "apiError.notFound": "Сұралған элемент табылмады.",
   "apiError.unsupportedType": "Қолдау көрсетілмейтін мазмұн түрі.",
-  "apiError.inactiveAccount": "Белсенсіз тіркелгілер әкімші функцияларын пайдалана алмайды.",
+  "apiError.inactiveAccount": "Белсенді емес тіркелгілер әкімші функцияларын пайдалана алмайды.",
   "apiError.settlementFailed": "Есеп айырысуды өңдеу сәтсіз аяқталды. Сәлден кейін қайталап көріңіз."
 }

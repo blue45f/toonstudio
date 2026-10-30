@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "ৱেবটুন × ৱেবনভেল",
   "home.hero.titleLine1": "ছিন্ন-ভিন্ন কাহিনীবোৰ,",
-  "home.hero.titleShimmer": "একক সূচক",
+  "home.hero.titleShimmer": "একক সূচী",
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Naver Webtoon, Series আৰু Kakao Webtoonত অনুসন্ধান কৰক, তাৰ পিছত বাস্তৱ-সময়ৰ সংকেত আৰু পাঠকৰ পছন্দ ব্যৱহাৰ কৰি কি পঢ়িব সেয়া দ্ৰুতভাৱে সংকীৰ্ণ কৰক।",
-  "home.hero.searchButton": "অনুসন্ধান শীৰ্ষক, সৃষ্টিকাৰী, ট্যাগ",
+  "home.hero.searchButton": "শীৰ্ষক, সৃষ্টিকাৰী, ট্যাগ অনুসন্ধান কৰক",
   "home.hero.rankingButton": "একীকৃত ৰেংকিং চাওক",
   "home.hero.studioLink": "সৃষ্টিকাৰী ষ্টুডিঅ'",
-  "home.hero.createLink": "সৃষ্টিকৰ্তা বোৰ্ড",
+  "home.hero.createLink": "সৃষ্টিকাৰী বোৰ্ড",
   "home.hero.stats.titles": "শীৰ্ষক",
   "home.hero.stats.platforms": "প্ৰকাশনৰ প্লেটফৰ্ম",
   "home.hero.stats.genres": "জেনাৰ স্পেকট্ৰাম",
-  "home.hero.stats.reviews": "পাঠকৰ সমীক্ষা",
-  "home.loadError": "হোম তথ্য লোড কৰিব পৰা নগ'ল।",
+  "home.hero.stats.reviews": "পাঠকৰ পৰ্যালোচনা",
+  "home.loadError": "হোম লোড কৰিব পৰা নগ'ল। অলপ পিছত পুনৰ চেষ্টা কৰক।",
   "home.creatorTitle": "এটা ধাৰণাৰ পৰা আপোনাৰ প্ৰথম দৃশ্যলৈ"
 }

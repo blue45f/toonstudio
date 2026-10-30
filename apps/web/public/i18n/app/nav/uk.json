@@ -5,13 +5,13 @@
   "nav.recommend": "Рекомендовані",
   "nav.explore": "Огляд",
   "nav.fortune": "Гороскоп",
-  "nav.play": "Аркаді",
+  "nav.play": "Аркада",
   "nav.reviews": "Відгуки",
   "nav.community": "Спільнота",
-  "nav.market": "Різномані",
+  "nav.market": "Маркет",
   "nav.insights": "Статистика",
   "nav.create": "Створити",
-  "nav.shaper": "Формер персонажів",
+  "nav.shaper": "Конструктор персонажів",
   "nav.library": "Бібліотека",
   "nav.login": "Увійти",
   "nav.search": "Пошук історій, інструментів та меню",
@@ -20,7 +20,7 @@
   "nav.menu": "Меню",
   "nav.allMenu": "Все меню",
   "nav.studio": "Студія",
-  "nav.assets": "Активи",
+  "nav.assets": "Матеріали",
   "nav.creators": "Творці",
-  "nav.discover": "Відкрити"
+  "nav.discover": "Огляд творів"
 }

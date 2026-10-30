@@ -2,17 +2,17 @@
   "command.palette.placeholder": "بحث عن العناوين، المبدعين، والعلامات...",
   "command.palette.label": "البحث",
   "command.palette.group.shortcuts": "الوصول السريع",
-  "command.palette.group.recent": "العناوين الأخيرة",
+  "command.palette.group.recent": "العناوين التي شاهدتها مؤخرًا",
   "command.palette.group.results": "العناوين",
-  "command.palette.quick.search": "البحث العالمي",
+  "command.palette.quick.search": "البحث الشامل",
   "command.palette.quick.ranking": "التصنيف",
   "command.palette.quick.recommend": "التوصيات الشخصية",
-  "command.palette.quick.fortune": "أوروسكوب الشخصيات",
+  "command.palette.quick.fortune": "أبراج الشخصيات",
   "command.palette.quick.random": "عنوان عشوائي",
   "command.palette.quick.calendar": "تقويم نشر",
   "command.palette.quick.compare": "مقارنة العناوين",
   "command.palette.quick.explore": "استكشاف / أنواع",
-  "command.palette.quick.insights": "لوحة التحكم في الاتجاه",
+  "command.palette.quick.insights": "تقرير الاتجاهات",
   "command.palette.quick.library": "مكتبي",
   "command.palette.quick.searchHint": "العناوين، المبدعين، العلامات",
   "command.palette.quick.rankingHint": "التصنيف عبر 6 محاور",
@@ -23,5 +23,5 @@
   "command.palette.quick.compareHint": "مقارنة اثنين من الأعمال جنبا إلى جنب",
   "command.palette.quick.exploreHint": "استكشاف الطيف",
   "command.palette.quick.insightsHint": "رؤى السوق من البيانات",
-  "command.palette.quick.libraryHint": "الاهتمامات، التصنيفات، الذوق"
+  "command.palette.quick.libraryHint": "الاهتمامات، التقييمات، الذوق"
 }

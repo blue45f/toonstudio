@@ -16,7 +16,7 @@
   "account.activity.stat.reviews": "Yozilgan sharhlar",
   "account.activity.stat.want": "Oʻqishni istayman",
   "account.activity.stat.reading": "Oʻqiyapman",
-  "account.activity.stat.done": "Yakunlangan",
+  "account.activity.stat.done": "Oʻqib tugatilgan",
   "account.activity.stat.collections": "Toʻplamlar",
   "account.activity.recentReviewsTitle": "Soʻnggi sharhlar",
   "account.activity.recentNoText": "Faqat baho",
@@ -27,7 +27,7 @@
   "account.profile.namePlaceholder": "Koʻrinadigan ism",
   "account.profile.bioLabel": "Qisqacha maʻlumot",
   "account.profile.bioPlaceholder": "Oʻzingiz haqingizda bir qatorda ayting.",
-  "account.profile.bioLength": "{length} /280",
+  "account.profile.bioLength": "{length}/280",
   "account.profile.saveButton": "Profilni saqlash",
   "account.profile.saving": "Saqlanmoqda…",
   "account.profile.saved": "Saqlandi",
@@ -41,6 +41,6 @@
   "account.profile.loadingError": "Profilni yuklab boʻlmadi. Iltimos, birozdan soʻng yana urinib koʻring.",
   "account.page.eyebrow": "MENING HISOBIM",
   "account.page.title": "Mening profilim",
-  "account.page.subtitle": "Oʻzingizning xabarlaringiz va faoliyatingizni tekshiring va profilingiz tafsilotlarini boshqaring.",
+  "account.page.subtitle": "Postlaringiz va faoliyatingizni koʻring hamda profilingizni boshqaring.",
   "account.page.tabsAria": "Profil tablari"
 }

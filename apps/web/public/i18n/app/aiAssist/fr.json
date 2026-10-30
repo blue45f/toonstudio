@@ -161,7 +161,7 @@
   "aiAssist.preflight.title": "Vérification avant exécution",
   "aiAssist.preflight.capChip": "Max. env. {cost}",
   "aiAssist.preflight.capUnknown": "Prix inconnu",
-  "aiAssist.preflight.route": "Trajet",
+  "aiAssist.preflight.route": "Chemin de traitement",
   "aiAssist.preflight.routeValue": "Ce navigateur → Anthropic (votre clé API Anthropic). Sans passer par les serveurs de ToonStudio.",
   "aiAssist.preflight.cost": "Coût",
   "aiAssist.preflight.costValue": "Facturé sur votre compte Anthropic. Jusqu'à {cost} environ (selon la limite de sortie).",

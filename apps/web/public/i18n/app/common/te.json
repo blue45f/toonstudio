@@ -7,10 +7,10 @@
   "common.retry": "మళ్లీ ప్రయత్నించండి",
   "common.retry.short": "మళ్లీ ప్రయత్నించండి",
   "common.backToTop": "తిరిగి పైకి",
-  "common.backToHome": "ఇంటికి వెళ్ళండి",
-  "common.loading.search": "శోధన.",
-  "common.notFoundWithQuery": "' {query} ' కొరకు ఫలితాలు లేవు.",
+  "common.backToHome": "హోమ్‌కి వెళ్ళండి",
+  "common.loading.search": "శోధిస్తోంది…",
+  "common.notFoundWithQuery": "'{query}' కోసం ఫలితాలు లేవు.",
   "common.openSearch": "శోధనలో కనుగొనండి →",
-  "common.loading.empty": "ఏ డేటా తిరిగి లేదు.",
-  "common.retry.all": "మళ్ళీ ప్రయత్నించండి లేదా ఇంటికి తిరిగి వెళ్ళండి."
+  "common.loading.empty": "ప్రతిస్పందనలో డేటా లేదు.",
+  "common.retry.all": "మళ్ళీ ప్రయత్నించండి లేదా హోమ్‌కి వెళ్ళండి."
 }

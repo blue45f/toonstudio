@@ -3,7 +3,7 @@
   "home.hero.titleLine1": "Rozproszone historie,",
   "home.hero.titleShimmer": "Jeden indeks",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Wyszukaj Naver Webtoon, Series i Kakao Webtoon, a następnie szybko ogranicz, co czytać, używając sygnałów w czasie rzeczywistym i preferencji czytelnika.",
+  "home.hero.description": "Przeszukuj Naver Webtoon, Series i Kakao Webtoon, a potem szybko zawęź wybór lektury dzięki sygnałom w czasie rzeczywistym i preferencjom czytelników.",
   "home.hero.searchButton": "Szukaj tytułów, twórców i tagów",
   "home.hero.rankingButton": "Zobacz ujednolicony ranking",
   "home.hero.studioLink": "Studio twórcy",
@@ -12,6 +12,6 @@
   "home.hero.stats.platforms": "Platformy publikacji",
   "home.hero.stats.genres": "Spektrum gatunków",
   "home.hero.stats.reviews": "Opinie czytelników",
-  "home.loadError": "Nie udało się wczytać danych strony głównej.",
+  "home.loadError": "Nie udało się wczytać strony głównej. Spróbuj ponownie później.",
   "home.creatorTitle": "Od pomysłu do pierwszej sceny"
 }

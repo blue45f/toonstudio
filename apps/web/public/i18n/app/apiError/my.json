@@ -4,6 +4,6 @@
   "apiError.adminOnlyPage": "ဤစာမျက်နှာသည် အုပ်ချုပ်ရေးမှူးများအတွက်သာ သက်ဆိုင်သည်။",
   "apiError.notFound": "တောင်းဆိုထားသော ပစ္စည်းကို ရှာမတွေ့နိုင်ပါ။",
   "apiError.unsupportedType": "မထောက်ပံ့တဲ့ အကြောင်းအရာအမျိုးအစား။",
-  "apiError.inactiveAccount": "မလုပ်ဆောင်တဲ့ အကောင့်တွေက Administrator Features ကို သုံးလို့မရဘူး။",
+  "apiError.inactiveAccount": "မလုပ်ဆောင်တဲ့ အကောင့်တွေက Admin ခွင့်ပြုချက်တွေကို သုံးလို့မရဘူး။",
   "apiError.settlementFailed": "ငွေရှင်းမှု ဆောင်ရွက်ခြင်း မအောင်မြင်ပါ။ ခဏအကြာတွင် ထပ်စမ်းကြည့်ပါ။"
 }

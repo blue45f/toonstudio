@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Çıkmış hikâyeler.",
-  "home.hero.titleShimmer": "Tek bir indeksi",
+  "home.hero.titleLine1": "Dağınık hikâyeleri,",
+  "home.hero.titleShimmer": "Tek bir dizinde",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Naver Webtoon, Seri ve Kakao Webtoon'u arayın, sonra gerçek zamanlı sinyaller ve okuyucu tercihlerini kullanarak okumak için neyi kısıtlayın.",
-  "home.hero.searchButton": "Arama başlıkları, yaratıcıları, etiketleri",
-  "home.hero.rankingButton": "Tek sıralama görüntüsü",
+  "home.hero.description": "Naver Webtoon, Series ve Kakao Webtoon genelinde arama yapın; gerçek zamanlı sinyalleri ve okuyucu tercihlerini birlikte okuyarak ne okuyacağınızı hızla daraltın.",
+  "home.hero.searchButton": "Eser, yazar ve etiket ara",
+  "home.hero.rankingButton": "Birleşik sıralamayı görüntüle",
   "home.hero.studioLink": "Yaratıcı stüdyosu",
-  "home.hero.createLink": "Yaratıcı tahtası",
-  "home.hero.stats.titles": "Başlıklar",
+  "home.hero.createLink": "Yaratıcı panosu",
+  "home.hero.stats.titles": "Eserler",
   "home.hero.stats.platforms": "Yayınlama platformları",
-  "home.hero.stats.genres": "Genre spektrum",
+  "home.hero.stats.genres": "Tür yelpazesi",
   "home.hero.stats.reviews": "Okuyucuların yorumları",
-  "home.loadError": "Ev verileri yüklenemiyor.",
-  "home.creatorTitle": "Bir fikrdenden ilk sahneye kadar"
+  "home.loadError": "Ana sayfa yüklenemedi. Lütfen biraz sonra tekrar deneyin.",
+  "home.creatorTitle": "Fikirden ilk sahneye"
 }

@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
-  "home.hero.titleLine1": "Des histoires répandues,",
-  "home.hero.titleShimmer": "Un seul indice",
+  "home.hero.titleLine1": "Des histoires éparses,",
+  "home.hero.titleShimmer": "Un seul index",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "Recherchez sur Naver Webtoon, Series et Kakao Webtoon, puis réduisez rapidement ce que vous devez lire en utilisant des signaux en temps réel et les préférences du lecteur.",
-  "home.hero.searchButton": "Titres de recherche, créateurs, étiquettes",
+  "home.hero.description": "Recherchez sur Naver Webtoon, Series et Kakao Webtoon, puis affinez rapidement votre choix de lecture grâce aux signaux en temps réel et aux préférences des lecteurs.",
+  "home.hero.searchButton": "Rechercher des œuvres, auteurs, tags",
   "home.hero.rankingButton": "Afficher le classement unifié",
   "home.hero.studioLink": "Studio créateur",
-  "home.hero.createLink": "Tableau de création",
+  "home.hero.createLink": "Forum de création",
   "home.hero.stats.titles": "Titres",
   "home.hero.stats.platforms": "Plateformes d'édition",
-  "home.hero.stats.genres": "Spéctrum de genre",
+  "home.hero.stats.genres": "Spectre des genres",
   "home.hero.stats.reviews": "Commentaires des lecteurs",
-  "home.loadError": "Je n'ai pas pu charger les données.",
-  "home.creatorTitle": "De l' idée à la première scène"
+  "home.loadError": "Impossible de charger l'accueil. Veuillez réessayer plus tard.",
+  "home.creatorTitle": "De l'idée à la première scène"
 }

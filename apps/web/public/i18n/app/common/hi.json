@@ -8,9 +8,9 @@
   "common.retry.short": "पुनः प्रयास करें",
   "common.backToTop": "शीर्ष पर वापस",
   "common.backToHome": "होम पर जाएं",
-  "common.loading.search": "खोज ...",
-  "common.notFoundWithQuery": "' {query} ' के लिए कोई परिणाम नहीं मिले।",
-  "common.openSearch": "खोज में खोजें →",
+  "common.loading.search": "खोजा जा रहा है…",
+  "common.notFoundWithQuery": "'{query}' के लिए कोई परिणाम नहीं मिला।",
+  "common.openSearch": "पूरी खोज में फिर से खोजें →",
   "common.loading.empty": "कोई डेटा नहीं लौटाया गया।",
-  "common.retry.all": "फिर से कोशिश करो या घर जाओ."
+  "common.retry.all": "फिर से प्रयास करें या होम पर जाएं।"
 }

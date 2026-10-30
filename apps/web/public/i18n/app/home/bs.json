@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Pretraži naslove, kreatore, oznake",
   "home.hero.rankingButton": "Prikaži jedinstveno rangiranje",
   "home.hero.studioLink": "Studio kreatora",
-  "home.hero.createLink": "Tabla kreatora",
+  "home.hero.createLink": "Forum kreatora",
   "home.hero.stats.titles": "Naslovi",
   "home.hero.stats.platforms": "Platforme za objavljivanje",
   "home.hero.stats.genres": "Spektrum žanrova",
-  "home.hero.stats.reviews": "Recenzije čitatelja",
-  "home.loadError": "Nije moguće učitati podatke početne stranice.",
+  "home.hero.stats.reviews": "Recenzije čitalaca",
+  "home.loadError": "Nije moguće učitati početnu stranicu. Pokušajte ponovo kasnije.",
   "home.creatorTitle": "Od ideje do prve scene"
 }

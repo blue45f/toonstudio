@@ -7,10 +7,10 @@
   "common.retry": "Yritä uudelleen.",
   "common.retry.short": "Yritä uudelleen.",
   "common.backToTop": "Takaisin ylös",
-  "common.backToHome": "Mene kotiin.",
+  "common.backToHome": "Etusivulle",
   "common.loading.search": "Etsitään...",
   "common.notFoundWithQuery": "Ei tuloksia haulle '{query}'.",
   "common.openSearch": "Etsi hausta →",
-  "common.loading.empty": "Ei tietoja palautettu.",
-  "common.retry.all": "Yritä uudestaan tai mene kotiin."
+  "common.loading.empty": "Vastauksessa ei ollut tietoja.",
+  "common.retry.all": "Yritä uudestaan tai palaa etusivulle."
 }

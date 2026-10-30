@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "ਲੌਗ ਇਨ ਕਰਨ ਦੀ ਲੋੜ ਹੈ।",
-  "apiError.adminRequired": "ਪ੍ਰਸ਼ਾਸਨ ਅਧਿਕਾਰਾਂ ਦੀ ਪੁਸ਼ਟੀ ਨਹੀਂ ਕੀਤੀ ਜਾ ਸਕੀ।",
+  "apiError.adminRequired": "ਪ੍ਰਸ਼ਾਸਕ ਅਧਿਕਾਰਾਂ ਦੀ ਪੁਸ਼ਟੀ ਨਹੀਂ ਕੀਤੀ ਜਾ ਸਕੀ।",
   "apiError.adminOnlyPage": "ਇਹ ਸਫ਼ਾ ਪ੍ਰਸ਼ਾਸਕਾਂ ਤੱਕ ਸੀਮਿਤ ਹੈ।",
   "apiError.notFound": "ਮੰਗ ਕੀਤੀ ਗਈ ਚੀਜ਼ ਨਹੀਂ ਲੱਭੀ।",
-  "apiError.unsupportedType": "ਸਹਿਯੋਗੀ ਨਹੀਂ ਸਮੱਗਰੀ ਦੀ ਕਿਸਮ.",
-  "apiError.inactiveAccount": "ਅਯੋਗ ਖਾਤੇ ਪ੍ਰਬੰਧਕ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ ਦੀ ਵਰਤੋਂ ਨਹੀਂ ਕਰ ਸਕਦੇ.",
-  "apiError.settlementFailed": "ਬੰਦੋਬਸਤ ਪ੍ਰਕਿਰਿਆ ਅਸਫਲ ਰਹੀ।"
+  "apiError.unsupportedType": "ਇਹ ਸਮੱਗਰੀ ਕਿਸਮ ਸਮਰਥਿਤ ਨਹੀਂ ਹੈ।",
+  "apiError.inactiveAccount": "ਅਕਿਰਿਆਸ਼ੀਲ ਖਾਤੇ ਪ੍ਰਸ਼ਾਸਕ ਅਧਿਕਾਰਾਂ ਦੀ ਵਰਤੋਂ ਨਹੀਂ ਕਰ ਸਕਦੇ।",
+  "apiError.settlementFailed": "ਭੁਗਤਾਨ ਨਿਪਟਾਰਾ ਪ੍ਰਕਿਰਿਆ ਅਸਫਲ ਰਹੀ। ਕਿਰਪਾ ਕਰਕੇ ਥੋੜ੍ਹੀ ਦੇਰ ਬਾਅਦ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
 }

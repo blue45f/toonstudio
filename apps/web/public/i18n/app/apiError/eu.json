@@ -5,5 +5,5 @@
   "apiError.notFound": "Eskatutako elementua ezin izan da aurkitu.",
   "apiError.unsupportedType": "Onartzen ez den eduki-mota.",
   "apiError.inactiveAccount": "Kontu ez aktiboek ezin dituzte administratzaileen funtzioak erabili.",
-  "apiError.settlementFailed": "Likidazioaren prozesamenduak huts egin du. Saiatu berriro une batean."
+  "apiError.settlementFailed": "Likidazioaren prozesamenduak huts egin du. Saiatu berriro pixka bat barru."
 }

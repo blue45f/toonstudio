@@ -5,5 +5,5 @@
   "apiError.notFound": "अनुरोध गरिएको वस्तु भेटिएन।",
   "apiError.unsupportedType": "असमर्थित सामग्री प्रकार।",
   "apiError.inactiveAccount": "निष्क्रिय खाताहरूले प्रशासक सुविधाहरू प्रयोग गर्न सक्दैनन्।",
-  "apiError.settlementFailed": "सम्झौता प्रक्रिया असफल भयो।"
+  "apiError.settlementFailed": "भुक्तानी हिसाब मिलान असफल भयो। कृपया केही समयपछि फेरि प्रयास गर्नुहोस्।"
 }

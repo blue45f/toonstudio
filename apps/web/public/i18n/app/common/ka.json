@@ -4,13 +4,13 @@
   "common.close": "დახურვა",
   "common.open": "გახსნა",
   "common.search": "ძებნა",
-  "common.retry": "შეეცადეთ",
-  "common.retry.short": "შეეცადეთ",
-  "common.backToTop": "უკან ზემოთ.",
-  "common.backToHome": "წადი სახლში.",
-  "common.loading.search": "ეძებს...",
-  "common.notFoundWithQuery": "არანაირი შედეგი არ არის \" {query} \" - ისთვის.",
-  "common.openSearch": "მოძებნა ძებნაში →",
-  "common.loading.empty": "ნვ ოჲეჲბჲდნაჳრვ.",
-  "common.retry.all": "სცადე კიდევ ერთხელ ან დაბრუნდი სახლში."
+  "common.retry": "ხელახლა ცდა",
+  "common.retry.short": "ხელახლა ცდა",
+  "common.backToTop": "ზემოთ დაბრუნება",
+  "common.backToHome": "მთავარ გვერდზე",
+  "common.loading.search": "მიმდინარეობს ძებნა…",
+  "common.notFoundWithQuery": "„{query}“-ის ძიების შედეგები ვერ მოიძებნა.",
+  "common.openSearch": "ხელახლა მოძებნა სრულ ძებნაში →",
+  "common.loading.empty": "პასუხის მონაცემები ცარიელია.",
+  "common.retry.all": "სცადეთ ხელახლა ან გადადით მთავარ გვერდზე."
 }

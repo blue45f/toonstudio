@@ -8,7 +8,7 @@
   "common.retry.short": "Փորձեք նորից",
   "common.backToTop": "Վերադարձ դեպի վերեւ",
   "common.backToHome": "Գնալ գլխավոր էջ",
-  "common.loading.search": "Փնտրելով...",
+  "common.loading.search": "Որոնում…",
   "common.notFoundWithQuery": "«{query}»-ի համար արդյունքներ չկան։",
   "common.openSearch": "Գտեք այն Որոնման մեջ →",
   "common.loading.empty": "Ոչ մի տվյալ չի վերադարձվել:",

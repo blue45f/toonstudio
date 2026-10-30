@@ -7,12 +7,12 @@
   "command.palette.quick.search": "Busca global",
   "command.palette.quick.ranking": "Clasificación",
   "command.palette.quick.recommend": "Recomendacións persoais",
-  "command.palette.quick.fortune": "Horóscopo de caracteres",
+  "command.palette.quick.fortune": "Horóscopo de personaxes",
   "command.palette.quick.random": "Título aleatorio",
   "command.palette.quick.calendar": "Calendario de publicación",
   "command.palette.quick.compare": "Comparación de títulos",
   "command.palette.quick.explore": "Explorar / Xéneros",
-  "command.palette.quick.insights": "Panel de tendencias",
+  "command.palette.quick.insights": "Informe de tendencias",
   "command.palette.quick.library": "A miña biblioteca",
   "command.palette.quick.searchHint": "Títulos, creadores, etiquetas",
   "command.palette.quick.rankingHint": "Clasificación a través de 6 eixos",
@@ -23,5 +23,5 @@
   "command.palette.quick.compareHint": "Comparar dúas obras lado a lado",
   "command.palette.quick.exploreHint": "Explorar o espectro",
   "command.palette.quick.insightsHint": "Información sobre o mercado a partir de datos",
-  "command.palette.quick.libraryHint": "Interés, calificación, gusto"
+  "command.palette.quick.libraryHint": "Intereses, valoracións, gustos"
 }

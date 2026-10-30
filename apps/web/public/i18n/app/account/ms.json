@@ -27,7 +27,7 @@
   "account.profile.namePlaceholder": "Nama paparan",
   "account.profile.bioLabel": "Bio",
   "account.profile.bioPlaceholder": "Beritahu kami tentang diri anda dalam satu baris.",
-  "account.profile.bioLength": "{length} /280",
+  "account.profile.bioLength": "{length}/280",
   "account.profile.saveButton": "Simpan profil",
   "account.profile.saving": "Menyimpan…",
   "account.profile.saved": "Disimpan",

@@ -11,16 +11,16 @@
   "nav.market": "Turg",
   "nav.insights": "Ülevaated",
   "nav.create": "Loo",
-  "nav.shaper": "Sisu kujundamine",
+  "nav.shaper": "Tegelaskuju kujundaja",
   "nav.library": "Raamatukogu",
   "nav.login": "Logi sisse",
   "nav.search": "Otsi lugusid, tööriistu ja menüüsid",
-  "nav.searchOpen": "Avage lugude, tööriistade ja menüüde ühtne otsing",
+  "nav.searchOpen": "Ava lugude, tööriistade ja menüüde ühtne otsing",
   "nav.quickAccess": "Kiire juurdepääs",
-  "nav.menu": "Menü",
+  "nav.menu": "Menüü",
   "nav.allMenu": "Kõik menüüd",
   "nav.studio": "Stuudio",
   "nav.assets": "Varad",
   "nav.creators": "Loojad",
-  "nav.discover": "Avastage"
+  "nav.discover": "Avasta lugusid"
 }

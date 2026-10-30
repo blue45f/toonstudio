@@ -1,6 +1,6 @@
 {
-  "error.reloading": "Herlaai die nuutste weergawe...",
-  "error.chunkRetryFailed": "Een keer verfris, maar die probleem duur voort. Gaan jou verbinding na en probeer weer.",
+  "error.reloading": "Besig om die nuutste weergawe te herlaai...",
+  "error.chunkRetryFailed": "Ons het een keer probeer herlaai, maar die probleem duur voort. Gaan jou netwerkverbinding na en probeer weer.",
   "error.reloadButton": "Herlaai bladsy",
   "error.goHome": "Gaan na die tuisblad",
   "error.retryDesc": "Probeer asseblief weer of gaan terug na die tuisblad."

@@ -4,14 +4,14 @@
   "home.hero.titleShimmer": "Un único índice",
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Busque en Naver Webtoon, Series e Kakao Webtoon, e despois restrinxa rapidamente o que ler usando sinais en tempo real e preferencias do lector.",
-  "home.hero.searchButton": "Títulos de busca, creadores, etiquetas",
+  "home.hero.searchButton": "Buscar títulos, creadores e etiquetas",
   "home.hero.rankingButton": "Ver clasificación unificada",
   "home.hero.studioLink": "Estudio de creadores",
-  "home.hero.createLink": "Tabela de creación",
+  "home.hero.createLink": "Taboleiro de creación",
   "home.hero.stats.titles": "Títulos",
   "home.hero.stats.platforms": "Plataformas de publicación",
   "home.hero.stats.genres": "Espectro de xénero",
-  "home.hero.stats.reviews": "Os comentarios dos lectores",
-  "home.loadError": "Non puideron cargar datos de casa.",
+  "home.hero.stats.reviews": "Recensións dos lectores",
+  "home.loadError": "Non se puido cargar o inicio. Ténteo de novo máis tarde.",
   "home.creatorTitle": "Desde unha idea ata a túa primeira escena"
 }

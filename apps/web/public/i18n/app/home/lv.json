@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Meklēt nosaukumus, autorus, atzīmes",
   "home.hero.rankingButton": "Skatīt vienoto reitingu",
   "home.hero.studioLink": "Autoru studija",
-  "home.hero.createLink": "Autoru dēlis",
-  "home.hero.stats.titles": "Nosaukumi",
+  "home.hero.createLink": "Autoru forums",
+  "home.hero.stats.titles": "Iekļautie darbi",
   "home.hero.stats.platforms": "Publicēšanas platformas",
   "home.hero.stats.genres": "Žanru spektrs",
   "home.hero.stats.reviews": "Lasītāju atsauksmes",
-  "home.loadError": "Neizdevās ielādēt sākumlapas datus.",
+  "home.loadError": "Neizdevās ielādēt sākumlapu. Lūdzu, mēģiniet vēlreiz vēlāk.",
   "home.creatorTitle": "No idejas līdz pirmajai ainai"
 }

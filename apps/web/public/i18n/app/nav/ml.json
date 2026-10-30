@@ -1,8 +1,8 @@
 {
   "nav.home": "ഹോം",
   "nav.ranking": "റാങ്കിംഗ്",
-  "nav.calendar": "കലണ്ടർ",
-  "nav.recommend": "ശപാർശ ചെയ്തവ",
+  "nav.calendar": "സീരീസ്",
+  "nav.recommend": "ശുപാർശ ചെയ്തവ",
   "nav.explore": "അന്വേഷിക്കുക",
   "nav.fortune": "ജാതകം",
   "nav.play": "ആർക്കേഡ്",
@@ -11,7 +11,7 @@
   "nav.market": "വിപണി",
   "nav.insights": "സ്ഥിതിവിവരക്കണക്കുകൾ",
   "nav.create": "സൃഷ്ടിക്കുക",
-  "nav.shaper": "കഥാപാത്ര രൂപം",
+  "nav.shaper": "കഥാപാത്ര ഷേപ്പർ",
   "nav.library": "ലൈബ്രറി",
   "nav.login": "ലോഗിൻ ചെയ്യുക",
   "nav.search": "കഥകൾ, ടൂളുകൾ, മെനുകൾ തിരയുക",
@@ -20,7 +20,7 @@
   "nav.menu": "മെനു",
   "nav.allMenu": "എല്ലാ മെനുവും",
   "nav.studio": "സ്റ്റുഡിയോ",
-  "nav.assets": "ആസ്തികൾ",
+  "nav.assets": "സാമഗ്രികൾ",
   "nav.creators": "സ്രഷ്ടാക്കൾ",
   "nav.discover": "കണ്ടെത്തുക"
 }

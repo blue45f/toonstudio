@@ -5,13 +5,13 @@
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Hledejte napříč Naver Webtoon, Series a Kakao Webtoon a pak pomocí signálů v reálném čase a preferencí čtenářů rychle zužte výběr toho, co číst.",
   "home.hero.searchButton": "Hledat díla, tvůrce, tagy",
-  "home.hero.rankingButton": "Zobrazit jednotné hodnocení",
+  "home.hero.rankingButton": "Zobrazit souhrnný žebříček",
   "home.hero.studioLink": "Studio tvůrce",
   "home.hero.createLink": "Nástěnka tvůrců",
   "home.hero.stats.titles": "Tituly",
   "home.hero.stats.platforms": "Vydávací platformy",
-  "home.hero.stats.genres": "Spektrum žánru",
+  "home.hero.stats.genres": "Spektrum žánrů",
   "home.hero.stats.reviews": "Recenze čtenářů",
-  "home.loadError": "Data domovské stránky se nepodařilo načíst.",
+  "home.loadError": "Domovskou stránku se nepodařilo načíst. Zkuste to prosím později znovu.",
   "home.creatorTitle": "Od nápadu k první scéně"
 }

@@ -6,11 +6,11 @@
   "common.search": "Szukaj",
   "common.retry": "Spróbuj ponownie",
   "common.retry.short": "Spróbuj ponownie.",
-  "common.backToTop": "Wracaj na górę.",
+  "common.backToTop": "Wróć na górę",
   "common.backToHome": "Strona główna",
   "common.loading.search": "Szukanie…",
   "common.notFoundWithQuery": "Brak wyników dla zapytania '{query}'.",
-  "common.openSearch": "Znajdź w wyszukiwarce",
+  "common.openSearch": "Wyszukaj ponownie w wyszukiwaniu globalnym →",
   "common.loading.empty": "Brak zwróconych danych.",
   "common.retry.all": "Spróbuj ponownie lub wróć na stronę główną."
 }

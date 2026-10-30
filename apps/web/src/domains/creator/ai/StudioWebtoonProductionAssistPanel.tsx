@@ -36,6 +36,7 @@ import {
   runAssistTattooStigmaUvTopologyLockDirector,
 } from "./assist/assist-phase6-ecosystem-suite";
 import {
+  appendStageDirectionToCut,
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
   buildDeterministicContinuityForeshadowReport,
@@ -257,10 +258,16 @@ export function StudioWebtoonProductionAssistPanel({
 
   const handleApplyActiveStageLine = (): void => {
     let stageLine: string;
+    const firstScrollCut = currentScrollView.cutDiagnostics[0];
+    if (activeMode === "scroll-eyepath" && firstScrollCut?.readyStageDirectionLine) {
+      // 컷 지문은 대본 끝의 새 컷이 아니라 그 컷의 연출 지시로 붙인다.
+      onApplyScript(
+        appendStageDirectionToCut(scriptInput, firstScrollCut.cutNumber, firstScrollCut.readyStageDirectionLine),
+      );
+      return;
+    }
     if (activeMode === "scroll-eyepath") {
-      stageLine =
-        currentScrollView.cutDiagnostics[0]?.readyStageDirectionLine ??
-        currentScrollView.cliffhangerScrollHookKo;
+      stageLine = currentScrollView.cliffhangerScrollHookKo;
     } else if (activeMode === "color-script") {
       stageLine =
         currentColorView.cutDirectives[0]?.readyColorStageLine ??

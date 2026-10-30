@@ -11,16 +11,16 @@
   "nav.market": "Рынак",
   "nav.insights": "Статыстыка",
   "nav.create": "Стварыць",
-  "nav.shaper": "Формер характару",
+  "nav.shaper": "Канструктар персанажаў",
   "nav.library": "Бібліятэка",
   "nav.login": "Увайсці",
   "nav.search": "Шукаць гісторыі, інструменты і меню",
   "nav.searchOpen": "Адкрыць адзіны пошук па гісторыях, інструментах і меню",
   "nav.quickAccess": "Хуткі доступ",
   "nav.menu": "Меню",
-  "nav.allMenu": "Усе меню",
+  "nav.allMenu": "Усё меню",
   "nav.studio": "Студыя",
   "nav.assets": "Матэрыялы",
   "nav.creators": "Творцы",
-  "nav.discover": "Адкрыць"
+  "nav.discover": "Агляд твораў"
 }
