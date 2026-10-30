@@ -68,6 +68,7 @@ import {
   type StudioHybridDccToolContext,
 } from "./studio-hybrid-dcc-tool-catalog";
 import { detectStudioHybridDccWebglCapability } from "./studio-hybrid-dcc-webgl-probe";
+import { describeStudioHybridDccOperationError, isStudioHybridDccRunResult } from "./studio-hybrid-dcc-operation-feedback";
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { useStudioHybridDccModeLabel } from "./studio-hybrid-dcc-workbench-modes";
 
@@ -89,12 +90,6 @@ import { cn } from "@/shared/lib/utils";
 import { friendlyHybridDccAssetName } from "./studio-hybrid-dcc-asset-label";
 
 export type { StudioHybridDccPersistenceStatus };
-
-function isStudioHybridDccRunResult(
-  value: StudioHybridDccWorkspace | StudioHybridDccRunResult,
-): value is StudioHybridDccRunResult {
-  return Object.hasOwn(value, "workspace");
-}
 
 function hybridDccSelectionSource(
   workspace: StudioHybridDccWorkspace,
@@ -285,7 +280,7 @@ export function StudioHybridDccPanel({
       setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runCompleted", { label, objects: Object.keys(next.session.state.geometry.records).length, shots: next.bridge.shots.length, uv: next.activeAssetId && next.session.state.geometry.records[next.activeAssetId]?.mesh.uvLayer ? bt("면 코너 UV", "Face-corner UVs") : frozenStatus3Text("studio.frozenStatus3.hybrid.uvNone", "없음"), errors: workspaceDiagnostics(next).errorCount }, "{label} 완료 · 오브젝트 {objects}개 · 컷 {shots}개 · UV {uv} · 오류 {errors}개"));
     } catch (error) {
       if (!mountedRef.current || generation !== runGenerationRef.current || !canCommit()) return;
-      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runFailed", { label, detail: error instanceof Error ? error.message : String(error) }, "{label} 실패 · {detail}"));
+      setLog(frozenStatus3Text("studio.frozenStatus3.hybrid.runFailed", { label, detail: describeStudioHybridDccOperationError(bt, error) }, "{label} 실패 · {detail}"));
     } finally {
       if (mountedRef.current && generation === runGenerationRef.current) setWorkspaceBusy(false);
     }

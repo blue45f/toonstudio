@@ -12,6 +12,7 @@ import { hashStudioEditableMeshAuthority } from "./studio-editable-mesh-authorit
 import { decodeStudioMeshUvLayer, snapshotStudioMeshUvLayer, validateStudioMeshUvLayer, type StudioMeshUvLayer } from "./mesh-uv/studio-mesh-uv-authority";
 import { preserveStudioMeshUvForUnchangedTopology, remapStudioMeshUvExtrudeRegion } from "./mesh-uv/studio-mesh-uv-topology-remap";
 import { bevelEditableMeshEdges } from "./hybrid-dcc/studio-editable-mesh-bevel";
+import { loopCutEditableMesh } from "./mesh-topology/studio-editable-mesh-loop-cut";
 
 export const STUDIO_EDITABLE_MESH_REVISION = 1 as const;
 
@@ -1842,83 +1843,18 @@ export function deserializeStudioEditableMesh(
   };
 }
 
-/** Loop cut on a quad strip: inserts a ring of vertices at factor along each selected edge pair. */
+/** 사각 면 띠를 실제 두 면으로 나누고 원본 면 속성·코너 UV를 보존한다. */
 export function loopCutStudioEditableMesh(
   mesh: StudioEditableMesh,
   startHalfEdgeId: number,
   factor = 0.5,
 ): StudioEditableMeshResult<StudioEditableMesh> {
-  if (!Number.isFinite(factor) || factor <= 0 || factor >= 1) {
-    return fail("invalid-parameter", "factor must be in (0,1)");
-  }
-  const start = mesh.halfEdges.find((h) => h.id === startHalfEdgeId);
-  if (!start) return fail("not-found", `he ${startHalfEdgeId}`);
-
-  // Collect a simple loop: walk next.twin.next around faces until return or break.
-  const loop: number[] = [];
-  let he = start.id;
-  const seen = new Set<number>();
-  for (let i = 0; i < mesh.halfEdges.length; i += 1) {
-    if (seen.has(he)) break;
-    seen.add(he);
-    loop.push(he);
-    const cur = mesh.halfEdges[he]!;
-    if (cur.twin < 0) break;
-    const twin = mesh.halfEdges[cur.twin]!;
-    he = twin.next;
-    const after = mesh.halfEdges[he]!;
-    he = after.next;
-    if (he === start.id) {
-      loop.push(he);
-      break;
-    }
-  }
-
-  if (loop.length < 2) {
-    return fail("topology-failed", "could not walk loop");
-  }
-
-  const positions = mesh.vertices.map((v) => v.position);
-  const idMap = new Map(mesh.vertices.map((v, i) => [v.id, i] as const));
-  const splitMap = new Map<string, number>(); // undirected edge -> new vertex index
-
-  for (const heId of loop) {
-    const heRec = mesh.halfEdges[heId]!;
-    const a = mesh.halfEdges[heRec.prev]!.vertex;
-    const b = heRec.vertex;
-    const key = a < b ? `${a}|${b}` : `${b}|${a}`;
-    if (splitMap.has(key)) continue;
-    const pa = mesh.vertices.find((v) => v.id === a)!.position;
-    const pb = mesh.vertices.find((v) => v.id === b)!.position;
-    const p = add(pa, scale(sub(pb, pa), factor));
-    splitMap.set(key, positions.length);
-    positions.push(p);
-  }
-
-  const polygons: number[][] = [];
-  for (const face of mesh.faces) {
-    const verts = faceLoopVertexIds(mesh, face.id);
-    const newLoop: number[] = [];
-    for (let i = 0; i < verts.length; i += 1) {
-      const a = verts[i]!;
-      const b = verts[(i + 1) % verts.length]!;
-      newLoop.push(idMap.get(a)!);
-      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
-      const mid = splitMap.get(key);
-      if (mid !== undefined) newLoop.push(mid);
-    }
-    // Fan-split n-gon into quads/tris by ear from first — keep as single polygon for half-edge
-    polygons.push(newLoop);
-  }
-
-  try {
-    return ok(createStudioEditableMeshFromPolygons(positions, polygons));
-  } catch (error) {
-    return fail(
-      "topology-failed",
-      error instanceof Error ? error.message : "loop cut failed",
-    );
-  }
+  return loopCutEditableMesh({
+    createMeshFromPolygons: createStudioEditableMeshFromPolygons,
+    validateAuthority: validateStudioEditableMeshSerializableAuthority,
+    validateManifold: preflightStudioEditableMeshEdgeManifold,
+    limits: STUDIO_EDITABLE_MESH_LIMITS,
+  }, mesh, startHalfEdgeId, factor);
 }
 
 export function weldStudioEditableMesh(

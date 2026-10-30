@@ -207,7 +207,7 @@ export function buildStudioHybridDccQuickTools(
       description: bt("면 흐름에 새 절단선을 넣습니다.", "Add a new cut across the faces."),
       requiresAsset: true,
       onClick: () => {
-        void run("가운데 절단선", () => workspaceLoopCutActive(ws, 0.5, resolveSelectedEdge()));
+        void run(bt("가운데 절단선", "Loop cut"), () => workspaceLoopCutActive(ws, 0.5, resolveSelectedEdge()));
       },
     },
     {
