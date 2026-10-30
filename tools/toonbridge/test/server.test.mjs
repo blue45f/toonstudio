@@ -117,7 +117,7 @@ test("ToonBridge enforces origin/auth and completes a hash-verified OCR job", { 
     assert.deepEqual(status.payload, {
       protocol: "toonstudio.production-toolchain",
       version: 2,
-      serviceVersion: "0.1.0",
+      serviceVersion: "0.2.0",
       activeJobs: 0,
       retainedJobs: 0,
     });

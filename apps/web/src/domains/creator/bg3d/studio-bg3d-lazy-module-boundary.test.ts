@@ -76,11 +76,13 @@ const LAZY_MODULES: readonly LazyModuleContract[] = [
       "./studio-bg3d-camera-application",
       "./studio-bg3d-environment-catalog",
       "./studio-bg3d-wall-probe",
+      "./studio-bg3d-model-material-variant",
     ],
     dynamicImports: [],
   },
   { file: "studio-bg3d-asset-placement-recipes.ts", valueImports: ["./studio-bg3d-asset-placement-catalog"], dynamicImports: [] },
   { file: "studio-bg3d-asset-placement-catalog.ts", valueImports: [], dynamicImports: [] },
+  { file: "studio-bg3d-model-material-variant.ts", valueImports: [], dynamicImports: [] },
   { file: "studio-bg3d-wall-probe.ts", valueImports: ["three", "./studio-bg3d-camera-application"], dynamicImports: [] },
   {
     file: "studio-bg3d-import-asset-metadata.ts",

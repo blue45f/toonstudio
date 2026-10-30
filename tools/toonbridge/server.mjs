@@ -26,7 +26,7 @@ import { operationById, probeAllTools, probeTool, toolById } from "./catalog.mjs
 
 const PROTOCOL = "toonstudio.production-toolchain";
 const VERSION = 2;
-const SERVICE_VERSION = "0.1.0";
+const SERVICE_VERSION = "0.2.0";
 const HOST = process.env.TOONBRIDGE_HOST?.trim() || "127.0.0.1";
 const PORT = Number(process.env.TOONBRIDGE_PORT || 49631);
 const TOKEN = process.env.TOONBRIDGE_TOKEN?.trim() || "";

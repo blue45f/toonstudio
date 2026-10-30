@@ -242,11 +242,16 @@ export function createStudioBg3dModelImportActions(
     modelImportUiOwners.set(modelImportAbortRef, importController);
     const ownsImportUi = () => modelImportUiOwners.get(modelImportAbortRef) === importController
       && isModalAssetSessionCurrent(session);
-    const isImportCurrent = () => ownsImportUi() && isMaterialBackendCurrent?.() !== false;
+    const isImportCurrent = () => ownsImportUi() && isMaterialBackendCurrent?.() !== false
+      && !importController.signal.aborted && signal?.aborted !== true;
+    const assertImportCurrent = () => {
+      if (!isImportCurrent()) throw new StudioBg3dStaleModalOperationError();
+    };
     setIsUploadingModel(true);
     setError(null);
     const uploadOwnedCacheEntries = new Map<string, ModelRootCacheEntry>();
     let uploadCommitted = false;
+    let libraryImported = false;
     let thumbnailCandidates: readonly Bg3dVerifiedStoredRecord[] = [];
     let plannedSourceFormats: readonly StudioGeneric3dSourceFormat[] = [];
     // .skp 가져오기만 변환 보고서·단위 확인 화면과 이어진다(다른 형식은 이 모듈을 불러오지도 않는다).
@@ -273,6 +278,7 @@ export function createStudioBg3dModelImportActions(
     };
     /** AI 사용 표기를 저장하고(.skp 가 아닌 소재) 결과를 상태 줄로 알린다. 던지지 않는다. */
     const saveAndAnnounceImportAiUse = async (): Promise<void> => {
+      if (!isImportCurrent()) return;
       let status = skpAiUseStatus;
       const plainRecords = hasStudioBg3dImportAiUse(importAiUse)
         ? thumbnailCandidates.filter((_, index) => plannedSkpSourcePaths[index] == null)
@@ -281,6 +287,7 @@ export function createStudioBg3dModelImportActions(
         try {
           // 저장 본체는 asset-metadata(zod)를 끌어오므로 AI 답이 있을 때만 불러온다.
           const { persistStudioBg3dImportedAiUse } = await import("./studio-bg3d-import-asset-metadata");
+          if (!isImportCurrent()) return;
           status = combineStudioBg3dImportAiUseStatus(
             status,
             await persistStudioBg3dImportedAiUse(plainRecords, importAiUse, { signal: importController.signal }),
@@ -321,6 +328,7 @@ export function createStudioBg3dModelImportActions(
       );
       if (plannedSkpSourcePaths.some((path) => path !== null)) {
         skpRun = await beginCurrentStudioBg3dSkpImportRun(() => isImportCurrent() && !importController.signal.aborted);
+        assertImportCurrent();
       }
       const canonicalInputs = await modelImportRuntime.convertStudioBg3dModelFilesToGlb(files, {
         executionBackend: "worker",
@@ -344,12 +352,16 @@ export function createStudioBg3dModelImportActions(
           signal: importController.signal,
         },
       );
+      // 검증 저장이 끝난 자료는 보존하되 취소 뒤에는 장면 배치와 후속 UI 작업을 시작하지 않는다.
+      libraryImported = true;
+      assertImportCurrent();
       const saved: Bg3dVerifiedStoredRecord[] = [];
       for (const importedRecord of imported) {
         if (!isImportCurrent()) {
           throw new StudioBg3dStaleModalOperationError();
         }
         const storedRecord = await getStoredBg3dModel(importedRecord.id);
+        assertImportCurrent();
         if (
           !storedRecord ||
           storedRecord.contentHash !== importedRecord.contentHash ||
@@ -363,8 +375,10 @@ export function createStudioBg3dModelImportActions(
         session,
         async (lease) => {
           lease.throwIfRevoked();
+          assertImportCurrent();
           const libraryEntries = await listBg3dModelLibraryEntries();
           lease.throwIfRevoked();
+          assertImportCurrent();
           const liveScene = physicsRuntimeSourceRef.current;
           const liveModels = liveScene.customModels;
           const nodeLimit = Math.min(
@@ -401,8 +415,11 @@ export function createStudioBg3dModelImportActions(
             const existing = attachmentByStorageModelIdRef.current.get(record.id);
             const sourceFormat =
               normalizeStudioGeneric3dSourceFormat(plannedSourceFormats[index] ?? "glb") ?? "glb";
+            const modelAttachment = existing ?? await createStudioBg3dModelAttachment(record);
+            lease.throwIfRevoked();
+            assertImportCurrent();
             const workflowAttachment = withStudioGeneric3dWorkflowMetadata(
-              existing ?? await createStudioBg3dModelAttachment(record),
+              modelAttachment,
               {
                 sourceFormat,
                 classification: genericModelClassifications.get(record.id) ?? null,
@@ -424,6 +441,9 @@ export function createStudioBg3dModelImportActions(
                 uploadOwnedCacheEntries.set(storageId, cacheEntry);
               },
             });
+            // 취소를 무시한 decoder가 늦게 끝나도 소유 캐시 정리 전에 장면으로 전달하지 않는다.
+            lease.throwIfRevoked();
+            assertImportCurrent();
             stagedPlacements.push(linkStudioBg3dSkpPlacement(
               createBgCustomModelInstance(record.id, liveModels.length + index, resolveStudioBg3dMetricPlacementScale(sourceFormat === "skp" ? attachment : {}, cached)),
               plannedSkpSourcePaths[index] == null ? null : { contentHash: record.contentHash, name: record.name },
@@ -448,6 +468,8 @@ export function createStudioBg3dModelImportActions(
               throw new Error("attachment-binding");
             }
           }
+          lease.throwIfRevoked();
+          assertImportCurrent();
           return {
             libraryEntries,
             nextAttachmentByStorageId,
@@ -514,7 +536,14 @@ export function createStudioBg3dModelImportActions(
     } catch (importFailure) {
       // 저장은 atomic import가 책임지고, 화면 배치는 별도 all-or-none이다. 이번 시도에서 처음 로드한
       // 캐시만 되돌려 기존 장면 인스턴스가 공유 중인 자원은 건드리지 않는다.
-      if (!isImportCurrent()) return false;
+      if (!ownsImportUi() || isMaterialBackendCurrent?.() === false) return false;
+      if (importController.signal.aborted || signal?.aborted) {
+        skpFailureMessage = libraryImported
+          ? "3D 모델 가져오기를 취소해 장면에 배치하지 않았습니다. 검증·저장된 모델은 보관함에 남아 있습니다."
+          : "3D 모델 가져오기를 취소했습니다. 장면과 라이브러리는 변경하지 않았습니다.";
+        setError(skpFailureMessage);
+        return false;
+      }
       skpFailureMessage =
         modelImportRuntime && importFailure instanceof modelImportRuntime.StudioBg3dModelImportError
           ? importFailure.message
