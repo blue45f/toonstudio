@@ -2,6 +2,8 @@ import {
   disposeStudioBg3dThreeResources,
 } from "../studio-background-3d-model";
 import { markStudioBg3dSkpMetricImport } from "./studio-bg3d-skp-metric-provenance";
+import { createStudioBg3dTrackedLoadingManager as createTrackedLoadingManager } from "./studio-bg3d-import-loading-manager";
+import { createStudioBg3dGltfEmbeddedImagesPlugin } from "./studio-bg3d-gltf-embedded-images";
 import {
   StudioBg3dGeometryWorkerClientError,
   parseStudioBg3dGeometryInWorker,
@@ -509,15 +511,21 @@ class LocalResourceResolver {
     return this.#urlForCanonicalPath(path);
   }
 
+  /** 검증한 파일·embedded 이미지의 URL만 resolver 수명에 묶어 허용한다. */
+  createOwnedObjectUrl = (blob: Blob): string => {
+    if (typeof URL?.createObjectURL !== "function") throw importError("environment-unsupported");
+    const objectUrl = URL.createObjectURL(blob);
+    this.#ownedObjectUrls.add(objectUrl);
+    return objectUrl;
+  };
+
   #urlForCanonicalPath(path: string): string {
     const existing = this.#objectUrlByPath.get(path);
     if (existing) return existing;
-    if (typeof URL?.createObjectURL !== "function") throw importError("environment-unsupported");
     const file = this.#resources.get(path);
     if (!file) throw importError("missing-resource");
-    const objectUrl = URL.createObjectURL(file);
+    const objectUrl = this.createOwnedObjectUrl(file);
     this.#objectUrlByPath.set(path, objectUrl);
-    this.#ownedObjectUrls.add(objectUrl);
     return objectUrl;
   }
 
@@ -609,60 +617,6 @@ class LocalResourceResolver {
     if (this.#resources.has(candidate)) return candidate;
     return this.#pathByFoldedPath.get(candidate.toLocaleLowerCase("en-US")) ?? null;
   }
-}
-
-interface TrackedLoadingManager {
-  readonly manager: THREE.LoadingManager;
-  waitForIdle(signal?: AbortSignal): Promise<void>;
-}
-
-async function createTrackedLoadingManager(
-  resolver: LocalResourceResolver,
-): Promise<TrackedLoadingManager> {
-  const { LoadingManager } = await import("three");
-  const manager = new LoadingManager();
-  let started = false;
-  let settled = false;
-  let failed = false;
-  let settle: (() => void) | null = null;
-  const idle = new Promise<void>((resolve) => {
-    settle = resolve;
-  });
-  manager.setURLModifier(resolver.urlForUri);
-  manager.onStart = () => {
-    started = true;
-  };
-  manager.onLoad = () => {
-    settled = true;
-    settle?.();
-  };
-  manager.onError = () => {
-    failed = true;
-    settled = true;
-    settle?.();
-  };
-  return {
-    manager,
-    async waitForIdle(signal) {
-      throwIfAborted(signal);
-      await Promise.resolve();
-      if (!started || settled) {
-        if (failed) throw importError("missing-resource");
-        return;
-      }
-      await new Promise<void>((resolve, reject) => {
-        const handleAbort = () => reject(importError("aborted"));
-        signal?.addEventListener("abort", handleAbort, { once: true });
-        if (signal?.aborted) handleAbort();
-        void idle.then(() => {
-          signal?.removeEventListener("abort", handleAbort);
-          resolve();
-        });
-      });
-      if (failed) throw importError("missing-resource");
-      throwIfAborted(signal);
-    },
-  };
 }
 
 async function readBytes(
@@ -1111,14 +1065,18 @@ async function parseGlbSourceImport(
   const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
   throwIfAborted(signal);
   const loader = new GLTFLoader(tracked.manager);
+  loader.register((parser) => createStudioBg3dGltfEmbeddedImagesPlugin(parser, {
+    createOwnedObjectUrl: resolver.createOwnedObjectUrl,
+    signal,
+  }));
   let parsedRoot: THREE.Object3D | null = null;
   try {
     const gltf = await new Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF>((resolve, reject) => {
-      loader.parse(source, "", resolve, () => reject(importError("parse-failed")));
+      loader.parse(source, "", resolve, (error) => reject(error instanceof StudioBg3dModelImportError ? error : importError("parse-failed")));
     });
-    throwIfAborted(signal);
     if (!gltf.scene) throw importError("parse-failed");
     parsedRoot = gltf.scene;
+    throwIfAborted(signal);
     await tracked.waitForIdle(signal);
     throwIfAborted(signal);
     return { root: parsedRoot, animations: gltf.animations };

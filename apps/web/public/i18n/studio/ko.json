@@ -280,7 +280,7 @@
   "studio.bg3dScene.skp.retry": "다시 시도",
   "studio.bg3dScene.skp.sceneHint": "장면 이름은 메모 후보로만 보여 줘요. 카메라 위치나 표시 상태는 되살리지 않아요.",
   "studio.bg3dScene.skp.scenes": "장면 이름",
-  "studio.bg3dScene.skp.scope": "SketchUp 파일에 적힌 이름만 가져와요. 컴포넌트 계층, 태그(레이어) 표시 상태, 장면(카메라)은 되살리지 않아요.",
+  "studio.bg3dScene.skp.scope": "원본 SKP 파일에 적힌 이름만 가져와요. 컴포넌트 계층, 태그(레이어) 표시 상태, 장면(카메라)은 되살리지 않아요.",
   "studio.bg3dScene.skp.tagHint": "고른 오브젝트에 이름을 태그로 붙일 수 있어요. 자동으로 붙이지는 않아요.",
   "studio.bg3dScene.skp.tagSkipped": "{count}개는 태그 규칙에 맞지 않아 제안하지 않아요.",
   "studio.bg3dScene.skp.tagSuggestions": "태그로 붙일 이름",

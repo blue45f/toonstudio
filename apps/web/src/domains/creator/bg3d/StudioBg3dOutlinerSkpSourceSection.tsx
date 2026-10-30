@@ -270,7 +270,7 @@ export function StudioBg3dOutlinerSkpSourceSection({
       <p className={NOTICE_TEXT}>
         {t(
           "studio.bg3dScene.skp.scope",
-          "SketchUp 파일에 적힌 이름만 가져와요. 컴포넌트 계층, 태그(레이어) 표시 상태, 장면(카메라)은 되살리지 않아요.",
+          "원본 SKP 파일에 적힌 이름만 가져와요. 컴포넌트 계층, 태그(레이어) 표시 상태, 장면(카메라)은 되살리지 않아요.",
         )}
       </p>
       {visible.map((source) => (
