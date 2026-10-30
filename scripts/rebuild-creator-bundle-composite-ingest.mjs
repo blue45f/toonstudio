@@ -172,20 +172,125 @@ function generatedProjection(plan, root) {
   assertBaseProjectionPreserved(plan.pinned.projection, output);
 }
 
+function ownerUriPath(packRoot, source, uri, allowParent = true) {
+  if (typeof uri !== "string" || !uri || uri !== uri.trim() || /[\\?#]/u.test(uri)
+    || Array.from(uri).some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 0x1f || code === 0x7f;
+    })
+    || /^[a-z][a-z0-9+.-]*:/iu.test(uri) || uri.startsWith("/") || /%(?![a-f0-9]{2})/iu.test(uri)) fail("소유 팩의 명시적 로컬 URI만 허용합니다.");
+  let decoded;
+  try { decoded = decodeURIComponent(uri); } catch { fail("URI 인코딩이 올바르지 않습니다."); }
+  const raw = uri.split("/"), parts = decoded.split("/");
+  if (raw.length !== parts.length || parts.some((part, index) => !part || part === "."
+    || (part === ".." && (!allowParent || raw[index] !== part)))) fail("인코딩으로 숨긴 경로 또는 BIN 상위 이동을 거부합니다.");
+  let current = dirname(source);
+  for (const [index, part] of parts.entries()) {
+    if (part === "..") {
+      if (current === packRoot) fail("URI가 소유 팩 밖으로 이동합니다.");
+      current = dirname(current);
+    } else current = checkedPath(current, part, index < parts.length - 1);
+  }
+  if (!inside(packRoot, current)) fail("URI가 소유 팩 밖에 있습니다.");
+  return current;
+}
+
+function sourcePlan(recipe, derived, proof, library, states, derivedInputs) {
+  exact(recipe, ["schema", "version", "generatedAt", "packs"]);
+  if (recipe.schema !== "toonstudio.creator-bundle-atlas-intake.v1" || recipe.version !== 1
+    || !Array.isArray(recipe.packs) || recipe.packs.length === 0) fail("Atlas recipe의 버전 또는 팩 목록이 다릅니다.");
+  const packs = new Map();
+  for (const pack of recipe.packs) {
+    const fields = ["catalogId", "ingestId", "packRoot", "sourceDirectory", "imagePaths"];
+    exact(pack, Object.hasOwn(pack, "sourceFormat") ? [...fields, "sourceFormat"] : fields);
+    if (Object.hasOwn(pack, "sourceFormat") && pack.sourceFormat !== "gltf") fail("지원하지 않는 recipe sourceFormat입니다.");
+    if (typeof pack.ingestId !== "string" || packs.has(pack.ingestId) || !pack.imagePaths
+      || typeof pack.imagePaths !== "object" || Array.isArray(pack.imagePaths) || Object.keys(pack.imagePaths).length === 0) fail("Atlas 팩 또는 이미지 매핑이 중복되거나 올바르지 않습니다.");
+    packs.set(pack.ingestId, pack);
+  }
+  const hasGltf = recipe.packs.some((pack) => pack.sourceFormat === "gltf"), mappings = new Map(), proofs = new Map();
+  if (hasGltf) {
+    if (!Array.isArray(derived.sourceInputs) || derived.sourceInputs.length !== derived.assets.length
+      || !Array.isArray(proof.assets) || proof.assets.length !== derived.assets.length) fail("glTF 원본 sourceInputs 또는 준비 증거가 빠졌습니다.");
+    const assets = new Map(derived.assets.map((asset) => [`${asset.packId}\0${asset.sourcePath}`, asset]));
+    for (const item of derived.sourceInputs) {
+      exact(item, ["packId", "sourcePath", "originalSourcePath", "sourceFormat"]);
+      const pack = packs.get(item.packId), key = `${item.packId}\0${item.sourcePath}`;
+      safeRelative(item.sourcePath); safeRelative(item.originalSourcePath);
+      const format = pack?.sourceFormat ?? "glb";
+      if (!pack || !assets.has(key) || mappings.has(key) || item.sourceFormat !== format
+        || item.originalSourcePath !== (format === "gltf" ? item.sourcePath.replace(/\.glb$/u, ".gltf") : item.sourcePath)) fail("sourceInputs의 형식·원본/출력 매핑 또는 중복이 recipe와 다릅니다.");
+      mappings.set(key, item);
+    }
+    for (const item of proof.assets) {
+      if (!item || typeof item.outputPath !== "string" || proofs.has(item.outputPath)) fail("준비 증거의 출력 매핑이 중복되거나 없습니다.");
+      proofs.set(item.outputPath, item);
+    }
+  } else if (Object.hasOwn(derived, "sourceInputs")) fail("GLB 전용 입력에 glTF sourceInputs를 혼합할 수 없습니다.");
+  const sourceTrees = new Map(), sourceFormats = new Map();
+  const requireInput = (path, expected = states.get(path)) => {
+    if (!derivedInputs.has(path) || !expected || !isDeepStrictEqual(states.get(path), expected)) fail("원본 출처의 실제 입력 fingerprint가 누락됐거나 준비 증거와 다릅니다.");
+  };
+  for (const pack of recipe.packs) {
+    const packRoot = checkedPath(library, safeRelative(pack.packRoot), true);
+    const directory = checkedPath(packRoot, safeRelative(pack.sourceDirectory), true), originals = [], used = new Set();
+    if (sourceTrees.has(directory)) fail("Atlas 원본 폴더의 명시 소속이 중복입니다.");
+    for (const asset of derived.assets.filter((entry) => entry.packId === pack.ingestId)) {
+      const item = mappings.get(`${asset.packId}\0${asset.sourcePath}`), name = item?.originalSourcePath ?? asset.sourcePath;
+      const original = checkedPath(directory, name);
+      requireInput(original); originals.push(original);
+      if (pack.sourceFormat !== "gltf") continue;
+      const record = proofs.get(asset.files[0].path);
+      exact(record, ["catalogId", "sourcePath", "outputPath", "source", "derived", "normalization", "sourceFormat", "originalSourcePath", "sourceBuffer"]);
+      if (record.catalogId !== pack.catalogId || record.sourcePath !== asset.sourcePath || record.sourceFormat !== "gltf"
+        || record.originalSourcePath !== name || !isDeepStrictEqual(record.derived, { bytes: asset.files[0].bytes, sha256: asset.files[0].sha256 })) fail("glTF 준비 증거의 원본·출력 출처가 다릅니다.");
+      requireInput(original, record.source);
+      const document = JSON.parse(remember(states, original, record.source));
+      if (!Array.isArray(document.buffers) || document.buffers.length !== 1 || !positive(document.buffers[0]?.byteLength)
+        || !Array.isArray(document.images) || document.images.length === 0) fail("glTF의 단일 BIN 또는 이미지 계약이 다릅니다.");
+      const binary = ownerUriPath(packRoot, original, document.buffers[0].uri, false);
+      exact(record.sourceBuffer, ["path", "bytes", "sha256"]);
+      if (!binary.endsWith(".bin") || binary !== checkedPath(packRoot, record.sourceBuffer.path)
+        || record.sourceBuffer.bytes !== document.buffers[0].byteLength) fail("glTF BIN의 원문 URI·길이·출처가 준비 증거와 다릅니다.");
+      requireInput(binary, { bytes: record.sourceBuffer.bytes, sha256: record.sourceBuffer.sha256 });
+      const embedded = record.normalization?.embeddedTextures;
+      if (record.normalization?.geometryBytesPreserved !== true || record.normalization.externalImageUrisRemaining !== 0
+        || !Array.isArray(embedded) || embedded.length !== document.images.length) fail("glTF 원문·이미지 보존 증거가 다릅니다.");
+      for (const [index, image] of document.images.entries()) {
+        if (Object.hasOwn(image, "bufferView") || !Object.hasOwn(pack.imagePaths, image.uri)) fail("승인하지 않은 glTF 이미지 URI입니다.");
+        const path = ownerUriPath(packRoot, original, image.uri);
+        if (path !== checkedPath(packRoot, pack.imagePaths[image.uri])) fail("이미지 URI가 명시된 소유 팩 매핑과 다릅니다.");
+        exact(embedded[index], ["uri", "sha256", "bytes"]);
+        if (embedded[index].uri !== image.uri) fail("내부화한 이미지의 URI가 원문과 다릅니다.");
+        requireInput(path, { bytes: embedded[index].bytes, sha256: embedded[index].sha256 }); used.add(image.uri);
+      }
+    }
+    if (originals.length === 0) fail("Atlas 원본 폴더의 명시 소속이 없습니다.");
+    if (pack.sourceFormat === "gltf") {
+      if (!isDeepStrictEqual([...used].sort(), Object.keys(pack.imagePaths).sort())) fail("glTF recipe에 사용하지 않는 이미지 매핑이 있습니다.");
+      sourceFormats.set(directory, "gltf");
+    }
+    sourceTrees.set(directory, originals.sort());
+  }
+  if (derived.assets.some((asset) => !packs.has(asset.packId))) fail("recipe에 없는 파생 팩이 있습니다.");
+  return { sourceTrees, ...(hasGltf ? { sourceFormats } : {}) };
+}
+
 export function assertCompositePlanCurrent(plan, root = plan.inputRoot) {
   for (const [directory, expected] of plan.sourceTrees) {
+    const sourceFormat = plan.sourceFormats?.get(directory) ?? "glb";
     const found = [];
     function walk(current) {
       for (const entry of readdirSync(current, { withFileTypes: true })) {
         const path = join(current, entry.name);
         if (entry.isSymbolicLink()) fail("Atlas 원본 목록에 심볼릭 링크가 생겼습니다.");
         if (entry.isDirectory()) walk(path);
-        else if (entry.isFile() && entry.name.toLowerCase().endsWith(".glb")) found.push(path);
+        else if (entry.isFile() && entry.name.toLowerCase().endsWith("." + sourceFormat)) found.push(path);
         else if (!entry.isFile()) fail("Atlas 원본 목록에 특수 파일이 생겼습니다.");
       }
     }
     walk(directory);
-    if (!isDeepStrictEqual(found.sort(), expected)) fail("Python 검증 이후 Atlas 원본 GLB 목록이 변경됐습니다.");
+    if (!isDeepStrictEqual(found.sort(), expected)) fail("Python 검증 이후 Atlas 원본 " + sourceFormat.toUpperCase() + " 목록이 변경됐습니다.");
   }
   for (const [path, state] of plan.states) assertState(path, state);
   checkInputTree(plan.inputRoot, plan.manifest.assets);
@@ -241,14 +346,8 @@ export function buildCompositeIngestPlan({ libraryRoot, inputRoot, config, confi
   const manifest = { ...structuredClone(base.manifest), generatedAt: config.snapshotGeneratedAt, totals: { ...base.manifest.totals, assets: assets.length }, assets };
   if (assets.length !== config.expected.files || assets.reduce((sum, asset) => sum + asset.files[0].bytes, 0) !== config.expected.bytes
     || !isDeepStrictEqual(JSON.parse(manifestBody), manifest)) fail("전체 private manifest가 원본·Atlas 재현 결과와 다릅니다.");
-  const sourceTrees = new Map();
-  for (const pack of recipe.packs) {
-    const directory = checkedPath(library, `${safeRelative(pack.packRoot)}/${safeRelative(pack.sourceDirectory)}`, true);
-    const originals = derived.assets.filter((asset) => asset.packId === pack.ingestId).map((asset) => checkedPath(directory, asset.sourcePath)).sort();
-    if (sourceTrees.has(directory) || originals.length === 0) fail("Atlas 원본 폴더의 명시 소속이 없거나 중복입니다.");
-    sourceTrees.set(directory, originals);
-  }
-  const plan = { config, states, sourceTrees, repoRoot: root, libraryRoot: library, inputRoot: input, pinned, ledger, themes, projection, manifest,
+  const sources = sourcePlan(recipe, derived, proof, library, states, derivedInputs);
+  const plan = { config, states, ...sources, repoRoot: root, libraryRoot: library, inputRoot: input, pinned, ledger, themes, projection, manifest,
     generate: dependencies.generate ?? buildThemePacks, summary: { baseAssets: base.manifest.assets.length, derivedAssets: derived.assets.length, files: assets.length, bytes: config.expected.bytes } };
   assertCompositePlanCurrent(plan);
   generatedProjection(plan, input);
