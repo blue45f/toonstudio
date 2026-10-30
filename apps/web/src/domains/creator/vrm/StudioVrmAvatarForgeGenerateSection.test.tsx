@@ -111,6 +111,31 @@ describe("StudioVrmAvatarForgeGenerateSection expression editing", () => {
     expect(within(region).queryByRole("slider", { name: "입모양 A 눈썹 높이" })).toBeNull();
     expect(within(region).getByRole("slider", { name: "입모양 A 입 벌림" })).toBeTruthy();
   });
+
+  it("renames a custom expression to the key other apps will show, refusing preset names", () => {
+    const { changes } = renderSection();
+    fireEvent.click(screen.getByRole("button", { name: /표정 편집/u }));
+    const region = screen.getByRole("region", { name: "표정 편집" });
+    fireEvent.click(within(region).getByRole("button", { name: /윙크 커스텀 표정 추가/u }));
+
+    const field = within(region).getByRole("textbox", { name: "윙크 이름" });
+    fireEvent.change(field, { target: { value: "Happy" } });
+    fireEvent.click(within(region).getByRole("button", { name: "이름 바꾸기" }));
+    // 프리셋 이름은 바꾸지 않고 이유를 입력란에 붙여 알린다.
+    expect(authoringOf(changes.at(-1))?.expressions?.custom?.map((entry) => entry.name)).toEqual(["wink"]);
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    expect(within(region).getByText("Happy은(는) VRM 기본 표정 이름이라 쓸 수 없어요.")).toBeTruthy();
+
+    fireEvent.change(field, { target: { value: " 장난 윙크 " } });
+    fireEvent.submit(field.closest("form")!);
+    expect(authoringOf(changes.at(-1))?.expressions?.custom).toEqual([
+      expect.objectContaining({ name: "장난 윙크", template: "wink" }),
+    ]);
+    // 칩·슬라이더 라벨이 새 이름을 따라가고, 선택도 그대로 남는다.
+    expect(within(region).getByRole("button", { name: "장난 윙크" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(region).getByRole("slider", { name: "장난 윙크 입꼬리" })).toBeTruthy();
+    expect(within(region).getByRole("textbox", { name: "장난 윙크 이름" })).toHaveProperty("value", "장난 윙크");
+  });
 });
 
 describe("StudioVrmAvatarForgeGenerateSection hair sway", () => {

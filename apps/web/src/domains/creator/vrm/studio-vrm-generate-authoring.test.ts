@@ -19,6 +19,8 @@ import {
 } from "./studio-vrm-generate-export-meta";
 import {
   addStudioVrmCustomExpression,
+  renameStudioVrmCustomExpression,
+  STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH,
   STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES,
   STUDIO_VRM_DEFAULT_FACE_MORPHS,
   STUDIO_VRM_EDITABLE_EXPRESSION_PRESETS,
@@ -174,6 +176,25 @@ describe("generate authoring: expressions", () => {
       expect(binds.length, name).toBeGreaterThan(0);
       expect(binds.every((bind) => bind.primitives?.length === 4), name).toBe(true);
     }
+  }, 60_000);
+
+  it("exports a renamed custom expression under the name the author chose", async () => {
+    // VRoid Studio 처럼 다른 앱의 표정 목록에 보일 이름을 정한다. 한글 키도 three-vrm 이 그대로 읽는다.
+    const renamed = renameStudioVrmCustomExpression(addStudioVrmCustomExpression(undefined, "shock").authoring, "shock", "깜짝 놀람");
+    if (!renamed.ok) throw new Error("expected the rename to succeed");
+    const bytes = exportState(withExpressions(base, renamed.authoring));
+
+    const json = gltfJson(bytes);
+    const custom = json.extensions.VRMC_vrm.expressions.custom ?? {};
+    expect(Object.keys(custom)).toEqual(["깜짝 놀람"]);
+    expect(custom["깜짝 놀람"]).toMatchObject({ overrideBlink: "block", overrideMouth: "blend" });
+
+    const vrm = await loadVrmBytes(bytes);
+    expect(vrm.expressionManager?.getExpression("shock")).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const binds = (vrm.expressionManager?.getExpression("깜짝 놀람")?.binds ?? []) as readonly { primitives?: readonly unknown[] }[];
+    expect(binds.length).toBeGreaterThan(0);
+    expect(binds.every((bind) => bind.primitives?.length === 4)).toBe(true);
   }, 60_000);
 
   it("upgrades a preset's blink override when the edit closes the eyes", () => {
@@ -367,6 +388,10 @@ describe("generate authoring: persistence", () => {
       const template = STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES[index % STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES.length];
       expressions = addStudioVrmCustomExpression(expressions, template.id).authoring;
     }
+    // 가장 긴 한글 이름도 저장 경계의 문자열 규칙을 지난다.
+    const longest = renameStudioVrmCustomExpression(expressions, "mine", "표정".repeat(STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH / 2));
+    if (!longest.ok) throw new Error("expected the rename to succeed");
+    expressions = longest.authoring;
     const hairSway = {
       global: { stiffness: 2, gravity: 2, drag: 1.2 },
       groups: Object.fromEntries(STUDIO_VRM_HAIR_SWAY_GROUP_IDS.map((id) => [id, { stiffness: 0.5, gravity: 1.5, drag: 0.8 }])),

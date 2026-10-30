@@ -1,23 +1,27 @@
 import { Plus, RotateCcw, Trash2 } from "lucide-react";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useId, useMemo, useState } from "react";
 
 import { vrmGenerateStatusText } from "../status-i18n/studio-vrm-generate-status-i18n";
 import { readAvatarForgeVrmAuthoring, withAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import { buildStudioVrmExpressionPreviews, type StudioVrmExpressionPreview } from "./studio-vrm-generate-expression-preview";
 import {
   addStudioVrmCustomExpression,
+  normalizeStudioVrmCustomExpressionName,
   removeStudioVrmCustomExpression,
+  renameStudioVrmCustomExpression,
   resetStudioVrmPresetExpression,
   setStudioVrmCustomExpressionEyeSide,
   setStudioVrmCustomExpressionParam,
   setStudioVrmPresetExpressionParam,
+  STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH,
   STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES,
   STUDIO_VRM_EDITABLE_EXPRESSION_PRESETS,
   STUDIO_VRM_EXPRESSION_PARAM_KEYS,
   STUDIO_VRM_EXPRESSION_PARAMS,
   STUDIO_VRM_EXPRESSION_PARTS,
   STUDIO_VRM_MAX_CUSTOM_EXPRESSIONS,
-  studioVrmCustomExpressionLabel,
+  studioVrmCustomExpressionDisplayName,
+  type StudioVrmCustomExpressionNameIssue,
   type StudioVrmEditableExpressionPreset,
   type StudioVrmExpressionAuthoring,
   type StudioVrmExpressionPart,
@@ -80,6 +84,109 @@ function ExpressionFace({ preview, label }: { readonly preview: StudioVrmExpress
   );
 }
 
+const NAME_INPUT_CLASS =
+  "min-h-10 w-full min-w-0 rounded-lg border border-line bg-panel px-2.5 text-[0.66rem] text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40 aria-[invalid=true]:border-danger";
+
+function customExpressionNameIssueText(issue: StudioVrmCustomExpressionNameIssue, name: string): string {
+  switch (issue) {
+    case "empty":
+      return vrmGenerateStatusText(
+        "studio.vrmGenerateStatus.customExpressionNameEmpty",
+        "이름에는 글자나 숫자가 하나 이상 있어야 해요.",
+      );
+    case "tooLong":
+      return vrmGenerateStatusText(
+        "studio.vrmGenerateStatus.customExpressionNameTooLong",
+        { max: STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH },
+        "이름은 {max}자까지 쓸 수 있어요.",
+      );
+    case "invalid":
+      return vrmGenerateStatusText(
+        "studio.vrmGenerateStatus.customExpressionNameInvalid",
+        "이름에는 글자·숫자·공백과 _ - . 만 쓸 수 있어요.",
+      );
+    case "reserved":
+      return vrmGenerateStatusText(
+        "studio.vrmGenerateStatus.customExpressionNameReserved",
+        { name },
+        "{name}은(는) VRM 기본 표정 이름이라 쓸 수 없어요.",
+      );
+    case "duplicate":
+      return vrmGenerateStatusText(
+        "studio.vrmGenerateStatus.customExpressionNameDuplicate",
+        { name },
+        "다른 커스텀 표정이 이미 {name} 이름을 쓰고 있어요.",
+      );
+  }
+}
+
+/**
+ * 커스텀 표정 이름(VRM 키) 입력. 다른 앱의 표정 목록에는 이 이름이 그대로 보인다. 확정(Enter·버튼)할
+ * 때만 검사해 입력 도중에 경고가 깜빡이지 않게 하고, 문제가 있으면 이름을 바꾸지 않는다.
+ */
+function CustomExpressionNameField({
+  name,
+  label,
+  disabled,
+  onRename,
+}: {
+  readonly name: string;
+  readonly label: string;
+  readonly disabled: boolean;
+  readonly onRename: (next: string) => StudioVrmCustomExpressionNameIssue | null;
+}) {
+  const [draft, setDraft] = useState(name);
+  const [issue, setIssue] = useState<string | null>(null);
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
+  return (
+    <form
+      className="space-y-1"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const problem = onRename(draft);
+        setIssue(problem ? customExpressionNameIssueText(problem, normalizeStudioVrmCustomExpressionName(draft)) : null);
+      }}
+    >
+      <label htmlFor={inputId} className="block text-[0.6rem] font-bold text-fg-2">
+        {label} 이름
+      </label>
+      <div className="flex gap-1.5">
+        <input
+          id={inputId}
+          type="text"
+          value={draft}
+          disabled={disabled}
+          maxLength={STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH * 2}
+          aria-invalid={issue ? true : undefined}
+          aria-describedby={issue ? errorId : undefined}
+          className={NAME_INPUT_CLASS}
+          onChange={(event) => {
+            setDraft(event.currentTarget.value);
+            setIssue(null);
+          }}
+        />
+        <button
+          type="submit"
+          disabled={disabled || normalizeStudioVrmCustomExpressionName(draft) === name}
+          className={`${chipClass(false)} shrink-0`}
+        >
+          이름 바꾸기
+        </button>
+      </div>
+      {issue ? (
+        <p id={errorId} className="text-[0.58rem] font-bold text-danger">
+          {issue}
+        </p>
+      ) : (
+        <p className="text-[0.56rem] text-fg-3">
+          다른 앱의 표정 목록에는 이 이름이 그대로 보여요. 글자·숫자·공백과 _ - . 만, {STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH}자까지 쓸 수 있어요.
+        </p>
+      )}
+    </form>
+  );
+}
+
 export interface StudioVrmGenerateExpressionEditorProps {
   readonly state: AvatarForgeState;
   /** 실제로 생성될 상태(기본 스타일 대체 포함). 미리보기는 이 얼굴로 그리고, 편집은 `state` 에 건다. */
@@ -114,7 +221,8 @@ export function StudioVrmGenerateExpressionEditor({
   const delta = resolvedTarget.kind === "preset"
     ? authoring?.presets?.[resolvedTarget.name] ?? {}
     : selectedCustom?.delta ?? {};
-  const targetLabel = presetSpec?.label ?? studioVrmCustomExpressionLabel(resolvedTarget.name) ?? resolvedTarget.name;
+  const targetLabel = presetSpec?.label
+    ?? (selectedCustom ? studioVrmCustomExpressionDisplayName(selectedCustom) : resolvedTarget.name);
 
   // 부모가 렌더마다 새 상태 객체를 만들므로 객체 동일성 대신 직렬화 값으로 메시를 다시 구울지 정한다.
   const deferredStateKey = useDeferredValue(JSON.stringify(previewState));
@@ -187,7 +295,7 @@ export function StudioVrmGenerateExpressionEditor({
                   className={chipClass(selected)}
                   onClick={() => setTarget({ kind: "custom", name: entry.name })}
                 >
-                  {studioVrmCustomExpressionLabel(entry.name) ?? entry.name}
+                  {studioVrmCustomExpressionDisplayName(entry)}
                 </button>
               );
             })}
@@ -235,6 +343,25 @@ export function StudioVrmGenerateExpressionEditor({
         <ExpressionFace preview={previews[0]} label="무표정" />
         <ExpressionFace preview={previews[1]} label={`${targetLabel} 편집 결과`} />
       </div>
+
+      {resolvedTarget.kind === "custom" && selectedCustom ? (
+        <CustomExpressionNameField
+          key={selectedCustom.name}
+          name={selectedCustom.name}
+          label={targetLabel}
+          disabled={disabled}
+          onRename={(next) => {
+            const renamed = renameStudioVrmCustomExpression(authoring, selectedCustom.name, next);
+            if (!renamed.ok) return renamed.issue;
+            setNotice(null);
+            if (renamed.name !== selectedCustom.name) {
+              emit(renamed.authoring);
+              setTarget({ kind: "custom", name: renamed.name });
+            }
+            return null;
+          }}
+        />
+      ) : null}
 
       {resolvedTarget.kind === "custom" && selectedCustom ? (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${targetLabel} 눈 조정 범위`}>

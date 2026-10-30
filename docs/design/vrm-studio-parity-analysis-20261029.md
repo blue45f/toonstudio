@@ -51,7 +51,7 @@ ToonStudio 의 아바타 조형(Avatar Forge)은 조형 상태를 레시피로 �
 | 가이드라인(REA) | `vroid.com/en/studio/guidelines` | `capture_browser_scenario` `ev_555a70b17f4b0972d4bbedc44d23fcdc42ac7e0b081bc99f040eef8b03da780d` | 직접 만든 텍스처·헤어 메시의 권리는 작가, 기본 모델·의상 메시·프리셋은 pixiv 제공(CC0 아님) |
 | 공개 공지(REA) | vroid.com v1.20.0 공지 | `capture_browser_scenario` `ev_a66a0982d8810caafef6a357c389c0e36fe217d3b23a5c32812540cf067b7f1e` | VRM1.0 내보내기 추가, VRM0.0 Other 라이선스 추가 URL, 얼굴 메시 없이 내보내기 |
 | 도움말(REA) | vroid.pixiv.help 헤어 흔들림 문서 | `capture_browser_scenario` `ev_4342738a358eb1ff79e4b92a6b48f85039e848c0ec30c9b9546a985ef221e38f` | Cloudflare 봇 검증 화면 — 본문 미수집 |
-| 런타임(REA) | `@pixiv/three-vrm-core` 3.5.5 `lib/three-vrm-core.module.js` | `analyze_javascript_application` `ev_a3a92d5b466aa8391981f9d0b1b52ccca4d871f38aa79d4708b12c22537c2124`(요약 `ev_c0a12cee…`) | AST 노드 13,822 · 발견 66 · 표정/메타/시선 로더 위치 |
+| 런타임(REA) | `@pixiv/three-vrm-core` 3.5.5 `lib/three-vrm-core.module.js` | `analyze_javascript_application` `ev_a3a92d5b466aa8391981f9d0b1b52ccca4d871f38aa79d4708b12c22537c2124`(요약 `ev_c0a12cee…`) | AST 노드 13,822 · 발견 66 · 표정/메타/시선 로더 위치 · custom 표정 이름은 프리셋 이름과 정확히 같을 때만 버림(REA-VRM-07) |
 | 런타임(REA) | `@pixiv/three-vrm-springbone` 3.5.5 `lib/three-vrm-springbone.module.js` | `analyze_javascript_application` `ev_71590d6f1aa9a70e0b2caa7dfd35a8872c8851952886169a444d4d16f7d2436a`(요약 `ev_24cca463…`) | AST 노드 7,201 · 발견 43 · 관절 설정·짝짓기 위치 |
 | 출력 파일 | CC0 샘플 7종(`Sendagaya_Shino.vrm` 등) | GLB JSON 청크 요약 스크립트 | 4.1절 관측 사실 |
 | 현재 구현 | `studio-vrm-generate-recipe.ts` 외 | 소스 판독·기존 테스트 | 메타 고정, 썸네일 없음, 표정 프리셋 18종, 흔들림 자동 조율만, 시선 정의 없음 |
@@ -108,7 +108,7 @@ ToonStudio 의 아바타 조형(Avatar Forge)은 조형 상태를 레시피로 �
 | VRoid 공개 작업 흐름 | 변경 전 ToonStudio | 이번 변경 | 남은 일 |
 | --- | --- | --- | --- |
 | 표정 편집(프리셋 조정) | 없음 | 감정 5종·입모양 5종을 눈썹·눈·입 슬라이더 9종으로 조정, 입모양은 입만 | — |
-| 커스텀 표정 | 없음 | 웹툰 연기 템플릿 10종에서 최대 12개, VRM 1.0 `expressions.custom`, 깜빡임·립싱크 override 자동 | 템플릿 밖 이름 짓기 |
+| 커스텀 표정 | 없음 | 웹툰 연기 템플릿 10종에서 최대 12개, VRM 1.0 `expressions.custom`, 깜빡임·립싱크 override 자동. 이름(다른 앱에 보이는 키)을 바꿀 수 있다 — 글자·숫자·공백·`_`·`-`·`.` 32자까지, VRM 프리셋·다른 커스텀 표정과 대소문자 구분 없이 겹치지 않게(REA-VRM-07) | — |
 | 헤어 묶음·덩어리별 흔들림 | 길이 자동 조율만 | 프리셋 5종 + 전체·묶음(앞·옆·뒤·묶음/땋은·삐침)·가닥(스프링 체인, 화면 왼쪽부터 번호) 배율 3종을 차례로 곱함 | 충돌 반경·본 수 조정, 붓질로 덩어리 만들기 |
 | 가슴·치마 흔들림, 팔·손 콜라이더 | 없음 | — | 의상 메시 스킨과 함께 설계 필요 |
 | 아바타 정보·이용 조건 | 고정값 | 이름·제작자 필수 검증, 버전·저작권·연락처·참조, 이용 조건 묶음 4종 + 개별 항목, 추가 라이선스 URL | — |
@@ -121,7 +121,7 @@ ToonStudio 의 아바타 조형(Avatar Forge)은 조형 상태를 레시피로 �
 
 | 영역 | 구현 파일 | 테스트 | 내용 |
 | --- | --- | --- | --- |
-| 표정 정의·편집 | `apps/web/src/domains/creator/vrm/studio-vrm-generate-expressions.ts` | `studio-vrm-generate-expressions.test.ts` | 기본 표정 테이블(휴머노이드 메시에서 이동), 부위 조정량 → 패치 연산, 커스텀 템플릿, override 정책 |
+| 표정 정의·편집 | `apps/web/src/domains/creator/vrm/studio-vrm-generate-expressions.ts` | `studio-vrm-generate-expressions.test.ts` | 기본 표정 테이블(휴머노이드 메시에서 이동), 부위 조정량 → 패치 연산, 커스텀 템플릿, 커스텀 이름 규칙(다듬기·검사·바꾸기), override 정책 |
 | 표정 미리보기 | `studio-vrm-generate-expression-preview.ts` | `studio-vrm-generate-expression-preview.test.ts` | 실제 얼굴 프리미티브 + 모프 델타 정면 투영, 깊이 순 칠하기 |
 | 헤어 흔들림 | `studio-vrm-generate-hair-sway.ts` | `studio-vrm-generate-hair-sway.test.ts` | 자동 조율 × 전체 × 묶음 × 가닥 배율, VRM 범위(dragForce 0~1) 보장. 가닥 키는 체인 id 형식만, 최대 32개, 정렬해 저장. 지금 헤어에 없는 가닥의 조정은 걷어 내고(`keepStudioVrmHairSwayChains`) 요약은 지금 헤어에 있는 묶음·가닥만 센다 |
 | 흔들림 묶음·가닥 판정 | `studio-vrm-humanoid-mesh.ts`(`buildStudioVrmHumanoidHairRig`), `studio-vrm-generate-recipe.ts`(`listStudioVrmGenerateHairSwayChains`·`listStudioVrmGenerateHairSwayGroups`) | `studio-vrm-generate-authoring.test.ts`, `StudioVrmAvatarForgeGenerateSection.test.tsx` | 메시를 굽지 않고 스프링 체인만 세워 **실제로 흔들리는 묶음과 가닥**만 탭으로 보인다(정수리 번·짧은 덩어리 제외). 가닥 하나를 조정하면 그 스프링만 바뀐다. 가닥 목록은 생성 구역이 외형 서명이 바뀔 때만 한 번 세워 요약 배지와 흔들림 편집이 함께 쓴다 |
@@ -132,7 +132,7 @@ ToonStudio 의 아바타 조형(Avatar Forge)은 조형 상태를 레시피로 �
 | 생성 연결 | `studio-vrm-generate-recipe.ts`, `studio-vrm-humanoid-mesh.ts`, `studio-vrm-generate-mcp.ts` | `studio-vrm-generate-authoring.test.ts`, `studio-vrm-generate.test.ts` | preset/custom 분리, 스프링 배율, 메타·썸네일, three-vrm 재적재. 내보내기 검증이 거절하면 연결 장애 안내 대신 그 사유를 보인다 |
 | UI | `StudioVrmAvatarForgeGenerateSection.tsx`, `StudioVrmGenerateExpressionEditor.tsx`, `StudioVrmGenerateHairSwayControls.tsx`, `StudioVrmGenerateExportInfoForm.tsx` | `StudioVrmAvatarForgeGenerateSection.test.tsx` | "새 VRM 캐릭터" 구역의 접이식 옵션 3개. 다른 모델로 바꾸면 이름·버전·참조·직접 고른 썸네일을 비우고 제작자·이용 조건은 남긴다. "내 이미지"인데 이미지가 없으면 생성을 막고, 4MB 넘는 파일은 읽기 전에 거른다 |
 | 상태 문구 i18n | `status-i18n/studio-vrm-generate-status-i18n.ts` | `studio-vrm-generate-status-i18n.test.ts`, `creator-status-i18n-contract.test.ts` | 차단·실패·빈 상태·완료·저장 상태 안내 13개를 ko/en 키로 등록(한국어 폴백). 새 UI 4파일을 상태 문구 가드에 등록 |
-| 포저 라벨 | `studio-vrm-poser-helpers.ts` | 기존 포저 테스트 | 커스텀 표정 키(ASCII)를 한글 템플릿 라벨로 표시 |
+| 포저 라벨 | `studio-vrm-poser-helpers.ts` | 기존 포저 테스트 | 템플릿 키 그대로인 커스텀 표정은 한글 템플릿 라벨, 이름을 바꾼 표정은 그 이름으로 표시 |
 | 시선(lookAt) | `studio-vrm-export-look-at.ts`(신규), `studio-vrm-export-vrm-extension.ts`, `studio-vrm-export-plan.ts`, `studio-vrm-generate-recipe.ts`(`generatedLookAt`), `studio-vrm-export-error.ts`(`look-at-invalid`) | `studio-vrm-export-look-at.test.ts`, `studio-vrm-generate-authoring.test.ts` | `bone` 은 좌우 눈 본, `expression` 은 시선 표정 4종이 있을 때만 쓴다. 범위·원점을 검증한다. three-vrm 이 30°에서 lookLeft 1/3 을 걸고, 4두신에서도 원점이 렌더된 두 눈 가운데에서 2mm 안이다 |
 
 ## 7. 하위호환·번들·성능 계약
@@ -154,20 +154,22 @@ ToonStudio 의 아바타 조형(Avatar Forge)은 조형 상태를 레시피로 �
 
 | 검증 | 결과 |
 | --- | --- |
-| 새·변경 단위·통합·UI 테스트 | 표정 18 · 흔들림 11 · 아바타 정보 11 · 기기 저장 3 · 생성 통합 14 · 미리보기 5 · 생성 구역 UI 15 · 상태 문구 3 · 참고 추천 6 · 생성 MCP 14 · 시선 내보내기 5, 모두 105개 통과 |
+| 새·변경 단위·통합·UI 테스트 | 표정 20 · 흔들림 11 · 아바타 정보 11 · 기기 저장 3 · 생성 통합 15 · 미리보기 5 · 생성 구역 UI 16 · 상태 문구 3 · 참고 추천 6 · 생성 MCP 14 · 시선 내보내기 5, 모두 109개 통과 |
 | 회귀 고정 확인 | 세션 전환 초기화·썸네일 미선택 차단·크기 선검사·참고 추천 이어받기는 수정을 하나씩 되돌리면 해당 테스트만 실패함을 확인. 시선 원점을 three-vrm 기본값(head 위 6cm)으로 바꾸면 4두신에서 10.8cm 어긋나 시선 테스트가 실패함을 확인. 지금 헤어에 없는 가닥 조정 32개가 쌓인 상태에서 요약 계산을 되돌리면 "묶음·가닥 32곳"으로 세고, 편집 전 걷어 내기를 되돌리면 새 가닥 조정이 정렬 순서에 밀려 저장되지 않아 생성 구역 테스트가 실패함을 확인. 병합 뒤 리뷰 반영분도 가닥 안내의 조건을 빼거나, 뿌리 X 정렬을 뒤집거나 빼거나, 가닥 저장 상한을 11로 낮추거나, Hybrid snapshot 모듈에 하드코딩 상태 문구를 더하면 각각 새 단언이 실패함을 확인 |
 | VRM 도메인 + 상태 문구 + 매뉴얼 + i18n 계약 + 조형 상태·장면 문서·내보내기 의존 테스트 | 가닥별 흔들림과 가닥 정리 뒤 최신 main(`36cfccec`, 시선 정의 PR 병합 포함) 위에서 367개 파일, 4,199개 테스트 모두 통과. 깨끗한 `4685be49` 에서도 같은 단언으로 실패하던 기존 실패 6건(`studio-frozen2-status-i18n-r4frz`·`studio-frozen3-status-i18n-r5frz`·`studio-frozen5-status-i18n-r6frz5`·`studio-frozen6-status-i18n-r7frz6`·`studio-status-i18n-r3c06`·`studio-vrm-pose-overlay-boundary`)은 원인대로 함께 고쳤다. main 이 상태 문구를 각 파일의 이중 언어 헬퍼로 옮기며 남긴 죽은 키 5개를 등록부에서 지우고, bg3d 의 새 하드코딩 실패 문구를 frozen6 키로 옮기고, Hybrid 뷰포트 코어에서 빠진 진단 문구 3건(`527f64f1` 이 공용 표면 검사로 바꿔 탐지 대상에서 빠진 1건, `968c6bb4` 가 `studio-hybrid-dcc-viewport-snapshot.ts` 로 옮긴 2건)만큼 고정값을 낮추고(옮긴 2건은 병합 뒤 리뷰에서 그 파일 단언으로 따로 고정), 포저 뷰포트가 쓰는 `CharacterShaperOrbitControls` 를 찾게 했다(손 IK·관절 핸들 가드 단언은 그대로). `36cfccec` 병합 뒤 새로 실패한 `studio-status-i18n-r3c07` 도 `64c3cd5b` 가 남긴 죽은 키 `saveSync.serverUnavailable` 를 지워 고쳤다(모두 7건). 그 전 기준(`35ee3aae`)에서는 355개 파일, 3,971개 테스트 모두 통과. 가닥별 흔들림은 편집하지 않으면 출력을 바꾸지 않는다(시선 추가 뒤 해시 22개와 같음). 옮기기 전 기준 커밋(`112b5f07`)에서는 `studio-frozen-status-i18n-r3frz.test.ts` 1건이 같은 단언으로 실패하던 기존 실패였고, main 의 `20ecdbb0` 이 고쳤다. 그 사이 main 변경 중 이 변경과 겹치는 파일은 없다 |
 | 매뉴얼 | `studio-manual.test.ts` 통과, `pnpm run verify:studio-manual-docs` 일치. main 의 bg3d 변경(`96ba8e67`)이 원문만 바꿔 main 에서도 불일치였던 생성 문서를 `pnpm manual:gen` 으로 다시 맞춤 |
 | 타입 검사 | 저장소 전체 `tsc` 는 이 세션 머신(메모리 16GB, 스왑 없음)에서 힙 부족으로 강제 종료돼 임시 스왑 8GB 를 붙여 끝까지 돌렸다. 이 실행이 변경 파일 범위 검사로는 못 잡은 오류 4건을 찾았다(기존 테스트 2개 파일에서 조형 상태를 장면 문서 정규 데이터 `StudioVrmCanonicalData` 자리에 넣는데 `authoring` 타입이 `unknown` 을 담아 할당되지 않음). `authoring` 을 장면 문서와 같은 JSON 모양 타입으로 바꿔 고친 뒤 푸시 전 훅의 전체 검사가 통과했고, 시선 정의를 더한 뒤에도 `pnpm run typecheck`(웹 tsc + API, 임시 스왑 8GB) 오류 0. 가닥 정리 뒤에는 변경 파일과 그 import 파일 범위 tsc 오류 0, 푸시 전 훅의 저장소 전체 tsc(웹)·API typecheck 통과 |
 | lint | 변경 파일 eslint 오류·경고 0 |
 | 래칫 | 파일 크기·즉시 로딩 그래프(`creator/vrm` 14/14) 통과. 미연결 코드 게이트는 변경 전 트리와 발견 목록이 같은 807건(기존 기준선 밖)으로 실패하며 차이는 0건 |
+| 커스텀 표정 이름(2026-10-30) | 이름 규칙(다듬기·글자 집합·32자·프리셋/중복 대소문자 무관 금지), 이름 바꾸기, 저장 정규화(바꾼 표정은 저장된 템플릿, 예전 문서는 키에서 유도)를 단위 테스트로, 입력란 오류 표시·선택 유지·칩/슬라이더 라벨 갱신을 생성 구역 UI 테스트로, 한글 이름 내보내기 → three-vrm 재적재 바인드와 가장 긴 한글 이름의 장면 문서 왕복을 생성 통합 테스트로 확인. 표정·상태 문구·매뉴얼·i18n 계약·장면 문서·미리보기 인접 37개 파일, 312개 테스트 통과 |
 | 병합 뒤 리뷰(2026-10-30) | blue45f/toonstudio#2569 병합 뒤 4개 관점 리뷰와 지적별 반박 검증. 확인된 4건(모두 낮음)을 후속 변경으로 고쳤다. ① 가닥이 하나뿐인 묶음(스타일 프리셋 21종 중 11종, 예: 포니테일 묶음·보브 뒷머리)은 번호 줄이 없는데 안내가 "가닥 번호를 고르면…"이라고 했다. ② "화면 왼쪽부터" 번호 테스트가 정렬 기준을 뒤집어도 통과했다. ③ 증거 원장의 가닥 조사가 볼륨을 빼 56종·최대 11개로 적었다(볼륨 끝값 포함 57종·최대 12개, 울프컷 윗머리 레이어는 볼륨 1.33 이상에서만 가닥). ④ r4frz 주석이 Hybrid 진단 문구 이동 경위를 잘못 적었고, 옮겨 간 2건은 어떤 탐지기 테스트도 지키지 않았다. 반박된 2건은 검증표 수치(병합 직전 `3077fb90` 에서 이미 갱신)와 포저 경계 테스트 약화(대상만 옮겼고 단언 강도는 같음)다 |
 
 ## 9. 남은 위험과 후속 과제
 
 - 썸네일 래스터화(SVG → 캔버스)와 흔들림 배율의 실제 움직임은 실제 브라우저에서 아직 확인하지 않았다. 캔버스를 쓸 수 없으면 썸네일 없이 내보내도록
   실패를 닫아 두었다.
-- 커스텀 표정 이름은 템플릿 키로 고정이다. 다른 앱에서는 `wink`, `jitome` 같은 키로 보인다.
+- 커스텀 표정 이름은 바꿀 수 있지만, 한글 같은 ASCII 밖 이름을 다른 앱(VSeeFace·Warudo 등)이 목록에 제대로 보여 주는지는 확인하지 않았다.
+  three-vrm 은 그대로 읽는다(재적재 테스트). 이름을 바꾸지 않으면 예전처럼 `wink`, `jitome` 같은 ASCII 키로 나간다.
 - 시선 범위는 VRM·three-vrm 의 `expression` 형식 기본값(90° → 가중치 1)이다. VRoid 의 Bone 형식(90° → 8~16°)과 체감 민감도가 다를 수 있고,
   실제 앱에서 육안으로 확인하지 않았다.
 - 헤어를 바꾼 뒤 흔들림을 다시 편집하면 이전 헤어에만 있던 가닥 조정은 지워진다. 같은 앞머리처럼 파츠가 같은 가닥은 id 가 같아 이어진다.
