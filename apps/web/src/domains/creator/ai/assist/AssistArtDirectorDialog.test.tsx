@@ -214,14 +214,14 @@ describe("AssistArtDirectorDialog", () => {
       await chooseImage();
 
       expect(preset("기본").checked).toBe(true);
-      // 입력은 UTF-8 바이트 상한(고정 지시 2,149토큰은 캐시 쓰기 ×1.25, 나머지 + 스키마 + 이미지 1,125토큰), 출력 8000토큰 상한.
+      // 입력은 UTF-8 바이트 상한(고정 지시 3,868토큰은 캐시 쓰기 ×1.25, 나머지 + 스키마 + 이미지 1,125토큰), 출력 8000토큰 상한.
       // Haiku 5.5 $0.1/$0.5, Opus 5.5 $4/$20 (100만 토큰당)
       const quick = preset("빠르게").closest("label") as HTMLElement;
       const standard = preset("기본").closest("label") as HTMLElement;
-      expect(within(quick).getByText("최대 약 $0.0046")).toBeTruthy();
-      expect(within(standard).getByText("최대 약 $0.18")).toBeTruthy();
-      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.18");
-      expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("최대 약 $0.18");
+      expect(within(quick).getByText("최대 약 $0.0048")).toBeTruthy();
+      expect(within(standard).getByText("최대 약 $0.19")).toBeTruthy();
+      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.19");
+      expect(document.querySelector("[data-claude-cap-chip]")?.textContent).toBe("최대 약 $0.19");
       expect(screen.getByText(/원본 800×1000px/)).toBeTruthy();
       expect(screen.getByText(/전송 크기 800×1000px · 2KB/)).toBeTruthy();
     });
@@ -232,7 +232,7 @@ describe("AssistArtDirectorDialog", () => {
       await chooseImage();
 
       fireEvent.click(preset("빠르게"));
-      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.0046");
+      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.0048");
       expect(within(document.querySelector("[data-claude-preflight]") as HTMLElement).getByText("Claude Haiku 5.5")).toBeTruthy();
 
       fireEvent.click(screen.getByRole("button", { name: RUN }));
@@ -266,7 +266,7 @@ describe("AssistArtDirectorDialog", () => {
       fireEvent.click(preset("직접 고르기"));
       fireEvent.change(screen.getByLabelText("사용할 모델"), { target: { value: "claude-fable-5-1" } });
       fireEvent.change(screen.getByLabelText("생각 깊이"), { target: { value: "high" } });
-      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.46");
+      expect(document.querySelector("[data-claude-footer-cap]")?.textContent).toBe("최대 약 $0.48");
       fireEvent.click(screen.getByRole("button", { name: RUN }));
       await screen.findByText("대사 글자가 묻혀요");
 
@@ -296,7 +296,7 @@ describe("AssistArtDirectorDialog", () => {
       const run = screen.getByRole("button", { name: RUN }) as HTMLButtonElement;
       expect(run.disabled).toBe(true);
       expect(screen.getByText("예산 확인을 체크하면 실행할 수 있어요.")).toBeTruthy();
-      expect(screen.getByRole("alert").textContent).toContain("이 요청은 최대 $0.18까지 들 수 있어 예산을 넘을 수 있어요.");
+      expect(screen.getByRole("alert").textContent).toContain("이 요청은 최대 $0.19까지 들 수 있어 예산을 넘을 수 있어요.");
 
       fireEvent.click(screen.getByLabelText("이번 한 번만 예산을 넘어도 진행해요"));
       expect(run.disabled).toBe(false);

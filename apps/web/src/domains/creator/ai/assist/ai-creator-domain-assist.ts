@@ -23,6 +23,8 @@ import { toAssistTokenUsage } from "@/shared/ai/assist/assist-usage-meter";
 import {
   CANON_APPEARANCE_MAX,
   CANON_OUTFIT_MAX,
+  CANON_TAG_MAX,
+  CANON_TAGS_MAX,
 } from "../canon/studio-character-canon";
 import {
   StudioAiPromptEnhancer,
@@ -91,6 +93,24 @@ export interface CharacterCanonArchitectView {
   readonly estimatedUsd: number | null;
 }
 
+/**
+ * 편집기는 태그 칸을 결과 태그로 통째로 바꾸므로, 작가가 이미 단 태그는 종류와 상관없이 그대로 앞에 두고
+ * 새 태그는 겹치지 않는 것만 뒤에 붙인다(저장 상한과 같은 개수·길이).
+ */
+function mergeCanonTraitTags(existing: readonly string[], added: readonly string[]): readonly string[] {
+  const merged: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of [...existing, ...added]) {
+    const tag = cleanSingleLineText(raw, CANON_TAG_MAX);
+    const key = tag.toLocaleLowerCase();
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(tag);
+    if (merged.length >= CANON_TAGS_MAX) break;
+  }
+  return Object.freeze(merged);
+}
+
 export function buildDeterministicCharacterCanonView(
   input: CharacterCanonArchitectInput,
 ): CharacterCanonArchitectView {
@@ -99,7 +119,7 @@ export function buildDeterministicCharacterCanonView(
   const notes = cleanSingleLineText(input.roughNotes ?? "", 160);
   const baseTags =
     input.existingTags && input.existingTags.length > 0
-      ? [...input.existingTags.slice(0, 6)]
+      ? mergeCanonTraitTags(input.existingTags, [])
       : ["냉철한 눈매", "은발 레이어드 컷", "왼쪽 눈 밑 점", "슬림한 실루엣"];
 
   return Object.freeze({
@@ -145,7 +165,17 @@ export async function runAssistCharacterCanonArchitect(
     system: [
       {
         type: "text",
-        text: "당신은 웹툰 캐릭터 캐논 시트(Character Canon Sheet) 디렉터입니다. 매 컷마다 동일한 얼굴·머리색·체형·의상이 유지되도록 외모 묘사(appearanceKo), 의상 묘사(outfitKo), 핵심 특징 태그(traitTags), 영문 이미지 시드 고정 토큰(englishPromptLockTokens), 외모 드리프트 방지 네거티브 토큰(negativeDriftTokens), 캐릭터 말투 요약(speechStyleSummaryKo)을 JSON으로 설계하세요.",
+        text: [
+          "당신은 웹툰 캐릭터 캐논 시트(Character Canon Sheet) 디렉터입니다. 작가·어시스턴트·이미지 생성이 매 컷 같은 얼굴·머리·체형·의상을 그리도록 작가 입력을 고정 기준으로 정리해 JSON으로 답하세요. 외모·의상·태그는 편집기 칸을 그대로 바꾸고 영문 고정 토큰·말투 가이드는 참고 상자에 보이므로 아래 분량을 지키세요.",
+          "- 작가 메모·기존 태그의 사실(나이·성별·체형·머리·눈·점/흉터/문신과 좌우 위치·의상·소품)은 빠뜨리거나 바꾸지 마세요. 빈 부분만 인물의 시대·배경·나이에 맞게 하나로 확정해 채우고('A 또는 B' 같은 선택지 금지), 입력에 없는 흉터·문신·과거사·관계는 지어내지 마세요.",
+          "- 장르·역할이 '미지정'이면 메모에서 시대·배경을 추론하고, 메모와 어울리지 않는 장르 분위기나 미형 프로포션을 덧씌우지 마세요.",
+          `- appearanceKo(보통 600자 이내, 작가 메모의 외모 글이 더 길면 사실을 줄이지 말고 ${CANON_APPEARANCE_MAX}자까지): 분위기 수식어 대신 그릴 수 있는 사실 — 나이대·키·등신·체형, 머리색·길이·스타일, 눈 색·모양, 점·흉터 위치(캐릭터 기준 왼쪽/오른쪽), 피부 톤.`,
+          `- outfitKo(보통 300자 이내, 작가 메모의 의상 글이 더 길면 사실을 줄이지 말고 ${CANON_OUTFIT_MAX}자까지): 기본 의상 한 벌의 구성·색·소재와 장신구·소지품 위치.`,
+          "- traitTags(12개 이내): 기존 태그는 종류와 상관없이 고치지 말고 모두 그대로 앞에 두고, 그 뒤에 그릴 수 있는 시각 식별 태그(각 15자 이내 명사구)를 더해 4개 이상이 되게 하세요. 새로 더하는 태그에는 기존 태그와 겹치거나 성격·역할·장르를 나타내는 것을 넣지 마세요.",
+          "- englishPromptLockTokens: 위 외모·의상을 옮긴 영어 이미지 생성 토큰 10~14개(각 2~4단어)를 쉼표로 구분해 공백 포함 280자 이내로, 정체성 핵심(나이·체형·머리·눈·흉터) → 의상 순서로 쓰세요.",
+          "- negativeDriftTokens: 이 캐릭터에게 생기기 쉬운 작화 이탈(머리·눈 색 변화, 흉터·점 누락이나 좌우 반전, 나이·체형 변화, 의상 색 변화)을 막는 영어 토큰 8~12개를 쉼표로 구분해 240자 이내로 쓰세요.",
+          "- speechStyleSummaryKo(150자 이내): 기본 높임 수준(반말·해요체·하십시오체 등 하나)과 문장 길이·말버릇을 담은 말투 가이드.",
+        ].join("\n"),
         cache_control: { type: "ephemeral" },
       },
     ],
@@ -154,11 +184,14 @@ export async function runAssistCharacterCanonArchitect(
         role: "user",
         content: [
           `캐릭터 이름: ${cleanSingleLineText(input.name || "유진", 40)}`,
-          `장르: ${cleanSingleLineText(input.genre ?? "로맨스 판타지", 40)}`,
-          `역할 아키타입: ${cleanSingleLineText(input.roleArchetype ?? "주인공", 40)}`,
-          ...(input.roughNotes ? [`작가 메모: ${cleanSingleLineText(input.roughNotes, 240)}`] : []),
+          `장르: ${cleanSingleLineText(input.genre ?? "", 40) || "미지정(작가 메모에서 추론)"}`,
+          `역할 아키타입: ${cleanSingleLineText(input.roleArchetype ?? "", 40) || "미지정(작가 메모에서 추론)"}`,
+          // 편집기는 '외모 칸 / 의상 칸'을 보내고 결과로 두 칸을 통째로 바꾸므로, 칸 내용이 잘려 지어낸 값으로 덮이지 않게 두 칸 상한만큼 받는다.
+          ...(input.roughNotes
+            ? [`작가 메모: ${cleanSingleLineText(input.roughNotes, CANON_APPEARANCE_MAX + CANON_OUTFIT_MAX + 3)}`]
+            : []),
           ...(input.existingTags?.length
-            ? [`기존 태그: ${input.existingTags.slice(0, 8).join(", ")}`]
+            ? [`기존 태그: ${mergeCanonTraitTags(input.existingTags, []).join(", ")}`]
             : []),
           "",
           "위 캐릭터의 웹툰 캐논 시트를 JSON으로 완성해 주세요.",
@@ -190,12 +223,7 @@ export async function runAssistCharacterCanonArchitect(
       model: assistModelInfo(actualModel)?.id ?? actualModel,
       appearanceKo: cleanSingleLineText(parsed.appearanceKo, CANON_APPEARANCE_MAX),
       outfitKo: cleanSingleLineText(parsed.outfitKo, CANON_OUTFIT_MAX),
-      traitTags: Object.freeze(
-        (parsed.traitTags ?? [])
-          .map((t) => cleanSingleLineText(t, 28))
-          .filter(Boolean)
-          .slice(0, 8),
-      ),
+      traitTags: mergeCanonTraitTags(input.existingTags ?? [], parsed.traitTags ?? []),
       englishPromptLockTokens: cleanSingleLineText(parsed.englishPromptLockTokens, 320),
       negativeDriftTokens: cleanSingleLineText(parsed.negativeDriftTokens, 260),
       speechStyleSummaryKo: cleanSingleLineText(parsed.speechStyleSummaryKo, 160),

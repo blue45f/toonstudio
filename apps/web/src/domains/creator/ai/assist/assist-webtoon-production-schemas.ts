@@ -367,7 +367,8 @@ export function buildDeterministicScrollEyePathReport(
           ? "하단 18% 엄지 가림 데드존을 피해 두 번째 말풍선을 우상단 대각선(Y: 22~68%)으로 이동하세요."
           : "좌상단 도입 말풍선 → 인물 시선 중심 → 우하단 후속 말풍선으로 S자 시선 궤적이 안정적입니다.",
       directorCoachingKo: `390×844 모바일 뷰포트 기준 ${cut.shotScale}(${cut.cameraAngle}) 후 ${gutterPx}px 세로 여백으로 서스펜스 호흡을 만드세요.`,
-      readyStageDirectionLine: `[스크롤 호흡 ${gutterPx}px · ${pattern}] ${cut.summary}`,
+      // 앱이 그 컷 줄 끝에 [ ]로 붙이는 지문이므로 컷 내용을 되풀이하지 않는다.
+      readyStageDirectionLine: `스크롤 호흡 ${gutterPx}px · ${pattern}`,
     });
   });
 

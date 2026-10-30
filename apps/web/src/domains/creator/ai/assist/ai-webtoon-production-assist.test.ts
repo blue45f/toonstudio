@@ -4,6 +4,7 @@ import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
 import { EMPTY_AI_CONFIGURATION, EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai-types";
 
 import {
+  appendStageDirectionToCut,
   buildDeterministicActingSfxReport,
   buildDeterministicColorScriptReport,
   buildDeterministicContinuityForeshadowReport,
@@ -103,7 +104,12 @@ describe("ai-webtoon-production-assist (신규 4대 웹툰 AI 보조 엔진 검�
     const live = await runAssistScrollEyePathDoctor({
       genre: "액션판타지",
       coreConflict: "봉인된 마검의 각성",
+      scriptText: "주인공이 검을 뽑는다.\n조력자: \"지금이야!\"",
     });
+    // 편집기의 컷 구분(한 줄 = 한 컷)을 번호로 살려 보낸다.
+    expect(assistParseMock.mock.calls[0]?.[1]?.messages?.[0]?.content).toContain(
+      "현재 대본 초안(한 줄 = 한 컷):\n1. 주인공이 검을 뽑는다.\n2. 조력자: \"지금이야!\"",
+    );
     expect(live.mode).toBe("scroll-eyepath");
     expect(live.source).toBe("claude-live");
     expect(live.overallReadabilityScore).toBe(95);
@@ -115,6 +121,16 @@ describe("ai-webtoon-production-assist (신규 4대 웹툰 AI 보조 엔진 검�
     });
     expect(fallback.source).toBe("deterministic-fallback");
     expect(fallback.cutDiagnostics.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("스크롤 연출 지문은 대본 끝의 새 컷이 아니라 그 컷 줄 끝에 [ ]로 붙고, 그 컷이 없을 때만 끝에 붙는다", () => {
+    // 빈 줄은 컷으로 세지 않고(StudioAiStoryboardDirector.direct와 같은 규칙) 줄 끝의 CR도 지킨다.
+    const script = "유적 입구\n\n카엘: \"뒤를 봐.\"\r\n횃불이 꺼진다";
+    expect(appendStageDirectionToCut(script, 2, "[바스트 샷] 로우 앵글, 말풍선 오른쪽 위")).toBe(
+      "유적 입구\n\n카엘: \"뒤를 봐.\" [바스트 샷 로우 앵글, 말풍선 오른쪽 위]\r\n횃불이 꺼진다",
+    );
+    expect(appendStageDirectionToCut("한 컷", 5, "롱 샷")).toBe("한 컷\n롱 샷");
+    expect(appendStageDirectionToCut("한 컷", 1, " [ ] ")).toBe("한 컷");
   });
 
   it("2. 에피소드 컬러 스크립트 & 4레이어 조명 디렉터: 실시간 Claude 구조화 출력 및 HEX 정규화·폴백을 검증한다", async () => {

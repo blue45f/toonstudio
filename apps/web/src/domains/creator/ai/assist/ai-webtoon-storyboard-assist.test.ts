@@ -16,6 +16,7 @@ import {
   evaluateLocalizeWebtoonBubbleHealth,
   mapArtDirectorIssuesToProductionLayers,
   normalizeAiStoryboardAssist,
+  numberedScriptCuts,
   runAssistHandPropGripAnatomyDirector,
   runAssistPanelBorderGutterTensionDirector,
   runAiWebtoonStoryboardAssist,
@@ -156,6 +157,42 @@ describe("ai-webtoon-storyboard-assist (Claude API 및 보조 기능 통합 검�
     expect(result.cutDirectingNotes[0]?.lensMm).toBe(18);
     expect(result.usage.inputTokens).toBe(420);
     expect(result.estimatedUsd).toBeGreaterThan(0);
+  });
+
+  it("대본 초안은 편집기처럼 한 줄 = 한 컷 번호를 붙여 보내고, 대본이 없거나 잘렸으면 그 사실을 알린다", () => {
+    const req = buildAiStoryboardAssistRequest("claude-haiku-5-5", {
+      scriptText: "유적 최하층, 횃불이 꺼진다.\n\n카엘: \"뒤를 봐.\"\n",
+    });
+    expect(req.messages[0]?.content).toContain(
+      "현재 대본 초안(한 줄 = 한 컷):\n1. 유적 최하층, 횃불이 꺼진다.\n2. 카엘: \"뒤를 봐.\"",
+    );
+    expect(buildAiStoryboardAssistRequest("claude-haiku-5-5", {}).messages[0]?.content).toContain(
+      "현재 대본 초안: (없음)",
+    );
+    // 예산을 넘으면 끝 줄(엔딩)을 먼저 남기고, 줄인 줄에는 …를 붙이며 전체 컷 수를 알린다.
+    expect(numberedScriptCuts(`${"가".repeat(30)}\n${"나".repeat(30)}`, 40)).toEqual([
+      `1. ${"가".repeat(24)}…`,
+      "(일부 줄은 길이 제한으로 줄임, 전체 2컷)",
+      `2. ${"나".repeat(12)}…`,
+    ]);
+  });
+
+  it("컷 번호는 앱의 컷 나누기(줄바꿈만 기준)와 같고, 대본이 길면 가운데를 생략해 끝부분(엔딩)과 전체 컷 수를 남긴다", () => {
+    // 줄 구분자(U+2028)는 앱에서 한 컷 안의 글자이고, 보이지 않는 문자(U+200B)만 있는 줄도 앱에서는 한 컷이다.
+    expect(numberedScriptCuts("가\u2028나\r\n\u200b\n다", 600)).toEqual(["1. 가 나", "2. (빈 컷)", "3. 다"]);
+    const sixtyCuts = Array.from({ length: 60 }, (_, index) => `컷${index + 1}`).join("\n");
+    const numbered = numberedScriptCuts(sixtyCuts, 600);
+    expect(numbered).toHaveLength(53);
+    expect(numbered[39]).toBe("40. 컷40");
+    expect(numbered[40]).toBe("(41~48번 컷 8개는 길이 제한으로 생략, 전체 60컷)");
+    expect(numbered[41]).toBe("49. 컷49");
+    expect(numbered.at(-1)).toBe("60. 컷60");
+    // 글자 예산을 넘는 긴 회차도 마지막 컷과 전체 컷 수가 남는다.
+    const longCuts = Array.from({ length: 30 }, (_, index) => `${index + 1}번 컷 ${"대사".repeat(13)}`).join("\n");
+    const clipped = numberedScriptCuts(longCuts, 500);
+    expect(clipped.at(-1)).toMatch(/^30\. 30번 컷 /u);
+    expect(clipped.some((line) => /번 컷 \d+개는 길이 제한으로 생략, 전체 30컷\)$/u.test(line))).toBe(true);
+    expect(clipped.join("\n").length).toBeLessThan(700);
   });
 
   it("오프라인 또는 오류 시에도 결정적 폴백(buildDeterministicStoryboardAssistFallback)으로 즉시 코칭을 반환한다", async () => {
