@@ -6,7 +6,9 @@
  * every xatlasjs/WASM resource.
  */
 
-export const STUDIO_XATLAS_UV_PROVIDER_VERSION = 1 as const;
+import { buildStudioXAtlasUvArtifact } from "./studio-xatlas-uv-provider-output";
+
+export const STUDIO_XATLAS_UV_PROVIDER_VERSION = 2 as const;
 
 export const STUDIO_XATLAS_UV_PROVIDER_LIMITS = Object.freeze({
   maxMeshes: 64,
@@ -115,6 +117,8 @@ export interface StudioXAtlasUvArtifact {
   readonly positions: Float32Array;
   readonly uv: Float32Array;
   readonly indices: Uint32Array;
+  /** 각 mesh range의 값은 해당 입력 mesh의 local 정점 인덱스다. */
+  readonly originalInputVertexIndices: Uint32Array;
   readonly meshes: readonly StudioXAtlasUvMeshRange[];
   readonly atlas: StudioXAtlasUvAtlasReceipt;
   readonly receipt: StudioXAtlasUvCapabilityReceipt;
@@ -253,6 +257,7 @@ export interface StudioXAtlasUvRuntimeMeshOutput {
   readonly positions: ArrayLike<number>;
   readonly uv: ArrayLike<number>;
   readonly indices: ArrayLike<number>;
+  readonly originalInputVertexIndices: ArrayLike<number>;
   readonly atlasSegments?: readonly Readonly<{
     readonly index: number;
     readonly count: number;
@@ -924,36 +929,6 @@ function normalizeProgress(value: unknown): number | null {
   return null;
 }
 
-function parseAtlasMetadata(
-  atlas: StudioXAtlasUvRuntimeAtlas,
-  expectedMeshCount: number,
-  limits: ResolvedLimits,
-): StudioXAtlasUvAtlasReceipt {
-  if (
-    !Number.isSafeInteger(atlas.width)
-    || atlas.width <= 0
-    || atlas.width > limits.maxAtlasResolution
-    || !Number.isSafeInteger(atlas.height)
-    || atlas.height <= 0
-    || atlas.height > limits.maxAtlasResolution
-    || !Number.isSafeInteger(atlas.atlasCount)
-    || atlas.atlasCount <= 0
-    || atlas.atlasCount > limits.maxAtlasCount
-    || atlas.meshCount !== expectedMeshCount
-    || !Number.isFinite(atlas.texelsPerUnit)
-    || atlas.texelsPerUnit <= 0
-    || atlas.texelsPerUnit > limits.maxTexelsPerUnit
-  ) {
-    stop("invalid-provider-output", "xatlas returned invalid atlas metadata");
-  }
-  return Object.freeze({
-    width: atlas.width,
-    height: atlas.height,
-    count: atlas.atlasCount,
-    texelsPerUnit: atlas.texelsPerUnit,
-  });
-}
-
 function capabilityReceipt(
   runtime: StudioXAtlasUvRuntime,
   source: StudioXAtlasUvCapabilityReceipt["runtimeSource"],
@@ -973,165 +948,6 @@ function capabilityReceipt(
     atlasCleanup: "direct-destroyAtlas-finally",
     geometryCleanup: "release-typed-array-snapshots",
     wasmCleanup: "dedicated-worker-termination",
-  });
-}
-
-function buildArtifact(
-  atlas: StudioXAtlasUvRuntimeAtlas,
-  request: ParsedRequest,
-  limits: ResolvedLimits,
-  receipt: StudioXAtlasUvCapabilityReceipt,
-): StudioXAtlasUvArtifact {
-  if (!Array.isArray(atlas.meshes) || atlas.meshes.length !== request.meshes.length) {
-    stop("invalid-provider-output", "xatlas returned the wrong mesh count");
-  }
-  const atlasReceipt = parseAtlasMetadata(atlas, request.meshes.length, limits);
-  const outputsById = new Map<string, StudioXAtlasUvRuntimeMeshOutput>();
-  for (const output of atlas.meshes) {
-    if (
-      typeof output !== "object"
-      || output === null
-      || typeof output.id !== "string"
-      || outputsById.has(output.id)
-    ) {
-      stop("invalid-provider-output", "xatlas returned invalid mesh metadata");
-    }
-    outputsById.set(output.id, output);
-  }
-
-  let declaredVertices = 0;
-  let declaredTriangles = 0;
-  let declaredBytes = 0;
-  for (const input of request.meshes) {
-    const output = outputsById.get(input.id);
-    if (output === undefined) {
-      stop("invalid-provider-output", `xatlas omitted mesh ${input.id}`);
-    }
-    const positionLength = output.positions?.length;
-    const uvLength = output.uv?.length;
-    const indexLength = output.indices?.length;
-    if (
-      !Number.isSafeInteger(positionLength)
-      || (positionLength as number) <= 0
-      || (positionLength as number) % 3 !== 0
-      || !Number.isSafeInteger(uvLength)
-      || (uvLength as number) !== ((positionLength as number) / 3) * 2
-      || !Number.isSafeInteger(indexLength)
-      || (indexLength as number) <= 0
-      || (indexLength as number) % 3 !== 0
-    ) {
-      stop("invalid-provider-output", `${input.id} has invalid output buffer shapes`);
-    }
-    const vertexCount = (positionLength as number) / 3;
-    declaredVertices = checkedAdd(
-      declaredVertices,
-      vertexCount,
-      "Output vertex count",
-    );
-    declaredTriangles = checkedAdd(
-      declaredTriangles,
-      (indexLength as number) / 3,
-      "Output triangle count",
-    );
-    declaredBytes = checkedAdd(
-      declaredBytes,
-      ((positionLength as number) + (uvLength as number)) * 4,
-      "Output byte count",
-    );
-    declaredBytes = checkedAdd(
-      declaredBytes,
-      (indexLength as number) * 4,
-      "Output byte count",
-    );
-    if (
-      vertexCount > limits.maxVerticesPerMesh
-      || declaredVertices > limits.maxOutputVertices
-      || declaredTriangles > limits.maxOutputTriangles
-      || declaredBytes > limits.maxOutputBytes
-    ) {
-      stop("budget-exceeded", "xatlas output exceeds its declared budgets");
-    }
-  }
-  const positions = new Float32Array(declaredVertices * 3);
-  const uv = new Float32Array(declaredVertices * 2);
-  const indices = new Uint32Array(declaredTriangles * 3);
-  const ranges: StudioXAtlasUvMeshRange[] = [];
-  let vertexOffset = 0;
-  let indexOffset = 0;
-  for (const input of request.meshes) {
-    const output = outputsById.get(input.id);
-    if (output === undefined) {
-      stop("invalid-provider-output", `xatlas omitted mesh ${input.id}`);
-    }
-    const vertexCount = output.positions.length / 3;
-    for (let index = 0; index < output.positions.length; index += 1) {
-      const item = output.positions[index];
-      if (!Number.isFinite(item)) {
-        stop("invalid-provider-output", `${input.id}.positions contains a non-finite value`);
-      }
-      positions[vertexOffset * 3 + index] = item as number;
-    }
-    for (let index = 0; index < output.uv.length; index += 1) {
-      const item = output.uv[index];
-      if (!Number.isFinite(item)) {
-        stop("invalid-provider-output", `${input.id}.uv contains a non-finite value`);
-      }
-      uv[vertexOffset * 2 + index] = item as number;
-    }
-    for (let index = 0; index < output.indices.length; index += 1) {
-      const item = output.indices[index];
-      if (
-        !Number.isSafeInteger(item)
-        || (item as number) < 0
-        || (item as number) >= vertexCount
-      ) {
-        stop("invalid-provider-output", `${input.id}.indices contains an invalid vertex index`);
-      }
-      indices[indexOffset + index] = (item as number) + vertexOffset;
-    }
-    const segments = (output.atlasSegments ?? []).map((segment) => {
-      if (
-        typeof segment !== "object"
-        || segment === null
-        || !Number.isSafeInteger(segment.index)
-        || segment.index < 0
-        || !Number.isSafeInteger(segment.count)
-        || segment.count <= 0
-        || segment.index + segment.count > output.indices.length
-        || !Number.isSafeInteger(segment.atlasIndex)
-        || segment.atlasIndex < 0
-        || segment.atlasIndex >= atlasReceipt.count
-      ) {
-        stop("invalid-provider-output", `${input.id} has an invalid atlas segment`);
-      }
-      return Object.freeze({
-        indexOffset: indexOffset + segment.index,
-        indexCount: segment.count,
-        atlasIndex: segment.atlasIndex,
-      });
-    });
-    ranges.push(Object.freeze({
-      id: input.id,
-      sourceVertexCount: input.sourceVertexCount,
-      vertexOffset,
-      vertexCount,
-      indexOffset,
-      indexCount: output.indices.length,
-      atlasSegments: Object.freeze(segments),
-    }));
-    vertexOffset += vertexCount;
-    indexOffset += output.indices.length;
-  }
-
-  return Object.freeze({
-    kind: "studio-xatlas-uv-atlas",
-    version: STUDIO_XATLAS_UV_PROVIDER_VERSION,
-    positions,
-    uv,
-    indices,
-    meshes: Object.freeze(ranges),
-    atlas: atlasReceipt,
-    receipt,
   });
 }
 
@@ -1366,6 +1182,12 @@ export class StudioXAtlasUvProvider {
       };
 
       try {
+        // 외부 runtime에 전달하는 배열과 검증 기준을 분리한다. 첫 await 전에 고정한다.
+        const outputSources = request.meshes.map((mesh) => Object.freeze({
+          id: mesh.id,
+          sourceVertexCount: mesh.sourceVertexCount,
+          positions: new Float32Array(mesh.positions),
+        }));
         try {
           runtime = await this.loadRuntime(onProgress);
         } catch {
@@ -1409,11 +1231,13 @@ export class StudioXAtlasUvProvider {
         if (admittedDocumentEpoch !== this.documentEpoch) {
           stop("stale-document-epoch", "xatlas document became stale after execution");
         }
-        const artifact = buildArtifact(
+        const artifact = buildStudioXAtlasUvArtifact(
           atlas,
-          request,
+          outputSources,
           this.limits,
           capabilityReceipt(runtime, this.runtimeSource),
+          STUDIO_XATLAS_UV_PROVIDER_VERSION,
+          stop,
         );
         this.completedRequestCount += 1;
         result = Object.freeze({ ok: true, artifact });

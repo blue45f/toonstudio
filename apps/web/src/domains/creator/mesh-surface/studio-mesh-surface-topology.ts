@@ -10,7 +10,7 @@ function safeStableId(value:number):boolean{return Number.isSafeInteger(value)&&
 function finiteVec3(value:StudioMeshVec3):boolean{return Number.isFinite(value.x)&&Number.isFinite(value.y)&&Number.isFinite(value.z);}
 function maximumNumber(values:Iterable<number>):number{let result=-Infinity;for(const value of values)result=Math.max(result,value);return result;}
 function compareCodeUnits(left:string,right:string):number{return left<right?-1:left>right?1:0;}
-function validateWithMeter(mesh: StudioEditableMesh, meter: StudioMeshSurfaceWorkMeter, allowCreaseMetadata: boolean, topologyPolicy: "strict" | "editable"): InternalResult<ValidatedMesh> {
+function validateWithMeter(mesh: StudioEditableMesh, meter: StudioMeshSurfaceWorkMeter, allowCreaseMetadata: boolean, topologyPolicy: "strict" | "editable", preserveFaceCorners: boolean): InternalResult<ValidatedMesh> {
   if (!isRecord(mesh) || !Array.isArray(mesh.vertices) || !Array.isArray(mesh.halfEdges) || !Array.isArray(mesh.faces)) {
     return stop(issue("error", "invalid-input", "Editable mesh arrays are required"));
   }
@@ -314,7 +314,7 @@ function validateWithMeter(mesh: StudioEditableMesh, meter: StudioMeshSurfaceWor
   const warnings: StudioHybridDccGlbIssue[] = [];
   let warningCount = 0;
   const validatedFaces: ValidatedFace[] = [];
-  const preserveCorners = mesh.uvLayer !== undefined || (allowCreaseMetadata
+  const preserveCorners = preserveFaceCorners || mesh.uvLayer !== undefined || (allowCreaseMetadata
     && (mesh.vertices.some(({ crease }) => crease !== 0) || mesh.halfEdges.some(({ crease }) => crease !== 0)));
   for (const loop of rawFaceLoops) {
     const prepared = prepareFaceWithMeter(loop.face, loop.halfEdgeIds, loop.vertexIds, vertexById, preserveCorners, meter);
@@ -339,6 +339,7 @@ function validateWithMeter(mesh: StudioEditableMesh, meter: StudioMeshSurfaceWor
     warningCount,
     sourceMesh: mesh,
     allowCreaseMetadata,
+    preserveFaceCorners,
     topologyPolicy,
     hasEditableTopologyExceptions,
     maxFaceCorners: rawFaceLoops.reduce((maximum, entry) => Math.max(maximum, entry.vertexIds.length), 0),
@@ -347,4 +348,4 @@ function validateWithMeter(mesh: StudioEditableMesh, meter: StudioMeshSurfaceWor
 }
 
 
-export function validateStudioMeshSurface(mesh:StudioEditableMesh,budget?:StudioMeshSurfaceBudget,options?:StudioMeshSurfaceOptions):InternalResult<ValidatedMesh>{try{return validateWithMeter(mesh,new StudioMeshSurfaceWorkMeter(budget),options?.allowCreaseMetadata===true, options?.topologyPolicy === "editable" ? "editable" : "strict");}catch(error){return surfaceBudgetFailure(error);}}
+export function validateStudioMeshSurface(mesh:StudioEditableMesh,budget?:StudioMeshSurfaceBudget,options?:StudioMeshSurfaceOptions):InternalResult<ValidatedMesh>{try{return validateWithMeter(mesh,new StudioMeshSurfaceWorkMeter(budget),options?.allowCreaseMetadata===true, options?.topologyPolicy === "editable" ? "editable" : "strict", options?.preserveFaceCorners === true);}catch(error){return surfaceBudgetFailure(error);}}
