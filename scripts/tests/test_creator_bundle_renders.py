@@ -667,5 +667,189 @@ class BlenderRigPolicyTests(unittest.TestCase):
             self.assertFalse(body.hide_render)
 
 
+class LicensedRenderTests(unittest.TestCase):
+    """공유 Node 판정 뒤의 출력 계약만 순수 Python으로 확인한다."""
+
+    def setUp(self):
+        guard = patch.object(renders.subprocess, "run", side_effect=AssertionError("표적 회귀에서 Node·Blender를 실행할 수 없습니다."))
+        guard.start()
+        self.addCleanup(guard.stop)
+
+    def asset(self, small_props=False):
+        pack_id = "cbv1-077-small-props-pack" if small_props else "cbv1-012-cemetery-statues"
+        provider = "RG Poly" if small_props else "EmaceArt"
+        url = ("https://rg-poly.itch.io/medieval-props-small-pack-low-poly" if small_props
+               else "https://emaceart.itch.io/cemetery-statues")
+        source = ("02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/gLTF/Props/Bag_1_A.glb"
+                  if small_props else "05-horror-gothic/cemetery-statues/models/glb/EA_Bld_Column_01a.glb")
+        rights = {"ledgerPackId": pack_id, "serve": "allow", "status": "licensed",
+                  "licenseName": "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)",
+                  "commercialUse": True, "attributionRequired": False}
+        grant = {key: rights[key] for key in ("status", "licenseName", "commercialUse", "attributionRequired")}
+        grant.update(inServiceOnly=True, downloadable=False, redistributionAllowed=False)
+        return {"id": "licensed-small-props" if small_props else "licensed-cemetery", "name": "구매 소품",
+                "packId": pack_id, "catalogId": pack_id, "source": source,
+                "sourceUrl": url, "selectionTerm": "구매 소품", "sourceModelSha256": "a" * 64,
+                "visualReviewed": False, "rightsInfo": {"rights": rights, "grant": grant,
+                "provider": provider, "libraryPacks": [source.split("/")[1]], "checkedOn": "2026-10-30"}}
+
+    def test_public_creator_pages_accept_both_approved_pack_sources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "selection.json"
+            assets = [self.asset(), self.asset(True)]
+            path.write_text(json.dumps({"assets": assets}))
+            self.assertEqual(renders.load_selection(path), assets)
+
+    def test_creator_source_rejects_private_credentials_other_hosts_and_queries(self):
+        urls = ["http://emaceart.itch.io/cemetery-statues", "https://itch.io/cemetery-statues",
+                "https://emaceart.itch.io.evil.test/cemetery-statues", "https://u:p@emaceart.itch.io/cemetery-statues",
+                "https://emaceart.itch.io:8443/cemetery-statues", "https://emaceart.itch.io/cemetery-statues?download=1",
+                "https://emaceart.itch.io/cemetery-statues#private", "https://emaceart.itch.io/download",
+                "https://emaceart.itch.io/private", "https://emaceart.itch.io/dashboard",
+                "https://emaceart.itch.io/api", "https://emaceart.itch.io/item/download/private"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "selection.json"
+            for url in urls:
+                with self.subTest(url=url):
+                    path.write_text(json.dumps({"assets": [{**self.asset(), "sourceUrl": url}]}))
+                    with self.assertRaises(renders.RenderError):
+                        renders.load_selection(path)
+
+    def test_licensed_metadata_has_distinct_stable_pack_ids_and_preserves_source_date(self):
+        licenses = [renders.render_license_metadata(self.asset(value)) for value in (False, True)]
+        self.assertNotEqual(licenses[0]["id"], licenses[1]["id"])
+        for small_props, license in zip((False, True), licenses, strict=True):
+            asset = self.asset(small_props)
+            self.assertEqual(license["id"], "cb-ledger-" + renders.digest(asset["packId"].encode("utf-8")))
+            self.assertEqual(len(license["id"]), 74)
+            self.assertEqual(license, renders.render_license_metadata(asset))
+            self.assertIsNone(license["url"])
+            self.assertFalse(license["redistributionAllowed"])
+            self.assertTrue(license["commercialUse"])
+            self.assertTrue(license["inServiceOnly"])
+            self.assertEqual(license["checkedOn"], "2026-10-30")
+            self.assertEqual(license["provider"], asset["rightsInfo"]["provider"])
+            self.assertEqual(license["sourceUrl"], asset["sourceUrl"])
+
+    def test_licensed_grant_and_projection_must_match_without_broadening_use(self):
+        invalid = [("rights", "serve", "hold"), ("rights", "ledgerPackId", "cbv1-008-cute-park-pack"),
+                   ("rights", "commercialUse", False), ("rights", "attributionRequired", True),
+                   ("grant", "status", "public-domain"), ("grant", "licenseName", "different"),
+                   ("grant", "commercialUse", False), ("grant", "attributionRequired", True),
+                   ("grant", "inServiceOnly", False), ("grant", "downloadable", True),
+                   ("grant", "redistributionAllowed", True), ("grant", "inServiceOnly", 1)]
+        for section, key, value in invalid:
+            with self.subTest(section=section, key=key, value=value):
+                asset = self.asset()
+                asset["rightsInfo"][section][key] = value
+                with self.assertRaises(renders.RenderError):
+                    renders.render_license_metadata(asset)
+
+    def test_licensed_cannot_claim_cc0_and_missing_grant_is_rejected(self):
+        for name in ("CC0-1.0", "cc0-1.0", "Cc0-1.0"):
+            asset = self.asset()
+            asset["rightsInfo"]["rights"]["licenseName"] = name
+            asset["rightsInfo"]["grant"]["licenseName"] = name
+            with self.subTest(name=name), self.assertRaises(renders.RenderError):
+                renders.render_license_metadata(asset)
+        asset = self.asset()
+        del asset["rightsInfo"]["grant"]
+        with self.assertRaises(renders.RenderError):
+            renders.render_license_metadata(asset)
+
+    def test_cc0_keeps_official_id_deed_and_redistribution(self):
+        asset = self.asset()
+        rights = asset["rightsInfo"]["rights"]
+        rights.update(status="public-domain", licenseName="CC0-1.0")
+        asset["rightsInfo"]["grant"] = {key: rights[key] for key in ("status", "licenseName", "commercialUse", "attributionRequired")}
+        asset["rightsInfo"]["checkedOn"] = "2026-10-28"
+        license = renders.render_license_metadata(asset)
+        self.assertEqual(license["id"], "CC0-1.0")
+        self.assertEqual(license["url"], renders.CC0_DEED)
+        self.assertTrue(license["redistributionAllowed"])
+        self.assertEqual(license["checkedOn"], "2026-10-28")
+
+    def test_capture_date_must_be_a_real_iso_date(self):
+        for value in (None, "2026-02-30", "20261030", "2026-10-30T00:00:00Z"):
+            asset = self.asset()
+            asset["rightsInfo"]["checkedOn"] = value
+            with self.subTest(value=value), self.assertRaisesRegex(renders.RenderError, "verifiedAt"):
+                renders.render_license_metadata(asset)
+
+    def test_mocked_shared_gate_result_is_checked_before_render_planning(self):
+        asset = self.asset()
+        approved = {asset["id"]: asset["rightsInfo"]}
+        response = SimpleNamespace(returncode=0, stdout=json.dumps(approved), stderr="")
+        with patch.object(renders.subprocess, "run", return_value=response) as gate:
+            self.assertEqual(renders.load_rights([asset], Path("unused-fixture-ledger.json")), approved)
+            self.assertEqual(gate.call_count, 1)
+        approved[asset["id"]]["grant"]["redistributionAllowed"] = True
+        response.stdout = json.dumps(approved)
+        with patch.object(renders.subprocess, "run", return_value=response):
+            with self.assertRaises(renders.RenderError):
+                renders.load_rights([asset], Path("unused-fixture-ledger.json"))
+
+    def test_licensed_webp_output_preserves_ledger_label_and_does_not_claim_cc0(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            png_root = root / "png"
+            png_root.mkdir()
+            for small_props in (False, True):
+                asset = self.asset(small_props)
+                path = png_root / (asset["id"] + ".png")
+                png(path)
+                row = renders.encode_asset(asset, png_root, root / "pack", False, renders.digest(path.read_bytes()))
+                self.assertEqual(row["license"], renders.render_license_metadata(asset))
+                self.assertEqual(row["rights"], asset["rightsInfo"]["rights"])
+                self.assertEqual(row["rights"]["licenseName"], "구매 번들 ToonStudio 상업적 프로젝트 사용 (소유자 확인)")
+                self.assertFalse(row["visualReviewed"])
+                self.assertFalse(row["studioRuntimeVerified"])
+                self.assertEqual(row["curationStatus"], "pending-visual-review")
+                self.assertEqual(row["sourceModelSha256"], asset["sourceModelSha256"])
+
+    def test_declared_cc0_is_preserved_and_approved_licensed_declarations_are_added(self):
+        cc0 = {"id": "CC0-1.0", "provider": "RG Poly", "sourceHost": "RG-POLY.ITCH.IO",
+               "deedUrl": renders.CC0_DEED, "note": "기존 선언 보존"}
+        pack = {"licenses": [cc0]}
+        before = json.dumps(pack, sort_keys=True)
+        replacements = [{"license": renders.render_license_metadata(self.asset(value))} for value in (False, True)]
+        declarations = renders.merge_render_license_declarations(pack, replacements)
+        self.assertEqual(json.dumps(pack, sort_keys=True), before)
+        self.assertEqual(declarations[0], cc0)
+        self.assertEqual(len(declarations), 3)
+        for declaration, asset in zip(declarations[1:], replacements, strict=True):
+            license = asset["license"]
+            self.assertEqual(declaration, {"id": license["id"], "provider": license["provider"],
+                             "sourceHost": "emaceart.itch.io" if license["provider"] == "EmaceArt" else "rg-poly.itch.io",
+                             "deedUrl": None})
+        self.assertEqual(renders.merge_render_license_declarations({"licenses": declarations}, replacements), declarations)
+
+    def test_missing_license_declarations_keeps_the_existing_implicit_path(self):
+        pack = {"id": "bundle-renders-v1", "inServiceOnly": True, "downloadable": False}
+        before = dict(pack)
+        replacements = [{"license": renders.render_license_metadata(self.asset())}]
+        self.assertIsNone(renders.merge_render_license_declarations(pack, replacements))
+        self.assertEqual(pack, before)
+        self.assertNotIn("licenses", pack)
+
+    def test_declaration_conflicts_and_duplicate_ids_leave_the_original_pack_unchanged(self):
+        cemetery = renders.render_license_metadata(self.asset())
+        existing = {"id": cemetery["id"], "provider": cemetery["provider"],
+                    "sourceHost": "emaceart.itch.io", "deedUrl": None}
+        replacements = [{"license": renders.render_license_metadata(self.asset(True))}, {"license": cemetery}]
+        for field, value in (("provider", "다른 제작사"), ("sourceHost", "other.itch.io"),
+                             ("deedUrl", "https://example.test/license")):
+            pack = {"licenses": [{**existing, field: value}]}
+            before = json.dumps(pack, sort_keys=True)
+            with self.subTest(field=field), self.assertRaisesRegex(renders.RenderError, "선언이 다릅니다"):
+                renders.merge_render_license_declarations(pack, replacements)
+            self.assertEqual(json.dumps(pack, sort_keys=True), before)
+        pack = {"licenses": [existing, dict(existing)]}
+        before = json.dumps(pack, sort_keys=True)
+        with self.assertRaisesRegex(renders.RenderError, "중복"):
+            renders.merge_render_license_declarations(pack, replacements)
+        self.assertEqual(json.dumps(pack, sort_keys=True), before)
+
+
 if __name__ == "__main__":
     unittest.main()

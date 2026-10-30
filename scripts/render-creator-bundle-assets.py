@@ -3,6 +3,7 @@
 
 import argparse
 from contextlib import contextmanager
+from datetime import date
 import ctypes
 import fcntl
 import hashlib
@@ -91,8 +92,16 @@ def load_selection(path):
         if not isinstance(asset.get("sourceModelSha256"), str) or not SHA256.fullmatch(asset["sourceModelSha256"]):
             raise RenderError("sourceModelSha256에 선정 시점 원본 SHA-256을 고정해야 합니다.")
         url = urlsplit(text(asset.get("sourceUrl"), "sourceUrl", 400))
-        if url.scheme != "https" or url.hostname != "rg-poly.itch.io" or url.username or url.password or url.query or url.fragment or "/download/" in url.path:
-            raise RenderError("sourceUrl은 공개 RG Poly 팩 페이지여야 합니다.")
+        try:
+            public_page = (url.scheme == "https" and not url.username and not url.password
+                           and url.port in (None, 443) and not url.query and not url.fragment
+                           and re.fullmatch(r"[a-z0-9][a-z0-9-]*\.itch\.io", url.hostname or "")
+                           and re.fullmatch(r"/[a-z0-9][a-z0-9-]*/?", url.path)
+                           and url.path.strip("/") not in ("download", "private", "dashboard", "api"))
+        except ValueError:
+            public_page = False
+        if not public_page:
+            raise RenderError("sourceUrl은 자격증명·query 없는 공개 itch.io 제작자 팩 페이지여야 합니다.")
         if "visualReviewed" in asset and not isinstance(asset["visualReviewed"], bool):
             raise RenderError("visualReviewed는 boolean이어야 합니다.")
         camera_direction(asset)
@@ -144,14 +153,13 @@ for (const asset of assets) {
   const decision = api.evaluateServeDecision(ledger, {catalogIds: entry.catalogIds, title: entry.title, creator: entry.creator});
   if (!decision.serve) throw new Error(asset.id + ': 팩이 hold이거나 증빙이 부족합니다.');
   // 서비스 이용 조건을 추가하는 것이 아니라, 기록한 출처 URL이 실제 이 팩의 증빙인지 대조한다.
-  if (!entry.evidence.some(evidence => evidence.kind === 'itch-page-capture' && evidence.url === asset.sourceUrl)) {
+  const capture = entry.evidence.find(evidence => evidence.kind === 'itch-page-capture' && evidence.url === asset.sourceUrl);
+  if (!capture) {
     throw new Error(asset.id + ': 출처 URL이 이 팩의 공식 라이선스 캡처와 다릅니다.');
   }
   const rights = {ledgerPackId: entry.id, ...api.packRightsProjection(entry)};
-  if (rights.status !== 'public-domain' || rights.licenseName !== 'CC0-1.0' || !rights.commercialUse || rights.attributionRequired) {
-    throw new Error(asset.id + ': 이 렌더 작업은 확인된 CC0 팩만 받습니다.');
-  }
-  result[asset.id] = {rights, provider: entry.creator, libraryPacks: entry.libraryPacks};
+  result[asset.id] = {rights, provider: entry.creator, libraryPacks: entry.libraryPacks,
+    grant: entry.grant, checkedOn: capture.verifiedAt};
 }
 process.stdout.write(JSON.stringify(result));
 """
@@ -162,7 +170,96 @@ process.stdout.write(JSON.stringify(result));
     )
     if result.returncode != 0:
         raise RenderError("팩별 권리 검증에 실패했습니다: " + result.stderr.strip())
-    return json.loads(result.stdout)
+    rights = json.loads(result.stdout)
+    if not isinstance(rights, dict):
+        raise RenderError("공유 원장의 렌더 권리 결과가 객체가 아닙니다.")
+    for asset in assets:
+        # 공유 원장이 승인한 결과도 렌더 출력 조건과 맞아야 실제 제작 전에 진행한다.
+        render_license_metadata({**asset, "rightsInfo": rights.get(asset["id"])})
+    return rights
+
+
+def render_license_metadata(asset):
+    info = asset.get("rightsInfo")
+    rights = info.get("rights") if isinstance(info, dict) else None
+    grant = info.get("grant") if isinstance(info, dict) else None
+    if not isinstance(rights, dict) or not isinstance(grant, dict):
+        raise RenderError("렌더 권리의 원장 투영과 승인 grant가 필요합니다.")
+    license_name = text(rights.get("licenseName"), "원장 licenseName", 200)
+    if (rights.get("ledgerPackId") != asset.get("packId") or rights.get("serve") != "allow"
+            or rights.get("commercialUse") is not True or rights.get("attributionRequired") is not False
+            or any(grant.get(key) != rights.get(key) for key in ("status", "licenseName"))
+            or grant.get("commercialUse") is not True or grant.get("attributionRequired") is not False):
+        raise RenderError("상업 사용·귀속 표기 없음 조건과 동일 팩의 승인 grant가 필요합니다.")
+    cc0 = rights.get("status") == "public-domain" and license_name == "CC0-1.0"
+    licensed = (rights.get("status") == "licensed" and license_name.lower() != "cc0-1.0"
+                and grant.get("inServiceOnly") is True and grant.get("downloadable") is False
+                and grant.get("redistributionAllowed") is False)
+    if not cc0 and not licensed:
+        raise RenderError("확인된 CC0 또는 서비스 내 이용만 승인한 licensed 렌더여야 합니다.")
+    checked_on = info.get("checkedOn")
+    try:
+        if not isinstance(checked_on, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", checked_on):
+            raise ValueError
+        date.fromisoformat(checked_on)
+    except ValueError as error:
+        raise RenderError("공식 출처 캡처의 실제 verifiedAt 날짜가 필요합니다.") from error
+    # 제작사·출처 host가 다른 구매 팩은 동일한 일반 license ID를 공유하지 않는다.
+    license_id = "CC0-1.0" if cc0 else "cb-ledger-" + digest(rights["ledgerPackId"].encode("utf-8"))
+    return {"id": license_id, "url": CC0_DEED if cc0 else None,
+            "provider": text(info.get("provider"), "원장 제작사", 80),
+            "sourceUrl": text(asset.get("sourceUrl"), "sourceUrl", 400),
+            "commercialUse": True, "redistributionAllowed": cc0,
+            "inServiceOnly": True, "checkedOn": checked_on}
+
+
+def merge_render_license_declarations(pack, replacements):
+    """명시한 선언만 복사해 확장하고 충돌 시 원래 팩은 그대로 둔다."""
+    if "licenses" not in pack:
+        return None
+    declarations = pack["licenses"]
+    if not isinstance(declarations, list) or not declarations:
+        raise RenderError("팩 라이선스 선언은 비어 있지 않은 배열이어야 합니다.")
+
+    def facts(declaration):
+        if not isinstance(declaration, dict):
+            raise RenderError("팩 라이선스 선언은 객체여야 합니다.")
+        identifier = text(declaration.get("id"), "선언 license id", 80)
+        provider = text(declaration.get("provider"), "선언 제작사", 80)
+        host = text(declaration.get("sourceHost"), "선언 출처 host", 253).lower()
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+", host):
+            raise RenderError("팩 라이선스 선언의 출처 host가 올바르지 않습니다.")
+        deed = declaration.get("deedUrl")
+        if deed is not None:
+            try:
+                url = urlsplit(text(deed, "선언 deed URL", 512))
+                valid = url.scheme == "https" and url.hostname and not url.username and not url.password and url.port in (None, 443)
+            except ValueError:
+                valid = False
+            if not valid:
+                raise RenderError("팩 라이선스 선언의 deed URL이 올바르지 않습니다.")
+        if identifier.lower() == "cc0-1.0" and deed != CC0_DEED:
+            raise RenderError("CC0 선언에는 공식 deed URL이 필요합니다.")
+        return identifier, (provider, host, deed)
+
+    merged, by_id = list(declarations), {}
+    for declaration in declarations:
+        identifier, declaration_facts = facts(declaration)
+        if identifier in by_id:
+            raise RenderError("팩 라이선스 선언 id가 중복됐습니다: " + identifier)
+        by_id[identifier] = declaration_facts
+    for asset in replacements:
+        license = asset["license"]
+        declaration = {"id": license["id"], "provider": license["provider"],
+                       "sourceHost": urlsplit(license["sourceUrl"]).hostname, "deedUrl": license.get("url")}
+        identifier, declaration_facts = facts(declaration)
+        if identifier in by_id:
+            if by_id[identifier] != declaration_facts:
+                raise RenderError("같은 라이선스 id의 제작사·출처 host·deed 선언이 다릅니다: " + identifier)
+        else:
+            by_id[identifier] = declaration_facts
+            merged.append(declaration)
+    return merged
 
 
 def validate_glb(data):
@@ -357,9 +454,7 @@ def encode_asset(asset, png_root, pack_root, reviewed, png_sha256):
         "curationStatus": "visual-reviewed" if reviewed else "pending-visual-review",
         "technicalChecks": ["source-GLB-checksum-bound", "native-1536px-render", "transparent-alpha", "unclipped-silhouette", "lossless-WebP-roundtrip"],
         "rights": asset["rightsInfo"]["rights"],
-        "license": {"id": "CC0-1.0", "url": CC0_DEED, "provider": asset["rightsInfo"]["provider"],
-                    "sourceUrl": asset["sourceUrl"], "commercialUse": True, "redistributionAllowed": True,
-                    "inServiceOnly": True, "checkedOn": "2026-10-28"},
+        "license": render_license_metadata(asset),
     }
     if asset.get("textureBindings"):
         result["sourceTextureSha256s"] = sorted({binding["sha256"] for binding in asset["textureBindings"]})
@@ -617,9 +712,12 @@ def run(args):
         drafts = {asset["id"] for asset in manifest["assets"] if str(asset.get("curationStatus", "")).startswith("draft")}
         if drafts.intersection(replacements):
             raise RenderError("기존 초안 슬롯과 선정 id가 겹칩니다. 초안은 별도로 보존해야 합니다.")
+        declarations = merge_render_license_declarations(manifest["pack"], replacements.values())
+        if declarations is not None:
+            manifest["pack"]["licenses"] = declarations
         manifest["assets"] = [asset for asset in manifest["assets"] if asset["id"] not in replacements] + list(replacements.values())
         manifest["pack"]["status"] = "visual-reviewed" if args.publish else "pending-visual-review"
-        manifest["pack"]["note"] = "확인된 CC0 모델의 렌더 이미지 전용 팩. 원본 GLB·텍스처는 포함하지 않는다."
+        manifest["pack"]["note"] = "원장이 승인한 모델의 렌더 이미지 전용 팩. 이용 권리는 각 슬롯의 원장 표기를 따른다. 원본 GLB·텍스처는 포함하지 않는다."
         (stage / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")), encoding="utf-8")
         verify_pack(stage, args.pack_rights, args.node)
         for asset in selected:

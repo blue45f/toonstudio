@@ -34,13 +34,17 @@ function descriptor(ingestId, name, body, suffix) {
     files: [{ kind: "primary", path: `${ingestId}/native/${name}`, bytes: body.length, sha256: sha(body) }] };
 }
 
-function fixture({ overBudget = false } = {}) {
+function fixture({ overBudget = false, gltf = false } = {}) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "composite-ingest-test-"))), repo = join(root, "repo"), library = join(root, "library"), input = join(root, "prepared");
   const baseBody = glb("기존 원본"), derivedBody = glb("파생본", { overBudget });
   const baseAsset = descriptor(baseId, "Bench_1_1.glb", baseBody, "base"), derivedAsset = descriptor(derivedId, "Farm Plants/Lettuce_C.glb", derivedBody, "derived");
   const librarySource = "01-city/cute-park-pack/models/mixed/gLTF";
   const source = put(join(library, librarySource, baseAsset.sourcePath), baseBody);
-  const atlasSource = put(join(library, "03-nature/nature-megapack-extended/Models/Farm Plants/Lettuce_C.glb"), Buffer.from("외부 Atlas 원본 합성 입력"));
+  const originalName = "Farm Plants/Lettuce_C." + (gltf ? "gltf" : "glb");
+  const atlasSource = put(join(library, "03-nature/nature-megapack-extended/Models", originalName), gltf
+    ? bytes({ asset: { version: "2.0" }, buffers: [{ uri: "Lettuce_C.bin", byteLength: 4 }], images: [{ uri: "../../Textures/atlas.png" }] })
+    : Buffer.from("외부 Atlas 원본 합성 입력"));
+  const atlasBinary = gltf ? put(join(dirname(atlasSource), "Lettuce_C.bin"), Buffer.from("BIN!")) : undefined;
   const atlasImage = put(join(library, "03-nature/nature-megapack-extended/Textures/atlas.png"), Buffer.from("합성 Atlas"));
   for (const [asset, body] of [[baseAsset, baseBody], [derivedAsset, derivedBody]]) put(join(input, asset.files[0].path), body);
   const baseManifest = { kind: "toonstudio.asset-bundle.v2", version: 2, inServiceOnly: true, downloadable: false,
@@ -57,9 +61,15 @@ function fixture({ overBudget = false } = {}) {
     snapshotGeneratedAt: baseManifest.generatedAt, copyPolicy: "copy-only-no-hardlinks", expected: { files: 1, bytes: baseBody.length },
     packs: [{ catalogId: "cbv1-008-cute-park-pack", ingestId: baseId, librarySource, files: 1, bytes: baseBody.length }] };
   const recipe = { schema: "toonstudio.creator-bundle-atlas-intake.v1", version: 1, generatedAt: stamp, packs: [{
-    catalogId: "cbv1-030-nature-megapack-extended", ingestId: derivedId, packRoot: "03-nature/nature-megapack-extended", sourceDirectory: "Models", imagePaths: { "../../Textures/atlas.png": "Textures/atlas.png" } }] };
+    catalogId: "cbv1-030-nature-megapack-extended", ingestId: derivedId, packRoot: "03-nature/nature-megapack-extended", sourceDirectory: "Models", imagePaths: { "../../Textures/atlas.png": "Textures/atlas.png" },
+    ...(gltf ? { sourceFormat: "gltf" } : {}) }] };
   const recipePath = put(join(repo, "config/creator-bundle-atlas-intake.json"), bytes(recipe));
   const proof = { schema: "toonstudio.creator-bundle-atlas-intake.v1-proof", productApplied: false, studioRuntimeVerified: false };
+  if (gltf) proof.assets = [{ catalogId: recipe.packs[0].catalogId, sourcePath: derivedAsset.sourcePath,
+    outputPath: derivedAsset.files[0].path, source: state(atlasSource), derived: { bytes: derivedBody.length, sha256: sha(derivedBody) },
+    sourceFormat: "gltf", originalSourcePath: originalName, sourceBuffer: { path: "Models/Farm Plants/Lettuce_C.bin", ...state(atlasBinary) },
+    normalization: { geometryBytesPreserved: true, externalImageUrisRemaining: 0,
+      embeddedTextures: [{ uri: "../../Textures/atlas.png", ...state(atlasImage) }] } }];
   const proofPath = put(join(input, "preparation-proof.json"), bytes(proof));
   const manifestPath = put(join(input, "manifest-v2.json"), bytes(manifest));
   for (const file of ["prepare-creator-bundle-atlas-intake.py", "normalize_studio_asset_glb.py"]) put(join(repo, "scripts", file), "# 합성 코드 fingerprint\n");
@@ -74,13 +84,46 @@ function fixture({ overBudget = false } = {}) {
     summary: { derivedAssets: 1, derivedBytes: derivedBody.length, inputUnchanged: true, targetUnchanged: true },
     controls: { recipe: state(recipePath), rights: state(ledgerPath), projection: { bytes: pinnedProjectionBytes.length, sha256: sha(pinnedProjectionBytes) } },
     targetManifest: state(manifestPath), assets: [structuredClone(derivedAsset)],
-    inputFiles: [recipePath, ledgerPath, atlasSource, atlasImage].map((path) => ({ path, ...state(path) })) });
+    inputFiles: [recipePath, ledgerPath, atlasSource, atlasImage, ...(gltf ? [atlasBinary] : [])].map((path) => ({ path, ...state(path) })),
+    ...(gltf ? { sourceInputs: [{ packId: derivedId, sourcePath: derivedAsset.sourcePath, originalSourcePath: originalName, sourceFormat: "gltf" }] } : {}) });
   const args = { libraryRoot: library, inputRoot: input, config, configPath, ledgerPath, repoRoot: repo };
-  return { root, repo, library, input, source, atlasSource, atlasImage, config, configPath, manifest, manifestPath, proofPath, baseProjection,
+  return { root, repo, library, input, source, atlasSource, atlasBinary, atlasImage, recipe, recipePath, proof, ledger, themes,
+    config, configPath, manifest, manifestPath, proofPath, baseProjection,
     baseAsset, derivedAsset, pinnedConfig, pinnedProjectionBytes, args, dependencies: { readPinned, verifyDerived },
     plan: (overrides = {}) => buildCompositeIngestPlan(args, { readPinned, verifyDerived, ...overrides }) };
 }
 function withFixture(run, options) { const f = fixture(options); try { run(f); } finally { rmSync(f.root, { recursive: true, force: true }); } }
+
+function repinRecipe(f) {
+  put(f.recipePath, bytes(f.recipe)); f.config.atlas.recipeSha256 = sha(bytes(f.recipe)); put(f.configPath, bytes(f.config));
+}
+function repinProof(f) {
+  put(f.proofPath, bytes(f.proof)); f.config.atlas.preparationProofSha256 = sha(bytes(f.proof)); put(f.configPath, bytes(f.config));
+}
+function addLegacyDerived(f) {
+  const id = "cbv1-ingest-231-lumagrovewonkywoods", body = glb("혼합 GLB 파생본"), asset = descriptor(id, "Tree.glb", body, "legacy");
+  const original = put(join(f.library, "03-nature/lumagrove-wonky-woods/Models/Tree.glb"), body);
+  const image = put(join(f.library, "03-nature/lumagrove-wonky-woods/Textures/atlas.png"), "혼합 합성 atlas");
+  put(join(f.input, asset.files[0].path), body); f.manifest.assets.push(asset); f.manifest.totals.assets += 1;
+  put(f.manifestPath, bytes(f.manifest));
+  f.recipe.packs.push({ catalogId: "cbv1-028-lumagrove-wonky-woods", ingestId: id,
+    packRoot: "03-nature/lumagrove-wonky-woods", sourceDirectory: "Models", imagePaths: { "../Textures/atlas.png": "Textures/atlas.png" } });
+  repinRecipe(f);
+  f.proof.assets.push({ catalogId: "cbv1-028-lumagrove-wonky-woods", sourcePath: asset.sourcePath,
+    outputPath: asset.files[0].path, source: state(original), derived: { bytes: body.length, sha256: sha(body) }, normalization: {} });
+  repinProof(f);
+  const projection = buildThemePacks({ manifestV2: f.manifest, themesDoc: f.themes, assetRoot: f.input, ledger: f.ledger }).output;
+  put(join(f.repo, PROJECTION_PATH), bytes(projection)); f.config.projectionSha256 = sha(bytes(projection));
+  f.config.expected.derivedAssets += 1; f.config.expected.files += 1; f.config.expected.bytes += body.length;
+  put(f.configPath, bytes(f.config));
+  return () => {
+    const result = f.dependencies.verifyDerived(); result.assets.push(structuredClone(asset));
+    result.summary.derivedAssets += 1; result.summary.derivedBytes += body.length;
+    result.inputFiles.push(...[original, image].map((path) => ({ path, ...state(path) })));
+    result.sourceInputs.push({ packId: id, sourcePath: asset.sourcePath, originalSourcePath: asset.sourcePath, sourceFormat: "glb" });
+    return result;
+  };
+}
 
 test("고정 Git 객체는 인자 배열과 config/projection의 실제 SHA를 함께 대조한다", () => withFixture((f) => {
   const calls = [];
@@ -173,6 +216,98 @@ test("Python 검증 뒤 새 Atlas GLB가 생기면 기존 목록 성공으로 �
   put(join(dirname(f.atlasSource), "new.glb"), "추가 원본");
   assert.throws(() => assertCompositePlanCurrent(plan), /목록이 변경/u);
 }));
+
+test("glTF 원본과 출력 GLB를 분리하고 BIN·이미지 fingerprint와 형식별 목록을 보존한다", () => withFixture((f) => {
+  const plan = f.plan(), directory = join(f.library, f.recipe.packs[0].packRoot, "Models");
+  assert.deepEqual(plan.sourceTrees.get(directory), [f.atlasSource]);
+  assert.equal(plan.sourceFormats.get(directory), "gltf");
+  for (const path of [f.atlasSource, f.atlasBinary, f.atlasImage]) assert.deepEqual(plan.states.get(path), state(path));
+  assert.equal(plan.manifest.assets[1].sourcePath, "Farm Plants/Lettuce_C.glb");
+  put(join(dirname(f.atlasSource), "late.gltf"), readFileSync(f.atlasSource));
+  assert.throws(() => assertCompositePlanCurrent(plan), /GLTF 목록이 변경/u);
+}, { gltf: true }));
+
+test("glTF 원본 BIN URI의 ASCII 제어 문자를 거부한다", () => {
+  for (const control of ["\u0000", "\u001f", "\u007f"]) withFixture((f) => {
+    const source = JSON.parse(readFileSync(f.atlasSource, "utf8"));
+    source.buffers[0].uri = "Lettuce" + control + "_C.bin";
+    put(f.atlasSource, bytes(source));
+    f.proof.assets[0].source = state(f.atlasSource);
+    repinProof(f);
+    assert.throws(() => f.plan(), /소유 팩의 명시적 로컬 URI/u);
+  }, { gltf: true });
+});
+
+test("GLB 전용 결과는 sourceFormats를 추가하지 않고 sourceInputs 혼합을 거부한다", () => withFixture((f) => {
+  assert.equal(Object.hasOwn(f.plan(), "sourceFormats"), false);
+  assert.throws(() => f.plan({ verifyDerived: () => ({ ...f.dependencies.verifyDerived(), sourceInputs: [] }) }), /GLB 전용/u);
+}));
+
+test("glTF sourceInputs의 누락·중복·잉여·잘못된 형식과 원본 stem을 거부한다", () => withFixture((f) => {
+  const changes = [(r) => { delete r.sourceInputs; }, (r) => { r.sourceInputs = []; },
+    (r) => { r.sourceInputs.push(r.sourceInputs[0]); }, (r) => { r.sourceInputs[0].extra = true; },
+    (r) => { r.sourceInputs[0].packId = "cbv1-ingest-unknown"; }, (r) => { r.sourceInputs[0].sourceFormat = "glb"; },
+    (r) => { r.sourceInputs[0].originalSourcePath = r.sourceInputs[0].sourcePath; },
+    (r) => { r.sourceInputs[0].originalSourcePath = "Farm Plants/Other.gltf"; }];
+  for (const change of changes) assert.throws(() => f.plan({ verifyDerived: () => {
+    const result = f.dependencies.verifyDerived(); change(result); return result;
+  } }), /sourceInputs|필드/u);
+}, { gltf: true }));
+
+test("glTF·BIN·이미지 fingerprint 중 하나라도 빠지면 sourceInputs만으로 통과하지 않는다", () => withFixture((f) => {
+  for (const missing of [f.atlasSource, f.atlasBinary, f.atlasImage]) assert.throws(() => f.plan({ verifyDerived: () => {
+    const result = f.dependencies.verifyDerived(); result.inputFiles = result.inputFiles.filter((item) => item.path !== missing); return result;
+  } }), /fingerprint/u);
+}, { gltf: true }));
+
+test("고정한 준비 증거에서도 glTF 원본·BIN·이미지의 위조 출처를 거부한다", () => withFixture((f) => {
+  const original = structuredClone(f.proof);
+  put(join(dirname(f.atlasBinary), "Other.bin"), readFileSync(f.atlasBinary));
+  const changes = [(record) => { record.originalSourcePath = "Other.gltf"; },
+    (record) => { record.source.sha256 = "0".repeat(64); },
+    (record) => { record.sourceBuffer.path = "Models/Farm Plants/Other.bin"; },
+    (record) => { record.sourceBuffer.sha256 = "0".repeat(64); },
+    (record) => { record.sourceBuffer.bytes += 1; },
+    (record) => { record.normalization.embeddedTextures[0].sha256 = "0".repeat(64); }];
+  for (const change of changes) {
+    f.proof.assets = structuredClone(original.assets); change(f.proof.assets[0]); repinProof(f);
+    assert.throws(() => f.plan(), /출처|fingerprint|BIN/u);
+  }
+}, { gltf: true }));
+
+test("glTF recipe의 잘못된 형식·중복 팩·위조 이미지 매핑을 거부한다", () => withFixture((f) => {
+  const original = structuredClone(f.recipe);
+  f.recipe.packs[0].sourceFormat = "glb"; repinRecipe(f);
+  assert.throws(() => f.plan(), /sourceFormat/u);
+  f.recipe.packs = [...structuredClone(original.packs), ...structuredClone(original.packs)]; repinRecipe(f);
+  assert.throws(() => f.plan(), /중복/u);
+  f.recipe.packs = structuredClone(original.packs);
+  put(join(dirname(f.atlasImage), "other.png"), readFileSync(f.atlasImage));
+  f.recipe.packs[0].imagePaths["../../Textures/atlas.png"] = "Textures/other.png"; repinRecipe(f);
+  assert.throws(() => f.plan(), /매핑/u);
+}, { gltf: true }));
+
+test("혼합 recipe는 GLB 행까지 유일한 sourceInputs가 필요하며 기존 목록 형식을 유지한다", () => withFixture((f) => {
+  const verifyDerived = addLegacyDerived(f), plan = f.plan({ verifyDerived });
+  const legacyDirectory = join(f.library, "03-nature/lumagrove-wonky-woods/Models");
+  assert.equal(plan.sourceFormats.has(legacyDirectory), false);
+  assert.deepEqual(plan.sourceTrees.get(legacyDirectory), [join(legacyDirectory, "Tree.glb")]);
+  for (const change of [(r) => { r.sourceInputs.pop(); }, (r) => { r.sourceInputs[1] = r.sourceInputs[0]; },
+    (r) => { r.sourceInputs[1].sourceFormat = "gltf"; }]) assert.throws(() => f.plan({ verifyDerived: () => {
+    const result = verifyDerived(); change(result); return result;
+  } }), /sourceInputs/u);
+  put(join(legacyDirectory, "late.glb"), "늦은 GLB");
+  assert.throws(() => assertCompositePlanCurrent(plan), /GLB 목록이 변경/u);
+}, { gltf: true }));
+
+test("glTF 계획 뒤 BIN·이미지 내용 변경은 재생성 영수증과 별개로 게시를 막는다", () => {
+  for (const kind of ["atlasBinary", "atlasImage"]) withFixture((f) => {
+    const plan = f.plan(); writeFileSync(f[kind], "계획 이후 변경");
+    assert.throws(() => assertCompositePlanCurrent(plan), /변경/u);
+    assert.throws(() => writeCompositeIngest(plan, join(f.root, "output")), /변경/u);
+    assert.equal(existsSync(join(f.root, "output")), false);
+  }, { gltf: true });
+});
 
 test("쓰기는 전체 입력을 한 번 복사하고 별도 sidecar 없이 독립 inode로 게시한다", () => withFixture((f) => {
   const output = join(f.root, "output"), plan = f.plan(), result = writeCompositeIngest(plan, output);
