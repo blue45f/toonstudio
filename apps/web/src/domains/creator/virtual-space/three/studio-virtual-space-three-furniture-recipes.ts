@@ -30,7 +30,7 @@ export const STUDIO_THREE_FURNITURE_FIXTURES: readonly StudioThreeFurnitureFixtu
   fixture("tidal-east-console", "tidal-atelier", "console", 1220, 495, 316, 110),
   fixture("tidal-table-north", "tidal-atelier", "table", 520, 500, 165, 80),
   fixture("tidal-table-middle", "tidal-atelier", "table", 685, 580, 190, 80),
-  fixture("tidal-table-south", "tidal-atelier", "table", 875, 660, 245, 100),
+  fixture("tidal-table-south", "tidal-atelier", "table", 875, 600, 245, 160),
   fixture("tidal-table-end", "tidal-atelier", "table", 985, 760, 150, 120),
   fixture("tidal-southwest-garden", "tidal-atelier", "boundary", 0, 800, 420, 224),
 ];
