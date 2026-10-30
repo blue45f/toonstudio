@@ -21,11 +21,11 @@
 [PR #2590](https://github.com/blue45f/toonstudio/pull/2590)으로 main
 `778c2fbf076b3a1da9d883c5a362e43393b6833e`에 반영됐다. 운영 배포 여부는 이 기록에 포함하지 않는다.
 
-**경계 보완의 후속 상태(migration, 2026-10-31):** 활성 필터 마스크 합성(FG01)과 갤러리의 direct
-실행 경계(FG02)는 로컬 후속 후보에만 작성돼 있으며 #2590에 포함되지 않았다.
-아래 `current`는 해당 소스에 존재하는 구현을 뜻하며, 이 후속 후보의 병합·실행 검증 완료를 뜻하지 않는다.
-집중 회귀 2파일·19사례에 이어 갤러리·마스크·Worker 회귀 36파일·945사례와 캔버스·모달 회귀 4파일·78사례도 통과했다.
-최종 main 통합·타입·하네스·브라우저 검증은 대기 상태다.
+**경계 보완의 구현 상태(current, 2026-10-31):** #2590 이후 활성 필터 마스크 합성(FG01)과 갤러리의 direct
+실행 경계(FG02)를 보완했다. 이 문서는 소스와 로컬 검증 결과를 설명하며 운영 배포 여부를 뜻하지 않는다.
+갤러리·마스크·Worker 회귀 36파일·945사례와 캔버스·모달 회귀 4파일·78사례가 통과했다.
+2D Canvas 테스트 fixture의 타입 보정 후 집중 회귀 2파일·19사례와 최신 main 통합 하네스도 통과했다.
+실제 브라우저 검증은 아직 실행하지 않았다.
 
 ## 2. 동작
 
@@ -314,8 +314,20 @@ pnpm exec vitest run --no-file-parallelism --maxWorkers=1 apps/web/src/domains/c
 pnpm exec vitest run --no-file-parallelism --maxWorkers=1 apps/web/src/domains/creator/StudioKonvaImageNode.test.tsx apps/web/src/domains/creator/StudioKonvaImageNode.race.test.tsx apps/web/src/domains/creator/useStudioModalSheet.test.ts apps/web/src/domains/creator/studio-cuttoon-editor/studio-modal-floating-isolation.test.ts
 ```
 
-이 기록의 기준은 후속 후보 `3b1125037e1f1369f671081588a75fe6a283cf49`와 로컬 7파일 변경이다.
-최신 main 통합·타입·하네스·브라우저 검증 완료를 뜻하지 않으며, 해당 검증은 다음 순서로 진행한다.
+위 두 관련 회귀는 후속 후보 `3b1125037e1f1369f671081588a75fe6a283cf49`와 로컬 7파일 변경에서 실행했다.
+이후 최신 main `7444b8d9bfd08435a2007a9faeafce6fe2c606b2`를 정상 통합했다. 첫 전체 타입 검사에서
+신규 Preview 테스트의 Canvas `getContext` 오버로드가 WebGPU로 추론되는 TS2345를 확인하고,
+저장소의 기존 2D prototype 계약 패턴으로 fixture를 보정했다. 제품 구현 4파일은 바뀌지 않았다.
+보정한 입력에서 집중 회귀 **2파일·19사례**를 다시 실행해 통과했으며 다음 하네스도 **종료 코드 0**을 확인했다.
+Web 전체·API 및 도구 3개 타입, 변경 lint·Secretlint·아키텍처·진입 그래프를 포함한다.
+
+```bash
+pnpm harness:verify --base=7444b8d9bfd08435a2007a9faeafce6fe2c606b2
+```
+
+하네스 입력은 통합 커밋 `99a618cb1a8fcf3882721134dfd5f1dfd97e76c1`과 위 테스트 fixture 보정이며,
+이후 이 문서에는 실제 결과만 갱신했다. 실제 브라우저·접근성·반응형 검증은 실행하지 않았으므로
+로컬 단위·타입 검증을 통합 GUI 완료로 확대하지 않는다.
 
 ```bash
 pnpm exec vitest run --no-file-parallelism apps/web/src/domains/creator/filter/gallery

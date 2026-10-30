@@ -125,7 +125,9 @@ beforeEach(async () => {
   });
   vi.stubGlobal("Worker", class {});
   const contexts = new WeakMap<HTMLCanvasElement, CanvasRenderingContext2D>();
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (this: HTMLCanvasElement) {
+  const canvas2dPrototype: { getContext(contextId: "2d"): CanvasRenderingContext2D | null } = HTMLCanvasElement.prototype;
+  vi.spyOn(canvas2dPrototype, "getContext").mockImplementation(function (this: HTMLCanvasElement, contextId: string) {
+    if (contextId !== "2d") return null;
     let context = contexts.get(this);
     if (!context) { context = contextFor(this); contexts.set(this, context); }
     return context;
