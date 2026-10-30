@@ -1,30 +1,18 @@
-/**
- * Production 회차 검수 룸 — 비동기 음성 해설 호스트 훅.
- *
- * `ProductionEpisodeReviewRoom.tsx`에서 분리했다. 패널(ReviewVoiceCommentaryPanel)은
- * 콜백 계약만 아는 순수 표면이라, 실제 탭·뷰포트·핀 상태는 룸이 소유하고
- * 이 훅이 어댑터를 만든다.
- */
+/** 회차 음성 해설의 세션 보관·서버 읽기·화면 연결을 소유한다. */
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
+import { getAuthUserId, listeners, type Session } from "@/domains/auth/public/session/auth-session-state";
+import { useT } from "@/shared/lib/i18n";
 
 import {
   listProductionVoiceCommentaries,
+  readProductionVoiceCommentary,
   uploadProductionVoiceCommentary,
 } from "./production-voice-commentary-api";
 import type { VoiceViewCapture } from "./ReviewVoiceCommentaryPanel";
-import {
-  mergeVoiceCommentaryTracks,
-  type VoiceCommentaryTrack,
-  type VoiceViewSnapshot,
-} from "./review-voice-commentary-model";
+import { mergeVoiceCommentaryTracks, type VoiceCommentaryTrack, type VoiceViewSnapshot } from "./review-voice-commentary-model";
 import type { StudioCommentsDocument } from "../studio-comments";
+import { compareSourceKey } from "./compare-review-model";
 
 export interface EpisodeVoiceCommentaryHostInput {
   readonly projectId: string;
@@ -32,175 +20,273 @@ export interface EpisodeVoiceCommentaryHostInput {
   readonly isDemo: boolean;
   readonly tab: "viewer" | "compare";
   readonly comments: StudioCommentsDocument | null;
+  readonly compareComments?: StudioCommentsDocument | null;
   readonly compareItems: readonly { readonly id: string }[];
   readonly pageId: string;
   readonly panelRef: RefObject<HTMLDivElement | null>;
   readonly programmaticScrollRef: RefObject<boolean>;
   readonly setTab: (next: "viewer" | "compare") => void;
+  readonly captureCompareView?: () => VoiceViewCapture | null;
+  readonly applyCompareView?: (view: VoiceViewSnapshot, pinThreadIds: readonly string[]) => void;
+}
+
+interface VoiceHostLifetime {
+  readonly projectId: string;
+  readonly episodeId: string;
+  readonly revision: number;
+  readonly isDemo: boolean;
+  readonly userId: string | null;
+  readonly requests: Set<AbortController>;
+  readonly blobUrls: Set<string>;
+  readonly retiredUrls: Set<string>;
+  readonly blobByTrack: Map<string, string>;
+  readonly saves: Map<string, symbol>;
+  active: boolean;
+}
+
+function releaseVoiceHost(lifetime: VoiceHostLifetime): void {
+  lifetime.active = false;
+  lifetime.requests.forEach((controller) => controller.abort());
+  lifetime.requests.clear();
+  lifetime.blobUrls.forEach((url) => URL.revokeObjectURL(url));
+  lifetime.blobUrls.clear();
+  lifetime.retiredUrls.clear();
+  lifetime.blobByTrack.clear();
+  lifetime.saves.clear();
+}
+
+function voiceHostCurrent(lifetime: VoiceHostLifetime | null): lifetime is VoiceHostLifetime {
+  return lifetime !== null && lifetime.active && lifetime.userId === getAuthUserId();
+}
+
+function abortedPlayback(): DOMException {
+  return new DOMException("음성 재생의 소유자 또는 선택이 바뀌었습니다.", "AbortError");
 }
 
 export function useEpisodeVoiceCommentary({
-  projectId,
-  episodeId,
-  isDemo,
-  tab,
-  comments,
-  compareItems,
-  pageId,
-  panelRef,
-  programmaticScrollRef,
-  setTab,
+  projectId, episodeId, isDemo, tab, comments, compareComments, pageId, panelRef, programmaticScrollRef, setTab,
+  captureCompareView, applyCompareView,
 }: EpisodeVoiceCommentaryHostInput) {
-// ── 비동기 검수 해설(음성 해설) 호스트 배선 ─────────────────────────────
-// 패널(ReviewVoiceCommentaryPanel)은 콜백 계약만 아는 순수 표면이라, 실제
-// 탭·뷰포트·핀 상태는 이 룸이 소유하고 어댑터를 여기서 만든다.
-// - captureView: 현재 탭 + 룸 패널 스크롤(정규화 0..1) + 열린 핀 스레드를
-//   VoiceViewSnapshot으로 변환한다. 원고 뷰어·비교 뷰어 내부의 줌/팬 상태는
-//   각 뷰어가 자체 소유해 호스트가 읽을 수 없으므로 scale은 1로 기록한다.
-// - onApplyView: 표면에 맞는 탭으로 전환하고, 원고 표면이면 기록된 스크롤을
-//   룸 패널에 적용하며, 큐가 가리키는 핀을 아래 요약 목록으로 하이라이트한다.
-//   비교 뷰어(ProcessCompareViewer)의 페인·뷰포트는 내부 상태라 호스트에서
-//   강제 적용할 수 없어, 비교 표면 적용은 탭 전환+핀 하이라이트까지가 범위다.
-// - onSaveTrack(저장): 실제 프로젝트에서는 제작 모듈의 회차 음성 해설
-//   엔드포인트(POST /production/projects/:projectId/episodes/:episodeId/
-//   voice-commentaries)로 업로드해 서버 저장 트랙으로 교체한다. 검수 음성
-//   노트 API는 project-graph 식별자·전사를 필수로 요구해 이 룸에서는 쓸 수
-//   없어, 같은 운영 정책(5MB·보유 기본 14일/최대 30일·서명 읽기)을 따르는
-//   전용 경로를 둔다. 데모이거나 업로드가 실패하면 패널이 만든 blob 참조
-//   트랙을 세션 상태에 그대로 보관한다 — 이 탭 안에서만 미리듣기가 되고
-//   새로고침하면 사라지며, 모델의 parse가 blob 오디오를 복원 대상에서
-//   제외하는 정책과 같은 한계다.
-// - 목록(진입 시): 실제 프로젝트면 같은 엔드포인트의 목록(query)을 룸
-//   마운트 때 불러와 서버 트랙을 세션 상태에 병합한다
-//   (mergeVoiceCommentaryTracks — 같은 id는 서명 URL이 새로 발급된
-//   서버본 우선, 목록에 없는 세션 트랙은 보존). 로딩·실패는 패널의
-//   loading/error 표면으로 알리고, 실패해도 세션 보관과 녹음은 유지된다.
-const [voiceTracks, setVoiceTracks] = useState<readonly VoiceCommentaryTrack[]>([]);
-const [voicePanelOpen, setVoicePanelOpen] = useState(false);
-const [voicePinIds, setVoicePinIds] = useState<readonly string[]>([]);
-const [voiceListState, setVoiceListState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const t = useT();
+  const [voiceTracks, setVoiceTracks] = useState<readonly VoiceCommentaryTrack[]>([]);
+  const [voicePanelOpen, setVoicePanelOpen] = useState(false);
+  const [voicePinIds, setVoicePinIds] = useState<readonly string[]>([]);
+  const [voiceListState, setVoiceListState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [voiceSaveError, setVoiceSaveError] = useState<string | null>(null);
+  const [ownerRevision, setOwnerRevision] = useState(0);
+  const lifetimeRef = useRef<VoiceHostLifetime | null>(null);
+  const lastVoiceViewRef = useRef<VoiceViewSnapshot | null>(null);
 
-useEffect(() => {
-  if (isDemo) return;
-  const controller = new AbortController();
-  setVoiceListState("loading");
-  void (async () => {
-    try {
-      const { items } = await listProductionVoiceCommentaries(projectId, episodeId, controller.signal);
-      if (controller.signal.aborted) return;
-      setVoiceTracks((previous) => mergeVoiceCommentaryTracks(previous, items.map((item) => item.track)));
-      setVoiceListState("ready");
-    } catch {
-      if (controller.signal.aborted) return;
-      // 목록을 못 불러와도 이 탭의 세션 보관 트랙과 녹음은 그대로 동작한다.
-      setVoiceListState("error");
-    }
-  })();
-  return () => controller.abort();
-}, [projectId, episodeId, isDemo]);
-// 패널은 녹화 중 500ms 간격으로 captureView를 부른다. 콜백 정체성이 매
-// 렌더마다 바뀌면 샘플링 타이머가 계속 리셋되므로, 최신 상태는 ref로 읽는다.
-const voiceCaptureRef = useRef({ tab, comments, compareItems });
-useEffect(() => {
-  voiceCaptureRef.current = { tab, comments, compareItems };
-}, [tab, comments, compareItems]);
-
-const captureVoiceView = useCallback((): VoiceViewCapture | null => {
-  const current = voiceCaptureRef.current;
-  const panel = panelRef.current;
-  const maxX = panel ? Math.max(1, panel.scrollWidth - panel.clientWidth) : 1;
-  const maxY = panel ? Math.max(1, panel.scrollHeight - panel.clientHeight) : 1;
-  const tx = panel ? Math.min(1, Math.max(0, panel.scrollLeft / maxX)) : 0;
-  const ty = panel ? Math.min(1, Math.max(0, panel.scrollTop / maxY)) : 0;
-  const doc = current.comments;
-  if (current.tab === "compare") {
-    return {
-      view: {
-        surface: "compare",
-        poolItemId: current.compareItems[0]?.id ?? null,
-        pageId: null,
-        mode: null,
-        scale: 1,
-        tx,
-        ty,
-      },
-      pinThreadIds: doc
-        ? doc.threads.filter((thread) => thread.anchor.type === "compare-image" && !thread.resolved).map((thread) => thread.id)
-        : [],
+  // React가 묶은 UID A→B→A도 공개 세션 발행 시점에 이전 요청을 폐기한다.
+  useLayoutEffect(() => {
+    let publishedUserId = getAuthUserId();
+    const published = (next: Session) => {
+      const nextId = next?.user.id ?? null;
+      if (publishedUserId === nextId) return;
+      publishedUserId = nextId;
+      if (lifetimeRef.current) releaseVoiceHost(lifetimeRef.current);
+      lifetimeRef.current = null;
+      setOwnerRevision((previous) => previous + 1);
     };
-  }
-  return {
-    view: { surface: "manuscript", poolItemId: null, pageId, mode: null, scale: 1, tx, ty },
-    pinThreadIds: doc
-      ? doc.threads
-        .filter((thread) => thread.anchor.type === "point" && thread.anchor.pageId === pageId && !thread.resolved)
-        .map((thread) => thread.id)
-      : [],
-  };
-}, [pageId, panelRef]);
+    listeners.add(published);
+    return () => { listeners.delete(published); };
+  }, []);
 
-const applyVoiceView = useCallback((view: VoiceViewSnapshot, pinThreadIds: readonly string[]) => {
-  setVoicePinIds(pinThreadIds);
-  if (view.surface === "compare") {
-    setTab("compare");
-    return;
-  }
-  setTab("viewer");
-  // 탭 전환 렌더 뒤에 스크롤을 적용한다. 프로그래매틱 스크롤로 표시해
-  // 팔로우 일시정지(handlePanelScroll)가 걸리지 않게 한다.
-  requestAnimationFrame(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const maxX = Math.max(0, panel.scrollWidth - panel.clientWidth);
-    const maxY = Math.max(0, panel.scrollHeight - panel.clientHeight);
-    // 호출자가 넘긴 ref 에 표시를 남기는 것이 이 훅의 계약이다(handlePanelScroll 이 읽는다).
-    // eslint-disable-next-line react-compiler/react-compiler
-    programmaticScrollRef.current = true;
-    panel.scrollTo({ left: view.tx * maxX, top: view.ty * maxY });
-  });
-}, [setTab, panelRef, programmaticScrollRef]);
+  useLayoutEffect(() => {
+    const lifetime: VoiceHostLifetime = {
+      projectId, episodeId, isDemo, revision: ownerRevision, userId: getAuthUserId(),
+      requests: new Set(), blobUrls: new Set(), retiredUrls: new Set(),
+      blobByTrack: new Map(), saves: new Map(), active: true,
+    };
+    lifetimeRef.current = lifetime;
+    setVoiceTracks([]);
+    setVoicePinIds([]);
+    setVoicePanelOpen(false);
+    setVoiceListState("idle");
+    setVoiceSaveError(null);
+    lastVoiceViewRef.current = null;
+    return () => {
+      releaseVoiceHost(lifetime);
+      if (lifetimeRef.current === lifetime) lifetimeRef.current = null;
+    };
+  }, [projectId, episodeId, isDemo, ownerRevision]);
 
-const handleSaveVoiceTrack = useCallback((track: VoiceCommentaryTrack, audioBlob: Blob | null) => {
-  // 먼저 세션에 넣어 이 탭에서 바로 재생할 수 있게 하고, 실제 프로젝트면
-  // 서버 저장을 이어 시도한다. 성공하면 서버가 재구성한 트랙(kind:"server"
-  // 참조 + 서명 URL)으로 교체하고, 실패하면 blob 세션 보관이 폴백으로 남는다.
-  setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), track]);
-  setVoicePanelOpen(true);
-  if (!audioBlob || isDemo) return;
-  void (async () => {
-    try {
-      const { view } = await uploadProductionVoiceCommentary({
-        projectId: projectId,
-        episodeId,
-        operationId: `episode-voice-commentary:${track.id}`,
-        track,
-        file: audioBlob,
-      });
-      setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), view.track]);
-    } catch {
-      // 서버 저장 실패(권한·용량·네트워크) — 세션 보관이 폴백으로 유지된다.
+  const currentLifetime = useCallback(() => {
+    const lifetime = lifetimeRef.current;
+    return voiceHostCurrent(lifetime) && lifetime.projectId === projectId
+      && lifetime.episodeId === episodeId && lifetime.revision === ownerRevision && lifetime.isDemo === isDemo ? lifetime : null;
+  }, [projectId, episodeId, isDemo, ownerRevision]);
+
+  useEffect(() => {
+    const lifetime = currentLifetime();
+    if (!lifetime || isDemo) return;
+    const controller = new AbortController();
+    lifetime.requests.add(controller);
+    setVoiceListState("loading");
+    void (async () => {
+      try {
+        const { items } = await listProductionVoiceCommentaries(projectId, episodeId, controller.signal);
+        if (!voiceHostCurrent(lifetime) || controller.signal.aborted) return;
+        for (const { track } of items) {
+          const previousUrl = lifetime.blobByTrack.get(track.id);
+          if (previousUrl && track.episodeId === episodeId) lifetime.retiredUrls.add(previousUrl);
+        }
+        setVoiceTracks((previous) => mergeVoiceCommentaryTracks(previous,
+          items.map((item) => item.track).filter((track) => track.episodeId === episodeId)));
+        setVoiceListState("ready");
+      } catch {
+        if (voiceHostCurrent(lifetime) && !controller.signal.aborted) setVoiceListState("error");
+      } finally {
+        lifetime.requests.delete(controller);
+      }
+    })();
+    return () => { controller.abort(); lifetime.requests.delete(controller); };
+  }, [projectId, episodeId, isDemo, currentLifetime]);
+
+  // 트랙을 그린 커밋 뒤에만 사용이 끝난 URL을 해제한다. 업로드 실패의 탭 보관본은 유지한다.
+  useEffect(() => {
+    const lifetime = currentLifetime();
+    if (!lifetime) return;
+    const retained = new Set(voiceTracks.flatMap((track) => track.audio?.kind === "blob" ? [track.audio.url] : []));
+    for (const url of lifetime.retiredUrls) {
+      if (retained.has(url)) continue;
+      URL.revokeObjectURL(url);
+      lifetime.blobUrls.delete(url);
+      lifetime.retiredUrls.delete(url);
     }
-  })();
-}, [projectId, episodeId, isDemo]);
+  }, [voiceTracks, currentLifetime]);
 
-const handleOpenVoicePin = useCallback((threadId: string) => {
-  setVoicePinIds([threadId]);
-  const thread = voiceCaptureRef.current.comments?.threads.find((candidate) => candidate.id === threadId);
-  // 핀 스레드 열기 동선은 기존 탭 구조를 재사용한다: 비교 핀이면 비교 탭,
-  // 원고 핀이면 원고 뷰어 탭으로 이동하고, 해당 핀을 아래 요약에 고정한다.
-  // (핀 브리지는 외부 선택 API가 없어 스레드 내부 선택까지는 강제하지 않는다.)
-  setTab(thread?.anchor.type === "compare-image" ? "compare" : "viewer");
-}, [setTab]);
+  const voiceCaptureRef = useRef({ tab, comments, compareComments, pageId, captureCompareView });
+  useLayoutEffect(() => {
+    voiceCaptureRef.current = { tab, comments, compareComments, pageId, captureCompareView };
+  }, [tab, comments, compareComments, pageId, captureCompareView]);
+
+  const captureVoiceView = useCallback((): VoiceViewCapture | null => {
+    if (!currentLifetime()) return null;
+    const current = voiceCaptureRef.current;
+    if (current.tab === "compare") return current.captureCompareView?.() ?? null;
+    const panel = panelRef.current;
+    const maxX = panel ? Math.max(1, panel.scrollWidth - panel.clientWidth) : 1;
+    const maxY = panel ? Math.max(1, panel.scrollHeight - panel.clientHeight) : 1;
+    const tx = panel ? Math.min(1, Math.max(0, panel.scrollLeft / maxX)) : 0;
+    const ty = panel ? Math.min(1, Math.max(0, panel.scrollTop / maxY)) : 0;
+    return {
+      view: { surface: "manuscript", poolItemId: null, pageId: current.pageId, mode: null, scale: 1, tx, ty },
+      pinThreadIds: current.comments?.threads
+        .filter((thread) => thread.anchor.type === "point" && thread.anchor.pageId === current.pageId && !thread.resolved)
+        .map((thread) => thread.id) ?? [],
+    };
+  }, [currentLifetime, panelRef]);
+
+  const applyVoiceView = useCallback((view: VoiceViewSnapshot, pinThreadIds: readonly string[]) => {
+    const lifetime = currentLifetime();
+    if (!lifetime) return;
+    lastVoiceViewRef.current = view;
+    setVoicePinIds(pinThreadIds);
+    applyCompareView?.(view, pinThreadIds);
+    if (view.surface === "compare") {
+      setTab("compare");
+      return;
+    }
+    setTab("viewer");
+    requestAnimationFrame(() => {
+      if (!voiceHostCurrent(lifetime)) return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const maxX = Math.max(0, panel.scrollWidth - panel.clientWidth);
+      const maxY = Math.max(0, panel.scrollHeight - panel.clientHeight);
+      // 호출자가 읽는 스크롤 표시에 프로그램에 의한 이동임을 기록한다.
+      programmaticScrollRef.current = true;
+      panel.scrollTo({ left: Math.max(0, view.tx) * maxX, top: Math.max(0, view.ty) * maxY });
+    });
+  }, [currentLifetime, setTab, applyCompareView, panelRef, programmaticScrollRef]);
+
+  const handleSaveVoiceTrack = useCallback((track: VoiceCommentaryTrack, audioBlob: Blob | null) => {
+    const lifetime = currentLifetime();
+    if (!lifetime || track.episodeId !== episodeId) {
+      if (track.audio?.kind === "blob") URL.revokeObjectURL(track.audio.url);
+      return;
+    }
+    const previousUrl = lifetime.blobByTrack.get(track.id);
+    if (previousUrl && previousUrl !== track.audio?.url) lifetime.retiredUrls.add(previousUrl);
+    if (track.audio?.kind === "blob") {
+      lifetime.blobUrls.add(track.audio.url);
+      lifetime.blobByTrack.set(track.id, track.audio.url);
+    }
+    const operation = Symbol(track.id);
+    lifetime.saves.set(track.id, operation);
+    setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), track]);
+    setVoicePanelOpen(true);
+    setVoiceSaveError(null);
+    if (!audioBlob || isDemo) return;
+    const controller = new AbortController();
+    lifetime.requests.add(controller);
+    void (async () => {
+      try {
+        const { view } = await uploadProductionVoiceCommentary({
+          projectId, episodeId, operationId: `episode-voice-commentary:${track.id}`, track, file: audioBlob,
+        }, controller.signal);
+        if (!voiceHostCurrent(lifetime) || controller.signal.aborted || lifetime.saves.get(track.id) !== operation) return;
+        if (view.track.id !== track.id || view.track.episodeId !== episodeId) throw new Error("voice_upload_response_changed");
+        if (track.audio?.kind === "blob") lifetime.retiredUrls.add(track.audio.url);
+        setVoiceTracks((previous) => [...previous.filter((kept) => kept.id !== track.id), view.track]);
+      } catch {
+        if (voiceHostCurrent(lifetime) && !controller.signal.aborted && lifetime.saves.get(track.id) === operation) {
+          setVoiceSaveError(t("productionHub.status.voiceSaveFailed", "해설을 서버에 저장하지 못했어요. 방금 녹음은 이 탭에서 계속 들을 수 있지만 새로고침하면 사라져요."));
+        }
+      } finally {
+        lifetime.requests.delete(controller);
+      }
+    })();
+  }, [currentLifetime, episodeId, projectId, isDemo, t]);
+
+  const handlePrepareVoicePlayback = useCallback(async (track: VoiceCommentaryTrack, signal: AbortSignal) => {
+    const lifetime = currentLifetime();
+    if (!lifetime || signal.aborted || track.episodeId !== episodeId) throw abortedPlayback();
+    if (track.audio?.kind !== "server" || isDemo) return track;
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    signal.addEventListener("abort", abort, { once: true });
+    lifetime.requests.add(controller);
+    try {
+      const read = await readProductionVoiceCommentary(projectId, episodeId, track.id, controller.signal);
+      if (!voiceHostCurrent(lifetime) || controller.signal.aborted || signal.aborted) throw abortedPlayback();
+      if (read.track.id !== track.id || read.track.episodeId !== episodeId || read.track.audio?.kind !== "server") {
+        throw new Error("voice_playback_response_changed");
+      }
+      const refreshed: VoiceCommentaryTrack = {
+        ...read.track, audio: { ...read.track.audio, url: read.signedRead.url },
+      };
+      setVoiceTracks((previous) => previous.map((kept) => kept.id === track.id ? refreshed : kept));
+      return refreshed;
+    } finally {
+      signal.removeEventListener("abort", abort);
+      lifetime.requests.delete(controller);
+    }
+  }, [currentLifetime, episodeId, projectId, isDemo]);
+
+  const handleOpenVoicePin = useCallback((threadId: string) => {
+    if (!currentLifetime()) return;
+    setVoicePinIds([threadId]);
+    const current = voiceCaptureRef.current;
+    const thread = current.compareComments?.threads.find((candidate) => candidate.id === threadId)
+      ?? current.comments?.threads.find((candidate) => candidate.id === threadId);
+    if (thread?.anchor.type === "compare-image") {
+      const anchor = thread.anchor;
+      const previous = lastVoiceViewRef.current;
+      const containsSource = previous?.surface === "compare" && (previous.poolItemId === anchor.poolItemId
+        || previous.compare?.panes.some((pane) => compareSourceKey(pane) === anchor.poolItemId));
+      applyVoiceView(containsSource && previous ? previous : {
+        surface: "compare", poolItemId: anchor.poolItemId, pageId: null,
+        mode: "panes", scale: 1, tx: 0, ty: 0,
+      }, [threadId]);
+      return;
+    }
+    setTab("viewer");
+  }, [currentLifetime, setTab, applyVoiceView]);
 
   return {
-    voiceTracks,
-    voicePanelOpen,
-    setVoicePanelOpen,
-    voicePinIds,
-    voiceListState,
-    captureVoiceView,
-    applyVoiceView,
-    handleSaveVoiceTrack,
-    handleOpenVoicePin,
+    voiceTracks, voicePanelOpen, setVoicePanelOpen, voicePinIds, voiceListState, voiceSaveError,
+    captureVoiceView, applyVoiceView, handleSaveVoiceTrack, handlePrepareVoicePlayback, handleOpenVoicePin,
   };
 }
