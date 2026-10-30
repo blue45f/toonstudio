@@ -280,7 +280,7 @@
   "studio.bg3dScene.skp.retry": "Try again",
   "studio.bg3dScene.skp.sceneHint": "Scene names are shown as memo candidates only. Camera positions and visibility states are not restored.",
   "studio.bg3dScene.skp.scenes": "Scene names",
-  "studio.bg3dScene.skp.scope": "Only the names written in the SketchUp file are imported. The component hierarchy, tag (layer) visibility, and scenes (cameras) are not restored.",
+  "studio.bg3dScene.skp.scope": "Only the names written in the source SKP file are imported. The component hierarchy, tag (layer) visibility, and scenes (cameras) are not restored.",
   "studio.bg3dScene.skp.tagHint": "You can add a name as a tag to the selected objects. Nothing is added automatically.",
   "studio.bg3dScene.skp.tagSkipped": "{count} names do not meet the tag rules, so they are not suggested.",
   "studio.bg3dScene.skp.tagSuggestions": "Names to add as tags",

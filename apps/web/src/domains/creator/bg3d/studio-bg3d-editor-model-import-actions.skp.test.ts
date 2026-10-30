@@ -223,11 +223,11 @@ describe("importModelFiles with a SketchUp file", () => {
   it("shows the converter's own refusal as the import error and leaves no result card", async () => {
     const h = harness();
     runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
-    runtime.convert.mockRejectedValue(new runtime.FakeImportError("skp-timeout", "SketchUp 변환이 제한 시간을 넘겼습니다."));
+    runtime.convert.mockRejectedValue(new runtime.FakeImportError("skp-timeout", "SKP 변환이 제한 시간을 넘겼습니다."));
 
     await h.actions().importModelFiles([file("room.skp")], RIGHTS);
 
-    expect(h.context.setError).toHaveBeenLastCalledWith("SketchUp 변환이 제한 시간을 넘겼습니다.");
+    expect(h.context.setError).toHaveBeenLastCalledWith("SKP 변환이 제한 시간을 넘겼습니다.");
     expect(studioBg3dSkpImportSession.getSnapshot().results).toEqual([]);
     expect(studioBg3dSkpImportSession.getSnapshot().activity).toBeNull();
   });

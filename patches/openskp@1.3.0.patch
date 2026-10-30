@@ -1,0 +1,206 @@
+diff --git a/dist/index.js b/dist/index.js
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1540,12 +1540,47 @@
+ }
+ 
+ // src/face-groups.ts
++// 빠른 헤더 bucket은 후보를 찾는 용도이며 이미지 동일성은 전체 바이트로 확인한다.
++function equalTextureBytes(left, right) {
++  if (left === right) return true;
++  if (!left || !right || left.length !== right.length) return false;
++  for (let index = 0; index < left.length; index++) {
++    if (left[index] !== right[index]) return false;
++  }
++  return true;
++}
++function effectiveFaceAlpha(color, material) {
++  return (color.a !== void 0 ? color.a / 255 : 1) * (material?.transparency ?? 1);
++}
++function emittedFaceTexture(material) {
++  const texture = material?.texture;
++  return texture && texture.data && texture.data.length > 0 && sniffImageMime(texture.data) !== null ? texture : null;
++}
++function equalFaceUvTransform(front, back) {
++  if (!front || !back) return !front && !back;
++  return front.length === 9 && back.length === 9 && front.every((value, index) => Number.isFinite(value) && value === back[index]);
++}
++// 기존 출력이 같은 경우만 합친다. projective Q와 투영 평면의 일반 보존을 보장하지 않는다.
++function equalFaceSideAppearance(frontColor, backColor, frontMaterial, backMaterial, face) {
++  if (frontColor.r !== backColor.r || frontColor.g !== backColor.g || frontColor.b !== backColor.b
++    || effectiveFaceAlpha(frontColor, frontMaterial) !== effectiveFaceAlpha(backColor, backMaterial)) return false;
++  const frontTexture = emittedFaceTexture(frontMaterial);
++  const backTexture = emittedFaceTexture(backMaterial);
++  if (!frontTexture || !backTexture) return frontTexture === backTexture;
++  if (!equalTextureBytes(frontTexture.data, backTexture.data)) return false;
++  const frontWidth = frontTexture.width > 1e-9 ? frontTexture.width : 1;
++  const frontHeight = frontTexture.height > 1e-9 ? frontTexture.height : 1;
++  const backWidth = backTexture.width > 1e-9 ? backTexture.width : 1;
++  const backHeight = backTexture.height > 1e-9 ? backTexture.height : 1;
++  return frontWidth === backWidth && frontHeight === backHeight
++    && Boolean(face.uvProjected) === Boolean(face.uvProjectedBack)
++    && equalFaceUvTransform(face.uvTransform, face.uvTransformBack);
++}
+ function buildLocalFaceGroups(builder, ctx) {
+   const faceGroups = /* @__PURE__ */ new Map();
+   const addSide = (triangles, fn, color, doubleSided, reverse, mat, uvTransform, xr, yr) => {
+     const texIndex = ctx.textureIndexFor(mat?.texture);
+-    const colorAlpha = color.a !== void 0 ? color.a / 255 : 1;
+-    const transparency = colorAlpha * (mat?.transparency ?? 1);
++    const transparency = effectiveFaceAlpha(color, mat);
+     const colorKey = `${color.r},${color.g},${color.b},${doubleSided},${texIndex ?? -1},${transparency}`;
+     let group = faceGroups.get(colorKey);
+     if (!group) {
+@@ -1628,8 +1663,7 @@
+     const { xr, yr } = faceUvBasis(fn);
+     const uvTransform = fData.uvTransform;
+     const uvTransformBack = fData.uvTransformBack;
+-    const sameColor = frontColor.r === backColor.r && frontColor.g === backColor.g && frontColor.b === backColor.b;
+-    if (sameColor) {
++    if (equalFaceSideAppearance(frontColor, backColor, frontMat, backMat, fData)) {
+       addSide(triangles, fn, frontColor, true, false, frontMat, uvTransform, xr, yr);
+     } else {
+       addSide(triangles, fn, frontColor, false, false, frontMat, uvTransform, xr, yr);
+@@ -1884,11 +1918,16 @@
+     if (mimeType === null) return null;
+     const head = Array.from(tex.data.subarray(0, 16)).join(",");
+     const key = `${tex.data.length}:${head}`;
+-    const hit = textureIndexByKey.get(key);
+-    if (hit !== void 0) return hit;
++    const bucket = textureIndexByKey.get(key);
++    if (bucket) {
++      for (const hit of bucket) {
++        if (equalTextureBytes(textures[hit].data, tex.data)) return hit;
++      }
++    }
+     const idx = textures.length;
+     textures.push({ data: tex.data, mimeType, filename: tex.filename });
+-    textureIndexByKey.set(key, idx);
++    if (bucket) bucket.push(idx);
++    else textureIndexByKey.set(key, [idx]);
+     return idx;
+   }
+   const colorToMaterialIndex = /* @__PURE__ */ new Map();
+@@ -3873,11 +3912,16 @@
+     if (mimeType === null) return null;
+     const head = Array.from(tex.data.subarray(0, 16)).join(",");
+     const key = `${tex.data.length}:${head}`;
+-    const hit = textureIndexByKey.get(key);
+-    if (hit !== void 0) return hit;
++    const bucket = textureIndexByKey.get(key);
++    if (bucket) {
++      for (const hit of bucket) {
++        if (equalTextureBytes(textures[hit].data, tex.data)) return hit;
++      }
++    }
+     const idx = textures.length;
+     textures.push({ data: tex.data, mimeType, filename: tex.filename });
+-    textureIndexByKey.set(key, idx);
++    if (bucket) bucket.push(idx);
++    else textureIndexByKey.set(key, [idx]);
+     return idx;
+   }
+   const colorToMaterialIndex = /* @__PURE__ */ new Map();
+diff --git a/dist/index.mjs b/dist/index.mjs
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1470,12 +1470,47 @@
+ }
+ 
+ // src/face-groups.ts
++// 빠른 헤더 bucket은 후보를 찾는 용도이며 이미지 동일성은 전체 바이트로 확인한다.
++function equalTextureBytes(left, right) {
++  if (left === right) return true;
++  if (!left || !right || left.length !== right.length) return false;
++  for (let index = 0; index < left.length; index++) {
++    if (left[index] !== right[index]) return false;
++  }
++  return true;
++}
++function effectiveFaceAlpha(color, material) {
++  return (color.a !== void 0 ? color.a / 255 : 1) * (material?.transparency ?? 1);
++}
++function emittedFaceTexture(material) {
++  const texture = material?.texture;
++  return texture && texture.data && texture.data.length > 0 && sniffImageMime(texture.data) !== null ? texture : null;
++}
++function equalFaceUvTransform(front, back) {
++  if (!front || !back) return !front && !back;
++  return front.length === 9 && back.length === 9 && front.every((value, index) => Number.isFinite(value) && value === back[index]);
++}
++// 기존 출력이 같은 경우만 합친다. projective Q와 투영 평면의 일반 보존을 보장하지 않는다.
++function equalFaceSideAppearance(frontColor, backColor, frontMaterial, backMaterial, face) {
++  if (frontColor.r !== backColor.r || frontColor.g !== backColor.g || frontColor.b !== backColor.b
++    || effectiveFaceAlpha(frontColor, frontMaterial) !== effectiveFaceAlpha(backColor, backMaterial)) return false;
++  const frontTexture = emittedFaceTexture(frontMaterial);
++  const backTexture = emittedFaceTexture(backMaterial);
++  if (!frontTexture || !backTexture) return frontTexture === backTexture;
++  if (!equalTextureBytes(frontTexture.data, backTexture.data)) return false;
++  const frontWidth = frontTexture.width > 1e-9 ? frontTexture.width : 1;
++  const frontHeight = frontTexture.height > 1e-9 ? frontTexture.height : 1;
++  const backWidth = backTexture.width > 1e-9 ? backTexture.width : 1;
++  const backHeight = backTexture.height > 1e-9 ? backTexture.height : 1;
++  return frontWidth === backWidth && frontHeight === backHeight
++    && Boolean(face.uvProjected) === Boolean(face.uvProjectedBack)
++    && equalFaceUvTransform(face.uvTransform, face.uvTransformBack);
++}
+ function buildLocalFaceGroups(builder, ctx) {
+   const faceGroups = /* @__PURE__ */ new Map();
+   const addSide = (triangles, fn, color, doubleSided, reverse, mat, uvTransform, xr, yr) => {
+     const texIndex = ctx.textureIndexFor(mat?.texture);
+-    const colorAlpha = color.a !== void 0 ? color.a / 255 : 1;
+-    const transparency = colorAlpha * (mat?.transparency ?? 1);
++    const transparency = effectiveFaceAlpha(color, mat);
+     const colorKey = `${color.r},${color.g},${color.b},${doubleSided},${texIndex ?? -1},${transparency}`;
+     let group = faceGroups.get(colorKey);
+     if (!group) {
+@@ -1558,8 +1593,7 @@
+     const { xr, yr } = faceUvBasis(fn);
+     const uvTransform = fData.uvTransform;
+     const uvTransformBack = fData.uvTransformBack;
+-    const sameColor = frontColor.r === backColor.r && frontColor.g === backColor.g && frontColor.b === backColor.b;
+-    if (sameColor) {
++    if (equalFaceSideAppearance(frontColor, backColor, frontMat, backMat, fData)) {
+       addSide(triangles, fn, frontColor, true, false, frontMat, uvTransform, xr, yr);
+     } else {
+       addSide(triangles, fn, frontColor, false, false, frontMat, uvTransform, xr, yr);
+@@ -1814,11 +1848,16 @@
+     if (mimeType === null) return null;
+     const head = Array.from(tex.data.subarray(0, 16)).join(",");
+     const key = `${tex.data.length}:${head}`;
+-    const hit = textureIndexByKey.get(key);
+-    if (hit !== void 0) return hit;
++    const bucket = textureIndexByKey.get(key);
++    if (bucket) {
++      for (const hit of bucket) {
++        if (equalTextureBytes(textures[hit].data, tex.data)) return hit;
++      }
++    }
+     const idx = textures.length;
+     textures.push({ data: tex.data, mimeType, filename: tex.filename });
+-    textureIndexByKey.set(key, idx);
++    if (bucket) bucket.push(idx);
++    else textureIndexByKey.set(key, [idx]);
+     return idx;
+   }
+   const colorToMaterialIndex = /* @__PURE__ */ new Map();
+@@ -3803,11 +3842,16 @@
+     if (mimeType === null) return null;
+     const head = Array.from(tex.data.subarray(0, 16)).join(",");
+     const key = `${tex.data.length}:${head}`;
+-    const hit = textureIndexByKey.get(key);
+-    if (hit !== void 0) return hit;
++    const bucket = textureIndexByKey.get(key);
++    if (bucket) {
++      for (const hit of bucket) {
++        if (equalTextureBytes(textures[hit].data, tex.data)) return hit;
++      }
++    }
+     const idx = textures.length;
+     textures.push({ data: tex.data, mimeType, filename: tex.filename });
+-    textureIndexByKey.set(key, idx);
++    if (bucket) bucket.push(idx);
++    else textureIndexByKey.set(key, [idx]);
+     return idx;
+   }
+   const colorToMaterialIndex = /* @__PURE__ */ new Map();
