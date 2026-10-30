@@ -83,9 +83,11 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
 /**
  * 이관 뒤에도 남는 탐지기 위반 수(실측 고정). 전부 상태 채널이 아닌 부류다:
  * PublishPackage는 표시 prop 라벨 3건, PublicationOperations는 IANA 설명
- * 본문 1건만 남는다. Hybrid의 생산자 진단 message 필드 3건(throw 채널과 함께
- * 별도 설계 대상)은 2026-10-29(527f64f1)에 studio-hybrid-dcc-viewport-snapshot.ts
- * 로 옮겨져 이 파일에는 없다. 나머지 파일은 0이어야 한다.
+ * 본문 1건만 남는다. Hybrid 뷰포트 코어의 생산자 진단 message 필드 3건(throw
+ * 채널과 함께 별도 설계 대상)은 코어를 떠났다. 527f64f1이 사전 검증 1건을 공용
+ * 표면 검사(탐지 대상이 아닌 폴백)로 바꿨고, 968c6bb4가 "메시 변환에 실패했습니다."
+ * 2건을 studio-hybrid-dcc-viewport-snapshot.ts로 옮겼다(아래 별도 단언으로 고정).
+ * 나머지 파일은 0이어야 한다.
  */
 const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "StudioWorkspaceInterchangeDialog.tsx": 0,
@@ -156,6 +158,13 @@ describe("frozen panel status i18n r4frz", () => {
       const violations = scanHardcodedStatusStrings(readSource(file));
       expect(violations.length, `${file}: ${JSON.stringify(violations)}`).toBe(EXPECTED_VIOLATIONS[file]);
     }
+  });
+
+  it("Hybrid 뷰포트 코어에서 옮겨 간 생산자 진단 위반 수를 snapshot 모듈에서 고정한다", () => {
+    // 키 소비 파일이 아니어서 CONSUMERS(키 참조·줄 기준선 단언)에는 넣지 않는다.
+    const file = "hybrid-dcc/studio-hybrid-dcc-viewport-snapshot.ts";
+    const violations = scanHardcodedStatusStrings(readSource(file));
+    expect(violations.length, `${file}: ${JSON.stringify(violations)}`).toBe(2);
   });
 
   it("소비 파일 줄 수가 래칫 기준선을 넘지 않는다 (줄중립)", () => {
