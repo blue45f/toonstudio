@@ -805,7 +805,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                       importProgress={modelImportProgress}
                       isRestoringScene={isRestoringScene}
                       deviceProfileLabel={deviceQuality.profile === "mobile" ? "모바일" : "데스크톱"}
-                      onFileChange={handleUploadModelFiles}
+                      onFileChange={handleUploadModelFiles} onImportFiles={h.importMarketplaceModelFiles} localBlendScopeKey={sharedStageSessionScopeKey}
                       onCancelImport={() => modelImportAbortRef.current?.abort()}
                       onAdd={addCustomModelToScene} onPlaceWithRecipe={h.placeCustomModelWithRecipe}
                       onDelete={handleDeleteModelFromLibrary}

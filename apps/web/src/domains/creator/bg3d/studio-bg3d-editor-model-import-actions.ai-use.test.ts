@@ -4,6 +4,8 @@ import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from "three";
 import { createStudioBg3dModelImportActions, type StudioBg3dModelImportActionsContext } from "./studio-bg3d-editor-model-import-actions";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
 import { createSkpReportFixture } from "./studio-bg3d-skp.test-fixture";
+import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from "./studio-bg3d-model-cache.test-fixture";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 import type { StudioBg3dSkpImportOptions } from "./studio-bg3d-skp-import";
 import type { admitAndCacheStudioBg3dModel } from "./studio-bg3d-model-runtime-admission";
@@ -27,6 +29,7 @@ const runtime = vi.hoisted(() => {
     convert: vi.fn(),
     importVerified: vi.fn(),
     getStored: vi.fn(),
+    deleteStored: vi.fn(),
     list: vi.fn(),
     runScene: vi.fn(),
     commit: vi.fn(),
@@ -52,7 +55,7 @@ vi.mock("./studio-bg3d-model-import", () => ({
 }));
 vi.mock("./studio-bg3d-model-library-loader", () => ({
   createStudioBg3dModelAttachment: runtime.createAttachment,
-  deleteStoredBg3dModelV12: vi.fn(),
+  deleteStoredBg3dModelV12: runtime.deleteStored,
   getStoredBg3dModelV12: runtime.getStored,
   importVerifiedBg3dModelsAtomicallyV12: runtime.importVerified,
   listBg3dModelLibraryEntriesV12: runtime.list,
@@ -203,6 +206,79 @@ beforeEach(() => {
 });
 
 describe("importModelFiles with AI use chosen on the rights form", () => {
+  it("저장 뒤 보관함 조회 중 취소하면 늦은 목록으로 장면을 바꾸지 않고 저장 모델은 보존한다", async () => {
+    const h = harness(), list = deferred<[]>(), controller = new AbortController();
+    runtime.list.mockReturnValueOnce(list.promise);
+    const pending = h.actions().importModelFiles([file("local-blender.glb")], AI_RIGHTS, controller.signal);
+    await vi.waitFor(() => { expect(runtime.list).toHaveBeenCalledOnce(); });
+    expect(runtime.importVerified).toHaveBeenCalledOnce();
+    controller.abort();
+    list.resolve([]);
+    await expect(pending).resolves.toBe(false);
+    expect(runtime.admit).not.toHaveBeenCalled();
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled();
+    expect(h.context.setModelLibrary).not.toHaveBeenCalled();
+    expect(h.context.attachmentByStorageModelIdRef.current.size).toBe(0);
+    expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(h.context.startModelThumbnailCaptureBatch).not.toHaveBeenCalled();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+    expect(runtime.deleteStored).not.toHaveBeenCalled();
+    expect(runtime.list).toHaveBeenCalledOnce();
+    expect(h.context.setError).toHaveBeenLastCalledWith(expect.stringContaining("검증·저장된 모델은 보관함에 남아 있습니다"));
+    expect(h.context.modelImportAbortRef.current).toBeNull();
+    expect(h.context.setIsUploadingModel.mock.calls).toEqual([[true], [false]]);
+    expect(h.context.setModelImportProgress).toHaveBeenLastCalledWith(null);
+  });
+
+  it("취소를 무시한 admission의 늦은 캐시도 배치하지 않고 자기 캐시만 정리한다", async () => {
+    const h = harness(), controller = new AbortController();
+    const record = createStudioBg3dCacheTestRecord("model-1", HASH);
+    const entry = { ...createStudioBg3dCacheTestEntry(record, "webgpu"), normalizationScale: 1 };
+    entry.root.add(new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial()));
+    const gate = deferred<typeof entry>();
+    let admission: Parameters<typeof admitAndCacheStudioBg3dModel>[0] | undefined;
+    runtime.admit.mockImplementationOnce((request: Parameters<typeof admitAndCacheStudioBg3dModel>[0]) => {
+      admission = request;
+      return gate.promise;
+    });
+    const pending = h.actions().importModelFiles([file("local-blender.glb")], AI_RIGHTS, controller.signal);
+    await vi.waitFor(() => { expect(runtime.admit).toHaveBeenCalledOnce(); });
+    if (!admission) throw new Error("admission 요청이 준비되지 않았습니다.");
+    expect(admission.isActive()).toBe(true);
+    controller.abort();
+    expect(admission.isActive()).toBe(false);
+    const key = studioBg3dModelCacheKey("model-1", "webgpu");
+    admission.cache.set(key, entry);
+    admission.onCacheEntryCreated?.("model-1", entry);
+    gate.resolve(entry);
+    await expect(pending).resolves.toBe(false);
+    expect(entry.dispose).toHaveBeenCalledOnce();
+    expect(h.context.modelRootCacheRef.current.has(key)).toBe(false);
+    expect(h.context.attachmentByStorageModelIdRef.current.size).toBe(0);
+    expect(h.context.storageModelIdByAttachmentIdRef.current.size).toBe(0);
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled();
+    expect(h.context.setModelLibrary).not.toHaveBeenCalled();
+    expect(h.context.startModelThumbnailCaptureBatch).not.toHaveBeenCalled();
+    expect(runtime.persistAi).not.toHaveBeenCalled();
+    expect(runtime.deleteStored).not.toHaveBeenCalled();
+    expect(h.context.setIsUploadingModel).toHaveBeenLastCalledWith(false);
+  });
+
+  it("장면 배치 뒤 외부 취소는 이미 배치한 모델을 지우지 않고 늦은 AI 완료 알림을 차단한다", async () => {
+    const h = harness(), save = deferred<string>(), controller = new AbortController();
+    runtime.persistAi.mockReturnValueOnce(save.promise);
+    const pending = h.actions().importModelFiles([file("local-blender.glb")], AI_RIGHTS, controller.signal);
+    await vi.waitFor(() => { expect(runtime.persistAi).toHaveBeenCalledOnce(); });
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce();
+    controller.abort();
+    save.resolve("saved");
+    await expect(pending).resolves.toBe(true);
+    expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledOnce();
+    expect(h.context.setSurfaceSnapStatus).not.toHaveBeenCalled();
+    expect(runtime.deleteStored).not.toHaveBeenCalled();
+    expect(runtime.importVerified).toHaveBeenCalledOnce();
+  });
+
   it("같은 backend A의 늦은 progress·catch·finally는 B의 controller·UI를 건드리지 않는다", async () => {
     const h = harness(), first = deferred<Blob[]>(), second = deferred<Blob[]>();
     const options: StudioBg3dModelImportOptions[] = [];

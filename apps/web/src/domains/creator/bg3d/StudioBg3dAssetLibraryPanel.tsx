@@ -10,7 +10,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
@@ -107,6 +107,7 @@ const RIGHTS_PRESETS: ReadonlyArray<{
 ];
 
 type StudioBg3dAssetLibraryPanelProps = {
+  renderLocalImport?: (rights: StudioBg3dImportRightsWithAiUse, ready: boolean, onImported: () => void) => ReactNode;
   entries: readonly Bg3dModelLibraryEntry[];
   classificationByModelId?: ReadonlyMap<string, AssetClassification>;
   libraryStatus: "idle" | "loading" | "ready" | "degraded" | "error";
@@ -134,7 +135,7 @@ function cx(...classes: Array<string | false | null | undefined>) {
 }
 
 export function StudioBg3dAssetLibraryPanel({
-  entries,
+  renderLocalImport, entries,
   classificationByModelId,
   libraryStatus,
   deletingModelId,
@@ -485,6 +486,7 @@ export function StudioBg3dAssetLibraryPanel({
         자체 포함 GLB를 저장 직전에 다시 검사해 내려받는 기능입니다.
       </p>
       <StudioBg3dSkpImportPanel />
+      {renderLocalImport?.(importRights, rightsAreComplete, () => { setAiGenerated("unknown"); setAiTraining("unknown"); })}
 
       {downloadFeedback ? (
         <p

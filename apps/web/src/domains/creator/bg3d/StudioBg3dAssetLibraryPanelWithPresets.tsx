@@ -1,6 +1,8 @@
 import { useRef, useState, type ComponentProps } from "react";
 
 import { StudioBg3dAssetLibraryPanel as ExistingAssetLibraryPanel } from "./StudioBg3dAssetLibraryPanel";
+import { StudioBg3dBlenderImportPanel } from "./StudioBg3dBlenderImportPanel";
+import type { StudioBg3dModelImportActions } from "./studio-bg3d-editor-model-import-actions";
 import { StudioBg3dAuthoredEnvironmentCyclesPanel } from "./StudioBg3dAuthoredEnvironmentCyclesPanel";
 import { StudioBg3dBundleThemePackPanel } from "./StudioBg3dBundleThemePackPanel";
 import { StudioBg3dEssentialPosePropPanel } from "./StudioBg3dEssentialPosePropPanel";
@@ -11,7 +13,10 @@ import { useStudioBg3dAssetRights } from "./useStudioBg3dAssetRights";
 import { useT } from "@/shared/lib/i18n";
 import "../studio-bg3d-panel-status-i18n";
 
-type Props = ComponentProps<typeof ExistingAssetLibraryPanel>;
+type Props = ComponentProps<typeof ExistingAssetLibraryPanel> & {
+  readonly onImportFiles?: StudioBg3dModelImportActions["importModelFiles"];
+  readonly localBlendScopeKey?: string;
+};
 
 /**
  * Compose the optional generator without relocating the canonical file-input and rights panel.
@@ -47,6 +52,16 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
       <fieldset disabled={isBuilding} className="m-0 min-w-0 border-0 p-0">
         <ExistingAssetLibraryPanel
           {...props}
+          renderLocalImport={props.onImportFiles ? (importRights, ready, onImported) => (
+            <StudioBg3dBlenderImportPanel
+              scopeKey={props.localBlendScopeKey ?? ""}
+              rightsKey={JSON.stringify(importRights)}
+              disabled={props.isRestoringScene || props.deletingModelId !== null || isBuilding || !ready}
+              importing={props.isUploading}
+              onImported={onImported}
+              onFile={async (file, signal) => (await props.onImportFiles?.([file], importRights, signal)) === true}
+            />
+          ) : undefined}
           rightsViews={props.rightsViews ?? rights.views}
           rightsLoadState={props.rightsLoadState ?? rights.state}
         />
