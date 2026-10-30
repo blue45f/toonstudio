@@ -1,4 +1,5 @@
 import type { VirtualThreeThemeModelRef } from './virtual-three-theme-types';
+import { VIRTUAL_THREE_NATURE_MODEL_IDS, VIRTUAL_THREE_NATURE_MODEL_REFS } from './virtual-three-nature-theme-models';
 
 /** 현재 bundle theme-packs.json과 기존 generated-assets.ts에서 읽은 ID만 참조한다. */
 export const VIRTUAL_THREE_THEME_MODEL_IDS = {
@@ -16,6 +17,7 @@ export const VIRTUAL_THREE_THEME_MODEL_IDS = {
   car: 'cbv1-ingest-local-cartoon-car-megapack-car-1-car-1-1-80734dec8dc7',
   artistEasel: 'tripo-artist-easel', storyDesk: 'tripo-story-desk', referenceShelf: 'tripo-reference-shelf',
   creatorArcade: 'tripo-creator-arcade', referenceDesk: 'varco-reference-desk', animatedReference: 'varco-animated-reference',
+  ...VIRTUAL_THREE_NATURE_MODEL_IDS,
 } as const;
 const M = VIRTUAL_THREE_THEME_MODEL_IDS;
 
@@ -39,6 +41,7 @@ export const VIRTUAL_THREE_THEME_MODEL_REFS: readonly VirtualThreeThemeModelRef[
   { source: 'generated', id: M.creatorArcade, url: '/models/tripo3d-mcp/tripo_h31_cyberpunk_arcade_cabinet_kit.glb', byteLength: 2021344, sha256: '55d421d44c5192a31528f62f8e4ec11f04479e5a1c9ea5ee775d920aac65dacd', provenanceId: 'tripo-creator-arcade' },
   { source: 'generated', id: M.referenceDesk, url: '/models/varco3d/varco_prop_school_desk_remesh_quad.glb', byteLength: 960772, sha256: 'ff7bd6cd8014eb6e20998a1c79df3895de7989c3857fd7cb89c906eee0be59e3', provenanceId: 'varco-reference-desk' },
   { source: 'generated', id: M.animatedReference, url: '/models/varco3d/varco_char_student_council_standing_idle.glb', byteLength: 6474256, sha256: '67bf36372efd19f5edf747da0331b3476bfb48f72fb8b9adb065b0bbcb3f125b', provenanceId: 'varco-animated-reference' },
+  ...VIRTUAL_THREE_NATURE_MODEL_REFS,
 ];
 export function findVirtualThreeThemeModelRef(id: string): VirtualThreeThemeModelRef | undefined {
   return VIRTUAL_THREE_THEME_MODEL_REFS.find(model => (model.source === 'bundle' ? model.assetId : model.id) === id);
