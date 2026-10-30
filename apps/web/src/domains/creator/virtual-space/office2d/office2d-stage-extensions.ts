@@ -125,6 +125,25 @@ const FIXTURE_TO_SPRITE: Readonly<Record<string, Office2dSpriteKey>> = Object.fr
   youtube: "review-screen",
 });
 
+function decorSprite(type: StudioVirtualDecorType): Office2dSpriteKey {
+  return DECOR_TO_SPRITE[type] ?? "plant-monstera";
+}
+
+function fixtureSprite(kind: StudioBuildPlacedFixture["kind"]): Office2dSpriteKey {
+  return FIXTURE_TO_SPRITE[kind] ?? "floor-lamp";
+}
+
+/** 장면 manifest 밖의 꾸미기·고정물도 실제 렌더링과 같은 매핑으로 이미지를 준비한다. */
+export function office2dPlacedDecorSpriteKeys(
+  decorations: StudioVirtualDecorationState | undefined,
+  placedFixtures: readonly StudioBuildPlacedFixture[] | undefined,
+): readonly Office2dSpriteKey[] {
+  return [...new Set([
+    ...(decorations?.placements.map((item) => decorSprite(item.type)) ?? []),
+    ...(placedFixtures?.map((fixture) => fixtureSprite(fixture.kind)) ?? []),
+  ])];
+}
+
 export class Office2dStageExtensions {
   private readonly objectStates = new Map<string, { readonly stateKey: string; readonly changedAt: number }>();
   private readonly bursts: Office2dComicBurst[] = [];
@@ -377,7 +396,7 @@ export class Office2dStageExtensions {
     if (decorations?.placements) {
       for (const item of decorations.placements) {
         if (item.x < visible.minX - 80 || item.x > visible.maxX + 80 || item.y < visible.minY - 80 || item.y > visible.maxY + 80) continue;
-        const sprite = DECOR_TO_SPRITE[item.type] ?? "plant-monstera";
+        const sprite = decorSprite(item.type);
         const width = Math.round(52 * Math.max(0.7, Math.min(1.5, item.scale || 1)));
         drawSprite(sprite, item.x, item.y, width, OFFICE2D_SPRITE_SPECS[sprite].tone);
       }
@@ -386,7 +405,7 @@ export class Office2dStageExtensions {
       for (const fixture of placedFixtures) {
         const { x, y } = fixture.point;
         if (x < visible.minX - 80 || x > visible.maxX + 80 || y < visible.minY - 80 || y > visible.maxY + 80) continue;
-        const sprite = FIXTURE_TO_SPRITE[fixture.kind] ?? "floor-lamp";
+        const sprite = fixtureSprite(fixture.kind);
         const width = sprite === "floor-lamp" ? 40 : 120;
         const spriteHeight = drawSprite(sprite, x, y, width, OFFICE2D_SPRITE_SPECS[sprite].tone);
         const label = language === "en" ? fixture.labelEn : fixture.labelKo;

@@ -19,6 +19,12 @@
   background-size:32px 32px;
   mask-image:linear-gradient(to bottom,#000,transparent 88%);
 }
+/* 열린 모달의 층. 쌓임 척도(studio-z-index.ts)는 모든 층이 셸 쌓임 맥락 안에 있다고 가정하는데, 위 isolation 이
+   워크스페이스를 셸 안의 z-index:auto 맥락으로 만들어 안에서 연 모달(필터 대화상자 z-[80], 모바일 모달 시트 z-[59]·z-[60])을
+   셸의 메뉴바·도구 띠(z-index 30) 아래에 가뒀다. 대화상자 머리(제목·닫기)는 도구 띠에, 오른쪽 위 단추는 메뉴바에 붙은 첫 게시
+   제안 카드에 가렸다. 모달이 열려 있는 동안에만 워크스페이스를 모달 층으로 올린다. 그동안은 모달의 배경막(fixed inset-0)이
+   메뉴바까지 덮고 모달 격리가 메뉴바를 inert 로 만들므로, 메뉴 드롭다운이 워크스페이스 아래로 깔릴 일은 없다. */
+[data-studio-cinematic-workspace="v4"]:has([aria-modal="true"]){position:relative;z-index:var(--studio-z-modal,80)}
 [data-studio-menubar],[data-studio-context]{
   border-color:rgba(164,177,255,.16)!important;
   background:linear-gradient(105deg,rgba(9,11,23,.96),rgba(18,21,39,.91))!important;

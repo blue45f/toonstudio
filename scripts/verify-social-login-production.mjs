@@ -145,18 +145,23 @@ export function validateSocialLoginDiscovery(payload, { allowDisabled = [] } = {
 }
 
 function requireCookieAttributes(setCookie, provider, cookieName) {
-  const lower = setCookie.toLowerCase();
-  if (!lower.includes(`${cookieName.toLowerCase()}=`)) {
+  const cookie = setCookie.split(/,(?=\s*[^;,=\s]+=)/u)
+    .find((value) => value.trimStart().startsWith(`${cookieName}=`));
+  if (!cookie) {
     throw new Error(`${provider} start response is missing ${cookieName}`);
   }
+  const attributes = cookie.split(";").slice(1).map((value) => value.trim().toLowerCase());
   const sameSite = provider === "apple" ? "samesite=none" : "samesite=lax";
   for (const attribute of ["httponly", "secure", sameSite]) {
-    if (!lower.includes(attribute)) {
+    if (!attributes.includes(attribute)) {
       throw new Error(`${provider} state cookie is missing ${attribute}`);
     }
   }
-  if (!lower.includes(`path=/api/auth/oauth/${provider}`)) {
+  if (!attributes.includes("path=/")) {
     throw new Error(`${provider} state cookie has an unexpected path`);
+  }
+  if (attributes.some((value) => /^domain\s*=/u.test(value))) {
+    throw new Error(`${provider} state cookie must not set Domain`);
   }
 }
 
@@ -261,13 +266,13 @@ async function verifyRedirectProvider(fetchImpl, origin, provider, timeoutMs) {
   requireCookieAttributes(
     setCookie,
     provider,
-    `toonstudio-oauth-state-${provider}`,
+    `__Host-toonstudio-oauth-state-${provider}`,
   );
   if (provider === "github") {
     requireCookieAttributes(
       setCookie,
       provider,
-      "toonstudio-oauth-pkce-github",
+      "__Host-toonstudio-oauth-pkce-github",
     );
   }
 

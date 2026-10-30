@@ -26,6 +26,7 @@ import {
   resolveOffice2dWorkstation,
 } from "./office2d-backdrop-art";
 import { office2dBaseZoom } from "./office2d-camera";
+import { createOffice2dDecorAssetLoader, type Office2dDecorAssetLoader } from "./office2d-decor-assets";
 import { Office2dResolutionGovernor } from "./office2d-quality";
 import { office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
 import { Office2dRuntime, type Office2dRuntimeCallbacks, type Office2dStageProps } from "./office2d-runtime";
@@ -72,6 +73,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const runtimeRef = useRef<Office2dRuntime | null>(null);
+  const decorAssetsRef = useRef<Office2dDecorAssetLoader | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [schematicMode, setSchematicMode] = useState(false);
@@ -425,7 +427,12 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("blur", handleWindowBlur);
     const refreshFloor = () => { if (!disposed) runtime.renderer.invalidateFloor(); };
-    void store.loadAll(urls, ASSET_TIMEOUT_MS, refreshFloor).then(() => {
+    const decorAssets = createOffice2dDecorAssetLoader(store, ASSET_TIMEOUT_MS, refreshFloor);
+    decorAssetsRef.current = decorAssets;
+    void Promise.all([
+      store.loadAll(urls, ASSET_TIMEOUT_MS, refreshFloor),
+      decorAssets.load(latest.current.decorations, latest.current.placedFixtures),
+    ]).then(() => {
       if (disposed) return;
       runtime.start();
       ready = true;
@@ -436,6 +443,8 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
 
     return () => {
       disposed = true;
+      decorAssets.dispose();
+      if (decorAssetsRef.current === decorAssets) decorAssetsRef.current = null;
       avatarProfileSource.dispose();
       runtimeRef.current = null;
       stopLoop();
@@ -455,6 +464,11 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       bridge.setFocusHandler(null);
     };
   }, [bridge, manifest, selfIdentity]);
+
+  // 꾸미기만 바뀌면 월드·입력·캐릭터 상태를 재생성하지 않고 새로 필요한 이미지만 이어 받는다.
+  useEffect(() => {
+    void decorAssetsRef.current?.load(props.decorations, props.placedFixtures);
+  }, [props.decorations, props.placedFixtures]);
 
   const activeWorkstation =
     (selectedWorkstationId

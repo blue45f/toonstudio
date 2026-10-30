@@ -8,7 +8,7 @@ import {
   type Session,
   type SessionSyncReason,
 } from "./auth-session-state";
-import { normalizeClientSession } from "./auth-session-storage";
+import { CLIENT_SESSION_MAX_SERIALIZED_BYTES, normalizeClientSession } from "./auth-session-storage";
 import { withAuthRequestDeadline } from "./auth-request-deadline";
 
 import { api, apiPath, WRITE_TIMEOUT_MS } from "@/platform/api";
@@ -202,7 +202,21 @@ const GOOGLE_SIGN_IN_FALLBACK_ERROR = "Google 로그인에 실패했어요. 다�
 const SIGN_OUT_RETRY_DELAYS_MS = [150, 600] as const;
 const SIGN_OUT_MAXIMUM_RETRY_DELAY_MS = 2_000;
 
-function readGoogleSignInError(payload: unknown): string | null {
+/** 로그인 성공 반환 전에 저장 가능한 공개 세션인지 확인한다. */
+function readSignInSession(payload: unknown): Session {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return null;
+  const user = (payload as { user?: unknown }).user;
+  const session = normalizeClientSession({ user, token: null });
+  if (!session) return null;
+  // 저장 계층에서 null로 바뀔 응답은 미리 거절해 기존 세션을 지우지 않는다.
+  const serialized = JSON.stringify(session);
+  const bytes = typeof TextEncoder === "function"
+    ? new TextEncoder().encode(serialized).byteLength
+    : serialized.length;
+  return bytes <= CLIENT_SESSION_MAX_SERIALIZED_BYTES ? session : null;
+}
+
+function readSignInError(payload: unknown): string | null {
   if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
     return null;
   }
@@ -269,19 +283,18 @@ export async function signInWithGoogleIdToken(
         signal,
         timeout: WRITE_TIMEOUT_MS,
       });
-      const payload = (await response.json().catch(() => null)) as
-        | { user?: NonNullable<Session>["user"]; error?: unknown }
-        | null;
+      const payload: unknown = await response.json().catch(() => null);
       signal.throwIfAborted();
-      if (!response.ok || !payload?.user) {
+      const nextSession = readSignInSession(payload);
+      if (!response.ok || !nextSession) {
         return {
           ok: false,
-          error: readGoogleSignInError(payload)
+          error: readSignInError(payload)
             ?? authFailureFallback(response.status, GOOGLE_SIGN_IN_FALLBACK_ERROR),
           status: response.status,
         };
       }
-      persistSession({ user: payload.user, token: null });
+      persistSession(nextSession);
       return { ok: true, error: null, status: response.status };
     }, options?.signal);
   } catch (error) {
@@ -335,21 +348,20 @@ export async function signIn(provider?: string, options?: Record<string, unknown
         signal,
         json: { email: options?.email, password: options?.password },
     });
-    const payload = (await response.json().catch(() => null)) as
-      | { user?: NonNullable<Session>["user"]; error?: string }
-      | null;
+    const payload: unknown = await response.json().catch(() => null);
 
     signal.throwIfAborted();
-    if (!response.ok || !payload?.user) {
+    const nextSession = readSignInSession(payload);
+    if (!response.ok || !nextSession) {
       return {
         ok: false,
-        error: payload?.error ?? authFailureFallback(response.status, "auth-failed"),
+        error: readSignInError(payload) ?? authFailureFallback(response.status, "auth-failed"),
         status: response.status,
         url: null,
       };
     }
 
-    persistSession({ user: payload.user, token: null });
+    persistSession(nextSession);
     return {
       ok: true,
       error: null,

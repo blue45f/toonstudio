@@ -2,8 +2,9 @@
 
 확인일: **2026-10-30**. SculptGL은 선택 JavaScript 4파일의 첫 REA 정적 분석과 제한된 의미 추적을
 완료했다. 구문 분석은 4파일 모두 완료됐지만 application coverage는 `partial`, semantic coverage는
-`unknown`이며 전체 앱이나 실제 조형 동작을 검증한 결과는 아니다. three.js Editor는 고정 원본을
-복원하고 해시를 확인한 상태이며 **실제 REA 분석은 실행하지 않았다**.
+`unknown`이며 전체 앱이나 실제 조형 동작을 검증한 결과는 아니다. three.js Editor도 고정 원본의
+선택 JavaScript 4파일을 **1회 REA 정적 분석**했다. 구문 분석은 완료됐지만 application coverage는
+`partial`, semantic coverage는 `unknown`이며 전체 편집기나 실제 변환 동작의 실행 검증은 아니다.
 
 ## current — 2026-10-30 입력 복원과 보존
 
@@ -15,7 +16,7 @@
 | 대상 | 고정 commit | 복원한 원본 | 실제 REA 상태 |
 | --- | --- | --- | --- |
 | SculptGL | `8e45dafc0f7906e5238dfffc1a2df742bd25f29d` | 6파일, 24,453 byte | 선택 JavaScript 4파일 1회 분석, 의미 추적은 부분 결과 |
-| three.js Editor | `83f6bd095356c68334df7d9b7ec03a0abebff3fc` | 6파일, 34,272 byte | 입력 복원·해시 확인만 완료, REA 미실행 |
+| three.js Editor | `83f6bd095356c68334df7d9b7ec03a0abebff3fc` | 6파일, 34,272 byte | 선택 JavaScript 4파일 1회 분석, 의미 관계는 부분 결과 |
 
 입력 보관 root는 `/Users/hjunkim/WebstormProjects/toonstudio/.qa/native-3d-postmerge-20261030/rea-inputs`다.
 각 대상은 `sculptgl-8e45dafc0f7906e5238dfffc1a2df742bd25f29d`와
@@ -82,6 +83,100 @@ REA가 호출 관계나 실제 실행을 확정했다는 뜻이 아니다.
 | 정확한 요청과 summary | `sculptgl-analysis-summary.json` |
 | 진단·제약·소스 관측 | `sculptgl-analysis-receipt.json` |
 | receipt SHA-256 | `5ea3c0811c336681382cac23c273d83e9673cf52a533a38a31b120b83c624826` |
+
+## current — 2026-10-30 three.js Editor 첫 REA 정적 분석
+
+고정 commit `83f6bd095356c68334df7d9b7ec03a0abebff3fc`에서 복원한 원본을 사용해
+`analyze_javascript_application`을 **1회** 호출했다. 정확한 선택 경로는 다음과 같다.
+
+- `editor/js/Viewport.js`
+- `editor/js/commands/SetPositionCommand.js`
+- `editor/js/commands/MultiCmdsCommand.js`
+- `editor/js/History.js`
+
+요청은 `detail: "summary"`, `analysis_timeout_ms: 30000`, `max_heap_mb: 512`다. timeout은 파일별
+분석 예산이며 V8 old-space 설정은 전체 CLI 메모리의 상한이 아니다. 분석기 worker는 실행했지만
+대상 소스·편집기 앱·브라우저·GPU는 실행하지 않았고 의존 설치도 하지 않았다.
+
+원본 소스·LICENSE·package.json 6파일은 34,272 byte, 기존 provenance manifest를 포함한 실제
+입력 디렉터리는 **7파일 41,133 byte**다. 원본 7개는 분석 전후 SHA-256이 모두 일치했다.
+도구의 관련 파일 수 6과 실제 디렉터리 파일 수 7을 같은 통계로 해석하지 않는다.
+
+- 분석 부모 Evidence: `ev_ab5629c6dc9c3ae9d82904229198b54d2c8843114b4bbb2d77fb21c349cbe35a`
+- summary Evidence: `ev_afae6c57a9b19cb93818ce095309e894786d1ca1f58cc8dce128afe6dd549a98`
+- 도구가 반환한 artifact SHA-256: `eb6adeb446efb78e210e235e4709da35cd05bbb66658701983bb9b0486d8060c`
+
+| 관측 범위 | 실제 반환 결과 |
+| --- | --- |
+| 선택 소스 구문 | 4파일 `complete`, parse failure 0, skipped JavaScript 0 |
+| 분석량 | 선택 JavaScript 29,379 byte, 방문 AST node 4,625개 |
+| application coverage | `partial`, application graph unknown 2개 |
+| semantic coverage | `unknown`, semantic unknown 1,152개 |
+| semantic unknown 분류 | call-flow 266, data-flow 277, object-flow 609 |
+| 요약 view | `complete-within-view`, 51/51, `next_offset: null` |
+| 의미 관계 생략 | 보고된 omitted node·relation 0, `truncated: false` |
+
+51/51은 이 summary view의 반환 범위다. 전체 앱·의존성·동적 실행의 완전성을 뜻하지 않는다.
+파싱 실패 0이나 결과 생략 0도 application/semantic unknown을 없애지 않는다. 이 요약에 없는
+무결성 모순 집계와 런타임 성능은 0 또는 통과로 채우지 않는다.
+
+원본 4파일을 다시 읽어 대응한 다음 관측은 **수동 소스 관측**이다. REA가 이 의미의 실제 실행이나
+완전한 호출 관계를 확정한 것으로 해석하지 않는다.
+
+- `Viewport`는 mouseDown에서 원래 변환을 복제하고 mouseUp에서 변경 값의 command를 만든다.
+  command가 0개면 실행하지 않고, 1개면 직접, 여러 개면 `MultiCmdsCommand`로 넘기는 분기가 있다.
+- `SetPositionCommand`는 old/new 위치를 복제하고 execute/undo에서 위치·matrix·변경 signal을 갱신한다.
+- `History.execute`는 object/type/script/attributeName과 updatable 조건이 같은 명령을 500ms 미만이면
+  갱신할 수 있다. 서로 다른 gesture도 합쳐질 수 있어 드래그마다 독립 undo가 보장된다고 말하지 않는다.
+- `MultiCmdsCommand`는 정방향 execute와 역방향 undo를 순회한다. 선택 파일 안에서는 자식 명령의
+  예외에 대한 일괄 rollback이나 signal 복원 finally를 확인하지 못했다. 이것만으로 모든 batch 실패의
+  실제 결과를 단정하지 않으며, ToonStudio에서는 실패·취소·권한 변경의 원본/이력 보존을 별도 검증한다.
+
+`Command.js`, `Editor.execute`, Signals·Commands registry, 회전·크기 command, TransformControls의
+ray/axis/snap·local/world 수학과 DOM 입력·취소·파일 재열기는 선택 범위 밖이다. 선택되지 않은 import와
+동적 관계는 unknown으로 유지한다. 다른 모델러 코드나 mutable scene graph를 편집 정본으로 복사하지 않았다.
+
+보관 파일은 입력 root와 같은 QA 상위 디렉터리의 다음 기록이다.
+
+| 기록 | 실제 보관 파일과 검증값 |
+| --- | --- |
+| 분석 부모·summary Evidence bundle | `three-js-83f6-evidence-bundle-20261030.json`, 2 records, 5,325,689 byte |
+| bundle SHA-256 | `04d320c3f70c1d87c30bc0f16b9edee294875f2f6a2e1445d6cf11f2292a5542` |
+| 실제 summary Evidence | `three-js-83f6-first-analysis-summary-20261030.json` |
+| summary SHA-256 | `9bbaa527f3f2007d560a2c0b49c943d06f073ce66da88a163f324b9a2f5c40ea` |
+| 실행 횟수·입력 전후 보존 | `three-js-first-analysis-terminal-20261030.json` |
+| 별도 History 파일 facts view | `three-js-history-facts-view-20261030.json`, 30,616 byte |
+| History view SHA-256 | `7ada4a0ae65d3e2bc90a76327ef43549dfe8b3eccf0a5a99e7e6056935a10a81` |
+
+bundle의 2 records는 위 분석 부모 Evidence와 summary Evidence다. History 상세 view는 이 2 records 안에
+포함되지 않고 별도 JSON에 보존했다. bundle 최상위의 session unknown 배열 0을 semantic unknown 1,152개나
+application unknown 2개의 해소로 해석하지 않는다. bundle을 확보한 사실도 전체 앱 의미 분석 완료가 아니다.
+
+파일을 기준으로 수행한 `inspect_analysis_view`의 `javascript-facts` 조회는
+`editor/js/History.js`에 한정해 성공했다. 해당 Evidence는
+`ev_a7d03e72b7960ffdcb5b8b47e3167bcf67bb7d72c6be13254c0623025f5a6092`이며,
+부모는 위 `ev_ab5629c6dc9c3ae9d82904229198b54d2c8843114b4bbb2d77fb21c349cbe35a`와 같다.
+정확한 요청은 `where.paths: ["editor/js/History.js"]`, `offset: 0`, `limit: 8`이다.
+
+| History 상세 view 범위 | 실제 반환 |
+| --- | --- |
+| coverage status | `page` |
+| 반환 rows / 해당 view total | 8 / 10 |
+| next offset / exhausted | `8` / `false` |
+| 부모의 semantic / application unknown | 1,152 / 2 그대로 |
+
+8/10은 이 파일의 facts view 첫 페이지다. 남은 2 rows를 읽은 것으로 세지 않고, 상위 summary의 51/51과
+합산해 전체 의미 완전성으로 바꾸지 않는다. 정적 facts 조회 성공은 gesture마다 독립 undo, 실제 event 도달,
+500ms 병합의 실행 결과나 확정된 전체 호출 관계를 뜻하지 않는다.
+
+초기 상세 조회에는 해당 세션의 retained record 부재로 `evidence_integrity_mismatch`의
+`reason: missing`이 반환됐지만, 이후 영속 파일을 기준으로 한 위 상세 조회는 성공했다. 초기 오류를
+입력 source 손상으로 해석하거나 원본 분석을 재호출하지 않았다. 별도 의미 trace 요청 1회는
+`invalidapplication` 검증에서 거부돼 **trace 실행 0회**다. 성공한 trace나 실제 호출 경로 확정을 주장하지 않는다.
+
+이번 문서 갱신은 기존 source·Evidence의 읽기와 비공개 문서 초안 작성이다. 분석 producer·대상 소스·편집기·
+브라우저·GPU·Node를 새로 실행하지 않았다. bundle은 읽기 전용 크기 제한과 SHA-256/JSON 확인만 수행했고
+대형 원문을 복사하거나 Git에 추가하지 않았다.
 
 ## 역사 기록 — 2026-10-29 준비 snapshot
 

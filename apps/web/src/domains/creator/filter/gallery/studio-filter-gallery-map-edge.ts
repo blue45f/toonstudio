@@ -198,10 +198,19 @@ const PAPER_MOVE_RATE = slider("moveRate", "이동률", 1, 90, 1, 25, "%");
 const PAPER_BACKGROUND = select("background", "배경", [["transparent", "투명"], ["inverted", "반전"], ["color", "색"]], "inverted");
 const PAPER_BACKGROUND_COLOR: ColorSpec = { key: "backgroundColor", label: "배경색", control: "color", default: "#ffffff" };
 
+/**
+ * 타일 한 장의 정수 이동(px). unit 은 −1~1 난수, maxMove 는 반올림하지 않은 최대 이동이다. 1px 이상이면 unit × maxMove 를
+ * 반올림한다. 그보다 작으면 반올림이 거의 늘 0 이라 이동률 여러 칸이 같은 그림이 되므로, |unit| 이 1 − maxMove/2 보다 큰 타일만
+ * 한 픽셀 민다. 움직이는 타일 비율(maxMove/2)이 이동률에 비례해 늘고, 1px 에서 반올림 규칙과 이어진다.
+ */
+const paperTileShift = (unit: number, maxMove: number): number =>
+  maxMove >= 1 ? Math.round(unit * maxMove) : Math.abs(unit) > 1 - maxMove / 2 ? Math.sign(unit) : 0;
+
 function applyPaperTile(image: StudioFilterGalleryImage, params: StudioFilterGalleryParams, context: StudioFilterGalleryContext): void {
   const { width, height, data } = image;
   const tile = Math.max(1, Math.min(Math.round(readSlider(params, PAPER_TILE_SIZE)), Math.max(width, height)));
-  const maxMove = Math.round((tile * readSlider(params, PAPER_MOVE_RATE)) / 100);
+  // 최대 이동은 반올림하지 않는다. 정수로 반올림하면 타일 40px 에서 이동률 두세 칸(0.4px 씩)이 같은 거리가 돼 같은 그림이었다.
+  const maxMove = (tile * readSlider(params, PAPER_MOVE_RATE)) / 100;
   const background = readSelect(params, PAPER_BACKGROUND);
   const [backgroundRed, backgroundGreen, backgroundBlue] = readColor(params, PAPER_BACKGROUND_COLOR);
   const source = data.slice();
@@ -228,7 +237,7 @@ function applyPaperTile(image: StudioFilterGalleryImage, params: StudioFilterGal
   }
   for (const piece of order) {
     const left = (piece % columns) * tile, top = Math.floor(piece / columns) * tile;
-    const shiftX = Math.round((random() * 2 - 1) * maxMove), shiftY = Math.round((random() * 2 - 1) * maxMove);
+    const shiftX = paperTileShift(random() * 2 - 1, maxMove), shiftY = paperTileShift(random() * 2 - 1, maxMove);
     const right = Math.min(width, left + tile), bottom = Math.min(height, top + tile);
     for (let y = top; y < bottom; y += 1) {
       const targetY = y + shiftY;

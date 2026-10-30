@@ -220,12 +220,13 @@ const sparkle: StudioFilterGalleryEffectDef = {
       level[index] = value; histogram[value]! += 1; visible += 1;
     }
     if (visible === 0 || intensity <= 0) return;
-    // 기준 밝기 = threshold 분위수(아래부터 누적이 그 비율에 처음 닿는 단계). 같은 밝기의 넓은 면이 걸쳐도 통째로 후보가 된다.
+    // 기준 밝기 = threshold 분위수: 아래부터 누적이 그 비율에 처음 닿는 단계 cut 과, cut 단계 픽셀 중 그 비율 아래에 드는 몫 fraction(0~1].
     const target = (visible * SPARKLE_THRESHOLD.read(params)) / 100;
     let cut = 0, below = histogram[0]!;
     while (cut < 255 && below < target) {
       cut += 1; below += histogram[cut]!;
     }
+    const fraction = clamp01((target - (below - histogram[cut]!)) / Math.max(1, histogram[cut]!));
     // 빛살 길이 절반 크기 칸마다 가장 밝은 후보 하나만 남겨(같은 밝기는 해시로) 광원이 뭉치지 않게 한다.
     const cell = Math.max(2, Math.round(length / 2)), columns = Math.ceil(width / cell), slots = columns * Math.ceil(height / cell);
     const best = new Int32Array(slots).fill(-1), score = new Float32Array(slots);
@@ -237,9 +238,36 @@ const sparkle: StudioFilterGalleryEffectDef = {
         if (best[slot]! < 0 || candidate > score[slot]!) { best[slot] = index; score[slot] = candidate; }
       }
     }
-    const order = best.map((index, slot) => (index < 0 ? -1 : slot)).filter((slot) => slot >= 0);
+    // cut 보다 밝은 칸은 늘 남는다. 가장 밝은 픽셀이 cut 단계인 칸들은 칸 해시 순서로 줄 세워 (순위 + 0.5) / 개수 가 fraction 이상인
+    // 칸만 남긴다. 정수 단계만 보면 한 단계에 픽셀이 몰린 그림(셀 채색 면·잘린 하이라이트)에서 기준을 여러 칸 옮겨도 같은 결과였다.
+    // 이제 기준을 올리면 그 단계 칸이 고른 간격으로 하나씩 빠진다. 다 빠지면 마지막까지 남는 칸 하나를 쓴다(기준 100% 에서도
+    // 가장 밝은 곳은 반짝인다).
+    const order: number[] = [], atCut: number[] = [];
+    for (let slot = 0; slot < slots; slot += 1) {
+      const index = best[slot]!;
+      if (index < 0) continue;
+      if (level[index]! > cut) order.push(slot);
+      else atCut.push(slot);
+    }
+    if (atCut.length > 0) {
+      const gateSeed = (seed + 0x1b87) | 0, gates = new Float64Array(atCut.length);
+      atCut.forEach((slot, position) => { gates[position] = hash2(slot % columns, Math.floor(slot / columns), gateSeed); });
+      // 해시 오름차순 순위가 keepFrom 이상인 칸(= 해시가 그 순위의 값 이상인 칸)만 남는다. 다 빠지는데 cut 보다 밝은 칸도 없으면
+      // 해시가 가장 큰 칸 하나를 남긴다.
+      const ranked = gates.slice().sort(), firstKept = Math.ceil(fraction * atCut.length - 0.5);
+      const keepFrom = firstKept < atCut.length ? firstKept : order.length === 0 ? atCut.length - 1 : atCut.length;
+      if (keepFrom < atCut.length) {
+        const bar = ranked[keepFrom]!;
+        atCut.forEach((slot, position) => { if (gates[position]! >= bar) order.push(slot); });
+      }
+    }
     order.sort((left, right) => score[right]! - score[left]! || left - right);
-    const sources = order.subarray(0, Math.min(order.length, SPARKLE_MAX_SOURCES));
+    // 광원이 상한보다 많으면 밝기 순서를 고르게 솎는다(가장 밝은 칸은 늘 들어간다). 가장 밝은 칸만 남기면 남는 칸이 상한보다 많은
+    // 동안(큰 그림·짧은 빛살) 기준을 내려도 그림이 그대로였다. 광원 목록은 예전처럼 형식 배열로 둔다(일반 배열로 두면 256² 측정에서
+    // 빛살이 많은 설정의 그리기가 15~18% 느렸다).
+    const sources = order.length <= SPARKLE_MAX_SOURCES
+      ? Int32Array.from(order)
+      : Int32Array.from({ length: SPARKLE_MAX_SOURCES }, (_, rank) => order[Math.floor((rank * order.length) / SPARKLE_MAX_SOURCES)]!);
     // 그리기 전에 광원 색(원본 색을 흰색 쪽으로 반쯤 당긴 0~1 값)을 떠 둔다. 앞서 그린 빛살이 뒤 광원 색에 섞이지 않게 한다.
     const tint = new Float32Array(sources.length * 3);
     sources.forEach((slot, rank) => {
@@ -273,7 +301,9 @@ const SHADOW_OPACITY = slider("opacity", "불투명도", 0, 100, 1, 60, "%");
 /**
  * 알파 실루엣을 방향 (ux, uy) 로 끌어 늘인 그림자 덮임(0~1)을 out 에 더한다.
  * 주축(|성분|이 큰 축)으로 1px 씩 나아가는 평행선들로 이미지를 기울여(shear) 훑으므로 선마다 1차원 문제가 된다.
- * 유한은 창 [i − 걸음, i] 의 최댓값(단조 덱), 점점 흐리게는 c ← max(현재, c − 1/걸음) 의 선형 감쇠다. 선 위 표본과 되쓰기에
+ * 유한은 창 [i − ⌊걸음⌋, i] 의 최댓값(단조 덱)과, 한 칸 더 뒤 표본에 걸음의 소수 부분을 곱한 값 중 큰 쪽이다(그림자 끝 1px 을
+ * 덮임 비율로 그려 길이를 1px 보다 잘게 바꿔도 보인다 — 걸음을 반올림하면 대각선에서 길이 칸 셋 중 하나가 같은 그림이었다).
+ * 점점 흐리게는 c ← max(현재, c − 1/걸음) 의 선형 감쇠다. 선 위 표본과 되쓰기에
  * 같은 부축 선형 보간 가중치를 써서 픽셀마다 가중치 합이 1 이고, 걸음마다 보간을 거듭하지 않아 그림자가 번지지 않는다. O(N).
  */
 function castShadow(alpha: Float32Array, out: Float32Array, width: number, height: number, ux: number, uy: number, length: number, fading: boolean): void {
@@ -281,7 +311,7 @@ function castShadow(alpha: Float32Array, out: Float32Array, width: number, heigh
   const majorLength = majorX ? width : height, minorLength = majorX ? height : width;
   const majorStride = majorX ? 1 : width, minorStride = majorX ? width : 1;
   const uMajor = majorX ? ux : uy, slope = (majorX ? uy : ux) / uMajor, forward = uMajor > 0;
-  const steps = length / Math.hypot(1, slope), span = Math.round(steps), decay = 1 / Math.max(1e-6, steps);
+  const steps = length / Math.hypot(1, slope), span = Math.floor(steps), part = steps - span, decay = 1 / Math.max(1e-6, steps);
   const line = new Float32Array(majorLength), result = new Float32Array(majorLength), deque = new Int32Array(majorLength);
   const extra = Math.ceil(Math.abs(slope) * majorLength) + 1;
   for (let lane = -extra; lane <= minorLength + extra; lane += 1) {
@@ -311,7 +341,8 @@ function castShadow(alpha: Float32Array, out: Float32Array, width: number, heigh
         while (tail > head && line[deque[tail - 1]!]! <= line[i]!) tail -= 1;
         deque[tail] = i; tail += 1;
         while (deque[head]! < i - span) head += 1;
-        result[i] = line[deque[head]!]!;
+        const tip = i > span ? line[i - span - 1]! * part : 0;
+        result[i] = Math.max(line[deque[head]!]!, tip);
       }
     }
     for (let i = 0; i < count; i += 1) {

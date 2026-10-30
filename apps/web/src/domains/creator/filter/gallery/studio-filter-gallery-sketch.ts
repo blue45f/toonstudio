@@ -9,9 +9,9 @@
  * 쓰지 않는다), 알파는 모든 효과가 그대로 둔다(RGB 만 고친다).
  */
 import {
-  booleanParam, clamp, clamp01, colorParam, fbm2, gaussianPlane, hash1, hash2, luma, lumaPlane, numberParam, sobel,
-  stringParam, valueNoise2,
+  clamp, clamp01, fbm2, gaussianPlane, hash1, hash2, luma, lumaPlane, sobel, valueNoise2,
 } from "./studio-filter-gallery-kernel-utils";
+import { paramChoices, paramColor, paramSelect, paramSlider, readColor, readSelect, readSlider } from "./studio-filter-gallery-param-specs";
 import {
   STUDIO_FILTER_GALLERY_LIGHT_OPTIONS,
   STUDIO_FILTER_GALLERY_TEXTURE_OPTIONS,
@@ -20,72 +20,8 @@ import {
   textureHeight,
 } from "./studio-filter-gallery-textures";
 
-import type {
-  StudioFilterGalleryEffectDef,
-  StudioFilterGalleryImage,
-  StudioFilterGalleryParamSpec,
-  StudioFilterGalleryParams,
-} from "./studio-filter-gallery-types";
-
-type Rgb = readonly [number, number, number];
-type SliderSpec = Extract<StudioFilterGalleryParamSpec, { readonly control: "slider" }>;
-type ColorSpec = Extract<StudioFilterGalleryParamSpec, { readonly control: "color" }>;
-type ToggleSpec = Extract<StudioFilterGalleryParamSpec, { readonly control: "toggle" }>;
-type Option<T extends string> = { readonly value: T; readonly label: string };
-interface SelectSpec<T extends string> {
-  readonly key: string;
-  readonly label: string;
-  readonly control: "select";
-  readonly options: readonly Option<T>[];
-  readonly default: T;
-}
-
-// ── 갤러리 매개변수 명세 만들기·읽기(텍스처·스타일화 커널도 가져다 쓴다). ──
-// 읽기 함수는 명세의 min/max/default 를 그대로 numberParam·stringParam·booleanParam·colorParam 에 넘겨
-// 화면 명세와 커널이 서로 다른 범위를 쓰는 일을 막는다.
-
-/** 정수 단계(step 1) 슬라이더 명세. suffix 는 값 뒤에 붙는 단위(예: "%")다. */
-export function paramSlider(key: string, label: string, min: number, max: number, value: number, suffix?: string): SliderSpec {
-  const spec: SliderSpec = { key, label, control: "slider", min, max, step: 1, default: value };
-  return suffix === undefined ? spec : { ...spec, suffix };
-}
-
-/** 선택 명세. 선택지 값 유니온이 readSelect 의 반환 형식이 된다. */
-export function paramSelect<T extends string>(key: string, label: string, options: readonly Option<T>[], value: T): SelectSpec<T> {
-  return { key, label, control: "select", options, default: value };
-}
-
-/** [값, 이름] 쌍을 선택지 목록으로 바꾼다. */
-export function paramChoices<T extends string>(...pairs: readonly (readonly [T, string])[]): readonly Option<T>[] {
-  return pairs.map(([value, label]) => ({ value, label }));
-}
-
-/** 켜고 끄는 토글 명세. */
-export const paramToggle = (key: string, label: string, value: boolean): ToggleSpec => ({ key, label, control: "toggle", default: value });
-
-/** #rrggbb 색 명세. */
-export const paramColor = (key: string, label: string, value: string): ColorSpec => ({ key, label, control: "color", default: value });
-
-/** 슬라이더 값을 명세 범위로 잘라 읽는다(숫자가 아니면 기본값). */
-export const readSlider = (params: StudioFilterGalleryParams, spec: SliderSpec): number =>
-  numberParam(params, spec.key, spec.default, spec.min, spec.max);
-
-/** 선택 값을 읽는다(선택지 밖이면 기본값). */
-export const readSelect = <T extends string>(params: StudioFilterGalleryParams, spec: SelectSpec<T>): T =>
-  stringParam(params, spec.key, spec.options.map((option) => option.value), spec.default);
-
-/** 토글 값을 읽는다(불리언이 아니면 기본값). */
-export const readToggle = (params: StudioFilterGalleryParams, spec: ToggleSpec): boolean =>
-  booleanParam(params, spec.key, spec.default);
-
-/** 색 값을 [r, g, b] 로 읽는다(형식이 틀리면 명세 기본색). */
-export function readColor(params: StudioFilterGalleryParams, spec: ColorSpec): Rgb {
-  const hex = spec.default;
-  const fallback: Rgb = [
-    Number.parseInt(hex.slice(1, 3), 16), Number.parseInt(hex.slice(3, 5), 16), Number.parseInt(hex.slice(5, 7), 16),
-  ];
-  return colorParam(params, spec.key, fallback);
-}
+import type { ColorSpec, Rgb } from "./studio-filter-gallery-param-specs";
+import type { StudioFilterGalleryEffectDef, StudioFilterGalleryImage, StudioFilterGalleryParams } from "./studio-filter-gallery-types";
 
 const inkSpec = (value: string): ColorSpec => paramColor("inkColor", "잉크 색", value);
 const paperSpec = (value: string): ColorSpec => paramColor("paperColor", "종이 색", value);
@@ -99,6 +35,26 @@ const lightSelect = (value: (typeof STUDIO_FILTER_GALLERY_LIGHT_OPTIONS)[number]
 
 const DIAGONAL = Math.SQRT1_2;
 const fract = (value: number): number => value - Math.floor(value);
+
+/** gaussianPlane 은 상자 반지름 r/√3 을 1 아래로 줄이지 않아 반지름 0.5~√3 이 모두 이 반지름의 흐림과 같다. */
+const FINEST_GAUSSIAN = Math.sqrt(3);
+
+/**
+ * 반지름 √3 아래까지 이어지는 가우시안(제자리). √3 이상은 gaussianPlane 그대로이고, 그 아래는 원본과 √3 흐림을
+ * 반지름 비율로 섞는다. gaussianPlane 이 이웃한 두 정수 상자 결과를 소수 부분만큼 섞는 규약을 상자 반지름 0(원본)~1
+ * 구간으로 넓힌 것이라 √3 에서 끊기지 않는다. 선형 연산이라 알파 가중 흐림의 분자·분모에 그대로 쓸 수 있다.
+ */
+function fineGaussianPlane(plane: Float32Array, width: number, height: number, radius: number): void {
+  if (radius >= FINEST_GAUSSIAN) {
+    gaussianPlane(plane, width, height, radius);
+    return;
+  }
+  if (!(radius > 0)) return;
+  const blurred = plane.slice();
+  gaussianPlane(blurred, width, height, FINEST_GAUSSIAN);
+  const share = radius / FINEST_GAUSSIAN;
+  for (let index = 0; index < plane.length; index += 1) plane[index] += (blurred[index] - plane[index]) * share;
+}
 
 /**
  * tone(0 = 잉크, 1 = 종이)을 두 색 사이로 사상해 RGB 에 쓴다. 알파는 그대로 둔다.
@@ -124,10 +80,11 @@ function paintWith(image: StudioFilterGalleryImage, tone: Float32Array, params: 
  * 불투명 픽셀이 전혀 없는 곳(흐림 창보다 먼 완전 투명 영역)은 실루엣에서 바깥으로 한 겹씩 벗겨 나가며 가장 가까운 값으로
  * 채운다. 그 자리를 0(검정)으로 두면 흐림 창보다 멀리 닿는 뒤 단계(석고 덩어리 흐림, 목탄 번짐, 찢긴 가장자리 표본 이동,
  * 메모지 층 흐림·요철)가 보이지 않는 검은 영역을 형태로 읽어 보이는 픽셀에 음영·잉크를 남긴다. radius 가 0.5 보다
- * 작으면 흐리지 않는다.
+ * 작으면 흐리지 않는다. fine 이면 fineGaussianPlane 으로 흐려 반지름 √3 아래도 칸마다 흐림이 달라진다(이때는 0.5 아래도
+ * 알파 가중으로 읽는다).
  */
-export function alphaWeightedLuma(image: StudioFilterGalleryImage, radius: number): Float32Array {
-  if (radius < 0.5) return lumaPlane(image);
+export function alphaWeightedLuma(image: StudioFilterGalleryImage, radius: number, fine = false): Float32Array {
+  if (radius < 0.5 && !fine) return lumaPlane(image);
   const { width, height, data } = image;
   const plane = new Float32Array(width * height);
   const weight = new Float32Array(width * height);
@@ -136,8 +93,9 @@ export function alphaWeightedLuma(image: StudioFilterGalleryImage, radius: numbe
     weight[index] = alpha;
     plane[index] = luma(data[offset], data[offset + 1], data[offset + 2]) * alpha;
   }
-  gaussianPlane(weight, width, height, radius);
-  gaussianPlane(plane, width, height, radius);
+  const blur = fine ? fineGaussianPlane : gaussianPlane;
+  blur(weight, width, height, radius);
+  blur(plane, width, height, radius);
   let uncovered = false;
   for (let index = 0; index < plane.length; index += 1) {
     if (weight[index] > 1e-4) {
@@ -684,7 +642,8 @@ const tornEdges: StudioFilterGalleryEffectDef = {
     const ragged = 0.04 + rough * 0.16;
     const seed = context.seed + 8803;
     const { width, height } = image;
-    const plane = alphaWeightedLuma(image, 0.4 + smoothness * 0.35);
+    // 매끄러움 1~3(반지름 0.75~1.45)은 공용 흐림의 가장 작은 상자에 묶여 같은 결과였다. √3 아래도 이어지게 흐린다.
+    const plane = alphaWeightedLuma(image, 0.4 + smoothness * 0.35, true);
     const tone = new Float32Array(plane.length);
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {

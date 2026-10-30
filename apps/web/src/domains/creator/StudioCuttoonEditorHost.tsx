@@ -3981,7 +3981,7 @@ export function StudioCuttoonEditor({
     setMobileSheet(null);
     setQuickActionsOpen(false);
     closeStudioMenusForWorkspace(source);
-    if (workspaceId) applyStudioWorkspaceLaunchSurface(workspaceId);
+    if (workspaceId && (studioRoute.surface === "canvas" || ["switch", "reload", "active-workspace-delete"].includes(source))) applyStudioWorkspaceLaunchSurface(workspaceId);
     if (clearSyncNotice) setWorkspaceSyncNotice(null);
     globalThis.requestAnimationFrame?.(() => propsSheetRef.current?.scrollTo({ top: 0 }));
   }
@@ -6554,9 +6554,9 @@ export function StudioCuttoonEditor({
     }
   }
   const initialWorkspaceLaunchId = useRef(workspaceState.activeWorkspaceId).current;
-  const applyInitialStudioWorkspaceLaunch = useEffectEvent(
-    applyStudioWorkspaceLaunchSurface,
-  );
+  const applyInitialStudioWorkspaceLaunch = useEffectEvent((workspaceId: StudioWorkspaceId) => {
+    if (studioRoute.surface === "canvas") applyStudioWorkspaceLaunchSurface(workspaceId);
+  });
   useEffect(() => {
     applyInitialStudioWorkspaceLaunch(initialWorkspaceLaunchId);
   }, [initialWorkspaceLaunchId]);

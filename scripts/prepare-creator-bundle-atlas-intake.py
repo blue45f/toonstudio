@@ -93,14 +93,16 @@ def remember(states, root, name):
 
 def assert_current(plan):
     for directory, expected in plan.get('sourceTrees', {}).items():
-        if glb_files(directory) != expected:
-            fail('계획 이후 sourceDirectory의 GLB 목록이 변경됐습니다.')
+        source_format = plan.get('sourceFormats', {}).get(directory, 'glb')
+        if glb_files(directory, source_format) != expected:
+            fail('계획 이후 sourceDirectory의 ' + source_format.upper() + ' 목록이 변경됐습니다.')
     for path, item in plan['states'].items():
         if checked_path(item['root'], item['relative']) != path or file_state(path) != item['state']:
             fail('계획 이후 원본·텍스처·설정·기존 입력이 변경됐습니다.')
 
 
-def glb_files(directory):
+def glb_files(directory, source_format='glb'):
+    extension, label = '.' + source_format, source_format.upper()
     result = []
     def walk(current):
         entries = sorted(current.iterdir(), key=lambda p: p.name)
@@ -111,16 +113,111 @@ def glb_files(directory):
                 fail('모델 디렉터리의 심볼릭 링크를 거부합니다.')
             if path.is_dir():
                 walk(path)
-            elif path.is_file() and path.suffix == '.glb':
+            elif path.is_file() and path.suffix == extension:
                 result.append(path)
-            elif path.suffix.lower() == '.glb':
-                fail('GLB 확장자 대소문자가 계약과 다릅니다. 소문자 .glb 경로를 명시한 입력을 사용하세요.')
+            elif path.suffix.lower() == extension:
+                fail(label + ' 확장자 대소문자가 계약과 다릅니다. 소문자 ' + extension + ' 경로를 명시한 입력을 사용하세요.')
             elif not path.is_file():
                 fail('모델 디렉터리의 특수 파일을 거부합니다.')
     walk(directory)
     if not result:
-        fail('지정한 sourceDirectory에 GLB가 없습니다.')
+        fail('지정한 sourceDirectory에 ' + label + '가 없습니다.')
     return result
+
+
+def gltf_input(source, root, source_state=None, binary_state=None):
+    """명시한 glTF의 단일 로컬 BIN만 읽고 컨테이너 외 원문은 바꾸지 않는다."""
+    source = checked_path(root, source.relative_to(root).as_posix())
+    if source.stat().st_size > glb.LIMIT:
+        fail('glTF 원문이 입력 크기 제한을 넘습니다.')
+    original = source.read_bytes()
+    if len(original) > glb.LIMIT:
+        fail('읽은 glTF 원문이 입력 크기 제한을 넘습니다.')
+    if source_state is not None and {'bytes': len(original), 'sha256': digest(original)} != source_state:
+        fail('glTF 원문이 준비 계획과 다릅니다.')
+    document = json.loads(original.decode('utf-8'), object_pairs_hook=unique_object)
+    if not isinstance(document, dict):
+        fail('glTF 원문의 루트가 JSON 객체가 아닙니다.')
+    buffers = document.get('buffers', [])
+    images = document.get('images', [])
+    if (document.get('asset', {}).get('version') != '2.0' or not isinstance(buffers, list)
+            or len(buffers) != 1 or not isinstance(buffers[0], dict)
+            or type(buffers[0].get('byteLength')) is not int or buffers[0]['byteLength'] <= 0
+            or not isinstance(buffers[0].get('uri'), str)):
+        fail('glTF에는 길이가 명시된 단일 로컬 BIN이 필요합니다.')
+    if (not isinstance(images, list) or not images or any(not isinstance(image, dict)
+            or not isinstance(image.get('uri'), str) or 'bufferView' in image for image in images)):
+        fail('glTF 이미지에는 승인할 원문 URI만 지정해야 합니다.')
+
+    def check_uris(value, location=()):
+        if len(location) > 64:
+            fail('glTF JSON의 중첩이 입력 제한을 넘습니다.')
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == 'uri' and not (location == ('buffers', 0)
+                        or len(location) == 2 and location[0] == 'images' and type(location[1]) is int):
+                    fail('glTF에 승인하지 않은 외부 URI가 있습니다.')
+                check_uris(child, location + (key,))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                check_uris(child, location + (index,))
+    check_uris(document)
+    name = relative(glb._decode_bound_image_uri(buffers[0]['uri']))
+    if not name.endswith('.bin'):
+        fail('glTF buffer URI는 같은 소유 팩의 소문자 .bin 파일이어야 합니다.')
+    binary_path = checked_path(root, (source.parent.relative_to(root) / name).as_posix())
+    if binary_path.stat().st_size != buffers[0]['byteLength'] or binary_path.stat().st_size > glb.LIMIT:
+        fail('glTF BIN 길이가 원문 byteLength 또는 입력 제한과 다릅니다.')
+    binary = binary_path.read_bytes()
+    if len(binary) != buffers[0]['byteLength']:
+        fail('읽은 BIN 길이가 glTF 원문의 byteLength와 다릅니다.')
+    if binary_state is not None and {'bytes': len(binary), 'sha256': digest(binary)} != binary_state:
+        fail('glTF BIN 원문이 준비 계획과 다릅니다.')
+    container = copy.deepcopy(document)
+    del container['buffers'][0]['uri']
+    # 기존 GLB 구조 검사가 모든 bufferView 범위와 컨테이너 길이를 함께 확인한다.
+    packed = glb.write_glb(container, binary)
+    glb.read_glb(packed)
+    return packed, binary_path
+
+
+def normalized_gltf(item):
+    """계획·생성·재검증이 동일한 원문과 정확한 이미지 resolver를 사용한다."""
+    bound = glb._resolve_owner_pack_images(item['source'], item['binding'])
+    if file_state(item['source']) != item['state']:
+        fail('glTF 원문이 준비 계획과 다릅니다.')
+    packed, binary_path = gltf_input(item['source'], item['binding'].pack_root, item['state'], item['binaryState'])
+    if binary_path != item['binarySource'] or file_state(binary_path) != item['binaryState']:
+        fail('glTF BIN 원문이 준비 계획과 다릅니다.')
+    def resolve_texture(uri):
+        path, expected = item['imageStates'][uri]
+        if bound.get(uri) != path:
+            fail('glTF 이미지의 소유 팩 경로가 준비 계획과 다릅니다.')
+        body = path.read_bytes()
+        if {'bytes': len(body), 'sha256': digest(body)} != expected:
+            fail('glTF 이미지 원문이 준비 계획과 다릅니다.')
+        return body
+
+    body, embedded = glb.normalize_bytes(packed, resolve_texture)
+    binding = item['binding']
+    return body, {'sourceSha256': item['state']['sha256'], 'normalizedSha256': digest(body),
+                  'embeddedTextures': embedded, 'geometryBytesPreserved': True,
+                  'externalImageUrisRemaining': 0, 'phase': 'normalized-not-reviewed',
+                  'studioRuntimeVerified': False, 'ownerPackBinding': {
+                      'ownerPackId': binding.owner_pack_id, 'sourceRelative': binding.source_relative,
+                      'imagePaths': dict(binding.image_paths), 'policy': 'exact-owner-pack-atlas-v1'}}
+
+
+def normalize_addition(item, destination):
+    if item.get('sourceFormat') != 'gltf':
+        return glb.normalize(item['source'], destination, owner_pack_images=item['binding'])
+    if destination.exists() or destination.is_symlink() or destination.resolve().is_relative_to(item['binding'].pack_root):
+        fail('glTF 파생 출력은 소유 팩 밖의 새 파일이어야 합니다.')
+    body, report = normalized_gltf(item)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open('xb') as stream:
+        stream.write(body)
+    return report
 
 
 def pack_owner(pack, ledger, projection):
@@ -191,7 +288,7 @@ def build_plan(*, recipe_path, library_root, output_root=None, existing_root=Non
     existing = absolute_directory(existing_root) if existing_root else None
     output = output_path(output_root, [REPO, library] + ([existing] if existing else [])) if output_root else None
     assets, copies, additions, ids, paths, sources, actual_sources = [], [], [], set(), set(), set(), set()
-    source_trees = {}
+    source_trees, source_formats = {}, {}
     def register(asset):
         primary = asset['files'][0]
         source = (asset['packId'], asset['sourcePath'])
@@ -232,7 +329,9 @@ def build_plan(*, recipe_path, library_root, output_root=None, existing_root=Non
             register(asset); copies.append((source, primary))
     ingests = set()
     for pack in recipe['packs']:
-        if (not isinstance(pack, dict) or set(pack) != {'catalogId', 'ingestId', 'packRoot', 'sourceDirectory', 'imagePaths'}
+        fields = {'catalogId', 'ingestId', 'packRoot', 'sourceDirectory', 'imagePaths'}
+        if (not isinstance(pack, dict) or set(pack) not in (fields, fields | {'sourceFormat'})
+                or 'sourceFormat' in pack and pack['sourceFormat'] != 'gltf'
                 or not isinstance(pack['catalogId'], str) or not IDENTIFIER.fullmatch(pack['ingestId'])
                 or pack['ingestId'] in ingests or not isinstance(pack['imagePaths'], dict) or not pack['imagePaths']):
             fail('추가 팩 recipe의 필드·식별자·URI 매핑이 올바르지 않거나 중복됩니다.')
@@ -240,41 +339,63 @@ def build_plan(*, recipe_path, library_root, output_root=None, existing_root=Non
         owner = pack_owner(pack, ledger, projection)
         root = checked_path(library, pack['packRoot'], directory=True)
         directory = checked_path(root, pack['sourceDirectory'], directory=True)
+        if directory in source_trees:
+            fail('같은 sourceDirectory를 여러 팩 또는 형식으로 중복 선택할 수 없습니다.')
         used = set()
-        candidates = glb_files(directory)
+        source_format = pack.get('sourceFormat', 'glb')
+        candidates = glb_files(directory, source_format)
         source_trees[directory] = candidates
+        if source_format == 'gltf':
+            source_formats[directory] = source_format
         for source in candidates:
             if source in actual_sources:
                 fail('같은 소유 팩의 원본 GLB를 여러 번 선택했습니다.')
             actual_sources.add(source)
             name = source.relative_to(root).as_posix()
             source, state = remember(states, root, name)
-            doc, _ = glb.read_glb(source.read_bytes())
+            binary_source = None
+            if source_format == 'gltf':
+                packed, binary_source = gltf_input(source, root, state)
+                doc, _ = glb.read_glb(packed)
+                binary_source, binary_state = remember(states, root, binary_source.relative_to(root).as_posix())
+            else:
+                doc, _ = glb.read_glb(source.read_bytes())
             uris = [image['uri'] for image in doc.get('images', []) if 'uri' in image]
             if any(not isinstance(uri, str) or uri not in pack['imagePaths'] for uri in uris):
                 fail('원문 이미지 URI의 명시적인 imagePaths 매핑이 없습니다.')
-            binding = None
+            binding, image_states = None, {}
             if uris:
                 mapping = {uri: pack['imagePaths'][uri] for uri in sorted(set(uris))}
                 binding = glb.OwnerPackImageBindings(owner['id'], root, name, mapping)
-                for image in glb._resolve_owner_pack_images(source, binding).values():
+                for uri, image in glb._resolve_owner_pack_images(source, binding).items():
                     _, image_state = remember(states, root, image.relative_to(root).as_posix())
+                    image_states[uri] = (image, image_state)
                     with image.open('rb') as stream:
                         signature = stream.read(8)
                     if image_state['bytes'] > 16 * 1024 * 1024 or not signature.startswith((b'\x89PNG\r\n\x1a\n', b'\xff\xd8\xff')):
                         fail('텍스처 크기 또는 PNG·JPEG 파일 서명이 내부화 계약과 다릅니다.')
                 used.update(uris)
             source_name = source.relative_to(directory).as_posix()
+            original_name = source_name
+            if source_format == 'gltf':
+                source_name = str(Path(source_name).with_suffix('.glb'))
             if (pack['ingestId'], source_name) in sources:
                 fail('기존 입력에 동일 팩의 sourcePath가 이미 있습니다.')
             sources.add((pack['ingestId'], source_name))
-            additions.append({'source': source, 'state': state, 'binding': binding,
-                              'packId': pack['ingestId'], 'sourcePath': source_name, 'catalogId': pack['catalogId']})
+            item = {'source': source, 'state': state, 'binding': binding,
+                    'packId': pack['ingestId'], 'sourcePath': source_name, 'catalogId': pack['catalogId']}
+            if source_format == 'gltf':
+                item.update(sourceFormat='gltf', originalSourcePath=original_name,
+                            binarySource=binary_source, binaryState=binary_state, imageStates=image_states)
+                normalized_gltf(item)
+            additions.append(item)
         if used != set(pack['imagePaths']):
             fail('imagePaths에 원본 GLB가 사용하지 않는 매핑이 있습니다.')
     plan = {'states': states, 'sourceTrees': source_trees, 'controls': controls, 'output': output, 'assets': assets,
             'copies': copies, 'additions': additions, 'base': base, 'stamp': stamp,
             'ids': ids, 'paths': paths, 'summary': {'existingAssets': len(assets), 'addedAssets': len(additions)}}
+    if source_formats:
+        plan['sourceFormats'] = source_formats
     assert_current(plan)
     return plan
 
@@ -301,7 +422,7 @@ def write_plan(plan):
         for item in plan['additions']:
             path = item['packId'] + '/native/' + item['sourcePath']
             destination = stage / path
-            report = glb.normalize(item['source'], destination, owner_pack_images=item['binding'])
+            report = normalize_addition(item, destination)
             state = file_state(destination)
             if report['sourceSha256'] != item['state']['sha256'] or report['normalizedSha256'] != state['sha256']:
                 fail('내부화 과정의 원본·파생본 해시가 준비 계획과 다릅니다.')
@@ -312,8 +433,13 @@ def write_plan(plan):
             plan['ids'].add(identifier); plan['paths'].add(path)
             assets.append({'id': identifier, 'packId': item['packId'], 'role': 'runtime', 'format': 'glb',
                            'sourcePath': item['sourcePath'], 'files': [{'kind': 'primary', 'path': path, **state}]})
-            proofs.append({'catalogId': item['catalogId'], 'sourcePath': item['sourcePath'], 'outputPath': path,
-                           'source': item['state'], 'derived': state, 'normalization': report})
+            proof = {'catalogId': item['catalogId'], 'sourcePath': item['sourcePath'], 'outputPath': path,
+                     'source': item['state'], 'derived': state, 'normalization': report}
+            if item.get('sourceFormat') == 'gltf':
+                proof.update(sourceFormat='gltf', originalSourcePath=item['originalSourcePath'],
+                             sourceBuffer={'path': item['binarySource'].relative_to(item['binding'].pack_root).as_posix(),
+                                           **item['binaryState']})
+            proofs.append(proof)
         for asset in assets:
             primary = asset['files'][0]
             if file_state(checked_path(stage, primary['path'])) != {k: primary[k] for k in ('bytes', 'sha256')}:
@@ -399,11 +525,7 @@ def verify_derived(plan, derived_root):
                 fail('소유 임시 디렉터리가 바뀌어 재생성을 중단합니다.')
             destination = temporary_root / 'derived.glb'
             try:
-                original_binding = item['binding']
-                binding = None if original_binding is None else glb.OwnerPackImageBindings(
-                    original_binding.owner_pack_id, original_binding.pack_root,
-                    original_binding.source_relative, dict(original_binding.image_paths))
-                report = glb.normalize(item['source'], destination, owner_pack_images=binding)
+                report = normalize_addition(item, destination)
                 state = file_state(destination)
                 if report['sourceSha256'] != item['state']['sha256'] or report['normalizedSha256'] != state['sha256']:
                     fail('재생성한 원본·파생 SHA256이 현재 입력과 다릅니다.')
@@ -420,7 +542,7 @@ def verify_derived(plan, derived_root):
                 destination.unlink(missing_ok=True)
     assert_current(plan)
     assert_current({'states': target_states})
-    return {'mode': 'verify-derived', 'persistentOutputWritten': False,
+    result = {'mode': 'verify-derived', 'persistentOutputWritten': False,
             'summary': {'derivedAssets': len(expected_assets),
                         'derivedBytes': sum(asset['files'][0]['bytes'] for asset in expected_assets),
                         'inputUnchanged': True, 'targetUnchanged': True},
@@ -429,6 +551,11 @@ def verify_derived(plan, derived_root):
             'inputFiles': [{'path': str(path), **plan['states'][path]['state']}
                            for path in sorted(plan['states'], key=str)],
             'assets': expected_assets}
+    if plan.get('sourceFormats'):
+        result['sourceInputs'] = [{'packId': item['packId'], 'sourcePath': item['sourcePath'],
+                                  'originalSourcePath': item.get('originalSourcePath', item['sourcePath']),
+                                  'sourceFormat': item.get('sourceFormat', 'glb')} for item in plan['additions']]
+    return result
 
 
 def main(argv=None):

@@ -10,6 +10,7 @@ import {
 export interface ProcessCompareSliderDrag {
   /** 현재 슬라이더 위치(%) — aria 값 동기화용. */
   readonly position: number;
+  readonly setPosition: (next: number) => void;
   readonly stageRef: React.RefObject<HTMLDivElement | null>;
   /** 스테이지 요소를 stageRef 에 붙이는 콜백 ref. 다른 ref 와 함께 쓸 때 `.current` 를 직접 쓰지 않게 한다. */
   readonly attachStage: (el: HTMLDivElement | null) => void;
@@ -111,6 +112,7 @@ export function useProcessCompareSliderDrag(): ProcessCompareSliderDrag {
 
   return {
     position,
+    setPosition: commitPosition,
     stageRef,
     attachStage,
     handleRef,
