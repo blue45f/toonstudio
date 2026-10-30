@@ -134,7 +134,13 @@ export function StudioWebtoonProductionAssistPanel({
   const [activeMode, setActiveMode] = useState<WebtoonProductionAssistMode>("scroll-eyepath");
   const [isRunningClaude, setIsRunningClaude] = useState(false);
 
-  const [liveScrollView, setLiveScrollView] = useState<AssistScrollEyePathView | null>(null);
+  // 스크롤 연출 결과의 컷 번호는 분석한 대본의 줄을 가리킨다. 대본을 고치거나 지문을 반영해 대본이 달라지면
+  // 낡은 컷 번호로 다른 줄에 지문을 붙이지 않도록 그 결과를 쓰지 않고 지금 대본의 분석을 보여 준다.
+  const [liveScroll, setLiveScroll] = useState<{
+    readonly view: AssistScrollEyePathView;
+    readonly script: string;
+  } | null>(null);
+  const liveScrollView = liveScroll?.script === scriptInput ? liveScroll.view : null;
   const [liveColorView, setLiveColorView] = useState<AssistColorScriptView | null>(null);
   const [liveContinuityView, setLiveContinuityView] =
     useState<AssistContinuityForeshadowView | null>(null);
@@ -234,7 +240,7 @@ export function StudioWebtoonProductionAssistPanel({
     try {
       if (activeMode === "scroll-eyepath") {
         const res = await runAssistScrollEyePathDoctor(assistInput);
-        setLiveScrollView(res);
+        setLiveScroll({ view: res, script: assistInput.scriptText ?? "" });
       } else if (activeMode === "color-script") {
         const res = await runAssistColorScriptDirector(assistInput);
         setLiveColorView(res);
@@ -261,9 +267,14 @@ export function StudioWebtoonProductionAssistPanel({
     const firstScrollCut = currentScrollView.cutDiagnostics[0];
     if (activeMode === "scroll-eyepath" && firstScrollCut?.readyStageDirectionLine) {
       // 컷 지문은 대본 끝의 새 컷이 아니라 그 컷의 연출 지시로 붙인다.
-      onApplyScript(
-        appendStageDirectionToCut(scriptInput, firstScrollCut.cutNumber, firstScrollCut.readyStageDirectionLine),
+      const nextScript = appendStageDirectionToCut(
+        scriptInput,
+        firstScrollCut.cutNumber,
+        firstScrollCut.readyStageDirectionLine,
       );
+      // [ ]만 붙이면 기존 컷 번호가 그대로라, 반영한 대본에서도 실시간 결과를 계속 쓴다.
+      if (liveScroll && liveScroll.script === scriptInput) setLiveScroll({ view: liveScroll.view, script: nextScript });
+      onApplyScript(nextScript);
       return;
     }
     if (activeMode === "scroll-eyepath") {

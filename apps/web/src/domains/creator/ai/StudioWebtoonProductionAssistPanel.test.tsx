@@ -159,4 +159,68 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
       );
     });
   });
+
+  it("스크롤 연출 지문은 분석한 대본의 그 컷 줄 끝에 붙고, 대본이 바뀌면 낡은 컷 번호로 다른 줄에 붙이지 않는다", async () => {
+    connectAssist("claude-haiku-5-5");
+    const onApplyScript = vi.fn();
+    const script = "유적 입구\n카엘: \"뒤를 봐.\"\n횃불이 꺼진다";
+    const props = {
+      storyGenre: "판타지",
+      coreConflict: "봉인된 유적",
+      relationshipDynamic: "fated-rivals",
+      posePresetId: "pose-dynamic-slash",
+      targetLocale: "ko",
+      artistLabel: "네오 잉크",
+      triggerWord: "neo_ink_style",
+      onApplyScript,
+    } as const;
+    const { rerender } = render(<StudioWebtoonProductionAssistPanel scriptInput={script} {...props} />);
+
+    assistParseMock.mockResolvedValueOnce({
+      message: {
+        model: "claude-haiku-5-5",
+        usage: { input_tokens: 300, output_tokens: 200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      },
+      parsed: {
+        overallReadabilityScore: 82,
+        sCurveContinuitySummaryKo: "2컷의 돌아보는 대사가 시선을 붙잡습니다.",
+        cliffhangerScrollHookKo: "마지막 컷 앞 여백을 늘리세요.",
+        cutDiagnostics: [
+          {
+            cutNumber: 2,
+            eyePathPattern: "s-curve-optimal",
+            cognitiveLoadScore: 40,
+            deadZoneViolation: "none",
+            recommendedGutterAfterPx: 220,
+            bubbleRelocationHint: "말풍선은 오른쪽 위",
+            directorCoachingKo: "돌아보는 동작을 바스트로 잡으세요.",
+            readyStageDirectionLine: "바스트 샷 로우 앵글, 말풍선 오른쪽 위",
+          },
+        ],
+      },
+    });
+    fireEvent.click(screen.getByTestId("run-claude-production-assist-btn"));
+    await waitFor(() => {
+      expect(screen.getByTestId("production-assist-engine-status").textContent).toContain("AI 실시간");
+    });
+
+    // 분석한 대본 그대로면 2번 컷 줄 끝에 [ ]로 붙는다(대본 끝의 새 컷이 아니다).
+    fireEvent.click(screen.getByTestId("apply-production-assist-script-btn"));
+    expect(onApplyScript).toHaveBeenLastCalledWith(
+      "유적 입구\n카엘: \"뒤를 봐.\" [바스트 샷 로우 앵글, 말풍선 오른쪽 위]\n횃불이 꺼진다",
+    );
+
+    // 반영한 대본으로 다시 그려도 컷 번호가 그대로라 실시간 결과를 계속 쓰고, 다시 눌러도 같은 지문을 두 번 붙이지 않는다.
+    const applied = onApplyScript.mock.lastCall?.[0] as string;
+    rerender(<StudioWebtoonProductionAssistPanel scriptInput={applied} {...props} />);
+    expect(screen.getByTestId("production-assist-engine-status").textContent).toContain("AI 실시간");
+    fireEvent.click(screen.getByTestId("apply-production-assist-script-btn"));
+    expect(onApplyScript).toHaveBeenLastCalledWith(applied);
+
+    // 앞에 줄을 넣어 2번 컷이 '유적 입구'가 되면 그 결과는 낡았으므로 쓰지 않는다.
+    rerender(<StudioWebtoonProductionAssistPanel scriptInput={`프롤로그: 비 내리는 밤\n${script}`} {...props} />);
+    expect(screen.getByTestId("production-assist-engine-status").textContent).not.toContain("AI 실시간");
+    fireEvent.click(screen.getByTestId("apply-production-assist-script-btn"));
+    expect(onApplyScript.mock.lastCall?.[0]).not.toContain("바스트 샷 로우 앵글");
+  });
 });
