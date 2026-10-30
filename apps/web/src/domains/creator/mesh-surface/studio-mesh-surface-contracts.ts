@@ -59,6 +59,8 @@ export interface StudioMeshSurfaceBudget {
 }
 export interface StudioMeshSurfaceOptions {
  readonly allowCreaseMetadata?: boolean;
+ /** UV 생성처럼 모든 원본 면 코너가 필요한 소비자만 명시한다. 기본값은 false다. */
+ readonly preserveFaceCorners?: boolean;
  /** 편집 정본만 허용한다. 생략 시 GLB의 엄격한 topology 정책을 사용한다. */
  readonly topologyPolicy?: "editable";
 }
@@ -90,6 +92,8 @@ export interface StudioMeshSurfaceEdgeUse {
 
 export interface StudioMeshSurfaceValidated {
   readonly allowCreaseMetadata: boolean;
+  /** 요청한 보존 정책이며 UV·crease에 의한 자동 보존 여부와 구분한다. */
+  readonly preserveFaceCorners: boolean;
   readonly topologyPolicy: "strict" | "editable";
   /** 실제 export topology 예외가 있는 경우만 기존 편집 음영 연결을 사용한다. */
   readonly hasEditableTopologyExceptions: boolean;
