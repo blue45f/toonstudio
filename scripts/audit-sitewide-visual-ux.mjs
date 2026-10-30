@@ -2,17 +2,18 @@ import { auditLanguage, auditMotion, auditViewportOverrides } from "./lib/visual
 import { compareScreenshotWithOdiff } from "./lib/visual-regression-odiff.mjs";
 import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   auditReadinessFindings,
-  declaredArrayIds,
-  declaredStringArrayValues,
-  expandAuditRoutePattern,
+  classifyAuditRouteCoverage,
+  inspectAuditPositionedOverflow,
   inspectAuditRouteReadiness,
+  persistAuditObservation,
   waitForAuditRouteReadiness,
 } from "./lib/sitewide-visual-ux-audit.mjs";
+import { collectAuditRouteInventory } from "./lib/sitewide-audit-route-inventory.mjs";
 
 const THEMES = ["aurora", "blossom", "starlight", "dark", "light", "graphite", "midnight", "sepia", "contrast"];
 const CRITICAL_THEMES = ["light", "dark", "contrast"];
@@ -63,69 +64,6 @@ function routePurposeSceneExpected(pathname) {
   );
 }
 
-function concretePath(route) {
-  if (!route.startsWith("/") || route.includes("*")) return null;
-  return route.replace(/:([A-Za-z0-9_]+)\??/gu, "visual-audit");
-}
-
-function collectLiteralRoutes(source, routes) {
-  const patterns = [
-    /\bpath:\s*["']([^"']+)["']/gu,
-    /\broute\(\s*["'][^"']+["']\s*,\s*["']([^"']+)["']/gu,
-  ];
-  for (const pattern of patterns) {
-    for (const match of source.matchAll(pattern)) {
-      const route = concretePath(match[1]);
-      if (route) routes.add(route);
-    }
-  }
-}
-
-async function collectRoutes() {
-  const routes = new Set(REPRESENTATIVE_ROUTES);
-  const groups = path.join(root, "apps/web/src/app/routes/groups");
-  for (const file of (await readdir(groups)).filter((name) => name.endsWith(".routes.tsx"))) {
-    collectLiteralRoutes(await readFile(path.join(groups, file), "utf8"), routes);
-  }
-  const studioRegistry = await readFile(
-    path.join(root, "apps/web/src/domains/creator/studio-route-registry.ts"),
-    "utf8",
-  );
-  for (const match of studioRegistry.matchAll(/\broute\(\s*["'][^"']+["']\s*,\s*["']([^"']+)["']/gu)) {
-    const route = concretePath(match[1]);
-    if (route) routes.add(route);
-  }
-  const routeManifests = [
-    "apps/web/src/domains/admin/router/admin-route-manifest.ts",
-  ];
-  for (const manifest of routeManifests) {
-    collectLiteralRoutes(await readFile(path.join(root, manifest), "utf8"), routes);
-  }
-  const studioManifest = await readFile(path.join(root, "apps/web/src/domains/creator/studio-router/studio-route-manifest.ts"), "utf8");
-  for (const match of studioManifest.matchAll(/\bpattern:\s*"([^"]+)"/gu)) {
-    const patterns = match[1] === "/studio/companion/:surface"
-      ? declaredStringArrayValues(studioManifest, "STUDIO_COMPANION_SURFACES").map((surface) => `/studio/companion/${surface}`)
-      : [match[1]];
-    for (const pattern of patterns) {
-      for (const route of expandAuditRoutePattern(pattern)) routes.add(route);
-    }
-  }
-  const learningRoot = path.join(root, "apps/web/src/domains/learn");
-  const learningPage = await readFile(path.join(learningRoot, "LearnPage.tsx"), "utf8");
-  for (const match of learningPage.matchAll(/"(\/learn(?:\/[a-z-]+)*)"/gu)) routes.add(match[1]);
-  const learningContent = await readFile(path.join(learningRoot, "LearnContent.tsx"), "utf8");
-  for (const match of learningContent.matchAll(/<Route\s+path="([^"*:]+)"/gu)) routes.add(`/learn/${match[1]}`);
-  for (const [file, authority, prefix] of [
-    ["learning-content.ts", "LESSONS", "/learn/lessons"],
-    ["learning-paths.ts", "LEARNING_PATHS", "/learn/paths"],
-  ]) {
-    for (const id of declaredArrayIds(await readFile(path.join(learningRoot, file), "utf8"), authority)) {
-      routes.add(`${prefix}/${encodeURIComponent(id)}`);
-    }
-  }
-  return [...routes].sort((left, right) => left.localeCompare(right));
-}
-
 function selectedRoutes(allRoutes) {
   if (process.env.AUDIT_ROUTES) {
     return process.env.AUDIT_ROUTES.split(",").map((route) => route.trim()).filter(Boolean);
@@ -158,16 +96,29 @@ function shouldCapture(route, issues) {
   return issues.length > 0 || ["/discover", "/story-lab", "/studio/bg3d"].includes(route);
 }
 
-await mkdir(output, { recursive: true });
-const allRoutes = await collectRoutes();
+const { routes: allRoutes, ...routeInventory } = await collectAuditRouteInventory(root);
 if (process.env.AUDIT_LIST_ROUTES === "1") {
-  console.log(JSON.stringify({ count: allRoutes.length, routes: allRoutes }, null, 2));
+  await new Promise((resolve, reject) => {
+    process.stdout.write(`${JSON.stringify({ count: allRoutes.length, routes: allRoutes, routeInventory }, null, 2)}\n`, (error) => error ? reject(error) : resolve());
+  });
   process.exit(0);
 }
 const routes = selectedRoutes(allRoutes);
 const themes = selectedThemes();
 const viewports = selectedViewports();
 if (viewports.some(([, viewport]) => !viewport)) throw new Error("Unknown AUDIT_VIEWPORT_MODE");
+await mkdir(output, { recursive: true });
+const observationDirectory = await mkdtemp(path.join(output, "observations-"));
+await writeFile(path.join(observationDirectory, "plan.json"), JSON.stringify({
+  startedAt: new Date().toISOString(),
+  base: base.origin,
+  routes,
+  themes,
+  viewports: viewports.map(([name]) => name),
+  routeInventory,
+  observationConditions: { authSession: "guest-fixture", otherApiResponses: "503-fixture", studioGpu: "disabled", functionalVerification: "not-performed" },
+}, null, 2));
+const inventoryByPath = new Map(routeInventory.entries.map((entry) => [entry.path, entry]));
 
 const results = [];
 for (const [viewportName, viewport] of viewports) {
@@ -306,7 +257,7 @@ for (const [viewportName, viewport] of viewports) {
               result.readiness = await waitForAuditRouteReadiness(page, { timeoutMs: auditStageTimeoutMs });
               result.finalPath = result.readiness.pathname;
             }
-            result.redirected = result.finalPath !== route;
+            result.redirected = result.finalPath !== new URL(route, base).pathname;
             const runtimeSceneExpectation = async () => {
               const value = await page.evaluate(() => document.documentElement.dataset.routePurposeScene ?? null)
                 .catch(() => null);
@@ -330,7 +281,8 @@ for (const [viewportName, viewport] of viewports) {
                 && rect.right > 0 && rect.left < innerWidth && style.display !== "none" && style.visibility !== "hidden";
               return !inViewport || image.complete;
             }), undefined, { timeout: 5_000 }).then(() => true, () => false);
-            result.metrics = await page.evaluate(({ expectedTheme, expectedScene }) => {
+            const positionedOverflow = await page.evaluate(inspectAuditPositionedOverflow);
+            result.metrics = await page.evaluate(({ expectedTheme, expectedScene, fixedOverflow }) => {
               const visible = (element) => {
                 for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
                   if (ancestor.tagName !== "DETAILS" || ancestor.open) continue;
@@ -391,15 +343,6 @@ for (const [viewportName, viewport] of viewports) {
                   cssHeight: style.height,
                   minHeight: style.minHeight,
                   transform: style.transform,
-                }));
-              const fixedOverflow = [...document.querySelectorAll("body *")]
-                .filter((element) => visible(element) && ["fixed", "sticky"].includes(getComputedStyle(element).position))
-                .map((element) => ({ element, rect: element.getBoundingClientRect() }))
-                .filter(({ rect }) => rect.left < -2 || rect.right > innerWidth + 2)
-                .slice(0, 12)
-                .map(({ element, rect }) => ({
-                  tag: element.tagName.toLowerCase(), className: String(element.className).slice(0, 100),
-                  left: Math.round(rect.left), right: Math.round(rect.right),
                 }));
               const describeElement = (element) => ({
                 tag: element.tagName.toLowerCase(),
@@ -529,7 +472,7 @@ for (const [viewportName, viewport] of viewports) {
                 tinyText,
                 missingThemeTokens,
               };
-            }, { expectedTheme: theme, expectedScene: sceneExpected });
+            }, { expectedTheme: theme, expectedScene: sceneExpected, fixedOverflow: positionedOverflow });
             // 대비 측정 중 DOM 관측과 화면 증거를 분리하기 위해 먼저 캡처한다.
             const screenshotBeforeContrast = auditAxe && auditCaptureMode !== "never"
               ? await page.screenshot({ fullPage: false })
@@ -616,6 +559,9 @@ for (const [viewportName, viewport] of viewports) {
             // crashing the whole audit process or looping on a dead context.
             if (!page) return;
           } finally {
+            result.coverage = classifyAuditRouteCoverage(result.readiness, route);
+            const inventoryEntry = inventoryByPath.get(route);
+            result.parameterEvidence = inventoryEntry ? (inventoryEntry.usesPlaceholder ? "placeholder" : "declared-path") : "custom-path";
             results.push(result);
             console.log(JSON.stringify({
               route, theme, viewport: viewportName,
@@ -624,8 +570,13 @@ for (const [viewportName, viewport] of viewports) {
               finalPath: result.finalPath,
               readiness: result.readiness?.outcome,
               readinessTimedOut: result.readiness?.timedOut,
+              contentCoverage: result.coverage.content,
             }));
-            await page?.close().catch(() => undefined);
+            try {
+              await persistAuditObservation(observationDirectory, result);
+            } finally {
+              await page?.close().catch(() => undefined);
+            }
           }
         }
       }));
@@ -656,6 +607,7 @@ if (auditBaselineDir) {
       maxDiffPercentage: verdict.maxDiffPercentage,
     };
     if (!verdict.pass) result.issues = [...(result.issues || []), `visual-regression:${verdict.status}`];
+    await persistAuditObservation(observationDirectory, result);
   }
 }
 
@@ -711,6 +663,8 @@ const report = {
   routes,
   themes,
   viewports: viewports.map(([name]) => name),
+  routeInventory,
+  observationDirectory: path.relative(output, observationDirectory),
   coverage,
   totals: {
     observations: results.length,
@@ -720,6 +674,11 @@ const report = {
     warningCounts,
     readinessCounts: results.reduce((counts, result) => {
       const state = result.readiness?.outcome ?? "unobserved";
+      counts[state] = (counts[state] || 0) + 1;
+      return counts;
+    }, {}),
+    contentCoverageCounts: results.reduce((counts, result) => {
+      const state = result.coverage.content;
       counts[state] = (counts[state] || 0) + 1;
       return counts;
     }, {}),
@@ -734,11 +693,16 @@ const summary = [
   "# Site-wide visual UX audit",
   "",
   `Origin: ${base.origin}`,
-  `Coverage: ${coverage.observed}/${coverage.expected} (${coverage.complete ? "complete" : "incomplete"})`,
+  `Observation coverage: ${coverage.observed}/${coverage.expected} (${coverage.complete ? "complete" : "incomplete"}); this does not measure functional completion.`,
   `Critical observations: ${failed.length}`,
   `Warning observations: ${warned.length}`,
   `Routes: ${routes.length}; themes: ${themes.length}; viewports: ${viewports.length}`,
   `Content readiness timeout: ${auditStageTimeoutMs} ms; animation completion alone does not pass.`,
+  `Incremental observation JSON: ${path.relative(output, observationDirectory)}/`,
+  `Route declarations: ${routeInventory.appRouteDeclarations}; source files: ${routeInventory.sources.length}; wildcard owners are recorded separately.`,
+  "",
+  "## 본문 도달 범위 (기능 검증 아님)",
+  ...formatCounts(report.totals.contentCoverageCounts),
   "",
   "## 콘텐츠 준비 상태",
   ...formatCounts(report.totals.readinessCounts),

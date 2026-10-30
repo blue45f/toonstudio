@@ -67,12 +67,14 @@ describe("모바일 풀 편집 안내 패턴 계약", () => {
   it("좁은 폭(1023px 이하)과 태블릿 가로에서만 렌더링하고 데스크톱에서는 나오지 않는다", () => {
     // 좁은 폭 쿼리 문자열의 정본은 studio-mobile-touch-flow 로 이동했다(A7).
     expect(noticeSource).toContain("MOBILE_FULL_EDIT_NOTICE_QUERY = STUDIO_TOUCH_NARROW_QUERY");
-    expect(noticeSource).toContain("if ((!narrow && !touchTablet) || dismissed) return null;");
+    expect(noticeSource).toContain("if (!narrow && !touchTablet) return null;");
   });
 
-  it("차단하지 않는 배너로 데스크톱 권장 + 가능 작업 목록 + 44px 닫기 동선을 제공한다", () => {
+  it("차단하지 않는 배너로 정본 제한을 먼저 요약하고 상세 목록과 44px 조작을 제공한다", () => {
     expect(noticeSource).toContain('data-testid="mobile-full-edit-notice"');
-    expect(noticeSource).toContain("풀 편집은 데스크톱에서 가장 편해요");
+    expect(noticeSource).toContain("const firstLimitation = limitations[0]");
+    expect(noticeSource).toContain("aria-expanded={expanded}");
+    expect(noticeSource).toContain("hidden={!expanded}");
     expect(noticeSource).toContain("mobileCapabilities.map");
     expect(noticeSource).toContain("min-h-11 w-full");
     expect(noticeSource).toContain("size-11 shrink-0");
@@ -102,7 +104,7 @@ describe("모바일 풀 편집 안내 패턴 계약", () => {
   it("태블릿 가로(데스크톱 폭 + 터치)에서도 안내가 렌더링된다", () => {
     expect(noticeSource).toContain("MOBILE_TOUCH_TABLET_NOTICE_QUERY");
     expect(noticeSource).toContain("STUDIO_TOUCH_TABLET_QUERY");
-    expect(noticeSource).toContain("if ((!narrow && !touchTablet) || dismissed) return null;");
+    expect(noticeSource).toContain("if (!narrow && !touchTablet) return null;");
     const flowSource = readFileSync(join(HERE, "../studio-mobile-touch-flow.ts"), "utf-8");
     expect(flowSource).toContain(
       '"(pointer: coarse) and (min-width: 1024px) and (max-width: 1366px)"',

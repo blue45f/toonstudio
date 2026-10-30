@@ -1,0 +1,166 @@
+{
+  "status": "current-working-branch-not-production",
+  "date": "2026-10-30",
+  "branch": "codex/full-ux-audit-20261030",
+  "baseBeforeChanges": "ce51781982bacc3bf40956c30fec79fe52fcfcdc",
+  "perfectScoreVerified": false,
+  "publicUniquePaths": 183,
+  "publicRouteObservations": 366,
+  "publicSuiteTests": 375,
+  "checks": [
+    {
+      "name": "public-inventory",
+      "scope": "183개 고정 공개 URL × 390px·1440px와 부가 탐색 검사. 익명 세션·API 503 fixture이며 실제 백엔드 성공이 아니다.",
+      "stats": {
+        "startTime": "2026-10-30T00:43:49.827Z",
+        "duration": 662011.2660000001,
+        "expected": 375,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "evidence": "artifacts/full-ux-audit/resume-20261030/public-inventory-results.json",
+      "sha256": "0428e7f7eff42c911b42c8cf9fd240ca68a44091210b10445a153cc5866a95d9"
+    },
+    {
+      "name": "targeted-release",
+      "scope": "캡처9, 공개 체험6, 일반 조작7, 관리자 접근성4, 대비 검사기5. 관리자 세션과 대부분 API는 fixture다.",
+      "stats": {
+        "startTime": "2026-10-30T00:55:16.581Z",
+        "duration": 49596.314999999995,
+        "expected": 31,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "evidence": "artifacts/full-ux-audit/resume-20261030/targeted-release-results.json",
+      "sha256": "370bba2c173703d70f57ffaa4c52bb66a687b5303a7dd28ce8e1552fcbd3a01d"
+    },
+    {
+      "name": "first-session-verified",
+      "scope": "로컬 최적화 빌드에서 실제 잉크·Undo/Redo·저장·재열기·PNG 및 ZIP 다운로드와 시작 경로.",
+      "stats": {
+        "startTime": "2026-10-30T00:48:24.521Z",
+        "duration": 71962.22799999999,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "evidence": "artifacts/full-ux-audit/resume-20261030/first-session-verified-results.json",
+      "sha256": "8297bbf218f9ceb230322eb085fddada5aedbcbef9362945207c32429362bc9d"
+    },
+    {
+      "name": "harness-verified",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/harness-verified.log",
+      "sha256": "2b9eb51e51421682d8b6d7eef9dc0e20ccd62061b64431bca8e5009687ecbb80"
+    },
+    {
+      "name": "production-bundle",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/production-bundle.log",
+      "sha256": "efc1d01e3d53328506f34157e9011fb00de39c4679ce432437ef5c4dc0ad0b44"
+    },
+    {
+      "name": "unit-regression",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/unit-regression.log",
+      "sha256": "b6e0e759e1971c4bdb4175bacf4851fb599a7381e2761a2f3bfb82689ea317d4"
+    },
+    {
+      "name": "bootstrap-vitest",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/bootstrap-vitest.log",
+      "sha256": "047a668c5f421078b8981bf9d0f52cf430840d61dab8e86a0610bf9931a70176"
+    },
+    {
+      "name": "audit-tests-verified",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/audit-tests-verified.log",
+      "sha256": "08b0767cd9a0b5b6388ef4833eac216f85119af07fa227e0cd3cb4f3a0ea2c13"
+    },
+    {
+      "name": "local-harness-unit",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/local-harness-unit.log",
+      "sha256": "888bee7962dc50ff1ea28b42d0a81ee96d690d7186475152a20303198d6be49f"
+    },
+    {
+      "name": "local-up",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/local-up.log",
+      "sha256": "4788fadc1f6e35a3fe9ced7ef2f092f30ae0171300228d7c7ea2b720650ceb5a"
+    },
+    {
+      "name": "local-smoke",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/local-smoke.log",
+      "sha256": "b145ce55fffdbc8c26e45d34a2af2e0476fe46480d6d89c1bd2f0329a78dbb39"
+    },
+    {
+      "name": "local-auth-browser",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/local-auth-browser.log",
+      "sha256": "6432c8736ab73e3b6e955e12b122253d53b580dbbdeacaf7769a985cf20859a8"
+    },
+    {
+      "name": "local-leakcheck",
+      "exitCode": 0,
+      "evidence": "artifacts/full-ux-audit/resume-20261030/local-leakcheck.log",
+      "sha256": "3dcd45271dd5bcaa089a6149f71591204fc5aec4e5b795862358a9a89df20021"
+    }
+  ],
+  "sourceFileSha256": {
+    "apps/web/src/domains/admin/components/AdminQuickPalette.test.tsx": "caca48d6fb999dc57af69f4db4f3d9feddf97f7f33c27124ce69cd998ff1985e",
+    "apps/web/src/domains/admin/components/AdminQuickPalette.tsx": "1ef99c06032d2e5090b2a00d0123b64597eedb7817a098be065f4fb13d2bbec5",
+    "apps/web/src/domains/admin/router/AdminRouter.tsx": "0f34098f7f8940031a26b179fc84602946a7ca26c33936b4fa9ac3b1acac5bda",
+    "apps/web/src/domains/admin/shell/AdminShell.test.tsx": "8dbd8566856c5e1a2693635f7a835529d6d8595d139ca72bdb819e05b6bc6bff",
+    "apps/web/src/domains/admin/shell/AdminShell.tsx": "017c3eeab7ee422c80e6db132cfb212edbb50222be4c1f6ba4caabc634a315b0",
+    "apps/web/src/domains/creator/StudioSaveStatusBar.tsx": "6df785fcbfc8edf0ef063400a445dfe1c727e1039de81d26351494427da653d1",
+    "apps/web/src/domains/creator/StudioSaveSyncStatusCenter.tsx": "53cab6ce8aa55bfafe1f63e7e6aaefff3e0dab6880a6b71a07dcd234bcc22ff9",
+    "apps/web/src/domains/creator/anchor-consistency/ui/AnchorDropZone.tsx": "7b70d1e0649ef10b652d555d0793db2f287e50f2d4f8802e306c3bf3cec50794",
+    "apps/web/src/domains/creator/bg3d/StudioBg3dEditorModal.tsx": "44a7a3176afdb57f918ca6224c94f3d3b42fa47c24e54d4845fb0bbd34a60815",
+    "apps/web/src/domains/creator/live/StudioSaveStatusBar.test.tsx": "88d2b786147918efbfaae8291b61e4cf81cecfd080cc7e261e20cacb82d87a0c",
+    "apps/web/src/domains/creator/live/StudioSaveSyncStatusCenter.test.tsx": "0a9e990e6c7f14e5d6dff2157d676940da5c5ec75e45e1c76b7aa07d901385ef",
+    "apps/web/src/domains/creator/studio-mobile-touch-flow.ts": "ce95c8cde4c4cc940d6fceea503da95b8eed80e167cb4a76fe9d74fbd1c7fe44",
+    "apps/web/src/domains/creator/studio-shell/MobileFullEditNotice.test.tsx": "a3c898df59f784e4ae0085081bd6c6b50d0c996698af46b2b72858a26eed253e",
+    "apps/web/src/domains/creator/studio-shell/MobileFullEditNotice.tsx": "4166eb6912e7fc1c969b7dc041683ec0fce953b8610122bc6174c0a566716cbf",
+    "apps/web/src/domains/creator/studio-shell/StudioCreatorLobby.tsx": "e782b2c6ff605b544ceb2ce404b7f2242509508bf79f51fee3bdbfd30e8047fa",
+    "apps/web/src/domains/creator/studio-shell/mobile-full-edit-notice.test.ts": "b835df7937609d6a76f594c8b89ac519176cb7c537ddc24fe06e47904bf5a758",
+    "apps/web/src/domains/cuts/cuts.css": "c871ea10dd1115e5530d62a4c285c56b5062e29cd56d50e8f5850eda6f32a910",
+    "apps/web/src/shared/components/site-experience/site-art-ui.css": "edd56231ec9ada73795a66a640b6082c60acf05774ffc3f9b1c53ead08462e77",
+    "e2e/admin-navigation-accessibility.spec.ts": "aa651701aa8560e81d171604dc31bbda593fa765ebb9359c45ba718c73da722a",
+    "e2e/atelier-public-polish.spec.ts": "858f448dfa856c510ac60487568da46e0859db58f96eb274abeefc5a09e2029c",
+    "e2e/beta-open-event-gate.spec.ts": "303b2188977b416b07275ce6c35abaf82510571ac4e7045e8d04e30f5ab1db41",
+    "e2e/capture-page-evidence.spec.ts": "ee9e4ef08f91efa8cc4f996978eb788afbaf2bc63dd238cb8ab4a24b4c562bd3",
+    "e2e/comprehensive-browser-audit.spec.ts": "b926b402d1c0b496b841b1325c7fe8815b3539c03766782a074e5787cfeda62c",
+    "e2e/helpers/capture-page-evidence.ts": "1fac20f350ac565ecf922754af5e09390dc0f17fe3f2a1254be979214a2e816b",
+    "e2e/helpers/expect-readable-control.ts": "04cd8551d4636dd8189a79250e2b724445c671492cccc818c3c4e2d0558e927d",
+    "e2e/helpers/studio-editor-panels.ts": "85f1d91297c89b332300aa3b7c3d0979106867c5279620d67614bd341dc39ecd",
+    "e2e/mobile-review-approval.spec.ts": "46a506fb5088ca52f696548e8d0522202e82da9fd79462d9bcf513878a011b3e",
+    "e2e/non-studio-controls.spec.ts": "2cddb607cfeb60bcf19f78c6fb7a6820da1ac22d380223398115b69880801d85",
+    "e2e/non-studio-experience.spec.ts": "f39f80b973ad56484f9e645d49e2ba3bfee7aa6430bb197dc02920a763ab9304",
+    "e2e/production-risk-intelligence.spec.ts": "378c42501270248366048195405fc8da11e42d6c70359952bc53c763f7a9584e",
+    "e2e/readable-controls.spec.ts": "e633aa7f7222ce400dfa068f2aea55eb01ba0690419c6a6bf4ae9f8344d25cc7",
+    "e2e/studio-editor-a11y.spec.ts": "7fa2272c2f0fa8b19d0b55b9da67900c6a5798b87a4875ca653bc85213281180",
+    "e2e/studio-exact-resume.spec.ts": "925aabfa77bdb2b1946284b83e7e6ff7d70243e77de51be9fca99de65c0ea011",
+    "e2e/usability-first-session.spec.ts": "e3c4898ef7870904f18d21408f38f53b2c5139b244be4bea5102d0e6be8b4985",
+    "playwright.non-studio.config.ts": "46b55c057ac493c7127ce081a79159cdb60c18b0efc3f9761829d93daf7a3e19",
+    "scripts/audit-sitewide-visual-ux.mjs": "fa1859b0b8b7761e12971c9a472da1265d6efd20caae85848778657b1daa50be",
+    "scripts/lib/sitewide-audit-route-inventory.mjs": "057d4607a611f2042f52c65a29cff30e9b56d42cd218ef44d721579ce665bc15",
+    "scripts/lib/sitewide-audit-route-inventory.test.mjs": "c933f1ccbe79716de028a9b2dbd6896d0aee84acc4b87ce4bc869641fe0e0f59",
+    "scripts/lib/sitewide-visual-ux-audit.mjs": "8b4530ba108924bf32614850743ce1453acc7d4e4c4a06568872e620aa056758",
+    "scripts/lib/sitewide-visual-ux-audit.test.mjs": "5d8766bd130ce2e8c7810fb3970daf242276310482a95e66eb565c8428697585",
+    "scripts/lib/studio-drawing-readiness.test.ts": "89dc92bb4787adb02f911ee65f3c32a7a8c57e73a48665a516051a5396d95fb8",
+    "scripts/lib/studio-drawing-readiness.ts": "df2c4fe3d147b072c21c6dba361c337a978388c330d0b59cd3aaeebf93354bba"
+  },
+  "limitations": [
+    "실제 OAuth 공급자 인증과 운영 배포 검증 아님",
+    "유효한 데이터와 모든 역할의 동적 CRUD·게시·구매·결제 미완주",
+    "기기 간 클라우드 저장·실시간 협업·유료 AI 전체 미검증",
+    "실물 휴대폰·펜·Safari·Firefox 전체 미검증",
+    "공개 API 503 fixture 화면 준비성은 해당 기능 성공을 뜻하지 않음",
+    "별도의 사용자 집단 평가 또는 SUS 점수 아님"
+  ]
+}

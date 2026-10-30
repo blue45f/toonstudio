@@ -1,5 +1,5 @@
-import { Check, CircleSlash, MonitorSmartphone, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, ChevronDown, CircleSlash, MonitorSmartphone, X } from "lucide-react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   dismissMobileFullEditNotice,
@@ -51,27 +51,49 @@ function useViewportQuery(queryText: string): boolean {
 }
 
 /**
- * 풀 편집 표면에 좁은 화면으로 들어왔을 때의 진입 안내 패턴.
- *
- * 데스크톱 UI가 그대로 좁아지면 "되는지 안 되는지"를 직접 눌러 보기 전에는 알 수 없다는
- * inclusion 발견 7의 마찰을 없앤다: 차단하지 않는 배너로 (1) 정밀 편집은 데스크톱이 편하다는 것,
- * (2) 이 기기에서 되는 작업 목록과 (3) 안 되는 작업 목록(대체 경로 포함)을 진입 즉시 알리고,
- * 닫으면 같은 세션에서는 다시 띄우지 않는다. 되는/안 되는 목록의 정본은 표면별
- * studio-mobile-touch-flow 계획이다. 데스크톱 폭+마우스에서는 렌더링하지 않지만,
- * 태블릿 가로(데스크톱 폭 + 터치 주 포인터)에서는 경계를 먼저 알리기 위해 렌더링한다.
+ * 처음에는 표면별 제한만 짧게 알리고 상세 목록은 사용자가 펼친다.
+ * 닫은 뒤에도 다시 여는 버튼을 남기며, 안내는 편집을 차단하거나 포커스를 가두지 않는다.
+ * 표면이 바뀌면 닫힘 기억을 새로 읽어 다른 도구의 제한을 누락하지 않는다.
  */
-export function MobileFullEditNotice({ surfaceId, surfaceLabel, mobileCapabilities, mobileLimitations, touchTier }: MobileFullEditNoticeProps) {
-  const bt = useBilingual("MobileFullEditNotice");
+export function MobileFullEditNotice(props: MobileFullEditNoticeProps) {
   const narrow = useViewportQuery(MOBILE_FULL_EDIT_NOTICE_QUERY);
   const touchTablet = useViewportQuery(MOBILE_TOUCH_TABLET_NOTICE_QUERY);
-  const [dismissed, setDismissed] = useState<boolean>(() => isMobileFullEditNoticeDismissed(surfaceId));
 
-  if ((!narrow && !touchTablet) || dismissed) return null;
+  if (!narrow && !touchTablet) return null;
+  return <MobileFullEditNoticeContent key={props.surfaceId} {...props} />;
+}
+
+function MobileFullEditNoticeContent({
+  surfaceId,
+  surfaceLabel,
+  mobileCapabilities,
+  mobileLimitations,
+  touchTier,
+}: MobileFullEditNoticeProps) {
+  const bt = useBilingual("MobileFullEditNotice");
+  const [dismissed, setDismissed] = useState(() => isMobileFullEditNoticeDismissed(surfaceId));
+  const [expanded, setExpanded] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const detailsId = useId();
   const limitations = mobileLimitations ?? [];
+  const compact = dismissed && !expanded;
+  // 정본 계획의 제한을 그대로 요약에 써서, 펼치기 전에도 현재 도구의 경계를 알린다.
+  const firstLimitation = limitations[0];
+  const reservedBottom = "max(var(--studio-canvas-bottom-inset, 4.75rem), var(--studio-mobile-dock-measured-height, 0px), env(safe-area-inset-bottom))";
 
   const close = () => {
     dismissMobileFullEditNotice(surfaceId);
     setDismissed(true);
+    setExpanded(false);
+    // 토글은 닫힘 전후 같은 DOM 노드다. 사라지는 버튼에 포커스를 남기지 않는다.
+    toggleRef.current?.focus({ preventScroll: true });
+  };
+
+  const handleEscape = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "Escape" || compact) return;
+    event.preventDefault();
+    event.stopPropagation();
+    close();
   };
 
   return (
@@ -79,40 +101,71 @@ export function MobileFullEditNotice({ surfaceId, surfaceLabel, mobileCapabiliti
       data-testid="mobile-full-edit-notice"
       data-studio-mobile-full-edit-notice="true"
       data-studio-mobile-touch-tier={touchTier}
+      data-studio-mobile-notice-expanded={expanded}
+      data-studio-mobile-notice-compact={compact}
+      data-studio-shortcut-boundary="true"
       aria-label={bt("모바일 편집 안내", "Mobile editing notice")}
       className={cn(
-        "fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-[90]",
-        "rounded-2xl border border-line bg-card/95 p-4 text-fg shadow-lg backdrop-blur-md",
+        "fixed z-[90] flex flex-col overflow-hidden rounded-2xl border border-line bg-card/95 text-fg shadow-lg backdrop-blur-md",
+        compact ? "right-3 max-w-[calc(100vw-1.5rem)]" : "inset-x-3 mx-auto max-w-lg",
       )}
+      style={{
+        bottom: `calc(${reservedBottom} + 0.5rem)`,
+        maxHeight: `calc(100dvh - ${reservedBottom} - env(safe-area-inset-top) - 1rem)`,
+      }}
     >
-      <div className="flex items-start gap-3">
-        <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden="true" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold leading-5">
-            {bt(
-              `${surfaceLabel.ko} 풀 편집은 데스크톱에서 가장 편해요`,
-              `Full editing in the ${surfaceLabel.en} works best on desktop`,
-            )}
+      <div className="flex shrink-0 items-center gap-1 px-1">
+        <button
+          ref={toggleRef}
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          onClick={() => setExpanded((value) => !value)}
+          onKeyDown={handleEscape}
+          className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm font-bold hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+        >
+          <MonitorSmartphone className="size-4 shrink-0 text-accent" aria-hidden="true" />
+          <span>{bt("기기 안내", "Device guide")}</span>
+          {" "}
+          {!compact ? <span className="text-xs font-normal text-fg-2">{expanded ? bt("접기", "Collapse") : bt("가능한 작업 보기", "View available tasks")}</span> : null}
+          <ChevronDown className={cn("ml-auto size-4 shrink-0", expanded && "rotate-180")} aria-hidden="true" />
+        </button>
+        {!compact ? (
+          <button
+            type="button"
+            onClick={close}
+            onKeyDown={handleEscape}
+            aria-label={bt("모바일 편집 안내 닫기", "Dismiss mobile editing notice")}
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
+      <div className="min-h-0 overflow-y-auto overscroll-contain px-3">
+        {!compact ? (
+          <p className="pb-3 text-xs leading-5 text-fg-2">
+            <strong className="block font-semibold text-fg">{bt(surfaceLabel.ko, surfaceLabel.en)}</strong>
+            {!expanded ? (firstLimitation
+              ? bt(firstLimitation.ko, firstLimitation.en)
+              : bt("정밀 편집은 데스크톱이 편해요. 이 기기에서 가능한 작업을 확인하세요.", "Precision editing works best on desktop. Check the tasks available on this device.")) : null}
           </p>
-          <p className="mt-1 text-xs leading-5 text-fg-2">
-            {bt(
-              "이 기기에서는 정밀 편집 도구가 접혀 있어요. 대신 아래 작업은 지금 바로 할 수 있어요.",
-              "Precision tools are folded away on this device. You can still do the following right now:",
-            )}
-          </p>
+        ) : null}
+        <div id={detailsId} hidden={!expanded}>
+          <h2 className="text-xs font-bold leading-5">{bt("지금 할 수 있어요", "Available now")}</h2>
           <ul className="mt-2 space-y-1">
             {mobileCapabilities.map((capability) => (
-              <li key={capability.ko} className="flex items-center gap-1.5 text-xs font-semibold text-fg">
-                <Check className="size-3.5 shrink-0 text-good" aria-hidden="true" />
+              <li key={capability.ko} className="flex items-start gap-1.5 text-xs leading-5 text-fg">
+                <Check className="mt-0.5 size-3.5 shrink-0 text-good" aria-hidden="true" />
                 {bt(capability.ko, capability.en)}
               </li>
             ))}
           </ul>
           {limitations.length > 0 ? (
             <>
-              <p className="mt-3 text-xs font-bold leading-5 text-fg">
+              <h2 className="mt-3 text-xs font-bold leading-5 text-fg">
                 {bt("이 기기에서는 안 돼요", "Not available on this device")}
-              </p>
+              </h2>
               <ul className="mt-1 space-y-1">
                 {limitations.map((limitation) => (
                   <li key={limitation.ko} className="flex items-start gap-1.5 text-xs leading-5 text-fg-2">
@@ -123,23 +176,16 @@ export function MobileFullEditNotice({ surfaceId, surfaceLabel, mobileCapabiliti
               </ul>
             </>
           ) : null}
+          <button
+            type="button"
+            onClick={close}
+            onKeyDown={handleEscape}
+            className="my-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-accent px-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+          >
+            {bt("안내 접고 계속하기", "Close guide and continue")}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={close}
-          aria-label={bt("모바일 편집 안내 닫기", "Dismiss mobile editing notice")}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <X className="size-4" aria-hidden="true" />
-        </button>
       </div>
-      <button
-        type="button"
-        onClick={close}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-accent px-3 text-sm font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        {bt("이해했어요", "Got it")}
-      </button>
     </aside>
   );
 }

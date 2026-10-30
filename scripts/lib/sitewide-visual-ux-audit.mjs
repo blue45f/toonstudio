@@ -1,4 +1,7 @@
 import ts from "typescript";
+import { createHash, randomUUID } from "node:crypto";
+import { rename, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 /** 브라우저에 직렬화해 실행하므로 외부 변수나 모듈을 참조하지 않는다. */
 export function inspectAuditRouteReadiness(root = document) {
@@ -20,11 +23,17 @@ export function inspectAuditRouteReadiness(root = document) {
   const count = (selector) => stage
     ? [...stage.querySelectorAll(selector)].filter(visible).length
     : 0;
+  const adminAccess = stage?.querySelector("[data-admin-access-state]");
+  const adminAccessState = visible(adminAccess) ? adminAccess.getAttribute("data-admin-access-state") : null;
+  const authGateVisible = adminAccessState === "guest" || adminAccessState === "forbidden";
   const loadingFallbacks = count("[data-route-loading-fallback]");
   const pendingMarkers = count("[data-route-pending]");
+  const blockedMarkers = count("[data-route-blocked]");
+  const degradedMarkers = count("[data-route-degraded]");
+  const errorMarkers = count("[data-route-error]");
   const recoveryVisible = count("[data-route-recovery]") > 0;
   const skeletons = count(".skeleton, [data-skeleton], [data-testid='skeleton']");
-  const ignored = "[data-route-semantic-heading], [data-route-recovery], [data-route-loading-fallback], [data-route-pending], [aria-busy='true'], [aria-hidden='true'], .sr-only, .skeleton, [data-skeleton]";
+  const ignored = "[data-route-semantic-heading], [data-route-recovery], [data-route-loading-fallback], [data-route-pending], [data-route-chrome], [aria-busy='true'], [aria-hidden='true'], .sr-only, .skeleton, [data-skeleton]";
   const contentElements = stage
     ? [...stage.querySelectorAll("h1,h2,h3,a[href],button,input,select,textarea,canvas,img,video,[role='alert'],[role='status']")]
       .filter((element) => visible(element) && !element.closest(ignored)).length
@@ -34,22 +43,83 @@ export function inspectAuditRouteReadiness(root = document) {
   else if (!stage) outcome = "missing";
   else if (recoveryVisible || state === "stalled") outcome = "stalled";
   else if (loadingFallbacks) outcome = "fallback";
-  else if (pendingMarkers || state === "pending" || stage.getAttribute("aria-busy") === "true") outcome = "pending";
-  else if (["blocked", "degraded", "error"].includes(state)) outcome = state;
+  else if (pendingMarkers || adminAccessState === "loading" || state === "pending" || stage.getAttribute("aria-busy") === "true") outcome = "pending";
+  else if (errorMarkers || adminAccessState === "error" || state === "error") outcome = "error";
+  else if (blockedMarkers || authGateVisible || state === "blocked") outcome = "blocked";
+  else if (degradedMarkers || state === "degraded") outcome = "degraded";
   else if (skeletons && contentElements <= 1) outcome = "skeleton";
   else if (state !== "ready" || !contentElements) outcome = "empty";
   return {
     pathname: view.location.pathname,
     state,
     readinessSource,
+    adminAccessState,
+    authGateVisible,
     outcome,
     developmentErrorOverlay,
     loadingFallbacks,
     pendingMarkers,
+    blockedMarkers,
+    degradedMarkers,
+    errorMarkers,
     recoveryVisible,
     skeletons,
     contentElements,
   };
+}
+
+/** 브라우저에서 독립 실행한다. sticky는 실제 내부 clip을 반영하고 fixed는 viewport 기준을 유지한다. */
+export function inspectAuditPositionedOverflow(root = document) {
+  const view = root.defaultView;
+  const findings = [];
+  for (const element of root.querySelectorAll("body *")) {
+    const style = view.getComputedStyle(element);
+    if (!["fixed", "sticky"].includes(style.position)) continue;
+    const rect = element.getBoundingClientRect();
+    if (style.display === "none" || style.visibility === "hidden" || rect.width <= 0 || rect.height <= 0) continue;
+    let insideClosedDetails = false;
+    for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      if (ancestor.tagName === "DETAILS" && !ancestor.open
+        && !ancestor.querySelector(":scope > summary")?.contains(element)) {
+        insideClosedDetails = true;
+        break;
+      }
+    }
+    if (insideClosedDetails) continue;
+
+    let left = rect.left;
+    let right = rect.right;
+    if (style.position === "sticky") {
+      // 문서·viewport 자체의 clip으로 화면 잘림을 정당화하지 않는다. 내부 스크롤 영역만 교차한다.
+      for (let ancestor = element.parentElement;
+        ancestor && ancestor !== root.body && ancestor !== root.documentElement;
+        ancestor = ancestor.parentElement) {
+        const ancestorStyle = view.getComputedStyle(ancestor);
+        if (/^(?:auto|scroll|hidden|clip|overlay)$/u.test(ancestorStyle.overflowX)
+          && ancestorStyle.display !== "contents") {
+          const clipRect = ancestor.getBoundingClientRect();
+          const scaleX = ancestor.offsetWidth > 0 ? clipRect.width / ancestor.offsetWidth : 1;
+          const clipLeft = clipRect.left + ancestor.clientLeft * scaleX;
+          left = Math.max(left, clipLeft);
+          right = Math.min(right, clipLeft + ancestor.clientWidth * scaleX);
+        }
+        // viewport에 고정된 컨테이너는 그 밖의 일반 overflow 조상에 의해 잘리지 않는다.
+        if (ancestorStyle.position === "fixed") break;
+      }
+    }
+    if (right <= left || (left >= -2 && right <= view.innerWidth + 2)) continue;
+    findings.push({
+      tag: element.tagName.toLowerCase(),
+      className: String(element.className).slice(0, 100),
+      position: style.position,
+      left: Math.round(left),
+      right: Math.round(right),
+      layoutLeft: Math.round(rect.left),
+      layoutRight: Math.round(rect.right),
+    });
+    if (findings.length === 12) break;
+  }
+  return findings;
 }
 
 /** 애니메이션 종료와 실제 콘텐츠 준비를 구분하고 SPA 전환이 안정된 뒤 관측한다. */
@@ -102,8 +172,37 @@ export function auditReadinessFindings(readiness, requestedPath) {
   if (readiness.outcome === "blocked" || readiness.outcome === "degraded") {
     warnings.push(`route-content-${readiness.outcome}`);
   }
-  if (readiness.pathname !== requestedPath) warnings.push(`route-redirect:${readiness.pathname}`);
+  if (readiness.pathname !== new URL(requestedPath, "http://audit.invalid").pathname) warnings.push(`route-redirect:${readiness.pathname}`);
+  if (classifyAuditRouteCoverage(readiness, requestedPath).content === "auth-gate") warnings.push("route-auth-gate");
   return { issues, warnings };
+}
+
+/** 시각 관측의 완료와 본문 도달·기능 검증은 서로 다른 증거다. */
+export function classifyAuditRouteCoverage(readiness, requestedPath) {
+  const pathname = new URL(requestedPath, "http://audit.invalid").pathname;
+  const authRedirect = readiness?.pathname !== pathname
+    && /^\/auth(?:\/|$)/u.test(readiness?.pathname ?? "");
+  let content = "unobserved";
+  if (authRedirect || readiness?.authGateVisible) content = "auth-gate";
+  else if (readiness?.outcome === "blocked" || readiness?.outcome === "degraded") content = readiness.outcome;
+  else if (readiness) content = readiness.outcome === "ready" && !readiness.timedOut ? "rendered" : "not-ready";
+  return { content, functionalVerification: "not-performed" };
+}
+
+/** 관측 직후 완전한 JSON 한 파일을 원자적으로 저장해 긴 감사 중간에도 근거를 읽을 수 있게 한다. */
+export async function persistAuditObservation(directory, result) {
+  const key = JSON.stringify([result.route, result.theme, result.viewport]);
+  const filename = `${createHash("sha256").update(key).digest("hex").slice(0, 24)}.json`;
+  const destination = path.join(directory, filename);
+  const temporary = `${destination}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temporary, JSON.stringify(result, null, 2));
+    await rename(temporary, destination);
+  } catch (error) {
+    await rm(temporary, { force: true });
+    throw error;
+  }
+  return filename;
 }
 
 /** Studio manifest의 선택 그룹과 선택 surface를 실제 감사 URL로 펼친다. */
@@ -117,6 +216,15 @@ export function expandAuditRoutePattern(pattern) {
     return [...new Set(alternatives.flatMap((value) => expandAuditRoutePattern(
       normalized.slice(0, group.index) + value + normalized.slice(group.index + group[0].length),
     )))];
+  }
+  const optionalParameter = /\/:[A-Za-z0-9_]+\?(?=\/|$)/u.exec(normalized);
+  if (optionalParameter) {
+    const before = normalized.slice(0, optionalParameter.index);
+    const after = normalized.slice(optionalParameter.index + optionalParameter[0].length);
+    return [...new Set([
+      ...expandAuditRoutePattern(`${before}${after}` || "/"),
+      ...expandAuditRoutePattern(`${before}${optionalParameter[0].slice(0, -1)}${after}`),
+    ])];
   }
   return [normalized.replace(/:[A-Za-z0-9_]+\??/gu, "visual-audit").replace(/\/{2,}/gu, "/").replace(/\/$/u, "") || "/"];
 }

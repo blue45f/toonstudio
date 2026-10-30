@@ -27,6 +27,11 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  translateBilingualValueForActiveLocale,
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
+
 import { resolveSaveRecoveryView } from "./studio-save-recovery-ux";
 import {
   formatRecoveryDiagnostics,
@@ -37,6 +42,9 @@ import {
 import { useStudioCopyFeedback } from "./use-studio-copy-feedback";
 
 import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
+
+const bi = (ko: string, en: string): string =>
+  translateBilingualValueForActiveLocale("StudioSaveSyncStatusCenter", ko, en);
 
 export interface StudioSaveSyncStatusCenterProps {
   readonly journal: StudioOperationJournalState;
@@ -67,14 +75,16 @@ function cloudStatusCopy(
   connectivity: StudioConnectivitySnapshot | null,
 ): string {
   if (connectivity?.mode === "server-unavailable") {
-    return r3c07StatusText("studio.panelStatus.r3c07.saveSync.serverUnavailable", "서버에 연결할 수 없어요. 작업은 이 기기에 보관 중이고, 연결이 돌아오면 자동으로 동기화해요.");
+    return bi("서버에 연결할 수 없어요. 서버 저장은 확인되지 않았어요.", "The server is unreachable. A server save has not been confirmed.");
   }
   if (connectivity?.mode === "reconnecting") {
-    return "서버 연결을 다시 확인하고 있어요.";
+    return bi("서버 연결을 다시 확인하고 있어요. 서버 저장은 아직 확인되지 않았어요.", "Checking the server connection. A server save has not been confirmed yet.");
   }
-  if (status === "synced") return "최신 상태로 저장됐어요.";
-  if (status === "pending") return "최근 변경을 이 기기에 보관했고 서버 동기화를 기다리고 있어요.";
-  return "인터넷이 연결되면 서버와 다시 동기화할 수 있어요.";
+  if (connectivity?.mode === "offline" || status === "offline") {
+    return bi("오프라인 상태예요. 서버 저장은 확인되지 않았어요.", "You are offline. A server save has not been confirmed.");
+  }
+  // synced는 로컬 편집 세대와 온라인 여부에서 나온 값이며 서버 receipt가 아니다.
+  return bi("이 화면에서는 서버 저장 여부를 확인할 수 없어요.", "This view cannot confirm whether your work is saved on the server.");
 }
 
 export function StudioSaveSyncStatusCenter({
@@ -87,6 +97,7 @@ export function StudioSaveSyncStatusCenter({
   onRetrySave,
   onRecheckConnection,
 }: StudioSaveSyncStatusCenterProps) {
+  useBilingualI18nRevision();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -95,6 +106,7 @@ export function StudioSaveSyncStatusCenter({
   const diagnosticsCopyStatus = diagnosticsCopy.statusFor("save-sync-diagnostics");
 
   const status = statusOverride ?? resolveSaveSyncStatus(journal, isOnline, isOpfsActive);
+  const hasLocalReceipt = statusOverride ? status.lastSavedAt > 0 : journal.lastCheckpoint !== null;
   if (status.pendingOperationsCount > 0) {
     peakPendingRef.current = Math.max(peakPendingRef.current, status.pendingOperationsCount);
   } else {
@@ -129,17 +141,20 @@ export function StudioSaveSyncStatusCenter({
   // 연결 모듈이 offline인데 저장 신호의 cloudSyncStatus가 아직 synced인
   // 구간에서 예전 분기는 "저장됨"으로 떨어지는 거짓 안심이 있었다 — 바와
   // 같은 판정을 쓰도록 offline 분기를 view.kind 기준으로 옮겼다.
+  const localSaveLabel = status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
+    ? bi("이 기기에 저장 중", "Saving on this device")
+    : hasLocalReceipt
+      ? bi("이 기기에 저장됨", "Saved on this device")
+      : bi("아직 저장 기록 없음", "No save recorded yet");
   const saveLabel = !status.localDurable
     ? "저장 확인 필요"
     : view.kind === "server-unavailable"
-      ? "서버 연결 안 됨 · 이 기기에 보관 중"
+      ? `${bi("서버 연결 안 됨", "Server unreachable")} · ${localSaveLabel}`
       : view.kind === "reconnecting"
         ? r3c07StatusText("studio.panelStatus.r3c07.saveSync.reconnecting", "연결 다시 확인 중")
         : view.kind === "offline" || status.cloudSyncStatus === "offline"
-          ? "오프라인 · 이 기기에 보관 중"
-          : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
-            ? `${status.pendingOperationsCount}개 변경 보존 중`
-            : "저장됨";
+          ? `${bi("오프라인", "Offline")} · ${localSaveLabel}`
+          : localSaveLabel;
 
   const handleCopyDiagnostics = () => {
     const report = formatRecoveryDiagnostics(journal, status);
@@ -213,13 +228,25 @@ export function StudioSaveSyncStatusCenter({
             <section className="rounded-lg bg-panel/60 p-2.5">
               <div className="flex items-start gap-2">
                 <HardDrive className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-fg">이 기기</p>
                   <p className="mt-0.5 leading-relaxed text-fg-3">
-                    {status.localDurable
-                      ? "최근 작업을 이 기기에 안전하게 보관하고 있어요."
-                      : "이 기기에 복구 가능한 작업을 남기지 못하고 있어요. 이 화면을 닫기 전에 프로젝트를 내보내 주세요."}
+                    {!status.localDurable
+                      ? "이 기기에 복구 가능한 작업을 남기지 못하고 있어요. 이 화면을 닫기 전에 프로젝트를 내보내 주세요."
+                      : status.pendingOperationsCount > 0
+                        ? bi("최근 변경을 이 기기에 저장하고 있어요. 저장 완료를 확인한 뒤 화면을 닫아 주세요.", "Saving recent changes on this device. Wait for saving to finish before closing this page.")
+                        : hasLocalReceipt
+                          ? bi("최근 작업이 이 기기에 저장됐어요.", "Your recent work is saved on this device.")
+                          : bi("아직 이 기기에 저장된 기록이 없어요.", "No save has been recorded on this device yet.")}
                   </p>
+                  {status.pendingOperationsCount > 0 ? (
+                    <progress
+                      aria-label={bi("이 기기 저장 대기열 진행률", "Local save queue progress")}
+                      className="mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-accent"
+                      max={peakPendingCount}
+                      value={drainedPendingCount}
+                    />
+                  ) : null}
                 </div>
               </div>
             </section>
@@ -235,18 +262,7 @@ export function StudioSaveSyncStatusCenter({
                   <p className="font-semibold text-fg">서버</p>
                   <p className="mt-0.5 leading-relaxed text-fg-3">
                     {cloudStatusCopy(status.cloudSyncStatus, connectivity)}
-                    {status.pendingOperationsCount > 0
-                      ? ` 서버에 아직 반영되지 않은 변경 ${status.pendingOperationsCount}개가 있어요.`
-                      : ""}
                   </p>
-                  {status.pendingOperationsCount > 0 ? (
-                    <progress
-                      aria-label="서버 동기화 대기열 진행률"
-                      className="mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-accent"
-                      max={peakPendingCount}
-                      value={drainedPendingCount}
-                    />
-                  ) : null}
                 </div>
               </div>
             </section>
@@ -257,7 +273,7 @@ export function StudioSaveSyncStatusCenter({
                 <div>
                   <p className="font-semibold text-fg">복구</p>
                   <p className="mt-0.5 leading-relaxed text-fg-3">
-                    {status.lastCheckpointAt > 0
+                    {hasLocalReceipt && status.lastCheckpointAt > 0
                       ? `마지막 복구 지점은 ${new Date(status.lastCheckpointAt).toLocaleTimeString()}에 만들어졌어요.`
                       : r3c07StatusText("studio.panelStatus.r3c07.saveSync.checkpointsEmpty", "아직 만들어진 복구 지점이 없어요. 아래에서 지금 만들 수 있어요.")}
                   </p>
@@ -309,7 +325,7 @@ export function StudioSaveSyncStatusCenter({
                   <Database className="size-3.5" aria-hidden />
                   로컬 저장 방식
                 </span>
-                <span>{status.localDurable ? "OPFS" : "메모리 전용"}</span>
+                <span>{status.localDurable ? bi("기기 저장", "Device storage") : bi("메모리 전용", "Memory only")}</span>
               </p>
               <p className="flex items-center justify-between gap-3">
                 <span>최근 작업 번호</span>

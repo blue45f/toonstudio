@@ -74,14 +74,14 @@
   gap: 0.4rem;
   padding: 0.55rem 1rem;
   border-radius: 999px;
-  background: #f43f5e;
+  background: #e11d48;
   color: #fff;
   font-weight: 700;
   font-size: 0.9rem;
   text-decoration: none;
 }
 .cuts-feed__make:hover {
-  background: #e11d48;
+  background: #be123c;
 }
 
 .cuts-player {
@@ -403,11 +403,11 @@
   cursor: pointer;
 }
 .cuts-button--primary {
-  background: #f43f5e;
+  background: #e11d48;
   color: #fff;
 }
 .cuts-button--primary:hover {
-  background: #e11d48;
+  background: #be123c;
 }
 .cuts-button--primary:disabled {
   background: #c9c9d4;

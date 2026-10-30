@@ -1,3 +1,4 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
 import { Download, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -38,25 +39,14 @@ export function AdminQuickPalette({ userId }: AdminQuickPaletteProps) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!open) return;
-    inputRef.current?.focus();
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [open]);
-
-  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing) return;
       if (
         event.key.toLowerCase() === "k" &&
         (event.metaKey || event.ctrlKey)
       ) {
         event.preventDefault();
         setOpen((current) => !current);
-      } else if (event.key === "Escape") {
-        setOpen(false);
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -65,7 +55,6 @@ export function AdminQuickPalette({ userId }: AdminQuickPaletteProps) {
 
   const close = () => {
     setOpen(false);
-    globalThis.requestAnimationFrame(() => triggerRef.current?.focus());
   };
 
   const navigate = (path: string) => {
@@ -97,24 +86,28 @@ export function AdminQuickPalette({ userId }: AdminQuickPaletteProps) {
   const overlay =
     open && typeof document !== "undefined"
       ? createPortal(
-          <div
+          <Dialog.Overlay
             className="fixed inset-0 z-[110] flex items-start justify-center bg-canvas/85 p-4 pt-[10vh] backdrop-blur-sm"
             role="presentation"
             onMouseDown={(event) => {
               if (event.currentTarget === event.target) close();
             }}
           >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label={t("admin.palette.trigger")}
+            <Dialog.Content
+              aria-describedby={undefined}
+              onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                inputRef.current?.focus();
+              }}
               className="w-full max-w-2xl overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl shadow-canvas"
             >
-              <Command className="bg-transparent text-fg">
+              <Dialog.Title className="sr-only">{t("admin.palette.trigger")}</Dialog.Title>
+              <Command label={t("admin.palette.placeholder")} className="bg-transparent text-fg">
                 <div className="flex items-center gap-2 border-b border-line px-4">
                   <Search className="text-fg-3" size={17} />
                   <Command.Input
                     ref={inputRef}
+                    aria-label={t("admin.palette.placeholder")}
                     placeholder={t("admin.palette.placeholder")}
                     className="min-h-14 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-3"
                   />
@@ -122,7 +115,7 @@ export function AdminQuickPalette({ userId }: AdminQuickPaletteProps) {
                     type="button"
                     onClick={close}
                     aria-label={copy.closeCommandPalette}
-                    className="inline-flex size-9 items-center justify-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg"
                   >
                     <X size={16} />
                   </button>
@@ -196,19 +189,21 @@ export function AdminQuickPalette({ userId }: AdminQuickPaletteProps) {
                   </Command.Group>
                 </Command.List>
               </Command>
-            </div>
-          </div>,
+            </Dialog.Content>
+          </Dialog.Overlay>,
           document.body,
         )
       : null;
 
   return (
-    <>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
       <button
+        data-admin-command-trigger="true"
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+        className="inline-flex min-h-11 min-w-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
+        aria-label={t("admin.palette.trigger")}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
@@ -220,7 +215,8 @@ export function AdminQuickPalette({ userId }: AdminQuickPaletteProps) {
           ⌘K
         </kbd>
       </button>
+      </Dialog.Trigger>
       {overlay}
-    </>
+    </Dialog.Root>
   );
 }
