@@ -121,6 +121,9 @@ describe("character-shaper-gen3d-bridge — SHAPER REA × Tripo 3D V3 MCP 리얼
       extractLuminanceOutline: true,
       passes: [
         { id: "beauty" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
+        // 헤어 분리는 실제 밑색과 별도 음영 패스를 요구한다. Beauty를 밑색으로 위장하지 않는다.
+        { id: "flat" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
+        { id: "shadow" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
         { id: "mask-hair" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
         { id: "line" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
       ],
@@ -143,6 +146,13 @@ describe("character-shaper-gen3d-bridge — SHAPER REA × Tripo 3D V3 MCP 리얼
     expect(assembled.receipt.layerNames).toContain("Hair Base");
     expect(assembled.receipt.layerNames).toContain("Hair Shadow");
     expect(assembled.receipt.layerNames).toContain("Hair Line");
+    const missingFlat = buildCharacterSemanticPsd(validRequest.passes.filter((pass) => pass.id !== "flat"), [], {
+      title: validRequest.title, createHairLayer: true, extractLuminanceOutline: true,
+    });
+    expect(missingFlat.receipt.layerNames).not.toContain("헤어 (SHAPER 3-Layer)");
+    expect(missingFlat.receipt.skipped).toEqual(expect.arrayContaining([
+      expect.objectContaining({ pass: "mask-hair", reason: expect.stringContaining("실제 밑색") }),
+    ]));
   });
 
   it("SHAPER MaterialData::ApplyShadeLine (0x06000236) 3차 MatCap 램프·반사광·비등방 외곽선(1.5×0.3)·hID*1 헤어 내선 억제를 계산한다", () => {

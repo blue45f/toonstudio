@@ -2,15 +2,30 @@ import { readFile } from "node:fs/promises";
 
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
+import { characterEditCategory } from "../apps/web/src/domains/creator/character-shaper/character-shaper-reference-model";
 import { STUDIO_BETA_NOTICE_REVISION, STUDIO_BETA_NOTICE_STORAGE_KEY } from "../apps/web/src/domains/creator/studio-beta-notice-storage";
 
+import type { CharacterSlotKind } from "../apps/web/src/domains/creator/character-shaper/character-shaper-contract";
+
 const ROOT = '[data-character-shaper="true"]';
-const SLOTS = ["face-shape", "eyes", "irises", "nose", "mouth", "ears", "hair", "body", "top", "bottom", "shoes", "accessory", "expression", "pose", "hand-pose"];
+const SLOTS: readonly CharacterSlotKind[] = ["face-shape", "eyes", "irises", "nose", "mouth", "ears", "hair", "body", "top", "bottom", "shoes", "accessory", "expression", "pose", "hand-pose"];
 
 async function activate(target: Locator, info: TestInfo): Promise<void> {
   await target.scrollIntoViewIfNeeded();
   if (info.project.use.hasTouch) await target.tap();
   else await target.click();
+}
+
+async function selectSlot(root: Locator, slot: CharacterSlotKind, info: TestInfo): Promise<void> {
+  const category = characterEditCategory(slot);
+  const tab = root.locator(`[data-character-category="${category.id}"]`);
+  await activate(tab, info);
+  await expect(tab).toHaveAttribute("aria-current", "true");
+  if (category.slots.length > 1) {
+    const part = root.locator(`[data-character-subslot-tabs] [data-character-slot="${slot}"]`);
+    await activate(part, info);
+    await expect(part).toHaveAttribute("aria-current", "true");
+  }
 }
 
 async function openCharacter(page: Page): Promise<Locator> {
@@ -79,8 +94,9 @@ test("15개 슬롯에서 프리셋 적용과 지원 제한을 실제 런타임�
   const root = await openCharacter(page);
   const coverage: { slot: string; available: number; unavailable: number; applied: boolean }[] = [];
   for (const slot of SLOTS) {
-    await activate(root.locator(`[data-character-slot="${slot}"]`), info);
-    await expect(root.locator(`[data-character-slot="${slot}"]`)).toHaveAttribute("aria-current", "true");
+    await selectSlot(root, slot, info);
+    // 선택 표시만으로 런타임 적용 성공을 주장하지 않는다. 실제 출력 가능 상태도 확인한다.
+    await expect(root.getByRole("button", { name: "캔버스에 추가", exact: true })).toBeEnabled();
     const available = root.locator('[data-character-slot-card]:not([aria-disabled="true"])');
     const candidate = root.locator('[data-character-slot-card-availability="available"]:not([aria-pressed="true"])').first();
     const canApply = await candidate.count() > 0;
@@ -92,6 +108,8 @@ test("15개 슬롯에서 프리셋 적용과 지원 제한을 실제 런타임�
       await activate(candidate, info);
       // 선택 직후 :not([aria-pressed=true])는 다음 카드로 바뀌므로 같은 원본 ID를 검증한다.
       await expect(root.locator(`[data-character-slot-card="${entryId}"]`)).toHaveAttribute("aria-pressed", "true");
+      await page.mouse.move(0, 0);
+      await expect(root.getByRole("button", { name: "캔버스에 추가", exact: true })).toBeEnabled();
     }
   }
   expect(coverage).toHaveLength(15);
@@ -103,7 +121,7 @@ test("15개 슬롯에서 프리셋 적용과 지원 제한을 실제 런타임�
 
 test("프리셋 편집의 실행 취소와 다시 실행이 실제 선택을 복원한다", async ({ page }, info) => {
   const root = await openCharacter(page);
-  await activate(root.locator('[data-character-slot="face-shape"]'), info);
+  await selectSlot(root, "face-shape", info);
   const egg = root.locator('[data-character-slot-card="face-shape:oval"]');
   await activate(egg, info);
   await expect(egg).toHaveAttribute("aria-pressed", "true");
@@ -120,9 +138,10 @@ test("실제 PNG 파일을 생성하고 이미지 서명과 해상도를 검증�
   const root = await openCharacter(page);
   const more = root.getByRole("button", { name: "내보내기 더 보기", exact: true });
   if (await more.count()) await activate(more, info);
+  else await activate(root.getByRole("button", { name: "출력 설정", exact: true }), info);
   await root.getByRole("combobox", { name: "파일 내보내기 해상도" }).selectOption("1024");
   const pending = page.waitForEvent("download", { timeout: 120_000 });
-  await activate(root.getByRole("button", { name: "PNG 저장", exact: true }), info);
+  await activate(root.getByRole("group", { name: "내보내기", exact: true }).getByRole("button", { name: "PNG 저장", exact: true }), info);
   const download = await pending;
   expect(await download.failure()).toBeNull();
   const file = info.outputPath("character-export.png");
