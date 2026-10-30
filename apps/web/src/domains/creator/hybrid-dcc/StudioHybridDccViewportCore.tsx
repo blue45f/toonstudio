@@ -10,7 +10,7 @@ import { ContactShadows } from "@react-three/drei/core/ContactShadows.js";
 import { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
 import { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
 import { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
-import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   AlertTriangle,
   Boxes,
@@ -35,21 +35,22 @@ import {
 import * as THREE from "three";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import {
-  mapStudioHybridDccRayFaceIndex,
-  type StudioHybridDccComponentMode,
-  type StudioHybridDccComponentSelection,
-  type StudioHybridDccMeshSelectionSource,
-  type StudioHybridDccSelectionMode,
-  type StudioHybridDccSelectionOperation,
+import type {
+  StudioHybridDccComponentMode,
+  StudioHybridDccComponentSelection,
+  StudioHybridDccSelectionMode,
+  StudioHybridDccSelectionOperation,
 } from "./studio-hybrid-dcc-component-selection";
 import {
   STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION,
   type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
-import { resolveStudioHybridDccScreenComponentCandidate } from "./studio-hybrid-dcc-screen-selection";
+import { createStudioHybridDccBoundaryOrbitGate, handleStudioHybridDccViewportMeshClick, type StudioHybridDccBoundaryEndpointPickHandler } from "./studio-hybrid-dcc-viewport-mesh-click";
+import { StudioHybridDccBoundaryEndpointMarkers } from "./StudioHybridDccBoundaryEndpointMarkers";
+import type { StudioBoundaryEndpointLease } from "./studio-hybrid-dcc-boundary-endpoint";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
+import { selectStudioHybridDccComponentFaceOverlayIndices } from "./studio-hybrid-dcc-component-face-overlay";
 import { detectStudioHybridDccWebglCapability } from "./studio-hybrid-dcc-webgl-probe";
 import {
   resolveStudioHybridDccViewportShortcut,
@@ -81,6 +82,7 @@ export { deriveStudioHybridDccViewportSnapshot } from "./studio-hybrid-dcc-viewp
 export type { StudioHybridDccViewportAssetSnapshot, StudioHybridDccViewportSnapshot, StudioHybridDccViewportRenderSource } from "./studio-hybrid-dcc-viewport-snapshot";
 
 export type { StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
+export type { StudioHybridDccBoundaryEndpointPick, StudioHybridDccBoundaryEndpointPickHandler } from "./studio-hybrid-dcc-viewport-mesh-click";
 
 export type StudioHybridDccViewportProjection = "perspective" | "orthographic";
 export type StudioHybridDccViewportOverlay = "material" | "material-wire" | "wireframe";
@@ -114,6 +116,8 @@ export interface StudioHybridDccViewportProps {
     operation: StudioHybridDccSelectionOperation,
   ) => void;
   readonly onClearComponentSelection?: () => void;
+  readonly onBoundaryEndpointPick?: StudioHybridDccBoundaryEndpointPickHandler;
+  readonly boundaryEndpointMarkers?: readonly StudioBoundaryEndpointLease[];
   readonly onComponentSelectionError?: (message: string) => void;
   /** Keeps camera inspection available while preventing stale edits during async engine work. */
   readonly editingDisabled?: boolean;
@@ -238,44 +242,17 @@ function createStudioHybridDccComponentOverlayResource(
   elementIds: readonly number[],
 ): StudioHybridDccComponentOverlayResource | null {
   if (elementIds.length === 0) return null;
-  const selected = new Set(elementIds);
   const verticesById = new Map(asset.mesh.vertices.map((vertex) => [vertex.id, vertex]));
   const geometry = new THREE.BufferGeometry();
 
   if (mode === "face") {
-    const selectedIndices: number[] = [];
-    let triangleOffset = 0;
-    for (const face of asset.mesh.faces) {
-      let corners = 0;
-      let halfEdgeId = face.he;
-      const visited = new Set<number>();
-      while (!visited.has(halfEdgeId)) {
-        visited.add(halfEdgeId);
-        corners += 1;
-        const halfEdge = asset.mesh.halfEdges[halfEdgeId];
-        if (!halfEdge) break;
-        halfEdgeId = halfEdge.next;
-      }
-      const triangleCount = Math.max(0, corners - 2);
-      if (selected.has(face.id)) {
-        for (let triangle = 0; triangle < triangleCount; triangle += 1) {
-          const indexOffset = (triangleOffset + triangle) * 3;
-          const a = asset.indices[indexOffset];
-          const b = asset.indices[indexOffset + 1];
-          const c = asset.indices[indexOffset + 2];
-          if (a !== undefined && b !== undefined && c !== undefined) {
-            selectedIndices.push(a, b, c);
-          }
-        }
-      }
-      triangleOffset += triangleCount;
-    }
-    if (selectedIndices.length === 0) {
+    const selectedIndices = selectStudioHybridDccComponentFaceOverlayIndices(asset, elementIds);
+    if (!selectedIndices) {
       geometry.dispose();
       return null;
     }
     geometry.setAttribute("position", new THREE.BufferAttribute(asset.positions, 3));
-    geometry.setIndex(new THREE.BufferAttribute(Uint32Array.from(selectedIndices), 1));
+    geometry.setIndex(new THREE.BufferAttribute(selectedIndices, 1));
   } else if (mode === "edge") {
     const halfEdgesById = new Map(asset.mesh.halfEdges.map((halfEdge) => [halfEdge.id, halfEdge]));
     const positions: number[] = [];
@@ -387,6 +364,10 @@ function StudioHybridDccAssetMesh({
   selected,
   onSelect,
   onSelectComponent,
+  onBoundaryEndpointPick,
+  boundaryEndpointMarkers,
+  componentSelection,
+  canSelect,
   onSelectionError,
   selectionElementIds,
   selectionMode,
@@ -415,6 +396,10 @@ function StudioHybridDccAssetMesh({
     operation: StudioHybridDccSelectionOperation,
   ) => void;
   readonly onSelectionError?: (message: string) => void;
+  readonly onBoundaryEndpointPick?: StudioHybridDccBoundaryEndpointPickHandler;
+  readonly boundaryEndpointMarkers?: readonly StudioBoundaryEndpointLease[];
+  readonly componentSelection?: StudioHybridDccComponentSelection;
+  readonly canSelect: () => boolean;
   readonly selectionElementIds: readonly number[];
   readonly selectionMode: StudioHybridDccSelectionMode;
   readonly editingDisabled: boolean;
@@ -459,60 +444,9 @@ function StudioHybridDccAssetMesh({
         castShadow
         receiveShadow
         {...sculptPointer}
-        onClick={(event: ThreeEvent<MouseEvent>) => {
-          event.stopPropagation();
-          if (editingDisabled || sculptGesture || sculptStroke) return;
-          if (selectionMode === "object" || !onSelectComponent) {
-            onSelect(asset.assetId);
-            return;
-          }
-          if (!Number.isSafeInteger(event.faceIndex) || (event.faceIndex ?? -1) < 0) {
-            onSelect(asset.assetId);
-            onSelectionError?.(frozenStatus2Text("studio.frozenStatus2.hybrid.selectionNotFound", "클릭한 삼각형을 편집 메시의 점·선·면으로 찾지 못했습니다."));
-            return;
-          }
-          const source: StudioHybridDccMeshSelectionSource = {
-            assetId: asset.assetId,
-            mesh: asset.mesh,
-            meshRevision: asset.meshRevision,
-            sourceHash: asset.meshHash,
-          };
-          const mapping = mapStudioHybridDccRayFaceIndex(source, event.faceIndex!);
-          if (!mapping.ok) {
-            onSelect(asset.assetId);
-            onSelectionError?.(mapping.diagnostics.map(({ message }) => message).join(" · "));
-            return;
-          }
-          const nativeEvent = event.nativeEvent;
-          const operation: StudioHybridDccSelectionOperation = nativeEvent.altKey
-            ? "subtract"
-            : nativeEvent.ctrlKey || nativeEvent.metaKey
-              ? "toggle"
-              : nativeEvent.shiftKey
-                ? "add"
-                : "replace";
-          let elementId = mapping.value.faceId;
-          if (selectionMode === "vertex" || selectionMode === "edge") {
-            const nearest = resolveStudioHybridDccScreenComponentCandidate(
-              asset.mesh,
-              selectionMode,
-              {
-                vertexIds: mapping.value.vertexCandidateIds,
-                edges: mapping.value.edgeCandidates,
-              },
-              event.pointer,
-              event.camera,
-              event.object.matrixWorld,
-              viewportSize,
-            );
-            if (nearest === null) {
-              onSelectionError?.(selectionMode === "vertex" ? frozenStatus2Text("studio.frozenStatus2.hybrid.clickNearVertex", "꼭짓점 가까이를 클릭해 주세요. 면 가운데는 임의의 점으로 선택하지 않습니다.") : frozenStatus2Text("studio.frozenStatus2.hybrid.clickNearEdge", "모서리 가까이를 클릭해 주세요. 면 가운데는 임의의 선으로 선택하지 않습니다."));
-              return;
-            }
-            elementId = nearest;
-          }
-          onSelectComponent(asset.assetId, selectionMode, elementId, operation);
-        }}
+        onClick={(event) => handleStudioHybridDccViewportMeshClick(event, { asset, selectionMode, editingDisabled,
+          sculpting: Boolean(sculptGesture || sculptStroke), canSelect, viewportSize, onSelect, onSelectComponent,
+          onSelectionError, onBoundaryEndpointPick })}
       >
         <StudioHybridDccSurfaceMaterial geometry={resource.geometry} slots={resource.materialSlots} bindings={asset.toonMaterials}
           color={asset.materialColor ?? viewportPaletteCssColor(selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
@@ -549,6 +483,7 @@ function StudioHybridDccAssetMesh({
           mode={selectionMode}
         />
       ) : null}
+      {boundaryEndpointMarkers?.length ? <StudioHybridDccBoundaryEndpointMarkers asset={asset} selection={componentSelection} leases={boundaryEndpointMarkers} color={VIEWPORT_COLORS.wireSelected} /> : null}
     </group>
   );
   if (editingDisabled || sculptGesture || sculptStroke || !selected || !onCommitTransform || selectionMode !== "object") {
@@ -675,6 +610,8 @@ export function StudioHybridDccViewport({
   onDeleteSelected,
   onDuplicateSelected,
   onSelectComponent,
+  onBoundaryEndpointPick,
+  boundaryEndpointMarkers,
   editingDisabled = false,
   interactionDescription = DEFAULT_STUDIO_HYBRID_DCC_VIEWPORT_DESCRIPTION,
   uvChecker = false,
@@ -708,6 +645,7 @@ export function StudioHybridDccViewport({
   const [interactionNotice, setInteractionNotice] = useState("");
   const draggingRef = useRef(false);
   const selectionGateRef = useRef<ReturnType<typeof createStudioHybridDccSelectionGate<ReturnType<typeof setTimeout>>> | null>(null);
+  const [orbitGate] = useState(() => createStudioHybridDccBoundaryOrbitGate(() => selectionGateRef.current?.suppress()));
   useEffect(() => {
     const gate = createStudioHybridDccSelectionGate(setTimeout, clearTimeout);
     selectionGateRef.current = gate;
@@ -824,8 +762,10 @@ export function StudioHybridDccViewport({
     setDragging(active);
     if (!active) selectionGateRef.current?.suppress();
   };
-  const selectionAllowed = () => !editingDisabled && !draggingRef.current
+  const selectionAllowed = () => !editingDisabled && !draggingRef.current && orbitGate.allows()
     && (selectionGateRef.current?.allows() ?? true);
+  const pickingBoundary = Boolean(onBoundaryEndpointPick);
+  useEffect(() => () => orbitGate.end(), [orbitGate, effectiveProjection, contextLost, pickingBoundary]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -840,8 +780,8 @@ export function StudioHybridDccViewport({
         textEntry: Boolean(target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="spinbutton"]')),
         selected: Boolean(selectedAsset), editingDisabled: editingDisabled || Boolean(sculptGesture || onSculptStroke),
         objectMode: effectiveSelectionMode === "object", canTransform: Boolean(onCommitAssetTransform),
-        canSelectComponents: Boolean(onComponentSelectionModeChange), canDuplicate: Boolean(onDuplicateSelected),
-        canDelete: Boolean(onDeleteSelected), dragging: draggingRef.current,
+        canSelectComponents: Boolean(onComponentSelectionModeChange) && !onBoundaryEndpointPick, canDuplicate: Boolean(onDuplicateSelected) && !onBoundaryEndpointPick,
+        canDelete: Boolean(onDeleteSelected) && !onBoundaryEndpointPick, dragging: draggingRef.current,
       });
       if (!action) return;
       if (action.kind === "toggle-isolation" && !isolatedAssetId && !selectedAsset) return;
@@ -879,7 +819,7 @@ export function StudioHybridDccViewport({
     viewport.addEventListener("keydown", handleViewportShortcut);
     return () => viewport.removeEventListener("keydown", handleViewportShortcut);
   }, [onCommitAssetTransform, onDeleteSelected, onDuplicateSelected,
-    onComponentSelectionModeChange, onProjectionChange, projection, effectiveProjection,
+    onComponentSelectionModeChange, onBoundaryEndpointPick, onProjectionChange, projection, effectiveProjection,
     selectedAsset, editingDisabled, effectiveSelectionMode, onSculptStroke, sculptGesture, isolatedAssetId, setPreferences]);
 
   return (
@@ -945,7 +885,7 @@ export function StudioHybridDccViewport({
               gl.domElement.tabIndex = 0;
             }}
             onPointerMissed={() => {
-              if (!selectionAllowed()) return;
+              if (onBoundaryEndpointPick || !selectionAllowed()) return;
               if (effectiveSelectionMode === "object") onSelectAsset(null);
               else onClearComponentSelection?.();
             }}
@@ -967,6 +907,7 @@ export function StudioHybridDccViewport({
               minDistance={0.05}
               maxDistance={Math.max(120, snapshot.radius * 24)}
               regress
+              onStart={() => orbitGate.start(Boolean(onBoundaryEndpointPick))} onChange={() => orbitGate.change()} onEnd={() => orbitGate.end()}
             />
             <StudioHybridDccCameraRig
               center={framedCenter}
@@ -1008,6 +949,10 @@ export function StudioHybridDccViewport({
                 overlay={effectiveOverlay}
                 uvChecker={uvChecker}
                 selected={asset.assetId === selectedAssetId}
+                canSelect={selectionAllowed}
+                onBoundaryEndpointPick={onBoundaryEndpointPick}
+                boundaryEndpointMarkers={boundaryEndpointMarkers}
+                componentSelection={componentSelection}
                 onSelect={(assetId) => { if (selectionAllowed()) onSelectAsset(assetId); }}
                 onSelectComponent={onSelectComponent
                   ? (...args) => { if (selectionAllowed()) onSelectComponent(...args); }
@@ -1155,9 +1100,9 @@ export function StudioHybridDccViewport({
                   <SegmentedButton
                     key={option.id}
                     active={effectiveSelectionMode === option.id}
-                    disabled={editingDisabled || (option.id !== "object" && !selectedAsset)}
+                    disabled={editingDisabled || Boolean(onBoundaryEndpointPick) || (option.id !== "object" && !selectedAsset)}
                     label={option.accessible}
-                    onClick={() => onComponentSelectionModeChange(option.id)}
+                    onClick={() => { if (!onBoundaryEndpointPick) onComponentSelectionModeChange(option.id); }}
                   >
                     {option.label}
                   </SegmentedButton>
@@ -1293,8 +1238,8 @@ export function StudioHybridDccViewport({
                   data-material-id={asset.materialId}
                   data-render-hash={asset.renderHash}
                   data-render-source={asset.renderSource}
-                  disabled={editingDisabled}
-                  onClick={() => { if (selectionAllowed()) onSelectAsset(asset.assetId); }}
+                  disabled={editingDisabled || Boolean(onBoundaryEndpointPick)}
+                  onClick={() => { if (!onBoundaryEndpointPick && selectionAllowed()) onSelectAsset(asset.assetId); }}
                   className={classes(
                     "min-h-11 max-w-40 shrink-0 rounded-lg border px-2.5 text-left transition-colors motion-reduce:transition-none sm:pointer-fine:min-h-9",
                     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
