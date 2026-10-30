@@ -72,7 +72,8 @@ it("산호 테이블의 관측된 상판 진입을 막고 두 좌석 사이와 �
   if (!firstSeat || !secondSeat || !spawn || !portal) throw new Error("산호 좌석·입구·귀환 위치가 없습니다.");
 
   expect(studioWorldCanOccupy(world, { x: 889, y: 643 }, 12)).toBe(false);
-  expect(studioWorldCanOccupy(world, { x: 889, y: 600 }, 12)).toBe(true);
+  expect(studioWorldCanOccupy(world, { x: 889, y: 620 }, 12)).toBe(false);
+  expect(studioWorldCanOccupy(world, { x: 889, y: 570 }, 12)).toBe(true);
   expect([firstSeat.anchorPoint, secondSeat.anchorPoint, portal.point]).toEqual([
     { x: 820, y: 700 }, { x: 900, y: 440 }, { x: 660, y: 965 },
   ]);

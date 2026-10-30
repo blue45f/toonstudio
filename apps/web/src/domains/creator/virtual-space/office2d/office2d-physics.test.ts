@@ -74,7 +74,7 @@ describe("Office2dPhysicsWorld", () => {
     });
     // 실제 self와 같은 actor 분류로 회전을 고정해 소품의 토크와 아바타 충돌을 구분한다.
     const actor = physics.addBody({ id: "actor", kind: "dynamic", shape: { type: "circle", radius: 12 },
-      x: 889, y: 600, mass: 60, linearDamping: 0, restitution: 0, friction: 0.1,
+      x: 889, y: 560, mass: 60, linearDamping: 0, restitution: 0, friction: 0.1,
       category: OFFICE2D_CATEGORY.actor, maxSpeed: 600 });
     let furthestY = actor.y;
     for (let index = 0; index < 120; index += 1) {
@@ -83,8 +83,8 @@ describe("Office2dPhysicsWorld", () => {
       furthestY = Math.max(furthestY, actor.y);
     }
     expect(actor.x).toBeCloseTo(889, 5);
-    expect(actor.y).toBeGreaterThan(615);
-    expect(furthestY).toBeLessThanOrEqual(620.5);
+    expect(actor.y).toBeGreaterThan(583);
+    expect(furthestY).toBeLessThanOrEqual(588.5);
   });
 
   it("벽에 비스듬히 부딪히면 벽을 따라 미끄러진다", () => {
