@@ -6,9 +6,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   appendCanvasOperation,
   createEmptyOperationJournal,
+  createJournalCheckpoint,
   type StudioSaveSyncStatus,
 } from "../studio-operation-recovery-coordinator";
 import { StudioSaveSyncStatusCenter } from "../StudioSaveSyncStatusCenter";
+import {
+  createStudioSaveSyncSignalStore,
+  resolveSaveSyncStatusFromSignals,
+  saveSyncJournalSnapshotFromSignals,
+} from "../studio-save-sync-signals";
 
 import type { StudioConnectivitySnapshot } from "../offline/studio-connectivity";
 
@@ -34,28 +40,71 @@ function openAdvancedDiagnostics(): HTMLButtonElement {
 }
 
 describe("StudioSaveSyncStatusCenter", () => {
-  it("shows a compact, unambiguous saved state", () => {
-    const journal = createEmptyOperationJournal("doc-1");
+  it("로컬 체크포인트가 있으면 저장 범위를 기기로 표시한다", () => {
+    const journal = createJournalCheckpoint(createEmptyOperationJournal("doc-1"), {});
     render(<StudioSaveSyncStatusCenter journal={journal} />);
 
-    expect(screen.getByText("저장됨")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "저장 상태 열기: 저장됨" })).not.toBeNull();
+    expect(screen.getByText("이 기기에 저장됨")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "저장 상태 열기: 이 기기에 저장됨" })).not.toBeNull();
   });
 
-  it("describes uncheckpointed work as locally preserved, not active server saving", () => {
+  it.each(["opfs-journal", "sqlite-fallback"] as const)("정상 서버 연결과 %s receipt를 서버 저장 확인으로 표시하지 않는다", (authority) => {
+    const store = createStudioSaveSyncSignalStore();
+    store.reset("guest-local-document");
+    store.noteDurability("available");
+    store.noteOnline(true);
+    store.noteDurableReceipt({ authority, savedAtMs: Date.now(), generation: 1, sequence: 1, revision: 1 });
+    const signals = store.getSignals();
+    const status = resolveSaveSyncStatusFromSignals(signals);
+    expect(status.cloudSyncStatus).toBe("synced");
+    const online: StudioConnectivitySnapshot = {
+      browserOnline: true,
+      serverReachable: true,
+      checking: false,
+      mode: "online",
+      serverAvailable: true,
+      localOnly: false,
+      lastCheckedAt: Date.now(),
+      consecutiveFailures: 0,
+    };
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={saveSyncJournalSnapshotFromSignals(signals)}
+        statusOverride={status}
+        connectivity={online}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 열기: 이 기기에 저장됨" }));
+    expect(screen.getByText("최근 작업이 이 기기에 저장됐어요.")).not.toBeNull();
+    expect(screen.getByText("이 화면에서는 서버 저장 여부를 확인할 수 없어요.")).not.toBeNull();
+    expect(screen.queryByText(/최신 상태로 저장됐어요|자동으로 동기화|서버 동기화를 기다리고/u)).toBeNull();
+    fireEvent.click(screen.getByText("고급 진단 보기"));
+    expect(screen.getByText("기기 저장", { exact: true }).parentElement).toBe(screen.getByText("로컬 저장 방식").parentElement);
+    expect(screen.queryByText("OPFS", { exact: true })).toBeNull();
+  });
+
+  it("체크포인트가 없는 새 문서는 저장 기록이 없다고 표시한다", () => {
+    render(<StudioSaveSyncStatusCenter journal={createEmptyOperationJournal("new-document")} />);
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 열기: 아직 저장 기록 없음" }));
+    expect(screen.getByText("아직 이 기기에 저장된 기록이 없어요.")).not.toBeNull();
+    expect(screen.getByText(/아직 만들어진 복구 지점이 없어요/u)).not.toBeNull();
+    expect(screen.queryByText(/마지막 복구 지점은/u)).toBeNull();
+  });
+
+  it("아직 체크포인트에 반영되지 않은 변경은 기기 저장 중으로 표시한다", () => {
     let journal = createEmptyOperationJournal("doc-1");
     journal = appendCanvasOperation(journal, "stroke", "선화 작화", {});
 
     render(<StudioSaveSyncStatusCenter journal={journal} />);
-    expect(screen.getByText("1개 변경 보존 중")).not.toBeNull();
+    expect(screen.getByText("이 기기에 저장 중")).not.toBeNull();
     expect(screen.queryByText(/서버에 저장하는 중/u)).toBeNull();
   });
 
   it("makes offline safety explicit", () => {
-    const journal = createEmptyOperationJournal("doc-1");
+    const journal = createJournalCheckpoint(createEmptyOperationJournal("doc-1"), {});
     render(<StudioSaveSyncStatusCenter journal={journal} isOnline={false} />);
 
-    expect(screen.getByText("오프라인 · 이 기기에 보관 중")).not.toBeNull();
+    expect(screen.getByText("오프라인 · 이 기기에 저장됨")).not.toBeNull();
   });
 
   it("opens plain-language details and keeps implementation data under advanced diagnostics", () => {
@@ -76,7 +125,8 @@ describe("StudioSaveSyncStatusCenter", () => {
     expect(screen.getByText("이 기기")).not.toBeNull();
     expect(screen.getByText("서버")).not.toBeNull();
     expect(screen.getByText("복구")).not.toBeNull();
-    expect(screen.getByText(/서버 동기화를 기다리고 있어요/u)).not.toBeNull();
+    expect(screen.getByText("이 화면에서는 서버 저장 여부를 확인할 수 없어요.")).not.toBeNull();
+    expect(screen.getByText(/최근 변경을 이 기기에 저장하고 있어요/u)).not.toBeNull();
     expect(screen.getByText("고급 진단 보기")).not.toBeNull();
     expect(screen.getByText("로컬 저장 방식")).not.toBeNull();
 
@@ -170,7 +220,7 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
       />
     );
 
-    expect(screen.getByText("서버 연결 안 됨 · 이 기기에 보관 중")).not.toBeNull();
+    expect(screen.getByText("서버 연결 안 됨 · 이 기기에 저장됨")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
     expect(screen.getByText(/서버에 연결할 수 없어요/u)).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "연결 다시 확인" }));
@@ -198,7 +248,7 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
     );
 
     // 연결 모듈이 오프라인이면 저장 신호가 synced여도 "저장됨"으로 읽히면 안 된다.
-    expect(screen.getByText("오프라인 · 이 기기에 보관 중")).not.toBeNull();
+    expect(screen.getByText("오프라인 · 이 기기에 저장됨")).not.toBeNull();
     expect(screen.queryByText("저장됨")).toBeNull();
   });
 
@@ -234,7 +284,7 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
     expect(screen.queryByRole("dialog", { name: "저장 상태 상세" })).toBeNull();
   });
 
-  it("renders a native progress bar that tracks pending sync queue drain", () => {
+  it("보류 세대 진행률을 서버가 아닌 이 기기 저장 섹션에 표시한다", () => {
     const journal = createEmptyOperationJournal("doc-g2");
     const { rerender } = render(
       <StudioSaveSyncStatusCenter
@@ -245,10 +295,13 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기/u }));
     const progress = screen.getByRole("progressbar", {
-      name: "서버 동기화 대기열 진행률",
+      name: "이 기기 저장 대기열 진행률",
     }) as HTMLProgressElement;
     expect(progress.max).toBe(81);
     expect(progress.value).toBe(0);
+    expect(screen.getByText("이 기기").closest("section")?.contains(progress)).toBe(true);
+    expect(screen.getByText("서버").closest("section")?.contains(progress)).toBe(false);
+    expect(screen.queryByText(/서버에 아직 반영되지 않은 변경/u)).toBeNull();
 
     rerender(
       <StudioSaveSyncStatusCenter
@@ -265,6 +318,6 @@ describe("StudioSaveSyncStatusCenter recovery actions (G2)", () => {
         statusOverride={{ ...baseStatus, pendingOperationsCount: 0, cloudSyncStatus: "synced" }}
       />
     );
-    expect(screen.queryByRole("progressbar", { name: "서버 동기화 대기열 진행률" })).toBeNull();
+    expect(screen.queryByRole("progressbar", { name: "이 기기 저장 대기열 진행률" })).toBeNull();
   });
 });

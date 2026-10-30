@@ -31,6 +31,7 @@ function completeSchemaCatalog() {
   return {
     relationNames: [...REQUIRED_DATABASE_RELATIONS],
     adminColumnsReady: true,
+    customerSupportAclReady: true,
     authUserColumnsReady: true,
     authUserConstraintsReady: true,
     authUserStatusIndexReady: true,
@@ -88,8 +89,9 @@ describe("PostgresHealthReadinessRepository", () => {
       ROLE_SEPARATION_ACL_FLAGS.map((flag) => [flag, false]),
     );
 
-    it("여섯 개는 마켓플레이스 표의 ACL 검사 이름과 정확히 같다", () => {
+    it("역할 분리가 필요한 표의 ACL 검사 이름과 정확히 같다", () => {
       expect([...ROLE_SEPARATION_ACL_FLAGS].sort()).toEqual([
+        "customerSupportAclReady",
         "marketplaceCloudLibraryAclReady",
         "marketplacePackageModerationAclReady",
         "marketplacePublishGateAclReady",
@@ -379,6 +381,7 @@ describe("PostgresHealthReadinessRepository", () => {
     "authAccountConstraintsReady",
     "authAccountUserIndexReady",
     "authRuntimeDmlReady",
+    "customerSupportAclReady",
     "personalCloudConnectionAclReady",
     "marketplaceResourceAclReady",
     "marketplaceCloudLibraryAclReady",
@@ -496,6 +499,7 @@ describe("PostgresHealthReadinessRepository", () => {
       "../../platform/database/migrations/0036_traffic_analytics_relations.sql",
       "../../platform/database/migrations/0066_share_analytics_events.sql",
       "../../platform/database/migrations/0077_membership_operations.sql",
+      "../../platform/database/migrations/0118_customer_support.sql",
     ].flatMap((path) => [
       ...readFileSync(new URL(path, import.meta.url), "utf8").matchAll(
         /\bCREATE TABLE(?: IF NOT EXISTS)? public\.([a-z_]+)/gu,
@@ -518,6 +522,9 @@ describe("PostgresHealthReadinessRepository", () => {
     expect(migrationRelations.toSorted()).toEqual([
       ...ASSET_PLATFORM_RELATIONS,
       "creator_role_workspace_preference",
+      "customer_support_ai_attempt",
+      "customer_support_conversation",
+      "customer_support_message",
       "membership_notice",
       "membership_policy_change",
       "membership_resource_state",

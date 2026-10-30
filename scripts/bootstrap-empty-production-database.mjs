@@ -27,6 +27,9 @@ import {
   validateProductionDatabaseUrl,
 } from "./validate-production-database-url.mjs";
 import { verifyProductionDatabaseCapabilities } from "./verify-production-database-capabilities.mjs";
+import { buildForwardMigrationBoundarySql } from "./bootstrap-forward-migration-boundary.mjs";
+
+export { buildForwardMigrationBoundarySql };
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = resolve(SCRIPT_DIRECTORY, "..");
@@ -65,6 +68,9 @@ const DRIZZLE_SCHEMA_PATHS = Object.freeze([
   "apps/api/src/platform/database/creator-marketplace-library.schema.ts",
   "apps/api/src/platform/database/creator-marketplace-package-moderation.schema.ts",
   "apps/api/src/platform/database/creator-asset-object-storage.schema.ts",
+  "apps/api/src/platform/database/creator-asset-platform.schema.ts",
+  "apps/api/src/platform/database/creator-asset-processing.schema.ts",
+  "apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",
   "apps/api/src/platform/database/studio-crdt-raster-checkpoint.schema.ts",
   "apps/api/src/platform/database/studio-raster-asset.schema.ts",
   "apps/api/src/platform/database/schema/production.schema.ts",
@@ -77,11 +83,14 @@ const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "package.json",
   "pnpm-lock.yaml",
   "scripts/bootstrap-empty-production-database.mjs",
+  "scripts/bootstrap-forward-migration-boundary.mjs",
   "scripts/production-database-migrations.manifest",
   "scripts/production-operations-database-contract.mjs",
   "scripts/run-production-database-migrations.mjs",
   "scripts/validate-production-database-url.mjs",
   "scripts/verify-production-database-capabilities.mjs",
+  "scripts/customer-support-database-contract.mjs",
+  "apps/api/src/modules/health/health-customer-support-acl.ts",
   "scripts/admin-database-contract.mjs",
   "scripts/creator-hiring-database-contract.mjs",
   "scripts/creator-hiring-automation-database-contract.mjs",
@@ -505,32 +514,6 @@ DROP SCHEMA IF EXISTS public CASCADE;
 DROP EXTENSION IF EXISTS pg_trgm CASCADE;
 CREATE SCHEMA public AUTHORIZATION CURRENT_USER;
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
-`;
-}
-
-export function buildForwardMigrationBoundarySql() {
-  return `
-DROP TABLE IF EXISTS
-  public.admin_announcements,
-  public.admin_audit_logs,
-  public.admin_banned_words,
-  public.admin_content_reports,
-  public.admin_promos,
-  public.admin_security_policies,
-  public.creator_work_publication_media,
-  public.creator_work_asset_storage_reference,
-  public.creator_asset_storage_object,
-  public.creator_marketplace_library_item,
-  public.creator_marketplace_package_moderation,
-  public.creator_marketplace_package_moderation_decision,
-  public.creator_marketplace_publish_gate,
-  public.creator_marketplace_resource_report_gate,
-  public.creator_marketplace_resource_report,
-  public.creator_marketplace_resource,
-  public.creator_draft_collaboration_room,
-  public.personal_cloud_connection
-CASCADE;
-DROP EXTENSION IF EXISTS pg_trgm;
 `;
 }
 
@@ -959,7 +942,7 @@ function runDrizzleKitGenerate({ configPath, drizzleKitBinary, outDirectory }) {
  * the statement list a pure function of the reviewed schema files: it can be
  * regenerated to prove determinism and applied inside a single transaction.
  */
-function generateCurrentSchemaDdl() {
+export function generateCurrentSchemaDdl() {
   const drizzleKitBinary = resolve(REPOSITORY_ROOT, DRIZZLE_KIT_BINARY_PATH);
   if (!existsSync(drizzleKitBinary)) {
     fail(

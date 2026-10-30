@@ -15,6 +15,7 @@ import { buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs
 import { buildHiringAutomationRuntimeAclSql } from "./creator-hiring-automation-database-contract.mjs";
 import { buildFortuneSnapshotRuntimeAclSql } from "./fortune-snapshot-database-contract.mjs";
 import { buildCareerConfirmationRuntimeAclSql } from "./creator-career-confirmation-database-contract.mjs";
+import { buildCustomerSupportRuntimeAclSql } from "./customer-support-database-contract.mjs";
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 
 export const MANAGED_BOOTSTRAP_VERSION = "toonstudio.managed-bootstrap-preparation.v1";
@@ -201,7 +202,7 @@ export function buildManagedRuntimeAclSql(role) {
     migrations.buildAuthRuntimeAclSql, migrations.buildTrafficAnalyticsRuntimeAclSql,
     migrations.buildCreatorRoleWorkspaceRuntimeAclSql, migrations.buildPersonalCloudRuntimeAclSql,
     migrations.buildCommunityCommentRuntimeAclSql, migrations.buildMessagingRuntimeAclSql,
-    buildAdminRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
+    buildCustomerSupportRuntimeAclSql, buildAdminRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
     migrations.buildRuntimeCutoverLedgerAclSql, migrations.buildMembershipRuntimeAclSql,
     buildHiringRuntimeAclSql, buildHiringAutomationRuntimeAclSql, buildFortuneSnapshotRuntimeAclSql,
     buildCareerConfirmationRuntimeAclSql, buildProductionOperationsRuntimeAclSql,

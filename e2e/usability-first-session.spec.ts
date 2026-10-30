@@ -197,12 +197,38 @@ async function downloadCurrentPng(page: Page, testInfo: TestInfo, name: string) 
   expect(bytes.readUInt32BE(20)).toBe(Number(dimensions[2]));
   expect(bytes.readUInt32BE(16) / bytes.readUInt32BE(20)).toBe(4 / 3);
   expect(bytes.length).toBeGreaterThan(1024);
+  // PNG 인코딩 메타데이터가 달라져도 실제 그림의 픽셀 변화만 비교한다.
+  const pixelDigest = await page.evaluate(async (encoded) => {
+    const png = Uint8Array.from(atob(encoded), (value) => value.charCodeAt(0));
+    const bitmap = await createImageBitmap(new Blob([png], { type: "image/png" }));
+    try {
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("다운로드한 PNG의 픽셀을 읽을 수 없습니다.");
+      context.drawImage(bitmap, 0, 0);
+      const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height);
+      const digest = await crypto.subtle.digest("SHA-256", pixels.data);
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    } finally {
+      bitmap.close();
+    }
+  }, bytes.toString("base64"));
   await testInfo.attach(name, { path, contentType: "image/png" });
-  return bytes;
+  // 열린 내보내기 메뉴가 다음 Undo/Redo 키 입력을 가로채지 않도록 정상 버튼으로 닫는다.
+  if (await panel.isVisible()) await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await expect(panel).toBeHidden();
+  return { bytes, pixelDigest };
 }
 
-test("새 캔버스에 그린 그림을 다운로드하고 다시 열어 같은 그림을 복원한다", async ({ page }, testInfo) => {
+test("새 캔버스의 잉크·Undo·Redo를 다운로드로 확인하고 다시 열어 같은 그림을 복원한다", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
+  const consoleErrors: string[] = [];
+  page.on("pageerror", (error) => consoleErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error" && !message.text().includes("Failed to load resource") && !message.text().includes("404")) {
+      consoleErrors.push(message.text());
+    }
+  });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/create", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/u }).click();
@@ -215,6 +241,8 @@ test("새 캔버스에 그린 그림을 다운로드하고 다시 열어 같은 
   await expect(page.locator('[data-studio-page-sequence-strip="true"]')).toHaveCount(0);
   const surface = page.locator("[data-studio-skia-document-surface]");
   const canvas = page.locator(".konvajs-content");
+  await expect(canvas).toBeVisible();
+  const blankImage = await downloadCurrentPng(page, testInfo, "drawing-blank");
   const bounds = await canvas.boundingBox();
   expect(bounds).not.toBeNull();
   if (!bounds) throw new Error("실제 캔버스 위치를 확인하지 못했습니다.");
@@ -225,6 +253,16 @@ test("새 캔버스에 그린 그림을 다운로드하고 다시 열어 같은 
   await expect(surface).toHaveAttribute("data-studio-skia-cached-items", "1", { timeout: 45_000 });
   await expect(surface).toHaveAttribute("data-studio-skia-phase", "presented");
   const firstImage = await downloadCurrentPng(page, testInfo, "drawing-original");
+  expect(firstImage.pixelDigest).not.toBe(blankImage.pixelDigest);
+
+  await page.keyboard.press("ControlOrMeta+z");
+  const undoneImage = await downloadCurrentPng(page, testInfo, "drawing-undone");
+  expect(undoneImage.pixelDigest).toBe(blankImage.pixelDigest);
+
+  await page.keyboard.press("ControlOrMeta+Shift+z");
+  await expect(surface).toHaveAttribute("data-studio-skia-phase", "presented");
+  const redoneImage = await downloadCurrentPng(page, testInfo, "drawing-redone");
+  expect(redoneImage.pixelDigest).toBe(firstImage.pixelDigest);
   await expect(page.locator("[data-studio-save-status-bar]")).toContainText("이 기기에 저장됨");
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL((url) => url.pathname === documentPath && url.searchParams.get("uiMode") === "focus");
@@ -232,9 +270,10 @@ test("새 캔버스에 그린 그림을 다운로드하고 다시 열어 같은 
   await expect(surface).toHaveAttribute("data-studio-skia-cached-items", "1", { timeout: 45_000 });
   await expect(surface).toHaveAttribute("data-studio-skia-phase", "presented");
   const reopenedImage = await downloadCurrentPng(page, testInfo, "drawing-reopened");
-  expect(reopenedImage.equals(firstImage)).toBe(true);
+  expect(reopenedImage.pixelDigest).toBe(firstImage.pixelDigest);
+  expect(reopenedImage.bytes.equals(firstImage.bytes)).toBe(true);
   const exports = page.locator('[data-studio-export-menu-panel="true"]');
-  if (await exports.isVisible()) await page.getByRole("button", { name: "내보내기 옵션", exact: true }).click();
+  await expect(exports).toBeHidden();
   await page.setViewportSize({ width: 390, height: 900 });
   await expectNoHorizontalOverflow(page);
   await expect(exports).toBeHidden();
@@ -243,6 +282,7 @@ test("새 캔버스에 그린 그림을 다운로드하고 다시 열어 같은 
   await expect(exports).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await capture(page, testInfo, "export-390");
+  expect(consoleErrors).toHaveLength(0);
 });
 
 test("밝은 테마와 고대비에서도 시작 행동과 글자를 구분할 수 있다", async ({ page }, testInfo) => {

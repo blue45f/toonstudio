@@ -43,6 +43,7 @@ apps/api/src/modules/creator/studio-scoped-write-store.test.ts
 apps/api/src/modules/creator/studio-scoped-write.repository.test.ts
 apps/api/src/modules/creator/studio-writer-room-capture.repository.test.ts
 apps/api/src/modules/creator/user-facing-error.test.ts
+apps/api/src/modules/customer-support
 apps/api/src/modules/fortune/fortune.controller.test.ts
 apps/api/src/modules/health/health-analytics-readiness.test.ts
 apps/api/src/modules/integration-platform/integration-runtime.access.test.ts
@@ -112,6 +113,7 @@ apps/web/src/app/service-worker
 apps/web/src/app/studio-cross-origin-isolation.test.ts
 apps/web/src/app/studio-immersive-shell.test.ts
 apps/web/src/domains/account/UserProfilePage.test.tsx
+apps/web/src/domains/admin/components/AdminBusinessInquiries.test.tsx
 apps/web/src/domains/auth/components/in-app-browser-notice.test.tsx
 apps/web/src/domains/catalog/DiscoverHubPage.test.tsx
 apps/web/src/domains/catalog/memory-finder/MemoryFinderSection.test.tsx
@@ -670,6 +672,8 @@ apps/web/src/domains/learn/AccessibleWebtoonGuidePage.test.tsx
 apps/web/src/domains/learn/LearningContractChecklistPage.test.tsx
 apps/web/src/domains/learn/accessible-webtoon-guide-docs.test.ts
 apps/web/src/domains/learn/accessible-webtoon-guide.test.ts
+apps/web/src/domains/legal/CustomerSupportChat.test.tsx
+apps/web/src/domains/legal/SupportPage.test.tsx
 apps/web/src/platform/creator-role-workspace-client.test.ts
 apps/web/src/platform/creator-work-read-options.test.ts
 apps/web/src/platform/search-client.test.ts
@@ -741,6 +745,7 @@ scripts/creator-bundle-scene-catalog.test.mjs
 scripts/creator-bundle-serving-parity.test.mjs
 scripts/creator-career-confirmation-database-contract.test.mjs
 scripts/creator-hiring-automation-database-contract.test.mjs
+scripts/customer-support-database-contract.test.mjs
 scripts/deploy-cloudflare-analytics.test.mjs
 scripts/deploy-cloudflare-static.test.mjs
 scripts/deploy-standing-approval.test.mjs

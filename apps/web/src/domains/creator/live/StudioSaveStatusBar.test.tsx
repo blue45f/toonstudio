@@ -1,10 +1,35 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioSaveStatusBar } from "../StudioSaveStatusBar";
+import {
+  createStudioSaveSyncSignalStore,
+  resolveSaveSyncStatusFromSignals,
+  type StudioSaveSyncReceiptRecord,
+} from "../studio-save-sync-signals";
+import type { StudioConnectivitySnapshot } from "../offline/studio-connectivity";
 import type { StudioSaveSyncStatus } from "../studio-operation-recovery-coordinator";
+
+afterEach(cleanup);
+
+function connectivity(mode: StudioConnectivitySnapshot["mode"]): StudioConnectivitySnapshot {
+  return {
+    browserOnline: mode !== "offline",
+    serverReachable: mode === "online" ? true : mode === "reconnecting" ? null : false,
+    checking: mode === "reconnecting",
+    mode,
+    serverAvailable: mode === "online",
+    localOnly: mode !== "online",
+    lastCheckedAt: Date.now(),
+    consecutiveFailures: mode === "server-unavailable" ? 2 : 0,
+  };
+}
+
+function localReceipt(authority: StudioSaveSyncReceiptRecord["authority"]): StudioSaveSyncReceiptRecord {
+  return { authority, savedAtMs: Date.now(), generation: 1, sequence: 1, revision: 1 };
+}
 
 function status(patch: Partial<StudioSaveSyncStatus> = {}): StudioSaveSyncStatus {
   return {
@@ -20,9 +45,76 @@ function status(patch: Partial<StudioSaveSyncStatus> = {}): StudioSaveSyncStatus
 }
 
 describe("StudioSaveStatusBar", () => {
-  it("shows 저장됨 · 방금 right after a receipt", () => {
-    render(<StudioSaveStatusBar status={status()} />);
-    expect(screen.getByText(/저장됨 · 방금|Saved · Just now/)).toBeTruthy();
+  it.each(["opfs-journal", "sqlite-fallback"] as const)("서버 연결이 정상이어도 %s receipt는 기기 저장으로 표시한다", (authority) => {
+    const store = createStudioSaveSyncSignalStore();
+    store.reset("guest-local-document");
+    store.noteDurability("available");
+    store.noteOnline(true);
+    store.noteDurableReceipt(localReceipt(authority));
+    const saved = resolveSaveSyncStatusFromSignals(store.getSignals());
+    expect(saved.cloudSyncStatus).toBe("synced");
+
+    render(<StudioSaveStatusBar status={saved} connectivity={connectivity("online")} />);
+    expect(screen.getByText(/^이 기기에 저장됨 · 방금$|^Saved on this device · Just now$/u)).toBeTruthy();
+    expect(screen.queryByText(/^저장됨 ·|^Saved ·/u)).toBeNull();
+  });
+
+  it("온라인 상태와 저장 경로 가용성만으로 아직 없는 저장 기록을 약속하지 않는다", () => {
+    const store = createStudioSaveSyncSignalStore();
+    store.reset("guest-empty-document");
+    store.noteDurability("available");
+    store.noteOnline(true);
+    render(
+      <StudioSaveStatusBar
+        status={resolveSaveSyncStatusFromSignals(store.getSignals())}
+        connectivity={connectivity("online")}
+      />,
+    );
+    expect(screen.getByText(/아직 저장 기록 없음|No save recorded yet/u)).toBeTruthy();
+    expect(screen.queryByText(/이 기기에 저장됨|Saved on this device/u)).toBeNull();
+  });
+
+  it("로컬 receipt로 저장이 끝나면 라이브 영역도 기기 저장 범위를 알린다", () => {
+    const store = createStudioSaveSyncSignalStore();
+    store.reset("guest-local-document");
+    store.noteDurability("available");
+    store.noteEditGeneration(1);
+    const { rerender } = render(
+      <StudioSaveStatusBar
+        status={resolveSaveSyncStatusFromSignals(store.getSignals())}
+        connectivity={connectivity("online")}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toBe("");
+    store.noteDurableReceipt(localReceipt("opfs-journal"));
+    rerender(
+      <StudioSaveStatusBar
+        status={resolveSaveSyncStatusFromSignals(store.getSignals())}
+        connectivity={connectivity("online")}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toMatch(/^모든 변경이 이 기기에 저장됐습니다\.$|^All changes saved on this device\.$/u);
+  });
+
+  it("연결 복구를 서버 저장 확인으로 알리지 않는다", () => {
+    const { rerender } = render(<StudioSaveStatusBar status={status()} connectivity={connectivity("online")} />);
+    rerender(<StudioSaveStatusBar status={status()} connectivity={connectivity("offline")} />);
+    rerender(<StudioSaveStatusBar status={status()} connectivity={connectivity("reconnecting")} />);
+    rerender(<StudioSaveStatusBar status={status()} connectivity={connectivity("online")} />);
+    expect(screen.getByRole("status").textContent).toMatch(
+      /^연결이 복구됐고 모든 변경이 이 기기에 저장됐습니다\.$|^Connection restored and all changes saved on this device\.$/u,
+    );
+  });
+
+  it("오프라인에서도 최근 변경이 아직 보류 중이면 저장 완료라고 표시하지 않는다", () => {
+    render(
+      <StudioSaveStatusBar
+        status={status({ pendingOperationsCount: 1, cloudSyncStatus: "pending" })}
+        connectivity={connectivity("offline")}
+      />,
+    );
+    expect(screen.getByText(/오프라인 · 이 기기에 저장 중|Offline · Saving on this device/u)).toBeTruthy();
+    expect(screen.queryByText(/이 기기에 저장됨|Saved on this device/u)).toBeNull();
   });
 
   it("shows the failure state with a working retry action", () => {

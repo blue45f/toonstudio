@@ -45,7 +45,8 @@ for (const width of [390, 1440]) {
         const errors: string[] = [];
         page.on("pageerror", (error) => errors.push(error.message));
         await page.goto(path, { waitUntil: "domcontentloaded" });
-        const main = page.locator('main[data-public-experience]');
+        const main = page.getByRole("main");
+        await expect(main, `${path}: unique main landmark`).toHaveCount(1);
         await expect(main).toBeVisible();
         await expect(main.locator("h1").first(), `${path}: page heading`).toBeVisible();
         const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2);
@@ -64,32 +65,57 @@ test("route inventory retains comprehensive coverage", () => {
   expect(routes.some((path) => EXCLUDED.test(path))).toBe(false);
 });
 
-test("spatial campus connects discovery, research, showcase and works by real clicks", async ({ page }) => {
+test("public and workspace navigation connects references, research, discovery and showcase by real clicks", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/references");
-  const library = page.getByRole("region", { name: "이야기 도서관" });
-  await expect(library).toBeVisible();
-  await library.getByRole("link", { name: "리서치 데스크", exact: true }).click();
-  await expect(page).toHaveURL(/\/research$/u);
-  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+  const referenceHero = page.locator(".ref-hero");
+  await expect(referenceHero.getByRole("heading", { level: 1 })).toBeVisible();
+  const openStudio = referenceHero.getByRole("link");
+  await expect(openStudio).toHaveAttribute("href", "/studio");
+  await openStudio.click();
+  await expect(page).toHaveURL(/\/studio$/u);
+  await expect(page.getByRole("region", { name: "작품 관리", exact: true })).toBeVisible();
 
-  await page.getByRole("navigation", { name: "주 메뉴", exact: true }).getByRole("link", { name: "둘러보기", exact: true }).click();
-  await expect(page).toHaveURL(/\/hub$/u);
-  await page.getByRole("link", { name: /창작 작품 전시/u }).click();
+  // 공개 페이지의 빠른 이동과 작업실의 주 메뉴는 같은 실제 목적지를 연결한다.
+  const navigation = page.getByRole("navigation", { name: /^(?:빠른 이동|주 메뉴)$/u });
+  await expect(navigation).toHaveCount(1);
+  await navigation.getByRole("link", { name: "전체 메뉴", exact: true }).click();
+  await expect(page).toHaveURL(/\/sitemap$/u);
+  await page.getByRole("searchbox", { name: "메뉴·도구 바로 찾기", exact: true }).fill("/research");
+  const research = page.getByRole("list", { name: "메뉴 검색 결과", exact: true }).locator('a[href="/research"]');
+  await expect(research).toHaveCount(1);
+  await research.click();
+  await expect(page).toHaveURL(/\/research$/u);
+  await expect(page.getByRole("heading", { level: 1, name: "창작 리서치 데스크", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "리서치 통합 검색", exact: true })).toBeVisible();
+
+  await navigation.getByRole("link", { name: "탐색", exact: true }).click();
+  await expect(page).toHaveURL(/\/discover$/u);
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();
+  await navigation.getByRole("link", { name: "커뮤니티", exact: true }).click();
+  await expect(page).toHaveURL(/\/community$/u);
+  await expect(page.getByRole("heading", { level: 1, name: "혼자 그린 이야기, 함께 넓어지는 세계.", exact: true })).toBeVisible();
+  await page.getByRole("main").getByRole("link", { name: "창작자 갤러리", exact: true }).click();
   await expect(page).toHaveURL(/\/showcase$/u);
-  await expect(page.getByRole("region", { name: "전시관·창작자 카페" })).toBeVisible();
-  await page.getByRole("navigation", { name: "주 메뉴", exact: true }).getByRole("link", { name: "작품", exact: true }).click();
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();
+  await navigation.getByRole("link", { name: "제작", exact: true }).click();
   await expect(page).toHaveURL(/\/studio$/u);
   await expect(page.getByRole("region", { name: "작품 관리", exact: true })).toBeVisible();
 });
 
-test("campus-owned public rooms keep the skip link keyboard-discoverable without duplicate footer chrome", async ({ page }) => {
+test("public pages keep the skip link keyboard-operable with a single footer", async ({ page }) => {
   await page.goto("/about");
-  await expect(page.locator("footer")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: "아이디어부터 완성된 웹툰까지, 하나의 작업실에서.", exact: true })).toBeVisible();
+  await expect(page.locator("footer")).toHaveCount(1);
+  const main = page.getByRole("main");
+  await expect(main).toHaveCount(1);
+  await expect(main).toHaveAttribute("id", "main-content");
   const skip = page.locator('a[href="#main-content"]');
+  await expect(skip).toHaveCount(1);
   await skip.focus();
+  await expect(skip).toBeVisible();
   await page.keyboard.press("Enter");
-  await expect(page.locator("#main-content")).toBeFocused();
+  await expect(main).toBeFocused();
 });
 
 test("literal percent names and malformed shared URLs cannot crash the app shell", async ({ page }) => {
@@ -120,7 +146,7 @@ test("account pages never receive promotional onward cards", async ({ page }) =>
   }
 });
 
-test("all-in-one home keeps contrast surfaces, reduced motion and responsive bounds", async ({ page }, testInfo) => {
+test("studio introduction keeps its artwork, reduced motion and responsive theme bounds", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     localStorage.setItem("toonstudio-theme", JSON.stringify({
       state: { preference: "light", studioPreference: "inherit", theme: "light" },
@@ -131,12 +157,20 @@ test("all-in-one home keeps contrast surfaces, reduced motion and responsive bou
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/about/studio");
   const home = page.locator('[data-creator-experience="all-in-one-studio-v3"]');
+  const heroArtwork = home.locator('.cf-hero img[src="/brand/hero-20261009-wave11/studio-intro-world.webp"]');
+  const tour = home.locator("#creator-tour");
   await expect(home).toBeVisible();
-  await expect(home.locator(".isw")).toBeVisible();
-  await expect(home.getByRole("tablist", { name: "작업실 둘러보기" }).getByRole("tab")).toHaveCount(3);
+  await expect(home).toHaveAttribute("data-home-view", "introduction");
+  await expect(home).toHaveAttribute("data-theme-art", "light");
+  await expect(heroArtwork).toBeVisible();
+  await expect.poll(() => heroArtwork.evaluate((image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+  await expect(tour.locator(".isw")).toBeVisible();
+  await expect(tour.getByRole("group", { name: "작업실 영역 고르기", exact: true }).getByRole("button")).toHaveCount(5);
+  await expect(home.getByRole("tablist")).toHaveCount(0);
+  await expect(home.locator('#creator-flow video, section[aria-labelledby="creator-closing-title"] video')).toHaveCount(0);
   await expect(home.locator('.cf-hero a[href="/studio/new"]')).toBeVisible();
   await expect(home.locator('.cf-hero a[href="/studio"]')).toBeVisible();
-  await expect(home.locator("h1")).toContainText("작업실을 눌러서 둘러보세요");
+  await expect(home.getByRole("heading", { level: 1 })).toHaveText("기획부터 연재까지, 웹툰 제작의 모든 것을 한곳에서.");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
   await capturePageEvidence(page, testInfo, "home-320-light");
 
@@ -153,15 +187,18 @@ test("all-in-one home keeps contrast surfaces, reduced motion and responsive bou
     }));
   }, dark);
   await expect(home).toBeVisible();
+  await expect(home).toHaveAttribute("data-theme-art", "dark");
   await expect(heroArtwork).toBeVisible();
+  await expect(tour.locator(".isw")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
   await capturePageEvidence(page, testInfo, "home-320-dark");
 });
 
 test("directory search supports real navigation, a shared query, Back and recovery", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/sitemap");
+  await page.goto("/sitemap", { waitUntil: "domcontentloaded" });
   const input = page.getByRole("searchbox", { name: "메뉴·도구 바로 찾기" });
+  await expect(input).toBeVisible();
   await input.fill("학습 기록");
   const results = page.getByRole("list", { name: "메뉴 검색 결과" });
   await expect(results.getByRole("link")).toHaveCount(1);

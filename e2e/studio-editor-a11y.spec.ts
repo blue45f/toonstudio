@@ -202,9 +202,19 @@ test.describe("열린 편집기 접근성 — 모바일 390×844", () => {
     await forEachPanel(page, MOBILE_PANEL_STEPS, (step) => expectNamesAndRolesAreSound(page, step));
   });
 
-  test("시트는 Esc 로 닫히고 포커스가 여는 단추로 돌아온다", async ({ page }) => {
+  test("기기 안내와 시트는 Esc 로 닫히고 포커스가 여는 단추로 돌아온다", async ({ page }) => {
     await openGuestEditor(page, { dismissStartDock: true });
-    await page.getByRole("button", { name: "이해했어요", exact: true }).click();
+    const notice = page.getByRole("complementary", { name: "모바일 편집 안내" });
+    await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).click();
+    const guideToggle = notice.getByRole("button", { name: "기기 안내", exact: true });
+    await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "true");
+    await expect(guideToggle).toBeFocused();
+    await guideToggle.press("Enter");
+    await expect(notice).toHaveAttribute("data-studio-mobile-notice-expanded", "true");
+    await expect(notice.getByRole("heading", { name: "지금 할 수 있어요", exact: true })).toBeVisible();
+    await notice.getByRole("button", { name: "모바일 편집 안내 닫기", exact: true }).press("Escape");
+    await expect(notice).toHaveAttribute("data-studio-mobile-notice-compact", "true");
+    await expect(guideToggle).toBeFocused();
     const workMenu = page.getByRole("button", { name: "작업 메뉴", exact: true }).first();
     await expectOpenCloseRestoresFocus(page, {
       label: "작업 메뉴 시트",

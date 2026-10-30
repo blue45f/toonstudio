@@ -118,6 +118,7 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus6.sceneOps.childTransformUnpreservable": "부모를 삭제해도 자식의 월드 변환을 보존할 수 없어 삭제를 취소했습니다.",
   "studio.frozenStatus6.sceneOps.cloneBundleIdFailed": "템플릿 복제 묶음의 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다.",
   "studio.frozenStatus6.sceneOps.organizerLoadFailed": "템플릿 정리 도구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  "studio.frozenStatus6.sceneOps.generatedPartsRejected": "저장 가능한 장면 용량이나 도형 정보의 범위를 초과해 배치하지 못했습니다.",
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenStatus6.sceneOps.budgetExceeded": "The current scene exceeds the safety budget, so template saving was not started. Split the scene or remove some objects.",
@@ -129,6 +130,7 @@ registerI18nLocaleEntries("en", {
   "studio.frozenStatus6.sceneOps.childTransformUnpreservable": "Deleting the parent cannot preserve the children's world transforms, so the deletion was canceled.",
   "studio.frozenStatus6.sceneOps.cloneBundleIdFailed": "Could not create a safe identifier for the cloned template bundle, so the scene was not changed.",
   "studio.frozenStatus6.sceneOps.organizerLoadFailed": "Could not load the template organizer tool. Please try again shortly.",
+  "studio.frozenStatus6.sceneOps.generatedPartsRejected": "Could not place the parts because they exceed the storable scene size or the allowed range of shape data.",
 });
 
 // ── bg3d/studio-bg3d-editor-placement-host.ts

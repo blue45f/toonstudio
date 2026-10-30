@@ -8,6 +8,7 @@
  * data URLs and signed asset URLs can contain private project material.
  */
 
+import { studioWetPaperBakesPending, waitForStudioWetPaperBakesIdle } from "./brush/wet-paper/studio-wet-paper-host";
 import {
   snapshotStudioMountedRasterImagePresentations,
   waitForStudioRasterImagePresentations,
@@ -104,6 +105,11 @@ export interface StudioCaptureReadinessOptions<
   rasterPresentationIdentities?: readonly StudioRasterImagePresentationIdentity[];
   /** Test seam for the product presentation fence. */
   waitForRasterPresentations?: typeof waitForStudioRasterImagePresentations;
+  /**
+   * 시험 이음새: 대기 중인 젖은 종이 굽기를 예산(ms) 안에서 기다리고, 실제로 기다렸으면 true. 기본값은 굽기 호스트의
+   * 대기 완료 약속을 기다린다.
+   */
+  waitForWetPaperBakes?: (signal: AbortSignal, budgetMs: number) => Promise<boolean>;
 }
 
 /** Shared by raster capture and JSON's generation/cache selection; returns a later recheck. */
@@ -171,6 +177,28 @@ function defaultNextFrame(): Promise<void> {
     }
     globalThis.setTimeout(resolve, 0);
   });
+}
+
+function captureNow(): number {
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
+/** 커밋 획의 젖은 종이 굽기가 끝나기를 예산 안에서 기다린다. 예산이 다 되면 그때 모습(베이스 워시)으로 캡처한다. */
+async function defaultWaitForWetPaperBakes(signal: AbortSignal, budgetMs: number): Promise<boolean> {
+  if (budgetMs <= 0 || !studioWetPaperBakesPending()) return false;
+  const budget = new AbortController();
+  const stop = () => budget.abort();
+  const timer = globalThis.setTimeout(stop, budgetMs);
+  signal.addEventListener("abort", stop, { once: true });
+  try {
+    await waitForStudioWetPaperBakesIdle(budget.signal);
+  } catch {
+    // 예산이 다 됐거나 중단됐다. 중단은 호출자의 assertCurrent 가 알린다.
+  } finally {
+    globalThis.clearTimeout(timer);
+    signal.removeEventListener("abort", stop);
+  }
+  return true;
 }
 
 async function defaultWaitForFonts(): Promise<void> {
@@ -425,6 +453,8 @@ export async function waitForStudioCaptureReady<
     ?? defaultResolveLinked3dPassRasterSource;
   const waitForRasterPresentations = options.waitForRasterPresentations
     ?? waitForStudioRasterImagePresentations;
+  const waitForWetPaperBakes = options.waitForWetPaperBakes ?? defaultWaitForWetPaperBakes;
+  const startedAt = captureNow();
 
   return withTimeout(async (operationSignal) => {
     throwIfAborted(operationSignal);
@@ -465,6 +495,13 @@ export async function waitForStudioCaptureReady<
     const stage = options.getStage();
     if (!stage) {
       throw new StudioCaptureReadinessError("stale-page", "캡처할 캔버스를 찾지 못했어요.");
+    }
+    // 커밋된 젖은 종이 획이 굽힌 래스터로 다시 그려지도록 남은 시간의 절반 안에서 기다린다. 기다렸으면 다시 렌더된
+    // 노드가 그려지게 두 프레임을 더 준다. 굽기가 늦으면 베이스 워시로 캡처한다(캡처 실패 사유가 아니다).
+    if (await waitForWetPaperBakes(operationSignal, Math.floor((timeoutMs - (captureNow() - startedAt)) / 2))) {
+      await nextFrame();
+      await nextFrame();
+      assertCurrent();
     }
     const rasterPresentationIdentities = options.rasterPresentationIdentities
       ?? snapshotStudioMountedRasterImagePresentations();

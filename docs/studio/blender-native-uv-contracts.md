@@ -78,7 +78,9 @@ UV 없는 flat cube·smooth cube·비평면 quad는 이전 커밋 `06ed3b4`의 G
 지원되는 Array·Mirror·SimpleDeform·Solidify·삼각 midpoint Subdivision은 명시적 원본 corner/child provenance로 UV를 전파한다.
 정확한 전파가 없는 enabled 수정자는 UV를 버리고 성공하지 않으며 명시적 오류를 낸다.
 Region Extrude는 발급된 receipt의 face remap·boundary 순서로 기존 면·cap·side를 결합하고,
-Weld는 위상이 그대로면 UV를 보존한다. Inset·Bevel·Loop Cut과 Cloth 등
+Weld는 위상이 그대로면 UV를 보존한다. 후속 Loop Cut은 면별 원본 코너를 보간해 실제 사각 면 분할과 함께 UV를 전달한다.
+지원 범위와 2026-10-30의 집중 CPU 검증은 [루프 절단 계약](3d-workbench-loop-cut-contracts.md)에 기록한다.
+Inset·Bevel과 Cloth 등
 다른 위상 편집의 UV 전달은 남은 범위다.
 UV 원본을 UV 없는 결과로 교체하는 일반 메시 commit과 수정자 적용은 중앙 geometry authority에서 거부한다.
 지원 전 편집은 오류를 표시하고 원본·저널·undo를 보존하며 UV를 조용히 지우고 성공하지 않는다.

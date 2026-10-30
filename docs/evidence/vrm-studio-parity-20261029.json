@@ -9,7 +9,7 @@
     "productBinary": "not-analyzed",
     "productBinaryNote": "docs/engines/labs-character-engine-references-2026-10-01.md 5절 10항(독점 제품은 공개 가이드의 워크플로만 재현, 역공학 금지)과 REA 면책 조항(라이선스·약관 준수)에 따라 VRoid Studio 실행 파일은 내려받거나 열지 않았다. 네이티브 바이너리를 열지 않았으므로 Ghidra 강제 정책의 적용 대상이 없었다.",
     "substitutes": [
-      "REA 브라우저 캡처: vroid.com 공개 공지(성공), vroid.pixiv.help 도움말(Cloudflare 봇 검증 화면, 우회하지 않음)",
+      "REA 브라우저 캡처: VRoid Studio 제품 소개·이용약관·가이드라인·출시 목록·v1.20.0 공지(성공), vroid.pixiv.help 도움말(Cloudflare 봇 검증 화면, 우회하지 않음)",
       "REA 정적 분석: 생성 VRM 을 읽는 MIT 오픈소스 런타임 @pixiv/three-vrm-core·three-vrm-springbone 3.5.5 ES 모듈 빌드",
       "CC0 VRoid Studio 0.8.1 출력 VRM 7종의 GLB JSON 청크 구조 요약(바이너리 청크는 해석하지 않음, Node.js 스크립트)",
       "공개 가이드 검색 요약(도움말 본문은 봇 검증으로 직접 열람 실패)",
@@ -341,6 +341,34 @@
         "evidenceId": "ev_4342738a358eb1ff79e4b92a6b48f85039e848c0ec30c9b9546a985ef221e38f",
         "accessibilitySha256": "99d7444861096d65d66052f2edb2a7960419741a906fc3e735450118028a96a0",
         "observed": "Cloudflare 'Performing security verification' 봇 검증 화면. 본문을 얻지 못했고 우회하지 않았다."
+      },
+      {
+        "operation": "capture_browser_scenario",
+        "target": "https://vroid.com/en/studio",
+        "evidenceId": "ev_9e89290f06a8d3a482a0530e74a431d8869b77bf6565d284fd0c37a53f730ba6",
+        "accessibilitySha256": "bd7a64ba5393c0a553582716b10ae2a6148ec117800f1164867da70585193a70",
+        "observed": "VRoid Studio v2.16.0 배포 페이지. 프리셋 + 슬라이더 실시간 편집, 의상 템플릿 겹치기, 안경·동물 귀 액세서리, 텍스처 펜·레이어·필압, 붓질로 헤어 덩어리 만들기와 덩어리마다 따로 정하는 헤어 흔들림, 모델별 이용 조건(상업 이용·크레딧) 설정과 VRM 내보내기, VRoid Hub 업로드"
+      },
+      {
+        "operation": "capture_browser_scenario",
+        "target": "https://policies.pixiv.net/en.html#vroidstudio",
+        "evidenceId": "ev_56b62852d5ca7aef970304e17e93fc15b41bcca94ce6399c90fa5e4dd1d1804e",
+        "accessibilitySha256": "2a8c0ade85fa84124cd6e2ea53684f074ea5dbf5bb942ec11242f4ff31f4441a",
+        "observed": "소프트웨어의 전부 또는 일부를 리버스 엔지니어링·디컴파일·역어셈블하거나 그 밖의 방식으로 분석하는 행위 금지"
+      },
+      {
+        "operation": "capture_browser_scenario",
+        "target": "https://vroid.com/en/studio/guidelines",
+        "evidenceId": "ev_555a70b17f4b0972d4bbedc44d23fcdc42ac7e0b081bc99f040eef8b03da780d",
+        "accessibilitySha256": "04cd4ba375ae33c883c4aee97d9caa8fb67541831bb0360337cc2c1e1ae9d6bd",
+        "observed": "직접 만든 텍스처·헤어 메시의 권리는 작가, 기본 모델·의상 메시·프리셋 아이템은 pixiv 제공 콘텐츠(CC0 아님)"
+      },
+      {
+        "operation": "capture_browser_scenario",
+        "target": "https://vroid.com/en/studio/releases",
+        "evidenceId": "ev_c24a8b539af5e9f3fa10b9bd4ad546892c583781452cef10bd705add09a15259",
+        "accessibilitySha256": "838a36ba359c49b992bff951b993a47fd1e4ef73dfedfccde8bb3d89aaf7042f",
+        "observed": "베타(v0.14.0) 지원 2024-10-31 종료 안내와 과거 버전 목록"
       }
     ],
     "findings": [
@@ -363,6 +391,22 @@
         "id": "REA-VRM-04",
         "fact": "스프링본은 이웃한 두 관절을 짝지어 앞 관절의 설정을 쓴다. 관절 1개짜리 스프링은 흔들리지 않는다. 생략값 stiffness 1, dragForce 0.4, gravityPower 0, hitRadius 0.",
         "action": "생성 VRM 스프링당 관절 4~7개 확인(스타일 프리셋 21종·헤어 스타일 14종), 변경 없음"
+      },
+      {
+        "id": "REA-VRM-05",
+        "fact": "VRoid Studio 제품 소개는 헤어 흔들림을 덩어리마다 따로 정한다고 밝힌다. 변경 전 ToonStudio 는 묶음 5종 단위까지만 정할 수 있었다.",
+        "action": "가닥(스프링 체인)별 배율 추가 — 전체 × 묶음 × 가닥, 화면 왼쪽부터 번호, 가닥 하나를 바꾸면 그 스프링만 바뀜. 가닥 id 는 헤어 파츠마다 달라 지금 헤어에 없는 가닥의 조정은 편집할 때 걷고 요약에서 세지 않음",
+        "chainIdSurvey": {
+          "method": "헤어 스타일 14종 × 앞머리 6종 × 삐침머리 0·1 × 길이 0.55·1·1.7 을 기본 상태와 스타일 프리셋 21종에 적용해 listStudioVrmGenerateHairSwayChains 로 수집",
+          "distinctChainIds": 56,
+          "maxChainsPerCharacter": 11,
+          "storedChainCap": 32
+        }
+      },
+      {
+        "id": "REA-VRM-06",
+        "fact": "VRoid Studio 이용약관은 소프트웨어의 리버스 엔지니어링·디컴파일·역어셈블·분석을 금지한다.",
+        "action": "VRoid Studio 실행 파일은 분석하지 않고 공개 웹 문서와 CC0 출력 파일, 오픈소스 런타임만 분석"
       }
     ]
   }

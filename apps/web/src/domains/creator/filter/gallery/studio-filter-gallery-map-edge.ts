@@ -5,7 +5,10 @@
  * 작은 타일, 이음매 없는 타일, 변위. 가장자리: 라플라스(크기·영교차, Marr·Hildreth 1980), 이미지 기울기(소벨),
  * 거리 맵(유클리드 = Felzenszwalb·Huttenlocher 2012 선형 시간 정확 거리 변환, 맨해튼·체비쇼프 = Rosenfeld·Pfaltz 1966
  * 두 번 훑는 챔퍼 변환). 공개 알고리즘과 기능 설명만으로 새로 구현했다. 기하 효과는 왜곡 계열과 같은 알파 가중
- * 재표본기를 써서 알파가 표본과 함께 움직이고, 범프 맵·라플라스·이미지 기울기·거리 맵은 알파를 그대로 둔다.
+ * 재표본기를 써서 알파가 표본과 함께 움직이고, 범프 맵·라플라스·이미지 기울기·거리 맵은 알파를 그대로 둔다. 휘도를 읽는
+ * 효과(범프 맵·변위(밝기 맵)·라플라스·이미지 기울기·거리 맵의 밝기 기준)는 알파를 곱한 휘도를 읽어 투명 픽셀의 숨은 RGB 가
+ * 보이는 결과로 새지 않는다. 불투명 픽셀과 RGB 0 인 투명 픽셀(캔버스 관례)로만 된 입력의 결과는 그대로이고, 반투명
+ * 픽셀은 덮인 비율만큼 어두운 휘도로 읽는다.
  * 크기 매개변수는 이미지 px 단위이고(context.scale 은 쓰지 않는다), 무작위성은 context.seed 에서 파생한 결정적 값이다.
  */
 import { remapWithEdges, sampleWithEdges } from "./studio-filter-gallery-distort";
@@ -13,11 +16,11 @@ import {
   booleanParam,
   clamp01,
   colorParam,
+  coveredLumaPlane,
   createRandom,
   fbm2,
   gaussianPlane,
   luma,
-  lumaPlane,
   numberParam,
   sobel,
   stringParam,
@@ -76,6 +79,14 @@ const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
 /** 가장자리 선택값(감싸기·가장자리 반복·투명) → 재표본기 방식. */
 const edgeMode = (edge: "wrap" | "repeat-edge" | "transparent"): StudioFilterGalleryEdgeMode => (edge === "repeat-edge" ? "clamp" : edge);
 
+/**
+ * 알파를 곱한 휘도(0~255) — coveredLumaPlane 과 같은 정의(휘도 × α/255)의 배정밀도 판이다. 투명 픽셀은 숨은 RGB 와
+ * 관계없이 0 이다. L × (α/255) 순서로 곱해 알파 255 에서는 휘도와 비트까지 같으므로 불투명 입력의 변위·문턱값 판정이 그대로다. 거리 맵은 Float32
+ * 평면을 쓰지 않는다: 128 회색의 휘도 127.99999999999999 가 128 로 반올림돼 문턱값 128 의 판정이 뒤집힌다.
+ */
+const coveredLuma = (data: Uint8ClampedArray, offset: number): number =>
+  luma(data[offset], data[offset + 1], data[offset + 2]) * (data[offset + 3] / 255);
+
 // ── 범프 맵 ─────────────────────────────────────────────────────
 
 const BUMP_AZIMUTH = slider("azimuth", "방위각", 0, 360, 1, 135, "°");
@@ -95,7 +106,8 @@ function applyBumpMap(image: StudioFilterGalleryImage, params: StudioFilterGalle
   const lightX = Math.cos(azimuth) * Math.cos(elevation);
   const lightY = -Math.sin(azimuth) * Math.cos(elevation);
   const lightZ = Math.sin(elevation);
-  const { gx, gy } = sobel(lumaPlane(image), width, height);
+  // 높이는 알파를 곱한 휘도다. 투명 이웃은 숨은 RGB 와 관계없이 높이 0 이라 실루엣 가장자리의 음영이 그 값에 흔들리지 않는다.
+  const { gx, gy } = sobel(coveredLumaPlane(image), width, height);
   // 소벨 값은 휘도 1단계 경사의 약 8배다. 높이(휘도 0~1) 경사에 깊이 × 2 를 곱해 법선 (−∂h/∂x, −∂h/∂y, 1) 을 만든다.
   const slope = ((invert ? -1 : 1) * depth * 2) / (8 * 255);
   for (let index = 0, offset = 0; index < gx.length; index += 1, offset += 4) {
@@ -367,11 +379,12 @@ function applyDisplace(image: StudioFilterGalleryImage, params: StudioFilterGall
   const mode = edgeMode(readSelect(params, DISPLACE_EDGE));
   const { width, height, data } = image;
   const count = width * height;
-  // 변위 맵 값 − 0.5 (밝기는 가로·세로가 같은 맵, 노이즈는 두 성분이 다른 시드).
+  // 변위 맵 값 − 0.5 (밝기는 가로·세로가 같은 맵, 노이즈는 두 성분이 다른 시드). 밝기는 알파를 곱한 휘도라 투명 픽셀은
+  // 숨은 RGB 와 관계없이 −0.5 이고, 그 RGB 가 어떤 보이는 내용을 끌어올지 정하지 못한다.
   const mapX = new Float32Array(count);
   const mapY = fromLuma ? mapX : new Float32Array(count);
   if (fromLuma) {
-    for (let index = 0, offset = 0; index < count; index += 1, offset += 4) mapX[index] = luma(data[offset], data[offset + 1], data[offset + 2]) / 255 - 0.5;
+    for (let index = 0, offset = 0; index < count; index += 1, offset += 4) mapX[index] = coveredLuma(data, offset) / 255 - 0.5;
   } else {
     const seed = context.seed + 0xd15e;
     for (let y = 0; y < height; y += 1) {
@@ -398,7 +411,8 @@ function applyLaplace(image: StudioFilterGalleryImage, params: StudioFilterGalle
   const strength = readSlider(params, LAPLACE_STRENGTH);
   const zeroCrossing = readSelect(params, LAPLACE_MODE) === "zero-crossing";
   const { width, height, data } = image;
-  const plane = lumaPlane(image);
+  // 알파를 곱한 휘도라 투명 이웃의 숨은 RGB 가 보이는 실루엣 선을 만들거나 지우지 않는다(영교차도 같은 평면을 쓴다).
+  const plane = coveredLumaPlane(image);
   // 영교차는 잡음의 가짜 부호 변화를 줄이려고 먼저 흐린다(Marr–Hildreth 1980 의 가우시안 라플라시안 근사).
   if (zeroCrossing) gaussianPlane(plane, width, height, 1.5);
   const laplacian = new Float32Array(width * height);
@@ -453,7 +467,8 @@ function hueWheel(hue: number, value: number, out: Float32Array): void {
 function applyImageGradient(image: StudioFilterGalleryImage, params: StudioFilterGalleryParams): void {
   const output = readSelect(params, GRADIENT_OUTPUT);
   const { width, height, data } = image;
-  const { gx, gy, magnitude } = sobel(lumaPlane(image), width, height);
+  // 알파를 곱한 휘도라 투명 이웃의 숨은 RGB 가 실루엣의 기울기 크기와 방향 색을 바꾸지 않는다.
+  const { gx, gy, magnitude } = sobel(coveredLumaPlane(image), width, height);
   const rgb = new Float32Array(3);
   for (let index = 0, offset = 0; index < magnitude.length; index += 1, offset += 4) {
     // 소벨 크기 510(휘도 128단계 계단) 이상을 최대 밝기로 본다.
@@ -564,10 +579,12 @@ function applyDistanceMap(image: StudioFilterGalleryImage, params: StudioFilterG
   const normalize = readToggle(params, DISTANCE_NORMALIZE);
   const { width, height, data } = image;
   const count = width * height;
-  // 기준 값이 문턱값 이상이면 안(켜짐), 아니면 바깥(꺼짐)이다.
+  // 기준 값(알파, 또는 알파를 곱한 휘도)이 문턱값 이상이면 안(켜짐), 아니면 바깥(꺼짐)이다. 투명 픽셀은 숨은 RGB 가
+  // 밝아도 기준 값이 0 이라 문턱값이 0 이 아니면 바깥이므로, 보이는 영역의 거리가 그림 테두리가 아니라 실제 경계까지 잰
+  // 값이 된다.
   const inside = new Uint8Array(count);
   for (let index = 0, offset = 0; index < count; index += 1, offset += 4) {
-    const value = fromAlpha ? data[offset + 3] : luma(data[offset], data[offset + 1], data[offset + 2]);
+    const value = fromAlpha ? data[offset + 3] : coveredLuma(data, offset);
     inside[index] = value >= threshold ? 1 : 0;
   }
   const distance = metric === "euclidean"

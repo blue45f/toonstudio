@@ -12,8 +12,9 @@
  * `#studio-document-chrome-slot`에 넣는 것을 권장한다 (연결 지점은 AUDIT.md).
  *
  * 상태 문구 규칙:
- * - 저장됨은 시각과 함께 보여준다 ("저장됨 · 오후 3:12") — 막연한 안심 금지.
- * - 오프라인은 실패가 아니라 "이 기기에 저장됨"으로 구분한다.
+ * - 실제 receipt는 OPFS/SQLite의 기기 저장만 확인한다. 온라인 여부로 서버 저장을 약속하지 않는다.
+ * - 저장됨은 범위와 시각을 함께 보여준다 ("이 기기에 저장됨 · 오후 3:12").
+ * - 오프라인은 실패와 구분하고, 아직 저장 중이거나 receipt가 없으면 완료라고 말하지 않는다.
  * - 실패(localDurable=false)는 문구 + 다시 시도 버튼으로 행동까지 제시한다.
  * - 상태는 아이콘 모양 + 문구로 전달한다. 색만으로 구분하지 않는다.
  *
@@ -94,6 +95,7 @@ export function StudioSaveStatusBar({
   useBilingualI18nRevision();
   const view = resolveSaveRecoveryView(status, connectivity, { readOnlyTab });
   const state: SaveRecoveryKind = view.kind;
+  const hasLocalReceipt = status.lastSavedAt > 0;
   const [announcement, setAnnouncement] = useState("");
   const announcementState = useRef<SaveRecoveryAnnouncementState>(
     initialSaveRecoveryAnnouncementState(state),
@@ -108,7 +110,9 @@ export function StudioSaveStatusBar({
     announcementState.current = advanced.state;
     const kind = advanced.announcement;
     if (kind === "saved") {
-      setAnnouncement(bi("모든 변경이 저장됐습니다.", "All changes saved."));
+      setAnnouncement(hasLocalReceipt
+        ? bi("모든 변경이 이 기기에 저장됐습니다.", "All changes saved on this device.")
+        : bi("아직 이 기기에 저장된 기록이 없습니다.", "No save has been recorded on this device yet."));
     } else if (kind === "failed") {
       setAnnouncement(bi(
         "저장이 확인되지 않았습니다. 화면을 닫기 전에 다시 시도해 주세요.",
@@ -120,12 +124,17 @@ export function StudioSaveStatusBar({
         "Connection lost. Your work keeps saving on this device.",
       ));
     } else if (kind === "recovered") {
-      setAnnouncement(bi(
-        "연결이 복구됐고 모든 변경이 저장됐습니다.",
-        "Connection restored and all changes saved.",
-      ));
+      setAnnouncement(hasLocalReceipt
+        ? bi(
+          "연결이 복구됐고 모든 변경이 이 기기에 저장됐습니다.",
+          "Connection restored and all changes saved on this device.",
+        )
+        : bi(
+          "연결이 복구됐습니다. 아직 이 기기에 저장된 기록이 없습니다.",
+          "Connection restored. No save has been recorded on this device yet.",
+        ));
     }
-  }, [state]);
+  }, [state, hasLocalReceipt]);
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
@@ -135,6 +144,12 @@ export function StudioSaveStatusBar({
     return () => clearInterval(timer);
   }, [state, status.lastSavedAt]);
   const recency = resolveSavedRecency(status.lastSavedAt, nowMs);
+  const savedLabel = hasLocalReceipt
+    ? bi("이 기기에 저장됨", "Saved on this device")
+    : bi("아직 저장 기록 없음", "No save recorded yet");
+  const localLabel = status.pendingOperationsCount > 0
+    ? bi("이 기기에 저장 중…", "Saving on this device…")
+    : savedLabel;
 
   const label =
     state === "readonly"
@@ -142,23 +157,23 @@ export function StudioSaveStatusBar({
       : state === "failed"
         ? bi("저장 확인 필요", "Couldn't confirm save")
         : state === "offline"
-          ? bi("오프라인 · 이 기기에 저장됨", "Offline · Saved on this device")
+          ? `${bi("오프라인", "Offline")} · ${localLabel}`
           : state === "server-unavailable"
-            ? bi("서버 연결 안 됨 · 이 기기에 저장됨", "Server unreachable · Saved on this device")
+            ? `${bi("서버 연결 안 됨", "Server unreachable")} · ${localLabel}`
             : state === "reconnecting"
               ? bi("연결 다시 확인 중…", "Reconnecting…")
               : state === "saving"
-                ? bi("저장 중…", "Saving…")
-                : status.lastSavedAt <= 0
-                  ? bi("저장됨", "Saved")
+                ? localLabel
+                : !hasLocalReceipt
+                  ? savedLabel
                   : recency.kind === "just-now"
-                    ? `${bi("저장됨", "Saved")} · ${bi("방금", "Just now")}`
+                    ? `${savedLabel} · ${bi("방금", "Just now")}`
                     : recency.kind === "minutes-ago"
-                      ? bi("저장됨 · {minutes}분 전", "Saved · {minutes} min ago").replace(
+                      ? bi("이 기기에 저장됨 · {minutes}분 전", "Saved on this device · {minutes} min ago").replace(
                           "{minutes}",
                           String(recency.minutes),
                         )
-                      : `${bi("저장됨", "Saved")} · ${formatSavedTime(status.lastSavedAt)}`;
+                      : `${savedLabel} · ${formatSavedTime(status.lastSavedAt)}`;
 
   const Icon =
     state === "readonly"

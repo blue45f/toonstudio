@@ -8,6 +8,7 @@
  */
 
 import { office2dGeneratedAtlas } from "./office2d-generated-atlases";
+import { office2dExpressionAssetUrls } from "./office2d-expression-catalog";
 
 export const OFFICE2D_ASSET_ROOT = "/assets/virtual-studio/toon-office-v1";
 
@@ -128,7 +129,7 @@ export function office2dActorAssetPlan(preferred: Office2dCharacterKey): { reado
   const critical = OFFICE2D_CHARACTERS.map(office2dLegacyCharacterUrl);
   const order = [preferred, ...OFFICE2D_CHARACTERS.filter((key) => key !== preferred)];
   const deferred = [...order.flatMap((key) => [office2dCharacterUrl(key), office2dWorkSheetUrl(key)]),
-    ...OFFICE2D_CHARACTERS.map(office2dLegacyWorkSheetUrl)];
+    ...OFFICE2D_CHARACTERS.map(office2dLegacyWorkSheetUrl), ...office2dExpressionAssetUrls(preferred)];
   return { critical, deferred: [...new Set(deferred)].filter((url) => !critical.includes(url)) };
 }
 

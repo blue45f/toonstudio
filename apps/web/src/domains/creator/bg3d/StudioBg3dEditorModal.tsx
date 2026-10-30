@@ -154,7 +154,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               <button
                 type="button"
                 aria-pressed={experienceMode === "simple"}
-                className="min-h-8 rounded-md px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-accent sm:px-2.5 sm:text-[0.65rem]"
+                className="min-h-8 rounded-md px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-2.5 sm:text-[0.65rem]"
                 onClick={() => setExperienceMode("simple")}
               >
                 <Sparkles size={12} className="mr-1 hidden min-[360px]:inline" aria-hidden />
@@ -164,7 +164,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               <button
                 type="button"
                 aria-pressed={experienceMode === "pro"}
-                className="min-h-8 rounded-md px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-accent sm:px-2.5 sm:text-[0.65rem]"
+                className="min-h-8 rounded-md px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-2.5 sm:text-[0.65rem]"
                 onClick={() => setExperienceMode("pro")}
               >
                 <SlidersHorizontal size={12} className="mr-1 hidden min-[360px]:inline" aria-hidden />

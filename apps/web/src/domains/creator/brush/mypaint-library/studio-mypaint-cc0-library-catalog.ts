@@ -7,8 +7,14 @@ import {
   STUDIO_MYPAINT_CC0_LIBRARY_GROUPS,
   STUDIO_MYPAINT_CC0_LIBRARY_SOURCE_COMMIT,
 } from "./studio-mypaint-cc0-library-index.generated";
+import { studioMypaintCc0ReachPx } from "./studio-mypaint-cc0-library-reach";
 
-import type { StudioMypaintCc0IndexEntry, StudioMypaintCc0SurfaceRequirement } from "./studio-mypaint-cc0-library-index.generated";
+import type {
+  StudioMypaintCc0IndexEntry,
+  StudioMypaintCc0ReachRow,
+  StudioMypaintCc0SurfaceRequirement,
+} from "./studio-mypaint-cc0-library-index.generated";
+import type { StudioMypaintCc0StrokeTiming } from "./studio-mypaint-cc0-library-reach";
 
 export type { StudioMypaintCc0SurfaceRequirement } from "./studio-mypaint-cc0-library-index.generated";
 
@@ -18,10 +24,8 @@ export interface StudioMypaintCc0Brush {
   readonly name: string;
   readonly group: string;
   readonly surface: StudioMypaintCc0SurfaceRequirement;
-  /** 기준 반지름 배수로 잡은 물감 도달 범위의 보수적 상한. */
-  readonly extentRadii: number;
-  /** 속도 오프셋이 더하는 거리 상한(px). */
-  readonly extentSpeedPx: number;
+  /** 물감 도달 범위를 정하는 libmypaint 설정 행(기준값·곡선). 여백은 획마다 studioMypaintCc0Halo 가 계산한다. */
+  readonly reach: readonly StudioMypaintCc0ReachRow[];
 }
 
 export interface StudioMypaintCc0Group {
@@ -50,8 +54,8 @@ export const STUDIO_MYPAINT_CC0_LIBRARY_PROVENANCE = Object.freeze({
 });
 
 function toBrush(group: string, entry: StudioMypaintCc0IndexEntry): StudioMypaintCc0Brush {
-  const [id, name, surface, extentRadii, extentSpeedPx] = entry;
-  return Object.freeze({ id, name, group, surface, extentRadii, extentSpeedPx });
+  const [id, name, surface, reach] = entry;
+  return Object.freeze({ id, name, group, surface, reach });
 }
 
 let groups: readonly StudioMypaintCc0Group[] | null = null;
@@ -88,11 +92,15 @@ export function studioMypaintCc0SurfaceBlockReason(brush: StudioMypaintCc0Brush)
 }
 
 /**
- * 변환 표면 여백(px). 기존 자체 3종과 같은 최소 여백(지름×4+4)을 지키고, 브러시의 보수적 도달 범위가 더 크면
- * 그만큼 넓힌다. 실제 물감이 표면 가장자리에 닿으면 작업자 출력 검증이 잘림을 숨기지 않고 거부한다.
+ * 변환 표면 여백(px). 기존 자체 3종과 같은 최소 여백(지름×4+4)을 지키고, 이 획의 표본(위치·시간)으로 계산한 물감
+ * 도달 범위가 더 크면 그만큼 넓힌다. 도달 범위는 곡선의 직선 연장과 획의 실제 속도 지수 평균을 따른다
+ * (studio-mypaint-cc0-library-reach). 실제 물감이 표면 가장자리에 닿으면 작업자 출력 검증이 잘림을 숨기지 않고 거부한다.
  */
-export function studioMypaintCc0Halo(brush: StudioMypaintCc0Brush, diameterPx: number): number {
-  const radius = diameterPx / 2;
-  const reach = radius * brush.extentRadii + brush.extentSpeedPx + 4;
+export function studioMypaintCc0Halo(
+  brush: StudioMypaintCc0Brush,
+  diameterPx: number,
+  samples: readonly StudioMypaintCc0StrokeTiming[],
+): number {
+  const reach = studioMypaintCc0ReachPx(brush.reach, diameterPx / 2, samples) + 4;
   return Math.ceil(Math.max(diameterPx * 4 + 4, reach));
 }

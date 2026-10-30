@@ -96,8 +96,12 @@ export interface StudioFilterGalleryEffectDef {
    */
   readonly references: readonly string[];
   readonly params: readonly StudioFilterGalleryParamSpec[];
-  /** 픽셀당 상대 작업량(1 = 3×3 이웃 한 번 정도). 예산 거절과 미리보기 축소에 쓴다. */
+  /**
+   * 픽셀당 상대 작업량(1 단위 ≈ 픽셀당 50ns, 3×3 이웃 한 번 정도). 예산 거절과 Worker 경로 판단에 쓴다.
+   * 매개변수에 따라 크게 달라지는 효과는 costFor 가 그 값을 낸다(cost 는 기본값의 작업량).
+   */
   readonly cost: number;
+  readonly costFor?: (params: StudioFilterGalleryParams) => number;
   readonly apply: (
     image: StudioFilterGalleryImage,
     params: StudioFilterGalleryParams,

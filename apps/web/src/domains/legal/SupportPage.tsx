@@ -22,6 +22,7 @@ import "./support-center.css";
 
 import { SiteShowMoreButton } from "./public/site-rail";
 import { useMobileShowMore } from "./public/site-show-more";
+import { CustomerSupportChat } from "./CustomerSupportChat";
 
 import Link from "@/shared/navigation/router-link";
 import { SectionArt } from "@/shared/components/section-art";
@@ -191,10 +192,11 @@ export function SupportPage() {
         <div>
           <p className="support-center__eyebrow"><LifeBuoy size={15} aria-hidden="true" /> TOONSTUDIO · SUPPORT</p>
           <h1>{bi("막힌 작업을 찾고,", "Find what got stuck,")}<br />{bi("안전하게 다시 이어가세요.", "and continue safely.")}</h1>
-          <p>{bi("이용 문의는 문제 해결과 적절한 지원 경로를 찾는 공간입니다. 공개 버그·아이디어·기능 요청은 제보·제안 보드에서 별도로 다룹니다.", "Support is where you solve problems and find the right help path. Public bugs, ideas and feature requests are handled separately on the feedback board.")}</p>
+          <p>{bi("AI 고객센터에서 사용 방법을 안내받고, 해결되지 않는 문제는 비공개 1:1 채팅으로 운영자에게 문의하세요. 공개 버그·아이디어·기능 요청은 제보·제안 보드에서 다룹니다.", "Get guidance from the AI help center and contact an operator through private support chat when you need more help. Public bugs, ideas and feature requests go to the feedback board.")}</p>
         </div>
         <div className="support-center__hero-actions">
-          <Link href="/feedback?type=question"><MessageCircleQuestion size={17} aria-hidden="true" /> {bi("공개 이용 질문", "Public usage questions")}</Link>
+          <Link href="#support-chat"><LifeBuoy size={17} aria-hidden="true" /> {bi("AI 고객센터 · 1:1 문의", "AI help center · Private chat")}</Link>
+          <Link href="/feedback?type=question" data-secondary><MessageCircleQuestion size={17} aria-hidden="true" /> {bi("공개 이용 질문", "Public usage questions")}</Link>
           <Link href="/feedback?type=bug" data-secondary><Wrench size={17} aria-hidden="true" /> {bi("버그 제보", "Report a bug")}</Link>
         </div>
       </header>
@@ -203,6 +205,8 @@ export function SupportPage() {
         image="learn"
         className="mt-6 aspect-[21/9] w-full rounded-3xl border border-line object-cover"
       />
+
+      <CustomerSupportChat />
 
       <section className="support-center__finder" aria-labelledby="support-finder-title">
         <div>
@@ -277,7 +281,7 @@ export function SupportPage() {
           <ul>
             <li><BookOpenCheck size={19} aria-hidden="true" /><div><strong>{bi("사용법과 일반 질문", "How-to & general questions")}</strong><span>{bi("도움말을 먼저 확인하고 해결되지 않으면 공개 이용 질문을 남깁니다.", "Check the help center first; if that doesn't solve it, leave a public question.")}</span><Link href="/help">{bi("도움말 보기", "View help")}<ArrowUpRight size={14} /></Link></div></li>
             <li><Wrench size={19} aria-hidden="true" /><div><strong>{bi("버그·아이디어·기능 요청", "Bugs, ideas & feature requests")}</strong><span>{bi("중복을 검색하고 다른 사용자의 경험과 운영 상태를 함께 확인합니다.", "Search for duplicates and compare with other users' experiences and service status.")}</span><Link href="/feedback">{bi("제보·제안 보드", "Feedback board")}<ArrowUpRight size={14} /></Link></div></li>
-            <li><ShieldAlert size={19} aria-hidden="true" /><div><strong>{bi("개인정보·결제·미공개 작품", "Privacy, payments & unpublished works")}</strong><span>{bi("공개 게시판에 입력하지 말고 관련 정책과 권리 절차를 먼저 확인합니다.", "Don't enter them on the public board — check the relevant policies and rights procedures first.")}</span><Link href="/privacy">{bi("개인정보 안내", "Privacy guide")}<ArrowUpRight size={14} /></Link></div></li>
+            <li><ShieldAlert size={19} aria-hidden="true" /><div><strong>{bi("계정·결제 관련 비공개 문의", "Private account & payment inquiries")}</strong><span>{bi("비공개 1:1 채팅에서 운영자에게 문의하세요. 비밀번호·API 키·결제 인증정보는 입력하지 마세요.", "Contact an operator through private chat. Do not enter passwords, API keys or payment credentials.")}</span><Link href="#support-chat">{bi("1:1 문의 열기", "Open private support chat")}<ArrowUpRight size={14} /></Link></div></li>
           </ul>
         </section>
       </div>

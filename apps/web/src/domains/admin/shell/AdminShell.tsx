@@ -1,3 +1,4 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   ExternalLink,
   Menu,
@@ -6,7 +7,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 
 import type { AdminMe } from "../components/admin-client";
 import { AdminHeaderStats } from "../components/AdminHeaderStats";
@@ -42,6 +43,7 @@ function AdminNavigation({
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
+  const navigationId = useId();
   const pathname = usePathname();
   const lang = useI18n((state) => state.lang);
   const copy = getAdminShellCopy(lang);
@@ -56,10 +58,10 @@ function AdminNavigation({
         <section
           key={group.id}
           className="mb-5"
-          aria-labelledby={`admin-nav-${group.id}`}
+          aria-labelledby={`${navigationId}-${group.id}`}
         >
           <h2
-            id={`admin-nav-${group.id}`}
+            id={`${navigationId}-${group.id}`}
             className={cn(
               "mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-3",
               collapsed && "sr-only",
@@ -153,12 +155,13 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!mobileOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
+    if (!mobileOpen || typeof window.matchMedia !== "function") return;
+    // 데스크톱으로 전환할 때 숨은 모달이 본문을 잠그지 않도록 닫는다.
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };
+    closeOnDesktop();
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
   }, [mobileOpen]);
 
   const toggleCollapsed = () => {
@@ -174,6 +177,7 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
   const production = import.meta.env.PROD;
 
   return (
+    <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
     <div
       data-admin-shell="true"
       data-admin-route={route.id}
@@ -233,55 +237,52 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
         </div>
       </aside>
 
-      {mobileOpen ? (
-        <div className="fixed inset-0 z-[90] lg:hidden">
-          <button
-            type="button"
-            aria-label={copy.closeNavigation}
-            className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="relative flex h-full w-[min(20rem,88vw)] flex-col border-r border-line bg-panel shadow-2xl shadow-canvas">
-            <div className="flex items-center justify-between border-b border-line pr-3">
-              <AdminBrand collapsed={false} />
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[90] bg-canvas/80 backdrop-blur-sm lg:hidden" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          data-admin-mobile-navigation="true"
+          className="fixed inset-y-0 left-0 z-[91] flex w-[min(20rem,88vw)] flex-col border-r border-line bg-panel text-fg shadow-2xl shadow-canvas lg:hidden"
+        >
+          <Dialog.Title className="sr-only">{copy.navigation}</Dialog.Title>
+          <div className="flex items-center justify-between border-b border-line pr-3">
+            <AdminBrand collapsed={false} />
+            <Dialog.Close asChild>
               <button
                 type="button"
-                onClick={() => setMobileOpen(false)}
                 aria-label={copy.closeNavigation}
-                className="inline-flex size-10 items-center justify-center rounded-xl text-fg-3 hover:bg-raised hover:text-fg"
+                className="inline-flex size-11 items-center justify-center rounded-xl text-fg-3 hover:bg-raised hover:text-fg"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
-            </div>
-            <AdminNavigation
-              collapsed={false}
-              onNavigate={() => setMobileOpen(false)}
-            />
-            <div className="border-t border-line p-3">
-              <Link
-                href="/"
-                onClick={() => setMobileOpen(false)}
-                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card text-sm font-medium text-fg-2 hover:border-line-strong hover:text-fg"
-              >
-                {copy.publicSite} <ExternalLink size={14} />
-              </Link>
-            </div>
-          </aside>
-        </div>
-      ) : null}
+            </Dialog.Close>
+          </div>
+          <AdminNavigation collapsed={false} onNavigate={() => setMobileOpen(false)} />
+          <div className="border-t border-line p-3">
+            <Link
+              href="/"
+              onClick={() => setMobileOpen(false)}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card text-sm font-medium text-fg-2 hover:border-line-strong hover:text-fg"
+            >
+              {copy.publicSite} <ExternalLink size={14} aria-hidden="true" />
+            </Link>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
 
       <div className="min-w-0">
         <header className="sticky top-0 z-40 flex min-h-16 items-center justify-between gap-3 border-b border-line bg-panel/95 px-4 backdrop-blur-lg sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
+            <Dialog.Trigger asChild>
             <button
               type="button"
-              onClick={() => setMobileOpen(true)}
-              className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-card text-fg-2 lg:hidden"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-line bg-card text-fg-2 lg:hidden"
               aria-label={copy.openNavigation}
               aria-expanded={mobileOpen}
             >
-              <Menu size={18} />
+              <Menu size={18} aria-hidden="true" />
             </button>
+            </Dialog.Trigger>
             <div className="min-w-0">
               <p className="truncate text-[11px] text-fg-3">
                 {copy.breadcrumbRoot} /{" "}
@@ -325,5 +326,6 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
         </div>
       </div>
     </div>
+    </Dialog.Root>
   );
 }

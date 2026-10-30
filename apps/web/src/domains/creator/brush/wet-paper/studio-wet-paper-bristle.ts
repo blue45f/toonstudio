@@ -2,7 +2,7 @@
  * 갈필(마르는 붓) 강모 마스크 — Chu & Tai, "Real-Time Painting with an Expressive Virtual Chinese Brush"
  * (IEEE CG&A 2004)의 dry-brush 개념.
  *
- * 강모 지도 생성(`buildWetPaperBristleField`)과 마스크 문턱 수식(`wetPaperDryBrushMask`)은 Sumi
+ * 강모 지도 생성(`createWetPaperBristleFieldBuilder`)과 마스크 문턱 수식(`wetPaperDryBrushMask`)은 Sumi
  * (https://github.com/Aureliaar/sumi, `public/sumi.js`의 `buildBristleTexture`·`equalize`·`FS_DAB`, MIT,
  * 커밋 89b8c443)에서 이식했다. 라이선스 원문과 출처는 `third_party/sumi/`에 있다. 이식하면서 바꾼 점:
  * - 크기 320×2048·강모 160가닥 → 128×512·64가닥(제품 베이크 격자 해상도에 맞춤),
@@ -90,7 +90,20 @@ interface Tuft {
   readonly drift: Float32Array;
 }
 
-function buildBristleField(): WetPaperBristleField {
+/** 시분할 단위 크기: 다발 지도 행 수, 강모 수. 한 단위가 몇 ms 안에 끝나게 잡았다. */
+const TUFT_ROWS_PER_UNIT = 32;
+const BRISTLES_PER_UNIT = 8;
+
+/**
+ * 강모 지도를 한 단위씩 만든다. 처음 한 번 만드는 데 수십 ms 가 걸려(다발 지도 detExp 39만 번 등) 시분할 호스트가
+ * 한 조각(8ms)에 다 넣으면 메인 스레드가 멈췄다. 단계·난수 순서는 한 번에 만들 때와 같아 결과가 비트 단위로 같다.
+ */
+export interface WetPaperBristleFieldBuilder {
+  /** 한 단위를 만든다. 다 만들었으면 지도를, 아직이면 null 을 돌려준다. */
+  step(): WetPaperBristleField | null;
+}
+
+export function createWetPaperBristleFieldBuilder(): WetPaperBristleFieldBuilder {
   const width = WET_PAPER_BRISTLE_WIDTH;
   const height = WET_PAPER_BRISTLE_HEIGHT;
   const random = createWetPaperMulberry32(BRISTLE_SEED);
@@ -113,20 +126,27 @@ function buildBristleField(): WetPaperBristleField {
   }
   const bristle = new Float32Array(width * height);
   const tuft = new Float32Array(width * height);
-  for (let y = 0; y < height; y += 1) {
-    const row = y * width;
-    for (let x = 0; x < width; x += 1) {
-      let sum = 0;
-      for (let k = 0; k < TUFT_COUNT; k += 1) {
-        const clump = tufts[k] as Tuft;
-        const d = x - (clump.center + (clump.drift[y] ?? 0));
-        sum += detExp((-d * d) / (2 * clump.width * clump.width));
-      }
-      tuft[row + x] = sum;
-    }
-  }
   const twoPi = 6.2831853;
-  for (let n = 0; n < BRISTLE_COUNT; n += 1) {
+  // 단계: 0 다발 지도(행), 1 강모(가닥), 2 바닥 잡음, 3 강모 평활화, 4 다발 평활화.
+  let phase = 0;
+  let next = 0;
+  let done: WetPaperBristleField | null = null;
+
+  const tuftRows = (from: number, to: number): void => {
+    for (let y = from; y < to; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        let sum = 0;
+        for (let k = 0; k < TUFT_COUNT; k += 1) {
+          const clump = tufts[k] as Tuft;
+          const d = x - (clump.center + (clump.drift[y] ?? 0));
+          sum += detExp((-d * d) / (2 * clump.width * clump.width));
+        }
+        tuft[row + x] = sum;
+      }
+    }
+  };
+  const oneBristle = (): void => {
     const clump = tufts[Math.floor(random() * TUFT_COUNT)] as Tuft;
     const x0 = clampNumber(clump.center + gauss() * clump.width * 0.75, 1, width - 2);
     const xn = (x0 / width) * 2 - 1;
@@ -156,21 +176,60 @@ function buildBristleField(): WetPaperBristleField {
         if (contribution > (bristle[row + xi] ?? 0)) bristle[row + xi] = contribution;
       }
     }
-  }
-  for (let index = 0; index < bristle.length; index += 1) {
-    bristle[index] = Math.max(bristle[index] ?? 0, random() * 0.05);
-  }
-  equalizeInPlace(bristle);
-  equalizeInPlace(tuft);
-  return Object.freeze({ width, height, bristle, tuft });
+  };
+
+  return {
+    step(): WetPaperBristleField | null {
+      if (done) return done;
+      if (phase === 0) {
+        const to = Math.min(height, next + TUFT_ROWS_PER_UNIT);
+        tuftRows(next, to);
+        next = to;
+        if (next >= height) {
+          phase = 1;
+          next = 0;
+        }
+      } else if (phase === 1) {
+        const to = Math.min(BRISTLE_COUNT, next + BRISTLES_PER_UNIT);
+        for (; next < to; next += 1) oneBristle();
+        if (next >= BRISTLE_COUNT) phase = 2;
+      } else if (phase === 2) {
+        for (let index = 0; index < bristle.length; index += 1) {
+          bristle[index] = Math.max(bristle[index] ?? 0, random() * 0.05);
+        }
+        phase = 3;
+      } else if (phase === 3) {
+        equalizeInPlace(bristle);
+        phase = 4;
+      } else {
+        equalizeInPlace(tuft);
+        done = Object.freeze({ width, height, bristle, tuft });
+      }
+      return done;
+    },
+  };
 }
 
 let bristleFieldMemo: WetPaperBristleField | null = null;
+let sharedBuilder: WetPaperBristleFieldBuilder | null = null;
 
-/** 강모 지도(모듈당 한 번, 결정적). */
+/** 공유 강모 지도를 한 단위 더 만든다(시분할 호스트용). 다 만들어져 있으면 true. */
+export function advanceWetPaperBristleFieldBuild(): boolean {
+  if (bristleFieldMemo) return true;
+  sharedBuilder ??= createWetPaperBristleFieldBuilder();
+  bristleFieldMemo = sharedBuilder.step();
+  if (bristleFieldMemo) sharedBuilder = null;
+  return bristleFieldMemo !== null;
+}
+
+/** 강모 지도(모듈당 한 번, 결정적). 아직 다 만들지 않았으면 남은 단위를 이 자리에서 마저 만든다. */
 export function wetPaperBristleField(): WetPaperBristleField {
-  bristleFieldMemo ??= buildBristleField();
-  return bristleFieldMemo;
+  let field = bristleFieldMemo;
+  while (!field) {
+    advanceWetPaperBristleFieldBuild();
+    field = bristleFieldMemo;
+  }
+  return field;
 }
 
 export interface WetPaperBristleSample {

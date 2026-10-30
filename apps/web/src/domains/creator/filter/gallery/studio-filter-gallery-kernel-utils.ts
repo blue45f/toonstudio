@@ -95,6 +95,19 @@ export function lumaPlane(image: StudioFilterGalleryImage): Float32Array {
   return out;
 }
 
+/**
+ * 알파를 곱한 휘도 평면(0~255). 투명 픽셀은 숨은 RGB 와 관계없이 0 이라, 그 값이 보이는 픽셀의 기울기·높이·변위로
+ * 새지 않는다. 불투명 이미지와 캔버스 관례(투명 = RGB 0) 입력에서는 lumaPlane 과 같다.
+ */
+export function coveredLumaPlane(image: StudioFilterGalleryImage): Float32Array {
+  const { width, height, data } = image;
+  const out = new Float32Array(width * height);
+  for (let index = 0, offset = 0; index < out.length; index += 1, offset += 4) {
+    out[index] = (luma(data[offset]!, data[offset + 1]!, data[offset + 2]!) * data[offset + 3]!) / 255;
+  }
+  return out;
+}
+
 /** 단일 채널 분리형 박스 블러(반지름 r, 가장자리 복제). 제자리에서 고친다. */
 export function boxBlurPlane(plane: Float32Array, width: number, height: number, radius: number): void {
   const r = Math.floor(radius);
@@ -126,8 +139,14 @@ export function boxBlurPlane(plane: Float32Array, width: number, height: number,
 export function gaussianPlane(plane: Float32Array, width: number, height: number, radius: number): void {
   const r = Math.max(0, radius);
   if (r < 0.5) return;
-  const box = Math.max(1, Math.round(r / Math.sqrt(3)));
-  for (let pass = 0; pass < 3; pass += 1) boxBlurPlane(plane, width, height, box);
+  // 상자 반지름 r/√3 을 정수로 반올림하면 슬라이더 여러 칸이 같은 결과를 낸다. 이웃한 두 정수 상자의 결과를 소수
+  // 부분만큼 섞어(선형 연산이라 가중 평균·정규화 흐림에도 그대로 쓸 수 있다) 칸마다 흐림 정도가 이어서 바뀌게 한다.
+  const box = Math.max(1, r / Math.sqrt(3)), lower = Math.floor(box), fraction = box - lower;
+  const upper = fraction > 1e-3 ? plane.slice() : null;
+  for (let pass = 0; pass < 3; pass += 1) boxBlurPlane(plane, width, height, lower);
+  if (!upper) return;
+  for (let pass = 0; pass < 3; pass += 1) boxBlurPlane(upper, width, height, lower + 1);
+  for (let index = 0; index < plane.length; index += 1) plane[index] = plane[index]! + (upper[index]! - plane[index]!) * fraction;
 }
 
 /** RGBA 를 채널별 평면 4개로 나눈다(Float32, 0~255). */

@@ -40,7 +40,6 @@ function capture(workspace: StudioHybridDccWorkspace) {
 const unsupported: readonly { readonly name: string; readonly run: (workspace: StudioHybridDccWorkspace) => StudioHybridDccWorkspace }[] = [
   { name: "Inset", run: (workspace) => workspaceInsetActive(workspace, 0.2) },
   { name: "Bevel", run: (workspace) => workspaceBevelEdgesActive(workspace, 0.05) },
-  { name: "Loop Cut", run: (workspace) => workspaceLoopCutActive(workspace, 0.5) },
   { name: "Subdivide", run: (workspace) => workspaceSubdivideActive(workspace, 1) },
   { name: "Cloth", run: workspaceClothStep },
   { name: "Repair", run: workspaceRepairActive },
@@ -48,6 +47,15 @@ const unsupported: readonly { readonly name: string; readonly run: (workspace: S
 ];
 
 describe("일반 지오메트리 편집의 UV 유실 거부", () => {
+  it("실제 면을 나누는 Loop Cut은 UV 코너를 전달하고 원본을 유지한다", () => {
+    const source = workspaceUnwrapUvActive(cube());
+    const before = capture(source);
+    const result = workspaceLoopCutActive(source, 0.5);
+    expect(record(result).mesh.faces).toHaveLength(10);
+    expect(record(result).mesh.uvLayer?.corners).toHaveLength(40);
+    expect(result.session.state.commandCount).toBe(source.session.state.commandCount + 1);
+    expect(capture(source)).toEqual(before);
+  });
   it("Sculpt는 검증된 공통 표면 코너의 UV를 보존하며 무UV 경로도 계속 지원한다", () => {
     const source = workspaceUnwrapUvActive(cube()); const before = capture(source);
     const result = workspaceSculptActive(source, 0.1);

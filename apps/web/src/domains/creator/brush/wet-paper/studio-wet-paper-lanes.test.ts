@@ -6,8 +6,17 @@ import { inflateSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { exportPageToSvg } from "../../export/studio-svg-export";
-import { BRUSH_PRESETS } from "../../studio-brush";
+import { BRUSH_PRESETS, resolveStudioBrushRenderFamily } from "../../studio-brush";
 import { applyStudioBrushAliasWatercolorMaterial } from "../studio-brush-alias-profile";
+import {
+  compileStudioBrushCompositionProgramSet,
+  createStudioBrushCompositionBaseline,
+  planStudioBrushComposition,
+} from "../studio-brush-composition-catalog";
+import {
+  constrainStudioBrushCompositionToRuntime,
+  resolveStudioBrushRuntimeProgramSet,
+} from "../studio-brush-composition-runtime";
 import {
   resolveStudioBrushEngineLaneLabelKo,
   resolveStudioBrushEngineLaneWatercolorMaterial,
@@ -122,6 +131,28 @@ describe("wet-paper diffusion lanes (MoXi · Curtis · granulation · dry brush)
       expect(resolveStudioWetPaperBakeProgramIdForBrush(laneId, bloomOverride), laneId).toBeNull();
       expect(resolveStudioWetPaperBakeProgramIdForBrush(laneId, livingOverride), laneId).toBeNull();
     }
+  });
+
+  it("keeps the bake when the Brush Studio composer edits a lane (the baseline is not living ink)", () => {
+    for (const [laneId, programId] of LANES) {
+      const family = resolveStudioBrushRenderFamily(laneId);
+      const baseline = createStudioBrushCompositionBaseline(laneId, family);
+      expect(baseline.physics, laneId).toBe("wet-diffusion-webgpu");
+      expect(baseline.pigment, laneId).toBe("spectral-wgsl");
+      expect(planStudioBrushComposition({ brushId: laneId, family, composition: baseline }).canSave, laneId).toBe(true);
+      // 컴포저의 슬롯 변경(StudioBrushCompositionComposer)과 같은 순서로 표면을 바꿔 저장한다.
+      const composition = constrainStudioBrushCompositionToRuntime({
+        family,
+        current: baseline,
+        requested: { ...baseline, surface: "smooth-paper" },
+      });
+      const saved = compileStudioBrushCompositionProgramSet({ brushId: laneId, family, current: null, composition });
+      expect(saved.watercolor, laneId).toBeUndefined();
+      const runtime = resolveStudioBrushRuntimeProgramSet(laneId, saved);
+      expect(resolveStudioWetPaperBakeProgramIdForBrush(laneId, runtime), laneId).toBe(programId);
+    }
+    // 리빙잉크 레인의 기준은 그대로 리빙잉크다.
+    expect(createStudioBrushCompositionBaseline("ink-wash--living-bake", "watercolor").physics).toBe("inkwash-fluid");
   });
 
   it("requests the settled bake only for committed document renders and keeps the base wash bytes", () => {
