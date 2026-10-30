@@ -175,11 +175,12 @@ describe('선언형 테마와 모델 참조 초안', () => {
     expect(Object.hasOwn(baseline, 'surfacePBR')).toBe(false);
   });
 
-  it('여섯 테마의 모든 역할은 정확한 registry 모델을 참조한다', () => {
+  it('여덟 테마의 모든 역할은 정확한 registry 모델을 참조한다', () => {
     expect(VIRTUAL_THREE_THEMES.map(theme => theme.id)).toEqual([
       'creator-campus', 'parkbotanical', 'fantasyguild', 'sflab', 'gothicarchive', 'vehiclegarage', 'cafefood',
+      'forestretreat', 'gardenstudy',
     ]);
-    expect(VIRTUAL_THREE_THEMES.filter(theme => theme.kind === 'asset-recipe')).toHaveLength(6);
+    expect(VIRTUAL_THREE_THEMES.filter(theme => theme.kind === 'asset-recipe')).toHaveLength(8);
     for (const theme of VIRTUAL_THREE_THEMES) {
       if (theme.kind !== 'asset-recipe') continue;
       expect(theme.modelAssetIds).toEqual([...new Set(theme.layoutRoles.map(role => role.modelAssetId))]);

@@ -1,5 +1,12 @@
 /** Runs the real worker against in-memory ServiceWorker globals. */
+import { randomUUID, webcrypto } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import bundleRelease from "../../domains/creator/bg3d/studio-bg3d-bundle-release.generated.json";
+import { releaseFixture } from "../../domains/creator/bg3d/studio-bg3d-bundle-release.test-fixture";
+import { loadStudioBg3dBundleDeployAvailability, loadStudioBg3dBundleThemePacks } from "../../domains/creator/bg3d/studio-bg3d-bundle-theme-packs";
+import type { StudioServiceWorkerRequestFacts } from "./studio-service-worker-policy";
 
 const ORIGIN = "https://toonstudio.test";
 const BUILD_ID = "testbuild001";
@@ -86,7 +93,7 @@ function createHarness() {
   vi.stubGlobal("fetch", workerFetch); vi.stubGlobal("Request", ScopedRequest);
   vi.stubGlobal("__STUDIO_SERVICE_WORKER_MANIFEST__", MANIFEST);
   return {
-    listeners, counters, caches, fetchCalls, fetchInits,
+    listeners, counters, caches, fetchCalls, fetchInits, scope,
     setNetwork(impl: (url: string) => Promise<Response>) { network = impl; },
     async dispatch(type: string, event: Record<string, unknown> = {}) {
       const pending: Promise<unknown>[] = [];
@@ -98,7 +105,7 @@ function createHarness() {
       const response = await Promise.resolve(responded).catch(() => undefined);
       const waited = Promise.all(pending);
       await waited.catch(() => undefined);
-      return { response, waited };
+      return { response, waited, responsePromise: responded === undefined ? undefined : Promise.resolve(responded) };
     },
   };
 }
@@ -156,6 +163,82 @@ describe("activate", () => {
 });
 
 describe("fetch routing", () => {
+  it.each(["503", "offline"] as const)("이전 SW에 완료 응답이 남고 새 SW가 waiting이어도 재확인의 %s를 unavailable로 전달한다", async (failure) => {
+    vi.stubGlobal("crypto", { subtle: webcrypto.subtle, randomUUID });
+    const fixture = releaseFixture();
+    const completionPath = fixture.completion.url;
+    const registration = Object.assign(harness.scope.registration, { waiting: { postMessage: vi.fn() } });
+    // 이전 정책은 완료 경로도 일반 /assets/와 같이 분류했다. entry 자체는 이전 구현을 그대로 실행한다.
+    vi.doMock("./studio-service-worker-policy", async (importOriginal) => {
+      const policy = await importOriginal<typeof import("./studio-service-worker-policy")>();
+      return { ...policy, classifyStudioServiceWorkerRequest: (facts: StudioServiceWorkerRequestFacts) => {
+        const url = new URL(facts.url);
+        if (facts.method === "GET" && !facts.rangeHeader && url.origin === facts.origin && url.pathname === completionPath) return "immutable-asset";
+        return policy.classifyStudioServiceWorkerRequest(facts);
+      } };
+    });
+    try {
+      harness.caches.seed("toonstudio-sw-immutable-v5", completionPath, fixture.response("index"));
+      await loadWorker();
+      harness.setNetwork(async () => fixture.response("index"));
+      const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = new Request(input, init);
+        if (request.url === new URL(fixture.release.catalog.url, ORIGIN).href) return fixture.response("catalog");
+        if (request.url === new URL(fixture.release.index.url, ORIGIN).href) return fixture.response("index");
+        const result = await harness.dispatch("fetch", { request });
+        return result.responsePromise ?? fetch(request);
+      };
+      const data = await loadStudioBg3dBundleThemePacks({ release: fixture.release, fetcher });
+      expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("available");
+      const firstUrl = harness.fetchCalls[0];
+      if (!firstUrl) throw new Error("완료 표식의 첫 네트워크 확인이 없습니다.");
+      const first = new URL(firstUrl);
+      expect(first.pathname).toBe(completionPath);
+      expect(first.searchParams.get("release-check")).toBeTruthy();
+      expect(harness.caches.entries("toonstudio-sw-immutable-v5")).toContain(first.href);
+      harness.setNetwork(async () => {
+        if (failure === "offline") throw new TypeError("offline");
+        return new Response("unavailable", { status: 503 });
+      });
+      expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("unavailable");
+      expect(harness.fetchCalls).toHaveLength(2);
+      const secondUrl = harness.fetchCalls[1];
+      if (!secondUrl) throw new Error("완료 표식의 두 번째 네트워크 확인이 없습니다.");
+      const second = new URL(secondUrl);
+      expect(second.pathname).toBe(completionPath);
+      expect(second.searchParams.get("release-check")).toBeTruthy();
+      expect(second.search).not.toBe(first.search);
+      expect(registration.waiting.postMessage).not.toHaveBeenCalled();
+      expect(harness.counters.skipWaiting).toBe(0);
+    } finally { vi.doUnmock("./studio-service-worker-policy"); }
+  });
+
+  it.each(["503", "offline"] as const)("R2 완료 표식의 이전 성공 캐시가 있어도 %s를 성공으로 바꾸지 않는다", async (failure) => {
+    const path = `/assets/studio/bundle-v2/release-index/${bundleRelease.index.sha256}.json`;
+    const original = readFileSync(new URL(`../../../public${bundleRelease.index.url}`, import.meta.url), "utf8");
+    expect(Buffer.byteLength(original)).toBe(bundleRelease.index.bytes);
+    for (const bucket of [PRECACHE, "toonstudio-sw-immutable-v5", "toonstudio-sw-data-v5"]) {
+      harness.caches.seed(bucket, path, new Response(original, { headers: { "content-type": "application/json" } }));
+    }
+    const open = vi.spyOn(harness.caches.api, "open");
+    harness.setNetwork(async () => {
+      if (failure === "offline") throw new TypeError("offline");
+      return new Response("unavailable", { status: 503 });
+    });
+    await loadWorker();
+    const request = new Request(`${ORIGIN}${path}`, { cache: "no-store" });
+    const result = await harness.dispatch("fetch", { request });
+    expect(result.response).toBeUndefined();
+    expect(open).not.toHaveBeenCalled();
+    expect(harness.fetchCalls).toEqual([]);
+    // respondWith가 없으면 브라우저가 원래 요청을 전송한다. 실패를 캐시 성공으로 대체하지 않는다.
+    const response = result.response ? Promise.resolve(result.response) : fetch(request);
+    if (failure === "offline") await expect(response).rejects.toThrow("offline");
+    else expect((await response).status).toBe(503);
+    expect(harness.fetchCalls).toEqual([request.url]);
+    expect(open).not.toHaveBeenCalled();
+  });
+
   it("leaves mutations and other /api/ routes entirely alone", async () => {
     await loadWorker();
     const post = await harness.dispatch("fetch", { request: new Request(`${ORIGIN}/api/works`, { method: "POST" }) });
