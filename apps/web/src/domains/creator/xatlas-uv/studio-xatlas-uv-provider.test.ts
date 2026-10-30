@@ -130,6 +130,7 @@ function defaultAtlas(
         positions: new Float32Array(geometry.input.positions),
         uv,
         indices: new Uint32Array(geometry.input.indices),
+        originalInputVertexIndices: Uint32Array.from({ length: vertexCount }, (_, index) => index),
         atlasSegments: [{
           index: 0,
           count: geometry.input.indices.length,

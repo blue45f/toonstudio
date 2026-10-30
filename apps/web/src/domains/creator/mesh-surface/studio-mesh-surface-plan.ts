@@ -12,8 +12,8 @@ import type { StudioEditableMesh } from "../studio-editable-half-edge-mesh";
 export type { StudioMeshSurfacePlan, StudioMeshSurfaceBudget, StudioMeshSurfaceOptions, StudioMeshSurfaceResult, StudioMeshSurfaceValidated, StudioMeshSurfaceTriangle, StudioMeshSurfaceGeometry, StudioMeshSurfaceWork } from "./studio-mesh-surface-contracts";
 
 const successCache = new WeakMap<StudioEditableMesh, Map<string, StudioMeshSurfacePlan>>();
-function policyKey(options?: StudioMeshSurfaceOptions): string { return JSON.stringify([options?.allowCreaseMetadata === true, options?.topologyPolicy ?? "strict"]); }
-function validatedPolicyKey(validated: StudioMeshSurfaceValidated): string { return JSON.stringify([validated.allowCreaseMetadata, validated.topologyPolicy]); }
+function policyKey(options?: StudioMeshSurfaceOptions): string { return JSON.stringify([options?.allowCreaseMetadata === true, options?.topologyPolicy ?? "strict", options?.preserveFaceCorners === true]); }
+function validatedPolicyKey(validated: StudioMeshSurfaceValidated): string { return JSON.stringify([validated.allowCreaseMetadata, validated.topologyPolicy, validated.preserveFaceCorners]); }
 /** 성공한 immutable mesh만 공유한다. 소비자별 예산 실패는 다음 큰 예산의 요청을 막지 않는다. */
 function admit(validated: StudioMeshSurfaceValidated, budget?: StudioMeshSurfaceBudget) {
   const meter = new StudioMeshSurfaceWorkMeter(budget); meter.checkFaces(validated.faces.length);
@@ -31,9 +31,14 @@ export function validateStudioMeshSurface(mesh: StudioEditableMesh, budget?: Stu
 /** GLB는 validate→UV 검증→sourceHash 대조 뒤 이 단계를 호출하여 기존 오류 우선순위를 유지한다. */
 export function buildStudioMeshSurface(validated: StudioMeshSurfaceValidated, budget?: StudioMeshSurfaceBudget, options?: StudioMeshSurfaceOptions): StudioMeshSurfaceResult<StudioMeshSurfacePlan> {
   try {
+    // options 자체를 생략한 build는 코너 보존 정책을 승계한다. 명시한 options의 기본값은 false다.
+    const preserveFaceCorners = options === undefined ? validated.preserveFaceCorners : options.preserveFaceCorners === true;
     if ((options !== undefined && (options.allowCreaseMetadata === true) !== validated.allowCreaseMetadata)
-      || (options?.topologyPolicy ?? "strict") !== validated.topologyPolicy) {
-      const changed = validateStudioMeshSurface(validated.sourceMesh, budget, options ?? { allowCreaseMetadata: validated.allowCreaseMetadata });
+      || (options?.topologyPolicy ?? "strict") !== validated.topologyPolicy
+      || preserveFaceCorners !== validated.preserveFaceCorners) {
+      const changed = validateStudioMeshSurface(validated.sourceMesh, budget, {
+        ...(options ?? { allowCreaseMetadata: validated.allowCreaseMetadata }), preserveFaceCorners,
+      });
       if (!changed.ok) return changed;
       validated = changed.value;
     }
@@ -63,6 +68,13 @@ export function buildStudioMeshSurface(validated: StudioMeshSurfaceValidated, bu
       for (let corner = 0; corner < 3; corner += 1) {
         const output = geometry.value.indices[index * 3 + corner];
         if (output === undefined || geometry.value.outputSourceVertexIds[output] !== triangle.vertexIds[corner]) throw new Error("표면 triangle table과 원본 정점 대응이 다릅니다.");
+      }
+    }
+    if (validated.preserveFaceCorners) {
+      const covered = new Set<number>();
+      for (const triangle of triangles) for (const id of triangle.cornerHalfEdgeIds) covered.add(id);
+      for (const face of validated.faces) for (const id of face.halfEdgeIds) {
+        if (!covered.has(id)) return surfaceStop(surfaceIssue("error", "triangulation-failed", "코너 보존 표면에서 원본 면 코너가 누락되었습니다.", { faceIds: [face.face.id], halfEdgeIds: [id] }));
       }
     }
     const plan = { validated, geometry: geometry.value, triangles, work };

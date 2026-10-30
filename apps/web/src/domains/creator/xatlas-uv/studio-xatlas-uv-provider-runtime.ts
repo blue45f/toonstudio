@@ -56,6 +56,7 @@ interface CallbackResource {
 interface XAtlasMeshResult {
   readonly mesh: unknown;
   readonly index: unknown;
+  readonly oldIndexes: unknown;
   readonly vertex: {
     readonly vertices?: unknown;
     readonly coords1?: unknown;
@@ -542,6 +543,7 @@ class ProductionRuntime implements StudioXAtlasUvRuntime {
             positions: arrayLike(result.vertex.vertices, `${geometry.id} positions`),
             uv: arrayLike(result.vertex.coords1, `${geometry.id} uv`),
             indices: arrayLike(result.index, `${geometry.id} indices`),
+            originalInputVertexIndices: arrayLike(result.oldIndexes, `${geometry.id} original input vertex indices`),
             atlasSegments: Array.isArray(segments)
               ? segments.map((segment) => {
                 if (!isRecord(segment)) {
