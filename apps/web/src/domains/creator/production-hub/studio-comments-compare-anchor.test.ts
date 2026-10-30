@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createCompareImageAnchor } from "./production-hub/compare-review-model";
+import { createCompareImageAnchor } from "./compare-review-model";
 import {
   addStudioCommentReply, addStudioCommentThread, createEmptyStudioCommentsDocument,
   normalizeStudioCommentsDocument, serializeStudioCommentsDocument,
-} from "./studio-comments";
+} from "../studio-comments";
 
 const at = new Date("2026-10-30T03:00:00.000Z");
 const author = { id: "reviewer", displayName: "검수자" };
