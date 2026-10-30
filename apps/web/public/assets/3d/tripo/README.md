@@ -57,7 +57,8 @@ Tripo Studio 유료 플랜으로 생성한 뒤 Blender로 웹 최적화한 GLB �
   교체했다 (원본은 로컬 raw/에 보존, 애니메이션·삼각형 수 동일,
   카페·경찰·선원 3종은 Blender 내보내기 특성상 neutral_bone
   채널 3개가 추가됨). IDLE 파일도 배치 12 의상 6종을
-  `batch12/`에 `toonstudio_*_idle.glb`로 추가했다 (간호사
+  `batch12/`에 `toonstudio_*_idle.glb`로 추가했고, 배치 13
+  의상 5종(간호사 제외)도 `batch13/`에 추가했다 (간호사
   IDLE은 앞서 `batch13/`에 있음). 간호사 IDLE 프리셋 파일럿도 `batch13/`에
   `toonstudio_nurse_idle.glb`로 추가했다 (애니메이션 1개 `idle.001`,
   369프레임, 삼각형 수는 리깅본과 동일, 비용 0).
