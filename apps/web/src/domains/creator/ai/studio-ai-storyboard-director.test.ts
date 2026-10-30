@@ -88,6 +88,65 @@ describe("StudioAiStoryboardDirector", () => {
     expect(res.cuts[1]?.dialogue).toBe("설마... 살아있었나?");
   });
 
+  it("keeps appended [ ] stage directions out of dialogue and narration, and reads shot words only as whole words", () => {
+    // 줄 끝에 붙인 연출 지문의 영문(s-curve·focus)이 클로즈업으로, 동작 묘사의 '얼굴'이 명시한 샷을 덮지 않는다.
+    const appended = director.direct(
+      [
+        "유적 입구에 두 사람이 선다. [스크롤 호흡 160px · s-curve-optimal]",
+        "카엘: 뒤를 봐. [풀 샷 로우 앵글, 카엘이 얼굴을 들어 바라보고 말풍선은 오른쪽 위]",
+        "횃불이 꺼진다. [바스트 샷, 인물 focus, \"뒤를 봐\" 말풍선 위치 확인 (나레이션 박스는 좌상단)]",
+        "[CU] 떨리는 손",
+      ].join("\n"),
+    );
+    const [entrance, kael, torch, hand] = appended.cuts;
+    expect(entrance?.shotScale).toBe("medium-shot");
+    expect(kael?.speaker).toBe("카엘");
+    expect(kael?.dialogue).toBe("뒤를 봐.");
+    expect(kael?.shotScale).toBe("full-shot");
+    expect(kael?.cameraAngle).toBe("low-angle");
+    expect(torch?.dialogue).toBeUndefined();
+    expect(torch?.narration).toBeUndefined();
+    expect(torch?.shotScale).toBe("medium-shot");
+    expect(hand?.shotScale).toBe("close-up");
+
+    // 감정·비트는 지시를 포함한 줄 전체로 판정하던 기존 규칙을 지킨다([잠시 후]만 쓴 줄은 장면 전환 컷).
+    const transition = director.direct(["카엘: 뒤를 봐.", "[잠시 후]", "횃불이 꺼진다."].join("\n"));
+    expect(transition.cuts[1]?.beatKind).toBe("transition");
+    expect(transition.cuts[1]?.dialogue).toBeUndefined();
+  });
+
+  it("keeps [ ] inside quoted dialogue, the speaker of a directive-only line, and standard compound shot abbreviations", () => {
+    // 따옴표 안의 [ ](시스템창·스킬 이름)는 대사이고, 따옴표 밖의 [ ]만 연출 지시다.
+    const quoted = director.direct(
+      [
+        `시스템: "[퀘스트를 완료했습니다]"`,
+        `카엘: "[블링크]!" [CU]`,
+        `카엘: "그건 [금지된 마법]이야"`,
+      ].join("\n"),
+    );
+    expect(quoted.cuts[0]?.dialogue).toBe("[퀘스트를 완료했습니다]");
+    expect(quoted.cuts[1]?.dialogue).toBe("[블링크]!");
+    expect(quoted.cuts[1]?.shotScale).toBe("close-up");
+    expect(quoted.cuts[2]?.dialogue).toBe("그건 [금지된 마법]이야");
+
+    // '이름: [지시]'는 대사가 없지만 화자는 그 인물이다.
+    const silent = director.direct(["카엘: [침묵]", `리아: "왜?"`, "횃불이 꺼진다."].join("\n"));
+    expect(silent.cuts[0]?.speaker).toBe("카엘");
+    expect(silent.cuts[0]?.dialogue).toBeUndefined();
+
+    // MCU·XCU·ELS·MLS 같은 표준 복합 약어도 명시 지시로 읽는다.
+    const compound = director.direct(
+      ["도입 컷", "[MCU] 카엘의 얼굴", "[XCU] 눈동자", "[ELS] 폐허가 된 도시", "[MLS] 두 사람", "[BCU] 입술", "마지막 컷"].join("\n"),
+    );
+    expect(compound.cuts.slice(1, 6).map((cut) => cut.shotScale)).toEqual([
+      "close-up",
+      "extreme-close-up",
+      "long-shot",
+      "long-shot",
+      "close-up",
+    ]);
+  });
+
   it("analyzes rough sketch presets and custom stroke boxes to infer shot scale, camera angle, and speech bubble reserve", () => {
     const presetIntent = analyzeRoughSketchIntent({
       presetId: "diagonal-action",

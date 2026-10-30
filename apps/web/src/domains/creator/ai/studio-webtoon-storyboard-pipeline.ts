@@ -31,6 +31,7 @@ import {
 } from "./studio-ai-emotion-bubble-matcher";
 import {
   StudioAiStoryboardDirector,
+  stripBracketDirectives,
   type StoryboardArtistStyleBinding,
   type StoryboardCutPlan,
   type StoryboardDirectingResult,
@@ -322,7 +323,13 @@ export function runWebtoonStoryboardMasterPipeline(
   // 7. 컷별 말풍선 감정 매칭 · 모바일 말풍선 분할 · 다국어 현지화 식자 · 와이어프레임/스타일 프리뷰 · 리얼드로우 4레이어 분해
   const bubbleMatcher = new StudioAiEmotionBubbleMatcher();
   const enrichedCuts: EnrichedStoryboardCutSpec[] = directingResult.cuts.map((cut, idx) => {
-    const lineText = cut.dialogue ?? cut.narration ?? cut.summary;
+    // 대사·나레이션이 없는 컷은 요약으로 말풍선을 만들므로 [ ] 연출 지시는 빼고 쓴다.
+    // 지시만 있던 '카엘: [침묵]'은 '카엘:'만 남으므로 그 이름표도 지워 말풍선을 만들지 않는다([ ]가 없던 줄은 그대로).
+    const summaryText = stripBracketDirectives(cut.summary);
+    const lineText =
+      cut.dialogue ??
+      cut.narration ??
+      (cut.summary.includes("[") ? summaryText.replace(/^[^:：\n(["“]{1,20}[:：]$/u, "") : summaryText);
     const emotionBubble = bubbleMatcher.match(lineText);
     const mobileBubbles = splitDialogueIntoWebtoonBubbles(lineText);
     const localizedDialogues = buildGlobalLocalizedDialoguePreview(lineText, {

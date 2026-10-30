@@ -111,6 +111,31 @@ describe("StudioVrmAvatarForgeGenerateSection expression editing", () => {
     expect(within(region).queryByRole("slider", { name: "입모양 A 눈썹 높이" })).toBeNull();
     expect(within(region).getByRole("slider", { name: "입모양 A 입 벌림" })).toBeTruthy();
   });
+
+  it("renames a custom expression to the key other apps will show, refusing preset names", () => {
+    const { changes } = renderSection();
+    fireEvent.click(screen.getByRole("button", { name: /표정 편집/u }));
+    const region = screen.getByRole("region", { name: "표정 편집" });
+    fireEvent.click(within(region).getByRole("button", { name: /윙크 커스텀 표정 추가/u }));
+
+    const field = within(region).getByRole("textbox", { name: "윙크 이름" });
+    fireEvent.change(field, { target: { value: "Happy" } });
+    fireEvent.click(within(region).getByRole("button", { name: "이름 바꾸기" }));
+    // 프리셋 이름은 바꾸지 않고 이유를 입력란에 붙여 알린다.
+    expect(authoringOf(changes.at(-1))?.expressions?.custom?.map((entry) => entry.name)).toEqual(["wink"]);
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    expect(within(region).getByText("Happy은(는) VRM 기본 표정 이름이라 쓸 수 없어요.")).toBeTruthy();
+
+    fireEvent.change(field, { target: { value: " 장난 윙크 " } });
+    fireEvent.submit(field.closest("form")!);
+    expect(authoringOf(changes.at(-1))?.expressions?.custom).toEqual([
+      expect.objectContaining({ name: "장난 윙크", template: "wink" }),
+    ]);
+    // 칩·슬라이더 라벨이 새 이름을 따라가고, 선택도 그대로 남는다.
+    expect(within(region).getByRole("button", { name: "장난 윙크" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(region).getByRole("slider", { name: "장난 윙크 입꼬리" })).toBeTruthy();
+    expect(within(region).getByRole("textbox", { name: "장난 윙크 이름" })).toHaveProperty("value", "장난 윙크");
+  });
 });
 
 describe("StudioVrmAvatarForgeGenerateSection hair sway", () => {
@@ -133,9 +158,23 @@ describe("StudioVrmAvatarForgeGenerateSection hair sway", () => {
 
     const hairSway = authoringOf(changes.at(-1))?.hairSway;
     expect(hairSway?.groups).toBeUndefined();
-    expect(Object.values(hairSway?.chains ?? {})).toEqual([{ stiffness: 2 }]);
+    // 1번 칩은 화면 왼쪽 끝 가닥이다.
+    expect(hairSway?.chains).toEqual({ "bang-blunt-0": { stiffness: 2 } });
     expect(within(strands).getByRole("button", { name: "앞머리 1번 가닥 (조정됨)" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: /헤어 흔들림/u }).textContent).toContain("묶음·가닥 1곳");
+  });
+
+  it("points to strand numbers only for groups that show them", () => {
+    // 포니테일(action-pony)의 묶음은 가닥이 하나라 번호 줄이 없다. 안내도 없는 번호를 가리키지 않아야 한다.
+    renderSection({ state: createAvatarForgeState("action-pony") });
+    fireEvent.click(screen.getByRole("button", { name: /헤어 흔들림/u }));
+    fireEvent.click(screen.getByRole("button", { name: "묶음·땋은 머리" }));
+    expect(screen.queryByRole("group", { name: "묶음·땋은 머리 가닥별 조율" })).toBeNull();
+    expect(screen.queryByText(/가닥 번호를 고르면/u)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "앞머리" }));
+    expect(screen.getByRole("group", { name: "앞머리 가닥별 조율" })).toBeTruthy();
+    expect(screen.getByText(/가닥 번호를 고르면/u)).toBeTruthy();
   });
 
   it("ignores strand tweaks the current hair does not have, so a new tweak still sticks", () => {

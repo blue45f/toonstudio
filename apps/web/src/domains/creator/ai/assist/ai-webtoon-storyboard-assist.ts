@@ -153,26 +153,28 @@ export function numberedScriptCuts(scriptText: string, maxLength: number): strin
     .split(/\n+/u)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-    .map((line) => cleanSingleLineText(line, budget) || "(빈 컷)");
+    // 줄은 정리만 하고 여기서 자르지 않는다. 자를 때는 아래에서 '…'와 생략 표시를 함께 붙인다.
+    .map((line) => cleanSingleLineText(line, Number.MAX_SAFE_INTEGER) || "(빈 컷)");
   const numbered = (index: number, text: string) => `${index + 1}. ${text}`;
   const total = lines.reduce((sum, line) => sum + scriptLineCost(line), 0);
   if (lines.length <= MAX_HEAD_SCRIPT_CUTS + MAX_TAIL_SCRIPT_CUTS && total <= budget) {
     return lines.map((line, index) => numbered(index, line));
   }
 
-  // 엔딩이 가장 중요하므로 끝부분을 먼저 확보한다(마지막 줄 하나가 예산보다 길면 그 줄만 잘라 넣는다).
+  // 엔딩이 가장 중요하므로 끝부분을 먼저 확보한다. 마지막 줄 하나가 끝부분 예산보다 길면 그 몫을 잡아 두고,
+  // 앞부분을 고른 뒤 남는 예산까지 모두 그 줄에 준다(한 문단짜리 대본이 예산의 일부만 보내지 않게).
   const tailBudget = Math.floor(budget * TAIL_SCRIPT_BUDGET_RATIO);
   const tail: string[] = [];
   let tailStart = lines.length;
   let used = 0;
+  let clipEnding = false;
   while (tailStart > 0 && tail.length < MAX_TAIL_SCRIPT_CUTS) {
     const line = lines[tailStart - 1]!;
     if (used + scriptLineCost(line) > tailBudget) {
       if (tail.length === 0) {
-        const clipped = clipScriptLine(line, tailBudget);
+        clipEnding = true;
         tailStart -= 1;
-        used += scriptLineCost(clipped);
-        tail.unshift(numbered(tailStart, clipped));
+        used = tailBudget;
       }
       break;
     }
@@ -189,6 +191,7 @@ export function numberedScriptCuts(scriptText: string, maxLength: number): strin
     if (scriptLineCost(line) > remaining) {
       const clipped = clipScriptLine(line, remaining);
       if ([...clipped].length >= 10) {
+        remaining -= scriptLineCost(clipped);
         head.push(numbered(headEnd, clipped));
         headEnd += 1;
       }
@@ -198,6 +201,7 @@ export function numberedScriptCuts(scriptText: string, maxLength: number): strin
     head.push(numbered(headEnd, line));
     headEnd += 1;
   }
+  if (clipEnding) tail.unshift(numbered(tailStart, clipScriptLine(lines[tailStart]!, used + Math.max(0, remaining))));
 
   const omitted = tailStart - headEnd;
   const note =

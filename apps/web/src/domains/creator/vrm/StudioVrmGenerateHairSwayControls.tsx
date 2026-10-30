@@ -79,6 +79,8 @@ export function StudioVrmGenerateHairSwayControls({
   const activeGroup: StudioVrmHairSwayGroupId | null = selectedChain?.group
     ?? (resolvedScope === "global" ? null : (resolvedScope as StudioVrmHairSwayGroupId));
   const groupChains = activeGroup ? chains.filter((chain) => chain.group === activeGroup) : [];
+  // 가닥이 하나뿐인 묶음은 묶음 배율이 곧 그 가닥 배율이라 가닥 번호 줄을 그리지 않는다. 안내 문구도 이 값을 따른다.
+  const showStrandChips = groupChains.length > 1;
   const values = resolveStudioVrmHairSwayScope(authoring, resolvedScope);
   const scopeLabel = selectedChain
     ? `${groupLabel(selectedChain.group)} ${selectedChain.order}번 가닥`
@@ -156,7 +158,7 @@ export function StudioVrmGenerateHairSwayControls({
             );
           })}
         </div>
-        {activeGroup && groupChains.length > 1 ? (
+        {activeGroup && showStrandChips ? (
           <div
             className="flex flex-wrap items-center gap-1.5"
             role="group"
@@ -223,7 +225,7 @@ export function StudioVrmGenerateHairSwayControls({
           {selectedChain
             ? `${scopeLabel} 배율은 전체·묶음 배율 위에 한 번 더 곱해집니다.`
             : activeGroup
-              ? `${scopeLabel} 배율은 전체 배율 위에 한 번 더 곱해집니다. 가닥 번호를 고르면 그 가닥만 다듬을 수 있어요.`
+              ? `${scopeLabel} 배율은 전체 배율 위에 한 번 더 곱해집니다.${showStrandChips ? " 가닥 번호를 고르면 그 가닥만 다듬을 수 있어요." : ""}`
               : "전체 배율은 모든 헤어 가닥에 곱해집니다. 묶음을 고르면 그 묶음만 더 다듬을 수 있어요."}
           {" "}생성한 VRM 은 포저 물리에서 바로 흔들립니다.
         </p>

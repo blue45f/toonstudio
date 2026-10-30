@@ -230,6 +230,17 @@ const SPEAKER_DIALOGUE_PATTERN = /^\s*([^:：\n(["“]{1,20})[:：]\s*(.+)$/u;
 const PAREN_NARRATION_PATTERN = /\((?:나레이션|독백|해설|N)[:：]?\s*([^)]+)\)/u;
 const BRACKET_DIRECTIVE_PATTERN = /\[([^\]]+)\]/gu;
 
+/**
+ * 대본 줄에서 [ ] 연출 지시를 뺀 본문. 지시는 샷·앵글에만 쓰고 대사·나레이션·말풍선에는 넣지 않는다.
+ * 따옴표 안의 [ ](시스템창·스킬 이름 대사)는 대사로 남기고, 따옴표 밖에서 시작한 [ ]만 뺀다(그 안의 따옴표도 함께).
+ */
+export function stripBracketDirectives(line: string): string {
+  return line
+    .replace(/(["“][^"”]*["”])|\[[^\]]+\]/gu, (_match, quoted?: string) => quoted ?? " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
 function visualPromptSource(line: string): string {
   const withoutDialogue = line
     .replace(BRACKET_DIRECTIVE_PATTERN, "")
@@ -336,6 +347,17 @@ export function analyzeRoughSketchIntent(
   });
 }
 
+const shotAbbreviation = (abbreviation: string): RegExp =>
+  new RegExp(`(?<![A-Za-z])${abbreviation}(?![A-Za-z])`, "iu");
+// 표준 복합 약어도 낱말로 읽는다: XCU는 익스트림 클로즈업, MCU·BCU는 클로즈업, ELS·XLS·MLS는 롱 샷.
+const SHOT_ABBREVIATION = {
+  ecu: shotAbbreviation("(?:E|X)CU"),
+  cu: shotAbbreviation("(?:M|B)?CU"),
+  ms: shotAbbreviation("MS"),
+  fs: shotAbbreviation("FS"),
+  ls: shotAbbreviation("(?:E|X|M)?LS"),
+} as const;
+
 function parseExplicitDirectiveOverrides(line: string): {
   shotScale?: StoryboardShotScale;
   cameraAngle?: StoryboardCameraAngle;
@@ -345,13 +367,16 @@ function parseExplicitDirectiveOverrides(line: string): {
   const matches = [...line.matchAll(BRACKET_DIRECTIVE_PATTERN)].map((m) => m[1] ?? "").join(" ");
   if (!matches) return {};
 
-  if (/익스트림\s*클로즈업|ECU|초근접/iu.test(matches)) shotScale = "extreme-close-up";
-  else if (/클로즈업|CU|얼굴/iu.test(matches)) shotScale = "close-up";
-  else if (/미디엄|바스트|MS/iu.test(matches)) shotScale = "medium-shot";
-  else if (/풀\s*샷|전신|FS/iu.test(matches)) shotScale = "full-shot";
-  else if (/롱\s*샷|와이드|원경|LS/iu.test(matches)) shotScale = "long-shot";
+  // 영문 약어는 낱말로 쓰였을 때만 읽는다('s-curve'·'focus' 속 cu를 클로즈업으로 오판하지 않게).
+  // '얼굴'은 샷 용어가 하나도 없을 때만 클로즈업으로 본다('풀 샷, 얼굴을 들어' 같은 동작 묘사가 샷을 덮지 않게).
+  if (/익스트림\s*클로즈업|초근접/iu.test(matches) || SHOT_ABBREVIATION.ecu.test(matches)) shotScale = "extreme-close-up";
+  else if (/클로즈업/iu.test(matches) || SHOT_ABBREVIATION.cu.test(matches)) shotScale = "close-up";
+  else if (/미디엄|바스트/iu.test(matches) || SHOT_ABBREVIATION.ms.test(matches)) shotScale = "medium-shot";
+  else if (/풀\s*샷|전신/iu.test(matches) || SHOT_ABBREVIATION.fs.test(matches)) shotScale = "full-shot";
+  else if (/롱\s*샷|와이드|원경/iu.test(matches) || SHOT_ABBREVIATION.ls.test(matches)) shotScale = "long-shot";
   else if (/버즈\s*아이|부감|조감/iu.test(matches)) shotScale = "birds-eye";
   else if (/웜즈\s*아이|앙각/iu.test(matches)) shotScale = "worms-eye";
+  else if (/얼굴/u.test(matches)) shotScale = "close-up";
 
   if (/로우\s*앵글|앙각/iu.test(matches)) cameraAngle = "low-angle";
   else if (/하이\s*앵글|부감/iu.test(matches)) cameraAngle = "high-angle";
@@ -549,14 +574,18 @@ export class StudioAiStoryboardDirector {
     let suggestedSfx: string | undefined;
     let heightRatio = 1.0;
 
-    const narrationMatch = line.match(PAREN_NARRATION_PATTERN);
+    // [ ] 안은 연출 지시라 화자·대사·나레이션 추출에서는 뺀다. 그래야 줄 끝에 붙인 지문이 따옴표 없는
+    // '이름: 대사'의 말풍선 글이 되지 않는다. 감정·비트 판정은 원칙 1대로 지시를 포함한 줄 전체로 한다([잠시 후] 등).
+    const textLine = stripBracketDirectives(line);
+    const narrationMatch = textLine.match(PAREN_NARRATION_PATTERN);
     const narration = narrationMatch?.[1]?.trim() || undefined;
-    const quoteMatch = line.match(QUOTED_DIALOGUE_PATTERN);
-    const speakerMatch = line.match(SPEAKER_DIALOGUE_PATTERN);
-    const speaker = speakerMatch?.[1]?.trim() || undefined;
+    const quoteMatch = textLine.match(QUOTED_DIALOGUE_PATTERN);
+    const speakerMatch = textLine.match(SPEAKER_DIALOGUE_PATTERN);
+    // '카엘: [침묵]'은 지시를 빼면 '카엘:'만 남아 대사가 없지만, 화자는 원래 줄의 카엘이다(이름 칸은 '['를 받지 않는다).
+    const speaker = (speakerMatch ?? line.match(SPEAKER_DIALOGUE_PATTERN))?.[1]?.trim() || undefined;
     const rawSpeakerDialogue = speakerMatch?.[2]?.trim().replace(/^["“]|["”]$/gu, "");
     const dialogue: string | undefined =
-      quoteMatch?.[1]?.trim() || rawSpeakerDialogue;
+      quoteMatch?.[1]?.trim() || rawSpeakerDialogue?.trim() || undefined;
 
     if (ACTION_PATTERN.test(line)) {
       shotScale = "full-shot";

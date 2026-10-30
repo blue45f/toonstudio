@@ -121,7 +121,7 @@ describe("character-shaper-gen3d-bridge — SHAPER REA × Tripo 3D V3 MCP 리얼
       extractLuminanceOutline: true,
       passes: [
         { id: "beauty" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
-        // 헤어 분리는 실제 밑색과 별도 음영 패스를 요구한다. Beauty를 밑색으로 위장하지 않는다.
+        // 0a708efc 이후 헤어 분리는 실제 밑색과 별도 음영 패스를 요구한다. Beauty로 대체하지 않는다.
         { id: "flat" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
         { id: "shadow" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
         { id: "mask-hair" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },

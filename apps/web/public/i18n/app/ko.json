@@ -497,7 +497,7 @@
   "aiAssist.episodic.continuityBasis": "대본의 연속성 점검 제안",
   "aiAssist.episodic.liveSource": "AI 작성 제안 · 실측 아님",
   "aiAssist.episodic.localSource": "로컬 예시 · AI 미실행",
-  "aiAssist.episodic.scopeNotice": "대본 앞 600자를 바탕으로 최대 4개 컷·전환을 검토합니다. 로컬 예시는 AI 분석 결과가 아니며, AI 제안도 실제 독자 통계나 완성 원고 검사 결과가 아닙니다.",
+  "aiAssist.episodic.scopeNotice": "대본 앞 600자를 바탕으로 최대 4개 컷·전환을 검토해요. 로컬 예시는 AI 분석 결과가 아니고, AI 제안도 실제 독자 통계나 완성 원고 검사 결과가 아니에요.",
   "aiAssist.episodic.running": "AI가 대본을 검토하고 있어요…",
   "aiAssist.episodic.run": "현재 탭 AI 검토",
   "aiAssist.episodic.retry": "AI 검토 다시 시도",
