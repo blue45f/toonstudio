@@ -67,7 +67,6 @@ export function AnchorDropZone({
       className={cn(
         "rounded-2xl border border-dashed border-line-strong bg-card p-4 transition-colors",
         dragging && "border-accent bg-accent-soft",
-        disabled && "opacity-70",
         className,
       )}
     >

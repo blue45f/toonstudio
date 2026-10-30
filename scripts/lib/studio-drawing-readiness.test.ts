@@ -10,7 +10,7 @@ import {
 type Surface = "comic" | "notice" | "beta" | "welcome" | "quickstart" | "viewport" | "stage";
 const selectors: Record<Surface, string> = {
   comic: '[data-studio-quick-comic-overlay="true"]',
-  notice: '[data-testid="mobile-full-edit-notice"]',
+  notice: '[data-testid="mobile-full-edit-notice"][data-studio-mobile-notice-compact="false"]',
   beta: '[data-studio-beta-notice="true"]',
   welcome: '[data-studio-cinematic-canvas-welcome="true"]',
   quickstart: '[data-studio-creative-starter="true"]',
@@ -19,7 +19,7 @@ const selectors: Record<Surface, string> = {
 };
 const closeControls: Partial<Record<Surface, string>> = {
   comic: "빠른 웹툰 조립 취소",
-  notice: "이해했어요",
+  notice: "모바일 편집 안내 닫기",
   beta: '[data-studio-beta-notice-acknowledge="true"]',
   welcome: "시작 안내 닫기",
   quickstart: '[data-studio-quickstart-dismiss="true"]',
@@ -30,15 +30,17 @@ function fakePage() {
   const visible: Record<Surface, boolean> = {
     comic: false, notice: false, beta: false, welcome: false, quickstart: false, viewport: true, stage: true,
   };
+  const noticeState = { compact: false };
   const calls: Array<{ surface: Surface | "target"; options: { timeout: number } }> = [];
   const close = vi.fn(async (surface: Surface, options: { timeout: number }) => {
     // 강제 클릭/DOM 변경 없이 실제 닫기 컨트롤만 사용해야 이 fake가 상태를 바꾼다.
     expect(Object.keys(options)).toEqual(["timeout"]);
     expect(options.timeout).toBeGreaterThan(0);
     calls.push({ surface, options });
-    visible[surface] = false;
+    if (surface === "notice") noticeState.compact = true;
+    else visible[surface] = false;
   });
-  const isVisible = vi.fn(async (surface: Surface) => visible[surface]);
+  const isVisible = vi.fn(async (surface: Surface) => visible[surface] && (surface !== "notice" || !noticeState.compact));
   const locators = Object.fromEntries(Object.keys(selectors).map((key) => {
     const surface = key as Surface;
     const locator = {
@@ -68,7 +70,7 @@ function fakePage() {
     calls.push({ surface: "target", options });
   });
   const target = { click: targetClick } as unknown as Locator;
-  return { page, visible, calls, close, isVisible, target, targetClick };
+  return { page, visible, noticeState, calls, close, isVisible, target, targetClick };
 }
 
 describe("그리기 검증기 UI readiness", () => {
@@ -99,7 +101,7 @@ describe("그리기 검증기 UI readiness", () => {
     expect(f.calls.map(({ surface }) => surface)).toEqual(["comic", "notice", "beta", "welcome", "quickstart"]);
   });
 
-  it("휴대폰 폭의 풀 편집 안내는 닫은 뒤에야 준비 완료로 보고 데스크톱 폭에서는 건드리지 않는다", async () => {
+  it("휴대폰 안내는 재진입 버튼으로 접힌 뒤 준비 완료로 보고 데스크톱 폭에서는 건드리지 않는다", async () => {
     const f = fakePage();
     expect(await waitForStudioDrawingReady(f.page)).toEqual({ welcomeDismissed: false });
     expect(f.close).not.toHaveBeenCalled();
@@ -110,8 +112,30 @@ describe("그리기 검증기 UI readiness", () => {
     await vi.runAllTimersAsync();
     await result;
     expect(f.calls.map(({ surface }) => surface)).toEqual(["notice"]);
-    expect(f.visible.notice).toBe(false);
+    expect(f.visible.notice).toBe(true);
+    expect(f.noticeState.compact).toBe(true);
     expect(finished).toHaveBeenCalledWith({ welcomeDismissed: false });
+  });
+
+  it("이미 접힌 재진입 버튼은 다시 열거나 반복해서 닫지 않는다", async () => {
+    const f = fakePage();
+    f.visible.notice = true;
+    f.noticeState.compact = true;
+    expect(await waitForStudioDrawingReady(f.page)).toEqual({ welcomeDismissed: false });
+    expect(f.close).not.toHaveBeenCalled();
+    expect(f.visible.notice).toBe(true);
+    expect(f.noticeState.compact).toBe(true);
+  });
+
+  it("모바일 닫기 클릭이 성공해도 실제로 접히지 않으면 준비 완료로 처리하지 않는다", async () => {
+    const f = fakePage();
+    f.visible.notice = true;
+    f.close.mockImplementation(async () => {});
+    const result = expect(waitForStudioDrawingReady(f.page, { timeoutMs: 450 })).rejects.toThrow("450ms 초과");
+    await vi.runAllTimersAsync();
+    await result;
+    expect(f.visible.notice).toBe(true);
+    expect(f.noticeState.compact).toBe(false);
   });
 
   it.each(["viewport", "stage"] as const)("안내를 닫아도 %s가 안 보이면 기다린다", async (surface) => {
@@ -309,7 +333,8 @@ describe("그리기 검증기 UI readiness", () => {
     await vi.runAllTimersAsync();
     await result;
     expect(f.calls.map(({ surface }) => surface)).toEqual(["notice", "target"]);
-    expect(f.visible.notice).toBe(false);
+    expect(f.visible.notice).toBe(true);
+    expect(f.noticeState.compact).toBe(true);
     expect(f.targetClick.mock.calls.map(([options]) => options)).toEqual([{ timeout: 1_000 }, { timeout: 300 }]);
     expect(Date.now() - started).toBe(1_200);
   });

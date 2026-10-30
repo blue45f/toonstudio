@@ -43,12 +43,12 @@ describe("admin command palette interaction", () => {
     open();
     const input = screen.getByRole("combobox");
     expect(document.activeElement).toBe(input);
-    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.body.hasAttribute("data-scroll-locked")).toBe(true);
     fireEvent.change(input, { target: { value: "audit" } });
     fireEvent.click(await screen.findByRole("option", { name: "admin.tabs.audit" }));
     expect(screen.getByLabelText("Location").textContent).toBe("/admin/security/audit");
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.body.style.overflow).toBe("auto");
+    expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
   });
 
   it("reports no matching commands and closes from the close control or backdrop with focus restored", async () => {
@@ -75,11 +75,11 @@ describe("admin command palette interaction", () => {
     fireEvent.keyDown(document, { key: "k" });
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.keyDown(document, { key: "k", ctrlKey: true });
-    fireEvent.click(screen.getByRole("button", { name: "External navigation" }));
+    fireEvent.click(screen.getByRole("button", { name: "External navigation", hidden: true }));
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.keyDown(document, { key: "k", ctrlKey: true });
     view.unmount();
-    expect(document.body.style.overflow).toBe("auto");
+    expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
     fireEvent.keyDown(document, { key: "k", ctrlKey: true });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -109,5 +109,31 @@ describe("admin command palette interaction", () => {
     expect(api.toast.mock.calls[0]![2]).toBe("error");
     expect(api.toast.mock.calls[0]![1]).toBe(failure instanceof Error ? failure.message : api.toast.mock.calls[0]![0]);
     expect(api.download).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("관리자 명령 검색의 포커스 경계", () => {
+  it("Escape 닫기 뒤에도 버튼으로 복귀하고 배경 버튼으로 포커스가 빠지지 않는다", async () => {
+    open();
+    const input = screen.getByRole("combobox", { name: "admin.palette.placeholder" });
+    const background = screen.getByRole("button", { name: "External navigation", hidden: true });
+    background.focus();
+    expect(document.activeElement).toBe(input);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "admin.palette.trigger" })));
+    expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
+  });
+
+  it("소비된 단축키나 글자 조합 중 단축키로 검색창을 열지 않는다", () => {
+    const view = open();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true, isComposing: true });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const event = new KeyboardEvent("keydown", { key: "k", ctrlKey: true, cancelable: true, bubbles: true });
+    event.preventDefault();
+    fireEvent(document, event);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    view.unmount();
   });
 });

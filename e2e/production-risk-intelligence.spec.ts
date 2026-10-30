@@ -1,6 +1,8 @@
 import { expect, test } from "./fixtures/non-studio-test";
 import { capturePageEvidence } from "./helpers/capture-page-evidence";
 
+import type { Page } from "@playwright/test";
+
 const THEME_STORAGE_KEY = "toonstudio-theme";
 
 function themeEnvelope() {
@@ -8,6 +10,16 @@ function themeEnvelope() {
     state: { preference: "light", studioPreference: "inherit", theme: "light" },
     version: 0,
   });
+}
+
+async function openOperationsDetail(page: Page) {
+  await expect(page.getByRole("heading", { name: "개요", exact: true })).toBeVisible();
+  const summary = page.locator("summary").filter({ hasText: "운영 자세히 보기" });
+  const details = summary.locator("..");
+  await expect(summary).toBeVisible();
+  await expect(details).toHaveJSProperty("open", false);
+  await summary.click();
+  await expect(details).toHaveJSProperty("open", true);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -35,8 +47,8 @@ test("predictive risk stays explainable and requires explicit registration on mo
 
   await page.goto("/production/projects/sample-project/overview", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "프로젝트 운영 조종석" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "예측 리스크 레이더" })).toBeVisible();
+  await openOperationsDetail(page);
+  await expect(page.getByRole("heading", { name: "위험 미리 보기", exact: true })).toBeVisible();
   await expect(page.getByText("왜 위험한가").first()).toBeVisible();
   await expect(page.getByText("예상 영향").first()).toBeVisible();
   await expect(page.getByText("권장 대응").first()).toBeVisible();
@@ -44,11 +56,15 @@ test("predictive risk stays explainable and requires explicit registration on mo
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 
-  const register = page.getByRole("button", { name: /예측 신호를 제작 위험으로 등록/u }).first();
+  const riskPanel = page.locator("[data-production-risk-intelligence]");
+  const firstRegister = riskPanel.getByRole("button", { name: /예측 신호를 제작 위험으로 등록/u }).first();
+  const signalTitle = await firstRegister.locator("xpath=ancestor::article[1]").getByRole("heading", { level: 3 }).innerText();
+  const register = riskPanel.getByRole("button", { name: `${signalTitle} 예측 신호를 제작 위험으로 등록`, exact: true });
   await expect(register).toBeEnabled();
   const signalCard = register.locator("xpath=ancestor::article[1]");
   await register.click();
-  await expect(signalCard.getByText("위험 원장 등록됨", { exact: true })).toBeVisible();
+  await expect(signalCard.getByText("위험 목록에 등록됨", { exact: true })).toBeVisible();
+  await expect(register).toBeDisabled();
   await expect(page.getByRole("status").filter({ hasText: "제작 위험으로 등록했습니다" })).toBeVisible();
 
   await capturePageEvidence(page, testInfo, "production-risk-overview-mobile");
@@ -85,26 +101,33 @@ test("recovery scenarios compare outcomes and apply only an explicit reversible 
 
   await page.goto("/production/projects/sample-project/overview", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "복구 시나리오 비교" })).toBeVisible();
+  await openOperationsDetail(page);
+  const recoveryPanel = page.locator("[data-production-recovery-scenarios]");
+  await expect(recoveryPanel.getByRole("heading", { name: "복구 계획 비교", exact: true })).toBeVisible();
   await expect(page.getByText(/원본 데이터에 적용하지 않고/u)).toBeVisible();
-  const selector = page.getByLabel("시나리오를 비교할 위험");
+  const selector = recoveryPanel.getByLabel("계획을 비교할 위험", { exact: true });
   await selector.selectOption("blocker:task-episode-12-background");
+  await expect(selector).toHaveValue("blocker:task-episode-12-background");
   await expect(page.getByText("마감 2일 재조정", { exact: true })).toBeVisible();
   await expect(page.getByText("차단 입력 즉시 확정", { exact: true })).toBeVisible();
   await expect(page.getByText("미리보기 전용").first()).toBeVisible();
   await expect(page.getByText("위험 점수").first()).toBeVisible();
   await expect(page.getByText("예상 개선").first()).toBeVisible();
 
-  const apply = page.getByRole("button", { name: "마감 2일 재조정 복구 시나리오 적용" });
+  const apply = recoveryPanel.getByRole("button", { name: "마감 2일 재조정 복구 계획 적용", exact: true });
+  const appliedStatus = recoveryPanel.getByRole("status").filter({ hasText: "마감 2일 재조정 적용됨" });
+  await expect(appliedStatus).toHaveCount(0);
   await expect(apply).toBeEnabled();
   await apply.click();
-  await expect(page.getByRole("status").filter({ hasText: "복구 시나리오를 원자적으로 적용했습니다" })).toBeVisible();
-  const undo = page.getByRole("button", { name: "마감 2일 재조정 복구 시나리오 되돌리기" });
-  await expect(page.locator("[data-production-recovery-scenarios]").getByRole("status")).toContainText("마감 2일 재조정 적용됨");
+  await expect(page.getByRole("status").filter({ hasText: "복구 계획을 적용했습니다" })).toBeVisible();
+  const undo = recoveryPanel.getByRole("button", { name: "마감 2일 재조정 복구 계획 되돌리기", exact: true });
+  await expect(appliedStatus).toBeVisible();
   await expect(undo).toBeEnabled();
   await undo.click();
-  await expect(page.getByRole("status").filter({ hasText: "복구 시나리오를 원자적으로 되돌렸습니다" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "복구 계획을 되돌렸습니다" })).toBeVisible();
   await expect(undo).toHaveCount(0);
+  await expect(appliedStatus).toHaveCount(0);
+  await expect(apply).toBeEnabled();
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await capturePageEvidence(page, testInfo, "production-recovery-scenario-mobile");

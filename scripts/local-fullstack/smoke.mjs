@@ -142,7 +142,7 @@ export async function runAuthSmoke({
     const response = await sendRequest(fetchImpl, "GET", `${api.origin}/api/auth/providers`);
     const email = response.json?.email;
     return {
-      ok: response.status === 200 && typeof email === "object" && email !== null,
+      ok: response.status === 200 && typeof email === "object" && email !== null && email.available === false,
       detail: `HTTP ${response.status}, email.available=${String(email?.available)}${email?.reason ? `, reason=${String(email.reason)}` : ""}`,
     };
   });
