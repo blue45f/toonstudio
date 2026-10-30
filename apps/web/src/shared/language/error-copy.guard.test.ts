@@ -23,6 +23,8 @@ const ALLOWLIST: Readonly<Record<string, string>> = {
   "productionHub.operations.releaseFailedRecorded": "완료 알림(동작 결과 확인)",
   // 사용자 글꼴 저장소 상태 배지의 라벨 — 같은 상황의 안내 문구(storageIntegrityImportBlocked)가 다음 행동을 안내한다.
   "studio.customFonts.storageIntegrityBadge": "상태 배지 라벨",
+  // 사용자가 직접 누른 '중지'의 결과 알림 — 오류가 아니라 동작 확인이고, 바로 위 실행 버튼이 다음 행동이다.
+  "aiAssist.episodic.stopped": "사용자 중지 확인(동작 결과 알림)",
 };
 
 function readNamespace(namespace: string): Record<string, unknown> {
