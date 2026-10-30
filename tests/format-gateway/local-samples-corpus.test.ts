@@ -12,13 +12,15 @@ import {
   inspectAsepriteSignature,
   resolveAsepriteLinkedCel,
 } from "../../packages/studio-format-gateway/src/aseprite-sprite";
-import { parseClipContainer } from "../../packages/studio-format-gateway/src/chunked-sqlite-container";
+import { inspectClipContainerKind, parseClipContainer } from "../../packages/studio-format-gateway/src/chunked-sqlite-container";
+import { CLIP_BY_DESIGN_UNSUPPORTED_CODES, importChunkedSqliteDocument } from "../../packages/studio-format-gateway/src/chunked-sqlite-document";
 import { importGimpBrush, importGimpPattern, inspectGimpBrushFormat } from "../../packages/studio-format-gateway/src/gimp-brush";
 import { importGimpBrushPipe } from "../../packages/studio-format-gateway/src/gimp-brush-pipe";
 import { importGimpGeneratedBrush } from "../../packages/studio-format-gateway/src/gimp-generated-brush";
 import { describeKraPixelFormat } from "../../packages/studio-format-gateway/src/kra-colorspace";
 import { applyKraTransparencyMasks, importKra, inspectKraSignature } from "../../packages/studio-format-gateway/src/kra-document";
 import { importXcf, inspectXcfHeader } from "../../packages/studio-format-gateway/src/xcf";
+import { openNodeSqlite } from "../corpus/formats/node-sqlite-clip-reader";
 
 /**
  * 사용자가 로컬에 둔 실제 샘플로 포맷 가정을 검증하는 코퍼스 테스트.
@@ -64,21 +66,67 @@ describe("로컬 실샘플 코퍼스", () => {
 function registerClipSamples(): void {
   describe("청크형 SQLite 컨테이너 로컬 실샘플", () => {
     for (const name of CLIP_SAMPLES) {
-      it(`${name}: 컨테이너 가정(H1–H4)이 실제 파일과 맞는다`, () => {
+      it(`${name}: 컨테이너 가정(제3자 명세 세 종과 일치한 항목)이 실제 파일과 맞는다`, () => {
         const bytes = new Uint8Array(readFileSync(join(SAMPLE_DIR, name)));
         const parsed = parseClipContainer(bytes);
 
         expect(parsed.truncated).toBe(false);
         expect(parsed.sqlite?.inspection.container).toBe("sqlite3");
         if (parsed.kind === "csfchunk") {
-          expect(parsed.headerLayout).not.toBe("unrecognized");
+          // 제3자 명세가 적은 순서(길이 → 위치)가 실제 파일에서도 맞는다.
+          expect(parsed.headerLayout).toBe("length-then-offset");
           const types = parsed.chunks.map((chunk) => chunk.type);
           expect(types).toContain("SQLi");
           expect(types.at(-1)).toBe("Foot");
-          expect(parsed.externalBlocks.every((block) => block.parsed)).toBe(true);
+          expect(parsed.head).not.toBeNull();
+          expect(parsed.externalBlocks.every((block) => block.parsed && block.idWellFormed)).toBe(true);
           expect(parsed.issues).toEqual([]);
         }
       });
+
+      if (inspectClipContainerKind(new Uint8Array(readFileSync(join(SAMPLE_DIR, name)).subarray(0, 64))) !== "csfchunk") continue;
+
+      it(
+        `${name}: 문서 가져오기가 레이어 트리와 픽셀을 일관되게 읽는다`,
+        async () => {
+          const bytes = new Uint8Array(readFileSync(join(SAMPLE_DIR, name)));
+          const result = await importChunkedSqliteDocument(bytes, { openSqlite: openNodeSqlite });
+
+          expect(result.canvas.width).toBeGreaterThan(0);
+          expect(result.canvas.height).toBeGreaterThan(0);
+          expect(result.layers.length).toBeGreaterThan(0);
+          // 연결·순환 같은 구조 진단이 없다. 코드별 총계(`diagnosticCounts`)로 본다: 진단 목록은 코드당 50건에서 접히기 때문이다.
+          expect(Object.keys(result.diagnosticCounts.warnings).filter((code) => code.startsWith("clip-layer-") || code.startsWith("clip-raster-"))).toEqual([]);
+          // 읽지 못한 레이어가 없다. 의도적으로 읽지 않는 종류·형식을 알리는 진단만 허용하고, 이것 말고 `unsupported`에 남는 항목은 실제
+          // 파일에서 가정이 어긋났다는 신호다.
+          expect(Object.keys(result.diagnosticCounts.unsupported).filter((code) => !CLIP_BY_DESIGN_UNSUPPORTED_CODES.has(code))).toEqual([]);
+          // 외부 ID 대조 가정(16진 글자의 대소문자 등)이 어긋나면 모든 래스터 레이어가 "저장된 데이터 없음"으로 읽혀 조용히 투명해진다. 컨테이너에
+          // 외부 블록이 있고 픽셀을 읽은 래스터 레이어가 있는데 저장된 블록을 푼 레이어가 하나도 없으면 그 가정을 의심한다(그림이 없는 문서나
+          // 외부 블록이 벡터·텍스트용뿐인 문서는 이 단언이 틀릴 수 있으니 그 경우 샘플을 확인한다).
+          const rasterWithPixels = result.layers.filter((layer) => layer.kind === "raster" && layer.pixels !== null);
+          if (parseClipContainer(bytes).externalBlocks.length > 0 && rasterWithPixels.length > 0) {
+            expect(
+              rasterWithPixels.some((layer) => (layer.storedBlocks ?? 0) > 0),
+              "픽셀을 읽은 래스터 레이어가 모두 저장된 블록 0개다: Offscreen.BlockData와 CHNKExta의 외부 ID 대조 가정을 확인하라",
+            ).toBe(true);
+          }
+          for (const layer of result.layers) {
+            if (layer.parentIndex !== null) expect(["folder", "frame-folder"]).toContain(result.layers[layer.parentIndex]?.kind);
+            if (layer.pixels !== null) {
+              expect(layer.extent, `${layer.index} 범위`).not.toBeNull();
+              expect(layer.pixels.length).toBe(layer.extent!.width * layer.extent!.height * 4);
+            }
+          }
+          // 미리보기가 있으면 캔버스와 가로세로비가 1% 안에서 같다(S1: 미리보기는 캔버스를 같은 비율로 줄인 것).
+          if (result.previewPng !== null && result.previewPng.length >= 24) {
+            const view = new DataView(result.previewPng.buffer, result.previewPng.byteOffset, result.previewPng.byteLength);
+            const aspect = view.getUint32(16, false) / view.getUint32(20, false);
+            const canvasAspect = result.canvas.width / result.canvas.height;
+            expect(Math.abs(aspect - canvasAspect) / canvasAspect).toBeLessThan(0.01);
+          }
+        },
+        ORACLE_TIMEOUT_MS,
+      );
     }
   });
 }

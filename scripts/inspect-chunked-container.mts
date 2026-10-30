@@ -62,6 +62,12 @@ export interface ChunkedContainerReport {
   readonly declaredChunkStart: number | null;
   readonly declaredFileLength: number | null;
   readonly truncated: boolean;
+  /** `CHNKHead` 본문의 숫자 필드. 파일 ID는 파일을 식별할 수 있어 출력하지 않는다. 해석하지 못했으면 null. */
+  readonly head: null | {
+    readonly version: number;
+    readonly sqliteChunkOffset: number;
+    readonly fileIdLength: number;
+  };
   readonly chunkTypeCounts: Readonly<Record<string, number>>;
   readonly chunks: readonly ContainerChunkSummary[];
   readonly chunksOmitted: number;
@@ -205,6 +211,10 @@ export function describeChunkedContainer(
     declaredChunkStart: parsed.declaredChunkStart,
     declaredFileLength: parsed.declaredFileLength,
     truncated: parsed.truncated,
+    head:
+      parsed.head === null
+        ? null
+        : { version: parsed.head.version, sqliteChunkOffset: parsed.head.sqliteChunkOffset, fileIdLength: parsed.head.fileIdLength },
     chunkTypeCounts,
     chunks: listed,
     chunksOmitted: Math.max(0, parsed.chunks.length - listed.length),
@@ -225,6 +235,11 @@ export function formatReportText(fileName: string, report: ChunkedContainerRepor
   lines.push(`== ${fileName} (${report.byteLength.toLocaleString("en-US")} bytes, sha256 ${report.sha256})`);
   lines.push(
     `kind=${report.kind} headerLayout=${report.headerLayout} declared(start=${String(report.declaredChunkStart)}, length=${String(report.declaredFileLength)}) truncated=${String(report.truncated)}`,
+  );
+  lines.push(
+    report.head === null
+      ? "head: (해석하지 못함)"
+      : `head: version=${report.head.version} sqliteChunkOffset=${report.head.sqliteChunkOffset} fileIdLength=${report.head.fileIdLength}`,
   );
   const counts = Object.entries(report.chunkTypeCounts)
     .map(([type, count]) => `${type}×${count}`)
