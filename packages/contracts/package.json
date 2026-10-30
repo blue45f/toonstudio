@@ -312,6 +312,11 @@
       "import": "./src/studio-crdt-authoring/element-projection.ts",
       "default": "./src/studio-crdt-authoring/element-projection.ts"
     },
+    "./studio-crdt-authoring/group-key": {
+      "types": "./src/studio-crdt-authoring/group-key.ts",
+      "import": "./src/studio-crdt-authoring/group-key.ts",
+      "default": "./src/studio-crdt-authoring/group-key.ts"
+    },
     "./studio-writer-room": {
       "types": "./src/studio-writer-room.ts",
       "import": "./src/studio-writer-room.ts",

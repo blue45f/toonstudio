@@ -16,6 +16,7 @@ import { office2dActorBob, office2dActorFrame, office2dActorOpacity, type Office
 import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot } from "./office2d-actor-geometry";
 import { paintOffice2dAvatarAccessory } from "./office2d-avatar-appearance";
 import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-atlas-frames";
+import { resolveOffice2dStandingExpression } from "./office2d-standing-expression";
 import type { Office2dCamera } from "./office2d-camera";
 import { office2dSignAlpha, type Office2dLabelBox } from "./office2d-label-layout";
 import { drawOffice2dKeycap, drawOffice2dOverlay, planOffice2dOverlay, type Office2dOverlayPlan } from "./office2d-overlay";
@@ -518,7 +519,8 @@ export class Office2dRenderer {
       ctx.stroke();
     }
     const anchorY = footY + bob.offsetY;
-    const image = workImage ?? walkImage;
+    const reaction = resolveOffice2dStandingExpression(actor, pose, frame, (url) => this.host.image(url));
+    const image = reaction?.image ?? workImage ?? walkImage;
     const drawHeight = seated && !workImage ? height * 0.9 : height;
     const tilt = !seated && !workImage ? bob.tiltRad : 0;
     let accessoryOffset = { x: 0, y: 0 };
@@ -526,17 +528,19 @@ export class Office2dRenderer {
       // 작업 자세의 80%, 보행 착석 폴백의 92% 자르기는 기존 논리셀 계약을 유지한다.
       const crop = workImage ? (seated && actor.seat?.facing === "up" ? 0.8 : 1) : seated ? 0.92 : 1;
       const selected = workImage ? pose : walkFrame;
-      const drawFrame = office2dAtlasDrawFrame(actor.character, workImage ? "work" : "walk", selected.row, selected.col, image, crop,
+      const drawFrame = reaction?.drawFrame ?? office2dAtlasDrawFrame(actor.character, workImage ? "work" : "walk", selected.row, selected.col, image, crop,
         Boolean(workImage ? generatedWorkImage : generatedWalkImage));
-      accessoryOffset = drawFrame.accessoryOffset;
+      accessoryOffset = reaction && (avatarProfile?.accessory === "glasses" || avatarProfile?.accessory === "sunglasses")
+        ? reaction.eyewearOffset : drawFrame.accessoryOffset;
       const source = drawFrame.source, target = drawFrame.destination;
       ctx.save();
-      ctx.translate(footX, anchorY);
-      ctx.rotate(tilt);
-      ctx.drawImage(image, source.x, source.y, source.width, source.height,
-        -width / 2 + target.x / 128 * width, -drawHeight * FOOT_RATIO + target.y / 192 * drawHeight,
-        target.width / 128 * width, target.height / 192 * drawHeight);
-      ctx.restore();
+      try {
+        ctx.translate(footX, anchorY);
+        ctx.rotate(tilt);
+        ctx.drawImage(image, source.x, source.y, source.width, source.height,
+          -width / 2 + target.x / 128 * width, -drawHeight * FOOT_RATIO + target.y / 192 * drawHeight,
+          target.width / 128 * width, target.height / 192 * drawHeight);
+      } finally { ctx.restore(); }
     } else {
       paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, actor.facing, actor.stride / 10);
     }

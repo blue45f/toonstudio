@@ -1,0 +1,1493 @@
+{
+  "version": 2,
+  "sheets": [
+    {
+      "role": "artist",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/artist-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 114,
+            "y": 25,
+            "width": 244,
+            "height": 466
+          },
+          "target": {
+            "x": 15.318182,
+            "y": 8.727273,
+            "width": 94.272727,
+            "height": 180.045455
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.090909
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 465,
+            "y": 25,
+            "width": 245,
+            "height": 466
+          },
+          "target": {
+            "x": 14.931818,
+            "y": 8.727273,
+            "width": 94.659091,
+            "height": 180.045455
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.090909
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 817,
+            "y": 25,
+            "width": 245,
+            "height": 466
+          },
+          "target": {
+            "x": 14.931818,
+            "y": 8.727273,
+            "width": 94.659091,
+            "height": 180.045455
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.090909
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 1169,
+            "y": 25,
+            "width": 245,
+            "height": 466
+          },
+          "target": {
+            "x": 14.931818,
+            "y": 8.727273,
+            "width": 94.659091,
+            "height": 180.045455
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.090909
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 113,
+            "y": 523,
+            "width": 245,
+            "height": 468
+          },
+          "target": {
+            "x": 15.143319,
+            "y": 8.730603,
+            "width": 94.251078,
+            "height": 180.038793
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.031789
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 465,
+            "y": 523,
+            "width": 245,
+            "height": 467
+          },
+          "target": {
+            "x": 15.037797,
+            "y": 8.728942,
+            "width": 94.454644,
+            "height": 180.042117
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.157667
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 817,
+            "y": 521,
+            "width": 246,
+            "height": 469
+          },
+          "target": {
+            "x": 15.248387,
+            "y": 8.732258,
+            "width": 94.432258,
+            "height": 180.035484
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.098387
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        },
+        {
+          "source": {
+            "x": 1169,
+            "y": 523,
+            "width": 245,
+            "height": 468
+          },
+          "target": {
+            "x": 15.143319,
+            "y": 8.730603,
+            "width": 94.251078,
+            "height": 180.038793
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -3.031789
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": -0.805
+          }
+        }
+      ]
+    },
+    {
+      "role": "pd",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/pd-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 90,
+            "y": 75,
+            "width": 227,
+            "height": 411
+          },
+          "target": {
+            "x": 12.248157,
+            "y": 8.62285,
+            "width": 99.556511,
+            "height": 180.2543
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.080467
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 469,
+            "y": 74,
+            "width": 229,
+            "height": 412
+          },
+          "target": {
+            "x": 12.265625,
+            "y": 8.625,
+            "width": 100.1875,
+            "height": 180.25
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.15625
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 847,
+            "y": 75,
+            "width": 229,
+            "height": 411
+          },
+          "target": {
+            "x": 11.590295,
+            "y": 8.62285,
+            "width": 100.433661,
+            "height": 180.2543
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.080467
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 1226,
+            "y": 75,
+            "width": 231,
+            "height": 411
+          },
+          "target": {
+            "x": 11.590295,
+            "y": 8.62285,
+            "width": 101.310811,
+            "height": 180.2543
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.080467
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 90,
+            "y": 555,
+            "width": 232,
+            "height": 413
+          },
+          "target": {
+            "x": 11.737469,
+            "y": 8.627139,
+            "width": 101.251834,
+            "height": 180.245721
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.231663
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 467,
+            "y": 555,
+            "width": 233,
+            "height": 413
+          },
+          "target": {
+            "x": 11.191932,
+            "y": 8.627139,
+            "width": 101.688264,
+            "height": 180.245721
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.231663
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 846,
+            "y": 555,
+            "width": 234,
+            "height": 413
+          },
+          "target": {
+            "x": 11.191932,
+            "y": 8.627139,
+            "width": 102.124694,
+            "height": 180.245721
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.231663
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        },
+        {
+          "source": {
+            "x": 1224,
+            "y": 555,
+            "width": 233,
+            "height": 413
+          },
+          "target": {
+            "x": 11.191932,
+            "y": 8.627139,
+            "width": 101.688264,
+            "height": 180.245721
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.231663
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 11.69
+          }
+        }
+      ]
+    },
+    {
+      "role": "writer",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/writer-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 108,
+            "y": 23,
+            "width": 190,
+            "height": 466
+          },
+          "target": {
+            "x": 25.688312,
+            "y": 10.233766,
+            "width": 72.792208,
+            "height": 178.532468
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.850649
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 486,
+            "y": 23,
+            "width": 191,
+            "height": 466
+          },
+          "target": {
+            "x": 25.496753,
+            "y": 10.233766,
+            "width": 73.175325,
+            "height": 178.532468
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.850649
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 864,
+            "y": 23,
+            "width": 193,
+            "height": 466
+          },
+          "target": {
+            "x": 25.113636,
+            "y": 10.233766,
+            "width": 73.941558,
+            "height": 178.532468
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.850649
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 1229,
+            "y": 23,
+            "width": 192,
+            "height": 466
+          },
+          "target": {
+            "x": 25.496753,
+            "y": 10.233766,
+            "width": 73.558442,
+            "height": 178.532468
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.850649
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 109,
+            "y": 528,
+            "width": 189,
+            "height": 467
+          },
+          "target": {
+            "x": 26.153348,
+            "y": 10.235421,
+            "width": 72.2527,
+            "height": 178.529158
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.916847
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 488,
+            "y": 527,
+            "width": 191,
+            "height": 468
+          },
+          "target": {
+            "x": 25.662716,
+            "y": 10.237069,
+            "width": 72.859914,
+            "height": 178.525862
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.792026
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 864,
+            "y": 529,
+            "width": 193,
+            "height": 466
+          },
+          "target": {
+            "x": 25.305195,
+            "y": 10.233766,
+            "width": 73.941558,
+            "height": 178.532468
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.850649
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        },
+        {
+          "source": {
+            "x": 1229,
+            "y": 528,
+            "width": 192,
+            "height": 467
+          },
+          "target": {
+            "x": 25.771058,
+            "y": 10.235421,
+            "width": 73.399568,
+            "height": 178.529158
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -1.916847
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.37
+          }
+        }
+      ]
+    },
+    {
+      "role": "colorist",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/colorist-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 60,
+            "y": 52,
+            "width": 269,
+            "height": 455
+          },
+          "target": {
+            "x": 6.168514,
+            "y": -1.838137,
+            "width": 112.72949,
+            "height": 190.676275
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.812639
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 443,
+            "y": 53,
+            "width": 269,
+            "height": 454
+          },
+          "target": {
+            "x": 6.25,
+            "y": -1.84,
+            "width": 112.98,
+            "height": 190.68
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.74
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 825,
+            "y": 53,
+            "width": 269,
+            "height": 454
+          },
+          "target": {
+            "x": 6.46,
+            "y": -1.84,
+            "width": 112.98,
+            "height": 190.68
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.74
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 1207,
+            "y": 53,
+            "width": 269,
+            "height": 454
+          },
+          "target": {
+            "x": 6.25,
+            "y": -1.84,
+            "width": 112.98,
+            "height": 190.68
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.74
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 60,
+            "y": 547,
+            "width": 270,
+            "height": 451
+          },
+          "target": {
+            "x": 5.651007,
+            "y": -1.845638,
+            "width": 114.161074,
+            "height": 190.691275
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.731544
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 441,
+            "y": 547,
+            "width": 274,
+            "height": 451
+          },
+          "target": {
+            "x": 4.805369,
+            "y": -1.845638,
+            "width": 115.852349,
+            "height": 190.691275
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.731544
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 823,
+            "y": 547,
+            "width": 276,
+            "height": 451
+          },
+          "target": {
+            "x": 4.911074,
+            "y": -1.845638,
+            "width": 116.697987,
+            "height": 190.691275
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.731544
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        },
+        {
+          "source": {
+            "x": 1207,
+            "y": 547,
+            "width": 271,
+            "height": 452
+          },
+          "target": {
+            "x": 5.886719,
+            "y": -1.84375,
+            "width": 114.328125,
+            "height": 190.6875
+          },
+          "accessoryOffset": {
+            "x": -1.0,
+            "y": -11.804688
+          },
+          "eyewearOffset": {
+            "x": -1.0,
+            "y": 0.98
+          }
+        }
+      ]
+    },
+    {
+      "role": "bgartist",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/bgartist-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 105,
+            "y": 49,
+            "width": 209,
+            "height": 441
+          },
+          "target": {
+            "x": 20.792767,
+            "y": 7.352615,
+            "width": 86.002969,
+            "height": 181.47038
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.256332
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 482,
+            "y": 49,
+            "width": 208,
+            "height": 441
+          },
+          "target": {
+            "x": 21.204264,
+            "y": 7.352615,
+            "width": 85.591472,
+            "height": 181.47038
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.256332
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 855,
+            "y": 49,
+            "width": 209,
+            "height": 441
+          },
+          "target": {
+            "x": 20.792767,
+            "y": 7.352615,
+            "width": 86.002969,
+            "height": 181.47038
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.256332
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 1229,
+            "y": 49,
+            "width": 210,
+            "height": 441
+          },
+          "target": {
+            "x": 20.587018,
+            "y": 7.352615,
+            "width": 86.414467,
+            "height": 181.47038
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.256332
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 105,
+            "y": 533,
+            "width": 210,
+            "height": 437
+          },
+          "target": {
+            "x": 20.185974,
+            "y": 7.345012,
+            "width": 87.212753,
+            "height": 181.485586
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.384628
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 481,
+            "y": 535,
+            "width": 209,
+            "height": 435
+          },
+          "target": {
+            "x": 20.191274,
+            "y": 7.341158,
+            "width": 87.200226,
+            "height": 181.493294
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.241056
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 854,
+            "y": 534,
+            "width": 210,
+            "height": 436
+          },
+          "target": {
+            "x": 19.876423,
+            "y": 7.343089,
+            "width": 87.414634,
+            "height": 181.489431
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.313008
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        },
+        {
+          "source": {
+            "x": 1230,
+            "y": 536,
+            "width": 209,
+            "height": 434
+          },
+          "target": {
+            "x": 20.089393,
+            "y": 7.339217,
+            "width": 87.403018,
+            "height": 181.497175
+          },
+          "accessoryOffset": {
+            "x": 0.0,
+            "y": -4.168769
+          },
+          "eyewearOffset": {
+            "x": 0.0,
+            "y": 3.622927
+          }
+        }
+      ]
+    },
+    {
+      "role": "letterer",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/letterer-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 103,
+            "y": 34,
+            "width": 249,
+            "height": 474
+          },
+          "target": {
+            "x": 15.969681,
+            "y": 9.493617,
+            "width": 94.169681,
+            "height": 179.262766
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.427394
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 455,
+            "y": 34,
+            "width": 250,
+            "height": 474
+          },
+          "target": {
+            "x": 16.158777,
+            "y": 9.493617,
+            "width": 94.547872,
+            "height": 179.262766
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.427394
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 814,
+            "y": 34,
+            "width": 255,
+            "height": 474
+          },
+          "target": {
+            "x": 14.646011,
+            "y": 9.493617,
+            "width": 96.43883,
+            "height": 179.262766
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.427394
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 1169,
+            "y": 34,
+            "width": 254,
+            "height": 474
+          },
+          "target": {
+            "x": 15.024202,
+            "y": 9.493617,
+            "width": 96.060638,
+            "height": 179.262766
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.427394
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 100,
+            "y": 532,
+            "width": 257,
+            "height": 464
+          },
+          "target": {
+            "x": 13.766304,
+            "y": 9.477174,
+            "width": 99.308152,
+            "height": 179.295652
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.336957
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 452,
+            "y": 532,
+            "width": 258,
+            "height": 464
+          },
+          "target": {
+            "x": 13.379891,
+            "y": 9.477174,
+            "width": 99.694565,
+            "height": 179.295652
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.336957
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 813,
+            "y": 532,
+            "width": 259,
+            "height": 464
+          },
+          "target": {
+            "x": 13.379891,
+            "y": 9.477174,
+            "width": 100.080978,
+            "height": 179.295652
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.336957
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        },
+        {
+          "source": {
+            "x": 1168,
+            "y": 532,
+            "width": 257,
+            "height": 464
+          },
+          "target": {
+            "x": 13.573098,
+            "y": 9.477174,
+            "width": 99.308152,
+            "height": 179.295652
+          },
+          "accessoryOffset": {
+            "x": -0.5,
+            "y": -2.336957
+          },
+          "eyewearOffset": {
+            "x": -0.5,
+            "y": 1.52
+          }
+        }
+      ]
+    },
+    {
+      "role": "modeler",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/modeler-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 103,
+            "y": 21,
+            "width": 249,
+            "height": 482
+          },
+          "target": {
+            "x": 16.75,
+            "y": 8.0,
+            "width": 93.375,
+            "height": 180.75
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.8125
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 452,
+            "y": 22,
+            "width": 248,
+            "height": 481
+          },
+          "target": {
+            "x": 17.214623,
+            "y": 7.998428,
+            "width": 93.194969,
+            "height": 180.753145
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.747642
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 829,
+            "y": 22,
+            "width": 250,
+            "height": 481
+          },
+          "target": {
+            "x": 17.02673,
+            "y": 7.998428,
+            "width": 93.946541,
+            "height": 180.753145
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.747642
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 1190,
+            "y": 23,
+            "width": 247,
+            "height": 480
+          },
+          "target": {
+            "x": 17.304622,
+            "y": 7.996849,
+            "width": 93.014181,
+            "height": 180.756303
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.870798
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 104,
+            "y": 519,
+            "width": 248,
+            "height": 479
+          },
+          "target": {
+            "x": 16.828947,
+            "y": 7.995263,
+            "width": 93.587368,
+            "height": 180.759474
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.805789
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 453,
+            "y": 519,
+            "width": 251,
+            "height": 479
+          },
+          "target": {
+            "x": 16.262895,
+            "y": 7.995263,
+            "width": 94.719474,
+            "height": 180.759474
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.805789
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 824,
+            "y": 516,
+            "width": 254,
+            "height": 482
+          },
+          "target": {
+            "x": 16.28125,
+            "y": 8.0,
+            "width": 95.25,
+            "height": 180.75
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.8125
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        },
+        {
+          "source": {
+            "x": 1191,
+            "y": 519,
+            "width": 248,
+            "height": 479
+          },
+          "target": {
+            "x": 17.017632,
+            "y": 7.995263,
+            "width": 93.587368,
+            "height": 180.759474
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -3.805789
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": 7.61
+          }
+        }
+      ]
+    },
+    {
+      "role": "editor",
+      "url": "/assets/virtual-studio/office-standing-expressions-v1/editor-standing-runtime-v1.png",
+      "width": 1536,
+      "height": 1024,
+      "columns": 4,
+      "rows": 2,
+      "frames": [
+        {
+          "source": {
+            "x": 136,
+            "y": 22,
+            "width": 219,
+            "height": 476
+          },
+          "target": {
+            "x": 21.393008,
+            "y": 2.71822,
+            "width": 85.604873,
+            "height": 186.063559
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.142479
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 480,
+            "y": 23,
+            "width": 221,
+            "height": 475
+          },
+          "target": {
+            "x": 20.714968,
+            "y": 2.716561,
+            "width": 86.570064,
+            "height": 186.066879
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.074841
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 843,
+            "y": 22,
+            "width": 223,
+            "height": 476
+          },
+          "target": {
+            "x": 20.415784,
+            "y": 2.71822,
+            "width": 87.168432,
+            "height": 186.063559
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.142479
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 1195,
+            "y": 22,
+            "width": 222,
+            "height": 477
+          },
+          "target": {
+            "x": 20.70296,
+            "y": 2.719873,
+            "width": 86.59408,
+            "height": 186.060254
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.209831
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 135,
+            "y": 518,
+            "width": 221,
+            "height": 476
+          },
+          "target": {
+            "x": 21.002119,
+            "y": 2.71822,
+            "width": 86.386653,
+            "height": 186.063559
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.142479
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 480,
+            "y": 518,
+            "width": 225,
+            "height": 476
+          },
+          "target": {
+            "x": 20.024894,
+            "y": 2.71822,
+            "width": 87.950212,
+            "height": 186.063559
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.142479
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 840,
+            "y": 518,
+            "width": 225,
+            "height": 476
+          },
+          "target": {
+            "x": 20.024894,
+            "y": 2.71822,
+            "width": 87.950212,
+            "height": 186.063559
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.142479
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        },
+        {
+          "source": {
+            "x": 1194,
+            "y": 518,
+            "width": 224,
+            "height": 476
+          },
+          "target": {
+            "x": 20.415784,
+            "y": 2.71822,
+            "width": 87.559322,
+            "height": 186.063559
+          },
+          "accessoryOffset": {
+            "x": 0.5,
+            "y": -8.142479
+          },
+          "eyewearOffset": {
+            "x": 0.5,
+            "y": -3.34
+          }
+        }
+      ]
+    }
+  ]
+}
