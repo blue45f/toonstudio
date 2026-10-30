@@ -54,6 +54,23 @@ const EDGE_BRIGHTNESS = slider("edgeBrightness", "가장자리 밝기", 0, 50, 3
 const EDGE_SMOOTHNESS = slider("smoothness", "매끄러움", 1, 15, 5);
 
 /**
+ * 공용 가우시안 흐림(상자 반지름 max(1, r/√3))을 상자 1 아래로 잇는다(제자리). 공용 흐림은 r < √3 이면 모두 상자
+ * 1(σ≈1.41)로 같아 매끄러움 1~4 칸이 같은 결과를 냈다. 그 아래에서는 흐리지 않은 평면(상자 0)과 상자 1 결과를
+ * r/√3 만큼 섞어, 이웃한 두 정수 상자를 섞는 공용 규약을 상자 0 까지 늘린다. r ≥ √3 이면 공용 흐림 그대로다.
+ */
+function gaussianBlurBelowOneBox(plane: Float32Array, width: number, height: number, radius: number): void {
+  const box = radius / Math.sqrt(3);
+  if (box >= 1) {
+    gaussianBlur(plane, width, height, radius);
+    return;
+  }
+  if (!(box > 0)) return;
+  const blurred = plane.slice();
+  gaussianBlur(blurred, width, height, Math.sqrt(3));
+  for (let index = 0; index < plane.length; index += 1) plane[index] += (blurred[index] - plane[index]) * box;
+}
+
+/**
  * 분리형 최댓값 필터(정사각 팽창, 제자리). 창은 가로·세로 모두 정확히 size 픽셀 [x − before, x + after] 이고, 짝수
  * 폭은 뒤(오른쪽·아래)를 한 칸 더 본다. 대칭 반지름 floor((size − 1) / 2) 로 줄이면 짝수 폭이 바로 아래 홀수 폭과
  * 같은 결과를 내 슬라이더 칸 절반이 아무 일도 하지 않는다. 세로도 행 순서로 읽는다.
@@ -99,10 +116,11 @@ const accentedEdges: StudioFilterGalleryEffectDef = {
     const smoothness = sliderValue(params, EDGE_SMOOTHNESS);
     const { width, height } = image;
     const source = readPaintSource(image);
-    // 매끄러움만큼 경계를 지키며 면을 다듬고(쿠와하라), 같은 만큼 흐린 휘도에서 가장자리를 찾는다.
+    // 매끄러움만큼 경계를 지키며 면을 다듬고(쿠와하라), 같은 만큼 흐린 휘도에서 가장자리를 찾는다. 매끄러움 1~4 의
+    // 흐림 반지름 0.75~1.5 는 상자 1 아래라 상자 0 과 섞는다(기본값 5 의 1.75 부터는 공용 흐림 그대로).
     const base = kuwahara(source, source.weight, width, height, 1 + Math.floor(smoothness / 5), 6);
     const shade = source.luma.slice();
-    gaussianBlur(shade, width, height, 0.5 + smoothness * 0.25);
+    gaussianBlurBelowOneBox(shade, width, height, 0.5 + smoothness * 0.25);
     const magnitude = gradientMagnitude(shade, width, height);
     dilatePlane(magnitude, width, height, edgeWidth);
     boxBlur(magnitude, width, height, 1);
@@ -127,18 +145,70 @@ function accentChannel(value: number, chalk: boolean, edge: number): number {
 // ── 각진 획 ──────────────────────────────────────────────────────
 
 /**
- * 한 방향 획 층: 색은 획 길이의 1/4 만큼만 번져 형태를 지키고, 획 길이의 1/2 만큼 늘인 결 노이즈로 붓자국을 새긴다.
+ * 반지름이 소수인 알파 가중 방향 번짐. 상자 창은 정수 반지름이라 이웃한 두 정수 반지름 결과를 소수 부분만큼
+ * 섞는다(공용 kuwaharaFractional 과 같은 방식). 반지름을 반올림하면 이웃한 획 길이 칸이 같은 결과를 냈다. 두 결과
+ * 모두 보이는 픽셀 색의 알파 가중 평균이라 섞어도 투명 픽셀의 숨은 색이 들어오지 않는다. 작업량은 소수 부분이 있을
+ * 때 두 배다.
+ */
+function smearColorFractional(
+  colors: ColorPlanes,
+  weight: Float32Array,
+  width: number,
+  height: number,
+  direction: StrokeDirection,
+  radius: number,
+): ColorPlanes {
+  const r = Math.max(0, radius), lower = Math.floor(r), fraction = r - lower;
+  const low = smearColor(colors, weight, width, height, direction, lower);
+  if (fraction <= 1e-3) return low;
+  const high = smearColor(colors, weight, width, height, direction, lower + 1);
+  for (let index = 0; index < weight.length; index += 1) {
+    low.red[index] += (high.red[index] - low.red[index]) * fraction;
+    low.green[index] += (high.green[index] - low.green[index]) * fraction;
+    low.blue[index] += (high.blue[index] - low.blue[index]) * fraction;
+  }
+  return low;
+}
+
+/**
+ * 결 길이가 소수인 결 노이즈(평균 0·표준편차 1). 같은 백색 잡음에서 만든 두 정수 길이 결을 소수 부분만큼 섞고, 두
+ * 결이 완전히 같지는 않아 섞으면 표준편차가 1 아래로 내려가므로(반씩 섞을 때 반지름 0·1 은 약 0.89, 1·2 는 약
+ * 0.94) 다시 1 로 맞춘다. 정수 길이면 공용 결 노이즈 그대로다.
+ */
+function streakNoiseFractional(width: number, height: number, seed: number, along: StrokeDirection, alongRadius: number): Float32Array {
+  const r = Math.max(0, alongRadius), lower = Math.floor(r), fraction = r - lower;
+  const low = streakNoise(width, height, seed, along, lower);
+  if (fraction <= 1e-3) return low;
+  const high = streakNoise(width, height, seed, along, lower + 1);
+  let sum = 0, square = 0;
+  for (let index = 0; index < low.length; index += 1) {
+    const value = low[index] + (high[index] - low[index]) * fraction;
+    low[index] = value;
+    sum += value;
+    square += value * value;
+  }
+  const mean = sum / Math.max(1, low.length);
+  const variance = square / Math.max(1, low.length) - mean * mean;
+  const scale = variance > 1e-12 ? 1 / Math.sqrt(variance) : 0;
+  for (let index = 0; index < low.length; index += 1) low[index] = (low[index] - mean) * scale;
+  return low;
+}
+
+/**
+ * 한 방향 획 층: 색은 smearRadius 만큼만 번져 형태를 지키고, grainRadius 만큼 늘인 결 노이즈로 붓자국을 새긴다.
+ * 두 반지름 모두 소수를 그대로 받는다(이웃한 두 정수 반지름 결과를 섞는다).
  */
 function strokeLayer(
   source: PaintSource,
   width: number,
   height: number,
   direction: StrokeDirection,
-  length: number,
+  smearRadius: number,
+  grainRadius: number,
   seed: number,
 ): ColorPlanes {
-  const layer = smearColor(source, source.weight, width, height, direction, Math.round(length / 4));
-  const grain = streakNoise(width, height, seed, direction, Math.max(1, Math.round(length / 2)));
+  const layer = smearColorFractional(source, source.weight, width, height, direction, smearRadius);
+  const grain = streakNoiseFractional(width, height, seed, direction, grainRadius);
   for (let index = 0; index < width * height; index += 1) {
     const shift = grain[index] * 9;
     layer.red[index] += shift;
@@ -167,8 +237,12 @@ const angledStrokes: StudioFilterGalleryEffectDef = {
     const { width, height } = image;
     const source = readPaintSource(image);
     const seed = context.seed ^ 0x6d01;
-    const falling = strokeLayer(source, width, height, "diagonal-down", length, seed);
-    const rising = strokeLayer(source, width, height, "diagonal-up", length, seed ^ 0x3);
+    // 색은 획 길이 L 의 약 1/4((L + 1) / 4)만 번지고 결은 약 1/2((L + 1) / 2)로 늘인다. 예전 Math.round(L / 4)·
+    // Math.round(L / 2) 는 4k − 1 과 4k 를 같은 정수 반지름으로 묶어 슬라이더 칸 넷 중 하나가 아무 일도 하지 않았다.
+    // 연속 반지름은 L ≡ 3 (mod 4)(기본값 15 의 4·8 포함)에서 예전과 같은 정수라 그 칸들의 출력은 그대로다.
+    const smear = (length + 1) / 4, grain = (length + 1) / 2;
+    const falling = strokeLayer(source, width, height, "diagonal-down", smear, grain, seed);
+    const rising = strokeLayer(source, width, height, "diagonal-up", smear, grain, seed ^ 0x3);
     // 균형 0 이면 모두 "\" 획, 100 이면 모두 "/" 획. 그 사이에서는 휘도가 기준보다 밝은 곳이 "\" 획이다.
     const pivot = -0.12 + balance * 1.24;
     for (let index = 0; index < width * height; index += 1) {
@@ -251,7 +325,10 @@ const inkOutlines: StudioFilterGalleryEffectDef = {
     const near = source.luma.slice(), far = source.luma.slice();
     gaussianBlur(near, width, height, 1);
     gaussianBlur(far, width, height, INK_FAR_RADIUS);
-    const hatch = streakNoise(width, height, context.seed ^ 0x6d03, "diagonal-down", Math.max(1, Math.round(length / 2)));
+    // 빗금 결 반지름은 획 길이의 절반을 반올림 없이 쓴다. 예전 Math.max(1, Math.round(L / 2)) 는 홀수 칸을 바로 위
+    // 짝수 칸과 같게 만들어 슬라이더 칸 절반이 아무 일도 하지 않았다. 짝수 칸(기본값 4 포함)은 예전과 같은 정수 반지름이고,
+    // 길이 1 은 반지름 0(점)과 1 사이를 섞어 길이 2 보다 짧은 빗금이 된다.
+    const hatch = streakNoiseFractional(width, height, context.seed ^ 0x6d03, "diagonal-down", length / 2);
     const out = createColorPlanes(width * height);
     for (let index = 0; index < width * height; index += 1) {
       const tone = source.luma[index] / 255;
@@ -286,19 +363,23 @@ function jitter(x: number, y: number, cell: number, speckle: number, seed: numbe
 
 /**
  * 픽셀마다 반경 radius 안의 이웃 하나를 골라 그 색을 그대로 가져온다(보간 없음, 알파는 그대로).
- * 투명한 이웃의 색은 보이지 않는 값이므로 가져오지 않는다.
+ * 투명한 이웃의 색은 보이지 않는 값이므로 가져오지 않는다. 반경은 소수를 그대로 받는다: 변위 jitter × 반경 × 1.6 을
+ * 반올림해 정수 픽셀로 옮기고 ±round(반경) 안으로 자르므로, 반경이 조금만 바뀌어도 일부 픽셀의 옮김이 달라진다.
+ * 반올림 뒤에 잘라 반경이 x.5 여도 양쪽 최대 옮김이 같다(Math.round(−x.5) 는 0 쪽으로 간다). 정수 반경에서는
+ * 예전(반경을 먼저 반올림하고 자른 뒤 반올림)과 같은 결과다.
  */
 function spray(image: StudioFilterGalleryImage, radius: number, smoothness: number, seed: number): void {
   const { width, height, data } = image;
-  const reach = Math.min(Math.round(radius), Math.max(width, height));
-  if (reach <= 0) return;
+  const reach = Math.min(radius, Math.max(width, height));
+  if (!(reach > 0)) return;
+  const limit = Math.round(reach);
   const source = data.slice();
   const cell = 0.6 + smoothness * 0.45;
   const speckle = 0.4 * (1 - ((smoothness - 1) / 14) * 0.75);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const offsetX = Math.round(clamp(jitter(x, y, cell, speckle, seed) * reach * 1.6, -reach, reach));
-      const offsetY = Math.round(clamp(jitter(x, y, cell, speckle, seed ^ 0x2f) * reach * 1.6, -reach, reach));
+      const offsetX = clamp(Math.round(jitter(x, y, cell, speckle, seed) * reach * 1.6), -limit, limit);
+      const offsetY = clamp(Math.round(jitter(x, y, cell, speckle, seed ^ 0x2f) * reach * 1.6), -limit, limit);
       const from = (clamp(y + offsetY, 0, height - 1) * width + clamp(x + offsetX, 0, width - 1)) * 4;
       const to = (y * width + x) * 4;
       if (source[from + 3] === 0 && source[to + 3] !== 0) continue;
@@ -348,10 +429,16 @@ const sprayedStrokes: StudioFilterGalleryEffectDef = {
   apply(image, params, context) {
     const length = sliderValue(params, SPRAYED_LENGTH);
     const axis = SPRAYED_AXIS[selectValue(params, SPRAYED_DIRECTION)];
-    // 흩뿌림은 반경의 70% 까지만 옮겨 주된 색 덩어리를 남기고, 그 위를 고른 방향 획으로 끈다.
-    spray(image, sliderValue(params, SPRAYED_RADIUS) * 0.7, 2, context.seed ^ 0x6d05);
+    // 흩뿌림은 반경의 5/7(약 70%)까지만 옮겨 주된 색 덩어리를 남기고, 그 위를 고른 방향 획으로 끈다. 옮김 반경을
+    // 반올림하지 않아 반경 칸마다 옮김 분포가 달라진다(예전 Math.round(반경 × 0.7) 은 1·2, 5·6, 8·9 … 칸을 같게
+    // 만들었다). 기본값 7 은 예전 반올림값과 같은 정수 5 다.
+    spray(image, (sliderValue(params, SPRAYED_RADIUS) * 5) / 7, 2, context.seed ^ 0x6d05);
     const { width, height } = image;
-    writeColorPlanes(image, strokeLayer(readPaintSource(image), width, height, axis, length * 1.2, context.seed ^ 0x6d06));
+    // 번짐 반지름 길이/3, 결 반지름 max(1, 길이 × 7/12): 예전 반올림(1.2배 길이의 1/4·1/2)은 0·1, 3·4, 6·7, 13·14,
+    // 16·17 칸을 같은 정수 반지름으로 묶었다. 이 연속 반지름은 예전 반올림이 기본값 12 에서 낸 4·7 과 길이 0 의 0·1 을
+    // 그대로 지나 두 칸의 출력은 같다.
+    const smear = length / 3, grain = Math.max(1, (length * 7) / 12);
+    writeColorPlanes(image, strokeLayer(readPaintSource(image), width, height, axis, smear, grain, context.seed ^ 0x6d06));
   },
 };
 
