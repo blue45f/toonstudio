@@ -1,4 +1,3 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { constants, copyFileSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -8,6 +7,8 @@ import { buildThemePacks } from "./generate-creator-bundle-theme-packs.mjs";
 import { loadPackRightsLedger } from "./lib/creator-bundle-pack-rights.mjs";
 import { dispatchCompositeIngestCli } from "./rebuild-creator-bundle-local-ingest.mjs";
 import { BASE_CONFIG_PATH, BASE_REVISION, COMPOSITE_CONFIG_PATH, COMPOSITE_SCHEMA, PROJECTION_PATH, assertBaseProjectionPreserved, assertCompositePlanCurrent, buildCompositeIngestPlan, parseCompositeArgs, readPinnedBase, validateCompositeConfig, writeCompositeIngest } from "./rebuild-creator-bundle-composite-ingest.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const sha = (body) => createHash("sha256").update(body).digest("hex");
 const stamp = "2026-10-30T00:00:00.000Z";

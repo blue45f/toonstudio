@@ -1,9 +1,10 @@
-import { webcrypto } from "node:crypto";
+import { randomUUID, webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getBuildFixedStudioBg3dBundleRelease, requireStudioBg3dBundleRelease } from "./studio-bg3d-bundle-release";
-import { releaseFixture } from "./studio-bg3d-bundle-release.test-fixture";
+import { getBuildFixedStudioBg3dBundleRelease, getStudioBg3dBundleReleaseCompletionBinding,
+  requireStudioBg3dBundleRelease } from "./studio-bg3d-bundle-release";
+import { releaseCompletionRequestNonce, releaseFixture } from "./studio-bg3d-bundle-release.test-fixture";
 import { findStudioBg3dBundleAsset, getStudioBg3dBundleThemePacksPublicationRevision, loadStudioBg3dBundleDeployAvailability,
   loadStudioBg3dBundleThemePacks, parseStudioBg3dBundleThemePacks, resetStudioBg3dBundleThemePacksCache,
   STUDIO_BG3D_BUNDLE_THEME_PACKS_URL, STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL } from "./studio-bg3d-bundle-theme-packs";
@@ -13,22 +14,32 @@ vi.mock("./studio-bg3d-bundle-release", async (importOriginal) => {
   return { ...actual, getBuildFixedStudioBg3dBundleRelease: vi.fn() };
 });
 
+function expectCompletionRequest(input: unknown, completion: { readonly url: string }): string {
+  const url = String(input);
+  expect(releaseCompletionRequestNonce(url, completion.url)).not.toBeNull();
+  return url;
+}
+
 beforeEach(() => {
   resetStudioBg3dBundleThemePacksCache();
-  vi.stubGlobal("crypto", webcrypto);
+  vi.stubGlobal("crypto", { subtle: webcrypto.subtle, randomUUID });
   vi.mocked(getBuildFixedStudioBg3dBundleRelease).mockReturnValue(releaseFixture().release);
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); resetStudioBg3dBundleThemePacksCache(); });
 
 describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
-  it("커밋 대상의 실제 descriptor와 원문으로 기본 loader를 통과하고 역사 1,929개를 유지한다", async () => {
+  it("실제 descriptor·정적 원문과 합성 R2 완료 응답으로 loader를 통과하고 역사 1,929개를 유지한다", async () => {
     const actual = await vi.importActual<typeof import("./studio-bg3d-bundle-release")>("./studio-bg3d-bundle-release");
     const release = actual.getBuildFixedStudioBg3dBundleRelease();
+    const completion = getStudioBg3dBundleReleaseCompletionBinding(release);
     vi.mocked(getBuildFixedStudioBg3dBundleRelease).mockReturnValue(release);
     const fetcher = vi.fn(async (url: RequestInfo | URL) => {
       const path = String(url);
-      if (![release.catalog.url, release.index.url].includes(path)) throw new Error("현재 발행 쌍 밖의 요청입니다.");
-      const body = readFileSync(new URL("../../../../public" + path, import.meta.url));
+      const live = releaseCompletionRequestNonce(path, completion.url) !== null;
+      if (![release.catalog.url, release.index.url].includes(path) && !live) throw new Error("현재 발행 쌍 밖의 요청입니다.");
+      // 완료 경로는 같은 정적 index 원문으로 명시 매핑한 mock이며 실제 R2 검증이 아니다.
+      const source = live ? release.index.url : path;
+      const body = readFileSync(new URL("../../../../public" + source, import.meta.url));
       return new Response(Uint8Array.from(body).buffer, { headers: { "content-type": "application/json" } });
     });
     vi.stubGlobal("fetch", fetcher);
@@ -45,7 +56,9 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
       expect(data.packs.find(pack => pack.catalogIds.includes(id))?.rights?.status).toBe("licensed");
     }
     expect(await loadStudioBg3dBundleDeployAvailability(data)).toBe("available");
-    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([release.catalog.url, release.index.url]);
+    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
+      release.catalog.url, release.index.url, expectCompletionRequest(fetcher.mock.calls[2]?.[0], completion),
+    ]);
   });
 
   it("기본 호출이 실제 SHA가 맞는 새 catalog와 그 객체에 결합된 index를 요청한다", async () => {
@@ -53,14 +66,77 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
     const fetcher = vi.fn(async (url: RequestInfo | URL) => {
       if (String(url) === fixture.release.catalog.url) return fixture.response("catalog");
       if (String(url) === fixture.release.index.url) return fixture.response("index");
+      if (fixture.completionNonce(url) !== null) return fixture.response("index");
       throw new Error("예상하지 않은 legacy 또는 다른 release 요청");
     });
     vi.stubGlobal("fetch", fetcher);
     const data = await loadStudioBg3dBundleThemePacks();
     expect(data.assets[0]?.id).toBe("cbv1-ingest-fixture-nature-leaf");
     expect(await loadStudioBg3dBundleDeployAvailability(data)).toBe("available");
-    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([fixture.release.catalog.url, fixture.release.index.url]);
+    const liveRequest = expectCompletionRequest(fetcher.mock.calls[2]?.[0], fixture.completion);
+    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
+      fixture.release.catalog.url, fixture.release.index.url, liveRequest,
+    ]);
+    expect(fixture.completion).toEqual({ url: `/assets/studio/bundle-v2/release-index/${fixture.release.index.sha256}.json`,
+      sha256: fixture.release.index.sha256, bytes: fixture.release.index.bytes });
     expect(fetcher).toHaveBeenCalledWith(fixture.release.catalog.url, expect.objectContaining({ cache: "force-cache", credentials: "same-origin", redirect: "error" }));
+    expect(fetcher).toHaveBeenCalledWith(fixture.release.index.url, expect.objectContaining({ cache: "force-cache", credentials: "same-origin", redirect: "error" }));
+    expect(fetcher).toHaveBeenCalledWith(liveRequest, expect.objectContaining({ cache: "no-store", credentials: "same-origin", redirect: "error" }));
+  });
+
+  it("완료 확인을 재시도할 때마다 같은 binding에 서로 다른 암호학적 nonce를 붙인다", async () => {
+    const fixture = releaseFixture();
+    const data = await loadStudioBg3dBundleThemePacks({ release: fixture.release, fetcher: async () => fixture.response("catalog") });
+    const requests: string[] = [];
+    const fetcher = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url) === fixture.release.index.url) return fixture.response("index");
+      requests.push(expectCompletionRequest(url, fixture.completion));
+      return fixture.response("index");
+    });
+    expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("available");
+    expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("available");
+    expect(requests).toHaveLength(2);
+    expect(new Set(requests.map(url => fixture.completionNonce(url))).size).toBe(2);
+    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
+      fixture.release.index.url, requests[0], fixture.release.index.url, requests[1],
+    ]);
+    expect(fixture.completion.url).toBe(`/assets/studio/bundle-v2/release-index/${fixture.release.index.sha256}.json`);
+  });
+
+  it("암호학적 nonce 생성기가 없으면 시간·고정값 fallback 없이 완료 확인을 닫는다", async () => {
+    const fixture = releaseFixture();
+    const data = await loadStudioBg3dBundleThemePacks({ release: fixture.release, fetcher: async () => fixture.response("catalog") });
+    vi.stubGlobal("crypto", { subtle: webcrypto.subtle });
+    const fetcher = vi.fn(async () => fixture.response("index"));
+    expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("unavailable");
+    expect(fetcher).toHaveBeenCalledExactlyOnceWith(fixture.release.index.url, expect.objectContaining({ cache: "force-cache" }));
+  });
+
+  it.each(["missing", "legacy"] as const)("실제 5,229개 정적 쌍이 정상이어도 R2 완료 응답이 %s면 닫는다", async mode => {
+    const actual = await vi.importActual<typeof import("./studio-bg3d-bundle-release")>("./studio-bg3d-bundle-release");
+    const release = actual.getBuildFixedStudioBg3dBundleRelease();
+    const completion = getStudioBg3dBundleReleaseCompletionBinding(release);
+    vi.mocked(getBuildFixedStudioBg3dBundleRelease).mockReturnValue(release);
+    const legacy = parseStudioBg3dBundleThemePacks(JSON.parse(readFileSync(new URL(
+      "../../../../public/assets/3d/environments/bundle-v1/theme-packs.json", import.meta.url), "utf8")));
+    expect(legacy.assets).toHaveLength(1929);
+    const legacyIndexText = JSON.stringify({ schema: "toonstudio.bundle-v2-deploy-index.v1", version: 1,
+      keyScheme: "sha256", files: legacy.assets.length, bytes: legacy.assets.reduce((sum, asset) => sum + asset.bytes, 0) });
+    const fetcher = vi.fn(async (url: RequestInfo | URL) => {
+      const path = String(url);
+      if (releaseCompletionRequestNonce(path, completion.url) !== null) return mode === "missing" ? new Response(null, { status: 404 })
+        : new Response(legacyIndexText, { headers: { "content-type": "application/json" } });
+      if (![release.catalog.url, release.index.url].includes(path)) throw new Error("미등록 발행 경로입니다.");
+      return new Response(Uint8Array.from(readFileSync(new URL("../../../../public" + path, import.meta.url))).buffer,
+        { headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const data = await loadStudioBg3dBundleThemePacks();
+    expect(data.assets).toHaveLength(5229);
+    expect(await loadStudioBg3dBundleDeployAvailability(data)).toBe("unavailable");
+    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
+      release.catalog.url, release.index.url, expectCompletionRequest(fetcher.mock.calls[2]?.[0], completion),
+    ]);
   });
 
   it("기본 경로는 검증한 같은 발행을 반복 파싱하지 않고 주입 포트와 명시 초기화는 재검증한다", async () => {
@@ -177,6 +253,16 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
     expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("available");
   });
 
+  it("명시 release:null은 기존 live manifest 한 번만 확인하고 새 완료 경로를 요청하지 않는다", async () => {
+    const fixture = releaseFixture();
+    const data = await loadStudioBg3dBundleThemePacks({ release: null,
+      fetcher: async () => ({ ok: true, status: 200, json: async () => fixture.catalog }) });
+    const fetcher = vi.fn(async () => ({ ok: true, status: 200, json: async () => fixture.index }));
+    expect(await loadStudioBg3dBundleDeployAvailability(data, { fetcher })).toBe("available");
+    expect(fetcher).toHaveBeenCalledExactlyOnceWith(STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_URL,
+      expect.objectContaining({ cache: "no-cache", credentials: "same-origin" }));
+  });
+
   it("원문 SHA가 맞아도 권리 거부와 실제 항목·합계 불일치를 우회하지 않는다", async () => {
     const invalid = [
       releaseFixture(undefined, {}, catalog => {
@@ -218,6 +304,7 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
       for (const fixture of [first, second]) {
         if (String(url) === fixture.release.catalog.url) return fixture.response("catalog");
         if (String(url) === fixture.release.index.url) return fixture.response("index");
+        if (fixture.completionNonce(url) !== null) return fixture.response("index");
       }
       throw new Error("미등록 release 요청");
     });
@@ -227,6 +314,8 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
     expect(await loadStudioBg3dBundleDeployAvailability(current, { fetcher })).toBe("available");
     expect(await loadStudioBg3dBundleDeployAvailability(old, { fetcher, url: second.release.index.url })).toBe("unavailable");
     expect(await loadStudioBg3dBundleDeployAvailability(old, { fetcher: async () => second.response("index") })).toBe("unavailable");
+    expect(await loadStudioBg3dBundleDeployAvailability(old, { fetcher: async url =>
+      String(url) === first.release.index.url ? first.response("index") : second.response("index") })).toBe("unavailable");
   });
 
   it("index 원문 해시가 맞아도 catalogSha256 또는 합계가 다르면 가용성을 열지 않는다", async () => {

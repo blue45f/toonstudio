@@ -1,4 +1,6 @@
-import { getBuildFixedStudioBg3dBundleRelease, readVerifiedStudioBg3dBundleReleaseJson, requireStudioBg3dBundleRelease,
+import { getBuildFixedStudioBg3dBundleRelease, getStudioBg3dBundleReleaseCompletionBinding,
+  getStudioBg3dBundleReleaseCompletionRequestUrl,
+  readVerifiedStudioBg3dBundleReleaseJson, requireStudioBg3dBundleRelease,
   type StudioBg3dBundleReleaseDescriptor, type StudioBg3dBundleResponse } from "./studio-bg3d-bundle-release";
 
 /**
@@ -594,7 +596,8 @@ export function countStudioBg3dBundlePackDeferred(pack: StudioBg3dBundleThemePac
 /* ── 배포 가용성 판정 ──────────────────────────────────────────────────────
  * theme-packs.json은 메타데이터라 GLB 실물 배포 여부와 무관하게 읽힌다.
  * 실물 배포의 완료 신호는 배포 절차(scripts/plan-creator-bundle-deploy.mjs)가
- * 마지막 객체로 올리는 배포 인덱스다. 인덱스가 없거나 키 방식(keyScheme)이 다르거나
+ * 마지막 객체로 올리는 배포 인덱스다. 새 발행은 정적 index와 동일한 원문을 R2 완료 경로에서도 확인한다.
+ * 인덱스가 없거나 키 방식(keyScheme)이 다르거나
  * 합계가 테마 팩 데이터와 어긋나면 "배포 미완료"로 판정해, 패널이 배치 가능으로
  * 오인시키지 않게 한다. */
 
@@ -640,9 +643,16 @@ export async function loadStudioBg3dBundleDeployAvailability(
     if (index.keyScheme !== STUDIO_BG3D_BUNDLE_DEPLOY_INDEX_KEY_SCHEME) return "unavailable";
     if (release && index.catalogSha256 !== release.catalog.sha256) return "unavailable";
     const expectedBytes = data.assets.reduce((sum, asset) => sum + asset.bytes, 0);
-    return index.files === data.totals.placeableAssets && index.bytes === expectedBytes
-      ? "available"
-      : "unavailable";
+    if (index.files !== data.totals.placeableAssets || index.bytes !== expectedBytes) return "unavailable";
+    if (release) {
+      const completion = getStudioBg3dBundleReleaseCompletionBinding(release);
+      const live = await fetcher(getStudioBg3dBundleReleaseCompletionRequestUrl(release), {
+        cache: "no-store", credentials: "same-origin", redirect: "error", signal: options.signal,
+      });
+      // 같은 SHA와 길이이므로 정적 index에서 검증한 catalog·합계 결합도 그대로 유지된다.
+      await readVerifiedStudioBg3dBundleReleaseJson(live, completion, options.signal);
+    }
+    return "available";
   } catch {
     return "unavailable";
   }

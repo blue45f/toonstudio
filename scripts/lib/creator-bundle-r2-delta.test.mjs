@@ -1,7 +1,8 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import { BUNDLE_V2_BUCKET, BUNDLE_V2_INDEX_KEY, BUNDLE_V2_MANIFEST_SCHEMA, bundleV2ObjectKey } from "../plan-creator-bundle-deploy.mjs";
 import { assertBundleR2RemoteBody, bundleR2BodyFingerprint, planBundleR2Delta, verifyBundleR2Delta } from "./creator-bundle-r2-delta.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 function fixture() {
   const bodies = [Buffer.from("기존 GLB 전체 바이트"), Buffer.from("새 GLB 전체 바이트")];

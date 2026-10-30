@@ -21,6 +21,30 @@ function recipe(id: VirtualThreeAssetRecipeThemeId) {
 }
 
 describe("3D 테마 재질·벽면 원화", () => {
+  it.each([["forestretreat", "lawn"], ["gardenstudy", "stone"]] as const)("%s의 바닥은 3D PBR 값을 보존하고 실제 타일 무늬를 그린다", (id, pattern) => {
+    const theme = recipe(id);
+    const spec = studioThreeSurfaceRecipe(theme).floors.grass;
+    const context = {
+      scale: vi.fn(), fillRect: vi.fn(), beginPath: vi.fn(), roundRect: vi.fn(), fill: vi.fn(),
+      moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(),
+      globalAlpha: 1, fillStyle: "", strokeStyle: "", lineWidth: 1,
+    };
+    const canvas = { width: 0, height: 0, getContext: () => context };
+    vi.stubGlobal("document", { createElement: () => canvas });
+    try {
+      expect(spec.pattern).toBe(pattern);
+      expect(spec.base).toBe(Number.parseInt(theme.surfacePBR.floor.baseColor.slice(1), 16));
+      const material = createStudioThreeFloorMaterial(spec, 10, 8);
+      try {
+        expect(material.map).toBeInstanceOf(THREE.CanvasTexture);
+        expect(context.fillRect).toHaveBeenCalled();
+        expect(material.map?.image).toBe(canvas);
+        expect(material.roughness).toBe(theme.surfacePBR.floor.roughness);
+        expect(material.metalness).toBe(theme.surfacePBR.floor.metalness);
+      } finally { material.map?.dispose(); material.dispose(); }
+    } finally { vi.unstubAllGlobals(); }
+  });
+
   it("DOM과 WebGL이 없는 환경도 테마 색을 유지하고 Canvas가 없으면 texture 없이 그린다", () => {
     const spec = studioThreeSurfaceRecipe(DEFAULT_VIRTUAL_THREE_THEME, "forest-atelier").floors.wood;
     expect(createStudioThreeFloorTexture(spec, 10, 8)).toBeNull();

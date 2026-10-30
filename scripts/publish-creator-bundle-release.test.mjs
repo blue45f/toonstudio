@@ -1,4 +1,3 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -7,6 +6,8 @@ import { tmpdir } from "node:os";
 import { ALLOWED_PACK, SELF_CONTAINED, assetEntry, ledgerWithAllowedAndHeld, planFor, themePacksFor, writeTree } from "./lib/plan-creator-bundle-deploy-test-support.mjs";
 import { BUNDLE_V2_INDEX_KEY } from "./plan-creator-bundle-deploy.mjs";
 import { RELEASE_DESCRIPTOR_PATH, RELEASE_SCHEMA, STATIC_DIRECTORY, STATIC_URL_PREFIX, checkReleaseCatalog, createReleaseCatalog, parseReleaseArgs, writeReleaseCatalog } from "./publish-creator-bundle-release.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const hash = (body) => createHash("sha256").update(body).digest("hex");
 const data = (value) => Buffer.from(JSON.stringify(value) + "\n");

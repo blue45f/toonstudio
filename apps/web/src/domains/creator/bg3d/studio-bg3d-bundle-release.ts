@@ -48,6 +48,23 @@ export function getBuildFixedStudioBg3dBundleRelease(): StudioBg3dBundleReleaseD
   return requireStudioBg3dBundleRelease(buildRelease);
 }
 
+/** 정적 index와 같은 원문을 실물 배포의 마지막 R2 객체에서 다시 확인한다. */
+export function getStudioBg3dBundleReleaseCompletionBinding(
+  release: StudioBg3dBundleReleaseDescriptor,
+): StudioBg3dBundleReleaseObject {
+  const { index } = requireStudioBg3dBundleRelease(release);
+  return Object.freeze({ url: `/assets/studio/bundle-v2/release-index/${index.sha256}.json`,
+    sha256: index.sha256, bytes: index.bytes });
+}
+
+/** 대기 중인 이전 서비스 워커도 과거 성공 캐시를 재사용하지 못하도록 매 시도 새 key를 만든다. */
+export function getStudioBg3dBundleReleaseCompletionRequestUrl(
+  release: StudioBg3dBundleReleaseDescriptor,
+): string {
+  const binding = getStudioBg3dBundleReleaseCompletionBinding(release);
+  return `${binding.url}?release-check=${crypto.randomUUID()}`;
+}
+
 async function boundedReleaseBytes(response: StudioBg3dBundleResponse, binding: StudioBg3dBundleReleaseObject, signal?: AbortSignal) {
   if (!response.ok || response.redirected || !response.body) {
     throw new TypeError("번들 release 원문 응답을 읽을 수 없습니다. 같은 출처의 검증된 JSON 배포를 확인하세요.");

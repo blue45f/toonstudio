@@ -1,4 +1,3 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -7,6 +6,8 @@ import { tmpdir } from "node:os";
 import { RELEASE_DESCRIPTOR_PATH, RELEASE_SCHEMA, STATIC_URL_PREFIX } from "./publish-creator-bundle-release.mjs";
 import { assertNativeBundleReleaseCurrent, loadNativeBundleRelease, nativeReleaseBindingProblems,
   nativeReleaseTraceProblems, NATIVE_COMPOSITE_CONFIG_PATH, requireNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const hash = body => createHash("sha256").update(body).digest("hex");
 const bytes = value => Buffer.from(JSON.stringify(value) + "\n");

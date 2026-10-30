@@ -1,6 +1,17 @@
 import { createHash } from "node:crypto";
 
-import { requireStudioBg3dBundleRelease } from "./studio-bg3d-bundle-release";
+import { getStudioBg3dBundleReleaseCompletionBinding, requireStudioBg3dBundleRelease } from "./studio-bg3d-bundle-release";
+
+/** query를 허용하는 경계는 완료 요청 하나뿐이다. 정적 원문 URL의 정확한 비교는 그대로 둔다. */
+export function releaseCompletionRequestNonce(input: RequestInfo | URL, completionUrl: string): string | null {
+  const origin = "https://toonstudio.test";
+  const value = typeof input === "string" || input instanceof URL ? String(input) : input.url;
+  const url = new URL(value, origin), expected = new URL(completionUrl, origin);
+  const nonce = url.searchParams.get("release-check");
+  return url.origin === expected.origin && url.pathname === expected.pathname && !url.hash
+    && nonce !== null && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(nonce)
+    && url.search === `?release-check=${nonce}` ? nonce : null;
+}
 
 export function rawReleaseCatalog(modelSha = "a".repeat(64)) {
   return {
@@ -35,5 +46,8 @@ export function releaseFixture(modelSha = "a".repeat(64), indexPatch: Record<str
   function response(kind: "catalog" | "index", text = kind === "catalog" ? catalogText : indexText) {
     return new Response(text, { headers: { "content-type": "application/json; charset=utf-8" } });
   }
-  return { catalog, index, catalogText, indexText, release, response };
+  const completion = getStudioBg3dBundleReleaseCompletionBinding(release);
+  // R2 응답은 정적 index 원문을 명시적으로 돌려주는 합성 응답이다. 실제 배포 증거가 아니다.
+  return { catalog, index, catalogText, indexText, release,
+    completion, completionNonce: (input: RequestInfo | URL) => releaseCompletionRequestNonce(input, completion.url), response };
 }
