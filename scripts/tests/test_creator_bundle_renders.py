@@ -1,10 +1,12 @@
 """번들 렌더의 권리·경로·원본 고정과 공개 전 검증을 시험한다."""
 
 import argparse
+import copy
 import importlib.util
 import json
 import struct
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +19,10 @@ SCRIPT = Path(__file__).resolve().parents[1] / "render-creator-bundle-assets.py"
 SPEC = importlib.util.spec_from_file_location("creator_bundle_renders", SCRIPT)
 renders = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(renders)
+BLENDER_SPEC = importlib.util.spec_from_file_location("bundle_blender", renders.BLENDER_SCRIPT)
+blender = importlib.util.module_from_spec(BLENDER_SPEC)
+with patch.dict(sys.modules, {"bpy": SimpleNamespace(), "mathutils": SimpleNamespace(Vector=object)}):
+    BLENDER_SPEC.loader.exec_module(blender)
 
 
 def glb(document=None):
@@ -85,6 +91,10 @@ class BundleRenderTests(unittest.TestCase):
         for asset in assets:
             png(self.png_root / (asset["id"] + ".png"))
         (self.png_root / "render-proof.json").write_text(json.dumps(renders.make_render_proof(assets, self.png_root)))
+
+    def planned(self):
+        assets = renders.load_selection(self.selection)
+        return renders.plan_assets(assets, self.library, renders.load_rights(assets, self.ledger_path))
 
     def unchanged(self):
         self.assertEqual((self.output / "manifest.json").read_text(), self.original)
@@ -274,15 +284,387 @@ class BundleRenderTests(unittest.TestCase):
         replacement = self.root / "replacement"
         replacement.mkdir()
         (replacement / "manifest.json").write_text("replacement")
-        original_rename = Path.rename
+        original_rename = renders.rename_no_replace
         def interrupt_ready(path, target):
             if path.name == "ready":
                 raise KeyboardInterrupt()
             return original_rename(path, target)
-        with patch.object(Path, "rename", new=interrupt_ready):
+        with patch.object(renders, "rename_no_replace", side_effect=interrupt_ready):
             with self.assertRaises(KeyboardInterrupt):
                 renders.publish_pack(replacement, self.output)
         self.unchanged()
+
+    def test_camera_and_rig_options_are_strict_and_defaults_are_unchanged(self):
+        invalid = [None, [], [1, 2], [1, 2, 3, 4], [True, 1, 1], [1, False, 1], ["1", 1, 1],
+                   [float("nan"), 1, 1], [1, float("inf"), 1], [11, 1, 1], [-10.01, 1, 1], [10 ** 1000, 1, 1], [0, 0, 0]]
+        for value in invalid:
+            with self.subTest(direction=value):
+                self.write_selection([{**self.asset, "cameraDirection": value}])
+                with self.assertRaisesRegex(renders.RenderError, "cameraDirection"):
+                    renders.load_selection(self.selection)
+                with self.assertRaisesRegex(ValueError, "cameraDirection"):
+                    blender.camera_direction({"cameraDirection": value})
+        for value in [None, False, "Icosphere", {"skip": "all"}]:
+            self.write_selection([{**self.asset, "rigPolicy": value}])
+            with self.assertRaisesRegex(renders.RenderError, "rigPolicy"):
+                renders.load_selection(self.selection)
+        self.assertEqual(renders.camera_direction(self.asset), [1.6, -2.4, 1.7])
+        self.assertEqual(blender.camera_direction({}), [1.6, -2.4, 1.7])
+        self.assertEqual(renders.camera_direction({"cameraDirection": [-10, 0, 10]}), [-10, 0, 10])
+        self.assertIsNone(renders.render_input_fingerprint(self.asset))
+        self.prepare_png()
+        entry = json.loads((self.png_root / "render-proof.json").read_text())["assets"][0]
+        self.assertEqual(set(entry), {"id", "sourceModelSha256", "textureBindings", "pngSha256"})
+
+    def test_new_camera_rejects_legacy_proof_and_every_stale_fingerprint(self):
+        self.prepare_png()
+        self.asset["cameraDirection"] = [0, -1, 0.05]
+        self.write_selection()
+        with self.assertRaisesRegex(renders.RenderError, "지문"):
+            renders.run(self.args())
+        planned = self.planned()
+        self.prepare_png(planned)
+        proof_path = self.png_root / "render-proof.json"
+        good = json.loads(proof_path.read_text())
+        for key, value in [("sourceModelSha256", "a" * 64), ("renderModelSha256", "b" * 64),
+                           ("cameraDirection", [1, -2, 0.08]), ("rigPolicy", renders.RIG_POLICY),
+                           ("rendererSha256", "c" * 64), ("sourcePreparation", {"normalizerSha256": "d" * 64})]:
+            with self.subTest(field=key):
+                stale = copy.deepcopy(good)
+                stale["assets"][0]["renderInputFingerprint"][key] = value
+                proof_path.write_text(json.dumps(stale))
+                with self.assertRaisesRegex(renders.RenderError, "지문"):
+                    renders.run(self.args())
+                self.unchanged()
+        proof_path.write_text(json.dumps(good))
+        result = renders.run(self.args())
+        slot = json.loads((Path(result["localPack"]) / "manifest.json").read_text())["assets"][0]
+        self.assertEqual(slot["sourceOriginalModelSha256"], self.asset["sourceModelSha256"])
+        self.assertEqual(slot["renderInputFingerprint"]["cameraDirection"], [0, -1, 0.05])
+
+    def test_preparation_keeps_raw_and_render_hashes_distinct_without_dry_run_writes(self):
+        prepared_data = glb({"asset": {"version": "2.0", "generator": "prepared"}})
+        prepared_sha = renders.digest(prepared_data)
+        preparation = {"data": prepared_data, "sha256": prepared_sha,
+                       "fingerprint": {"kind": "embed-pack-images-v1", "normalizerSha256": "e" * 64}, "checks": []}
+        self.asset["sourcePreparation"] = {"kind": "embed-pack-images-v1"}
+        self.asset["cameraDirection"] = [0, -1, 0.05]
+        self.write_selection()
+        # 입력 helper 자체의 형식·파일 검사는 전용 회귀가 맡고, 이 시험은 driver 연결을 검사한다.
+        with patch.object(renders, "validate_preparation"), patch.object(renders, "prepare_render_input", return_value=preparation):
+            renders.run(self.args(dry_run=True))
+            self.assertFalse((self.root / "work").exists())
+            planned = self.planned()
+            self.prepare_png(planned)
+            proof = json.loads((self.png_root / "render-proof.json").read_text())["assets"][0]
+            self.assertEqual(proof["sourceModelSha256"], prepared_sha)
+            self.assertEqual(proof["renderInputFingerprint"]["sourceModelSha256"], self.asset["sourceModelSha256"])
+            with patch.object(renders, "revalidate_preparation") as revalidate:
+                result = renders.run(self.args())
+                revalidate.assert_called_once_with(preparation, self.library)
+            slot = json.loads((Path(result["localPack"]) / "manifest.json").read_text())["assets"][0]
+            self.assertEqual(slot["sourceModelSha256"], prepared_sha)
+            self.assertEqual(slot["sourceOriginalModelSha256"], self.asset["sourceModelSha256"])
+            self.assertEqual(self.source.read_bytes(), glb())
+            self.assertNotIn(str(self.root), json.dumps(slot))
+            self.unchanged()
+            changed = copy.deepcopy(preparation)
+            changed["fingerprint"]["normalizerSha256"] = "f" * 64
+            with patch.object(renders, "prepare_render_input", return_value=changed):
+                with self.assertRaisesRegex(renders.RenderError, "지문"):
+                    renders.run(self.args())
+
+    def test_prepared_glb_still_rejects_external_uri(self):
+        preparation = {"data": glb({"asset": {"version": "2.0"}, "images": [{"uri": "../bad.png"}]}),
+                       "sha256": "a" * 64, "fingerprint": {}, "checks": []}
+        with patch.object(renders, "prepare_render_input", return_value=preparation):
+            with self.assertRaisesRegex(renders.RenderError, "외부 URI"):
+                renders.run(self.args(dry_run=True))
+        self.assertFalse((self.root / "work").exists())
+        self.unchanged()
+
+    def test_real_preparation_is_pure_and_rechecks_approved_png_after_proof(self):
+        import normalize_studio_asset_glb as normalizer
+        texture = self.source.parent / "atlas.png"
+        Image.new("RGBA", (16, 16), (20, 90, 150, 255)).save(texture)
+        texture_bytes = texture.read_bytes()
+        original = normalizer.write_glb({"asset": {"version": "2.0"}, "buffers": [{"byteLength": 4}],
+                                         "bufferViews": [{"buffer": 0, "byteOffset": 0, "byteLength": 4}],
+                                         "images": [{"uri": "atlas.png"}]}, b"mesh")
+        self.source.write_bytes(original)
+        prepared, _ = normalizer.normalize_bytes(original, lambda uri: texture_bytes)
+        self.asset.update(sourceModelSha256=renders.digest(original), sourcePreparation={
+            "kind": "embed-pack-images-v1", "expectedSha256": renders.digest(prepared), "images": [{
+                "uri": "atlas.png", "source": texture.relative_to(self.library).as_posix(),
+                "sha256": renders.digest(texture_bytes), "bytes": len(texture_bytes)}]})
+        self.write_selection()
+        renders.run(self.args(dry_run=True))
+        self.assertFalse((self.root / "work").exists())
+        planned = self.planned()
+        self.assertEqual(planned[0]["renderPreparation"]["data"], prepared)
+        self.prepare_png(planned)
+        result = renders.run(self.args())
+        slot = json.loads((Path(result["localPack"]) / "manifest.json").read_text())["assets"][0]
+        self.assertEqual(slot["sourceModelSha256"], renders.digest(prepared))
+        self.assertEqual(slot["sourceOriginalModelSha256"], renders.digest(original))
+        self.assertEqual(self.source.read_bytes(), original)
+        self.assertEqual(texture.read_bytes(), texture_bytes)
+        verify = renders.verify_render_proof
+        def replace_texture(assets, directory):
+            verified = verify(assets, directory)
+            texture.write_bytes(texture_bytes + b"changed")
+            return verified
+        with patch.object(renders, "verify_render_proof", side_effect=replace_texture):
+            with self.assertRaisesRegex(ValueError, "바이트 수|SHA-256"):
+                renders.run(self.args())
+        self.unchanged()
+
+    def test_renderer_change_after_proof_rejects_stale_image_before_publish(self):
+        self.asset.update(cameraDirection=[0, -1, 0.05], visualReviewed=True)
+        self.write_selection()
+        renderer = self.root / "renderer.py"
+        renderer.write_bytes(renders.BLENDER_SCRIPT.read_bytes())
+        with patch.object(renders, "BLENDER_SCRIPT", renderer):
+            self.prepare_png(self.planned())
+            verify = renders.verify_render_proof
+            def replace_renderer(assets, directory):
+                verified = verify(assets, directory)
+                renderer.write_bytes(renderer.read_bytes() + b"\n# changed\n")
+                return verified
+            with patch.object(renders, "verify_render_proof", side_effect=replace_renderer):
+                with self.assertRaisesRegex(renders.RenderError, "검증 이후.*지문"):
+                    renders.run(self.args(publish=True))
+        self.unchanged()
+
+    def test_rig_reuse_requires_actual_helper_check_record(self):
+        self.asset["rigPolicy"] = renders.RIG_POLICY
+        self.write_selection()
+        self.prepare_png(self.planned())
+        path = self.png_root / "render-proof.json"
+        proof = json.loads(path.read_text())
+        with self.assertRaisesRegex(renders.RenderError, "리그 검증 기록"):
+            renders.run(self.args())
+        proof["assets"][0]["rigChecks"] = {"bodyMeshes": 1, "bones": 21, "vertexGroups": 21, "excludedCustomShapes": ["Icosphere"]}
+        path.write_text(json.dumps(proof))
+        renders.run(self.args())
+        proof["assets"][0]["rigChecks"]["bodyMeshes"] = True
+        path.write_text(json.dumps(proof))
+        with self.assertRaisesRegex(renders.RenderError, "리그 검증 기록"):
+            renders.run(self.args())
+
+    def test_new_helper_proof_is_required_and_is_not_overwritten_by_host(self):
+        self.asset["cameraDirection"] = [0, -1, 0.05]
+        self.write_selection()
+        original_run = subprocess.run
+        original_verify = renders.verify_render_proof
+        observed = []
+        helper_bytes = []
+        def fake_render(command, **kwargs):
+            if command[0] != "fake-blender":
+                return original_run(command, **kwargs)
+            jobs = json.loads(Path(command[-2]).read_text())
+            directory = Path(command[-1])
+            self.assertEqual(jobs[0]["cameraDirection"], self.asset["cameraDirection"])
+            self.assertEqual(blender.verify_job_input(jobs[0]), jobs[0]["renderInputFingerprint"])
+            png(directory / (self.asset["id"] + ".png"))
+            proof = renders.make_render_proof(self.planned(), directory)
+            proof["assets"][0]["helperObserved"] = "preserved"
+            helper_bytes.append(json.dumps(proof).encode())
+            (directory / "render-proof.json").write_bytes(helper_bytes[-1])
+            return SimpleNamespace(returncode=0)
+        def verify(assets, directory):
+            observed.append(json.loads((directory / "render-proof.json").read_text())["assets"][0]["helperObserved"])
+            return original_verify(assets, directory)
+        with patch.object(renders.subprocess, "run", side_effect=fake_render), patch.object(renders, "verify_render_proof", side_effect=verify):
+            renders.run(self.args(reuse_renders=None))
+        self.assertEqual(observed, ["preserved"])
+        saved_proof = json.loads((self.root / "work/render-proof.json").read_text())
+        self.assertEqual(saved_proof["assets"][0]["helperObserved"], "preserved")
+        self.assertEqual((self.root / "work/render-proof.json").read_bytes(), helper_bytes[0])
+        def render_without_proof(command, **kwargs):
+            if command[0] != "fake-blender":
+                return original_run(command, **kwargs)
+            png(Path(command[-1]) / (self.asset["id"] + ".png"))
+            return SimpleNamespace(returncode=0)
+        with patch.object(renders.subprocess, "run", side_effect=render_without_proof):
+            with self.assertRaises(FileNotFoundError):
+                renders.run(self.args(reuse_renders=None))
+        self.unchanged()
+
+    def test_prepared_job_writes_verified_temporary_input_and_helper_checks_actual_hashes(self):
+        prepared = glb({"asset": {"version": "2.0", "generator": "prepared"}})
+        plan = {**self.planned()[0], "cameraDirection": [0, -1, 0.05],
+                "renderPreparation": {"data": prepared, "sha256": renders.digest(prepared), "fingerprint": None, "checks": []}}
+        temporary = self.root / "job"
+        temporary.mkdir()
+        job = renders.render_jobs([plan], temporary)[0]
+        self.assertEqual(Path(job["source"]).read_bytes(), prepared)
+        self.assertTrue(Path(job["source"]).is_relative_to(temporary / "prepared"))
+        self.assertEqual(job["sourceOriginal"], str(self.source.resolve()))
+        blender.verify_job_input(job)
+        with patch.object(blender, "RENDERER_SHA256", "d" * 64):
+            with self.assertRaisesRegex(ValueError, "실제 해시"):
+                blender.verify_job_input(job)
+        for key, value in [("renderModelSha256", "a" * 64), ("sourceModelSha256", "b" * 64),
+                           ("rendererSha256", "c" * 64), ("cameraDirection", [1, 0, 0]), ("rigPolicy", renders.RIG_POLICY)]:
+            changed = copy.deepcopy(job)
+            changed["renderInputFingerprint"][key] = value
+            with self.subTest(field=key), self.assertRaises(ValueError):
+                blender.verify_job_input(changed)
+        Path(job["source"]).write_bytes(b"replaced")
+        with self.assertRaisesRegex(ValueError, "실제 해시"):
+            blender.verify_job_input(job)
+        self.assertEqual(self.source.read_bytes(), glb())
+
+    def test_append_only_blocks_ready_and_draft_collisions_before_writes_or_render(self):
+        for status in ["visual-reviewed", "draft-waiting"]:
+            self.original = json.dumps({"assets": [{"id": self.asset["id"], "curationStatus": status}]})
+            (self.output / "manifest.json").write_text(self.original)
+            for dry_run in [False, True]:
+                with self.subTest(status=status, dry_run=dry_run), self.assertRaisesRegex(renders.RenderError, "append-only"):
+                    renders.run(self.args(append_only=True, dry_run=dry_run, reuse_renders=None))
+                self.assertFalse((self.root / "work").exists())
+                self.unchanged()
+
+    def test_append_only_rechecks_copied_stage_before_encoding(self):
+        self.prepare_png()
+        original_copy = renders.copy_existing_pack
+        changed = json.dumps({"assets": [{"id": self.asset["id"], "curationStatus": "visual-reviewed"}]})
+        def concurrent_change(source, destination):
+            (source / "manifest.json").write_text(changed)
+            original_copy(source, destination)
+        with patch.object(renders, "copy_existing_pack", side_effect=concurrent_change), patch.object(renders, "encode_asset") as encode:
+            with self.assertRaisesRegex(renders.RenderError, "stage 복사 도중 변경"):
+                renders.run(self.args(append_only=True))
+            encode.assert_not_called()
+        self.assertEqual((self.output / "manifest.json").read_text(), changed)
+
+    def test_append_only_new_id_preserves_existing_slot_and_all_image_bytes(self):
+        self.asset["visualReviewed"] = True
+        self.write_selection()
+        self.prepare_png()
+        renders.run(self.args(publish=True))
+        before = json.loads((self.output / "manifest.json").read_text())
+        files = {p.relative_to(self.output): p.read_bytes() for p in self.output.rglob("*.webp")}
+        self.asset.update(id="new-reference", cameraDirection=[0, -1, 0.05])
+        self.write_selection()
+        self.prepare_png(self.planned())
+        renders.run(self.args(publish=True, append_only=True))
+        after = json.loads((self.output / "manifest.json").read_text())
+        self.assertEqual(after["assets"][:-1], before["assets"])
+        self.assertEqual(after["assets"][-1]["id"], "new-reference")
+        for path, data in files.items():
+            self.assertEqual((self.output / path).read_bytes(), data)
+
+    def test_default_still_replaces_existing_complete_id(self):
+        self.asset["visualReviewed"] = True
+        self.write_selection()
+        self.prepare_png()
+        renders.run(self.args(publish=True))
+        self.asset["name"] = "새 이름"
+        self.write_selection()
+        renders.run(self.args(publish=True))
+        after = json.loads((self.output / "manifest.json").read_text())
+        self.assertEqual(len(after["assets"]), 1)
+        self.assertEqual(after["assets"][0]["name"], "새 이름")
+
+    def test_append_only_concurrent_publisher_after_stage_copy_is_preserved(self):
+        self.asset["visualReviewed"] = True
+        self.write_selection()
+        self.prepare_png()
+        renders.run(self.args(publish=True))
+        concurrent = self.root / "concurrent"
+        renders.copy_existing_pack(self.output, concurrent)
+        manifest = json.loads((concurrent / "manifest.json").read_text())
+        slot = {**manifest["assets"][0], "id": "concurrent-prop",
+                "path": "assets/concurrent-prop/prop.webp", "previewPath": "assets/concurrent-prop/thumbnail.webp"}
+        renders.shutil.copytree(concurrent / "assets" / self.asset["id"], concurrent / "assets/concurrent-prop")
+        manifest["assets"].append(slot)
+        (concurrent / "manifest.json").write_text(json.dumps(manifest))
+        expected = {p.relative_to(concurrent): p.read_bytes() for p in concurrent.rglob("*") if p.is_file()}
+        self.asset["id"] = "new-reference"
+        self.write_selection()
+        self.prepare_png()
+        encode = renders.encode_asset
+        def publish_concurrently(*args, **kwargs):
+            result = encode(*args, **kwargs)
+            renders.publish_pack(concurrent, self.output)
+            return result
+        with patch.object(renders, "encode_asset", side_effect=publish_concurrently):
+            with self.assertRaisesRegex(renders.RenderError, "게시.*변경"):
+                renders.run(self.args(publish=True, append_only=True))
+        actual = {p.relative_to(self.output): p.read_bytes() for p in self.output.rglob("*") if p.is_file()}
+        self.assertEqual(actual, expected)
+
+
+class BlenderRigPolicyTests(unittest.TestCase):
+    def fixture(self):
+        shape = SimpleNamespace(name="표시형상", type="MESH", vertex_groups=[], modifiers=[], hide_render=False)
+        rig = SimpleNamespace(name="Rig", type="ARMATURE", data=SimpleNamespace(bones=[object() for _ in range(21)]),
+                              pose=SimpleNamespace(bones=[SimpleNamespace(custom_shape=shape) for _ in range(21)]))
+        body = SimpleNamespace(name="Body", type="MESH", vertex_groups=[object() for _ in range(21)],
+                               modifiers=[SimpleNamespace(type="ARMATURE", object=rig)], hide_render=False)
+        return rig, body, shape
+
+    def test_only_actual_custom_shape_references_are_excluded_without_mutating_objects(self):
+        rig, body, shape = self.fixture()
+        meshes, excluded = blender.select_render_meshes([rig, body, shape], renders.RIG_POLICY)
+        self.assertIs(meshes[0], body)
+        self.assertEqual(len(meshes), 1)
+        self.assertEqual(len(excluded), 1)
+        self.assertIs(excluded[0], shape)
+        self.assertFalse(shape.hide_render)
+        self.assertFalse(body.hide_render)
+        default_meshes, default_excluded = blender.select_render_meshes([rig, body, shape])
+        self.assertEqual(len(default_meshes), 2)
+        self.assertEqual(default_excluded, [])
+        with self.assertRaisesRegex(ValueError, "rigPolicy"):
+            blender.select_render_meshes([rig, body, shape], "skip-Icosphere")
+
+    def test_unreferenced_icosphere_and_same_named_distinct_mesh_are_not_hidden(self):
+        rig, body, shape = self.fixture()
+        extra = SimpleNamespace(name="Icosphere", type="MESH", vertex_groups=[], modifiers=[], hide_render=False)
+        for name in ["Icosphere", shape.name]:
+            extra.name = name
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "본체"):
+                blender.select_render_meshes([rig, body, shape, extra], renders.RIG_POLICY)
+            self.assertFalse(extra.hide_render)
+
+    def test_unsafe_shapes_wrong_counts_and_wrong_armature_connections_fail_closed(self):
+        for scenario in ["body-is-shape", "weighted-shape", "armature-shape", "nonmesh-shape", "no-rig", "extra-rig",
+                         "bones20", "pose20", "groups20", "no-modifier", "wrong-rig", "two-modifiers", "no-body"]:
+            rig, body, shape = self.fixture()
+            objects = [rig, body, shape]
+            if scenario == "body-is-shape":
+                rig.pose.bones[0].custom_shape = body
+            elif scenario == "weighted-shape":
+                shape.vertex_groups = [object()]
+            elif scenario == "armature-shape":
+                shape.modifiers = [SimpleNamespace(type="ARMATURE", object=rig)]
+            elif scenario == "nonmesh-shape":
+                shape.type = "EMPTY"
+            elif scenario == "no-rig":
+                objects.remove(rig)
+            elif scenario == "extra-rig":
+                objects.append(SimpleNamespace(type="ARMATURE"))
+            elif scenario == "bones20":
+                rig.data.bones.pop()
+            elif scenario == "pose20":
+                rig.pose.bones.pop()
+            elif scenario == "groups20":
+                body.vertex_groups.pop()
+            elif scenario == "no-modifier":
+                body.modifiers = []
+            elif scenario == "wrong-rig":
+                body.modifiers[0].object = SimpleNamespace(name=rig.name)
+            elif scenario == "two-modifiers":
+                body.modifiers.append(SimpleNamespace(type="ARMATURE", object=rig))
+            elif scenario == "no-body":
+                objects.remove(body)
+            with self.subTest(scenario=scenario), self.assertRaises(ValueError):
+                blender.select_render_meshes(objects, renders.RIG_POLICY)
+            self.assertFalse(shape.hide_render)
+            self.assertFalse(body.hide_render)
 
 
 if __name__ == "__main__":

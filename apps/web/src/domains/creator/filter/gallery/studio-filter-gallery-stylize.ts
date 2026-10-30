@@ -1,15 +1,15 @@
 /**
  * 필터 갤러리 "스타일화" 분류 커널 6종(확산·돌출·타일·윤곽선 추적·바람·판화).
  *
- * 공개 매뉴얼의 기능 설명과 일반적인 래스터 기법(무작위 픽셀 교환, 화가 알고리즘과 원근 투영, 삼각형 래스터화,
+ * 공개 매뉴얼의 기능 설명과 일반적인 래스터 기법(무작위 픽셀 교환, 화가 알고리즘과 원근 투영, 볼록 다각형 래스터화,
  * 채널별 등고선, 행 단위 줄무늬 전파)만으로 새로 구현했다. 난수는 context.seed 에 효과별 상수를 더한 해시에서만
  * 나오고 크기 매개변수는 이미지 px 단위다. 알파는 그대로 두되 두 가지 예외가 있다.
  * - 돌출: 그려진 블록·피라미드 면에 칸 평균 알파(이미지 전면은 원본 알파)를 쓴다. 완전 투명 칸은 그리지 않는다.
  * - 타일의 "투명" 채우기: 타일이 원본 알파를 함께 옮기고 빈 틈은 알파 0 이 된다.
  */
 import { clamp, hash2, luma, lumaPlane, sobel } from "./studio-filter-gallery-kernel-utils";
+import { alphaWeightedLuma } from "./studio-filter-gallery-sketch";
 import {
-  alphaWeightedLuma,
   paramChoices,
   paramColor,
   paramSelect,
@@ -19,7 +19,7 @@ import {
   readSelect,
   readSlider,
   readToggle,
-} from "./studio-filter-gallery-sketch";
+} from "./studio-filter-gallery-param-specs";
 
 import type { StudioFilterGalleryEffectDef, StudioFilterGalleryParams } from "./studio-filter-gallery-types";
 
@@ -112,33 +112,47 @@ function extrudeCost(params: StudioFilterGalleryParams): number {
   return Math.max(EXTRUDE_COST, (nanoseconds * 1.4) / 50);
 }
 
-/** 선분 (ax, ay)–(bx, by) 가 수평선 y 와 만나는 x. 만나지 않으면(수평 선분 포함) NaN. */
-function crossX(ax: number, ay: number, bx: number, by: number, y: number): number {
-  if ((ay > y) === (by > y)) return Number.NaN;
-  return ax + ((y - ay) * (bx - ax)) / (by - ay);
+/** 변 하나가 차지하는 칸 수(기준 x·기준 y·방향 x·방향 y·y 하한·y 상한). */
+const EDGE_FIELDS = 6;
+
+/**
+ * edges 의 index 번째 변을 적는다. 주사선 y 와의 교점은 기준점에서 방향 (dx, dy) 로 잰 baseX + (y − baseY)·dx / dy 이고,
+ * 변의 두 끝 y 사이 [작은 쪽, 큰 쪽) 에서만 만난다(수평 변은 만나지 않는다).
+ */
+function setEdge(
+  edges: Float64Array, index: number, baseX: number, baseY: number, dx: number, dy: number, endY: number, otherEndY: number,
+): void {
+  const offset = index * EDGE_FIELDS;
+  edges[offset] = baseX;
+  edges[offset + 1] = baseY;
+  edges[offset + 2] = dx;
+  edges[offset + 3] = dy;
+  edges[offset + 4] = Math.min(endY, otherEndY);
+  edges[offset + 5] = Math.max(endY, otherEndY);
 }
 
 /**
- * 삼각형을 단색으로 채운다. 행마다 세 변과의 교점으로 구간을 구하는 주사선 방식이라 길고 가는 측면도
- * 경계 상자 전체를 훑지 않는다. 픽셀 중심이 [왼쪽, 오른쪽) 반열린 구간에 들 때 칠하므로 이웃 삼각형과
- * 틈이나 겹침이 없다. 넓이가 0 이하(화면에서 뒤를 향한 면)면 그리지 않는다.
+ * 변 count 개가 둘러싼 볼록 다각형을 단색으로 채운다. 행마다 변과의 교점으로 구간을 구하는 주사선 방식이라 길고 가는
+ * 측면도 경계 상자 전체를 훑지 않는다. 픽셀 중심이 [왼쪽, 오른쪽) 반열린 구간에 들 때 칠한다. 이웃 면과 맞닿은 변은 두 면이
+ * 같은 기준점·방향으로 재므로 교점이 비트까지 같고, 그 변 위의 픽셀 중심은 오른쪽 면 하나에만 들어가 틈도 겹침도 없다.
  */
-function fillTriangle(
-  data: Uint8ClampedArray, width: number, height: number,
-  ax: number, ay: number, bx: number, by: number, cx: number, cy: number,
-  rgba: Float32Array,
-): void {
-  const area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-  if (!(area > 1e-9)) return;
-  const minY = Math.max(0, Math.floor(Math.min(ay, by, cy)));
-  const maxY = Math.min(height - 1, Math.ceil(Math.max(ay, by, cy)));
-  for (let y = minY; y <= maxY; y += 1) {
+function fillPolygon(data: Uint8ClampedArray, width: number, height: number, edges: Float64Array, count: number, rgba: Float32Array): void {
+  let low = Infinity, high = -Infinity;
+  for (let edge = 0; edge < count; edge += 1) {
+    low = Math.min(low, edges[edge * EDGE_FIELDS + 4]);
+    high = Math.max(high, edges[edge * EDGE_FIELDS + 5]);
+  }
+  const lastRow = Math.min(height, Math.ceil(high - 0.5));
+  for (let y = Math.max(0, Math.ceil(low - 0.5)); y < lastRow; y += 1) {
     const py = y + 0.5;
-    const first = crossX(ax, ay, bx, by, py);
-    const second = crossX(bx, by, cx, cy, py);
-    const third = crossX(cx, cy, ax, ay, py);
-    const left = Math.min(Number.isNaN(first) ? Infinity : first, Number.isNaN(second) ? Infinity : second, Number.isNaN(third) ? Infinity : third);
-    const right = Math.max(Number.isNaN(first) ? -Infinity : first, Number.isNaN(second) ? -Infinity : second, Number.isNaN(third) ? -Infinity : third);
+    let left = Infinity, right = -Infinity;
+    for (let edge = 0; edge < count; edge += 1) {
+      const offset = edge * EDGE_FIELDS;
+      if (py < edges[offset + 4] || py >= edges[offset + 5]) continue;
+      const crossing = edges[offset] + ((py - edges[offset + 1]) * edges[offset + 2]) / edges[offset + 3];
+      if (crossing < left) left = crossing;
+      if (crossing > right) right = crossing;
+    }
     const end = Math.min(width, Math.ceil(right - 0.5));
     for (let x = Math.max(0, Math.ceil(left - 0.5)); x < end; x += 1) {
       const offset = (y * width + x) * 4;
@@ -208,10 +222,13 @@ const extrude: StudioFilterGalleryEffectDef = {
       keys[cell] = (width + height - offCenter) * count + cell;
     }
     keys.sort();
-    // 화면 중심 위의 시점에서 본 원근: 높이 z 인 점은 중심에서 (1 + z / focal) 배 멀어진다.
+    // 화면 중심 위의 시점에서 본 원근: 높이 z 인 점은 중심에서 (1 + z / focal) 배 멀어진다. 전면 꼭짓점(front)은 예전처럼 Float32 다.
+    // 측면의 세로 모서리는 front 가 아니라 화면 중심에서 바닥 꼭짓점으로 가는 광선으로 재므로(아래) front 의 반올림이 틈을 내지
+    // 않고, 전면 사각형의 범위와 늘린 그림의 표본 위치는 고치기 전과 바이트까지 같다.
     const focal = Math.max(width, height) * 0.9;
     const corners = new Float32Array(8);
     const front = new Float32Array(8);
+    const edges = new Float64Array(4 * EDGE_FIELDS);
     const rgba = new Float32Array(4);
     for (let k = 0; k < count; k += 1) {
       const cell = keys[k] % count;
@@ -243,12 +260,30 @@ const extrude: StudioFilterGalleryEffectDef = {
         }
         for (let channel = 0; channel < 3; channel += 1) rgba[channel] = colors[cell * 4 + channel] * shade;
         rgba[3] = colors[cell * 4 + 3];
+        const ax = corners[a], ay = corners[a + 1], bx = corners[b], by = corners[b + 1];
+        // 뒷면(중심 반대쪽을 향한 면)은 넓이가 0 이하라 그리지 않는다.
         if (pyramids) {
-          fillTriangle(data, width, height, corners[a], corners[a + 1], corners[b], corners[b + 1], apexX, apexY, rgba);
+          if (!((bx - ax) * (apexY - ay) - (by - ay) * (apexX - ax) > 1e-9)) continue;
+          // 이웃 면과 공유하는 꼭대기 쪽 변은 두 면 모두 바닥 꼭짓점에서 꼭대기 쪽으로 잰다(끝점을 바꿔 재면 교점이 한 비트
+          // 어긋나 변 위의 픽셀이 두 면에서 다 빠졌다).
+          setEdge(edges, 0, ax, ay, bx - ax, by - ay, ay, by);
+          setEdge(edges, 1, bx, by, apexX - bx, apexY - by, by, apexY);
+          setEdge(edges, 2, ax, ay, apexX - ax, apexY - ay, ay, apexY);
+          fillPolygon(data, width, height, edges, 3, rgba);
         } else {
-          // 측면 사각형을 삼각형 두 개로. 뒷면(중심 반대쪽을 향한 면)은 넓이가 음수라 그려지지 않는다.
-          fillTriangle(data, width, height, corners[a], corners[a + 1], corners[b], corners[b + 1], front[b], front[b + 1], rgba);
-          fillTriangle(data, width, height, corners[a], corners[a + 1], front[b], front[b + 1], front[a], front[a + 1], rgba);
+          const fax = front[a], fay = front[a + 1], fbx = front[b], fby = front[b + 1];
+          if (!((bx - ax) * (fby - ay) - (by - ay) * (fbx - ax) > 1e-9)) continue;
+          // 측면은 바닥 변·꼭대기 변과 두 세로 모서리로 둘러싼 사다리꼴 하나다(대각선으로 쪼개지 않는다). 세로 모서리는 화면
+          // 중심에서 바닥 꼭짓점으로 가는 광선 위에 있으므로 중심을 기준점, (꼭짓점 − 중심)을 방향으로 잰다. 같은 광선을 쓰는 면은
+          // 이웃 측면이든 높이가 다른 이웃 칸의 벽이든 같은 수로 같은 계산을 해 교점이 비트까지 같다. (py − 중심 y)·(꼭짓점 − 중심)
+          // 은 반정수 곱이라 정확해서, 픽셀 중심이 광선 위에 정확히 놓이면 교점도 정확히 그 값이고 반열린 구간 규칙대로 오른쪽 면
+          // 하나에만 들어간다. 전엔 두 삼각형이 이 모서리를 서로 다른 끝점(바닥 꼭짓점, Float32 로 반올림한 전면 꼭짓점)에서 재서
+          // 두 칸의 벽이 맞닿은 광선 위 픽셀이 양쪽에서 다 빠지면 먼 칸이 1px 점선으로 비쳤다.
+          setEdge(edges, 0, ax, ay, bx - ax, by - ay, ay, by);
+          setEdge(edges, 1, centerX, centerY, bx - centerX, by - centerY, by, fby);
+          setEdge(edges, 2, fax, fay, fbx - fax, fby - fay, fay, fby);
+          setEdge(edges, 3, centerX, centerY, ax - centerX, ay - centerY, ay, fay);
+          fillPolygon(data, width, height, edges, 4, rgba);
         }
       }
       if (pyramids) continue;
@@ -290,6 +325,17 @@ const TL_FILL = paramSelect(
 );
 const TL_COLOR = paramColor("fillColor", "채우기 색", "#ffffff");
 
+/**
+ * 타일 한 장의 정수 이동(px). unit 은 −1~1 난수, reach 는 반올림하지 않은 최대 이동이다. 1px 이상이면 unit × reach 를
+ * 반올림한다. 그보다 작으면 반올림이 늘 0 이라, 전엔 최대 이동을 1px 로 올려 잡았고 그래서 1px 아래의 최대 오프셋 칸이 모두
+ * 같은 그림이었다(512×384, 타일 수 10 에서 1·2%, 타일 수 99 에서 1~25%). 이제 |unit| 이 1 − reach/2 보다 큰 타일만 한 픽셀
+ * 민다. 움직이는 타일 비율(reach/2)이 오프셋에 비례해 늘고, 1px 에서 반올림 규칙과 이어진다.
+ */
+function tileShift(unit: number, reach: number): number {
+  if (reach >= 1) return Math.round(unit * reach);
+  return Math.abs(unit) > 1 - reach / 2 ? Math.sign(unit) : 0;
+}
+
 const tiles: StudioFilterGalleryEffectDef = {
   id: "stylize.tiles",
   category: "stylize",
@@ -300,9 +346,10 @@ const tiles: StudioFilterGalleryEffectDef = {
   cost: 1,
   apply(image, params, context) {
     const { width, height, data } = image;
-    // 타일 수는 짧은 변을 따라 센다. 최대 오프셋은 타일 크기의 %(최소 1px 이라 작은 이미지에서도 보인다).
+    // 타일 수는 짧은 변을 따라 센다. 최대 오프셋은 타일 크기의 %다. 1px 아래면 일부 타일만 1px 움직여(tileShift) 작은
+    // 이미지·작은 타일에서도 보이고 칸마다 달라진다.
     const tile = Math.max(1, Math.min(width, height) / readSlider(params, TL_COUNT));
-    const reach = Math.max(1, (tile * readSlider(params, TL_OFFSET)) / 100);
+    const reach = (tile * readSlider(params, TL_OFFSET)) / 100;
     const fill = readSelect(params, TL_FILL);
     const [fillRed, fillGreen, fillBlue] = readColor(params, TL_COLOR);
     const transparent = fill === "transparent";
@@ -327,8 +374,8 @@ const tiles: StudioFilterGalleryEffectDef = {
       const y0 = Math.round(row * tile), y1 = Math.min(height, Math.round((row + 1) * tile));
       for (let column = 0; column < columns; column += 1) {
         const x0 = Math.round(column * tile), x1 = Math.min(width, Math.round((column + 1) * tile));
-        const shiftX = Math.round((hash2(column, row, seed) * 2 - 1) * reach);
-        const shiftY = Math.round((hash2(column, row, seed + 1) * 2 - 1) * reach);
+        const shiftX = tileShift(hash2(column, row, seed) * 2 - 1, reach);
+        const shiftY = tileShift(hash2(column, row, seed + 1) * 2 - 1, reach);
         for (let y = Math.max(y0, -shiftY); y < Math.min(y1, height - shiftY); y += 1) {
           for (let x = Math.max(x0, -shiftX); x < Math.min(x1, width - shiftX); x += 1) {
             const from = (y * width + x) * 4;

@@ -1,6 +1,6 @@
 # 필터 갤러리 (효과 스택)
 
-작성 기준일: 2026-10-29 · 대상: 상단 메뉴 **필터 ▸ 필터 갤러리…**
+작성 기준일: 2026-10-31 · 대상: 상단 메뉴 **필터 ▸ 필터 갤러리…**
 
 이 문서는 효과를 여러 겹 쌓아 비파괴로 적용하는 필터 갤러리의 **현재 구현(current)**, 저장 형식, 실행 경로, 효과 목록, 한계를 적는다. 분석·내재화 경위는 [`reports/brush-filter-rea-internalization-2026-10-29.md`](../reports/brush-filter-rea-internalization-2026-10-29.md)에 있다.
 
@@ -9,12 +9,23 @@
 | 영역 | 상태 | 근거 |
 | --- | --- | --- |
 | 메뉴 행·명령(`filter.filter-gallery`)·75개 언어 문구 | current | `studio-main-menu-items-filter.ts`, `studio-command-catalog.ts`, `apps/web/public/i18n/studio/**` |
-| 대화상자(분류·검색, 최대 8겹, 겹별 표시·순서·불투명도·매개변수, 무늬 바꾸기, 선택 안/밖 적용) | current | `filter/gallery/StudioFilterGalleryDialog.tsx`(지연 로드 `studio-filter-gallery-lazy.ts`) |
+| 대화상자(분류·검색, 최대 8겹, 겹별 표시·순서·불투명도·매개변수, 무늬 바꾸기, 선택 안/밖 적용, 작업량 상한 안내) | current | `filter/gallery/StudioFilterGalleryDialog.tsx`(지연 로드 `studio-filter-gallery-lazy.ts`) |
+| 대화상자 안 결과 미리보기(캔버스와 같은 계산, 원본 비교, 맞춤·실제 크기) | current | `filter/gallery/StudioFilterGalleryPreview.tsx`, `…-preview.ts` |
 | 저장 형식 `filterGallery`(효과 id·매개변수만) | current | `filter/gallery/studio-filter-gallery-types.ts`, `render/studio-konva-filter-fields.ts` |
 | 정규화·예산·실행 | current | `filter/gallery/studio-filter-gallery-registry.ts`, `…-engine.ts` |
 | Konva 캐시 필터·이미지 필터 Worker 실행 | current | `render/studio-konva-filters.ts`(`F.FilterGallery`), `studio-image-filter-worker-client.ts` |
 | 효과 커널 | current | `filter/gallery/studio-filter-gallery-*.ts` 계열 파일(3절) |
 | 겹별 썸네일 미리보기, 사용자 프리셋 저장, 보정 레이어(smart filter) 스택 편입 | 미구현 | 5절 |
+
+**기존 기능의 통합 상태(current, 2026-10-31):** 내부 미리보기와 슬라이더 후속은
+[PR #2590](https://github.com/blue45f/toonstudio/pull/2590)으로 main
+`778c2fbf076b3a1da9d883c5a362e43393b6833e`에 반영됐다. 운영 배포 여부는 이 기록에 포함하지 않는다.
+
+**경계 보완의 구현 상태(current, 2026-10-31):** #2590 이후 활성 필터 마스크 합성(FG01)과 갤러리의 direct
+실행 경계(FG02)를 보완했다. 이 문서는 소스와 로컬 검증 결과를 설명하며 운영 배포 여부를 뜻하지 않는다.
+갤러리·마스크·Worker 회귀 36파일·945사례와 캔버스·모달 회귀 4파일·78사례가 통과했다.
+2D Canvas 테스트 fixture의 타입 보정 후 집중 회귀 2파일·19사례와 최신 main 통합 하네스도 통과했다.
+실제 브라우저 검증은 아직 실행하지 않았다.
 
 ## 2. 동작
 
@@ -28,8 +39,23 @@
   - 겹마다 켜기·끄기, 위·아래 이동, 빼기, 불투명도(0~100%), 매개변수를 고친다.
   - "무늬 바꾸기"는 스택 시드를 바꿔 무작위 무늬가 있는 효과의 결과를 다시 뽑는다.
 - **미리보기**
-  - 값이 바뀔 때마다 `{ filterGallery }` 패치로 캔버스에 바로 그린다.
+  - 캔버스 미리보기: 값이 바뀔 때마다 `{ filterGallery }` 패치로 캔버스에 바로 그린다. "캔버스 미리보기" 단추로 켜고 끈다.
   - 실제 필터 엔진이 같은 커널을 실행하므로, 미리보기와 적용 결과가 같다.
+  - 대화상자 안 결과 미리보기: 대화상자가 넓어 캔버스를 대부분 가리므로 대화상자 안에도 결과를 보인다(넓은 화면은 왼쪽 열,
+    좁은 화면은 위 띠).
+    - 캔버스와 같은 계산이다. 요소의 문서 크기(반올림한 너비×높이)로 원본을 그리고(뒤집기 포함), 요소 필드 위에 초안
+      스택을 얹어 이미지 필터 Worker 상주 세션으로 계산한다. 커널의 크기 매개변수가 이미지 px 단위라 축소본으로 계산하지
+      않는다. 요소의 다른 필터도 캔버스처럼 함께 적용된다.
+    - 계산은 마지막 변경 120ms 뒤 한 번에 하나씩 돌고, 도는 동안 바뀐 값은 마지막 것만 남겨 이어 돌린다.
+    - "원본 비교"로 원본을, "실제 크기"로 1:1 픽셀을 스크롤해 본다.
+    - 활성 이미지 필터 마스크가 있으면 Worker 결과와 원본을 캔버스의 공통 커버리지 커널로 합성한다. 마스크는 원본처럼
+      콘텐츠 좌표의 좌우·상하 뒤집기를 적용한다. immutable surface의 로컬 src가 아직 없거나 마스크를 읽지 못하면
+      마스크 없는 전체 결과를 표시하지 않는다. 명시적으로 꺼 둔 마스크와 활성 필터가 없는 대상은 기존 전체 계산을 유지한다.
+    - Worker가 없는 환경에서는 같은 공통 작업량 판정으로 허용한 경량 스택만 direct로 계산한다. 갤러리 direct 한도를
+      넘으면 기존 계산 불가 안내를 보이며, 동기 커널로 다시 실행하지 않는다.
+    - 캔버스가 필터를 끄는 크기(16M 픽셀 초과)는 계산하지 않고, 작업량 상한을 넘는 스택은 빠진 결과라고 알린다. 원본을
+      읽을 수 없으면(출처 제한 등) 캔버스 미리보기로 확인하라고 알린다.
+  - 작업량 표시는 이 조합을 적용할 수 있는 가장 큰 이미지 크기(MP·정사각 px)를 함께 보인다(약 4000×4000 이상이면 등급만).
 - **적용**
   - 이미지 대상은 요소에 `filterGallery` 필드를 저장한다(비파괴). 다시 열면 겹마다 고칠 수 있다.
   - 효과를 모두 빼고 적용하면 필드를 지운다.
@@ -265,12 +291,46 @@ interface StudioFilterGalleryStack {
   - 사용자 프리셋 저장·공유
   - 보정 레이어(smart filter) 스택 편입
   - 효과별 GPU 경로
-- 실브라우저 시각 확인을 하지 않았다(jsdom 대화상자 시험과 Node 픽셀 시험만 했다).
+- 후속 원본 커밋의 기록에는 실브라우저(Playwright·Chromium, 게스트 `/studio/canvas`, 1440×900)에서 페이지 합성 대상으로
+  맞춤·실제 크기·원본 비교와 작업량 안내를 확인했다고 적혀 있다. 이 과거 기록은 2026-10-31의 마스크·direct 후속 후보의
+  경계 수정의 현재 검증 결과로 사용하지 않는다. 효과별 모양과 해당 브라우저 흐름도 후보에서 다시 검증해야 한다.
 
 ## 6. 검증
 
+2026-10-31 후속 후보에서 아래 집중 회귀를 실제 실행해 **2파일·19사례 통과, 종료 코드 0**을 확인했다.
+마스크 0/128/255 합성, 서로 다른 해상도·양방향 flip, surface 준비·실패·교체·unmount,
+Worker 부재와 세 종류 direct API의 작업량 거부·경량 보존을 확인하는 범위다.
+
 ```bash
-pnpm exec vitest run apps/web/src/domains/creator/filter/gallery
+pnpm exec vitest run --no-file-parallelism --maxWorkers=1 apps/web/src/domains/creator/filter/gallery/StudioFilterGalleryPreview.test.tsx apps/web/src/domains/creator/filter/gallery/studio-filter-gallery-direct-boundary.test.ts
+```
+
+이후 같은 구현·테스트 6파일에서 갤러리·마스크·Worker 회귀 **36파일·945사례**, 캔버스·모달 회귀
+**4파일·78사례**를 각각 실행해 모두 종료 코드 0을 확인했다. 두 실행 후 해당 구현·테스트와 index는 변하지 않았다.
+첫 집중 19사례는 갤러리 범위에 포함되므로 합산하지 않는다. 실제 명령은 다음과 같다.
+
+```bash
+pnpm exec vitest run --no-file-parallelism --maxWorkers=1 apps/web/src/domains/creator/filter/gallery apps/web/src/domains/creator/filter/studio-filter-mask.test.ts apps/web/src/domains/creator/filter/studio-filter-mask-alpha.integration.test.ts apps/web/src/domains/creator/scene3d/studio-image-filter-worker-client.test.ts apps/web/src/domains/creator/scene3d/studio-image-filter-worker-stability.test.ts
+pnpm exec vitest run --no-file-parallelism --maxWorkers=1 apps/web/src/domains/creator/StudioKonvaImageNode.test.tsx apps/web/src/domains/creator/StudioKonvaImageNode.race.test.tsx apps/web/src/domains/creator/useStudioModalSheet.test.ts apps/web/src/domains/creator/studio-cuttoon-editor/studio-modal-floating-isolation.test.ts
+```
+
+위 두 관련 회귀는 후속 후보 `3b1125037e1f1369f671081588a75fe6a283cf49`와 로컬 7파일 변경에서 실행했다.
+이후 최신 main `7444b8d9bfd08435a2007a9faeafce6fe2c606b2`를 정상 통합했다. 첫 전체 타입 검사에서
+신규 Preview 테스트의 Canvas `getContext` 오버로드가 WebGPU로 추론되는 TS2345를 확인하고,
+저장소의 기존 2D prototype 계약 패턴으로 fixture를 보정했다. 제품 구현 4파일은 바뀌지 않았다.
+보정한 입력에서 집중 회귀 **2파일·19사례**를 다시 실행해 통과했으며 다음 하네스도 **종료 코드 0**을 확인했다.
+Web 전체·API 및 도구 3개 타입, 변경 lint·Secretlint·아키텍처·진입 그래프를 포함한다.
+
+```bash
+pnpm harness:verify --base=7444b8d9bfd08435a2007a9faeafce6fe2c606b2
+```
+
+하네스 입력은 통합 커밋 `99a618cb1a8fcf3882721134dfd5f1dfd97e76c1`과 위 테스트 fixture 보정이며,
+이후 이 문서에는 실제 결과만 갱신했다. 실제 브라우저·접근성·반응형 검증은 실행하지 않았으므로
+로컬 단위·타입 검증을 통합 GUI 완료로 확대하지 않는다.
+
+```bash
+pnpm exec vitest run --no-file-parallelism apps/web/src/domains/creator/filter/gallery
 ```
 
 ```bash

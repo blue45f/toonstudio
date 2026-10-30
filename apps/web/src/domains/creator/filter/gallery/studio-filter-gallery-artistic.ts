@@ -21,6 +21,7 @@ import {
   kuwahara,
   kuwaharaFractional,
   orientedStreakNoise,
+  posterize,
   posterizeLuma,
   readPaintSource,
   select,
@@ -151,6 +152,33 @@ const coloredPencil: StudioFilterGalleryEffectDef = {
 
 // ── 드라이 브러시 · 프레스코 ─────────────────────────────────────
 
+/**
+ * 소수 단계 수 posterizeLuma(제자리). 정수면 posterizeLuma 그대로이고, 아니면 이웃한 두 정수 단계 결과를 소수 부분만큼
+ * 섞는다(posterizeLuma 는 세 채널에 같은 양을 더하므로 두 결과를 섞는 것은 더할 양을 섞는 것과 같다).
+ */
+function posterizeLumaFractional(planes: ColorPlanes, levels: number, amount: number): void {
+  const lower = Math.floor(levels), fraction = levels - lower;
+  if (fraction <= 1e-6) {
+    posterizeLuma(planes, lower, amount);
+    return;
+  }
+  for (let index = 0; index < planes.red.length; index += 1) {
+    const value = luma(planes.red[index], planes.green[index], planes.blue[index]);
+    const low = posterize(value, lower);
+    const shift = (low + (posterize(value, lower + 1) - low) * fraction - value) * amount;
+    planes.red[index] += shift;
+    planes.green[index] += shift;
+    planes.blue[index] += shift;
+  }
+}
+
+/**
+ * 드라이 브러시 명도 단계 수. 예전 Math.round(3 + 세부 × 0.9) 는 세부 5 와 6 이 둘 다 8 단계라 두 칸이 같은 결과를 냈다.
+ * 다른 칸의 단계 수(세부 0~4 → 3~7, 6~10 → 8~12, 기본값 8 → 10)는 그대로 두고 5 만 7 과 8 단계의 가운데(7.5)로
+ * 옮긴다. 칸 사이 값(저장된 소수 세부)도 반올림 없이 이어진다.
+ */
+const dryBrushLevels = (detail: number): number => detail + 3 - clamp01((detail - 4) / 2);
+
 const dryBrush: StudioFilterGalleryEffectDef = {
   id: "artistic.dry-brush",
   category: "artistic",
@@ -161,12 +189,12 @@ const dryBrush: StudioFilterGalleryEffectDef = {
   cost: 5,
   apply(image, params, context) {
     const size = sliderValue(params, BRUSH_SIZE);
-    const levels = Math.round(3 + sliderValue(params, BRUSH_DETAIL) * 0.9);
+    const levels = dryBrushLevels(sliderValue(params, BRUSH_DETAIL));
     const grain = 6 * sliderValue(params, TEXTURE_AMOUNT);
     const { width, height } = image;
     const source = readPaintSource(image);
     const painted = kuwahara(source, source.weight, width, height, size + 1, 6);
-    posterizeLuma(painted, levels, 0.8);
+    posterizeLumaFractional(painted, levels, 0.8);
     const bristles = orientedStreakNoise(source.luma, width, height, context.seed ^ 0x6c02, 3 + size);
     for (let index = 0; index < width * height; index += 1) {
       const streak = bristles[index] * grain;

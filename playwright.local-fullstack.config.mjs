@@ -18,7 +18,7 @@ const channel = process.env.PLAYWRIGHT_CHANNEL?.trim();
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "local-fullstack-auth.spec.mjs",
+  testMatch: ["local-fullstack-auth.spec.mjs", "local-fullstack-profile.spec.mjs"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

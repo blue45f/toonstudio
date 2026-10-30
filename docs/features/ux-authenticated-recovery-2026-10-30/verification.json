@@ -1,0 +1,184 @@
+{
+  "status": "migration: isolated source integration; execution validation pending; existing checks are historical",
+  "date": "2026-10-30",
+  "scope": "계정·프로필·인증 무응답 복구와 격리 DB 협업 검증",
+  "sourceFix": {
+    "branch": "codex/ux-final-recovery-20261030",
+    "baseHead": "5cce6b15cc417033900e38992498d6a778dee4b4",
+    "mergeHead": "c8e7a012c657fcd67fcada386630fee0e4ba1d72",
+    "originalOwnerHead": "c92c256ac7536c8894540271bff5586f4ec38797",
+    "originalOwnerModified": false,
+    "status": "소스 구현 완료, 테스트 실행 대기",
+    "correction": "초안 저장소 identity generation 구독으로 한 commit 안의 null→동일 ID 재로그인도 새 프로필 폼으로 분리",
+    "regressionsAdded": 5,
+    "regressionsExecuted": 0,
+    "validationAuthority": "중앙 검증 순서에서 정확한 최종 소스로 실행",
+    "historicalOwnerEvidence": {
+      "unitPassed": 478,
+      "harnessFailures": 2,
+      "browserPassed": 22,
+      "browserFailed": 1,
+      "newOwnerTestsUnrun": 13,
+      "acceptedAsCurrentPass": false
+    }
+  },
+  "checks": [
+    {
+      "name": "auth-deadline-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-deadline-baseline.log",
+      "sha256": "8bb6d60a6559e593f717339c75d0bd75f010386e3656e4027402620f8daa8704",
+      "result": {
+        "exit": 1
+      }
+    },
+    {
+      "name": "profile-shape-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/profile-shape-baseline.log",
+      "sha256": "e9014e67526af621b8087582c1214ad6de2f7ae6262f1a5edc50cbf79be9a753",
+      "result": {
+        "exit": 1
+      }
+    },
+    {
+      "name": "auth-account-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-account-final.log",
+      "sha256": "e5d34cff2843d64e22fc02856963e737e9ef594957f209ff9f963240c32b8d19",
+      "result": {
+        "exit": 0,
+        "at": "2026-10-30T18:40:36.548018"
+      }
+    },
+    {
+      "name": "profile-auth-browser",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/profile-auth-browser.log",
+      "sha256": "b09de7b989a953204163db6e382c09cb2a3c4c89a326383ba38712d8a77799c5",
+      "result": {
+        "exit": 0,
+        "at": "2026-10-30T18:29:45.013932"
+      }
+    },
+    {
+      "name": "collaboration-db",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/collaboration-db.log",
+      "sha256": "0b4d3b5fb9cd155246cbdcc68b929ff9b809be1b1f9a18f5061058c286580428",
+      "result": {
+        "exit": 0,
+        "suites": [
+          "apps/api/src/modules/production-collaboration/team-workspace.repository.integration.test.ts",
+          "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
+          "apps/api/src/modules/creator/studio-live-lock.repository.integration.test.ts",
+          "apps/api/src/modules/creator/studio-work-asset.repository.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts"
+        ],
+        "at": "2026-10-30T09:33:30.059Z"
+      }
+    },
+    {
+      "name": "focused-lint",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/focused-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": {
+        "exit": 0
+      }
+    },
+    {
+      "name": "harness",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/harness.log",
+      "sha256": "3775335f73d6b2b42d24cb03a76c6a9747ec1aa46cfd384db63bf1caaba79b28",
+      "result": {
+        "exit": 0
+      }
+    },
+    {
+      "name": "auth-account-release",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-account-release.log",
+      "sha256": "5ed248043633c3515d6beaf0142955d6ed7643808cc12fa521bbf87ef8e12196",
+      "result": {
+        "exit": 0
+      }
+    },
+    {
+      "name": "profile-auth-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/profile-auth-final.log",
+      "sha256": "69de5a48b274ad2d42b268865f61d64f82586303a0e0fab218f41a10e9fd81b8",
+      "result": {
+        "exit": 0,
+        "at": "2026-10-30T18:50:41.668122"
+      }
+    },
+    {
+      "name": "auth-late401-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-late401-baseline.log",
+      "sha256": "68bbc0f932bfde2c613d35966b96a0548176b3038fe19f45ea56c1883b882ce6",
+      "result": {
+        "exit": 1
+      }
+    },
+    {
+      "name": "auth-late401-verified",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-late401-verified.log",
+      "sha256": "598c5f270dce07c70b5c2fde8b8d0f1ba9b2cf2741028986abb49ba4ddb0c096",
+      "result": {
+        "exit": 0
+      }
+    },
+    {
+      "name": "character-expression-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-expression-baseline.log",
+      "sha256": "6cbf217eb1a21e6b3a88861e58d70a39fb99f9e3f538cdc433024ad4ccbf6d06",
+      "result": {
+        "exit": 1
+      }
+    },
+    {
+      "name": "character-unit-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-unit-final.log",
+      "sha256": "7c62f8d7de439c4c61834ce421f1d9c0ea314c4fb262941144a6b1c3779fda5c",
+      "result": {
+        "exit": 0
+      }
+    },
+    {
+      "name": "character-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-final.log",
+      "sha256": "d55e0fe254448012882c44fc11eca04b979bad234a732c54a3f2f8339679dfa1",
+      "result": {
+        "exit": 1,
+        "at": "2026-10-30T19:00:27.044533"
+      }
+    },
+    {
+      "name": "character-landscape-recheck",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-landscape-recheck.log",
+      "sha256": "0ee2821024116fc4a91788914c0f39966601793a6ba442033697df39406d1e75",
+      "result": {
+        "exit": 1,
+        "error": "page.goto: net::ERR_ABORTED"
+      }
+    },
+    {
+      "name": "character-integrated",
+      "sourceCommit": "c92c256ac7536c8894540271bff5586f4ec38797",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-integrated.log",
+      "sha256": "afdd215ad04ae137958c7db96dc966b399cadb2bb4f7ddddd3df87dafd692b9a",
+      "result": {
+        "status": "passed",
+        "expected": 15,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "startTime": "2026-10-30T10:06:36.521Z",
+        "durationMs": 350813.417
+      }
+    }
+  ],
+  "openIssues": [
+    2581
+  ],
+  "productionChanged": false
+}

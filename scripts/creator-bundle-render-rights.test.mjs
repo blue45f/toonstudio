@@ -42,7 +42,7 @@ const test = process.env.VITEST ? vitestTest : nodeTest;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT = resolve(REPO_ROOT, "scripts/sync-creator-bundle-render-rights.mjs");
 const COMMITTED_MANIFEST = resolve(REPO_ROOT, RENDER_PACK_DIR, RENDER_MANIFEST_FILE);
-const COMMITTED_DELIVERED_COUNT = 178;
+const COMMITTED_DELIVERED_COUNT = 186;
 const COMMITTED_DRAFT_IDS = [
   "cbv1-021-slavica-scene-render-001", "cbv1-028-nature-props-render-001",
   "cbv1-042-kitchen-props-render-001", "cbv1-045-food-props-render-001",
@@ -64,6 +64,70 @@ function assertKeysSorted(value, where = "$") {
     for (const key of keys) assertKeysSorted(value[key], `${where}.${key}`);
   }
 }
+
+const codeSha256 = (relative) => createHash("sha256").update(readFileSync(resolve(REPO_ROOT, relative))).digest("hex");
+const RENDER_SOURCE_CODE_HASHES = {
+  normalizerSha256: codeSha256("scripts/normalize_studio_asset_glb.py"),
+  preparationPolicySha256: codeSha256("scripts/lib/creator_bundle_render_preparation.py"),
+  rendererSha256: codeSha256("scripts/lib/render-creator-bundle-assets-blender.py"),
+};
+
+function assertCommittedRenderSource(asset, source, hashes = RENDER_SOURCE_CODE_HASHES) {
+  const preparation = source.sourcePreparation;
+  const renderSha256 = preparation ? preparation.expectedSha256 : source.sourceModelSha256;
+  assert.equal(asset.sourceModelSha256, renderSha256, asset.id);
+  if (!preparation && !Object.hasOwn(source, "cameraDirection") && !Object.hasOwn(source, "rigPolicy")) {
+    assert.equal(asset.sourceOriginalModelSha256, undefined, asset.id);
+    assert.equal(asset.renderInputFingerprint, undefined, asset.id);
+    return;
+  }
+  assert.equal(asset.sourceOriginalModelSha256, source.sourceModelSha256, asset.id);
+  if (preparation) {
+    assert.equal(preparation.kind, "embed-pack-images-v1", asset.id);
+    assert.equal(source.rigPolicy, "skinned-reference-21-v1", asset.id);
+  }
+  assert.deepEqual(asset.renderInputFingerprint, {
+    schema: "toonstudio.creator-bundle-render-input.v2",
+    sourceModelSha256: source.sourceModelSha256, renderModelSha256: renderSha256,
+    sourcePreparation: preparation ? {
+      kind: preparation.kind, originalModelSha256: source.sourceModelSha256, preparedModelSha256: renderSha256,
+      images: [...preparation.images].sort((left, right) => left.uri < right.uri ? -1 : left.uri > right.uri ? 1 : 0),
+      normalizerSha256: hashes.normalizerSha256, preparationPolicySha256: hashes.preparationPolicySha256,
+    } : null,
+    cameraDirection: source.cameraDirection ?? [1.6, -2.4, 1.7], rigPolicy: source.rigPolicy ?? null,
+    rendererSha256: hashes.rendererSha256,
+  }, asset.id);
+}
+
+test("정규화 렌더의 원본·실제 입력·방향·리그·코드 지문을 구분하고 변조를 거부한다", () => {
+  const raw = "a".repeat(64), prepared = "b".repeat(64);
+  const hashes = { normalizerSha256: "c".repeat(64), preparationPolicySha256: "d".repeat(64), rendererSha256: "e".repeat(64) };
+  const images = [{ uri: "../../Textures/atlas.png", source: "10-characters/characters-2/Textures/atlas.png", sha256: "f".repeat(64), bytes: 12 }];
+  const source = { sourceModelSha256: raw, sourcePreparation: { kind: "embed-pack-images-v1", expectedSha256: prepared, images }, cameraDirection: [0, 2, 1], rigPolicy: "skinned-reference-21-v1" };
+  const asset = { id: "prepared-reference", sourceModelSha256: prepared, sourceOriginalModelSha256: raw, renderInputFingerprint: {
+    schema: "toonstudio.creator-bundle-render-input.v2", sourceModelSha256: raw, renderModelSha256: prepared,
+    sourcePreparation: { kind: "embed-pack-images-v1", originalModelSha256: raw, preparedModelSha256: prepared, images, normalizerSha256: hashes.normalizerSha256, preparationPolicySha256: hashes.preparationPolicySha256 },
+    cameraDirection: [0, 2, 1], rigPolicy: source.rigPolicy, rendererSha256: hashes.rendererSha256,
+  } };
+  assertCommittedRenderSource(asset, source, hashes);
+  for (const change of [
+    (value) => { value.sourceModelSha256 = raw; }, (value) => { value.sourceOriginalModelSha256 = prepared; },
+    (value) => { value.renderInputFingerprint.schema = "toonstudio.creator-bundle-render-input.v1"; },
+    (value) => { value.renderInputFingerprint.sourceModelSha256 = prepared; },
+    (value) => { value.renderInputFingerprint.renderModelSha256 = raw; },
+    (value) => { value.renderInputFingerprint.cameraDirection = [1, 2, 0]; },
+    (value) => { value.renderInputFingerprint.rigPolicy = null; },
+    (value) => { value.renderInputFingerprint.rendererSha256 = raw; },
+    (value) => { value.renderInputFingerprint.sourcePreparation.normalizerSha256 = raw; },
+    (value) => { value.renderInputFingerprint.sourcePreparation.preparationPolicySha256 = raw; },
+    (value) => { value.renderInputFingerprint.sourcePreparation.images[0].bytes += 1; },
+  ]) {
+    const changed = structuredClone(asset); change(changed);
+    assert.throws(() => assertCommittedRenderSource(changed, source, hashes));
+  }
+  assertCommittedRenderSource({ id: "legacy", sourceModelSha256: raw }, { sourceModelSha256: raw }, hashes);
+  assert.throws(() => assertCommittedRenderSource({ id: "legacy", sourceModelSha256: prepared }, { sourceModelSha256: raw }, hashes));
+});
 
 /* ── 원장 번호 조회 ─────────────────────────────────────────────────────────────────────── */
 
@@ -382,6 +446,16 @@ test("커밋된 렌더 매니페스트는 커밋된 원장과 어긋나지 않�
   const sourceById = new Map(selection.assets.map((asset) => [asset.id, asset]));
   assert.equal(sourceById.size, COMMITTED_DELIVERED_COUNT);
   assert.deepEqual(planned.slots.filter((slot) => !slot.draft).map((slot) => slot.slotId).sort(), [...sourceById.keys()].sort());
+  assert.equal(new Set(planned.slots.filter((slot) => slot.deliverable).map((slot) => slot.entry.id)).size, 16);
+  const prepared = selection.assets.filter((asset) => asset.sourcePreparation);
+  assert.equal(prepared.length, 8);
+  const preparedModels = new Set(prepared.map((asset) => asset.source));
+  assert.equal(preparedModels.size, 4);
+  for (const model of preparedModels) {
+    const views = prepared.filter((asset) => asset.source === model);
+    assert.equal(views.length, 2, model);
+    assert.equal(new Set(views.map((asset) => JSON.stringify(asset.cameraDirection))).size, 2, model);
+  }
   for (const slot of planned.slots) {
     assert.ok(slot.entry, `${slot.slotId}: 원장 항목으로 특정되지 않음`);
     const asset = slot.stamped;
@@ -397,7 +471,7 @@ test("커밋된 렌더 매니페스트는 커밋된 원장과 어긋나지 않�
     assert.match(asset.sourceModelSha256, /^[a-f0-9]{64}$/u, slot.slotId);
     const source = sourceById.get(slot.slotId);
     assert.ok(source, `${slot.slotId}: 검수된 원본 선택 기록이 없음`);
-    assert.equal(asset.sourceModelSha256, source.sourceModelSha256, slot.slotId);
+    assertCommittedRenderSource(asset, source);
     assert.equal(asset.derivedFromPack, source.catalogId, slot.slotId);
     assert.equal(asset.path, `assets/${slot.slotId}/prop.webp`);
     assert.equal(asset.previewPath, `assets/${slot.slotId}/thumbnail.webp`);

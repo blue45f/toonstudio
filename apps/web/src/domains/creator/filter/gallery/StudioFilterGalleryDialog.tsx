@@ -2,8 +2,10 @@
  * 필터 갤러리 대화상자 — 효과를 분류·검색으로 골라 최대 8겹까지 쌓고, 겹마다 매개변수·불투명도·표시를 조절한다.
  *
  * 단일 필터 대화상자(StudioFilterDialog)와 같은 세션 계약(props)을 받아 세션 대화상자가 종류에 따라 둘 중 하나를
- * 띄운다. 미리보기는 기존 대화상자처럼 onPreview 패치로 캔버스에 직접 그리고(필터 엔진이 같은 커널을 실행),
- * 적용하면 { filterGallery } 패치 하나를 넘긴다. 이 파일은 지연 로드 청크라 등록부(커널 전체)를 바로 가져온다.
+ * 띄운다. 미리보기는 두 곳에 보인다. 캔버스 미리보기는 기존 대화상자처럼 onPreview 패치로 캔버스에 직접 그리고(필터
+ * 엔진이 같은 커널을 실행), 대화상자가 캔버스를 대부분 가리므로 대화상자 안 결과 미리보기 창(StudioFilterGalleryPreview)이
+ * 같은 필드·같은 픽셀 크기로 계산한 결과를 함께 보인다. 적용하면 { filterGallery } 패치 하나를 넘긴다. 이 파일은 지연
+ * 로드 청크라 등록부(커널 전체)를 바로 가져온다.
  */
 import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutGrid, RotateCcw, Search, Shuffle, Trash2, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactElement, type RefObject } from "react";
@@ -12,6 +14,8 @@ import { STUDIO_EASE, STUDIO_FOCUS_RING, studioSegmentChipClass } from "../../st
 import { useStudioModalSheet } from "../../useStudioModalSheet";
 import { studioFilterDraftToPatch } from "../studio-filter-menu";
 
+import { StudioFilterGalleryPreview } from "./StudioFilterGalleryPreview";
+import { planStudioFilterGalleryPreview, studioFilterGalleryPreviewFields } from "./studio-filter-gallery-preview";
 import {
   STUDIO_FILTER_GALLERY_EFFECTS,
   defaultStudioFilterGalleryParams,
@@ -25,6 +29,7 @@ import {
   STUDIO_FILTER_GALLERY_CATEGORIES,
   STUDIO_FILTER_GALLERY_CATEGORY_LABELS,
   STUDIO_FILTER_GALLERY_MAX_ENTRIES,
+  STUDIO_FILTER_GALLERY_WORK_BUDGET,
 } from "./studio-filter-gallery-types";
 
 import type {
@@ -38,16 +43,28 @@ import type {
 import type { ImageFilterFields } from "../../render/studio-konva-filter-fields";
 import type { StudioFilterApplicationScope } from "../StudioFilterDialog";
 import type { StudioFilterDraft, StudioFilterKind } from "../studio-filter-menu";
+import type { FilterMaskLike } from "../studio-filter-mask";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 type FilterPatch = Partial<ImageFilterFields>;
 
+/**
+ * 대상 이미지 요소. 필터 필드에 더해 문서 크기·뒤집기가 있으면 대화상자 안 미리보기를 캔버스와 같은 크기로 계산한다
+ * (세션은 이미지 요소를 그대로 넘긴다).
+ */
+export type StudioFilterGalleryDialogImage = ImageFilterFields & FilterMaskLike & {
+  readonly width?: number;
+  readonly height?: number;
+  readonly flipped?: boolean;
+  readonly flippedY?: boolean;
+};
+
 export interface StudioFilterGalleryDialogProps {
   activeKey: string;
   kind: StudioFilterKind;
-  image: ImageFilterFields;
+  image: StudioFilterGalleryDialogImage;
   imageSrc?: string | null;
   initialDraft?: StudioFilterDraft;
   rootRef: RefObject<HTMLElement | null>;
@@ -83,11 +100,20 @@ function matchesQuery(effect: StudioFilterGalleryEffectDef, query: string): bool
 /** 다음 시드 — 32비트 선형 합동 한 걸음(무늬 바꾸기 버튼). */
 const nextSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
 
+/** 이 크기(픽셀 수) 이상까지 적용되는 조합은 상한을 따로 알리지 않는다(약 4000×4000). */
+const WORK_LIMIT_NOTICE_PIXELS = 16_000_000;
+
+/**
+ * 작업량 등급과, 작업량 상한(픽셀 수 × cost 합) 안에서 이 조합을 적용할 수 있는 가장 큰 이미지 크기. 상한을 넘는 이미지는
+ * 효과를 건너뛰므로(아무 변화 없음) 미리 알린다.
+ */
 function workLabel(cost: number): string {
   if (cost <= 0) return "효과 없음";
-  if (cost < 10) return "가벼움";
-  if (cost < 40) return "보통";
-  return "무거움 — 큰 이미지는 미리보기가 느리고, 작업량 상한을 넘으면 적용되지 않아요";
+  const weight = cost < 10 ? "가벼움" : cost < 40 ? "보통" : "무거움";
+  const limit = STUDIO_FILTER_GALLERY_WORK_BUDGET / cost;
+  if (limit >= WORK_LIMIT_NOTICE_PIXELS) return weight;
+  const side = Math.floor(Math.sqrt(limit)).toLocaleString("ko-KR");
+  return `${weight} · 약 ${(limit / 1_000_000).toFixed(1)}MP(${side}×${side}px)까지 적용돼요. 더 큰 이미지에서는 적용되지 않아요`;
 }
 
 function ParamControl({
@@ -179,6 +205,7 @@ function ParamControl({
 export function StudioFilterGalleryDialog({
   activeKey,
   image,
+  imageSrc,
   initialDraft,
   rootRef,
   targetKind = "image",
@@ -257,6 +284,11 @@ export function StudioFilterGalleryDialog({
   const selectedEntry = selected === null ? undefined : stack.entries[selected];
   const selectedEffect = selectedEntry ? findStudioFilterGalleryEffect(selectedEntry.id) : undefined;
   const cost = studioFilterGalleryStackCost(stack);
+  const previewPlan = useMemo(
+    () => planStudioFilterGalleryPreview({ width: image.width, height: image.height }, stack),
+    [image.width, image.height, stack],
+  );
+  const previewFields = useMemo(() => studioFilterGalleryPreviewFields(image, stack), [image, stack]);
 
   const replaceEntries = (entries: readonly StudioFilterGalleryEntry[]) => setStack((current) => ({ ...current, entries }));
   const addEffect = (effect: StudioFilterGalleryEffectDef) => {
@@ -328,7 +360,7 @@ export function StudioFilterGalleryDialog({
         aria-busy={applying || undefined}
         data-studio-shortcut-boundary="true"
         tabIndex={-1}
-        className="relative flex max-h-[min(90dvh,46rem)] w-[min(60rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel text-fg shadow-2xl"
+        className="relative flex max-h-[min(90dvh,46rem)] w-[min(60rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-2xl border border-line-strong bg-panel text-fg shadow-2xl lg:w-[min(80rem,calc(100vw-2rem))]"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-line px-4 py-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-accent/35 bg-accent-soft text-accent">
@@ -354,7 +386,17 @@ export function StudioFilterGalleryDialog({
 
         <p aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</p>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        {/* 좁으면 미리보기를 위 띠로, 넓으면(lg) 왼쪽 열로 둔다. */}
+        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[9rem_minmax(0,1fr)_minmax(0,1fr)] overflow-hidden md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:grid-rows-[11rem_minmax(0,1fr)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1.05fr)_minmax(0,1fr)] lg:grid-rows-1">
+          <StudioFilterGalleryPreview
+            src={imageSrc}
+            plan={previewPlan}
+            flipped={image.flipped === true}
+            flippedY={image.flippedY === true}
+            fields={previewFields}
+            filterMask={image}
+            className="md:col-span-2 lg:col-span-1"
+          />
           <section aria-label="효과 찾기" className="flex min-h-0 flex-col gap-2 border-b border-line p-3 md:border-b-0 md:border-r">
             <label className="relative block">
               <span className="sr-only">효과 검색</span>
@@ -419,7 +461,7 @@ export function StudioFilterGalleryDialog({
                   onClick={() => setPreviewEnabled((current) => !current)}
                   className={buttonClass({ variant: "ghost", className: "min-h-9 gap-1 px-2 text-[0.7rem]" })}
                 >
-                  {previewEnabled ? <Eye size={13} aria-hidden /> : <EyeOff size={13} aria-hidden />} 미리보기
+                  {previewEnabled ? <Eye size={13} aria-hidden /> : <EyeOff size={13} aria-hidden />} 캔버스 미리보기
                 </button>
               </div>
             </div>

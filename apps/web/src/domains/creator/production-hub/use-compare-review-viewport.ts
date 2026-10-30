@@ -3,6 +3,8 @@ import { useCallback, useRef, useState } from "react";
 import {
   COMPARE_VIEWPORT_IDENTITY,
   panCompareViewport,
+  clampComparePan,
+  clampCompareScale,
   zoomCompareViewport,
   type SharedCompareViewport,
 } from "./compare-review-model";
@@ -20,6 +22,7 @@ export interface CompareReviewViewport {
   readonly setScale: (paneIndex: number, syncView: boolean, nextScale: number) => void;
   readonly panBy: (paneIndex: number, syncView: boolean, delta: { dx: number; dy: number }) => void;
   readonly reset: () => void;
+  readonly restore: (shared: SharedCompareViewport, locals: readonly SharedCompareViewport[]) => void;
   /** 드래그 이동 제스처 핸들러 묶음. pin/스포이드 모드에서는 호출 측이 붙이지 않는다. */
   readonly panHandlers: (paneIndex: number, syncView: boolean) => {
     readonly onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
@@ -78,6 +81,14 @@ export function useCompareReviewViewport(): CompareReviewViewport {
     setShared(COMPARE_VIEWPORT_IDENTITY);
     setLocals({});
   }, []);
+  const restore = useCallback((next: SharedCompareViewport, individual: readonly SharedCompareViewport[]) => {
+    const bounded = (value: SharedCompareViewport): SharedCompareViewport => ({
+      scale: clampCompareScale(value.scale), tx: clampComparePan(value.tx), ty: clampComparePan(value.ty),
+    });
+    dragRef.current = null;
+    setShared(bounded(next));
+    setLocals(Object.fromEntries(individual.slice(0, 4).map((value, index) => [index, bounded(value)])));
+  }, []);
 
   const panHandlers = useCallback(
     (paneIndex: number, syncView: boolean) => ({
@@ -121,5 +132,5 @@ export function useCompareReviewViewport(): CompareReviewViewport {
     [panBy],
   );
 
-  return { shared, locals, localFor, zoomAt, setScale, panBy, reset, panHandlers };
+  return { shared, locals, localFor, zoomAt, setScale, panBy, reset, restore, panHandlers };
 }
