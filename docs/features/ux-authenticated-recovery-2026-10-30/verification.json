@@ -135,8 +135,26 @@
     {
       "name": "character-landscape-recheck",
       "relativeArtifact": "artifacts/ux-finalization-20261030/character-landscape-recheck.log",
-      "sha256": "9f032126e08c2eb02f74ca3f36f615b22075e9f266f56392235cf3e3634b8ac1",
-      "result": "pending"
+      "sha256": "0ee2821024116fc4a91788914c0f39966601793a6ba442033697df39406d1e75",
+      "result": {
+        "exit": 1,
+        "error": "page.goto: net::ERR_ABORTED"
+      }
+    },
+    {
+      "name": "character-integrated",
+      "sourceCommit": "c92c256ac7536c8894540271bff5586f4ec38797",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-integrated.log",
+      "sha256": "afdd215ad04ae137958c7db96dc966b399cadb2bb4f7ddddd3df87dafd692b9a",
+      "result": {
+        "status": "passed",
+        "expected": 15,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "startTime": "2026-10-30T10:06:36.521Z",
+        "durationMs": 350813.417
+      }
     }
   ],
   "openIssues": [
