@@ -20,7 +20,7 @@ import { pickMeshes } from "./skinned-pick";
 
 import type { CharacterRig } from "./character-rig";
 import type { MeshPickHit } from "./skinned-pick";
-import type { PaintLayer, PartRole, PickHit } from "../../contracts";
+import type { CharacterPickOptions, PaintLayer, PartRole, PickHit } from "../../contracts";
 import type { Camera } from "@babylonjs/core/Cameras/camera.js";
 import type { Ray } from "@babylonjs/core/Culling/ray.js";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh.js";
@@ -54,8 +54,9 @@ export function pickCandidates(scene: Scene, camera: Camera, rig: CharacterRig, 
 }
 
 /** NDC [-1,1](y 위쪽 양수) → PickHit. 맞지 않으면 null. */
-export function pickRig(scene: Scene, camera: Camera, rig: CharacterRig, ndcX: number, ndcY: number): PickHit | null {
-  const candidates: Mesh[] = rigVisibleMeshes(rig, { includeOutlines: false });
+export function pickRig(scene: Scene, camera: Camera, rig: CharacterRig, ndcX: number, ndcY: number, options?: CharacterPickOptions): PickHit | null {
+  const visible = rigVisibleMeshes(rig, { includeOutlines: false });
+  const candidates = options?.ignoreOccludingParts && options.targetPart ? visible.filter((mesh) => readRigMeshMetadata(mesh.metadata)?.role === options.targetPart) : visible;
   const hit = pickCandidates(scene, camera, rig, candidates, ndcX, ndcY);
   if (!hit) return null;
   const metadata = readRigMeshMetadata(hit.mesh.metadata);

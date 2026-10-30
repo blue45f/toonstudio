@@ -107,6 +107,7 @@ export interface StudioCrdtCompatibleDrawElement {
   hidden?: boolean;
   locked?: boolean;
   noClip?: boolean;
+  frameClipId?: string;
   lockAspect?: boolean;
   groupId?: string;
   clipBelow?: boolean;
@@ -128,6 +129,7 @@ const EXTENSION_KEYS = [
   "hidden",
   "locked",
   "noClip",
+  "frameClipId",
   "lockAspect",
   "groupId",
   "clipBelow",
@@ -293,6 +295,7 @@ function alignedSlice(
 }
 
 function extensionsOf(element: StudioCrdtCompatibleDrawElement): StudioCrdtJsonObject | undefined {
+  if (element.frameClipId !== undefined && (!element.frameClipId || element.frameClipId.length > 160 || /\p{Cc}/u.test(element.frameClipId))) throw new Error("원고 컷 클립 ID가 올바르지 않습니다.");
   const extensions: StudioCrdtJsonObject = {};
   for (const key of EXTENSION_KEYS) {
     const normalized = jsonValue(element[key]);

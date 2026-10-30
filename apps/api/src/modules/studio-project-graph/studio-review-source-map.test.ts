@@ -46,10 +46,11 @@ describe("server source-map attestation", () => {
   });
 });
 
-function resolutionRows() {
+function resolutionRows(projectId = intent.projectId) {
   const sequence = 11;
-  const subject = { ...pin, schemaVersion: 1, reviewId: `review-${key}`, revisionId: `review-snapshot-${key}` };
-  const payload = { ...operation.payload, previews: [{ ordinal: 0, sha256: hash }, { ordinal: 1, sha256: secondHash }] };
+  const capturedIntent = { ...intent, projectId };
+  const subject = { ...pin, projectId, schemaVersion: 1, reviewId: `review-${key}`, revisionId: `review-snapshot-${key}` };
+  const payload = { ...operation.payload, intent: capturedIntent, previews: [{ ordinal: 0, sha256: hash }, { ordinal: 1, sha256: secondHash }] };
   const revision = (id: string, kind: string) => ({ id, kind, artifactId: pin.artifactId, rootGraphHash: digest,
     operationFirst: sequence, operationLast: sequence, createdBy: "owner", deviceId: intent.deviceId });
   return { pin: subject,
@@ -57,7 +58,8 @@ function resolutionRows() {
       resultRevisionId: subject.revisionId, actorUserId: "owner", deviceId: intent.deviceId, commandType: "review.snapshot-create",
       payloadHash: studioReviewPreviewDigest(payload), operation: { ...operation, type: "review.snapshot-create", payload } },
     receipt: { ...receipt, artifactId: pin.artifactId, resultRevisionId: subject.revisionId,
-      requestHash: studioReviewPreviewDigest({ intent, pages: payload.previews }), response: { ...receipt.response, subject } },
+      requestHash: studioReviewPreviewDigest({ intent: capturedIntent, pages: payload.previews }),
+      response: { ...receipt.response, subject, fingerprint: studioReviewPreviewDigest(capturedIntent) } },
     snapshot: revision(subject.revisionId, "review-snapshot"), submission: revision(`review-submission-${key}`, "submission"),
     checkpoint: revision(`review-checkpoint-${key}`, "checkpoint"),
     base: { id: intent.expectedHeadRevisionId, artifactId: pin.artifactId, rootGraphHash: intent.expectedHeadRootGraphHash },
@@ -67,6 +69,12 @@ function resolutionRows() {
 }
 
 describe("server capture resolution lineage", () => {
+  it("실제 Graph 캡처의 slash·at 프로젝트도 영수증과 전체 chain을 함께 검증한다", () => {
+    const rows = resolutionRows("graph/project@one");
+    expect(studioReviewResolutionCaptureFromRows(rows)).toEqual({ subject: rows.pin, submissionId: rows.submission.id,
+      sourceServerRevision: 7, sequence: 11 });
+    expect(studioReviewResolutionCaptureFromRows({ ...rows, pin: { ...rows.pin, projectId: "graph/other@one" } })).toBeNull();
+  });
   it("attests a captured document, completed receipt and exact three-revision graph without using createdAt", () => {
     const rows = resolutionRows();
     expect(studioReviewResolutionCaptureFromRows(rows)).toEqual({ subject: rows.pin, submissionId: rows.submission.id,
@@ -99,12 +107,12 @@ describe("server capture resolution lineage", () => {
 
 function repositoryFixture() {
   const inserted = vi.fn();
-  db.query.mockImplementation(async (sql: string) => {
+  db.query.mockImplementation(async (sql: string, values?: readonly unknown[]) => {
     if (sql.includes("FROM studio_review WHERE")) return { rows: [{ artifactId: "artifact", revisionId: "snapshot", status: "open" }] };
     if (sql.includes('AS "ownerUserId"')) return { rows: [{ projectId: "project", workId: "work", ownerUserId: "owner", artifactId: "artifact",
       membershipRole: null, membershipStatus: null, projectScope: { projectId: "project" } }] };
     if (sql.includes("capture.operation")) return { rows: [{ rootGraphHash: digest, operation, hash, captureReceipt: receipt }] };
-    if (sql.includes("INSERT INTO studio_review_comment")) { inserted(); return { rows: [{ createdAt: new Date("2026-09-20T00:00:00Z") }] }; }
+    if (sql.includes("INSERT INTO studio_review_comment")) { inserted(values); return { rows: [{ createdAt: new Date("2026-09-20T00:00:00Z") }] }; }
     return { rows: [] };
   });
   const spatial = createStudioReviewSpatialAnchor(studioReviewMappingFromOperation(operation, pin, 0, hash, receipt), { kind: "panel", frameId: "frame-one" })!;
@@ -134,4 +142,26 @@ describe("review comment source authority", () => {
       })).rejects.toMatchObject({ causeCode: "review_anchor_scope_mismatch" });
       expect(inserted).not.toHaveBeenCalled();
     });
+  it("실제 캡처 mapping 안의 펜 획을 저장하고 생성 응답에도 보존한다", async () => {
+    const { repository, inserted, input } = repositoryFixture();
+    const spatial = createStudioReviewSpatialAnchor(studioReviewMappingFromOperation(operation, pin, 0, hash, receipt),
+      { kind: "region", x: 10, y: 10, width: 100, height: 100 })!;
+    const strokes = [{ id: "stroke-one", points: [{ x: 20, y: 20 }, { x: 50, y: 50 }], color: "#e5484d", width: 3 }];
+    const result = await repository.createReviewComment("owner", "review", { ...input, strokes, anchor: { ...input.anchor, ...spatial } });
+    expect(result.strokes).toEqual(strokes);
+    expect(JSON.parse(inserted.mock.calls[0]![0][7])).toEqual(strokes);
+  });
+  it.each([
+    { points: [{ x: 20, y: 20 }, { x: 400, y: 50 }], width: 3 },
+    { points: [{ x: 20, y: 20 }, { x: 900, y: 50 }], width: 3 },
+    { points: [{ x: 20, y: 20 }, { x: 50, y: 50 }], width: 1201 },
+  ])("페이지·영역 밖의 점이나 폭은 실제 source mapping으로 거절한다", async (change) => {
+    const { repository, inserted, input } = repositoryFixture();
+    const spatial = createStudioReviewSpatialAnchor(studioReviewMappingFromOperation(operation, pin, 0, hash, receipt),
+      { kind: "region", x: 10, y: 10, width: 100, height: 100 })!;
+    await expect(repository.createReviewComment("owner", "review", { ...input,
+      anchor: { ...input.anchor, ...spatial }, strokes: [{ id: "stroke-one", color: "#e5484d", ...change }],
+    })).rejects.toMatchObject({ causeCode: "review_pen_strokes_mismatch" });
+    expect(inserted).not.toHaveBeenCalled();
+  });
 });

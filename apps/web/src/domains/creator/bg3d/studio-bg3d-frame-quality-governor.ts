@@ -19,10 +19,14 @@ export interface StudioBg3dFrameQualityState {
   readonly reason: StudioBg3dFrameQualityReason;
 }
 
+export type StudioBg3dFrameResolutionPolicy = "preserve" | "adaptive";
+
 export interface StudioBg3dFrameQualitySample {
   readonly deltaSeconds: number;
   readonly targetFps: number;
   readonly paused?: boolean;
+  /** 생략하면 해상도를 보존하며 프레임 계측만 갱신한다. 자동 조정은 명시적으로 요청해야 한다. */
+  readonly resolutionPolicy?: StudioBg3dFrameResolutionPolicy;
 }
 
 /** Samples the smoothed average needs before it describes the scene rather than the first frame. */
@@ -49,16 +53,20 @@ export function createStudioBg3dFrameQualityState(
   });
 }
 
-/** Degrades after sustained pressure and recovers slowly so DPR cannot oscillate while orbiting. */
+/** 기본 해상도를 보존한다. 명시적 adaptive 정책에서만 기존 부하·회복·cooldown을 적용한다. */
 export function advanceStudioBg3dFrameQuality(
   previous: StudioBg3dFrameQualityState,
   sample: StudioBg3dFrameQualitySample,
 ): StudioBg3dFrameQualityState {
+  const preserveResolution = sample.resolutionPolicy !== "adaptive";
   if (sample.paused) {
     return Object.freeze({
       ...previous,
+      dprStepIndex: preserveResolution ? 0 : previous.dprStepIndex,
+      dprScale: preserveResolution ? 1 : previous.dprScale,
       overloadSamples: 0,
       headroomSamples: 0,
+      cooldownSamples: preserveResolution ? 0 : previous.cooldownSamples,
       reason: "paused",
     });
   }
@@ -67,8 +75,11 @@ export function advanceStudioBg3dFrameQuality(
   if (!Number.isFinite(frameMs) || frameMs < 1 || frameMs > 250) {
     return Object.freeze({
       ...previous,
+      dprStepIndex: preserveResolution ? 0 : previous.dprStepIndex,
+      dprScale: preserveResolution ? 1 : previous.dprScale,
       overloadSamples: 0,
       headroomSamples: 0,
+      cooldownSamples: preserveResolution ? 0 : previous.cooldownSamples,
       reason: "outlier-ignored",
     });
   }
@@ -79,6 +90,19 @@ export function advanceStudioBg3dFrameQuality(
   const acceptedSamples = previous.acceptedSamples + 1;
   const smoothedFrameMs = previous.smoothedFrameMs
     + (frameMs - previous.smoothedFrameMs) * SMOOTHING_ALPHA;
+  if (preserveResolution) {
+    return Object.freeze({
+      dprStepIndex: 0,
+      dprScale: 1,
+      smoothedFrameMs,
+      acceptedSamples,
+      overloadSamples: 0,
+      headroomSamples: 0,
+      cooldownSamples: 0,
+      reason: acceptedSamples < WARMUP_SAMPLES ? "warming-up"
+        : previous.dprStepIndex > 0 || previous.dprScale !== 1 ? "recovered" : "stable",
+    });
+  }
   const cooldownSamples = Math.max(0, previous.cooldownSamples - 1);
   let overloadSamples = smoothedFrameMs > targetFrameMs * 1.15
     ? previous.overloadSamples + 1

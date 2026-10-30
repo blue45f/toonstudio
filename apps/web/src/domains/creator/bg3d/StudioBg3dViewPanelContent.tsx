@@ -40,11 +40,11 @@ import type { StudioBg3dSectionPlaneState } from "./studio-bg3d-section-plane";
 import type { StudioBg3dShotBatchRecoveryScope } from "./studio-bg3d-shot-batch-plan";
 import type { StudioBg3dProfessionalRuntimeReadiness } from "./studio-bg3d-professional-runtime-readiness";
 import type { StudioBg3dSunRigConfig } from "./studio-bg3d-sun-rig";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 import type { ViewEditorSection } from "./StudioBackground3DTypes";
 import { formatNumber } from "@toonstudio/core/format";
 
 export type StudioBg3dBabylonDiagnosticBackend = "webgl2" | "webgpu";
-
 export type StudioBg3dBabylonDiagnosticState =
   | {
       readonly status: "idle";
@@ -64,7 +64,6 @@ export type StudioBg3dBabylonDiagnosticState =
       readonly backend: StudioBg3dBabylonDiagnosticBackend;
       readonly message: string;
     };
-
 interface StudioBg3dViewPanelContext {
   readonly VIEW_EDITOR_SECTIONS: readonly [{ readonly id: "camera"; readonly label: "카메라 · 환경"; }, { readonly id: "physics"; readonly label: "물리 배치"; }];
   readonly viewEditorSection: ViewEditorSection;
@@ -183,8 +182,7 @@ interface StudioBg3dViewPanelContext {
   readonly setScaleGuideVisible: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   readonly Ruler: typeof import("lucide-react").Ruler;
 }
-
-export interface StudioBg3dViewPanelProps {
+export interface StudioBg3dViewPanelProps extends StudioBg3dWorkbenchHostPorts {
   readonly engineDiagnostics?: import("../scene3d/studio-scene3d-gpu-diagnostics").StudioScene3dGpuDiagnostics;
   readonly inplaceTools?: Scene3dInplaceToolsBridge;
   readonly hidden: boolean;

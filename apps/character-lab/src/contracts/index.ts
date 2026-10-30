@@ -18,6 +18,7 @@ export * from "./customization";
 export * from "./engine";
 export * from "./errors";
 export * from "./events";
+export * from "./eye-gaze";
 export * from "./expression";
 export * from "./mesh-data";
 export * from "./morph-names";

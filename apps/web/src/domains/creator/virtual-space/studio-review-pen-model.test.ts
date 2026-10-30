@@ -33,6 +33,34 @@ describe("studio-review-pen-model", () => {
     expect(stroke?.color).toBe(STUDIO_REVIEW_PEN_DEFAULT_COLOR);
   });
 
+  it.each([
+    { size: { width: 800, height: 16000 }, expectedWidth: 3.2 },
+    { size: { width: 16000, height: 800 }, expectedWidth: 3.2 },
+    { size: page, expectedWidth: 4 },
+  ])("새 획 기본 굵기는 긴 원고에서도 짧은 변을 기준으로 한다: %j", ({ size, expectedWidth }) => {
+    const points = [{ x: 10, y: 10 }, { x: 20, y: 20 }];
+    const stroke = normalizeStudioReviewPenStroke({ id: "new-stroke", points }, size);
+    expect(stroke?.width).toBe(expectedWidth);
+    expect(stroke?.points).toEqual(points);
+  });
+
+  it.each([64, 0.125])("명시한 굵기 %s는 긴 원고의 새 기본값으로 다시 계산하지 않는다", (width) => {
+    const stroke = normalizeStudioReviewPenStroke(
+      { id: "explicit-width", points: [{ x: 10, y: 10 }, { x: 20, y: 20 }], width },
+      { width: 800, height: 16000 },
+    );
+    expect(stroke?.width).toBe(width);
+  });
+
+  it("기존 75점 획의 굵기·좌표·색·ID는 정규화와 저장 왕복에서 정확히 보존한다", () => {
+    const stored = { id: "stored-long-page", width: 64, color: "#2563eb",
+      points: Array.from({ length: 75 }, (_, index) => ({ x: 100 + index * 3, y: 200 + index * 20 })) };
+    expect(normalizeStudioReviewPenStroke(stored, { width: 800, height: 16000 })).toEqual(stored);
+    const serialized = JSON.stringify(serializeStudioReviewPenStrokes([stored]));
+    expect(parseStudioReviewPenStrokes(JSON.parse(serialized))).toEqual([stored]);
+    expect(stored.points).toHaveLength(75);
+  });
+
   it("바운딩 박스를 구하고 최소 크기를 보장한다", () => {
     const stroke = normalizeStudioReviewPenStroke(
       { id: "s1", points: [{ x: 100, y: 200 }, { x: 300, y: 500 }] },

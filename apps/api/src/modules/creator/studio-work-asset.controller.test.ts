@@ -212,7 +212,7 @@ describe("StudioWorkAssetController", () => {
       "editor"
     )).resolves.toBe(manifest);
     expect(service.upload).toHaveBeenCalledWith(
-      "editor", "work-1", "asset-1", "image", "{}", file
+      "editor", "work-1", "asset-1", "image", "{}", file, undefined
     );
   });
 
@@ -247,7 +247,7 @@ describe("StudioWorkAssetController", () => {
       "derived",
       "preview-1",
       "image",
-      file,
+      file, undefined,
     );
 
     await expect(controller().sourceStorageReference(
@@ -324,7 +324,7 @@ describe("StudioWorkAssetController", () => {
       "editor",
       "work-1",
       "{\"version\":1}",
-      files
+      files, undefined
     );
   });
 

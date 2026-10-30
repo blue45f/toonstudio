@@ -5,6 +5,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { BgCustomModelInstance, BgPrimitive, StudioBg3dLayerListItem, StudioToolHintSpec } from "./studio-bg3d-editor-runtime-bindings";
+import { shouldRenderStudioBg3dPrimitiveEditLineArtIndividually } from "./studio-bg3d-primitive-edit-material-runtime";
 import { resolveStudioBg3dFocusSelection } from "./studio-bg3d-camera-selection";
 import { isStudioBg3dTagHidden, projectStudioBg3dTagVisibility, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
 
@@ -394,7 +395,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
         break;
       }
       const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
-      const cacheEntry = model ? modelRootCacheRef.current.get(model.modelId) : undefined;
+      const cacheEntry = model ? R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend) : undefined;
       if (
         model && (
           model.animation !== undefined || model.pose !== undefined || model.morph !== undefined ||
@@ -411,7 +412,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
   if (!physicsSelectionUnavailableReason) {
     const unsupportedVisibleModel = customModels.find((model: BgCustomModelInstance) => {
       if (!effectivelyVisibleLayerIds.has(model.id)) return false;
-      const cacheEntry = modelRootCacheRef.current.get(model.modelId);
+      const cacheEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend);
       return model.animation !== undefined || model.pose !== undefined || model.morph !== undefined ||
         model.constraints !== undefined || (cacheEntry?.metrics.skins ?? 0) > 0 ||
         (cacheEntry?.metrics.morphTargets ?? 0) > 0;
@@ -530,9 +531,10 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
     });
   const batchCandidatesByModelId = new Map<string, BgCustomModelInstance[]>();
   for (const model of renderCustomModels) {
-    const cacheEntry = modelRootCacheRef.current.get(model.modelId);
+    const cacheEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend);
     if (
       !cacheEntry || unbatchableModelIds.has(model.modelId) || !isBgObjectVisible(model) ||
+      shouldRenderStudioBg3dPrimitiveEditLineArtIndividually(cacheEntry.root, lineArtPreview) ||
       selectedIds.has(model.id) || (sceneHierarchy.parentById.get(model.id) ?? null) !== null ||
       (sceneHierarchy.childrenByParent.get(model.id)?.length ?? 0) > 0 ||
       model.materialOverride !== undefined || model.modelTexturePaint !== undefined || model.animation !== undefined || model.pose !== undefined ||
@@ -552,7 +554,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
   }[] = [];
   const batchedNodeIds = new Set<string>();
   for (const [modelId, candidates] of batchCandidatesByModelId) {
-    const sourceRoot = modelRootCacheRef.current.get(modelId)?.root;
+    const sourceRoot = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.root;
     if (!sourceRoot) continue;
     for (let offset = 0; offset < candidates.length; offset += 1_024) {
       const instances = candidates.slice(offset, offset + 1_024);
@@ -587,7 +589,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
       scale: model.scale,
       visible: model.visible,
       localBounds: readStudioBg3dShadowModelLocalBounds(
-        modelRootCacheRef.current.get(model.modelId)?.root,
+        R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root,
       ),
     })),
     ...sharedCharacters.map(createStudioShared3dCharacterShadowEntity),

@@ -62,7 +62,7 @@ export function subscribeStudio3dAssetQuality(listener: () => void): () => void 
 export function enableStudio3dHighAssetQuality(): void {
   initializeStudio3dAssetQualitySession();
   writeRiskMarker(true);
-  publish("high", "현재 실행에서만 고품질 모델 허용 한도를 적용합니다. 새로고침하거나 3D 편집기를 닫으면 자동 모드로 돌아갑니다.");
+  publish("high", "현재 페이지에서 고품질 모델 허용 한도를 적용합니다. 3D 편집기를 닫아도 선택은 유지하며, 새로고침하면 자동 모드로 시작합니다.");
 }
 
 export function resetStudio3dAssetQualityMode(reason?: string): void {

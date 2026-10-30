@@ -25,7 +25,10 @@ function pixelCanvas(
     }
     return { width: w, height: h, data };
   });
-  const canvas = { width, height, getContext: () => ({ getImageData }) } as unknown as HTMLCanvasElement;
+  // 희소 사각 픽셀 fixture도 실제 캡처 표면의 경로·합성 인터페이스를 제공한다.
+  const context = { getImageData, save: vi.fn(), restore: vi.fn(), setTransform: vi.fn(), beginPath: vi.fn(),
+    rect: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), closePath: vi.fn(), fill: vi.fn() };
+  const canvas = { width, height, getContext: () => context } as unknown as HTMLCanvasElement;
   return { canvas, getImageData };
 }
 
@@ -166,7 +169,7 @@ describe("PSD custom draw node capture", () => {
     });
   });
 
-  it("keeps panel clipping, noClip and clipping-layer metadata for document-sized captures", async () => {
+  it.each(["automatic", "explicit"] as const)("keeps %s panel clipping, noClip and clipping-layer metadata for document-sized captures", async (mode) => {
     const { element: clipped, capture: captureClipped } = addDraw("clipped");
     const { element: unclipped, capture: captureUnclipped } = addDraw("unclipped");
     captureClipped.mockReturnValue(pixelCanvas(64, 96, 100, 102, [
@@ -177,7 +180,8 @@ describe("PSD custom draw node capture", () => {
     ]).canvas);
     addDraw("panel", 90, true);
     const panel: PsdExportEl = { id: "panel", type: "frame", x: 3, y: 5, width: 14, height: 17 };
-    const result = await exportPagePsd(stage, [panel, clipped, {
+    const clippedElement = mode === "explicit" ? { ...clipped, points: [0, 0, 1000, 1000], frameClipId: panel.id } : clipped;
+    const result = await exportPagePsd(stage, [panel, clippedElement, {
       ...unclipped, noClip: true, clipBelow: true, blendMode: "multiply", opacity: 0.4,
     }], 32, 48, 1, { scale: 2, includeBackground: false });
     const psd = readPsd(await result.blob.arrayBuffer(), {
@@ -191,6 +195,12 @@ describe("PSD custom draw node capture", () => {
     expect(psd.children?.[0]?.imageData?.data.slice(0, 4)).toEqual(new Uint8ClampedArray([110, 50, 80, 1]));
     expect(psd.children?.[1]?.imageData?.data.slice(0, 4)).toEqual(new Uint8ClampedArray([100, 50, 80, 1]));
     expect(psd.children?.[1]?.imageData?.data.slice(-4)).toEqual(new Uint8ClampedArray([100, 50, 80, 102]));
+  });
+
+  it("누락된 명시 컷을 무클립 원본으로 내보내지 않는다", async () => {
+    const { element } = addDraw("missing-panel");
+    await expect(exportPagePsd(stage, [{ ...element, frameClipId: "missing" }], 32, 48, 1,
+      { includeBackground: false })).rejects.toMatchObject({ code: "buildFailed" });
   });
 
   it("preserves opacity already baked by a custom draw sceneFunc without multiplying it again", async () => {

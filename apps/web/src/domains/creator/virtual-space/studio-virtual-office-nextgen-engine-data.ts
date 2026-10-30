@@ -501,7 +501,7 @@ export const ILLUSTRATED_V13_STUDIO_PROPS: readonly IllustratedV13PropSpec[] = [
   },
   {
     id: "blender-hologram-stage-table",
-    labelKo: "3D 블렌더 홀로그램 스테이지 테이블",
+    labelKo: "3D 홀로그램 스테이지 테이블",
     zoneRoleKo: "배경 투시도 · 성채 에셋 · 카메라 앵글 360° 프리뷰 존",
     interactiveHintKo: "[X]키로 3점 투시 카메라 프리셋 즉시 동기화",
     spriteUrl:
@@ -543,7 +543,7 @@ export const ILLUSTRATED_V11_CREATOR_PERSONAS: readonly IllustratedCreatorPerson
       id: "cgi-director",
       nameKo: "강태오 (3D & Unreal Director)",
       roleTitleKo: "3D 배경 · 언리얼 카메라 디렉터",
-      specialtyKo: "스케치업/블렌더 에셋 빌드 · 3점 투시 카메라 매칭 · 라이팅 베이크",
+      specialtyKo: "공간 모델러/블렌더 에셋 빌드 · 3점 투시 카메라 매칭 · 라이팅 베이크",
       signatureGearKo:
         "사이버 바이저 스마트 글래스 · 테크 재킷 · 3D 기즈모 컨트롤 패드",
       idleSpriteUrl: "/assets/virtual-studio/studio-art-v11/cast/cgi-director-idle.webp",

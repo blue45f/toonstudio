@@ -283,7 +283,7 @@ describe("ToonStudio everyday prop pack v4", () => {
       geometrySource: { kind: "gltf", url: "/assets/3d/modern_smartphone_prop.glb" },
     });
     expect(propDefById("blender_modern_smartphone")).toMatchObject({
-      label: "블렌더 모던 스마트폰",
+      label: "모던 스마트폰",
       defaultColor: null,
       geometrySource: { kind: "gltf", url: "/assets/3d/modern_smartphone_prop.glb" },
     });

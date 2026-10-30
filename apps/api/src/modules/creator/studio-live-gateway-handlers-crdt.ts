@@ -409,7 +409,7 @@ export async function applyCrdtUpdateBinary(
   ) {
     return reply(ack, failure("not_joined", "실시간 작업실에 다시 참여해 주세요."));
   }
-  if (!authorizedBefore.value.capabilities.edit) {
+  if (!authorizedBefore.value.capabilities.edit && !parsed.data.writeContext) {
     return reply(ack, failure("forbidden", "이 작품을 편집할 권한이 없습니다."));
   }
 
@@ -420,6 +420,7 @@ export async function applyCrdtUpdateBinary(
       updateId: parsed.data.updateId,
       actorUserId: authorizedBefore.value.userId,
       data: parsed.data.update,
+      writeContext: parsed.data.writeContext,
     });
   } catch (error) {
     const mappedFailure = mapStudioLiveCrdtFailure(error, parsed.data.workId, "update");
@@ -584,7 +585,7 @@ export async function applyCrdtUpdate(
   if (!authorizedBefore || authorizedBefore.value !== quotaParticipant) {
     return reply(ack, failure("not_joined", "실시간 작업실에 다시 참여해 주세요."));
   }
-  if (!authorizedBefore.value.capabilities.edit) {
+  if (!authorizedBefore.value.capabilities.edit && !parsed.data.writeContext) {
     return reply(ack, failure("forbidden", "이 작품을 편집할 권한이 없습니다."));
   }
 
@@ -595,6 +596,7 @@ export async function applyCrdtUpdate(
       updateId: parsed.data.updateId,
       actorUserId: authorizedBefore.value.userId,
       data: parsed.data.update,
+      writeContext: parsed.data.writeContext,
     });
   } catch (error) {
     const mappedFailure = mapStudioLiveCrdtFailure(error, parsed.data.workId, "update");
@@ -613,10 +615,7 @@ export async function applyCrdtUpdate(
     duplicate: applied.duplicate,
   };
   const response: StudioLiveAck<StudioLiveCrdtUpdateAck> = { ok: true, data };
-  // The forced ACL check immediately before applyUpdate is the authorization linearization
-  // point. Once persistence starts, its durable outcome must always be ACKed and fanned out: a
-  // second ACL check here could turn a committed operation into an apparent failure, causing
-  // retries while peers never observe the already-persisted update.
+  // 실제 승인 경계는 append transaction의 현재 작품·배정 검사다. 커밋된 결과는 ACK 후 전파한다.
   // The sender learns that durable persistence succeeded before any peer can observe the op.
   reply(ack, response);
   if (!applied.duplicate) {

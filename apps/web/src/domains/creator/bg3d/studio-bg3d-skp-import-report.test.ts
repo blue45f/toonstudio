@@ -21,6 +21,7 @@ import {
 } from "./studio-bg3d-skp-report-constants";
 import { studioBg3dSkpUnitScaleFactor } from "./studio-bg3d-skp-unit";
 import { createBoxPrimitive } from "./studio-bg3d-skp.test-fixture";
+import { buildStudioBg3dSkpAssetMetadata, compactStudioBg3dSkpReportForStorage } from "./studio-bg3d-skp-asset-metadata";
 
 function reportInput(size: number, overrides: Partial<StudioBg3dSkpReportInput> = {}): StudioBg3dSkpReportInput {
   const stats = analyzeStudioBg3dSkpMesh([createBoxPrimitive({ size })], { orientationTriangleBudget: 1_000 });
@@ -56,8 +57,24 @@ describe("buildStudioBg3dSkpImportReport", () => {
     const report = buildReport(3);
     expect(report.version).toBe(STUDIO_BG3D_SKP_IMPORT_REPORT_VERSION);
     expect(report.kind).toBe(STUDIO_BG3D_SKP_IMPORT_REPORT_KIND);
+    expect(report.metricPolicy).toBe("authored-metres");
     expect(parseStudioBg3dSkpImportReport(report)).toEqual(report);
     expect(parseStudioBg3dSkpImportReport(JSON.parse(JSON.stringify(report)))).toEqual(report);
+  });
+
+  it("원본 미터 정책을 자산 등록까지 보존하고 정책이 없던 v1 보고서는 변경하지 않는다", () => {
+    const report = buildReport(20);
+    expect(compactStudioBg3dSkpReportForStorage(report).metricPolicy).toBe("authored-metres");
+    const stored = buildStudioBg3dSkpAssetMetadata({
+      sourcePath: "room.skp", name: "방", contentHash: `sha256:${"a".repeat(64)}`,
+      byteSize: 4096, triangles: 12, textures: 0, rights: { status: "owned", commercialUse: true },
+    }, report, 1000);
+    expect(stored?.skpImport?.metricPolicy).toBe("authored-metres");
+    const legacy = { ...report };
+    delete legacy.metricPolicy;
+    const parsed = parseStudioBg3dSkpImportReport(legacy);
+    expect(parsed).toEqual(legacy);
+    expect(parsed).not.toHaveProperty("metricPolicy");
   });
 
   it("records the OpenSKP coordinate facts and the baseline inch unit", () => {

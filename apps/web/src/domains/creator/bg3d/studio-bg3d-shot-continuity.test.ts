@@ -25,6 +25,15 @@ function shot(
 }
 
 describe("studio-bg3d-shot-continuity", () => {
+  it("부분 샷의 높이를 상속하고 서로 다른 평행 화면 범위를 중복 구도로 오인하지 않는다", () => {
+    const base = { ...BASE_CAMERA, projection: "orthographic" as const, orthographicHeight: 8, zoom: 2 };
+    expect(resolveStudioBg3dShotContinuityCamera(base, shot("inherit", { zoom: 4 })).orthographicHeight).toBe(8);
+    expect(resolveStudioBg3dShotContinuityCamera(base, shot("override", { orthographicHeight: 12 })).orthographicHeight).toBe(12);
+    const different = analyzeStudioBg3dShotContinuity(base, [shot("a", {}), shot("b", { orthographicHeight: 16 })]);
+    expect(different.transitions[0]?.issues.map((entry) => entry.code)).not.toContain("duplicate-framing");
+    const equivalent = analyzeStudioBg3dShotContinuity(base, [shot("a", {}), shot("b", { orthographicHeight: 16, zoom: 4 })]);
+    expect(equivalent.transitions[0]?.issues.map((entry) => entry.code)).toContain("duplicate-framing");
+  });
   it("resolves partial shot camera overrides without mutating the base camera", () => {
     const resolved = resolveStudioBg3dShotContinuityCamera(BASE_CAMERA, shot("close", {
       fovDegrees: 24,

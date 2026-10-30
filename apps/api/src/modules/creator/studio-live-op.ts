@@ -23,6 +23,7 @@
  * 스냅샷·catch-up을 만들고, 증분 상태와 전체 접기의 일치를 스스로 검증한다.
  */
 
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 /** op 채널 이벤트 이름. HOST_INSERTION_SPEC 2절의 계약 그대로다. */
 export const STUDIO_LIVE_OP_SUBMIT_EVENT = "studio:op:submit" as const;
 export const STUDIO_LIVE_OP_BROADCAST_EVENT = "studio:op:broadcast" as const;
@@ -416,6 +417,9 @@ export interface StudioLiveOpAppendResult {
   inserted: boolean;
   op: SequencedStudioLiveOp;
 }
+export class StudioLiveOpIdConflictError extends Error {
+  constructor() { super("같은 스트로크 연산 ID에 다른 내용을 저장할 수 없습니다."); }
+}
 
 export interface StudioLiveOpLogStore {
   /**
@@ -425,7 +429,7 @@ export interface StudioLiveOpLogStore {
   appendOp(
     workId: string,
     op: StudioLiveOp,
-    actorUserId: string
+    actorUserId: string, writeContext?: StudioScopedWriteContext
   ): Promise<StudioLiveOpAppendResult>;
   /** afterSeq보다 큰 seq의 op 전부 (seq 오름차순). */
   listOpsAfter(workId: string, afterSeq: number): Promise<SequencedStudioLiveOp[]>;
@@ -535,8 +539,8 @@ export class StudioLiveOpRoom {
    * 제출 처리 전체를 방 단위 체인으로 직렬화한다. 게이트웨이의 발신자별
    * 체인과 함께, seq 부여·FIFO 판정·영속이 한 임계 구역에서 일어난다.
    */
-  submit(op: StudioLiveOp, actorUserId: string): Promise<StudioLiveOpSubmitOutcome> {
-    const run = this.tail.then(() => this.submitSerialized(op, actorUserId));
+  submit(op: StudioLiveOp, actorUserId: string, writeContext?: StudioScopedWriteContext): Promise<StudioLiveOpSubmitOutcome> {
+    const run = this.tail.then(() => this.submitSerialized(op, actorUserId, writeContext));
     this.tail = run.then(
       () => undefined,
       () => undefined
@@ -546,16 +550,18 @@ export class StudioLiveOpRoom {
 
   private async submitSerialized(
     op: StudioLiveOp,
-    actorUserId: string
+    actorUserId: string, writeContext?: StudioScopedWriteContext
   ): Promise<StudioLiveOpSubmitOutcome> {
     const existingSeq = this.seqByOpId.get(op.opId);
     if (existingSeq !== undefined) {
+      if (writeContext) return { status: "duplicate", result: await this.store.appendOp(this.workId, op, actorUserId, writeContext) };
       const existing =
         existingSeq <= (this.baseSnapshot?.seq ?? 0)
           ? null
           : this.log[existingSeq - (this.baseSnapshot?.seq ?? 0) - 1];
       if (existing) {
-        return { status: "duplicate", result: { inserted: false, op: existing } };
+        if (canonicalStringify({ ...existing, seq: undefined }) !== canonicalStringify(op)) throw new StudioLiveOpIdConflictError();
+        return { status: "duplicate", result: await this.store.appendOp(this.workId, op, actorUserId) };
       }
       // 스냅샷으로 접힌 op의 재제출: 본문은 로그에 없으므로 저장소가 정본이다.
       const stored = await this.store.listOpsAfter(this.workId, existingSeq - 1);
@@ -593,7 +599,8 @@ export class StudioLiveOpRoom {
     }
     if (this.lastSeq >= STUDIO_OP_ROOM_LOG_MAX_OPS) return { status: "log_limit" };
 
-    const appended = await this.store.appendOp(this.workId, op, actorUserId);
+    const appended = writeContext ? await this.store.appendOp(this.workId, op, actorUserId, writeContext)
+      : await this.store.appendOp(this.workId, op, actorUserId);
     if (!appended.inserted) {
       // 다른 API 노드가 먼저 영속한 경우: 그 seq를 정본으로 받아 따라잡는다.
       await this.catchUpFromStore();

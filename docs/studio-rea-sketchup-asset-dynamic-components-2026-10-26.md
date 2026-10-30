@@ -1,5 +1,7 @@
 # 기성 웹툰 3D 스케치업(.skp) 소재 시장 및 동적 구성 요소(Dynamic Components) REA 역공학 분석 및 내재화 보고서 (2026-10-26)
 
+> 2026-10-28 재검증: 아래 SketchUp 분석은 호환 파서·계산 커널·예제 패널과 실제 사용자 장면 통합을 구분해 읽어야 한다. 현재 연결 범위와 미확정 영역은 [재검증 보고서](reports/sketchup-rea-integration-2026-10-28.md)를 따른다.
+
 - **작성일**: 2026-10-26
 - **문서 상태**: `current`
 - **증거 원장**: [`docs/evidence/rea-sketchup-asset-marketplace-20261026.json`](evidence/rea-sketchup-asset-marketplace-20261026.json)

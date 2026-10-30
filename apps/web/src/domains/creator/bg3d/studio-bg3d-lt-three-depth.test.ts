@@ -1,6 +1,8 @@
+import { MToonMaterial } from "@pixiv/three-vrm";
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { StudioMToonMaterial } from "../mesh-materials/studio-mtoon-webgl-runtime";
 import { registerStudioBg3dDepthExcludedObject } from "./studio-bg3d-capture-exclusion";
 import { captureStudioBg3dThreeDepth } from "./studio-bg3d-lt-three-depth";
 import { captureStudioBg3dThreeNormals } from "./studio-bg3d-three-normal-capture";
@@ -71,6 +73,56 @@ function rendererFixture(readback: Promise<THREE.TypedArray>) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe.each([
+  ["depth", captureStudioBg3dThreeDepth],
+  ["normal", captureStudioBg3dThreeNormals],
+] as const)("실제 %s capture의 툰 본체 coverage", (kind, capture) => {
+  it("outline을 제외하고 화면 uniform snapshot을 제출한 뒤 fence 전에 원본을 복원한다", async () => {
+    const readback = deferred<THREE.TypedArray>(), f = rendererFixture(readback.promise);
+    const map = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+    const normalMap = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+    const body = new StudioMToonMaterial({ side: THREE.DoubleSide, map, normalMap, opacity: .6, alphaTest: .25 });
+    body.clippingPlanes = [new THREE.Plane(new THREE.Vector3(1, 0, 0), -.1)];
+    body.uvAnimationScrollXSpeedFactor = .4; body.update(.5);
+    // property가 다음 frame을 기다려도 pass는 현재 beauty에 업로드된 값과 일치해야 한다.
+    body.opacity = .9; body.alphaTest = .75; map.offset.set(.6, .4);
+    const outline = body.clone(); outline.isOutline = true; outline.side = THREE.BackSide;
+    const geometry = new THREE.BoxGeometry(); geometry.clearGroups();
+    geometry.addGroup(0, geometry.index!.count, 0); geometry.addGroup(0, geometry.index!.count, 1);
+    const originals = [body, outline], mesh = new THREE.Mesh(geometry, originals), scene = new THREE.Scene(); scene.add(mesh);
+    const originalGroups = JSON.stringify(geometry.groups), originalMatrix = map.matrix.clone(), sourceDisposed = vi.fn();
+    const originalSourceVersion = map.source.version, originalNormalSourceVersion = normalMap.source.version;
+    body.addEventListener("dispose", sourceDisposed);
+    const passDisposed = vi.fn(); let capturedPass: MToonMaterial | undefined;
+    vi.mocked(f.renderer.render).mockImplementation(() => {
+      expect(scene.overrideMaterial).toBeNull();
+      if (!Array.isArray(mesh.material) || !(mesh.material[0] instanceof MToonMaterial)) throw new Error("실제 툰 기하 pass가 없습니다.");
+      const pass = mesh.material[0]; capturedPass = pass; pass.addEventListener("dispose", passDisposed);
+      expect(pass).not.toBe(body); expect(pass.isOutline).toBe(false); expect(pass.side).toBe(THREE.DoubleSide);
+      expect(mesh.material[1]?.visible).toBe(false);
+      expect(pass.map).toBe(map); expect(pass.normalMap).toBeNull(); expect(pass.clippingPlanes).toEqual(body.clippingPlanes);
+      expect(pass.uniforms.opacity?.value).toBe(.6); expect(pass.uniforms.alphaTest?.value).toBe(.25);
+      expect(pass.uniforms.mapUvTransform?.value).toEqual(body.uniforms.mapUvTransform?.value);
+      expect(pass.uniforms.uvAnimationScrollXOffset?.value).toBeCloseTo(.2);
+      expect(pass.debugMode).toBe("normal");
+      const shader = { vertexShader: pass.vertexShader, fragmentShader: pass.fragmentShader, uniforms: pass.uniforms };
+      Reflect.apply(pass.onBeforeCompile, pass, [shader, { outputColorSpace: THREE.LinearSRGBColorSpace }]);
+      expect(shader.fragmentShader.includes("vHighPrecisionZW")).toBe(kind === "depth");
+    });
+    try {
+      const pending = capture({ renderer: f.renderer, scene, camera: new THREE.PerspectiveCamera(), width: 2, height: 2 });
+      expect(f.renderer.render).toHaveBeenCalledOnce(); expect(capturedPass).toBeDefined();
+      expect(mesh.material).toBe(originals); expect(scene.overrideMaterial).toBeNull(); expect(f.current().renderTarget).toBeNull();
+      expect(passDisposed).not.toHaveBeenCalled(); expect(sourceDisposed).not.toHaveBeenCalled();
+      expect(JSON.stringify(geometry.groups)).toBe(originalGroups); expect(map.matrix).toEqual(originalMatrix);
+      expect(map.source.version).toBe(originalSourceVersion); expect(normalMap.source.version).toBe(originalNormalSourceVersion);
+      readback.resolve(new Uint8Array(16)); await pending;
+      expect(passDisposed).toHaveBeenCalledOnce(); expect(sourceDisposed).not.toHaveBeenCalled();
+      expect(body.uniforms.uvAnimationScrollXOffset?.value).toBeCloseTo(.2);
+    } finally { body.dispose(); outline.dispose(); geometry.dispose(); map.dispose(); normalMap.dispose(); }
+  });
 });
 
 describe("captureStudioBg3dThreeDepth", () => {

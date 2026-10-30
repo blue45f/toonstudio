@@ -82,6 +82,7 @@ export interface ProjectStudioLiveSyncSnapshotInput {
   availability: StudioLiveAvailability;
   mode: StudioLiveTransportMode | null;
   canEdit: boolean;
+  scopedWrite?: boolean;
   telemetry: StudioCrdtSyncTelemetry | null;
   /** True only after the initial authoritative frontier has been applied and exposed to Studio. */
   operationSyncReady?: boolean;
@@ -119,6 +120,7 @@ export function projectStudioLiveSyncSnapshot({
   availability,
   mode,
   canEdit,
+  scopedWrite = false,
   telemetry,
   operationSyncReady: exposedOperationSyncReady,
   documentWritable,
@@ -126,13 +128,14 @@ export function projectStudioLiveSyncSnapshot({
   transportMessage = null,
 }: ProjectStudioLiveSyncSnapshotInput): StudioLiveSyncSnapshot {
   const pendingCount = safePendingCount(telemetry?.pendingCount ?? 0);
-  const persistenceDurability = canEdit
+  const mutationPublisher = canEdit || scopedWrite;
+  const persistenceDurability = mutationPublisher
     ? telemetry?.persistenceDurability ?? "checking"
     : "not-applicable";
   const transportReady = telemetry?.transportReady ?? availability === "ready";
   const operationSyncReady = exposedOperationSyncReady ?? telemetry?.state === "ready";
   const message = transportMessage?.trim() || telemetry?.message || INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT.message;
-  const editsDurablyProtected = canEdit
+  const editsDurablyProtected = mutationPublisher
     ? documentWritable !== false && operationSyncReady && (
         mode === "local" ||
         serverDurable({ mode, transportReady, operationSyncReady }) ||
@@ -179,13 +182,13 @@ export function projectStudioLiveSyncSnapshot({
   // A follower tab is healthy, not at risk — its document lives safely in the leader tab. What it
   // must never do is claim the green "안전하게 동기화됨" while its own saves are being rejected, so
   // this branch sits above every optimistic phase and below the terminal ones.
-  if (canEdit && documentWritable === false) {
+  if (mutationPublisher && documentWritable === false) {
     return { ...common, phase: "read-only-follower" };
   }
   if (telemetry?.state === "repairing") return { ...common, phase: "repairing" };
 
   if (!telemetry) {
-    if (availability === "error" && canEdit) {
+    if (availability === "error" && mutationPublisher) {
       return { ...common, phase: "durability-risk", editsDurablyProtected: false };
     }
     return { ...common, phase: "initializing" };
@@ -213,7 +216,7 @@ export function projectStudioLiveSyncSnapshot({
     };
   }
 
-  if (telemetry.durabilityAtRisk || (canEdit && !editsDurablyProtected)) {
+  if (telemetry.durabilityAtRisk || (mutationPublisher && !editsDurablyProtected)) {
     return { ...common, phase: "durability-risk" };
   }
 

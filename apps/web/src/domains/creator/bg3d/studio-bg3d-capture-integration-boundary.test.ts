@@ -19,6 +19,39 @@ const studioLazyPanelStackSource = readFileSync(
 );
 
 describe("Studio 3D asynchronous capture integration boundary", () => {
+  it("PNG 인코딩 후 삽입·소재 저장·AI handoff 전에 동결 문서의 환경을 재검사한다", () => {
+    const saveStart = background3dSource.indexOf("async function handleSaveToLibrary()");
+    const aiStart = background3dSource.indexOf("async function handleUseAsAiMethodReference()", saveStart);
+    const insertStart = background3dSource.indexOf("async function handleInsert()");
+    const insertEnd = background3dSource.indexOf("// 선택된 것이 도형", insertStart);
+    const cases = [
+      { source: background3dSource.slice(saveStart, aiStart), encoded: 'canvas.toDataURL("image/png")', handoff: "await saveAsset(" },
+      { source: background3dSource.slice(aiStart, insertStart), encoded: 'canvas.toDataURL("image/png")', handoff: "await onUseAsAiMethodReference(" },
+      { source: background3dSource.slice(insertStart, insertEnd), encoded: "encodeStudioBg3dLtLayers(rendered.layers)", handoff: 'insertPhase = "commit"' },
+    ];
+    for (const { source, encoded, handoff } of cases) {
+      const guard = source.indexOf("assertStudioBg3dCaptureEnvironmentCurrent(captured, expectedEnvironmentFingerprint)");
+      expect(source).toContain("createStudioBg3dCaptureDocumentEnvironmentFingerprint(adapted.document, deviceQuality.profile)");
+      expect(source.indexOf(encoded)).toBeGreaterThanOrEqual(0);
+      expect(guard).toBeGreaterThan(source.indexOf(encoded));
+      expect(source.indexOf(handoff)).toBeGreaterThan(guard);
+    }
+  });
+
+  it("현재 shot의 artifact만 recovery commit과 로컬 authorization에서 검사한다", () => {
+    const source = readFileSync(new URL("./studio-bg3d-shot-batch-export-run.ts", import.meta.url), "utf8");
+    const guard = "assertStudioBg3dCaptureEnvironmentCurrent(shotArtifacts, expectedEnvironmentFingerprint)";
+    const complete = source.indexOf("await shotBatchRecoveryStore.completeShot(");
+    const authorize = source.indexOf("authorizeBeforeCommit: async () =>", complete);
+    const local = source.indexOf("isLocallyCurrent: () =>", authorize);
+    const publication = source.indexOf("images.push(...shotArtifacts.images)", local);
+    expect(source.lastIndexOf(guard, complete)).toBeGreaterThan(source.indexOf("const shotArtifacts ="));
+    expect(source.indexOf(guard, authorize)).toBeGreaterThan(authorize);
+    expect(source.indexOf(guard, local)).toBeGreaterThan(local);
+    expect(source.indexOf(guard, local)).toBeLessThan(publication);
+    expect(source.slice(publication)).not.toContain(guard);
+  });
+
   it("keeps adapter registration stable when capture UI state rerenders", () => {
     const start = background3dSource.indexOf("function CaptureBridge(");
     const end = background3dSource.indexOf("type StudioBg3dImmersiveStageSuccess", start);

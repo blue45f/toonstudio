@@ -9,6 +9,7 @@ export function draftMatchesComment(scope: ReviewDraftScope, input: ReviewDraftI
   return comment.id === input.id && comment.reviewId === scope.subject.reviewId && comment.authorUserId === scope.actorId
     && comment.body === input.body && comment.severity === input.severity
     && canonicalJson(comment.anchor) === canonicalJson(input.anchor)
+    && canonicalJson(comment.strokes ?? []) === canonicalJson(input.strokes ?? [])
     && canonicalJson([...comment.assigneeIds].sort()) === canonicalJson([...input.assigneeIds].sort())
     && (comment.dueAt ? Date.parse(comment.dueAt) : null) === (input.dueAt ? Date.parse(input.dueAt) : null);
 }
@@ -53,7 +54,8 @@ export function publishReviewDrafts(scope: ReviewDraftScope, selection: readonly
         if (initial.expiresAt <= Date.now()) throw new Error("expired");
         const receipt = await dependencies.create(scope.subject.reviewId, marked.input); check();
         if (receipt.id !== id || receipt.reviewId !== scope.subject.reviewId
-          || canonicalJson(receipt.anchor) !== canonicalJson(marked.input.anchor)) throw new Error("receipt-mismatch");
+          || canonicalJson(receipt.anchor) !== canonicalJson(marked.input.anchor)
+          || canonicalJson(receipt.strokes ?? []) !== canonicalJson(marked.input.strokes ?? [])) throw new Error("receipt-mismatch");
         const final = await verify(), recorded = final.review.comments.find((comment) => comment.id === id);
         if (!recorded || !draftMatchesComment(scope, marked.input, recorded)) throw new Error("receipt-unconfirmed");
         await repository.remove(scope, id, current, expected); check(); confirmed.push(id);

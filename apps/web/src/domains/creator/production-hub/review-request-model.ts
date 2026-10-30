@@ -6,17 +6,19 @@
  * 이 모델은 한 화면 폼(ProductionReviewRequestForm)의 초안·검증·전송물 변환과,
  * 받는 쪽 통합 작업함에서 비교 검수로 바로 들어가는 경로를 한곳에서 제공한다.
  *
- * 전송물은 새 서버 계약을 만들지 않는다: 기존 검수 작업과 같은 모양의 ProductionTask
- * (status "internal-review" + reviewerAssignmentIds + completionCriteria)를
- * 기존 `upsert-task` 명령으로 저장한다. 받는 사람의 작업함·보드 "내 검수" 규칙
- * (productionTaskIsMine)이 그대로 잡아낸다 — reviewerAssignmentIds에 검수자가 들어간다.
+ * 실제 제작 작업의 현재 제출본과 고정 입력을 유지하고 검수자·기한·체크포인트를 추가한다.
+ * 새 빈 작업을 검수 상태로 만들지 않고 합법적인 검수 전환을 expectedTasks와 함께 저장한다.
  */
 import {
-  episodeScope,
+  eligibleAssignmentsForTask, eligibleProductionReviewAssignments, episodeScope, scopeContains, productionTaskHasCurrentReviewOutputs,
   type ProductionProjectAggregate,
   type ProductionTask,
   type ReviewLane,
 } from "@toonstudio/core/production";
+import { previewProductionBoardMove } from "./production-board-move-preview";
+import { policyForProductionSubmission } from "./production-review-submission";
+import type { ProductionClientCommand } from "./production-api";
+import { canonicalJson } from "@toonstudio/studio-project-model";
 
 import type { ProductionPersonalInboxItem } from "./production-dashboard-api";
 import { REVIEW_LANE_LABELS, type BilingualLabel, type ProductionLocalize } from "./production-labels";
@@ -67,6 +69,7 @@ export function addLocalDays(date: Date, days: number): Date {
 
 export interface ReviewRequestDraft {
   readonly episodeId: string;
+  readonly taskId: string;
   readonly reviewerAssignmentId: string;
   /** 검수 항목(레인). 검수자 선택 전에는 빈 문자열. */
   readonly lane: ReviewLane | "";
@@ -79,6 +82,7 @@ export interface ReviewRequestDraft {
 export function createReviewRequestDraft(episodeId: string, now: Date): ReviewRequestDraft {
   return {
     episodeId,
+    taskId: "",
     reviewerAssignmentId: "",
     lane: "",
     dueDate: toLocalDateInputValue(addLocalDays(now, REVIEW_REQUEST_DEFAULT_DUE_DAYS)),
@@ -89,18 +93,22 @@ export function createReviewRequestDraft(episodeId: string, now: Date): ReviewRe
 
 export type ReviewRequestIssue =
   | "episode-required"
+  | "task-required"
   | "reviewer-required"
   | "lane-required"
   | "due-required"
   | "due-past"
+  | "due-invalid"
   | "checkpoint-required";
 
 const REVIEW_REQUEST_ISSUE_LABELS: Readonly<Record<ReviewRequestIssue, BilingualLabel>> = Object.freeze({
   "episode-required": { ko: "검수할 회차를 골라 주세요.", en: "Pick an episode to review." },
+  "task-required": { ko: "현재 제출본이 있는 실제 작업을 골라 주세요.", en: "Pick an existing task with current submissions." },
   "reviewer-required": { ko: "검수자를 골라 주세요.", en: "Pick a reviewer." },
   "lane-required": { ko: "검수 항목을 골라 주세요.", en: "Pick a review lane." },
   "due-required": { ko: "마감을 정해 주세요.", en: "Set a due date." },
   "due-past": { ko: "마감은 오늘 이후로 정해 주세요.", en: "Set the due date to today or later." },
+  "due-invalid": { ko: "실제로 존재하는 마감 날짜를 선택하세요.", en: "Select a valid calendar date." },
   "checkpoint-required": { ko: "체크포인트를 하나 이상 골라 주세요.", en: "Pick at least one checkpoint." },
 });
 
@@ -113,10 +121,15 @@ export function reviewRequestIssueLabel(issue: ReviewRequestIssue, localize: Pro
 export function validateReviewRequestDraft(draft: ReviewRequestDraft, now: Date): readonly ReviewRequestIssue[] {
   const issues: ReviewRequestIssue[] = [];
   if (!draft.episodeId) issues.push("episode-required");
+  if (!draft.taskId) issues.push("task-required");
   if (!draft.reviewerAssignmentId) issues.push("reviewer-required");
   if (!draft.lane) issues.push("lane-required");
   if (!draft.dueDate) issues.push("due-required");
-  else if (draft.dueDate < toLocalDateInputValue(now)) issues.push("due-past");
+  else {
+    const date = new Date(`${draft.dueDate}T12:00:00`);
+    if (!/^\d{4}-\d{2}-\d{2}$/u.test(draft.dueDate) || !Number.isFinite(date.getTime()) || toLocalDateInputValue(date) !== draft.dueDate) issues.push("due-invalid");
+    else if (draft.dueDate < toLocalDateInputValue(now)) issues.push("due-past");
+  }
   if (draft.checkpointIds.length === 0) issues.push("checkpoint-required");
   return issues;
 }
@@ -130,11 +143,9 @@ export interface ReviewRequestEpisodeOption {
 export function deriveReviewRequestEpisodes(
   aggregate: ProductionProjectAggregate,
 ): readonly ReviewRequestEpisodeOption[] {
-  const policyEpisodeIds = new Set(
-    aggregate.reviewPolicies.filter((policy) => policy.scope.kind === "episode").map((policy) => policy.scope.id),
-  );
   return aggregate.episodes
-    .filter((episode) => policyEpisodeIds.has(episode.episodeId) && episode.state !== "published")
+    .filter((episode) => episode.projectId === aggregate.projectId && episode.state !== "published" && episode.state !== "cancelled" && aggregate.reviewPolicies.some((policy) => policy.projectId === aggregate.projectId
+      && (scopeContains(policy.scope, episodeScope(aggregate.projectId, episode.episodeId)) || scopeContains(episodeScope(aggregate.projectId, episode.episodeId), policy.scope))))
     .map((episode) => {
       const plan = aggregate.episodePlans
         .filter((entry) => entry.episodeId === episode.episodeId)
@@ -159,17 +170,22 @@ export interface ReviewRequestReviewerOption {
 export function deriveReviewRequestReviewers(
   aggregate: ProductionProjectAggregate,
   episodeId: string,
+  taskId?: string,
+  at = new Date().toISOString(),
 ): readonly ReviewRequestReviewerOption[] {
-  const policy = aggregate.reviewPolicies.find((entry) => entry.scope.id === episodeId) ?? null;
-  if (!policy) return [];
-  return aggregate.assignments
-    .filter((assignment) => assignment.status === "active")
+  const task = taskId ? deriveReviewRequestTasks(aggregate, episodeId).find((entry) => entry.id === taskId) : null;
+  const policies = task ? task.outputDeliverableIds.flatMap((id) => {
+    const deliverable = aggregate.deliverables.find((entry) => entry.id === id), submission = aggregate.submissions.find((entry) => entry.id === deliverable?.currentSubmissionId);
+    const policy = policyForProductionSubmission(aggregate, submission ?? null); return policy ? [policy] : [];
+  }) : aggregate.reviewPolicies.filter((entry) => entry.scope.kind === "episode" && entry.scope.id === episodeId);
+  if (!policies.length) return [];
+  const eligibleIds = new Set(task ? eligibleAssignmentsForTask({ task, assignments: aggregate.assignments, kind: "reviewer", at }).map((entry) => entry.id) : aggregate.assignments.map((entry) => entry.id));
+  return aggregate.assignments.filter((assignment) => eligibleIds.has(assignment.id))
     .map((assignment) => ({
       assignmentId: assignment.id,
       displayName: aggregate.parties.find((party) => party.id === assignment.partyId)?.publicDisplayName ?? assignment.id,
-      lanes: policy.lanes
-        .filter((lane) => lane.eligibleAssignmentIds.includes(assignment.id))
-        .map((lane) => lane.lane),
+      lanes: [...new Set(policies.flatMap((policy) => eligibleProductionReviewAssignments(aggregate, policy.scope, at).some((entry) => entry.id === assignment.id)
+        ? policy.lanes.filter((lane) => lane.eligibleAssignmentIds.includes(assignment.id)).map((lane) => lane.lane) : []))],
     }))
     .filter((option) => option.lanes.length > 0);
 }
@@ -179,52 +195,52 @@ export function reviewRequestCheckpointLabel(id: ReviewRequestCheckpointId, loca
   return checkpoint ? localize(checkpoint.label.ko, checkpoint.label.en) : id;
 }
 
-/**
- * 검증이 끝난 초안을 전송용 검수 작업으로 바꾼다.
- * - status "internal-review" + reviewerAssignmentIds: 받는 쪽 작업함·보드의 "내 검수" 규칙과 그대로 맞물린다.
- * - completionCriteria: 고른 체크포인트가 검수 완료 조건으로 남는다.
- * - note: briefBlocks 문단으로 남겨 받는 쪽이 요청 맥락을 작업에서 바로 읽는다.
- */
-export function buildReviewRequestTask(
+export function deriveReviewRequestTasks(aggregate: ProductionProjectAggregate, episodeId: string): readonly ProductionTask[] {
+  return aggregate.tasks.filter((task) => task.projectId === aggregate.projectId
+    && (task.scope.kind === "episode" && task.scope.id === episodeId || task.scope.ancestors.some((entry) => entry.kind === "episode" && entry.id === episodeId)));
+}
+export interface ProductionReviewRequestPlan { readonly task: ProductionTask; readonly command: ProductionClientCommand; readonly outputSubmissionIds: readonly string[]; readonly expectedRevision: number }
+/** 원고·담당자·기존 조건을 유지한 실제 작업에만 검수를 요청한다. */
+export function buildReviewRequestPlan(
   aggregate: ProductionProjectAggregate,
   draft: ReviewRequestDraft,
-  input: { readonly id: string; readonly localize: ProductionLocalize },
-): ProductionTask {
-  const episode = deriveReviewRequestEpisodes(aggregate).find((entry) => entry.episodeId === draft.episodeId);
-  const episodeLabel = episode ? input.localize(episode.label.ko, episode.label.en) : draft.episodeId;
+  input: { readonly id: string; readonly localize: ProductionLocalize; readonly at: string },
+): ProductionReviewRequestPlan {
+  if (!Number.isFinite(Date.parse(input.at)) || validateReviewRequestDraft(draft, new Date(input.at)).length) throw new Error("검수할 작업·검수자·항목·마감과 체크포인트를 확인하세요.");
+  const task = deriveReviewRequestTasks(aggregate, draft.episodeId).find((entry) => entry.id === draft.taskId);
+  if (!task) throw new Error("현재 회차의 실제 작업을 선택하세요.");
+  if (!["in-progress", "internal-review"].includes(task.status)) throw new Error("작업 보드에서 입력을 준비하고 작업을 시작한 뒤 검수를 요청하세요. 상태를 자동으로 건너뛰지 않습니다.");
+  if (!productionTaskHasCurrentReviewOutputs(task, aggregate)) throw new Error("모든 산출물에 작업의 고정 입력과 일치하는 현재 제출본이 있어야 합니다. 먼저 원고를 제출하세요.");
+  if (task.outputDeliverableIds.some((id) => { const output = aggregate.deliverables.find((entry) => entry.id === id), submission = aggregate.submissions.find((entry) => entry.id === output?.currentSubmissionId); return !policyForProductionSubmission(aggregate, submission ?? null); })) throw new Error("현재 산출물마다 적용할 제작 검수 기준을 먼저 설정하세요.");
+  const reviewer = deriveReviewRequestReviewers(aggregate, draft.episodeId, task.id, input.at).find((entry) => entry.assignmentId === draft.reviewerAssignmentId && draft.lane && entry.lanes.includes(draft.lane));
+  if (!reviewer) throw new Error("현재 작업 범위·기간과 검수 정책에 맞는 연결 검수자와 항목을 선택하세요.");
   const laneLabel = draft.lane ? input.localize(REVIEW_LANE_LABELS[draft.lane].ko, REVIEW_LANE_LABELS[draft.lane].en) : "";
   const note = draft.note.trim();
-  return {
-    id: input.id,
-    projectId: aggregate.projectId,
-    scope: episodeScope(aggregate.projectId, draft.episodeId),
-    processKey: REVIEW_REQUEST_PROCESS_KEY,
-    title: input.localize(
-      `검수 요청 · ${episodeLabel} · ${laneLabel}`,
-      `Review request · ${episodeLabel} · ${laneLabel}`,
-    ),
-    status: "internal-review",
-    assignmentIds: [draft.reviewerAssignmentId],
-    reviewerAssignmentIds: [draft.reviewerAssignmentId],
-    inputRevisionRefs: [],
-    outputDeliverableIds: [],
-    dependencyTaskIds: [],
+  const prepared: ProductionTask = {
+    ...task,
+    reviewerAssignmentIds: [...new Set([...task.reviewerAssignmentIds, draft.reviewerAssignmentId])],
     dueAt: new Date(`${draft.dueDate}T23:59:00`).toISOString(),
-    estimateHours: null,
-    completionCriteria: draft.checkpointIds.map((id) => reviewRequestCheckpointLabel(id, input.localize)),
-    sourceAgreementMilestoneId: null,
-    ...(note
-      ? {
-          briefBlocks: [
-            {
-              id: `${input.id}-note`,
-              kind: "paragraph" as const,
-              text: note,
-            },
-          ],
-        }
-      : {}),
+    completionCriteria: [...new Set([...task.completionCriteria, ...draft.checkpointIds.map((id) => reviewRequestCheckpointLabel(id, input.localize))])],
+    briefBlocks: [...(task.briefBlocks ?? []).filter((entry) => entry.id !== `${input.id}-note`), { id: `${input.id}-note`, kind: "paragraph",
+      text: input.localize(`검수 요청 · ${laneLabel}${note ? ` · ${note}` : ""}`, `Review request · ${laneLabel}${note ? ` · ${note}` : ""}`) }],
   };
+  const candidate = { ...aggregate, tasks: aggregate.tasks.map((entry) => entry.id === task.id ? prepared : entry) };
+  const preview = task.status === "in-progress" ? previewProductionBoardMove(candidate, [task.id], "internal-review", input.at) : null;
+  if (preview && !preview.allowed) throw new Error(preview.reason);
+  const updated = preview?.changed[0] ?? prepared;
+  const outputSubmissionIds = task.outputDeliverableIds.map((id) => aggregate.deliverables.find((entry) => entry.id === id)?.currentSubmissionId).filter((id): id is string => Boolean(id));
+  return { task: updated, command: { type: "upsert-task-batch", tasks: [updated], expectedTasks: [task] }, outputSubmissionIds, expectedRevision: aggregate.revision };
+}
+export function confirmsReviewRequest(aggregate: ProductionProjectAggregate, plan: ProductionReviewRequestPlan): boolean {
+  if (aggregate.revision <= plan.expectedRevision) return false;
+  const task = aggregate.tasks.find((entry) => entry.id === plan.task.id && entry.projectId === plan.task.projectId);
+  if (!task || canonicalJson(task) !== canonicalJson(plan.task)) return false;
+  const current = task.outputDeliverableIds.map((id) => aggregate.deliverables.find((entry) => entry.id === id)?.currentSubmissionId);
+  return plan.outputSubmissionIds.length === current.length && plan.outputSubmissionIds.every((id, index) => current[index] === id);
+}
+export function buildTaskReviewPath(projectId: string, taskId: string, episodeId?: string | null): string {
+  const query = new URLSearchParams({ task: taskId }); if (episodeId) query.set("episode", episodeId);
+  return `/production/projects/${encodeURIComponent(projectId)}/review?${query.toString()}`;
 }
 
 /** 회차 룸 비교 검수 탭으로 바로 들어가는 경로. 룸은 `roomView=compare`를 읽어 비교 탭으로 연다. */
@@ -240,8 +256,8 @@ export function buildCompareReviewPath(projectId: string, episodeId: string): st
 export function reviewInboxItemHref(
   item: Pick<ProductionPersonalInboxItem, "bucket" | "projectId" | "taskId" | "episodeId">,
 ): string {
-  if (item.bucket === "review" && item.episodeId) {
-    return buildCompareReviewPath(item.projectId, item.episodeId);
+  if (item.bucket === "review") {
+    return buildTaskReviewPath(item.projectId, item.taskId, item.episodeId);
   }
   return `/production/projects/${encodeURIComponent(item.projectId)}/production?task=${encodeURIComponent(item.taskId)}`;
 }

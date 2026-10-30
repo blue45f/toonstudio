@@ -703,8 +703,8 @@ export function resolveShaperThreeStyleCameraAction(input: {
     return "none";
   }
   // 3ds Max
-  if (input.button === "middle" && alt) return "orbit";
   if (input.button === "middle" && ctrl && alt) return "zoom";
+  if (input.button === "middle" && alt) return "orbit";
   if (input.button === "middle") return "pan";
   return "none";
 }

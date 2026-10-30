@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioVirtualSpacePhaserCanvasProps } from "../studio-virtual-space-phaser-canvas-model";
+import type { StudioVirtualSpaceThreeStageProps } from "../three/studio-virtual-space-three-stage-props";
 
 const LazyPhaserCanvas = lazy(() => import("../StudioVirtualSpacePhaserCanvas").then((module) => ({ default: module.StudioVirtualSpacePhaserCanvas })));
 const LazyThreeCanvas = lazy(() => import("../three/StudioVirtualSpaceThreeCanvas").then((module) => ({ default: module.StudioVirtualSpaceThreeCanvas })));
@@ -13,7 +14,7 @@ function StageLoading() {
 }
 
 /** 선택형 3D 스테이지. three.js는 사용자가 3D를 고를 때만 내려받는다. */
-export function StudioVirtualSpaceThreeStage(props: StudioVirtualSpacePhaserCanvasProps) {
+export function StudioVirtualSpaceThreeStage(props: StudioVirtualSpaceThreeStageProps) {
   return <Suspense fallback={<StageLoading />}><LazyThreeCanvas {...props} /></Suspense>;
 }
 

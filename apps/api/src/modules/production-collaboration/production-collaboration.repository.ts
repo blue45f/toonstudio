@@ -1,7 +1,8 @@
 import { and, eq, or } from "drizzle-orm";
 import { Injectable } from "@nestjs/common";
 
-import { migrateProductionProjectAggregate, type ProductionProjectAggregate } from "@toonstudio/core/production";
+import { migrateProductionProjectAggregate, type ProductionProjectAggregate,
+  type ProductionTaskOutputCaptures, type ProductionTaskOutputSources } from "@toonstudio/core/production";
 
 import {
   creatorWorkCollaborators,
@@ -12,6 +13,11 @@ import {
   productionProjects,
 } from "../../platform/database";
 import { resolveCreatorCollaborationAccess } from "../creator/creator-collaboration.policy";
+import { studioScopedRequestHash } from "../creator/studio-scoped-write-store";
+import { matchesProductionTaskBatchPreconditions, type ProductionTaskBatchPreconditions } from "./production-task-batch-concurrency";
+import { getVerifiedProductionTaskOutputCaptures } from "./production-task-output-source";
+import { authorizeProductionTaskOutput, inspectScopedProductionTaskOutput, lockProductionTaskOutputWork,
+  recordScopedProductionTaskOutput, type ScopedProductionTaskOutputCommand } from "./production-task-output-authority";
 
 export interface ProductionProjectAccess {
   readonly view: boolean;
@@ -431,26 +437,55 @@ export class ProductionCollaborationRepository {
     readonly mutationId: string;
     readonly requestDigest: string;
     readonly requiredCapability?: "comment" | "edit" | "manage";
+    readonly taskBatchPreconditions?: ProductionTaskBatchPreconditions;
+    readonly taskOutputSources?: ProductionTaskOutputSources & { readonly command?: ScopedProductionTaskOutputCommand };
     readonly mutate: (
       aggregate: ProductionProjectAggregate,
       access: ProductionProjectAccess,
+      taskOutputCaptures?: ProductionTaskOutputCaptures,
     ) => ProductionMutationResponse;
   }): Promise<ProductionMutationResponse> {
     return db.transaction(async (transaction) => {
+      // 힌트는 잠금 순서에만 쓰고, 권한·원고 검증은 아래에서 잠근 최신 행을 기준으로 한다.
+      const hint = input.taskOutputSources ? await loadProjectRow(transaction, input.projectId, false) : null;
+      if (input.taskOutputSources && !hint) throw new ProductionProjectNotFoundError("project");
+      const outputCommand = input.taskOutputSources?.command;
+      const scopedWork = hint && outputCommand
+        ? await lockProductionTaskOutputWork(transaction, hint.workId, input.actorUserId) : null;
+      if (hint && !scopedWork) {
+        // 생성 경로와 같은 작품 → 멤버십 → 제작 프로젝트 순서로 잠가 순환 대기를 막는다.
+        await transaction.select({ id: creatorWorks.id }).from(creatorWorks)
+          .where(eq(creatorWorks.id, hint.workId)).for("share");
+        await transaction.select({ workId: creatorWorkCollaborators.workId }).from(creatorWorkCollaborators)
+          .where(and(eq(creatorWorkCollaborators.workId, hint.workId),
+            eq(creatorWorkCollaborators.userId, input.actorUserId))).for("share");
+      }
       const row = await loadProjectRow(transaction, input.projectId, true);
       if (!row) throw new ProductionProjectNotFoundError("project");
+      if (hint && hint.workId !== row.workId) throw new ProductionProjectRevisionConflictError(row.revision);
       const currentAggregate = assertAggregateRow(row);
       const access = await loadAccess(transaction, input.actorUserId, row.workId);
+      const outputAuthorization = scopedWork && outputCommand
+        ? await authorizeProductionTaskOutput(transaction, scopedWork, outputCommand) : null;
+      const limitedOutput = outputAuthorization?.context ? outputAuthorization : null;
       const requiredCapability = input.requiredCapability ?? "edit";
-      if (!access || (requiredCapability === "comment" && !access.comment)) {
+      if (!access?.view || (requiredCapability === "comment" && !access.comment)) {
         throw new ProductionProjectForbiddenError("edit");
       }
-      if (requiredCapability === "edit" && !access.edit) {
+      if (requiredCapability === "edit" && !access.edit && !limitedOutput) {
         throw new ProductionProjectForbiddenError("edit");
       }
       if (requiredCapability === "manage" && !access.manage) {
         throw new ProductionProjectForbiddenError("manage");
       }
+      const scopedRequestHash = studioScopedRequestHash({ projectId: input.projectId,
+        expectedRevision: input.expectedRevision, command: outputCommand });
+      // 제한 제출은 캐시된 응답도 현재 담당 범위와 실제 원고를 확인한 뒤 반환한다.
+      let taskOutputCaptures = limitedOutput && input.taskOutputSources
+        ? await getVerifiedProductionTaskOutputCaptures(transaction, currentAggregate, input.taskOutputSources) : undefined;
+      const scopedOutput = limitedOutput && outputCommand && taskOutputCaptures
+        ? await inspectScopedProductionTaskOutput(transaction, limitedOutput, outputCommand, taskOutputCaptures,
+          input.mutationId, scopedRequestHash) : null;
 
       const receiptRows = await transaction
         .select({
@@ -466,16 +501,21 @@ export class ProductionCollaborationRepository {
         .limit(1);
       const receipt = receiptRows[0];
       if (receipt) {
-        if (receipt.requestDigest !== input.requestDigest) {
+        if (receipt.requestDigest !== input.requestDigest || (limitedOutput && !scopedOutput?.receipt)) {
           throw new ProductionProjectMutationConflictError();
         }
         return receipt.response;
       }
-      if (row.revision !== input.expectedRevision) {
+      if (scopedOutput?.receipt) throw new ProductionProjectMutationConflictError();
+      if (row.revision !== input.expectedRevision && (input.expectedRevision > row.revision
+        || !matchesProductionTaskBatchPreconditions(currentAggregate, input.taskBatchPreconditions))) {
         throw new ProductionProjectRevisionConflictError(row.revision);
       }
 
-      const response = input.mutate(currentAggregate, access);
+      taskOutputCaptures ??= input.taskOutputSources
+        ? await getVerifiedProductionTaskOutputCaptures(transaction, currentAggregate, input.taskOutputSources) : undefined;
+      const response = taskOutputCaptures ? input.mutate(currentAggregate, access, taskOutputCaptures)
+        : input.mutate(currentAggregate, access);
       const aggregate = response.aggregate;
       if (
         aggregate.projectId !== row.id
@@ -532,6 +572,8 @@ export class ProductionCollaborationRepository {
         resultRevision: aggregate.revision,
         response,
       });
+      if (limitedOutput && scopedOutput) await recordScopedProductionTaskOutput(transaction, limitedOutput,
+        input.mutationId, scopedRequestHash, scopedOutput.targetIds, response);
       return response;
     });
   }

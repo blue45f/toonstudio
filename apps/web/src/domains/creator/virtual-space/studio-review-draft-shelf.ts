@@ -1,4 +1,4 @@
-import { canonicalJson, reviewAnchorSchema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
+import { canonicalJson, reviewAnchorSchema, reviewPenStrokesSchema, STUDIO_REVIEW_PEN_MAX_JSON_BYTES, studioEntityIdSchema } from "@toonstudio/studio-project-model";
 import { z } from "zod";
 import type { StudioAsyncKeyValueStore } from "../studio-local-database";
 import { parseStudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewSubject } from "./studio-virtual-space-review-subject";
@@ -8,11 +8,18 @@ export const draftNoteInputSchema = z.object({
   severity: z.enum(["note", "recommended", "required"]),
   assigneeIds: z.array(studioEntityIdSchema).max(64).default([]),
   dueAt: z.string().datetime({ offset: true }).optional(),
-}).strict();
+  strokes: reviewPenStrokesSchema.optional(),
+}).strict().superRefine((input, context) => {
+  if (input.strokes?.length && (input.anchor.kind !== "region" || !input.anchor.source)) {
+    context.addIssue({ code: "custom", path: ["strokes"], message: "pen strokes require a source-mapped region" });
+  }
+});
 export type ReviewDraftInput = z.infer<typeof draftNoteInputSchema>;
 const entrySchema = z.object({ input: draftNoteInputSchema, state: z.enum(["draft", "attempted"]), savedAt: z.number().int().nonnegative() }).strict();
 export type ReviewPrivateDraft = z.infer<typeof entrySchema>;
 const shelfSchema = z.object({ version: z.literal(1), entries: z.array(entrySchema).max(20) }).strict();
+/** 20개 초안 모두에서 API가 허용하는 펜 획과 본문·배정 정보를 보존한다. */
+export const REVIEW_PRIVATE_DRAFT_MAX_BYTES = 20 * (STUDIO_REVIEW_PEN_MAX_JSON_BYTES + 128 * 1024);
 export interface ReviewDraftScope { readonly actorId: string; readonly subject: StudioVirtualSpaceReviewSubject }
 export function reviewDraftScopeKey(scope: ReviewDraftScope): string {
   studioEntityIdSchema.parse(scope.actorId);
@@ -23,7 +30,7 @@ export function reviewDraftScopeKey(scope: ReviewDraftScope): string {
 export const draftContentKey = (input: ReviewDraftInput): string => canonicalJson({ ...input, id: null, assigneeIds: [...input.assigneeIds].sort() });
 export function parseReviewDraftShelf(raw: string | null, scope: ReviewDraftScope): ReviewPrivateDraft[] {
   if (raw === null) return [];
-  if (new TextEncoder().encode(raw).byteLength > 1_000_000) throw new Error("Draft capacity exceeded");
+  if (new TextEncoder().encode(raw).byteLength > REVIEW_PRIVATE_DRAFT_MAX_BYTES) throw new Error("Draft capacity exceeded");
   const { entries } = shelfSchema.parse(JSON.parse(raw));
   if (new Set(entries.map((entry) => entry.input.id)).size !== entries.length) throw new Error("Duplicate draft identity");
   for (const { input } of entries) {

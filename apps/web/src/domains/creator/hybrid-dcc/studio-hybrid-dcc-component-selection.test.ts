@@ -402,7 +402,7 @@ describe("studio hybrid DCC component selection authority", () => {
     });
   });
 
-  it("maps renderer fan-triangle faceIndex to stable face, vertices, and edge candidates", () => {
+  it("공유 GLB surface 순서의 faceIndex를 원본 안정 ID와 실제 코너에 대응시킨다", () => {
     const meshSource = source();
     const first = expectValue(mapStudioHybridDccRayFaceIndex(meshSource, 0));
     const second = expectValue(mapStudioHybridDccRayFaceIndex(meshSource, 1));
@@ -413,8 +413,10 @@ describe("studio hybrid DCC component selection authority", () => {
       faceId: 0,
       triangleIndexWithinFace: 0,
       faceVertexIds: [0, 3, 2, 1],
-      triangleVertexIds: [0, 3, 2],
-      vertexCandidateIds: [0, 2, 3],
+      triangleVertexIds: [1, 0, 3],
+      triangleCornerHalfEdgeIds: [3, 0, 1],
+      triangleBoundaryEdgeIds: [3, 0, null],
+      vertexCandidateIds: [0, 1, 2, 3],
     });
     expect(first.edgeCandidates).toHaveLength(4);
     expect(first.edgeCandidates.map((edge) => edge.id)).toEqual(
@@ -423,12 +425,12 @@ describe("studio hybrid DCC component selection authority", () => {
     expect(second).toMatchObject({
       faceId: 0,
       triangleIndexWithinFace: 1,
-      triangleVertexIds: [0, 2, 1],
+      triangleVertexIds: [3, 2, 1],
     });
     expect(nextFace).toMatchObject({
       faceId: 1,
       faceVertexIds: [4, 5, 6, 7],
-      triangleVertexIds: [4, 5, 6],
+      triangleVertexIds: [7, 4, 5],
     });
 
     const outside = mapStudioHybridDccRayFaceIndex(meshSource, 12);

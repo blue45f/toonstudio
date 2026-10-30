@@ -40,6 +40,22 @@ export interface StudioBg3dWebglRecoveryNoticeDetail {
   readonly retry: () => boolean;
 }
 
+interface RecoveryOwner {
+  readonly lease: object | null;
+  readonly snapshot: StudioBg3dWebglRecoverySnapshot;
+  readonly lossTimes: readonly number[];
+}
+const recoveryOwners = new WeakMap<HTMLCanvasElement, RecoveryOwner>();
+
+function unavailable(phase: StudioBg3dWebglRecoveryPhase): boolean {
+  return phase === "lost" || phase === "failed" || phase === "degraded";
+}
+
+/** renderer를 만들지 않고 현재 상태를 읽는다. 폐기한 owner의 미복구 상태도 실제 복구까지 남긴다. */
+export function getStudioBg3dWebglRecoverySnapshot(canvas: HTMLCanvasElement): StudioBg3dWebglRecoverySnapshot | null {
+  return recoveryOwners.get(canvas)?.snapshot ?? null;
+}
+
 const DEFAULT_RECOVERY_WINDOW_MS = 30_000;
 const DEFAULT_DEGRADATION_THRESHOLD = 3;
 
@@ -88,18 +104,24 @@ export function installStudioBg3dWebglContextRecovery(
   let disposed = false;
   let scheduledFrame: number | null = null;
   let restorationEpoch = 0;
-  let lossTimes: number[] = [];
-  let current: StudioBg3dWebglRecoverySnapshot = Object.freeze({
+  const previous = recoveryOwners.get(canvas);
+  const retained = previous && unavailable(previous.snapshot.phase) ? previous : undefined;
+  let lossTimes: number[] = [...(retained?.lossTimes ?? [])];
+  let current: StudioBg3dWebglRecoverySnapshot = retained?.snapshot ?? Object.freeze({
     degraded: false,
     lossCount: 0,
     phase: "healthy",
     timestamp: now(),
   });
+  const ownerLease = {};
+  recoveryOwners.set(canvas, { lease: ownerLease, snapshot: current, lossTimes });
+  const ownsCanvas = () => !disposed && recoveryOwners.get(canvas)?.lease === ownerLease;
 
   const publish = (
     phase: StudioBg3dWebglRecoveryPhase,
     timestamp: number,
   ): void => {
+    if (!ownsCanvas()) return;
     const degraded = lossTimes.length >= degradationThreshold;
     current = Object.freeze({
       degraded,
@@ -107,6 +129,7 @@ export function installStudioBg3dWebglContextRecovery(
       phase: degraded && phase === "lost" ? "degraded" : phase,
       timestamp,
     });
+    recoveryOwners.set(canvas, { lease: ownerLease, snapshot: current, lossTimes });
     options.onStateChange?.(current);
   };
 
@@ -117,7 +140,7 @@ export function installStudioBg3dWebglContextRecovery(
   };
 
   const handleContextLost = (event: Event): void => {
-    if (disposed) return;
+    if (!ownsCanvas()) return;
     event.preventDefault();
     restorationEpoch += 1;
     cancelScheduledFrame();
@@ -129,7 +152,7 @@ export function installStudioBg3dWebglContextRecovery(
   };
 
   const restoreRenderer = (): boolean => {
-    if (disposed) return false;
+    if (!ownsCanvas()) return false;
     const timestamp = now();
     const epoch = restorationEpoch + 1;
     restorationEpoch = epoch;
@@ -139,17 +162,17 @@ export function installStudioBg3dWebglContextRecovery(
       options.resetRenderer();
     } catch {
       // 캐시 재생성이 끝나지 않은 렌더러는 복구 성공이나 후속 프레임을 발행하지 않는다.
-      if (disposed || restorationEpoch !== epoch) return false;
+      if (!ownsCanvas() || restorationEpoch !== epoch) return false;
       publish("failed", timestamp);
       return false;
     }
-    if (disposed || restorationEpoch !== epoch) return false;
+    if (!ownsCanvas() || restorationEpoch !== epoch) return false;
     queueMicrotask(() => {
-      if (!disposed && restorationEpoch === epoch) options.invalidate();
+      if (ownsCanvas() && restorationEpoch === epoch) options.invalidate();
     });
     scheduledFrame = scheduleFrame(() => {
       scheduledFrame = null;
-      if (!disposed && restorationEpoch === epoch) options.invalidate();
+      if (ownsCanvas() && restorationEpoch === epoch) options.invalidate();
     });
     publish("restored", timestamp);
     return true;
@@ -164,7 +187,7 @@ export function installStudioBg3dWebglContextRecovery(
     false,
   );
 
-  return Object.freeze({
+  const controller: StudioBg3dWebglRecoveryController = Object.freeze({
     dispose: () => {
       if (disposed) return;
       disposed = true;
@@ -180,8 +203,18 @@ export function installStudioBg3dWebglContextRecovery(
         false,
       );
       cancelScheduledFrame();
+      if (recoveryOwners.get(canvas)?.lease === ownerLease) {
+        if (unavailable(current.phase)) recoveryOwners.set(canvas, { lease: null, snapshot: current, lossTimes });
+        else recoveryOwners.delete(canvas);
+      }
     },
     retry: () => current.phase === "failed" && restoreRenderer(),
     snapshot: () => current,
   });
+  // 재설치만으로 미복구 상태를 healthy로 바꾸지 않는다. 기존 callback 발행 순서도 유지한다.
+  if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
+    const detail: StudioBg3dWebglRecoveryNoticeDetail = { owner: canvas, snapshot: current, retry: controller.retry };
+    window.dispatchEvent(new CustomEvent(STUDIO_BG3D_WEBGL_RECOVERY_EVENT, { detail }));
+  }
+  return controller;
 }

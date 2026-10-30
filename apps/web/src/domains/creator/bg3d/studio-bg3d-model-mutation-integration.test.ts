@@ -16,6 +16,9 @@ const modelImportActionsSource = readFileSync(
   new URL("./studio-bg3d-editor-model-import-actions.ts", import.meta.url),
   "utf8",
 );
+const generatedPartsSource = readFileSync(
+  new URL("./studio-bg3d-generated-parts-command.ts", import.meta.url), "utf8",
+);
 const MODEL_IMPORT_ACTIONS_TAIL =
   "return { handleDeleteModelFromLibrary, handleUploadModelFiles, importModelFiles };";
 
@@ -48,7 +51,10 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
     );
     expect(additive).toContain("live.primitives.length + live.customModels.length > nodeLimit - additionalNodeCount");
     expect(additive).toContain("if (!canAdmitSceneNodes(1)) return");
-    expect(additive).toContain("if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return");
+    expect(additive).toContain("const addGeneratedParts = createStudioBg3dGeneratedPartsCommand({");
+    expect(additive).toContain("canAdmitSceneNodes, replace: replaceCanonicalDocumentState, select: setSelectedIds");
+    expect(generatedPartsSource).toContain("parts.length === 0");
+    expect(generatedPartsSource).toContain("canAdmitSceneNodes(parts.length)");
     expectInOrder(additive, [
       "if (!canAdmitSceneNodes(primitivePairs.length + modelPairs.length)) return",
       "replaceCanonicalDocumentState({",
@@ -81,11 +87,11 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
       "signal: combinedSignal.signal",
       "if (!lease.isCurrent() || !args.isActive() || !isPolicyCurrent())",
       "loaded.dispose()",
-      "args.cache.set(args.record.id, entry)",
+      "args.cache.set(cacheKey, entry)",
       "combinedSignal.dispose()",
     ]);
     expect(add).toContain(
-      "isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent()",
+      "isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent() && isMaterialBackendCurrent?.() !== false",
     );
     expectInOrder(remove, [
       "async (lease) =>",
@@ -99,10 +105,11 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
   it("runs cheap live-scene admission on every cache hit while caching profile-and-budget attestation", () => {
     const cachedBranch = sourceBetweenIn(
       admissionSource,
-      "const cached = args.cache.get(args.record.id);",
-      "const pending = args.pending.get(args.record.id);",
+      "const cached = args.cache.get(cacheKey);",
+      "const pending = args.pending.get(cacheKey);",
     );
     expectInOrder(cachedBranch, [
+      "if (cached.runtimeVariant !== runtimeVariant)",
       "assertStudioBg3dModelPlacementAdmission({",
       "if (!cached.admissionPolicyKeys?.has(policyKey))",
       "admitStoredBg3dModelForRendering(args.record.id",
@@ -200,7 +207,7 @@ describe("Studio BG3D model placement and persistent deletion integration", () =
       "deleteStoredBg3dModel(storageModelId, { signal: lease.signal })",
       "commitSceneEntityRemoval(plan, { resetHistory: true })",
       "attachmentByStorageModelIdRef.current.delete(id)",
-      "modelRootCacheRef.current.delete(id)",
+      "deleteStudioBg3dModelCacheVariants(modelRootCacheRef.current, id)",
       "authoritativePersistence: true",
     ]);
     expect(handler).not.toContain("removeSceneEntities(removedInstanceIds)");

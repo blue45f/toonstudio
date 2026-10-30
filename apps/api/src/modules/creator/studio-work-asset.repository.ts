@@ -2,6 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 
 import { and, asc, count, eq, inArray, ne, or, sql } from "drizzle-orm";
 import * as Y from "yjs";
+import { canonicalJson } from "@toonstudio/studio-project-model";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
+import { authorizeStudioScopedAssetPurpose } from "./studio-scoped-asset-purpose";
 
 import {
   normalizeStudioBrushR8TextureGrainSource,
@@ -149,6 +152,7 @@ export interface StudioWorkAssetGeneratedDeletePlan {
 }
 
 export interface StudioWorkAssetWrite {
+  writeContext?: StudioScopedWriteContext;
   workId: string;
   assetId: string;
   elementType: StudioWorkAssetType;
@@ -166,11 +170,12 @@ export interface StudioWorkAssetContent {
 }
 
 export interface StudioWorkAssetRepository {
-  assertCanEditWork(actorUserId: string, workId: string): Promise<void>;
+  assertCanEditWork(actorUserId: string, workId: string, writeContext?: StudioScopedWriteContext): Promise<void>;
   assertCanStoreGeneratedObject(
     actorUserId: string,
     workId: string,
     sourceAssetId: string,
+    writeContext?: StudioScopedWriteContext,
   ): Promise<void>;
   findReusableStorageObject(
     object: PrivateObjectReference,
@@ -232,7 +237,7 @@ export interface StudioWorkAssetRepository {
   registerGeneratedStorageReference(
     actorUserId: string,
     input: StudioWorkAssetStorageReference,
-    reactivateDeletedObject: boolean,
+    reactivateDeletedObject: boolean, writeContext?: StudioScopedWriteContext,
   ): Promise<StudioWorkAssetStorageReference>;
   listGeneratedStorageReferencesForWorkDeletion(
     actorUserId: string,
@@ -977,28 +982,20 @@ async function readAsset(
 export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetRepository {
   async assertCanEditWork(
     actorUserId: string,
-    workId: string,
+    workId: string, writeContext?: StudioScopedWriteContext,
   ): Promise<void> {
-    await db.transaction(
-      (transaction) => requireAccess(
-        transaction,
-        actorUserId,
-        workId,
-        "edit",
-        false,
-      ),
-      { isolationLevel: "repeatable read", accessMode: "read only" },
-    );
+    await db.transaction(async (transaction) => { await authorizeStudioScopedAssetPurpose(transaction, actorUserId, workId, writeContext); });
   }
 
   async assertCanStoreGeneratedObject(
     actorUserId: string,
     workId: string,
     sourceAssetId: string,
+    writeContext?: StudioScopedWriteContext,
   ): Promise<void> {
     await db.transaction(
       async (transaction) => {
-        await requireAccess(transaction, actorUserId, workId, "edit", false);
+        await authorizeStudioScopedAssetPurpose(transaction, actorUserId, workId, writeContext);
         const [source] = await transaction
           .select({ assetId: creatorWorkAssets.assetId })
           .from(creatorWorkAssets)
@@ -1011,7 +1008,6 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
           .limit(1);
         if (!source) throw new StudioWorkAssetNotFoundError();
       },
-      { isolationLevel: "repeatable read", accessMode: "read only" },
     );
   }
 
@@ -1061,7 +1057,8 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
     return db.transaction(async (transaction) => {
       // This one work-row lock serializes the entire pair against every participating upload,
       // collaborator downgrade, cleanup and trusted deletion mutation for the work.
-      await requireAccess(transaction, actorUserId, workId, "edit", true);
+      if (inputs.some((input) => canonicalJson(input.writeContext ?? null) !== canonicalJson(inputs[0]?.writeContext ?? null))) throw new StudioWorkAssetForbiddenError("edit");
+      await authorizeStudioScopedAssetPurpose(transaction, actorUserId, workId, inputs[0]?.writeContext);
       const assetIds = inputs.map(({ assetId }) => assetId);
       const reserved = await transaction
         .select({ assetId: creatorWorkAssetTombstones.assetId })
@@ -1330,7 +1327,7 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
   async registerGeneratedStorageReference(
     actorUserId: string,
     input: StudioWorkAssetStorageReference,
-    reactivateDeletedObject: boolean,
+    reactivateDeletedObject: boolean, writeContext?: StudioScopedWriteContext,
   ): Promise<StudioWorkAssetStorageReference> {
     const object = PrivateObjectReferenceSchema.parse(input.object);
     if (object.purpose === "source") {
@@ -1338,7 +1335,7 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
     }
     const generatedPurpose = object.purpose;
     return db.transaction(async (transaction) => {
-      await requireAccess(transaction, actorUserId, input.workId, "edit", true);
+      await authorizeStudioScopedAssetPurpose(transaction, actorUserId, input.workId, writeContext);
       const [source] = await transaction
         .select({ assetId: creatorWorkAssets.assetId })
         .from(creatorWorkAssets)

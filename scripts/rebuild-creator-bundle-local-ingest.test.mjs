@@ -31,11 +31,45 @@ function fixture() {
 function inFixture(run) { const f = fixture(); try { run(f); } finally { rmSync(f.root, { recursive: true, force: true }); } }
 function updateProjection(f) { f.inputs.projectionBytes = Buffer.from(JSON.stringify(f.projection)); f.inputs.config.projectionSha256 = sha(f.inputs.projectionBytes); }
 
-test("설정은 상대 경로만 기록하며 현재 8팩·1764개·바이트 권위 합계를 보존한다", () => {
+test("설정은 역사 8팩을 보존하고 현재 10팩·1929개의 공개 메타데이터와 바이트 합계를 대조한다", () => {
   const config = JSON.parse(readFileSync(DEFAULT_CONFIG, "utf8"));
   validateLocalIngestConfig(config);
-  assert.equal(config.packs.length, 8);
-  assert.deepEqual(config.expected, { files: 1764, bytes: 1893423580 });
+  const historical = [
+    ["cbv1-008-cute-park-pack", "cbv1-ingest-local-cute-park", "01-city/cute-park-pack/models/mixed/gLTF", 103, 94403244],
+    ["cbv1-024-cute-dungeon-megapack", "cbv1-ingest-local-cute-dungeon", "02-medieval-fantasy/cute-dungeon-megapack/models/mixed/gLTF", 320, 196787736],
+    ["cbv1-014-cute-graveyard", "cbv1-ingest-local-cute-graveyard", "05-horror-gothic/cute-graveyard/models/mixed/gLTF", 253, 142555424],
+    ["cbv1-076-medieval-weapons", "cbv1-ingest-local-medieval-weapons", "02-medieval-fantasy/free-medieval-weapons-small-low-poly-pack/models/mixed/gLTF", 32, 18906768],
+    ["cbv1-053-scifi-arena-blue-base", "cbv1-ingest-local-scifi-blue-base", "06-scifi/sci-fi-arena-blue-base/models/mixed/gLTF", 114, 81671064],
+    ["cbv1-081-cartoon-car-megapack", "cbv1-ingest-local-cartoon-car-megapack", "20-vehicles/cartoon-car-megapack/models/mixed/gLTF", 180, 302323400],
+    ["cbv1-017-cartoon-cars-2", "cbv1-ingest-local-cartoon-cars-2", "20-vehicles/cartoon-cars-2/models/mixed/Gltf", 453, 863451444],
+    ["cbv1-018-army-pack", "cbv1-ingest-local-army-pack", "30-props/army-pack/models/mixed/gLTF", 309, 193324500],
+  ];
+  assert.equal(config.packs.length, 10);
+  assert.equal(config.expected.files, 1929);
+  assert.deepEqual(config.packs.slice(0, 8).map((pack) => [pack.catalogId, pack.ingestId, pack.librarySource, pack.files, pack.bytes]), historical);
+  assert.deepEqual(config.packs.slice(8).map((pack) => [pack.catalogId, pack.ingestId, pack.librarySource, pack.files]), [
+    ["cbv1-012-cemetery-statues", "cbv1-ingest-local-cemetery-statues", "05-horror-gothic/cemetery-statues/models/glb", 50],
+    ["cbv1-077-small-props-pack", "cbv1-ingest-local-small-props-pack", "02-medieval-fantasy/free-medieval-props-small-pack-low-poly/models/mixed/gLTF/Props", 115],
+  ]);
+  assert.equal(config.packs.reduce((sum, pack) => sum + pack.files, 0), config.expected.files);
+  assert.equal(config.packs.reduce((sum, pack) => sum + pack.bytes, 0), config.expected.bytes);
+  const projectionBytes = readFileSync(join(dirname(DEFAULT_CONFIG), "..", config.projection));
+  assert.equal(sha(projectionBytes), config.projectionSha256);
+  const projection = JSON.parse(projectionBytes);
+  assert.equal(projection.sourceManifest.generatedAt, config.snapshotGeneratedAt);
+  assert.equal(projection.assets.length, config.expected.files);
+  assert.equal(projection.totals.placeableAssets, config.expected.files);
+  assert.equal(projection.assets.reduce((sum, asset) => sum + asset.bytes, 0), config.expected.bytes);
+  for (const pack of config.packs) {
+    const assets = projection.assets.filter((asset) => asset.path.startsWith(pack.ingestId + "/native/"));
+    assert.equal(assets.length, pack.files, pack.ingestId);
+    assert.equal(assets.reduce((sum, asset) => sum + asset.bytes, 0), pack.bytes, pack.ingestId);
+    for (const asset of assets) {
+      assert.ok(asset.id.startsWith(pack.ingestId + "-"), asset.id);
+      assert.ok(projection.packs[asset.pack].catalogIds.includes(pack.catalogId), asset.id);
+      assert.ok(projection.packs[asset.pack].ingestPackIds.includes(pack.ingestId), asset.id);
+    }
+  }
   assert(!JSON.stringify(config).includes("/Users/"));
   const wrong = structuredClone(config); wrong.packs[0].librarySource = "/outside/pack";
   assert.throws(() => validateLocalIngestConfig(wrong), /상대 경로/u);

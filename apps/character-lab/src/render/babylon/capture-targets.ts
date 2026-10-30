@@ -65,11 +65,11 @@ function createTarget(scene: Scene, name: string, width: number, height: number,
 }
 
 /** 캡처 한 패스용 RGBA8 타깃을 빌린다. 작은 크기는 장면별 풀에서 재사용한다. */
-export function acquireCaptureTarget(scene: Scene, pass: string, width: number, height: number, samples: number): CaptureTargetLease {
+export function acquireCaptureTarget(scene: Scene, pass: string, width: number, height: number, samples: number, poolGroup = "default"): CaptureTargetLease {
   const poolable = width <= POOLED_CAPTURE_MAX_EDGE && height <= POOLED_CAPTURE_MAX_EDGE;
   if (poolable) {
     const pool = poolOf(scene);
-    const key = `${width}x${height}:${samples}`;
+    const key = `${poolGroup}:${width}x${height}:${samples}`;
     let slot = pool.get(key);
     if (slot && slot.rtt.getInternalTexture() === null) {
       // 컨텍스트 손실 등으로 이미 해제된 타깃은 버린다.

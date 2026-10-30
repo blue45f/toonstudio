@@ -197,9 +197,9 @@ describe("면 모델링 작업대: 접힘·도구·상태 이름", () => {
     const section = open();
     expect(within(section).getByRole("button", { name: /^면 모델링 · / }).getAttribute("aria-expanded")).toBe("true");
     const radios = within(section).getAllByRole("radio");
-    expect(radios.map((radio) => radio.getAttribute("value"))).toEqual(["push-pull", "inset", "offset", "draw"]);
+    expect(radios.map((radio) => radio.getAttribute("value"))).toEqual(["push-pull", "inset", "offset", "draw", "follow-me"]);
     expect(screen.getByRole("radio", { name: "밀기/당기기" })).toHaveProperty("checked", true);
-    for (const name of ["안쪽 테두리", "오프셋", "면 그리기"]) {
+    for (const name of ["안쪽 테두리", "오프셋", "면 그리기", "따라 만들기"]) {
       expect(screen.getByRole("radio", { name })).toHaveProperty("checked", false);
     }
     const state = section.querySelector("[data-studio-hybrid-dcc-face-modeling-state]")!;

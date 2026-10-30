@@ -1,5 +1,6 @@
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
+import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
 
 import {
   CREATOR_COLLABORATION_STATUSES,
@@ -179,9 +180,12 @@ export const UpdateCreatorSharedDocumentSchema = CreatorSharedDocumentMutableFie
   .extend({
     baseRevision: CreatorWorkRevisionSchema,
     crdtServerSequence: CreatorCrdtServerSequenceSchema,
+    mutationId: z.uuid().optional(),
+    writeContext: StudioScopedWriteContextSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {
+    if (Boolean(value.mutationId) !== Boolean(value.writeContext)) context.addIssue({ code: "custom", message: "제한 저장 ID와 현재 편집 범위를 함께 보내세요." });
     if (!creatorSharedDocumentFieldNames.some((field) => Object.hasOwn(value, field))) {
       context.addIssue({
         code: "custom",

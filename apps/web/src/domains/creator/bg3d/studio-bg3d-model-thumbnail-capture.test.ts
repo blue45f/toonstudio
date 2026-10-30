@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import * as modelLibrary from "./bg3d-model-library";
 import {
   STUDIO_BG3D_CAPTURE_PROFILE_RGBA8_DEPTH_V1,
   type StudioBg3dCaptureAdapter,
@@ -107,6 +108,135 @@ afterEach(() => {
 });
 
 describe("Studio BG3D per-model thumbnail capture lane", () => {
+  it("기본 저장 경로에 작업 signal과 전체 소유권 검사를 전달한다", async () => {
+    const persist = vi.spyOn(modelLibrary, "saveBg3dModelThumbnailIfCurrentV12")
+      .mockImplementation(async (_id, _url, options) => {
+        expect(options?.signal?.aborted).toBe(false);
+        expect(options?.assertCurrent).toBeTypeOf("function");
+        options?.assertCurrent?.();
+        return true;
+      });
+    const controller = new StudioBg3dModelThumbnailCaptureController({
+      dependencies: {
+        capture: async () => raster(),
+        encode: async () => pngBlob(),
+        verify: async () => undefined,
+        toDataUrl: async () => thumbnailDataUrl(),
+        revisionFactory: () => 11,
+      },
+    });
+    try {
+      await expect(controller.captureAndStore({
+        storageModelId: "default-guard",
+        adapter: adapter(),
+      })).resolves.toMatchObject({ captureRevision: 11 });
+      expect(persist).toHaveBeenCalledExactlyOnceWith(
+        "default-guard",
+        thumbnailDataUrl(),
+        expect.objectContaining({
+          captureRevision: 11,
+          signal: expect.any(AbortSignal),
+          assertCurrent: expect.any(Function),
+        }),
+      );
+    } finally {
+      controller.dispose();
+    }
+  });
+
+  it("저장 대기 중 lease가 바뀌면 stale을 보존하고 ready를 발행하지 않는다", async () => {
+    const entered = deferred<void>();
+    const release = deferred<void>();
+    const progress: string[] = [];
+    let current = true;
+    const persist: NonNullable<StudioBg3dModelThumbnailCaptureDependencies["persist"]> =
+      async (_id, _url, _revision, guard) => {
+        guard.assertCurrent();
+        entered.resolve(undefined);
+        await release.promise;
+        guard.assertCurrent();
+        return true;
+      };
+    const controller = new StudioBg3dModelThumbnailCaptureController({
+      dependencies: dependencies({ persist }),
+    });
+    try {
+      const result = controller.captureAndStore({
+        storageModelId: "changed-lease",
+        adapter: adapter(),
+        isCurrent: () => current,
+        onProgress: ({ stage }) => progress.push(stage),
+      });
+      const rejected = expect(result).rejects.toMatchObject({ code: "stale" });
+      await entered.promise;
+      current = false;
+      release.resolve(undefined);
+      await rejected;
+      expect(progress).toContain("persisting");
+      expect(progress).not.toContain("ready");
+    } finally {
+      release.resolve(undefined);
+      controller.dispose();
+    }
+  });
+
+  it("이전 세대의 늦은 저장은 새 세대의 결과를 덮어쓰지 않는다", async () => {
+    const entered = deferred<void>();
+    const release = deferred<void>();
+    const finished = deferred<void>();
+    const published: number[] = [];
+    const persist: NonNullable<StudioBg3dModelThumbnailCaptureDependencies["persist"]> =
+      async (_id, _url, revision, guard) => {
+        try {
+          if (revision === 20) {
+            entered.resolve(undefined);
+            await release.promise;
+          }
+          guard.assertCurrent();
+          published.push(revision);
+          return true;
+        } finally {
+          if (revision === 20) finished.resolve(undefined);
+        }
+      };
+    let revision = 20;
+    const controller = new StudioBg3dModelThumbnailCaptureController({
+      dependencies: dependencies({ persist, revisionFactory: () => revision++ }),
+    });
+    try {
+      const obsolete = controller.captureAndStore({
+        storageModelId: "same-model", adapter: adapter(),
+      });
+      const rejected = expect(obsolete).rejects.toMatchObject({ code: "stale" });
+      await entered.promise;
+      controller.invalidate();
+      await rejected;
+      await expect(controller.captureAndStore({
+        storageModelId: "same-model", adapter: adapter(),
+      })).resolves.toMatchObject({ generationId: 2 });
+      release.resolve(undefined);
+      await finished.promise;
+      expect(published).toEqual([21]);
+    } finally {
+      release.resolve(undefined);
+      controller.dispose();
+    }
+  });
+
+  it("유효한 작업의 실제 저장 오류는 persistence-failed로 유지한다", async () => {
+    const failure = new Error("저장소 기록 실패");
+    const controller = new StudioBg3dModelThumbnailCaptureController({
+      dependencies: dependencies({ persist: async () => { throw failure; } }),
+    });
+    try {
+      await expect(controller.captureAndStore({
+        storageModelId: "storage-failure", adapter: adapter(),
+      })).rejects.toMatchObject({ code: "persistence-failed", cause: failure });
+    } finally {
+      controller.dispose();
+    }
+  });
+
   it("runs capture, Worker encode, verification, and fenced persistence in order", async () => {
     const calls: string[] = [];
     const identities: Array<{ generationId: number; requestId: number }> = [];

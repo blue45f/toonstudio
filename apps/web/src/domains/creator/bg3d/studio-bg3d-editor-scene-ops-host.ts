@@ -29,6 +29,7 @@ import {
 import { readStudioBg3dTemplateStaticModelWorldBounds } from "./studio-bg3d-template-organizer-bounds";
 import { formatNumber } from "@toonstudio/core/format";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { createStudioBg3dGeneratedPartsCommand } from "./studio-bg3d-generated-parts-command";
 
 export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
   const {
@@ -493,16 +494,14 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     void captureStudio3dPlatesFromAdapter(graded.scene, 48, 27, captureRef?.current?.adapter ?? null);
   };
   h.addPrimitive = addPrimitive;
-  // 합성·방·웹툰 배경처럼 "한 번에 여러 도형을 만들어 붙이는" 추가의 공통 경로: 노드 수 한도를 확인한 뒤 한 번의 상태
-  // 교체로 커밋하고 첫 도형을 선택한다. buildParts(기존 도형 수, 현재 카메라 뷰) → BgPrimitive[]; 더한 목록(실패면 false)을 돌려준다.
-  const addGeneratedParts = (buildParts: (count: number, view: StudioBg3dCameraSettings) => BgPrimitive[]) => {
-    const live = physicsRuntimeSourceRef.current;
-    const parts = buildParts(live.primitives.length, viewportApiRef.current?.readView() ?? sceneBaseDocument.camera);
-    if (parts.length === 0 || !canAdmitSceneNodes(parts.length)) return false;
-    replaceCanonicalDocumentState({ primitives: [...live.primitives, ...parts] });
-    setSelectedIds(new Set([parts[0].id]));
-    return parts;
-  };
+  const addGeneratedParts = createStudioBg3dGeneratedPartsCommand({
+    readRuntime: () => physicsRuntimeSourceRef.current,
+    readView: () => viewportApiRef.current?.readView() ?? sceneBaseDocument.camera,
+    canAdmitSceneNodes, replace: replaceCanonicalDocumentState, select: setSelectedIds,
+    readAttachments: () => attachmentByStorageModelIdRef.current,
+    onPersistenceRejected: () => setError("저장 가능한 장면 용량이나 도형 정보의 범위를 초과해 배치하지 못했습니다."),
+    commitHistory: commitImmediateHistoryTransition,
+  });
   h.addGeneratedParts = addGeneratedParts;
   // "숨긴 벽 되돌리기": 자동 단면이 숨긴 조각(id 목록)만 한 번의 상태 교체로 다시 보이게 한다.
   h.showSceneParts = (ids: readonly string[]) => replaceCanonicalDocumentState({ primitives: physicsRuntimeSourceRef.current.primitives.map((p: BgPrimitive) => (ids.includes(p.id) && p.visible === false ? { ...p, visible: true } : p)) });
@@ -520,7 +519,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     const currentUsage = calculateStudioBg3dProceduralSceneUsage(
       live.primitives,
       live.customModels,
-      (modelId: string) => modelRootCacheRef.current.get(modelId)?.metrics ?? null,
+      (modelId: string) => R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.metrics ?? null,
     );
     if (!currentUsage) return { ok: false, reason: "invalid-budget" };
 
@@ -899,7 +898,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     );
     if (!model) return null;
     return readStudioBg3dTemplateStaticModelWorldBounds(
-      modelRootCacheRef.current.get(model.modelId)?.root,
+      R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root,
       model,
     );
   };

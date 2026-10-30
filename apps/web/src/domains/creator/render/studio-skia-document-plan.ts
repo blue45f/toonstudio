@@ -1,4 +1,5 @@
 import { isStudioStrokePaintModelCompatible } from "../brush/studio-stroke-paint-model";
+import { studioFrameClip } from "@toonstudio/studio-project-model/frame-clip";
 import type { SkiaDocumentItem } from "@toonstudio/studio-engine-skia";
 import type { SceneNodeIR } from "@toonstudio/studio-project-model";
 import { isDirectLiveDraftEl, resolveStudioCausalInkDrawContract } from "../brush/studio-draw-rendering";
@@ -346,6 +347,9 @@ export function createStudioSkiaDocumentProjector() {
         if (ids.has(element.id)) return { supported: false, items: [], ownedDocumentIds: [], reason: "duplicate-document-id" };
         ids.add(element.id);
         const panel = element.type === "frame" || element.noClip ? null : resolvePanel(element);
+        if (element.type !== "frame" && !element.noClip && element.frameClipId !== undefined && !panel) {
+          return { supported: false, items: [], ownedDocumentIds: [], reason: `unresolved-frame-clip:${element.id}` };
+        }
         const theme = element.type === "frame" ? frameTheme : null;
         const preparedImage = preparedImages.get(element.id);
         const preparedImageKey = preparedImage?.key ?? null;
@@ -361,7 +365,7 @@ export function createStudioSkiaDocumentProjector() {
             ? {
                 ...result,
                 revision: { element, panel, preparedImageKey },
-                clip: { x: panel.x, y: panel.y, width: panel.width, height: panel.height },
+                clip: studioFrameClip(panel),
               }
             : result;
           entry = { element, panel, theme, preparedImageKey, item };

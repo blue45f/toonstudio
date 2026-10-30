@@ -1,7 +1,7 @@
 /**
  * Character Shaper — floating controls over the 3D viewport.
  *
- * Desktop top-left: camera presets. Mobile camera controls occupy a separate normal-flow bar.
+ * 카메라 프리셋과 선택 필드는 모든 화면에서 별도의 정상 흐름 bar가 예약한 공간을 사용한다.
  * Top-right: turntable, lighting tone, transparent background, zoom.
  * Bottom-left: a status pill (model status / busy reason / hold-to-compare). Every control is a
  * labelled 44px button; the wrapper is pointer-transparent so orbiting the model keeps working.
@@ -28,7 +28,7 @@ import {
   resolveShaperContextKeycapStatusGuide,
 } from "./character-shaper-ui-model";
 
-import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
+import { useCharacterShaperSessionSettings } from "./character-shaper-session-settings";
 
 import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-contract";
 import type { LoadStatus } from "../vrm/StudioVrmPoserTypes";
@@ -142,6 +142,7 @@ function downloadLtPayloadAsPng(payload: StudioLtConvertLayerPayload): boolean {
 }
 
 export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }: CharacterShaperViewportHudProps) {
+  const settings = useCharacterShaperSessionSettings();
   const locale = useI18n((state) => state.lang);
   const bt = useBilingual("CharacterShaperViewportHud");
   const [ltOpen, setLtOpen] = useState(false);
@@ -295,8 +296,6 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
       data-character-shaper-hud="true"
       className="pointer-events-none absolute inset-0 z-20"
     >
-      {!compact ? <CharacterShaperCameraControls h={h} compact={false} /> : null}
-
       <div
         role="group"
         aria-label="뷰포트 보기 설정"
@@ -437,8 +436,9 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
             className="flex items-center gap-2 rounded-xl border border-line/60 bg-panel/85 px-2.5 py-1 text-[0.65rem] font-medium text-fg-2 shadow-sm backdrop-blur"
           >
             {resolveShaperContextKeycapStatusGuide({
-              tab: paintMode ? "draw" : "pose",
+              tab: paintMode ? "draw" : "camera",
               drawingActive: paintMode,
+              cameraStyle: settings?.cameraStyle,
             }).map((item) => (
               <span key={item.keycap} className="inline-flex items-center gap-1">
                 <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-line-strong/70 bg-card px-1 font-mono text-[0.6rem] font-bold text-fg">

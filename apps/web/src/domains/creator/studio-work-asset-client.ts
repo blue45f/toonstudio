@@ -3,6 +3,8 @@ import {
   type StudioLayerLiftTrustedArtifactPair,
 } from "./layer/studio-layer-lift-artifact";
 import { readBoundedStudioAssetResponse } from "./studio-bounded-asset-response";
+import { appendStudioScopedAssetContext } from "./studio-collab/studio-scoped-asset-context";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 import type {
   StudioWorkAssetDescriptor,
@@ -128,7 +130,7 @@ function exactLayerLiftBatchReceipt(
 export async function uploadStudioWorkAssetLayerLiftBatch(
   workId: string,
   input: UploadStudioWorkAssetLayerLiftBatchInput,
-  signal?: AbortSignal,
+  signal?: AbortSignal, writeContext?: StudioScopedWriteContext,
 ): Promise<StudioWorkAssetLayerLiftBatchReceipt> {
   try {
     if (signal?.aborted) {
@@ -187,6 +189,7 @@ export async function uploadStudioWorkAssetLayerLiftBatch(
       ],
     });
     const form = new FormData();
+    appendStudioScopedAssetContext(form, writeContext);
     form.append("metadata", JSON.stringify(metadata));
     form.append(
       "background",
@@ -278,10 +281,11 @@ export async function uploadStudioWorkAsset(
   reference: StudioWorkAssetReference,
   descriptorValue: StudioWorkAssetDescriptor,
   file: Blob,
-  signal?: AbortSignal
+  signal?: AbortSignal, writeContext?: StudioScopedWriteContext
 ): Promise<StudioWorkAssetManifest> {
   const descriptor = parseStudioWorkAssetDescriptor(descriptorValue, reference);
   const form = new FormData();
+  appendStudioScopedAssetContext(form, writeContext);
   form.append("elementType", reference.elementType);
   form.append("descriptor", JSON.stringify(descriptor));
   form.append("file", file, `${reference.assetId}.${reference.elementType === "image" ? "bin" : "glb"}`);

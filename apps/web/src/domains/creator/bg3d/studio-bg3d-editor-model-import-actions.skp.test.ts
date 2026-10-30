@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from "three";
 
 import { createStudioBg3dModelImportActions, type StudioBg3dModelImportActionsContext } from "./studio-bg3d-editor-model-import-actions";
 import { studioBg3dSkpImportSession } from "./studio-bg3d-skp-import-session";
@@ -149,7 +150,12 @@ beforeEach(() => {
   runtime.list.mockResolvedValue([]);
   runtime.persist.mockResolvedValue("saved");
   runtime.createAttachment.mockImplementation(async (record: { id: string }) => ({ id: `attachment-${record.id}`, hash: "h" }));
-  runtime.admit.mockResolvedValue(undefined);
+  runtime.admit.mockImplementation(async () => {
+    const root = new Group();
+    root.add(new Mesh(new BoxGeometry(20, 12, 8), new MeshBasicMaterial()));
+    root.scale.setScalar(0.1);
+    return { root, normalizationScale: 0.1 };
+  });
   runtime.importVerified.mockResolvedValue([{ id: "model-1", contentHash: HASH, byteSize: 2_000 }]);
   runtime.getStored.mockImplementation(async (id: string) => storedRecord(id));
   runtime.runScene.mockImplementation(async (_session: unknown, work: (lease: unknown) => Promise<unknown>, commit: (value: unknown) => void) => {
@@ -278,10 +284,13 @@ describe("importModelFiles with a SketchUp file", () => {
     await h.actions().importModelFiles([file("prop.glb"), file("room.skp")], RIGHTS);
 
     expect(h.context.replaceCanonicalDocumentState).toHaveBeenCalledTimes(1);
-    const placed: readonly { modelId: string; componentRef?: { id: string; name: string } }[] =
+    const placed: readonly { modelId: string; scale: readonly number[]; componentRef?: { id: string; name: string } }[] =
       h.context.replaceCanonicalDocumentState.mock.calls[0]?.[0]?.customModels ?? [];
     expect(placed.map((instance) => instance.modelId)).toEqual(["glb-model", "skp-model"]);
     expect(placed[0]).not.toHaveProperty("componentRef");
+    expect(placed[0]?.scale).toEqual([1, 1, 1]);
+    expect(placed[1]?.scale).toEqual([10, 10, 10]);
+    expect(h.context.attachmentByStorageModelIdRef.current.get("skp-model")?.metricPolicy).toBe("authored-metres");
     expect(placed[1]?.componentRef).toEqual({ id: `skp-${"f".repeat(16)}`, name: "방" });
   });
 
@@ -295,6 +304,18 @@ describe("importModelFiles with a SketchUp file", () => {
     expect(options).toMatchObject({ skp: undefined });
     expect(runtime.persist).not.toHaveBeenCalled();
     expect(studioBg3dSkpImportSession.getSnapshot().results).toEqual([]);
+  });
+
+  it("SKP 역배율이 문서 한도를 넘으면 혼합 업로드 전체를 장면에 배치하지 않는다", async () => {
+    const h = harness();
+    runtime.plan.mockReturnValue(planOf({ format: "skp", primaryPath: "room.skp" }));
+    const root = new Group();
+    root.add(new Mesh(new BoxGeometry(20, 12, 8), new MeshBasicMaterial()));
+    root.scale.setScalar(1 / 1001);
+    runtime.admit.mockResolvedValue({ root, normalizationScale: 1 / 1001 });
+    expect(await h.actions().importModelFiles([file("room.skp")], RIGHTS)).toBe(false);
+    expect(h.context.replaceCanonicalDocumentState).not.toHaveBeenCalled();
+    expect(h.context.setError).toHaveBeenCalledWith(expect.stringContaining("배율 범위"));
   });
 
   it("publishes nothing when the editing session went away during the import", async () => {

@@ -1,5 +1,6 @@
 
 import { requireStudioDrawingPointerTransport } from "../brush/studio-drawing-pointer-transport";
+import { admitStudioScopedPagesCommit } from "../studio-collab/studio-scoped-write-mutation";
 import { studioLayerCompPageAdmissionError } from "../layer/studio-layer-comp-page-admission";
 import {
   releaseStudioGpuPendingAuthorityPrefix,
@@ -359,10 +360,6 @@ export function createStudioDeferredStrokeCommitEngine(
       setError(frozenStatus6Text("studio.frozenStatus6.deferred.saveInProgress", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return false;
     }
-    if (collaborationAccessRef.current.locked) {
-      setError(collaborationLockMessage());
-      return false;
-    }
     const commitPageId = targetPageId ?? activePage.id;
     // Multiple pointerup/flush commits can run before React renders. Read and advance the
     // ref-backed history, not this render's `pages`, so a cross-page deferred flush cannot be
@@ -375,6 +372,7 @@ export function createStudioDeferredStrokeCommitEngine(
     const commitBasePages = currentHistory[currentHistoryIndex] ?? pages;
     const commitTargetPage = commitBasePages.find((page) => page.id === commitPageId);
     const commitBaseElements = commitTargetPage?.elements ?? elements;
+    if (masterEditMode && collaborationAccessRef.current.locked) { setError(collaborationLockMessage()); return false; }
     const workAssetReason = studioWorkAssetSourceTransitionReason(commitBaseElements, nextElements);
     if (workAssetReason) {
       setError(workAssetReason);
@@ -529,7 +527,7 @@ export function createStudioDeferredStrokeCommitEngine(
     const localNextPages = commitBasePages.map((p) =>
       p.id === commitPageId ? { ...p, ...finalExtraPatch, elements: resolved } : p
     );
-    if (!publishStudioCrdtSceneTransition(commitBasePages, localNextPages)) return false;
+    if (!admitStudioScopedPagesCommit({ owner: collaborationAccessRef, reportError: setError, lockMessage: collaborationLockMessage, previous: commitBasePages, next: localNextPages }) || !publishStudioCrdtSceneTransition(commitBasePages, localNextPages)) return false;
     const nextPages = mergeStudioCrdtFrontier(localNextPages);
     const appended = appendStudioPagesHistorySnapshot(
       currentHistory,
@@ -561,10 +559,6 @@ export function createStudioDeferredStrokeCommitEngine(
       setError(frozenStatus6Text("studio.frozenStatus6.deferred.saveInProgress", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return;
     }
-    if (collaborationAccessRef.current.locked) {
-      setError(collaborationLockMessage());
-      return;
-    }
     // A pointer stream may emit multiple coalesced samples before React commits a render. Always
     // branch from the synchronously advanced refs so those samples form one monotonic history
     // transition instead of repeatedly branching from the render closure.
@@ -581,6 +575,7 @@ export function createStudioDeferredStrokeCommitEngine(
       return;
     }
     const commitBaseElements = commitTargetPage.elements;
+    if (masterEditMode && collaborationAccessRef.current.locked) { setError(collaborationLockMessage()); return; }
     const workAssetReason = studioWorkAssetSourceTransitionReason(
       commitBaseElements,
       nextElements
@@ -614,7 +609,7 @@ export function createStudioDeferredStrokeCommitEngine(
     const localNextPages = commitBasePages.map((p) =>
       p.id === commitPageId ? { ...p, elements: resolved } : p
     );
-    if (!publishStudioCrdtSceneTransition(commitBasePages, localNextPages)) return;
+    if (!admitStudioScopedPagesCommit({ owner: collaborationAccessRef, reportError: setError, lockMessage: collaborationLockMessage, previous: commitBasePages, next: localNextPages }) || !publishStudioCrdtSceneTransition(commitBasePages, localNextPages)) return;
     const nextPages = mergeStudioCrdtFrontier(localNextPages);
     const replacesCurrentSnapshot =
       coalesceKeyRef.current === key &&
@@ -986,10 +981,7 @@ export function createStudioDeferredStrokeCommitEngine(
       setError(frozenStatus6Text("studio.frozenStatus6.deferred.saveInProgress", "저장 중에는 원고를 변경할 수 없어요. 저장이 끝난 뒤 다시 시도해 주세요."));
       return false;
     }
-    if (collaborationAccessRef.current.locked) {
-      setError(collaborationLockMessage());
-      return false;
-    }
+    if (!admitStudioScopedPagesCommit({ owner: collaborationAccessRef, reportError: setError, lockMessage: collaborationLockMessage, master: masterEditMode, previous: pagesHistoryRef.current[pagesHiRef.current] ?? pages, next: nextPages, previewOnly: true })) return false;
     if (drawingRef.current || requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) {
       setError(frozenStatus6Text("studio.frozenStatus6.deferred.strokeInProgressPageLayout", "현재 획을 마친 뒤 페이지 구성을 변경할 수 있어요."));
       return false;
@@ -1052,7 +1044,7 @@ export function createStudioDeferredStrokeCommitEngine(
     const document = studioCrdtDocumentRef.current;
     let resolvedPages = rebasedNextPages;
     if (document) {
-      if (!publishStudioCrdtSceneTransition(currentPages, rebasedNextPages)) return false;
+      if (!admitStudioScopedPagesCommit({ owner: collaborationAccessRef, reportError: setError, lockMessage: collaborationLockMessage, previous: currentPages, next: rebasedNextPages }) || !publishStudioCrdtSceneTransition(currentPages, rebasedNextPages)) return false;
       resolvedPages = mergeStudioCrdtFrontier(rebasedNextPages);
     }
     coalesceKeyRef.current = null;

@@ -364,6 +364,7 @@ export const PRODUCTION_ACTIVITY_LABELS: Readonly<Record<ProductionActivityActio
   "record-review-decision": { ko: "검수 결정 기록", en: "Review decision recorded" },
   "set-board-order": { ko: "카드 순서 변경", en: "Card order changed" },
   "set-project-cover": { ko: "프로젝트 표지 변경", en: "Project cover changed" },
+  "submit-task-output": { ko: "작업물 제출", en: "Task output submitted" },
   "suppress-risk-signal": { ko: "위험 신호 숨김", en: "Risk signal suppressed" },
   "transition-risk": { ko: "위험 상태 변경", en: "Risk status changed" },
   "transition-risk-response": { ko: "위험 대응 상태 변경", en: "Risk response status changed" },

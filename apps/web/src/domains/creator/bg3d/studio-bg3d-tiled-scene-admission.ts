@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { hideStudioBg3dCaptureExcludedObjects } from "./studio-bg3d-capture-exclusion";
+import { isStudioMToonRasterMaterial } from "../mesh-materials/studio-mtoon-raster-scope";
+import type { StudioMToonMaterialBackend } from "../mesh-materials/studio-mtoon-runtime-identity";
 /** Viewport-dependent stochastic/custom shading is not silently treated as tile-invariant. */
-export function assertStudioBg3dTiledSceneAdmission(scene: THREE.Scene): void {
+export function assertStudioBg3dTiledSceneAdmission(scene: THREE.Scene, backend: StudioMToonMaterialBackend = "webgl"): void {
   if (scene.overrideMaterial)
     throw new Error(
       "A scene-wide override material cannot be mixed with exact tiled export.",
@@ -22,18 +24,19 @@ export function assertStudioBg3dTiledSceneAdmission(scene: THREE.Scene): void {
         : materials
           ? [materials]
           : []) {
+        const mtoon = isStudioMToonRasterMaterial(material, backend);
         if (
           (material as THREE.MeshPhysicalMaterial).transmission > 0 ||
           material.alphaHash ||
           material.dithering ||
-          (material as THREE.ShaderMaterial).isShaderMaterial ||
           material.type === "LineMaterial" ||
-          material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile
+          (!mtoon && ((material as THREE.ShaderMaterial).isShaderMaterial || material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile))
         ) {
           throw new Error(
             "Transmissive, custom, stochastic or viewport-dependent materials require a tile-compatible shader adapter before high-resolution output.",
           );
         }
+        if (mtoon) continue;
         const node = material as THREE.Material & { isNodeMaterial?: boolean };
         if (
           node.isNodeMaterial &&

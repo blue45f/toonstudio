@@ -5,11 +5,12 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { Studio3dAssetQualityPanel } from "../Studio3dAssetQualityPanel";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
-
 import { useEffect as useReactEffect, useMemo, useState as useReactState } from "react";
-
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
+import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import { createStudioBg3dPrimitiveEditHostPorts } from "./studio-bg3d-primitive-edit-host";
+import { createStudioBg3dSceneGlbHostPorts } from "./studio-bg3d-scene-glb-host";
 
 export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
@@ -433,10 +434,10 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
   return (
     <>
               <Studio3dAssetQualityPanel
-                active={open}
+                active={open} ownerCanvas={modelRenderer?.domElement ?? null}
                 disabled={isCapturing || isRestoringScene || isUploadingModel || isSavingTemplate || Boolean(applyingTemplateId) || physicsInteractionLocked || hasPendingClone || hasCloneFailure}
                 emptyScene={primitives.length === 0 && customModels.length === 0}
-                deviceLostMessage={engineRuntime.deviceLostMessage}
+                deviceLostMessage={engineRuntime.deviceLostMessage ?? (engineRuntime.plan.status !== "available" ? engineRuntime.plan.notice : null)}
                 onBeforeEnable={handleSaveSceneAsTemplate}
               />
               <section hidden={hideOnTab("layers")}>
@@ -486,7 +487,6 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                   장면 계층은 왼쪽 패널에서 관리할 수 있습니다. 선택한 객체의 상세 설정은 이 패널에서 이어서 편집하세요.
                 </p>
               </section>
-
               <div inert={immersiveSceneActive || undefined}>
               <StudioBg3dViewPanel
                 hidden={hideOnTab("view")}
@@ -504,6 +504,8 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 onEnginePreferenceChange={engineRuntime.setPreference}
                 onSetCaptureAspectRatio={updateLtExportAspectRatio}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
+                {...createStudioBg3dWorkbenchHostPorts(h)}
+                {...createStudioBg3dPrimitiveEditHostPorts(h)} {...createStudioBg3dSceneGlbHostPorts(h)}
                 aiReferenceBusy={isCapturing}
                 aiReferenceDisabled={
                   insertBlocked || (primitives.length === 0 && customModels.length === 0)
@@ -630,7 +632,6 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                   Ruler,
                 }}
               />
-
               <section
                 hidden={hideOnTab("view")}
                 className="border-t border-line pt-4"
@@ -646,7 +647,6 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 />
               </section>
               </div>
-
               <section
                 hidden={hideOnTab("view")}
                 className="border-t border-line pt-4"

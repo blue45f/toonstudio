@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { acquireStudioBg3dCaptureEnvironmentReceipt, assertStudioBg3dCaptureEnvironmentCurrent,
+  attachStudioBg3dCaptureEnvironmentReceipt, publishStudioBg3dCaptureEnvironment } from "./studio-bg3d-capture-environment-receipt";
 import { StudioBg3dLtRenderWorkerError } from "./studio-bg3d-lt-render-worker-client";
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 import {
@@ -100,6 +102,59 @@ function pipelineInput(
     ...overrides,
   };
 }
+
+function deferred<T>() {
+  let complete: ((value: T) => void) | undefined;
+  const promise = new Promise<T>((resolve) => { complete = resolve; });
+  return { promise, resolve(value: T) {
+    if (!complete) throw new Error("지연 입력이 아직 준비되지 않았습니다.");
+    complete(value);
+  } };
+}
+
+async function capturedEnvironment(output: object) {
+  const scene = {}, renderer = {};
+  const owner = publishStudioBg3dCaptureEnvironment(scene, renderer, {
+    fingerprint: "shot-pipeline-environment", ready: Promise.resolve(true), isApplied: () => true,
+  });
+  const receipt = await acquireStudioBg3dCaptureEnvironmentReceipt(scene, renderer);
+  attachStudioBg3dCaptureEnvironmentReceipt(output, receipt);
+  return owner;
+}
+
+describe("컷 인코딩과 환경 영수증의 인계", () => {
+  it.each(["png", "psd"] as const)("%s 인코딩 대기 중 환경이 해제되면 artifact를 반환하지 않는다", async (stage) => {
+    const source = pipelineInput({ passes: ["beauty"], includeLayeredPsd: true });
+    const owner = await capturedEnvironment(source.captured);
+    const encoded = deferred<Blob>();
+    const deps = dependencies(stage === "png"
+      ? { encodePngInWorker: vi.fn(() => encoded.promise) }
+      : { buildLayeredPsdInWorker: vi.fn(() => encoded.promise) });
+    const pending = buildStudioBg3dShotArtifacts(source, deps);
+    const rejected = expect(pending).rejects.toMatchObject({ code: "disposed" });
+    try {
+      await vi.waitFor(() => expect(stage === "png" ? deps.encodePngInWorker : deps.buildLayeredPsdInWorker).toHaveBeenCalledOnce());
+      owner.dispose();
+      encoded.resolve(stage === "png" ? pngBlob(1) : psdBlob(1));
+      await rejected;
+      if (stage === "png") expect(deps.buildLayeredPsdInWorker).not.toHaveBeenCalled();
+      expect(source.captured.rgba).toEqual(new Uint8Array([10, 20, 30, 255]));
+    } finally { owner.dispose(); }
+  });
+
+  it("완성 artifact에 원본 raster 영수증을 승계하고 이후 검사도 같은 세대를 확인한다", async () => {
+    const source = pipelineInput({ passes: ["beauty"] });
+    const owner = await capturedEnvironment(source.captured);
+    try {
+      const output = await buildStudioBg3dShotArtifacts(source, dependencies());
+      expect(() => assertStudioBg3dCaptureEnvironmentCurrent(output, "shot-pipeline-environment")).not.toThrow();
+      owner.dispose();
+      expect(() => assertStudioBg3dCaptureEnvironmentCurrent(output)).toThrow(expect.objectContaining({ code: "disposed" }));
+      expect(output.images).toHaveLength(1);
+      expect(output.artifactBytes).toBe(1);
+    } finally { owner.dispose(); }
+  });
+});
 
 describe("Studio BG3D shot artifact pipeline", () => {
   it("이미 취소된 출력은 LT와 PNG Worker를 시작하지 않는다", async () => {

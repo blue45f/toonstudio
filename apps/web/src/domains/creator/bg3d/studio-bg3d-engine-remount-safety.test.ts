@@ -21,6 +21,7 @@ const layoutSource = readFileSync(
   new URL("./studio-bg3d-editor-layout-view-model.ts", import.meta.url),
   "utf8",
 );
+const restoreStateSource = readFileSync(new URL("./studio-bg3d-initial-restore-state.ts", import.meta.url), "utf8");
 
 describe("BG3D canvas remount safety", () => {
   it("separates a renderer remount from initial-scene restoration", () => {
@@ -29,13 +30,11 @@ describe("BG3D canvas remount safety", () => {
 
     // 판정은 renderer 가 아니라 모달 세션과 초기 장면 입력으로 한다. renderer 를 넣으면 remount
     // 자체가 "새 복원"으로 보여 다시 파괴적 경로를 타게 된다.
-    const identity = restoreSource.slice(
-      restoreSource.indexOf("const isRendererRemount"),
-      restoreSource.indexOf("restoredSourceRef.current = {"),
-    );
-    expect(identity).toContain("previous.session === session");
-    expect(identity).toContain("previous.initialScene === initialScene");
-    expect(identity).not.toContain("modelRenderer");
+    expect(restoreSource).toContain("restoredSourceRef.current.begin({ session, initialScene, initialDataUrl })");
+    expect(restoreStateSource).toContain("source.session === next.session");
+    expect(restoreStateSource).toContain("source.initialScene === next.initialScene");
+    expect(restoreStateSource).toContain("same && completed");
+    expect(restoreStateSource).not.toContain("modelRenderer");
   });
 
   it("rebuilds only the model cache on a remount, never the scene state", () => {

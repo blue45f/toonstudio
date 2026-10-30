@@ -25,7 +25,7 @@ import type { StudioBg3dComponentRef } from "./studio-bg3d-scene-document-types"
 export const STUDIO_BG3D_SKP_COMPONENT_ID_PREFIX = "skp-";
 const SKP_COMPONENT_ID_HEX_LENGTH = 16;
 /** 이름이 규칙에 맞지 않을 때 쓰는 일반 이름(가져오기 메타데이터와 같은 값). */
-export const STUDIO_BG3D_SKP_FALLBACK_COMPONENT_NAME = "SketchUp 모델";
+export const STUDIO_BG3D_SKP_FALLBACK_COMPONENT_NAME = "가져온 3D 모델";
 /** 장면 이름 하나를 메모 후보 한 줄로 만들 때 앞에 붙이는 말. */
 export const STUDIO_BG3D_SKP_MEMO_LINE_PREFIX = "SKP 장면: ";
 

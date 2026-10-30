@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { saveStudioScopedRestDocument, type StudioScopedRestWriteInput } from "./studio-scoped-write-rest";
 
 import {
   assertStudioLinked3dPassAssetRows,
@@ -777,11 +778,8 @@ export class CreatorCollaborationRepository {
   }
 
   async saveSharedDocument(
-    actorUserId: string,
-    workId: string,
-    baseRevision: number,
-    crdtServerSequence: bigint,
-    patch: CreatorSharedDocumentPatch
+    actorUserId: string, workId: string, baseRevision: number, crdtServerSequence: bigint,
+    patch: CreatorSharedDocumentPatch, scoped?: StudioScopedRestWriteInput
   ): Promise<CreatorSharedDocumentSaveResponse> {
     if (
       !Number.isInteger(baseRevision) ||
@@ -795,6 +793,7 @@ export class CreatorCollaborationRepository {
     ) {
       throw new Error("invalid creator shared document mutation");
     }
+    if (scoped) { const saved = await saveStudioScopedRestDocument({ actorUserId, workId, baseRevision, crdtServerSequence, patch, scoped }); if (saved) return saved; }
     return this.persistence.transaction(async (unit) => {
       // CRDT append/compaction uses this same transaction-scoped per-work lock. It must be the
       // first lock in this transaction so no CRDT commit can slip between the client's final sync

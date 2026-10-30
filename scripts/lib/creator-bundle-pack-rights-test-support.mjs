@@ -10,6 +10,7 @@ import {
   HOLD_PUBLIC_LABEL,
   loadPackRightsLedger,
   PACK_RIGHTS_SCHEMA,
+  OWNER_COMMERCIAL_USE_EVIDENCE_KIND,
   requiredEvidenceKinds,
   validatePackRightsLedger,
 } from "./creator-bundle-pack-rights.mjs";
@@ -189,7 +190,7 @@ export function flipToAllow(entry, { evidence } = {}) {
 export const problemsFor = (ledger) => validatePackRightsLedger(ledger);
 
 /** 소유자가 allow 요구를 채우는 증빙 종류. 이 종류들은 소유자가 원장에 넣는 값이라 테스트 기준선에서 비운다. */
-const OWNER_PROVIDED_EVIDENCE_KINDS = Object.freeze(["itch-page-capture", "purchase-receipt", "producer-written-confirmation"]);
+const OWNER_PROVIDED_EVIDENCE_KINDS = Object.freeze(["itch-page-capture", "purchase-receipt", "producer-written-confirmation", OWNER_COMMERCIAL_USE_EVIDENCE_KIND]);
 
 /**
  * 커밋된 원장에서 꺼낸 팩 항목을 "아직 열리지 않은 시드 상태"로 되돌린다: hold로 두고 grant와 소유자 제공 증빙을

@@ -10,6 +10,8 @@ import { createStudioUnitCubeMesh } from "../studio-editable-half-edge-mesh";
 import { disposeStudioOcctWorker } from "../studio-occt-worker-client";
 
 import { StudioHybridDccPanel } from "./StudioHybridDccPanel";
+import * as fileIo from "./studio-hybrid-dcc-file-io";
+import { decodeStudioHybridDccWorkfile, STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
 
 import type {
   StudioOcctWorkerRequest,
@@ -92,6 +94,7 @@ afterEach(() => {
   cleanup();
   disposeStudioOcctWorker();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   FakePanelOcctWorker.operations = [];
 });
 
@@ -319,6 +322,7 @@ describe("StudioHybridDccPanel industrial wiring", () => {
   });
 
   it("build/document domains: room, BOM, collab, UV, boolean, export toon3d", async () => {
+    const download = vi.spyOn(fileIo, "downloadStudioHybridDccFile").mockImplementation(() => undefined);
     useFakeBrowserOcctWorker();
     render(<StudioHybridDccPanel />);
     fireEvent.click(screen.getByRole("button", { name: /^Room/u }));
@@ -353,18 +357,28 @@ describe("StudioHybridDccPanel industrial wiring", () => {
       const stats = document.querySelector("[data-studio-hybrid-dcc-stats]");
       expect(stats?.getAttribute("data-uv")).not.toBe("");
     });
+    const uvStateHash = document.querySelector("[data-studio-hybrid-dcc-stats]")?.getAttribute("data-studio-hybrid-dcc-state-hash");
     fireEvent.click(screen.getByRole("button", { name: /^Subdiv/u }));
     await waitFor(() => {
       expect(document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent).toMatch(
-        /Subdiv 완료/u,
+        /Subdiv 실패.*UV/u,
       );
     });
+    expect(document.querySelector("[data-studio-hybrid-dcc-stats]")?.getAttribute("data-studio-hybrid-dcc-state-hash")).toBe(uvStateHash);
     fireEvent.click(screen.getByRole("button", { name: /^Export \.toon3d/u }));
     await waitFor(() => {
-      expect(document.querySelector("[data-studio-hybrid-dcc-log]")?.textContent).toMatch(
-        /\.toon3d packed|hash=/u,
-      );
+      expect(download).toHaveBeenCalledTimes(1);
     });
+    const [fileBytes, mime, filename] = download.mock.calls[0] ?? [];
+    if (!fileBytes || typeof fileBytes === "string") throw new Error("작업파일 다운로드 바이트가 없습니다.");
+    expect(mime).toBe(STUDIO_HYBRID_DCC_WORKFILE_MIME);
+    expect(filename).toMatch(/\.toon3d$/u);
+    const restored = decodeStudioHybridDccWorkfile(Uint8Array.from(fileBytes), { documentId: "industrial-file-roundtrip" });
+    expect(Object.keys(restored.session.state.geometry.records).length).toBeGreaterThan(1);
+    expect(restored.bom.lines.length).toBeGreaterThan(0);
+    expect(restored.session.undoStack.length).toBeGreaterThan(0);
+    expect(restored.session.state.stateHash).not.toBe(uvStateHash);
+    expect(Object.values(restored.session.state.geometry.records).some((record) => record.mesh.uvLayer?.corners.length === 24)).toBe(true);
     // Industrial OCCT boolean (not Manifold pure path) on dedicated asset
     fireEvent.click(screen.getByRole("button", { name: /^OCCT boolean/u }));
     await waitFor(

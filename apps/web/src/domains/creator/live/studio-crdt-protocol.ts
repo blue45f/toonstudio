@@ -1,5 +1,6 @@
 import { STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "../../../shared/lib/studio-brush-material-program-contract";
 import { fromUint8Array, toUint8Array } from "js-base64";
+import { StudioScopedWriteContextSchema, type StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 // v8 gates rooms that can persist renderer engine programs in stroke payload v6.
 // The local wire brand changes with the room protocol so older peers cannot join and
@@ -90,6 +91,7 @@ export interface StudioCrdtSyncResponse {
 }
 
 export interface StudioCrdtUpdateRequest {
+  writeContext?: StudioScopedWriteContext;
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   workId: string;
   /** Stable across retries so the server can make publication idempotent. */
@@ -388,6 +390,7 @@ export function parseStudioCrdtUpdateRequest(
       "updateId",
       "clientSequence",
       "update",
+      ...(Object.hasOwn(value, "writeContext") ? ["writeContext"] : []),
     ]) ||
     !commonContract(value, options) ||
     !isUuid(value.updateId) ||
@@ -398,7 +401,10 @@ export function parseStudioCrdtUpdateRequest(
   ) {
     return null;
   }
-  return value as unknown as StudioCrdtUpdateRequest;
+  const context = Object.hasOwn(value, "writeContext") ? StudioScopedWriteContextSchema.safeParse(value.writeContext) : null;
+  if (context && !context.success) return null;
+  return { protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION, workId: String(value.workId), updateId: String(value.updateId),
+    clientSequence: value.clientSequence, update: String(value.update), ...(context?.success ? { writeContext: context.data } : {}) };
 }
 
 /**

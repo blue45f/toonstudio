@@ -466,8 +466,8 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             type="button"
             data-testid="drawing-appbar-sync-status"
             aria-live="polite"
-            aria-label={`${tx("원고 동기화 상태")}: ${syncLabel}`}
-            title={tx("클릭하여 즉시 원고 저장·서버 동기화 플러시")}
+            aria-label={s.scopedSavePendingConfirmation ? tx("저장 상태 확인") : `${tx("원고 동기화 상태")}: ${syncLabel}`}
+            title={s.scopedSavePendingConfirmation ? tx("기존 요청의 저장 상태 확인") : tx("클릭하여 즉시 원고 저장·서버 동기화 플러시")}
             onClick={() => s.requestSaveFlush?.()}
             className={cn(
               "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[0.65rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",

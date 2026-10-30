@@ -265,7 +265,7 @@ export function evaluateBlenderModifierStack(
         for (let i = 0; i < Math.min(count, 8); i++) {
           primitives.push({
             id: `blender-mod-array-${i}`,
-            name: `Blender_Array_Inst_${i + 1}`,
+            name: `배열 복사본 ${i + 1}`,
             kind: "box",
             position: [round3((i - (Math.min(count, 8) - 1) * 0.5) * 1.35), 1.1, 0],
             rotation: [0, 0, 0],
@@ -348,7 +348,7 @@ export function evaluateBlenderModifierStack(
   if (primitives.length === 0) {
     primitives.push({
       id: "blender-mod-base-mesh",
-      name: "Blender_Modified_Mesh",
+      name: "모디파이어 생성물",
       kind: "box",
       position: [0, 1.0, 0],
       rotation: [0, 0, 0],
@@ -443,7 +443,7 @@ export function evaluateBlenderGp3AndFreestylePipeline(
     freestyleEdgeTypeCount,
     visibleQiStrokeRatio,
     effectiveLineThicknessPx,
-    summaryKo: `GPv3 ${layerCount}레이어(마스크 ${maskedLayerCount}) + Freestyle ${freestyleEdgeTypeCount}종 엣지 → 총 ${total3dStrokes}스트로크 (${effectiveLineThicknessPx}px)`,
+    summaryKo: `선화 ${layerCount}레이어(마스크 ${maskedLayerCount}) + ${freestyleEdgeTypeCount}종 엣지 → 총 ${total3dStrokes}스트로크 (${effectiveLineThicknessPx}px)`,
   };
 }
 
@@ -538,7 +538,7 @@ export function evaluateBlenderPhysicsSuite(
     mantaflowVoxelCount,
     mantaflowSecondaryParticleCount,
     primitives,
-    summaryKo: `RigidBody(${rigidBodyTerminalMomentumNs}N·s) · Cloth(${clothStableSubsteps} substeps) · Mantaflow ${config.fluidDomainType}(${mantaflowVoxelCount.toLocaleString("ko-KR")} voxels)`,
+    summaryKo: `RigidBody(${rigidBodyTerminalMomentumNs}N·s) · Cloth(${clothStableSubsteps} substeps) · 유체 ${config.fluidDomainType}(${mantaflowVoxelCount.toLocaleString("ko-KR")} voxels)`,
   };
 }
 
@@ -586,7 +586,7 @@ export function evaluateBlenderCameraRig(
     circleOfConfusionMm,
     fisheyeMaxAngleDeg,
     cameraSettings,
-    summaryKo: `Blender 카메라(${config.type}): ${focal}mm (수직 FOV ${verticalFovDeg}°) · f/${fstop} (${config.apertureBlades}날 보케) · Shift [${config.shiftX}, ${config.shiftY}]`,
+    summaryKo: `카메라 설정(${config.type}): ${focal}mm (수직 FOV ${verticalFovDeg}°) · f/${fstop} (${config.apertureBlades}날 보케) · Shift [${config.shiftX}, ${config.shiftY}]`,
   };
 }
 

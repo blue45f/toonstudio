@@ -222,8 +222,7 @@ export function StudioGen3dFeatureWorkbench({
         className="rounded-lg border border-line/60 bg-card px-3 py-2"
       >
         <summary className="cursor-pointer font-semibold text-fg">
-          Tripo Studio V3 3원 모델 라우터 (v3.1 / P1 / P2) & 12단계 후처리 체인 & Blender 5비율 포즈
-          제어기
+          Tripo Studio V3 3원 모델 라우터 (v3.1 / P1 / P2) & 12단계 후처리 체인 & 5종 신체 비율·포즈 설정
         </summary>
         <div className="mt-2 grid grid-cols-1 gap-3 text-[0.72rem] text-fg-2 md:grid-cols-3">
           {/* Column 1: Prompt + Dual/Triple Model Router */}
@@ -414,7 +413,7 @@ export function StudioGen3dFeatureWorkbench({
           {/* Column 3: Blender 5-Ratio Pose Control + Pre-Run Plan Card */}
           <div className="flex flex-col gap-1.5">
             <span className="font-medium text-fg">
-              3. Blender 5비율 T/A-Pose 제어 & Pre-Run 크레딧 카드
+              3. 신체 비율·T/A 포즈 설정·실행 전 크레딧 안내
             </span>
             <div className="flex items-center gap-1">
               {(["None", "T-Pose", "A-Pose"] as const).map((pt) => (

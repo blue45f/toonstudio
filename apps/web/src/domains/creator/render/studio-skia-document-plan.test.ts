@@ -88,6 +88,29 @@ it("preserves transparent frame paint as a child clipping boundary", () => {
   expect(clipped.items[1]?.clip).toEqual({ x: 0, y: 0, width: 80, height: 80 });
 });
 
+it("대각 컷의 자식도 배경과 같은 다각형으로 클리핑한다", () => {
+  const frame: El = { id: "diagonal-panel", type: "frame", x: 5, y: 10, width: 80, height: 80,
+    points: [0, 0, 80, 20, 50, 80], bgColor: "#ffffff00", strokeWidth: 0 };
+  const plan = createStudioSkiaDocumentProjector().project([frame, pen()]);
+  expect(plan.supported).toBe(true);
+  expect(plan.items[1]?.clip).toEqual({ x: 5, y: 10, width: 80, height: 80,
+    points: [5, 10, 85, 30, 55, 90] });
+});
+
+it("고품질 전체 문서 PNG의 크기를 바꾸지 않고 명시한 컷으로 자른다", () => {
+  const frame: El = { id: "paint-panel", type: "frame", x: 10, y: 20, width: 80, height: 80,
+    points: [0, 0, 80, 20, 40, 80], bgColor: "#ffffff00", strokeWidth: 0 };
+  const image: El = { id: "canonical-paint", type: "image", src: "data:image/png;base64,AA==", x: 0, y: 0,
+    width: 1440, height: 3600, rotation: 0, frameClipId: "paint-panel" };
+  const plan = createStudioSkiaDocumentProjector().project([frame, image]);
+  expect(plan.supported).toBe(true);
+  expect(plan.items[1]?.image).toMatchObject({ width: 1440, height: 3600 });
+  expect(plan.items[1]?.clip).toEqual({ x: 10, y: 20, width: 80, height: 80,
+    points: [10, 20, 90, 40, 50, 100] });
+  expect(createStudioSkiaDocumentProjector().project([image])).toMatchObject({ supported: false,
+    items: [], ownedDocumentIds: [], reason: "unresolved-frame-clip:canonical-paint" });
+});
+
 it("admits only exact static image semantics and preserves transform metadata", () => {
   const image = {
     id: "image", type: "image", src: "data:image/png;base64,AA==",

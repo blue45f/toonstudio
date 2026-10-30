@@ -7,7 +7,9 @@ type PositionMap = Record<ReviewComparePane, ReviewScrollPosition>;
 const origin = (): PositionMap => ({ left: REVIEW_SCROLL_ORIGIN, right: REVIEW_SCROLL_ORIGIN, overlay: REVIEW_SCROLL_ORIGIN });
 
 /** Ephemeral viewport only. No pixels, source URLs, draft text or authorization are persisted. */
-export function useReviewCompareViewport(layoutKey: string, linkMatchingPages: boolean) {
+export function useReviewCompareViewport(layoutKey: string, linkMatchingPages: boolean, onResize?: () => void) {
+  const onResizeRef = useRef(onResize);
+  useLayoutEffect(() => { onResizeRef.current = onResize; }, [onResize]);
   const nodes = useRef<Record<ReviewComparePane, HTMLDivElement | null>>({ left: null, right: null, overlay: null });
   const positions = useRef<PositionMap>(origin());
   const dimensions = useRef<Record<string, string>>({});
@@ -29,14 +31,15 @@ export function useReviewCompareViewport(layoutKey: string, linkMatchingPages: b
   }, []);
   useLayoutEffect(() => {
     const restoreAll = () => { for (const side of PANES) restore(side); };
+    const resized = () => { onResizeRef.current?.(); restoreAll(); };
     restoreAll();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(restoreAll);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resized);
     for (const side of PANES) {
       const node = nodes.current[side];
       if (node) { observer?.observe(node); if (node.firstElementChild) observer?.observe(node.firstElementChild); }
     }
-    globalThis.addEventListener("resize", restoreAll);
-    return () => { observer?.disconnect(); globalThis.removeEventListener("resize", restoreAll); };
+    globalThis.addEventListener("resize", resized);
+    return () => { observer?.disconnect(); globalThis.removeEventListener("resize", resized); };
   }, [layoutKey, restore]);
   const onScroll = (side: ReviewComparePane, event: UIEvent<HTMLDivElement>) => {
     const node = event.currentTarget;

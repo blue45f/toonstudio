@@ -17,6 +17,7 @@ import {
   type StudioEditableHalfEdge,
   type StudioEditableMesh,
 } from "../studio-editable-half-edge-mesh";
+import { pickStudioHybridDccSurfaceTriangle } from "./studio-hybrid-dcc-component-surface-pick";
 
 export const STUDIO_HYBRID_DCC_COMPONENT_SELECTION_REVISION = 1 as const;
 export const STUDIO_HYBRID_DCC_COMPONENT_SELECTION_SNAPSHOT_VERSION = 1 as const;
@@ -182,10 +183,14 @@ export interface StudioHybridDccRayHitMapping {
   readonly faceIndex: number;
   readonly faceId: number;
   readonly triangleIndexWithinFace: number;
-  /** Ordered polygon loop, before fan triangulation. */
+  /** 원본 face.he 순서의 경계 loop. 표시용 collinear 생략·대각선과 분리한다. */
   readonly faceVertexIds: readonly number[];
-  /** Ordered fan-triangle vertices for this exact renderer faceIndex. */
+  /** 공유 surface 표가 정의한 정확한 renderer faceIndex의 원본 정점이다. */
   readonly triangleVertexIds: readonly [number, number, number];
+  readonly triangleCornerHalfEdgeIds: readonly [number, number, number];
+  /** 단일 원본 boundary edge와 같은 변만 canonical ID다. 표시 대각선·생략 코너 연결은 null이다. */
+  readonly triangleBoundaryEdgeIds: readonly [number | null, number | null, number | null];
+  readonly materialSlot: number;
   /** Stable vertex candidates for point-selection hit refinement. */
   readonly vertexCandidateIds: readonly number[];
   /** All boundary edges of the polygon, suitable for nearest-edge hit refinement. */
@@ -197,8 +202,6 @@ interface StudioHybridDccIndexedFace {
   readonly face: StudioEditableFace;
   readonly vertexIds: readonly number[];
   readonly edges: readonly StudioHybridDccRayEdgeCandidate[];
-  readonly triangleStart: number;
-  readonly triangleCount: number;
 }
 
 interface StudioHybridDccMeshSelectionIndex {
@@ -206,8 +209,6 @@ interface StudioHybridDccMeshSelectionIndex {
   readonly faceById: ReadonlyMap<number, StudioHybridDccIndexedFace>;
   readonly canonicalEdgeIds: ReadonlySet<number>;
   readonly canonicalEdgeByHalfEdgeId: ReadonlyMap<number, number>;
-  readonly facesInRenderOrder: readonly StudioHybridDccIndexedFace[];
-  readonly triangleCount: number;
 }
 
 const meshSelectionIndexCache = new WeakMap<
@@ -445,7 +446,6 @@ function buildStudioHybridDccMeshSelectionIndex(
 
     const ownedHalfEdges = new Set<number>();
     const indexedFaces: StudioHybridDccIndexedFace[] = [];
-    let triangleStart = 0;
     for (const face of mesh.faces) {
       if (!isStableId(face.he) || !halfEdgeById.has(face.he)) {
         throw new Error(`face ${face.id} has no boundary half-edge`);
@@ -486,16 +486,11 @@ function buildStudioHybridDccMeshSelectionIndex(
         halfEdgeId = halfEdge.next;
       }
       if (vertexLoop.length < 3) throw new Error(`face ${face.id} has fewer than three vertices`);
-      const triangleCount = vertexLoop.length - 2;
       indexedFaces.push(Object.freeze({
         face,
         vertexIds: Object.freeze(vertexLoop),
         edges: Object.freeze(edgeLoop.toSorted((left, right) => left.id - right.id)),
-        triangleStart,
-        triangleCount,
       }));
-      triangleStart += triangleCount;
-      if (!Number.isSafeInteger(triangleStart)) throw new Error("triangle count overflow");
     }
     if (ownedHalfEdges.size !== mesh.halfEdges.length) {
       throw new Error("orphan or boundary-record half-edges are not supported by the current kernel");
@@ -518,8 +513,6 @@ function buildStudioHybridDccMeshSelectionIndex(
       faceById,
       canonicalEdgeIds,
       canonicalEdgeByHalfEdgeId,
-      facesInRenderOrder: Object.freeze(indexedFaces),
-      triangleCount: triangleStart,
     }));
   } catch (error) {
     result = meshInvalid(error instanceof Error ? error.message : "unknown topology failure");
@@ -1366,10 +1359,7 @@ export function resolveStudioHybridDccUndirectedEdgeId(
   return success(edgeId);
 }
 
-/**
- * Maps R3F/Three.js faceIndex (fan-triangle index) back to editable stable IDs. The candidate lists
- * remain renderer-free; a viewport may choose the nearest vertex/edge in screen space afterward.
- */
+/** 실제 표시 triangle 표를 원본 안정 ID로 결합하며 topology 선택 자체는 surface 성공에 의존하지 않는다. */
 export function mapStudioHybridDccRayFaceIndex(
   source: StudioHybridDccMeshSelectionSource,
   faceIndex: number,
@@ -1379,41 +1369,8 @@ export function mapStudioHybridDccRayFaceIndex(
   }
   const verified = verifySource(source);
   if (!verified.ok) return verified;
-  const index = verified.value.index;
-  if (faceIndex >= index.triangleCount) {
-    return failure(diagnostic("element-not-found", "Renderer faceIndex is outside the mesh triangle range."));
-  }
-
-  let low = 0;
-  let high = index.facesInRenderOrder.length - 1;
-  let hit: StudioHybridDccIndexedFace | undefined;
-  while (low <= high) {
-    const middle = (low + high) >>> 1;
-    const candidate = index.facesInRenderOrder[middle]!;
-    if (faceIndex < candidate.triangleStart) high = middle - 1;
-    else if (faceIndex >= candidate.triangleStart + candidate.triangleCount) low = middle + 1;
-    else {
-      hit = candidate;
-      break;
-    }
-  }
-  if (!hit) {
-    return failure(diagnostic("element-not-found", "Renderer faceIndex has no authority face mapping."));
-  }
-  const triangleIndexWithinFace = faceIndex - hit.triangleStart;
-  const triangleVertexIds = Object.freeze([
-    hit.vertexIds[0]!,
-    hit.vertexIds[triangleIndexWithinFace + 1]!,
-    hit.vertexIds[triangleIndexWithinFace + 2]!,
-  ]) as readonly [number, number, number];
-  return success(Object.freeze({
-    faceIndex,
-    faceId: hit.face.id,
-    triangleIndexWithinFace,
-    faceVertexIds: Object.freeze([...hit.vertexIds]),
-    triangleVertexIds,
-    vertexCandidateIds: sortedUniqueNumbers(triangleVertexIds),
-    edgeCandidates: Object.freeze([...hit.edges]),
-    provenance: verified.value.provenance,
-  }));
+  try {
+    const hit = pickStudioHybridDccSurfaceTriangle(source.mesh, faceIndex, verified.value.index.faceById, verified.value.provenance);
+    return hit ? success(hit) : failure(diagnostic("element-not-found", "Renderer faceIndex is outside the mesh triangle range."));
+  } catch (error) { return meshInvalid(error instanceof Error ? error.message : "공유 표면의 선택 대응을 확인하지 못했습니다."); }
 }

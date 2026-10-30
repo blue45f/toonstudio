@@ -33,7 +33,7 @@ import {
   pushCharacterShaperKeyLayer,
   reduceCharacterShaperUiState,
 } from "./character-shaper-ui-model";
-import { DEFAULT_CHARACTER_OUTPUT_FRAMING } from "./character-shaper-framing";
+import { useCharacterShaperOutputSettings } from "./character-shaper-session-settings";
 import { CharacterShaperAxisGizmo } from "./CharacterShaperAxisGizmo";
 import { CharacterShaperCompositionGuide } from "./CharacterShaperCompositionGuide";
 import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
@@ -59,6 +59,7 @@ import type { ChangeEvent, ReactNode, RefObject } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import { ModalStatusSlot } from "@/shared/components/modal-status-slot";
 
 type MobileSheetTab = "shelf" | "inspector" | "view";
 
@@ -98,7 +99,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
   const touchPortrait = useMediaQuery(CHARACTER_SHAPER_TOUCH_PORTRAIT_QUERY);
   const layout: CharacterShaperLayout = touchLandscape || touchPortrait ? "mobile" : isDesktop ? "desktop" : isTablet ? "tablet" : "mobile";
   const [ui, dispatch] = useReducer(reduceCharacterShaperUiState, undefined, () => createCharacterShaperUiState({ mobileSheet: layout === "mobile" ? "collapsed" : "half" }));
-  const [outputFraming, setOutputFraming] = useState(DEFAULT_CHARACTER_OUTPUT_FRAMING);
+  const { framing: outputFraming, setFraming: setOutputFraming } = useCharacterShaperOutputSettings();
   const previousSheetRef = useRef<"half" | "full">("half");
   const [mobileTab, setMobileTab] = useState<MobileSheetTab>("shelf");
   const activeMobileTab = mobileTab === "view" && !touchLandscape ? "shelf" : mobileTab;
@@ -331,15 +332,6 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
 
     if (typing || modifier || event.altKey) return false;
 
-    if (key === "F10") {
-      if (paintActive || !modelReady) return false;
-      event.preventDefault();
-      const nextEyeballLock = !h.fixEyeballCam;
-      h.setFixEyeballCam?.(nextEyeballLock);
-      setCommitNotice(nextEyeballLock ? "F10 · 시선 카메라 고정 켜짐" : "F10 · 시선 카메라 고정 꺼짐");
-      return true;
-    }
-
     if (key === "t" || key === "T") {
       if (paintActive || !modelReady) return false;
       event.preventDefault();
@@ -495,7 +487,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
 
   const renderViewport = (className?: string) => {
     const viewport = (
-    <div data-character-shaper-viewport="true" className={cn(VIEWPORT_WRAPPER_CLASS, layout === "mobile" ? "flex-1" : className)}>
+    <div data-character-shaper-viewport="true" className={cn(VIEWPORT_WRAPPER_CLASS, "flex-1")}>
       <div data-character-shaper-stage="true" className="relative grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
         <StudioVrmPoserViewport h={h} presentation="shaper" />
         <CharacterShaperCompositionGuide framing={outputFraming} />
@@ -570,12 +562,12 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
       ) : null}
     </div>
     );
-    return layout === "mobile" ? (
+    return (
       <div data-character-shaper-model-workspace="true" className={cn("flex min-h-0 min-w-0 flex-col bg-card", className)}>
         {!touchLandscape && !paintActive ? <CharacterShaperCameraControls h={h} compact /> : null}
         {viewport}
       </div>
-    ) : viewport;
+    );
   };
 
   const dock = (
@@ -733,7 +725,10 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
       }}
     >
       <div data-character-shaper-surface="true" className="relative mx-auto grid h-full max-h-full min-h-0 w-full max-w-[1600px] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
-        {summaryBar}
+        <div data-character-shaper-header="true" className="min-w-0">
+          {summaryBar}
+          <ModalStatusSlot className="flex min-w-0 justify-end px-2 pb-1.5 empty:hidden" />
+        </div>
         {middle}
         {dock}
       </div>

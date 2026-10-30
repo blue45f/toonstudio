@@ -48,6 +48,8 @@ export interface StudioScene3dCutBg3dEditorHost {
   ) => void;
   readonly open: boolean;
   readonly modelRenderer?: StudioScene3dCutAssetPreparation["renderer"];
+  readonly materialBackend?: StudioScene3dCutAssetPreparation["materialBackend"];
+  readonly isMaterialBackendCurrent?: () => boolean;
   readonly modelRootCacheRef?: {
     current: StudioScene3dCutAssetPreparation["cache"];
   };
@@ -168,7 +170,10 @@ export function createStudioScene3dCutBg3dHost(
 ): StudioScene3dCutHost {
   const projectId = studioScene3dCutProjectId(h);
   const assetSession = h.modalAssetSessionRef?.current;
+  const materialBackend = h.materialBackend, modelRenderer = h.modelRenderer, isMaterialBackendCurrent = h.isMaterialBackendCurrent;
   const blockedReason = () => {
+    if (isMaterialBackendCurrent?.() === false || h.materialBackend !== materialBackend || h.modelRenderer !== modelRenderer)
+      return "표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다.";
     if (h.modalAssetSessionRef?.current !== assetSession)
       return "편집 세션이 바뀌어 이전 컷 작업을 중단했습니다.";
     if (studioScene3dCutProjectId(h) !== projectId)
@@ -299,7 +304,7 @@ export function createStudioScene3dCutBg3dHost(
       try {
         if (document.attachments.length) {
           if (
-            !h.modelRenderer ||
+            !modelRenderer ||
             !h.modelRootCacheRef ||
             !h.attachmentByStorageModelIdRef
           )
@@ -311,7 +316,7 @@ export function createStudioScene3dCutBg3dHost(
               document,
               h.viewportHostRef?.current ?? null
             ),
-            renderer: h.modelRenderer,
+            renderer: modelRenderer, materialBackend,
             cache: h.modelRootCacheRef.current,
             isCurrent: () => blockedReason() === null,
             expectedInputRevision: inputRevision,
@@ -370,6 +375,8 @@ export function createStudioScene3dCutBg3dHost(
               );
           }
         }
+        const reasonBeforeCommit = blockedReason();
+        if (reasonBeforeCommit) throw new Error(reasonBeforeCommit);
         prepared?.commitCache();
         if (prepared) {
           h.storageModelIdByAttachmentIdRef.current = new Map([

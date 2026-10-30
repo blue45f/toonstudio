@@ -482,6 +482,8 @@ describe("bootstrap SQL and repository contract", () => {
       "0113_production_episode_voice_commentary",
       "0114_studio_ai_premium_route_ledger",
       "0115_studio_ai_usage_ledger_reserved_tokens",
+      "0116_studio_review_comment_pen_strokes",
+      "0117_studio_scoped_write_policy",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([

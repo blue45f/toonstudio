@@ -20,8 +20,13 @@ const GLOB_PATTERN = /[*?[\]]/u;
 
 /** These mandatory suites belong to the real PostgreSQL lane, never to a DB-less shard. */
 export const CORE_DATABASE_VITEST_TARGETS = Object.freeze([
+  "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
+  "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
+  "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-recording-booth-asset.integration.test.ts",
+  "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
+  "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts",
   "apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts",

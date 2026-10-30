@@ -15,9 +15,9 @@ import type {
   StudioBg3dSkpMetadataStatus,
 } from "./studio-bg3d-skp-asset-metadata";
 import type { StudioBg3dImportAiUse, StudioBg3dImportAiUseStatus } from "./studio-bg3d-import-ai-use";
-import type { StudioBg3dSkpImportOptions, StudioBg3dSkpReportEvent } from "./studio-bg3d-skp-import";
+import type { StudioBg3dSkpImportOptions, StudioBg3dSkpReportEvent, StudioBg3dSkpUnitDecision } from "./studio-bg3d-skp-import";
 import type { StudioBg3dSkpImportReport } from "./studio-bg3d-skp-import-report";
-import type { StudioBg3dSkpImportSession, StudioBg3dSkpResultInput } from "./studio-bg3d-skp-import-session";
+import type { StudioBg3dSkpActivity, StudioBg3dSkpImportSession, StudioBg3dSkpResultInput } from "./studio-bg3d-skp-import-session";
 
 /** 검증을 마치고 저장된 라이브러리 레코드 중 이 모듈이 읽는 필드. */
 export interface StudioBg3dSkpStoredRecordLike {
@@ -83,6 +83,8 @@ export interface StudioBg3dSkpImportRun {
 
 export interface StudioBg3dSkpImportRunDeps {
   readonly session?: StudioBg3dSkpImportSession;
+  /** 호출자가 캡처한 modal/import generation의 UI 권위. 단순 open Boolean은 ABA를 구분하지 못한다. */
+  readonly isCurrent?: () => boolean;
   readonly persist?: (
     asset: StudioBg3dSkpImportedAsset,
     report: StudioBg3dSkpImportReport,
@@ -91,11 +93,24 @@ export interface StudioBg3dSkpImportRunDeps {
 }
 
 const NOT_SAVED_REASON = "이번 가져오기에서 저장되지 않았습니다.";
+// 마지막 실행 표지를 지우면 먼저 시작한 실행이 되살아날 수 있어 session 수명 동안 하나를 유지한다.
+const currentRuns = new WeakMap<StudioBg3dSkpImportSession, AbortController>();
 
 export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {}): StudioBg3dSkpImportRun {
   const session = deps.session ?? studioBg3dSkpImportSession;
   const persist = deps.persist ?? ((asset, report, signal) => persistStudioBg3dSkpAssetMetadata(asset, report, { signal }));
   const reports: StudioBg3dSkpReportEvent[] = [];
+  const questionOwner = new AbortController();
+  // lazy import가 늦게 끝난 이전 modal은 현재 run의 질문·표지를 선점하지 않는다.
+  if (deps.isCurrent?.() ?? true) {
+    const previous = currentRuns.get(session);
+    currentRuns.set(session, questionOwner);
+    previous?.abort();
+  }
+  const ownsUi = (): boolean => currentRuns.get(session) === questionOwner && (deps.isCurrent?.() ?? true);
+  let ownedActivity: StudioBg3dSkpActivity | null = null;
+  let completion: Promise<StudioBg3dImportAiUseStatus> | null = null;
+  let completing = false;
 
   const resultFor = async (
     event: StudioBg3dSkpReportEvent,
@@ -136,24 +151,55 @@ export function beginStudioBg3dSkpImportRun(deps: StudioBg3dSkpImportRunDeps = {
 
   return {
     options: {
-      resolveUnit: (request, signal) => session.requestUnit(request, signal),
-      onStage: (event) => session.setActivity({ sourceName: event.sourceName, progress: event.progress }),
+      async resolveUnit(request, signal): Promise<StudioBg3dSkpUnitDecision> {
+        if (completing || !ownsUi() || signal?.aborted) return { kind: "cancel" };
+        const controller = new AbortController();
+        const abort = (): void => controller.abort();
+        questionOwner.signal.addEventListener("abort", abort, { once: true });
+        signal?.addEventListener("abort", abort, { once: true });
+        try {
+          if (questionOwner.signal.aborted || signal?.aborted) controller.abort();
+          const decision = await session.requestUnit(request, controller.signal);
+          return !completing && ownsUi() && !signal?.aborted ? decision : { kind: "cancel" };
+        } finally {
+          questionOwner.signal.removeEventListener("abort", abort);
+          signal?.removeEventListener("abort", abort);
+        }
+      },
+      onStage: (event) => {
+        if (!completing && ownsUi()) {
+          ownedActivity = { sourceName: event.sourceName, progress: event.progress };
+          session.setActivity(ownedActivity);
+        }
+      },
       onReport: (event) => {
-        reports.push(event);
+        // 오래된 실행이라도 이미 저장한 모델의 보고서 기록은 완료할 수 있게 유지한다.
+        if (!completing) reports.push(event);
       },
     },
-    async complete(outcome) {
-      session.setActivity(null);
-      if (reports.length === 0 || outcome.status === "abandoned") return "skipped";
-      const inputs: StudioBg3dSkpResultInput[] = [];
-      let aiUse: StudioBg3dImportAiUseStatus = "skipped";
-      for (const event of reports) {
-        const result = await resultFor(event, outcome);
-        inputs.push(result.input);
-        aiUse = combineImportAiUseStatusLazy(aiUse, result.aiUse);
-      }
-      session.publishResults(inputs);
-      return aiUse;
+    complete(outcome) {
+      if (completion) return completion;
+      completing = true;
+      const completedReports = [...reports];
+      // Promise를 먼저 고정해 동기 session listener가 complete를 다시 불러도 기록을 중복하지 않는다.
+      completion = Promise.resolve().then(async (): Promise<StudioBg3dImportAiUseStatus> => {
+        questionOwner.abort();
+        // modal 권위가 바뀌어도 자기 표시만 회수하고, 다음 run/외부가 놓은 표시는 지우지 않는다.
+        if (ownedActivity !== null && session.getSnapshot().activity === ownedActivity) session.setActivity(null);
+        ownedActivity = null;
+        if (completedReports.length === 0 || outcome.status === "abandoned") return "skipped";
+        const inputs: StudioBg3dSkpResultInput[] = [];
+        let aiUse: StudioBg3dImportAiUseStatus = "skipped";
+        for (const event of completedReports) {
+          const result = await resultFor(event, outcome);
+          inputs.push(result.input);
+          aiUse = combineImportAiUseStatusLazy(aiUse, result.aiUse);
+        }
+        // 각 persist await 중 새 실행이 시작될 수 있다. 영속 기록과 화면 게시의 권위를 분리한다.
+        if (ownsUi()) session.publishResults(inputs);
+        return aiUse;
+      });
+      return completion;
     },
   };
 }

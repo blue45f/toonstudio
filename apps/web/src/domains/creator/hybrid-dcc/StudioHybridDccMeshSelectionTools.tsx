@@ -47,7 +47,7 @@ export function StudioHybridDccMeshSelectionTools(props: Props) {
   const [notice, setNotice] = useState("");
   const record = workspace.activeAssetId ? workspace.session.state.geometry.records[workspace.activeAssetId] : null;
   const mode = componentSelection?.mode ?? "object";
-  const blocked = props.editingDisabled || Boolean(props.onSculptStroke) || mode === "object"
+  const blocked = props.editingDisabled || Boolean(props.onSculptStroke || props.sculptGesture) || mode === "object"
     || !record || !props.onSelectComponent;
   const savedMatches = saved && record && saved.mode === mode && saved.assetId === record.assetId
     && saved.meshRevision === record.revision && saved.sourceHash === record.meshHash;

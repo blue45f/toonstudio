@@ -50,6 +50,21 @@ describe("production demo timeline", () => {
 });
 
 describe("production demo session", () => {
+  it("서버 검증이 없는 작업물 제출은 샘플 원고와 제출 이력을 바꾸지 않는다", () => {
+    const original = productionDemoAdapter.create();
+    const before = JSON.stringify(original);
+    expect(() => productionDemoAdapter.reduce(original, {
+      type: "submit-task-output", taskId: "task-episode-12-thumbnail", submissionId: "unverified-submission",
+      submittedByAssignmentId: "sample-assignment", documentRole: "lineart",
+      source: { subject: { schemaVersion: 1, workId: "sample-work", projectId: "sample-graph",
+        artifactId: "sample-artifact", reviewId: "sample-review", revisionId: "sample-revision", rootGraphHash: "a".repeat(64) } },
+      selection: { mode: "document" }, inputs: { mode: "current" },
+      target: { kind: "existing", deliverableId: "sample-deliverable" },
+    })).toThrow("서버의 저장 원고 검증이 필요합니다");
+    expect(productionDemoAdapter.create()).toBe(original);
+    expect(JSON.stringify(original)).toBe(before);
+  });
+
   it("keeps sample changes across pages until it is reset", () => {
     const first = productionDemoAdapter.create();
     expect(productionDemoAdapter.create()).toBe(first);

@@ -43,6 +43,7 @@ export interface StudioMainMenuBuilderState extends StudioMainMenuSurfaceState {
   sharedNonOwnerSave: boolean;
   saving: boolean;
   collaborationDocumentLocked: boolean;
+  scopedDraftSaveAvailable?: boolean; scopedPendingSaveConfirmation?: boolean;
   hasWorkId: boolean;
   projectArchiveBusy: boolean;
   interchangeImportBusy: boolean;

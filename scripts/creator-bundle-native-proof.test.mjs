@@ -1,30 +1,46 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { assertPrivateNativeBody, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+import { assertPrivateNativeBody, LICENSED_NATIVE_INTAKE, LICENSED_NATIVE_PACKS, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+import { packRightsProjection } from "./lib/creator-bundle-pack-rights.mjs";
+import { FIXTURE_LIBRARY_PACK, fixtureLedger, fixtureLicenseText, ledgerEntry, qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const rights = { status: "public-domain", licenseName: "CC0-1.0", commercialUse: true, attributionRequired: false };
 const sha256 = "a".repeat(64);
-function fixture() {
+function fixture({ licensed = false, attribution } = {}) {
+  const ingestId = licensed ? LICENSED_NATIVE_PACKS[0].ingestId : "cbv1-ingest-local-cute-park";
+  const id = `${ingestId}-unit-model`, sourceRights = licensed
+    ? { ...rights, status: "licensed", licenseName: "합성 native 검증 라이선스", ...(attribution === undefined ? {} : { attributionRequired: true, attribution }) }
+    : { ...rights };
+  const entry = ledgerEntry({ title: "합성 native 팩", catalogIds: [licensed ? LICENSED_NATIVE_PACKS[0].ledgerPackId : "cbv1-008-cute-park-pack"],
+    creator: licensed ? "EmaceArt" : "RG Poly", licenseClass: licensed ? "emaceart-local-license" : "cc0-explicit",
+    libraryPacks: [FIXTURE_LIBRARY_PACK], serve: "allow", grant: { ...sourceRights },
+    evidence: [qualifyingEvidence("local-license-file"), ...(licensed
+      ? [qualifyingEvidence("purchase-receipt"), qualifyingEvidence("producer-written-confirmation")] : [])] });
+  const assets = [{ id, pack: 0, path: `${ingestId}/native/Unit.glb`, bytes: 123, sha256 }];
+  const ledger = fixtureLedger([entry], [fixtureLicenseText({ class: licensed ? "emaceart-app-shipping-explicit" : "rg-poly-cc0" })]);
+  const themePacks = { packs: [{ title: entry.title, creator: entry.creator, catalogIds: entry.catalogIds,
+    ingestPackIds: [ingestId], placeable: 1, rights: packRightsProjection(entry) }], assets };
   return {
-    assets: [{ id: "one", bytes: 123, sha256 }],
-    rows: [{ id: "one", ok: true, bytes: 123, sha256: `sha256:${sha256}`, profile: "mobile", rights }],
+    assets, themePacks, ledger,
+    rows: [{ id, packIndex: 0, ok: true, bytes: 123, sha256: `sha256:${sha256}`, profile: "mobile", rights: { ...sourceRights } }],
     worker: { requests: 3, responses: 3, rejected: 0, profileErrors: 0, errors: [], urls: ["http://127.0.0.1/studio-bg3d-glb-validation.worker.ts"] },
-    representatives: [{ index: 0, id: "one" }],
-    renders: [{ id: "one", bytes: 123, sha256: `sha256:${sha256}`, shaderErrors: [], foregroundPixels: 8000,
+    representatives: [{ index: 0, id }],
+    renders: [{ id, packIndex: 0, bytes: 123, sha256: `sha256:${sha256}`, shaderErrors: [], foregroundPixels: 8000,
       materials: [{ type: "MeshStandardMaterial" }], backend: { renderer: "ANGLE Metal Renderer: Apple M2 Max" },
       camera: { corners: Array.from({ length: 8 }, () => [0.5, 0.5, 0.5]) }, normalizedSize: [2, 1, 1] }],
     wrongHash: { code: "hash-mismatch" }, errors: [],
   };
 }
 
-test("실제 카탈로그에서 서로 다른 8팩의 대표 모델을 정확히 선택한다", () => {
+test("실제 카탈로그의 기존 8팩과 실제 편입된 구매 팩의 대표를 정확히 선택한다", () => {
   const catalog = JSON.parse(readFileSync(new URL("../apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json", import.meta.url)));
   const selected = selectNativeRepresentatives(catalog);
-  assert.equal(selected.length, 8);
-  assert.equal(new Set(selected.map(({ index }) => catalog.assets[index].pack)).size, 8);
+  const additions = LICENSED_NATIVE_PACKS.filter(({ ingestId }) => catalog.assets.some((asset) => asset.path.startsWith(`${ingestId}/native/`)));
+  assert.equal(selected.length, 8 + additions.length);
+  assert.equal(new Set(selected.map(({ index }) => catalog.assets[index].pack)).size, 8 + additions.length);
   assert.throws(() => selectNativeRepresentatives({ assets: [] }), /대표 모델/);
 });
 
@@ -71,7 +87,7 @@ test("전수 증거 재사용은 같은 카탈로그와 모든 원본 SHA/Worker
   const catalogSha256 = "c".repeat(64);
   const summary = { status: "ok", catalogSha256, assets: 1, validated: 1, bytes: 123,
     failures: [], problems: [], wrongHash: proof.wrongHash, worker: proof.worker, renders: proof.renders };
-  const value = { assets: proof.assets, rows: proof.rows, summary, catalogSha256 };
+  const value = { assets: proof.assets, rows: proof.rows, summary, catalogSha256, themePacks: proof.themePacks, ledger: proof.ledger };
   assert.deepEqual(reusableNativeValidationProblems(value), []);
   for (const mutate of [
     (input) => { input.catalogSha256 = "d".repeat(64); },
@@ -89,4 +105,108 @@ test("전수 증거 재사용은 같은 카탈로그와 모든 원본 SHA/Worker
   assert.deepEqual(nativeProofProblems(reused), []);
   reused.reusedValidation.rowsSha256 = "";
   assert.ok(nativeProofProblems(reused).length > 0);
+});
+
+test("licensed 구매 팩의 원장·공개 권리·레코드 출처가 정확히 같아야 전수 증거로 인정한다", () => {
+  const value = fixture({ licensed: true, attribution: "합성 원작자 출처" });
+  assert.deepEqual(nativeCatalogRightsProblems(value), []);
+  assert.deepEqual(nativeProofProblems(value), []);
+  assert.equal(value.rows[0].rights.status, "licensed");
+  assert.equal(value.rows[0].rights.attribution, "합성 원작자 출처");
+  for (const mutate of [
+    (proof) => { delete proof.rows[0].rights.attribution; },
+    (proof) => { proof.rows[0].rights.attribution = "다른 원작자"; },
+    (proof) => { proof.themePacks.packs[0].rights.status = "public-domain"; proof.rows[0].rights.status = "public-domain"; },
+    (proof) => { proof.themePacks.packs[0].rights.licenseName = "CC0-1.0"; proof.rows[0].rights.licenseName = "CC0-1.0"; },
+    (proof) => { proof.themePacks.packs[0].rights.commercialUse = false; proof.rows[0].rights.commercialUse = false; },
+    (proof) => { delete proof.themePacks.packs[0].rights.attribution; delete proof.rows[0].rights.attribution; },
+    (proof) => { proof.rows[0].packIndex = 1; },
+    (proof) => { proof.renders[0].packIndex = 1; },
+  ]) {
+    const proof = fixture({ licensed: true, attribution: "합성 원작자 출처" }); mutate(proof);
+    assert.ok(nativeProofProblems(proof).length > 0, mutate.toString());
+  }
+});
+
+test("기대 권리 원장·카탈로그가 없거나 원장 항목이 hold면 CC0 레코드를 제시해도 성공하지 않는다", () => {
+  for (const mutate of [
+    (proof) => { delete proof.ledger; },
+    (proof) => { delete proof.themePacks; },
+    (proof) => { proof.ledger.packs = []; },
+    (proof) => { proof.ledger.packs[0].serve = "hold"; proof.ledger.packs[0].holdReason = "technical-intake-pending"; proof.ledger.packs[0].holdLabel = "기술 편입 대기"; },
+    (proof) => { proof.rows[0].rights.status = "unknown"; },
+  ]) {
+    const proof = fixture(); mutate(proof);
+    assert.ok(nativeProofProblems(proof).length > 0, mutate.toString());
+  }
+});
+
+test("모델의 다른 팩 표시와 모델이 없는 공개 팩의 권리 변조도 원장 대조에서 거부한다", () => {
+  const proof = fixture({ licensed: true });
+  const other = ledgerEntry({ title: "다른 합성 팩", catalogIds: ["cbv1-902-other-native"], serve: "allow", grant: { ...proof.rows[0].rights } });
+  proof.ledger.packs.push(other);
+  proof.themePacks.packs.push({ title: other.title, creator: other.creator, catalogIds: other.catalogIds,
+    ingestPackIds: ["cbv1-ingest-other"], placeable: 0, rights: packRightsProjection(other) });
+  assert.deepEqual(nativeProofProblems(proof), []);
+  proof.assets[0].pack = 1; proof.rows[0].packIndex = 1; proof.renders[0].packIndex = 1;
+  assert.ok(nativeProofProblems(proof).some((problem) => /인제스션/u.test(problem)));
+  proof.assets[0].pack = 0; proof.rows[0].packIndex = 0; proof.renders[0].packIndex = 0;
+  proof.themePacks.packs[1].rights.status = "public-domain";
+  assert.ok(nativeProofProblems(proof).some((problem) => /공개 팩 권리/u.test(problem)));
+});
+
+test("기존 8팩의 CC0 단언을 공개·원장의 일치만으로 licensed로 바꾸지 않는다", () => {
+  const proof = fixture({ licensed: true });
+  const ingestId = "cbv1-ingest-local-cute-park";
+  proof.assets[0].id = `${ingestId}-unit-model`; proof.assets[0].path = `${ingestId}/native/Unit.glb`;
+  proof.themePacks.packs[0].ingestPackIds = [ingestId];
+  proof.rows[0].id = proof.assets[0].id; proof.renders[0].id = proof.assets[0].id; proof.representatives[0].id = proof.assets[0].id;
+  assert.ok(nativeProofProblems(proof).some((problem) => /기존 8팩의 CC0/u.test(problem)));
+});
+
+test("같은 CC0 권리라도 기존 Park 인제스션을 Nature 등 다른 owner에 붙이면 거부한다", () => {
+  const proof = fixture(), otherId = "cbv1-030-nature-megapack-extended";
+  const entry = proof.ledger.packs[0], pack = proof.themePacks.packs[0];
+  entry.id = otherId; entry.catalogIds = [otherId]; entry.title = "다른 CC0 owner 합성 fixture";
+  pack.catalogIds = [otherId]; pack.title = entry.title;
+  assert.deepEqual(pack.rights, packRightsProjection(entry));
+  assert.ok(nativeProofProblems(proof).some((problem) => /원장 소속/u.test(problem)));
+});
+
+test("추가 팩 metadata ID만으로 대표를 강제하지 않고 실제 등록된 팩만 독립적으로 요구한다", () => {
+  const catalog = JSON.parse(readFileSync(new URL("../apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json", import.meta.url)));
+  const base = { ...catalog, assets: catalog.assets.filter((asset) => !LICENSED_NATIVE_PACKS.some(({ ingestId }) => asset.path.startsWith(`${ingestId}/native/`))),
+    packs: catalog.packs.map((pack) => ({ ...pack, placeable: 0 })) };
+  for (const pack of LICENSED_NATIVE_PACKS) base.packs.push({ ingestPackIds: [pack.ingestId], placeable: 0 });
+  assert.equal(selectNativeRepresentatives(base).length, 8);
+  const first = LICENSED_NATIVE_PACKS[0];
+  base.assets.push({ id: "합성 대표 선택 항목", path: `${first.ingestId}/native/${first.source}`, pack: base.packs.length - 2 });
+  assert.equal(selectNativeRepresentatives(base).length, 9);
+  base.assets[base.assets.length - 1].path = `${first.ingestId}/native/Other.glb`;
+  assert.throws(() => selectNativeRepresentatives(base), /대표 모델/u);
+  base.assets.pop(); base.packs[base.packs.length - 1].placeable = 1;
+  assert.throws(() => selectNativeRepresentatives(base), /대표 모델/u);
+  assert.throws(() => selectNativeRepresentatives(base, { expectedIntake: LICENSED_NATIVE_INTAKE }), /대표 모델/u);
+});
+
+test("이번 paired 편입 옵션은 각각 50·115개를 요구하고 일부 등록을 전수 성공으로 세지 않는다", () => {
+  const proof = fixture({ licensed: true });
+  assert.deepEqual(nativeCatalogRightsProblems(proof), []);
+  const problems = nativeCatalogRightsProblems({ ...proof, expectedIntake: LICENSED_NATIVE_INTAKE });
+  assert.ok(problems.some((problem) => problem.includes("50개 필요")));
+  assert.ok(problems.some((problem) => problem.includes("115개 필요")));
+  assert.ok(nativeProofProblems({ ...proof, expectedIntake: LICENSED_NATIVE_INTAKE }).length > 0);
+  assert.ok(nativeCatalogRightsProblems({ ...proof, expectedIntake: "unknown-intake" }).length > 0);
+  // 모델 바이트/Worker 성공 기록을 만들지 않는 합성 카탈로그 수량 fixture다.
+  const second = ledgerEntry({ title: "추가 수량 합성 팩", catalogIds: [LICENSED_NATIVE_PACKS[1].ledgerPackId],
+    serve: "allow", grant: { ...proof.ledger.packs[0].grant } });
+  proof.ledger.packs.push(second);
+  proof.themePacks.packs.push({ title: second.title, creator: second.creator, catalogIds: second.catalogIds,
+    ingestPackIds: [LICENSED_NATIVE_PACKS[1].ingestId], placeable: 115, rights: packRightsProjection(second) });
+  proof.themePacks.assets = LICENSED_NATIVE_PACKS.flatMap((pack, index) => Array.from({ length: pack.models }, (_, item) => ({
+    id: `${pack.ingestId}-unit-${item}`, pack: index, path: `${pack.ingestId}/native/Unit-${item}.glb`, bytes: 123, sha256,
+  })));
+  assert.deepEqual(nativeCatalogRightsProblems({ ...proof, expectedIntake: LICENSED_NATIVE_INTAKE }), []);
+  proof.themePacks.assets.pop();
+  assert.ok(nativeCatalogRightsProblems({ ...proof, expectedIntake: LICENSED_NATIVE_INTAKE }).some((problem) => problem.includes("115개 필요")));
 });

@@ -11,6 +11,9 @@ export class StudioThreeWorldNavigation {
 
   constructor(private readonly manifest: StudioVirtualSpaceWorldManifest) {}
 
+  /** 다음 이동 계산에 남아 있는 실제 waypoint 수다. 경로를 다시 계산하지 않는다. */
+  get waypointCount(): number { return this.route.length; }
+
   resolveTarget(point: StudioVirtualSpacePoint): StudioVirtualSpacePoint | null {
     return resolveStudioWorldSpawn(this.manifest, clampStudioWorldPoint(this.manifest, point));
   }

@@ -38,6 +38,8 @@ import {
   STUDIO_BG3D_SKP_UNAVAILABLE_NAME_LIST,
 } from "./studio-bg3d-skp-report-builder";
 import { describeStudioBg3dSkpDeclaredUnits, type StudioBg3dSkpDeclaredUnits } from "./studio-bg3d-skp-unit";
+import { extractStudioBg3dSkpSceneManifest } from "./studio-bg3d-skp-scene-manifest";
+import { studioBg3dSkpGeometryTransform, unavailableStudioBg3dSkpSceneSource, type StudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 
 import type { StudioBg3dSkpImportReport, StudioBg3dSkpReportWarning } from "./studio-bg3d-skp-import-report";
 
@@ -92,6 +94,7 @@ export interface StudioBg3dSkpConversionOptions {
 export interface StudioBg3dSkpConversionOutput {
   readonly glb: Uint8Array;
   readonly report: StudioBg3dSkpImportReport;
+  readonly sceneSource: StudioBg3dSkpSceneSource;
 }
 
 const PROGRESS_THROTTLE_MS = 100;
@@ -246,19 +249,25 @@ async function loadModuleOrFail(loadModule: OpenSkpModuleLoader): Promise<OpenSk
 interface MetadataOutcome {
   readonly status: "done" | "skipped-large" | "failed";
   readonly summary: StudioBg3dSkpModelSummary | null;
+  readonly sceneSource: StudioBg3dSkpSceneSource;
 }
 
 function readMetadata(module: OpenSkpModuleLike, source: ArrayBuffer): MetadataOutcome {
   if (source.byteLength > STUDIO_BG3D_SKP_METADATA_PASS_MAX_BYTES) {
-    return { status: "skipped-large", summary: null };
+    return { status: "skipped-large", summary: null, sceneSource: unavailableStudioBg3dSkpSceneSource("metadata-pass-size-limit") };
   }
-  if (!module.parseSkp) return { status: "failed", summary: null };
+  if (!module.parseSkp) return { status: "failed", summary: null, sceneSource: unavailableStudioBg3dSkpSceneSource("parser-unavailable") };
   try {
-    const summary = summarizeOpenSkpModel(module.parseSkp(source));
-    return summary ? { status: "done", summary } : { status: "failed", summary: null };
+    const model = module.parseSkp(source);
+    const summary = summarizeOpenSkpModel(model);
+    const manifest = extractStudioBg3dSkpSceneManifest(model);
+    const sceneSource: StudioBg3dSkpSceneSource = manifest.ok
+      ? { version: 1, status: "available", manifest: manifest.value, reason: null, geometryTransform: studioBg3dSkpGeometryTransform() }
+      : unavailableStudioBg3dSkpSceneSource(manifest.code === "budget-exceeded" ? "manifest-budget-exceeded" : "manifest-invalid-source");
+    return { status: summary ? "done" : "failed", summary, sceneSource };
   } catch {
     // 이름·단위 보고는 부가 정보다. 실패는 보고서에 남기고 변환은 buildScene 결과로 계속한다.
-    return { status: "failed", summary: null };
+    return { status: "failed", summary: null, sceneSource: unavailableStudioBg3dSkpSceneSource("metadata-parse-failed") };
   }
 }
 
@@ -476,5 +485,6 @@ export async function convertStudioBg3dSkpBytes(
   return {
     glb,
     report: buildStudioBg3dSkpImportReport({ ...reportBase, elapsedMs: run.elapsedMs(), warnings }),
+    sceneSource: metadata.sceneSource,
   };
 }

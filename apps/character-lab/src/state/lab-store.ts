@@ -154,6 +154,7 @@ export function createLabStore(options: LabStoreOptions): LabStoreHandle {
       at: now(),
       // 연속 드래그 병합: param/set·expression/set과 v3 슬라이더 명령(look·비례·채널·형태·소품·헤어 색)
       ...(coalesceKey !== undefined ? { coalesceKey } : {}),
+      ...(command.type === "pose/set" && command.coalesceMode === "session" ? { coalesceMode: "session" as const } : {}),
       ...(command.type === "source/set" ? { capabilities: { before: state.capabilities, after: command.capabilities } } : {}),
     };
     history.push(entry);

@@ -5,6 +5,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { useStudioBg3dInplaceTools } from "./useStudioBg3dInplaceTools";
+import { useStudioBg3dModelMaterialLease } from "./useStudioBg3dModelMaterialLease";
 import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
 import { useStudioBg3dGlbTexturePaintHost } from "./useStudioBg3dGlbTexturePaintHost";
 import { useStudioBg3dPrimitivePaintHost } from "./useStudioBg3dPrimitivePaintHost";
@@ -43,6 +44,9 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
   } = R;
   const h = useStudioBg3dEditorState(props);
   bindStudioBg3dEditorViewModel(h);
+  const materialBackend = h.engineRuntime?.plan?.backend === "webgpu" ? "webgpu" : "webgl";
+  h.materialBackend = materialBackend;
+  h.isMaterialBackendCurrent = useStudioBg3dModelMaterialLease({ renderer: h.modelRenderer, rendererRef: h.modelRendererRef, materialBackend });
   bindStudioBg3dEditorSelectionViewModel(h);
   bindStudioBg3dEditorLayoutViewModel(h);
   attachStudioBg3dEditorHosts(h);
@@ -62,6 +66,8 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
     modelImportAbortRef: h.modelImportAbortRef,
     modelLoadPendingRef: h.modelLoadPendingRef,
     modelRenderer: h.modelRenderer,
+    materialBackend,
+    isMaterialBackendCurrent: h.isMaterialBackendCurrent,
     modelRootCacheRef: h.modelRootCacheRef,
     physicsRuntimeSourceRef: h.physicsRuntimeSourceRef,
     replaceCanonicalDocumentState: h.replaceCanonicalDocumentState,
@@ -90,9 +96,10 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
   h.inplaceTools = useStudioBg3dInplaceTools({
     live: h.physicsRuntimeSourceRef, selectedIds: h.selectedIds, session: h.modalAssetSessionRef.current,
     ready: h.open && !h.isRestoringScene && !h.physicsInteractionLocked && !h.isCapturing && !h.isBatchRenderingShots,
-    renderer: h.modelRenderer, quality: h.deviceQuality, cache: h.modelRootCacheRef.current,
+    renderer: h.modelRenderer, materialBackend, quality: h.deviceQuality, cache: h.modelRootCacheRef.current,
     attachments: h.attachmentByStorageModelIdRef.current, storageIds: h.storageModelIdByAttachmentIdRef.current,
     isSessionCurrent: h.isModalAssetSessionCurrent,
+    isMaterialBackendCurrent: h.isMaterialBackendCurrent,
     isBlocked: () => h.captureInFlightRef.current || h.sceneRestoreAbortRef.current !== null || h.modelImportAbortRef.current !== null || h.destructiveMutationGuardRef.current.blocksClose || isStudioBg3dPhysicsTransientPhase(h.physicsPhaseRef.current) || h.placementSessionRef.current.phase === "preview",
     replace: h.replaceCanonicalDocumentState, commitHistory: h.commitImmediateHistoryTransition,
     notify: () => h.setRefTick((value: number) => value + 1),
@@ -111,7 +118,7 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
     instance: h.selectedCustomModel ?? null,
     setCustomModels: h.setCustomModels,
     cachedRoot: h.selectedCustomModel
-      ? (h.modelRootCacheRef.current.get(h.selectedCustomModel.modelId)?.root ?? null)
+      ? (R.readStudioBg3dModelCacheEntry(h.modelRootCacheRef.current, h.selectedCustomModel.modelId, materialBackend)?.root ?? null)
       : null,
   });
   h.glbTexturePaint = glbTexturePaint;

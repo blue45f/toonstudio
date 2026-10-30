@@ -1,13 +1,33 @@
 import { lazy, Suspense, useId, useState } from "react";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type { StudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 
 const SpatialStoryboardPanel = lazy(() => import("./StudioBg3dSpatialStoryboardPanel"));
 const AdvancedWorkbenchHub = lazy(() => import("./StudioBg3dAdvancedWorkbenchHub"));
 
 /** No heavyweight renderer, session request or eager specialist chunk on studio startup. */
-export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readonly hidden?: boolean }) {
+export function StudioBg3dSpatialStoryboardLauncher({
+  hidden = false,
+  disabled = false,
+  onInsertScenePrimitives,
+  arraySelection,
+  onExecuteSelectionArray,
+  skpSourceSelection,
+  onReadSkpSceneSource,
+  onApplySkpSourceCamera,
+  primitiveEditSelection,
+  onBeginPrimitiveEdit,
+  onApplyPrimitiveEdit,
+  sceneGlbExportUnavailableReason,
+  onExportCurrentSceneGlb,
+}: StudioBg3dWorkbenchHostPorts & {
+  readonly hidden?: boolean;
+  readonly disabled?: boolean;
+}) {
   const t = useT();
+  const bt = useBilingual("StudioBg3dSpatialStoryboardLauncher");
   const [expanded, setExpanded] = useState(false);
   const [workbenchExpanded, setWorkbenchExpanded] = useState(false);
   const contentId = useId();
@@ -39,12 +59,28 @@ export function StudioBg3dSpatialStoryboardLauncher({ hidden = false }: { readon
         className="min-h-11 w-full rounded-lg border border-line bg-card px-3 text-left text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         onClick={() => setWorkbenchExpanded((value) => !value)}
       >
-        3D 웹툰·DCC 스페셜리스트 워크벤치 (14종 도구) {workbenchExpanded ? "접기" : "열기"}
+        {workbenchExpanded
+          ? bt("공간 모델러 접기", "Close Spatial Modeler")
+          : bt("공간 모델러 열기", "Open Spatial Modeler")}
       </button>
       <div id={workbenchContentId} hidden={!workbenchExpanded}>
         {workbenchExpanded && !hidden ? (
           <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.spatialStoryboardTools", "3D 스페셜리스트 워크벤치를 불러오는 중이에요.")} />}>
-            <AdvancedWorkbenchHub />
+            <AdvancedWorkbenchHub
+              defaultTab="spatial-modeler"
+              disabled={disabled}
+              onInsertScenePrimitives={onInsertScenePrimitives}
+              arraySelection={arraySelection}
+              onExecuteSelectionArray={onExecuteSelectionArray}
+              skpSourceSelection={skpSourceSelection}
+              onReadSkpSceneSource={onReadSkpSceneSource}
+              onApplySkpSourceCamera={onApplySkpSourceCamera}
+              primitiveEditSelection={primitiveEditSelection}
+              onBeginPrimitiveEdit={onBeginPrimitiveEdit}
+              onApplyPrimitiveEdit={onApplyPrimitiveEdit}
+              sceneGlbExportUnavailableReason={sceneGlbExportUnavailableReason}
+              onExportCurrentSceneGlb={onExportCurrentSceneGlb}
+            />
           </Suspense>
         ) : null}
       </div>

@@ -78,6 +78,29 @@ function fixture() {
 }
 
 describe("실제 BG3D 컷 호스트의 모델 연결 확정 경계", () => {
+  it("준비에 캡처한 backend를 전달하고 callback이 바뀌어도 이전 fence가 실패하면 commit하지 않는다", async () => {
+    const value = fixture(), gate = Promise.withResolvers<StudioScene3dPreparedCutAssets>(); let current = true;
+    Object.assign(value.host, { materialBackend: "webgpu", isMaterialBackendCurrent: () => current });
+    const adapter = createStudioScene3dCutBg3dHost(value.host);
+    vi.mocked(prepareStudioScene3dCutAssets).mockReturnValueOnce(gate.promise);
+    const applying = adapter.applySource(value.source, null, new AbortController().signal);
+    const request = vi.mocked(prepareStudioScene3dCutAssets).mock.calls.at(-1)?.[0];
+    expect(request?.materialBackend).toBe("webgpu"); expect(request?.isCurrent()).toBe(true);
+    current = false; Object.assign(value.host, { isMaterialBackendCurrent: () => true });
+    expect(request?.isCurrent()).toBe(false); gate.resolve(value.prepared);
+    await expect(applying).rejects.toThrow(/표시 엔진/u);
+    expect(value.commitCache).not.toHaveBeenCalled(); expect(value.history).not.toHaveBeenCalled(); expect(value.replace).not.toHaveBeenCalled(); expect(value.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("renderer 인스턴스가 준비 중 교체되면 같은 backend라도 이전 컷 commit을 취소한다", async () => {
+    const value = fixture(), gate = Promise.withResolvers<StudioScene3dPreparedCutAssets>();
+    vi.mocked(prepareStudioScene3dCutAssets).mockReturnValueOnce(gate.promise);
+    const applying = value.adapter.applySource(value.source, null, new AbortController().signal);
+    Object.assign(value.host, { modelRenderer: { ...value.host.modelRenderer } }); gate.resolve(value.prepared);
+    await expect(applying).rejects.toThrow(/표시 엔진/u);
+    expect(value.commitCache).not.toHaveBeenCalled(); expect(value.replace).not.toHaveBeenCalled(); expect(value.dispose).toHaveBeenCalledOnce();
+  });
+
   it("첨부 ID가 다른 저장 모델에 이미 연결되면 cache·maps·history·문서를 모두 보존한다", async () => {
     const value = fixture();
     value.storageModelIdByAttachmentIdRef.current.set("cut-attachment", "storage-old");

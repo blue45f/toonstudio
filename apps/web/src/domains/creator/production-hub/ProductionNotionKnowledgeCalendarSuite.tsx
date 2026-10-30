@@ -34,7 +34,7 @@ const INITIAL_LORE_RECORDS: readonly NotionLoreRecord[] = [
     title: "잿빛 성채 대연회장 & 지하 봉인실",
     canonicalTag: "LOC-CITADEL",
     summaryBlock: "고대 거인족 석조 양식 위에 세워진 북부 요새 중심부.",
-    outfitOrVisualSpec: "Blender 3D 세트 AST-BG-CITADEL v4 기준 · 스테인드글라스 북쪽 창문 채광 고정",
+    outfitOrVisualSpec: "3D 배경 세트 AST-BG-CITADEL v4 기준 · 스테인드글라스 북쪽 창문 채광 고정",
     continuityWarning: null,
     verification: {
       verifiedBy: "배경3D팀 박도윤",

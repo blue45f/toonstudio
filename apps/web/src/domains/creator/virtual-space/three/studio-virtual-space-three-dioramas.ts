@@ -1,14 +1,18 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { studioEmoteDefinition } from "../studio-virtual-space-emotes";
 import type { StudioVirtualSpacePoint, StudioVirtualSpacePresenceState } from "../studio-virtual-space-model";
 import { userStatusBadge } from "../studio-virtual-space-user-status";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { STUDIO_THREE_SCALE, worldToThree } from "./studio-virtual-space-three-scene";
+import { disposeStudioThreeOwnedModel } from "./studio-virtual-space-three-asset-loader";
+import { StudioThreePendingLoads, type StudioThreePendingController } from "./studio-virtual-space-three-runtime-policy";
 
-export type StudioThreeLightingPreset = "day" | "studio" | "night";
+import type { StudioThreeLightingPreset } from "./studio-virtual-space-three-hdri-controller";
+
+export { createStudioThreeHdriController, STUDIO_THREE_HDRI_URLS } from "./studio-virtual-space-three-hdri-controller";
+export type { StudioThreeLightingPreset } from "./studio-virtual-space-three-hdri-controller";
 
 export interface StudioThreeLocalBoxFilter {
   readonly minX: number;
@@ -226,12 +230,6 @@ export const STUDIO_THREE_ZONE_DIORAMAS: readonly StudioThreeZoneDioramaSpec[] =
   },
 ]);
 
-/** 조명 프리셋별 실측 PolyHaven CC0 HDRI 환경맵(`/assets/3d/hdri/...`) 경로. */
-export const STUDIO_THREE_HDRI_URLS: Readonly<Record<StudioThreeLightingPreset, string>> = Object.freeze({
-  day: "/assets/3d/hdri/konigsallee_1k.hdr",
-  studio: "/assets/3d/hdri/combination_room_1k.hdr",
-  night: "/assets/3d/hdri/cobblestone_street_night_1k.hdr",
-});
 
 function filterMeshGeometryByLocalBoxes(
   mesh: THREE.Mesh,
@@ -274,38 +272,81 @@ function filterMeshGeometryByLocalBoxes(
 /**
  * 10개 구역의 풀 3D 건축 디오라마 GLB를 로드하여 각 구역 좌표에 정밀 배치한다.
  */
+function dioramaExcluded(node: THREE.Object3D, excluded: ReadonlySet<THREE.Object3D>): boolean {
+  let ancestor: THREE.Object3D | null = node;
+  while (ancestor) { if (excluded.has(ancestor)) return true; ancestor = ancestor.parent; }
+  return false;
+}
+
+function dioramaBounds(model: THREE.Object3D, excluded: ReadonlySet<THREE.Object3D>): THREE.Box3 {
+  model.updateMatrixWorld(true);
+  const bounds = new THREE.Box3(), local = new THREE.Box3();
+  model.traverse((node) => {
+    if (!(node instanceof THREE.Mesh)) return;
+    if (dioramaExcluded(node, excluded)) return;
+    let box: THREE.Box3 | null;
+    if (node instanceof THREE.SkinnedMesh || node instanceof THREE.InstancedMesh) {
+      node.computeBoundingBox(); box = node.boundingBox;
+    } else {
+      if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+      box = node.geometry.boundingBox;
+    }
+    if (box) bounds.union(local.copy(box).applyMatrix4(node.matrixWorld));
+  });
+  return bounds;
+}
+
 export function loadStudioThreeZoneDioramas(
   scene: THREE.Scene,
   loader: GLTFLoader,
   isDisposed: () => boolean,
-): void {
+  onAssetError?: (url: string) => void,
+): StudioThreePendingController & { readonly dispose: () => void } {
+  const pending = new StudioThreePendingLoads();
+  const owned = new Set<{ readonly root: THREE.Group; readonly orphaned: Set<THREE.BufferGeometry> }>();
+  let stopped = false;
+  const release = (record: { readonly root: THREE.Group; readonly orphaned: Set<THREE.BufferGeometry> }) => {
+    record.root.removeFromParent();
+    const current = new Set<THREE.BufferGeometry>(), failures: unknown[] = [];
+    record.root.traverse((node) => { if (node instanceof THREE.Mesh) current.add(node.geometry); });
+    try { disposeStudioThreeOwnedModel(record.root); } catch (error) { failures.push(error); }
+    for (const geometry of record.orphaned) if (!current.has(geometry)) {
+      try { geometry.dispose(); } catch (error) { failures.push(error); }
+    }
+    record.root.clear();
+    if (failures.length) throw new AggregateError(failures, "디오라마 자원 해제에 실패했습니다.");
+  };
   for (const spec of STUDIO_THREE_ZONE_DIORAMAS) {
-    loader.load(
-      spec.url,
-      (gltf) => {
-        if (isDisposed()) return;
-        const model = gltf.scene;
-        if (!model) return;
-
+    const finish = pending.begin();
+    const accept = (gltf: GLTF) => {
+      const model = gltf.scene;
+      if (isDisposed() || stopped) { disposeStudioThreeOwnedModel(model); return; }
+      const wrapper = new THREE.Group();
+      wrapper.name = `zone-diorama-${spec.roomId}`;
+      wrapper.add(model);
+      const record = { root: wrapper, orphaned: new Set<THREE.BufferGeometry>() };
+      owned.add(record);
+      try {
         const hiddenPatterns = spec.hiddenNodeSubstrings ?? [];
+        const excluded = new Set<THREE.Object3D>();
         if (hiddenPatterns.length > 0) {
-          const toRemove: THREE.Object3D[] = [];
           model.traverse((child) => {
             if (!child.name) return;
             if (hiddenPatterns.some((pat) => child.name.includes(pat))) {
-              toRemove.push(child);
+              child.visible = false;
+              excluded.add(child);
             }
           });
-          for (const node of toRemove) {
-            node.removeFromParent();
-          }
         }
 
         const clearBoxes = spec.clearLocalBoxes ?? [];
         model.traverse((child) => {
+          if (dioramaExcluded(child, excluded)) return;
           if (child instanceof THREE.Mesh) {
             if (clearBoxes.length > 0) {
+              const previous = child.geometry;
               filterMeshGeometryByLocalBoxes(child, clearBoxes);
+              if (previous !== child.geometry) record.orphaned.add(previous);
             }
             child.castShadow = true;
             child.receiveShadow = true;
@@ -320,7 +361,8 @@ export function loadStudioThreeZoneDioramas(
         });
 
         model.updateMatrixWorld(true);
-        const rawBox = new THREE.Box3().setFromObject(model);
+        const rawBox = dioramaBounds(model, excluded);
+        if (rawBox.isEmpty()) throw new Error("디오라마에 표시할 geometry가 없습니다.");
         const rawSize = new THREE.Vector3();
         rawBox.getSize(rawSize);
 
@@ -329,90 +371,47 @@ export function loadStudioThreeZoneDioramas(
         model.scale.set(scaleX, spec.scaleY, scaleZ);
         model.updateMatrixWorld(true);
 
-        const scaledBox = new THREE.Box3().setFromObject(model);
+        const scaledBox = dioramaBounds(model, excluded);
         const scaledCenter = new THREE.Vector3();
         scaledBox.getCenter(scaledCenter);
 
-        const wrapper = new THREE.Group();
-        wrapper.name = `zone-diorama-${spec.roomId}`;
         model.position.set(
           -scaledCenter.x,
           -scaledBox.min.y + spec.elevationMeters,
           -scaledCenter.z,
         );
-        wrapper.add(model);
         wrapper.position.copy(worldToThree({ x: spec.x, y: spec.y }, 0));
         if (spec.rotationY) wrapper.rotation.y = spec.rotationY;
         scene.add(wrapper);
-      },
-      undefined,
-      () => {
-        // 환경 디오라마 로드 실패 시 조용히 무시하고 기본 건축 구성을 유지한다.
-      },
-    );
+      } catch (error) {
+        owned.delete(record);
+        try { release(record); } catch (cleanupError) { throw new AggregateError([error, cleanupError], "디오라마 준비와 해제에 실패했습니다.", { cause: cleanupError }); }
+        throw error;
+      }
+    };
+    try {
+      loader.load(spec.url, (gltf) => {
+        try { accept(gltf); } finally { finish(); }
+      }, undefined, () => {
+        // 오류를 보고하고 기본 건축 구성을 유지한다. 자동 재시도는 하지 않는다.
+        finish();
+        if (!stopped && !isDisposed()) onAssetError?.(spec.url);
+      });
+    } catch (error) { finish(); throw error; }
   }
-}
-
-/**
- * Chrome 고품질 PBR 렌더링을 위한 실측 HDRI IBL 환경맵 로더 및 캐시 컨트롤러.
- */
-export function createStudioThreeHdriController(
-  renderer: THREE.WebGLRenderer,
-  scene: THREE.Scene,
-  isDisposed: () => boolean,
-): {
-  readonly applyPreset: (preset: StudioThreeLightingPreset) => void;
-  readonly dispose: () => void;
-} {
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  pmremGenerator.compileEquirectangularShader();
-  const rgbeLoader = new RGBELoader();
-  const envCache = new Map<StudioThreeLightingPreset, THREE.Texture>();
-  let activePreset: StudioThreeLightingPreset = "day";
-
-  const applyEnvTexture = (tex: THREE.Texture, preset: StudioThreeLightingPreset) => {
-    if (isDisposed() || activePreset !== preset) return;
-    scene.environment = tex;
-    scene.environmentIntensity = preset === "day" ? 0.56 : preset === "studio" ? 0.64 : 0.42;
+  return {
+    getPendingCount: () => pending.getPendingCount(),
+    getPendingRevision: () => pending.getPendingRevision(),
+    whenIdle: () => pending.whenIdle(),
+    dispose() {
+      if (stopped) return;
+      stopped = true;
+      const records = [...owned], failures: unknown[] = [];
+      owned.clear();
+      for (const record of records) { try { release(record); } catch (error) { failures.push(error); } }
+      if (failures.length) throw new AggregateError(failures, "디오라마 전체 해제에 실패했습니다.");
+    },
   };
-
-  const applyPreset = (preset: StudioThreeLightingPreset) => {
-    activePreset = preset;
-    const cached = envCache.get(preset);
-    if (cached) {
-      applyEnvTexture(cached, preset);
-      return;
-    }
-    const url = STUDIO_THREE_HDRI_URLS[preset];
-    rgbeLoader.load(
-      url,
-      (hdrEquirect) => {
-        if (isDisposed()) {
-          hdrEquirect.dispose();
-          return;
-        }
-        const envMap = pmremGenerator.fromEquirectangular(hdrEquirect).texture;
-        hdrEquirect.dispose();
-        envCache.set(preset, envMap);
-        applyEnvTexture(envMap, preset);
-      },
-      undefined,
-      () => {
-        // HDRI 로드 실패 시 기본 디렉셔널/헤미스피어 조명을 유지한다.
-      },
-    );
-  };
-
-  const dispose = () => {
-    scene.environment = null;
-    for (const tex of envCache.values()) {
-      tex.dispose();
-    }
-    envCache.clear();
-    pmremGenerator.dispose();
-  };
-
-  return { applyPreset, dispose };
 }
 
 export interface StudioThreeChromePostPipeline {

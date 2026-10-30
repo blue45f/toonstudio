@@ -23,7 +23,7 @@ import { PROJECTION_FALLBACK_SCREEN_NDC, metersPerTexel, projectionSizeM } from 
 import { toVector3 } from "./convert";
 import { pickCandidates } from "./pick-and-paint";
 
-import type { PartRole } from "../../contracts";
+import type { CharacterPickOptions, PartRole } from "../../contracts";
 import type { ProjectionBrushBitmap, ProjectionOverlay, ProjectionPaintPort, ProjectionStampOutcome } from "../projection-paint";
 import type { ReadbackLane } from "../readback";
 import type { CharacterRig } from "./character-rig";
@@ -68,7 +68,6 @@ export interface ProjectionPainter extends ProjectionPaintPort {
 interface BrushState {
   readonly bitmap: ProjectionBrushBitmap;
   readonly radiusPx: number;
-  readonly texture: RawTexture;
 }
 
 interface QueuedStamp {
@@ -76,7 +75,7 @@ interface QueuedStamp {
   readonly position: Vector3;
   readonly normal: Vector3;
   readonly size: Vector3;
-  readonly brush: RawTexture;
+  readonly brush: ProjectionBrushBitmap;
 }
 
 const SHARED_SHADER_NAME = "meshUVSpaceRendererShader";
@@ -84,9 +83,11 @@ const SHARED_SHADER_NAME = "meshUVSpaceRendererShader";
 export function createProjectionPainter(deps: ProjectionPainterDeps): ProjectionPainter {
   const { scene, camera } = deps;
   let part: PartRole | null = null;
+  let pickOptions: CharacterPickOptions | undefined;
   let layerWidth = 0;
   let layerHeight = 0;
   let brush: BrushState | null = null;
+  let uploadedBrush: { readonly bitmap: ProjectionBrushBitmap; readonly texture: RawTexture } | null = null;
   const renderers = new Map<Mesh, MeshUVSpaceRenderer>();
   let queue: QueuedStamp[] = [];
   let painted = false;
@@ -110,22 +111,25 @@ export function createProjectionPainter(deps: ProjectionPainterDeps): Projection
   };
 
   const replay = (stamp: QueuedStamp): void => {
-    stamp.renderer.renderTexture(stamp.brush, stamp.position, stamp.normal, stamp.size, 0, false);
+    stamp.renderer.renderTexture(uploadBrush(stamp.brush), stamp.position, stamp.normal, stamp.size, 0, false);
     painted = true;
   };
 
-  const uploadBrush = (bitmap: ProjectionBrushBitmap, radiusPx: number): BrushState => {
+  const uploadBrush = (bitmap: ProjectionBrushBitmap): RawTexture => {
+    if (uploadedBrush?.bitmap.size === bitmap.size && uploadedBrush.bitmap.key === bitmap.key) return uploadedBrush.texture;
     const bytes = new Uint8Array(bitmap.rgba);
-    if (brush && brush.bitmap.size === bitmap.size) {
-      if (brush.bitmap.key !== bitmap.key) brush.texture.update(bytes);
-      return { bitmap, radiusPx, texture: brush.texture };
+    if (uploadedBrush && uploadedBrush.bitmap.size === bitmap.size) {
+      if (uploadedBrush.bitmap.key !== bitmap.key) uploadedBrush.texture.update(bytes);
+      uploadedBrush = { bitmap, texture: uploadedBrush.texture };
+      return uploadedBrush.texture;
     }
-    brush?.texture.dispose();
+    uploadedBrush?.texture.dispose();
     const texture = RawTexture.CreateRGBATexture(bytes, bitmap.size, bitmap.size, scene, false, false, Constants.TEXTURE_BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE);
     texture.name = "projection-paint:brush";
     texture.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
     texture.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
-    return { bitmap, radiusPx, texture };
+    uploadedBrush = { bitmap, texture };
+    return texture;
   };
 
   const clearAll = (): void => {
@@ -148,7 +152,8 @@ export function createProjectionPainter(deps: ProjectionPainterDeps): Projection
   };
 
   return {
-    begin(next, width, height) {
+    begin(next, width, height, options) {
+      pickOptions = options;
       const rig = deps.rig();
       if (!rig) return false;
       const meshes = rig.parts.filter((entry) => entry.role === next && !entry.forceHidden).flatMap((entry) => entry.meshes);
@@ -167,13 +172,14 @@ export function createProjectionPainter(deps: ProjectionPainterDeps): Projection
       return true;
     },
     setBrush(bitmap, radiusPx) {
-      brush = uploadBrush(bitmap, radiusPx);
+      brush = { bitmap, radiusPx };
+      uploadBrush(bitmap);
     },
     stamp(ndcX, ndcY): ProjectionStampOutcome {
       const miss: ProjectionStampOutcome = { hit: false, worldSizeM: 0, screenSizeNdc: [0, 0] };
       const rig = deps.rig();
       if (!rig || part === null || brush === null) return miss;
-      const candidates = rig.parts.filter((entry) => !entry.forceHidden && entry.visible).flatMap((entry) => entry.meshes);
+      const candidates = rig.parts.filter((entry) => !entry.forceHidden && entry.visible && (!pickOptions?.ignoreOccludingParts || !pickOptions.targetPart || entry.role === pickOptions.targetPart)).flatMap((entry) => entry.meshes);
       const hit = pickCandidates(scene, camera, rig, candidates, ndcX, ndcY);
       if (!hit) return miss;
       const role = (hit.mesh.metadata as { readonly role?: unknown } | null)?.role;
@@ -187,7 +193,8 @@ export function createProjectionPainter(deps: ProjectionPainterDeps): Projection
       // MeshUVSpaceRenderer는 투영 볼륨의 중심을 position + normal·size/2(= 표면 바깥쪽 한 칸)에 둔다. 볼록한 표면은 브러시 가장자리에서
       // 접평면 안쪽으로 휘므로 볼륨이 표면 점을 가운데로 오도록 position을 안쪽으로 size/2 옮겨 곡률 ±size/2를 포함시킨다.
       const position = toVector3(hit.worldPosition).subtract(normal.scale(sizeM * 0.5));
-      const stamp: QueuedStamp = { renderer, position, normal, size: new Vector3(sizeM, sizeM, sizeM), brush: brush.texture };
+      // 준비 대기 중인 각 dab은 불변 비트맵을 보존한다. 재사용 GPU 텍스처를 저장하면 뒤 dab의 필압이 앞 dab까지 덮는다.
+      const stamp: QueuedStamp = { renderer, position, normal, size: new Vector3(sizeM, sizeM, sizeM), brush: brush.bitmap };
       if (renderer.isReady() && queue.length === 0) {
         configureBlend();
         replay(stamp);
@@ -242,7 +249,8 @@ export function createProjectionPainter(deps: ProjectionPainterDeps): Projection
     rendererCount: () => renderers.size,
     dispose() {
       disposeRenderers();
-      brush?.texture.dispose();
+      uploadedBrush?.texture.dispose();
+      uploadedBrush = null;
       brush = null;
       part = null;
     },

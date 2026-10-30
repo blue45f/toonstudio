@@ -26,8 +26,6 @@ import {
   workspaceDuplicateActive,
   workspaceDynatopoActive,
   workspaceEnsureShots,
-  workspaceExportActiveMesh,
-  workspaceExportToon3d,
   workspaceExtrudeActive,
   workspaceExtrudeRegionActive,
   workspaceInsetActive,
@@ -116,6 +114,8 @@ export interface StudioHybridDccToolContext {
   readonly run: (label: string, fn: () => StudioHybridDccRunnable) => Promise<void>;
   readonly runModifier: (label: string, fn: () => StudioHybridDccWorkspace | Promise<StudioHybridDccWorkspace>) => void;
   readonly setLog: (message: string) => void;
+  readonly downloadWorkfile: () => void;
+  readonly downloadObj: () => void;
   readonly pickImportFile: () => void;
   readonly canOpenInBackground3d: boolean;
   readonly openInBackground3d: () => Promise<void>;
@@ -136,7 +136,8 @@ export function buildStudioHybridDccQuickTools(
     resolveSelectedEdges,
     run,
     runModifier,
-    setLog,
+    downloadWorkfile,
+    downloadObj,
     pickImportFile,
     canOpenInBackground3d,
     openInBackground3d,
@@ -409,11 +410,11 @@ export function buildStudioHybridDccQuickTools(
       onClick: () => { void run("메시 경량화", () => workspaceDecimateActive(ws, 0.5)); },
     },
     {
-      label: bt("OBJ 내보내기 점검", "OBJ export check"),
+      label: bt("원본 메시 OBJ 저장", "Save source mesh as OBJ"),
       technical: "OBJ export",
-      description: bt("OBJ로 바꾸고 손실을 보고합니다.", "Convert to OBJ with a loss report."),
+      description: bt("선택한 원본 메시를 OBJ 파일로 저장합니다.", "Download the selected source mesh as OBJ."),
       requiresAsset: true,
-      onClick: () => { void run("OBJ 내보내기", () => workspaceExportActiveMesh(ws, "obj")); },
+      onClick: downloadObj,
     },
   ] : [
     {
@@ -442,10 +443,7 @@ export function buildStudioHybridDccQuickTools(
       label: bt(".toon3d 작업 파일", ".toon3d package"),
       technical: "Authoring package",
       description: bt("다시 편집할 수 있게 묶습니다.", "Bundle everything for later editing."),
-      onClick: () => {
-        const pkg = workspaceExportToon3d(ws);
-        setLog(`.toon3d 준비 완료 · ${Object.keys(pkg.files).length}개 파일 · ${pkg.manifest.packageHash.slice(0, 18)}…`);
-      },
+      onClick: downloadWorkfile,
     },
   ];
 }
@@ -462,6 +460,8 @@ export function buildStudioHybridDccExpertToolGroups(
     run,
     runModifier,
     setLog,
+    downloadWorkfile,
+    downloadObj,
     pickImportFile,
     canOpenInBackground3d,
     openInBackground3d,
@@ -564,14 +564,11 @@ export function buildStudioHybridDccExpertToolGroups(
       title: bt("표면·내보내기", "Surface & export"),
       tools: [
         { name: "UV unwrap", hint: bt("UV 펼치기", "Unwrap UVs"), requiresAsset: true, onClick: () => { void run("UV", () => workspaceUvUnwrapActive(ws)); } },
-        { name: "Export OBJ", hint: bt("OBJ 파일로 변환", "Convert to OBJ"), requiresAsset: true, onClick: () => { void run("Export OBJ", () => workspaceExportActiveMesh(ws, "obj")); } },
+        { name: "Export OBJ", hint: bt("원본 메시를 OBJ 파일로 저장", "Save the source mesh as OBJ"), requiresAsset: true, onClick: downloadObj },
         {
           name: "Export .toon3d",
           hint: bt("다시 편집할 작업 패키지", "Re-editable package"),
-          onClick: () => {
-            const pkg = workspaceExportToon3d(ws);
-            setLog(`.toon3d packed hash=${pkg.manifest.packageHash.slice(0, 18)}… files=${Object.keys(pkg.files).length}`);
-          },
+          onClick: downloadWorkfile,
         },
         { name: "BOM", hint: bt("부품·권리 목록", "Parts & rights list"), onClick: () => { void run("BOM", () => workspaceRebuildBom(ws)); } },
       ],

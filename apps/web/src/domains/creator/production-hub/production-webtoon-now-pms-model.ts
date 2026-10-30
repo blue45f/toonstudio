@@ -60,7 +60,7 @@ export const WEBTOON_SUB_STAGE_LABELS_KO: Readonly<Record<WebtoonNowSubStage, st
   lineart: "선화·펜선",
   "flat-color": "밑색",
   shading: "명암·음영",
-  "background-3d": "배경·스케치업 3D",
+  "background-3d": "배경·공간 모델러",
   "vfx-compositing": "후보정·이펙트",
   typesetting: "식자·말풍선",
 };

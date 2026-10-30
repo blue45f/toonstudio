@@ -44,7 +44,7 @@ describe("collab-notification-landing-source", () => {
     expect(events).toHaveLength(1);
     expect(events[0]?.kind).toBe("review-requested");
     expect(events[0]?.urgent).toBe(true);
-    expect(events[0]?.target.href).toBe("/production/projects/p1/episodes/ep-3?roomView=compare");
+    expect(events[0]?.target.href).toBe("/production/projects/p1/review?task=task-1&episode=ep-3");
     expect(events[0]?.flowKey).toBe("task-1");
   });
 

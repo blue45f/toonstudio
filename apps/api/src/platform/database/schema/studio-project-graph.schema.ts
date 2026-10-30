@@ -20,6 +20,7 @@ import type {
   ProjectAuthorityVersion,
   RevisionKind,
   ReviewAnchor,
+  ReviewPenStroke,
   ScopeRef,
 } from "@toonstudio/studio-project-model";
 import type {
@@ -616,6 +617,7 @@ export const studioReviewComments = pgTable(
       .references(() => studioReviews.id, { onDelete: "cascade" }),
     authorUserId: text("authorUserId").references(() => users.id, { onDelete: "set null" }),
     anchor: jsonb("anchor").$type<ReviewAnchor>().notNull(),
+    strokes: jsonb("strokes").$type<readonly ReviewPenStroke[]>().notNull().default(sql`'[]'::jsonb`),
     body: text("body").notNull(),
     severity: text("severity").notNull(),
     status: text("status").notNull().default("open"),
@@ -642,6 +644,9 @@ export const studioReviewComments = pgTable(
     index("idx_studio_review_comment_anchor_gin").using("gin", table.anchor),
     check("studio_review_comment_id_check", sql`length(${table.id}) between 1 and 160`),
     check("studio_review_comment_anchor_check", sql`jsonb_typeof(${table.anchor}) = 'object'`),
+    // 내부 shape·불변성은 추가형 migration trigger가 검사하며 작품 권한을 대신하지 않는다.
+    check("studio_review_comment_strokes_budget_check", sql`case when jsonb_typeof(${table.strokes}) = 'array'
+      then jsonb_array_length(${table.strokes}) <= 50 and octet_length(${table.strokes}::text) <= 2097152 else false end`),
     check("studio_review_comment_body_check", sql`length(btrim(${table.body})) between 1 and 20000`),
     check(
       "studio_review_comment_severity_check",

@@ -314,7 +314,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     expect(screen.getByRole("status").textContent).toContain("연재 승인 점프 하이파이브");
     fireEvent.click(screen.getByTestId("nextgen-v13-prop-blender-hologram-stage-table-btn"));
     expect(screen.getByRole("status").textContent).toContain(
-      "3D 블렌더 홀로그램 스테이지 테이블",
+      "3D 홀로그램 스테이지 테이블",
     );
   });
 

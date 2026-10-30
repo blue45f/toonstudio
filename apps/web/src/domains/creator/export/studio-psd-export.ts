@@ -1,4 +1,6 @@
 import type { StudioAdjustmentKind } from "../filter/studio-adjustment-effect-graph";
+import { explicitStudioFrameClipTarget, studioFrameClip, studioFrameClipBounds } from "@toonstudio/studio-project-model/frame-clip";
+import { applyStudioPsdPanelClip, cropToPanel } from "./studio-psd-panel-clip";
 
 import { convertStudioAdjustmentToPsd } from "./studio-psd-adjustment-export";
 import {
@@ -85,6 +87,7 @@ export { StudioPsdExportError, type PsdExportBlockingReason, type PsdExportBlock
 
 /** 모든 요소가 공유하는 레이어 메타(El 인터섹션과 동일 필드 중 이 모듈이 쓰는 것만). */
 interface PsdElMeta {
+  frameClipId?: string;
   id: string;
   name?: string;
   opacity?: number;
@@ -177,6 +180,7 @@ export interface PsdFrameElLike extends PsdElMeta {
   width: number;
   height: number;
   hidden?: boolean;
+  points?: readonly number[];
 }
 
 export interface PsdFocusLinesElLike extends PsdElMeta {
@@ -843,6 +847,11 @@ function elBounds(el: PsdExportEl): { x: number; y: number; w: number; h: number
 
 function containingPanel(el: PsdExportEl, all: readonly PsdExportEl[]): PsdFrameElLike | null {
   if (el.type === "frame") return null;
+  if (el.frameClipId !== undefined) {
+    const explicit = explicitStudioFrameClipTarget(el.frameClipId, all.filter((value): value is PsdFrameElLike => value.type === "frame"));
+    if (!explicit) throw new StudioPsdExportError("buildFailed", { causeMessage: "원고에 연결된 컷을 찾을 수 없습니다. 컷 연결을 확인한 뒤 내보내세요." });
+    return explicit;
+  }
   const b = elBounds(el);
   const cx = b.x + b.w / 2;
   const cy = b.y + b.h / 2;
@@ -859,38 +868,6 @@ function containingPanel(el: PsdExportEl, all: readonly PsdExportEl[]): PsdFrame
     }
   }
   return best;
-}
-
-/**
- * 캡처된 레이어 캔버스를 패널 사각형(문서 좌표)에 맞춰 자른다. `originDocX/Y` 는 캔버스의
- * (0,0)이 위치한 문서 좌표(패딩 반영 후), `scale` 은 출력 배율 — 문서 좌표 1단위가 캔버스
- * 픽셀 `scale` 개에 대응한다(§좌표계 규약 참고). 패널과 실질적으로 안 겹치면(패딩 등으로
- * 인한 경계 오차) 원본을 그대로 두도록 null 을 반환한다 — 레이어를 통째로 지우지 않는다.
- */
-function cropToPanel(
-  canvas: HTMLCanvasElement,
-  originDocX: number,
-  originDocY: number,
-  scale: number,
-  panel: PsdFrameElLike
-): { canvas: HTMLCanvasElement; dx: number; dy: number } | null {
-  const x0 = Math.round(Math.max(0, (panel.x - originDocX) * scale));
-  const y0 = Math.round(Math.max(0, (panel.y - originDocY) * scale));
-  const x1 = Math.round(Math.min(canvas.width, (panel.x + panel.width - originDocX) * scale));
-  const y1 = Math.round(Math.min(canvas.height, (panel.y + panel.height - originDocY) * scale));
-  const w = x1 - x0;
-  const h = y1 - y0;
-  if (w < 1 || h < 1) return null; // 겹치는 영역이 없음 — 자르지 않고 원본 유지(드문 경계 케이스)
-  if (x0 === 0 && y0 === 0 && w === canvas.width && h === canvas.height) return { canvas, dx: 0, dy: 0 };
-  const cropped = document.createElement("canvas");
-  cropped.width = w;
-  cropped.height = h;
-  const ctx = cropped.getContext("2d");
-  if (!ctx) {
-    throw new StudioPsdExportError("panelCropSurfaceFailed");
-  }
-  ctx.drawImage(canvas, x0, y0, w, h, 0, 0, w, h);
-  return { canvas: cropped, dx: x0, dy: y0 };
 }
 
 /** Node.toCanvas paints its own surface; resizing/redrawing the whole Stage is unnecessary. */
@@ -932,10 +909,11 @@ function readPsdDrawPixels(
 ): { imageData: ImageData; left: number; top: number } | null {
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) throw new StudioPsdExportError("strokePixelsUnreadable");
-  const x0 = panel ? Math.round(Math.max(0, panel.x * scale)) : 0;
-  const y0 = panel ? Math.round(Math.max(0, panel.y * scale)) : 0;
-  const x1 = panel ? Math.round(Math.min(canvas.width, (panel.x + panel.width) * scale)) : canvas.width;
-  const y1 = panel ? Math.round(Math.min(canvas.height, (panel.y + panel.height) * scale)) : canvas.height;
+  const bounds = panel ? studioFrameClipBounds(studioFrameClip(panel)) : null;
+  const x0 = bounds ? Math.floor(Math.max(0, bounds.x * scale)) : 0;
+  const y0 = bounds ? Math.floor(Math.max(0, bounds.y * scale)) : 0;
+  const x1 = bounds ? Math.ceil(Math.min(canvas.width, (bounds.x + bounds.width) * scale)) : canvas.width;
+  const y1 = bounds ? Math.ceil(Math.min(canvas.height, (bounds.y + bounds.height) * scale)) : canvas.height;
   if (x1 <= x0 || y1 <= y0) return null;
   const transientBytes = retainedBytes + canvas.width * canvas.height * 4;
   const rowBytes = (x1 - x0) * 4;
@@ -1488,6 +1466,7 @@ export async function exportPagePsd(
     // 태그된 노드를 직접 캡처하면 wrapClip 의 "패널 안으로 클리핑"이 반영되지 않는다 —
     // 같은 조건으로 패널을 찾아 캡처 캔버스를 사후에 잘라 복원한다.
     const panel = !el.noClip ? containingPanel(el, elements) : null;
+    if (panel) applyStudioPsdPanelClip(canvas, documentCapture ? 0 : originDocX, documentCapture ? 0 : originDocY, scale, panel);
     let drawPixels: PixelData | undefined;
     if (documentCapture) {
       let cropped: ReturnType<typeof readPsdDrawPixels>;

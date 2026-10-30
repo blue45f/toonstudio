@@ -1,5 +1,6 @@
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
+import { StudioScopedAssetContextSchema } from "./studio-scoped-write-input";
 
 import {
   STUDIO_RASTER_ASSET_MAX_AXIS,
@@ -7,6 +8,8 @@ import {
   StudioRasterAssetIdSchema,
   StudioRasterAssetMediaTypeSchema,
 } from "@toonstudio/contracts/studio-raster-asset-contract";
+
+export class UploadStudioRasterAssetDto extends createZodDto(z.object({ writeContext: StudioScopedAssetContextSchema }).strict()) {}
 
 export const StudioRasterAssetParamsSchema = z
   .object({

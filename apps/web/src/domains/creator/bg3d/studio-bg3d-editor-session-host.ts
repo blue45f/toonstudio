@@ -409,6 +409,10 @@ export function attachStudioBg3dEditorSessionHost(h: Record<string, any>) {
     if (records.length === 0 || !isModalAssetSessionCurrent(session)) return;
     const renderer = modelRendererRef.current;
     if (!renderer) return;
+    const materialBackend = h.materialBackend;
+    const isMaterialBackendCurrent = h.isMaterialBackendCurrent;
+    if ((materialBackend !== "webgl" && materialBackend !== "webgpu")
+      || typeof isMaterialBackendCurrent !== "function" || !isMaterialBackendCurrent()) return;
 
     const batchController = new AbortController();
     modelThumbnailCaptureAbortRef.current = batchController;
@@ -418,6 +422,7 @@ export function attachStudioBg3dEditorSessionHost(h: Record<string, any>) {
       modelThumbnailCaptureAbortRef.current === batchController &&
       modelThumbnailCaptureEpochRef.current === batchEpoch &&
       modelRendererRef.current === renderer &&
+      isMaterialBackendCurrent() &&
       isModalAssetSessionCurrent(session)
     );
 
@@ -440,7 +445,7 @@ export function attachStudioBg3dEditorSessionHost(h: Record<string, any>) {
         // Import and scene placement remain successful when another shot/LT/insert capture owns
         // the renderer. The library card simply retains its existing placeholder in that case.
         if (captureInFlightRef.current) continue;
-        const cachedEntry = modelRootCacheRef.current.get(record.id);
+        const cachedEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, record.id, materialBackend);
         if (
           !cachedEntry ||
           cachedEntry.record.contentHash !== record.contentHash ||
@@ -480,7 +485,7 @@ export function attachStudioBg3dEditorSessionHost(h: Record<string, any>) {
             adapter: leasedAdapter,
             signal: batchController.signal,
             isCurrent: () => isCurrent() && (
-              modelRootCacheRef.current.get(record.id)?.record.contentHash === record.contentHash
+              R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, record.id, materialBackend) === cachedEntry
             ),
           });
           capturedAnyThumbnail = true;
@@ -489,7 +494,6 @@ export function attachStudioBg3dEditorSessionHost(h: Record<string, any>) {
           // stay committed; malformed bounds, a busy renderer, or a blocked Worker keep the card's
           // placeholder instead of rolling the model transaction back.
         } finally {
-          modelThumbnailGpuLeaseRef.current?.release();
           captureHandle?.dispose();
         }
       }

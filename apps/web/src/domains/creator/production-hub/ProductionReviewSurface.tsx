@@ -1,10 +1,8 @@
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { ArrowRight, ClipboardCheck, Columns2, MessageSquareMore } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Suspense, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 
-import { ProductionAsyncWalkthroughButlerSuite } from "./ProductionAsyncWalkthroughButlerSuite";
-import { ProductionCreativeReviewConsensusSuite } from "./ProductionCreativeReviewConsensusSuite";
 import { ProductionReviewRequestForm } from "./ProductionReviewRequestForm";
 import { ProductionReviewWorkspace } from "./ProductionReviewWorkspace";
 import { buildCompareReviewPath } from "./review-request-model";
@@ -22,6 +20,12 @@ import { ProductionAvatar, ProductionEmptyState, ProductionPill, ProductionSecti
 
 import type { CreatorRoleLens } from "@/shared/lib/creator-role-contract";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useApp } from "@/shared/lib/store";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { ProductionReviewPolicyEditor } from "./ProductionReviewPolicyEditor";
+
+const ConsensusPreview = lazyRetry(() => import("./ProductionCreativeReviewConsensusSuite").then((module) => ({ default: module.ProductionCreativeReviewConsensusSuite })), "ProductionReviewConsensusPreview");
+const WalkthroughPreview = lazyRetry(() => import("./ProductionAsyncWalkthroughButlerSuite").then((module) => ({ default: module.ProductionAsyncWalkthroughButlerSuite })), "ProductionReviewWalkthroughPreview");
 
 /**
  * 검수 화면: 검수할 회차(승인 게이트 요약) → 원고 비교·주석 작업대 → 결정 기록 순서로 보여 준다.
@@ -31,14 +35,34 @@ export function ProductionReviewSurface({
   aggregate,
   execute,
   canEdit,
+  canReview,
+  canManage = false,
+  refresh,
+  isDemo = false,
   roleLens,
 }: {
   readonly aggregate: ProductionProjectAggregate;
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
   readonly canEdit: boolean;
+  readonly canReview?: boolean;
+  readonly canManage?: boolean;
+  readonly refresh?: () => Promise<void>;
+  readonly isDemo?: boolean;
   readonly roleLens: CreatorRoleLens;
 }) {
   const bt = useBilingual("ProductionReviewSurface");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [params] = useSearchParams();
+  const viewerUserId = useApp((state) => state.userId);
+  const taskValues = params.getAll("task");
+  const episodeValues = params.getAll("episode");
+  const targetTaskId = params.has("task") ? taskValues.length === 1 ? taskValues[0] ?? "" : "" : undefined;
+  const preferredEpisodeId = params.has("episode") ? episodeValues.length === 1 ? episodeValues[0] ?? "" : "" : undefined;
+  const viewerAssignmentIds = aggregate.projectId === "sample-project" ? undefined : aggregate.assignments
+    .filter((assignment) => viewerUserId && aggregate.parties.some((party) => party.id === assignment.partyId && party.accountUserId === viewerUserId))
+    .map((assignment) => assignment.id);
+  const workspace = <ProductionReviewWorkspace aggregate={aggregate} execute={execute} canEdit={canReview ?? canEdit} roleLens={roleLens}
+    targetTaskId={targetTaskId} preferredEpisodeId={preferredEpisodeId} viewerAssignmentIds={viewerAssignmentIds} viewerUserId={aggregate.projectId === "sample-project" ? undefined : viewerUserId} />;
   const [now] = useState(() => Date.now());
   const queue = aggregate.episodes
     .map((episode) => {
@@ -55,7 +79,9 @@ export function ProductionReviewSurface({
 
   return (
     <div className="space-y-4">
-      <ProductionReviewRequestForm aggregate={aggregate} execute={execute} canEdit={canEdit} />
+      {targetTaskId !== undefined ? workspace : null}
+      <ProductionReviewPolicyEditor aggregate={aggregate} canManage={canManage} execute={execute} refresh={refresh} />
+      <ProductionReviewRequestForm aggregate={aggregate} execute={execute} canEdit={canEdit} refresh={refresh} />
 
       <ProductionSectionCard
         title={bt("검수할 회차", "Episodes to review")}
@@ -124,9 +150,8 @@ export function ProductionReviewSurface({
         )}
       </ProductionSectionCard>
 
-      <ProductionReviewWorkspace aggregate={aggregate} execute={execute} canEdit={canEdit} roleLens={roleLens} />
+      {targetTaskId === undefined ? workspace : null}
 
-      <ProductionCreativeReviewConsensusSuite />
 
       <ProductionSectionCard
         title={bt("결정 기록", "Decision log")}
@@ -160,7 +185,11 @@ export function ProductionReviewSurface({
         )}
       </ProductionSectionCard>
 
-      <ProductionAsyncWalkthroughButlerSuite aggregate={aggregate} />
+      {isDemo ? <details className="rounded-2xl border border-dashed border-line bg-panel p-4" onToggle={(event) => setPreviewOpen(event.currentTarget.open)}>
+        <summary className="min-h-11 cursor-pointer text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent">{bt("기능 체험 · 서버에 적용되지 않음", "Feature preview · no server changes")}</summary>
+        <p className="mt-2 text-xs leading-5 text-fg-2">{bt("예시 자료로 합의 검수와 작업 안내를 체험합니다. 실제 원고·검수 결정·서버 상태에는 적용되지 않습니다.", "Try consensus review and walkthroughs with example data. This does not change real manuscripts, review decisions or server state.")}</p>
+        {previewOpen ? <Suspense fallback={<p role="status" className="mt-3 text-sm text-fg-2">{bt("체험 도구를 여는 중…", "Opening preview tools…")}</p>}><div className="mt-4 space-y-4"><ConsensusPreview /><WalkthroughPreview aggregate={aggregate} /></div></Suspense> : null}
+      </details> : null}
     </div>
   );
 }

@@ -5,22 +5,14 @@
  * 렌더링은 SVG viewBox 로 같은 좌표계를 쓰므로 줌·리사이즈와 무관하게 같은 위치에 그려진다.
  * 검수 코멘트의 공간 앵커(ReviewAnchor) 권한 모델은 바꾸지 않는다. 펜 첨삭은
  * 스트로크들의 바운딩 박스를 region 앵커로 삼고, 스트로크 자체는 코멘트 입력의
- * 선택적 strokes 필드로 함께 전송한다. 서버가 strokes 를 저장하지 않으면
- * region 앵커(서버가 이미 저장하는 필드)만 남는다.
+ * 선택적 strokes 필드로 함께 전송하고, 서버가 검증한 같은 원고의 획을 다시 읽는다.
  */
 
-export interface StudioReviewPenPoint {
-  readonly x: number;
-  readonly y: number;
-}
+import { STUDIO_REVIEW_PEN_MAX_STROKES, STUDIO_REVIEW_PEN_MAX_POINTS_PER_STROKE,
+  type ReviewPenPoint, type ReviewPenStroke } from "@toonstudio/studio-project-model";
 
-export interface StudioReviewPenStroke {
-  readonly id: string;
-  readonly points: readonly StudioReviewPenPoint[];
-  readonly color: string;
-  /** 페이지 좌표계 단위의 선 굵기. */
-  readonly width: number;
-}
+export type StudioReviewPenPoint = ReviewPenPoint;
+export type StudioReviewPenStroke = ReviewPenStroke;
 
 /** 빨간펜 기본 팔레트. */
 export const STUDIO_REVIEW_PEN_COLORS = Object.freeze([
@@ -30,8 +22,8 @@ export const STUDIO_REVIEW_PEN_COLORS = Object.freeze([
 ] as const);
 export const STUDIO_REVIEW_PEN_DEFAULT_COLOR = STUDIO_REVIEW_PEN_COLORS[0].value;
 
-const MAX_STROKES_PER_COMMENT = 50;
-const MAX_POINTS_PER_STROKE = 500;
+const MAX_STROKES_PER_COMMENT = STUDIO_REVIEW_PEN_MAX_STROKES;
+const MAX_POINTS_PER_STROKE = STUDIO_REVIEW_PEN_MAX_POINTS_PER_STROKE;
 const MIN_POINT_DISTANCE = 2;
 
 function isPenColor(value: string): boolean {
@@ -44,6 +36,11 @@ function clampPoint(point: StudioReviewPenPoint, pageWidth: number, pageHeight: 
     x: Math.min(pageWidth, Math.max(0, point.x)),
     y: Math.min(pageHeight, Math.max(0, point.y)),
   };
+}
+
+/** 새 획의 기본 굵기는 원고 길이 대신 짧은 변을 기준으로 한다. */
+export function studioReviewPenDefaultWidth(page: { readonly width: number; readonly height: number }): number {
+  return Math.min(page.width, page.height) * 0.004;
 }
 
 /**
@@ -71,7 +68,7 @@ export function normalizeStudioReviewPenStroke(
   if (points.length < 2) return null;
   const width = Number.isFinite(input.width) && (input.width as number) > 0
     ? (input.width as number)
-    : Math.max(page.width, page.height) * 0.004;
+    : studioReviewPenDefaultWidth(page);
   return Object.freeze({
     id: input.id,
     points: Object.freeze(points),

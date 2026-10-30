@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from "@nestjs/common";
 import { fromUint8Array, toUint8Array } from "js-base64";
 import * as Y from "yjs";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
+import { admitStudioScopedCrdtProbe, type StudioScopedCrdtProbeAdmission } from "./studio-scoped-crdt-write";
+import { StudioScopedWriteDeniedError, type StudioScopedWriteEffectAdmission } from "./studio-scoped-write-effects";
+import type { StudioScopedAuthorization } from "./studio-scoped-write-store";
 
 import {
   STUDIO_CRDT_RASTER_OPERATIONS_ROOT,
@@ -183,6 +187,7 @@ export interface StudioCrdtApplyUpdateInput {
   updateId: string;
   actorUserId: string;
   data: string;
+  writeContext?: StudioScopedWriteContext;
 }
 
 export interface StudioCrdtApplyBinaryUpdateInput {
@@ -190,6 +195,7 @@ export interface StudioCrdtApplyBinaryUpdateInput {
   updateId: string;
   actorUserId: string;
   data: Uint8Array;
+  writeContext?: StudioScopedWriteContext;
 }
 
 export interface StudioCrdtApplyUpdateResult {
@@ -556,10 +562,9 @@ export class StudioCrdtService implements OnModuleDestroy {
     }
     const update = decodeStudioCrdtBase64(input.data, STUDIO_CRDT_UPDATE_MAX_BYTES, "update");
     const applied = await this.applyUpdateBytes({
-      workId: input.workId,
-      updateId: input.updateId,
-      actorUserId: input.actorUserId,
+      workId: input.workId, updateId: input.updateId, actorUserId: input.actorUserId,
       data: update,
+      writeContext: input.writeContext,
     });
     return {
       ...applied,
@@ -588,13 +593,14 @@ export class StudioCrdtService implements OnModuleDestroy {
           actorUserId: input.actorUserId,
           payload: update,
           createdAt: this.now(),
+          writeContext: input.writeContext,
         },
-        (current, transaction) => this.validateUpdateAgainstHydration(
+        (current, transaction, authorization) => this.validateUpdateAgainstHydration(
           input.workId,
           current,
           update,
           input.actorUserId,
-          transaction
+          transaction, authorization, input.writeContext !== undefined
         )
       );
       if (
@@ -604,8 +610,7 @@ export class StudioCrdtService implements OnModuleDestroy {
         throw new StudioCrdtUpdateIdConflictError();
       }
 
-      // A different API process can commit between the pre-validation catch-up and this insert.
-      // Reload from the durable sequence boundary so the cached doc includes both commits.
+      // 다른 API의 동시 커밋까지 포함하도록 영속 sequence에서 캐시를 다시 읽는다.
       await this.catchUpDocument(input.workId, entry);
       entry.lastAccessedAt = this.now().getTime();
       await this.maybeCompact(input.workId, entry);
@@ -868,12 +873,11 @@ export class StudioCrdtService implements OnModuleDestroy {
   }
 
   private async validateUpdateAgainstDocument(
-    workId: string,
-    doc: Y.Doc,
+    workId: string, doc: Y.Doc,
     update: Uint8Array,
     actorUserId: string,
-    transaction?: DrizzleStudioCrdtTransaction
-  ): Promise<void> {
+    transaction?: DrizzleStudioCrdtTransaction, validateAuthority?: StudioScopedCrdtProbeAdmission
+  ): Promise<StudioScopedWriteEffectAdmission | undefined> {
     const probe = new Y.Doc();
     const candidate = new Y.Doc();
     const deletionRootsBefore = snapshotStudioCrdtDeletionRoots(doc);
@@ -1031,9 +1035,10 @@ export class StudioCrdtService implements OnModuleDestroy {
           );
         }
       }
+      return await validateAuthority?.(doc, probe);
     } catch (error) {
       if (
-        error instanceof StudioCrdtDocumentTooLargeError ||
+        error instanceof StudioScopedWriteDeniedError || error instanceof StudioCrdtDocumentTooLargeError ||
         error instanceof StudioCrdtInvalidPayloadError
       ) throw error;
       throw new StudioCrdtInvalidPayloadError("update is not a valid Yjs update");
@@ -1044,24 +1049,18 @@ export class StudioCrdtService implements OnModuleDestroy {
   }
 
   private async validateUpdateAgainstHydration(
-    workId: string,
-    current: StudioCrdtHydrationState,
+    workId: string, current: StudioCrdtHydrationState,
     update: Uint8Array,
     actorUserId: string,
-    transaction: DrizzleStudioCrdtTransaction
-  ): Promise<void> {
+    transaction: DrizzleStudioCrdtTransaction,
+    authorization?: StudioScopedAuthorization, requiresScopedAuthority = false
+  ) {
     const durable = this.createCachedDocument(workId, current);
     try {
-      await this.validateUpdateAgainstDocument(
-        workId,
-        durable.doc,
-        update,
-        actorUserId,
-        transaction
-      );
-    } finally {
-      durable.doc.destroy();
-    }
+      if (requiresScopedAuthority && !authorization) throw new StudioScopedWriteDeniedError("policy");
+      return await this.validateUpdateAgainstDocument(workId, durable.doc, update, actorUserId, transaction,
+        authorization?.context ? (before, probe) => admitStudioScopedCrdtProbe(authorization, before, probe, transaction, update) : undefined);
+    } finally { durable.doc.destroy(); }
   }
 
   private async maybeCompact(

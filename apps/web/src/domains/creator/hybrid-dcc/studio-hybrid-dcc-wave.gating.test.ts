@@ -364,6 +364,9 @@ describe("wave multi-step product loop", () => {
     expect(result.metrics.collabEpoch).toBeGreaterThan(0);
     expect(result.metrics.collabOps).toBeGreaterThanOrEqual(2);
     expect(result.metrics.uvMode).toBe("box");
+    const uvMesh = result.workspace.session.state.geometry.records["geo-sphere"]?.mesh;
+    expect(uvMesh?.uvLayer?.corners).toHaveLength(Object.keys(uvMesh?.halfEdges ?? {}).length);
+    expect(uvMesh?.uvLayer?.corners.length).toBeGreaterThan(0);
     expect(result.metrics.packageHash.startsWith("sha256:")).toBe(true);
     expect(result.metrics.documentHasGeo).toBe(true);
     expect(result.metrics.importFormat).toBe("ifc");

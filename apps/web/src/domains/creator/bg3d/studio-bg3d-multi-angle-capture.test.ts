@@ -22,6 +22,19 @@ function baseDocument(): StudioBg3dSceneDocument {
 }
 
 describe("studio-bg3d-multi-angle-capture", () => {
+  it("평행 높이를 후보 생성·샷·리스트·재적용 전 경로에서 보존한다", () => {
+    const base = baseDocument();
+    const document = { ...base, camera: { ...base.camera, projection: "orthographic" as const, orthographicHeight: 8, zoom: 2 } };
+    const result = captureStudioBg3dMultiAngleSet(document, "basic-4", "height");
+    if (!result) throw new Error("평행 카메라의 다각도 결과가 필요합니다.");
+    expect(result.plan.candidates.every((candidate) => candidate.camera.orthographicHeight === 8)).toBe(true);
+    const changedBase = { ...result.document, camera: { ...result.document.camera, orthographicHeight: 12 } };
+    const candidates = listStudioBg3dMultiAngleCandidates(changedBase, "height");
+    expect(candidates).toHaveLength(4);
+    expect(candidates.every((candidate) => candidate.camera.orthographicHeight === 8)).toBe(true);
+    expect(insertStudioBg3dMultiAngleCandidate(changedBase, "height-front")?.camera.orthographicHeight).toBe(8);
+    expect(document.camera.orthographicHeight).toBe(8);
+  });
   it("defines frozen angle sets whose angles all exist in the catalog", () => {
     expect(Object.isFrozen(STUDIO_BG3D_MULTI_ANGLE_SETS)).toBe(true);
     expect(Object.isFrozen(STUDIO_BG3D_MULTI_ANGLES)).toBe(true);

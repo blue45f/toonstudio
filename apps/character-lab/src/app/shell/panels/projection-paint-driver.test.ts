@@ -12,7 +12,7 @@ import { bytesEqual } from "../../../shared/typed-array";
 
 import { brushBitmapFor, compositeOverlayTiles, createProjectionStrokeDriver, createSwitchingPaintDriver, MAX_STAMPS_PER_MOVE } from "./projection-paint-driver";
 
-import type { PaintLayer, PaintUndoToken, PartRole, PickHit } from "../../../contracts";
+import type { CharacterPickOptions, PaintLayer, PaintUndoToken, PartRole, PickHit } from "../../../contracts";
 import type { ProjectionBrushBitmap, ProjectionOverlay, ProjectionPaintPort } from "../../../render/projection-paint";
 
 const BRUSH = { radiusPx: 4, hardness: 1, opacity: 1, color: "#ff0000", spacing: 0.5 };
@@ -26,13 +26,16 @@ interface FakePortOptions {
 }
 
 interface FakePort extends ProjectionPaintPort {
-  readonly calls: { begin: number; stamps: Array<{ x: number; y: number }>; flush: number; cancel: number; brushes: ProjectionBrushBitmap[] };
+  readonly calls: { begin: number; stamps: Array<{ x: number; y: number }>; flush: number; cancel: number; brushes: ProjectionBrushBitmap[]; radii: number[]; pickOptions: Array<CharacterPickOptions | undefined> };
   resolveFlush(): void;
 }
 
 /** 가짜 투영 포트. `deferred`면 flush가 `resolveFlush()`를 부를 때까지 끝나지 않는다. */
 function fakePort(part: PartRole, options: FakePortOptions = {}, deferred = false): FakePort {
-  const calls = { begin: 0, stamps: [] as Array<{ x: number; y: number }>, flush: 0, cancel: 0, brushes: [] as ProjectionBrushBitmap[] };
+  const calls: FakePort["calls"] = { begin: 0, stamps: [], flush: 0, cancel: 0, brushes: [], radii: [], pickOptions: [] };
+  const paintSamples: Array<{ x: number; y: number; radius: number; alpha: number }> = [];
+  let radius = BRUSH.radiusPx;
+  let alpha = 255;
   let width = 0;
   let height = 0;
   let release: () => void = () => undefined;
@@ -42,26 +45,40 @@ function fakePort(part: PartRole, options: FakePortOptions = {}, deferred = fals
   return {
     calls,
     resolveFlush: () => release(),
-    begin: (_part, w, h) => {
+    begin: (_part, w, h, pickOptions) => {
       calls.begin += 1;
+      calls.pickOptions.push(pickOptions);
       width = w;
       height = h;
       calls.stamps.length = 0;
+      paintSamples.length = 0;
       return true;
     },
-    setBrush: (bitmap) => {
+    setBrush: (bitmap, nextRadius) => {
       calls.brushes.push(bitmap);
+      calls.radii.push(nextRadius);
+      radius = nextRadius;
+      alpha = bitmap.rgba[(Math.floor(bitmap.size / 2) * bitmap.size + Math.floor(bitmap.size / 2)) * 4 + 3] ?? 0;
     },
     stamp: (x, y) => {
       if (options.hit && !options.hit(x, y)) return { hit: false, worldSizeM: 0, screenSizeNdc: [0, 0] };
       calls.stamps.push({ x, y });
+      paintSamples.push({ x, y, radius, alpha });
       return { hit: true, worldSizeM: 0.03, screenSizeNdc: options.screenSizeNdc ?? [0.1, 0.1] };
     },
     flush: async () => {
       calls.flush += 1;
       if (deferred) await gate;
       if (options.overlay) return options.overlay(calls.stamps, width, height);
-      return redCircles(part, calls.stamps, width, height);
+      const rgba = new Uint8Array(width * height * 4);
+      for (const sample of paintSamples) {
+        const painted = redCircles(part, [sample], width, height, sample.radius, sample.alpha);
+        for (let i = 0; i < rgba.length; i += 4) {
+          const sourceAlpha = (painted.rgba[i + 3] ?? 0) / 255;
+          for (let channel = 0; channel < 4; channel += 1) rgba[i + channel] = Math.round((painted.rgba[i + channel] ?? 0) + (rgba[i + channel] ?? 0) * (1 - sourceAlpha));
+        }
+      }
+      return { part, width, height, rgba };
     },
     cancel: () => {
       calls.cancel += 1;
@@ -102,6 +119,56 @@ async function settle(): Promise<void> {
     setTimeout(resolve, 0);
   });
 }
+
+describe("공유 필압·의상 마스킹의 투영 연결", () => {
+  it("펜 모드는 실제 반지름·비트맵 알파를 포트에 전달해 최종 레이어와 undo를 바꾼다", async () => {
+    const counts: number[] = [];
+    for (const pressure of [0.25, 1]) {
+      const port = fakePort("skin");
+      const h = harness(port);
+      h.session.setPressureMode("pen");
+      h.driver.down({ ndcX: 0, ndcY: 0, pressure });
+      h.driver.up();
+      await settle();
+      expect(port.calls.radii[0]).toBe(BRUSH.radiusPx * pressure * 2);
+      const layer = h.session.layer("skin");
+      expect(readPixel(layer, 64, 64)[3]).toBe(Math.round(255 * pressure));
+      counts.push(layer.rgba.filter((value, index) => index % 4 === 3 && value > 0).length);
+      const token = h.commits[0];
+      if (!token) throw new Error("undo 토큰 없음");
+      h.session.applyToken(token);
+      expect(layer.rgba.every((value) => value === 0)).toBe(true);
+    }
+    expect(counts[1] ?? 0).toBeGreaterThan((counts[0] ?? 0) * 4);
+  });
+
+  it("가상 필압은 종료 후 투영 경로를 실제 재생하고 의상 마스킹 OFF만 가림 무시를 전달한다", async () => {
+    const port = fakePort("skin");
+    const h = harness(port);
+    h.session.setPressureMode("fake");
+    h.session.setBodyLineMaskEnabled(false);
+    h.driver.down({ ndcX: -0.5, ndcY: 0, pressure: 0.1 });
+    h.driver.move({ ndcX: 0, ndcY: 0, pressure: 0.1 });
+    h.driver.move({ ndcX: 0.5, ndcY: 0, pressure: 0.1 });
+    h.driver.up();
+    await settle();
+    expect(port.calls.begin).toBe(2);
+    expect(port.calls.pickOptions).toEqual([{ targetPart: "skin", ignoreOccludingParts: true }, { targetPart: "skin", ignoreOccludingParts: true }]);
+    const layer = h.session.layer("skin");
+    expect(readPixel(layer, 32, 67)[3]).toBe(0);
+    expect(readPixel(layer, 64, 67)[3]).toBe(255);
+    expect(h.commits).toHaveLength(1);
+    expect(h.driver.dabCount).toBe(0);
+    const token = h.commits[0];
+    if (!token) throw new Error("undo 토큰 없음");
+    h.session.applyToken(token);
+    expect(layer.rgba.every((value) => value === 0)).toBe(true);
+    h.session.setBodyLineMaskEnabled(true);
+    h.driver.down({ ndcX: 0, ndcY: 0, pressure: 1 });
+    expect(port.calls.pickOptions.at(-1)).toBeUndefined();
+    h.driver.cancel();
+  });
+});
 
 describe("brushBitmapFor", () => {
   it("premultiplied sRGB 원: 가운데는 색×강도, 모서리는 투명, 크기는 8~64로 제한된다", () => {

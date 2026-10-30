@@ -8,7 +8,7 @@ import type { StudioVirtualDecorationState } from "./studio-virtual-space-custom
 import type { StudioVirtualExperiencePreference } from "./studio-virtual-space-experience-preference";
 import type { StudioVirtualEnvironmentPreference } from "./studio-virtual-space-environment-preference";
 import type { StudioVirtualRuntimeMetrics } from "./studio-virtual-space-observability";
-import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
+import type { StudioVirtualSpaceEngineLocalState } from "./studio-virtual-space-stage-state";
 import type { StudioCharacterMotionState, StudioCharacterSkin } from "./studio-virtual-space-character-skins";
 import type { StudioEmotePose } from "./studio-virtual-space-emote-runtime";
 import type { StudioTileEffectDefinition, StudioTileEffectTrigger } from "./studio-virtual-space-tile-effects";
@@ -36,14 +36,7 @@ import type {
   StudioWorldPropDefinition,
 } from "./studio-virtual-space-world-manifest";
 
-export interface StudioVirtualSpaceEngineLocalState {
-  readonly point: StudioVirtualSpacePoint;
-  readonly facing: StudioVirtualSpaceFacing;
-  readonly moving: boolean;
-  readonly zoneId: string;
-  /** 아바타 자세 (서기/앉기/눕기). 피어 동기화·HUD 표시에 쓴다. */
-  readonly pose?: StudioSpacePose;
-}
+export type { StudioVirtualSpaceEngineLocalState } from "./studio-virtual-space-stage-state";
 
 export interface StudioVirtualSpacePhaserCanvasProps {
   readonly manifest: StudioVirtualSpaceWorldManifest;

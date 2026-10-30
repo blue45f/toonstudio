@@ -307,7 +307,10 @@ export function bindStudioCuttoonStagePointersDown(
     // The first contact owns a bubble point drag. A palm/second finger cannot replace its owner.
     if (bubbleShapeDragRef.current) return;
     if (handleStudioPointCommentStageDown(e, stagePointerEvent)) return;
-    if (canvasInteractionBlocked && !commentPinArmed) return;
+    if (canvasInteractionBlocked && !commentPinArmed) {
+      if (h.scopedDrawAllowed?.() && !h.capturePendingCatalogInput?.(stagePointerEvent, e.target.getStage())) api.tryStageDownDraw(e, stagePointerEvent);
+      return;
+    }
     if (!isSpacePressed && h.capturePendingCatalogInput?.(stagePointerEvent, e.target.getStage())) return;
     const pendingRetouchPreparation = studioRasterRetouchPreparationRef.current;
     const pendingSelectionPreparation = pixelMarqueeRasterPreparationActivationRef.current;

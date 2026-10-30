@@ -264,3 +264,61 @@ Orion GLB 내보내기(NullEngine): sparse 정리 전 12.36 MB → 후 3.61 MB(�
 - 위 표의 수치는 2026-10-08 실제 실행값이다: 키트 렌더 5개 파일(`babylon-kit-load` 69 · `babylon-kit-engine` 38 · `kit-region-mask` 17 · `outline-policy` 3 · `kit-bytes-cache` 6 = 133) 통과.
 - `PackagePanel.test.tsx`(18)는 처음 실행했을 때(15:05 UTC) FIX-A2가 `PackagePanel.tsx`를 편집하는 도중이라 9건이 실패했고(소유 경로 밖이라 고치지 않았다), 그 뒤 다시 실행해 18건 모두 통과했다. 다른 작업자가 같은 파일을 계속 바꿀 수 있으므로 통합 시 다시 확인한다.
 - 패널 행(SlotPanel 14 · PaintPanel 8 · ExportPanel 7 · ParamPanel 17)과 `lab-runtime.test.ts` 18 · `apply-loop.test.ts` 19는 같은 실행에서 통과했다.
+
+
+## 11. 비등방 외곽선과 캡처 분리 — 2026-10-29
+
+| 항목 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고 |
+| --- | --- | --- | --- | --- |
+| 필압 외곽선 | 실제 렌더 연결: `shading.toon.outlinePressure` → 공유 geometry·스킨·morph의 런타임 역방향 hull. 화면 가로·세로의 확장 폭이 다르다 | `render/pressure-outline.test.ts`: 기반 정점의 morph·본 회전 일치, 파츠 숨김/변환, PBR 복귀/소스 해제, GLB 제외, 알파/UV 전달 | 2026-10-29 macOS·Apple M2 Max Metal WebGPU: 실제 WGSL·RTT의 기본↔필압 외곽선 2,750픽셀 차이(채널 차이 >4). WebGL2 SwiftShader: 2,669픽셀. 모서리 알파·페이지 오류 0 | `outlinePressure`는 v3 선택 필드. 기존 레시피에 값을 주입하지 않고 기본 외곽선 설정을 유지한다. 모든 캐릭터 조합의 시각 품질 검증은 별도 |
+| 저장·실행 취소 | 실제 recipe/history/JSON 왕복. hull 외의 모드에서는 토글 비활성 | `contracts/shading.test.ts`, `app/shell/panels/RenderPanel.test.tsx`: 실제 `createLabStore`·undo/redo·직렬화 | 전체 UI 브라우저 검증은 통합 프로브에서 별도 기록 | 고정 camera/light 수식으로 만들던 MatCap·안구 하이라이트 숫자 요약을 제거했다. 하이라이트 기준 변경은 미지원 사유를 표시한다 |
+| 비주선 캡처 | 밑색·ID·법선·깊이는 런타임 hull·패키지 outline 셸을 넣지 않고, Babylon 기본 hull/edge/overlay도 RTT 제출 동안 끈 뒤 복원한다 | `render/pressure-outline.test.ts`: lit 전용 renderList·오류 시 복원, `render/babylon-capture*.test.ts` | 같은 SwiftShader 실제 RTT에서 토글 전후 밑색·부위 ID·법선 픽셀 차이 0 | GLB에는 렌더 전용 hull을 넣지 않는다. PSD 주선 분해가 쓸 밑색/ID 마스크에 선이 섞이지 않게 한다 |
+| 첫 캡처의 GPU 제출·준비 | WebGPU는 첫 await 전 뷰포트 명령을 제출하고, 비동기 준비 뒤 다시 제출한 다음 캡처를 시작한다. RTT renderPassId의 실제 서브메시·기본 외곽선 준비를 기다리며 준비한 override cache를 렌더 직전에 지우지 않는다 | `render/babylon-capture-readiness.test.ts`: 늦은 서브메시·기본/필압 hull, 실패 시 pass·override 복원, 제출→준비→제출→단일 RTT 순서 | 같은 Metal에서 수동 `renderFrame()`과 실제 연속 렌더 각각 첫 요청부터 정상. 3모드 2회 반복(6캡처)에서 각 모드의 4패스 바이트가 동일 | 임의 대기·재캡처·자동 backend 전환 없음. 타깃 풀·비동기 readback·썸네일의 일시 적용 동기 구간을 유지한다 |
+
+위 브라우저 수치는 네모 형태의 결정적 절차 fixture를 실제 엔진에 올린 작은 렌더 검증이다. 제작 캐릭터의 모든 헤어·의상·투명 재질 조합을 검증한 결과로 해석하지 않는다. 실제 `requestAdapter` 호출은 `vendor=apple`, `architecture=metal-3`, `isFallbackAdapter=false`이며, Chrome `channel=chrome`, `headless=true`에 추가 GPU 플래그 없이 실행했다. Metal의 없음/기본/필압 불투명 면적은 각각 36,798/37,342/38,186픽셀이고 없음↔기본은 2,451픽셀 차이다. 밑색·부위 ID·법선은 두 렌더 방식 모두 모드 간 차이가 0이다.
+
+최초 소프트웨어 기록의 2,264픽셀은 기본 외곽선이 첫 캡처에서 생략돼 없음과 기본이 같은 이미지였던 값이다. 준비 검사 보완 후 필압·없음 PNG의 RGBA 바이트는 최초와 같고 기본 PNG에 실제 hull이 생겨 기본↔필압 차이가 2,669픽셀이 됐다. 최초 Metal 기록 역시 없음은 투명, 기본과 필압은 같은 결과였다. 제출 경계만 고친 실험에서는 필압이 복구됐지만 기본 hull은 빠졌고, 기본 hull 준비까지 기다리는 최종 경로에서 세 상태가 구분됐다. 첫 await 뒤에만 제출하는 실험은 만료된 swapchain 표면의 제출 오류가 발생해 거부했다. 최초 실패 기록과 원본 PNG는 덮어쓰지 않았다.
+
+최종 Metal 검증 원본은 ignored 배치 폴더의 `verification/pressure-outline-metal-webgpu-bounded-manual/`·`pressure-outline-metal-webgpu-bounded-live/`에 있다. 두 방식 모두 hull 효과 4개가 준비됐고, GPU validation scope 오류가 없으며, 실제 GPUShaderModule 4개의 `getCompilationInfo`도 메시지 없이 완료됐다. 이 보조 진단은 모듈별로 중복 제거하고 15초 상한을 둔다. 앞선 반복 조회 대기는 제품 캡처 실패와 구분한다.
+
+이전 증거는 같은 배치의 `verification/pressure-outline/`(최초 소프트웨어), `pressure-outline-software-regression/`, `pressure-outline-metal-webgpu/`(최초 실패), `pressure-outline-metal-webgpu-flush-only/`(원인 분리)에 보존했다. 앞선 소프트웨어 WebGPU 컴파일 진단의 `Instance dropped error` 실패도 그대로 남아 있으며 Metal 성공과 구분한다. 앱의 WebGPU fallback 차단·명시적 backend 선택 정책은 변경하지 않았다.
+
+## 12. PSD 전용 헤어 소유권 보조 RTT — 2026-10-29
+
+상태: **current**. 분리 PSD 요청은 기존 공개 6패스에 새 패스 ID를 넣지 않고 선택적 `CaptureRequest.includeHairOwnership`와 `CaptureResult.hairOwnership`로 보조 래스터를 주고받는다. 이 요청에는 lit가 필요하며 메모리 예산에 RGBA 1패스를 더한다. 일반 capture·PNG·일반 PSD는 보조 RTT를 만들지 않는다.
+
+`babylon/hair-ownership.ts`는 실제 source mesh별 flat 재질 clone에 원래 character vertex 경로와 알파 컷아웃을 연결한다. native hull은 원래 OutlineRenderer의 스킨·morph·기하 확장·알파 테스트 프로토콜을 그대로 사용한다. 필압 hull은 실제 원본 필압 재질 clone을 사용하고, 명시적으로 연결한 source mesh의 역할에 따라 출력색만 바꾼다. 원본 재질이 native hull에 제공하지 않던 임의 discard를 새로 보장하지 않는다. 원본 native hull의 cutoff 0.4와 UV 동작도 같은 경로로 유지한다.
+
+보조 재질·타깃의 준비 대기는 원래 native 선 색을 바꾸지 않는다. 실제 lit readPixels가 명령을 제출한 직후 같은 동기 구간에서 소유권을 그린다. 그 사이 await·입력·물리 프레임이 없고, 두 제출이 끝나면 원래 선 색·override를 복원한 뒤 readback을 기다린다. 오류·준비 실패·readback 실패도 finally에서 clone·타깃 lease를 해제한다. 두 readback은 `Promise.allSettled`로 완료를 확인해 아직 쓰는 타깃을 먼저 반환하지 않는다. 이 보장은 lit와 새 보조 마스크의 동일 draw 상태에 한정되며 다른 모든 패스의 전역 시점 고정을 뜻하지 않는다.
+
+실제 정점 알파가 모두 1인 입력은 원래 alpha queue·깊이·culling 규약을 복제해 지원한다. 실제 반투명 정점·BLEND/ALPHATESTANDBLEND·별도 opacity 맵·PBR UV2 컷아웃·사용자 clipping·베이크 정점 애니메이션·미확인 custom/베타 재질은 분리 지원을 사전에 거부한다. source geometry·재질·정점 데이터가 바뀌면 프리플라이트가 현재 데이터를 다시 검사하며, 준비 중 source/material이 바뀐 결과를 조용히 사용하지 않는다. 일반 PSD는 계속 사용할 수 있다.
+
+검증은 `render/hair-ownership.test.ts`의 실제 NullEngine 계약·수명·moving PhysicsBridge 시험, 양 테스트 설정의 관련 9파일 118개와 별도 실제 Metal WebGPU 16조건이다. 같은 fixture의 원래 6패스 전후 바이트는 모두 같고, owner mask의 hair-only footprint 이탈은 0이다. 저장 PSD 기본 레이어의 독립 재합성 RGB/알파 오차 0, 헤어 숨김 잔여 알파 0도 확인했다. 원본 flat options/uniform·필압 outlineColor와 공유 텍스처가 clone 수정·해제 후 그대로인 회귀를 포함한다.
+
+MSAA는 가시 샘플 과반으로 전체 픽셀을 한 소유자에게 배정하고 동률을 헤어로 정한다. 공유 경계의 혼합색을 본체·헤어별 서브픽셀로 역분리하지 않는다. 검증 원본과 움직임 시험은 `verification/shaper-hair-ownership-final-metal-manual/`·`shaper-hair-ownership-moving-metal-manual/`에 보존한다. 실제 키트 기본 10파트의 지원 프리플라이트는 확인했지만 모든 키트·생성 에셋 조합의 렌더 결과를 검사한 것은 아니다.
+
+같은 16조건의 GLSL은 추가 GPU 플래그 없는 실제 `ANGLE Metal Renderer: Apple M2 Max` WebGL2에서도 확인했다. 준비된 동일 상태에서 소유권 요청 전후 6패스 바이트와 실제 PSD 독립 재합성 오차는 0이고 GL·페이지 오류도 0이다. 초기 추가 검사에서는 첫 PBR 일반 캡처 1회↔2회에 최대 64/255·36,798픽셀 차이가 있었다. 소유권 없는 일반 캡처만으로 발생한 독립 결함이며 §13에서 원인 분리·수정을 기록한다. 비교·분리 원본은 `verification/shaper-hair-ownership-comparison-metal-webgl2-manual/`와 `shaper-hair-ownership-baseline-metal-webgl2-manual/`다. 앞선 SwiftShader 보조 진단의 서버 종료·연결 거부 기록은 셰이더 판정에서 제외했다.
+
+## 13. 첫 PBR의 직접 색 처리·그림자 준비 — 2026-10-29
+
+상태: **current**. 첫 WebGL2 PBR 캡처는 뷰포트의 `applyByPostProcess=true`로 `IMAGEPROCESSINGPOSTPROCESS` 변종을 준비했지만, 실제 RTT의 PrePass 초기화는 이를 false로 바꿨다. 이전 변종의 shader hot-swap으로 그려 첫 RGB가 달랐다. 128² 계측에서 첫 draw의 설정은 false인데 실제 effect는 `TONEMAPPING 0`·`IMAGEPROCESSINGPOSTPROCESS`, 두 번째는 `TONEMAPPING 3`·`IMAGEPROCESSING`이었다. 알파 차이는 0이고 RGB 최대 차이는 63/255였다. 색 처리 설정만 준비 전부터 false로 맞춘 대조군은 첫 차이가 0이어서 UBO 문제로 추정해 우회하지 않았다.
+
+`capture.ts`는 준비 폴링과 실제 lit draw 각각의 동기 구간에서 직접 image-processing 변종을 사용하고 즉시 뷰포트 설정을 복원한다. 재질 준비 검사에서는 `allowShaderHotSwapping`을 잠시 false로 두어 이전 shader로 그릴 수 있다는 응답을 현재 변종의 준비 완료로 세지 않으며, 실패 시에도 원래 값을 복원한다. 전역 hot-swap 해제·숨긴 예열 캡처·sleep·자동 재시도는 추가하지 않았다.
+
+장면 프레임을 전혀 그리지 않은 대조에서는 별도 첫 lit 차이가 WebGL2 71/255·WebGPU 65/255였다. 그림자 OFF에서는 0이어서 그림자 경로를 분리했고, 첫 CSM 패스가 shader 준비를 기다리지 않는 사실을 확인했다. 활성 그림자의 공개 `RenderTargetTexture.isReadyForRendering()`을 기존 시간 제한이 있는 폴링에 포함해 실제 CSM 패스·투명도 변종을 준비한다. 이 준비 검사는 draw를 제출하지 않는다. 단순 `forceCompilationAsync`나 전역 PrePass 상태 변경으로 대체하지 않았다.
+
+최종 128² 실제 Metal 검사는 WebGL2·WebGPU 각각 장면 프레임 0회/1회/캡처 사이 뷰포트 복귀의 3조건이다. 각 조건의 첫↔두 번째·두 번째↔세 번째 6패스 바이트 차이는 0이며 첫 lit의 가시 픽셀 4,187개, 원래 정상 두 번째 결과와 새 첫 결과의 RGBA 차이 0이다. 뷰포트 색 처리 설정도 복원됐고 GPU/GL validation·캡처 실패·페이지 오류는 0이다. WebGPU 명시적 dispose 뒤의 정상 `Device was destroyed` 알림은 수집 단계를 구분해 기록했다. 실제 장치 오류를 성공으로 바꾸는 예외는 추가하지 않았다.
+
+`verification/shaper-first-pbr-diagnostic/`는 원래 실패와 변종·UBO 조사 기록, `shaper-first-pbr-shadow-diagnostic/`는 그림자 ON/OFF 분리, `shaper-first-pbr-uniform-state/`·`shaper-first-pbr-verified/`는 수정 후 원본이다. uniform 계측에서 해당 WebGL2는 UBO를 사용하지 않고, WebGPU는 Scene 68개·광원 24/20개 float의 CPU 측 UBO cache를 기록했다. PBR Material은 직접 uniform 모드라 빈 cache를 UBO 검증 성공으로 세지 않았다. GPU 버퍼 자체를 역으로 읽어 검사한 것은 아니다.
+
+관련 9파일은 양 Vitest 설정에서 각각 125개를 통과했다. 이후 384²의 기존 PSD 16조건도 양 실제 backend에서 다시 검사해 6패스 불변·독립 PSD RGB/알파 0·헤어 숨김 잔여 0을 유지했다. 원본은 `verification/shaper-hair-ownership-post-pbr-metal-manual/`·`shaper-hair-ownership-post-pbr-metal-webgl2-manual/`·`shaper-hair-ownership-post-pbr-moving-metal-manual/`이다. 이 단계에서 모든 앱 테스트·타입 검사·빌드를 새로 수행한 것은 아니며 통합 담당의 후속 게이트를 따른다.
+
+독립 검토가 찾은 초기 숨김/disabled 하위 메시의 준비·제출 목록 불일치도 수정했다. 준비와 같은 가시성 조건으로 제출 목록을 만들며 처음부터 숨긴 두 입력은 일반 lit·소유권 모두 성공한다. 준비 뒤 새로 보인 미준비 메시의 실패·정리 guard는 유지하고 세 회귀로 확인했다.
+
+## 14. 안구 시선의 실제 형상 연결 판정 — 2026-10-29
+
+상태: **current**. `eyeGaze()`는 양안 본 매핑과 함께 각 눈 자신·하위 본의 실제 양수 스킨 가중치 또는 해당 본/연결 TransformNode에 부착된 메시를 확인한다. 본 이름만 있고 눈이 텍스처에 그려진 소스는 한글 사유와 함께 미지원으로 반환하며 기존 안구 UI·F10은 비활성화된다. 일시 숨김·슬롯 가시성은 소스의 지원 능력을 없애지 않고, 영구 제외·해제된 메시·다른 스켈레톤·비활성 skin 영향은 근거로 쓰지 않는다.
+
+`eye-geometry-support.ts`는 현재 rig.parts와 스켈레톤을 읽고, 최대 8개 활성 영향 및 CPU 스킨의 원래 가중치를 다룬다. 정적 geometry의 VertexBuffer·원시 데이터·native buffer identity와 영향 수를 WeakMap으로 캐시하며 실제 로더의 버퍼 교체·삭제·키트 파트 제거/추가를 반영한다. updatable 가중치는 capability read 때 재평가한다. 매 프레임 시선 적용에는 새 버퍼 스캔을 추가하지 않으며 Geometry/전역 콜백도 바꾸지 않는다. 직접 원시 배열만 고치고 Babylon 갱신 API를 호출하지 않는 외부 변경은 지원 계약이 아니다.
+
+기존 실제 Tripo 55본 GLB의 양쪽 `J_Adj_*_FaceEye`는 양수 영향 0개이고 시선 변경 전후 CPU 스킨 위치 159,060성분의 차이도 0이다. 이제 `unavailable`이며, 실제 Orion은 각 눈 456개 영향·기본 여성 키트는 각 701개 영향으로 `available`을 유지한다. 절차 fixture의 각 24정점 눈, 하위 보조 본·rigid 부착·추가 영향·숨김·교체·UI/F10 회귀는 `render/babylon-eye-geometry.test.ts`와 기존 안구 통합 시험에 있다. 실제 파일 검증 원본은 ignored 배치의 `verification/eye-gaze-capability-20261029/`다. 이 판정은 기하 연결 지원이며 시선의 미학·해부학 품질이나 텍스처 눈의 독립 제어를 인증하지 않는다. 이 단계에서 새 GPU/브라우저·전체 타입/빌드 검사는 실행하지 않았다.

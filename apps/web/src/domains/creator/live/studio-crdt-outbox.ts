@@ -190,7 +190,7 @@ function assertScope(scope: string): void {
 
 function serializeRequest(request: StudioCrdtUpdateRequest): {
   payload: string;
-  payloadBytes: number;
+  payloadBytes: number; request: StudioCrdtUpdateRequest;
 } {
   const parsed = parsePersistedStudioCrdtUpdateRequest(request, {
     expectedWorkId: request.workId,
@@ -201,7 +201,7 @@ function serializeRequest(request: StudioCrdtUpdateRequest): {
   if (payloadBytes <= 0 || payloadBytes > STUDIO_CRDT_OUTBOX_MAX_REQUEST_BYTES) {
     throw new StudioCrdtOutboxCapacityError(1, payloadBytes);
   }
-  return { payload, payloadBytes };
+  return { payload, payloadBytes, request: parsed };
 }
 
 function assertRetryMetadata(metadata: StudioCrdtOutboxRetryMetadata): void {
@@ -255,7 +255,7 @@ function putMemoryRow(scope: string, request: StudioCrdtUpdateRequest): void {
   assertScope(scope);
   const key = outboxKey(scope, request.workId, request.updateId);
   if (emergencyAcknowledgedUpdates.has(key)) return;
-  const { payloadBytes } = serializeRequest(request);
+  const { payloadBytes, request: stableRequest } = serializeRequest(request);
   const existing = memoryRows.get(key);
   const usageKey = scopeWorkKey(scope, request.workId);
   const usage = memoryUsage.get(usageKey) ?? { entries: 0, bytes: 0 };
@@ -274,7 +274,7 @@ function putMemoryRow(scope: string, request: StudioCrdtUpdateRequest): void {
     workId: request.workId,
     updateId: request.updateId,
     clientSequence: request.clientSequence,
-    request: { ...request },
+    request: stableRequest,
     createdAt: existing?.createdAt ?? Date.now(),
     payloadBytes,
     durable: existing?.durable ?? false,

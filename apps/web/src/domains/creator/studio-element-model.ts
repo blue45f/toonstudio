@@ -637,6 +637,8 @@ export interface AdjustmentEl {
 }
 
 interface StudioElementLayerMetadata {
+  /** 실제 프레임 ID를 고정한 렌더 클립이다. 이 필드 자체는 편집 권한이 아니다. */
+  frameClipId?: string;
   name?: string;
   hidden?: boolean;
   locked?: boolean;

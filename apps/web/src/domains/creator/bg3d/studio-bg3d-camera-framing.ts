@@ -9,6 +9,7 @@
 import {
   isStudioBg3dCameraNearClip,
   isStudioBg3dCameraUpVectorValid,
+  isStudioBg3dOrthographicHeight,
   resolveStudioBg3dCameraNearClip,
   resolveStudioBg3dCameraUpVector,
 } from "./studio-bg3d-camera-orientation";
@@ -222,6 +223,7 @@ function freezeView(
     fovDegrees: camera.fovDegrees,
     projection: camera.projection === "orthographic" ? "orthographic" : "perspective",
     zoom,
+    ...(camera.orthographicHeight !== undefined ? { orthographicHeight: camera.orthographicHeight } : {}),
     ...(lensShift ? { lensShift } : {}),
     ...(camera.nearClip !== undefined ? { nearClip: camera.nearClip } : {}),
     ...(up ? { up } : {}),
@@ -284,6 +286,7 @@ export function fitStudioBg3dCameraToBounds(
       STUDIO_BG3D_CAMERA_MAX_ZOOM,
     ) ||
     (camera.nearClip !== undefined && !isStudioBg3dCameraNearClip(camera.nearClip)) ||
+    (camera.orthographicHeight !== undefined && !isStudioBg3dOrthographicHeight(camera.orthographicHeight)) ||
     (camera.up !== undefined && !isStudioBg3dCameraUpVectorValid(camera.up, camera)) ||
     !finiteInRange(input.viewportAspect, MIN_VIEWPORT_ASPECT, MAX_VIEWPORT_ASPECT)
   ) return null;
@@ -335,7 +338,8 @@ export function fitStudioBg3dCameraToBounds(
   const frustum = input.orthographicFrustumAtZoomOne;
   if (
     typeof frustum !== "object" || frustum === null ||
-    !finiteInRange(frustum.width, MIN_DIRECTION_LENGTH, MAX_ORTHOGRAPHIC_FRUSTUM_SPAN) ||
+    !finiteInRange(frustum.width, MIN_DIRECTION_LENGTH / (camera.orthographicHeight !== undefined ? MAX_VIEWPORT_ASPECT : 1),
+      MAX_ORTHOGRAPHIC_FRUSTUM_SPAN * (camera.orthographicHeight !== undefined ? MAX_VIEWPORT_ASPECT : 1)) ||
     !finiteInRange(frustum.height, MIN_DIRECTION_LENGTH, MAX_ORTHOGRAPHIC_FRUSTUM_SPAN)
   ) return null;
   const horizontalSpan = Math.max(...corners.map((corner) => Math.abs(corner[0]))) * 2;

@@ -1,19 +1,16 @@
 import { z } from "zod";
-import { sha256Schema, studioEntityIdSchema, type StudioReviewPageMapping } from "@toonstudio/studio-project-model";
+import type { StudioReviewPageMapping } from "@toonstudio/studio-project-model";
 
 import {
   LocatedPrivateObjectReferenceSchema, type LocatedPrivateObjectReference,
 } from "../../platform/adapters/private-object-storage/private-object-storage.contract";
+import { studioReviewCaptureSubjectSchema } from "./studio-review-capture-subject";
 
 export const STUDIO_REVIEW_PREVIEW_PAGE_SIZE = 32;
 export const STUDIO_REVIEW_PREVIEW_URL_SECONDS = 30;
 export const STUDIO_REVIEW_PREVIEW_MEDIA_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
-export const studioReviewPreviewSubjectSchema = z.object({
-  schemaVersion: z.literal(1), projectId: studioEntityIdSchema, workId: studioEntityIdSchema,
-  artifactId: studioEntityIdSchema, reviewId: studioEntityIdSchema, revisionId: studioEntityIdSchema,
-  rootGraphHash: sha256Schema,
-}).strict();
+export const studioReviewPreviewSubjectSchema = studioReviewCaptureSubjectSchema;
 export type StudioReviewPreviewSubject = z.infer<typeof studioReviewPreviewSubjectSchema>;
 
 export const studioReviewPreviewCursorSchema = z.string().regex(/^(0|[1-9][0-9]{0,6})\.[a-f0-9]{64}$/u)

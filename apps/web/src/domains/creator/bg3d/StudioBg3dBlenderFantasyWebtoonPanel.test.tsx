@@ -9,6 +9,18 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     cleanup();
   });
 
+  it("실제 웹 모델링 작업대 경로를 안내하고 비활성 상태에서는 이동을 막는다", () => {
+    const { rerender } = render(<StudioBg3dBlenderFantasyWebtoonPanel />);
+    const link = screen.getByRole("link", { name: "3D 모델링 작업대로 이동" });
+    expect(link.getAttribute("href")).toBe("/studio/3d/dcc/model");
+    expect(link.hasAttribute("aria-disabled")).toBe(false);
+    expect(screen.getByLabelText("웹 모델링 작업대").textContent).toContain("설정 검토와 배경 프리셋");
+
+    rerender(<StudioBg3dBlenderFantasyWebtoonPanel disabled />);
+    expect(link.getAttribute("aria-disabled")).toBe("true");
+    expect(fireEvent.click(link)).toBe(false);
+  });
+
   it("renders all 5 Blender 5.2 fantasy webtoon sections and invokes callbacks on interaction", () => {
     const onApplyLightingRig = vi.fn();
     const onApplyNprShader = vi.fn();

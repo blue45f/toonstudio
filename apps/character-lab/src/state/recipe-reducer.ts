@@ -17,6 +17,7 @@ import {
   bonesInScope,
   clampExpression,
   clampParam,
+  eyeGazeSchema,
   isBodyParamKey,
   isFaceParamKey,
   isPhysicsProviderId,
@@ -26,6 +27,7 @@ import {
   parseRecipe,
   presetSlot,
   recipeSourceSchema,
+  resolveEyeGaze,
   shadingProfileSchema,
 } from "../contracts";
 import { normalizeHex } from "../shared/color";
@@ -200,6 +202,12 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
       const weights = command.merge ? { ...recipe.expression, ...command.weights } : command.weights;
       return { ...recipe, expression: clampExpression(weights) };
     }
+    case "eye-gaze/set": {
+      const checked = eyeGazeSchema.safeParse(command.gaze);
+      if (!checked.success) throw new RecipeCommandError("command-eye-gaze-invalid", "안구 시선 값은 유한한 ±25° 범위여야 합니다.");
+      const eyeGaze = resolveEyeGaze(checked.data);
+      return stableStringify(eyeGaze) === stableStringify(recipe.eyeGaze) ? recipe : { ...recipe, eyeGaze };
+    }
     case "pose/set":
       return { ...recipe, pose: mergePoseScoped(recipe.pose, command.pose, command.scope) };
     case "hand-pose/set":
@@ -272,6 +280,8 @@ export function describeCommandKo(command: RecipeCommand, catalog?: PresetCatalo
       return `색 ${command.key}`;
     case "expression/set":
       return command.merge ? "표정 조정" : "표정 설정";
+    case "eye-gaze/set":
+      return command.gaze.mode === "camera" ? "카메라 응시" : "안구 시선 설정";
     case "pose/set":
       return command.labelKo || "포즈 변경";
     case "hand-pose/set": {

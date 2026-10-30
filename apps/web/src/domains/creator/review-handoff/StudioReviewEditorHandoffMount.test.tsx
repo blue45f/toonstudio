@@ -28,6 +28,7 @@ function fixture() {
   const data = reviewEditorFixture(digestForTest); let pageId = "p1";
   const bindings: StudioReviewCaptureHostBindings = { studioAuthUserId: "actor", workId: "work", available: true,
     editorMountedRef: { current: true }, studioRevisionProjectGenerationRef: { current: 1 }, drawingRef: { current: null }, pendingStrokeCommitsRef: { current: null },
+    flushPendingStrokeCommitsRef: { current: vi.fn(() => true) },
     captureStudioMutationTicket: () => ({ authScopeKey: "actor", workId: "work", accessGeneration: 1, documentGeneration: 1 }),
     canApplyStudioMutation: () => true, getSnapshot: () => data.snapshot, canvasWidth: 800, isDurableMask: () => false,
     save: vi.fn(async () => {}), captureAll: vi.fn(async () => []),

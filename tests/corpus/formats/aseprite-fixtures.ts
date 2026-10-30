@@ -513,4 +513,3 @@ export function richAsepriteSpec(): FixtureSpec {
     { headerFlags: 3, speed: 120 },
   );
 }
-

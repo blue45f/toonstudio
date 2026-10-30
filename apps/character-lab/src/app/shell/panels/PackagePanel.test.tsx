@@ -117,6 +117,11 @@ describe("PackagePanel", () => {
     expect(screen.getByText(/GLB에 VRM 확장 없음/u)).toBeTruthy();
     expect(screen.getByText(/필수 15\/15 · 손가락 30\/30/u)).toBeTruthy();
     expect(screen.getByText(/패키지 격차 \d+개/u)).toBeTruthy();
+    expect(screen.getByText("품질(패키지 선언)")).toBeTruthy();
+    expect(screen.getByText(/파일 크기와 SHA-256은 불러온 데이터로 확인합니다/u)).toBeTruthy();
+    expect(screen.queryByTestId("shaper-package-asset-check")).toBeNull();
+    expect(screen.queryByTestId("tripo3d-mcp-character-lab-summary")).toBeNull();
+    expect(screen.queryByText(/GLBForge/u)).toBeNull();
   }, 30000);
 
   it("엔진이 있으면 reloadSource로 올리고 '절차 소스로 돌아가기'는 procedural source/set을 보낸다", async () => {
@@ -511,6 +516,6 @@ describe("PackagePanel — 모듈식 키트", () => {
     expect(male.disabled).toBe(true);
     expect(male.title).toMatch(/해당 베이스가 없습니다/u);
     expect(document.querySelector('td[data-base="male"]')).toBeNull();
-    expect(screen.getByTestId("shaper-package-asset-check").textContent).toContain("SHAPER 에셋 버전 진단");
+    expect(screen.queryByTestId("shaper-package-asset-check")).toBeNull();
   });
 });
