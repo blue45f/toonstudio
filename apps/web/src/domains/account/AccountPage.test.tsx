@@ -49,7 +49,7 @@ vi.mock("@/platform/creator-client", () => ({
 }));
 vi.mock("@/platform/me-client", () => ({
   deleteMyAccount: vi.fn(),
-  getMyProfile: vi.fn(),
+  getMyProfileForEditing: vi.fn(),
   updateMyProfile: vi.fn(),
 }));
 vi.mock("./CreatorRoleProfileEditor", () => ({ CreatorRoleProfileEditor: () => null }));
