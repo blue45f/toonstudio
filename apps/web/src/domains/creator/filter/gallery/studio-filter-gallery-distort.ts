@@ -210,6 +210,13 @@ type GlassTexture = (typeof GLASS_TEXTURE)["default"];
 const glassBlurRadius = (smoothness: number): number => (smoothness - 1) * 0.6;
 
 /**
+ * 공용 흐림이 구별하는 가장 작은 흐림(매끄러움 3 의 반지름 1.2). gaussianPlane 은 상자 반지름을 1 아래로 내리지 않아 반지름
+ * 0.5~√3 이 모두 같은 흐림이고, 그래서 매끄러움 2(0.6)와 3(1.2)이 같은 그림이었다. 이보다 작은 반지름은 흐리지 않은 맵과
+ * 이 흐림을 반지름 비율만큼 섞는다(매끄러움 1 은 흐리지 않고, 3 이상은 예전과 같다).
+ */
+const GLASS_LEAST_BLUR_RADIUS = glassBlurRadius(3);
+
+/**
  * 높이맵을 그림 밖으로 넓힐 폭(px). gaussianPlane 의 3회 상자 흐림(상자 반지름 최대 ⌈max(1, r/√3)⌉)이 닿는 거리에
  * 중앙차분 1px 을 더해, 그림 안 기울기가 넓힌 맵 끝의 가장자리 복제에 닿지 않게 한다.
  */
@@ -277,9 +284,13 @@ function applyGlass(image: StudioFilterGalleryImage, params: StudioFilterGallery
   // 안쪽 질감이 거의 지워지면 RMS 정규화가 그 경사만 키워 테두리 띠만 통째로 밀리므로, 흐림이 닿는 거리만큼 그림 밖까지
   // 실제 질감을 만들어 흐린다. 캔버스는 매끄러움을 바꿔도 무늬가 밀리지 않게 늘 가장 넓은 여백을 쓴다.
   const radius = glassBlurRadius(smoothness);
-  const margin = texture === "canvas" ? GLASS_MARGIN_MAX : glassMargin(radius);
+  const mix = radius > 0 && radius < GLASS_LEAST_BLUR_RADIUS ? radius / GLASS_LEAST_BLUR_RADIUS : 1;
+  const blurRadius = mix < 1 ? GLASS_LEAST_BLUR_RADIUS : radius;
+  const margin = texture === "canvas" ? GLASS_MARGIN_MAX : glassMargin(blurRadius);
   const heightMap = glassHeight(texture, width, height, margin, scale, context.seed + 0x6c61);
-  gaussianPlane(heightMap, width + 2 * margin, height + 2 * margin, radius);
+  const sharp = mix < 1 ? heightMap.slice() : null;
+  gaussianPlane(heightMap, width + 2 * margin, height + 2 * margin, blurRadius);
+  if (sharp) for (let index = 0; index < heightMap.length; index += 1) heightMap[index] = sharp[index] + (heightMap[index] - sharp[index]) * mix;
   const [fieldX, fieldY] = heightGradient(heightMap, width, height, margin);
   displaceByField(image, fieldX, fieldY, distortion);
 }
