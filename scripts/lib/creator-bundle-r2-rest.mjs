@@ -154,6 +154,8 @@ export function createBundleR2Rest({ accountId, token, fetcher = globalThis.fetc
       if (json?.success !== true) { stopped = true; transferFail("PUT_ACK_REJECTED", "PUT 성공 확인이 없습니다. 재전송하지 말고 원격 객체를 별도 확인하세요."); }
     }
   }
+  // HTTP 성공 뒤의 JSON·pagination 오류도 첫 실패다. 같은 adapter의 다음 GET/PUT을 막는다.
+  const listFormatFail = (message) => { stopped = true; transferFail("LIST_FORMAT", message); };
   return Object.freeze({
     requestPolicy: Object.freeze({ intervalMs, requestTimeoutMs, maximumRequests }),
     getRequestStats: () => Object.freeze({ requestsStarted, maximumRequests, credentialProviderCalls,
@@ -163,13 +165,13 @@ export function createBundleR2Rest({ accountId, token, fetcher = globalThis.fetc
       const query = new URLSearchParams({ per_page: "1000", prefix: BUNDLE_V2_KEY_PREFIX });
       if (cursor !== undefined) query.set("cursor", cursor);
       const bytes = await request(base + "?" + query, "GET", { maximum: 8 * 1024 * 1024 });
-      let value; try { value = JSON.parse(bytes.toString("utf8")); } catch { transferFail("LIST_FORMAT", "R2 목록 응답 형식이 다릅니다. 원문을 출력하지 않고 중단합니다."); }
+      let value; try { value = JSON.parse(bytes.toString("utf8")); } catch { listFormatFail("R2 목록 응답 형식이 다릅니다. 원문을 출력하지 않고 중단합니다."); }
       if (value?.success !== true || !Array.isArray(value.result)
-        || (value.errors !== undefined && (!Array.isArray(value.errors) || value.errors.length !== 0))) transferFail("LIST_FORMAT", "R2 목록이 전체 성공한 응답이 아닙니다. 원문을 출력하지 않고 중단합니다.");
+        || (value.errors !== undefined && (!Array.isArray(value.errors) || value.errors.length !== 0))) listFormatFail("R2 목록이 전체 성공한 응답이 아닙니다. 원문을 출력하지 않고 중단합니다.");
       const info = value.result_info;
-      if (info !== undefined && (info === null || typeof info !== "object" || Array.isArray(info))) transferFail("LIST_FORMAT", "R2 목록 pagination 정보의 형식이 다릅니다.");
+      if (info !== undefined && (info === null || typeof info !== "object" || Array.isArray(info))) listFormatFail("R2 목록 pagination 정보의 형식이 다릅니다.");
       if ((info?.is_truncated !== undefined && typeof info.is_truncated !== "boolean")
-        || (info?.cursor !== undefined && (typeof info.cursor !== "string" || info.cursor.length > 4096 || /[\r\n]/u.test(info.cursor)))) transferFail("LIST_FORMAT", "R2 목록 marker·cursor의 형식이 다릅니다.");
+        || (info?.cursor !== undefined && (typeof info.cursor !== "string" || info.cursor.length > 4096 || /[\r\n]/u.test(info.cursor)))) listFormatFail("R2 목록 marker·cursor의 형식이 다릅니다.");
       return { objects: value.result, truncated: info?.is_truncated, cursor: info?.cursor };
     },
     getObject(object) {
