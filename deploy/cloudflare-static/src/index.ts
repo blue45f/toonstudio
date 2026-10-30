@@ -9,6 +9,7 @@ import {
   cloudflareLargeAssetDescriptor,
   cloudflareLargeAssetKey,
   cloudflareSameOriginOnlyAllows,
+  isCloudflareBundleV2ReleaseIndexNamespacePath,
   isCloudflareOversizedAssetPath,
   matchesIfNoneMatch,
   matchesIfRange,
@@ -590,6 +591,11 @@ async function serveR2LargeAsset(
     const rejection = jsonError(403, "BUNDLE_ASSET_SAME_ORIGIN_ONLY", { vary: "Sec-Fetch-Site" });
     return method === "HEAD" ? new Response(null, rejection) : rejection;
   }
+  if (descriptor.getHeadOnly && method !== "GET" && method !== "HEAD") {
+    return withSecurityHeaders(new Response(null, {
+      status: 405, headers: { allow: "GET, HEAD", vary: "Sec-Fetch-Site" },
+    }));
+  }
   const key = cloudflareLargeAssetKey(requestUrl.pathname);
   if (!key || !env.LARGE_ASSETS) return null;
 
@@ -657,6 +663,11 @@ export function createCloudflareStaticGateway(
     if (isEdgeLivenessRequest(request, requestUrl)) {
       return edgeLivenessResponse(request);
     }
+    if (isCloudflareBundleV2ReleaseIndexNamespacePath(requestUrl.pathname)
+      && !cloudflareLargeAssetDescriptor(requestUrl.pathname)) {
+      const rejection = jsonError(404, "BUNDLE_RELEASE_INDEX_NOT_FOUND");
+      return request.method === "HEAD" ? new Response(null, rejection) : rejection;
+    }
     if (!isDynamicPath(requestUrl.pathname)) {
       return env.ASSETS.fetch(request);
     }
@@ -685,7 +696,10 @@ export function createCloudflareStaticGateway(
       // R2 미디어 이관 경로는 R2에 아직 없으면 Static Assets로 돌린다(단계 이관·롤백 안전망).
       if (largeAsset?.staticFallback) return withSecurityHeaders(await staticMediaFallback(request, env.ASSETS));
       // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
-      if (largeAsset?.sameOriginOnly) return jsonError(503, "LARGE_ASSET_UNAVAILABLE", { vary: "Sec-Fetch-Site" });
+      if (largeAsset?.sameOriginOnly) {
+        const unavailable = jsonError(503, "LARGE_ASSET_UNAVAILABLE", { vary: "Sec-Fetch-Site" });
+        return request.method === "HEAD" ? new Response(null, unavailable) : unavailable;
+      }
     }
 
     const configuredCoreSecret = env.CORE_ORIGIN_SECRET;

@@ -90,7 +90,7 @@ describe("Studio user manual content", () => {
 
   it("documents the SketchUp import limits and the unit question without promising every file converts", () => {
     const section = findManualArticle("background-3d")?.sections.find((candidate) => candidate.id === "sketchup");
-    expect(section?.title).toContain("SketchUp");
+    expect(section?.title).toBe("SKP 파일 가져오기");
     const text = JSON.stringify(section);
     // 문서의 숫자는 변환기가 실제로 적용하는 상수와 같아야 한다.
     expect(text).toContain(`SketchUp ${2000 + STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION} 이후`);

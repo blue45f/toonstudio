@@ -4,6 +4,7 @@ import { studioWorldInteractions, studioWorldPortals, type StudioVirtualSpaceWor
 import { isStudioThreeCampusManifest, studioThreeGeneratedProps, studioThreeManifestProps } from "../studio-virtual-space-three-generated-assets";
 import { STUDIO_THREE_PROPS, STUDIO_THREE_SCALE } from "../studio-virtual-space-three-scene";
 import { VIRTUAL_THREE_THEME_MODEL_IDS } from "./virtual-three-theme-models";
+import { findVirtualThreeNatureDisplaySize } from "./virtual-three-nature-theme-models";
 import type { VirtualThreeLayoutRoleKind } from "./virtual-three-theme-types";
 
 interface Footprint extends StudioWorldRect { readonly sourceId: string }
@@ -97,6 +98,8 @@ export function virtualThreeThemeModelDisplaySize(kind: VirtualThreeLayoutRoleKi
   readonly axis: "height" | "ground-extent";
   readonly meters: number;
 } {
+  const natureSize = findVirtualThreeNatureDisplaySize(kind, modelAssetId);
+  if (natureSize) return natureSize;
   if (kind === "botanical" && modelAssetId === VIRTUAL_THREE_THEME_MODEL_IDS.parkFlower) {
     return { axis: "ground-extent", meters: 0.45 };
   }

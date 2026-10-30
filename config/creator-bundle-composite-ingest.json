@@ -1,0 +1,26 @@
+{
+  "schema": "toonstudio.creator-bundle-composite-ingest.v1",
+  "version": 1,
+  "copyPolicy": "copy-only-no-hardlinks",
+  "base": {
+    "revision": "4685be49e2c108ad1602fb1851670bdf6eca002d",
+    "configPath": "config/creator-bundle-local-ingest.json",
+    "configSha256": "6e3cf233751a86a2e8e44ee89d2558b295be71c55ec5206c43b935a47a15668e",
+    "projectionPath": "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json",
+    "projectionSha256": "ad227c555222e1a6ec93b59c1b4917eac18d9059a213d6f48736bb49ab56cff4"
+  },
+  "atlas": {
+    "recipe": "config/creator-bundle-atlas-intake.json",
+    "recipeSha256": "ee36e2562495ce7f1f3b995fc461b4e7f6c9aa56b9afaeb08a35c265a2b633f3",
+    "preparationProofSha256": "a9762db13789ea82b9b65b57bf3454bf749ed6c155b69e0188b53c9bf7c6995b"
+  },
+  "projection": "apps/web/public/assets/3d/environments/bundle-v1/theme-packs.e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4.json",
+  "projectionSha256": "e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4",
+  "snapshotGeneratedAt": "2026-10-30T00:00:00.000Z",
+  "expected": {
+    "baseAssets": 1929,
+    "derivedAssets": 3300,
+    "files": 5229,
+    "bytes": 3985892748
+  }
+}

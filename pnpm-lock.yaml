@@ -70,6 +70,7 @@ patchedDependencies:
   ktx2-encoder@0.6.0: 20ab5cce62142bddaf85f69af8a41633b64f264f931b3ef71c8a57c3e0de5c74
   manifold-3d@3.5.1: 53990fc6cbf1cc1a3839a32a88a8a1d4b76e28d2699332b21e2afeca78e466ad
   minimatch@3.1.5: fe761a9f2ee67f36ecef95437aff71cccde54f98d08053c41eb3f815a907be71
+  openskp@1.3.0: 68b4e19d0b31d0fad5f13ae1e86d54b0e45a31ddc749fee45735a5dd5b01ddf1
   p5.brush@2.2.1: 6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb
 
 importers:
@@ -291,7 +292,7 @@ importers:
         version: 1.1.1
       openskp:
         specifier: 1.3.0
-        version: 1.3.0
+        version: 1.3.0(patch_hash=68b4e19d0b31d0fad5f13ae1e86d54b0e45a31ddc749fee45735a5dd5b01ddf1)
       p5.brush:
         specifier: 2.2.1
         version: 2.2.1(patch_hash=6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb)(p5@2.3.1)
@@ -15847,7 +15848,7 @@ snapshots:
 
   opencascade.js@1.1.1: {}
 
-  openskp@1.3.0:
+  openskp@1.3.0(patch_hash=68b4e19d0b31d0fad5f13ae1e86d54b0e45a31ddc749fee45735a5dd5b01ddf1):
     dependencies:
       earcut: 3.2.3
       fflate: 0.8.3

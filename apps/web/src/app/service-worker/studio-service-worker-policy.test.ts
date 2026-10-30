@@ -101,6 +101,9 @@ describe("classifyStudioServiceWorkerRequest", () => {
       // 번들 배포 인덱스는 가용성 신호라 캐시하지 않고, sha256 내용 주소 GLB는 immutable이다.
       ["/assets/studio/bundle-v2/manifest.json", "passthrough"],
       ["/assets/studio/bundle-v2/manifest.json?v=1", "passthrough"],
+      [`/assets/studio/bundle-v2/release-index/${"a".repeat(64)}.json`, "passthrough"],
+      [`/assets/studio/bundle-v2/release-index/${"a".repeat(64)}.json?v=1`, "passthrough"],
+      [`/assets/3d/environments/bundle-v1/deploy-index.${"a".repeat(64)}.json`, "immutable-asset"],
       [`/assets/studio/bundle-v2/${"a".repeat(64)}.glb`, "immutable-asset"],
       // 렌더 매니페스트는 권리 원장 스탬프를 싣는 게이트라 철회·개방이 바로 닿도록 캐시하지 않고, 이미지는 그대로 immutable이다.
       ["/assets/studio/bundle-renders-v1/manifest.json", "passthrough"],
@@ -140,6 +143,15 @@ describe("classifyStudioServiceWorkerRequest", () => {
       ),
     ).toBe("passthrough");
     expect(studioServiceWorkerStrategy("passthrough")).toBe("network-only");
+  });
+
+  it("R2 완료 표식은 직접 열어도 네트워크로 전달하고 캐시 보관함을 배정하지 않는다", () => {
+    const route = classifyStudioServiceWorkerRequest(
+      facts(`/assets/studio/bundle-v2/release-index/${"a".repeat(64)}.json`, { mode: "navigate" }),
+    );
+    expect(route).toBe("passthrough");
+    expect(studioServiceWorkerStrategy(route)).toBe("network-only");
+    expect(studioServiceWorkerCacheBucket(route)).toBeNull();
   });
 
   it("keeps the worker script itself off the cache path", () => {
