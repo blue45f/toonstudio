@@ -31,6 +31,11 @@ registerI18nLocaleEntries("ko", {
   "studio.vrmGenerateStatus.hairSwayNoHair": "흔들릴 헤어가 없어요. 헤어 탭에서 실루엣을 고르면 흔들림을 조율할 수 있습니다.",
   "studio.vrmGenerateStatus.hairSwayNoChains": "이 헤어에는 흔들리는 가닥이 없어요. 더 긴 실루엣을 고르면 흔들림을 조율할 수 있습니다.",
   "studio.vrmGenerateStatus.customExpressionLimit": "커스텀 표정은 {max}개까지 둘 수 있어요.",
+  "studio.vrmGenerateStatus.customExpressionNameEmpty": "이름에는 글자나 숫자가 하나 이상 있어야 해요.",
+  "studio.vrmGenerateStatus.customExpressionNameTooLong": "이름은 {max}자까지 쓸 수 있어요.",
+  "studio.vrmGenerateStatus.customExpressionNameInvalid": "이름에는 글자·숫자·공백과 _ - . 만 쓸 수 있어요.",
+  "studio.vrmGenerateStatus.customExpressionNameReserved": "{name}은(는) VRM 기본 표정 이름이라 쓸 수 없어요.",
+  "studio.vrmGenerateStatus.customExpressionNameDuplicate": "다른 커스텀 표정이 이미 {name} 이름을 쓰고 있어요.",
 });
 
 registerI18nLocaleEntries("en", {
@@ -47,6 +52,11 @@ registerI18nLocaleEntries("en", {
   "studio.vrmGenerateStatus.hairSwayNoHair": "There is no hair to sway. Pick a silhouette in the Hair tab to tune the sway.",
   "studio.vrmGenerateStatus.hairSwayNoChains": "This hairstyle has no swaying strands. Pick a longer silhouette to tune the sway.",
   "studio.vrmGenerateStatus.customExpressionLimit": "You can keep up to {max} custom expressions.",
+  "studio.vrmGenerateStatus.customExpressionNameEmpty": "A name needs at least one letter or number.",
+  "studio.vrmGenerateStatus.customExpressionNameTooLong": "Names can be up to {max} characters long.",
+  "studio.vrmGenerateStatus.customExpressionNameInvalid": "Names can only use letters, numbers, spaces, and _ - .",
+  "studio.vrmGenerateStatus.customExpressionNameReserved": "{name} is a built-in VRM expression name. Pick another name.",
+  "studio.vrmGenerateStatus.customExpressionNameDuplicate": "Another custom expression already uses the name {name}.",
 });
 
 /** 현재 로케일로 상태 문구를 푼다. 키가 없으면 한국어 폴백을 쓰고 `{이름}` 자리표시를 채운다. */

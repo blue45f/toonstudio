@@ -3,7 +3,14 @@ import { Box3, Vector3, type Material, type SkinnedMesh } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
-import { createAvatarForgeState, sanitizeAvatarForgeState, type AvatarForgeState } from "./studio-vrm-avatar-forge";
+import {
+  AVATAR_FORGE_BANG_STYLE_OPTIONS,
+  AVATAR_FORGE_HAIR_LIMITS,
+  AVATAR_FORGE_HAIR_STYLE_OPTIONS,
+  createAvatarForgeState,
+  sanitizeAvatarForgeState,
+  type AvatarForgeState,
+} from "./studio-vrm-avatar-forge";
 import { readAvatarForgeVrmAuthoring, withAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import { STUDIO_VRM_EXPORT_LICENSE_URL } from "./studio-vrm-export-vrm-extension";
 import {
@@ -12,6 +19,8 @@ import {
 } from "./studio-vrm-generate-export-meta";
 import {
   addStudioVrmCustomExpression,
+  renameStudioVrmCustomExpression,
+  STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH,
   STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES,
   STUDIO_VRM_DEFAULT_FACE_MORPHS,
   STUDIO_VRM_EDITABLE_EXPRESSION_PRESETS,
@@ -169,6 +178,25 @@ describe("generate authoring: expressions", () => {
     }
   }, 60_000);
 
+  it("exports a renamed custom expression under the name the author chose", async () => {
+    // VRoid Studio 처럼 다른 앱의 표정 목록에 보일 이름을 정한다. 한글 키도 three-vrm 이 그대로 읽는다.
+    const renamed = renameStudioVrmCustomExpression(addStudioVrmCustomExpression(undefined, "shock").authoring, "shock", "깜짝 놀람");
+    if (!renamed.ok) throw new Error("expected the rename to succeed");
+    const bytes = exportState(withExpressions(base, renamed.authoring));
+
+    const json = gltfJson(bytes);
+    const custom = json.extensions.VRMC_vrm.expressions.custom ?? {};
+    expect(Object.keys(custom)).toEqual(["깜짝 놀람"]);
+    expect(custom["깜짝 놀람"]).toMatchObject({ overrideBlink: "block", overrideMouth: "blend" });
+
+    const vrm = await loadVrmBytes(bytes);
+    expect(vrm.expressionManager?.getExpression("shock")).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const binds = (vrm.expressionManager?.getExpression("깜짝 놀람")?.binds ?? []) as readonly { primitives?: readonly unknown[] }[];
+    expect(binds.length).toBeGreaterThan(0);
+    expect(binds.every((bind) => bind.primitives?.length === 4)).toBe(true);
+  }, 60_000);
+
   it("upgrades a preset's blink override when the edit closes the eyes", () => {
     const sleepyAngry = withExpressions(base, { presets: { angry: { eyeClose: 0.8 } } });
     const preset = gltfJson(exportState(sleepyAngry)).extensions.VRMC_vrm.expressions.preset;
@@ -211,6 +239,10 @@ describe("generate authoring: hair sway", () => {
     const bangs = listStudioVrmGenerateHairSwayChains(base).filter((chain) => chain.group === "bang");
     expect(bangs.length).toBeGreaterThan(1);
     expect(bangs.map((chain) => chain.order)).toEqual(bangs.map((_chain, index) => index + 1));
+    // 화면 왼쪽(-X)이 1번이다. 뒷머리는 id 순(hime-back < hime-back-left)과 화면 순이 갈려 정렬 기준이 뿌리 X 인지까지 잡는다.
+    expect(bangs.map((chain) => chain.id)).toEqual(["bang-blunt-0", "bang-blunt-1", "bang-blunt-2", "bang-blunt-3", "bang-blunt-4"]);
+    expect(listStudioVrmGenerateHairSwayChains(base).filter((chain) => chain.group === "back").map((chain) => chain.id))
+      .toEqual(["hime-back-left", "hime-back", "hime-back-right"]);
     const target = bangs[1];
     if (!target) throw new Error("expected a second bang strand");
 
@@ -222,6 +254,26 @@ describe("generate authoring: hair sway", () => {
       expect(ratio, spring.name).toBeCloseTo(spring.name === `Hair_${target.id}` ? 2 : 1, 9);
     });
     expect(after.some((spring) => spring.name === `Hair_${target.id}`)).toBe(true);
+  });
+
+  it("keeps every strand a character can have within the stored strand cap", () => {
+    // 한 캐릭터의 가닥이 저장 상한보다 많으면 상한에 밀린 가닥의 조정이 버려진다. 슬라이더 끝값까지 훑는다
+    // (울프컷 윗머리 레이어처럼 볼륨을 올려야 생기는 가닥이 있다).
+    let most = 0;
+    for (const style of AVATAR_FORGE_HAIR_STYLE_OPTIONS) {
+      for (const bang of AVATAR_FORGE_BANG_STYLE_OPTIONS) {
+        for (const ahoge of [0, 1]) {
+          for (const length of [AVATAR_FORGE_HAIR_LIMITS.length.min, AVATAR_FORGE_HAIR_LIMITS.length.max]) {
+            for (const volume of [AVATAR_FORGE_HAIR_LIMITS.volume.min, AVATAR_FORGE_HAIR_LIMITS.volume.max]) {
+              const hair = { ...base.hair, style: style.id, bangStyle: bang.id, ahoge, length, volume };
+              most = Math.max(most, listStudioVrmGenerateHairSwayChains(sanitizeAvatarForgeState({ ...base, hair })).length);
+            }
+          }
+        }
+      }
+    }
+    expect(most).toBeGreaterThan(1);
+    expect(most).toBeLessThanOrEqual(STUDIO_VRM_HAIR_SWAY_MAX_CHAINS);
   });
 
   it("lists exactly the groups whose multiplier reaches an exported spring", () => {
@@ -336,6 +388,10 @@ describe("generate authoring: persistence", () => {
       const template = STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES[index % STUDIO_VRM_CUSTOM_EXPRESSION_TEMPLATES.length];
       expressions = addStudioVrmCustomExpression(expressions, template.id).authoring;
     }
+    // 가장 긴 한글 이름도 저장 경계의 문자열 규칙을 지난다.
+    const longest = renameStudioVrmCustomExpression(expressions, "mine", "표정".repeat(STUDIO_VRM_CUSTOM_EXPRESSION_NAME_MAX_LENGTH / 2));
+    if (!longest.ok) throw new Error("expected the rename to succeed");
+    expressions = longest.authoring;
     const hairSway = {
       global: { stiffness: 2, gravity: 2, drag: 1.2 },
       groups: Object.fromEntries(STUDIO_VRM_HAIR_SWAY_GROUP_IDS.map((id) => [id, { stiffness: 0.5, gravity: 1.5, drag: 0.8 }])),
