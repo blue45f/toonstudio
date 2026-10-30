@@ -56,6 +56,7 @@ import {
 } from "./studio-hybrid-dcc-face-modeling-workspace";
 
 import { createStudioFollowMeNormalPath, parseStudioFollowMePath } from "./studio-hybrid-dcc-follow-me-input";
+import { useStudioHybridDccBoundaryChord } from "./useStudioHybridDccBoundaryChord";
 
 import type { StudioPlanarPoint } from "./studio-hybrid-dcc-face-modeling-geometry";
 import type { StudioOffsetDirection } from "./studio-hybrid-dcc-face-modeling-kernel";
@@ -63,7 +64,7 @@ import type { StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore
 
 /** 패널이 문서에 올려 주는 편집 실행기. 없으면 읽기 전용 화면이라 도구가 꺼진다. */
 export interface StudioHybridDccFaceModelingHost {
-  readonly onRunWorkspaceEdit?: (label: string, edit: StudioHybridDccWorkspaceEdit) => void;
+  readonly onRunWorkspaceEdit?: (label: string, edit: StudioHybridDccWorkspaceEdit, canCommit?: () => boolean) => void;
 }
 
 const EMPTY_SELECTION: StudioHybridDccComponentSelection = createStudioHybridDccComponentSelection();
@@ -118,6 +119,7 @@ export function useStudioHybridDccFaceModeling(
   const contextKey = [
     assetId ?? "",
     record?.meshHash ?? "",
+    record?.revision ?? "",
     selection.mode,
     selection.elementIds.join(","),
     run ? "run" : "no-run",
@@ -182,6 +184,9 @@ export function useStudioHybridDccFaceModeling(
         : null;
 
   const active = open && unavailable === null;
+  // host의 busy로 생기는 disabled는 별도 포트에서 처리한다. 확정 중 enabled 세대를 거짓으로 바꾸지 않는다.
+  const boundaryChord = useStudioHybridDccBoundaryChord({ workspace, selection,
+    enabled: open && Boolean(run) && !sculpting && !engaged, disabled: editingDisabled || sculpting, run });
   const distanceTool = tool === "draw" || tool === "follow-me" ? null : tool;
 
   const extent = useMemo(() => (record ? studioFaceModelingExtent(record.mesh) : 1), [record]);
@@ -286,6 +291,7 @@ export function useStudioHybridDccFaceModeling(
   }
 
   const cancel = () => {
+    if (boundaryChord.engaged) { boundaryChord.cancel(); return; }
     if (!engaged || committing) return;
     resetInputs();
     setNotice(bt(
@@ -295,7 +301,7 @@ export function useStudioHybridDccFaceModeling(
   };
   const cancelFromKey = useEffectEvent(cancel);
   useEffect(() => {
-    if (!engaged || committing) return;
+    if ((!engaged && !boundaryChord.engaged) || committing || boundaryChord.applying) return;
     const view = sectionRef.current?.ownerDocument.defaultView ?? window;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
@@ -307,17 +313,20 @@ export function useStudioHybridDccFaceModeling(
     };
     view.addEventListener("keydown", onKeyDown, true);
     return () => view.removeEventListener("keydown", onKeyDown, true);
-  }, [engaged, committing]);
+  }, [engaged, committing, boundaryChord.engaged, boundaryChord.applying]);
 
   /** 입력을 바꿀 수 있는 상태인지. 확정이 진행 중이면 바뀐 입력이 이미 떠난 요청과 어긋나므로 잠근다. */
   const edited = (): boolean => {
-    if (committing) return false;
+    if (committing || boundaryChord.applying) return false;
+    if (boundaryChord.engaged) boundaryChord.clear();
     setApplyRequest(null);
     setNotice("");
     return true;
   };
   // 뷰포트에 넘길 속성: 미리보기가 있으면 결과를 얹은 복사본 작업공간과 선택을 쓰고 편집은 잠근다.
-  const viewportProps: StudioHybridDccViewportProps = preview?.ok
+  const viewportProps: StudioHybridDccViewportProps = boundaryChord.preview
+    ? { ...props, workspace: boundaryChord.preview.workspace, componentSelection: boundaryChord.preview.selection, editingDisabled: true }
+    : preview?.ok
     ? {
       ...props,
       workspace: preview.value.workspace,
@@ -330,12 +339,13 @@ export function useStudioHybridDccFaceModeling(
     sectionRef,
     open,
     setOpen: (next: boolean) => {
-      if (!next) resetInputs();
+      if (!next) { boundaryChord.clear(); resetInputs(); }
       setNotice("");
       setOpenState(next);
     },
     tool,
     setTool: (next: StudioFaceModelingTool) => {
+      boundaryChord.clear();
       resetInputs();
       setNotice("");
       setToolState(next);
@@ -350,10 +360,12 @@ export function useStudioHybridDccFaceModeling(
     /** 지금 선택·설정으로는 쓸 수 없는 이유(면 미선택, 바깥쪽 오프셋 불가 등). 도구·방향 선택은 열려 있다. */
     unusable: unusableMessage,
     selectionCount,
-    engaged,
-    committing,
+    engaged: engaged || boundaryChord.engaged,
+    committing: committing || boundaryChord.applying,
     dragging,
-    notice,
+    notice: boundaryChord.notice || notice,
+    /** viewport 경계 수집과 다음 전용 패널에서 사용할 typed port. 기존 DrawPad는 바꾸지 않는다. */
+    boundaryChord,
     /** 거리 도구 */
     text,
     setText: (next: string) => {
@@ -391,7 +403,7 @@ export function useStudioHybridDccFaceModeling(
       setFrozenText(null);
     },
     /** 입력이 멈추기를 기다리는 중인지, 그리고 기다리지 않고 지금 입력으로 미리보기를 계산한다. */
-    pending,
+    pending: pending || boundaryChord.pending,
     flushPreview: () => setSettledText(inputText),
     /** 따라 만들기의 오브젝트 기준 경로 */
     pathText,
@@ -424,12 +436,13 @@ export function useStudioHybridDccFaceModeling(
       if (!edited()) return;
       setDrawPoints(drawPoints.slice(0, -1));
     },
-    error,
+    error: boundaryChord.error || error,
     hint,
     problemPoints,
     previewSummary,
-    canApply,
+    canApply: boundaryChord.engaged ? boundaryChord.canApply : canApply,
     apply: () => {
+      if (boundaryChord.engaged) { boundaryChord.apply(); return; }
       if (!canApply || !run || !request || !assetId || !record) return;
       const requested = request;
       setApplyRequest({ assetId, meshHash: record.meshHash });

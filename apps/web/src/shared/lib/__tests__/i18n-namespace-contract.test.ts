@@ -49,6 +49,9 @@ const LEGACY_REVERSED_NAMESPACES: readonly string[] = [];
  */
 const GUARDED_NEW_SURFACE_FILES = [
   "apps/web/src/app/AppShell.tsx",
+  // 경계선 면 나누기 신규 도구. 기존 wrapper의 재질 선택은 레거시 쌍 표면으로 유지한다.
+  "apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccBoundaryChordTools.tsx",
+  "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-boundary-chord-messages.ts",
   // 컷 감지·카드뉴스 가져오기 화면(panelImport 네임스페이스). 화면 문구는 키로만 쓰고, 사용자 값은 번역 원문이 아니라 {자리표시} 값으로만
   // 넘긴다(번역 서비스로 파일 이름·행 번호가 나가지 않게 하는 일은 panel-detect 의 시험이 따로 지킨다).
   "apps/web/src/domains/creator/panel-detect/panel-import-i18n.ts",
