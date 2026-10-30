@@ -75,7 +75,6 @@ function ProfileTab({ userId }: { userId: string }) {
     secondaryRoles: [],
     specialties: [],
   }));
-  const [roleProfileLoaded, setRoleProfileLoaded] = useState(false);
   const [roleProfileTouched, setRoleProfileTouched] = useState(false);
   const [profileLoading, setProfileLoading] = useState(Boolean(user?.id));
   const [loadError, setLoadError] = useState(false);
@@ -86,6 +85,7 @@ function ProfileTab({ userId }: { userId: string }) {
     image: string | null;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,19 +99,18 @@ function ProfileTab({ userId }: { userId: string }) {
     const controller = new AbortController();
     setProfileLoading(true);
     setLoadError(false);
-    setRoleProfileLoaded(false);
     setRoleProfileTouched(false);
-    getMyProfile(controller.signal)
+    // 편집 시작·재시도에는 서버의 최신 값을 읽는다. 폼은 조회가 끝날 때까지 잠근다.
+    getMyProfile(controller.signal, true)
       .then((profile) => {
         if (!alive) return;
         const nextName = profile.name || "";
         const nextBio = profile.bio || "";
         const nextImage = profile.image ?? null;
-        setName((prev) => prev || nextName);
-        setBio((prev) => prev || nextBio);
-        setImage((prev) => prev ?? nextImage);
+        setName(nextName);
+        setBio(nextBio);
+        setImage(nextImage);
         setCreatorRoleProfile(profile.creatorRoleProfile);
-        setRoleProfileLoaded(true);
         setLoaded({ name: nextName, bio: nextBio, image: nextImage });
       })
       .catch(() => {
@@ -130,23 +129,40 @@ function ProfileTab({ userId }: { userId: string }) {
   const dirty =
     roleProfileTouched ||
     (loaded !== null &&
-      (name !== loaded.name || bio !== loaded.bio || (image ?? null) !== loaded.image));
+      (name.trim() !== loaded.name || bio.trim() !== loaded.bio || (image ?? null) !== loaded.image));
 
-  const markEdited = useCallback(() => setSaved(false), []);
+  const profileUnavailable = profileLoading || loadError || loaded === null;
+  const editingDisabled = saving || profileUnavailable;
+
+  // 저장되지 않은 입력이 있을 때만 새로고침·창 닫기의 기본 확인을 요청한다.
+  useEffect(() => {
+    if (!dirty) return;
+    const protectDraft = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener("beforeunload", protectDraft);
+    return () => window.removeEventListener("beforeunload", protectDraft);
+  }, [dirty]);
+
+  const markEdited = useCallback(() => {
+    setSaved(false);
+    setError(null);
+  }, []);
 
   const onSave = async () => {
+    // 표시뿐 아니라 이벤트 경계도 막아 조회 실패·중복 제출로 덮어쓰지 않는다.
+    if (savingRef.current || profileUnavailable || !loaded || !name.trim() || !dirty) return;
+    savingRef.current = true;
     setSaving(true);
     setError(null);
     setSaved(false);
     try {
       const updated = await updateMyProfile({
-        name: name.trim(),
-        bio: bio.trim(),
-        image,
-        ...(roleProfileLoaded || roleProfileTouched ? { creatorRoleProfile } : {}),
+        // 변경한 필드만 보내 다른 화면에서 저장한 직무·사진을 덮어쓰지 않는다.
+        ...(name.trim() !== loaded.name ? { name: name.trim() } : {}),
+        ...(bio.trim() !== loaded.bio ? { bio: bio.trim() } : {}),
+        ...(image !== loaded.image ? { image } : {}),
+        ...(roleProfileTouched ? { creatorRoleProfile } : {}),
       });
       setCreatorRoleProfile(updated.creatorRoleProfile);
-      setRoleProfileLoaded(true);
       setRoleProfileTouched(false);
       setLoaded({
         name: updated.name || "",
@@ -160,6 +176,7 @@ function ProfileTab({ userId }: { userId: string }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("account.profile.errorSave"));
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -188,7 +205,11 @@ function ProfileTab({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
+    <form
+      aria-label={bi("공개 프로필 편집", "Edit public profile")}
+      onSubmit={(event) => { event.preventDefault(); void onSave(); }}
+      className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start"
+    >
       <div className="min-w-0 space-y-6">
       {loadError && (
         <div
@@ -217,7 +238,7 @@ function ProfileTab({ userId }: { userId: string }) {
             markEdited();
           }}
           onError={setError}
-          disabled={saving}
+          disabled={editingDisabled}
         />
       </section>
 
@@ -231,11 +252,14 @@ function ProfileTab({ userId }: { userId: string }) {
             type="text"
             value={name}
             maxLength={60}
+            required
+            aria-invalid={nameInvalid}
+            aria-describedby={nameInvalid ? "profile-name-required" : undefined}
             onChange={(e) => {
               setName(e.target.value);
               markEdited();
             }}
-            disabled={saving}
+            disabled={editingDisabled}
             className="w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm text-fg outline-none transition-colors focus:border-accent/70 focus-visible:ring-2 focus-visible:ring-accent/40"
             placeholder={t("account.profile.namePlaceholder")}
           />
@@ -253,7 +277,7 @@ function ProfileTab({ userId }: { userId: string }) {
               setBio(e.target.value);
               markEdited();
             }}
-            disabled={saving}
+            disabled={editingDisabled}
             className="w-full resize-none rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm text-fg outline-none transition-colors focus:border-accent/70 focus-visible:ring-2 focus-visible:ring-accent/40"
             placeholder={t("account.profile.bioPlaceholder")}
           />
@@ -263,15 +287,29 @@ function ProfileTab({ userId }: { userId: string }) {
         </div>
       </section>
 
-      <CreatorRoleProfileEditor
-        value={creatorRoleProfile}
-        onChange={(next) => {
-          setCreatorRoleProfile(next);
-          setRoleProfileTouched(true);
-          markEdited();
-        }}
-        disabled={saving || profileLoading}
-      />
+      <details className="rounded-2xl border border-line bg-panel/40">
+        <summary className="min-h-11 cursor-pointer rounded-2xl px-5 py-3 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          {bi("직무·협업 정보 (선택)", "Role and collaboration (optional)")}
+          <span className="ml-2 text-xs font-normal text-fg-2">
+            {roleProfileTouched
+              ? bi("저장 전", "Unsaved")
+              : creatorRoleProfile.primaryRole
+                ? bi("설정한 직무 확인·수정", "Review or edit your role")
+                : bi("필요할 때 추가하세요", "Add when needed")}
+          </span>
+        </summary>
+        <div className="p-3 pt-0">
+          <CreatorRoleProfileEditor
+            value={creatorRoleProfile}
+            onChange={(next) => {
+              setCreatorRoleProfile(next);
+              setRoleProfileTouched(true);
+              markEdited();
+            }}
+            disabled={editingDisabled}
+          />
+        </div>
+      </details>
 
       {error && (
         <p className="rounded-xl border border-bad/40 bg-bad/10 px-3.5 py-2.5 text-sm text-bad" role="alert">
@@ -281,16 +319,18 @@ function ProfileTab({ userId }: { userId: string }) {
 
       <div className="flex items-center gap-3">
         <button
-          type="button"
-          onClick={onSave}
-          disabled={saving || nameInvalid}
+          type="submit"
+          disabled={editingDisabled || nameInvalid || !dirty}
           className={buttonClass({ variant: "solid", className: "gap-1.5" })}
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : null}
           {saving ? t("account.profile.saving") : saved ? t("account.profile.saved") : t("account.profile.saveButton")}
         </button>
-        {nameInvalid && <span className="text-xs text-fg-3">{t("account.profile.nameRequired")}</span>}
+        {nameInvalid && <span id="profile-name-required" className="text-xs text-fg-3">{t("account.profile.nameRequired")}</span>}
       </div>
+      <p role="status" aria-live="polite" className="text-sm text-fg-2">
+        {saved ? bi("프로필을 저장했어요.", "Your profile has been saved.") : null}
+      </p>
 
       {/* 탈퇴 같은 위험 작업은 프로필 편집과 분리해 설정의 계정 탭에서만 다룬다. */}
       <section className="rounded-2xl border border-line bg-panel/40 p-5">
@@ -325,7 +365,7 @@ function ProfileTab({ userId }: { userId: string }) {
         />
       </aside>
 
-    </div>
+    </form>
   );
 }
 
@@ -390,6 +430,8 @@ export function AccountPage() {
               }}
               type="button"
               role="tab"
+              id={`account-tab-${option.id}`}
+              aria-controls={`account-panel-${option.id}`}
               aria-selected={on}
               tabIndex={on ? 0 : -1}
               onClick={() => setTab(option.id)}
@@ -410,9 +452,16 @@ export function AccountPage() {
         {bi(TAB_PURPOSE[tab].ko, TAB_PURPOSE[tab].en)}
       </p>
 
-      {tab === "posts" && <PostsTab userId={userId} />}
-      {tab === "activity" && <ActivityTab />}
-      {tab === "profile" && <ProfileTab userId={userId} />}
+      <section id="account-panel-posts" role="tabpanel" aria-labelledby="account-tab-posts" hidden={tab !== "posts"}>
+        {tab === "posts" && <PostsTab userId={userId} />}
+      </section>
+      <section id="account-panel-activity" role="tabpanel" aria-labelledby="account-tab-activity" hidden={tab !== "activity"}>
+        {tab === "activity" && <ActivityTab />}
+      </section>
+      {/* 프로필은 탭 이동 중에도 유지하고, 계정이 바뀌면 이전 입력을 폐기한다. */}
+      <section id="account-panel-profile" role="tabpanel" aria-labelledby="account-tab-profile" hidden={tab !== "profile"}>
+        <ProfileTab key={userId} userId={userId} />
+      </section>
     </Container>
   );
 }
