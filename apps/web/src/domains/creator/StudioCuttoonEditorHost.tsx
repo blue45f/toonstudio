@@ -178,7 +178,7 @@ import {
 } from "./studio-retained-stroke-history";
 import { acquireStudioCatalogInputRecoveryRepository, serializeStudioCatalogInputRecovery, restoreStudioCatalogInputRecovery } from "./brush/studio-pending-catalog-input-persistence";
 import { StudioPendingCatalogInput, type StudioBrushSelectionLifecycle } from "./brush/studio-pending-catalog-input";
-import { bindStudioBg3dRenderedImage } from "./studio-cuttoon-editor/studio-cuttoon-bg3d-insert";
+import { bindStudioBg3dRenderedImage, studioBg3dInsertLoader } from "./studio-cuttoon-editor/runtime/loadStudioBg3dInsertRuntime";
 import {
   bindStudioAdvancedFillRun,
   bindStudioLassoFillRun,
@@ -6197,7 +6197,7 @@ export function StudioCuttoonEditor({
       setBg3dInitialDataUrl(undefined);
       setBg3dInitialScene(undefined);
       setBg3dInitialElementId(undefined);
-    }
+    } else studioBg3dInsertLoader.preload();
   }, [bg3dOpen]);
   const bg3dTargetBundleId = useMemo(
     () => masterEditMode
