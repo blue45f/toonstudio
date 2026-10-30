@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { studioOfficeEnvironmentManifest } from "../studio-virtual-space-office-environments";
 import { OFFICE2D_CATEGORY, Office2dPhysicsWorld, office2dCollide, Office2dBody } from "./office2d-physics";
+import { office2dSceneFor } from "./office2d-scene";
 
 function world(): Office2dPhysicsWorld {
   return new Office2dPhysicsWorld({ width: 800, height: 600 });
@@ -58,6 +60,31 @@ describe("Office2dPhysicsWorld", () => {
     }
     expect(actor.x).toBeLessThanOrEqual(400 - 8 - 12 + 0.5);
     expect(actor.x).toBeGreaterThan(370);
+  });
+
+  it("산호 테이블 북쪽으로 접근한 반경 12 캐릭터가 관측 상판 진입점 전에 멈춘다", () => {
+    const manifest = studioOfficeEnvironmentManifest("tidal-atelier");
+    if (!manifest) throw new Error("산호 사무실 manifest가 없습니다.");
+    const physics = new Office2dPhysicsWorld({ width: manifest.width, height: manifest.height });
+    office2dSceneFor(manifest).staticColliders.forEach((rect, index) => {
+      physics.addBody({ id: `static:${index}`, kind: "static",
+        shape: { type: "box", halfWidth: rect.width / 2, halfHeight: rect.height / 2 },
+        x: rect.x + rect.width / 2, y: rect.y + rect.height / 2,
+        category: OFFICE2D_CATEGORY.world, friction: 0.05 });
+    });
+    // 실제 self와 같은 actor 분류로 회전을 고정해 소품의 토크와 아바타 충돌을 구분한다.
+    const actor = physics.addBody({ id: "actor", kind: "dynamic", shape: { type: "circle", radius: 12 },
+      x: 889, y: 560, mass: 60, linearDamping: 0, restitution: 0, friction: 0.1,
+      category: OFFICE2D_CATEGORY.actor, maxSpeed: 600 });
+    let furthestY = actor.y;
+    for (let index = 0; index < 120; index += 1) {
+      physics.setVelocity("actor", 0, 210);
+      physics.step(1 / 60);
+      furthestY = Math.max(furthestY, actor.y);
+    }
+    expect(actor.x).toBeCloseTo(889, 5);
+    expect(actor.y).toBeGreaterThan(583);
+    expect(furthestY).toBeLessThanOrEqual(588.5);
   });
 
   it("벽에 비스듬히 부딪히면 벽을 따라 미끄러진다", () => {
