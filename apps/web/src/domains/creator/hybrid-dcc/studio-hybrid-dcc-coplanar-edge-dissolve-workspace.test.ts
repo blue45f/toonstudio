@@ -474,6 +474,77 @@ describe("공유 모서리 치유의 원본·후보·발행 수명", () => {
     expect(next.generation).toBe(2); expect(canCommitStudioHybridDccCoplanarEdgeDissolve(next)).toBe(true);
   });
 
+  it("원본의 추가 UV 채널은 hash가 같아도 복사 전에 거부하고 compute와 history를 보존한다", async () => {
+    const producer = vi.fn(compute), h = harness(producer), mesh = record(h.initial.workspace).mesh;
+    const knownHash = hashStudioEditableMesh(mesh), canonical = serializeStudioEditableMesh(mesh);
+    const additional = [{ ...need(mesh.uvLayer, "기존 실제 UV 레이어가 없습니다."), name: "second-uv" }];
+    Object.defineProperty(mesh, "uvLayers", { value: additional, enumerable: true, configurable: true });
+    expect(Object.hasOwn(mesh, "uvLayers")).toBe(true);
+    expect(hashStudioEditableMesh(mesh)).toBe(knownHash);
+    expect(record(h.initial.workspace).meshHash).toBe(knownHash);
+    const before = controls(h.initial.workspace);
+    await expectFailure(() => h.prepare(), "unsupported-uv");
+    expect(producer).not.toHaveBeenCalled();
+    expect(controls(h.initial.workspace)).toEqual(before);
+    expect(h.initial.workspace.session.undoStack).toBe(before.undo);
+    expect(h.initial.workspace.session.redoStack).toBe(before.redo);
+    expect(serializeStudioEditableMesh(mesh)).toEqual(canonical);
+    expect(Object.getOwnPropertyDescriptor(mesh, "uvLayers")?.value).toBe(additional);
+  });
+
+  it("producer 결과의 추가 법선 채널을 직렬화로 버리지 않고 private plan 발급 전에 거부한다", async () => {
+    const producer: Preparation["compute"] = async (source, request) => {
+      const result = successful(dissolveStudioHybridDccCoplanarEdges(source, request));
+      const additional = result.mesh.vertices.map(() => ({ x: 0, y: 0, z: 1 }));
+      Object.defineProperty(result.mesh, "normalLayer", { value: additional, enumerable: true, configurable: true });
+      expect(Object.hasOwn(result.mesh, "normalLayer")).toBe(true);
+      expect(hashStudioEditableMesh(result.mesh)).toBe(result.resultMeshHash);
+      return result;
+    };
+    const observed = vi.fn(producer), h = harness(observed), before = snapshot(h.initial.workspace);
+    await expectFailure(() => h.prepare(), "unsupported-uv");
+    expect(observed).toHaveBeenCalledTimes(1);
+    expectUnchanged(h.initial.workspace, before);
+  });
+
+  it("compute 대기 중 원본에 추가된 채널도 같은 hash의 늦은 결과로 덮지 않는다", async () => {
+    const started = deferred<void>(), release = deferred<void>();
+    const producer: Preparation["compute"] = async (source, request) => {
+      started.resolve(undefined); await release.promise;
+      return dissolveStudioHybridDccCoplanarEdges(source, request);
+    };
+    const observed = vi.fn(producer), h = harness(observed), pending = h.prepare();
+    await started.promise;
+    const mesh = record(h.initial.workspace).mesh, knownHash = hashStudioEditableMesh(mesh);
+    const additional = [{ ...need(mesh.uvLayer, "기존 실제 UV 레이어가 없습니다."), name: "late-uv" }];
+    Object.defineProperty(mesh, "uvLayers", { value: additional, enumerable: true, configurable: true });
+    expect(hashStudioEditableMesh(mesh)).toBe(knownHash);
+    const afterExternalChange = controls(h.initial.workspace);
+    release.resolve(undefined);
+    await expectFailure(() => pending, "unsupported-uv");
+    expect(observed).toHaveBeenCalledTimes(1);
+    expect(controls(h.initial.workspace)).toEqual(afterExternalChange);
+    expect(h.initial.workspace.session.undoStack).toBe(afterExternalChange.undo);
+    expect(h.initial.workspace.session.redoStack).toBe(afterExternalChange.redo);
+    expect(Object.getOwnPropertyDescriptor(mesh, "uvLayers")?.value).toBe(additional);
+  });
+
+  it("plan 발급 후 추가된 비열거 법선 채널도 preview·commit·발행 guard에서 거부한다", async () => {
+    const h = harness(), plan = await h.prepare(), mesh = record(h.initial.workspace).mesh;
+    const knownHash = hashStudioEditableMesh(mesh), additional = mesh.vertices.map(() => ({ x: 0, y: 0, z: 1 }));
+    Object.defineProperty(mesh, "normalLayer", { value: additional, enumerable: false, configurable: true });
+    expect(Object.hasOwn(mesh, "normalLayer")).toBe(true);
+    expect(hashStudioEditableMesh(mesh)).toBe(knownHash);
+    const afterExternalChange = controls(h.initial.workspace);
+    expect(canCommitStudioHybridDccCoplanarEdgeDissolve(plan)).toBe(false);
+    await expectFailure(() => previewStudioHybridDccCoplanarEdgeDissolve(h.initial, plan), "unsupported-uv");
+    await expectFailure(() => commitStudioHybridDccCoplanarEdgeDissolve(h.initial, plan), "unsupported-uv");
+    expect(controls(h.initial.workspace)).toEqual(afterExternalChange);
+    expect(h.initial.workspace.session.undoStack).toBe(afterExternalChange.undo);
+    expect(h.initial.workspace.session.redoStack).toBe(afterExternalChange.redo);
+    expect(Object.getOwnPropertyDescriptor(mesh, "normalLayer")?.value).toBe(additional);
+  });
+
   it.each(["hash", "vertices", "removed", "remap", "uv"])("producer의 잘못된 %s 결과를 private plan으로 발급하지 않는다", async (kind) => {
     const producer: Preparation["compute"] = async (source, request) => {
       const result = successful(dissolveStudioHybridDccCoplanarEdges(source, request));

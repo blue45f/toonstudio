@@ -77,7 +77,10 @@ describe("Studio lazy i18n assets", () => {
       // 1_736 → 1_794: 선으로 면 나누기 UI 20키·오류 30키·안내 8키를
       // studio.bg3dScene.boundaryChord.* 정본에 추가했다(2026-10-30).
       // 정상 동기화로 75개 팩 모두 같은 58키를 포함한다.
-      expect(Object.keys(dictionary ?? {})).toHaveLength(1_794);
+      // 1_794 → 1_841: 공유 모서리 치유 UI 15키·오류 24키·안내 8키를
+      // studio.bg3dScene.coplanarEdgeHeal.* 정본에 추가했다(2026-10-31).
+      // 기존 키를 유지하고 정상 동기화된 팩의 정확한 총 개수를 검사한다.
+      expect(Object.keys(dictionary ?? {})).toHaveLength(1_841);
     }
     // The mobile dock used to hardcode Korean labels; every pack must now carry the keys that
     // replaced them, so an `en` viewport cannot fall back to Korean chrome.
