@@ -114,7 +114,7 @@ export interface StudioShortcutHandlerContext {
   readonly clearPaintRetouchStrokePreview: () => void;
   readonly clearPolyLassoDraft: () => void;
   readonly closeViewToolWithFocus: () => void;
-  readonly collaborationDocumentLocked: boolean;
+  readonly collaborationDocumentLocked: boolean; readonly scopedDraftSaveAvailable?: boolean;
   readonly collaborationLockMessage: () => string;
   readonly color: string;
   readonly commentPinArmed: boolean;
@@ -517,7 +517,7 @@ export function buildStudioShortcutHandler(
         && !e.repeat
       ) {
         e.preventDefault();
-        if (collaborationDocumentLocked) {
+        if (collaborationDocumentLocked && !ctx.scopedDraftSaveAvailable) {
           announceDrawingShortcut({ text: collaborationLockMessage() });
         } else if (saving) {
           announceDrawingShortcut({ code: "alreadySaving" });

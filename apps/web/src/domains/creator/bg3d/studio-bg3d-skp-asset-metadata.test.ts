@@ -166,7 +166,7 @@ describe("buildStudioBg3dSkpAssetMetadata", () => {
 
   it("falls back to a generic name when the file name breaks the storage text rules", () => {
     const record = buildStudioBg3dSkpAssetMetadata(asset({ name: "<b>room</b>" }), createSkpReportFixture(), 1);
-    expect(record?.name).toBe("SketchUp 모델");
+    expect(record?.name).toBe("가져온 3D 모델");
   });
 
   it("returns null for an unusable hash", () => {

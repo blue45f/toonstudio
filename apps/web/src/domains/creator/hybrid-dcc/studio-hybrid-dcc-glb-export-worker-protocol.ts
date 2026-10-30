@@ -57,6 +57,7 @@ const ISSUE_CODES = new Set<StudioHybridDccGlbIssueCode>([
   "stable-id-counter-invalid",
   "position-non-finite",
   "position-float32-overflow",
+  "position-float32-collapse",
   "crease-invalid",
   "crease-unsupported",
   "face-property-invalid",
@@ -82,11 +83,13 @@ const ISSUE_CODES = new Set<StudioHybridDccGlbIssueCode>([
   "face-collinear-corner-omitted",
   "triangulation-failed",
   "normal-unresolved",
+  "uv-coordinate-invalid",
   "index-overflow",
   "material-slot-metadata-only",
   "diagnostic-overflow",
   "container-write-failed",
   "container-validation-failed",
+  "surface-budget-exceeded",
 ]);
 
 export interface StudioHybridDccGlbExportWorkerRequest {
@@ -157,16 +160,17 @@ function isWithinCumulativeInputBudget(
   let faces = 0;
   let bytes = 0;
   for (const payload of payloads) {
+    const materialBytes = payload.manifest.toonMaterials === undefined ? 0 : new TextEncoder().encode(JSON.stringify(payload.manifest.toonMaterials)).byteLength;
     if (
       payload.manifest.counts.vertices > STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_TOTAL_VERTICES - vertices
       || payload.manifest.counts.halfEdges > STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_TOTAL_HALF_EDGES - halfEdges
       || payload.manifest.counts.faces > STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_TOTAL_FACES - faces
-      || payload.buffer.byteLength > STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_INPUT_BYTES - bytes
+      || payload.buffer.byteLength + materialBytes > STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_INPUT_BYTES - bytes
     ) return false;
     vertices += payload.manifest.counts.vertices;
     halfEdges += payload.manifest.counts.halfEdges;
     faces += payload.manifest.counts.faces;
-    bytes += payload.buffer.byteLength;
+    bytes += payload.buffer.byteLength + materialBytes;
   }
   return true;
 }
@@ -279,12 +283,14 @@ function isReport(value: unknown, expectedStatus: "blocked" | "exported"): value
       "sourceRevision",
       "sourceHash",
       "meshSchemaRevision",
+      ...(Object.hasOwn(value.source, "toonMaterialsHash") ? ["toonMaterialsHash"] : []),
     ])
     || value.source.authority !== "editable-half-edge-mesh"
     || !isBoundedString(value.source.assetId, 0, 160)
     || !isSafeInteger(value.source.sourceRevision)
     || !isBoundedString(value.source.sourceHash, 0, 160)
     || value.source.meshSchemaRevision !== EDITABLE_MESH_REVISION
+    || Object.hasOwn(value.source, "toonMaterialsHash") && (typeof value.source.toonMaterialsHash !== "string" || !/^toon-slots:sha256:[0-9a-f]{64}$/u.test(value.source.toonMaterialsHash))
     || !isIssueList(value.errors, "error")
     || !isIssueList(value.losses, "loss")
     || !isIssueList(value.warnings, "warning")

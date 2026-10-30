@@ -20,6 +20,7 @@ import {
   encodeStudioCrdtBinaryEnvelope,
   reassembleStudioCrdtBinarySyncEnvelope,
 } from "@/shared/lib/studio-crdt-binary-envelope";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
 export const STUDIO_CRDT_BINARY_WIRE_VERSION = 1 as const;
 export const STUDIO_CRDT_BINARY_WIRE_FORMAT = "binary-v1" as const;
@@ -62,6 +63,7 @@ export interface StudioCrdtBinarySyncRequest {
 }
 
 export interface StudioCrdtBinaryUpdateRequest {
+  writeContext?: StudioScopedWriteContext;
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   wireVersion: typeof STUDIO_CRDT_BINARY_WIRE_VERSION;
   workId: string;
@@ -246,6 +248,7 @@ export function createStudioCrdtBinaryUpdateRequest(
     workId: request.workId,
     updateId: request.updateId,
     clientSequence: request.clientSequence,
+    ...(request.writeContext ? { writeContext: structuredClone(request.writeContext) } : {}),
     update: encodeStudioCrdtBinaryEnvelope(
       "update",
       decodeStudioCrdtUpdate(request.update)

@@ -16,6 +16,8 @@ import {
 } from "./generate-creator-bundle-theme-packs.mjs";
 import {
   HOLD_PUBLIC_LABEL,
+  loadPackRightsLedger,
+  packRightsProjection,
   packRightsKey,
   requiredEvidenceKinds,
 } from "./lib/creator-bundle-pack-rights.mjs";
@@ -37,10 +39,15 @@ const firstIngest = (defs, title) => {
   assert.ok(def?.ingest.length, `생성기 정의에 인제스션 폴더가 있는 ${title}가 없습니다.`);
   return def.ingest[0];
 };
+const localIngest = (title, id) => {
+  assert.ok(CATALOG_PACKS.find((candidate) => candidate.title === title)?.ingest.includes(id), title);
+  return id;
+};
 const INGEST = {
   oldTown: firstIngest(CATALOG_PACKS, "Old Town — Courtyards"),
   pirate: firstIngest(CATALOG_PACKS, "Pirate Island"),
-  smallProps: firstIngest(CATALOG_PACKS, "Small Props Pack"),
+  smallProps: localIngest("Small Props Pack", "cbv1-ingest-local-small-props-pack"),
+  cemetery: localIngest("Cemetery Statues Pack", "cbv1-ingest-local-cemetery-statues"),
   characters1: firstIngest(CROWD_PACKS, "Characters 1"),
 };
 
@@ -108,7 +115,7 @@ function withFixtureTree(run) {
       assets,
     };
     const themesDoc = { themes: [{ theme: "city", label: "도시" }, { theme: "desert-tropical", label: "사막·열대" }] };
-    return run({ root, manifestV2, themesDoc, files });
+    return run({ root, manifestV2, themesDoc, files, add });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -150,6 +157,33 @@ test("원장이 열어 준 팩만 packs·assets에 들어가고 hold 팩은 pend
     assert.equal(output.packs.reduce((sum, pack) => sum + pack.placeable, 0), output.assets.length);
     assert.equal(output.totals.crowdGlbAssets, 0);
     assert.ok(output.assets.every((asset) => output.packs[asset.pack] !== undefined));
+  });
+});
+
+test("Cemetery·Small Props의 새 로컬 입력은 기존 owner에만 연결하고 옛 인제스션 ID를 보존한다", () => {
+  assert.deepEqual(CATALOG_PACKS.find((pack) => pack.title === "Cemetery Statues Pack").ingest, [
+    "cbv1-ingest-038-cemeterystatuespack", "cbv1-ingest-039-cemeterystatuespack-godot-2026-09-29", INGEST.cemetery,
+  ]);
+  assert.deepEqual(CATALOG_PACKS.find((pack) => pack.title === "Small Props Pack").ingest, ["cbv1-ingest-285-small-props-pack", INGEST.smallProps]);
+  withFixtureTree(({ root, manifestV2, themesDoc, add }) => {
+    add(INGEST.cemetery, "statue", "cemetery-statue");
+    manifestV2.totals.assets = manifestV2.assets.length;
+    const ledger = holdAllLedger();
+    openPack(ledger, "Cemetery Statues Pack"); openPack(ledger, "Small Props Pack");
+    const { output } = buildThemePacks({ manifestV2, themesDoc, assetRoot: root, ledger });
+    assert.deepEqual(output.packs.map((pack) => pack.title), ["Cemetery Statues Pack", "Small Props Pack"]);
+    assert.equal(output.assets.length, 3);
+    for (const [title, catalogId, ingestId, files] of [
+      ["Cemetery Statues Pack", "cbv1-012-cemetery-statues", INGEST.cemetery, 1],
+      ["Small Props Pack", "cbv1-077-small-props-pack", INGEST.smallProps, 2],
+    ]) {
+      const index = output.packs.findIndex((pack) => pack.title === title), pack = output.packs[index];
+      assert.deepEqual(pack.catalogIds, [catalogId]);
+      assert.equal(pack.rights.status, "licensed");
+      const assets = output.assets.filter((asset) => asset.pack === index);
+      assert.equal(assets.length, files);
+      assert.ok(assets.every((asset) => asset.path.startsWith(ingestId + "/native/")));
+    }
   });
 });
 
@@ -362,9 +396,11 @@ test("CLI는 잘못된 원장이면 아무것도 쓰지 않고 종료 코드 2�
   });
 });
 
-test("로컬 실측 8팩의 메타데이터 1764개는 유지하되 원본 모델과 배포 인덱스를 공개 경로에 만들지 않는다", () => {
+test("역사 CC0 8팩과 추가 licensed 2팩의 1929개 메타데이터를 대조하고 원본·배포 인덱스를 공개하지 않는다", () => {
   const publicRoot = resolve(dirname(SCRIPT), "../apps/web/public");
   const output = JSON.parse(readFileSync(join(publicRoot, "assets/3d/environments/bundle-v1/theme-packs.json"), "utf8"));
+  const config = JSON.parse(readFileSync(new URL("../config/creator-bundle-local-ingest.json", import.meta.url), "utf8"));
+  const ledger = loadPackRightsLedger();
   const verifiedPacks = new Map([
     ["Cute Park Pack", { ingestId: "cbv1-ingest-local-cute-park", count: 103 }],
     ["Cute Dungeon Megapack", { ingestId: "cbv1-ingest-local-cute-dungeon", count: 320 }],
@@ -374,22 +410,42 @@ test("로컬 실측 8팩의 메타데이터 1764개는 유지하되 원본 모�
     ["Cartoon Car Megapack", { ingestId: "cbv1-ingest-local-cartoon-car-megapack", count: 180 }],
     ["Cartoon Cars 2", { ingestId: "cbv1-ingest-local-cartoon-cars-2", count: 453 }],
     ["Army Pack", { ingestId: "cbv1-ingest-local-army-pack", count: 309 }],
+    ["Cemetery Statues Pack", { ingestId: "cbv1-ingest-local-cemetery-statues", count: 50, licensed: true }],
+    ["Small Props Pack", { ingestId: "cbv1-ingest-local-small-props-pack", count: 115, licensed: true }],
   ]);
-  assert.equal(output.totals.placeableAssets, 1764);
-  assert.equal(output.assets.length, 1764);
+  assert.equal(config.packs.length, 10);
+  assert.equal(config.expected.files, 1929);
+  assert.equal(output.totals.placeableAssets, config.expected.files);
+  assert.equal(output.assets.length, config.expected.files);
+  assert.equal(output.assets.reduce((sum, asset) => sum + asset.bytes, 0), config.expected.bytes);
   assert.equal(output.inServiceOnly, true);
   assert.equal(output.downloadable, false);
   for (const [title, expected] of verifiedPacks) {
     const packIndex = output.packs.findIndex((pack) => pack.title === title);
     assert.ok(packIndex >= 0, title);
     const pack = output.packs[packIndex];
-    assert.deepEqual(pack.ingestPackIds, [expected.ingestId], title);
+    const intake = config.packs.find((entry) => entry.ingestId === expected.ingestId);
+    assert.ok(intake, title);
+    const definition = CATALOG_PACKS.find((entry) => entry.catalogIds.includes(intake.catalogId) && entry.ingest.includes(expected.ingestId));
+    assert.ok(definition, title);
+    assert.deepEqual(pack.catalogIds, definition.catalogIds, title);
+    assert.deepEqual(pack.ingestPackIds, expected.licensed ? definition.ingest : [expected.ingestId], title);
+    assert.equal(intake.files, expected.count, title);
     assert.equal(pack.placeable, expected.count, title);
-    assert.equal(pack.rights.status, "public-domain", title);
-    assert.equal(pack.rights.licenseName, "CC0-1.0", title);
-    assert.match(pack.note, /3D 모델 서빙·배포는 수행하지 않았다/u, title);
+    if (expected.licensed) {
+      const entry = ledger.packs.find((candidate) => candidate.catalogIds.includes(intake.catalogId));
+      assert.ok(entry, title);
+      assert.equal(pack.rights.status, "licensed", title);
+      assert.deepEqual(pack.rights, packRightsProjection(entry), title);
+      assert.match(pack.note, /3D 서빙·배포를 완료한 것은 아니다/u, title);
+    } else {
+      assert.equal(pack.rights.status, "public-domain", title);
+      assert.equal(pack.rights.licenseName, "CC0-1.0", title);
+      assert.match(pack.note, /3D 모델 서빙·배포는 수행하지 않았다/u, title);
+    }
     const assets = output.assets.filter((asset) => asset.pack === packIndex);
     assert.equal(assets.length, expected.count, title);
+    assert.equal(assets.reduce((sum, asset) => sum + asset.bytes, 0), intake.bytes, title);
     for (const asset of assets) {
       assert.ok(asset.id.startsWith(`${expected.ingestId}-`), asset.id);
       assert.ok(asset.path.startsWith(`${expected.ingestId}/native/`), asset.id);

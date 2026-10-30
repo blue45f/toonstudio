@@ -1,16 +1,22 @@
 import type { StudioSharedDocument } from "../studio-shared-document-client";
+import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import type {
   StudioReviewCaptureInput,
   StudioReviewCaptureIntent,
 } from "../virtual-space/studio-virtual-space-review-producer";
 import type { StudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-subject";
+import type { StudioReviewCaptureSourceRevision } from "./studio-review-capture-source";
 
 export interface StudioReviewCaptureContext {
   readonly workId: string | null;
   /** Auth, document and access generations; never a bearer token. */
   readonly scopeKey: string;
   readonly generation: number | string;
+  /** 권한 재확인 중 고정할 편집기 세대이며 purpose 갱신은 포함하지 않는다. */
+  readonly sourceGeneration?: number | string;
   readonly available: boolean;
+  readonly sourceRevision?: StudioReviewCaptureSourceRevision;
+  readonly writeContext?: StudioScopedWriteContext;
 }
 export interface StudioReviewCaptureProjection {
   readonly doc: Record<string, unknown>;
@@ -41,6 +47,7 @@ export const EMPTY_STUDIO_REVIEW_CAPTURE: StudioReviewCaptureSnapshot = Object.f
 });
 
 export interface StudioReviewCaptureBridgeDependencies {
+  refreshPurpose?(): Promise<void>;
   getContext(): StudioReviewCaptureContext;
   readSaved(workId: string, signal: AbortSignal): Promise<StudioSharedDocument>;
   projectRuntime(saved: StudioSharedDocument): Promise<StudioReviewCaptureProjection>;
@@ -69,9 +76,14 @@ interface SourcePin {
 class CaptureChangedError extends Error {}
 class CaptureUnavailableError extends Error {}
 
+function sameSourceContext(a: StudioReviewCaptureContext, b: StudioReviewCaptureContext) {
+  return a.workId === b.workId && a.scopeKey === b.scopeKey
+    && (a.sourceGeneration ?? a.generation) === (b.sourceGeneration ?? b.generation)
+    && JSON.stringify(a.sourceRevision) === JSON.stringify(b.sourceRevision);
+}
 function sameContext(a: StudioReviewCaptureContext, b: StudioReviewCaptureContext) {
-  return b.available && a.workId === b.workId && a.scopeKey === b.scopeKey
-    && a.generation === b.generation;
+  return b.available && sameSourceContext(a, b) && a.generation === b.generation
+    && JSON.stringify(a.writeContext) === JSON.stringify(b.writeContext);
 }
 function retryableRequest(error: unknown) {
   return typeof error === "object" && error !== null
@@ -108,11 +120,14 @@ export class StudioReviewCaptureBridge {
     }
   }
   private async readPin(epoch: number, signal: AbortSignal): Promise<SourcePin> {
+    const source = this.dependencies.getContext();
+    await this.dependencies.refreshPurpose?.(); this.assertCurrent(epoch);
     const context = this.dependencies.getContext();
+    if (!sameSourceContext(source, context)) throw new CaptureChangedError();
     if (!context.available || !context.workId) throw new CaptureUnavailableError();
     const saved = await this.dependencies.readSaved(context.workId, signal);
     this.assertCurrent(epoch, context);
-    if (saved.workId !== context.workId || !saved.capabilities.edit
+    if (saved.workId !== context.workId || (!saved.capabilities.edit && !context.writeContext)
       || saved.document.format !== "cuttoon") throw new CaptureUnavailableError();
     const runtime = await this.dependencies.projectRuntime(saved);
     this.assertCurrent(epoch, context);
@@ -120,6 +135,8 @@ export class StudioReviewCaptureBridge {
       this.dependencies.digest(saved.document.doc), this.dependencies.digest(runtime.doc),
     ]);
     this.assertCurrent(epoch, context);
+    if (context.sourceRevision && (context.sourceRevision.rootGraphHash !== digest
+      || context.sourceRevision.rootGraphHash !== runtimeDigest)) throw new CaptureChangedError();
     const savedPages = saved.document.doc.pagesList;
     const matches = digest === runtimeDigest && runtime.title === saved.document.title
       && runtime.description === saved.document.description
@@ -176,6 +193,8 @@ export class StudioReviewCaptureBridge {
         sourceServerRevision: pin.saved.revision, sourceContentDigest: pin.digest,
         pageCount: pin.pageCount, title: pin.saved.document.title,
         deviceId: this.dependencies.getDeviceId(), createdAt: this.dependencies.now(),
+        ...(pin.context.sourceRevision ? { sourceRevision: pin.context.sourceRevision } : {}),
+        ...(pin.context.writeContext ? { writeContext: structuredClone(pin.context.writeContext) } : {}),
       });
       this.update({ sourceRevision: pin.saved.revision, title: pin.saved.document.title });
       await this.continueCapture(epoch, abort.signal);

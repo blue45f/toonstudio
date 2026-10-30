@@ -11,12 +11,15 @@ import { createStrokeSession } from "./stroke-session";
 
 import type { BrushDab, BrushSettings, PaintLayer, PaintUndoToken, PartRole } from "../contracts";
 import type { MutablePaintLayer } from "./paint-layer";
+import type { PaintPressureMode } from "./paint-pressure";
 import type { StrokeSession } from "./stroke-session";
 
 export interface PaintSessionState {
   readonly brush: BrushSettings;
   readonly activePart: PartRole;
   readonly wrap: boolean;
+  readonly pressureMode: PaintPressureMode;
+  readonly bodyLineMaskEnabled: boolean;
   /** 생성된 레이어(부위 → 레이어). 참조는 변경마다 새 Map. */
   readonly layers: ReadonlyMap<PartRole, PaintLayer>;
   readonly strokeActive: boolean;
@@ -29,6 +32,8 @@ export interface PaintSessionOptions {
   readonly activePart?: PartRole;
   readonly wrap?: boolean;
   readonly layerSize?: number;
+  readonly pressureMode?: PaintPressureMode;
+  readonly bodyLineMaskEnabled?: boolean;
 }
 
 export interface PaintSession {
@@ -37,6 +42,8 @@ export interface PaintSession {
   setBrush(patch: Partial<BrushSettings>): void;
   setActivePart(part: PartRole): void;
   setWrap(wrap: boolean): void;
+  setPressureMode(mode: PaintPressureMode): void;
+  setBodyLineMaskEnabled(enabled: boolean): void;
   /** 부위 레이어(없으면 생성) */
   layer(part: PartRole): MutablePaintLayer;
   /** 활성 부위 레이어에 스트로크를 시작한다. 진행 중인 스트로크가 있으면 먼저 닫고 그 토큰을 버린다(호출 측 오류). */
@@ -74,6 +81,8 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
   let brush = clampBrush(DEFAULT_BRUSH, options.brush ?? {});
   let activePart: PartRole = options.activePart ?? PAINTABLE_PART_ROLES[0] ?? "skin";
   let wrap = options.wrap ?? true;
+  let pressureMode: PaintPressureMode = options.pressureMode ?? "constant";
+  let bodyLineMaskEnabled = options.bodyLineMaskEnabled ?? true;
   let stroke: StrokeSession | null = null;
   let version = 0;
   let snapshot: PaintSessionState | null = null;
@@ -95,7 +104,7 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
   return {
     getState() {
       if (!snapshot) {
-        snapshot = { brush, activePart, wrap, layers: new Map(layers), strokeActive: stroke !== null, version };
+        snapshot = { brush, activePart, wrap, pressureMode, bodyLineMaskEnabled, layers: new Map(layers), strokeActive: stroke !== null, version };
       }
       return snapshot;
     },
@@ -120,6 +129,14 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
       wrap = next;
       invalidate();
     },
+    setPressureMode(next) {
+      pressureMode = next;
+      invalidate();
+    },
+    setBodyLineMaskEnabled(next) {
+      bodyLineMaskEnabled = next;
+      invalidate();
+    },
     layer(part) {
       const created = !layers.has(part);
       const layer = ensureLayer(part);
@@ -129,7 +146,7 @@ export function createPaintSession(options: PaintSessionOptions = {}): PaintSess
     beginStroke(dab, part = activePart) {
       if (stroke) stroke.end();
       const layer = ensureLayer(part);
-      stroke = createStrokeSession(layer, brush, { wrap });
+      stroke = createStrokeSession(layer, brush, { wrap, pressureMode });
       stroke.begin(dab);
       invalidate();
     },

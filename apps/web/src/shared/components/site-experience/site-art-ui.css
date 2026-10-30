@@ -395,6 +395,23 @@
   opacity: 0.96;
 }
 
+@media (max-width: 639px), (pointer: coarse) {
+  .nb-site-spotlight__lenses {
+    max-width: 100%;
+  }
+
+  .nb-site-spotlight__lens-btn,
+  .nb-site-spotlight__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* Subnav Illustrated miniature visual badge */
 .nb-site-subnav-brand {
   display: inline-flex;

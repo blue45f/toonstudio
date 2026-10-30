@@ -24,6 +24,7 @@ import type { SkewFields } from "../studio-skew";
 
 /** 모든 요소가 공유하는 레이어 메타(El 인터섹션과 동일 필드). */
 export interface SvgElMeta {
+  frameClipId?: string;
   name?: string;
   hidden?: boolean;
   locked?: boolean;

@@ -28,6 +28,13 @@ import {
 } from "./studio-bg3d-scene-document";
 
 import type { StudioProjectFile } from "../studio-project-file";
+import {
+  resolveStudioBg3dModelExportProvenance,
+  assertStudioBg3dModelExportReceiptCurrent,
+  assertStudioBg3dModelFileExportAllowed,
+  type StudioBg3dModelExportProvenanceReceipt,
+} from "./studio-bg3d-model-export-provenance";
+import { fingerprintStudioBg3dModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
 
 /**
  * Private SQLite/OPFS storage identities stay outside project and archive documents. This bridge resolves a
@@ -39,6 +46,7 @@ export type StudioBg3dProjectLibraryErrorCode =
   | "export-model-missing"
   | "export-model-mismatch"
   | "export-model-untrusted"
+  | "export-model-restricted"
   | "import-attachment-missing"
   | "import-attachment-mismatch"
   | "import-project-mismatch";
@@ -47,6 +55,7 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dProjectLibraryErrorCode, string>
   "export-model-missing": "프로젝트의 3D 모델을 로컬 검증 라이브러리에서 찾을 수 없습니다.",
   "export-model-mismatch": "프로젝트의 3D 모델 정보가 로컬 검증 자산과 일치하지 않습니다.",
   "export-model-untrusted": "프로젝트의 3D 모델이 내보내기 안전 검사를 통과하지 못했습니다.",
+  "export-model-restricted": "파일 내보내기를 허용하지 않은 모델이 있어 archive를 만들지 않았습니다. 서비스 내 장면 편집과 적용은 계속할 수 있습니다.",
   "import-attachment-missing": "프로젝트 archive에 필요한 3D 모델 파일이 없습니다.",
   "import-attachment-mismatch": "프로젝트 archive의 3D 모델 정보가 장면 문서와 일치하지 않습니다.",
   "import-project-mismatch": "검증한 프로젝트와 복구할 3D 장면 원본이 일치하지 않습니다.",
@@ -70,6 +79,9 @@ export interface StudioBg3dProjectLibraryDependencies {
   readonly importAtomicallyWithDisposition: typeof importVerifiedBg3dModelsAtomicallyWithDisposition;
   readonly compensateImported: typeof compensateImportedBg3dModelsIfCreationMatches;
   readonly buildArchive: typeof buildStudioProjectArchive;
+  readonly resolveProvenance: typeof resolveStudioBg3dModelExportProvenance;
+  readonly assertProvenanceCurrent: typeof assertStudioBg3dModelExportReceiptCurrent;
+  readonly assertFileExportAllowed: typeof assertStudioBg3dModelFileExportAllowed;
 }
 
 export interface PrepareStudioBg3dProjectArchiveOptions {
@@ -92,6 +104,9 @@ const DEFAULT_DEPENDENCIES: StudioBg3dProjectLibraryDependencies = Object.freeze
   importAtomicallyWithDisposition: importVerifiedBg3dModelsAtomicallyWithDisposition,
   compensateImported: compensateImportedBg3dModelsIfCreationMatches,
   buildArchive: buildStudioProjectArchive,
+  resolveProvenance: resolveStudioBg3dModelExportProvenance,
+  assertProvenanceCurrent: assertStudioBg3dModelExportReceiptCurrent,
+  assertFileExportAllowed: assertStudioBg3dModelFileExportAllowed,
 });
 
 function resolveDependencies(
@@ -134,12 +149,19 @@ function copyReferences(
  * Resolves every scene hash before validation starts. Missing or conflicting library rows therefore
  * fail before any archive builder is invoked, and no private IndexedDB id can enter the result.
  */
+async function assertArchiveProvenanceCurrent(receipts: readonly StudioBg3dModelExportProvenanceReceipt[],
+  dependencies: StudioBg3dProjectLibraryDependencies): Promise<void> {
+  try {
+    for (const receipt of receipts) await dependencies.assertProvenanceCurrent(receipt);
+  } catch { throw new StudioBg3dProjectLibraryError("export-model-untrusted"); }
+}
+
 async function prepareAttachmentsFromPlan(
   plan: StudioBg3dProjectArchivePlan,
   options: PrepareStudioBg3dProjectArchiveOptions,
   dependencies: StudioBg3dProjectLibraryDependencies,
-): Promise<StudioProjectArchiveAttachmentInput[]> {
-  if (plan.attachments.length === 0) return [];
+): Promise<{ attachments: StudioProjectArchiveAttachmentInput[]; receipts: StudioBg3dModelExportProvenanceReceipt[] }> {
+  if (plan.attachments.length === 0) return { attachments: [], receipts: [] };
 
   let records: (Bg3dVerifiedStoredRecord | null)[];
   try {
@@ -153,13 +175,21 @@ async function prepareAttachmentsFromPlan(
     throw new StudioBg3dProjectLibraryError("export-model-missing");
   }
 
-  const verifiedRecords = records as Bg3dVerifiedStoredRecord[];
+  const verifiedRecords: Bg3dVerifiedStoredRecord[] = [];
+  const receipts: StudioBg3dModelExportProvenanceReceipt[] = [];
   for (let index = 0; index < plan.attachments.length; index += 1) {
     const planned = plan.attachments[index];
-    const record = verifiedRecords[index];
+    const record = records[index];
     if (!planned || !record || !recordMatchesPlan(record, planned)) {
       throw new StudioBg3dProjectLibraryError("export-model-mismatch");
     }
+    verifiedRecords.push(record);
+    let receipt: StudioBg3dModelExportProvenanceReceipt;
+    try { receipt = await dependencies.resolveProvenance(record); }
+    catch { throw new StudioBg3dProjectLibraryError("export-model-untrusted"); }
+    try { dependencies.assertFileExportAllowed(receipt); }
+    catch { throw new StudioBg3dProjectLibraryError("export-model-restricted"); }
+    receipts.push(receipt);
   }
 
   const attachments: StudioProjectArchiveAttachmentInput[] = [];
@@ -197,7 +227,8 @@ async function prepareAttachmentsFromPlan(
       documentReferences: copyReferences(planned.documentReferences),
     });
   }
-  return attachments;
+  await assertArchiveProvenanceCurrent(receipts, dependencies);
+  return { attachments, receipts };
 }
 
 export async function prepareStudioBg3dProjectArchiveAttachments(
@@ -207,7 +238,7 @@ export async function prepareStudioBg3dProjectArchiveAttachments(
 ): Promise<StudioProjectArchiveAttachmentInput[]> {
   const dependencies = resolveDependencies(dependencyOverrides);
   const plan = dependencies.collectPlan(project, { limits: options.limits });
-  return prepareAttachmentsFromPlan(plan, options, dependencies);
+  return (await prepareAttachmentsFromPlan(plan, options, dependencies)).attachments;
 }
 
 /** Thin StudioPage helper: verified BG3D bytes are prepared before the archive builder can run. */
@@ -221,16 +252,18 @@ export async function buildStudioProjectArchiveWithVerifiedBg3dModels(
   // async hash lookup/revalidation and the archive builder so rights or scene metadata cannot be
   // changed on the caller-owned object between those boundaries.
   const plan = dependencies.collectPlan(input.project, { limits: options.limits });
-  const bg3dAttachments = await prepareAttachmentsFromPlan(
+  const prepared = await prepareAttachmentsFromPlan(
     plan,
     { limits: options.limits },
     dependencies,
   );
-  return dependencies.buildArchive({
+  const archive = await dependencies.buildArchive({
     ...input,
     project: plan.project,
-    attachments: [...(input.attachments ?? []), ...bg3dAttachments],
+    attachments: [...(input.attachments ?? []), ...prepared.attachments],
   }, options);
+  await assertArchiveProvenanceCurrent(prepared.receipts, dependencies);
+  return archive;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -313,7 +346,31 @@ function createImportItem(
     },
     rights: { ...planned.attachment.rights },
     expectedSha256: planned.attachment.hash,
+    ingress: { kind: "archive" },
   };
+}
+
+/** archive 메타데이터로 허가를 만들지 않고, 같은 실제 저장 원본이 있을 때만 출처를 재사용한다. */
+async function bindExistingImportSources(items: readonly Bg3dModelImportItem[], plan: StudioBg3dProjectArchivePlan,
+  dependencies: StudioBg3dProjectLibraryDependencies): Promise<Bg3dModelImportItem[]> {
+  const bound: Bg3dModelImportItem[] = [];
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index]; const planned = plan.attachments[index];
+    if (!item || !planned) throw new StudioBg3dProjectLibraryError("import-attachment-mismatch");
+    const record = await dependencies.getStoredByHash(planned.sha256);
+    if (!record || !recordMatchesPlan(record, planned)) { bound.push(item); continue; }
+    if (!isSourceHash(record.contentHash)) throw new StudioBg3dProjectLibraryError("import-attachment-mismatch");
+    const receipt = await dependencies.resolveProvenance(record);
+    await dependencies.assertProvenanceCurrent(receipt);
+    const { ingress: _ingress, ...input } = item;
+    bound.push({ ...input, sourceReceipt: { sourceRecordId: record.id, sourceContentHash: record.contentHash,
+      sourceRestrictionFingerprint: fingerprintStudioBg3dModelSourceRestriction(receipt.sourceRestriction) } });
+  }
+  return bound;
+}
+
+function isSourceHash(value: string): value is `sha256:${string}` {
+  return /^sha256:[a-f0-9]{64}$/u.test(value);
 }
 
 export interface InstallStudioBg3dProjectArchiveResult<ApplyResult> {
@@ -399,8 +456,9 @@ export async function installPreparedStudioBg3dProjectArchiveModelsAndApply<Appl
   PREPARED_BG3D_IMPORTS.delete(prepared);
   let disposition: Bg3dModelAtomicImportDispositionV12 | null = null;
   try {
-    disposition = state.items.length > 0
-      ? await state.dependencies.importAtomicallyWithDisposition(state.items, {
+    const items = await bindExistingImportSources(state.items, state.plan, state.dependencies);
+    disposition = items.length > 0
+      ? await state.dependencies.importAtomicallyWithDisposition(items, {
           ...state.options.verification,
           profile: state.options.verification?.profile ?? "desktop",
           cumulativeUsedBytes: state.options.verification?.cumulativeUsedBytes ?? 0,
@@ -466,8 +524,9 @@ export async function installStudioBg3dProjectArchiveModelsAndApply<ApplyResult>
     items.push(createImportItem(planned, imported));
   }
 
-  const records = items.length > 0
-    ? await dependencies.importAtomically(items, {
+  const boundItems = await bindExistingImportSources(items, plan, dependencies);
+  const records = boundItems.length > 0
+    ? await dependencies.importAtomically(boundItems, {
       ...options.verification,
       profile: options.verification?.profile ?? "desktop",
       cumulativeUsedBytes: options.verification?.cumulativeUsedBytes ?? 0,

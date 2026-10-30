@@ -15,15 +15,16 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test.describe("spatial-campus marketing ownership", () => {
+test.describe("public-route marketing ownership", () => {
   test.use({ dismissBetaEvent: false });
 
   for (const width of [390, 1440]) {
-    test(`keeps the campus workspace uninterrupted at ${width}px`, async ({ page }) => {
+    test(`keeps the service introduction uninterrupted at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/about");
       await expect(page.locator("#main-content")).toBeVisible();
-      await expect(page.getByRole("region", { name: "안내·설정관" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: "아이디어부터 완성된 웹툰까지, 하나의 작업실에서.", exact: true })).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "ToonStudio 소개 메뉴", exact: true })).toBeVisible();
       await expect(page.locator(gateSelector)).toHaveCount(0);
       expect(await page.evaluate((key) => localStorage.getItem(key), seenKey)).toBeNull();
     });
@@ -36,7 +37,7 @@ test.describe("spatial-campus marketing ownership", () => {
   });
 });
 
-test("journey fixture remains a no-op when the campus owns the route", async ({ page }) => {
+test("journey fixture remains a no-op when the route has no marketing gate", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.addInitScript(() => {
     (window as Window & { betaCloseClicks?: number }).betaCloseClicks = 0;

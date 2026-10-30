@@ -53,6 +53,15 @@ describe("canonicalStudioVrmExportJsonText", () => {
     expect(canonicalStudioVrmExportJsonText({ v: -0 })).toBe('{"v":0}');
   });
 
+  it("원본 JSON의 __proto__·constructor 키를 객체 권위로 해석하지 않고 보존한다", () => {
+    const source = '{"asset":{"version":"2.0"},"extras":{"__proto__":{"author":"자체 제작"},"constructor":{"keep":true},"toString":"본문"}}';
+    const json: unknown = JSON.parse(source);
+    expect(canonicalStudioVrmExportJsonText(json)).toBe(source);
+    const reloaded = readStudioVrmExportGlb(writeStudioVrmExportGlb({ json }));
+    expect(JSON.stringify(reloaded.json)).toBe(source);
+    expect(Object.hasOwn(Object.prototype, "author")).toBe(false);
+  });
+
   it("rejects non-finite numbers rather than silently writing null", () => {
     expectExportError(() => canonicalStudioVrmExportJsonText({ v: Number.NaN }), "json-not-serializable");
     expectExportError(

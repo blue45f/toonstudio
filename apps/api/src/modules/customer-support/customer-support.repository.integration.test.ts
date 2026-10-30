@@ -12,7 +12,7 @@ import { PostgresCustomerSupportRepository } from "./customer-support.repository
 const target = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim();
 const describePostgres = target ? describe : describe.skip;
 const role = `support_runtime_${randomUUID().replaceAll("-", "")}`;
-const migrationUrl = new URL("../../platform/database/migrations/0116_customer_support.sql", import.meta.url);
+const migrationUrl = new URL("../../platform/database/migrations/0118_customer_support.sql", import.meta.url);
 
 describePostgres("비공개 고객상담 PostgreSQL 권한·순서·AI 예약", () => {
   let owner: Pool;

@@ -79,6 +79,7 @@ import {
   pointsToPathD,
 } from "./studio-svg-export-geometry";
 import { nextId } from "./studio-svg-export-png";
+import { studioSvgPanelClip } from "./studio-svg-panel-clip";
 
 import type {
   ExportCtx,
@@ -825,9 +826,7 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
       const panel = !el.noClip ? containingPanel(el, input.elements) : null;
       if (panel) {
         const clipId = nextId(ctx, "sec");
-        ctx.defs.push(
-          `<clipPath id="${clipId}"><rect x="${fmt(panel.x)}" y="${fmt(panel.y)}" width="${fmt(panel.width)}" height="${fmt(panel.height)}"/></clipPath>`
-        );
+        ctx.defs.push(studioSvgPanelClip(clipId, panel));
         eraserMarkup = `<g clip-path="url(#${clipId})">${eraserMarkup}</g>`;
       }
 
@@ -900,9 +899,7 @@ export function exportPageToSvg(input: SvgExportPageInput): SvgExportResult {
     }
     if (panel) {
       const clipId = nextId(ctx, "sc");
-      ctx.defs.push(
-        `<clipPath id="${clipId}"><rect x="${fmt(panel.x)}" y="${fmt(panel.y)}" width="${fmt(panel.width)}" height="${fmt(panel.height)}"/></clipPath>`
-      );
+      ctx.defs.push(studioSvgPanelClip(clipId, panel));
       markup = `<g clip-path="url(#${clipId})"${blendStyle}>${markup}</g>`;
     } else if (blendStyle) {
       markup = `<g${blendStyle}>${markup}</g>`;

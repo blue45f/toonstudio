@@ -20,12 +20,10 @@
  * - `VRMHumanoidLoaderPlugin` throws unless all 15 `VRMRequiredHumanBoneName` entries are present.
  */
 
-import {
-  STUDIO_HUMANOID_BONE_NAMES,
-  type StudioHumanoidBoneName,
-} from "../studio-humanoid-bones";
+import { STUDIO_HUMANOID_BONE_NAMES, type StudioHumanoidBoneName } from "../studio-humanoid-bones";
 
 import { studioVrmExportError } from "./studio-vrm-export-error";
+import { buildStudioVrmExportLookAt, type StudioVrmExportLookAt } from "./studio-vrm-export-look-at";
 
 export const STUDIO_VRM_EXPORT_SPEC_VERSION = "1.0" as const;
 export const STUDIO_VRM_EXPORT_VRM_EXTENSION = "VRMC_vrm" as const;
@@ -596,6 +594,7 @@ export function buildStudioVrmcVrmExtension(input: {
   readonly humanoidBones: StudioVrmExportHumanoidBones;
   readonly expressions?: StudioVrmExportExpressions;
   readonly firstPerson?: readonly StudioVrmExportFirstPersonAnnotation[];
+  readonly lookAt?: StudioVrmExportLookAt;
   readonly context: StudioVrmExtensionContext;
 }): Record<string, unknown> {
   const { context } = input;
@@ -605,6 +604,7 @@ export function buildStudioVrmcVrmExtension(input: {
     humanoid: buildStudioVrmExportHumanoid(input.humanoidBones, context),
     expressions: buildStudioVrmExportExpressions(input.expressions, context),
     firstPerson: buildStudioVrmExportFirstPerson(input.firstPerson, context),
+    lookAt: buildStudioVrmExportLookAt(input.lookAt, input),
   };
 }
 

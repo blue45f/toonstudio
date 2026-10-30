@@ -1,0 +1,104 @@
+# 공간 모델러 기능 내재화 요구·검증 원장
+
+- 상태: `migration` — 전체 목표를 위한 요구 원장과 확인 중인 구현 상태.
+- 기준일: 2026-10-29.
+- 제품 이름: **공간 모델러**(`Spatial Modeler`). SketchUp은 원본 동작 비교·기술 조사와 SKP 호환성을 설명할 때만 사용하며 ToonStudio의 제품명으로 사용하지 않는다.
+- 사용자 목표: **스케치업 기능을 REA로 역공학해 모두 구현될 때까지 계속 진행한다.**
+- 현재 전체 완료 판정: **미완료**. 개별 커널·패널의 존재, 한정된 테스트, 샘플 계산을 전체 지원으로 합산하지 않는다.
+
+## 판정 계약
+
+각 항목은 원본 동작 계약, ToonStudio의 실제 사용자 진입점, 문서·런타임 명령, 실패 시 원자성,
+Undo/Redo, 저장·복원, 필요한 렌더·파일 왕복 증거가 연결돼야 완료로 판정한다.
+행의 범위는 구현이 쉬운 부분으로 축소하지 않는다. 원본 버전의 추가 기능을 확인하면 하위 요구를 더한다.
+외부 서비스·계정·확장 API도 제외하지 않으며 접근권과 공급자 의존성이 필요한 상태를 별도로 기록한다.
+
+공식 동작 계약은 [Ruby API](https://ruby.sketchup.com/),
+[JavaScript API 기능 지도](https://developer.trimble.com/docs/sketchup/jsa/welcome/capabilities),
+[기본 도형 작도](https://help.sketchup.com/en/sketchup/drawing-basic-shapes),
+[Follow Me](https://help.sketchup.com/en/sketchup/extruding-follow-me)를 기준으로 추적한다.
+이는 공개 계약이며 바이너리 내부 알고리즘을 관측했다는 뜻은 아니다.
+REA 증거와 실제 구현 증거는 [조사·통합 기록](../reports/sketchup-rea-integration-2026-10-28.md)에서 구분한다.
+공식 2027 Mac 배포본과 Ghidra의 제한된 native 분석 증거는
+[2026-10-29 원본 조사](../reports/sketchup-native-rea-2026-10-29.md)에 기록한다.
+
+## 기능별 현재 상태와 완료에 필요한 증거
+
+`부분`은 확인한 실제 경로가 있어도 원본의 전체 하위 동작을 입증하지 못한 상태다.
+`확인 중`은 소스나 수학 모듈의 존재만으로 실제 장면 지원을 확정하지 않은 상태다.
+
+| ID | 요구 기능 | 현재 증거와 상태 | 추가 완료 조건 |
+| --- | --- | --- | --- |
+| SK01 | 선·자유선·사각형·회전 사각형·원·다각형·원호·Pie 작도 | 부분: 실제 선택 볼록면의 엄격한 내부 polygon 작도와 BG3D 생성기; 경계 endpoint를 잇는 분할은 미연결 | 각 작도 도구의 직접 조작·수치 입력·면 생성·기존 면 분할·저장 검증 |
+| SK02 | 끝점·중점·면·축·평행·수직 추론, 추론 고정 | 부분: 측정·배치의 실제 추론 서비스; 면 작도 패드는 별도 SVG/grid 입력이며 실제 endpoint/edge 추론 전달은 미연결 | 중첩 변환·작도 평면·모든 작도/변환 도구에서 원본 추론 계약 검증 |
+| SK03 | 클릭·박스·올가미·가려진 요소 선택, 그룹 내부 편집 | 부분: 실제 오브젝트·정밀 모델러 component 선택 | 편집 경로별 face/edge/vertex 집합과 숨김·잠금·가림 경계 검증 |
+| SK04 | 면 Push/Pull, 사본·반복·반대 면 관통 | 부분: 실제 정밀 모델러 Push/Pull, BG3D 제한 도형 면 조절 | 임의 면·구멍·복사 모드·반복·관통을 실제 사용자 메시에서 검증 |
+| SK05 | 안쪽·바깥쪽 Offset, 구멍·오목한 윤곽 | 부분: 실제 볼록 평면 Inset/Offset | 오목한 면·내부 루프와 붕괴·교차 조건의 원본 계약 검증 |
+| SK06 | 기본 Follow Me, 선택 edge 경로·단면 스윕·회전체 | 부분: 실제 선택 면·열린 3D 경로·preview·확정·Undo/Redo와 실제 Canvas 조작 검증 | 직접 edge 경로·독립/오목/구멍 있는 단면·닫힌 경로·회전체·UV·저장 검증 |
+| SK07 | 비파괴 Procedural Follow Me·절차적 컴포넌트 | 미완료: 기본 Follow Me와 별도 요구 | 원본 경로·단면 보존, 경로/단면 재편집과 결과 재생성·저장 검증 |
+| SK08 | Move/Copy·Rotate/Copy·Scale·Flip·피벗·배열 | 부분: 실제 변환과 선택 기본 도형의 선형/원형 배열 | 일반 메시/외부 모델·수치 입력·반사·중첩 변환·복사/공유 의미 검증 |
+| SK09 | Erase·모서리 치유·교차 분할·면 방향·부드러운 모서리 | 확인 중: 관련 메시 연산과 표시 모듈 존재 | 동일 편집 context의 위상·앞뒷면·soft/smooth 속성 보존 검증 |
+| SK10 | Union·Intersect·Subtract·Trim·Split·Outer Shell | 부분: 독립 정밀 모델러의 operand-aware Boolean과 실제 예제 삽입; BG3D 선택 두 source의 결과 교체는 미연결 | 임의 실제 솔리드의 입력 유지/삭제 의미·수밀성·실패 원자성 검증 |
+| SK11 | 그룹·컴포넌트 정의·인스턴스·Make Unique·Explode | 부분: 실제 parent·component 표시 묶음·linked clone 외형 동기화·독립 source 재편집; 공유 geometry 정의 편집은 미연결 | 정의 공유 편집·고유화·해체·중첩 편집·파일 왕복 검증 |
+| SK12 | Dynamic Components 수식·속성·상호작용·Live Components | 미완료: raw properties는 실제 manifest/GLB에 보관; 별도 추론·수식 helper의 importer 소비와 실행/재생성은 미연결 | 실제 원본 속성 전달·수식 평가·상호작용·재생성·의존성 저장 검증 |
+| SK13 | 앞뒷면 재질·Paint Bucket·텍스처·UV 위치/사영·PBR | 부분: 실제 GLB 재질/이미지와 표면 페인트 | 앞뒷면·4핀·사영·컴포넌트 재질 상속의 실제 편집/왕복 검증 |
+| SK14 | 줄자·유한/무한 보조선·각도기·축 변경 | 부분: 실제 줄자 pick·추론·길이 잠금·가이드 UI; 별도 측정 state는 장면 history/저장에 미연결 | 정본 엔티티로 생성·선택·정확한 단위·변환·저장·복원 검증 |
+| SK15 | 선형/반경 치수·텍스트·3D Text | 확인 중: 치수·문자 계산 모듈 존재 | 실제 장면 엔티티·동적 치수 참조·텍스트 메시·저장 검증 |
+| SK16 | 태그·폴더·Outliner·가시성·잠금 | 부분: ToonStudio 정본 태그·계층 UI | SKP membership·폴더·숨김 상태와 중첩 instance 표시의 일치 검증 |
+| SK17 | Scene/Page·카메라·스타일·단면·환경·그림자 상태 | 부분: 실제 BG3D shots·북마크, SKP Page 보관·조회와 파서 평행 카메라 값 적용 | 원근 카메라·원본 Page의 상태 플래그·순서·애니메이션·전체 저장 검증 |
+| SK18 | Orbit·Pan·Zoom·Zoom Extents·표준 시점·Walk·Look Around | 부분: 실제 뷰포트 카메라 명령 | 각 조작·제약·접근성·이전/다음 시점·저장과 원본 동작 검증 |
+| SK19 | 원근·직교·2점 투시·화각·Match Photo | 부분: 실제 원근/직교·렌즈 명령, 명시 직교 높이의 저장·resize·Scene3D 왕복 | 사진 정합·수평/수직 화각 의미·2점 투시·원본 카메라 전체 왕복 검증 |
+| SK20 | Section Plane·활성 단면·단면 채움·내보내기 | 부분: 실제 전역 단면 표시와 예제 교차 계산 | 지속되는 복수 단면 엔티티·그룹별 활성 상태·단면 파일 출력 검증 |
+| SK21 | 스타일·은선·뒤선·X-ray·단색·Fog·워터마크·AO | 부분: 실제 라인/톤/NPR 렌더 설정 | 상태별 렌더·저장·SKP 스타일 반입과 원본 의미 검증 |
+| SK22 | 지리 위치·북쪽·태양 시각·그림자·환경 | 부분: 실제 Sun Rig, 공간 모델러의 태양광 패널은 예제 | 원본 위치·시간·북쪽·환경의 실제 장면 적용과 파일 왕복 검증 |
+| SK23 | Sandbox 지형·등고선·Smoove·Stamp·Drape·상세/대각선 | 부분: height grid 계산과 실제 삽입/history; 결과는 box 묶음이며 원본 grid/recipe·선택 지형 재편집은 미보존 | 사용자 선택 지형의 직접 편집·원본 위상·지리 데이터 검증 |
+| SK24 | SKP 형상·재질·단위의 품질 보존 가져오기 | 부분: 실제 Worker 기반 SKP→GLB 반입·캡처·저장 | 모든 지원 버전/복잡 형상·숨김·soft edge·텍스처 용량 정책의 품질 보존 |
+| SK25 | SKP 계층·정의/인스턴스·태그·Page·주석 복원 | 부분: 파서 원본 manifest를 Worker→GLB→정보 조회·JSON까지 보존, 렌더링은 단일 모델 | 원본 식별자·계층·속성·숨김·카메라를 편집 가능한 정본 문서에 연결하고 왕복 검증 |
+| SK26 | SKP 실물 치수·중첩 행렬·런타임 정규화 일치 | 부분: 새 SKP의 미터 배율·고스트·재배치·저장 복원을 실제 바이트와 Three로 검증 | 폭넓은 원본 corpus·원본 계층/페이지까지 같은 좌표 권위로 연결하고 검증 |
+| SK27 | 이미지·DWG/DXF·DAE·OBJ·FBX·3DS·DEM 등 가져오기 | 확인 중: 여러 실제 가져오기 경로와 예제 파서 존재 | 형식별 실제 파일 corpus·단위·재질·계층·오류/취소·저장 검증 |
+| SK28 | 현재 장면의 SKP·CAD·메시·이미지·벡터·애니메이션 출력 | migration: 현재 표시 canonical 장면의 실제 GLB 다운로드·raw GLTFLoader metre parity 일부와 초기 복원 renderer 전환 보완 확인; raw RGBA 이미지 경로 추가 구현 중 | UV bake·RGBA 최신 통합·HDR/렌더/재생 경계, 전체 editable 복원과 legacy import 단위, SKP/CAD/이미지·벡터·애니메이션의 형식별 출력·왕복 및 최신 전체 검사 |
+| SK29 | LayOut 연계·축척 도면·참조 갱신·출력 | 확인 중: 전체 목표의 연계 요구로 보존 | 실제 문서 참조·뷰포트·치수·페이지·갱신·인쇄/출력 증거 |
+| SK30 | 3D Warehouse·Extension Warehouse·Trimble Connect | 확인 중: 외부 서비스 접근·계정 계약 조사 필요 | 권한·카탈로그/자산·업로드·동기화·오류/취소·비용 경계의 실제 연결 |
+| SK31 | Ruby/JavaScript/확장 도구·속성 사전·observer·사용자 도구 | 확인 중: 공개 API 계약 조사 시작 | 기능별 호환 계약·도구 이벤트·원자 명령·확장 격리와 실제 실행 증거 |
+| SK32 | 단위·정밀도·Undo/Redo·저장·복원·성능·플랫폼 입력 | 부분: 기존 정본 문서/명령/직렬화와 기능별 회귀 | 각 요구와 모든 주요 context에 대한 실패 원자성·파일/브라우저/성능 검증 |
+| SK33 | BG3D 배경과 정밀 면 모델러의 실제 원본 편집 연계 | 부분: 독립 단색 상자와 v1 원본 mesh 파생 모델의 반복 면 편집·Worker/OPFS·같은 ID 교체·Undo/Redo·두 번의 캡처/새 마운트 복원 | 일반 도형/계층/재질/외부 모델의 원본 보존과 전체 검사·production build 검증 |
+
+2026-10-29 [전체 요구의 source·공개 계약 대조](../reports/spatial-modeler-source-coverage-audit-2026-10-29.md)에서
+작도 추론·Boolean operands·정의 공유·속성 실행·측정 저장·지형 위상의 연결 공백과 형식별 출력/확장 계약을 추가로 확인했다.
+이는 읽기 조사이며 최신 제품 source의 테스트·브라우저·native 실행 성공 수를 늘리지 않는다.
+
+## 실제 확인한 변경과 남은 검증
+
+- `f632422625a1f6a63ff8664c22e75ca95e8332e0`: 건축 9종을 실제 장면 명령에 연결하고 실제 지붕 방향을 보정했다.
+- `04f61b69772886d27eee26deef403f0d686ebb75`: 기본 도형 선택 배열·전체 묶음 선택·즉시 Undo·저장 용량 검사를 추가했다.
+- `c6cbb3ca6a718885f6187697e2c15aadba6e48d2`: 새 SKP의 원본 미터 배율을 GLB 자산·인스턴스·고스트·재배치·저장 복원까지 보존했다.
+- 위 두 커밋의 관련 회귀 10파일·96개와 실제 편집기 배열·캡처·새 인스턴스 복원 증거가 있다.
+  이는 SK08의 확인된 일부이며 다른 행의 완료 증거로 전용하지 않는다.
+- 이전 전체 하네스는 종료 코드 0을 확인했지만 실행이 시작된 뒤 새 파일이 추가됐다.
+  최신 변경의 전체 타입 검사·배포 빌드·운영 스모크는 별도 완료 조건으로 남긴다.
+- `3bc6d62f5`: 실제 선택 면 Follow Me의 열린 경로 미리보기·확정·Undo/Redo를 연결했다.
+- SKP 원본 정보의 통합 회귀 11파일·189개와 실제 파일 업로드→Worker→정보 조회→JSON 다운로드가 통과했다.
+  별도 컨텍스트의 저장소 worker-src 조건도 확인했다. 운영 전체 CSP·배포 빌드는 별도다.
+- SK06의 열린 경로 편집, SK25의 원본 정보 보관·조회, SK26의 새 미터 배치는 각각 확인한 지원 범위다.
+  이를 원본 Follow Me 전체나 SKP 전체 구조 복원의 완료로 확대하지 않는다.
+- 직교 높이·파서 평행 Page 적용은 관련 50파일·664개와 실제 Apply→Undo/Redo→캡처→새 마운트 복원을 검증했다.
+  [카메라 검증 기록](../reports/sketchup-camera-restore-2026-10-29.md)의 한정 범위를 SK17/SK19의 부분 증거로 사용한다.
+
+- 2026-10-29 기본 상자 원본 편집은 관련 15파일·237개와 실제 브라우저의 선택→면 편집→Worker/OPFS→같은 ID 교체→Undo/Redo→캡처→새 마운트 복원을 확인했다.
+  [지원 경계](bg3d-primitive-face-edit.md)와 [검증 기록](../reports/bg3d-primitive-face-edit-2026-10-29.md)을 SK33의 부분 증거로 사용한다.
+  이 최초 경로의 기록만으로 반복 면 편집을 입증하지 않는다. 최신 전체 하네스·production build는 별도 대기 중이다.
+- v1 원본 mesh를 보관한 편집 모델은 현재 배치·단색·권리를 유지하며 재선택·재편집하는 경로를 구현했다.
+  GLB의 Float32 정점을 원본으로 재구성하지 않으며, 저장 Blob SHA·record·attachment·캐시와 현재 source를 함께 검증한다.
+  같은 read snapshot의 `[B]` 또는 `[A, B]` lease를 동기 교체까지 유지하고 실패 시 원본과 공유 인스턴스를 보존한다.
+  공통 lease 보강 후 집중 20파일·411회귀와 새 브라우저 context의 세 번 반복 편집·두 번 캡처/저장/새 마운트·17개 확인 항목을 통과했다.
+  [지원 경계](bg3d-authored-model-face-edit.md)와 [재편집 검증 기록](../reports/bg3d-authored-model-face-edit-2026-10-29.md)을 별도로 추적한다.
+  이 unsigned payload의 내부 일관성은 출처·소유권 인증이 아니며 구형 GLB·일반 모델/계층/재질 연계는 남아 있다.
+- 자기 생성 SKP의 [native camera golden corpus](../reports/sketchup-native-camera-golden-2026-10-29.md)는 SDK 저장·재읽기와 실제 파서→GLB의 4회귀를 보존한다.
+  원근 FOV 축·aspect가 OpenSKP에 노출되지 않는 경계는 그대로이며, 미확인 값을 추측해 적용하지 않는다.
+
+- SK28의 [현재 표시 장면 GLB](bg3d-current-scene-glb-export.md)는 `migration`이다. 13종 기본 도형·custom model graph와 현재 배치/재질/pose·원본 clip·카메라를 구분하고, 원본 Blob/출력을 Worker로 검증하며 장면·history는 쓰지 않는다.
+  warm UI의 표시 3개/숨김 1개·28항목 true와 테마/폭 6조합 axe violation 0/incomplete 0, 실제 압축 GPU/graph/artifact 일부 왕복을 확인했다.
+  [공식 계약·native REA](../reports/sketchup-scene-export-rea-2026-10-29.md)와 [통합 검증 기록](../reports/bg3d-current-scene-glb-export-2026-10-29.md)을 연결한다.
+  단면·NPR/sky 등은 기하 절단·화면 bake가 아닌 상태 metadata이며 연결 캐릭터는 거부한다. Mesh의 UV shear/auto 비균일 회전은 개인 정점 bake 경로에 연결했고 GPU 검증 중이다. projective·4채널 초과, HDR/shader/wireframe/instanced morph/procedural surface 등은 남아 있다.
+  초기 복원 중 renderer 전환은 12회귀와 실제 fresh context의 4node 복원으로 보완을 확인했다. alpha0 데이터맵의 RGB 보존은 raw RGBA·PNG·최종 GLB image 경로로 추가 구현 중이다.
+  raw GLTFLoader 미터 복원을 전체 canonical editable 복원이나 legacy 최장 변 2 m import 해결로 확대하지 않으며, 최신 출력과 전체 검사 수치는 통합 마감 전이다.

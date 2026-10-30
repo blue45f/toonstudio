@@ -23,8 +23,10 @@ const sessions = new WeakMap<
 /** 기존 가변 host bag을 그대로 사용하여 간편/전문가 모드가 같은 컷 세션을 공유한다. */
 export function StudioScene3dBg3dCutPanel({
   host,
+  preferredExpanded,
 }: {
   readonly host: unknown;
+  readonly preferredExpanded?: boolean;
 }) {
   const t = useBilingual("scene3d-cut-versions");
   const [, refresh] = useReducer((value: number) => value + 1, 0);
@@ -65,6 +67,7 @@ export function StudioScene3dBg3dCutPanel({
     <StudioScene3dCutPanel
       key={`${id}:${cached.generation}`}
       session={cached.session}
+      preferredExpanded={preferredExpanded}
     />
   );
 }

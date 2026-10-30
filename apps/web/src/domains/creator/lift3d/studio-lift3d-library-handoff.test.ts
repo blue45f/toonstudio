@@ -51,13 +51,14 @@ describe("Studio Lift 3D 라이브러리 등록", () => {
     expect(first).toEqual(second);
   });
 
-  it("메인 스레드에서 중복 해싱하지 않고 권리만 실어 넘긴다", () => {
+  it("중복 해싱 없이 사용자 선언과 실제 자체 생성 출처를 함께 넘긴다", () => {
     // expectedSha256 은 외부 매니페스트를 든 호출자용이다. 여기서는 방금 만든 메모리 버퍼를
     // 그대로 넘기므로 대조할 제3의 출처가 없고, 라이브러리가 같은 바이트를 어차피 다시 해싱한다.
     const item = createStudioLift3dImportItem(liftedGlb(), { status: "owned", commercialUse: true });
 
     expect(item.expectedSha256).toBeUndefined();
     expect(item.rights).toEqual({ status: "owned", commercialUse: true });
+    expect(item.ingress).toEqual({ kind: "studio-generated", modelFileExport: "allowed" });
   });
 
   it("확인 전 표기는 상업 이용 선언을 실어 보내지 않는다", () => {
@@ -69,6 +70,7 @@ describe("Studio Lift 3D 라이브러리 등록", () => {
     });
 
     expect(item.rights).toEqual({ status: "unknown", commercialUse: false });
+    expect(item.ingress).toEqual({ kind: "studio-generated", modelFileExport: "allowed" });
   });
 
   it("퍼블릭 도메인의 상업 이용 선언을 잃지 않는다", () => {
@@ -81,6 +83,7 @@ describe("Studio Lift 3D 라이브러리 등록", () => {
     });
 
     expect(item.rights).toEqual({ status: "public-domain", commercialUse: true });
+    expect(item.ingress).toEqual({ kind: "studio-generated", modelFileExport: "allowed" });
   });
 
   it("등록에 성공하면 검증된 레코드를 돌려준다", async () => {

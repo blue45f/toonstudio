@@ -1,3 +1,4 @@
+import { assertStudioBg3dCaptureEnvironmentCurrent, inheritStudioBg3dCaptureEnvironmentReceipt } from "./studio-bg3d-capture-environment-receipt";
 import { selectStudioBg3dShotPassLayers } from "./studio-bg3d-shot-pass-layers";
 /**
  * Batch-only artifact production for one frozen 3D shot.
@@ -130,6 +131,7 @@ export async function buildStudioBg3dShotArtifacts(
 ): Promise<StudioBg3dShotArtifactPipelineResult> {
   assertStudioBg3dShotArtifactActive(input.signal);
   assertStudioBg3dShotArtifactBudget(input.committedArtifactBytes, dependencies.maxTotalBytes);
+  assertStudioBg3dCaptureEnvironmentCurrent(input.captured);
   const ltRenderInput: StudioBg3dLtRasterInput = {
     width: input.captured.width,
     height: input.captured.height,
@@ -143,6 +145,7 @@ export async function buildStudioBg3dShotArtifacts(
     { signal: input.signal },
   );
   assertStudioBg3dShotArtifactActive(input.signal);
+  assertStudioBg3dCaptureEnvironmentCurrent(input.captured);
 
   const images: StudioBg3dShotBatchImage[] = [];
   const skippedArtifacts: StudioBg3dShotBatchSkippedArtifact[] = [];
@@ -173,6 +176,7 @@ export async function buildStudioBg3dShotArtifacts(
     const pngOptions = { signal: input.signal, timeoutMs: 20_000 } as const;
     const png = await dependencies.encodePngInWorker(passLayers, pngOptions);
     assertStudioBg3dShotArtifactActive(input.signal);
+    assertStudioBg3dCaptureEnvironmentCurrent(input.captured);
     if (
       png.size > dependencies.maxImageBytes ||
       input.committedArtifactBytes + artifactBytes + png.size > dependencies.maxTotalBytes
@@ -246,11 +250,14 @@ export async function buildStudioBg3dShotArtifacts(
   }
 
   assertStudioBg3dShotArtifactActive(input.signal);
-  return {
+  assertStudioBg3dCaptureEnvironmentCurrent(input.captured);
+  const result: StudioBg3dShotArtifactPipelineResult = {
     images,
     skippedArtifacts,
     layeredPsds,
     psdFallbacks,
     artifactBytes,
   };
+  inheritStudioBg3dCaptureEnvironmentReceipt(result, input.captured);
+  return result;
 }

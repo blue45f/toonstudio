@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { Euler, Matrix4, Quaternion, Vector3 } from "three";
+import { makeGeometry } from "../studio-background-3d-primitives";
 
 import {
   buildBlenderPresetScenePrimitives,
@@ -21,6 +23,7 @@ import {
   evaluateSketchUpSolidOperation,
   inspectSketchUpManifoldSolid,
   synthesizeSketchUpTerrainPrimitives,
+  type SketchUpArchitecturalComponentKind,
 } from "./studio-bg3d-sketchup-full-engine";
 
 describe("SketchUp 3D 전 기능 엔진 (Sandbox · Solid Tools · Match Photo · 건축 컴포넌트)", () => {
@@ -163,6 +166,44 @@ describe("SketchUp 3D 전 기능 엔진 (Sandbox · Solid Tools · Match Photo �
     });
     expect(svg.svg).toContain("<svg");
     expect(svg.byteLength).toBeGreaterThan(100);
+  });
+
+  const roofCases: readonly { kind: SketchUpArchitecturalComponentKind; width: number; height: number; depth: number }[] = [
+    { kind: "roof-gable", width: 3.6, height: 3.2, depth: 4.2 },
+    { kind: "roof-gable", width: 7.3, height: 1.7, depth: 9.5 },
+    { kind: "roof-hanok", width: 3.6, height: 3.2, depth: 4.2 },
+    { kind: "roof-hanok", width: 7.3, height: 1.7, depth: 9.5 },
+  ];
+  it.each(roofCases)("$kind 본체의 실제 렌더 지오메트리에 치수와 수평 용마루를 보존한다 ($width/$height/$depth m)", ({ kind, width, height, depth }) => {
+    const result = buildSketchUpArchitecturalComponentPrimitives({
+      kind, widthMeters: width, heightMeters: height, depthMeters: depth, stepOrBayCount: 8,
+    });
+    const main = result.primitives.find(({ id }) => id === "skp-arch-roof-main");
+    if (!main) throw new Error("지붕 본체가 없습니다.");
+    // SceneNodes와 동일한 실제 도형 및 T·R·S 변환으로 축과 크기를 검사한다.
+    const geometry = makeGeometry(main.kind);
+    try {
+      geometry.applyMatrix4(new Matrix4().compose(
+        new Vector3(...main.position), new Quaternion().setFromEuler(new Euler(...main.rotation)), new Vector3(...main.scale),
+      ));
+      geometry.computeBoundingBox();
+      const bounds = geometry.boundingBox;
+      if (!bounds) throw new Error("지붕 경계를 계산하지 못했습니다.");
+      const size = bounds.getSize(new Vector3());
+      expect(size.x).toBeCloseTo(width, 2);
+      expect(size.y).toBeCloseTo(height, 2);
+      expect(size.z).toBeCloseTo(depth, 2);
+      expect(bounds.min.y).toBeCloseTo(2.4, 2);
+      expect(bounds.max.y).toBeCloseTo(2.4 + height, 2);
+      const positions = geometry.getAttribute("position");
+      const ridge = Array.from({ length: positions.count }, (_, index) => new Vector3().fromBufferAttribute(positions, index))
+        .filter(({ y }) => Math.abs(y - bounds.max.y) < 0.001);
+      expect(ridge.length).toBeGreaterThan(0);
+      expect(ridge.every(({ x }) => Math.abs(x) < 0.001)).toBe(true);
+      expect(Math.max(...ridge.map(({ z }) => z)) - Math.min(...ridge.map(({ z }) => z))).toBeCloseTo(depth, 2);
+    } finally {
+      geometry.dispose();
+    }
   });
 });
 

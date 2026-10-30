@@ -115,6 +115,8 @@ export function createStudioLift3dImportItem(
   return {
     file: createStudioLift3dUploadSource(glb),
     rights: normalizeDeclaration(rights),
+    // 이 경계는 사용자가 고른 원화에서 방금 생성한 결과만 받는다. 저장 모델의 파생 입구로 재사용하지 않는다.
+    ingress: { kind: "studio-generated", modelFileExport: "allowed" },
   };
 }
 

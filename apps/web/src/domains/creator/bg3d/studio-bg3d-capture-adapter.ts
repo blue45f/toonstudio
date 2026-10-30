@@ -7,6 +7,8 @@ import type { StudioBg3dTiledCaptureSession } from "./studio-bg3d-tiled-session"
  */
 
 import { assertStudioBg3dCaptureBudget } from "./studio-bg3d-capture-budget";
+import { acquireStudioBg3dCaptureEnvironmentForAdapter } from "./studio-bg3d-capture-environment-adapter";
+import { attachStudioBg3dCaptureEnvironmentReceipt } from "./studio-bg3d-capture-environment-receipt";
 
 export type StudioBg3dCaptureEngineId =
   | "three"
@@ -83,6 +85,8 @@ export interface StudioBg3dCaptureAdapter {
 export interface StudioBg3dCaptureOperationOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
+  /** 캡처 host가 동결한 정본 요청을 실제 적용 세대와 대조한다. */
+  readonly expectedEnvironmentFingerprint?: string;
 }
 
 export interface AcquireStudioBg3dCaptureAdapterAfterViewTransitionInput {
@@ -371,19 +375,26 @@ export async function captureStudioBg3dRaster(
     background: Object.freeze({ ...request.background }),
   });
   throwIfCaptureOperationAborted(options.signal);
+  const environmentReady = acquireStudioBg3dCaptureEnvironmentForAdapter(adapter, options);
+  const environmentReceipt = environmentReady ? await environmentReady : undefined;
+  throwIfCaptureOperationAborted(options.signal);
+  environmentReceipt?.assertCurrent(options.expectedEnvironmentFingerprint);
   const captured = await waitForStudioBg3dCapturePhase(
     adapter.capture(requestSnapshot),
     options,
   );
   assertCapturedRaster(captured, requestSnapshot);
+  environmentReceipt?.assertCurrent(options.expectedEnvironmentFingerprint);
 
   // WebGPU mapped buffers and renderer pools may be recycled after the adapter Promise settles.
   // Own both arrays at this boundary so later engine work cannot mutate LT input behind Studio.
-  return Object.freeze({
+  const owned = Object.freeze({
     width: captured.width,
     height: captured.height,
     rgba: new Uint8ClampedArray(captured.rgba),
     ...(captured.depth ? { depth: new Float32Array(captured.depth) } : {}),
     ...(captured.normalRgba ? { normalRgba: new Uint8ClampedArray(captured.normalRgba) } : {}),
   });
+  if (environmentReceipt) attachStudioBg3dCaptureEnvironmentReceipt(owned, environmentReceipt);
+  return owned;
 }

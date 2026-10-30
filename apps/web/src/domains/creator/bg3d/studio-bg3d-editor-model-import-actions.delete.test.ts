@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStudioBg3dModelImportActions, type StudioBg3dModelImportActionsContext } from "./studio-bg3d-editor-model-import-actions";
+import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from "./studio-bg3d-model-cache.test-fixture";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 const runtime = vi.hoisted(() => ({
   deleteModel: vi.fn(), list: vi.fn(), preflight: vi.fn(), run: vi.fn(), commit: vi.fn(),
@@ -63,8 +65,36 @@ beforeEach(() => {
   });
   runtime.commit.mockImplementation((_session: unknown, commit: () => void) => { commit(); return true; });
 });
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("3D model deletion feedback and convergence", () => {
+  it("라이브러리 모델 삭제는 모든 variant를 떼고 rAF·fallback에서 unique entry를 한 번씩 정리한다", async () => {
+    vi.useFakeTimers(); const frame = vi.fn<(callback: FrameRequestCallback) => number>(() => 1); vi.stubGlobal("requestAnimationFrame", frame); vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const h = harness(), record = createStudioBg3dCacheTestRecord("model-a"), webgl = createStudioBg3dCacheTestEntry(record), webgpu = createStudioBg3dCacheTestEntry(record, "webgpu");
+    const other = createStudioBg3dCacheTestEntry(createStudioBg3dCacheTestRecord("model-b"));
+    h.context.modelRootCacheRef.current.set(studioBg3dModelCacheKey(record.id, "webgl"), webgl);
+    h.context.modelRootCacheRef.current.set(studioBg3dModelCacheKey(record.id, "webgpu"), webgpu);
+    h.context.modelRootCacheRef.current.set("same-entry-alias", webgl);
+    h.context.modelRootCacheRef.current.set(studioBg3dModelCacheKey(other.record.id, "webgl"), other);
+    await h.actions().handleDeleteModelFromLibrary(record.id);
+    expect([...h.context.modelRootCacheRef.current.values()]).toEqual([other]);
+    expect(webgl.dispose).not.toHaveBeenCalled(); expect(webgpu.dispose).not.toHaveBeenCalled();
+    const dispose = frame.mock.calls[0]?.[0]; if (typeof dispose !== "function") throw new Error("정리 frame이 없습니다.");
+    dispose(0); await vi.advanceTimersByTimeAsync(300);
+    expect(webgl.dispose).toHaveBeenCalledTimes(1); expect(webgpu.dispose).toHaveBeenCalledTimes(1); expect(other.dispose).not.toHaveBeenCalled();
+  });
+
+  it("정리 중 한 variant가 실패해도 다른 variant의 disposal을 생략하지 않는다", async () => {
+    vi.useFakeTimers(); vi.stubGlobal("requestAnimationFrame", vi.fn(() => 0));
+    const h = harness(), record = createStudioBg3dCacheTestRecord("model-a"), first = createStudioBg3dCacheTestEntry(record), second = createStudioBg3dCacheTestEntry(record, "webgpu");
+    vi.mocked(first.dispose).mockImplementation(() => { throw new Error("dispose failed"); });
+    h.context.modelRootCacheRef.current.set(studioBg3dModelCacheKey(record.id, "webgl"), first);
+    h.context.modelRootCacheRef.current.set(studioBg3dModelCacheKey(record.id, "webgpu"), second);
+    await h.actions().handleDeleteModelFromLibrary(record.id); await vi.advanceTimersByTimeAsync(300);
+    expect(first.dispose).toHaveBeenCalledOnce(); expect(second.dispose).toHaveBeenCalledOnce();
+    expect(h.context.setError).toHaveBeenCalledWith(expect.stringContaining("화면 자원"));
+  });
+
   it("explains why scene restoration blocks deletion without touching storage", async () => {
     const h = harness(); h.context.isRestoringScene = true;
     await h.actions().handleDeleteModelFromLibrary("model-a");

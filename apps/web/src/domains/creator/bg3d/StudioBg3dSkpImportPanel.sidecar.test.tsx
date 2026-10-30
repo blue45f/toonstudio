@@ -18,7 +18,7 @@ const SCOPE_SENTENCE =
 describe("StudioBg3dSkpImportPanel 의 SKP 이름 연결 범위 안내", () => {
   it("가져오기 안내에서 계층·표시 상태·카메라를 되살리지 않는다고 미리 알린다", () => {
     render(<StudioBg3dSkpImportPanel session={createStudioBg3dSkpImportSession()} />);
-    const guide = screen.getByText("SketchUp(.skp) 가져오기 안내").closest("details");
+    const guide = screen.getByText("SKP 파일 가져오기 안내").closest("details");
     expect(guide).not.toBeNull();
     expect(within(guide as HTMLElement).getByText(SCOPE_SENTENCE)).toBeTruthy();
   });

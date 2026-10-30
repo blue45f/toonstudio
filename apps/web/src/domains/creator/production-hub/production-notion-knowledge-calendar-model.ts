@@ -322,7 +322,7 @@ export function instantiateStudioLoreTemplate(
         title: `[신규 3D 배경 #${num}] 지하 봉인 수로 제3수문`,
         canonicalTag: `LOC-TPL-${num}`,
         summaryBlock: "성채 지하 40m에 위치한 고대 수로. 청록색 발광 이끼와 석조 아치 구조.",
-        outfitOrVisualSpec: "Blender 4.2 세트 v1 · 카메라 기본 화각 35mm · 환경 안개 밀도 0.18",
+        outfitOrVisualSpec: "3D 배경 세트 v1 · 카메라 기본 화각 35mm · 환경 안개 밀도 0.18",
         continuityWarning: null,
         verification: {
           verifiedBy: "배경3D팀 박도윤",

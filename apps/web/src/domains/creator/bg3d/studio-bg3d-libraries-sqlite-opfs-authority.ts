@@ -82,17 +82,31 @@ export interface StudioBg3dLibraryMutationContext {
   getBlob(receipt: StudioBg3dLibraryBlobReceipt): Promise<Uint8Array>;
 }
 
+/** 기존 V12 writer와 같은 잠금 안에서 읽으며 manifest·CAS를 수정할 수 없다. */
+export interface StudioBg3dLibraryReadSnapshotContext {
+  readonly currentRaw: string | null;
+  getBlob(receipt: StudioBg3dLibraryBlobReceipt): Promise<Uint8Array>;
+}
+
 export interface StudioBg3dLibraryMutationResult<T> {
   /** Strict canonical JSON validated by the domain adapter before returning it. */
   readonly nextRaw: string;
   /** Complete set of CAS hashes referenced by nextRaw. */
   readonly nextRefs: readonly StudioOpfsContentHash[];
   readonly result: T;
+  /** 동기 검사이며 오래된 작업이면 throw한다. DB 요청 인계 뒤의 취소를 되돌리지는 않는다. */
+  readonly assertCurrent?: () => void;
 }
 
 export interface StudioBg3dLibrariesAuthority {
   readManifest(slot: StudioBg3dLibraryManifestSlot): Promise<string | null>;
   readBlob(receipt: StudioBg3dLibraryBlobReceipt): Promise<Uint8Array>;
+  /** callback이 끝날 때까지 동일 origin의 V12 writer를 대기시킨다. 구형 권위에는 없을 수 있다. */
+  withReadSnapshot?<T>(
+    slot: StudioBg3dLibraryManifestSlot,
+    read: (context: StudioBg3dLibraryReadSnapshotContext) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T>;
   mutate<T>(
     slot: StudioBg3dLibraryManifestSlot,
     currentRefs: (raw: string | null) => readonly StudioOpfsContentHash[],
@@ -302,6 +316,26 @@ export function createStudioBg3dLibrariesAuthority(
       return verifiedBlob(assets, receipt);
     },
 
+    withReadSnapshot<T>(slot: StudioBg3dLibraryManifestSlot,
+      read: (context: StudioBg3dLibraryReadSnapshotContext) => Promise<T>, signal?: AbortSignal) {
+      if (!crossRealmExclusive) return Promise.reject(authorityError("storage-unavailable", "Web Locks가 없어 모델 원본 읽기를 보호할 수 없습니다."));
+      return inRealmExclusive(() => crossRealmExclusive(async () => {
+        throwIfAborted(signal);
+        const { database, assets } = await resources();
+        throwIfAborted(signal);
+        const currentRaw = await database.kvGet(STUDIO_BG3D_LIBRARIES_SQLITE_NAMESPACE, STUDIO_BG3D_LIBRARY_MANIFEST_KEYS[slot]);
+        throwIfAborted(signal);
+        const value = await read(Object.freeze({ currentRaw, async getBlob(receipt: StudioBg3dLibraryBlobReceipt) {
+          throwIfAborted(signal);
+          const bytes = await verifiedBlob(assets, receipt);
+          throwIfAborted(signal);
+          return bytes;
+        } }));
+        throwIfAborted(signal);
+        return value;
+      }));
+    },
+
     mutate<T>(
       slot: StudioBg3dLibraryManifestSlot,
       currentRefs: (raw: string | null) => readonly StudioOpfsContentHash[],
@@ -348,6 +382,7 @@ export function createStudioBg3dLibrariesAuthority(
         });
         const mutation = await operation(context);
         throwIfAborted(signal);
+        mutation.assertCurrent?.();
         if (typeof mutation.nextRaw !== "string" || mutation.nextRaw.length === 0) {
           throw authorityError("corrupt", "BG3D 다음 manifest가 비어 있습니다.");
         }
@@ -420,6 +455,8 @@ export function createStudioBg3dLibrariesAuthority(
 
         try {
           throwIfAborted(signal);
+          // owner 보호 뒤 다시 검사하고 await 없이 바로 아래 kvSet 요청으로 인계한다.
+          mutation.assertCurrent?.();
         } catch (cause) {
           await setReconciledOwnerRefs(
             oldRefs,

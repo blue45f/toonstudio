@@ -12,7 +12,7 @@ import { parseStudioHybridDccPrecisionInput } from "./studio-hybrid-dcc-precisio
 import type { StudioPlanarPoint } from "./studio-hybrid-dcc-face-modeling-geometry";
 import type { StudioFaceModelingTool } from "./studio-hybrid-dcc-face-modeling-workspace";
 
-export type StudioFaceModelingDistanceTool = Exclude<StudioFaceModelingTool, "draw">;
+export type StudioFaceModelingDistanceTool = Exclude<StudioFaceModelingTool, "draw" | "follow-me">;
 export type StudioFaceModelingStepScale = "fine" | "normal" | "coarse";
 
 /**

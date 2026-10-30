@@ -58,6 +58,11 @@
       "import": "./src/production/index.ts",
       "default": "./src/production/index.ts"
     },
+    "./production/scope": {
+      "types": "./src/production/scope.ts",
+      "import": "./src/production/scope.ts",
+      "default": "./src/production/scope.ts"
+    },
     "./infrastructure-fabric": {
       "types": "./src/infrastructure-fabric.ts",
       "import": "./src/infrastructure-fabric.ts",

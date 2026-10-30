@@ -34,6 +34,8 @@ import {
   type StudioVrmExtensionContext,
 } from "./studio-vrm-export-vrm-extension";
 
+import type { StudioVrmExportLookAt } from "./studio-vrm-export-look-at";
+
 /** Stable, version-free generator string. A timestamp here would break byte determinism. */
 export const STUDIO_VRM_EXPORT_GENERATOR = "ToonStudio Studio VRM Exporter";
 
@@ -144,6 +146,8 @@ export interface StudioVrmExportSceneSnapshot {
   readonly images?: readonly StudioVrmExportImage[];
   readonly expressions?: StudioVrmExportExpressions;
   readonly firstPerson?: readonly StudioVrmExportFirstPersonAnnotation[];
+  /** `VRMC_vrm.lookAt`. 생략하면 시선을 정의하지 않는다(로더가 시선을 만들지 않는다). */
+  readonly lookAt?: StudioVrmExportLookAt;
   readonly springBone?: StudioVrmExportSpringBoneConfig;
 }
 
@@ -895,13 +899,8 @@ export function planStudioVrmExport(snapshot: StudioVrmExportSceneSnapshot): Stu
     morphTargetCountByNode,
   };
 
-  const vrmExtension = buildStudioVrmcVrmExtension({
-    meta: snapshot.meta,
-    humanoidBones: snapshot.humanoidBones,
-    expressions: snapshot.expressions,
-    firstPerson: snapshot.firstPerson,
-    context,
-  });
+  const { meta, humanoidBones, expressions, firstPerson, lookAt } = snapshot;
+  const vrmExtension = buildStudioVrmcVrmExtension({ meta, humanoidBones, expressions, firstPerson, lookAt, context });
   const springBoneExtension = buildStudioVrmcSpringBoneExtension(snapshot.springBone, context);
 
   const extensionsUsed = new Set<string>([STUDIO_VRM_EXPORT_VRM_EXTENSION]);

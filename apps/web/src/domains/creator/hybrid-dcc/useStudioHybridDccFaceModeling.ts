@@ -48,11 +48,14 @@ import {
   previewStudioHybridDccFaceModeling,
   StudioFaceModelingCommitError,
   studioHybridDccFaceDrawingGuide,
+  studioHybridDccFaceFollowMeGuide,
   studioHybridDccFaceModelingRange,
   type StudioFaceModelingRequest,
   type StudioFaceModelingTool,
   type StudioHybridDccWorkspaceEdit,
 } from "./studio-hybrid-dcc-face-modeling-workspace";
+
+import { createStudioFollowMeNormalPath, parseStudioFollowMePath } from "./studio-hybrid-dcc-follow-me-input";
 
 import type { StudioPlanarPoint } from "./studio-hybrid-dcc-face-modeling-geometry";
 import type { StudioOffsetDirection } from "./studio-hybrid-dcc-face-modeling-kernel";
@@ -92,12 +95,13 @@ export function useStudioHybridDccFaceModeling(
   const sectionRef = useRef<HTMLElement | null>(null);
   const { workspace, editingDisabled = false } = props;
   const selection = props.componentSelection ?? EMPTY_SELECTION;
-  const sculpting = Boolean(props.onSculptStroke);
+  const sculpting = Boolean(props.onSculptStroke || props.sculptGesture);
 
   const [open, setOpenState] = useState(false);
   const [tool, setToolState] = useState<StudioFaceModelingTool>("push-pull");
   const [direction, setDirectionState] = useState<StudioOffsetDirection>("inward");
   const [text, setTextState] = useState("");
+  const [pathText, setPathTextState] = useState("");
   const [drawPoints, setDrawPoints] = useState<readonly StudioPlanarPoint[]>([]);
   const [dragging, setDragging] = useState(false);
   /** 큰 메시에서 핸들을 끄는 동안 미리보기를 멈춰 둘 값(끌기 시작 시점의 입력). */
@@ -119,10 +123,12 @@ export function useStudioHybridDccFaceModeling(
     run ? "run" : "no-run",
     sculpting ? "sculpt" : "model",
   ].join("|");
-  const engaged = tool === "draw" ? drawPoints.length > 0 : text.trim() !== "";
+  const inputText = tool === "follow-me" ? pathText : text;
+  const engaged = tool === "draw" ? drawPoints.length > 0 : inputText.trim() !== "";
 
   const resetInputs = () => {
     setTextState("");
+    setPathTextState("");
     setDrawPoints([]);
     setDragging(false);
     setFrozenText(null);
@@ -176,7 +182,7 @@ export function useStudioHybridDccFaceModeling(
         : null;
 
   const active = open && unavailable === null;
-  const distanceTool = tool === "draw" ? null : tool;
+  const distanceTool = tool === "draw" || tool === "follow-me" ? null : tool;
 
   const extent = useMemo(() => (record ? studioFaceModelingExtent(record.mesh) : 1), [record]);
   const rangeResult = useMemo(
@@ -192,18 +198,24 @@ export function useStudioHybridDccFaceModeling(
     [active, tool, workspace, selection],
   );
 
+  const followMeGuideResult = useMemo(
+    () => (active && tool === "follow-me" ? studioHybridDccFaceFollowMeGuide(workspace, selection) : null),
+    [active, tool, workspace, selection],
+  );
+  const pathParsed = useMemo(() => parseStudioFollowMePath(pathText), [pathText]);
   const faceCount = record ? record.mesh.faces.length : 0;
   const selectionCount = selection.mode === "face" ? selection.elementIds.length : 0;
   const previewCost = studioFaceModelingPreviewCost(faceCount, selectionCount);
   const debounced = previewCost > STUDIO_FACE_MODELING_LIMITS.debouncedPreviewCost;
   // 입력이 멈추면 대기 중이던 값을 미리보기에 반영한다. 입력이 이어지면 이전 대기를 지우고 다시 센다.
   useEffect(() => {
-    if (!debounced || settledText === text) return;
-    const timer = setTimeout(() => setSettledText(text), STUDIO_FACE_MODELING_LIMITS.previewDebounceMs);
+    if (!debounced || settledText === inputText) return;
+    const timer = setTimeout(() => setSettledText(inputText), STUDIO_FACE_MODELING_LIMITS.previewDebounceMs);
     return () => clearTimeout(timer);
-  }, [debounced, text, settledText]);
-  const pending = debounced && frozenText === null && settledText !== text;
-  const previewText = frozenText ?? (debounced ? settledText : text);
+  }, [debounced, inputText, settledText]);
+  const pending = debounced && frozenText === null && settledText !== inputText;
+  const previewText = frozenText ?? (debounced ? settledText : inputText);
+  const previewPathParsed = useMemo(() => parseStudioFollowMePath(previewText), [previewText]);
   const parsed = useMemo(() => parseStudioFaceModelingDistance(text), [text]);
   const previewParsed = useMemo(() => parseStudioFaceModelingDistance(previewText), [previewText]);
   const check = distanceTool && rangeView && parsed.kind === "value"
@@ -211,13 +223,14 @@ export function useStudioHybridDccFaceModeling(
     : null;
   const request = useMemo((): StudioFaceModelingRequest | null => {
     if (tool === "draw") return drawPoints.length >= 3 ? { tool, points: drawPoints } : null;
+    if (tool === "follow-me") return previewPathParsed.kind === "value" ? { tool, path: previewPathParsed.points } : null;
     if (!rangeView || previewParsed.kind !== "value") return null;
     const previewCheck = checkStudioFaceModelingDistance(tool, previewParsed.value, rangeView.allowed);
     if (!previewCheck.ok) return null;
     return tool === "offset"
       ? { tool, distance: previewCheck.distance, direction }
       : { tool, distance: previewCheck.distance };
-  }, [tool, drawPoints, rangeView, previewParsed, direction]);
+  }, [tool, drawPoints, rangeView, previewParsed, previewPathParsed, direction]);
   const preview = useMemo(
     () => (active && engaged && request ? previewStudioHybridDccFaceModeling(workspace, selection, request) : null),
     [active, engaged, request, workspace, selection],
@@ -235,6 +248,10 @@ export function useStudioHybridDccFaceModeling(
       } else if (preview && !preview.ok) {
         error = describeStudioFaceModelingFailure(bt, preview, tool);
       }
+    } else if (tool === "follow-me") {
+      if (pathParsed.kind === "invalid") {
+        error = bt("경로는 2~64개 점으로 입력하세요. 각 줄에 숫자 X, Y, Z 세 개를 적어 주세요.", "Enter 2–64 path points, with three numeric X, Y, Z coordinates on each line.");
+      } else if (preview && !preview.ok) error = describeStudioFaceModelingFailure(bt, preview, tool);
     } else if (parsed.kind === "invalid") {
       error = describeStudioFaceModelingParseError(bt);
     } else if (check && !check.ok) {
@@ -245,7 +262,8 @@ export function useStudioHybridDccFaceModeling(
     }
   }
   const unusable = active
-    ? (rangeResult && !rangeResult.ok ? rangeResult : guideResult && !guideResult.ok ? guideResult : null)
+    ? (rangeResult && !rangeResult.ok ? rangeResult : guideResult && !guideResult.ok ? guideResult
+      : followMeGuideResult && !followMeGuideResult.ok ? followMeGuideResult : null)
     : null;
   const unusableMessage = unusable ? describeStudioFaceModelingFailure(bt, unusable, tool) : null;
   const previewSummary = preview?.ok ? describeStudioFaceModelingPreview(bt, preview.value.plan) : null;
@@ -258,7 +276,10 @@ export function useStudioHybridDccFaceModeling(
     hint = bt("다른 편집이 끝나면 적용할 수 있어요.", "You can apply once the other edit has finished.");
   }
   if (!error && !hint && active && engaged && pending) {
-    hint = bt(
+    hint = tool === "follow-me" ? bt(
+      "입력을 멈추면 미리보기를 계산해요. Ctrl+Enter 또는 ⌘+Enter를 누르면 바로 계산해요.",
+      "The preview is calculated once you stop typing. Press Ctrl+Enter or Command+Enter to calculate it right away.",
+    ) : bt(
       "입력을 멈추면 미리보기를 계산해요. Enter를 누르면 바로 계산해요.",
       "The preview is calculated once you stop typing. Press Enter to calculate it right away.",
     );
@@ -371,7 +392,19 @@ export function useStudioHybridDccFaceModeling(
     },
     /** 입력이 멈추기를 기다리는 중인지, 그리고 기다리지 않고 지금 입력으로 미리보기를 계산한다. */
     pending,
-    flushPreview: () => setSettledText(text),
+    flushPreview: () => setSettledText(inputText),
+    /** 따라 만들기의 오브젝트 기준 경로 */
+    pathText,
+    setPathText: (next: string) => {
+      if (!edited()) return;
+      setPathTextState(next);
+    },
+    followMeGuide: followMeGuideResult?.ok ? followMeGuideResult.value : null,
+    makeNormalPath: () => {
+      if (!followMeGuideResult?.ok || !edited()) return;
+      const guide = followMeGuideResult.value;
+      setPathTextState(createStudioFollowMeNormalPath(guide.centroid, guide.normal, Math.max(extent * 0.5, guide.minSegmentLength * 10)));
+    },
     /** 면 그리기 */
     guide: guideResult?.ok ? guideResult.value : null,
     drawPoints,

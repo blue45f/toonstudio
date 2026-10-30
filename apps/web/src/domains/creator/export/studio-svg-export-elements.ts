@@ -1,4 +1,5 @@
 import { hasActiveImageFilters } from "../render/studio-konva-filter-fields";
+import { explicitStudioFrameClipTarget } from "@toonstudio/studio-project-model/frame-clip";
 import {
   planStudioFocusLineSegments,
   planStudioSpeedLineSegments,
@@ -196,6 +197,11 @@ export function elBounds(el: SvgExportEl): { x: number; y: number; w: number; h:
 /** 요소가 들어가야 할 패널(StudioPage containingPanel 포트) — 없으면 null. */
 export function containingPanel(el: SvgExportEl, all: readonly SvgExportEl[]): SvgFrameElLike | null {
   if (el.type === "frame") return null;
+  if (el.frameClipId !== undefined) {
+    const explicit = explicitStudioFrameClipTarget(el.frameClipId, all.filter((value): value is SvgFrameElLike => value.type === "frame"));
+    if (!explicit) throw new Error("원고에 연결된 컷을 찾을 수 없습니다. 컷 연결을 확인한 뒤 내보내세요.");
+    return explicit;
+  }
   const b = elBounds(el);
   const cx = b.x + b.w / 2;
   const cy = b.y + b.h / 2;

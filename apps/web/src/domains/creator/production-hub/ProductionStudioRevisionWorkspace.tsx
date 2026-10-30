@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 
 import {
   evaluateProductionStudioRevisionCoverage,
-  inferProductionStudioDocumentRole,
+  productionStudioDeliverableRole,
   type ProductionProjectAggregate,
   type ProductionStudioDocumentRole,
   type ProductionStudioRevisionLink,
@@ -49,6 +49,7 @@ function activeAssignment(
   roleLens: ProductionStudioRoleLens,
   actorUserId: string | null,
 ): RoleAssignment | null {
+  if (!actorUserId?.trim()) return null;
   const priorities: Readonly<Record<ProductionStudioRoleLens, readonly RoleAssignment["roleType"][]>> = {
     story: ["story-lead", "writer", "adaptation-writer"],
     art: ["art-lead", "storyboard-artist", "line-artist", "background-artist", "colorist"],
@@ -107,7 +108,7 @@ export function ProductionStudioRevisionWorkspace({
   const episodes = aggregate.episodes.filter((episode) => episode.state !== "cancelled");
   const initialEpisodeId = episodes.find((episode) => aggregate.deliverables.some((deliverable) => (
     deliverableBelongsToEpisode(deliverable, episode.episodeId)
-    && inferProductionStudioDocumentRole(deliverable.type) !== null
+    && productionStudioDeliverableRole(aggregate, deliverable) !== null
   )))?.episodeId ?? episodes[0]?.episodeId ?? "";
   const [selectedEpisodeId, setSelectedEpisodeId] = useState(initialEpisodeId);
   const [linkingId, setLinkingId] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export function ProductionStudioRevisionWorkspace({
   const rows = useMemo(() => aggregate.deliverables
     .filter((deliverable) => deliverableBelongsToEpisode(deliverable, selectedEpisodeId))
     .flatMap((deliverable) => {
-      const role = inferProductionStudioDocumentRole(deliverable.type);
+      const role = productionStudioDeliverableRole(aggregate, deliverable);
       if (!role) return [];
       const submission = aggregate.submissions.find((entry) => (
         entry.id === (deliverable.approvedSubmissionId ?? deliverable.currentSubmissionId)

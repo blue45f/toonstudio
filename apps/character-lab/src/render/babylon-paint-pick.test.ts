@@ -68,6 +68,14 @@ describe("pick", () => {
     expect(harness.engine.pick(...handleNdc("chest"))).toMatchObject({ partId: 2, role: "skin" });
   });
 
+  it("가림 무시는 명시적 대상이 있을 때만 적용하고 기본 최근접 의상 히트를 보존한다", () => {
+    const ndc = handleNdc("chest");
+    expect(harness.engine.pick(...ndc)).toMatchObject({ role: "top" });
+    expect(harness.engine.pick(...ndc, { targetPart: "skin" })).toMatchObject({ role: "top" });
+    expect(harness.engine.pick(...ndc, { ignoreOccludingParts: true })).toMatchObject({ role: "top" });
+    expect(harness.engine.pick(...ndc, { targetPart: "skin", ignoreOccludingParts: true })).toMatchObject({ role: "skin" });
+  });
+
   it("스키닝 포즈를 반영한다: 엉덩이를 90° 눕히면 원래 가슴 위치는 비고 새 가슴 위치가 맞는다", () => {
     const before = handleNdc("chest");
     expect(harness.engine.pick(...before)).not.toBeNull();

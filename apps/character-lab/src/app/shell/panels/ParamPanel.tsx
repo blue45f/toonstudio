@@ -18,7 +18,6 @@
  */
 import { useCallback, useId, useState, useSyncExternalStore } from "react";
 
-import { computeShaperMuscleFatBlendShapeWeights } from "../../../animation/two-bone-ik";
 import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
@@ -281,10 +280,6 @@ export function ParamPanel() {
   const headCount = proportions.height / (proportions.head.scale * 2);
   const armLength = proportions.upperArmLength + proportions.lowerArmLength;
   const legLength = proportions.upperLegLength + proportions.lowerLegLength;
-  const shaperBlendWeights = computeShaperMuscleFatBlendShapeWeights({
-    muscleSlider: (bodyValue("shoulderWidth") + 1) * 0.5,
-    fatSlider: (bodyValue("hip") + 1) * 0.5,
-  });
   const isKit = recipe.source.kind === "kit";
   const kitBaseHeight = useKitBaseHeight();
   const limited = (isKit ? [...CAPABILITY_SLOTS, ...KIT_EXTRA_CAPABILITY_SLOTS] : CAPABILITY_SLOTS)
@@ -317,10 +312,6 @@ export function ParamPanel() {
           ? `키트 베이스 키 ${meters(kitBaseHeight)} m(manifest 실측, 체형 슬라이더 반영 전 기준)`
           : `${isKit ? "참고값(절차 비례 계산, 키트 베이스 실측 아님) · " : ""}키 ${meters(proportions.height)} m · 약 ${headCount.toFixed(1)}등신 · 팔 ${meters(armLength)} m · 다리 ${meters(legLength)} m`}
       </p>
-      <p className="cl-param-shaper-weights" data-testid="param-shaper-blend-weights">
-        SHAPER 블렌드쉐입 가중치: 신체 근육 {shaperBlendWeights.bodyMuscleWeight.toFixed(0)}% · 체지방 {shaperBlendWeights.bodyFatWeight.toFixed(0)}% (의상 감쇠 {shaperBlendWeights.costumeMuscleWeight.toFixed(0)}% / {shaperBlendWeights.costumeFatWeight.toFixed(0)}%)
-      </p>
-
       <div className="cl-param-presets" role="group" aria-label="빠른 체형 프리셋">
         {QUICK_PROPORTION_PRESETS.map((preset) => (
           <button

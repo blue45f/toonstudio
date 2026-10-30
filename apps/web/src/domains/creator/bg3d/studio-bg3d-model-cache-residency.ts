@@ -58,15 +58,15 @@ export function buildStudioBg3dModelCacheResidencyCandidates(input: {
   return Object.freeze(
     [...input.cache.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([modelId, entry]) => Object.freeze({
-        assetId: modelId,
+      .map(([cacheKey, entry]) => Object.freeze({
+        assetId: cacheKey,
         estimatedGpuBytes: safeBytes(entry),
-        visibleRefCount: visibleRefs.get(modelId) ?? 0,
-        selectedRefCount: selectedRefs.get(modelId) ?? 0,
-        pinCount: pinned.has(modelId) ? 1 : 0,
-        lastUsedOrdinal: input.lastUsedOrdinalByModelId?.get(modelId) ?? 0,
-        ...(input.prefetchPriorityByModelId?.has(modelId)
-          ? { prefetchPriority: input.prefetchPriorityByModelId.get(modelId)! }
+        visibleRefCount: visibleRefs.get(entry.record.id) ?? 0,
+        selectedRefCount: selectedRefs.get(entry.record.id) ?? 0,
+        pinCount: pinned.has(entry.record.id) ? 1 : 0,
+        lastUsedOrdinal: input.lastUsedOrdinalByModelId?.get(entry.record.id) ?? 0,
+        ...(input.prefetchPriorityByModelId?.has(entry.record.id)
+          ? { prefetchPriority: input.prefetchPriorityByModelId.get(entry.record.id)! }
           : {}),
       })),
   );

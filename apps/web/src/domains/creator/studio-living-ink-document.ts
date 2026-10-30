@@ -284,6 +284,7 @@ export function createStudioLivingInkCanonicalTransaction(input: Readonly<{
   canonicalImageId: string;
   result: StudioLivingInkCanonicalResult;
   mutationLocked?: boolean;
+  replaceExistingImageId?: string | null;
 }>): StudioLivingInkCanonicalTransactionResult {
   const sourceIndex = input.sourceElementId
     ? input.elements.findIndex(({ id }) => id === input.sourceElementId)
@@ -298,7 +299,8 @@ export function createStudioLivingInkCanonicalTransaction(input: Readonly<{
   }
 
   const existingImageIndex = input.elements.findIndex((element) =>
-    isLivingInkImage(element) && element.livingInkReceipt?.pageId === input.result.pageId
+    isLivingInkImage(element) && element.livingInkReceipt?.pageId === input.result.pageId && element.frameClipId === drawSource?.frameClipId
+      && (input.replaceExistingImageId === undefined || element.id === input.replaceExistingImageId)
   );
   if (
     existingImageIndex < 0
@@ -336,7 +338,7 @@ export function createStudioLivingInkCanonicalTransaction(input: Readonly<{
     : null;
   const canonicalImage: El & ImageEl = Object.freeze({
     ...(existingImage ?? {}),
-    id: existingImage?.id ?? input.canonicalImageId,
+    id: input.canonicalImageId,
     type: "image",
     src: input.result.src,
     x: 0,
@@ -348,6 +350,8 @@ export function createStudioLivingInkCanonicalTransaction(input: Readonly<{
     lockAspect: true,
     blendMode: "multiply",
     livingInkReceipt: receipt,
+    ...(drawSource?.frameClipId ? { frameClipId: drawSource.frameClipId, noClip: false } : {}),
+    ...(drawSource?.groupId ? { groupId: drawSource.groupId } : {}),
   });
 
   if (existingImageIndex >= 0) {

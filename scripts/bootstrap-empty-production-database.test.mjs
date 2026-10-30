@@ -18,6 +18,7 @@ import {
   expectedResetConfirmation,
   extractDrizzleSchemaPaths,
   findProvisioningMismatches,
+  generateCurrentSchemaDdl,
   loadBootstrapContract,
   parseBootstrapArguments,
   parseGeneratedSchemaDdl,
@@ -307,6 +308,20 @@ describe("bootstrap SQL and repository contract", () => {
     expect(sql).not.toContain('public."user"');
   });
 
+  test("0039 소유 테이블은 현재 Drizzle 스키마와 중복 생성하지 않는다", () => {
+    const foundationSql = readFileSync(
+      new URL("../apps/api/src/platform/database/migrations/0039_creator_asset_platform_foundation.sql", import.meta.url),
+      "utf8",
+    );
+    const tables = [...foundationSql.matchAll(/^CREATE TABLE public\."([^"]+)"/gmu)]
+      .map((match) => match[1]);
+    expect(tables).toHaveLength(14);
+    const boundarySql = buildForwardMigrationBoundarySql();
+    for (const table of tables) {
+      expect(boundarySql).toMatch(new RegExp(`\\bpublic\\.${table}\\b`, "u"));
+    }
+  });
+
   test("runtime ACL preserves migration and object-storage boundaries", () => {
     const sql = buildRuntimeBootstrapAclSql("toonspectrum_runtime");
     expect(sql).toContain("REVOKE ALL ON ALL TABLES IN SCHEMA public");
@@ -482,10 +497,16 @@ describe("bootstrap SQL and repository contract", () => {
       "0113_production_episode_voice_commentary",
       "0114_studio_ai_premium_route_ledger",
       "0115_studio_ai_usage_ledger_reserved_tokens",
-      "0116_customer_support",
+      "0116_studio_review_comment_pen_strokes",
+      "0117_studio_scoped_write_policy",
+      "0118_customer_support",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([
+      "scripts/bootstrap-forward-migration-boundary.mjs",
+      "apps/api/src/platform/database/creator-asset-platform.schema.ts",
+      "apps/api/src/platform/database/creator-asset-processing.schema.ts",
+      "apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",
       "scripts/creator-hiring-database-contract.mjs",
       "scripts/creator-hiring-automation-database-contract.mjs",
       "scripts/creator-career-confirmation-database-contract.mjs",
@@ -520,6 +541,21 @@ describe("bootstrap SQL and repository contract", () => {
 });
 
 describe("deterministic Drizzle base schema provisioning", () => {
+  test("manifest와 생성 DDL이 함께 만드는 비멱등 테이블은 모두 전방 경계에 포함한다", () => {
+    const generatedTables = new Set(generateCurrentSchemaDdl().tableNames);
+    const boundarySql = buildForwardMigrationBoundarySql();
+    const boundaryTables = new Set(
+      [...boundarySql.matchAll(/\bpublic\.([a-z_][a-z0-9_]*)\b/gu)].map((match) => match[1]),
+    );
+    const overlaps = loadBootstrapContract().pending.flatMap((migration) =>
+      [...migration.contents.matchAll(/^\s*CREATE\s+TABLE\s+(?:"?public"?\.)?"?([a-z_][a-z0-9_]*)"?\s*\(/gimu)]
+        .map((match) => ({ migration: migration.id, table: match[1] }))
+        .filter(({ table }) => generatedTables.has(table)),
+    );
+    expect(overlaps.length).toBeGreaterThanOrEqual(14);
+    expect(overlaps.filter(({ table }) => !boundaryTables.has(table))).toEqual([]);
+  }, 60_000);
+
   test("derives the provisioning schema entries from the live Drizzle config", () => {
     const schemaPaths = resolveDrizzleSchemaPaths();
     expect(schemaPaths).toHaveLength(11);

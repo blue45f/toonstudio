@@ -31,7 +31,7 @@ export const BLENDER_FANTASY_WEAPON_PRESETS: readonly BlenderFantasyWeaponPreset
       nameKo: "천검 12궁 어검술 (부유 검진)",
       categoryKo: "어검술·마법 부유 무기",
       descriptionKo:
-        "Blender `FollowPath` 공전 궤도와 `TrackTo` 표적 조준 제약을 결합해 등 뒤 12자루의 영체 검이 일제히 적을 겨누는 하이라이트 컷을 생성합니다.",
+        "공전 궤도와 표적 조준 설정을 결합한 12자루 영체 검 연출 프리셋입니다.",
       bladeCount: 12,
       baseLengthMeters: 1.25,
       defaultSocket: "floating-halo-orbit",
@@ -357,7 +357,7 @@ export const BLENDER_FANTASY_CROWD_PRESETS: readonly BlenderFantasyCrowdPreset[]
       nameKo: "왕국 성기사단 대열 행군 (방진)",
       categoryKo: "기사단 출정·대군 행렬",
       descriptionKo:
-        "Blender GeometryNodes 격자·열 분포와 `BoidRuleFollowLeader` 규칙으로 창병·방패병·기수가 흐트러짐 없이 진군하는 대규모 출정 컷을 구현합니다.",
+        "격자·열 배치와 선두 추종 설정을 조합한 대규모 군단 진군 프리셋입니다.",
       distributionMode: "PHALANX_RANKS",
       defaultAgentCount: 120,
       areaWidthMeters: 28,

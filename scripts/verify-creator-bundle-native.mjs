@@ -3,6 +3,7 @@
  * 사용: node scripts/verify-creator-bundle-native.mjs --asset-root <private ingest> \
  *   --base-url http://127.0.0.1:<Vite port> [--out <local evidence directory>]
  *   [--reuse-validation <같은 카탈로그로 성공한 증거 폴더>]
+ *   [--expected-intake licensed-20261029] (Cemetery50+SmallProps115의 paired 편입 검수)
  * 원격 요청/업로드 없이 공개 SHA URL만 private 검증 바이트로 응답한다. 출력은 로컬 증거와 계획뿐이다.
  */
 import { createHash } from "node:crypto";
@@ -13,13 +14,13 @@ import { chromium } from "playwright";
 import { WEB_PUBLIC } from "./lib/repo-paths.mjs";
 import { loadPackRightsLedger } from "./lib/creator-bundle-pack-rights.mjs";
 import { createBundleV2DeployPlan } from "./plan-creator-bundle-deploy.mjs";
-import { assertPrivateNativeBody, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+import { assertPrivateNativeBody, LICENSED_NATIVE_INTAKE, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
 
 const options = {};
 for (let index = 2; index < process.argv.length; index += 1) {
   const key = process.argv[index];
-  if (!["--asset-root", "--base-url", "--out", "--lane", "--reuse-validation"].includes(key) || !process.argv[index + 1]) {
-    throw new Error("--asset-root, --base-url, --out, --lane, --reuse-validation 옵션과 값을 확인하세요.");
+  if (!["--asset-root", "--base-url", "--out", "--lane", "--reuse-validation", "--expected-intake"].includes(key) || !process.argv[index + 1]) {
+    throw new Error("--asset-root, --base-url, --out, --lane, --reuse-validation, --expected-intake 옵션과 값을 확인하세요.");
   }
   options[key.slice(2)] = process.argv[++index];
 }
@@ -31,6 +32,8 @@ if (origin.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes
 }
 const lane = options.lane ?? "hardware";
 if (!["hardware", "swiftshader"].includes(lane)) throw new Error("--lane은 hardware 또는 swiftshader여야 합니다.");
+const expectedIntake = options["expected-intake"];
+if (expectedIntake !== undefined && expectedIntake !== LICENSED_NATIVE_INTAKE) throw new Error("--expected-intake는 licensed-20261029만 지원합니다.");
 const output = options.out ? resolve(options.out) : mkdtempSync(join(tmpdir(), "toonstudio-bundle-native-"));
 if (output === WEB_PUBLIC || output.startsWith(`${WEB_PUBLIC}${sep}`)) throw new Error("검증 출력은 public 밖이어야 합니다.");
 mkdirSync(output, { recursive: true });
@@ -38,10 +41,14 @@ const themePath = join(WEB_PUBLIC, "assets/3d/environments/bundle-v1/theme-packs
 const themeBody = readFileSync(themePath);
 const catalogSha256 = createHash("sha256").update(themeBody).digest("hex");
 const themePacks = JSON.parse(themeBody);
+const ledger = loadPackRightsLedger();
+const rightsContext = { themePacks, ledger, expectedIntake };
+const rightsProblems = nativeCatalogRightsProblems(rightsContext);
+if (rightsProblems.length) throw new Error(`native 카탈로그/원장 권리 대조 실패: ${rightsProblems.join(" / ")}`);
 const assetRoot = realpathSync(options["asset-root"]);
-const { plan, errors: planErrors } = createBundleV2DeployPlan({ themePacks, assetRoot, ledger: loadPackRightsLedger() });
+const { plan, errors: planErrors } = createBundleV2DeployPlan({ themePacks, assetRoot, ledger });
 if (!plan || planErrors.length || plan.excludedByRights.length) throw new Error(`권리/경로/실물 계획 검증 실패: ${planErrors.join(" / ")}`);
-const representatives = selectNativeRepresentatives(themePacks);
+const representatives = selectNativeRepresentatives(themePacks, { expectedIntake });
 const byPath = new Map(plan.objects.filter((object) => object.source).map((object) => [object.publicPath, object]));
 if (plan.totals.glbAssets !== themePacks.assets.length) throw new Error("계획의 전수 모델 개수가 다릅니다.");
 writeFileSync(join(output, "native-deploy-plan.json"), `${JSON.stringify(plan, null, 2)}\n`);
@@ -54,7 +61,7 @@ if (options["reuse-validation"]) {
   const rowsBody = readFileSync(join(previous, "native-validation.json"));
   const summary = JSON.parse(summaryBody);
   const previousRows = JSON.parse(rowsBody);
-  const problems = reusableNativeValidationProblems({ assets: themePacks.assets, rows: previousRows, summary, catalogSha256 });
+  const problems = reusableNativeValidationProblems({ assets: themePacks.assets, rows: previousRows, summary, catalogSha256, ...rightsContext });
   if (problems.length) throw new Error(problems.join(" / "));
   rows.push(...previousRows);
   reusedValidation = { evidence: basename(previous), validated: previousRows.length, sourceCatalogSha256: catalogSha256,
@@ -160,7 +167,7 @@ try {
   } else {
     console.log(`카탈로그·원본 SHA가 같은 이전 모바일 Worker 전수 증거 ${rows.length}개 재사용`);
   }
-  stage = "eight-pack-representative-renders";
+  stage = "registered-pack-representative-renders";
   for (const [index, representative] of representatives.entries()) {
     const proof = await page.evaluate((assetIndex) => window.__creatorBundleNative.render(assetIndex), representative.index);
     const screenshot = `${String(index + 1).padStart(2, "0")}-${themePacks.packs[proof.packIndex].catalogIds[0]}.png`;
@@ -173,11 +180,11 @@ try {
   errors.push(`${stage}: ${error instanceof Error ? error.stack : String(error)}`);
 } finally {
   if (page && !page.isClosed()) worker = await page.evaluate(() => window.__bundleNativeWorkerTrace).catch(() => undefined);
-  const problems = nativeProofProblems({ assets: themePacks.assets, rows, worker, representatives, renders, wrongHash, errors, lane, reusedValidation });
+  const problems = nativeProofProblems({ assets: themePacks.assets, rows, worker, representatives, renders, wrongHash, errors, lane, reusedValidation, ...rightsContext });
   const summary = { schema: "toonstudio.creator-bundle-native-proof.v1", status: problems.length ? "failed" : "ok", stage,
     scope: "로컬 SHA URL 응답 · 실제 prepareVerifiedBg3dModelRecord · 모바일 Worker 전수 · 실제 Three 로더/2m 정규화 대표 검수. 운영 배포/실제 모바일 GPU 성능 검증은 아님.",
     lane, browserVersion: browser?.version(), browserBinary, browserGpuFlags, reusedValidation,
-    catalogSha256,
+    catalogSha256, expectedIntake,
     assets: themePacks.assets.length, bytes: plan.totals.assetBytes, validated: rows.filter((row) => row.ok).length,
     failures: rows.filter((row) => !row.ok), worker, wrongHash, renders, problems, rawModelsPublished: false };
   writeFileSync(join(output, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);

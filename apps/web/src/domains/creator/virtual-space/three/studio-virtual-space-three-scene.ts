@@ -7,6 +7,7 @@ import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtua
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import type { StudioVirtualSpaceWorldManifest } from "../studio-virtual-space-world-manifest";
 import { createStudioThreeGlbLoader, loadStudioThreeModelProps, type StudioThreeModelController } from "./studio-virtual-space-three-asset-loader";
+import { createStudioThreeActorLoader } from "./studio-virtual-space-three-actor-loader";
 import { isStudioThreeCampusManifest, studioThreeGeneratedProps, studioThreeManifestProps } from "./studio-virtual-space-three-generated-assets";
 import { loadStudioThreeZoneDioramas } from "./studio-virtual-space-three-dioramas";
 
@@ -639,104 +640,28 @@ export function applyNaturalVrmPosture(
  */
 export function loadStudioThreeAssets(
   scene: THREE.Scene,
-  actorNodes: ReadonlyMap<string, StudioThreeActorNode>,
+  actorNodes: Map<string, StudioThreeActorNode>,
   isDisposed: () => boolean,
   selfAvatarIndex = 0,
   manifest?: StudioVirtualSpaceWorldManifest,
   onAssetError?: (url: string) => void,
-): ((actorId: string, index: number) => void) & StudioThreeModelController {
+): ((actorId: string, index: number) => void) & StudioThreeModelController & {
+  readonly prunePeerActors: (activePeerActorIds: ReadonlySet<string>) => void;
+} {
   const glbLoader = createStudioThreeGlbLoader();
-
-  const loadActorVrm = (actorId: string, index: number, forceReplace = false) => {
-    const vrmUrl = resolveStudioThreeVrmUrl(index);
-    if (!isVerifiedStudioThreeVrmUrl(vrmUrl)) return;
-    glbLoader.load(
-      vrmUrl,
-      (gltf) => {
-        if (isDisposed()) return;
-        const vrmScene = gltf.scene;
-        if (!vrmScene) return;
-        const node = actorNodes.get(actorId);
-        if (!node || (node.vrmLoaded && !forceReplace)) return;
-
-        // 보조 기계팔(robo_arm 등) 노드가 있는 샘플은 스키닝·바운딩 왜곡 방지를 위해 스케일 축소 및 숨김 처리
-        vrmScene.traverse((child) => {
-          if (child.name && /robo_/i.test(child.name)) {
-            child.visible = false;
-            child.scale.setScalar(0);
-          }
-        });
-
-        // VRM 0.0 에셋은 +Z 정면이므로 Math.PI 회전, VRM 1.0(VRMC_vrm) 에셋은 0 유지
-        const isVrm1 = Boolean(
-          (gltf as { parser?: { json?: { extensions?: { VRMC_vrm?: unknown } } } }).parser?.json?.extensions?.VRMC_vrm,
-        );
-        vrmScene.rotation.y = isVrm1 ? 0 : Math.PI;
-
-        vrmScene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = false;
-            child.receiveShadow = false;
-            child.frustumCulled = false;
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            for (const mat of mats) {
-              if (mat instanceof THREE.MeshBasicMaterial) {
-                if (mat.map) {
-                  mat.map.colorSpace = THREE.SRGBColorSpace;
-                  mat.color.setRGB(0.84, 0.84, 0.88);
-                }
-                mat.needsUpdate = true;
-              } else if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
-                mat.envMapIntensity = 0.22;
-                mat.roughness = Math.max(0.85, mat.roughness);
-                mat.metalness = 0;
-                if (mat.map) {
-                  mat.map.colorSpace = THREE.SRGBColorSpace;
-                  mat.color.setRGB(0.82, 0.82, 0.84);
-                }
-                mat.needsUpdate = true;
-              }
-            }
-          }
-        });
-
-        node.vrmLeftUpperArm = undefined;
-        node.vrmRightUpperArm = undefined;
-        node.vrmLeftLowerArm = undefined;
-        node.vrmRightLowerArm = undefined;
-        node.vrmLeftUpperLeg = undefined;
-        node.vrmRightUpperLeg = undefined;
-        applyNaturalVrmPosture(node, vrmScene);
-        vrmScene.updateMatrixWorld(true);
-
-        const box = new THREE.Box3().setFromObject(vrmScene);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const targetHeight = 1.86;
-        const scale = targetHeight / Math.max(0.1, size.y);
-        vrmScene.scale.setScalar(scale);
-        vrmScene.updateMatrixWorld(true);
-
-        const scaledBox = new THREE.Box3().setFromObject(vrmScene);
-        vrmScene.position.set(0, -scaledBox.min.y, 0);
-
-        node.rigGroup.clear();
-        node.rigGroup.add(vrmScene);
-        node.vrmLoaded = true;
-      },
-      undefined,
-      () => {
-        // VRM 로드 전·실패 시 스타일라이즈드 3D 캐릭터 리그를 그대로 유지한다.
-      },
-    );
-  };
+  const actors = createStudioThreeActorLoader(glbLoader, actorNodes, isDisposed, {
+    resolveUrl: resolveStudioThreeVrmUrl,
+    isVerifiedUrl: isVerifiedStudioThreeVrmUrl,
+    applyPosture: applyNaturalVrmPosture,
+  });
+  const loadActorVrm = actors.load;
 
   const npcIds = ["self", ...(manifest?.npcs ?? CAMPUS_NPCS).map((npc) => npc.id)];
 
   // 1. 초기 진입 로비 아바타(self, concierge) + 10개 구역 풀 3D 건축 디오라마 최우선 로드
   loadActorVrm("self", selfAvatarIndex);
   if (npcIds[1]) loadActorVrm(npcIds[1], 1);
-  if (isStudioThreeCampusManifest(manifest)) loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed);
+  const dioramas = isStudioThreeCampusManifest(manifest) ? loadStudioThreeZoneDioramas(scene, glbLoader, isDisposed, onAssetError) : null;
 
   // 2. 나머지 구역 NPC VRM 아바타 로드
   npcIds.slice(2).forEach((actorId, offset) => loadActorVrm(actorId, offset + 2));
@@ -744,6 +669,32 @@ export function loadStudioThreeAssets(
   // 3. 기존 장비와 실생성 Tripo·Varco 소품·내장 모션을 함께 로드한다.
   const props = isStudioThreeCampusManifest(manifest) || !manifest ? STUDIO_THREE_PROPS : studioThreeManifestProps(manifest);
   const models = loadStudioThreeModelProps(scene, glbLoader, [...props, ...studioThreeGeneratedProps(manifest)], isDisposed, onAssetError);
-  return Object.assign((actorId: string, index: number) => loadActorVrm(actorId, index, true), models);
+  const controllers = [actors, models, ...(dioramas ? [dioramas] : [])];
+  const pendingCount = () => controllers.reduce((count, controller) => count + controller.getPendingCount(), 0);
+  const pendingRevision = () => controllers.reduce((revision, controller) => revision + controller.getPendingRevision(), 0);
+  return Object.assign((actorId: string, index: number) => loadActorVrm(actorId, index, true), {
+    update: models.update,
+    prunePeerActors: actors.prunePeerActors,
+    getPendingCount: pendingCount,
+    getPendingRevision: pendingRevision,
+    async whenIdle() {
+      const failures = new Map<object, unknown>();
+      let before: number;
+      do {
+        before = pendingRevision();
+        const results = await Promise.allSettled(controllers.map((controller) => controller.whenIdle()));
+        results.forEach((result, index) => {
+          const controller = controllers[index];
+          if (controller && result.status === "rejected") failures.set(controller, result.reason);
+        });
+      } while (pendingCount() > 0 || before !== pendingRevision());
+      if (failures.size) throw new AggregateError([...failures.values()], "3D core 작업 종료에 실패했습니다.");
+    },
+    dispose() {
+      const failures: unknown[] = [];
+      for (const controller of controllers) { try { controller.dispose(); } catch (error) { failures.push(error); } }
+      if (failures.length) throw new AggregateError(failures, "3D core 모델 해제에 실패했습니다.");
+    },
+  });
 }
 

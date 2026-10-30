@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { parseSkp } from "openskp";
 
 import {
   STUDIO_BG3D_SKP_MAIN_THREAD_MAX_BYTES,
@@ -18,6 +19,7 @@ import {
   type StudioBg3dSkpConversionOptions,
 } from "./studio-bg3d-skp-conversion-core";
 import { parseStudioBg3dSkpImportReport } from "./studio-bg3d-skp-import-report";
+import { createStudioBg3dSkpSceneSourceMfcBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
 import {
   createBoxPrimitive,
   createFakeOpenSkpModule,
@@ -405,9 +407,18 @@ describe("convertStudioBg3dSkpBytes — cancellation and time limits", () => {
 });
 
 describe("convertStudioBg3dSkpBytes — metadata pass", () => {
+  it("manifest 예산을 넘으면 부분 manifest 대신 unavailable 원인만 남기고 형상은 계속 변환한다", async () => {
+    const bytes = createStudioBg3dSkpSceneSourceMfcBytes();
+    const model = parseSkp(new Uint8Array(bytes).buffer);
+    const { conversion } = options({ scene: sceneOf(), model: { ...model, pages: Array.from({ length: 257 }, () => ({})) } });
+    const output = await convertStudioBg3dSkpBytes(bytes, conversion);
+    expect(output.glb.byteLength).toBeGreaterThan(0);
+    expect(output.sceneSource).toMatchObject({ status: "unavailable", reason: "manifest-budget-exceeded", manifest: null });
+  });
   it("still converts when the second parse fails and says that names are unavailable", async () => {
     const { conversion } = options({ scene: sceneOf(), parseError: new Error("model builder failed") });
-    const { report } = await convertStudioBg3dSkpBytes(VFF_BYTES, conversion);
+    const { report, sceneSource } = await convertStudioBg3dSkpBytes(VFF_BYTES, conversion);
+    expect(sceneSource).toMatchObject({ status: "unavailable", reason: "metadata-parse-failed", manifest: null });
     expect(report.conversion.metadataPass).toBe("failed");
     expect(report.counts.sourceFaces).toBeNull();
     expect(report.names.scenes.available).toBe(false);
@@ -418,14 +429,16 @@ describe("convertStudioBg3dSkpBytes — metadata pass", () => {
 
   it("treats a module without parseSkp the same way", async () => {
     const { conversion } = options({ scene: sceneOf() });
-    const { report } = await convertStudioBg3dSkpBytes(VFF_BYTES, conversion);
+    const { report, sceneSource } = await convertStudioBg3dSkpBytes(VFF_BYTES, conversion);
+    expect(sceneSource).toMatchObject({ status: "unavailable", reason: "parser-unavailable", manifest: null });
     expect(report.conversion.metadataPass).toBe("failed");
   });
 
   it("skips the second parse for very large files to protect time and memory", async () => {
     const big = createSkpHeaderBytes({ byteLength: STUDIO_BG3D_SKP_METADATA_PASS_MAX_BYTES + 1 });
     const { conversion, fake } = options({ scene: sceneOf(), model: modelOf() }, { maxBytes: 64 * 1024 * 1024 });
-    const { report } = await convertStudioBg3dSkpBytes(big, conversion);
+    const { report, sceneSource } = await convertStudioBg3dSkpBytes(big, conversion);
+    expect(sceneSource).toMatchObject({ status: "unavailable", reason: "metadata-pass-size-limit", manifest: null });
     expect(fake.calls.parse).toBe(0);
     expect(report.conversion.metadataPass).toBe("skipped-large");
     expect(report.warnings).toContainEqual({ code: "metadata-unavailable", severity: "info", count: null, detail: "large-file" });

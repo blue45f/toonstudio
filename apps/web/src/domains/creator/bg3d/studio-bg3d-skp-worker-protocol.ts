@@ -41,6 +41,8 @@ export interface StudioBg3dSkpWorkerResultResponse {
   readonly requestId: number;
   readonly glb: ArrayBuffer;
   readonly report: unknown;
+  /** 구 Worker에는 없을 수 있다. 클라이언트가 manifest와 좌표 권위를 다시 검증한다. */
+  readonly sceneSource?: unknown;
 }
 
 export interface StudioBg3dSkpWorkerErrorResponse {

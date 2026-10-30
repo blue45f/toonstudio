@@ -1,4 +1,5 @@
 import type { El, FrameEl } from "./studio-element-model";
+import { explicitStudioFrameClipTarget } from "@toonstudio/studio-project-model/frame-clip";
 
 export interface StudioElementBounds {
   x: number;
@@ -78,6 +79,8 @@ export function panelContainingBounds(
 // 전체 배경처럼 패널보다 훨씬 큰 요소는 제외해 백드롭이 한 칸에 갇히지 않게 한다.
 export function containingPanel(el: El, all: readonly El[]): FrameEl | null {
   if (el.type === "frame") return null;
+  if (el.frameClipId !== undefined) return explicitStudioFrameClipTarget(el.frameClipId,
+    all.filter((value): value is FrameEl => value.type === "frame")) ?? null;
   return panelContainingBounds(elBounds(el), all);
 }
 
@@ -92,7 +95,8 @@ export function createStudioPanelResolver(elements: readonly El[]): (element: El
     if (element.type === "frame" || panels.length === 0) return null;
     const cached = cache.get(element);
     if (cached !== undefined) return cached;
-    const panel = panelContainingBounds(elBounds(element), panels);
+    const explicit = explicitStudioFrameClipTarget(element.frameClipId, panels);
+    const panel = explicit !== undefined ? explicit : panelContainingBounds(elBounds(element), panels);
     cache.set(element, panel);
     return panel;
   };

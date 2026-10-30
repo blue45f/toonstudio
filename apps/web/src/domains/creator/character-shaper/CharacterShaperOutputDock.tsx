@@ -14,6 +14,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import "../studio-r3c04-status-i18n";
+import { useCharacterShaperOutputSettings } from "./character-shaper-session-settings";
 import { roundExportSize } from "../vrm/studio-vrm-poser-helpers";
 import { encodeStudioVrmCapturePngBlob, captureStudioVrmRgbaCooperatively } from "../vrm/studio-vrm-raster-capture";
 
@@ -124,9 +125,8 @@ export function CharacterShaperOutputDock({
   const hostRef = useRef(h);
   const exportRef = useRef<CharacterExportSession | null>(null);
   const helperLeaseRef = useRef<(() => void) | null>(null);
-  const [exportEdge, setExportEdge] = useState<CharacterExportEdge>(2048);
-  const [psdHairLayerSplit, setPsdHairLayerSplit] = useState(true);
-  const [psdLuminanceOutline, setPsdLuminanceOutline] = useState(true);
+  const { psdOptions, setPsdOptions, exportEdge, setExportEdge } = useCharacterShaperOutputSettings();
+  const { createHairLayer: psdHairLayerSplit, extractLuminanceOutline: psdLuminanceOutline } = psdOptions;
   const sheetRef = useRef<HTMLDivElement>(null);
   const sheetTriggerRef = useRef<HTMLButtonElement>(null);
   const [running, setRunning] = useState<ExportKind | null>(null);
@@ -445,10 +445,10 @@ export function CharacterShaperOutputDock({
           data-testid="shaper-dock-psd-hair-split"
           checked={psdHairLayerSplit}
           disabled={exportBlocked}
-          onChange={(event) => setPsdHairLayerSplit(event.currentTarget.checked)}
+          onChange={(event) => setPsdOptions({ ...psdOptions, createHairLayer: event.currentTarget.checked })}
           className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
         />
-        헤어 3분할 (앞·윗·뒷머리)
+        헤어 분리 (Base · Shadow · Line)
       </label>
       <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-line bg-card px-2.5 text-[0.7rem] font-semibold text-fg-2">
         <input
@@ -456,7 +456,7 @@ export function CharacterShaperOutputDock({
           data-testid="shaper-dock-psd-outline-alpha"
           checked={psdLuminanceOutline}
           disabled={exportBlocked}
-          onChange={(event) => setPsdLuminanceOutline(event.currentTarget.checked)}
+          onChange={(event) => setPsdOptions({ ...psdOptions, extractLuminanceOutline: event.currentTarget.checked })}
           className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
         />
         선화 휘도 알파 추출 (a=1-r)

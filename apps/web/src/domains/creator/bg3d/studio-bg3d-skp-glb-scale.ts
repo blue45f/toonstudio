@@ -148,3 +148,14 @@ export function scaleStudioBg3dGlbUniformly(glb: Uint8Array, factor: number): Ui
   wrapSceneRoots(root, factor);
   return writeGlb([{ type: GLB_JSON_CHUNK, data: encodeJsonChunk(root) }, ...chunks.slice(1)]);
 }
+
+/** 기존 형상·BIN 청크는 그대로 두고 선택 장면의 extras만 원자적으로 함께 기록한다. */
+export function mergeStudioBg3dSkpGlbSceneExtras(glb: Uint8Array, extras: Readonly<Record<string, unknown>>): Uint8Array {
+  const chunks = readChunks(glb), root = readJsonRoot(chunks);
+  const scenes = root.scenes;
+  const index = typeof root.scene === "number" && Number.isSafeInteger(root.scene) ? root.scene : 0;
+  const scene: unknown = isUnknownArray(scenes) ? scenes[index] : undefined;
+  if (!isRecord(scene)) throw invalidGlb("장면 출처를 기록할 GLB 장면이 없습니다.");
+  scene.extras = { ...(isRecord(scene.extras) ? scene.extras : {}), ...extras };
+  return writeGlb([{ type: GLB_JSON_CHUNK, data: encodeJsonChunk(root) }, ...chunks.slice(1)]);
+}

@@ -9,6 +9,7 @@ import {
   commitStudioBg3dDebouncedHistory,
   resetStudioBg3dCommandHistory,
 } from "./studio-bg3d-history-command-adapter";
+import { createStudioBg3dInitialRestoreState } from "./studio-bg3d-initial-restore-state";
 
 export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
   const {
@@ -330,8 +331,8 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
     historyCommandTimelineRef,
   };
 
-  // 이 effect 가 어떤 입력으로 이미 복원을 돌렸는지. renderer 아이덴티티는 일부러 넣지 않는다.
-  const restoredSourceRef = useRef<{ session: any; initialScene: any; initialDataUrl: any } | null>(null);
+  // 초기 복원이 실제 완료된 source만 renderer 재마운트에서 현재 편집 문서로 전환한다.
+  const restoredSourceRef = useRef(createStudioBg3dInitialRestoreState());
 
   // Mark restoration busy before the newly created/replaced renderer can expose editable UI.
   useLayoutEffect(() => {
@@ -339,8 +340,8 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
     const session = modalAssetSessionRef.current;
     if (!session) return;
 
-    // 모달 세션과 초기 장면이 그대로인데 renderer 만 새것이면 초기 복원이 아니라 **Canvas
-    // remount** 다 — 엔진 선호 변경·WebGPU 폴백·디바이스 손실 복구가 canvasKey 를 바꾼 결과다.
+    // 모달 세션과 초기 장면이 그대로이고 초기 복원이 완료됐으면 renderer 교체는 **Canvas
+    // remount** 다. 미완료 WebGPU 폴백은 원래 입력으로 복원을 재시도한다.
     // 여기서 초기 장면 복원을 다시 돌리면 히스토리를 비우고 모달을 열었던 시점의 장면으로
     // 되돌려, 아티스트가 그동안 편집한 내용을 조용히 날린다.
     //
@@ -348,12 +349,8 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
     // transcode 대상이 갈린다. 그래서 캐시만 **현재 문서** 기준으로 다시 만들고 장면 상태는
     // 건드리지 않는다. 인스턴스는 modelId 로 캐시를 조회하므로(StudioBg3dEditorSceneGraph),
     // 같은 키로 다시 채우면 장면 그래프가 다음 렌더에서 새 root 를 집어 간다.
-    const previous = restoredSourceRef.current;
-    const isRendererRemount = previous !== null
-      && previous.session === session
-      && previous.initialScene === initialScene
-      && previous.initialDataUrl === initialDataUrl;
-    restoredSourceRef.current = { session, initialScene, initialDataUrl };
+    const attempt = restoredSourceRef.current.begin({ session, initialScene, initialDataUrl });
+    const isRendererRemount = attempt.kind === "renderer-remount";
 
     if (isRendererRemount) {
       const rebuildController = new AbortController();
@@ -363,6 +360,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
       const isRebuildCurrent = () =>
         !rebuildCancelled
         && !rebuildController.signal.aborted
+        && restoredSourceRef.current.isCurrent(attempt)
         && isModalAssetSessionCurrent(session);
       setIsRestoringScene(true);
       void (async () => {
@@ -385,6 +383,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
                 signal: rebuildController.signal,
               });
               const record = resolution.record;
+              if (!isRebuildCurrent()) return;
               if (!record || !attachmentMatchesRecord(attachment, record)) continue;
               await admitAndCacheModel({
                 record,
@@ -397,6 +396,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
                 isActive: isRebuildCurrent,
                 signal: rebuildController.signal,
               });
+              if (!isRebuildCurrent()) return;
               bindModelAttachment({
                 attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
                 storageModelIdByAttachmentId: storageModelIdByAttachmentIdRef.current,
@@ -414,6 +414,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
       })();
       return () => {
         rebuildCancelled = true;
+        restoredSourceRef.current.cancel(attempt);
         rebuildController.abort("scene-restoration-cancelled");
         if (sceneRestoreAbortRef.current === rebuildController) {
           sceneRestoreAbortRef.current = null;
@@ -428,6 +429,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
     const isCurrent = () =>
       !cancelled &&
       !restoreController.signal.aborted &&
+      restoredSourceRef.current.isCurrent(attempt) &&
       isModalAssetSessionCurrent(session);
     setIsRestoringScene(true);
     setSceneRecoveryError(null);
@@ -498,6 +500,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
               signal: restoreController.signal,
             });
             const record = resolution.record;
+            if (!isCurrent()) return;
             if (!record) {
               if (resolution.deletionReceipt) {
                 deletedAttachmentIds.add(attachment.id);
@@ -517,6 +520,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
               isActive: isCurrent,
               signal: restoreController.signal,
             });
+            if (!isCurrent()) return;
             if (!bindModelAttachment({
               attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
               storageModelIdByAttachmentId: storageModelIdByAttachmentIdRef.current,
@@ -528,6 +532,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
             recoveryFailed = true;
           }
         }
+        if (!isCurrent()) return;
         if (deletedAttachmentIds.size > 0) {
           const reconciled = planStudioBg3dDeletedAttachmentReconciliation({
             document: restoredDocument,
@@ -560,15 +565,14 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
         );
         setGenericModelSourceFormats(restoredWorkflow.sourceFormats);
         setGenericModelClassifications(restoredWorkflow.classifications);
-        if (
-          recoveryFailed ||
+        const restoreFailed = recoveryFailed ||
           !hydrated.ok ||
           hydrated.diagnostics.length > 0 ||
           hydrated.omittedDiagnosticCount > 0 ||
-          hydrated.counts.droppedCustomModels > 0
-        ) {
+          hydrated.counts.droppedCustomModels > 0;
+        if (restoreFailed) {
           setSceneRecoveryError("일부 3D 모델의 원본 또는 무결성을 확인하지 못했습니다. 기존 PNG를 보존하기 위해 업데이트를 막았습니다.");
-        }
+        } else if (isCurrent()) restoredSourceRef.current.complete(attempt);
         setRefTick((n: number) => n + 1);
         setIsRestoringScene(false);
         return;
@@ -594,16 +598,18 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
       setPrimitives(nextPrimitives);
       setCustomModels(nextModels);
 
+      let recoveryFailed = false;
       if (nextModels.length > 0) {
         const quality = resolveDeviceQuality(DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, viewportHostRef.current);
-        let recoveryFailed = false;
         const uniqueStorageIds = [...new Set<string>(nextModels.map((model: any) => model.modelId))];
         for (const storageId of uniqueStorageIds) {
           if (!isCurrent()) return;
           try {
             const record = await getStoredBg3dModel(storageId);
+            if (!isCurrent()) return;
             if (!record) throw new Error("missing-record");
             const attachment = await createStudioBg3dModelAttachment(record);
+            if (!isCurrent()) return;
             await admitAndCacheModel({
               record,
               document: DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
@@ -617,6 +623,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
               isActive: isCurrent,
               signal: restoreController.signal,
             });
+            if (!isCurrent()) return;
             if (!bindModelAttachment({
               attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
               storageModelIdByAttachmentId: storageModelIdByAttachmentIdRef.current,
@@ -627,11 +634,12 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
             recoveryFailed = true;
           }
         }
-        if (recoveryFailed) {
+        if (isCurrent() && recoveryFailed) {
           setSceneRecoveryError("이전 3D 배경의 모델 원본을 모두 검증하지 못했습니다. 기존 PNG를 보존하기 위해 업데이트를 막았습니다.");
         }
       }
       if (!isCurrent()) return;
+      if (!recoveryFailed) restoredSourceRef.current.complete(attempt);
       setRefTick((n: number) => n + 1);
       setIsRestoringScene(false);
     })().finally(() => {
@@ -641,6 +649,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
     });
     return () => {
       cancelled = true;
+      restoredSourceRef.current.cancel(attempt);
       restoreController.abort("scene-restoration-cancelled");
       if (sceneRestoreAbortRef.current === restoreController) {
         sceneRestoreAbortRef.current = null;

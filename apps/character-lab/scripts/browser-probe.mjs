@@ -19,6 +19,7 @@
 //   CHARACTER_LAB_BROWSER_PROBE=1 node apps/character-lab/scripts/browser-probe.mjs --url http://localhost:4176/   # 이미 떠 있는 dev/preview 서버
 // 옵션: --software(Linux SwiftShader 플래그) --backends webgpu,webgl2 --require-ready webgl2,... --out <json> --shots <dir> --url <주소> --timeout-sec <초>
 //       --dist <폴더>(vite preview가 서빙할 빌드 산출물, 기본 apps/character-lab/dist — 다른 작업이 dist를 만지는 중일 때 별도 outDir로 빌드해 쓴다)
+//       --gpu-lane observe|metal|software(기본 observe, metal은 실제 선택 디바이스·renderer를 픽셀 읽기 전에 검증)
 // 환경 변수: CHARACTER_LAB_CHROMIUM_PATH(Chrome for Testing 등 실행 파일 경로).
 //
 // 운영 규칙(스크립트가 스스로 지킨다):
@@ -38,13 +39,21 @@
 //     모든 카드가 비활성이다(엔진 선택 전 화면에서 확인). 그래서 이 단계는 백엔드가 처음 ready가 된 뒤 한 번 실행하고, ready 엔진이 없으면
 //     건너뛴다(`--require-ready`로 ready를 강제할 수 있다).
 //   - 키트 렌더 자체(툰 외곽선 정책·정점색 AO·알파 컷오프·몸 가림)의 실브라우저(SwiftShader) 확인은 이 프로브가 아니라 `scripts/kit-preview.mjs`(docs/kit-preview.md)가 한다.
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
+
+import {
+  classifyGpuConsoleDiagnostic,
+  closeBrowserAndStopPreview,
+  installGpuProofRecorder,
+  validateGpuProofSnapshot,
+  withGpuProofDeadline,
+} from "./browser-gpu-proof.mjs";
 
 const labRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -79,11 +88,12 @@ function guardTmpdir(env = process.env, platform = process.platform, tmpdirOf = 
 }
 
 function parseArgs(argv) {
-  const options = { software: false, backends: ["webgpu", "webgl2"], requireReady: [], out: null, shots: null, url: null, dist: null, timeoutSec: 180 };
+  const options = { software: false, gpuLane: "observe", backends: ["webgpu", "webgl2"], requireReady: [], out: null, shots: null, url: null, dist: null, timeoutSec: 180 };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const next = () => argv[(i += 1)];
     if (arg === "--software") options.software = true;
+    else if (arg === "--gpu-lane") options.gpuLane = next();
     else if (arg === "--backends") options.backends = String(next()).split(",").filter(Boolean);
     else if (arg === "--require-ready") options.requireReady = String(next()).split(",").filter(Boolean);
     else if (arg === "--out") options.out = next();
@@ -93,7 +103,35 @@ function parseArgs(argv) {
     else if (arg === "--timeout-sec") options.timeoutSec = Number(next());
     else throw new Error(`알 수 없는 옵션: ${arg}`);
   }
+  if (!["observe", "metal", "software"].includes(options.gpuLane)) throw new Error("--gpu-lane은 observe, metal, software 중 하나여야 합니다.");
+  if (options.gpuLane === "metal" && options.software) throw new Error("Metal 검증과 --software는 함께 요청할 수 없습니다.");
   return options;
+}
+
+/** 연결한 브라우저의 CDP PID만 조회한다. 사용자의 다른 Chrome 프로세스는 검색하지 않는다. */
+async function readOwnedBrowserIdentity(browser, executablePath, args) {
+  const identity = { requestedExecutablePath: executablePath ?? null, args, browserVersion: browser.version(), browserPid: null, observedCommand: null, cdpProcesses: [] };
+  let session;
+  try {
+    session = await browser.newBrowserCDPSession();
+    const result = await session.send("SystemInfo.getProcessInfo");
+    identity.cdpProcesses = result.processInfo.map(({ id, type }) => ({ pid: id, type }));
+    const processInfo = result.processInfo.find(({ type }) => type === "browser");
+    if (processInfo && Number.isSafeInteger(processInfo.id) && processInfo.id > 0) {
+      identity.browserPid = processInfo.id;
+      if (process.platform !== "win32") {
+        identity.observedCommand = execFileSync("ps", ["-p", String(processInfo.id), "-o", "command="], { encoding: "utf8", timeout: 2000 }).trim();
+      }
+    }
+  } catch (error) {
+    identity.observationError = String(error?.message ?? error).slice(0, 300);
+  } finally {
+    if (session) {
+      try { await session.detach(); }
+      catch (error) { identity.detachError = String(error?.message ?? error).slice(0, 200); }
+    }
+  }
+  return identity;
 }
 
 /** 8비트 RGBA·비인터레이스 PNG만 디코드한다(앱 자체 인코더 산출물 검사용). */
@@ -239,12 +277,16 @@ async function main() {
   // 서버(vite preview 그룹)와 브라우저는 어떤 경로로 끝나든(정상·예외·시그널) 정리한다.
   let server = { url: options.url ?? "", stop: () => undefined };
   let cleaned = false;
+  const cleanupErrors = [];
   const cleanup = async () => {
     if (cleaned) return;
     cleaned = true;
     pendingCleanups.delete(cleanup);
-    await browser.close().catch(() => undefined);
-    server.stop();
+    try {
+      await closeBrowserAndStopPreview(() => browser.close(), () => server.stop(), Math.min(options.timeoutSec * 1000, 5000));
+    } catch (error) {
+      cleanupErrors.push(String(error?.message ?? error).slice(0, 300));
+    }
   };
   pendingCleanups.add(cleanup);
   for (const signal of ["SIGINT", "SIGTERM"]) {
@@ -262,9 +304,10 @@ async function main() {
   const timeoutMs = options.timeoutSec * 1000;
   const steps = [];
   const consoleErrors = new Map();
+  const gpuConsoleDiagnostics = [];
   const pageErrors = [];
   const httpErrors = [];
-  const report = { generatedAt: new Date().toISOString(), url: server.url, software: options.software, userAgent: "", steps, consoleErrors: [], httpErrors, pageErrors };
+  const report = { generatedAt: new Date().toISOString(), url: server.url, software: options.software, gpuLane: options.gpuLane, userAgent: "", steps, consoleErrors: [], gpuConsoleDiagnostics, cleanupErrors, httpErrors, pageErrors, gpuProof: null, gpuChecks: [] };
   if (options.shots) mkdirSync(options.shots, { recursive: true });
 
   const record = (name, status, detail) => {
@@ -283,11 +326,19 @@ async function main() {
   };
 
   const context = await browser.newContext({ viewport: { width: 1600, height: 1000 }, acceptDownloads: true });
+  await context.addInitScript(installGpuProofRecorder, {
+    lane: options.gpuLane === "metal" ? "native" : options.gpuLane,
+    ...(options.gpuLane === "metal" ? { expectedVendor: "apple", expectedArchitecture: "^metal-", expectedWebglRenderer: "Apple|Metal" } : {}),
+  });
   const page = await context.newPage();
   page.setDefaultTimeout(timeoutMs);
   page.on("console", (message) => {
-    if (message.type() !== "error") return;
-    const text = message.text().replace(/\[\d\d:\d\d:\d\d\]/gu, "").slice(0, 200);
+    const type = message.type();
+    const fullText = message.text().replace(/\[\d\d:\d\d:\d\d\]/gu, "");
+    const diagnostic = classifyGpuConsoleDiagnostic(type, fullText);
+    if (diagnostic) gpuConsoleDiagnostics.push(diagnostic);
+    if (type !== "error") return;
+    const text = fullText.slice(0, 200);
     consoleErrors.set(text, (consoleErrors.get(text) ?? 0) + 1);
   });
   page.on("pageerror", (error) => pageErrors.push(String(error.message).slice(0, 300)));
@@ -295,6 +346,35 @@ async function main() {
     if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`);
   });
   report.userAgent = await browser.version();
+  let currentBackend = null;
+  let gpuProofReadFailed = false;
+  const readyBackends = new Set();
+  const readGpuSnapshot = () => withGpuProofDeadline(() => page.evaluate(() => globalThis.__characterLabGpuProof?.snapshot() ?? null), Math.min(timeoutMs, 2000));
+  const readGpuProof = async () => {
+    if (gpuProofReadFailed) throw new Error("이전 GPU 증거 수집이 실패했습니다. 픽셀 검증을 계속할 수 없습니다.");
+    try {
+      const snapshot = await withGpuProofDeadline(() => page.evaluate(async () => {
+        const recorder = globalThis.__characterLabGpuProof;
+        return recorder ? recorder.settle() : null;
+      }), timeoutMs);
+      report.gpuProof = snapshot;
+      return snapshot;
+    } catch (error) {
+      gpuProofReadFailed = true;
+      report.gpuReadError = String(error?.message ?? error).slice(0, 300);
+      try { report.gpuProof = await readGpuSnapshot(); }
+      catch (snapshotError) { report.gpuSnapshotError = String(snapshotError?.message ?? snapshotError).slice(0, 300); }
+      throw error;
+    }
+  };
+  const assertGpuProof = async (backend) => {
+    const snapshot = await readGpuProof();
+    const proof = validateGpuProofSnapshot(snapshot, backend, gpuConsoleDiagnostics);
+    report.gpuChecks.push({ backend, at: new Date().toISOString(), ...proof });
+    if (!proof.ok) throw new Error(`실제 GPU 검증 실패: ${proof.problems.join("; ")}`);
+    return proof;
+  };
+  const expectDeviceShutdown = (reason) => withGpuProofDeadline(() => page.evaluate((value) => globalThis.__characterLabGpuProof?.expectCurrentDeviceShutdown(value), reason), Math.min(timeoutMs, 2000));
 
   const statusText = async () => ((await page.locator('[role="status"]').first().textContent()) ?? "").trim();
   const waitStatus = async (pattern) => {
@@ -318,14 +398,22 @@ async function main() {
     }
   };
   const exportPng = async () => {
+    await assertGpuProof(currentBackend);
     await page.getByRole("tab", { name: "내보내기" }).click();
     const [download] = await Promise.all([page.waitForEvent("download", { timeout: timeoutMs }), page.getByRole("button", { name: "투명 PNG 저장" }).click()]);
     const file = await download.path();
+    await assertGpuProof(currentBackend);
     return { fileName: download.suggestedFilename(), analysis: analyzeAlpha(decodePngRgba(readFileSync(file))) };
   };
 
   try {
+    report.browserIdentity = await readOwnedBrowserIdentity(browser, executablePath, chromiumArgs(options));
+    if (options.gpuLane === "metal" && (!report.browserIdentity.browserPid || !report.browserIdentity.observedCommand)) {
+      throw new Error("Metal 검증에서 실행한 브라우저의 실제 PID·명령 경로를 확인하지 못했습니다.");
+    }
     await page.goto(server.url, { waitUntil: "load" });
+    report.origin = await page.evaluate(() => ({ origin: location.origin, isSecureContext }));
+    if (options.gpuLane === "metal" && !report.origin.isSecureContext) throw new Error("Metal 검증에는 실제 secure origin이 필요합니다.");
     await step("셸 마운트: 슬롯 15칸·인스펙터 탭 9개·엔진 미선택 안내", async () => {
       await page.waitForSelector("h1");
       const slotTabs = await page.locator(".cl-slot-tab").count();
@@ -395,6 +483,7 @@ async function main() {
       const label = backend === "webgpu" ? "WebGPU" : "WebGL2";
       let outcome = "unknown";
       await step(`${label} 명시 선택: ready 또는 사유가 보이는 failed(자동 대체 없음)`, async () => {
+        await expectDeviceShutdown("backend-transition");
         await page.getByRole("button", { name: label, exact: true }).click();
         const text = await waitStatus(/활성 엔진|실패|\[[a-z0-9-]+\]|lost/u);
         if (text.startsWith("TIMEOUT")) return { fail: text.slice(0, 160) };
@@ -406,7 +495,18 @@ async function main() {
         if (options.requireReady.includes(backend) && outcome !== "ready") return { fail: `ready가 필요하지만 ${outcome}: ${text.slice(0, 160)}` };
         return { detail: `${outcome} — ${text.slice(0, 200)}` };
       });
-      if (options.shots) await page.screenshot({ path: path.join(options.shots, `2-${backend}-select.png`) });
+      if (outcome === "ready") {
+        currentBackend = backend;
+        let proofReady = false;
+        await step(`${label} 실제 adapter·device·renderer 지문과 GPU 오류`, async () => {
+          const proof = await assertGpuProof(backend);
+          proofReady = true;
+          readyBackends.add(backend);
+          return { detail: proof.fingerprints };
+        });
+        if (!proofReady) outcome = "gpu-proof-failed";
+      }
+      if (options.shots && (outcome === "ready" || options.gpuLane === "observe")) await page.screenshot({ path: path.join(options.shots, `2-${backend}-select.png`) });
       if (outcome !== "ready") {
         record(`${label} 이후 단계(썸네일·PNG·history)`, "skip", `엔진이 ready가 아니다(${outcome})`);
         continue;
@@ -429,7 +529,10 @@ async function main() {
             await page.waitForTimeout(1500);
           }
           const { fileName, analysis } = await exportPng();
-          if (options.shots) await page.screenshot({ path: path.join(options.shots, `3-${backend}-${mode}.png`) });
+          if (options.shots) {
+            await assertGpuProof(backend);
+            await page.screenshot({ path: path.join(options.shots, `3-${backend}-${mode}.png`) });
+          }
           const problems = [];
           if (analysis.cornerAlphas.some((alpha) => alpha !== 0)) problems.push(`모서리 알파 ${analysis.cornerAlphas.join(",")}`);
           if (analysis.transparentWithRgb > 0) problems.push(`알파 0인데 RGB≠0 픽셀 ${analysis.transparentWithRgb}`);
@@ -457,10 +560,35 @@ async function main() {
       }
     }
     if (!recipeRoundTripDone) record(RECIPE_ROUNDTRIP_STEP, "skip", "ready가 된 엔진이 없다 — 키트 부팅은 엔진이 소스를 올리기 전까지 슬롯 카드가 모두 비활성이다");
+    await step("실제 GPU 오류·예기치 않은 device loss 없음", async () => {
+      for (const backend of readyBackends) await assertGpuProof(backend);
+      if (readyBackends.size === 0) {
+        const snapshot = await readGpuProof();
+        const proof = validateGpuProofSnapshot(snapshot, options.backends[0], gpuConsoleDiagnostics);
+        if (!proof.ok) return { fail: proof.problems.join("; ") };
+      }
+      return { detail: "의도된 backend 해제와 예기치 않은 손실을 구분" };
+    });
     await step("페이지 오류(pageerror) 없음", async () => (pageErrors.length > 0 ? { fail: pageErrors.slice(0, 3).join(" | ") } : { detail: "0건" }));
+  } catch (error) {
+    record("프로브 실행 완료", "fail", String(error?.message ?? error).slice(0, 400));
   } finally {
     report.consoleErrors = [...consoleErrors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([message, count]) => ({ count, message }));
+    try {
+      const snapshot = gpuProofReadFailed ? await readGpuSnapshot() : await readGpuProof();
+      report.gpuProof = snapshot;
+      for (const backend of readyBackends) {
+        const proof = validateGpuProofSnapshot(snapshot, backend, gpuConsoleDiagnostics);
+        if (!proof.ok) record(`${backend} 종료 전 GPU 오류 검사`, "fail", proof.problems.join("; "));
+      }
+      await expectDeviceShutdown("probe-cleanup");
+    } catch (error) {
+      record("GPU 증거 최종 수집", "fail", String(error?.message ?? error).slice(0, 300));
+    }
     await cleanup();
+    if (gpuConsoleDiagnostics.length) record("명확한 GPU 콘솔 오류 없음", "fail", gpuConsoleDiagnostics.map(({ code, message }) => `${code}: ${message}`).join(" | "));
+    else record("명확한 GPU 콘솔 오류 없음", "pass", "0건 — 일반 경고는 오류로 판정하지 않음");
+    if (cleanupErrors.length) record("브라우저·preview 종료 정리", "fail", cleanupErrors.join(" | "));
   }
 
   const failed = steps.filter((entry) => entry.status === "fail").length;

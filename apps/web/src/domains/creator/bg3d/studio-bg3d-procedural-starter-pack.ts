@@ -405,7 +405,7 @@ export const STUDIO_BG3D_PROCEDURAL_STARTER_ASSETS = Object.freeze([
     id: "ts3d-lounge-sofa-v1",
     category: "furniture",
     label: "라운지 소파",
-    description: "Blender 가구 팩 디자인을 파츠 편집형으로 재구성한 2인 소파",
+    description: "파츠별로 편집할 수 있는 2인 라운지 소파",
     tags: ["sofa", "lounge", "furniture", "소파", "카페", "가구"],
     bounds: { width: 1.8, height: 1.05, depth: 0.82 },
     parts: [

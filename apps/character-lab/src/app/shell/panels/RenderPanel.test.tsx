@@ -2,11 +2,14 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_SHADING, QUALITY_PRESETS, createDefaultRecipe, createKitDefaultRecipe } from "../../../contracts";
+import { DEFAULT_SHADING, QUALITY_PRESETS, createDefaultRecipe, createKitDefaultRecipe, createPresetCatalog } from "../../../contracts";
 import { BETA_FEATURE_IDS, betaActive, betaFailed, betaOff, betaUnsupported, betaWaiting, createBetaReport } from "../../../render/beta-features";
 import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../../../render/scene-features";
+import { createLabStore } from "../../../state/lab-store";
+import { deserializeRecipe, serializeRecipe } from "../../../state/recipe-io";
 import { createMockEngine, mockDiagnostics } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
+import { vocabularyCatalogEntries } from "../../../testing/recipe-fixtures";
 
 import { RenderPanel, describeBetaState } from "./RenderPanel";
 
@@ -235,17 +238,34 @@ describe("shading/set 명령", () => {
     });
   });
 
-  it("샤퍼 Cubic MatCap 램프 배율·비등방 필압 외곽선(1.5×0.3)·안구 하이라이트 4모드(fix/cam/light/world)를 실시간 표시한다", () => {
-    renderPanel({ shading: { mode: "toon" } });
-    const readout = screen.getByTestId("shaper-toon-readout");
-    expect(readout.textContent).toContain("외곽선 비등방 (1.5×0.3)");
-    expect(readout.textContent).toContain("하이라이트 Yaw 180°");
-
+  it("비등방 외곽선은 실제 레시피·히스토리·저장 파일로 전달되고 실행 취소로 복원된다", () => {
+    const recipe = createDefaultRecipe();
+    const store = createLabStore({
+      catalog: createPresetCatalog(vocabularyCatalogEntries()),
+      initial: { recipe: { ...recipe, shading: { ...recipe.shading, mode: "toon" } } },
+    });
+    render(<MockLabProvider store={store}><RenderPanel pollIntervalMs={0} /></MockLabProvider>);
+    expect((screen.getByLabelText("비등방 필압 외곽선") as HTMLInputElement).checked).toBe(false);
+    const before = store.getState().recipe;
     fireEvent.click(screen.getByLabelText("비등방 필압 외곽선"));
-    expect(readout.textContent).toContain("외곽선 비등방 (1.0×1.0)");
+    expect(store.getState().recipe.shading.toon.outlinePressure).toBe(true);
+    expect(store.getState().history).toMatchObject({ depth: 1, revision: 1 });
+    const parsed = deserializeRecipe(serializeRecipe(store.getState().recipe));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.recipe.shading.toon.outlinePressure).toBe(true);
+    act(() => store.dispatch({ type: "history/undo" }));
+    expect(store.getState().recipe).toEqual(before);
+    expect((screen.getByLabelText("비등방 필압 외곽선") as HTMLInputElement).checked).toBe(false);
+    act(() => store.dispatch({ type: "history/redo" }));
+    expect(store.getState().recipe.shading.toon.outlinePressure).toBe(true);
+  });
 
-    fireEvent.change(screen.getByLabelText("안구 하이라이트 기준"), { target: { value: "light" } });
-    expect(readout.textContent).toContain("하이라이트 Yaw 335°");
+  it("hull 외의 외곽선에서는 비등방 제어를 끄고 안구 하이라이트 미지원 사유를 보인다", () => {
+    renderPanel({ shading: { mode: "toon", toon: { ...DEFAULT_SHADING.toon, outline: "edge" } } });
+    expect((screen.getByLabelText("비등방 필압 외곽선") as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTestId("eyeball-highlight-unavailable").textContent).toContain("현재 렌더러가 지원하지 않습니다");
+    expect(screen.queryByLabelText("안구 하이라이트 기준")).toBeNull();
+    expect(screen.getByTestId("shaper-toon-readout").textContent).not.toContain("MatCap");
   });
 });
 

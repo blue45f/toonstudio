@@ -10,6 +10,8 @@ import {
   orderStudioBg3dHierarchySelectionRootsFirst,
 } from "./studio-bg3d-template-instance";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
+import { loadStudioBg3dMetricAttachment, scaleStudioBg3dMetricPlacementAsset, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
+import { copyStudioBg3dMetricInstanceScale, StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
 
 export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
   const {
@@ -236,7 +238,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     handleViewportReady, resetWebXrPresentationUi, finishWebXrControllerCleanup,
     disposeCurrentWebXrControllerGeneration, disposeWebXrControllerForOpenChange,
     handleWebXrControllerReady, handleWebXrSessionStateChange, historyRef, historyIndexRef,
-    deviceQuality, hasCloneFailure, hasPendingClone, hasPendingSharedCharacter,
+    deviceQuality, materialBackend, isMaterialBackendCurrent, hasCloneFailure, hasPendingClone, hasPendingSharedCharacter,
     hasUnavailableSharedCharacter, physicsInteractionLocked, insertBlocked,
     magicLayerSelectedPrimitive, magicLayerLensShift, magicLayerUnavailableReason,
     shotBatchBlockedReason, transitionPhysicsPhase, commitImmediateHistoryTransition, doUndo,
@@ -321,7 +323,6 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     genericModelClassifications, genericModelSourceFormats, placementPreviewAsset, setGenericModelSourceFormats, setPlacementPreviewAsset, setRefTick,
   } = { ...R, ...h } as typeof R & Record<string, any>;
-
   async function ensureModelRootCached(
     modelId: string,
     session: StudioBg3dModalSession,
@@ -329,20 +330,17 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     signal: AbortSignal,
   ): Promise<Bg3dVerifiedStoredRecord | null> {
     const record = await getStoredBg3dModel(modelId);
-    if (!isOperationCurrent()) throw new StudioBg3dStaleModalOperationError();
+    if (!isOperationCurrent() || isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
     if (!record) return null;
     const existingAttachment = attachmentByStorageModelIdRef.current.get(modelId);
-    const sourceFormat =
-      normalizeStudioGeneric3dSourceFormat(genericModelSourceFormats.get(modelId))
+    let sourceFormat = normalizeStudioGeneric3dSourceFormat(genericModelSourceFormats.get(modelId))
       ?? parseStudioGeneric3dWorkflowMetadata(existingAttachment)?.sourceFormat
       ?? "glb";
-    const classification =
-      normalizeStudioGeneric3dClassification(genericModelClassifications.get(modelId))
+    const classification = normalizeStudioGeneric3dClassification(genericModelClassifications.get(modelId))
       ?? parseStudioGeneric3dWorkflowMetadata(existingAttachment)?.classification
       ?? null;
-    const attachment = withStudioGeneric3dWorkflowMetadata(
-      existingAttachment ?? await createStudioBg3dModelAttachment(record),
-      { sourceFormat, classification },
+    let attachment = withStudioGeneric3dWorkflowMetadata(
+      existingAttachment ?? await createStudioBg3dModelAttachment(record), { sourceFormat, classification },
     );
     const live = physicsRuntimeSourceRef.current;
     assertStudioBg3dModelAttachmentAdmission({
@@ -357,18 +355,20 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
       attachmentByStorageModelIdRef.current,
       modelId
     );
-    await admitAndCacheModel({
+    const cached = await admitAndCacheModel({
       record,
       document: live.document,
       quality: resolveDeviceQuality(live.document, viewportHostRef.current),
       cumulativeUsedBytes,
-      renderer: modelRenderer,
+      renderer: modelRenderer, materialBackend,
       cache: modelRootCacheRef.current,
       pending: modelLoadPendingRef.current,
-      isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent(),
+      isActive: () => isModalAssetSessionCurrent(session) && isOperationCurrent() && isMaterialBackendCurrent?.() !== false,
       signal,
     });
-    if (!isOperationCurrent()) throw new StudioBg3dStaleModalOperationError();
+    attachment = await loadStudioBg3dMetricAttachment(attachment, existingAttachment, record.contentHash, cached);
+    sourceFormat = parseStudioGeneric3dWorkflowMetadata(attachment)?.sourceFormat ?? sourceFormat;
+    if (!isOperationCurrent() || isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
     if (!bindModelAttachment({
       attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
       storageModelIdByAttachmentId: storageModelIdByAttachmentIdRef.current,
@@ -451,7 +451,6 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     });
     const plan = committed.ok ? committed.commitPlan : null;
     if (!plan || plan.storageId !== asset.modelId) return;
-
     const normal = new THREE.Vector3(...plan.placement.worldNormal).normalize();
     const orientation = new THREE.Quaternion()
       .setFromAxisAngle(normal, THREE.MathUtils.degToRad(-plan.placement.yawDegrees))
@@ -468,14 +467,15 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
       setError(frozenStatus6Text("studio.frozenStatus6.placement.outOfBounds", "선택한 위치가 3D 장면의 안전 범위를 벗어나 배치를 취소했습니다."));
       return;
     }
-
     const runtime = physicsRuntimeSourceRef.current;
     const attachment = attachmentByStorageModelIdRef.current.get(asset.modelId);
     if (!attachment) {
       setError(frozenStatus6Text("studio.frozenStatus6.placement.attachmentUnknown", "배치할 3D 모델의 장면 연결 정보를 확인할 수 없어 장면을 변경하지 않았습니다."));
       return;
     }
+    let instanceScale: [number, number, number];
     try {
+      instanceScale = copyStudioBg3dMetricInstanceScale(asset.instanceScale);
       assertStudioBg3dModelAttachmentAdmission({
         models: runtime.customModels,
         attachments: attachmentByStorageModelIdRef.current,
@@ -484,12 +484,12 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         maximumCumulativeBytes: runtime.document.budgets.complexity.maxModelBytes,
       });
     } catch (admissionFailure) {
-      setError(admissionFailure instanceof StudioBg3dModelPlacementAdmissionError ? admissionFailure.message : frozenStatus6Text("studio.frozenStatus6.placement.budgetUnknown", "3D 모델 원본 개수 예산을 확인할 수 없어 장면을 변경하지 않았습니다."));
+      setError(admissionFailure instanceof StudioBg3dModelMetricPolicyError ? studioBg3dModelMetricPolicyMessage() : admissionFailure instanceof StudioBg3dModelPlacementAdmissionError ? admissionFailure.message : frozenStatus6Text("studio.frozenStatus6.placement.budgetUnknown", "3D 모델 원본 개수 예산을 확인할 수 없어 장면을 변경하지 않았습니다."));
       return;
     }
     const rotation = new THREE.Euler().setFromQuaternion(orientation, "XYZ");
     const next: BgCustomModelInstance = {
-      ...createBgCustomModelInstance(asset.modelId, runtime.customModels.length),
+      ...createBgCustomModelInstance(asset.modelId, runtime.customModels.length, instanceScale),
       position: position.toArray() as [number, number, number],
       rotation: [rotation.x, rotation.y, rotation.z],
     };
@@ -530,7 +530,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           );
           lease.throwIfRevoked();
           if (!record) throw new Error("model-unavailable");
-          const root = modelRootCacheRef.current.get(modelId)?.root;
+          const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.root;
           if (!root) throw new Error("model-unavailable");
           root.updateWorldMatrix(true, true);
           const bounds = new THREE.Box3().setFromObject(root, true);
@@ -543,19 +543,20 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           }
           return {
             record,
-            asset: {
+            asset: scaleStudioBg3dMetricPlacementAsset({
               modelId,
               name: record.name,
-              size: size as [number, number, number],
+              size: [size[0], size[1], size[2]],
               localInsertionPoint: [
                 (bounds.min.x + bounds.max.x) / 2,
                 bounds.min.y,
                 (bounds.min.z + bounds.max.z) / 2,
-              ] as [number, number, number],
-            } satisfies StudioBg3dPlacementPreviewAsset,
+              ],
+            }, attachmentByStorageModelIdRef.current.get(modelId), R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, materialBackend)),
           };
         },
         ({ record, asset }: { record: Bg3dVerifiedStoredRecord; asset: StudioBg3dPlacementPreviewAsset }) => {
+          if (isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
           if (surfaceSnapArmedRef.current) cancelSurfaceSnap();
           placementTokenSequenceRef.current += 1;
           const initialTarget = viewportApiRef.current?.readView().target ?? [0, 0, 0];
@@ -582,8 +583,8 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         },
       );
     } catch (modelFailure) {
-      if (!isModalAssetSessionCurrent(session)) return;
-      setError(modelFailure instanceof StudioBg3dThreeOperationError ? modelFailure.message : modelFailure instanceof StudioBg3dModelPlacementAdmissionError ? modelFailure.message : frozenStatus6Text("studio.frozenStatus6.placement.integrityUnknown", "3D 모델의 원본·경계와 무결성을 확인하지 못해 배치 미리보기를 시작하지 않았습니다."));
+      if (!isModalAssetSessionCurrent(session) || isMaterialBackendCurrent?.() === false) return;
+      setError(modelFailure instanceof StudioBg3dModelMetricPolicyError ? studioBg3dModelMetricPolicyMessage() : modelFailure instanceof StudioBg3dThreeOperationError ? modelFailure.message : modelFailure instanceof StudioBg3dModelPlacementAdmissionError ? modelFailure.message : frozenStatus6Text("studio.frozenStatus6.placement.integrityUnknown", "3D 모델의 원본·경계와 무결성을 확인하지 못해 배치 미리보기를 시작하지 않았습니다."));
     }
   }
   h.addCustomModelToScene = addCustomModelToScene;
@@ -606,13 +607,11 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         physicsRuntimeSourceRef.current.customModels.map((model: BgCustomModelInstance) => model.modelId),
       );
       for (const [storageId, ownedEntry] of templateOwnedCacheEntries) {
-        // A later queued operation may already have committed this exact cache entry into the live
-        // scene. Never dispose live geometry, and never delete a replacement installed by another
-        // operation after this template load completed.
+        // 다른 작업에 공개됐거나 교체된 cache는 보존한다.
         if (liveStorageIds.has(storageId)) continue;
-        if (modelRootCacheRef.current.get(storageId) !== ownedEntry) continue;
+        if (!R.isStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry)) continue;
         ownedEntry.dispose();
-        modelRootCacheRef.current.delete(storageId);
+        R.deleteStudioBg3dOwnedModelCacheEntry(modelRootCacheRef.current, storageId, ownedEntry);
       }
       templateOwnedCacheEntries.clear();
     };
@@ -673,7 +672,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           );
 
           for (const attachment of instantiated.document.attachments) {
-            if (!isModalAssetSessionCurrent(session) || !lease.isCurrent()) {
+            if (!isModalAssetSessionCurrent(session) || !lease.isCurrent() || isMaterialBackendCurrent?.() === false) {
               throw new StudioBg3dStaleModalOperationError();
             }
             const record = await getStoredBg3dModelByHash(attachment.hash);
@@ -692,10 +691,10 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
               document: destinationDocument,
               quality,
               cumulativeUsedBytes,
-              renderer: modelRenderer,
+              renderer: modelRenderer, materialBackend,
               cache: modelRootCacheRef.current,
               pending: modelLoadPendingRef.current,
-              isActive: () => isModalAssetSessionCurrent(session) && lease.isCurrent(),
+              isActive: () => isModalAssetSessionCurrent(session) && lease.isCurrent() && isMaterialBackendCurrent?.() !== false,
               signal: lease.signal,
               onCacheEntryCreated: (storageId: string, cacheEntry: ModelRootCacheEntry) => {
                 templateOwnedCacheEntries.set(storageId, cacheEntry);
@@ -741,6 +740,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           };
         },
         (prepared: any) => {
+          if (isMaterialBackendCurrent?.() === false) throw new StudioBg3dStaleModalOperationError();
           if (isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)) {
             throw new Error("physics-transient");
           }
@@ -802,7 +802,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         },
       );
     } catch (templateFailure) {
-      if (isModalAssetSessionCurrent(session)) {
+      if (isModalAssetSessionCurrent(session) && isMaterialBackendCurrent?.() !== false) {
         setError(
           templateFailure instanceof Error &&
             templateFailure.message === "template-attachment-missing"

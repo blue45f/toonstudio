@@ -5,6 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { attachStudioBg3dEditorSceneOpsHost } from "./studio-bg3d-editor-scene-ops-host";
 import { buildStudioBg3dRoomParts, getStudioBg3dRoomPreset, type StudioBg3dRoomSpec } from "./studio-bg3d-room-builder";
+import { createStudioBg3dWorkbenchInsertionFromHost } from "./studio-bg3d-workbench-insertion";
+import { createDefaultStudioBg3dSceneDocument, parseStudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
+import { adaptStudioBg3dRuntimeToDocument, hydrateStudioBg3dDocumentToRuntime } from "./studio-bg3d-scene-runtime";
+import { createStudioBg3dHistorySnapshot } from "./studio-bg3d-editor-derivations";
+import { commitStudioBg3dDebouncedHistory, resetStudioBg3dCommandHistory, stepStudioBg3dCommandHistory, type StudioBg3dHistoryCommandRefs } from "./studio-bg3d-history-command-adapter";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -85,6 +90,54 @@ function renderHost(options: FixtureOptions) {
 }
 
 describe("씬 연산 호스트의 방 추가(addRoomBuild)와 공통 묶음 추가(addGeneratedParts)", () => {
+  it("작업대 도형을 실제 씬 연산 호스트로 추가하고 문서 왕복과 기존 history adapter의 한 단계 복원을 보존한다", () => {
+    const view = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH });
+    const document = createDefaultStudioBg3dSceneDocument();
+    const source: BgPrimitive[] = [
+      { id: "generated-step", name: "계단", kind: "box", position: [0, 0.5, 0], rotation: [0, 0, 0], scale: [2, 1, 1], color: "#ffffff" },
+      { id: "generated-rail", name: "난간", kind: "box", position: [1, 1.5, 0], rotation: [0, 0, 0], scale: [0.1, 1, 1], color: "#888888" },
+    ];
+    const before = createStudioBg3dHistorySnapshot({ primitives: [], customModels: [], document });
+    const history: StudioBg3dHistoryCommandRefs = {
+      historyRef: { current: [] }, historyIndexRef: { current: -1 }, historyCommandTimelineRef: { current: null },
+    };
+    resetStudioBg3dCommandHistory(history, before);
+    const insert = createStudioBg3dWorkbenchInsertionFromHost(view.result.current);
+    act(() => { expect(insert(source, "계단 추가")).toBe(true); });
+    const added: BgPrimitive[] = view.result.current.primitives;
+    expect(added).toHaveLength(2);
+    expect(view.result.current.selectedIds).toEqual(new Set([added[0]?.id]));
+    expect(added[0]?.id).not.toBe(source[0]?.id);
+    const saved = adaptStudioBg3dRuntimeToDocument({ primitives: added, customModels: [], attachmentByStorageModelId: new Map(), baseDocument: document });
+    const parsed = parseStudioBg3dSceneDocument(saved.serialized);
+    expect(parsed).not.toBeNull();
+    if (!parsed) throw new Error("추가한 장면의 직렬화 결과를 읽지 못했습니다.");
+    const reopened = hydrateStudioBg3dDocumentToRuntime({ document: parsed, storageModelIdByAttachmentId: new Map() });
+    expect(reopened.ok).toBe(true);
+    expect(reopened.primitives.map(({ id, name, position, scale }) => ({ id, name, position, scale })))
+      .toEqual(added.map(({ id, name, position, scale }) => ({ id, name, position, scale })));
+    // 제품 restore effect가 호출하는 동일한 debounce adapter로 묶음 전체를 한 단계에 기록한다.
+    commitStudioBg3dDebouncedHistory(history, {
+      rebasedCurrent: before,
+      next: createStudioBg3dHistorySnapshot({ primitives: added, customModels: [], document }),
+    });
+    expect(stepStudioBg3dCommandHistory(history, "undo")?.state.primitives).toEqual([]);
+    expect(stepStudioBg3dCommandHistory(history, "redo")?.state.primitives.map(({ id }) => id)).toEqual(added.map(({ id }) => id));
+    view.unmount();
+  });
+
+  it("작업대 삽입도 실제 호스트의 노드 한도 거부를 반환하고 기존 장면을 보존한다", () => {
+    const view = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH });
+    const source: BgPrimitive[] = Array.from({ length: 101 }, (_, index) => ({
+      id: `step-${index}`, kind: "box", position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], color: "#ffffff",
+    }));
+    const insert = createStudioBg3dWorkbenchInsertionFromHost(view.result.current);
+    act(() => { expect(insert(source, "초과 묶음")).toBe(false); });
+    expect(view.result.current.primitives).toEqual([]);
+    expect(view.result.current.selectedIds.size).toBe(0);
+    expect(view.result.current.setError).toHaveBeenCalledTimes(1);
+  });
+
   it("자동 단면을 끄면 모든 파츠를 보이는 상태로 한 번에 더하고 첫 도형을 선택한다", () => {
     const view = renderHost({ spec: classroom, liveView: OUTSIDE_SOUTH });
     act(() => view.result.current.addRoomBuild());

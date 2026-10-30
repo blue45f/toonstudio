@@ -35,7 +35,7 @@ export type StudioBg3dSkpMetadataStatus = "saved" | "existing" | "failed" | "ski
 /** 자산 메타데이터에 저장하는 이름 수(목록마다). 보고서 화면은 변환 직후 전체(최대 64)를 보여 준다. */
 export const STUDIO_BG3D_SKP_STORED_MAX_NAMES = 16;
 
-const FALLBACK_ASSET_NAME = "SketchUp 모델";
+const FALLBACK_ASSET_NAME = "가져온 3D 모델";
 
 /** 저장소에 기록할 가져온 자산의 사실. 라이브러리 레코드에서 필요한 값만 추려 넘긴다. */
 export interface StudioBg3dSkpImportedAsset {

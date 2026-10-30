@@ -18,7 +18,7 @@ import { studioReviewRosterName, useStudioReviewRoster } from "./use-studio-revi
 import { normalizeStudioReviewAssignees, studioReviewAssigneesAllowed, studioReviewDueAt } from "./studio-review-comment-assignment";
 import { verifyStudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewVerification } from "./studio-virtual-space-review-invitation";
 import { StudioPinnedReviewPreview } from "./StudioPinnedReviewPreview";
-import { serializeStudioReviewPenStrokes, type StudioReviewPenStroke } from "./studio-review-pen-model";
+import { serializeStudioReviewPenStrokes } from "./studio-review-pen-model";
 import { StudioPinnedReviewWorkflow } from "./StudioPinnedReviewWorkflow";
 import { StudioPinnedReviewComparison } from "./StudioPinnedReviewComparison";
 import { StudioReviewVoiceNotes } from "./StudioReviewVoiceNotes";
@@ -78,8 +78,6 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
   const [loading, setLoading] = useState(false);
   const [annotation, setAnnotation] = useState<StudioReviewAnnotationSelection | null>(null);
   const [needsLocation, setNeedsLocation] = useState(false);
-  /** C-5: 서버가 strokes 를 저장·반환하기 전까지 방금 만든 의견의 펜 획을 로컬에 둔다. */
-  const [commentStrokes, setCommentStrokes] = useState<ReadonlyMap<string, readonly StudioReviewPenStroke[]>>(() => new Map());
   const roster = useStudioReviewRoster({ actorId, workId: subject?.workId ?? null, enabled: result?.ok === true,
     autoStart: result?.ok === true && result.review.comments.some((comment) => Boolean(comment.assigneeIds?.length)) });
   const annotationRef = useRef<StudioReviewAnnotationSelection | null>(null);
@@ -184,8 +182,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
         anchor, ...(assigned.length ? { assigneeIds: assigned } : {}), ...(dueDate.dueAt ? { dueAt: dueDate.dueAt } : {}),
         ...(strokes ? { strokes } : {}),
       } };
-      const created = await createStudioReviewComment(subject.reviewId, attempted.current.input);
-      if (strokes) setCommentStrokes((prev) => new Map(prev).set(created.id, strokes));
+      await createStudioReviewComment(subject.reviewId, attempted.current.input);
       if (own !== generation.current || sessionRevision !== getAuthSessionRevision()) return;
       attempted.current = null; setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false);
       setNotice(bt("이 검수 버전에 의견을 남겼어요.", "Your note was saved to this review version."));
@@ -226,11 +223,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       <p className="text-xs text-fg-3 break-all">{bt("검수 버전", "Review version")} · {result.subject.revisionId}</p>
       <details className="mt-2 text-xs"><summary className="flex min-h-11 cursor-pointer items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("버전 식별 정보", "Version identity")}</summary><code className="break-all">{result.subject.rootGraphHash}</code></details>
       <StudioPinnedReviewPreview key={JSON.stringify(result.subject)} subject={subject ?? result.subject} onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }}
-        notes={result.review.comments.map((comment) => {
-          const local = commentStrokes.get(comment.id);
-          const strokes = local ?? comment.strokes ?? [];
-          return strokes.length ? { ...comment, strokes } : comment;
-        })}
+        notes={result.review.comments}
         annotation={result.project.access.comment && ["open", "changes-requested"].includes(result.review.status)
           ? { selected: annotation, onSelect: selectAnnotation, disabled: busy, commentInputId: inputId } : undefined} />
       <StudioPinnedReviewComparison subject={subject ?? result.subject} title={result.review.title}

@@ -5,6 +5,8 @@ import {
   projectAuthorityVersionSchema,
   revisionKindSchema,
   reviewAnchorSchema,
+  reviewPenStrokeSchema,
+  reviewPenStrokesSchema,
   scopeRefSchema,
   sha256Schema,
   studioEntityIdSchema,
@@ -160,20 +162,14 @@ export const studioReviewSummarySchema = z
     updatedAt: isoTimestampSchema,
     reviewerIds: z.array(studioEntityIdSchema),
     openRequiredCommentCount: z.number().int().nonnegative(),
+    sourceRevision: z.object({ artifactId: studioEntityIdSchema, revisionId: studioEntityIdSchema,
+      rootGraphHash: sha256Schema, scope: scopeRefSchema }).strict().optional(),
   })
   .strict();
 export type StudioReviewSummary = z.infer<typeof studioReviewSummarySchema>;
 
-/**
- * C-5: 원고 위 펜 획(페이지 좌표계). 서버가 저장·반환하지 않아도 되며,
- * 반환하면 목록 파싱이 깨지지 않고 그대로 표시한다.
- */
-export const studioReviewPenStrokeSchema = z.object({
-  id: z.string(),
-  points: z.array(z.object({ x: z.number(), y: z.number() }).readonly()).max(500).readonly(),
-  color: z.string(),
-  width: z.number(),
-}).readonly();
+/** 서버와 같은 원본 픽셀·펜 첨삭 계약을 검증한다. */
+export const studioReviewPenStrokeSchema = reviewPenStrokeSchema;
 export type StudioReviewPenStrokePayload = z.infer<typeof studioReviewPenStrokeSchema>;
 
 export const studioReviewCommentSchema = z
@@ -191,9 +187,13 @@ export const studioReviewCommentSchema = z
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
     assigneeIds: z.array(studioEntityIdSchema),
-    strokes: z.array(studioReviewPenStrokeSchema).max(50).optional(),
+    strokes: reviewPenStrokesSchema.optional(),
   })
-  .strict();
+  .strict().superRefine((comment, context) => {
+    if (comment.strokes?.length && (comment.anchor.kind !== "region" || !comment.anchor.source)) {
+      context.addIssue({ code: "custom", path: ["strokes"], message: "pen strokes require a source-mapped region" });
+    }
+  });
 export type StudioReviewComment = z.infer<typeof studioReviewCommentSchema>;
 
 export const studioReviewRecordSchema = studioReviewSummarySchema.extend({
@@ -297,10 +297,7 @@ export interface StudioReviewCommentCreateInput {
   readonly severity: "required" | "recommended" | "note";
   readonly assigneeIds?: readonly string[];
   readonly dueAt?: string;
-  /**
-   * C-5: 원고 위 펜 획(페이지 좌표계). region 앵커(바운딩 박스)와 함께 전송한다.
-   * 서버가 이 필드를 저장하지 않아도 anchor 검증에는 영향을 주지 않는다.
-   */
+  /** 불변 원고의 원본 픽셀 좌표를 source가 확인된 region과 함께 저장한다. */
   readonly strokes?: readonly StudioReviewPenStrokePayload[];
 }
 

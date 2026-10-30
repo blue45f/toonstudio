@@ -499,7 +499,7 @@ describe("PostgresHealthReadinessRepository", () => {
       "../../platform/database/migrations/0036_traffic_analytics_relations.sql",
       "../../platform/database/migrations/0066_share_analytics_events.sql",
       "../../platform/database/migrations/0077_membership_operations.sql",
-      "../../platform/database/migrations/0116_customer_support.sql",
+      "../../platform/database/migrations/0118_customer_support.sql",
     ].flatMap((path) => [
       ...readFileSync(new URL(path, import.meta.url), "utf8").matchAll(
         /\bCREATE TABLE(?: IF NOT EXISTS)? public\.([a-z_]+)/gu,

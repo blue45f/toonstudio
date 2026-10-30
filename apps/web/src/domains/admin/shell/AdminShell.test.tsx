@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { StrictMode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { getAdminShellCopy } from "../router/admin-route-manifest";
 
 import { AdminShell } from "./AdminShell";
 
@@ -34,6 +36,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("AdminShell sidebar preference", () => {
@@ -66,5 +69,68 @@ describe("AdminShell sidebar preference", () => {
     view.unmount();
     renderShell();
     expect(screen.getByRole("button", { name: "사이드바 펼치기" })).toBeTruthy();
+  });
+});
+
+
+describe("관리자 모바일 탐색의 키보드와 복구", () => {
+  const copy = getAdminShellCopy("ko");
+
+  it("이름 있는 모달로 열리고 Escape 후 원래 버튼에 포커스를 돌린다", async () => {
+    renderShell();
+    const trigger = screen.getByRole("button", { name: copy.openNavigation });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: copy.navigation });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(trigger.getAttribute("aria-controls")).toBe(dialog.id);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("모바일과 데스크톱 메뉴의 제목 ID가 중복되지 않고 닫기 버튼도 복구한다", async () => {
+    renderShell();
+    const trigger = screen.getByRole("button", { name: copy.openNavigation });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const ids = Array.from(document.querySelectorAll("[id]"), (element) => element.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const dialog = screen.getByRole("dialog", { name: copy.navigation });
+    fireEvent.click(within(dialog).getByRole("button", { name: copy.closeNavigation }));
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("배경으로 포커스가 빠지지 않고 이동 링크를 선택하면 메뉴가 닫힌다", async () => {
+    renderShell();
+    const trigger = screen.getByRole("button", { name: copy.openNavigation });
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: copy.navigation });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    trigger.focus();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    fireEvent.click(within(dialog).getByRole("link", { name: copy.publicSite }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("넓은 화면으로 전환하면 숨은 모달과 본문 잠금을 남기지 않는다", async () => {
+    let matches = false;
+    const changes = new EventTarget();
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      get matches() { return matches; },
+      media: "(min-width: 1024px)",
+      addEventListener: changes.addEventListener.bind(changes),
+      removeEventListener: changes.removeEventListener.bind(changes),
+    })));
+    renderShell();
+    fireEvent.click(screen.getByRole("button", { name: copy.openNavigation }));
+    expect(screen.getByRole("dialog", { name: copy.navigation })).toBeTruthy();
+    matches = true;
+    act(() => { changes.dispatchEvent(new Event("change")); });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
   });
 });

@@ -110,7 +110,10 @@ function canonicalizeJsonValue(value: unknown, seen: Set<object>): unknown {
     for (const key of Object.keys(value).sort()) {
       const entry = value[key];
       if (entry === undefined) continue;
-      result[key] = canonicalizeJsonValue(entry, seen);
+      // __proto__도 원본 JSON의 데이터 키다. prototype setter를 호출하지 않고 own property로 기록한다.
+      Object.defineProperty(result, key, {
+        value: canonicalizeJsonValue(entry, seen), enumerable: true, configurable: true, writable: true,
+      });
     }
     return result;
   } finally {

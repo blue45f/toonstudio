@@ -1,3 +1,6 @@
+import { HttpException } from "@nestjs/common";
+import { StudioScopedWriteDeniedError } from "./studio-scoped-write-effects";
+import { StudioLiveOpIdConflictError } from "./studio-live-op";
 import {
   StudioCrdtBackpressureError,
   StudioCrdtDocumentTooLargeError,
@@ -61,6 +64,9 @@ export function mapStudioLiveCrdtFailure(
   workId: string,
   operation: StudioLiveCrdtOperation
 ): StudioLiveCrdtFailureMapping {
+  if (error instanceof StudioScopedWriteDeniedError || (error instanceof HttpException && [403, 409].includes(error.getStatus()))) {
+    return { response: studioLiveFailure("forbidden", "현재 편집 배정이나 권한을 확인할 수 없습니다. 초안을 보존하고 배정을 다시 확인하세요."), diagnostic: null };
+  }
   if (error instanceof StudioCrdtBackpressureError) {
     // Admission failed before a durable mutation began. The ordered browser outbox can safely
     // retry the same idempotent update after backoff.
@@ -75,6 +81,7 @@ export function mapStudioLiveCrdtFailure(
 
   if (
     error instanceof StudioCrdtInvalidPayloadError
+    || error instanceof StudioLiveOpIdConflictError
     || error instanceof StudioCrdtUpdateIdConflictError
     || error instanceof StudioCrdtDocumentTooLargeError
   ) {

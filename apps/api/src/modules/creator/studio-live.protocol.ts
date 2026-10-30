@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
 import { STUDIO_ACOUSTIC_RESOURCE_PREFIX } from "@toonstudio/studio-project-model/world-acoustic";
 
 import {
@@ -76,9 +77,7 @@ export const StudioLiveLockRequestIdSchema = z.uuid();
 export const STUDIO_LIVE_LOCK_PROTOCOL_VERSION = 2 as const;
 export const STUDIO_LIVE_LOCK_REVISION_VERSION = 1 as const;
 
-// v8 is the first room protocol that accepts renderer engine programs in stroke payload v6.
-// Rejecting v1-v7 prevents stale tabs from silently omitting material strokes.
-// The base64-v4 label remains the name of the unchanged legacy transport encoding.
+// v8부터 stroke v6 engine program을 받으며 이전 wire의 재료 획 누락을 거절한다. base64-v4 인코딩은 유지한다.
 export const STUDIO_CRDT_PROTOCOL_VERSION = 8 as const;
 export const STUDIO_CRDT_BINARY_WIRE_VERSION = 1 as const;
 export const STUDIO_CRDT_BINARY_WIRE_FORMAT = "binary-v1" as const;
@@ -586,7 +585,7 @@ export const StudioLiveCrdtUpdateSchema = z
     workId: WorkIdSchema,
     updateId: StudioCrdtUpdateIdSchema,
     clientSequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
-    update: encodedBase64(STUDIO_CRDT_UPDATE_MAX_BYTES),
+    update: encodedBase64(STUDIO_CRDT_UPDATE_MAX_BYTES), writeContext: StudioScopedWriteContextSchema.optional(),
   })
   .strict();
 
@@ -634,7 +633,7 @@ export const StudioLiveCrdtBinaryUpdateSchema = z
     workId: WorkIdSchema,
     updateId: StudioCrdtUpdateIdSchema,
     clientSequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
-    update: decodedBinaryEnvelope("update"),
+    update: decodedBinaryEnvelope("update"), writeContext: StudioScopedWriteContextSchema.optional(),
   })
   .strict();
 
@@ -864,7 +863,7 @@ export const StudioLiveOpSubmitSchema = z
   .object({
     protocolVersion: StudioCrdtProtocolVersionSchema,
     workId: WorkIdSchema,
-    op: StudioLiveOpSchema,
+    op: StudioLiveOpSchema, writeContext: StudioScopedWriteContextSchema.optional(),
   })
   .strict();
 

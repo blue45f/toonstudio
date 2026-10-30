@@ -9,11 +9,17 @@
 import { buildProductionWorkflowTasks, transitionProductionTaskBatch, validateProductionWorkflowMutation, validateProductionWorkflowProfile } from "@toonstudio/contracts/production-workflow";
 import {
   applyProductionStudioRevisionLink,
+  activeAssignments,
+  applyProductionSubmissionReviewToTasks,
+  applySubmissionToDeliverable,
   createImmutableScopePackage,
   createPlanningSnapshot,
   evaluateProductionRisks,
   transitionProductionRisk,
   transitionProductionRiskResponse,
+  validateSubmission,
+  validateReviewDecision,
+  productionSubmissionBlockingClarifications,
   type PlanningSnapshot,
   type ProductionProjectAggregate,
   type ProductionTask,
@@ -22,6 +28,14 @@ import {
 
 import type { ProductionClientCommand } from "./production-api";
 import { createProductionDemoProject, PRODUCTION_DEMO_ANCHOR_AT } from "./production-demo";
+import { decisionsForProductionSubmission, plainSubmissionApproval, policyForProductionSubmission } from "./production-review-submission";
+import { registerI18nEnglishSourceEntries, registerI18nLocaleEntries } from "@/shared/lib/i18n";
+
+const TASK_OUTPUT_SERVER_KEY = "productionHub.demo.taskOutputRequiresServer";
+const TASK_OUTPUT_SERVER_KO = "작업물 제출에는 서버의 저장 원고 검증이 필요합니다. 실제 프로젝트에서 제출해 주세요.";
+// 샘플 전용 안내는 해당 화면을 불러올 때 등록해 앱 셸 사전을 늘리지 않는다.
+registerI18nLocaleEntries("ko", { [TASK_OUTPUT_SERVER_KEY]: TASK_OUTPUT_SERVER_KO });
+registerI18nEnglishSourceEntries({ [TASK_OUTPUT_SERVER_KEY]: "Task output submission requires server verification of saved manuscripts. Submit it from a real project." });
 
 /**
  * 모델 문구 번역자. 컴포넌트/훅이 `useT()` 기반 번역자를 주입하면 사전 키로 해소하고,
@@ -55,6 +69,8 @@ export function reduceProductionDemoCommand(
 ): ProductionProjectAggregate {
   const base = { ...aggregate, revision: aggregate.revision + 1, updatedAt: new Date().toISOString() };
   switch (command.type) {
+    case "submit-task-output":
+      throw new Error(translate(TASK_OUTPUT_SERVER_KEY, TASK_OUTPUT_SERVER_KO));
     case "upsert-planning-record": {
       const record = command.record;
       switch (record.kind) {
@@ -98,12 +114,34 @@ export function reduceProductionDemoCommand(
       return { ...base, mergeRequests: replaceById(aggregate.mergeRequests, command.mergeRequest) };
     case "upsert-deliverable":
       return { ...base, deliverables: replaceById(aggregate.deliverables, command.deliverable) };
-    case "upsert-submission":
-      return { ...base, submissions: replaceById(aggregate.submissions, command.submission) };
+    case "upsert-submission": {
+      const submission = command.submission;
+      const deliverable = aggregate.deliverables.find((entry) => entry.id === submission.deliverableId) ?? null;
+      const current = aggregate.submissions.find((entry) => entry.id === submission.id) ?? null;
+      const issues = validateSubmission({ submission, current, deliverable,
+        activeAssignmentIds: activeAssignments(aggregate.assignments, base.updatedAt).map((assignment) => assignment.id) });
+      if (issues.length || !deliverable) throw new Error(issues.join("\n") || "제출본의 산출물이 없습니다.");
+      if (submission.status === "approved" && current?.status !== "approved") {
+        const policy = policyForProductionSubmission(aggregate, submission);
+        if (current?.status !== "in-review" || !policy || !policy.lanes.length
+          || !plainSubmissionApproval(policy, decisionsForProductionSubmission(aggregate, submission, policy, base.updatedAt)).approved
+          || productionSubmissionBlockingClarifications(aggregate, submission).length > 0) {
+          throw new Error("현재 제출본의 필수 검수 승인을 완료하세요.");
+        }
+      }
+      return applyProductionSubmissionReviewToTasks({ ...base, submissions: replaceById(aggregate.submissions, submission),
+        deliverables: replaceById(aggregate.deliverables, applySubmissionToDeliverable(deliverable, submission)) }, submission, base.updatedAt);
+    }
     case "upsert-studio-revision-link":
       return applyProductionStudioRevisionLink(base, command.link);
-    case "record-review-decision":
-      return { ...base, reviewDecisions: replaceById(aggregate.reviewDecisions, command.decision) };
+    case "record-review-decision": {
+      if (aggregate.reviewDecisions.some((decision) => decision.id === command.decision.id)) throw new Error("이미 기록된 검수 결정은 바꿀 수 없습니다. 새 결정을 기록하세요.");
+      const policy = aggregate.reviewPolicies.find((entry) => entry.id === command.policyId);
+      if (!policy) throw new Error("검수 정책을 찾을 수 없습니다.");
+      const issues = validateReviewDecision(policy, command.decision);
+      if (issues.length) throw new Error(issues.join("\n"));
+      return { ...base, reviewDecisions: [...aggregate.reviewDecisions, { ...command.decision, createdAt: base.updatedAt }] };
+    }
     case "upsert-episode":
       return { ...base, episodes: replaceById(aggregate.episodes, command.episode) };
     case "configure-workflow": {

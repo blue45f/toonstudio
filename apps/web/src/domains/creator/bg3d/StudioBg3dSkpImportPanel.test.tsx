@@ -42,7 +42,7 @@ describe("StudioBg3dSkpImportPanel", () => {
   it("shows only the guide while idle, with the support limits and the unofficial-parser notice", () => {
     const session = createStudioBg3dSkpImportSession();
     render(<StudioBg3dSkpImportPanel session={session} />);
-    const guide = screen.getByText("SketchUp(.skp) 가져오기 안내").closest("details");
+    const guide = screen.getByText("SKP 파일 가져오기 안내").closest("details");
     expect(guide).not.toBeNull();
     expect(within(guide as HTMLElement).getByText(/데스크톱 32MiB·모바일 16MiB/u)).toBeTruthy();
     expect(within(guide as HTMLElement).getByText(/Trimble과 관련 없는 비공식/u)).toBeTruthy();

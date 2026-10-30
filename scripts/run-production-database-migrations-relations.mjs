@@ -141,6 +141,8 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "creator_work_report",
   "creator_work_review_feedback",
   "creator_work_review_link",
+  "creator_work_scoped_write_policy",
+  "creator_work_scoped_write_receipt",
   "customer_support_ai_attempt",
   "customer_support_conversation",
   "customer_support_message",

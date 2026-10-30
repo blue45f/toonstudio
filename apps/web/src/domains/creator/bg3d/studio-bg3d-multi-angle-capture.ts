@@ -403,6 +403,7 @@ function buildCandidateCamera(
       : {}),
     ...(shot.camera.projection ? { projection: shot.camera.projection } : {}),
     ...(shot.camera.zoom !== undefined ? { zoom: shot.camera.zoom } : {}),
+    ...(shot.camera.orthographicHeight !== undefined ? { orthographicHeight: shot.camera.orthographicHeight } : {}),
     ...(shot.camera.lensShift ? { lensShift: shot.camera.lensShift } : {}),
     ...(shot.camera.nearClip !== undefined ? { nearClip: shot.camera.nearClip } : {}),
     ...(shot.camera.up ? { up: shot.camera.up } : {}),

@@ -9,6 +9,9 @@ import {
   createStudioBg3dMeasurementDocument,
 } from "./studio-bg3d-measurement";
 import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
+import { createBgCustomModelInstance } from "../studio-background-3d-model";
+import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from "./studio-bg3d-model-cache.test-fixture";
+import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dInferenceHostInput } from "./useStudioBg3dInferenceHost";
@@ -186,6 +189,28 @@ describe("에디터 호스트 ↔ 추론 서비스 연결", () => {
 });
 
 describe("모델 배치 연결", () => {
+  it("같은 저장 모델의 renderer variant가 바뀌면 추론 경계도 현재 backend의 root에서 다시 읽는다", () => {
+    const record = createStudioBg3dCacheTestRecord("shared-model");
+    const webgl = createStudioBg3dCacheTestEntry(record, "webgl"), webgpu = createStudioBg3dCacheTestEntry(record, "webgpu");
+    const small = new THREE.BoxGeometry(2, 2, 2), large = new THREE.BoxGeometry(8, 8, 8);
+    const material = new THREE.MeshBasicMaterial();
+    webgl.root.add(new THREE.Mesh(small, material)); webgpu.root.add(new THREE.Mesh(large, material));
+    const model = { ...createBgCustomModelInstance(record.id, 0), id: "model-instance" };
+    const { host } = makeHost({ primitives: [], customModels: [model], placementActive: true, materialBackend: "webgl",
+      modelRootCacheRef: { current: new Map([[studioBg3dModelCacheKey(record.id, "webgl"), webgl], [studioBg3dModelCacheKey(record.id, "webgpu"), webgpu]]) } });
+    const { result, rerender, unmount } = mount(host);
+    const cursor = { kind: "point", point: [4.02, 4.02, 4.02], worldPerPixel: 1 / 64 } as const;
+    try {
+      act(() => { result.current.service.resolve({ cursor }); });
+      expect(result.current.service.getResult()?.sourceIds ?? []).not.toContain(model.id);
+      rerender({ host: { ...host, materialBackend: "webgpu" } });
+      act(() => { result.current.service.resolve({ cursor }); });
+      expect(result.current.service.getResult()?.sourceIds).toContain(model.id);
+      expect(result.current.service.getResult()?.point).toEqual([4, 4, 4]);
+      expect(webgl.dispose).not.toHaveBeenCalled(); expect(webgpu.dispose).not.toHaveBeenCalled();
+    } finally { unmount(); small.dispose(); large.dispose(); material.dispose(); }
+  });
+
   it("배치 미리보기 중에는 HUD·키보드 없는 추론 세션을 열고 끝나면 닫는다", () => {
     const { host } = makeHost({ placementActive: true });
     const { result, rerender } = mount(host);

@@ -101,8 +101,8 @@ export function isGlb(bytes: Uint8Array): boolean {
   return view.getUint32(0, true) === 0x46546c67 && view.getUint32(4, true) === 2;
 }
 
-async function capture(engine: CharacterEngine, options: ExportCaptureOptions, passes: readonly RenderPassId[], now: number) {
-  const request = buildCaptureRequest(options, passes);
+async function capture(engine: CharacterEngine, options: ExportCaptureOptions, passes: readonly RenderPassId[], now: number, includeHairOwnership = false) {
+  const request = { ...buildCaptureRequest(options, passes), ...(includeHairOwnership ? { includeHairOwnership: true } : {}) };
   if (request.settleSteps > 0) {
     try {
       await engine.settle(request.settleSteps);
@@ -162,9 +162,14 @@ export async function exportLayeredPsd(engine: CharacterEngine, paintLayers: rea
   const started = now();
   const sizeFailure = validateExportDimensions(options.width, options.height, MAX_PSD_EXPORT_DIMENSION, started);
   if (sizeFailure) return { ok: false, failure: sizeFailure };
+  if (options.splitHairLayers) {
+    const support = engine.psdHairLayers?.();
+    if (support?.status !== "available") return { ok: false, failure: failVisible("psd-hair-ownership-unavailable", support?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.", undefined, started) };
+  }
   const passes: RenderPassId[] = ["flat", "lit", "normal", "depth", "part-id"];
-  const captured = await capture(engine, options, passes, started);
+  const captured = await capture(engine, options, passes, started, options.splitHairLayers);
   if (!captured.ok) return captured;
+  if (options.splitHairLayers && captured.result.hairOwnership?.status !== "available") return { ok: false, failure: failVisible("psd-hair-ownership-unavailable", captured.result.hairOwnership?.reasonKo ?? "엔진이 실제 헤어 소유권 마스크를 반환하지 않았습니다. 일반 PSD를 사용할 수 있습니다.", undefined, started) };
   const planned = planCharacterPsd(
     captured.result,
     paintLayers,

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -52,10 +53,11 @@ import { StudioVirtualSpaceJoystick } from "./StudioVirtualSpaceJoystick";
 import { StudioVirtualSpaceNpcDialoguePanel, type StudioNpcDialogueAction } from "./StudioVirtualSpaceNpcDialoguePanel";
 import { StudioVirtualSpaceOfficeStart } from "./StudioVirtualSpaceOfficeStart";
 import { StudioVirtualSpacePanelGate } from "./StudioVirtualSpacePanelGate";
-import type { StudioVirtualSpaceEngineLocalState } from "./StudioVirtualSpacePhaserCanvas";
+import type { StudioVirtualSpaceEngineLocalState } from "./studio-virtual-space-stage-state";
 import { readStudioVirtualStageMode, resolveStudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
-import { StudioOffice2dCanvas } from "./office2d/StudioOffice2dCanvas";
-import { StudioVirtualSpaceLegacyStage, StudioVirtualSpaceThreeStage } from "./office2d/StudioVirtualSpaceStages";
+import { StudioVirtualSpaceStageSurface } from "./StudioVirtualSpaceStageSurface";
+import { VirtualThreeThemeProvider } from "./three/ui/VirtualThreeThemeProvider";
+import { VirtualThreeThemePanel } from "./three/ui/VirtualThreeThemePanel";
 import type { StudioSpaceSocialAction, StudioSpaceSocialRequest } from "./StudioVirtualSpaceSocialPanel";
 import { StudioVirtualSpaceUserList } from "./StudioVirtualSpaceUserList";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
@@ -280,6 +282,8 @@ import "./studio-virtual-space.css";
 import "./studio-workspace-live.css";
 import "./hud/space-hud.css";
 
+const LazyVirtualThreeAvatarPicker = lazy(() => import("./three/ui/VirtualThreeAvatarPicker").then(module => ({ default: module.VirtualThreeAvatarPicker })));
+
 export function VirtualSpaceExperience({
   projectId,
   preparing,
@@ -339,6 +343,8 @@ export function VirtualSpaceExperience({
   const controllerRef = useRef<StudioVirtualSpacePresenceController | null>(null);
   const fallbackIdentity = live.room?.participant.sessionId ?? `space:${projectId}`;
   const decorationScope = JSON.stringify([projectId, activeWorldScope, authoringMode]);
+  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() => readStudioVirtualStageMode(typeof window === "undefined" ? "" : window.location.search) === "3d" ? "3d" : "2d");
+  const stageKind = resolveStudioVirtualStageKind({ engineMode, authoringMode, search: typeof window === "undefined" ? "" : window.location.search });
   const preferences = useSpacePreferences({ initialArtStyle: initialArtStyleOverride, decorationScope, notify });
   const {
     artStyle, selectArtStyle, characterCustomization, selectCharacterCustomization, rewardInventory, claimReward, equipReward,
@@ -1722,13 +1728,16 @@ export function VirtualSpaceExperience({
           }))} /> : null}
       </StudioVirtualSpacePanelGate>;
       case "build": return <StudioVirtualSpacePanelGate active>
-        <section className="space-panel-section" aria-label={bt("내 캐릭터", "My character")}>
+        {stageKind === "three" ? <><VirtualThreeThemePanel />
+          <Suspense fallback={<p role="status">{bt("3D 아바타 목록을 불러오는 중…", "Loading 3D avatars…")}</p>}>
+            <LazyVirtualThreeAvatarPicker avatarIndex={avatarIndex} onSelect={selectAvatar} />
+          </Suspense></> : <section className="space-panel-section" aria-label={bt("내 캐릭터", "My character")}>
           <StudioVirtualThemeCharacterPicker mode="all" includeAuto artStyle={artStyle} spaceTheme={spaceTheme} avatarIndex={avatarIndex} onSelect={selectAvatar} />
           <p className="space-panel-note">{personal ? bt("캐릭터 선택은 이 브라우저에 저장됩니다.", "Your character choice is saved in this browser.")
             : bt("이 선택은 이 브라우저에만 저장되고 P2P로 팀원에게 공유됩니다.", "This choice stays in this browser and is shared with teammates over P2P.")}</p>
-        </section>
+        </section>}
         <SpaceAvatarDetailSection identity={fallbackIdentity} />
-        <fieldset className="space-panel-section studio-vspace-art-style-picker">
+        {stageKind !== "three" ? <fieldset className="space-panel-section studio-vspace-art-style-picker">
           <legend>{bt("공간 아트 스타일", "World art direction")}</legend>
           <p className="space-panel-note">{bt("건물·가구·바닥의 작화를 선택해요. 내 캐릭터는 직접 고른 모습을 유지해요.", "Choose the art for buildings, furniture and floors. Your character keeps the look you chose.")}</p>
           <div className="studio-vspace-art-style-grid">
@@ -1738,7 +1747,7 @@ export function VirtualSpaceExperience({
               <small>{bt(style.labelKo, style.labelEn)}</small>
             </button>)}
           </div>
-        </fieldset>
+        </fieldset> : null}
         {!personal ? <button type="button" className="space-link-row" onClick={() => {
           const nextSearch = new URLSearchParams(location.search);
           nextSearch.set("worldEdit", "1");
@@ -1746,10 +1755,10 @@ export function VirtualSpaceExperience({
         }}><Brush size={17} aria-hidden />{bt("월드 편집기 열기", "Open the world editor")}</button> : null}
       </StudioVirtualSpacePanelGate>;
       case "settings": return <StudioVirtualSpacePanelGate active>
-        <SpaceAtmosphereSettings value={atmosphere} localOnly={connectivity.localOnly} onChange={changeAtmosphere} />
-        <StudioVirtualSpaceEnvironmentPanel value={environmentPreference} artStyle={artStyle} onChange={selectEnvironmentPreference}
-          spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} />
-        <StudioVirtualSpaceLightingPanel fixtures={lightFixtures} ambient={lightAmbient} hour={lightHour}
+        {stageKind !== "three" ? <SpaceAtmosphereSettings value={atmosphere} localOnly={connectivity.localOnly} onChange={changeAtmosphere} /> : null}
+        {stageKind === "three" ? <VirtualThreeThemePanel /> : <StudioVirtualSpaceEnvironmentPanel value={environmentPreference} artStyle={artStyle} onChange={selectEnvironmentPreference}
+          spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} />}
+        {stageKind !== "three" ? <StudioVirtualSpaceLightingPanel fixtures={lightFixtures} ambient={lightAmbient} hour={lightHour}
           hourOverride={lightHourOverride} onToggleFixture={toggleLightFixture} onDimmerChange={changeLightDimmer}
           onHourOverride={setLightHourOverride} onClearHourOverride={() => setLightHourOverride(null)}
           onApplyPreset={applyLightPreset}
@@ -1757,8 +1766,8 @@ export function VirtualSpaceExperience({
           cycleAutoLighting={lightAutoMode} onCycleAutoLightingChange={setLightAutoMode}
           cycleTimeOfDay={cycleTimeOfDay}
           cycleSpeedMs={dayNightSpeedMs} onToggleCycle={toggleDayNight} onCycleScrub={scrubDayNight}
-          onCycleSpeedChange={changeDayNightSpeed} />
-        <StudioVirtualSpaceExperiencePanel value={experiencePreference} metrics={runtimeMetrics} onChange={selectExperiencePreference} onCapture={captureVirtualPhoto} />
+          onCycleSpeedChange={changeDayNightSpeed} /> : null}
+        {stageKind !== "three" ? <StudioVirtualSpaceExperiencePanel value={experiencePreference} metrics={runtimeMetrics} onChange={selectExperiencePreference} onCapture={captureVirtualPhoto} /> : null}
         <button type="button" className="space-link-row" onClick={() => setHelpOpen(true)}><CircleHelp size={17} aria-hidden />{bt("단축키 도움말 · 처음 안내 다시 보기", "Shortcuts · replay the first-visit guide")}</button>
         <button type="button" className="space-link-row" onClick={returnToStartPosition}><LifeBuoy size={17} aria-hidden />{bt("시작 위치로 돌아가기", "Back to the start position")}</button>
         {!personal ? <>
@@ -1831,7 +1840,7 @@ export function VirtualSpaceExperience({
     ...(!personal ? [{ id: "huddle", visible: panel === "chat", node: <Suspense fallback={null}><StudioP2pHuddleLauncher placement="inline" /></Suspense> }] : []),
     { id: "ambient-audio", visible: panel === "settings", node: <StudioVirtualSpaceAmbientAudio key={projectId} scope={worldManifest} ready={worldReady && !authoringMode}
       focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} /> },
-    { id: "customization", visible: panel === "build", node: <StudioVirtualSpacePanelGate active={panel === "build"} preserveAfterOpen>
+    { id: "customization", visible: stageKind !== "three" && panel === "build", node: <StudioVirtualSpacePanelGate active={stageKind !== "three" && panel === "build"} preserveAfterOpen>
       <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldManifest} nickname={nickname}
         character={characterCustomization} decorations={decorations} selfPoint={snapshot.self}
         tileEffects={tileEffects} onTileEffectsChange={changeTileEffects}
@@ -1878,12 +1887,8 @@ export function VirtualSpaceExperience({
       moreItems={moreItems} workLauncher={workLauncher} dockRef={mobileDockRef} onPopover={setDockPopover} onEmote={emote}
       onTogglePeople={() => togglePanel("people")} onToggleMap={toggleMap} />;
 
-  // 2D(ToonOffice 2D)가 기본이고 3D는 선택형이다. 저작 모드와 ?stage=legacy만 이전 Phaser 스테이지를 쓴다.
-  const [engineMode, setEngineMode] = useState<"2d" | "3d">(() => readStudioVirtualStageMode(typeof window === "undefined" ? "" : window.location.search) === "3d" ? "3d" : "2d");
-  const stageKind = resolveStudioVirtualStageKind({ engineMode, authoringMode, search: typeof window === "undefined" ? "" : window.location.search });
-  const StageCanvas = stageKind === "legacy" ? StudioVirtualSpaceLegacyStage : stageKind === "three" ? StudioVirtualSpaceThreeStage : StudioOffice2dCanvas;
-
   return (
+    <VirtualThreeThemeProvider spaceScopeId={decorationScope}>
     <div className="space-hud" data-own-control-size="true" data-studio-live-shell="true" data-studio-personal-space={personal || undefined}
       data-route-ready="studio-live-space" data-hud-layout={desktop ? "desktop" : "mobile"} data-panel-open={panel ? "true" : undefined}
       data-dock-popover={dockPopover ?? undefined}
@@ -1892,44 +1897,23 @@ export function VirtualSpaceExperience({
       <div className="space-hud__stage" data-studio-virtual-space="true"
         data-handedness={experiencePreference.handedness} data-control-mode={experiencePreference.controlMode}
         data-quality-preset={experiencePreference.qualityPreset} data-spotlight-active={spotlightEventId ? "true" : undefined}>
-        {worldReady ? <StageCanvas
-          manifest={worldManifest}
-          worldAssetUrls={publishedWorld?.assetUrls}
-          snapshot={chatSnapshot}
-          bridge={engineBridge}
-          selfIdentity={fallbackIdentity}
-          selfDisplayName={nickname}
-          seatedActors={seatedActors}
-          waveActorIds={waveActorIds}
-          guideTourRequest={guideTourRequest}
-          onGuideTourChange={updateGuideTour}
-          debugWorld={authoringMode}
-          atmosphere={activity === "focused" || activity === "away" ? "focus" : atmosphere}
-          artStyle={artStyle}
-          spaceTheme={spaceTheme}
-          decorations={decorations}
-          experiencePreference={experiencePreference}
-          environmentPreference={environmentPreference}
-          onRuntimeMetrics={setRuntimeMetrics}
-          onNpcInteract={handleEngineNpcInteract}
-          onLocalState={handleEngineLocalState}
-          onInteract={handleEngineInteract}
-          onNearbyInteractionChange={handleNearbyInteractionChange}
-          onPeerSelect={handleEnginePeerSelect}
-          onCancelFollow={cancelFollowing}
-          onPortal={handleEnginePortal}
-          onZoneChange={setZone}
-          onNearbyNpcsChange={setNearbyNpcs}
-          onStuckChange={setStuck}
-          onEngineStatusChange={setEngineStatus}
-          onGhostModeChange={setGhostMode}
-          onSpaceUiEvent={spaceUi.handleSpaceUiEvent}
-          onSelfImpact={(vx, vy) => controllerRef.current?.sendImpact(vx, vy)}
-          onObjectStateChange={(change) => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt)}
-          tileEffects={tileEffects}
-          placedFixtures={mergedPlacedFixtures} onBuildPlacementEvent={buildPlacement.handleCanvasEvent}
-          onTileEffectTrigger={handleTileEffectTrigger}
-        /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
+        {worldReady ? <StudioVirtualSpaceStageSurface stageKind={stageKind} logical={{
+          manifest: worldManifest, snapshot: chatSnapshot, bridge: engineBridge, selfDisplayName: nickname,
+          onRuntimeMetrics: setRuntimeMetrics, onNpcInteract: handleEngineNpcInteract, onLocalState: handleEngineLocalState,
+          onInteract: handleEngineInteract, onNearbyInteractionChange: handleNearbyInteractionChange, onPortal: handleEnginePortal,
+          onZoneChange: setZone, onNearbyNpcsChange: setNearbyNpcs, onEngineStatusChange: setEngineStatus,
+        }} twoD={{
+          worldAssetUrls: publishedWorld?.assetUrls, selfIdentity: fallbackIdentity, seatedActors, waveActorIds,
+          guideTourRequest, onGuideTourChange: updateGuideTour, debugWorld: authoringMode,
+          atmosphere: activity === "focused" || activity === "away" ? "focus" : atmosphere,
+          artStyle, spaceTheme, decorations, experiencePreference, environmentPreference,
+          onPeerSelect: handleEnginePeerSelect, onCancelFollow: cancelFollowing, onStuckChange: setStuck,
+          onGhostModeChange: setGhostMode, onSpaceUiEvent: spaceUi.handleSpaceUiEvent,
+          onSelfImpact: (vx, vy) => controllerRef.current?.sendImpact(vx, vy),
+          onObjectStateChange: change => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt),
+          tileEffects, placedFixtures: mergedPlacedFixtures, onBuildPlacementEvent: buildPlacement.handleCanvasEvent,
+          onTileEffectTrigger: handleTileEffectTrigger,
+        }} /> : <div className="studio-vspace-engine-message" role="status">{worldLoadError
           ? bt("이 월드에는 안전하게 시작할 수 있는 바닥이 없습니다.", "This world has no safe floor where a player can start.")
           : bt("공간 데이터 불러오는 중…", "Loading world data…")}</div>}
       </div>
@@ -2108,7 +2092,7 @@ export function VirtualSpaceExperience({
           onReset={resetAuthoringManifest}
         /></Suspense>
       </div> : null}
-    </div>
+    </div></VirtualThreeThemeProvider>
   );
 }
 

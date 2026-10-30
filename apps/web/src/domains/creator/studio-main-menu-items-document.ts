@@ -55,10 +55,11 @@ export function buildStudioFileMenuItems({
     {
       id: "save-draft",
       commandId: "file.save-draft",
-      label: state.sharedNonOwnerSave ? "공동 저장" : "초안 저장",
+      label: state.scopedPendingSaveConfirmation ? "저장 상태 확인" : state.sharedNonOwnerSave ? "공동 저장" : "초안 저장",
+      ...(state.scopedPendingSaveConfirmation ? { labelEn: "Check save status", labelKey: "studio.mainMenu.item.file.confirm-pending-save" } : {}),
       icon: Bookmark,
       shortcut: "⌘S",
-      disabled: state.saving || state.collaborationDocumentLocked,
+      disabled: state.saving || (state.collaborationDocumentLocked && !state.scopedDraftSaveAvailable),
       onSelect: () => {
         void editor.save("draft");
       },

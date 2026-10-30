@@ -100,7 +100,10 @@ export function describeStudioScene3dLinkedLayerReview(input: {
     || (camera.projection ?? "perspective") !== cut.camera.projection
     || Math.abs((camera.nearClip ?? 0.03) - cut.camera.near) > 1e-8
     || (cut.camera.projection === "orthographic"
-      && Math.abs((camera.zoom ?? 1) - 5 / cut.camera.orthoScale) > 1e-8)
+      && (camera.orthographicHeight === undefined
+        ? Math.abs((camera.zoom ?? 1) - 5 / cut.camera.orthoScale) > 1e-8
+        : Math.abs(camera.orthographicHeight / (camera.zoom ?? 1) - cut.camera.orthoScale)
+          > 1e-8 * Math.max(camera.orthographicHeight / (camera.zoom ?? 1), cut.camera.orthoScale)))
   );
   const aspectRatio = cut ? cut.source.scene.output.width / cut.source.scene.output.height : 1;
   const sceneNeedsReview = cut !== undefined && (!cut.source.legacyBg3d

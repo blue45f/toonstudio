@@ -71,6 +71,7 @@ export function studioBg3dBundleAssetRights(
     status: rights.status,
     commercialUse: rights.commercialUse,
     attributionRequired: rights.attributionRequired,
+    ...(rights.attribution === undefined ? {} : { attribution: rights.attribution }),
     licenseName: rights.licenseName,
   });
 }

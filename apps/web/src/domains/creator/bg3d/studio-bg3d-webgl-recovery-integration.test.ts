@@ -15,7 +15,7 @@ describe("BG3D primary WebGL recovery wiring", () => {
     expect(bridgeSource).toContain(
       "resetRendererAfterContextRestore(renderer)",
     );
-    expect(bridgeSource).toContain("currentDpr * 0.75");
+    // 반복 손실 중 DPR 보존은 CaptureBridge.quality의 실제 component 회귀에서 검증한다.
     expect(bridgeSource).toContain(
       "STUDIO_BG3D_WEBGL_RECOVERY_EVENT",
     );

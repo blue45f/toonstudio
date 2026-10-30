@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
 
-import { canonicalJson, reviewAnchorSchema, scopeContains, scopeRefSchema, validateStudioReviewSpatialAnchor } from "@toonstudio/studio-project-model";
+import { canonicalJson, reviewAnchorSchema, reviewPenStrokesSchema, scopeContains, scopeRefSchema } from "@toonstudio/studio-project-model";
 import { STUDIO_WORLD_ARTIFACT_PREFIX } from "@toonstudio/studio-project-model/world-publication";
 import { STUDIO_WORK_SESSION_ARTIFACT_PREFIX } from "@toonstudio/studio-project-model/work-session";
 import {
@@ -15,9 +15,13 @@ import type { PoolClient } from "pg";
 import { STUDIO_REVIEW_PREVIEW_PAGE_SIZE, type StudioReviewPreviewBlobRow,
   type StudioReviewPreviewSource, type StudioReviewPreviewSubject } from "./studio-review-preview";
 import { lockStudioReviewPreviewStorage } from "./studio-review-preview-storage";
-import { studioReviewMappingFromOperation, studioReviewMappingsFromOperation } from "./studio-review-source-map";
+import { studioReviewMappingsFromOperation } from "./studio-review-source-map";
 import { loadStudioReviewResolutionCaptures } from "./studio-review-capture-attestation";
-
+import { attachStudioReviewCaptureSources } from "./studio-review-capture-source-revision";
+import { authorizeStudioReviewCaptureBootstrap } from "./studio-review-capture-purpose";
+import type { StudioReviewPreviewCapture } from "./studio-review-preview-producer.contract";
+import { mapStudioReviewComment, sameStudioReviewCommentMutation, validateStudioReviewCommentSource,
+  type StudioReviewCommentRecord, type StudioReviewCommentRow, type StudioReviewExistingCommentRow } from "./studio-review-comment-store";
 import { dbPool } from "../../platform/database";
 import {
   resolveCreatorCollaborationAccess,
@@ -36,6 +40,8 @@ import type {
   RestoreStudioRevision,
   RegisterStudioBlob,
 } from "./studio-project-graph.dto";
+
+export type { StudioReviewCommentRecord } from "./studio-review-comment-store";
 
 export interface StudioProjectAccess extends CreatorCollaborationAccess {
   readonly owner: boolean;
@@ -355,6 +361,7 @@ function mapPostgresError(error: unknown): never {
     ? String((error as { constraint?: unknown }).constraint ?? "")
     : "";
   if (code === "23505") {
+    if (constraint === "studio_review_comment_pkey") throw new StudioIdempotencyConflictError();
     if (constraint.includes("work_unique")) {
       throw new StudioProjectIdentityConflictError("work_already_linked");
     }
@@ -397,24 +404,8 @@ export interface StudioReviewSummaryRecord {
   readonly updatedAt: string;
   readonly reviewerIds: readonly string[];
   readonly openRequiredCommentCount: number;
+  readonly sourceRevision?: import("./studio-review-preview-producer.contract").StudioReviewAttestedSourceRevision;
 }
-
-export interface StudioReviewCommentRecord {
-  readonly id: string;
-  readonly reviewId: string;
-  readonly authorUserId: string | null;
-  readonly anchor: Record<string, unknown>;
-  readonly body: string;
-  readonly severity: "required" | "recommended" | "note";
-  readonly status: "open" | "resolved" | "reopened" | "dismissed";
-  readonly dueAt: string | null;
-  readonly resolutionRevisionId: string | null;
-  readonly resolvedBy: string | null;
-  readonly createdAt: string;
-  readonly updatedAt: string;
-  readonly assigneeIds: readonly string[];
-}
-
 export interface StudioReviewRecord extends StudioReviewSummaryRecord {
   readonly comments: readonly StudioReviewCommentRecord[];
 }
@@ -460,34 +451,6 @@ function mapStudioReviewSummary(
   });
 }
 
-interface StudioReviewCommentRow {
-  id: string;
-  reviewId: string;
-  authorUserId: string | null;
-  anchor: Record<string, unknown>;
-  body: string;
-  severity: StudioReviewCommentRecord["severity"];
-  status: StudioReviewCommentRecord["status"];
-  dueAt: Date | null;
-  resolutionRevisionId: string | null;
-  resolvedBy: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  assigneeIds: string[];
-}
-
-function mapStudioReviewComment(
-  row: StudioReviewCommentRow,
-): StudioReviewCommentRecord {
-  return Object.freeze({
-    ...row,
-    dueAt: row.dueAt ? toIso(row.dueAt) : null,
-    createdAt: toIso(row.createdAt),
-    updatedAt: toIso(row.updatedAt),
-    assigneeIds: Object.freeze([...row.assigneeIds]),
-  });
-}
-
 /** Server-owned world assets must not be written through generic graph commands or restore. */
 function assertGenericWorldArtifact(artifactId: string): void {
   if (artifactId.startsWith(STUDIO_WORLD_ARTIFACT_PREFIX)) {
@@ -504,15 +467,15 @@ export class StudioProjectGraphRepository {
   async createProject(
     actorUserId: string,
     input: CreateStudioProjectGraph,
-    idempotencyKey: string,
+    idempotencyKey: string, capture?: StudioReviewPreviewCapture,
   ): Promise<StudioProjectCreateResponse> {
-    assertGenericWorldArtifact(input.artifact.id);
-    assertGenericWorkSessionArtifact(input.artifact.id);
+    assertGenericWorldArtifact(input.artifact.id); assertGenericWorkSessionArtifact(input.artifact.id);
     const client = await dbPool.connect();
     const keyHash = studioIdempotencyKeyHash(idempotencyKey);
     const requestHash = studioRequestHash(input);
     try {
       await client.query("BEGIN");
+      if (capture) await authorizeStudioReviewCaptureBootstrap(client, actorUserId, capture, input.projectId, input);
       const receipt = await client.query<{
         requestHash: string;
         response: StudioProjectCreateResponse;
@@ -552,9 +515,8 @@ export class StudioProjectGraphRepository {
       );
       const work = workResult.rows[0];
       if (!work) throw new StudioProjectNotFoundError("work");
-      assertAccess(projectAccess(actorUserId, work), "manage");
+      if (!capture) assertAccess(projectAccess(actorUserId, work), "manage");
       await verifyBlobRefsReady(client, input.initialRevision.blobRefs, input.workId);
-
       await client.query(
         `INSERT INTO studio_project_graph (
            id, "workId", "schemaVersion", "authorityVersion", "ownerUserId"
@@ -642,15 +604,14 @@ export class StudioProjectGraphRepository {
     actorUserId: string,
     projectId: string,
     input: CreateStudioArtifact,
-    idempotencyKey: string,
+    idempotencyKey: string, capture?: StudioReviewPreviewCapture,
   ): Promise<StudioProjectCreateResponse> {
-    assertGenericWorldArtifact(input.artifact.id);
-    assertGenericWorkSessionArtifact(input.artifact.id);
+    assertGenericWorldArtifact(input.artifact.id); assertGenericWorkSessionArtifact(input.artifact.id);
     const client = await dbPool.connect();
-    const keyHash = studioIdempotencyKeyHash(idempotencyKey);
-    const requestHash = studioRequestHash({ projectId, input });
+    const keyHash = studioIdempotencyKeyHash(idempotencyKey), requestHash = studioRequestHash({ projectId, input });
     try {
       await client.query("BEGIN");
+      if (capture) await authorizeStudioReviewCaptureBootstrap(client, actorUserId, capture, projectId, input);
       const accessResult = await loadProjectAccess(
         client,
         actorUserId,
@@ -658,7 +619,7 @@ export class StudioProjectGraphRepository {
         true,
       );
       if (!accessResult) throw new StudioProjectNotFoundError("project");
-      assertAccess(accessResult.access, "edit");
+      if (capture ? accessResult.row.workId !== capture.workId : !accessResult.access.edit) throw new StudioProjectForbiddenError("edit");
       if (input.artifact.scope.projectId !== projectId) {
         throw new StudioRepositoryInvariantError(
           "scope_project_mismatch",
@@ -1483,7 +1444,7 @@ export class StudioProjectGraphRepository {
          ORDER BY review."createdAt" DESC, review.id`,
         [artifactId],
       );
-      return Object.freeze(result.rows.map(mapStudioReviewSummary));
+      return await attachStudioReviewCaptureSources(client, artifactId, result.rows.map(mapStudioReviewSummary));
     } finally {
       client.release();
     }
@@ -1540,6 +1501,7 @@ export class StudioProjectGraphRepository {
            comment."reviewId" AS "reviewId",
            comment."authorUserId" AS "authorUserId",
            comment.anchor,
+           comment.strokes,
            comment.body,
            comment.severity,
            comment.status,
@@ -1779,6 +1741,7 @@ export class StudioProjectGraphRepository {
     input: CreateStudioReviewComment,
   ) {
     const anchor = reviewAnchorSchema.parse(input.anchor);
+    const strokes = reviewPenStrokesSchema.parse(input.strokes ?? []);
     const client = await dbPool.connect();
     try {
       await client.query("BEGIN");
@@ -1817,16 +1780,8 @@ export class StudioProjectGraphRepository {
           "comment scope must stay inside the reviewed artifact scope; authoring coordinates do not create graph scope identities",
         );
       }
-      const existing = await client.query<{
-        reviewId: string;
-        body: string;
-        severity: CreateStudioReviewComment["severity"];
-        dueAtMatches: boolean;
-        assigneeIds: string[];
-        anchor: Record<string, unknown>;
-        createdAt: Date;
-      }>(
-        `SELECT comment."reviewId", comment.body, comment.severity, comment.anchor, comment."createdAt",
+      const existing = await client.query<StudioReviewExistingCommentRow>(
+        `SELECT comment."reviewId", comment."authorUserId", comment.body, comment.severity, comment.anchor, comment.strokes, comment."createdAt",
            (comment."dueAt" IS NOT DISTINCT FROM $2::timestamptz) AS "dueAtMatches",
            ARRAY(SELECT assignee."assigneeUserId" FROM studio_review_comment_assignee assignee
              WHERE assignee."commentId" = comment.id ORDER BY assignee."assigneeUserId") AS "assigneeIds"
@@ -1835,14 +1790,7 @@ export class StudioProjectGraphRepository {
       );
       const current = existing.rows[0];
       if (current) {
-        if (
-          current.reviewId !== reviewId
-          || current.body !== input.body
-          || current.severity !== input.severity
-          || !current.dueAtMatches
-          || canonicalJson([...current.assigneeIds].sort()) !== canonicalJson([...input.assigneeIds].sort())
-          || canonicalJson(current.anchor) !== canonicalJson(anchor)
-        ) {
+        if (!sameStudioReviewCommentMutation(current, actorUserId, reviewId, input, anchor, strokes)) {
           throw new StudioIdempotencyConflictError();
         }
         await client.query("COMMIT");
@@ -1851,6 +1799,7 @@ export class StudioProjectGraphRepository {
           reviewId,
           status: "open" as const,
           anchor: current.anchor,
+          strokes: reviewPenStrokesSchema.parse(current.strokes),
           createdAt: toIso(current.createdAt),
         };
       }
@@ -1860,28 +1809,13 @@ export class StudioProjectGraphRepository {
           "new comments cannot change a terminal review",
         );
       }
-      if (anchor.source) {
-        const source = await client.query<{ rootGraphHash: string; operation: unknown; hash: string; captureReceipt: unknown }>(
-          `SELECT revision."rootGraphHash", capture.operation, ref."blobHash" AS hash,
-             jsonb_build_object('actorUserId', receipt."actorUserId", 'idempotencyKeyHash', receipt."idempotencyKeyHash", 'response', receipt.response) AS "captureReceipt"
-           FROM studio_revision revision
-           JOIN studio_operation capture ON capture."artifactId" = revision."artifactId"
-             AND capture."resultRevisionId" = revision.id AND capture.sequence = revision."operationLast"
-             AND revision."operationFirst" = revision."operationLast" AND capture."commandType" = 'review.snapshot-create'
-           JOIN studio_revision_blob ref ON ref."revisionId" = revision.id AND ref.role = 'preview' AND ref.ordinal = $3
-           JOIN studio_mutation_receipt receipt ON receipt."artifactId"=revision."artifactId" AND receipt."resultRevisionId"=revision.id
-             AND receipt.response->>'status'='completed' AND receipt.response->'subject'->>'reviewId'=$4
-           WHERE revision.id = $1 AND revision."artifactId" = $2 AND revision.kind = 'review-snapshot'`,
-          [review.revisionId, review.artifactId, anchor.source.pageOrdinal, reviewId]);
-        const row = source.rows.length === 1 ? source.rows[0] : undefined;
-        const mapping = row ? studioReviewMappingFromOperation(row.operation, {
-          workId: accessResult.row.workId, projectId: accessResult.row.projectId,
-          artifactId: review.artifactId, rootGraphHash: row.rootGraphHash,
-          reviewId, revisionId: review.revisionId,
-        }, anchor.source.pageOrdinal, row.hash, row.captureReceipt) : { status: "unmapped" as const, reason: "source-unavailable" as const };
-        if (!validateStudioReviewSpatialAnchor(mapping, anchor)) throw new StudioRepositoryInvariantError(
-          "review_source_anchor_mismatch", "comment source coordinates must match the immutable saved review page");
-      }
+      const sourceValidity = await validateStudioReviewCommentSource(client, {
+        workId: accessResult.row.workId, projectId: accessResult.row.projectId,
+        artifactId: review.artifactId, reviewId, revisionId: review.revisionId,
+      }, anchor, strokes);
+      if (sourceValidity !== "valid") throw new StudioRepositoryInvariantError(
+        sourceValidity === "anchor-mismatch" ? "review_source_anchor_mismatch" : "review_pen_strokes_mismatch",
+        "댓글 좌표와 펜 획은 불변 저장 원고의 페이지와 선택 영역 안에 있어야 합니다.");
       if (input.assigneeIds.length > 0) {
         const assigneeAccess = await client.query<{ id: string }>(
           `SELECT candidate.id
@@ -1911,8 +1845,8 @@ export class StudioProjectGraphRepository {
 
       const inserted = await client.query<{ createdAt: Date }>(
         `INSERT INTO studio_review_comment (
-           id, "reviewId", "authorUserId", anchor, body, severity, status, "dueAt"
-         ) VALUES ($1, $2, $3, $4::jsonb, $5, $6, 'open', $7)
+           id, "reviewId", "authorUserId", anchor, body, severity, status, "dueAt", strokes
+         ) VALUES ($1, $2, $3, $4::jsonb, $5, $6, 'open', $7, $8::jsonb)
          RETURNING "createdAt"`,
         [
           input.id,
@@ -1922,6 +1856,7 @@ export class StudioProjectGraphRepository {
           input.body,
           input.severity,
           input.dueAt ?? null,
+          JSON.stringify(strokes),
         ],
       );
       for (const assigneeId of input.assigneeIds) {
@@ -1938,6 +1873,7 @@ export class StudioProjectGraphRepository {
         reviewId,
         status: "open" as const,
         anchor,
+        strokes,
         createdAt: toIso(inserted.rows[0]!.createdAt),
       };
     } catch (error) {

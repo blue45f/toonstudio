@@ -9,6 +9,7 @@ import {
 } from "./studio-bg3d-skp-contract";
 import { convertStudioBg3dSkpBytes } from "./studio-bg3d-skp-conversion-core";
 import { convertStudioBg3dSkp, type StudioBg3dSkpWorkerLike } from "./studio-bg3d-skp-worker-client";
+import { unavailableStudioBg3dSkpSceneSource } from "./studio-bg3d-skp-scene-source";
 import {
   STUDIO_BG3D_SKP_WORKER_PROTOCOL_VERSION as VERSION,
   type StudioBg3dSkpWorkerRequest,
@@ -127,8 +128,23 @@ describe("convertStudioBg3dSkp — Worker path", () => {
     expect(stages).toEqual([{ stage: "building-scene", fraction: 0.4, execution: "worker" }]);
     expect([...output.glb.subarray(0, 4)]).toEqual([0x67, 0x6c, 0x54, 0x46]);
     expect(output.report.conversion.execution).toBe("worker");
+    expect(output.sceneSource).toMatchObject({ status: "legacy", reason: "not-recorded", geometryTransform: { status: "unknown" } });
     expect(worker.terminated).toBe(true);
     expect(worker.listeners.message.size).toBe(0);
+  });
+
+  it("Worker의 명시된 geometry-only 원인은 보존하고 잘못된 available manifest는 프로토콜 오류로 거부한다", async () => {
+    const worker = new FakeWorker();
+    const source = unavailableStudioBg3dSkpSceneSource("manifest-budget-exceeded");
+    const success = start(worker);
+    worker.respond({ ...await resultMessage(), sceneSource: source });
+    expect((await success).sceneSource).toEqual(source);
+    const invalid = new FakeWorker();
+    const pending = start(invalid);
+    const failure = failureOf(pending);
+    invalid.respond({ ...await resultMessage(), sceneSource: { ...source, status: "available", reason: null, manifest: {} } });
+    expect((await failure).reason).toBe("worker-protocol");
+    expect(invalid.terminated).toBe(true);
   });
 
   it("copies the input by default and transfers it only when the caller hands it over", async () => {

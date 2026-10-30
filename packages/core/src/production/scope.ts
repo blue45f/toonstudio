@@ -1,4 +1,26 @@
-import { PRODUCTION_SCOPE_KINDS, type ProductionScopeKind, type ScopeAncestorRef, type ScopeRef } from "./types";
+export const PRODUCTION_SCOPE_KINDS = [
+  "project",
+  "season",
+  "episode",
+  "scene",
+  "scroll-segment",
+  "cut",
+  "layer-group",
+  "asset",
+  "deliverable",
+] as const;
+export type ProductionScopeKind = (typeof PRODUCTION_SCOPE_KINDS)[number];
+
+export interface ScopeRef {
+  readonly kind: ProductionScopeKind;
+  readonly id: string;
+  readonly ancestors: readonly ScopeAncestorRef[];
+}
+
+export interface ScopeAncestorRef {
+  readonly kind: Exclude<ProductionScopeKind, "deliverable">;
+  readonly id: string;
+}
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/u;
 const SCOPE_ORDER: Readonly<Record<ProductionScopeKind, number>> = Object.freeze({

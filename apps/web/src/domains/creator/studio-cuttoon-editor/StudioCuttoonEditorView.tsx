@@ -23,6 +23,8 @@ import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
 import { StudioCuttoonEditorWorkspace } from "./StudioCuttoonEditorWorkspace";
 import { StudioDrawingAppBar } from "./StudioDrawingAppBar";
+import { StudioScopedWriteTargetPicker } from "./StudioScopedWriteTargetPicker";
+import { StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 import "../studio-shell/studio-visual-identity.css";
@@ -66,6 +68,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
   const drawingAppPresentation = drawingPresentation === "app";
 
   return (
+    <StudioScopedWriteAuthorityContext.Provider value={s.scopedWriteRuntime?.authority ?? null}>
     <StudioLiveCollaborationProvider
       workId={effectiveWorkId}
       participant={studioLiveParticipant}
@@ -209,6 +212,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
           onExportBackup={() => s.studioMenubarContentHandlers.handleExportProject()}
         />
         </Suspense>
+        {s.scopedWriteRuntime ? <StudioScopedWriteTargetPicker runtime={s.scopedWriteRuntime} currentPageId={s.currentPageId} onPage={s.setCurrentPageId} onDraw={() => { s.activatePrimaryCanvasTool("draw", "pen"); }} /> : null}
         <StudioCuttoonEditorWorkspace {...s} />
         <StudioCuttoonEditorContextMenu {...s} />
       </Container>
@@ -241,5 +245,6 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
     </StudioToolHintPreferencesProvider>
     </StudioColorWorkspaceProvider>
     </StudioLiveCollaborationProvider>
+    </StudioScopedWriteAuthorityContext.Provider>
   );
 }

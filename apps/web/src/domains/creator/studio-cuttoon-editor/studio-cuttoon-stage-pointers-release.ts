@@ -6,6 +6,7 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 
 import { resolveStudioCapturedBrushDynamicsPresetId } from "../brush/studio-brush-dynamics";
+import { admitStudioScopedCanonicalImage, scopedStudioCanonicalImageId, scopedStudioCanonicalMutationLocked, scopedStudioLivingInkReplacement } from "../studio-collab/studio-scoped-canonical-image";
 import {
   advanceStudioBrushVelocityPressure, initializeStudioBrushVelocityPressure,
   resolveStudioBrushReleasePressure,
@@ -470,16 +471,16 @@ export function bindStudioCuttoonStagePointersRelease(
         finished,
       );
       const existingImage = baseElements.find((element) =>
-        element.type === "image" && element.livingInkReceipt?.pageId === state.pageId
+        element.type === "image" && element.livingInkReceipt?.pageId === state.pageId && element.frameClipId === finished.frameClipId
       );
       const transaction = createStudioLivingInkCanonicalTransaction({
         elements: baseElements,
         sourceElementId: finished.id,
-        canonicalImageId: existingImage?.id ?? uid(),
+        canonicalImageId: scopedStudioCanonicalImageId(collaborationAccessRef, finished.id, collaborationAccessRef.current.locked ? uid() : existingImage?.id ?? uid()),
+        replaceExistingImageId: scopedStudioLivingInkReplacement(collaborationAccessRef, baseElements, state.pageId, finished.frameClipId),
         result,
         mutationLocked:
-          collaborationAccessRef.current.locked
-          || activeSurfaceReviewLockedRef.current,
+          scopedStudioCanonicalMutationLocked(collaborationAccessRef, finished.id, activeSurfaceReviewLockedRef.current, h.scopedCanvasBoundaryRef),
       });
       if (!transaction.ok) throw new Error(transaction.message);
       const handoffClaim = claimStudioStrokeSurfaceLifecycle(state.route, {
@@ -492,7 +493,7 @@ export function bindStudioCuttoonStagePointersRelease(
         throw new Error("canonical 이미지 인계 route가 pointer-down 영수증과 다릅니다.");
       }
       const committed = commit(
-        [...transaction.transaction.nextElements],
+        await admitStudioScopedCanonicalImage(collaborationAccessRef, finished.id, transaction.transaction.canonicalImageId, transaction.transaction.nextElements),
         undefined,
         state.pageId,
       );
@@ -581,18 +582,17 @@ export function bindStudioCuttoonStagePointersRelease(
         ),
         sourceElementId: finished.id,
         expectedSourceRevision,
-        canonicalImageId: uid(),
+        canonicalImageId: scopedStudioCanonicalImageId(collaborationAccessRef, finished.id, uid()),
         result,
         mutationLocked:
-          collaborationAccessRef.current.locked
-          || activeSurfaceReviewLockedRef.current,
+          scopedStudioCanonicalMutationLocked(collaborationAccessRef, finished.id, activeSurfaceReviewLockedRef.current, h.scopedCanvasBoundaryRef),
       });
       if (!transaction.ok) throw new Error(transaction.message);
       state.canonicalImageId = transaction.transaction.canonicalImageId;
       state.canonicalPngHash = result.receipt.pngHash;
       state.transactionCommitted = true;
       const committed = commit(
-        [...transaction.transaction.nextElements],
+        await admitStudioScopedCanonicalImage(collaborationAccessRef, finished.id, transaction.transaction.canonicalImageId, transaction.transaction.nextElements),
         undefined,
         state.pageId,
       );

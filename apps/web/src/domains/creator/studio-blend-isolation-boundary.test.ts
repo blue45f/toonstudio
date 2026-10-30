@@ -24,13 +24,15 @@ function source(fileName: string): string {
  * and jsdom has no canvas to composite with. They are written to fail if the arrangement regresses.
  */
 describe("blend modes composite once per element", () => {
-  it("routes every non-source-over composite through the isolating cache group", () => {
+  it("지우개 외의 합성 모드를 컷 경로와 함께 격리 캐시 그룹으로 연결한다", () => {
     const viewport = source("./canvas/StudioCanvasViewportDocumentLayer.tsx");
-    expect(viewport).toContain("BlendIsolationGroup");
-    expect(viewport).toContain('const isolatedComposite = composite !== "source-over"');
+    const panel = source("./canvas/StudioPanelClipGroup.tsx");
+    expect(viewport).toContain('const isolatedComposite = composite !== "source-over" && composite !== "destination-out"');
+    expect(viewport).toMatch(/<StudioPanelClipGroup\s+key=\{el\.id\}\s+isolated=\{isolatedComposite\}\s+composite=\{composite\}\s+cacheKey=\{blendCacheKey\}\s+clip=\{clip\}>/u);
+    expect(panel).toMatch(/if \(isolated\) return <BlendIsolationGroup\s+composite=\{composite\}\s+cacheKey=\{cacheKey\}\s+\{\.\.\.\(clip \? \{ clip \} : \{\}\)\}>/u);
     // The bare-Group fallback must carry clipping only. If `globalCompositeOperation` ever appears
     // on it again, stamps are compositing individually and every non-idempotent mode is broken.
-    const bareClipGroup = /<Group key=\{el\.id\} clipX=\{clip\.x\}[^>]*>/u.exec(viewport)?.[0] ?? "";
+    const bareClipGroup = /<Group\s+\{\.\.\.studioKonvaPanelClip\(clip\)\}[^>]*>/u.exec(panel)?.[0] ?? "";
     expect(bareClipGroup).not.toBe("");
     expect(bareClipGroup).not.toContain("globalCompositeOperation");
   });
@@ -46,13 +48,17 @@ describe("blend modes composite once per element", () => {
     const groupTag = /<Group\s+ref=\{ref\}[\s\S]*?>/u.exec(group)?.[0] ?? "";
     expect(groupTag).not.toBe("");
     expect(groupTag).toContain("globalCompositeOperation={composite}");
+    expect(groupTag).toContain("{...studioKonvaPanelClip(clip)}");
+    expect(group).toContain("node.cache(studioFrameClipCacheBounds(rect, currentClip))");
   });
 
   it("re-caches when the element's rendered result changes", () => {
     const viewport = source("./canvas/StudioCanvasViewportDocumentLayer.tsx");
     const group = source("./BlendIsolationGroup.tsx");
     // A cache that never invalidates would freeze the stroke at its first painted state.
-    expect(group).toContain("[cacheKey]");
+    expect(group).toContain("[cacheKey, clipKey]");
+    expect(group).toContain("const clipKey = JSON.stringify(clip)");
+    expect(group).toContain("useLayoutEffect(() => { clipRef.current = clip; }, [clip])");
     expect(viewport).toMatch(
       /\[\s*el\.id,\s*composite,\s*pagesHi,\s*previewSequence\s*\?\?\s*"authoritative",\s*JSON\.stringify\(elBounds\(el\)\),\s*\]\.join\("\|"\)/u,
     );

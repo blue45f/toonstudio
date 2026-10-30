@@ -90,6 +90,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [notices, setNotices] = useState<readonly string[]>([]);
 
   const engineReady = engineStatus.phase === "ready";
+  const hairSupport = engineSession.engine()?.psdHairLayers?.();
+  const hairSplitReason = hairSupport?.status === "available" ? null : hairSupport?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.";
   const framingValue = { ...DEFAULT_FRAMING, mode: framing };
 
   const finish = useCallback(
@@ -338,7 +340,9 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <label htmlFor={`${ids}-lumalpha`}>
           <input id={`${ids}-lumalpha`} type="checkbox" checked={useLuminanceToAlpha} onChange={(event) => setUseLuminanceToAlpha(event.target.checked)} /> SHAPER 휘도 반전 선화 추출(a = 1 - r)
         </label>
-        <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null}>
+        {splitHairLayers && hairSplitReason ? <p role="status">{hairSplitReason}</p> : null}
+        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리합니다. MSAA 공유 경계는 가시 샘플 과반 소유로 나누며 동률은 헤어에 귀속합니다. 추가 추출 주선은 기본 숨김이며, 켜면 원본 렌더 위에 선 효과가 더해집니다.</p>
+        <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null || (splitHairLayers && hairSplitReason !== null)}>
           레이어 PSD 저장
         </button>
       </fieldset>

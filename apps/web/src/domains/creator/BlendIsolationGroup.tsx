@@ -22,6 +22,8 @@
  */
 import { useLayoutEffect, useRef } from "react";
 import { Group } from "react-konva/lib/ReactKonvaCore";
+import { studioFrameClipCacheBounds, type StudioFrameClip } from "@toonstudio/studio-project-model/frame-clip";
+import { studioKonvaPanelClip } from "./canvas/studio-konva-panel-clip";
 
 import { registerStudioRasterPresentationCache } from "./render/studio-raster-presentation-cache";
 
@@ -36,13 +38,16 @@ export function BlendIsolationGroup({
 }: {
   cacheKey: string;
   composite: NonNullable<Konva.NodeConfig["globalCompositeOperation"]>;
-  clip?: { x: number; y: number; width: number; height: number };
+  clip?: StudioFrameClip;
   children: ReactNode;
 }): React.ReactElement {
   const ref = useRef<Konva.Group>(null);
+  const clipKey = JSON.stringify(clip);
+  const clipRef = useRef(clip);
+  useLayoutEffect(() => { clipRef.current = clip; }, [clip]);
 
   useLayoutEffect(() => {
-    let cancelled = false;
+    let cancelled = false; const currentClip = clipRef.current;
     const recache = () => {
       const node = ref.current;
       if (cancelled || !node) return false;
@@ -54,7 +59,8 @@ export function BlendIsolationGroup({
       const rect = node.getClientRect({ skipTransform: true });
       if (rect.width > 0 && rect.height > 0) {
         try {
-          node.cache();
+          if (currentClip) node.cache(studioFrameClipCacheBounds(rect, currentClip));
+          else node.cache();
         } catch {
           node.clearCache();
         }
@@ -70,15 +76,13 @@ export function BlendIsolationGroup({
       unregister();
       timers.forEach((t) => globalThis.clearTimeout(t));
     };
-  }, [cacheKey]);
+  }, [cacheKey, clipKey]);
 
   return (
     <Group
       ref={ref}
       globalCompositeOperation={composite}
-      {...(clip
-        ? { clipX: clip.x, clipY: clip.y, clipWidth: clip.width, clipHeight: clip.height }
-        : {})}
+      {...studioKonvaPanelClip(clip)}
     >
       {children}
     </Group>

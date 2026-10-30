@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { INITIAL_HISTORY, createDefaultRecipe, createKitDefaultRecipe } from "../../../contracts";
+import { readPixel } from "../../../paint/paint-layer";
 import { createPaintSession } from "../../../paint/paint-session";
 import { createMockEngine } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
@@ -193,21 +194,37 @@ describe("PaintPanel", () => {
     expect(session.getState().brush).toMatchObject({ radiusPx: 36, opacity: 0.45, hardness: 0.25 });
   });
 
-  it("샤퍼 3D 스트로크 필압 모드(fake sin(πt) vs pen 2p) 및 의상 신체 선화 마스킹 토글을 지원한다", () => {
-    const session = createPaintSession({ layerSize: 64, brush: { radiusPx: 10, opacity: 1, hardness: 1 } });
+  it("필압·의상 마스킹 선택을 공유 세션에 반영하고 펜 입력이 실제 반지름·알파를 바꾼다", () => {
+    const session = createPaintSession({ layerSize: 64, wrap: false, brush: { radiusPx: 10, opacity: 1, hardness: 1 } });
     render(
       <MockLabProvider>
         <PaintPanel session={session} />
       </MockLabProvider>,
     );
     const readout = screen.getByTestId("shaper-paint-stroke-readout");
-    expect(readout.textContent).toContain("피크 두께 10.0 px · 의상 마스킹 ON");
+    expect(readout.textContent).toContain("기준 반지름 10.0 px · 의상 마스킹 ON");
+    expect(session.getState().pressureMode).toBe("constant");
 
     fireEvent.change(screen.getByLabelText("3D 스트로크 필압 모드"), { target: { value: "pen" } });
-    // pen mode: 10 * 0.8 * 2.0 = 16.0 px
-    expect(readout.textContent).toContain("피크 두께 16.0 px · 의상 마스킹 ON");
+    expect(session.getState().pressureMode).toBe("pen");
+    act(() => {
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 0.25 });
+      session.endStroke();
+    });
+    expect(readPixel(session.layer("skin"), 32, 32)[3]).toBe(64);
+    expect(readPixel(session.layer("skin"), 32, 39)[3]).toBe(0);
+    const lowPressurePixels = session.layer("skin").rgba.filter((value, index) => index % 4 === 3 && value > 0).length;
+    act(() => {
+      session.clearLayer("skin");
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+    expect(readPixel(session.layer("skin"), 32, 32)[3]).toBe(255);
+    expect(readPixel(session.layer("skin"), 32, 39)[3]).toBe(255);
+    expect(session.layer("skin").rgba.filter((value, index) => index % 4 === 3 && value > 0).length).toBeGreaterThan(lowPressurePixels * 4);
 
-    fireEvent.click(screen.getByLabelText("의상 영역 신체 선화 자동 마스킹"));
+    fireEvent.click(screen.getByLabelText("의상 뒤 신체 페인트 차단"));
+    expect(session.getState().bodyLineMaskEnabled).toBe(false);
     expect(readout.textContent).toContain("의상 마스킹 OFF");
   });
 });

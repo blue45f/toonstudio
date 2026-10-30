@@ -226,14 +226,14 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         <div className="flex items-center gap-1.5 font-bold text-fg">
           <Sparkles className="size-4 text-accent" aria-hidden />
           <span>
-            Blender 5.2 EEVEE·ShaderToRGB·Freestyle·무기/몬스터/군단 스튜디오
+            ToonStudio 판타지 장면 설정·프리셋
           </span>
         </div>
         <span
           data-testid="bg3d-blender-summary-badge"
           className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-semibold text-accent"
         >
-          EEVEE 시인성 {lightingEvaluation.webtoonReadabilityGrade} · 어검{" "}
+          웹툰 조명 시인성 {lightingEvaluation.webtoonReadabilityGrade} · 어검{" "}
           {weaponSolveResult.blades.length}자루 · 몬스터 체인{" "}
           {monsterSolveResult.solvedLimbs.length}개 · 군단{" "}
           {crowdResult.totalAgents}기 (VRAM -{crowdResult.vramReductionPercent}%)
@@ -248,7 +248,7 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1 font-semibold text-fg">
             <Flame className="size-3.5 text-accent" aria-hidden />
-            1. EEVEE 광원·IES 배광·색온도·볼륨 라이트 프로브
+            1. 장면 조명·배광·색온도·볼륨 설정
           </span>
           <span
             data-testid="bg3d-blender-lighting-readout"
@@ -320,7 +320,7 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         <div className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-fg">
-              2A. ShaderToRGB · ValToRGB 만화 채색 셰이더
+              2A. 툰 채색·색상 단계 설정
             </span>
             <span
               data-testid="bg3d-blender-shader-readout"
@@ -370,7 +370,7 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         <div className="flex flex-col gap-2 rounded-lg border border-line bg-panel/50 p-2.5">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-fg">
-              2B. Freestyle ViewMap · LineArt 스트로크
+              2B. 외곽선·선화 스트로크 설정
             </span>
             <span
               data-testid="bg3d-blender-freestyle-readout"

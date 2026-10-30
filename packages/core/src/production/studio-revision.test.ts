@@ -1,18 +1,23 @@
 import { describe, expect, it } from "vitest";
 
 import { createProductionProjectAggregate } from "./aggregate";
-import { episodeScope } from "./scope";
+import { episodeScope, projectScope } from "./scope";
 import {
   applyProductionStudioRevisionLink,
   evaluateProductionStudioRevisionCoverage,
   inferProductionStudioDocumentRole,
   validateProductionStudioRevisionLink,
 } from "./studio-revision";
+import { applySubmissionToDeliverable, validateDeliverable, validateSubmission } from "./versioning";
+import { applyProductionSubmissionReviewToTasks } from "./workflow";
 
 import type {
+  Deliverable,
+  Submission,
   EpisodeCollaboration,
   ProductionProjectAggregate,
   ProductionStudioRevisionLink,
+  ProductionTask,
   RevisionRef,
 } from "./types";
 
@@ -207,5 +212,62 @@ describe("production Studio revision bridge", () => {
     expect(coverage.pendingRoles).toEqual([]);
     expect(coverage.missingRoles).toEqual([]);
     expect(coverage.readyForIntegratedReview).toBe(true);
+  });
+});
+
+describe("제출본 버전과 승인 포인터", () => {
+const at = "2026-10-28T09:00:00.000Z";
+const revision = { id: "r1", lineage: "visual" as const, revision: 1, digest: `sha256:${"a".repeat(64)}`, createdAt: at };
+const deliverable: Deliverable = { id: "d", projectId: "p", scope: projectScope("p"), type: "원고", expectedFormat: "PNG",
+  completionCriteria: ["교정 완료"], currentSubmissionId: "s1", approvedSubmissionId: "s1" };
+const submission: Submission = { id: "s1", projectId: "p", deliverableId: "d", revisionRef: revision,
+  submittedByAssignmentId: "artist", submittedAt: at, status: "approved", inputRevisionRefs: [revision], evidenceRefs: ["review"] };
+
+  it("제출본 승인과 수정 요청이 연결 작업에 원자적으로 반영된다", () => {
+    const task: ProductionTask = { id: "task", projectId: "p", scope: projectScope("p"), processKey: "line-art", title: "선화",
+      status: "internal-review", assignmentIds: [], reviewerAssignmentIds: [], inputRevisionRefs: [revision],
+      outputDeliverableIds: [deliverable.id], dependencyTaskIds: [], dueAt: null, estimateHours: null,
+      completionCriteria: [], sourceAgreementMilestoneId: null };
+    const base: ProductionProjectAggregate = { ...fixture(), projectId: "p", tasks: [task, { ...task, id: "unrelated", outputDeliverableIds: ["other"] }],
+      submissions: [submission], deliverables: [deliverable] };
+    const approved = applyProductionSubmissionReviewToTasks(base, submission, at);
+    expect(approved.tasks[0]).toMatchObject({ status: "approved", statusChangedAt: at, completedAt: at });
+    expect(approved.tasks[1]?.status).toBe("internal-review");
+    expect(base.tasks[0]?.status).toBe("internal-review");
+    const changes = { ...submission, status: "changes-requested" as const };
+    const revised = applyProductionSubmissionReviewToTasks({ ...approved, submissions: [changes],
+      deliverables: [applySubmissionToDeliverable(deliverable, changes)] }, changes, at);
+    expect(revised.tasks[0]).toMatchObject({ status: "changes-requested", completedAt: null });
+  });
+
+
+  it("일반 산출물 편집으로 이전 승인 포인터를 복구하거나 조작하지 못한다", () => {
+    const current = { ...deliverable, currentSubmissionId: "s2", approvedSubmissionId: null };
+    expect(validateDeliverable(deliverable, "p", current)).toContain("deliverable-submission-pointers-managed-by-submission");
+    expect(validateDeliverable(deliverable, "p", null)).toContain("deliverable-submission-pointers-managed-by-submission");
+    expect(validateDeliverable({ ...current, expectedFormat: "PSD" }, "p", current)).toEqual([]);
+  });
+  it("재제출은 이전 승인 이력을 보존하면서 현재 산출물의 승인을 초기화한다", () => {
+    const next = { ...submission, id: "s2", status: "submitted" as const, revisionRef: { ...revision, id: "r2", revision: 2 } };
+    expect(applySubmissionToDeliverable(deliverable, next)).toMatchObject({ currentSubmissionId: "s2", approvedSubmissionId: null });
+    expect(submission.status).toBe("approved");
+    expect(deliverable.approvedSubmissionId).toBe("s1");
+  });
+  it("이전 제출본 폐기는 새 제출본의 포인터를 되돌리지 않는다", () => {
+    const current = { ...deliverable, currentSubmissionId: "s2", approvedSubmissionId: "s2" };
+    expect(applySubmissionToDeliverable(current, { ...submission, status: "superseded" })).toEqual(current);
+    expect(applySubmissionToDeliverable(deliverable, { ...submission, status: "superseded" })).toMatchObject({ currentSubmissionId: null, approvedSubmissionId: null });
+  });
+  it("이전 제출본 상태 저장으로 최신 버전을 되돌릴 수 없다", () => {
+    expect(validateSubmission({ submission, current: submission,
+      deliverable: { ...deliverable, currentSubmissionId: "s2", approvedSubmissionId: null }, activeAssignmentIds: ["artist"] })).toContain("submission-not-current");
+  });
+  it("동일 ID의 revision 번호·계보·시각과 고정 입력을 바꾸지 못한다", () => {
+    for (const revisionRef of [{ ...revision, revision: 2 }, { ...revision, lineage: "integrated" as const }, { ...revision, createdAt: "2026-10-29T09:00:00Z" }]) {
+      expect(validateSubmission({ submission: { ...submission, revisionRef }, current: submission, deliverable, activeAssignmentIds: ["artist"] })).toContain("submission-content-mutated");
+    }
+    expect(validateSubmission({ submission: { ...submission, inputRevisionRefs: [] }, current: submission, deliverable, activeAssignmentIds: ["artist"] })).toContain("submission-content-mutated");
+    expect(validateSubmission({ submission: { ...submission, submittedByAssignmentId: "reviewer" }, current: submission, deliverable, activeAssignmentIds: ["reviewer"] })).toContain("submission-identity-changed");
+    expect(validateSubmission({ submission: { ...submission, evidenceRefs: ["replaced-proof"] }, current: submission, deliverable, activeAssignmentIds: ["artist"] })).toContain("submission-approval-evidence-mutated");
   });
 });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PinnedShareView } from "@toonstudio/studio-project-model/pinned-review-share";
 
@@ -34,6 +34,20 @@ function Harness({ initial = `/production/pinned-review#token=${TOKEN}` }: { ini
   </Routes></MemoryRouter>;
 }
 
+function ReviewLinkNavigation({ token }: { readonly token: string }) {
+  const navigate = useNavigate();
+  return <button type="button" onClick={() => navigate(`/production/pinned-review#token=${token}`)}>검수 링크 전환</button>;
+}
+
+function deferred<T>() {
+  let complete: ((value: T) => void) | undefined;
+  const promise = new Promise<T>((resolve) => { complete = resolve; });
+  return { promise, resolve: (value: T) => {
+    if (!complete) throw new Error("대기 중인 테스트 응답이 없습니다.");
+    complete(value);
+  } };
+}
+
 const originalCreate = Object.getOwnPropertyDescriptor(URL, "createObjectURL");
 const originalRevoke = Object.getOwnPropertyDescriptor(URL, "revokeObjectURL");
 const createUrl = vi.fn((blob: Blob) => `blob:review-${blob.size}`);
@@ -53,9 +67,136 @@ beforeEach(() => {
   mocks.feedback.mockResolvedValue({ id: "22222222-2222-4222-8222-222222222222", pageOrdinal: 0, reviewerName: "멘토", body: "첫 컷을 조금 더 길게 보여 주세요.", createdAt: "2026-09-23T00:00:00.000Z" });
   vi.spyOn(crypto, "randomUUID").mockReturnValue("22222222-2222-4222-8222-222222222222");
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("external immutable review page", () => {
+  it("화면에 머무른 채 권한을 갱신할 때 같은 PNG를 중복 다운로드하지 않는다", async () => {
+    vi.useFakeTimers();
+    await act(async () => { render(<Harness />); });
+    const originalUrl = screen.getByRole("img", { name: "1페이지 고정 검수 이미지" }).getAttribute("src");
+    await act(async () => { await vi.advanceTimersByTimeAsync(59_000); });
+    expect(mocks.view).toHaveBeenCalledTimes(2);
+    expect(mocks.image).toHaveBeenCalledOnce();
+    expect(screen.getByRole("img").getAttribute("src")).toBe(originalUrl);
+  });
+
+  it("정상 권한 갱신은 진행 중인 같은 페이지 PNG를 무효화하지 않는다", async () => {
+    vi.useFakeTimers();
+    const pending = deferred<Blob>();
+    mocks.image.mockImplementationOnce(() => pending.promise);
+    await act(async () => { render(<Harness />); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(59_000); });
+    expect(mocks.view).toHaveBeenCalledTimes(2);
+    expect(mocks.image).toHaveBeenCalledOnce();
+    await act(async () => { pending.resolve(new Blob(["verified-page"], { type: "image/png" })); });
+    expect(screen.getByRole("img", { name: "1페이지 고정 검수 이미지" })).toBeTruthy();
+  });
+
+  it("같은 고정 페이지로 복귀하면 새 권한을 확인한 뒤 PNG를 다시 읽는다", async () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    const singlePage = { ...shareView(), pages: pages.slice(0, 1) }, renewedView = deferred<PinnedShareView>();
+    mocks.view.mockResolvedValueOnce(singlePage).mockImplementationOnce(() => renewedView.promise);
+    render(<Harness />);
+    const original = await screen.findByRole("img", { name: "1페이지 고정 검수 이미지" });
+    const originalUrl = original.getAttribute("src");
+
+    act(() => { visibility = "hidden"; document.dispatchEvent(new Event("visibilitychange")); });
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(revokeUrl).toHaveBeenCalledWith(originalUrl);
+
+    act(() => { visibility = "visible"; document.dispatchEvent(new Event("visibilitychange")); });
+    await waitFor(() => expect(mocks.view).toHaveBeenCalledTimes(2));
+    expect(mocks.image).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("img")).toBeNull();
+    await act(async () => { renewedView.resolve(singlePage); });
+    await waitFor(() => expect(mocks.image).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("img", { name: "1페이지 고정 검수 이미지" })).toBeTruthy();
+  });
+
+  it("숨김 중인 PNG 요청을 취소하고 늦게 도착한 바이트를 표시하지 않는다", async () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    const pending = deferred<Blob>();
+    let imageSignal: AbortSignal | undefined;
+    mocks.image.mockImplementationOnce((_access: unknown, _ordinal: number, signal: AbortSignal) => {
+      imageSignal = signal;
+      return pending.promise;
+    });
+    render(<Harness />);
+    await waitFor(() => expect(mocks.image).toHaveBeenCalledOnce());
+    act(() => { visibility = "hidden"; document.dispatchEvent(new Event("visibilitychange")); });
+    if (!imageSignal) throw new Error("PNG 요청의 AbortSignal이 없습니다.");
+    expect(imageSignal.aborted).toBe(true);
+    await act(async () => { pending.resolve(new Blob(["obsolete-image"], { type: "image/png" })); });
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(createUrl).not.toHaveBeenCalled();
+  });
+
+  it("복귀 직후 focus 검증이 겹쳐도 최신 권한 확인 후 이미지를 한 번 복구한다", async () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    const earlier = deferred<PinnedShareView>();
+    mocks.view.mockResolvedValueOnce(shareView()).mockImplementationOnce(() => earlier.promise)
+      .mockResolvedValueOnce(shareView());
+    render(<Harness />);
+    await screen.findByRole("img", { name: "1페이지 고정 검수 이미지" });
+    act(() => { visibility = "hidden"; document.dispatchEvent(new Event("visibilitychange")); });
+    act(() => { visibility = "visible"; document.dispatchEvent(new Event("visibilitychange")); });
+    fireEvent(window, new Event("focus"));
+    await waitFor(() => expect(mocks.view).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(mocks.image).toHaveBeenCalledTimes(2));
+    await act(async () => { earlier.resolve(shareView()); });
+    expect(mocks.image).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("img", { name: "1페이지 고정 검수 이미지" })).toBeTruthy();
+  });
+
+  it("숨김 중 권한이 회수되면 복귀해도 이전 PNG를 되살리지 않는다", async () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    mocks.view.mockResolvedValueOnce(shareView()).mockRejectedValueOnce(new Error("share revoked"));
+    render(<Harness />);
+    const original = await screen.findByRole("img", { name: "1페이지 고정 검수 이미지" });
+    const originalUrl = original.getAttribute("src");
+    act(() => { visibility = "hidden"; document.dispatchEvent(new Event("visibilitychange")); });
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(revokeUrl).toHaveBeenCalledWith(originalUrl);
+
+    act(() => { visibility = "visible"; document.dispatchEvent(new Event("visibilitychange")); });
+    await screen.findByRole("heading", { name: "고정 검수본을 열 수 없습니다" });
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(mocks.image).toHaveBeenCalledOnce();
+    expect(createUrl).toHaveBeenCalledOnce();
+  });
+
+  it("숨김 중 링크가 바뀌면 새 링크 권한 확인 전까지 이전 PNG를 표시하지 않는다", async () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    const nextToken = "B".repeat(43), nextView = deferred<PinnedShareView>();
+    mocks.view.mockResolvedValueOnce(shareView()).mockImplementationOnce(() => nextView.promise);
+    mocks.image.mockResolvedValueOnce(new Blob(["old"], { type: "image/png" }))
+      .mockResolvedValueOnce(new Blob(["new-new"], { type: "image/png" }));
+    render(<MemoryRouter initialEntries={[`/production/pinned-review#token=${TOKEN}`]}>
+      <ReviewLinkNavigation token={nextToken} />
+      <Routes><Route path="/production/pinned-review" element={<StudioPinnedReviewSharePage />} /></Routes>
+    </MemoryRouter>);
+    const original = await screen.findByRole("img", { name: "1페이지 고정 검수 이미지" });
+    const originalUrl = original.getAttribute("src");
+    act(() => { visibility = "hidden"; document.dispatchEvent(new Event("visibilitychange")); });
+    fireEvent.click(screen.getByRole("button", { name: "검수 링크 전환" }));
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(revokeUrl).toHaveBeenCalledWith(originalUrl);
+    expect(mocks.image).toHaveBeenCalledOnce();
+
+    act(() => { visibility = "visible"; document.dispatchEvent(new Event("visibilitychange")); });
+    await waitFor(() => expect(mocks.view).toHaveBeenLastCalledWith({ token: nextToken }));
+    expect(screen.queryByRole("img")).toBeNull();
+    await act(async () => { nextView.resolve({ ...shareView(), title: "새 고정 검수본" }); });
+    expect(await screen.findByRole("img", { name: "1페이지 고정 검수 이미지" })).toBeTruthy();
+    expect(mocks.image).toHaveBeenLastCalledWith({ token: nextToken }, 0, expect.any(AbortSignal));
+    expect(screen.getByRole("img").getAttribute("src")).not.toBe(originalUrl);
+  });
+
   it("이미지 로드가 실패하면 이미지 영역에 오류와 다시 불러오기 버튼을 보여주고 재시도한다", async () => {
     mocks.image
       .mockRejectedValueOnce(new Error("network down"))

@@ -33,6 +33,8 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     expect(DYNAMIC_SPRITE_ACTIONS).toHaveLength(10);
     expect(DYNAMIC_SPRITE_VFX_PRESETS).toHaveLength(8);
     expect(PRACTICAL_COLLAB_ZONES).toHaveLength(4);
+    expect(PRACTICAL_COLLAB_ZONES.find((zone) => zone.id === "zone-3d-blender-sketchup")?.titleKo).toContain("공간 모델러");
+    expect(DYNAMIC_CREATOR_SPRITE_CAST.find((persona) => persona.personaId === "cgi-director")?.characterNameKo).toContain("공간 모델러");
 
     for (const persona of DYNAMIC_CREATOR_SPRITE_CAST) {
       expect(persona.headToBodyRatio).toBeLessThanOrEqual(0.185);
@@ -76,6 +78,7 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
   it("handles practical workspace collaboration actions, synergy pairing, fever awakening, and canvas pins", () => {
     let state = createInitialPracticalSpriteWorkspaceState();
     expect(state.collaborators).toHaveLength(8);
+    expect(state.collaborators.find((collaborator) => collaborator.personaId === "cgi-director")?.dccToolBadge).toBe("공간 모델러 + Blender 5.2");
 
     state = updateCollaboratorSpriteConfig(state, "line-artist", {
       expressionId: "sparkle-star",

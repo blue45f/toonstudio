@@ -38,6 +38,15 @@ _BAND: dict[tuple[str, str], tuple[int, int]] = {
     ("jaw", "neck"): (4, 4),
 }
 
+# 고밀도 HBM에서 2~4링만 섞으면 팔 벌림이 좁은 띠에 집중된다. 후보 빌드 전용 대역이다.
+_SHOULDER_BLEND_BAND = {
+    **_BAND,
+    ("spine", "shoulder"): (8, 8),
+    ("shoulder", "arm"): (12, 12),
+    ("spine", "arm"): (6, 12),
+    ("neck", "shoulder"): (6, 6),
+}
+
 
 def _category(name: str) -> str:
     base = name.removeprefix(MIXAMO)
@@ -46,13 +55,14 @@ def _category(name: str) -> str:
     return _CATEGORY.get(base, "other")
 
 
-def band_width(owner_name: str, other_name: str) -> int:
+def band_width(owner_name: str, other_name: str, bands: dict[tuple[str, str], tuple[int, int]] | None = None) -> int:
     """owner쪽 정점이 other와의 경계에서 몇 링까지 섞이는가."""
     a, b = _category(owner_name), _category(other_name)
-    if (a, b) in _BAND:
-        return _BAND[(a, b)][0]
-    if (b, a) in _BAND:
-        return _BAND[(b, a)][1]
+    table = _BAND if bands is None else bands
+    if (a, b) in table:
+        return table[(a, b)][0]
+    if (b, a) in table:
+        return table[(b, a)][1]
     return 3
 
 
@@ -78,7 +88,7 @@ def _gather_neighbors(vertices: np.ndarray, ptr: np.ndarray, idx: np.ndarray) ->
     return src, dst
 
 
-def band_cores(owner: np.ndarray, ptr: np.ndarray, idx: np.ndarray, names: list[str]) -> np.ndarray:
+def band_cores(owner: np.ndarray, ptr: np.ndarray, idx: np.ndarray, names: list[str], bands: dict[tuple[str, str], tuple[int, int]] | None = None) -> np.ndarray:
     """경계에서 충분히 먼 정점(= 소유 본 100 %로 고정할 정점)의 불리언 마스크."""
     count = len(owner)
     all_vertices = np.arange(count)
@@ -107,11 +117,11 @@ def band_cores(owner: np.ndarray, ptr: np.ndarray, idx: np.ndarray, names: list[
     for a in np.unique(owner[has_other]):
         for b in np.unique(other[has_other & (owner == a)]):
             sel = has_other & (owner == a) & (other == b)
-            limit[sel] = band_width(names[a], names[b])
+            limit[sel] = band_width(names[a], names[b], bands)
     return dist >= limit
 
 
-def harmonic_weights(owner: np.ndarray, core: np.ndarray, ptr: np.ndarray, idx: np.ndarray, bone_count: int, iterations: int = 240) -> np.ndarray:
+def harmonic_weights(owner: np.ndarray, core: np.ndarray, ptr: np.ndarray, idx: np.ndarray, bone_count: int, iterations: int = 240, local_initialization: bool = False, tolerance: float | None = None) -> np.ndarray:
     """코어 정점은 소유 본 one-hot으로 고정하고 나머지는 이웃 평균을 반복해 조화 보간한 (V,B) float32."""
     count = len(owner)
     used = np.unique(owner)
@@ -125,11 +135,20 @@ def harmonic_weights(owner: np.ndarray, core: np.ndarray, ptr: np.ndarray, idx: 
         counts = (ptr[free + 1] - ptr[free]).astype(np.float32)
         segment = np.cumsum(counts.astype(np.int64)) - counts.astype(np.int64)
         inverse = (1.0 / np.maximum(counts, 1.0))[:, None]
-        # 코어와 먼 자유 정점의 초기값은 이웃 평균이 빠르게 수렴하도록 균등 분포로 시작한다.
-        weights[free] = 1.0 / len(used)
+        # 기존 빌드는 전본 균등 초기화를 보존한다. 넓은 후보 대역은 소유 본에서 시작해 비국소 본 누출을 막고 수렴을 검사한다.
+        if not local_initialization:
+            weights[free] = 1.0 / len(used)
+        change = float("inf")
         for _ in range(iterations):
             gathered = weights[dst]
-            weights[free] = np.add.reduceat(gathered, segment, axis=0) * inverse
+            next_weights = np.add.reduceat(gathered, segment, axis=0) * inverse
+            if tolerance is not None:
+                change = float(np.abs(next_weights - weights[free]).max())
+            weights[free] = next_weights
+            if tolerance is not None and change <= tolerance:
+                break
+        if tolerance is not None and change > tolerance:
+            raise RuntimeError(f"조화 웨이트 미수렴: {iterations}회 뒤 변화 {change:.6g} > {tolerance:.6g}")
     full = np.zeros((count, bone_count), dtype=np.float32)
     full[:, used] = weights
     return full
@@ -269,14 +288,22 @@ def compute_weights(
     rig: Rig,
     head_mask: np.ndarray,
     finger_groups: dict[tuple[str, str], np.ndarray],
+    shoulder_blend: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """몸 전체 스킨 웨이트. (influence 인덱스 (V,4) uint8, 값 (V,4) float32, 정점 소유 본 (V,))를 돌려준다."""
     count = len(body.positions)
     bone_count = len(rig.names)
     ptr, idx = vertex_adjacency(body.faces, count)
     _, owner = assign_owners(body, rig, head_mask)
-    core = band_cores(owner, ptr, idx, rig.names)
-    weights = harmonic_weights(owner, core, ptr, idx, bone_count)
+    core = band_cores(owner, ptr, idx, rig.names, _SHOULDER_BLEND_BAND if shoulder_blend else None)
+    weights = harmonic_weights(owner, core, ptr, idx, bone_count, iterations=4096 if shoulder_blend else 240, local_initialization=shoulder_blend, tolerance=1e-6 if shoulder_blend else None)
+    if shoulder_blend:
+        # 수렴 방식 변경이 손·다리의 기존 웨이트까지 바꾸지 않도록 어깨에서만 부드럽게 섞는다.
+        legacy = harmonic_weights(owner, band_cores(owner, ptr, idx, rig.names), ptr, idx, bone_count)
+        pivots = np.stack([rig.a_pose[rig.index(f"{MIXAMO}{side}Arm")] for side in ("Left", "Right")])
+        distance = np.linalg.norm(body.positions[:, None, :] - pivots[None], axis=2).min(axis=1)
+        blend = (1.0 - _smoothstep(0.21, 0.28, distance))[:, None]
+        weights = (legacy + blend * (weights - legacy)).astype(np.float32)
     J = {name: i for i, name in enumerate(rig.names)}
     for (label, finger), vertices in finger_groups.items():
         chain = np.stack([rig.a_pose[J[f"{MIXAMO}{label}Hand{finger}{k}"]] for k in range(1, 5)])
@@ -373,11 +400,14 @@ def convert_to_t_pose(
     idx: np.ndarray,
     shoulder_radius: float = 0.17,
     arap_iterations: int = 24,
+    shoulder_blend: bool = False,
 ) -> np.ndarray:
-    """A-포즈 점을 T-포즈로 옮긴다. DQS로 옮긴 뒤 어깨 전이 영역만 ARAP로 다시 푼다."""
+    """A→T 변환. 기본은 DQS 뒤 국소 ARAP이며 명시적 shoulder_blend 후보만 국소 LBS/평활을 쓴다."""
     from .arap import arap_deform
 
     moved = dual_quaternion_skin(positions, indices, weights, rig.rotation, rig.translation)
+    if shoulder_blend:
+        return blended_shoulder_rest(positions, moved, indices, weights, rig, ptr, idx)
     mixed = weights.max(axis=1) < 0.999
     free_mask = np.zeros(len(positions), dtype=bool)
     for label in ("Left", "Right"):
@@ -389,6 +419,31 @@ def convert_to_t_pose(
     if free.size == 0:
         return moved
     return arap_deform(positions, moved, free, ptr, idx, iterations=arap_iterations)
+
+
+def blended_shoulder_rest(
+    rest: np.ndarray, dqs: np.ndarray, indices: np.ndarray, weights: np.ndarray,
+    rig: Rig, ptr: np.ndarray, idx: np.ndarray,
+) -> np.ndarray:
+    """후보 어깨 레스트: 넓은 웨이트 전이와 LBS를 쓰고 접힘을 국소 평활한다.
+
+    큰 팔 벌림에서 DQS의 체적 팽창과 좁은 mixed ARAP 고정 경계가 어깨 절벽·겨드랑이 막을 만든다.
+    어깨 반경 밖은 DQS 그대로 두며, 손·얼굴을 전역 LBS로 바꾸지 않는다. 공개 키트 반입 전 렌더 검토가 필요하다.
+    """
+    pivots = np.stack([rig.a_pose[rig.index(f"{MIXAMO}{side}Arm")] for side in ("Left", "Right")])
+    distance = np.linalg.norm(rest[:, None, :] - pivots[None], axis=2).min(axis=1)
+    blend = 1.0 - _smoothstep(0.21, 0.28, distance)
+    linear = linear_blend_skin(rest, indices, weights, rig.rotation, rig.translation)
+    moved = dqs + blend[:, None] * (linear - dqs)
+    neck_y = rig.a_pose[rig.index(MIXAMO + "Neck"), 1]
+    # 머리 이음·손·가슴 아래는 고정하고, 어깨-팔 접합의 실제 조직만 평활한다.
+    free = (np.abs(rest[:, 0]) > 0.045) & (np.abs(rest[:, 0]) < 0.30)
+    free &= (rest[:, 1] > neck_y - 0.165) & (rest[:, 1] < neck_y + 0.055)
+    free &= (distance < 0.24) & (np.diff(ptr) > 0)
+    head_joints = [rig.index(MIXAMO + name) for name in ("Neck", "Head", "HeadTop_End")]
+    head_weight = np.where(np.isin(indices, head_joints), weights, 0.0).sum(axis=1)
+    free &= head_weight < 0.5
+    return taubin_smooth(moved, np.flatnonzero(free), ptr, idx, iterations=60)
 
 
 def taubin_smooth(positions: np.ndarray, free: np.ndarray, ptr: np.ndarray, idx: np.ndarray, iterations: int = 20, lam: float = 0.5, mu: float = -0.53) -> np.ndarray:

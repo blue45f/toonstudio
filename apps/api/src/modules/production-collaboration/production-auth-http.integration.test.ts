@@ -7,7 +7,7 @@ import { vi, afterAll, beforeAll, describe, expect, it  } from "vitest";
 import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 
 import { randomBytes, randomUUID } from "node:crypto";
-import type { ProductionProjectAggregate, ProductionTask } from "@toonstudio/core/production";
+import type { ProductionProjectAggregate, ProductionTask, RevisionRef, Submission } from "@toonstudio/core/production";
 import { createProductionWorkflowProfile } from "@toonstudio/contracts/production-workflow";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -229,9 +229,371 @@ describe.skipIf(!url)("실제 일반 가입·쿠키·PostgreSQL 협업 HTTP", ()
     })));
     expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
   });
+  it("서로 다른 카드의 전체 CAS 저장은 두 작업자의 동시 변경을 보존하고 재전송은 한 번만 반영한다", async () => {
+    for (const id of ["http-cas-a", "http-cas-b"]) expect((await command({ type: "upsert-task", task: taskDraft(id) })).status).toBe(201);
+    const current = await project();
+    const a = current.aggregate.tasks.find((task) => task.id === "http-cas-a");
+    const b = current.aggregate.tasks.find((task) => task.id === "http-cas-b");
+    if (!a || !b) throw new Error("동시 저장 검증용 작업이 없습니다.");
+    const requests = [{ actor: owner(), task: a, title: "글 작업자가 저장한 A" }, { actor: editor(), task: b, title: "그림 작업자가 저장한 B" }].map((entry) => ({
+      actor: entry.actor, body: { expectedRevision: current.aggregate.revision, mutationId: randomUUID(),
+        command: { type: "upsert-task-batch", tasks: [{ ...entry.task, title: entry.title }], expectedTasks: [entry.task] } },
+    }));
+    const results = await Promise.all(requests.map((request) => h.request<Project>(`/production/projects/${projectId}/commands`, { cookie: request.actor.cookie, body: request.body })));
+    expect(results.map((result) => result.status)).toEqual([201, 201]);
+    const after = await project();
+    expect(after.aggregate.revision).toBe(current.aggregate.revision + 2);
+    expect(after.aggregate.tasks.find((task) => task.id === a.id)?.title).toBe("글 작업자가 저장한 A");
+    expect(after.aggregate.tasks.find((task) => task.id === b.id)?.title).toBe("그림 작업자가 저장한 B");
+    const rebasedIndex = results.findIndex((result) => result.body.aggregate.revision === after.aggregate.revision);
+    const request = requests[rebasedIndex]; const result = results[rebasedIndex];
+    if (!request || !result) throw new Error("최신 aggregate로 저장한 응답이 없습니다.");
+    const repeated = await h.request<Project>(`/production/projects/${projectId}/commands`, { cookie: request.actor.cookie, body: request.body });
+    expect(repeated.status).toBe(201); expect(repeated.body).toEqual(result.body);
+    expect((await project()).aggregate.revision).toBe(after.aggregate.revision);
+    const changed = { ...request.body, command: { ...request.body.command, tasks: request.body.command.tasks.map((task) => ({ ...task, title: "같은 요청 ID의 다른 내용" })) } };
+    expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: request.actor.cookie, body: changed })).status).toBe(409);
+  });
+  it("동일 카드 전체 CAS 충돌·미래 revision·일부 무전제 묶음은 거절한다", async () => {
+    const current = await project();
+    const task = current.aggregate.tasks.find((entry) => entry.id === "http-cas-a");
+    if (!task) throw new Error("동시 저장 검증용 작업이 없습니다.");
+    const results = await Promise.all([owner(), editor()].map((actor, index) => h.request(`/production/projects/${projectId}/commands`, {
+      cookie: actor.cookie, body: { expectedRevision: current.aggregate.revision, mutationId: randomUUID(),
+        command: { type: "upsert-task-batch", tasks: [{ ...task, title: `같은 카드 ${index}` }], expectedTasks: [task] } },
+    })));
+    expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
+    const latest = await project();
+    const a = latest.aggregate.tasks.find((entry) => entry.id === "http-cas-a");
+    const b = latest.aggregate.tasks.find((entry) => entry.id === "http-cas-b");
+    if (!a || !b) throw new Error("동시 저장 검증용 작업이 없습니다.");
+    for (const body of [
+      { expectedRevision: latest.aggregate.revision + 1, command: { type: "upsert-task-batch", tasks: [{ ...a, title: "미래 버전" }], expectedTasks: [a] } },
+      { expectedRevision: current.aggregate.revision, command: { type: "upsert-task-batch", tasks: [{ ...a, title: "전제조건 누락 A" }, b], expectedTasks: [a] } },
+      { expectedRevision: current.aggregate.revision, command: { type: "upsert-task-batch", tasks: [{ ...a, title: "전제조건 없음" }] } },
+    ]) expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: editor().cookie, body: { ...body, mutationId: randomUUID() } })).status).toBe(409);
+    expect((await project()).aggregate.revision).toBe(latest.aggregate.revision);
+  });
+  it("신규 카드 부재 CAS도 독립 저장 이후 허용하고 같은 ID의 중복 생성은 거절한다", async () => {
+    const current = await project();
+    const existing = current.aggregate.tasks.find((entry) => entry.id === "http-cas-a");
+    if (!existing) throw new Error("동시 저장 검증용 작업이 없습니다.");
+    expect((await command({ type: "upsert-task", task: { ...existing, title: "신규 카드와 독립된 변경" } })).status).toBe(201);
+    const newTask = taskDraft("http-cas-new");
+    const body = { expectedRevision: current.aggregate.revision, mutationId: randomUUID(),
+      command: { type: "upsert-task-batch", tasks: [newTask], expectedTasks: [], expectedAbsentTaskIds: [newTask.id] } };
+    expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: editor().cookie, body })).status).toBe(201);
+    const savedRevision = (await project()).aggregate.revision;
+    expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: owner().cookie, body: { ...body, mutationId: randomUUID() } })).status).toBe(409);
+    expect((await project()).aggregate.revision).toBe(savedRevision);
+  });
+  it("실제 HTTP 검수 승인은 현재 제출본과 연결 작업을 한 revision으로 확정하고 재제출 인계를 차단한다", async () => {
+    const initial = (await project()).aggregate;
+    const ownerParty = initial.parties.find((party) => party.accountUserId === owner().id);
+    const ownerRole = initial.assignments.find((assignment) => assignment.partyId === ownerParty?.id);
+    if (!ownerParty || !ownerRole) throw new Error("실제 HTTP 프로젝트 소유자 배정이 없습니다.");
+    const authorAssignmentId = "http-line-author", reviewerAssignmentId = "http-editor-reviewer";
+    expect((await command({ type: "configure-collaboration", parties: [...initial.parties,
+      { ...ownerParty, id: "http-reviewer-party", accountUserId: editor().id, publicDisplayName: "편집 검수자", internalDisplayName: "편집 검수자" }],
+      assignments: [...initial.assignments,
+        { ...ownerRole, id: authorAssignmentId, roleType: "line-artist", lead: false },
+        { ...ownerRole, id: reviewerAssignmentId, partyId: "http-reviewer-party", roleType: "editor", lead: false }],
+      authorityRules: initial.authorityRules,
+    })).status).toBe(201);
+    const policy = { id: "http-review-policy", projectId, scope: scope(), responseDueHours: 24, expiredReviewAction: "escalate",
+      lanes: [{ lane: "production", eligibleAssignmentIds: [reviewerAssignmentId], requiredAssignmentIds: [reviewerAssignmentId],
+        quorum: 1, vetoAssignmentIds: [], blocksPublication: true }] };
+    expect((await command({ type: "upsert-review-policy", policy }, editor())).status).toBe(403);
+    expect((await command({ type: "upsert-review-policy", policy })).status).toBe(201);
+    const at = new Date().toISOString();
+    const input = { id: "http-source-revision", lineage: "narrative" as const, revision: 1, digest: `sha256:${"c".repeat(64)}`, createdAt: at };
+    const output = { id: "http-line-revision-1", lineage: "visual" as const, revision: 1, digest: `sha256:${"d".repeat(64)}`, createdAt: at };
+    const deliverable = { id: "http-line-deliverable", projectId, scope: scope(), type: "line-art", expectedFormat: "PNG",
+      completionCriteria: ["선화 검수"], currentSubmissionId: null, approvedSubmissionId: null };
+    expect((await command({ type: "upsert-deliverable", deliverable })).status).toBe(201);
+    const task = { ...taskDraft("http-line-task"), processKey: "line-art", assignmentIds: [authorAssignmentId],
+      reviewerAssignmentIds: [reviewerAssignmentId], inputRevisionRefs: [input], outputDeliverableIds: [deliverable.id] };
+    const beforeForgery = await project();
+    expect((await command({ type: "upsert-task", task: { ...task, id: "http-forged-approved", status: "approved", outputDeliverableIds: [] } }, editor())).status).toBe(400);
+    expect((await project()).aggregate.revision).toBe(beforeForgery.aggregate.revision);
+    expect((await command({ type: "upsert-task", task })).status).toBe(201);
+    for (const [fromStatus, toStatus] of [["draft", "ready"], ["ready", "in-progress"]]) {
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus, toStatus }] })).status).toBe(201);
+    }
+    const submission = { id: "http-line-submission-1", projectId, deliverableId: deliverable.id, revisionRef: output,
+      submittedByAssignmentId: authorAssignmentId, submittedAt: at, status: "submitted", inputRevisionRefs: [input], evidenceRefs: ["http-line-proof"] };
+    expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+    expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+    expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "in-progress", toStatus: "internal-review" }] })).status).toBe(201);
+    const decision = { id: "http-current-submission-decision", reviewRoundId: submission.id, lane: "production", assignmentId: reviewerAssignmentId,
+      value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at };
+    expect((await command({ type: "record-review-decision", policyId: policy.id, decision }, viewer())).status).toBe(403);
+    expect((await command({ type: "record-review-decision", policyId: policy.id, decision }, editor())).status).toBe(201);
+    const beforeOverwrite = await project();
+    expect((await command({ type: "record-review-decision", policyId: policy.id,
+      decision: { ...decision, value: "request-changes", reasonCode: "replacement" } }, editor())).status).toBe(409);
+    expect((await project()).aggregate.revision).toBe(beforeOverwrite.aggregate.revision);
+    const approved = await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+    expect(approved.status).toBe(201);
+    expect(approved.body.aggregate.revision).toBe(beforeOverwrite.aggregate.revision + 1);
+    expect(approved.body.aggregate.tasks.find((entry) => entry.id === task.id)?.status).toBe("approved");
+    expect(approved.body.aggregate.deliverables.find((entry) => entry.id === deliverable.id)).toMatchObject({
+      currentSubmissionId: submission.id, approvedSubmissionId: submission.id,
+    });
+    const persisted = (await project()).aggregate;
+    expect(persisted.revision).toBe(approved.body.aggregate.revision);
+    expect(persisted.tasks.find((entry) => entry.id === task.id)?.status).toBe("approved");
+    expect(persisted.submissions.find((entry) => entry.id === submission.id)?.status).toBe("approved");
+
+    const downstream: ProductionTask = { ...taskDraft("http-downstream-proof"), processKey: "joint-proof", assignmentIds: [reviewerAssignmentId],
+      reviewerAssignmentIds: [reviewerAssignmentId], inputRevisionRefs: [output], dependencyTaskIds: [task.id] };
+    expect((await command({ type: "upsert-task", task: downstream })).status).toBe(201);
+    expect((await command({ type: "transition-task-batch", transitions: [{ taskId: downstream.id, fromStatus: "draft", toStatus: "ready" }] })).status).toBe(201);
+    const revised = { ...submission, id: "http-line-submission-2", status: "submitted", revisionRef: {
+      ...output, id: "http-line-revision-2", revision: 2, digest: `sha256:${"e".repeat(64)}`,
+    } };
+    const resubmitted = await command({ type: "upsert-submission", submission: revised });
+    expect(resubmitted.status).toBe(201);
+    expect(resubmitted.body.aggregate.deliverables.find((entry) => entry.id === deliverable.id)).toMatchObject({
+      currentSubmissionId: revised.id, approvedSubmissionId: null,
+    });
+    expect((await command({ type: "transition-task-batch", transitions: [{ taskId: downstream.id, fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(400);
+    const rejected = (await project()).aggregate;
+    expect(rejected.revision).toBe(resubmitted.body.aggregate.revision);
+    expect(rejected.tasks.find((entry) => entry.id === downstream.id)?.status).toBe("ready");
+    expect(rejected.submissions.find((entry) => entry.id === submission.id)?.status).toBe("approved");
+    const reviewingAgain = await command({ type: "upsert-submission", submission: { ...revised, status: "in-review" } }, editor());
+    expect(reviewingAgain.status).toBe(201);
+    // 첫 제출본에 대한 실제 승인 결정이 있어도 새 제출본 승인으로 재사용하지 않는다.
+    expect((await command({ type: "upsert-submission", submission: { ...revised, status: "approved" } }, editor())).status).toBe(400);
+    expect((await project()).aggregate.revision).toBe(reviewingAgain.body.aggregate.revision);
+  });
+  it("선행 재제출 뒤 후속 부분 승인·완료는 원자적으로 거절하고 새 입력의 재작업은 완료한다", async () => {
+    const at = new Date().toISOString();
+    const ref = (id: string, digit: string, revision = 1): RevisionRef => ({ id, lineage: "visual", revision,
+      digest: `sha256:${digit.repeat(64)}`, createdAt: at });
+    const source = ref("http-stale-brief", "1"), a1 = ref("http-stale-a1", "2"), a2 = ref("http-stale-a2", "3", 2);
+    async function createTask(id: string, inputs: RevisionRef[], dependencies: string[], outputCount: number) {
+      const outputDeliverableIds = Array.from({ length: outputCount }, (_, index) => `${id}-output-${index}`);
+      for (const outputId of outputDeliverableIds) expect((await command({ type: "upsert-deliverable", deliverable: {
+        id: outputId, projectId, scope: scope(), type: "line-art", expectedFormat: "PNG", completionCriteria: ["검수"],
+        currentSubmissionId: null, approvedSubmissionId: null,
+      } })).status).toBe(201);
+      const task: ProductionTask = { ...taskDraft(id), processKey: dependencies.length ? "joint-proof" : "line-art",
+        assignmentIds: ["http-line-author"], reviewerAssignmentIds: ["http-editor-reviewer"],
+        inputRevisionRefs: inputs, dependencyTaskIds: dependencies, outputDeliverableIds };
+      expect((await command({ type: "upsert-task", task })).status).toBe(201);
+      for (const [fromStatus, toStatus] of [["draft", "ready"], ["ready", "in-progress"]]) {
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: id, fromStatus, toStatus }] })).status).toBe(201);
+      }
+      return task;
+    }
+    async function submit(task: ProductionTask, outputIndex: number, output: RevisionRef): Promise<Submission> {
+      const submission: Submission = { id: `${output.id}-submission-${outputIndex}`, projectId,
+        deliverableId: task.outputDeliverableIds[outputIndex]!, revisionRef: output, inputRevisionRefs: task.inputRevisionRefs,
+        submittedByAssignmentId: "http-line-author", submittedAt: at, status: "submitted", evidenceRefs: ["http-stale-proof"] };
+      expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+      expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+      expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+        id: `${submission.id}-decision`, reviewRoundId: submission.id, lane: "production", assignmentId: "http-editor-reviewer",
+        value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+      } }, editor())).status).toBe(201);
+      return submission;
+    }
+    async function transition(taskId: string, fromStatus: string, toStatus: string) {
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId, fromStatus, toStatus }] })).status).toBe(201);
+    }
+    async function approve(submission: Submission) {
+      const response = await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+      expect(response.status).toBe(201); return response.body.aggregate;
+    }
+    async function rejectAtomically(value: Record<string, unknown>) {
+      const before = await project(), mutationId = randomUUID();
+      const response = await h.request(`/production/projects/${projectId}/commands`, { cookie: editor().cookie,
+        body: { command: value, expectedRevision: before.aggregate.revision, mutationId } });
+      expect(response.status).toBe(400);
+      expect(await project()).toEqual(before);
+      const receipt = await h.pool.query('SELECT count(*)::int AS count FROM production_project_mutation_receipt WHERE "projectId"=$1 AND "mutationId"=$2', [projectId, mutationId]);
+      expect(receipt.rows[0].count).toBe(0);
+    }
+    const upstream = await createTask("http-stale-upstream", [source], [], 1);
+    const firstUpstream = await submit(upstream, 0, a1);
+    await transition(upstream.id, "in-progress", "internal-review");
+    await approve(firstUpstream);
+    const partial = await createTask("http-stale-partial", [a1], [upstream.id], 2);
+    const partialFirst = await submit(partial, 0, ref("http-stale-partial-a", "4"));
+    await submit(partial, 1, ref("http-stale-partial-b", "5"));
+    await transition(partial.id, "in-progress", "internal-review");
+    const finished = await createTask("http-stale-finished", [a1], [upstream.id], 1);
+    const firstFinished = await submit(finished, 0, ref("http-stale-finished-a", "6"));
+    await transition(finished.id, "in-progress", "internal-review");
+    await approve(firstFinished);
+    const nextUpstream: Submission = { ...firstUpstream, id: "http-stale-a2-submission", revisionRef: a2, status: "submitted" };
+    expect((await command({ type: "upsert-submission", submission: nextUpstream })).status).toBe(201);
+    for (const state of ["submitted", "approved"]) {
+      if (state === "approved") {
+        expect((await command({ type: "upsert-submission", submission: { ...nextUpstream, status: "in-review" } }, editor())).status).toBe(201);
+        expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+          id: "http-stale-a2-decision", reviewRoundId: nextUpstream.id, lane: "production", assignmentId: "http-editor-reviewer",
+          value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+        } }, editor())).status).toBe(201);
+        await approve(nextUpstream);
+      }
+      await rejectAtomically({ type: "upsert-submission", submission: { ...partialFirst, status: "approved" } });
+      const currentFinished = (await project()).aggregate.tasks.find((entry) => entry.id === finished.id)!;
+      await rejectAtomically({ type: "upsert-task", task: { ...currentFinished, status: "done" } });
+      await rejectAtomically({ type: "transition-task-batch", transitions: [{ taskId: finished.id, fromStatus: "approved", toStatus: "done" }] });
+    }
+    const history = (await project()).aggregate;
+    expect(history.submissions.find((entry) => entry.id === firstUpstream.id)?.status).toBe("approved");
+    expect(history.submissions.find((entry) => entry.id === firstFinished.id)?.status).toBe("approved");
+    expect(history.reviewDecisions.find((entry) => entry.id === `${partialFirst.id}-decision`)?.value).toBe("approve");
+    expect(history.tasks.find((entry) => entry.id === partial.id)?.inputRevisionRefs).toEqual([a1]);
+    const historicalTask = history.tasks.find((entry) => entry.id === finished.id)!;
+    expect((await command({ type: "upsert-task", task: { ...historicalTask, title: "이전 승인 이력 보존" } })).status).toBe(201);
+    await transition(partial.id, "internal-review", "changes-requested");
+    const rework = { ...(await project()).aggregate.tasks.find((entry) => entry.id === partial.id)!, inputRevisionRefs: [a2] };
+    expect((await command({ type: "upsert-task", task: rework })).status).toBe(201);
+    await transition(partial.id, "changes-requested", "in-progress");
+    const nextFirst = await submit(rework, 0, ref("http-stale-rework-a", "7", 2));
+    const nextSecond = await submit(rework, 1, ref("http-stale-rework-b", "8", 2));
+    await transition(partial.id, "in-progress", "internal-review");
+    expect((await approve(nextFirst)).tasks.find((entry) => entry.id === partial.id)?.status).toBe("internal-review");
+    expect((await approve(nextSecond)).tasks.find((entry) => entry.id === partial.id)?.status).toBe("approved");
+    await transition(partial.id, "approved", "done");
+    const final = (await project()).aggregate;
+    expect(final.tasks.find((entry) => entry.id === partial.id)).toMatchObject({ status: "done", inputRevisionRefs: [a2] });
+    expect(final.submissions.find((entry) => entry.id === partialFirst.id)?.status).toBe("in-review");
+    expect(final.tasks.find((entry) => entry.id === finished.id)?.status).toBe("approved");
+  }, 60_000);
+  it("중복 검수 영역 등록과 기존 모호한 정책의 새 승인은 HTTP에서 전체 저장 없이 거절한다", async () => {
+    const initial = (await project()).aggregate;
+    const policy = initial.reviewPolicies.find((entry) => entry.id === "http-review-policy");
+    const submission = initial.submissions.find((entry) => entry.id === "http-line-submission-2");
+    const lane = policy?.lanes[0];
+    if (!policy || !submission || !lane) throw new Error("기존 검수 정책·제출본 fixture가 없습니다.");
+    const duplicate = { ...policy, lanes: [lane, { ...lane, eligibleAssignmentIds: ["http-line-author"], requiredAssignmentIds: [] }] };
+    const reject = async (value: Record<string, unknown>, actor = owner()) => {
+      const before = await project(), mutationId = randomUUID();
+      expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: actor.cookie,
+        body: { command: value, expectedRevision: before.aggregate.revision, mutationId } })).status).toBe(400);
+      expect(await project()).toEqual(before);
+      const receipt = await h.pool.query('SELECT count(*)::int AS count FROM production_project_mutation_receipt WHERE "projectId"=$1 AND "mutationId"=$2', [projectId, mutationId]);
+      expect(receipt.rows[0].count).toBe(0);
+    };
+    await reject({ type: "upsert-review-policy", policy: duplicate });
+    expect((await command({ type: "record-review-decision", policyId: policy.id, decision: {
+      id: "http-legacy-policy-vote", reviewRoundId: submission.id, lane: lane.lane, assignmentId: "http-editor-reviewer",
+      value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: new Date().toISOString(),
+    } }, editor())).status).toBe(201);
+    const valid = (await project()).aggregate;
+    // 과거 저장될 수 있었던 중복 정책만 격리 DB fixture로 복원한다. 제품 API로 삽입한 것으로 표시하지 않는다.
+    const legacy = { ...valid, reviewPolicies: valid.reviewPolicies.map((entry) => entry.id === policy.id ? duplicate : entry) };
+    const update = await h.pool.query('UPDATE production_project SET aggregate=$1::jsonb WHERE id=$2 AND revision=$3', [JSON.stringify(legacy), projectId, valid.revision]);
+    expect(update.rowCount).toBe(1);
+    try {
+      await reject({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+      expect((await project()).aggregate.reviewDecisions).toEqual(valid.reviewDecisions);
+    } finally {
+      const restored = await h.pool.query('UPDATE production_project SET aggregate=$1::jsonb WHERE id=$2 AND revision=$3', [JSON.stringify(valid), projectId, valid.revision]);
+      expect(restored.rowCount).toBe(1);
+    }
+    expect((await project()).aggregate).toEqual(valid);
+  });
+  it("독립된 제작자와 검수자가 여덟 공정을 완주하고 재작업 이전 승인을 재사용하지 않는다", async () => {
+    const initial = (await project()).aggregate;
+    const ownerRole = initial.assignments.find((entry) => entry.id === "http-line-author");
+    if (!ownerRole) throw new Error("제작자 역할 fixture가 없습니다.");
+    const at = new Date().toISOString();
+    const profile = createProductionWorkflowProfile(projectId, "studio", at);
+    const steps = profile.steps;
+    const assignments = steps.map((step) => ({ ...ownerRole, id: `pipeline-author-${step.key}`, roleType: step.defaultRole }));
+    expect((await command({ type: "configure-collaboration", parties: initial.parties,
+      assignments: [...initial.assignments, ...assignments], authorityRules: initial.authorityRules })).status).toBe(201);
+    expect((await command({ type: "configure-workflow", profile: { ...profile, revision: (initial.workflowProfile?.revision ?? 0) + 1 },
+      expectedWorkflowRevision: initial.workflowProfile?.revision ?? 0 })).status).toBe(201);
+    const baseInput: RevisionRef = { id: "pipeline-brief", lineage: "narrative", revision: 1,
+      digest: `sha256:${"0".repeat(64)}`, createdAt: at };
+    const outputs = new Map<string, RevisionRef>(steps.map((step, index) => [step.key, {
+      id: `pipeline-${step.key}-r1`, lineage: step.key === "story-lock" ? "narrative" : "visual", revision: 1,
+      digest: `sha256:${(index + 1).toString(16).repeat(64)}`, createdAt: at,
+    }]));
+    for (const step of steps) {
+      const inputs = step.dependsOn.map((key) => outputs.get(key));
+      if (inputs.some((input) => !input)) throw new Error("선행 revision fixture가 없습니다.");
+      const inputRevisionRefs = inputs.filter((input): input is RevisionRef => input !== undefined);
+      const deliverable = { id: `pipeline-output-${step.key}`, projectId, scope: scope(), type: step.key,
+        expectedFormat: "studio-document", completionCriteria: step.completionCriteria, currentSubmissionId: null, approvedSubmissionId: null };
+      expect((await command({ type: "upsert-deliverable", deliverable })).status).toBe(201);
+      const task: ProductionTask = { ...taskDraft(`pipeline-task-${step.key}`), title: step.name, processKey: step.key,
+        assignmentIds: [`pipeline-author-${step.key}`], reviewerAssignmentIds: ["http-editor-reviewer"],
+        dependencyTaskIds: step.dependsOn.map((key) => `pipeline-task-${key}`), outputDeliverableIds: [deliverable.id],
+        inputRevisionRefs: inputRevisionRefs.length ? inputRevisionRefs : [baseInput] };
+      expect((await command({ type: "upsert-task", task })).status).toBe(201);
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "draft", toStatus: "ready" }] })).status).toBe(201);
+    }
+    const premature = await project();
+    expect((await command({ type: "transition-task-batch", transitions: [{ taskId: "pipeline-task-color", fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(400);
+    expect((await project()).aggregate.revision).toBe(premature.aggregate.revision);
+    for (const step of steps) {
+      const current = (await project()).aggregate;
+      let task = current.tasks.find((entry) => entry.id === `pipeline-task-${step.key}`);
+      const output = outputs.get(step.key);
+      if (!task || !output) throw new Error("공정 fixture가 없습니다.");
+      if (step.key === "lettering") {
+        // 이전 채색본을 고정한 식자는 재작업 승인 후에도 자동으로 시작하지 않는다.
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(400);
+        const color = outputs.get("color");
+        if (!color) throw new Error("재작업 채색 revision이 없습니다.");
+        const originalTask = task;
+        task = { ...originalTask, inputRevisionRefs: [color] };
+        expect((await command({ type: "upsert-task-batch", tasks: [task], expectedTasks: [originalTask] })).status).toBe(201);
+      }
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "ready", toStatus: "in-progress" }] })).status).toBe(201);
+      let submission: Submission = { id: `pipeline-submission-${step.key}-1`, projectId,
+        deliverableId: task.outputDeliverableIds[0] ?? "", revisionRef: output, submittedByAssignmentId: task.assignmentIds[0] ?? "",
+        submittedAt: at, status: "submitted", inputRevisionRefs: task.inputRevisionRefs, evidenceRefs: [`pipeline-proof-${step.key}`] };
+      expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "in-progress", toStatus: "internal-review" }] })).status).toBe(201);
+      expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+      if (step.key === "color") {
+        expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+          id: "pipeline-color-retake", reviewRoundId: submission.id, lane: "production", assignmentId: "http-editor-reviewer",
+          value: "request-changes", reasonCode: "color-continuity", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+        } }, editor())).status).toBe(201);
+        const retake = await command({ type: "upsert-submission", submission: { ...submission, status: "changes-requested" } }, editor());
+        expect(retake.status).toBe(201);
+        expect(retake.body.aggregate.tasks.find((entry) => entry.id === task.id)?.status).toBe("changes-requested");
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "changes-requested", toStatus: "in-progress" }] })).status).toBe(201);
+        const revised = { ...output, id: "pipeline-color-r2", revision: 2, digest: `sha256:${"f".repeat(64)}` };
+        outputs.set("color", revised);
+        submission = { ...submission, id: "pipeline-submission-color-2", revisionRef: revised };
+        expect((await command({ type: "upsert-submission", submission })).status).toBe(201);
+        expect((await command({ type: "upsert-submission", submission: { ...submission, status: "in-review" } }, editor())).status).toBe(201);
+        expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "in-progress", toStatus: "internal-review" }] })).status).toBe(201);
+        const beforeMissingApproval = await project();
+        expect((await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor())).status).toBe(400);
+        expect((await project()).aggregate.revision).toBe(beforeMissingApproval.aggregate.revision);
+      }
+      expect((await command({ type: "record-review-decision", policyId: "http-review-policy", decision: {
+        id: `pipeline-approval-${step.key}`, reviewRoundId: submission.id, lane: "production", assignmentId: "http-editor-reviewer",
+        value: "approve", reasonCode: "checked", evidenceScopeRefs: [scope()], conditions: [], createdAt: at,
+      } }, editor())).status).toBe(201);
+      const approved = await command({ type: "upsert-submission", submission: { ...submission, status: "approved" } }, editor());
+      expect(approved.status).toBe(201);
+      expect(approved.body.aggregate.tasks.find((entry) => entry.id === task.id)?.status).toBe("approved");
+      expect((await command({ type: "transition-task-batch", transitions: [{ taskId: task.id, fromStatus: "approved", toStatus: "done" }] })).status).toBe(201);
+    }
+    const final = (await project()).aggregate;
+    expect(final.tasks.filter((entry) => entry.id.startsWith("pipeline-task-")).map((entry) => entry.status)).toEqual(Array(8).fill("done"));
+    expect(final.deliverables.filter((entry) => entry.id.startsWith("pipeline-output-")).every((entry) => entry.currentSubmissionId === entry.approvedSubmissionId)).toBe(true);
+    expect(final.submissions.find((entry) => entry.id === "pipeline-submission-color-1")?.status).toBe("changes-requested");
+    expect(final.reviewDecisions.find((entry) => entry.id === "pipeline-color-retake")?.value).toBe("request-changes");
+    expect(final.reviewDecisions.filter((entry) => entry.id.startsWith("pipeline-approval-")).every((entry) => entry.assignmentId === "http-editor-reviewer")).toBe(true);
+  }, 60_000);
   it("회수된 작품 권한은 과거 저장 요청 재전송에도 적용한다", async () => {
     const current = await project(); const task = current.aggregate.tasks[0]!;
-    const body = { expectedRevision: current.aggregate.revision, mutationId: randomUUID(), command: { type: "upsert-task", task: { ...task, title: "회수 전 저장" } } };
+    const body = { expectedRevision: current.aggregate.revision, mutationId: randomUUID(), command: { type: "upsert-task-batch", tasks: [{ ...task, title: "회수 전 저장" }], expectedTasks: [task] } };
     expect((await h.request(`/production/projects/${projectId}/commands`, { cookie: editor().cookie, body })).status).toBe(201);
     await h.pool.query('DELETE FROM creator_work_collaborator WHERE "workId"=$1 AND "userId"=$2', [workId, editor().id]);
     expect((await h.request(`/production/projects/${projectId}`, { cookie: editor().cookie })).status).toBe(403);

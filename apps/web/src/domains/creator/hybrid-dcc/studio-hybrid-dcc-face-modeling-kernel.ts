@@ -44,6 +44,7 @@ import {
   failStudioFaceModeling,
   findRenderableStartCorner,
   okStudioFaceModeling,
+  rejectStudioFaceModelingUvRebuild,
   STUDIO_FACE_MODELING_LIMITS,
   studioFaceCornerPositions,
   type StudioFaceModelingOutcome,
@@ -68,6 +69,8 @@ function insetFaces(
 ): StudioFaceModelingResult<StudioFaceModelingOutcome> {
   const invalid = validateStudioFaceModelingDistance(distance);
   if (invalid) return invalid;
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, faceIds);
@@ -168,6 +171,8 @@ export function studioEditableMeshInsetRange(
   mesh: StudioEditableMesh,
   faceIds: readonly number[],
 ): StudioFaceModelingResult<{ readonly maxDistance: number }> {
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, faceIds);
@@ -276,6 +281,61 @@ function traceRegionBoundary(
   return okStudioFaceModeling({ vertexIds, creaseByEdge });
 }
 
+/** 영역 재분할로 사라지는 속성만 거부하고, 남는 면·외곽 모서리·정점의 속성은 허용한다. */
+function validateOutwardRegionAttributes(
+  context: StudioFaceModelingContext,
+  selected: StudioMeshFaceLoop,
+  region: ReadonlySet<number>,
+  boundary: RegionBoundary,
+): StudioFaceModelingResult<StudioMeshFaceLoop> {
+  const restSourceId = [...region].filter((id) => id !== selected.id).sort((left, right) => left - right)[0];
+  const restSource = restSourceId === undefined ? undefined : context.loopById.get(restSourceId);
+  if (!restSource) {
+    return failStudioFaceModeling(restSourceId === undefined ? "no-coplanar-region" : "invalid-mesh", "coplanar region has no remainder source face", {
+      elementIds: [selected.id],
+    });
+  }
+  const survivingVertices = new Set([...boundary.vertexIds, ...selected.vertexIds]);
+  const removedVertices = new Set<number>();
+  for (const loop of context.loops) {
+    if (!region.has(loop.id)) {
+      for (const vertexId of loop.vertexIds) survivingVertices.add(vertexId);
+      continue;
+    }
+    if (loop.id === selected.id) continue;
+    if (loop.materialSlot !== restSource.materialSlot || loop.smooth !== restSource.smooth) {
+      return failStudioFaceModeling("unsupported-region-attributes", "removed coplanar region faces have different material or smooth attributes", {
+        elementIds: [loop.id],
+      });
+    }
+    for (const vertexId of loop.vertexIds) removedVertices.add(vertexId);
+    for (const halfEdgeId of loop.halfEdgeIds) {
+      const halfEdge = context.mesh.halfEdges[halfEdgeId];
+      if (!halfEdge) return failStudioFaceModeling("invalid-mesh", "coplanar region half-edge is missing");
+      const twin = halfEdge.twin < 0 ? undefined : context.mesh.halfEdges[halfEdge.twin];
+      if (twin?.face === selected.id) {
+        if (halfEdge.crease !== twin.crease) {
+          return failStudioFaceModeling("unsupported-region-attributes", "selected boundary half-edge creases differ", {
+            elementIds: [loop.id, selected.id],
+          });
+        }
+      } else if (twin && region.has(twin.face) && halfEdge.crease !== 0) {
+        return failStudioFaceModeling("unsupported-region-attributes", "removed internal region edge has a crease", {
+          elementIds: [loop.id, twin.face],
+        });
+      }
+    }
+  }
+  for (const vertex of context.mesh.vertices) {
+    if (removedVertices.has(vertex.id) && !survivingVertices.has(vertex.id) && vertex.crease !== 0) {
+      return failStudioFaceModeling("unsupported-region-attributes", "removed internal region vertex has a crease", {
+        elementIds: [selected.id],
+      });
+    }
+  }
+  return okStudioFaceModeling(restSource);
+}
+
 /** 같은 평면 이웃 영역 안에서 면 둘레를 바깥쪽으로 오프셋한다. */
 function offsetFaceOutward(
   context: StudioFaceModelingContext,
@@ -295,6 +355,8 @@ function offsetFaceOutward(
   }
   const boundary = traceRegionBoundary(context, region);
   if (!boundary.ok) return boundary;
+  const regionAttributes = validateOutwardRegionAttributes(context, face.loop, region, boundary.value);
+  if (!regionAttributes.ok) return regionAttributes;
   const boundaryPoints3 = studioFaceCornerPositions(mesh, boundary.value.vertexIds);
   const boundaryPolygon = boundaryPoints3.map((point) => projectToStudioPlanarFrame(face.frame, point));
   const boundaryShape = describeStudioPlanarPolygon(boundaryPolygon);
@@ -350,9 +412,8 @@ function offsetFaceOutward(
     if (id === face.loop.id) continue;
     for (const vertex of loopById.get(id)!.vertexIds) droppableVertices.add(vertex);
   }
-  // 나머지 영역 조각은 영역에서 가장 앞선(ID가 작은) 이웃 면의 재질·부드러움을 이어받는다.
-  const restSourceId = [...region].filter((id) => id !== face.loop.id).sort((left, right) => left - right)[0]!;
-  const restSource = loopById.get(restSourceId)!;
+  // 선택면은 별도로 보존하고, 동질인 비선택 이웃 조각은 최소 ID 이웃의 속성을 쓴다.
+  const restSource = regionAttributes.value;
   const ringIds: number[] = [];
   let removedArea = 0;
   let createdArea = 0;
@@ -429,6 +490,8 @@ export function offsetStudioEditableMeshFace(
   if (direction !== "outward") return failStudioFaceModeling("invalid-parameter", "unknown offset direction");
   const invalid = validateStudioFaceModelingDistance(distance);
   if (invalid) return invalid;
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, [faceId]);
@@ -444,6 +507,8 @@ export function studioEditableMeshOffsetRange(
   faceId: number,
   direction: StudioOffsetDirection,
 ): StudioFaceModelingResult<{ readonly maxDistance: number }> {
+  const uvUnsupported = rejectStudioFaceModelingUvRebuild(mesh);
+  if (uvUnsupported) return uvUnsupported;
   const context = createStudioFaceModelingContext(mesh);
   if (!context.ok) return context;
   const selected = selectStudioFaceLoops(context.value, [faceId]);
@@ -468,6 +533,8 @@ export function studioEditableMeshOffsetRange(
   }
   const boundary = traceRegionBoundary(context.value, region.value);
   if (!boundary.ok) return boundary;
+  const regionAttributes = validateOutwardRegionAttributes(context.value, face.value.loop, region.value, boundary.value);
+  if (!regionAttributes.ok) return regionAttributes;
   const boundaryPolygon = studioFaceCornerPositions(mesh, boundary.value.vertexIds)
     .map((point) => projectToStudioPlanarFrame(face.value.frame, point));
   const shape = describeStudioPlanarPolygon(boundaryPolygon);

@@ -49,6 +49,7 @@ const ktx2RuntimeMocks = vi.hoisted(() => ({
 
 vi.mock("three/examples/jsm/loaders/GLTFLoader.js", () => ({
   GLTFLoader: class MockGltfLoader {
+    register() { return this; }
     setMeshoptDecoder(decoder: unknown) {
       threeLoaderMocks.setMeshoptDecoder(decoder);
       return this;

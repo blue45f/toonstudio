@@ -5,6 +5,8 @@ export type StudioHokusaiPinnedLiveStroke = any;
 export type StudioLivingInkPinnedStroke = any;
 
 export type StudioCuttoonStagePointersHost = {
+  scopedDrawAllowed?: () => boolean;
+  scopedCanvasBoundaryRef?: import("../studio-collab/studio-scoped-drawing-boundary").StudioScopedCanvasBoundaryRef;
   capturePendingCatalogInput?: (event: PointerEvent, stage: import("konva").default.Stage | null) => boolean;
   pendingStrokeAdmissionRef?: { current: import("../live/studio-pending-stroke-admission").StudioPendingStrokeAdmissionQueue | null };
   activeCatalogBrush: any;

@@ -91,7 +91,9 @@ function projectCamera(
     target: Object.freeze([...source.target] as [number, number, number]),
     up: Object.freeze([...(source.up ?? [0, 1, 0])] as [number, number, number]),
     focalLengthMm: studioBg3dFovDegreesToFocalLength(source.fovDegrees),
-    orthoScale: Math.max(0.001, 5 / Math.max(0.001, source.zoom ?? 1)),
+    orthoScale: source.orthographicHeight === undefined
+      ? Math.max(0.001, 5 / Math.max(0.001, source.zoom ?? 1))
+      : source.orthographicHeight / (source.zoom ?? 1),
     near: Math.max(0.001, source.nearClip ?? 0.03),
     far: DEFAULT_FAR,
     lensShift: Object.freeze([...(source.lensShift ?? [0, 0])] as [number, number]),

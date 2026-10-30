@@ -1,3 +1,5 @@
+import { sameProductionRevision } from "./revision";
+
 import type {
   Deliverable,
   EpisodeCollaboration,
@@ -18,6 +20,10 @@ const ROLE_LINEAGE: Readonly<Record<ProductionStudioDocumentRole, RevisionRef["l
   final: "integrated",
 };
 
+export function productionStudioDocumentRoleLineage(role: ProductionStudioDocumentRole): RevisionRef["lineage"] {
+  return ROLE_LINEAGE[role];
+}
+
 const ROLE_TYPE_PATTERNS: readonly {
   readonly role: ProductionStudioDocumentRole;
   readonly patterns: readonly RegExp[];
@@ -31,15 +37,8 @@ const ROLE_TYPE_PATTERNS: readonly {
   { role: "final", patterns: [/integrated/iu, /proof/iu, /publication/iu, /final/iu, /게시/iu, /통합/iu] },
 ];
 
-function sameRevision(left: RevisionRef, right: RevisionRef): boolean {
-  return left.id === right.id
-    && left.lineage === right.lineage
-    && left.revision === right.revision
-    && left.digest === right.digest;
-}
-
 function belongsToEpisode(deliverable: Deliverable, episodeId: string): boolean {
-  return deliverable.scope.id === episodeId
+  return (deliverable.scope.kind === "episode" && deliverable.scope.id === episodeId)
     || deliverable.scope.ancestors.some((ancestor) => (
       ancestor.kind === "episode" && ancestor.id === episodeId
     ));
@@ -62,6 +61,21 @@ export function inferProductionStudioDocumentRole(
   return ROLE_TYPE_PATTERNS.find((entry) => (
     entry.patterns.some((pattern) => pattern.test(normalized))
   ))?.role ?? null;
+}
+
+/** 새 제출의 명시적 역할을 우선하며 기존 산출물 정의의 역할 추론은 보존한다. */
+export function productionStudioDeliverableRole(
+  aggregate: ProductionProjectAggregate,
+  deliverable: Deliverable,
+): ProductionStudioDocumentRole | null {
+  if (deliverable.projectId !== aggregate.projectId) return null;
+  for (const id of [deliverable.currentSubmissionId, deliverable.approvedSubmissionId]) {
+    if (!id) continue;
+    const submission = aggregate.submissions.find((entry) => entry.id === id && entry.projectId === aggregate.projectId
+      && entry.deliverableId === deliverable.id);
+    if (submission?.sourceEvidence) return submission.sourceEvidence.documentRole;
+  }
+  return inferProductionStudioDocumentRole(deliverable.type);
 }
 
 export function validateProductionStudioRevisionLink(input: {
@@ -90,8 +104,11 @@ export function validateProductionStudioRevisionLink(input: {
   if (submission && submission.deliverableId !== link.deliverableId) {
     issues.push("studio-link-submission-deliverable-mismatch");
   }
-  if (submission && !sameRevision(submission.revisionRef, link.studioRevisionRef)) {
+  if (submission && !sameProductionRevision(submission.revisionRef, link.studioRevisionRef)) {
     issues.push("studio-link-submission-revision-mismatch");
+  }
+  if (submission?.sourceEvidence?.version === 1 && link.documentRole !== submission.sourceEvidence.documentRole) {
+    issues.push("studio-link-submission-role-mismatch");
   }
   if (link.status === "approved") {
     if (submission?.status !== "approved") issues.push("studio-link-submission-not-approved");
@@ -146,7 +163,7 @@ export function applyProductionStudioRevisionLink(
     && link.status === "approved"
     && previous.episodeId === link.episodeId
     && previous.documentRole === link.documentRole
-    && sameRevision(previous.studioRevisionRef, link.studioRevisionRef);
+    && sameProductionRevision(previous.studioRevisionRef, link.studioRevisionRef);
   const studioRevisionLinks = Object.freeze(upsertById(superseded, link));
   const episodes = link.episodeId && !unchangedApproval
     ? aggregate.episodes.map((episode) => (
@@ -170,22 +187,43 @@ export function evaluateProductionStudioRevisionCoverage(
   aggregate: ProductionProjectAggregate,
   episodeId: string,
 ): ProductionStudioRevisionCoverage {
-  const expectedRoles = [...new Set(aggregate.deliverables
-    .filter((deliverable) => belongsToEpisode(deliverable, episodeId))
-    .map((deliverable) => inferProductionStudioDocumentRole(deliverable.type))
-    .filter((role): role is ProductionStudioDocumentRole => Boolean(role)))];
+  const deliverablesByRole = new Map<ProductionStudioDocumentRole, Deliverable[]>();
+  for (const deliverable of aggregate.deliverables) {
+    if (deliverable.projectId !== aggregate.projectId || !belongsToEpisode(deliverable, episodeId)) continue;
+    const role = productionStudioDeliverableRole(aggregate, deliverable);
+    if (!role) continue;
+    const related = deliverablesByRole.get(role) ?? [];
+    related.push(deliverable); deliverablesByRole.set(role, related);
+  }
+  const expectedRoles = [...deliverablesByRole.keys()];
   const activeLinks = (aggregate.studioRevisionLinks ?? [])
     .filter((link) => link.episodeId === episodeId && link.status !== "superseded")
     .sort((left, right) => right.linkedAt.localeCompare(left.linkedAt));
-  const approved = new Set(activeLinks
-    .filter((link) => link.status === "approved")
-    .map((link) => link.documentRole));
-  const pending = new Set(activeLinks
-    .filter((link) => link.status === "submitted")
-    .map((link) => link.documentRole));
-  const approvedRoles = expectedRoles.filter((role) => approved.has(role));
-  const pendingRoles = expectedRoles.filter((role) => !approved.has(role) && pending.has(role));
-  const missingRoles = expectedRoles.filter((role) => !approved.has(role) && !pending.has(role));
+  const linksByDeliverable = new Map<string, ProductionStudioRevisionLink[]>();
+  for (const link of activeLinks) {
+    const related = linksByDeliverable.get(link.deliverableId) ?? [];
+    related.push(link); linksByDeliverable.set(link.deliverableId, related);
+  }
+  const approvedRoles: ProductionStudioDocumentRole[] = [], pendingRoles: ProductionStudioDocumentRole[] = [], missingRoles: ProductionStudioDocumentRole[] = [];
+  for (const [role, deliverables] of deliverablesByRole) {
+    const states = deliverables.map((deliverable): "approved" | "pending" | "missing" => {
+      const current = aggregate.submissions.filter((submission) => submission.id === deliverable.currentSubmissionId
+        && submission.projectId === aggregate.projectId && submission.deliverableId === deliverable.id);
+      const submission = current[0];
+      if (current.length !== 1 || !submission || submission.status === "superseded") return "missing";
+      const links = (linksByDeliverable.get(deliverable.id) ?? []).filter((link) => link.documentRole === role
+        && link.submissionId === submission.id && sameProductionRevision(link.studioRevisionRef, submission.revisionRef)
+        // 현재 정본의 승인 이력은 기록 후 담당자가 종료되어도 유지한다.
+        && validateProductionStudioRevisionLink({ aggregate, link })
+          .every((issue) => issue === "studio-link-active-assignment-missing"));
+      if (deliverable.approvedSubmissionId === submission.id && submission.status === "approved"
+        && links.some((link) => link.status === "approved")) return "approved";
+      return links.some((link) => link.status === "submitted") ? "pending" : "missing";
+    });
+    if (states.every((state) => state === "approved")) approvedRoles.push(role);
+    else if (states.every((state) => state !== "missing")) pendingRoles.push(role);
+    else missingRoles.push(role);
+  }
   return Object.freeze({
     episodeId,
     expectedRoles: Object.freeze(expectedRoles),
@@ -196,7 +234,7 @@ export function evaluateProductionStudioRevisionCoverage(
     readyForIntegratedReview: expectedRoles.length > 0
       && missingRoles.length === 0
       && pendingRoles.length === 0
-      && approved.has("final"),
+      && approvedRoles.includes("final"),
   });
 }
 

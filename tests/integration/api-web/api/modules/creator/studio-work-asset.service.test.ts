@@ -379,7 +379,7 @@ describe("StudioWorkAssetService", () => {
       descriptor: manifest.descriptor,
       storageObject: storageObject("source", bytes),
     }));
-    expect(repository.assertCanEditWork).toHaveBeenCalledWith("editor", "work-1");
+    expect(repository.assertCanEditWork).toHaveBeenCalledWith("editor", "work-1", undefined);
     expect(objectStorage.verifyPrivatePurposeBuckets).toHaveBeenCalledOnce();
     expect(objectStorage.uploadImmutable).toHaveBeenCalledWith(expect.objectContaining({
       purpose: "source",
@@ -479,12 +479,12 @@ describe("StudioWorkAssetService", () => {
     expect(repository.assertCanStoreGeneratedObject).toHaveBeenCalledWith(
       "editor",
       "work-1",
-      "asset-1",
+      "asset-1", undefined,
     );
     expect(repository.registerGeneratedStorageReference).toHaveBeenCalledWith(
       "editor",
       reference,
-      true,
+      true, undefined,
     );
 
     await expect(service().uploadGeneratedObject(

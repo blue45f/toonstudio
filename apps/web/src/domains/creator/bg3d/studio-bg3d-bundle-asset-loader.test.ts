@@ -192,12 +192,12 @@ describe("같은 ID의 현재 출처·본문·권리와 캐시 정합", () => {
     const fixture = changingFixture("rights");
     const prepare = vi.fn<StudioBg3dBundleRecordPreparer>(async (...args) => fixtureRecord(...args));
     const first = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
-    const restrictive = { serve: "allow", status: "licensed", licenseName: "갱신된 팩 라이선스", commercialUse: false, attributionRequired: true };
+    const restrictive = { serve: "allow", status: "licensed", licenseName: "갱신된 팩 라이선스", commercialUse: false, attributionRequired: true, attribution: "Test Pack by Tester" };
     (fixture.raw.packs as Record<string, unknown>[])[0] = { ...(fixture.raw.packs as Record<string, unknown>[])[0], rights: restrictive };
     const second = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
     expect(prepare).toHaveBeenCalledTimes(2);
     expect(second).not.toBe(first);
-    expect(second?.rights).toMatchObject({ commercialUse: false, attributionRequired: true, licenseName: restrictive.licenseName });
+    expect(second?.rights).toMatchObject({ commercialUse: false, attributionRequired: true, licenseName: restrictive.licenseName, attribution: restrictive.attribution });
   });
 
   it.each(["hash", "bytes", "path", "owner"] as const)("%s만 달라져도 이전 검증 레코드를 현재 소스로 반환하지 않는다", async (field) => {
@@ -217,6 +217,21 @@ describe("같은 ID의 현재 출처·본문·권리와 캐시 정합", () => {
     }
     const second = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
     expect(prepare).toHaveBeenCalledTimes(2);
+    expect(second).not.toBe(first);
+  });
+
+  it("출처 문구만 바뀌어도 같은 본문의 검증 레코드를 다시 준비한다", async () => {
+    const fixture = changingFixture("attribution-only");
+    const packs = fixture.raw.packs;
+    if (!Array.isArray(packs)) throw new Error("팩 fixture가 없습니다.");
+    packs[0].rights = { ...TEST_PACK_RIGHTS, attributionRequired: true, attribution: "Original Creator" };
+    const prepare = vi.fn<StudioBg3dBundleRecordPreparer>(async (...args) => fixtureRecord(...args));
+    const first = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    packs[0].rights = { ...packs[0].rights, attribution: "Updated Creator" };
+    const second = await loadStudioBg3dBundleThemePackRecord(fixture.id, undefined, "worker", prepare);
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(first?.rights.attribution).toBe("Original Creator");
+    expect(second?.rights.attribution).toBe("Updated Creator");
     expect(second).not.toBe(first);
   });
 
@@ -494,8 +509,9 @@ describe("studioBg3dBundleAssetRights (팩별 권리 조회)", () => {
 
   it.each([
     { commercialUse: false, attributionRequired: false },
-    { commercialUse: true, attributionRequired: true },
-    { commercialUse: false, attributionRequired: true },
+    { commercialUse: true, attributionRequired: true, attribution: "Test Pack by Tester" },
+    { commercialUse: false, attributionRequired: true, attribution: "Test Pack by Tester" },
+    { commercialUse: true, attributionRequired: false, attribution: "Optional credit by Tester" },
   ])("passes a restrictive pack grant through unchanged (commercialUse=$commercialUse, attributionRequired=$attributionRequired)", async (grant) => {
     // 기본값(상업 이용 가능·출처 표기 불필요)과 다른 값이 레코드 권리까지 그대로 가야 한다 — 권리를 넓히는 정규화가 없다.
     const raw = multiPackRaw();

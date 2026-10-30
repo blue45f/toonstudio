@@ -6,6 +6,7 @@ import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useCharacterShaperBinding } from "../../character-shaper/useCharacterShaperBinding";
+import { CharacterShaperSessionSettingsProvider } from "../../character-shaper/CharacterShaperSessionSettingsProvider";
 import { StudioCharacterShaperDialog } from "../../character-shaper/StudioCharacterShaperDialog";
 import { useStudioVrmPoserBroadcast } from "../../vrm/useStudioVrmPoserBroadcast";
 import { addCharacterSurfaceInkStroke, createEmptyCharacterSurfaceInkDocument } from "../surface-ink/character-surface-ink";
@@ -60,7 +61,7 @@ function renderWorkbench(withParent = false, withShell = false) {
     const binding = useCharacterShaperBinding(host);
     return <>{withParent ? <ParentKeyboard /> : null}{withShell ? <StudioCharacterShaperDialog h={host} binding={binding} /> : null}<CharacterPlatformWorkbench h={host} binding={binding} /></>;
   }
-  const view = render(<StrictMode><Workbench /></StrictMode>);
+  const view = render(<StrictMode><CharacterShaperSessionSettingsProvider><Workbench /></CharacterShaperSessionSettingsProvider></StrictMode>);
   return { parent, parentClose, canvas, onClose, cancelStroke, abort, doUndo, doRedo, dispose: () => { view.unmount(); parent.remove(); } };
 }
 
@@ -244,7 +245,7 @@ describe("CharacterPlatformWorkbench drawing mode", () => {
     } finally { f.dispose(); }
   });
 
-  it("displays SHAPER 3-vertex prism badge in ink tab and Toon Cubic MatCap / Eyeball Highlight calibration in render tab", async () => {
+  it("미지원 렌더 보정을 명시하고 공유 카메라·PSD 옵션을 표시한다", async () => {
     const f = renderWorkbench();
     try {
       await act(async () => { fireEvent.click(screen.getByRole("button", { name: "캐릭터 저작 도구" })); });
@@ -253,15 +254,15 @@ describe("CharacterPlatformWorkbench drawing mode", () => {
       expect(prismBadge.textContent).toContain("2.0x Max");
 
       fireEvent.click(screen.getByRole("tab", { name: "렌더" }));
-      const toonCal = screen.getByTestId("shaper-render-toon-calibration");
-      expect(toonCal.textContent).toContain("강도 64.0");
-      fireEvent.change(screen.getByLabelText("Cubic MatCap 감쇠"), { target: { value: "0" } });
-      expect(toonCal.textContent).toContain("강도 125.0");
+      expect(screen.queryByLabelText("Cubic MatCap 감쇠")).toBeNull();
+      expect((screen.getByLabelText("실제 외곽선 두께") as HTMLInputElement).disabled).toBe(true);
+      expect(screen.getByText(/Cubic MatCap, 비등방성 외곽선/u)).toBeTruthy();
 
       expect(screen.getByTestId("workbench-vroid-subroute").textContent).toContain("photobooth");
       expect(screen.getByTestId("workbench-onward-bridge").textContent).toContain("본편 원고 스튜디오로 삽입");
       const psdOptions = screen.getByTestId("shaper-psd-preflight-options");
-      expect(psdOptions.textContent).toContain("Hair Base / Hair Shadow / Hair Line");
+      expect(psdOptions.textContent).toContain("비활성");
+      expect(screen.getByText(/헤어 분리 생략:/u)).toBeTruthy();
       expect(psdOptions.textContent).toContain("a = 1 - r");
 
       const camSelect = screen.getByTestId("workbench-camera-style-select") as HTMLSelectElement;
@@ -270,9 +271,8 @@ describe("CharacterPlatformWorkbench drawing mode", () => {
       expect(screen.getByTestId("workbench-shaper-context-statusbar").textContent).toContain("MMB");
 
       const gazeLockBtn = screen.getByTestId("workbench-eyeball-gaze-lock");
-      expect(gazeLockBtn.textContent).toContain("F10 응시 ON");
-      fireEvent.click(gazeLockBtn);
-      expect(gazeLockBtn.textContent).toContain("F10 응시 OFF");
+      expect((gazeLockBtn as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByText("이 모델에 VRM LookAt이 없어 시선을 바꿀 수 없습니다.")).toBeTruthy();
 
       fireEvent.click(screen.getByRole("tab", { name: "웹 코어" }));
       const licenseMatrix = screen.getByTestId("workbench-vrm-license-matrix");

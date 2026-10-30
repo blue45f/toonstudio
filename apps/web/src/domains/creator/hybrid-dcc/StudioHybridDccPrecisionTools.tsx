@@ -18,7 +18,7 @@ const DEFAULTS = { translate: "10cm", rotate: "15deg", scale: "110%", dimension:
 const format = (value: number) => Number(value.toPrecision(7)).toLocaleString("ko-KR", { maximumFractionDigits: 7 });
 
 function PrecisionEditor(props: StudioHybridDccViewportProps) {
-  const { workspace, editingDisabled, componentSelection, onCommitAssetTransform, onSculptStroke } = props;
+  const { workspace, editingDisabled, componentSelection, onCommitAssetTransform, onSculptStroke, sculptGesture } = props;
   const id = useId();
   const [kind, setKind] = useState<StudioHybridDccPrecisionKind>("translate");
   const [axis, setAxis] = useState<StudioHybridDccPrecisionAxis>("x");
@@ -45,7 +45,7 @@ function PrecisionEditor(props: StudioHybridDccViewportProps) {
   const unavailable = measurement.error
     ?? (editingDisabled ? subStatusText("studio.subStatus.precision.editingBusy", "다른 편집이 완료된 뒤 적용하세요.") : undefined)
     ?? (componentSelection && componentSelection.mode !== "object" ? subStatusText("studio.subStatus.precision.objectMode", "오브젝트 모드에서 사용하세요. 메시 요소는 변경하지 않습니다.") : undefined)
-    ?? (onSculptStroke ? subStatusText("studio.subStatus.precision.sculptMode", "조형 모드에서는 오브젝트 정밀 변환을 잠시 사용할 수 없습니다.") : undefined)
+    ?? (onSculptStroke || sculptGesture ? subStatusText("studio.subStatus.precision.sculptMode", "조형 모드에서는 오브젝트 정밀 변환을 잠시 사용할 수 없습니다.") : undefined)
     ?? (!onCommitAssetTransform ? subStatusText("studio.subStatus.precision.readOnly", "이 화면은 읽기 전용입니다.") : undefined);
   const candidate = (() => {
     if (!measurement.transform || !measurement.bounds) return { error: measurement.error };

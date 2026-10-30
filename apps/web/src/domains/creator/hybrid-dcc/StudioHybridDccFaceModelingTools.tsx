@@ -3,6 +3,7 @@ import { useId, useRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEv
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { StudioHybridDccFaceDrawPad } from "./StudioHybridDccFaceDrawPad";
+import { StudioHybridDccFollowMePath } from "./StudioHybridDccFollowMePath";
 import {
   describeStudioFaceModelingDistanceHint,
   describeStudioFaceModelingEntryHint,
@@ -23,7 +24,7 @@ import type { StudioOffsetDirection } from "./studio-hybrid-dcc-face-modeling-ke
 import type { StudioFaceModelingTool } from "./studio-hybrid-dcc-face-modeling-workspace";
 import type { StudioHybridDccFaceModelingModel } from "./useStudioHybridDccFaceModeling";
 
-const TOOLS: readonly StudioFaceModelingTool[] = ["push-pull", "inset", "offset", "draw"];
+const TOOLS: readonly StudioFaceModelingTool[] = ["push-pull", "inset", "offset", "draw", "follow-me"];
 const DIRECTIONS: readonly StudioOffsetDirection[] = ["inward", "outward"];
 const FIELD =
   "min-h-9 pointer-coarse:min-h-11 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
@@ -234,6 +235,7 @@ function FaceModelingBody({ model }: { readonly model: StudioHybridDccFaceModeli
   const bt = useBilingual("StudioHybridDccFaceModeling");
   const id = useId();
   const fieldRef = useRef<HTMLInputElement>(null);
+  const pathFieldRef = useRef<HTMLTextAreaElement>(null);
   const tool = model.tool;
   const state = model.committing ? "committing" : model.engaged ? "previewing" : "idle";
   const stateText = state === "committing"
@@ -244,14 +246,15 @@ function FaceModelingBody({ model }: { readonly model: StudioHybridDccFaceModeli
   const status = model.unavailable ?? model.unusable ?? (model.notice || model.previewSummary || "");
   const finish = (action: () => void) => {
     action();
-    fieldRef.current?.focus();
+    if (tool === "follow-me") pathFieldRef.current?.focus();
+    else fieldRef.current?.focus();
   };
   return (
     <div className="space-y-3 border-t border-line p-3" data-studio-hybrid-dcc-face-modeling-body="true">
       <p className="text-[11px] leading-relaxed text-fg-3">
         {bt(
-          "면을 선택한 뒤 정확한 거리를 입력하거나 핸들을 끌어 모델링합니다. 확정하기 전에는 3D 화면에 미리보기만 보이고 문서와 되돌리기 기록은 바뀌지 않으며, 확정은 되돌리기 한 번으로 원래대로 돌아갑니다. 따라 만들기(Follow Me)는 지원하지 않습니다.",
-          "Select a face, then type an exact distance or drag the handle. Until you confirm, only a preview shows in the 3D view and neither the document nor the undo history changes; confirming is a single undo step. Follow Me is not supported.",
+          "면을 선택한 뒤 거리·도형·경로를 입력해 모델링합니다. 확정하기 전에는 3D 화면에 미리보기만 보이고 문서와 되돌리기 기록은 바뀌지 않으며, 확정은 되돌리기 한 번으로 원래대로 돌아갑니다.",
+          "Select a face, then enter a distance, shape or path. Until you confirm, only a preview shows in the 3D view and neither the document nor the undo history changes; confirming is a single undo step.",
         )}
       </p>
       <fieldset className="min-w-0">
@@ -283,6 +286,8 @@ function FaceModelingBody({ model }: { readonly model: StudioHybridDccFaceModeli
       </p>
       {tool === "draw" ? (
         <StudioHybridDccFaceDrawPad model={model} />
+      ) : tool === "follow-me" ? (
+        <StudioHybridDccFollowMePath model={model} fieldRef={pathFieldRef} />
       ) : (
         <DistanceControls model={model} tool={tool} fieldRef={fieldRef} />
       )}
@@ -293,7 +298,7 @@ function FaceModelingBody({ model }: { readonly model: StudioHybridDccFaceModeli
           type="button"
           className={`${BUTTON} border-accent/60 bg-accent-soft text-accent`}
           aria-disabled={!model.canApply || undefined}
-          aria-keyshortcuts="Enter"
+          aria-keyshortcuts={tool === "follow-me" ? "Control+Enter Meta+Enter" : "Enter"}
           onClick={() => finish(() => { if (model.canApply) model.apply(); })}
         >
           {bt("적용", "Apply")}
@@ -331,7 +336,7 @@ export function StudioHybridDccFaceModelingTools({ model }: { readonly model: St
         aria-controls={id}
         onClick={() => model.setOpen(!model.open)}
       >
-        <span>{bt("면 모델링 · 밀기/당기기 · 안쪽 테두리 · 오프셋 · 면 그리기", "Face modeling · Push/Pull · Inset · Offset · Draw face")}</span>
+        <span>{bt("면 모델링 · 밀기/당기기 · 안쪽 테두리 · 오프셋 · 면 그리기 · 따라 만들기", "Face modeling · Push/Pull · Inset · Offset · Draw face · Follow Me")}</span>
         <span aria-hidden="true">{model.open ? "−" : "+"}</span>
       </button>
       <div id={id} hidden={!model.open}>

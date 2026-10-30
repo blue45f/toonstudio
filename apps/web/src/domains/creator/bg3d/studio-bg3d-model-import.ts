@@ -1,7 +1,7 @@
 import {
   disposeStudioBg3dThreeResources,
 } from "../studio-background-3d-model";
-
+import { markStudioBg3dSkpMetricImport } from "./studio-bg3d-skp-metric-provenance";
 import {
   StudioBg3dGeometryWorkerClientError,
   parseStudioBg3dGeometryInWorker,
@@ -1145,7 +1145,7 @@ async function parseSkpImport(
     executionBackend,
     context: skp,
   });
-  return parseGlbSourceImport(glb, resolver, signal);
+  return markStudioBg3dSkpMetricImport(await parseGlbSourceImport(glb, resolver, signal));
 }
 
 async function preflightObjBytesForImport(

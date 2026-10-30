@@ -68,7 +68,9 @@ export type StudioFaceModelingFailureCode =
   | "single-face-required"
   | "unrenderable-result"
   | "unsupported-face"
+  | "unsupported-uv"
   | "unsupported-region"
+  | "unsupported-region-attributes"
   | "would-collide";
 
 export interface StudioFaceModelingFailure {
@@ -86,7 +88,7 @@ export type StudioFaceModelingResult<T> =
   | { readonly ok: true; readonly value: T }
   | StudioFaceModelingFailure;
 
-export type StudioFaceModelingOperation = "inset" | "offset" | "draw" | "push-pull";
+export type StudioFaceModelingOperation = "inset" | "offset" | "draw" | "push-pull" | "follow-me";
 
 export interface StudioFaceModelingOutcome {
   readonly operation: StudioFaceModelingOperation;
@@ -188,6 +190,13 @@ export function countStudioMeshBoundaryHalfEdges(mesh: StudioEditableMesh): numb
   let count = 0;
   for (const halfEdge of mesh.halfEdges) if (halfEdge.twin < 0) count += 1;
   return count;
+}
+
+/** 코너 UV 재매핑이 없는 전체 메시 재조립 경로만 거부한다. UV를 보존하는 연산은 호출하지 않는다. */
+export function rejectStudioFaceModelingUvRebuild(mesh: StudioEditableMesh): StudioFaceModelingFailure | null {
+  return mesh.uvLayer !== undefined
+    ? failStudioFaceModeling("unsupported-uv", "this face reconstruction cannot preserve the mesh UV layer")
+    : null;
 }
 
 /** 입력 메시가 연산해도 되는 정규 권위 배치인지 확인한다. */

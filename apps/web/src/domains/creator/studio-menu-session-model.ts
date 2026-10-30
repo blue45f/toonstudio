@@ -105,12 +105,13 @@ export type StudioMenuDismissReason =
   | "command-complete"
   | "presentation-change";
 
-/** All layout replacement paths share the same transient-menu closing contract. */
+/** 계정·작업공간 전환은 메뉴를 닫고, 같은 계정의 초기 복원은 새 사용자 선택을 보존한다. */
 export type StudioWorkspaceLayoutSource =
   | "switch"
   | "reload"
   | "active-workspace-delete"
   | "owner-scope-change"
+  | "owner-hydration"
   | "external-sync";
 
 export type StudioMenuSessionEvent =
@@ -166,8 +167,11 @@ export function reduceStudioMenuSession(
     case "app-menu.close":
       return nextStudioMenuSession(state, state.toolMenu, null);
     case "menus.dismiss":
-    case "workspace.layout-applied":
       return nextStudioMenuSession(state, null, null);
+    case "workspace.layout-applied":
+      return event.source === "owner-hydration"
+        ? state
+        : nextStudioMenuSession(state, null, null);
   }
 }
 

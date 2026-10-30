@@ -30,9 +30,9 @@ AI 설정 누락·호출 실패·한도 초과 시 자동 답변을 만들어 �
 
 ## 저장소와 권한
 
-추가형 마이그레이션 `0116_customer_support.sql`이 문의·메시지·AI 사용 원장 테이블을 만든다. API 요청 중 DDL을 실행하지 않는다. 사용자 API `/api/support/*`는 세션 인증과 문의 소유권을 확인하며 관리자 API `/api/admin/support/*`는 관리자 권한을 별도로 확인한다. 공통 CSRF 보호를 따른다.
+추가형 마이그레이션 `0118_customer_support.sql`이 문의·메시지·AI 사용 원장 테이블을 만든다. API 요청 중 DDL을 실행하지 않는다. 사용자 API `/api/support/*`는 세션 인증과 문의 소유권을 확인하며 관리자 API `/api/admin/support/*`는 관리자 권한을 별도로 확인한다. 공통 CSRF 보호를 따른다.
 
-이 번호형 SQL 파일 한 개의 추가에 맞춰 `architecture-source-ratchet.json`의 `apiDatabaseFiles`를 167에서 168로 조정했다. 기존 migration 이력과 다른 source-layout 한도는 유지한다.
+이 번호형 SQL 파일 한 개의 추가에 맞춰 `architecture-source-ratchet.json`의 `apiDatabaseFiles`를 170에서 171로 조정했다. 기존 migration 이력과 다른 source-layout 한도는 유지한다.
 
 메시지의 `clientMessageId`로 네트워크 재전송을 중복 저장하지 않는다. 같은 문의의 AI 실행과 상태 변경은 DB 잠금·실행 소유권으로 조정한다. 제목은 2~120자, 사용자 메시지는 1~4,000자이며 한 문의의 메시지는 최대 200개다. 상담원 전환 후에는 AI가 새 답변을 붙이지 않는다.
 
@@ -40,7 +40,7 @@ AI 설정 누락·호출 실패·한도 초과 시 자동 답변을 만들어 �
 
 ## 운영 반영과 복구
 
-운영 담당자가 [DEPLOY.md](../../DEPLOY.md)의 승인 범위와 필수 검사를 확인한 뒤 기존 migration runner의 `apply` 절차로 0116을 먼저 적용하고 같은 SHA의 API·웹을 반영한다. 입력은 검증된 SHA와 운영 migration 전용 연결이며, 성공 기준은 migration/readiness 통과와 사용자·관리자 대화 왕복 확인이다. 이 문서의 작성 자체로 운영 DB·키·배포를 변경하지 않는다.
+운영 담당자가 [DEPLOY.md](../../DEPLOY.md)의 승인 범위와 필수 검사를 확인한 뒤 기존 migration runner의 `apply` 절차로 0118을 먼저 적용하고 같은 SHA의 API·웹을 반영한다. 입력은 검증된 SHA와 운영 migration 전용 연결이며, 성공 기준은 migration/readiness 통과와 사용자·관리자 대화 왕복 확인이다. 이 문서의 작성 자체로 운영 DB·키·배포를 변경하지 않는다.
 
 장애 시 기존 정상 API·웹 이미지로 되돌리고 추가된 테이블과 상담 기록은 유지한다. 테이블 삭제나 문의 데이터 삭제는 자동 롤백에 포함하지 않는다. AI만 중지해야 하면 기존 운영 설정 변경 절차에 따라 `CUSTOMER_SUPPORT_AI_ENABLED=false`를 적용한다.
 
@@ -53,3 +53,5 @@ AI 설정 누락·호출 실패·한도 초과 시 자동 답변을 만들어 �
 전달된 키의 서버 설정 인식은 확인했지만, 이 실행 환경의 프록시가 `api.anthropic.com` 연결을 403으로 거절해 실제 키 인증·모델 조회·Claude 응답은 검증하지 못했다. 이후 사용자가 키의 크레딧 소진을 알려 로컬 비밀 저장소에 `CUSTOMER_SUPPORT_AI_ENABLED=false`를 적용했고 서버 상태가 `disabled`임을 확인했다. 비공개 1:1 문의는 AI 설정과 독립적으로 동작한다. 실제 비밀값은 Git에서 제외되는 로컬 저장소에만 보관했으며 운영 환경에 등록하거나 배포하지 않았다.
 
 재실행 가능한 `e2e/customer-support.spec.ts`의 세 회귀 시나리오도 최종 일괄 실행에서 모두 통과했다(`3 passed`, 1.5분). AI 대화·재전송·상담원 전환·답변 확인·종료, 관리자 답변·권한 해제, 51개 문의의 페이지 이동과 초안 보존을 다룬다. 테마 대비는 애니메이션이 없는 정적 최종 팔레트와 완전히 보이는 제어 요소에서 검사하며, 390px 모바일 레이아웃 검증은 별도로 유지한다. 임시 PostgreSQL과 Vite 서버는 검증 후 종료했다.
+
+main 병합 준비에서는 기존 `0116_studio_review_comment_pen_strokes.sql`·`0117_studio_scoped_write_policy.sql`을 보존하고 고객지원 SQL을 `0118`로 통합했다. migration manifest 118개, bootstrap 원장 119개, PostgreSQL suite 25개를 확인했다. 최신 main 통합 후 DB·정책·준비성 9개 파일의 테스트 249개, 사용자·관리자 테스트 28개, 브라우저 테스트 3개가 통과했다. 기존 main의 scoped-write 표 2개도 준비성·후기 릴레이션 등록에 포함했다.

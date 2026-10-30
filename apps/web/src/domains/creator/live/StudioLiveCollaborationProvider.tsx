@@ -1,4 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { StudioScopedWriteAuthorityContext, canParticipantEdit } from "../studio-collab/studio-scoped-write-context";
 import { useStudioLiveAutoReconnect } from "./use-studio-live-auto-reconnect";
 import { requestStudioLiveTransportAuthRecovery } from "./use-studio-live-transport-auth";
 import { resolveStudioLiveProducerErrorFromCause } from "../status-i18n/studio-producer-error-i18n-live-room";
@@ -143,10 +144,6 @@ function findStudioLiveRecoveryBoundaryEntry(
   ) ?? null;
 }
 
-function canParticipantEdit(role: StudioLiveParticipant["role"] | null): boolean {
-  return role === "owner" || role === "admin" || role === "editor";
-}
-
 function bindingTelemetryState(state: string): StudioCrdtSyncTelemetry["state"] {
   if (
     state === "idle" ||
@@ -238,6 +235,7 @@ export function StudioLiveCollaborationProvider({
   const previousPageIdRef = useRef(currentPageId);
   const participantName = participant?.displayName ?? null;
   const participantRole = participant?.role ?? null;
+  const scopedWrite = useContext(StudioScopedWriteAuthorityContext);
   const participantCanEdit = canParticipantEdit(participantRole);
   const recoveryBoundaryScopeKey = workId
     ? JSON.stringify([outboxScope || null, workId])
@@ -526,7 +524,7 @@ export function StudioLiveCollaborationProvider({
                 message: "팀 원고의 권위 상태를 확인하는 중입니다.",
                 pendingCount: 0,
                 persistenceDurability:
-                  participantCanEdit && outboxScope ? "checking" : participantCanEdit ? "unavailable" : "not-applicable",
+                  (participantCanEdit || scopedWrite) && outboxScope ? "checking" : participantCanEdit || scopedWrite ? "unavailable" : "not-applicable",
                 transportReady: true,
                 lastAckAt: null,
                 lastAckServerSequence: null,
@@ -633,7 +631,7 @@ export function StudioLiveCollaborationProvider({
           crdtBinding = new bindingModule.StudioCrdtRoomBinding({
             document: crdtDocument,
             room: nextRoom,
-            canEdit: participantRole === "owner" || participantRole === "admin" || participantRole === "editor",
+            canEdit: participantCanEdit, scopedWrite,
             outboxScope,
             onStatus: (status) => {
               if (cancelled) return;
@@ -673,7 +671,7 @@ export function StudioLiveCollaborationProvider({
                 previous,
                 status,
                 transportReady: nextRoom.ready,
-                outboxConfigured: participantCanEdit && Boolean(outboxScope),
+                outboxConfigured: Boolean(participantCanEdit || scopedWrite) && Boolean(outboxScope),
               }));
               if ((status as { state: string }).state === "recovery-required") {
                 const previousBoundary =
@@ -903,7 +901,7 @@ export function StudioLiveCollaborationProvider({
   }, [
     participantName,
     participantRole,
-    participantCanEdit,
+    participantCanEdit, scopedWrite,
     ephemeralOnly,
     onCrdtDocumentChange,
     onAuthoritativeSaveBarrierChange,
@@ -935,7 +933,7 @@ export function StudioLiveCollaborationProvider({
   const syncSnapshot = projectStudioLiveSyncSnapshot({
     availability,
     mode,
-    canEdit: participantCanEdit,
+    canEdit: participantCanEdit, scopedWrite: Boolean(scopedWrite?.snapshot?.scopedWrite),
     telemetry: syncTelemetry,
     operationSyncReady: scopedOperationSyncReady,
     terminalTransportState,

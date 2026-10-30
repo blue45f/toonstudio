@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createReviewDraftRepository, draftNoteInputSchema, parseReviewDraftShelf, reviewDraftScopeKey, type ReviewDraftScope } from "./studio-review-draft-shelf";
+import { createReviewDraftRepository, draftNoteInputSchema, parseReviewDraftShelf, reviewDraftScopeKey, REVIEW_PRIVATE_DRAFT_MAX_BYTES, type ReviewDraftScope } from "./studio-review-draft-shelf";
 import { publishReviewDrafts } from "./studio-review-draft-publish";
 import type { StudioVirtualSpaceReviewVerification } from "./studio-virtual-space-review-invitation";
 import type { StudioReviewComment, StudioReviewCommentCreateInput } from "../project-graph/studio-project-graph-contract";
@@ -19,7 +19,8 @@ function fixture() {
   const create = vi.fn(async (_reviewId: string, raw: StudioReviewCommentCreateInput) => {
     const note = draftNoteInputSchema.parse(raw);
     comments.push({ ...note, reviewId: "review", authorUserId: "artist-a", dueAt: note.dueAt ?? null, status: "open", resolutionRevisionId: null, resolvedBy: null, createdAt: "2026-09-21T00:00:00Z", updatedAt: "2026-09-21T00:00:00Z" });
-    return { id: note.id, reviewId: "review", status: "open" as const, anchor: note.anchor, createdAt: "2026-09-21T00:00:00Z" };
+    return { id: note.id, reviewId: "review", status: "open" as const, anchor: note.anchor, createdAt: "2026-09-21T00:00:00Z",
+      ...(note.strokes?.length ? { strokes: note.strokes } : {}) };
   });
   return { repository, rows, store, comments, dependencies: { verify, create } };
 }
@@ -57,7 +58,54 @@ describe("private draft storage", () => {
     f.store.set.mockRejectedValueOnce(new Error("storage failure"));
     await expect(f.repository.reviseBody(scope, "draft-0", "new", () => true)).rejects.toThrow();
     expect(f.rows.get(reviewDraftScopeKey(scope))).toBe(before);
-    expect(() => parseReviewDraftShelf("x".repeat(1_000_001), scope)).toThrow();
+    expect(() => parseReviewDraftShelf("x".repeat(REVIEW_PRIVATE_DRAFT_MAX_BYTES + 1), scope)).toThrow("Draft capacity exceeded");
+  });
+});
+
+const penStroke = { id: "pen-one", points: [{ x: 10, y: 20 }, { x: 40, y: 60 }], color: "#e5484d", width: 4 };
+const penInput = () => ({ ...draftNoteInputSchema.parse({ ...input(),
+  anchor: { ...input().anchor, kind: "region", x: 10, y: 20, width: 30, height: 40,
+    source: { version: 1, sourceServerRevision: 3, sourceContentDigest: scope.subject.rootGraphHash, pageOrdinal: 0, pageId: "page-one" } },
+  strokes: [penStroke],
+}), strokes: [penStroke] });
+
+describe("펜 첨삭 초안의 영속성과 복구", () => {
+  it("50획과 획당 500점의 유효한 첨삭을 자르지 않고 초안에 보관한다", async () => {
+    const f = fixture(), pen = penInput();
+    const full = { ...pen, body: "획".repeat(20_000), strokes: Array.from({ length: 50 }, (_, stroke) => ({ ...penStroke, id: `pen-${stroke}`,
+      points: Array.from({ length: 500 }, (_, point) => ({ x: 10 + point * .123456789, y: 20 + point * .1987654321 })) })) };
+    await f.repository.add(scope, full, () => true);
+    const raw = f.rows.get(reviewDraftScopeKey(scope)); if (!raw) throw new Error("실제 저장된 초안이 필요합니다.");
+    expect(new TextEncoder().encode(raw).byteLength).toBeGreaterThan(1_000_000);
+    expect((await f.repository.list(scope))[0]?.input.strokes).toEqual(full.strokes);
+  });
+  it("초안 보관과 새 repository 조회에서 모든 펜 획을 유지한다", async () => {
+    const f = fixture(), pen = penInput();
+    await f.repository.add(scope, pen, () => true);
+    const raw = f.rows.get(reviewDraftScopeKey(scope));
+    expect(parseReviewDraftShelf(raw ?? null, scope)[0]?.input).toEqual(pen);
+    const changed = { ...pen, id: "other-pen", strokes: [{ ...penStroke, width: 5 }] };
+    await f.repository.add(scope, changed, () => true);
+    expect(await f.repository.list(scope)).toHaveLength(2);
+  });
+  it("저장 응답이 사라져도 같은 ID와 서버의 같은 획으로만 초안을 정리한다", async () => {
+    const f = fixture(), pen = penInput(); await f.repository.add(scope, pen, () => true);
+    const create = f.dependencies.create.getMockImplementation(); if (!create) throw new Error("fixture create");
+    f.dependencies.create.mockImplementationOnce(async (reviewId, note) => { await create(reviewId, note); throw new Error("response lost"); });
+    expect(await publishReviewDrafts(scope, [pen], f.repository, () => true, f.dependencies)).toEqual({ confirmed: [], stopped: pen.id });
+    expect((await f.repository.list(scope))[0]?.input.strokes).toEqual(pen.strokes);
+    expect(await publishReviewDrafts(scope, [pen], f.repository, () => true, f.dependencies)).toEqual({ confirmed: [pen.id], stopped: null });
+    expect(f.dependencies.create).toHaveBeenCalledTimes(1); expect(f.comments).toHaveLength(1);
+  });
+  it.each(["missing", "changed"])("서버의 획이 %s이면 초안을 폐기하거나 새 쓰기를 보내지 않는다", async (mode) => {
+    const f = fixture(), pen = penInput(); await f.repository.add(scope, pen, () => true);
+    await f.dependencies.create("review", pen);
+    const stored = f.comments[0]; if (!stored) throw new Error("fixture comment");
+    f.comments[0] = { ...stored, strokes: mode === "missing" ? [] : [{ ...penStroke, width: 5 }] };
+    f.dependencies.create.mockClear();
+    expect(await publishReviewDrafts(scope, [pen], f.repository, () => true, f.dependencies)).toEqual({ confirmed: [], stopped: pen.id });
+    expect((await f.repository.list(scope))[0]?.input).toEqual(pen);
+    expect(f.dependencies.create).not.toHaveBeenCalled();
   });
 });
 describe("explicit per-note publication", () => {

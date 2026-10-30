@@ -6,7 +6,6 @@ import {
   COLLABORATION_MODELS,
   DECISION_DOMAINS,
   PRODUCTION_ROLE_TYPES,
-  PRODUCTION_STUDIO_DOCUMENT_ROLES,
   REVIEW_LANES,
 } from "../../../../../packages/core/src/production";
 import {
@@ -30,25 +29,16 @@ import {
   SeasonPlanSchema,
   SeriesMasterSchema,
 } from "./production-collaboration-planning.dto";
+import {
+  SubmitProductionTaskOutputCommandSchema,
+  UpsertDeliverableCommandSchema,
+  UpsertStudioRevisionLinkCommandSchema,
+  UpsertSubmissionCommandSchema,
+} from "./production-submission.dto";
+import { RecordReviewDecisionCommandSchema, UpsertReviewPolicyCommandSchema } from "./production-review.dto";
 
 export { ProductionRevisionRefSchema, ProductionScopeRefSchema };
 
-
-const ProductionStudioRevisionLinkSchema = z.object({
-  id: IdentitySchema,
-  projectId: IdentitySchema,
-  workId: IdentitySchema,
-  episodeId: IdentitySchema.nullable(),
-  studioDocumentRef: z.string().trim().min(1).max(500),
-  documentRole: z.enum(PRODUCTION_STUDIO_DOCUMENT_ROLES),
-  studioRevisionRef: ProductionRevisionRefSchema,
-  deliverableId: IdentitySchema,
-  submissionId: IdentitySchema,
-  linkedByAssignmentId: IdentitySchema,
-  status: z.enum(["submitted", "approved", "superseded"]),
-  linkedAt: IsoDateTimeSchema,
-  approvedAt: NullableIsoDateTimeSchema,
-}).strict();
 
 const CollaborationPartySchema = z.object({
   id: IdentitySchema,
@@ -210,36 +200,6 @@ const ClarificationThreadSchema = z.object({
   updatedAt: IsoDateTimeSchema,
 }).strict();
 
-const ReviewPolicyLaneSchema = z.object({
-  lane: z.enum(REVIEW_LANES),
-  eligibleAssignmentIds: z.array(IdentitySchema).max(100),
-  requiredAssignmentIds: z.array(IdentitySchema).max(100),
-  quorum: z.number().int().min(1).max(100),
-  vetoAssignmentIds: z.array(IdentitySchema).max(100),
-  blocksPublication: z.boolean(),
-}).strict();
-
-const ReviewPolicySchema = z.object({
-  id: IdentitySchema,
-  projectId: IdentitySchema,
-  scope: ProductionScopeRefSchema,
-  lanes: z.array(ReviewPolicyLaneSchema).min(1).max(20),
-  responseDueHours: z.number().int().min(1).max(8_760),
-  expiredReviewAction: z.enum(["escalate", "replace-reviewer", "reschedule"]),
-}).strict();
-
-const ReviewDecisionSchema = z.object({
-  id: IdentitySchema,
-  reviewRoundId: IdentitySchema,
-  lane: z.enum(REVIEW_LANES),
-  assignmentId: IdentitySchema,
-  value: z.enum(["approve", "approve-with-conditions", "request-changes", "veto", "abstain"]),
-  reasonCode: z.string().trim().min(1).max(120).nullable(),
-  evidenceScopeRefs: z.array(ProductionScopeRefSchema).max(1_000),
-  conditions: z.array(HumanTextSchema).max(100),
-  createdAt: IsoDateTimeSchema,
-}).strict();
-
 const CreativeBranchSchema = z.object({
   id: IdentitySchema,
   projectId: IdentitySchema,
@@ -275,29 +235,6 @@ const CreativeMergeRequestSchema = z.object({
   status: z.enum(["draft", "ready-for-review", "changes-requested", "approved", "conflicted", "merged", "closed"]),
   createdByAssignmentId: IdentitySchema,
   createdAt: IsoDateTimeSchema,
-}).strict();
-
-const DeliverableSchema = z.object({
-  id: IdentitySchema,
-  projectId: IdentitySchema,
-  scope: ProductionScopeRefSchema,
-  type: z.string().trim().min(1).max(120),
-  expectedFormat: z.string().trim().min(1).max(240),
-  completionCriteria: z.array(HumanTextSchema).min(1).max(1_000),
-  currentSubmissionId: IdentitySchema.nullable(),
-  approvedSubmissionId: IdentitySchema.nullable(),
-}).strict();
-
-const SubmissionSchema = z.object({
-  id: IdentitySchema,
-  projectId: IdentitySchema,
-  deliverableId: IdentitySchema,
-  revisionRef: ProductionRevisionRefSchema,
-  submittedByAssignmentId: IdentitySchema,
-  submittedAt: IsoDateTimeSchema,
-  status: z.enum(["submitted", "in-review", "changes-requested", "approved", "superseded"]),
-  inputRevisionRefs: z.array(ProductionRevisionRefSchema).min(1).max(100_000),
-  evidenceRefs: z.array(IdentitySchema).max(100_000),
 }).strict();
 
 const EstimateHoursSchema = z.object({
@@ -986,14 +923,6 @@ const UpsertHandoffCommandSchema = z.object({ type: z.literal("upsert-handoff"),
 const UpsertClarificationCommandSchema = z.object({ type: z.literal("upsert-clarification"), clarification: ClarificationThreadSchema }).strict();
 const UpsertBranchCommandSchema = z.object({ type: z.literal("upsert-branch"), branch: CreativeBranchSchema }).strict();
 const UpsertMergeRequestCommandSchema = z.object({ type: z.literal("upsert-merge-request"), mergeRequest: CreativeMergeRequestSchema }).strict();
-const UpsertDeliverableCommandSchema = z.object({ type: z.literal("upsert-deliverable"), deliverable: DeliverableSchema }).strict();
-const UpsertSubmissionCommandSchema = z.object({ type: z.literal("upsert-submission"), submission: SubmissionSchema }).strict();
-const UpsertStudioRevisionLinkCommandSchema = z.object({
-  type: z.literal("upsert-studio-revision-link"),
-  link: ProductionStudioRevisionLinkSchema,
-}).strict();
-const UpsertReviewPolicyCommandSchema = z.object({ type: z.literal("upsert-review-policy"), policy: ReviewPolicySchema }).strict();
-const RecordReviewDecisionCommandSchema = z.object({ type: z.literal("record-review-decision"), policyId: IdentitySchema, decision: ReviewDecisionSchema }).strict();
 const UpsertTaskCommandSchema = z.object({ type: z.literal("upsert-task"), task: ProductionTaskSchema }).strict();
 const UpsertTaskBatchCommandSchema = z.object({
   type: z.literal("upsert-task-batch"),
@@ -1155,6 +1084,7 @@ export const ProductionCommandSchema = z.discriminatedUnion("type", [
   UpsertDeliverableCommandSchema,
   UpsertSubmissionCommandSchema,
   UpsertStudioRevisionLinkCommandSchema,
+  SubmitProductionTaskOutputCommandSchema,
   UpsertReviewPolicyCommandSchema,
   RecordReviewDecisionCommandSchema,
   UpsertTaskCommandSchema,

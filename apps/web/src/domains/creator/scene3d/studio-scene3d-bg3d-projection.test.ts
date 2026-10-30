@@ -8,6 +8,26 @@ import { isStudioScene3dDocument } from "./studio-scene3d-document";
 import { projectStudioBg3dDocumentToScene3d } from "./studio-scene3d-bg3d-projection";
 
 describe("BG3D → Scene3D projection", () => {
+  it.each([{ height: 12, zoom: 3 }, { height: 0.000001, zoom: 100 }, { height: 100000, zoom: 0.1 }])("명시 높이 $height와 zoom $zoom의 실제 보이는 높이를 자르지 않고 전달한다", ({ height, zoom }) => {
+    const source: StudioBg3dSceneDocument = { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+      camera: { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera, projection: "orthographic", orthographicHeight: height, zoom },
+    };
+    const projected = projectStudioBg3dDocumentToScene3d({ documentId: "explicit-ortho", source, viewportAspectRatio: 1 });
+    expect(projected.cameras[0]?.orthoScale).toBe(height / zoom);
+  });
+
+  it("샷 높이 override·상속과 값이 없는 기존 5/zoom 경로를 각각 유지한다", () => {
+    const source: StudioBg3dSceneDocument = { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+      camera: { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera, projection: "orthographic", orthographicHeight: 12, zoom: 3 },
+      shots: [{ id: "override", name: "높이 변경", camera: { orthographicHeight: 30, zoom: 5 } }, { id: "inherit", name: "높이 상속", camera: { zoom: 2 } }],
+    };
+    const projected = projectStudioBg3dDocumentToScene3d({ documentId: "shot-ortho", source, viewportAspectRatio: 1 });
+    expect(projected.cameras.map((camera) => camera.orthoScale)).toEqual([4, 6, 6]);
+    const legacy = projectStudioBg3dDocumentToScene3d({ documentId: "legacy-ortho", viewportAspectRatio: 1,
+      source: { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, camera: { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.camera, projection: "orthographic", zoom: 2 } },
+    });
+    expect(legacy.cameras[0]?.orthoScale).toBe(2.5);
+  });
   it("keeps primitives procedural and models content-addressed while sharing camera/light/output authority", () => {
     const source: StudioBg3dSceneDocument = {
       ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,

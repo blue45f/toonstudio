@@ -18,6 +18,8 @@ import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES } from "../../src/domains/creat
 import { resolveStudioBg3dModelNormalizationScale } from "../../src/domains/creator/bg3d/studio-bg3d-model-runtime-admission";
 import { loadVerifiedStudioBg3dGlbWithThree } from "../../src/domains/creator/studio-background-3d-model";
 
+import type { StudioBg3dAttachmentRights } from "../../src/domains/creator/bg3d/studio-bg3d-scene-document";
+
 function assert(value: unknown, message: string): asserts value {
   if (!value) throw new Error(message);
 }
@@ -25,9 +27,17 @@ function assert(value: unknown, message: string): asserts value {
 let catalog: StudioBg3dBundleThemePacks;
 let disposePreview: (() => void) | undefined;
 
+function rightsIdentity(rights: StudioBg3dAttachmentRights): string {
+  return JSON.stringify([rights.status, rights.licenseName ?? null, rights.commercialUse,
+    rights.attributionRequired, rights.attribution ?? null]);
+}
+
 async function prepare(index: number, expectedHash?: string) {
   const asset = catalog.assets[index];
   assert(asset, "카탈로그 에셋 인덱스가 없습니다.");
+  const rights = studioBg3dBundleAssetRights(asset, catalog);
+  assert((rights.status === "licensed" || rights.status === "public-domain") && rights.commercialUse === true,
+    "카탈로그 팩의 상업 이용 권리가 없습니다.");
   const loaded = await loadStudioBg3dBundleAssetBytes(asset, studioBg3dBundleAssetUrl(asset, catalog));
   try {
     const record = await prepareVerifiedBg3dModelRecord({
@@ -37,12 +47,12 @@ async function prepare(index: number, expectedHash?: string) {
         type: "model/gltf-binary",
         arrayBuffer: async () => Uint8Array.from(loaded.bytes).buffer,
       },
-      rights: studioBg3dBundleAssetRights(asset, catalog),
+      rights,
       expectedSha256: expectedHash ?? asset.sha256,
     }, { profile: "mobile", executionBackend: "worker", idFactory: () => asset.id, now: 0 });
     assert(record.contentHash === asset.sha256 && record.byteSize === asset.bytes, "검증 레코드 무결성이 다릅니다.");
     assert(record.validatorProfile === "mobile", "모바일 프로필이 아닙니다.");
-    assert(record.rights.status === "public-domain" && record.rights.licenseName === "CC0-1.0", "검증 레코드의 CC0 권리가 다릅니다.");
+    assert(rightsIdentity(record.rights) === rightsIdentity(rights), "검증 레코드의 팩 권리·출처 표기가 다릅니다.");
     return record;
   } finally {
     releaseStudioBg3dBundleAssetBytes(asset.id);
@@ -186,7 +196,7 @@ async function render(index: number) {
   assert(foreground > 4800, "모델이 화면의 1% 이상을 차지하지 않습니다.");
   document.body.replaceChildren();
   const title = document.createElement("h1"); title.textContent = `${pack.title} · ${record.name}`;
-  const note = document.createElement("p"); note.textContent = `CC0-1.0 · 모바일 Worker 검증 · 최대 변 2m · ${backend.renderer}`;
+  const note = document.createElement("p"); note.textContent = `${record.rights.licenseName} · 모바일 Worker 검증 · 최대 변 2m · ${backend.renderer}${record.rights.attribution ? ` · ${record.rights.attribution}` : ""}`;
   document.body.append(title, note, renderer.domElement);
   disposePreview = () => { loaded.dispose(); renderer.dispose(); };
   return { id: asset.id, packIndex: asset.packIndex, title: pack.title, sha256: record.contentHash,

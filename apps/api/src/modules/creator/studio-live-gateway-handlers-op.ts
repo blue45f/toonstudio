@@ -19,11 +19,13 @@
 import {
   replyStudioLiveAck as reply,
   studioLiveFailure as failure,
+  mapStudioLiveCrdtFailure,
 } from "./studio-live-ack";
 import { studioLiveRoom } from "./studio-live-gateway-constants";
 import {
   STUDIO_OP_MAX_BYTES,
   studioLiveOpByteLength,
+  type StudioLiveOpSubmitOutcome,
 } from "./studio-live-op";
 import {
   STUDIO_LIVE_OP_BROADCAST_EVENT,
@@ -74,22 +76,25 @@ export async function submitStudioLiveOp(
   const authorizedBefore = await this.runWithAuthorizedParticipant(
     client,
     parsed.data.workId,
-    true,
+    false,
     true,
     (participant) => participant
   );
   if (!authorizedBefore || authorizedBefore.value !== quotaParticipant) {
     return reply(ack, failure("not_joined", "실시간 작업실에 다시 참여해 주세요."));
   }
-  if (!authorizedBefore.value.capabilities.edit) {
+  if (!authorizedBefore.value.capabilities.edit && !parsed.data.writeContext) {
     return reply(ack, failure("forbidden", "이 작품을 편집할 권한이 없습니다."));
   }
 
   const senderKey = `${parsed.data.workId}\u0000${parsed.data.op.actorId}`;
-  const outcome = await this.runStudioLiveOpSerialized(senderKey, async () => {
-    const room = await this.studioLiveOpRooms.getRoom(parsed.data.workId);
-    return room.submit(parsed.data.op, authorizedBefore.value.userId);
-  });
+  let outcome: StudioLiveOpSubmitOutcome;
+  try {
+    outcome = await this.runStudioLiveOpSerialized(senderKey, async () => {
+      const room = await this.studioLiveOpRooms.getRoom(parsed.data.workId);
+      return room.submit(parsed.data.op, authorizedBefore.value.userId, parsed.data.writeContext);
+    });
+  } catch (error) { return reply(ack, mapStudioLiveCrdtFailure(error, parsed.data.workId, "update").response); }
   if (outcome.status === "fifo_rejected") {
     // 순서가 어긋난 제출은 영속하지 않는다. 클라이언트는 sync로 따라잡은 뒤
     // pending을 순서대로 다시 제출해야 한다 (웹 코어 재접속 규약).

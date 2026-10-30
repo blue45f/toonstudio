@@ -6,16 +6,19 @@ import { studioVirtualSpaceReviewHref } from "../virtual-space/studio-virtual-sp
 import { StudioReviewCaptureReturnLink, type StudioReviewCaptureOrigin } from "../review-resolution/StudioReviewCaptureReturnLink";
 
 import type { StudioReviewCaptureSnapshot } from "./studio-review-capture-bridge";
+import type { StudioReviewCaptureSourceRevision } from "./studio-review-capture-source";
 
 import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 
 const bi = (ko: string, en: string) => translateBilingualValueForActiveLocale("StudioReviewCaptureDialog", ko, en);
 const button = "inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50";
 
-export function StudioReviewCaptureDialog({ open, snapshot, origin, onSave, onRetry, onClose }: {
+export function StudioReviewCaptureDialog({ open, snapshot, origin, sourceRevision, returnHref, onSave, onRetry, onClose }: {
   readonly open: boolean;
   readonly snapshot: StudioReviewCaptureSnapshot;
   readonly origin?: StudioReviewCaptureOrigin | null;
+  readonly sourceRevision?: StudioReviewCaptureSourceRevision;
+  readonly returnHref?: string | null;
   readonly onSave: () => void;
   readonly onRetry: () => void;
   readonly onClose: () => void;
@@ -45,7 +48,9 @@ export function StudioReviewCaptureDialog({ open, snapshot, origin, onSave, onRe
       : bi("아직 저장하지 않은 변경이 있어요. 저장이 확인된 원고로만 검수본을 만들 수 있습니다.", "There are unsaved changes. A review can be created only after the source save is confirmed.")
     : snapshot.reason === "image-rejected" ? bi("현재 PNG의 크기 또는 색상 형식을 검수 저장소에서 지원하지 않아 중단했어요. 이미지 크기와 해상도는 변경하지 않았습니다.",
       "The review store does not support this PNG size or color format. The image dimensions and resolution were preserved.")
-    : snapshot.reason === "changed" ? bi("작업 중 원고나 접근 권한이 변경되어 생성을 중단했어요.", "Creation stopped because the document or access changed.")
+    : snapshot.reason === "changed" ? sourceRevision
+      ? bi("현재 편집 원고가 선택한 제출 정본과 다르거나 접근이 변경됐어요. 원본을 자동 교체하거나 저장하지 않고 생성을 중단했습니다.", "The editor differs from the submitted source or access changed. Creation stopped without replacing or saving the source.")
+      : bi("작업 중 원고나 접근 권한이 변경되어 생성을 중단했어요.", "Creation stopped because the document or access changed.")
     : snapshot.phase === "cancelled" ? bi("검수본 생성을 취소했어요.", "Review creation was cancelled.")
     : bi("검수본을 만들 수 없었어요. 원고 접근 권한과 연결 상태를 확인해 주세요.", "The review could not be created. Check document access and the connection.");
   return createPortal(<div className="fixed inset-0 z-[165] grid place-items-center bg-black/55 p-4 backdrop-blur-sm">
@@ -59,6 +64,7 @@ export function StudioReviewCaptureDialog({ open, snapshot, origin, onSave, onRe
       {snapshot.title ? <p className="mt-4 break-words text-sm font-semibold">{snapshot.title}
         {snapshot.sourceRevision !== null ? ` · v${snapshot.sourceRevision}` : ""}
         {snapshot.pageCount !== null ? ` · ${snapshot.pageCount} ${bi("페이지", "pages")}` : ""}</p> : null}
+      {sourceRevision ? <p className="mt-3 break-all text-xs text-fg-3">{bi("제출 원본 정본", "Submitted source revision")} · {sourceRevision.revisionId}</p> : null}
       <p role={snapshot.phase === "failed" ? "alert" : "status"} aria-live="polite" className="mt-4 rounded-xl border border-line bg-card p-3 text-sm leading-6">{status}</p>
       {snapshot.subject ? <p className="mt-3 text-sm text-fg-3">{bi("검수 담당자는 작품 소유자로 지정됩니다. 가상 스튜디오에서는 이 고정 버전을 함께 검토하도록 초대할 수 있어요.",
         "The work owner is designated as reviewer. In Virtual Studio, you can invite others to discuss this pinned version.")}</p> : null}
@@ -70,6 +76,7 @@ export function StudioReviewCaptureDialog({ open, snapshot, origin, onSave, onRe
         {snapshot.subject ? <>
           {origin && snapshot.phase === "completed" ? <StudioReviewCaptureReturnLink origin={origin} replacement={snapshot.subject} className={button} /> : null}
           <a className={`${button} bg-accent text-on-accent`} href={studioVirtualSpaceReviewHref(snapshot.subject)}>{bi("검수본 보기", "View pinned review")}</a>
+          {returnHref && snapshot.phase === "completed" ? <a className={button} href={returnHref}>{bi("제출본 검수로 돌아가기", "Return to submission review")}</a> : null}
           <a className={button} href={`/studio/p/${encodeURIComponent(snapshot.subject.workId)}/space`}>{bi("가상 스튜디오에서 초대", "Invite from Virtual Studio")}</a>
         </> : null}
         <button type="button" className={button} disabled={snapshot.phase === "cancelling"} onClick={onClose}>

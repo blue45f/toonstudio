@@ -1,33 +1,35 @@
 import { CalendarClock, Check, Columns2, Send } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import type { ProductionClientCommand } from "./production-api";
-import { reviewLaneLabel } from "./production-labels";
+import { reviewLaneLabel, taskStatusLabel } from "./production-labels";
+import { getAuthSession, getAuthSessionRevision } from "@/domains/auth/public/session/auth-session-state";
+import { taskOutputRejectionDisposition } from "./production-task-output-rejection";
+import { useProductionReviewClock } from "./use-production-review-clock";
 import { ProductionEmptyState, ProductionPill, ProductionSectionCard } from "./production-ui";
 import {
   addLocalDays,
-  buildCompareReviewPath,
-  buildReviewRequestTask,
+  buildTaskReviewPath,
+  buildReviewRequestPlan,
+  confirmsReviewRequest,
   createReviewRequestDraft,
   deriveReviewRequestEpisodes,
   deriveReviewRequestReviewers,
+  deriveReviewRequestTasks,
   REVIEW_REQUEST_CHECKPOINTS,
   reviewRequestIssueLabel,
   toLocalDateInputValue,
   validateReviewRequestDraft,
   type ReviewRequestDraft,
+  type ProductionReviewRequestPlan,
 } from "./review-request-model";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
-
-function uniqueId(prefix: string): string {
-  return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
-}
 
 const DUE_PRESETS: readonly { readonly days: number; readonly label: { readonly ko: string; readonly en: string } }[] = [
   { days: 0, label: { ko: "오늘", en: "Today" } },
@@ -40,17 +42,19 @@ const DUE_PRESETS: readonly { readonly days: number; readonly label: { readonly 
  * 검수 요청 한 화면 폼.
  *
  * 대상(회차·검수자·항목)·마감·체크포인트를 단계 없이 한 화면에서 정해 바로 보낸다.
- * 보내면 검수 작업이 생겨 받는 사람의 통합 작업함 "내 검수"에 뜨고,
- * 그 항목은 회차 룸 비교 검수로 바로 이어진다(reviewInboxItemHref).
+ * 기존 제작 작업에 검수자를 배정하고 현재 제출본을 검수하도록 요청한다.
+ * 받는 사람의 통합 작업함은 같은 작업의 현재 제출본으로 연결된다.
  */
 export function ProductionReviewRequestForm({
   aggregate,
   execute,
   canEdit,
+  refresh,
 }: {
   readonly aggregate: ProductionProjectAggregate;
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
   readonly canEdit: boolean;
+  readonly refresh?: () => Promise<void>;
 }) {
   const bt = useBilingual("ProductionReviewRequestForm");
   const episodes = useMemo(() => deriveReviewRequestEpisodes(aggregate), [aggregate]);
@@ -58,16 +62,27 @@ export function ProductionReviewRequestForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [sentEpisodeId, setSentEpisodeId] = useState<string | null>(null);
+  const [sentTaskId, setSentTaskId] = useState<string | null>(null), [sealed, setSealed] = useState(false);
+  const [requestId, nextRequestId] = useState(() => `review-request:${crypto.randomUUID()}`), request = useRef<ProductionReviewRequestPlan | null>(null);
+  const [actor] = useState(() => ({ id: getAuthSession()?.user.id ?? null, revision: getAuthSessionRevision() }));
+  const mounted = useRef(true), latest = useRef(aggregate);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useLayoutEffect(() => { latest.current = aggregate; }, [aggregate]);
+  const current = useCallback(() => mounted.current && actor.revision === getAuthSessionRevision() && actor.id === (getAuthSession()?.user.id ?? null), [actor]);
+  const at = useProductionReviewClock(aggregate.assignments), tasks = deriveReviewRequestTasks(aggregate, draft.episodeId);
+  const selectedTask = tasks.find((task) => task.id === draft.taskId);
+  const taskCanRequest = selectedTask && ["in-progress", "internal-review"].includes(selectedTask.status);
   const sending = useRef(false);
 
   const reviewers = useMemo(
-    () => deriveReviewRequestReviewers(aggregate, draft.episodeId),
-    [aggregate, draft.episodeId],
+    () => deriveReviewRequestReviewers(aggregate, draft.episodeId, draft.taskId, at),
+    [aggregate, draft.episodeId, draft.taskId, at],
   );
   const reviewer = reviewers.find((entry) => entry.assignmentId === draft.reviewerAssignmentId) ?? null;
 
   // 회차를 바꾸면 이전 회차에서만 자격이 있던 검수자·항목 선택을 조용히 남기지 않고 정리한다.
   useEffect(() => {
+    if (sealed) return;
     setDraft((current) => {
       if (!current.reviewerAssignmentId) return current;
       const nextReviewer = reviewers.find((entry) => entry.assignmentId === current.reviewerAssignmentId);
@@ -77,14 +92,22 @@ export function ProductionReviewRequestForm({
       }
       return current;
     });
-  }, [reviewers]);
+  }, [reviewers, sealed]);
+
+  const acknowledge = useCallback(() => {
+    if (!request.current || !current()) return;
+    setSentTaskId(request.current.task.id); setSentEpisodeId(draft.episodeId); request.current = null; setSealed(false); setError(""); nextRequestId(`review-request:${crypto.randomUUID()}`);
+  }, [current, draft.episodeId]);
+  useEffect(() => { if (sealed && !pending && current() && request.current && confirmsReviewRequest(aggregate, request.current)) acknowledge(); }, [aggregate, sealed, pending, current, acknowledge]);
 
   const issues = validateReviewRequestDraft(draft, new Date());
   const firstIssue = issues[0];
-  const blocked = !canEdit || pending || issues.length > 0;
+  const blocked = !canEdit || pending || issues.length > 0 || !taskCanRequest;
 
   const patch = (next: Partial<ReviewRequestDraft>) => {
+    if (sealed) return;
     setSentEpisodeId(null);
+    setSentTaskId(null);
     setDraft((current) => ({ ...current, ...next }));
   };
 
@@ -97,22 +120,30 @@ export function ProductionReviewRequestForm({
   };
 
   const submit = async () => {
-    if (blocked || sending.current) return;
+    if ((!sealed && blocked) || sending.current || !current()) return;
     sending.current = true;
     setPending(true);
     setError("");
     try {
-      const task = buildReviewRequestTask(aggregate, draft, { id: uniqueId("review-request"), localize: bt });
-      await execute(
-        { type: "upsert-task", task },
-        bt("검수 요청을 보냈습니다.", "Review request sent."),
-      );
-      setSentEpisodeId(draft.episodeId);
+      if (sealed) {
+        if (!refresh) throw new Error(bt("최신 프로젝트에서 원래 검수 요청의 결과를 확인하세요. 선택 내용은 유지됩니다.", "Check the original review request in the latest project. Your choices are preserved."));
+        await refresh();
+        if (current() && request.current && confirmsReviewRequest(latest.current, request.current)) acknowledge();
+        else if (current()) setError(bt("원래 검수 요청의 현재 작업·제출본을 아직 확인하지 못했습니다. 선택 내용을 고정한 채 다시 확인할 수 있습니다.", "The original request's task and current submissions are not confirmed yet. Its fixed choices are kept for another status check."));
+        return;
+      }
+      const plan = buildReviewRequestPlan(aggregate, draft, { id: requestId, localize: bt, at: new Date().toISOString() });
+      request.current = structuredClone(plan); setSealed(true);
+      await execute(plan.command, bt("현재 제출본의 검수 요청을 보냈습니다.", "Review requested for the current submissions."));
+      if (current()) acknowledge();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : bt("검수 요청을 보내지 못했습니다. 입력 내용은 그대로 있습니다.", "Could not send the request. Your input was preserved."));
+      if (current()) {
+        if (actor.id && taskOutputRejectionDisposition(cause, actor.id, aggregate.projectId) !== "sealed") { request.current = null; setSealed(false); }
+        setError(cause instanceof Error ? cause.message : bt("검수 요청을 보내지 못했습니다. 입력 내용은 그대로 있습니다.", "Could not send the request. Your input was preserved."));
+      }
     } finally {
       sending.current = false;
-      setPending(false);
+      if (current()) setPending(false);
     }
   };
 
@@ -120,8 +151,8 @@ export function ProductionReviewRequestForm({
     <ProductionSectionCard
       title={bt("검수 요청", "Request a review")}
       description={bt(
-        "대상·마감·체크포인트를 한 화면에서 정해 바로 보냅니다. 받은 사람은 통합 작업함의 '내 검수'에서 비교 검수로 바로 들어갑니다.",
-        "Set the target, due date and checkpoints on one screen. The reviewer opens it straight into compare review from their inbox.",
+        "실제 작업의 현재 제출본과 입력을 유지하고 검수자·마감·체크포인트를 추가합니다. 받은 사람은 작업에 연결된 현재 원고를 검수합니다.",
+        "Keep the existing task's current submissions and inputs while adding reviewers, a due date and checkpoints. The reviewer opens the manuscripts linked to that task.",
       )}
     >
       {episodes.length === 0 ? (
@@ -130,7 +161,8 @@ export function ProductionReviewRequestForm({
           description={bt("회차에 검수 정책을 정하면 그 회차를 대상으로 검수 요청을 보낼 수 있습니다.", "Set a review policy on an episode to request a review for it.")}
         />
       ) : (
-        <div className="space-y-4">
+        <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+          <fieldset disabled={!canEdit || pending || sealed} className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-3">
             <label className="block text-sm font-semibold">
               {bt("대상 회차", "Episode")}
@@ -138,8 +170,9 @@ export function ProductionReviewRequestForm({
                 className="mt-2 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm"
                 value={draft.episodeId}
                 disabled={!canEdit || pending}
-                onChange={(event) => patch({ episodeId: event.target.value, reviewerAssignmentId: "", lane: "" })}
+                onChange={(event) => patch({ episodeId: event.target.value, taskId: "", reviewerAssignmentId: "", lane: "" })}
               >
+                <option value="">{bt("검수할 회차 선택", "Select an episode to review")}</option>
                 {episodes.map((episode) => (
                   <option key={episode.episodeId} value={episode.episodeId}>
                     {bt(episode.label.ko, episode.label.en)}
@@ -147,6 +180,8 @@ export function ProductionReviewRequestForm({
                 ))}
               </select>
             </label>
+            <label className="block text-sm font-semibold">{bt("현재 원고를 검수할 작업", "Task whose manuscripts need review")}<select className="mt-2 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm" value={draft.taskId} onChange={(event) => patch({ taskId: event.target.value, reviewerAssignmentId: "", lane: "" })} required>
+              <option value="">{bt("실제 작업 선택", "Select an existing task")}</option>{tasks.map((task) => <option key={task.id} value={task.id}>{task.title} · {taskStatusLabel(task.status, bt)}</option>)}</select></label>
             <label className="block text-sm font-semibold">
               {bt("검수자", "Reviewer")}
               <select
@@ -263,6 +298,9 @@ export function ProductionReviewRequestForm({
               placeholder={bt("예: 이번 회차는 봉투 문양 노출 순서만 집중해서 봐 주세요.", "e.g. Please focus on the envelope motif reveal order in this episode.")}
             />
           </label>
+          {selectedTask ? <p className="text-sm text-fg-2">{bt(`고정 입력 ${selectedTask.inputRevisionRefs.length}개 · 현재 산출물 ${selectedTask.outputDeliverableIds.length}개를 그대로 사용합니다.`, `${selectedTask.inputRevisionRefs.length} pinned inputs and ${selectedTask.outputDeliverableIds.length} outputs are preserved.`)}</p> : null}
+          {selectedTask && !taskCanRequest ? <p role="status" className="text-sm text-warn">{bt("작업 보드에서 입력을 준비하고 작업을 시작한 뒤 요청하세요. 상태를 자동으로 건너뛰지 않습니다.", "Prepare inputs and start work on the task board before requesting review. No workflow states are skipped.")} <Link to={`/production/projects/${encodeURIComponent(aggregate.projectId)}/production?task=${encodeURIComponent(selectedTask.id)}`}>{bt("선택한 작업 열기", "Open selected task")}</Link></p> : null}
+          </fieldset>
 
           {!canEdit ? (
             <p role="status" className="text-sm text-fg-2">{bt("편집 권한이 있어야 검수 요청을 보낼 수 있습니다.", "You need edit access to send a review request.")}</p>
@@ -274,9 +312,9 @@ export function ProductionReviewRequestForm({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className={buttonClass()} disabled={blocked} onClick={() => void submit()}>
+            <button type="submit" className={buttonClass()} disabled={pending || (!sealed && blocked)}>
               <Send size={16} aria-hidden="true" />
-              {pending ? bt("보내는 중…", "Sending…") : bt("검수 요청 보내기", "Send review request")}
+              {pending ? bt("저장 결과 확인 중…", "Checking save result…") : sealed ? bt("저장 상태 확인", "Check save status") : bt("검수 요청 보내기", "Send review request")}
             </button>
             {reviewer && draft.lane ? (
               <ProductionPill tone="accent">
@@ -285,7 +323,8 @@ export function ProductionReviewRequestForm({
             ) : null}
           </div>
 
-          {sentEpisodeId ? (
+          {sealed ? <p role="status" className="text-sm text-fg-2">{bt("원래 작업·제출본·명령을 고정했습니다. 상태 확인은 원래 요청을 복구하며 새 검수 작업을 만들지 않습니다.", "The original task, submissions and command are fixed. Status checks recover that request without creating another review task.")}</p> : null}
+          {sentEpisodeId && sentTaskId ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-good/35 bg-good/10 p-3">
               <p className="flex items-center gap-2 text-sm font-semibold text-fg">
                 <Check className="size-4 text-good" aria-hidden="true" />
@@ -293,14 +332,14 @@ export function ProductionReviewRequestForm({
               </p>
               <Link
                 className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
-                to={buildCompareReviewPath(aggregate.projectId, sentEpisodeId)}
+                to={buildTaskReviewPath(aggregate.projectId, sentTaskId, sentEpisodeId)}
               >
                 <Columns2 className="size-4" aria-hidden="true" />
                 {bt("비교 검수로 열기", "Open in compare review")}
               </Link>
             </div>
           ) : null}
-        </div>
+        </form>
       )}
     </ProductionSectionCard>
   );

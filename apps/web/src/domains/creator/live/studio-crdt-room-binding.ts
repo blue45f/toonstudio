@@ -6,6 +6,8 @@ import {
   type StudioCrdtFailureClassification,
 } from "./studio-crdt-operation-error";
 import { createStudioCrdtOutbox, type StudioCrdtOutbox } from "./studio-crdt-outbox";
+import { defaultSetTimeout, defaultClearTimeout } from "./studio-crdt-binding-timers";
+import type { StudioScopedCrdtPublisher } from "../studio-collab/studio-scoped-write-authority";
 import {
   STUDIO_CRDT_ORIGIN_REMOTE,
   STUDIO_CRDT_ORIGIN_SYNC,
@@ -120,6 +122,7 @@ export interface StudioCrdtRoomBindingOptions {
   room: StudioLiveRoom;
   /** Viewers still receive the durable document, but never enqueue local mutations. */
   canEdit?: boolean;
+  scopedWrite?: StudioScopedCrdtPublisher | null;
   /** Stable authenticated-user scope for browser-durable unsent updates. */
   outboxScope?: string | null;
   outbox?: StudioCrdtOutbox;
@@ -153,14 +156,6 @@ function defaultRandomId(): string {
     throw new StudioCrdtRoomBindingError("secure-id-unavailable");
   }
   return crypto.randomUUID();
-}
-
-function defaultSetTimeout(handler: () => void, delay: number): unknown {
-  return globalThis.setTimeout(handler, delay);
-}
-
-function defaultClearTimeout(handle: unknown): void {
-  globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>);
 }
 
 /**
@@ -197,6 +192,8 @@ export class StudioCrdtRoomBinding {
   private readonly document: StudioCrdtDocument;
   private readonly room: StudioLiveRoom;
   private readonly canEdit: boolean;
+  private readonly scopedWrite: StudioScopedCrdtPublisher | null;
+  private readonly unbindScopedFlush: (() => void) | undefined;
   private readonly outboxScope: string | null;
   private readonly outbox: StudioCrdtOutbox;
   private readonly recoveryVault: StudioCrdtRecoveryVault;
@@ -240,6 +237,8 @@ export class StudioCrdtRoomBinding {
     this.document = options.document;
     this.room = options.room;
     this.canEdit = options.canEdit ?? true;
+    this.scopedWrite = this.canEdit ? null : options.scopedWrite ?? null;
+    this.unbindScopedFlush = this.scopedWrite?.bindFlushBoundary(() => this.batchSubscription?.flush());
     this.outboxScope = options.outboxScope?.trim() || null;
     this.outbox = options.outbox ?? createStudioCrdtOutbox();
     this.recoveryVault = options.recoveryVault ?? createStudioCrdtRecoveryVault();
@@ -259,7 +258,7 @@ export class StudioCrdtRoomBinding {
     if (!this.room.ready) throw new StudioCrdtRoomBindingError("room-not-ready");
     this.started = true;
     this.authoritativeSyncReady = !this.hasAuthoritativeServer();
-    if (this.canEdit && this.outboxScope) await this.restoreOutbox();
+    if ((this.canEdit || this.scopedWrite) && this.outboxScope) await this.restoreOutbox();
     if (this.closed) return;
     if (this.recoveryState) {
       this.emitRecoveryRequiredStatus();
@@ -267,7 +266,7 @@ export class StudioCrdtRoomBinding {
     }
     this.unsubscribeCrdt = this.room.subscribeCrdt((event) => this.onCrdtEvent(event));
     this.unsubscribeRoom = this.room.subscribe((event) => this.onRoomEvent(event));
-    if (this.canEdit) {
+    if (this.canEdit || this.scopedWrite) {
       this.batchSubscription = this.document.subscribeBatchedUpdates(({ update }) => {
         this.enqueueUpdate(update);
       });
@@ -604,7 +603,7 @@ export class StudioCrdtRoomBinding {
     this.batchSubscription?.flush();
     this.batchSubscription?.unsubscribe();
     this.batchSubscription = null;
-    this.closed = true;
+    this.closed = true; this.unbindScopedFlush?.();
     this.resyncRequested = false;
     this.activeSyncRequestId = null;
     this.unsubscribeCrdt?.();
@@ -656,7 +655,7 @@ export class StudioCrdtRoomBinding {
       const localVector = this.document.encodeStateVector();
       // Pending operations already represent the client's unsent frontier. Adding a second
       // aggregate diff on reconnect would persist the same Yjs structs under a fresh updateId.
-      if (this.canEdit && this.pending.size === 0 && !sameBytes(serverVector, localVector)) {
+      if ((this.canEdit || this.scopedWrite) && this.pending.size === 0 && !sameBytes(serverVector, localVector)) {
         const missingOnServer = this.document.encodeStateAsUpdate(serverVector);
         if (missingOnServer.byteLength > EMPTY_UPDATE_BYTE_LENGTH) this.enqueueUpdate(missingOnServer);
       }
@@ -677,22 +676,18 @@ export class StudioCrdtRoomBinding {
 
   private enqueueUpdate(update: Uint8Array): void {
     if (this.closed || this.recoveryState || update.byteLength <= EMPTY_UPDATE_BYTE_LENGTH) return;
+    let encoded: string, writeContext: StudioCrdtUpdateRequest["writeContext"];
+    try { encoded = encodeStudioCrdtUpdate(update); writeContext = this.scopedWrite?.captureWriteContext((kind, id, pageId, restoration) => kind === "stroke" ? this.document.getStroke(id, !restoration) !== null : kind === "element" ? this.document.getSceneElement(id, !restoration) !== null : kind === "group" ? this.document.getLayerGroup(pageId, id, !restoration) !== null : this.document.getRasterOperationLog(id) !== null); }
+    catch (error) { this.emitStatus({ state: "error", message: statusMessageFrom(error, "update-encode-failed") }); return; }
     const canCoalesce = !this.recoveryTransition && (!this.room.ready || (this.hasAuthoritativeServer() && !this.authoritativeSyncReady));
     const tail = [...this.pending.values()].at(-1);
-    if (tryCoalescePendingCrdtUpdate(tail, update, canCoalesce)) {
+    if (tryCoalescePendingCrdtUpdate(tail, update, canCoalesce, writeContext)) {
       this.emitStatus({
         state: this.room.ready ? "syncing" : "retrying",
         message: this.room.ready ? statusFrom("enqueue-saving-to-server") : statusFrom("enqueue-keep-in-recovery"),
       });
       if (this.outboxScope) this.beginPendingPersistence(tail);
       void this.drainPending();
-      return;
-    }
-    let encoded: string;
-    try {
-      encoded = encodeStudioCrdtUpdate(update);
-    } catch (error) {
-      this.emitStatus({ state: "error", message: statusMessageFrom(error, "update-encode-failed") });
       return;
     }
     const updateId = this.randomId();
@@ -702,6 +697,7 @@ export class StudioCrdtRoomBinding {
       updateId,
       clientSequence: ++this.clientSequence,
       update: encoded,
+      ...(writeContext ? { writeContext } : {}),
     };
     const pending: PendingUpdate = {
       request,
@@ -1526,7 +1522,7 @@ export class StudioCrdtRoomBinding {
   }
 
   private persistenceDurability(): StudioCrdtBindingTelemetry["persistenceDurability"] {
-    if (!this.canEdit) return "not-applicable";
+    if (!this.canEdit && !this.scopedWrite) return "not-applicable";
     if (!this.outboxScope || !this.outbox.getStatus) return "unavailable";
     if (!this.persistenceChecked) return "checking";
     if ([...this.pending.values()].some(({ persistenceState }) => persistenceState === "pending")) {

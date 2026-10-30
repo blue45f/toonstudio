@@ -62,10 +62,10 @@ export class StudioReviewPreviewProducerService {
         // The same reconstructed PNG becomes the source of this derived preview. Original input
         // bytes are never registered as clean, saved to source storage, or made readable.
         await this.assets.upload(actor, intent.workId, assetId, "image", JSON.stringify({ version: 1,
-          element: { id: assetId, type: "image", x: 0, y: 0, width: canonical.width, height: canonical.height, rotation: 0 } }), upload);
+          element: { id: assetId, type: "image", x: 0, y: 0, width: canonical.width, height: canonical.height, rotation: 0 } }), upload, intent.writeContext);
         sourceStored = true;
         abort();
-        const reference = await this.assets.uploadGeneratedObject(actor, intent.workId, assetId, "derived", assetId, "image", upload);
+        const reference = await this.assets.uploadGeneratedObject(actor, intent.workId, assetId, "derived", assetId, "image", upload, intent.writeContext);
         generatedStored = true;
         abort();
         const object = LocatedPrivateObjectReferenceSchema.parse(reference.object);

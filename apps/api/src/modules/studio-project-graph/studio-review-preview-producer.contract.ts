@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
-import { canonicalJson, isoTimestampSchema, sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
+import { canonicalJson, isoTimestampSchema, scopeRefSchema, sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
 import { z } from "zod";
+import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
+
+export const studioReviewCaptureSourceRevisionSchema = z.object({
+  artifactId: studioEntityIdSchema, revisionId: studioEntityIdSchema, rootGraphHash: sha256Schema,
+}).strict();
+export const studioReviewAttestedSourceRevisionSchema = studioReviewCaptureSourceRevisionSchema.extend({ scope: scopeRefSchema });
+export type StudioReviewAttestedSourceRevision = z.infer<typeof studioReviewAttestedSourceRevisionSchema>;
 
 export const studioReviewPreviewCaptureSchema = z.object({
   intentId: studioEntityIdSchema,
@@ -12,12 +19,21 @@ export const studioReviewPreviewCaptureSchema = z.object({
   title: z.string().trim().min(1).max(240),
   deviceId: studioEntityIdSchema,
   createdAt: isoTimestampSchema,
+  sourceRevision: studioReviewCaptureSourceRevisionSchema.optional(),
+  writeContext: StudioScopedWriteContextSchema.optional(),
 }).strict();
 export const studioReviewPreviewIntentSchema = studioReviewPreviewCaptureSchema.extend({
   projectId: studioEntityIdSchema, artifactId: studioEntityIdSchema,
   expectedHeadRevisionId: studioEntityIdSchema,
   expectedHeadRootGraphHash: sha256Schema,
-}).strict();
+  sourceRevisionScope: scopeRefSchema.optional(),
+}).strict().superRefine((intent, context) => {
+  if (Boolean(intent.sourceRevision) !== Boolean(intent.sourceRevisionScope)
+    || (intent.sourceRevisionScope && intent.sourceRevisionScope.projectId !== intent.projectId)
+    || (intent.sourceRevision && intent.sourceRevision.rootGraphHash !== intent.sourceContentDigest)) {
+    context.addIssue({ code: "custom", path: ["sourceRevision"], message: "원본 revision과 저장 원고의 식별·범위를 함께 고정해야 합니다." });
+  }
+});
 export const studioReviewPreviewCompleteSchema = z.object({
   intent: studioReviewPreviewIntentSchema,
   pages: z.array(z.object({ ordinal: z.number().int().nonnegative().max(99_999), sha256: sha256Schema }).strict()).min(1).max(100_000),

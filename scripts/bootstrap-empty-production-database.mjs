@@ -27,6 +27,9 @@ import {
   validateProductionDatabaseUrl,
 } from "./validate-production-database-url.mjs";
 import { verifyProductionDatabaseCapabilities } from "./verify-production-database-capabilities.mjs";
+import { buildForwardMigrationBoundarySql } from "./bootstrap-forward-migration-boundary.mjs";
+
+export { buildForwardMigrationBoundarySql };
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = resolve(SCRIPT_DIRECTORY, "..");
@@ -65,6 +68,9 @@ const DRIZZLE_SCHEMA_PATHS = Object.freeze([
   "apps/api/src/platform/database/creator-marketplace-library.schema.ts",
   "apps/api/src/platform/database/creator-marketplace-package-moderation.schema.ts",
   "apps/api/src/platform/database/creator-asset-object-storage.schema.ts",
+  "apps/api/src/platform/database/creator-asset-platform.schema.ts",
+  "apps/api/src/platform/database/creator-asset-processing.schema.ts",
+  "apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",
   "apps/api/src/platform/database/studio-crdt-raster-checkpoint.schema.ts",
   "apps/api/src/platform/database/studio-raster-asset.schema.ts",
   "apps/api/src/platform/database/schema/production.schema.ts",
@@ -77,6 +83,7 @@ const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "package.json",
   "pnpm-lock.yaml",
   "scripts/bootstrap-empty-production-database.mjs",
+  "scripts/bootstrap-forward-migration-boundary.mjs",
   "scripts/production-database-migrations.manifest",
   "scripts/production-operations-database-contract.mjs",
   "scripts/run-production-database-migrations.mjs",
@@ -510,32 +517,6 @@ REVOKE ALL ON SCHEMA public FROM PUBLIC;
 `;
 }
 
-export function buildForwardMigrationBoundarySql() {
-  return `
-DROP TABLE IF EXISTS
-  public.admin_announcements,
-  public.admin_audit_logs,
-  public.admin_banned_words,
-  public.admin_content_reports,
-  public.admin_promos,
-  public.admin_security_policies,
-  public.creator_work_publication_media,
-  public.creator_work_asset_storage_reference,
-  public.creator_asset_storage_object,
-  public.creator_marketplace_library_item,
-  public.creator_marketplace_package_moderation,
-  public.creator_marketplace_package_moderation_decision,
-  public.creator_marketplace_publish_gate,
-  public.creator_marketplace_resource_report_gate,
-  public.creator_marketplace_resource_report,
-  public.creator_marketplace_resource,
-  public.creator_draft_collaboration_room,
-  public.personal_cloud_connection
-CASCADE;
-DROP EXTENSION IF EXISTS pg_trgm;
-`;
-}
-
 export function buildRuntimeRoleCreationSql(runtimeDatabaseRole, password) {
   const role = validateRuntimeDatabaseRole(runtimeDatabaseRole);
   validateRuntimeDatabasePassword(password);
@@ -953,8 +934,15 @@ function runDrizzleKitGenerate({ configPath, drizzleKitBinary, outDirectory }) {
   return readFileSync(join(outDirectory, sqlFiles[0]), "utf8");
 }
 
-/** live DB introspection 없이 정본 스키마로 빈 DB용 DDL을 생성해 결정성과 원자적 적용을 보장한다. */
-function generateCurrentSchemaDdl() {
+/**
+ * Provisioning must not depend on live database introspection. `drizzle-kit
+ * push` diffs the schema against whatever state the target happens to be in,
+ * applies statements non-atomically, and reports some failures only in its
+ * output text while exiting zero. Generating the from-empty DDL instead makes
+ * the statement list a pure function of the reviewed schema files: it can be
+ * regenerated to prove determinism and applied inside a single transaction.
+ */
+export function generateCurrentSchemaDdl() {
   const drizzleKitBinary = resolve(REPOSITORY_ROOT, DRIZZLE_KIT_BINARY_PATH);
   if (!existsSync(drizzleKitBinary)) {
     fail(

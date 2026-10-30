@@ -4,6 +4,8 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { createStudioBg3dCaptureDocumentEnvironmentFingerprint } from "./studio-bg3d-capture-document-environment";
+import { assertStudioBg3dCaptureEnvironmentCurrent } from "./studio-bg3d-capture-environment-receipt";
 import type { StudioBackground3DInsertResult, StudioBg3dLtRenderSettings, StudioBg3dMagicBabylonBackend, StudioBg3dMagicSelectionSnapshot, StudioBg3dSceneDocument } from "./studio-bg3d-editor-runtime-bindings";
 import { bakeStudioBg3dTagVisibilityIntoDocument } from "./studio-bg3d-hierarchy";
 import { resolveStudioBg3dInsertQualityPlan } from "./studio-bg3d-insert-quality-policy";
@@ -381,6 +383,7 @@ export function attachStudioBg3dEditorInsertHost(h: Record<string, any>) {
       return;
     }
     const adapted = adaptation.value;
+    const expectedEnvironmentFingerprint = createStudioBg3dCaptureDocumentEnvironmentFingerprint(adapted.document, deviceQuality.profile);
     if (
       adapted.diagnostics.length > 0 ||
       adapted.omittedDiagnosticCount > 0 ||
@@ -534,7 +537,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         includeDepth: studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),
         ...(captureAdapter.normalProfile && ltSettingsSnapshot.line.depthEnabled && !ltSettingsSnapshot.line.depthOutlineOnly
           ? { includeNormals: true } : {}),
-      }, { signal: insertController.signal, timeoutMs: 30_000 })
+      }, { signal: insertController.signal, timeoutMs: 30_000, expectedEnvironmentFingerprint })
         // 성공·실패·취소 어느 쪽이든 라이브 카메라를 원래 view 창으로 되돌린다(멱등).
         .finally(releaseCaptureFrameViewOffset);
       if (!isInsertCurrent() || captureAdapterIsStale()) return;
@@ -667,6 +670,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         setError(SHARED_CHARACTER_CAPTURE_AUTHORITY_ERROR_MESSAGE);
         return;
       }
+      assertStudioBg3dCaptureEnvironmentCurrent(captured, expectedEnvironmentFingerprint);
       insertPhase = "commit";
       setSceneBaseDocument(adapted.document);
       const linkedCharacterCapture = createStudioBg3dLinkedCharacterCapture(

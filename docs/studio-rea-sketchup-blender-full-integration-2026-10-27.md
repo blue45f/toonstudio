@@ -1,5 +1,7 @@
 # SketchUp 3D & Blender 5.2 전 기능 REA 역공학 분석 및 ToonStudio 사이트 완전 통합 보고서 (2026-10-27)
 
+> **상태: legacy exception — Blender 구현 범위 정정(2026-10-29).** 본문의 Blender “전 기능” 표현은 현재 기능 보증으로 사용하지 않는다. `studio-bg3d-blender-full-engine.ts`의 설정 수치·프리미티브 생성은 실제 메시 편집·셰이더/합성기·유체 엔진 구현과 다르다. 실제 웹 메시 권위는 Hybrid DCC이며, 새 기능의 근거는 [Blender 네이티브 웹 수정자 계약](studio/blender-native-modifier-contracts.md)과 source/tests에서 확인한다. SketchUp 부분은 이 정정의 검증 범위 밖이다.
+
 - **작성일**: `2026-10-27`
 - **분석 도구**: `REA (reverse-engineer-anything)` (`inspect_python_pyc`, `inspect_analysis_view`, `open_bundle_resources`, `inspect_plist`, `analyze_javascript_application`, `inspect_rust_binary`)
 - **네이티브 분석 엔진 정책**: `AGENTS.md §6` 준수 (`provider_id: "ghidra"` 전용, `hopper` 미사용)

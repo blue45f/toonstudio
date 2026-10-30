@@ -118,6 +118,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "creator_work_review_feedback",
   "creator_work_review_link",
   "creator_work_revision",
+  "creator_work_scoped_write_policy",
+  "creator_work_scoped_write_receipt",
   "creator_work_team_comment_activity",
   "creator_work_team_comment_message",
   "creator_work_team_comment_mutation",
@@ -246,10 +248,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
 
 /**
  * Only cutovers that cannot be proven by a final-looking Drizzle schema use the durable ledger.
- * Most migrations 0018+ are represented by required relations/capabilities below. A release
- * storage cutover such as 0030 is also ledger-fenced because the runtime cannot safely query its
- * new immutable ordinal before that migration. Secondary-index-only migration 0029 stays outside
- * runtime readiness; the strict production capability verifier owns that contract.
+ * 대부분의 0018+ migration은 릴레이션·capability로 증명한다. 불변 ordinal을 쓰는 0030은 원장으로도 보호한다.
+ * 인덱스 전용 0029는 운영 capability 검증기가 확인한다.
  * Likewise 0065-0067 never write this legacy cutover ledger. Their schemas are checked via
  * required product relations and their exact checksums via toonspectrum_ops.deployment_migration.
  * Requiring fabricated legacy rows would permanently reject a correctly migrated database.

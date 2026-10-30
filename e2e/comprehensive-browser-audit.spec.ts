@@ -1,15 +1,18 @@
 import { expect, test } from "@playwright/test";
 
 import { creatorMarketplaceJsonByteSize } from "../apps/web/src/shared/lib/creator-marketplace-resource-contract";
+import { waitForStudioDrawingReady } from "../scripts/lib/studio-drawing-readiness";
 
 /**
  * Mock 공개 프로필 캐시를 사용하는 브라우저 인터랙션 및 런타임 오류 감사 스위트
  * - 페이지 내 콘솔 에러(Unhandled rejection, React error, TypeError 등) 실시간 감지
- * - 스튜디오 캔버스, 레이어, 말풍선, 컷 분할, 자산 허브, 3D 엔진, 내보내기 전수 조작
- * - 마켓 브러시, 템플릿, 3D 리소스 상세 및 프리뷰 조작
+ * - 스튜디오 홈에서 예제 문서로 이동하고 실제 에디터 UI가 준비되는지 확인
+ * - 자산 메뉴 진입 화면과 mock 마켓 브러시·템플릿·3D 리소스 참고 프리뷰 확인
+ * - 실제 잉크·Undo/Redo·기기 저장·재열기는 usability-first-session.spec.ts가 검증
  */
 
 test.describe("스튜디오 & 마켓 mock 브라우저 상호작용 감사", () => {
+  test.use({ locale: "ko-KR" });
   const MOCK_PUBLIC_PROFILE = {
     user: {
       id: "123e4567-e89b-12d3-a456-426614174000",
@@ -39,7 +42,8 @@ test.describe("스튜디오 & 마켓 mock 브라우저 상호작용 감사", () 
     });
   });
 
-  test("스튜디오 캔버스 드로잉, 펜/지우개 전환, 색상 변경, 줌 인터랙션 감사", async ({ page }) => {
+  test("스튜디오 작업 홈에서 예제 문서 에디터로 이동하고 그리기 UI 준비를 확인한다", async ({ page }) => {
+    test.setTimeout(120_000);
     const consoleErrors: string[] = [];
     page.on("pageerror", (err) => consoleErrors.push(err.message));
     page.on("console", (msg) => {
@@ -48,40 +52,17 @@ test.describe("스튜디오 & 마켓 mock 브라우저 상호작용 감사", () 
       }
     });
 
-    await page.goto("/studio");
-    await expect(page.locator("body")).toBeVisible();
-
-    const canvas = page.locator("main, #main-content, canvas").first();
-    await expect(canvas).toBeVisible({ timeout: 20_000 });
-
-    const box = await canvas.boundingBox();
-    if (box) {
-      // 1. 드로잉 인터랙션
-      await page.mouse.move(box.x + 100, box.y + 100);
-      await page.mouse.down();
-      await page.mouse.move(box.x + 200, box.y + 150, { steps: 5 });
-      await page.mouse.move(box.x + 300, box.y + 200, { steps: 5 });
-      await page.mouse.up();
-
-      // 2. Undo / Redo
-      const isMac = process.platform === "darwin";
-      await page.keyboard.press(isMac ? "Meta+z" : "Control+z");
-      await page.keyboard.press(isMac ? "Meta+Shift+z" : "Control+Shift+z");
-
-      // 3. 지우개 단축키 (E)
-      await page.keyboard.press("e");
-      await page.mouse.move(box.x + 150, box.y + 120);
-      await page.mouse.down();
-      await page.mouse.move(box.x + 250, box.y + 180, { steps: 5 });
-      await page.mouse.up();
-
-      // 4. 펜 단축키 (P / B)
-      await page.keyboard.press("b");
-
-      // 5. 줌 인/아웃 단축키 (+/-)
-      await page.keyboard.press("=");
-      await page.keyboard.press("-");
-    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/studio", { waitUntil: "domcontentloaded" });
+    const example = page.getByRole("link", { name: "예제 · 첫 웹툰 한 컷 이어서 작업", exact: true });
+    await expect(example).toBeVisible({ timeout: 20_000 });
+    await expect(example).toHaveAttribute("href", /^\/studio\/p\/example-first-webtoon\/d\/example-ep01(?:\?|$)/u);
+    await example.click();
+    await expect(page).toHaveURL((url) => url.pathname === "/studio/p/example-first-webtoon/d/example-ep01");
+    await expect(page.locator('[data-studio-editor="true"]')).toBeVisible({ timeout: 60_000 });
+    await waitForStudioDrawingReady(page);
+    await expect(page.locator(".konvajs-content")).toBeVisible();
+    await expect(page.locator("[data-studio-brush-active-pill]")).toBeVisible({ timeout: 45_000 });
 
     // 치명적 런타임 크래시가 없음을 검증
     expect(consoleErrors).toHaveLength(0);
@@ -170,12 +151,12 @@ test.describe("스튜디오 & 마켓 mock 브라우저 상호작용 감사", () 
 
     // 브러시 캔버스에 마우스 드래그 드로잉 테스트
     const canvasBox = await brushCanvas.boundingBox();
-    if (canvasBox) {
-      await page.mouse.move(canvasBox.x + 30, canvasBox.y + 30);
-      await page.mouse.down();
-      await page.mouse.move(canvasBox.x + 120, canvasBox.y + 70, { steps: 5 });
-      await page.mouse.up();
-    }
+    expect(canvasBox).not.toBeNull();
+    if (!canvasBox) throw new Error("브러시 프리뷰 캔버스 위치를 확인하지 못했습니다.");
+    await page.mouse.move(canvasBox.x + 30, canvasBox.y + 30);
+    await page.mouse.down();
+    await page.mouse.move(canvasBox.x + 120, canvasBox.y + 70, { steps: 5 });
+    await page.mouse.up();
     await page.getByRole("button", { name: "초기화" }).click();
 
     // 2. 3D 프리셋 리소스
