@@ -121,6 +121,9 @@ describe("character-shaper-gen3d-bridge — SHAPER REA × Tripo 3D V3 MCP 리얼
       extractLuminanceOutline: true,
       passes: [
         { id: "beauty" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
+        // 0a708efc 부터 헤어 그룹은 실제 밑색(flat) 위에서만 나누고, Hair Shadow 는 독립 음영 패스가 있을 때만 만든다.
+        { id: "flat" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
+        { id: "shadow" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
         { id: "mask-hair" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
         { id: "line" as const, width: 4, height: 1, rgba: new Uint8ClampedArray(rgba) },
       ],
