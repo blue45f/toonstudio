@@ -115,6 +115,13 @@ describe("studio-webtoon-storyboard-pipeline (200%+ 고도화 통합 검증)", (
     expect(diag.plotDoctorNotes.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("지시만 있는 '이름: [지시]' 컷은 화자를 지키고 '이름:'만 남은 말풍선을 만들지 않는다", () => {
+    const output = runWebtoonStoryboardMasterPipeline({ scriptText: `카엘: [침묵]\n리아: "왜?"` });
+    expect(output.directingResult.cuts[0]?.speaker).toBe("카엘");
+    expect(output.enrichedCuts[0]?.mobileBubbles).toEqual([]);
+    expect(output.enrichedCuts[1]?.mobileBubbles).toEqual(["왜?"]);
+  });
+
   it("작가 학습 샘플 + 자유 드로잉 스케치 + 스토리라인/대사 추천 + 글로벌 K-콘텐츠 다국어 식자를 단일 파이프라인으로 통합 실행한다", () => {
     const output = runWebtoonStoryboardMasterPipeline({
       storylineInput: {

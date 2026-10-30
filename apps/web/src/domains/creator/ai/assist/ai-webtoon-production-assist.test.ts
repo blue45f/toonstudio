@@ -130,6 +130,11 @@ describe("ai-webtoon-production-assist (신규 4대 웹툰 AI 보조 엔진 검�
       "유적 입구\n\n카엘: \"뒤를 봐.\" [바스트 샷 로우 앵글, 말풍선 오른쪽 위]\r\n횃불이 꺼진다",
     );
     expect(appendStageDirectionToCut("한 컷", 5, "롱 샷")).toBe("한 컷\n롱 샷");
+    // 컷 줄이 없어 새 줄로 붙인 지문도 다시 반영하면 한 번만 남는다.
+    expect(appendStageDirectionToCut("한 컷\n롱 샷", 5, "롱 샷")).toBe("한 컷\n롱 샷");
+    expect(appendStageDirectionToCut("한 컷\n롱 샷", 2, "롱 샷")).toBe("한 컷\n롱 샷");
+    expect(appendStageDirectionToCut("", 1, "S자 시선 흐름")).toBe("S자 시선 흐름");
+    expect(appendStageDirectionToCut("S자 시선 흐름", 1, "S자 시선 흐름")).toBe("S자 시선 흐름");
     expect(appendStageDirectionToCut("한 컷", 1, " [ ] ")).toBe("한 컷");
   });
 
