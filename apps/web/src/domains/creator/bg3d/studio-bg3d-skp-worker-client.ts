@@ -73,7 +73,7 @@ export interface StudioBg3dSkpConvertOptions {
 }
 
 function cancelled(): StudioBg3dSkpConversionError {
-  return new StudioBg3dSkpConversionError("skp-cancelled", "SketchUp 변환이 취소되었습니다.", { reason: "aborted" });
+  return new StudioBg3dSkpConversionError("skp-cancelled", "SKP 변환이 취소되었습니다.", { reason: "aborted" });
 }
 
 function unavailable(
@@ -156,7 +156,7 @@ function convertInWorker(
     try {
       worker = (options.workerFactory ?? browserWorkerFactory)();
     } catch (error) {
-      reject(unavailable("SketchUp 변환 Worker 를 만들지 못했습니다.", "worker-failed", error));
+      reject(unavailable("SKP 변환 Worker 를 만들지 못했습니다.", "worker-failed", error));
       return;
     }
 
@@ -185,10 +185,10 @@ function convertInWorker(
     }
     function onWorkerFailure(event: WorkerErrorEventLike): void {
       event.preventDefault?.();
-      fail(unavailable("SketchUp 변환 Worker 가 중단되었습니다.", "worker-failed"));
+      fail(unavailable("SKP 변환 Worker 가 중단되었습니다.", "worker-failed"));
     }
     function onProtocolFailure(): void {
-      fail(unavailable("SketchUp 변환 Worker 응답을 읽지 못했습니다.", "worker-protocol"));
+      fail(unavailable("SKP 변환 Worker 응답을 읽지 못했습니다.", "worker-protocol"));
     }
     function onMessage(event: WorkerMessageEventLike): void {
       const response = event.data;
@@ -229,7 +229,7 @@ function convertInWorker(
     timeout = setTimeout(() => {
       fail(new StudioBg3dSkpConversionError(
         "skp-timeout",
-        "SketchUp 변환이 제한 시간을 넘어 중단되었습니다.",
+        "SKP 변환이 제한 시간을 넘어 중단되었습니다.",
         { reason: "timeout", detail: { timeoutMs } },
       ));
     }, timeoutMs);
@@ -244,7 +244,7 @@ function convertInWorker(
     try {
       worker.postMessage(request, [bytes]);
     } catch (error) {
-      fail(unavailable("SketchUp 변환 Worker 로 파일을 보내지 못했습니다.", "worker-failed", error));
+      fail(unavailable("SKP 변환 Worker 로 파일을 보내지 못했습니다.", "worker-failed", error));
     }
   });
 }

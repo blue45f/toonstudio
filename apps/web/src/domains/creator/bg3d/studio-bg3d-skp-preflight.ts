@@ -115,7 +115,7 @@ function detectContainer(bytes: Uint8Array): StudioBg3dSkpContainerKind {
 export function inspectStudioBg3dSkpHeader(bytes: Uint8Array): StudioBg3dSkpHeaderInfo {
   if (!hasStudioBg3dSkpSignature(bytes)) {
     throw new StudioBg3dSkpParseError(
-      "SketchUp(.skp) 파일 시그니처가 아닙니다. 확장자만 바뀐 다른 파일이거나 손상된 파일일 수 있습니다.",
+      "SKP 파일 시그니처가 아닙니다. 확장자만 바뀐 다른 파일이거나 손상된 파일일 수 있습니다.",
       { reason: "invalid-signature" },
     );
   }
