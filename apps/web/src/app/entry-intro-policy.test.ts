@@ -52,3 +52,20 @@ describe("shouldShowEntryIntro", () => {
     },
   );
 });
+
+
+describe("입력·계정·운영 화면은 브랜드 연출보다 작업을 우선한다", () => {
+  it.each([
+    "/me", "/me/", "/MY///", "/settings", "/settings/role", "/settings/notifications",
+    "/auth/login", "/auth/reset-password", "/account/points", "/membership/usage",
+    "/messages", "/messages/thread-1", "/notifications", "/production", "/production/project-1",
+    "/market/library", "/market/publish", "/market/manage", "/market/seller", "/market/wishlist",
+  ])("%s의 입력·조회 화면을 전면 인트로로 가리지 않는다", (pathname) => {
+    expect(shouldShowEntryIntro(pathname)).toBe(false);
+  });
+  it.each(["/", "/about", "/membership", "/market", "/market/browse", "/settings-guide", "/my-story"])(
+    "%s의 공개 소개 연출은 작업 경로와 혼동하지 않는다", (pathname) => {
+      expect(shouldShowEntryIntro(pathname)).toBe(true);
+    },
+  );
+});

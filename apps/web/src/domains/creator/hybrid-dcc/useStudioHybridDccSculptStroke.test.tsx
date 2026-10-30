@@ -464,3 +464,111 @@ describe("pointerup 뒤 committing 상태의 DOM Escape·blur 소유권", () => 
     expect(evidence(workspace)).toEqual(before);
   });
 });
+
+describe("사용자가 정한 드래그 반경의 영향 범위와 gesture 경계", () => {
+  const topCenter: StudioMeshVec3 = { x: 0, y: 0.5, z: 0 };
+
+  function expectOnlyTopVerticesMoved(workspace: StudioHybridDccWorkspace, result: StudioHybridDccWorkspace) {
+    const original = mesh(workspace), changed = mesh(result);
+    let affected = 0;
+    for (const vertex of original.vertices) {
+      const actual = changed.vertices[vertex.id];
+      if (!actual) throw new Error("반경 검증의 원본 정점 대응이 없습니다.");
+      if (vertex.position.y === 0.5) {
+        expect(actual.position.y).toBeGreaterThan(vertex.position.y);
+        expect((actual.position.x - vertex.position.x) * vertex.position.x).toBeGreaterThan(0);
+        expect((actual.position.z - vertex.position.z) * vertex.position.z).toBeGreaterThan(0);
+        affected += 1;
+      } else expect(actual.position).toEqual(vertex.position);
+    }
+    expect(affected).toBe(4);
+  }
+
+  it("기본 0.45의 면 중앙은 no-op이고 반경 1은 위쪽 네 정점만 한 command·undo로 바꾼다", async () => {
+    const workspace = source(), before = evidence(workspace), h = mount(workspace);
+    const controller = h.hook.result.current.controller;
+    expect(h.hook.result.current.radius).toBe(0.45);
+    const unchanged = begin(h.hook.result.current, workspace, topCenter), oldFrame = firstFrame();
+    end(h.hook.result.current, unchanged); deliverFrame(oldFrame);
+    expect(h.commit).not.toHaveBeenCalled(); expect(evidence(workspace)).toEqual(before);
+
+    act(() => { h.hook.result.current.setRadiusText("1"); });
+    expect(evidence(workspace)).toEqual(before);
+    expect(h.hook.result.current.controller).toBe(controller);
+    const token = begin(h.hook.result.current, workspace, topCenter);
+    deliverFrame(firstFrame());
+    expect(h.hook.result.current.preview).not.toBeNull();
+    end(h.hook.result.current, token); end(h.hook.result.current, token);
+    expect(h.commit).toHaveBeenCalledTimes(1);
+    const candidate = h.call().candidate;
+    expectOnlyTopVerticesMoved(workspace, candidate);
+    expect(candidate.session.state.commandCount).toBe(workspace.session.state.commandCount + 1);
+    expect(candidate.session.undoStack).toHaveLength(workspace.session.undoStack.length + 1);
+    expect(evidence(workspace)).toEqual(before);
+    expect(await h.release()).toBe(true);
+    expect(hashStudioEditableMesh(mesh(workspaceUndo(h.workspace)))).toBe(before.hash);
+    expect(hashStudioEditableMesh(mesh(workspaceRedo(workspaceUndo(h.workspace))))).toBe(hashStudioEditableMesh(mesh(candidate)));
+  });
+
+  it("한 batch의 반경 A→B→A는 이전 stroke를 취소하고 즉시 재시작한 새 반경만 사용한다", async () => {
+    const workspace = source(), before = evidence(workspace), h = mount(workspace);
+    const controller = h.hook.result.current.controller;
+    const old = begin(h.hook.result.current, workspace), oldFrame = firstFrame();
+    act(() => {
+      h.hook.result.current.setRadiusText("1");
+      h.hook.result.current.setRadiusText("0.45");
+    });
+    deliverFrame(oldFrame); end(h.hook.result.current, old);
+    expect(h.hook.result.current.phase).toBe("idle");
+    expect(h.hook.result.current.preview).toBeNull();
+    expect(h.commit).not.toHaveBeenCalled(); expect(evidence(workspace)).toEqual(before);
+
+    const issued: StudioSculptGestureToken[] = [];
+    act(() => {
+      h.hook.result.current.setRadiusText("1");
+      const token = controller.begin({ assetId: "cube", pointerId: 7, localPoint: topCenter });
+      if (token) issued.push(token);
+    });
+    const next = issued[0];
+    if (!next) throw new Error("변경한 반경으로 즉시 재시작하지 못했습니다.");
+    expect(h.hook.result.current.phase).toBe("drawing");
+    expect(h.hook.result.current.controller).toBe(controller);
+    deliverFrame(firstFrame()); end(h.hook.result.current, next);
+    expectOnlyTopVerticesMoved(workspace, h.call().candidate);
+    expect(await h.release()).toBe(true); expect(h.published).toHaveLength(1);
+  });
+
+  it("committing 중 반경 변경은 이전 발행을 막고 새 stroke를 늦은 finally로 정리하지 않는다", async () => {
+    const workspace = source(), before = evidence(workspace), h = mount(workspace);
+    const old = begin(h.hook.result.current, workspace), oldFrame = firstFrame();
+    end(h.hook.result.current, old);
+    expect(h.hook.result.current.phase).toBe("committing");
+    act(() => { h.hook.result.current.setRadiusText("1"); });
+    expect(h.call(0).isCurrent()).toBe(false);
+    const next = begin(h.hook.result.current, workspace, topCenter);
+    deliverFrame(oldFrame); deliverFrame(firstFrame());
+    const preview = h.hook.result.current.preview;
+    expect(preview).not.toBeNull();
+    expect(await h.release(0)).toBe(false);
+    expect(h.hook.result.current.phase).toBe("drawing");
+    expect(h.hook.result.current.preview).toBe(preview);
+    expect(h.published).toHaveLength(0); expect(evidence(workspace)).toEqual(before);
+    end(h.hook.result.current, next);
+    expectOnlyTopVerticesMoved(workspace, h.call(1).candidate);
+    expect(await h.release(1)).toBe(true); expect(h.published).toHaveLength(1);
+  });
+
+  it.each(["", "0", "-1", "NaN", "Infinity", "1e9999", "숫자 아님"])("잘못된 반경 초안 %j은 보존하되 기존 수치로 몰래 시작하지 않는다", (text) => {
+    const workspace = source(), before = evidence(workspace), h = mount(workspace);
+    act(() => { h.hook.result.current.setRadiusText("1"); });
+    act(() => { h.hook.result.current.setRadiusText(text); });
+    expect(h.hook.result.current.radius).toBe(1);
+    expect(h.hook.result.current.radiusText).toBe(text);
+    expect(h.hook.result.current.radiusError).not.toBe("");
+    act(() => {
+      expect(h.hook.result.current.controller.begin({ assetId: "cube", pointerId: 7, localPoint: topCenter })).toBeNull();
+    });
+    expect(h.commit).not.toHaveBeenCalled(); expect(evidence(workspace)).toEqual(before);
+    expect(requestFrame).not.toHaveBeenCalled();
+  });
+});

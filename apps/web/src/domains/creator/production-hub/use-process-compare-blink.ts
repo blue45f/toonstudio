@@ -5,6 +5,7 @@ import { clampProcessCompareBlinkMs } from "./process-compare-model";
 export interface ProcessCompareBlink {
   /** 현재 보이는 레이어가 B(after)인지. */
   readonly phase: boolean;
+  readonly setPhase: (next: boolean) => void;
   readonly togglePhase: () => void;
 }
 
@@ -34,6 +35,7 @@ export function useProcessCompareBlink(
 
   return {
     phase,
+    setPhase,
     togglePhase: () => setPhase((prev) => !prev),
   };
 }

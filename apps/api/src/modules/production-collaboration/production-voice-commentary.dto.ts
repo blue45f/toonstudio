@@ -37,6 +37,24 @@ export const productionVoiceCommentaryContentTypeSchema = z.enum([
   "audio/wav",
 ]);
 
+const compareSourceSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("revision"), processId: z.string().min(1).max(500), revisionId: z.string().min(1).max(500) }).strict(),
+  z.object({ kind: z.literal("external"), assetId: z.string().min(1).max(500) }).strict(),
+  z.object({ kind: z.literal("page"), projectId: z.string().min(1).max(500), episodeId: z.string().min(1).max(500), pageId: z.string().min(1).max(500) }).strict(),
+  z.object({ kind: z.literal("reference"), boardId: z.string().min(1).max(500), itemId: z.string().min(1).max(500) }).strict(),
+]);
+const compareViewportSchema = z.object({ scale: z.number().min(0.25).max(8), tx: z.number().min(-1).max(1), ty: z.number().min(-1).max(1) }).strict();
+const voiceCompareSchema = z.object({
+  version: z.literal(1), panes: z.array(compareSourceSchema).min(1).max(4),
+  mode: z.enum(["panes", "slider", "blink", "overlay"]), syncView: z.boolean(),
+  offsets: z.array(z.object({ source: compareSourceSchema, dx: z.number().min(-0.25).max(0.25), dy: z.number().min(-0.25).max(0.25) }).strict()).max(4),
+  flipBoth: z.boolean(), flipVertical: z.boolean(), diffOn: z.boolean(), overlayOpacity: z.number().min(0).max(1),
+  shared: compareViewportSchema, locals: z.array(compareViewportSchema).max(4), sliderPosition: z.number().min(0).max(100),
+  blink: z.object({ enabled: z.boolean(), intervalMs: z.number().min(250).max(2000), phase: z.boolean() }).strict(),
+  focusedPane: z.number().int().min(0).max(3),
+}).strict().refine((view) => view.locals.length === view.panes.length && view.focusedPane < view.panes.length,
+  { message: "각 비교 페인의 뷰포트와 집중 페인이 구성에 맞아야 합니다." });
+
 const voiceViewSnapshotSchema = z.object({
   surface: z.enum(["compare", "manuscript"]),
   poolItemId: z.string().max(500).nullable(),
@@ -45,7 +63,8 @@ const voiceViewSnapshotSchema = z.object({
   scale: z.number().finite(),
   tx: z.number().finite(),
   ty: z.number().finite(),
-}).strict();
+  compare: voiceCompareSchema.optional(),
+}).strict().refine((view) => !view.compare || view.surface === "compare", { message: "비교 상태는 비교 표면에서만 기록할 수 있습니다." });
 
 const voiceKeyframeSchema = z.object({
   atMs: z.number().int().min(0).max(86_400_000),

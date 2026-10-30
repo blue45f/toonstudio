@@ -6,9 +6,11 @@
  * 세션의 direct 모드로 돌리고, direct 로 허용되지 않는 무거운 작업은 그 사실을 알린다.
  */
 import { Columns2, Maximize2, Minimize2 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactElement } from "react";
 
 import { STUDIO_FOCUS_RING } from "../../studio-panel-ui";
+import { hasActiveImageFilters } from "../../render/studio-konva-filter-fields";
+import { applyFilterMaskToPixels, computeFilterMaskCoverage, filterMaskRenderKey, shouldApplyFilterMask } from "../studio-filter-mask";
 
 import { createStudioFilterGalleryPreviewScheduler } from "./studio-filter-gallery-preview";
 
@@ -16,8 +18,10 @@ import type { StudioFilterGalleryPreviewPlan, StudioFilterGalleryPreviewSchedule
 import type { ImageFilterFields } from "../../render/studio-konva-filter-fields";
 import type { StudioImageFilterResidentWorkerSession } from "../../studio-image-filter-worker-client";
 import type { StudioImageDataLike } from "../../studio-filters";
+import type { FilterMaskCoverage, FilterMaskLike } from "../studio-filter-mask";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { FALLBACK_CHAIN, getLang, registerI18nLocaleEntries, resolveTranslationForDisplay } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 export interface StudioFilterGalleryPreviewProps {
@@ -27,6 +31,8 @@ export interface StudioFilterGalleryPreviewProps {
   readonly flippedY: boolean;
   /** 캔버스 미리보기와 같은 필드(요소 필드 위에 초안 스택). */
   readonly fields: ImageFilterFields;
+  /** 필터 계산 뒤 원본과 합성하는 기존 이미지 마스크. */
+  readonly filterMask?: FilterMaskLike;
   /** 대화상자 격자 안 배치. */
   readonly className?: string;
 }
@@ -41,7 +47,26 @@ type SourceState =
       readonly width: number;
       readonly height: number;
       readonly revision: number;
+      readonly identity: string;
     };
+
+type MaskState =
+  | { readonly src: string; readonly key: string; readonly status: "ready"; readonly coverage: FilterMaskCoverage }
+  | { readonly src: string; readonly key: string; readonly status: "error" }
+  | null;
+
+const MASK_STATUS = {
+  loading: "필터 마스크를 불러오는 중…",
+  error: "필터 마스크를 읽지 못했어요. 캔버스 미리보기로 확인하세요.",
+} as const;
+registerI18nLocaleEntries("ko", {
+  "studio.filterGallery.preview.maskLoading": MASK_STATUS.loading,
+  "studio.filterGallery.preview.maskError": MASK_STATUS.error,
+});
+registerI18nLocaleEntries("en", {
+  "studio.filterGallery.preview.maskLoading": "Loading the filter mask…",
+  "studio.filterGallery.preview.maskError": "Could not read the filter mask. Check the canvas preview.",
+});
 
 const CHECKER_STYLE = {
   backgroundImage: "conic-gradient(from 90deg at 1px 1px, oklch(0.24 0.011 64) 25%, oklch(0.19 0.009 68) 0)",
@@ -78,22 +103,77 @@ function errorText(error: unknown): string {
   return "미리보기를 계산하지 못했어요. 캔버스 미리보기로 확인하세요.";
 }
 
-export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, fields, className }: StudioFilterGalleryPreviewProps): ReactElement {
+export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, fields, filterMask, className }: StudioFilterGalleryPreviewProps): ReactElement {
   const resultCanvasRef = useRef<HTMLCanvasElement>(null);
   const sourceCanvasRef = useRef<HTMLCanvasElement>(null);
   const schedulerRef = useRef<StudioFilterGalleryPreviewScheduler<ImageFilterFields> | null>(null);
   const fieldsRef = useRef(fields);
+  const currentPreviewRef = useRef<string | null>(null);
   const [source, setSource] = useState<SourceState>({ status: "idle" });
+  const [mask, setMask] = useState<MaskState>(null);
+  const [paintedIdentity, setPaintedIdentity] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [compare, setCompare] = useState(false);
   const [actualSize, setActualSize] = useState(false);
   const width = plan.kind === "ready" ? plan.width : 0;
   const height = plan.kind === "ready" ? plan.height : 0;
+  const sourceIdentity = JSON.stringify([src, width, height, flipped, flippedY]);
+  const maskRequested = hasActiveImageFilters(fields) && filterMask !== undefined && shouldApplyFilterMask(filterMask);
+  const maskSrc = maskRequested ? filterMask?.filterMaskSrc : undefined;
+  const maskKey = maskRequested && filterMask ? filterMaskRenderKey(filterMask) : "";
+  const currentMask = mask && mask.src === maskSrc && mask.key === maskKey ? mask : null;
+  const activeMask = currentMask?.status === "ready" ? currentMask.coverage : null;
+  const maskBlocked = maskRequested && !activeMask;
+  const previewIdentity = JSON.stringify([sourceIdentity, maskKey, maskSrc]);
+  const sourceCurrent = source.status === "ready" && source.identity === sourceIdentity;
+
+  // props가 바뀐 커밋부터 이전 비동기 출력은 폐기한다(수동 effect 정리 전의 완료도 포함).
+  useLayoutEffect(() => {
+    currentPreviewRef.current = previewIdentity;
+    return () => { currentPreviewRef.current = null; };
+  }, [previewIdentity]);
 
   useEffect(() => {
     fieldsRef.current = fields;
   }, [fields]);
+
+  useEffect(() => {
+    if (!maskSrc) {
+      setMask(null);
+      return;
+    }
+    let cancelled = false;
+    const image = new Image();
+    const fail = () => {
+      if (!cancelled) setMask({ src: maskSrc, key: maskKey, status: "error" });
+    };
+    if (needsCors(maskSrc)) image.crossOrigin = "anonymous";
+    image.onload = () => {
+      if (cancelled) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth || image.width;
+        canvas.height = image.naturalHeight || image.height;
+        const context = canvas.getContext("2d");
+        if (!context) { fail(); return; }
+        context.drawImage(image, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+        const coverage = computeFilterMaskCoverage(pixels.data, canvas.width, canvas.height);
+        if (!coverage) { fail(); return; }
+        setMask({ src: maskSrc, key: maskKey, status: "ready", coverage });
+      } catch {
+        fail();
+      }
+    };
+    image.onerror = fail;
+    image.src = maskSrc;
+    return () => {
+      cancelled = true;
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [maskSrc, maskKey]);
 
   // 원본 스냅샷: src·문서 크기·뒤집기가 바뀔 때만 다시 만든다.
   useEffect(() => {
@@ -123,10 +203,10 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
         context.drawImage(image, 0, 0, width, height);
         context.restore();
         const pixels = context.getImageData(0, 0, width, height).data;
-        // 첫 결과가 오기 전에는 원본을 보인다.
+        // 원본은 비교용으로 준비하되 결과는 현재 마스크 합성이 끝난 뒤에만 공개한다.
         paintPixels(resultCanvasRef.current, { data: pixels, width, height });
         nextSourceRevision += 1;
-        setSource({ status: "ready", pixels, width, height, revision: nextSourceRevision });
+        setSource({ status: "ready", pixels, width, height, revision: nextSourceRevision, identity: sourceIdentity });
       } catch {
         setSource({ status: "error", message: "원본 픽셀을 읽지 못했어요(이미지 출처 제한). 캔버스 미리보기로 확인하세요." });
       }
@@ -140,14 +220,15 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
       image.onload = null;
       image.onerror = null;
     };
-  }, [src, width, height, flipped, flippedY]);
+  }, [src, width, height, flipped, flippedY, sourceIdentity]);
 
   // 원본이 준비되면 상주 세션과 실행 순서를 만든다. 원본이 바뀌면 둘 다 새로 만든다.
   useEffect(() => {
-    if (source.status !== "ready") return;
+    if (source.status !== "ready" || !sourceCurrent || maskBlocked) return;
     let session: StudioImageFilterResidentWorkerSession | null = null;
     let disposed = false;
     const request = { data: source.pixels, width: source.width, height: source.height };
+    setRunError(null);
     const scheduler = createStudioFilterGalleryPreviewScheduler<ImageFilterFields, StudioImageDataLike>({
       run: async (el, signal) => {
         const client = await import("../../studio-image-filter-worker-client");
@@ -159,10 +240,21 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
         return result.imageData;
       },
       onResult: (imageData) => {
+        if (currentPreviewRef.current !== previewIdentity) return;
+        if (activeMask) {
+          applyFilterMaskToPixels({
+            target: imageData.data, original: source.pixels,
+            width: source.width, height: source.height, coverage: activeMask,
+            transform: { flipX: flipped, flipY: flippedY },
+          });
+        }
         setRunError(null);
         paintPixels(resultCanvasRef.current, imageData);
+        setPaintedIdentity(previewIdentity);
       },
-      onError: (error) => setRunError(errorText(error)),
+      onError: (error) => {
+        if (currentPreviewRef.current === previewIdentity) setRunError(errorText(error));
+      },
       onBusyChange: setBusy,
     });
     schedulerRef.current = scheduler;
@@ -174,7 +266,7 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
       session?.dispose();
       setBusy(false);
     };
-  }, [source]);
+  }, [source, sourceCurrent, maskBlocked, activeMask, previewIdentity, flipped, flippedY]);
 
   useEffect(() => {
     schedulerRef.current?.request(fields);
@@ -186,6 +278,13 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
       return `이미지가 커서(${plan.width}×${plan.height}px) 캔버스처럼 필터를 계산하지 않아요.`;
     }
     if (!src) return "미리볼 원본이 없어요. 캔버스 미리보기로 확인하세요.";
+    if (maskBlocked) {
+      const failed = currentMask?.status === "error";
+      return resolveTranslationForDisplay(
+        getLang(), failed ? "studio.filterGallery.preview.maskError" : "studio.filterGallery.preview.maskLoading",
+        FALLBACK_CHAIN, failed ? MASK_STATUS.error : MASK_STATUS.loading,
+      );
+    }
     if (source.status === "error") return source.message;
     if (source.status === "loading" || source.status === "idle") return "원본을 불러오는 중…";
     if (runError) return runError;
@@ -193,7 +292,7 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
     if (plan.stackSkipped) return `작업량 상한을 넘어 효과 스택이 빠진 결과예요(캔버스와 같음) · ${size}`;
     return busy ? `계산 중… · ${size}` : `${compare ? "원본" : "결과"} · ${size}`;
   })();
-  const showCanvas = plan.kind === "ready" && Boolean(src) && source.status !== "error";
+  const showCanvas = plan.kind === "ready" && Boolean(src) && sourceCurrent && !maskBlocked;
 
   return (
     <section aria-label="결과 미리보기" className={cn("flex min-h-0 flex-col gap-2 border-b border-line p-3 lg:border-b-0 lg:border-r", className)}>
@@ -234,7 +333,7 @@ export function StudioFilterGalleryPreview({ src, plan, flipped, flippedY, field
       >
         {[resultCanvasRef, sourceCanvasRef].map((ref, index) => {
           const isSource = index === 1;
-          const visible = showCanvas && compare === isSource;
+          const visible = showCanvas && compare === isSource && (isSource || paintedIdentity === previewIdentity);
           return (
             <canvas
               key={isSource ? "source" : "result"}

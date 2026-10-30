@@ -1145,7 +1145,7 @@ export function StudioHybridDccViewport({
         <div className="pointer-events-auto flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-panel/95 p-1 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]">
           {onComponentSelectionModeChange ? (
             <>
-              <div className="flex gap-1" role="group" aria-label="메시 선택 모드">
+              <div className="flex shrink-0 gap-1" role="group" aria-label="메시 선택 모드">
                 {([
                   { id: "object", label: "오브젝트", accessible: "오브젝트 선택 모드 (4)" },
                   { id: "vertex", label: "점", accessible: "꼭짓점 선택 모드 (1)" },
@@ -1168,7 +1168,7 @@ export function StudioHybridDccViewport({
           ) : null}
           {onCommitAssetTransform && effectiveSelectionMode === "object" ? (
             <>
-              <div className="flex gap-1" role="group" aria-label="오브젝트 변환 도구">
+              <div className="flex shrink-0 gap-1" role="group" aria-label="오브젝트 변환 도구">
                 <SegmentedButton
                   active={transformMode === "translate"}
                   disabled={editingDisabled}
@@ -1205,7 +1205,7 @@ export function StudioHybridDccViewport({
               <span className="my-1 w-px shrink-0 bg-line" aria-hidden="true" />
             </>
           ) : null}
-          <div className="flex gap-1" role="group" aria-label="투영 방식">
+          <div className="flex shrink-0 gap-1" role="group" aria-label="투영 방식">
             <SegmentedButton
               active={effectiveProjection === "perspective"}
               label="원근 투영"
@@ -1222,7 +1222,7 @@ export function StudioHybridDccViewport({
             </SegmentedButton>
           </div>
           <span className="my-1 w-px shrink-0 bg-line" aria-hidden="true" />
-          <div className="flex gap-1" role="group" aria-label="표준 보기와 화면 맞춤">
+          <div className="flex shrink-0 gap-1" role="group" aria-label="표준 보기와 화면 맞춤">
             {([
               { id: "isometric", label: "등각", accessible: "등각 보기" },
               { id: "front", label: "앞", accessible: "정면 보기 (숫자 키패드 1)" },
@@ -1258,7 +1258,7 @@ export function StudioHybridDccViewport({
             </SegmentedButton>
           </div>
           <span className="my-1 w-px shrink-0 bg-line" aria-hidden="true" />
-          <div className="flex gap-1" role="group" aria-label="표현 모드">
+          <div className="flex shrink-0 gap-1" role="group" aria-label="표현 모드">
             {OVERLAY_OPTIONS.map((option) => (
               <SegmentedButton
                 key={option.id}

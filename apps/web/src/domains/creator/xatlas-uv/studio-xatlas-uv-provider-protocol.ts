@@ -1,13 +1,17 @@
 import { sha256HexPortable } from "../studio-sha256";
 
-import type {
-  StudioXAtlasUvProviderLimits,
-  StudioXAtlasUvRequest,
-  StudioXAtlasUvResult,
-  StudioXAtlasUvRuntimeAssets,
+import {
+  STUDIO_XATLAS_UV_PROVIDER_VERSION,
+  type StudioXAtlasUvProviderLimits,
+  type StudioXAtlasUvRequest,
+  type StudioXAtlasUvResult,
+  type StudioXAtlasUvRuntimeAssets,
 } from "./studio-xatlas-uv-provider";
 
-export const STUDIO_XATLAS_UV_WORKER_PROTOCOL_VERSION = 1 as const;
+import { hasStudioXAtlasUvOwnWorkerData, isStudioXAtlasUvOwnedWorkerArray, studioXAtlasUvWorkerArrayBytes } from "./studio-xatlas-uv-provider-worker-data";
+
+/** 메시지 버전과 artifact 버전은 별개 계약이며 이번 변경에서 각각 2로 올린다. */
+export const STUDIO_XATLAS_UV_WORKER_PROTOCOL_VERSION = 2 as const;
 
 export interface StudioXAtlasUvWorkerConfigureMessage {
   readonly type: "studio-xatlas-uv/configure";
@@ -86,7 +90,9 @@ export type StudioXAtlasUvWorkerOutboundMessage =
   | StudioXAtlasUvWorkerResultMessage;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function exactKeys(
@@ -94,11 +100,11 @@ function exactKeys(
   required: readonly string[],
   optional: readonly string[] = [],
 ): boolean {
-  const keys = Object.keys(value);
+  const keys = Reflect.ownKeys(value);
   return keys.length >= required.length
     && keys.length <= required.length + optional.length
     && required.every((key) => Object.hasOwn(value, key))
-    && keys.every((key) => required.includes(key) || optional.includes(key));
+    && keys.every((key) => typeof key === "string" && (required.includes(key) || optional.includes(key)));
 }
 
 function isEpoch(value: unknown): value is number {
@@ -115,7 +121,7 @@ function isSha256(value: unknown): value is `sha256:${string}` {
 
 function bytesHash(value: ArrayBufferView): `sha256:${string}` {
   return `sha256:${sha256HexPortable(
-    new Uint8Array(value.buffer, value.byteOffset, value.byteLength),
+    studioXAtlasUvWorkerArrayBytes(value),
   )}`;
 }
 
@@ -153,6 +159,7 @@ export function studioXAtlasUvResultHash(
     positions: bytesHash(artifact.positions),
     uv: bytesHash(artifact.uv),
     indices: bytesHash(artifact.indices),
+    originalInputVertexIndices: bytesHash(artifact.originalInputVertexIndices),
     meshes: artifact.meshes,
     atlas: artifact.atlas,
     receipt: artifact.receipt,
@@ -170,7 +177,8 @@ export function isStudioXAtlasUvWorkerInboundMessage(
   value: unknown,
 ): value is StudioXAtlasUvWorkerInboundMessage {
   if (
-    !isRecord(value)
+    !hasStudioXAtlasUvOwnWorkerData(value)
+    || !isRecord(value)
     || value.version !== STUDIO_XATLAS_UV_WORKER_PROTOCOL_VERSION
     || typeof value.type !== "string"
   ) {
@@ -324,13 +332,19 @@ function isSuccess(value: unknown): boolean {
   return isRecord(artifact)
     && exactKeys(
       artifact,
-      ["kind", "version", "positions", "uv", "indices", "meshes", "atlas", "receipt"],
+      ["kind", "version", "positions", "uv", "indices", "originalInputVertexIndices", "meshes", "atlas", "receipt"],
     )
     && artifact.kind === "studio-xatlas-uv-atlas"
-    && artifact.version === STUDIO_XATLAS_UV_WORKER_PROTOCOL_VERSION
+    && artifact.version === STUDIO_XATLAS_UV_PROVIDER_VERSION
     && artifact.positions instanceof Float32Array
+    && isStudioXAtlasUvOwnedWorkerArray(artifact.positions, "Float32Array")
     && artifact.uv instanceof Float32Array
+    && isStudioXAtlasUvOwnedWorkerArray(artifact.uv, "Float32Array")
     && artifact.indices instanceof Uint32Array
+    && isStudioXAtlasUvOwnedWorkerArray(artifact.indices, "Uint32Array")
+    && artifact.originalInputVertexIndices instanceof Uint32Array
+    && isStudioXAtlasUvOwnedWorkerArray(artifact.originalInputVertexIndices, "Uint32Array")
+    && artifact.originalInputVertexIndices.length === artifact.positions.length / 3
     && Array.isArray(artifact.meshes)
     && artifact.meshes.every(isMeshRange)
     && isAtlasReceipt(artifact.atlas)
@@ -350,14 +364,15 @@ function isResultBinding(value: unknown): value is StudioXAtlasUvWorkerResultBin
 }
 
 export function isStudioXAtlasUvResult(value: unknown): value is StudioXAtlasUvResult {
-  return isFailure(value) || isSuccess(value);
+  return hasStudioXAtlasUvOwnWorkerData(value) && (isFailure(value) || isSuccess(value));
 }
 
 export function isStudioXAtlasUvWorkerOutboundMessage(
   value: unknown,
 ): value is StudioXAtlasUvWorkerOutboundMessage {
   if (
-    !isRecord(value)
+    !hasStudioXAtlasUvOwnWorkerData(value)
+    || !isRecord(value)
     || value.version !== STUDIO_XATLAS_UV_WORKER_PROTOCOL_VERSION
     || typeof value.type !== "string"
   ) {
@@ -419,5 +434,6 @@ export function studioXAtlasUvResultTransfers(result: StudioXAtlasUvResult): Tra
   addBuffer(buffers, result.artifact.positions);
   addBuffer(buffers, result.artifact.uv);
   addBuffer(buffers, result.artifact.indices);
+  addBuffer(buffers, result.artifact.originalInputVertexIndices);
   return [...buffers];
 }

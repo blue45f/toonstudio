@@ -43,11 +43,19 @@ export interface StudioHybridDccSculptStrokeHost {
   ) => Promise<boolean>;
 }
 
+function parseSculptRadius(text: string): number | null {
+  if (text.trim() === "") return null;
+  const value = Number(text);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 /** 입력 sample은 모두 계산하고 표시 발행만 frame 단위로 합친다. 문서는 정상 종료 때 한 번 확정한다. */
 export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStrokeHost) {
   const bt = useBilingual("StudioHybridDccSculptTools");
   const [kind, setKind] = useState<StudioSculptBrushKind>("inflate");
   const [carve, setCarve] = useState(false);
+  const [radiusText, setRadiusTextValue] = useState("0.45");
+  const radiusState = useRef({ value: 0.45, valid: true });
   const [phase, setPhase] = useState<"idle" | "drawing" | "committing">("idle");
   const [preview, setPreview] = useState<StudioSculptGeometryPreview | null>(null);
   const [notice, setNotice] = useState("");
@@ -76,6 +84,20 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
     "조형을 취소했습니다. 원본과 편집 이력은 그대로입니다.",
     "Sculpting cancelled. The source and edit history are unchanged.",
   );
+
+  const setRadiusText = (text: string) => {
+    if (!live.current) return;
+    const parsed = parseSculptRadius(text);
+    const previous = radiusState.current;
+    const next = { value: parsed ?? previous.value, valid: parsed !== null };
+    radiusState.current = next;
+    // 같은 render 안의 A→B→A도 기존 gesture를 살리지 않도록 즉시 취소한다.
+    if (next.value !== previous.value || next.valid !== previous.valid) {
+      const operation = active.current;
+      if (operation) clearOperation(operation, cancelledMessage());
+    }
+    setRadiusTextValue(text);
+  };
 
   useLayoutEffect(() => {
     live.current = true;
@@ -121,13 +143,15 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
   const begin = ({ assetId, pointerId, localPoint }: StudioSculptGestureInput) => {
     if (!live.current || !host.enabled || latestHost.current.externalBusy || active.current
       || host.workspace.activeAssetId !== assetId || !Number.isSafeInteger(pointerId) || pointerId < 0) return null;
+    const radius = radiusState.current;
+    if (!radius.valid) return null;
     const controller = new AbortController();
     const lease = captureLease(controller);
     if (!lease()) return null;
     const token = createStudioSculptGestureToken();
     try {
       const session = createStudioHybridDccSculptStrokeSession(host.workspace, {
-        kind, radius: 0.45, strength: carve ? -0.2 : 0.2,
+        kind, radius: radius.value, strength: carve ? -0.2 : 0.2,
         ...(kind === "grab" || kind === "snakeHook" ? { direction: { x: 0, y: 0.15, z: 0 } } : {}),
       });
       const onAbort = () => {
@@ -211,6 +235,9 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
 
   return {
     kind, setKind, carve, setCarve, phase, preview, notice, error, controller,
+    radius: radiusState.current.value, radiusText, setRadiusText,
+    radiusError: parseSculptRadius(radiusText) === null
+      ? bt("반경은 0보다 큰 유한한 숫자로 입력하세요.", "Enter a finite radius greater than zero.") : "",
     engaged: phase !== "idle",
     cancel: () => { const operation = active.current; if (operation) cancel(operation.token); },
   };
