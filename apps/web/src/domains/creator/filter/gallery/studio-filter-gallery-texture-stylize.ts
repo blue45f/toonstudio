@@ -201,6 +201,20 @@ const MT_SIZE = paramSlider("tileSize", "타일 크기", 2, 100, 12);
 const MT_GROUT = paramSlider("groutWidth", "줄눈 폭", 1, 15, 3);
 const MT_LIGHTEN = paramSlider("lightenGrout", "줄눈 밝기", 0, 10, 9);
 
+/**
+ * 줄눈 폭 슬라이더 값 → 줄눈 선 폭(px). 전엔 타일 크기의 45% 에서 잘라 기본 타일 12px 에서 줄눈 폭 6~15 가 모두 같은 그림이었다
+ * (타일이 31px 이하면 늘 끝쪽 칸이 같았다). 45% 까지는 예전 그대로 두고, 그 위는 남은 칸을 고르게 나눠 슬라이더 끝(15)에서 타일
+ * 면이 타일 크기의 10% 와 0.7px 중 넓은 쪽만큼 남게 올린다(그 전에 15px 에 닿는 큰 타일은 요청값 그대로). 0.7px 는 가장 작은
+ * 2px 타일 몫이다. 격자 휨(타일의 10%)이 0.2px 뿐이라 모든 픽셀 중심이 줄눈선에서 0.7px 안에 있어, 면을 0.6px 아래로 좁히면
+ * 모든 픽셀이 줄눈이 되고 끝쪽 칸이 다시 같아진다.
+ */
+function groutLineWidth(requested: number, size: number): number {
+  const knee = size * 0.45;
+  if (requested <= knee) return requested;
+  const widest = size - Math.max(size * 0.1, 0.7);
+  return knee + (requested - knee) * Math.min(1, (widest - knee) / (MT_GROUT.max - knee));
+}
+
 const mosaicTiles: StudioFilterGalleryEffectDef = {
   id: "texture.mosaic-tiles",
   category: "texture",
@@ -212,7 +226,7 @@ const mosaicTiles: StudioFilterGalleryEffectDef = {
   apply(image, params, context) {
     const { width, height, data } = image;
     const size = Math.min(readSlider(params, MT_SIZE), Math.max(2, width, height));
-    const grout = Math.min(readSlider(params, MT_GROUT), size * 0.45) / 2;
+    const grout = groutLineWidth(readSlider(params, MT_GROUT), size) / 2;
     const lighten = readSlider(params, MT_LIGHTEN) / 10;
     const seed = context.seed + 1511;
     const warp = size * 0.1;
