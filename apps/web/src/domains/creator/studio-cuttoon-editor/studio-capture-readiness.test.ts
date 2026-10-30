@@ -68,6 +68,54 @@ describe("waitForStudioCaptureReady", () => {
     expect(targetStage.drawCount).toBe(1);
   });
 
+  it("waits for pending wet-paper bakes within half the remaining budget and repaints before capture", async () => {
+    const targetStage = stage();
+    let frames = 0;
+    const budgets: number[] = [];
+
+    await expect(waitForStudioCaptureReady({
+      pageId: "page-1",
+      getRenderedPageId: () => "page-1",
+      getStage: () => targetStage,
+      timeoutMs: 8_000,
+      nextFrame: async () => {
+        frames += 1;
+      },
+      waitForFonts: async () => undefined,
+      preloadImage: async () => undefined,
+      waitForWetPaperBakes: async (signal, budgetMs) => {
+        expect(signal.aborted).toBe(false);
+        budgets.push(budgetMs);
+        return true;
+      },
+    })).resolves.toBe(targetStage);
+
+    expect(budgets).toHaveLength(1);
+    expect(budgets[0]).toBeGreaterThan(3_000);
+    expect(budgets[0]).toBeLessThanOrEqual(4_000);
+    // 기다렸으면 다시 렌더된 획이 그려지도록 두 프레임을 더 준다(기본 4프레임 중 첫 커밋 대기 1프레임은 없다).
+    expect(frames).toBe(5);
+  });
+
+  it("does not add frames when no wet-paper bake was pending", async () => {
+    const targetStage = stage();
+    let frames = 0;
+
+    await expect(waitForStudioCaptureReady({
+      pageId: "page-1",
+      getRenderedPageId: () => "page-1",
+      getStage: () => targetStage,
+      nextFrame: async () => {
+        frames += 1;
+      },
+      waitForFonts: async () => undefined,
+      preloadImage: async () => undefined,
+      waitForWetPaperBakes: async () => false,
+    })).resolves.toBe(targetStage);
+
+    expect(frames).toBe(3);
+  });
+
   it("stops when the selected page changes during readiness work", async () => {
     const targetStage = stage();
     let renderedPageId = "page-1";

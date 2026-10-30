@@ -102,6 +102,8 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
       if (!whole || !again || !sliced) continue;
       while (!advanceWetPaperSolve(sliced, 1)) { /* 시분할 호스트와 같은 한 스텝씩 */ }
       const slicedResult = finishWetPaperSolve(sliced);
+      expect(slicedResult, programId).not.toBeNull();
+      if (!slicedResult) continue;
       expect(bakeHash(again), programId).toBe(bakeHash(whole));
       expect(bakeHash(slicedResult), programId).toBe(bakeHash(whole));
       expect(whole.steps).toBe(studioWetPaperProgramSteps(STUDIO_WET_PAPER_BAKE_PROGRAMS[programId]));
@@ -139,9 +141,9 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
       programId,
       program,
       studioWetPaperProgramSteps(program),
-    );
+    )!;
     advanceWetPaperSolve(solve, solve.steps);
-    const result = finishWetPaperSolve(solve);
+    const result = finishWetPaperSolve(solve)!;
     const interior = annulusMean(result, 100, 100, 0, washRadius * 0.5);
     const rim = annulusMean(result, 100, 100, washRadius * 0.7, washRadius);
     expect(interior).toBeGreaterThan(0.05);
@@ -163,9 +165,9 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
       // 물만 든 붓(안료 0)을 워시가 반쯤 마른 스텝에 떨어뜨린다. null이면 같은 자리를 다시 적시지 않는다.
       const events = eventsAt(dabs, settings, program, (index) => (index === 0 ? 0 : rewetStep ?? steps));
       events.pigment[1] = 0;
-      const solve = createWetPaperSolveFromEvents(events, programId, program, steps);
+      const solve = createWetPaperSolveFromEvents(events, programId, program, steps)!;
       advanceWetPaperSolve(solve, steps);
-      return finishWetPaperSolve(solve);
+      return finishWetPaperSolve(solve)!;
     };
     const dry = bake(null);
     const rewet = bake(Math.round(steps * 0.4));
@@ -235,10 +237,11 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
     expect(halo).toBeGreaterThan(0.02);
   });
 
-  it("caps the dense grid for extreme extents (explicit bounds)", () => {
+  it("caps the dense grid within explicit bounds and refuses extents the core dab cannot resolve", () => {
     const limits = STUDIO_WET_PAPER_GRID_LIMITS;
     for (const cellsAcross of [7, 10, 20]) {
-      const grid = planWetPaperGrid({
+      // 극단 범위: 상한을 맞추려면 셀을 키워 core dab(지름 12px)이 1.5셀보다 좁아진다 → 굽지 않는다(베이스 워시).
+      expect(planWetPaperGrid({
         minX: -20_000,
         minY: -9_000,
         maxX: 20_000,
@@ -248,7 +251,23 @@ describe("wet-paper settled bake solver (MoXi / Curtis / Chu & Tai)", () => {
         strokeLength: 400_000,
         depositAreaPx: 1e9,
         eventCount: 16_384,
+      }, cellsAcross)).toBeNull();
+      // 상한 때문에 셀을 키워도 core dab(지름 60px)이 1.5셀 이상이면 상한 안의 격자를 만든다.
+      const grid = planWetPaperGrid({
+        minX: 0,
+        minY: 0,
+        maxX: 1_800,
+        maxY: 1_200,
+        meanCoreRadius: 30,
+        maxRadius: 40,
+        strokeLength: 6_000,
+        depositAreaPx: 3e7,
+        eventCount: 4_000,
       }, cellsAcross);
+      expect(grid, String(cellsAcross)).not.toBeNull();
+      if (!grid) continue;
+      expect(grid.cellPx).toBeGreaterThan((30 * 2) / cellsAcross);
+      expect((30 * 2) / grid.cellPx).toBeGreaterThanOrEqual(limits.minCoreCellsAcross);
       expect(grid.cells).toBeLessThanOrEqual(limits.maxCells);
       expect(grid.width).toBeLessThanOrEqual(limits.maxSide);
       expect(grid.height).toBeLessThanOrEqual(limits.maxSide);

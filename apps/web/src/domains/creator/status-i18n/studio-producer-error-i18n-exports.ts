@@ -361,6 +361,7 @@ registerI18nLocaleEntries("ko", {
   "studio.producerError.svgExport.verticalBubbleLatinApprox": "말풍선 세로쓰기 속 라틴/숫자 폭은 글꼴 실측 없이 근사해 열 나눔이 화면과 조금 다를 수 있어요.",
   "studio.producerError.svgExport.clipMaskUnsupported": "아래 레이어로 자르기(클리핑 마스크)는 SVG에서 지원되지 않아 자르지 않고 표시돼요.",
   "studio.producerError.svgExport.blendModeUnsupported": "혼합 모드({blend})는 SVG에서 지원되지 않아 보통 합성으로 표시돼요.",
+  "studio.producerError.svgExport.wetPaperBakeBudget": "젖은 종이 굽기 작업량 한도를 넘어 이 획은 굽지 않은 기본 수채로 내보냈어요.",
   "studio.producerError.svgExport.resultSaved": "SVG 저장 완료 — 요소 {elementCount}개 벡터 변환",
   "studio.producerError.svgExport.resultDropped": "제외 {count}개",
   "studio.producerError.svgExport.resultApprox": "근사 {count}개",
@@ -381,6 +382,7 @@ registerI18nLocaleEntries("en", {
   "studio.producerError.svgExport.verticalBubbleLatinApprox": "Widths of Latin/numeric runs in vertical bubble text are approximated without font measurement, so column breaks may differ slightly from the screen.",
   "studio.producerError.svgExport.clipMaskUnsupported": "Clipping to the layer below (clipping mask) is not supported in SVG, so it is shown unclipped.",
   "studio.producerError.svgExport.blendModeUnsupported": "The blend mode ({blend}) is not supported in SVG, so it is shown with normal compositing.",
+  "studio.producerError.svgExport.wetPaperBakeBudget": "The wet-paper bake work limit was reached, so this stroke was exported as the unbaked base watercolour.",
   "studio.producerError.svgExport.resultSaved": "SVG saved — {elementCount} elements converted to vectors",
   "studio.producerError.svgExport.resultDropped": "{count} excluded",
   "studio.producerError.svgExport.resultApprox": "{count} approximated",
@@ -402,6 +404,7 @@ const SVG_EXPORT_SKIP_KEYS: Readonly<Record<string, string>> = {
   verticalBubbleLatinApprox: "studio.producerError.svgExport.verticalBubbleLatinApprox",
   clipMaskUnsupported: "studio.producerError.svgExport.clipMaskUnsupported",
   blendModeUnsupported: "studio.producerError.svgExport.blendModeUnsupported",
+  wetPaperBakeBudget: "studio.producerError.svgExport.wetPaperBakeBudget",
 };
 
 /** 키별 ko 원문 템플릿 — 미등록 로케일·미해석 시 폴백이며 이관 전 원문과 동일하다. */
@@ -419,6 +422,7 @@ const SVG_EXPORT_SKIP_KO: Readonly<Record<string, string>> = {
   "studio.producerError.svgExport.verticalBubbleLatinApprox": "말풍선 세로쓰기 속 라틴/숫자 폭은 글꼴 실측 없이 근사해 열 나눔이 화면과 조금 다를 수 있어요.",
   "studio.producerError.svgExport.clipMaskUnsupported": "아래 레이어로 자르기(클리핑 마스크)는 SVG에서 지원되지 않아 자르지 않고 표시돼요.",
   "studio.producerError.svgExport.blendModeUnsupported": "혼합 모드({blend})는 SVG에서 지원되지 않아 보통 합성으로 표시돼요.",
+  "studio.producerError.svgExport.wetPaperBakeBudget": "젖은 종이 굽기 작업량 한도를 넘어 이 획은 굽지 않은 기본 수채로 내보냈어요.",
 };
 
 /**

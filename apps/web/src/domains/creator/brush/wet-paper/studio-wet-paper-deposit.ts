@@ -185,6 +185,7 @@ export function buildWetPaperDepositEvents(
   let lastCoreY = Number.NaN;
   let dirX = 1;
   let dirY = 0;
+  let directionKnown = false;
   let load = 1;
   let pressure = 1;
   let lastCoreRadius = meanCoreRadius;
@@ -203,6 +204,15 @@ export function buildWetPaperDepositEvents(
           along += length;
           dirX = dx / length;
           dirY = dy / length;
+          if (!directionKnown) {
+            // 첫 core 와 그 사이 dab 은 자리 표시 방향(1, 0)을 받았다. 첫 진행 방향으로 채워 시작 끝이 획 방향을 따르게
+            // 한다(그러지 않으면 +x 가 아닌 획의 시작 끝이 비뚤고, 같은 획을 거꾸로 그리면 결과가 달랐다).
+            for (let earlier = 0; earlier < slot; earlier += 1) {
+              events.dirX[earlier] = dirX;
+              events.dirY[earlier] = dirY;
+            }
+            directionKnown = true;
+          }
         }
       }
       lastCoreX = dab.x;
@@ -326,7 +336,14 @@ export function applyWetPaperDepositEvent(
   const radius = events.radius[eventIndex] ?? MIN_RADIUS;
   const gx = (ex - originXPx) / cellPx;
   const gy = (ey - originYPx) / cellPx;
-  const radiusCells = Math.max(0.5, radius / cellPx);
+  const exactRadiusCells = radius / cellPx;
+  // 지름이 2셀보다 작은 dab 은 셀 중심 표본이 원을 통째로 놓칠 수 있다(셀 경계를 따라가는 가는 직선 획이 비었다).
+  // 그런 dab 은 담긴 셀 하나에만 넣고, 물은 선이 셀을 덮는 비율(2r)만큼, 안료는 큰 dab 의 현 정규화 적분과 같은
+  // 면적(π r², 간격이 있으면 2r·간격 중 작은 값)만큼 넣는다. 지름 2셀 이상이면 담긴 셀 중심이 늘 평평한 몸통 안이다.
+  const subCell = exactRadiusCells < 1;
+  const subCellX = Math.floor(gx);
+  const subCellY = Math.floor(gy);
+  const radiusCells = Math.max(0.5, exactRadiusCells);
   const minX = Math.max(0, Math.floor(gx - radiusCells - 1));
   const maxX = Math.min(width - 1, Math.ceil(gx + radiusCells + 1));
   const minY = Math.max(0, Math.floor(gy - radiusCells - 1));
@@ -363,21 +380,25 @@ export function applyWetPaperDepositEvent(
   const alongCells0 = along0 / cellPx;
   let addedWater = 0;
   let addedPigment = 0;
+  const subCellArea = spacingCells > 0
+    ? Math.min(Math.PI * exactRadiusCells * exactRadiusCells, 2 * exactRadiusCells * spacingCells)
+    : Math.PI * exactRadiusCells * exactRadiusCells;
   for (let y = minY; y <= maxY; y += 1) {
     const dy = y + 0.5 - gy;
     for (let x = minX; x <= maxX; x += 1) {
+      if (subCell && (x !== subCellX || y !== subCellY)) continue;
       const dx = x + 0.5 - gx;
-      const distance = Math.sqrt(dx * dx + dy * dy) * invRadius;
+      const distance = subCell ? 0 : Math.sqrt(dx * dx + dy * dy) * invRadius;
       let weight = depositProfile(profile, distance);
-      let waterWeight = waterProfile(distance);
+      let waterWeight = subCell ? Math.min(1, 2 * exactRadiusCells) : waterProfile(distance);
       if (waterWeight <= 0) continue;
       const index = y * width + x;
       // 바깥 벽 한 겹에는 아무것도 넣지 않는다(격자 여유가 충분해 정상 입력에서는 닿지 않는다).
       if (state.wall[index] === 1) continue;
       if (field) {
-        // 획 좌표(가로 u, 세로 along)에서 강모 지도를 읽는다(Chu & Tai / Sumi).
-        const lateral = (dx * -dirY + dy * dirX) * invRadius;
-        const alongPx = along0 + (dx * dirX + dy * dirY) * cellPx;
+        // 획 좌표(가로 u, 세로 along)에서 강모 지도를 읽는다(Chu & Tai / Sumi). 셀보다 가는 dab 은 자기 중심선을 읽는다.
+        const lateral = subCell ? 0 : (dx * -dirY + dy * dirX) * invRadius;
+        const alongPx = subCell ? along0 : along0 + (dx * dirX + dy * dirY) * cellPx;
         sampleWetPaperBristle(
           field,
           lateral,
@@ -401,8 +422,8 @@ export function applyWetPaperDepositEvent(
         state.wsCur[index] = targetWater;
         addedWater += targetWater - currentWater;
       }
-      let mass = pigment * weight;
-      if (spacingCells > 0) {
+      let mass = pigment * weight * (subCell ? subCellArea : 1);
+      if (!subCell && spacingCells > 0) {
         const lateralCells = dx * -dirY + dy * dirX;
         const half = radiusCells * radiusCells - lateralCells * lateralCells;
         const halfChord = half > 0 ? Math.sqrt(half) : 0;

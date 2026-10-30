@@ -58,6 +58,8 @@ export interface StudioWatercolorSettledSurfaceInput {
   /** 베이크가 캐시에 들어오면 한 번 불린다(렌더 세대 증가). */
   readonly onBakeReady: () => void;
   readonly bakeGeneration: number;
+  /** 요청자(렌더 인스턴스·대칭 변형): 같은 요청자의 이전 젖은 종이 요청 중 아무도 기다리지 않는 작업을 버린다. */
+  readonly requester?: string;
 }
 
 export interface StudioWatercolorSettledSurface {
@@ -101,6 +103,7 @@ export function resolveStudioWatercolorSettledSurface(
         input.color,
         input.onBakeReady,
         input.bakeGeneration,
+        input.requester,
       )
     : null;
   return { dabs, wetPaperBake };

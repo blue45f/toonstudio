@@ -19,6 +19,7 @@ import {
   gaussianBlur,
   gradientMagnitude,
   kuwahara,
+  kuwaharaFractional,
   orientedStreakNoise,
   posterizeLuma,
   readPaintSource,
@@ -47,6 +48,45 @@ const BRUSH_SIZE = slider("brushSize", "브러시 크기", 0, 10, 2);
 const BRUSH_DETAIL = slider("brushDetail", "브러시 세부", 0, 10, 8);
 const TEXTURE_AMOUNT = slider("texture", "텍스처", 1, 3, 1);
 const SCALING = slider("scaling", "비율", 50, 200, 100, "%");
+
+// ── 작은 반지름 잇기 ─────────────────────────────────────────────
+// 공용 흐림·쿠와하라는 가장 작은 창보다 더 작아지지 않아, 작은 반지름 여러 칸이 같은 결과를 냈다. 그 아래는 원본과
+// 가장 작은 창 결과를 반지름 비율로 섞어 반지름 0(원본)까지 이어지게 한다.
+
+/** target 을 base 에서 target 쪽으로 share(0~1)만큼만 간 값으로 바꾼다(제자리). */
+function mixFrom(base: ColorPlanes, target: ColorPlanes, share: number): ColorPlanes {
+  for (let index = 0; index < target.red.length; index += 1) {
+    target.red[index] = base.red[index] + (target.red[index] - base.red[index]) * share;
+    target.green[index] = base.green[index] + (target.green[index] - base.green[index]) * share;
+    target.blue[index] = base.blue[index] + (target.blue[index] - base.blue[index]) * share;
+  }
+  return target;
+}
+
+/** gaussianBlur 는 상자 반지름 r/√3 을 1 아래로 줄이지 않아 반지름 0.5~√3 이 모두 이 반지름의 흐림과 같다. */
+const FINEST_BLUR = Math.sqrt(3);
+
+/** 알파 가중 흐림. √3 아래 반지름은 원본과 √3 흐림을 반지름 비율로 섞는다(√3 이상·0 이하는 blurColor 그대로). */
+function fineBlurColor(colors: ColorPlanes, weight: Float32Array, width: number, height: number, radius: number): ColorPlanes {
+  if (!(radius > 0) || radius >= FINEST_BLUR) return blurColor(colors, weight, width, height, radius);
+  return mixFrom(colors, blurColor(colors, weight, width, height, FINEST_BLUR), radius / FINEST_BLUR);
+}
+
+/**
+ * 소수 반지름 쿠와하라(kuwaharaFractional)를 반지름 0 까지 잇는다. 반지름 0 쿠와하라는 픽셀 하나짜리 상자라 원본
+ * 그대로이므로 1 아래는 원본과 반지름 1 결과를 반지름만큼 섞는다(공용 판은 1 아래를 1 로 올린다).
+ */
+function flattenFractional(
+  colors: ColorPlanes,
+  weight: Float32Array,
+  width: number,
+  height: number,
+  radius: number,
+  hardness: number,
+): ColorPlanes {
+  if (radius >= 1) return kuwaharaFractional(colors, weight, width, height, radius, hardness);
+  return mixFrom(colors, kuwahara(colors, weight, width, height, 1, hardness), Math.max(0, radius));
+}
 
 // ── 색연필 ───────────────────────────────────────────────────────
 
@@ -244,6 +284,14 @@ const DAUB_TYPE = select("brushType", "브러시 유형", [
 
 type DaubKind = (typeof DAUB_TYPE.options)[number]["value"];
 
+/**
+ * 붓 유형별 작업량 상한(256² 실측, 크기·선명도 중 가장 무거운 값). 소수 반지름은 쿠와하라를 두 번 돌리고, 넓고
+ * 흐리게는 흐림을, 거친 붓·반짝이는 결 따라 붓결 노이즈를 더 쓴다.
+ */
+const DAUB_COST: Readonly<Record<DaubKind, number>> = {
+  simple: 17, "light-rough": 25, "dark-rough": 25, "wide-sharp": 17, "wide-blurry": 22, sparkle: 26,
+};
+
 /** 거친 붓(밝게·어둡게)은 결 따라 붓결로 명도를 흔들고, 반짝이는 밝은 곳에 드문드문 반짝임을 찍는다. */
 function daubTexture(
   painted: ColorPlanes,
@@ -279,7 +327,8 @@ const paintDaubs: StudioFilterGalleryEffectDef = {
   description: "고른 붓 유형과 크기로 물감을 덕지덕지 바른 듯 색 덩어리를 만들고 선명도만큼 붓자국을 세웁니다.",
   references: ["Photoshop · 페인트 바르기"],
   params: [DAUB_SIZE, DAUB_SHARPNESS, DAUB_TYPE],
-  cost: 8,
+  cost: 17,
+  costFor: (params) => DAUB_COST[selectValue(params, DAUB_TYPE)],
   apply(image, params, context) {
     const size = sliderValue(params, DAUB_SIZE);
     const sharpness = sliderValue(params, DAUB_SHARPNESS) / 40;
@@ -287,9 +336,10 @@ const paintDaubs: StudioFilterGalleryEffectDef = {
     const { width, height } = image;
     const source = readPaintSource(image);
     const wide = kind === "wide-sharp" || kind === "wide-blurry";
-    const radius = Math.max(1, Math.round(size * (wide ? 0.5 : 0.3)));
-    let painted = kuwahara(source, source.weight, width, height, radius, wide ? 5 : 8);
-    if (kind === "wide-blurry") painted = blurColor(painted, source.weight, width, height, radius * 0.6);
+    // 반지름을 반올림(최소 1)하면 작은 붓 크기 여러 칸이 같은 결과를 냈다. 소수 반지름을 0 쪽까지 그대로 쓴다.
+    const radius = size * (wide ? 0.5 : 0.3);
+    let painted = flattenFractional(source, source.weight, width, height, radius, wide ? 5 : 8);
+    if (kind === "wide-blurry") painted = fineBlurColor(painted, source.weight, width, height, radius * 0.6);
     const boost = kind === "wide-sharp" ? 3 : kind === "wide-blurry" ? 0.5 : 2;
     sharpenColor(painted, source.weight, width, height, 1 + size * 0.08, sharpness * boost);
     if (kind === "light-rough" || kind === "dark-rough" || kind === "sparkle") {
@@ -312,18 +362,23 @@ const paletteKnife: StudioFilterGalleryEffectDef = {
   description: "세부를 덜어 내고 나이프로 얇게 펴 바른 듯 넓고 평평한 색 면으로 칠해 아래 캔버스 결이 비치게 합니다.",
   references: ["Photoshop · 팔레트 나이프"],
   params: [KNIFE_SIZE, KNIFE_DETAIL, KNIFE_SOFTNESS],
-  cost: 10,
+  cost: 24,
+  // 소수 반지름 첫 패스는 쿠와하라를 두 번, 절반 반지름 둘째 패스는 한 번 돌리고, 부드러움이 0 보다 크면 흐림이 더
+  // 든다(256² 실측 중앙값 약 22·29 단위).
+  costFor: (params) => (sliderValue(params, KNIFE_SOFTNESS) > 0 ? 31 : 24),
   apply(image, params, context) {
     const size = sliderValue(params, KNIFE_SIZE);
     const detail = sliderValue(params, KNIFE_DETAIL);
     const softness = sliderValue(params, KNIFE_SOFTNESS);
     const { width, height } = image;
     const source = readPaintSource(image);
-    const radius = Math.max(1, Math.round((1 + size * 0.14) * (1.3 - detail * 0.15)));
-    // 쿠와하라를 큰 반지름 → 절반 반지름으로 두 번 걸면 사분면 경계가 칼로 자른 듯한 평면으로 굳는다.
-    let painted = kuwahara(source, source.weight, width, height, radius, 14);
+    const radius = (1 + size * 0.14) * (1.3 - detail * 0.15);
+    // 쿠와하라를 큰 반지름 → 절반 반지름으로 두 번 걸면 사분면 경계가 칼로 자른 듯한 평면으로 굳는다. 반지름을
+    // 반올림하면 획 크기·세부 여러 칸이 같은 결과를 내서 첫 패스는 소수 반지름(최소 1)을 쓴다. 첫 패스가 칸마다
+    // 달라지므로 둘째 패스는 정수 반지름 한 번으로 충분하다(소수로 두 번 돌리면 큰 이미지가 작업량 상한을 넘었다).
+    let painted = kuwaharaFractional(source, source.weight, width, height, radius, 14);
     painted = kuwahara(painted, source.weight, width, height, Math.max(1, Math.round(radius / 2)), 14);
-    if (softness > 0) painted = blurColor(painted, source.weight, width, height, softness * 0.35);
+    if (softness > 0) painted = fineBlurColor(painted, source.weight, width, height, softness * 0.35);
     writeColorPlanes(image, painted);
     applyRelief(image, textureHeight("canvas", width, height, 1, context.seed ^ 0x6c06), "top-left", 6);
   },
@@ -497,6 +552,16 @@ function cellularDistance(x: number, y: number, seed: number): number {
   return Math.sqrt(best);
 }
 
+/** 소수 반지름 상자 평균(제자리). 정수로 반올림하면 매끄러움 여러 칸이 같아서 이웃한 두 정수 반지름 결과를 섞는다. */
+function boxBlurFractional(plane: Float32Array, width: number, height: number, radius: number): void {
+  const lower = Math.floor(radius), fraction = radius - lower;
+  const upper = fraction > 1e-3 ? plane.slice() : null;
+  boxBlur(plane, width, height, lower);
+  if (!upper) return;
+  boxBlur(upper, width, height, lower + 1);
+  for (let index = 0; index < plane.length; index += 1) plane[index] += (upper[index] - plane[index]) * fraction;
+}
+
 const sponge: StudioFilterGalleryEffectDef = {
   id: "artistic.sponge",
   category: "artistic",
@@ -521,7 +586,7 @@ const sponge: StudioFilterGalleryEffectDef = {
           + 0.4 * fbm2(x / (cell * 1.7), y / (cell * 1.7), seed ^ 0x3, 2);
       }
     }
-    boxBlur(pores, width, height, Math.round(smoothness * 0.3));
+    boxBlurFractional(pores, width, height, smoothness * 0.3);
     for (let index = 0; index < count; index += 1) {
       // 0 은 스펀지 구멍(짙게), 1 은 스펀지 면(밝게).
       const gain = 1 + (smoothstep(0.2, 0.6, pores[index]) - 0.55) * definition * 0.9;
@@ -554,7 +619,7 @@ const underpainting: StudioFilterGalleryEffectDef = {
     const coverage = sliderValue(params, UNDER_COVERAGE) / 40;
     const { width, height } = image;
     const source = readPaintSource(image);
-    let painted = blurColor(source, source.weight, width, height, size * 0.6);
+    let painted = fineBlurColor(source, source.weight, width, height, size * 0.6);
     painted = kuwahara(painted, source.weight, width, height, 1 + Math.round(size / 8), 3);
     const scaling = sliderValue(params, SCALING) / 100;
     const surface = textureHeight(selectValue(params, UNDER_TEXTURE), width, height, scaling, context.seed ^ 0x6c0b);

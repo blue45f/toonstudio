@@ -206,13 +206,30 @@ const GLASS_SCALING = slider("scaling", "비율", 50, 200, 1, 100, "%");
 
 type GlassTexture = (typeof GLASS_TEXTURE)["default"];
 
-/** 유리 높이맵(대략 0~1). 서리 = 고운 프랙털 노이즈, 블록 = 경사진 테두리와 기울기를 가진 정사각 칸, 작은 렌즈 = 반구 격자. */
-function glassHeight(texture: GlassTexture, width: number, height: number, scale: number, seed: number): Float32Array {
-  if (texture === "canvas") return textureHeight("canvas", width, height, scale, seed);
-  const out = new Float32Array(width * height);
+/** 매끄러움 → 높이맵 가우스 흐림 반지름(px). */
+const glassBlurRadius = (smoothness: number): number => (smoothness - 1) * 0.6;
+
+/**
+ * 높이맵을 그림 밖으로 넓힐 폭(px). gaussianPlane 의 3회 상자 흐림(상자 반지름 최대 ⌈max(1, r/√3)⌉)이 닿는 거리에
+ * 중앙차분 1px 을 더해, 그림 안 기울기가 넓힌 맵 끝의 가장자리 복제에 닿지 않게 한다.
+ */
+const glassMargin = (radius: number): number => (radius < 0.5 ? 1 : 3 * Math.ceil(Math.max(1, radius / Math.sqrt(3))) + 1);
+const GLASS_MARGIN_MAX = glassMargin(glassBlurRadius(GLASS_SMOOTHNESS.max));
+
+/**
+ * 유리 높이맵(대략 0~1)을 그림보다 사방 margin px 넓게 만든다. 넓힌 맵의 (x, y) 는 그림 좌표 (x − margin, y − margin)
+ * 의 높이라 여백과 관계없이 무늬가 그림에 고정된다. 서리 = 고운 프랙털 노이즈, 블록 = 경사진 테두리와 기울기를 가진
+ * 정사각 칸, 작은 렌즈 = 반구 격자. 공용 캔버스 생성기는 원점이 넓힌 맵의 (0, 0) 이라 호출부가 여백을 고정한다.
+ */
+function glassHeight(texture: GlassTexture, width: number, height: number, margin: number, scale: number, seed: number): Float32Array {
+  const paddedWidth = width + 2 * margin, paddedHeight = height + 2 * margin;
+  if (texture === "canvas") return textureHeight("canvas", paddedWidth, paddedHeight, scale, seed);
+  const out = new Float32Array(paddedWidth * paddedHeight);
   const grain = 2.2 * scale, block = 18 * scale, lens = 7 * scale;
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
+  for (let row = 0; row < paddedHeight; row += 1) {
+    const y = row - margin;
+    for (let column = 0; column < paddedWidth; column += 1) {
+      const x = column - margin;
       let value: number;
       if (texture === "frosted") {
         value = fbm2(x / grain, y / grain, seed, 3);
@@ -228,21 +245,22 @@ function glassHeight(texture: GlassTexture, width: number, height: number, scale
         const lu = (u - Math.floor(u)) * 2 - 1, lv = (v - Math.floor(v)) * 2 - 1;
         value = Math.sqrt(Math.max(0, 1 - lu * lu - lv * lv));
       }
-      out[y * width + x] = value;
+      out[row * paddedWidth + column] = value;
     }
   }
   return out;
 }
 
-/** 높이맵의 중앙차분 기울기(가장자리 복제)를 변위장으로 돌려준다. */
-function heightGradient(heightMap: Float32Array, width: number, height: number): [Float32Array, Float32Array] {
+/** 사방 margin(1 이상) px 넓힌 높이맵에서 그림 픽셀마다 중앙차분 기울기를 구해 변위장으로 돌려준다. */
+function heightGradient(heightMap: Float32Array, width: number, height: number, margin: number): [Float32Array, Float32Array] {
+  const stride = width + 2 * margin;
   const gradientX = new Float32Array(width * height), gradientY = new Float32Array(width * height);
   for (let y = 0; y < height; y += 1) {
-    const row = y * width, above = Math.max(0, y - 1) * width, below = Math.min(height - 1, y + 1) * width;
+    const row = y * width, center = (y + margin) * stride + margin;
     for (let x = 0; x < width; x += 1) {
-      const left = Math.max(0, x - 1), right = Math.min(width - 1, x + 1);
-      gradientX[row + x] = (heightMap[row + right] - heightMap[row + left]) * 0.5;
-      gradientY[row + x] = (heightMap[below + x] - heightMap[above + x]) * 0.5;
+      const at = center + x;
+      gradientX[row + x] = (heightMap[at + 1] - heightMap[at - 1]) * 0.5;
+      gradientY[row + x] = (heightMap[at + stride] - heightMap[at - stride]) * 0.5;
     }
   }
   return [gradientX, gradientY];
@@ -255,11 +273,19 @@ function applyGlass(image: StudioFilterGalleryImage, params: StudioFilterGallery
   const scale = readSlider(params, GLASS_SCALING) / 100;
   if (distortion <= 0) return;
   const { width, height } = image;
-  const heightMap = glassHeight(texture, width, height, scale, context.seed + 0x6c61);
-  gaussianPlane(heightMap, width, height, (smoothness - 1) * 0.6);
-  const [fieldX, fieldY] = heightGradient(heightMap, width, height);
+  // 그림 크기 그대로 가장자리 복제로 흐리면 가장자리 줄과 질감 평균의 차이가 테두리에 경사로 남는다. 매끄러움이 커서
+  // 안쪽 질감이 거의 지워지면 RMS 정규화가 그 경사만 키워 테두리 띠만 통째로 밀리므로, 흐림이 닿는 거리만큼 그림 밖까지
+  // 실제 질감을 만들어 흐린다. 캔버스는 매끄러움을 바꿔도 무늬가 밀리지 않게 늘 가장 넓은 여백을 쓴다.
+  const radius = glassBlurRadius(smoothness);
+  const margin = texture === "canvas" ? GLASS_MARGIN_MAX : glassMargin(radius);
+  const heightMap = glassHeight(texture, width, height, margin, scale, context.seed + 0x6c61);
+  gaussianPlane(heightMap, width + 2 * margin, height + 2 * margin, radius);
+  const [fieldX, fieldY] = heightGradient(heightMap, width, height, margin);
   displaceByField(image, fieldX, fieldY, distortion);
 }
+
+/** 질감별 작업량 상한(256² 실측, 매끄러움·비율·왜곡 중 가장 무거운 값). 캔버스는 직조 질감 생성이 무겁고 늘 가장 넓은 여백을 쓴다. */
+const GLASS_COST: Readonly<Record<GlassTexture, number>> = { frosted: 7, blocks: 6, canvas: 12, "tiny-lens": 5 };
 
 // ── 바다 물결 ───────────────────────────────────────────────────
 
@@ -470,13 +496,17 @@ function applyRaindrops(image: StudioFilterGalleryImage, params: StudioFilterGal
     const facing = distance > 1e-6 ? (dx * DROP_LIGHT_X + dy * DROP_LIGHT_Y) / distance : 0;
     const shade = 1 - 0.32 * rho ** 4 - 0.15 * Math.max(0, -facing) * rho;
     const glint = 0.55 * 255 * Math.max(0, facing) ** 3 * Math.max(0, 1 - Math.abs(rho - 0.7) / 0.2);
-    // 테두리 한 픽셀은 덮인 비율만큼만 섞어 계단을 줄인다.
+    // 테두리 한 픽셀은 덮인 비율만큼만 섞어 계단을 줄인다. 색은 알파로 가중해 섞어(렌즈 색 몫 = 덮인 비율 × 표본 알파 /
+    // 결과 알파) 투명한 원본이나 투명한 굴절 표본의 숨은 RGB 가 보이는 테두리로 번지지 않게 한다. 두 알파가 같으면(불투명
+    // 그림) 몫이 덮인 비율 그대로라 덮인 비율로 바로 섞는 것과 바이트까지 같다.
     const coverage = clamp01(radius + 0.5 - distance);
     const offset = index * 4;
+    const alpha = source[offset + 3] + (sample[3] - source[offset + 3]) * coverage;
+    const share = alpha > 1e-3 ? coverage * (sample[3] / alpha) : coverage;
     for (let channel = 0; channel < 3; channel += 1) {
-      data[offset + channel] = source[offset + channel] + (sample[channel] * shade + glint - source[offset + channel]) * coverage;
+      data[offset + channel] = source[offset + channel] + (sample[channel] * shade + glint - source[offset + channel]) * share;
     }
-    data[offset + 3] = source[offset + 3] + (sample[3] - source[offset + 3]) * coverage;
+    data[offset + 3] = alpha;
   }
 }
 
@@ -544,7 +574,8 @@ export const STUDIO_FILTER_GALLERY_DISTORT_EFFECTS: readonly StudioFilterGallery
     description: "서리·블록·캔버스·작은 렌즈 질감 높이맵의 기울기만큼 픽셀을 밀어 울퉁불퉁한 유리 너머로 보는 듯한 굴절을 만듭니다(그림 밖은 가장자리 반복).",
     references: ["Photoshop · 유리", "Paint.NET · 서리 낀 유리"],
     params: [GLASS_DISTORTION, GLASS_SMOOTHNESS, GLASS_TEXTURE, GLASS_SCALING],
-    cost: 4,
+    cost: 5,
+    costFor: (params) => GLASS_COST[readSelect(params, GLASS_TEXTURE)],
     apply: applyGlass,
   },
   {

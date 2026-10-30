@@ -393,6 +393,18 @@ const COFFEE: Rgb = [0.46, 0.3, 0.15];
 /** 얼룩 고리 모양을 각도별로 저장하는 표 칸 수. */
 const RING_SAMPLES = 128;
 
+/**
+ * 커피 얼룩 작업량(cost 1 단위 ≈ 픽셀당 50ns). 얼룩마다 테 바깥 꼬리 원(1.35R) 안 픽셀에서 atan2·제곱근·지수·값 노이즈를 계산하므로
+ * 픽셀당 일은 얼룩 수 × 얼룩이 덮는 이미지 비율이다. 얼룩 반지름·위치가 시드마다 달라 무거운 쪽 꼬리가 길므로, 얼룩마다 가장 큰
+ * 반지름(R = 0.625 × 크기 × 짧은 변)의 꼬리 원이 정사각형 이미지를 가장 많이 덮는 경우를 더한 상한을 쓴다. 계수는 256²·512² 시드
+ * 수십 개 실측 최악(얼룩 하나: 크기 35% 약 40ns/px, 60% 약 113ns/px, 100% 약 183ns/px · 기본값 약 94ns/px · 얼룩 10개: 크기 60% 약
+ * 780ns/px, 100% 약 1210~1275ns/px)을 덮는다.
+ */
+function coffeeStainCost(params: StudioFilterGalleryParams): number {
+  const stains = Math.round(STAIN_COUNT.read(params)), size = STAIN_SIZE.read(params) / 100;
+  return (2 + stains * Math.min(200, 360 * size * size)) / 50;
+}
+
 const coffeeStain: StudioFilterGalleryEffectDef = {
   id: "decor.coffee-stain",
   category: "decor",
@@ -400,7 +412,9 @@ const coffeeStain: StudioFilterGalleryEffectDef = {
   description: "가장자리 테가 진한 커피 잔 얼룩을 이미지에 곱해 얹습니다.",
   references: ["GIMP · 커피 얼룩"],
   params: [STAIN_COUNT.spec, STAIN_SIZE.spec, STAIN_DARKNESS.spec],
-  cost: 2,
+  // 기본값(빈 매개변수는 기본값으로 읽힌다)의 작업량이다.
+  cost: coffeeStainCost({}),
+  costFor: coffeeStainCost,
   apply(image, params, context) {
     const { width, height, data } = image;
     const stains = Math.round(STAIN_COUNT.read(params)), darkness = (1.5 * STAIN_DARKNESS.read(params)) / 100;
@@ -479,7 +493,9 @@ const JIGSAW_Y = slider("tilesY", "세로 조각 수", 1, 40, 1, 4);
 const JIGSAW_BEVEL = slider("bevelWidth", "경사 폭", 0, 20, 1, 3, "px");
 const JIGSAW_HIGHLIGHT = slider("highlight", "음영 세기", 0, 100, 1, 50, "%");
 const JIGSAW_STYLE = choice("style", "모양", [["square", "사각"], ["curved", "곡선"]], "curved");
-/** 꼭지 머리(원) 반지름과 목 반폭의 비(조각 짧은 변 기준 0.17 · 0.1)로 정해지는, 목과 이어지는 호의 반각 코사인. */
+/** 이웃한 두 변의 꼭지 머리 원 사이에 남길 최소 간격(px). 자름선 잉크가 원 양쪽 1px 씩이라 2px 안이면 맞닿는다. */
+const KNOB_CLEARANCE = 3.5;
+/** 꼭지 머리(원) 반지름과 목 반폭의 비(꼭지 크기 기준 0.17 · 0.1)로 정해지는, 목과 이어지는 호의 반각 코사인. */
 const NECK_COS = Math.sqrt(1 - (0.1 / 0.17) ** 2);
 
 /** 점 (px, py) 에서 선분 (ax, ay)–(bx, by) 까지 거리. */
@@ -492,7 +508,7 @@ function segmentDistance(px: number, py: number, ax: number, ay: number, bx: num
 
 /**
  * 조각 경계 한 변까지의 거리. 변 좌표계에서 a 는 변을 따라(0~span), b 는 변에 수직이며, center 에 꼭지가 side(±1) 쪽으로
- * 튀어나온다. 곡선형은 목(두 선분)과 둥근 머리(목과 이어지는 짧은 호를 뺀 원), 사각형은 네모난 혹이다. size 는 조각의 짧은 변이다.
+ * 튀어나온다. 곡선형은 목(두 선분)과 둥근 머리(목과 이어지는 짧은 호를 뺀 원), 사각형은 네모난 혹이다. size 는 꼭지 크기다.
  */
 function edgeDistance(a: number, b: number, span: number, center: number, side: number, size: number, curved: boolean): number {
   if (!curved) {
@@ -530,13 +546,22 @@ const jigsaw: StudioFilterGalleryEffectDef = {
     const tileW = width / tilesX, tileH = height / tilesY, size = Math.min(tileW, tileH), near = bevel + 2, reach = 0.5 * size + near;
     // 변마다 꼭지 방향(±1)·위치(변 길이 비율)·크기를 해시로 미리 정한다(같은 시드면 같은 퍼즐). 세로 자름선은 경계 열 i(0~tilesX)·행 j,
     // 가로 자름선은 경계 행 j(0~tilesY)·열 i 로 찾는다.
+    // 한 조각에 이웃한 두 변(예: 왼쪽·위)의 꼭지가 함께 들어오면 두 머리가 그 모서리 쪽에서 마주 본다. 꼭지 크기는 짧은 변의
+    // 0.72~0.84 이고, 위치(변 길이 비율)는 lowest~1 − lowest 다. 가장 가까운 경우(위치 lowest·크기 0.84) 두 머리 원의 중심(변에서
+    // 0.25 × 크기 안쪽) 사이는 (lowest − 0.21)·√2·짧은 변, 반지름(0.17 × 크기) 합은 0.2856·짧은 변이므로, lowest 를 원 사이가
+    // KNOB_CLEARANCE 이상 떨어지는 가장 작은 값으로 잡아 자름선이 엇갈리거나 맞닿아 조각을 쪼개지 않게 한다. 짧은 변이 약 88px
+    // 이상이면 lowest 는 0.44(원 사이는 짧은 변의 약 4%)이고, 조각이 작을수록 꼭지가 변 가운데로 모인다. 사각형 혹은 같은
+    // 위치에서 원보다 더 떨어지고, 직사각형 조각은 긴 변 쪽 꼭지가 모서리에서 더 멀어 간격이 더 넓다. 짧은 변이 약 28px 보다
+    // 작으면 가운데 꼭지끼리도 그 간격을 띄울 수 없고, 약 24px 보다 작으면 곡선형 목(폭 0.2 × 크기)이 양쪽 잉크에 막혀 머리가
+    // 조각에서 떨어져 보일 수 있다.
+    const lowest = Math.min(0.5, Math.max(0.44, 0.21 + (0.2856 + KNOB_CLEARANCE / size) / Math.SQRT2));
     const knobTable = (count: number, columns: number, salt: number): Float32Array => {
       const table = new Float32Array(count * 3);
       for (let index = 0; index < count; index += 1) {
         const i = index % columns, j = (index - i) / columns;
         table[index * 3] = hash2(i, j, salt) < 0.5 ? -1 : 1;
-        table[index * 3 + 1] = 0.42 + 0.16 * hash2(i, j, salt + 1);
-        table[index * 3 + 2] = size * (0.9 + 0.2 * hash2(i, j, salt + 2));
+        table[index * 3 + 1] = lowest + 2 * (0.5 - lowest) * hash2(i, j, salt + 1);
+        table[index * 3 + 2] = size * (0.72 + 0.12 * hash2(i, j, salt + 2));
       }
       return table;
     };

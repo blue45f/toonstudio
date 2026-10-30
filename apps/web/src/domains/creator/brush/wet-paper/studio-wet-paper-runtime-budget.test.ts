@@ -54,6 +54,8 @@ describe("wet-paper settled bake runtime budget (largest grid)", () => {
         maxProcessedCells = Math.max(maxProcessedCells, solve.state.processCount * 16);
       }
       const result = finishWetPaperSolve(solve);
+      expect(result, programId).not.toBeNull();
+      if (!result) continue;
       const raster = compositeStudioWetPaperRaster(result, "#1f6feb");
       const elapsed = performance.now() - started;
       expect(maxProcessedCells, programId).toBeLessThanOrEqual(grid.cells);

@@ -44,6 +44,16 @@ const LIBMYPAINT_161_DEFAULTS = Object.freeze({
   lock_alpha: 0, colorize: 0, posterize: 0, posterize_num: 0.05, snap_to_pixel: 0, pressure_gain_log: 0,
 });
 const ALWAYS_KEEP = new Set(["opaque_multiply"]);
+/**
+ * 물감 도달 범위(변환 표면 여백)를 정하는 설정. 색인에 브러시마다 이 설정의 행(기준값과 곡선)을 싣고, 계획 단계가
+ * 실제 획 속도로 libmypaint 의 계산을 따라간다(studio-mypaint-cc0-library-reach.ts).
+ */
+const REACH_SETTINGS = Object.freeze([
+  "radius_logarithmic", "radius_by_random", "offset_by_random", "offset_x", "offset_y", "offset_angle",
+  "offset_angle_asc", "offset_angle_view", "offset_angle_2", "offset_angle_2_asc", "offset_angle_2_view",
+  "offset_multiplier", "offset_by_speed", "offset_by_speed_slowness", "custom_input", "speed1_gamma",
+  "speed2_gamma", "speed1_slowness", "speed2_slowness", "slow_tracking", "tracking_noise", "pressure_gain_log",
+]);
 /** 묶음/파일 이름. 원본에는 `+`, `#`, `%`, 괄호가 들어간 이름이 있다(예: `ramon/100%_Opaque`). */
 const ID_PATTERN = /^[A-Za-z0-9_]+\/[A-Za-z0-9_+\-#.%()]+$/u;
 
@@ -115,55 +125,6 @@ function displayName(id) {
   return id.slice(id.indexOf("/") + 1).replace(/_/gu, " ").replace(/\s+/gu, " ").trim();
 }
 
-/** 설정의 최댓값 추정: 기준값 + 입력 곡선마다 양의 최대 출력의 합(libmypaint mapping_calculate 는 곡선 출력을 더한다). */
-function settingMaximum(settings, name) {
-  const setting = settings[name];
-  if (!setting) return LIBMYPAINT_161_DEFAULTS[name] ?? 0;
-  let total = setting.base_value;
-  for (const points of Object.values(setting.inputs ?? {})) {
-    total += Math.max(0, ...points.map((point) => point[1]));
-  }
-  return total;
-}
-
-/** 절댓값 최댓값 추정(음수 오프셋도 같은 거리를 간다). */
-function settingMagnitude(settings, name) {
-  const setting = settings[name];
-  if (!setting) return Math.abs(LIBMYPAINT_161_DEFAULTS[name] ?? 0);
-  let total = Math.abs(setting.base_value);
-  for (const points of Object.values(setting.inputs ?? {})) {
-    total += Math.max(0, ...points.map((point) => Math.abs(point[1])));
-  }
-  return total;
-}
-
-/**
- * 기준 반지름 r 에 대한 물감 도달 범위의 보수적 상한 [r 의 배수, 속도 오프셋 px].
- * rand_gauss 는 균등 난수 4개 합을 늘인 값이라 절댓값이 2√3(≈3.4641)을 넘지 않는다.
- * offset_by_speed 는 속도에 비례하므로 2,000px/s 를 상한으로 가정한 절대 거리로 따로 둔다.
- */
-function extentEstimate(settings) {
-  const gaussianLimit = 3.4642;
-  const radiusSetting = settings.radius_logarithmic;
-  let radiusLogOffset = 0;
-  for (const points of Object.values(radiusSetting?.inputs ?? {})) {
-    radiusLogOffset += Math.max(0, ...points.map((point) => point[1]));
-  }
-  const radiusRandom = Math.max(0, settingMaximum(settings, "radius_by_random"));
-  const dab = Math.exp(Math.min(6, radiusLogOffset + gaussianLimit * radiusRandom));
-  const scatter = gaussianLimit * Math.max(0, settingMaximum(settings, "offset_by_random"));
-  const directional = (
-    settingMagnitude(settings, "offset_x") + settingMagnitude(settings, "offset_y")
-    + settingMagnitude(settings, "offset_angle") + settingMagnitude(settings, "offset_angle_asc")
-    + settingMagnitude(settings, "offset_angle_view") + settingMagnitude(settings, "offset_angle_2")
-    + settingMagnitude(settings, "offset_angle_2_asc") + settingMagnitude(settings, "offset_angle_2_view")
-  ) * Math.exp(Math.min(3, Math.max(-2, settingMaximum(settings, "offset_multiplier"))));
-  const tracking = gaussianLimit * Math.max(0, settings.tracking_noise?.base_value ?? 0);
-  const radii = Math.min(256, dab + scatter + directional + tracking);
-  const speedPx = Math.min(600, 200 * settingMagnitude(settings, "offset_by_speed"));
-  return [Math.ceil(radii * 100) / 100, Math.ceil(speedPx)];
-}
-
 /** 설정의 최솟값 추정: 기준값 + 입력 곡선마다 음의 최소 출력의 합. 곡선이 어떤 입력에서도 낮출 수 없는 하한이다. */
 function settingMinimum(settings, name) {
   const setting = settings[name];
@@ -223,8 +184,10 @@ function build(source, commit) {
         .filter((entry) => entry !== null);
       const sha256 = crypto.createHash("sha256").update(bytes).digest("hex");
       dataLines.push(`  [${JSON.stringify(id)}, ${JSON.stringify(sha256)}, [${settings.join(", ")}]],`);
-      const [extentRadii, extentSpeedPx] = extentEstimate(document.settings);
-      members.push(`    [${JSON.stringify(id)}, ${JSON.stringify(displayName(id))}, ${JSON.stringify(surfaceRequirement(document.settings))}, ${number(extentRadii)}, ${number(extentSpeedPx)}],`);
+      const reach = REACH_SETTINGS.filter((name) => Object.hasOwn(document.settings, name))
+        .map((name) => encodeSetting(name, document.settings[name], id))
+        .filter((entry) => entry !== null);
+      members.push(`    [${JSON.stringify(id)}, ${JSON.stringify(displayName(id))}, ${JSON.stringify(surfaceRequirement(document.settings))}, [${reach.join(", ")}]],`);
     }
     // order.conf 의 빈 묶음(예: 사용자용 Favorites)은 브러시가 없으므로 싣지 않는다.
     if (members.length) indexGroups.push({ name: group.name, members });
@@ -252,11 +215,19 @@ function build(source, commit) {
     " */",
     "export type StudioMypaintCc0SurfaceRequirement = \"paint\" | \"eraser\" | \"lock-alpha\" | \"colorize\" | \"posterize\" | \"smudge-only\";",
     "",
+    "/** 도달 범위 설정 행: [설정 이름, 기준값] 또는 [설정 이름, 기준값, { 입력 이름: [x0, y0, x1, y1, …] }](데이터 행과 같은 꼴). */",
+    "export type StudioMypaintCc0ReachRow =",
+    "  | readonly [setting: string, base: number]",
+    "  | readonly [setting: string, base: number, inputs: Readonly<Record<string, readonly number[]>>];",
+    "",
+    "/** 도달 범위 설정의 libmypaint 1.6.1 기본값. 색인 행에 없는 설정은 이 값이고 곡선이 없다. */",
+    `export const STUDIO_MYPAINT_CC0_REACH_DEFAULTS: Readonly<Record<string, number>> = Object.freeze({ ${REACH_SETTINGS.map((name) => `${name}: ${number(LIBMYPAINT_161_DEFAULTS[name])}`).join(", ")} });`,
+    "",
     "/**",
-    " * order.conf 순서의 묶음과 [브러시 id, 표시 이름, 표면 분류, 도달 범위(기준 반지름 배수), 속도 오프셋 상한 px].",
-    " * 표시 이름은 파일 이름에서 밑줄만 공백으로 바꾼 원문이다. 도달 범위는 변환 표면 여백을 잡는 보수적 추정이다.",
+    " * order.conf 순서의 묶음과 [브러시 id, 표시 이름, 표면 분류, 도달 범위 설정 행].",
+    " * 표시 이름은 파일 이름에서 밑줄만 공백으로 바꾼 원문이다. 도달 범위 설정 행은 기본값과 같고 곡선이 없는 설정을 뺀다.",
     " */",
-    "export type StudioMypaintCc0IndexEntry = readonly [id: string, name: string, surface: StudioMypaintCc0SurfaceRequirement, extentRadii: number, extentSpeedPx: number];",
+    "export type StudioMypaintCc0IndexEntry = readonly [id: string, name: string, surface: StudioMypaintCc0SurfaceRequirement, reach: readonly StudioMypaintCc0ReachRow[]];",
     "",
     "export const STUDIO_MYPAINT_CC0_LIBRARY_GROUPS: readonly (readonly [group: string, brushes: readonly StudioMypaintCc0IndexEntry[]])[] = [",
     ...indexGroups.flatMap((group) => [`  [${JSON.stringify(group.name)}, [`, ...group.members, "  ]],"]),
