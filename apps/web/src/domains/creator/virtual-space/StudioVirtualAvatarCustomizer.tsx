@@ -34,8 +34,9 @@ import {
  *
  * 파츠 선택(피부·헤어·의상·액세서리·표정) + 실시간 미리보기(SVG 피규어 8방향 +
  * 프로시저럴 스프라이트 셀) + 랜덤/프리셋/초기화 버튼. 선택 즉시
- * `useStudioVirtualAvatarProfile` 저장소(이 기기)에 저장된다. 아직 월드 렌더러와 프레즌스는
- * 이 프로필을 읽지 않으므로 화면 문구는 '미리보기 전용'으로 정직하게 안내한다.
+ * `useStudioVirtualAvatarProfile` 저장소(이 기기)에 저장된다. Office2D는 내 캐릭터의
+ * 액세서리와 강조색을 반영한다. 피부·헤어·의상은 미리보기에서만 바뀌며,
+ * 월드 캐릭터 전체 모습은 캐릭터 선택으로 바꾼다.
  */
 
 type Bilingual = (ko: string, en: string) => string;
@@ -179,8 +180,8 @@ export function StudioVirtualAvatarCustomizer({ identity }: { readonly identity:
       <h2 className="avatar-customizer__title">{bt("내 아바타 꾸미기", "Customize my avatar")}</h2>
       <p className="avatar-customizer__note">
         {bt(
-          "파츠를 고르면 이 기기에 바로 저장돼요. 지금은 미리보기 전용이라 월드 캐릭터는 위의 캐릭터 선택으로 바꿔요.",
-          "Picks save on this device instantly. This is a preview for now — change your world character with the character picker above.",
+          "선택은 이 기기에 바로 저장돼요. 2D 공간에서는 내 캐릭터의 액세서리와 강조색에 반영돼요. 피부·헤어·의상은 미리보기에서만 바뀌며, 월드 캐릭터 전체 모습은 위의 캐릭터 선택으로 바꿔요.",
+          "Picks save on this device instantly. Accessories and the accent color apply to your character in the 2D space. Skin, hair and outfit changes appear only in the preview; use the character picker above to change your world character's overall look.",
         )}
       </p>
 

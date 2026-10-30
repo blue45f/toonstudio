@@ -92,7 +92,9 @@ export const STUDIO_OFFICE_ENVIRONMENTS: readonly OfficeEnvironment[] = Object.f
       { x: 1220, y: 495, width: 316, height: 110 },
       { x: 520, y: 500, width: 165, height: 80 },
       { x: 685, y: 580, width: 190, height: 80 },
-      { x: 875, y: 660, width: 245, height: 100 },
+      // 2026-10-30 화면 검수에서 x889의 상판 북쪽 윤곽에 맞춰 발점이 y588에서 멈추게 한다.
+      // 남쪽 끝 760과 좌석·귀환 동선은 유지한다.
+      { x: 875, y: 600, width: 245, height: 160 },
       { x: 985, y: 760, width: 150, height: 120 },
       { x: 0, y: 800, width: 420, height: 224 },
     ],
