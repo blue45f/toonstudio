@@ -91,6 +91,40 @@ describe("source-mapped spatial placement", () => {
     expect(selection.strokes?.[0].points.length).toBeGreaterThanOrEqual(2);
     expect(selection.strokes?.[0].color).toBe("#e5484d");
   });
+  it("컷에서 펜으로 전환하면 현재 컷 범위를 표시하고 명시적으로 해제한 뒤 다른 위치의 획을 연결한다", () => {
+    const { choose } = setup(); mode("panel");
+    fireEvent.change(screen.getByLabelText("연결할 컷"), { target: { value: "frame-a" } });
+    apply();
+    expect(choose.mock.lastCall?.[0].anchor.source.frameId).toBe("frame-a");
+    mode("pen");
+    const cut = screen.getByLabelText("연결할 컷");
+    expect(cut).toHaveProperty("value", "frame-a");
+    expect(screen.getByRole("option", { name: "페이지 전체 범위" }).getAttribute("value")).toBe("");
+    const image = screen.getByRole("img"), surface = image.parentElement;
+    if (!surface) throw new Error("원고 pointer stage가 없습니다.");
+    Object.defineProperties(image, { complete: { value: true }, naturalWidth: { value: 1600 }, naturalHeight: { value: 2400 } });
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({ left: 100, top: 50, right: 500, bottom: 650, width: 400, height: 600, x: 100, y: 50, toJSON: () => ({}) });
+    const pointer = (type: string, x: number, y: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
+      Object.defineProperty(event, "pointerId", { value: 1 }); fireEvent(surface, event);
+    };
+    const drawOutsideCut = () => { pointer("pointerdown", 350, 350); pointer("pointermove", 400, 425); pointer("pointerup", 400, 425); };
+    drawOutsideCut(); choose.mockClear(); apply();
+    expect(choose).toHaveBeenCalledTimes(1);
+    expect(choose.mock.lastCall?.[0]).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("펜 획의 위치를 페이지 안에 맞게");
+    fireEvent.change(cut, { target: { value: "" } });
+    expect(cut).toHaveProperty("value", "");
+    expect(screen.queryByRole("alert")).toBeNull();
+    drawOutsideCut(); apply();
+    const selection: StudioReviewAnnotationSelection | null | undefined = choose.mock.lastCall?.[0];
+    if (!selection) throw new Error("페이지 전체 범위의 펜 의견이 연결되지 않았습니다.");
+    expect(selection.anchor).toMatchObject({ kind: "region", x: 500, y: 600, width: 100, height: 150,
+      source: { pageId: "page-a", pageOrdinal: 0, sourceServerRevision: 7, sourceContentDigest: "a".repeat(64) } });
+    expect(selection.anchor.source).not.toHaveProperty("frameId");
+    expect(selection.strokes).toHaveLength(1);
+    expect(selection.strokes?.[0]?.points).toEqual([{ x: 500, y: 600 }, { x: 600, y: 750 }]);
+  });
   it("undoes pen strokes one at a time", () => {
     setup(); mode("pen");
     const image = screen.getByRole("img"), surface = image.parentElement!;
