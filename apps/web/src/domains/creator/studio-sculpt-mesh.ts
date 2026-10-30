@@ -184,7 +184,7 @@ export function cloneSculptMesh(mesh: SculptMesh): SculptMesh {
 // 법선
 // ---------------------------------------------------------------------------
 
-function normalizeInPlace(target: Float32Array, base: number): void {
+function normalizeInPlace(target: Float32Array | Float64Array, base: number): void {
   const x = target[base];
   const y = target[base + 1];
   const z = target[base + 2];
@@ -197,7 +197,9 @@ function normalizeInPlace(target: Float32Array, base: number): void {
 }
 
 /** 전역 법선 재계산 — 삼각형 오름차순 면적 가중 누산 후 정규화. */
-export function recomputeSculptNormals(mesh: SculptMesh): void {
+export function recomputeSculptNormals(
+  mesh: Omit<SculptMesh, "normals"> & { readonly normals: Float32Array | Float64Array },
+): void {
   const { positions, normals, indices, triangleCount } = mesh;
   normals.fill(0);
   for (let t = 0; t < triangleCount; t += 1) {

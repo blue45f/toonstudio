@@ -3,7 +3,8 @@
  *
  * ## 한계
  * - 프로덕션 multires / dynamesh / face-set GPU 스컬프 코어(`studio-sculpt-*`)가 아니다.
- * - 삼각형 soup 위에서 동작하며 ZBrush급 수천만 poly·멀티레벨 델타를 지원하지 않는다.
+ * - inflate/clay/crease의 방향만 기존 정점 법선 코어를 재사용한다. brush 계수·mask 의미는 유지한다.
+ * - 변경 dab의 UV 삼각 remap·triangle 정본 전환은 현행 그대로이며 polygon 위상을 보존하지 않는다.
  * - voxel remesh는 격자 스냅 근사(상세 손실 있음).
  */
 
@@ -15,10 +16,11 @@ import {
   type StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
 import { remapStudioMeshUvTriangleSoup } from "../mesh-uv/studio-mesh-uv-triangle-remap";
+import { recomputeSculptNormals } from "../studio-sculpt-mesh";
 import { planStudioMeshSurface } from "../mesh-surface/studio-mesh-surface-plan";
 import { projectStudioMeshSurfaceForRender, type StudioMeshSurfaceRenderProjection } from "../mesh-surface/studio-mesh-surface-render";
 
-export const STUDIO_SCULPT_KERNEL_REVISION = 1 as const;
+export const STUDIO_SCULPT_KERNEL_REVISION = 2 as const;
 
 export type StudioSculptBrushKind =
   | "grab"
@@ -117,37 +119,43 @@ export function applyStudioSculptStroke(
   const cy = stroke.center.y;
   const cz = stroke.center.z;
 
-  // Average normal for inflate
-  let nx = 0;
-  let ny = 0;
-  let nz = 0;
-  for (let t = 0; t < soup.indices.length; t += 3) {
-    const ia = soup.indices[t]!;
-    const ib = soup.indices[t + 1]!;
-    const ic = soup.indices[t + 2]!;
-    const ax = positions[ia * 3]!;
-    const ay = positions[ia * 3 + 1]!;
-    const az = positions[ia * 3 + 2]!;
-    const bx = positions[ib * 3]! - ax;
-    const by = positions[ib * 3 + 1]! - ay;
-    const bz = positions[ib * 3 + 2]! - az;
-    const cxn = positions[ic * 3]! - ax;
-    const cyn = positions[ic * 3 + 1]! - ay;
-    const czn = positions[ic * 3 + 2]! - az;
-    nx += by * czn - bz * cyn;
-    ny += bz * cxn - bx * czn;
-    nz += bx * cyn - by * cxn;
-  }
-  const nl = Math.hypot(nx, ny, nz);
-  // 닫힌 메시는 면적 가중 평균 법선이 0 으로 퇴화한다 — 그때는 브러시 direction 이 평면 축을 대신한다.
-  if (nl > 1e-6) {
-    nx /= nl;
-    ny /= nl;
-    nz /= nl;
+  const usesVertexNormals = stroke.kind === "inflate" || stroke.kind === "clay" || stroke.kind === "crease";
+  let vertexNormals: Float64Array | undefined;
+  let nx = 0, ny = 1, nz = 0;
+  if (usesVertexNormals) {
+    // 큰 외적과 작은 독립 성분을 전역 좌표 축척 없이 보존한다.
+    vertexNormals = new Float64Array(positions.length);
+    // 위치는 private scratch이고 indices는 검증된 surface의 읽기 전용 입력이다.
+    recomputeSculptNormals({
+      positions, normals: vertexNormals, indices: soup.indices,
+      vertexCount: n, triangleCount: soup.indices.length / 3,
+    });
   } else {
-    nx = 0;
-    ny = 1;
-    nz = 0;
+    // 다른 브러시의 기존 plane/grab fallback 의미는 유지한다.
+    nx = 0; ny = 0; nz = 0;
+    for (let t = 0; t < soup.indices.length; t += 3) {
+      const ia = soup.indices[t]!;
+      const ib = soup.indices[t + 1]!;
+      const ic = soup.indices[t + 2]!;
+      const ax = positions[ia * 3]!;
+      const ay = positions[ia * 3 + 1]!;
+      const az = positions[ia * 3 + 2]!;
+      const bx = positions[ib * 3]! - ax;
+      const by = positions[ib * 3 + 1]! - ay;
+      const bz = positions[ib * 3 + 2]! - az;
+      const cxn = positions[ic * 3]! - ax;
+      const cyn = positions[ic * 3 + 1]! - ay;
+      const czn = positions[ic * 3 + 2]! - az;
+      nx += by * czn - bz * cyn;
+      ny += bz * cxn - bx * czn;
+      nz += bx * cyn - by * cxn;
+    }
+    const length = Math.hypot(nx, ny, nz);
+    if (length > 1e-6) {
+      nx /= length; ny /= length; nz /= length;
+    } else {
+      nx = 0; ny = 1; nz = 0;
+    }
   }
 
   const dir = stroke.direction ?? { x: nx, y: ny, z: nz };
@@ -167,15 +175,17 @@ export function applyStudioSculptStroke(
       positions[i * 3] = x + (dir.x / dl) * w;
       positions[i * 3 + 1] = y + (dir.y / dl) * w;
       positions[i * 3 + 2] = z + (dir.z / dl) * w;
-    } else if (stroke.kind === "inflate" || stroke.kind === "clay") {
-      const s = stroke.kind === "clay" ? w * 0.5 : w;
-      positions[i * 3] = x + nx * s;
-      positions[i * 3 + 1] = y + ny * s;
-      positions[i * 3 + 2] = z + nz * s;
-    } else if (stroke.kind === "crease") {
-      positions[i * 3] = x - nx * w * 0.5;
-      positions[i * 3 + 1] = y - ny * w * 0.5;
-      positions[i * 3 + 2] = z - nz * w * 0.5;
+    } else if (usesVertexNormals) {
+      const normalX = vertexNormals?.[i * 3];
+      const normalY = vertexNormals?.[i * 3 + 1];
+      const normalZ = vertexNormals?.[i * 3 + 2];
+      if (normalX === undefined || normalY === undefined || normalZ === undefined) {
+        return { ok: false, detail: "조형 정점 법선의 원본 대응을 확인할 수 없습니다." };
+      }
+      const amount = stroke.kind === "clay" ? w * 0.5 : stroke.kind === "crease" ? -w * 0.5 : w;
+      positions[i * 3] = x + normalX * amount;
+      positions[i * 3 + 1] = y + normalY * amount;
+      positions[i * 3 + 2] = z + normalZ * amount;
     } else if (stroke.kind === "flatten" || stroke.kind === "scrape") {
       // 가중 평균 평면 투영. scrape 는 방향 쪽으로 튀어나온 정점만 닦아내린다.
       // 평면 법선은 브러시 direction 을 따른다(닫힌 메시의 평균 법선은 0 으로 퇴화한다).
