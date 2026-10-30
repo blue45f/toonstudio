@@ -3,7 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "rea
 
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { vrmGenerateStatusText } from "../status-i18n/studio-vrm-generate-status-i18n";
-import { readAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
+import { avatarForgeAppearanceSignature, readAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import {
   createStudioVrmExportProfileStore,
   type StudioVrmExportProfileStore,
@@ -28,7 +28,7 @@ import {
   STUDIO_VRM_HAIR_SWAY_PRESETS,
 } from "./studio-vrm-generate-hair-sway";
 import { generateStudioVrmCharacter, type StudioVrmGenerateResult } from "./studio-vrm-generate-mcp";
-import { createStudioVrmGenerateRecipe } from "./studio-vrm-generate-recipe";
+import { createStudioVrmGenerateRecipe, listStudioVrmGenerateHairSwayChains } from "./studio-vrm-generate-recipe";
 import { rasterizeStudioVrmSvgThumbnail, squareStudioVrmThumbnailImage } from "./studio-vrm-generate-thumbnail";
 import { formatStudioVrmHeadUnits, resolveStudioVrmProportionMetrics } from "./studio-vrm-proportion-core";
 import { describeStudioVrmAvatarForgeState, StudioVrmAvatarForgePreview } from "./StudioVrmAvatarForgePreview";
@@ -183,6 +183,12 @@ export function StudioVrmAvatarForgeGenerateSection({
     () => createStudioVrmGenerateRecipe({ presetId: state.presetId, state, allowDefaultPreset }),
     [state, allowDefaultPreset],
   );
+  // 흔들리는 가닥은 외형으로만 정해진다. 표정·흔들림만 바꿀 때는 외형 서명이 같아 다시 세우지 않는다.
+  const swayAppearanceKey = avatarForgeAppearanceSignature(previewRecipe.state);
+  const swayChains = useMemo(
+    () => listStudioVrmGenerateHairSwayChains(JSON.parse(swayAppearanceKey) as AvatarForgeState),
+    [swayAppearanceKey],
+  );
   const describedPreview = describeStudioVrmAvatarForgeState(previewRecipe.state);
   const effectiveDraft: StudioVrmGenerateExportMetaDraft = {
     ...draft,
@@ -293,7 +299,7 @@ export function StudioVrmAvatarForgeGenerateSection({
   const authoring = readAvatarForgeVrmAuthoring(state);
   const expressionCount = countStudioVrmEditedExpressions(authoring?.expressions);
   const swayPreset = matchStudioVrmHairSwayPreset(authoring?.hairSway);
-  const swayGroups = countStudioVrmHairSwayScopes(authoring?.hairSway) - (authoring?.hairSway?.global ? 1 : 0);
+  const swayGroups = countStudioVrmHairSwayScopes(authoring?.hairSway, swayChains) - (authoring?.hairSway?.global ? 1 : 0);
   const swaySummary = `${swayPreset ? STUDIO_VRM_HAIR_SWAY_PRESETS.find((preset) => preset.id === swayPreset)?.label : "직접 조정"}${
     swayGroups > 0 ? ` · 묶음·가닥 ${swayGroups}곳` : ""
   }`;
@@ -388,6 +394,7 @@ export function StudioVrmAvatarForgeGenerateSection({
           <StudioVrmGenerateHairSwayControls
             state={state}
             previewState={previewRecipe.state}
+            chains={swayChains}
             disabled={disabled}
             onChange={onChange}
           />

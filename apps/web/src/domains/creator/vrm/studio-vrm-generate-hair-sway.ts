@@ -7,9 +7,8 @@
  * VRoid Studio 공개 가이드의 흔들림 설정(헤어 묶음마다 단단함·중력·충돌 반경을 조정)과 같은
  * 작업 흐름을 따르되, 값은 절대값이 아니라 자동 조율에 곱하는 배율이다. VRoid Studio 제품 소개가
  * 밝히듯 흔들림은 헤어 덩어리마다 따로 정할 수 있어야 하므로, 전체 → 묶음 → 가닥(스프링 체인) 세 단계로
- * 곱한다. 그래야 같은 "찰랑찰랑"
- * 설정에서도 앞머리는 앞머리답게, 롱헤어는 롱헤어답게 흔들린다. 배율이 전부 1 이면 아무것도 바꾸지
- * 않으므로 조정하지 않은 생성 VRM 은 이전과 같다.
+ * 곱한다. 그래야 같은 "찰랑찰랑" 설정에서도 앞머리는 앞머리답게, 롱헤어는 롱헤어답게 흔들린다.
+ * 배율이 전부 1 이면 아무것도 바꾸지 않으므로 조정하지 않은 생성 VRM 은 이전과 같다.
  */
 
 import type { AvatarForgeHairPart } from "./studio-vrm-avatar-forge";
@@ -194,6 +193,26 @@ export function resetStudioVrmHairSwayScope(
   return sanitizeStudioVrmHairSwayAuthoring({ ...authoring, groups });
 }
 
+/**
+ * 지금 헤어에 있는 가닥의 조정만 남긴다. 가닥 id 는 헤어 파츠마다 달라서 헤어를 바꾸면 이전 헤어의 가닥
+ * 조정이 보이지도 않고 효과도 없이 남는다. 헤어 스타일 전체의 가닥은 상한보다 많으므로, 그대로 쌓이면
+ * 정렬 순서에 밀린 새 조정이 저장되지 않는다. 걷어 낼 것이 없으면 받은 객체를 그대로 돌려준다.
+ */
+export function keepStudioVrmHairSwayChains(
+  authoring: StudioVrmHairSwayAuthoring | undefined,
+  chainIds: Iterable<string>,
+): StudioVrmHairSwayAuthoring | undefined {
+  const chains = authoring?.chains;
+  if (!chains) return authoring;
+  const keep = new Set(chainIds);
+  const ids = Object.keys(chains);
+  if (ids.every((id) => keep.has(id))) return authoring;
+  return sanitizeStudioVrmHairSwayAuthoring({
+    ...authoring,
+    chains: Object.fromEntries(ids.filter((id) => keep.has(id)).map((id) => [id, chains[id]])),
+  });
+}
+
 /** 전체 배율이 프리셋과 같으면 그 프리셋 id. 직접 조정했다면 `null`. */
 export function matchStudioVrmHairSwayPreset(
   authoring: StudioVrmHairSwayAuthoring | undefined,
@@ -257,7 +276,18 @@ export function applyStudioVrmHairSway(
   };
 }
 
-/** 조정한 범위 수(전체 + 묶음 + 가닥). 패널 요약 배지에 쓴다. */
-export function countStudioVrmHairSwayScopes(authoring: StudioVrmHairSwayAuthoring | undefined): number {
-  return (authoring?.global ? 1 : 0) + Object.keys(authoring?.groups ?? {}).length + Object.keys(authoring?.chains ?? {}).length;
+/**
+ * 조정한 범위 수(전체 + 묶음 + 가닥). 패널 요약 배지에 쓴다. 생성 VRM 의 가닥 목록을 주면 그 헤어에 있는
+ * 묶음·가닥만 센다 — 헤어를 바꾸면 이전 헤어에만 있던 묶음·가닥의 조정은 효과 없이 남는다.
+ */
+export function countStudioVrmHairSwayScopes(
+  authoring: StudioVrmHairSwayAuthoring | undefined,
+  present?: readonly { readonly id: string; readonly group: StudioVrmHairSwayGroupId }[],
+): number {
+  const global = authoring?.global ? 1 : 0;
+  if (!present) return global + Object.keys(authoring?.groups ?? {}).length + Object.keys(authoring?.chains ?? {}).length;
+  const groups = new Set(present.map((chain) => chain.group));
+  return global
+    + [...groups].filter((group) => authoring?.groups?.[group]).length
+    + present.filter((chain) => authoring?.chains?.[chain.id]).length;
 }

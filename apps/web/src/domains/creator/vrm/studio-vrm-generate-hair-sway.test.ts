@@ -4,6 +4,7 @@ import {
   applyStudioVrmHairSway,
   applyStudioVrmHairSwayPreset,
   countStudioVrmHairSwayScopes,
+  keepStudioVrmHairSwayChains,
   matchStudioVrmHairSwayPreset,
   resetStudioVrmHairSwayScope,
   resolveStudioVrmHairSwayScope,
@@ -115,6 +116,30 @@ describe("hair sway editing helpers", () => {
     );
     expect(Object.keys(sanitizeStudioVrmHairSwayAuthoring({ chains: many })?.chains ?? {}))
       .toHaveLength(STUDIO_VRM_HAIR_SWAY_MAX_CHAINS);
+  });
+
+  it("drops strand tweaks of a previous hairstyle and counts only what the current hair has", () => {
+    // 이전 헤어(울프컷)의 가닥 조정이 지금 헤어(히메컷)의 조정과 함께 남은 상태.
+    const authoring = {
+      groups: { bang: { stiffness: 2 }, tail: { drag: 0.5 } },
+      chains: { "wolf-nape-left": { gravity: 2 }, "hime-lock-left": { stiffness: 0.5 } },
+    };
+    const present = [
+      { id: "hime-lock-left", group: "side" as const },
+      { id: "bang-blunt-0", group: "bang" as const },
+    ];
+    expect(keepStudioVrmHairSwayChains(authoring, present.map((chain) => chain.id))).toEqual({
+      groups: authoring.groups,
+      chains: { "hime-lock-left": { stiffness: 0.5 } },
+    });
+    // 걷어 낼 것이 없으면 같은 객체, 가닥 조정이 모두 사라지면 키도 지운다.
+    const kept = { chains: { "hime-lock-left": { stiffness: 0.5 } } };
+    expect(keepStudioVrmHairSwayChains(kept, ["hime-lock-left"])).toBe(kept);
+    expect(keepStudioVrmHairSwayChains({ chains: { "wolf-nape-left": { gravity: 2 } } }, [])).toBeUndefined();
+
+    // 묶은 머리(tail) 묶음과 울프컷 가닥은 지금 헤어에 없어 세지 않는다.
+    expect(countStudioVrmHairSwayScopes(authoring)).toBe(4);
+    expect(countStudioVrmHairSwayScopes(authoring, present)).toBe(2);
   });
 
   it("ships presets whose values stay inside the slider limits", () => {

@@ -1,14 +1,11 @@
 import { RotateCcw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { vrmGenerateStatusText } from "../status-i18n/studio-vrm-generate-status-i18n";
-import {
-  avatarForgeAppearanceSignature,
-  readAvatarForgeVrmAuthoring,
-  withAvatarForgeVrmAuthoring,
-} from "./studio-vrm-avatar-forge-authoring";
+import { readAvatarForgeVrmAuthoring, withAvatarForgeVrmAuthoring } from "./studio-vrm-avatar-forge-authoring";
 import {
   applyStudioVrmHairSwayPreset,
+  keepStudioVrmHairSwayChains,
   matchStudioVrmHairSwayPreset,
   resetStudioVrmHairSwayScope,
   resolveStudioVrmHairSwayScope,
@@ -22,10 +19,10 @@ import {
   type StudioVrmHairSwayGroupId,
   type StudioVrmHairSwayScope,
 } from "./studio-vrm-generate-hair-sway";
-import { listStudioVrmGenerateHairSwayChains } from "./studio-vrm-generate-recipe";
 import { StudioVrmForgeRangeControl } from "./StudioVrmForgeRangeControl";
 
 import type { AvatarForgeState } from "./studio-vrm-avatar-forge";
+import type { StudioVrmGenerateHairSwayChain } from "./studio-vrm-generate-recipe";
 
 function groupLabel(id: StudioVrmHairSwayGroupId): string {
   return STUDIO_VRM_HAIR_SWAY_GROUPS.find((group) => group.id === id)?.label ?? id;
@@ -40,10 +37,15 @@ function chipClass(selected: boolean): string {
 export interface StudioVrmGenerateHairSwayControlsProps {
   readonly state: AvatarForgeState;
   /**
-   * 실제로 생성될 상태. 아무 스타일도 고르지 않았으면 기본 스타일 헤어가 대신 들어가므로, 어떤 묶음이
+   * 실제로 생성될 상태. 아무 스타일도 고르지 않았으면 기본 스타일 헤어가 대신 들어가므로, 흔들릴 헤어가
    * 있는지는 이 상태로 판단한다. 편집은 언제나 `state` 에 건다.
    */
   readonly previewState?: AvatarForgeState;
+  /**
+   * `previewState` 로 생성될 VRM 에서 실제로 흔들리는 가닥(`listStudioVrmGenerateHairSwayChains`).
+   * 생성 구역이 한 번 세워 요약 배지와 함께 쓴다.
+   */
+  readonly chains: readonly StudioVrmGenerateHairSwayChain[];
   readonly disabled?: boolean;
   readonly onChange: (state: AvatarForgeState) => void;
 }
@@ -55,19 +57,20 @@ export interface StudioVrmGenerateHairSwayControlsProps {
 export function StudioVrmGenerateHairSwayControls({
   state,
   previewState = state,
+  chains,
   disabled = false,
   onChange,
 }: StudioVrmGenerateHairSwayControlsProps) {
   const [scope, setScope] = useState<StudioVrmHairSwayScope>("global");
-  const authoring = readAvatarForgeVrmAuthoring(state)?.hairSway;
+  // 이전 헤어에만 있던 가닥의 조정은 걷어 낸 값에서 편집한다. 그래야 저장되는 가닥 조정이 지금 헤어의
+  // 가닥 수를 넘지 않고, 쌓인 조정에 밀려 새 조정이 버려지지 않는다.
+  const authoring = keepStudioVrmHairSwayChains(
+    readAvatarForgeVrmAuthoring(state)?.hairSway,
+    chains.map((chain) => chain.id),
+  );
   const activePreset = matchStudioVrmHairSwayPreset(authoring);
   // 생성될 VRM 에서 스프링 체인이 실제로 달리는 가닥·묶음만 보여 준다. 정수리에 얹힌 번이나 짧은 덩어리는
-  // 체인이 없어 배율을 바꿔도 그대로다. 표정·흔들림만 바꿀 때는 외형 서명이 같아 다시 세우지 않는다.
-  const appearanceKey = avatarForgeAppearanceSignature(previewState);
-  const chains = useMemo(
-    () => listStudioVrmGenerateHairSwayChains(JSON.parse(appearanceKey) as AvatarForgeState),
-    [appearanceKey],
-  );
+  // 체인이 없어 배율을 바꿔도 그대로다.
   const presentGroups = STUDIO_VRM_HAIR_SWAY_GROUPS.filter((group) => chains.some((chain) => chain.group === group.id));
   const selectedChain = chains.find((chain) => studioVrmHairSwayChainScope(chain.id) === scope);
   const resolvedScope: StudioVrmHairSwayScope = scope === "global" || selectedChain || presentGroups.some((group) => group.id === scope)
