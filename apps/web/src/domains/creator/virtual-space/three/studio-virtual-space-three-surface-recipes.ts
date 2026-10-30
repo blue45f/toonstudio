@@ -43,6 +43,7 @@ export function studioThreePreservedOfficeSurface(roomId?: string): PreservedOff
 }
 const ASSET_FLOOR_PATTERNS: Readonly<Record<VirtualThreeAssetRecipeThemeId, StudioThreeFloorPattern>> = {
   parkbotanical: "stone", fantasyguild: "planks", sflab: "slate", gothicarchive: "stone", vehiclegarage: "checker", cafefood: "planks",
+  forestretreat: "lawn", gardenstudy: "stone",
 };
 function toneMap<T>(value: (tone: StudioThreeRoomTone, index: number) => T): ToneMap<T> {
   return { marble: value("marble", 0), wood: value("wood", 1), oak: value("oak", 2), cafe: value("cafe", 3), carpet: value("carpet", 4), stone: value("stone", 5), stage: value("stage", 6), mosaic: value("mosaic", 7), sand: value("sand", 8), lavender: value("lavender", 9), grass: value("grass", 10) };

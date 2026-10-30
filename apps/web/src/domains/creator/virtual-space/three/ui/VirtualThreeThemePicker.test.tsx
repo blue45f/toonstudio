@@ -22,11 +22,11 @@ function props(): VirtualThreeThemePickerProps {
 const group = () => screen.getByRole("group", { name: "3D 공간 테마" });
 
 describe("3D 전용 테마 선택기", () => {
-  it("기존 baseline과 여섯 테마의 이름·설명·pressed 상태를 키보드 단추로 제공한다", () => {
+  it("기존 baseline과 여덟 테마의 이름·설명·pressed 상태를 키보드 단추로 제공한다", () => {
     const input = props();
     render(<VirtualThreeThemePicker {...input} />);
     const cards = within(group()).getAllByRole("button").filter(button => button.hasAttribute("data-three-theme"));
-    expect(cards).toHaveLength(7);
+    expect(cards).toHaveLength(9);
     for (const theme of VIRTUAL_THREE_THEMES) {
       const card = within(group()).getByRole("button", { name: theme.copy.ko.name });
       expect(card.getAttribute("aria-pressed")).toBe(String(theme.id === "creator-campus"));
@@ -35,6 +35,17 @@ describe("3D 전용 테마 선택기", () => {
     }
     fireEvent.click(screen.getByRole("button", { name: "SF 제작 실험실" }));
     expect(input.onPreview).toHaveBeenCalledExactlyOnceWith("sflab");
+    expect(input.onApply).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["숲속 관찰 작업실", "forestretreat"],
+    ["정원 관찰 작업실", "gardenstudy"],
+  ])("새 %s 선택은 준비 요청만 전달하고 즉시 저장하지 않는다", (label, id) => {
+    const input = props();
+    render(<VirtualThreeThemePicker {...input} />);
+    fireEvent.click(within(group()).getByRole("button", { name: label }));
+    expect(input.onPreview).toHaveBeenCalledExactlyOnceWith(id);
     expect(input.onApply).not.toHaveBeenCalled();
   });
 
