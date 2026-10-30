@@ -116,3 +116,4 @@ apps/api/src/platform/database/migrations/0115_studio_ai_usage_ledger_reserved_t
 apps/api/src/platform/database/migrations/0116_studio_review_comment_pen_strokes.sql
 apps/api/src/platform/database/migrations/0117_studio_scoped_write_policy.sql
 apps/api/src/platform/database/migrations/0118_customer_support.sql
+apps/api/src/platform/database/migrations/0119_studio_review_voice_note_guard_schema.sql

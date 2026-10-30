@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { assertPrivateNativeBody, LICENSED_NATIVE_INTAKE, LICENSED_NATIVE_PACKS, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+import { assertPrivateNativeBody, ATLAS_NATIVE_INTAKE, ATLAS_NATIVE_PACK, ATLAS_NATIVE_BASE_COUNTS, ATLAS_NATIVE_EXPECTED_MODELS, LICENSED_NATIVE_INTAKE, LICENSED_NATIVE_PACKS, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
 import { packRightsProjection } from "./lib/creator-bundle-pack-rights.mjs";
+import { createNativeBundleReleaseTrace } from "./lib/creator-bundle-native-release.mjs";
 import { FIXTURE_LIBRARY_PACK, fixtureLedger, fixtureLicenseText, ledgerEntry, qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -209,4 +210,135 @@ test("이번 paired 편입 옵션은 각각 50·115개를 요구하고 일부 �
   assert.deepEqual(nativeCatalogRightsProblems({ ...proof, expectedIntake: LICENSED_NATIVE_INTAKE }), []);
   proof.themePacks.assets.pop();
   assert.ok(nativeCatalogRightsProblems({ ...proof, expectedIntake: LICENSED_NATIVE_INTAKE }).some((problem) => problem.includes("115개 필요")));
+});
+
+/** 모델 바이트·Worker·GPU를 실행하지 않는 판정기 입력 fixture다. 실제 전수 성공 증거가 아니다. */
+function atlasFixture() {
+  const themePacks = JSON.parse(readFileSync(new URL("../apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json", import.meta.url)));
+  const ledger = JSON.parse(readFileSync(new URL("../config/creator-bundle-pack-rights.json", import.meta.url)));
+  const baseIngestIds = new Set(ATLAS_NATIVE_BASE_COUNTS.map(([ingest]) => ingest));
+  const baseAssets = themePacks.assets.filter((asset) => baseIngestIds.has(asset.path.split("/")[0]));
+  const pack = themePacks.packs.findIndex((candidate) => candidate.ingestPackIds.includes(ATLAS_NATIVE_PACK.ingestId));
+  assert.ok(pack >= 0);
+  themePacks.packs[pack].placeable = 3300;
+  themePacks.assets = [...baseAssets, ...Array.from({ length: 3300 }, (_, index) => ({
+    id: `${ATLAS_NATIVE_PACK.ingestId}-synthetic-${index}`, pack,
+    path: `${ATLAS_NATIVE_PACK.ingestId}/native/${index === 0 ? "Farm Plants/Lettuce_C.glb" : `Synthetic/model-${index}.glb`}`,
+    bytes: 123, sha256,
+  }))];
+  themePacks.totals = { ...themePacks.totals, placeableAssets: 5229 };
+  const assets = themePacks.assets;
+  const rows = assets.map((asset) => {
+    const sourceRights = { ...themePacks.packs[asset.pack].rights };
+    delete sourceRights.serve;
+    return { id: asset.id, packIndex: asset.pack, ok: true, bytes: asset.bytes,
+      sha256: `sha256:${asset.sha256}`, profile: "mobile", rights: sourceRights };
+  });
+  const representatives = selectNativeRepresentatives(themePacks, { expectedIntake: ATLAS_NATIVE_INTAKE });
+  const sample = fixture();
+  const renders = representatives.map(({ index }) => ({ ...structuredClone(sample.renders[0]),
+    id: assets[index].id, packIndex: assets[index].pack, bytes: assets[index].bytes,
+    sha256: `sha256:${assets[index].sha256}` }));
+  const calls = assets.length + 2 * representatives.length;
+  const releaseBinding = { descriptorSha256: "e".repeat(64), descriptorBytes: 512,
+    compositeConfigSha256: "f".repeat(64), compositeConfigBytes: 1024,
+    catalog: { url: `/assets/3d/environments/bundle-v1/theme-packs.${"c".repeat(64)}.json`, sha256: "c".repeat(64), bytes: 1234 },
+    index: { url: `/assets/3d/environments/bundle-v1/deploy-index.${"d".repeat(64)}.json`, sha256: "d".repeat(64), bytes: 234 } };
+  const releaseTrace = createNativeBundleReleaseTrace(releaseBinding);
+  releaseTrace.catalog.requests = 1; releaseTrace.index.requests = 1; releaseTrace.descriptorRequests = 1;
+  const nonce = "00000000-0000-4000-8000-000000000001";
+  releaseTrace.completion.requests = 1;
+  releaseTrace.completion.responses.push({ method: "GET", requestTarget: `${releaseTrace.completion.url}?release-check=${nonce}`,
+    releaseCheckNonce: nonce, status: 200, bodySha256: releaseBinding.index.sha256, bodyBytes: releaseBinding.index.bytes,
+    qaSynthetic: true, actualR2Proof: false, productionValidation: false });
+  return { ...sample, themePacks, ledger, assets, rows, representatives, renders,
+    expectedIntake: ATLAS_NATIVE_INTAKE, catalogSha256: "c".repeat(64),
+    worker: { ...sample.worker, requests: calls, responses: calls }, releaseBinding, releaseTrace };
+}
+
+test("Atlas 명시 모드는 기존 10팩1929개와 Nature3300개·정확 원장 소속을 함께 요구한다", () => {
+  const proof = atlasFixture();
+  assert.equal(proof.assets.length, 5229);
+  assert.equal(ATLAS_NATIVE_EXPECTED_MODELS, 5229);
+  assert.deepEqual(nativeCatalogRightsProblems(proof), []);
+  for (const mutate of [
+    (value) => { value.assets.pop(); },
+    (value) => { value.themePacks.totals.placeableAssets = 1929; },
+    (value) => { value.themePacks.packs[value.assets.at(-1).pack].placeable = 3299; },
+    (value) => { value.assets[0].path = value.assets[0].path.replace("cute-park", "other-pack"); },
+    (value) => { value.themePacks.packs[value.assets.at(-1).pack].rights.status = "licensed"; },
+  ]) {
+    const value = atlasFixture(); mutate(value);
+    assert.ok(nativeCatalogRightsProblems(value).length > 0, mutate.toString());
+  }
+  const swapped = atlasFixture(), natureIndex = swapped.assets.at(-1).pack;
+  const park = swapped.themePacks.packs.find((candidate) => candidate.catalogIds.includes("cbv1-008-cute-park-pack"));
+  Object.assign(swapped.themePacks.packs[natureIndex], {
+    title: park.title, creator: park.creator, catalogIds: [...park.catalogIds], rights: { ...park.rights },
+  });
+  assert.ok(nativeCatalogRightsProblems(swapped).some((problem) => /Nature Atlas의 원장 소속/u.test(problem)));
+});
+
+test("Atlas 대표는 기존8·Cemetery·SmallProps를 유지하고 실제 Lettuce 경로를 11번째로 요구한다", () => {
+  const proof = atlasFixture();
+  assert.equal(proof.representatives.length, 11);
+  assert.equal(proof.representatives.at(-1).path, "cbv1-ingest-007-030-nature-godot/native/Farm Plants/Lettuce_C.glb");
+  const base = selectNativeRepresentatives(proof.themePacks, { expectedIntake: LICENSED_NATIVE_INTAKE });
+  assert.deepEqual(proof.representatives.slice(0, 10), base);
+  proof.themePacks.assets.at(-3300).path = "cbv1-ingest-007-030-nature-godot/native/Other.glb";
+  assert.throws(() => selectNativeRepresentatives(proof.themePacks, { expectedIntake: ATLAS_NATIVE_INTAKE }), /대표 모델/u);
+});
+
+test("Atlas 판정은 전수5229 Worker·11대표·현재catalogSHA를 요구하고 샘플 또는 과거receipt를 거부한다", () => {
+  const proof = atlasFixture();
+  assert.deepEqual(nativeProofProblems(proof), []);
+  for (const mutate of [
+    (value) => { value.rows = value.rows.slice(0, 1929); },
+    (value) => { value.worker.requests = 1929 + 20; value.worker.responses = 1929 + 20; },
+    (value) => { value.renders.pop(); },
+    (value) => { value.representatives.pop(); value.renders.pop(); value.worker.requests -= 2; value.worker.responses -= 2; },
+    (value) => { delete value.catalogSha256; },
+    (value) => { delete value.releaseBinding; },
+    (value) => { value.releaseTrace.index.requests = 0; },
+    (value) => { delete value.releaseTrace.completion; },
+    (value) => { value.releaseTrace.completion.requests = 0; },
+    (value) => { value.releaseTrace.completion.responses[0].bodySha256 = "f".repeat(64); },
+    (value) => { value.releaseTrace.actualR2Proof = true; },
+    (value) => { value.releaseTrace.catalog.sha256 = "f".repeat(64); },
+    (value) => { value.releaseTrace.unexpected.push("/assets/3d/environments/bundle-v1/theme-packs.json"); },
+    (value) => { value.rows.at(-1).rights.status = "licensed"; },
+  ]) {
+    const value = atlasFixture(); mutate(value);
+    assert.ok(nativeProofProblems(value).length > 0, mutate.toString());
+  }
+  const summary = { status: "ok", expectedIntake: ATLAS_NATIVE_INTAKE, catalogSha256: proof.catalogSha256,
+    assets: proof.assets.length, validated: proof.assets.length,
+    bytes: proof.assets.reduce((sum, asset) => sum + asset.bytes, 0), failures: [], problems: [],
+    wrongHash: proof.wrongHash, worker: proof.worker, renders: proof.renders,
+    releaseBinding: proof.releaseBinding, releaseTrace: proof.releaseTrace };
+  const reusable = { assets: proof.assets, rows: proof.rows, summary, catalogSha256: proof.catalogSha256,
+    themePacks: proof.themePacks, ledger: proof.ledger, expectedIntake: ATLAS_NATIVE_INTAKE,
+    releaseBinding: proof.releaseBinding };
+  assert.deepEqual(reusableNativeValidationProblems(reusable), []);
+  // catalog/index 전용 과거 Atlas receipt는 새 completion 검사 성공 증거로 재해석하지 않는다.
+  const historicalSummary = structuredClone(summary);
+  delete historicalSummary.releaseTrace.completion;
+  delete historicalSummary.releaseTrace.qaSynthetic;
+  delete historicalSummary.releaseTrace.actualR2Proof;
+  delete historicalSummary.releaseTrace.productionValidation;
+  assert.ok(reusableNativeValidationProblems({ ...reusable, summary: historicalSummary }).length > 0);
+  for (const patch of [
+    { expectedIntake: LICENSED_NATIVE_INTAKE }, { assets: 1929, validated: 1929 },
+    { catalogSha256: "d".repeat(64) },
+    { releaseBinding: undefined },
+    { releaseBinding: { ...proof.releaseBinding, descriptorSha256: "f".repeat(64) } },
+    { releaseBinding: { ...proof.releaseBinding, compositeConfigSha256: "a".repeat(64) } },
+  ]) assert.ok(reusableNativeValidationProblems({ ...reusable, summary: { ...summary, ...patch } }).length > 0);
+  const reusedValidation = { expectedIntake: ATLAS_NATIVE_INTAKE, validated: 5229,
+    sourceCatalogSha256: proof.catalogSha256, summarySha256: sha256, rowsSha256: sha256,
+    releaseBinding: proof.releaseBinding };
+  assert.deepEqual(nativeProofProblems({ ...proof, reusedValidation,
+    worker: { ...proof.worker, requests: 22, responses: 22 } }), []);
+  assert.ok(nativeProofProblems({ ...proof, reusedValidation: { ...reusedValidation, sourceCatalogSha256: "d".repeat(64) },
+    worker: { ...proof.worker, requests: 22, responses: 22 } }).length > 0);
 });

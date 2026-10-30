@@ -1,3 +1,4 @@
+import { bindConsumerReleaseFixture, consumerReleaseFixture, isConsumerCatalogUrl } from "./studio-bg3d-bundle-release-consumer.test-fixture";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -88,9 +89,10 @@ function rawThemePacks(sha256: string): Record<string, unknown> {
 
 async function stubServing(): Promise<`sha256:${string}`> {
   const hex = await sha256Hex(GLB);
+  bindConsumerReleaseFixture(() => rawThemePacks(hex));
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-    if (String(input).includes("theme-packs.json")) {
-      return { ok: true, status: 200, headers: new Headers(), json: async () => rawThemePacks(hex) };
+    if (isConsumerCatalogUrl(String(input))) {
+      return consumerReleaseFixture(rawThemePacks(hex)).catalogResponse();
     }
     return {
       ok: true,
@@ -107,6 +109,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 

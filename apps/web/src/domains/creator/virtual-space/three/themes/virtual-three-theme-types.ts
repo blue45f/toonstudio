@@ -1,5 +1,5 @@
 /** 엔진 객체와 독립된 3D 테마 계약이다. */
-export type VirtualThreeAssetRecipeThemeId = 'parkbotanical' | 'fantasyguild' | 'sflab' | 'gothicarchive' | 'vehiclegarage' | 'cafefood';
+export type VirtualThreeAssetRecipeThemeId = 'parkbotanical' | 'fantasyguild' | 'sflab' | 'gothicarchive' | 'vehiclegarage' | 'cafefood' | 'forestretreat' | 'gardenstudy';
 export type VirtualThreeThemeId = 'creator-campus' | VirtualThreeAssetRecipeThemeId;
 export type VirtualThreeThemePreviewState =
   | { readonly status: 'idle' }

@@ -10,11 +10,16 @@ import {
   findStudioBg3dBundleAssetByHash,
   isStudioBg3dBundleAssetId,
   loadStudioBg3dBundleDeployAvailability,
-  loadStudioBg3dBundleThemePacks,
+  loadStudioBg3dBundleThemePacks as loadStudioBg3dBundleThemePacksActual,
   parseStudioBg3dBundleThemePacks,
   resetStudioBg3dBundleThemePacksCache,
   studioBg3dBundleAssetUrl,
 } from "./studio-bg3d-bundle-theme-packs";
+
+// 기존 JSON-only fixture는 명시 legacy 계약을 검사한다. 새 기본 release는 별도 실제 원문 회귀에서 검사한다.
+function loadStudioBg3dBundleThemePacks(options: Parameters<typeof loadStudioBg3dBundleThemePacksActual>[0] = {}) {
+  return loadStudioBg3dBundleThemePacksActual({ ...options, release: null });
+}
 
 const SHA_A = "a".repeat(64);
 const SHA_B = "b".repeat(64);
@@ -69,6 +74,16 @@ function mutate(fn: (raw: Record<string, unknown>) => void): Record<string, unkn
 }
 
 describe("parseStudioBg3dBundleThemePacks", () => {
+  it.each(["packs", "placeableAssets", "presets", "crowdGlbAssets", "deferredAssets"])("실제 항목과 다른 합계를 거부한다 (%s)", key => {
+    const raw = validRawThemePacks();
+    const totals = raw.totals;
+    if (totals === null || typeof totals !== "object" || Array.isArray(totals)) {
+      throw new Error("합계 회귀의 원본 fixture가 올바르지 않습니다.");
+    }
+    raw.totals = { ...totals, [key]: 2 };
+    expect(() => parseStudioBg3dBundleThemePacks(raw)).toThrow("합계가 실제 항목과 일치하지 않습니다");
+  });
+
   it("accepts a well-formed in-service-only document and freezes it", () => {
     const data = parseStudioBg3dBundleThemePacks(validRawThemePacks());
     expect(data.inServiceOnly).toBe(true);

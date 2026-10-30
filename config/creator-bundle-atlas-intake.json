@@ -1,0 +1,16 @@
+{
+  "schema": "toonstudio.creator-bundle-atlas-intake.v1",
+  "version": 1,
+  "generatedAt": "2026-10-30T00:00:00.000Z",
+  "packs": [
+    {
+      "catalogId": "cbv1-030-nature-megapack-extended",
+      "ingestId": "cbv1-ingest-007-030-nature-godot",
+      "packRoot": "03-nature/nature-megapack-extended/engine/godot/LowPolyNature_Godot",
+      "sourceDirectory": "Models",
+      "imagePaths": {
+        "../../Textures/atlas_nature.png": "Textures/atlas_nature.png"
+      }
+    }
+  ]
+}

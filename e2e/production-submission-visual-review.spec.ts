@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
@@ -10,6 +12,9 @@ import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 // 브라우저는 명시적인 API·이미지 fixture로 고정 버전 연결을 검사한다. 실제 저장·인가는 별도 DB HTTP 검증을 사용한다.
 async function prepareProject(page: Page) {
+  const imageBytes = readFileSync(resolve(process.cwd(), "apps/web/public/brand/studio-canvas-previews/romance.webp"));
+  const imageSha256 = createHash("sha256").update(imageBytes).digest("hex");
+  const previewBlobRefs = [0, 1].map((ordinal) => ({ sha256: imageSha256, role: "preview" as const, ordinal }));
   const fixture = submissionVisualFixture();
   const sourceArtifact = fixture.project.artifacts.find((entry) => entry.id === "artifact");
   const sourceRevision = fixture.revisions.artifact.find((entry) => entry.id === "submitted-revision");
@@ -23,8 +28,8 @@ async function prepareProject(page: Page) {
   const project: StudioProjectRecord = { ...fixture.project, artifacts: [...fixture.project.artifacts, captureArtifact] };
   const revisions: Record<string, readonly StudioRevisionRecord[]> = { artifact: fixture.revisions.artifact.map((entry) => ({ ...entry,
     kind: entry.id === "submitted-revision" ? "submission" : "checkpoint" })), "capture-artifact": [
-    { ...sourceRevision, id: "capture-submitted", artifactId: captureArtifact.id, kind: "review-snapshot" },
-    { ...inputRevision, id: "capture-input", artifactId: captureArtifact.id, kind: "review-snapshot" },
+    { ...sourceRevision, id: "capture-submitted", artifactId: captureArtifact.id, kind: "review-snapshot", blobRefs: previewBlobRefs },
+    { ...inputRevision, id: "capture-input", artifactId: captureArtifact.id, kind: "review-snapshot", blobRefs: previewBlobRefs },
   ] };
   const reviews: Record<string, readonly StudioReviewSummary[]> = { artifact: [], "capture-artifact": [
     { ...submissionReview, artifactId: captureArtifact.id, revisionId: "capture-submitted", sourceRevision: {
@@ -42,7 +47,7 @@ async function prepareProject(page: Page) {
   const writes: unknown[] = [];
   await page.addInitScript((user) => sessionStorage.setItem("toonstudio-auth-session", JSON.stringify({ user })), actor);
   await page.route("**/__collaboration-fixture/*.webp", (route) => route.fulfill({ contentType: "image/webp",
-    path: resolve(process.cwd(), "apps/web/public/brand/studio-canvas-previews/romance.webp") }));
+    headers: { "Cross-Origin-Resource-Policy": "cross-origin", "Access-Control-Allow-Origin": "*" }, body: imageBytes }));
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -66,13 +71,26 @@ async function prepareProject(page: Page) {
     if (graphResource) return route.fulfill({ json: (graphResource[2] === "revisions" ? revisions : reviews)[graphResource[1] ?? ""] });
     if (path.endsWith("/previews")) {
       previewRequests.push(url.href);
-      const revisionId = path.includes("/input-review/") ? "capture-input" : "capture-submitted";
-      expect(url.searchParams.get("revisionId")).toBe(revisionId);
-      expect(url.searchParams.get("rootGraphHash")).toBe((revisionId === "capture-input" ? "b" : "a").repeat(64));
-      const ordinal = url.searchParams.has("cursor") ? 1 : 0;
-      return route.fulfill({ json: { ok: true, previews: [{ sha256: "d".repeat(64), ordinal, mediaType: "image/webp", byteLength: 700,
-        url: `${url.origin}/__collaboration-fixture/${revisionId}-${ordinal}.webp`, expiresAt: Date.now() + 60_000, mapping: null }],
-      nextCursor: ordinal === 0 ? "page-2" : null } });
+      const reviewId = path.match(/\/reviews\/([^/]+)\/previews$/u)?.[1];
+      const review = reviews[captureArtifact.id]?.find((entry) => entry.id === reviewId);
+      const revision = review ? revisions[captureArtifact.id]?.find((entry) => entry.id === review.revisionId
+        && entry.artifactId === review.artifactId) : undefined;
+      if (!review || !revision) throw new Error("선택한 고정 캡처의 검수·원고 버전 fixture가 없습니다.");
+      const cursor = url.searchParams.get("cursor");
+      const expectedCursor = `0.${imageSha256}`;
+      expect(Object.fromEntries(url.searchParams)).toEqual({
+        projectId: project.id, workId: aggregate.workId, artifactId: captureArtifact.id,
+        revisionId: revision.id, rootGraphHash: revision.rootGraphHash,
+        ...(cursor === null ? {} : { cursor: expectedCursor }),
+      });
+      const ordinal = cursor === null ? 0 : 1;
+      const subject = { schemaVersion: 1, projectId: project.id, workId: aggregate.workId,
+        artifactId: review.artifactId, reviewId: review.id, revisionId: revision.id, rootGraphHash: revision.rootGraphHash };
+      return route.fulfill({ json: { ok: true, subject,
+        previews: [{ sha256: imageSha256, ordinal, mediaType: "image/webp", byteLength: imageBytes.byteLength,
+          url: `https://collaboration-fixture.test/__collaboration-fixture/${revision.id}-${ordinal}.webp`,
+          expiresAt: Date.now() + 60_000, mapping: { status: "unmapped", reason: "legacy-review" } }],
+        nextCursor: ordinal === 0 ? expectedCursor : null } });
     }
     if (path.endsWith("/health/capabilities")) return route.fulfill({ json: { status: "available", incidentId: null, retryAfterSeconds: null,
       checkedAt: new Date().toISOString(), capabilities: { publicCatalog: "available", authSession: "available", communityRead: "available",

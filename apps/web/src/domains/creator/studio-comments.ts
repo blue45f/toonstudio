@@ -476,6 +476,8 @@ function normalizeAnchor(value: unknown): StudioCommentAnchor | null {
   if (!isRecord(value)) return null;
   const nestedAnchor = firstValue(value, ["anchor", "target"]);
   const source = isRecord(nestedAnchor) ? nestedAnchor : value;
+  const canonical = StudioCommentAnchorSchema.safeParse(source);
+  if (canonical.success) return canonical.data;
   const rawType = firstValue(source, ["type", "kind", "anchorType", "targetType"]);
   const type = typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
 
@@ -657,9 +659,7 @@ function extractThreadCandidates(value: unknown): unknown[] {
   return [];
 }
 
-export function createEmptyStudioCommentsDocument(): StudioCommentsDocument {
-  return { version: STUDIO_COMMENTS_VERSION, threads: [] };
-}
+export function createEmptyStudioCommentsDocument(): StudioCommentsDocument { return { version: STUDIO_COMMENTS_VERSION, threads: [] }; }
 
 /**
  * Converts v1 and conservative unversioned legacy shapes to the canonical document.
