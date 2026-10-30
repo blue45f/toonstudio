@@ -4,8 +4,8 @@
   "nav.calendar": "Sèries",
   "nav.recommend": "Recomanats",
   "nav.explore": "Explora",
-  "nav.fortune": "Horóscòp",
-  "nav.play": "Arcade",
+  "nav.fortune": "Horòscop",
+  "nav.play": "Sala de jocs",
   "nav.reviews": "Ressenyes",
   "nav.community": "Comunitat",
   "nav.market": "Mercat",
@@ -20,7 +20,7 @@
   "nav.menu": "Menú",
   "nav.allMenu": "Tot el menú",
   "nav.studio": "Estudi",
-  "nav.assets": "Actius",
-  "nav.creators": "Creadors",
+  "nav.assets": "Materials",
+  "nav.creators": "Galeria de creacions",
   "nav.discover": "Descobreix"
 }

@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "É necessário iniciar sessão.",
-  "apiError.adminRequired": "As permissões de administração não foram verificadas.",
+  "apiError.loginRequired": "É necessário fazer login.",
+  "apiError.adminRequired": "Não foi possível verificar as permissões de administrador.",
   "apiError.adminOnlyPage": "Esta página é restrita aos administradores.",
-  "apiError.notFound": "O artigo solicitado não foi encontrado.",
+  "apiError.notFound": "O item solicitado não foi encontrado.",
   "apiError.unsupportedType": "Tipo de conteúdo não suportado.",
   "apiError.inactiveAccount": "As contas inativas não podem usar recursos de administrador.",
-  "apiError.settlementFailed": "A transacção falhou."
+  "apiError.settlementFailed": "Falha ao processar o acerto de contas. Tente novamente em instantes."
 }

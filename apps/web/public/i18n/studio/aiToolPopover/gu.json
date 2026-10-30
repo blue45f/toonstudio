@@ -1,6 +1,6 @@
 {
   "studio.aiToolPopover.title": "AI એકીકરણ",
-  "studio.aiToolPopover.description": "ડ્રાફ્ટ, સ્ટોક અને દૃશ્યને કનેક્ટ કરો અને લિંકિંગ ટૅબમાં મુખ્ય સેટિંગ મેનેજ કરો.",
+  "studio.aiToolPopover.description": "ડ્રાફ્ટ, સ્ટોક અને દૃશ્યને કનેક્ટ કરો અને એકીકરણ ટૅબમાં કી સેટિંગ્સ મેનેજ કરો.",
   "studio.aiToolPopover.menuAria": "AI મેનુ વિસ્તાર",
   "studio.aiToolPopover.tabAssist": "મદદ",
   "studio.aiToolPopover.tabAssistTitle": "BYOK પૃષ્ઠભૂમિ, પાત્ર, રચના પ્રસ્તાવ",
@@ -10,7 +10,7 @@
   "studio.aiToolPopover.tabStock": "સ્ટોક",
   "studio.aiToolPopover.tabStockTitle": "અનસ્પ્લેશ ફ્રી ફોટા",
   "studio.aiToolPopover.tabIntegrations": "સેટિંગ્સ",
-  "studio.aiToolPopover.tabIntegrationsTitle": "API કી/લિંક સેટિંગ્સ",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API કી/એકીકરણ સેટિંગ્સ",
   "studio.aiToolPopover.panelLoadingAssist": "AI આસિસ્ટ પેનલ ખોલી રહ્યાં છીએ...",
   "studio.aiToolPopover.panelLoadingStock": "સ્ટોક ફોટો પેનલ ખોલી રહ્યું છે...",
   "studio.aiToolPopover.panelLoadingIntegrations": "એકીકરણ સેટિંગ્સ પેનલ ખોલી રહ્યું છે...",
@@ -19,9 +19,9 @@
   "studio.aiToolPopover.imageApiConnected": "છબી API કનેક્ટ થયેલ છે",
   "studio.aiToolPopover.serverLoginHint": "લોગિન અથવા API કી જરૂરી છે",
   "studio.aiToolPopover.apiKeyNeed": "API કી નોંધણી જરૂરી છે",
-  "studio.aiToolPopover.textAiProvider": "AI પ્રદાતાને ટેક્સ્ટ કરો",
+  "studio.aiToolPopover.textAiProvider": "ટેક્સ્ટ AI પ્રદાતા",
   "studio.aiToolPopover.serverTextAiProviderAria": "સર્વર ટેક્સ્ટ AI પ્રદાતા",
   "studio.aiToolPopover.serverProviderAuto": "સ્વચાલિત સ્વિચિંગ",
-  "studio.aiToolPopover.serverFallbackMessage": "જ્યારે બેલેન્સ/પેકેજ મર્યાદા સમાપ્ત થઈ જાય, ત્યારે તમે બીજા પ્રદાતા પર સ્વિચ કરશો. ડબલ ચાર્જિંગને રોકવા માટે સામાન્ય ભૂલો આપમેળે મોકલવામાં આવતી નથી.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "બેલેન્સ/પેકેજ મર્યાદા સમાપ્ત થાય ત્યારે અમે બીજા પ્રદાતા પર સ્વિચ કરીએ છીએ. ડબલ ચાર્જિંગ રોકવા માટે સામાન્ય ભૂલો પર આપમેળે ફરી મોકલતા નથી.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "માસ્ટર એડિટિંગ દરમિયાન એપિસોડ AI કટ નિર્માણનો ઉપયોગ કરી શકાતો નથી."
 }

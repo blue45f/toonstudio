@@ -5,13 +5,13 @@
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Hae Naver Webtoonista, Seriesistä ja Kakao Webtoonista ja rajaa nopeasti luettavaa reaaliaikaisten signaalien ja lukijoiden mieltymysten avulla.",
   "home.hero.searchButton": "Hae teoksia, tekijöitä ja tunnisteita",
-  "home.hero.rankingButton": "Näytä yhtenäinen sijoitus",
+  "home.hero.rankingButton": "Näytä yhdistetty rankinglista",
   "home.hero.studioLink": "Luoja-studio",
-  "home.hero.createLink": "Luojalauta",
+  "home.hero.createLink": "Luojien keskustelupalsta",
   "home.hero.stats.titles": "Teokset",
   "home.hero.stats.platforms": "Julkaisualustat",
   "home.hero.stats.genres": "Genrespektri",
   "home.hero.stats.reviews": "Lukijoiden arvostelut",
-  "home.loadError": "Etusivun tietoja ei voitu ladata.",
-  "home.creatorTitle": "Ajattelusta ensimmäiseen kohtaukseen"
+  "home.loadError": "Etusivua ei voitu ladata. Yritä hetken kuluttua uudelleen.",
+  "home.creatorTitle": "Ideasta ensimmäiseen kohtaukseen"
 }

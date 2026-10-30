@@ -3,5 +3,5 @@
   "error.chunkRetryFailed": "Uppdaterade en gång, men problemet kvarstår. Kontrollera din anslutning och försök igen.",
   "error.reloadButton": "Ladda om sidan",
   "error.goHome": "Gå till startsidan",
-  "error.retryDesc": "Försök igen eller gå tillbaka till hemsidan."
+  "error.retryDesc": "Försök igen eller gå tillbaka till startsidan."
 }

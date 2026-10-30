@@ -1,7 +1,7 @@
 {
   "error.reloading": "Pag-reload ng pinakabagong bersyon...",
-  "error.chunkRetryFailed": "Isang beses na nag-refurbish, ngunit ang isyu ay nagpapatuloy.",
+  "error.chunkRetryFailed": "Sinubukang i-reload nang isang beses, ngunit nagpapatuloy pa rin ang problema. Pakisuri ang iyong koneksyon sa network at subukang muli.",
   "error.reloadButton": "I-reload ang pahina",
-  "error.goHome": "Pumunta sa Balay",
+  "error.goHome": "Pumunta sa Home",
   "error.retryDesc": "Mangyaring subukan muli o bumalik sa home page."
 }

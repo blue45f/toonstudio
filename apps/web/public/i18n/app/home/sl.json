@@ -11,7 +11,7 @@
   "home.hero.stats.titles": "Naslovi",
   "home.hero.stats.platforms": "Platforme za objavljanje",
   "home.hero.stats.genres": "Spektrum žanrov",
-  "home.hero.stats.reviews": "Pregledi bralcev",
-  "home.loadError": "Podatkov za domačo stran ni bilo mogoče naložiti.",
+  "home.hero.stats.reviews": "Ocene bralcev",
+  "home.loadError": "Domače strani ni bilo mogoče naložiti. Poskusite znova pozneje.",
   "home.creatorTitle": "Od ideje do prvega prizora"
 }

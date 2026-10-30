@@ -1,17 +1,17 @@
 {
   "home.hero.eyebrow": "WEBTOON × WEBNOVEL",
   "home.hero.titleLine1": "داستان های پراکنده",
-  "home.hero.titleShimmer": "یک شاخص واحد",
+  "home.hero.titleShimmer": "یک فهرست واحد",
   "home.hero.titleSuffix": ".",
-  "home.hero.description": "در شبکه های وب، سریال و وب سایت کاکاو جستجو کنید، سپس به سرعت با استفاده از سیگنال های زمان واقعی و ترجیحات خواننده، آنچه را که باید بخوانید را محدود کنید.",
-  "home.hero.searchButton": "عنوان جستجو، سازندگان، برچسب ها",
+  "home.hero.description": "در نِیوِر وبتون، سریز و کاکائو وبتون جستجو کنید و با تکیه بر سیگنال‌های لحظه‌ای و سلیقهٔ خوانندگان، به‌سرعت انتخاب کنید چه بخوانید.",
+  "home.hero.searchButton": "جستجوی آثار، نویسندگان و برچسب‌ها",
   "home.hero.rankingButton": "مشاهده رتبه بندی یکپارچه",
-  "home.hero.studioLink": "استودیو خالق",
-  "home.hero.createLink": "صفحه سازنده",
+  "home.hero.studioLink": "استودیوی آفرینش",
+  "home.hero.createLink": "انجمن آفرینش",
   "home.hero.stats.titles": "عنوان ها",
   "home.hero.stats.platforms": "پلتفرم های انتشار",
   "home.hero.stats.genres": "طیف ژانر",
   "home.hero.stats.reviews": "نظرات خواننده",
-  "home.loadError": "نتونستم اطلاعات خونه رو بار بزنم",
-  "home.creatorTitle": "از يه ایده تا اولين صحنه"
+  "home.loadError": "بارگیری صفحهٔ اصلی ممکن نشد. لطفاً کمی بعد دوباره تلاش کنید.",
+  "home.creatorTitle": "از یک ایده تا اولین صحنه"
 }

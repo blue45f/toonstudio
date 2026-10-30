@@ -5,7 +5,7 @@
   "nav.recommend": "Seçimlər",
   "nav.explore": "Kəşf et",
   "nav.fortune": "Fal",
-  "nav.play": "Arkada",
+  "nav.play": "Oyun meydançası",
   "nav.reviews": "Rəylər",
   "nav.community": "Forum",
   "nav.market": "Bazar",
@@ -21,6 +21,6 @@
   "nav.allMenu": "Bütün menyu",
   "nav.studio": "Studiya",
   "nav.assets": "Materiallar",
-  "nav.creators": "Yaradıcılar",
-  "nav.discover": "Kəşf et"
+  "nav.creators": "Yaradıcılıq qalereyası",
+  "nav.discover": "Əsərləri kəşf et"
 }

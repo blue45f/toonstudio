@@ -391,7 +391,7 @@
   "aiAssist.preflight.capPending": "输入内容后会计算",
   "aiAssist.preflight.costPending": "添加图像或文字后，这里会计算此请求的最高费用。费用由您自己的 Anthropic 账户承担。",
   "aiAssist.preflight.failureShort": "不会自动重新发送，也不会自动更换模型。",
-  "aiAssist.budget.unconfirmed": "有 {count} 个请求没有收到响应，未计入用量。它们可能仍会产生费用（最多 {cost}）。准确金额请在 Anthropic 控制台中查看。",
+  "aiAssist.budget.unconfirmed": "有 {count} 个请求没有收到响应，未计入用量。可能已经产生费用（最多 {cost}）。准确金额请在 Anthropic 控制台中查看。",
   "aiAssist.common.copyFailed": "无法复制。请自行选中文字后复制，或检查浏览器的剪贴板权限。",
   "aiAssist.common.trimmedNotice": "由于长度或数量限制，有 {count} 项内容被缩短或省略。被截断的句子结尾可能不够自然。",
   "aiAssist.art.coverageTruncated": "图像非常长：在 {total}px 的高度中，只能对上方 {covered}px（{percent}%）进行分段。请将其余部分裁剪出来，再重新上传。",

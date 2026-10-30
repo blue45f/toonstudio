@@ -5,12 +5,12 @@
   "common.open": "Ouvrir",
   "common.search": "Rechercher",
   "common.retry": "Réessayer",
-  "common.retry.short": "Retournez",
-  "common.backToTop": "Retour au sommet",
+  "common.retry.short": "Réessayer",
+  "common.backToTop": "Retour en haut",
   "common.backToHome": "Accueil",
-  "common.loading.search": "Je suis à la recherche...",
+  "common.loading.search": "Recherche en cours…",
   "common.notFoundWithQuery": "Aucun résultat pour \" {query} \".",
   "common.openSearch": "Trouvez-le dans la recherche →",
   "common.loading.empty": "Aucune information n'a été renvoyée.",
-  "common.retry.all": "Essayez encore ou rentrez chez vous."
+  "common.retry.all": "Réessayez ou revenez à l'accueil."
 }

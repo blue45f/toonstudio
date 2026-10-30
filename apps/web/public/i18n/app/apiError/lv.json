@@ -1,7 +1,7 @@
 {
   "apiError.loginRequired": "Nepieciešama pierakstīšanās.",
   "apiError.adminRequired": "Administratora atļaujas nevarēja pārbaudīt.",
-  "apiError.adminOnlyPage": "Šī lapa ir ierobežota administratoriem.",
+  "apiError.adminOnlyPage": "Šī lapa ir pieejama tikai administratoriem.",
   "apiError.notFound": "Pieprasīto vienumu neizdevās atrast.",
   "apiError.unsupportedType": "Neatbalstīts satura veids.",
   "apiError.inactiveAccount": "Neaktīvi konti nevar izmantot administratora funkcijas.",

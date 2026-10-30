@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Bilatu izenburuak, sortzaileak, etiketak",
   "home.hero.rankingButton": "Ikusi sailkapen bateratua",
   "home.hero.studioLink": "Sortzaileen estudioa",
-  "home.hero.createLink": "Sortzaileen taula",
+  "home.hero.createLink": "Sortzaileen foroa",
   "home.hero.stats.titles": "Izenburuak",
   "home.hero.stats.platforms": "Argitalpen-plataformak",
   "home.hero.stats.genres": "Generoaren espektroa",
   "home.hero.stats.reviews": "Irakurleen iritziak",
-  "home.loadError": "Ezin izan dira hasierako datuak kargatu.",
+  "home.loadError": "Ezin izan da hasiera kargatu. Saiatu berriro geroago.",
   "home.creatorTitle": "Ideia batetik zure lehen eszenaraino."
 }

@@ -1,6 +1,6 @@
 {
   "common.loading": "Memuat",
-  "common.loading.short": "Pengisian",
+  "common.loading.short": "Memuat",
   "common.close": "Tutup",
   "common.open": "Buka",
   "common.search": "Cari",
@@ -9,8 +9,8 @@
   "common.backToTop": "Kembali ke atas",
   "common.backToHome": "Ke Beranda",
   "common.loading.search": "Mencari...",
-  "common.notFoundWithQuery": "Tidak ada hasil untuk ' {query} '.",
-  "common.openSearch": "Temukan dalam Pencarian",
+  "common.notFoundWithQuery": "Tidak ada hasil untuk '{query}'.",
+  "common.openSearch": "Cari lagi di Pencarian lengkap →",
   "common.loading.empty": "Tidak ada data yang dikembalikan.",
-  "common.retry.all": "Coba lagi atau pulang."
+  "common.retry.all": "Coba lagi atau kembali ke Beranda."
 }

@@ -1,5 +1,5 @@
 {
-  "common.loading": "लोड",
+  "common.loading": "लोड हुँदैछ",
   "common.loading.short": "लोड",
   "common.close": "बन्द गर्नुहोस्",
   "common.open": "खोल्नुहोस्",
@@ -7,10 +7,10 @@
   "common.retry": "पुनः प्रयास गर्नुहोस्",
   "common.retry.short": "पुनः प्रयास गर्नुहोस्",
   "common.backToTop": "शीर्षमा फिर्ता",
-  "common.backToHome": "घर जाऊ",
+  "common.backToHome": "गृहपृष्ठमा जानुहोस्",
   "common.loading.search": "खोज्दै...",
-  "common.notFoundWithQuery": "' {query} ' को लागि कुनै परिणामहरू भेटिएन।",
-  "common.openSearch": "खोजमा खोज्नुहोस्",
-  "common.loading.empty": "कुनै डाटा फिर्ता छैन।",
-  "common.retry.all": "फेरि प्रयास गर्नुहोस् वा घर फर्कनुहोस्।"
+  "common.notFoundWithQuery": "'{query}' को लागि कुनै परिणाम भेटिएन।",
+  "common.openSearch": "पूर्ण खोजमा फेरि खोज्नुहोस् →",
+  "common.loading.empty": "प्रतिक्रिया डाटा खाली छ।",
+  "common.retry.all": "फेरि प्रयास गर्नुहोस् वा गृहपृष्ठमा फर्कनुहोस्।"
 }

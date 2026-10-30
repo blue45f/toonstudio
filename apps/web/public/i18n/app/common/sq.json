@@ -8,7 +8,7 @@
   "common.retry.short": "Provo sërish",
   "common.backToTop": "Kthehu në krye",
   "common.backToHome": "Shko në faqen kryesore",
-  "common.loading.search": "Po kërkon…",
+  "common.loading.search": "Po kërkohet…",
   "common.notFoundWithQuery": "Nuk ka rezultate për '{query}'.",
   "common.openSearch": "Gjeni te Kërkimi →",
   "common.loading.empty": "Nuk u kthyen të dhëna.",

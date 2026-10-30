@@ -18,9 +18,9 @@
   "nav.searchOpen": "Egységes keresés megnyitása történetekhez, eszközökhöz és menükhöz",
   "nav.quickAccess": "Gyors elérés",
   "nav.menu": "Menü",
-  "nav.allMenu": "Minden menü",
+  "nav.allMenu": "Teljes menü",
   "nav.studio": "Stúdió",
   "nav.assets": "Anyagok",
-  "nav.creators": "Alkotók",
-  "nav.discover": "Felfedezés"
+  "nav.creators": "Alkotói galéria",
+  "nav.discover": "Művek felfedezése"
 }

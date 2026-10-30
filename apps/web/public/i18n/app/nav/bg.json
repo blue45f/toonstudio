@@ -11,16 +11,16 @@
   "nav.market": "Пазар",
   "nav.insights": "Статистика",
   "nav.create": "Създаване",
-  "nav.shaper": "Оформящ характер",
+  "nav.shaper": "Оформяне на персонажи",
   "nav.library": "Библиотека",
   "nav.login": "Влезте",
   "nav.search": "Търсене на истории, инструменти и менюта",
   "nav.searchOpen": "Отворете обединеното търсене на истории, инструменти и менюта",
   "nav.quickAccess": "Бърз достъп",
-  "nav.menu": "Менюто",
-  "nav.allMenu": "Всички менюта",
+  "nav.menu": "Меню",
+  "nav.allMenu": "Цялото меню",
   "nav.studio": "Студия",
-  "nav.assets": "Активи",
-  "nav.creators": "Създатели",
-  "nav.discover": "Открийте"
+  "nav.assets": "Материали",
+  "nav.creators": "Галерия на творби",
+  "nav.discover": "Откриване на творби"
 }

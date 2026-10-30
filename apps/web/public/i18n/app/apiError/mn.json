@@ -4,6 +4,6 @@
   "apiError.adminOnlyPage": "Энэ хуудас зөвхөн админуудад зориулагдсан.",
   "apiError.notFound": "Хүссэн зүйл олдсонгүй.",
   "apiError.unsupportedType": "Дэмжигдээгүй агуулгын төрөл.",
-  "apiError.inactiveAccount": "Идэвхгүй бүртгэл админы боломжийг ашиглах боломжгүй.",
+  "apiError.inactiveAccount": "Идэвхгүй бүртгэл админы эрхийг ашиглах боломжгүй.",
   "apiError.settlementFailed": "Тооцоог боловсруулж чадсангүй. Түр хүлээгээд дахин оролдоно уу."
 }

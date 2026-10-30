@@ -1,17 +1,17 @@
 {
   "studio.aiToolPopover.title": "AI integracija",
-  "studio.aiToolPopover.description": "Susiekite juodraštį, atsargas ir scenarijų bei tvarkykite pagrindinius nustatymus susiejimo skirtuke.",
+  "studio.aiToolPopover.description": "Susiekite juodraščius, nuotraukų banką ir scenarijus, o raktų nustatymus tvarkykite integracijų skirtuke.",
   "studio.aiToolPopover.menuAria": "AI meniu sritis",
-  "studio.aiToolPopover.tabAssist": "padėti",
-  "studio.aiToolPopover.tabAssistTitle": "BYOK fonas, charakteris, kompozicijos pasiūlymas",
+  "studio.aiToolPopover.tabAssist": "Asistentas",
+  "studio.aiToolPopover.tabAssistTitle": "BYOK fono, personažų ir kompozicijos pasiūlymai",
   "studio.aiToolPopover.tabScenario": "scenarijus",
   "studio.aiToolPopover.tabScenarioDisabled": "Negalima naudoti pagrindinio redagavimo metu.",
   "studio.aiToolPopover.tabScenarioTitle": "scenarijaus dizainas",
-  "studio.aiToolPopover.tabStock": "atsargos",
+  "studio.aiToolPopover.tabStock": "Nuotraukų bankas",
   "studio.aiToolPopover.tabStockTitle": "Unsplash nemokamos nuotraukos",
-  "studio.aiToolPopover.tabIntegrations": "nustatymus",
-  "studio.aiToolPopover.tabIntegrationsTitle": "API rakto / nuorodos nustatymai",
-  "studio.aiToolPopover.panelLoadingAssist": "Atidaromas AI Assist skydelis...",
+  "studio.aiToolPopover.tabIntegrations": "Nustatymai",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API raktų ir integracijų nustatymai",
+  "studio.aiToolPopover.panelLoadingAssist": "Atidaromas AI asistento skydelis...",
   "studio.aiToolPopover.panelLoadingStock": "Atidaromas nuotraukų skydelis...",
   "studio.aiToolPopover.panelLoadingIntegrations": "Atidaromas integravimo nustatymų skydelis...",
   "studio.aiToolPopover.serverProviderConnected": "{provider} prijungtas",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Teksto AI teikėjas",
   "studio.aiToolPopover.serverTextAiProviderAria": "Serverio teksto AI teikėjas",
   "studio.aiToolPopover.serverProviderAuto": "automatinis perjungimas",
-  "studio.aiToolPopover.serverFallbackMessage": "Išnaudojus likučio / paketo limitą, pereisite prie kito teikėjo. Bendrosios klaidos automatiškai nesiunčiamos iš naujo, kad būtų išvengta dvigubo įkrovimo.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "Išnaudojus likutį ar paketo limitą, perjungiama į kitą teikėją. Įprastos klaidos automatiškai nesiunčiamos iš naujo, kad būtų išvengta dvigubo apmokestinimo.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Redaguojant pagrindinį šabloną, epizodo AI kadrų kūrimas negalimas."
 }

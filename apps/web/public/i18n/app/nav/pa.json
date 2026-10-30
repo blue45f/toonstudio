@@ -1,7 +1,7 @@
 {
-  "nav.home": "ਮੁੱਖ",
+  "nav.home": "ਮੁੱਖ ਪੰਨਾ",
   "nav.ranking": "ਰੈਂਕਿੰਗ",
-  "nav.calendar": "ਕੈਲੰਡਰ",
+  "nav.calendar": "ਲੜੀਵਾਰ",
   "nav.recommend": "ਸਿਫਾਰਸ਼ੀ",
   "nav.explore": "ਖੋਜੋ",
   "nav.fortune": "ਰਾਸ਼ੀ",
@@ -11,16 +11,16 @@
   "nav.market": "ਬਾਜ਼ਾਰ",
   "nav.insights": "ਅੰਕੜੇ",
   "nav.create": "ਬਣਾਓ",
-  "nav.shaper": "ਚਰਿੱਤਰ ਸ਼ੇਪਰ",
+  "nav.shaper": "ਕਿਰਦਾਰ ਸ਼ੇਪਰ",
   "nav.library": "ਲਾਇਬ੍ਰੇਰੀ",
   "nav.login": "ਲੌਗ ਇਨ ਕਰੋ",
-  "nav.search": "ਕਹਾਣੀਆਂ, ਟੂਲ ਅਤੇ ਮੈਨੂ ਖੋਜੋ",
-  "nav.searchOpen": "ਕਹਾਣੀਆਂ, ਟੂਲ ਅਤੇ ਮੈਨੂ ਲਈ ਏਕੀਕ੍ਰਿਤ ਖੋਜ ਖੋਲ੍ਹੋ",
+  "nav.search": "ਕਹਾਣੀਆਂ, ਟੂਲ ਅਤੇ ਮੇਨੂ ਖੋਜੋ",
+  "nav.searchOpen": "ਕਹਾਣੀਆਂ, ਟੂਲ ਅਤੇ ਮੇਨੂ ਲਈ ਏਕੀਕ੍ਰਿਤ ਖੋਜ ਖੋਲ੍ਹੋ",
   "nav.quickAccess": "ਤੇਜ਼ ਪਹੁੰਚ",
   "nav.menu": "ਮੇਨੂ",
   "nav.allMenu": "ਸਾਰੇ ਮੇਨੂ",
   "nav.studio": "ਸਟੂਡੀਓ",
-  "nav.assets": "ਸੰਪਤੀਆਂ",
+  "nav.assets": "ਸਮੱਗਰੀ",
   "nav.creators": "ਸਿਰਜਣਹਾਰ",
-  "nav.discover": "ਖੋਜੋ"
+  "nav.discover": "ਕਹਾਣੀਆਂ ਖੋਜੋ"
 }

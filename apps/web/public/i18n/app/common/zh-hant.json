@@ -9,8 +9,8 @@
   "common.backToTop": "返回頂部",
   "common.backToHome": "返回首頁",
   "common.loading.search": "搜尋中…",
-  "common.notFoundWithQuery": "未找到 「{query}」 的相關結果。",
+  "common.notFoundWithQuery": "找不到「{query}」的搜尋結果。",
   "common.openSearch": "在全域搜尋中查找 →",
-  "common.loading.empty": "暫無數據。",
+  "common.loading.empty": "回應資料為空。",
   "common.retry.all": "請重試或返回首頁。"
 }

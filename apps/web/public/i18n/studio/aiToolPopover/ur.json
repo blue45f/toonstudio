@@ -1,6 +1,6 @@
 {
   "studio.aiToolPopover.title": "AI انضمام",
-  "studio.aiToolPopover.description": "ڈرافٹ، اسٹاک اور منظر نامے کو جوڑیں، اور لنکنگ ٹیب میں کلیدی ترتیبات کا نظم کریں۔",
+  "studio.aiToolPopover.description": "ڈرافٹ، اسٹاک اور منظر نامے کو جوڑیں، اور انضمام ٹیب میں کلید کی ترتیبات کا نظم کریں۔",
   "studio.aiToolPopover.menuAria": "AI مینو ایریا",
   "studio.aiToolPopover.tabAssist": "مدد",
   "studio.aiToolPopover.tabAssistTitle": "BYOK پس منظر، کردار، ساخت کی تجویز",
@@ -10,7 +10,7 @@
   "studio.aiToolPopover.tabStock": "اسٹاک",
   "studio.aiToolPopover.tabStockTitle": "انسپلیش مفت تصاویر",
   "studio.aiToolPopover.tabIntegrations": "ترتیبات",
-  "studio.aiToolPopover.tabIntegrationsTitle": "API کلید/لنک کی ترتیبات",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API کلید/انضمام کی ترتیبات",
   "studio.aiToolPopover.panelLoadingAssist": "AI اسسٹ پینل کھول رہا ہے...",
   "studio.aiToolPopover.panelLoadingStock": "اسٹاک فوٹو پینل کھول رہا ہے...",
   "studio.aiToolPopover.panelLoadingIntegrations": "انضمام کی ترتیبات کا پینل کھول رہا ہے...",
@@ -18,10 +18,10 @@
   "studio.aiToolPopover.internalProviderConnected": "میرا API منسلک ہے۔",
   "studio.aiToolPopover.imageApiConnected": "امیج API منسلک ہے۔",
   "studio.aiToolPopover.serverLoginHint": "لاگ ان یا API کلید درکار ہے۔",
-  "studio.aiToolPopover.apiKeyNeed": "API کلیدی رجسٹریشن درکار ہے۔",
-  "studio.aiToolPopover.textAiProvider": "AI فراہم کنندہ کو ٹیکسٹ کریں۔",
+  "studio.aiToolPopover.apiKeyNeed": "API کلید کا اندراج درکار ہے۔",
+  "studio.aiToolPopover.textAiProvider": "ٹیکسٹ AI فراہم کنندہ",
   "studio.aiToolPopover.serverTextAiProviderAria": "سرور ٹیکسٹ AI فراہم کنندہ",
   "studio.aiToolPopover.serverProviderAuto": "خود کار طریقے سے سوئچنگ",
-  "studio.aiToolPopover.serverFallbackMessage": "بیلنس/پیکیج کی حد ختم ہونے پر، آپ کسی دوسرے فراہم کنندہ پر جائیں گے۔ ڈبل چارجنگ کو روکنے کے لیے عام غلطیاں خود بخود نہیں بھیجی جاتی ہیں۔",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "بیلنس/پیکیج کی حد ختم ہونے پر ہم کسی دوسرے فراہم کنندہ پر منتقل ہو جاتے ہیں۔ ڈبل چارجنگ سے بچنے کے لیے عام غلطیوں پر خود بخود دوبارہ کوشش نہیں کی جاتی۔",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "ماسٹر ایڈیٹنگ کے دوران قسط کی AI کٹ تیاری استعمال نہیں کی جا سکتی۔"
 }

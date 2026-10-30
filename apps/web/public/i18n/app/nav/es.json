@@ -1,7 +1,7 @@
 {
   "nav.home": "Inicio",
   "nav.ranking": "Clasificación",
-  "nav.calendar": "Calendario",
+  "nav.calendar": "Series",
   "nav.recommend": "Recomendados",
   "nav.explore": "Explorar",
   "nav.fortune": "Horóscopo",
@@ -11,16 +11,16 @@
   "nav.market": "Mercado",
   "nav.insights": "Estadísticas",
   "nav.create": "Crear",
-  "nav.shaper": "Formador de caracteres",
+  "nav.shaper": "Formador de personajes",
   "nav.library": "Biblioteca",
   "nav.login": "Iniciar sesión",
   "nav.search": "Buscar obras, herramientas y menús",
   "nav.searchOpen": "Abrir la búsqueda unificada (obras, herramientas y menús)",
   "nav.quickAccess": "Acceso rápido",
-  "nav.menu": "El menú",
+  "nav.menu": "Menú",
   "nav.allMenu": "Todo el menú",
-  "nav.studio": "El estudio",
-  "nav.assets": "Activos",
-  "nav.creators": "Los creadores",
-  "nav.discover": "Descubra"
+  "nav.studio": "Estudio",
+  "nav.assets": "Materiales",
+  "nav.creators": "Galería de creaciones",
+  "nav.discover": "Descubrir"
 }

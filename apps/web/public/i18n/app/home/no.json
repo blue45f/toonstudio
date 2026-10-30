@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Søk etter titler, skapere, tagger",
   "home.hero.rankingButton": "Se enhetlig rangering",
   "home.hero.studioLink": "Skaperstudio",
-  "home.hero.createLink": "Skaperbrett",
+  "home.hero.createLink": "Skaperforum",
   "home.hero.stats.titles": "Titler",
   "home.hero.stats.platforms": "Utgivelsesplattformer",
-  "home.hero.stats.genres": "Genre spekter",
+  "home.hero.stats.genres": "Genrespekter",
   "home.hero.stats.reviews": "Leseranmeldelser",
-  "home.loadError": "Jeg kunne ikke laste inn hjemdata.",
+  "home.loadError": "Kunne ikke laste inn startsiden. Prøv igjen om litt.",
   "home.creatorTitle": "Fra en idé til din første scene"
 }

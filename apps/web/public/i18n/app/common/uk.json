@@ -4,13 +4,13 @@
   "common.close": "Закрити",
   "common.open": "Відкрити",
   "common.search": "Пошук",
-  "common.retry": "Попробуйте знову",
-  "common.retry.short": "Попробуйте знову",
-  "common.backToTop": "Поверніться до вершини.",
-  "common.backToHome": "Поїжджайте додому.",
+  "common.retry": "Повторити",
+  "common.retry.short": "Повторити",
+  "common.backToTop": "Нагору",
+  "common.backToHome": "На головну",
   "common.loading.search": "Шукаю...",
-  "common.notFoundWithQuery": "Ніяких результатів на \" {query} \".",
+  "common.notFoundWithQuery": "Немає результатів для «{query}».",
   "common.openSearch": "Знайдіть його в пошуку →",
   "common.loading.empty": "Ніяких даних не повернулося.",
-  "common.retry.all": "Попробуй ще раз або поверніться додому."
+  "common.retry.all": "Спробуйте ще раз або перейдіть на головну сторінку."
 }

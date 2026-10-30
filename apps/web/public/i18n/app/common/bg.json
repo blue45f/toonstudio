@@ -1,16 +1,16 @@
 {
-  "common.loading": "Натоварване",
-  "common.loading.short": "Натоварване",
+  "common.loading": "Зареждане",
+  "common.loading.short": "Зареждане",
   "common.close": "Затвори",
   "common.open": "Отвори",
   "common.search": "Търсене",
   "common.retry": "Опитайте отново.",
   "common.retry.short": "Опитайте отново.",
-  "common.backToTop": "Върнете се на върха.",
-  "common.backToHome": "Върви си вкъщи.",
-  "common.loading.search": "Търся...",
+  "common.backToTop": "Към началото",
+  "common.backToHome": "Към началната страница",
+  "common.loading.search": "Търсене…",
   "common.notFoundWithQuery": "Няма резултати за \" {query} \".",
   "common.openSearch": "Намерете го в търсенето →",
   "common.loading.empty": "Няма данни.",
-  "common.retry.all": "Опитай пак или се връщай у дома."
+  "common.retry.all": "Опитай отново или се върни към началната страница."
 }

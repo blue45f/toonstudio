@@ -7,10 +7,10 @@
   "common.retry": "دوباره امتحان کن",
   "common.retry.short": "دوباره امتحان کن",
   "common.backToTop": "برگرد به بالا",
-  "common.backToHome": "برو خونه",
-  "common.loading.search": "... دنبالش ميگردم",
-  "common.notFoundWithQuery": "هیچ نتیجه ای برای \" {query} \" دریافت نشد.",
-  "common.openSearch": "در جستجو پیدا کنید",
-  "common.loading.empty": "هیچ اطلاعاتی برگشت",
-  "common.retry.all": "دوباره امتحان کن يا برگرد خونه"
+  "common.backToHome": "رفتن به خانه",
+  "common.loading.search": "در حال جستجو…",
+  "common.notFoundWithQuery": "هیچ نتیجه‌ای برای «{query}» یافت نشد.",
+  "common.openSearch": "دوباره در جستجوی کامل پیدا کنید →",
+  "common.loading.empty": "داده‌های پاسخ خالی است.",
+  "common.retry.all": "لطفاً دوباره تلاش کنید یا به خانه بروید."
 }

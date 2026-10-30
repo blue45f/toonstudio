@@ -5,13 +5,13 @@
   "home.hero.titleSuffix": ".",
   "home.hero.description": "Tafuta kwenye Naver Webtoon, Series, na Kakao Webtoon, kisha punguza haraka cha kusoma kwa kutumia ishara za wakati halisi na mapendeleo ya wasomaji.",
   "home.hero.searchButton": "Tafuta majina, waundaji, vitambulisho",
-  "home.hero.rankingButton": "Tazama orodha ya pamoja",
-  "home.hero.studioLink": "Studio ya Muumba",
-  "home.hero.createLink": "Jopo la Muumba",
-  "home.hero.stats.titles": "Vichwa",
+  "home.hero.rankingButton": "Tazama viwango vya pamoja",
+  "home.hero.studioLink": "Studio ya Waundaji",
+  "home.hero.createLink": "Ubao wa Waundaji",
+  "home.hero.stats.titles": "Kazi zilizomo",
   "home.hero.stats.platforms": "Majukwaa ya kuchapisha",
   "home.hero.stats.genres": "Wigo wa aina",
   "home.hero.stats.reviews": "Maoni ya Wasomaji",
-  "home.loadError": "Imeshindwa kupakia data ya ukurasa wa nyumbani.",
+  "home.loadError": "Imeshindwa kupakia ukurasa wa nyumbani. Tafadhali jaribu tena baadaye.",
   "home.creatorTitle": "Kutoka wazo hadi tukio lako la kwanza"
 }

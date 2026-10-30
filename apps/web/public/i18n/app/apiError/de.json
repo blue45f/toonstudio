@@ -5,5 +5,5 @@
   "apiError.notFound": "Das angeforderte Element konnte nicht gefunden werden.",
   "apiError.unsupportedType": "Nicht unterstützter Inhaltstyp.",
   "apiError.inactiveAccount": "Inaktive Konten können keine Administratorfunktionen nutzen.",
-  "apiError.settlementFailed": "Abrechnungsverarbeitung fehlgeschlagen."
+  "apiError.settlementFailed": "Abrechnungsverarbeitung fehlgeschlagen. Bitte versuchen Sie es in Kürze erneut."
 }

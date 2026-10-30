@@ -6,11 +6,11 @@
   "common.search": "ਖੋਜੋ",
   "common.retry": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
   "common.retry.short": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
-  "common.backToTop": "ਸਿਖਰ ' ਤੇ ਵਾਪਸ",
-  "common.backToHome": "ਘਰ ਜਾਉ",
+  "common.backToTop": "ਸਿਖਰ 'ਤੇ ਜਾਓ",
+  "common.backToHome": "ਹੋਮ 'ਤੇ ਜਾਓ",
   "common.loading.search": "ਖੋਜ ਕਰ ਰਿਹਾ ਹੈ...",
-  "common.notFoundWithQuery": "' {query} ' ਲਈ ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ ਆਇਆ।",
-  "common.openSearch": "ਖੋਜ ਵਿੱਚ ਲੱਭੋ →",
+  "common.notFoundWithQuery": "'{query}' ਲਈ ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ ਮਿਲਿਆ।",
+  "common.openSearch": "ਪੂਰੀ ਖੋਜ ਵਿੱਚ ਦੁਬਾਰਾ ਲੱਭੋ →",
   "common.loading.empty": "ਕੋਈ ਡਾਟਾ ਵਾਪਸ ਨਹੀਂ ਆਇਆ।",
-  "common.retry.all": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜਾਂ ਘਰ ਵਾਪਸ ਜਾਓ."
+  "common.retry.all": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜਾਂ ਹੋਮ 'ਤੇ ਜਾਓ।"
 }

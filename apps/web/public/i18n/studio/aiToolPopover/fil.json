@@ -1,16 +1,16 @@
 {
   "studio.aiToolPopover.title": "Pagsasama ng AI",
-  "studio.aiToolPopover.description": "Ikonekta ang draft, stock, at senaryo, at pamahalaan ang mga pangunahing setting sa tab ng pagli-link.",
+  "studio.aiToolPopover.description": "Ikonekta ang draft, stock, at senaryo, at pamahalaan ang mga setting ng key sa tab ng pagsasama.",
   "studio.aiToolPopover.menuAria": "Lugar ng menu ng AI",
-  "studio.aiToolPopover.tabAssist": "tumulong",
-  "studio.aiToolPopover.tabAssistTitle": "BYOK background, karakter, komposisyon proposal",
+  "studio.aiToolPopover.tabAssist": "Tulong",
+  "studio.aiToolPopover.tabAssistTitle": "BYOK na mungkahi sa background, karakter, at komposisyon",
   "studio.aiToolPopover.tabScenario": "senaryo",
   "studio.aiToolPopover.tabScenarioDisabled": "Hindi magagamit sa panahon ng master editing.",
   "studio.aiToolPopover.tabScenarioTitle": "disenyo ng senaryo",
   "studio.aiToolPopover.tabStock": "stock",
-  "studio.aiToolPopover.tabStockTitle": "Unsplash Libreng Mga Larawan",
+  "studio.aiToolPopover.tabStockTitle": "Mga libreng larawan mula sa Unsplash",
   "studio.aiToolPopover.tabIntegrations": "mga setting",
-  "studio.aiToolPopover.tabIntegrationsTitle": "Mga setting ng API key/link",
+  "studio.aiToolPopover.tabIntegrationsTitle": "Mga setting ng API key at pagsasama",
   "studio.aiToolPopover.panelLoadingAssist": "Binubuksan ang panel ng AI Assist...",
   "studio.aiToolPopover.panelLoadingStock": "Binubuksan ang panel ng stock na larawan...",
   "studio.aiToolPopover.panelLoadingIntegrations": "Binubuksan ang panel ng mga setting ng pagsasama...",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Text AI Provider",
   "studio.aiToolPopover.serverTextAiProviderAria": "Server Text AI Provider",
   "studio.aiToolPopover.serverProviderAuto": "awtomatikong paglipat",
-  "studio.aiToolPopover.serverFallbackMessage": "Kapag naubos na ang limitasyon sa balanse/package, lilipat ka sa ibang provider. Ang mga pangkalahatang error ay hindi awtomatikong ipinadala upang maiwasan ang dobleng pagsingil.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "Kapag naubos ang balanse o limitasyon ng package, lilipat kami sa ibang provider. Hindi awtomatikong muling ipinapadala ang mga pangkalahatang error para maiwasan ang dobleng pagsingil.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Hindi magagamit ang paggawa ng AI cut para sa episode habang ine-edit ang master."
 }

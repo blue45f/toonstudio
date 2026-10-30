@@ -1,9 +1,9 @@
 {
-  "apiError.loginRequired": "Вход необходим.",
-  "apiError.adminRequired": "Дозволы администратора не были проверены.",
+  "apiError.loginRequired": "Необходимо войти в систему.",
+  "apiError.adminRequired": "Не удалось проверить права администратора.",
   "apiError.adminOnlyPage": "Эта страница предназначена только для администраторов.",
-  "apiError.notFound": "Запрошенный товар не был найден.",
-  "apiError.unsupportedType": "Неподдерживаемый тип содержания.",
+  "apiError.notFound": "Запрошенный объект не найден.",
+  "apiError.unsupportedType": "Неподдерживаемый тип контента.",
   "apiError.inactiveAccount": "Неактивные учетные записи не могут использовать функции администратора.",
-  "apiError.settlementFailed": "Процесс расчетов не удалось."
+  "apiError.settlementFailed": "Не удалось выполнить расчет. Пожалуйста, повторите попытку чуть позже."
 }

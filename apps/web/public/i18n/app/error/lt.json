@@ -3,5 +3,5 @@
   "error.chunkRetryFailed": "Atnaujinta vieną kartą, bet problema išlieka. Patikrinkite ryšį ir bandykite dar kartą.",
   "error.reloadButton": "Perkrauti puslapį",
   "error.goHome": "Grįžti į pradžią",
-  "error.retryDesc": "Prašau bandyti dar kartą arba grįžti į pagrindinį puslapį."
+  "error.retryDesc": "Bandykite dar kartą arba grįžkite į pagrindinį puslapį."
 }

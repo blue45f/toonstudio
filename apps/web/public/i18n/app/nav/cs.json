@@ -11,7 +11,7 @@
   "nav.market": "Trh",
   "nav.insights": "Přehledy",
   "nav.create": "Vytvořit",
-  "nav.shaper": "Character Shaper",
+  "nav.shaper": "Tvarovač postav",
   "nav.library": "Knihovna",
   "nav.login": "Přihlásit se",
   "nav.search": "Hledat příběhy, nástroje a nabídky",
@@ -21,6 +21,6 @@
   "nav.allMenu": "Celá nabídka",
   "nav.studio": "Studio",
   "nav.assets": "Materiály",
-  "nav.creators": "Tvůrci",
+  "nav.creators": "Galerie tvorby",
   "nav.discover": "Objevovat"
 }

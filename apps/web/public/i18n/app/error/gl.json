@@ -1,7 +1,7 @@
 {
-  "error.reloading": "Recargar a última versión...",
-  "error.chunkRetryFailed": "Unha vez refrescado, pero o problema persiste.",
+  "error.reloading": "Recargando a última versión…",
+  "error.chunkRetryFailed": "Intentouse recargar unha vez, pero o problema continúa. Comproba a túa conexión de rede e téntao de novo.",
   "error.reloadButton": "Recargar páxina",
-  "error.goHome": "Vai para casa.",
+  "error.goHome": "Ir ao inicio",
   "error.retryDesc": "Por favor, tente de novo ou regrese á páxina de inicio."
 }

@@ -1,9 +1,9 @@
 {
   "apiError.loginRequired": "Inloggen is vereist.",
-  "apiError.adminRequired": "Admin-toestemmingen konden niet worden geverifieerd.",
+  "apiError.adminRequired": "Beheerdersrechten konden niet worden geverifieerd.",
   "apiError.adminOnlyPage": "Deze pagina is beperkt tot beheerders.",
-  "apiError.notFound": "Het aangevraagde artikel kon niet worden gevonden.",
-  "apiError.unsupportedType": "Niet-ondersteunde inhoudstypen.",
-  "apiError.inactiveAccount": "Onwerkzame accounts kunnen geen administratieve functies gebruiken.",
-  "apiError.settlementFailed": "De afwikkeling is mislukt."
+  "apiError.notFound": "Het opgevraagde item kon niet worden gevonden.",
+  "apiError.unsupportedType": "Niet-ondersteund inhoudstype.",
+  "apiError.inactiveAccount": "Inactieve accounts kunnen geen beheerdersrechten gebruiken.",
+  "apiError.settlementFailed": "De afwikkeling is mislukt. Probeer het zo meteen opnieuw."
 }

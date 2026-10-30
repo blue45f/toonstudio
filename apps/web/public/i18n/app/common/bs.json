@@ -12,5 +12,5 @@
   "common.notFoundWithQuery": "Nema rezultata za '{query}'.",
   "common.openSearch": "Pronađi u Pretrazi →",
   "common.loading.empty": "Nema vraćenih podataka.",
-  "common.retry.all": "Pokušaj ponovo ili se vrati kući."
+  "common.retry.all": "Pokušaj ponovo ili se vrati na početnu."
 }

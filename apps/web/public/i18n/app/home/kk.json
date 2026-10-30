@@ -6,12 +6,12 @@
   "home.hero.description": "Naver Webtoon, Series және Kakao Webtoon бойынша іздеңіз, содан кейін нақты уақыт сигналдары мен оқырман талғамдарын пайдаланып, оқитыныңызды тез таңдаңыз.",
   "home.hero.searchButton": "Туындыларды, авторларды, тегтерді іздеу",
   "home.hero.rankingButton": "Бірыңғай рейтингті қарау",
-  "home.hero.studioLink": "Жаратушы студиясы",
-  "home.hero.createLink": "Жаратушы тақтасы",
+  "home.hero.studioLink": "Шығармашылық студиясы",
+  "home.hero.createLink": "Шығармашылық тақтасы",
   "home.hero.stats.titles": "Туындылар",
   "home.hero.stats.platforms": "Баспа платформалары",
   "home.hero.stats.genres": "Жанрлық спектр",
   "home.hero.stats.reviews": "Оқырманның пікірлері",
-  "home.loadError": "Басты бет деректерін жүктеу мүмкін болмады.",
+  "home.loadError": "Басты бетті жүктеу мүмкін болмады. Біраздан соң қайталап көріңіз.",
   "home.creatorTitle": "Бір идеядан бастап алғашқы сахнаға дейін"
 }

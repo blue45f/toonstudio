@@ -1,16 +1,16 @@
 {
   "studio.aiToolPopover.title": "एआई एकीकरण",
-  "studio.aiToolPopover.description": "ड्राफ्ट, स्टॉक और परिदृश्य को कनेक्ट करें और लिंकिंग टैब में मुख्य सेटिंग्स प्रबंधित करें।",
+  "studio.aiToolPopover.description": "ड्राफ्ट, स्टॉक और परिदृश्य को कनेक्ट करें, और कुंजी सेटिंग्स एकीकरण टैब में प्रबंधित करें।",
   "studio.aiToolPopover.menuAria": "एआई मेनू क्षेत्र",
-  "studio.aiToolPopover.tabAssist": "सहायता करें",
+  "studio.aiToolPopover.tabAssist": "सहायता",
   "studio.aiToolPopover.tabAssistTitle": "BYOK पृष्ठभूमि, चरित्र, रचना प्रस्ताव",
   "studio.aiToolPopover.tabScenario": "परिदृश्य",
   "studio.aiToolPopover.tabScenarioDisabled": "मास्टर संपादन के दौरान उपयोग नहीं किया जा सकता.",
   "studio.aiToolPopover.tabScenarioTitle": "परिदृश्य डिजाइन",
   "studio.aiToolPopover.tabStock": "स्टॉक",
-  "studio.aiToolPopover.tabStockTitle": "निःशुल्क तस्वीरें अनप्लैश करें",
+  "studio.aiToolPopover.tabStockTitle": "Unsplash निःशुल्क तस्वीरें",
   "studio.aiToolPopover.tabIntegrations": "सेटिंग्स",
-  "studio.aiToolPopover.tabIntegrationsTitle": "एपीआई कुंजी/लिंक सेटिंग्स",
+  "studio.aiToolPopover.tabIntegrationsTitle": "API कुंजी/एकीकरण सेटिंग्स",
   "studio.aiToolPopover.panelLoadingAssist": "AI सहायता पैनल खोला जा रहा है...",
   "studio.aiToolPopover.panelLoadingStock": "स्टॉक फ़ोटो पैनल खोला जा रहा है...",
   "studio.aiToolPopover.panelLoadingIntegrations": "एकीकरण सेटिंग पैनल खोला जा रहा है...",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "टेक्स्ट एआई प्रदाता",
   "studio.aiToolPopover.serverTextAiProviderAria": "सर्वर टेक्स्ट एआई प्रदाता",
   "studio.aiToolPopover.serverProviderAuto": "स्वचालित स्विचिंग",
-  "studio.aiToolPopover.serverFallbackMessage": "जब शेष राशि/पैकेज सीमा समाप्त हो जाएगी, तो आप किसी अन्य प्रदाता पर स्विच कर देंगे। डबल चार्जिंग को रोकने के लिए सामान्य त्रुटियाँ स्वचालित रूप से वापस नहीं आती हैं।",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "शेष राशि/पैकेज सीमा समाप्त होने पर दूसरे प्रदाता पर स्विच किया जाता है। दोहरे शुल्क से बचने के लिए सामान्य त्रुटियों पर अनुरोध स्वचालित रूप से दोबारा नहीं भेजा जाता।",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "मास्टर संपादन के दौरान एपिसोड AI कट निर्माण का उपयोग नहीं किया जा सकता।"
 }

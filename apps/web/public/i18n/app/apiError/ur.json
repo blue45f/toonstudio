@@ -5,5 +5,5 @@
   "apiError.notFound": "مطلوبہ شے نہیں مل سکی۔",
   "apiError.unsupportedType": "غیر معاون مواد کی قسم",
   "apiError.inactiveAccount": "غیر فعال اکاؤنٹس ایڈمنسٹریٹر کی خصوصیات استعمال نہیں کر سکتے۔",
-  "apiError.settlementFailed": "تصفیہ پروسیسنگ ناکام."
+  "apiError.settlementFailed": "تصفیہ کی پروسیسنگ ناکام ہو گئی۔ براہ کرم تھوڑی دیر بعد دوبارہ کوشش کریں۔"
 }

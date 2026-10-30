@@ -8,16 +8,16 @@
   "auth.callback.message.working": "Afslutter log ind…",
   "auth.callback.error.badState": "Ugyldig tilstandsparameter.",
   "auth.callback.error.noCode": "Manglende godkendelseskode.",
-  "auth.callback.error.oauthFailed": "OAuth-udveksling mislykkedes.",
+  "auth.callback.error.oauthFailed": "Log ind kunne ikke fuldføres. Gå tilbage til log ind-siden, og prøv igen.",
   "auth.callback.error.unsupported": "Ikke-understøttet log-in-leverandør.",
   "auth.callback.error.accessDenied": "Log ind blev annulleret.",
   "auth.callback.error.generic": "Log ind mislykkedes. Gå tilbage til log ind-siden, og prøv igen.",
   "auth.callback.error.noUser": "Kan ikke verificere brugeroplysninger.",
   "auth.callback.error.invalidAccess": "Ugyldig adgang.",
-  "auth.callback.error.failed": "Der opstod en fejl under log ind.",
+  "auth.callback.error.failed": "Der opstod en fejl, og log ind kunne ikke fuldføres. Gå tilbage til log ind-siden, og prøv igen.",
   "auth.callback.message.done": "Log ind er fuldført. Omdirigerer om et øjeblik.",
   "auth.callback.message.doneDemo": "Demo-log ind er fuldført. Omdirigerer om et øjeblik.",
   "auth.callback.demo.message": "Du er logget ind med en demokonto. Nogle funktioner kan være begrænsede.",
   "auth.callback.backToLogin": "Tilbage til log ind",
-  "auth.callback.slowHelp": "Det tager længere tid end normalt. Hvis denne skærm forbliver, skal du gå tilbage til log ind og prøve igen."
+  "auth.callback.slowHelp": "Det tager længere tid end normalt. Hvis du bliver ved med at se denne skærm, skal du gå tilbage til log ind og prøve igen."
 }

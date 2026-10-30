@@ -1,16 +1,16 @@
 {
   "studio.aiToolPopover.title": "Integrazione dell'intelligenza artificiale",
-  "studio.aiToolPopover.description": "Collega bozza, stock e scenario e gestisci le impostazioni principali nella scheda di collegamento.",
+  "studio.aiToolPopover.description": "Collega bozze, stock e scenari e gestisci le impostazioni delle chiavi nella scheda Integrazioni.",
   "studio.aiToolPopover.menuAria": "Area del menu AI",
-  "studio.aiToolPopover.tabAssist": "assistere",
-  "studio.aiToolPopover.tabAssistTitle": "Sfondo BYOK, personaggio, proposta compositiva",
+  "studio.aiToolPopover.tabAssist": "Assistenza",
+  "studio.aiToolPopover.tabAssistTitle": "Suggerimenti BYOK per sfondo, personaggio e composizione",
   "studio.aiToolPopover.tabScenario": "scenario",
-  "studio.aiToolPopover.tabScenarioDisabled": "Non può essere utilizzato durante la modifica principale.",
+  "studio.aiToolPopover.tabScenarioDisabled": "Non disponibile durante la modifica del master",
   "studio.aiToolPopover.tabScenarioTitle": "progettazione dello scenario",
-  "studio.aiToolPopover.tabStock": "magazzino",
-  "studio.aiToolPopover.tabStockTitle": "Unsplash foto gratuite",
+  "studio.aiToolPopover.tabStock": "Stock",
+  "studio.aiToolPopover.tabStockTitle": "Foto gratuite Unsplash",
   "studio.aiToolPopover.tabIntegrations": "impostazioni",
-  "studio.aiToolPopover.tabIntegrationsTitle": "Impostazioni chiave/collegamento API",
+  "studio.aiToolPopover.tabIntegrationsTitle": "Impostazioni chiavi API e integrazioni",
   "studio.aiToolPopover.panelLoadingAssist": "Apertura del pannello AI Assist...",
   "studio.aiToolPopover.panelLoadingStock": "Apertura del pannello delle foto stock...",
   "studio.aiToolPopover.panelLoadingIntegrations": "Apertura del pannello delle impostazioni di integrazione...",
@@ -22,6 +22,6 @@
   "studio.aiToolPopover.textAiProvider": "Fornitore di intelligenza artificiale di testo",
   "studio.aiToolPopover.serverTextAiProviderAria": "Provider di intelligenza artificiale di testo del server",
   "studio.aiToolPopover.serverProviderAuto": "commutazione automatica",
-  "studio.aiToolPopover.serverFallbackMessage": "Quando il limite del saldo/pacchetto sarà esaurito, passerai a un altro fornitore. Gli errori generali non vengono rinviati automaticamente per evitare un doppio addebito.",
-  "studio.aiToolPopover.masterEditAiCutDisabled": "Episode AI cut production is not available while editing the master."
+  "studio.aiToolPopover.serverFallbackMessage": "Quando il saldo o il limite del pacchetto si esaurisce, passiamo a un altro fornitore. Gli errori generici non vengono ritentati automaticamente per evitare un doppio addebito.",
+  "studio.aiToolPopover.masterEditAiCutDisabled": "Durante la modifica del master non è possibile usare la creazione di vignette AI dell'episodio."
 }

@@ -13,7 +13,7 @@
   "settings.rating.title": "មាត្រដ្ឋានវាយតម្លៃ",
   "settings.rating.desc": "ជ្រើសរើសរបៀបដែលការវាយតម្លៃត្រូវបានបង្ហាញ។",
   "settings.language.title": "ភាសា",
-  "settings.language.desc": "ភាសា UI សម្រាប់ម៉ឺនុយ និងស្លាក។ (មាតិកាស្នាដៃនៅតែតាមលំដាប់ដើមភាសាកូរ៉េ។)",
+  "settings.language.desc": "ភាសាសម្រាប់ម៉ឺនុយ និងប៊ូតុង។ (មាតិកាស្នាដៃត្រូវបានផ្តល់ជូនជាភាសាកូរ៉េដើមជាអាទិភាព។)",
   "settings.filters.remember": "ចងចាំតម្រង",
   "settings.filters.remember.desc": "រក្សាតម្រងចំណាត់ថ្នាក់ ការណែនាំ និងប្រតិទិននៅគ្រប់ការចូលមើល។",
   "settings.filters.clear": "សម្អាតតម្រងដែលបានរក្សាទុក",
@@ -23,7 +23,7 @@
   "settings.age.title": "ភាពមើលឃើញនៃផ្លាកមនុស្សពេញវ័យ",
   "settings.age.descriptionVerified": "បានផ្ទៀងផ្ទាត់ថា 19+",
   "settings.age.descriptionVerifiedWithBirthdate": "បានផ្ទៀងផ្ទាត់ថា 19+ ({date})",
-  "settings.age.description": "ផ្លាកមនុស្សពេញវ័យបង្ហាញបន្ទាប់ពីការផ្ទៀងផ្ទាត់អាយុ។",
+  "settings.age.description": "ផ្លាកមនុស្សពេញវ័យនឹងបង្ហាញបន្ទាប់ពីផ្ទៀងផ្ទាត់ថាអ្នកមានអាយុ 19 ឆ្នាំឡើងទៅតាមថ្ងៃខែឆ្នាំកំណើត។",
   "settings.age.reset": "ដកការផ្ទៀងផ្ទាត់",
   "settings.age.verify": "ការត្រួតពិនិត្យអាយុ",
   "settings.data.export": "នាំចេញច្បាប់ចម្លងបណ្ណាល័យ",
@@ -49,7 +49,7 @@
   "settings.data.confirmDelete": "កំណត់ទាំងអស់ឡើងវិញ",
   "settings.data.statsDesc": "ស្ថិតិការចូលមើល។",
   "settings.account.title": "ការគ្រប់គ្រងគណនី · ចាកចេញពីសេវាកម្ម",
-  "settings.account.desc": "ការកែសម្រួលប្រវត្តិរូប និងការលុបគណនីមាននៅលើទំព័រប្រវត្តិរូបរបស់អ្នក។ ការលុបធ្វើឱ្យអ្នកចេញពីគណនីភ្លាមៗ។",
+  "settings.account.desc": "អ្នកអាចកែសម្រួលប្រវត្តិរូប និងលុបគណនីនៅលើទំព័រព័ត៌មានរបស់ខ្ញុំ។ នៅពេលលុបគណនី ព័ត៌មានចូលគណនីនឹងត្រូវបានលុប ហើយវគ្គនឹងផុតកំណត់។",
   "settings.account.manage": "ការគ្រប់គ្រងគណនី",
   "settings.account.toProfile": "ទៅប្រវត្តិរូប"
 }

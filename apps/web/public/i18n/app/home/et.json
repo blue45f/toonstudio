@@ -7,11 +7,11 @@
   "home.hero.searchButton": "Otsi pealkirju, loojaid, silte",
   "home.hero.rankingButton": "Vaata ühtset edetabelit",
   "home.hero.studioLink": "Looja stuudio",
-  "home.hero.createLink": "Looja tahvel",
-  "home.hero.stats.titles": "Pealkirjad",
+  "home.hero.createLink": "Loojate foorum",
+  "home.hero.stats.titles": "Teosed",
   "home.hero.stats.platforms": "Avaldamisplatvormid",
   "home.hero.stats.genres": "Žanrispekter",
   "home.hero.stats.reviews": "Lugejate arvustused",
-  "home.loadError": "Avalehe andmeid ei õnnestunud laadida.",
+  "home.loadError": "Avalehte ei õnnestunud laadida. Proovige hiljem uuesti.",
   "home.creatorTitle": "Ideest teie esimese stseenini"
 }

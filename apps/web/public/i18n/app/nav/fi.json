@@ -1,6 +1,6 @@
 {
   "nav.home": "Koti",
-  "nav.ranking": "Sijoitus",
+  "nav.ranking": "Kärkilista",
   "nav.calendar": "Sarjat",
   "nav.recommend": "Suositukset",
   "nav.explore": "Tutki",
@@ -8,10 +8,10 @@
   "nav.play": "Pelihalli",
   "nav.reviews": "Arvostelut",
   "nav.community": "Yhteisö",
-  "nav.market": "Markkina",
+  "nav.market": "Kauppa",
   "nav.insights": "Tilastot",
   "nav.create": "Luo",
-  "nav.shaper": "Character Shaper",
+  "nav.shaper": "Hahmonmuokkain",
   "nav.library": "Kirjasto",
   "nav.login": "Kirjaudu sisään",
   "nav.search": "Hae tarinoita, työkaluja ja valikoita",
@@ -21,6 +21,6 @@
   "nav.allMenu": "Koko valikko",
   "nav.studio": "Studio",
   "nav.assets": "Materiaalit",
-  "nav.creators": "Luojat",
-  "nav.discover": "Tutki"
+  "nav.creators": "Luomusgalleria",
+  "nav.discover": "Tutki teoksia"
 }

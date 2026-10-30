@@ -5,5 +5,5 @@
   "apiError.notFound": "הפריט המבוקש לא נמצא.",
   "apiError.unsupportedType": "סוג תוכן לא נתמך.",
   "apiError.inactiveAccount": "חשבונות לא פעילים לא יכולים להשתמש בתכונות מנהל.",
-  "apiError.settlementFailed": "עיבוד ההסדר נכשל. נסו שוב בעוד רגע."
+  "apiError.settlementFailed": "עיבוד ההתחשבנות נכשל. נסו שוב בעוד רגע."
 }

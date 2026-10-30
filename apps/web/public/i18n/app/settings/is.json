@@ -13,7 +13,7 @@
   "settings.rating.title": "Einkunnakvarði",
   "settings.rating.desc": "Veldu hvernig einkunnir eru sýndar.",
   "settings.language.title": "Tungumál",
-  "settings.language.desc": "Tungumál viðmóts fyrir valmyndir og merki. (Efni verka helst í kóreskri upprunalegri röð.)",
+  "settings.language.desc": "Tungumál viðmóts fyrir valmyndir og hnappa. (Efni verka er fyrst og fremst birt á kóresku frummáli.)",
   "settings.filters.remember": "Muna síur",
   "settings.filters.remember.desc": "Halda síum fyrir röðun, meðmæli og dagatal milli heimsókna.",
   "settings.filters.clear": "Hreinsa vistaðar síur",
@@ -23,7 +23,7 @@
   "settings.age.title": "Sýnileiki merkis fyrir fullorðna",
   "settings.age.descriptionVerified": "Staðfest sem 19+",
   "settings.age.descriptionVerifiedWithBirthdate": "Staðfest sem 19+ ({date})",
-  "settings.age.description": "Merki fyrir fullorðna birtast eftir aldursstaðfestingu.",
+  "settings.age.description": "Merki fyrir fullorðna birtast þegar þú staðfestir með fæðingardegi að þú sért 19 ára eða eldri.",
   "settings.age.reset": "Afturkalla staðfestingu",
   "settings.age.verify": "Aldursathugun",
   "settings.data.export": "Flytja út öryggisafrit bókasafns",
@@ -49,7 +49,7 @@
   "settings.data.confirmDelete": "Endurstilla allt",
   "settings.data.statsDesc": "Tölfræði heimsókna.",
   "settings.account.title": "Reikningsstjórnun · yfirgefa þjónustu",
-  "settings.account.desc": "Breytingar á prófíl og eyðing reiknings eru í boði á prófílssíðunni þinni. Eyðing skráir þig út samstundis.",
+  "settings.account.desc": "Breytingar á prófíl og eyðing reiknings eru í boði á prófílsíðunni þinni. Við eyðingu er innskráningarupplýsingum eytt og lotan rennur út.",
   "settings.account.manage": "Reikningsstjórnun",
   "settings.account.toProfile": "Fara á prófíl"
 }

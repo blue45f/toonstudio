@@ -1,7 +1,7 @@
 {
   "studio.aiNotice.title": "जनरेटिव्ह AI प्रतिमा मार्गदर्शक",
   "studio.aiNotice.description": "हे कार्य जनरेटिव्ह AI (OpenAI) वापरून प्रतिमा तयार करते. तयार केलेल्या परिणामांवर AI बॅज प्रदर्शित केले जातात.",
-  "studio.aiNotice.ruleCopyright": "आम्ही इतर लोकांची कामे, पात्रे किंवा वास्तविक लोकांचे चेहरे तयार करत नाही.",
+  "studio.aiNotice.ruleCopyright": "इतरांच्या कॉपीराइट असलेल्या कलाकृती, पात्रे किंवा वास्तविक व्यक्तींचे चेहरे तयार करू नका.",
   "studio.aiNotice.ruleAccuracy": "AI परिणाम चुकीचे किंवा हेतूपेक्षा वेगळे असू शकतात.",
   "studio.aiNotice.ruleResponsibility": "तुम्ही तयार केलेल्या प्रतिमा वापरण्यासाठी तुम्ही जबाबदार आहात.",
   "studio.aiNotice.cancel": "रद्द करा",
