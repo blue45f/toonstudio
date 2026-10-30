@@ -15,6 +15,7 @@ attribute vec2 uv;
 uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 outlineSize;
+uniform float outlineDepthOffset;
 uniform mat4 diffuseMatrix;
 varying vec2 vUV;
 void main(void) {
@@ -33,7 +34,13 @@ void main(void) {
   vec3 normalV = normalize(mat3(view) * normalW);
   vec4 positionV = view * worldPos;
   positionV.xyz += normalV * outlineSize;
-  gl_Position = projection * positionV;
+  vec4 clip = projection * positionV;
+  if (outlineDepthOffset != 0.0) {
+    vec4 depthClip = clip + projection[2] * outlineDepthOffset;
+    // X·Y·W와 UV 보간을 유지하고 실제 투영 행렬로 후퇴한 깊이만 사용한다.
+    if (clip.w > 0.000001 && depthClip.w > 0.000001) clip.z = depthClip.z * clip.w / depthClip.w;
+  }
+  gl_Position = clip;
   vUV = (diffuseMatrix * vec4(uvUpdated, 1.0, 0.0)).xy;
 }`;
 
@@ -47,6 +54,7 @@ attribute uv: vec2f;
 #include<morphTargetsVertexDeclaration>[0..maxSimultaneousMorphTargets]
 #include<instancesDeclaration>
 uniform outlineSize: vec3f;
+uniform outlineDepthOffset: f32;
 uniform diffuseMatrix: mat4x4f;
 varying vUV: vec2f;
 @vertex
@@ -66,7 +74,12 @@ fn main(input: VertexInputs) -> FragmentInputs {
   let normalV = normalize(mat3x3f(scene.view[0].xyz, scene.view[1].xyz, scene.view[2].xyz) * normalW);
   var positionV = scene.view * worldPos;
   positionV = vec4f(positionV.xyz + normalV * uniforms.outlineSize, positionV.w);
-  vertexOutputs.position = scene.projection * positionV;
+  var clip = scene.projection * positionV;
+  if (uniforms.outlineDepthOffset != 0.0) {
+    let depthClip = clip + scene.projection[2] * uniforms.outlineDepthOffset;
+    if (clip.w > 0.000001 && depthClip.w > 0.000001) { clip.z = depthClip.z * clip.w / depthClip.w; }
+  }
+  vertexOutputs.position = clip;
   vertexOutputs.vUV = (uniforms.diffuseMatrix * vec4f(uvUpdated, 1.0, 0.0)).xy;
 }`;
 
