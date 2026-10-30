@@ -173,6 +173,32 @@ describe("studio workspace routes", () => {
     );
   });
 
+  it.each([
+    "/studio/p/project-1/d/document-1",
+    "/studio/draft/draft-1",
+  ])("로컬 %s의 3D 배경 진입과 닫기가 같은 문서와 lifecycle을 유지한다", (pathname) => {
+    const search = "?workspace=draw&focus=cut%3A8&language=ko&version=v2&room=team-a&uiMode=focus";
+    const route = parseStudioWorkspaceRoute({ pathname, search });
+    if (!route.valid) throw new Error("fixture route failed");
+    const bg3dHref = studio2dSurfaceNavigationHref({ ...route, workId: null }, "bg3d", search);
+    expect(bg3dHref).toBe(`${pathname}?focus=cut%3A8&language=ko&room=team-a&uiMode=focus&version=v2&workspace=3d`);
+    const bg3dSearch = bg3dHref.slice(bg3dHref.indexOf("?"));
+    const bg3dRoute = parseStudioWorkspaceRoute({ pathname, search: bg3dSearch });
+    if (!bg3dRoute.valid) throw new Error("fixture BG3D route failed");
+    expect(bg3dRoute).toMatchObject({
+      projectId: route.projectId,
+      documentId: route.documentId,
+      draftId: route.draftId,
+      workId: route.workId,
+      documentWorkspace: "3d",
+      surface: "bg3d",
+    });
+    expect(studioRouteStageKey({ pathname, search: bg3dSearch }))
+      .toBe(studioRouteStageKey({ pathname, search }));
+    expect(studio2dSurfaceNavigationHref(bg3dRoute, "canvas", bg3dSearch))
+      .toBe(`${pathname}?focus=cut%3A8&language=ko&room=team-a&uiMode=focus&version=v2&workspace=draw`);
+  });
+
   it("keeps one route-stage lifecycle only within the same Studio document", () => {
     expect(studioRouteStageKey(STUDIO_HOME_PATHNAME)).toBe(STUDIO_HOME_PATHNAME);
     expect(studioRouteStageKey(STUDIO_DRAFT_CANVAS_PATHNAME)).toBe("/studio/draft/editor");
@@ -446,4 +472,11 @@ describe("editor surface navigation boundary", () => {
         .toBe(studio2dHref({ workId: "server-a", surface, search: "?room=team-a" }));
     },
   );
+
+  it("리믹스 문서의 기존 3D 배경 경로를 유지한다", () => {
+    const route = parseStudioWorkspaceRoute({ pathname: "/studio/remix/source-a/canvas" });
+    if (!route.valid) throw new Error("Invalid remix fixture");
+    expect(studio2dSurfaceNavigationHref(route, "bg3d", "?room=team-a"))
+      .toBe("/studio/remix/source-a/bg3d?room=team-a");
+  });
 });

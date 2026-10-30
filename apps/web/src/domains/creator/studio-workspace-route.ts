@@ -382,6 +382,19 @@ export function studio2dSurfaceNavigationHref(
   surface: Studio2dWorkspaceSurface,
   search?: string | URLSearchParams,
 ): string {
+  if (route.documentWorkspace !== null && surface === "bg3d") {
+    const params = queryParams(search);
+    return studioDocumentHref({
+      focus: params.get("focus"),
+      language: params.get("language"),
+      version: params.get("version"),
+      projectId: route.projectId,
+      documentId: route.documentId,
+      draftId: route.draftId,
+      workspace: "3d",
+      search,
+    });
+  }
   return surface === "canvas"
     ? studioCanvasReturnHref(route, search)
     : studio2dHref({
