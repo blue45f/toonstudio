@@ -1,4 +1,5 @@
-import { VRMLoaderPlugin, type VRM } from "@pixiv/three-vrm";
+import { VRMLoaderPlugin, VRMLookAtExpressionApplier, type VRM } from "@pixiv/three-vrm";
+import { Box3, Vector3, type Material, type SkinnedMesh } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
@@ -32,6 +33,8 @@ import {
   serializeStudioVrmSceneDocument,
 } from "./studio-vrm-scene-document";
 import { buildStudioVrmHumanoidMesh, STUDIO_VRM_HUMANOID_MORPH_TARGET_NAMES } from "./studio-vrm-humanoid-mesh";
+import { STUDIO_VRM_PROPORTION_PRESETS } from "./studio-vrm-proportion-core";
+import { extractEmbeddedVrmThumbnailBytes } from "./vrm-library";
 
 (globalThis as unknown as { self: typeof globalThis }).self = globalThis;
 
@@ -151,6 +154,14 @@ describe("generate authoring: expressions", () => {
     expect(vrm.expressionManager?.getExpression("pout")).not.toBeNull();
     expect(vrm.expressionManager?.getExpression("happy")).not.toBeNull();
     expect(vrm.expressionManager?.getExpression("mine")).toBeNull();
+    // three-vrm 은 노드의 **모든** 프리미티브가 그 모프 번호를 가질 때만 바인드를 붙이고, 아니면 경고만 남긴다(표정은 등록되지만
+    // 움직이지 않는다). 바인드는 기다리지 않는 비동기 콜백으로 붙으므로 한 틱 뒤에 확인한다.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    for (const name of ["shock", "pout", "happy"]) {
+      const binds = (vrm.expressionManager?.getExpression(name)?.binds ?? []) as readonly { primitives?: readonly unknown[] }[];
+      expect(binds.length, name).toBeGreaterThan(0);
+      expect(binds.every((bind) => bind.primitives?.length === 4), name).toBe(true);
+    }
   }, 60_000);
 
   it("upgrades a preset's blink override when the edit closes the eyes", () => {
@@ -238,6 +249,44 @@ describe("generate authoring: avatar info and thumbnail", () => {
     const meta = vrm.meta as { name?: string; authors?: readonly string[] };
     expect(meta.name).toBe("하늘 시노");
     expect(meta.authors).toEqual(["하늘 작가"]);
+    // 앱의 캐릭터 라이브러리도 같은 썸네일을 그대로 꺼낸다(meta.thumbnailImage → images[0].bufferView).
+    expect(extractEmbeddedVrmThumbnailBytes(bytes)).toEqual({ mimeType: "image/png", bytes: thumbnail.bytes });
+  }, 60_000);
+});
+
+describe("generate authoring: look-at", () => {
+  it("lets three-vrm drive the gaze morphs from the midpoint of the rendered eyes", async () => {
+    // 4두신은 head 노드에 큰 조형 스케일이 붙는다. 시선 원점이 그 스케일을 받은 뒤에도 눈 사이여야 한다.
+    const mini = STUDIO_VRM_PROPORTION_PRESETS.find((preset) => preset.id === "mini-4");
+    const state = sanitizeAvatarForgeState({ ...createAvatarForgeState("wave-diva"), proportions: mini?.proportions });
+    const json = gltfJson(exportState(state)) as GltfJson & { extensions: { VRMC_vrm: { lookAt?: { type?: string } } } };
+    expect(json.extensions.VRMC_vrm.lookAt?.type).toBe("expression");
+
+    const vrm = await loadVrmBytes(exportState(state));
+    const lookAt = vrm.lookAt;
+    if (!lookAt) throw new Error("expected three-vrm to build a look-at");
+    expect(lookAt.applier).toBeInstanceOf(VRMLookAtExpressionApplier);
+
+    // 30° 를 보면 시선 표정이 1/3 걸린다(expression 형식 기본 범위 90° → 1).
+    lookAt.yaw = 30;
+    lookAt.update(0);
+    expect(vrm.expressionManager?.getValue("lookLeft")).toBeCloseTo(1 / 3, 5);
+    expect(vrm.expressionManager?.getValue("lookRight")).toBe(0);
+
+    vrm.scene.updateMatrixWorld(true);
+    const eyes = new Box3();
+    const vertex = new Vector3();
+    vrm.scene.traverse((object) => {
+      const mesh = object as SkinnedMesh;
+      // MToon 외곽선이 켜지면 재질이 [표면, 외곽선] 배열이 된다.
+      const materials = ([] as Material[]).concat(mesh.material ?? []);
+      if (!mesh.isSkinnedMesh || !materials.some((material) => material.name.includes("Face_Iris"))) return;
+      for (let index = 0; index < mesh.geometry.attributes.position.count; index += 1) {
+        eyes.expandByPoint(mesh.getVertexPosition(index, vertex).applyMatrix4(mesh.matrixWorld));
+      }
+    });
+    expect(eyes.isEmpty()).toBe(false);
+    expect(lookAt.getLookAtWorldPosition(new Vector3()).distanceTo(eyes.getCenter(new Vector3()))).toBeLessThan(0.002);
   }, 60_000);
 });
 
