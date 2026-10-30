@@ -10,8 +10,9 @@
  *   결과가 정확히 T(흰 종이 위 Beer–Lambert)다. 색 바탕 위에서는 곱셈 겹칠의 근사다(문서화된 한계).
  * - 지수는 결정적 근사(`detExp`)로 만든 4097칸 LUT를 선형 보간한다(엔진 간 바이트 일치).
  *
- * 해상도: 솔버 격자(셀 ≈ 2–12 문서 px)를 문서 약 1.25 px 픽셀의 래스터로 합성한다. 젖음 전선은 덮임(0/1) 장을 쌍선형
- * 보간한 0.5 등고선으로 자르고(한 픽셀 안티앨리어스), 밀도는 덮인 셀끼리만 정규화 보간해 테두리(가장자리
+ * 해상도: 솔버 격자(셀 ≈ 2–12 문서 px)를 문서 약 1.25 px 픽셀의 래스터로 합성한다. 젖음 전선은 펴진 덮임 장(솔버의
+ * `edge`, 없으면 이진 덮임)을 쌍선형 보간한 0.5 등고선으로 자른다. 안티앨리어스 반 폭은 그 점의 장 기울기(래스터
+ * 픽셀당)의 절반이라 전선 둘레가 늘 한 픽셀 폭으로 부드럽다. 밀도는 덮인 셀끼리만 정규화 보간해 테두리(가장자리
  * 짙어짐)가 바깥 0과 섞여 흐려지지 않게 한다. 셀보다 작은 종이 결은 같은 문서 좌표 종이 높이로 다시 입힌다.
  */
 
@@ -148,6 +149,7 @@ export function advanceStudioWetPaperRasterJob(job: StudioWetPaperRasterJob, max
   const gridHeight = result.height;
   const density = result.density;
   const coverage = result.coverage;
+  const edge = result.edge;
   const grainDetail = clamp01(result.grainDetail);
   const paperSeed = result.sheet.seed >>> 0;
   const lutScale = LUT_SIZE / LUT_MAX_DENSITY;
@@ -174,18 +176,42 @@ export function advanceStudioWetPaperRasterJob(job: StudioWetPaperRasterJob, max
       const k10 = (coverage[row0 + c1] as number) * w10;
       const k01 = (coverage[row1 + c0] as number) * w01;
       const k11 = (coverage[row1 + c1] as number) * w11;
-      const covered = k00 + k10 + k01 + k11;
-      if (covered <= 0.5 - edgeHalfWidth) continue;
-      // 덮인 셀끼리만 정규화 보간(테두리 밀도가 바깥 0과 섞여 흐려지지 않는다).
-      let value = (
-        k00 * (density[row0 + c0] as number)
-        + k10 * (density[row0 + c1] as number)
-        + k01 * (density[row1 + c0] as number)
-        + k11 * (density[row1 + c1] as number)
-      ) / covered;
-      // 젖음 전선: 덮임 0.5 등고선에서 한 픽셀 폭 안티앨리어스.
-      if (covered < 0.5 + edgeHalfWidth) {
-        const t = (covered - (0.5 - edgeHalfWidth)) / (2 * edgeHalfWidth);
+      const binary = k00 + k10 + k01 + k11;
+      let covered = binary;
+      let halfWidth = edgeHalfWidth;
+      let e00 = 0;
+      let e10 = 0;
+      let e01 = 0;
+      let e11 = 0;
+      if (edge) {
+        e00 = (edge[row0 + c0] as number) / 255;
+        e10 = (edge[row0 + c1] as number) / 255;
+        e01 = (edge[row1 + c0] as number) / 255;
+        e11 = (edge[row1 + c1] as number) / 255;
+        covered = e00 * w00 + e10 * w10 + e01 * w01 + e11 * w11;
+        const slopeX = ((1 - ty) * (e10 - e00) + ty * (e11 - e01)) * invScale;
+        const slopeY = ((1 - tx) * (e01 - e00) + tx * (e11 - e10)) * invScale;
+        halfWidth = Math.max(1e-3, 0.5 * Math.sqrt(slopeX * slopeX + slopeY * slopeY));
+      }
+      if (covered <= 0.5 - halfWidth) continue;
+      // 덮인 셀끼리만 정규화 보간(테두리 밀도가 바깥 0과 섞여 흐려지지 않는다). 펴진 전선이 덮인 셀 바깥 셀 안까지
+      // 나온 곳은 전선 장 무게로 보간한다.
+      let value = binary > 0
+        ? (
+          k00 * (density[row0 + c0] as number)
+          + k10 * (density[row0 + c1] as number)
+          + k01 * (density[row1 + c0] as number)
+          + k11 * (density[row1 + c1] as number)
+        ) / binary
+        : (
+          e00 * w00 * (density[row0 + c0] as number)
+          + e10 * w10 * (density[row0 + c1] as number)
+          + e01 * w01 * (density[row1 + c0] as number)
+          + e11 * w11 * (density[row1 + c1] as number)
+        ) / covered;
+      // 젖음 전선: 등고선 둘레 한 픽셀 폭 안티앨리어스.
+      if (covered < 0.5 + halfWidth) {
+        const t = (covered - (0.5 - halfWidth)) / (2 * halfWidth);
         value *= t * t * (3 - 2 * t);
       }
       if (grainDetail > 0 && value > 0) {

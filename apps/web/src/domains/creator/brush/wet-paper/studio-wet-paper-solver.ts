@@ -66,6 +66,12 @@ export interface StudioWetPaperBakeResult {
    * 써서 격자보다 고운 해상도에서도 가장자리가 선명하다.
    */
   readonly coverage: Uint8Array;
+  /**
+   * 젖음 전선 장(0..255): 덮임(0/1)을 [1,2,1] 이항 필터로 가로·세로 두 번 편 값(σ ≈ 1 셀). 합성은 이 장의 0.5
+   * 등고선을 젖음 전선으로 써서 셀 계단 대신 계단 가운데를 지나는 매끄러운 곡선을 그린다. 없으면(직접 구성한 시험
+   * 입력) 이진 덮임으로 그린다.
+   */
+  readonly edge?: Uint8Array;
   /** 종이 낱장(합성이 고운 종이 결을 같은 문서 좌표로 다시 읽는다). */
   readonly sheet: StudioWetPaperBakeProgram["sheet"];
   /** 고운 종이 결 대비(0..1) — 입자 침전 레인일수록 크다. */
@@ -215,6 +221,7 @@ export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeRes
     }
   }
   if (maxX < 0 || !(state.pigmentIn > 0)) return null;
+  const fullEdge = smoothStudioWetPaperWetFront(fullCoverage, width, height);
   minX = Math.max(0, minX - 1);
   minY = Math.max(0, minY - 1);
   maxX = Math.min(width - 1, maxX + 1);
@@ -223,10 +230,12 @@ export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeRes
   const cropHeight = maxY - minY + 1;
   const density = new Float32Array(cropWidth * cropHeight);
   const coverage = new Uint8Array(cropWidth * cropHeight);
+  const edge = new Uint8Array(cropWidth * cropHeight);
   for (let y = 0; y < cropHeight; y += 1) {
     const from = (minY + y) * width + minX;
     density.set(full.subarray(from, from + cropWidth), y * cropWidth);
     coverage.set(fullCoverage.subarray(from, from + cropWidth), y * cropWidth);
+    edge.set(fullEdge.subarray(from, from + cropWidth), y * cropWidth);
   }
   return Object.freeze({
     version: STUDIO_WET_PAPER_BAKE_VERSION,
@@ -238,6 +247,7 @@ export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeRes
     cellPx,
     density,
     coverage,
+    edge,
     sheet: solve.program.sheet,
     grainDetail: solve.program.grainDetail,
     referenceDensity: solve.program.referenceDensity,
@@ -252,6 +262,38 @@ export function finishWetPaperSolve(solve: WetPaperSolve): StudioWetPaperBakeRes
       pigmentOut: totals.pigment,
     }),
   });
+}
+
+/**
+ * 젖음 전선 장: 덮임(0/1)을 [1,2,1] 이항 필터로 가로·세로 두 번 편다(가장자리는 끝값 반복). 펴진 장의 0.5 등고선은
+ * 셀 계단의 가운데를 지나는 매끄러운 곡선이다. 셀 하나 폭의 돌출·구멍은 둥글게 줄어든다.
+ */
+export function smoothStudioWetPaperWetFront(coverage: Uint8Array, width: number, height: number): Uint8Array {
+  let current = Float32Array.from(coverage);
+  let next = new Float32Array(coverage.length);
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      for (let x = 0; x < width; x += 1) {
+        const left = current[row + (x > 0 ? x - 1 : 0)] as number;
+        const right = current[row + (x + 1 < width ? x + 1 : width - 1)] as number;
+        next[row + x] = (left + 2 * (current[row + x] as number) + right) * 0.25;
+      }
+    }
+    [current, next] = [next, current];
+    for (let y = 0; y < height; y += 1) {
+      const row = y * width;
+      const up = (y > 0 ? y - 1 : 0) * width;
+      const down = (y + 1 < height ? y + 1 : height - 1) * width;
+      for (let x = 0; x < width; x += 1) {
+        next[row + x] = ((current[up + x] as number) + 2 * (current[row + x] as number) + (current[down + x] as number)) * 0.25;
+      }
+    }
+    [current, next] = [next, current];
+  }
+  const edge = new Uint8Array(coverage.length);
+  for (let index = 0; index < edge.length; index += 1) edge[index] = Math.round((current[index] as number) * 255);
+  return edge;
 }
 
 /** 동기 전체 베이크(캐시 없음). 유한 dab이 없거나, 격자로 풀 수 없거나, 안료가 들어가지 않으면 null. */

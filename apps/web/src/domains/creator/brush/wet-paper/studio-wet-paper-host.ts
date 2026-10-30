@@ -103,7 +103,7 @@ interface RequesterState {
 
 /** 캐시 상한. 소프트를 넘으면 핀이 아닌 오래된 것부터 버리고, 하드를 넘겨야 하면 새 것을 보관하지 않는다. */
 export interface StudioWetPaperBakeHostLimits {
-  /** 결과 항목 수·보관 셀 수(셀당 Float32 밀도 + Uint8 덮임 ≈ 5 B → 소프트 약 20 MiB). */
+  /** 결과 항목 수·보관 셀 수(셀당 Float32 밀도 + Uint8 덮임·전선 ≈ 6 B → 소프트 약 24 MiB). */
   readonly entrySoftCount: number;
   readonly entryHardCount: number;
   readonly cellSoftCount: number;
