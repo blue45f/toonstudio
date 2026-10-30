@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { RELEASE_DESCRIPTOR_PATH, RELEASE_SCHEMA, STATIC_URL_PREFIX } from "./publish-creator-bundle-release.mjs";
 import { assertNativeBundleReleaseCurrent, createNativeBundleReleaseTrace, getNativeBundleReleaseCompletionBinding,
   loadNativeBundleRelease, nativeReleaseBindingProblems, nativeReleaseCompletionRequest, nativeReleaseTraceProblems,
-  NATIVE_COMPOSITE_CONFIG_PATH, prepareNativeBundleReleaseCompletion, requireNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
+  LUMA_NATIVE_COMPOSITE_CONFIG_PATH, NATIVE_COMPOSITE_CONFIG_PATH, prepareNativeBundleReleaseCompletion, requireNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
@@ -96,6 +96,51 @@ test("새 composite 생성 원본의 projection 경로·SHA·개수·바이트·
     assert.throws(f.load, /composite 생성 원본/u);
   });
 });
+
+test("Luma는 명시한 새 composite를 읽고 경로·SHA를 묶으며 기존 기본 binding은 보존한다", () => withFixture(f => {
+  const legacy = f.load();
+  assert.equal(Object.hasOwn(legacy.binding, "compositeConfigPath"), false);
+  const compositeConfigPath = LUMA_NATIVE_COMPOSITE_CONFIG_PATH;
+  const lumaPath = put(join(f.repoRoot, compositeConfigPath), bytes(f.composite));
+  const release = loadNativeBundleRelease({ repoRoot: f.repoRoot, webPublic: f.webPublic, compositeConfigPath });
+  assert.equal(release.compositeFile.path, lumaPath);
+  assert.equal(release.binding.compositeConfigPath, compositeConfigPath);
+  assert.deepEqual(nativeReleaseBindingProblems(release.binding, f.descriptor.catalog.sha256, { compositeConfigPath }), []);
+  for (const binding of [legacy.binding, { ...release.binding, compositeConfigPath: NATIVE_COMPOSITE_CONFIG_PATH },
+    { ...release.binding, compositeConfigPath: "../outside.json" }]) {
+    assert.ok(nativeReleaseBindingProblems(binding, f.descriptor.catalog.sha256, { compositeConfigPath }).length > 0);
+  }
+  assert.ok(nativeReleaseBindingProblems(release.binding, f.descriptor.catalog.sha256).length > 0);
+  writeFileSync(f.compositePath, bytes({ ...f.composite, expected: { files: 5229, bytes: 128 } }));
+  assert.doesNotThrow(() => assertNativeBundleReleaseCurrent(release));
+  assert.throws(f.load, /composite 생성 원본/u);
+  const changed = Buffer.from(readFileSync(lumaPath)); changed[0] ^= 1; writeFileSync(lumaPath, changed);
+  assert.throws(() => assertNativeBundleReleaseCurrent(release), /바이트·SHA/u);
+}));
+
+test("명시 Luma 설정이 없거나 symlink면 기본 설정으로 대체하지 않고 미지원 상대 경로도 거부한다", () => withFixture(f => {
+  const load = compositeConfigPath => loadNativeBundleRelease({ repoRoot: f.repoRoot, webPublic: f.webPublic, compositeConfigPath });
+  assert.throws(() => load(LUMA_NATIVE_COMPOSITE_CONFIG_PATH));
+  for (const path of ["../config/creator-bundle-composite-ingest.json", "/config/creator-bundle-composite-ingest.json",
+    "config/../config/creator-bundle-composite-ingest.json", "config/%63reator-bundle-composite-ingest.json", "config/other.json", ""]) {
+    assert.throws(() => load(path), /설정 경로/u);
+  }
+  const lumaPath = join(f.repoRoot, LUMA_NATIVE_COMPOSITE_CONFIG_PATH);
+  symlinkSync(f.compositePath, lumaPath);
+  assert.throws(() => load(LUMA_NATIVE_COMPOSITE_CONFIG_PATH), /심볼릭 링크/u);
+}));
+
+test("Luma completion 요청마다 선택한 새 composite 원문을 다시 검사한다", () => withFixture(f => {
+  const compositeConfigPath = LUMA_NATIVE_COMPOSITE_CONFIG_PATH;
+  const lumaPath = put(join(f.repoRoot, compositeConfigPath), bytes(f.composite));
+  const release = loadNativeBundleRelease({ repoRoot: f.repoRoot, webPublic: f.webPublic, compositeConfigPath });
+  const completion = getNativeBundleReleaseCompletionBinding(release.descriptor), usedNonces = new Set();
+  const request = nonce => ({ requestTarget: `${completion.url}?release-check=${nonce}`, method: "GET", usedNonces });
+  prepareNativeBundleReleaseCompletion(release, request("00000000-0000-4000-8000-000000000001"));
+  const changed = Buffer.from(readFileSync(lumaPath)); changed[0] ^= 1; writeFileSync(lumaPath, changed);
+  assert.throws(() => prepareNativeBundleReleaseCompletion(release, request("00000000-0000-4000-8000-000000000002")), /바이트·SHA/u);
+  assert.equal(usedNonces.size, 1);
+}));
 
 test("실제 catalog/index 요청 trace와 동일 release binding이 모두 있어야 한다", () => withFixture(f => {
   const release = f.load(), trace = createNativeBundleReleaseTrace(release.binding);

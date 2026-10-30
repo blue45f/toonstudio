@@ -649,7 +649,77 @@ def publish_local_evidence(source, work, proof_bytes):
                 shutil.rmtree(proof_stage)
 
 
+def revalidate_render_source(asset, library_root):
+    if digest(Path(asset["resolvedSource"]).read_bytes()) != asset["sourceModelSha256"]:
+        raise RenderError(asset["id"] + ": 렌더 중 원본 해시가 바뀌었습니다.")
+    revalidate_preparation(asset["renderPreparation"], library_root)
+    for binding in asset["resolvedTextureBindings"]:
+        if digest(Path(binding["source"]).read_bytes()) != binding["sha256"]:
+            raise RenderError(asset["id"] + ": 렌더 중 텍스처 해시가 바뀌었습니다.")
+
+
+def validate_render_masters(directory, assets, proof_bytes):
+    if not stat.S_ISDIR(directory.lstat().st_mode):
+        raise RenderError("보존 렌더는 심볼릭 링크 없는 디렉터리여야 합니다.")
+    expected = {asset["id"] + ".png" for asset in assets} | {"render-proof.json"}
+    paths = list(directory.iterdir())
+    if {path.name for path in paths} != expected or any(not stat.S_ISREG(path.lstat().st_mode) for path in paths):
+        raise RenderError("보존 렌더에는 선정 PNG와 proof 일반 파일만 있어야 합니다.")
+    proof_path = directory / "render-proof.json"
+    if proof_path.read_bytes() != proof_bytes:
+        raise RenderError("보존 렌더의 proof 원문이 다릅니다.")
+    verified = verify_render_proof(assets, directory)
+    entries = json.loads(proof_bytes)["assets"]
+    if len(entries) != len(assets) or {entry["id"] for entry in entries} != {asset["id"] for asset in assets}:
+        raise RenderError("보존 렌더의 proof가 선정 목록과 다릅니다.")
+    for asset in assets:
+        verify_image(directory / (asset["id"] + ".png"), verified[asset["id"]])
+    if proof_path.read_bytes() != proof_bytes:
+        raise RenderError("보존 렌더를 검증하는 동안 proof가 바뀌었습니다.")
+
+
+def render_masters_root(work):
+    root = work / "render-masters"
+    if os.path.lexists(root) and not stat.S_ISDIR(root.lstat().st_mode):
+        raise RenderError("render-masters는 심볼릭 링크 없는 디렉터리여야 합니다.")
+    return root
+
+
+def retain_render_masters(assets, png_root, work, proof_bytes, library_root):
+    # proof 원문 해시로 주소를 고정한다. 검수 후 같은 PNG·proof를 재사용하며 기존 보존본은 덮어쓰지 않는다.
+    root = render_masters_root(work)
+    with publication_lock(root):
+        root.mkdir(mode=0o700, exist_ok=True)
+        render_masters_root(work)
+        target = root / digest(proof_bytes)
+        if os.path.lexists(target):
+            validate_render_masters(target, assets, proof_bytes)
+            return target
+        staging = Path(tempfile.mkdtemp(prefix=".render-masters-", dir=work))
+        try:
+            for name in [asset["id"] + ".png" for asset in assets] + ["render-proof.json"]:
+                source = png_root / name
+                if not stat.S_ISREG(source.lstat().st_mode):
+                    raise RenderError("보존할 PNG·proof는 심볼릭 링크 없는 일반 파일이어야 합니다.")
+                shutil.copyfile(source, staging / name, follow_symlinks=False)
+            validate_render_masters(staging, assets, proof_bytes)
+            if (png_root / "render-proof.json").read_bytes() != proof_bytes:
+                raise RenderError("렌더 원본을 보존하는 동안 proof가 바뀌었습니다.")
+            for asset in assets:
+                revalidate_render_source(asset, library_root)
+                render_input_fingerprint(asset)
+            render_masters_root(work)
+            rename_no_replace(staging, target)
+            return target
+        finally:
+            if staging.exists():
+                shutil.rmtree(staging)
+
+
 def run(args):
+    retain_masters = getattr(args, "retain_render_masters", False)
+    if retain_masters and args.reuse_renders:
+        raise RenderError("retain-render-masters와 reuse-renders는 함께 사용할 수 없습니다.")
     assets = load_selection(args.selection)
     rights = load_rights(assets, args.pack_rights, args.node)
     planned = plan_assets(assets, args.library_root, rights)
@@ -667,7 +737,10 @@ def run(args):
         raise RenderError("publish에는 visualReviewed=true로 검수된 항목이 필요합니다.")
     if args.dry_run:
         return {"selected": len(planned), "publishEligible": sum(asset.get("visualReviewed") is True for asset in planned), "dryRun": True, "published": False}
+    if retain_masters:
+        render_masters_root(work)
     work.mkdir(parents=True, exist_ok=True)
+    retained = None
     with tempfile.TemporaryDirectory(prefix="render-job-", dir=work) as temporary:
         temporary = Path(temporary)
         png_root = Path(args.reuse_renders).resolve(strict=True) if args.reuse_renders else temporary / "png"
@@ -702,12 +775,7 @@ def run(args):
         replacements = {}
         for asset in selected:
             # 실제 렌더/재사용 뒤 원본이 바뀌었으면 결괏값을 공개하지 않는다.
-            if digest(Path(asset["resolvedSource"]).read_bytes()) != asset["sourceModelSha256"]:
-                raise RenderError(asset["id"] + ": 렌더 중 원본 해시가 바뀌었습니다.")
-            revalidate_preparation(asset["renderPreparation"], args.library_root)
-            for binding in asset["resolvedTextureBindings"]:
-                if digest(Path(binding["source"]).read_bytes()) != binding["sha256"]:
-                    raise RenderError(asset["id"] + ": 렌더 중 텍스처 해시가 바뀌었습니다.")
+            revalidate_render_source(asset, args.library_root)
             replacements[asset["id"]] = encode_asset(asset, png_root, stage, args.publish, verified_pngs[asset["id"]])
         drafts = {asset["id"] for asset in manifest["assets"] if str(asset.get("curationStatus", "")).startswith("draft")}
         if drafts.intersection(replacements):
@@ -722,6 +790,8 @@ def run(args):
         verify_pack(stage, args.pack_rights, args.node)
         for asset in selected:
             render_input_fingerprint(asset)
+        if retain_masters:
+            retained = retain_render_masters(selected, png_root, work, proof_bytes, args.library_root)
         local_pack = work / "pack"
         publish_local_evidence(stage, work, proof_bytes)
         if args.publish:
@@ -729,7 +799,8 @@ def run(args):
             for asset in selected:
                 render_input_fingerprint(asset)
             publish_pack(stage, output, expected_snapshot=baseline_snapshot if getattr(args, "append_only", False) else UNPINNED)
-    return {"selected": len(planned), "rendered": len(selected), "localPack": str(work / "pack"), "published": args.publish}
+    return {"selected": len(planned), "rendered": len(selected), "localPack": str(work / "pack"), "published": args.publish,
+            **({"renderMasters": str(retained)} if retain_masters else {})}
 
 
 def main(argv=None):
@@ -742,6 +813,7 @@ def main(argv=None):
     parser.add_argument("--blender", default="blender")
     parser.add_argument("--node", default="node")
     parser.add_argument("--reuse-renders", type=Path, help="같은 선정 작업의 기존 PNG를 재사용할 폴더")
+    parser.add_argument("--retain-render-masters", action="store_true", help="검증된 PNG·proof 원문을 비공개 work-dir에 보존한다")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--publish", action="store_true")
     parser.add_argument("--append-only", action="store_true", help="기존 완성·초안 슬롯과 겹치는 id를 렌더 전에 거부한다")
