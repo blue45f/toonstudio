@@ -6,6 +6,7 @@ import { gzipSync } from "node:zlib";
 import { DIST_DIR } from "./lib/repo-paths.mjs";
 import { resolveTemporaryBundleCeiling } from "./lib/studio-bundle-temporary-allowance.mjs";
 import { isStudioCrdtRuntimeEntry } from "./lib/studio-crdt-bundle-boundary.mjs";
+import { isStudioSpecialistRuntimeEntry } from "./lib/studio-specialist-bundle-boundary.mjs";
 
 const outputDirectory = path.resolve(process.env.STUDIO_BUNDLE_DIR ?? DIST_DIR);
 const manifestPath = path.join(outputDirectory, ".vite", "manifest.json");
@@ -444,6 +445,7 @@ if (!fs.existsSync(manifestPath)) {
     pattern,
     approvedEntrySource,
     requiredRuntimeChunkName,
+    runtimeEntrySource,
     approvedParentEntryKey,
     forbiddenStaticClosures,
   }) {
@@ -474,11 +476,7 @@ if (!fs.existsSync(manifestPath)) {
     if (approvedEntry.isDynamicEntry !== true) {
       fail(`${label} approved entry is not a dynamic manifest entry: ${approvedEntryKey}`);
     }
-    const runtimeChunks = matching.filter((key) => {
-      const entry = manifest[key];
-      return key.includes(requiredRuntimeChunkName) ||
-        entry.file?.includes(requiredRuntimeChunkName);
-    });
+    const runtimeChunks = matching.filter((key) => isStudioSpecialistRuntimeEntry(key, manifest[key], { runtimeEntrySource, runtimeChunkName: requiredRuntimeChunkName }));
     if (runtimeChunks.length !== 1) {
       fail(
         `${label} requires one manifest-visible ${requiredRuntimeChunkName} chunk, found ${runtimeChunks.length}`,
@@ -763,6 +761,8 @@ if (!fs.existsSync(manifestPath)) {
         pattern: webgpuRendererManifestPattern,
         approvedEntrySource: approvedWebgpuRendererEntry,
         requiredRuntimeChunkName: approvedWebgpuRuntimeChunkName,
+        // 같은 이름 접두사의 renderer helper를 승인 entry와 중복 집계하지 않는다.
+        runtimeEntrySource: approvedWebgpuRendererEntry,
         approvedParentEntryKey: background3dEntries[0],
         forbiddenStaticClosures: [
           ["app entry", appKeys],
