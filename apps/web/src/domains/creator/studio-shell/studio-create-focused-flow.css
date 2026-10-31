@@ -19,3 +19,32 @@
     margin-top: 0;
   }
 }
+
+/* 크기 필드를 한 행 안에서 축소하고 초기화 동작은 별도 행에 둔다. */
+[data-studio-outcome-create="true"] [data-studio-create-dimensions] {
+  display: grid;
+  grid-template-columns: minmax(0, 9rem) auto minmax(0, 9rem);
+  gap: .75rem;
+  align-items: end;
+}
+[data-studio-outcome-create="true"] [data-studio-create-dimensions] > label {
+  min-width: 0;
+}
+[data-studio-outcome-create="true"] [data-studio-create-dimensions] input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+[data-studio-outcome-create="true"] [data-studio-create-dimensions] > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+[data-studio-outcome-create="true"] [data-studio-create-error] {
+  scroll-margin-block: 6rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 639px) {
+  [data-studio-outcome-create="true"] [data-studio-create-form] :is(input, select) {
+    font-size: 1rem;
+  }
+}

@@ -184,4 +184,40 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
+  it("프로젝트 이름 Enter로 저장과 기존 기획 화면 이동을 수행한다", async () => {
+    const { container } = renderCreate();
+    const name = screen.getByRole<HTMLInputElement>("textbox", { name: /프로젝트 이름|Project name/u });
+    fireEvent.change(name, { target: { value: "키보드로 만든 이야기" } });
+    fireEvent.keyDown(name, { key: "Enter", code: "Enter" });
+    await waitFor(() => expect(screen.getByLabelText("location").textContent).toMatch(/^\/studio\/p\/[^/]+\/story$/u));
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);
+    expect(readStudioProjectLibrary(window.localStorage).projects[0]?.title).toBe("키보드로 만든 이야기");
+    expect(required<HTMLFormElement>(container, "[data-studio-create-form]").noValidate).toBe(true);
+  });
+
+  it("한글 조합의 Enter와 조합종료 경계229에서는 저장하지 않는다", () => {
+    renderCreate();
+    const name = screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u });
+    fireEvent.compositionStart(name); fireEvent.keyDown(name, { key: "Enter" });
+    fireEvent.compositionEnd(name); fireEvent.keyDown(name, { key: "Enter", keyCode: 229 });
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
+  it("입력란 Enter도 접힌 크기 오류를 펼치고 잘못된 입력으로 복귀한다", () => {
+    const { container } = renderCreate();
+    advanced(container).open = true;
+    const width = widthInput(container);
+    fireEvent.change(width, { target: { value: "0" } }); advanced(container).open = false;
+    fireEvent.keyDown(screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }), { key: "Enter" });
+    expect(advanced(container).open).toBe(true); expect(document.activeElement).toBe(width);
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
+  it("동기 submit이 연속으로 와도 프로젝트를 하나만 만든다", () => {
+    const { container } = renderCreate();
+    const form = required<HTMLFormElement>(container, "[data-studio-create-form]");
+    fireEvent.submit(form); fireEvent.submit(form); fireEvent.submit(form);
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);
+  });
+
 });

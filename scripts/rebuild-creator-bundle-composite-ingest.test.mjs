@@ -162,6 +162,49 @@ test("현재 5,229 projection은 역사 1,929 전체를 보존하며 별도 conf
   assert.deepEqual(config.expected, { baseAssets: 1929, derivedAssets: 3300, files: 5229, bytes: 3985892748 });
 });
 
+test("Nature·Luma 5,434 projection은 기존 5,229 전체와 테마·팩 순서를 보존하고 실제 recipe에 연결한다", () => {
+  const previousConfig = JSON.parse(readFileSync(new URL("../" + COMPOSITE_CONFIG_PATH, import.meta.url)));
+  const config = JSON.parse(readFileSync(new URL("../config/creator-bundle-nature-luma-composite-ingest.json", import.meta.url)));
+  validateCompositeConfig(config);
+  assert.deepEqual(config.base, previousConfig.base);
+  assert.deepEqual(config.expected, { baseAssets: 1929, derivedAssets: 3505, files: 5434, bytes: 4459482140 });
+  assert.equal(config.snapshotGeneratedAt, "2026-10-30T18:00:00.000Z");
+  assert.equal(config.atlas.recipe, "config/creator-bundle-nature-luma-intake.json");
+  const recipeBody = readFileSync(new URL("../" + config.atlas.recipe, import.meta.url));
+  assert.equal(sha(recipeBody), config.atlas.recipeSha256);
+  const recipe = JSON.parse(recipeBody);
+  assert.equal(recipe.generatedAt, config.snapshotGeneratedAt);
+  assert.deepEqual(recipe.packs.map(({ ingestId, sourceFormat }) => [ingestId, sourceFormat ?? "glb"]), [
+    [derivedId, "glb"], ["cbv1-ingest-231-lumagrovewonkywoods", "gltf"],
+  ]);
+  const previousBody = readFileSync(new URL("../" + previousConfig.projection, import.meta.url));
+  const currentBody = readFileSync(new URL("../" + config.projection, import.meta.url));
+  assert.equal(sha(previousBody), previousConfig.projectionSha256);
+  assert.equal(sha(currentBody), config.projectionSha256);
+  assert.notEqual(config.projection, previousConfig.projection);
+  const previous = JSON.parse(previousBody), current = JSON.parse(currentBody);
+  assert.equal(previous.assets.length, 5229);
+  assert.equal(current.assets.length, 5434);
+  assert.equal(new Set(current.assets.map((asset) => asset.id)).size, 5434);
+  assert.equal(current.totals.placeableAssets, 5434);
+  assert.equal(current.sourceManifest.generatedAt, config.snapshotGeneratedAt);
+  assert.equal(current.assets.reduce((sum, asset) => sum + asset.bytes, 0), config.expected.bytes);
+  assertBaseProjectionPreserved(previous, current);
+  assert.deepEqual(current.themes, previous.themes);
+  assert.deepEqual(current.packs.map((pack) => pack.catalogIds), previous.packs.map((pack) => pack.catalogIds));
+  for (const [ingestId, catalogId, count] of [
+    [derivedId, "cbv1-030-nature-megapack-extended", 3300],
+    ["cbv1-ingest-231-lumagrovewonkywoods", "cbv1-028-lumagrove-wonky-woods", 205],
+  ]) {
+    assert.equal(current.assets.filter((asset) => asset.path.startsWith(ingestId + "/native/")).length, count);
+    assert.equal(current.packs.find((pack) => pack.catalogIds.includes(catalogId))?.placeable, count);
+  }
+  const previousIds = new Set(previous.assets.map((asset) => asset.id));
+  const added = current.assets.filter((asset) => !previousIds.has(asset.id));
+  assert.equal(added.length, 205);
+  assert.ok(added.every((asset) => asset.path.startsWith("cbv1-ingest-231-lumagrovewonkywoods/native/")));
+});
+
 test("읽기 검사는 실제 v1 원본 재현과 현재 generator를 사용하고 출력 파일을 만들지 않는다", () => withFixture((f) => {
   const plan = f.plan();
   assert.deepEqual(plan.summary, { baseAssets: 1, derivedAssets: 1, files: 2, bytes: f.config.expected.bytes });
