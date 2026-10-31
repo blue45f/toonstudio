@@ -88,6 +88,7 @@ import {
   standaloneDocumentTitle,
   type AuxiliaryKind,
 } from "./studio-mode-project-create-helpers";
+import { StudioCreateKeyboardForm } from "./StudioCreateKeyboardForm";
 import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCreateLaunchSummary";
 import { StudioCreateReviewDetails } from "./StudioCreateReviewDetails";
 import { StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
@@ -189,6 +190,11 @@ export function StudioModeProjectCreatePage() {
         : !auxiliary && effectiveStartPoint === "idea" ? bt("다음: 이야기 기획", "Next: story planning")
           : !auxiliary && effectiveStartPoint === "script" ? bt("다음: 대본 작성", "Next: script writing")
             : bt("다음: 편집기", "Next: editor");
+  function focusCanvasSize() {
+    if (advancedSettingsRef.current) advancedSettingsRef.current.open = true;
+    document.getElementById(customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID)?.focus();
+  }
+
   function chooseFormat(profile: StudioProjectFormatProfile) {
     setAuxiliaryKind(null);
     setFormatId(profile.id);
@@ -222,9 +228,9 @@ export function StudioModeProjectCreatePage() {
     }
   }
 
-  function create() {
+  function create(): boolean {
     const normalizedTitle = title.trim();
-    if (creating || !normalizedTitle || !sizeReady) return;
+    if (creating || !normalizedTitle || !sizeReady) return false;
     setCreating(true);
     setError(null);
     try {
@@ -266,36 +272,38 @@ export function StudioModeProjectCreatePage() {
           createStudioWebtoonOnboardingProfile(result.project.id, selection, result.project.createdAt),
         );
         navigate(webtoonOnboardingProjectHref(result.project.id, selection), { replace: true });
-        return;
+        return true;
       }
       if (!auxiliary && effectiveStartPoint === "files") {
         navigate(`/studio/import?projectId=${encodeURIComponent(result.project.id)}&format=${format.id}`, {
           replace: true,
         });
-        return;
+        return true;
       }
       // 레인 착지 (S2-7): 콘티·빈 캔버스·템플릿 레인은 재료 기본값(idea)이 아니라
       // 에디터로 착지한다. 이야기 레인과 레인 없는 진입은 아래 기존 착지(기획)를 따른다.
       if (!auxiliary && studioCreateLanding(lane) === "editor") {
         const launchHref = buildStudioModeLaunchHref(result, modePlan);
         navigate(hrefWithFormat(launchHref, format.id), { replace: true });
-        return;
+        return true;
       }
       if (!auxiliary && effectiveStartPoint === "idea") {
         navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story`, { replace: true });
-        return;
+        return true;
       }
       if (!auxiliary && effectiveStartPoint === "script") {
         navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story?view=script`, { replace: true });
-        return;
+        return true;
       }
       const launchHref = buildStudioModeLaunchHref(result, modePlan);
       navigate(auxiliary ? launchHref : hrefWithFormat(launchHref, format.id), { replace: true });
+      return true;
     } catch (cause) {
       setCreating(false);
       setError(cause instanceof Error
         ? cause.message
         : bt("새 작업을 만들지 못했습니다.", "The new work could not be created."));
+      return false;
     }
   }
 
@@ -310,7 +318,9 @@ export function StudioModeProjectCreatePage() {
       className="min-h-[calc(100vh-4rem)] bg-bg"
     >
       <Container size="wide" className="py-4 sm:py-7">
-        <div className="mx-auto max-w-6xl">
+        <StudioCreateKeyboardForm label={bt("새 프로젝트 설정", "New project settings")}
+          titleReady={titleReady} sizeReady={sizeReady} creating={creating}
+          onCreate={create} onFixName={focusProjectTitle} onFixSize={focusCanvasSize}>
           {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
             eyebrow={(
@@ -475,6 +485,7 @@ export function StudioModeProjectCreatePage() {
                 {bt("프로젝트 이름", "Project name")}
                 <input
                   id={PROJECT_TITLE_INPUT_ID}
+                  enterKeyHint="go"
                   aria-invalid={!titleReady || undefined}
                   aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
                   value={title}
@@ -518,11 +529,7 @@ export function StudioModeProjectCreatePage() {
             targetTitle={targetTitle} width={documentWidth} height={documentHeight}
             titleReady={titleReady} sizeReady={sizeReady} structuredWebtoon={structuredWebtoon}
             creating={creating} startLabel={startLabel} nextStepLabel={nextStepLabel} error={error}
-            onCreate={create} onFixName={focusProjectTitle}
-            onFixSize={() => {
-              if (advancedSettingsRef.current) advancedSettingsRef.current.open = true;
-              document.getElementById(customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID)?.focus();
-            }}
+            onFixName={focusProjectTitle} onFixSize={focusCanvasSize}
           />
 
           <details ref={advancedSettingsRef} className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" data-studio-create-advanced="true">
@@ -534,7 +541,7 @@ export function StudioModeProjectCreatePage() {
               <legend className="text-xs font-bold text-fg-2">
                 {bt("캔버스 크기 직접 입력", "Enter canvas size directly")}
               </legend>
-              <div className="mt-2 flex flex-wrap items-end gap-3">
+              <div className="mt-2 flex flex-wrap items-end gap-3" data-studio-create-dimensions="true">
                 <label className="block text-xs font-bold text-fg-2" htmlFor={CANVAS_WIDTH_INPUT_ID}>
                   {bt("너비(px)", "Width (px)")}
                   <input
@@ -745,7 +752,7 @@ export function StudioModeProjectCreatePage() {
               {onboardingEnabled ? <StudioCreateReturnToStart /> : null}
             </section>
           ) : null}
-        </div>
+        </StudioCreateKeyboardForm>
       </Container>
     </div>
   );
