@@ -83,7 +83,7 @@ describe("빠른 액세스의 실제 React·DOM 키보드 연결", () => {
       <input type="radio" name="choice" aria-label="선택" defaultChecked /><button type="button">끝</button></Surface>);
     act(() => vi.runOnlyPendingTimers());
     const root = screen.getByRole("dialog"); root.focus(); tab(root);
-    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "선택", exact: true }));
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "선택" }));
     tab(document.activeElement ?? root, true);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "끝" }));
   });
