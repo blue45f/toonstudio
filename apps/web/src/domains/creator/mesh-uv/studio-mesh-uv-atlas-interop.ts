@@ -1,6 +1,6 @@
 /**
- * 미통합 연결 초안: 정본 코너 계획과 provider v2의 mesh-local 원본 대응을 연결한다.
- * 실제 WASM UV 축의 판정은 호출자가 해야 하며 이 모듈은 기본 축이나 검증 표시를 만들지 않는다.
+ * 정본 코너 계획과 provider v2의 mesh-local 원본 대응을 연결한다.
+ * 좌표 해석은 호출자가 명시하며 이 모듈은 이미지 원점의 기본값이나 검증 표시를 만들지 않는다.
  */
 import type { StudioEditableMesh } from "../studio-editable-half-edge-mesh";
 import type {

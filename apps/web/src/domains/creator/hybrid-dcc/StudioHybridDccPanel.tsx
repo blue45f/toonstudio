@@ -28,6 +28,7 @@ import {
   workspaceToggleActiveModifier,
 } from "./studio-hybrid-dcc-modifier-workspace";
 import { workspaceLoadEditableRoomPreset } from "./studio-hybrid-dcc-room-workspace";
+import { createStudioHybridDccUvAtlasHost } from "./studio-hybrid-dcc-uv-atlas-host";
 import {
   createStudioHybridDccWorkspace,
   workspaceAddUnitCube,
@@ -251,7 +252,6 @@ export function StudioHybridDccPanel({
       cancelled = true;
     };
   }, []);
-
   const run = async (
     label: string,
     fn: () =>
@@ -285,7 +285,6 @@ export function StudioHybridDccPanel({
       if (mountedRef.current && generation === runGenerationRef.current) setWorkspaceBusy(false);
     }
   };
-
   const sculpt = useStudioHybridDccSculptStroke({
     workspace: ws, workspaceDocumentId, enabled: workbenchMode === "sculpt", externalBusy: workspaceBusy, scopeRef: sculptScopeRef,
     commit: async (receipt, isCurrent, onPublished) => {
@@ -769,6 +768,7 @@ export function StudioHybridDccPanel({
             }}
             onDeleteSelected={() => { if (!busy) void run("오브젝트 삭제", () => workspaceDeleteActive(ws)); }}
             onRunWorkspaceEdit={(label, edit, canCommit) => { if (!busy) void run(label, () => edit(ws, componentSelection), canCommit); }}
+            onRunWorkspaceUvAtlas={createStudioHybridDccUvAtlasHost({ workspace: ws, selection: componentSelection, busy, generation: runGenerationRef.current, getGeneration: () => runGenerationRef.current, run })}
             onSelectAsset={selectWorkspaceAsset}
             onSelectComponent={selectMeshComponent}
             sculptGesture={workbenchMode === "sculpt" ? sculpt.controller : undefined}

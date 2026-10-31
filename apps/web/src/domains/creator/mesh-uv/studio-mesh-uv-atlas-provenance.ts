@@ -1,6 +1,6 @@
 /**
- * 미통합 초안: atlas 출력의 명시적인 원본 정점 대응으로 정본 면 코너 UV만 교체한다.
- * 현행 provider가 버리는 oldIndexes와 UV 단위·축 변환은 이 모듈 밖에서 검증해야 한다.
+ * atlas 출력의 명시적인 원본 정점 대응으로 정본 면 코너 UV만 교체한다.
+ * provider v2가 보존한 원본 대응과 별도로 UV 단위·좌표 해석은 interop 경계에서 명시한다.
  */
 import {
   hashStudioEditableMesh,

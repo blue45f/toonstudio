@@ -28,7 +28,7 @@ export * from "./StudioHybridDccViewportCore";
 const OBJECT_SELECTION = createStudioHybridDccComponentSelection();
 
 export function StudioHybridDccViewport({
-  onRunWorkspaceEdit, materialMode = false, workspaceDocumentId,
+  onRunWorkspaceEdit, onRunWorkspaceUvAtlas, materialMode = false, workspaceDocumentId,
   ...props
 }: StudioHybridDccViewportProps & StudioHybridDccUvEditorHost) {
   const scopeRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export function StudioHybridDccViewport({
   const geometryProps = materialMode ? { ...props, componentSelection: OBJECT_SELECTION, editingDisabled: true } : props;
   const faceModeling = useStudioHybridDccFaceModeling(geometryProps, onRunWorkspaceEdit);
   const componentTransform = useStudioHybridDccComponentTransform(geometryProps, onRunWorkspaceEdit, faceModeling.engaged);
-  const uvEditor = useStudioHybridDccUvEditor(props, { materialMode: uvMode, workspaceDocumentId, onRunWorkspaceEdit }, !materialMode && (faceModeling.engaged || componentTransform.dirty));
+  const uvEditor = useStudioHybridDccUvEditor(props, { materialMode: uvMode, workspaceDocumentId, onRunWorkspaceEdit, onRunWorkspaceUvAtlas }, !materialMode && (faceModeling.engaged || componentTransform.dirty));
   const toonEditor = useStudioHybridDccToonEditor(props, { workspaceDocumentId, onRunWorkspaceEdit }, materialMode && materialTool === "toon");
   const toolsProps = componentTransform.previewing ? { ...props, editingDisabled: true } : props;
   const faceTools = componentTransform.previewing
