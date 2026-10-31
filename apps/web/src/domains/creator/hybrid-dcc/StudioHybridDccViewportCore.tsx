@@ -47,6 +47,7 @@ import {
 } from "./studio-hybrid-dcc-object-transform";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { createStudioHybridDccBoundaryOrbitGate, handleStudioHybridDccViewportMeshClick, type StudioHybridDccBoundaryEndpointPickHandler } from "./studio-hybrid-dcc-viewport-mesh-click";
+import { createStudioHybridDccViewportPointerEvents } from "./studio-hybrid-dcc-viewport-pointer-events";
 import { StudioHybridDccBoundaryEndpointMarkers } from "./StudioHybridDccBoundaryEndpointMarkers";
 import type { StudioBoundaryEndpointLease } from "./studio-hybrid-dcc-boundary-endpoint";
 import { createStudioHybridDccSelectionGate } from "./studio-hybrid-dcc-selection-gate";
@@ -75,7 +76,6 @@ import type { StudioSculptGestureController } from "./studio-hybrid-dcc-sculpt-g
 import type { StudioSculptGeometryPreview } from "./studio-hybrid-dcc-sculpt-stroke-session";
 
 import { createStudioHybridDccGeometryResource, type StudioHybridDccGeometryResource } from "./studio-hybrid-dcc-geometry-resource";
-
 import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
 // eslint-disable-next-line react-refresh/only-export-components -- 기존 순수 snapshot 공개 API를 유지한다.
 export { deriveStudioHybridDccViewportSnapshot } from "./studio-hybrid-dcc-viewport-snapshot";
@@ -868,6 +868,7 @@ export function StudioHybridDccViewport({
             tabIndex={0}
             dpr={[STUDIO_HYBRID_DCC_RENDER_PROFILE.minDpr, maxDpr]}
             frameloop="demand"
+            events={createStudioHybridDccViewportPointerEvents}
             gl={{
               alpha: false,
               antialias: true,
@@ -876,9 +877,7 @@ export function StudioHybridDccViewport({
             shadows={{ enabled: true, type: STUDIO_HYBRID_DCC_RENDER_PROFILE.shadowMapType }}
             onCreated={({ gl }) => {
               applyStudioHybridDccRendererProfile(gl);
-              // React Three Fiber keeps several DOM props on its wrapper instead of forwarding
-              // them to the authoritative WebGL canvas. The canvas itself owns pointer and
-              // keyboard editing, so expose the same accessible name and instructions there.
+              // 실제 WebGL Canvas가 포인터·키보드 편집과 접근성 이름을 소유한다.
               gl.domElement.setAttribute("role", "application");
               gl.domElement.setAttribute("aria-label", "편집 메시 3D 렌더");
               gl.domElement.setAttribute("aria-describedby", descriptionId);
