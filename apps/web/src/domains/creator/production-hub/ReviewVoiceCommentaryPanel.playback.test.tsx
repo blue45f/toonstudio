@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { emitSession } from "@/domains/auth/public/session/auth-session-state";
@@ -19,6 +20,18 @@ function track(id = "voice-1", authorName = "검수자 1"): VoiceCommentaryTrack
 
 function freshTrack(source: VoiceCommentaryTrack): VoiceCommentaryTrack {
   return { ...source, audio: { kind: "server", url: `https://example.test/${source.id}-fresh.webm`, mimeType: "audio/webm", byteSize: 1024 } };
+}
+
+function trackWithFinalCue(): VoiceCommentaryTrack {
+  const source = track();
+  return {
+    ...source, durationMs: 1037,
+    audio: { kind: "blob", url: "blob:recorded-commentary", mimeType: "audio/webm", byteSize: 8983 },
+    keyframes: [
+      ...source.keyframes,
+      { atMs: 1007, view: { surface: "compare", pageId: null, poolItemId: "external:final", mode: "overlay", scale: 1.5625, tx: 0.25, ty: 0.125 }, pinThreadIds: [] },
+    ],
+  };
 }
 
 function deferred<T>() {
@@ -63,6 +76,40 @@ describe("음성 해설의 명시적 재생과 요청 수명", () => {
     await act(async () => { pending.resolve(refreshed); await pending.promise; });
     expect(audioElement(container).src).toBe(refreshed.audio?.url);
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("호스트의 서버 트랙 갱신이 대기 중인 재생 주소를 중복 설정하지 않는다", async () => {
+    const reading = deferred<VoiceCommentaryTrack>(), playing = deferred<void>();
+    const source = track(), refreshed = freshTrack(source);
+    vi.mocked(HTMLMediaElement.prototype.play).mockReturnValueOnce(playing.promise);
+    function Host() {
+      const [tracks, setTracks] = useState<readonly VoiceCommentaryTrack[]>([source]);
+      const prepare: NonNullable<ReviewVoiceCommentaryPanelProps["onPreparePlayback"]> = async () => {
+        const current = await reading.promise;
+        setTracks([current]);
+        return current;
+      };
+      return <ReviewVoiceCommentaryPanel {...props({ tracks, onPreparePlayback: prepare })} />;
+    }
+    const { container } = render(<Host />);
+    const audio = audioElement(container), sourceChanges: (string | null)[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.attributeName === "src") sourceChanges.push(audio.getAttribute("src"));
+      }
+    });
+    observer.observe(audio, { attributes: true, attributeFilter: ["src"] });
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "해설 듣기" }));
+      await act(async () => { reading.resolve(refreshed); await reading.promise; await Promise.resolve(); });
+      expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+      expect(audio.getAttribute("src")).toBe(refreshed.audio?.url);
+      expect(sourceChanges).toEqual([refreshed.audio?.url]);
+      await act(async () => { playing.resolve(undefined); await playing.promise; });
+      expect(screen.getByRole("button", { name: "일시정지" })).toBeTruthy();
+      expect(audio.getAttribute("src")).toBe(refreshed.audio?.url);
+      expect(sourceChanges).toEqual([refreshed.audio?.url]);
+    } finally { observer.disconnect(); }
   });
 
   it("서명 읽기 실패를 재생 중으로 표시하지 않으며 사용자의 다음 클릭으로 다시 시도한다", async () => {
@@ -117,6 +164,63 @@ describe("음성 해설의 명시적 재생과 요청 수명", () => {
     expect(prepare).toHaveBeenCalledTimes(1);
     expect(audioElement(container).currentTime).toBe(6);
     expect(apply).toHaveBeenLastCalledWith(expect.objectContaining({ pageId: "page-at-six" }), ["pin-at-six"]);
+  });
+
+  it("정지 중 선택한 마지막 큐를 오디오 탐색 보정이 이전 화면으로 되돌리지 않는다", () => {
+    const source = trackWithFinalCue(), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [source], onApplyView: apply })} />);
+    fireEvent.click(screen.getByRole("button", { name: /external:final/u }));
+    const slider = screen.getByRole("slider", { name: "해설 재생 위치" });
+    expect(slider.getAttribute("value")).toBe("1007");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
+    const audio = audioElement(container);
+    expect(audio.paused).toBe(true);
+    Object.defineProperty(audio, "ended", { configurable: true, value: true });
+    audio.currentTime = 0.96;
+    fireEvent.timeUpdate(audio);
+    expect(slider.getAttribute("value")).toBe("1007");
+    expect(apply).toHaveBeenCalledTimes(1);
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
+  });
+
+  it("수동 큐 선택 뒤 실제 재생이 시작되면 오디오 시각을 다시 따라간다", () => {
+    const source = trackWithFinalCue(), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [source], onApplyView: apply })} />);
+    fireEvent.click(screen.getByRole("button", { name: /external:final/u }));
+    const audio = audioElement(container);
+    Object.defineProperty(audio, "paused", { configurable: true, value: false });
+    fireEvent.play(audio);
+    audio.currentTime = 0.96;
+    fireEvent.timeUpdate(audio);
+    const slider = screen.getByRole("slider", { name: "해설 재생 위치" });
+    expect(slider.getAttribute("value")).toBe("960");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[0]?.view, []);
+    audio.currentTime = 1.02;
+    fireEvent.timeUpdate(audio);
+    expect(slider.getAttribute("value")).toBe("1020");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
+  });
+
+  it("수동 탐색 없이 재생하다 멈출 때는 마지막 오디오 시각도 반영한다", () => {
+    const source = trackWithFinalCue(), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [source], onApplyView: apply })} />);
+    const audio = audioElement(container);
+    Object.defineProperty(audio, "paused", { configurable: true, value: false });
+    fireEvent.play(audio);
+    audio.currentTime = 0.96;
+    fireEvent.timeUpdate(audio);
+    Object.defineProperty(audio, "paused", { configurable: true, value: true });
+    fireEvent.pause(audio);
+    audio.currentTime = 1.02;
+    fireEvent.timeUpdate(audio);
+    expect(screen.getByRole("slider", { name: "해설 재생 위치" }).getAttribute("value")).toBe("1020");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
+    Object.defineProperty(audio, "ended", { configurable: true, value: true });
+    fireEvent.ended(audio);
+    audio.currentTime = 1.037;
+    fireEvent.timeUpdate(audio);
+    expect(screen.getByRole("slider", { name: "해설 재생 위치" }).getAttribute("value")).toBe("1037");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
   });
 
   it("다른 해설을 선택하면 대기 요청을 취소하고 늦은 주소·위치를 새 선택에 적용하지 않는다", async () => {
