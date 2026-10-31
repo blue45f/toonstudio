@@ -1,6 +1,6 @@
 # 선택형 로컬 Blender 장면 가져오기 — 2026-10-30
 
-상태: **migration — 독립 구현 후보, 집중 단위 검증 완료 후 전체 게이트·실물 검증 대기**.
+상태: **migration — main 병합·계약 회귀 완료, 수정 뒤 실제 UI 3종 검증 대기**.
 기반은 `b54f66b58ea7f1aa99e36bfb5696a176489e01ef`의 작업 기록 복구와
 `5cce6b15cc417033900e38992498d6a778dee4b4` main의 정상 병합이다.
 이 문서는 운영 제공 또는 배포 완료 기록이 아니다.
@@ -93,3 +93,17 @@ PNG는 signature·IHDR·크기·청크 순서·CRC·IDAT/IEND를 확인한다.
 공용 실행 순서에 따라 전체 TypeScript, `pnpm harness:verify`, 제품 빌드, 실제 브라우저,
 실제 Blender→검증 GLB→BG3D 장면 소비와 PNG 전체 디코딩·저장 검증은 아직 실행하지 않았다.
 집중 단위 테스트는 이 검증을 대신하지 않는다.
+
+## 2026-10-31 현재 검증과 남은 실제 작업
+
+앞의 독립 후보·CLI 미병합·전체 검사 미실행 문구는 각 기준 SHA에서 작성한 이력으로 보존한다. 현재 영수증 계약 수정은 [PR #2620](https://github.com/blue45f/toonstudio/pull/2620)의 source `fe0102d0a9a54b5092e5a43cfbb1a9a30e5d1a7a`에서 정상 게시되어 main `bb7ff5075aaad4de74ccdb172a2abb877d0be38b`에 병합됐다. 이 병합을 운영 배포나 실제 UI 작업 완료로 해석하지 않는다.
+
+수정 전 실제 UI r7은 **session 56592·종료 1**이었다. 문서 권한이 전달된 화면에서 실행기 필드 활성화·연결과 첫 GLB 작업의 생성 201·시작 200·Blender 완료 응답까지 확인했다. 완료 영수증의 `toolVersion`은 전체 버전 출력 500자였고, 웹 계약의 최대 160자 검증에서 거부됐다. 뒤이은 completed 취소 응답도 같은 검증을 통과하지 못해 결과 GET은 0회, 검증 완료 job은 0개였다. 당초 cleanup의 HTTP timeout 실패 기록은 보존하며, 후속 소유 서비스 3개의 정상 종료 **session 21880·종료 0**과 구분한다.
+
+수정은 새 영수증과 기존 완료 작업의 공개 응답에서 버전 첫 줄만 trim해 최대 160자로 기록한다. probe 상세 500자와 기존 raw manifest는 보존하고, 클라이언트 schema·권한·입출력 digest·소유 범위 검증은 유지했다. source `fe0102d0a9a54b5092e5a43cfbb1a9a30e5d1a7a`의 게시 검사 **session 63323·종료 0**에서 Node 5개·웹 103개 시험, base `2d54336c67e5c902e044ea4aec5201bccb9db5f6`의 범위 하네스와 정상 push를 통과했다. 실제 r7 manifest의 별도 client Zod 확인 **session 41380·종료 0**은 최초 거부 항목이 `receipt.toolVersion:too_big` 하나임을 확인했고, 공개 버전이 500자에서 첫 줄 17자로 정규화된 뒤 수락되며 원본 manifest와 결과 파일이 유지됨을 확인했다. 이 검사는 새 Blender 작업이나 UI 재실행이 아니다.
+
+main `bb7ff5075aaad4de74ccdb172a2abb877d0be38b`의 production bundle은 **session 62947·종료 0**으로 빌드·정적 bundle 구조 검사·postbuild CSP 검사를 통과했다. 완료 영수증 `cpu-r1-mainbb7-build-r3/completion.json`의 SHA-256은 `84ac4e137a6ff9fd55ca0a980c43ec41850cab46feceb27bb6d36bc1783430b2`이다. 동일 제품 소스의 후속 QA는 이 산출물을 재사용하며, 정적 검사 통과를 실제 Blender UI 작업 통과로 해석하지 않는다.
+
+수정 뒤 실제 UI r8은 **session 18438·종료 1**, `actual-login` 단계의 `REQUEST_ORIGIN_GUARD_REJECTED`로 중단됐다. QA 요청 guard가 공개 CSS의 `fonts.gstatic.com/l/font` GET 12회를 거부해 native 작업 생성 시도와 검증 완료 job은 모두 0이었다. supervisor의 cleanup 확인은 true였고, 후속 소유 서비스 종료 **session 89471·종료 0**, 다른 세션 프로세스에 보낸 신호 0을 확인했다. 이 실패는 제품의 GLB 변환·가져오기 실행 결과를 새로 제공하지 않는다.
+
+이후 QA driver만 이미 허용한 공개 CSS가 선언한 font URL의 GET을 정확히 허용하도록 보정했다. 구문 확인과 오프라인 VM 24개 검사는 통과했으며 제품 소스는 바꾸지 않았다. 실제 UI r9는 로그인을 통과한 뒤 `actual-canonical-documents` 단계에서 `wss://www.toonstudio.cloud/socket.io/` GET 1회를 요청 guard가 거부해 **session 99556·종료 1·15.24초**로 중단됐다. native 작업 생성 시도와 검증 완료 job은 모두 0이며 supervisor cleanup 확인은 true였다. 후속 소유 서비스 종료 **session 71439·종료 0**, 알려진 소유 PG 잔류 0과 다른 세션 프로세스에 보낸 신호 0을 확인했다. 실제 반환 기록 `root-r9-actual-return.json`의 SHA-256은 `fb5a4dd9b8df5dc73946268075cbbe96f8b86d83186e58f14503f426a9a5a70a`이다. 읽기 전용 확인에서 번들의 `VITE_STUDIO_LIVE_ORIGIN`이 운영 URL로 고정돼 있음을 확인했으며, 후속 로컬 검증용 빌드의 연결 설정 보정은 아직 실행하지 않았다. GLB의 정규 가져오기·장면 반영, render-scene·line-art 두 PNG 작업과 전체 디코딩·저장·재열기, 문서 A/B 보존 등 실제 3종 작업 범위는 미검증으로 남아 있다. 과거 r7·r8·r9 실패나 단위 검사를 새 실제 UI 통과로 합산하지 않는다.
