@@ -322,3 +322,17 @@ MSAA는 가시 샘플 과반으로 전체 픽셀을 한 소유자에게 배정�
 `eye-geometry-support.ts`는 현재 rig.parts와 스켈레톤을 읽고, 최대 8개 활성 영향 및 CPU 스킨의 원래 가중치를 다룬다. 정적 geometry의 VertexBuffer·원시 데이터·native buffer identity와 영향 수를 WeakMap으로 캐시하며 실제 로더의 버퍼 교체·삭제·키트 파트 제거/추가를 반영한다. updatable 가중치는 capability read 때 재평가한다. 매 프레임 시선 적용에는 새 버퍼 스캔을 추가하지 않으며 Geometry/전역 콜백도 바꾸지 않는다. 직접 원시 배열만 고치고 Babylon 갱신 API를 호출하지 않는 외부 변경은 지원 계약이 아니다.
 
 기존 실제 Tripo 55본 GLB의 양쪽 `J_Adj_*_FaceEye`는 양수 영향 0개이고 시선 변경 전후 CPU 스킨 위치 159,060성분의 차이도 0이다. 이제 `unavailable`이며, 실제 Orion은 각 눈 456개 영향·기본 여성 키트는 각 701개 영향으로 `available`을 유지한다. 절차 fixture의 각 24정점 눈, 하위 보조 본·rigid 부착·추가 영향·숨김·교체·UI/F10 회귀는 `render/babylon-eye-geometry.test.ts`와 기존 안구 통합 시험에 있다. 실제 파일 검증 원본은 ignored 배치의 `verification/eye-gaze-capability-20261029/`다. 이 판정은 기하 연결 지원이며 시선의 미학·해부학 품질이나 텍스처 눈의 독립 제어를 인증하지 않는다. 이 단계에서 새 GPU/브라우저·전체 타입/빌드 검사는 실행하지 않았다.
+
+## 15. 키트 몸통 필압 윤곽선의 의상 가림 후보 — 2026-10-31
+
+상태: **검증 전 후보, 품질 HOLD**. PR #2599의 `a2ecc6ee31eecdd9d9ce24d835e4a4f3c72019be`와 고정 산출물에서 실제 Apple M2 Max Metal WebGPU·ANGLE Metal WebGL2의 full/torso-only/other-only/restored 8개 lit PNG 진단을 수행했다. 등록한 실패 좌표 WebGPU 11개·WebGL2 3개와 상체 마스크 차이 51개·59개는 모두 torso-only가 full과 같고 other-only가 outline-none과 같았다. full과 restored도 기존 실패 PNG와 바이트가 같았다. 이는 해당 픽셀의 몸통 draw 기여 근거이며 GPU 버퍼 readback·픽셀 원인 확정·시각 품질 승인은 아니다. 더 넓은 하체 사각 영역에는 비몸통 기여 154개·184개가 있어 비몸통 선을 없애는 근거로 쓰지 않는다. 원본 증거는 `verification/lab-toon-underwear-20261030/pressure-regions-gpu-attempt1/`에 보존했다.
+
+후속 후보는 `bodyRegions`와 현재 압축된 가시 인덱스 범위에서 몸통 주선만 별도 런타임 proxy로 나눈다. 원본 geometry·인덱스·본·morph·색·선폭과 비몸통 draw를 유지하며, 실제 불투명·cutout 의상 fragment의 depth 통과 sample에만 전용 stencil 비트 `0x08`을 기록한다. 몸통 주선은 공개 재질 정렬로 opaque/cutout 뒤·기존 transparent 헤어 앞에 두고 해당 비트가 없는 sample만 읽는다. 의상 marker와 몸통 predicate는 실제 주 카메라·등록한 lit RTT에만 적용하며, lit의 stencil attachment는 다른 캡처 풀 타깃과 분리한다. 기존 활성 material/global stencil·부분 alpha·vertex alpha·MultiMaterial의 predicate를 덮지 않고 기존 경로를 유지한다. marker는 기존 before-render·bind 콜백 뒤의 공개 before-draw 알림에서만 적용하고, 별도 before-draw 콜백이 있는 의상은 적용을 생략한다. readiness 실패에는 임시 marker를 만들지 않으며, draw 예외는 공개 observer와 상위 렌더 `finally`에서 복원한다.
+
+| 항목 | 구현 상태 | Node 회귀 | 실제 GPU 검증 |
+| --- | --- | --- | --- |
+| 가시 몸통·비몸통 범위 분리와 원본 자원 수명 | 후보 작성 | `babylon-kit-outline-ranges.test.ts`, `babylon-kit-pressure-occlusion.test.ts` 작성, 미실행 | 새 후보 미실행 |
+| 의상 marker·패스·공유 재질·예외 복원 | 후보 작성 | `babylon-pressure-garment-stencil.test.ts`, `babylon-pressure-occlusion-pass.test.ts`, `babylon-kit-engine.test.ts` 작성, 미실행 | 새 후보 미실행 |
+| lit RTT attachment별 풀 재사용 | 후보 작성 | `babylon-responsiveness.test.ts`, `babylon-pressure-occlusion-pass.test.ts` 작성, 미실행 | 새 후보 미실행 |
+
+새 후보에는 타입 검사·테스트·빌드·strict GPU·표준 19 probe·harness 검증이 아직 없다. 이전 PR head의 기술 검증이나 위 진단 종료 코드 0을 새 후보의 성공 근거로 넘기지 않는다. 실패 11개·3개 및 상체 51개·59개 제거, 하체·외부 실루엣·앞쪽 팔/손·헤어·모드 전환·작은 썸네일 보존은 실제 두 backend에서 확인해야 하며, main 병합과 운영 배포는 수행하지 않았다.

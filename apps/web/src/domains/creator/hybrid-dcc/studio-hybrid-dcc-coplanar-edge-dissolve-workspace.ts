@@ -18,6 +18,7 @@ import {
   type StudioHybridDccComponentSelection,
   type StudioHybridDccMeshSelectionSource,
 } from "./studio-hybrid-dcc-component-selection";
+import { hasSupportedStudioCoplanarEdgeDissolveChannels } from "./studio-hybrid-dcc-coplanar-edge-dissolve-channels";
 import { hybridDccCommitGeometry, type StudioHybridDccSession } from "./studio-hybrid-dcc-document";
 import {
   synchronizeWorkspaceGeometryAuthority,
@@ -147,6 +148,9 @@ function selectionSource(current: StudioHybridDccCoplanarEdgeDissolveCurrent): S
 function canonicalCopy(mesh: StudioEditableMesh, expectedHash: string): {
   readonly snapshot: StudioEditableMeshSnapshot; readonly mesh: StudioEditableMesh;
 } {
+  if (!hasSupportedStudioCoplanarEdgeDissolveChannels(mesh)) {
+    fail("unsupported-uv", "단일 코너 UV 외의 추가 메시 채널·메타데이터는 치유로 보존할 수 없습니다.");
+  }
   const authority = validateStudioEditableMeshSerializableAuthority(mesh);
   if (!authority.ok) fail(authority.code === "budget-exceeded" ? "budget-exceeded" : "invalid-result", authority.detail);
   // serializer의 같은 root에 대한 과거 loop cache를 현재 복사의 근거로 쓰지 않는다.
@@ -165,6 +169,9 @@ function assertCurrentState(source: CapturedSource, current: StudioHybridDccCopl
     fail("stale-context", "요청 뒤 작업공간·오브젝트 또는 선택이 바뀌었습니다.");
   }
   const live = workspaceComponentSelectionSource(workspace);
+  if (live && !hasSupportedStudioCoplanarEdgeDissolveChannels(live.mesh)) {
+    fail("unsupported-uv", "단일 코너 UV 외의 추가 메시 채널·메타데이터는 치유로 보존할 수 없습니다.");
+  }
   if (!live || live.mesh !== source.mesh || live.meshRevision !== source.sourceMeshRevision
     || live.sourceHash !== source.sourceMeshHash || hashStudioEditableMesh(live.mesh) !== source.sourceMeshHash) {
     fail("stale-context", "요청 뒤 원본 메시 또는 편집 버전이 바뀌었습니다.");

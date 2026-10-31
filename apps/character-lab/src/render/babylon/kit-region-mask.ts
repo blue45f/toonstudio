@@ -26,12 +26,22 @@ export interface BodyMaskReport {
   readonly hiddenTriangles: number;
 }
 
+/** 압축된 현재 인덱스 버퍼의 주선 범위. 전부 숨김의 의미상 개수는 퇴화 버퍼 길이와 구분한다. */
+export interface KitBodyOutlineRanges {
+  readonly torso: readonly IndexRun[];
+  readonly other: readonly IndexRun[];
+  readonly visibleIndexCount: number;
+}
+
 type IndexBuffer = Uint16Array | Uint32Array;
 
 /** 마스크를 적용하기 전의 전체 인덱스(영역 범위의 기준). 메시마다 처음 한 번만 복사한다. */
 const FULL_INDICES = new WeakMap<Mesh, IndexBuffer>();
 /** 마지막으로 만든 보이는 구간의 서명 — 같으면 인덱스 버퍼를 다시 만들지 않는다. */
 const APPLIED_SIGNATURE = new WeakMap<Mesh, string>();
+/** source 몸 메시만 키로 사용한다. geometry를 공유하는 주선 메시의 범위와 혼동하지 않는다. */
+const OUTLINE_RANGES = new WeakMap<Mesh, KitBodyOutlineRanges>();
+const TORSO_REGION: KitHideableRegionId = "torso";
 
 /** 전부 숨겨졌을 때 쓰는 퇴화 삼각형(빈 인덱스 버퍼는 Babylon이 정점 수만큼 그리려 한다). */
 const DEGENERATE_TRIANGLE: readonly number[] = [0, 0, 0];
@@ -58,6 +68,44 @@ function concatenateRuns(full: IndexBuffer, runs: readonly IndexRun[]): IndexBuf
   return out;
 }
 
+function appendRun(runs: IndexRun[], indexStart: number, indexCount: number): void {
+  if (indexCount <= 0) return;
+  const last = runs[runs.length - 1];
+  if (last && last.indexStart + last.indexCount === indexStart) {
+    runs[runs.length - 1] = { indexStart: last.indexStart, indexCount: last.indexCount + indexCount };
+  } else {
+    runs.push({ indexStart, indexCount });
+  }
+}
+
+function compressedOutlineRanges(ranges: readonly KitRegionRange[], visible: readonly IndexRun[]): KitBodyOutlineRanges | null {
+  const torsoRegion = ranges.find((range) => range.id === TORSO_REGION);
+  if (!torsoRegion) return null;
+  const torso: IndexRun[] = [];
+  const other: IndexRun[] = [];
+  const torsoEnd = torsoRegion.indexStart + torsoRegion.indexCount;
+  let cursor = 0;
+  for (const run of visible) {
+    const end = run.indexStart + run.indexCount;
+    const overlapStart = Math.max(run.indexStart, torsoRegion.indexStart);
+    const overlapEnd = Math.min(end, torsoEnd);
+    if (overlapStart < overlapEnd) {
+      appendRun(other, cursor, overlapStart - run.indexStart);
+      appendRun(torso, cursor + overlapStart - run.indexStart, overlapEnd - overlapStart);
+      appendRun(other, cursor + overlapEnd - run.indexStart, end - overlapEnd);
+    } else {
+      appendRun(other, cursor, run.indexCount);
+    }
+    cursor += run.indexCount;
+  }
+  return { torso, other, visibleIndexCount: cursor };
+}
+
+/** applyBodyMask가 적용한 현재 가시 인덱스 기준 범위. bodyRegions가 없거나 아직 적용하지 않았으면 null이다. */
+export function kitBodyOutlineRanges(body: Mesh): KitBodyOutlineRanges | null {
+  return OUTLINE_RANGES.get(body) ?? null;
+}
+
 /**
  * `body`의 인덱스 버퍼를 `hidden`을 뺀 구간들을 이어 붙인 것으로 바꾼다. `ranges`가 비어 있거나 `hidden`이 비면 전체 인덱스로 되돌린다.
  * 호출자가 `regionRangeProblems`로 범위의 분할을 이미 확인했다고 가정한다.
@@ -73,6 +121,10 @@ export function applyBodyMask(body: Mesh, ranges: readonly KitRegionRange[], hid
     if (!untouched) body.setIndices(concatenateRuns(full, runs), body.getTotalVertices(), false);
     APPLIED_SIGNATURE.set(body, signature);
   }
+  // 물리 인덱스 구간이 같아도 torso의 의미상 위치가 달라질 수 있으므로 매번 갱신한다.
+  const outlineRanges = compressedOutlineRanges(ranges, runs);
+  if (outlineRanges) OUTLINE_RANGES.set(body, outlineRanges);
+  else OUTLINE_RANGES.delete(body);
   // SubMesh가 하나라 Babylon이 SubMesh별 절두체 컬링을 하지 않는다 — 항상 선택 플래그가 필요 없다.
   body.alwaysSelectAsActiveMesh = false;
   const hiddenRegions = ranges.filter((range) => effectiveHidden.has(range.id)).map((range) => range.id);

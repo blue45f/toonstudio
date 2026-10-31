@@ -54,6 +54,11 @@ export { applyRigPlan, restoreRig, rigBoneSnapshots, rigBoneWorld, snapshotRig }
 export { applyRigEyeGaze, readRigEyeGaze } from "../babylon/eye-gaze";
 export { createJointOffsetRig } from "../babylon/joint-offset-rig";
 export { KitOutlineDepthController } from "../babylon/kit-outline-depth";
+export { applyBodyMask, kitBodyOutlineRanges } from "../babylon/kit-region-mask";
+export type { KitBodyOutlineRanges } from "../babylon/kit-region-mask";
+export { PressureOutlineController } from "../babylon/pressure-outline";
+export { PressureGarmentStencilController, PRESSURE_GARMENT_STENCIL_BIT, restorePendingPressureGarmentStencil } from "../babylon/pressure-garment-stencil";
+export { isPressureOcclusionRenderPass, registerPressureOcclusionRenderPass } from "../babylon/pressure-occlusion-pass";
 export { createIblShadows, IBL_VOXEL_MIN_INTERVAL_MS } from "../babylon/lighting/ibl-shadows";
 export { createNodeToon, NODE_TOON_INPUTS, nodeLanguageFor } from "../babylon/materials/node-toon-material";
 export { applyOpenPbrParams, createOpenPbrMaterial } from "../babylon/materials/openpbr-material";
