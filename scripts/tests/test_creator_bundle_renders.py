@@ -96,6 +96,26 @@ class BundleRenderTests(unittest.TestCase):
         assets = renders.load_selection(self.selection)
         return renders.plan_assets(assets, self.library, renders.load_rights(assets, self.ledger_path))
 
+    def fake_fresh_blender(self, proofs):
+        original_run = subprocess.run
+
+        def render(command, **kwargs):
+            if command[0] != "fake-blender":
+                return original_run(command, **kwargs)
+            jobs = json.loads(Path(command[-2]).read_bytes())
+            directory = Path(command[-1])
+            planned = {asset["id"]: asset for asset in self.planned()}
+            assets = [planned[job["id"]] for job in jobs]
+            for asset in assets:
+                png(directory / (asset["id"] + ".png"))
+            proof = renders.make_render_proof(assets, directory)
+            proof["helperObserved"] = "원문 보존"
+            proofs.append(json.dumps(proof, ensure_ascii=False, indent=3).encode("utf-8"))
+            (directory / "render-proof.json").write_bytes(proofs[-1])
+            return SimpleNamespace(returncode=0)
+
+        return patch.object(renders.subprocess, "run", side_effect=render)
+
     def unchanged(self):
         self.assertEqual((self.output / "manifest.json").read_text(), self.original)
         self.assertEqual(list(self.output.iterdir()), [self.output / "manifest.json"])
@@ -184,6 +204,157 @@ class BundleRenderTests(unittest.TestCase):
         self.assertFalse(manifest["assets"][0]["studioRuntimeVerified"])
         self.assertEqual(manifest["assets"][0]["curationStatus"], "pending-visual-review")
         self.assertEqual(list(Path(result["localPack"]).rglob("*.glb")), [])
+        self.assertNotIn("renderMasters", result)
+        self.assertFalse((self.root / "work/render-masters").exists())
+        self.unchanged()
+
+    def test_retained_fresh_masters_survive_temporary_cleanup_with_exact_helper_proof(self):
+        self.asset["cameraDirection"] = [1.6, -2.4, 1.7]
+        self.write_selection()
+        proofs = []
+        with self.fake_fresh_blender(proofs):
+            result = renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        masters = Path(result["renderMasters"])
+        self.assertEqual(masters, (self.root / "work/render-masters").resolve() / renders.digest(proofs[0]))
+        self.assertEqual((masters / "render-proof.json").read_bytes(), proofs[0])
+        self.assertEqual({path.name for path in masters.iterdir()}, {self.asset["id"] + ".png", "render-proof.json"})
+        verified = renders.verify_render_proof(self.planned(), masters)
+        original = renders.verify_image(masters / (self.asset["id"] + ".png"), verified[self.asset["id"]])
+        with Image.open(Path(result["localPack"]) / "assets" / self.asset["id"] / "prop.webp") as encoded:
+            self.assertEqual(encoded.convert("RGBA").tobytes(), original.tobytes())
+        self.assertEqual(list((self.root / "work").glob("render-job-*")), [])
+        self.assertEqual(list((self.root / "work").glob(".render-masters-*")), [])
+        self.unchanged()
+
+    def test_reviewed_publish_reuses_retained_masters_without_starting_blender(self):
+        self.asset["cameraDirection"] = [1.6, -2.4, 1.7]
+        self.write_selection()
+        proofs = []
+        with self.fake_fresh_blender(proofs):
+            created = renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        masters = Path(created["renderMasters"])
+        original_pixels = renders.verify_image(masters / (self.asset["id"] + ".png")).tobytes()
+        self.asset["visualReviewed"] = True
+        self.write_selection()
+        original_run = subprocess.run
+        blender_calls = []
+
+        def reject_blender(command, **kwargs):
+            if command[0] == "fake-blender":
+                blender_calls.append(command)
+                raise AssertionError("보존 PNG 재사용에서 Blender를 시작했습니다.")
+            return original_run(command, **kwargs)
+
+        with patch.object(renders.subprocess, "run", side_effect=reject_blender):
+            result = renders.run(self.args(reuse_renders=masters, work_dir=self.root / "reviewed-work", publish=True))
+        self.assertTrue(result["published"])
+        self.assertEqual(blender_calls, [])
+        self.assertEqual((masters / "render-proof.json").read_bytes(), proofs[0])
+        self.assertEqual((self.root / "reviewed-work/render-proof.json").read_bytes(), proofs[0])
+        with Image.open(self.output / "assets" / self.asset["id"] / "prop.webp") as encoded:
+            self.assertEqual(encoded.convert("RGBA").tobytes(), original_pixels)
+
+    def test_retain_and_reuse_are_rejected_before_starting_any_child(self):
+        with patch.object(renders.subprocess, "run", side_effect=AssertionError("자식 프로세스를 시작했습니다.")):
+            with self.assertRaisesRegex(renders.RenderError, "함께"):
+                renders.run(self.args(retain_render_masters=True))
+        self.assertFalse((self.root / "work").exists())
+        self.unchanged()
+
+    def test_retain_dry_run_creates_no_master_or_work_directory(self):
+        result = renders.run(self.args(reuse_renders=None, retain_render_masters=True, dry_run=True))
+        self.assertTrue(result["dryRun"])
+        self.assertNotIn("renderMasters", result)
+        self.assertFalse((self.root / "work").exists())
+        self.unchanged()
+
+    def test_retain_rejects_master_symlink_and_overlapping_work_before_blender(self):
+        outside = self.root / "outside-masters"
+        outside.mkdir()
+        work = self.root / "work"
+        work.mkdir()
+        (work / "render-masters").symlink_to(outside, target_is_directory=True)
+        proofs = []
+        with self.fake_fresh_blender(proofs):
+            with self.assertRaisesRegex(renders.RenderError, "심볼릭 링크"):
+                renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+            with self.assertRaisesRegex(renders.RenderError, "겹치지"):
+                renders.run(self.args(reuse_renders=None, retain_render_masters=True, work_dir=self.output / "work"))
+        self.assertEqual(proofs, [])
+        self.assertEqual(list(outside.iterdir()), [])
+        self.unchanged()
+
+    def test_copy_tampering_rejects_retained_master_and_cleans_staging(self):
+        self.asset["cameraDirection"] = [1.6, -2.4, 1.7]
+        self.write_selection()
+        original_copy = renders.shutil.copyfile
+
+        def change_copy(source, destination, **kwargs):
+            result = original_copy(source, destination, **kwargs)
+            if Path(source).suffix == ".png" and Path(destination).parent.name.startswith(".render-masters-"):
+                with Path(destination).open("ab") as stream:
+                    stream.write(b"changed-during-copy")
+            return result
+
+        with self.fake_fresh_blender([]), patch.object(renders.shutil, "copyfile", side_effect=change_copy):
+            with self.assertRaisesRegex(renders.RenderError, "PNG 해시"):
+                renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        self.assertEqual(list((self.root / "work/render-masters").iterdir()), [])
+        self.assertEqual(list((self.root / "work").glob(".render-masters-*")), [])
+        self.assertFalse((self.root / "work/pack").exists())
+        self.unchanged()
+
+    def test_source_change_during_master_copy_rejects_retention(self):
+        original_copy = renders.shutil.copyfile
+
+        def change_source(source, destination, **kwargs):
+            result = original_copy(source, destination, **kwargs)
+            if Path(source).suffix == ".png" and Path(destination).parent.name.startswith(".render-masters-"):
+                with self.source.open("ab") as stream:
+                    stream.write(b"changed-after-render")
+            return result
+
+        with self.fake_fresh_blender([]), patch.object(renders.shutil, "copyfile", side_effect=change_source):
+            with self.assertRaisesRegex(renders.RenderError, "원본 해시"):
+                renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        self.assertEqual(list((self.root / "work/render-masters").iterdir()), [])
+        self.assertEqual(list((self.root / "work").glob(".render-masters-*")), [])
+        self.unchanged()
+
+    def test_helper_proof_change_during_master_copy_rejects_retention(self):
+        self.asset["cameraDirection"] = [1.6, -2.4, 1.7]
+        self.write_selection()
+        original_copy = renders.shutil.copyfile
+
+        def change_proof(source, destination, **kwargs):
+            result = original_copy(source, destination, **kwargs)
+            if Path(source).name == "render-proof.json" and Path(destination).parent.name.startswith(".render-masters-"):
+                Path(source).write_bytes(b"changed-helper-proof")
+            return result
+
+        with self.fake_fresh_blender([]), patch.object(renders.shutil, "copyfile", side_effect=change_proof):
+            with self.assertRaisesRegex(renders.RenderError, "보존하는 동안 proof"):
+                renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        self.assertEqual(list((self.root / "work/render-masters").iterdir()), [])
+        self.assertEqual(list((self.root / "work").glob(".render-masters-*")), [])
+        self.unchanged()
+
+    def test_existing_master_tampering_is_rejected_without_replacing_evidence(self):
+        self.asset["cameraDirection"] = [1.6, -2.4, 1.7]
+        self.write_selection()
+        proofs = []
+        with self.fake_fresh_blender(proofs):
+            result = renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        masters = Path(result["renderMasters"])
+        path = masters / (self.asset["id"] + ".png")
+        changed = path.read_bytes() + b"changed-after-retention"
+        path.write_bytes(changed)
+        with self.fake_fresh_blender(proofs):
+            with self.assertRaisesRegex(renders.RenderError, "PNG 해시"):
+                renders.run(self.args(reuse_renders=None, retain_render_masters=True))
+        self.assertEqual(proofs[0], proofs[1])
+        self.assertEqual(path.read_bytes(), changed)
+        self.assertEqual((masters / "render-proof.json").read_bytes(), proofs[0])
         self.unchanged()
 
     def test_publish_requires_explicit_visual_review(self):
@@ -214,9 +385,11 @@ class BundleRenderTests(unittest.TestCase):
             target = Path(command[-1]) / (self.asset["id"] + ".png")
             png(target)
             return SimpleNamespace(returncode=42)
-        with patch.object(renders.subprocess, "run", side_effect=fail_render):
-            with self.assertRaisesRegex(renders.RenderError, "Blender 렌더가 실패"):
-                renders.run(self.args(reuse_renders=None))
+        for retain in (False, True):
+            with self.subTest(retain=retain), patch.object(renders.subprocess, "run", side_effect=fail_render):
+                with self.assertRaisesRegex(renders.RenderError, "Blender 렌더가 실패"):
+                    renders.run(self.args(reuse_renders=None, retain_render_masters=retain))
+            self.assertFalse((self.root / "work/render-masters").exists())
         self.unchanged()
 
     def test_texture_binding_is_confined_pinned_and_in_reuse_proof(self):

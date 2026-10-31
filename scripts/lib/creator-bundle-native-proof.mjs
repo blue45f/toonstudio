@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 
 import { evaluateServeDecision, packRightsProjection, validatePackRightsLedger } from "./creator-bundle-pack-rights.mjs";
 import { isRecord, relativePathProblem } from "./creator-bundle-pack-rights-form.mjs";
-import { nativeReleaseBindingProblems, nativeReleaseTraceProblems } from "./creator-bundle-native-release.mjs";
+import { LUMA_NATIVE_COMPOSITE_CONFIG_PATH, NATIVE_COMPOSITE_CONFIG_PATH, nativeReleaseBindingProblems, nativeReleaseTraceProblems } from "./creator-bundle-native-release.mjs";
 
 const LEGACY_REPRESENTATIVES = Object.freeze([
   ["cbv1-ingest-local-cute-park", "Bench_1_1.glb", "cbv1-008-cute-park-pack"],
@@ -34,9 +34,23 @@ export const ATLAS_NATIVE_BASE_COUNTS = Object.freeze([
   ...LICENSED_NATIVE_PACKS.map(({ ingestId, models }) => [ingestId, models]),
 ].map((row) => Object.freeze(row)));
 export const ATLAS_NATIVE_EXPECTED_MODELS = 5229;
+export const LUMA_NATIVE_INTAKE = "luma-20261031";
+export const LUMA_NATIVE_PACK = Object.freeze({
+  ingestId: "cbv1-ingest-231-lumagrovewonkywoods", ledgerPackId: "cbv1-028-lumagrove-wonky-woods", models: 205,
+  sources: Object.freeze(["EA_Env_Flora_GreenTree_01a.glb", "DSEmace_wycinka.glb", "EA_Env_Water_WaterLily_BloomOnly_1b.glb"]),
+});
+export const LUMA_NATIVE_EXPECTED_MODELS = ATLAS_NATIVE_EXPECTED_MODELS + LUMA_NATIVE_PACK.models;
+
+export function isReleaseNativeIntake(value) {
+  return value === ATLAS_NATIVE_INTAKE || value === LUMA_NATIVE_INTAKE;
+}
+
+function releaseBindingOptions(expectedIntake) {
+  return { compositeConfigPath: expectedIntake === LUMA_NATIVE_INTAKE ? LUMA_NATIVE_COMPOSITE_CONFIG_PATH : NATIVE_COMPOSITE_CONFIG_PATH };
+}
 
 export function isSupportedNativeIntake(value) {
-  return value === undefined || value === LICENSED_NATIVE_INTAKE || value === ATLAS_NATIVE_INTAKE;
+  return value === undefined || value === LICENSED_NATIVE_INTAKE || isReleaseNativeIntake(value);
 }
 
 function belongsToIngest(asset, ingestId) {
@@ -62,7 +76,7 @@ function expectedNativeRights({ themePacks, ledger, expectedIntake } = {}) {
     if (!isDeepStrictEqual(pack.rights, projection) || projection.commercialUse !== true) {
       problems.push(`공개 팩 권리가 현재 원장과 다릅니다: ${index}`); continue;
     }
-    packs.set(index, { entryId: decision.entry.id, rights: { status: projection.status, licenseName: projection.licenseName,
+    packs.set(index, { entryId: decision.entry.id, grant: decision.entry.grant, rights: { status: projection.status, licenseName: projection.licenseName,
       commercialUse: projection.commercialUse, attributionRequired: projection.attributionRequired,
       ...(projection.attribution === undefined ? {} : { attribution: projection.attribution }) } });
   }
@@ -87,30 +101,38 @@ function expectedNativeRights({ themePacks, ledger, expectedIntake } = {}) {
     if (addedPack && (expected.entryId !== addedPack.ledgerPackId || expected.rights.status !== "licensed")) {
       problems.push(`새 구매 팩의 licensed 원장 소속이 다릅니다: ${asset.id}`); continue;
     }
-    if (expectedIntake === ATLAS_NATIVE_INTAKE && ingestId === ATLAS_NATIVE_PACK.ingestId
+    if (isReleaseNativeIntake(expectedIntake) && ingestId === ATLAS_NATIVE_PACK.ingestId
       && (expected.entryId !== ATLAS_NATIVE_PACK.ledgerPackId || expected.rights.status !== "public-domain"
         || expected.rights.licenseName !== "CC0-1.0" || expected.rights.commercialUse !== true
         || expected.rights.attributionRequired !== false)) {
       problems.push(`Nature Atlas의 원장 소속·원본 CC0 권리 계약이 다릅니다: ${asset.id}`); continue;
     }
+    if (expectedIntake === LUMA_NATIVE_INTAKE && ingestId === LUMA_NATIVE_PACK.ingestId
+      && (expected.entryId !== LUMA_NATIVE_PACK.ledgerPackId || expected.rights.status !== "licensed"
+        || expected.grant.inServiceOnly !== true || expected.grant.downloadable !== false
+        || expected.grant.redistributionAllowed !== false)) {
+      problems.push(`Luma의 원장 소속·구매 라이선스·서비스 전용 권리 계약이 다릅니다: ${asset.id}`); continue;
+    }
     byId.set(asset.id, expected.rights);
   }
-  if (expectedIntake === LICENSED_NATIVE_INTAKE || expectedIntake === ATLAS_NATIVE_INTAKE) for (const pack of LICENSED_NATIVE_PACKS) {
+  if (expectedIntake === LICENSED_NATIVE_INTAKE || isReleaseNativeIntake(expectedIntake)) for (const pack of LICENSED_NATIVE_PACKS) {
     if (themePacks.assets.filter((asset) => belongsToIngest(asset, pack.ingestId)).length !== pack.models) {
       problems.push(`이번 paired 편입의 전수 모델 기대 수가 다릅니다: ${pack.ingestId} (${pack.models}개 필요)`);
     }
   }
-  if (expectedIntake === ATLAS_NATIVE_INTAKE) {
-    if (themePacks.assets.length !== ATLAS_NATIVE_EXPECTED_MODELS
-      || themePacks.totals?.placeableAssets !== ATLAS_NATIVE_EXPECTED_MODELS) {
-      problems.push(`Atlas 편입의 전체 모델 기대 수가 다릅니다 (${ATLAS_NATIVE_EXPECTED_MODELS}개 필요). 실제 생성기 admission을 먼저 확인하세요.`);
+  if (isReleaseNativeIntake(expectedIntake)) {
+    const label = expectedIntake === LUMA_NATIVE_INTAKE ? "Luma" : "Atlas";
+    const expectedModels = expectedIntake === LUMA_NATIVE_INTAKE ? LUMA_NATIVE_EXPECTED_MODELS : ATLAS_NATIVE_EXPECTED_MODELS;
+    if (themePacks.assets.length !== expectedModels || themePacks.totals?.placeableAssets !== expectedModels) {
+      problems.push(`${label} 편입의 전체 모델 기대 수가 다릅니다 (${expectedModels}개 필요). 실제 생성기 admission을 먼저 확인하세요.`);
     }
-    for (const [ingestId, models] of [...ATLAS_NATIVE_BASE_COUNTS, [ATLAS_NATIVE_PACK.ingestId, ATLAS_NATIVE_PACK.models]]) {
+    for (const [ingestId, models] of [...ATLAS_NATIVE_BASE_COUNTS, [ATLAS_NATIVE_PACK.ingestId, ATLAS_NATIVE_PACK.models],
+      ...(expectedIntake === LUMA_NATIVE_INTAKE ? [[LUMA_NATIVE_PACK.ingestId, LUMA_NATIVE_PACK.models]] : [])]) {
       const matching = themePacks.assets.filter((asset) => belongsToIngest(asset, ingestId));
       const packIndices = new Set(matching.map((asset) => asset.pack));
       if (matching.length !== models || packIndices.size !== 1
         || themePacks.packs[matching[0]?.pack]?.placeable !== models) {
-        problems.push(`Atlas 편입의 팩별 전수 기대 수·단일 소속이 다릅니다: ${ingestId} (${models}개 필요)`);
+        problems.push(`${label} 편입의 팩별 전수 기대 수·단일 소속이 다릅니다: ${ingestId} (${models}개 필요)`);
       }
     }
   }
@@ -129,11 +151,12 @@ export function assertPrivateNativeBody(body, object) {
 /** 공개 메타데이터에서 팩별 검수할 실물 하나를 결정한다. 다른 변형을 임의로 추가하지 않는다. */
 export function selectNativeRepresentatives(themePacks, { expectedIntake } = {}) {
   if (!isSupportedNativeIntake(expectedIntake)) throw new Error("알 수 없는 native 편입 기대 범위입니다.");
-  const additions = LICENSED_NATIVE_PACKS.filter(({ ingestId }) => expectedIntake === LICENSED_NATIVE_INTAKE || expectedIntake === ATLAS_NATIVE_INTAKE
+  const additions = LICENSED_NATIVE_PACKS.filter(({ ingestId }) => expectedIntake === LICENSED_NATIVE_INTAKE || isReleaseNativeIntake(expectedIntake)
     || themePacks.assets.some((asset) => belongsToIngest(asset, ingestId))
     || themePacks.packs?.some((pack) => pack.ingestPackIds?.includes(ingestId) && pack.placeable > 0));
   const choices = [...LEGACY_REPRESENTATIVES, ...additions.map(({ ingestId, source }) => [ingestId, source]),
-    ...(expectedIntake === ATLAS_NATIVE_INTAKE ? [[ATLAS_NATIVE_PACK.ingestId, ATLAS_NATIVE_PACK.source]] : [])];
+    ...(isReleaseNativeIntake(expectedIntake) ? [[ATLAS_NATIVE_PACK.ingestId, ATLAS_NATIVE_PACK.source]] : []),
+    ...(expectedIntake === LUMA_NATIVE_INTAKE ? LUMA_NATIVE_PACK.sources.map((source) => [LUMA_NATIVE_PACK.ingestId, source]) : [])];
   return choices.map(([ingest, source]) => {
     const path = `${ingest}/native/${source}`;
     const matches = themePacks.assets.map((asset, index) => ({ asset, index })).filter(({ asset }) => asset.path === path);
@@ -164,12 +187,12 @@ export function nativeValidationProblems(assets, rows, context) {
 export function reusableNativeValidationProblems({ assets, rows, summary, catalogSha256, themePacks, ledger, expectedIntake, releaseBinding }) {
   const problems = nativeValidationProblems(assets, rows, { themePacks, ledger, expectedIntake });
   const calls = assets.length + 2 * (summary.renders?.length ?? 0);
-  if (expectedIntake === ATLAS_NATIVE_INTAKE && (summary.expectedIntake !== ATLAS_NATIVE_INTAKE
+  if (isReleaseNativeIntake(expectedIntake) && (summary.expectedIntake !== expectedIntake
     || !/^[a-f0-9]{64}$/.test(catalogSha256))) {
-    problems.push("Atlas 전수 증거의 명시적 편입 모드·현재 카탈로그 SHA가 없습니다. 새 카탈로그로 전체 Worker 검증을 실행하세요.");
+    problems.push("전수 증거의 명시적 편입 모드·현재 카탈로그 SHA가 없습니다. 새 카탈로그로 전체 Worker 검증을 실행하세요.");
   }
-  if (expectedIntake === ATLAS_NATIVE_INTAKE) {
-    problems.push(...nativeReleaseBindingProblems(releaseBinding, catalogSha256));
+  if (isReleaseNativeIntake(expectedIntake)) {
+    problems.push(...nativeReleaseBindingProblems(releaseBinding, catalogSha256, releaseBindingOptions(expectedIntake)));
     if (!isDeepStrictEqual(summary.releaseBinding, releaseBinding)) problems.push("이전 전수 증거가 같은 빌드의 catalog/index release와 연결되지 않았습니다.");
     problems.push(...nativeReleaseTraceProblems(summary.releaseTrace, releaseBinding));
   }
@@ -188,20 +211,23 @@ export function reusableNativeValidationProblems({ assets, rows, summary, catalo
 export function nativeProofProblems({ assets, rows, worker, representatives, renders, wrongHash, errors, lane = "hardware", reusedValidation, themePacks, ledger, expectedIntake, catalogSha256, releaseBinding, releaseTrace }) {
   const problems = [...errors, ...nativeValidationProblems(assets, rows, { themePacks, ledger, expectedIntake })];
   const expectedCalls = (reusedValidation ? 0 : assets.length) + 2 * representatives.length;
-  if (expectedIntake === ATLAS_NATIVE_INTAKE) {
-    problems.push(...nativeReleaseBindingProblems(releaseBinding, catalogSha256), ...nativeReleaseTraceProblems(releaseTrace, releaseBinding));
+  if (isReleaseNativeIntake(expectedIntake)) {
+    const label = expectedIntake === LUMA_NATIVE_INTAKE ? "Luma" : "Atlas";
+    problems.push(...nativeReleaseBindingProblems(releaseBinding, catalogSha256, releaseBindingOptions(expectedIntake)), ...nativeReleaseTraceProblems(releaseTrace, releaseBinding));
     if (reusedValidation && !isDeepStrictEqual(reusedValidation.releaseBinding, releaseBinding)) problems.push("재사용한 전수 증거의 빌드 release 결합이 다릅니다.");
     if (!/^[a-f0-9]{64}$/.test(catalogSha256)
-      || (reusedValidation && (reusedValidation.expectedIntake !== ATLAS_NATIVE_INTAKE
+      || (reusedValidation && (reusedValidation.expectedIntake !== expectedIntake
         || reusedValidation.sourceCatalogSha256 !== catalogSha256))) {
-      problems.push("Atlas 전수 증거가 현재 카탈로그 SHA·명시 편입 모드와 연결되지 않았습니다.");
+      problems.push(`${label} 전수 증거가 현재 카탈로그 SHA·명시 편입 모드와 연결되지 않았습니다.`);
     }
     try {
       if (!isDeepStrictEqual(representatives, selectNativeRepresentatives(themePacks, { expectedIntake }))) {
-        problems.push("Atlas 검수는 기존 10팩과 Nature Lettuce_C 대표 11개를 정확히 요구합니다.");
+        problems.push(expectedIntake === LUMA_NATIVE_INTAKE
+          ? "Luma 검수는 기존 11대표와 GreenTree·DSEmace·WaterLily 대표 3개를 더한 14개를 정확히 요구합니다."
+          : "Atlas 검수는 기존 10팩과 Nature Lettuce_C 대표 11개를 정확히 요구합니다.");
       }
     } catch (error) {
-      problems.push(`Atlas 대표 목록을 확정할 수 없습니다: ${error instanceof Error ? error.message : String(error)}`);
+      problems.push(`${label} 대표 목록을 확정할 수 없습니다: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   if (reusedValidation && (reusedValidation.validated !== assets.length || !/^[a-f0-9]{64}$/.test(reusedValidation.summarySha256)
