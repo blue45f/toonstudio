@@ -170,6 +170,9 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
         skpSourceSelection={props.skpSourceSelection}
         onReadSkpSceneSource={props.onReadSkpSceneSource}
         onApplySkpSourceCamera={props.onApplySkpSourceCamera}
+        selectedMaterialId={props.selectedMaterialId}
+        applyReady={props.applyReady}
+        onApplySurfaceMaterial={props.onApplySurfaceMaterial}
         primitiveEditSelection={props.primitiveEditSelection}
         onBeginPrimitiveEdit={props.onBeginPrimitiveEdit}
         onApplyPrimitiveEdit={props.onApplyPrimitiveEdit}

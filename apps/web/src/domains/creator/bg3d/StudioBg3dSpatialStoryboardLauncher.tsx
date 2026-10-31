@@ -17,6 +17,9 @@ export function StudioBg3dSpatialStoryboardLauncher({
   skpSourceSelection,
   onReadSkpSceneSource,
   onApplySkpSourceCamera,
+  selectedMaterialId,
+  applyReady,
+  onApplySurfaceMaterial,
   primitiveEditSelection,
   onBeginPrimitiveEdit,
   onApplyPrimitiveEdit,
@@ -75,6 +78,9 @@ export function StudioBg3dSpatialStoryboardLauncher({
               skpSourceSelection={skpSourceSelection}
               onReadSkpSceneSource={onReadSkpSceneSource}
               onApplySkpSourceCamera={onApplySkpSourceCamera}
+              selectedMaterialId={selectedMaterialId}
+              applyReady={applyReady}
+              onApplySurfaceMaterial={onApplySurfaceMaterial}
               primitiveEditSelection={primitiveEditSelection}
               onBeginPrimitiveEdit={onBeginPrimitiveEdit}
               onApplyPrimitiveEdit={onApplyPrimitiveEdit}

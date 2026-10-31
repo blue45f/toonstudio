@@ -733,7 +733,7 @@ export function StudioBg3dShapesPanel({
                         </div>
                       </div>
 
-                      <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} onSelectMaterial={(entry) => {
+                      <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} selectedMaterialId={selectedPrimitive.materialOverride?.surfaceMaterialId ?? null} onSelectMaterial={(entry) => {
                         updateColor(selectedPrimitive.id, entry.tintHex);
                         applySurfacePreset(selectedPrimitive.id, entry.id);
                       }} />
@@ -1018,7 +1018,7 @@ export function StudioBg3dShapesPanel({
                             원본 재질과 텍스처는 보존한 채 이 배치에만 색·투명도·와이어 설정을 적용합니다.
                           </p>
                         )}
-                        <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} onSelectMaterial={(_entry, override) => {
+                        <StudioBg3dCc0SurfaceMaterialPicker disabled={selectedIsLocked} selectedMaterialId={selectedCustomModel.materialOverride?.surfaceMaterialId ?? null} onSelectMaterial={(_entry, override) => {
                           updateCustomModelMaterial(selectedCustomModel.id, override);
                         }} />
                       </div>

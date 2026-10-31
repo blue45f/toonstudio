@@ -188,6 +188,9 @@ export function StudioBg3dAdvancedWorkbenchHub({
   skpSourceSelection,
   onReadSkpSceneSource,
   onApplySkpSourceCamera,
+  selectedMaterialId,
+  applyReady,
+  onApplySurfaceMaterial,
   primitiveEditSelection,
   onBeginPrimitiveEdit,
   onApplyPrimitiveEdit,
@@ -446,9 +449,13 @@ export function StudioBg3dAdvancedWorkbenchHub({
             disabled={disabled}
             onApplyShader={(preset) => setLastActionSummary(`셰이더: ${preset.name}`)}
             onApplyMtoonPreset={(preset) => setLastActionSummary(`MToon LT: ${preset.label}`)}
-            onApplyCc0SurfaceMaterial={(entry) =>
-              setLastActionSummary(`CC0 표면 재질: ${entry.labelKo}`)
-            }
+            selectedMaterialId={selectedMaterialId ?? null}
+            applyReady={applyReady}
+            onApplyCc0SurfaceMaterial={(entry) => {
+              if (!disabled && onApplySurfaceMaterial?.(entry.id) === true) {
+                setLastActionSummary(`${entry.provider} · ${entry.labelKo}`);
+              }
+            }}
           />
         ) : null}
 

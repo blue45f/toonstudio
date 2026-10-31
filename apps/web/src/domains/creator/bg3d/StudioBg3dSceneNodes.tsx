@@ -488,8 +488,8 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
   const { geometry, edges } = geometryPool.get(prim.kind);
   const paintTexture = useStudioBg3dPrimitivePaintTexture(prim);
   const pbrSpread = useMemo(
-    () => resolveStudioBg3dPrimitiveCc0PbrSpread(prim.materialOverride, paintTexture),
-    [prim.materialOverride, paintTexture],
+    () => resolveStudioBg3dPrimitiveCc0PbrSpread(prim.materialOverride, paintTexture, prim.color),
+    [prim.materialOverride, paintTexture, prim.color],
   );
   const handlePaintPointer = onPaintPointer
     ? (phase: StudioBg3dPaintPointerPhase) => (event: ThreeEvent<PointerEvent>) => {
@@ -534,10 +534,12 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
           <meshBasicMaterial color="#ffffff" polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
         ) : (
           <meshStandardMaterial
-            color={paintTexture ? "#ffffff" : prim.color}
+            color={pbrSpread.color ?? (paintTexture ? "#ffffff" : prim.color)}
             map={pbrSpread.map}
             roughnessMap={pbrSpread.roughnessMap}
+            metalnessMap={pbrSpread.metalnessMap}
             normalMap={pbrSpread.normalMap}
+            normalScale={pbrSpread.normalScale}
             aoMap={pbrSpread.aoMap}
             polygonOffset
             polygonOffsetFactor={1}

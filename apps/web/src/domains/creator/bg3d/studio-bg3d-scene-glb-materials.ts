@@ -103,7 +103,7 @@ export function createStudioBg3dSceneGlbMaterials(createCanvas: StudioBg3dSceneG
         const painted = new THREE.CanvasTexture(canvas); painted.colorSpace = THREE.SRGBColorSpace; painted.anisotropy = 4;
         paint = painted; disposals.push(() => painted.dispose());
       }
-      const maps = resolveStudioBg3dPrimitiveCc0PbrSpread(node.materialOverride, paint);
+      const maps = resolveStudioBg3dPrimitiveCc0PbrSpread(node.materialOverride, paint, node.color);
       const material = new THREE.MeshStandardMaterial({ color: paint ? "#ffffff" : node.color, ...maps,
         ...spreadStudioBg3dSurfaceMaterialProps(resolveStudioBg3dSurfaceMaterialProps(node.materialOverride)),
         side: node.materialOverride?.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
