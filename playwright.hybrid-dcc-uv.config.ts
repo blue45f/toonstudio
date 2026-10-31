@@ -2,6 +2,8 @@ import { defineConfig } from "@playwright/test";
 
 const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 const origin = "http://127.0.0.1:5359";
+// 실제 Chrome 실행 인수를 CDP로 확인할 수 있도록 자동화 표식을 명시한다.
+const browserArgs = ["--enable-automation"];
 
 /** 실제 제품 화면과 기본 Worker를 검사하는 로컬 GPU 회귀. 배포 빌드 검증은 별도다. */
 export default defineConfig({
@@ -20,7 +22,7 @@ export default defineConfig({
   use: {
     baseURL: origin,
     browserName: "chromium",
-    ...(executablePath ? { launchOptions: { executablePath, args: [] } } : { channel: "chrome", launchOptions: { args: [] } }),
+    ...(executablePath ? { launchOptions: { executablePath, args: browserArgs } } : { channel: "chrome", launchOptions: { args: browserArgs } }),
     headless: true,
     locale: "ko-KR",
     timezoneId: "Asia/Seoul",
