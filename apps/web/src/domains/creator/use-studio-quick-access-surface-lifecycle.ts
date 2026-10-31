@@ -6,6 +6,16 @@ import {
   studioQuickAccessTabBoundary,
 } from "./studio-cuttoon-editor/studio-quick-access-keyboard";
 
+const UNAVAILABLE_SURFACE = "[inert], [hidden], [aria-hidden='true']";
+const OPEN_MODAL = "[role='dialog'][aria-modal='true'], [role='alertdialog'][aria-modal='true'], dialog[open]";
+
+/** 확인창·중첩 모달의 키는 그 창에 맡기고, 비활성 팔레트는 조작하지 않는다. */
+function ownsSurfaceKeyboard(root: HTMLElement, target: EventTarget | null): boolean {
+  if (root.closest(UNAVAILABLE_SURFACE)) return false;
+  const modal = target instanceof Element ? target.closest(OPEN_MODAL) : null;
+  return modal === null || modal === root;
+}
+
 /** 실제 Tab 후보를 모은다. 접힌·비활성·inert 영역은 이동 대상이 아니다. */
 function visibleFocusableElements(root: HTMLElement): HTMLElement[] {
   const visible = [...root.querySelectorAll<HTMLElement>([
@@ -64,7 +74,8 @@ export function useStudioQuickAccessSurfaceLifecycle(
     return () => {
       globalThis.clearTimeout(timer);
       const restoreTarget = restoreFocusRef.current;
-      if (restoreTarget?.isConnected && !restoreTarget.closest("[inert]")) {
+      if (restoreTarget?.isConnected && !restoreTarget.matches(":disabled")
+        && !restoreTarget.closest(UNAVAILABLE_SURFACE)) {
         restoreTarget.focus({ preventScroll: true });
       }
       restoreFocusRef.current = null;
@@ -77,11 +88,7 @@ export function useStudioQuickAccessSurfaceLifecycle(
       const root = surfaceRef.current;
       if (event.key !== "Tab" || !root || studioQuickAccessKeyboardClaimed(event)
         || event.altKey || event.ctrlKey || event.metaKey
-        || root.closest("[inert], [hidden], [aria-hidden='true']")) return;
-      // 위에 열린 별도 모달의 키 처리를 빼앗지 않는다.
-      const modal = event.target instanceof Element
-        ? event.target.closest("[role='dialog'][aria-modal='true'], dialog[open]") : null;
-      if (modal && modal !== root) return;
+        || !ownsSurfaceKeyboard(root, event.target)) return;
       const focusable = visibleFocusableElements(root);
       const active = root.ownerDocument.activeElement;
       const next = studioQuickAccessTabBoundary(
@@ -89,7 +96,8 @@ export function useStudioQuickAccessSurfaceLifecycle(
       );
       if (next === null) return;
       event.preventDefault();
-      (next < 0 ? root : focusable[next] ?? root).focus({ preventScroll: true });
+      // Tab 경계 이동은 대상 도구가 보이도록 기본 스크롤을 허용한다. 닫기 복귀의 스크롤 보존은 유지한다.
+      (next < 0 ? root : focusable[next] ?? root).focus();
     }
     document.addEventListener("keydown", trapMobileFocus);
     return () => document.removeEventListener("keydown", trapMobileFocus);
@@ -98,8 +106,9 @@ export function useStudioQuickAccessSurfaceLifecycle(
   useEffect(() => {
     function handleSurfaceShortcut(event: globalThis.KeyboardEvent): void {
       if (studioQuickAccessKeyboardClaimed(event)) return;
+      const root = surfaceRef.current;
       const target = event.target instanceof HTMLElement ? event.target : null;
-      if (!target || !surfaceRef.current?.contains(target)) return;
+      if (!root || !target || !root.contains(target) || !ownsSurfaceKeyboard(root, target)) return;
       if (
         event.code === "KeyQ"
         && event.shiftKey
