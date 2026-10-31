@@ -7,6 +7,7 @@ import {
   updateStudioBg3dRetainedOwnerLease,
   type StudioBg3dRetainedElement,
 } from "./studio-bg3d-retained-owner";
+import { useStudioBg3dRetainedRouteElement } from "./useStudioBg3dRetainedRouteElement";
 
 export interface StudioBg3dRetainedOwnerRouteBridgeProps {
   readonly element: StudioBg3dRetainedElement | null;
@@ -22,10 +23,11 @@ export function StudioBg3dRetainedOwnerRouteBridge({
   element,
   open,
 }: StudioBg3dRetainedOwnerRouteBridgeProps) {
+  const retainedElement = useStudioBg3dRetainedRouteElement(element);
   const generationRef = useRef(0);
-  const elementRef = useRef(element);
+  const elementRef = useRef(retainedElement);
   const openRef = useRef(open);
-  elementRef.current = element;
+  elementRef.current = retainedElement;
   openRef.current = open;
   const ownerSnapshot = useSyncExternalStore(
     studioBg3dRetainedOwnerSource.subscribe,
@@ -51,10 +53,10 @@ export function StudioBg3dRetainedOwnerRouteBridge({
 
   useLayoutEffect(() => {
     updateStudioBg3dRetainedOwnerLease(generationRef.current, {
-      element,
+      element: retainedElement,
       logicalOpen: open,
     });
-  }, [element, open]);
+  }, [retainedElement, open]);
 
   return null;
 }
