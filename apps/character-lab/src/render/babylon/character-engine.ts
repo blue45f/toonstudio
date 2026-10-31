@@ -308,7 +308,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       this.reportFailure(error, "physics-step-failed", "물리 스텝 중 오류가 나 물리를 중단했습니다.");
     }
     this.beta.tick();
-    this.character.scene.render();
+    this.pressureOutline.renderScene();
     this.frameStats.push(this.engine.getDeltaTime());
   }
 

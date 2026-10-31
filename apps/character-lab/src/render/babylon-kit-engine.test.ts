@@ -8,7 +8,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
+import { MaterialStencilState } from "@babylonjs/core/Materials/materialStencilState.js";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
+import { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, KIT_HIDEABLE_REGION_IDS, rolePartId } from "../contracts";
@@ -18,7 +20,7 @@ import { applyPlanFixture } from "../testing/recipe-fixtures";
 
 import { KIT_OUTLINE_EXEMPT_ROLES } from "./outline-policy";
 import { buildKitFixture, fixtureUrl } from "./testing/kit-glb-fixture";
-import { createNullEngineHarness } from "./testing/null-engine-harness";
+import { createNullEngineHarness, PRESSURE_GARMENT_STENCIL_BIT } from "./testing/null-engine-harness";
 import { createPackagePlanFixture } from "./testing/package-plan-fixture";
 import { createProceduralFixture } from "./testing/procedural-fixture";
 
@@ -317,6 +319,69 @@ describe("키트 틴트(RigPart.tint)", () => {
 // ---------------------------------------------------------------- 외곽선 정책
 
 describe("툰 hull 외곽선 정책(A-5·A-9)", () => {
+  it("실제 키트의 주 프레임 draw가 실패해도 의상 stencil을 공유 재질에 남기지 않는다", async () => {
+    const env = await bootKit();
+    env.h.engine.setShading(toon({ outlinePressure: true }));
+    const garment = env.scene.getMeshByName(partByRole(env, "top").meshNames[0]) as Mesh;
+    const material = garment?.material;
+    const camera = env.scene.activeCamera;
+    if (!material || !camera) throw new Error("의상·카메라가 없습니다.");
+    const original = new MaterialStencilState();
+    material.stencil.copyTo(original);
+    const render = vi.spyOn(env.scene, "render").mockImplementation(() => {
+      const engine = env.h.nullEngine;
+      const previous = engine.currentRenderPassId;
+      try {
+        engine.currentRenderPassId = camera.renderPassId;
+        // 실제 엔진이 등록한 공개 observer 뒤의 draw 실패를 주입한다. GPU 픽셀 검증은 아니다.
+        garment.onBeforeRenderObservable.notifyObservers(garment);
+        garment.onBeforeDrawObservable.notifyObservers(garment);
+        expect(material.stencil.enabled).toBe(true);
+        expect(material.stencil.mask).toBe(PRESSURE_GARMENT_STENCIL_BIT);
+        throw new Error("의상 주 프레임 draw 실패");
+      } finally { engine.currentRenderPassId = previous; }
+    });
+    expect(() => env.h.engine.renderFrame()).toThrow("의상 주 프레임 draw 실패");
+    expect(render).toHaveBeenCalledOnce();
+    expect(material.stencil).toEqual(original);
+  });
+
+  it("실제 lit 캡처 draw 실패에도 패스 재질의 의상 stencil과 override를 복원한다", async () => {
+    const env = await bootKit();
+    env.h.engine.setShading(toon({ outlinePressure: true }));
+    const garment = env.scene.getMeshByName(partByRole(env, "top").meshNames[0]) as Mesh;
+    const sourceMaterial = garment?.material;
+    if (!sourceMaterial) throw new Error("의상 재질이 없습니다.");
+    const original = new MaterialStencilState();
+    sourceMaterial.stencil.copyTo(original);
+    const affected: Array<{ material: Material; original: MaterialStencilState; pass: number }> = [];
+    vi.spyOn(RenderTargetTexture.prototype, "render").mockImplementation(function (this: RenderTargetTexture) {
+      if (this.name !== "capture-lit") return;
+      const material = garment.getMaterialForRenderPass(this.renderPassId) ?? sourceMaterial;
+      const saved = new MaterialStencilState();
+      material.stencil.copyTo(saved);
+      affected.push({ material, original: saved, pass: this.renderPassId });
+      const engine = env.h.nullEngine;
+      const previous = engine.currentRenderPassId;
+      try {
+        engine.currentRenderPassId = this.renderPassId;
+        garment.onBeforeRenderObservable.notifyObservers(garment);
+        garment.onBeforeDrawObservable.notifyObservers(garment);
+        expect(material.stencil.enabled).toBe(true);
+        expect(material.stencil.mask).toBe(PRESSURE_GARMENT_STENCIL_BIT);
+        throw new Error("의상 lit draw 실패");
+      } finally { engine.currentRenderPassId = previous; }
+    });
+    await expect(env.h.engine.renderPasses({ width: 16, height: 16, passes: ["lit"], transparentBackground: true, settleSteps: 0 }))
+      .rejects.toThrow("의상 lit draw 실패");
+    expect(affected).toHaveLength(1);
+    for (const row of affected) {
+      expect(row.material.stencil).toEqual(row.original);
+      expect(garment.getMaterialForRenderPass(row.pass)).toBeUndefined();
+    }
+    expect(sourceMaterial.stencil).toEqual(original);
+  });
+
   it("키트: 머리·눈·입 안·속옷을 제외하고 피부·헤어·의상·신발 hull을 켠다", async () => {
     const env = await bootKit();
     env.h.engine.setShading(toon());
