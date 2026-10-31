@@ -20,6 +20,6 @@ export function StudioHybridDccBoundaryEndpointMarkers({ asset, selection, lease
   const markers = useMemo(() => studioHybridDccBoundaryEndpointMarkerPositions(asset, selection, leases), [asset, selection, leases]);
   return <>{markers.map((marker) => <points key={marker.key} position={marker.position} renderOrder={12} raycast={studioHybridDccBoundaryEndpointMarkerRaycast}>
     <bufferGeometry><bufferAttribute attach="attributes-position" args={[new Float32Array(3), 3]} /></bufferGeometry>
-    <pointsMaterial color={color} size={10} sizeAttenuation={false} depthTest={false} depthWrite={false} toneMapped={false} />
+    <pointsMaterial color={color} size={10} sizeAttenuation={false} transparent opacity={1} depthTest={false} depthWrite={false} toneMapped={false} />
   </points>)}</>;
 }

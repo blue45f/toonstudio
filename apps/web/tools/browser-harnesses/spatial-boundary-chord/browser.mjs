@@ -295,12 +295,24 @@ async function healingScenario(original, initialDisplay) {
 }
 
 async function stableCamera() {
-  let previous = JSON.stringify(await page.evaluate(() => window.__boundaryChordQa.gpu().camera)), unchanged = 0;
-  while (unchanged < 3) {
-    left(); await waitFrames();
-    const current = JSON.stringify(await page.evaluate(() => window.__boundaryChordQa.gpu().camera));
-    unchanged = current === previous ? unchanged + 1 : 0; previous = current;
+  const startedAt = Date.now(), cameraDeadline = startedAt + left();
+  const samples = [];
+  let previous = JSON.stringify(await page.evaluate(() => window.__boundaryChordQa.gpu().camera)), unchanged = 0, sampleCount = 0;
+  try {
+    while (unchanged < 3) {
+      const remaining = cameraDeadline - Date.now();
+      assert(remaining > 0, "실제 카메라 프레임이 원래 기한 안에 안정되지 않았습니다.");
+      const sample = await page.evaluate((timeoutMs) => window.__boundaryChordQa.sampleDemandCameraFrame(timeoutMs), remaining);
+      assert(Date.now() <= cameraDeadline, "실제 카메라 표본이 원래 기한을 넘었습니다.");
+      assert(sample.frame > sample.beforeFrame, "실제 렌더 프레임이 진행되지 않았습니다.");
+      const current = JSON.stringify(sample.camera);
+      unchanged = current === previous ? unchanged + 1 : 0; previous = current;
+      sampleCount++; samples.push({ ...sample, unchanged }); if (samples.length > 12) samples.shift();
+    }
+  } finally {
+    events.push({ phase, cameraSynchronization: { startedAt, deadline: cameraDeadline, finishedAt: Date.now(), sampleCount, unchanged, samples } });
   }
+  assert(Date.now() <= cameraDeadline, "카메라 안정화 판정이 원래 기한을 넘었습니다.");
 }
 async function selectFace() {
   await page.getByRole("button", { name: "면 선택 모드 (3)", exact: true }).click({ timeout: left() });
@@ -494,9 +506,37 @@ try {
   await click(escapeTarget.edgeStart); await count(1); await waitFrames();
   const escapeMarkers = await page.evaluate(() => window.__boundaryChordQa.markers()); assert.equal(escapeMarkers.length, 1);
   await shot("escape-first-marker", escapeMarkers[0]);
-  await page.keyboard.press("Escape"); await count(0);
+  await page.keyboard.press("Escape");
+  // DOM과 별도 Canvas 커밋의 완료를 원래 한 단계 기한 안에서 함께 관측한다.
+  const escapeSyncStartedAt = Date.now(), escapeSyncDeadline = escapeSyncStartedAt + left();
+  try {
+    const remaining = escapeSyncDeadline - Date.now();
+    assert(remaining > 0, "취소 동기화의 원래 단계 기한이 지났습니다.");
+    await page.waitForFunction(() => {
+      const section = document.querySelector('[data-studio-hybrid-dcc-boundary-chord="true"]');
+      const domZero = Array.from(section?.querySelectorAll("p") ?? []).some((item) => item.textContent?.trim() === "선택한 경계점 0/2");
+      return domZero && section?.querySelector('[role="status"]')?.textContent?.trim() === "Cancelled"
+        && section?.querySelector('[data-studio-boundary-start="edge"]')?.getAttribute("aria-pressed") === "false"
+        && window.__boundaryChordQa.markers().length === 0;
+    }, null, { timeout: remaining });
+  } finally {
+    const observation = await page.evaluate(() => {
+      const section = document.querySelector('[data-studio-hybrid-dcc-boundary-chord="true"]');
+      return { observedAtMs: performance.now(),
+        domZero: Array.from(section?.querySelectorAll("p") ?? []).some((item) => item.textContent?.trim() === "선택한 경계점 0/2"),
+        notice: section?.querySelector('[role="status"]')?.textContent?.trim(),
+        ariaPressed: section?.querySelector('[data-studio-boundary-start="edge"]')?.getAttribute("aria-pressed"),
+        sceneMarkerCount: window.__boundaryChordQa.markers().length };
+    }).catch((cause) => ({ observationError: cause instanceof Error ? cause.message : String(cause) }));
+    events.push({ phase, escapeSynchronization: { startedAt: escapeSyncStartedAt, deadline: escapeSyncDeadline,
+      finishedAt: Date.now(), observation } });
+  }
+  assert(Date.now() <= escapeSyncDeadline, "취소 상태와 장면이 원래 단계 기한 안에 확인되지 않았습니다.");
+  assert(await page.locator('[data-studio-hybrid-dcc-boundary-chord="true"]').getByText("선택한 경계점 0/2", { exact: true }).isVisible(),
+    "취소한 경계점 0/2 안내가 실제로 보이지 않습니다.");
   assert.equal(await start.getAttribute("aria-pressed"), "false");
   assert.equal((await page.evaluate(() => window.__boundaryChordQa.markers())).length, 0);
+  assert(Date.now() <= escapeSyncDeadline, "취소의 마지막 확인이 원래 단계 기한을 넘었습니다.");
   assert.deepEqual((await observe()).authority, original); await settledWorkers(0);
   stages.push({ name: "native-escape-before-and-after-first-endpoint", authority: original });
   const edge = await scenario("edge", original);
