@@ -9,6 +9,14 @@ import {
 const UNAVAILABLE_SURFACE = "[inert], [hidden], [aria-hidden='true']";
 const OPEN_MODAL = "[role='dialog'][aria-modal='true'], [role='alertdialog'][aria-modal='true'], dialog[open]";
 
+/** 화면에서 사용할 수 있는 대상만 자동 초점과 복귀 대상으로 삼는다. */
+function isAvailableFocusTarget(element: HTMLElement): boolean {
+  if (!element.isConnected || element.matches(":disabled")
+    || element.closest(UNAVAILABLE_SURFACE) || element.getClientRects().length === 0) return false;
+  const visibility = element.ownerDocument.defaultView?.getComputedStyle(element).visibility;
+  return visibility !== "hidden" && visibility !== "collapse";
+}
+
 /** 확인창·중첩 모달의 키는 그 창에 맡기고, 비활성 팔레트는 조작하지 않는다. */
 function ownsSurfaceKeyboard(root: HTMLElement, target: EventTarget | null): boolean {
   if (root.closest(UNAVAILABLE_SURFACE)) return false;
@@ -22,11 +30,7 @@ function visibleFocusableElements(root: HTMLElement): HTMLElement[] {
     "button", "a[href]", "area[href]", "input:not([type='hidden'])", "select",
     "textarea", "summary", "[tabindex]", "[contenteditable]", "audio[controls]", "video[controls]",
   ].join(","))].filter((element) => {
-    if (element.tabIndex < 0 || element.matches(":disabled")
-      || element.closest("[hidden], [inert], [aria-hidden='true']")
-      || element.getClientRects().length === 0) return false;
-    const visibility = root.ownerDocument.defaultView?.getComputedStyle(element).visibility;
-    return visibility !== "hidden" && visibility !== "collapse";
+    return element.tabIndex >= 0 && isAvailableFocusTarget(element);
   });
   return visible.filter((element) => {
     if (!(element instanceof HTMLInputElement) || element.type !== "radio" || !element.name) return true;
@@ -61,21 +65,33 @@ export function useStudioQuickAccessSurfaceLifecycle(
   const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const activeElement = document.activeElement;
-    restoreFocusRef.current = activeElement instanceof HTMLElement
-      ? activeElement
-      : null;
+    const mountedSurface = surfaceRef.current;
+    const ownerDocument = mountedSurface?.ownerDocument ?? document;
+    const activeElement = ownerDocument.activeElement;
+    restoreFocusRef.current = activeElement instanceof HTMLElement ? activeElement : null;
     const timer = globalThis.setTimeout(() => {
-      const initialCommand = surfaceRef.current?.querySelector<HTMLElement>(
-        "[data-command-available='true'] button:not([disabled])",
-      );
-      (initialCommand ?? surfaceRef.current)?.focus({ preventScroll: true });
+      const root = surfaceRef.current;
+      if (!root || !isAvailableFocusTarget(root)) return;
+      const active = ownerDocument.activeElement;
+      // 예약한 동안 사용자가 입력란이나 다른 창을 선택했다면 그 초점을 유지한다.
+      if (active !== null && active !== ownerDocument.body && active !== root
+        && active !== restoreFocusRef.current) return;
+      if (!ownsSurfaceKeyboard(root, active)) return;
+      const initialCommand = visibleFocusableElements(root).find((element) => (
+        element.tagName === "BUTTON" && element.closest("[data-command-available='true']")
+        && ownsSurfaceKeyboard(root, element)
+      ));
+      // 처음 선택한 도구도 화면 밖에 숨지 않도록 기본 초점 스크롤을 허용한다.
+      (initialCommand ?? root).focus();
     }, 0);
     return () => {
       globalThis.clearTimeout(timer);
       const restoreTarget = restoreFocusRef.current;
-      if (restoreTarget?.isConnected && !restoreTarget.matches(":disabled")
-        && !restoreTarget.closest(UNAVAILABLE_SURFACE)) {
+      const active = ownerDocument.activeElement;
+      const focusStillOwned = active === null || active === ownerDocument.body
+        || (mountedSurface?.contains(active) ?? false);
+      // 사용자가 다른 화면을 조작 중이면 복귀시키지 않는다. 정상 닫기의 캔버스 스크롤은 보존한다.
+      if (focusStillOwned && restoreTarget && isAvailableFocusTarget(restoreTarget)) {
         restoreTarget.focus({ preventScroll: true });
       }
       restoreFocusRef.current = null;
