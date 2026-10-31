@@ -3,6 +3,7 @@ import { useId } from "react";
 import { formatI18nTemplate, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { StudioHybridDccUvSelectionSurface } from "./StudioHybridDccUvSelectionSurface";
+import { StudioHybridDccUvAtlasTools } from "./StudioHybridDccUvAtlasTools";
 
 import type { StudioHybridDccUvEditorState } from "./useStudioHybridDccUvEditor";
 
@@ -16,6 +17,7 @@ export function StudioHybridDccUvEditor({ model }: { readonly model: StudioHybri
   return <section ref={model.sectionRef} aria-labelledby={`${id}-title`} className="mt-3 min-w-0 space-y-3 rounded-xl border border-line bg-panel p-3" data-studio-hybrid-dcc-uv-editor="true" data-previewing={model.previewing || undefined} data-source-hash={model.sourceModel?.sourceHash ?? ""}>
     <h3 id={`${id}-title`} className="text-sm font-semibold text-fg">{bt("UV 편집", "UV editing")}</h3>
     <p id={`${id}-help`} className="text-xs leading-relaxed text-fg-2">{bt("원본 메시의 면 코너 UV를 편집합니다. 3D 체크무늬는 좌표 확인용이며, 이미지 텍스처를 저장하지 않습니다. 변형 결과는 적용 전까지 저장되지 않습니다.", "Edit the source mesh's face-corner UVs. The 3D checker is a coordinate guide and does not save an image texture. Transform previews are not saved until applied.")}</p>
+    <StudioHybridDccUvAtlasTools model={model.atlas} />
     <fieldset disabled={model.locked} className="flex flex-wrap items-end gap-2">
       <legend className="sr-only">{bt("UV 생성", "Generate UVs")}</legend>
       <label className="grid min-w-0 flex-1 gap-1 text-xs text-fg-2" htmlFor={`${id}-unwrap`}>

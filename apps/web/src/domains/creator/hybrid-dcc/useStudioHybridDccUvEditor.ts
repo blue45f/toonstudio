@@ -5,6 +5,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { studioUvDefaultFields, studioUvTransformRequest, type StudioUvFields } from "./studio-hybrid-dcc-uv-editor-session";
 import { workspacePackUvActive } from "./studio-hybrid-dcc-uv-pack-workspace";
+import { useStudioHybridDccUvAtlas } from "./useStudioHybridDccUvAtlas";
 import {
   createStudioHybridDccUvSelection,
   deriveStudioHybridDccUvEditorModel,
@@ -16,12 +17,14 @@ import {
 } from "./studio-hybrid-dcc-uv-edit";
 
 import type { StudioHybridDccWorkspaceEdit } from "./studio-hybrid-dcc-face-modeling-workspace";
+import type { StudioHybridDccUvAtlasRun } from "./studio-hybrid-dcc-uv-atlas-host";
 import type { StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
 
 export interface StudioHybridDccUvEditorHost {
   readonly materialMode?: boolean;
   readonly workspaceDocumentId?: string;
   readonly onRunWorkspaceEdit?: (label: string, edit: StudioHybridDccWorkspaceEdit, canCommit?: () => boolean) => void;
+  readonly onRunWorkspaceUvAtlas?: StudioHybridDccUvAtlasRun;
 }
 function subscribeAuth(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 
@@ -51,6 +54,8 @@ export function useStudioHybridDccUvEditor(
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState("");
   const [operationError, setOperationError] = useState("");
+  const atlas = useStudioHybridDccUvAtlas({ workspace, workspaceDocumentId, enabled: materialMode, editingDisabled,
+    blocked: otherPreviewActive || dirty || applying, run: host.onRunWorkspaceUvAtlas });
   const sectionRef = useRef<HTMLElement>(null);
   const lock = useRef(false);
   const live = useRef(true);
@@ -93,7 +98,7 @@ export function useStudioHybridDccUvEditor(
     } catch (cause) { return { result: null, request, error: cause instanceof Error ? cause.message : bt("UV를 변형할 수 없습니다.", "Could not transform the UVs."), neutral: false }; }
   }, [bt, dirty, fields, kind, materialMode, sameContext, selection, unavailable, workspace]);
   const displayModel = useMemo(() => candidate.result ? deriveStudioHybridDccUvEditorModel(candidate.result.workspace) : source.model, [candidate.result, source.model]);
-  const locked = editingDisabled || applying || Boolean(unavailable);
+  const locked = editingDisabled || applying || atlas.busy || Boolean(unavailable);
   const resetDraft = () => { setFields(studioUvDefaultFields(kind)); setDirty(false); setOperationError(""); setNotice(""); };
   const cancel = () => {
     if (applying) return;
@@ -138,7 +143,7 @@ export function useStudioHybridDccUvEditor(
     }, current);
   };
   return {
-    sectionRef, visible: materialMode, sourceModel: source.model, displayModel, selectionMode, islandIds, cornerIds, selectedCorners,
+    sectionRef, visible: materialMode, sourceModel: source.model, displayModel, selectionMode, islandIds, cornerIds, selectedCorners, atlas,
     kind, fields, unwrapMode, packMargin, packRotate, packError, dirty, applying, locked, unavailable, selectedCount: selectedCorners.size,
     previewing: Boolean(candidate.result), canApply: Boolean(candidate.result && !locked),
     error: operationError || candidate.error || packError || source.error,
@@ -168,7 +173,7 @@ export function useStudioHybridDccUvEditor(
     cancel,
     apply: () => { const request = candidate.request; if (candidate.result && request && selection) execute(bt("UV 선택 변형", "Transform selected UVs"), (current) => workspaceTransformUvIslands(current, selection, request)); },
     unwrap: () => execute(bt("UV 펼치기", "Unwrap UVs"), (current) => ({ workspace: workspaceUnwrapUvActive(current, unwrapMode) })),
-    viewportProps: candidate.result ? { ...props, workspace: candidate.result.workspace, editingDisabled: true } : props,
+    viewportProps: candidate.result ? { ...props, workspace: candidate.result.workspace, editingDisabled: true } : atlas.busy ? { ...props, editingDisabled: true } : props,
   };
 }
 
