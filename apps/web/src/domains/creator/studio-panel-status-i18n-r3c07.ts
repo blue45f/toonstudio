@@ -8,7 +8,7 @@
  * 깨지 않기 위해서다. 대상 표면: c07 클러스터 creator 루트 파일 후반부.
  *
  * 진입 그래프(앱 셸·Studio 첫 청크) 소비 파일이 쓰는 키 21개와 해석 헬퍼는 `./status-i18n/studio-panel-status-i18n-r3c07-core` 로 옮겼다.
- * 이 모듈은 지연 표면 전용 키 139개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
+ * 이 모듈은 지연 표면 전용 키 141개만 등록하고 코어를 함께 불러오므로, 지연 소비 파일의 import 경로와 호출은
  * 그대로다. 진입 그래프에 닿는 파일에서는 이 모듈 대신 코어를 import 한다.
  */
 import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
@@ -45,6 +45,8 @@ registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.creatorPack.checkingSql": "로컬 SQL 확인 중…",
   "studio.panelStatus.r3c07.creatorPack.packsEmpty": "조건에 맞는 Creator Pack이 없습니다.",
   "studio.panelStatus.r3c07.draftSync.syncFailed": "동기화 작업을 완료하지 못했습니다.",
+  "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded": "효과 스택 저장 예산을 초과해 기존 스택을 유지했습니다.",
   "studio.panelStatus.r3c07.effectsWorkspace.applyFailed": "레시피를 적용하지 못했습니다.",
   "studio.panelStatus.r3c07.effectsWorkspace.recipesEmpty": "일치하는 레시피가 없습니다",
@@ -186,6 +188,8 @@ registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.creatorPack.checkingSql": "Checking local SQL…",
   "studio.panelStatus.r3c07.creatorPack.packsEmpty": "No Creator Pack matches your conditions.",
   "studio.panelStatus.r3c07.draftSync.syncFailed": "Could not complete the sync operation.",
+  "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "Your manuscript is protected on the team server and in this device's recovery storage.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "Pending changes ({count}) are kept in this device's recovery storage until the server reconnects. They have not been applied to the team server yet.",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded": "The effect stack storage budget was exceeded, so the existing stack was kept.",
   "studio.panelStatus.r3c07.effectsWorkspace.applyFailed": "Could not apply the recipe.",
   "studio.panelStatus.r3c07.effectsWorkspace.recipesEmpty": "No matching recipes",

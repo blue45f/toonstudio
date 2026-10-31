@@ -4,7 +4,7 @@ import {
   compareStudioQuickAccessTabOrder,
   studioQuickAccessKeyboardClaimed,
   studioQuickAccessTabBoundary,
-} from "./studio-quick-access-keyboard";
+} from "./studio-cuttoon-editor/studio-quick-access-keyboard";
 
 /** 실제 Tab 후보를 모은다. 접힌·비활성·inert 영역은 이동 대상이 아니다. */
 function visibleFocusableElements(root: HTMLElement): HTMLElement[] {
