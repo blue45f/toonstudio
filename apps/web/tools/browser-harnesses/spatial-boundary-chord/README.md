@@ -1,7 +1,7 @@
 # 공간 모델러 면 나누기·공유 모서리 치유 브라우저 검증
 
 - 상태: `migration` — 실제 제품 UI를 사용하는 수동 실행 검증 도구이며, 전체 시나리오의 브라우저 통과는 미확인이다.
-- 기록일: 2026-10-31.
+- 기록일: 2026-11-01.
 - 제품 구현은 [PR #2598](https://github.com/blue45f/toonstudio/pull/2598)과 [PR #2604](https://github.com/blue45f/toonstudio/pull/2604)로 main에 병합됐다.
 - 이 폴더는 기존 로컬 검증 후보를 검토할 수 있도록 게시한 사본이다. 제품 기능 완료나 운영 배포를 뜻하지 않는다.
 
@@ -11,6 +11,13 @@
 `onWorkspaceChange`로 마운트한다. 기본 cube 문서와 별도의 affine UV 문서를 공개 geometry 계약으로
 초기 준비하며, 이후 선택·경계점 입력·미리보기·적용·취소·Undo/Redo·저장·재열기는 제품 UI를 사용한다.
 Worker·렌더러·선택·문서 확정 함수를 mock하거나 브라우저 driver에서 대신 호출하지 않는다.
+
+카메라 안정화 구간은 해당 Canvas의 공개 `state.invalidate()`로 정상 demand 프레임을 한 번씩 요청한다.
+공개 `addAfterEffect`의 렌더 순회 후 표본에서 실제 renderer의 `info.render.frame` 진행과 카메라의 exact 동일성을 확인한다.
+카운터 증가량을 독립 표본 수로 세지 않으며, offscreen render·GPU 완료·화면 표시 완료를 같은 것으로 취급하지 않는다.
+이 구간은 단순 읽기와 다른 능동 QA 전제이며, 자연 demand 루프가 스스로 완전히 감쇠했다는 증거가 아니다.
+카메라·조작기·기하 값을 직접 바꾸지 않고, 한 번 정한 15초와 전체 180초 안에 안정화되지 않으면 실패한다.
+이후 실제 PNG·동일 카메라·Worker·이력·저장 판정 기준을 그대로 적용한다.
 
 `browser.mjs`는 실행자가 소유한 Chrome의 CDP endpoint에 Playwright로 연결한다.
 실제 마우스·키보드·파일 입력으로 면 분할 2회, 공유 모서리 치유의 준비 후 취소·적용 2회를 검증하도록 작성했다.

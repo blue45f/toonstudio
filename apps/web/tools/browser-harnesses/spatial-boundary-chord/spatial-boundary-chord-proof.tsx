@@ -1,5 +1,5 @@
-/** 실제 Panel/Canvas의 수동 관측기다. 도구·Worker·선택·문서 확정은 제품 UI만 실행한다. */
-import { _roots } from "@react-three/fiber";
+/** 실제 Panel/Canvas 검증기다. 정상 프레임 요청 외 도구·Worker·선택·문서 확정은 제품 UI만 실행한다. */
+import { _roots, addAfterEffect } from "@react-three/fiber";
 import { createRoot } from "react-dom/client";
 import {
   BufferGeometry, Euler, LineSegments, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Points, PointsMaterial, Quaternion,
@@ -432,6 +432,30 @@ function gpu() {
     camera: { position: state.camera.position.toArray(), matrixWorld: state.camera.matrixWorld.toArray(), projection: state.camera.projectionMatrix.toArray() },
   };
 }
+/** QA는 정상 demand 프레임만 요청하고 카메라·조작기·기하는 제품이 처리한다. */
+function sampleDemandCameraFrame(timeoutMs: number) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 15_000) throw new Error("카메라 표본의 남은 기한이 올바르지 않습니다.");
+  const { canvas, state, renderer } = live();
+  if (state.frameloop !== "demand" || !state.internal.active || renderer.xr.isPresenting) throw new Error("카메라 관측에는 실행 중인 비 XR demand 화면이 필요합니다.");
+  const beforeFrame = renderer.info.render.frame;
+  return new Promise<{ beforeFrame: number; frame: number; at: number; camera: ReturnType<typeof gpu>["camera"] }>((resolve, reject) => {
+    let remove: (() => void) | null = null;
+    const timer = window.setTimeout(() => { remove?.(); reject(new Error("실제 카메라 렌더 프레임을 기한 안에 관측하지 못했습니다.")); }, timeoutMs);
+    remove = addAfterEffect(() => {
+      try {
+        const current = _roots.get(canvas)?.store.getState();
+        if (!current || current.camera !== state.camera || current.gl !== renderer || !current.internal.active) {
+          throw new Error("카메라를 관측하던 실제 화면이 바뀌었습니다.");
+        }
+        if (renderer.info.render.frame <= beforeFrame) return;
+        const sample = { beforeFrame, frame: renderer.info.render.frame, at: performance.now(), camera: { position: current.camera.position.toArray(), matrixWorld: current.camera.matrixWorld.toArray(), projection: current.camera.projectionMatrix.toArray() } };
+        window.clearTimeout(timer); remove?.(); resolve(sample);
+      } catch (error) { window.clearTimeout(timer); remove?.(); reject(error); }
+    });
+    try { state.invalidate(); }
+    catch (error) { window.clearTimeout(timer); remove?.(); reject(error); }
+  });
+}
 function markers() {
   const { state, canvas } = live(), rect = canvas.getBoundingClientRect(), values: unknown[] = [];
   state.scene.traverse((object) => {
@@ -490,7 +514,7 @@ function changed(workspace: StudioHybridDccWorkspace) {
   const output = document.getElementById("authority");
   if (output) output.textContent = JSON.stringify(observe(), null, 2);
 }
-const api = Object.freeze({ observe, targets, healingTargets, selectedEdges, gpu, markers, display, wire, inspectScreenshot, inspectWireScreenshots,
+const api = Object.freeze({ observe, targets, healingTargets, selectedEdges, gpu, sampleDemandCameraFrame, markers, display, wire, inspectScreenshot, inspectWireScreenshots,
   beginPointerTrace, pointerTrace: () => pointerTrace ? { capacity: 48, ...pointerTrace, rows: [...pointerTrace.rows] } : null,
   shutdown() { stopPointerTrace?.(); if (mounted) { mounted = false; root.unmount(); } } });
 declare global { interface Window { __boundaryChordQa: typeof api; } }
