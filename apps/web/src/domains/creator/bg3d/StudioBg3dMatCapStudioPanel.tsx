@@ -25,6 +25,8 @@ export interface StudioBg3dMatCapStudioPanelProps {
     entry: StudioBg3dSurfaceMaterialEntry,
     override: StudioBg3dMaterialOverride,
   ) => void;
+  readonly selectedMaterialId?: string | null;
+  readonly applyReady?: boolean;
   readonly onApplyMtoonPreset?: (preset: StudioVrmMtoonPreset) => void;
   readonly disabled?: boolean;
 }
@@ -33,6 +35,8 @@ export function StudioBg3dMatCapStudioPanel({
   onApplyShader,
   onApplyCc0SurfaceMaterial,
   onApplyMtoonPreset,
+  selectedMaterialId = null,
+  applyReady = false,
   disabled = false,
 }: StudioBg3dMatCapStudioPanelProps) {
   const [activeCategory, setActiveCategory] = useState<"all" | "toon" | "clay" | "material" | "special">("all");
@@ -219,7 +223,8 @@ export function StudioBg3dMatCapStudioPanel({
       </div>
 
       <StudioBg3dCc0SurfaceMaterialPicker
-        disabled={disabled}
+        disabled={disabled || !applyReady}
+        selectedMaterialId={selectedMaterialId}
         onSelectMaterial={(entry, override) => {
           onApplyCc0SurfaceMaterial?.(entry, override);
         }}
