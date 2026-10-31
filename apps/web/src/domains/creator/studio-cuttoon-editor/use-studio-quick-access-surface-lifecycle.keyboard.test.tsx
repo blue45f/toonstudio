@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { useState, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useStudioQuickAccessSurfaceLifecycle } from "./use-studio-quick-access-surface-lifecycle";
+import { useStudioQuickAccessSurfaceLifecycle } from "../use-studio-quick-access-surface-lifecycle";
 
 function Surface({ children, onClose = () => undefined, mobile = true }: {
   children?: ReactNode; onClose?: () => void; mobile?: boolean;
@@ -66,8 +66,11 @@ describe("빠른 액세스의 실제 React·DOM 키보드 연결", () => {
   });
 
   it("summary와 명시적인 양수 tabindex를 원래 순서로 포함한다", () => {
-    render(<Surface><button type="button" tabIndex={2}>둘째</button><details><summary>펼치기</summary></details>
-      <button type="button" tabIndex={1}>첫째</button></Surface>);
+    render(<Surface><button type="button">둘째</button><details><summary>펼치기</summary></details>
+      <button type="button">첫째</button></Surface>);
+    // 레거시 DOM의 양수 tabindex 입력을 구성하고 같은 버튼의 정렬·복원을 검증한다.
+    screen.getByRole("button", { name: "둘째" }).tabIndex = 2;
+    screen.getByRole("button", { name: "첫째" }).tabIndex = 1;
     act(() => vi.runOnlyPendingTimers());
     const root = screen.getByRole("dialog"); root.focus(); tab(root);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "첫째" }));
