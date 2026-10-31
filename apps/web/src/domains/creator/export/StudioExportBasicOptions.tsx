@@ -1,13 +1,17 @@
 import { Copy, Download, Loader2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 
 import { cx } from "@/shared/lib/cx";
 import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark";
-import { frozenStatusText } from "../studio-frozen-status-i18n";
 import { EXPORT_FORMATS, EXPORT_SCALES, canCopyImageToClipboard, exportFormatLabel } from "./studio-export";
 import { exportMenuText } from "./studio-export-menu-i18n";
+import { StudioExportOutputSummary } from "./StudioExportOutputSummary";
 import { StudioExportSection } from "./StudioExportSection";
 import type { StudioExportMenuPanelProps } from "./StudioExportMenuPanel";
+
+const POSITION_LABELS = {
+  br: "positionBottomRight", bl: "positionBottomLeft", tr: "positionTopRight", tl: "positionTopLeft", center: "positionCenter",
+} as const;
 
 type StudioExportBasicOptionsProps = Pick<StudioExportMenuPanelProps,
   "canvasWidth" | "canvasHeight" | "exportScale" | "exportFormat" | "exportTransparent" |
@@ -20,96 +24,131 @@ export function StudioExportBasicOptions({
   isExporting, busy, setExportScale, setExportFormat, setExportTransparent,
   setExportPresetId, setWatermark, onCopyToClipboard, onDownloadCurrentPage, children,
 }: StudioExportBasicOptionsProps) {
+  const instanceId = useId();
+  const summaryId = `${instanceId}-output`;
+  const formatHelpId = `${instanceId}-format-help`;
+  const busyHelpId = `${instanceId}-busy-help`;
+  const transparencyHelpId = `${instanceId}-transparency-help`;
+  const signatureHelpId = `${instanceId}-signature-help`;
+  const appearanceRef = useRef<HTMLDetailsElement>(null);
+  const transparencyRef = useRef<HTMLInputElement>(null);
+  const signatureToggleRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
+  const opacityRef = useRef<HTMLInputElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const downloadRef = useRef<HTMLButtonElement>(null);
+  const locked = busy || isExporting;
+  const formatHelp = exportMenuText(exportFormat === "png" ? "pngHelp" : exportFormat === "jpg" ? "jpgHelp" : "webpHelp");
+
+  const editAppearance = () => {
+    if (locked) return;
+    if (appearanceRef.current) appearanceRef.current.open = true;
+    if (watermark.enabled && watermark.text.trim().length === 0) signatureInputRef.current?.focus();
+    else if (watermark.enabled && (!Number.isFinite(watermark.opacity) || watermark.opacity <= 0)) opacityRef.current?.focus();
+    else if (exportFormat === "jpg") signatureToggleRef.current?.focus();
+    else transparencyRef.current?.focus();
+  };
+  const returnToDownload = () => {
+    const button = downloadRef.current;
+    if (button && !button.disabled) button.focus();
+    else summaryRef.current?.focus();
+  };
+
   return (
-    <section aria-labelledby="studio-export-basic-title">
-      <h2 id="studio-export-basic-title" className="text-sm font-bold text-fg">{exportMenuText("title")}</h2>
+    <section data-studio-export-basic="true" aria-labelledby={`${instanceId}-title`} className="min-w-0">
+      <h2 id={`${instanceId}-title`} className="text-sm font-bold text-fg">{exportMenuText("title")}</h2>
       <p className="mt-1 text-xs leading-relaxed text-fg-2">{exportMenuText("help")}</p>
-      <fieldset className="mt-3">
+      {locked ? <p id={busyHelpId} aria-live="polite" className="mt-2 text-xs leading-5 text-fg-2">{exportMenuText("settingsBusy")}</p> : null}
+      <fieldset className="mt-3 min-w-0" disabled={locked} aria-describedby={locked ? busyHelpId : formatHelpId}>
         <legend className="mb-1 text-xs font-semibold text-fg-2">{exportMenuText("format")}</legend>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid min-w-0 grid-cols-3 gap-1.5">
           {EXPORT_FORMATS.map((format) => (
-            <button
-              key={format}
-              type="button"
-              onClick={() => setExportFormat(format)}
+            <button key={format} type="button" disabled={locked}
+              onClick={() => { if (!locked) setExportFormat(format); }}
               aria-pressed={exportFormat === format}
               className={cx(
-                "min-h-11 rounded-lg border px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "min-h-11 min-w-11 rounded-lg border px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50",
                 exportFormat === format ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:bg-raised",
-              )}
-            >
-              {exportFormatLabel(format)}
-            </button>
+              )}>{exportFormatLabel(format)}</button>
           ))}
         </div>
+        <p id={formatHelpId} className="mt-2 break-words text-xs leading-5 text-fg-2">{formatHelp}</p>
       </fieldset>
-      <fieldset className="mt-2.5">
+      <fieldset className="mt-2.5 min-w-0" disabled={locked} aria-describedby={locked ? busyHelpId : undefined}>
         <legend className="mb-1 text-xs font-semibold text-fg-2">{exportMenuText("scale")}</legend>
-        <div className="flex items-center gap-1.5">
+        <div className="grid min-w-0 grid-cols-3 gap-1.5">
           {EXPORT_SCALES.map((scale) => (
-            <button
-              key={scale}
-              type="button"
-              onClick={() => { setExportScale(scale); setExportPresetId(null); }}
+            <button key={scale} type="button" disabled={locked}
+              onClick={() => { if (!locked) { setExportScale(scale); setExportPresetId(null); } }}
               aria-pressed={exportScale === scale}
               className={cx(
-                "min-h-11 min-w-11 rounded-lg border px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "min-h-11 min-w-11 rounded-lg border px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50",
                 exportScale === scale ? "border-accent bg-accent-soft text-fg" : "border-line bg-card text-fg-2 hover:bg-raised",
-              )}
-            >
-              {scale}×
-            </button>
+              )}>{scale}×</button>
           ))}
-          <span className="ml-auto text-right text-[0.68rem] tabular-nums text-fg-2" aria-live="polite">
-            {Math.round(canvasWidth * exportScale)} × {Math.round(canvasHeight * exportScale)} px
-          </span>
         </div>
       </fieldset>
+      <StudioExportOutputSummary format={exportFormat} width={Math.round(canvasWidth * exportScale)} height={Math.round(canvasHeight * exportScale)}
+        transparent={exportTransparent} watermark={watermark} busy={locked} summaryId={summaryId} summaryRef={summaryRef} onEditAppearance={editAppearance} />
       {onDownloadCurrentPage ? (
-        <button
-          type="button"
-          onClick={onDownloadCurrentPage}
-          disabled={busy}
-          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent shadow-sm transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
-        >
+        <button ref={downloadRef} type="button" onClick={() => { if (!locked) onDownloadCurrentPage(); }}
+          disabled={locked} aria-busy={isExporting || undefined} aria-describedby={locked ? busyHelpId : `${summaryId}-values`}
+          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent shadow-sm transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45">
           {isExporting ? <Loader2 size={15} aria-hidden className="animate-spin motion-reduce:animate-none" /> : <Download size={15} aria-hidden />}
           {isExporting ? exportMenuText("currentBusy") : exportMenuText("currentDownload", { format: exportFormatLabel(exportFormat) })}
         </button>
       ) : null}
+      {/* 취소·진행 동작을 잠그지 않도록 여러 페이지 내보내기는 disabled fieldset 밖에 둔다. */}
       {children}
-      <StudioExportSection id="appearance" title={exportMenuText("appearance")} description={exportMenuText("appearanceHelp")}>
-        <label
-          className={cx("flex min-h-11 items-center gap-2 text-xs", exportFormat === "jpg" ? "cursor-not-allowed text-fg-3 opacity-50" : "cursor-pointer text-fg-2")}
-          title={exportFormat === "jpg" ? frozenStatusText("studio.frozenStatus.export.jpgNoTransparency", "JPG는 투명도를 지원하지 않아요") : exportMenuText("transparentHelp")}
-        >
-          <input type="checkbox" checked={exportTransparent && exportFormat !== "jpg"} disabled={exportFormat === "jpg"} onChange={(event) => setExportTransparent(event.target.checked)} className="size-4 accent-accent" />
-          {exportMenuText("transparent")}
-        </label>
-        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
-          <input type="checkbox" checked={watermark.enabled} onChange={(event) => setWatermark({ ...watermark, enabled: event.target.checked })} className="size-4 accent-accent" />
-          {exportMenuText("watermark")}
-        </label>
-        {watermark.enabled ? (
-          <div className="mt-1.5 space-y-1.5">
-            <input type="text" value={watermark.text} onChange={(event) => setWatermark({ ...watermark, text: event.target.value })} placeholder="© 작가명 / @아이디" maxLength={60} aria-label={exportMenuText("watermarkText")} className="min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" />
-            <div className="flex items-center gap-2">
-              <select
-                value={watermark.position}
-                onChange={(event) => setWatermark({ ...watermark, position: event.target.value as WatermarkSettings["position"] })}
-                aria-label={exportMenuText("watermarkPosition")}
-                className="min-h-11 flex-1 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                {WATERMARK_POSITIONS.map((position) => <option key={position.id} value={position.id}>{position.label}</option>)}
-              </select>
-              <input type="range" min={0.15} max={1} step={0.05} value={watermark.opacity} onChange={(event) => setWatermark({ ...watermark, opacity: Number(event.target.value) })} aria-label={exportMenuText("watermarkOpacity")} className="h-11 w-20 accent-accent" />
+      <StudioExportSection id="appearance" detailsRef={appearanceRef} title={exportMenuText("appearance")} description={exportMenuText("appearanceHelp")}>
+        <fieldset disabled={locked} className="min-w-0" aria-describedby={locked ? busyHelpId : undefined}>
+          <legend className="sr-only">{exportMenuText("appearance")}</legend>
+          <label className={cx("flex min-h-11 items-center gap-2 text-xs", exportFormat === "jpg" || locked ? "cursor-not-allowed text-fg-2" : "cursor-pointer text-fg-2")}>
+            <input ref={transparencyRef} type="checkbox" checked={exportTransparent && exportFormat !== "jpg"} disabled={locked || exportFormat === "jpg"}
+              aria-describedby={transparencyHelpId} onChange={(event) => { if (!locked) setExportTransparent(event.target.checked); }} className="size-4 shrink-0 accent-accent" />
+            {exportMenuText("transparent")}
+          </label>
+          <p id={transparencyHelpId} className="mb-2 text-xs leading-5 text-fg-2">{exportMenuText(exportFormat === "jpg" ? "jpgTransparentHint" : "transparentHelp")}</p>
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
+            <input ref={signatureToggleRef} type="checkbox" checked={watermark.enabled} disabled={locked}
+              onChange={(event) => { if (!locked) setWatermark({ ...watermark, enabled: event.target.checked }); }} className="size-4 shrink-0 accent-accent" />
+            {exportMenuText("watermark")}
+          </label>
+          {watermark.enabled ? (
+            <div className="mt-1.5 min-w-0 space-y-1.5">
+              <input ref={signatureInputRef} type="text" value={watermark.text} disabled={locked}
+                onChange={(event) => { if (!locked) setWatermark({ ...watermark, text: event.target.value }); }} placeholder="© 작가명 / @아이디" maxLength={60}
+                aria-label={exportMenuText("watermarkText")} aria-describedby={signatureHelpId}
+                className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-base text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:text-xs" />
+              <p id={signatureHelpId} className="text-xs leading-5 text-fg-2">{exportMenuText("signatureTextHelp")}</p>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <select value={watermark.position} disabled={locked}
+                  onChange={(event) => { if (!locked) setWatermark({ ...watermark, position: event.target.value as WatermarkSettings["position"] }); }}
+                  aria-label={exportMenuText("watermarkPosition")}
+                  className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2 text-base text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:text-xs">
+                  {WATERMARK_POSITIONS.map((position) => <option key={position.id} value={position.id}>{exportMenuText(POSITION_LABELS[position.id])}</option>)}
+                </select>
+                <input ref={opacityRef} type="range" min={0.15} max={1} step={0.05} value={watermark.opacity} disabled={locked}
+                  onChange={(event) => { if (!locked) setWatermark({ ...watermark, opacity: Number(event.target.value) }); }}
+                  aria-label={exportMenuText("watermarkOpacity")} className="h-11 w-20 shrink-0 accent-accent" />
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </fieldset>
+        <button type="button" onClick={returnToDownload}
+          className="mt-2 min-h-11 max-w-full rounded-lg px-1 text-left text-xs font-semibold text-accent underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          {exportMenuText("returnToDownload")}
+        </button>
       </StudioExportSection>
       {canCopyImageToClipboard() ? (
-        <button type="button" onClick={onCopyToClipboard} disabled={busy} title={exportMenuText("clipboardHelp")} className="mt-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
-          <Copy size={14} aria-hidden />{exportMenuText("clipboard")}
-        </button>
+        <>
+          <button type="button" onClick={() => { if (!locked) onCopyToClipboard(); }} disabled={locked}
+            aria-describedby={`${instanceId}-clipboard-help`}
+            className="mt-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50">
+            <Copy size={14} aria-hidden />{exportMenuText("clipboard")}
+          </button>
+          <p id={`${instanceId}-clipboard-help`} className="mt-1 text-xs leading-5 text-fg-2">{exportMenuText("clipboardPngHelp")}</p>
+        </>
       ) : null}
     </section>
   );
