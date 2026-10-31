@@ -135,6 +135,10 @@ function readVoiceCapture(capture: ReviewVoiceCommentaryPanelProps["captureView"
   catch { return null; }
 }
 
+function syncVoiceAudioSource(audio: HTMLAudioElement, url: string): void {
+  if (audio.getAttribute("src") !== url) audio.src = url;
+}
+
 export function ReviewVoiceCommentaryPanel({
   episodeId,
   tracks,
@@ -168,6 +172,7 @@ export function ReviewVoiceCommentaryPanel({
   const lastAppliedRef = useRef<string>("");
   const lastKeyframeRef = useRef<number>(-1);
   const playheadRef = useRef(0);
+  const pausedCueRef = useRef(false);
   const playbackRef = useRef<AbortController | null>(null);
   const playbackAudioRef = useRef<string | null>(null);
 
@@ -182,6 +187,12 @@ export function ReviewVoiceCommentaryPanel({
     () => tracks.find((t) => t.id === selectedId) ?? tracks[tracks.length - 1] ?? null,
     [tracks, selectedId],
   );
+  const selectedAudioUrl = selected?.audio?.url;
+  useLayoutEffect(() => {
+    // 주소 반영을 한 경로로 모아 호스트 재렌더가 준비 중인 재생을 다시 로드하지 않게 한다.
+    const audio = audioRef.current;
+    if (audio && selectedAudioUrl) syncVoiceAudioSource(audio, selectedAudioUrl);
+  }, [selectedAudioUrl]);
 
   const isCurrentAttempt = useCallback((attempt: RecordingAttempt): boolean => (
     mountedRef.current && !attempt.settled && attemptRef.current === attempt
@@ -237,6 +248,7 @@ export function ReviewVoiceCommentaryPanel({
     setPlaybackError(null);
     setPlayheadMs(0);
     playheadRef.current = 0;
+    pausedCueRef.current = false;
     lastKeyframeRef.current = -1;
     lastAppliedRef.current = "";
     return cancelPlayback;
@@ -534,7 +546,7 @@ export function ReviewVoiceCommentaryPanel({
         throw new Error("voice_playback_source_changed");
       }
       // 호스트의 다음 렌더를 기다리지 않고 권한을 확인한 새 주소로 재생한다.
-      if (audio.getAttribute("src") !== playable.audio.url) audio.src = playable.audio.url;
+      syncVoiceAudioSource(audio, playable.audio.url);
       playbackAudioRef.current = playable.audio.url;
       audio.currentTime = playheadRef.current / 1000;
       await audio.play();
@@ -555,6 +567,7 @@ export function ReviewVoiceCommentaryPanel({
   };
 
   const onSeek = (valueMs: number) => {
+    pausedCueRef.current = audioRef.current?.paused ?? true;
     playheadRef.current = valueMs;
     setPlayheadMs(valueMs);
     if (audioRef.current) audioRef.current.currentTime = valueMs / 1000;
@@ -645,8 +658,9 @@ export function ReviewVoiceCommentaryPanel({
             <audio
               ref={audioRef}
               preload="none"
-              src={selected.audio.url}
               onTimeUpdate={(event) => {
+                // 정지 중 선택한 큐는 오디오 seek 보정으로 다른 화면에 되돌리지 않는다.
+                if (pausedCueRef.current && event.currentTarget.paused) return;
                 const ms = event.currentTarget.currentTime * 1000;
                 playheadRef.current = ms;
                 setPlayheadMs(ms);
@@ -654,7 +668,7 @@ export function ReviewVoiceCommentaryPanel({
               }}
               onEnded={() => setPlaying(false)}
               onPause={() => setPlaying(false)}
-              onPlay={() => setPlaying(true)}
+              onPlay={() => { pausedCueRef.current = false; setPlaying(true); }}
               onError={() => {
                 // 새 읽기 응답을 기다리는 동안 이전 주소의 실패로 새 요청을 취소하지 않는다.
                 if (playbackRef.current && playbackAudioRef.current === null) return;
