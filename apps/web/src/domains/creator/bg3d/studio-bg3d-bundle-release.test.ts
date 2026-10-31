@@ -28,7 +28,7 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); resetStudioBg3dBundleThemePacksCache(); });
 
 describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
-  it("실제 descriptor·정적 원문과 합성 R2 완료 응답으로 loader를 통과하고 역사 1,929개를 유지한다", async () => {
+  it("실제 Nature·Luma 5,434개와 합성 완료 응답을 불러오고 기존 5,229개 전체를 유지한다", async () => {
     const actual = await vi.importActual<typeof import("./studio-bg3d-bundle-release")>("./studio-bg3d-bundle-release");
     const release = actual.getBuildFixedStudioBg3dBundleRelease();
     const completion = getStudioBg3dBundleReleaseCompletionBinding(release);
@@ -44,14 +44,22 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     const data = await loadStudioBg3dBundleThemePacks();
-    expect(data.assets).toHaveLength(5229);
-    expect(data.assets.reduce((sum, asset) => sum + asset.bytes, 0)).toBe(3985892748);
+    expect(data.assets).toHaveLength(5434);
+    expect(data.assets.reduce((sum, asset) => sum + asset.bytes, 0)).toBe(4459482140);
     expect(data.packs.find(pack => pack.catalogIds.includes("cbv1-030-nature-megapack-extended"))?.placeable).toBe(3300);
+    expect(data.packs.find(pack => pack.catalogIds.includes("cbv1-028-lumagrove-wonky-woods"))?.placeable).toBe(205);
     const legacy = parseStudioBg3dBundleThemePacks(JSON.parse(readFileSync(new URL(
       "../../../../public/assets/3d/environments/bundle-v1/theme-packs.json", import.meta.url), "utf8")));
     expect(legacy.assets).toHaveLength(1929);
     const currentById = new Map(data.assets.map(asset => [asset.id, asset]));
     for (const asset of legacy.assets) expect(currentById.get(asset.id)).toEqual(asset);
+    const previous = parseStudioBg3dBundleThemePacks(JSON.parse(readFileSync(new URL(
+      "../../../../public/assets/3d/environments/bundle-v1/theme-packs.e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4.json",
+      import.meta.url), "utf8")));
+    expect(previous.assets).toHaveLength(5229);
+    for (const asset of previous.assets) expect(currentById.get(asset.id)).toEqual(asset);
+    expect(data.themes).toEqual(previous.themes);
+    expect(data.packs.map(pack => pack.catalogIds)).toEqual(previous.packs.map(pack => pack.catalogIds));
     for (const id of ["cbv1-012-cemetery-statues", "cbv1-077-small-props-pack"]) {
       expect(data.packs.find(pack => pack.catalogIds.includes(id))?.rights?.status).toBe("licensed");
     }
@@ -112,7 +120,7 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
     expect(fetcher).toHaveBeenCalledExactlyOnceWith(fixture.release.index.url, expect.objectContaining({ cache: "force-cache" }));
   });
 
-  it.each(["missing", "legacy"] as const)("실제 5,229개 정적 쌍이 정상이어도 R2 완료 응답이 %s면 닫는다", async mode => {
+  it.each(["missing", "legacy"] as const)("실제 Nature·Luma 5,434개 정적 쌍이 정상이어도 R2 완료 응답이 %s면 닫는다", async mode => {
     const actual = await vi.importActual<typeof import("./studio-bg3d-bundle-release")>("./studio-bg3d-bundle-release");
     const release = actual.getBuildFixedStudioBg3dBundleRelease();
     const completion = getStudioBg3dBundleReleaseCompletionBinding(release);
@@ -132,7 +140,7 @@ describe("빌드에 고정한 번들 catalog/index 원문 결합", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     const data = await loadStudioBg3dBundleThemePacks();
-    expect(data.assets).toHaveLength(5229);
+    expect(data.assets).toHaveLength(5434);
     expect(await loadStudioBg3dBundleDeployAvailability(data)).toBe("unavailable");
     expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
       release.catalog.url, release.index.url, expectCompletionRequest(fetcher.mock.calls[2]?.[0], completion),
