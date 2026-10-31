@@ -1,0 +1,21 @@
+/* 새 프로젝트 화면에 한정한다. 편집 캔버스·템플릿 갤러리는 변경하지 않는다. */
+[data-studio-outcome-create="true"] [data-studio-format-count] {
+  align-items: stretch;
+}
+[data-studio-outcome-create="true"] [data-studio-create-format] {
+  align-content: start;
+}
+[data-studio-outcome-create="true"] :is([data-studio-create-submit], [data-studio-create-advanced], #studio-create-primary-action, input, select) {
+  scroll-margin-block-start: 6rem;
+  scroll-margin-block-end: 6rem;
+}
+@media (max-width: 639px) {
+  /* 장식용 그림보다 결과물의 실제 구조를 남겨 두 열에서도 형식을 구분하게 한다. */
+  [data-studio-outcome-create="true"] [data-studio-create-format] .studio-format-illustration {
+    display: none;
+  }
+  [data-studio-outcome-create="true"] [data-studio-create-format] > [data-studio-format-visual] {
+    height: 4.25rem;
+    margin-top: 0;
+  }
+}

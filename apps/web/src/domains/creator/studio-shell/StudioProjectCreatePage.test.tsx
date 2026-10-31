@@ -70,7 +70,7 @@ describe("StudioProjectCreatePage", () => {
     expect(container.querySelector("[data-studio-imported-idea]")).toBeNull();
   });
 
-  it("shows five final outcomes, their silhouettes and an always-visible prepared-project preview", () => {
+  it("결과물 다섯 가지와 선택적으로 펼치는 프로젝트 미리보기를 제공한다", () => {
     const { container } = renderCreate();
 
     expect(container.querySelectorAll("[data-studio-create-format]")).toHaveLength(5);
@@ -82,6 +82,11 @@ describe("StudioProjectCreatePage", () => {
     expect(container.querySelector('[data-studio-format-preview="vertical-webtoon"]')).not.toBeNull();
     expect(container.querySelector('[data-studio-mode-preview="webtoon"]')).not.toBeNull();
     expect(container.querySelector("[data-studio-auxiliary-workspaces]")?.hasAttribute("open")).toBe(false);
+    const preview = container.querySelector<HTMLDetailsElement>("[data-studio-create-preview]");
+    if (!preview) throw new Error("프로젝트 미리보기 구역이 없습니다.");
+    expect(preview.open).toBe(false);
+    preview.open = true;
+    expect(preview.open).toBe(true);
     expect(screen.queryByRole("combobox", { name: /만들 작업 선택|Choose work type/u })).toBeNull();
   });
 
