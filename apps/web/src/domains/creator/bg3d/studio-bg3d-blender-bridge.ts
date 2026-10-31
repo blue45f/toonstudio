@@ -10,8 +10,15 @@ import type { StudioToonBridgeClient } from "../toolchain/studio-toonbridge-clie
 
 export type BlenderBridgeOperation = "export-glb" | "render-scene" | "line-art";
 
+/** Blender 바이너리 버전과 별개로 현재 프레임 어댑터를 포함하는 실행기 서비스 revision이다. */
+export const STUDIO_BLENDER_SERVICE_REVISION = "0.2.0";
+
+export function isStudioBlenderServiceRevision(value: unknown): value is typeof STUDIO_BLENDER_SERVICE_REVISION {
+  return value === STUDIO_BLENDER_SERVICE_REVISION;
+}
+
 type BlenderBridgeClient = Pick<StudioToonBridgeClient,
-  "settings" | "createJob" | "uploadInput" | "startJob" | "getJob" | "cancelJob" | "downloadOutput"
+  "settings" | "status" | "createJob" | "uploadInput" | "startJob" | "getJob" | "cancelJob" | "downloadOutput"
 >;
 
 interface BlenderJobRequest {
@@ -156,6 +163,17 @@ export async function runStudioBlenderJob({
   if (file.size > STUDIO_PRODUCTION_JOB_LIMITS.fileBytes) throw new Error("Blender 파일이 로컬 실행기의 파일당 2 GiB 한도를 넘었습니다.");
   const tool = studioProductionTool("blender");
   if (!tool) throw new Error("Blender 제작 도구 계약을 확인하지 못했습니다.");
+  const updateMessage = `로컬 ToonBridge를 ${STUDIO_BLENDER_SERVICE_REVISION}으로 업데이트하고 다시 연결해 주세요.`;
+  // 화면에 저장된 probe와 별도로 매 실행 직전에 서비스 revision을 새로 확인한다.
+  let revision: unknown;
+  try {
+    revision = (await client.status(signal)).serviceVersion;
+  } catch (cause) {
+    assertCurrent();
+    throw new Error(`로컬 실행기 버전을 확인하지 못했습니다. ${updateMessage}`, { cause });
+  }
+  assertCurrent();
+  if (!isStudioBlenderServiceRevision(revision)) throw new Error(updateMessage);
   const sourceBytes = await file.arrayBuffer();
   assertCurrent();
   const sourceDigest = await sha256(sourceBytes);

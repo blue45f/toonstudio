@@ -63,7 +63,7 @@ function connection(available = true): StudioToonBridgeConnectionState {
     status: available ? {
       protocol: "toonstudio.production-toolchain",
       version: 2,
-      serviceVersion: "2.0.0",
+      serviceVersion: "0.2.0",
       activeJobs: 0,
       retainedJobs: 0,
     } : null,
@@ -92,6 +92,13 @@ function deferredFile() {
     resolve = success;
     reject = failure;
   });
+  return { promise, resolve, reject };
+}
+
+function deferredImport() {
+  let resolve: (accepted: boolean) => void = () => undefined;
+  let reject: (error: Error) => void = () => undefined;
+  const promise = new Promise<boolean>((success, failure) => { resolve = success; reject = failure; });
   return { promise, resolve, reject };
 }
 
@@ -326,14 +333,131 @@ describe("Blender 실제 장면 작업 패널", () => {
     expect(screen.getByText(/최종 결과는 3D 모델 목록/u)).toBeTruthy();
   });
 
-  it("모델 검증 거부는 성공으로 표시하지 않고 AI 답도 소비하지 않는다", async () => {
+  it("모델 검증 거부는 성공으로 표시하지 않되 전달한 파일의 AI 답은 소비한다", async () => {
     vi.mocked(runStudioBlenderJob).mockResolvedValue(new File(["glTF"], "room.glb"));
     const onImported = vi.fn();
     render(<StudioBg3dBlenderImportPanel onFile={async () => false} onImported={onImported} />);
     openAndSelect();
     fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
     expect(await screen.findByRole("alert")).toHaveProperty("textContent", "모델 검증 또는 이용 권리 확인을 완료하지 못했습니다.");
+    expect(onImported).toHaveBeenCalledOnce();
+  });
+
+  it.each([false, true])("모델 가져오기 중 취소의 완료 결과 %s를 확인하고 응답 대기 안내를 끝낸다", async (accepted) => {
+    vi.mocked(runStudioBlenderJob).mockResolvedValue(new File(["glTF"], "room.glb"));
+    const pending = deferredImport(), onImported = vi.fn(), onBusyChange = vi.fn();
+    const onFile = vi.fn((_file: File, _signal: AbortSignal) => pending.promise);
+    render(<StudioBg3dBlenderImportPanel onFile={onFile} onImported={onImported} onBusyChange={onBusyChange} />);
+    openAndSelect();
+    fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
+    await waitFor(() => expect(onFile).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole("button", { name: "Blender 작업 취소" }));
+    expect(onFile.mock.calls[0]?.[1].aborted).toBe(true);
+    expect(screen.getByText(/모델 가져오기 취소를 요청하고/u)).toBeTruthy();
+    await act(async () => pending.resolve(accepted));
+    expect(screen.getByText(accepted ? /모델이 이미 장면에 반영되어/u : /모델 가져오기를 취소해 장면에 배치하지/u)).toBeTruthy();
+    expect(screen.queryByText(/응답을 기다려|취소를 요청하고/u)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Blender 작업 취소" })).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(onImported).toHaveBeenCalledOnce();
+    expect(onBusyChange.mock.calls).toEqual([[true], [false]]);
+    expect(runStudioBlenderJob).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([false, true])("다른 프로젝트로 이동한 뒤 돌아와도 이전 모델 가져오기 결과 %s는 안내와 권리 답을 바꾸지 않는다", async (accepted) => {
+    vi.mocked(runStudioBlenderJob).mockResolvedValue(new File(["glTF"], "room.glb"));
+    const pending = deferredImport(), onImported = vi.fn();
+    const onFile = vi.fn((_file: File, _signal: AbortSignal) => pending.promise);
+    const view = render(<StudioBg3dBlenderImportPanel onFile={onFile} onImported={onImported} />);
+    openAndSelect();
+    fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
+    await waitFor(() => expect(onFile).toHaveBeenCalledOnce());
+    view.rerender(<StudioBg3dBlenderImportPanel projectId="project-b" onFile={onFile} onImported={onImported} />);
+    view.rerender(<StudioBg3dBlenderImportPanel onFile={onFile} onImported={onImported} />);
+    expect(onFile.mock.calls[0]?.[1].aborted).toBe(true);
+    const notice = screen.getByText(/작업 대상이나 연결이 바뀌어/u).textContent;
+    await act(async () => pending.resolve(accepted));
+    expect(screen.getByText(/작업 대상이나 연결이 바뀌어/u).textContent).toBe(notice);
+    expect(screen.queryByText(/모델이 이미 장면에 반영되어|모델 가져오기를 취소해 장면에 배치하지/u)).toBeNull();
     expect(onImported).not.toHaveBeenCalled();
+    expect(runStudioBlenderJob).toHaveBeenCalledTimes(1);
+  });
+
+  it("정규 가져오기가 AbortError로 끝나도 이미 저장·반영된 결과가 없다고 단정하지 않는다", async () => {
+    vi.mocked(runStudioBlenderJob).mockResolvedValue(new File(["glTF"], "room.glb"));
+    const pending = deferredImport(), onImported = vi.fn();
+    const onFile = vi.fn((_file: File, _signal: AbortSignal) => pending.promise);
+    render(<StudioBg3dBlenderImportPanel onFile={onFile} onImported={onImported} />);
+    openAndSelect();
+    fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
+    await waitFor(() => expect(onFile).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole("button", { name: "Blender 작업 취소" }));
+    await act(async () => pending.reject(new DOMException("cancelled", "AbortError")));
+    expect(screen.getByText(/이미 저장·반영된 결과와 AI 사용 표기/u)).toBeTruthy();
+    expect(screen.queryByText(/취소한 결과는 가져오거나 저장하지/u)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Blender 작업 취소" })).toBeNull();
+    expect(onImported).toHaveBeenCalledOnce();
+  });
+
+  it.each(["0.1.0", "2.0.0", "unknown", "0.2.0-beta.1", "0.2.1", " 0.2.0"])("실행기 revision %s에서는 업데이트를 안내하고 작업을 만들지 않는다", (serviceVersion) => {
+    const available = connection();
+    if (!available.status) throw new Error("연결된 status fixture가 필요합니다.");
+    useConnection.mockReturnValue({ ...available, status: { ...available.status, serviceVersion } });
+    render(<StudioBg3dBlenderImportPanel />);
+    openAndSelect();
+    expect(screen.getByText(/ToonBridge 0.2.0으로 업데이트/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
+    expect(runStudioBlenderJob).not.toHaveBeenCalled();
+  });
+
+  it("연결 상태만 남고 서비스 revision을 확인하지 못한 경우 실행하지 않는다", () => {
+    useConnection.mockReturnValue({ ...connection(), status: null, connected: true });
+    render(<StudioBg3dBlenderImportPanel />);
+    openAndSelect();
+    expect(screen.getByText(/현재 프레임 보존을 확인하지 못해/u)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
+    expect(runStudioBlenderJob).not.toHaveBeenCalled();
+  });
+
+  it.each(["GLB로 변환해 가져오기", "현재 프레임 PNG 저장", "Freestyle 선화 PNG 저장"])("같은 client의 revision이 미지원으로 바뀌면 %s의 늦은 결과를 버린다", async (button) => {
+    const available = connection();
+    if (!available.status) throw new Error("연결된 status fixture가 필요합니다.");
+    useConnection.mockReturnValue(available);
+    const pending = deferredFile();
+    vi.mocked(runStudioBlenderJob).mockReturnValue(pending.promise);
+    const onFile = vi.fn(async () => true), createUrl = vi.fn(() => "blob:late-revision");
+    vi.stubGlobal("URL", class extends URL { static createObjectURL = createUrl; static revokeObjectURL = vi.fn(); });
+    const view = render(<StudioBg3dBlenderImportPanel onFile={onFile} />);
+    openAndSelect();
+    fireEvent.click(screen.getByRole("button", { name: button }));
+    const call = vi.mocked(runStudioBlenderJob).mock.calls[0]?.[0];
+    useConnection.mockReturnValue({ ...available, status: { ...available.status, serviceVersion: "0.1.0" } });
+    view.rerender(<StudioBg3dBlenderImportPanel onFile={onFile} />);
+    expect(call?.signal.aborted).toBe(true);
+    expect(call?.isCurrent?.()).toBe(false);
+    useConnection.mockReturnValue(available);
+    view.rerender(<StudioBg3dBlenderImportPanel onFile={onFile} />);
+    await act(async () => pending.resolve(new File(["late"], "late.glb")));
+    expect(onFile).not.toHaveBeenCalled();
+    expect(createUrl).not.toHaveBeenCalled();
+    expect(runStudioBlenderJob).toHaveBeenCalledTimes(1);
+  });
+
+  it("같은 client에서 status가 미확인으로 바뀌면 진행 중 작업을 취소한다", async () => {
+    const available = connection();
+    useConnection.mockReturnValue(available);
+    const pending = deferredFile();
+    vi.mocked(runStudioBlenderJob).mockReturnValue(pending.promise);
+    const onFile = vi.fn(async () => true);
+    const view = render(<StudioBg3dBlenderImportPanel onFile={onFile} />);
+    openAndSelect();
+    fireEvent.click(screen.getByRole("button", { name: "GLB로 변환해 가져오기" }));
+    const call = vi.mocked(runStudioBlenderJob).mock.calls[0]?.[0];
+    useConnection.mockReturnValue({ ...available, status: null });
+    view.rerender(<StudioBg3dBlenderImportPanel onFile={onFile} />);
+    expect(call?.signal.aborted).toBe(true);
+    await act(async () => pending.resolve(new File(["glTF"], "late.glb")));
+    expect(onFile).not.toHaveBeenCalled();
   });
 
   it("로컬 연결과 원고 편집 권위가 없으면 실행하지 않는다", () => {

@@ -10,7 +10,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioToonBridgeConnectionCard } from "../toolchain/StudioToonBridgeConnectionCard";
 import { useStudioToonBridgeConnection } from "../toolchain/useStudioToonBridgeConnection";
 import {
-  isStudioBlenderLoopbackUrl, runStudioBlenderJob,
+  isStudioBlenderLoopbackUrl, isStudioBlenderServiceRevision, runStudioBlenderJob,
+  STUDIO_BLENDER_SERVICE_REVISION,
   type BlenderBridgeOperation,
 } from "./studio-bg3d-blender-bridge";
 
@@ -20,6 +21,7 @@ interface StudioBg3dBlenderImportPanelProps {
   readonly scopeKey: string;
   readonly rightsKey: string;
   readonly onFile: (file: File, signal: AbortSignal) => Promise<boolean>;
+  /** 정규 가져오기에 넘긴 파일의 AI 답을 같은 소유 범위에서 한 번 소비한다. */
   readonly onImported?: () => void;
   readonly onBusyChange?: (busy: boolean) => void;
 }
@@ -52,9 +54,11 @@ export function StudioBg3dBlenderImportPanel({
   const [failure, setFailure] = useState(false);
   const activeRef = useRef<{ controller: AbortController; invalidated: boolean; publishing: boolean; finishBusy: () => void } | null>(null);
   const liveRef = useRef(false);
+  const serviceRevision = connection.status?.serviceVersion;
+  const serviceSupported = isStudioBlenderServiceRevision(serviceRevision);
   const scopeChangedMessage = bt("작업 대상이나 연결이 바뀌어 이전 Blender 작업의 중단을 요청했습니다. 늦은 결과는 적용하지 않습니다.", "The target or connection changed. Cancellation was requested; late results will not be applied.");
-  const latest = useRef({ ownerKey, rightsKey, disabled, importing, authority, scopeChangedMessage, client: connection.client, connected: connection.connected });
-  latest.current = { ownerKey, rightsKey, disabled, importing, authority, scopeChangedMessage, client: connection.client, connected: connection.connected };
+  const latest = useRef({ ownerKey, rightsKey, disabled, importing, authority, serviceRevision, serviceSupported, scopeChangedMessage, client: connection.client, connected: connection.connected });
+  latest.current = { ownerKey, rightsKey, disabled, importing, authority, serviceRevision, serviceSupported, scopeChangedMessage, client: connection.client, connected: connection.connected };
   const previousOwner = useRef(ownerKey);
 
   useLayoutEffect(() => {
@@ -76,7 +80,7 @@ export function StudioBg3dBlenderImportPanel({
     }
     if (previousOwner.current !== ownerKey) setFile(null);
     previousOwner.current = ownerKey;
-  }, [ownerKey, rightsKey, disabled, connection.client, connection.connected, authority?.locked]);
+  }, [ownerKey, rightsKey, disabled, connection.client, connection.connected, authority?.locked, serviceRevision]);
   useLayoutEffect(() => {
     const active = activeRef.current;
     // 자신이 시작한 모델 검증의 busy는 유지하고, 다른 파일 가져오기는 변환을 취소한다.
@@ -85,7 +89,7 @@ export function StudioBg3dBlenderImportPanel({
 
   const blender = connection.probes.find((probe) => probe.toolId === "blender");
   const localRunner = connection.client !== null && isStudioBlenderLoopbackUrl(connection.client.settings.baseUrl);
-  const ready = localRunner && authority !== null && ticket !== undefined && !authority.locked && authority.isCurrent(ticket)
+  const ready = serviceSupported && localRunner && authority !== null && ticket !== undefined && !authority.locked && authority.isCurrent(ticket)
     && connection.connected && blender?.state === "available" && blender.executable;
   const busy = operation !== null;
 
@@ -94,7 +98,9 @@ export function StudioBg3dBlenderImportPanel({
     if (!active) return;
     active.controller.abort(new DOMException("user-cancelled", "AbortError"));
     setFailure(false);
-    setNotice(bt("Blender 작업 취소를 요청하고 있습니다. 실행기의 응답을 기다려 주세요.", "Requesting cancellation of the Blender job. Waiting for the runner to respond."));
+    setNotice(active.publishing
+      ? bt("모델 가져오기 취소를 요청하고 있습니다. 이미 완료된 반영은 유지하며 처리 결과를 확인합니다.", "Requesting cancellation of model import. Checking the result while keeping changes already committed.")
+      : bt("Blender 작업 취소를 요청하고 있습니다. 실행기의 응답을 기다려 주세요.", "Requesting cancellation of the Blender job. Waiting for the runner to respond."));
   };
 
   const run = async (nextOperation: BlenderBridgeOperation) => {
@@ -107,12 +113,14 @@ export function StudioBg3dBlenderImportPanel({
     } };
     activeRef.current = active;
     const ownsDisplay = () => liveRef.current && activeRef.current === active;
-    const current = () => ownsDisplay() && !active.invalidated && !controller.signal.aborted
+    const ownsScope = () => ownsDisplay() && !active.invalidated
       && latest.current.ownerKey === ownerKey && latest.current.rightsKey === rightsKey
       && latest.current.client === client && latest.current.connected
+      && latest.current.serviceSupported && latest.current.serviceRevision === serviceRevision
       && !latest.current.disabled && (!latest.current.importing || active.publishing) && !latest.current.authority?.locked
       && ticket !== undefined && latest.current.authority?.isCurrent(ticket) === true
       && getAuthUserId() === actor && getAuthSessionRevision() === authRevision;
+    const current = () => !controller.signal.aborted && ownsScope();
     setOperation(nextOperation);
     setFailure(false);
     setNotice(bt("로컬 Blender 작업을 준비하고 있습니다.", "Preparing the local Blender job."));
@@ -137,9 +145,16 @@ export function StudioBg3dBlenderImportPanel({
       if (nextOperation === "export-glb") {
         active.publishing = true;
         const accepted = await onFile(result, controller.signal);
-        if (!current()) return;
+        if (!ownsScope()) return;
+        if (controller.signal.aborted) {
+          // 취소 전에 끝난 장면 반영은 보존하고, 다른 범위의 늦은 완료와 구별한다.
+          setFailure(false);
+          setNotice(accepted
+            ? bt("모델이 이미 장면에 반영되어 취소 요청으로 되돌리지 않았습니다. 3D 모델 목록에서 결과와 AI 사용 표기를 확인하세요.", "The model was already added to the scene and was kept after cancellation was requested. Check the result and AI-use labels in the 3D model list.")
+            : bt("모델 가져오기를 취소해 장면에 배치하지 않았습니다. 보관함의 저장 상태와 AI 사용 표기는 3D 모델 목록에서 확인하세요.", "Model import was cancelled before scene placement. Check saved models and AI-use labels in the 3D model list."));
+          return;
+        }
         if (!accepted) throw new Error(bt("모델 검증 또는 이용 권리 확인을 완료하지 못했습니다.", "Model validation or rights verification could not be completed."));
-        onImported?.();
         setNotice(bt("검증한 GLB를 모델 가져오기로 전달했습니다. 최종 결과는 3D 모델 목록에서 확인하세요.", "Sent the verified GLB to model import. Check the 3D model list for the final result."));
       } else {
         const url = URL.createObjectURL(result);
@@ -154,20 +169,26 @@ export function StudioBg3dBlenderImportPanel({
         setNotice(bt("검증한 PNG 저장을 시작했습니다.", "Started saving the verified PNG."));
       }
     } catch (cause) {
-      if (!ownsDisplay() || active.invalidated) return;
+      if (!ownsScope()) return;
       if ((cause instanceof Error || cause instanceof DOMException) && cause.name === "AbortError") {
         setFailure(false);
-        setNotice(bt("Blender 작업을 취소했습니다. 취소한 결과는 가져오거나 저장하지 않습니다.", "Blender job cancelled. Its result will not be imported or saved."));
+        setNotice(active.publishing
+          ? bt("모델 가져오기 처리를 중단했습니다. 이미 저장·반영된 결과와 AI 사용 표기는 3D 모델 목록에서 확인하세요.", "Model import was interrupted. Check any saved or committed results and AI-use labels in the 3D model list.")
+          : bt("Blender 작업을 취소했습니다. 취소한 결과는 가져오거나 저장하지 않습니다.", "Blender job cancelled. Its result will not be imported or saved."));
       } else {
         setFailure(true);
         setNotice(cause instanceof Error || cause instanceof DOMException ? cause.message : bt("Blender 작업을 완료하지 못했습니다.", "The Blender job could not be completed."));
       }
     } finally {
+      // 기존 파일 선택과 같이 정규 가져오기에 넘긴 파일의 AI 답은 결과와 무관하게 한 번만 소비한다.
+      const consumeFileAnswers = active.publishing && ownsScope();
       if (activeRef.current === active) {
         activeRef.current = null;
         if (liveRef.current) setOperation(null);
       }
       active.finishBusy();
+      // active를 먼저 해제해 자기 폼 초기화가 아직 진행 중인 요청을 취소하지 않게 한다.
+      if (consumeFileAnswers) onImported?.();
     }
   };
 
@@ -188,7 +209,9 @@ export function StudioBg3dBlenderImportPanel({
             <StudioToonBridgeConnectionCard connection={connection} compact />
             {connection.connected ? (
               <p className="text-xs leading-5 text-fg-2" role="status">
-                {ready
+                {!serviceSupported
+                  ? bt(`로컬 실행기를 ToonBridge ${STUDIO_BLENDER_SERVICE_REVISION}으로 업데이트한 뒤 다시 연결하세요. 현재 프레임 보존을 확인하지 못해 작업을 시작하지 않습니다.`, `Update the local runner to ToonBridge ${STUDIO_BLENDER_SERVICE_REVISION} and reconnect. Jobs remain blocked until saved-frame support is verified.`)
+                  : ready
                   ? bt(`Blender 사용 가능 · ${blender?.version ?? "버전 확인됨"}`, `Blender available · ${blender?.version ?? "version verified"}`)
                   : bt("Blender를 실행할 수 없습니다. 설치 경로와 실행기 연결을 확인하세요.", "Blender is unavailable. Check its installation path and runner connection.")}
               </p>

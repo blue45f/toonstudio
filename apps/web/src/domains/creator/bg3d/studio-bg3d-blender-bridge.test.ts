@@ -10,12 +10,20 @@ import {
   type StudioProductionJobInput,
 } from "../toolchain/studio-production-jobs";
 import { studioProductionTool } from "../toolchain/studio-production-toolchain";
-import { isStudioBlenderLoopbackUrl, runStudioBlenderJob, type BlenderBridgeOperation } from "./studio-bg3d-blender-bridge";
+import { StudioToonBridgeClient, type StudioToonBridgeStatus } from "../toolchain/studio-toonbridge-client";
+import {
+  isStudioBlenderLoopbackUrl, isStudioBlenderServiceRevision, runStudioBlenderJob,
+  STUDIO_BLENDER_SERVICE_REVISION, type BlenderBridgeOperation,
+} from "./studio-bg3d-blender-bridge";
 
 type Stage = "create" | "upload" | "start" | "poll" | "cancel";
 const source = new Uint8Array([66, 76, 69, 78, 68, 69, 82]);
 const remoteId = "job_remote_12345678";
 const hash = (bytes: Uint8Array) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+const supportedStatus: StudioToonBridgeStatus = {
+  protocol: "toonstudio.production-toolchain", version: 2,
+  serviceVersion: STUDIO_BLENDER_SERVICE_REVISION, activeJobs: 0, retainedJobs: 0,
+};
 
 function glb(json = '{"asset":{"version":"2.0"}}'): Uint8Array<ArrayBuffer> {
   const padded = json.padEnd(Math.ceil(json.length / 4) * 4, " ");
@@ -100,6 +108,7 @@ function fixture(options: {
   };
   const client = {
     settings: { baseUrl: "http://127.0.0.1:49631", token: "fixture-token-not-a-real-credential" },
+    status: vi.fn(async (_signal?: AbortSignal) => supportedStatus),
     createJob: vi.fn(async (job: StudioProductionJob, _signal?: AbortSignal) => {
       // 실제 v2 서버는 클라이언트 ID를 보존하지 않고 ID를 발급한다.
       uploaded = false;
@@ -124,6 +133,100 @@ function fixture(options: {
 afterEach(() => vi.useRealTimers());
 
 describe("BG3D 로컬 Blender 단일 작업", () => {
+  it("Blender 바이너리 버전과 분리된 실행기 revision 문자열만 정확히 허용한다", () => {
+    expect(STUDIO_BLENDER_SERVICE_REVISION).toBe("0.2.0");
+    expect(isStudioBlenderServiceRevision("0.2.0")).toBe(true);
+    for (const value of [undefined, null, 0.2, {}, [], "", "0.1.0", "0.2", "v0.2.0", " 0.2.0 ", "0.2.0-beta.1", "0.2.0+local", "0.2.1", "Blender 5.2.0"]) {
+      expect(isStudioBlenderServiceRevision(value)).toBe(false);
+    }
+  });
+
+  it.each(["0.1.0", "unknown", "0.2.0-beta.1", "0.2.0+local", "0.2.1"])("실행 직전 %s 실행기면 파일 읽기와 원격 작업 없이 업데이트를 안내한다", async (serviceVersion) => {
+    const { client, request } = fixture();
+    client.status.mockResolvedValue({ ...supportedStatus, serviceVersion });
+    const read = vi.spyOn(request.file, "arrayBuffer");
+    await expect(runStudioBlenderJob(request)).rejects.toThrow(/0\.2\.0으로 업데이트하고 다시 연결/u);
+    expect(client.status).toHaveBeenCalledExactlyOnceWith(request.signal);
+    expect(read).not.toHaveBeenCalled();
+    expect(client.createJob).not.toHaveBeenCalled();
+    expect(client.uploadInput).not.toHaveBeenCalled();
+    expect(client.startJob).not.toHaveBeenCalled();
+    expect(client.cancelJob).not.toHaveBeenCalled();
+  });
+
+  it("명시적 실행마다 버전을 다시 읽으므로 같은 연결이 구 실행기로 바뀌어도 원본을 읽지 않는다", async () => {
+    const { client, request } = fixture();
+    const read = vi.spyOn(request.file, "arrayBuffer");
+    await runStudioBlenderJob(request);
+    expect(client.status).toHaveBeenCalledExactlyOnceWith(request.signal);
+    expect(client.status.mock.invocationCallOrder[0]).toBeLessThan(read.mock.invocationCallOrder[0] ?? 0);
+    expect(read.mock.invocationCallOrder[0]).toBeLessThan(client.createJob.mock.invocationCallOrder[0] ?? 0);
+    client.status.mockResolvedValue({ ...supportedStatus, serviceVersion: "0.1.0" });
+    await expect(runStudioBlenderJob(request)).rejects.toThrow(/업데이트/u);
+    expect(client.status).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(client.createJob).toHaveBeenCalledTimes(1);
+    expect(client.uploadInput).toHaveBeenCalledTimes(1);
+    expect(client.startJob).toHaveBeenCalledTimes(1);
+  });
+
+  it("상태 확인 실패는 원본을 읽거나 자동 재시도하지 않고 원인과 연결 안내를 보존한다", async () => {
+    const { client, request } = fixture();
+    const cause = new Error("실행기 연결 단절");
+    client.status.mockRejectedValue(cause);
+    const read = vi.spyOn(request.file, "arrayBuffer");
+    await expect(runStudioBlenderJob(request)).rejects.toMatchObject({ cause, message: expect.stringContaining("업데이트하고 다시 연결") });
+    expect(client.status).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
+    expect(client.createJob).not.toHaveBeenCalled();
+    expect(client.uploadInput).not.toHaveBeenCalled();
+    expect(client.startJob).not.toHaveBeenCalled();
+    expect(client.cancelJob).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["잘못된 JSON", "{broken"],
+    ["null 상태", "null"],
+    ["누락 revision", JSON.stringify({ protocol: supportedStatus.protocol, version: 2, activeJobs: 0, retainedJobs: 0 })],
+    ["숫자 revision", JSON.stringify({ ...supportedStatus, serviceVersion: 0.2 })],
+    ["빈 revision", JSON.stringify({ ...supportedStatus, serviceVersion: "" })],
+    ["다른 protocol", JSON.stringify({ ...supportedStatus, protocol: "unknown" })],
+  ])("실제 client의 %s 응답도 타입 우회 없이 파일 읽기 전에 거부한다", async (_label, body) => {
+    const { client, request } = fixture();
+    const realClient = new StudioToonBridgeClient(client.settings);
+    const fetchStatus = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(body, { status: 200 }));
+    const create = vi.spyOn(realClient, "createJob");
+    const read = vi.spyOn(request.file, "arrayBuffer");
+    try {
+      await expect(runStudioBlenderJob({ ...request, client: realClient })).rejects.toThrow(/실행기 버전을 확인하지 못했습니다/u);
+      expect(fetchStatus).toHaveBeenCalledExactlyOnceWith(`${client.settings.baseUrl}/v2/status`, expect.objectContaining({ signal: request.signal }));
+      expect(read).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+    } finally {
+      fetchStatus.mockRestore();
+      create.mockRestore();
+    }
+  });
+
+  it.each(["abort-resolve", "abort-reject", "owner-resolve", "owner-reject"] as const)("상태 확인 중 %s이면 업데이트 안내보다 취소를 우선하고 입력을 읽지 않는다", async (boundary) => {
+    const { client, request, controller } = fixture();
+    let current = true;
+    client.status.mockImplementation(async () => {
+      if (boundary.startsWith("abort")) controller.abort();
+      else current = false;
+      if (boundary.endsWith("reject")) throw new Error("늦은 상태 확인 실패");
+      return supportedStatus;
+    });
+    const read = vi.spyOn(request.file, "arrayBuffer");
+    await expect(runStudioBlenderJob({ ...request, isCurrent: () => current })).rejects.toMatchObject({ name: "AbortError" });
+    expect(client.status).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
+    expect(client.createJob).not.toHaveBeenCalled();
+    expect(client.uploadInput).not.toHaveBeenCalled();
+    expect(client.startJob).not.toHaveBeenCalled();
+    expect(client.cancelJob).not.toHaveBeenCalled();
+  });
+
   it.each(["http://127.0.0.1:49631", "http://localhost:49631", "http://[::1]:49631", "https://localhost"])("%s loopback 실행기만 허용한다", (baseUrl) => {
     expect(isStudioBlenderLoopbackUrl(baseUrl)).toBe(true);
   });

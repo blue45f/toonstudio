@@ -149,19 +149,22 @@ function ffmpegPlan(binary, job, jobDirectory) {
 
 function blenderPlan(binary, job, jobDirectory) {
   const input = firstInput(job);
+  // 입력 파일을 열기 전에 사용자 시작 설정과 자동 실행을 차단한다.
+  const args = ["--background", "--factory-startup", "--disable-autoexec", "--python-exit-code", "42", input];
   if (job.operationId === "render-scene") {
-    const result = imageOutput(jobDirectory, "blender0001.png");
-    return plan(binary, ["--background", input, "--render-output", join(jobDirectory, "outputs", "blender####"), "--render-format", "PNG", "--render-frame", "1"], [result]);
+    const result = imageOutput(jobDirectory, "blender.png");
+    const script = join(HERE, "adapters", "blender-render-scene.py");
+    return plan(binary, [...args, "--python", script, "--", result.localPath], [result]);
   }
   if (job.operationId === "line-art") {
     const result = imageOutput(jobDirectory, "line-art.png");
     const script = join(HERE, "adapters", "blender-line-art.py");
-    return plan(binary, ["--background", input, "--python", script, "--", result.localPath], [result]);
+    return plan(binary, [...args, "--python", script, "--", result.localPath], [result]);
   }
   if (job.operationId === "export-glb") {
     const result = output(jobDirectory, "result", "scene.glb", "model/gltf-binary");
     const script = join(HERE, "adapters", "blender-export-glb.py");
-    return plan(binary, ["--background", input, "--python", script, "--", result.localPath], [result]);
+    return plan(binary, [...args, "--python", script, "--", result.localPath], [result]);
   }
   throw new Error("ADAPTER_NOT_IMPLEMENTED");
 }
