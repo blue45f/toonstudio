@@ -5,6 +5,7 @@ import {
 } from "../studio-editable-half-edge-mesh";
 import { inspectStudioMeshSurfaceForInteractiveProjection } from "../mesh-surface/studio-mesh-surface-interactive";
 import { projectStudioMeshSurfaceForRender } from "../mesh-surface/studio-mesh-surface-render";
+import { hasSupportedStudioCoplanarEdgeDissolveChannels } from "./studio-hybrid-dcc-coplanar-edge-dissolve-channels";
 import { readStudioMeshFaceLoops, type StudioMeshFaceLoop } from "./studio-hybrid-dcc-face-modeling-mesh";
 
 type FailureCode = "unsupported-uv" | "unsupported-normal-field" | "unrenderable-result" | "budget-exceeded";
@@ -102,8 +103,7 @@ class Exact {
 }
 
 function checkMeshBudget(mesh: StudioEditableMesh): void {
-  if (Reflect.ownKeys(mesh).some((key) => typeof key !== "string"
-    || !["revision", "vertices", "halfEdges", "faces", "nextVertexId", "nextHalfEdgeId", "nextFaceId", "uvLayer"].includes(key))) {
+  if (!hasSupportedStudioCoplanarEdgeDissolveChannels(mesh)) {
     stop("unsupported-uv", "단일 코너 UV 외의 추가 메시 채널·메타데이터는 치유로 보존할 수 없습니다.");
   }
   if (!Array.isArray(mesh.vertices) || !Array.isArray(mesh.halfEdges) || !Array.isArray(mesh.faces)
