@@ -61,7 +61,7 @@ export class PressureGarmentStencilController {
 
     // draw 예외 뒤 다음 미등록 메시도 공유 재질을 읽기 전에 복원한다.
     for (const mesh of scene.meshes) if (mesh instanceof Mesh) this.watch(mesh);
-    // addMesh 알림은 Mesh의 super 생성자 안이다. 아직 준비되지 않은 mesh observable을 읽지 않는다.
+    // addMesh의 지연 알림에서는 큐에 넣고 다음 프레임·그룹 전에 메시 observer를 연결한다.
     const added = scene.onNewMeshAddedObservable.add((mesh) => {
       if (this.disposed) return;
       this.restorePending();
