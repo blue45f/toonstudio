@@ -25,6 +25,7 @@ import { acquireCaptureTarget, readCaptureTarget } from "./capture-targets";
 import { computeRigBounds, rigVisibleMeshes } from "./character-rig";
 import { fromVector3 } from "./convert";
 import { prepareHairOwnership } from "./hair-ownership";
+import { restorePendingPressureGarmentStencil } from "./pressure-garment-stencil";
 
 import type { CameraFraming, CaptureProvenance, CaptureRequest, CaptureResult, CapturedDepth, CapturedRaster, HairOwnership, RasterPassId, RenderPassId } from "../../contracts";
 import type { ReadbackLane, SyntheticBox } from "../readback";
@@ -353,7 +354,7 @@ async function renderPass(deps: CaptureDeps, camera: ArcRotateCamera, pass: Rend
       pendingOwnership = ownership?.submit();
       if (pending === null) boxes = syntheticBoxes(deps, camera, width, height);
     } finally {
-      around?.after();
+      try { restorePendingPressureGarmentStencil(deps.scene); } finally { around?.after(); }
     }
 
     // (3) 비동기 구간: GPU readback 대기(이 동안 뷰포트는 복원된 상태를 그린다)

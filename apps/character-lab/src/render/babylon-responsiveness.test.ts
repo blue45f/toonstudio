@@ -112,18 +112,23 @@ describe("P-01 morph 바인딩", () => {
 });
 
 describe("P-01 캡처 타깃 풀", () => {
-  it("작은 타깃(썸네일)은 같은 장면·크기·샘플 수면 재사용하고 장면 텍스처 목록에 남기지 않는다", () => {
+  it("작은 타깃은 같은 attachment끼리 재사용하고 lit stencil을 다른 패스와 섞지 않는다", () => {
     const { scene } = bare();
     const before = scene.textures.length;
     const first = acquireCaptureTarget(scene, "lit", 128, 128, 4);
     first.release();
     const second = acquireCaptureTarget(scene, "flat", 128, 128, 4);
-    expect(second.rtt).toBe(first.rtt);
+    expect(second.rtt).not.toBe(first.rtt);
     expect(second.pooled).toBe(true);
+    expect(first.rtt.renderTargetOptions.generateStencilBuffer).toBe(true);
+    expect(second.rtt.renderTargetOptions.generateStencilBuffer).toBe(false);
+    const repeatedLit = acquireCaptureTarget(scene, "lit", 128, 128, 4);
+    expect(repeatedLit.rtt).toBe(first.rtt);
+    repeatedLit.release();
     // 이름은 패스를 나타낸다(진단·모의 readback)
     expect(second.rtt.name).toBe("capture-flat");
     expect(scene.textures.length).toBe(before);
-    expect(pooledCaptureTargetCount(scene)).toBe(1);
+    expect(pooledCaptureTargetCount(scene)).toBe(2);
     // 반납하면 렌더 목록을 비워 임시 리그 메시 참조를 남기지 않는다
     second.rtt.renderList = [new Mesh("probe", scene)];
     second.release();

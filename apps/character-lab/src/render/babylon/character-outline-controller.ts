@@ -11,7 +11,7 @@ export class CharacterOutlineController {
   private readonly pressure: PressureOutlineController;
   private readonly nativeDepth: KitOutlineDepthController;
 
-  constructor(scene: Scene, white: BaseTexture) {
+  constructor(private readonly scene: Scene, white: BaseTexture) {
     this.pressure = new PressureOutlineController(scene, white);
     this.nativeDepth = new KitOutlineDepthController(scene);
   }
@@ -28,6 +28,11 @@ export class CharacterOutlineController {
 
   meshesFor(rig: CharacterRig): Mesh[] {
     return this.pressure.meshesFor(rig);
+  }
+
+  /** 준비 실패·draw 예외에도 원래 의상 stencil을 다음 프레임 전에 복원한다. */
+  renderScene(): void {
+    try { this.scene.render(); } finally { this.pressure.restorePending(); }
   }
 
   dispose(): void {
