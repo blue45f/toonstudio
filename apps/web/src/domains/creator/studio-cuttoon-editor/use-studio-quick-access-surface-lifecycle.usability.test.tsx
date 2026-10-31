@@ -182,7 +182,7 @@ describe("팔레트 초기 초점과 사용자 이동의 경합", () => {
       if (state === "fieldset-disabled") first.closest("fieldset")?.setAttribute("disabled", "");
       else if (state === "negative-tabindex") first.tabIndex = -1;
       else if (state === "css-hidden") first.style.visibility = "hidden";
-      else if (state === "layout-hidden") vi.spyOn(first, "getClientRects").mockReturnValue(Object.assign([], { item: () => null }));
+      else if (state === "layout-hidden") Object.defineProperty(first, "getClientRects", { configurable: true, value: () => Object.assign([], { item: () => null }) });
       else first.setAttribute(state, state === "aria-hidden" ? "true" : "");
       const unavailableFocus = vi.spyOn(first, "focus");
       act(() => vi.runOnlyPendingTimers());
@@ -256,7 +256,7 @@ describe("팔레트 초기 초점과 사용자 이동의 경합", () => {
     try {
       const view = render(<Surface>{commands()}</Surface>); act(() => vi.runOnlyPendingTimers());
       if (state === "css-hidden") launcher.style.visibility = "hidden";
-      else vi.spyOn(launcher, "getClientRects").mockReturnValue(Object.assign([], { item: () => null }));
+      else Object.defineProperty(launcher, "getClientRects", { configurable: true, value: () => Object.assign([], { item: () => null }) });
       const restored = vi.spyOn(launcher, "focus"); view.unmount();
       expect(restored).not.toHaveBeenCalled();
     } finally { launcher.remove(); }
