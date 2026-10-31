@@ -1,8 +1,8 @@
 import {
-  ArrowRight, Lightbulb,
+  Lightbulb,
   Sparkles, Upload,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -88,11 +88,12 @@ import {
   standaloneDocumentTitle,
   type AuxiliaryKind,
 } from "./studio-mode-project-create-helpers";
-import { StudioModeWorkspacePreview } from "./StudioModeWorkspacePreview";
-import { StudioProjectFormatPreview, StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
-import { DisabledReason } from "./StudioTaskFlow";
+import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCreateLaunchSummary";
+import { StudioCreateReviewDetails } from "./StudioCreateReviewDetails";
+import { StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
 import { STUDIO_PROJECT_TITLE_MAX_LENGTH, normalizeStudioProjectTitleDraft } from "./studio-project-title";
 import "./studio-illustrated-project-surfaces.css";
+import "./studio-create-focused-flow.css";
 
 export function StudioModeProjectCreatePage() {
   const bt = useBilingual("StudioModeProjectCreatePage");
@@ -147,6 +148,7 @@ export function StudioModeProjectCreatePage() {
   const [sizeOverride, setSizeOverride] = useState<{ width: string; height: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const advancedSettingsRef = useRef<HTMLDetailsElement>(null);
 
   const format = studioProjectFormatProfile(formatId);
   const auxiliary = STUDIO_AUXILIARY_WORKSPACE_OPTIONS.find((option) => option.id === auxiliaryKind) ?? null;
@@ -175,12 +177,18 @@ export function StudioModeProjectCreatePage() {
   const targetTitle = auxiliary
     ? bt(auxiliary.titleKo, auxiliary.titleEn)
     : bt(format.titleKo, format.titleEn);
-  const startLabel = effectiveStartPoint === "files" && !auxiliary
-    ? bt("프로젝트 만들고 파일 가져오기", "Create project and import files")
-    : structuredWebtoon
-      ? bt("프로젝트와 제작 계획 만들기", "Create project and production plan")
+  const startLabel = structuredWebtoon
+    ? bt("프로젝트와 제작 계획 만들기", "Create project and production plan")
+    : effectiveStartPoint === "files" && !auxiliary
+      ? bt("프로젝트 만들고 파일 가져오기", "Create project and import files")
       : bt(`${targetTitle} 시작`, `Start ${targetTitle}`);
 
+  const nextStepLabel = structuredWebtoon ? bt("다음: 제작 계획에 맞춘 작업 화면", "Next: your planned workspace")
+    : !auxiliary && effectiveStartPoint === "files" ? bt("다음: 파일 가져오기", "Next: import files")
+      : !auxiliary && studioCreateLanding(lane) === "editor" ? bt("다음: 편집기", "Next: editor")
+        : !auxiliary && effectiveStartPoint === "idea" ? bt("다음: 이야기 기획", "Next: story planning")
+          : !auxiliary && effectiveStartPoint === "script" ? bt("다음: 대본 작성", "Next: script writing")
+            : bt("다음: 편집기", "Next: editor");
   function chooseFormat(profile: StudioProjectFormatProfile) {
     setAuxiliaryKind(null);
     setFormatId(profile.id);
@@ -303,8 +311,7 @@ export function StudioModeProjectCreatePage() {
     >
       <Container size="wide" className="py-4 sm:py-7">
         <div className="mx-auto max-w-6xl">
-          {/* 목적 헤더 슬롯 (BLUEPRINT §3.1 form 변형) — eyebrow+H1+설명 1줄+부 행동 1개.
-              주 행동은 양식 끝 제출 구역에 하나만 두므로 헤더에는 부 행동(가져오기)만 둔다. */}
+          {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
             eyebrow={(
               <>
@@ -314,8 +321,8 @@ export function StudioModeProjectCreatePage() {
             )}
             title={bt("어떤 결과물을 완성하려고 하나요?", "What do you want to finish?")}
             description={bt(
-              "결과물 형식을 고르면 작품 구조, 작업실, 검수 기준과 내보내기가 함께 준비됩니다.",
-              "Choose the final outcome and ToonStudio prepares its structure, workspace, checks and exports.",
+              "형식과 시작 재료를 고르면 바로 시작할 수 있어요. 자세한 설정은 필요한 경우에만 펼쳐 보세요.",
+              "Choose a format and starting material, then begin. Open the extra settings only when needed.",
             )}
             secondaryActions={(
               <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
@@ -349,8 +356,7 @@ export function StudioModeProjectCreatePage() {
             title={bt("완성할 콘텐츠를 선택하세요", "Choose the final outcome")}
             description={bt("도구가 아니라 독자와 시청자가 보게 될 형태를 기준으로 선택합니다.", "Choose by what readers or viewers will receive, not by a tool.")}
           >
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5" data-studio-format-count={STUDIO_PROJECT_FORMAT_PROFILES.length}>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5" data-studio-format-count={STUDIO_PROJECT_FORMAT_PROFILES.length}>
               {STUDIO_PROJECT_FORMAT_PROFILES.map((profile) => {
                 const active = !auxiliary && profile.id === format.id;
                 const outputs = locale === "ko" ? profile.outputsKo : profile.outputsEn;
@@ -362,7 +368,7 @@ export function StudioModeProjectCreatePage() {
                     data-studio-create-format={profile.id}
                     onClick={() => chooseFormat(profile)}
                     className={cn(
-                      "rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      "min-w-0 rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                       active
                         ? "border-accent bg-accent-soft/45"
                         : "border-line bg-panel/45 hover:border-line-strong hover:bg-raised",
@@ -372,13 +378,12 @@ export function StudioModeProjectCreatePage() {
                       <span>{bt("안내 일러스트", "Guide illustration")}</span>
                     </span>
                     <StudioProjectFormatVisual profile={profile} active={active} className="h-32" />
-                    <strong className="mt-3 block text-sm text-fg">
-                      {bt(profile.titleKo, profile.titleEn)}
-                    </strong>
-                    <span className="mt-1 line-clamp-3 block text-xs leading-5 text-fg-2">
+                    <strong className="mt-3 block break-words text-sm text-fg">{bt(profile.titleKo, profile.titleEn)}</strong>
+                    <span className="mt-1 block min-h-5 text-xs font-bold text-accent">{active ? bt("✓ 선택됨", "✓ Selected") : null}</span>
+                    <span className="mt-1 block break-words text-xs leading-5 text-fg-2">
                       {bt(profile.descriptionKo, profile.descriptionEn)}
                     </span>
-                    <span className={cn("mt-2 block text-[0.65rem] font-bold", active ? "text-fg" : "text-accent")}>
+                    <span className={cn("mt-2 block break-words text-xs font-bold", active ? "text-fg" : "text-fg-2")}>
                       {bt("출력", "Output")} · {outputs.slice(0, 2).join(" · ")}
                     </span>
                   </button>
@@ -420,15 +425,13 @@ export function StudioModeProjectCreatePage() {
               </div>
             </details>
           </FormStepSection>
-
           <FormStepSection
             step={2}
             titleId="studio-start-point-title"
             title={bt("지금 어떤 재료를 가지고 있나요?", "What do you have right now?")}
             description={bt("선택한 위치에서 가장 짧은 제작 경로로 시작합니다.", "Start from the shortest production path for your current material.")}
           >
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
               {STUDIO_PROJECT_START_POINT_OPTIONS.map((option) => {
                 const Icon = START_POINT_ICONS[option.id];
                 const active = effectiveStartPoint === option.id;
@@ -440,7 +443,7 @@ export function StudioModeProjectCreatePage() {
                     data-studio-start-point={option.id}
                     onClick={() => chooseStartPoint(option.id)}
                     className={cn(
-                      "flex min-h-24 items-start gap-3 rounded-2xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+                      "flex min-h-24 min-w-0 flex-col items-start gap-2 rounded-2xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:flex-row sm:gap-3",
                       active ? "border-accent bg-accent-soft/45" : "border-line bg-panel/45 hover:bg-raised",
                     )}
                   >
@@ -450,7 +453,7 @@ export function StudioModeProjectCreatePage() {
                     )}>
                       <Icon size={17} aria-hidden="true" />
                     </span>
-                    <span>
+                    <span className="min-w-0 break-words">
                       <strong className="block text-sm text-fg">{bt(option.titleKo, option.titleEn)}</strong>
                       <span className="mt-1 block text-xs leading-5 text-fg-2">
                         {bt(option.descriptionKo, option.descriptionEn)}
@@ -461,19 +464,19 @@ export function StudioModeProjectCreatePage() {
               })}
             </div>
           </FormStepSection>
-
           <FormStepSection
             step={3}
             titleId="studio-project-details-title"
-            title={bt("프로젝트 세부 설정", "Project details")}
-            description={bt("형식마다 필요한 크기와 초기 문서 구조가 다르게 준비됩니다.", "Each format prepares its own size and initial document structure.")}
+            title={bt("이름과 기본 크기를 확인하세요", "Check the name and starting size")}
+            description={bt("별도 규격이 없다면 미리 채워진 값으로 시작하세요.", "Use the prefilled values unless your project needs a different specification.")}
           >
-
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="block text-xs font-bold text-fg-2" htmlFor={PROJECT_TITLE_INPUT_ID}>
                 {bt("프로젝트 이름", "Project name")}
                 <input
                   id={PROJECT_TITLE_INPUT_ID}
+                  aria-invalid={!titleReady || undefined}
+                  aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
                   value={title}
                   maxLength={STUDIO_PROJECT_TITLE_MAX_LENGTH}
                   onChange={(event) => {
@@ -509,6 +512,24 @@ export function StudioModeProjectCreatePage() {
               </label>
             </div>
 
+          </FormStepSection>
+
+          <StudioCreateLaunchSummary
+            targetTitle={targetTitle} width={documentWidth} height={documentHeight}
+            titleReady={titleReady} sizeReady={sizeReady} structuredWebtoon={structuredWebtoon}
+            creating={creating} startLabel={startLabel} nextStepLabel={nextStepLabel} error={error}
+            onCreate={create} onFixName={focusProjectTitle}
+            onFixSize={() => {
+              if (advancedSettingsRef.current) advancedSettingsRef.current.open = true;
+              document.getElementById(customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID)?.focus();
+            }}
+          />
+
+          <details ref={advancedSettingsRef} className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" data-studio-create-advanced="true">
+            <summary className="min-h-12 cursor-pointer content-center rounded-xl text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              {bt("크기·제작 목적·협업 설정 (선택)", "Size, purpose and collaboration (optional)")}
+              <span className="mt-1 block text-xs font-normal leading-5 text-fg-2">{bt("직접 정할 필요가 있을 때만 바꾸세요. 접어도 선택한 값은 유지됩니다.", "Change these only when needed. Collapsing this section keeps your choices.")}</span>
+            </summary>
             <fieldset className="mt-4" data-studio-create-custom-size="true">
               <legend className="text-xs font-bold text-fg-2">
                 {bt("캔버스 크기 직접 입력", "Enter canvas size directly")}
@@ -525,6 +546,7 @@ export function StudioModeProjectCreatePage() {
                     step={1}
                     value={sizeOverride?.width ?? String(modePlan.document.width)}
                     aria-invalid={sizeOverride !== null && customWidth === null ? true : undefined}
+                    aria-describedby={sizeOverride !== null && customWidth === null ? CREATE_SIZE_REASON_ID : undefined}
                     onChange={(event) => setSizeOverride({
                       width: event.target.value,
                       height: sizeOverride?.height ?? String(modePlan.document.height),
@@ -544,6 +566,7 @@ export function StudioModeProjectCreatePage() {
                     step={1}
                     value={sizeOverride?.height ?? String(modePlan.document.height)}
                     aria-invalid={sizeOverride !== null && customHeight === null ? true : undefined}
+                    aria-describedby={sizeOverride !== null && customHeight === null ? CREATE_SIZE_REASON_ID : undefined}
                     onChange={(event) => setSizeOverride({
                       width: sizeOverride?.width ?? String(modePlan.document.width),
                       height: event.target.value,
@@ -638,42 +661,12 @@ export function StudioModeProjectCreatePage() {
                 )}
               </p>
             )}
-          </FormStepSection>
+            <StudioCreateReturnToStart />
+          </details>
 
-          <FormStepSection
-            step={4}
-            titleId="studio-prepared-project-title"
-            title={bt("준비되는 프로젝트를 확인하세요", "Review what will be prepared")}
-            description={bt("선택 결과가 실제 작업 화면과 출력 방식에 어떻게 반영되는지 보여줍니다.", "See how your choice changes the workspace and delivery.")}
-          >
+          <StudioCreateReviewDetails format={auxiliary ? null : format} workspace={modePlan.profile} locale={locale} pageCount={selectedPageCount} />
 
-            <div className="mt-4 space-y-4">
-              {!auxiliary ? <StudioProjectFormatPreview profile={format} locale={locale} /> : null}
-              <StudioModeWorkspacePreview profile={modePlan.profile} locale={locale} />
-              {!auxiliary ? (
-                <div className="rounded-2xl border border-line bg-panel/45 p-4">
-                  <p className="text-xs font-black text-fg-2">{bt("연결되는 작업실", "Connected workspaces")}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {format.enabledWorkspaces.map((workspace) => (
-                      <span key={workspace} className="rounded-full border border-line bg-card px-2.5 py-1 text-[0.68rem] font-bold text-fg-2">
-                        {workspace}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-fg-2">
-                    {bt(
-                      `${selectedPageCount}개 초기 페이지 · ${format.keyToolsKo.join(" · ")}`,
-                      `${selectedPageCount} initial page${selectedPageCount === 1 ? "" : "s"} · ${format.keyToolsEn.join(" · ")}`,
-                    )}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </FormStepSection>
-
-          {/* 고급 구역 (BLUEPRINT §3.1 form 변형) — 선택 설정은 기본 꺼짐이고, 펼침 상태가
-              온보딩 선택 상태와 양방향으로 묶여 있어 AdvancedSection(details)으로 바꾸지 않고
-              슬롯 역할만 이 섹션이 맡는다. */}
+          {/* 명시적인 제작 계획 선택은 기존 토글·온보딩 상태를 유지한다. */}
           {supportsProductionPlan ? (
             <section className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" data-studio-create-optional-settings="true">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -683,8 +676,8 @@ export function StudioModeProjectCreatePage() {
                   </p>
                   <p className="mt-1 text-xs leading-5 text-fg-2">
                     {bt(
-                      "대본·콘티·팀 구성과 연재 주기를 반영해 첫 할 일과 제작 게이트를 만듭니다.",
-                      "Use your material, team and cadence to create the first tasks and production gates.",
+                      "대본·콘티·제작 인원과 주기를 정하고, 처음 할 일을 준비합니다.",
+                      "Set your script, storyboard, team and schedule to prepare the first tasks.",
                     )}
                   </p>
                 </div>
@@ -749,44 +742,9 @@ export function StudioModeProjectCreatePage() {
                   </div>
                 </div>
               ) : null}
+              {onboardingEnabled ? <StudioCreateReturnToStart /> : null}
             </section>
           ) : null}
-
-          {/* 제출·복구 구역 (BLUEPRINT §3.1 form 변형) — 주 행동(만들기) 1개와
-              비활성 사유·오류(role=alert)를 같은 구역에 모아 양식을 끝낸다. */}
-          <section className="mt-4 rounded-3xl border border-accent/35 bg-accent-soft/20 p-4 sm:p-5">
-            <div className="rounded-xl bg-panel/60 px-3 py-2.5 text-xs leading-5 text-fg-2">
-              {bt(
-                "작업은 이 기기에 자동 저장됩니다. 팀 공유와 클라우드 백업은 작업 중 언제든 연결할 수 있어요.",
-                "Your work is autosaved on this device. Team sharing and cloud backup can be connected later.",
-              )}
-            </div>
-            <DisabledReason id={CREATE_DISABLED_REASON_ID} visible={!titleReady} className="mt-3">
-              {bt("프로젝트 이름을 입력해 주세요.", "Enter a project name.")}
-            </DisabledReason>
-            <DisabledReason id={CREATE_SIZE_REASON_ID} visible={!sizeReady} className="mt-3">
-              {bt(
-                "캔버스 너비와 높이는 1부터 1,000,000 사이의 정수로 입력해 주세요.",
-                "Enter canvas width and height as whole numbers between 1 and 1,000,000.",
-              )}
-            </DisabledReason>
-            <button
-              type="button"
-              disabled={creating || !titleReady || !sizeReady}
-              aria-describedby={
-                [
-                  !titleReady ? CREATE_DISABLED_REASON_ID : null,
-                  !sizeReady ? CREATE_SIZE_REASON_ID : null,
-                ].filter(Boolean).join(" ") || undefined
-              }
-              onClick={create}
-              className={buttonClass({ variant: "solid", size: "lg", className: "mt-4 min-h-12 w-full gap-2" })}
-            >
-              {creating ? bt("프로젝트 만드는 중…", "Creating project…") : startLabel}
-              {!creating ? <ArrowRight size={16} aria-hidden="true" /> : null}
-            </button>
-            {error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}
-          </section>
         </div>
       </Container>
     </div>
