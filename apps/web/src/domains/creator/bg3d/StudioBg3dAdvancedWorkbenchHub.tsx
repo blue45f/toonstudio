@@ -447,7 +447,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
             onApplyShader={(preset) => setLastActionSummary(`셰이더: ${preset.name}`)}
             onApplyMtoonPreset={(preset) => setLastActionSummary(`MToon LT: ${preset.label}`)}
             onApplyCc0SurfaceMaterial={(entry) =>
-              setLastActionSummary(`CC0 표면 재질: ${entry.labelKo}`)
+              setLastActionSummary(`${entry.provider} · ${entry.labelKo}`)
             }
           />
         ) : null}
