@@ -1,0 +1,882 @@
+{
+  "schema": "toonstudio.purchased-surface-materials.v1",
+  "packId": "toon-plasticine-pbr-material",
+  "provider": "EmacEArt",
+  "license": {
+    "kind": "purchased-project-use",
+    "sourceLicenseSha256": "55a6a1730ed9fff877c77172c9bd707fc55268380acf09eb384d4ef78dcd52e8"
+  },
+  "originalPngVerification": {
+    "date": "2026-11-01",
+    "logicalFiles": 65,
+    "logicalBytes": 1939211459,
+    "receiptSha256": "edb321d662da8216db9cc90ecbf00ff3a9380021e19bbe4b71c7a8fcc45e0242"
+  },
+  "assets": [
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0352d2ef1b6f5dcf2d40a37f2d00e2c5d1bd006ebf874736b7423073152461aa.png",
+      "sha256": "0352d2ef1b6f5dcf2d40a37f2d00e2c5d1bd006ebf874736b7423073152461aa",
+      "bytes": 4567596
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/03fdc6e4ceec4e67af874ac0ea139875425d6fc79c3f47ac0d518ea6c38fbb4b.png",
+      "sha256": "03fdc6e4ceec4e67af874ac0ea139875425d6fc79c3f47ac0d518ea6c38fbb4b",
+      "bytes": 11348532
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/092f9c6f9fde6db309767fd6cdeae84c9da631bacad14981d2812f057b3bceb7.png",
+      "sha256": "092f9c6f9fde6db309767fd6cdeae84c9da631bacad14981d2812f057b3bceb7",
+      "bytes": 232843
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0da4d074e24ddf57625a4ded6c10fd47320f5e43ca1e0a957c2190a7caf09498.png",
+      "sha256": "0da4d074e24ddf57625a4ded6c10fd47320f5e43ca1e0a957c2190a7caf09498",
+      "bytes": 3951635
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0e165b88ab4236ba4304e9583539925391faefb7b4e7c9a0ab6634fa486dbfb2.png",
+      "sha256": "0e165b88ab4236ba4304e9583539925391faefb7b4e7c9a0ab6634fa486dbfb2",
+      "bytes": 30482927
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/12f65e7c8ca7db7585f57532a8e9c194704c1e11bd54adff95c82848ae353481.png",
+      "sha256": "12f65e7c8ca7db7585f57532a8e9c194704c1e11bd54adff95c82848ae353481",
+      "bytes": 7267951
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/1a191f3b2097fe25cdf670d873feabb6d36eb26498e77af8a5a4b1fae87ea72f.png",
+      "sha256": "1a191f3b2097fe25cdf670d873feabb6d36eb26498e77af8a5a4b1fae87ea72f",
+      "bytes": 11072693
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/22777ffaf31ec3b929e3095f1cec81614caa68196f8393767dd24b10703dfd64.png",
+      "sha256": "22777ffaf31ec3b929e3095f1cec81614caa68196f8393767dd24b10703dfd64",
+      "bytes": 177103891
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/2bc650e720cce9eb661e905be63a374bb3615b011a835f94a831298ddb8994cc.png",
+      "sha256": "2bc650e720cce9eb661e905be63a374bb3615b011a835f94a831298ddb8994cc",
+      "bytes": 6990
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/3482251a0f2203c743b3da48b593b3d40aa7f1ee0e1ba2078ed1abd4594a677b.png",
+      "sha256": "3482251a0f2203c743b3da48b593b3d40aa7f1ee0e1ba2078ed1abd4594a677b",
+      "bytes": 2151032
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/35f37844785a00aaa9b5eff0ecba0fd6ac8ec0918dc51f864a2475787b68a101.png",
+      "sha256": "35f37844785a00aaa9b5eff0ecba0fd6ac8ec0918dc51f864a2475787b68a101",
+      "bytes": 11455793
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/35fe26a131b08e8bd071d17cb86f09e0722df7ec4386f8c93a81cc6e40321cf8.png",
+      "sha256": "35fe26a131b08e8bd071d17cb86f09e0722df7ec4386f8c93a81cc6e40321cf8",
+      "bytes": 2713596
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/3f6ac95de4fbd9aeb0d10a8c227428cc32be4089d7b51afee8c539f803652b44.png",
+      "sha256": "3f6ac95de4fbd9aeb0d10a8c227428cc32be4089d7b51afee8c539f803652b44",
+      "bytes": 5311377
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/410220980da461b10cb7922ec5955ab6833ac2219474f179bd870a5bd2e3019c.png",
+      "sha256": "410220980da461b10cb7922ec5955ab6833ac2219474f179bd870a5bd2e3019c",
+      "bytes": 24222558
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/420f67dbf3dc23e3f9a9b866a52a7912eb37df79b9eeb3feee570815e364085f.png",
+      "sha256": "420f67dbf3dc23e3f9a9b866a52a7912eb37df79b9eeb3feee570815e364085f",
+      "bytes": 176896646
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/425675300b9c434fc98c66b375ffd1ab0a9893fcd357909faa44517821947ebe.png",
+      "sha256": "425675300b9c434fc98c66b375ffd1ab0a9893fcd357909faa44517821947ebe",
+      "bytes": 31977063
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/4d30ff34503dc0ae6b3d4b04501d7417259e3b0b9fc0d9b86e97f08ebdc1e994.png",
+      "sha256": "4d30ff34503dc0ae6b3d4b04501d7417259e3b0b9fc0d9b86e97f08ebdc1e994",
+      "bytes": 153581907
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/4e5c5b60dba2dcc094774b1e907752edecd5d8d08faf10c5af91f189628ba92b.png",
+      "sha256": "4e5c5b60dba2dcc094774b1e907752edecd5d8d08faf10c5af91f189628ba92b",
+      "bytes": 7999743
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/56e8271adf849dcda1ea95e2ab52829c3b0209d9bb42c8b7e20b97cf0da20dc6.png",
+      "sha256": "56e8271adf849dcda1ea95e2ab52829c3b0209d9bb42c8b7e20b97cf0da20dc6",
+      "bytes": 127027
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/6074cb12102aa8c54f2dc0b8beda2f75e9e245fda606f41cbe63186381948251.png",
+      "sha256": "6074cb12102aa8c54f2dc0b8beda2f75e9e245fda606f41cbe63186381948251",
+      "bytes": 3006887
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/60ec034447b7e07a1bf72bac167efee8b9be92728f15e0cf875a7781690a8bf4.png",
+      "sha256": "60ec034447b7e07a1bf72bac167efee8b9be92728f15e0cf875a7781690a8bf4",
+      "bytes": 10279040
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/61d1c6914a482b7baa971e3bd1f8748953b4783468e15690b617c5d2922ba29e.png",
+      "sha256": "61d1c6914a482b7baa971e3bd1f8748953b4783468e15690b617c5d2922ba29e",
+      "bytes": 4268390
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/702ef988ca953968be3e559f5eec6d46b2f05a47153fd7c58beb55162d09b031.png",
+      "sha256": "702ef988ca953968be3e559f5eec6d46b2f05a47153fd7c58beb55162d09b031",
+      "bytes": 176546
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/72b4cf862bab9df5e098d8aae24be23e945fd70e94a9618dfe304b120c32b16d.png",
+      "sha256": "72b4cf862bab9df5e098d8aae24be23e945fd70e94a9618dfe304b120c32b16d",
+      "bytes": 61825371
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/72bedbf3366739eb3ad752c4edef892e256e9e8e75f7f9fb0710b6b0928d8381.png",
+      "sha256": "72bedbf3366739eb3ad752c4edef892e256e9e8e75f7f9fb0710b6b0928d8381",
+      "bytes": 361477
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/74adb7879ae60f6329dc7ccd6a24d81ccf3e20e82d8bc10ff62851c8e3a764f5.png",
+      "sha256": "74adb7879ae60f6329dc7ccd6a24d81ccf3e20e82d8bc10ff62851c8e3a764f5",
+      "bytes": 10136401
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/75ed663ee4f7fbb2785214728925df54a85db1058eaeb13f126aceed3f144f53.png",
+      "sha256": "75ed663ee4f7fbb2785214728925df54a85db1058eaeb13f126aceed3f144f53",
+      "bytes": 135327
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/785cab65929acfa49021f5cffade01d8e9202a3fc19218d4462e676ac3690484.png",
+      "sha256": "785cab65929acfa49021f5cffade01d8e9202a3fc19218d4462e676ac3690484",
+      "bytes": 1126808
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/7bfe1ee68c7dafd3d22464a65d230d2fad043911f1082a4409aa635f7bce6cd0.png",
+      "sha256": "7bfe1ee68c7dafd3d22464a65d230d2fad043911f1082a4409aa635f7bce6cd0",
+      "bytes": 464414
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/82baece976eb535c741fc3d1be23393f22786ed64d5483d9066672f16968b10f.png",
+      "sha256": "82baece976eb535c741fc3d1be23393f22786ed64d5483d9066672f16968b10f",
+      "bytes": 40176426
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/843f16aeef85fa7ddfb6ed5edff35a768c40ed09b15867b21a73b6f162fee66c.png",
+      "sha256": "843f16aeef85fa7ddfb6ed5edff35a768c40ed09b15867b21a73b6f162fee66c",
+      "bytes": 4560307
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/857c1fde389e3198cda0683633b30c4d2fe4268adc21a03aaa5d02a588729347.png",
+      "sha256": "857c1fde389e3198cda0683633b30c4d2fe4268adc21a03aaa5d02a588729347",
+      "bytes": 10786282
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/860b4870a34fdc59decca0d7fda25f509a3ec020d75a588048dac8d330eed2fb.png",
+      "sha256": "860b4870a34fdc59decca0d7fda25f509a3ec020d75a588048dac8d330eed2fb",
+      "bytes": 11190395
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/945aeb2963eb2b10a93e7f2cf5bc5fdf1b4fd26f2824d62bb69bab53ca105050.png",
+      "sha256": "945aeb2963eb2b10a93e7f2cf5bc5fdf1b4fd26f2824d62bb69bab53ca105050",
+      "bytes": 11383055
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/95cb8c3518ab740ddc30bc60c6f47a17c1aeaa8f2aded840d22524ad61b3e9b2.png",
+      "sha256": "95cb8c3518ab740ddc30bc60c6f47a17c1aeaa8f2aded840d22524ad61b3e9b2",
+      "bytes": 11130455
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/9713104f2195a427b7df69ff14d0c3fb25b7a11c71b5cec7b10cf3ac08c82d50.png",
+      "sha256": "9713104f2195a427b7df69ff14d0c3fb25b7a11c71b5cec7b10cf3ac08c82d50",
+      "bytes": 3363559
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/981b6eaf23176adabb93ef7442c0196ada1d5745788c1bffdeac658a21916b96.png",
+      "sha256": "981b6eaf23176adabb93ef7442c0196ada1d5745788c1bffdeac658a21916b96",
+      "bytes": 11355550
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/9f7168026f45d7da513f74ed305bd5e28d4d3087b9af2680c122f22829c24083.png",
+      "sha256": "9f7168026f45d7da513f74ed305bd5e28d4d3087b9af2680c122f22829c24083",
+      "bytes": 1742390
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/a6232020450addcb564656f18994c250f5c1e3e81daf1b572a74b9b563e4ae12.png",
+      "sha256": "a6232020450addcb564656f18994c250f5c1e3e81daf1b572a74b9b563e4ae12",
+      "bytes": 184395951
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/a81b518701f63f433f64183a39ae8dbfcac26fdbfed1aededa5911e1312faece.png",
+      "sha256": "a81b518701f63f433f64183a39ae8dbfcac26fdbfed1aededa5911e1312faece",
+      "bytes": 171695578
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/aa0e101d1685735d7b44ce6b31b312c777210902ad591083ad5204b6852bcaaf.png",
+      "sha256": "aa0e101d1685735d7b44ce6b31b312c777210902ad591083ad5204b6852bcaaf",
+      "bytes": 2816728
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/ac4d667266a43b60c54bf8e443ea363b5a1d7d783327f94204317c90ca9eb099.png",
+      "sha256": "ac4d667266a43b60c54bf8e443ea363b5a1d7d783327f94204317c90ca9eb099",
+      "bytes": 4277752
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/b241d0f99c87ecea17cfc1fabd3c850e57a4dbfd80cd2118c7591cf1934d4b7d.png",
+      "sha256": "b241d0f99c87ecea17cfc1fabd3c850e57a4dbfd80cd2118c7591cf1934d4b7d",
+      "bytes": 176452082
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/b2bff963258eb8869c0984624990b1749cdc0f2aa3a491c9e7cc591dc8c53619.png",
+      "sha256": "b2bff963258eb8869c0984624990b1749cdc0f2aa3a491c9e7cc591dc8c53619",
+      "bytes": 3996505
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/bc22b31befb8e3c368ac2bf512a730d202ab9064fbcbd04636baeb9e1eea304d.png",
+      "sha256": "bc22b31befb8e3c368ac2bf512a730d202ab9064fbcbd04636baeb9e1eea304d",
+      "bytes": 94238412
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/c141ed75bca1862fc0a0c88db1ae16f81dcd9c73112f735409fd1f28d040032f.png",
+      "sha256": "c141ed75bca1862fc0a0c88db1ae16f81dcd9c73112f735409fd1f28d040032f",
+      "bytes": 29034990
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/c2f95d123e6cf31c73141772496e33f90405b46ddc69b438f8cd8b2bc901daa1.png",
+      "sha256": "c2f95d123e6cf31c73141772496e33f90405b46ddc69b438f8cd8b2bc901daa1",
+      "bytes": 140729
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/c9607fed2dda9b042b4d38686412a92a5887582a116258bdd8a1bec224ba86ac.png",
+      "sha256": "c9607fed2dda9b042b4d38686412a92a5887582a116258bdd8a1bec224ba86ac",
+      "bytes": 23441530
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d056b7b93839bdff106ca9ca46d0b65da341dc7dce1ae4405c9a5d71fba97ade.png",
+      "sha256": "d056b7b93839bdff106ca9ca46d0b65da341dc7dce1ae4405c9a5d71fba97ade",
+      "bytes": 2079275
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+      "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+      "bytes": 65408
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d617062c2964bd5124bff9c32c1367c6180aefe36bccb361752d5b8c73ab7734.png",
+      "sha256": "d617062c2964bd5124bff9c32c1367c6180aefe36bccb361752d5b8c73ab7734",
+      "bytes": 86766086
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d6ebf776ac272ebdcbfc8a27f687d8a3d8d48141314c03b8cc037b40b5bd6b1c.png",
+      "sha256": "d6ebf776ac272ebdcbfc8a27f687d8a3d8d48141314c03b8cc037b40b5bd6b1c",
+      "bytes": 84499
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/db5313be973bd9d7fcb02d1741de25bb81db9627bff81f100e5fac307c254f36.png",
+      "sha256": "db5313be973bd9d7fcb02d1741de25bb81db9627bff81f100e5fac307c254f36",
+      "bytes": 19848005
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/dfa60ad8b603a033e1f95caed5d89144410d578f97cab4b980b87d8409430e38.png",
+      "sha256": "dfa60ad8b603a033e1f95caed5d89144410d578f97cab4b980b87d8409430e38",
+      "bytes": 553630
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/e1b18b95d36508122c60295cc0f630a4d6c07fc5ca24a4ee0812b9f2c913d686.png",
+      "sha256": "e1b18b95d36508122c60295cc0f630a4d6c07fc5ca24a4ee0812b9f2c913d686",
+      "bytes": 182085471
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/e6a018081077a32b3d17f26aedc80d3c62411ec40dd56c2aa90d032cafb95743.png",
+      "sha256": "e6a018081077a32b3d17f26aedc80d3c62411ec40dd56c2aa90d032cafb95743",
+      "bytes": 3338573
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/f0b8cdbf8c6bdfc269c29109c250df233d706dff0e5de58017f05a8fe53c0321.png",
+      "sha256": "f0b8cdbf8c6bdfc269c29109c250df233d706dff0e5de58017f05a8fe53c0321",
+      "bytes": 3650221
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/f96d75f334a5912e57191cc04e4fb4eadb636e28af8f9267c6fb2ff16df3afea.png",
+      "sha256": "f96d75f334a5912e57191cc04e4fb4eadb636e28af8f9267c6fb2ff16df3afea",
+      "bytes": 87342631
+    },
+    {
+      "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/fb782df9fcf38c2e396e9ef55699bd42049e6deafa1a06cbf66840def8d2f4db.png",
+      "sha256": "fb782df9fcf38c2e396e9ef55699bd42049e6deafa1a06cbf66840def8d2f4db",
+      "bytes": 2574075
+    }
+  ],
+  "materials": [
+    {
+      "id": "emaceart-plasticine-01",
+      "labelKo": "플라스티신 01",
+      "labelEn": "Plasticine 01",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d056b7b93839bdff106ca9ca46d0b65da341dc7dce1ae4405c9a5d71fba97ade.png",
+      "defaultVariantId": "emaceart-plasticine-01-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-01-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/db5313be973bd9d7fcb02d1741de25bb81db9627bff81f100e5fac307c254f36.png",
+              "sha256": "db5313be973bd9d7fcb02d1741de25bb81db9627bff81f100e5fac307c254f36",
+              "bytes": 19848005
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/4d30ff34503dc0ae6b3d4b04501d7417259e3b0b9fc0d9b86e97f08ebdc1e994.png",
+              "sha256": "4d30ff34503dc0ae6b3d4b04501d7417259e3b0b9fc0d9b86e97f08ebdc1e994",
+              "bytes": 153581907
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/785cab65929acfa49021f5cffade01d8e9202a3fc19218d4462e676ac3690484.png",
+              "sha256": "785cab65929acfa49021f5cffade01d8e9202a3fc19218d4462e676ac3690484",
+              "bytes": 1126808
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-01-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d056b7b93839bdff106ca9ca46d0b65da341dc7dce1ae4405c9a5d71fba97ade.png",
+              "sha256": "d056b7b93839bdff106ca9ca46d0b65da341dc7dce1ae4405c9a5d71fba97ade",
+              "bytes": 2079275
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/74adb7879ae60f6329dc7ccd6a24d81ccf3e20e82d8bc10ff62851c8e3a764f5.png",
+              "sha256": "74adb7879ae60f6329dc7ccd6a24d81ccf3e20e82d8bc10ff62851c8e3a764f5",
+              "bytes": 10136401
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/75ed663ee4f7fbb2785214728925df54a85db1058eaeb13f126aceed3f144f53.png",
+              "sha256": "75ed663ee4f7fbb2785214728925df54a85db1058eaeb13f126aceed3f144f53",
+              "bytes": 135327
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-02",
+      "labelKo": "플라스티신 02",
+      "labelEn": "Plasticine 02",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/6074cb12102aa8c54f2dc0b8beda2f75e9e245fda606f41cbe63186381948251.png",
+      "defaultVariantId": "emaceart-plasticine-02-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-02-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0e165b88ab4236ba4304e9583539925391faefb7b4e7c9a0ab6634fa486dbfb2.png",
+              "sha256": "0e165b88ab4236ba4304e9583539925391faefb7b4e7c9a0ab6634fa486dbfb2",
+              "bytes": 30482927
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/a81b518701f63f433f64183a39ae8dbfcac26fdbfed1aededa5911e1312faece.png",
+              "sha256": "a81b518701f63f433f64183a39ae8dbfcac26fdbfed1aededa5911e1312faece",
+              "bytes": 171695578
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/9f7168026f45d7da513f74ed305bd5e28d4d3087b9af2680c122f22829c24083.png",
+              "sha256": "9f7168026f45d7da513f74ed305bd5e28d4d3087b9af2680c122f22829c24083",
+              "bytes": 1742390
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-02-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/6074cb12102aa8c54f2dc0b8beda2f75e9e245fda606f41cbe63186381948251.png",
+              "sha256": "6074cb12102aa8c54f2dc0b8beda2f75e9e245fda606f41cbe63186381948251",
+              "bytes": 3006887
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/1a191f3b2097fe25cdf670d873feabb6d36eb26498e77af8a5a4b1fae87ea72f.png",
+              "sha256": "1a191f3b2097fe25cdf670d873feabb6d36eb26498e77af8a5a4b1fae87ea72f",
+              "bytes": 11072693
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/092f9c6f9fde6db309767fd6cdeae84c9da631bacad14981d2812f057b3bceb7.png",
+              "sha256": "092f9c6f9fde6db309767fd6cdeae84c9da631bacad14981d2812f057b3bceb7",
+              "bytes": 232843
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-03",
+      "labelKo": "플라스티신 03",
+      "labelEn": "Plasticine 03",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/aa0e101d1685735d7b44ce6b31b312c777210902ad591083ad5204b6852bcaaf.png",
+      "defaultVariantId": "emaceart-plasticine-03-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-03-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/c9607fed2dda9b042b4d38686412a92a5887582a116258bdd8a1bec224ba86ac.png",
+              "sha256": "c9607fed2dda9b042b4d38686412a92a5887582a116258bdd8a1bec224ba86ac",
+              "bytes": 23441530
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/b241d0f99c87ecea17cfc1fabd3c850e57a4dbfd80cd2118c7591cf1934d4b7d.png",
+              "sha256": "b241d0f99c87ecea17cfc1fabd3c850e57a4dbfd80cd2118c7591cf1934d4b7d",
+              "bytes": 176452082
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/9713104f2195a427b7df69ff14d0c3fb25b7a11c71b5cec7b10cf3ac08c82d50.png",
+              "sha256": "9713104f2195a427b7df69ff14d0c3fb25b7a11c71b5cec7b10cf3ac08c82d50",
+              "bytes": 3363559
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/12f65e7c8ca7db7585f57532a8e9c194704c1e11bd54adff95c82848ae353481.png",
+              "sha256": "12f65e7c8ca7db7585f57532a8e9c194704c1e11bd54adff95c82848ae353481",
+              "bytes": 7267951
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-03-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/aa0e101d1685735d7b44ce6b31b312c777210902ad591083ad5204b6852bcaaf.png",
+              "sha256": "aa0e101d1685735d7b44ce6b31b312c777210902ad591083ad5204b6852bcaaf",
+              "bytes": 2816728
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/35f37844785a00aaa9b5eff0ecba0fd6ac8ec0918dc51f864a2475787b68a101.png",
+              "sha256": "35f37844785a00aaa9b5eff0ecba0fd6ac8ec0918dc51f864a2475787b68a101",
+              "bytes": 11455793
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/dfa60ad8b603a033e1f95caed5d89144410d578f97cab4b980b87d8409430e38.png",
+              "sha256": "dfa60ad8b603a033e1f95caed5d89144410d578f97cab4b980b87d8409430e38",
+              "bytes": 553630
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-04",
+      "labelKo": "플라스티신 04",
+      "labelEn": "Plasticine 04",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/f0b8cdbf8c6bdfc269c29109c250df233d706dff0e5de58017f05a8fe53c0321.png",
+      "defaultVariantId": "emaceart-plasticine-04-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-04-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/425675300b9c434fc98c66b375ffd1ab0a9893fcd357909faa44517821947ebe.png",
+              "sha256": "425675300b9c434fc98c66b375ffd1ab0a9893fcd357909faa44517821947ebe",
+              "bytes": 31977063
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/420f67dbf3dc23e3f9a9b866a52a7912eb37df79b9eeb3feee570815e364085f.png",
+              "sha256": "420f67dbf3dc23e3f9a9b866a52a7912eb37df79b9eeb3feee570815e364085f",
+              "bytes": 176896646
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/c141ed75bca1862fc0a0c88db1ae16f81dcd9c73112f735409fd1f28d040032f.png",
+              "sha256": "c141ed75bca1862fc0a0c88db1ae16f81dcd9c73112f735409fd1f28d040032f",
+              "bytes": 29034990
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-04-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/f0b8cdbf8c6bdfc269c29109c250df233d706dff0e5de58017f05a8fe53c0321.png",
+              "sha256": "f0b8cdbf8c6bdfc269c29109c250df233d706dff0e5de58017f05a8fe53c0321",
+              "bytes": 3650221
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/945aeb2963eb2b10a93e7f2cf5bc5fdf1b4fd26f2824d62bb69bab53ca105050.png",
+              "sha256": "945aeb2963eb2b10a93e7f2cf5bc5fdf1b4fd26f2824d62bb69bab53ca105050",
+              "bytes": 11383055
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/3482251a0f2203c743b3da48b593b3d40aa7f1ee0e1ba2078ed1abd4594a677b.png",
+              "sha256": "3482251a0f2203c743b3da48b593b3d40aa7f1ee0e1ba2078ed1abd4594a677b",
+              "bytes": 2151032
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-05",
+      "labelKo": "플라스티신 05",
+      "labelEn": "Plasticine 05",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/3f6ac95de4fbd9aeb0d10a8c227428cc32be4089d7b51afee8c539f803652b44.png",
+      "defaultVariantId": "emaceart-plasticine-05-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-05-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d617062c2964bd5124bff9c32c1367c6180aefe36bccb361752d5b8c73ab7734.png",
+              "sha256": "d617062c2964bd5124bff9c32c1367c6180aefe36bccb361752d5b8c73ab7734",
+              "bytes": 86766086
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/a6232020450addcb564656f18994c250f5c1e3e81daf1b572a74b9b563e4ae12.png",
+              "sha256": "a6232020450addcb564656f18994c250f5c1e3e81daf1b572a74b9b563e4ae12",
+              "bytes": 184395951
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d6ebf776ac272ebdcbfc8a27f687d8a3d8d48141314c03b8cc037b40b5bd6b1c.png",
+              "sha256": "d6ebf776ac272ebdcbfc8a27f687d8a3d8d48141314c03b8cc037b40b5bd6b1c",
+              "bytes": 84499
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-05-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/3f6ac95de4fbd9aeb0d10a8c227428cc32be4089d7b51afee8c539f803652b44.png",
+              "sha256": "3f6ac95de4fbd9aeb0d10a8c227428cc32be4089d7b51afee8c539f803652b44",
+              "bytes": 5311377
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/95cb8c3518ab740ddc30bc60c6f47a17c1aeaa8f2aded840d22524ad61b3e9b2.png",
+              "sha256": "95cb8c3518ab740ddc30bc60c6f47a17c1aeaa8f2aded840d22524ad61b3e9b2",
+              "bytes": 11130455
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/2bc650e720cce9eb661e905be63a374bb3615b011a835f94a831298ddb8994cc.png",
+              "sha256": "2bc650e720cce9eb661e905be63a374bb3615b011a835f94a831298ddb8994cc",
+              "bytes": 6990
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-06",
+      "labelKo": "플라스티신 06",
+      "labelEn": "Plasticine 06",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0352d2ef1b6f5dcf2d40a37f2d00e2c5d1bd006ebf874736b7423073152461aa.png",
+      "defaultVariantId": "emaceart-plasticine-06-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-06-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/f96d75f334a5912e57191cc04e4fb4eadb636e28af8f9267c6fb2ff16df3afea.png",
+              "sha256": "f96d75f334a5912e57191cc04e4fb4eadb636e28af8f9267c6fb2ff16df3afea",
+              "bytes": 87342631
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/22777ffaf31ec3b929e3095f1cec81614caa68196f8393767dd24b10703dfd64.png",
+              "sha256": "22777ffaf31ec3b929e3095f1cec81614caa68196f8393767dd24b10703dfd64",
+              "bytes": 177103891
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/82baece976eb535c741fc3d1be23393f22786ed64d5483d9066672f16968b10f.png",
+              "sha256": "82baece976eb535c741fc3d1be23393f22786ed64d5483d9066672f16968b10f",
+              "bytes": 40176426
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-06-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0352d2ef1b6f5dcf2d40a37f2d00e2c5d1bd006ebf874736b7423073152461aa.png",
+              "sha256": "0352d2ef1b6f5dcf2d40a37f2d00e2c5d1bd006ebf874736b7423073152461aa",
+              "bytes": 4567596
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/60ec034447b7e07a1bf72bac167efee8b9be92728f15e0cf875a7781690a8bf4.png",
+              "sha256": "60ec034447b7e07a1bf72bac167efee8b9be92728f15e0cf875a7781690a8bf4",
+              "bytes": 10279040
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/fb782df9fcf38c2e396e9ef55699bd42049e6deafa1a06cbf66840def8d2f4db.png",
+              "sha256": "fb782df9fcf38c2e396e9ef55699bd42049e6deafa1a06cbf66840def8d2f4db",
+              "bytes": 2574075
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-07",
+      "labelKo": "플라스티신 07",
+      "labelEn": "Plasticine 07",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/843f16aeef85fa7ddfb6ed5edff35a768c40ed09b15867b21a73b6f162fee66c.png",
+      "defaultVariantId": "emaceart-plasticine-07-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-07-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/72b4cf862bab9df5e098d8aae24be23e945fd70e94a9618dfe304b120c32b16d.png",
+              "sha256": "72b4cf862bab9df5e098d8aae24be23e945fd70e94a9618dfe304b120c32b16d",
+              "bytes": 61825371
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/e1b18b95d36508122c60295cc0f630a4d6c07fc5ca24a4ee0812b9f2c913d686.png",
+              "sha256": "e1b18b95d36508122c60295cc0f630a4d6c07fc5ca24a4ee0812b9f2c913d686",
+              "bytes": 182085471
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/61d1c6914a482b7baa971e3bd1f8748953b4783468e15690b617c5d2922ba29e.png",
+              "sha256": "61d1c6914a482b7baa971e3bd1f8748953b4783468e15690b617c5d2922ba29e",
+              "bytes": 4268390
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-07-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/843f16aeef85fa7ddfb6ed5edff35a768c40ed09b15867b21a73b6f162fee66c.png",
+              "sha256": "843f16aeef85fa7ddfb6ed5edff35a768c40ed09b15867b21a73b6f162fee66c",
+              "bytes": 4560307
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/857c1fde389e3198cda0683633b30c4d2fe4268adc21a03aaa5d02a588729347.png",
+              "sha256": "857c1fde389e3198cda0683633b30c4d2fe4268adc21a03aaa5d02a588729347",
+              "bytes": 10786282
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/72bedbf3366739eb3ad752c4edef892e256e9e8e75f7f9fb0710b6b0928d8381.png",
+              "sha256": "72bedbf3366739eb3ad752c4edef892e256e9e8e75f7f9fb0710b6b0928d8381",
+              "bytes": 361477
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-08",
+      "labelKo": "플라스티신 08",
+      "labelEn": "Plasticine 08",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/35fe26a131b08e8bd071d17cb86f09e0722df7ec4386f8c93a81cc6e40321cf8.png",
+      "defaultVariantId": "emaceart-plasticine-08-native-8k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-08-native-8k",
+          "sourceVariant": "native-8k",
+          "resolution": 8192,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/410220980da461b10cb7922ec5955ab6833ac2219474f179bd870a5bd2e3019c.png",
+              "sha256": "410220980da461b10cb7922ec5955ab6833ac2219474f179bd870a5bd2e3019c",
+              "bytes": 24222558
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/bc22b31befb8e3c368ac2bf512a730d202ab9064fbcbd04636baeb9e1eea304d.png",
+              "sha256": "bc22b31befb8e3c368ac2bf512a730d202ab9064fbcbd04636baeb9e1eea304d",
+              "bytes": 94238412
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/b2bff963258eb8869c0984624990b1749cdc0f2aa3a491c9e7cc591dc8c53619.png",
+              "sha256": "b2bff963258eb8869c0984624990b1749cdc0f2aa3a491c9e7cc591dc8c53619",
+              "bytes": 3996505
+            },
+            "metalness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3.png",
+              "sha256": "d14806ffcc0ad14d949a8a6a6f27363bea0e5f22a4109eb597124af3ab83aac3",
+              "bytes": 65408
+            }
+          }
+        },
+        {
+          "id": "emaceart-plasticine-08-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/35fe26a131b08e8bd071d17cb86f09e0722df7ec4386f8c93a81cc6e40321cf8.png",
+              "sha256": "35fe26a131b08e8bd071d17cb86f09e0722df7ec4386f8c93a81cc6e40321cf8",
+              "bytes": 2713596
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/4e5c5b60dba2dcc094774b1e907752edecd5d8d08faf10c5af91f189628ba92b.png",
+              "sha256": "4e5c5b60dba2dcc094774b1e907752edecd5d8d08faf10c5af91f189628ba92b",
+              "bytes": 7999743
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/7bfe1ee68c7dafd3d22464a65d230d2fad043911f1082a4409aa635f7bce6cd0.png",
+              "sha256": "7bfe1ee68c7dafd3d22464a65d230d2fad043911f1082a4409aa635f7bce6cd0",
+              "bytes": 464414
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-09",
+      "labelKo": "플라스티신 09",
+      "labelEn": "Plasticine 09",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/ac4d667266a43b60c54bf8e443ea363b5a1d7d783327f94204317c90ca9eb099.png",
+      "defaultVariantId": "emaceart-plasticine-09-godot-2k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-09-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/ac4d667266a43b60c54bf8e443ea363b5a1d7d783327f94204317c90ca9eb099.png",
+              "sha256": "ac4d667266a43b60c54bf8e443ea363b5a1d7d783327f94204317c90ca9eb099",
+              "bytes": 4277752
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/03fdc6e4ceec4e67af874ac0ea139875425d6fc79c3f47ac0d518ea6c38fbb4b.png",
+              "sha256": "03fdc6e4ceec4e67af874ac0ea139875425d6fc79c3f47ac0d518ea6c38fbb4b",
+              "bytes": 11348532
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/56e8271adf849dcda1ea95e2ab52829c3b0209d9bb42c8b7e20b97cf0da20dc6.png",
+              "sha256": "56e8271adf849dcda1ea95e2ab52829c3b0209d9bb42c8b7e20b97cf0da20dc6",
+              "bytes": 127027
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-10",
+      "labelKo": "플라스티신 10",
+      "labelEn": "Plasticine 10",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/e6a018081077a32b3d17f26aedc80d3c62411ec40dd56c2aa90d032cafb95743.png",
+      "defaultVariantId": "emaceart-plasticine-10-godot-2k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-10-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/e6a018081077a32b3d17f26aedc80d3c62411ec40dd56c2aa90d032cafb95743.png",
+              "sha256": "e6a018081077a32b3d17f26aedc80d3c62411ec40dd56c2aa90d032cafb95743",
+              "bytes": 3338573
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/981b6eaf23176adabb93ef7442c0196ada1d5745788c1bffdeac658a21916b96.png",
+              "sha256": "981b6eaf23176adabb93ef7442c0196ada1d5745788c1bffdeac658a21916b96",
+              "bytes": 11355550
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/c2f95d123e6cf31c73141772496e33f90405b46ddc69b438f8cd8b2bc901daa1.png",
+              "sha256": "c2f95d123e6cf31c73141772496e33f90405b46ddc69b438f8cd8b2bc901daa1",
+              "bytes": 140729
+            },
+            "metalness": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emaceart-plasticine-11",
+      "labelKo": "플라스티신 11",
+      "labelEn": "Plasticine 11",
+      "previewUrl": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0da4d074e24ddf57625a4ded6c10fd47320f5e43ca1e0a957c2190a7caf09498.png",
+      "defaultVariantId": "emaceart-plasticine-11-godot-2k",
+      "variants": [
+        {
+          "id": "emaceart-plasticine-11-godot-2k",
+          "sourceVariant": "godot-2k",
+          "resolution": 2048,
+          "maps": {
+            "baseColor": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/0da4d074e24ddf57625a4ded6c10fd47320f5e43ca1e0a957c2190a7caf09498.png",
+              "sha256": "0da4d074e24ddf57625a4ded6c10fd47320f5e43ca1e0a957c2190a7caf09498",
+              "bytes": 3951635
+            },
+            "normal": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/860b4870a34fdc59decca0d7fda25f509a3ec020d75a588048dac8d330eed2fb.png",
+              "sha256": "860b4870a34fdc59decca0d7fda25f509a3ec020d75a588048dac8d330eed2fb",
+              "bytes": 11190395
+            },
+            "roughness": {
+              "url": "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/702ef988ca953968be3e559f5eec6d46b2f05a47153fd7c58beb55162d09b031.png",
+              "sha256": "702ef988ca953968be3e559f5eec6d46b2f05a47153fd7c58beb55162d09b031",
+              "bytes": 176546
+            },
+            "metalness": null
+          }
+        }
+      ]
+    }
+  ]
+}

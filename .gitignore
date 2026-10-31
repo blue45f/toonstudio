@@ -197,3 +197,6 @@ apps/web/public/assets/3d/environments/mcp-free-v1/.work/
 # README.md 만 추적한다.
 /tests/corpus/formats/local-samples/*
 !/tests/corpus/formats/local-samples/README.md
+
+# 구매 원본은 검증된 source recipe로 준비하며 Git에는 채널·해시·재질 메타데이터만 기록한다.
+/apps/web/public/assets/virtual-studio/purchased-materials-v1/plasticine/

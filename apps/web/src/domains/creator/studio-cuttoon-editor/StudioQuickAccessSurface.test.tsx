@@ -51,6 +51,12 @@ const CATALOG = buildStudioQuickAccessCommandCatalog({
 });
 
 beforeEach(() => {
+  // jsdom에는 배치 계산이 없으므로 기존 키보드 회귀와 같은 가시 영역만 대체한다.
+  vi.spyOn(HTMLElement.prototype, "getClientRects").mockImplementation(function (this: HTMLElement): DOMRectList {
+    if (this.closest("[hidden]")) return Object.assign([], { item: () => null });
+    const rect = new DOMRect(0, 0, 100, 44);
+    return Object.assign([rect], { item: (index: number) => index === 0 ? rect : null });
+  });
   window.sessionStorage.clear();
   Object.defineProperty(globalThis, "innerWidth", {
     configurable: true,
@@ -62,7 +68,10 @@ beforeEach(() => {
   });
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 function SurfaceHarness({
   isMobile,

@@ -11,6 +11,14 @@ import { studioBg3dModelCacheKey, studioBg3dModelRuntimeVariant } from "./studio
 import { studioBg3dSkpGeometryTransform } from "./studio-bg3d-skp-scene-source";
 import { createStudioBg3dSkpSceneSourceVffBytes } from "./studio-bg3d-skp-scene-source.test-fixture";
 import { createStudioBg3dSkpSourceReaderFromHost, inspectStudioBg3dSkpSourceSelection } from "./studio-bg3d-skp-source-read-command";
+import type { BgPrimitive } from "../studio-background-3d-metadata";
+import type { BgCustomModelInstance } from "../studio-background-3d-model";
+import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
+import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
+import { buildStudioBg3dSurfacePresetOverride } from "./studio-bg3d-surface-presets";
+import { syncLinkedCloneAppearance } from "./studio-bg3d-linked-clones";
+import { STUDIO_BG3D_PURCHASED_SURFACE_MATERIALS } from "./studio-bg3d-purchased-surface-material-catalog";
+
 
 import {
   StudioBg3dAdvancedWorkbenchHub,
@@ -61,9 +69,154 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+/** 기존 transform-host와 같은 setter 계약으로 실제 장면 배열을 갱신한다. */
+function materialHost() {
+  const primitive: BgPrimitive = { id: "material-box", kind: "box", position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], color: "#123456" };
+  const model: BgCustomModelInstance = { id: "material-model", modelId: "storage-material", position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
+  const live = { primitives: [primitive], customModels: [model] };
+  const host = {
+    open: true, modelRenderer: {}, isRestoringScene: false, isCapturing: false, physicsInteractionLocked: false,
+    captureInFlightRef: { current: false }, selectedIds: new Set([primitive.id]),
+    selectedIdsRef: { current: new Set([primitive.id]) }, physicsRuntimeSourceRef: { current: live },
+    addGeneratedParts: () => false as const,
+    updateColor: (id: string, color: string) => { live.primitives = live.primitives.map((value) => value.id === id ? { ...value, color } : value); },
+    applySurfacePreset: (id: string, presetId: string | null) => {
+      const override = presetId === null ? undefined : buildStudioBg3dSurfacePresetOverride(presetId) ?? undefined;
+      live.primitives = live.primitives.map((value) => value.id === id ? { ...value, materialOverride: override } : value);
+    },
+    updateCustomModelMaterial: (id: string, override: StudioBg3dMaterialOverride) => {
+      live.customModels = live.customModels.map((value) => value.id === id ? { ...value, materialOverride: { ...override } } : value);
+    },
+  };
+  return { host, live, primitiveId: primitive.id, modelId: model.id };
+}
+
 describe("StudioBg3dAdvancedWorkbenchHub", () => {
   afterEach(() => {
     cleanup();
+  });
+
+  it("MatCap 구매 재질을 현재 도형·모델에 적용하고 적용 표시와 잠금 거부를 실제 장면에서 읽는다", () => {
+    const material = STUDIO_BG3D_PURCHASED_SURFACE_MATERIALS.find((entry) => entry.variants.some((variant) => variant.sourceVariant === "native-8k"));
+    const native = material?.variants.find((variant) => variant.sourceVariant === "native-8k");
+    const godot = material?.variants.find((variant) => variant.sourceVariant === "godot-2k");
+    if (!material || !native || !godot) throw new Error("8K·2K를 모두 가진 구매 재질이 필요합니다.");
+    const { host, live, primitiveId, modelId } = materialHost();
+    const view = render(<StudioBg3dAdvancedWorkbenchHub defaultTab="matcap-studio" {...createStudioBg3dWorkbenchHostPorts(host)} />);
+    const refresh = () => view.rerender(<StudioBg3dAdvancedWorkbenchHub defaultTab="matcap-studio" {...createStudioBg3dWorkbenchHostPorts(host)} />);
+    fireEvent.click(screen.getByTestId("bg3d-purchased-surface-material-toggle"));
+    const card = within(screen.getByTestId(`bg3d-purchased-material-${material.id}`));
+    const apply = card.getByRole("button", { name: `${material.labelKo} 적용` });
+    expect(apply.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(apply);
+    expect(live.primitives.find(({ id }) => id === primitiveId)?.materialOverride?.surfaceMaterialId).toBe(native.id);
+    expect(live.primitives.find(({ id }) => id === primitiveId)?.color).toBe(native.tintHex);
+    expect(live.customModels.find(({ id }) => id === modelId)?.materialOverride).toBeUndefined();
+    refresh();
+    expect(apply.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain(material.labelKo);
+
+    // 렌더 값 selectedIds는 남겨 두고 실제 선택 ref만 바꿔 새 대상을 읽는지 확인한다.
+    host.selectedIdsRef.current = new Set([modelId]);
+    refresh();
+    expect(apply.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.change(card.getByRole("combobox"), { target: { value: godot.id } });
+    fireEvent.click(apply);
+    expect(live.customModels.find(({ id }) => id === modelId)?.materialOverride?.surfaceMaterialId).toBe(godot.id);
+    expect(live.primitives.find(({ id }) => id === primitiveId)?.materialOverride?.surfaceMaterialId).toBe(native.id);
+    refresh();
+    expect(apply.getAttribute("aria-pressed")).toBe("true");
+
+    // 오래된 enabled UI의 클릭도 명령 시점 잠금을 재검사하며 summary를 수락으로 바꾸지 않는다.
+    live.customModels = live.customModels.map((value) => ({ ...value, locked: true }));
+    fireEvent.click(screen.getByTestId("bg3d-mtoon-preset-bold-ink"));
+    const before = JSON.stringify(live), summary = screen.getByTestId("bg3d-workbench-last-action").textContent;
+    fireEvent.change(card.getByRole("combobox"), { target: { value: native.id } });
+    fireEvent.click(apply);
+    expect(JSON.stringify(live)).toBe(before);
+    expect(apply.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toBe(summary);
+    refresh();
+    expect(apply.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("재질 명령의 오래된 ready 값은 현재 선택·캡처·물리·부모 잠금을 통과하지 못한다", () => {
+    const material = STUDIO_BG3D_PURCHASED_SURFACE_MATERIALS[0]?.variants[0];
+    if (!material) throw new Error("구매 재질이 필요합니다.");
+    const { host, live, modelId, primitiveId } = materialHost();
+    const execute = createStudioBg3dWorkbenchHostPorts(host).onApplySurfaceMaterial;
+    if (!execute) throw new Error("실제 재질 명령이 필요합니다.");
+    host.selectedIdsRef.current = new Set([modelId]);
+    expect(execute(material.id)).toBe(true);
+    expect(live.customModels.find(({ id }) => id === modelId)?.materialOverride?.surfaceMaterialId).toBe(material.id);
+    expect(live.primitives.find(({ id }) => id === primitiveId)?.materialOverride).toBeUndefined();
+    host.selectedIdsRef.current = new Set([primitiveId]);
+    const before = JSON.stringify(live);
+    host.captureInFlightRef.current = true;
+    expect(execute(material.id)).toBe(false);
+    host.captureInFlightRef.current = false;
+    host.isCapturing = true;
+    expect(execute(material.id)).toBe(false);
+    host.isCapturing = false;
+    host.physicsInteractionLocked = true;
+    expect(execute(material.id)).toBe(false);
+    host.physicsInteractionLocked = false;
+    host.isRestoringScene = true;
+    expect(execute(material.id)).toBe(false);
+    host.isRestoringScene = false;
+    host.open = false;
+    expect(execute(material.id)).toBe(false);
+    host.open = true;
+    host.selectedIdsRef.current = new Set(["사라진 대상"]);
+    expect(execute(material.id)).toBe(false);
+    host.selectedIdsRef.current = new Set([primitiveId, modelId]);
+    expect(execute(material.id)).toBe(false);
+    host.selectedIdsRef.current = new Set([primitiveId]);
+    expect(execute("등록되지 않은 재질")).toBe(false);
+    expect(JSON.stringify(live)).toBe(before);
+    live.primitives = live.primitives.map((value) => ({ ...value, parentId: modelId }));
+    live.customModels = live.customModels.map((value) => ({ ...value, locked: true }));
+    const locked = JSON.stringify(live);
+    expect(execute(material.id)).toBe(false);
+    expect(JSON.stringify(live)).toBe(locked);
+  });
+
+  it("실제 연결 외형 동기화가 있는 도형·모델 복제본은 원본을 바꾸지 않고 직접 재질 적용을 거부한다", () => {
+    const material = STUDIO_BG3D_PURCHASED_SURFACE_MATERIALS[0]?.variants[0];
+    if (!material) throw new Error("구매 재질이 필요합니다.");
+    const { host, live, primitiveId, modelId } = materialHost();
+    const primitive = live.primitives.find(({ id }) => id === primitiveId);
+    const model = live.customModels.find(({ id }) => id === modelId);
+    if (!primitive || !model) throw new Error("연결 복제의 원본이 필요합니다.");
+    const linkedPrimitive: BgPrimitive = { ...primitive, id: "linked-material-box", linkedSourceId: primitiveId, color: "#abcdef" };
+    const linkedModel: BgCustomModelInstance = { ...model, id: "linked-material-model", linkedSourceId: modelId };
+    live.primitives = [...live.primitives, linkedPrimitive];
+    live.customModels = [...live.customModels, linkedModel];
+    const synchronize = () => {
+      const synced = syncLinkedCloneAppearance(live);
+      live.primitives = synced.primitives;
+      live.customModels = synced.customModels;
+    };
+    // 실제 canonical setter처럼 매 변경 뒤 원본 외형을 연결 복제본에 동기화한다.
+    const updateColor = host.updateColor, applySurfacePreset = host.applySurfacePreset, updateCustomModelMaterial = host.updateCustomModelMaterial;
+    host.updateColor = (id, color) => { updateColor(id, color); synchronize(); };
+    host.applySurfacePreset = (id, presetId) => { applySurfacePreset(id, presetId); synchronize(); };
+    host.updateCustomModelMaterial = (id, override) => { updateCustomModelMaterial(id, override); synchronize(); };
+    synchronize();
+    expect(live.primitives.find(({ id }) => id === linkedPrimitive.id)?.color).toBe(primitive.color);
+    const before = JSON.stringify(live);
+    const stale = createStudioBg3dWorkbenchHostPorts(host);
+    expect(stale.applyReady).toBe(true);
+    for (const id of [linkedPrimitive.id, linkedModel.id]) {
+      host.selectedIdsRef.current = new Set([id]);
+      const ports = createStudioBg3dWorkbenchHostPorts(host);
+      expect(ports.applyReady).toBe(false);
+      expect(ports.onApplySurfaceMaterial?.(material.id)).toBe(false);
+      expect(stale.onApplySurfaceMaterial?.(material.id)).toBe(false);
+      expect(JSON.stringify(live)).toBe(before);
+    }
+    expect(live.primitives.find(({ id }) => id === primitiveId)).toBe(primitive);
+    expect(live.customModels.find(({ id }) => id === modelId)).toBe(model);
   });
 
   it("18종의 스페셜리스트 탭을 모두 렌더링하고 탭 전환 시 각 도메인 엔진 UI가 정상 마운트된다", () => {

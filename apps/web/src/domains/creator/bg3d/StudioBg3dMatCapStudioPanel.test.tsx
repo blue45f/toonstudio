@@ -27,7 +27,7 @@ describe("StudioBg3dMatCapStudioPanel & CC0 2K Surface / Backdrop Pickers", () =
   it("expands the 82 CC0 2K PBR surface material catalog, filters by category, and applies room kits and materials", () => {
     const handleCc0Material = vi.fn();
     render(
-      <StudioBg3dMatCapStudioPanel onApplyCc0SurfaceMaterial={handleCc0Material} />,
+      <StudioBg3dMatCapStudioPanel applyReady onApplyCc0SurfaceMaterial={handleCc0Material} />,
     );
 
     const toggleBtn = screen.getByTestId("bg3d-cc0-surface-material-toggle");
