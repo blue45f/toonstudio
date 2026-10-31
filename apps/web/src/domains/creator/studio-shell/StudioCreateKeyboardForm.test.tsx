@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ComponentProps } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,7 +10,7 @@ function fixture(options: { titleReady?: boolean; sizeReady?: boolean; creating?
   const fixName = vi.fn(() => screen.getByLabelText("이름").focus());
   const fixSize = vi.fn(() => screen.getByLabelText("너비").focus());
   const props = { label: "새 프로젝트 설정", titleReady: true, sizeReady: true, creating: false, ...options, onCreate: create, onFixName: fixName, onFixSize: fixSize };
-  const children = <><label>이름<input /></label><label>너비<input type="number" /></label><label>선택<select><option>하나</option><option>둘</option></select></label><label>메모<textarea /></label><details><summary>설정</summary>상세</details><button type="button">선택 변경</button><button type="submit">시작</button></>;
+  const children: ComponentProps<typeof StudioCreateKeyboardForm>["children"] = (onInputKeyDown) => <><label>이름<input onKeyDown={onInputKeyDown} /></label><label>너비<input type="number" onKeyDown={onInputKeyDown} /></label><label>선택<select><option>하나</option><option>둘</option></select></label><label>메모<textarea /></label><details><summary>설정</summary>상세</details><button type="button">선택 변경</button><button type="submit">시작</button></>;
   const view = render(<StudioCreateKeyboardForm {...props}>{children}</StudioCreateKeyboardForm>);
   return { ...view, create, fixName, fixSize, props, children, form: screen.getByRole("form", { name: props.label }), input: screen.getByLabelText("이름") };
 }
@@ -21,6 +22,18 @@ describe("프로젝트 시작의 단일 키보드 제출 경계", () => {
     const { create, input } = fixture();
     fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
     expect(create).toHaveBeenCalledOnce();
+  });
+  it("입력란이 취소한 Enter는 생성하지 않는다", () => {
+    const create = vi.fn(() => true);
+    render(<StudioCreateKeyboardForm label="취소 가능한 프로젝트 설정" titleReady sizeReady creating={false}
+      onCreate={create} onFixName={vi.fn()} onFixSize={vi.fn()}>
+      {(onInputKeyDown) => <label>취소 가능한 이름<input onKeyDown={(event) => {
+        event.preventDefault();
+        onInputKeyDown(event);
+      }} /></label>}
+    </StudioCreateKeyboardForm>);
+    expect(fireEvent.keyDown(screen.getByLabelText("취소 가능한 이름"), { key: "Enter" })).toBe(false);
+    expect(create).not.toHaveBeenCalled();
   });
   it("클릭과 같은 틱의 연속 제출도 한 번만 생성한다", () => {
     const { create, form } = fixture();

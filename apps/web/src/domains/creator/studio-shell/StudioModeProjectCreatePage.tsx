@@ -321,6 +321,7 @@ export function StudioModeProjectCreatePage() {
         <StudioCreateKeyboardForm label={bt("새 프로젝트 설정", "New project settings")}
           titleReady={titleReady} sizeReady={sizeReady} creating={creating}
           onCreate={create} onFixName={focusProjectTitle} onFixSize={focusCanvasSize}>
+          {(onInputKeyDown) => <>
           {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
             eyebrow={(
@@ -485,6 +486,7 @@ export function StudioModeProjectCreatePage() {
                 {bt("프로젝트 이름", "Project name")}
                 <input
                   id={PROJECT_TITLE_INPUT_ID}
+                  onKeyDown={onInputKeyDown}
                   enterKeyHint="go"
                   aria-invalid={!titleReady || undefined}
                   aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
@@ -546,6 +548,7 @@ export function StudioModeProjectCreatePage() {
                   {bt("너비(px)", "Width (px)")}
                   <input
                     id={CANVAS_WIDTH_INPUT_ID}
+                    onKeyDown={onInputKeyDown}
                     type="number"
                     inputMode="numeric"
                     min={CANVAS_DIMENSION_MIN}
@@ -566,6 +569,7 @@ export function StudioModeProjectCreatePage() {
                   {bt("높이(px)", "Height (px)")}
                   <input
                     id={CANVAS_HEIGHT_INPUT_ID}
+                    onKeyDown={onInputKeyDown}
                     type="number"
                     inputMode="numeric"
                     min={CANVAS_DIMENSION_MIN}
@@ -752,6 +756,7 @@ export function StudioModeProjectCreatePage() {
               {onboardingEnabled ? <StudioCreateReturnToStart /> : null}
             </section>
           ) : null}
+          </>}
         </StudioCreateKeyboardForm>
       </Container>
     </div>
