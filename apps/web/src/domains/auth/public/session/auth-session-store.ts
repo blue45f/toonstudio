@@ -8,7 +8,8 @@ import {
   type Session,
   type SessionSyncReason,
 } from "./auth-session-state";
-import { normalizeClientSession } from "./auth-session-storage";
+import { CLIENT_SESSION_MAX_SERIALIZED_BYTES, normalizeClientSession } from "./auth-session-storage";
+import { withAuthRequestDeadline } from "./auth-request-deadline";
 
 import { api, apiPath, WRITE_TIMEOUT_MS } from "@/platform/api";
 
@@ -121,7 +122,7 @@ export function synchronizeServerSessionState(
   if (serverSessionRequest) return serverSessionRequest;
   const requestRevision = getAuthSessionRevision();
   const requestIsCurrent = () => getAuthSessionRevision() === requestRevision;
-  const request = (async (): Promise<ServerSessionSynchronization> => {
+  const request = withAuthRequestDeadline<ServerSessionSynchronization>(5_000, async (signal) => {
     let response: Response;
     try {
       // 세션 확인이 공개 렌더링을 붙잡지 않도록 5초 상한을 둔다. 타임아웃은
@@ -130,12 +131,13 @@ export function synchronizeServerSessionState(
         method: "GET",
         cache: "no-store",
         throwHttpErrors: false,
-        signal: AbortSignal.timeout(5_000),
+        signal,
       });
     } catch {
       return { status: "indeterminate", session: getAuthSession() };
     }
 
+    signal.throwIfAborted();
     if (!requestIsCurrent()) {
       return { status: "indeterminate", session: getAuthSession() };
     }
@@ -150,6 +152,7 @@ export function synchronizeServerSessionState(
     const payload = parseServerSessionPayload(
       await response.json().catch(() => null),
     );
+    signal.throwIfAborted();
     if (!requestIsCurrent()) {
       return { status: "indeterminate", session: getAuthSession() };
     }
@@ -168,7 +171,9 @@ export function synchronizeServerSessionState(
       return { status: "indeterminate", session: null };
     }
     return { status: "authenticated", session: synchronizedSession };
-  })().finally(() => {
+  }).catch((): ServerSessionSynchronization => ({
+    status: "indeterminate", session: getAuthSession(),
+  })).finally(() => {
     serverSessionRequest = null;
   });
   serverSessionRequest = request;
@@ -197,7 +202,21 @@ const GOOGLE_SIGN_IN_FALLBACK_ERROR = "Google 로그인에 실패했어요. 다�
 const SIGN_OUT_RETRY_DELAYS_MS = [150, 600] as const;
 const SIGN_OUT_MAXIMUM_RETRY_DELAY_MS = 2_000;
 
-function readGoogleSignInError(payload: unknown): string | null {
+/** 로그인 성공 반환 전에 저장 가능한 공개 세션인지 확인한다. */
+function readSignInSession(payload: unknown): Session {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return null;
+  const user = (payload as { user?: unknown }).user;
+  const session = normalizeClientSession({ user, token: null });
+  if (!session) return null;
+  // 저장 계층에서 null로 바뀔 응답은 미리 거절해 기존 세션을 지우지 않는다.
+  const serialized = JSON.stringify(session);
+  const bytes = typeof TextEncoder === "function"
+    ? new TextEncoder().encode(serialized).byteLength
+    : serialized.length;
+  return bytes <= CLIENT_SESSION_MAX_SERIALIZED_BYTES ? session : null;
+}
+
+function readSignInError(payload: unknown): string | null {
   if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
     return null;
   }
@@ -256,25 +275,28 @@ export async function signInWithGoogleIdToken(
   }
 
   try {
-    const response = await api.raw(apiPath("/auth/oauth/google/id-token"), {
-      method: "POST",
-      throwHttpErrors: false,
-      json: { idToken: token },
-      signal: options?.signal,
-    });
-    const payload = (await response.json().catch(() => null)) as
-      | { user?: NonNullable<Session>["user"]; error?: unknown }
-      | null;
-    if (!response.ok || !payload?.user) {
-      return {
-        ok: false,
-        error: readGoogleSignInError(payload)
-          ?? authFailureFallback(response.status, GOOGLE_SIGN_IN_FALLBACK_ERROR),
-        status: response.status,
-      };
-    }
-    persistSession({ user: payload.user, token: null });
-    return { ok: true, error: null, status: response.status };
+    return await withAuthRequestDeadline<GoogleIdTokenSignInResult>(WRITE_TIMEOUT_MS, async (signal) => {
+      const response = await api.raw(apiPath("/auth/oauth/google/id-token"), {
+        method: "POST",
+        throwHttpErrors: false,
+        json: { idToken: token },
+        signal,
+        timeout: WRITE_TIMEOUT_MS,
+      });
+      const payload: unknown = await response.json().catch(() => null);
+      signal.throwIfAborted();
+      const nextSession = readSignInSession(payload);
+      if (!response.ok || !nextSession) {
+        return {
+          ok: false,
+          error: readSignInError(payload)
+            ?? authFailureFallback(response.status, GOOGLE_SIGN_IN_FALLBACK_ERROR),
+          status: response.status,
+        };
+      }
+      persistSession(nextSession);
+      return { ok: true, error: null, status: response.status };
+    }, options?.signal);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       return { ok: false, error: "Google 로그인 요청이 취소되었어요.", status: 0 };
@@ -318,32 +340,35 @@ export async function signIn(provider?: string, options?: Record<string, unknown
   // 전송 실패(네트워크 단절·타임아웃)는 throw 로 흘리지 않고 Google 경로와 같은 연결 오류
   // 결과로 돌려줘 폼이 오류를 표시하고 다시 시도할 수 있게 한다.
   try {
-    const response = await api.raw(apiPath("/auth/login"), {
-      method: "POST",
-      throwHttpErrors: false,
-      timeout: WRITE_TIMEOUT_MS,
-      json: { email: options?.email, password: options?.password },
+    return await withAuthRequestDeadline(WRITE_TIMEOUT_MS, async (signal) => {
+      const response = await api.raw(apiPath("/auth/login"), {
+        method: "POST",
+        throwHttpErrors: false,
+        timeout: WRITE_TIMEOUT_MS,
+        signal,
+        json: { email: options?.email, password: options?.password },
     });
-    const payload = (await response.json().catch(() => null)) as
-      | { user?: NonNullable<Session>["user"]; error?: string }
-      | null;
+    const payload: unknown = await response.json().catch(() => null);
 
-    if (!response.ok || !payload?.user) {
+    signal.throwIfAborted();
+    const nextSession = readSignInSession(payload);
+    if (!response.ok || !nextSession) {
       return {
         ok: false,
-        error: payload?.error ?? authFailureFallback(response.status, "auth-failed"),
+        error: readSignInError(payload) ?? authFailureFallback(response.status, "auth-failed"),
         status: response.status,
         url: null,
       };
     }
 
-    persistSession({ user: payload.user, token: null });
+    persistSession(nextSession);
     return {
       ok: true,
       error: null,
       status: response.status,
       url: null,
     };
+    });
   } catch {
     return {
       ok: false,
@@ -360,42 +385,45 @@ async function performSignOut(
   const retryDelays = signOutRetryDelays(options.retryDelaysMs);
   const wait = options.wait ?? waitForSignOutRetry;
   let httpStatus = 0;
-
-  for (let attempt = 1; attempt <= retryDelays.length + 1; attempt += 1) {
-    try {
-      const response = await api.raw(apiPath("/auth/logout"), {
-        method: "POST",
-        cache: "no-store",
-        throwHttpErrors: false,
-      });
-      httpStatus = response.status;
-      if (response.ok || response.status === 401) {
-        // This revision change also prevents an older /auth/session response from reviving the
-        // just-cleared profile after the authoritative logout response arrives.
-        persistSession(null);
-        return {
-          ok: true,
-          status: "signed-out",
-          attempts: attempt,
-          httpStatus: response.status,
-          error: null,
-        };
+  let attempts = 0;
+  try {
+    const confirmed = await withAuthRequestDeadline<SignOutResult | null>(WRITE_TIMEOUT_MS, async (signal) => {
+      for (let attempt = 1; attempt <= retryDelays.length + 1; attempt += 1) {
+        signal.throwIfAborted();
+        attempts = attempt;
+        try {
+          const response = await api.raw(apiPath("/auth/logout"), {
+            method: "POST",
+            cache: "no-store",
+            throwHttpErrors: false,
+            timeout: WRITE_TIMEOUT_MS,
+            signal,
+          });
+          signal.throwIfAborted();
+          httpStatus = response.status;
+          if (response.ok || response.status === 401) {
+            // 이전 세션 조회의 지연 응답이 완료된 로그아웃을 되돌리지 못하게 한다.
+            persistSession(null);
+            return { ok: true, status: "signed-out", attempts, httpStatus, error: null };
+          }
+        } catch (error) {
+          if (signal.aborted) throw error;
+          httpStatus = 0;
+        }
+        const retryDelay = retryDelays[attempt - 1];
+        if (retryDelay !== undefined) await wait(retryDelay);
       }
-    } catch {
-      httpStatus = 0;
-    }
-
-    const retryDelay = retryDelays[attempt - 1];
-    if (retryDelay !== undefined) await wait(retryDelay);
+      return null;
+    });
+    if (confirmed) return confirmed;
+  } catch {
+    // 전체 대기 상한 초과도 로그아웃 성공을 증명하지 않는다. 세션은 미확정으로 유지한다.
+    httpStatus = 0;
   }
-
-  // A transport failure cannot prove whether the server received the request. Keep the public
-  // profile as pending/indeterminate instead of falsely announcing logout success; callers can
-  // surface this bounded result and let the user retry.
   return {
     ok: false,
     status: "pending",
-    attempts: retryDelays.length + 1,
+    attempts,
     httpStatus,
     error: "로그아웃 확인에 실패했어요. 연결을 확인한 뒤 다시 시도해 주세요.",
   };

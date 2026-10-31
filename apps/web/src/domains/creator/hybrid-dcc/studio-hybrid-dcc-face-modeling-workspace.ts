@@ -52,6 +52,12 @@ import {
 
 import type { StudioPlanarPoint } from "./studio-hybrid-dcc-face-modeling-geometry";
 
+// 기존 내부 polygon 그리기와 경계 두 점의 topology 분할 요청을 같은 작업공간 경계에서 제공한다.
+export { prepareStudioHybridDccBoundaryChord, previewStudioHybridDccBoundaryChord, commitStudioHybridDccBoundaryChord,
+  StudioBoundaryChordWorkspaceError } from "./studio-hybrid-dcc-boundary-chord-workspace";
+export type { StudioBoundaryChordPlan, StudioBoundaryChordWorkspaceRequest, StudioBoundaryChordWorkspaceResult }
+  from "./studio-hybrid-dcc-boundary-chord-workspace";
+
 export type StudioFaceModelingTool = "push-pull" | "inset" | "offset" | "draw" | "follow-me";
 
 export type StudioFaceModelingRequest =

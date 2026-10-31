@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { Group } from "three";
+import { EXPRESSION_PRESETS } from "../../studio-pose-presets";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useCharacterShaperBinding } from "../../character-shaper/useCharacterShaperBinding";
@@ -21,14 +22,14 @@ vi.mock("../../studio-local-database-runtime", () => ({
   }) }),
 }));
 
-function useFixture({ modelId = "unified-authoring" } = {}) {
+function useFixture({ modelId = "unified-authoring", withExpressions = false } = {}) {
   const [customColors, setCustomColors] = useState<Record<string, string>>({});
   const [transparentBackground, setTransparentBackground] = useState(true);
   const [avatarForgeState, handleAvatarForgeChange] = useState(createAvatarForgeState);
   const [wardrobeState, setWardrobeState] = useState<WardrobeState>({});
-  const [activeExpressionId, setActiveExpressionId] = useState("");
+  const [activeExpressionId, setActiveExpressionId] = useState(withExpressions ? "neutral" : "");
   const [expressionWeights, setExpressionWeights] = useState<Record<string, number>>({});
-  const vrm = useMemo(() => { const scene = new Group(); scene.name = modelId; return { scene }; }, [modelId]);
+  const vrm = useMemo(() => { const scene = new Group(); scene.name = modelId; return { scene, ...(withExpressions ? { expressionManager: { expressionMap: { happy: {} } } } : {}) }; }, [modelId, withExpressions]);
   const h = { activeModelId: modelId, status: "ready", vrm, customColors, setCustomColors,
     transparentBackground, setTransparentBackground, avatarForgeState, handleAvatarForgeChange,
     wardrobeMetrics: {}, wardrobeState, setWardrobeState,
@@ -38,6 +39,11 @@ function useFixture({ modelId = "unified-authoring" } = {}) {
       return equip ? { ...current, [slot]: { ...equip, ...patch } } : current;
     }),
     setActiveExpressionId, activeExpressionId, setExpressionWeights, expressionWeights,
+    handleExpressionPresetSelect: (id: string) => {
+      const preset = EXPRESSION_PRESETS.find((entry) => entry.id === id);
+      setActiveExpressionId(`preset:${id}`);
+      setExpressionWeights({ ...preset?.weights });
+    },
   };
   const runtime = useCharacterShaperBinding(h, { runtimeOnly: true });
   const workbench = useCharacterPlatformWorkbench(h, runtime, { documentAuthority: true });
@@ -192,4 +198,30 @@ describe("상위 V3 authority와 Shaper의 단일 편집 이력", () => {
     act(() => { authority.cancelPreview(); });
     expect(serializeCharacterDocumentV3(hook.result.current.workbench.authoring.snapshot.document)).toBe(serialized);
   });
+
+  it("사용자 미소 가중치는 파생된 중립 카드 초기화에 덮이지 않고 적용·undo·redo된다", async () => {
+    const hook = renderHook(() => useFixture({ withExpressions: true }));
+    await ready(hook);
+    const original = hook.result.current.workbench.authoring.snapshot.document;
+    const { expression: _card, ...otherSlots } = original.recipe.slots;
+    await act(async () => {
+      expect(await hook.result.current.workbench.authoring.importJson(serializeCharacterDocumentV3({
+        ...original,
+        recipe: { ...original.recipe, slots: otherSlots },
+        expression: { activeEntryId: "neutral", weights: { happy: 0.2 } },
+      }))).toBe(true);
+    });
+    await waitFor(() => expect(hook.result.current.h.expressionWeights).toEqual({ happy: 0.2 }));
+    await waitFor(() => expect(hook.result.current.workbench.hostRuntime.pending).toBe(false));
+    expect(hook.result.current.workbench.hostRuntime.error).toBeNull();
+    expect(hook.result.current.h.activeExpressionId).toBe("neutral");
+    act(() => hook.result.current.binding.undo());
+    await waitFor(() => expect(hook.result.current.h.expressionWeights).toEqual({}));
+    await waitFor(() => expect(hook.result.current.workbench.hostRuntime.pending).toBe(false));
+    act(() => hook.result.current.binding.redo());
+    await waitFor(() => expect(hook.result.current.h.expressionWeights).toEqual({ happy: 0.2 }));
+    await waitFor(() => expect(hook.result.current.workbench.hostRuntime.pending).toBe(false));
+    expect(hook.result.current.workbench.hostRuntime.error).toBeNull();
+  });
+
 });

@@ -4,8 +4,9 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { RELEASE_DESCRIPTOR_PATH, RELEASE_SCHEMA, STATIC_URL_PREFIX } from "./publish-creator-bundle-release.mjs";
-import { assertNativeBundleReleaseCurrent, loadNativeBundleRelease, nativeReleaseBindingProblems,
-  nativeReleaseTraceProblems, NATIVE_COMPOSITE_CONFIG_PATH, requireNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
+import { assertNativeBundleReleaseCurrent, createNativeBundleReleaseTrace, getNativeBundleReleaseCompletionBinding,
+  loadNativeBundleRelease, nativeReleaseBindingProblems, nativeReleaseCompletionRequest, nativeReleaseTraceProblems,
+  LUMA_NATIVE_COMPOSITE_CONFIG_PATH, NATIVE_COMPOSITE_CONFIG_PATH, prepareNativeBundleReleaseCompletion, requireNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
@@ -96,9 +97,57 @@ test("새 composite 생성 원본의 projection 경로·SHA·개수·바이트·
   });
 });
 
+test("Luma는 명시한 새 composite를 읽고 경로·SHA를 묶으며 기존 기본 binding은 보존한다", () => withFixture(f => {
+  const legacy = f.load();
+  assert.equal(Object.hasOwn(legacy.binding, "compositeConfigPath"), false);
+  const compositeConfigPath = LUMA_NATIVE_COMPOSITE_CONFIG_PATH;
+  const lumaPath = put(join(f.repoRoot, compositeConfigPath), bytes(f.composite));
+  const release = loadNativeBundleRelease({ repoRoot: f.repoRoot, webPublic: f.webPublic, compositeConfigPath });
+  assert.equal(release.compositeFile.path, lumaPath);
+  assert.equal(release.binding.compositeConfigPath, compositeConfigPath);
+  assert.deepEqual(nativeReleaseBindingProblems(release.binding, f.descriptor.catalog.sha256, { compositeConfigPath }), []);
+  for (const binding of [legacy.binding, { ...release.binding, compositeConfigPath: NATIVE_COMPOSITE_CONFIG_PATH },
+    { ...release.binding, compositeConfigPath: "../outside.json" }]) {
+    assert.ok(nativeReleaseBindingProblems(binding, f.descriptor.catalog.sha256, { compositeConfigPath }).length > 0);
+  }
+  assert.ok(nativeReleaseBindingProblems(release.binding, f.descriptor.catalog.sha256).length > 0);
+  writeFileSync(f.compositePath, bytes({ ...f.composite, expected: { files: 5229, bytes: 128 } }));
+  assert.doesNotThrow(() => assertNativeBundleReleaseCurrent(release));
+  assert.throws(f.load, /composite 생성 원본/u);
+  const changed = Buffer.from(readFileSync(lumaPath)); changed[0] ^= 1; writeFileSync(lumaPath, changed);
+  assert.throws(() => assertNativeBundleReleaseCurrent(release), /바이트·SHA/u);
+}));
+
+test("명시 Luma 설정이 없거나 symlink면 기본 설정으로 대체하지 않고 미지원 상대 경로도 거부한다", () => withFixture(f => {
+  const load = compositeConfigPath => loadNativeBundleRelease({ repoRoot: f.repoRoot, webPublic: f.webPublic, compositeConfigPath });
+  assert.throws(() => load(LUMA_NATIVE_COMPOSITE_CONFIG_PATH));
+  for (const path of ["../config/creator-bundle-composite-ingest.json", "/config/creator-bundle-composite-ingest.json",
+    "config/../config/creator-bundle-composite-ingest.json", "config/%63reator-bundle-composite-ingest.json", "config/other.json", ""]) {
+    assert.throws(() => load(path), /설정 경로/u);
+  }
+  const lumaPath = join(f.repoRoot, LUMA_NATIVE_COMPOSITE_CONFIG_PATH);
+  symlinkSync(f.compositePath, lumaPath);
+  assert.throws(() => load(LUMA_NATIVE_COMPOSITE_CONFIG_PATH), /심볼릭 링크/u);
+}));
+
+test("Luma completion 요청마다 선택한 새 composite 원문을 다시 검사한다", () => withFixture(f => {
+  const compositeConfigPath = LUMA_NATIVE_COMPOSITE_CONFIG_PATH;
+  const lumaPath = put(join(f.repoRoot, compositeConfigPath), bytes(f.composite));
+  const release = loadNativeBundleRelease({ repoRoot: f.repoRoot, webPublic: f.webPublic, compositeConfigPath });
+  const completion = getNativeBundleReleaseCompletionBinding(release.descriptor), usedNonces = new Set();
+  const request = nonce => ({ requestTarget: `${completion.url}?release-check=${nonce}`, method: "GET", usedNonces });
+  prepareNativeBundleReleaseCompletion(release, request("00000000-0000-4000-8000-000000000001"));
+  const changed = Buffer.from(readFileSync(lumaPath)); changed[0] ^= 1; writeFileSync(lumaPath, changed);
+  assert.throws(() => prepareNativeBundleReleaseCompletion(release, request("00000000-0000-4000-8000-000000000002")), /바이트·SHA/u);
+  assert.equal(usedNonces.size, 1);
+}));
+
 test("실제 catalog/index 요청 trace와 동일 release binding이 모두 있어야 한다", () => withFixture(f => {
-  const release = f.load(), trace = { catalog: { ...release.binding.catalog, requests: 1 },
-    index: { ...release.binding.index, requests: 1 }, unexpected: [] };
+  const release = f.load(), trace = createNativeBundleReleaseTrace(release.binding);
+  trace.catalog.requests = 1; trace.index.requests = 1;
+  const requestTarget = trace.completion.url + "?release-check=00000000-0000-4000-8000-000000000001";
+  const response = prepareNativeBundleReleaseCompletion(release, { requestTarget, method: "GET", usedNonces: new Set() });
+  trace.completion.requests = 1; trace.completion.responses.push(response.proof);
   assert.deepEqual(nativeReleaseTraceProblems(trace, release.binding), []);
   for (const mutate of [
     value => { value.index.requests = 0; }, value => { value.catalog.sha256 = "f".repeat(64); },
@@ -109,4 +158,93 @@ test("실제 catalog/index 요청 trace와 동일 release binding이 모두 있�
     assert.ok(nativeReleaseTraceProblems(changed, release.binding).length > 0);
   }
   assert.ok(nativeReleaseBindingProblems(release.binding, "e".repeat(64)).length > 0);
+}));
+
+const FIRST_NONCE = "00000000-0000-4000-8000-000000000001";
+const SECOND_NONCE = "00000000-0000-4000-8000-000000000002";
+function completionTrace(release) {
+  const trace = createNativeBundleReleaseTrace(release.binding);
+  trace.catalog.requests = 1; trace.index.requests = 1;
+  const response = prepareNativeBundleReleaseCompletion(release, {
+    method: "GET", requestTarget: `${trace.completion.url}?release-check=${FIRST_NONCE}`, usedNonces: new Set(),
+  });
+  trace.completion.requests = 1; trace.completion.responses.push(response.proof);
+  return trace;
+}
+
+test("로컬 completion은 검증된 같은 index 원문을 그대로 쓰며 R2·운영 성공으로 표시하지 않는다", () => withFixture(f => {
+  const release = f.load(), binding = getNativeBundleReleaseCompletionBinding(release.descriptor);
+  assert.deepEqual(binding, { url: `/assets/studio/bundle-v2/release-index/${release.binding.index.sha256}.json`,
+    sha256: release.binding.index.sha256, bytes: release.binding.index.bytes });
+  const requestTarget = `${binding.url}?release-check=${FIRST_NONCE}`;
+  const response = prepareNativeBundleReleaseCompletion(release, { requestTarget, method: "GET", usedNonces: new Set() });
+  assert.ok(response.body.equals(readFileSync(f.indexPath)));
+  assert.equal(hash(response.body), release.binding.index.sha256);
+  assert.deepEqual(response.proof, { method: "GET", requestTarget, releaseCheckNonce: FIRST_NONCE, status: 200,
+    bodySha256: release.binding.index.sha256, bodyBytes: release.binding.index.bytes,
+    qaSynthetic: true, actualR2Proof: false, productionValidation: false });
+  assert.equal(Object.hasOwn(response.proof, "sourceHeader"), false);
+}));
+
+test("completion은 정확한 단일 소문자 v4 nonce GET 이외의 method·경로·query·별칭을 거부한다", () => withFixture(f => {
+  const release = f.load(), binding = getNativeBundleReleaseCompletionBinding(release.descriptor);
+  const valid = `${binding.url}?release-check=${FIRST_NONCE}`;
+  assert.deepEqual(nativeReleaseCompletionRequest(release.descriptor, valid, "GET"),
+    { method: "GET", requestTarget: valid, releaseCheckNonce: FIRST_NONCE });
+  for (const method of ["HEAD", "POST", "OPTIONS", "get", undefined]) {
+    assert.throws(() => nativeReleaseCompletionRequest(release.descriptor, valid, method));
+  }
+  for (const target of [binding.url, `${binding.url}?release-check=`, valid + "&release-check=" + SECOND_NONCE,
+    valid + "&x=1", valid + "#part", valid + "\n", valid.replace("release-check", "release%2dcheck"),
+    valid.replace("000000000001", "%30".repeat(12)), valid.replace("-4000-", "-3000-"),
+    valid.replace("-8000-", "-7000-"), `${binding.url}?release-check=ABCDEF00-0000-4000-8000-000000000001`,
+    valid.replace(release.binding.index.sha256, "f".repeat(64)), valid.replace("release-index", "%72elease-index"),
+    valid.replace("release-index/", "release-index/../release-index/"), "http://127.0.0.1:4321" + valid,
+    release.descriptor.index.url + "?release-check=" + FIRST_NONCE]) {
+    assert.throws(() => nativeReleaseCompletionRequest(release.descriptor, target, "GET"), target);
+  }
+}));
+
+test("같은 실행의 completion nonce 재사용과 요청 사이 원문 변경을 거부한다", () => {
+  withFixture(f => {
+    const release = f.load(), binding = getNativeBundleReleaseCompletionBinding(release.descriptor), usedNonces = new Set();
+    const request = nonce => ({ method: "GET", requestTarget: `${binding.url}?release-check=${nonce}`, usedNonces });
+    prepareNativeBundleReleaseCompletion(release, request(FIRST_NONCE));
+    prepareNativeBundleReleaseCompletion(release, request(SECOND_NONCE));
+    assert.equal(usedNonces.size, 2);
+    assert.throws(() => prepareNativeBundleReleaseCompletion(release, request(FIRST_NONCE)), /nonce/u);
+    assert.throws(() => prepareNativeBundleReleaseCompletion(release, { ...request(SECOND_NONCE), usedNonces: undefined }), /nonce/u);
+  });
+  for (const name of ["descriptorPath", "compositePath", "catalogPath", "indexPath"]) withFixture(f => {
+    const release = f.load(), binding = getNativeBundleReleaseCompletionBinding(release.descriptor);
+    const changed = Buffer.from(readFileSync(f[name])); changed[0] ^= 1; writeFileSync(f[name], changed);
+    assert.throws(() => prepareNativeBundleReleaseCompletion(release, { method: "GET",
+      requestTarget: `${binding.url}?release-check=${FIRST_NONCE}`, usedNonces: new Set() }));
+  });
+});
+
+test("catalog/index만 가진 과거 Atlas trace와 completion 원문·nonce·합성 표기 위조를 거부한다", () => withFixture(f => {
+  const release = f.load(), trace = completionTrace(release);
+  assert.deepEqual(nativeReleaseTraceProblems(trace, release.binding), []);
+  const oldTrace = { catalog: trace.catalog, index: trace.index, unexpected: [] };
+  assert.ok(nativeReleaseTraceProblems(oldTrace, release.binding).length > 0);
+  for (const mutate of [
+    value => { delete value.completion; }, value => { value.completion.requests = 0; },
+    value => { value.completion.responses = []; }, value => { value.completion.bytes += 1; },
+    value => { value.completion.responses[0].bodySha256 = "f".repeat(64); },
+    value => { value.completion.responses[0].bodyBytes += 1; },
+    value => { value.completion.responses[0].method = "HEAD"; },
+    value => { value.completion.responses[0].status = 503; },
+    value => { value.completion.responses[0].releaseCheckNonce = SECOND_NONCE; },
+    value => { value.completion.responses[0].requestTarget += "&x=1"; },
+    value => { value.completion.requests = 2; value.completion.responses.push(structuredClone(value.completion.responses[0])); },
+    value => { value.qaSynthetic = false; }, value => { value.actualR2Proof = true; },
+    value => { value.productionValidation = true; }, value => { value.completion.responses[0].qaSynthetic = false; },
+    value => { value.completion.responses[0].actualR2Proof = true; },
+    value => { value.completion.responses[0].productionValidation = true; },
+    value => { value.completion.responses[0].sourceHeader = "r2"; },
+  ]) {
+    const changed = structuredClone(trace); mutate(changed);
+    assert.ok(nativeReleaseTraceProblems(changed, release.binding).length > 0, mutate.toString());
+  }
 }));

@@ -41,6 +41,7 @@ describe("V5 specialist workspace product launch boundary", () => {
     );
     expect(apply).toContain("workspaceId?: StudioWorkspaceId");
     expect(apply).toContain("applyStudioWorkspaceLaunchSurface(workspaceId)");
+    expect(apply).toContain('studioRoute.surface === "canvas" || ["switch", "reload", "active-workspace-delete"].includes(source)');
 
     const launch = sourceBetween(
       "function applyStudioWorkspaceLaunchSurface(",
@@ -58,13 +59,14 @@ describe("V5 specialist workspace product launch boundary", () => {
     expect(launch).toContain("setMannequinPoserOpen(true)");
   });
 
-  it("reopens a persisted specialist workspace after initial hydration", () => {
+  it("초기 작업 레이아웃은 명시적인 편집 표면을 덮어쓰지 않는다", () => {
     const initialLaunch = sourceBetween(
       "const initialWorkspaceLaunchId",
       "const [pageSequenceOpen",
       "initial specialist launch",
     );
     expect(initialLaunch).toContain("workspaceState.activeWorkspaceId");
+    expect(initialLaunch).toContain('if (studioRoute.surface === "canvas") applyStudioWorkspaceLaunchSurface(workspaceId)');
     expect(initialLaunch).toContain(
       "applyInitialStudioWorkspaceLaunch(initialWorkspaceLaunchId)",
     );

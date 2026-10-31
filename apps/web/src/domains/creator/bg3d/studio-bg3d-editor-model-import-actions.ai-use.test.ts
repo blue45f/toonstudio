@@ -8,6 +8,7 @@ import { createStudioBg3dCacheTestEntry, createStudioBg3dCacheTestRecord } from 
 import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 
 import type { StudioBg3dSkpImportOptions } from "./studio-bg3d-skp-import";
+import type { Bg3dVerifiedStoredRecord } from "./bg3d-model-library";
 import type { admitAndCacheStudioBg3dModel } from "./studio-bg3d-model-runtime-admission";
 import type { StudioBg3dModelImportOptions, StudioBg3dImportProgress } from "./studio-bg3d-model-import";
 import type { StudioBg3dSkpImportRun } from "./studio-bg3d-skp-import-run";
@@ -93,7 +94,7 @@ vi.mock("./studio-bg3d-import-asset-metadata", async (importOriginal) => ({
   persistStudioBg3dImportedAiUse: runtime.persistAi,
 }));
 
-const HASH = `sha256:${"f".repeat(64)}`;
+const HASH: Bg3dVerifiedStoredRecord["contentHash"] = `sha256:${"f".repeat(64)}`;
 const RIGHTS = { status: "owned", commercialUse: true, attributionRequired: false } as const;
 
 function storedRecord(id: string) {

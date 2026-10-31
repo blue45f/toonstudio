@@ -5,6 +5,7 @@
  *   [--reuse-validation <같은 카탈로그로 성공한 증거 폴더>]
  *   [--expected-intake licensed-20261029] (Cemetery50+SmallProps115의 paired 편입 검수)
  *   [--expected-intake atlas-20261030] (기존 1929+Nature 3300의 전수 검증과 11대표 렌더)
+ *   [--expected-intake luma-20261031] (기존 5229+Luma 205의 전수 검증과 14대표 렌더)
  * 원격 요청/업로드 없이 공개 SHA URL만 private 검증 바이트로 응답한다. 출력은 로컬 증거와 계획뿐이다.
  */
 import { createHash } from "node:crypto";
@@ -16,8 +17,9 @@ import { WEB_PUBLIC } from "./lib/repo-paths.mjs";
 import { loadPackRightsLedger } from "./lib/creator-bundle-pack-rights.mjs";
 import { createBundleV2DeployPlan } from "./plan-creator-bundle-deploy.mjs";
 import { RELEASE_DESCRIPTOR_PATH, STATIC_URL_PREFIX } from "./publish-creator-bundle-release.mjs";
-import { assertNativeBundleReleaseCurrent, loadNativeBundleRelease } from "./lib/creator-bundle-native-release.mjs";
-import { ATLAS_NATIVE_INTAKE, assertPrivateNativeBody, isSupportedNativeIntake, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+import { assertNativeBundleReleaseCurrent, createNativeBundleReleaseTrace, loadNativeBundleRelease,
+  LUMA_NATIVE_COMPOSITE_CONFIG_PATH, NATIVE_COMPOSITE_CONFIG_PATH, NATIVE_RELEASE_COMPLETION_PREFIX, prepareNativeBundleReleaseCompletion } from "./lib/creator-bundle-native-release.mjs";
+import { LUMA_NATIVE_INTAKE, assertPrivateNativeBody, isReleaseNativeIntake, isSupportedNativeIntake, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
 
 const options = {};
 for (let index = 2; index < process.argv.length; index += 1) {
@@ -36,20 +38,22 @@ if (origin.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes
 const lane = options.lane ?? "hardware";
 if (!["hardware", "swiftshader"].includes(lane)) throw new Error("--lane은 hardware 또는 swiftshader여야 합니다.");
 const expectedIntake = options["expected-intake"];
-if (!isSupportedNativeIntake(expectedIntake)) throw new Error("--expected-intake는 licensed-20261029 또는 atlas-20261030만 지원합니다. 명시한 편입 버전을 확인하세요.");
+if (!isSupportedNativeIntake(expectedIntake)) throw new Error("--expected-intake는 licensed-20261029·atlas-20261030·luma-20261031만 지원합니다. 명시한 편입 버전을 확인하세요.");
 const output = options.out ? resolve(options.out) : mkdtempSync(join(tmpdir(), "toonstudio-bundle-native-"));
 if (output === WEB_PUBLIC || output.startsWith(`${WEB_PUBLIC}${sep}`)) throw new Error("검증 출력은 public 밖이어야 합니다.");
 mkdirSync(output, { recursive: true });
 const themePath = join(WEB_PUBLIC, "assets/3d/environments/bundle-v1/theme-packs.json");
-// 옛 모드는 역사 1929 catalog를 보존하고 새 Atlas 모드만 빌드 고정 release를 읽는다.
-const release = expectedIntake === ATLAS_NATIVE_INTAKE ? loadNativeBundleRelease() : null;
+// 옛 모드는 역사 1929 catalog를 보존하고 명시한 Atlas·Luma 모드만 해당 composite에 묶인 빌드 release를 읽는다.
+const release = isReleaseNativeIntake(expectedIntake) ? loadNativeBundleRelease({
+  compositeConfigPath: expectedIntake === LUMA_NATIVE_INTAKE ? LUMA_NATIVE_COMPOSITE_CONFIG_PATH : NATIVE_COMPOSITE_CONFIG_PATH,
+}) : null;
 const themeBody = release?.catalogFile.body ?? readFileSync(themePath);
 const catalogSha256 = createHash("sha256").update(themeBody).digest("hex");
 const themePacks = JSON.parse(themeBody);
 const ledger = loadPackRightsLedger();
 const releaseBinding = release?.binding;
-const releaseTrace = release ? { catalog: { ...releaseBinding.catalog, requests: 0 },
-  index: { ...releaseBinding.index, requests: 0 }, unexpected: [], descriptorRequests: 0 } : undefined;
+const releaseTrace = release ? createNativeBundleReleaseTrace(releaseBinding) : undefined;
+const completionNonces = new Set();
 const rightsContext = { themePacks, ledger, expectedIntake, catalogSha256, releaseBinding, releaseTrace };
 const rightsProblems = nativeCatalogRightsProblems(rightsContext);
 if (rightsProblems.length) throw new Error(`native 카탈로그/원장 권리 대조 실패: ${rightsProblems.join(" / ")}`);
@@ -162,6 +166,24 @@ try {
       }
       return;
     }
+    if (release && url.pathname.startsWith(NATIVE_RELEASE_COMPLETION_PREFIX)) {
+      const requestTarget = url.pathname + url.search + url.hash;
+      try {
+        const response = prepareNativeBundleReleaseCompletion(release, {
+          requestTarget, method: route.request().method(), usedNonces: completionNonces,
+        });
+        releaseTrace.completion.requests += 1;
+        await route.fulfill({ status: 200, contentType: "application/json", body: response.body,
+          headers: { "cache-control": "no-store", "x-toonstudio-qa-synthetic": "native-release-completion" } });
+        // 실제 fulfil 성공 이후만 응답으로 센다. 이 합성 응답은 실제 R2·운영 증거가 아니다.
+        releaseTrace.completion.responses.push(response.proof);
+      } catch (error) {
+        releaseTrace.unexpected.push(requestTarget);
+        errors.push(`로컬 completion 응답 거부: ${error instanceof Error ? error.message : String(error)}`);
+        await route.abort("failed");
+      }
+      return;
+    }
     if (url.pathname === "/assets/3d/environments/bundle-v1/theme-packs.json") {
       await route.fulfill({ contentType: "application/json", body: themeBody }); return;
     }
@@ -223,6 +245,7 @@ try {
     scope: "로컬 SHA URL 응답 · 실제 prepareVerifiedBg3dModelRecord · 모바일 Worker 전수 · 실제 Three 로더/2m 정규화 대표 검수. 운영 배포/실제 모바일 GPU 성능 검증은 아님.",
     lane, browserVersion: browser?.version(), browserBinary, browserGpuFlags, reusedValidation,
     catalogSha256, expectedIntake, releaseBinding, releaseTrace,
+    ...(release ? { qaSynthetic: true, actualR2Proof: false, productionValidation: false } : {}),
     assets: themePacks.assets.length, bytes: plan.totals.assetBytes, validated: rows.filter((row) => row.ok).length,
     failures: rows.filter((row) => !row.ok), worker, wrongHash, renders, problems, rawModelsPublished: false };
   writeFileSync(join(output, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);

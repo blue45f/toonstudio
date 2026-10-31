@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { assertPrivateNativeBody, ATLAS_NATIVE_INTAKE, ATLAS_NATIVE_PACK, ATLAS_NATIVE_BASE_COUNTS, ATLAS_NATIVE_EXPECTED_MODELS, LICENSED_NATIVE_INTAKE, LICENSED_NATIVE_PACKS, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
+import { assertPrivateNativeBody, ATLAS_NATIVE_INTAKE, ATLAS_NATIVE_PACK, ATLAS_NATIVE_BASE_COUNTS, ATLAS_NATIVE_EXPECTED_MODELS, LICENSED_NATIVE_INTAKE, LICENSED_NATIVE_PACKS, LUMA_NATIVE_INTAKE, LUMA_NATIVE_PACK, LUMA_NATIVE_EXPECTED_MODELS, isReleaseNativeIntake, isSupportedNativeIntake, nativeCatalogRightsProblems, nativeProofProblems, reusableNativeValidationProblems, selectNativeRepresentatives } from "./lib/creator-bundle-native-proof.mjs";
 import { packRightsProjection } from "./lib/creator-bundle-pack-rights.mjs";
+import { LUMA_NATIVE_COMPOSITE_CONFIG_PATH, NATIVE_COMPOSITE_CONFIG_PATH, createNativeBundleReleaseTrace } from "./lib/creator-bundle-native-release.mjs";
 import { FIXTURE_LIBRARY_PACK, fixtureLedger, fixtureLicenseText, ledgerEntry, qualifyingEvidence } from "./lib/creator-bundle-pack-rights-test-support.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -243,8 +244,13 @@ function atlasFixture() {
     compositeConfigSha256: "f".repeat(64), compositeConfigBytes: 1024,
     catalog: { url: `/assets/3d/environments/bundle-v1/theme-packs.${"c".repeat(64)}.json`, sha256: "c".repeat(64), bytes: 1234 },
     index: { url: `/assets/3d/environments/bundle-v1/deploy-index.${"d".repeat(64)}.json`, sha256: "d".repeat(64), bytes: 234 } };
-  const releaseTrace = { catalog: { ...releaseBinding.catalog, requests: 1 },
-    index: { ...releaseBinding.index, requests: 1 }, unexpected: [], descriptorRequests: 1 };
+  const releaseTrace = createNativeBundleReleaseTrace(releaseBinding);
+  releaseTrace.catalog.requests = 1; releaseTrace.index.requests = 1; releaseTrace.descriptorRequests = 1;
+  const nonce = "00000000-0000-4000-8000-000000000001";
+  releaseTrace.completion.requests = 1;
+  releaseTrace.completion.responses.push({ method: "GET", requestTarget: `${releaseTrace.completion.url}?release-check=${nonce}`,
+    releaseCheckNonce: nonce, status: 200, bodySha256: releaseBinding.index.sha256, bodyBytes: releaseBinding.index.bytes,
+    qaSynthetic: true, actualR2Proof: false, productionValidation: false });
   return { ...sample, themePacks, ledger, assets, rows, representatives, renders,
     expectedIntake: ATLAS_NATIVE_INTAKE, catalogSha256: "c".repeat(64),
     worker: { ...sample.worker, requests: calls, responses: calls }, releaseBinding, releaseTrace };
@@ -294,6 +300,10 @@ test("Atlas 판정은 전수5229 Worker·11대표·현재catalogSHA를 요구하
     (value) => { delete value.catalogSha256; },
     (value) => { delete value.releaseBinding; },
     (value) => { value.releaseTrace.index.requests = 0; },
+    (value) => { delete value.releaseTrace.completion; },
+    (value) => { value.releaseTrace.completion.requests = 0; },
+    (value) => { value.releaseTrace.completion.responses[0].bodySha256 = "f".repeat(64); },
+    (value) => { value.releaseTrace.actualR2Proof = true; },
     (value) => { value.releaseTrace.catalog.sha256 = "f".repeat(64); },
     (value) => { value.releaseTrace.unexpected.push("/assets/3d/environments/bundle-v1/theme-packs.json"); },
     (value) => { value.rows.at(-1).rights.status = "licensed"; },
@@ -310,6 +320,13 @@ test("Atlas 판정은 전수5229 Worker·11대표·현재catalogSHA를 요구하
     themePacks: proof.themePacks, ledger: proof.ledger, expectedIntake: ATLAS_NATIVE_INTAKE,
     releaseBinding: proof.releaseBinding };
   assert.deepEqual(reusableNativeValidationProblems(reusable), []);
+  // catalog/index 전용 과거 Atlas receipt는 새 completion 검사 성공 증거로 재해석하지 않는다.
+  const historicalSummary = structuredClone(summary);
+  delete historicalSummary.releaseTrace.completion;
+  delete historicalSummary.releaseTrace.qaSynthetic;
+  delete historicalSummary.releaseTrace.actualR2Proof;
+  delete historicalSummary.releaseTrace.productionValidation;
+  assert.ok(reusableNativeValidationProblems({ ...reusable, summary: historicalSummary }).length > 0);
   for (const patch of [
     { expectedIntake: LICENSED_NATIVE_INTAKE }, { assets: 1929, validated: 1929 },
     { catalogSha256: "d".repeat(64) },
@@ -324,4 +341,125 @@ test("Atlas 판정은 전수5229 Worker·11대표·현재catalogSHA를 요구하
     worker: { ...proof.worker, requests: 22, responses: 22 } }), []);
   assert.ok(nativeProofProblems({ ...proof, reusedValidation: { ...reusedValidation, sourceCatalogSha256: "d".repeat(64) },
     worker: { ...proof.worker, requests: 22, responses: 22 } }).length > 0);
+});
+
+/** 5434개 기대 판정용 합성 metadata이며 실제 GLB·Worker·GPU 실행 증거가 아니다. */
+function lumaFixture() {
+  const proof = atlasFixture(), pack = proof.themePacks.packs.findIndex((candidate) => candidate.ingestPackIds.includes(LUMA_NATIVE_PACK.ingestId));
+  assert.ok(pack >= 0);
+  const entry = proof.ledger.packs.find((candidate) => candidate.id === LUMA_NATIVE_PACK.ledgerPackId);
+  assert.equal(entry.grant.status, "licensed");
+  proof.themePacks.packs[pack].placeable = LUMA_NATIVE_PACK.models;
+  proof.assets.push(...Array.from({ length: LUMA_NATIVE_PACK.models }, (_, index) => ({
+    id: `${LUMA_NATIVE_PACK.ingestId}-synthetic-${index}`, pack,
+    path: `${LUMA_NATIVE_PACK.ingestId}/native/${LUMA_NATIVE_PACK.sources[index] ?? `Synthetic/model-${index}.glb`}`,
+    bytes: 123, sha256,
+  })));
+  proof.themePacks.totals.placeableAssets = 5434;
+  const sourceRights = { ...packRightsProjection(entry) }; delete sourceRights.serve;
+  proof.rows.push(...proof.assets.slice(-LUMA_NATIVE_PACK.models).map((asset) => ({
+    id: asset.id, packIndex: pack, ok: true, bytes: asset.bytes, sha256: `sha256:${asset.sha256}`,
+    profile: "mobile", rights: { ...sourceRights },
+  })));
+  proof.expectedIntake = LUMA_NATIVE_INTAKE;
+  proof.representatives = selectNativeRepresentatives(proof.themePacks, { expectedIntake: LUMA_NATIVE_INTAKE });
+  const sample = fixture().renders[0];
+  proof.renders = proof.representatives.map(({ index }) => ({ ...structuredClone(sample),
+    id: proof.assets[index].id, packIndex: proof.assets[index].pack, bytes: proof.assets[index].bytes,
+    sha256: `sha256:${proof.assets[index].sha256}` }));
+  proof.worker.requests = proof.assets.length + 2 * proof.representatives.length;
+  proof.worker.responses = proof.worker.requests;
+  proof.releaseBinding = { ...proof.releaseBinding, compositeConfigPath: LUMA_NATIVE_COMPOSITE_CONFIG_PATH };
+  return proof;
+}
+
+test("Luma 모드는 기존 기본·licensed·Atlas 모드와 구분하고 5434개 및 팩별 수를 강제한다", () => {
+  assert.equal(isSupportedNativeIntake(LUMA_NATIVE_INTAKE), true);
+  assert.equal(isReleaseNativeIntake(LUMA_NATIVE_INTAKE), true);
+  assert.equal(isReleaseNativeIntake(undefined), false);
+  assert.equal(isReleaseNativeIntake(LICENSED_NATIVE_INTAKE), false);
+  assert.equal(isSupportedNativeIntake("luma"), false);
+  const proof = lumaFixture();
+  assert.equal(LUMA_NATIVE_EXPECTED_MODELS, 5434);
+  assert.equal(proof.assets.length, 5434);
+  assert.deepEqual(nativeCatalogRightsProblems(proof), []);
+  for (const mutate of [
+    value => { value.assets.pop(); },
+    value => { value.themePacks.totals.placeableAssets = 5229; },
+    value => { value.themePacks.packs[value.assets.at(-1).pack].placeable = 204; },
+    value => { value.assets[0].path = `${LUMA_NATIVE_PACK.ingestId}/native/Unexpected.glb`; value.assets[0].id = `${LUMA_NATIVE_PACK.ingestId}-unexpected`; value.assets[0].pack = value.assets.at(-1).pack; },
+  ]) {
+    const value = lumaFixture(); mutate(value);
+    assert.ok(nativeCatalogRightsProblems(value).length > 0, mutate.toString());
+  }
+  assert.ok(nativeCatalogRightsProblems({ ...proof, expectedIntake: ATLAS_NATIVE_INTAKE }).length > 0);
+  assert.ok(nativeCatalogRightsProblems({ ...atlasFixture(), expectedIntake: LUMA_NATIVE_INTAKE }).length > 0);
+});
+
+test("Luma는 현재 licensed 원장의 정확 owner·grant를 요구하고 Nature CC0와 기존 구매 권리도 보존한다", () => {
+  for (const mutate of [
+    value => { value.rows.at(-1).rights.status = "public-domain"; },
+    value => { value.themePacks.packs[value.assets.at(-1).pack].rights.licenseName = "CC0-1.0"; },
+    value => { value.ledger.packs.find((entry) => entry.id === LUMA_NATIVE_PACK.ledgerPackId).grant.status = "public-domain"; value.themePacks.packs[value.assets.at(-1).pack].rights.status = "public-domain"; },
+    value => { value.ledger.packs.find((entry) => entry.id === LUMA_NATIVE_PACK.ledgerPackId).grant.redistributionAllowed = true; },
+    value => { value.ledger.packs.find((entry) => entry.id === LUMA_NATIVE_PACK.ledgerPackId).grant.inServiceOnly = false; },
+    value => { value.themePacks.packs.find((pack) => pack.ingestPackIds.includes(ATLAS_NATIVE_PACK.ingestId)).rights.status = "licensed"; },
+    value => { value.rows.find((row) => row.id.startsWith(LICENSED_NATIVE_PACKS[0].ingestId)).rights.status = "public-domain"; },
+  ]) {
+    const value = lumaFixture(); mutate(value);
+    assert.ok(nativeProofProblems(value).length > 0, mutate.toString());
+  }
+  const proof = lumaFixture(), luma = proof.themePacks.packs[proof.assets.at(-1).pack];
+  const other = proof.themePacks.packs.find((pack) => pack.catalogIds.includes(LICENSED_NATIVE_PACKS[0].ledgerPackId));
+  Object.assign(luma, { title: other.title, creator: other.creator, catalogIds: [...other.catalogIds], rights: { ...other.rights } });
+  assert.ok(nativeCatalogRightsProblems(proof).some((problem) => /Luma의 원장 소속/u.test(problem)));
+});
+
+test("Luma 대표는 기존11개에 GreenTree·DSEmace·WaterLily 세 경로를 추가한다", () => {
+  const proof = lumaFixture();
+  assert.equal(proof.representatives.length, 14);
+  assert.deepEqual(proof.representatives.slice(0, 11), selectNativeRepresentatives(proof.themePacks, { expectedIntake: ATLAS_NATIVE_INTAKE }));
+  assert.deepEqual(proof.representatives.slice(-3).map(({ path }) => path), LUMA_NATIVE_PACK.sources.map((source) => `${LUMA_NATIVE_PACK.ingestId}/native/${source}`));
+  proof.assets[proof.representatives.at(-1).index].path = `${LUMA_NATIVE_PACK.ingestId}/native/Other.glb`;
+  assert.throws(() => selectNativeRepresentatives(proof.themePacks, { expectedIntake: LUMA_NATIVE_INTAKE }), /대표 모델/u);
+});
+
+test("Luma 증거는 전수5434 Worker·14대표·새 composite 경로·현재 release trace를 함께 요구한다", () => {
+  assert.deepEqual(nativeProofProblems(lumaFixture()), []);
+  for (const mutate of [
+    value => { value.rows = value.rows.slice(0, 5229); },
+    value => { value.worker.requests = 5229 + 22; value.worker.responses = 5229 + 22; },
+    value => { value.representatives.pop(); value.renders.pop(); value.worker.requests -= 2; value.worker.responses -= 2; },
+    value => { delete value.releaseBinding.compositeConfigPath; },
+    value => { value.releaseBinding.compositeConfigPath = NATIVE_COMPOSITE_CONFIG_PATH; },
+    value => { value.releaseTrace.completion.responses[0].bodySha256 = "f".repeat(64); },
+    value => { value.releaseTrace.index.requests = 0; },
+  ]) {
+    const value = lumaFixture(); mutate(value);
+    assert.ok(nativeProofProblems(value).length > 0, mutate.toString());
+  }
+});
+
+test("Luma 재사용은 같은5434 catalog·명시모드·새 composite binding만 허용하고 과거5229 proof는 거부한다", () => {
+  const proof = lumaFixture();
+  const summary = { status: "ok", expectedIntake: LUMA_NATIVE_INTAKE, catalogSha256: proof.catalogSha256,
+    assets: proof.assets.length, validated: proof.assets.length, bytes: proof.assets.reduce((sum, asset) => sum + asset.bytes, 0),
+    failures: [], problems: [], wrongHash: proof.wrongHash, worker: proof.worker, renders: proof.renders,
+    releaseBinding: proof.releaseBinding, releaseTrace: proof.releaseTrace };
+  const input = { ...proof, summary };
+  assert.deepEqual(reusableNativeValidationProblems(input), []);
+  for (const patch of [
+    { expectedIntake: ATLAS_NATIVE_INTAKE }, { assets: 5229, validated: 5229 }, { catalogSha256: "d".repeat(64) },
+    { releaseBinding: { ...proof.releaseBinding, compositeConfigPath: NATIVE_COMPOSITE_CONFIG_PATH } },
+    { releaseBinding: { ...proof.releaseBinding, compositeConfigSha256: "a".repeat(64) } },
+  ]) assert.ok(reusableNativeValidationProblems({ ...input, summary: { ...summary, ...patch } }).length > 0);
+  const old = atlasFixture();
+  assert.ok(reusableNativeValidationProblems({ ...input, rows: old.rows,
+    summary: { ...summary, assets: 5229, validated: 5229, expectedIntake: ATLAS_NATIVE_INTAKE,
+      worker: old.worker, renders: old.renders, releaseBinding: old.releaseBinding } }).length > 0);
+  const reusedValidation = { expectedIntake: LUMA_NATIVE_INTAKE, validated: 5434, sourceCatalogSha256: proof.catalogSha256,
+    summarySha256: sha256, rowsSha256: sha256, releaseBinding: proof.releaseBinding };
+  const worker = { ...proof.worker, requests: 28, responses: 28 };
+  assert.deepEqual(nativeProofProblems({ ...proof, reusedValidation, worker }), []);
+  assert.ok(nativeProofProblems({ ...proof, worker, reusedValidation: { ...reusedValidation, expectedIntake: ATLAS_NATIVE_INTAKE } }).length > 0);
 });

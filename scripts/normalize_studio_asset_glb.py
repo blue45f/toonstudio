@@ -6,7 +6,7 @@ Spec: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
 """
 from __future__ import annotations
 import argparse
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 import copy
 from dataclasses import dataclass
 import hashlib
@@ -21,6 +21,7 @@ from studio_asset_curation import safe_file, sha256_file
 LIMIT = 64 * 1024 * 1024
 JSON_CHUNK = 0x4E4F534A
 BIN_CHUNK = 0x004E4942
+NORMALIZER_SOURCE_SHA256 = sha256_file(Path(__file__))
 
 
 @dataclass(frozen=True)
@@ -177,41 +178,27 @@ def write_glb(doc: dict, binary: bytes) -> bytes:
             + js + struct.pack('<II', len(padded), BIN_CHUNK) + padded)
 
 
-def normalize(source: Path, destination: Path, *,
-              owner_pack_images: OwnerPackImageBindings | None = None) -> dict: # NOSONAR python:S3776
-    if destination.exists() or destination.is_symlink():
-        raise ValueError('destination already exists')
-    bound_images = _resolve_owner_pack_images(source, owner_pack_images) if owner_pack_images is not None else None
-    if owner_pack_images is not None and destination.resolve().is_relative_to(owner_pack_images.pack_root.resolve(strict=True)):
-        raise ValueError('파생 출력이 소유 팩 안에 있습니다. 원본을 보존하도록 소유 팩 밖의 새 경로를 destination으로 지정하세요.')
-    if source.stat().st_size > LIMIT:
-        raise ValueError('source exceeds pilot budget')
-    original = source.read_bytes()
+def normalize_bytes(original: bytes, resolve_texture: Callable[[str], bytes]) -> tuple[bytes, list[dict]]: # NOSONAR python:S3776
+    """파일을 쓰지 않고 승인된 resolver의 이미지 바이트만 GLB에 내장한다."""
     doc, binary = read_glb(original)
     original_doc = copy.deepcopy(doc)
     original_binary = binary
     embedded = []
     proofs: list[tuple[int, bytes, str, dict]] = []
-    if bound_images is not None:
-        uris = [image['uri'] for image in doc.get('images', []) if 'uri' in image]
-        if any(not isinstance(uri, str) for uri in uris) or set(uris) != set(bound_images):
-            raise ValueError('image_paths와 원본 GLB의 외부 이미지 URI 집합이 다릅니다. 누락되거나 사용하지 않는 매핑을 원본 URI 집합에 맞추세요.')
     for image_index, image in enumerate(doc.get('images', [])):
         if 'uri' not in image:
             continue
         uri = image['uri']
         if not isinstance(uri, str) or 'bufferView' in image:
             raise ValueError('ambiguous image source')
-        if bound_images is None:
-            parsed = urlsplit(uri)
-            if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
-                raise ValueError('external or data URI not supported by pilot')
-            texture = safe_file(source.parent, unquote(parsed.path))
-        else:
-            texture = bound_images[uri]
-        if texture.stat().st_size > 16 * 1024 * 1024:
+        parsed = urlsplit(uri)
+        if parsed.scheme or parsed.netloc or parsed.query or parsed.fragment:
+            raise ValueError('external or data URI not supported by pilot')
+        image_bytes = resolve_texture(uri)
+        if not isinstance(image_bytes, bytes):
+            raise ValueError('이미지 resolver는 bytes를 반환해야 합니다.')
+        if len(image_bytes) > 16 * 1024 * 1024:
             raise ValueError('texture too large')
-        image_bytes = texture.read_bytes()
         if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
             mime = 'image/png'
         elif image_bytes.startswith(b'\xff\xd8\xff'):
@@ -227,8 +214,7 @@ def normalize(source: Path, destination: Path, *,
         del image['uri']
         view = {'buffer': 0, 'byteOffset': offset, 'byteLength': len(image_bytes)}
         views.append(view)
-        if bound_images is not None:
-            proofs.append((image_index, image_bytes, mime, view))
+        proofs.append((image_index, image_bytes, mime, view))
         embedded.append({'uri': uri, 'sha256': hashlib.sha256(image_bytes).hexdigest(), 'bytes': len(image_bytes)})
     doc['buffers'][0]['byteLength'] = len(binary)
     data = write_glb(doc, binary) if embedded else original
@@ -240,14 +226,54 @@ def normalize(source: Path, destination: Path, *,
     for key in ('meshes', 'accessors', 'nodes', 'scenes', 'materials', 'textures', 'animations', 'skins'):
         if check_doc.get(key) != original_doc.get(key):
             raise ValueError('geometry or scene metadata changed')
+    for key in original_doc.keys() - {'buffers', 'bufferViews', 'images'}:
+        if check_doc.get(key) != original_doc[key]:
+            raise ValueError('GLB의 원본 메타데이터가 변경됐습니다.')
+    original_views = original_doc.get('bufferViews', [])
+    if check_doc.get('bufferViews', [])[:len(original_views)] != original_views:
+        raise ValueError('GLB의 원본 bufferView가 변경됐습니다.')
+    for key in original_doc['buffers'][0].keys() - {'byteLength'}:
+        if check_doc['buffers'][0].get(key) != original_doc['buffers'][0][key]:
+            raise ValueError('GLB의 원본 buffer 메타데이터가 변경됐습니다.')
+    for before, after in zip(original_doc.get('images', []), check_doc.get('images', []), strict=True):
+        for key in before.keys() - {'uri', 'bufferView', 'mimeType'}:
+            if after.get(key) != before[key]:
+                raise ValueError('GLB의 원본 image 메타데이터가 변경됐습니다.')
     for image in check_doc.get('images', []):
         view_id = image.get('bufferView')
         if type(view_id) is not int or not 0 <= view_id < len(check_doc.get('bufferViews', [])):
             raise ValueError('image missing embedded data')
         if image.get('mimeType') not in {'image/png', 'image/jpeg'}:
             raise ValueError('unsupported embedded image type')
+    # 순수 호출과 파일 호출 모두 이미지 내부화 외의 JSON 변경을 거부한다.
+    _verify_bound_json_and_images(original_doc, check_doc, check_bin, len(binary), proofs)
+    return data, embedded
+
+
+def normalize(source: Path, destination: Path, *,
+              owner_pack_images: OwnerPackImageBindings | None = None) -> dict: # NOSONAR python:S3776
+    if destination.exists() or destination.is_symlink():
+        raise ValueError('destination already exists')
+    bound_images = _resolve_owner_pack_images(source, owner_pack_images) if owner_pack_images is not None else None
+    if owner_pack_images is not None and destination.resolve().is_relative_to(owner_pack_images.pack_root.resolve(strict=True)):
+        raise ValueError('파생 출력이 소유 팩 안에 있습니다. 원본을 보존하도록 소유 팩 밖의 새 경로를 destination으로 지정하세요.')
+    if source.stat().st_size > LIMIT:
+        raise ValueError('source exceeds pilot budget')
+    original = source.read_bytes()
     if bound_images is not None:
-        _verify_bound_json_and_images(original_doc, check_doc, check_bin, len(binary), proofs)
+        doc, _ = read_glb(original)
+        uris = [image['uri'] for image in doc.get('images', []) if 'uri' in image]
+        if any(not isinstance(uri, str) for uri in uris) or set(uris) != set(bound_images):
+            raise ValueError('image_paths와 원본 GLB의 외부 이미지 URI 집합이 다릅니다. 누락되거나 사용하지 않는 매핑을 원본 URI 집합에 맞추세요.')
+
+    def resolve_texture(uri: str) -> bytes:
+        texture = (safe_file(source.parent, unquote(urlsplit(uri).path))
+                   if bound_images is None else bound_images[uri])
+        if texture.stat().st_size > 16 * 1024 * 1024:
+            raise ValueError('texture too large')
+        return texture.read_bytes()
+
+    data, embedded = normalize_bytes(original, resolve_texture)
     destination.parent.mkdir(parents=True, exist_ok=True)
     with destination.open('xb') as f:
         f.write(data)

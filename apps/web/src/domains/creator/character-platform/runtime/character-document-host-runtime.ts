@@ -91,7 +91,10 @@ export function applyCharacterDocumentToHost(input: {
       if (slot !== "hair" && selectionOverrides && Object.keys(selectionOverrides).length > 0) {
         throw new Error(`${slot} 파츠의 외부 override는 현재 호환 실행기에서 지원하지 않습니다. 원본은 보존됩니다.`);
       }
-      if (slot === "hair" || slot === "pose") continue;
+      // 표정 카드 선택은 가중치에서 파생된 표시다. 사용자 미소처럼 카드가 없는
+      // 상태를 중립으로 초기화하면 아래의 정본 expression 적용에 영원히 도달하지 못한다.
+      // 포즈와 마찬가지로 표정도 전용 문서 필드에서 한 번만 재생한다.
+      if (slot === "hair" || slot === "pose" || slot === "expression") continue;
       if (controlPrefixes[slot]?.some((prefix) => Object.keys(controls).some((control) => control.startsWith(prefix)))) continue;
       const selection = target.recipe.slots[slot];
       if ((current.recipe.slots[slot]?.entryId ?? null) === (selection?.entryId ?? null)) continue;

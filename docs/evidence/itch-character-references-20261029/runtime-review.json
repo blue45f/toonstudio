@@ -1,0 +1,1016 @@
+{
+  "expected": 186,
+  "imageContract": {
+    "successes": 186,
+    "failures": 0,
+    "text": "검사 완료 · 186/186개 확인 · 성공 186개 · 실패 0개"
+  },
+  "insertions": [
+    {
+      "id": "cbv1-008-bench-1-1",
+      "scope": "legacy-bench-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "벤치 · Bench 1 1",
+        "ID": "bundle:cbv1-008-bench-1-1",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "676,401",
+        "투명 픽셀": "1,682,895",
+        "콘텐츠 해시": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/cute-park-pack"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-008-bench-1-1",
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-024-potion-1-1",
+      "scope": "legacy-potion-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "물약 병 · Potion 1 1",
+        "ID": "bundle:cbv1-024-potion-1-1",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "397,775",
+        "투명 픽셀": "1,961,521",
+        "콘텐츠 해시": "sha256:5001f97482dc063c225838d06f1d13098c2bce4c92027682bce1c8a377424fea",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/cute-dungeon-megapack"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-024-potion-1-1",
+        "ledgerPackId": "cbv1-024-cute-dungeon-megapack",
+        "contentHash": "sha256:5001f97482dc063c225838d06f1d13098c2bce4c92027682bce1c8a377424fea",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-024-potion-1-1/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/cute-dungeon-megapack",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-008-bench-1-1",
+      "scope": "legacy-bench-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "벤치 · Bench 1 1",
+        "ID": "bundle:cbv1-008-bench-1-1",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "676,401",
+        "투명 픽셀": "1,682,895",
+        "콘텐츠 해시": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/cute-park-pack"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-008-bench-1-1",
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-2-10-a-mc-front",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 녹색 코트 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-2-10-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "481,678",
+        "투명 픽셀": "1,877,618",
+        "콘텐츠 해시": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-2-10-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-2-10-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-2-10-a-mc-three-quarter",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 녹색 코트 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-2-10-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "445,778",
+        "투명 픽셀": "1,913,518",
+        "콘텐츠 해시": "sha256:37eb6317ed04f61230731ab5079da931e5d72160aa7bce53ef53b31b2e6acc79",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-2-10-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:37eb6317ed04f61230731ab5079da931e5d72160aa7bce53ef53b31b2e6acc79",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-2-10-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-3-1-a-mc-front",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 선글라스 코트 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-3-1-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "517,381",
+        "투명 픽셀": "1,841,915",
+        "콘텐츠 해시": "sha256:f9499451f971ad3a55b745ea0c247a73cd649174aa053fc2be3f2565211aace0",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-3-1-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:f9499451f971ad3a55b745ea0c247a73cd649174aa053fc2be3f2565211aace0",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-3-1-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-3-1-a-mc-three-quarter",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 선글라스 코트 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-3-1-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "473,228",
+        "투명 픽셀": "1,886,068",
+        "콘텐츠 해시": "sha256:330573ae80306b1d87c8a61b6815ec99df054b2beda3d697a639a5a25deb2b52",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-3-1-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:330573ae80306b1d87c8a61b6815ec99df054b2beda3d697a639a5a25deb2b52",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-3-1-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-4-2-a-mc-front",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 비니 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-4-2-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "475,348",
+        "투명 픽셀": "1,883,948",
+        "콘텐츠 해시": "sha256:dcc7ce4b626971d3b85983ab87eacf61552febcf320f0a646763c4bfd9385a88",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-4-2-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:dcc7ce4b626971d3b85983ab87eacf61552febcf320f0a646763c4bfd9385a88",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-4-2-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-4-2-a-mc-three-quarter",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 비니 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-4-2-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "435,267",
+        "투명 픽셀": "1,924,029",
+        "콘텐츠 해시": "sha256:6b8e1355027a8dd24714f640eba7f171317f11fbef3c4abdc9de3d6a9f347e5f",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-4-2-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:6b8e1355027a8dd24714f640eba7f171317f11fbef3c4abdc9de3d6a9f347e5f",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-4-2-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-6-10-a-mc-front",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 파란 셔츠 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-6-10-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "470,482",
+        "투명 픽셀": "1,888,814",
+        "콘텐츠 해시": "sha256:2993a9bea6a64617831ba6a9deabe7a3974d944a188ecc17c01bb7a1238a0dca",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-6-10-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:2993a9bea6a64617831ba6a9deabe7a3974d944a188ecc17c01bb7a1238a0dca",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-6-10-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-6-10-a-mc-three-quarter",
+      "scope": "characters2-desktop",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 파란 셔츠 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-6-10-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "424,526",
+        "투명 픽셀": "1,934,770",
+        "콘텐츠 해시": "sha256:f84da776485e318c99a2fd20303dc12be8ec411e416223a7c2a8ca7d04c307f9",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-6-10-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:f84da776485e318c99a2fd20303dc12be8ec411e416223a7c2a8ca7d04c307f9",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-6-10-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-2-10-a-mc-front",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 녹색 코트 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-2-10-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "481,678",
+        "투명 픽셀": "1,877,618",
+        "콘텐츠 해시": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-2-10-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-2-10-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-2-10-a-mc-three-quarter",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 녹색 코트 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-2-10-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "445,778",
+        "투명 픽셀": "1,913,518",
+        "콘텐츠 해시": "sha256:37eb6317ed04f61230731ab5079da931e5d72160aa7bce53ef53b31b2e6acc79",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-2-10-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:37eb6317ed04f61230731ab5079da931e5d72160aa7bce53ef53b31b2e6acc79",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-2-10-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-3-1-a-mc-front",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 선글라스 코트 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-3-1-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "517,381",
+        "투명 픽셀": "1,841,915",
+        "콘텐츠 해시": "sha256:f9499451f971ad3a55b745ea0c247a73cd649174aa053fc2be3f2565211aace0",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-3-1-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:f9499451f971ad3a55b745ea0c247a73cd649174aa053fc2be3f2565211aace0",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-3-1-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-3-1-a-mc-three-quarter",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 선글라스 코트 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-3-1-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "473,228",
+        "투명 픽셀": "1,886,068",
+        "콘텐츠 해시": "sha256:330573ae80306b1d87c8a61b6815ec99df054b2beda3d697a639a5a25deb2b52",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-3-1-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:330573ae80306b1d87c8a61b6815ec99df054b2beda3d697a639a5a25deb2b52",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-3-1-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-4-2-a-mc-front",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 비니 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-4-2-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "475,348",
+        "투명 픽셀": "1,883,948",
+        "콘텐츠 해시": "sha256:dcc7ce4b626971d3b85983ab87eacf61552febcf320f0a646763c4bfd9385a88",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-4-2-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:dcc7ce4b626971d3b85983ab87eacf61552febcf320f0a646763c4bfd9385a88",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-4-2-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-4-2-a-mc-three-quarter",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 비니 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-4-2-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "435,267",
+        "투명 픽셀": "1,924,029",
+        "콘텐츠 해시": "sha256:6b8e1355027a8dd24714f640eba7f171317f11fbef3c4abdc9de3d6a9f347e5f",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-4-2-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:6b8e1355027a8dd24714f640eba7f171317f11fbef3c4abdc9de3d6a9f347e5f",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-4-2-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-6-10-a-mc-front",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 파란 셔츠 캐릭터 · T포즈 정면 참고",
+        "ID": "bundle:cbv1-007-ch-6-10-a-mc-front",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "470,482",
+        "투명 픽셀": "1,888,814",
+        "콘텐츠 해시": "sha256:2993a9bea6a64617831ba6a9deabe7a3974d944a188ecc17c01bb7a1238a0dca",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-6-10-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:2993a9bea6a64617831ba6a9deabe7a3974d944a188ecc17c01bb7a1238a0dca",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-6-10-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "id": "cbv1-007-ch-6-10-a-mc-three-quarter",
+      "scope": "characters2-mobile",
+      "decoded": {
+        "width": 1536,
+        "height": 1536
+      },
+      "details": {
+        "소재": "캐릭터 2 · 파란 셔츠 캐릭터 · T포즈 3/4 참고",
+        "ID": "bundle:cbv1-007-ch-6-10-a-mc-three-quarter",
+        "실제 크기": "1536 × 1536px",
+        "보이는 픽셀": "424,526",
+        "투명 픽셀": "1,934,770",
+        "콘텐츠 해시": "sha256:f84da776485e318c99a2fd20303dc12be8ec411e416223a7c2a8ca7d04c307f9",
+        "라이선스": "CC0-1.0",
+        "권리 확인": "확인됨",
+        "출처": "RG Poly — https://rg-poly.itch.io/characters-2"
+      },
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-6-10-a-mc-three-quarter",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:f84da776485e318c99a2fd20303dc12be8ec411e416223a7c2a8ca7d04c307f9",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-6-10-a-mc-three-quarter/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "desktop-library.png",
+    "mobile-canvas.png",
+    "characters2-desktop.png",
+    "characters2-mobile.png"
+  ],
+  "layouts": [
+    {
+      "scope": "legacy-bench-desktop:cbv1-008-bench-1-1:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "legacy-bench-desktop:cbv1-008-bench-1-1:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "legacy-potion-desktop:cbv1-024-potion-1-1:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "legacy-potion-desktop:cbv1-024-potion-1-1:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "legacy-bench-mobile:cbv1-008-bench-1-1:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "legacy-bench-mobile:cbv1-008-bench-1-1:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-desktop:cards",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-2-10-a-mc-front:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-2-10-a-mc-front:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-2-10-a-mc-three-quarter:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-2-10-a-mc-three-quarter:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-3-1-a-mc-front:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-3-1-a-mc-front:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-3-1-a-mc-three-quarter:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-3-1-a-mc-three-quarter:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-4-2-a-mc-front:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-4-2-a-mc-front:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-4-2-a-mc-three-quarter:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-4-2-a-mc-three-quarter:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-6-10-a-mc-front:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-6-10-a-mc-front:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-6-10-a-mc-three-quarter:preview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-desktop:cbv1-007-ch-6-10-a-mc-three-quarter:inserted",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "scope": "characters2-mobile:cards",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-2-10-a-mc-front:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-2-10-a-mc-front:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-2-10-a-mc-three-quarter:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-2-10-a-mc-three-quarter:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-3-1-a-mc-front:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-3-1-a-mc-front:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-3-1-a-mc-three-quarter:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-3-1-a-mc-three-quarter:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-4-2-a-mc-front:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-4-2-a-mc-front:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-4-2-a-mc-three-quarter:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-4-2-a-mc-three-quarter:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-6-10-a-mc-front:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-6-10-a-mc-front:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-6-10-a-mc-three-quarter:preview",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "scope": "characters2-mobile:cbv1-007-ch-6-10-a-mc-three-quarter:inserted",
+      "width": 390,
+      "scrollWidth": 390
+    }
+  ],
+  "databasePersistenceVerified": true,
+  "persistenceCases": [
+    {
+      "scope": "legacy-bench",
+      "sourceAssetId": "cbv1-008-bench-1-1",
+      "id": "7aaf0345-35b6-4837-a323-87e6999d144f",
+      "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-008-bench-1-1",
+        "ledgerPackId": "cbv1-008-cute-park-pack",
+        "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    },
+    {
+      "scope": "characters2",
+      "sourceAssetId": "cbv1-007-ch-2-10-a-mc-front",
+      "id": "fb9aa2cc-8612-41f6-908d-a931676a2b0b",
+      "contentHash": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+      "bundleSourceCredit": {
+        "schema": "toonstudio.bundle-source-credit.v1",
+        "assetId": "cbv1-007-ch-2-10-a-mc-front",
+        "ledgerPackId": "cbv1-007-cartoon-characters-2",
+        "contentHash": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+        "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-2-10-a-mc-front/prop.webp",
+        "sourceUrl": "https://rg-poly.itch.io/characters-2",
+        "provider": "RG Poly",
+        "licenseId": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "licenseName": "CC0-1.0",
+        "serve": "allow",
+        "status": "public-domain",
+        "commercialUse": true,
+        "attributionRequired": false
+      }
+    }
+  ],
+  "characters2": {
+    "expected": 8,
+    "models": 4,
+    "assetIds": [
+      "cbv1-007-ch-2-10-a-mc-front",
+      "cbv1-007-ch-2-10-a-mc-three-quarter",
+      "cbv1-007-ch-3-1-a-mc-front",
+      "cbv1-007-ch-3-1-a-mc-three-quarter",
+      "cbv1-007-ch-4-2-a-mc-front",
+      "cbv1-007-ch-4-2-a-mc-three-quarter",
+      "cbv1-007-ch-6-10-a-mc-front",
+      "cbv1-007-ch-6-10-a-mc-three-quarter"
+    ],
+    "desktop": [
+      "cbv1-007-ch-2-10-a-mc-front",
+      "cbv1-007-ch-2-10-a-mc-three-quarter",
+      "cbv1-007-ch-3-1-a-mc-front",
+      "cbv1-007-ch-3-1-a-mc-three-quarter",
+      "cbv1-007-ch-4-2-a-mc-front",
+      "cbv1-007-ch-4-2-a-mc-three-quarter",
+      "cbv1-007-ch-6-10-a-mc-front",
+      "cbv1-007-ch-6-10-a-mc-three-quarter"
+    ],
+    "mobile": [
+      "cbv1-007-ch-2-10-a-mc-front",
+      "cbv1-007-ch-2-10-a-mc-three-quarter",
+      "cbv1-007-ch-3-1-a-mc-front",
+      "cbv1-007-ch-3-1-a-mc-three-quarter",
+      "cbv1-007-ch-4-2-a-mc-front",
+      "cbv1-007-ch-4-2-a-mc-three-quarter",
+      "cbv1-007-ch-6-10-a-mc-front",
+      "cbv1-007-ch-6-10-a-mc-three-quarter"
+    ]
+  },
+  "localPersistence": {
+    "id": "7aaf0345-35b6-4837-a323-87e6999d144f",
+    "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+    "bundleSourceCredit": {
+      "schema": "toonstudio.bundle-source-credit.v1",
+      "assetId": "cbv1-008-bench-1-1",
+      "ledgerPackId": "cbv1-008-cute-park-pack",
+      "contentHash": "sha256:b9fe70a44aee3617d22a264f9bdaab1286d9bc9f5e55359b17ab35bb3f667a49",
+      "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-008-bench-1-1/prop.webp",
+      "sourceUrl": "https://rg-poly.itch.io/cute-park-pack",
+      "provider": "RG Poly",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseName": "CC0-1.0",
+      "serve": "allow",
+      "status": "public-domain",
+      "commercialUse": true,
+      "attributionRequired": false
+    }
+  },
+  "characters2Persistence": {
+    "id": "fb9aa2cc-8612-41f6-908d-a931676a2b0b",
+    "contentHash": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+    "bundleSourceCredit": {
+      "schema": "toonstudio.bundle-source-credit.v1",
+      "assetId": "cbv1-007-ch-2-10-a-mc-front",
+      "ledgerPackId": "cbv1-007-cartoon-characters-2",
+      "contentHash": "sha256:73ec29e14e7486b527b21f07b052ffbb481190e65fe8d5a639b0157a11f5cbd6",
+      "renderPath": "/assets/studio/bundle-renders-v1/assets/cbv1-007-ch-2-10-a-mc-front/prop.webp",
+      "sourceUrl": "https://rg-poly.itch.io/characters-2",
+      "provider": "RG Poly",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseName": "CC0-1.0",
+      "serve": "allow",
+      "status": "public-domain",
+      "commercialUse": true,
+      "attributionRequired": false
+    }
+  },
+  "verificationExitCode": 0,
+  "postRegenerationVerification": {
+    "browserRerun": false,
+    "bodyShaAndAllConsumerFieldsIdentical": true,
+    "thumbnailDecodedPixelsEquivalent": true,
+    "changedField": "신규 8개 renderInputFingerprint.sourcePreparation.preparationPolicySha256",
+    "preparationPolicySha256": "ae1b21eb5d28a59e7e94f56b922a3f12724be3dc356a0fe2e07a14cf40b2db46",
+    "manifestSha256": "781b69c90d7e59f62da25d0eb3ceff95e83a7109158167e86c1401f64723fb5f",
+    "source": "registration-review.json의 재생성 후 전수 동일성 검사"
+  },
+  "scope": "로컬 실제 소재 패널·전체 delivery·canvas 삽입과 SQLite/OPFS 개인 저장; 원격 인증 프로젝트 저장·운영 배포는 별도"
+}

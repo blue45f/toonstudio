@@ -1,8 +1,8 @@
 import { ServiceUnavailableException } from "@nestjs/common";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { signSession } from "../../server/session";
-import { AUTH_SESSION_COOKIE_NAME } from "../../session-cookie";
+import { AUTH_SESSION_COOKIE_NAME, resolveSessionCookieName } from "../../session-cookie";
 
 import { resolveAuthSessionUser } from "./auth-session-profile";
 import { AuthController, authResponseUser, isValidSignupEmail } from "./auth.controller";
@@ -56,6 +56,7 @@ function response(): Response {
 }
 
 describe("AuthController session truth source", () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.mocked(resolveAuthSessionUser).mockReset();
     revokeUserSessions.mockReset();
@@ -87,6 +88,22 @@ describe("AuthController session truth source", () => {
       }),
     );
     expect(resolveAuthSessionUser).not.toHaveBeenCalled();
+  });
+
+  it("운영 로그아웃은 __Host- 이름을 읽고 같은 이름의 쿠키만 지운다", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("AUTH_SESSION_SECRET", "production-cookie-session-test-secret-123456789");
+    const res = response();
+    const token = signSession("host-cookie-user", 1);
+    await controller().logout(undefined, request(
+      `${AUTH_SESSION_COOKIE_NAME}=legacy-token; ${resolveSessionCookieName()}=${token}`,
+    ), res);
+    expect(revokeUserSessions).toHaveBeenCalledWith("host-cookie-user");
+    expect(res.clearCookie).toHaveBeenCalledWith(
+      "__Host-toonstudio-auth-session",
+      expect.objectContaining({ secure: true, httpOnly: true, path: "/", maxAge: 0 }),
+    );
+    expect(vi.mocked(res.clearCookie).mock.calls[0]?.[1]).not.toHaveProperty("domain");
   });
 
   it("hydrates only the public user projection for a verified session id", async () => {

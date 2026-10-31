@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import struct
 import sys
 import tempfile
 import unittest
@@ -454,6 +455,181 @@ class AtlasIntakeTests(unittest.TestCase):
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr): self.assertEqual(intake.main(args), 2)
         self.assertIn('--check', stderr.getvalue()); self.assertFalse(self.output.exists())
+
+
+class GltfAtlasIntakeTests(unittest.TestCase):
+    """작은 합성 원문으로 명시적 glTF 입력의 보존·거부 경계를 확인한다."""
+    save_glb = AtlasIntakeTests.save_glb
+    flush = AtlasIntakeTests.flush
+    plan = AtlasIntakeTests.plan
+    verified_input = AtlasIntakeTests.verified_input
+    rewrite_candidate = AtlasIntakeTests.rewrite_candidate
+
+    def setUp(self):
+        AtlasIntakeTests.setUp(self)
+        self.source.unlink()
+        self.source = self.source.with_suffix('.gltf')
+        self.binary = self.source.with_suffix('.bin')
+        self.raw_binary = struct.pack('<8fH', 1, 2, 3, 0, 1, 0, .25, .5, 0) + b'\0\0' + struct.pack('<f', 0) + b'X'
+        self.binary.write_bytes(self.raw_binary)
+        self.document = {
+            'asset': {'version': '2.0', 'generator': '합성 glTF 원문'},
+            'buffers': [{'uri': 'leaf.bin', 'byteLength': len(self.raw_binary), 'name': '원문 BIN'}],
+            'bufferViews': [{'buffer': 0, 'byteOffset': offset, 'byteLength': length}
+                            for offset, length in [(0, 12), (12, 12), (24, 8), (32, 2), (36, 4)]],
+            'accessors': [{'bufferView': i, 'componentType': 5123 if i == 3 else 5126,
+                           'count': 1, 'type': kind} for i, kind in enumerate(['VEC3', 'VEC3', 'VEC2', 'SCALAR', 'SCALAR'])],
+            'images': [{'uri': self.uri, 'name': '원문 atlas', 'extras': {'keep': True}}],
+            'samplers': [{'magFilter': 9729, 'wrapS': 10497, 'wrapT': 10497}],
+            'textures': [{'source': 0, 'sampler': 0}],
+            'materials': [{'name': '원문 재질', 'pbrMetallicRoughness': {'baseColorTexture': {'index': 0}}}],
+            'meshes': [{'primitives': [{'attributes': {'POSITION': 0, 'NORMAL': 1, 'TEXCOORD_0': 2},
+                                       'indices': 3, 'material': 0, 'mode': 0}]}],
+            'nodes': [{'mesh': 0, 'skin': 0, 'translation': [1, 2, 3]}, {'name': '관절'}],
+            'skins': [{'joints': [1]}], 'scenes': [{'nodes': [0, 1]}], 'scene': 0,
+            'animations': [{'samplers': [{'input': 4, 'output': 0}],
+                            'channels': [{'sampler': 0, 'target': {'node': 1, 'path': 'translation'}}]}],
+            'extras': {'keep': '원문 부가 정보'}}
+        self.save_gltf()
+        self.recipe['packs'][0]['sourceFormat'] = 'gltf'
+        self.flush()
+
+    def save_gltf(self, document=None):
+        self.source.write_text(json.dumps(self.document if document is None else document, ensure_ascii=False), encoding='utf-8')
+
+    def test_gltf_preserves_original_geometry_json_image_and_separate_provenance(self):
+        before = {p: p.read_bytes() for p in [self.source, self.binary, self.image]}
+        plan, root = self.verified_input()
+        manifest = intake.read_json(root / 'manifest-v2.json')
+        asset = manifest['assets'][0]
+        self.assertEqual(asset['sourcePath'], 'Plants/leaf.glb')
+        document, binary = intake.glb.read_glb((root / asset['files'][0]['path']).read_bytes())
+        view = document['bufferViews'][document['images'][0]['bufferView']]
+        expected = copy.deepcopy(self.document)
+        del expected['buffers'][0]['uri']
+        expected['buffers'][0]['byteLength'] = len(binary)
+        expected['images'][0].pop('uri')
+        expected['images'][0].update(mimeType='image/png', bufferView=len(expected['bufferViews']))
+        expected['bufferViews'].append(view)
+        self.assertEqual(document, expected)
+        self.assertEqual(binary[:len(self.raw_binary)], self.raw_binary)
+        self.assertEqual(view['byteOffset'] % 4, 0)
+        self.assertEqual(binary[view['byteOffset']:view['byteOffset'] + view['byteLength']], self.image.read_bytes())
+        proof = intake.read_json(root / 'preparation-proof.json')['assets'][0]
+        self.assertEqual(proof['sourcePath'], 'Plants/leaf.glb')
+        self.assertEqual(proof['originalSourcePath'], 'Plants/leaf.gltf')
+        self.assertEqual(proof['sourceFormat'], 'gltf')
+        self.assertEqual(proof['source'], intake.file_state(self.source))
+        self.assertEqual(proof['sourceBuffer'], {'path': 'Models/Plants/leaf.bin', **intake.file_state(self.binary)})
+        result = intake.verify_derived(plan, root)
+        self.assertTrue({self.source, self.binary, self.image} <= {Path(entry['path']) for entry in result['inputFiles']})
+        self.assertEqual(result['sourceInputs'], [{'packId': 'cbv1-ingest-nature', 'sourcePath': 'Plants/leaf.glb',
+                         'originalSourcePath': 'Plants/leaf.gltf', 'sourceFormat': 'gltf'}])
+        self.assertEqual(before, {p: p.read_bytes() for p in before})
+
+    def test_invalid_source_format_is_not_silently_treated_as_glb(self):
+        for value in ['glb', 'GLTF', None, 1]:
+            self.recipe['packs'][0]['sourceFormat'] = value
+            with self.subTest(value=value), self.assertRaises(ValueError): self.plan()
+
+    def test_same_source_directory_cannot_hide_another_format_snapshot(self):
+        other = copy.deepcopy(self.recipe['packs'][0])
+        other.pop('sourceFormat'); other['ingestId'] = 'cbv1-ingest-other'
+        self.recipe['packs'].append(other)
+        self.projection['packs'][0]['ingestPackIds'].append(other['ingestId'])
+        self.save_glb(self.source.with_suffix('.glb'))
+        with self.assertRaisesRegex(ValueError, 'sourceDirectory.*중복'): self.plan()
+
+    def test_single_local_bin_and_exact_length_are_required(self):
+        cases = [[], [self.document['buffers'][0]] * 2, [{'byteLength': 41}],
+                 [{'uri': 'leaf.bin', 'byteLength': True}], [{'uri': 'leaf.bin', 'byteLength': 40}]]
+        for buffers in cases:
+            document = copy.deepcopy(self.document); document['buffers'] = buffers; self.save_gltf(document)
+            with self.subTest(buffers=buffers), self.assertRaises(ValueError): self.plan()
+
+    def test_bin_bytes_read_after_stat_must_match_declared_length(self):
+        read = Path.read_bytes
+        def changed(path):
+            body = read(path)
+            return body + b'X' if path == self.binary else body
+        with patch.object(Path, 'read_bytes', changed):
+            with self.assertRaisesRegex(ValueError, '읽은 BIN 길이'): self.plan()
+
+    def test_bin_uri_escape_network_query_and_hidden_external_resources_are_rejected(self):
+        for uri in ['../leaf.bin', '%2e%2e/leaf.bin', 'https://example.test/leaf.bin',
+                    'data:application/octet-stream,AAAA', 'leaf.bin?x=1', 'leaf.bin#x', '%2fleaf.bin']:
+            document = copy.deepcopy(self.document); document['buffers'][0]['uri'] = uri; self.save_gltf(document)
+            with self.subTest(uri=uri), self.assertRaises(ValueError): self.plan()
+        document = copy.deepcopy(self.document); document['extras']['uri'] = 'hidden.bin'; self.save_gltf(document)
+        with self.assertRaisesRegex(ValueError, '승인하지 않은'): self.plan()
+
+    def test_gltf_bin_and_texture_symlinks_are_rejected(self):
+        for index, path in enumerate([self.source, self.binary, self.image]):
+            moved = self.root / ('moved-' + str(index)); path.rename(moved); path.symlink_to(moved)
+            with self.subTest(path=path), self.assertRaises(ValueError): self.plan()
+            path.unlink(); moved.rename(path)
+
+    def test_unapproved_image_and_duplicate_gltf_keys_are_rejected(self):
+        self.recipe['packs'][0]['imagePaths'] = {'unused.png': 'Textures/atlas.png'}
+        with self.assertRaisesRegex(ValueError, '매핑'): self.plan()
+        self.recipe['packs'][0]['imagePaths'] = {self.uri: 'Textures/atlas.png'}
+        self.source.write_text('{"asset":{},"asset":{}}', encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, '중복된 키'): self.plan()
+
+    def test_gltf_mode_does_not_replace_an_embedded_glb_image(self):
+        self.recipe['packs'][0].pop('sourceFormat')
+        path = self.source.with_suffix('.glb')
+        document = {'asset': {'version': '2.0'}, 'buffers': [{'byteLength': 4}],
+                    'bufferViews': [{'buffer': 0, 'byteOffset': 0, 'byteLength': 4}],
+                    'images': [{'bufferView': 0, 'mimeType': 'image/png'}]}
+        path.write_bytes(intake.glb.write_glb(document, b'1234'))
+        with self.assertRaisesRegex(ValueError, '사용하지 않는'): self.plan()
+
+    def test_all_gltf_inputs_are_frozen_before_write(self):
+        for path in [self.source, self.binary, self.image]:
+            plan = self.plan(); original = path.read_bytes()
+            path.write_bytes(original[:-1] + bytes([original[-1] ^ 1]))
+            with self.subTest(path=path), self.assertRaises(ValueError): intake.write_plan(plan)
+            self.assertFalse(self.output.exists()); path.write_bytes(original)
+
+    def test_new_gltf_source_is_rejected_after_plan(self):
+        plan = self.plan()
+        self.source.with_name('late.gltf').write_bytes(self.source.read_bytes())
+        with self.assertRaisesRegex(ValueError, 'GLTF 목록'): intake.write_plan(plan)
+        self.assertFalse(self.output.exists())
+
+    def test_rebuilt_gltf_rejects_candidate_geometry_json_and_texture_changes(self):
+        for kind in ['geometry', 'json', 'image']:
+            self.output = self.root / ('output-' + kind)
+            plan, root = self.verified_input()
+            changes = {'change_document': lambda document: document.update(extras={'changed': True})} if kind == 'json' else {
+                'change_binary': (lambda binary: bytes([binary[0] ^ 1]) + binary[1:]) if kind == 'geometry' else
+                                 (lambda binary: binary[:-1] + bytes([binary[-1] ^ 1]))}
+            self.rewrite_candidate(root, **changes)
+            with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, '재생성한 결과'):
+                intake.verify_derived(plan, root)
+
+    def test_gltf_final_binary_and_source_list_drift_are_rejected(self):
+        plan, root = self.verified_input()
+        normalize = intake.glb.normalize_bytes
+        original = self.binary.read_bytes()
+        for kind in ['binary', 'source-list']:
+            def changed(*args, **kwargs):
+                result = normalize(*args, **kwargs)
+                if kind == 'binary': self.binary.write_bytes(original[:-1] + b'Y')
+                else: self.source.with_name('late.gltf').write_bytes(self.source.read_bytes())
+                return result
+            with self.subTest(kind=kind), patch.object(intake.glb, 'normalize_bytes', side_effect=changed):
+                with self.assertRaises(ValueError): intake.verify_derived(plan, root)
+            self.binary.write_bytes(original)
+            self.source.with_name('late.gltf').unlink(missing_ok=True)
+
+    def test_gltf_normalization_failure_preserves_inputs_and_owned_cleanup(self):
+        plan, root = self.verified_input()
+        before = {p: p.read_bytes() for p in [self.source, self.binary, self.image, root / 'manifest-v2.json']}
+        with patch.object(intake.glb, 'normalize_bytes', side_effect=ValueError('합성 glTF 실패')):
+            with self.assertRaisesRegex(ValueError, '합성 glTF 실패'): intake.verify_derived(plan, root)
+        self.assertEqual(before, {p: p.read_bytes() for p in before})
 
 
 if __name__ == '__main__':

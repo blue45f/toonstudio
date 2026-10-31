@@ -12,6 +12,8 @@
  * 기존 핀 흐름과는 완전히 독립이라, 트랙이 없어도 핀은 종전대로 동작한다.
  */
 
+import { interpolateVoiceCompareView, parseVoiceCompareView, type VoiceCompareView } from "./voice-compare-view";
+
 export type VoiceCommentarySurface = "compare" | "manuscript";
 
 /** 해설 한 시점의 화면 상태. 비교 세션(CompareSession+공유 뷰포트)과 원고 화면 모두를 담는 최소 계약. */
@@ -26,6 +28,8 @@ export interface VoiceViewSnapshot {
   readonly scale: number;
   readonly tx: number;
   readonly ty: number;
+  /** 신규 녹음의 전체 비교 표시 상태. 이전 v1 트랙에는 없어도 된다. */
+  readonly compare?: VoiceCompareView;
 }
 
 export interface VoiceCommentaryKeyframe {
@@ -114,6 +118,7 @@ function clampPan(value: number): number {
 }
 
 export function normalizeVoiceView(view: VoiceViewSnapshot): VoiceViewSnapshot {
+  const compare = view.surface === "compare" && view.compare ? parseVoiceCompareView(view.compare) : null;
   return {
     surface: view.surface === "manuscript" ? "manuscript" : "compare",
     poolItemId: view.poolItemId ?? null,
@@ -122,6 +127,7 @@ export function normalizeVoiceView(view: VoiceViewSnapshot): VoiceViewSnapshot {
     scale: clampScale(view.scale),
     tx: clampPan(view.tx),
     ty: clampPan(view.ty),
+    ...(compare ? { compare } : {}),
   };
 }
 
@@ -225,6 +231,7 @@ export function recordVoiceKeyframe(
     last.view.scale === normalized.scale &&
     last.view.tx === normalized.tx &&
     last.view.ty === normalized.ty &&
+    JSON.stringify(last.view.compare) === JSON.stringify(normalized.compare) &&
     last.pinThreadIds.length === pins.length &&
     last.pinThreadIds.every((id, i) => id === pins[i])
   ) {
@@ -275,6 +282,7 @@ function interpolateView(a: VoiceViewSnapshot, b: VoiceViewSnapshot, ratio: numb
     scale: clampScale(a.scale + (b.scale - a.scale) * t),
     tx: clampPan(a.tx + (b.tx - a.tx) * t),
     ty: clampPan(a.ty + (b.ty - a.ty) * t),
+    ...(a.compare && b.compare ? { compare: interpolateVoiceCompareView(a.compare, b.compare, t) } : {}),
   };
 }
 
@@ -329,6 +337,8 @@ export function parseVoiceCommentaryTrack(raw: string | null): VoiceCommentaryTr
     const kf = entry as Record<string, unknown>;
     const view = kf.view as Record<string, unknown> | null;
     if (!view || typeof kf.atMs !== "number") return null;
+    const compare = view.compare === undefined ? undefined : parseVoiceCompareView(view.compare);
+    if (compare === null || (compare && view.surface !== "compare")) return null;
     keyframes.push({
       atMs: kf.atMs,
       view: {
@@ -339,6 +349,7 @@ export function parseVoiceCommentaryTrack(raw: string | null): VoiceCommentaryTr
         scale: typeof view.scale === "number" ? view.scale : 1,
         tx: typeof view.tx === "number" ? view.tx : 0,
         ty: typeof view.ty === "number" ? view.ty : 0,
+        ...(compare ? { compare } : {}),
       },
       pinThreadIds: Array.isArray(kf.pinThreadIds) ? kf.pinThreadIds.filter((v): v is string => typeof v === "string") : [],
     });
@@ -374,6 +385,15 @@ export function voiceTracksForEpisode(
   episodeId: string,
 ): VoiceCommentaryTrack[] {
   return tracks.filter((t) => t.episodeId === episodeId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export function voiceCommentaryPinSummaries(
+  pinIds: readonly string[], documents: readonly ({ readonly threads: readonly { readonly id: string; readonly body: string; readonly resolved: boolean }[] } | null)[],
+): { id: string; body: string; resolved: boolean }[] {
+  return pinIds.flatMap((id) => {
+    const thread = documents.flatMap((document) => document?.threads ?? []).find((candidate) => candidate.id === id);
+    return thread ? [{ id: thread.id, body: thread.body, resolved: thread.resolved }] : [];
+  });
 }
 
 /**

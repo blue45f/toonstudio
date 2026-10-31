@@ -16,11 +16,10 @@ import {
   STUDIO_XATLAS_UV_WORKER_PROTOCOL_VERSION,
   studioXAtlasUvRequestHash,
   studioXAtlasUvRequestTransfers,
-  studioXAtlasUvResultHash,
   type StudioXAtlasUvWorkerConfigureMessage,
   type StudioXAtlasUvWorkerInboundMessage,
-  type StudioXAtlasUvWorkerOutboundMessage,
 } from "./studio-xatlas-uv-provider-protocol";
+import { boundStudioXAtlasUvWorkerSuccessMatches, type StudioXAtlasUvWorkerResultAdmission } from "./studio-xatlas-uv-provider-worker-output";
 
 export const STUDIO_XATLAS_UV_WORKER_STARTUP_TIMEOUT_MS = 30_000;
 export const STUDIO_XATLAS_UV_WORKER_REQUEST_TIMEOUT_MS = 120_000;
@@ -68,14 +67,7 @@ export interface StudioXAtlasUvWorkerClientDiagnostics {
   readonly admittedRequestCount: number;
 }
 
-interface PendingRequest {
-  readonly requestEpoch: number;
-  readonly documentEpoch: number;
-  readonly requestHash: `sha256:${string}`;
-  readonly meshes: readonly Readonly<{
-    readonly id: string;
-    readonly sourceVertexCount: number;
-  }>[];
+interface PendingRequest extends StudioXAtlasUvWorkerResultAdmission {
   readonly resolve: (result: StudioXAtlasUvResult) => void;
   readonly signal: AbortSignal | undefined;
   readonly abort: () => void;
@@ -537,95 +529,6 @@ function snapshotRequest(
   }
 }
 
-function boundSuccessMatches(
-  message: Extract<
-    StudioXAtlasUvWorkerOutboundMessage,
-    { readonly type: "studio-xatlas-uv/result" }
-  >,
-  pending: PendingRequest,
-  limits: StudioXAtlasUvProviderLimits | undefined,
-): boolean {
-  if (!message.result.ok || message.binding === undefined) return false;
-  const { artifact } = message.result;
-  if (
-    message.binding.requestEpoch !== pending.requestEpoch
-    || message.binding.documentEpoch !== pending.documentEpoch
-    || message.binding.requestHash !== pending.requestHash
-    || message.binding.resultHash !== studioXAtlasUvResultHash(message.result)
-    || artifact.positions.length === 0
-    || artifact.positions.length % 3 !== 0
-    || artifact.uv.length !== (artifact.positions.length / 3) * 2
-    || artifact.indices.length === 0
-    || artifact.indices.length % 3 !== 0
-    || artifact.meshes.length !== pending.meshes.length
-  ) {
-    return false;
-  }
-  const vertexCount = artifact.positions.length / 3;
-  const triangleCount = artifact.indices.length / 3;
-  const outputBytes =
-    artifact.positions.byteLength
-    + artifact.uv.byteLength
-    + artifact.indices.byteLength;
-  if (
-    vertexCount
-      > (limits?.maxOutputVertices
-        ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxOutputVertices)
-    || triangleCount
-      > (limits?.maxOutputTriangles
-        ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxOutputTriangles)
-    || outputBytes
-      > (limits?.maxOutputBytes ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxOutputBytes)
-    || artifact.atlas.width
-      > (limits?.maxAtlasResolution
-        ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxAtlasResolution)
-    || artifact.atlas.height
-      > (limits?.maxAtlasResolution
-        ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxAtlasResolution)
-    || artifact.atlas.count
-      > (limits?.maxAtlasCount ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxAtlasCount)
-  ) {
-    return false;
-  }
-  for (const index of artifact.indices) {
-    if (index >= vertexCount) return false;
-  }
-  let expectedVertexOffset = 0;
-  let expectedIndexOffset = 0;
-  for (let index = 0; index < pending.meshes.length; index += 1) {
-    const expected = pending.meshes[index];
-    const range = artifact.meshes[index];
-    if (
-      range === undefined
-      || expected === undefined
-      || range.id !== expected.id
-      || range.sourceVertexCount !== expected.sourceVertexCount
-      || range.vertexOffset !== expectedVertexOffset
-      || range.indexOffset !== expectedIndexOffset
-      || range.vertexCount
-        > (limits?.maxVerticesPerMesh
-          ?? STUDIO_XATLAS_UV_PROVIDER_LIMITS.maxVerticesPerMesh)
-      || range.vertexOffset + range.vertexCount > vertexCount
-      || range.indexOffset + range.indexCount > artifact.indices.length
-      || range.indexCount % 3 !== 0
-      || range.atlasSegments.some((segment) => (
-        segment.indexOffset < range.indexOffset
-        || segment.indexOffset + segment.indexCount
-          > range.indexOffset + range.indexCount
-        || segment.atlasIndex >= artifact.atlas.count
-      ))
-    ) {
-      return false;
-    }
-    expectedVertexOffset += range.vertexCount;
-    expectedIndexOffset += range.indexCount;
-  }
-  return (
-    expectedVertexOffset === vertexCount
-    && expectedIndexOffset === artifact.indices.length
-  );
-}
-
 export class StudioXAtlasUvWorkerClient {
   private readonly workerFactory: () => StudioXAtlasUvWorkerLike;
   private readonly startupTimeoutMs: number;
@@ -831,7 +734,7 @@ export class StudioXAtlasUvWorkerClient {
       && (
         pending.requestEpoch !== this.requestEpoch
         || pending.documentEpoch !== this.documentEpoch
-        || !boundSuccessMatches(message, pending, this.limits)
+        || !boundStudioXAtlasUvWorkerSuccessMatches(message, pending, this.limits)
       )
     ) {
       this.restartCold(
@@ -1001,6 +904,8 @@ export class StudioXAtlasUvWorkerClient {
           meshes: Object.freeze(request.meshes.map((mesh) => Object.freeze({
             id: mesh.id,
             sourceVertexCount: mesh.positions.length / 3,
+            // 전송 시 detach될 request 배열과 분리하며 settle의 Map 삭제로 소유권을 끝낸다.
+            positions: new Float32Array(mesh.positions),
           }))),
           resolve,
           signal: validatedExecution.signal,

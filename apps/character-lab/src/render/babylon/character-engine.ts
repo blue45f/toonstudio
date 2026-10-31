@@ -31,6 +31,7 @@ import { normalizeToonLighting } from "../toon-reference";
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
+import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
@@ -47,7 +48,6 @@ import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
-import { PressureOutlineController } from "./pressure-outline";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
@@ -190,7 +190,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private readonly postfx: ReturnType<typeof createPostProcessStack>;
   private readonly ibl: ProceduralIbl;
   private readonly whiteTexture: RawTexture;
-  private readonly pressureOutline: PressureOutlineController;
+  private readonly pressureOutline: CharacterOutlineController;
   private readonly clearTexture: RawTexture;
   private readonly sdfTexture: RawTexture;
   /** 입 안 UV 섬을 어둡게 곱하는 알베도 마스크(절차 소스 `head` 파츠만, `mouth-shade.ts`) */
@@ -236,7 +236,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.paintTextures = createPaintTextures(scene);
     this.whiteTexture = RawTexture.CreateRGBATexture(new Uint8Array([255, 255, 255, 255]), 1, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
     this.whiteTexture.name = "default:white";
-    this.pressureOutline = new PressureOutlineController(scene, this.whiteTexture);
+    this.pressureOutline = new CharacterOutlineController(scene, this.whiteTexture);
     scene.onBeforeActiveMeshesEvaluationObservable.add(() => this.gaze.update());
     this.clearTexture = RawTexture.CreateRGBATexture(new Uint8Array([0, 0, 0, 0]), 1, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
     this.clearTexture.name = "default:clear";
@@ -623,7 +623,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const toon = this.shading.mode === "toon";
     const outline = toon ? this.shading.toon.outline : "none";
     const pressure = outline === "hull" && this.shading.toon.outlinePressure === true;
-    this.pressureOutline.sync(rig, pressure, TOON_OUTLINE_WIDTH);
+    this.pressureOutline.sync(rig, pressure, TOON_OUTLINE_WIDTH, outline === "hull" && !pressure);
     // 키트 hull은 Babylon 기본 깊이 오프셋(카메라 쪽으로 당김)을 끈다: 몸·속옷 hull이 꽉 낀 의상·신발(남성 부츠 발끝 등)을 뚫고 어두운 얼룩으로 비쳤다(실측, 0이면 사라짐).
     if (outline === "hull" && rig.kind === "kit") {
       const renderer = this.character.scene.getOutlineRenderer();

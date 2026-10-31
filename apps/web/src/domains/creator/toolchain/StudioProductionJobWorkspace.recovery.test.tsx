@@ -58,10 +58,10 @@ describe("실제 작업 큐의 복구 경계", () => {
     const create = vi.spyOn(runner.client, "createJob").mockRejectedValue(new Error("자동 생성을 허용하지 않는 fixture"));
     const page = render(<StudioProductionJobWorkspace profile="open" projectId="project-a" connection={runner} />);
     selectFile(page.container);
-    expect(screen.getByRole<HTMLButtonElement>("button", { name: "작업 시작", exact: true }).disabled).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "작업 시작" }).disabled).toBe(true);
     expect(create).not.toHaveBeenCalled();
     await act(async () => { loaded.resolve([]); });
-    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "작업 시작", exact: true }).disabled).toBe(false));
+    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "작업 시작" }).disabled).toBe(false));
     expect(screen.getByText("fixture.blend")).toBeTruthy();
   });
 
@@ -74,8 +74,8 @@ describe("실제 작업 큐의 복구 경계", () => {
     const start = vi.spyOn(runner.client, "startJob").mockRejectedValue(new Error("실물 실행을 허용하지 않는 fixture"));
     const page = render(<StudioProductionJobWorkspace profile="open" projectId="project-a" connection={runner} />);
     selectFile(page.container);
-    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "작업 시작", exact: true }).disabled).toBe(false));
-    fireEvent.click(screen.getByRole("button", { name: "작업 시작", exact: true }));
+    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "작업 시작" }).disabled).toBe(false));
+    fireEvent.click(screen.getByRole("button", { name: "작업 시작" }));
     expect(create).toHaveBeenCalledOnce();
     const requested = create.mock.calls[0]?.[0];
     if (!requested) throw new Error("실제 생성 요청이 필요합니다.");

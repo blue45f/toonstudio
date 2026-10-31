@@ -62,3 +62,32 @@ it("세 사무실의 실제 충돌 배치·좌석·진입 위치가 서로 다�
   expect(new Set(STUDIO_OFFICE_ENVIRONMENTS.map((environment) => JSON.stringify(environment.seats))).size).toBe(3);
   expect(new Set(STUDIO_OFFICE_ENVIRONMENTS.map((environment) => JSON.stringify(environment.spawn))).size).toBe(3);
 });
+
+it("산호 테이블의 관측된 상판 진입을 막고 두 좌석 사이와 귀환 동선을 보존한다", () => {
+  const world = studioOfficeEnvironmentManifest("tidal-atelier");
+  if (!world) throw new Error("산호 사무실 manifest가 없습니다.");
+  const [firstSeat, secondSeat] = world.interactionSlots ?? [];
+  const spawn = world.spawns.find((item) => item.id === "main");
+  const portal = world.portals.find((item) => item.id === "tidal-atelier-return");
+  if (!firstSeat || !secondSeat || !spawn || !portal) throw new Error("산호 좌석·입구·귀환 위치가 없습니다.");
+
+  expect(studioWorldCanOccupy(world, { x: 889, y: 643 }, 12)).toBe(false);
+  expect(studioWorldCanOccupy(world, { x: 889, y: 620 }, 12)).toBe(false);
+  expect(studioWorldCanOccupy(world, { x: 889, y: 570 }, 12)).toBe(true);
+  expect([firstSeat.anchorPoint, secondSeat.anchorPoint, portal.point]).toEqual([
+    { x: 820, y: 700 }, { x: 900, y: 440 }, { x: 660, y: 965 },
+  ]);
+
+  const route = [spawn.point, secondSeat.approachPoint, secondSeat.anchorPoint, secondSeat.exitPoint,
+    firstSeat.approachPoint, firstSeat.anchorPoint, firstSeat.exitPoint, portal.point];
+  for (let index = 1; index < route.length; index += 1) {
+    const start = route[index - 1];
+    const target = route[index];
+    if (!start || !target) throw new Error("좌석·귀환 경로의 끝점이 없습니다.");
+    expect(studioWorldCanOccupy(world, target, 12), `${target.x},${target.y} 점유`).toBe(true);
+    const path = findStudioWorldPath(world, start, target, 12);
+    expect(path.length, `${start.x},${start.y} → ${target.x},${target.y} 경로`).toBeGreaterThan(0);
+    expect(path[path.length - 1]).toEqual(target);
+    expect(path.every((point) => studioWorldCanOccupy(world, point, 12))).toBe(true);
+  }
+});

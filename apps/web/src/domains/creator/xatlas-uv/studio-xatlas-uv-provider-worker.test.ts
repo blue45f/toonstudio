@@ -63,10 +63,11 @@ function uvRequest(
 function artifact(): StudioXAtlasUvArtifact {
   return {
     kind: "studio-xatlas-uv-atlas",
-    version: 1,
+    version: 2,
     positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
     uv: new Float32Array([0, 0, 1, 0, 0, 1]),
     indices: new Uint32Array([0, 1, 2]),
+    originalInputVertexIndices: new Uint32Array([0, 1, 2]),
     meshes: [{
       id: "triangle",
       sourceVertexCount: 3,
@@ -247,6 +248,7 @@ class HostRuntime implements StudioXAtlasUvRuntime {
           positions: geometry.mesh.positions,
           uv: new Float32Array([0, 0, 1, 0, 0, 1]),
           indices: geometry.mesh.indices,
+          originalInputVertexIndices: new Uint32Array([0, 1, 2]),
           atlasSegments: [{ index: 0, count: 3, atlasIndex: 0 }],
         };
       }),
@@ -689,7 +691,7 @@ describe("Studio xatlas UV Worker boundary", () => {
       requestId: "valid",
       result: { ok: true },
     });
-    expect(scope.outbound[2]?.transfer).toHaveLength(3);
+    expect(scope.outbound[2]?.transfer).toHaveLength(4);
     expect(runtime.initialized).toBe(1);
 
     scope.dispatch({ type: "legacy/run", requestId: "malformed" });
@@ -735,6 +737,7 @@ describe("Studio xatlas UV Worker boundary", () => {
       result.artifact.positions.buffer,
       result.artifact.uv.buffer,
       result.artifact.indices.buffer,
+      result.artifact.originalInputVertexIndices.buffer,
     ]);
     expect(isStudioXAtlasUvWorkerOutboundMessage({
       ...outbound,

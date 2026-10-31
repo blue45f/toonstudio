@@ -82,7 +82,7 @@ export class PressureOutlineController {
     const material = new ShaderMaterial(`pressure-outline:${source.name}`, this.scene,
       { vertex: PRESSURE_OUTLINE_SHADER, fragment: PRESSURE_OUTLINE_SHADER }, {
         attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "view", "projection", "viewProjection", "outlineSize", "outlineColor", "diffuseMatrix", "alphaSettings"],
+        uniforms: ["world", "view", "projection", "viewProjection", "outlineSize", "outlineDepthOffset", "outlineColor", "diffuseMatrix", "alphaSettings"],
         uniformBuffers: language === ShaderLanguage.WGSL ? ["Scene", "Mesh"] : [],
         needAlphaBlending: part.pbr.needAlphaBlending(),
         samplers: ["albedoSampler"], defines: ["#define NORMAL", "#define UV1"], shaderLanguage: language,
@@ -124,6 +124,9 @@ export class PressureOutlineController {
       mesh.computeWorldMatrix(true);
       const aspect = resolveOutlinePressureAspect(true);
       material.setVector3("outlineSize", new Vector3(entry.width * aspect.widthScale, entry.width * aspect.heightScale, entry.width));
+      // 피부의 최대 확장 폭만큼 깊이를 뒤로 두되 화면상 선의 위치·굵기는 셰이더에서 보존한다.
+      const depthOffset = entry.rig.kind === "kit" && part.role === "skin" ? entry.width * aspect.widthScale * (this.scene.useRightHandedSystem ? -1 : 1) : 0;
+      material.setFloat("outlineDepthOffset", depthOffset);
       material.setVector4("outlineColor", new Vector4(0.05, 0.04, 0.06, part.pbr.alpha));
       material.alpha = part.pbr.alpha;
       material.options.needAlphaBlending = part.pbr.needAlphaBlending();

@@ -170,7 +170,9 @@ const PLASMA_TURBULENCE = slider("turbulence", "난류", 0.1, 7, 0.1, 1);
 function plasmaPlane(plane: Float32Array, done: Uint8Array, width: number, height: number, seed: number, turbulence: number): void {
   done.fill(0);
   // 변 길이(0.5px 단위)별 변위 폭을 미리 구해 둔다(점마다 거듭제곱을 다시 하지 않게).
-  const span = Math.max(width, height), roughness = clamp(1 / turbulence, 0.15, 3), amplitude = new Float32Array(2 * span + 1);
+  // 난류는 판독기가 슬라이더 범위 [0.1, 7] 로 이미 잘라 두므로 지수 1/난류 는 [1/7, 10] 안이다. 지수를 다시 [0.15, 3] 으로
+  // 자르면 난류 0.1·0.2·0.3 과 6.7~7 칸이 같은 지수가 되어 슬라이더를 움직여도 무늬가 그대로였다(칸마다 지수가 달라야 한다).
+  const span = Math.max(width, height), roughness = 1 / turbulence, amplitude = new Float32Array(2 * span + 1);
   for (let half = 0; half < amplitude.length; half += 1) amplitude[half] = 255 * (half / (2 * span)) ** roughness;
   const at = (x: number, y: number): number => plane[y * width + x]!;
   const put = (x: number, y: number, base: number, length: number): void => {

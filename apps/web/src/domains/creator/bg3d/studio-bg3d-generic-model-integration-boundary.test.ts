@@ -100,11 +100,12 @@ describe("Studio BG3D generic model mode integration boundary", () => {
       "new Set(joints.map((joint) => joint.canonicalKey)).size",
     );
     expectInOrder(admission, [
+      "const cacheKey = studioBg3dModelCacheKey(args.record.id, backend)",
       "loadVerifiedStudioBg3dGlbWithThree",
       "assertStudioBg3dModelPlacementAdmission({",
       "const joints = collectStudioBg3dThreeJoints(loaded.root)",
       "genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints)",
-      "args.cache.set(args.record.id, entry)",
+      "args.cache.set(cacheKey, entry)",
     ]);
   });
 

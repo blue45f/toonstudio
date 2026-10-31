@@ -379,7 +379,9 @@ const splitToning: StudioFilterGalleryEffectDef = {
     { key: "highlightSaturation", label: "밝은 영역 채도", control: "slider", min: 0, max: 100, step: 1, default: 40, suffix: "%" },
     { key: "shadowHue", label: "어두운 영역 색상", control: "slider", min: 0, max: 360, step: 1, default: 215, suffix: "°" },
     { key: "shadowSaturation", label: "어두운 영역 채도", control: "slider", min: 0, max: 100, step: 1, default: 45, suffix: "%" },
-    { key: "balance", label: "균형", control: "slider", min: -100, max: 100, step: 1, default: 0 },
+    // 균형 ±90 이 기준 밝기(pivot) 0.05~0.95 끝이다. 예전 ±100 범위는 pivot 을 그 끝에 붙여 ±90~±100 의 20칸이 같은 결과였다.
+    // 범위만 좁혔으므로 저장된 ±90 너머 값은 ±90 으로 정규화되어 예전과 같은 그림이 된다.
+    { key: "balance", label: "균형", control: "slider", min: -90, max: 90, step: 1, default: 0 },
   ],
   cost: 0.5,
   apply(image, params) {
@@ -391,7 +393,9 @@ const splitToning: StudioFilterGalleryEffectDef = {
     };
     const highlight = tint(numberParam(params, "highlightHue", 40, 0, 360), numberParam(params, "highlightSaturation", 40, 0, 100) / 100);
     const shadow = tint(numberParam(params, "shadowHue", 215, 0, 360), numberParam(params, "shadowSaturation", 45, 0, 100) / 100);
-    const pivot = clamp(0.5 - numberParam(params, "balance", 0, -100, 100) / 200, 0.05, 0.95);
+    // 두 색조가 늘 조금은 남도록 pivot 은 0.05~0.95 안에 있다(균형 범위 ±90 이 바로 그 끝). clamp 는 0.5 − 90/200 의
+    // 부동소수 오차(0.04999…)만 끝값으로 맞춰, 예전 범위의 같은 값과 비트까지 같은 pivot 을 낸다.
+    const pivot = clamp(0.5 - numberParam(params, "balance", 0, -90, 90) / 200, 0.05, 0.95);
     const { data } = image;
     for (let offset = 0; offset < data.length; offset += 4) {
       const red = data[offset]!, green = data[offset + 1]!, blue = data[offset + 2]!;

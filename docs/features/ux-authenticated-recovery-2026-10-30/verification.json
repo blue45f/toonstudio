@@ -1,0 +1,403 @@
+{
+  "status": "migration — 로컬 계정·클라이언트 및 인증·프로필 UI 부분 검증 완료; 운영·전체 target 미완료",
+  "date": "2026-10-31",
+  "scope": "계정·프로필·인증 무응답 복구와 격리 DB 협업 검증",
+  "sourceFix": {
+    "branch": "codex/ux-final-recovery-20261030",
+    "baseHead": "5cce6b15cc417033900e38992498d6a778dee4b4",
+    "mergeHead": "c8e7a012c657fcd67fcada386630fee0e4ba1d72",
+    "originalOwnerHead": "c92c256ac7536c8894540271bff5586f4ec38797",
+    "originalOwnerModified": false,
+    "status": "소스 통합 및 해당 회귀를 포함한 현재 6파일 검사 완료",
+    "correction": "초안 저장소 identity generation 구독으로 한 commit 안의 null→동일 ID 재로그인도 새 프로필 폼으로 분리",
+    "regressionsAdded": 5,
+    "regressionsExecuted": 5,
+    "validationAuthority": "정확한 main7976 입력의 실제 6파일 82개 결과. 인증 65개와 UI는 별도 exact 소스 근거.",
+    "historicalOwnerEvidence": {
+      "unitPassed": 478,
+      "harnessFailures": 2,
+      "browserPassed": 22,
+      "browserFailed": 1,
+      "newOwnerTestsUnrun": 13,
+      "acceptedAsCurrentPass": false
+    },
+    "currentValidationHead": "7976f79761b318be1d7bd39756c5df20d2c94e47",
+    "historicalFieldsMeaning": "baseHead·mergeHead·historicalOwnerEvidence는 당시 인계 이력이며 현재 pending 상태가 아니다.",
+    "originalOwnerRegressions13NowIncluded": true
+  },
+  "checks": [
+    {
+      "name": "auth-deadline-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-deadline-baseline.log",
+      "sha256": "8bb6d60a6559e593f717339c75d0bd75f010386e3656e4027402620f8daa8704",
+      "result": {
+        "exit": 1
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "profile-shape-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/profile-shape-baseline.log",
+      "sha256": "e9014e67526af621b8087582c1214ad6de2f7ae6262f1a5edc50cbf79be9a753",
+      "result": {
+        "exit": 1
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "auth-account-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-account-final.log",
+      "sha256": "e5d34cff2843d64e22fc02856963e737e9ef594957f209ff9f963240c32b8d19",
+      "result": {
+        "exit": 0,
+        "at": "2026-10-30T18:40:36.548018"
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "profile-auth-browser",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/profile-auth-browser.log",
+      "sha256": "b09de7b989a953204163db6e382c09cb2a3c4c89a326383ba38712d8a77799c5",
+      "result": {
+        "exit": 0,
+        "at": "2026-10-30T18:29:45.013932"
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "collaboration-db",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/collaboration-db.log",
+      "sha256": "0b4d3b5fb9cd155246cbdcc68b929ff9b809be1b1f9a18f5061058c286580428",
+      "result": {
+        "exit": 0,
+        "suites": [
+          "apps/api/src/modules/production-collaboration/team-workspace.repository.integration.test.ts",
+          "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
+          "apps/api/src/modules/creator/studio-live-lock.repository.integration.test.ts",
+          "apps/api/src/modules/creator/studio-work-asset.repository.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-review-voice-note.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-work-session.integration.test.ts",
+          "apps/api/src/modules/studio-project-graph/studio-world-publication.integration.test.ts"
+        ],
+        "at": "2026-10-30T09:33:30.059Z"
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "focused-lint",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/focused-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": {
+        "exit": 0
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "harness",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/harness.log",
+      "sha256": "3775335f73d6b2b42d24cb03a76c6a9747ec1aa46cfd384db63bf1caaba79b28",
+      "result": {
+        "exit": 0
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "auth-account-release",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-account-release.log",
+      "sha256": "5ed248043633c3515d6beaf0142955d6ed7643808cc12fa521bbf87ef8e12196",
+      "result": {
+        "exit": 0
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "profile-auth-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/profile-auth-final.log",
+      "sha256": "69de5a48b274ad2d42b268865f61d64f82586303a0e0fab218f41a10e9fd81b8",
+      "result": {
+        "exit": 0,
+        "at": "2026-10-30T18:50:41.668122"
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "auth-late401-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-late401-baseline.log",
+      "sha256": "68bbc0f932bfde2c613d35966b96a0548176b3038fe19f45ea56c1883b882ce6",
+      "result": {
+        "exit": 1
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "auth-late401-verified",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/auth-late401-verified.log",
+      "sha256": "598c5f270dce07c70b5c2fde8b8d0f1ba9b2cf2741028986abb49ba4ddb0c096",
+      "result": {
+        "exit": 0
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "character-expression-baseline",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-expression-baseline.log",
+      "sha256": "6cbf217eb1a21e6b3a88861e58d70a39fb99f9e3f538cdc433024ad4ccbf6d06",
+      "result": {
+        "exit": 1
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "character-unit-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-unit-final.log",
+      "sha256": "7c62f8d7de439c4c61834ce421f1d9c0ea314c4fb262941144a6b1c3779fda5c",
+      "result": {
+        "exit": 0
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "character-final",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-final.log",
+      "sha256": "d55e0fe254448012882c44fc11eca04b979bad234a732c54a3f2f8339679dfa1",
+      "result": {
+        "exit": 1,
+        "at": "2026-10-30T19:00:27.044533"
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "character-landscape-recheck",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-landscape-recheck.log",
+      "sha256": "0ee2821024116fc4a91788914c0f39966601793a6ba442033697df39406d1e75",
+      "result": {
+        "exit": 1,
+        "error": "page.goto: net::ERR_ABORTED"
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    },
+    {
+      "name": "character-integrated",
+      "sourceCommit": "c92c256ac7536c8894540271bff5586f4ec38797",
+      "relativeArtifact": "artifacts/ux-finalization-20261030/character-integrated.log",
+      "sha256": "afdd215ad04ae137958c7db96dc966b399cadb2bb4f7ddddd3df87dafd692b9a",
+      "result": {
+        "status": "passed",
+        "expected": 15,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "startTime": "2026-10-30T10:06:36.521Z",
+        "durationMs": 350813.417
+      },
+      "evidenceState": "historical",
+      "acceptedAsCurrentSourcePass": false
+    }
+  ],
+  "openIssues": [
+    2581
+  ],
+  "productionChanged": false,
+  "currentValidation": {
+    "status": "migration — 로컬 계정·클라이언트 및 인증·프로필 UI 부분 검증 완료; 운영·전체 target 미완료",
+    "sourceHead": "7976f79761b318be1d7bd39756c5df20d2c94e47",
+    "documentationWorktreeBaseHead": "66d9431dc782c4492d491d1e4c9450ba575d4e57",
+    "preDocumentationTreeMatchesTestedMain": true,
+    "preDocumentationTree": "f2f7fb1bce5d1d995b917555866e502e699e3d69",
+    "preservedAncestors": [
+      "c8e7a012c657fcd67fcada386630fee0e4ba1d72",
+      "c92c256ac7536c8894540271bff5586f4ec38797"
+    ],
+    "accountMeClient": {
+      "sourceHead": "7976f79761b318be1d7bd39756c5df20d2c94e47",
+      "executedAtUtc": "2026-10-30T22:27:17.131515+00:00",
+      "actualExit": 0,
+      "seconds": 6.930060167,
+      "fileCount": 6,
+      "passed": 82,
+      "failed": 0,
+      "pending": 0,
+      "todo": 0,
+      "vitestReportedSuites": 14,
+      "fileCountMeaning": "실제 testResults는6파일이며 Vitest describe/suite 수14와 구분한다.",
+      "files": [
+        {
+          "path": "apps/web/src/platform/me-client.recovery.test.ts",
+          "passed": 31,
+          "sha256": "ef85771d6adce9d5476ad8b0b01376987262e303e3d4d1156fe5b6508016a38e"
+        },
+        {
+          "path": "apps/web/src/platform/me-client.test.ts",
+          "passed": 3,
+          "sha256": "b06c56ba8afd09fa8f7562c31c2840861d9bf5cf0ac9e430ef0b48c3c0b2b1c6"
+        },
+        {
+          "path": "apps/web/src/domains/account/AccountPage.test.tsx",
+          "passed": 9,
+          "sha256": "631fb977958c136488d750c6e7c1f55cd86a104271dce667b543786dcf9d435b"
+        },
+        {
+          "path": "apps/web/src/domains/account/AccountProfileReadRace.test.tsx",
+          "passed": 6,
+          "sha256": "118639b8ee09761e01b81ed4d526c4415f05da4ad55d8b136d1faef9623ac729"
+        },
+        {
+          "path": "apps/web/src/domains/account/AccountProfileRecovery.test.tsx",
+          "passed": 19,
+          "sha256": "26b9b3e32b13feb3ed18ac22af248e1da54bab9eed032b1843f7eb15d3928e61"
+        },
+        {
+          "path": "apps/web/src/domains/account/account-profile-draft.test.ts",
+          "passed": 14,
+          "sha256": "e7160a9806d8a828ab43dec9c6891c2202db484c4b1103da98b46eff21d24953"
+        }
+      ],
+      "sourceAndTestsUnchanged": true,
+      "sourcePins": {
+        "apps/web/src/domains/account/AccountPage.test.tsx": "631fb977958c136488d750c6e7c1f55cd86a104271dce667b543786dcf9d435b",
+        "apps/web/src/domains/account/AccountProfileRecovery.test.tsx": "26b9b3e32b13feb3ed18ac22af248e1da54bab9eed032b1843f7eb15d3928e61",
+        "apps/web/src/domains/account/AccountProfileReadRace.test.tsx": "118639b8ee09761e01b81ed4d526c4415f05da4ad55d8b136d1faef9623ac729",
+        "apps/web/src/domains/account/account-profile-draft.test.ts": "e7160a9806d8a828ab43dec9c6891c2202db484c4b1103da98b46eff21d24953",
+        "apps/web/src/platform/me-client.test.ts": "b06c56ba8afd09fa8f7562c31c2840861d9bf5cf0ac9e430ef0b48c3c0b2b1c6",
+        "apps/web/src/platform/me-client.recovery.test.ts": "ef85771d6adce9d5476ad8b0b01376987262e303e3d4d1156fe5b6508016a38e",
+        "apps/web/src/domains/account/AccountPage.tsx": "d1bd4780c43c294ef5d911c67b083ab5bd90bf4f1545a2be57863f4fecf4e1c9",
+        "apps/web/src/domains/account/account-profile-draft.ts": "e9afb90f0dee3b78d863bf8d940308ab2df9005819211650f5ceeab6a53dce58",
+        "apps/web/src/platform/me-client.ts": "4736dfb3871311f8754395aa30cd9fe5f8dae6a2fd16f989d38dfe78e26658a5",
+        "apps/web/src/domains/auth/public/session/auth-session-store.ts": "e7496c9e86d1304411739f11fdd0463c255bcc2303c67759b1b2365504c57484"
+      },
+      "result": {
+        "relativeArtifact": ".git/cleanup-evidence-20261030/ux-history-completion-20261031/sixfiles-result-r1.json",
+        "sha256": "9907714222e6bed9c8b697d45f8636c4d0294daedb87b35157c2c805f25f3201"
+      },
+      "receipt": {
+        "relativeArtifact": ".git/cleanup-evidence-20261030/ux-history-completion-20261031/sixfiles-receipt-r1.json",
+        "sha256": "195475e744a0df1a1553f6492c4259453620cdd7f424a7c5abf5f5a1f3ad3e27"
+      },
+      "plan": {
+        "relativeArtifact": ".git/cleanup-evidence-20261030/ux-history-completion-20261031/regression-plan-r1.json",
+        "sha256": "314441047a86cb873bc5411cace993acc615689f3015b1f8a81673dd5ac0c36b"
+      },
+      "original13Included": true,
+      "sourceFix5Included": true,
+      "sourceFix5PassedTitles": [
+        "같은 commit의 로그아웃·동일 계정 재로그인은 이전 폼을 폐기하고 새 초안을 왕복 복구한다",
+        "동일 계정 재로그인 전의 늦은 GET은 새 폼·캐시를 되돌리거나 추가 재조회하지 않는다",
+        "이전 로그인의 늦은 PATCH 완료는 새 로그인 초안과 저장 상태를 지우지 않는다",
+        "동일 계정의 프로필 반영·세션 재확인은 폼과 작성 중 초안을 유지한다",
+        "초안 변경·동일 계정 알림은 유지하고 로그아웃·재로그인 세대만 동기 발행한다"
+      ],
+      "subsetCountsMeaning": "원본 추가13·SourceFix 추가5는 인계 당시 부분집합이다. 현재 파일 전체82에 포함되며 별도 실행수로 더하지 않는다.",
+      "countsAddedTo82": false
+    },
+    "auth2595": {
+      "pr": 2595,
+      "unitExecutionWorktreeHead": "7444b8d9bfd08435a2007a9faeafce6fe2c606b2",
+      "unitInputFreeze": {
+        "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/first4-r3-preflight.json",
+        "sha256": "d7ce8ce96d3e73436ce51c5c111d5c272ced3670d6a2e9749bc00ecec6b448e2"
+      },
+      "unitSource2": {
+        "apps/web/src/domains/auth/public/session/auth-session-store.ts": "e7496c9e86d1304411739f11fdd0463c255bcc2303c67759b1b2365504c57484",
+        "apps/web/src/domains/auth/public/session/auth-signin-response.validation.test.ts": "b1d42bd6f9354f4bd179d94a24055846821314248162d3342682c64305cc8fd3"
+      },
+      "unitSource2MatchesFinalCandidateAndCurrentSource": true,
+      "unit": {
+        "fileCount": 4,
+        "passed": 65,
+        "actualExit": 0,
+        "receipt": {
+          "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/first4-r3-receipt.json",
+          "sha256": "d7d0b087f7711f7955487ab5b58a836d0197b920db850ce533ef7ad0ca6a7547"
+        },
+        "logSha256": "239272d546fabfc6d767e1e7004dd453e356a85a1f8eb5bde7b6d6cb3aebeb92"
+      },
+      "finalCandidateHead": "ea930b3a8e1ff28aa6583aa500b3bc30fd091cf2",
+      "normalHarnessAndPush": {
+        "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/full-gates-r1-receipt.json",
+        "sha256": "d8d162e5a4a660ac4066db6fa4315644796d90af7ffa64d6bd6c73947b5e5658"
+      },
+      "ui": {
+        "sourceHead": "ea930b3a8e1ff28aa6583aa500b3bc30fd091cf2",
+        "widths": [
+          390,
+          1440
+        ],
+        "authCases": 2,
+        "authResponseMocks": false,
+        "authReceipt": {
+          "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/ui-r2/auth-ui-receipt.json",
+          "sha256": "0f61177a77643be10cacab284c25fdf4f603649ebe1151def12c7971cb515245"
+        },
+        "profileCasesByWidth": [
+          {
+            "width": 390,
+            "passed": 2,
+            "actualExit": 0,
+            "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/ui-r2/profile-390.log",
+            "sha256": "e04f74c48da406f667a0030198e8eaecc9aaab16e139b30a3b42539984677592"
+          },
+          {
+            "width": 1440,
+            "passed": 2,
+            "actualExit": 0,
+            "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/ui-r2/profile-1440.log",
+            "sha256": "9d303d4ddc62b7bd34c2d634b2472d664e3c5ba636ab9b3415fa43b15a007bcf"
+          }
+        ],
+        "profile503ResponseMocked": true,
+        "profileRestoredInFinally": true,
+        "completionReceipt": {
+          "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/ui-r2/completion-receipt.json",
+          "sha256": "c641e985f87fa8fe4add85ca0556ff5dbe75cb2955fa5413fceb2f997a8bc50e"
+        },
+        "sourceUnchanged": true
+      },
+      "countsCombinedWithAccount82": false
+    },
+    "hostedCi": {
+      "head": "ea930b3a8e1ff28aa6583aa500b3bc30fd091cf2",
+      "observedAtUtc": "2026-10-30T20:59:08.374142+00:00",
+      "checkRuns": 21,
+      "runnerUnassigned": 21,
+      "zeroSteps": 21,
+      "billingPrestartFailureAnnotations": 21,
+      "runnerImageMigrationNotices": 6,
+      "hostedCiPassed": false,
+      "receipt": {
+        "relativeArtifact": ".git/cleanup-evidence-20261030/auth2595-validation-20261031/ci-classification-r1.json",
+        "sha256": "6f3db39d2942b9d2d6bcc7a696a426ad7918e147ecd0c0653b24a7b1a713933a"
+      }
+    },
+    "documentationGate": "이번 문서 수정에서는 Node·새 검사를 실행하지 않았다. 문서와 BG3D 통합 후보의 필수 검증은 root의 후속 정상 hooks에서 수행한다.",
+    "documentationOnlyNewNodeOrTestsExecuted": false,
+    "historicalCountsCombined": false
+  },
+  "remainingTarget": [
+    "실제 운영 OAuth",
+    "모든 역할·데이터의 UI 생성·수정·삭제",
+    "다중 기기 저장·실시간 협업",
+    "결제·유료 AI",
+    "정상 GPU 3D 전체 저작·실물 기기 검증",
+    "실물 휴대폰·펜 입력",
+    "실제 초보자·제작팀 평가",
+    "이슈 #2581 일반 백업 복원 결함"
+  ]
+}
