@@ -16,6 +16,7 @@ import { scanHardcodedStatusStrings } from "@/shared/language/status-i18n";
  * 잔여만 있는 파일 11)과 잔여 근거는 r3-c07.md에 남겼다.
  * 탐지기 잔여 3건은 버튼 동사 라벨(다시 시도 계열)로 같은 문서에 근거를 남겼고
  * 아래 기대값으로 고정한다.
+ * 2026-10-31 동기화 보호 모델의 후속 문구 2건도 같은 카탈로그의 키 참조 계약으로 검사한다.
  */
 
 const HANGUL = /[가-힣]/;
@@ -71,6 +72,8 @@ const R3C07_KEYS = [
   "studio.panelStatus.r3c07.creatorPack.checkingSql",
   "studio.panelStatus.r3c07.creatorPack.packsEmpty",
   "studio.panelStatus.r3c07.draftSync.syncFailed",
+  "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded",
@@ -233,6 +236,8 @@ const EXPECTED_KO: Readonly<Record<string, string>> = {
   "studio.panelStatus.r3c07.creatorPack.checkingSql": "로컬 SQL 확인 중…",
   "studio.panelStatus.r3c07.creatorPack.packsEmpty": "조건에 맞는 Creator Pack이 없습니다.",
   "studio.panelStatus.r3c07.draftSync.syncFailed": "동기화 작업을 완료하지 못했습니다.",
+  "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "따라 그리기 원본을 찾지 못했어요",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded": "효과 스택 저장 예산을 초과해 기존 스택을 유지했습니다.",
@@ -491,7 +496,10 @@ describe("studio panel status i18n r3c07", () => {
   });
 
   it("신규 키가 소비 파일에서 실제로 참조되고 미등록 참조가 없다", () => {
-    const consumerSource = CONSUMERS.map((file) => readSource(file)).join("\n");
+    const consumerSource = [
+      ...CONSUMERS,
+      "studio-draft-operation-sync-assistant-model.ts",
+    ].map((file) => readSource(file)).join("\n");
     for (const key of R3C07_KEYS) {
       expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
     }

@@ -10,6 +10,7 @@ import type {
   StudioLiveSyncPhase,
 } from "./live/studio-live-sync-safety";
 import type { StudioLiveTransportMode } from "./live/studio-live-collaboration-transport";
+import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 
 export type StudioDraftOperationSyncTone =
   | "success"
@@ -91,6 +92,14 @@ function deviceSummary(input: StudioDraftOperationSyncAssistantInput): string {
 function operationSummary(input: StudioDraftOperationSyncAssistantInput): string {
   const pending = safeCount(input.pendingCount);
   const recoveryCount = Math.max(pending, safeCount(input.recoveryUpdateCount));
+  // 자동 저장 지점 수와 독립인 실제 연산 복구 저장소의 내구 상태를 확인한다.
+  const deviceProtected = input.liveContextAvailable
+    && input.mode === "server"
+    && input.persistenceDurability === "durable"
+    && input.editsDurablyProtected
+    && input.hydrated
+    && !input.hydrationFailed
+    && safeCount(input.recoveryUpdateCount) === 0;
   switch (input.syncPhase) {
     case "recovery-required":
       return recoveryCount > 0
@@ -109,6 +118,11 @@ function operationSummary(input: StudioDraftOperationSyncAssistantInput): string
     case "unsupported-jam":
       return "이 브라우저에서는 저장 전 실시간 공동 작업을 사용할 수 없습니다.";
     case "offline-queued":
+      if (deviceProtected) {
+        return r3c07StatusText("studio.panelStatus.r3c07.draftSync.offlineDurableQueued", {
+          count: pending.toLocaleString("ko-KR"),
+        }, "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.");
+      }
       return pending > 0
         ? `변경 ${pending.toLocaleString("ko-KR")}개를 서버가 다시 연결될 때까지 이 기기에 보관합니다.`
         : "서버가 다시 연결될 때까지 변경을 이 기기에 보관합니다.";
@@ -123,6 +137,10 @@ function operationSummary(input: StudioDraftOperationSyncAssistantInput): string
         ? `변경 ${pending.toLocaleString("ko-KR")}개를 순서대로 서버에 반영하고 있습니다.`
         : "새 변경을 서버에 반영하고 있습니다.";
     case "synced":
+      if (deviceProtected && pending === 0 && !input.collaborationSyncPending) {
+        return r3c07StatusText("studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected",
+          "팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.");
+      }
       return input.mode === "local"
         ? "이 기기 안의 열린 탭끼리 변경을 맞췄습니다. 다른 기기에서 이어가려면 서버 원고 저장도 완료해 주세요."
         : "새 변경이 팀 서버에 모두 반영되었습니다.";

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -10,10 +10,12 @@ import {
 } from "./studio-live-collaboration-context";
 import { INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT } from "./studio-live-sync-safety";
 import { StudioDraftOperationSyncAssistant, type StudioDraftOperationSyncAssistantProps } from "../StudioDraftOperationSyncAssistant";
+import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "../studio-shell/studio-menubar-status-slot";
 
 function renderAssistant(
   liveOverrides: Partial<StudioLiveCollaborationContextValue> = {},
   props: Partial<StudioDraftOperationSyncAssistantProps> = {},
+  menubar = false,
 ) {
   const onOpenVersions = vi.fn();
   const onExportBackup = vi.fn(() => Promise.resolve());
@@ -37,21 +39,24 @@ function renderAssistant(
   };
 
   render(
-    <StudioLiveCollaborationContext.Provider value={value}>
-      <StudioDraftOperationSyncAssistant
-        serverRevision={7}
-        hasServerDocument
-        localCheckpointCount={3}
-        localRole="leader"
-        collaborationSyncPending={false}
-        hydrated
-        hydrationFailed={false}
-        saving={false}
-        onOpenVersions={onOpenVersions}
-        onExportBackup={onExportBackup}
-        {...props}
-      />
-    </StudioLiveCollaborationContext.Provider>,
+    <>
+      {menubar ? <div ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.sync} /> : null}
+      <StudioLiveCollaborationContext.Provider value={value}>
+        <StudioDraftOperationSyncAssistant
+          serverRevision={7}
+          hasServerDocument
+          localCheckpointCount={3}
+          localRole="leader"
+          collaborationSyncPending={false}
+          hydrated
+          hydrationFailed={false}
+          saving={false}
+          onOpenVersions={onOpenVersions}
+          onExportBackup={onExportBackup}
+          {...props}
+        />
+      </StudioLiveCollaborationContext.Provider>
+    </>,
   );
 
   return { onOpenVersions, onExportBackup };
@@ -67,6 +72,44 @@ describe("StudioDraftOperationSyncAssistant", () => {
     renderAssistant();
 
     expect(screen.queryByRole("button", { name: /동기화 상태/ })).toBeNull();
+  });
+
+  it("메뉴바 상태 창에서 서버 승인과 기기 복구 저장소 보호를 함께 확인한다", () => {
+    renderAssistant({}, {}, true);
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "동기화 상태: 변경 동기화 완료",
+    }));
+
+    const dialog = screen.getByRole("dialog", { name: "기기·서버 동기화" });
+    expect(within(dialog).getAllByText("팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.").length)
+      .toBeGreaterThan(0);
+  });
+
+  it("서버만 승인된 경우 기기 복구 저장소까지 보호됐다고 표시하지 않는다", () => {
+    renderAssistant({
+      sync: {
+        ...INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT,
+        phase: "synced",
+        pendingCount: 0,
+        persistenceDurability: "degraded",
+        transportReady: true,
+        operationSyncReady: true,
+        editsDurablyProtected: true,
+        message: "서버 동기화됨",
+        mode: "server",
+      },
+    }, {}, true);
+
+    fireEvent.click(screen.getByRole("button", {
+      name: "동기화 상태: 변경 동기화 완료",
+    }));
+
+    const dialog = screen.getByRole("dialog", { name: "기기·서버 동기화" });
+    expect(within(dialog).queryByText("팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다."))
+      .toBeNull();
+    expect(within(dialog).getAllByText("새 변경이 팀 서버에 모두 반영되었습니다.").length)
+      .toBeGreaterThan(0);
   });
 
   it("shows durable offline work and retries through the existing live authority", () => {
@@ -93,7 +136,8 @@ describe("StudioDraftOperationSyncAssistant", () => {
     }));
 
     expect(screen.getByRole("dialog", { name: "기기·서버 동기화" })).not.toBeNull();
-    expect(screen.getAllByText(/변경 3개를 서버가 다시 연결될 때까지/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/서버가 다시 연결될 때까지 변경 3개를 이 기기의 복구 저장소에 보관합니다/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/아직 팀 서버에 반영되지 않았습니다/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "서버 연결 다시 확인" }));
     expect(retryServer).toHaveBeenCalledTimes(1);
   });
