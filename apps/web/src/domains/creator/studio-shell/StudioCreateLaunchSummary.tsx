@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -8,6 +9,7 @@ import { DisabledReason } from "./StudioTaskFlow";
 
 const SUMMARY_ID = "studio-create-launch-summary";
 const BUTTON_ID = "studio-create-primary-action";
+const ERROR_ID = "studio-create-failure";
 
 interface StudioCreateLaunchSummaryProps {
   readonly targetTitle: string;
@@ -20,7 +22,6 @@ interface StudioCreateLaunchSummaryProps {
   readonly startLabel: string;
   readonly nextStepLabel: string;
   readonly error: string | null;
-  readonly onCreate: () => void;
   readonly onFixName: () => void;
   readonly onFixSize: () => void;
 }
@@ -44,10 +45,12 @@ export function StudioCreateReturnToStart() {
 /** 주 행동·다음 화면·기기 저장 범위와 오류 복구를 한 구역에 모은다. */
 export function StudioCreateLaunchSummary({
   targetTitle, width, height, titleReady, sizeReady, structuredWebtoon,
-  creating, startLabel, nextStepLabel, error, onCreate, onFixName, onFixSize,
+  creating, startLabel, nextStepLabel, error, onFixName, onFixSize,
 }: StudioCreateLaunchSummaryProps) {
   const bt = useBilingual("StudioCreateLaunchSummary");
-  const reasons = [!titleReady ? CREATE_DISABLED_REASON_ID : null, !sizeReady ? CREATE_SIZE_REASON_ID : null].filter(Boolean).join(" ") || undefined;
+  const failureRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => { if (error) failureRef.current?.focus(); }, [error]);
+  const reasons = [!titleReady ? CREATE_DISABLED_REASON_ID : null, !sizeReady ? CREATE_SIZE_REASON_ID : null, error ? ERROR_ID : null].filter(Boolean).join(" ") || undefined;
   return (
     <section id={SUMMARY_ID} tabIndex={-1} data-studio-create-submit="true"
       aria-labelledby="studio-create-summary-title"
@@ -57,7 +60,7 @@ export function StudioCreateLaunchSummary({
         {targetTitle} · {sizeReady ? `${width} × ${height} px` : bt("크기 확인 필요", "Check the size")}
         {structuredWebtoon ? bt(" · 제작 계획 포함", " · Production plan included") : null}
       </p>
-      <p data-studio-create-next-step="true" role="status" aria-atomic="true" className="mb-3 text-sm font-semibold text-fg">{nextStepLabel}</p>
+      <p data-studio-create-next-step="true" role="status" aria-atomic="true" className="mb-3 text-sm font-semibold text-fg">{creating ? bt("프로젝트 만드는 중…", "Creating project…") : nextStepLabel}</p>
       <p className="rounded-xl bg-panel/60 px-3 py-2.5 text-xs leading-5 text-fg-2">
         {bt("작업은 이 기기에 자동 저장됩니다. 팀 공유와 클라우드 백업은 작업 중 언제든 연결할 수 있어요.", "Your work is autosaved on this device. Team sharing and cloud backup can be connected later.")}
       </p>
@@ -69,13 +72,13 @@ export function StudioCreateLaunchSummary({
         {bt("캔버스 너비와 높이는 1부터 1,000,000 사이의 정수로 입력해 주세요.", "Enter canvas width and height as whole numbers between 1 and 1,000,000.")}
         <button type="button" onClick={onFixSize} className="ml-2 min-h-11 rounded-lg px-2 font-bold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{bt("크기 수정하기", "Fix the size")}</button>
       </DisabledReason>
-      <button id={BUTTON_ID} type="button" disabled={creating || !titleReady || !sizeReady}
-        aria-describedby={reasons} aria-busy={creating || undefined} onClick={onCreate}
+      <button id={BUTTON_ID} type="submit" disabled={creating || !titleReady || !sizeReady}
+        aria-describedby={reasons} aria-busy={creating || undefined}
         className={buttonClass({ variant: "solid", size: "lg", className: "mt-4 min-h-12 w-full gap-2" })}>
         {creating ? bt("프로젝트 만드는 중…", "Creating project…") : startLabel}
         {!creating ? <ArrowRight size={16} aria-hidden="true" /> : null}
       </button>
-      {error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}
+      {error ? <p id={ERROR_ID} ref={failureRef} tabIndex={-1} role="alert" data-studio-create-error="true" className="mt-3 rounded-lg text-sm text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{error}</p> : null}
     </section>
   );
 }
