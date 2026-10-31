@@ -335,11 +335,18 @@ it("기존 의상·키트 v2 층 역할만 가림을 기록하고 액세서리�
   }
 });
 
-it("등록 이후 추가한 공유 재질 메시에도 미복원 상태를 회수하는 guard를 붙인다", () => {
+it("등록 이후 추가한 공유 재질 메시에도 미복원 상태를 회수하는 guard를 붙인다", async () => {
   const env = boot();
   const additional = env.bodyMesh.clone("stencil-shared-new");
   if (!additional) throw new Error("공유 재질 fixture 복제가 실패했습니다.");
   additional.material = env.top.pbr;
+  await new Promise<void>((resolve) => {
+    const observer = env.scene.onNewMeshAddedObservable.add((mesh) => {
+      if (mesh !== additional) return;
+      env.scene.onNewMeshAddedObservable.remove(observer);
+      resolve();
+    });
+  });
   env.scene.onBeforeRenderObservable.notifyObservers(env.scene);
   const original = stencil(env.top.pbr);
   before(env.mesh);
@@ -350,7 +357,7 @@ it("등록 이후 추가한 공유 재질 메시에도 미복원 상태를 회�
   additional.dispose(false, false);
 });
 
-it("그룹 중 새 메시의 생성자 알림을 안전하게 넘기고 다음 프레임의 공유 재질 draw도 보호한다", () => {
+it("그룹 중 새 메시의 지연 알림에서 복원하고 다음 프레임의 공유 재질 draw도 보호한다", async () => {
   const env = boot();
   const original = stencil(env.top.pbr);
   before(env.mesh);
@@ -358,6 +365,13 @@ it("그룹 중 새 메시의 생성자 알림을 안전하게 넘기고 다음 �
   const additional = env.bodyMesh.clone("stencil-shared-mid-group");
   if (!additional) throw new Error("공유 재질 fixture 복제가 실패했습니다.");
   additional.material = env.top.pbr;
+  await new Promise<void>((resolve) => {
+    const observer = env.scene.onNewMeshAddedObservable.add((mesh) => {
+      if (mesh !== additional) return;
+      env.scene.onNewMeshAddedObservable.remove(observer);
+      resolve();
+    });
+  });
   expect(stencil(env.top.pbr)).toEqual(original);
   env.scene.onBeforeRenderObservable.notifyObservers(env.scene);
   before(env.mesh);
