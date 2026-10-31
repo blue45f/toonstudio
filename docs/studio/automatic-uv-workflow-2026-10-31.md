@@ -1,6 +1,6 @@
 # 자동 UV 작업 흐름 — 2026-10-31
 
-상태: **migration — UI와 문서 발행 연결, 관련 회귀와 전체 하네스 통과, 실제 브라우저 검증 전**.
+상태: **migration — UI와 문서 발행 연결, 기준 입력의 관련 회귀·전체 하네스와 실제 Chrome 단일 작업 흐름 통과; 확장 검증은 남음**.
 
 ## 현재 기준
 
@@ -55,4 +55,20 @@
 
 교정 입력의 `uv-role-contract-r6.json`은 UI 11개·실제 Panel 통합 3개, 총 2파일·14개 모두 통과했으며 종료 0이었다. 이어 `pnpm harness:verify --base=d4144662b97c8f8a02d6043d2bef7171cdd45573`는 변경 TS/TSX 15파일 lint·텍스트 16파일 Secretlint·문서·구조·소스 크기·Studio 진입 그래프와 웹·API 전체 타입 검사를 모두 통과하고 종료 0이었다. 실행 전후 다른 소스 입력은 유지했다. 이미 통과한 hook 29개를 반복 실행하거나 기존 91개와 중복 합산하지 않았다. 정상 커밋·푸시 결과는 PR의 게시 기록과 구분한다.
 
-실제 새 UI 버튼부터 기본 production Worker → 단일 확정 → Undo → 저장·재열기 브라우저 검증, 비대칭 텍스처의 실제 GPU 소비·독립 GLB loader, 새 production build/CSP와 큰 메시의 응답성·메모리 검증은 남아 있다. 단위 대역의 계산 결과를 실제 WASM 실행 근거로 세지 않는다. 브라우저 결과는 실제 실행 뒤 이 절에 기록한다.
+### 실제 Chrome 단일 작업 흐름 — 2026-10-31
+
+HEAD `b2b4d477859a031b108ddf9cd3607d69029de3f7`에 config SHA-256 `e8756a029cb0b4f8aaac158f15d22ff847e7ec2e982ed388cd0cec244d6a78df`, spec SHA-256 `75a5bb263ea07251fda2805bd05688a8fada6f8ec2bf8f4427712a5178571825`를 적용한 입력에서 실제 Chrome 검증 **session 16100·종료 0·1사례 통과·53.08초**를 확인했다. 실패·건너뜀·flaky는 0이었다. Chrome for Testing 156.0.8078.4와 Apple M2 Max ANGLE Metal WebGL2를 사용했다. 이 결과는 해당 입력과 단일 사례에 귀속되며 이후 main 전체의 검증으로 확대하지 않는다.
+
+Vite의 실제 제품 화면에서 큐브 추가 → 자동 UV 버튼 → 기본 dedicated Worker와 실제 WASM 로딩 → 정본의 단일 `geometry.commit` → Undo·Redo → `.toon3d` 다운로드 → 실제 파일 선택기와 교체 확인 대화상자를 통한 재열기를 연결했다. 원본 geometry 보존, 편집 이력 한 단계 증가, 다시 연 정본 메시의 일치를 확인했다. 이 1사례를 기존 91개·29개 등 단위 시험 수와 합산하지 않는다.
+
+원본 영수증은 ignored QA의 `.qa/native-3d-postmerge-20261030/uv-workflow-followup-20261031/runtime-browser-20261031-r4/cleanup-return-r1.json`과 같은 폴더의 `report.json`이다. SHA-256은 각각 `f8df9fb45db5a66889c4a734541ae2e19ffe63c634f403d51e2ee51fb986a925`, `487a4ac80804a5c34714112ae5adb66d856a27b5c4c8559d850b2a3e99eb764b`이다. 실행 전후 입력 핀이 같고 소유 프로세스·로그 writer·5359 포트 잔류가 없음을 확인했다.
+
+`actualUvBasis: unresolved`는 유지한다. 비대칭 텍스처의 실제 GPU 소비와 방향 교정·독립 GLB loader·큰 메시의 응답성·메모리 검증은 남아 있다. 아래 새 production bundle의 빌드·정적 CSP 검사는 통과했지만, 해당 번들에서 자동 UV Worker·WASM이 로드되고 CSP 아래에서 실제 UV 작업이 완료되는 runtime 검증은 별도로 남아 있다. 이 Vite 단일 사례와 production bundle의 정적 검사 결과는 각각의 입력과 범위에 귀속한다.
+
+### 정본 main의 production bundle·정적 CSP — 2026-10-31
+
+정본 main `2d54336c67e5c902e044ea4aec5201bccb9db5f6`, source tree `c35c90a6478896215c6ef13112e6a222daf2a832`의 로컬 빌드는 **session 35483·종료 0**이었다. `VITE_CATALOG_SOURCE=static` 입력의 `pnpm run build:bundle`과 `pnpm run check:studio-bundle`이 각각 종료 0이었고, postbuild의 `verify-static-csp.mjs dist/index.html`도 provider-neutral CSP와 inline data block hash 1개를 확인했다. bundle 검사는 정적 구조 검사이며, 기존 startup runtime 수치를 새로 측정한 결과로 해석하지 않는다. 운영 배포는 실행하지 않았다.
+
+새 산출물의 SHA-256은 `dist/index.html`이 `f2fd5f4451595954c2eff44b9a74666be6b56abfdafa019c6a4df3060a25a230`, `dist/.vite/manifest.json`이 `a8d1436ad25cc626d4b23964ac959a9306f57d7d1fe717181aacedadf926bc91`이다. 빌드는 격리한 index로 실행했으며, 실행 후 정본의 stage 41,170항목·작업파일 실제 내용·생성 파일 14개의 SHA가 유지되고 소유 실행 그룹이 모두 종료된 것을 확인했다. 앞선 session 30870은 raw index 보존 검사 실패로 남기며 이번 성공으로 바꾸거나 합산하지 않는다.
+
+원본 완료 영수증은 공통 Git의 `.git/cleanup-evidence-20261030/bg3d-retained-authority-20261031/runs/cpu-r1-main2d54-build-isolated-r2/completion.json`이며 SHA-256은 `41f6261f7f0bb961c38c77b77067d418f30de8d4f0a7fb69f0129bdbde8df61b`이다. 실제 session과 정본 보존 확인은 공통 Git의 `.git/cleanup-evidence-20261030/bg3d-retained-authority-20261031/index-isolation-main2d54-r2/actual-return.json`에 남겼다. 이 빌드·정적 CSP 통과를 새 번들의 자동 UV runtime·비대칭 텍스처 방향·독립 GLB·큰 메시 검증 통과로 확대하지 않는다.
