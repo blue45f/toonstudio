@@ -173,13 +173,18 @@ export function ReviewVoiceCommentaryPanel({
   const lastKeyframeRef = useRef<number>(-1);
   const playheadRef = useRef(0);
   const pausedCueRef = useRef(false);
+  const naturalEndRef = useRef(false);
   const playbackRef = useRef<AbortController | null>(null);
   const playbackAudioRef = useRef<string | null>(null);
+  const playbackTrackRef = useRef<string | null>(null);
 
   const cancelPlayback = useCallback(() => {
     playbackRef.current?.abort();
     playbackRef.current = null;
     playbackAudioRef.current = null;
+    playbackTrackRef.current = null;
+    if (naturalEndRef.current) pausedCueRef.current = false;
+    naturalEndRef.current = false;
     audioRef.current?.pause();
   }, []);
 
@@ -535,6 +540,7 @@ export function ReviewVoiceCommentaryPanel({
     const controller = new AbortController();
     playbackRef.current = controller;
     playbackAudioRef.current = null;
+    playbackTrackRef.current = null;
     setPreparingPlayback(true);
     setPlaybackError(null);
     try {
@@ -546,11 +552,19 @@ export function ReviewVoiceCommentaryPanel({
         throw new Error("voice_playback_source_changed");
       }
       // 호스트의 다음 렌더를 기다리지 않고 권한을 확인한 새 주소로 재생한다.
+      if (naturalEndRef.current) {
+        naturalEndRef.current = false;
+        pausedCueRef.current = false;
+        playheadRef.current = 0;
+        setPlayheadMs(0);
+      }
       syncVoiceAudioSource(audio, playable.audio.url);
       playbackAudioRef.current = playable.audio.url;
+      playbackTrackRef.current = playable.id;
       audio.currentTime = playheadRef.current / 1000;
       await audio.play();
       if (controller.signal.aborted || playbackRef.current !== controller || !mountedRef.current) return;
+      if (naturalEndRef.current) return;
       setPlaying(true);
       setPlaybackError(null);
       applyCue(playable, playheadRef.current, true);
@@ -567,11 +581,29 @@ export function ReviewVoiceCommentaryPanel({
   };
 
   const onSeek = (valueMs: number) => {
+    naturalEndRef.current = false;
     pausedCueRef.current = audioRef.current?.paused ?? true;
     playheadRef.current = valueMs;
     setPlayheadMs(valueMs);
     if (audioRef.current) audioRef.current.currentTime = valueMs / 1000;
     if (selected) applyCue(selected, valueMs, true);
+  };
+
+  const finishPlayback = (audio: HTMLAudioElement, track: VoiceCommentaryTrack) => {
+    const source = playbackAudioRef.current;
+    if (!mountedRef.current || audio !== audioRef.current || !audio.ended || !audio.paused || pausedCueRef.current
+      || !source || playbackTrackRef.current !== track.id || track.episodeId !== episodeId
+      || audio.getAttribute("src") !== source || audio.currentSrc !== audio.src) return;
+    // 오디오 끝보다 늦은 화면 큐도 논리 종료에 도달시킨다. 미디어를 다시 탐색하지 않는다.
+    playbackRef.current?.abort();
+    playbackRef.current = null;
+    setPreparingPlayback(false);
+    naturalEndRef.current = true;
+    pausedCueRef.current = true;
+    playheadRef.current = track.durationMs;
+    setPlayheadMs(track.durationMs);
+    setPlaying(false);
+    applyCue(track, track.durationMs, true);
   };
 
   return (
@@ -666,9 +698,9 @@ export function ReviewVoiceCommentaryPanel({
                 setPlayheadMs(ms);
                 applyCue(selected, ms, false);
               }}
-              onEnded={() => setPlaying(false)}
+              onEnded={(event) => finishPlayback(event.currentTarget, selected)}
               onPause={() => setPlaying(false)}
-              onPlay={() => { pausedCueRef.current = false; setPlaying(true); }}
+              onPlay={() => { naturalEndRef.current = false; pausedCueRef.current = false; setPlaying(true); }}
               onError={() => {
                 // 새 읽기 응답을 기다리는 동안 이전 주소의 실패로 새 요청을 취소하지 않는다.
                 if (playbackRef.current && playbackAudioRef.current === null) return;
@@ -705,7 +737,7 @@ export function ReviewVoiceCommentaryPanel({
             aria-label={t("productionHub.voice.seekLabel", "해설 재생 위치")}
             min={0}
             max={Math.max(0, selected.durationMs)}
-            step={100}
+            step={1}
             value={Math.min(playheadMs, selected.durationMs)}
             onChange={(event) => onSeek(Number(event.currentTarget.value))}
           />

@@ -25,7 +25,7 @@ const fixture = "/tools/browser-harnesses/voice-review.html";
 
 async function observeVoiceMedia(page: Page) {
   const handle = await page.evaluateHandle(() => {
-    const events: Array<{ event: string; at: number; src: string | null; currentSrc: string; currentTime: number;
+    const events: Array<{ event: string; trusted: boolean; at: number; src: string | null; currentSrc: string; currentTime: number;
       paused: boolean; ended: boolean; seeking: boolean; readyState: number; networkState: number;
       error: { code: number; message: string } | null }> = [];
     const sources: Array<{ at: number; before: string | null; after: string | null }> = [];
@@ -34,7 +34,7 @@ async function observeVoiceMedia(page: Page) {
     const collect = (event: Event) => {
       const audio = event.target;
       if (!owns(audio) || events.length >= 120) return;
-      events.push({ event: event.type, at: performance.now(), src: audio.getAttribute("src"), currentSrc: audio.currentSrc,
+      events.push({ event: event.type, trusted: event.isTrusted, at: performance.now(), src: audio.getAttribute("src"), currentSrc: audio.currentSrc,
         currentTime: audio.currentTime, paused: audio.paused, ended: audio.ended, seeking: audio.seeking,
         readyState: audio.readyState, networkState: audio.networkState,
         error: audio.error ? { code: audio.error.code, message: audio.error.message } : null });
@@ -146,7 +146,7 @@ async function observedCompare(page: Page): Promise<VoiceCompareCapture | null> 
   return JSON.parse(await page.locator('output[aria-label="현재 비교 상태"]').textContent() ?? "null") as VoiceCompareCapture | null;
 }
 
-test("실제 WebM 녹음의 마지막 비교 화면을 탭 재생성 뒤 복원하고 로컬 음성을 재생한다", async ({ page }, testInfo) => {
+test("실제 WebM 녹음의 마지막 비교 화면을 탭 재생성 뒤 복원하고 자연 재생 종료에도 보존한다", async ({ page }, testInfo) => {
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   const api = await mockApi(page, "local");
@@ -194,12 +194,35 @@ test("실제 WebM 녹음의 마지막 비교 화면을 탭 재생성 뒤 복원�
   expect((await observedCompare(page))?.view.compare).toEqual(last?.view.compare);
   const seek = panel.getByRole("slider", { name: "해설 재생 위치" });
   await seek.focus(); await seek.press("Home");
+  // 수동 마지막 큐의 잔상이 아니라 실제 재생이 마지막 화면을 복원해야 한다.
+  await expect(page.getByRole("button", { name: "나란히", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect((await observedCompare(page))?.view.compare).not.toEqual(last?.view.compare);
   await panel.getByRole("button", { name: "해설 듣기", exact: true }).click();
   await expect.poll(() => panel.locator("audio").evaluate((audio: HTMLAudioElement) => audio.currentTime)).toBeGreaterThan(0.05);
   expect(await panel.locator("audio").evaluate((audio: HTMLAudioElement) => audio.error)).toBeNull();
+  // 미디어 메서드·시각·이벤트를 바꾸지 않고 브라우저의 자연 ended를 끝까지 기다린다.
+  await expect.poll(() => panel.locator("audio").evaluate((audio: HTMLAudioElement) => audio.ended)).toBe(true);
+  const observation = mediaObservations.get(page);
+  if (!observation) throw new Error("자연 종료를 증명할 제품 오디오 관측이 없습니다.");
+  const nativeEnd = await observation.handle.evaluate(({ events }) => events.filter((event) => event.event === "ended").at(-1) ?? null);
+  expect(nativeEnd).toMatchObject({ event: "ended", trusted: true, ended: true, paused: true, seeking: false, error: null });
+  if (!nativeEnd || !last) throw new Error("실제 오디오 종료 또는 마지막 녹음 큐가 없습니다.");
+  // 이 경계가 관측되지 않으면 최종 wallclock 큐에 닿기 전 자연 종료한 경우는 미검증이다.
+  expect(nativeEnd.currentTime * 1000).toBeLessThan(last.atMs);
+  await expect(seek).toHaveAttribute("max", String(receipt.track.durationMs));
+  await expect.poll(() => seek.inputValue()).toBe(String(receipt.track.durationMs));
+  await expect(panel.getByRole("button", { name: "해설 듣기", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "오버레이", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("crv-stage-overlay").getByRole("img", { name: "채색 고정본", exact: true })).toBeVisible();
+  const stylesAtEnd = await page.getByTestId("crv-stage-overlay").locator('[style*="transform"]').evaluateAll((elements) => elements.map((element) => element.getAttribute("style")));
+  expect(stylesAtEnd).toEqual(stylesBefore);
+  const compareAtEnd = await observedCompare(page);
+  expect(compareAtEnd?.view.compare).toEqual(last.view.compare);
   await noOverflow(page);
   expect(api.uploads).toBe(1); expect(api.reads).toBe(0); expect(api.unexpected).toEqual([]); expect(pageErrors).toEqual([]);
-  await testInfo.attach("desktop 관측", { body: JSON.stringify({ receipt, stylesBefore, stylesAfter, api: { uploads: api.uploads, reads: api.reads } }), contentType: "application/json" });
+  await testInfo.attach("desktop 관측", { body: JSON.stringify({ receipt, stylesBefore, stylesAfter, nativeEnd,
+    logicalPositionMs: Number(await seek.inputValue()), stylesAtEnd, compareAtEnd,
+    api: { uploads: api.uploads, reads: api.reads } }), contentType: "application/json" });
   await page.screenshot({ path: testInfo.outputPath("desktop-replay.png"), fullPage: true });
 });
 

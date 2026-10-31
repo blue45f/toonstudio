@@ -51,6 +51,36 @@ function props(overrides: Partial<ReviewVoiceCommentaryPanelProps> = {}): Review
   return { episodeId: "episode-1", tracks: [track()], authorName: "나", authorId: "assignment-1", readOnly: true, ...overrides };
 }
 
+function playbackPosition(): HTMLInputElement {
+  const position = screen.getByRole("slider", { name: "해설 재생 위치" });
+  if (!(position instanceof HTMLInputElement)) throw new Error("해설 재생 위치 입력이 없습니다.");
+  return position;
+}
+
+function nativeAudioState(audio: HTMLAudioElement, paused: boolean, ended: boolean) {
+  Object.defineProperty(audio, "paused", { configurable: true, value: paused });
+  Object.defineProperty(audio, "ended", { configurable: true, value: ended });
+  Object.defineProperty(audio, "currentSrc", { configurable: true, value: audio.src });
+}
+
+async function startNativePlayback(container: HTMLElement): Promise<HTMLAudioElement> {
+  fireEvent.click(screen.getByRole("button", { name: "해설 듣기" }));
+  await act(async () => { await Promise.resolve(); });
+  const audio = audioElement(container);
+  nativeAudioState(audio, false, false);
+  fireEvent.play(audio);
+  return audio;
+}
+
+async function endAtShorterAudioTime(container: HTMLElement): Promise<HTMLAudioElement> {
+  const audio = await startNativePlayback(container);
+  audio.currentTime = 0.96;
+  fireEvent.timeUpdate(audio);
+  nativeAudioState(audio, true, true);
+  fireEvent.ended(audio);
+  return audio;
+}
+
 describe("음성 해설의 명시적 재생과 요청 수명", () => {
   beforeEach(() => {
     emitSession({ user: { id: "account-A" }, token: null });
@@ -221,6 +251,87 @@ describe("음성 해설의 명시적 재생과 요청 수명", () => {
     fireEvent.timeUpdate(audio);
     expect(screen.getByRole("slider", { name: "해설 재생 위치" }).getAttribute("value")).toBe("1037");
     expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
+  });
+
+  it.each([
+    { kind: "blob" as const, url: "blob:recorded-commentary" },
+    { kind: "server" as const, url: "/voice/recorded-commentary.webm" },
+  ])("실제 음성이 마지막 큐보다 먼저 끝나도 마지막 화면과 논리적 종료 시각을 보존한다: $url", async ({ kind, url }) => {
+    const source: VoiceCommentaryTrack = { ...trackWithFinalCue(), audio: { kind, url, mimeType: "audio/webm", byteSize: 8983 } };
+    const apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [source], onApplyView: apply })} />);
+    const audio = await endAtShorterAudioTime(container);
+    expect(audio.currentTime).toBe(0.96);
+    const slider = playbackPosition();
+    expect(slider.value).toBe("1037");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[1]?.view, []);
+    expect(screen.getByRole("button", { name: "해설 듣기" })).toBeTruthy();
+    apply.mockClear();
+    audio.currentTime = 0.96;
+    fireEvent.timeUpdate(audio);
+    expect(slider.value).toBe("1037");
+    expect(apply).not.toHaveBeenCalled();
+  });
+
+  it("자연 종료 뒤 다시 재생하면 종료 화면 고정을 해제하고 처음부터 오디오 시각을 따른다", async () => {
+    const source = trackWithFinalCue(), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [source], onApplyView: apply })} />);
+    await endAtShorterAudioTime(container);
+    expect(playbackPosition().value).toBe("1037");
+    const audio = await startNativePlayback(container);
+    expect(audio.currentTime).toBe(0);
+    fireEvent.timeUpdate(audio);
+    expect(playbackPosition().value).toBe("0");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[0]?.view, []);
+    audio.currentTime = 0.5;
+    fireEvent.timeUpdate(audio);
+    expect(playbackPosition().value).toBe("500");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[0]?.view, []);
+  });
+
+  it("자연 종료 뒤 명시적으로 탐색하면 고정된 마지막 큐를 떠나고 다음 재생도 선택 시각을 따른다", async () => {
+    const source = trackWithFinalCue(), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [source], onApplyView: apply })} />);
+    const audio = await endAtShorterAudioTime(container);
+    nativeAudioState(audio, true, false);
+    fireEvent.change(screen.getByRole("slider", { name: "해설 재생 위치" }), { target: { value: "500" } });
+    expect(playbackPosition().value).toBe("500");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[0]?.view, []);
+    expect(audio.currentTime).toBe(0.5);
+    await startNativePlayback(container);
+    expect(audio.currentTime).toBe(0.5);
+    audio.currentTime = 0.6;
+    fireEvent.timeUpdate(audio);
+    expect(playbackPosition().value).toBe("600");
+    expect(apply).toHaveBeenLastCalledWith(source.keyframes[0]?.view, []);
+  });
+
+  it("이전 해설의 늦은 ended 이벤트가 새 해설의 진행 중인 재생을 종료하지 않는다", async () => {
+    const first = trackWithFinalCue(), second = track("voice-2", "검수자 2"), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [second, first], onApplyView: apply })} />);
+    const oldAudio = await endAtShorterAudioTime(container);
+    fireEvent.click(screen.getByRole("button", { name: /검수자 2 ·/ }));
+    const currentAudio = await startNativePlayback(container);
+    currentAudio.currentTime = 0.25;
+    fireEvent.timeUpdate(currentAudio);
+    apply.mockClear();
+    fireEvent.ended(oldAudio);
+    expect(screen.getByRole("button", { name: "일시정지" })).toBeTruthy();
+    expect(playbackPosition().value).toBe("250");
+    expect(apply).not.toHaveBeenCalled();
+    expect(currentAudio.getAttribute("src")).toBe(second.audio?.url);
+  });
+
+  it("새 해설을 선택한 직후 이전 오디오 소스의 종료가 새 해설의 마지막 화면을 적용하지 않는다", async () => {
+    const first = trackWithFinalCue(), second = track("voice-2", "검수자 2"), apply = vi.fn();
+    const { container } = render(<ReviewVoiceCommentaryPanel {...props({ tracks: [second, first], onApplyView: apply })} />);
+    const oldAudio = await endAtShorterAudioTime(container);
+    fireEvent.click(screen.getByRole("button", { name: /검수자 2 ·/ }));
+    apply.mockClear();
+    fireEvent.ended(oldAudio);
+    expect(playbackPosition().value).toBe("0");
+    expect(apply).not.toHaveBeenCalled();
+    expect(audioElement(container).getAttribute("src")).toBe(second.audio?.url);
   });
 
   it("다른 해설을 선택하면 대기 요청을 취소하고 늦은 주소·위치를 새 선택에 적용하지 않는다", async () => {
