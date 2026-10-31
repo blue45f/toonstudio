@@ -292,4 +292,26 @@ describe("StudioQuickAccessSurface", () => {
       name: "빠른 액세스 팔레트",
     })).toBeTruthy();
   });
+
+  it("모바일 닫기 동작을 아이콘과 가시 텍스트로 함께 표시한다", () => {
+    render(<SurfaceHarness isMobile onExecute={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "빠른 액세스 열기" }));
+    const close = screen.getByRole("button", { name: "빠른 액세스 팔레트 닫기" });
+    expect(close.textContent).toContain("닫기");
+    expect(close.className).toContain("min-h-11");
+    fireEvent.click(close);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("보조기술이 전달한 click만으로도 모바일 배경 닫기가 동작한다", () => {
+    render(<SurfaceHarness isMobile onExecute={vi.fn()} />);
+    const launcher = screen.getByRole("button", { name: "빠른 액세스 열기" });
+    launcher.focus(); fireEvent.click(launcher);
+    const backdrop = screen.getByRole("button", { name: "빠른 액세스 닫기" });
+    expect(backdrop.tabIndex).toBe(-1);
+    fireEvent.click(backdrop, { detail: 0 });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(launcher);
+  });
+
 });
