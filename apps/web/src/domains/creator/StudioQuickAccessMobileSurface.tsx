@@ -51,7 +51,8 @@ export function StudioQuickAccessMobileSurface({
         className={cn(
           "pointer-events-auto absolute min-h-0 text-fg",
           "inset-x-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom))]",
-          "h-[min(78dvh,44rem)] max-h-[calc(100dvh-4rem)] min-h-[14rem]",
+          // 낮은 화면에서는 고정 최소높이가 최대높이를 이겨 닫기 버튼을 밀어내지 않게 한다.
+          "h-[min(78dvh,44rem)] max-h-[calc(100dvh-4rem)]",
         )}
       >
         <p id={descriptionId} className="sr-only">

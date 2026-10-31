@@ -1,0 +1,505 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-11-01",
+  "baseMainObserved": "bb7ff5075aaad4de74ccdb172a2abb877d0be38b",
+  "scope": "전체 서비스; 핵심 흐름 일부로 전체 점수 대체 금지",
+  "targetScore": 95,
+  "currentScore": null,
+  "scoringType": "내부 전문가 평가; 표준인증이나 자동테스트 통과율이 아님",
+  "routeInventoryComplete": false,
+  "newlyExecutedRepositoryTests": 0,
+  "newlyExecutedBrowserTests": 0,
+  "productionChanges": false,
+  "evaluationDimensions": [
+    {
+      "id": "task-safety",
+      "maxPoints": 30,
+      "criteria": [
+        {
+          "id": "task-safety-1",
+          "title": "생성",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "task-safety-2",
+          "title": "편집",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "task-safety-3",
+          "title": "저장",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "task-safety-4",
+          "title": "재열기/복구",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "task-safety-5",
+          "title": "내보내기",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "task-safety-6",
+          "title": "권한/협업 안전",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "navigation",
+      "maxPoints": 20,
+      "criteria": [
+        {
+          "id": "navigation-1",
+          "title": "진입/찾기",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "navigation-2",
+          "title": "다음단계",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "navigation-3",
+          "title": "되돌아오기",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "navigation-4",
+          "title": "용어/도움말",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "visual",
+      "maxPoints": 20,
+      "criteria": [
+        {
+          "id": "visual-1",
+          "title": "주 행동",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "visual-2",
+          "title": "정보 밀도",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "visual-3",
+          "title": "글자/대비",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "visual-4",
+          "title": "일관성",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "accessibility",
+      "maxPoints": 15,
+      "criteria": [
+        {
+          "id": "accessibility-1",
+          "title": "화면/키보드 가림",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "accessibility-2",
+          "title": "키보드/보조기술",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "accessibility-3",
+          "title": "터치/펜/IME",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "id": "recovery",
+      "maxPoints": 15,
+      "criteria": [
+        {
+          "id": "recovery-1",
+          "title": "예방/입력복구",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "recovery-2",
+          "title": "비동기/취소",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        },
+        {
+          "id": "recovery-3",
+          "title": "재시도/오프라인",
+          "maxPoints": 5,
+          "score": null,
+          "evidence": []
+        }
+      ]
+    }
+  ],
+  "stopConditions": [
+    "데이터 손실",
+    "핵심 과업 실패",
+    "거짓 저장완료",
+    "접근 불가/키보드 덫",
+    "권한 혼선",
+    "중복 결제"
+  ],
+  "taskStates": [
+    "planned",
+    "reproduced",
+    "implemented_unvalidated",
+    "unit_verified",
+    "browser_verified",
+    "user_verified",
+    "integrated",
+    "deployed_verified",
+    "blocked"
+  ],
+  "tasks": [
+    {
+      "id": "UX-001",
+      "priority": "P0",
+      "title": "경로·역할·패널 과업 목록",
+      "dependsOn": [],
+      "ownerRole": "QA/UX",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "전체 경로/패널과 동적 fixture·역할·제한을 상태로 기록",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-002",
+      "priority": "P0",
+      "title": "390px·1440px 프로필 설정왕복",
+      "dependsOn": [
+        "UX-001"
+      ],
+      "ownerRole": "계정 UI/QA",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "기존 4개 browser case 실패·skip·retry0, 서버 값·입력 보존",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-003",
+      "priority": "P0",
+      "title": "저장·세션·오프라인 복구",
+      "dependsOn": [
+        "UX-001"
+      ],
+      "ownerRole": "저장/인증/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "미저장·로컬·서버·충돌 구분, 손실·거짓성공0",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-004",
+      "priority": "P0",
+      "title": "기본 제작 과업 완주",
+      "dependsOn": [
+        "UX-002",
+        "UX-003"
+      ],
+      "ownerRole": "편집기/QA",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "동일 프로젝트 생성→편집→저장→재열기→다운로드 결과 확인",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-005",
+      "priority": "P1",
+      "title": "내 작업·탐색·검색·복귀",
+      "dependsOn": [
+        "UX-001"
+      ],
+      "ownerRole": "탐색 UX",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "검색/정렬/필터/현재위치 보존",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-006",
+      "priority": "P1",
+      "title": "프로젝트 생성 동선",
+      "dependsOn": [
+        "UX-004"
+      ],
+      "ownerRole": "생성 UX",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "대표 형식/재료의 Enter/IME/입력오류/실패후재시도",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-007",
+      "priority": "P1",
+      "title": "편집 도구 위계·선택·Undo/Redo",
+      "dependsOn": [
+        "UX-004"
+      ],
+      "ownerRole": "편집기 UX",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "주 행동과 선택·되돌리기 상태 명확, 기존 실행기 유지",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-008",
+      "priority": "P1",
+      "title": "가져오기·내보내기·파일 결과",
+      "dependsOn": [
+        "UX-004"
+      ],
+      "ownerRole": "내보내기/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "형식·범위·순서·해상도·투명도와 실제 파일 일치",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-009",
+      "priority": "P1",
+      "title": "디자인 토큰·상태·문구 일관화",
+      "dependsOn": [
+        "UX-001"
+      ],
+      "ownerRole": "디자인시스템/UX",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "3테마 제목/입력/주행동/선택/오류/밀도 증거",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-010",
+      "priority": "P2",
+      "title": "팔레트 가시적 초점·하위모달·짧은높이",
+      "dependsOn": [
+        "UX-001"
+      ],
+      "ownerRole": "팔레트 UX/QA",
+      "relativeEffort": "소",
+      "status": "implemented_unvalidated",
+      "acceptance": "추가 회귀+실제 스크롤/초점/짧은 화면/닫기 복귀 검증",
+      "testEvidence": [],
+      "scopeNote": "이번 PR의 부분 구현; 실제 앱 검증 전"
+    },
+    {
+      "id": "UX-011",
+      "priority": "P2",
+      "title": "모바일·확대·가상키보드",
+      "dependsOn": [
+        "UX-006",
+        "UX-007",
+        "UX-008",
+        "UX-009"
+      ],
+      "ownerRole": "모바일 UX/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "주요 과업에서 가림·의도치 않은 가로넘침0",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-012",
+      "priority": "P2",
+      "title": "키보드·보조기술·대비",
+      "dependsOn": [
+        "UX-009",
+        "UX-010"
+      ],
+      "ownerRole": "접근성/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "수동+자동 접근성, 미해결 critical/serious0",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-013",
+      "priority": "P3",
+      "title": "에셋·캐릭터·3D·외부 DCC",
+      "dependsOn": [
+        "UX-007",
+        "UX-008"
+      ],
+      "ownerRole": "3D/에셋/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "정상·제한 GPU, Worker, 가져오기→삽입→저장·재열기",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-014",
+      "priority": "P3",
+      "title": "협업·검수·게시",
+      "dependsOn": [
+        "UX-003",
+        "UX-007"
+      ],
+      "ownerRole": "협업/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "다중사용자·오프라인·충돌·권한회수·공개전확인",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-015",
+      "priority": "P3",
+      "title": "마켓·결제·구독·사용량",
+      "dependsOn": [
+        "UX-001",
+        "UX-003"
+      ],
+      "ownerRole": "상거래/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "샌드박스 비용고지·실패복구·중복방지·권한부여",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-016",
+      "priority": "P3",
+      "title": "메시지·커뮤니티·학습·설정·관리자",
+      "dependsOn": [
+        "UX-005",
+        "UX-009"
+      ],
+      "ownerRole": "각 도메인/QA",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "역할별 대표과업·빈/오류/차단·문맥복귀",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-017",
+      "priority": "P4",
+      "title": "초보자·숙련자 사용자 관찰",
+      "dependsOn": [
+        "UX-004",
+        "UX-011",
+        "UX-012"
+      ],
+      "ownerRole": "UX리서치",
+      "relativeEffort": "중",
+      "status": "planned",
+      "acceptance": "동의 후 초보자8/숙련자4 초기문제발견, 수정후재검증",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    },
+    {
+      "id": "UX-018",
+      "priority": "P4",
+      "title": "최종main·전체95점 평가",
+      "dependsOn": [
+        "UX-013",
+        "UX-014",
+        "UX-015",
+        "UX-016",
+        "UX-017"
+      ],
+      "ownerRole": "통합/QA/UX",
+      "relativeEffort": "대",
+      "status": "planned",
+      "acceptance": "고정범위 20항목 전부근거, 95이상·핵심차단0, 배포는별도",
+      "testEvidence": [],
+      "scopeNote": "후속 실행 계획; 기존 partial 증거는 별도 바인딩"
+    }
+  ],
+  "requiredEvidenceFields": [
+    "sourceSha",
+    "sourceManifest",
+    "lockSha",
+    "command",
+    "actualExit",
+    "passed",
+    "failed",
+    "skipped",
+    "retried",
+    "environment",
+    "artifactPaths",
+    "artifactHashes",
+    "limitations"
+  ],
+  "executionPolicy": {
+    "oneHeavyOwner": true,
+    "oneMergeOwner": true,
+    "ownSourceOnly": true,
+    "noAutomaticRetry": true,
+    "noWeakeningAssertions": true,
+    "noCIStatusManipulation": true,
+    "noOperationalWrites": true,
+    "doNotOverwriteOriginal14": true
+  },
+  "implementationScope": {
+    "productFiles": 2,
+    "newReactCases": 23,
+    "repositoryReactExecuted": false,
+    "eventAdapterScenarios": 36,
+    "baselineMatched": 13,
+    "candidateMatched": 36,
+    "adapterIsReactOrBrowser": false
+  }
+}
