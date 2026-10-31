@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { once } from "node:events";
+
+import { probeTool, toolById } from "../catalog.mjs";
 
 const ORIGIN = "http://127.0.0.1:5173";
 const TOKEN = "test_token_abcdefghijklmnopqrstuvwxyz0123456789";
@@ -78,7 +80,7 @@ async function stopChild(child) {
 test("ToonBridge enforces origin/auth and completes a hash-verified OCR job", { timeout: 30_000 }, async () => {
   const port = await freePort();
   const dataDir = mkdtempSync(join(tmpdir(), "toonbridge-server-test-"));
-  const child = spawn(process.execPath, [SERVER], {
+  const startServer = () => spawn(process.execPath, [SERVER], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -91,6 +93,7 @@ test("ToonBridge enforces origin/auth and completes a hash-verified OCR job", { 
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
+  let child = startServer();
   const baseUrl = `http://127.0.0.1:${port}`;
 
   try {
@@ -121,6 +124,13 @@ test("ToonBridge enforces origin/auth and completes a hash-verified OCR job", { 
       activeJobs: 0,
       retainedJobs: 0,
     });
+
+    const probe = probeTool(toolById("tesseract"), {
+      PATH: process.env.PATH,
+      TOONBRIDGE_TOOL_TESSERACT_BIN: FAKE_TESSERACT,
+    });
+    assert.equal(probe.version.length, 500);
+    assert.match(probe.version, /build details retained by the probe/u);
 
     const malformedNameJob = await jsonRequest(baseUrl, "/v2/jobs", {
       method: "POST",
@@ -199,6 +209,7 @@ test("ToonBridge enforces origin/auth and completes a hash-verified OCR job", { 
     assert.match(completed.outputs[0].sha256, /^sha256:[0-9a-f]{64}$/u);
     assert.equal(completed.receipt.license, "Apache-2.0");
     assert.match(completed.receipt.toolVersion, /99\.0\.0/u);
+    assert.equal(completed.receipt.toolVersion, "tesseract 99.0.0-toonbridge-test");
     assert.match(completed.receipt.commandDigest, /^sha256:[0-9a-f]{64}$/u);
 
     const isolatedEnvironment = JSON.parse(readFileSync(
@@ -217,6 +228,27 @@ test("ToonBridge enforces origin/auth and completes a hash-verified OCR job", { 
     });
     assert.equal(outputResponse.status, 200);
     assert.equal(await outputResponse.text(), `OCR:${input.toString("utf8")}`);
+
+    await stopChild(child);
+    const manifest = join(dataDir, jobId, "manifest.json");
+    const legacy = JSON.parse(readFileSync(manifest, "utf8"));
+    legacy.receipt.toolVersion = probe.version;
+    const legacyBytes = Buffer.from(`${JSON.stringify(legacy, null, 2)}\n`);
+    writeFileSync(manifest, legacyBytes);
+    child = startServer();
+    await waitForReady(child);
+
+    const retained = await jsonRequest(baseUrl, `/v2/jobs/${jobId}`);
+    assert.equal(retained.response.status, 200);
+    assert.deepEqual(retained.payload, completed);
+    const cancelled = await jsonRequest(baseUrl, `/v2/jobs/${jobId}/cancel`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    assert.equal(cancelled.response.status, 200);
+    assert.deepEqual(cancelled.payload, completed);
+    assert.deepEqual(readFileSync(manifest), legacyBytes);
   } finally {
     await stopChild(child);
     rmSync(dataDir, { recursive: true, force: true });

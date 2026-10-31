@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 const args = process.argv.slice(2);
 if (args.includes("--version")) {
-  process.stdout.write("tesseract 99.0.0-toonbridge-test\n");
+  process.stdout.write("tesseract 99.0.0-toonbridge-test\n" + "build details retained by the probe\n".repeat(20));
   process.exit(0);
 }
 const [input, outputBase] = args;

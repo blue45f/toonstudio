@@ -22,6 +22,7 @@ import { pipeline } from "node:stream/promises";
 
 import { buildCommandPlan } from "./command-plans.mjs";
 import { hashFileStream } from "./file-integrity.mjs";
+import { publicJob, receiptToolVersion } from "./job-receipts.mjs";
 import { operationById, probeAllTools, probeTool, toolById } from "./catalog.mjs";
 
 const PROTOCOL = "toonstudio.production-toolchain";
@@ -159,10 +160,6 @@ function jobDirectory(id) {
 
 function manifestPath(record) {
   return join(record.directory, "manifest.json");
-}
-
-function publicJob(record) {
-  return JSON.parse(JSON.stringify(record.job));
 }
 
 function persist(record) {
@@ -496,7 +493,7 @@ async function finalizeSuccess(record, plan) {
     failure: null,
     receipt: {
       toolId: tool.id,
-      toolVersion: record.probe?.version || "version-unavailable",
+      toolVersion: receiptToolVersion(record.probe?.version),
       operationId: record.job.operationId,
       license: tool.license,
       source: tool.source,
