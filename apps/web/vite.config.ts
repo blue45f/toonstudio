@@ -5,10 +5,9 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, URL } from "node:url";
 
-import { WEB_REACT_COMPILER_EXCLUDE } from "./vite-react-compiler-filter";
+import { createWebReactCompilerPlugin } from "./vite-react-compiler-filter";
 
-import babel from "@rolldown/plugin-babel";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react";
 import { build as viteBuild, createLogger, defineConfig, type Logger, type Plugin } from "vite";
 
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
@@ -607,10 +606,7 @@ export default defineConfig(({ command, mode }) => ({
     studioCrossOriginIsolationPlugin(),
     studioServiceWorkerPlugin(),
     react(),
-    babel({
-      presets: [reactCompilerPreset()],
-      exclude: WEB_REACT_COMPILER_EXCLUDE,
-    }),
+    createWebReactCompilerPlugin(),
     // Last on purpose: the visualizer must observe the final bundle.
     bundleVisualizerPlugin(),
   ],

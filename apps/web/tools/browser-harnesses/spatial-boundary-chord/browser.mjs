@@ -1,4 +1,4 @@
-/** 미래 GO에서만 실행한다. 실제 UI 입력·전용 Worker·기존 저장/열기 경로를 대체하지 않는다. */
+/** 수동으로 실행하며 실제 UI 입력·전용 Worker·기존 저장/열기 경로를 대체하지 않는다. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -48,6 +48,7 @@ const checkpoint = () => {
   return { head: git("rev-parse", "HEAD"), branch: git("branch", "--show-current"), dirty: [...new Set(dirty)].sort(), rows };
 };
 const events = [], workers = [], errors = [], warnings = [], stages = [], screenshots = [];
+const requests = new Map();
 const workerRecords = new Map();
 let documentEpoch = 0;
 const deadline = Date.now() + 180_000;
@@ -149,8 +150,9 @@ async function wireProof(name, baselineShot, changedShot, originalWire, actualWi
   const pixels = await page.evaluate(({ before, after, probe }) => window.__boundaryChordQa.inspectWireScreenshots(before, after, probe), {
     before: readFileSync(baselineShot.file).toString("base64"), after: readFileSync(changedShot.file).toString("base64"), probe,
   });
-  assert(pixels.qualifying >= 3, "대상 선 위치의 실제 PNG 변화와 양쪽 면의 불변을 세 지점에서 확인하지 못했습니다.");
+  // 실패한 픽셀 표본도 원본 PNG와 함께 남겨 동일 입력의 재실행 없이 진단한다.
   stages.push({ name, endpoints, presentAfter, baseline: baselineShot.name, changed: changedShot.name, actualWire, probe, pixels });
+  assert(pixels.qualifying >= 3, "대상 선 위치의 실제 PNG 변화와 양쪽 면의 불변을 세 지점에서 확인하지 못했습니다.");
 }
 
 function surfaceSamples(displayed) {
@@ -242,6 +244,8 @@ async function healingScenario(original, initialDisplay) {
   assert.deepEqual((await observe()).authority, original);
   const selectSeam = async () => {
     await page.getByRole("button", { name: "모서리 선택 모드 (2)", exact: true }).click({ timeout: left() });
+    const selectionToggle = page.getByRole("region", { name: "메시 선택 작업대", exact: true }).getByRole("button", { name: "메시 선택 · 연결 영역 · 경계 · 최단 경로", exact: true });
+    if (await selectionToggle.getAttribute("aria-expanded") !== "true") await selectionToggle.click({ timeout: left() });
     await page.getByRole("region", { name: "메시 선택 작업대", exact: true }).getByRole("button", { name: "선택 해제", exact: true }).click({ timeout: left() });
     await page.locator('canvas[aria-label="편집 메시 3D 렌더"]').scrollIntoViewIfNeeded({ timeout: left() }); await waitFrames();
     target = await page.evaluate(() => window.__boundaryChordQa.healingTargets());
@@ -447,6 +451,9 @@ try {
   browser = await chromium.connectOverCDP(endpoint, { timeout: left() });
   context = await browser.newContext({ viewport: { width: 1600, height: 1100 }, deviceScaleFactor: 2,
     colorScheme: "dark", locale: "ko-KR", acceptDownloads: true, serviceWorkers: "block" });
+  context.on("request", (request) => requests.set(request, { url: safeUrl(request.url()), type: request.resourceType(), startedAt: Date.now(), finishedAt: null }));
+  const finishedRequest = (request, failed) => { const entry = requests.get(request); if (entry) Object.assign(entry, { finishedAt: Date.now(), failed, timing: request.timing() }); };
+  context.on("requestfinished", (request) => finishedRequest(request, false)); context.on("requestfailed", (request) => finishedRequest(request, true));
   await context.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.origin === origin && ["http:", "blob:"].includes(url.protocol)) return route.continue();
@@ -612,7 +619,16 @@ try {
   assert(native.trusted.pointerdown > 0 && native.trusted.pointerup > 0 && native.trusted.click > 0);
   await settledWorkers(4); assert.equal(errors.length, 0);
   result = { original, edge, vertexOriginal, vertexCommitted, vertex, healed, reopened, reopenedDisplay, saved, nativeBeforeFixtureChange, native };
-} catch (error) { failure = { name: error instanceof Error ? error.name : "unknown", message: error instanceof Error ? error.message : String(error), phase }; }
+} catch (error) {
+  failure = { name: error instanceof Error ? error.name : "unknown", message: error instanceof Error ? error.message : String(error), phase };
+  events.push({ phase, requests: [...requests.values()].map((entry) => ({ ...entry })) });
+  if (page && !page.isClosed()) try {
+    events.push({ phase, failureDocument: await page.evaluate(() => ({ readyState: document.readyState,
+      text: document.body?.innerText.slice(0, 3000), resources: performance.getEntriesByType("resource").slice(-40)
+        .map((entry) => ({ url: new URL(entry.name).pathname, duration: entry.duration })) })) });
+    await page.screenshot({ path: path.join(output, "failure-page.png"), timeout: 5000 });
+  } catch (diagnosticError) { events.push({ phase, diagnosticError: String(diagnosticError) }); }
+}
 finally {
   phase = "cleanup";
   if (page && !page.isClosed()) {
