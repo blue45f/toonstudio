@@ -60,6 +60,8 @@ async function openActualOverview(actorId: string | null) {
   const details = screen.getByText("운영 자세히 보기").closest("details");
   if (!(details instanceof HTMLDetailsElement)) throw new Error("실제 개요의 운영 상세가 없습니다.");
   await act(async () => { details.open = true; fireEvent(details, new Event("toggle")); });
+  // 상세 열림을 publication한 뒤 등록된 lazy import와 그 반영을 기다린다.
+  await act(async () => { await vi.dynamicImportSettled(); });
   await screen.findByRole("heading", { name: "프로젝트 상태 한눈에" });
   await screen.findByRole("heading", { name: "실제 원고 revision 연결" });
   return { aggregate, execute };
