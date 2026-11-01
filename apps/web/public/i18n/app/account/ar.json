@@ -42,5 +42,8 @@
   "account.page.eyebrow": "حسابي",
   "account.page.title": "ملفي الشخصي",
   "account.page.subtitle": "تحقق من مشاركاتك ونشاطك وإدارة تفاصيل ملفك الشخصي.",
-  "account.page.tabsAria": "علامات تبويب ملفي الشخصي"
+  "account.page.tabsAria": "علامات تبويب ملفي الشخصي",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

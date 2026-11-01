@@ -42,5 +42,8 @@
   "account.page.eyebrow": "МЕНИН ЭСЕБИМ",
   "account.page.title": "Менин профилим",
   "account.page.subtitle": "Жазууларыңызды жана ишмердүүлүгүңүздү текшерип, профилиңиздин маалыматтарын башкарыңыз.",
-  "account.page.tabsAria": "Профиль өтмөктөрү"
+  "account.page.tabsAria": "Профиль өтмөктөрү",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

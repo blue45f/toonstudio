@@ -42,5 +42,8 @@
   "account.page.eyebrow": "CONTUL MEU",
   "account.page.title": "Profilul meu",
   "account.page.subtitle": "Verificați postările și activitățile și gestionați detaliile profilului.",
-  "account.page.tabsAria": "Tab-uri de profil"
+  "account.page.tabsAria": "Tab-uri de profil",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

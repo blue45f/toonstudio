@@ -42,5 +42,8 @@
   "account.page.eyebrow": "OMA TILI",
   "account.page.title": "Profiili",
   "account.page.subtitle": "Tarkista julkaisusi ja toimintasi ja hallitse profiiliasi.",
-  "account.page.tabsAria": "Profiilin välilehdet"
+  "account.page.tabsAria": "Profiilin välilehdet",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

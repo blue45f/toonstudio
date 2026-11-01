@@ -42,5 +42,8 @@
   "account.page.eyebrow": "MIJN ACCOUNT",
   "account.page.title": "Mijn profiel",
   "account.page.subtitle": "Bekijk je berichten en activiteit en beheer je profielgegevens.",
-  "account.page.tabsAria": "Tabbladen van mijn profiel"
+  "account.page.tabsAria": "Tabbladen van mijn profiel",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }
