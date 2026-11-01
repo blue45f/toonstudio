@@ -506,6 +506,7 @@ function studioServiceWorkerPlugin(): Plugin {
 
       await viteBuild({
         configFile: false,
+        envDir: false,
         root,
         logLevel: "warn",
         define: {
