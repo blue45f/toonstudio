@@ -333,22 +333,71 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - name: 체크아웃 전 디스크·inode 사용량 확인
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
         run: |
-          df -P -B1 "$GITHUB_WORKSPACE"
-          df -Pi "$GITHUB_WORKSPACE"
-          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
-            if test -e "$target"; then
-              du -s -B1 -- "$target"
-            else
-              printf '경로 없음: %s\n' "$target"
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
             fi
           done
-          if command -v pnpm >/dev/null 2>&1; then
-            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
-              printf 'pnpm 저장소: %s\n' "$store"
-              if test -d "$store"; then du -s -B1 -- "$store"; fi
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
             fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
           fi
       - uses: actions/checkout@v7
         with:
@@ -431,22 +480,71 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: 체크아웃 전 디스크·inode 사용량 확인
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
         run: |
-          df -P -B1 "$GITHUB_WORKSPACE"
-          df -Pi "$GITHUB_WORKSPACE"
-          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
-            if test -e "$target"; then
-              du -s -B1 -- "$target"
-            else
-              printf '경로 없음: %s\n' "$target"
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
             fi
           done
-          if command -v pnpm >/dev/null 2>&1; then
-            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
-              printf 'pnpm 저장소: %s\n' "$store"
-              if test -d "$store"; then du -s -B1 -- "$store"; fi
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
             fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
           fi
       - uses: actions/checkout@v7
         with:
@@ -533,22 +631,71 @@ jobs:
       # during Vite chunk generation. Keep the larger heap scoped to this job.
       NODE_OPTIONS: --max-old-space-size=12288
     steps:
-      - name: 체크아웃 전 디스크·inode 사용량 확인
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
         run: |
-          df -P -B1 "$GITHUB_WORKSPACE"
-          df -Pi "$GITHUB_WORKSPACE"
-          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
-            if test -e "$target"; then
-              du -s -B1 -- "$target"
-            else
-              printf '경로 없음: %s\n' "$target"
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
             fi
           done
-          if command -v pnpm >/dev/null 2>&1; then
-            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
-              printf 'pnpm 저장소: %s\n' "$store"
-              if test -d "$store"; then du -s -B1 -- "$store"; fi
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
             fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
           fi
       - uses: actions/checkout@v7
         with:
@@ -651,22 +798,71 @@ jobs:
       TEST_DATABASE_URL: postgresql://studio_review_test@127.0.0.1:5432/studio_review_integration
       STUDIO_LIVE_POSTGRES_INTEGRATION_URL: postgresql://studio_review_test@127.0.0.1:5432/studio_review_integration
     steps:
-      - name: 체크아웃 전 디스크·inode 사용량 확인
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
         run: |
-          df -P -B1 "$GITHUB_WORKSPACE"
-          df -Pi "$GITHUB_WORKSPACE"
-          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
-            if test -e "$target"; then
-              du -s -B1 -- "$target"
-            else
-              printf '경로 없음: %s\n' "$target"
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
             fi
           done
-          if command -v pnpm >/dev/null 2>&1; then
-            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
-              printf 'pnpm 저장소: %s\n' "$store"
-              if test -d "$store"; then du -s -B1 -- "$store"; fi
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
             fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
           fi
       - uses: actions/checkout@v7
         with:
