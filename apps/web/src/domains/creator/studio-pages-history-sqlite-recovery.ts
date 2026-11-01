@@ -458,11 +458,8 @@ export class StudioPagesHistorySqliteRecovery implements StudioPagesHistoryRecov
     // sqlite-wasm statements and transactions complete before their async facade resolves.
   }
 
-  async abort(): Promise<void> {
-    if (this.#aborted) return;
-    this.#aborted = true;
+  async releaseWriter(): Promise<void> {
     const lease = this.#lease;
-    this.#lease = null;
     if (lease) {
       await this.#withExclusiveLock(async () => {
         const persisted = await this.#persistedLease();
@@ -475,6 +472,14 @@ export class StudioPagesHistorySqliteRecovery implements StudioPagesHistoryRecov
         }
       });
     }
+    // 디스크 해제가 성공하기 전까지 close/retry가 사용할 소유 증거를 보존한다.
+    if (this.#lease === lease) this.#lease = null;
+  }
+
+  async abort(): Promise<void> {
+    if (this.#aborted && !this.#lease) return;
+    this.#aborted = true;
+    await this.releaseWriter();
     if (this.#closeDatabaseOnAbort) await this.#database.close();
   }
 }

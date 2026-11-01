@@ -33,6 +33,7 @@ interface StudioPagesHistoryCommandJournalRuntime {
   reset(): void;
   dispose?(): void;
   close?(): Promise<void>;
+  flush?(): Promise<void>;
   durabilityStatus?(): StudioPagesHistoryDurabilityStatus;
 }
 
@@ -108,8 +109,11 @@ export class StudioPagesHistoryCommandJournalClient {
     | undefined;
   private runtime: StudioPagesHistoryCommandJournalRuntime | null = null;
   private loadPromise: Promise<boolean> | null = null;
+  private closingRuntime: Promise<void> | null = null;
+  private durabilityRetry: Promise<boolean> | null = null;
   private pending: StudioHistoryJournalClientAction[] = [];
   private latestTarget: StudioHistoryJournalNavigationTarget | null = null;
+  private targetVersion = 0;
   private lastReadinessError: unknown = null;
   private durability: StudioPagesHistoryCommandJournalDurabilityStatus =
     STUDIO_PAGES_HISTORY_INITIAL_DURABILITY_STATUS;
@@ -132,8 +136,11 @@ export class StudioPagesHistoryCommandJournalClient {
   }
 
   private publishDurabilityStatus(
-    status: StudioPagesHistoryCommandJournalDurabilityStatus
+    status: StudioPagesHistoryCommandJournalDurabilityStatus,
+    checkpointCommitted = false,
   ): void {
+    // 재시도는 backend 선택이 아니라 최신 체크포인트의 완료까지 기다린다.
+    if (this.durabilityRetry && status.durable && !checkpointCommitted) return;
     this.durability = Object.freeze({ ...status });
     try {
       this.onDurabilityStatus?.(this.durability);
@@ -210,6 +217,7 @@ export class StudioPagesHistoryCommandJournalClient {
 
   private ensureRuntime(): Promise<boolean> {
     if (this.disposed) return Promise.resolve(false);
+    if (this.closingRuntime) return this.closingRuntime.then(() => this.ensureRuntime());
     if (this.runtime) return Promise.resolve(true);
     if (this.loadPromise) return this.loadPromise;
     this.lastReadinessError = null;
@@ -271,6 +279,7 @@ export class StudioPagesHistoryCommandJournalClient {
 
   private enqueue(action: StudioHistoryJournalClientAction): void {
     if (this.disposed) return;
+    this.targetVersion += 1;
     const target = actionTarget(action);
     if (action.kind === "reset") this.latestTarget = null;
     else if (target) this.latestTarget = target;
@@ -379,9 +388,10 @@ export class StudioPagesHistoryCommandJournalClient {
    * Editing stays available while this promise runs; a failed retry remains explicitly
    * memory-only and can be attempted again.
    */
-  async retryDurability(): Promise<boolean> {
-    if (this.disposed) return false;
-    if (this.durability.durable) return true;
+  retryDurability(): Promise<boolean> {
+    if (this.disposed) return Promise.resolve(false);
+    if (this.durabilityRetry) return this.durabilityRetry;
+    if (this.durability.durable) return Promise.resolve(true);
     this.publishDurabilityStatus({
       state: "retrying",
       durable: false,
@@ -391,12 +401,42 @@ export class StudioPagesHistoryCommandJournalClient {
     });
     const previous = this.runtime;
     this.runtime = null;
-    if (previous?.close) await previous.close().catch(() => undefined);
-    else previous?.dispose?.();
-    this.retainLatestCheckpoint();
-    this.lastReadinessError = null;
-    const ready = await this.ensureRuntime();
-    return ready && this.durability.durable;
+    const closing = previous?.close
+      ? previous.close().catch(() => undefined)
+      : Promise.resolve(previous?.dispose?.());
+    this.closingRuntime = closing;
+    const retry = closing.then(async () => {
+      this.closingRuntime = null;
+      if (this.disposed) return false;
+      // 종료 대기 중 들어온 편집도 최신 체크포인트 하나로 인계한다.
+      this.retainLatestCheckpoint();
+      this.lastReadinessError = null;
+      const ready = await this.ensureRuntime();
+      const runtime = this.runtime;
+      if (!ready || !runtime || this.disposed) return false;
+      try {
+        let version: number;
+        do {
+          version = this.targetVersion;
+          await runtime.flush?.();
+        } while (!this.disposed && version !== this.targetVersion);
+      }
+      catch (cause) {
+        if (!this.disposed) this.publishDurabilityStatus({
+          state: "memory-only", durable: false, persistenceKind: "memory-only", retryable: true, cause,
+        });
+        this.reportError(cause);
+        return false;
+      }
+      if (this.disposed) return false;
+      const status = runtime.durabilityStatus?.() ?? this.durability;
+      this.publishDurabilityStatus(status, true);
+      return status.durable;
+    }).finally(() => {
+      if (this.durabilityRetry === retry) this.durabilityRetry = null;
+    });
+    this.durabilityRetry = retry;
+    return retry;
   }
 
   /** Await only in diagnostics/tests; Studio editing never blocks on journal loading. */

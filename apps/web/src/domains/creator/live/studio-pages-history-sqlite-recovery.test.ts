@@ -1,8 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { openStudioLocalDatabase } from "../studio-local-database";
 import { createDefaultStudioPagesHistoryDurableRuntime } from "../studio-pages-history-durable-runtime";
-import { createStudioPagesHistorySqliteRecovery } from "../studio-pages-history-sqlite-recovery";
+import { createStudioPagesHistorySqliteRecovery, StudioPagesHistorySqliteRecovery } from "../studio-pages-history-sqlite-recovery";
 
 import type {
   StudioLocalDatabase,
@@ -157,6 +157,120 @@ describe("Studio pages history SQLite recovery", () => {
     });
     expect(mismatched.recordUndo(target(2))).toBe("rebased");
     await mismatched.close();
+  });
+
+  it("writer 획득 뒤 복구 payload 조회가 실패하면 해제하고 같은 저장소를 즉시 다시 연다", async () => {
+    const database = await openMemoryDatabase();
+    const failure = new Error("writer 획득 후 복구 payload 읽기 실패");
+    const readPayload = vi.spyOn(StudioPagesHistorySqliteRecovery.prototype, "readLatestPayload")
+      .mockRejectedValueOnce(failure);
+    const acquireWriter = vi.spyOn(StudioPagesHistorySqliteRecovery.prototype, "acquireWriter");
+    const abort = vi.spyOn(StudioPagesHistorySqliteRecovery.prototype, "abort");
+    let reopened: Awaited<ReturnType<typeof createDefaultStudioPagesHistoryDurableRuntime>> | null = null;
+    try {
+      await expect(createDefaultStudioPagesHistoryDurableRuntime({
+        initialTarget: target(0),
+        openDatabase: () => Promise.resolve(database),
+      }, {
+        navigator: { storage: {} },
+        crypto: { randomUUID: () => "11111111-1111-4111-8111-111111111111" },
+      })).rejects.toBe(failure);
+      expect(acquireWriter).toHaveBeenCalledOnce();
+      expect(abort).toHaveBeenCalledOnce();
+      expect(abort.mock.contexts[0]).toBe(acquireWriter.mock.contexts[0]);
+      expect(readPayload.mock.contexts[0]).toBe(acquireWriter.mock.contexts[0]);
+
+      // clock를 전진시키지 않고 다른 owner가 같은 DB의 writer를 다시 획득해야 한다.
+      reopened = await createDefaultStudioPagesHistoryDurableRuntime({
+        initialTarget: target(0),
+        openDatabase: () => Promise.resolve(database),
+      }, {
+        navigator: { storage: {} },
+        crypto: { randomUUID: () => "22222222-2222-4222-8222-222222222222" },
+      });
+      expect(reopened.persistenceKind).toBe("sqlite-opfs");
+      expect(acquireWriter).toHaveBeenCalledTimes(2);
+      expect(readPayload).toHaveBeenCalledTimes(2);
+      reopened.recordTransition(transition(0, 1));
+      await reopened.flush();
+      expect(reopened.replayPlan()).toMatchObject({ recordCount: 1 });
+      expect(reopened.durabilityStatus()).toMatchObject({
+        state: "durable",
+        persistenceKind: "sqlite-opfs",
+      });
+    } finally {
+      try {
+        await reopened?.close();
+      } finally {
+        readPayload.mockRestore();
+        acquireWriter.mockRestore();
+        abort.mockRestore();
+      }
+    }
+  });
+
+  it("완료한 체크포인트는 문서 잠금을 유지하면서 다음 history writer를 막지 않는다", async () => {
+    const database = await openMemoryDatabase();
+    const locks = {
+      async request<T>(
+        _name: string,
+        _options: { readonly mode: "exclusive"; readonly signal?: AbortSignal },
+        callback: (lock: unknown) => T | PromiseLike<T>,
+      ): Promise<T> { return await callback({}); },
+    };
+    const first = await createDefaultStudioPagesHistoryDurableRuntime({
+      initialTarget: target(0), openDatabase: async () => database,
+    }, { navigator: { storage: {}, locks }, crypto: { randomUUID: () => "writer-first" } });
+    let next: Awaited<ReturnType<typeof createDefaultStudioPagesHistoryDurableRuntime>> | null = null;
+    try {
+      first.recordTransition(transition(0, 1));
+      await first.flush();
+      // 이전 runtime을 닫거나 TTL을 전진시키지 않는다. 같은 탭의 새 세대가 실제 DB를 연다.
+      next = await createDefaultStudioPagesHistoryDurableRuntime({
+        initialTarget: target(1), openDatabase: async () => database,
+      }, { navigator: { storage: {}, locks }, crypto: { randomUUID: () => "writer-next" } });
+      expect(next.persistenceKind).toBe("sqlite-opfs");
+      next.recordTransition(transition(1, 2));
+      await next.flush();
+      expect(next.durabilityStatus().durable).toBe(true);
+      expect(next.replayPlan()).toMatchObject({ recordCount: 2 });
+    } finally {
+      await next?.close();
+      await first.close();
+    }
+  });
+
+  it("lease 해제 저장이 실패해도 원 writer의 정리 권한을 유지해 저장소 회복 뒤 해제한다", async () => {
+    const database = await openMemoryDatabase();
+    const first = createStudioPagesHistorySqliteRecovery({ database, identity: IDENTITY });
+    const next = createStudioPagesHistorySqliteRecovery({ database, identity: IDENTITY });
+    await first.acquireWriter({ ownerId: "release-first" });
+    const failure = new Error("해제 기록 저장 실패");
+    const save = vi.spyOn(database, "kvSet").mockRejectedValueOnce(failure);
+    try {
+      await expect(first.releaseWriter()).rejects.toBe(failure);
+      await expect(next.acquireWriter({ ownerId: "release-next" })).rejects.toThrow("busy");
+      // 장애가 해제되면 원 권위의 close가 같은 lease를 해제해야 한다. TTL은 전진시키지 않는다.
+      await first.abort();
+      await expect(next.acquireWriter({ ownerId: "release-next" })).resolves.toMatchObject({ ownerId: "release-next" });
+    } finally { save.mockRestore(); await next.abort(); await first.abort(); }
+  });
+
+  it("저장과 writer 해제가 함께 실패하면 원인과 정리 오류를 모두 보존한다", async () => {
+    const database = await openMemoryDatabase();
+    const locks = { async request<T>(_name: string, _options: { readonly mode: "exclusive" }, callback: (lock: unknown) => T | PromiseLike<T>): Promise<T> { return await callback({}); } };
+    const runtime = await createDefaultStudioPagesHistoryDurableRuntime({ initialTarget: target(0), openDatabase: async () => database }, { navigator: { locks } });
+    const failure = new Error("체크포인트 실패");
+    const releaseFailure = new Error("해제 실패");
+    const compact = vi.spyOn(StudioPagesHistorySqliteRecovery.prototype, "compact").mockRejectedValueOnce(failure);
+    const release = vi.spyOn(StudioPagesHistorySqliteRecovery.prototype, "releaseWriter").mockRejectedValueOnce(releaseFailure);
+    try {
+      runtime.rebase(target(1));
+      await runtime.flush();
+      const cause = runtime.durabilityStatus().cause;
+      expect(cause).toBeInstanceOf(AggregateError);
+      expect(cause).toMatchObject({ cause: failure, errors: [failure, releaseFailure] });
+    } finally { compact.mockRestore(); release.mockRestore(); await runtime.close(); }
   });
 
   it("fences a second writer until the persisted lease is released", async () => {
