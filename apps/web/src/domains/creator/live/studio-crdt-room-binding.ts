@@ -722,6 +722,7 @@ export class StudioCrdtRoomBinding {
       return pending.persisted;
     }
     pending.persistenceState = "pending";
+    pending.persistenceStarted = true;
     const operation = Promise.resolve().then(() => this.outbox.put(scope, pending.request));
     const persisted = this.withPersistenceTimeout(operation).then(
       () => {
@@ -859,14 +860,8 @@ export class StudioCrdtRoomBinding {
 
   private async runDrain(): Promise<void> {
     if (this.recoveryState) return;
-    if (this.hasAuthoritativeServer() && !this.authoritativeSyncReady) {
-      for (const pending of this.pending.values()) {
-        if (this.closed) return;
-        await this.ensurePendingPersistence(pending);
-      }
-      return;
-    }
-    if (!this.room.ready) {
+    // 서버 초기 동기화를 기다리는 동안에도 실패한 기기 보관은 같은 backoff로 재시도한다.
+    if (!this.room.ready || (this.hasAuthoritativeServer() && !this.authoritativeSyncReady)) {
       for (const pending of this.pending.values()) {
         if (this.closed) return;
         const persisted = await this.ensurePendingPersistence(pending);
@@ -876,7 +871,10 @@ export class StudioCrdtRoomBinding {
           return;
         }
       }
-      this.scheduleRetry();
+      // 정본 응답을 기다리는 durable 큐는 쉬고, 저장 중 준비된 연결과 피어 경로는 다시 깨운다.
+      if (!this.hasAuthoritativeServer() || this.authoritativeSyncReady) {
+        this.scheduleRetry();
+      }
       return;
     }
     for (const [updateId, pending] of this.pending) {
@@ -1323,6 +1321,7 @@ export class StudioCrdtRoomBinding {
         request,
         attempts: 0,
         persistenceState: "ready",
+        persistenceStarted: true,
         persisted: Promise.resolve(true),
       });
     }

@@ -143,6 +143,8 @@ export interface CoalesceablePendingCrdtUpdate {
   request: StudioCrdtUpdateRequest;
   attempts: number;
   persistenceState: "pending" | "ready" | "failed";
+  /** 영속화 시도 뒤에는 결과와 무관하게 요청 ID와 본문을 고정하는 런타임 전용 값이다. */
+  persistenceStarted?: boolean;
   persisted: Promise<boolean>;
   localBroadcasted?: boolean;
   inFlight?: boolean;
@@ -173,7 +175,7 @@ export function shouldRetainNonAuthoritativePendingUpdate(options: {
 
 /**
  * Goodnotes(`gnyjsFFI` `merge_updates`) 및 Figma 오프라인 저널과 동일하게,
- * 오프라인·재연결 대기 중 아직 전송된 적 없는 연속 Yjs 업데이트들을 단일 프레임 상한(`48KB`) 안에서 병합한다.
+ * 오프라인·재연결 대기 중 아직 영속화·전송하지 않은 연속 Yjs 업데이트들을 단일 프레임 상한(`48KB`) 안에서 병합한다.
  * 이미 네트워크 전송을 시도했거나(`attempts > 0`, `inFlight`), 피어 브로드캐스트되었거나,
  * 초안 보호 경계(`draftProtectionBoundary`)에 포함된 항목은 ID 불변성을 위해 병합하지 않는다.
  */
@@ -186,6 +188,7 @@ export function tryCoalescePendingCrdtUpdate(
   if (
     !canCoalesce ||
     !tail ||
+    tail.persistenceStarted ||
     tail.request.writeContext !== undefined || incomingWriteContext !== undefined ||
     tail.attempts > 0 ||
     tail.localBroadcasted ||
