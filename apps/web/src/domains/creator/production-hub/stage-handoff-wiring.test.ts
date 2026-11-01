@@ -25,7 +25,7 @@ describe("stage handoff surface wiring", () => {
     ["ProductionEpisodeReviewRoom.tsx", "review"],
     ["ProductionReviewWorkspace.tsx", "review"],
     ["ProductionManuscriptWorkspace.tsx", "art"],
-    ["ProductionHubPage.tsx", "storyboard"],
+    ["ProductionBoardSurface.tsx", "storyboard"],
     ["ProductionEpisodeOperationsWorkspace.tsx", "operate"],
   ])("%s mounts the handoff section for stage %s", (file, stage) => {
     const source = read(file);
@@ -33,9 +33,19 @@ describe("stage handoff surface wiring", () => {
     expect(source).toContain(`targetStage="${stage}"`);
   });
 
+  it("제작 허브가 지연 로드한 실제 보드 화면을 공정 화면에 마운트한다", () => {
+    const hub = read("ProductionHubPage.tsx");
+    expect(hub).toContain(
+      'const BoardSurface = lazyRetry(() => import("./ProductionBoardSurface").then((module) => ({ default: module.ProductionBoardSurface }))',
+    );
+    expect(hub).toMatch(/case "production":\s*return <BoardSurface \{\.\.\.props\} \/>;/u);
+  });
+
   it("episode-scoped mounts only render with a real episode context", () => {
     expect(read("ProductionManuscriptWorkspace.tsx")).toContain("{episodeId ? (");
-    expect(read("ProductionHubPage.tsx")).toContain("{boardEpisode ? (");
+    const board = read("ProductionBoardSurface.tsx");
+    expect(board).toContain("{boardEpisode ? (");
+    expect(board).toContain("aggregate.episodes.find((episode) => episode.episodeId === boardEpisodeId) ?? null");
     expect(read("ProductionEpisodeOperationsWorkspace.tsx")).toContain("{nextRelease ? (");
   });
 
