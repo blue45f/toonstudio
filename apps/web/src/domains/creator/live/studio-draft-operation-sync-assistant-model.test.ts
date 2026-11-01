@@ -40,6 +40,28 @@ function input(
 }
 
 describe("resolveStudioDraftOperationSyncAssistant", () => {
+  it("정본 전송이 끝나도 오프라인 충돌이 남으면 완료로 표시하지 않는다", () => {
+    const model = resolveStudioDraftOperationSyncAssistant(input({ syncPhase: "synced", pendingCount: 0, offlinePendingCount: 1, offlineConflictCount: 1 }));
+    expect(model.visible).toBe(true);
+    expect(model.tone).toBe("warning");
+    expect(model.compactLabel).toBe("오프라인 변경 1개 검토 필요");
+    expect(model.serverSummary).toContain("아직 확인되지 않았습니다");
+    expect(model.serverSummary).not.toContain("다른 기기에서 이어서 작업");
+  });
+
+  it("충돌 선택을 저장한 뒤에도 서버 승인 전 오프라인 변경을 반영 대기로 유지한다", () => {
+    const model = resolveStudioDraftOperationSyncAssistant(input({ syncPhase: "synced", offlinePendingCount: 1, offlineConflictCount: 0 }));
+    expect(model.visible).toBe(true);
+    expect(model.compactLabel).toBe("오프라인 변경 1개 반영 대기");
+    expect(model.operationSummary).not.toContain("모두 반영");
+  });
+
+  it("오프라인 충돌 안내가 권한 회수 안내를 덮지 않는다", () => {
+    const model = resolveStudioDraftOperationSyncAssistant(input({ syncPhase: "revoked", offlinePendingCount: 1, offlineConflictCount: 1 }));
+    expect(model.tone).toBe("danger");
+    expect(model.compactLabel).toBe("편집 권한 회수됨");
+  });
+
   it("stays quiet while a healthy live context has no work to surface", () => {
     const model = resolveStudioDraftOperationSyncAssistant(input({
       syncPhase: "synced",

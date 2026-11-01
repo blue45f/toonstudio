@@ -1395,6 +1395,7 @@ import type {
   StudioDialogueInterchangeDocument,
 } from "./lettering/studio-dialogue-interchange";
 import type { StudioCrdtDocument } from "./live/studio-crdt-document";
+import type { StudioCrdtSceneGraphChangedIds, StudioCrdtSceneGraphFrontier } from "./live/studio-crdt-history";
 import type { StudioRasterOverlaySourceElement } from "./live/studio-crdt-raster-ui-bridge";
 import type { StudioCommentPinClickPayload } from "./live/StudioLiveCanvasOverlay";
 import type { StudioLivePressureStore } from "./live/StudioLiveInkHosts";
@@ -2242,23 +2243,16 @@ export function StudioCuttoonEditor({
   ]);
   useLayoutEffect(() => {
     if (!studioCrdtDocument || sourceHydrationPending) return;
+    const subscribedRuntime = studioCrdtSceneRuntimeRef.current;
+    let reconciliationActive = true;
     const applyFrontier = (
-      frontier: {
-        strokes: ReturnType<StudioCrdtDocument["getStrokes"]>;
-        sceneElements: ReturnType<StudioCrdtDocument["getSceneElements"]>;
-        pages: ReturnType<StudioCrdtDocument["getPages"]>;
-        layerGroups: ReturnType<StudioCrdtDocument["getLayerGroups"]>;
-      },
-      changedIds: {
-        strokeIds: ReadonlySet<string>;
-        sceneElementIds: ReadonlySet<string>;
-        pageIds: ReadonlySet<string>;
-        layerGroupIds: ReadonlySet<string>;
-      } | null
+      frontier: StudioCrdtSceneGraphFrontier,
+      changedIds: StudioCrdtSceneGraphChangedIds | null,
+      forceOfflineProjection = false
     ) => {
       if (!editorMountedRef.current) return;
       const runtime = studioCrdtSceneRuntimeRef.current;
-      if (!runtime) return;
+      if (!reconciliationActive || !runtime || runtime !== subscribedRuntime) return;
       const currentHistory = pagesHistoryRef.current;
       const currentIndex = Math.max(
         0,
@@ -2271,6 +2265,7 @@ export function StudioCuttoonEditor({
         currentIndex,
         frontier,
         changedIds,
+        forceOfflineProjection,
         referenceSources: readyStudioWorkAssetImageSources(studioWorkAssetHydrator),
       });
       if (!reconciled) return;
@@ -2288,42 +2283,22 @@ export function StudioCuttoonEditor({
       );
       setPagesHistoryState(reconciled.history);
     };
-    applyFrontier({
-      strokes: studioCrdtDocument.getStrokes({ includeDeleted: true }),
-      sceneElements: studioCrdtDocument.getSceneElements({ includeDeleted: true }),
-      pages: studioCrdtDocument.getPages(true),
-      layerGroups: studioCrdtDocument.getLayerGroups({ includeDeleted: true }),
-    }, null);
+    applyFrontier(studioOfflineHost.studioOfflineDocumentFrontier(studioCrdtDocument), null);
     // layout effect 안의 history update와 같은 commit 전 배치로 처리한다. 따라서 stale 로컬
     // 캔버스가 한 프레임 먼저 활성화되는 구간 없이 frontier가 반영된 다음 편집이 열린다.
     setStudioCrdtReconciledDocument(studioCrdtDocument);
-    return studioCrdtDocument.subscribeChanges(
-      (change) => applyFrontier({
-        strokes: change.snapshot.strokes,
-        sceneElements: change.snapshot.sceneElements,
-        pages: change.snapshot.pages,
-        layerGroups: change.snapshot.layerGroups,
-      }, {
-        strokeIds: change.changedStrokeIds,
-        sceneElementIds: change.changedSceneElementIds,
-        pageIds: change.changedPageIds,
-        layerGroupIds: change.changedLayerGroupIds,
-      }),
-      {
-        includeOrigin: (origin) => origin !== STUDIO_CRDT_ORIGIN_LOCAL,
-        includeChange: ({
-          changedStrokeIds,
-          changedSceneElementIds,
-          changedPageIds,
-          changedLayerGroupIds,
-        }) =>
-          changedStrokeIds.size > 0 ||
-          changedSceneElementIds.size > 0 ||
-          changedPageIds.size > 0 ||
-          changedLayerGroupIds.size > 0,
-        snapshotFields: ["strokes", "sceneElements", "pages", "layerGroups"] as const,
-      }
+    const unsubscribeDocument = studioOfflineHost.subscribeStudioOfflineDocumentFrontier(
+      studioCrdtDocument, STUDIO_CRDT_ORIGIN_LOCAL, applyFrontier
     );
+    // 마지막 로컬 제안을 제외해 Yjs 이벤트가 없어도 공유본과 history를 다시 일치시킨다.
+    const unsubscribeOffline = studioCrdtSceneRuntimeRef.current?.offlineBranch?.subscribeProjection(() => {
+      applyFrontier(studioOfflineHost.studioOfflineDocumentFrontier(studioCrdtDocument), null, true);
+    });
+    return () => {
+      reconciliationActive = false;
+      unsubscribeDocument();
+      unsubscribeOffline?.();
+    };
   }, [
     collaborationAccessRef,
     editorMountedRef,

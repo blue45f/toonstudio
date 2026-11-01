@@ -3,6 +3,7 @@ import {
   STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION,
   studioOfflineBranchOperationPayloadHashes,
   studioOfflineBranchPendingOperations,
+  studioOfflineBranchRetainedPayloadOperations,
   type StudioOfflineBranchConflict,
   type StudioOfflineBranchOperation,
   type StudioOfflineBranchReceipt,
@@ -16,6 +17,8 @@ import {
   revertStudioOfflineBranchOperation,
   type StudioOfflinePreparedMutation,
 } from "./studio-offline-branch-scene-bridge";
+import { describeStudioOfflineBranchConflicts, resolveStudioOfflineBranchConflict, collectStudioOfflineBranchPayloads, studioOfflineBranchOperationConflict as operationConflict } from "./studio-offline-branch-conflict-resolution";
+import type { StudioOfflineBranchConflictDetail, StudioOfflineBranchResolveInput, StudioOfflineConflictState } from "./studio-offline-branch-conflict-resolution";
 import { fingerprintStudioOfflineBranchValue } from "./studio-offline-branch-payload";
 import {
   createProductStudioOfflineBranchStorage,
@@ -30,6 +33,8 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioCrdtDraftProtectionBarrierResult } from "../live/studio-crdt-room-binding";
 import type { StudioCanvasMutationIntent } from "../live/studio-live-canvas-mutation-gate";
 import type { PageState } from "../studio-page-state";
+
+export type { StudioOfflineBranchConflictDetail, StudioOfflineBranchResolveInput } from "./studio-offline-branch-conflict-resolution";
 
 const ZERO_CONTENT_HASH = `sha256:${"0".repeat(64)}`;
 
@@ -113,20 +118,6 @@ function equalOfflinePayloadBytes(
   return true;
 }
 
-function operationConflict(
-  operation: StudioOfflineBranchOperation,
-  code: StudioOfflineBranchConflict["code"],
-  message: string,
-  detectedAt: number,
-): StudioOfflineBranchConflict {
-  return {
-    operationId: operation.id,
-    code,
-    message: message.slice(0, STUDIO_OFFLINE_BRANCH_LIMITS.maxMessageLength),
-    detectedAt,
-  };
-}
-
 export class StudioOfflineBranchRuntime {
   private readonly workId: string;
   private readonly scope: string;
@@ -137,13 +128,17 @@ export class StudioOfflineBranchRuntime {
   private readonly randomId: () => string;
   private readonly onError: (message: string) => void;
   private readonly listeners = new Set<(status: StudioOfflineBranchRuntimeStatus) => void>();
+  private readonly projectionListeners = new Set<() => void>();
   private readonly payloads = new Map<string, Uint8Array>();
   private readonly optimistic = new Map<string, OptimisticEntry>();
   private canonicalPages: PageState[] = [];
   private snapshotValue: StudioOfflineBranchSnapshot;
+  private durableSnapshot: StudioOfflineBranchSnapshot;
   private canonicalAuthorityValue: boolean;
   private proposalDepth = 0;
   private closed = false;
+  private closing = false;
+  private resolutionRecoveryRequired = false;
   private serial: Promise<unknown> = Promise.resolve();
   private lastOperationCreatedAt = 0;
 
@@ -162,6 +157,7 @@ export class StudioOfflineBranchRuntime {
     this.randomId = options.randomId ?? defaultRandomId;
     this.onError = options.onError ?? (() => undefined);
     this.snapshotValue = snapshot;
+    this.durableSnapshot = snapshot;
     this.canonicalAuthorityValue = options.canonicalAuthority;
     this.lastOperationCreatedAt = snapshot.operations.reduce(
       (maximum, operation) => Math.max(maximum, operation.createdAt),
@@ -190,6 +186,14 @@ export class StudioOfflineBranchRuntime {
     return runtime;
   }
 
+  private adoptSnapshot(snapshot: StudioOfflineBranchSnapshot): void {
+    this.snapshotValue = snapshot;
+    this.lastOperationCreatedAt = Math.max(this.lastOperationCreatedAt, snapshot.branch.updatedAt);
+    for (const operation of snapshot.operations) {
+      this.lastOperationCreatedAt = Math.max(this.lastOperationCreatedAt, operation.createdAt);
+    }
+  }
+
   get status(): StudioOfflineBranchRuntimeStatus {
     const pending = studioOfflineBranchPendingOperations(this.snapshotValue).length
       + this.optimistic.size;
@@ -198,8 +202,10 @@ export class StudioOfflineBranchRuntime {
       pendingOperations: pending,
       conflicts: Object.keys(this.snapshotValue.conflicts).length,
       canonicalAuthority: this.canonicalAuthorityValue,
-      durability: this.storage.status.durability,
-      storageMessage: this.storage.status.message,
+      durability: this.resolutionRecoveryRequired ? "memory-only" : this.storage.status.durability,
+      storageMessage: this.resolutionRecoveryRequired
+        ? "오프라인 보관함을 다시 열어 복구해야 합니다. 원래 변경 자료는 유지했습니다."
+        : this.storage.status.message,
     };
   }
 
@@ -218,15 +224,89 @@ export class StudioOfflineBranchRuntime {
     for (const listener of this.listeners) listener(status);
   }
 
+  subscribeProjection(listener: () => void): () => void {
+    this.projectionListeners.add(listener);
+    return () => this.projectionListeners.delete(listener);
+  }
+
+  private notifyProjection(): void {
+    if (this.closed || this.closing) return;
+    for (const listener of this.projectionListeners) listener();
+  }
+
+  private conflictState(): StudioOfflineConflictState {
+    return { snapshot: this.snapshotValue, canonicalPages: this.canonicalPages,
+      actorId: this.actorId, canonicalAuthority: this.canonicalAuthorityValue,
+      writable: !this.closed && !this.closing && !this.resolutionRecoveryRequired,
+      payloads: this.payloads };
+  }
+
+  conflictDetails(): readonly StudioOfflineBranchConflictDetail[] {
+    return describeStudioOfflineBranchConflicts(this.conflictState());
+  }
+
+  resolveConflict(input: StudioOfflineBranchResolveInput): Promise<void> {
+    return this.enqueue(async () => {
+      await this.persistOptimisticEntries([...this.optimistic.values()]);
+      await this.ensureCurrentDocumentDurable();
+      try {
+        const snapshot = await resolveStudioOfflineBranchConflict(input, {
+          current: () => this.conflictState(), storage: this.storage, worker: this.worker,
+          payloads: this.payloads, nextOperationTime: () => this.nextOperationTime(),
+          randomId: this.randomId,
+          operationTimeFloor: () => Math.max(this.now(), this.lastOperationCreatedAt, this.snapshotValue.branch.updatedAt),
+          prepareOperation: (mutation, id, createdAt) => this.optimisticOperation(mutation, id, createdAt),
+          persistDocument: (snapshot) => this.persistDocument(snapshot),
+          restoreFailedWorkerChange: (snapshot, bytes) => this.restoreFailedWorkerChange(snapshot, bytes),
+        });
+        this.adoptSnapshot(snapshot);
+        this.notify();
+        this.notifyProjection();
+      } catch (cause) {
+        this.notify();
+        throw cause;
+      }
+    });
+  }
+
+  private async restoreFailedWorkerChange(
+    previousSnapshot: StudioOfflineBranchSnapshot,
+    previousBytes: Uint8Array,
+  ): Promise<void> {
+    // 실패한 결정이 피어로 전파되지 않도록 Worker와 기기 저널의 기준을 함께 복구한다.
+    try {
+      this.adoptSnapshot(await this.worker.open({
+        id: previousSnapshot.branch.id, workId: this.workId, scope: this.scope,
+        actorId: this.actorId, baseRevision: previousSnapshot.branch.baseRevision,
+        createdAt: previousSnapshot.branch.createdAt,
+      }, previousBytes));
+      await this.storage.saveDocument(this.scope, this.workId, previousBytes, previousSnapshot);
+      this.durableSnapshot = previousSnapshot;
+    } catch {
+      this.adoptSnapshot(previousSnapshot);
+      this.resolutionRecoveryRequired = true;
+      this.onError("오프라인 보관함을 다시 열어 복구해야 합니다. 원래 변경 자료는 유지했습니다.");
+    }
+  }
+
   private enqueue<T>(task: () => Promise<T>): Promise<T> {
-    if (this.closed) return Promise.reject(new Error("offline branch runtime is closed"));
-    const next = this.serial.then(task, task);
+    if (this.closed || this.closing || this.resolutionRecoveryRequired) {
+      return Promise.reject(new Error("오프라인 보관함이 닫히거나 복구 중입니다."));
+    }
+    const run = (): Promise<T> => {
+      // 정상 종료는 이미 수락한 저장 큐를 비운다. 복구 실패 뒤의 큐는 실행하지 않는다.
+      if (this.closed || this.resolutionRecoveryRequired) {
+        return Promise.reject(new Error("오프라인 보관함이 닫히거나 복구 중입니다."));
+      }
+      return task();
+    };
+    const next = this.serial.then(run, run);
     this.serial = next.then(() => undefined, () => undefined);
     return next;
   }
 
   private nextOperationTime(): number {
-    const selected = Math.max(this.now(), this.lastOperationCreatedAt + 1);
+    const selected = Math.max(this.now(), this.lastOperationCreatedAt + 1, this.snapshotValue.branch.updatedAt + 1);
     this.lastOperationCreatedAt = selected;
     return selected;
   }
@@ -242,7 +322,7 @@ export class StudioOfflineBranchRuntime {
     readonly elementIds: readonly string[];
     readonly intent: StudioCanvasMutationIntent;
   }): boolean {
-    if (this.closed) return false;
+    if (this.closed || this.closing || this.resolutionRecoveryRequired) return false;
     this.proposalDepth += 1;
     return true;
   }
@@ -257,6 +337,7 @@ export class StudioOfflineBranchRuntime {
 
   observeCanonicalPages(pages: readonly PageState[]): void {
     this.canonicalPages = clonePages(pages);
+    this.notify();
   }
 
   canonicalPagesSnapshot(): PageState[] {
@@ -277,6 +358,7 @@ export class StudioOfflineBranchRuntime {
         predecessor = operation;
       }
     };
+    // 처리한 원본도 이력의 식별자로 유지해 이후 같은 의도의 새 편집을 dedupe로 버리지 않는다.
     for (const operation of this.snapshotValue.operations) consider(operation);
     for (const entry of this.optimistic.values()) consider(entry.operation);
     return predecessor;
@@ -347,6 +429,11 @@ export class StudioOfflineBranchRuntime {
     previousPages: readonly PageState[],
     nextPages: readonly PageState[],
   ): StudioOfflineBranchStageResult {
+    if (this.closed || this.closing || this.resolutionRecoveryRequired) {
+      const message = "오프라인 보관함이 닫히거나 복구 중입니다. 원래 변경은 유지했습니다.";
+      this.onError(message);
+      return stageResult(false, 0, [message]);
+    }
     const plan = planStudioOfflineSceneTransition(previousPages, nextPages);
     if (plan.unsupported.length > 0) {
       this.onError(plan.unsupported.join("\n"));
@@ -434,7 +521,7 @@ export class StudioOfflineBranchRuntime {
       Math.max(this.now(), this.lastOperationCreatedAt),
     );
     await this.persistDocument(appended.snapshot);
-    this.snapshotValue = appended.snapshot;
+    this.adoptSnapshot(appended.snapshot);
     for (const entry of entries) this.optimistic.delete(entry.operation.id);
     this.notify();
   }
@@ -519,43 +606,41 @@ export class StudioOfflineBranchRuntime {
       }
     }
     if (conflicts.length > 0) {
-      this.snapshotValue = await this.worker.recordConflicts(conflicts, this.now());
+      this.adoptSnapshot(await this.worker.recordConflicts(conflicts, this.now()));
     }
+  }
+
+  private async ensureCurrentDocumentDurable(): Promise<void> {
+    if (this.snapshotValue !== this.durableSnapshot) await this.persistDocument();
   }
 
   private async persistDocument(
     snapshot = this.snapshotValue,
   ): Promise<void> {
     const bytes = await this.worker.save();
-    await this.storage.saveDocument(this.scope, this.workId, bytes, snapshot);
-    const hashes = studioOfflineBranchPendingOperations(snapshot)
+    const hashes = [...studioOfflineBranchRetainedPayloadOperations(snapshot),
+      ...studioOfflineBranchRetainedPayloadOperations(this.durableSnapshot)]
       .flatMap(studioOfflineBranchOperationPayloadHashes);
+    // 새 저널보다 payload 참조를 먼저 보호한다. 문서 쓰기 실패 시 이전 참조도 유지된다.
     await this.storage.setPayloadRefs(this.scope, this.workId, [...new Set(hashes)]);
+    await this.storage.saveDocument(this.scope, this.workId, bytes, snapshot);
+    this.durableSnapshot = snapshot;
   }
 
-  async exportPeerDocument(): Promise<Uint8Array> {
-    await this.enqueue(() =>
-      this.persistOptimisticEntries([...this.optimistic.values()])
-    );
-    return this.worker.save();
+  exportPeerDocument(): Promise<Uint8Array> {
+    return this.enqueue(async () => {
+      await this.persistOptimisticEntries([...this.optimistic.values()]);
+      await this.ensureCurrentDocumentDurable();
+      return this.worker.save();
+    });
   }
 
-  async peerPayloads(): Promise<readonly { hash: string; bytes: Uint8Array }[]> {
-    await this.enqueue(() =>
-      this.persistOptimisticEntries([...this.optimistic.values()])
-    );
-    const hashes = new Set(
-      studioOfflineBranchPendingOperations(this.snapshotValue)
-        .flatMap(studioOfflineBranchOperationPayloadHashes),
-    );
-    const payloads: Array<{ hash: string; bytes: Uint8Array }> = [];
-    for (const hash of hashes) {
-      const bytes = this.payloads.get(hash) ?? await this.storage.getPayload(hash);
-      if (!bytes) continue;
-      this.payloads.set(hash, Uint8Array.from(bytes));
-      payloads.push({ hash, bytes: Uint8Array.from(bytes) });
-    }
-    return payloads;
+  peerPayloads(): Promise<readonly { hash: string; bytes: Uint8Array }[]> {
+    return this.enqueue(async () => {
+      await this.persistOptimisticEntries([...this.optimistic.values()]);
+      await this.ensureCurrentDocumentDurable();
+      return collectStudioOfflineBranchPayloads(this.snapshotValue, this.payloads, this.storage);
+    });
   }
 
   async acceptPeerPayload(hash: string, bytes: Uint8Array): Promise<void> {
@@ -570,12 +655,22 @@ export class StudioOfflineBranchRuntime {
   ): Promise<{ changed: boolean; replyNeeded: boolean }> {
     return this.enqueue(async () => {
       await this.persistOptimisticEntries([...this.optimistic.values()]);
-      const imported = await this.worker.importPeerDocument(bytes, this.now());
-      this.snapshotValue = imported.snapshot;
-      await this.hydratePayloads();
-      await this.persistDocument();
-      this.notify();
-      return { changed: imported.changed, replyNeeded: imported.replyNeeded };
+      await this.ensureCurrentDocumentDurable();
+      const previousSnapshot = this.snapshotValue;
+      const previousBytes = await this.worker.save();
+      try {
+        const imported = await this.worker.importPeerDocument(bytes, this.now());
+        this.adoptSnapshot(imported.snapshot);
+        await this.hydratePayloads();
+        await this.persistDocument();
+        this.notify();
+        if (imported.changed) this.notifyProjection();
+        return { changed: imported.changed, replyNeeded: imported.replyNeeded };
+      } catch (cause) {
+        await this.restoreFailedWorkerChange(previousSnapshot, previousBytes);
+        this.notify();
+        throw cause;
+      }
     });
   }
 
@@ -654,10 +749,10 @@ export class StudioOfflineBranchRuntime {
       }
 
       if (conflicts.length > 0) {
-        this.snapshotValue = await this.worker.recordConflicts(conflicts, this.now());
+        this.adoptSnapshot(await this.worker.recordConflicts(conflicts, this.now()));
       }
       if (localReceipts.length > 0) {
-        this.snapshotValue = await this.worker.recordReceipts(localReceipts, this.now());
+        this.adoptSnapshot(await this.worker.recordReceipts(localReceipts, this.now()));
         this.canonicalPages = canonical;
         await this.persistDocument();
       }
@@ -675,7 +770,7 @@ export class StudioOfflineBranchRuntime {
           serverSequence: protection.serverSequence,
           appliedAt: protection.acknowledgedAt ?? this.now(),
         }));
-        this.snapshotValue = await this.worker.recordReceipts(serverReceipts, this.now());
+        this.adoptSnapshot(await this.worker.recordReceipts(serverReceipts, this.now()));
         await this.persistDocument();
       }
       this.notify();
@@ -683,13 +778,20 @@ export class StudioOfflineBranchRuntime {
   }
 
   async close(): Promise<void> {
-    if (this.closed) return;
-    await this.serial;
-    await this.persistOptimisticEntries([...this.optimistic.values()]);
-    await this.persistDocument();
-    this.closed = true;
-    this.listeners.clear();
-    await this.worker.close();
+    if (this.closed || this.closing) return;
+    this.closing = true;
+    try {
+      await this.serial;
+      if (!this.resolutionRecoveryRequired) {
+        await this.persistOptimisticEntries([...this.optimistic.values()]);
+        await this.persistDocument();
+      }
+    } finally {
+      this.closed = true;
+      this.listeners.clear();
+      this.projectionListeners.clear();
+      await this.worker.close();
+    }
   }
 }
 

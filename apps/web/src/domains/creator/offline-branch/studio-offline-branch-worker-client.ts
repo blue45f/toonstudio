@@ -3,6 +3,7 @@ import type {
   StudioOfflineBranchConflict,
   StudioOfflineBranchOperation,
   StudioOfflineBranchReceipt,
+  StudioOfflineBranchResolution,
   StudioOfflineBranchSnapshot,
 } from "./studio-offline-branch-contract";
 import type {
@@ -40,6 +41,11 @@ export interface StudioOfflineBranchWorkerClientOptions {
 }
 
 export interface StudioOfflineBranchWorkerPort {
+  resolveConflict(
+    resolution: StudioOfflineBranchResolution,
+    replacement: StudioOfflineBranchOperation | null,
+    updatedAt: number,
+  ): Promise<StudioOfflineBranchSnapshot>;
   open(
     input: CreateStudioOfflineBranchInput,
     bytes: Uint8Array | null,
@@ -161,6 +167,18 @@ export class StudioOfflineBranchWorkerClient implements StudioOfflineBranchWorke
     const result = await this.request({ type: "conflicts", conflicts, updatedAt });
     if (result.kind !== "updated") {
       throw new Error("offline branch worker returned an invalid conflict result");
+    }
+    return result.snapshot;
+  }
+
+  async resolveConflict(
+    resolution: StudioOfflineBranchResolution,
+    replacement: StudioOfflineBranchOperation | null,
+    updatedAt: number,
+  ): Promise<StudioOfflineBranchSnapshot> {
+    const result = await this.request({ type: "resolve-conflict", resolution, replacement, updatedAt });
+    if (result.kind !== "updated") {
+      throw new Error("오프라인 충돌 처리 결과를 확인하지 못했습니다.");
     }
     return result.snapshot;
   }

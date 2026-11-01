@@ -9,9 +9,9 @@ import type { StudioLiveRoom } from "../live/studio-live-collaboration-room";
 import type { StudioPeerFabricEvent } from "../live/studio-peer-fabric";
 import type { StudioOfflineBranchRuntime } from "./studio-offline-branch-runtime";
 
-const HELLO_WIRE = "studio-offline-branch-hello-v2" as const;
+const HELLO_WIRE = "studio-offline-branch-hello-v3" as const;
 const MIME = "application/vnd.toonstudio.offline-branch+binary";
-const CAPABILITY = "offline-branch-v1" as const;
+const CAPABILITY = "offline-branch-resolutions-v1" as const;
 
 interface StudioOfflineBranchHello {
   readonly wire: typeof HELLO_WIRE;
@@ -185,7 +185,8 @@ export function connectStudioOfflineBranchPeerSync({
     });
   };
   const unsubscribeRuntime = runtime.subscribe((status) => {
-    if (status.pendingOperations > 0 || status.state === "conflicted") announce();
+    if (status.pendingOperations > 0 || status.state === "conflicted"
+      || Object.keys(runtime.snapshot.resolutions ?? {}).length > 0) announce();
   });
   announce();
 

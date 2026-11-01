@@ -15,18 +15,7 @@ import type { DrawEl } from "../studio-element-model";
 import type { StudioCrdtSceneGraphRuntime } from "../live/StudioLiveCollaborationProvider";
 import type { StudioDeferredStrokeCommitEngineContext } from "../studio-cuttoon-editor/studio-deferred-stroke-commit";
 import type { PageState } from "../studio-page-state";
-import type {
-  CreateStudioOfflineBranchInput,
-  StudioOfflineBranchImportResult,
-} from "./studio-offline-branch-automerge";
-import type {
-  StudioOfflineBranchConflict,
-  StudioOfflineBranchOperation,
-  StudioOfflineBranchReceipt,
-  StudioOfflineBranchSnapshot,
-} from "./studio-offline-branch-contract";
-import type { StudioOfflineBranchStorage } from "./studio-offline-branch-storage";
-import type { StudioOfflineBranchWorkerPort } from "./studio-offline-branch-worker-client";
+import { MemoryStorage, InlineWorker, runtimeOptions } from "./studio-offline-branch-runtime.test-support";
 
 beforeAll(async () => {
   await initializeStudioOfflineBranchAutomerge();
@@ -53,134 +42,6 @@ function stroke(id: string, y: number): DrawEl {
     stroke: "#111111",
     strokeWidth: 4,
     opacity: 1,
-  };
-}
-
-async function sha256(bytes: Uint8Array): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", Uint8Array.from(bytes));
-  return `sha256:${Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0")).join("")}`;
-}
-
-class MemoryStorage implements StudioOfflineBranchStorage {
-  readonly status = {
-    durability: "durable" as const,
-    message: "test storage",
-  };
-  private readonly documents = new Map<string, Uint8Array>();
-  private readonly payloads = new Map<string, Uint8Array>();
-
-  private key(scope: string, workId: string): string {
-    return `${scope}:${workId}`;
-  }
-
-  async loadDocument(scope: string, workId: string): Promise<Uint8Array | null> {
-    const value = this.documents.get(this.key(scope, workId));
-    return value ? Uint8Array.from(value) : null;
-  }
-
-  async saveDocument(
-    scope: string,
-    workId: string,
-    bytes: Uint8Array,
-  ): Promise<void> {
-    this.documents.set(this.key(scope, workId), Uint8Array.from(bytes));
-  }
-
-  async putPayload(bytes: Uint8Array): Promise<{ hash: `sha256:${string}`; bytes: number }> {
-    const hash = await sha256(bytes) as `sha256:${string}`;
-    this.payloads.set(hash, Uint8Array.from(bytes));
-    return { hash, bytes: bytes.byteLength };
-  }
-
-  async getPayload(hash: string): Promise<Uint8Array | null> {
-    const value = this.payloads.get(hash);
-    return value ? Uint8Array.from(value) : null;
-  }
-
-  async setPayloadRefs(): Promise<void> {}
-
-  async deleteDocument(scope: string, workId: string): Promise<void> {
-    this.documents.delete(this.key(scope, workId));
-  }
-}
-
-class InlineWorker implements StudioOfflineBranchWorkerPort {
-  private engine: StudioOfflineBranchAutomergeEngine | null = null;
-
-  async open(
-    input: CreateStudioOfflineBranchInput,
-    bytes: Uint8Array | null,
-  ): Promise<StudioOfflineBranchSnapshot> {
-    this.engine = bytes
-      ? StudioOfflineBranchAutomergeEngine.load(bytes, input)
-      : StudioOfflineBranchAutomergeEngine.create(input);
-    return this.engine.snapshot();
-  }
-
-  async append(
-    operations: readonly StudioOfflineBranchOperation[],
-    updatedAt: number,
-  ): Promise<{ count: number; snapshot: StudioOfflineBranchSnapshot }> {
-    const count = this.requireEngine().append(operations, updatedAt);
-    return { count, snapshot: this.requireEngine().snapshot() };
-  }
-
-  async recordReceipts(
-    receipts: readonly StudioOfflineBranchReceipt[],
-    updatedAt: number,
-  ): Promise<StudioOfflineBranchSnapshot> {
-    this.requireEngine().recordReceipts(receipts, updatedAt);
-    return this.requireEngine().snapshot();
-  }
-
-  async recordConflicts(
-    conflicts: readonly StudioOfflineBranchConflict[],
-    updatedAt: number,
-  ): Promise<StudioOfflineBranchSnapshot> {
-    this.requireEngine().recordConflicts(conflicts, updatedAt);
-    return this.requireEngine().snapshot();
-  }
-
-  async snapshot(): Promise<StudioOfflineBranchSnapshot> {
-    return this.requireEngine().snapshot();
-  }
-
-  async save(): Promise<Uint8Array> {
-    return this.requireEngine().save();
-  }
-
-  async importPeerDocument(
-    bytes: Uint8Array,
-    updatedAt: number,
-  ): Promise<StudioOfflineBranchImportResult & { snapshot: StudioOfflineBranchSnapshot }> {
-    const imported = this.requireEngine().importDocument(bytes, updatedAt);
-    return { ...imported, snapshot: this.requireEngine().snapshot() };
-  }
-
-  async close(): Promise<void> {
-    this.engine?.close();
-    this.engine = null;
-  }
-
-  private requireEngine(): StudioOfflineBranchAutomergeEngine {
-    if (!this.engine) throw new Error("worker is not open");
-    return this.engine;
-  }
-}
-
-function runtimeOptions(storage: MemoryStorage, actorId = "user-1") {
-  let time = 1_000;
-  let id = 0;
-  return {
-    workId: "work-1",
-    scope: "user-1",
-    actorId,
-    canonicalAuthority: false,
-    storage,
-    worker: new InlineWorker(),
-    now: () => ++time,
-    randomId: () => `id-${++id}`,
   };
 }
 
@@ -594,4 +455,280 @@ describe("StudioOfflineBranchRuntime", () => {
     document.destroy();
     await runtime.close();
   });
+});
+
+
+async function conflictedGroupRuntime(storage = new MemoryStorage(), worker = new InlineWorker()) {
+  const runtime = await StudioOfflineBranchRuntime.create({ ...runtimeOptions(storage), worker });
+  runtime.stageSceneTransition([page("선화")], [page("내 채색")]);
+  await runtime.exportPeerDocument();
+  const shared = [page("팀 검수")];
+  runtime.observeCanonicalPages(shared);
+  runtime.setCanonicalAuthority(true);
+  const document = new StudioCrdtDocument();
+  document.addLayerGroup({ id: "group-1", pageId: "page-1",
+    payload: { version: 1, props: { name: "팀 검수", hidden: false, locked: false } } });
+  const protect = vi.fn(async () => ({ protection: "server" as const,
+    serverSequence: "99", acknowledgedAt: 9_000, protectedUpdateIds: [] }));
+  await runtime.promotePending(document, protect);
+  expect(runtime.status.conflicts).toBe(1);
+  expect(protect).not.toHaveBeenCalled();
+  return { runtime, document, shared, protect, storage };
+}
+
+describe("오프라인 충돌의 사용자 선택", () => {
+  it("공유본을 유지하면 서버 변경 없이 원본과 선택을 영속 보존하고 재열기 뒤 되살아나지 않는다", async () => {
+    const { runtime, document, shared, storage } = await conflictedGroupRuntime();
+    const original = runtime.snapshot.operations[0];
+    if (!original?.payloadHash || !original.previousPayloadHash) throw new Error("원본과 이전 payload가 필요합니다.");
+    const changed = vi.fn();
+    const unsubscribe = runtime.subscribeProjection(changed);
+    const conflict = runtime.conflictDetails()[0];
+    if (!conflict) throw new Error("원래 충돌이 필요합니다.");
+    await runtime.resolveConflict({ operationId: conflict.operationId, action: "keep-canonical",
+      expectedCanonicalFingerprint: conflict.canonicalFingerprint });
+    expect(runtime.status.pendingOperations).toBe(0);
+    expect(runtime.status.conflicts).toBe(0);
+    expect(runtime.snapshot.operations).toHaveLength(1);
+    expect(runtime.snapshot.receipts[original.id]).toBeUndefined();
+    expect(document.getLayerGroup("page-1", "group-1")?.payload.props.name).toBe("팀 검수");
+    expect(runtime.projectPages(shared)).toEqual(shared);
+    expect(changed).toHaveBeenCalledOnce();
+    expect(storage.references.has(original.payloadHash)).toBe(true);
+    expect(storage.references.has(original.previousPayloadHash)).toBe(true);
+    unsubscribe();
+    await runtime.close();
+    const reopened = await StudioOfflineBranchRuntime.create(runtimeOptions(storage));
+    expect(reopened.status.pendingOperations).toBe(0);
+    expect(reopened.status.conflicts).toBe(0);
+    expect(reopened.projectPages(shared)).toEqual(shared);
+    expect(reopened.snapshot.operations).toHaveLength(1);
+    await reopened.close(); document.destroy();
+  });
+
+  it("내 변경은 현재 공유본을 기준으로 새 작업을 만들고 서버 ACK 뒤에만 완료된다", async () => {
+    const { runtime, document, shared, protect } = await conflictedGroupRuntime();
+    const original = runtime.snapshot.operations[0];
+    const detail = runtime.conflictDetails()[0];
+    if (!original || !detail) throw new Error("원래 작업과 충돌이 필요합니다.");
+    await runtime.resolveConflict({ operationId: detail.operationId, action: "reapply-local",
+      expectedCanonicalFingerprint: detail.canonicalFingerprint });
+    const replacement = runtime.snapshot.operations.find((operation) => operation.id !== original.id);
+    if (!replacement) throw new Error("재적용한 새 작업이 필요합니다.");
+    expect(replacement.expectedFingerprint).toBe(detail.canonicalFingerprint);
+    expect(replacement.previousPayloadHash).not.toBe(original.previousPayloadHash);
+    expect(runtime.snapshot.receipts[original.id]).toBeUndefined();
+    expect(runtime.snapshot.receipts[replacement.id]).toBeUndefined();
+    expect(runtime.status.pendingOperations).toBe(1);
+    expect(runtime.reconstructCanonicalPages(runtime.projectPages(shared))).toEqual(shared);
+    await runtime.promotePending(document, protect);
+    expect(document.getLayerGroup("page-1", "group-1")?.payload.props.name).toBe("내 채색");
+    expect(runtime.snapshot.receipts[replacement.id]?.state).toBe("server");
+    expect(runtime.status.pendingOperations).toBe(0);
+    await runtime.close(); document.destroy();
+  });
+
+  it("오래된 선택과 저장 실패는 성공으로 표시하지 않고 원래 충돌을 유지한다", async () => {
+    const { runtime, document, storage } = await conflictedGroupRuntime();
+    const detail = runtime.conflictDetails()[0];
+    if (!detail) throw new Error("원래 충돌이 필요합니다.");
+    runtime.observeCanonicalPages([page("팀 수정")]);
+    await expect(runtime.resolveConflict({ operationId: detail.operationId, action: "reapply-local",
+      expectedCanonicalFingerprint: detail.canonicalFingerprint })).rejects.toThrow("공유 원고가 변경됐습니다");
+    expect(runtime.status.pendingOperations).toBe(1);
+    const refreshed = runtime.conflictDetails()[0];
+    if (!refreshed) throw new Error("현재 공유본의 충돌이 필요합니다.");
+    storage.failNextSave = true;
+    await expect(runtime.resolveConflict({ operationId: refreshed.operationId, action: "keep-canonical",
+      expectedCanonicalFingerprint: refreshed.canonicalFingerprint })).rejects.toThrow("기기 저장에 실패했습니다");
+    expect(runtime.status.conflicts).toBe(1);
+    expect(runtime.status.pendingOperations).toBe(1);
+    const exportedAfterFailure = await runtime.exportPeerDocument();
+    const recovered = StudioOfflineBranchAutomergeEngine.load(exportedAfterFailure,
+      { workId: "work-1", scope: "user-1", actorId: "user-1" });
+    expect(Object.keys(recovered.snapshot().resolutions ?? {})).toHaveLength(0);
+    expect(recovered.snapshot().operations).toHaveLength(1);
+    recovered.close();
+    await runtime.promotePending(document, async () => { throw new Error("충돌 작업은 승격하면 안 됩니다."); });
+    expect(runtime.status.pendingOperations).toBe(1);
+    await runtime.resolveConflict({ operationId: refreshed.operationId, action: "keep-canonical",
+      expectedCanonicalFingerprint: refreshed.canonicalFingerprint });
+    expect(runtime.status.pendingOperations).toBe(0);
+    expect(runtime.snapshot.operations).toHaveLength(1);
+    await runtime.close(); document.destroy();
+  });
+
+  it("편집 권한 회수 뒤 재적용은 막고 로컬 원본은 유지한다", async () => {
+    const { runtime, document } = await conflictedGroupRuntime();
+    runtime.setCanonicalAuthority(false);
+    const detail = runtime.conflictDetails()[0];
+    if (!detail) throw new Error("원래 충돌이 필요합니다.");
+    expect(detail.canReapplyLocal).toBe(false);
+    await expect(runtime.resolveConflict({ operationId: detail.operationId, action: "reapply-local",
+      expectedCanonicalFingerprint: detail.canonicalFingerprint })).rejects.toThrow("공유 원고에 연결");
+    expect(runtime.status.conflicts).toBe(1);
+    expect(runtime.snapshot.operations).toHaveLength(1);
+    await runtime.close(); document.destroy();
+  });
+});
+
+
+it("복구 실패 전에 대기열에 들어간 내보내기도 실행 직전 차단한다", async () => {
+  const worker = new InlineWorker();
+  const { runtime, document, storage } = await conflictedGroupRuntime(new MemoryStorage(), worker);
+  let release: () => void = () => { throw new Error("저장 대기가 준비되지 않았습니다."); };
+  let entered: () => void = () => { throw new Error("진입 대기가 준비되지 않았습니다."); };
+  const blocked = new Promise<void>((resolve) => { release = resolve; });
+  const started = new Promise<void>((resolve) => { entered = resolve; });
+  storage.beforeSave = async () => {
+    storage.beforeSave = null;
+    entered();
+    await blocked;
+    throw new Error("기기 저장에 실패했습니다.");
+  };
+  const detail = runtime.conflictDetails()[0];
+  if (!detail) throw new Error("충돌이 필요합니다.");
+  const resolving = runtime.resolveConflict({ operationId: detail.operationId,
+    action: "keep-canonical", expectedCanonicalFingerprint: detail.canonicalFingerprint });
+  const resolutionFailure = expect(resolving).rejects.toThrow("기기 저장에 실패했습니다");
+  await started;
+  worker.failOpen = true;
+  const queuedExport = runtime.exportPeerDocument();
+  const exportFailure = expect(queuedExport).rejects.toThrow("복구 중");
+  const saveCallsBeforeFailure = worker.saveCalls;
+  release();
+  await resolutionFailure;
+  await exportFailure;
+  expect(worker.saveCalls).toBe(saveCallsBeforeFailure);
+  expect(runtime.status.pendingOperations).toBe(1);
+  expect(runtime.status.durability).toBe("memory-only");
+  await runtime.close();
+  document.destroy();
+});
+
+it.each(["keep-canonical", "reapply-local"] as const)("앞선 시계의 피어 작업을 가져온 뒤에도 %s 선택 시각은 단조 증가한다", async (action) => {
+  const { runtime, document } = await conflictedGroupRuntime();
+  const original = runtime.snapshot.operations[0];
+  if (!original) throw new Error("원래 작업이 필요합니다.");
+  const peer = StudioOfflineBranchAutomergeEngine.load(await runtime.exportPeerDocument(),
+    { workId: "work-1", scope: "user-1", actorId: "user-1" });
+  peer.append([{ ...original, id: "future-operation", dedupeKey: "future-edit", createdAt: 1_000_000 }], 1_000_000);
+  const peerBytes = peer.save();
+  peer.close();
+  await runtime.importPeerDocument("future-peer", peerBytes);
+  const detail = runtime.conflictDetails().find((candidate) => candidate.operationId === original.id);
+  if (!detail) throw new Error("원래 충돌이 필요합니다.");
+  await runtime.resolveConflict({ operationId: original.id, action,
+    expectedCanonicalFingerprint: detail.canonicalFingerprint });
+  expect(runtime.snapshot.resolutions?.[original.id]?.resolvedAt).toBeGreaterThanOrEqual(1_000_000);
+  if (action === "reapply-local") {
+    expect(runtime.snapshot.operations.some((operation) => operation.createdAt > 1_000_000)).toBe(true);
+  }
+  await runtime.close(); document.destroy();
+});
+
+
+it("새 이전 payload를 저널 쓰기 전에 보호하고 저장 실패 뒤에도 원래 참조를 유지한다", async () => {
+  const { runtime, document, storage } = await conflictedGroupRuntime();
+  const detail = runtime.conflictDetails()[0];
+  if (!detail) throw new Error("충돌이 필요합니다.");
+  let protectedBeforeWrite = false;
+  storage.beforeSave = async (bytes) => {
+    storage.beforeSave = null;
+    const candidate = StudioOfflineBranchAutomergeEngine.load(bytes,
+      { workId: "work-1", scope: "user-1", actorId: "user-1" });
+    const selected = candidate.snapshot().resolutions?.[detail.operationId];
+    const replacement = candidate.snapshot().operations.find((operation) => operation.id === selected?.replacementOperationId);
+    if (!replacement?.previousPayloadHash) throw new Error("현재 공유본을 보관한 참조가 필요합니다.");
+    protectedBeforeWrite = storage.references.has(replacement.previousPayloadHash);
+    candidate.close();
+    throw new Error("저널 쓰기를 중단했습니다.");
+  };
+  await expect(runtime.resolveConflict({ operationId: detail.operationId, action: "reapply-local",
+    expectedCanonicalFingerprint: detail.canonicalFingerprint })).rejects.toThrow("저널 쓰기를 중단");
+  expect(protectedBeforeWrite).toBe(true);
+  const original = runtime.snapshot.operations[0];
+  if (!original?.payloadHash || !original.previousPayloadHash) throw new Error("원래 payload 참조가 필요합니다.");
+  expect(storage.references.has(original.payloadHash)).toBe(true);
+  expect(storage.references.has(original.previousPayloadHash)).toBe(true);
+  expect(runtime.snapshot.operations).toHaveLength(1);
+  expect(runtime.status.pendingOperations).toBe(1);
+  await runtime.close(); document.destroy();
+});
+
+it("정상 종료는 이미 수락한 저장·내보내기 큐를 비우고 다음 실행에 변경을 남긴다", async () => {
+  const storage = new MemoryStorage();
+  const runtime = await StudioOfflineBranchRuntime.create(runtimeOptions(storage));
+  runtime.stageSceneTransition([page("선화")], [page("내 채색")]);
+  const exporting = runtime.exportPeerDocument();
+  const closing = runtime.close();
+  const bytes = await exporting;
+  await closing;
+  const recovered = StudioOfflineBranchAutomergeEngine.load(bytes,
+    { workId: "work-1", scope: "user-1", actorId: "user-1" });
+  expect(recovered.snapshot().operations).toHaveLength(1);
+  recovered.close();
+  const reopened = await StudioOfflineBranchRuntime.create(runtimeOptions(storage));
+  expect(reopened.status.pendingOperations).toBe(1);
+  expect(reopened.projectPages([page("선화")])[0]?.groups?.[0]?.name).toBe("내 채색");
+  await reopened.close();
+});
+
+
+it.each(["copied-journal", "independent-stage"] as const)("두 기기의 같은 재적용 선택은 %s 경로에서도 replacement 하나로 수렴한다", async (origin) => {
+  const { runtime, document, shared } = await conflictedGroupRuntime();
+  const peerStorage = new MemoryStorage();
+  if (origin === "copied-journal") {
+    await peerStorage.saveDocument("user-1", "work-1", await runtime.exportPeerDocument());
+    for (const payload of await runtime.peerPayloads()) await peerStorage.putPayload(payload.bytes);
+  }
+  let sequence = 0;
+  const peer = await StudioOfflineBranchRuntime.create({ ...runtimeOptions(peerStorage),
+    randomId: () => `peer-id-${++sequence}` });
+  if (origin === "independent-stage") {
+    peer.stageSceneTransition([page("선화")], [page("내 채색")]);
+    await peer.exportPeerDocument();
+  }
+  peer.observeCanonicalPages(shared);
+  peer.setCanonicalAuthority(true);
+  if (origin === "independent-stage") {
+    await peer.promotePending(document, async () => { throw new Error("충돌 작업은 승격하면 안 됩니다."); });
+  }
+  const first = runtime.conflictDetails()[0];
+  const second = peer.conflictDetails()[0];
+  if (!first || !second) throw new Error("양쪽 기기의 같은 충돌이 필요합니다.");
+  if (origin === "independent-stage") expect(first.operationId).not.toBe(second.operationId);
+  await runtime.resolveConflict({ operationId: first.operationId, action: "reapply-local",
+    expectedCanonicalFingerprint: first.canonicalFingerprint });
+  await peer.resolveConflict({ operationId: second.operationId, action: "reapply-local",
+    expectedCanonicalFingerprint: second.canonicalFingerprint });
+  const peerReplacement = peer.snapshot.operations.find((operation) => operation.id !== second.operationId);
+  const localReplacement = runtime.snapshot.operations.find((operation) => operation.id !== first.operationId);
+  expect(peerReplacement?.id).not.toBe(localReplacement?.id);
+  expect(peerReplacement?.dedupeKey).toBe(localReplacement?.dedupeKey);
+  await runtime.importPeerDocument("other-device", await peer.exportPeerDocument());
+  expect(runtime.snapshot.operations).toHaveLength(2);
+  expect(runtime.status.pendingOperations).toBe(1);
+  expect(runtime.projectPages(shared)[0]?.groups?.[0]?.name).toBe("내 채색");
+  await peer.close(); await runtime.close(); document.destroy();
+});
+
+
+it("공유본 유지 뒤 같은 의도의 새 편집은 예전 해결 작업과 중복 제거하지 않는다", async () => {
+  const { runtime, document } = await conflictedGroupRuntime();
+  const original = runtime.snapshot.operations[0];
+  const detail = runtime.conflictDetails()[0];
+  if (!original || !detail) throw new Error("원래 충돌 작업이 필요합니다.");
+  await runtime.resolveConflict({ operationId: original.id, action: "keep-canonical",
+    expectedCanonicalFingerprint: detail.canonicalFingerprint });
+  runtime.observeCanonicalPages([page("선화")]);
+  runtime.setCanonicalAuthority(false);
+  expect(runtime.stageSceneTransition([page("선화")], [page("내 채색")]).staged).toBe(true);
+  await runtime.exportPeerDocument();
+  expect(runtime.snapshot.operations).toHaveLength(2);
+  const fresh = runtime.snapshot.operations.find((operation) => operation.id !== original.id);
+  expect(fresh?.dedupeKey).not.toBe(original.dedupeKey);
+  expect(runtime.status.pendingOperations).toBe(1);
+  expect(runtime.projectPages([page("선화")])[0]?.groups?.[0]?.name).toBe("내 채색");
+  await runtime.close(); document.destroy();
 });

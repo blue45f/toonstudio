@@ -4,6 +4,7 @@ import * as automergeWasmBase64Module from "@automerge/automerge/automerge.wasm.
 import {
   STUDIO_OFFLINE_BRANCH_LIMITS,
   STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION,
+  STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION,
   isStudioOfflineBranchIdentifier,
   parseStudioOfflineBranchOperation,
   type StudioOfflineBranchConflict,
@@ -11,8 +12,15 @@ import {
   type StudioOfflineBranchMetadata,
   type StudioOfflineBranchOperation,
   type StudioOfflineBranchReceipt,
+  type StudioOfflineBranchResolution,
   type StudioOfflineBranchSnapshot,
 } from "./studio-offline-branch-contract";
+import {
+  assertStudioOfflineBranchResolutions,
+  sameStudioOfflineBranchResolutionMeaning as sameResolutionMeaning,
+  validStudioOfflineBranchReplacement as validReplacement,
+  validStudioOfflineBranchResolution as validResolution,
+} from "./studio-offline-branch-resolution-validation";
 
 type EncodedAutomergeWasmSource = string | (() => string);
 
@@ -72,6 +80,9 @@ function assertNoConflicts(
   for (const key of keys) {
     const conflicts = Automerge.getConflicts(object as never, key as never);
     if (conflicts && Object.keys(conflicts).length > 0) {
+      if (label === "offline branch resolutions") {
+        throw new Error("충돌 처리 기록 자체에 서로 다른 선택이 있습니다. 원본 변경을 그대로 보존했습니다.");
+      }
       throw new Error(`${label} contains unresolved Automerge conflicts`);
     }
   }
@@ -126,8 +137,12 @@ function validConflict(value: unknown, operationId: string): value is StudioOffl
 }
 
 function assertDocument(doc: StudioOfflineBranchDocument): Uint8Array {
-  if (doc.schemaVersion !== STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION) {
+  if (doc.schemaVersion !== STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION
+    && doc.schemaVersion !== STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION) {
     throw new Error("offline branch schema version is unsupported");
+  }
+  if (doc.schemaVersion === STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION && !record(doc.resolutions)) {
+    throw new Error("오프라인 충돌 처리 지원 문서에 처리 기록이 없습니다.");
   }
   assertNoConflicts(doc, [
     "schemaVersion",
@@ -136,6 +151,7 @@ function assertDocument(doc: StudioOfflineBranchDocument): Uint8Array {
     "dedupe",
     "receipts",
     "conflicts",
+    ...(doc.resolutions === undefined ? [] : ["resolutions"]),
   ], "offline branch root");
   assertMetadata(doc.branch);
   assertNoConflicts(doc.branch, [
@@ -192,15 +208,36 @@ function assertDocument(doc: StudioOfflineBranchDocument): Uint8Array {
     if (
       !doc.operations[operationId]
       || doc.receipts[operationId]?.state === "server"
+      || doc.resolutions?.[operationId] !== undefined
       || !validConflict(conflict, operationId)
     ) throw new Error("offline branch conflict is invalid");
   }
+
+  assertStudioOfflineBranchResolutions(doc, assertNoConflicts);
 
   const bytes = Automerge.save(doc as Automerge.Doc<StudioOfflineBranchDocument>);
   if (bytes.byteLength === 0 || bytes.byteLength > STUDIO_OFFLINE_BRANCH_LIMITS.maxDocumentBytes) {
     throw new Error("offline branch document byte budget is exceeded");
   }
   return bytes;
+}
+
+function loadAndUpgradeDocument(bytes: Uint8Array): Automerge.Doc<StudioOfflineBranchDocument> {
+  let document = Automerge.load<StudioOfflineBranchDocument>(bytes, { freeze: true });
+  try {
+    assertDocument(document);
+    if (document.schemaVersion === STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION) {
+      document = Automerge.change(document, { message: "오프라인 문서의 충돌 처리 지원 버전 갱신" }, (draft) => {
+        draft.schemaVersion = STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION;
+        draft.resolutions ??= {};
+      });
+      assertDocument(document);
+    }
+    return document;
+  } catch (cause) {
+    Automerge.free(document);
+    throw cause;
+  }
 }
 
 function initialDocument(input: CreateStudioOfflineBranchInput): StudioOfflineBranchDocument {
@@ -213,7 +250,7 @@ function initialDocument(input: CreateStudioOfflineBranchInput): StudioOfflineBr
     throw new Error("offline branch creation time is invalid");
   }
   return {
-    schemaVersion: STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION,
+    schemaVersion: STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION,
     branch: {
       id: input.id,
       workId: input.workId,
@@ -229,6 +266,7 @@ function initialDocument(input: CreateStudioOfflineBranchInput): StudioOfflineBr
     dedupe: {},
     receipts: {},
     conflicts: {},
+    resolutions: {},
   };
 }
 
@@ -288,7 +326,8 @@ function preferredReceipt(
 
 function branchState(doc: StudioOfflineBranchDocument): StudioOfflineBranchMetadata["state"] {
   if (Object.keys(doc.conflicts).length > 0) return "conflicted";
-  const operationIds = Object.keys(doc.operations);
+  const operationIds = Object.keys(doc.operations).filter((id) => !doc.resolutions?.[id]);
+  if (Object.keys(doc.operations).length > 0 && operationIds.length === 0) return "merged";
   if (operationIds.length === 0) return "editing";
   if (operationIds.every((id) => doc.receipts[id]?.state === "server")) return "merged";
   if (operationIds.some((id) => doc.receipts[id] !== undefined)) return "syncing";
@@ -305,6 +344,21 @@ function sortedOperations(doc: StudioOfflineBranchDocument): StudioOfflineBranch
 export class StudioOfflineBranchAutomergeEngine {
   private document: Automerge.Doc<StudioOfflineBranchDocument>;
   private readonly localActorId: string;
+
+  private acceptValidatedChange(
+    next: Automerge.Doc<StudioOfflineBranchDocument>,
+    previousBytes: Uint8Array,
+  ): void {
+    try {
+      assertDocument(next);
+    } catch (cause) {
+      // 변경 뒤의 용량·연결 검증이 실패해도 기존 journal을 다시 쓸 수 있는 상태로 복구한다.
+      Automerge.free(next);
+      this.document = Automerge.load<StudioOfflineBranchDocument>(previousBytes, { freeze: true });
+      throw cause;
+    }
+    this.document = next;
+  }
 
   private constructor(
     document: Automerge.Doc<StudioOfflineBranchDocument>,
@@ -335,9 +389,9 @@ export class StudioOfflineBranchAutomergeEngine {
       || bytes.byteLength === 0
       || bytes.byteLength > STUDIO_OFFLINE_BRANCH_LIMITS.maxDocumentBytes
     ) throw new Error("offline branch document bytes are invalid");
-    const document = Automerge.load<StudioOfflineBranchDocument>(bytes, { freeze: true });
-    assertDocument(document);
+    const document = loadAndUpgradeDocument(bytes);
     if (document.branch.workId !== expected.workId || document.branch.scope !== expected.scope) {
+      Automerge.free(document);
       throw new Error("offline branch document belongs to another work or user scope");
     }
     return new StudioOfflineBranchAutomergeEngine(document, expected.actorId);
@@ -399,7 +453,11 @@ export class StudioOfflineBranchAutomergeEngine {
   ): void {
     if (receipts.length === 0) return;
     for (const receipt of receipts) {
-      if (!this.document.operations[receipt.operationId] || !validReceipt(receipt, receipt.operationId)) {
+      if (this.document.resolutions?.[receipt.operationId]) {
+        throw new Error("이미 처리한 오프라인 변경에 정본 수신 확인을 추가할 수 없습니다. 원본 변경은 보존돼 있습니다.");
+      }
+      if (!this.document.operations[receipt.operationId]
+        || !validReceipt(receipt, receipt.operationId)) {
         throw new Error("offline branch receipt cannot be attached");
       }
     }
@@ -435,6 +493,7 @@ export class StudioOfflineBranchAutomergeEngine {
     }, (draft) => {
       for (const conflict of conflicts) {
         if (this.document.receipts[conflict.operationId]?.state === "server") continue;
+        if (this.document.resolutions?.[conflict.operationId]) continue;
         const current = this.document.conflicts[conflict.operationId];
         if (!current || conflict.detectedAt >= current.detectedAt) {
           draft.conflicts[conflict.operationId] = conflict;
@@ -447,6 +506,59 @@ export class StudioOfflineBranchAutomergeEngine {
     this.document = next;
   }
 
+  resolveConflict(
+    resolution: StudioOfflineBranchResolution,
+    replacement: StudioOfflineBranchOperation | null,
+    updatedAt: number,
+  ): StudioOfflineBranchSnapshot {
+    const original = this.document.operations[resolution.operationId];
+    if (!original || !validResolution(resolution, original.id)
+      || original.actorId !== this.localActorId || resolution.actorId !== this.localActorId
+      || !Number.isSafeInteger(updatedAt) || updatedAt < 0
+      || resolution.resolvedAt < original.createdAt || resolution.resolvedAt > updatedAt) {
+      throw new Error("충돌 처리 요청의 사용자 또는 시각 정보가 올바르지 않습니다.");
+    }
+    const existing = this.document.resolutions?.[original.id];
+    if (existing) {
+      if (existing.action !== resolution.action) {
+        throw new Error("이미 저장된 선택과 다른 요청입니다. 현재 기기의 선택과 원본 변경을 그대로 보존했습니다.");
+      }
+      return this.snapshot();
+    }
+    if (!this.document.conflicts[original.id] || this.document.receipts[original.id]
+      || updatedAt < this.document.branch.updatedAt) {
+      throw new Error("이미 정본에 전달됐거나 더 이상 유효하지 않은 충돌입니다. 원본 변경을 그대로 보존했습니다.");
+    }
+    const parsed = replacement === null ? null : parseStudioOfflineBranchOperation(replacement);
+    if (resolution.action === "keep-canonical") {
+      if (replacement !== null) throw new Error("정본 유지 선택에는 새 재적용 작업을 함께 보관할 수 없습니다.");
+    } else if (!parsed || parsed.id !== resolution.replacementOperationId
+      || !validReplacement(original, parsed) || parsed.createdAt > updatedAt
+      || this.document.operations[parsed.id] || this.document.dedupe[parsed.dedupeKey]) {
+      throw new Error("재적용 작업의 대상 또는 결과가 원본 변경과 일치하지 않습니다.");
+    }
+    if (parsed && Object.keys(this.document.operations).length >= STUDIO_OFFLINE_BRANCH_LIMITS.maxOperations) {
+      throw new Error("오프라인 작업 보관 한도를 초과해 재적용하지 못했습니다. 원본 변경은 보존돼 있습니다.");
+    }
+    const previousBytes = this.save();
+    const next = Automerge.change(this.document, {
+      message: "오프라인 충돌에 대한 사용자 선택 보관",
+      time: Math.floor(updatedAt / 1_000),
+    }, (draft) => {
+      if (parsed) {
+        draft.operations[parsed.id] = parsed;
+        draft.dedupe[parsed.dedupeKey] = parsed.id;
+      }
+      draft.resolutions ??= {};
+      draft.resolutions[original.id] = resolution;
+      delete draft.conflicts[original.id];
+      draft.branch.updatedAt = updatedAt;
+      draft.branch.state = branchState(draft as StudioOfflineBranchDocument);
+    });
+    this.acceptValidatedChange(next, previousBytes);
+    return this.snapshot();
+  }
+
   importDocument(bytes: Uint8Array, updatedAt: number): StudioOfflineBranchImportResult {
     if (
       !(bytes instanceof Uint8Array)
@@ -455,7 +567,7 @@ export class StudioOfflineBranchAutomergeEngine {
       || !Number.isSafeInteger(updatedAt)
       || updatedAt < 0
     ) throw new Error("offline branch peer document is invalid");
-    const remote = Automerge.load<StudioOfflineBranchDocument>(bytes, { freeze: true });
+    const remote = loadAndUpgradeDocument(bytes);
     try {
     assertDocument(remote);
     if (
@@ -474,6 +586,12 @@ export class StudioOfflineBranchAutomergeEngine {
       }
       const localReceipt = this.document.receipts[local.id];
       const peerReceipt = remote.receipts[peer.id];
+      const localResolution = this.document.resolutions?.[local.id];
+      const peerResolution = remote.resolutions?.[peer.id];
+      if (localResolution && !peerResolution) {
+        replyNeeded = true;
+        break;
+      }
       if (preferredReceipt(peerReceipt, localReceipt) === localReceipt && localReceipt !== peerReceipt) {
         replyNeeded = true;
         break;
@@ -516,12 +634,47 @@ export class StudioOfflineBranchAutomergeEngine {
       > STUDIO_OFFLINE_BRANCH_LIMITS.maxOperations
     ) throw new Error("offline branch operation budget is exceeded");
 
+    // 모든 결정을 먼저 검증한다. 경합을 발견하면 replacement를 포함한 어떤 피어 작업도 반영하지 않는다.
+    const resolutionUpdates: StudioOfflineBranchResolution[] = [];
+    const selectedResolutions = new Map(Object.entries(this.document.resolutions ?? {}));
+    const mergedOperations = new Map(Object.entries(this.document.operations));
+    for (const operation of accepted) mergedOperations.set(operation.id, operation);
+    for (const resolution of Object.values(remote.resolutions ?? {})) {
+      const operationId = idMap.get(resolution.operationId);
+      const replacementOperationId = resolution.replacementOperationId
+        ? idMap.get(resolution.replacementOperationId)
+        : null;
+      if (!operationId || (resolution.replacementOperationId && !replacementOperationId)) {
+        throw new Error("다른 기기의 충돌 처리 기록이 올바른 원본 작업을 가리키지 않습니다.");
+      }
+      const mapped: StudioOfflineBranchResolution = {
+        ...resolution,
+        operationId,
+        replacementOperationId: replacementOperationId ?? null,
+      };
+      const original = mergedOperations.get(operationId);
+      if (!original || original.actorId !== mapped.actorId || this.document.receipts[operationId]) {
+        throw new Error("다른 기기의 충돌 처리 기록이 사용자 또는 정본 수신 확인 경계와 일치하지 않습니다. 현재 기기의 선택과 원본 변경을 그대로 보존했습니다.");
+      }
+      const current = selectedResolutions.get(operationId);
+      if (current && !sameResolutionMeaning(current, mapped)) {
+        throw new Error("두 기기의 충돌 처리 선택이 다릅니다. 현재 기기의 선택과 원본 변경을 그대로 보존했으며 다른 기기의 변경도 부분 반영하지 않았습니다.");
+      }
+      if (!current) {
+        resolutionUpdates.push(mapped);
+        selectedResolutions.set(operationId, mapped);
+      }
+    }
+
     const receiptUpdates: StudioOfflineBranchReceipt[] = [];
     const conflictUpdates: StudioOfflineBranchConflict[] = [];
     for (const operation of remoteOperations) {
       const localId = idMap.get(operation.id)!;
       const incomingReceipt = remote.receipts[operation.id];
       if (incomingReceipt) {
+        if (selectedResolutions.has(localId)) {
+          throw new Error("다른 기기의 정본 수신 확인이 저장된 충돌 처리 선택과 충돌합니다. 현재 기기의 선택과 원본 변경을 그대로 보존했습니다.");
+        }
         const mapped = { ...incomingReceipt, operationId: localId };
         const current = this.document.receipts[localId];
         const selected = preferredReceipt(current, mapped);
@@ -530,6 +683,7 @@ export class StudioOfflineBranchAutomergeEngine {
       const incomingConflict = remote.conflicts[operation.id];
       if (
         incomingConflict
+        && !selectedResolutions.has(localId)
         && preferredReceipt(this.document.receipts[localId], incomingReceipt)?.state !== "server"
       ) {
         const mapped = { ...incomingConflict, operationId: localId };
@@ -538,10 +692,17 @@ export class StudioOfflineBranchAutomergeEngine {
       }
     }
 
-    if (accepted.length === 0 && receiptUpdates.length === 0 && conflictUpdates.length === 0) {
+    if (accepted.length === 0 && receiptUpdates.length === 0 && conflictUpdates.length === 0
+      && resolutionUpdates.length === 0) {
       Automerge.free(remote);
       return { changed: false, replyNeeded };
     }
+    let adoptedUpdatedAt = Math.max(this.document.branch.updatedAt, remote.branch.updatedAt, updatedAt);
+    for (const operation of accepted) adoptedUpdatedAt = Math.max(adoptedUpdatedAt, operation.createdAt);
+    for (const resolution of selectedResolutions.values()) {
+      adoptedUpdatedAt = Math.max(adoptedUpdatedAt, resolution.resolvedAt);
+    }
+    const previousBytes = this.save();
     const next = Automerge.change(this.document, {
       message: `import ${accepted.length} peer offline operations`,
       time: Math.floor(updatedAt / 1_000),
@@ -555,19 +716,21 @@ export class StudioOfflineBranchAutomergeEngine {
         if (receipt.state === "server") delete draft.conflicts[receipt.operationId];
       }
       for (const conflict of conflictUpdates) {
-        if (draft.receipts[conflict.operationId]?.state !== "server") {
+        if (draft.receipts[conflict.operationId]?.state !== "server"
+          && !draft.resolutions?.[conflict.operationId]) {
           draft.conflicts[conflict.operationId] = conflict;
         }
       }
-      draft.branch.updatedAt = Math.max(
-        draft.branch.updatedAt,
-        updatedAt,
-      );
+      for (const resolution of resolutionUpdates) {
+        draft.resolutions ??= {};
+        draft.resolutions[resolution.operationId] = resolution;
+        delete draft.conflicts[resolution.operationId];
+      }
+      draft.branch.updatedAt = adoptedUpdatedAt;
       draft.branch.state = branchState(draft as StudioOfflineBranchDocument);
     });
-    assertDocument(next);
+    this.acceptValidatedChange(next, previousBytes);
     Automerge.free(remote);
-    this.document = next;
     return { changed: true, replyNeeded };
     } catch (cause) {
       Automerge.free(remote);
@@ -583,6 +746,7 @@ export class StudioOfflineBranchAutomergeEngine {
       operations: sortedOperations(this.document),
       receipts: structuredClone(this.document.receipts),
       conflicts: structuredClone(this.document.conflicts),
+      resolutions: structuredClone(this.document.resolutions ?? {}),
       documentBytes: bytes.byteLength,
     };
   }

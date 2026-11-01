@@ -10,6 +10,7 @@ import {
 } from "./studio-live-collaboration-context";
 import { INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT } from "./studio-live-sync-safety";
 import { StudioDraftOperationSyncAssistant, type StudioDraftOperationSyncAssistantProps } from "../StudioDraftOperationSyncAssistant";
+import type { StudioOfflineBranchConflictDetail } from "../offline-branch/studio-offline-branch-runtime";
 import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "../studio-shell/studio-menubar-status-slot";
 
 function renderAssistant(
@@ -68,6 +69,19 @@ afterEach(() => {
 });
 
 describe("StudioDraftOperationSyncAssistant", () => {
+  it("오프라인 충돌만 남은 상태에서도 한 동기화 진입점과 해결 동선을 제공한다", () => {
+    const detail: StudioOfflineBranchConflictDetail = { operationId: "operation-a", pageId: "page-a", pageName: "1페이지", targetId: "stroke-a", targetType: "stroke", action: "upsert", code: "target-changed", message: "공유본 변경", canonicalFingerprint: null, canKeepCanonical: true, canReapplyLocal: true, disabledReason: null };
+    renderAssistant({ offlineBranch: { workId: "work-a", generation: 1, pendingOperations: 1, conflicts: [detail] } });
+    const trigger = screen.getByRole("button", { name: "동기화 상태: 오프라인 변경 1개 검토 필요" });
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "공유본 유지" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "내 변경 다시 적용" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("stays hidden for a healthy, fully acknowledged operation stream", () => {
     renderAssistant();
 

@@ -3,10 +3,18 @@ import type {
   StudioOfflineBranchConflict,
   StudioOfflineBranchOperation,
   StudioOfflineBranchReceipt,
+  StudioOfflineBranchResolution,
   StudioOfflineBranchSnapshot,
 } from "./studio-offline-branch-contract";
 
 export type StudioOfflineBranchWorkerRequest =
+  | {
+      readonly requestId: number;
+      readonly type: "resolve-conflict";
+      readonly resolution: StudioOfflineBranchResolution;
+      readonly replacement: StudioOfflineBranchOperation | null;
+      readonly updatedAt: number;
+    }
   | {
       readonly requestId: number;
       readonly type: "open";

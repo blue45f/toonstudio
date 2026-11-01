@@ -18,6 +18,7 @@ export interface StudioOfflineFrontierReconciliationInput {
   readonly frontier: StudioCrdtSceneGraphFrontier;
   readonly changedIds: StudioCrdtSceneGraphChangedIds | null;
   readonly referenceSources: ReadonlyMap<string, El>;
+  readonly forceOfflineProjection?: boolean;
 }
 
 export interface StudioOfflineFrontierReconciliationResult {
@@ -55,11 +56,12 @@ export function reconcileStudioOfflineCrdtFrontier({
   frontier,
   changedIds,
   referenceSources,
+  forceOfflineProjection = false,
 }: StudioOfflineFrontierReconciliationInput):
 StudioOfflineFrontierReconciliationResult | null {
   const offlineBranch = runtime.offlineBranch ?? null;
   const hasOfflinePending = (offlineBranch?.status.pendingOperations ?? 0) > 0;
-  if (!studioCrdtFrontierHasWork(frontier, changedIds, hasOfflinePending)) return null;
+  if (!forceOfflineProjection && !studioCrdtFrontierHasWork(frontier, changedIds, hasOfflinePending)) return null;
 
   const reconciled = runtime.reconcileHistory(
     currentHistory,
@@ -68,11 +70,12 @@ StudioOfflineFrontierReconciliationResult | null {
     changedIds,
     referenceSources,
   );
-  if (!reconciled.changed && !hasOfflinePending) return null;
+  if (!reconciled.changed && !hasOfflinePending && !forceOfflineProjection) return null;
 
-  const nextHistory = hasOfflinePending ? [...reconciled.history] : reconciled.history;
+  const nextHistory = hasOfflinePending || forceOfflineProjection
+    ? [...reconciled.history] : reconciled.history;
   let canonicalPages = reconciled.history[currentIndex] ?? [];
-  if (offlineBranch && hasOfflinePending) {
+  if (offlineBranch && (hasOfflinePending || forceOfflineProjection)) {
     const rememberedCanonical = offlineBranch.canonicalPagesSnapshot();
     const cleanBaseline = rememberedCanonical.length > 0
       ? rememberedCanonical
@@ -160,4 +163,29 @@ export function stageStudioOfflineSceneTransition(
   // deferred React history commit runs. The lazy runtime reports an empty, supported transition so
   // this host can accept the history boundary without importing the heavy scene planner itself.
   return result.operations === 0 && result.unsupported.length === 0;
+}
+
+
+export function studioOfflineDocumentFrontier(document: StudioCrdtDocument): StudioCrdtSceneGraphFrontier {
+  return { strokes: document.getStrokes({ includeDeleted: true }),
+    sceneElements: document.getSceneElements({ includeDeleted: true }),
+    pages: document.getPages(true), layerGroups: document.getLayerGroups({ includeDeleted: true }) };
+}
+
+export function subscribeStudioOfflineDocumentFrontier(
+  document: StudioCrdtDocument,
+  localOrigin: unknown,
+  listener: (frontier: StudioCrdtSceneGraphFrontier, changedIds: StudioCrdtSceneGraphChangedIds) => void,
+): () => void {
+  return document.subscribeChanges((change) => listener({
+    strokes: change.snapshot.strokes, sceneElements: change.snapshot.sceneElements,
+    pages: change.snapshot.pages, layerGroups: change.snapshot.layerGroups,
+  }, { strokeIds: change.changedStrokeIds, sceneElementIds: change.changedSceneElementIds,
+    pageIds: change.changedPageIds, layerGroupIds: change.changedLayerGroupIds }), {
+    includeOrigin: (origin) => origin !== localOrigin,
+    includeChange: ({ changedStrokeIds, changedSceneElementIds, changedPageIds, changedLayerGroupIds }) =>
+      changedStrokeIds.size > 0 || changedSceneElementIds.size > 0
+      || changedPageIds.size > 0 || changedLayerGroupIds.size > 0,
+    snapshotFields: ["strokes", "sceneElements", "pages", "layerGroups"] as const,
+  });
 }
