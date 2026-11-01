@@ -20,6 +20,7 @@ import {
 
 import { resolveRequiredTargets } from "./run-core-vitest.mjs";
 import { SERIAL_TEST_FILES } from "../vitest.serial-test-files.mjs";
+import { sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
@@ -417,12 +418,14 @@ test("live transform 회귀의 이동된 현재 경로를 필수 editing shard�
 });
 
 
-test("foundation sparse checkout은 전체 기본 래스터 소품 입력을 복원한다", () => {
+test("foundation 초기 sparse checkout은 전체 기본 래스터 소품 입력을 포함한다", () => {
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
-  const restore = workflow.match(/- name: Restore Virtual Studio art for foundation regressions\n([\s\S]*?)(?=\n {6}- name:)/u)?.[1];
-  assert.ok(restore, "foundation 입력 복원 단계를 유지해야 합니다.");
-  assert.match(restore, /if: matrix.shard == 'studio-foundation'/u);
-  assert.match(restore, /(?:^|\s)\/apps\/web\/public\/assets\/studio\/props\/(?:\s|$)/u);
+  const staticJob = workflow.slice(workflow.indexOf("\n  static:\n"), workflow.indexOf("\n  serial:\n"));
+  const path = "/apps/web/public/assets/studio/props/";
+  assert.ok(staticJob.includes("${{ matrix.shard == 'studio-foundation' && '" + path + "' || '' }}"));
+  for (const shard of SHARD_NAMES) {
+    assert.equal(sparsePatterns(staticJob, { shard }).includes(path), shard === "studio-foundation", `${shard}: 기본 소품 입력 경계`);
+  }
 });
 
 test("가상 오피스 원본·런타임·기존 시트 검증 입력은 소유 foundation shard에만 복원한다", () => {
@@ -435,17 +438,21 @@ test("가상 오피스 원본·런타임·기존 시트 검증 입력은 소유 
     assert.deepEqual(SHARD_NAMES.filter((name) => targetIsCovered(target, execution[name])), ["studio-foundation"], target);
   }
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
-  const restore = workflow.match(/- name: 가상 오피스 원본·런타임 시트와 환경 아트 검증 입력 복원\n([\s\S]*?)(?=\n {6}- name:)/u)?.[1];
-  assert.ok(restore, "실제 아트 파일을 읽는 회귀의 sparse 복원 단계를 유지해야 합니다.");
-  assert.match(restore, /if: matrix.shard == 'studio-foundation'/u);
-  assert.match(restore, /git sparse-checkout add/u);
-  const paths = [...restore.matchAll(/(?:^|\s)(\/apps\/web\/public\/assets\/[A-Za-z0-9/_-]+\/)(?=\s|$)/gu)].map((match) => match[1]);
-  assert.deepEqual(paths.sort(), [
+  const staticJob = workflow.slice(workflow.indexOf("\n  static:\n"), workflow.indexOf("\n  serial:\n"));
+  const expected = [
     "/apps/web/public/assets/virtual-studio/office-cast-v2/",
     "/apps/web/public/assets/virtual-studio/office-themes-v1/",
     "/apps/web/public/assets/virtual-studio/toon-office-v1/characters/",
-  ]);
-  for (const path of paths) assert.equal(workflow.split(path).length - 1, 1, `${path}: 다른 shard의 checkout 범위를 넓히지 않습니다.`);
+  ];
+  const declarations = [...staticJob.matchAll(/\$\{\{ matrix\.shard == 'studio-foundation' && '([^']+)' \|\| '' \}\}/gu)]
+    .map((match) => match[1]).filter((path) => /\/(?:office-cast-v2|office-themes-v1|toon-office-v1\/characters)\/$/u.test(path));
+  assert.deepEqual(declarations.sort(), expected);
+  for (const path of expected) {
+    assert.equal(workflow.split(path).length - 1, 1, `${path}: 초기 조건 경로는 한 번만 선언해야 합니다.`);
+    for (const shard of SHARD_NAMES) {
+      assert.equal(sparsePatterns(staticJob, { shard }).includes(path), shard === "studio-foundation", `${shard}: 오피스 원본 입력 경계 ${path}`);
+    }
+  }
 });
 
 test("제작 공정과 시각적 작업 보드 검증은 필수 product shard에서 한 번만 실행한다", () => {

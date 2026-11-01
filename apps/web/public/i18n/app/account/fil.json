@@ -42,5 +42,8 @@
   "account.page.eyebrow": "AKING ACCOUNT",
   "account.page.title": "Ang aking profile",
   "account.page.subtitle": "Suriin ang iyong mga post at aktibidad, at pamahalaan ang iyong mga detalye ng profile.",
-  "account.page.tabsAria": "Mga tab ng profile"
+  "account.page.tabsAria": "Mga tab ng profile",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

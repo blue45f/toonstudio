@@ -42,5 +42,8 @@
   "account.page.eyebrow": "MOJ RAČUN",
   "account.page.title": "Moj profil",
   "account.page.subtitle": "Provjerite svoje objave i aktivnosti te upravljajte pojedinostima profila.",
-  "account.page.tabsAria": "Kartice profila"
+  "account.page.tabsAria": "Kartice profila",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

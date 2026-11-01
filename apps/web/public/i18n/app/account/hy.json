@@ -42,5 +42,8 @@
   "account.page.eyebrow": "ԻՄ ՀԱՇԻՎԸ",
   "account.page.title": "Իմ պրոֆիլը",
   "account.page.subtitle": "Ստուգեք ձեր գրառումները եւ գործունեությունը եւ կառավարեք ձեր պրոֆիլի մանրամասները:",
-  "account.page.tabsAria": "Պրոֆիլի ներդիրներ"
+  "account.page.tabsAria": "Պրոֆիլի ներդիրներ",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

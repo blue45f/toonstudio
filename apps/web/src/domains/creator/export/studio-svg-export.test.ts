@@ -3936,7 +3936,7 @@ describe("레이어 규약(클립·혼합)", () => {
   it("패널 안 요소는 패널 rect로 클립된다(wrapClip 규약)", () => {
     const { svg } = exportPageToSvg(page([frame, textEl({ x: 50, y: 50, width: 100, align: "left" })]));
     expect((svg.match(/clip-path="url\(#/g) ?? []).length).toBe(2); // 프레임 자체 + 패널 클립
-    expect(svg).toMatch(/<clipPath id="sc\d+"><rect x="0" y="0" width="300" height="300"\/><\/clipPath>/);
+    expect(svg).toMatch(/<clipPath id="sc\d+" clipPathUnits="userSpaceOnUse"><rect x="0" y="0" width="300" height="300"\/><\/clipPath>/);
   });
 
   it("noClip 요소는 패널 클립을 받지 않는다", () => {

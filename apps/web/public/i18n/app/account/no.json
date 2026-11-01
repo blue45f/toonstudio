@@ -42,5 +42,8 @@
   "account.page.eyebrow": "MIN KONTO",
   "account.page.title": "Min profil",
   "account.page.subtitle": "Sjekk innleggene og aktivitetene dine, og administrer profilopplysningene dine.",
-  "account.page.tabsAria": "Profilfaner"
+  "account.page.tabsAria": "Profilfaner",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

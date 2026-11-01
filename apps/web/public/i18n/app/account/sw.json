@@ -42,5 +42,8 @@
   "account.page.eyebrow": "AKAUNTI YANGU",
   "account.page.title": "Wasifu wangu",
   "account.page.subtitle": "Angalia machapisho na shughuli zako, na udhibiti maelezo ya wasifu wako.",
-  "account.page.tabsAria": "Vichupo vya wasifu"
+  "account.page.tabsAria": "Vichupo vya wasifu",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

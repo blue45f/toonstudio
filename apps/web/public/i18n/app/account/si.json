@@ -42,5 +42,8 @@
   "account.page.eyebrow": "මගේ ගිණුම",
   "account.page.title": "මගේ පැතිකඩ",
   "account.page.subtitle": "ඔබේ සටහන් සහ ක්‍රියාකාරකම් පරීක්ෂා කර ඔබේ පැතිකඩ විස්තර කළමනාකරණය කරන්න.",
-  "account.page.tabsAria": "පැතිකඩ ටැබ්"
+  "account.page.tabsAria": "පැතිකඩ ටැබ්",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

@@ -42,5 +42,8 @@
   "account.page.eyebrow": "I-AKHAWUNTI YAMI",
   "account.page.title": "Iphrofayela yami",
   "account.page.subtitle": "Hlola okuthunyelwe kwakho nomsebenzi wakho, futhi uphathe imininingwane yephrofayela yakho.",
-  "account.page.tabsAria": "Amathebu ephrofayela"
+  "account.page.tabsAria": "Amathebu ephrofayela",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

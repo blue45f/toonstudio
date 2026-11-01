@@ -42,5 +42,8 @@
   "account.page.eyebrow": "MINHA CONTA",
   "account.page.title": "Meu perfil",
   "account.page.subtitle": "Confira suas publicações e atividades e gerencie os detalhes do seu perfil.",
-  "account.page.tabsAria": "Abas do perfil"
+  "account.page.tabsAria": "Abas do perfil",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

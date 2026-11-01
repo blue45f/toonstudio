@@ -42,5 +42,8 @@
   "account.page.eyebrow": "El meu compte",
   "account.page.title": "El meu perfil",
   "account.page.subtitle": "Consulta les teves publicacions i la teva activitat, i gestiona el teu perfil.",
-  "account.page.tabsAria": "Pestanyes del perfil"
+  "account.page.tabsAria": "Pestanyes del perfil",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }

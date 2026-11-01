@@ -42,5 +42,8 @@
   "account.page.eyebrow": "ਮੇਰਾ ਖਾਤਾ",
   "account.page.title": "ਮੇਰੀ ਪ੍ਰੋਫਾਈਲ",
   "account.page.subtitle": "ਆਪਣੀਆਂ ਪੋਸਟਾਂ ਅਤੇ ਗਤੀਵਿਧੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ, ਅਤੇ ਆਪਣੇ ਪ੍ਰੋਫਾਈਲ ਵੇਰਵਿਆਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ।",
-  "account.page.tabsAria": "ਪ੍ਰੋਫਾਈਲ ਟੈਬ"
+  "account.page.tabsAria": "ਪ੍ਰੋਫਾਈਲ ਟੈਬ",
+  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
+  "account.profile.discardDraft": "Discard draft",
+  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
 }
