@@ -149,7 +149,7 @@ function ProfileTab({ userId }: { userId: string }) {
   const dirty =
     roleProfileTouched ||
     (loaded !== null &&
-      (name.trim() !== loaded.name || bio.trim() !== loaded.bio || (image ?? null) !== loaded.image));
+      (name !== loaded.name || bio !== loaded.bio || (image ?? null) !== loaded.image));
 
   const profileUnavailable = profileLoading || loadError || loaded === null;
   const editingDisabled = saving || profileUnavailable;
@@ -183,8 +183,8 @@ function ProfileTab({ userId }: { userId: string }) {
     try {
       const updated = await updateMyProfile({
         // 변경한 필드만 보내 다른 화면에서 저장한 직무·사진을 덮어쓰지 않는다.
-        ...(name.trim() !== loaded.name ? { name: name.trim() } : {}),
-        ...(bio.trim() !== loaded.bio ? { bio: bio.trim() } : {}),
+        ...(name !== loaded.name ? { name: name.trim() } : {}),
+        ...(bio !== loaded.bio ? { bio: bio.trim() } : {}),
         ...(image !== loaded.image ? { image } : {}),
         ...(roleProfileTouched ? { creatorRoleProfile } : {}),
       });

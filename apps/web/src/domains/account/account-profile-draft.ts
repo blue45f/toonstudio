@@ -129,8 +129,8 @@ export function changedProfileFields(
   roleTouched: boolean,
 ): ProfileDraftPatch {
   return {
-    ...(current.name.trim() !== baseline.name ? { name: current.name } : {}),
-    ...(current.bio.trim() !== baseline.bio ? { bio: current.bio } : {}),
+    ...(current.name !== baseline.name ? { name: current.name } : {}),
+    ...(current.bio !== baseline.bio ? { bio: current.bio } : {}),
     ...(current.image !== baseline.image ? { image: current.image } : {}),
     ...(roleTouched ? { creatorRoleProfile: current.creatorRoleProfile } : {}),
   };
