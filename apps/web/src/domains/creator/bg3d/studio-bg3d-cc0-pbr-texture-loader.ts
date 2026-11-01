@@ -37,14 +37,30 @@ export interface StudioBg3dCc0PbrMaterialSpread {
   readonly color?: THREE.Color;
 }
 
-export type StudioBg3dTextureFactory = (url: string) => THREE.Texture;
+export type StudioBg3dTextureFactory = (
+  url: string,
+  onLoad?: (texture: THREE.Texture) => void,
+) => THREE.Texture;
 
 const textureByUrlCache = new Map<string, THREE.Texture>();
 const textureSetByMaterialIdCache = new Map<string, StudioBg3dCc0PbrTextureSet>();
+const textureReadyListeners = new Set<() => void>();
+let textureCacheGeneration = 0;
+let textureReadyRevision = 0;
+
+/** 구독 전에 완료된 이미지도 같은 snapshot으로 관측한다. 캐시 정리 시 역행하지 않는다. */
+export function getStudioBg3dCc0PbrTextureReadyRevision(): number {
+  return textureReadyRevision;
+}
+
+export function subscribeStudioBg3dCc0PbrTextureReady(listener: () => void): () => void {
+  textureReadyListeners.add(listener);
+  return () => { textureReadyListeners.delete(listener); };
+}
 
 let sharedThreeTextureLoader: THREE.TextureLoader | null = null;
 
-function defaultTextureFactory(url: string): THREE.Texture {
+function defaultTextureFactory(url: string, onLoad?: (texture: THREE.Texture) => void): THREE.Texture {
   if (typeof Image === "undefined") {
     const fallback = new THREE.Texture();
     fallback.name = url;
@@ -54,7 +70,7 @@ function defaultTextureFactory(url: string): THREE.Texture {
     sharedThreeTextureLoader = new THREE.TextureLoader();
   }
   try {
-    return sharedThreeTextureLoader.load(url);
+    return sharedThreeTextureLoader.load(url, onLoad);
   } catch {
     const fallback = new THREE.Texture();
     fallback.name = url;
@@ -81,7 +97,22 @@ function loadCachedChannelTexture(
   const cached = textureByUrlCache.get(cacheKey);
   if (cached) return cached;
 
-  const texture = activeTextureFactory(url);
+  const generation = textureCacheGeneration;
+  let disposed = false;
+  let completionQueued = false;
+  const onDispose = () => { disposed = true; };
+  const texture = activeTextureFactory(url, (loadedTexture) => {
+    if (completionQueued) return;
+    completionQueued = true;
+    // 동기 factory도 캐시와 채널 설정이 끝난 뒤 알린다. 렌더 중 외부 store 갱신도 피한다.
+    queueMicrotask(() => {
+      if (disposed || generation !== textureCacheGeneration || textureByUrlCache.get(cacheKey) !== loadedTexture) return;
+      loadedTexture.removeEventListener("dispose", onDispose);
+      textureReadyRevision += 1;
+      for (const listener of [...textureReadyListeners]) listener();
+    });
+  });
+  texture.addEventListener("dispose", onDispose);
   texture.colorSpace = colorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -266,6 +297,7 @@ export function getStudioBg3dCc0PbrTextureCacheStats(): {
 }
 
 export function clearStudioBg3dCc0PbrTextureCache(): void {
+  textureCacheGeneration += 1;
   for (const texture of textureByUrlCache.values()) {
     try {
       texture.dispose();

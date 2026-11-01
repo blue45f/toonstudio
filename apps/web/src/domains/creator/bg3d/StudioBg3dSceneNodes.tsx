@@ -31,6 +31,7 @@ import {
 import { registerStudioBg3dCaptureExcludedObject } from "./studio-bg3d-capture-exclusion";
 import { readStudioBg3dCameraOrthographicHeight } from "./studio-bg3d-orthographic-frustum";
 import { resolveStudioBg3dPrimitiveCc0PbrSpread } from "./studio-bg3d-cc0-pbr-texture-loader";
+import { updateStudioBg3dStandardMaterialShaderTopology } from "./studio-bg3d-material-shader-topology";
 import { CAMERA_PRESETS, DEFAULT_CAMERA_TARGET } from "./studio-bg3d-editor-derivations";
 import {
   advanceStudioBg3dFrameQuality,
@@ -47,10 +48,7 @@ import {
   computeStudioBg3dSectionPlane,
   type StudioBg3dSectionPlaneState,
 } from "./studio-bg3d-section-plane";
-import {
-  resolveStudioBg3dSurfaceMaterialProps,
-  spreadStudioBg3dSurfaceMaterialProps,
-} from "./studio-bg3d-surface-presets";
+import { resolveStudioBg3dPrimitiveSurfaceMaterialProps } from "./studio-bg3d-surface-presets";
 import {
   StudioBg3dTexturePaintSurface,
   type StudioBg3dPaintCanvas,
@@ -60,6 +58,7 @@ import {
   type StudioBg3dThreeInstancingSuccess,
 } from "./studio-bg3d-three-instancing";
 import { applyStudioBg3dThreeRenderSettings } from "./studio-bg3d-three-render-settings";
+import { useStudioBg3dPbrTextureInvalidation } from "./useStudioBg3dPbrTextureInvalidation";
 
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type { StudioBg3dPlacementPreviewState } from "./studio-bg3d-placement-session";
@@ -91,6 +90,7 @@ export function StudioBg3dThreeRenderSettingsController({
 }: {
   readonly render: StudioBg3dSceneDocument["render"];
 }) {
+  useStudioBg3dPbrTextureInvalidation();
   const gl = useThree((state) => state.gl);
   useLayoutEffect(() => {
     applyStudioBg3dThreeRenderSettings(gl, render);
@@ -534,6 +534,7 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
           <meshBasicMaterial color="#ffffff" polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
         ) : (
           <meshStandardMaterial
+            onUpdate={updateStudioBg3dStandardMaterialShaderTopology}
             color={pbrSpread.color ?? (paintTexture ? "#ffffff" : prim.color)}
             map={pbrSpread.map}
             roughnessMap={pbrSpread.roughnessMap}
@@ -544,7 +545,7 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
             polygonOffset
             polygonOffsetFactor={1}
             polygonOffsetUnits={1}
-            {...spreadStudioBg3dSurfaceMaterialProps(resolveStudioBg3dSurfaceMaterialProps(prim.materialOverride))}
+            {...resolveStudioBg3dPrimitiveSurfaceMaterialProps(prim.materialOverride)}
             side={prim.materialOverride?.doubleSided ? THREE.DoubleSide : THREE.FrontSide}
           />
         )}

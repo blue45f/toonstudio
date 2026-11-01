@@ -1,3 +1,4 @@
+import { applyProps } from "@react-three/fiber";
 import * as THREE from "three";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -10,6 +11,7 @@ import {
   resolveStudioBg3dPrimitiveCc0PbrSpread,
   setStudioBg3dCc0PbrTextureFactoryForTest,
 } from "./studio-bg3d-cc0-pbr-texture-loader";
+import { updateStudioBg3dStandardMaterialShaderTopology } from "./studio-bg3d-material-shader-topology";
 import { createStudioBg3dSceneGlbMaterials } from "./studio-bg3d-scene-glb-materials";
 import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
@@ -24,7 +26,10 @@ import {
   findStudioBg3dSurfaceMaterial,
   resolveStudioBg3dSurfaceMaterialFromOverride,
 } from "./studio-bg3d-surface-material-catalog";
-import { buildStudioBg3dSurfacePresetOverride } from "./studio-bg3d-surface-presets";
+import {
+  buildStudioBg3dSurfacePresetOverride,
+  resolveStudioBg3dPrimitiveSurfaceMaterialProps,
+} from "./studio-bg3d-surface-presets";
 
 const NATIVE_ID = "emaceart-plasticine-01-native-8k";
 const GODOT_ID = "emaceart-plasticine-01-godot-2k";
@@ -283,6 +288,237 @@ describe("구매 Plasticine PBR 런타임", () => {
       expect(spread.normalScale).toBeUndefined();
     } finally {
       material.dispose();
+    }
+  });
+});
+
+describe("도형 표준 재질의 맵 shader 구성 갱신", () => {
+  function mappedMaterial() {
+    const maps = {
+      map: new THREE.Texture(),
+      roughnessMap: new THREE.Texture(),
+      metalnessMap: new THREE.Texture(),
+      normalMap: new THREE.Texture(),
+      aoMap: new THREE.Texture(),
+    };
+    return { material: new THREE.MeshStandardMaterial(maps), textures: Object.values(maps) };
+  }
+
+  it("초기 props와 중복 onUpdate는 재질의 최초 프로그램 버전을 올리지 않는다", () => {
+    const empty = new THREE.MeshStandardMaterial();
+    const { material, textures } = mappedMaterial();
+    try {
+      for (const target of [empty, material]) {
+        const initial = target.version;
+        updateStudioBg3dStandardMaterialShaderTopology(target);
+        updateStudioBg3dStandardMaterialShaderTopology(target);
+        expect(target.version).toBe(initial);
+      }
+    } finally {
+      empty.dispose();
+      material.dispose();
+      textures.forEach((texture) => texture.dispose());
+    }
+  });
+
+  it("맵 없는 glass 적용·Undo는 opaque 프로그램을 갱신하고 opacity 숫자 변경만으로는 갱신하지 않는다", () => {
+    const glass = buildStudioBg3dSurfacePresetOverride("glass");
+    if (!glass) throw new Error("실제 glass 프리셋이 필요합니다.");
+    const bareProps = resolveStudioBg3dPrimitiveSurfaceMaterialProps(undefined);
+    const glassProps = resolveStudioBg3dPrimitiveSurfaceMaterialProps(glass);
+    const material = new THREE.MeshStandardMaterial();
+    try {
+      applyProps(material, bareProps);
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      const initial = material.version;
+      applyProps(material, glassProps);
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.map).toBeNull(); expect(material.transparent).toBe(true);
+      expect(material.opacity).toBe(0.35); expect(material.version).toBe(initial + 1);
+      applyProps(material, { ...glassProps, opacity: 0.6 });
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.opacity).toBe(0.6); expect(material.version).toBe(initial + 1);
+      applyProps(material, bareProps);
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.map).toBeNull(); expect(material.transparent).toBe(false);
+      expect(material.opacity).toBe(1); expect(material.version).toBe(initial + 2);
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+    } finally { material.dispose(); }
+  });
+
+  it("Front·Double·Back 면 방향 전이는 한 번씩 갱신하고 같은 방향은 유지한다", () => {
+    const material = new THREE.MeshStandardMaterial();
+    const sides: THREE.Side[] = [THREE.DoubleSide, THREE.BackSide, THREE.FrontSide];
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      let expected = material.version;
+      for (const side of sides) {
+        material.side = side;
+        updateStudioBg3dStandardMaterialShaderTopology(material);
+        expected += 1; expect(material.version).toBe(expected);
+        updateStudioBg3dStandardMaterialShaderTopology(material);
+        expect(material.version).toBe(expected);
+      }
+    } finally { material.dispose(); }
+  });
+
+  it("실제 opaque의 blending·coverage 조건과 별도의 alpha-to-coverage 분기를 반영한다", () => {
+    const material = new THREE.MeshStandardMaterial();
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      const initial = material.version;
+      material.blending = THREE.AdditiveBlending;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 1);
+      material.blending = THREE.MultiplyBlending;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 1);
+      material.blending = THREE.NormalBlending;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+      material.alphaToCoverage = true;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 3);
+      material.transparent = true;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 3);
+      material.alphaToCoverage = false;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 4);
+    } finally { material.dispose(); }
+  });
+
+  const textureSlots: Array<"map" | "roughnessMap" | "metalnessMap" | "normalMap" | "aoMap"> = [
+    "map", "roughnessMap", "metalnessMap", "normalMap", "aoMap",
+  ];
+
+  it.each(textureSlots)("%s의 추가와 해제는 각각 한 번만 프로그램 버전을 올린다", (slot) => {
+    const material = new THREE.MeshStandardMaterial();
+    const texture = new THREE.Texture();
+    let disposed = 0;
+    texture.addEventListener("dispose", () => { disposed += 1; });
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      const initial = material.version;
+      material[slot] = texture;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 1);
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 1);
+      material[slot] = null;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+      expect(disposed).toBe(0);
+    } finally {
+      material.dispose();
+      texture.dispose();
+    }
+  });
+
+  it("같은 맵 구성의 Texture 교체·업로드 표시·색과 uniform 변경은 재컴파일하지 않는다", () => {
+    const { material, textures } = mappedMaterial();
+    const replacement = new THREE.Texture();
+    let disposed = 0;
+    for (const texture of [...textures, replacement]) {
+      texture.addEventListener("dispose", () => { disposed += 1; });
+    }
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      const initial = material.version;
+      for (const slot of textureSlots) material[slot] = replacement;
+      replacement.needsUpdate = true;
+      replacement.repeat.set(2, 3);
+      replacement.offset.set(0.2, 0.4);
+      material.color.set("#6e523b");
+      material.roughness = 0.4;
+      material.metalness = 0.2;
+      material.normalScale.set(0.4, 0.6);
+      material.aoMapIntensity = 0.7;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial);
+      expect(disposed).toBe(0);
+    } finally {
+      material.dispose();
+      textures.forEach((texture) => texture.dispose());
+      replacement.dispose();
+    }
+  });
+
+  it("노멀과 AO를 포함한 각 맵의 UV 채널 변경은 한 번씩 프로그램을 갱신한다", () => {
+    const { material, textures } = mappedMaterial();
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      let expected = material.version;
+      for (const texture of textures) {
+        texture.channel = 1;
+        updateStudioBg3dStandardMaterialShaderTopology(material);
+        expected += 1;
+        expect(material.version).toBe(expected);
+        updateStudioBg3dStandardMaterialShaderTopology(material);
+        expect(material.version).toBe(expected);
+      }
+    } finally {
+      material.dispose();
+      textures.forEach((texture) => texture.dispose());
+    }
+  });
+
+  it("노멀 공간과 packed RG shader 분기만 갱신하고 같은 packed 형식 교체는 유지한다", () => {
+    const normal = new THREE.Texture();
+    const material = new THREE.MeshStandardMaterial({ normalMap: normal });
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      const initial = material.version;
+      normal.format = THREE.RGFormat;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 1);
+      const packedFormats: THREE.Texture["format"][] = [THREE.RG11_EAC_Format, THREE.RED_GREEN_RGTC2_Format];
+      for (const format of packedFormats) {
+        normal.format = format;
+        updateStudioBg3dStandardMaterialShaderTopology(material);
+        expect(material.version).toBe(initial + 1);
+      }
+      material.normalMapType = THREE.ObjectSpaceNormalMap;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+      normal.format = THREE.RGBAFormat;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+      material.normalMapType = THREE.TangentSpaceNormalMap;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 3);
+    } finally {
+      material.dispose();
+      normal.dispose();
+    }
+  });
+
+  it("비디오 컬러 맵의 sRGB decode 분기만 갱신하고 일반 맵의 색 공간은 유지한다", () => {
+    const videoMap = new THREE.Texture();
+    const ordinaryMap = new THREE.Texture();
+    // DOM 디코딩 없이 Three가 shader 키에서 읽는 비디오 표식만 지정한다.
+    Object.defineProperty(videoMap, "isVideoTexture", { value: true });
+    const material = new THREE.MeshStandardMaterial({ map: videoMap });
+    try {
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      const initial = material.version;
+      videoMap.colorSpace = THREE.SRGBColorSpace;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 1);
+      videoMap.colorSpace = THREE.LinearSRGBColorSpace;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+      ordinaryMap.colorSpace = THREE.SRGBColorSpace;
+      material.map = ordinaryMap;
+      updateStudioBg3dStandardMaterialShaderTopology(material);
+      expect(material.version).toBe(initial + 2);
+    } finally {
+      material.dispose();
+      videoMap.dispose();
+      ordinaryMap.dispose();
     }
   });
 });

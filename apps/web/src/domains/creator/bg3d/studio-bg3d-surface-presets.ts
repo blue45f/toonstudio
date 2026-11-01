@@ -152,3 +152,19 @@ export function spreadStudioBg3dSurfaceMaterialProps(
   if (props.wireframe === true) spread.wireframe = true;
   return spread;
 }
+
+/** 기존 도형 재질을 재사용하는 R3F Undo·해제에서도 생성 시 기본값을 명시적으로 복원한다. */
+export function resolveStudioBg3dPrimitiveSurfaceMaterialProps(
+  override: StudioBg3dMaterialOverride | undefined,
+): Required<StudioBg3dSurfaceMaterialSpread> {
+  return {
+    roughness: 1,
+    metalness: 0,
+    emissive: "#000000",
+    emissiveIntensity: override?.emissiveIntensity ?? 1,
+    opacity: 1,
+    transparent: false,
+    wireframe: false,
+    ...spreadStudioBg3dSurfaceMaterialProps(resolveStudioBg3dSurfaceMaterialProps(override)),
+  };
+}

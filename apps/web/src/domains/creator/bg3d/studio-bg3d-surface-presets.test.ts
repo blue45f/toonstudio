@@ -1,3 +1,5 @@
+import { applyProps } from "@react-three/fiber";
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE } from "./studio-bg3d-scene-document";
@@ -5,6 +7,7 @@ import {
   STUDIO_BG3D_SURFACE_PRESETS,
   buildStudioBg3dSurfacePresetOverride,
   isStudioBg3dSurfacePresetId,
+  resolveStudioBg3dPrimitiveSurfaceMaterialProps,
   resolveStudioBg3dSurfaceMaterialProps,
   spreadStudioBg3dSurfaceMaterialProps,
 } from "./studio-bg3d-surface-presets";
@@ -37,6 +40,65 @@ describe("STUDIO_BG3D_SURFACE_PRESETS", () => {
       expect(preset.patch.opacityMultiplier).toBeGreaterThan(0);
       expect(preset.patch.opacityMultiplier).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe("프리미티브 표면 기본값 복원", () => {
+  function state(material: THREE.MeshStandardMaterial) {
+    return {
+      roughness: material.roughness,
+      metalness: material.metalness,
+      emissive: `#${material.emissive.getHexString()}`,
+      emissiveIntensity: material.emissiveIntensity,
+      opacity: material.opacity,
+      transparent: material.transparent,
+      wireframe: material.wireframe,
+    };
+  }
+
+  it("bare 도형의 명시적 소품은 실제 MeshStandardMaterial 생성 기본값과 같다", () => {
+    const material = new THREE.MeshStandardMaterial();
+    try {
+      expect(resolveStudioBg3dPrimitiveSurfaceMaterialProps(undefined)).toEqual(state(material));
+    } finally { material.dispose(); }
+  });
+
+  it.each(["chrome", "glass", "neon"])("%s 적용·Undo·재적용·해제에서 숫자와 boolean 소품을 생략하지 않는다", (id) => {
+    const override = buildStudioBg3dSurfacePresetOverride(id);
+    if (!override) throw new Error("검증할 실제 프리셋이 필요합니다.");
+    const material = new THREE.MeshStandardMaterial();
+    const baseline = state(material);
+    const selected = resolveStudioBg3dPrimitiveSurfaceMaterialProps({ ...override, wireframe: true });
+    const cleared = resolveStudioBg3dPrimitiveSurfaceMaterialProps(undefined);
+    try {
+      // 제거한 숫자 소품을 0으로 돌리는 diff 경로에 의존하지 않도록 모든 키를 유지한다.
+      expect(Object.keys(cleared).sort()).toEqual(Object.keys(selected).sort());
+      applyProps(material, selected);
+      const applied = state(material);
+      expect(applied).not.toEqual(baseline);
+      applyProps(material, cleared);
+      expect(state(material)).toEqual(baseline);
+      applyProps(material, selected);
+      expect(state(material)).toEqual(applied);
+      applyProps(material, resolveStudioBg3dPrimitiveSurfaceMaterialProps(DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE));
+      expect(state(material)).toEqual(baseline);
+    } finally { material.dispose(); }
+  });
+
+  it("명시한 0은 기본값으로 바꾸지 않고 custom 재질용 생략 계약도 유지한다", () => {
+    const explicit = resolveStudioBg3dPrimitiveSurfaceMaterialProps({
+      ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
+      roughness: 0, metalness: 0, emissiveIntensity: 0,
+    });
+    expect(explicit).toMatchObject({ roughness: 0, metalness: 0, emissiveIntensity: 0 });
+    const custom = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.27, opacity: 0.8, emissiveIntensity: 0.6 });
+    try {
+      const baseline = state(custom);
+      const unchanged = spreadStudioBg3dSurfaceMaterialProps(resolveStudioBg3dSurfaceMaterialProps(undefined));
+      expect(unchanged).toEqual({});
+      applyProps(custom, unchanged);
+      expect(state(custom)).toEqual(baseline);
+    } finally { custom.dispose(); }
   });
 });
 
