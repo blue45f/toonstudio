@@ -159,6 +159,36 @@ describe("세션 메모리 프로필 초안", () => {
     expect(beforeUnload()).toBe(false);
   });
 
+  it("기존 서버 원본에 공백이 남아도 변경하지 않은 필드를 초안에 담지 않는다", () => {
+    const baseline = { ...fields(), name: " 이름 ", bio: "소개\n" };
+    expect(changedProfileFields(baseline, baseline, false)).toEqual({});
+    expect(changedProfileFields({ ...baseline, name: "다른 이름" }, baseline, false))
+      .toEqual({ name: "다른 이름" });
+    expect(changedProfileFields({ ...baseline, image: null }, baseline, false)).toEqual({ image: null });
+    expect(changedProfileFields(baseline, baseline, true)).toEqual({
+      creatorRoleProfile: baseline.creatorRoleProfile,
+    });
+  });
+
+  it("공백 포함 기존 값에서 변경이 없으면 이탈 확인을 요청하지 않는다", () => {
+    const baseline = { ...fields(), name: " 이름 ", bio: "소개\n" };
+    const scope = captureProfileDraftScope("user-a");
+    const unchanged = changedProfileFields(baseline, baseline, false);
+    expect(unchanged).toEqual({});
+    expect(writeProfileDraft(scope, unchanged)).toBeNull();
+    expect(readProfileDraft(scope)).toBeNull();
+    expect(beforeUnload()).toBe(false);
+    const patch = changedProfileFields({ ...baseline, image: null }, baseline, false);
+    expect(patch).toEqual({ image: null });
+    const revision = writeProfileDraft(scope, patch);
+    expect(readProfileDraft(scope)?.patch).toEqual({ image: null });
+    expect(beforeUnload()).toBe(true);
+    expect(clearProfileDraft(scope, revision)).toBe(true);
+    expect(beforeUnload()).toBe(false);
+    expect(changedProfileFields({ ...baseline, name: "이름", bio: "소개" }, baseline, false))
+      .toEqual({ name: "이름", bio: "소개" });
+  });
+
   it("다른 화면의 서버 필드를 덮지 않도록 변경한 값만 초안에 포함한다", () => {
     const baseline = fields();
     expect(changedProfileFields({ ...baseline, bio: " 새 소개 " }, baseline, false)).toEqual({ bio: " 새 소개 " });

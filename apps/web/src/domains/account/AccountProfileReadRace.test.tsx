@@ -231,4 +231,112 @@ describe("실제 프로필 클라이언트와 편집 폼의 갱신 경합", () =
     expect((await screen.findByLabelText<HTMLTextAreaElement>("account.profile.bioLabel")).value).toBe("계속 작성할 초안");
     expect(screen.getByLabelText<HTMLInputElement>("account.profile.nameLabel").value).toBe("갱신한 이름");
   });
+
+  it("공백 포함 서버 원본은 입력 전 초안이나 저장 요청을 만들지 않는다", async () => {
+    const legacy = profile(" 이름 ", "소개\n");
+    network.get.mockResolvedValueOnce({ profile: legacy })
+      .mockResolvedValueOnce({ profile: { ...legacy, name: "외부에서 갱신한 이름" } });
+    mount();
+    const name = await screen.findByLabelText<HTMLInputElement>("account.profile.nameLabel");
+    expect(name.value).toBe(legacy.name);
+    expect(screen.getByLabelText<HTMLTextAreaElement>("account.profile.bioLabel").value).toBe(legacy.bio);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "account.profile.saveButton" }).disabled).toBe(true);
+    const scope = captureProfileDraftScope("profile-race-user");
+    expect(readProfileDraft(scope)).toBeNull();
+    expect(beforeUnload()).toBe(false);
+    fireEvent.submit(screen.getByRole("form", { name: "공개 프로필 편집" }));
+    expect(network.patch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("link", { name: "다른 화면" }));
+    fireEvent.click(screen.getByRole("link", { name: "프로필로 돌아가기" }));
+    const returned = await screen.findByLabelText<HTMLInputElement>("account.profile.nameLabel");
+    expect(returned.value).toBe("외부에서 갱신한 이름");
+    expect(screen.getByLabelText<HTMLTextAreaElement>("account.profile.bioLabel").value).toBe(legacy.bio);
+    expect(screen.queryByRole("button", { name: "account.profile.discardDraft" })).toBeNull();
+    expect(readProfileDraft(scope)).toBeNull();
+    expect(beforeUnload()).toBe(false);
+    expect(network.get).toHaveBeenCalledTimes(2);
+    expect(network.patch).not.toHaveBeenCalled();
+  });
+
+  it("공백 포함 서버 원본에서 이름만 저장하면 미수정 소개를 PATCH에 넣지 않는다", async () => {
+    const legacy = profile(" 이름 ", "소개\n");
+    network.get.mockResolvedValueOnce({ profile: legacy });
+    network.patch.mockResolvedValueOnce({ profile: { ...legacy, name: "새 이름" } });
+    mount();
+    const name = await screen.findByLabelText<HTMLInputElement>("account.profile.nameLabel");
+    fireEvent.change(name, { target: { value: " 새 이름 " } });
+    expect(readProfileDraft(captureProfileDraftScope("profile-race-user"))?.patch).toEqual({ name: " 새 이름 " });
+    expect(beforeUnload()).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "account.profile.saveButton" }));
+    const saved = await screen.findByRole<HTMLButtonElement>("button", { name: "account.profile.saved" });
+    expect(network.patch).toHaveBeenCalledTimes(1);
+    expect(network.patch).toHaveBeenCalledWith("/me/profile", { name: "새 이름" });
+    expect(name.value).toBe("새 이름");
+    expect(screen.getByLabelText<HTMLTextAreaElement>("account.profile.bioLabel").value).toBe(legacy.bio);
+    expect(getCachedMyProfile()?.bio).toBe(legacy.bio);
+    expect(saved.disabled).toBe(true);
+    expect(readProfileDraft(captureProfileDraftScope("profile-race-user"))).toBeNull();
+    expect(beforeUnload()).toBe(false);
+  });
+
+  it("공백 포함 서버 원본의 초안 폐기는 최신 이름·서버 소개·초점을 복구한다", async () => {
+    const legacy = profile(" 이름 ", "소개\n");
+    const latest = { ...legacy, name: "다른 화면의 최신 이름" };
+    network.get.mockResolvedValue({ profile: latest }).mockResolvedValueOnce({ profile: legacy });
+    mount();
+    const bio = await screen.findByLabelText<HTMLTextAreaElement>("account.profile.bioLabel");
+    fireEvent.change(bio, { target: { value: "폐기할 소개" } });
+    const scope = captureProfileDraftScope("profile-race-user");
+    expect(readProfileDraft(scope)?.patch).toEqual({ bio: "폐기할 소개" });
+    fireEvent.click(screen.getByRole("link", { name: "다른 화면" }));
+    fireEvent.click(screen.getByRole("link", { name: "프로필로 돌아가기" }));
+    const restored = await screen.findByLabelText<HTMLTextAreaElement>("account.profile.bioLabel");
+    const name = screen.getByLabelText<HTMLInputElement>("account.profile.nameLabel");
+    expect(restored.value).toBe("폐기할 소개");
+    expect(name.value).toBe(latest.name);
+    expect(beforeUnload()).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "account.profile.discardDraft" }));
+    expect(document.activeElement).toBe(name);
+    expect(name.value).toBe(latest.name);
+    expect(restored.value).toBe(legacy.bio);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "account.profile.saveButton" }).disabled).toBe(true);
+    expect(readProfileDraft(scope)).toBeNull();
+    expect(beforeUnload()).toBe(false);
+
+    fireEvent.click(screen.getByRole("link", { name: "다른 화면" }));
+    fireEvent.click(screen.getByRole("link", { name: "프로필로 돌아가기" }));
+    expect((await screen.findByLabelText<HTMLTextAreaElement>("account.profile.bioLabel")).value).toBe(legacy.bio);
+    expect(screen.getByLabelText<HTMLInputElement>("account.profile.nameLabel").value).toBe(latest.name);
+    expect(screen.queryByRole("button", { name: "account.profile.discardDraft" })).toBeNull();
+    expect(network.get).toHaveBeenCalledTimes(3);
+    expect(network.patch).not.toHaveBeenCalled();
+  });
+
+  it("공백 포함 서버 원본을 의도적으로 정리한 입력은 저장하고 재방문 때 초안을 남기지 않는다", async () => {
+    const legacy = profile(" 이름 ", "소개\n");
+    const normalized = profile("이름", "소개");
+    network.get.mockResolvedValue({ profile: normalized }).mockResolvedValueOnce({ profile: legacy });
+    network.patch.mockResolvedValueOnce({ profile: normalized });
+    mount();
+    const name = await screen.findByLabelText<HTMLInputElement>("account.profile.nameLabel");
+    const bio = screen.getByLabelText<HTMLTextAreaElement>("account.profile.bioLabel");
+    fireEvent.change(name, { target: { value: "이름" } });
+    fireEvent.change(bio, { target: { value: "소개" } });
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "account.profile.saveButton" }).disabled).toBe(false);
+    expect(readProfileDraft(captureProfileDraftScope("profile-race-user"))?.patch).toEqual({ name: "이름", bio: "소개" });
+    fireEvent.click(screen.getByRole("button", { name: "account.profile.saveButton" }));
+    const saved = await screen.findByRole<HTMLButtonElement>("button", { name: "account.profile.saved" });
+    expect(network.patch).toHaveBeenCalledTimes(1);
+    expect(network.patch).toHaveBeenCalledWith("/me/profile", { name: "이름", bio: "소개" });
+    expect(saved.disabled).toBe(true);
+    expect(beforeUnload()).toBe(false);
+    fireEvent.click(screen.getByRole("link", { name: "다른 화면" }));
+    fireEvent.click(screen.getByRole("link", { name: "프로필로 돌아가기" }));
+    expect((await screen.findByLabelText<HTMLInputElement>("account.profile.nameLabel")).value).toBe("이름");
+    expect(screen.getByLabelText<HTMLTextAreaElement>("account.profile.bioLabel").value).toBe("소개");
+    expect(screen.queryByRole("button", { name: "account.profile.discardDraft" })).toBeNull();
+    expect(readProfileDraft(captureProfileDraftScope("profile-race-user"))).toBeNull();
+    expect(network.get).toHaveBeenCalledTimes(2);
+  });
 });
