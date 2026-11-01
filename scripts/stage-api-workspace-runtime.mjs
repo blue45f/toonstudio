@@ -35,6 +35,8 @@ const WORKSPACE_RUNTIME_PACKAGES = Object.freeze([
   },
   {
     name: "@toonstudio/studio-project-model",
+    sourceManifest: new URL("../packages/studio-project-model/package.json", import.meta.url),
+    compiledDirectory: "packages/studio-project-model",
     compiledEntry: "packages/studio-project-model/src/index.js",
     exports: { ".": "./index.js", ...Object.fromEntries(
       ["work-session", "work-session-evidence", "pinned-review-share", "review-delivery", "review-voice-note", "world-publication", "world-acoustic", "world-conversation", "recording-booth-asset"].map((name) => [`./${name}`, `./${name}.js`]),

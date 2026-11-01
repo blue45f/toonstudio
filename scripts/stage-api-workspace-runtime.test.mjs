@@ -78,6 +78,14 @@ test("stages workspace packages inside the emitted API boundary", async () => {
       "packages/studio-project-model/src/index.js",
       '"use strict"; module.exports = { model: "v3" };\n',
     );
+    // 공개 subpath의 실제 소스를 CommonJS로 emit해 Node 배포 경계에서 직접 읽는다.
+    const frameClipSource = await readFile(new URL("../packages/studio-project-model/src/frame-clip.ts", import.meta.url), "utf8");
+    const frameClipOutput = ts.transpileModule(frameClipSource, {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    await compiledPackage(root, "packages/studio-project-model/src/frame-clip.js", frameClipOutput);
+    await compiledPackage(root, "packages/studio-project-model/src/private-internal.js",
+      '"use strict"; module.exports = { privateModel: true };\n');
     await compiledPackage(
       root,
       "packages/studio-format-gateway/src/index.js",
@@ -86,7 +94,7 @@ test("stages workspace packages inside the emitted API boundary", async () => {
     const caller = await compiledPackage(
       root,
       "apps/api/src/main.js",
-      '"use strict"; require("@toonstudio/contracts/avatar"); require("@toonstudio/contracts/studio-live-auth-ticket");\n',
+      '"use strict"; require("@toonstudio/contracts/avatar"); require("@toonstudio/contracts/studio-live-auth-ticket"); require("@toonstudio/studio-project-model/frame-clip");\n',
     );
     await compiledPackage(root, "packages/contracts/src/avatar.js", 'module.exports = require("@toonstudio/contracts/affiliate");\n');
     await compiledPackage(root, "packages/contracts/src/affiliate.js", 'module.exports = { affiliate: "ready" };\n');
@@ -128,7 +136,7 @@ test("stages workspace packages inside the emitted API boundary", async () => {
         code: "ERR_PACKAGE_PATH_NOT_EXPORTED",
       });
     }
-    await writeFile(caller, 'require("@toonstudio/contracts/studio-live-auth-ticket");\nrequire("@toonstudio/contracts/creator-resource-workflow");\n');
+    await writeFile(caller, 'require("@toonstudio/contracts/studio-live-auth-ticket");\nrequire("@toonstudio/contracts/creator-resource-workflow");\nrequire("@toonstudio/studio-project-model/frame-clip");\n');
     assert.ok(verifyCompiledApiImports(root).importsChecked > 2);
     const validCallerSource = await readFile(caller, "utf8");
     await writeFile(caller, 'require("@toonstudio/contracts/studio-live-lock-resource");\n');
@@ -161,6 +169,25 @@ test("stages workspace packages inside the emitted API boundary", async () => {
     assert.deepEqual(requireFromApi("@toonstudio/studio-project-model"), {
       model: "v3",
     });
+    const frameClip = requireFromApi("@toonstudio/studio-project-model/frame-clip");
+    assert.equal(typeof frameClip.studioFrameClip, "function");
+    assert.deepEqual(frameClip.studioFrameClip({
+      x: 10, y: 20, width: 30, height: 40, points: [0, 0, 30, 0, 30, 40],
+    }), {
+      x: 10, y: 20, width: 30, height: 40, points: [10, 20, 40, 20, 40, 60],
+    });
+    const modelPackageJson = JSON.parse(await readFile(
+      resolve(root, "node_modules", "@toonstudio", "studio-project-model", "package.json"),
+      "utf8",
+    ));
+    assert.equal(modelPackageJson.exports["./frame-clip"], "./frame-clip.js");
+    // 컴파일된 private 파일과 emit하지 않은 공개 Node/브라우저 진입점은 노출하지 않는다.
+    for (const subpath of ["private-internal", "node", "browser"]) {
+      assert.equal(("./" + subpath) in modelPackageJson.exports, false);
+      assert.throws(() => requireFromApi("@toonstudio/studio-project-model/" + subpath), {
+        code: "ERR_PACKAGE_PATH_NOT_EXPORTED",
+      });
+    }
     assert.deepEqual(requireFromApi("@toonstudio/studio-format-gateway"), {
       gateway: "compatibility",
     });
@@ -169,6 +196,11 @@ test("stages workspace packages inside the emitted API boundary", async () => {
       assert.deepEqual(requireFromApi(`@toonstudio/studio-project-model/${name}`), { contract: name });
     }
     const canonicalRoot = await realpath(root);
+    const frameClipResolution = await realpath(requireFromApi.resolve("@toonstudio/studio-project-model/frame-clip"));
+    assert.ok(frameClipResolution.startsWith(canonicalRoot + "/"));
+    assert.equal(frameClipResolution, await realpath(resolve(
+      root, "node_modules", "@toonstudio", "studio-project-model", "frame-clip.js",
+    )));
     for (const name of [
       "@toonstudio/core",
       "@toonstudio/studio-project-model",
