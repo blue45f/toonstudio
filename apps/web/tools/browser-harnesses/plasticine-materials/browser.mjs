@@ -1,4 +1,4 @@
-/** 실제 제품 UI의 대표 3개만 검사한다. 서버·업로드·다른 팩·전체 19개 검사는 시작하지 않는다. */
+/** 실제 제품 UI의 core-3·도형 복수 객체·대표 GLB 복수 인스턴스를 별도 범위로 검사한다. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -7,10 +7,14 @@ import { readFile, writeFile, mkdir, realpath, lstat, readdir } from "node:fs/pr
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { createMultiObjectScenario } from "./multi-object-scenario.mjs";
+import { createImportedMaterialScenario, IMPORTED_CASE_ID, IMPORTED_FIXTURE } from "./imported-material-scenario.mjs";
+import { createLettuceMaterialScenario, LETTUCE_CASE_ID, LETTUCE_FIXTURE, verifyLettuceFixture } from "./lettuce-material-scenario.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const EXPECTED_SCOPE = "core-3";
-const IDS = ["emaceart-plasticine-01-native-8k", "emaceart-plasticine-01-godot-2k", "emaceart-plasticine-11-godot-2k"];
+const CORE_IDS = ["emaceart-plasticine-01-native-8k", "emaceart-plasticine-01-godot-2k", "emaceart-plasticine-11-godot-2k"];
+const MULTI_IDS = ["emaceart-plasticine-01-godot-2k", "emaceart-plasticine-11-godot-2k"];
+const MULTI_CASE_ID = "multi-object-isolation";
 const DOM_MS = 15_000, LOAD_MS = 120_000, CLEANUP_MS = 60_000;
 const args = new Map();
 for (let index = 2; index < process.argv.length; index += 2) {
@@ -20,8 +24,13 @@ for (let index = 2; index < process.argv.length; index += 2) {
 }
 const required = ["--repo", "--expected-head", "--base-url", "--observer-url", "--out", "--browser-binary", "--scope", "--work-ms"];
 assert.ok(required.every((key) => args.has(key)), "필수 인자가 없습니다. 범위 메모의 실행 예시를 확인하세요.");
-assert.ok([...args.keys()].every((key) => required.includes(key)), "허용하지 않은 인자가 있습니다.");
-assert.equal(args.get("--scope"), EXPECTED_SCOPE, "이 QA는 대표 3개만 검사합니다.");
+const lettuceArgs = ["--lettuce-file", "--lettuce-receipt"];
+assert.ok([...args.keys()].every((key) => required.includes(key) || lettuceArgs.includes(key)), "허용하지 않은 인자가 있습니다.");
+const scope = args.get("--scope");
+assert.ok(["core-3", "multi-object", "imported-model", "lettuce-template"].includes(scope), "허용하지 않은 scope입니다.");
+assert(lettuceArgs.every((key) => scope === "lettuce-template" ? args.has(key) && path.isAbsolute(args.get(key)) : !args.has(key)),
+  "Lettuce 범위에는 원본 GLB와 정상화 receipt 절대 경로가 필요합니다.");
+const IDS = scope === "core-3" ? CORE_IDS : MULTI_IDS;
 const repo = await realpath(args.get("--repo"));
 const base = new URL(args.get("--base-url"));
 assert.equal(base.hostname, "127.0.0.1", "제품 원점은 로컬 IPv4여야 합니다.");
@@ -38,6 +47,11 @@ const observerSource = path.join(HERE, "passive-entry.ts");
 assert.equal(observerUrl.pathname, "/tools/browser-harnesses/plasticine-materials/passive-entry.ts", "관측기는 같은 제품 Vite 그래프의 공개 도구여야 합니다.");
 assert.equal(await realpath(observerSource), observerSource, "관측기의 링크 경로는 허용하지 않습니다.");
 const observerSourceBytes = await readFile(observerSource);
+for (const name of ["multi-object-scenario.mjs", "imported-material-scenario.mjs", "lettuce-material-scenario.mjs"]) {
+  const scenarioSource = path.join(HERE, name);
+  assert.equal(await realpath(scenarioSource), scenarioSource, "시나리오 모듈의 링크 경로는 허용하지 않습니다.");
+}
+let importedFixtureBytes, lettuceFixtureBytes;
 assert.ok(path.isAbsolute(args.get("--out")), "출력은 아직 없는 절대 경로여야 합니다.");
 const out = path.resolve(args.get("--out"));
 assert.ok(out !== repo && out !== HERE && !out.startsWith(HERE + path.sep)
@@ -45,7 +59,7 @@ assert.ok(out !== repo && out !== HERE && !out.startsWith(HERE + path.sep)
 await mkdir(path.dirname(out), { recursive: true });
 await mkdir(out, { recursive: false });
 const workMs = Number(args.get("--work-ms"));
-assert.equal(workMs, 800_000, "대표 3개 검증의 원래 작업 상한 800초를 유지합니다.");
+assert.equal(workMs, 800_000, "scope별 검증도 원래 작업 상한 800초를 유지합니다.");
 const started = Date.now(), workDeadline = started + workMs, cleanupDeadline = workDeadline + CLEANUP_MS;
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const expectedHead = args.get("--expected-head");
@@ -57,7 +71,7 @@ async function sourceCheckpoint() {
   const changed = git(["diff", "--name-only", "-z", "HEAD", "--", ...sourceScopes]).split("\0").filter(Boolean);
   const untracked = git(["ls-files", "--others", "--exclude-standard", "-z", "--", ...sourceScopes]).split("\0").filter(Boolean);
   const names = [...new Set([...changed, ...untracked, "apps/web/src/domains/creator/bg3d/studio-bg3d-plasticine-materials.generated.json",
-    "apps/web/vite.config.ts", "apps/web/vite-react-compiler-filter.ts", "package.json", "pnpm-lock.yaml", ...["browser.mjs", "passive-entry.ts", "source-server.mjs", "README.md"].map((name) => `${harnessRelative}/${name}`)])]
+    "apps/web/vite.config.ts", "apps/web/vite-react-compiler-filter.ts", "package.json", "pnpm-lock.yaml", ...["browser.mjs", "passive-entry.ts", "source-server.mjs", "README.md", "multi-object-scenario.mjs", "imported-material-scenario.mjs", "lettuce-material-scenario.mjs"].map((name) => `${harnessRelative}/${name}`)])]
     .filter((name) => /\.(?:[cm]?jsx?|tsx?|json|css|ya?ml|md)$/u.test(name)).sort();
   const files = {};
   for (const name of names) {
@@ -75,19 +89,26 @@ const cases = IDS.map((id) => {
   assert.ok(material, "대표 재질이 카탈로그에 없습니다.");
   return { material, variant: material.variants.find((entry) => entry.id === id) };
 });
+const runs = scope === "core-3"
+  ? cases.map((item) => ({ id: item.variant.id, item, variantIds: [item.variant.id] }))
+  : [{ id: scope === "multi-object" ? MULTI_CASE_ID : scope === "lettuce-template" ? LETTUCE_CASE_ID : IMPORTED_CASE_ID, item: null, variantIds: [...MULTI_IDS] }];
 const { chromium } = createRequire(path.join(repo, "package.json"))("playwright");
 const browserBinary = await realpath(args.get("--browser-binary"));
 const events = [], results = [];
-const receipt = { schema: "toonstudio.plasticine-actual-core.v3", scope: EXPECTED_SCOPE, expectedHead,
+const receipt = { schema: scope === "core-3" ? "toonstudio.plasticine-actual-core.v3"
+  : scope === "multi-object" ? "toonstudio.plasticine-actual-multi-object.v1" : scope === "lettuce-template" ? "toonstudio.plasticine-actual-lettuce-template.v1" : "toonstudio.plasticine-actual-imported-model.v1", scope, expectedHead,
   browserKind: "Chrome for Testing chromium channel", engine: "explicit WebGL2", originalResolution: true,
   startedAt: new Date(started).toISOString(), workMs, cleanupReserveMs: CLEANUP_MS,
   catalogSha256: sha(catalogBytes), sourcePins, sourceCheckpointBefore: sourceBefore, cases: results,
+  plannedCaseIds: runs.map((run) => run.id), plannedVariantIds: [...IDS],
+  notPlannedVariantIds: CORE_IDS.filter((id) => !IDS.includes(id)),
   sourceCheck: { method: "catalog-local-path-size-sha256", receivedHttpBodyShaVerified: false },
   observer: { url: observerUrl.href, sourceSha256: sha(observerSourceBytes), source: `${harnessRelative}/passive-entry.ts` },
   routingMayDisableHttpCache: true,
   full19Verified: false, safariVerified: false, installedChromeVerified: false, webgpuPerformanceVerified: false,
+  webgpuAdapterObserved: false, webgpuDeviceObserved: false, backendEvidenceScope: "explicit-webgl2-owning-product-canvas",
   memorySoakVerified: false, glbExportVerified: false, productionVerified: false, retries: 0 };
-let browser, failure;
+let browser, browserCdp, failure;
 function remaining(cap = DOM_MS, cleanup = false) {
   const left = (cleanup ? cleanupDeadline : workDeadline) - Date.now();
   assert.ok(left > 0, cleanup ? "정리 기한을 소진했습니다." : "원래 작업 기한을 소진했습니다.");
@@ -114,12 +135,57 @@ async function bounded(promise, cap, label) {
     return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label)), cap); })]);
   } finally { if (timer) clearTimeout(timer); }
 }
-async function verifyCatalogSources() {
+/** 같은 허용 필터·실패 기준으로 정리 중 늦게 도착한 실제 이벤트도 검사한다. */
+function assertCaseRuntimeEvents(result) {
+  result.unexpectedConsoleErrors = result.consoleErrors.filter((message) => message !== "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    && !message.startsWith("[vite] failed to connect to websocket."));
+  assert.equal(result.contextLossEvents.length, 0, "제품 Canvas의 WebGL context lost 이벤트가 있습니다.");
+  assert.equal(result.pageErrors.length, 0, "제품 페이지 예외가 있습니다.");
+  assert.equal(result.unexpectedConsoleErrors.length, 0, "의도한 로컬 요청 차단 외의 콘솔 오류가 있습니다.");
+  assert.equal(result.networkPolicyFailures.length, 0, "구매 원본 요청 URL 경계가 다릅니다.");
+  assert.ok(result.network.every((entry) => entry.finished && !entry.failure && entry.status === 200), "원본 요청 실패가 있습니다.");
+}
+function recordEventRecheckFailure(result, phase, error) {
+  result.status = "failed";
+  result.failure ??= { message: error.message, stack: error.stack };
+  result.eventRecheckFailures ??= [];
+  result.eventRecheckFailures.push({ phase, message: error.message, stack: error.stack });
+}
+async function readPinnedFixture(expected, cleanup = false) {
+  remaining(DOM_MS, cleanup);
+  const file = expected.absolutePath ?? path.join(repo, expected.relativePath);
+  assert.equal(await realpath(file), file, "입력 GLB·권리 근거의 링크 경로는 허용하지 않습니다.");
+  const before = await lstat(file, { bigint: true });
+  assert(before.isFile()); assert.equal(before.size, BigInt(expected.bytes));
+  const bytes = await readFile(file); assert.equal(sha(bytes), expected.sha256, "입력 원본 SHA256이 다릅니다.");
+  const after = await lstat(file, { bigint: true });
+  assert.deepEqual([after.dev, after.ino, after.size, after.mtimeNs, after.mode, after.nlink],
+    [before.dev, before.ino, before.size, before.mtimeNs, before.mode, before.nlink], "대조 중 원본이 바뀌었습니다.");
+  return { bytes, pin: { path: expected.relativePath ?? path.basename(file), bytes: expected.bytes, sha256: expected.sha256,
+    identity: [after.dev, after.ino, after.size, after.mtimeNs, after.mode, after.nlink].map(String) } };
+}
+async function verifyImportedFixture(cleanup = false) {
+  const verified = [];
+  for (const expected of [IMPORTED_FIXTURE, ...IMPORTED_FIXTURE.provenance]) {
+    const { bytes, pin } = await readPinnedFixture(expected, cleanup);
+    if (!cleanup && expected === IMPORTED_FIXTURE) importedFixtureBytes = bytes;
+    verified.push(pin);
+  }
+  return { ...verified[0], provenance: verified.slice(1), licenseId: "CC0-1.0", provider: "Kenney" };
+}
+async function verifyLettuceSource(cleanup = false) {
+  const value = await verifyLettuceFixture({ repo, file: args.get("--lettuce-file"), receiptFile: args.get("--lettuce-receipt"),
+    readPinned: (expected) => readPinnedFixture(expected, cleanup) });
+  if (!cleanup) lettuceFixtureBytes = value.buffer;
+  return value.source;
+}
+
+async function verifyCatalogSources(cleanup = false) {
   const prefix = "/assets/virtual-studio/purchased-materials-v1/plasticine/maps/";
   assert.equal(catalog.schema, "toonstudio.purchased-surface-materials.v1");
   const expectedNames = new Set(), verified = [];
   for (const asset of catalog.assets) {
-    remaining();
+    remaining(DOM_MS, cleanup);
     assert.match(asset.sha256, /^[0-9a-f]{64}$/u);
     assert.equal(asset.url, prefix + asset.sha256 + ".png");
     assert.ok(Number.isSafeInteger(asset.bytes) && asset.bytes > 0);
@@ -130,14 +196,15 @@ async function verifyCatalogSources() {
     const before = await lstat(file, { bigint: true });
     assert.ok(before.isFile()); assert.equal(before.size, BigInt(asset.bytes));
     const digest = createHash("sha256"), stream = createReadStream(file);
-    const timer = setTimeout(() => stream.destroy(new Error("원본 대조 기한을 소진했습니다.")), remaining(LOAD_MS));
-    try { for await (const chunk of stream) { remaining(); digest.update(chunk); } }
+    const timer = setTimeout(() => stream.destroy(new Error("원본 대조 기한을 소진했습니다.")), remaining(LOAD_MS, cleanup));
+    try { for await (const chunk of stream) { remaining(DOM_MS, cleanup); digest.update(chunk); } }
     finally { clearTimeout(timer); stream.destroy(); }
     assert.equal(digest.digest("hex"), asset.sha256, "로컬 원본 SHA256이 카탈로그와 다릅니다.");
     const after = await lstat(file, { bigint: true });
     assert.deepEqual([after.dev, after.ino, after.size, after.mtimeNs, after.mode, after.nlink],
       [before.dev, before.ino, before.size, before.mtimeNs, before.mode, before.nlink], "원본 대조 중 파일이 바뀌었습니다.");
-    verified.push({ url: asset.url, bytes: asset.bytes, sha256: asset.sha256 });
+    verified.push({ url: asset.url, bytes: asset.bytes, sha256: asset.sha256,
+      identity: [after.dev, after.ino, after.size, after.mtimeNs, after.mode, after.nlink].map(String) });
   }
   const names = await readdir(path.join(repo, "apps/web/public", prefix));
   assert.deepEqual([...names].sort(), [...expectedNames].sort(), "실제 원본 파일 집합이 카탈로그와 다릅니다.");
@@ -149,15 +216,62 @@ async function verifyCatalogSources() {
   return { method: "catalog-local-path-size-sha256", files: verified.length, bytes: verified.reduce((sum, asset) => sum + asset.bytes, 0),
     verified, receivedHttpBodyShaVerified: false, full19BrowserVerified: false };
 }
-async function readObservation(page) {
-  return page.evaluate(() => {
-    if (!window.__plasticineActualObserver) throw new Error("수동 관측기가 준비되지 않았습니다.");
-    return window.__plasticineActualObserver.observe();
+// reader와 토큰의 수명은 같은 observe 함수 인스턴스에 묶인다. reload 전에 JSHandle을 해제한다.
+const observerReaders = new Map();
+let nextObserverEpoch = 1;
+async function createStableObserverReader(page) {
+  const expectedObserve = await page.evaluateHandle(() => {
+    const observe = window.__plasticineActualObserver?.observe;
+    if (typeof observe !== "function") throw new Error("실제 관측기 함수가 없습니다.");
+    return observe;
   });
+  const epoch = nextObserverEpoch++;
+  let disposed = false;
+  return {
+    async read() {
+      if (disposed) throw new Error("종료한 관측기 reader를 재사용할 수 없습니다.");
+      const observation = await page.evaluate((expected) => {
+        const current = window.__plasticineActualObserver;
+        if (!current || current.observe !== expected) throw new Error("관측기가 교체돼 이전 WebGL 객체 식별자를 비교할 수 없습니다.");
+        return current.observe();
+      }, expectedObserve);
+      return { ...observation, observerEpoch: epoch };
+    },
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      await expectedObserve.dispose();
+    },
+  };
+}
+async function releaseObserverReader(page) {
+  const reader = observerReaders.get(page);
+  if (!reader) return;
+  observerReaders.delete(page);
+  await bounded(reader.dispose(), remaining(5_000, true), "관측기 JSHandle 해제 기한");
+}
+async function readObservation(page) {
+  const reader = observerReaders.get(page);
+  assert.ok(reader, "같은 observe 함수에 고정된 reader가 없습니다.");
+  const observation = await reader.read(); validateRenderer(observation);
+  if (!receipt.hardwareProcessSnapshot) {
+    receipt.hardwareProcessSnapshot = await browserCdp.send("SystemInfo.getProcessInfo");
+    assert(receipt.hardwareProcessSnapshot.processInfo.some((entry) => /gpu/iu.test(entry.type)), "소유 Chrome의 실제 GPU 프로세스가 없습니다.");
+    receipt.productOrigin = { origin: observation.origin, secureContext: observation.secureContext, backend: observation.backend };
+  }
+  return observation;
 }
 async function attachObserver(page) {
+  assert.equal(observerReaders.has(page), false, "관측기를 다시 붙이기 전에 기존 JSHandle을 해제해야 합니다.");
   await page.addScriptTag({ type: "module", url: observerUrl.href });
   await until(() => page.evaluate(() => Boolean(window.__plasticineActualObserver)), DOM_MS, "수동 관측기를 로드하지 못했습니다.");
+  observerReaders.set(page, await createStableObserverReader(page));
+}
+async function productCanvas(page) {
+  const canvas = page.getByTestId("studio-bg3d-dialog").getByTestId("studio-bg3d-viewport").locator("canvas");
+  await canvas.waitFor({ state: "attached", timeout: remaining() });
+  assert.equal(await canvas.count(), 1, "실제 제품 viewport의 유일한 공유 Canvas가 아닙니다.");
+  return canvas;
 }
 async function openEditor(page) {
   const dialog = page.getByTestId("studio-bg3d-dialog");
@@ -172,7 +286,7 @@ async function openEditor(page) {
     await engine.click({ timeout: remaining() });
   }
   await until(async () => /WebGL2 사용 중/u.test(await page.getByTestId("studio-bg3d-engine-active-backend").first().innerText()), DOM_MS, "제품 WebGL2 실행 상태가 아닙니다.");
-  await dialog.locator("canvas").first().waitFor({ state: "visible", timeout: remaining() });
+  await (await productCanvas(page)).waitFor({ state: "visible", timeout: remaining() });
   const cutPanel = dialog.getByTestId("scene3d-cut-panel");
   if (await cutPanel.count() && await cutPanel.getAttribute("open") !== null) await cutPanel.locator(":scope > summary").click({ timeout: remaining() });
   await attachObserver(page);
@@ -190,6 +304,7 @@ async function showPicker(page, item) {
     apply: card.getByRole("button", { name: item.material.labelKo + " 적용", exact: true }) };
 }
 function validateRenderer(observation) {
+  assert.equal(observation.backend, "webgl2"); assert.equal(observation.secureContext, true, "보안 제품 원점이 아닙니다.");
   assert.equal(observation.contextLost, false);
   assert.ok(observation.renderer && /Apple|Metal/iu.test(observation.renderer), "실제 Apple/Metal 하드웨어 renderer가 아닙니다.");
   assert.doesNotMatch(observation.renderer, /SwiftShader|llvmpipe|software/iu);
@@ -236,7 +351,7 @@ async function waitNaturalMaterial(page, item, initialFrame) {
   }, LOAD_MS, "원본 채널 또는 자연스러운 제품 프레임이 제한시간 안에 준비되지 않았습니다.");
 }
 async function screenshot(page, name) {
-  const bytes = await page.getByTestId("studio-bg3d-dialog").locator("canvas").first().screenshot({ type: "png", timeout: remaining() });
+  const bytes = await (await productCanvas(page)).screenshot({ type: "png", timeout: remaining() });
   await writeFile(path.join(out, name), bytes);
   return { bytes, file: name, sha256: sha(bytes) };
 }
@@ -357,22 +472,33 @@ async function compareSurfaceAppearance(page, applied, reopened, observation, re
 }
 
 try {
+  if (scope === "imported-model") receipt.fixtureSource = await verifyImportedFixture();
+  if (scope === "lettuce-template") receipt.fixtureSource = await verifyLettuceSource();
   receipt.sourceCheck = await verifyCatalogSources();
   event("source-check-complete", { files: receipt.sourceCheck.files, bytes: receipt.sourceCheck.bytes });
   event("browser-launch-start");
   browser = await chromium.launch({ channel: "chromium", executablePath: browserBinary, headless: true,
     timeout: remaining(30_000), args: ["--disable-background-networking", "--enable-automation"] });
-  const browserCdp = await browser.newBrowserCDPSession();
+  browserCdp = await browser.newBrowserCDPSession();
   receipt.browserVersion = browser.version();
   receipt.browserCommandLine = await browserCdp.send("Browser.getBrowserCommandLine");
   assert.equal(await realpath(receipt.browserCommandLine.arguments[0]), browserBinary, "실제 시작한 Chrome 바이너리가 다릅니다.");
   receipt.browserProcesses = await browserCdp.send("SystemInfo.getProcessInfo");
-  for (const item of cases) {
+  for (const run of runs) {
     remaining();
-    const result = { id: item.variant.id, status: "running", screenshots: [], network: [], networkPolicyFailures: [], pageErrors: [], consoleErrors: [], blockedRequests: [], actions: [] };
+    const item = run.item;
+    const result = { id: run.id, status: "running", screenshots: [], network: [], networkPolicyFailures: [], pageErrors: [], consoleErrors: [], contextLossEvents: [], blockedRequests: [], actions: [] };
+    if (scope !== "core-3") result.plannedVariantIds = [...run.variantIds];
     results.push(result); event("case-start", { id: result.id });
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1, locale: "ko-KR", serviceWorkers: "block" });
     const page = await context.newPage(); page.setDefaultTimeout(DOM_MS);
+    await page.exposeBinding("__plasticineReportContextLoss", (_source, value) => result.contextLossEvents.push(value));
+    await page.addInitScript(() => {
+      // 이벤트를 취소하거나 render를 요청하지 않는다. 실제 Canvas의 손실만 외부 receipt에 전달한다.
+      document.addEventListener("webglcontextlost", (event) => {
+        if (event.target instanceof HTMLCanvasElement) window.__plasticineReportContextLoss({ at: performance.now(), canvasId: event.target.id });
+      }, true);
+    });
     const requests = new Map(); let pending = 0;
     await context.route("**/*", async (route) => {
       const url = new URL(route.request().url());
@@ -405,6 +531,18 @@ try {
     try {
       // 기존 inapp verifier와 같이 guest UI를 쓴다. auth session·문서·OPFS를 직접 주입하지 않는다.
       await page.addInitScript("globalThis.__name ??= (target) => target;");
+      if (scope !== "core-3") {
+        const sharedCore = { origin, DOM_MS, LOAD_MS, remaining, until, bounded, openEditor,
+          showPicker, readObservation, materialReady, untexturedReady, screenshot, compareSurfaceAppearance,
+          requireSameSurface, releaseObserverReader };
+        const scenario = scope === "multi-object" ? createMultiObjectScenario(sharedCore)
+          : scope === "lettuce-template" ? createLettuceMaterialScenario(sharedCore, {
+            name: LETTUCE_FIXTURE.fileName, mimeType: "model/gltf-binary", buffer: lettuceFixtureBytes,
+          }) : createImportedMaterialScenario(sharedCore, { name: "chair.glb", mimeType: "model/gltf-binary", buffer: importedFixtureBytes });
+        await scenario.run({ page, item01: cases.find((entry) => entry.variant.id === MULTI_IDS[0]),
+          item11: cases.find((entry) => entry.variant.id === MULTI_IDS[1]), pending: () => pending, result });
+        assert.equal(result.scenarioCompleted, true);
+      } else {
       await page.goto(origin + "/studio/bg3d", { waitUntil: "domcontentloaded", timeout: remaining() });
       await openEditor(page);
       await page.locator("#bg3d-tab-shapes").first().click({ timeout: remaining() });
@@ -498,6 +636,7 @@ try {
         emissiveIntensity: clearedMesh.emissiveIntensity, wireframe: clearedMesh.wireframe },
       { color: [1, 1, 1], roughness: 1, metalness: 0, opacity: 1, transparent: false,
         emissive: [0, 0, 0], emissiveIntensity: 1, wireframe: false }, "프리셋 해제 뒤 실제 기본 표면 값이 다릅니다.");
+      await releaseObserverReader(page);
       await page.reload({ waitUntil: "domcontentloaded", timeout: remaining() });
       await openEditor(page);
       const beforeReopen = await readObservation(page); result.beforeTemplateApply = beforeReopen;
@@ -516,12 +655,8 @@ try {
       requireSameSurface(result.surfaceAppearance, "최초 적용과 재열기의 실제 표면 무늬가 다릅니다.");
       for (const triangles of result.surfaceAppearance.patterns) assert(triangles.some((stats) => stats.chromaticPixels > 100 && stats.quantizedColors > 8),
         "기즈모를 제외한 실제 면 내부에 대표 원본의 비회색 공간 무늬가 없습니다.");
-      assert.equal(result.pageErrors.length, 0, "제품 페이지 예외가 있습니다.");
-      result.unexpectedConsoleErrors = result.consoleErrors.filter((message) => message !== "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
-        && !message.startsWith("[vite] failed to connect to websocket."));
-      assert.equal(result.unexpectedConsoleErrors.length, 0, "의도한 로컬 요청 차단 외의 콘솔 오류가 있습니다.");
-      assert.equal(result.networkPolicyFailures.length, 0, "구매 원본 요청 URL 경계가 다릅니다.");
-      assert.ok(result.network.every((entry) => entry.finished && !entry.failure && entry.status === 200), "원본 요청 실패가 있습니다.");
+      }
+      assertCaseRuntimeEvents(result);
       result.status = "passed";
     } catch (error) {
       result.status = "failed"; result.failure = { message: error.message, stack: error.stack };
@@ -545,13 +680,21 @@ try {
       catch (captureError) { result.failureScreenshotError = String(captureError); }
       caseFailure = error;
     } finally {
+      try { await releaseObserverReader(page); result.observerHandleReleased = true; }
+      catch (error) { result.observerCleanupError = String(error); result.status = "failed"; caseFailure ??= error; }
       try { await bounded(context.close({ reason: "대표 단일 검증 종료" }), remaining(15_000, true), "소유 context 정리 기한"); }
       catch (error) { result.contextCleanupError = String(error); result.status = "failed"; caseFailure ??= error; }
-      finally { await saveJson(result.id + ".json", result); }
+      finally {
+        try { assertCaseRuntimeEvents(result); }
+        catch (error) { recordEventRecheckFailure(result, "after-context-close", error); caseFailure ??= error; }
+        result.eventsCheckedAfterContextCloseAttempt = true;
+        result.eventsCheckedAfterContextClose = !result.contextCleanupError;
+        await saveJson(result.id + ".json", result);
+      }
     }
     if (caseFailure) throw caseFailure;
   }
-  assert.equal(results.length, 3); assert.ok(results.every((entry) => entry.status === "passed"));
+  assert.equal(results.length, scope === "core-3" ? 3 : 1); assert.ok(results.every((entry) => entry.status === "passed"));
 } catch (error) { failure = { message: error.message, stack: error.stack }; }
 finally {
   if (browser) {
@@ -562,13 +705,53 @@ finally {
     receipt.sourceCheckpointAfter = await sourceCheckpoint();
     assert.deepEqual(receipt.sourceCheckpointAfter, sourceBefore, "실행 중 HEAD·제품 변경·QA 소스가 바뀌었습니다.");
     assert.equal(sha(await readFile(observerSource)), receipt.observer.sourceSha256);
+    if (receipt.sourceCheck.files === 59) {
+      receipt.sourceCheckAfter = await verifyCatalogSources(true);
+      assert.deepEqual(receipt.sourceCheckAfter, receipt.sourceCheck, "실행 중 구매 재질 59개 원본이 바뀌었습니다.");
+    }
+    if (scope === "imported-model" || scope === "lettuce-template") {
+      receipt.fixtureSourceAfter = scope === "lettuce-template" ? await verifyLettuceSource(true) : await verifyImportedFixture(true);
+      assert.deepEqual(receipt.fixtureSourceAfter, receipt.fixtureSource, "실행 전후 입력 GLB 원본이 다릅니다.");
+    }
     receipt.productSourceUnchanged = true;
   } catch (error) { receipt.productSourceUnchanged = false; failure ??= { message: error.message }; }
+  // browser 종료와 source 대조 뒤 같은 listener 배열을 다시 검사하고 case JSON도 최신 상태로 덮어쓴다.
+  for (const result of results) {
+    try { assertCaseRuntimeEvents(result); }
+    catch (error) {
+      recordEventRecheckFailure(result, "after-browser-close-and-source-check", error);
+      failure ??= { message: error.message, stack: error.stack };
+    }
+    result.eventsCheckedAfterBrowserCloseAttempt = true;
+    result.eventsCheckedAfterBrowserClose = receipt.browserClosed === true;
+    try {
+      const saveCap = remaining(5_000, true);
+      await bounded(saveJson(result.id + ".json", result), saveCap, "최종 case 결과 저장 기한");
+    }
+    catch (error) {
+      result.status = "failed"; result.finalResultSaveError = String(error);
+      failure ??= { message: "최종 case JSON 저장 미완료", detail: String(error) };
+    }
+  }
+  if (results.some((result) => result.status !== "passed")) failure ??= { message: "최종 case 실패 상태가 있습니다." };
   if (Date.now() >= cleanupDeadline) failure ??= { message: "절대 정리 기한을 넘었습니다." };
   receipt.failure = failure ?? null; receipt.status = failure ? "failed" : "passed";
   receipt.finishedAt = new Date().toISOString(); receipt.elapsedMs = Date.now() - started;
   receipt.withinCleanupDeadline = Date.now() < cleanupDeadline;
-  receipt.notExecutedIds = IDS.filter((id) => !results.some((entry) => entry.id === id));
+  receipt.executedCaseIds = results.map((entry) => entry.id);
+  receipt.notExecutedCaseIds = runs.map((run) => run.id).filter((id) => !results.some((entry) => entry.id === id));
+  receipt.passedCaseIds = results.filter((entry) => entry.status === "passed").map((entry) => entry.id);
+  receipt.uiRequestedVariantIds = [...new Set(results.flatMap((entry) => entry.actions
+    .filter((action) => action.action === "apply" && (scope === "core-3"
+      || action.phase === "ui-requested" || action.phase === "natural-ready")).map((action) => action.variantId)))];
+  receipt.naturalReadyVariantIds = scope === "core-3"
+    ? results.filter((entry) => entry.applied).map((entry) => entry.id)
+    : [...new Set(results.flatMap((entry) => entry.actions
+      .filter((action) => action.action === "apply" && action.phase === "natural-ready").map((action) => action.variantId)))];
+  // core-3의 기존 의미는 유지한다. 복수 객체는 시나리오 ID와 실제 요청한 재질 ID를 분리한다.
+  receipt.notExecutedIds = scope === "core-3"
+    ? IDS.filter((id) => !results.some((entry) => entry.id === id))
+    : IDS.filter((id) => !receipt.uiRequestedVariantIds.includes(id));
   await saveJson("events.json", events); await saveJson("receipt.json", receipt);
   if (Date.now() >= cleanupDeadline) {
     receipt.failure ??= { message: "결과 저장 중 절대 정리 기한을 넘었습니다." };

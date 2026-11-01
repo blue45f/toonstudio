@@ -17,6 +17,7 @@ vi.mock("./studio-bg3d-editor-runtime-bindings", async () => ({ ...await import(
 beforeEach(() => { readMetadata.mockReset().mockResolvedValue(null); });
 
 type Admission = Parameters<typeof admitAndCacheStudioBg3dModel>[0];
+type ResolveModelHash = typeof import("./studio-bg3d-model-library-loader").resolveBg3dModelHashV12;
 interface Lease { readonly signal: AbortSignal; isCurrent(): boolean; throwIfRevoked(): void }
 interface Host extends Record<string, unknown> {
   isMaterialBackendCurrent: () => boolean;
@@ -46,6 +47,7 @@ function harness() {
   const h: Host = {
     THREE, materialBackend: "webgpu", engineRuntime: { plan: { backend: "webgpu" } }, isMaterialBackendCurrent: () => backendCurrent,
     modelRenderer: null, getStoredBg3dModel: vi.fn(async () => record), getStoredBg3dModelByHash: vi.fn(async () => record),
+    resolveBg3dModelHash: vi.fn<ResolveModelHash>(async () => ({ record, deletionReceipt: null })),
     modelRootCacheRef: { current: cache }, modelLoadPendingRef: { current: new Map() },
     attachmentByStorageModelIdRef: { current: new Map() }, storageModelIdByAttachmentIdRef: { current: new Map() },
     genericModelSourceFormats: new Map(), genericModelClassifications: new Map(),
@@ -70,7 +72,7 @@ function harness() {
     setGenericModelSourceFormats: vi.fn(), replaceCanonicalDocumentState: replacement,
     allocateStudioBg3dTemplateInstanceNodeIds: () => ({ nodeIds: ["placed"] }), generateId: () => "seed",
     instantiateBg3dTemplateDocument: async (document: unknown) => ({ document }), attachmentMatchesRecord: () => true,
-    hydrateStudioBg3dDocumentToRuntime: () => ({ ok: true, diagnostics: [], omittedDiagnosticCount: 0, counts: { droppedPrimitives: 0, droppedCustomModels: 0 },
+    hydrateStudioBg3dDocumentToRuntime: () => ({ ok: true, diagnostics: [], omittedDiagnosticCount: 0, counts: { emittedPrimitives: 0, emittedCustomModels: 1, droppedPrimitives: 0, droppedCustomModels: 0 },
       primitives: [], customModels: [{ id: "placed", modelId: record.id }] }),
     orderStudioBg3dHierarchySelectionRootsFirst: () => ["placed"],
   };
@@ -123,9 +125,10 @@ describe("실제 배치·템플릿 호스트의 material backend fence", () => {
     finally { value.dispose(); }
   });
   it("템플릿 rollback은 소유 WebGPU entry만 dispose한 뒤 삭제하고 다른 variant를 유지한다", async () => {
-    const value = harness(); value.beforeCommit(value.changeBackend);
+    const value = harness(), beforeCommit = vi.fn(value.changeBackend); value.beforeCommit(beforeCommit);
     try {
       await value.h.applyUserTemplate?.({ id: "template", document: { nodes: [{ kind: "custom-model" }], attachments: [{ hash: value.record.contentHash, byteSize: 32 }] } });
+      expect(beforeCommit).toHaveBeenCalledOnce();
       expect(value.admit.mock.calls[0]?.[0].materialBackend).toBe("webgpu"); expect(value.replacement).not.toHaveBeenCalled();
       expect(value.webgpu.dispose).toHaveBeenCalledOnce(); expect(value.webgl.dispose).not.toHaveBeenCalled();
       expect(value.cache.get(studioBg3dModelCacheKey(value.record.id, "webgpu"))).toBeUndefined();
@@ -133,9 +136,10 @@ describe("실제 배치·템플릿 호스트의 material backend fence", () => {
     } finally { value.dispose(); }
   });
   it("rollback dispose가 실패하면 소유 entry를 먼저 삭제하지 않는다", async () => {
-    const value = harness(); value.beforeCommit(value.changeBackend); vi.mocked(value.webgpu.dispose).mockImplementation(() => { throw new Error("dispose failed"); });
+    const value = harness(), beforeCommit = vi.fn(value.changeBackend); value.beforeCommit(beforeCommit); vi.mocked(value.webgpu.dispose).mockImplementation(() => { throw new Error("dispose failed"); });
     try {
       await expect(value.h.applyUserTemplate?.({ id: "template", document: { nodes: [{ kind: "custom-model" }], attachments: [{ hash: value.record.contentHash, byteSize: 32 }] } })).rejects.toThrow(/dispose failed/u);
+      expect(beforeCommit).toHaveBeenCalledOnce();
       expect(value.cache.get(studioBg3dModelCacheKey(value.record.id, "webgpu"))).toBe(value.webgpu);
     } finally { value.dispose(); }
   });

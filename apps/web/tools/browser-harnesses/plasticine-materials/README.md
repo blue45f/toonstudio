@@ -1,6 +1,6 @@
 # 구매 Plasticine 재질의 실제 제품 브라우저 검증
 
-실제 `/studio/bg3d`의 guest UI에서 다음 대표 3개만 순서대로 검사한다.
+기본 `--scope core-3`는 실제 `/studio/bg3d`의 guest UI에서 다음 대표 3개를 순서대로 검사한다.
 
 - `emaceart-plasticine-01-native-8k`
 - `emaceart-plasticine-01-godot-2k`
@@ -94,3 +94,76 @@ HTTP 응답 body의 SHA256을 검증했다는 주장은 하지 않는다. 사전
 이 검증은 Safari·설치형 Chrome·WebGPU 성능·장시간 메모리 안정성·GLB 내보내기·운영 배포를
 보증하지 않는다. 비공개 r5의 이전 실패 기록은 이 공개 사본의 통과 증거가 아니며,
 공개 사본은 정확한 HEAD와 변경 소스가 봉인된 새 실제 실행으로 검증해야 한다.
+
+
+## 별도 복수 객체 범위
+
+`--scope core-3`는 기존 대표 3종·원본 해상도·판정 수치·800초 작업/60초 정리 상한을 유지한다. `--scope multi-object`는 별도 fresh guest context에서 Godot01/11만 사용하는 복수 객체 격리 사례 하나를 검사한다. 같은 인자 구조와 시간 상한을 사용하며 두 scope를 한 실행에서 이어 붙이지 않는다. scope별 결과는 실행 시의 receipt에 한정하며 전체19·Safari·WebGPU·GLB·운영 배포를 보증하지 않는다.
+
+복수 객체는 두 상자를 UI로 만들고 이름·위치를 정한 뒤, 선택한 A만 재질 변경·해제·Undo/Redo하고 B의 원본 채널·실제 무늬가 보존되는지 본다. 첫 재질 적용 전에 기본 카메라에서 비가림·각 표면 >100px인 배치를 정하며, 재질 첫 표시 뒤 카메라 입력으로 실패를 살리지 않는다. 사용자 템플릿은 노드 추가와 ID 재발급 계약이다. 저장·reload의 빈 장면·템플릿 적용 뒤 원래 위치/geometry로 새 ID를 대응시켜 각 원본 무늬를 비교한다.
+
+관측기는 WebGLTexture 객체를 observer 전용 WeakMap 숫자 토큰으로 읽는다. runner는 같은 observe 함수 참조를 JSHandle로 고정하고 교체되면 실패한다. 같은 세션 B의 토큰·UUID·업로드·alive·표면만 불변 요구하며, reload 후 새 epoch·토큰을 허용한다. 토큰은 드라이버 내부 물리 저장소 보존을 증명하지 않는다. JSHandle은 reload 전과 context 정리 때 해제한다.
+
+receipt는 `plannedCaseIds/plannedVariantIds/notPlannedVariantIds`, `executedCaseIds/notExecutedCaseIds/passedCaseIds`, `uiRequestedVariantIds/naturalReadyVariantIds`로 계획·시작·요청·준비·통과를 구분한다. 복수 객체의 case ID를 단일 재질 실행 ID로 취급하지 않는다. `notExecutedIds`는 core-3의 기존 의미를 유지하며, multi-object에서는 해당 scope에 계획한 ID 중 UI 적용 요청을 하지 않은 ID이며, 계획에서 제외한 ID는 `notPlannedVariantIds`로 구분한다. 첫 8K 원본은 multi-object 범위에 포함되지 않는다. 새 `multi-object-scenario.mjs`도 변경 여부와 관계없이 항상 source pin에 포함한다.
+
+## chair 가져온 모델 두 인스턴스 범위
+
+`--scope imported-model --work-ms 800000`은 별도 fresh guest context의 `imported-model-same-source-material-isolation` 사례 하나만 계획한다. 기존 `core-3`와 primitive `multi-object` 범위는 독립 실행한다. 소스 채택과 실제 실행 통과는 구분하며, 실행한 SHA·소스 핀·receipt로만 결과를 판정한다.
+
+입력은 기존 Kenney CC0 `assets/studio/cc0-20260906/assets/kenney-furniture/chair.glb` 원본 10,756바이트, SHA256 `c8a11eec93e89e31250ba91afc1b8d56c3bec7ae86640fd1239f595ff4180883` 하나다. 파일을 실제 모델 가져오기 UI에 한 번 전달하고 outliner의 일반 `복제` UI로 두 번째 인스턴스를 만든다. 별도 asset 재가져오기·연결 복제·DB/cache 쓰기는 사용하지 않는다. 원본 GLB를 수정하거나 무늬 이미지를 만들지 않는다. 실행 전후 GLB·LICENSE·manifest의 path/bytes/SHA를 별도 fixture receipt에 기록하고, 최초 검증한 원본 Buffer를 그대로 실제 파일 input에 전달한다.
+
+두 인스턴스가 같은 geometry UUID와 서로 다른 mesh/material UUID를 가지는지 읽는다. 저장 완료 후 실제 표시된 유일한 카드의 현재 committed React owner props에서 canonical v3 UI 데이터를 읽어 최초 ID·이름으로 A/B를 찾고, 같은 attachmentId·원본 hash/bytes·MIME·local-library source를 별도로 판정한다. attached fiber는 HostRoot 발견에만 쓰며 current 트리의 membership과 lazy resolved owner를 확인한다. own data descriptor만 허용하며 getter·제품 callback·저장소 accessor·runtime API는 호출하지 않는다. 이 관측은 `committed-ui-render-state`이고 `durableStorageProofObserved:false`다. 내구성은 관측기 reader 해제 → reload → 빈 장면 → 저장한 정확한 UI 카드 적용 → 위치·geometry로 새 ID 대응 → 자연 렌더와 원본 표면 일치로 별도 판정한다. runtime modelId는 직접 관측하지 않는다. 재질 source를 새 ID 대응 키로 쓰지 않는다.
+
+실제 원본은 1 Mesh·1 primitive·MeshStandard 경로·무텍스처·정적 GLB다. UV 230개는 finite이고 고유 좌표쌍 134개, 삼각형 170개 중 양수 UV 면적 162개·0면적 8개다. UV가 [0,1] 밖으로 넓게 펼쳐져 반복되므로 실제 가시 면의 무늬는 Chrome 판정이 필요하다. 이 한 대표가 전체 GLB/glTF·스킨·애니메이션·복수 mesh·복수 재질·다른 파일 형식 호환성을 증명하지 않는다.
+
+A/B의 Godot01 첫 적용을 각각 추가 UI 없이 자연 GPU 준비와 실제 면 무늬로 남긴 뒤, A의 Godot11 교체·Undo/Redo·`원본 복원`·Undo/Redo·다시 Undo·템플릿 저장·reload·재열기를 검사한다. 원본 복원은 GLB 고유 linear 색 `[0.8962264,0.6015712,0.3931559]`와 roughness 1/metalness 0 및 초기 material 수치·보조맵 baseline을 정확 비교한다. 동일 세션에서 B의 Texture UUID·WebGLTexture 객체 토큰·업로드·alive·실제 표면을 매번 보존해야 한다. 재열기에는 새 토큰을 허용한다.
+
+모델 자식에 R3F state가 없으면 가장 가까운 실제 R3F ancestor의 같은 renderer와 scene ancestry를 확인해 그 포털 camera를 읽는다. 기본 Canvas camera로 묵시 대체하지 않는다. 수치 위치 입력은 model owner의 position으로 확인하고, 투영에는 계속 실제 자식 meshMatrixWorld를 사용한다. 기본 camera에서 첫 재질 적용 전에만 배치를 정하며, 첫 자연 무늬 증거 전에 추가 선택·camera·렌더 요청을 넣지 않는다. 기존 800초 작업/60초 정리, 실제 Apple/Metal WebGL2, 면 >100px, 삼각형 안쪽 2 native px·실제 기즈모 제외, 비회색 픽셀 >100·색 >8, 차이 >3인 픽셀 0개 조건을 유지한다.
+
+## Lettuce의 atlas 원본과 내 템플릿 왕복
+
+`--scope lettuce-template`은 별도 새 guest context에서 Lettuce 사례를 실행한다.
+공통 실행 인자에 다음 원본 경로를 명시한다.
+
+```sh
+  --scope lettuce-template --work-ms 800000 \
+  --lettuce-file <Lettuce_C.owner-bound.glb의_절대_경로> \
+  --lettuce-receipt <같은_정상화_작업_receipt.json의_절대_경로>
+```
+
+GLB는 563,256바이트/SHA256 `d0278329da4045e00515f0bad66925eccdf08985c9aed1f66d90a929a777f3a3`다.
+정상화 receipt 4,854바이트와 RG Poly `cbv1-030-nature-megapack-extended` 권리 원장,
+2026-10-28에 보관한 공식 페이지 발췌·증거 인덱스를 실행 전후 고정 대조한다.
+보관 페이지는 CC0-1.0을 기록하며 현재 웹 페이지를 재조회한 증거로 취급하지 않는다.
+사용자의 원본 절대 경로·구매 기록·GLB Buffer를 결과 JSON에 넣지 않는다.
+
+원본은 mesh/material 하나, 정점 210개·index 282개이며 1024×1024 embedded baseColor atlas가 있다.
+원본 색 `[1,1,1]`, roughness 1, metalness 0, double-sided와 실제 atlas decode·GPU 업로드를 확인한다.
+실제 파일 UI 가져오기 한 번과 일반 복제로 두 모델을 만들고 A에는 Godot11, B에는 Godot01을 적용한다.
+A 적용으로 B의 원본 atlas와 인스턴스 재질이 바뀌지 않는지, 첫 적용 무늬가 추가 선택·camera 입력 없이
+표시되는지 검사한다. 이후 저장·reload·빈 장면·같은 카드 적용·새 ID 대응·두 원본 표면 일치까지
+chair와 같은 기준으로 검사한다. Lettuce 범위는 Undo/원본 복원 사례를 반복하지 않는다.
+그 근거는 chair 범위에 따로 남긴다.
+
+동일 hash의 번들 asset이 503인 경우 local-library 첨부를 우선하는 계약은 제품 단위 테스트의 근거다.
+이 브라우저 범위는 실제 정상 UI 카드 적용을 검사하며 503을 주입하지 않는다.
+`unavailableBundleTested:false`를 유지하고 단위 테스트와 실제 Chrome 결과를 합쳐 쓰지 않는다.
+
+## 실행 자원과 최종 판정
+
+각 사례는 새 포트·새 runKey와 소유 PID/PG를 정한 유한한 단독 구간에서 실행한다.
+슬롯 계획 1,200초 안에서 준비 120초 + 작업 800초 + 브라우저 정리 60초 + driver/server/guard 정리와
+사전·최종 IO 여유를 확보한다. 이 문서는 예약 자체가 아니며 외부 guard의 실제 상한을 기록한다.
+원본 runner·patch·archive·C8 dist와 공개 재질 PNG 59개는 덮어쓰지 않는다.
+제품 소스가 달라졌으면 기존 dist 대신 고정된 새 Vite 소스를 사용한다.
+
+외부 실행 감독은 `/usr/bin/memory_pressure -Q`의 같은 System-wide free percentage를 시작 전과
+15초 간격으로 확인한다. 40% 미만 또는 측정 실패 시 자기 소유 작업만 중단하고 실패와 정리 결과를
+보존한다. 다른 프로세스를 종료하거나 품질·원본 해상도·판정 기준을 낮추지 않으며 자동 재시도하지 않는다.
+이 감독은 browser driver에 내장되어 있지 않으므로 실행 receipt에서 실제 사용 여부를 별도로 증명한다.
+
+실행한 Chrome 바이너리·버전·프로세스와 보안 원점, 제품 소유 Canvas의 실제 WebGL2 renderer/vendor,
+context-lost 이벤트·페이지·콘솔·원본 네트워크 오류를 기록한다. 별도 WebGPU adapter probe를
+실행하지 않는다. 명시 WebGL2 결과는 기본 WebGPU·adapter/device·FPS·다른 장치 성능 증거가 아니다.
+브라우저 통과뿐 아니라 소유 서버 정상 종료, guard 자연 종료, 강제 정리 없음·소유 잔여 없음,
+기한 준수와 최종 소스·원본 핀 일치가 확인된 뒤 완료로 판정한다. 운영 배포는 범위 밖이다.

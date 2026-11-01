@@ -675,7 +675,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             if (!isModalAssetSessionCurrent(session) || !lease.isCurrent() || isMaterialBackendCurrent?.() === false) {
               throw new StudioBg3dStaleModalOperationError();
             }
-            const record = await getStoredBg3dModelByHash(attachment.hash);
+            const record = (await resolveBg3dModelHash(attachment.hash, { source: attachment.source === "local-library" ? "local-library" : undefined, signal: lease.signal })).record;
             lease.throwIfRevoked();
             if (!record || !attachmentMatchesRecord(attachment, record)) {
               throw new Error("template-attachment-missing");
