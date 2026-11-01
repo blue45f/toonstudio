@@ -1,6 +1,6 @@
 # 공간 모델러 면 나누기·공유 모서리 치유 브라우저 검증
 
-- 상태: `migration` — 실제 제품 UI를 사용하는 수동 실행 검증 도구이며, 전체 시나리오의 브라우저 통과는 미확인이다.
+- 상태: `current` — 고정한 두 cube 문서의 전체 시나리오를 실제 제품 UI로 검증한 수동 실행 도구다.
 - 기록일: 2026-11-01.
 - 제품 구현은 [PR #2598](https://github.com/blue45f/toonstudio/pull/2598)과 [PR #2604](https://github.com/blue45f/toonstudio/pull/2604)로 main에 병합됐다.
 - 이 폴더는 기존 로컬 검증 후보를 검토할 수 있도록 게시한 사본이다. 제품 기능 완료나 운영 배포를 뜻하지 않는다.
@@ -23,7 +23,7 @@ Worker·렌더러·선택·문서 확정 함수를 mock하거나 브라우저 dr
 실제 마우스·키보드·파일 입력으로 면 분할 2회, 공유 모서리 치유의 준비 후 취소·적용 2회를 검증하도록 작성했다.
 모델링 계산 Worker는 정확히 4개로 판정하고, 페이지 수명의 로컬 DB Worker는 별도로 추적한다.
 결과 문서의 f64 위치·UV·crease·material·원본 TRS·단일 history와 저장 후 재열기를 비교한다.
-전체 시나리오의 실행 성공은 아직 없다.
+2026-11-01 로컬 Chrome/Metal 실행에서 전체 시나리오가 통과했다. 범위와 한계는 아래 기록을 따른다.
 
 실제 R3F store와 표시 geometry·재질·행렬은 읽기 관측에 사용한다. 기본 cube의
 `MeshPhysicalMaterial`과 현재 표시 구조에 한정된 관측이며 임의 모델이나 renderer로 일반화하지 않는다.
@@ -53,6 +53,9 @@ node apps/web/tools/browser-harnesses/spatial-boundary-chord/server.mjs \
 `prebundle.id: "three-stdlib"`, `fileExists: true`, `discovered: 0`을 확인한 뒤 진행한다.
 `fileHash`는 Vite 메타데이터이며 출력 파일 내용의 SHA가 아니다.
 이 조건은 알려진 초기 의존성의 commit 확인으로, 모든 후속 동적 import의 성공을 보장하지 않는다.
+검증 HTML·entry의 변환과 뒤늦게 발견된 실제 pre-transform 대기열도 준비한 뒤 ready를 낸다.
+Vite 8.3.4의 `_pendingRequests` 계약을 확인하며, 계약이 다르면 중단한다.
+서버는 env 파일을 읽지 않는다. 이 준비는 dev 검증 입력의 준비이며 cold 제품 로딩 성능의 증거가 아니다.
 
 실행자가 별도로 소유한 Chrome을 loopback CDP로 준비한 뒤 다음 driver를 한 번 실행한다.
 
@@ -73,19 +76,22 @@ PNG는 Chrome의 native decoder로 읽고 실제 Canvas의 빈 이미지·marker
 실행자는 실제 종료 코드와 소유 프로세스·포트·로그 writer 정리를 별도로 확인해야 한다.
 입력 HEAD·변경 파일·선택 의존성의 실행 전후 비교는 전체 node_modules의 불변을 보장하지 않는다.
 
-## 2026-10-31 실행 현황과 한계
+## 실행 기록과 한계
 
 | 입력 | 실제 결과 | 판정 범위 |
 | --- | --- | --- |
 | 과거 r8 후보 | Metal Canvas 진입·실제 면 선택 후 첫 경계점 입력 대기 15초에서 실패 | 분할·치유·저장 왕복 통과 아님. 새 클릭의 제품 callback 도달 원인은 미확정 |
 | 과거 r9 후보 | 초기 준비 15초에서 실패. `three-stdlib`의 늦은 최적화가 기존 chunk를 무효화하며 HTTP 504 발생 | 모델링 계산 Worker·단계·PNG·pointer trace 모두 0. 제품 geometry 또는 GPU 실패로 단정하지 않음 |
-| 이번 게시 사본 | 사전 최적화 ready 조건과 수동 관측을 포함 | 이 사본으로 서버·브라우저·GPU를 실행하지 않음. 새 실제 검증 필요 |
+| 2026-10-31 r17 | 동일 카메라 검사는 통과했지만 분할선 대비 표본이 2개로 기존 기준 3개에 미달 | 전체 치유·저장 왕복은 미실행 |
+| 2026-11-01 `c4-fixed-r9` | 전체 driver exit 0, 페이지·콘솔 오류 0, PNG 16개 | 두 분할·치유 취소/적용·Undo/Redo·작업파일 저장 및 새로고침 뒤 재열기 통과 |
 
-과거 r8·r9의 원본 입력과 실패 기록은 보존했다. 이번 게시에서는 파일 위치 guard·entry URL·필수 `--root` 입력을
-새 경로에 맞췄다. entry에는 OS 절대 경로를 넣지 않아 저장소 경로의 `#`·`?`가 URL로 해석되는 문제를 피한다.
-정상 lint에 맞춰 import 순서를 정리하고 정리 실패의 `cause`를 `AggregateError`에 명시한다.
-기존 클릭·좌표·15초 단계 한도·Worker 4개·fixture·판정 기준은 유지한다.
-사전 최적화 보완을 브라우저 성공으로 보고하지 않는다.
+2026-11-01 실행은 Chrome for Testing 156.0.8078.4 / Apple M2 Max Metal WebGL2에서 수행했다.
+분할선·치유선의 원래 PNG 판정은 각각 5/5/6/6/6/6개 표본에서 통과했다. 계산 Worker 4개
+(분할 2·치유 2), 문서 수명별 DB Worker 3개가 모두 종료됐고 입력 소스의 전후 SHA가 일치했다.
+저장한 `.toon3d`는 39,128바이트이며 재열기 뒤 f64 위치·UV·TRS·문서 이력이 일치했다.
+기존 클릭·좌표·15초 단계·전체 180초·Worker 4개·fixture·픽셀 기준은 유지한다.
+접힌 선택 작업대는 실제 버튼으로 펼친 뒤 선택 해제를 누른다. 실패한 wire 표본은 assert 이전에 기록한다.
+원본 실패 기록은 보존하며 과거 실패를 이번 성공으로 덮어쓰지 않는다.
 
 모바일·touch·전체 접근성·대형 모델 성능·4K·WebGPU·다른 게임 엔진 비교·전체 모델링 도구 동등성은
 이 검증 범위에 포함하지 않는다. 전체 기능 원장의 완료 상태도 변경하지 않는다.

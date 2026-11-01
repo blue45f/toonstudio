@@ -7,7 +7,7 @@
  */
 
 import { ContactShadows } from "@react-three/drei/core/ContactShadows.js";
-import { OrbitControls } from "@react-three/drei/core/OrbitControls.js";
+import { StudioHybridDccOrbitControls as OrbitControls } from "./StudioHybridDccOrbitControls";
 import { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js";
 import { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
 import { Canvas, useThree } from "@react-three/fiber";
@@ -319,10 +319,10 @@ function StudioHybridDccComponentOverlay({
   if (!resource) return null;
   if (resource.mode === "face") {
     return (
-      <mesh geometry={resource.geometry} renderOrder={6}>
+      <mesh geometry={resource.geometry} renderOrder={2}>
         <meshBasicMaterial
           color={VIEWPORT_COLORS.wireSelected}
-          depthTest
+          depthTest depthWrite={false}
           polygonOffset
           polygonOffsetFactor={-4}
           polygonOffsetUnits={-4}
@@ -461,7 +461,7 @@ function StudioHybridDccAssetMesh({
             polygonOffsetFactor={-1}
             polygonOffsetUnits={-1}
             transparent
-            opacity={selected ? 0.84 : componentCage ? 0.58 : 0.42}
+            opacity={selected ? 0.84 : componentCage ? 0.58 : 0.42} toneMapped={false}
             wireframe
           />
         </mesh>
