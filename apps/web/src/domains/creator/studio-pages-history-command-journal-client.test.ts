@@ -385,6 +385,113 @@ describe("Studio pages history command journal lazy client", () => {
     ]);
   });
 
+  it("이전 writer 종료를 기다리는 재시도 중 편집은 최신 체크포인트 한 번으로 인계한다", async () => {
+    let finishClose!: () => void;
+    const closing = new Promise<void>((resolve) => { finishClose = resolve; });
+    class ClosingRuntime extends DurabilityRuntime {
+      override async close() {
+        this.closeCount += 1;
+        await closing;
+        this.dispose();
+      }
+    }
+    const previous = new ClosingRuntime({
+      state: "memory-only",
+      durable: false,
+      persistenceKind: "memory-only",
+      retryable: true,
+      cause: new Error("writer 재시도가 필요합니다."),
+    });
+    const replacement = new DurabilityRuntime({
+      state: "durable",
+      durable: true,
+      persistenceKind: "sqlite-opfs",
+      retryable: false,
+      cause: null,
+    });
+    let attempt = 0;
+    const loadRuntime = vi.fn(async () => (++attempt === 1 ? previous : replacement));
+    const client = createStudioPagesHistoryCommandJournalClient({ loadRuntime });
+    client.rebase({ pages: pages(3), historyIndex: 1 });
+    await client.ready();
+    const retry = client.retryDurability();
+    try {
+      expect(previous.closeCount).toBe(1);
+      client.recordTransition({
+        mutationKind: "elements.commit",
+        previousPages: pages(3),
+        nextPages: pages(4),
+        previousHistoryIndex: 1,
+        nextHistoryIndex: 2,
+      });
+      // close를 막아 둔 채 기존 loader의 Promise 단계만 진행한다.
+      await Promise.resolve();
+      expect(loadRuntime).toHaveBeenCalledTimes(1);
+      expect(replacement.actions).toEqual([]);
+      finishClose();
+      await expect(retry).resolves.toBe(true);
+      expect(loadRuntime).toHaveBeenCalledTimes(2);
+      expect(replacement.actions).toEqual([
+        { kind: "rebase", target: { pages: pages(4), historyIndex: 2 } },
+      ]);
+      expect(previous.disposeCount).toBe(1);
+      expect(client.durabilityStatus()).toMatchObject({
+        state: "durable",
+        persistenceKind: "sqlite-opfs",
+      });
+    } finally {
+      finishClose();
+      await retry;
+      client.dispose();
+    }
+  });
+
+  it("재시도의 최신 체크포인트가 flush되기 전에는 durable 상태를 게시하지 않는다", async () => {
+    let finishFlush!: () => void;
+    const flushing = new Promise<void>((resolve) => { finishFlush = resolve; });
+    const memory = new DurabilityRuntime({ state: "memory-only", durable: false,
+      persistenceKind: "memory-only", retryable: true, cause: new Error("저장 실패") });
+    const replacement = Object.assign(new DurabilityRuntime({ state: "durable", durable: true,
+      persistenceKind: "sqlite-opfs", retryable: false, cause: null }), { flush: vi.fn(() => flushing) });
+    let attempt = 0;
+    const client = createStudioPagesHistoryCommandJournalClient({ loadRuntime: async () => (++attempt === 1 ? memory : replacement) });
+    client.rebase({ pages: pages(2), historyIndex: 2 });
+    await client.ready();
+    const retry = client.retryDurability();
+    try {
+      await vi.waitFor(() => expect(attempt).toBe(2));
+      expect(client.durabilityStatus().state).toBe("retrying");
+      expect(replacement.flush).toHaveBeenCalledOnce();
+      client.recordTransition({ mutationKind: "elements.commit", previousPages: pages(2), nextPages: pages(3),
+        previousHistoryIndex: 2, nextHistoryIndex: 3 });
+      finishFlush();
+      await expect(retry).resolves.toBe(true);
+      expect(replacement.flush).toHaveBeenCalledTimes(2);
+      expect(replacement.actions.at(-1)).toMatchObject({ kind: "transition", input: { nextPages: pages(3), nextHistoryIndex: 3 } });
+      expect(client.durabilityStatus().state).toBe("durable");
+    } finally { finishFlush(); await retry; client.dispose(); }
+  });
+
+  it.each(["write-status", "flush-rejection"] as const)("재시도 %s 실패는 durable로 승격하지 않는다", async (failureKind) => {
+    const failure = new Error("체크포인트 저장 실패");
+    const memoryStatus = { state: "memory-only", durable: false, persistenceKind: "memory-only", retryable: true, cause: failure } as const;
+    let status: StudioPagesHistoryDurabilityStatus = { state: "durable", durable: true, persistenceKind: "sqlite-opfs", retryable: false, cause: null };
+    const memory = new DurabilityRuntime(memoryStatus);
+    const replacement = Object.assign(new DurabilityRuntime(status), {
+      durabilityStatus: () => status,
+      flush: async () => { if (failureKind === "flush-rejection") throw failure; status = memoryStatus; },
+    });
+    const onDurabilityStatus = vi.fn();
+    let attempt = 0;
+    const client = createStudioPagesHistoryCommandJournalClient({ loadRuntime: async () => (++attempt === 1 ? memory : replacement), onDurabilityStatus });
+    client.rebase({ pages: pages(2), historyIndex: 2 });
+    await client.ready();
+    await expect(client.retryDurability()).resolves.toBe(false);
+    expect(client.durabilityStatus()).toMatchObject(memoryStatus);
+    expect(onDurabilityStatus.mock.calls.map(([value]) => value.state)).not.toContain("durable");
+    client.dispose();
+  });
+
   it("keeps a failed retry explicitly memory-only and retryable", async () => {
     const onDurabilityStatus = vi.fn();
     const loadRuntime = vi.fn(async () => new DurabilityRuntime({

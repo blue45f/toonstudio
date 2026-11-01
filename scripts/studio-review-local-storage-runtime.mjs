@@ -34,8 +34,9 @@ export async function createStudioReviewQaCertificates() {
       "-keyout", path.join(directory, "ca.key"), "-out", path.join(directory, "ca.crt")]);
     await run("openssl", ["req", "-new", "-newkey", "rsa:2048", "-nodes", "-subj", "/CN=127.0.0.1",
       "-keyout", path.join(directory, "private.key"), "-out", path.join(directory, "server.csr")]);
+    // LibreSSL의 기본 경로 계산은 상위 폴더의 첫 점에서 잘리므로 serial 위치를 명시한다.
     await run("openssl", ["x509", "-req", "-in", path.join(directory, "server.csr"), "-CA", path.join(directory, "ca.crt"),
-      "-CAkey", path.join(directory, "ca.key"), "-CAcreateserial", "-days", "1", "-extfile", extensions, "-out", path.join(directory, "public.crt")]);
+      "-CAkey", path.join(directory, "ca.key"), "-CAserial", path.join(directory, "ca.srl"), "-CAcreateserial", "-days", "1", "-extfile", extensions, "-out", path.join(directory, "public.crt")]);
     for (const file of ["ca.key", "private.key"]) await chmod(path.join(directory, file), 0o600);
     return directory;
   } catch (error) { await rm(directory, { recursive: true, force: true }); throw error; }

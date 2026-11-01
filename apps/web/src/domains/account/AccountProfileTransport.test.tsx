@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -168,7 +168,8 @@ describe("실제 프로필 폼과 API 본문 읽기의 연결", () => {
 
     stallGet = false;
     fireEvent.click(screen.getByRole("button", { name: "다시 불러오기" }));
-    await screen.findByDisplayValue(stored.name);
+    // 표시값 쿼리의 공백 정규화를 거치지 않고 서버 원문이 입력에 보존되는지 확인한다.
+    await waitFor(() => expect(nameInput().value).toBe(stored.name));
     expect(nameInput().value).toBe(stored.name);
     expect(bioInput().value).toBe(stored.bio);
     expect(nameInput().disabled).toBe(false);
@@ -183,7 +184,7 @@ describe("실제 프로필 폼과 API 본문 읽기의 연결", () => {
 
   it("저장 본문 지연을 성공으로 알리지 않고 초안을 보존하며 명시적 재시도만 전송한다", async () => {
     mount();
-    await screen.findByDisplayValue(stored.name);
+    await waitFor(() => expect(nameInput().value).toBe(stored.name));
     fireEvent.change(bioInput(), { target: { value: "유지할 새 소개" } });
     const scope = captureProfileDraftScope(userId);
     expect(readProfileDraft(scope)?.patch).toEqual({ bio: "유지할 새 소개" });
