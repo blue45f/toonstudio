@@ -78,7 +78,7 @@ const cases = IDS.map((id) => {
 const { chromium } = createRequire(path.join(repo, "package.json"))("playwright");
 const browserBinary = await realpath(args.get("--browser-binary"));
 const events = [], results = [];
-const receipt = { schema: "toonstudio.plasticine-actual-core.v2", scope: EXPECTED_SCOPE, expectedHead,
+const receipt = { schema: "toonstudio.plasticine-actual-core.v3", scope: EXPECTED_SCOPE, expectedHead,
   browserKind: "Chrome for Testing chromium channel", engine: "explicit WebGL2", originalResolution: true,
   startedAt: new Date(started).toISOString(), workMs, cleanupReserveMs: CLEANUP_MS,
   catalogSha256: sha(catalogBytes), sourcePins, sourceCheckpointBefore: sourceBefore, cases: results,
@@ -199,11 +199,13 @@ function materialReady(observation, item) {
   validateRenderer(observation);
   if (observation.entities.length !== 1) return false;
   const mesh = observation.entities[0];
-  if (!mesh.visible) return false;
+  if (!mesh.visible || !mesh.appearance || !mesh.program.linked) return false;
   for (const [channel, expected] of Object.entries(item.variant.maps)) {
     const actual = mesh.channels[channel];
-    if (!expected) { if (actual !== null) return false; continue; }
+    if (!expected) { if (actual !== null || mesh.program.samplers[channel] !== false) return false; continue; }
     if (!actual?.decoded || actual.sourceUrl !== expected.url || actual.width !== item.variant.resolution || actual.height !== item.variant.resolution) return false;
+    if (!actual.sourceDataReady || !actual.gpuObjectAlive || actual.version <= 0 || actual.uploadedVersion !== actual.version
+      || mesh.program.samplers[channel] !== true) return false;
     assert.equal(actual.colorSpace, channel === "baseColor" ? "srgb" : "");
     assert.deepEqual(actual.repeat, [1, 1]);
   }
@@ -212,7 +214,17 @@ function materialReady(observation, item) {
   assert.equal(mesh.roughness, 1);
   assert.equal(mesh.metalness, item.variant.maps.metalness ? 1 : 0);
   assert.deepEqual(mesh.color, [1, 1, 1]);
+  assert.equal(mesh.opacity, 1); assert.equal(mesh.transparent, false);
+  assert.deepEqual(mesh.emissive, [0, 0, 0]); assert.equal(mesh.emissiveIntensity, 1); assert.equal(mesh.wireframe, false);
   return true;
+}
+function untexturedReady(observation) {
+  validateRenderer(observation);
+  if (observation.entities.length !== 1) return false;
+  const mesh = observation.entities[0];
+  return mesh.visible && mesh.appearance && mesh.program.linked
+    && Object.values(mesh.channels).every((channel) => channel === null)
+    && Object.values(mesh.program.samplers).every((active) => active === false);
 }
 async function waitNaturalMaterial(page, item, initialFrame) {
   let lastNotReadyFrame = initialFrame, last;
@@ -253,6 +265,96 @@ async function compareFrames(page, left, right) {
   }, [left, right].map((entry) => "data:image/png;base64," + entry.bytes.toString("base64")));
 }
 function requirePaint(delta) { assert.ok(delta.changedPixels > 100 && delta.peakChannelDelta > 3 && delta.distinctColors > 3, "원본 적용 후 실제 합성 픽셀 변화가 부족합니다."); }
+
+function appearancePreconditions(before, after) {
+  assert.equal(before.entities.length, 1); assert.equal(after.entities.length, 1);
+  assert.deepEqual(before.canvas, after.canvas, "표면 비교의 실제 Canvas 크기가 다릅니다.");
+  const a = before.entities[0], b = after.entities[0], aa = a.appearance, ba = b.appearance;
+  assert(aa && ba); assert.deepEqual(aa.geometry, ba.geometry, "저장 왕복의 표시 geometry/normal/UV가 다릅니다.");
+  assert.deepEqual(aa.meshMatrixWorld, ba.meshMatrixWorld, "저장 왕복의 실제 mesh TRS가 다릅니다.");
+  assert.deepEqual(aa.renderer, ba.renderer, "표면 비교의 renderer 색/톤/해상도 조건이 다릅니다.");
+  assert.equal(aa.camera.type, ba.camera.type);
+  const roundoffOnly = (x, y) => Number.isFinite(x) && Number.isFinite(y)
+    && Math.abs(x - y) <= 64 * Number.EPSILON * Math.max(1, Math.abs(x), Math.abs(y));
+  for (const field of ["matrixWorld", "matrixWorldInverse", "projection"]) {
+    assert.equal(aa.camera[field].length, ba.camera[field].length);
+    assert(aa.camera[field].every((value, index) => roundoffOnly(value, ba.camera[field][index])), `표면 비교의 실제 포털 camera.${field}가 다릅니다.`);
+  }
+  for (const field of ["left", "top", "width", "height"]) assert(roundoffOnly(aa.view[field], ba.view[field]), "실제 포털 viewport가 다릅니다.");
+  assert.equal(aa.overlayBounds.length, ba.overlayBounds.length, "표면 위 실제 기즈모 개수가 다릅니다.");
+  aa.overlayBounds.forEach((bounds, index) => {
+    for (const field of ["left", "top", "right", "bottom"]) assert(roundoffOnly(bounds[field], ba.overlayBounds[index][field]), "표면 위 실제 기즈모 위치가 다릅니다.");
+  });
+  const surface = (mesh) => ({ color: mesh.color, roughness: mesh.roughness, metalness: mesh.metalness,
+    opacity: mesh.opacity, transparent: mesh.transparent, emissive: mesh.emissive, emissiveIntensity: mesh.emissiveIntensity, wireframe: mesh.wireframe,
+    normalMapType: mesh.normalMapType, normalScale: mesh.normalScale,
+    channels: Object.fromEntries(Object.entries(mesh.channels).map(([key, value]) => [key, value ? {
+      sourceUrl: value.sourceUrl, width: value.width, height: value.height, colorSpace: value.colorSpace, repeat: value.repeat,
+    } : null])) });
+  assert.deepEqual(surface(a), surface(b), "저장 왕복의 실제 표면 설정이 다릅니다.");
+  return aa;
+}
+function requireSameSurface(delta, label) {
+  assert(delta.comparedPixels > 100, "실제 geometry 내부의 표면 비교 픽셀이 부족합니다.");
+  assert.equal(delta.changedPixelsAbove3, 0, label);
+}
+
+async function compareSurfaceAppearance(page, applied, reopened, observation, restored) {
+  const surface = appearancePreconditions(observation, restored);
+  return page.evaluate(async ({ first, second, surface, css }) => {
+    const decode = async (encoded) => {
+      const bitmap = await createImageBitmap(new Blob([Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0))], { type: "image/png" }));
+      try {
+        const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (!context) throw new Error("표면 PNG 디코더가 없습니다.");
+        context.drawImage(bitmap, 0, 0);
+        return { width: bitmap.width, height: bitmap.height, pixels: context.getImageData(0, 0, bitmap.width, bitmap.height).data };
+      } finally { bitmap.close(); }
+    };
+    const [a, b] = await Promise.all([decode(first), decode(second)]);
+    if (a.width !== b.width || a.height !== b.height) throw new Error("표면 PNG 크기가 다릅니다.");
+    const triangles = surface.projectedTriangles.map((triangle) => triangle.map((point) => ({ x: point.x * a.width / css.cssWidth, y: point.y * a.height / css.cssHeight })));
+    const overlays = surface.overlayBounds.map((bounds) => ({ left: bounds.left * a.width / css.cssWidth - 2,
+      right: bounds.right * a.width / css.cssWidth + 2, top: bounds.top * a.height / css.cssHeight - 2,
+      bottom: bounds.bottom * a.height / css.cssHeight + 2 }));
+    const edge = (point, from, to) => (to.x - from.x) * (point.y - from.y) - (to.y - from.y) * (point.x - from.x);
+    const inside = (point, triangle) => {
+      const [a, b, c] = triangle, distances = [[a, b], [b, c], [c, a]].map(([from, to]) => edge(point, from, to));
+      if (!distances.every((value) => value <= 0) && !distances.every((value) => value >= 0)) return false;
+      // geometry가 정한 내부만 쓴다. 실루엣·wire의 AA 경계는 실제 PNG 2px 안쪽에서 제외한다.
+      return [[a, b], [b, c], [c, a]].every(([from, to]) => Math.abs(edge(point, from, to)) / Math.hypot(to.x - from.x, to.y - from.y) >= 2);
+    };
+    const vertices = triangles.flat();
+    const bounds = { left: Math.max(0, Math.floor(Math.min(...vertices.map((point) => point.x)))),
+      top: Math.max(0, Math.floor(Math.min(...vertices.map((point) => point.y)))),
+      right: Math.min(a.width, Math.ceil(Math.max(...vertices.map((point) => point.x)))),
+      bottom: Math.min(a.height, Math.ceil(Math.max(...vertices.map((point) => point.y)))) };
+    let comparedPixels = 0, changedPixelsAbove3 = 0, peakChannelDelta = 0;
+    const pattern = [a, b].map(() => triangles.map(() => ({ pixels: 0, chromaticPixels: 0, colors: new Set() })));
+    for (let y = bounds.top; y < bounds.bottom; y++) for (let x = bounds.left; x < bounds.right; x++) {
+      const point = { x: x + 0.5, y: y + 0.5 };
+      if (overlays.some((bounds) => point.x >= bounds.left && point.x <= bounds.right && point.y >= bounds.top && point.y <= bounds.bottom)) continue;
+      const triangle = triangles.findIndex((triangle) => inside(point, triangle));
+      if (triangle < 0) continue;
+      comparedPixels++;
+      const offset = (y * a.width + x) * 4; let changed = false;
+      [a, b].forEach((image, imageIndex) => {
+        const stats = pattern[imageIndex][triangle], [r, g, blue] = image.pixels.subarray(offset, offset + 3);
+        stats.pixels++; if (Math.max(r, g, blue) - Math.min(r, g, blue) > 3) stats.chromaticPixels++;
+        stats.colors.add(((r >> 2) << 12) | ((g >> 2) << 6) | (blue >> 2));
+      });
+      for (let channel = 0; channel < 3; channel++) {
+        const delta = Math.abs(a.pixels[offset + channel] - b.pixels[offset + channel]);
+        peakChannelDelta = Math.max(peakChannelDelta, delta); if (delta > 3) changed = true;
+      }
+      if (changed) changedPixelsAbove3++;
+    }
+    return { width: a.width, height: a.height, footprint: "actual-geometry-front-triangles-eroded-2-native-pixels-minus-visible-overlay-geometry-bounds",
+      triangleCount: triangles.length, overlayCount: overlays.length, bounds, comparedPixels, changedPixelsAbove3, peakChannelDelta, threshold: 3,
+      patterns: pattern.map((triangles) => triangles.map(({ pixels, chromaticPixels, colors }) => ({ pixels, chromaticPixels, quantizedColors: colors.size }))) };
+  }, { first: applied.bytes.toString("base64"), second: reopened.bytes.toString("base64"), surface, css: observation.canvas });
+}
 
 try {
   receipt.sourceCheck = await verifyCatalogSources();
@@ -329,6 +431,8 @@ try {
       result.before = before;
       const baseline = await screenshot(page, result.id + "-before.png");
       result.screenshots.push({ file: baseline.file, sha256: baseline.sha256 });
+      result.beforeCapture = await readObservation(page);
+      assert(untexturedReady(result.beforeCapture), "첫 적용 전 실제 무맵 shader가 준비되지 않았습니다.");
       const applyCursor = result.network.length;
       await controls.apply.click({ timeout: remaining() });
       result.actions.push({ action: "apply", at: Date.now(), variantId: item.variant.id });
@@ -341,6 +445,29 @@ try {
       const rendered = await screenshot(page, result.id + "-applied.png");
       result.screenshots.push({ file: rendered.file, sha256: rendered.sha256 });
       result.applied = applied; result.applyPixels = await compareFrames(page, baseline, rendered); requirePaint(result.applyPixels);
+      result.appliedCapture = await readObservation(page);
+      assert(materialReady(result.appliedCapture, item), "첫 적용 PNG 시점의 실제 GPU 채널이 준비되지 않았습니다.");
+      const viewport = page.getByTestId("studio-bg3d-dialog").getByTestId("studio-bg3d-viewport");
+      await viewport.getByRole("button", { name: "실행 취소", exact: true }).click({ timeout: remaining() });
+      result.actions.push({ action: "undo-material", at: Date.now() });
+      result.undone = await until(async () => {
+        const value = await readObservation(page);
+        return value.frame > result.appliedCapture.frame && untexturedReady(value) ? value : false;
+      }, DOM_MS, "재질 실행 취소 뒤 실제 무맵 shader가 복원되지 않았습니다.");
+      const undone = await screenshot(page, result.id + "-undone.png");
+      result.screenshots.push({ file: undone.file, sha256: undone.sha256 });
+      result.undoneCapture = await readObservation(page);
+      result.undoAppearance = await compareSurfaceAppearance(page, baseline, undone, result.beforeCapture, result.undoneCapture);
+      requireSameSurface(result.undoAppearance, "실행 취소 뒤 최초 표면이 복원되지 않았습니다.");
+      await viewport.getByRole("button", { name: "다시 실행", exact: true }).click({ timeout: remaining() });
+      result.actions.push({ action: "redo-material", at: Date.now() });
+      result.redone = await waitNaturalMaterial(page, item, result.undoneCapture.frame);
+      const redone = await screenshot(page, result.id + "-redone.png");
+      result.screenshots.push({ file: redone.file, sha256: redone.sha256 });
+      result.redoneCapture = await readObservation(page);
+      assert(materialReady(result.redoneCapture, item), "다시 실행 PNG 시점의 실제 GPU 채널이 준비되지 않았습니다.");
+      result.redoAppearance = await compareSurfaceAppearance(page, rendered, redone, result.appliedCapture, result.redoneCapture);
+      requireSameSurface(result.redoAppearance, "다시 실행 뒤 최초 재질 무늬가 복원되지 않았습니다.");
       await page.locator("#bg3d-tab-templates").first().click({ timeout: remaining() });
       const library = page.locator('section[aria-labelledby="bg3d-user-template-library-title"]');
       const save = library.getByRole("button", { name: "현재 장면을 내 템플릿으로 저장", exact: true });
@@ -352,12 +479,25 @@ try {
       result.templateButtonName = await saved.getAttribute("aria-label");
       await page.locator("#bg3d-tab-shapes").first().click({ timeout: remaining() });
       const beforeClear = await readObservation(page);
+      const sourceColor = page.getByTestId("studio-bg3d-dialog").getByLabel("색상(셰이딩 미리보기 전용)", { exact: true });
+      result.clearSourceColor = { before: await sourceColor.inputValue({ timeout: remaining() }) };
+      assert.equal(result.clearSourceColor.before, "#ffffff", "대표 구매 원본의 제품 도형 색이 예상과 다릅니다.");
       await page.getByRole("button", { name: "표면 프리셋 해제", exact: true }).first().click({ timeout: remaining() });
       result.cleared = await until(async () => {
-        const value = await readObservation(page); validateRenderer(value);
-        return value.entities.length === 1 && value.frame > beforeClear.frame && Object.values(value.entities[0].channels).every((entry) => entry === null) ? value : false;
+        const value = await readObservation(page);
+        return value.frame > beforeClear.frame && untexturedReady(value) ? value : false;
       }, DOM_MS, "UI 해제 뒤 실제 원본 채널이 제거되지 않았습니다.");
       const cleared = await screenshot(page, result.id + "-cleared.png"); result.screenshots.push({ file: cleared.file, sha256: cleared.sha256 });
+      result.clearedCapture = await readObservation(page);
+      assert(untexturedReady(result.clearedCapture), "해제 PNG 시점의 실제 무맵 shader가 준비되지 않았습니다.");
+      result.clearSourceColor.after = await sourceColor.inputValue({ timeout: remaining() });
+      assert.equal(result.clearSourceColor.after, result.clearSourceColor.before, "프리셋 해제에서 제품 도형 색이 바뀌었습니다.");
+      const clearedMesh = result.clearedCapture.entities[0];
+      assert.deepEqual({ color: clearedMesh.color, roughness: clearedMesh.roughness, metalness: clearedMesh.metalness,
+        opacity: clearedMesh.opacity, transparent: clearedMesh.transparent, emissive: clearedMesh.emissive,
+        emissiveIntensity: clearedMesh.emissiveIntensity, wireframe: clearedMesh.wireframe },
+      { color: [1, 1, 1], roughness: 1, metalness: 0, opacity: 1, transparent: false,
+        emissive: [0, 0, 0], emissiveIntensity: 1, wireframe: false }, "프리셋 해제 뒤 실제 기본 표면 값이 다릅니다.");
       await page.reload({ waitUntil: "domcontentloaded", timeout: remaining() });
       await openEditor(page);
       const beforeReopen = await readObservation(page); result.beforeTemplateApply = beforeReopen;
@@ -370,6 +510,12 @@ try {
       assert.equal(await restoredControls.apply.getAttribute("aria-pressed"), "true");
       const reopened = await screenshot(page, result.id + "-reopened.png"); result.screenshots.push({ file: reopened.file, sha256: reopened.sha256 });
       result.reopenPixels = await compareFrames(page, cleared, reopened); requirePaint(result.reopenPixels);
+      result.reopenedCapture = await readObservation(page);
+      assert(materialReady(result.reopenedCapture, item), "재열기 PNG 시점의 실제 GPU 채널이 준비되지 않았습니다.");
+      result.surfaceAppearance = await compareSurfaceAppearance(page, rendered, reopened, result.appliedCapture, result.reopenedCapture);
+      requireSameSurface(result.surfaceAppearance, "최초 적용과 재열기의 실제 표면 무늬가 다릅니다.");
+      for (const triangles of result.surfaceAppearance.patterns) assert(triangles.some((stats) => stats.chromaticPixels > 100 && stats.quantizedColors > 8),
+        "기즈모를 제외한 실제 면 내부에 대표 원본의 비회색 공간 무늬가 없습니다.");
       assert.equal(result.pageErrors.length, 0, "제품 페이지 예외가 있습니다.");
       result.unexpectedConsoleErrors = result.consoleErrors.filter((message) => message !== "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
         && !message.startsWith("[vite] failed to connect to websocket."));
@@ -379,6 +525,8 @@ try {
       result.status = "passed";
     } catch (error) {
       result.status = "failed"; result.failure = { message: error.message, stack: error.stack };
+      try { result.failureObservation = await readObservation(page); }
+      catch (observationError) { result.failureObservationError = String(observationError); }
       try {
         result.failureDiagnostics = await bounded(page.evaluate(() => ({
           path: location.pathname, readyState: document.readyState,

@@ -7,9 +7,11 @@ import {
   applyStudioBg3dCc0PbrMapsToStandardMaterial,
   clearStudioBg3dCc0PbrTextureCache,
   getStudioBg3dCc0PbrTextureCacheStats,
+  getStudioBg3dCc0PbrTextureReadyRevision,
   loadStudioBg3dCc0PbrTextureSet,
   resolveStudioBg3dPrimitiveCc0PbrSpread,
   setStudioBg3dCc0PbrTextureFactoryForTest,
+  subscribeStudioBg3dCc0PbrTextureReady,
 } from "./studio-bg3d-cc0-pbr-texture-loader";
 import {
   buildStudioBg3dCc0SurfaceMaterialOverride,
@@ -168,5 +170,138 @@ describe("studio-bg3d-cc0-pbr-texture-loader", () => {
     for (const wallPart of wallParts) {
       expect(wallPart.materialOverride?.surfaceMaterialId).toBe("polyhaven-white-rough-plaster");
     }
+  });
+});
+
+describe("PBR 이미지 완료와 demand frame 구독", () => {
+  const stops: Array<() => void> = [];
+  type PendingLoad = { texture: THREE.Texture; complete: () => void };
+
+  function deferredTextures(): PendingLoad[] {
+    const loads: PendingLoad[] = [];
+    setStudioBg3dCc0PbrTextureFactoryForTest((url, onLoad) => {
+      if (!onLoad) throw new Error("이미지 완료 callback이 필요합니다.");
+      const texture = new THREE.Texture(); texture.name = url;
+      loads.push({ texture, complete: () => {
+        texture.image = { width: 2048, height: 2048, complete: true };
+        texture.needsUpdate = true;
+        onLoad(texture);
+      } });
+      return texture;
+    });
+    return loads;
+  }
+
+  function channel(loads: PendingLoad[], index = 0): PendingLoad {
+    const load = loads[index];
+    if (!load) throw new Error("캐시에 로드한 실제 채널이 필요합니다.");
+    return load;
+  }
+
+  function subscribe(listener: () => void): () => void {
+    const stop = subscribeStudioBg3dCc0PbrTextureReady(listener);
+    stops.push(stop);
+    return stop;
+  }
+
+  afterEach(() => {
+    for (const stop of stops.splice(0)) stop();
+    setStudioBg3dCc0PbrTextureFactoryForTest(null);
+    clearStudioBg3dCc0PbrTextureCache();
+  });
+
+  it("바인딩한 Texture의 비동기 이미지 완료를 한 번 알리고 같은 캐시는 재요청하지 않는다", async () => {
+    const loads = deferredTextures();
+    const set = loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    if (!set) throw new Error("실제 카탈로그 텍스처 세트가 필요합니다.");
+    const material = new THREE.MeshStandardMaterial({ map: set.baseColorMap });
+    const before = getStudioBg3dCc0PbrTextureReadyRevision(), versions: number[] = [];
+    subscribe(() => {
+      expect(material.map).toBe(channel(loads).texture);
+      expect(material.map?.image).toMatchObject({ width: 2048, height: 2048 });
+      versions.push(getStudioBg3dCc0PbrTextureReadyRevision());
+    });
+    expect(loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor")).toBe(set);
+    expect(loads).toHaveLength(5); expect(versions).toEqual([]);
+    await Promise.resolve(); channel(loads).complete();
+    expect(versions).toEqual([]);
+    await Promise.resolve();
+    expect(versions).toEqual([before + 1]);
+    channel(loads).complete(); await Promise.resolve();
+    expect(versions).toEqual([before + 1]);
+    material.dispose();
+  });
+
+  it("동기 완료 factory도 캐시와 색공간 설정이 끝난 뒤 구독자에게 알린다", async () => {
+    const textures: THREE.Texture[] = [];
+    setStudioBg3dCc0PbrTextureFactoryForTest((_url, onLoad) => {
+      const texture = new THREE.Texture({ width: 2048, height: 2048 });
+      textures.push(texture); onLoad?.(texture);
+      return texture;
+    });
+    const before = getStudioBg3dCc0PbrTextureReadyRevision(), snapshots: number[] = [];
+    subscribe(() => {
+      expect(getStudioBg3dCc0PbrTextureCacheStats().cachedTextureCount).toBe(5);
+      expect(textures[0]?.colorSpace).toBe(THREE.SRGBColorSpace);
+      snapshots.push(getStudioBg3dCc0PbrTextureReadyRevision());
+    });
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    expect(snapshots).toEqual([]);
+    await Promise.resolve();
+    expect(snapshots).toEqual([1, 2, 3, 4, 5].map((step) => before + step));
+  });
+
+  it("구독 전에 완료돼도 snapshot은 진행하고 새 구독의 다음 완료를 놓치지 않는다", async () => {
+    const loads = deferredTextures(), before = getStudioBg3dCc0PbrTextureReadyRevision();
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    channel(loads).complete(); await Promise.resolve();
+    expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 1);
+    let calls = 0; subscribe(() => { calls++; });
+    expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 1);
+    channel(loads, 1).complete(); await Promise.resolve();
+    expect(calls).toBe(1);
+    expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 2);
+  });
+
+  it("구독 해제 뒤에는 완료 알림을 보내지 않고 최신 snapshot만 유지한다", async () => {
+    const loads = deferredTextures(), before = getStudioBg3dCc0PbrTextureReadyRevision();
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    let calls = 0; const stop = subscribe(() => { calls++; }); stop();
+    channel(loads).complete(); await Promise.resolve();
+    expect(calls).toBe(0);
+    expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 1);
+  });
+
+  it("캐시 정리 후 늦게 완료된 기존 Texture는 버리고 같은 URL의 새 Texture만 알린다", async () => {
+    const loads = deferredTextures(), before = getStudioBg3dCc0PbrTextureReadyRevision();
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    const stale = channel(loads); let disposed = 0, calls = 0;
+    stale.texture.addEventListener("dispose", () => { disposed++; });
+    subscribe(() => { calls++; });
+    clearStudioBg3dCc0PbrTextureCache();
+    expect(disposed).toBe(1);
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    const fresh = channel(loads, 5); expect(fresh.texture).not.toBe(stale.texture);
+    stale.complete(); await Promise.resolve();
+    expect(calls).toBe(0); expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before);
+    fresh.complete(); await Promise.resolve();
+    expect(calls).toBe(1); expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 1);
+  });
+
+  it("캐시에 남아 있어도 이미 dispose한 Texture의 늦은 완료는 알리지 않는다", async () => {
+    const loads = deferredTextures(), before = getStudioBg3dCc0PbrTextureReadyRevision();
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    let calls = 0; subscribe(() => { calls++; });
+    channel(loads).texture.dispose(); channel(loads).complete(); await Promise.resolve();
+    expect(calls).toBe(0); expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before);
+  });
+
+  it("완료 callback과 알림 microtask 사이에 캐시가 정리돼도 오래된 알림을 보내지 않는다", async () => {
+    const loads = deferredTextures(), before = getStudioBg3dCc0PbrTextureReadyRevision();
+    loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    let calls = 0; subscribe(() => { calls++; });
+    channel(loads).complete(); clearStudioBg3dCc0PbrTextureCache();
+    await Promise.resolve();
+    expect(calls).toBe(0); expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before);
   });
 });
