@@ -1,7 +1,7 @@
 // 공유 HTTP 클라이언트 — ky 인스턴스 1개로 통일한다(이전엔 각 모듈이 fetch를 직접 호출).
 // 인증 진실원천은 same-origin HttpOnly 쿠키다. 브라우저 저장소의 bearer를 읽거나
 // x-user-id로 자동 전송하지 않는다.
-import ky, { HTTPError, type KyResponse, type Options } from "ky";
+import ky, { HTTPError, type ResponsePromise, type Options } from "ky";
 
 import { handleUnauthorizedSession } from "@/domains/auth/public/session/auth-session-state";
 import {
@@ -126,26 +126,24 @@ function errorFallback(options: ApiOptions | undefined, fallback: string): strin
   return options?.errorMessage?.trim() || fallback;
 }
 
-// 응답 본문을 타입 T 로 파싱한다. 204/빈 본문은 undefined.
-// 비 JSON 본문(예: 미배포 엔드포인트의 HTML 404 페이지)은 JSON.parse 의 원시 SyntaxError
-// ("Unexpected token '<'") 가 그대로 UI 로 새지 않도록 깔끔한 한국어 메시지로 감싼다.
-async function toJson<T>(response: KyResponse): Promise<T> {
-  if (response.status === 204) return undefined as T;
-  const text = await response.text();
-  if (!text) return undefined as T;
+// 빈 본문(204 포함)은 이전과 같이 undefined로 처리하고, 비 JSON 본문의
+// 원시 SyntaxError는 사용자에게 노출하지 않는다. Ky 응답 promise의 .json()은
+// 헤더 도착 뒤에도 응답 본문 읽기를 timeout/totalTimeout·AbortSignal 안에 묶는다.
+function parseApiJson(text: string): unknown {
+  if (!text) return undefined;
   try {
-    return JSON.parse(text) as T;
+    return JSON.parse(text) as unknown;
   } catch {
     throw new Error("서버 응답을 해석하지 못했어요. 잠시 후 다시 시도해 주세요.");
   }
 }
 
 async function requestJson<T>(
-  request: PromiseLike<KyResponse>,
+  request: ResponsePromise,
   fallback: string,
 ): Promise<T> {
   try {
-    return await toJson<T>(await request);
+    return await request.json<T>();
   } catch (error) {
     if (isAbortError(error)) throw error;
     throw toAppApiError(error, fallback);
@@ -158,6 +156,7 @@ function readOptions(options?: ApiOptions): Options {
     totalTimeout: READ_TOTAL_TIMEOUT_MS,
     retry: READ_RETRY,
     ...toOptions(options),
+    parseJson: options?.parseJson ?? parseApiJson,
   };
 }
 
@@ -168,6 +167,7 @@ function writeOptions(options?: ApiOptions): Options {
     ...toOptions(options),
     // 쓰기 재시도는 호출부의 멱등성 보장 없이는 절대 켜지 않는다.
     retry: 0,
+    parseJson: options?.parseJson ?? parseApiJson,
   };
 }
 
