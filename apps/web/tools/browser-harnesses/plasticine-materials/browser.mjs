@@ -275,8 +275,13 @@ async function productCanvas(page) {
 }
 async function openEditor(page) {
   const dialog = page.getByTestId("studio-bg3d-dialog");
+  const modes = page.getByRole("group", { name: "3D 편집 모드", exact: true });
+  await modes.waitFor({ state: "visible", timeout: remaining() });
+  assert.equal(await modes.count(), 1);
+  const precision = modes.getByRole("button", { name: /^정밀(?: 편집)?$/u });
+  assert.equal(await precision.count(), 1);
+  await precision.click({ timeout: remaining() });
   await dialog.waitFor({ state: "visible", timeout: remaining() });
-  await page.getByRole("group", { name: "3D 편집 모드", exact: true }).getByRole("button", { name: /^정밀(?: 편집)?$/u }).click({ timeout: remaining() });
   await page.getByRole("dialog", { name: "정밀 3D 편집", exact: true }).waitFor({ state: "visible", timeout: remaining() });
   await page.locator("#bg3d-tab-view").first().click({ timeout: remaining() });
   const engine = page.getByTestId("studio-bg3d-engine-preference-webgl2").first();
