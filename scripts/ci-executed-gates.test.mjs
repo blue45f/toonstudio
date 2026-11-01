@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -134,6 +134,121 @@ test("core retains every mandatory quality lane without a bypass", () => {
   }
   assert.doesNotMatch(job("build"), /pnpm run build(?!:)/, "web typecheck must not repeat in build");
   assert.ok(job("serial").includes("pnpm run test:perf"));
+});
+
+test("호스팅 full 검사와 Market의 SDK 정리는 실제 shell과 가짜 실행기로 경계·실패·입력 보존을 검증한다", () => {
+  const stepName = "체크아웃 전 미사용 SDK 정리와 디스크 여유 확인";
+  const removal = "sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk";
+  const market = readFileSync(new URL("../.github/workflows/market-cc0-delivery.yml", import.meta.url), "utf8");
+  const marketJob = market.slice(market.indexOf("\n  verify:\n"));
+  const bodies = [];
+  const blocks = [...["build", "database", "a11y", "serial"].map((name) => [name, job(name)]), ["market verify", marketJob]];
+  for (const [name, block] of blocks) {
+    const step = block.split(/(?=^ {6}- )/mu).find((entry) => entry.startsWith(`      - name: ${stepName}\n`));
+    assert.ok(step, `${name}: 체크아웃 전 공간 확보 단계 누락`);
+    assert.match(block, /runs-on: ubuntu-24\.04/u);
+    assert.match(step, /shell: bash/u);
+    assert.ok(step.includes("TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}"));
+    assert.ok(step.includes("TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}"));
+    assert.ok(block.indexOf(step) < block.indexOf("uses: actions/checkout@v7"));
+    assert.match(block, /uses: actions\/setup-node@v7\n {8}with:\n {10}node-version: 24\n {10}cache: pnpm/u);
+    assert.ok(block.includes("run: pnpm install --frozen-lockfile --prefer-offline"));
+    assert.doesNotMatch(block.replace(step, ""), /android|dotnet|sdkmanager|gradlew/u, "이 검사에는 제거 대상 SDK 소비자가 없어야 합니다.");
+    const body = step.match(/^ {8}run: \|\n((?: {10}[^\n]*\n)+)/mu)?.[1].replace(/^ {10}/gmu, "");
+    assert.ok(body);
+    assert.equal(body.split(removal).length - 1, 1);
+    assert.doesNotMatch(body, /continue-on-error|\|\| true|\/[^\s]*sudo|\brm\b(?! -rf -- \/usr\/local\/lib\/android\/sdk \/usr\/share\/dotnet\/sdk)/u);
+    assert.ok(body.includes('workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)'));
+    assert.ok(body.includes('"$workspace" == "$target/"*'));
+    assert.ok(body.includes('"$target" == "$workspace/"*'));
+    assert.match(body, /available_bytes < 21474836480/u);
+    bodies.push(body);
+  }
+  assert.equal(bodies.length, 5);
+  assert.ok(bodies.every((body) => body === bodies[0]), "다섯 검사는 같은 안전 경계를 사용해야 합니다.");
+  assert.equal(source.split(removal).length - 1, 4);
+  assert.equal(market.split(removal).length - 1, 1);
+  assert.ok(market.includes("node --import tsx scripts/generate-market-cc0-catalog.mts --check"));
+  for (const target of ["studio-entry-redirect", "studio-marketplace-catalog-open", "studio-host-architecture-ratchet", "studio-pixel-selection-scene-target", "studio-marketplace-cc0-catalog", "studio-community-marketplace", "studio-marketplace-deep-link", "studio-creator-pack-runtime", "StudioCommunityMarketplacePanel.race", "studio-cc0-asset-delivery", "StudioCommunityMarketplacePanel", "MarketResourceDetailArticle"]) {
+    assert.ok(market.includes(`${target}.test.`), `Market 필수 회귀 누락: ${target}`);
+  }
+  assert.match(market, /pnpm exec vitest run/u);
+  assert.doesNotMatch(market, /continue-on-error|\|\| true/u);
+  for (const name of ["static", "lint", "typecheck"]) assert.ok(!job(name).includes(stepName));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "hosted-sdk-cleanup-contract-")));
+  const bin = join(root, "bin");
+  const workspace = join(root, "workspace");
+  const sudoLog = join(root, "sudo-calls");
+  mkdirSync(bin);
+  mkdirSync(workspace);
+  const writeExecutable = (name, body) => writeFileSync(join(bin, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+  // PATH에는 이 네 가짜 실행기만 둔다. sudo는 인자를 기록한 뒤 종료하며 명령을 실행하지 않는다.
+  writeExecutable("sudo", 'printf "%s\\0" "$@" >> "$FAKE_SUDO_LOG"\nprintf "\\n" >> "$FAKE_SUDO_LOG"\nexit "${FAKE_SUDO_EXIT:-0}"');
+  writeExecutable("uname", 'printf "%s\\n" "${FAKE_KERNEL:-Linux}"');
+  writeExecutable("du", 'printf "0\\t%s\\n" "${4:-fixture}"');
+  writeExecutable("df", 'if [ "$2" = "-B1" ]; then\n  if [ "${FAKE_DF_HEADER:-1}" = 1 ]; then printf "Filesystem 1-blocks Used Available Capacity Mounted\\n"; fi\n  printf "fixture 999999999999 0 %s 0%% /\\n" "$FAKE_AVAILABLE"\nelse\n  printf "Filesystem Inodes IUsed IFree IUse%% Mounted\\nfixture 100 1 99 1%% /\\n"\nfi');
+  const sentinels = [".git/preserved", "apps/web/public/preserved.bin", "node_modules/preserved"];
+  for (const file of sentinels) {
+    mkdirSync(dirname(join(workspace, file)), { recursive: true });
+    writeFileSync(join(workspace, file), `그대로 보존: ${file}\n`);
+  }
+  const before = sentinels.map((file) => readFileSync(join(workspace, file)));
+  const environment = {
+    PATH: bin, GITHUB_ACTIONS: "true", RUNNER_ENVIRONMENT: "github-hosted", RUNNER_OS: "Linux", ImageOS: "ubuntu24",
+    TOONSTUDIO_CI_RUNNER_ENVIRONMENT: "github-hosted", TOONSTUDIO_CI_RUNNER_OS: "Linux",
+    GITHUB_WORKSPACE: workspace, FAKE_AVAILABLE: "21474836480", FAKE_SUDO_LOG: sudoLog,
+  };
+  const mockStat = 'test() { if [[ "$#" == 2 && "$1" == -L ]]; then [[ -n "${FAKE_SYMLINK:-}" && "${FAKE_SYMLINK:-}" == "$2" ]]; return; fi; builtin test "$@"; }\n';
+  const execute = (changes = {}, missing = []) => {
+    if (existsSync(sudoLog)) rmSync(sudoLog);
+    const env = { ...environment, ...changes };
+    for (const key of missing) delete env[key];
+    const result = spawnSync("/bin/bash", ["-c", mockStat + bodies[0]], { cwd: workspace, env, encoding: "utf8", timeout: 10_000 });
+    const calls = existsSync(sudoLog) ? readFileSync(sudoLog, "utf8").trim().split("\n").map((line) => line.split("\0").filter(Boolean)) : [];
+    for (let index = 0; index < sentinels.length; index += 1) {
+      assert.deepEqual(readFileSync(join(workspace, sentinels[index])), before[index], `필수 입력 변경: ${sentinels[index]}`);
+    }
+    return { ...result, calls };
+  };
+  const expected = [["rm", "-rf", "--", "/usr/local/lib/android/sdk", "/usr/share/dotnet/sdk"]];
+  try {
+    const success = execute();
+    assert.equal(success.status, 0, success.stderr);
+    assert.deepEqual(success.calls, expected);
+    const decimal = execute({ FAKE_AVAILABLE: "021474836480" });
+    assert.equal(decimal.status, 0, decimal.stderr);
+    assert.deepEqual(decimal.calls, expected, "앞자리 0이 있는 정수도 10진수로 해석해야 합니다.");
+    for (const changes of [
+      { RUNNER_OS: "macOS" }, { RUNNER_ENVIRONMENT: "self-hosted" }, { ImageOS: "ubuntu22" },
+      { GITHUB_ACTIONS: "false" }, { FAKE_KERNEL: "Darwin" },
+      { TOONSTUDIO_CI_RUNNER_OS: "macOS" }, { TOONSTUDIO_CI_RUNNER_ENVIRONMENT: "self-hosted" },
+      { GITHUB_WORKSPACE: "/" }, { GITHUB_WORKSPACE: "relative/workspace" },
+      { FAKE_SYMLINK: "/usr/local/lib/android" }, { FAKE_SYMLINK: workspace },
+    ]) {
+      const rejected = execute(changes);
+      assert.notEqual(rejected.status, 0, JSON.stringify(changes));
+      assert.deepEqual(rejected.calls, [], "환경·중첩·링크 거절 전에 sudo를 호출하면 안 됩니다.");
+    }
+    for (const key of ["GITHUB_ACTIONS", "RUNNER_ENVIRONMENT", "RUNNER_OS", "ImageOS", "GITHUB_WORKSPACE", "TOONSTUDIO_CI_RUNNER_ENVIRONMENT", "TOONSTUDIO_CI_RUNNER_OS"]) {
+      const rejected = execute({}, [key]);
+      assert.notEqual(rejected.status, 0, `필수 변수 누락: ${key}`);
+      assert.deepEqual(rejected.calls, []);
+    }
+    const sudoFailure = execute({ FAKE_SUDO_EXIT: "23" });
+    assert.equal(sudoFailure.status, 23, "정리 실패를 재시도하거나 성공으로 바꾸면 안 됩니다.");
+    assert.deepEqual(sudoFailure.calls, expected);
+    for (const value of ["invalid", "-1", "12.5", "9999999999999999999"]) {
+      const invalid = execute({ FAKE_AVAILABLE: value });
+      assert.notEqual(invalid.status, 0, `잘못된 df 정수: ${value}`);
+      assert.deepEqual(invalid.calls, [], "측정값 검증 실패 전에 sudo를 호출하면 안 됩니다.");
+    }
+    const noHeader = execute({ FAKE_DF_HEADER: "0" });
+    assert.notEqual(noHeader.status, 0);
+    assert.deepEqual(noHeader.calls, []);
+    const insufficient = execute({ FAKE_AVAILABLE: "21474836479" });
+    assert.notEqual(insufficient.status, 0, "20 GiB보다 1바이트 부족하면 실패해야 합니다.");
+    assert.deepEqual(insufficient.calls, expected);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("번들 Python 회귀는 foundation에서 고정 wheel을 준비하고 두 필수 패턴을 실패 없이 생략하지 않는다", () => {
