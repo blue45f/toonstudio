@@ -2,6 +2,19 @@
 import { _roots, getRootState } from "@react-three/fiber";
 import * as THREE from "three";
 
+/** 관측기 전용 식별자다. 제품의 Texture·renderer·GPU를 생성하거나 갱신하지 않는다. */
+const observedGpuHandles = new WeakMap<WebGLTexture, number>();
+let nextObservedGpuHandleId = 1;
+
+function gpuHandleIdentityToken(handle: unknown, gl: WebGL2RenderingContext): number | null {
+  if (!(handle instanceof WebGLTexture) || !gl.isTexture(handle)) return null;
+  const existing = observedGpuHandles.get(handle);
+  if (existing !== undefined) return existing;
+  const token = nextObservedGpuHandleId++;
+  observedGpuHandles.set(handle, token);
+  return token;
+}
+
 function textureInfo(texture: THREE.Texture | null | undefined, renderer: THREE.WebGLRenderer, gl: WebGL2RenderingContext) {
   if (!texture) return null;
   const image: unknown = texture.source?.data ?? texture.image;
@@ -26,6 +39,7 @@ function textureInfo(texture: THREE.Texture | null | undefined, renderer: THREE.
     sourceDataReady: texture.source.dataReady,
     uploadedVersion: typeof record?.__version === "number" ? record.__version : null,
     gpuObjectAlive: handle instanceof WebGLTexture && gl.isTexture(handle),
+    gpuIdentityToken: gpuHandleIdentityToken(handle, gl),
   };
 }
 
@@ -40,14 +54,40 @@ function materialProgram(material: THREE.MeshStandardMaterial, renderer: THREE.W
     roughness: sampler("roughnessMap"), metalness: sampler("metalnessMap") } };
 }
 
+/** 원본 복원의 수치 비교용이다. UUID·program은 별도 수명 증거로만 비교한다. */
+function materialSettings(material: THREE.MeshStandardMaterial) {
+  return { side: material.side, alphaTest: material.alphaTest, depthTest: material.depthTest, depthWrite: material.depthWrite,
+    colorWrite: material.colorWrite, blending: material.blending, flatShading: material.flatShading,
+    vertexColors: material.vertexColors, toneMapped: material.toneMapped, fog: material.fog,
+    envMapIntensity: material.envMapIntensity, aoMapIntensity: material.aoMapIntensity,
+    lightMapIntensity: material.lightMapIntensity, bumpScale: material.bumpScale,
+    displacementScale: material.displacementScale, displacementBias: material.displacementBias };
+}
+
+/** GLTF clone의 자식에는 __r3f가 없을 수 있다. 가장 가까운 실제 R3F 조상만 읽는다. */
+function nearestActualPortalState(mesh: THREE.Mesh, renderer: THREE.WebGLRenderer) {
+  let ancestor: THREE.Object3D | null = mesh;
+  while (ancestor) {
+    const state = getRootState(ancestor);
+    if (state) {
+      if (state.gl !== renderer) throw new Error("가장 가까운 R3F 조상의 renderer가 다릅니다.");
+      let inScene: THREE.Object3D | null = mesh;
+      while (inScene && inScene !== state.scene) inScene = inScene.parent;
+      if (!inScene) throw new Error("실제 mesh가 최근접 R3F 조상의 scene 안에 없습니다.");
+      return state;
+    }
+    ancestor = ancestor.parent;
+  }
+  throw new Error("실제 mesh의 R3F 조상이 없습니다. Canvas 기본 camera로 대체하지 않습니다.");
+}
+
 /** 원본 buffer·실제 포털 카메라와 투영 footprint만 읽는다. 행렬 갱신이나 렌더 요청은 하지 않는다. */
 function appearance(mesh: THREE.Mesh, renderer: THREE.WebGLRenderer, canvas: HTMLCanvasElement) {
-  const state = getRootState(mesh);
-  if (!state || state.gl !== renderer) throw new Error("실제 mesh를 그리는 같은 renderer의 포털 state가 없습니다.");
+  const state = nearestActualPortalState(mesh, renderer);
   const { camera } = state, rect = canvas.getBoundingClientRect();
   const view = { left: state.size.left - rect.left, top: state.size.top - rect.top, width: state.size.width, height: state.size.height };
   const geometry = mesh.geometry, position = geometry.getAttribute("position"), normal = geometry.getAttribute("normal"), uv = geometry.getAttribute("uv"), index = geometry.getIndex();
-  if (!position || !normal || !uv || position.itemSize !== 3 || normal.itemSize !== 3 || uv.itemSize !== 2) throw new Error("대표 도형의 실제 position/normal/UV stream이 없습니다.");
+  if (!position || !normal || !uv || position.itemSize !== 3 || normal.itemSize !== 3 || uv.itemSize !== 2) throw new Error("실제 mesh의 position/normal/UV stream이 없습니다.");
   const stream = (attribute: THREE.BufferAttribute | THREE.InterleavedBufferAttribute, dimensions: 2 | 3) => {
     const values: number[] = [];
     for (let offset = 0; offset < attribute.count; offset++) {
@@ -64,7 +104,7 @@ function appearance(mesh: THREE.Mesh, renderer: THREE.WebGLRenderer, canvas: HTM
   });
   const triangles: Array<readonly (typeof projected[number])[]> = [];
   const determinant = Math.sign(mesh.matrixWorld.determinant());
-  if (determinant === 0) throw new Error("대표 도형의 실제 변환이 특이행렬입니다.");
+  if (determinant === 0) throw new Error("실제 mesh의 변환이 특이행렬입니다.");
   for (let offset = 0; offset < projected.length; offset += 3) {
     const a = projected[offset], b = projected[offset + 1], c = projected[offset + 2];
     if (!a || !b || !c) throw new Error("실제 표시 삼각형의 코너가 없습니다.");
@@ -98,39 +138,58 @@ function appearance(mesh: THREE.Mesh, renderer: THREE.WebGLRenderer, canvas: HTM
 }
 
 function observe() {
-  const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="studio-bg3d-dialog"] canvas');
+  const canvases = document.querySelectorAll<HTMLCanvasElement>('[data-testid="studio-bg3d-dialog"] [data-testid="studio-bg3d-viewport"] canvas');
+  if (canvases.length !== 1) throw new Error("실제 제품 viewport의 유일한 공유 Canvas가 아닙니다.");
+  const canvas = canvases[0];
   if (!canvas) throw new Error("제품 BG3D Canvas가 없습니다.");
   const state = _roots.get(canvas)?.store.getState();
   if (!state) throw new Error("같은 모듈 그래프의 제품 R3F store가 없습니다.");
   if (!(state.gl instanceof THREE.WebGLRenderer)) throw new Error("이 최소 검증은 실제 WebGLRenderer만 허용합니다.");
   const renderer = state.gl;
+  if (renderer.domElement !== canvas) throw new Error("R3F renderer가 실제 제품 viewport Canvas를 소유하지 않습니다.");
   const gl = renderer.getContext();
   if (!(gl instanceof WebGL2RenderingContext)) throw new Error("제품 Canvas가 WebGL2가 아닙니다.");
   const debug = gl.getExtension("WEBGL_debug_renderer_info");
   const entities: Array<{
-    entityId: string; meshUuid: string; visible: boolean; materialType: string;
+    entityId: string; entityKind: "primitive" | "model"; meshUuid: string; geometryUuid: string; materialUuid: string;
+    ownerMatrixWorld: number[]; ownerPosition: number[]; visible: boolean; materialType: string;
+    materialSettings: ReturnType<typeof materialSettings>; auxiliaryChannels: Record<string, ReturnType<typeof textureInfo>>;
     color: number[]; roughness: number; metalness: number; normalMapType: THREE.NormalMapTypes;
     opacity: number; transparent: boolean; emissive: number[]; emissiveIntensity: number; wireframe: boolean;
     normalScale: number[]; channels: Record<string, ReturnType<typeof textureInfo>>;
     program: ReturnType<typeof materialProgram>; appearance: ReturnType<typeof appearance>;
   }> = [];
+  const entityMeshes: Array<{ entityId: string; entityKind: "primitive" | "model"; meshUuid: string; materialTypes: string[] }> = [];
   // 제품의 drei View portal은 Canvas 기본 scene 밖에 있다. 같은 root의 실제 interaction 객체도 읽는다.
   const visited = new Set<string>();
   const inspect = (object: THREE.Object3D) => {
     if (visited.has(object.uuid)) return;
     visited.add(object.uuid);
-    if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial)) return;
+    if (!(object instanceof THREE.Mesh)) return;
     let owner: THREE.Object3D | null = object;
     let visible = true;
-    while (owner && owner.userData.studioBg3dEntityKind !== "primitive") {
+    while (owner && owner.userData.studioBg3dEntityKind !== "primitive" && owner.userData.studioBg3dEntityKind !== "model") {
       visible = visible && owner.visible;
       owner = owner.parent;
     }
     if (!owner || typeof owner.userData.studioBg3dEntityId !== "string") return;
     visible = visible && owner.visible;
+    for (let ancestor = owner.parent; ancestor; ancestor = ancestor.parent) visible = visible && ancestor.visible;
+    const entityKind = owner.userData.studioBg3dEntityKind;
+    if (entityKind !== "primitive" && entityKind !== "model") throw new Error("관측 entity 종류가 다릅니다.");
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    entityMeshes.push({ entityId: owner.userData.studioBg3dEntityId, entityKind, meshUuid: object.uuid,
+      materialTypes: materials.map((material) => material.type) });
+    if (!(object.material instanceof THREE.MeshStandardMaterial)) return;
     const material = object.material;
     entities.push({
-      entityId: owner.userData.studioBg3dEntityId, meshUuid: object.uuid, visible,
+      entityId: owner.userData.studioBg3dEntityId, entityKind, meshUuid: object.uuid, geometryUuid: object.geometry.uuid,
+      materialUuid: material.uuid, ownerMatrixWorld: owner.matrixWorld.toArray(), ownerPosition: owner.position.toArray(), visible,
+      materialSettings: materialSettings(material),
+      auxiliaryChannels: { alpha: textureInfo(material.alphaMap, renderer, gl), ao: textureInfo(material.aoMap, renderer, gl),
+        bump: textureInfo(material.bumpMap, renderer, gl), displacement: textureInfo(material.displacementMap, renderer, gl),
+        emissive: textureInfo(material.emissiveMap, renderer, gl), light: textureInfo(material.lightMap, renderer, gl),
+        environment: textureInfo(material.envMap, renderer, gl) },
       materialType: material.type, color: material.color.toArray(), roughness: material.roughness,
       opacity: material.opacity, transparent: material.transparent, emissive: material.emissive.toArray(),
       emissiveIntensity: material.emissiveIntensity, wireframe: material.wireframe,
@@ -145,12 +204,13 @@ function observe() {
   for (const object of state.internal.interaction) object.traverse(inspect);
   const rect = canvas.getBoundingClientRect();
   return {
+    backend: "webgl2", secureContext: window.isSecureContext, origin: location.origin,
     observedAt: performance.now(), frame: renderer.info.render.frame,
     renderer: debug ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : null,
     vendor: debug ? String(gl.getParameter(debug.UNMASKED_VENDOR_WEBGL)) : null,
     maxTextureSize: Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)), contextLost: gl.isContextLost(),
     canvas: { width: canvas.width, height: canvas.height, cssWidth: rect.width, cssHeight: rect.height },
-    entities,
+    entities, entityMeshes,
   };
 }
 

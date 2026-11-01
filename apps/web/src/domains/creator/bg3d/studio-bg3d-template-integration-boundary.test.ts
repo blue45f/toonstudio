@@ -66,7 +66,7 @@ describe("Studio BG3D user-template integration boundary", () => {
     );
     const mutationStart = apply.indexOf("runSceneMutation(");
     const instantiate = apply.indexOf("instantiateBg3dTemplateDocument(");
-    const hashLookup = apply.indexOf("getStoredBg3dModelByHash(attachment.hash)");
+    const hashLookup = apply.indexOf("resolveBg3dModelHash(attachment.hash,");
     const exactMatch = apply.indexOf("attachmentMatchesRecord(attachment, record)");
     const admission = apply.indexOf("await admitAndCacheModel({");
     const stagedBinding = apply.indexOf("attachmentByStorageModelId: nextAttachmentByStorageId");
