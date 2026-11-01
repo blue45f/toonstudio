@@ -587,8 +587,64 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
   assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
 });
 
-test("다섯 shard는 기존 필수 48경로와 자산 제외 범위를 최초 checkout에서 보존한다", () => {
+test("다섯 shard는 기존 48개와 foundation 추가 54개 선언을 최초 checkout에서 정확히 보존한다", () => {
   const asset = "/apps/web/public/assets/";
+  const foundationInputs = [
+    "/apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json",
+    "/apps/web/public/assets/3d/environments/bundle-v1/theme-packs.e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4.json",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/cgi-director-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/cgi-director-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/chief-pd-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/chief-pd-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/colorist-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/colorist-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/line-artist-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/cast/line-artist-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/diverse-creator-cast-clean-atlas.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/four-studio-themes-atlas.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/action-mocap-actor-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/action-mocap-actor-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/sound-letterer-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/sound-letterer-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/story-writer-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/story-writer-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-idle.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-work.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/genre-studio-themes-atlas.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/specialist-cast-clean-atlas.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/themes/brooklyn-indie-comics-loft.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/themes/murim-bamboo-pavilion.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v12/themes/scifi-orbital-command.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/creator-emote-and-walk-sheet.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/celebrate-highfive.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/coffee-cat-break.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/crunch-flame-focus.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/stride-walk.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/four-more-studio-themes-atlas.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/props/blender-hologram-stage-table.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/props/deadline-espresso-cat-lounge.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/props/dual-cintiq-critique-pod.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/props/webtoon-sound-foley-booth.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/themes/abyssal-bioluminescent-worldlab.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/themes/dolby-sound-dubbing-studio.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v13/webtoon-props-and-zones-atlas.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/recruit-interview-conservatory.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/retro-arcade-gacha-lounge.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/tarot-story-oracle-pavilion.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-down.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
+    "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp",
+    "/apps/web/public/vrm/LICENSES.md",
+  ];
   const owned = {
     product: ["/docs/", ...[
       "3d/outfits/README.md", "studio/cc0-20260906/README.md", "3d/LICENSES.md",
@@ -601,16 +657,21 @@ test("다섯 shard는 기존 필수 48경로와 자산 제외 범위를 최초 c
       `${asset}virtual-studio/art-v4-manifest.json`, `${asset}studio/props/`,
       `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
       `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
+      ...foundationInputs,
     ],
     "studio-editing": [],
     "studio-3d": [`${asset}3d/environments/authored-v1/`],
     "studio-character": ["Sendagaya_Shibu", "Sendagaya_Shino", "Sakurada_Fumiriya", "AliciaSolid", "Darkness_Shibu", "Jimmy", "Jennifer"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   };
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 27, 0, 1, 7]);
+  assert.equal(foundationInputs.length, 54);
+  assert.equal(new Set(foundationInputs).size, 54);
+  assert.ok(foundationInputs.every((path) => !path.endsWith("/")), "추가 입력은 개별 파일이어야 합니다.");
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 81, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(job("static"), /persist-credentials: false/u);
   assert.match(job("static"), /sparse-checkout-cone-mode: false/u);
-  assert.equal(declarations.length, 48, "필수 경로를 빼거나 무관한 조건 경로를 추가하면 안 됩니다.");
+  assert.equal(declarations.length, 102, "기존 48개와 foundation 54개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 101, "VRM 라이선스만 product와 foundation에서 공유합니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }
@@ -622,7 +683,9 @@ test("다섯 shard는 기존 필수 48경로와 자산 제외 범위를 최초 c
   };
   const input = (path) => `${path.slice(1)}${path.endsWith("/") ? "fixture-payload.bin" : ""}`;
   const world = "apps/web/public/assets/virtual-studio/world/default-world.json";
-  const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin"];
+  const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
+    "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
+    "apps/web/public/assets/3d/environments/bundle-v1/unrelated-large.glb"];
   try {
     git("init", "--quiet");
     for (const file of [world, ...Object.values(owned).flat().map(input), ...unrelated, "package.json"]) {
@@ -641,7 +704,8 @@ test("다섯 shard는 기존 필수 48경로와 자산 제외 범위를 최초 c
         for (const path of paths) {
           // 3D 팩 전체에 속한 라이선스는 기존 팩 복원에도 포함되던 공통 입력이다.
           const sharedPackLicense = shard === "studio-3d" && path === `${asset}3d/environments/authored-v1/LICENSES.md`;
-          assert.equal(existsSync(join(root, input(path))), owner === shard || sharedPackLicense, `${shard}: ${owner} 입력 경계 ${path}`);
+          const ownedByShard = owned[shard].includes(path);
+          assert.equal(existsSync(join(root, input(path))), ownedByShard || sharedPackLicense, `${shard}: ${owner} 입력 경계 ${path}`);
         }
       }
       for (const file of unrelated) assert.equal(existsSync(join(root, file)), false, `${shard}: 무관한 대형 자산 ${file}`);
