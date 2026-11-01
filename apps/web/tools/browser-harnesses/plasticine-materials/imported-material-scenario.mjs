@@ -279,6 +279,11 @@ export function createImportedEntities(core, fixtureUpload, fixture = IMPORTED_F
       return observation.entities.length === 1 && observation.entityMeshes.length === 1
         && observation.entities[0].entityKind === "model" ? observation.entities[0].entityId : false;
     }, core.LOAD_MS, "실제 파일 가져오기가 한 모델 인스턴스를 만들지 못했습니다.");
+    const search = library.getByRole("searchbox", { name: "3D 모델 라이브러리 검색", exact: true });
+    assert.equal(await search.count(), 1);
+    const basename = fixtureUpload.name.replace(/\.glb$/iu, "");
+    await search.fill(basename, { timeout: remaining() });
+    assert.equal(await search.inputValue(), basename);
     const card = library.getByRole("button", { name: fixture.cardName, exact: true });
     await card.waitFor({ state: "visible", timeout: remaining() });
     assert.equal(await card.count(), 1); await until(() => card.isEnabled(), DOM_MS, "검증된 원본 카드가 준비되지 않았습니다.");
@@ -292,7 +297,7 @@ export function createImportedEntities(core, fixtureUpload, fixture = IMPORTED_F
     }, DOM_MS, "일반 복제 UI가 같은 원본의 별도 인스턴스를 만들지 못했습니다.");
     assert.equal(await tree(page).locator('[role="treeitem"][aria-selected="true"]').count(), 1);
     await renameSelected(page, names.B); await moveSelectedX(page, B, 2.5);
-    result.importUi = { fileSelections: 1, fixture, createB: "outliner ordinary duplicate", linkedDuplicate: false };
+    result.importUi = { fileSelections: 1, fixture, createB: "outliner ordinary duplicate", linkedDuplicate: false, librarySearch: basename };
     return { A, B };
   };
 }
