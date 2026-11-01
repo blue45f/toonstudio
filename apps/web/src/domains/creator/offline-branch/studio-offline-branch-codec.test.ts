@@ -150,4 +150,17 @@ describe("studio offline branch peer bundle", () => {
     });
     expect(() => decodeStudioOfflineBranchPeerBundle(encoded.subarray(0, -1))).toThrow();
   });
+
+  it("해결 기록을 이해하지 못하는 이전 v2 프레임을 거절한다", () => {
+    const encoded = encodeStudioOfflineBranchPeerBundle({
+      workId: "work-1", scope: "user-1", documentBytes: Uint8Array.of(1), payloads: [],
+    });
+    const headerLength = new DataView(encoded.buffer).getUint32(0, true);
+    const header = new TextDecoder().decode(encoded.subarray(4, 4 + headerLength));
+    expect(header).toContain("studio-offline-branch-peer-bundle-v3");
+    const legacyHeader = new TextEncoder().encode(header.replace("peer-bundle-v3", "peer-bundle-v2"));
+    expect(legacyHeader.byteLength).toBe(headerLength);
+    encoded.set(legacyHeader, 4);
+    expect(() => decodeStudioOfflineBranchPeerBundle(encoded)).toThrow(/header/u);
+  });
 });

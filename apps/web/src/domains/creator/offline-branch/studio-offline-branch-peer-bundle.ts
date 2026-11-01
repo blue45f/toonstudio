@@ -4,7 +4,7 @@ import {
 } from "./studio-offline-branch-contract";
 
 export const STUDIO_OFFLINE_BRANCH_PEER_BUNDLE_WIRE =
-  "studio-offline-branch-peer-bundle-v2" as const;
+  "studio-offline-branch-peer-bundle-v3" as const;
 export const STUDIO_OFFLINE_BRANCH_PEER_PAYLOAD_CHUNK_BYTES = 192 * 1024 * 1024;
 export const STUDIO_OFFLINE_BRANCH_PEER_PAYLOAD_CHUNK_COUNT = 128;
 

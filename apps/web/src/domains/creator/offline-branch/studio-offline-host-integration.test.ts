@@ -259,3 +259,25 @@ describe("studio offline host integration", () => {
     expect(promotePending).toHaveBeenCalledOnce();
   });
 });
+
+
+it("마지막 오프라인 작업을 제외한 뒤 Yjs 이벤트 없이도 현재 history를 공유본으로 재투영한다", () => {
+  const projected = [page("내 채색")];
+  const canonical = [page("팀 검수")];
+  const observeCanonicalPages = vi.fn();
+  const projectPages = vi.fn((pages: PageState[]) => pages);
+  const reconcileHistory = vi.fn((history: PageState[][]) => ({ history, changed: false }));
+  const runtime = {
+    offlineBranch: { status: { pendingOperations: 0, canonicalAuthority: false },
+      canonicalPagesSnapshot: () => canonical, observeCanonicalPages, projectPages },
+    reconcileHistory,
+  } as unknown as StudioCrdtSceneGraphRuntime;
+  const result = reconcileStudioOfflineCrdtFrontier({ runtime,
+    document: {} as StudioCrdtDocument, reportError: vi.fn(), currentHistory: [projected], currentIndex: 0,
+    frontier: EMPTY_FRONTIER, changedIds: EMPTY_CHANGED_IDS, referenceSources: new Map(),
+    forceOfflineProjection: true });
+  expect(result?.currentPages).toEqual(canonical);
+  expect(observeCanonicalPages).toHaveBeenCalledWith(canonical);
+  expect(projectPages).toHaveBeenCalledWith(canonical);
+  expect(projected[0]?.groups?.[0]?.name).toBe("내 채색");
+});

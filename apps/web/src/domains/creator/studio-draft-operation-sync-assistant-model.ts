@@ -10,6 +10,7 @@ import type {
   StudioLiveSyncPhase,
 } from "./live/studio-live-sync-safety";
 import type { StudioLiveTransportMode } from "./live/studio-live-collaboration-transport";
+import { offlineConflictText } from "./offline-branch/studio-offline-conflict-i18n";
 import { r3c07StatusText } from "./status-i18n/studio-panel-status-i18n-r3c07-core";
 
 export type StudioDraftOperationSyncTone =
@@ -29,6 +30,8 @@ export interface StudioDraftOperationSyncAssistantInput {
   readonly liveContextAvailable: boolean;
   readonly syncPhase: StudioLiveSyncPhase;
   readonly pendingCount: number;
+  readonly offlinePendingCount?: number;
+  readonly offlineConflictCount?: number;
   readonly persistenceDurability: StudioLivePersistenceDurability;
   readonly editsDurablyProtected: boolean;
   readonly mode: StudioLiveTransportMode | null;
@@ -155,6 +158,7 @@ function serverSummary(input: StudioDraftOperationSyncAssistantInput): string {
   const revision = validRevision(input.serverRevision);
   if (input.hydrationFailed) return "현재 화면으로 서버 원고를 덮어쓰지 않습니다.";
   if (input.saving) return "현재 원고를 서버 초안으로 저장하고 있습니다.";
+  if (safeCount(input.offlinePendingCount) > 0 || safeCount(input.offlineConflictCount) > 0) return offlineConflictText("serverPending");
   if (!input.hasServerDocument) return "아직 서버 원고가 없습니다. 첫 초안 저장 후 다른 기기에서 이어갈 수 있습니다.";
   if (revision === null) return "서버 원고 연결은 확인됐으며 버전 정보를 불러오고 있습니다.";
   if (
@@ -183,7 +187,11 @@ export function resolveStudioDraftOperationSyncAssistant(
 ): StudioDraftOperationSyncAssistantModel {
   const pending = safeCount(input.pendingCount);
   const recoveryCount = safeCount(input.recoveryUpdateCount);
+  const offlinePending = safeCount(input.offlinePendingCount);
+  const offlineConflicts = safeCount(input.offlineConflictCount);
   const visible = input.collaborationSyncPending
+    || offlinePending > 0
+    || offlineConflicts > 0
     || pending > 0
     || recoveryCount > 0
     || (
@@ -195,7 +203,7 @@ export function resolveStudioDraftOperationSyncAssistant(
   let tone: StudioDraftOperationSyncTone = "neutral";
   let compactLabel = "변경 동기화 확인";
   let headline = "기기와 서버의 변경 상태를 확인하고 있어요";
-  const detail = operationSummary(input);
+  let detail = operationSummary(input);
   let primaryAction: StudioDraftOperationSyncAction = null;
 
   if (input.syncPhase === "recovery-required" || recoveryCount > 0) {
@@ -215,6 +223,16 @@ export function resolveStudioDraftOperationSyncAssistant(
     compactLabel = "변경 보호 확인 필요";
     headline = "새 변경을 안전하게 보호할 경로를 다시 확인해 주세요";
     primaryAction = "retry";
+  } else if (offlineConflicts > 0) {
+    tone = "warning";
+    compactLabel = offlineConflictText("conflictLabel", { count: offlineConflicts });
+    headline = offlineConflictText("conflictHeadline");
+    detail = offlineConflictText("conflictDetail", { count: offlineConflicts });
+  } else if (offlinePending > 0 && input.syncPhase === "synced") {
+    tone = "warning";
+    compactLabel = offlineConflictText("pendingLabel", { count: offlinePending });
+    headline = offlineConflictText("pendingHeadline");
+    detail = offlineConflictText("pendingDetail", { count: offlinePending });
   } else if (input.syncPhase === "read-only-follower") {
     tone = "warning";
     compactLabel = "다른 탭이 동기화 담당";

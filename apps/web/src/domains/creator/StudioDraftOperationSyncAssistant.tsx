@@ -20,6 +20,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { StudioOfflineConflictResolution } from "./offline-branch/StudioOfflineConflictResolution";
 
 import {
   resolveStudioDraftOperationSyncAssistant,
@@ -136,8 +138,10 @@ export function StudioDraftOperationSyncAssistant({
   onOpenVersions,
   onExportBackup,
 }: StudioDraftOperationSyncAssistantProps) {
+  useBilingualI18nRevision();
   const live = useStudioLiveCollaboration();
   const [open, setOpen] = useState(false);
+  const conflictReviewOpenRef = useRef(false);
   const [busyAction, setBusyAction] = useState<StudioDraftOperationSyncAction | "backup">(null);
   // 렌더링 전 연속 클릭도 같은 내보내기 작업으로 합친다.
   const exportInFlight = useRef(false);
@@ -156,6 +160,8 @@ export function StudioDraftOperationSyncAssistant({
     liveContextAvailable,
     syncPhase: live.sync.phase,
     pendingCount: live.sync.pendingCount,
+    offlinePendingCount: live.offlineBranch?.pendingOperations ?? 0,
+    offlineConflictCount: live.offlineBranch?.conflicts.length ?? 0,
     persistenceDurability: live.sync.persistenceDurability,
     editsDurablyProtected: live.sync.editsDurablyProtected,
     mode: live.sync.mode,
@@ -219,10 +225,21 @@ export function StudioDraftOperationSyncAssistant({
   }, [live, model.primaryAction, onOpenVersions, runExport]);
 
   useEffect(() => {
-    if (model.visible) return;
+    if (model.visible || (open && ((inline && liveContextAvailable) || conflictReviewOpenRef.current))) return;
     setOpen(false);
     setActionError(null);
-  }, [model.visible]);
+  }, [inline, liveContextAvailable, model.visible, open]);
+
+  const offlineScopeKey = live.offlineBranch
+    ? `${live.offlineBranch.workId}:${live.offlineBranch.generation}` : null;
+  const previousOfflineScopeRef = useRef(offlineScopeKey);
+  useEffect(() => {
+    if (previousOfflineScopeRef.current === offlineScopeKey) return;
+    previousOfflineScopeRef.current = offlineScopeKey;
+    conflictReviewOpenRef.current = false;
+    setOpen(false);
+    setActionError(null);
+  }, [offlineScopeKey]);
 
   useEffect(() => {
     // 상단 바 배치에서는 좌표를 잰 뒤에 대화상자가 생기므로, 실제로 보일 때 포커스를 옮긴다.
@@ -240,6 +257,7 @@ export function StudioDraftOperationSyncAssistant({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       event.preventDefault();
+      conflictReviewOpenRef.current = false;
       setOpen(false);
       triggerRef.current?.focus({ preventScroll: true });
     };
@@ -256,7 +274,7 @@ export function StudioDraftOperationSyncAssistant({
   // 된다. 부유 배치는 기존처럼 주의를 끌 일이 있을 때만 나타나고, 라이브 맥락이 아예
   // 없으면(연결 전) 보여줄 동기화 상태 자체가 없다.
   const showInlineCalm = inline && liveContextAvailable;
-  if (!model.visible && !showInlineCalm) return null;
+  if (!model.visible && !showInlineCalm && !(open && conflictReviewOpenRef.current)) return null;
 
   const liveRegion = (
     <span
@@ -276,7 +294,11 @@ export function StudioDraftOperationSyncAssistant({
       aria-controls={open ? dialogId : undefined}
       aria-label={`동기화 상태: ${model.compactLabel}`}
       title={inline ? model.compactLabel : undefined}
-      onClick={() => setOpen((current) => !current)}
+      onClick={() => {
+        const next = !open;
+        conflictReviewOpenRef.current = next && (live.offlineBranch?.conflicts.length ?? 0) > 0;
+        setOpen(next);
+      }}
       data-studio-operation-sync-trigger={inline ? "menubar" : "floating"}
       className={cn(
         TRIGGER_CLASS,
@@ -336,6 +358,7 @@ export function StudioDraftOperationSyncAssistant({
             <button
               type="button"
               onClick={() => {
+                conflictReviewOpenRef.current = false;
                 setOpen(false);
                 triggerRef.current?.focus({ preventScroll: true });
               }}
@@ -382,6 +405,12 @@ export function StudioDraftOperationSyncAssistant({
               <dd className="mt-1 text-sm font-black">{serverRevision === null ? "—" : `r${serverRevision}`}</dd>
             </div>
           </dl>
+
+          {live.offlineBranch ? <StudioOfflineConflictResolution
+            key={`${live.offlineBranch.workId}:${live.offlineBranch.generation}`}
+            conflicts={live.offlineBranch.conflicts}
+            resolve={live.resolveOfflineConflict}
+          /> : null}
 
           {model.primaryAction && model.primaryActionLabel ? (
             <button

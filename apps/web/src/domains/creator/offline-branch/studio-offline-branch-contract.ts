@@ -1,4 +1,5 @@
 export const STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION = 1 as const;
+export const STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION = 2 as const;
 export const STUDIO_OFFLINE_BRANCH_WIRE = "studio-automerge-offline-branch-v1" as const;
 
 export const STUDIO_OFFLINE_BRANCH_LIMITS = Object.freeze({
@@ -63,6 +64,15 @@ export interface StudioOfflineBranchConflict {
   readonly detectedAt: number;
 }
 
+/** 서버 수신 확인과 구분되는 사용자의 오프라인 충돌 처리 기록이다. */
+export interface StudioOfflineBranchResolution {
+  readonly operationId: string;
+  readonly action: "keep-canonical" | "reapply-local";
+  readonly replacementOperationId: string | null;
+  readonly actorId: string;
+  readonly resolvedAt: number;
+}
+
 export interface StudioOfflineBranchMetadata {
   readonly id: string;
   readonly workId: string;
@@ -76,12 +86,13 @@ export interface StudioOfflineBranchMetadata {
 }
 
 export interface StudioOfflineBranchDocument extends Record<string, unknown> {
-  schemaVersion: typeof STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION;
+  schemaVersion: typeof STUDIO_OFFLINE_BRANCH_SCHEMA_VERSION | typeof STUDIO_OFFLINE_BRANCH_DOCUMENT_VERSION;
   branch: StudioOfflineBranchMetadata;
   operations: Record<string, StudioOfflineBranchOperation>;
   dedupe: Record<string, string>;
   receipts: Record<string, StudioOfflineBranchReceipt>;
   conflicts: Record<string, StudioOfflineBranchConflict>;
+  resolutions?: Record<string, StudioOfflineBranchResolution>;
 }
 
 export interface StudioOfflineBranchSnapshot {
@@ -90,6 +101,7 @@ export interface StudioOfflineBranchSnapshot {
   readonly operations: readonly StudioOfflineBranchOperation[];
   readonly receipts: Readonly<Record<string, StudioOfflineBranchReceipt>>;
   readonly conflicts: Readonly<Record<string, StudioOfflineBranchConflict>>;
+  readonly resolutions?: Readonly<Record<string, StudioOfflineBranchResolution>>;
   readonly documentBytes: number;
 }
 
@@ -219,7 +231,20 @@ export function studioOfflineBranchPendingOperations(
 ): StudioOfflineBranchOperation[] {
   return snapshot.operations.filter((operation) =>
     snapshot.receipts[operation.id]?.state !== "server"
+    && !snapshot.resolutions?.[operation.id]
   );
+}
+
+/** 해결 전후 payload를 보관해 사용자의 선택 뒤에도 원래 변경을 복구할 수 있게 한다. */
+export function studioOfflineBranchRetainedPayloadOperations(
+  snapshot: StudioOfflineBranchSnapshot,
+): StudioOfflineBranchOperation[] {
+  const retained = new Set(studioOfflineBranchPendingOperations(snapshot).map(({ id }) => id));
+  for (const resolution of Object.values(snapshot.resolutions ?? {})) {
+    retained.add(resolution.operationId);
+    if (resolution.replacementOperationId) retained.add(resolution.replacementOperationId);
+  }
+  return snapshot.operations.filter(({ id }) => retained.has(id));
 }
 
 export function studioOfflineBranchHasUnresolvedWork(

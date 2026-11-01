@@ -518,3 +518,27 @@ export function describeStudioOfflinePreparedMutation(
     resultFingerprint: mutation.resultFingerprint,
   });
 }
+
+/** 사용자 선택의 결과를 현재 공유 원고에 대조해 새 proposal의 기준을 만든다. */
+export function prepareStudioOfflineBranchReapplication(
+  canonicalPages: readonly PageState[],
+  operation: StudioOfflineBranchOperation,
+  payloadBytes: Uint8Array | null,
+): StudioOfflinePreparedMutation | null {
+  if (!canonicalPages.some((page) => page.id === operation.pageId)) {
+    throw new Error("공유 원고에서 페이지가 삭제됐습니다.");
+  }
+  if (operation.action === "upsert") {
+    if (!payloadBytes) throw new Error("내 변경 자료를 찾지 못했습니다.");
+    const envelope = decodeStudioOfflineBranchPayload(payloadBytes, operation.targetType);
+    if (envelope.value.id !== operation.targetId || envelope.value.pageId !== operation.pageId
+      || stateFingerprint(envelope.value, operation.beforeId) !== operation.resultFingerprint) {
+      throw new Error("내 변경의 대상과 내용이 보관 기록과 일치하지 않습니다.");
+    }
+  }
+  const desired = projectStudioOfflineBranchOperation(canonicalPages, operation, payloadBytes);
+  const plan = planStudioOfflineSceneTransition(canonicalPages, desired);
+  if (plan.unsupported.length > 0) throw new Error(plan.unsupported.join("\n"));
+  return plan.mutations.find((mutation) => mutation.targetType === operation.targetType
+    && mutation.targetId === operation.targetId && mutation.pageId === operation.pageId) ?? null;
+}

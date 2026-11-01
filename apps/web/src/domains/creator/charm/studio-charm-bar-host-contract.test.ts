@@ -409,15 +409,73 @@ describe("참 바 호스트 계약: 편집 잠금 값", () => {
     }
   });
 
-  it("문서 변경은 공동 편집 잠금이면 막고, 마스터 편집 중에는 페이지 검토 잠금을 보지 않고 마스터에 쓴다", () => {
-    const source = readFileSync(new URL(`${CREATOR}studio-cuttoon-editor/studio-deferred-stroke-commit.ts`, import.meta.url), "utf8");
-    const collaboration = source.indexOf("if (collaborationAccessRef.current.locked) {");
-    const master = source.indexOf("if (masterEditMode) {");
-    const pageLock = source.indexOf("if (pageEditLocked) {");
-    expect(collaboration).toBeGreaterThan(-1);
-    expect(master).toBeGreaterThan(collaboration);
-    expect(pageLock).toBeGreaterThan(master);
-  });
+  it.each(["commit", "commitCoalesced"] as const)(
+    "%s는 마스터 전역 잠금과 페이지 검토·담당 범위 검증 뒤에만 이력을 쓴다",
+    (name) => {
+      const file = sourceFileOf("../studio-cuttoon-editor/studio-deferred-stroke-commit.ts");
+      const declarations = findFunctions(file, name);
+      expect(declarations).toHaveLength(1);
+      const declaration = declarations[0];
+      if (!declaration?.body) throw new Error("문서 변경 함수 본문이 없습니다.");
+      const statements = declaration.body.statements;
+      const guardIndex = (condition: string): number => statements.findIndex(
+        (statement) => ts.isIfStatement(statement)
+          && statement.expression.getText(file).replace(/\s+/gu, "") === condition,
+      );
+      const negatedCallName = (expression: ts.Expression): string | null => {
+        if (!ts.isPrefixUnaryExpression(expression)
+          || expression.operator !== ts.SyntaxKind.ExclamationToken
+          || !ts.isCallExpression(expression.operand)
+          || !ts.isIdentifier(expression.operand.expression)) return null;
+        return expression.operand.expression.text;
+      };
+      const collaboration = guardIndex("masterEditMode&&collaborationAccessRef.current.locked");
+      const master = guardIndex("masterEditMode");
+      const pageLock = guardIndex("pageEditLocked");
+      const admission = statements.findIndex((statement) => {
+        if (!ts.isIfStatement(statement) || !ts.isBinaryExpression(statement.expression)) return false;
+        const condition = statement.expression;
+        return condition.operatorToken.kind === ts.SyntaxKind.BarBarToken
+          && negatedCallName(condition.left) === "admitStudioScopedPagesCommit"
+          && negatedCallName(condition.right) === "publishStudioCrdtSceneTransition";
+      });
+      const historyCalls = new Set([
+        "appendStudioPagesHistorySnapshot", "onHistoryBranch", "recordStudioHistoryTransition",
+        "recordStudioHistoryJournalPages", "setPagesHistory", "setPagesHi",
+      ]);
+      const writesHistory = (node: ts.Node): boolean => {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+          && historyCalls.has(node.expression.text)) return true;
+        if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+          && node.left.getText(file) === "pagesHistoryRef.current") return true;
+        return ts.forEachChild(node, writesHistory) ?? false;
+      };
+      const history = statements.findIndex(writesHistory);
+      expect(collaboration).toBeGreaterThan(-1);
+      expect(master).toBeGreaterThan(collaboration);
+      expect(pageLock).toBeGreaterThan(master);
+      expect(admission).toBeGreaterThan(pageLock);
+      expect(history).toBeGreaterThan(admission);
+
+      for (const index of [collaboration, pageLock, admission]) {
+        const statement = statements[index];
+        if (!statement || !ts.isIfStatement(statement)) throw new Error("편집 거부 경계가 없습니다.");
+        const branch = ts.isBlock(statement.thenStatement)
+          ? statement.thenStatement.statements : [statement.thenStatement];
+        const exit = branch.at(-1);
+        if (!exit || !ts.isReturnStatement(exit)) throw new Error("거부 뒤 문서 변경이 계속됩니다.");
+        expect(exit.expression?.kind).toBe(name === "commit" ? ts.SyntaxKind.FalseKeyword : undefined);
+      }
+      const masterStatement = statements[master];
+      if (!masterStatement || !ts.isIfStatement(masterStatement)) throw new Error("마스터 변경 분기가 없습니다.");
+      expect(masterStatement.thenStatement.getText(file)).toContain("setMaster(");
+      const masterBranch = ts.isBlock(masterStatement.thenStatement)
+        ? masterStatement.thenStatement.statements : [masterStatement.thenStatement];
+      const masterExit = masterBranch.at(-1);
+      if (!masterExit || !ts.isReturnStatement(masterExit)) throw new Error("마스터 변경 뒤 페이지 변경이 계속됩니다.");
+      expect(masterExit.expression?.kind).toBe(name === "commit" ? ts.SyntaxKind.TrueKeyword : undefined);
+    },
+  );
 });
 
 describe("참 바 호스트 계약: 놓이는 크기(격자 스냅의 전제)", () => {

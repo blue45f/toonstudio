@@ -219,12 +219,13 @@ describe("Production 제출 명령 경계", () => {
   it("서비스가 edit·정확한 project revision·검증 대상과 세 번째 capture 인수를 연결한다", async () => {
     const repository = new ProductionCollaborationRepository();
     const before = fixture();
+    const parsedCommand = SubmitProductionTaskOutputCommandSchema.parse(command);
     const access: ProductionProjectAccess = { view: true, comment: true, edit: true, manage: true, owner: true, role: "owner" };
     const mutate = vi.spyOn(repository, "mutateProject").mockImplementation(async (input) => {
       expect(input.requiredCapability).toBe("edit");
       expect(input.expectedRevision).toBe(before.revision);
       expect(input.taskBatchPreconditions).toBeUndefined();
-      expect(input.taskOutputSources).toEqual({ output: command.source });
+      expect(input.taskOutputSources).toEqual({ output: parsedCommand.source, command: parsedCommand });
       expect(input.mutationId).toBe("11111111-1111-4111-8111-111111111111");
       return input.mutate(before, access, captures);
     });
@@ -233,7 +234,7 @@ describe("Production 제출 명령 경계", () => {
     try {
       const result = await new ProductionCollaborationService(repository).executeCommand("owner-1", before.projectId, {
         expectedRevision: before.revision, mutationId: "11111111-1111-4111-8111-111111111111",
-        command: SubmitProductionTaskOutputCommandSchema.parse(command),
+        command: parsedCommand,
       });
       expect(mutate).toHaveBeenCalledOnce();
       expect(result.aggregate.revision).toBe(before.revision + 1);
@@ -248,15 +249,18 @@ describe("Production 제출 명령 경계", () => {
   it("initial-capture의 별도 입력 근거를 저장소 검증 대상으로 함께 전달한다", async () => {
     const repository = new ProductionCollaborationRepository();
     const initial = { subject: { ...subject, reviewId: "initial-review", revisionId: "initial-revision" } };
+    const parsedInitialCommand = SubmitProductionTaskOutputCommandSchema.parse({
+      ...command, inputs: { mode: "initial-capture", source: initial },
+    });
     const mutate = vi.spyOn(repository, "mutateProject").mockImplementation(async (input) => {
-      expect(input.taskOutputSources).toEqual({ output: command.source, initial });
+      expect(input.taskOutputSources).toEqual({ output: parsedInitialCommand.source, command: parsedInitialCommand, initial });
       expect(input.taskBatchPreconditions).toBeUndefined();
       return { aggregate: fixture() };
     });
     try {
       await new ProductionCollaborationService(repository).executeCommand("owner-1", "production-1", {
         expectedRevision: 0, mutationId: "11111111-1111-4111-8111-111111111111",
-        command: SubmitProductionTaskOutputCommandSchema.parse({ ...command, inputs: { mode: "initial-capture", source: initial } }),
+        command: parsedInitialCommand,
       });
       expect(mutate).toHaveBeenCalledOnce();
     } finally {

@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import type { StudioOfflineBranchConflictDetail, StudioOfflineBranchResolveInput } from "../offline-branch/studio-offline-branch-runtime";
 
 import {
   INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT,
@@ -23,6 +24,13 @@ export interface StudioLiveRecoveryState {
   message: string;
 }
 
+export interface StudioLiveOfflineBranchState {
+  readonly workId: string;
+  readonly generation: number;
+  readonly pendingOperations: number;
+  readonly conflicts: readonly StudioOfflineBranchConflictDetail[];
+}
+
 export interface StudioLiveCollaborationContextValue {
   room: StudioLiveRoom | null;
   availability: StudioLiveAvailability;
@@ -40,6 +48,8 @@ export interface StudioLiveCollaborationContextValue {
   /** Structured, fail-closed durability state for always-visible editor chrome. */
   sync: StudioLiveSyncSnapshot;
   recovery: StudioLiveRecoveryState | null;
+  offlineBranch: StudioLiveOfflineBranchState | null;
+  resolveOfflineConflict: (input: StudioOfflineBranchResolveInput) => Promise<void>;
   exportRecovery: () => Promise<void>;
   reloadAuthoritative: () => void;
   retryServer: () => void;
@@ -62,6 +72,8 @@ export const EMPTY_STUDIO_LIVE_CONTEXT: StudioLiveCollaborationContextValue = {
   sendChatMessage: () => false,
   sync: INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT,
   recovery: null,
+  offlineBranch: null,
+  resolveOfflineConflict: async () => { throw new Error("현재 오프라인 변경 보관함이 없습니다."); },
   exportRecovery: async () => undefined,
   reloadAuthoritative: () => undefined,
   retryServer: () => undefined,

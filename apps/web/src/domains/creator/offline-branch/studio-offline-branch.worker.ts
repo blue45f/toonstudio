@@ -55,6 +55,13 @@ function execute(command: StudioOfflineBranchWorkerCommand): StudioOfflineBranch
       branch.recordConflicts(command.conflicts, command.updatedAt);
       return { kind: "updated", snapshot: branch.snapshot() };
     }
+    case "resolve-conflict":
+      return {
+        kind: "updated",
+        snapshot: requireEngine().resolveConflict(
+          command.resolution, command.replacement, command.updatedAt,
+        ),
+      };
     case "snapshot":
       return { kind: "snapshot", snapshot: requireEngine().snapshot() };
     case "save":
