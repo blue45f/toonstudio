@@ -74,13 +74,10 @@
  *
  * ## Scope and honesty
  *
- * `LANE_PROBES` covers all 15 `StudioBrushEngineLaneId` values plus the family-level retained
- * branches that have no lane id (highlighter, calligraphy, neon, glow, pastel). A probe must run
- * the whole per-move chain, not just the stage that was rewritten most recently — see the
- * 2026-09-03 note below for the shape of that mistake. The first test
- * asserts the catalog side of that, so a newly added lane id fails here until it is either probed
- * or explicitly skipped with a reason. `SKIPPED_LANES` is part of the deliverable: an unmeasurable
- * lane is listed with why, never silently dropped.
+ * `LANE_PROBES`는 16개 `StudioBrushEngineLaneId`와 lane id가 없는 retained 계열
+ * (highlighter, calligraphy, neon, glow, pastel)의 전체 이동 체인을 측정한다. 2026-09-03 기록처럼
+ * 최근 고친 단계만 측정하지 않는다. 첫 테스트는 새 lane마다 probe 또는 사유 있는 명시적 skip을 요구한다.
+ * 측정할 수 없는 lane은 `SKIPPED_LANES`에 사유를 남기며 조용히 누락하지 않는다.
  *
  * ## State of the shelf when this gate was written (2026-08-21, node 24)
  *
@@ -179,7 +176,7 @@ import {
 import { createStudioIncrementalRetainedMediaCurveBuilder } from "../studio-retained-media-pressure";
 import { planStudioRetainedMediaRibbon } from "../studio-retained-media-ribbon";
 
-import { mapStudioBrushAliasPressure } from "./studio-brush-alias-profile";
+import { mapStudioBrushAliasPressure, resolveStudioBrushAliasWatercolorPlanSettings } from "./studio-brush-alias-profile";
 import {
   resolveStudioCapturedBrushDynamicsPresetId,
   studioDynamicBrushDepositPipelineUsesContinuation,
@@ -739,6 +736,38 @@ function fxPressurePathProbe(
   };
 }
 
+const wetWashProbe = (id: string, brushId: string, width: number): LaneProbe => ({
+  id,
+  brushId,
+  path: "live-incremental",
+  entry: "StudioDrawNode draft -> planStudioWetWashLivePipeline (planner+material+carrier)",
+  makeStroke: () => {
+    // 활성 초안의 raw points·공유 cap·previewEndpoint로 planner·재질·carrier의 prefix/tail을 측정한다. 정착 bake·commit/SVG 배치·브라우저 E2E FPS는 범위 밖이다.
+    const settings = id === "wet-paper" ? resolveStudioBrushAliasWatercolorPlanSettings(brushId, width) : null;
+    if (id === "wet-paper" && !settings) throw new Error("젖은 종이 프로브의 정식 재질 설정이 없습니다.");
+    const strokeKey = [ELEMENT_ID, id, wetDabsProbeSequence += 1].join(":");
+    return wholePrefixStepper((stroke) => {
+      const plan = planStudioWetWashLivePipeline(strokeKey, {
+        brushId,
+        input: {
+          points: stroke.points,
+          pressures: stroke.pressures,
+          baseWidth: settings?.baseWidth ?? width,
+          spacing: settings?.spacing,
+          seed: SEED,
+          maxDabs: DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS,
+          previewEndpoint: true,
+        },
+        carrierSeed: SEED,
+      });
+      if (id === "wet-paper" && (!plan || plan.carrierPlan.footprintCount <= 0)) {
+        throw new Error("젖은 종이 프로브가 실제 carrier 작업을 만들지 못했습니다.");
+      }
+      return plan ? plan.carrierPlan.footprintCount : 0;
+    });
+  },
+});
+
 const LANE_PROBES: readonly LaneProbe[] = Object.freeze([
   // ── causal ink ──────────────────────────────────────────────────────────────────────────────
   {
@@ -880,37 +909,8 @@ const LANE_PROBES: readonly LaneProbe[] = Object.freeze([
   dynamicDabProbe("spray-dynamic", "airbrush--klecks-grit"),
 
   // ── wet dabs ────────────────────────────────────────────────────────────────────────────────
-  {
-    id: "wet-dabs",
-    brushId: "watercolor--granular",
-    path: "live-incremental",
-    entry: "StudioDrawNode draft -> planStudioWetWashLivePipeline (planner+material+carrier)",
-    makeStroke: () => {
-      // `StudioDrawNode`'s active-draft branch drives one element-id-keyed pipeline per move:
-      // the causal planner, the material per-dab scale and the wet ribbon carrier all retain
-      // their stable prefix, so a move pays only for new samples plus the preview tail. The
-      // batch chain (`planCausalWatercolorBrushDabs` -> `applyStudioBrushAliasWatercolorMaterial`
-      // -> `planStudioWetRibbonCarrier`) remains the commit/SVG-export path, a cost no pointer
-      // move pays. The input mirrors the draft branch: raw points (causal strokes skip
-      // `processFreehandPoints`), the shared causal dab cap and `previewEndpoint: true`.
-      const strokeKey = `${ELEMENT_ID}:wet-dabs:${wetDabsProbeSequence += 1}`;
-      return wholePrefixStepper((stroke) => {
-        const plan = planStudioWetWashLivePipeline(strokeKey, {
-          brushId: "watercolor--granular",
-          input: {
-            points: stroke.points,
-            pressures: stroke.pressures,
-            baseWidth: 30,
-            seed: SEED,
-            maxDabs: DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS,
-            previewEndpoint: true,
-          },
-          carrierSeed: SEED,
-        });
-        return plan ? plan.carrierPlan.footprintCount : 0;
-      });
-    },
-  },
+  wetWashProbe("wet-dabs", "watercolor--granular", 30),
+  wetWashProbe("wet-paper", "ink-wash--dry-brush", 24),
 
   // ── stamp engines ───────────────────────────────────────────────────────────────────────────
   stampProbe("wet-stamp", "watercolor--edge-stamp"),
