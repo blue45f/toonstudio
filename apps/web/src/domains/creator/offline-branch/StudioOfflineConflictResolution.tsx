@@ -92,6 +92,7 @@ export function StudioOfflineConflictResolution({ conflicts, resolve }: StudioOf
         </li>;
       })}
     </ul>
+    {busyOperation !== null && !conflicts.some((detail) => detail.operationId === busyOperation) ? <p role="status" className="mt-2 text-xs text-fg-3">{offlineConflictText("busy")}</p> : null}
     {conflicts.length > visibleCount ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs text-fg-3">{offlineConflictText("shown", { total: conflicts.length, count: visibleCount })}</p>
       <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" onClick={() => setVisibleCount((count) => count + 20)}>{offlineConflictText("showMore")}</button>

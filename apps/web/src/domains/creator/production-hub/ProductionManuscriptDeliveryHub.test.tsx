@@ -263,20 +263,56 @@ describe("ProductionManuscriptDeliveryHub", () => {
   });
 
   it("removes private actions when the verification lease expires during a stalled renewal", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date(now));
+    const startedAt = Date.now();
+    let finishRenewal: (value: StudioVirtualSpaceReviewVerification) => void = () => undefined;
+    const renewal = new Promise<StudioVirtualSpaceReviewVerification>((resolve) => { finishRenewal = resolve; });
     f.verify
-      .mockResolvedValueOnce({ ...verified, verifiedAt: Date.now(), expiresAt: Date.now() + 80 })
-      .mockImplementationOnce(() => new Promise(() => undefined));
-    render(<ProductionManuscriptDeliveryHub
+      .mockResolvedValueOnce({ ...verified, verifiedAt: startedAt, expiresAt: startedAt + 80 })
+      .mockImplementationOnce(() => renewal);
+    const view = render(<ProductionManuscriptDeliveryHub
       projectId="work-1"
       subject={subject}
       process={process}
       onOpenFeedback={vi.fn()}
     />);
-    await screen.findByText("SHARE MANAGER review-1");
-    await act(async () => { await new Promise((resolve) => globalThis.setTimeout(resolve, 120)); });
+    // 검증 결과를 먼저 publication한 뒤 실제 private lazy 모듈 완료를 기다린다. lease 시간은 전진시키지 않는다.
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { await vi.dynamicImportSettled(); });
+    expect(Date.now()).toBe(startedAt);
+    expect(f.verify).toHaveBeenCalledExactlyOnceWith(subject, "view");
+    expect(screen.getByText("SHARE MANAGER review-1")).toBeTruthy();
+    expect(screen.getByText("OFFICIAL DELIVERY review-1")).toBeTruthy();
+
+    // 기존 80ms fixture의 갱신은 즉시 시작하지만, 미완료 응답이 현재 lease를 연장하지 않는다.
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(f.verify).toHaveBeenCalledTimes(2);
+    expect(f.verify).toHaveBeenNthCalledWith(2, subject, "view");
+    expect(screen.getByText("SHARE MANAGER review-1")).toBeTruthy();
+    expect(screen.getByText("OFFICIAL DELIVERY review-1")).toBeTruthy();
+    await act(async () => { await vi.advanceTimersByTimeAsync(79); });
+    expect(Date.now()).toBe(startedAt + 79);
+    expect(screen.getByText("SHARE MANAGER review-1")).toBeTruthy();
+    expect(screen.getByText("OFFICIAL DELIVERY review-1")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(Date.now()).toBe(startedAt + 80);
     expect(screen.queryByText("SHARE MANAGER review-1")).toBeNull();
     expect(screen.queryByText("OFFICIAL DELIVERY review-1")).toBeNull();
-    expect((await screen.findByRole("alert")).textContent).toContain("권한 확인 시간이 지나");
+    expect(screen.getByRole("alert").textContent).toContain("권한 확인 시간이 지나");
+    await act(async () => {
+      finishRenewal({ ...verified, verifiedAt: Date.now(), expiresAt: Date.now() + 15_000 });
+      await renewal;
+    });
+    expect(screen.queryByText("SHARE MANAGER review-1")).toBeNull();
+    expect(screen.queryByText("OFFICIAL DELIVERY review-1")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("권한 확인 시간이 지나");
+    view.unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => globalThis.dispatchEvent(new Event("focus")));
+    expect(f.verify).toHaveBeenCalledTimes(2);
   });
 
   it("requires a pinned review before offering external share or delivery", () => {

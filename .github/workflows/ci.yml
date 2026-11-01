@@ -282,6 +282,60 @@ jobs:
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/bundle-renders-v1/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/bundle-scenes-v1/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/bundle-decor-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/3d/environments/bundle-v1/theme-packs.e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4.json' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/cgi-director-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/cgi-director-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/chief-pd-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/chief-pd-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/colorist-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/colorist-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/line-artist-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/cast/line-artist-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/diverse-creator-cast-clean-atlas.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/four-studio-themes-atlas.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/action-mocap-actor-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/action-mocap-actor-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/sound-letterer-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/sound-letterer-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/story-writer-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/story-writer-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-idle.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/studio-cat-mascot-work.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/genre-studio-themes-atlas.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/specialist-cast-clean-atlas.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/themes/brooklyn-indie-comics-loft.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/themes/murim-bamboo-pavilion.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/themes/romance-palace-conservatory.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/themes/scifi-orbital-command.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/creator-emote-and-walk-sheet.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/celebrate-highfive.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/coffee-cat-break.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/crunch-flame-focus.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/emotes/stride-walk.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/four-more-studio-themes-atlas.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/props/blender-hologram-stage-table.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/props/deadline-espresso-cat-lounge.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/props/dual-cintiq-critique-pod.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/props/webtoon-sound-foley-booth.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/themes/abyssal-bioluminescent-worldlab.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/themes/dolby-sound-dubbing-studio.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/themes/magic-academy-astral-library.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/themes/rooftop-sunset-screening-stage.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v13/webtoon-props-and-zones-atlas.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/global-ip-pitch-boardroom.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/recruit-interview-conservatory.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/retro-arcade-gacha-lounge.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/rooms/tarot-story-oracle-pavilion.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-down.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/LICENSES.md' || '' }}
             ${{ matrix.shard == 'studio-3d' && '/apps/web/public/assets/3d/environments/authored-v1/' || '' }}
             ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sendagaya_Shibu.vrm' || '' }}
             ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sendagaya_Shino.vrm' || '' }}

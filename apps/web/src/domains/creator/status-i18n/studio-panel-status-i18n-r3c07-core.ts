@@ -1,7 +1,7 @@
 /**
  * creator 루트 패널 후반부 로딩·실패·빈 상태 문구 사전 (A4 잔여 3라운드 c07) — 진입 그래프 코어.
  *
- * 앱 셸·Studio 첫 청크 그래프에 정적으로 들어오는 소비 파일(useStudioSmartShapeEditing.tsx, StudioOnDemandModuleStatus.tsx, studio-mobile-dock-presets.tsx 등 11개)이 쓰는 키 21개와
+ * 앱 셸·Studio 첫 청크 그래프에 정적으로 들어오는 소비 파일(useStudioSmartShapeEditing.tsx, StudioOnDemandModuleStatus.tsx, studio-mobile-dock-presets.tsx 등)과 동기화 상태 모델이 쓰는 키 23개와
  * 해석 헬퍼(`r3c07StatusText`)만 등록한다. 나머지 키는 지연 표면 전용이라 원본 모듈
  * (`studio-panel-status-i18n-r3c07`)이 등록하고, 원본이 이 코어를 함께 불러오므로 지연 소비 파일은 원본만 import 해도
  * 전체 키를 얻는다. 진입 그래프 소비 파일은 원본 대신 이 코어를 직접 import 해, 지연 표면 전용 사전 본문이 첫 청크에
@@ -15,6 +15,8 @@ import {
 } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
+  "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "따라 그리기 원본을 찾지 못했어요",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.",
   "studio.panelStatus.r3c07.onDemandModule.loadFailed": "창을 불러오지 못했습니다. 캔버스는 유지됩니다.",
@@ -39,6 +41,8 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "Your manuscript is protected on the team server and in this device's recovery storage.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "Pending changes ({count}) are kept in this device's recovery storage until the server reconnects. They have not been applied to the team server yet.",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "Could not find the tracing original",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "Your drawing is kept as is. Import the same original again.",
   "studio.panelStatus.r3c07.onDemandModule.loadFailed": "Could not load the window. The canvas is kept.",

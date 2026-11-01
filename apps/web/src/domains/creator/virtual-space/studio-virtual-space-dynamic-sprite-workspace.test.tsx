@@ -33,8 +33,8 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     expect(DYNAMIC_SPRITE_ACTIONS).toHaveLength(10);
     expect(DYNAMIC_SPRITE_VFX_PRESETS).toHaveLength(8);
     expect(PRACTICAL_COLLAB_ZONES).toHaveLength(4);
-    expect(PRACTICAL_COLLAB_ZONES.find((zone) => zone.id === "zone-3d-blender-sketchup")?.titleKo).toContain("공간 모델러");
-    expect(DYNAMIC_CREATOR_SPRITE_CAST.find((persona) => persona.personaId === "cgi-director")?.characterNameKo).toContain("공간 모델러");
+    expect(PRACTICAL_COLLAB_ZONES.find((zone) => zone.id === "zone-3d-blender-sketchup")?.titleKo).toBe("🧊 ToonStudio 3D 배경 합동 스튜디오");
+    expect(DYNAMIC_CREATOR_SPRITE_CAST.find((persona) => persona.personaId === "cgi-director")?.characterNameKo).toBe("윤진 (3D 배경 감독)");
 
     for (const persona of DYNAMIC_CREATOR_SPRITE_CAST) {
       expect(persona.headToBodyRatio).toBeLessThanOrEqual(0.185);
