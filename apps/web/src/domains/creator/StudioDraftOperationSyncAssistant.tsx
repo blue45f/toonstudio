@@ -156,12 +156,13 @@ export function StudioDraftOperationSyncAssistant({
     || live.sync.operationSyncReady
     || live.sync.pendingCount > 0
   );
+  const offlineConflictCount = live.offlineBranch?.conflicts.length ?? 0;
   const model = resolveStudioDraftOperationSyncAssistant({
     liveContextAvailable,
     syncPhase: live.sync.phase,
     pendingCount: live.sync.pendingCount,
     offlinePendingCount: live.offlineBranch?.pendingOperations ?? 0,
-    offlineConflictCount: live.offlineBranch?.conflicts.length ?? 0,
+    offlineConflictCount,
     persistenceDurability: live.sync.persistenceDurability,
     editsDurablyProtected: live.sync.editsDurablyProtected,
     mode: live.sync.mode,
@@ -225,10 +226,12 @@ export function StudioDraftOperationSyncAssistant({
   }, [live, model.primaryAction, onOpenVersions, runExport]);
 
   useEffect(() => {
+    // 열린 창에 뒤늦게 도착한 충돌도 선택 완료 안내를 확인할 때까지 유지한다.
+    if (open && offlineConflictCount > 0) conflictReviewOpenRef.current = true;
     if (model.visible || (open && ((inline && liveContextAvailable) || conflictReviewOpenRef.current))) return;
     setOpen(false);
     setActionError(null);
-  }, [inline, liveContextAvailable, model.visible, open]);
+  }, [inline, liveContextAvailable, model.visible, offlineConflictCount, open]);
 
   const offlineScopeKey = live.offlineBranch
     ? `${live.offlineBranch.workId}:${live.offlineBranch.generation}` : null;

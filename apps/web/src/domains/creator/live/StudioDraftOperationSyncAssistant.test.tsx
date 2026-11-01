@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -39,10 +39,10 @@ function renderAssistant(
     ...liveOverrides,
   };
 
-  render(
+  const content = (liveValue: StudioLiveCollaborationContextValue) => (
     <>
       {menubar ? <div ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.sync} /> : null}
-      <StudioLiveCollaborationContext.Provider value={value}>
+      <StudioLiveCollaborationContext.Provider value={liveValue}>
         <StudioDraftOperationSyncAssistant
           serverRevision={7}
           hasServerDocument
@@ -57,10 +57,17 @@ function renderAssistant(
           {...props}
         />
       </StudioLiveCollaborationContext.Provider>
-    </>,
+    </>
   );
 
-  return { onOpenVersions, onExportBackup };
+  const view = render(content(value));
+  return {
+    onOpenVersions,
+    onExportBackup,
+    rerenderLive: (overrides: Partial<StudioLiveCollaborationContextValue>) => {
+      view.rerender(content({ ...value, ...overrides }));
+    },
+  };
 }
 
 afterEach(() => {
@@ -214,6 +221,77 @@ describe("StudioDraftOperationSyncAssistant", () => {
 
     expect(screen.queryByRole("dialog", { name: "기기·서버 동기화" })).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+
+describe("열린 부유 동기화 창의 늦은 충돌", () => {
+  const floatingModes = [
+    ["모바일 몰입", { mobileImmersive: true }],
+    ["캔버스만 보기", { canvasOnlyMode: true }],
+  ] as const;
+  const detail: StudioOfflineBranchConflictDetail = {
+    operationId: "operation-a", pageId: "page-a", pageName: "1페이지", targetId: "stroke-a",
+    targetType: "stroke", action: "upsert", code: "target-changed", message: "공유본 변경",
+    canonicalFingerprint: "fp1:1111111111111111", canKeepCanonical: true, canReapplyLocal: true,
+    disabledReason: null,
+  };
+  const scope = { workId: "work-a", generation: 1, pendingOperations: 1, conflicts: [] };
+
+  it.each(floatingModes)("%s는 같은 세대의 충돌 0→1→0 뒤 완료 안내와 초점을 유지하고 명시적으로 닫힌다", async (_name, props) => {
+    let finish: () => void = () => undefined;
+    const decision = new Promise<void>((resolve) => { finish = resolve; });
+    const resolveOfflineConflict = vi.fn(() => decision);
+    const view = renderAssistant({ offlineBranch: scope, resolveOfflineConflict }, props, true);
+    const trigger = screen.getByRole("button", { name: /동기화 상태:/ });
+    expect(trigger.getAttribute("data-studio-operation-sync-trigger")).toBe("floating");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    view.rerenderLive({ offlineBranch: { ...scope, conflicts: [detail] } });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "공유본 유지" }));
+    expect(resolveOfflineConflict).toHaveBeenCalledExactlyOnceWith({
+      operationId: detail.operationId, action: "keep-canonical",
+      expectedCanonicalFingerprint: detail.canonicalFingerprint,
+    });
+    view.rerenderLive({ offlineBranch: { ...scope, pendingOperations: 0 } });
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(within(dialog).getByText("선택 저장 중…")).toBeTruthy();
+    await act(async () => { finish(); await decision; });
+    expect(within(dialog).getByText(/공유본 유지 결정을 저장했습니다/)).toBeTruthy();
+    const section = dialog.querySelector("[data-studio-offline-conflict-resolution]");
+    expect(section).not.toBeNull();
+    expect(document.activeElement).toBe(section);
+    fireEvent.click(within(dialog).getByRole("button", { name: "기기·서버 동기화 닫기" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: /동기화 상태:/ })).toBeNull();
+  });
+
+  it.each([
+    ["원고", { ...scope, workId: "work-b" }],
+    ["세대", { ...scope, generation: 2 }],
+  ] as const)("%s 교체는 이전 충돌 검토 창을 닫고 새 창에 유지 상태를 넘기지 않는다", (_name, nextScope) => {
+    const view = renderAssistant({ offlineBranch: { ...scope, conflicts: [detail] } }, { mobileImmersive: true }, true);
+    fireEvent.click(screen.getByRole("button", { name: /동기화 상태:/ }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    view.rerenderLive({ offlineBranch: nextScope });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /동기화 상태:/ }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    view.rerenderLive({ offlineBranch: { ...nextScope, pendingOperations: 0 } });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: /동기화 상태:/ })).toBeNull();
+  });
+
+  it.each(floatingModes)("%s는 충돌을 본 적이 없으면 정상 동기화 뒤 기존처럼 자동으로 닫힌다", (_name, props) => {
+    const view = renderAssistant({ offlineBranch: scope }, props, true);
+    const trigger = screen.getByRole("button", { name: /동기화 상태:/ });
+    expect(trigger.getAttribute("data-studio-operation-sync-trigger")).toBe("floating");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    view.rerenderLive({ offlineBranch: { ...scope, pendingOperations: 0 } });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("button", { name: /동기화 상태:/ })).toBeNull();
   });
 });
 

@@ -50,7 +50,9 @@ describe("오프라인 변경의 사용자 선택", () => {
     view.rerender(<StudioOfflineConflictResolution conflicts={[]} resolve={resolve} />);
     expect(view.container.querySelector("section")).toBeTruthy();
     expect(screen.queryByRole("listitem")).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("선택 저장 중…");
     await act(async () => { pending.finish(); await pending.promise; });
+    expect(screen.queryByRole("status")).toBeNull();
     expect(screen.getByText(/공유본 유지 결정을 저장했습니다/)).toBeTruthy();
     expect(document.activeElement).toBe(view.container.querySelector("section"));
   });
