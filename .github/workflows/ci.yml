@@ -242,52 +242,67 @@ jobs:
             /docs/studio/virtual-studio-design-closure-ledger-20260920.md
             /docs/studio/virtual-studio-all-pages-closure-20260924.md
             !/tests/benchmarks/results/
-      - name: Restore documentation authority for product regressions
-        if: matrix.shard == 'product'
-        run: >-
-          git sparse-checkout add
-          /docs/
-          /apps/web/public/assets/3d/outfits/README.md
-          /apps/web/public/assets/studio/cc0-20260906/README.md
-          /apps/web/public/assets/3d/LICENSES.md
-          /apps/web/public/assets/3d/environments/expansion-v1/LICENSES.md
-          /apps/web/public/assets/3d/environments/mcp-free-v1/LICENSES.md
-          /apps/web/public/assets/3d/environments/authored-v1/LICENSES.md
-          /apps/web/public/assets/3d/environments/refined-v6/LICENSES.md
-          /apps/web/public/assets/3d/environments/webtoon-v7/LICENSES.md
-          /apps/web/public/assets/3d/refined-v8/LICENSES.md
-          /apps/web/public/vrm/LICENSES.md
-          /tests/benchmarks/results/app-startup-perf.json
-          /tests/benchmarks/results/i18n-fix.json
-      - name: Restore Virtual Studio art for foundation regressions
-        if: matrix.shard == 'studio-foundation'
-        run: git sparse-checkout add /apps/web/public/assets/virtual-studio/production-v2/ /apps/web/public/assets/virtual-studio/living-world/ /apps/web/public/assets/virtual-studio/drawn-characters-v1/ /apps/web/public/assets/virtual-studio/ambient-audio/ /apps/web/public/assets/virtual-studio/npc-cast-v1/ /apps/web/public/assets/virtual-studio/npc-cast-v2/ /apps/web/public/assets/virtual-studio/npc-cast-v3/ /apps/web/public/assets/virtual-studio/npc-cast-v4/ /apps/web/public/assets/virtual-studio/characters-lpc-v1/ /apps/web/public/assets/virtual-studio/portraits-v1/ /apps/web/public/assets/virtual-studio/art-v4/ /apps/web/public/assets/virtual-studio/art-v4-manifest.json /apps/web/public/assets/virtual-studio/style-packs/ /apps/web/public/assets/virtual-studio/style-packs-v5/ /apps/web/public/assets/virtual-studio/living-town-v6/ /apps/web/public/assets/virtual-studio/imagegen25-v7/ /apps/web/public/assets/virtual-studio/experience-v8/ /apps/web/public/assets/virtual-studio/cinematic-v9/ /apps/web/public/assets/virtual-studio/world-v2/ /apps/web/public/assets/studio/props/
-      - name: 가상 오피스 원본·런타임 시트와 환경 아트 검증 입력 복원
-        if: matrix.shard == 'studio-foundation'
-        run: >-
-          git sparse-checkout add
-          /apps/web/public/assets/virtual-studio/office-cast-v2/
-          /apps/web/public/assets/virtual-studio/office-themes-v1/
-          /apps/web/public/assets/virtual-studio/toon-office-v1/characters/
-      - name: 드로잉 일러스트 원본 무결성 검사용 파일 준비
-        if: matrix.shard == 'studio-foundation'
-        run: git sparse-checkout add /apps/web/public/assets/studio/illustration-20260926/
-      # 번들 권리·배경·장식 회귀가 실제 WebP 본문과 파일 목록을 대조한다. 원본 3D 모델은 받지 않는다.
-      - name: 번들 소재 회귀 검사용 파생 이미지 준비
-        if: matrix.shard == 'studio-foundation'
-        run: >-
-          git sparse-checkout add
-          /apps/web/public/assets/studio/bundle-renders-v1/
-          /apps/web/public/assets/studio/bundle-scenes-v1/
-          /apps/web/public/assets/virtual-studio/bundle-decor-v1/
-      - name: Restore generated BG3D pack for studio-3d regressions
-        if: matrix.shard == 'studio-3d'
-        run: git sparse-checkout add /apps/web/public/assets/3d/environments/authored-v1/
-      - name: Restore VRM sample fixtures for character regressions
-        if: matrix.shard == 'studio-character'
-        run: git sparse-checkout add /apps/web/public/vrm/Sendagaya_Shibu.vrm /apps/web/public/vrm/Sendagaya_Shino.vrm /apps/web/public/vrm/Sakurada_Fumiriya.vrm /apps/web/public/vrm/AliciaSolid.vrm /apps/web/public/vrm/Darkness_Shibu.vrm /apps/web/public/vrm/Jimmy.vrm /apps/web/public/vrm/Jennifer.vrm
+            ${{ matrix.shard == 'product' && '/docs/' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/outfits/README.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/studio/cc0-20260906/README.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/environments/expansion-v1/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/environments/mcp-free-v1/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/environments/authored-v1/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/environments/refined-v6/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/environments/webtoon-v7/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/assets/3d/refined-v8/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/apps/web/public/vrm/LICENSES.md' || '' }}
+            ${{ matrix.shard == 'product' && '/tests/benchmarks/results/app-startup-perf.json' || '' }}
+            ${{ matrix.shard == 'product' && '/tests/benchmarks/results/i18n-fix.json' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/production-v2/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/living-world/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/drawn-characters-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/ambient-audio/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/npc-cast-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/npc-cast-v2/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/npc-cast-v3/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/npc-cast-v4/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/characters-lpc-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/portraits-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/art-v4/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/art-v4-manifest.json' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/style-packs/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/style-packs-v5/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/living-town-v6/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/imagegen25-v7/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/experience-v8/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/cinematic-v9/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/world-v2/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/props/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/office-cast-v2/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/office-themes-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/toon-office-v1/characters/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/illustration-20260926/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/bundle-renders-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/bundle-scenes-v1/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/bundle-decor-v1/' || '' }}
+            ${{ matrix.shard == 'studio-3d' && '/apps/web/public/assets/3d/environments/authored-v1/' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sendagaya_Shibu.vrm' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sendagaya_Shino.vrm' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Sakurada_Fumiriya.vrm' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/AliciaSolid.vrm' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Darkness_Shibu.vrm' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Jimmy.vrm' || '' }}
+            ${{ matrix.shard == 'studio-character' && '/apps/web/public/vrm/Jennifer.vrm' || '' }}
       - name: Restore documentation inputs for product contracts
         if: matrix.shard == 'product'
+        # 동적 문서 링크에 필요한 읽기 인증은 이 단계의 Git 자식에만 전달하고 저장하지 않는다.
+        env:
+          TOONSTUDIO_CHECKOUT_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_0: credential.helper
+          GIT_CONFIG_VALUE_0: ""
+          GIT_CONFIG_KEY_1: credential.https://github.com.helper
+          GIT_CONFIG_VALUE_1: >-
+            !f() { if test "$1" = get && test -n "${TOONSTUDIO_CHECKOUT_TOKEN:-}"; then
+            printf '%s\n' 'username=x-access-token' "password=$TOONSTUDIO_CHECKOUT_TOKEN"; fi; }; f
+          GIT_TERMINAL_PROMPT: "0"
         run: node scripts/restore-documentation-checkout.mjs
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
@@ -318,15 +333,85 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
+      - name: 체크아웃 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: 체크아웃 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
+      - name: 의존성 설치 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 의존성 설치 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - name: Run serial performance checks
         run: |
           set -euo pipefail
@@ -346,15 +431,85 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
+      - name: 체크아웃 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: 체크아웃 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
+      - name: 의존성 설치 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 의존성 설치 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run serious and critical accessibility smoke
@@ -378,15 +533,85 @@ jobs:
       # during Vite chunk generation. Keep the larger heap scoped to this job.
       NODE_OPTIONS: --max-old-space-size=12288
     steps:
+      - name: 체크아웃 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: 체크아웃 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
+      - name: 의존성 설치 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 의존성 설치 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - name: Build API and web without repeating the required web typecheck
         run: |
           set -euo pipefail
@@ -426,15 +651,85 @@ jobs:
       TEST_DATABASE_URL: postgresql://studio_review_test@127.0.0.1:5432/studio_review_integration
       STUDIO_LIVE_POSTGRES_INTEGRATION_URL: postgresql://studio_review_test@127.0.0.1:5432/studio_review_integration
     steps:
+      - name: 체크아웃 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: 체크아웃 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
+      - name: 의존성 설치 전 디스크·inode 사용량 확인
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 의존성 설치 후 디스크·inode 사용량 확인
+        if: always()
+        run: |
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+          for target in "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/.git" "$GITHUB_WORKSPACE/apps/web/public" "$GITHUB_WORKSPACE/node_modules"; do
+            if test -e "$target"; then
+              du -s -B1 -- "$target"
+            else
+              printf '경로 없음: %s\n' "$target"
+            fi
+          done
+          if command -v pnpm >/dev/null 2>&1; then
+            if store=$(COREPACK_ENABLE_NETWORK=0 pnpm store path --silent); then
+              printf 'pnpm 저장소: %s\n' "$store"
+              if test -d "$store"; then du -s -B1 -- "$store"; fi
+            fi
+          fi
       - name: Prepare an empty disposable database with real graph constraints
         run: node scripts/prepare-studio-review-test-db.mjs
       - name: PostgreSQL 백업·복원 클라이언트 설치

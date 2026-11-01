@@ -38,11 +38,12 @@ jobs:
       # 환경 팩·VRM 카탈로그·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, 캐릭터 썸네일, 해당 VRM 폴더)을 함께 받는다. 전체 VRM 폴더 같은 무관한 자산 트리는 받지 않는다.
       # 일러스트 팩 무결성 시험(studio-illustration-pack)은 원본 PNG·SOURCE.json·PROMPTS.json 을 디스크에서 읽는다(약 33 MB).
       # Creator Bundle 테마 팩·권리 원장 시험은 공개 JSON 두 개(theme-packs.json, 공식 81팩 카탈로그 manifest.json)를 디스크에서 읽는다.
+      # PR의 세 파생 팩은 인증이 유효한 최초 체크아웃에 포함하고 수동 검사는 manifest만 유지한다.
       - name: Checkout focused ToonStudio source
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 1 }}
           filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |
@@ -115,15 +116,9 @@ jobs:
             /apps/web/public/vrm/Victoria_Rubin.vrm
             /apps/web/public/vrm/UnicornPerson.vrm
             /apps/web/public/vrm/MegaAngel.vrm
-
-      # related 회귀가 실제 본문·목록을 검사하는 세 파생 팩만 PR에서 복원한다.
-      - name: 관련 회귀 검사용 번들 파생 이미지 준비
-        if: github.event_name == 'pull_request'
-        run: >-
-          git sparse-checkout add
-          /apps/web/public/assets/studio/bundle-renders-v1/
-          /apps/web/public/assets/studio/bundle-scenes-v1/
-          /apps/web/public/assets/virtual-studio/bundle-decor-v1/
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/studio/bundle-renders-v1/' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/studio/bundle-scenes-v1/' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/virtual-studio/bundle-decor-v1/' || '' }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -151,20 +146,22 @@ jobs:
       - name: Verify planned feature ownership and UI reachability
         run: node scripts/verify-toonstudio-session-goals.mjs
 
-      - name: Fetch the exact PR base
+      - name: PR 기준 커밋 존재 확인
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          GIT_NO_LAZY_FETCH: "1"
+        run: git cat-file -e "$BASE_SHA^{commit}"
 
       - name: Collect changed ToonStudio sources
         if: github.event_name == 'pull_request'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GIT_NO_LAZY_FETCH: "1"
         run: |
           set -euo pipefail
-          git diff --name-only -z --diff-filter=ACMR "$BASE_SHA" HEAD -- \
+          git diff --no-renames --name-only -z --diff-filter=ACMR "$BASE_SHA" HEAD -- \
             'apps/web/src/**/*.js' \
             'apps/web/src/**/*.jsx' \
             'apps/web/src/**/*.ts' \

@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { devNull, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { restoreDocumentationCheckout } from "./restore-documentation-checkout.mjs";
+import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -43,15 +44,96 @@ test("product 문서 계약 전에 추적 문서와 내부 링크 입력을 복�
   const restoration = workflow.indexOf("      - name: Restore documentation inputs for product contracts\n");
   const execution = workflow.indexOf("      - name: Run semantic regression shard\n");
   assert.ok(restoration >= 0 && execution > restoration);
-  assert.match(workflow.slice(restoration, execution), /if: matrix\.shard == 'product'\n\s+run: node scripts\/restore-documentation-checkout\.mjs/u);
+  const step = workflow.slice(restoration, execution);
+  assert.match(step, /if: matrix\.shard == 'product'/u);
+  assert.match(step, /run: node scripts\/restore-documentation-checkout\.mjs/u);
+  assert.match(step, /TOONSTUDIO_CHECKOUT_TOKEN: \$\{\{ github\.token \}\}/u);
+  assert.match(step, /GIT_CONFIG_COUNT: ['"]2['"]/u);
+  assert.match(step, /GIT_CONFIG_KEY_0: credential\.helper/u);
+  assert.match(step, /GIT_CONFIG_VALUE_0: ['"]['"]/u);
+  assert.match(step, /GIT_CONFIG_KEY_1: credential\.https:\/\/github\.com\.helper/u);
+  assert.match(step, /GIT_TERMINAL_PROMPT: ['"]0['"]/u);
+});
+
+test("문서 복원의 실제 credential helper는 GitHub HTTPS get만 허용하고 사용자 설정과 저장을 건드리지 않는다", () => {
+  const step = workflow.split(/(?=^ {6}- )/mu)
+    .find((entry) => entry.startsWith("      - name: Restore documentation inputs for product contracts\n"));
+  assert.ok(step);
+  const helper = step.match(/^ {10}GIT_CONFIG_VALUE_1: >-\n((?: {12}[^\n]*\n)+)/mu)?.[1]
+    .split("\n").filter(Boolean).map((line) => line.slice(12)).join(" ");
+  assert.ok(helper, "workflow의 실제 folded helper를 실행해야 합니다.");
+  assert.match(helper, /^!f\(\)/u);
+  assert.match(helper, /test "\$1" = get/u);
+  assert.match(helper, /test -n "\$\{TOONSTUDIO_CHECKOUT_TOKEN:-\}"/u);
+  assert.equal(workflow.split("TOONSTUDIO_CHECKOUT_TOKEN: ${{ github.token }}").length - 1, 1, "토큰은 문서 복원 step에만 제공해야 합니다.");
+  const root = mkdtempSync(join(tmpdir(), "documentation-credential-scope-"));
+  const baseEnvironment = fixtureGitEnvironment(root);
+  const globalConfig = baseEnvironment.GIT_CONFIG_GLOBAL;
+  const spyCalls = join(root, "unexpected-helper-calls");
+  const git = (args, environment = baseEnvironment, input) => spawnSync("git", args, {
+    cwd: root, env: environment, input, encoding: "utf8",
+  });
+  const requireSuccess = (args) => {
+    const result = git(args);
+    assert.equal(result.status, 0, result.stderr);
+  };
+  try {
+    requireSuccess(["init", "--quiet"]);
+    const spy = '!f() { printf "%s\\n" "$1" >> "$SPY_CALLS"; }; f';
+    requireSuccess(["config", "--file", globalConfig, "--add", "credential.helper", spy]);
+    requireSuccess(["config", "--local", "--add", "credential.helper", spy]);
+    const spyEnvironment = { ...baseEnvironment, SPY_CALLS: spyCalls };
+    const spyInput = "protocol=https\nhost=github.com\nusername=fixture-user\npassword=fixture-value\n\n";
+    git(["credential", "fill"], spyEnvironment, "protocol=https\nhost=github.com\n\n");
+    git(["credential", "approve"], spyEnvironment, spyInput);
+    git(["credential", "reject"], spyEnvironment, spyInput);
+    const operations = new Set(readFileSync(spyCalls, "utf8").trim().split("\n"));
+    assert.deepEqual(operations, new Set(["get", "store", "erase"]), "차단 여부를 측정할 기존 helper spy 자체가 동작해야 합니다.");
+    rmSync(spyCalls);
+    const globalBefore = readFileSync(globalConfig);
+    const localPath = join(root, ".git/config");
+    const localBefore = readFileSync(localPath);
+    const environment = fixtureGitEnvironment(root, {
+      SPY_CALLS: spyCalls,
+      TOONSTUDIO_CHECKOUT_TOKEN: "fixture-token-for-test-only",
+      GIT_CONFIG_COUNT: "2",
+      GIT_CONFIG_KEY_0: "credential.helper",
+      GIT_CONFIG_VALUE_0: "",
+      GIT_CONFIG_KEY_1: "credential.https://github.com.helper",
+      GIT_CONFIG_VALUE_1: helper,
+    });
+    const request = (protocol, host) => `protocol=${protocol}\nhost=${host}\n\n`;
+    const allowed = git(["credential", "fill"], environment, request("https", "github.com"));
+    assert.equal(allowed.status, 0, allowed.stderr);
+    const credentials = Object.fromEntries(allowed.stdout.trim().split("\n").map((line) => {
+      const index = line.indexOf("=");
+      return [line.slice(0, index), line.slice(index + 1)];
+    }));
+    assert.equal(credentials.username, "x-access-token");
+    assert.equal(credentials.password, environment.TOONSTUDIO_CHECKOUT_TOKEN);
+    for (const [protocol, host] of [["https", "example.invalid"], ["http", "github.com"], ["https", "github.com.example.invalid"]]) {
+      const rejected = git(["credential", "fill"], environment, request(protocol, host));
+      assert.notEqual(rejected.status, 0, `${protocol}://${host}에 자격증명을 제공하면 안 됩니다.`);
+      assert.doesNotMatch(rejected.stdout, /username=|password=/u);
+    }
+    const empty = git(["credential", "fill"], { ...environment, TOONSTUDIO_CHECKOUT_TOKEN: "" }, request("https", "github.com"));
+    assert.notEqual(empty.status, 0, "빈 토큰으로 인증 성공을 보고하면 안 됩니다.");
+    assert.doesNotMatch(empty.stdout, /username=|password=/u);
+    const input = `${request("https", "github.com").trim()}\nusername=x-access-token\npassword=fixture-token-for-test-only\n\n`;
+    for (const action of ["approve", "reject"]) {
+      const result = git(["credential", action], environment, input);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, "");
+    }
+    assert.equal(existsSync(spyCalls), false, "기존 helper의 get/store/erase는 모두 차단해야 합니다.");
+    assert.deepEqual(readFileSync(globalConfig), globalBefore, "fixture global 설정이 바뀌면 안 됩니다.");
+    assert.deepEqual(readFileSync(localPath), localBefore, ".git/config에 토큰이나 helper를 저장하면 안 됩니다.");
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("실제 sparse checkout에서 문서 링크만 복원하고 무관한 대형 자산과 깨진 링크는 보존한다", () => {
   const root = mkdtempSync(join(tmpdir(), "documentation-checkout-"));
-  const environment = {
-    ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_"))),
-    GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: devNull,
-  };
+  const environment = fixtureGitEnvironment(root);
   const git = (...args) => {
     const result = spawnSync("git", args, { cwd: root, env: environment, encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
@@ -79,14 +161,14 @@ test("실제 sparse checkout에서 문서 링크만 복원하고 무관한 대�
     git("add", ".");
     git("-c", "user.name=Documentation Fixture", "-c", "user.email=fixture@example.invalid", "commit", "--quiet", "-m", "fixture");
     const staticJob = workflow.slice(workflow.indexOf("\n  static:\n"), workflow.indexOf("\n  serial:\n"));
-    const sparse = staticJob.match(/ {10}sparse-checkout: \|\n((?: {12}.+\n)+)/u);
-    assert.ok(sparse, "static shard sparse-checkout patterns must exist");
-    git("sparse-checkout", "set", "--no-cone", ...sparse[1].trim().split("\n").map((line) => line.trim()));
+    git("sparse-checkout", "set", "--no-cone", ...sparsePatterns(staticJob, { shard: "product" }));
     const preview = restoreDocumentationCheckout(root, { dryRun: true, environment });
     assert.deepEqual(preview.markdown, [`${assetRoot}/README.md`, "docs/current.md", "docs/detail.mdx", "vendor/README.md"]);
     assert.deepEqual(preview.linkedFiles, [`${assetRoot}/document image.png`, `${assetRoot}/report.json`]);
     assert.deepEqual(preview.linkedDirectories, [`${assetRoot}/models`]);
-    assert.equal(existsSync(join(root, "docs/current.md")), false, "dry-run must not change checkout");
+    assert.equal(existsSync(join(root, "docs/current.md")), true, "product 문서는 최초 checkout에 있어야 합니다.");
+    assert.equal(existsSync(join(root, `${assetRoot}/document image.png`)), false, "dry-run은 링크 본문을 복원하지 않아야 합니다.");
+    assert.equal(existsSync(join(root, `${assetRoot}/README.md`)), false, "dry-run은 자산 트리의 문서를 복원하지 않아야 합니다.");
     assert.deepEqual(restoreDocumentationCheckout(root, { environment }), preview);
     for (const file of [...preview.markdown, ...preview.linkedFiles, ...preview.linkedDirectories]) {
       assert.equal(existsSync(join(root, file)), true, file);

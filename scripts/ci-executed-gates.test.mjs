@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { REQUIRED_CORE_GATES } from "./ci-core-gate.mjs";
 import { CORE_DATABASE_VITEST_TARGETS } from "./ci-core-regression-shards.mjs";
+import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const source = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -47,6 +48,13 @@ function targetExists(target) {
   );
   return readdirSync(directory).some((entry) => expression.test(entry));
 }
+
+test("checkout 조건식 파서는 알려진 literal 이외의 실행식과 조건을 거부한다", () => {
+  const block = (expression) => `          sparse-checkout: |\n            /*\n            ${expression}\n`;
+  assert.throws(() => sparsePatterns(block("${{ fromJSON(inputs.paths) }}")), /지원하지 않는 checkout 조건식/u);
+  assert.throws(() => sparsePatterns(block("${{ matrix.shard != 'product' && '/docs/' || '' }}")), /지원하지 않는 checkout 조건식/u);
+  assert.deepEqual(sparsePatterns(block("${{ matrix.shard == 'studio-3d' && '/models/' || '' }}"), { shard: "studio-3d" }), ["/*", "/models/"]);
+});
 
 
 test("production integrity follows the real menu verifier and its CI bootstrap", () => {
@@ -295,7 +303,7 @@ test("PR lint is scoped while push and merge validation stay repository-wide", (
   }
 });
 
-test("sparse lanes exclude artwork until foundation restores exactly its required Virtual Studio packs", () => {
+test("초기 checkout은 foundation의 실제 아트만 포함하고 다른 검사에서는 제외한다", () => {
   const world = "apps/web/public/assets/virtual-studio/world/default-world.json";
   const requiredArt = [
     // 필수 소품 회귀가 읽는 네 분류를 모두 복원하되 다른 스튜디오 자산은 제외한다.
@@ -369,13 +377,8 @@ test("sparse lanes exclude artwork until foundation restores exactly its require
   ];
   const excluded = [...requiredArt, ...unrelatedArt];
   const staticJob = job("static");
-  const restoreStep = staticJob.split(/(?=^ {6}- )/mu)
-    .find((step) => step.includes("Restore Virtual Studio art for foundation regressions"));
-  assert.ok(restoreStep, "foundation must restore the real artwork its required tests read");
-  assert.match(restoreStep, /^ {8}if: matrix\.shard == 'studio-foundation'$/mu);
-  const restoreArgs = restoreStep.match(/^ {8}run: git (.+)$/mu)?.[1].split(/\s+/u);
-  assert.deepEqual(restoreArgs, [
-    "sparse-checkout", "add",
+  const foundationPatterns = sparsePatterns(staticJob, { shard: "studio-foundation" });
+  for (const pattern of [
     "/apps/web/public/assets/virtual-studio/production-v2/",
     "/apps/web/public/assets/virtual-studio/living-world/",
     "/apps/web/public/assets/virtual-studio/drawn-characters-v1/",
@@ -396,9 +399,8 @@ test("sparse lanes exclude artwork until foundation restores exactly its require
     "/apps/web/public/assets/virtual-studio/cinematic-v9/",
     "/apps/web/public/assets/virtual-studio/world-v2/",
     "/apps/web/public/assets/studio/props/",
-  ]);
-  assert.ok(staticJob.indexOf(restoreStep) < staticJob.indexOf("Run semantic regression shard"),
-    "artwork must be present before the required foundation tests execute");
+  ]) assert.ok(foundationPatterns.includes(pattern), `초기 foundation 아트 누락: ${pattern}`);
+  assert.doesNotMatch(staticJob, /git sparse-checkout add/u, "정적 입력은 인증이 살아 있는 최초 checkout에서 준비해야 합니다.");
   assert.ok(requiredTargets.includes("scripts/verify-virtual-studio-art-manifest.test.mjs"),
     "the full build art gate does not replace the existing foundation art regression target");
   const artTestScript = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")).scripts["test:studio-virtual-art"];
@@ -416,7 +418,7 @@ test("sparse lanes exclude artwork until foundation restores exactly its require
     "원본 타일과 캐릭터의 무결성 검사를 실행해야 합니다.");
   const scratch = mkdtempSync(join(tmpdir(), "virtual-studio-ci-inputs-"));
   const git = (...args) => {
-    const result = spawnSync("git", args, { cwd: scratch, encoding: "utf8" });
+    const result = spawnSync("git", args, { cwd: scratch, env: fixtureGitEnvironment(scratch), encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
   };
   try {
@@ -432,15 +434,15 @@ test("sparse lanes exclude artwork until foundation restores exactly its require
     git("config", "core.sparseCheckout", "true");
     git("config", "core.sparseCheckoutCone", "false");
     for (const lane of ["lint", "typecheck", "static"]) {
-      const checkout = job(lane).match(/sparse-checkout: \|\n((?: {12}[^\n]*\n)+)/u)?.[1];
-      assert.ok(checkout, `${lane} must declare its minimal checkout`);
-      writeFileSync(join(scratch, ".git/info/sparse-checkout"), checkout.replace(/^ {12}/gmu, ""));
+      const checkout = sparsePatterns(job(lane));
+      writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${checkout.join("\n")}\n`);
       git("read-tree", "-mu", "HEAD");
       assert.ok(existsSync(join(scratch, world)), `${lane} must include imported world JSON`);
       for (const file of excluded) assert.equal(existsSync(join(scratch, file)), false,
         `${lane} must not download artwork/model binaries: ${file}`);
     }
-    git(...restoreArgs);
+    writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${foundationPatterns.join("\n")}\n`);
+    git("read-tree", "-mu", "HEAD");
     for (const file of [world, ...requiredArt]) assert.ok(existsSync(join(scratch, file)),
       `foundation must retain its real art test input: ${file}`);
     for (const file of unrelatedArt) assert.equal(existsSync(join(scratch, file)), false,
@@ -450,12 +452,8 @@ test("sparse lanes exclude artwork until foundation restores exactly its require
   }
 });
 
-test("product regression restores the source-controlled documentation authority without large artwork", () => {
-  const staticJob = job("static");
-  const restoreStep = staticJob.split(/(?=^ {6}- )/mu)
-    .find((step) => step.includes("Restore documentation authority for product regressions"));
-  assert.ok(restoreStep, "product must restore the documentation authority hidden by sparse checkout");
-  assert.match(restoreStep, /^ {8}if: matrix\.shard == 'product'$/mu);
+test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 제외한다", () => {
+  const patterns = sparsePatterns(job("static"), { shard: "product" });
   for (const path of [
     "/docs/",
     "/apps/web/public/assets/3d/outfits/README.md",
@@ -463,26 +461,86 @@ test("product regression restores the source-controlled documentation authority 
     "/apps/web/public/assets/3d/LICENSES.md",
     "/apps/web/public/assets/3d/environments/expansion-v1/LICENSES.md",
     "/apps/web/public/assets/3d/environments/mcp-free-v1/LICENSES.md",
+    "/apps/web/public/assets/3d/environments/authored-v1/LICENSES.md",
     "/apps/web/public/assets/3d/environments/refined-v6/LICENSES.md",
     "/apps/web/public/assets/3d/environments/webtoon-v7/LICENSES.md",
     "/apps/web/public/assets/3d/refined-v8/LICENSES.md",
     "/apps/web/public/vrm/LICENSES.md",
     "/tests/benchmarks/results/app-startup-perf.json",
     "/tests/benchmarks/results/i18n-fix.json",
-  ]) assert.ok(restoreStep.includes(path), `documentation restore is missing ${path}`);
-  assert.doesNotMatch(restoreStep, /\.(?:glb|png|webp|vrm)(?:\s|$)/u);
-  assert.ok(staticJob.indexOf(restoreStep) < staticJob.indexOf("pnpm install --frozen-lockfile"),
-    "documentation authority must be materialized before product validation runs");
+  ]) assert.ok(patterns.includes(path), `초기 product 문서 누락: ${path}`);
+  assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
+});
+
+test("다섯 shard는 기존 필수 48경로와 자산 제외 범위를 최초 checkout에서 보존한다", () => {
+  const asset = "/apps/web/public/assets/";
+  const owned = {
+    product: ["/docs/", ...[
+      "3d/outfits/README.md", "studio/cc0-20260906/README.md", "3d/LICENSES.md",
+      ...["expansion-v1", "mcp-free-v1", "authored-v1", "refined-v6", "webtoon-v7"].map((id) => `3d/environments/${id}/LICENSES.md`),
+      "3d/refined-v8/LICENSES.md",
+    ].map((path) => asset + path), "/apps/web/public/vrm/LICENSES.md",
+    "/tests/benchmarks/results/app-startup-perf.json", "/tests/benchmarks/results/i18n-fix.json"],
+    "studio-foundation": [
+      ...["production-v2", "living-world", "drawn-characters-v1", "ambient-audio", "npc-cast-v1", "npc-cast-v2", "npc-cast-v3", "npc-cast-v4", "characters-lpc-v1", "portraits-v1", "art-v4", "style-packs", "style-packs-v5", "living-town-v6", "imagegen25-v7", "experience-v8", "cinematic-v9", "world-v2", "office-cast-v2", "office-themes-v1"].map((id) => `${asset}virtual-studio/${id}/`),
+      `${asset}virtual-studio/art-v4-manifest.json`, `${asset}studio/props/`,
+      `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
+      `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
+    ],
+    "studio-editing": [],
+    "studio-3d": [`${asset}3d/environments/authored-v1/`],
+    "studio-character": ["Sendagaya_Shibu", "Sendagaya_Shino", "Sakurada_Fumiriya", "AliciaSolid", "Darkness_Shibu", "Jimmy", "Jennifer"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
+  };
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 27, 0, 1, 7]);
+  const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
+  assert.match(job("static"), /persist-credentials: false/u);
+  assert.match(job("static"), /sparse-checkout-cone-mode: false/u);
+  assert.equal(declarations.length, 48, "필수 경로를 빼거나 무관한 조건 경로를 추가하면 안 됩니다.");
+  for (const [shard, paths] of Object.entries(owned)) {
+    assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
+  }
+  const root = mkdtempSync(join(tmpdir(), "core-shard-initial-checkout-"));
+  const env = fixtureGitEnvironment(root);
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: root, env, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  const input = (path) => `${path.slice(1)}${path.endsWith("/") ? "fixture-payload.bin" : ""}`;
+  const world = "apps/web/public/assets/virtual-studio/world/default-world.json";
+  const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin"];
+  try {
+    git("init", "--quiet");
+    for (const file of [world, ...Object.values(owned).flat().map(input), ...unrelated, "package.json"]) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      writeFileSync(join(root, file), "fixture\n");
+    }
+    git("add", ".");
+    git("-c", "user.name=CI Fixture", "-c", "user.email=ci@example.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    for (const shard of Object.keys(owned)) {
+      writeFileSync(join(root, ".git/info/sparse-checkout"), `${sparsePatterns(job("static"), { shard }).join("\n")}\n`);
+      git("read-tree", "-mu", "HEAD");
+      assert.ok(existsSync(join(root, world)), `${shard}: 공통 메타데이터 누락`);
+      for (const [owner, paths] of Object.entries(owned)) {
+        for (const path of paths) {
+          // 3D 팩 전체에 속한 라이선스는 기존 팩 복원에도 포함되던 공통 입력이다.
+          const sharedPackLicense = shard === "studio-3d" && path === `${asset}3d/environments/authored-v1/LICENSES.md`;
+          assert.equal(existsSync(join(root, input(path))), owner === shard || sharedPackLicense, `${shard}: ${owner} 입력 경계 ${path}`);
+        }
+      }
+      for (const file of unrelated) assert.equal(existsSync(join(root, file)), false, `${shard}: 무관한 대형 자산 ${file}`);
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("static regression checkout retains all imported 3D manifests but excludes their model payloads", () => {
-  const patterns = job("static").match(/sparse-checkout: \|\n((?: {12}[^\n]*\n)+)/u)?.[1];
-  assert.ok(patterns);
+  const patterns = sparsePatterns(job("static"));
   const manifests = ["refined-v6", "expansion-v1", "webtoon-v7"].map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`);
   const models = ["refined-v6/hospital_reception.glb", "expansion-v1/library_reading_room.glb", "webtoon-v7/webtoon_rooftop_utility_platform.glb", "unrelated/large.glb"].map((file) => `apps/web/public/assets/3d/environments/${file}`);
   const scratch = mkdtempSync(join(tmpdir(), "core-3d-manifests-"));
   const git = (...args) => {
-    const result = spawnSync("git", args, { cwd: scratch, encoding: "utf8" });
+    const result = spawnSync("git", args, { cwd: scratch, env: fixtureGitEnvironment(scratch), encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
   };
   try {
@@ -491,7 +549,7 @@ test("static regression checkout retains all imported 3D manifests but excludes 
     git("add", ".");
     git("-c", "user.name=CI Test", "-c", "user.email=ci@example.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture");
     git("config", "core.sparseCheckout", "true"); git("config", "core.sparseCheckoutCone", "false");
-    writeFileSync(join(scratch, ".git/info/sparse-checkout"), patterns.replace(/^ {12}/gmu, "")); git("read-tree", "-mu", "HEAD");
+    writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`); git("read-tree", "-mu", "HEAD");
     for (const file of manifests) assert.ok(existsSync(join(scratch, file)), `missing 3D import: ${file}`);
     for (const file of models) assert.equal(existsSync(join(scratch, file)), false, `unrelated binary admitted: ${file}`);
   } finally { rmSync(scratch, { recursive: true, force: true }); }
@@ -515,20 +573,17 @@ test("번들 sparse checkout은 작은 manifest와 실제 회귀가 읽는 래�
       `임시 Git fixture 밖의 경로는 허용하지 않습니다: ${file}`);
   }
   const excluded = ["studio/bundle-v2/private-model.glb", "studio/unrelated/large.webp", "3d/unrelated/model.glb"].map((path) => prefix + path);
-  const restore = job("static").split(/(?=^ {6}- )/mu).find((step) => step.includes("번들 소재 회귀 검사용 파생 이미지 준비"));
-  assert.ok(restore);
-  assert.match(restore, /^ {8}if: matrix\.shard == 'studio-foundation'$/mu);
-  const restoreArgs = restore.match(/git sparse-checkout add\n((?: {10}\/[^\n]+\n)+)/u)?.[1].trim().split(/\s+/u);
-  assert.deepEqual(restoreArgs, roots.map((root) => `/${prefix}${root}/`));
+  const requiredPatterns = roots.map((root) => `/${prefix}${root}/`);
+  const foundationPatterns = sparsePatterns(job("static"), { shard: "studio-foundation" });
+  for (const path of requiredPatterns) assert.ok(foundationPatterns.includes(path), `초기 번들 본문 누락: ${path}`);
   const scratch = mkdtempSync(join(tmpdir(), "core-bundle-sparse-"));
   const git = (...args) => {
-    const result = spawnSync("git", args, { cwd: scratch, encoding: "utf8" });
+    const result = spawnSync("git", args, { cwd: scratch, env: fixtureGitEnvironment(scratch), encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
   };
-  const apply = (block) => {
-    const patterns = block.match(/sparse-checkout: \|\n((?: {12}[^\n]*\n)+)/u)?.[1];
-    assert.ok(patterns);
-    writeFileSync(join(scratch, ".git/info/sparse-checkout"), patterns.replace(/^ {12}/gmu, ""));
+  const apply = (block, context) => {
+    const patterns = sparsePatterns(block, context);
+    writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`);
     git("read-tree", "-mu", "HEAD");
   };
   try {
@@ -544,17 +599,13 @@ test("번들 sparse checkout은 작은 manifest와 실제 회귀가 읽는 래�
       for (const file of manifests) assert.ok(existsSync(join(scratch, file)), `${lane}: manifest 누락 ${file}`);
       for (const file of rasters) assert.equal(existsSync(join(scratch, file)), false, `${lane}: 무관한 래스터 다운로드 ${file}`);
     }
-    git("sparse-checkout", "add", ...restoreArgs);
+    apply(job("static"), { shard: "studio-foundation" });
     for (const file of [...manifests, ...metadata, ...rasters]) assert.ok(existsSync(join(scratch, file)), `foundation 입력 누락 ${file}`);
     const focused = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
     apply(focused);
     for (const file of rasters) assert.equal(existsSync(join(scratch, file)), false, `manual smoke의 불필요한 번들 본문 ${file}`);
-    const relatedRestore = focused.split(/(?=^ {6}- )/mu).find((step) => step.includes("관련 회귀 검사용 번들 파생 이미지 준비"));
-    assert.ok(relatedRestore);
-    assert.match(relatedRestore, /^ {8}if: github\.event_name == 'pull_request'$/mu);
-    const relatedArgs = relatedRestore.match(/git sparse-checkout add\n((?: {10}\/[^\n]+\n)+)/u)?.[1].trim().split(/\s+/u);
-    assert.deepEqual(relatedArgs, restoreArgs);
-    git("sparse-checkout", "add", ...relatedArgs);
+    assert.doesNotMatch(focused, /git sparse-checkout add/u, "PR 본문도 인증 범위 안에서 최초 checkout해야 합니다.");
+    apply(focused, { eventName: "pull_request" });
     for (const file of [...manifests, ...metadata, ...rasters]) assert.ok(existsSync(join(scratch, file)), `related 테스트 입력 누락 ${file}`);
     for (const file of excluded) assert.equal(existsSync(join(scratch, file)), false, `무관한 모델·래스터 복원 ${file}`);
   } finally { rmSync(scratch, { recursive: true, force: true }); }
@@ -639,10 +690,84 @@ test("ToonStudio session validation shares one setup and delegates full gates to
   assert.equal(sessionJobs.length, 1, "session validation should pay setup cost once");
   assert.match(session, /filter: blob:none/);
   assert.match(session, /!\/apps\/web\/public\/assets\//);
-  assert.match(session, /git diff --name-only -z --diff-filter=ACMR "\$BASE_SHA" HEAD/);
+  assert.match(session, /git diff --no-renames --name-only -z --diff-filter=ACMR "\$BASE_SHA" HEAD/);
   assert.match(session, /pnpm exec eslint --max-warnings=0 --no-warn-ignored/);
   assert.match(session, /pnpm exec vitest related/);
   assert.doesNotMatch(session, /lint:quick|pnpm (?:run )?build(?:\s|$)|pnpm exec tsc/);
+});
+
+test("PR 깊이 2의 filtered merge checkout은 추가 인증 없이 기준 tree와 현재 변경 경로를 읽는다", () => {
+  const focused = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
+  assert.ok(focused.includes("fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 1 }}"));
+  assert.match(focused, /persist-credentials: false/u);
+  assert.doesNotMatch(focused, /git fetch/u, "인증이 끝난 뒤 원격에서 기준 커밋을 다시 받으면 안 됩니다.");
+  const steps = focused.split(/(?=^ {6}- )/mu);
+  const baseStep = steps.find((step) => step.startsWith("      - name: PR 기준 커밋 존재 확인\n"));
+  const selector = steps.find((step) => step.startsWith("      - name: Collect changed ToonStudio sources\n"));
+  assert.ok(baseStep && selector);
+  assert.match(baseStep, /if: github\.event_name == 'pull_request'/u);
+  assert.match(baseStep, /run: git cat-file -e "\$BASE_SHA\^\{commit\}"/u);
+  for (const step of [baseStep, selector]) {
+    assert.ok(step.includes("BASE_SHA: ${{ github.event.pull_request.base.sha }}"));
+    assert.match(step, /GIT_NO_LAZY_FETCH: ['"]1['"]/u);
+  }
+  const command = selector.match(/^ {8}run: \|\n((?: {10}[^\n]*\n)+)/mu)?.[1].replace(/^ {10}/gmu, "");
+  assert.ok(command);
+  assert.match(command, /git diff --no-renames --name-only -z --diff-filter=ACMR "\$BASE_SHA" HEAD --/u);
+  const root = mkdtempSync(join(tmpdir(), "focused-filtered-base-"));
+  const repository = join(root, "remote");
+  const workspace = join(root, "workspace");
+  const env = fixtureGitEnvironment(root);
+  const runGit = (cwd, args, extra = {}) => spawnSync("git", args, { cwd, env: { ...env, ...extra }, encoding: "utf8" });
+  const git = (cwd, ...args) => {
+    const result = runGit(cwd, args);
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  const write = (file, body) => {
+    mkdirSync(dirname(join(repository, file)), { recursive: true });
+    writeFileSync(join(repository, file), body);
+  };
+  const identity = ["-c", "user.name=CI Fixture", "-c", "user.email=ci@example.invalid", "-c", "commit.gpgsign=false"];
+  try {
+    mkdirSync(repository);
+    git(repository, "init", "--quiet", "-b", "main");
+    git(repository, "config", "uploadpack.allowFilter", "true");
+    write("apps/web/src/domains/fixture/rename-old.ts", "export const original = 1;\n".repeat(300));
+    write("apps/web/src/domains/fixture/modified.ts", "export const version = 1;\n");
+    write("apps/web/src/domains/fixture/deleted.ts", "export const removed = true;\n");
+    write("apps/web/src/domains/fixture/unchanged.ts", "export const unchanged = true;\n");
+    write("outside/ignored.ts", "export const outside = 1;\n");
+    git(repository, "add", ".");
+    git(repository, ...identity, "commit", "--quiet", "-m", "base");
+    const baseSha = git(repository, "rev-parse", "HEAD");
+    const baseTree = git(repository, "rev-parse", "HEAD^{tree}");
+    const oldBlob = git(repository, "rev-parse", "HEAD:apps/web/src/domains/fixture/rename-old.ts");
+    git(repository, "checkout", "--quiet", "-b", "feature");
+    git(repository, "mv", "apps/web/src/domains/fixture/rename-old.ts", "apps/web/src/domains/fixture/rename-new.ts");
+    write("apps/web/src/domains/fixture/rename-new.ts", `${"export const original = 1;\n".repeat(299)}export const original = 2;\n`);
+    write("apps/web/src/domains/fixture/modified.ts", "export const version = 2;\n");
+    write("apps/web/src/domains/fixture/new.ts", "export const added = true;\n");
+    write("outside/ignored.ts", "export const outside = 2;\n");
+    rmSync(join(repository, "apps/web/src/domains/fixture/deleted.ts"));
+    git(repository, "add", "-A");
+    git(repository, ...identity, "commit", "--quiet", "-m", "feature");
+    git(repository, "checkout", "--quiet", "main");
+    git(repository, ...identity, "merge", "--quiet", "--no-ff", "feature", "-m", "merge");
+    git(root, "clone", "--quiet", "--filter=blob:none", "--depth=2", "--no-checkout", `file://${repository}`, workspace);
+    git(workspace, "remote", "set-url", "origin", `file://${join(root, "unavailable-remote")}`);
+    const noFetch = { GIT_NO_LAZY_FETCH: "1" };
+    assert.equal(runGit(workspace, ["cat-file", "-e", `${baseSha}^{commit}`], noFetch).status, 0);
+    assert.equal(runGit(workspace, ["cat-file", "-e", baseTree], noFetch).status, 0);
+    assert.notEqual(runGit(workspace, ["cat-file", "-e", oldBlob], noFetch).status, 0, "필터된 기준 원문 blob은 없어야 합니다.");
+    const result = spawnSync("bash", ["-c", command], {
+      cwd: workspace, env: { ...env, ...noFetch, BASE_SHA: baseSha, RUNNER_TEMP: root }, encoding: "utf8",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const actual = readFileSync(join(root, "toonstudio-related-files"), "utf8").split("\0").filter(Boolean).sort();
+    assert.deepEqual(actual, ["apps/web/src/domains/fixture/modified.ts", "apps/web/src/domains/fixture/new.ts", "apps/web/src/domains/fixture/rename-new.ts"]);
+    assert.notEqual(runGit(workspace, ["cat-file", "-e", oldBlob], noFetch).status, 0, "경로 비교가 기준 원문을 내려받으면 안 됩니다.");
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 test("focused integration checks cannot collide with the protected core status", () => {
   const integration = readFileSync(
@@ -669,8 +794,7 @@ test("focused integration checks cannot collide with the protected core status",
 
 test("focused ToonStudio checkout includes imported metadata, validated artwork and fault evidence without unrelated inputs", () => {
   const workflow = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
-  const patterns = workflow.match(/sparse-checkout: \|\n((?: {12}[^\n]*\n)+)/u)?.[1];
-  assert.ok(patterns, "focused workflow must declare its checkout");
+  const patterns = sparsePatterns(workflow);
   const manifests = ["3d/environments/refined-v6/manifest.json", "3d/environments/expansion-v1/manifest.json", "3d/environments/webtoon-v7/manifest.json", "3d/environments/mcp-free-v1/manifest.json", "virtual-studio/world/default-world.json"].map((file) => `apps/web/public/assets/${file}`);
   const validatedArt = [
     "world-v2/characters/pixel-maker/manifest.json",
@@ -693,7 +817,7 @@ test("focused ToonStudio checkout includes imported metadata, validated artwork 
   const artwork = "apps/web/public/assets/3d/environments/unrelated-pack/large-model.glb";
   const scratch = mkdtempSync(join(tmpdir(), "toonstudio-focused-inputs-"));
   const git = (...args) => {
-    const result = spawnSync("git", args, { cwd: scratch, encoding: "utf8" });
+    const result = spawnSync("git", args, { cwd: scratch, env: fixtureGitEnvironment(scratch), encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
   };
   try {
@@ -706,7 +830,7 @@ test("focused ToonStudio checkout includes imported metadata, validated artwork 
     git("-c", "user.name=CI Test", "-c", "user.email=ci@example.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture");
     git("config", "core.sparseCheckout", "true");
     git("config", "core.sparseCheckoutCone", "false");
-    writeFileSync(join(scratch, ".git/info/sparse-checkout"), patterns.replace(/^ {12}/gmu, ""));
+    writeFileSync(join(scratch, ".git/info/sparse-checkout"), `${patterns.join("\n")}\n`);
     git("read-tree", "-mu", "HEAD");
     for (const file of [...requiredInputs, faultEvidence]) assert.ok(existsSync(join(scratch, file)), `missing import: ${file}`);
     assert.equal(existsSync(join(scratch, unrelatedResult)), false);
