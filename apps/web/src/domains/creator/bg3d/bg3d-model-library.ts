@@ -1,3 +1,4 @@
+import { resolveStudioBg3dLocalModelHash } from "./studio-bg3d-local-model-hash-resolution";
 import {
   copyStudioBg3dBundledEnvironmentLibraryEntries,
 } from "./studio-bg3d-bundled-environment-library";
@@ -1944,25 +1945,23 @@ export async function getBg3dModelDeletionReceiptByHashV12(
 
 export async function resolveBg3dModelHashV12(
   hash: string,
-  options: Bg3dModelV12StorageOptions & Bg3dModelDatabaseOperationOptions = {},
+  options: Bg3dModelV12StorageOptions & Bg3dModelDatabaseOperationOptions & { readonly source?: "local-library" } = {},
 ): Promise<Bg3dModelHashResolution> {
   const canonicalHash = canonicalizeBg3dModelHash(hash);
   if (!canonicalHash) return { record: null, deletionReceipt: null };
   throwIfBg3dOperationAborted(options.signal);
+  if (options.source === "local-library") {
+    return resolveStudioBg3dLocalModelHash(
+      canonicalHash, v12Authority(options), parseV12ModelManifest, hydrateV12ModelRecord,
+    );
+  }
   const bundled = getStudioBg3dEnvironmentAssetByHash(canonicalHash);
   const bundledRecord = bundled ? await loadBundledEnvironmentRecord(bundled.id, options.signal, options.executionBackend)
     : await loadStudioBg3dBundleThemePackRecordByHash(canonicalHash, options.signal, options.executionBackend, prepareVerifiedBg3dModelRecord);
   if (bundledRecord) return { record: bundledRecord, deletionReceipt: null };
-  const authority = v12Authority(options);
-  const manifest = parseV12ModelManifest(await authority.readManifest("models"));
-  const stored = manifest.records.find(({ contentHash }) => contentHash === canonicalHash);
-  const deletionReceipt = manifest.deletions.find(
-    ({ contentHash }) => contentHash === canonicalHash,
-  ) ?? null;
-  return {
-    record: stored ? await hydrateV12ModelRecord(stored, authority) : null,
-    deletionReceipt,
-  };
+  return resolveStudioBg3dLocalModelHash(
+    canonicalHash, v12Authority(options), parseV12ModelManifest, hydrateV12ModelRecord,
+  );
 }
 
 export async function importVerifiedBg3dModelsAtomicallyWithDispositionV12(

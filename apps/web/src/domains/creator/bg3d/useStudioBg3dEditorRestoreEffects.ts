@@ -381,6 +381,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
             try {
               const resolution = await resolveBg3dModelHash(attachment.hash, {
                 signal: rebuildController.signal,
+                ...(attachment.source === "local-library" ? { source: "local-library" as const } : {}),
               });
               const record = resolution.record;
               if (!isRebuildCurrent()) return;
@@ -498,6 +499,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
           try {
             const resolution = await resolveBg3dModelHash(attachment.hash, {
               signal: restoreController.signal,
+              ...(attachment.source === "local-library" ? { source: "local-library" as const } : {}),
             });
             const record = resolution.record;
             if (!isCurrent()) return;

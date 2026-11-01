@@ -148,6 +148,28 @@ describe("실제 restore hook의 초기 renderer 교체", () => {
     expect(view.result.current.error).toBeNull(); expect(view.result.current.history.historyRef.current).toEqual(history);
   });
 
+  it("canonical 복원과 완료 후 renderer 재생성 모두 로컬 출처를 명시한다", async () => {
+    const f = await fourNodeFixture(), session = {};
+    const view = renderHook(useRestoreFixture, { initialProps: { renderer: {}, session, initialScene: f.initialScene } }); await flush();
+    expect(view.result.current.error).toBeNull(); expect(view.result.current.customModels).toHaveLength(1);
+    expect(ports.resolve).toHaveBeenLastCalledWith(f.record.contentHash, expect.objectContaining({ source: "local-library", signal: expect.any(AbortSignal) }));
+    ports.resolve.mockClear();
+    view.rerender({ renderer: {}, session, initialScene: f.initialScene }); await flush();
+    expect(ports.resolve).toHaveBeenCalledOnce();
+    expect(ports.resolve).toHaveBeenLastCalledWith(f.record.contentHash, expect.objectContaining({ source: "local-library", signal: expect.any(AbortSignal) }));
+    expect(view.result.current.error).toBeNull(); expect(view.result.current.customModels).toHaveLength(1);
+  });
+
+  it("로컬 원본의 권리가 첨부와 다르면 렌더링과 업데이트를 계속 차단한다", async () => {
+    const f = await fourNodeFixture(), session = {}, attachment = f.initialScene.attachments[0];
+    if (!attachment) throw Error("모델 첨부가 필요합니다.");
+    const initialScene = normalizeStudioBg3dSceneDocument({ ...f.initialScene, attachments: [{ ...attachment,
+      rights: { ...attachment.rights, commercialUse: !attachment.rights.commercialUse } }] });
+    const view = renderHook(useRestoreFixture, { initialProps: { renderer: {}, session, initialScene } }); await flush();
+    expect(view.result.current.error).toBeTypeOf("string"); expect(view.result.current.customModels).toHaveLength(0);
+    expect(ports.admit).not.toHaveBeenCalled();
+  });
+
   it("legacy pending도 원래 payload를 다시 읽고 완료 뒤 remount는 로컬 편집을 유지한다", async () => {
     const f = await createSceneGlbFixture(false), lane = deferredSceneGlb<void>(), session = {};
     const primitives = Array.from({ length: 4 }, (_, index): BgPrimitive => ({ ...f.primitive, id: `legacy-${index}`, position: [index, 0.5, 0] }));

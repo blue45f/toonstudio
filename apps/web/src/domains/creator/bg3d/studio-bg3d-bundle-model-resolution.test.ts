@@ -3,11 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createStudioBg3dModelAttachment,
+  deleteStoredBg3dModelV12,
+  importVerifiedBg3dModelsAtomicallyV12,
   getStoredBg3dModelByHashV12,
   getStoredBg3dModelV12,
   resolveBg3dModelHashV12,
   resolveStudioBg3dModelAttachmentSource,
 } from "./bg3d-model-library";
+import { openStudioLocalDatabase, type StudioLocalDatabase } from "../studio-local-database";
+import { createStudioOpfsAssetStore } from "../studio-opfs-asset-store";
+import { createStudioOpfsMemoryFileSystem } from "../studio-opfs-filesystem";
+import { createStudioBg3dLibrariesAuthority, STUDIO_BG3D_LIBRARIES_SQLITE_NAMESPACE, STUDIO_BG3D_LIBRARY_MANIFEST_KEYS } from "./studio-bg3d-libraries-sqlite-opfs-authority";
+import type { StudioBg3dLibrariesAuthority } from "./studio-bg3d-libraries-sqlite-opfs-authority";
 import { resetStudioBg3dBundleThemePacksCache } from "./studio-bg3d-bundle-theme-packs";
 
 /**
@@ -49,7 +56,7 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 
 const GLB = validGlb();
 
-function rawThemePacks(sha256: string): Record<string, unknown> {
+function rawThemePacks(sha256: string, assetId = BUNDLE_ID): Record<string, unknown> {
   return {
     schema: "toonstudio.bg3d-bundle-theme-packs.v1",
     version: 1,
@@ -78,7 +85,7 @@ function rawThemePacks(sha256: string): Record<string, unknown> {
       note: null,
     }],
     assets: [{
-      id: BUNDLE_ID, pack: 0, path: "test-pack/scene.glb", bytes: GLB.byteLength, sha256, tris: 0,
+      id: assetId, pack: 0, path: "test-pack/scene.glb", bytes: GLB.byteLength, sha256, tris: 0,
     }],
     presets: [],
     crowdPacks: [],
@@ -87,12 +94,12 @@ function rawThemePacks(sha256: string): Record<string, unknown> {
   };
 }
 
-async function stubServing(): Promise<`sha256:${string}`> {
+async function stubServing(assetId = BUNDLE_ID): Promise<`sha256:${string}`> {
   const hex = await sha256Hex(GLB);
-  bindConsumerReleaseFixture(() => rawThemePacks(hex));
+  bindConsumerReleaseFixture(() => rawThemePacks(hex, assetId));
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     if (isConsumerCatalogUrl(String(input))) {
-      return consumerReleaseFixture(rawThemePacks(hex)).catalogResponse();
+      return consumerReleaseFixture(rawThemePacks(hex, assetId)).catalogResponse();
     }
     return {
       ok: true,
@@ -104,11 +111,37 @@ async function stubServing(): Promise<`sha256:${string}`> {
   return `sha256:${hex}`;
 }
 
+const localDatabases: StudioLocalDatabase[] = [];
+async function localLibrary(includeRecord = true) {
+  const database = await openStudioLocalDatabase({ vfs: "memory", memoryFilename: `local-resolution-${crypto.randomUUID()}.sqlite3` });
+  localDatabases.push(database);
+  const fileSystem = createStudioOpfsMemoryFileSystem();
+  const assets = createStudioOpfsAssetStore({ fs: fileSystem, now: () => 1_000 });
+  let tail: Promise<unknown> = Promise.resolve();
+  const authority = createStudioBg3dLibrariesAuthority({ acquireDatabase: async () => database,
+    acquireAssetStore: async () => assets, allowNonDurableAssetStoreForTests: true, now: () => 1_000,
+    runExclusive: <T>(task: () => Promise<T>) => { const result = tail.then(task, task); tail = result.catch(() => undefined); return result; } });
+  const records = includeRecord ? await importVerifiedBg3dModelsAtomicallyV12([{ file: new File([Uint8Array.from(GLB)], "local.glb", { type: "model/gltf-binary" }),
+    rights: { status: "unknown", commercialUse: false, attributionRequired: false },
+    ingress: { kind: "user-file", modelFileExport: "allowed" } }], { authority, executionBackend: "direct", now: 1_000 }) : [];
+  return { database, authority, fileSystem, record: records[0], options: { authority, executionBackend: "direct" as const, source: "local-library" as const } };
+}
+async function unavailableBundle() {
+  const assetId = `cbv1-ingest-local-${crypto.randomUUID()}`;
+  const hash = await stubServing(assetId);
+  const fetcher = vi.fn<typeof fetch>(async (input) => isConsumerCatalogUrl(String(input))
+    ? consumerReleaseFixture(rawThemePacks(hash.slice(7), assetId)).catalogResponse()
+    : new Response("", { status: 503 }));
+  vi.stubGlobal("fetch", fetcher);
+  return { hash, fetcher };
+}
+
 beforeEach(() => {
   resetStudioBg3dBundleThemePacksCache();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await Promise.all(localDatabases.splice(0).map((database) => database.close()));
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -150,5 +183,68 @@ describe("Creator Bundle records through the model library", () => {
     expect(attachment.source).toBe("bundled");
     expect(attachment.hash).toBe(sha);
     expect(attachment.rights.licenseName).toBe(TEST_PACK_LICENSE_NAME);
+  });
+});
+
+
+describe("로컬 출처를 명시한 V12 해시 복원", () => {
+  it("같은 해시의 번들 바이트가 실패해도 실제 SQLite/OPFS 원본의 ID·바이트·권리를 보존한다", async () => {
+    const local = await localLibrary(), { hash, fetcher } = await unavailableBundle();
+    if (!local.record) throw Error("실제 저장 모델이 필요합니다.");
+    await expect(resolveBg3dModelHashV12(hash, { executionBackend: "direct" })).rejects.toThrow();
+    const requests = fetcher.mock.calls.length;
+    const result = await resolveBg3dModelHashV12(hash, local.options);
+    expect(result.record).toMatchObject({ id: local.record.id, contentHash: hash, byteSize: GLB.byteLength,
+      mime: local.record.mime, rights: local.record.rights });
+    expect(result.deletionReceipt).toBeNull();
+    if (!result.record) throw Error("복원 모델이 필요합니다.");
+    expect(new Uint8Array(await result.record.blob.arrayBuffer())).toEqual(GLB);
+    expect(fetcher).toHaveBeenCalledTimes(requests);
+  });
+
+  it("로컬 원본이 없으면 번들의 같은 해시로 대체하지 않는다", async () => {
+    const local = await localLibrary(false), { hash, fetcher } = await unavailableBundle();
+    await expect(resolveBg3dModelHashV12(hash, local.options)).resolves.toEqual({ record: null, deletionReceipt: null });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("유효한 로컬 삭제 영수증을 그대로 돌려주고 번들로 부활시키지 않는다", async () => {
+    const local = await localLibrary(); if (!local.record) throw Error("실제 저장 모델이 필요합니다.");
+    await deleteStoredBg3dModelV12(local.record.id, { authority: local.authority, now: 2_000 });
+    const { hash, fetcher } = await unavailableBundle();
+    const result = await resolveBg3dModelHashV12(hash, local.options);
+    expect(result.record).toBeNull();
+    expect(result.deletionReceipt).toMatchObject({ contentHash: hash, storageModelId: local.record.id, deletedAt: 2_000 });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("손상된 로컬 manifest와 취소 요청은 계속 실패로 반환한다", async () => {
+    const local = await localLibrary(), { hash, fetcher } = await unavailableBundle();
+    await local.database.kvSet(STUDIO_BG3D_LIBRARIES_SQLITE_NAMESPACE, STUDIO_BG3D_LIBRARY_MANIFEST_KEYS.models, "{broken");
+    await expect(resolveBg3dModelHashV12(hash, local.options)).rejects.toMatchObject({ code: "stored-metadata-mismatch" });
+    const controller = new AbortController(); controller.abort();
+    await expect(resolveBg3dModelHashV12(hash, { ...local.options, signal: controller.signal })).rejects.toMatchObject({ code: "aborted" });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("같은 길이로 변조된 로컬 CAS도 해시 검증에서 차단한다", async () => {
+    const local = await localLibrary(), { hash, fetcher } = await unavailableBundle();
+    const path = [...local.fileSystem.snapshot().keys()].find((value) => value.includes(hash.slice(7)));
+    if (!path) throw Error("실제 CAS 파일 경로가 필요합니다.");
+    const bytes = local.fileSystem.snapshot().get(path);
+    if (!bytes) throw Error("실제 CAS 바이트가 필요합니다.");
+    bytes[bytes.length - 1] = (bytes[bytes.length - 1] ?? 0) ^ 0xff;
+    await local.fileSystem.write(path, bytes);
+    await expect(resolveBg3dModelHashV12(hash, local.options)).rejects.toMatchObject({ code: "corrupt" });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("기본 번들 복원은 로컬 DB를 열지 않고 기존 번들 권리를 유지한다", async () => {
+    const local = await localLibrary(false), hash = await stubServing();
+    const readManifest = vi.fn<StudioBg3dLibrariesAuthority["readManifest"]>(async () => { throw Error("기본 번들은 로컬 DB에 의존하지 않아야 합니다."); });
+    const authority: StudioBg3dLibrariesAuthority = { ...local.authority, readManifest };
+    const result = await resolveBg3dModelHashV12(hash, { authority, executionBackend: "direct" });
+    expect(result.record).toMatchObject({ id: BUNDLE_ID, contentHash: hash, rights: { licenseName: TEST_PACK_LICENSE_NAME } });
+    expect(readManifest).not.toHaveBeenCalled();
   });
 });
