@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { createMultiObjectScenario } from "./multi-object-scenario.mjs";
-import { createImportedMaterialScenario, IMPORTED_CASE_ID, IMPORTED_FIXTURE } from "./imported-material-scenario.mjs";
+import { createImportedMaterialScenario, IMPORTED_CASE_ID, IMPORTED_TEMPLATE_CASE_ID, IMPORTED_FIXTURE } from "./imported-material-scenario.mjs";
 import { createLettuceMaterialScenario, LETTUCE_CASE_ID, LETTUCE_FIXTURE, verifyLettuceFixture } from "./lettuce-material-scenario.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -27,7 +27,7 @@ assert.ok(required.every((key) => args.has(key)), "필수 인자가 없습니다
 const lettuceArgs = ["--lettuce-file", "--lettuce-receipt"];
 assert.ok([...args.keys()].every((key) => required.includes(key) || lettuceArgs.includes(key)), "허용하지 않은 인자가 있습니다.");
 const scope = args.get("--scope");
-assert.ok(["core-3", "multi-object", "imported-model", "lettuce-template"].includes(scope), "허용하지 않은 scope입니다.");
+assert.ok(["core-3", "multi-object", "imported-model", "imported-template", "lettuce-template"].includes(scope), "허용하지 않은 scope입니다.");
 assert(lettuceArgs.every((key) => scope === "lettuce-template" ? args.has(key) && path.isAbsolute(args.get(key)) : !args.has(key)),
   "Lettuce 범위에는 원본 GLB와 정상화 receipt 절대 경로가 필요합니다.");
 const IDS = scope === "core-3" ? CORE_IDS : MULTI_IDS;
@@ -91,12 +91,12 @@ const cases = IDS.map((id) => {
 });
 const runs = scope === "core-3"
   ? cases.map((item) => ({ id: item.variant.id, item, variantIds: [item.variant.id] }))
-  : [{ id: scope === "multi-object" ? MULTI_CASE_ID : scope === "lettuce-template" ? LETTUCE_CASE_ID : IMPORTED_CASE_ID, item: null, variantIds: [...MULTI_IDS] }];
+  : [{ id: scope === "multi-object" ? MULTI_CASE_ID : scope === "lettuce-template" ? LETTUCE_CASE_ID : scope === "imported-template" ? IMPORTED_TEMPLATE_CASE_ID : IMPORTED_CASE_ID, item: null, variantIds: [...MULTI_IDS] }];
 const { chromium } = createRequire(path.join(repo, "package.json"))("playwright");
 const browserBinary = await realpath(args.get("--browser-binary"));
 const events = [], results = [];
 const receipt = { schema: scope === "core-3" ? "toonstudio.plasticine-actual-core.v3"
-  : scope === "multi-object" ? "toonstudio.plasticine-actual-multi-object.v1" : scope === "lettuce-template" ? "toonstudio.plasticine-actual-lettuce-template.v1" : "toonstudio.plasticine-actual-imported-model.v1", scope, expectedHead,
+  : scope === "multi-object" ? "toonstudio.plasticine-actual-multi-object.v1" : scope === "lettuce-template" ? "toonstudio.plasticine-actual-lettuce-template.v1" : scope === "imported-template" ? "toonstudio.plasticine-actual-imported-template.v1" : "toonstudio.plasticine-actual-imported-model.v1", scope, expectedHead,
   browserKind: "Chrome for Testing chromium channel", engine: "explicit WebGL2", originalResolution: true,
   startedAt: new Date(started).toISOString(), workMs, cleanupReserveMs: CLEANUP_MS,
   catalogSha256: sha(catalogBytes), sourcePins, sourceCheckpointBefore: sourceBefore, cases: results,
@@ -477,7 +477,7 @@ async function compareSurfaceAppearance(page, applied, reopened, observation, re
 }
 
 try {
-  if (scope === "imported-model") receipt.fixtureSource = await verifyImportedFixture();
+  if (["imported-model", "imported-template"].includes(scope)) receipt.fixtureSource = await verifyImportedFixture();
   if (scope === "lettuce-template") receipt.fixtureSource = await verifyLettuceSource();
   receipt.sourceCheck = await verifyCatalogSources();
   event("source-check-complete", { files: receipt.sourceCheck.files, bytes: receipt.sourceCheck.bytes });
@@ -543,7 +543,7 @@ try {
         const scenario = scope === "multi-object" ? createMultiObjectScenario(sharedCore)
           : scope === "lettuce-template" ? createLettuceMaterialScenario(sharedCore, {
             name: LETTUCE_FIXTURE.fileName, mimeType: "model/gltf-binary", buffer: lettuceFixtureBytes,
-          }) : createImportedMaterialScenario(sharedCore, { name: "chair.glb", mimeType: "model/gltf-binary", buffer: importedFixtureBytes });
+          }) : createImportedMaterialScenario(sharedCore, { name: "chair.glb", mimeType: "model/gltf-binary", buffer: importedFixtureBytes }, { templateOnly: scope === "imported-template" });
         await scenario.run({ page, item01: cases.find((entry) => entry.variant.id === MULTI_IDS[0]),
           item11: cases.find((entry) => entry.variant.id === MULTI_IDS[1]), pending: () => pending, result });
         assert.equal(result.scenarioCompleted, true);
@@ -714,7 +714,7 @@ finally {
       receipt.sourceCheckAfter = await verifyCatalogSources(true);
       assert.deepEqual(receipt.sourceCheckAfter, receipt.sourceCheck, "실행 중 구매 재질 59개 원본이 바뀌었습니다.");
     }
-    if (scope === "imported-model" || scope === "lettuce-template") {
+    if (["imported-model", "imported-template", "lettuce-template"].includes(scope)) {
       receipt.fixtureSourceAfter = scope === "lettuce-template" ? await verifyLettuceSource(true) : await verifyImportedFixture(true);
       assert.deepEqual(receipt.fixtureSourceAfter, receipt.fixtureSource, "실행 전후 입력 GLB 원본이 다릅니다.");
     }

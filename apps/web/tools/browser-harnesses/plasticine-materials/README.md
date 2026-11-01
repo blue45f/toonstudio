@@ -167,3 +167,20 @@ context-lost 이벤트·페이지·콘솔·원본 네트워크 오류를 기록�
 실행하지 않는다. 명시 WebGL2 결과는 기본 WebGPU·adapter/device·FPS·다른 장치 성능 증거가 아니다.
 브라우저 통과뿐 아니라 소유 서버 정상 종료, guard 자연 종료, 강제 정리 없음·소유 잔여 없음,
 기한 준수와 최종 소스·원본 핀 일치가 확인된 뒤 완료로 판정한다. 운영 배포는 범위 밖이다.
+
+
+## chair의 남은 템플릿 왕복 범위 — 2026-11-02
+
+`--scope imported-template --work-ms 800000`은 별도
+`imported-model-template-material-roundtrip` 사례다. 기존 `imported-model`의 전체 검사 기본값은 유지한다.
+정확한 boolean `templateOnly` 옵션으로 기존 Lettuce와 공통 템플릿 분기를 사용한다.
+새 guest context에서 chair 원본 파일 한 번·일반 복제·기본 배치를 준비하고 A11/B01의 자연 무늬를 확인한 뒤,
+저장·reader 해제·reload·빈 장면·정확한 카드 적용·위치/geometry에 따른 새 ID 대응·원본 표면 일치를 검사한다.
+원본 shader·fixture/권리·GPU·오류·원본 해상도·800초 작업/60초 정리 기준을 유지하며
+이 범위의 `historyTested`는 `false`다. 템플릿 분기의 PNG 이름은 `template-*`로 중립 표기한다.
+
+r4 실제 실행은 chair의 최초 적용·B 격리·변경 Undo/Redo·원본 복원과 그 Undo/Redo의 표면 비교를 완료한 뒤,
+템플릿 패널의 lazy 로딩 직후 유일성 검사에서 실패했다. 해당 원본 failed receipt와 PNG를 그대로 보존한다.
+남은 범위는 패널/카드의 실제 표시를 기존 15초 안에서 기다린 뒤 템플릿 왕복만 별도로 실행한다.
+전체 평가는 r4의 확인된 부분과 새 제한 왕복 결과를 결합하되, r4 전체 사례를 통과로 바꾸거나
+새 범위에서 history가 다시 검증됐다고 표시하지 않는다. 실제 새 결과가 나오기 전에는 이 왕복도 미완료다.

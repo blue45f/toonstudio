@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createMultiObjectScenario } from "./multi-object-scenario.mjs";
 
 export const IMPORTED_CASE_ID = "imported-model-same-source-material-isolation";
+export const IMPORTED_TEMPLATE_CASE_ID = "imported-model-template-material-roundtrip";
 export const IMPORTED_FIXTURE = Object.freeze({
   relativePath: "apps/web/public/assets/studio/cc0-20260906/assets/kenney-furniture/chair.glb",
   bytes: 10756, sha256: "c8a11eec93e89e31250ba91afc1b8d56c3bec7ae86640fd1239f595ff4180883",
@@ -22,6 +23,9 @@ function originalSnapshot(entity) {
 }
 function originalReady(entity, baseline) {
   if (entity.entityKind !== "model" || entity.materialType !== "MeshStandardMaterial"
+    || !entity.visible || !entity.appearance || !entity.program.linked
+    || Object.values(entity.channels).some((channel) => channel !== null)
+    || Object.values(entity.program.samplers).some((active) => active !== false)
     || Object.values(entity.auxiliaryChannels).some((channel) => channel !== null)) return false;
   return !baseline || JSON.stringify(originalSnapshot(entity)) === JSON.stringify(baseline);
 }
@@ -302,12 +306,13 @@ export function createImportedEntities(core, fixtureUpload, fixture = IMPORTED_F
   };
 }
 
-export function createImportedMaterialScenario(core, fixtureUpload) {
+export function createImportedMaterialScenario(core, fixtureUpload, { templateOnly = false } = {}) {
+  assert.equal(typeof templateOnly, "boolean", "templateOnly는 boolean이어야 합니다.");
   assert.equal(typeof core.bounded, "function");
   assert.equal(fixtureUpload.name, "chair.glb"); assert.equal(fixtureUpload.mimeType, "model/gltf-binary");
   assert(Buffer.isBuffer(fixtureUpload.buffer)); assert.equal(fixtureUpload.buffer.byteLength, IMPORTED_FIXTURE.bytes);
   return createMultiObjectScenario(core, {
-    names: { A: "가져온 격리 A", B: "가져온 격리 B" }, originalReady, originalSnapshot, assertOriginal,
+    templateOnly, names: { A: "가져온 격리 A", B: "가져온 격리 B" }, originalReady, originalSnapshot, assertOriginal,
     assertSeparateInstances, requireSavedSourceIdentity: (args) => requireSavedSourceIdentity({ ...args, core }),
     async clearOriginal(page, remaining) {
       const dialog = page.getByTestId("studio-bg3d-dialog");

@@ -250,18 +250,18 @@ export function createMultiObjectScenario(core, imported = null) {
       originalById.set(id, imported.originalSnapshot(entity));
     }
     if (imported?.templateOnly) {
-      // atlas 원본은 무맵으로 취급하지 않는다. Lettuce의 내 템플릿 왕복은 chair의 이력 사례와 분리한다.
+      // 모델별 원본 준비 판정을 유지하며 템플릿 왕복과 전체 이력 사례를 분리한다.
       const aOnly = new Map([[A, item11], [B, null]]);
       await apply(page, item11, aOnly, pending, result);
-      const firstA = await capture(page, aOnly, "lettuce-first-a.png", result);
+      const firstA = await capture(page, aOnly, "template-first-a.png", result);
       sameLiveTexture(original, firstA, B);
-      result.bOriginalAfterA = await sameObjects(page, original, firstA, [[B, B]], "A 적용으로 B의 원본 atlas가 바뀌었습니다.");
+      result.bOriginalAfterA = await sameObjects(page, original, firstA, [[B, B]], "A 적용으로 B의 원본 표면이 바뀌었습니다.");
       await quietWindow(page, aOnly); await selectOnly(page, names.B);
       const expected = new Map([[A, item11], [B, item01]]);
       await apply(page, item01, expected, pending, result);
-      await capture(page, expected, "lettuce-first-b.png", result);
+      await capture(page, expected, "template-first-b.png", result);
       await quietWindow(page, expected); await selectOnly(page, names.A); await quietWindow(page, expected);
-      const restored = await capture(page, expected, "lettuce-before-save.png", result);
+      const restored = await capture(page, expected, "template-before-save.png", result);
       imported.assertSeparateInstances(restored.observation, A, B);
       result.unavailableBundleTested = false;
       result.historyTested = false;
@@ -341,6 +341,7 @@ export function createMultiObjectScenario(core, imported = null) {
     const templatesTab = dialog(page).locator("#bg3d-tab-templates");
     assert.equal(await templatesTab.count(), 1); await templatesTab.click({ timeout: remaining() });
     const library = dialog(page).locator('section[aria-labelledby="bg3d-user-template-library-title"]');
+    await library.waitFor({ state: "visible", timeout: remaining() });
     assert.equal(await library.count(), 1);
     const save = library.getByRole("button", { name: "현재 장면을 내 템플릿으로 저장", exact: true });
     assert.equal(await save.count(), 1);
@@ -358,6 +359,7 @@ export function createMultiObjectScenario(core, imported = null) {
     assert.equal(await reopenedTab.count(), 1); await reopenedTab.click({ timeout: remaining() });
     const reopenedCard = dialog(page).locator('section[aria-labelledby="bg3d-user-template-library-title"]')
       .getByRole("button", { name: templateButtonName, exact: true });
+    await reopenedCard.waitFor({ state: "visible", timeout: remaining() });
     assert.equal(await reopenedCard.count(), 1); await reopenedCard.click({ timeout: remaining() });
     // 템플릿은 ID를 재발급한다. material source로 대응시키면 잘못 적용된 객체끼리 바꿔치기할 수 있다.
     // 먼저 고정된 실제 위치/geometry로만 대응시키고, 그 새 ID의 materialReady를 별도로 검사한다.
