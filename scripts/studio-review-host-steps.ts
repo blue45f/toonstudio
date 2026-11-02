@@ -93,6 +93,35 @@ export async function selectStudioReviewHostPage(page: Page, ordinal: number) {
   await pageButton.click();
 }
 
+async function dismissStudioReviewPenObstructions(page: Page) {
+  const guide = page.getByRole("button", { name: "시작 안내 닫기", exact: true }).first();
+  const quickStart = page.locator('button[data-studio-quickstart-dismiss="true"]:visible').first();
+  const sequence = page.locator('button[data-studio-page-sequence-close="true"]:visible').first();
+  for (const close of [guide, quickStart, sequence]) {
+    if (await close.isVisible()) {
+      await close.click();
+      await close.waitFor({ state: "hidden" });
+    }
+  }
+}
+
+type StudioReviewPenPoint = { x: number; y: number };
+
+async function assertStudioReviewPenTargets(page: Page, points: StudioReviewPenPoint[]) {
+  assert(points.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y)), "펜 입력 좌표가 유한해야 해요.");
+  // 문자열 평가는 브라우저 밖 TS 변환기의 보조 함수에 의존하지 않으며 DOM만 읽는다.
+  const clear = await page.evaluate<boolean>(`(() => {
+    const points = ${JSON.stringify(points)};
+    return points.every((point) => {
+      const target = document.elementFromPoint(point.x, point.y);
+      return target?.tagName === "CANVAS"
+        && !!target.closest('[data-studio-canvas-cursor]')
+        && !target.closest('button,input,textarea,a,[role="dialog"]');
+    });
+  })()`);
+  assert(clear, "펜 입력 경로를 UI가 가리고 있어요. 안내·페이지 패널을 닫고 다시 확인해 주세요.");
+}
+
 export async function authorStudioReviewHostSketches(page: Page, output: string) {
   // Actual pointer events through the existing pen tool author two different thumbnail sketches.
   // No browser globals, imported state setters, seeded draw elements or mocked save endpoints.
@@ -104,6 +133,7 @@ export async function authorStudioReviewHostSketches(page: Page, output: string)
       `button[data-studio-page-sequence-item="true"][aria-label^="${index + 1}번 페이지"][aria-current="page"]`,
     ].join(", ")) !== null, ordinal);
     const initialLayerCount = await page.locator('[data-studio-layer-row="true"]').count();
+    await dismissStudioReviewPenObstructions(page);
     await page.keyboard.press("Escape");
     await page.keyboard.press("b");
     await page.locator('[data-studio-draw-options="true"][data-studio-active-draw-mode="pen"]').waitFor();
@@ -122,11 +152,14 @@ export async function authorStudioReviewHostSketches(page: Page, output: string)
     if (await smartShape.isVisible() && await smartShape.getAttribute("aria-pressed") === "true") await smartShape.click();
     const viewport = await page.locator("[data-studio-canvas-viewport]").boundingBox();
     const surface = await page.locator("[data-studio-canvas-cursor]").boundingBox();
-    assert(viewport && surface);
-    const left = Math.max(viewport.x, surface.x) + 45, top = Math.max(viewport.y, surface.y) + 55;
-    const width = Math.min(viewport.x + viewport.width, surface.x + surface.width) - left - 45;
-    const height = Math.min(viewport.y + viewport.height, surface.y + surface.height) - top - 65;
-    assert(width > 200 && height > 200, "Author only within the visible unoccluded manuscript");
+    const screen = page.viewportSize();
+    assert(viewport && surface && screen, "펜 입력에 사용할 캔버스와 브라우저 크기가 필요해요.");
+    // 실제 C8 검증 영역을 사용하고 상단 도구·하단 상태 영역을 입력 범위에서 제외한다.
+    const left = Math.max(viewport.x, surface.x, 0) + 70;
+    const top = Math.max(viewport.y, surface.y, 0) + 130;
+    const width = Math.min(360, Math.min(viewport.x + viewport.width, surface.x + surface.width, screen.width) - left - 120);
+    const height = Math.min(285, Math.min(viewport.y + viewport.height, surface.y + surface.height, screen.height) - top - 240);
+    assert(width > 200 && height > 200, "가려지지 않은 원고 영역이 부족해요. 작업 패널과 브라우저 크기를 확인해 주세요.");
     const gestures = ordinal === 0 ? [
       [[.18, .14], [.78, .14], [.78, .82], [.18, .82], [.18, .14]],
       [[.30, .60], [.40, .35], [.52, .58], [.63, .40], [.71, .63]],
@@ -136,14 +169,40 @@ export async function authorStudioReviewHostSketches(page: Page, output: string)
       [[.27, .52], [.33, .35], [.48, .32], [.60, .46], [.53, .62], [.36, .64], [.27, .52]],
       [[.32, .72], [.41, .78], [.53, .70], [.64, .73]],
     ];
-    for (const gesture of gestures) {
-      const points = gesture.map(([x, y]) => ({ x: left + x! * width, y: top + y! * height }));
+    const canonicalLayerCounts: number[] = [];
+    for (const [strokeIndex, gesture] of gestures.entries()) {
+      const vertices = gesture.map(([x, y]) => ({ x: left + x! * width, y: top + y! * height }));
+      const points = [vertices[0]!];
+      for (let index = 1; index < vertices.length; index++) {
+        const before = vertices[index - 1]!, after = vertices[index]!;
+        for (let step = 1; step <= 12; step++) points.push({
+          x: before.x + (after.x - before.x) * step / 12,
+          y: before.y + (after.y - before.y) * step / 12,
+        });
+      }
+      await assertStudioReviewPenTargets(page, points);
+      await assertStudioReviewPenTargets(page, [points[0]!]);
       await page.mouse.move(points[0]!.x, points[0]!.y);
+      await assertStudioReviewPenTargets(page, [points[0]!]);
       await page.mouse.down();
-      for (const point of points.slice(1)) await page.mouse.move(point.x, point.y, { steps: 12 });
-      await page.mouse.up();
+      try {
+        for (const point of points.slice(1)) {
+          await assertStudioReviewPenTargets(page, [point]);
+          await page.mouse.move(point.x, point.y);
+        }
+        await assertStudioReviewPenTargets(page, [points.at(-1)!]);
+      } finally {
+        // 가림 검사가 실패해도 눌린 포인터는 해제하며 원래 실패 판정을 유지한다.
+        await page.mouse.up();
+      }
+      await page.waitForFunction((expected) => document.querySelectorAll('[data-studio-layer-row="true"]').length === expected,
+        initialLayerCount + strokeIndex + 1);
+      const layerCount = await page.locator('[data-studio-layer-row="true"]').count();
+      assert.equal(layerCount, initialLayerCount + strokeIndex + 1);
+      canonicalLayerCounts.push(layerCount);
     }
-    authoredGestures.push({ ordinal, gestures, visibleArea: { left, top, width, height } });
+    authoredGestures.push({ ordinal, gestures, visibleArea: { left, top, width, height },
+      allPenTargetsVerified: true, canonicalLayerCounts });
     // Pointer-up may leave retained preview ink pending until the real deferred document commit.
     // Wait for its canonical layer rows before asking the capture authority to pin the source.
     await page.waitForFunction((expected) => document.querySelectorAll('[data-studio-layer-row="true"]').length === expected, initialLayerCount + 3);
