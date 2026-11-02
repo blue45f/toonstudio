@@ -7,6 +7,7 @@ import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
 import { actualState, verifyActualProjectRead } from './actual-input.mjs';
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
 import { reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
+import { prepareLocalQaTls } from './local-qa-tls.mjs';
 
 let stage = 'config';
 const result = { schemaVersion: 2, status: 'not-started', verdict: '제어 측정 준비물; 최종 C9 p95 판정 불가', samples: [], apiReads: [], networkReads: [], validation: [], bootstrap: [], assets: [], concurrentReads: [], forbiddenMutations: [], blockedExternalRequests: [], pageErrors: [], db: null };
@@ -254,6 +255,17 @@ async function actorProfile(browser, env, state, actor, profile) {
   }
   try {
     await instrumentation(context);
+    // C9 조회 계측에는 WS가 필요하지 않다. 서버 연결 없이 시도만 기록하고 닫는다.
+    await context.routeWebSocket('**/*', async (socket) => {
+      const address = new URL(socket.url());
+      address.protocol = address.protocol === 'wss:' ? 'https:' : 'http:';
+      if (address.origin === env.webOrigin || address.origin === env.apiOrigin) {
+        result.forbiddenMutations.push({ ...metadata(), method: 'WEBSOCKET', kind: 'websocket', blocked: true });
+      } else {
+        result.blockedExternalRequests.push({ ...metadata(), method: 'WEBSOCKET', resourceType: 'websocket', blocked: true });
+      }
+      await socket.close({ code: 1008 });
+    });
     // routing은 bootstrap부터 끝까지 HTTP cache를 끈다. 응답 fixture·fulfill은 없다.
     await context.route('**/*', async (route) => {
       const request = route.request();
@@ -517,6 +529,7 @@ async function main() {
   check(process.argv.length === 3, '사용법: node browser.mjs <절대 config>');
   const env = await loadConfig(process.argv[2]);
   const { config } = env;
+  check(config.browserChannel === undefined || config.browserChannel === 'chrome', '브라우저 채널은 기본 Chromium 또는 설치된 Chrome만 허용합니다.');
   check(Number.isInteger(config.iterations) && config.iterations >= 2, '반복 횟수를 명시하세요(bootstrap 완료 뒤 cache-disabled navigation 최소 2회).');
   check(Number.isFinite(config.typingKeyIntervalMs) && config.typingKeyIntervalMs >= 0 && Number.isInteger(config.actionTimeoutMs) && Number.isInteger(config.navigationTimeoutMs) && config.actionTimeoutMs > 0 && config.navigationTimeoutMs > 0, '키 간격과 기능 대기 timeout을 명시하세요. timeout은 성능 합격 예산이 아닙니다.');
   check(Array.isArray(config.profiles) && config.profiles.length > 0 && new Set(config.profiles.map((profile) => profile.id)).size === config.profiles.length, '고유한 profile이 필요합니다.');
@@ -544,12 +557,14 @@ async function main() {
   if (!env.actualInput) check(before.revision === 0 && before.eventCount === 0 && before.mutationReceiptCount === 0, '합성 측정 전 변경 수가 0이 아닙니다.');
   result.db = { before };
   result.dataset = { name: state.dataset, counts: state.counts, sha256: state.aggregateSha256, projectId: state.projectId, workId: state.workId, source: state.fixtureLimit };
+  stage = 'local-qa-tls';
+  const tls = await prepareLocalQaTls(env);
   const { chromium } = requireAt(config.repoRoot)('playwright');
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, ...(config.browserChannel === 'chrome' ? { channel: 'chrome' } : {}), ...tls.launchOptions });
   await runWithOwnedBrowser(browser, async () => {
     try {
       stage = 'record-browser-start';
-      result.browser = { engine: 'chromium', version: browser.version(), headless: true };
+      result.browser = { engine: 'chromium', channel: config.browserChannel ?? 'chromium', version: browser.version(), headless: true, tls: tls.evidence };
       result.status = 'running';
       await save();
       stage = 'browser-read-render-search-detail';

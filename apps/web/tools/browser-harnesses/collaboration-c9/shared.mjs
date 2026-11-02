@@ -136,7 +136,7 @@ export async function artifactEvidence(env) {
   const { config } = env;
   if (config.runtimeMode === 'development') {
     check(config.allowDevelopment === true && config.artifact === null, '개발 측정은 명시 승인 라벨과 artifact:null이 필요합니다.');
-    return { runtimeMode: 'development', qualifiedForFinalP95: false, reason: '개발 모드·대표 원고 없음', sourceSha: env.git.sourceSha };
+    return { runtimeMode: 'development', qualifiedForFinalP95: false, reason: env.actualInput ? '개발 모드; 최종 production 성능 판정 불가' : '개발 모드·대표 원고 없음', sourceSha: env.git.sourceSha };
   }
   check(config.runtimeMode === 'production-preview' && config.allowDevelopment === false, '검증된 production-preview 또는 명시 development만 허용합니다.');
   const artifact = config.artifact;
@@ -166,5 +166,5 @@ export async function artifactEvidence(env) {
     const response = await fetch(new URL(file, `${env.webOrigin}/`), { redirect: 'error' });
     check(response.ok && sha256(Buffer.from(await response.arrayBuffer())) === sha256(await readFile(join(dist, file))), 'preview entry JS/CSS와 검증된 산출물이 다릅니다.');
   }
-  return { runtimeMode: 'production-preview', sourceSha: env.git.sourceSha, manifestSha256: sha256(manifestBytes), indexSha256: sha256(indexBytes), manifestEntries: Object.keys(manifest).length, manifestFiles: paths.size, files, servedEntryAssetsVerified: entryAssets.size, buildCommand: evidence.command, buildLogPath: evidence.logPath, builtAt: evidence.builtAt, qualifiedForFinalP95: false, reason: '대표 원고 이미지·승인된 C9 예산 없음' };
+  return { runtimeMode: 'production-preview', sourceSha: env.git.sourceSha, manifestSha256: sha256(manifestBytes), indexSha256: sha256(indexBytes), manifestEntries: Object.keys(manifest).length, manifestFiles: paths.size, files, servedEntryAssetsVerified: entryAssets.size, buildCommand: evidence.command, buildLogPath: evidence.logPath, builtAt: evidence.builtAt, qualifiedForFinalP95: false, reason: env.actualInput ? '승인된 C9 p95·메모리 예산 없음; 실제 원고 decode 관측은 별도 기록' : '대표 원고 이미지·승인된 C9 예산 없음' };
 }
