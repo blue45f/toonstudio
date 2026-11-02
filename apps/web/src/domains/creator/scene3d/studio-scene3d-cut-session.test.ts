@@ -72,6 +72,60 @@ function fixture() {
 }
 
 describe("실제 V3 저장소를 사용하는 컷 세션의 비동기 안전성", () => {
+  it("작업을 시작하지 않은 세션과 새 빈 프로젝트만 호스트 변경으로 다시 시작할 수 있다", async () => {
+    const { session, repository } = fixture();
+    expect(session.canRestartForHostChange()).toBe(true);
+    const pending = Promise.withResolvers<null>();
+    vi.spyOn(repository, "load").mockImplementationOnce(() => pending.promise);
+
+    const restore = session.restore();
+    expect(session.read().phase).toBe("loading");
+    expect(session.canRestartForHostChange()).toBe(false);
+    pending.resolve(null);
+    await restore;
+
+    expect(session.read()).toMatchObject({ phase: "ready", dirty: false, canUndo: false, canRedo: false });
+    expect(session.read().project?.shotVersions?.cuts ?? []).toEqual([]);
+    expect(session.canRestartForHostChange()).toBe(true);
+  });
+
+  it("컷을 모두 삭제하거나 생성 전으로 되돌려도 편집 이력이 있으면 호스트 재시작을 거부한다", async () => {
+    const { session } = fixture();
+    await session.restore();
+    session.capture("보존할 컷");
+    const cutId = session.read().selectedId;
+    if (cutId === null) throw new Error("생성한 컷 ID가 없습니다.");
+    expect(session.canRestartForHostChange()).toBe(false);
+
+    session.remove(cutId);
+    expect(session.read().project?.shotVersions?.cuts ?? []).toEqual([]);
+    expect(session.read()).toMatchObject({ dirty: true, canUndo: true });
+    expect(session.canRestartForHostChange()).toBe(false);
+    session.step("undo");
+    session.step("undo");
+    expect(session.read().project?.shotVersions?.cuts ?? []).toEqual([]);
+    expect(session.read().canRedo).toBe(true);
+    expect(session.canRestartForHostChange()).toBe(false);
+  });
+
+  it("저장된 빈 원본이나 현재 호스트에 고정된 컷이 있으면 빈 세션도 다시 시작하지 않는다", async () => {
+    const saved = fixture();
+    saved.rows.set(PROJECT_ID, serializeStudioWebAuthoringProjectV3(savedProject()));
+    await saved.session.restore();
+    expect(saved.session.read()).toMatchObject({ phase: "ready", dirty: false, canUndo: false, canRedo: false });
+    expect(saved.session.read().project?.shotVersions?.cuts ?? []).toEqual([]);
+    expect(saved.session.canRestartForHostChange()).toBe(false);
+
+    const live = fixture();
+    let pinned: ReturnType<typeof createStudioScene3dVersionedCut> | null = null;
+    const session = new StudioScene3dCutSession({ ...live.host, readPinnedCut: () => pinned }, live.repository);
+    await session.restore();
+    expect(session.canRestartForHostChange()).toBe(true);
+    pinned = createStudioScene3dVersionedCut({ ...source(), id: "cut:pinned", name: "원고 고정 컷" });
+    expect(session.read().project?.shotVersions?.cuts ?? []).toEqual([]);
+    expect(session.canRestartForHostChange()).toBe(false);
+  });
+
   it("복원 전과 지연 복원 중에는 컷 변경과 저장을 허용하지 않는다", async () => {
     const { session, repository, store } = fixture();
     const pending = Promise.withResolvers<null>();

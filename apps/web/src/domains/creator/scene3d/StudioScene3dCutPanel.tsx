@@ -8,10 +8,12 @@ const BUTTON =
 export function StudioScene3dCutPanel({
   session,
   preferredExpanded,
+  hostPreparing = false,
 }: {
   readonly session: StudioScene3dCutSession;
   /** 사용자 선택 전의 권장 상태다. 생략한 기존 소비자는 펼쳐진 상태를 유지한다. */
   readonly preferredExpanded?: boolean;
+  readonly hostPreparing?: boolean;
 }) {
   const t = useBilingual("scene3d-cut-versions");
   const state = useSyncExternalStore(
@@ -37,7 +39,8 @@ export function StudioScene3dCutPanel({
       if (backupUrl.current) URL.revokeObjectURL(backupUrl.current);
     };
   }, [session]);
-  const busy = ["loading", "saving", "applying"].includes(state.phase);
+  const operationBusy = ["loading", "saving", "applying"].includes(state.phase);
+  const busy = hostPreparing || operationBusy;
   const available = Boolean(state.project) && !busy;
   const cuts = state.project?.shotVersions?.cuts ?? [];
   const selected = cuts.find((cut) => cut.id === state.selectedId);
@@ -128,7 +131,7 @@ export function StudioScene3dCutPanel({
           >
             {t("로컬 다시 불러오기", "Reload local project")}
           </button>
-          {busy && (
+          {operationBusy && (
             <button
               type="button"
               className={BUTTON}

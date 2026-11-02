@@ -1,15 +1,17 @@
 // @vitest-environment jsdom
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import {
   act,
   cleanup,
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioBg3dProfessionalWorkspace } from "../bg3d/StudioBg3dProfessionalWorkspace";
 import { useStudioBg3dCanonicalDocumentState } from "../bg3d/useStudioBg3dCanonicalDocumentState";
+import { useStudioBg3dModelMaterialLease } from "../bg3d/useStudioBg3dModelMaterialLease";
 import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   normalizeStudioBg3dSceneDocument,
@@ -25,6 +27,7 @@ import * as repositoryModule from "../studio-web-runtime/studio-web-authoring-pr
 import type { StudioAsyncKeyValueStore } from "../studio-local-database";
 import type { StudioScene3dCutBg3dEditorHost } from "./studio-scene3d-cut-bg3d-host";
 import { createStudioScene3dCutBg3dHost } from "./studio-scene3d-cut-bg3d-host";
+import { StudioScene3dCutSession } from "./studio-scene3d-cut-session";
 
 const memory = () => {
   const data = new Map<string, string>();
@@ -66,7 +69,11 @@ function Viewport({ h }: { readonly h: StudioScene3dCutBg3dEditorHost }) {
     </div>
   );
 }
-function Workspace() {
+function Workspace({ rendererReady = true, rendererGeneration = 0, materialBackend = "webgpu" }: {
+  readonly rendererReady?: boolean;
+  readonly rendererGeneration?: number;
+  readonly materialBackend?: "webgl" | "webgpu";
+}) {
   const canonical = useStudioBg3dCanonicalDocumentState({
     initialDocument: initialDocument(),
   });
@@ -78,15 +85,27 @@ function Workspace() {
   const hostRef = useRef<StudioScene3dCutBg3dEditorHost | null>(null);
   const pendingCamera = useRef<StudioBg3dSceneDocument["camera"] | null>(null);
   const viewportApi = useRef({ applyView: appliedViews });
-  const modelRenderer = useRef({
-    domElement: document.createElement("canvas"),
-    isWebGPURenderer: true as const,
-    hasFeature: () => false,
+  const renderer = useMemo(() => {
+    const domElement = document.createElement("canvas");
+    domElement.dataset.rendererGeneration = String(rendererGeneration);
+    return {
+      domElement,
+      isWebGPURenderer: true as const,
+      hasFeature: () => false,
+    };
+  }, [rendererGeneration]);
+  const modelRenderer = rendererReady ? renderer : null;
+  const rendererRef = useRef(modelRenderer);
+  rendererRef.current = modelRenderer;
+  const isMaterialBackendCurrent = useStudioBg3dModelMaterialLease({
+    renderer: modelRenderer, rendererRef, materialBackend,
   });
   const storageIds = useRef(new Map<string, string>());
   const values: StudioScene3dCutBg3dEditorHost = {
     open: true,
-    modelRenderer: modelRenderer.current,
+    modelRenderer,
+    materialBackend,
+    isMaterialBackendCurrent,
     sharedStageSessionScopeKey: "project-a:page-1:bg-layer",
     ...canonical,
     storageModelIdByAttachmentIdRef: storageIds,
@@ -170,6 +189,142 @@ afterEach(() => {
 });
 
 describe("제품 전문가 작업공간의 컷 버전 통합", () => {
+  it("렌더러가 없는 냉시작은 이전 엔진을 캐시하지 않고 준비 뒤 빈 컷 프로젝트를 연다", async () => {
+    const { repository, data } = memory();
+    vi.spyOn(repositoryModule, "getStudioWebAuthoringProjectV3Repository").mockReturnValue(repository);
+    const load = vi.spyOn(repository, "load");
+    const rendered = render(<Workspace rendererReady={false} />);
+    expect(screen.getByText("장면과 렌더러가 준비되면 컷 패널을 엽니다.")).toBeDefined();
+    expect(load).not.toHaveBeenCalled();
+
+    rendered.rerender(<Workspace />);
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("list", { name: "고정한 컷 목록" }).children).toHaveLength(0);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(data.size).toBe(0);
+    expect(history.historyCommandTimelineRef.current).toBeNull();
+  });
+
+  it("보존할 작업이 없는 빈 세션은 새 엔진에 결속하고 이전 세션을 정상 폐기한다", async () => {
+    const { repository, data } = memory();
+    vi.spyOn(repositoryModule, "getStudioWebAuthoringProjectV3Repository").mockReturnValue(repository);
+    const load = vi.spyOn(repository, "load");
+    const dispose = vi.spyOn(StudioScene3dCutSession.prototype, "dispose");
+    const rendered = render(<Workspace />);
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    const adapter = createStudioScene3dCutBg3dHost(host());
+    const source = adapter.readSource();
+
+    rendered.rerender(<Workspace rendererGeneration={1} />);
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(dispose).toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다.")).toBeNull();
+    await expect(adapter.applySource(source, null, new AbortController().signal))
+      .rejects.toThrow(/^표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다\.$/u);
+    expect(data.size).toBe(0);
+    expect(history.historyCommandTimelineRef.current).toBeNull();
+  });
+
+  it("nonnull 렌더러도 실제 backend lease가 유효해진 뒤에만 같은 렌더러로 컷 세션을 만든다", async () => {
+    const { repository, data } = memory();
+    vi.spyOn(repositoryModule, "getStudioWebAuthoringProjectV3Repository").mockReturnValue(repository);
+    const load = vi.spyOn(repository, "load");
+    const rendered = render(<Workspace materialBackend="webgl" />);
+    const renderer = host().modelRenderer;
+    expect(renderer).not.toBeNull();
+    expect(host().isMaterialBackendCurrent?.()).toBe(false);
+    expect(screen.getByText("장면과 렌더러가 준비되면 컷 패널을 엽니다.")).toBeDefined();
+    expect(load).not.toHaveBeenCalled();
+
+    rendered.rerender(<Workspace materialBackend="webgpu" />);
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    expect(host().modelRenderer).toBe(renderer);
+    expect(host().isMaterialBackendCurrent?.()).toBe(true);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(data.size).toBe(0);
+  });
+
+  it("같은 문서의 엔진만 바뀌면 미제출 컷 이름과 JSON 초안을 보존한 패널에 새 세션을 연결한다", async () => {
+    const { repository, data } = memory();
+    vi.spyOn(repositoryModule, "getStudioWebAuthoringProjectV3Repository").mockReturnValue(repository);
+    const load = vi.spyOn(repository, "load");
+    const rendered = render(<Workspace />);
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    const name = screen.getByLabelText<HTMLInputElement>("컷 이름");
+    const json = screen.getByLabelText<HTMLTextAreaElement>("프로젝트 JSON");
+    const details = screen.getByText("JSON 백업·가져오기").closest("details");
+    if (!(details instanceof HTMLDetailsElement)) throw new Error("JSON details가 없습니다.");
+    fireEvent.click(screen.getByText("JSON 백업·가져오기"));
+    expect(details.open).toBe(true);
+    fireEvent.change(name, { target: { value: "아직 고정하지 않은 컷" } });
+    fireEvent.change(json, { target: { value: '{"미제출":"백업 초안"}' } });
+
+    rendered.rerender(<Workspace rendererGeneration={1} />);
+    expect(screen.getByLabelText("컷 이름")).toBe(name);
+    expect(name.value).toBe("아직 고정하지 않은 컷");
+    for (const action of ["로컬 다시 불러오기", "로컬 저장", "JSON 가져오기"]) {
+      expect(screen.getByRole<HTMLButtonElement>("button", { name: action }).disabled).toBe(true);
+    }
+    expect(screen.queryByRole("button", { name: "작업 취소" })).toBeNull();
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    expect(screen.getByLabelText<HTMLInputElement>("컷 이름").value).toBe("아직 고정하지 않은 컷");
+    expect(screen.getByLabelText<HTMLTextAreaElement>("프로젝트 JSON").value).toBe('{"미제출":"백업 초안"}');
+    expect(screen.getByText("JSON 백업·가져오기").closest("details")?.hasAttribute("open")).toBe(true);
+    click("현재 장면으로 컷 만들기");
+    expect(await screen.findByRole("button", { name: "아직 고정하지 않은 컷 · 초안" })).toBeDefined();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(data.size).toBe(0);
+  });
+
+  it("컷이 있는 엔진 변경은 세션을 버리지 않고 이전 컷 적용을 같은 오류로 거부한다", async () => {
+    const { repository } = memory();
+    vi.spyOn(repositoryModule, "getStudioWebAuthoringProjectV3Repository").mockReturnValue(repository);
+    const load = vi.spyOn(repository, "load");
+    const rendered = render(<Workspace />);
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    await createCut("보존할 컷", 3);
+    const original = host().sceneBaseDocument;
+
+    rendered.rerender(<Workspace rendererGeneration={1} />);
+    expect(screen.getByRole("button", { name: "보존할 컷 · 초안" })).toBeDefined();
+    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "이 컷으로 복귀" }).disabled).toBe(false));
+    click("이 컷으로 복귀");
+    expect((await screen.findByRole("alert")).textContent)
+      .toContain("표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다.");
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(host().sceneBaseDocument).toBe(original);
+    expect(screen.getByRole("button", { name: "보존할 컷 · 초안" })).toBeDefined();
+    expect(history.historyCommandTimelineRef.current).toBeNull();
+  });
+
+  it("복원 중 엔진 변경은 진행 중 세션을 다시 만들거나 늦은 원본을 적용하지 않는다", async () => {
+    const { repository, data } = memory();
+    vi.spyOn(repositoryModule, "getStudioWebAuthoringProjectV3Repository").mockReturnValue(repository);
+    const pending = Promise.withResolvers<null>();
+    const load = vi.spyOn(repository, "load").mockImplementationOnce(() => pending.promise);
+    const rendered = render(<Workspace />);
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+    const original = host().sceneBaseDocument;
+
+    rendered.rerender(<Workspace rendererReady={false} />);
+    expect(screen.getByRole("button", { name: "작업 취소" })).toBeDefined();
+    expect(load).toHaveBeenCalledTimes(1);
+    rendered.rerender(<Workspace rendererGeneration={1} />);
+    await act(async () => { pending.resolve(null); });
+    expect((await screen.findByRole("alert")).textContent)
+      .toContain("표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다.");
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(host().sceneBaseDocument).toBe(original);
+    expect(history.historyCommandTimelineRef.current).toBeNull();
+    expect(data.size).toBe(0);
+  });
+
   it("3컷 생성→원본 변경→승인 컷 보존→선택 업데이트→repository 저장→재진입을 실제 패널과 canonical host로 실행한다", async () => {
     const { repository, data } = memory();
     vi.spyOn(

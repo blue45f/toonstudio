@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+// 문서가 먼저 계층 규칙을 초기화하도록 해 기본 문서 생성 중의 순환 import를 피한다.
+import "./studio-bg3d-scene-document";
 
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
 import { resolveStudioBg3dHierarchy } from "./studio-bg3d-hierarchy";
@@ -94,6 +97,37 @@ describe("StudioBg3dSceneOutliner", () => {
     expect(callbacks.onToggleLock).toHaveBeenCalledWith(expect.objectContaining({ id: "desk" }));
     expect(callbacks.onDuplicate).toHaveBeenCalledWith(expect.objectContaining({ id: "desk" }));
     expect(callbacks.onRemove).toHaveBeenCalledWith(expect.objectContaining({ id: "desk" }));
+  });
+
+  it.each(["dock", "panel"] as const)("%s에서 같은 표시 이름이어도 정본 ID 행의 숨기기·보이기가 같은 객체로 전달된다", (variant) => {
+    const { callbacks, controller } = createController();
+    const model = controller.items.find((item) => item.id === "desk");
+    if (!model) throw new Error("모델 fixture가 없습니다.");
+    const items = [
+      { ...model, label: "3D 모델 1", parentId: null },
+      { ...model, id: "other-model", label: "3D 모델 1", parentId: null },
+    ];
+    const visibleController = { ...controller, items, filteredItems: items, hierarchy: resolveStudioBg3dHierarchy(items) };
+    const view = render(<StudioBg3dSceneOutliner controller={visibleController} variant={variant} />);
+    const row = () => {
+      const matches = screen.getAllByRole("treeitem")
+        .filter((item) => item.getAttribute("data-studio-bg3d-node-id") === "desk");
+      expect(matches).toHaveLength(1);
+      const match = matches[0];
+      if (!match) throw new Error("정본 ID 행이 없습니다.");
+      return within(match);
+    };
+
+    fireEvent.click(row().getByRole("button", { name: "3D 모델 1 숨기기" }));
+    expect(callbacks.onToggleVisibility).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: "desk", visible: true }));
+    const hiddenItems = items.map((item) => item.id === "desk" ? { ...item, visible: false } : item);
+    view.rerender(<StudioBg3dSceneOutliner
+      controller={{ ...visibleController, items: hiddenItems, filteredItems: hiddenItems }}
+      variant={variant}
+    />);
+    fireEvent.click(row().getByRole("button", { name: "3D 모델 1 보이기" }));
+    expect(callbacks.onToggleVisibility).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: "desk", visible: false }));
+    expect(callbacks.onToggleVisibility).toHaveBeenCalledTimes(2);
   });
 
   it("supports collapse and keyboard traversal without owning scene state", () => {

@@ -70,6 +70,15 @@ export class StudioScene3dCutSession {
     readonly repository: StudioWebAuthoringProjectV3Repository
   ) {}
   read = () => this.#snapshot;
+  /** 보존할 컷·저장 원본·작업이 없는 세션만 새 호스트 세대로 시작할 수 있다. */
+  canRestartForHostChange() {
+    const state = this.#snapshot;
+    if (this.host.readPinnedCut?.() || this.#requiresReload || this.#storedRevision !== null)
+      return false;
+    if (state.phase === "loading") return this.#operation === null;
+    return state.phase === "ready" && !state.dirty && !state.canUndo && !state.canRedo
+      && (state.project?.shotVersions?.cuts.length ?? 0) === 0;
+  }
   subscribe = (listener: () => void) => {
     this.#listeners.add(listener);
     return () => {

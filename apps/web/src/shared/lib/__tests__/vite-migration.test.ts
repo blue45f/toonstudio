@@ -101,7 +101,8 @@ describe("vite migration", () => {
 
     // Space Grotesk alone earns the render-blocking slot: globals.css numeral/eyebrow use it on
     // every route and, being latin-only, its stylesheet is 12 @font-face / 543 B gzip.
-    expect(html).toContain("family=Space+Grotesk");
+    expect(html).toContain('href="/fonts/space-grotesk/v22/space-grotesk.css"');
+    expect(html).not.toMatch(/<link[^>]+href=["']https:\/\/fonts\.googleapis\.com/iu);
     for (const family of studioOnlyFamilies) {
       expect(html).not.toContain(`family=${family.replaceAll(" ", "+")}`);
       expect(presetFonts).toContain(`family: "${family}"`);
