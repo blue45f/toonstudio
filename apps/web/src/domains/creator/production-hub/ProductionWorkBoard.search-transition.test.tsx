@@ -120,7 +120,7 @@ describe("제작 보드 검색의 Router 전환 경합", () => {
     expect(input.value).toBe("콘티");
     expect(screen.getByTestId("production-card-board-ready")).toBeTruthy();
     expect(screen.queryByTestId("production-card-board-draft")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "외부 URL에서 검색 초기화", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "외부 URL에서 검색 초기화" }));
     await waitFor(() => expect(committedParams().has("boardQuery")).toBe(false));
     await waitFor(() => expect(input.value).toBe(""));
     expect(committedParams().get("untouched")).toBe("keep");
@@ -140,7 +140,7 @@ describe("제작 보드 검색의 Router 전환 경합", () => {
         }
         expect(input.value).toBe("콘티");
         expect(committedParams().get("boardQuery")).toBe("");
-        fireEvent.click(screen.getByRole("button", { name: clearName, exact: true }));
+        fireEvent.click(screen.getByRole("button", { name: clearName }));
         await waitFor(() => expect(input.value).toBe(""));
         await act(async () => { gate.release(); });
         expect(input.value).toBe("");
