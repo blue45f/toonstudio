@@ -6,7 +6,7 @@ import { COUNTS, artifactEvidence, assertCounts, check, digest, gitEvidence, hos
 import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
 import { actualState, verifyActualProjectRead } from './actual-input.mjs';
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
-import { reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
+import { assertNativeDnt, launchPrivateDntBrowser, reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
 import { prepareLocalQaTls } from './local-qa-tls.mjs';
 
 let stage = 'config';
@@ -281,7 +281,7 @@ async function actorProfile(browser, env, state, actor, profile) {
           result.bootstrap.push({ ...metadata(), kind: 'actual-AppShell-me-merge-request', method: 'POST', startedAt: new Date().toISOString(), allowedOnlyBeforeMeasurement: true });
           return route.continue();
         }
-        result.forbiddenMutations.push({ ...metadata(), method: request.method(), kind: apiKind(url, state.projectId), blocked: true });
+        result.forbiddenMutations.push({ ...metadata(), method: request.method(), pathname: url.pathname.split('/').map((part) => /^[A-Za-z0-9_.~%+-]{32,}$/u.test(part) ? ':redacted' : part).join('/'), kind: apiKind(url, state.projectId), blocked: true });
         return route.abort('blockedbyclient');
       }
       if (manuscriptImage && request.method() !== 'GET') {
@@ -295,6 +295,8 @@ async function actorProfile(browser, env, state, actor, profile) {
     await validateRead(await context.request.get(`${env.webOrigin}/api/production/projects/${state.projectId}`), state, actor.role, { profile: profile.id, phase: 'preflight', iteration: null, operation: 'acl-read-preflight' });
     if (manuscript) await manuscript.prepare(context);
     const page = await context.newPage();
+    const privacy = await assertNativeDnt(page);
+    result.browser.privacy.actorContexts.push({ ...metadata(), ...privacy });
     page.setDefaultTimeout(config.actionTimeoutMs);
     page.setDefaultNavigationTimeout(config.navigationTimeoutMs);
     page.on('pageerror', (error) => { result.pageErrors.push({ ...metadata(), errorType: error.name }); });
@@ -560,11 +562,11 @@ async function main() {
   stage = 'local-qa-tls';
   const tls = await prepareLocalQaTls(env);
   const { chromium } = requireAt(config.repoRoot)('playwright');
-  const browser = await chromium.launch({ headless: true, ...(config.browserChannel === 'chrome' ? { channel: 'chrome' } : {}), ...tls.launchOptions });
+  const { browser, privacy } = await launchPrivateDntBrowser({ chromium, outputDir: config.outputDir, launchOptions: { headless: true, ...(config.browserChannel === 'chrome' ? { channel: 'chrome' } : {}), ...tls.launchOptions } });
   await runWithOwnedBrowser(browser, async () => {
     try {
       stage = 'record-browser-start';
-      result.browser = { engine: 'chromium', channel: config.browserChannel ?? 'chromium', version: browser.version(), headless: true, tls: tls.evidence };
+      result.browser = { engine: 'chromium', channel: config.browserChannel ?? 'chromium', version: browser.version(), headless: true, tls: tls.evidence, privacy: { ...privacy, actorContexts: [], scope: 'native DNT=1의 제어 측정. 분석 수집을 켠 기본 환경의 성능 판정으로 확대하지 않음.' } };
       result.status = 'running';
       await save();
       stage = 'browser-read-render-search-detail';
