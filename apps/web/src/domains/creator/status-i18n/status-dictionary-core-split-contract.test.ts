@@ -25,6 +25,7 @@ interface SplitDictionary {
 }
 
 const DICTIONARIES: readonly SplitDictionary[] = [
+  { body: "domains/creator/studio-brush-canvas-status-i18n.ts", core: "domains/creator/status-i18n/studio-brush-canvas-status-i18n-core.ts" },
   { body: "shared/rest-status-i18n.ts", core: "shared/rest-status-i18n-core.ts" },
   { body: "domains/auth/components/auth-rest-status-i18n.ts", core: "domains/auth/components/auth-rest-status-i18n-core.ts" },
   { body: "domains/creator/studio-panel-status-i18n-r3c06.ts", core: "domains/creator/status-i18n/studio-panel-status-i18n-r3c06-core.ts" },

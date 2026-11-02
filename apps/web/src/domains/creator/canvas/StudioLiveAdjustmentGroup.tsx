@@ -6,7 +6,7 @@ import { acknowledgeStudioRasterImagePresentationDraw, registerStudioMountedRast
 import { refreshStudioRasterPresentationCaches, registerStudioRasterCapturePreparation, registerStudioRasterPresentationCache } from "../render/studio-raster-presentation-cache";
 import type { StudioLiveAdjustmentElement } from "../studio-live-adjustment";
 import { publishStudioLiveAdjustmentStatus } from "../studio-live-adjustment-status";
-import { brushCanvasStatusText } from "../studio-brush-canvas-status-i18n";
+import { brushCanvasStatusText } from "../status-i18n/studio-brush-canvas-status-i18n-core";
 
 import type Konva from "konva";
 import type { StudioAdjustmentLayerMask } from "../studio-adjustment-layer-runtime";

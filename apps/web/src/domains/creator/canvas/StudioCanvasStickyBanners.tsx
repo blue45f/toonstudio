@@ -24,7 +24,7 @@ import { StudioViewToolsHud } from "../studio-view-tools-hud-loader";
 
 import { localizeText } from "./studio-canvas-viewport-primitives";
 
-import "../studio-brush-canvas-status-i18n";
+import "../status-i18n/studio-brush-canvas-status-i18n-core";
 
 import type { Tool } from "../studio-editor-tool-model";
 import type { PageState } from "../studio-page-state";

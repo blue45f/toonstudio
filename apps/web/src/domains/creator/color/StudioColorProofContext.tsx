@@ -1,7 +1,7 @@
 import { createContext, lazy, Suspense, useContext, useState, type ReactNode } from "react";
 import { useT } from "@/shared/lib/i18n";
 
-import "../studio-brush-canvas-status-i18n";
+import "../status-i18n/studio-brush-canvas-status-i18n-core";
 import type { PageState } from "../studio-page-state";
 import type { StudioColorProofDocument } from "./studio-color-proof-document";
 

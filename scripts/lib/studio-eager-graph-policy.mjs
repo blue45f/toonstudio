@@ -45,6 +45,7 @@ const WEB_SRC = "apps/web/src";
  *   지연 표면이 import 한다. 본문 모듈은 `-core` 를 함께 불러오므로 지연 소비 파일의 import 는 그대로다.
  */
 export const PINNED_LAZY_FILES = Object.freeze([
+  `${WEB_SRC}/domains/creator/studio-brush-canvas-status-i18n.ts`,
   `${WEB_SRC}/shared/rest-status-i18n.ts`,
   `${WEB_SRC}/domains/auth/components/auth-rest-status-i18n.ts`,
   `${WEB_SRC}/domains/creator/studio-panel-status-i18n-r3c06.ts`,

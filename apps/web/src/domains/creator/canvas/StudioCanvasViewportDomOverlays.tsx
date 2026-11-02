@@ -2,7 +2,7 @@ import type { StudioSkiaCameraSource } from "../render/studio-skia-camera-source
 import { Suspense, useState } from "react";
 import { useT } from "@/shared/lib/i18n";
 
-import "../studio-brush-canvas-status-i18n";
+import "../status-i18n/studio-brush-canvas-status-i18n-core";
 
 import { StudioSkiaDocumentSurface } from "../render/StudioSkiaDocumentSurface";
 import { CANVAS_W } from "../studio-assets";

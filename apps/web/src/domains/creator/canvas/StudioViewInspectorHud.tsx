@@ -20,7 +20,7 @@ import {
 import { SwitchIndicator } from "@/shared/components/ui/switch";
 import { useT } from "@/shared/lib/i18n";
 
-import "../studio-brush-canvas-status-i18n";
+import "../status-i18n/studio-brush-canvas-status-i18n-core";
 
 import {
   closeStudioViewInspectionPanel,
