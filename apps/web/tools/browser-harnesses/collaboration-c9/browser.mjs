@@ -53,14 +53,28 @@ async function instrumentation(context) {
     }).observe({ type: 'longtask', buffered: true });
   });
 }
-async function measure(page, meta, action, completion, { navigation = false, startFrom = null, capturedCompletion = null, deferSave = false } = {}) {
+async function measure(page, meta, action, completion, { navigation = false, startFrom = null, capturedCompletion = null, deferSave = false, onFailure = null } = {}) {
   stage = `${meta.actorRole}/${meta.profile}/${meta.iteration}/${meta.operation}`;
   const hostStartMs = startFrom?.hostStartMs ?? performance.now();
   const startedAt = startFrom?.startedAt ?? new Date().toISOString();
   const browserStart = startFrom ? { time: startFrom.browser.startTime, timeOrigin: startFrom.browser.timeOrigin, inputs: startFrom.browser.inputEventsAtStart }
     : navigation ? null : await page.evaluate(() => ({ time: performance.now(), timeOrigin: performance.timeOrigin, inputs: window.__c9Telemetry.inputEvents }));
-  await action();
-  const observed = capturedCompletion?.observed ?? await completion();
+  let observed;
+  let failedPhase = 'action';
+  try {
+    await action();
+    failedPhase = 'semantic-completion';
+    observed = capturedCompletion?.observed ?? await completion();
+  } catch (error) {
+    let observation = null;
+    if (onFailure) {
+      try { observation = await onFailure(); }
+      catch (diagnosticError) { observation = { diagnosticErrorType: diagnosticError instanceof Error ? diagnosticError.name : typeof diagnosticError }; }
+    }
+    result.measurementFailures ??= [];
+    result.measurementFailures.push({ ...meta, failedPhase, failedAt: new Date().toISOString(), errorType: error instanceof Error ? error.name : typeof error, observation });
+    throw error;
+  }
   const hostEndMs = capturedCompletion?.hostEndMs ?? performance.now();
   check(observed && Number.isFinite(observed.time), 'browser semantic 완료 시각이 없습니다.');
   if (browserStart) check(browserStart.timeOrigin === observed.timeOrigin, '동작 중 문서가 바뀌어 browser interval을 비교할 수 없습니다.');
@@ -345,6 +359,26 @@ async function actorProfile(browser, env, state, actor, profile) {
     const boardTask = board.getByRole('button', { name: target.title, exact: true });
     const queueTask = queue.getByTestId(`division-task-${target.id}`);
     const dialog = page.getByRole('dialog', { name: target.title, exact: true });
+    const waitBoardQuery = async (expected) => {
+      await page.waitForFunction((value) => {
+        const input = document.querySelector('[data-testid="production-work-board"] input[aria-label="작업 검색"]');
+        const query = new URL(location.href).searchParams.get('boardQuery') ?? '';
+        return input instanceof HTMLInputElement && input.value === value && input.getAttribute('aria-busy') !== 'true' && query === value;
+      }, expected);
+    };
+    const searchedBoard = async () => { await waitBoardQuery(target.title); return rendered(page, boardTask); };
+    // 실패 때만 입력·주소·대상 일치 여부를 읽는다. 검색어·주소 원문은 기록하지 않는다.
+    const searchFailure = (input, task, queryKey) => async () => {
+      const inputCount = await input.count();
+      const value = inputCount === 1 ? await input.inputValue({ timeout: 1000 }) : null;
+      const targetCount = await task.count();
+      return { inputCount, valueLength: value?.length ?? null, expectedLength: target.title.length,
+        inputMatchesExpected: value === target.title,
+        urlQueryMatchesExpected: new URL(page.url()).searchParams.get(queryKey) === target.title,
+        targetCount, targetVisible: targetCount === 1 ? await task.isVisible() : false,
+        inputFocused: inputCount === 1 ? await input.evaluate((node) => node === document.activeElement, undefined, { timeout: 1000 }) : false,
+        visiblePhaseOverlayCount: await page.locator('[aria-hidden="true"][data-phase]').evaluateAll((nodes) => nodes.filter((node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden').length) };
+    };
     const readyBoard = async () => { await board.waitFor({ state: 'visible' }); await page.waitForFunction(() => document.querySelector('[data-testid="production-work-board"]')?.getAttribute('aria-busy') !== 'true'); return rendered(page, board); };
     // 실제 AppShell/StoreSync가 먼저 guest merge를 완료해야 한다. backend wiring이 없으면 실패한다.
     operation = 'AppShell-bootstrap-before-measurement';
@@ -399,7 +433,7 @@ async function actorProfile(browser, env, state, actor, profile) {
       await freshNavigation(boardPath, readyBoard);
       const beforeHeap = await heap(cdp);
       operation = 'board.search-fill';
-      await measure(page, { actorRole: actor.role, profile: profile.id, iteration, operation }, () => boardSearch.fill(target.title), () => rendered(page, boardTask));
+      await measure(page, { actorRole: actor.role, profile: profile.id, iteration, operation, completionCondition: 'input + URL + committed filter + target visible + 2 rAF' }, () => boardSearch.fill(target.title), searchedBoard);
       await drainValidation();
       operation = 'board.detail-open';
       await measure(page, { actorRole: actor.role, profile: profile.id, iteration, operation }, () => boardTask.click(), () => rendered(page, dialog));
@@ -408,9 +442,10 @@ async function actorProfile(browser, env, state, actor, profile) {
       await measure(page, { actorRole: actor.role, profile: profile.id, iteration, operation }, () => dialog.getByRole('button', { name: '대화상자 닫기', exact: true }).click(), async () => { await dialog.waitFor({ state: 'hidden' }); return rendered(page, boardTask); });
       await drainValidation();
       await boardSearch.fill('');
+      await waitBoardQuery('');
       await readyBoard();
       operation = 'board.search-typing';
-      await measure(page, { actorRole: actor.role, profile: profile.id, iteration, operation, characterCount: target.title.length, keyIntervalMs: config.typingKeyIntervalMs, intentionalKeyDelayLowerBoundMs: Math.max(0, target.title.length - 1) * config.typingKeyIntervalMs }, () => boardSearch.pressSequentially(target.title, { delay: config.typingKeyIntervalMs }), () => rendered(page, boardTask));
+      await measure(page, { actorRole: actor.role, profile: profile.id, iteration, operation, completionCondition: 'input + URL + committed filter + target visible + 2 rAF', characterCount: target.title.length, keyIntervalMs: config.typingKeyIntervalMs, intentionalKeyDelayLowerBoundMs: Math.max(0, target.title.length - 1) * config.typingKeyIntervalMs }, () => boardSearch.pressSequentially(target.title, { delay: config.typingKeyIntervalMs }), searchedBoard, { onFailure: searchFailure(boardSearch, boardTask, 'boardQuery') });
       await drainValidation();
       operation = 'handoff.navigation-render';
       await freshNavigation(handoffPath, () => rendered(page, queue));
