@@ -72,7 +72,7 @@ function harness() {
     setGenericModelSourceFormats: vi.fn(), replaceCanonicalDocumentState: replacement,
     allocateStudioBg3dTemplateInstanceNodeIds: () => ({ nodeIds: ["placed"] }), generateId: () => "seed",
     instantiateBg3dTemplateDocument: async (document: unknown) => ({ document }), attachmentMatchesRecord: () => true,
-    hydrateStudioBg3dDocumentToRuntime: () => ({ ok: true, diagnostics: [], omittedDiagnosticCount: 0, counts: { emittedPrimitives: 0, emittedCustomModels: 1, droppedPrimitives: 0, droppedCustomModels: 0 },
+    hydrateStudioBg3dDocumentToRuntime: () => ({ ok: true, diagnostics: [], omittedDiagnosticCount: 0, counts: { inputPrimitives: 0, inputCustomModels: 1, emittedPrimitives: 0, emittedCustomModels: 1, droppedPrimitives: 0, droppedCustomModels: 0 },
       primitives: [], customModels: [{ id: "placed", modelId: record.id }] }),
     orderStudioBg3dHierarchySelectionRootsFirst: () => ["placed"],
   };

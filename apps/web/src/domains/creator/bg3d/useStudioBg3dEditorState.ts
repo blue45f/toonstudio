@@ -4,11 +4,12 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
-import type { Bg3dModelLibraryEntry, Bg3dTemplateLibraryEntry, BgCompositeCategory, BgPanelTab, BgSceneTemplateCategory, BgViewportApi, CaptureState, LtEditorSection, LtUserPresetLibraryStatus, LtUserPresetNotice, ModelRootCacheEntry, ModelThumbnailGpuLease, StudioBg3dBabylonDiagnosticState, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress, StudioBg3dLtPresetPayload, StudioBg3dMeasurementDocument, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dModalSession, StudioBg3dModelAttachment, StudioBg3dModelThumbnailCaptureController, StudioBg3dPhysicsGravityPreset, StudioBg3dPhysicsPhase, StudioBg3dPhysicsSession, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dPhysicsTransformSample, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dRigBakeReader, StudioBg3dRigSelectionState, StudioBg3dRoomSpec, StudioBg3dSectionPlaneState, StudioBg3dSharedCharacterCaptureAuthorityInput, StudioBg3dShotBatchPass, StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBg3dSnapSettings, StudioBg3dSunRigConfig, StudioBg3dWorldMeasurement, StudioGeneric3dClassification, StudioGeneric3dControlMode, StudioGeneric3dSourceFormat, StudioWebXrSessionController, StudioWebXrSessionState, StudioWebXrSupportSnapshot, TransformModeId, TransformSpace, ViewEditorSection } from "./studio-bg3d-editor-runtime-bindings";
+import type { Bg3dModelLibraryEntry, Bg3dTemplateLibraryEntry, BgCompositeCategory, BgPanelTab, BgSceneTemplateCategory, BgViewportApi, CaptureState, LtEditorSection, LtUserPresetLibraryStatus, LtUserPresetNotice, ModelRootCacheEntry, ModelThumbnailGpuLease, StudioBg3dBabylonDiagnosticState, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress, StudioBg3dLtPresetPayload, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dModalSession, StudioBg3dModelAttachment, StudioBg3dModelThumbnailCaptureController, StudioBg3dPhysicsGravityPreset, StudioBg3dPhysicsPhase, StudioBg3dPhysicsSession, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dPhysicsTransformSample, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dRigBakeReader, StudioBg3dRigSelectionState, StudioBg3dRoomSpec, StudioBg3dSectionPlaneState, StudioBg3dSharedCharacterCaptureAuthorityInput, StudioBg3dShotBatchPass, StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBg3dSnapSettings, StudioBg3dSunRigConfig, StudioBg3dWorldMeasurement, StudioGeneric3dClassification, StudioGeneric3dControlMode, StudioGeneric3dSourceFormat, StudioWebXrSessionController, StudioWebXrSessionState, StudioWebXrSupportSnapshot, TransformModeId, TransformSpace, ViewEditorSection } from "./studio-bg3d-editor-runtime-bindings";
 import type { StudioBg3dHistoryCommandTimeline } from "./studio-bg3d-history-command-adapter";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import { rememberStudioBg3dCameraBeforeViewportRemount } from "./studio-bg3d-camera-history-transition";
 import { useStudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
+import { readStudioBg3dSceneMeasurements } from "./studio-bg3d-scene-measurements";
 
 export function useStudioBg3dEditorState(props: Record<string, any>) {
   const hostRef = R.useRef<Record<string, any> | null>(null);
@@ -26,7 +27,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     StudioBg3dPrimitiveGeometryPool, getProductStudioBg3dLtPresetSqliteRepository,
     EMPTY_STUDIO_BG3D_LT_USER_PRESET_PAYLOAD, DEFAULT_LT_USER_PRESET_DESCRIPTION,
     DEFAULT_STUDIO_BG3D_SUN_RIG_CONFIG, DEFAULT_STUDIO_BG3D_SECTION_PLANE_STATE,
-    createStudioBg3dMeasurementDocument, DEFAULT_STUDIO_BG3D_SNAP_SETTINGS,
+    DEFAULT_STUDIO_BG3D_SNAP_SETTINGS,
     copyStudioBg3dBundledEnvironmentLibraryEntries, createStudioBg3dPlacementSession,
     getStudioBg3dRoomPreset, collectDeviceSignals, canonicalSceneDocument,
     DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, StudioBg3dDestructiveMutationGuard, THREE,
@@ -242,9 +243,8 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     DEFAULT_STUDIO_BG3D_SECTION_PLANE_STATE,
   );
   const [scaleGuideVisible, setScaleGuideVisible] = useState(false);
-  // Persistent guides and transient two-point capture intentionally remain outside scene geometry.
-  const [measurementDocument, setMeasurementDocument] =
-    useState<StudioBg3dMeasurementDocument>(() => createStudioBg3dMeasurementDocument("cm"));
+  // 저장할 가이드는 정본 문서에서 읽고 두 점을 찍는 동안의 상태만 따로 유지한다.
+  const measurementDocument = readStudioBg3dSceneMeasurements(sceneBaseDocument);
   const [measurementActive, setMeasurementActive] = useState(false);
   const [measurementStartWorld, setMeasurementStartWorld] =
     useState<StudioBg3dMeasurementVec3 | null>(null);
@@ -604,7 +604,6 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     scaleGuideVisible,
     setScaleGuideVisible,
     measurementDocument,
-    setMeasurementDocument,
     measurementActive,
     setMeasurementActive,
     measurementStartWorld,

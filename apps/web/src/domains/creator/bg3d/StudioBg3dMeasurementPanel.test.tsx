@@ -11,6 +11,7 @@ import {
   type StudioBg3dMeasurementDocument,
 } from "./studio-bg3d-measurement";
 import { StudioBg3dMeasurementPanel } from "./StudioBg3dMeasurementPanel";
+import type { StudioBg3dMeasurementCommandResult } from "./studio-bg3d-measurement-command";
 
 afterEach(cleanup);
 
@@ -50,7 +51,9 @@ function renderPanel(overrides: Partial<
     draftMeasurement: draft(),
     inference: inference(),
     lockedLengthMeters: null,
-    onDocumentChange: vi.fn(),
+    onDocumentChange: vi.fn((next: StudioBg3dMeasurementDocument): StudioBg3dMeasurementCommandResult => ({
+      ok: true, changed: true, document: next,
+    })),
     onLengthLockChange: vi.fn(),
     ...overrides,
   };
@@ -85,7 +88,7 @@ describe("StudioBg3dMeasurementPanel", () => {
     expect(props.onDocumentChange).toHaveBeenCalledWith(expect.objectContaining({
       unit: "mm",
       guides: [],
-    }));
+    }), props.document);
   });
 
   it("enables the length lock from the current distance and converts edited display units", () => {
@@ -113,7 +116,7 @@ describe("StudioBg3dMeasurementPanel", () => {
           endWorld: [3, 4, 0],
         }),
       ],
-    }));
+    }), props.document);
     expect(screen.getByLabelText("측정 가이드 알림").textContent).toContain("500 cm");
   });
 
@@ -126,13 +129,38 @@ describe("StudioBg3dMeasurementPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "250 cm 가이드 숨기기" }));
     expect(props.onDocumentChange).toHaveBeenCalledWith(expect.objectContaining({
       guides: [expect.objectContaining({ visible: false })],
-    }));
+    }), props.document);
 
     fireEvent.click(screen.getByRole("button", { name: "250 cm 가이드 삭제" }));
     expect(props.onDocumentChange).toHaveBeenLastCalledWith(expect.objectContaining({
       guides: [],
-    }));
+    }), props.document);
     expect(screen.getByLabelText("측정 가이드 알림").textContent).toContain("삭제했습니다");
+  });
+
+  it("장면 명령이 저장을 거부하면 성공 안내를 표시하지 않는다", () => {
+    const onDocumentChange = vi.fn((): StudioBg3dMeasurementCommandResult => ({
+      ok: false, code: "document-rejected", messageKo: "저장할 수 없습니다.",
+    }));
+    const { props } = renderPanel({ onDocumentChange });
+    fireEvent.click(screen.getByRole("button", { name: "현재 측정을 영구 가이드로 고정" }));
+    expect(onDocumentChange).toHaveBeenCalledWith(expect.objectContaining({
+      guides: [expect.objectContaining({ id: "measure-guide-0001" })],
+    }), props.document);
+    expect(screen.getByLabelText("측정 가이드 알림").textContent).toContain("손실 없이 저장할 수 없어");
+    expect(screen.getByLabelText("측정 가이드 알림").textContent).not.toContain("고정했습니다");
+    expect(props.document.guides).toEqual([]);
+  });
+
+  it("오래된 화면의 단위 변경 거부를 현재 상태 재시도 안내로 표시한다", () => {
+    const onDocumentChange = vi.fn((): StudioBg3dMeasurementCommandResult => ({
+      ok: false, code: "source-changed", messageKo: "원본이 바뀌었습니다.",
+    }));
+    const { props } = renderPanel({ onDocumentChange });
+    fireEvent.click(screen.getByRole("radio", { name: "m" }));
+    expect(onDocumentChange).toHaveBeenCalledWith(expect.objectContaining({ unit: "m" }), props.document);
+    expect(screen.getByLabelText("측정 가이드 알림").textContent).toContain("현재 상태에서 다시 시도");
+    expect(screen.getByRole("radio", { name: "cm" }).getAttribute("aria-checked")).toBe("true");
   });
 
   it("disables every modifying control when the host scene is not editable", () => {
