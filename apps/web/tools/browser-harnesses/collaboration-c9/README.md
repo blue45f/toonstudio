@@ -19,6 +19,8 @@
 
 기존 소스 SHA·clean, 별도 QA cluster·계정, 실제 AppShell 초기화, 측정 중 GET/HEAD/OPTIONS 외 요청 차단, DB 불변 snapshot, production dist와 실제 요청 자산의 바이트 대조를 유지한다. 실제 자료에는 기존 revision/event/receipt의 절대값 0을 요구하지 않고 기록된 기준에서 전후 delta 0을 요구한다. 계정의 권한은 역할 이름으로 추정하지 않는다.
 
+자체 서명한 로컬 QA 이미지 저장소는 actorConfig의 `storage.certificatePath`에 공개 서버 인증서만 지정한다. 인증서는 승인된 `expectedPgData`의 부모인 QA infra 안에 있어야 하며, `storage.qaOnly: true`와 실제 원고의 HTTPS loopback 이미지 origin 일치, 유효 기간·호스트·leaf 인증서를 확인한다. 브라우저에는 이 인증서의 SPKI 한 개만 허용한다. 인증서 설정이 없으면 기본 시스템 신뢰를 사용하며, 운영체제 신뢰 저장소를 바꾸거나 전역 TLS 오류 무시는 사용하지 않는다. 결과에는 공개 인증서 hash와 신뢰 모드만 기록한다.
+
 실제 검수 경로의 `검수 제출본` 선택과 `고정 제출 원고 이미지` 패널을 사용한다. 패널 첫 목록·전체 목록·첫 이미지 decode는 같은 패널 열기의 별도 milestone이며 서로 겹친다. 명시한 나머지 순번은 실제 select 조작 뒤 decode한다. 정상 DOM을 읽기만 하며 원고·상태·가짜 이미지 요소를 주입하지 않는다.
 
 `img.decode()`, complete, natural 치수, mapping의 render 치수, 실제 viewport·상위 스크롤 영역 안의 가시성과 두 번째 rAF를 관측한다. 이것은 decode 관측이며 GPU 업로드 완료·정확한 paint·VRAM·RSS·peak·장시간 누수 증거가 아니다. JS heap/DOM은 열기 전·전체 목록과 첫 decode 뒤·나머지 순회 뒤를 구분한다.
