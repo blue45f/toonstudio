@@ -6,6 +6,7 @@ import { COUNTS, artifactEvidence, assertCounts, check, digest, gitEvidence, hos
 import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
 import { actualState, verifyActualProjectRead } from './actual-input.mjs';
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
+import { persistAndReportFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
 
 let stage = 'config';
 const result = { schemaVersion: 2, status: 'not-started', verdict: '제어 측정 준비물; 최종 C9 p95 판정 불가', samples: [], apiReads: [], networkReads: [], validation: [], bootstrap: [], assets: [], concurrentReads: [], forbiddenMutations: [], blockedExternalRequests: [], pageErrors: [], db: null };
@@ -545,25 +546,26 @@ async function main() {
   result.dataset = { name: state.dataset, counts: state.counts, sha256: state.aggregateSha256, projectId: state.projectId, workId: state.workId, source: state.fixtureLimit };
   const { chromium } = requireAt(config.repoRoot)('playwright');
   const browser = await chromium.launch({ headless: true });
-  result.browser = { engine: 'chromium', version: browser.version(), headless: true };
-  result.status = 'running';
-  await save();
-  try {
-    stage = 'browser-read-render-search-detail';
-    for (const profile of config.profiles) for (const actor of env.actors) await actorProfile(browser, env, state, actor, profile);
-    stage = 'distinct-account-concurrent-get';
-    await concurrentReads(browser, env, state);
-    stage = 'sample-completeness';
-    result.summary = summarize(config, env.actualInput);
-    check(result.forbiddenMutations.length === 0 && result.pageErrors.length === 0 && result.blockedExternalRequests.length === 0, 'mutation·pageerror·외부 요청이 발생했습니다.');
-    gitEvidence(config);
-    if (config.runtimeMode === 'production-preview') check(result.assets.length > 0 && result.assets.every((entry) => entry.verified === true), '실제 요청된 production 자산의 dist hash 검증이 누락됐습니다.');
-    result.status = 'controlled-measurement-complete';
-  } catch (error) {
-    result.originalFailureStage = stage;
-    throw error;
-  } finally {
-    await browser.close();
+  await runWithOwnedBrowser(browser, async () => {
+    try {
+      stage = 'record-browser-start';
+      result.browser = { engine: 'chromium', version: browser.version(), headless: true };
+      result.status = 'running';
+      await save();
+      stage = 'browser-read-render-search-detail';
+      for (const profile of config.profiles) for (const actor of env.actors) await actorProfile(browser, env, state, actor, profile);
+      stage = 'distinct-account-concurrent-get';
+      await concurrentReads(browser, env, state);
+      stage = 'sample-completeness';
+      result.summary = summarize(config, env.actualInput);
+      check(result.forbiddenMutations.length === 0 && result.pageErrors.length === 0 && result.blockedExternalRequests.length === 0, 'mutation·pageerror·외부 요청이 발생했습니다.');
+      gitEvidence(config);
+      if (config.runtimeMode === 'production-preview') check(result.assets.length > 0 && result.assets.every((entry) => entry.verified === true), '실제 요청된 production 자산의 dist hash 검증이 누락됐습니다.');
+    } catch (error) {
+      result.originalFailureStage = stage;
+      throw error;
+    }
+  }, async () => {
     stage = 'mutation-zero-after';
     const after = await snapshotDb(env, state.projectId);
     result.db.after = after;
@@ -572,7 +574,9 @@ async function main() {
     result.db.productionEventDelta = 0;
     result.db.productionReceiptDelta = 0;
     await save();
-  }
+  });
+  result.status = 'controlled-measurement-complete';
+  stage = 'record-final-result';
   result.finishedAt = new Date().toISOString();
   result.finalP95Verdict = { qualified: false, reasons: [env.actualInput ? '고정 원고의 명시 순번 decode 관측; VRAM·GPU peak·장시간 누수 판정 아님' : '대표 원고·실제 이미지 decode/VRAM 부하 없음', 'C9 전용 승인 p95/메모리 예산 없음', '로컬 단일 호스트 제어 측정; 실제 팀 파일럿 아님'], passBudgetInvented: false };
   await save();
@@ -580,6 +584,9 @@ async function main() {
 }
 main().catch(async (error) => {
   result.status = 'failed'; result.failedStage = stage; result.failure = { errorType: error.name, errorCode: error.code ?? null, validation: error.c9SafeMessage ?? null, note: 'cookie/password/signed URL/원고·외부 응답 본문·stack는 기록하지 않음' }; result.finishedAt = new Date().toISOString();
-  await save();
-  console.error(JSON.stringify({ status: 'failed', stage, originalFailureStage: result.originalFailureStage ?? null, errorType: error.name, errorCode: error.code ?? null, validation: error.c9SafeMessage ?? null, resultPath: resultPath ?? null })); process.exitCode = 1;
+  await persistAndReportFailure(save, (persistenceFailure) => {
+    process.exitCode = 1;
+    console.error(JSON.stringify({ status: 'failed', stage, originalFailureStage: result.originalFailureStage ?? null, errorType: error.name, errorCode: error.code ?? null, validation: error.c9SafeMessage ?? null, resultPath: resultPath ?? null,
+      failureRecordSaved: persistenceFailure === null, persistenceFailure }));
+  });
 });
