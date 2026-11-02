@@ -228,6 +228,7 @@ import {
 import {
   useStudioSharedDocumentRevalidation,
 } from "./studio-cuttoon-editor/runtime/useStudioSharedDocumentRevalidation";
+import { useStudioBg3dRoutedEntry } from "./studio-cuttoon-editor/runtime/useStudioBg3dRoutedEntry";
 import { remapStudioBg3dLtCopiedBundles } from "./bg3d/studio-bg3d-lt-copy-remap";
 import { useStudioPageClipboard } from "./studio-page-clipboard-controller";
 import { useStudioPageViewControls } from "./canvas/studio-page-view-controller";
@@ -2805,24 +2806,6 @@ export function StudioCuttoonEditor({
     previousRoutedSurfaceRef.current = studioRoute.surface;
     if (studioRoute.surface === "brushes") {
       void STUDIO_MOBILE_EDITING_DOCK_UI.loadStudioBrushStudio();
-    } else if (studioRoute.surface === "bg3d") {
-      // A UI opener may already have populated an existing layer's edit source before the
-      // routed-surface synchronizer upgrades canvas -> bg3d. Do not erase that source on the
-      // resulting route commit. Only a route-owned entry (deep link, Back/Forward) starts a
-      // fresh scene because no BG3D surface was open before the route became authoritative.
-      if (!routedSurfacePanelSyncRef.current.bg3d) {
-        setBg3dSeedTemplateId(null);
-        setBg3dSeedPrimitiveKind(null);
-        setBg3dInitialDataUrl(undefined);
-        setBg3dInitialScene(undefined);
-        setBg3dInitialElementId(undefined);
-      }
-      // The committed routed surface is the single interactive 3D owner. Retiring peers only
-      // after the URL changes avoids their close effects racing the requested 3D navigation.
-      setPoserVrmOpen(false);
-      setCharacterShaperOpen(false);
-      setMannequinPoserOpen(false);
-      setBg3dOpen(true);
     } else if (studioRoute.surface === "poser") {
       setBg3dOpen(false);
       setCharacterShaperOpen(false);
@@ -6580,6 +6563,20 @@ export function StudioCuttoonEditor({
       // 전이(edge)에만 반응한다 — 초기 마운트의 false 는 닫힘이 아니다.
     }, [surface, open]);
   }
+  useStudioBg3dRoutedEntry({
+    routedSurface: studioRoute.surface,
+    workHydrated, sourceHydrationPending, remoteSource: Boolean(workId || remixId),
+    autosaveChecked, hasAutosave,
+    wasOpen: () => routedSurfacePanelSyncRef.current.bg3d,
+    resetColdSource: () => {
+      setBg3dSeedTemplateId(null); setBg3dSeedPrimitiveKind(null);
+      setBg3dInitialDataUrl(undefined); setBg3dInitialScene(undefined); setBg3dInitialElementId(undefined);
+    },
+    openEntry: () => {
+      setPoserVrmOpen(false); setCharacterShaperOpen(false); setMannequinPoserOpen(false);
+      setBg3dOpen(true);
+    },
+  });
   useRoutedSurfacePanelSync("animation", timelineOpen);
   useRoutedSurfacePanelSync("comic", storyboardGridOpen);
   useRoutedSurfacePanelSync("bg3d", bg3dOpen);

@@ -11,6 +11,11 @@ const admission = readFileSync(
   "utf8",
 );
 
+const routedBg3dEntry = readFileSync(
+  new URL("./studio-cuttoon-editor/runtime/useStudioBg3dRoutedEntry.ts", import.meta.url),
+  "utf8",
+);
+
 describe("Studio 3D entry continuity boundary", () => {
   it("keeps seeded asset insertion on the routed open-edge path", () => {
     const start = host.indexOf("function openStudioObjectInsert(");
@@ -38,17 +43,36 @@ describe("Studio 3D entry continuity boundary", () => {
     expect(source).toContain("navigateStudio2dSurface(surface)");
   });
 
-  it("retires stale routed 3D peers only after the requested route owns presentation", () => {
-    const start = host.indexOf('} else if (studioRoute.surface === "bg3d")');
-    const end = host.indexOf('} else if (studioRoute.surface === "animation")', start);
+  it("BG 진입을 한 번 배선하고 새 hook의 route·준비 판정 뒤에만 다른 3D 표면을 닫는다", () => {
+    const start = host.indexOf("  useStudioBg3dRoutedEntry({");
+    const end = host.indexOf('  useRoutedSurfacePanelSync("animation"', start);
     const source = host.slice(start, end);
+    const peerStart = host.indexOf('} else if (studioRoute.surface === "poser")');
+    const peerEnd = host.indexOf('} else if (studioRoute.surface === "animation")', peerStart);
+    const peers = host.slice(peerStart, peerEnd);
+    const earlyStart = host.indexOf("const previousRoutedSurfaceRef");
+    const earlyEnd = host.indexOf("const hybridDccReturnFocusRef", earlyStart);
 
+    expect(start).toBeGreaterThan(host.indexOf("const [autosaveChecked,"));
+    expect(start).toBeGreaterThan(host.indexOf("const routedSurfacePanelSyncRef"));
+    expect(end).toBeGreaterThan(start);
+    expect(host.match(/useStudioBg3dRoutedEntry\(\{/gu)).toHaveLength(1);
+    expect(host.slice(earlyStart, earlyEnd)).not.toContain("setBg3dOpen(true)");
+    expect(source).toContain("routedSurface: studioRoute.surface");
+    expect(source).toContain("workHydrated, sourceHydrationPending");
+    expect(source).toContain("autosaveChecked, hasAutosave");
+    expect(source).toContain("wasOpen: () => routedSurfacePanelSyncRef.current.bg3d");
     expect(source).toContain("setPoserVrmOpen(false)");
     expect(source).toContain("setCharacterShaperOpen(false)");
     expect(source).toContain("setMannequinPoserOpen(false)");
-    expect(source).toContain("setBg3dOpen(false)");
-    expect(source).toContain("setPoserVrmOpen(true)");
-    expect(source).toContain("setCharacterShaperOpen(true)");
+    expect(source).toContain("setBg3dOpen(true)");
+    expect(routedBg3dEntry).toContain('routedSurface !== "bg3d"');
+    expect(routedBg3dEntry).toContain("if (!warmEntry && !sourceReady) return;");
+    expect(routedBg3dEntry).toContain("if (!warmEntry) resetColdSourceEvent();");
+    expect(routedBg3dEntry).toContain("openEntryEvent();");
+    expect(peers).toContain("setBg3dOpen(false)");
+    expect(peers).toContain("setPoserVrmOpen(true)");
+    expect(peers).toContain("setCharacterShaperOpen(true)");
   });
 
   it("uses the current route to admit exactly one heavyweight renderer", () => {
