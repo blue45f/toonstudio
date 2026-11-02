@@ -445,6 +445,7 @@ export function StudioBg3dSceneOutliner({
                 <li
                   key={row.key}
                   role="treeitem"
+                  data-studio-bg3d-node-id={item.id}
                   aria-level={row.depth + 1}
                   aria-selected={selected}
                   aria-expanded={hasChildren ? !collapsed : undefined}
