@@ -1,7 +1,48 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
-import { ACTUAL_PROFILE, actualCounts, validateActualInput, verifyActualProjectRead } from './actual-input.mjs';
+import { ACTUAL_PROFILE, actualCounts, restoreActorContext, validateActualInput, verifyActorSession, verifyActualProjectRead } from './actual-input.mjs';
+
+test('실제 로그인 세션을 세 계정의 별도 context에 복원하고 서버 GET으로 각각 확인한다', async () => {
+  const observed = [], contexts = [], states = ['owner', 'editor', 'viewer'].map((role) => ({ cookies: [{ name: 'fixture-session', value: role }], origins: [] }));
+  const browser = { newContext: async (options) => {
+    const id = options.storageState.cookies[0].value;
+    const context = { request: {
+      get: async (url) => { observed.push({ id, url }); return { ok: () => true, json: async () => ({ authenticated: true, user: { id } }) }; },
+      post: async () => assert.fail('읽기 측정에서 비밀번호 로그인을 반복하지 않는다'),
+    }, close: async () => assert.fail('정상 context의 수명은 호출자가 소유한다') };
+    contexts.push({ options, context }); return context;
+  } };
+  for (const [index, actorId] of ['owner', 'editor', 'viewer'].entries()) {
+    const context = await restoreActorContext(browser, { storageState: states[index], webOrigin: 'https://127.0.0.1:5191', actorId });
+    assert.equal(context, contexts[index].context);
+    assert.equal(contexts[index].options.storageState, states[index]);
+    assert.equal(contexts[index].options.serviceWorkers, 'block');
+  }
+  assert.equal(new Set(contexts.map((entry) => entry.context)).size, 3);
+  assert.deepEqual(observed, ['owner', 'editor', 'viewer'].map((id) => ({ id, url: 'https://127.0.0.1:5191/api/auth/session' })));
+});
+
+test('만료·다른 계정·HTTP 실패 세션은 승인하지 않고 만든 context를 닫는다', async () => {
+  for (const [ok, data] of [[false, null], [true, { authenticated: false }], [true, { authenticated: true, user: { id: 'other' } }]]) {
+    let closed = 0;
+    const context = { request: { get: async () => ({ ok: () => ok, json: async () => data }) }, close: async () => { closed++; } };
+    await assert.rejects(restoreActorContext({ newContext: async () => context }, { storageState: { cookies: [], origins: [] }, webOrigin: 'https://127.0.0.1:5191', actorId: 'owner' }));
+    assert.equal(closed, 1);
+  }
+});
+
+test('세션이 없으면 context를 만들지 않으며 확인 대상 계정도 필수다', async () => {
+  await assert.rejects(restoreActorContext({ newContext: async () => assert.fail('미인증 context 생성 금지') }, { webOrigin: 'https://127.0.0.1:5191', actorId: 'owner' }));
+  await assert.rejects(verifyActorSession({ request: { get: async () => assert.fail('대상 없는 세션 조회 금지') } }, 'https://127.0.0.1:5191', undefined));
+});
+
+test('세션 GET과 context 종료가 모두 실패해도 두 원인을 보존한다', async () => {
+  const failure = new Error('세션 연결 실패'), cleanupFailure = new Error('context 종료 실패');
+  const context = { request: { get: async () => { throw failure; } }, close: async () => { throw cleanupFailure; } };
+  await assert.rejects(restoreActorContext({ newContext: async () => context }, { storageState: { cookies: [], origins: [] }, webOrigin: 'https://127.0.0.1:5191', actorId: 'owner' }),
+    (error) => error instanceof AggregateError && error.cause === failure && error.errors[0] === failure && error.errors[1] === cleanupFailure);
+});
 
 const sha = 'a'.repeat(40);
 const stable = (value) => Array.isArray(value) ? `[${value.map(stable).join(',')}]`
