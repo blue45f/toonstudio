@@ -118,14 +118,14 @@ describe("StudioBg3dSceneOutliner", () => {
       return within(match);
     };
 
-    fireEvent.click(row().getByRole("button", { name: "3D 모델 1 숨기기", exact: true }));
+    fireEvent.click(row().getByRole("button", { name: "3D 모델 1 숨기기" }));
     expect(callbacks.onToggleVisibility).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: "desk", visible: true }));
     const hiddenItems = items.map((item) => item.id === "desk" ? { ...item, visible: false } : item);
     view.rerender(<StudioBg3dSceneOutliner
       controller={{ ...visibleController, items: hiddenItems, filteredItems: hiddenItems }}
       variant={variant}
     />);
-    fireEvent.click(row().getByRole("button", { name: "3D 모델 1 보이기", exact: true }));
+    fireEvent.click(row().getByRole("button", { name: "3D 모델 1 보이기" }));
     expect(callbacks.onToggleVisibility).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: "desk", visible: false }));
     expect(callbacks.onToggleVisibility).toHaveBeenCalledTimes(2);
   });
