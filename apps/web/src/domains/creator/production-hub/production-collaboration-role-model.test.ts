@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canonicalJson } from "@toonstudio/studio-project-model";
-import { projectScope, type ProductionProjectAggregate, type RoleAssignment } from "@toonstudio/core/production";
+import { evaluateRoleAssignmentPermissionGuardrails, productionRolePermissionProfile, projectScope, type ProductionProjectAggregate, type RoleAssignment } from "@toonstudio/core/production";
 import type { StudioTeamMember } from "../studio-team-client";
 import { productionReviewFlowFixture, REVIEW_FLOW_AT } from "./production-review-flow.test-fixture";
 import { buildProductionRoleSetupRequest, productionRoleLocalDateTime, productionRoleSetupConfirmed, productionRoleSetupDraft,
@@ -16,6 +16,30 @@ function build(aggregate: ProductionProjectAggregate, draft: ProductionRoleSetup
 }
 
 describe("실제 계정의 제작 역할 설정", () => {
+  it("미리보기는 신규 배정의 실제 저장 capability 빈 배열을 평가한다", () => {
+    const aggregate = productionReviewFlowFixture().base;
+    const draft = { ...prepared(aggregate), roleType: "line-assistant" as const };
+    const result = build(aggregate, draft);
+    const saved = result.command.assignments.find((entry) => entry.id === result.assignmentId);
+    expect(saved?.capabilities).toEqual(draft.capabilities);
+    expect(evaluateRoleAssignmentPermissionGuardrails({ ...draft, scope: projectScope(aggregate.projectId) }).missingDefaultCapabilities)
+      .toEqual(productionRolePermissionProfile(draft.roleType).defaultCapabilities);
+  });
+  it("명시적으로 선택한 직군 기본 capability만 저장하고 기존 승인권·계약·원본은 보존한다", () => {
+    const f = productionReviewFlowFixture();
+    const original = { ...f.artist, capabilities: ["review.approve", "workflow.configure"], agreementRevisionRef: "agreement:7", publicCreditRole: "원래 크레딧" };
+    const aggregate = { ...f.aggregate, assignments: f.aggregate.assignments.map((entry) => entry.id === original.id ? original : entry) };
+    const before = structuredClone(aggregate);
+    const capabilities = [...productionRolePermissionProfile("line-assistant").defaultCapabilities];
+    const draft = { ...prepared(aggregate, original), roleType: "line-assistant" as const, capabilities, lead: false };
+    const request = build(aggregate, draft, original);
+    expect(request.command.assignments.find((entry) => entry.id === original.id)).toMatchObject({ capabilities, lead: false, agreementRevisionRef: "agreement:7", publicCreditRole: "원래 크레딧" });
+    expect(request.command.authorityRules).toEqual(aggregate.authorityRules);
+    capabilities.push("tampered-after-save");
+    expect(request.command.assignments.find((entry) => entry.id === original.id)?.capabilities).not.toContain("tampered-after-save");
+    expect(aggregate).toEqual(before);
+  });
+
   it("실제 참여자와 역할을 함께 추가하고 기존 권한·헌장·입력 객체를 보존한다", () => {
     const aggregate = productionReviewFlowFixture().base, before = structuredClone(aggregate);
     const result = build(aggregate, prepared(aggregate));

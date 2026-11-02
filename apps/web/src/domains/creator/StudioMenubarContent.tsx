@@ -1,3 +1,4 @@
+import { useStudioMenubarRole } from "./studio-menubar-role/use-studio-menubar-role";
 import { StudioPsdSourceDownloads } from "./export/StudioPsdSourceDownloads";
 import { StudioDocumentChromeSlot } from "./studio-shell/StudioDocumentChromeSlot";
 import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
@@ -53,7 +54,6 @@ import {
   type SetStateAction,
 } from "react";
 import { createPortal } from "react-dom";
-
 import { STUDIO_CANVAS_WIDTH as CANVAS_W } from "./canvas/studio-canvas-constants";
 import { handleStudioHorizontalWheel } from "./studio-horizontal-wheel";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
@@ -93,7 +93,6 @@ import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import { StudioToolHintTarget } from "./StudioToolHint";
 import { StudioWorkspaceMenuGate } from "./StudioWorkspaceMenuGate";
 import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "./studio-shell/studio-menubar-status-slot";
-
 import type { StudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
 import type { ExportFormat } from "./export/studio-export";
 import type { PsdExportResult } from "./export/studio-psd-export";
@@ -1180,7 +1179,8 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   // 그룹당 펼침 행을 하나만 남긴다(프레젠테이션 모듈의 병합 노트 참조).
   const [menubarAdvancedSectionsExpanded, setMenubarAdvancedSectionsExpanded] =
     useState(false);
-  const mainMenuPresentation = createStudioMainMenuPresentation(studioMainMenuGroups, {
+  const activeRole = useStudioMenubarRole();
+  const mainMenuPresentation = createStudioMainMenuPresentation(studioMainMenuGroups, { activeRole, prioritizeRoleGroups: true,
     labels: {
       insert: compositeMenuLabel("insert"),
       create: compositeMenuLabel("create"),
