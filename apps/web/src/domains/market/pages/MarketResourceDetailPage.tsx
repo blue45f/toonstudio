@@ -48,8 +48,12 @@ export function MarketResourceDetailPage() {
   });
   useJsonLd(record ? marketResourceJsonLd(record) : null);
 
-  const related = useMarketResources(record ? { kind: record.kind, limit: 5, sort: "newest" } : null);
-  const relatedItems = related.items.filter((item) => item.id !== record?.id).slice(0, 4);
+  const related = useMarketResources(record ? { kind: record.kind, limit: 8, sort: "newest" } : null);
+  const relatedItems = related.items.filter((item) => item.id !== record?.id);
+  const publisherMore = useMarketResources(
+    record ? { publisher: record.publisher.id, limit: 5, sort: "newest" } : null,
+  );
+  const publisherItems = publisherMore.items.filter((item) => item.id !== record?.id).slice(0, 4);
 
   return (
     <Container size="wide" className="py-7 sm:py-10">
@@ -134,7 +138,13 @@ export function MarketResourceDetailPage() {
             ]}
           />
           <MarketProductionFitWorkbench record={record} />
-          <MarketResourceDetailArticle record={record} relatedItems={relatedItems} staleSavedAt={staleSavedAt} onRetry={reload} />
+          <MarketResourceDetailArticle
+            record={record}
+            relatedItems={relatedItems}
+            publisherItems={publisherItems}
+            staleSavedAt={staleSavedAt}
+            onRetry={reload}
+          />
           <MarketSceneCompletionJourney record={record} />
         </div>
       )}

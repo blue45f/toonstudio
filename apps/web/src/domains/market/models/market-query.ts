@@ -1,14 +1,19 @@
 import type {
+  CreatorMarketplaceResourceEngine,
   CreatorMarketplaceResourceKind,
   CreatorMarketplaceResourceLicense,
+  CreatorMarketplaceResourceProvenanceOrigin,
   CreatorMarketplaceResourceSort,
 } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS,
   CREATOR_MARKETPLACE_RESOURCE_QUERY_TAG_MAX_CHARACTERS,
+  CreatorMarketplaceResourceBooleanQuerySchema,
+  CreatorMarketplaceResourceEngineSchema,
   CreatorMarketplaceResourceKindSchema,
   CreatorMarketplaceResourceLicenseSchema,
+  CreatorMarketplaceResourceProvenanceOriginSchema,
   CreatorMarketplaceResourcePublisherQuerySchema,
   CreatorMarketplaceResourceSearchQuerySchema,
   CreatorMarketplaceResourceSortSchema,
@@ -21,7 +26,11 @@ export type MarketBrowseQueryParam =
   | "kind"
   | "license"
   | "publisher"
-  | "sort";
+  | "sort"
+  | "containsAi"
+  | "engine"
+  | "commercial"
+  | "origin";
 export type MarketBrowseQueryIssueCode = "duplicate" | "too-long" | "invalid";
 
 export interface MarketBrowseQueryIssue {
@@ -37,6 +46,10 @@ export interface MarketBrowseQueryValues {
   readonly license?: CreatorMarketplaceResourceLicense;
   readonly publisher?: string;
   readonly sort?: CreatorMarketplaceResourceSort;
+  readonly containsAi?: boolean;
+  readonly engine?: CreatorMarketplaceResourceEngine;
+  readonly commercial?: boolean;
+  readonly origin?: CreatorMarketplaceResourceProvenanceOrigin;
 }
 
 export interface ParsedMarketBrowseQuery {
@@ -53,6 +66,10 @@ const LABEL_BY_PARAM: Record<MarketBrowseQueryParam, string> = {
   license: "라이선스",
   publisher: "배급자",
   sort: "정렬 기준",
+  containsAi: "AI 사용 여부",
+  engine: "호환 엔진",
+  commercial: "상업 이용 가능 여부",
+  origin: "제작 출처",
 };
 
 function readSingleParam(
@@ -106,6 +123,10 @@ export function parseMarketBrowseQuery(
   const rawLicense = readSingleParam(searchParams, "license", issues);
   const rawPublisher = readSingleParam(searchParams, "publisher", issues);
   const rawSort = readSingleParam(searchParams, "sort", issues);
+  const rawContainsAi = readSingleParam(searchParams, "containsAi", issues);
+  const rawEngine = readSingleParam(searchParams, "engine", issues);
+  const rawCommercial = readSingleParam(searchParams, "commercial", issues);
+  const rawOrigin = readSingleParam(searchParams, "origin", issues);
 
   let search: string | undefined;
   if (rawSearch !== undefined) {
@@ -196,8 +217,71 @@ export function parseMarketBrowseQuery(
     });
   }
 
+  let containsAi: boolean | undefined;
+  if (rawContainsAi !== undefined) {
+    const parsed = CreatorMarketplaceResourceBooleanQuerySchema.safeParse(rawContainsAi);
+    if (parsed.success) containsAi = parsed.data;
+    else {
+      issues.push({
+        param: "containsAi",
+        code: "invalid",
+        message: "AI 사용 여부 조건 형식이 올바르지 않아 적용하지 않았어요.",
+      });
+    }
+  }
+
+  let engine: CreatorMarketplaceResourceEngine | undefined;
+  if (rawEngine !== undefined) {
+    const parsed = CreatorMarketplaceResourceEngineSchema.safeParse(rawEngine);
+    if (parsed.success) engine = parsed.data;
+    else {
+      issues.push({
+        param: "engine",
+        code: "invalid",
+        message: "지원하지 않는 호환 엔진이라 적용하지 않았어요.",
+      });
+    }
+  }
+
+  let commercial: boolean | undefined;
+  if (rawCommercial !== undefined) {
+    const parsed = CreatorMarketplaceResourceBooleanQuerySchema.safeParse(rawCommercial);
+    if (parsed.success) commercial = parsed.data;
+    else {
+      issues.push({
+        param: "commercial",
+        code: "invalid",
+        message: "상업 이용 가능 여부 조건 형식이 올바르지 않아 적용하지 않았어요.",
+      });
+    }
+  }
+
+  let origin: CreatorMarketplaceResourceProvenanceOrigin | undefined;
+  if (rawOrigin !== undefined) {
+    const parsed = CreatorMarketplaceResourceProvenanceOriginSchema.safeParse(rawOrigin);
+    if (parsed.success) origin = parsed.data;
+    else {
+      issues.push({
+        param: "origin",
+        code: "invalid",
+        message: "지원하지 않는 제작 출처라 적용하지 않았어요.",
+      });
+    }
+  }
+
   return {
-    values: { search, tag, kind, license, publisher, sort },
+    values: {
+      search,
+      tag,
+      kind,
+      license,
+      publisher,
+      sort,
+      ...(containsAi !== undefined ? { containsAi } : {}),
+      ...(engine !== undefined ? { engine } : {}),
+      ...(commercial !== undefined ? { commercial } : {}),
+      ...(origin !== undefined ? { origin } : {}),
+    },
     searchDraft: firstSearchDraft,
     issues,
   };

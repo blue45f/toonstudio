@@ -11,12 +11,19 @@ import type { CreatorMarketplaceOwnedRelease } from "@/shared/lib/creator-market
 import { CREATOR_MARKETPLACE_STARTER_RECORDS } from "@/shared/lib/creator-marketplace-starter-catalog";
 
 const mocks = vi.hoisted(() => ({
-  session: vi.fn(), list: vi.fn(), delist: vi.fn(), relist: vi.fn(),
+  session: vi.fn(),
+  list: vi.fn(),
+  history: vi.fn(),
+  publish: vi.fn(),
+  delist: vi.fn(),
+  relist: vi.fn(),
 }));
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: mocks.session }));
 vi.mock("@/platform/creator-marketplace-client", () => ({
   listCreatorMarketplaceOwnedHeads: mocks.list,
+  listCreatorMarketplaceOwnedHistory: mocks.history,
+  publishCreatorMarketplaceResource: mocks.publish,
   deleteCreatorMarketplaceResource: mocks.delist,
   relistCreatorMarketplaceResource: mocks.relist,
 }));

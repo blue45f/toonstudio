@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useMarketProductionProfile } from "../hooks/use-market-production-profile";
+import { useMarketResourceDetail } from "../hooks/use-market-resource-detail";
 import { useMarketResources } from "../hooks/use-market-resources";
 import {
   DEFAULT_MARKET_PRODUCTION_PROFILE,
@@ -17,6 +18,16 @@ import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-mark
 
 vi.mock("../hooks/use-market-production-profile", () => ({
   useMarketProductionProfile: vi.fn(),
+}));
+vi.mock("../hooks/use-market-resource-detail", () => ({
+  useMarketResourceDetail: vi.fn(() => ({
+    record: null,
+    loading: false,
+    error: null,
+    stale: false,
+    staleSavedAt: null,
+    reload: vi.fn(),
+  })),
 }));
 vi.mock("../hooks/use-market-resources", () => ({
   useMarketResources: vi.fn(),
@@ -39,6 +50,7 @@ vi.mock("@/shared/seo/use-document-title", () => ({
 }));
 
 const useProfile = vi.mocked(useMarketProductionProfile);
+const useDetail = vi.mocked(useMarketResourceDetail);
 const useResources = vi.mocked(useMarketResources);
 
 function record(
@@ -204,5 +216,75 @@ describe("MarketFitLabPage", () => {
       screen.getByRole("button", { name: "Blocked 장면에 올려보기" })
         .getAttribute("aria-pressed"),
     ).toBe("true");
+  });
+
+  it("supports ?slug=<packageId> from MarketResourceCard and ?slug=<uuid> deep links", () => {
+    const ready = record(
+      "Ready",
+      "123e4567-e89b-42d3-a456-426614174001",
+      "1.0.0",
+      "2026-08-01T01:00:00.000Z",
+    );
+    const blocked = record(
+      "Blocked",
+      "123e4567-e89b-42d3-a456-426614174002",
+      "9.0.0",
+      "2026-09-01T01:00:00.000Z",
+    );
+    const deepLinked = record(
+      "DeepLinked",
+      "123e4567-e89b-42d3-a456-426614174099",
+      "1.0.0",
+      "2026-09-02T01:00:00.000Z",
+    );
+
+    useProfile.mockReturnValue({
+      profile: mergeMarketProductionProfile(DEFAULT_MARKET_PRODUCTION_PROFILE, {
+        studioVersion: "1.4.0",
+      }),
+      hydrated: true,
+      persistenceAvailable: true,
+      updateProfile: vi.fn(),
+      replaceProfile: vi.fn(),
+      resetProfile: vi.fn(),
+    });
+    useResources.mockReturnValue({
+      items: [ready, blocked],
+      loading: false,
+      loadingMore: false,
+      error: null,
+      loadMoreError: null,
+      hasMore: false,
+      stale: false,
+      staleSavedAt: null,
+      loadMore: vi.fn(),
+      reload: vi.fn(),
+    });
+
+    const first = render(
+      <MemoryRouter initialEntries={[`/market/fit-lab?slug=${encodeURIComponent(blocked.packageId)}`]}>
+        <MarketFitLabPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("img", { name: /Blocked 리소스를 겹친 합성 미리보기/ })).toBeTruthy();
+    expect(useDetail).toHaveBeenCalledWith(undefined);
+    first.unmount();
+
+    useDetail.mockReturnValueOnce({
+      record: deepLinked,
+      loading: false,
+      error: null,
+      notFound: false,
+      staleSavedAt: null,
+      reload: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={[`/market/fit-lab?slug=${deepLinked.id}`]}>
+        <MarketFitLabPage />
+      </MemoryRouter>,
+    );
+    expect(useDetail).toHaveBeenCalledWith(deepLinked.id);
+    expect(screen.getByRole("img", { name: /DeepLinked 리소스를 겹친 합성 미리보기/ })).toBeTruthy();
   });
 });

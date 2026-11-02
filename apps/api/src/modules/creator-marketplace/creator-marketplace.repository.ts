@@ -42,6 +42,14 @@ import {
   CreatorMarketplaceResourceRelistRejectedError,
   CreatorMarketplaceResourceReportRejectedError,
 } from "./creator-marketplace.repository-contract";
+import {
+  appendMarketplaceFacetFilters,
+  creatorMarketplaceReleaseLockKey,
+  escapeLikePattern,
+  mapLifecycleStoredRow,
+  mapStoredRow,
+  newestCursorBoundary,
+} from "./creator-marketplace.repository-filters";
 
 import type {
   CreatorMarketplaceLifecycleStoredRow,
@@ -75,14 +83,8 @@ const absoluteCreatorMarketplaceHead = alias(
 );
 const creatorMarketplaceReporters = alias(users, "creator_marketplace_reporter");
 const creatorMarketplacePublishers = alias(users, "creator_marketplace_publisher");
-const CREATOR_MARKETPLACE_RELEASE_LOCK_NAMESPACE =
-  "toonspectrum:creator-marketplace-release:v1:";
 const CREATOR_MARKETPLACE_ORPHAN_DISMISS_LOCK_NAMESPACE =
   "toonspectrum:creator-marketplace:orphan-dismiss:v1:";
-
-function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/gu, (character) => `\\${character}`);
-}
 
 function relevanceScoreExpression(search: string): SQL<number> {
   const escaped = escapeLikePattern(search);
@@ -105,16 +107,6 @@ function relevanceScoreExpression(search: string): SQL<number> {
   )`;
 }
 
-function newestCursorBoundary(createdAt: Date, id: string): SQL {
-  return or(
-    lt(creatorMarketplaceResources.createdAt, createdAt),
-    and(
-      eq(creatorMarketplaceResources.createdAt, createdAt),
-      lt(creatorMarketplaceResources.id, id)
-    )
-  )!;
-}
-
 function absolutePackageHeadIsListed(): SQL {
   return sql<boolean>`coalesce((
     select ${absoluteCreatorMarketplaceHead.delistedAt} is null
@@ -126,58 +118,6 @@ function absolutePackageHeadIsListed(): SQL {
     order by ${absoluteCreatorMarketplaceHead.releaseOrdinal} desc
     limit 1
   ), false)`;
-}
-
-function mapStoredRow(row: {
-  id: string;
-  publisherId: string;
-  publisherName: string | null;
-  publisherAvatar: string | null;
-  manifest: CreatorMarketplaceResourceStoredRow["manifest"];
-  manifestHash: string;
-  manifestByteSize: number;
-  createdAt: Date;
-  updatedAt: Date;
-  relevanceScore?: number;
-}): CreatorMarketplaceResourceStoredRow {
-  return row;
-}
-
-function mapLifecycleStoredRow(row: {
-  id: string;
-  publisherId: string;
-  publisherName: string | null;
-  publisherAvatar: string | null;
-  manifest: CreatorMarketplaceResourceStoredRow["manifest"];
-  manifestHash: string;
-  manifestByteSize: number;
-  releaseOrdinal: number;
-  delistedAt: Date | null;
-  packageState: string;
-  packageRevision: number;
-  packageHiddenAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  relevanceScore?: number;
-}): CreatorMarketplaceLifecycleStoredRow {
-  if (row.packageState !== "active" && row.packageState !== "hidden") {
-    throw new Error("creator_marketplace_package_moderation_state_invalid");
-  }
-  return {
-    ...row,
-    packageState: row.packageState,
-    // Kept only for older owned/admin consumers; package state is the sole authority.
-    hidden: row.packageState === "hidden",
-  };
-}
-
-function creatorMarketplaceReleaseLockKey(
-  publisherId: string,
-  packageId: string
-): string {
-  return `${CREATOR_MARKETPLACE_RELEASE_LOCK_NAMESPACE}`
-    + `${publisherId.length}:${publisherId}`
-    + `${packageId.length}:${packageId}`;
 }
 
 export class DrizzleCreatorMarketplaceResourceRepository
@@ -222,13 +162,7 @@ export class DrizzleCreatorMarketplaceResourceRepository
     if (input.publisherId) {
       filters.push(eq(creatorMarketplaceResources.publisherId, input.publisherId));
     }
-    if (input.kind) filters.push(eq(creatorMarketplaceResources.kind, input.kind));
-    if (input.license) filters.push(eq(creatorMarketplaceResources.license, input.license));
-    if (input.tag) {
-      filters.push(
-        sql`${creatorMarketplaceResources.tags} @> ${JSON.stringify([input.tag])}::jsonb`
-      );
-    }
+    appendMarketplaceFacetFilters(filters, input);
     if (input.search) {
       const pattern = `%${escapeLikePattern(input.search)}%`;
       filters.push(
@@ -331,15 +265,7 @@ export class DrizzleCreatorMarketplaceResourceRepository
           ))
       ),
     ];
-    if (input.kind) filters.push(eq(creatorMarketplaceResources.kind, input.kind));
-    if (input.license) {
-      filters.push(eq(creatorMarketplaceResources.license, input.license));
-    }
-    if (input.tag) {
-      filters.push(
-        sql`${creatorMarketplaceResources.tags} @> ${JSON.stringify([input.tag])}::jsonb`
-      );
-    }
+    appendMarketplaceFacetFilters(filters, input);
     if (input.search) {
       const pattern = `%${escapeLikePattern(input.search)}%`;
       filters.push(

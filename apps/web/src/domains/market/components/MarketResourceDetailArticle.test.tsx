@@ -374,4 +374,26 @@ describe("MarketResourceDetailArticle actions and metadata", () => {
     expect(within(dialog).getByRole("link", { name: /네이버/u }).getAttribute("href"))
       .toContain(encodeURIComponent(`/market/resource/${record.id}`));
   });
+
+  it("exposes creator storefront link, follow toggle, SHA-256 spec audit, and license team-seat simulator", () => {
+    const record = marketRecord("asset");
+    renderDetail(record);
+
+    expect(screen.getByRole("link", { name: "배급자 스토어 열기" }).getAttribute("href"))
+      .toBe(`/market/creator/${record.publisher.id}`);
+
+    const followButton = screen.getByRole("button", { name: "배급자 팔로우" });
+    expect(followButton.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(followButton);
+    expect(screen.getByRole("button", { name: "배급자 팔로우 중" }).getAttribute("aria-pressed")).toBe("true");
+
+    expect(screen.getByTestId("market-detail-spec-audit")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "패키지 manifest SHA-256 해시 복사" })).toBeTruthy();
+    expect(screen.getByTestId("market-license-permission-matrix")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "출처 표기문 복사" })).toBeTruthy();
+
+    const seatsInput = screen.getByLabelText("동시 작업 인원");
+    fireEvent.change(seatsInput, { target: { value: "3" } });
+    expect(screen.getByText(/선택된 라이선스의 허용 인원/u)).toBeTruthy();
+  });
 });

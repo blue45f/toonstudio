@@ -1,9 +1,11 @@
 import {
+  CheckCircle2,
   CornerDownRight,
   Heart,
   LoaderCircle,
   MessageSquare,
   RefreshCw,
+  Search,
   Send,
   ShieldCheck,
   Sparkles,
@@ -108,8 +110,18 @@ function AuthorBadge({
 // `data` is still loading.
 const NO_COMMENTS: readonly CreatorMarketplaceSocialComment[] = Object.freeze([]);
 
+type CommentAnswerFilter = "all" | "answered" | "unanswered";
+
+function hasPublisherAnswer(node: CommentNode, publisherId?: string): boolean {
+  const isPublisherAuthor = (author: CreatorMarketplaceSocialComment["author"]) =>
+    author.badge === "publisher" || Boolean(publisherId && author.id === publisherId);
+  if (!node.deleted && isPublisherAuthor(node.author)) return true;
+  return node.replies.some((reply) => !reply.deleted && isPublisherAuthor(reply.author));
+}
+
 export function MarketCommentsSection({
   resourceId,
+  publisherId,
 }: MarketCommentsSectionProps) {
   const t = useT();
   const session = useSession();
@@ -130,13 +142,35 @@ export function MarketCommentsSection({
   const [commentInput, setCommentInput] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState("");
+  const [answerFilter, setAnswerFilter] = useState<CommentAnswerFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const comments = data?.comments ?? NO_COMMENTS;
-  const roots = useMemo(() => buildCommentTree(comments), [comments]);
+  const allRoots = useMemo(() => buildCommentTree(comments), [comments]);
+  const roots = useMemo(() => {
+    const normalized = searchQuery.trim().toLocaleLowerCase("ko-KR");
+    return allRoots.filter((node) => {
+      const answered = hasPublisherAnswer(node, publisherId);
+      if (answerFilter === "answered" && !answered) return false;
+      if (answerFilter === "unanswered" && answered) return false;
+      if (!normalized) return true;
+      const inRoot =
+        (!node.deleted && node.content.toLocaleLowerCase("ko-KR").includes(normalized)) ||
+        node.author.name.toLocaleLowerCase("ko-KR").includes(normalized);
+      if (inRoot) return true;
+      return node.replies.some(
+        (reply) =>
+          (!reply.deleted && reply.content.toLocaleLowerCase("ko-KR").includes(normalized)) ||
+          reply.author.name.toLocaleLowerCase("ko-KR").includes(normalized),
+      );
+    });
+  }, [allRoots, answerFilter, publisherId, searchQuery]);
 
   useEffect(() => {
     setCommentInput("");
     setReplyingTo(null);
     setReplyInput("");
+    setAnswerFilter("all");
+    setSearchQuery("");
   }, [resourceId]);
 
   async function submitComment(event: FormEvent): Promise<void> {
@@ -260,7 +294,48 @@ export function MarketCommentsSection({
         </div>
       ) : null}
 
-      <div className="mt-6 space-y-4">
+      {allRoots.length > 0 ? (
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Q&A 답변 상태 필터">
+            {([
+              { id: "all", label: "전체" },
+              { id: "answered", label: "배급자 답변 완료" },
+              { id: "unanswered", label: "답변 대기" },
+            ] as const).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={answerFilter === option.id}
+                onClick={() => setAnswerFilter(option.id)}
+                className={cn(
+                  "min-h-8 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors",
+                  answerFilter === option.id
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-line bg-panel text-fg-2 hover:text-fg",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className="relative min-w-[180px] flex-1 sm:max-w-[240px]">
+            <Search
+              className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-fg-3"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              aria-label="질문·답글 검색"
+              placeholder="질문·답글 키워드 검색…"
+              className="h-8 w-full rounded-lg border border-line bg-panel pl-8 pr-2.5 text-xs text-fg focus:border-accent focus:outline-none"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-4 space-y-4">
         {loadingInitial ? (
           <div role="status" className="space-y-3" aria-label={t("market.comments.loadingAria", "댓글 불러오는 중")}>
             {Array.from({ length: 2 }, (_, index) => (
@@ -294,6 +369,17 @@ export function MarketCommentsSection({
                         {comment.author.name}
                       </span>
                       <AuthorBadge badge={comment.author.badge} />
+                      {comment.replies.some(
+                        (reply) =>
+                          !reply.deleted &&
+                          (reply.author.badge === "publisher" ||
+                            Boolean(publisherId && reply.author.id === publisherId)),
+                      ) ? (
+                        <span className="inline-flex items-center gap-0.5 rounded bg-good/15 px-1.5 py-0.5 text-[0.62rem] font-semibold text-good">
+                          <CheckCircle2 className="size-2.5" aria-hidden="true" />
+                          배급자 답변 완료
+                        </span>
+                      ) : null}
                     </div>
                     <time dateTime={comment.createdAt} className="text-[0.65rem] text-fg-3">
                       {formatRelativeTime(comment.createdAt)}

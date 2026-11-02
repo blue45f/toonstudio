@@ -12,6 +12,7 @@ const LEGACY_STUDIO_EDITOR_QUERY_KEYS = new Set([
   "document",
   "demo",
   "installMarketResource",
+  "communityView",
 ]);
 
 export function readInitialDocumentPathname(): string | null {

@@ -12,15 +12,19 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigationType, useSearchParams } from "react-router-dom";
 
+import { MarketBrowseFacetBar } from "../components/MarketBrowseFacetBar";
 import { MarketCompareShelf } from "../components/MarketCompareShelf";
 import { MarketFamilyPicker } from "../components/MarketFamilyPicker";
+import { MarketQuickPreviewDialog } from "../components/MarketQuickPreviewDialog";
+import { MarketRecentlyViewedStrip } from "../components/MarketRecentlyViewedStrip";
 import { MarketViewToggle } from "../components/MarketViewToggle";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketSentenceSearch } from "../components/MarketSentenceSearch";
 import { MARKET_COMPARE_MAX_ITEMS, useMarketCompare } from "../hooks/use-market-compare";
+import { useMarketSearchHistory } from "../hooks/use-market-search-history";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { CampusObjectSource } from "@/shared/components/spatial-campus/CampusObjectSource";
@@ -37,6 +41,10 @@ import {
   parseMarketBrowseQuery,
   resolveMarketBrowseSort,
 } from "../models/market-query";
+import {
+  sortMarketResourcesForDisplay,
+  type MarketDisplaySortMode,
+} from "../models/market-similar-resources";
 
 import { Container } from "@/shared/components/section";
 import { ListTemplate } from "@/shared/components/layout/ListTemplate";
@@ -46,6 +54,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS,
   CreatorMarketplaceResourceSearchQuerySchema,
+  type CreatorMarketplaceResourceRecord,
 } from "@/shared/lib/creator-marketplace-resource-contract";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
@@ -94,6 +103,10 @@ function filterChipClass(active: boolean): string {
 export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boolean } = {}) {
   const t = useBilingual("MarketBrowsePage");
   const { compareCount, clearCompare } = useMarketCompare();
+  const { recordRecentSearch } = useMarketSearchHistory();
+  const [displaySort, setDisplaySort] = useState<MarketDisplaySortMode>("server");
+  const [quickPreviewRecord, setQuickPreviewRecord] =
+    useState<CreatorMarketplaceResourceRecord | null>(null);
   const marketBrowseDescription = t(
     "웹툰 템플릿, 2D·3D 에셋, 브러시, 팔레트와 필터를 제작 목적과 사용권으로 찾아보세요.",
     "Find webtoon templates, 2D/3D assets, brushes, palettes, and filters by production purpose and license.",
@@ -197,7 +210,19 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
   const resetFilters = useCallback(() => {
     cancelPendingSearchCommit();
     setDraftSearch("");
-    patchParams({ q: null, tag: null, publisher: null, kind: null, license: null, sort: null });
+    setDisplaySort("server");
+    patchParams({
+      q: null,
+      tag: null,
+      publisher: null,
+      kind: null,
+      license: null,
+      sort: null,
+      containsAi: null,
+      engine: null,
+      commercial: null,
+      origin: null,
+    });
   }, [cancelPendingSearchCommit, patchParams]);
 
   // 문장으로 읽은 조건은 기존 URL 필터를 그대로 바꾼다(새 API 없음). 대기 중이던 키워드 반영이 뒤늦게 덮어쓰지 않게 먼저 멈춘다.
@@ -206,7 +231,32 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
     patchParams({ ...patch });
   }, [cancelPendingSearchCommit, patchParams]);
 
-  const hasActiveFilters = Boolean(query.search || query.tag || query.publisher || activeKind || activeLicense);
+  const applyPresetSearch = useCallback((rawSearch: string) => {
+    cancelPendingSearchCommit();
+    const next = new URLSearchParams(rawSearch.startsWith("?") ? rawSearch.slice(1) : rawSearch);
+    const currentLayout = searchParamsRef.current.get("layout");
+    if (currentLayout === "list") next.set("layout", "list");
+    searchParamsRef.current = next;
+    setDraftSearch(next.get("q") ?? "");
+    setSearchParams(next, { replace: true });
+  }, [cancelPendingSearchCommit, setSearchParams]);
+
+  const hasActiveFilters = Boolean(
+    query.search ||
+      query.tag ||
+      query.publisher ||
+      activeKind ||
+      activeLicense ||
+      query.containsAi !== undefined ||
+      query.engine ||
+      query.commercial !== undefined ||
+      query.origin,
+  );
+
+  const visibleItems = useMemo(
+    () => sortMarketResourcesForDisplay(page.items, displaySort),
+    [displaySort, page.items],
+  );
 
   const selectFamily = (family: MarketResourceFamily | null) => {
     patchParams({ kind: family ? family.subcategories[0].kind : null, tag: null });
@@ -249,7 +299,10 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
               if (composingRef.current) return;
               cancelPendingSearchCommit();
               const parsed = CreatorMarketplaceResourceSearchQuerySchema.safeParse(draftSearch);
-              if (parsed.success) patchParams({ q: parsed.data || null, ...(parsed.data ? {} : { sort: null }) });
+              if (parsed.success) {
+                if (parsed.data) recordRecentSearch(parsed.data);
+                patchParams({ q: parsed.data || null, ...(parsed.data ? {} : { sort: null }) });
+              }
             }}
           >
             <div className="relative flex-1">
@@ -399,6 +452,15 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           </section>
         ) : null}
 
+        <MarketBrowseFacetBar
+          query={parsedUrlQuery.values}
+          hasActiveFilters={hasActiveFilters}
+          displaySort={displaySort}
+          onChangeDisplaySort={setDisplaySort}
+          onPatchParams={patchParams}
+          onApplyPresetSearch={applyPresetSearch}
+        />
+
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line/60 pt-4">
           {!hasInvalidQuery && !page.loading && !page.error ? (
             <p className="text-xs text-fg-3" aria-live="polite">
@@ -459,6 +521,10 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             {query.search ? <button type="button" aria-label={t(`검색: “${query.search}” 필터 제거`, `Remove search filter: “${query.search}”`)} onClick={clearSearch} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">{t("검색", "Search")}: “{query.search}” <X className="size-3" aria-hidden="true" /></button> : null}
             {query.tag ? <button type="button" aria-label={t(`#${query.tag} 태그 필터 제거`, `Remove #${query.tag} tag filter`)} onClick={() => patchParams({ tag: null })} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">#{query.tag} <X className="size-3" aria-hidden="true" /></button> : null}
             {activeLicense ? <button type="button" aria-label={t(`${MARKET_LICENSES.find((meta) => meta.license === activeLicense)?.label ?? activeLicense} 필터 제거`, `Remove license filter: ${MARKET_LICENSES.find((meta) => meta.license === activeLicense)?.label ?? activeLicense}`)} onClick={() => patchParams({ license: null })} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">{MARKET_LICENSES.find((meta) => meta.license === activeLicense)?.label} <X className="size-3" aria-hidden="true" /></button> : null}
+            {query.containsAi !== undefined ? <button type="button" aria-label={t(`${query.containsAi ? "AI 포함 공개" : "AI 미포함만"} 필터 제거`, "Remove AI disclosure filter")} onClick={() => patchParams({ containsAi: null })} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">{query.containsAi ? t("AI 포함 공개", "AI included") : t("AI 미포함만", "No-AI only")} <X className="size-3" aria-hidden="true" /></button> : null}
+            {query.commercial !== undefined ? <button type="button" aria-label={t(`${query.commercial ? "상업 연재 허용" : "비상업 전용"} 필터 제거`, "Remove commercial filter")} onClick={() => patchParams({ commercial: null })} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">{query.commercial ? t("상업 연재 허용", "Commercial OK") : t("비상업 전용", "Non-commercial")} <X className="size-3" aria-hidden="true" /></button> : null}
+            {query.engine ? <button type="button" aria-label={t(`렌더러: ${query.engine} 필터 제거`, `Remove engine filter: ${query.engine}`)} onClick={() => patchParams({ engine: null })} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">{t("렌더러", "Engine")}: {query.engine} <X className="size-3" aria-hidden="true" /></button> : null}
+            {query.origin ? <button type="button" aria-label={t(`출처: ${query.origin} 필터 제거`, `Remove origin filter: ${query.origin}`)} onClick={() => patchParams({ origin: null })} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg">{t("출처", "Origin")}: {query.origin} <X className="size-3" aria-hidden="true" /></button> : null}
             {query.publisher ? <button type="button" aria-label={t(`배급자: ${activePublisherLabel} 필터 제거`, `Remove publisher filter: ${activePublisherLabel}`)} onClick={() => patchParams({ publisher: null })} className="inline-flex min-h-9 max-w-full items-center gap-1 rounded-lg bg-raised px-2.5 text-fg-2 hover:text-fg"><span className="max-w-64 truncate">{t("배급자", "Publisher")}: {activePublisherLabel}</span><X className="size-3 shrink-0" aria-hidden="true" /></button> : null}
             <button type="button" onClick={resetFilters} className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-bad/10 px-2.5 text-bad hover:bg-bad/20"><RotateCcw className="size-3" aria-hidden="true" />{t("조건 초기화", "Reset filters")}</button>
           </div>
@@ -497,7 +563,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             <ul aria-busy={page.loading || undefined} className={`market-browse-results market-browse-results--${layout}`}>
               {page.loading && page.items.length === 0
                 ? Array.from({ length: PAGE_SIZE }, (_, index) => <li key={index} aria-hidden="true"><div className="skeleton aspect-[16/9] w-full rounded-t-xl" /><div className="space-y-2 rounded-b-xl border border-t-0 border-line bg-card p-3.5"><div className="skeleton h-4 w-4/5" /><div className="skeleton h-3 w-2/5" /></div></li>)
-                : page.items.map((record, index) => <li key={record.id} {...introItemProps(index)}><MarketResourceCard record={record} className="h-full" /></li>)}
+                : visibleItems.map((record, index) => <li key={record.id} {...introItemProps(index)}><MarketResourceCard record={record} onQuickPreview={setQuickPreviewRecord} className="h-full" /></li>)}
             </ul>
 
             {!page.loading && page.items.length === 0 ? (
@@ -507,7 +573,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
                 ) : activeKind ? (
                   <><div className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">{(() => { const Icon = marketKindMeta(activeKind).icon; return <Icon className="size-6" aria-hidden="true" />; })()}</div><h2 className="mt-4 text-base font-bold text-fg">{t(`아직 이 조건에 맞는 ${marketKindMeta(activeKind).label}이 없어요`, `No ${marketKindMeta(activeKind).label} matches these conditions yet`)}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2">{t("세부 카테고리를 바꾸거나 Studio에서 만든 리소스를 첫 번째로 공유해 보세요.", "Try a different subcategory, or be the first to share a resource you made in Studio.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 공유하기", "Share from Studio")}</Link><button type="button" onClick={() => patchParams({ kind: null, tag: null })} className={buttonClass({ variant: "outline", size: "sm" })}>{t("전체 리소스 보기", "View all resources")}</button></div></>
                 ) : (
-                  <><div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3"><PackageSearch className="size-6" aria-hidden="true" /></div><h2 className="mt-4 text-base font-bold text-fg">{t("조건에 맞는 공유 리소스가 없어요", "No shared resources match these conditions")}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2">{t("공개 마켓에 없는 소재는 기본 무료 제작 소재에서 찾아보세요. 회원가입 없이 원본 파일과 사용 조건을 확인할 수 있습니다.", "For materials not on the public market, try the built-in free production materials. You can check source files and terms without signing up.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}</Link>{hasActiveFilters ? <button type="button" onClick={resetFilters} className={buttonClass({ variant: "outline", size: "sm" })}><RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />{t("조건 초기화", "Reset filters")}</button> : null}</div></>
+                  <><div className="mx-auto flex size-12 items-center justify-center rounded-full bg-raised text-fg-3"><PackageSearch className="size-6" aria-hidden="true" /></div><h2 className="mt-4 text-base font-bold text-fg">{t("조건에 맞는 공유 리소스가 없어요", "No shared resources match these conditions")}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-2">{t("공개 마켓에 없는 소재는 기본 무료 제작 소재에서 찾아보세요. 회원가입 없이 원본 파일과 사용 조건을 확인할 수 있습니다.", "For materials not on the public market, try the built-in free production materials. You can check source files and terms without signing up.")}</p><div className="mt-6 flex flex-wrap justify-center gap-2.5"><Link href="/studio/assets?view=essentials" className={buttonClass({ variant: "solid", size: "sm" })}>{t("기본 무료 소재 사용하기", "Use built-in free materials")}</Link><Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "solid", size: "sm" })}><Upload className="mr-1.5 size-3.5" aria-hidden="true" />{t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}</Link>{hasActiveFilters ? <button type="button" onClick={resetFilters} className={buttonClass({ variant: "outline", size: "sm" })}><RotateCcw className="mr-1.5 size-3.5" aria-hidden="true" />{t("모든 조건 초기화", "Reset all filters")}</button> : null}</div></>
                 )}
               </div>
             ) : null}
@@ -520,8 +586,13 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           </>
         )}
         </ListTemplate>
+        <MarketRecentlyViewedStrip className="mt-8" />
         <MarketCompareShelf />
       </Container>
+      <MarketQuickPreviewDialog
+        record={quickPreviewRecord}
+        onClose={() => setQuickPreviewRecord(null)}
+      />
     </div>
   );
 }

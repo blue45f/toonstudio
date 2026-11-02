@@ -9,22 +9,23 @@ import {
   Download,
   FileJson,
   Heart,
-  Layers,
-  Lightbulb,
   LogIn,
-  Shield,
   ShieldCheck,
   Sliders,
   Sparkles,
+  Store,
   Upload,
+  UserCheck,
+  UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useMarketDeviceInstall } from "../hooks/use-market-device-install";
+import { useMarketFollowedCreators } from "../hooks/use-market-followed-creators";
 import { useMarketLibrary } from "../hooks/use-market-library";
+import { useMarketRecentlyViewed } from "../hooks/use-market-recently-viewed";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
 import {
-  formatMarketByteSize,
   formatMarketDate,
   marketKindMeta,
   marketLicenseMeta,
@@ -49,17 +50,21 @@ import { MarketAssetRecipePreview } from "./MarketAssetRecipePreview";
 import { MarketBrushPreview } from "./MarketBrushPreview";
 import { MarketCommentsSection } from "./MarketCommentsSection";
 import { MarketCompareToggle } from "./MarketCompareToggle";
+import { MarketDetailLicenseAdvisor } from "./MarketDetailLicenseAdvisor";
+import { MarketDetailPackageInspector } from "./MarketDetailPackageInspector";
+import { MarketDetailRelatedShelves } from "./MarketDetailRelatedShelves";
 import { MarketDetailStickyBar } from "./MarketDetailStickyBar";
+import { MarketDetailUsageGuide } from "./MarketDetailUsageGuide";
 import { MarketDeviceInstallStatus } from "./MarketDeviceInstallStatus";
 import { MarketEditResourceModal } from "./MarketEditResourceModal";
 import { MarketFilterPreview } from "./MarketFilterPreview";
 import { MarketInstallJourney } from "./MarketInstallJourney";
 import { MarketPalettePreview } from "./MarketPalettePreview";
-import { MarketResourceCard } from "./MarketResourceCard";
 import { MarketResourceCover } from "./MarketResourceCover";
 import { MarketResourceReleaseHistory } from "./MarketResourceReleaseHistory";
 import { MarketReviewsSection } from "./MarketReviewsSection";
 import { MarketScene3dPreview } from "./MarketScene3dPreview";
+import { MarketSocialProofBar } from "./MarketSocialProofBar";
 import { MarketTemplatePreview } from "./MarketTemplatePreview";
 import { MarketWebtoon3dViewerModal } from "./MarketWebtoon3dViewerModal";
 import { MarketWebtoonSpecBadge } from "./MarketWebtoonSpecBadge";
@@ -88,12 +93,6 @@ const ENGINE_LABELS: Record<string, string> = {
   three: "Three.js",
 };
 
-const DELIVERY_LABELS: Record<string, string> = {
-  "portable-json": "portable JSON",
-  "procedural-recipe": "절차형 레시피",
-  "builtin-ref": "스튜디오 내장 참조",
-};
-
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3 py-2.5">
@@ -118,6 +117,7 @@ function downloadMetadataSnapshot(record: CreatorMarketplaceResourceRecord): voi
 export interface MarketResourceDetailArticleProps {
   record: CreatorMarketplaceResourceRecord;
   relatedItems: readonly CreatorMarketplaceResourceRecord[];
+  publisherItems?: readonly CreatorMarketplaceResourceRecord[];
   staleSavedAt: string | null;
   onRetry: () => void;
 }
@@ -126,6 +126,7 @@ export interface MarketResourceDetailArticleProps {
 export function MarketResourceDetailArticle({
   record,
   relatedItems,
+  publisherItems = [],
   staleSavedAt,
   onRetry,
 }: MarketResourceDetailArticleProps) {
@@ -161,8 +162,11 @@ export function MarketResourceDetailArticle({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const { isAcquired } = useMarketLibrary();
   const { isWishlisted, toggleWishlist } = useMarketWishlist();
+  const { recordRecentlyViewed } = useMarketRecentlyViewed();
+  const { isFollowingCreator, toggleFollowCreator } = useMarketFollowedCreators();
   const acquired = isAcquired(currentRecord.id);
   const wishlisted = isWishlisted(currentRecord.id);
+  const followingPublisher = isFollowingCreator(record.publisher.id);
   // 게스트 획득 사전 고지(P-3): 획득 버튼 근처 고지와 같은 판정을 공유한다.
   // 게스트의 획득 클릭은 실패할 획득 모달 대신 로그인 절차로 연결한다.
   const guestLoginState = useMarketGuestLoginNoticeState();
@@ -186,6 +190,10 @@ export function MarketResourceDetailArticle({
   useEffect(() => {
     setSelectedPreviewIndex(0);
   }, [record.id]);
+
+  useEffect(() => {
+    recordRecentlyViewed(record);
+  }, [record, recordRecentlyViewed]);
   const studioActionLabel = studioHandoff.actionLabel;
   const studioActionSummary = studioHandoff.summary;
 
@@ -246,6 +254,7 @@ export function MarketResourceDetailArticle({
             </button>
           ) : null}
         </div>
+        <MarketSocialProofBar resourceId={currentRecord.id} />
           </div>
           {/* 상세 첫 화면의 주인공은 리소스 자체의 아트다 — 카드와 같은 커버를 큰 무대로 재사용한다. */}
           <div aria-hidden="true" className="group relative aspect-[16/9] overflow-hidden rounded-xl border border-line/70 lg:aspect-[4/3]">
@@ -355,213 +364,13 @@ export function MarketResourceDetailArticle({
             </section>
           )}
 
-          {/* Contents Section */}
-          <section aria-labelledby="market-entries-heading">
-            <div className="flex items-center justify-between">
-              <h2 id="market-entries-heading" className="eyebrow text-fg-3">
-                {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "패키지 항목 · ")}<span className="numeral tnum">{record.entries.length}</span>{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "개")}</h2>
-              <span className="text-xs text-fg-3">
-                {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "manifest 크기: ")}{formatMarketByteSize(record.manifestByteSize)}
-              </span>
-            </div>
-            <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-card">
-              {record.entries.map((entry) => (
-                <li key={entry.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-fg">{entry.name}</p>
-                    <p className="truncate text-xs text-fg-3">{entry.id}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded bg-raised px-1.5 py-0.5 text-[0.65rem] text-fg-2">
-                      {DELIVERY_LABELS[entry.delivery.mode] ?? entry.delivery.mode}
-                    </span>
-                    <span className="numeral tnum text-xs text-fg-3">
-                      {entry.delivery.byteSize > 0 ? formatMarketByteSize(entry.delivery.byteSize) : translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "내장 참조")}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <MarketDetailPackageInspector record={record} />
 
           <MarketResourceReleaseHistory resourceId={record.id} />
 
-          {/* Pro Artist Usage Guide & Settings (Clip Studio Assets Benchmark) */}
-          <section aria-labelledby="market-usage-guide-heading" className="rounded-xl border border-line bg-card p-5">
-            <h2 id="market-usage-guide-heading" className="flex items-center gap-2 text-sm font-bold text-fg">
-              <Lightbulb className="h-4 w-4 text-accent" aria-hidden="true" />
-              {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "프로 작가 소재 활용 팁 & 추천 설정")}</h2>
-            <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
-              {record.kind === "3d-asset" ? (
-                <>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Sliders className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "3D 카메라 & 구도 잡기")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "Three.js 뷰포트에서 마우스 우클릭으로 회전하고 스크롤로 줌인/줌아웃하여 하이앵글·로우앵글 투시도를 쉽게 잡을 수 있습니다.")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Layers className="h-4 w-4 shrink-0 text-cool mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "선화(Line) 추출 가이드")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "외곽선 잉크 두께를 1.5~2.0px로 설정하면 일반 G펜 브러시 펜선과 이질감 없이 자연스럽게 블렌딩됩니다.")}</p>
-                    </div>
-                  </div>
-                </>
-              ) : record.kind === "3d-preset" ? (
-                <>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Sliders className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배경 조명 & 엠비언트 매칭")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "스토리 시간대에 맞춰 주간/노을/야간 조명을 선택한 후 Studio 컬러 필터와 결합해 통일된 무드를 연출하세요.")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Layers className="h-4 w-4 shrink-0 text-cool mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "소점 및 컷 스냅")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "3D 씬의 소점 가이드를 컷 박스에 맞추어 인물과 배경 사이의 투시 왜곡을 방지합니다.")}</p>
-                    </div>
-                  </div>
-                </>
-              ) : record.kind === "brush" ? (
-                <>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Sliders className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "추천 필압 및 손떨림 보정")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "선화 작업 시 추천 브러시 크기는 8~14px이며 손떨림 보정 15 내외에서 가장 깔끔한 펜선이 나옵니다.")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Layers className="h-4 w-4 shrink-0 text-cool mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "레이어 블렌딩 모드")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "음영 채색 시 [곱하기(Multiply)] 모드에 불투명도 70~80%를 적용하면 부드러운 입체감을 얻을 수 있습니다.")}</p>
-                    </div>
-                  </div>
-                </>
-              ) : record.kind === "palette" ? (
-                <>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Sliders className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배색 황금비율 적용")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "주조색(Base) 60%, 보조색(Sub) 30%, 포인트 강조색(Accent) 10% 비율로 채색하면 안정된 톤 밸런스가 완성됩니다.")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Layers className="h-4 w-4 shrink-0 text-cool mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "Studio 스와치 등록")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "설치 즉시 스튜디오 컬러 피커의 팔레트 목록에 자동 등록되어 스포이드 없이 1클릭으로 색상을 추출할 수 있습니다.")}</p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Sliders className="h-4 w-4 shrink-0 text-accent mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "Studio 원터치 핸드오프")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "스튜디오 캔버스에서 해당 소재를 불러오면 즉시 해당 컷 레이어에 최적화되어 배치됩니다.")}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                    <Layers className="h-4 w-4 shrink-0 text-cool mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "모바일 스크롤 최적화")}</p>
-                      <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "국내 주요 웹툰 플랫폼의 세로 스크롤 규격(720px~1080px 너비)에 완벽하게 호환됩니다.")}</p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
+          <MarketDetailUsageGuide kind={record.kind} />
 
-          {/* Decision evidence from the immutable public manifest. */}
-          <section aria-labelledby="market-trust-guarantee-heading" className="rounded-xl border border-line bg-card p-5">
-            <h2 id="market-trust-guarantee-heading" className="flex items-center gap-2 text-sm font-bold text-fg">
-              <ShieldCheck className="h-4 w-4 text-good" aria-hidden="true" />
-              {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "게시 manifest 기반 권리·호환성 확인")}</h2>
-            <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
-              {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "아래 내용은 배급자가 게시한 현재 릴리스의 선언입니다. 독립적인 법률·성능 보증으로 해석하지 말고 실제 프로젝트 적용 전에 세부 조건을 확인하세요.")}</p>
-            <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
-              <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-good" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-fg">{license.label}</p>
-                  <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "사용 조건: ")}{license.summary}</p>
-                  <p className="mt-1 break-words text-[0.65rem] leading-relaxed text-fg-3">
-                    {record.attributionText ? formatI18nTemplate(translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "출처 표기: {v0}"), { v0: String(record.attributionText) }) : translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "게시된 출처 표기문 없음")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                <Layers className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-fg">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "Studio 호환 선언")}</p>
-                  <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                    {record.compatibility.engines.map((engine) => ENGINE_LABELS[engine] ?? engine).join(", ")}
-                  </p>
-                  <p className="mt-1 text-[0.65rem] text-fg-3">{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "최소 Studio v")}{record.minimumStudioVersion}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-fg">
-                    {record.containsAi ? translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "AI 사용 포함으로 공개") : translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "AI 사용 미포함으로 공개")}
-                  </p>
-                  <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                    {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자 manifest의 공개값이며 ToonStudio의 독립 감정이나 NoAI 보증 배지가 아닙니다.")}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5 rounded-lg border border-line/60 bg-panel/50 p-3">
-                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-cool" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-fg">
-                    {record.provenance.origin === "original" ? translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자 직접 제작으로 공개") : translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "외부 허용 출처로 공개")}
-                  </p>
-                  {record.provenance.origin === "permissive" ? (
-                    <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                      {record.provenance.sourceName} ·{" "}
-                      <a
-                        href={record.provenance.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline decoration-line-strong underline-offset-2 hover:text-accent"
-                      >
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "원본 확인")}</a>
-                      {" · "}
-                      <a
-                        href={record.provenance.sourceLicenseUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline decoration-line-strong underline-offset-2 hover:text-accent"
-                      >
-                        {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "원본 사용권")}</a>
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-[0.68rem] leading-relaxed text-fg-3">
-                      {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자가 원본 제작자로 선언한 릴리스입니다.")}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
+          <MarketDetailLicenseAdvisor record={record} />
 
           {/* Artist Reviews & Ratings (Real interactive submission & feedback) */}
           <MarketReviewsSection resourceId={currentRecord.id} />
@@ -590,20 +399,11 @@ export function MarketResourceDetailArticle({
             </section>
           ) : null}
 
-          {/* Related Resources */}
-          {relatedItems.length > 0 ? (
-            <section aria-labelledby="market-related-heading">
-              <h2 id="market-related-heading" className="eyebrow text-fg-3">
-                {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "같은 종류 최신 리소스")}</h2>
-              <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                {relatedItems.map((item) => (
-                  <li key={item.id}>
-                    <MarketResourceCard record={item} className="h-full" />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+          <MarketDetailRelatedShelves
+            record={record}
+            relatedItems={relatedItems}
+            publisherItems={publisherItems}
+          />
         </div>
 
         <div className="space-y-4 lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)] lg:self-start">
@@ -728,7 +528,7 @@ export function MarketResourceDetailArticle({
 
           <dl className="divide-y divide-line rounded-xl border border-line bg-card px-4 py-1">
             <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자")}>
-              <span className="flex max-w-full flex-col items-end gap-0.5">
+              <span className="flex max-w-full flex-col items-end gap-1">
                 <span className="inline-flex max-w-full items-center">
                   {record.publisher.avatar ? (
                     <img
@@ -744,6 +544,35 @@ export function MarketResourceDetailArticle({
                   >
                     {record.publisher.name}
                   </Link>
+                </span>
+                <span className="flex flex-wrap items-center justify-end gap-1.5">
+                  <Link
+                    href={`/market/creator/${encodeURIComponent(record.publisher.id)}`}
+                    className="inline-flex min-h-6 items-center gap-1 rounded border border-line bg-panel px-2 py-0.5 text-[0.68rem] font-semibold text-fg transition-colors hover:border-accent/50 hover:text-accent"
+                  >
+                    <Store className="size-3 text-accent" aria-hidden="true" />
+                    {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자 스토어 열기")}
+                  </Link>
+                  <button
+                    type="button"
+                    aria-pressed={followingPublisher}
+                    onClick={() => toggleFollowCreator(record.publisher)}
+                    className={cn(
+                      "inline-flex min-h-6 items-center gap-1 rounded border px-2 py-0.5 text-[0.68rem] font-semibold transition-colors",
+                      followingPublisher
+                        ? "border-accent/50 bg-accent/15 text-accent"
+                        : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
+                    )}
+                  >
+                    {followingPublisher ? (
+                      <UserCheck className="size-3" aria-hidden="true" />
+                    ) : (
+                      <UserPlus className="size-3" aria-hidden="true" />
+                    )}
+                    {followingPublisher
+                      ? translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자 팔로우 중")
+                      : translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "배급자 팔로우")}
+                  </button>
                 </span>
                 <Link
                   href={formatI18nTemplate(translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "en", "/market/browse?publisher={v0}"), { v0: String(encodeURIComponent(record.publisher.id)) })}

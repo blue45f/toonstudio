@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -81,5 +81,24 @@ describe("MarketComparePage", () => {
     expect(screen.queryByRole("button", { name: "다음 열 보기" })).toBeNull();
     expect(screen.getByRole("link", { name: "에셋 탐색" }).getAttribute("href"))
       .toBe("/market/browse");
+  });
+
+  it("renders production profile fit evaluation row, Fit Lab link, and Markdown export", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    renderPage();
+
+    expect(screen.getByRole("rowheader", { name: /내 작업 프로필 적합성/u })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "적합성 프로필 설정" }).getAttribute("href"))
+      .toBe("/market/fit-lab");
+
+    fireEvent.click(screen.getByRole("button", { name: "비교표 Markdown 복사" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(String(writeText.mock.calls[0]?.[0] ?? "")).toContain("| 비교 항목 |");
+    expect(String(writeText.mock.calls[0]?.[0] ?? "")).toContain("내 작업 프로필 적합성");
+    expect(screen.getByRole("button", { name: "비교표 복사됨" })).toBeTruthy();
   });
 });

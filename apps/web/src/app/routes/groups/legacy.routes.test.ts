@@ -13,6 +13,7 @@ const EXPECTED_LEGACY_REDIRECTS = [
   { id: "legacy-principles", path: "/principles", target: "/about/principles" },
   { id: "legacy-story", path: "/story", target: "/story-lab" },
   { id: "legacy-canvas", path: "/canvas", target: "/studio/canvas" },
+  { id: "legacy-marketplace", path: "/marketplace", target: "/market" },
 ] as const;
 
 describe("레거시 단축 URL redirect", () => {

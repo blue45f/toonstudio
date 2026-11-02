@@ -283,4 +283,44 @@ describe("CreatorMarketplaceService.list 공식 스타터 병합", () => {
       ServiceUnavailableException
     );
   });
+
+  it("containsAi, engine, commercial, origin 패싯 필터를 스타터와 저장소 입력에 동일하게 적용한다", async () => {
+    const { service, repository } = makeService([]);
+    const threeItems = await collectAll(service, {
+      containsAi: false,
+      engine: "three",
+      commercial: true,
+      origin: "original",
+    });
+    expect(threeItems.length).toBeGreaterThan(0);
+    expect(repository.list).toHaveBeenCalledWith(
+      expect.objectContaining({
+        containsAi: false,
+        engine: "three",
+        commercial: true,
+        origin: "original",
+      }),
+    );
+    const expectedIds = CREATOR_MARKETPLACE_STARTER_RECORDS.filter(
+      (record) =>
+        record.containsAi === false
+        && record.compatibility.engines.includes("three")
+        && record.license !== "cc-by-nc-4.0"
+        && record.provenance.origin === "original",
+    ).map((record) => record.id);
+    expect(threeItems.map((item) => item.id).sort()).toEqual([...expectedIds].sort());
+  });
+
+  it("패싯 조건이 바뀐 뒤 이전 커서를 재사용하면 queryHash 불일치로 400을 반환한다", async () => {
+    const { service } = makeService([]);
+    const firstPage = await service.list(
+      query({ limit: 5, containsAi: false, engine: "canvas2d" }),
+    );
+    expect(firstPage.nextCursor).toBeTruthy();
+    await expect(
+      service.list(
+        query({ limit: 5, containsAi: false, engine: "three", cursor: firstPage.nextCursor! }),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

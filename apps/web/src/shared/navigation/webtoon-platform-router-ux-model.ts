@@ -542,6 +542,7 @@ const STUDIO_SUBNAV_PATHS = new Set([
 const ASSET_SUBNAV_PATHS = new Set([
   "/market", "/marketplace", "/market/browse", "/market/library",
   "/market/wishlist", "/market/seller", "/market/fit", "/market/compare",
+  "/market/publish", "/market/manage", "/market/orders",
   "/studio/assets", "/studio/brushes", "/assets", "/brushes",
   "/research", "/research/scene-3d", "/research/character-3d",
 ]);
@@ -565,7 +566,7 @@ export function resolveContextualSubNavForPath(rawPathname: string): ContextualS
     return CONTEXTUAL_SUBNAV_GROUPS[2] ?? null;
   }
   if (STUDIO_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[3] ?? null;
-  if (ASSET_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
+  if (ASSET_SUBNAV_PATHS.has(pathname) || pathname.startsWith("/market/resource/") || pathname.startsWith("/market/creator/")) return CONTEXTUAL_SUBNAV_GROUPS[4] ?? null;
   if (LIBRARY_SUBNAV_PATHS.has(pathname)) return CONTEXTUAL_SUBNAV_GROUPS[5] ?? null;
   return null;
 }

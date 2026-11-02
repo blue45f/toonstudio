@@ -1,16 +1,21 @@
 import {
   ArrowUpRight,
+  Edit,
   Eye,
   EyeOff,
+  History,
   LoaderCircle,
   PackagePlus,
   Palette,
   RefreshCw,
   ShieldAlert,
+  Store,
   UserCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { MarketEditResourceModal } from "../components/MarketEditResourceModal";
+import { MarketplaceAuthoringInstallAction } from "../components/MarketplaceAuthoringInstallAction";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketSellerCenterTabs } from "../components/MarketSellerCenterTabs";
 import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
@@ -30,7 +35,11 @@ import {
 } from "../models/market-kind";
 import { marketStudioResourceHref } from "../models/market-studio-handoff";
 
-import type { CreatorMarketplaceOwnedRelease } from "@/shared/lib/creator-marketplace-resource-contract";
+import {
+  CreatorMarketplaceResourcePublisherQuerySchema,
+  type CreatorMarketplaceOwnedRelease,
+  type CreatorMarketplaceResourceRecord,
+} from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -47,6 +56,7 @@ import {
 import {
   deleteCreatorMarketplaceResource,
   listCreatorMarketplaceOwnedHeads,
+  listCreatorMarketplaceOwnedHistory,
   relistCreatorMarketplaceResource,
 } from "@/platform/creator-marketplace-client";
 
@@ -126,6 +136,15 @@ export function MarketOwnedResourcesPage() {
   const [selectedIds, setSelectedIds] = useState<readonly string[]>([]);
   const [bulkPending, setBulkPending] = useState<OwnedBulkAction | null>(null);
   const [confirmBulkUnlist, setConfirmBulkUnlist] = useState(false);
+  const [releaseTarget, setReleaseTarget] = useState<CreatorMarketplaceResourceRecord | null>(null);
+  const [openHistoryPkg, setOpenHistoryPkg] = useState<string | null>(null);
+  const [historyByPkg, setHistoryByPkg] = useState<
+    Readonly<Record<string, readonly CreatorMarketplaceOwnedRelease[]>>
+  >({});
+  const [historyLoadingPkg, setHistoryLoadingPkg] = useState<string | null>(null);
+  const validStorefrontId = userId && CreatorMarketplaceResourcePublisherQuerySchema.safeParse(userId).success
+    ? userId.toLowerCase()
+    : null;
   const generationRef = useRef(0);
   const firstPageControllerRef = useRef<AbortController | null>(null);
   const loadMoreControllerRef = useRef<AbortController | null>(null);
@@ -150,6 +169,10 @@ export function MarketOwnedResourcesPage() {
     setSelectedIds([]);
     setBulkPending(null);
     setConfirmBulkUnlist(false);
+    setReleaseTarget(null);
+    setOpenHistoryPkg(null);
+    setHistoryByPkg({});
+    setHistoryLoadingPkg(null);
     setError(null);
     setMessage(confirmation);
 
@@ -290,6 +313,29 @@ export function MarketOwnedResourcesPage() {
     setSelectedIds(selectionState === "all" ? [] : selectableIds);
   }
 
+  async function toggleHistory(packageId: string): Promise<void> {
+    if (openHistoryPkg === packageId) {
+      setOpenHistoryPkg(null);
+      return;
+    }
+    setOpenHistoryPkg(packageId);
+    if (historyByPkg[packageId]) return;
+    setHistoryLoadingPkg(packageId);
+    try {
+      const res = await listCreatorMarketplaceOwnedHistory({ packageId, limit: 10 });
+      setHistoryByPkg((prev) => ({ ...prev, [packageId]: res.items }));
+    } catch (caught) {
+      setError(
+        marketAuthorityErrorMessage(
+          caught,
+          t("릴리스 이력을 불러오지 못했습니다.", "Could not load release history."),
+        ),
+      );
+    } finally {
+      setHistoryLoadingPkg((curr) => (curr === packageId ? null : curr));
+    }
+  }
+
   async function runBulk(action: OwnedBulkAction): Promise<void> {
     if (!userId || bulkBusy) return;
     const plan = action === "relist" ? relistPlan : unlistPlan;
@@ -339,10 +385,21 @@ export function MarketOwnedResourcesPage() {
             {t("판매자 센터의 패키지 관리 탭입니다. 서버가 보유한 패키지 head와 릴리스 상태만 표시합니다. 브라우저 임시 레코드로 공개 상태나 immutable 버전을 변경하지 않습니다.", "This is the package management tab of the seller center. Only the package heads and release states held by the server are shown. Browser temporary records cannot change listing status or immutable versions.")}
           </p>
         </div>
-        <Link href="/market/publish" className={buttonClass({ variant: "solid", size: "sm" })}>
-          <PackagePlus className="size-4" aria-hidden="true" />
-          {t("새 릴리스 게시", "Publish a new release")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {validStorefrontId ? (
+            <Link
+              href={`/market/creator/${validStorefrontId}`}
+              className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            >
+              <Store className="size-4" aria-hidden="true" />
+              {t("내 배급자 스토어", "My storefront")}
+            </Link>
+          ) : null}
+          <Link href="/market/publish" className={buttonClass({ variant: "solid", size: "sm" })}>
+            <PackagePlus className="size-4" aria-hidden="true" />
+            {t("새 릴리스 게시", "Publish a new release")}
+          </Link>
+        </div>
       </header>
 
       <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3 text-sm text-fg-2">
@@ -529,85 +586,128 @@ export function MarketOwnedResourcesPage() {
                   <li
                     key={record.id}
                     {...introItemProps(index)}
-                    className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 p-4"
                   >
-                    <div className="flex min-w-0 flex-1 items-start gap-3.5">
-                      <input
-                        type="checkbox"
-                        className="mt-1 size-4 shrink-0"
-                        checked={selectedIds.includes(record.id)}
-                        disabled={moderated || bulkBusy}
-                        onChange={() => toggleSelected(record.id)}
-                        aria-label={t(`${record.name} 선택`, `Select ${record.name}`)}
-                        title={moderated
-                          ? t("관리자 숨김 상태는 제작자가 변경할 수 없습니다.", "A hidden-by-admin state cannot be changed by the creator.")
-                          : undefined}
-                      />
-                      <span className="relative size-11 shrink-0 overflow-hidden rounded-xl" aria-hidden="true">
-                        <MarketResourceCover record={record} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="truncate text-sm font-bold text-fg">{record.name}</h2>
-                          <span className="numeral tnum rounded bg-accent/15 px-1.5 py-0.5 text-[0.62rem] font-bold text-accent">
-                            v{record.resourceVersion}
-                          </span>
-                          <span className={cn("rounded px-1.5 py-0.5 text-[0.62rem] font-bold", state.className)}>
-                            {state.label}
-                          </span>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 flex-1 items-start gap-3.5">
+                        <input
+                          type="checkbox"
+                          className="mt-1 size-4 shrink-0"
+                          checked={selectedIds.includes(record.id)}
+                          disabled={moderated || bulkBusy}
+                          onChange={() => toggleSelected(record.id)}
+                          aria-label={t(`${record.name} 선택`, `Select ${record.name}`)}
+                          title={moderated
+                            ? t("관리자 숨김 상태는 제작자가 변경할 수 없습니다.", "A hidden-by-admin state cannot be changed by the creator.")
+                            : undefined}
+                        />
+                        <span className="relative size-11 shrink-0 overflow-hidden rounded-xl" aria-hidden="true">
+                          <MarketResourceCover record={record} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="truncate text-sm font-bold text-fg">{record.name}</h2>
+                            <span className="numeral tnum rounded bg-accent/15 px-1.5 py-0.5 text-[0.62rem] font-bold text-accent">
+                              v{record.resourceVersion}
+                            </span>
+                            <span className={cn("rounded px-1.5 py-0.5 text-[0.62rem] font-bold", state.className)}>
+                              {state.label}
+                            </span>
+                          </div>
+                          <p className="mt-1 line-clamp-1 text-xs text-fg-3">
+                            {record.description || t("설명 없음", "No description")}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[0.68rem] text-fg-3">
+                            <span>{kind.label}</span>
+                            <span>{license.label}</span>
+                            <span>{t(`${record.entries.length}개 항목`, `${record.entries.length} entries`)}</span>
+                            <span>manifest {formatMarketByteSize(record.manifestByteSize)}</span>
+                            <span>{state.detail}</span>
+                          </div>
                         </div>
-                        <p className="mt-1 line-clamp-1 text-xs text-fg-3">
-                          {record.description || t("설명 없음", "No description")}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[0.68rem] text-fg-3">
-                          <span>{kind.label}</span>
-                          <span>{license.label}</span>
-                          <span>{t(`${record.entries.length}개 항목`, `${record.entries.length} entries`)}</span>
-                          <span>manifest {formatMarketByteSize(record.manifestByteSize)}</span>
-                          <span>{state.detail}</span>
-                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={moderated || bulkBusy}
+                          onClick={() => setReleaseTarget(record)}
+                          className={buttonClass({ variant: "outline", size: "sm" })}
+                        >
+                          <Edit className="size-3.5" aria-hidden="true" />
+                          {t("새 버전 배포", "New release")}
+                        </button>
+                        <button
+                          type="button"
+                          aria-expanded={openHistoryPkg === record.packageId}
+                          onClick={() => void toggleHistory(record.packageId)}
+                          className={buttonClass({ variant: "ghost", size: "sm" })}
+                        >
+                          <History className="size-3.5" aria-hidden="true" />
+                          {t("릴리스 이력", "History")}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={moderated || pendingId !== null || bulkPending !== null}
+                          onClick={() => void toggleListing(item)}
+                          title={moderated
+                            ? t("관리자 숨김 상태는 제작자가 변경할 수 없습니다.", "A hidden-by-admin state cannot be changed by the creator.")
+                            : undefined}
+                          className={buttonClass({ variant: "outline", size: "sm" })}
+                        >
+                          {pendingId === record.id ? (
+                            <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+                          ) : item.delistedAt ? (
+                            <Eye className="size-3.5" aria-hidden="true" />
+                          ) : (
+                            <EyeOff className="size-3.5" aria-hidden="true" />
+                          )}
+                          {item.delistedAt ? t("재공개", "Relist") : t("공개 목록에서 내리기", "Remove from public list")}
+                        </button>
+
+                        {publiclyAvailable ? (
+                          <>
+                            <Link
+                              href={`/market/resource/${record.id}`}
+                              className={buttonClass({ variant: "ghost", size: "sm" })}
+                            >
+                              {t("상세", "Details")}
+                              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                            </Link>
+                            <Link
+                              href={marketStudioResourceHref(record.id)}
+                              className={buttonClass({ variant: "ghost", size: "sm" })}
+                            >
+                              <Palette className="size-3.5" aria-hidden="true" />
+                              Studio
+                            </Link>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={moderated || pendingId !== null || bulkPending !== null}
-                        onClick={() => void toggleListing(item)}
-                        title={moderated
-                          ? t("관리자 숨김 상태는 제작자가 변경할 수 없습니다.", "A hidden-by-admin state cannot be changed by the creator.")
-                          : undefined}
-                        className={buttonClass({ variant: "outline", size: "sm" })}
-                      >
-                        {pendingId === record.id ? (
-                          <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
-                        ) : item.delistedAt ? (
-                          <Eye className="size-3.5" aria-hidden="true" />
+                    {openHistoryPkg === record.packageId ? (
+                      <div className="rounded-xl border border-line bg-panel/70 px-3.5 py-2.5 text-xs">
+                        {historyLoadingPkg === record.packageId ? (
+                          <p className="text-fg-3">{t("버전 이력을 불러오는 중…", "Loading release history…")}</p>
                         ) : (
-                          <EyeOff className="size-3.5" aria-hidden="true" />
+                          <ul className="space-y-1.5">
+                            {(historyByPkg[record.packageId] ?? []).map((rel) => (
+                              <li key={rel.resource.id} className="flex flex-wrap items-center justify-between gap-2 text-fg-2">
+                                <span className="font-mono font-bold text-fg">
+                                  #{rel.releaseOrdinal} · v{rel.resource.resourceVersion}
+                                </span>
+                                <span className="truncate text-fg-3">{rel.resource.name}</span>
+                                <span className="text-[0.68rem] text-fg-3">
+                                  {rel.delistedAt ? t("비공개", "Unlisted") : t("기록 유지", "Recorded")} · {rel.resource.createdAt.slice(0, 10)}
+                                </span>
+                              </li>
+                            ))}
+                           </ul>
                         )}
-                        {item.delistedAt ? t("재공개", "Relist") : t("공개 목록에서 내리기", "Remove from public list")}
-                      </button>
-
-                      {publiclyAvailable ? (
-                        <>
-                          <Link
-                            href={`/market/resource/${record.id}`}
-                            className={buttonClass({ variant: "ghost", size: "sm" })}
-                          >
-                            {t("상세", "Details")}
-                            <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                          </Link>
-                          <Link
-                            href={marketStudioResourceHref(record.id)}
-                            className={buttonClass({ variant: "ghost", size: "sm" })}
-                          >
-                            <Palette className="size-3.5" aria-hidden="true" />
-                            Studio
-                          </Link>
-                        </>
-                      ) : null}
-                    </div>
+                        <MarketplaceAuthoringInstallAction record={record} className="mt-3" />
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
@@ -628,6 +728,23 @@ export function MarketOwnedResourcesPage() {
                 {loadingMore ? t("불러오는 중", "Loading") : t("더 보기", "Load more")}
               </button>
             </div>
+          ) : null}
+          {releaseTarget ? (
+            <MarketEditResourceModal
+              open
+              mode="server"
+              record={releaseTarget}
+              onClose={() => setReleaseTarget(null)}
+              onSaved={(published) => {
+                setReleaseTarget(null);
+                void loadFirstPage(
+                  t(
+                    `“${published.name}” v${published.resourceVersion} 새 릴리스를 게시했습니다.`,
+                    `Published new release v${published.resourceVersion} of “${published.name}”.`,
+                  ),
+                );
+              }}
+            />
           ) : null}
         </>
       )}

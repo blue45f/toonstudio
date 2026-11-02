@@ -37,4 +37,6 @@ export const legacyRedirectRoutes = defineAppRoutes([
   { id: "legacy-story", path: "/story", element: <Navigate to="/story-lab" replace /> },
   // 모바일 탭 "캔버스" -> Studio 캔버스 에디터 (`/studio/*` 라우터가 처리).
   { id: "legacy-canvas", path: "/canvas", element: <Navigate to="/studio/canvas" replace /> },
+  // 구 마켓 단축 주소 -> 소재 마켓 홈.
+  { id: "legacy-marketplace", path: "/marketplace", element: <Navigate to="/market" replace /> },
 ]);

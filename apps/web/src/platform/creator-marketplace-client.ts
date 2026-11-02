@@ -15,10 +15,12 @@ import type {
   CreatorMarketplaceResourceModerationAction,
   CreatorMarketplaceResourceModerationQueuePage,
   CreatorMarketplaceResourceModerationReceipt,
+  CreatorMarketplaceResourceEngine,
   CreatorMarketplaceResourceKind,
   CreatorMarketplaceResourceLicense,
   CreatorMarketplaceResourceListPage,
   CreatorMarketplaceResourceManifest,
+  CreatorMarketplaceResourceProvenanceOrigin,
   CreatorMarketplaceResourceRecord,
   CreatorMarketplaceResourceReportReason,
   CreatorMarketplaceResourceReportReceipt,
@@ -36,8 +38,10 @@ import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_TAG_MAX_CHARACTERS,
   CREATOR_MARKETPLACE_RUNTIME_BY_KIND,
   CreatorMarketplacePortablePayloadSchema,
+  CreatorMarketplaceResourceEngineSchema,
   CreatorMarketplaceResourceKindSchema,
   CreatorMarketplaceResourceLicenseSchema,
+  CreatorMarketplaceResourceProvenanceOriginSchema,
   CreatorMarketplaceResourcePublisherQuerySchema,
   CreatorMarketplaceResourceSearchQuerySchema,
   CreatorMarketplaceResourceSortSchema,
@@ -65,6 +69,10 @@ export interface CreatorMarketplaceListParams {
   license?: CreatorMarketplaceResourceLicense;
   publisher?: string;
   sort?: CreatorMarketplaceResourceSort;
+  containsAi?: boolean;
+  engine?: CreatorMarketplaceResourceEngine;
+  commercial?: boolean;
+  origin?: CreatorMarketplaceResourceProvenanceOrigin;
 }
 
 export interface CreatorMarketplaceReportInput {
@@ -115,7 +123,16 @@ export {
 export class InvalidCreatorMarketplaceListQueryError extends TypeError {
   readonly field: keyof Pick<
     CreatorMarketplaceListParams,
-    "search" | "tag" | "kind" | "license" | "publisher" | "sort"
+    | "search"
+    | "tag"
+    | "kind"
+    | "license"
+    | "publisher"
+    | "sort"
+    | "containsAi"
+    | "engine"
+    | "commercial"
+    | "origin"
   >;
 
   constructor(
@@ -202,6 +219,30 @@ export function normalizeCreatorMarketplaceListParams(
     invalidListQuery("sort", "관련도순 정렬에는 검색어가 필요합니다.");
   }
 
+  if (params.containsAi !== undefined && typeof params.containsAi !== "boolean") {
+    invalidListQuery("containsAi", "AI 사용 여부 조건 형식이 올바르지 않습니다.");
+  }
+
+  const rawEngine = typeof params.engine === "string" ? params.engine.trim() : params.engine;
+  const parsedEngine = rawEngine === undefined
+    ? undefined
+    : CreatorMarketplaceResourceEngineSchema.safeParse(rawEngine);
+  if (parsedEngine && !parsedEngine.success) {
+    invalidListQuery("engine", "지원하지 않는 호환 엔진입니다.");
+  }
+
+  if (params.commercial !== undefined && typeof params.commercial !== "boolean") {
+    invalidListQuery("commercial", "상업 이용 가능 여부 조건 형식이 올바르지 않습니다.");
+  }
+
+  const rawOrigin = typeof params.origin === "string" ? params.origin.trim() : params.origin;
+  const parsedOrigin = rawOrigin === undefined
+    ? undefined
+    : CreatorMarketplaceResourceProvenanceOriginSchema.safeParse(rawOrigin);
+  if (parsedOrigin && !parsedOrigin.success) {
+    invalidListQuery("origin", "지원하지 않는 제작 출처입니다.");
+  }
+
   return {
     limit: params.limit,
     cursor: params.cursor,
@@ -213,6 +254,10 @@ export function normalizeCreatorMarketplaceListParams(
       ? parsedPublisher.data.toLowerCase()
       : undefined,
     sort: parsedSort?.success ? parsedSort.data : undefined,
+    ...(params.containsAi !== undefined ? { containsAi: params.containsAi } : {}),
+    ...(parsedEngine?.success ? { engine: parsedEngine.data } : {}),
+    ...(params.commercial !== undefined ? { commercial: params.commercial } : {}),
+    ...(parsedOrigin?.success ? { origin: parsedOrigin.data } : {}),
   };
 }
 

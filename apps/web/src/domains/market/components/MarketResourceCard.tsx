@@ -1,8 +1,13 @@
-import { ArrowUpRight, Heart, Layers } from "lucide-react";
+import { ArrowUpRight, Eye, Heart, Layers, ShieldCheck, Store } from "lucide-react";
 
 import { useCommerceConfig } from "../hooks/use-commerce-config";
 import { useMarketWishlist } from "../hooks/use-market-wishlist";
-import { formatMarketDate, marketKindMeta, marketLicenseMeta } from "../models/market-kind";
+import {
+  formatMarketByteSize,
+  formatMarketDate,
+  marketKindMeta,
+  marketLicenseMeta,
+} from "../models/market-kind";
 import { palettePreviewColors } from "../models/market-preview";
 import { resolveMarketCardPrice } from "../models/market-price";
 
@@ -15,25 +20,27 @@ import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-mark
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
-
 interface MarketResourceCardProps {
   readonly record: CreatorMarketplaceResourceRecord;
-  className?: string;
+  readonly className?: string;
+  readonly onQuickPreview?: (record: CreatorMarketplaceResourceRecord) => void;
 }
 
 /**
- * 마켓 리소스 카드: 커버 아트·가격·라이선스·사전점검 배지와 함께
- * 카드 푸터에서 후보 비교(MarketCompareToggle) 및 원고 위 시험(Fit Lab)으로 바로 연결한다.
+ * 마켓 리소스 카드: 커버 아트·가격·라이선스·No-AI 공개·용량·사전점검 배지와 함께
+ * 배급자 스토어 링크, 빠른 미리보기, 후보 비교(MarketCompareToggle), 원고 위 시험(Fit Lab)으로 바로 연결한다.
  */
-export function MarketResourceCard({ record, className }: MarketResourceCardProps) {
+export function MarketResourceCard({
+  record,
+  className,
+  onQuickPreview,
+}: MarketResourceCardProps) {
   const kind = marketKindMeta(record.kind);
   const license = marketLicenseMeta(record.license);
   const KindIcon = kind.icon;
   const paletteColors = palettePreviewColors(record);
   const { isWishlisted, toggleWishlist, storageError } = useMarketWishlist();
   const { config, isPaidMode } = useCommerceConfig();
-  // 가격 1차 정보 (P-4): 목록 계약에 리소스별 가격이 없어 공개 설정의 표준
-  // 가격으로만 표시하고, 미확정이면 금액을 지어내지 않는다 (market-price 모델).
   const price = resolveMarketCardPrice({
     isPaidMode,
     defaultPriceKrw: config?.defaultMarketPriceKrw,
@@ -51,8 +58,6 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
         className,
       )}
     >
-      {/* 소재 아트가 주인공인 커버 (BLUEPRINT §6.3: 마켓 변형 16:10).
-          가격·라이선스 배지는 이 아트 위에 얹어 목록에서도 바로 비교하게 한다. */}
       <div
         className={cn(
           "relative flex aspect-[16/10] items-end justify-between overflow-hidden p-3.5",
@@ -85,6 +90,16 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
               aria-hidden="true"
             />
           </button>
+          {onQuickPreview ? (
+            <button
+              type="button"
+              onClick={() => onQuickPreview(record)}
+              aria-label={`${record.name} 빠른 미리보기`}
+              className="flex size-11 items-center justify-center rounded-full bg-card/85 text-fg-2 shadow-sm backdrop-blur-sm transition-colors hover:bg-card hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            >
+              <Eye className="size-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
 
         <span className="relative z-[2] rounded-md bg-canvas px-1.5 py-1 font-display text-xs font-semibold uppercase tracking-[0.06em] text-fg shadow-sm">
@@ -151,14 +166,31 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
             </span>
           )}
         </div>
+
         <div className="flex items-center justify-between gap-2 text-xs text-fg-2">
-          <span className="truncate">{record.publisher.name}</span>
-          <span className="numeral tnum shrink-0 rounded bg-raised px-1.5 py-0.5 text-xs font-semibold text-fg-2">
-            v{record.resourceVersion}
+          <Link
+            href={`/market/creator/${encodeURIComponent(record.publisher.id)}`}
+            className="inline-flex min-w-0 items-center gap-1 truncate font-medium text-fg-2 transition-colors hover:text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          >
+            <Store className="size-3 shrink-0 text-fg-3" aria-hidden="true" />
+            <span className="truncate">{record.publisher.name}</span>
+          </Link>
+          <span className="numeral tnum shrink-0 rounded bg-raised px-1.5 py-0.5 text-[11px] font-semibold text-fg-2">
+            v{record.resourceVersion} · {formatMarketByteSize(record.manifestByteSize)}
           </span>
         </div>
+
         <div className="flex flex-wrap items-center gap-1.5">
           <MarketProductionFitBadge record={record} showCounts />
+          {!record.containsAi ? (
+            <span
+              data-market-no-ai-disclosed="true"
+              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-good/30 bg-good/10 px-2 py-0.5 text-[0.68rem] font-semibold text-good"
+            >
+              <ShieldCheck className="size-3" aria-hidden="true" />
+              AI 미포함 공개
+            </span>
+          ) : null}
           {record.compatibility.engines.length > 0 ? (
             <span
               data-market-studio-ready="true"
@@ -168,17 +200,23 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
             </span>
           ) : null}
         </div>
-        {storageError ? <p role="alert" className="rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-fg">{storageError}</p> : null}
+
+        {storageError ? (
+          <p role="alert" className="rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-fg">
+            {storageError}
+          </p>
+        ) : null}
+
         <div className="mt-auto flex items-center gap-1.5 pt-1.5 text-xs text-fg-2">
           <span className="inline-flex min-h-6 items-center rounded bg-accent px-2 font-semibold text-on-accent">
             {kind.label}
           </span>
-          {/* 라이선스 라벨은 아트 위 배지로 올라갔고, 여기서는 조건 요약만 남긴다. */}
           <span className="truncate" title={license.summary}>
             {license.summary}
           </span>
           <ArrowUpRight className="ml-auto h-3.5 w-3.5 shrink-0 text-fg-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden="true" />
         </div>
+
         {record.tags.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {record.tags.slice(0, 3).map((tag) => (
@@ -188,14 +226,27 @@ export function MarketResourceCard({ record, className }: MarketResourceCardProp
             ))}
           </div>
         ) : null}
+
         <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5 border-t border-line/60 pt-2">
           <MarketCompareToggle record={record} />
-          <Link
-            href={`/market/fit-lab?slug=${encodeURIComponent(resourceSlug)}`}
-            className="inline-flex min-h-8 items-center rounded-lg border border-line bg-panel px-2.5 py-1 text-xs font-semibold text-accent transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-          >
-            원고 위 시험 (Fit Lab)
-          </Link>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {onQuickPreview ? (
+              <button
+                type="button"
+                onClick={() => onQuickPreview(record)}
+                className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-line bg-card px-2 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              >
+                <Eye className="size-3" aria-hidden="true" />
+                미리보기
+              </button>
+            ) : null}
+            <Link
+              href={`/market/fit-lab?slug=${encodeURIComponent(resourceSlug)}`}
+              className="inline-flex min-h-8 items-center rounded-lg border border-line bg-panel px-2.5 py-1 text-xs font-semibold text-accent transition-colors hover:border-accent/50 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            >
+              원고 위 시험 (Fit Lab)
+            </Link>
+          </div>
         </div>
         <time dateTime={record.updatedAt} className="text-xs text-fg-2">
           {formatMarketDate(record.updatedAt)} 업데이트

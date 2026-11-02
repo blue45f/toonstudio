@@ -11,7 +11,9 @@ import { sha256HexPortable } from "./sha256-portable";
 
 import type {
   CreatorMarketplaceJsonValue,
+  CreatorMarketplaceResourceEngine,
   CreatorMarketplaceResourceKind,
+  CreatorMarketplaceResourceProvenanceOrigin,
   CreatorMarketplaceResourceRecord,
 } from "./creator-marketplace-resource-contract";
 
@@ -721,6 +723,10 @@ export interface FilterStarterRecordsOptions {
   license?: string;
   tag?: string;
   publisher?: string;
+  containsAi?: boolean;
+  engine?: CreatorMarketplaceResourceEngine;
+  commercial?: boolean;
+  origin?: CreatorMarketplaceResourceProvenanceOrigin;
   sort?: "newest" | "relevance";
 }
 
@@ -743,6 +749,20 @@ export function filterStarterMarketplaceResources(
   }
   if (options.license) {
     filtered = filtered.filter((r) => r.license === options.license);
+  }
+  if (options.containsAi !== undefined) {
+    filtered = filtered.filter((r) => r.containsAi === options.containsAi);
+  }
+  if (options.engine) {
+    filtered = filtered.filter((r) => r.compatibility.engines.includes(options.engine!));
+  }
+  if (options.commercial !== undefined) {
+    filtered = filtered.filter((r) =>
+      options.commercial ? r.license !== "cc-by-nc-4.0" : r.license === "cc-by-nc-4.0",
+    );
+  }
+  if (options.origin) {
+    filtered = filtered.filter((r) => r.provenance.origin === options.origin);
   }
   if (options.tag) {
     const targetTag = options.tag.toLowerCase();

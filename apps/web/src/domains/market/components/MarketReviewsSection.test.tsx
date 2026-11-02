@@ -133,4 +133,24 @@ describe("MarketReviewsSection", () => {
       });
     });
   });
+
+  it("filters reviews interactively by star histogram button and role filter", () => {
+    render(
+      <SessionContext.Provider value={session}>
+        <MarketReviewsSection resourceId="11111111-1111-4111-8111-111111111111" />
+      </SessionContext.Provider>,
+    );
+
+    expect(screen.getByText("실제 컷에서 바로 쓸 수 있었습니다")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: /4점 리뷰 필터/ }));
+    expect(screen.queryByText("실제 컷에서 바로 쓸 수 있었습니다")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 필터 초기화" }));
+    expect(screen.getByText("실제 컷에서 바로 쓸 수 있었습니다")).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText("작업 역할 필터"), {
+      target: { value: "어시스턴트" },
+    });
+    expect(screen.queryByText("실제 컷에서 바로 쓸 수 있었습니다")).toBeNull();
+  });
 });

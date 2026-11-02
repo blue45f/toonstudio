@@ -80,6 +80,9 @@ describe("MarketResourceCard", () => {
     expect(html).toContain("원고 위 시험 (Fit Lab)");
     expect(html).toContain(`/market/fit-lab?slug=${encodeURIComponent(record.packageId)}`);
     expect(html).toContain("Studio 즉시 호환");
+    expect(html).toContain("AI 미포함 공개");
+    expect(html).toContain("256 B");
+    expect(html).toContain(`href="/market/creator/${record.publisher.id}"`);
     expect(html).not.toContain(">4.9<");
     expect(html).not.toContain("공식 인증 배급자");
     expect(html).not.toContain("text-white");

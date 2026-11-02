@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
+import { MarketMultiKindManifestBuilder } from "../components/MarketMultiKindManifestBuilder";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketSellerCenterTabs } from "../components/MarketSellerCenterTabs";
 import { MarketplaceAuthoringWorkshop } from "../components/MarketplaceAuthoringWorkshop";
@@ -267,6 +268,18 @@ export function MarketPublishAuthorityPage() {
             body: t("내 Studio에서 바로 불러와 결과를 확인합니다.", "Load it in your Studio and check the result right away."),
           },
         ]}
+      />
+
+      <MarketMultiKindManifestBuilder
+        publisherId={userId ?? undefined}
+        publisherName={authenticated && session.user.name ? session.user.name : t("내 크리에이터 스튜디오", "My Creator Studio")}
+        onApplyManifest={(manifestJson, fileLabel) => {
+          beginSourceRequest();
+          setManifestText(manifestJson);
+          setSourceName(fileLabel);
+          setPublishedRecord(null);
+          setError(null);
+        }}
       />
 
       <section id="market-server-publish" aria-labelledby="market-server-publish-heading" className="mt-8 border-t border-line pt-8">

@@ -3,6 +3,7 @@ import {
   ExternalLink,
   RefreshCw,
   Save,
+  Search,
   ShieldCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -19,7 +20,9 @@ import {
 } from "./admin-client";
 import { AdminCard, AdminSpinner } from "./admin-ui";
 
-import { getCurrentUiLocale } from "@/shared/lib/i18n-bilingual-copy";
+import { listCreatorMarketplaceResources } from "@/platform/creator-marketplace-client";
+import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
+import { getCurrentUiLocale, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
 
 /** 결제 상태 코드(토스)를 운영자 언어로 바꾼다. 모르는 코드는 원본을 유지한다. */
@@ -63,12 +66,18 @@ const won = (value: number) => "₩" + value.toLocaleString(getCurrentUiLocale()
 
 export function AdminCommercePayments({ uid }: { uid: string }) {
   const t = useT();
+  const bt = useBilingual("AdminCommercePayments");
   const [settings, setSettings] = useState<CommerceAdminSettings | null>(null);
   const [draft, setDraft] = useState<CommerceAdminSettings | null>(null);
   const [orders, setOrders] = useState<CommerceOrderPublicEntry[]>([]);
   const [ordersLoaded, setOrdersLoaded] = useState(false);
   const [resourceId, setResourceId] = useState("");
   const [resourcePrice, setResourcePrice] = useState(0);
+  const [packageQuery, setPackageQuery] = useState("");
+  const [packageResults, setPackageResults] = useState<readonly CreatorMarketplaceResourceRecord[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<CreatorMarketplaceResourceRecord | null>(null);
+  const [packageSearching, setPackageSearching] = useState(false);
+  const [packageSearchNotice, setPackageSearchNotice] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
@@ -152,10 +161,39 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
       );
       setResourceId("");
       setResourcePrice(0);
+      setSelectedPackage(null);
     } catch (requestError) {
       setError((requestError as AdminApiError).message);
     } finally {
       setBusy("");
+    }
+  };
+
+  const searchMarketplacePackages = async () => {
+    setPackageSearching(true);
+    setPackageSearchNotice("");
+    try {
+      const trimmed = packageQuery.trim();
+      const page = await listCreatorMarketplaceResources({
+        search: trimmed || undefined,
+        limit: 8,
+      });
+      setPackageResults(page.items);
+      if (page.items.length === 0) {
+        setPackageSearchNotice(
+          bt("일치하는 공개 마켓 패키지가 없습니다.", "No matching public marketplace packages found."),
+        );
+      }
+    } catch {
+      setPackageResults([]);
+      setPackageSearchNotice(
+        bt(
+          "마켓 패키지를 조회하지 못했습니다. 리소스 UUID를 직접 입력할 수 있습니다.",
+          "Could not search marketplace packages. You can enter the resource UUID directly.",
+        ),
+      );
+    } finally {
+      setPackageSearching(false);
     }
   };
 
@@ -363,7 +401,13 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
               {t("admin.commerce.resourceId")}
               <input
                 value={resourceId}
-                onChange={(event) => setResourceId(event.target.value)}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setResourceId(nextValue);
+                  if (selectedPackage && selectedPackage.id !== nextValue.trim()) {
+                    setSelectedPackage(null);
+                  }
+                }}
                 className="mt-1 block min-h-10 w-72 rounded-xl border border-line bg-panel px-3 text-sm"
               />
             </label>
@@ -387,6 +431,80 @@ export function AdminCommercePayments({ uid }: { uid: string }) {
               {t("admin.commerce.savePrice")}
             </button>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-line bg-panel/50 p-3.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              aria-label={bt("마켓 패키지 검색", "Search marketplace package")}
+              placeholder={bt("패키지 이름·packageId·태그로 검색해 UUID 자동 입력", "Search package name, packageId, or tag to fill UUID")}
+              value={packageQuery}
+              onChange={(event) => setPackageQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void searchMarketplacePackages();
+                }
+              }}
+              className="min-h-10 min-w-60 flex-1 rounded-xl border border-line bg-card px-3 text-xs text-fg"
+            />
+            <button
+              type="button"
+              disabled={packageSearching}
+              onClick={() => void searchMarketplacePackages()}
+              className={adminButtonClass("ghost")}
+            >
+              <Search size={14} aria-hidden="true" />
+              {packageSearching
+                ? bt("검색 중…", "Searching…")
+                : bt("패키지 검색", "Search packages")}
+            </button>
+          </div>
+          {selectedPackage ? (
+            <p className="mt-2 text-xs text-accent">
+              {bt("선택된 패키지:", "Selected package:")}{" "}
+              <strong className="font-semibold text-fg">{selectedPackage.name}</strong>{" "}
+              <code className="text-[11px] text-fg-3">
+                ({selectedPackage.packageId} · {selectedPackage.kind} · v{selectedPackage.resourceVersion})
+              </code>
+            </p>
+          ) : null}
+          {packageSearchNotice ? (
+            <p className="mt-2 text-xs text-fg-3">{packageSearchNotice}</p>
+          ) : null}
+          {packageResults.length > 0 ? (
+            <ul
+              aria-label={bt("마켓 패키지 검색 결과", "Marketplace package search results")}
+              className="mt-2.5 grid gap-1.5 sm:grid-cols-2"
+            >
+              {packageResults.map((pkg) => (
+                <li key={pkg.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResourceId(pkg.id);
+                      setSelectedPackage(pkg);
+                    }}
+                    className={
+                      "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors "
+                      + (resourceId === pkg.id
+                        ? "border-accent bg-accent-soft text-fg"
+                        : "border-line bg-card text-fg-2 hover:border-accent/50")
+                    }
+                  >
+                    <span className="min-w-0 truncate">
+                      <strong className="font-semibold text-fg">{pkg.name}</strong>{" "}
+                      <span className="text-[11px] text-fg-3">({pkg.packageId})</span>
+                    </span>
+                    <span className="shrink-0 rounded bg-panel px-1.5 py-0.5 text-[10px] font-semibold text-fg-3">
+                      {pkg.kind} · v{pkg.resourceVersion}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </AdminCard>
 
