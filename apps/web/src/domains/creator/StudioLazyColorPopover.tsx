@@ -76,11 +76,17 @@ function StudioColorPopoverFallback({
   );
 }
 
-export function LazyStudioColorPopover({
+export function LazyStudioColorPopover(props: LazyStudioColorPopoverProps) {
+  const targetKey = useStudioColorTargetKey(props.purpose ?? "generic", props.controlId, props.targetKey ?? props.label);
+  // 대상이 바뀌면 활성 상태도 새로 만들어 이전 페이지의 닫힌 창을 다시 열지 않는다.
+  return <StudioColorPopoverActivation key={targetKey} activationTargetKey={targetKey} {...props} />;
+}
+
+function StudioColorPopoverActivation({
+  activationTargetKey: targetKey,
   onLoadRecentColors,
   ...props
-}: LazyStudioColorPopoverProps) {
-  const targetKey = useStudioColorTargetKey(props.purpose ?? "generic", props.controlId, props.targetKey ?? props.label);
+}: LazyStudioColorPopoverProps & { activationTargetKey: string }) {
   const [activationKey, setActivationKey] = useState<string | null>(null);
   const activate = () => {
     if (props.disabled) return;
