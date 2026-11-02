@@ -491,6 +491,10 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
     () => resolveStudioBg3dPrimitiveCc0PbrSpread(prim.materialOverride, paintTexture, prim.color),
     [prim.materialOverride, paintTexture, prim.color],
   );
+  // 이전 WebGPU TextureNode가 null 맵을 읽지 않도록 슬롯 유무가 바뀌면 재질만 교체한다.
+  const materialLayoutKey = [
+    pbrSpread.map, pbrSpread.roughnessMap, pbrSpread.metalnessMap, pbrSpread.normalMap, pbrSpread.aoMap,
+  ].map((texture) => texture === null ? "0" : "1").join("");
   const handlePaintPointer = onPaintPointer
     ? (phase: StudioBg3dPaintPointerPhase) => (event: ThreeEvent<PointerEvent>) => {
         event.stopPropagation();
@@ -534,6 +538,7 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
           <meshBasicMaterial color="#ffffff" polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
         ) : (
           <meshStandardMaterial
+            key={materialLayoutKey}
             onUpdate={updateStudioBg3dStandardMaterialShaderTopology}
             color={pbrSpread.color ?? (paintTexture ? "#ffffff" : prim.color)}
             map={pbrSpread.map}
