@@ -60,6 +60,8 @@ const CONSUMERS = [
   "StudioCommunityMarketplacePanel.tsx",
   "StudioUploadPublish.tsx",
   "hybrid-dcc/StudioHybridDccViewportCore.tsx",
+  // 메시 클릭 처리로 옮겨 간 안내도 동일한 키·폴백·탐지·줄 수 계약으로 검사한다.
+  "hybrid-dcc/studio-hybrid-dcc-viewport-mesh-click.ts",
 ] as const;
 
 /** 이관 전 줄 수(래칫 기준선) — 소비 파일은 이 줄 수를 넘을 수 없다. */
@@ -78,6 +80,7 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "StudioCommunityMarketplacePanel.tsx": 2602,
   "StudioUploadPublish.tsx": 1070,
   "hybrid-dcc/StudioHybridDccViewportCore.tsx": 1969,
+  "hybrid-dcc/studio-hybrid-dcc-viewport-mesh-click.ts": 95,
 };
 
 /**
@@ -104,6 +107,7 @@ const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "StudioCommunityMarketplacePanel.tsx": 0,
   "StudioUploadPublish.tsx": 0,
   "hybrid-dcc/StudioHybridDccViewportCore.tsx": 0,
+  "hybrid-dcc/studio-hybrid-dcc-viewport-mesh-click.ts": 0,
 };
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));

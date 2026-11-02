@@ -2,16 +2,11 @@ import { Copy, Download, Loader2 } from "lucide-react";
 import { useId, useRef, type ReactNode } from "react";
 
 import { cx } from "@/shared/lib/cx";
-import { WATERMARK_POSITIONS, type WatermarkSettings } from "../studio-watermark";
 import { EXPORT_FORMATS, EXPORT_SCALES, canCopyImageToClipboard, exportFormatLabel } from "./studio-export";
 import { exportMenuText } from "./studio-export-menu-i18n";
 import { StudioExportOutputSummary } from "./StudioExportOutputSummary";
-import { StudioExportSection } from "./StudioExportSection";
+import { StudioExportAppearanceOptions } from "./StudioExportAppearanceOptions";
 import type { StudioExportMenuPanelProps } from "./StudioExportMenuPanel";
-
-const POSITION_LABELS = {
-  br: "positionBottomRight", bl: "positionBottomLeft", tr: "positionTopRight", tl: "positionTopLeft", center: "positionCenter",
-} as const;
 
 type StudioExportBasicOptionsProps = Pick<StudioExportMenuPanelProps,
   "canvasWidth" | "canvasHeight" | "exportScale" | "exportFormat" | "exportTransparent" |
@@ -100,46 +95,9 @@ export function StudioExportBasicOptions({
       ) : null}
       {/* 취소·진행 동작을 잠그지 않도록 여러 페이지 내보내기는 disabled fieldset 밖에 둔다. */}
       {children}
-      <StudioExportSection id="appearance" detailsRef={appearanceRef} title={exportMenuText("appearance")} description={exportMenuText("appearanceHelp")}>
-        <fieldset disabled={locked} className="min-w-0" aria-describedby={locked ? busyHelpId : undefined}>
-          <legend className="sr-only">{exportMenuText("appearance")}</legend>
-          <label className={cx("flex min-h-11 items-center gap-2 text-xs", exportFormat === "jpg" || locked ? "cursor-not-allowed text-fg-2" : "cursor-pointer text-fg-2")}>
-            <input ref={transparencyRef} type="checkbox" checked={exportTransparent && exportFormat !== "jpg"} disabled={locked || exportFormat === "jpg"}
-              aria-describedby={transparencyHelpId} onChange={(event) => { if (!locked) setExportTransparent(event.target.checked); }} className="size-4 shrink-0 accent-accent" />
-            {exportMenuText("transparent")}
-          </label>
-          <p id={transparencyHelpId} className="mb-2 text-xs leading-5 text-fg-2">{exportMenuText(exportFormat === "jpg" ? "jpgTransparentHint" : "transparentHelp")}</p>
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
-            <input ref={signatureToggleRef} type="checkbox" checked={watermark.enabled} disabled={locked}
-              onChange={(event) => { if (!locked) setWatermark({ ...watermark, enabled: event.target.checked }); }} className="size-4 shrink-0 accent-accent" />
-            {exportMenuText("watermark")}
-          </label>
-          {watermark.enabled ? (
-            <div className="mt-1.5 min-w-0 space-y-1.5">
-              <input ref={signatureInputRef} type="text" value={watermark.text} disabled={locked}
-                onChange={(event) => { if (!locked) setWatermark({ ...watermark, text: event.target.value }); }} placeholder="© 작가명 / @아이디" maxLength={60}
-                aria-label={exportMenuText("watermarkText")} aria-describedby={signatureHelpId}
-                className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-card px-2 text-base text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:text-xs" />
-              <p id={signatureHelpId} className="text-xs leading-5 text-fg-2">{exportMenuText("signatureTextHelp")}</p>
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <select value={watermark.position} disabled={locked}
-                  onChange={(event) => { if (!locked) setWatermark({ ...watermark, position: event.target.value as WatermarkSettings["position"] }); }}
-                  aria-label={exportMenuText("watermarkPosition")}
-                  className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-card px-2 text-base text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:text-xs">
-                  {WATERMARK_POSITIONS.map((position) => <option key={position.id} value={position.id}>{exportMenuText(POSITION_LABELS[position.id])}</option>)}
-                </select>
-                <input ref={opacityRef} type="range" min={0.15} max={1} step={0.05} value={watermark.opacity} disabled={locked}
-                  onChange={(event) => { if (!locked) setWatermark({ ...watermark, opacity: Number(event.target.value) }); }}
-                  aria-label={exportMenuText("watermarkOpacity")} className="h-11 w-20 shrink-0 accent-accent" />
-              </div>
-            </div>
-          ) : null}
-        </fieldset>
-        <button type="button" onClick={returnToDownload}
-          className="mt-2 min-h-11 max-w-full rounded-lg px-1 text-left text-xs font-semibold text-accent underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-          {exportMenuText("returnToDownload")}
-        </button>
-      </StudioExportSection>
+      <StudioExportAppearanceOptions {...{ exportFormat, exportTransparent, watermark, locked, busyHelpId,
+        transparencyHelpId, signatureHelpId, appearanceRef, transparencyRef, signatureToggleRef,
+        signatureInputRef, opacityRef, setExportTransparent, setWatermark, returnToDownload }} />
       {canCopyImageToClipboard() ? (
         <>
           <button type="button" onClick={() => { if (!locked) onCopyToClipboard(); }} disabled={locked}
