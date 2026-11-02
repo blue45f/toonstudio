@@ -2,7 +2,7 @@ import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-
 
 import { productionText, useProductionCopy } from "./production-workboard-copy";
 import { ChevronDown, Columns3, Filter, Keyboard, KanbanSquare, LayoutList, Rows3, Save, Search, X } from "lucide-react";
-import { useId, useMemo, useState, type ReactNode, type RefObject } from "react";
+import { startTransition, useId, useMemo, useOptimistic, useState, type ReactNode, type RefObject } from "react";
 import {
   PRODUCTION_ROLE_LABELS,
   WEBTOON_PRODUCTION_PIPELINE,
@@ -75,6 +75,8 @@ export function ProductionBoardFilters({
   useProductionCopy();
   const bt = useBilingual("ProductionBoardFilters");
   const regionId = useId();
+  // 주소 전환 중에는 입력을 즉시 유지하고, 전환·외부 탐색이 끝나면 실제 주소 값과 함께 확정한다.
+  const [searchDraft, setSearchDraft] = useOptimistic(filters.query);
   const advancedCount = [
     filters.episode,
     filters.process,
@@ -128,10 +130,17 @@ export function ProductionBoardFilters({
           <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3 top-3.5 text-fg-3" />
           <input
             aria-label={productionText("작업 검색")}
+            aria-busy={searchDraft !== filters.query}
             ref={searchRef}
-            value={filters.query}
+            value={searchDraft}
             maxLength={200}
-            onChange={(event) => onFilter("boardQuery", event.target.value)}
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              startTransition(() => {
+                setSearchDraft(value);
+                onFilter("boardQuery", value);
+              });
+            }}
             className={cn(FIELD, "w-full pl-10 pr-10")}
             placeholder={productionText("작업·담당자·설명 검색")}
           />
@@ -265,7 +274,10 @@ export function ProductionBoardFilters({
         <button
           type="button"
           className={cn(buttonClass({ variant: "ghost" }), "min-h-11 shrink-0 whitespace-nowrap text-xs")}
-          onClick={onClear}
+          onClick={() => startTransition(() => {
+            setSearchDraft("");
+            onClear();
+          })}
         >
           <X size={14} aria-hidden="true" />
           {productionText("필터 초기화")}
