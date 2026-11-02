@@ -68,4 +68,24 @@ describe("CreatorRoleProfileEditor", () => {
       roleVisibility: false,
     });
   });
+
+  it("직군 카테고리 필터 탭을 통해 세분화 어시스턴트·보조 글작가·각색 작가를 선택할 수 있다", () => {
+    render(<EditorHarness />);
+
+    fireEvent.click(screen.getByRole("button", { name: "글·각색·기획" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "대표 직무" }))
+      .getByRole("button", { name: /보조 글작가·자료조사/ }));
+    expect(readProfile()).toMatchObject({
+      primaryRole: "associate-writer",
+      activeRole: "associate-writer",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "전문 어시스턴트" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "대표 직무" }))
+      .getByRole("button", { name: /선화·펜터치 어시스턴트/ }));
+    expect(readProfile()).toMatchObject({
+      primaryRole: "line-assistant",
+      activeRole: "line-assistant",
+    });
+  });
 });

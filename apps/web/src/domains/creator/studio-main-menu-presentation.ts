@@ -35,6 +35,7 @@
  */
 
 import type { StudioUiDensityMode } from "./studio-ui-density";
+import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
 
 /** Presentation order of the nine workflow-oriented primary menu titles. */
 export const STUDIO_MAIN_MENU_PRESENTATION_ORDER = [
@@ -184,7 +185,113 @@ export interface StudioMainMenuPresentableGroup<
 > {
   readonly id: string;
   readonly label: string;
+  readonly recommendedForRole?: boolean;
   readonly items: readonly TItem[];
+}
+
+/**
+ * 직군별 최우선 상위 메뉴 그룹 매핑 (25개 전 직군).
+ *
+ * 어떤 메뉴도 숨기지 않으면서(Zero-Hidden-Capability), 활성 직군이 가장 자주 여는
+ * 상위 메뉴 2~3개에 `recommendedForRole` 표식을 부여하고 선택적으로 앞쪽(파일 바로 뒤)에
+ * 우선 배치할 수 있게 한다.
+ */
+export const STUDIO_ROLE_PRIORITY_MAIN_MENU_GROUPS: Readonly<
+  Record<CreatorRoleId, readonly StudioMainMenuPresentedGroupId[]>
+> = Object.freeze({
+  creator: ["create", "layer", "canvas"],
+  story: ["file", "insert", "view"],
+  adaptation: ["insert", "canvas", "view"],
+  "associate-writer": ["file", "insert", "view"],
+  planner: ["file", "view", "canvas"],
+  storyboard: ["canvas", "create", "insert"],
+  "associate-artist": ["create", "canvas", "layer"],
+  "line-art": ["create", "layer", "edit"],
+  background: ["insert", "canvas", "view"],
+  color: ["layer", "create", "filter"],
+  lettering: ["insert", "layer", "view"],
+  character: ["create", "layer", "canvas"],
+  "three-d": ["insert", "canvas", "view"],
+  educator: ["view", "create", "help"],
+  assistant: ["create", "layer", "edit"],
+  "line-assistant": ["create", "layer", "edit"],
+  "flat-color-assistant": ["layer", "create", "edit"],
+  "shading-assistant": ["layer", "filter", "create"],
+  "background-assistant": ["insert", "canvas", "view"],
+  "effect-assistant": ["filter", "layer", "create"],
+  "lettering-assistant": ["insert", "layer", "view"],
+  editor: ["view", "file", "insert"],
+  producer: ["file", "view", "help"],
+  localization: ["insert", "view", "file"],
+  reviewer: ["view", "file", "layer"],
+});
+
+/**
+ * 직군별로 simple·focus 모드에서도 접지 않고 즉시 펼쳐 두는 복합 메뉴 하위 섹션.
+ * 예: 배경·3D 어시는 `3d` 섹션이 일상 도구이고, 선화 어시는 `vector`·`transform`이 필수다.
+ */
+export const STUDIO_ROLE_DEFAULT_UNFOLDED_SOURCES: Readonly<
+  Partial<Record<CreatorRoleId, readonly string[]>>
+> = Object.freeze({
+  background: ["3d"],
+  "three-d": ["3d"],
+  "background-assistant": ["3d", "transform"],
+  "associate-artist": ["3d", "transform"],
+  "line-art": ["vector", "transform"],
+  "line-assistant": ["vector", "transform"],
+  character: ["vector", "3d"],
+  editor: ["collaboration"],
+  producer: ["collaboration"],
+  reviewer: ["collaboration"],
+  planner: ["collaboration"],
+  "associate-writer": ["collaboration"],
+});
+
+export function studioMainMenuPriorityGroupsForRole(
+  role: CreatorRoleId | null | undefined,
+): readonly StudioMainMenuPresentedGroupId[] {
+  return role ? STUDIO_ROLE_PRIORITY_MAIN_MENU_GROUPS[role] : [];
+}
+
+export function studioMainMenuRoleUnfoldedSources(
+  role: CreatorRoleId | null | undefined,
+): readonly string[] {
+  return (role ? STUDIO_ROLE_DEFAULT_UNFOLDED_SOURCES[role] : undefined) ?? [];
+}
+
+/**
+ * 활성 직군에 맞춰 상위 메뉴에 `recommendedForRole`을 표시하고,
+ * `prioritizeOrder`가 켜진 경우 `파일`은 맨 앞, `도움말`은 맨 뒤에 고정한 채
+ * 직군 핵심 메뉴를 앞쪽으로 배치한다. 모든 메뉴와 명령은 하나도 빠지지 않는다.
+ */
+export function orderStudioMainMenuGroupsForRole<
+  TGroup extends StudioMainMenuPresentableGroup,
+>(
+  groups: readonly TGroup[],
+  role: CreatorRoleId | null | undefined,
+  prioritizeOrder = false,
+): readonly TGroup[] {
+  if (!role) return groups;
+  const priorityIds = STUDIO_ROLE_PRIORITY_MAIN_MENU_GROUPS[role];
+  const prioritySet = new Set<string>(priorityIds);
+  const stamped = groups.map((group) =>
+    prioritySet.has(group.id)
+      ? ({ ...group, recommendedForRole: true } as TGroup)
+      : group,
+  );
+  if (!prioritizeOrder) return stamped;
+  const firstFixed = stamped.filter((group) => group.id === "file");
+  const lastFixed = stamped.filter((group) => group.id === "help");
+  const middle = stamped.filter(
+    (group) => group.id !== "file" && group.id !== "help",
+  );
+  const prioritizedMiddle = [
+    ...priorityIds
+      .filter((id) => id !== "file" && id !== "help")
+      .flatMap((id) => middle.filter((group) => group.id === id)),
+    ...middle.filter((group) => !prioritySet.has(group.id)),
+  ];
+  return [...firstFixed, ...prioritizedMiddle, ...lastFixed];
 }
 
 /** One composite title's advanced (foldable) sections, for the fold-row renderer. */
@@ -214,6 +321,10 @@ export interface StudioMainMenuPresentationOptions {
    * visibility boundary, before the first advanced section).
    */
   readonly advancedSectionsExpanded?: boolean;
+  /** Active creator role used to mark recommended menu groups and auto-unfold role-essential sections. */
+  readonly activeRole?: CreatorRoleId | null;
+  /** When true, moves the active role's priority menu groups immediately after File while preserving all groups. */
+  readonly prioritizeRoleGroups?: boolean;
 }
 
 export interface StudioMainMenuPresentation<
@@ -346,6 +457,9 @@ export function createStudioMainMenuPresentation<
   const foldsSections =
     options.densityMode === "simple" || options.densityMode === "focus";
   const sectionsExpanded = options.advancedSectionsExpanded === true;
+  const roleUnfoldedSet = new Set<string>(
+    studioMainMenuRoleUnfoldedSources(options.activeRole),
+  );
   const compositeAdvancedSections: StudioMainMenuAdvancedCompositeSection[] = [];
   let foldedCompositeItemCount = 0;
 
@@ -356,7 +470,11 @@ export function createStudioMainMenuPresentation<
       .map((id) => byId.get(id))
       .filter((group): group is TGroup => group !== undefined);
     const advancedSources = foldsSections
-      ? allSources.filter((source) => ADVANCED_COMPOSITE_SOURCE_SET.has(source.id))
+      ? allSources.filter(
+          (source) =>
+            ADVANCED_COMPOSITE_SOURCE_SET.has(source.id) &&
+            !roleUnfoldedSet.has(source.id),
+        )
       : [];
     if (advancedSources.length > 0) {
       compositeAdvancedSections.push({
@@ -439,17 +557,22 @@ export function createStudioMainMenuPresentation<
     } as TGroup];
   });
 
+  const finalGroups = orderStudioMainMenuGroupsForRole(
+    presented,
+    options.activeRole,
+    options.prioritizeRoleGroups === true,
+  );
   const specialistGroupIds: ReadonlySet<string> = new Set(STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS);
   return {
-    groups: presented,
+    groups: finalGroups,
     actionGroups,
     compositeSources,
-    presentedGroupIds: presented.map((group) => group.id),
+    presentedGroupIds: finalGroups.map((group) => group.id),
     presentedActionGroupIds: actionGroups.map((group) => group.id),
     specialistBoundaryGroupId:
       options.densityMode === "full"
         ? null
-        : (presented.map((group) => group.id).find((id) => specialistGroupIds.has(id)) ?? null),
+        : (finalGroups.map((group) => group.id).find((id) => specialistGroupIds.has(id)) ?? null),
     compositeAdvancedSections,
     foldedCompositeItemCount,
   };

@@ -677,11 +677,7 @@ function MenuDropdown({
         preferredSide="bottom"
         className="shrink-0"
       >
-        <button
-          ref={buttonRef}
-          type="button"
-          data-studio-main-menu-trigger={group.id}
-          role="menuitem"
+        <button ref={buttonRef} type="button" data-studio-main-menu-trigger={group.id} data-recommended-for-role={group.recommendedForRole ? "true" : undefined} role="menuitem"
           // APG roving tabindex: the menubar is one tab stop, and arrows move between the
           // 18 groups. Before this, reaching the canvas by keyboard cost 18 Tab presses.
           tabIndex={isTabStop ? 0 : -1}
@@ -757,7 +753,7 @@ function MenuDropdown({
               : "text-fg-2 hover:bg-raised/80 hover:text-fg"
           )}
         >
-          {group.label}
+          {group.label}{group.recommendedForRole ? <span aria-hidden title="직군 핵심 메뉴" className="size-1.5 shrink-0 rounded-full bg-accent/85" /> : null}
           <ChevronDown
             size={STUDIO_ICON_SIZE.contextMenu}
             aria-hidden

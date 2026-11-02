@@ -55,15 +55,24 @@ export function creatorRoleAiRecommendations(
 ): readonly CreatorRoleAiRecommendation[] {
   switch (role) {
     case "story":
+    case "adaptation":
+    case "associate-writer":
     case "planner": return STORY;
     case "storyboard":
+    case "associate-artist":
     case "line-art":
     case "character":
-    case "assistant": return ART;
+    case "assistant":
+    case "line-assistant": return ART;
     case "background":
+    case "background-assistant":
     case "three-d": return BACKGROUND;
-    case "color": return COLOR;
+    case "color":
+    case "flat-color-assistant":
+    case "shading-assistant":
+    case "effect-assistant": return COLOR;
     case "lettering":
+    case "lettering-assistant":
     case "localization": return LETTERING;
     case "editor":
     case "reviewer": return REVIEW;

@@ -895,22 +895,13 @@ export function buildSharedResourceBoard(
 }
 
 /** 공유 풀(역할) 표시 이름. 배경팀·채색팀처럼 현장에서 부르는 이름 우선. */
-export const SHARED_POOL_ROLE_LABELS: Readonly<
-  Record<ProductionRoleType, { readonly ko: string; readonly en: string }>
-> = Object.freeze({
-  "story-lead": { ko: "스토리 리드", en: "Story lead" },
-  writer: { ko: "글작가", en: "Writer" },
-  "adaptation-writer": { ko: "각색 작가", en: "Adaptation writer" },
-  "storyboard-artist": { ko: "콘티팀", en: "Storyboard team" },
-  "art-lead": { ko: "작화 리드", en: "Art lead" },
-  "line-artist": { ko: "선화팀", en: "Line art team" },
-  colorist: { ko: "채색팀", en: "Color team" },
-  "background-artist": { ko: "배경팀", en: "Background team" },
-  letterer: { ko: "식자팀", en: "Lettering team" },
-  localizer: { ko: "번역·현지화", en: "Localization" },
-  editor: { ko: "편집", en: "Editor" },
-  producer: { ko: "프로듀서", en: "Producer" },
-  "rights-reviewer": { ko: "권리 검수", en: "Rights review" },
-  assistant: { ko: "어시스턴트", en: "Assistant" },
-  vendor: { ko: "외주", en: "Vendor" },
+export const SHARED_POOL_ROLE_LABELS: Readonly<Record<ProductionRoleType, { readonly ko: string; readonly en: string }>> = Object.freeze({
+  "story-lead": { ko: "스토리 리드", en: "Story lead" }, writer: { ko: "글작가", en: "Writer" }, "adaptation-writer": { ko: "각색 작가", en: "Adaptation writer" },
+  "associate-writer": { ko: "보조 글작가", en: "Associate writer" }, "storyboard-artist": { ko: "콘티팀", en: "Storyboard team" }, "associate-artist": { ko: "보조 그림작가", en: "Associate artist" },
+  "art-lead": { ko: "작화 리드", en: "Art lead" }, "line-artist": { ko: "선화팀", en: "Line art team" }, colorist: { ko: "채색팀", en: "Color team" },
+  "background-artist": { ko: "배경팀", en: "Background team" }, letterer: { ko: "식자팀", en: "Lettering team" }, localizer: { ko: "번역·현지화", en: "Localization" },
+  editor: { ko: "편집", en: "Editor" }, producer: { ko: "프로듀서", en: "Producer" }, "rights-reviewer": { ko: "권리 검수", en: "Rights review" },
+  assistant: { ko: "어시스턴트", en: "Assistant" }, "line-assistant": { ko: "선화 어시", en: "Line assistant" }, "flat-color-assistant": { ko: "밑색 어시", en: "Flat-color assistant" },
+  "shading-assistant": { ko: "명암 어시", en: "Shading assistant" }, "background-assistant": { ko: "배경 어시", en: "Background assistant" }, "effect-assistant": { ko: "이펙트 어시", en: "FX assistant" },
+  "lettering-assistant": { ko: "식자 어시", en: "Lettering assistant" }, vendor: { ko: "외주", en: "Vendor" },
 });

@@ -24,6 +24,16 @@ const ROLE_WORKSPACE_PRESETS: Readonly<
     operationalLens: "story",
     reason: "대본과 컷 흐름을 함께 확인합니다.",
   },
+  adaptation: {
+    workspaceId: "storyboard",
+    operationalLens: "story",
+    reason: "원작 서사와 웹툰 컷 비트·스크롤 호흡을 나란히 각색합니다.",
+  },
+  "associate-writer": {
+    workspaceId: "storyboard",
+    operationalLens: "story",
+    reason: "자료조사·설정 대조와 회차 보조 집필 보드를 함께 엽니다.",
+  },
   planner: {
     workspaceId: "storyboard",
     operationalLens: "planning",
@@ -33,6 +43,11 @@ const ROLE_WORKSPACE_PRESETS: Readonly<
     workspaceId: "storyboard",
     operationalLens: "storyboard",
     reason: "컷 구성과 스크롤 흐름에 집중합니다.",
+  },
+  "associate-artist": {
+    workspaceId: "lineart",
+    operationalLens: "drawing",
+    reason: "러프 데생·포즈 가이드와 서브 캐릭터 작화 도구를 우선합니다.",
   },
   "line-art": {
     workspaceId: "lineart",
@@ -73,6 +88,36 @@ const ROLE_WORKSPACE_PRESETS: Readonly<
     workspaceId: "lineart",
     operationalLens: "drawing",
     reason: "담당 컷과 반복 작업 도구를 빠르게 엽니다.",
+  },
+  "line-assistant": {
+    workspaceId: "lineart",
+    operationalLens: "drawing",
+    reason: "선화 클린업·잔선 제거·펜터치 보조 도구를 즉시 배치합니다.",
+  },
+  "flat-color-assistant": {
+    workspaceId: "coloring",
+    operationalLens: "color-finishing",
+    reason: "선화 참조 채우기와 파츠별 밑색·색분할 마스크 도구를 우선합니다.",
+  },
+  "shading-assistant": {
+    workspaceId: "coloring",
+    operationalLens: "color-finishing",
+    reason: "클리핑 명암·셀 셰이딩·하이라이트 채색 도구를 우선합니다.",
+  },
+  "background-assistant": {
+    workspaceId: "pose-3d",
+    operationalLens: "background",
+    reason: "3D 에셋 배치·투시선 정합·배경 톤 추출 도구를 우선합니다.",
+  },
+  "effect-assistant": {
+    workspaceId: "coloring",
+    operationalLens: "color-finishing",
+    reason: "집중선·광학 이펙트·대기 효과와 색보정 도구를 우선합니다.",
+  },
+  "lettering-assistant": {
+    workspaceId: "lettering",
+    operationalLens: "lettering",
+    reason: "대사 흘려넣기·말풍선 정렬·효과음 스탬프 도구를 우선합니다.",
   },
   editor: {
     workspaceId: "review",

@@ -406,7 +406,9 @@ export const ROLE_TYPE_LABELS: Readonly<Record<ProductionRoleType, BilingualLabe
   "story-lead": { ko: "메인 스토리 작가", en: "Story lead" },
   writer: { ko: "글 작가", en: "Writer" },
   "adaptation-writer": { ko: "각색 작가", en: "Adaptation writer" },
+  "associate-writer": { ko: "보조 글작가", en: "Associate writer" },
   "storyboard-artist": { ko: "콘티 작가", en: "Storyboard artist" },
+  "associate-artist": { ko: "보조 그림작가", en: "Associate artist" },
   "art-lead": { ko: "메인 그림 작가", en: "Art lead" },
   "line-artist": { ko: "선화 작가", en: "Line artist" },
   colorist: { ko: "채색 작가", en: "Colorist" },
@@ -417,6 +419,12 @@ export const ROLE_TYPE_LABELS: Readonly<Record<ProductionRoleType, BilingualLabe
   producer: { ko: "PD", en: "Producer" },
   "rights-reviewer": { ko: "권리 검토", en: "Rights reviewer" },
   assistant: { ko: "어시스턴트", en: "Assistant" },
+  "line-assistant": { ko: "선화 어시스턴트", en: "Line assistant" },
+  "flat-color-assistant": { ko: "밑색 어시스턴트", en: "Flat-color assistant" },
+  "shading-assistant": { ko: "명암·채색 어시스턴트", en: "Shading assistant" },
+  "background-assistant": { ko: "배경·3D 어시스턴트", en: "Background assistant" },
+  "effect-assistant": { ko: "후보정·이펙트 어시스턴트", en: "FX assistant" },
+  "lettering-assistant": { ko: "식자·효과음 어시스턴트", en: "Lettering assistant" },
   vendor: { ko: "외주 파트너", en: "Vendor" },
 });
 

@@ -83,6 +83,8 @@ export interface StudioMainMenuGroup {
    * resolving.
    */
   labelKey?: string;
+  /** True when this menu group is a top-priority workflow group for the active creator role. */
+  recommendedForRole?: boolean;
   items: readonly StudioMainMenuItem[];
 }
 

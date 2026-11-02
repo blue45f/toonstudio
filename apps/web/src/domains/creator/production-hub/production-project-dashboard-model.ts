@@ -36,8 +36,23 @@ export const DASHBOARD_LIMITS = Object.freeze({ episodes: 3, todos: 5, feedback:
 
 /** 샘플처럼 로그인 사용자와 연결된 참여자가 없을 때 역할 관점으로 "내 할 일"을 고른다. */
 const LENS_ROLES: Readonly<Record<CreatorRoleLens, readonly ProductionRoleType[]>> = Object.freeze({
-  story: ["story-lead", "writer", "adaptation-writer"],
-  art: ["art-lead", "storyboard-artist", "line-artist", "colorist", "background-artist", "letterer"],
+  story: ["story-lead", "writer", "adaptation-writer", "associate-writer"],
+  art: [
+    "art-lead",
+    "storyboard-artist",
+    "associate-artist",
+    "line-artist",
+    "colorist",
+    "background-artist",
+    "letterer",
+    "assistant",
+    "line-assistant",
+    "flat-color-assistant",
+    "shading-assistant",
+    "background-assistant",
+    "effect-assistant",
+    "lettering-assistant",
+  ],
   producer: ["producer", "editor", "rights-reviewer"],
 });
 

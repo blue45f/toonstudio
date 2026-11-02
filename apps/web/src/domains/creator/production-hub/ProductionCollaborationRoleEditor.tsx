@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { PRODUCTION_ROLE_TYPES, type ProductionProjectAggregate, type RoleAssignment } from "@toonstudio/core/production";
+import {
+  PRODUCTION_ROLE_TYPES,
+  evaluateRoleAssignmentPermissionGuardrails,
+  productionRolePermissionProfile,
+  type ProductionProjectAggregate,
+  type RoleAssignment,
+} from "@toonstudio/core/production";
 import { canonicalJson } from "@toonstudio/studio-project-model";
 import { getAuthSessionRevision, getAuthUserId, listeners } from "@/domains/auth/public/session/auth-session-state";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -124,8 +130,11 @@ function RoleEditorScope(props: ScopedProps) {
       const party = aggregate.parties.find((entry) => entry.id === assignment.partyId);
       const member = team?.members.find((entry) => entry.userId === party?.accountUserId && entry.status === "active");
       const name = party?.publicDisplayName || bt("참여자 확인 필요", "Party needs verification");
+      const guardrail = evaluateRoleAssignmentPermissionGuardrails(assignment);
       return <li key={assignment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3"><div className="min-w-0"><p className="font-semibold">{name} · {roleTypeLabel(assignment.roleType, bt)}</p>
-        <p className="mt-1 text-xs text-fg-2">{scopes.get(canonicalJson(assignment.scope)) ?? assignment.scope.id} · {assignmentStatusLabel(assignment.status, bt)} · {party?.accountUserId ? member ? bt("작품 팀 계정 연결", "Linked active account") : bt("연결 계정이 현재 작품 팀에 없음", "Linked account is outside this work team") : bt("계정 미연결", "No linked account")}</p></div>
+        <p className="mt-1 text-xs text-fg-2">{scopes.get(canonicalJson(assignment.scope)) ?? assignment.scope.id} · {assignmentStatusLabel(assignment.status, bt)} · {party?.accountUserId ? member ? bt("작품 팀 계정 연결", "Linked active account") : bt("연결 계정이 현재 작품 팀에 없음", "Linked account is outside this work team") : bt("계정 미연결", "No linked account")}</p>
+        <p className="mt-1 text-[0.7rem] text-fg-3">{bt(`허용 레이어 그룹: ${guardrail.profile.allowedLayerGroups.join(", ")} · 설정집 권한: ${guardrail.profile.canonWriteAccess}`, `Allowed layers: ${guardrail.profile.allowedLayerGroups.join(", ")} · Canon access: ${guardrail.profile.canonWriteAccess}`)}</p>
+        {guardrail.warnings.length > 0 ? <p className="mt-1 text-xs font-semibold text-warn">{guardrail.warnings[0]}</p> : null}</div>
         <button type="button" disabled={!party || !team || loading || Boolean(recovery) || props.hasUnconfirmedCommand || recovering} className={buttonClass({ variant: "outline", size: "sm" })} aria-label={bt(`${name} ${roleTypeLabel(assignment.roleType, bt)} 역할 편집`, `Edit ${name} ${roleTypeLabel(assignment.roleType, bt)} role`)} onClick={() => open(assignment.id)}>{bt("역할 편집", "Edit role")}</button></li>;
     })}</ul>
     {selected && formTeam && (selected === "new" || formOriginal) ? <RoleForm key={selected} {...props} original={formOriginal} team={team ?? formTeam} loadTeam={loadTeam} current={current} onClose={close} /> : null}
@@ -237,6 +246,62 @@ function RoleForm({ aggregate, canManage, execute, refresh, hasUnconfirmedComman
         {fixedAccount ? <p className="text-xs text-fg-2">{bt("이 역할의 연결 계정과 참여자는 바꿀 수 없습니다. 작품 팀에서 나간 계정의 역할도 중지·종료할 수 있습니다.", "This role's account and party cannot be replaced. Roles held by departed accounts may still be paused or ended.")}</p> : null}
         <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">{bt("공정 역할", "Production role")}<select className={FIELD} value={draft.roleType} onChange={(event) => { const role = PRODUCTION_ROLE_TYPES.find((entry) => entry === event.target.value); if (role) patch({ roleType: role }); }}>{PRODUCTION_ROLE_TYPES.map((role) => <option key={role} value={role}>{roleTypeLabel(role, bt)}</option>)}</select></label>
           <label className="block text-sm font-semibold">{bt("실제 담당 범위", "Actual assignment scope")}<select className={FIELD} required value={draft.scopeKey} onChange={(event) => patch({ scopeKey: event.target.value })}><option value="">{bt("현재 프로젝트의 범위 선택", "Choose a scope in this project")}</option>{scopes.map((entry) => <option key={entry.key} value={entry.key}>{entry.label}</option>)}</select></label></div>
+        {(() => {
+          const roleProfile = productionRolePermissionProfile(draft.roleType);
+          const selectedScopeEntry = scopes.find((entry) => entry.key === draft.scopeKey);
+          const recommendedScopeEntry =
+            scopes.find((entry) => entry.scope.kind === roleProfile.recommendedScopeKind)
+            ?? scopes.find((entry) => entry.scope.kind === "episode")
+            ?? scopes[0];
+          const draftGuardrail = selectedScopeEntry
+            ? evaluateRoleAssignmentPermissionGuardrails({
+                roleType: draft.roleType,
+                scope: selectedScopeEntry.scope,
+                capabilities: original?.capabilities ?? roleProfile.defaultCapabilities,
+                lead: draft.lead,
+              })
+            : null;
+          return (
+            <div className="space-y-2 rounded-xl border border-accent/30 bg-accent-soft/20 p-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-bold text-fg">
+                  {bt(
+                    `${roleTypeLabel(draft.roleType, bt)} 최소권한·레이어 보호 기준`,
+                    `${roleTypeLabel(draft.roleType, bt)} least-privilege & layer policy`,
+                  )}
+                </p>
+                {recommendedScopeEntry ? (
+                  <button
+                    type="button"
+                    className={buttonClass({ variant: "outline", size: "sm" })}
+                    onClick={() =>
+                      patch({
+                        scopeKey: recommendedScopeEntry.key,
+                        lead: roleProfile.category === "lead",
+                      })
+                    }
+                  >
+                    {bt("직군 최소권한 프리셋 적용", "Apply least-privilege preset")}
+                  </button>
+                ) : null}
+              </div>
+              <p className="leading-5 text-fg-2">{roleProfile.summaryKo}</p>
+              <p className="text-[0.7rem] text-fg-3">
+                {bt(
+                  `권장 범위: ${roleProfile.recommendedScopeKind} · 허용 레이어 그룹: ${roleProfile.allowedLayerGroups.join(", ")} · 설정집 접근: ${roleProfile.canonWriteAccess}`,
+                  `Recommended scope: ${roleProfile.recommendedScopeKind} · Allowed layers: ${roleProfile.allowedLayerGroups.join(", ")} · Canon: ${roleProfile.canonWriteAccess}`,
+                )}
+              </p>
+              {draftGuardrail && draftGuardrail.warnings.length > 0 ? (
+                <ul className="space-y-1 rounded-lg border border-warn/40 bg-warn/10 p-2 text-warn">
+                  {draftGuardrail.warnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })()}
         <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">{bt("역할 시작 · 내 시간대", "Role start · local time")}<input className={FIELD} type="datetime-local" required value={draft.startsAtLocal} onChange={(event) => patch({ startsAtLocal: event.target.value })} /></label>
           <label className="block text-sm font-semibold">{bt("역할 종료 · 내 시간대", "Role end · local time")}<input className={FIELD} type="datetime-local" value={draft.endsAtLocal} onChange={(event) => patch({ endsAtLocal: event.target.value })} /><span className="mt-1 block text-xs font-normal text-fg-2">{bt("비워 두면 종료일 미정", "Leave empty for an open-ended role")}</span></label></div>
         <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-semibold">{bt("참여자 상태", "Party status")}<select className={FIELD} value={draft.partyStatus} onChange={(event) => { const status = PARTY_STATUSES.find((entry) => entry === event.target.value); if (status) patch({ partyStatus: status }); }}>{PARTY_STATUSES.map((status) => <option key={status} value={status}>{assignmentStatusLabel(status, bt)}</option>)}</select></label>

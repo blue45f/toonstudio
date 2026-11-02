@@ -7,7 +7,7 @@ import {
   Sparkles,
   UsersRound,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   CREATOR_COLLABORATION_LABELS,
@@ -40,12 +40,30 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 
 const FEATURED_ROLES: readonly CreatorRoleId[] = [
   "story",
+  "adaptation",
   "line-art",
+  "associate-artist",
   "assistant",
+  "line-assistant",
+  "flat-color-assistant",
   "planner",
   "producer",
   "educator",
   "creator",
+];
+
+type RoleCategoryFilter = "featured" | CreatorRoleGroup;
+
+const ROLE_CATEGORY_FILTERS: readonly {
+  readonly id: RoleCategoryFilter;
+  readonly ko: string;
+  readonly en: string;
+}[] = [
+  { id: "featured", ko: "주요 추천", en: "Featured" },
+  { id: "story", ko: "글·각색·기획", en: "Story & adaptation" },
+  { id: "art", ko: "작화·보조작가", en: "Art & associate" },
+  { id: "support", ko: "전문 어시스턴트", en: "Specialized assistants" },
+  { id: "production", ko: "편집·PD·검수", en: "Editorial & PD" },
 ];
 
 const ROLE_GROUP_LABELS: Readonly<Record<CreatorRoleGroup, { ko: string; en: string }>> = {
@@ -82,7 +100,14 @@ export function CreatorRoleProfileEditor({
 }) {
   useBilingualI18nRevision();
   const locale: CreatorRoleLocale = getActiveI18nLocale();
+  const [roleCategoryFilter, setRoleCategoryFilter] = useState<RoleCategoryFilter>("featured");
   const selectedRoles = creatorRoleSelection(value);
+  const visiblePrimaryRoleIds = useMemo((): readonly CreatorRoleId[] => {
+    if (roleCategoryFilter === "featured") return FEATURED_ROLES;
+    return CREATOR_ROLE_DEFINITIONS
+      .filter((entry) => entry.group === roleCategoryFilter)
+      .map((entry) => entry.id);
+  }, [roleCategoryFilter]);
   const recommendedSpecialtySet = useMemo(
     () => new Set(recommendedCreatorSpecialties(selectedRoles)),
     [selectedRoles],
@@ -172,8 +197,33 @@ export function CreatorRoleProfileEditor({
         <legend className="text-xs font-black text-fg">
           {localized(locale, "대표 직무", "Primary role")}
         </legend>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {FEATURED_ROLES.map((role) => {
+        <div
+          className="mt-2 flex flex-wrap gap-1.5"
+          role="group"
+          aria-label={localized(locale, "직무 분야 필터", "Role category filter")}
+        >
+          {ROLE_CATEGORY_FILTERS.map((category) => {
+            const active = roleCategoryFilter === category.id;
+            return (
+              <button
+                key={category.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setRoleCategoryFilter(category.id)}
+                className={cn(
+                  "min-h-8 rounded-full border px-3 text-xs font-bold transition-colors",
+                  active
+                    ? "border-accent bg-accent text-on-accent"
+                    : "border-line bg-card text-fg-2 hover:border-accent/35 hover:text-fg",
+                )}
+              >
+                {localized(locale, category.ko, category.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-2.5 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {visiblePrimaryRoleIds.map((role) => {
             const definition = creatorRoleDefinition(role);
             if (!definition) return null;
             const selected = value.primaryRole === role;

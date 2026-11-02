@@ -94,13 +94,8 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioRolePersonalizationCenter", ko, en);
 
 const FEATURED_ONBOARDING_ROLES: readonly CreatorRoleId[] = [
-  "story",
-  "line-art",
-  "assistant",
-  "planner",
-  "producer",
-  "educator",
-  "creator",
+  "story", "adaptation", "associate-writer", "line-art", "associate-artist",
+  "assistant", "line-assistant", "flat-color-assistant", "planner", "producer", "educator", "creator",
 ];
 
 const USAGE_GOAL_LABELS: Readonly<

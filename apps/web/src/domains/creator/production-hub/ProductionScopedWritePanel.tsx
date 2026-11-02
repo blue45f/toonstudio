@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
-import { scopeContains, type ProductionProjectAggregate } from "@toonstudio/core/production";
+import { productionRolePermissionProfile, scopeContains, type ProductionProjectAggregate } from "@toonstudio/core/production";
 import { StudioScopedWriteManagementCommandSchema, type StudioScopedEntity, type StudioScopedWriteManagementCommand,
   type StudioScopedWritePolicy } from "@toonstudio/contracts/studio-scoped-write";
 import { getAuthSessionRevision, getAuthUserId, listeners } from "@/domains/auth/public/session/auth-session-state";
@@ -224,6 +224,22 @@ function ScopedWritePanel({ aggregate, actorId, authRevision }: {
           <label className="text-sm">{bt("편집 종료 (선택)", "Editing ends (optional)")}<input type="datetime-local" step="1" className={FIELD} value={endsAt} onChange={(event) => setEndsAt(event.target.value)} /></label>
         </fieldset>
         <p className="text-xs text-fg-2">{bt("현재 작품의 활성 열람·댓글 계정에만 배정할 수 있습니다. 기존 원고 귀속을 유지하며 다음 공정은 새 작업·역할 배정으로 연결합니다.", "Only active viewers and commenters can receive these grants. Artwork ownership stays stable; each next process uses a new task and role grant.")}</p>
+        {(() => {
+          const selectedRole = assignments.find((entry) => entry.id === assignmentId);
+          if (!selectedRole) return null;
+          const profile = productionRolePermissionProfile(selectedRole.roleType);
+          return (
+            <div className="rounded-xl border border-accent/30 bg-accent-soft/20 p-2.5 text-xs text-fg-2">
+              <p className="font-semibold text-fg">
+                {bt(
+                  `선택 직군(${selectedRole.roleType}) 권장 편집 레이어 그룹: ${profile.allowedLayerGroups.join(", ")}`,
+                  `Recommended layer groups for ${selectedRole.roleType}: ${profile.allowedLayerGroups.join(", ")}`,
+                )}
+              </p>
+              <p className="mt-0.5 text-[0.7rem] text-fg-3">{profile.summaryKo}</p>
+            </div>
+          );
+        })()}
         <button type="submit" className={buttonClass({ size: "sm" })} disabled={disabled || !grantTarget || !grantTask || !assignmentId}>{bt("담당 편집 배정", "Assign scoped editing")}</button>
       </form>
       <div className="space-y-2"><h3 className="text-sm font-bold">{bt("현재 배정과 회수", "Assignments and revocation")}</h3>

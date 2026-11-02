@@ -8,13 +8,17 @@ import {
   STUDIO_MAIN_MENU_FOLDED_SHORTCUT_ID_SUFFIX,
   STUDIO_MAIN_MENU_PRESENTATION_ORDER,
   STUDIO_MAIN_MENU_SPECIALIST_GROUP_IDS,
+  STUDIO_ROLE_PRIORITY_MAIN_MENU_GROUPS,
   createStudioMainMenuPresentation,
   insertStudioMainMenuAdvancedSectionFoldRows,
   isStudioMainMenuAdvancedCompositeSource,
+  orderStudioMainMenuGroupsForRole,
   studioMainMenuPresentedTitleFor,
+  studioMainMenuPriorityGroupsForRole,
   type StudioMainMenuPresentableGroup,
   type StudioMainMenuPresentableItem,
 } from "../studio-main-menu-presentation";
+import { CREATOR_ROLE_IDS } from "@/shared/lib/creator-role-contract";
 
 const CATALOGUE_IDS = [
   "file",
@@ -538,5 +542,47 @@ describe("접힌 3D 섹션의 '3D 데생 인형' 바로가기 (B-15)", () => {
       densityMode: "focus",
     }).groups.find((group) => group.id === "insert")!;
     expect(insert.items.at(-1)?.label).toBe("3D drawing mannequin");
+  });
+});
+
+describe("직군 맞춤 상위 메뉴 추천 및 우선 배치", () => {
+  it("25개 모든 직군에 대해 핵심 상위 메뉴 그룹을 정의하고 모든 9개 메뉴를 보존한다", () => {
+    expect(CREATOR_ROLE_IDS).toHaveLength(25);
+    for (const roleId of CREATOR_ROLE_IDS) {
+      const priority = studioMainMenuPriorityGroupsForRole(roleId);
+      expect(priority.length).toBeGreaterThanOrEqual(2);
+      expect(priority).toEqual(STUDIO_ROLE_PRIORITY_MAIN_MENU_GROUPS[roleId]);
+
+      const stamped = createStudioMainMenuPresentation(catalogue(), {
+        activeRole: roleId,
+      });
+      expect(stamped.presentedGroupIds).toEqual([...STUDIO_MAIN_MENU_PRESENTATION_ORDER]);
+      expect(
+        stamped.groups.filter((group) => group.recommendedForRole).map((group) => group.id),
+      ).toEqual(expect.arrayContaining([...priority]));
+
+      const prioritized = orderStudioMainMenuGroupsForRole(stamped.groups, roleId, true);
+      expect(prioritized).toHaveLength(STUDIO_MAIN_MENU_PRESENTATION_ORDER.length);
+      expect(prioritized[0]?.id).toBe("file");
+      expect(prioritized.at(-1)?.id).toBe("help");
+    }
+  });
+
+  it("배경·3D 어시스턴트와 선화 어시스턴트는 simple 모드에서도 필수 하위 섹션(3d, vector/transform)을 접지 않는다", () => {
+    const bgAssistantPresentation = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "simple",
+      activeRole: "background-assistant",
+    });
+    const insertItems = bgAssistantPresentation.groups.find((group) => group.id === "insert")?.items ?? [];
+    expect(insertItems.some((item) => item.sourceGroupId === "3d")).toBe(true);
+
+    const lineAssistantPresentation = createStudioMainMenuPresentation(catalogue(2), {
+      densityMode: "simple",
+      activeRole: "line-assistant",
+    });
+    const lineInsertItems = lineAssistantPresentation.groups.find((group) => group.id === "insert")?.items ?? [];
+    const lineEditItems = lineAssistantPresentation.groups.find((group) => group.id === "edit")?.items ?? [];
+    expect(lineInsertItems.some((item) => item.sourceGroupId === "vector")).toBe(true);
+    expect(lineEditItems.some((item) => item.sourceGroupId === "transform")).toBe(true);
   });
 });

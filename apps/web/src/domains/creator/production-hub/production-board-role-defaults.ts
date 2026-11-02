@@ -27,19 +27,29 @@ export function boardRoleDefaultFilters(
   switch (roleId) {
     case "story":
     case "planner":
-      // 글·기획: 기획·스토리 공정부터 본다.
+      // 글·기획: 기획·스토리 공정부터 본다. 구 프로필 호환을 위해 "story"도 함께 둔다.
       return { processCandidates: ["story-lock", "story"] };
+    case "adaptation":
+    case "associate-writer":
+      // 각색·보조 글작가: 각색·리서치·스토리 공정부터 본다.
+      return { processCandidates: ["adaptation-script", "research-canon", "story-lock", "story"] };
     case "storyboard":
       // 콘티: 콘티 공정부터 본다. (인계 대기는 별도 칩이 없어 공정 기본값만 둔다.)
       return { processCandidates: ["storyboard"] };
+    case "associate-artist":
     case "line-art":
     case "character":
     case "assistant":
-      // 선화·캐릭터·어시: 내게 배정된 컷부터 본다.
+    case "line-assistant":
+    case "flat-color-assistant":
+    case "shading-assistant":
+    case "effect-assistant":
+      // 선화·캐릭터·보조 그림작가·세분화 작화/채색 어시: 내게 배정된 컷부터 본다.
       return MINE_FOCUS;
     case "background":
+    case "background-assistant":
     case "three-d":
-      // 배경·3D: 배경 공정부터 본다. 프로필마다 단계 키가 달라 후보를 넓게 둔다.
+      // 배경·3D·배경 어시: 배경 공정부터 본다. 프로필마다 단계 키가 달라 후보를 넓게 둔다.
       return {
         processCandidates: ["background", "background-draft", "background-compose", "background-3d"],
       };
@@ -48,6 +58,8 @@ export function boardRoleDefaultFilters(
     case "lettering":
     case "localization":
       return { processCandidates: ["lettering"] };
+    case "lettering-assistant":
+      return { processCandidates: ["lettering-assist", "lettering"] };
     case "editor":
     case "reviewer":
     case "producer":
