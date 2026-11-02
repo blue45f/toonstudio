@@ -29,6 +29,7 @@ export interface ProductionRoleSetupDraft {
   readonly assignmentStatus: RoleAssignment["status"];
   readonly partyStatus: CollaborationParty["status"];
   readonly lead: boolean;
+  readonly capabilities: readonly string[];
 }
 export interface ProductionRoleSetupRequest {
   readonly command: ProductionRoleSetupCommand;
@@ -73,7 +74,7 @@ export function productionRoleSetupDraft(aggregate: ProductionProjectAggregate, 
   return { assignmentId: original?.id ?? null, memberId, partyId: selectedParty?.id ?? null, partyBaseline: partyBaseline(selectedParty),
     roleType: original?.roleType ?? "line-artist", scopeKey: canonicalJson(original?.scope ?? projectScope(aggregate.projectId)),
     startsAtLocal: productionRoleLocalDateTime(original?.startsAt ?? at), endsAtLocal: original?.endsAt ? productionRoleLocalDateTime(original.endsAt) : "",
-    assignmentStatus: original?.status ?? "active", partyStatus: selectedParty?.status ?? "active", lead: original?.lead ?? false };
+    assignmentStatus: original?.status ?? "active", partyStatus: selectedParty?.status ?? "active", lead: original?.lead ?? false, capabilities: [...(original?.capabilities ?? [])] };
 }
 export function productionRoleSetupSelectMember(aggregate: ProductionProjectAggregate, draft: ProductionRoleSetupDraft,
   memberId: string): ProductionRoleSetupDraft {
@@ -130,7 +131,7 @@ export function buildProductionRoleSetupRequest(input: { readonly aggregate: Pro
       contactPartyId: null, agencyPartyId: null, status: draft.partyStatus };
   const assignment: RoleAssignment = { ...(original ?? { capabilities: [], agreementRevisionRef: null, publicCreditRole: null }),
     id: assignmentId, projectId: aggregate.projectId, partyId, roleType: draft.roleType, scope, startsAt, endsAt,
-    status: draft.assignmentStatus, lead: draft.lead };
+    status: draft.assignmentStatus, lead: draft.lead, capabilities: [...draft.capabilities] };
   const command: ProductionRoleSetupCommand = { type: "configure-collaboration",
     parties: selectedParty ? aggregate.parties.map((entry) => entry.id === partyId ? party : entry) : [...aggregate.parties, party],
     assignments: original ? aggregate.assignments.map((entry) => entry.id === assignmentId ? assignment : entry) : [...aggregate.assignments, assignment],

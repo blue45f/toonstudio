@@ -257,7 +257,7 @@ function RoleForm({ aggregate, canManage, execute, refresh, hasUnconfirmedComman
             ? evaluateRoleAssignmentPermissionGuardrails({
                 roleType: draft.roleType,
                 scope: selectedScopeEntry.scope,
-                capabilities: original?.capabilities ?? roleProfile.defaultCapabilities,
+                capabilities: draft.capabilities,
                 lead: draft.lead,
               })
             : null;
@@ -266,8 +266,8 @@ function RoleForm({ aggregate, canManage, execute, refresh, hasUnconfirmedComman
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-bold text-fg">
                   {bt(
-                    `${roleTypeLabel(draft.roleType, bt)} 최소권한·레이어 보호 기준`,
-                    `${roleTypeLabel(draft.roleType, bt)} least-privilege & layer policy`,
+                    `${roleTypeLabel(draft.roleType, bt)} 권장 권한·레이어 기준`,
+                    `${roleTypeLabel(draft.roleType, bt)} recommended permissions & layer policy`,
                   )}
                 </p>
                 {recommendedScopeEntry ? (
@@ -278,6 +278,7 @@ function RoleForm({ aggregate, canManage, execute, refresh, hasUnconfirmedComman
                       patch({
                         scopeKey: recommendedScopeEntry.key,
                         lead: roleProfile.category === "lead",
+                        capabilities: [...roleProfile.defaultCapabilities],
                       })
                     }
                   >
@@ -288,8 +289,8 @@ function RoleForm({ aggregate, canManage, execute, refresh, hasUnconfirmedComman
               <p className="leading-5 text-fg-2">{roleProfile.summaryKo}</p>
               <p className="text-[0.7rem] text-fg-3">
                 {bt(
-                  `권장 범위: ${roleProfile.recommendedScopeKind} · 허용 레이어 그룹: ${roleProfile.allowedLayerGroups.join(", ")} · 설정집 접근: ${roleProfile.canonWriteAccess}`,
-                  `Recommended scope: ${roleProfile.recommendedScopeKind} · Allowed layers: ${roleProfile.allowedLayerGroups.join(", ")} · Canon: ${roleProfile.canonWriteAccess}`,
+                  `권장 범위: ${roleProfile.recommendedScopeKind} · 권장 레이어 그룹: ${roleProfile.allowedLayerGroups.join(", ")} · 설정집 접근: ${roleProfile.canonWriteAccess}`,
+                  `Recommended scope: ${roleProfile.recommendedScopeKind} · Recommended layers: ${roleProfile.allowedLayerGroups.join(", ")} · Canon: ${roleProfile.canonWriteAccess}`,
                 )}
               </p>
               {draftGuardrail && draftGuardrail.warnings.length > 0 ? (
@@ -308,7 +309,7 @@ function RoleForm({ aggregate, canManage, execute, refresh, hasUnconfirmedComman
           <label className="block text-sm font-semibold">{bt("역할 상태", "Role status")}<select className={FIELD} value={draft.assignmentStatus} onChange={(event) => { const status = ROLE_STATUSES.find((entry) => entry === event.target.value); if (status) patch({ assignmentStatus: status }); }}>{ROLE_STATUSES.map((status) => <option key={status} value={status}>{assignmentStatusLabel(status, bt)}</option>)}</select></label></div>
         {party ? <p className="text-xs text-fg-2">{bt("참여자 상태는 같은 참여자의 다른 역할에도 적용됩니다. 역할 하나만 멈추려면 역할 상태를 바꾸세요.", "Party status affects that party's other roles too. Change role status to pause just this assignment.")}</p> : null}
         <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={draft.lead} onChange={(event) => patch({ lead: event.target.checked })} />{bt("이 담당 범위의 리드 역할", "Lead role for this scope")}</label>
-        <p className="text-xs leading-6 text-fg-2">{original ? bt(`기존 capabilities ${original.capabilities.length}개, 계약 연결과 공개 크레딧을 유지합니다.`, `Preserves ${original.capabilities.length} existing capabilities, the agreement link and public credit.`) : bt("새 역할의 capabilities는 빈 배열로 저장합니다. 리드 표시는 원고 편집·승인·최종 결정권을 추가하지 않습니다.", "New roles have no capabilities. Lead status does not add manuscript editing, approval or final decision authority.")}</p>
+        <p className="text-xs leading-6 text-fg-2" data-production-role-capabilities="">{bt(`저장할 capabilities: ${draft.capabilities.join(", ") || "없음"}. 프리셋을 적용하면 이 목록을 직군 기본값으로 교체합니다. 계약·크레딧·결정권은 유지하며 작품 접근·레이어 편집 권한은 서버의 별도 검사를 따릅니다.`, `Capabilities to save: ${draft.capabilities.join(", ") || "none"}. Applying a preset replaces this list with role defaults. Agreements, credits and decision authority are preserved; work access and layer editing remain subject to separate server checks.`)}</p>
       </fieldset>}
       <div className="flex flex-wrap gap-2"><button type="submit" disabled={!draft || busy || sealed || denied || hasUnconfirmedCommand || !canManage} className={buttonClass()}>{bt("공정 역할 저장", "Save production role")}</button>
         <button type="button" disabled={busy || !refresh} className={buttonClass({ variant: "outline" })} onClick={() => void check()}>{bt(sealed ? "원래 저장 상태 확인" : "최신 상태 확인", sealed ? "Reconcile original save" : "Refresh current state")}</button></div>

@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { canonicalJson } from "@toonstudio/studio-project-model";
-import type { ProductionProjectAggregate } from "@toonstudio/core/production";
+import { productionRolePermissionProfile, type ProductionProjectAggregate } from "@toonstudio/core/production";
 import { AppApiError } from "@/platform/api";
 import { useI18n } from "@/shared/lib/i18n-core";
 import type { StudioTeamSnapshot } from "../studio-team-client";
@@ -90,6 +90,27 @@ beforeEach(() => {
 afterEach(() => { cleanup(); window.sessionStorage.clear(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("실제 작품 팀 계정을 쓰는 공정 역할 관리 UI", () => {
+  it("새 역할 미리보기와 프리셋 적용 후 저장값을 같은 draft에서 읽는다", async () => {
+    const f = fixture(), execute = executor(); render(<ProductionCollaborationRoleEditor aggregate={f.aggregate} canManage execute={execute} />);
+    await openNew(f);
+    expect(document.querySelector("[data-production-role-capabilities]")?.textContent).toContain("저장할 capabilities: 없음");
+    fireEvent.click(screen.getByRole("button", { name: "직군 최소권한 프리셋 적용" }));
+    const defaults = productionRolePermissionProfile("colorist").defaultCapabilities;
+    expect(document.querySelector("[data-production-role-capabilities]")?.textContent).toContain(defaults.join(", "));
+    save(); await waitFor(() => expect(execute).toHaveBeenCalledOnce());
+    expect(configure(execute.mock.calls[0]?.[0]).assignments.at(-1)?.capabilities).toEqual(defaults);
+  });
+  it("기존 고권한은 기본 편집에서 유지하고 명시적 프리셋으로만 교체한다", async () => {
+    const f = fixture(), execute = executor(); render(<ProductionCollaborationRoleEditor aggregate={f.aggregate} canManage execute={execute} />);
+    await openExisting("선화 담당 선화 작가 역할 편집");
+    expect(document.querySelector("[data-production-role-capabilities]")?.textContent).toContain("legacy-drawing-capability");
+    fireEvent.change(screen.getByRole("combobox", { name: "공정 역할" }), { target: { value: "line-assistant" } });
+    fireEvent.click(screen.getByRole("button", { name: "직군 최소권한 프리셋 적용" })); save();
+    await waitFor(() => expect(execute).toHaveBeenCalledOnce());
+    const saved = configure(execute.mock.calls[0]?.[0]).assignments.find((entry) => entry.id === f.artist.id);
+    expect(saved?.capabilities).toEqual(productionRolePermissionProfile("line-assistant").defaultCapabilities);
+    expect(saved?.lead).toBe(false); expect(saved?.agreementRevisionRef).toBe(f.artist.agreementRevisionRef);
+  });
   it("관리 권한과 현재 계정이 없으면 조회·편집을 시작하지 않는다", () => {
     const f = fixture(), execute = executor();
     const view = render(<ProductionCollaborationRoleEditor aggregate={f.aggregate} canManage={false} execute={execute} />);
