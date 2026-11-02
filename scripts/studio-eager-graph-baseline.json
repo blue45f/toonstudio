@@ -307,8 +307,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 562,
-      "bytes": 8354086
+      "modules": 561,
+      "bytes": 8328628
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -480,7 +480,7 @@
     },
     "apps/web/src/domains/creator/studio-collab": {
       "modules": 13,
-      "bytes": 57232
+      "bytes": 57223
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 81,
@@ -524,7 +524,7 @@
     },
     "apps/web/src/platform": {
       "modules": 3,
-      "bytes": 24280
+      "bytes": 24263
     },
     "apps/web/src/platform/browser": {
       "modules": 4,
@@ -572,7 +572,7 @@
     },
     "packages/contracts": {
       "modules": 25,
-      "bytes": 290271
+      "bytes": 282597
     },
     "packages/core": {
       "modules": 12,
@@ -1351,7 +1351,6 @@
     "apps/web/src/domains/creator/studio-bg3d-model-texture-paint.ts": 2,
     "apps/web/src/domains/creator/studio-bounded-asset-response.ts": 2,
     "apps/web/src/domains/creator/studio-brand-kit.ts": 2,
-    "apps/web/src/domains/creator/studio-brush-canvas-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-brush.ts": 2,
     "apps/web/src/domains/creator/studio-canonical-brush-draw-adapter.ts": 2,
     "apps/web/src/domains/creator/studio-canonical-brush-plan.ts": 2,
@@ -2125,7 +2124,6 @@
     "packages/contracts/src/studio-brush-material-program-contract.ts": 2,
     "packages/contracts/src/studio-brush-r8-grain-asset-contract.ts": 2,
     "packages/contracts/src/studio-bundle-source-credit.ts": 2,
-    "packages/contracts/src/studio-crdt-authoring/element-projection.ts": 2,
     "packages/contracts/src/studio-crdt-raster-compaction.ts": 2,
     "packages/contracts/src/studio-crdt-raster-ops.ts": 2,
     "packages/contracts/src/studio-filter-mask-surface-contract.ts": 2,

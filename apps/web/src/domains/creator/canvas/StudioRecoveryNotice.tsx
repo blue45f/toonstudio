@@ -6,7 +6,7 @@ import { createStudioRecoveryNewDrawingHref } from "./studio-recovery-notice-mod
 import { translateNow, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
-import "../studio-brush-canvas-status-i18n";
+import "../status-i18n/studio-brush-canvas-status-i18n-core";
 
 export type StudioRecoveryBlockedReason = "legacy-unversioned" | "work-mismatch" | "revision-mismatch" | null;
 

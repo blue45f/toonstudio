@@ -1,21 +1,11 @@
 /**
- * brush-lab·brush·color·canvas·lettering 로딩·실패·빈 상태 문구 사전
- * (A4 잔여 3라운드 배치 c09).
+ * 브러시·색상·레터링 패널 전용 상태 문구 79키.
  *
- * `registerI18nLocaleEntries`로 ko/en 키를 등록한다. UI는 `t(key, fallback)`
- * 형태로 호출하므로 키가 없어도 한국어 폴백 문구가 그대로 노출된다.
- * 정본 패턴은 studio-panel-status-i18n.ts·studio-vrm-panel-status-i18n.ts와
- * 동일하다. 비컴포넌트 생산자(StudioLiveAdjustmentGroup·
- * StudioBrushV6DraftGuard의 읽기 경로)는 훅을 쓸 수 없어 생산 시점 해석
- * 헬퍼 `brushCanvasStatusText`를 쓴다 (studio-ai-error-i18n 선례).
- * 대상 표면은 r3-c09 배치 테스트(studio-status-i18n-r3c09.test.ts)가 고정한다.
+ * 패널 청크가 평가될 때 ko/en을 동기로 등록한다. 첫 화면·복구 안내 31키와 해석 헬퍼는
+ * status-i18n/studio-brush-canvas-status-i18n-core.ts에 있고, 이 모듈도 코어를 함께 내보낸다.
+ * 기존 소비자는 전체 사전을 유지하며, 첫 화면 소비자 6곳만 코어를 직접 읽는다.
  */
-import {
-  FALLBACK_CHAIN,
-  getLang,
-  registerI18nLocaleEntries,
-  resolveTranslationForDisplay,
-} from "@/shared/lib/i18n";
+import { registerI18nLocaleEntries } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
   "studio.brushCanvasStatus.brushLab.catalogueEmpty": "일치하는 제품 브러시가 없습니다.",
@@ -62,36 +52,6 @@ registerI18nLocaleEntries("ko", {
   "studio.brushCanvasStatus.brush.subToolEmpty": "도구가 없습니다.",
   "studio.brushCanvasStatus.brush.subToolSearchEmpty": "일치하는 대표 도구가 없습니다. 다른 표현은 전체 라이브러리에서 찾을 수 있습니다.",
   "studio.brushCanvasStatus.brush.trayProMetadataFailed": "프로 브러시 정보를 불러오지 못해 코어 브러시를 표시합니다. 라이브러리를 열어 다시 시도할 수 있습니다.",
-  "studio.brushCanvasStatus.canvas.adjustCacheRestoreFailed": "보정 레이어 화면 캐시를 복원하지 못했어요.",
-  "studio.brushCanvasStatus.canvas.adjustComputeAtScaleFailed": "요청한 출력 배율에서 보정 레이어를 계산하지 못했어요. 출력 배율을 낮춰 주세요.",
-  "studio.brushCanvasStatus.canvas.adjustComputeFailed": "보정 레이어를 계산하지 못했어요.",
-  "studio.brushCanvasStatus.canvas.adjustMaskCanvasFailed": "보정 마스크 캔버스를 만들지 못했어요.",
-  "studio.brushCanvasStatus.canvas.adjustMaskLoadFailed": "보정 레이어 마스크를 불러오지 못했어요.",
-  "studio.brushCanvasStatus.canvas.gpuKeptFrame": "화면을 업데이트하지 못해 마지막으로 표시한 그림을 유지하고 있어요. 아래 버튼으로 다시 시도해 주세요.",
-  "studio.brushCanvasStatus.canvas.gpuNotSwitched": "이 브라우저에서 작업 화면을 열지 못했어요. 아래 버튼으로 다시 시도해 주세요.",
-  "studio.brushCanvasStatus.canvas.gpuPrepareFailed": "작업 화면을 표시하지 못했어요",
-  "studio.brushCanvasStatus.canvas.gpuRetry": "작업 화면 다시 열기",
-  "studio.brushCanvasStatus.canvas.noSelectionFit": "선택한 개체가 없어 맞춤 확대를 사용할 수 없습니다.",
-  "studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailed": "자동으로 이어 열지 못했어요. 현재 그림은 그대로 유지했어요.",
-  "studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle": "자동으로 이어 열지 못했어요",
-  "studio.brushCanvasStatus.canvas.recoveryBlockedUnverified": "안전하게 열 수 있는지 확인하지 못했어요. 먼저 백업 파일을 받아 주세요.",
-  "studio.brushCanvasStatus.canvas.recoveryDeletingCheck": "삭제 확인 중…",
-  "studio.brushCanvasStatus.canvas.recoveryLoadingHeading": "마지막 작업을 이어 여는 중이에요",
-  "studio.brushCanvasStatus.canvas.recoveryOpening": "그림 여는 중…",
-  "studio.brushCanvasStatus.canvas.recoveryRequestFailed": "요청을 마치지 못했어요. 다시 시도하거나 백업 파일을 받아 주세요.",
-  "studio.brushCanvasStatus.canvas.stickyGoOriginalWork": "원본 작품으로 이동",
-  "studio.brushCanvasStatus.canvas.stickyGoUploadEditor": "업로드 편집기로 이동",
-  "studio.brushCanvasStatus.canvas.stickyLockedKeptDesc": "빈 캔버스로 덮어쓰지 않도록 잠금을 유지합니다. 다시 불러와 주세요.",
-  "studio.brushCanvasStatus.canvas.stickyLockedLoadingDesc": "불러오기가 끝날 때까지 편집·저장·가져오기·내보내기를 잠급니다.",
-  "studio.brushCanvasStatus.canvas.stickyLockedUploadDesc": "원본을 보호하기 위해 컷툰 편집을 잠갔습니다. 업로드 편집 화면으로 이동해 주세요.",
-  "studio.brushCanvasStatus.canvas.stickyOtherAccountDesc": "이전 계정이나 다른 작품의 캔버스는 표시·내보내지 않습니다.",
-  "studio.brushCanvasStatus.canvas.stickyReload": "다시 불러오기",
-  "studio.brushCanvasStatus.canvas.stickyRemixLoading": "리믹스 원본을 안전하게 불러오는 중",
-  "studio.brushCanvasStatus.canvas.stickyRemixOpenFailed": "리믹스 원본을 열지 못했어요",
-  "studio.brushCanvasStatus.canvas.stickySharedOpenFailed": "공동 문서를 열지 못했어요",
-  "studio.brushCanvasStatus.canvas.stickyUploadEditorNeeded": "업로드형 작품은 별도 편집기가 필요해요",
-  "studio.brushCanvasStatus.canvas.stickyWorkLoading": "원고를 안전하게 불러오는 중",
-  "studio.brushCanvasStatus.canvas.stickyWorkOpenFailed": "원고를 열지 못했어요",
   "studio.brushCanvasStatus.color.clipboardUnavailable": "이 브라우저에서는 복사를 사용할 수 없습니다.",
   "studio.brushCanvasStatus.color.copyCodeFailed": "색상 코드 복사에 실패했습니다.",
   "studio.brushCanvasStatus.color.historyEmpty": "기록된 색상이 없습니다.",
@@ -107,7 +67,6 @@ registerI18nLocaleEntries("ko", {
   "studio.brushCanvasStatus.color.proofProfileReadFailed": "ICC 프로필을 읽지 못했습니다.",
   "studio.brushCanvasStatus.color.proofSettingsChangeUnavailable": "현재 문서의 설정을 변경할 수 없습니다.",
   "studio.brushCanvasStatus.color.proofSettingsChangeUnavailableIcc": "현재 문서에서 ICC 설정을 변경할 수 없습니다.",
-  "studio.brushCanvasStatus.color.proofToolOpening": "ICC 도구를 여는 중…",
   "studio.brushCanvasStatus.color.recentLoading": "최근 색을 불러오는 중…",
   "studio.brushCanvasStatus.color.recentSaveFailed": "최근 색을 저장하지 못했습니다. 현재 세션에서만 사용할 수 있으며 창을 닫으면 사라질 수 있습니다.",
   "studio.brushCanvasStatus.color.recentSaving": "최근 색 저장 중…",
@@ -175,36 +134,6 @@ registerI18nLocaleEntries("en", {
   "studio.brushCanvasStatus.brush.subToolEmpty": "No tools.",
   "studio.brushCanvasStatus.brush.subToolSearchEmpty": "No matching featured tools. You can find other expressions in the full library.",
   "studio.brushCanvasStatus.brush.trayProMetadataFailed": "Could not load pro brush information, so core brushes are shown. Open the library to try again.",
-  "studio.brushCanvasStatus.canvas.adjustCacheRestoreFailed": "Could not restore the adjustment layer display cache.",
-  "studio.brushCanvasStatus.canvas.adjustComputeAtScaleFailed": "Could not compute the adjustment layer at the requested output scale. Lower the output scale.",
-  "studio.brushCanvasStatus.canvas.adjustComputeFailed": "Could not compute the adjustment layer.",
-  "studio.brushCanvasStatus.canvas.adjustMaskCanvasFailed": "Could not create the adjustment mask canvas.",
-  "studio.brushCanvasStatus.canvas.adjustMaskLoadFailed": "Could not load the adjustment layer mask.",
-  "studio.brushCanvasStatus.canvas.gpuKeptFrame": "The canvas could not update, so the last displayed image is still visible. Use the button below to try again.",
-  "studio.brushCanvasStatus.canvas.gpuNotSwitched": "The canvas could not open in this browser. Use the button below to try again.",
-  "studio.brushCanvasStatus.canvas.gpuPrepareFailed": "Could not display the canvas",
-  "studio.brushCanvasStatus.canvas.gpuRetry": "Reopen canvas",
-  "studio.brushCanvasStatus.canvas.noSelectionFit": "No object is selected, so fit zoom is unavailable.",
-  "studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailed": "Could not reopen it automatically. Your current drawing was kept as is.",
-  "studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle": "Could not reopen it automatically",
-  "studio.brushCanvasStatus.canvas.recoveryBlockedUnverified": "Could not verify that it is safe to open. Download a backup file first.",
-  "studio.brushCanvasStatus.canvas.recoveryDeletingCheck": "Checking deletion…",
-  "studio.brushCanvasStatus.canvas.recoveryLoadingHeading": "Reopening your last work",
-  "studio.brushCanvasStatus.canvas.recoveryOpening": "Opening the drawing…",
-  "studio.brushCanvasStatus.canvas.recoveryRequestFailed": "Could not finish the request. Try again or download a backup file.",
-  "studio.brushCanvasStatus.canvas.stickyGoOriginalWork": "Go to the original work",
-  "studio.brushCanvasStatus.canvas.stickyGoUploadEditor": "Go to the upload editor",
-  "studio.brushCanvasStatus.canvas.stickyLockedKeptDesc": "The lock stays on so an empty canvas does not overwrite it. Please load it again.",
-  "studio.brushCanvasStatus.canvas.stickyLockedLoadingDesc": "Editing, saving, importing, and exporting stay locked until loading finishes.",
-  "studio.brushCanvasStatus.canvas.stickyLockedUploadDesc": "Cuttoon editing is locked to protect the original. Go to the upload editing screen.",
-  "studio.brushCanvasStatus.canvas.stickyOtherAccountDesc": "Canvases from a previous account or another work are not shown or exported.",
-  "studio.brushCanvasStatus.canvas.stickyReload": "Load again",
-  "studio.brushCanvasStatus.canvas.stickyRemixLoading": "Safely loading the remix source",
-  "studio.brushCanvasStatus.canvas.stickyRemixOpenFailed": "Could not open the remix source",
-  "studio.brushCanvasStatus.canvas.stickySharedOpenFailed": "Could not open the shared document",
-  "studio.brushCanvasStatus.canvas.stickyUploadEditorNeeded": "Uploaded works need a separate editor",
-  "studio.brushCanvasStatus.canvas.stickyWorkLoading": "Safely loading the manuscript",
-  "studio.brushCanvasStatus.canvas.stickyWorkOpenFailed": "Could not open the manuscript",
   "studio.brushCanvasStatus.color.clipboardUnavailable": "Copying is not available in this browser.",
   "studio.brushCanvasStatus.color.copyCodeFailed": "Failed to copy the color code.",
   "studio.brushCanvasStatus.color.historyEmpty": "No recorded colors.",
@@ -220,7 +149,6 @@ registerI18nLocaleEntries("en", {
   "studio.brushCanvasStatus.color.proofProfileReadFailed": "Could not read the ICC profile.",
   "studio.brushCanvasStatus.color.proofSettingsChangeUnavailable": "The current document's settings cannot be changed.",
   "studio.brushCanvasStatus.color.proofSettingsChangeUnavailableIcc": "ICC settings cannot be changed in the current document.",
-  "studio.brushCanvasStatus.color.proofToolOpening": "Opening the ICC tool…",
   "studio.brushCanvasStatus.color.recentLoading": "Loading recent colors…",
   "studio.brushCanvasStatus.color.recentSaveFailed": "Could not save recent colors. They are available only in this session and may disappear when you close the window.",
   "studio.brushCanvasStatus.color.recentSaving": "Saving recent colors…",
@@ -243,28 +171,4 @@ registerI18nLocaleEntries("en", {
   "studio.brushCanvasStatus.lettering.voiceNoDeviations": "No lines stray far from the fingerprint.",
 });
 
-/**
- * 비컴포넌트 생산자용 생산 시점 로케일 해석 헬퍼 (studio-ai-error-i18n의
- * `aiErrorText`·studio-vrm-panel-status-i18n의 `vrmPanelStatusText` 선례).
- * 키가 사전에 없으면 koFallback을 그대로 돌려준다. `{token}` 보간은
- * useT 리졸버와 같은 규약으로 한 번만 치환한다.
- */
-export function brushCanvasStatusText(key: string, koFallback: string): string;
-export function brushCanvasStatusText(
-  key: string,
-  params: Readonly<Record<string, string | number>>,
-  koFallback: string,
-): string;
-export function brushCanvasStatusText(
-  key: string,
-  paramsOrFallback: Readonly<Record<string, string | number>> | string,
-  koFallback?: string,
-): string {
-  const params = typeof paramsOrFallback === "string" ? undefined : paramsOrFallback;
-  const fallback = typeof paramsOrFallback === "string" ? paramsOrFallback : koFallback ?? "";
-  const text = resolveTranslationForDisplay(getLang(), key, FALLBACK_CHAIN, fallback);
-  if (!params) return text;
-  return text.replace(/\{([A-Za-z0-9_]+)\}/gu, (placeholder, token: string) =>
-    Object.hasOwn(params, token) ? String(params[token]) : placeholder,
-  );
-}
+export { brushCanvasStatusText } from "./status-i18n/studio-brush-canvas-status-i18n-core";
