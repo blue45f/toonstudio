@@ -27,6 +27,7 @@ import {
   parseStudioBg3dSceneDocument,
 } from "./studio-bg3d-scene-document";
 import { buildStudioBg3dSurfacePresetOverride } from "./studio-bg3d-surface-presets";
+import { buildStudioBg3dSurfaceMaterialOverride } from "./studio-bg3d-surface-material-catalog";
 
 describe("studio-bg3d-cc0-pbr-texture-loader", () => {
   afterEach(() => {
@@ -177,13 +178,13 @@ describe("PBR 이미지 완료와 demand frame 구독", () => {
   const stops: Array<() => void> = [];
   type PendingLoad = { texture: THREE.Texture; complete: () => void };
 
-  function deferredTextures(): PendingLoad[] {
+  function deferredTextures(resolution = 2048): PendingLoad[] {
     const loads: PendingLoad[] = [];
     setStudioBg3dCc0PbrTextureFactoryForTest((url, onLoad) => {
       if (!onLoad) throw new Error("이미지 완료 callback이 필요합니다.");
       const texture = new THREE.Texture(); texture.name = url;
       loads.push({ texture, complete: () => {
-        texture.image = { width: 2048, height: 2048, complete: true };
+        texture.image = { width: resolution, height: resolution, complete: true };
         texture.needsUpdate = true;
         onLoad(texture);
       } });
@@ -208,6 +209,49 @@ describe("PBR 이미지 완료와 demand frame 구독", () => {
     for (const stop of stops.splice(0)) stop();
     setStudioBg3dCc0PbrTextureFactoryForTest(null);
     clearStudioBg3dCc0PbrTextureCache();
+  });
+
+  it("8K 원본 채널은 이미지가 없는 동안 업로드하지 않고 실제 이미지 완료 뒤 같은 Texture를 갱신한다", async () => {
+    const loads = deferredTextures(8192);
+    const override = buildStudioBg3dSurfaceMaterialOverride("emaceart-plasticine-01-native-8k");
+    if (!override) throw new Error("실제 구매 원본 재질이 필요합니다.");
+    const set = loadStudioBg3dCc0PbrTextureSet("emaceart-plasticine-01-native-8k");
+    if (!set) throw new Error("실제 구매 원본 텍스처 세트가 필요합니다.");
+    const spread = resolveStudioBg3dPrimitiveCc0PbrSpread(override);
+    const material = new THREE.MeshStandardMaterial();
+    applyStudioBg3dCc0PbrMapsToStandardMaterial(material, override);
+
+    expect(loads).toHaveLength(4);
+    expect([spread.map, spread.roughnessMap, spread.metalnessMap, spread.normalMap])
+      .toEqual([set.baseColorMap, set.roughnessMap, set.metalnessMap, set.normalMap]);
+    expect([material.map, material.roughnessMap, material.metalnessMap, material.normalMap])
+      .toEqual([set.baseColorMap, set.roughnessMap, set.metalnessMap, set.normalMap]);
+    expect(spread.aoMap).toBeNull();
+    for (const load of loads) {
+      expect(load.texture.image).toBeNull();
+      // Three WebGPU는 version 0을 비동기 default texture 경로로 처리한다.
+      expect(load.texture.version).toBe(0);
+      expect(load.texture.source.version).toBe(0);
+    }
+
+    const before = getStudioBg3dCc0PbrTextureReadyRevision();
+    for (const load of loads) load.complete();
+    await Promise.resolve();
+
+    expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 4);
+    expect(loadStudioBg3dCc0PbrTextureSet("emaceart-plasticine-01-native-8k")).toBe(set);
+    expect(material.map).toBe(set.baseColorMap);
+    for (const load of loads) {
+      expect(load.texture.image).toEqual({ width: 8192, height: 8192, complete: true });
+      expect(load.texture.version).toBe(1);
+      expect(load.texture.source.version).toBe(1);
+      expect(load.texture.repeat.toArray()).toEqual([1, 1]);
+    }
+    expect(set.baseColorMap.colorSpace).toBe(THREE.SRGBColorSpace);
+    for (const texture of [set.roughnessMap, set.metalnessMap, set.normalMap]) {
+      expect(texture?.colorSpace).toBe(THREE.NoColorSpace);
+    }
+    material.dispose();
   });
 
   it("바인딩한 Texture의 비동기 이미지 완료를 한 번 알리고 같은 캐시는 재요청하지 않는다", async () => {
