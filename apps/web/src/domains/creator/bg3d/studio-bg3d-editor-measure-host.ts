@@ -4,6 +4,8 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { commitStudioBg3dMeasurementEditorDocument } from "./studio-bg3d-measurement-editor-host";
+import type { StudioBg3dMeasurementDocument } from "./studio-bg3d-measurement";
 import type { BgCustomModelInstance, BgPrimitive, ResolveStudioBg3dSurfaceSnapInput, StudioBg3dMeasurementInferenceReference, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dWorldMeasurement, ThreeEvent } from "./studio-bg3d-editor-runtime-bindings";
 
 export function attachStudioBg3dEditorMeasureHost(h: Record<string, any>) {
@@ -314,6 +316,8 @@ export function attachStudioBg3dEditorMeasureHost(h: Record<string, any>) {
     // 파일 분할 때 목록에서 빠져 ReferenceError 를 던지던 식별자들(런타임 값 위치) — 복구.
     measurementDocument, measurementDraft, measurementLockedLengthMeters, measurementStartWorld, setMeasurementDraft, setMeasurementInference, setMeasurementLockedLengthMeters, setMeasurementStartWorld,
   } = { ...R, ...h } as typeof R & Record<string, any>;
+  h.setMeasurementDocument = (next: StudioBg3dMeasurementDocument, expectedCurrent: StudioBg3dMeasurementDocument) =>
+    commitStudioBg3dMeasurementEditorDocument(h, next, expectedCurrent);
 
   function cancelMeasurement(message = "줄자를 켠 뒤 첫 번째 점을 선택하세요."): void {
     measurementActiveRef.current = false;

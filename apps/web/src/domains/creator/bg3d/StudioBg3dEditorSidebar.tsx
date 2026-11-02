@@ -14,6 +14,7 @@ import { StudioBg3dGlbTexturePaintMount } from "./StudioBg3dGlbTexturePaintMount
 import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
+import { hasStudioBg3dTemplateContent } from "./studio-bg3d-measurement-template";
 
 export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro = () => {} }: { h: Record<string, any>; experienceMode?: "simple" | "pro"; onOpenPro?: () => void }) {
   const t = useT();
@@ -621,7 +622,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                       applyingTemplateId={applyingTemplateId}
                       saveDisabled={
                         isRestoringScene || isUploadingModel ||
-                        (primitives.length === 0 && customModels.length === 0)
+                        !hasStudioBg3dTemplateContent({ primitives, customModels, document: sceneBaseDocument })
                       }
                       applyDisabled={isRestoringScene || isUploadingModel}
                       onSave={() => void handleSaveSceneAsTemplate()}

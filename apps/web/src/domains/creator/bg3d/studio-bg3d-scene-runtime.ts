@@ -248,23 +248,7 @@ function settingsOnlyDocument(
   attachments: readonly StudioBg3dModelAttachment[],
   nodes: readonly StudioBg3dSceneNode[]
 ): StudioBg3dSceneDocument {
-  return {
-    kind: base.kind,
-    version: base.version,
-    camera: base.camera,
-    render: base.render,
-    background: base.background,
-    lighting: base.lighting,
-    quality: base.quality,
-    output: base.output,
-    budgets: base.budgets,
-    attachments,
-    nodes,
-    ...(base.shots === undefined ? {} : { shots: base.shots }),
-    ...(base.activeShotId === undefined ? {} : { activeShotId: base.activeShotId }),
-    ...(base.pinnedVersionedCut === undefined ? {} : { pinnedVersionedCut: base.pinnedVersionedCut }),
-    ...(base.meta === undefined ? {} : { meta: base.meta }), ...(base.sceneRecipe === undefined ? {} : { sceneRecipe: base.sceneRecipe }),
-  };
+  return { ...base, attachments, nodes };
 }
 
 function canonicalBaseDocument(

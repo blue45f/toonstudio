@@ -21,6 +21,7 @@ import { useState } from "react";
 import { useT } from "@/shared/lib/i18n";
 import "../studio-bg3d-panel-status-i18n";
 import { resolveStudioBg3dMeasurementError } from "../status-i18n/studio-producer-error-i18n-bg3d-measure";
+import type { StudioBg3dMeasurementCommandResult } from "./studio-bg3d-measurement-command";
 
 import {
   STUDIO_BG3D_CONTROL_BUTTON,
@@ -64,7 +65,10 @@ export interface StudioBg3dMeasurementPanelProps {
   readonly inference?: StudioBg3dMeasurementInferenceSuccess | null;
   readonly lockedLengthMeters?: number | null;
   readonly disabled?: boolean;
-  readonly onDocumentChange: (document: StudioBg3dMeasurementDocument) => void;
+  readonly onDocumentChange: (
+    document: StudioBg3dMeasurementDocument,
+    expectedCurrent: StudioBg3dMeasurementDocument,
+  ) => StudioBg3dMeasurementCommandResult;
   readonly onLengthLockChange: (lockedLengthMeters: number | null) => void;
 }
 
@@ -122,6 +126,22 @@ export function StudioBg3dMeasurementPanel({
     resolved: resolveStudioBg3dMeasurementGuide(guide, document.unit),
   }));
 
+  const commitDocument = (next: StudioBg3dMeasurementDocument): boolean => {
+    const committed = onDocumentChange(next, document);
+    if (committed.ok) return true;
+    const fallback = {
+      "scene-unavailable": "장면 준비 또는 다른 작업이 끝난 뒤 가이드를 변경해 주세요.",
+      "source-changed": "장면이나 가이드가 바뀌었습니다. 현재 상태에서 다시 시도해 주세요.",
+      "measurement-invalid": "가이드의 좌표·단위·길이 또는 저장 용량을 확인해 주세요.",
+      "document-rejected": "장면을 손실 없이 저장할 수 없어 가이드를 변경하지 않았습니다.",
+    }[committed.code];
+    setNotice({
+      tone: "error",
+      message: t(`studio.bg3dPanelStatus.measurement.${committed.code}`, fallback),
+    });
+    return false;
+  };
+
   const updateDocument = (
     result:
       | ReturnType<typeof setStudioBg3dMeasurementUnit>
@@ -133,7 +153,7 @@ export function StudioBg3dMeasurementPanel({
       setNotice({ tone: "error", message: resolveStudioBg3dMeasurementError(result) });
       return;
     }
-    onDocumentChange(result.document);
+    if (!commitDocument(result.document)) return;
     setNotice(successMessage ? { tone: "success", message: successMessage } : null);
   };
 
@@ -148,7 +168,7 @@ export function StudioBg3dMeasurementPanel({
       setNotice({ tone: "error", message: resolveStudioBg3dMeasurementError(result) });
       return;
     }
-    onDocumentChange(result.document);
+    if (!commitDocument(result.document)) return;
     const guideLabel =
       formatStudioBg3dMeasurementLength(draftMeasurement.distanceMeters, document.unit)
       ?? "측정";
