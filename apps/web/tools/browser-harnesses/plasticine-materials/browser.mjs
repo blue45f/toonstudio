@@ -363,7 +363,20 @@ async function screenshot(page, name) {
 async function compareFrames(page, left, right) {
   return page.evaluate(async ([leftUrl, rightUrl]) => {
     const decode = async (url) => {
-      const image = await createImageBitmap(await (await fetch(url)).blob());
+      const prefix = "data:image/png;base64,";
+      if (typeof url !== "string" || !url.startsWith(prefix)) throw new Error("증거 PNG URI 형식이 올바르지 않습니다.");
+      const encoded = url.slice(prefix.length);
+      if (!encoded || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/u.test(encoded)
+        || (encoded.endsWith("==") && !/[AQgw]==$/u.test(encoded))
+        || (!encoded.endsWith("==") && encoded.endsWith("=") && !/[AEIMQUYcgkosw048]=$/u.test(encoded))) {
+        throw new Error("증거 PNG base64 형식이 올바르지 않습니다.");
+      }
+      // 원 PNG 바이트를 로컬에서만 풀어 CSP의 connect-src 요청을 만들지 않는다.
+      const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+      if (bytes.length < 8 || ![137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value)) {
+        throw new Error("증거 PNG 서명이 올바르지 않습니다.");
+      }
+      const image = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
       const canvas = document.createElement("canvas"); canvas.width = image.width; canvas.height = image.height;
       const context = canvas.getContext("2d", { willReadFrequently: true });
       if (!context) throw new Error("증거 PNG를 읽을 2D context가 없습니다.");
