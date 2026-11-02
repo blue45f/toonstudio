@@ -1,0 +1,11 @@
+{
+  "sourceSha": "REPLACE_WITH_APPROVED_MAIN_SHA",
+  "clean": true,
+  "exitCode": 0,
+  "runtimeMode": "production-preview",
+  "builtAt": "REPLACE-ACTUAL-BUILD-TIMESTAMP",
+  "command": "REPLACE-ACTUAL-BUILD-COMMAND",
+  "logPath": "/tmp/REPLACE-ACTUAL-BUILD-LOG",
+  "manifestSha256": "REPLACE-ACTUAL-MANIFEST-SHA256",
+  "indexSha256": "REPLACE-ACTUAL-INDEX-SHA256"
+}

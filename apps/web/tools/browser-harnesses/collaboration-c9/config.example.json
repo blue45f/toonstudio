@@ -1,0 +1,66 @@
+{
+  "repoRoot": "/ABSOLUTE/PATH/TO/TOONSTUDIO",
+  "expectedSourceSha": "REPLACE_WITH_APPROVED_MAIN_SHA",
+  "actorConfigPath": "/tmp/toon-collaboration-c9-real-qa/infra-REPLACE-AFTER-ALLOCATION/qa-config.json",
+  "expectedDatabaseName": "toonstudio_c9_real_REPLACE_test",
+  "expectedSchema": "c9real_replace_run_marker",
+  "expectedProductSchema": "public",
+  "actorRoles": [
+    "owner",
+    "artist",
+    "contractor",
+    "reviewer"
+  ],
+  "webBaseUrl": "http://127.0.0.1:5199",
+  "outputDir": "/tmp/toon-collaboration-c9-real-qa/run-REPLACE-UNIQUE-ID",
+  "dataset": "persisted-review-manuscript-v1",
+  "dataProfile": "existing-manuscript-with-images",
+  "runtimeMode": "production-preview",
+  "allowDevelopment": false,
+  "artifact": {
+    "distDir": "/ABSOLUTE/PATH/TO/TOONSTUDIO/dist",
+    "manifestSha256": "REPLACE-AFTER-ACTUAL-CURRENT-SHA-BUILD",
+    "buildEvidencePath": "/tmp/toon-collaboration-c9-real-qa/build-evidence-REPLACE-AFTER-ACTUAL-BUILD.json"
+  },
+  "iterations": 3,
+  "typingKeyIntervalMs": 50,
+  "actionTimeoutMs": 120000,
+  "navigationTimeoutMs": 120000,
+  "profiles": [
+    {
+      "id": "unthrottled",
+      "cpuRate": 1,
+      "network": null,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "locale": "ko-KR",
+      "timezoneId": "Asia/Seoul"
+    },
+    {
+      "id": "cpu4x-slow4g",
+      "cpuRate": 4,
+      "network": {
+        "offline": false,
+        "latency": 562.5,
+        "downloadThroughput": 209715.2,
+        "uploadThroughput": 96000
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "locale": "ko-KR",
+      "timezoneId": "Asia/Seoul"
+    }
+  ],
+  "concurrentReads": {
+    "enabled": true,
+    "iterations": 3
+  },
+  "expectedPgData": "/tmp/toon-collaboration-c9-real-qa/infra-REPLACE-AFTER-ALLOCATION/pgdata",
+  "actualInputPath": "/tmp/toon-collaboration-c9-real-qa/approved-inputs/actual-manuscript.json"
+}
