@@ -6,7 +6,7 @@ import { COUNTS, artifactEvidence, assertCounts, check, digest, gitEvidence, hos
 import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
 import { actualState, verifyActualProjectRead } from './actual-input.mjs';
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
-import { persistAndReportFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
+import { reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
 
 let stage = 'config';
 const result = { schemaVersion: 2, status: 'not-started', verdict: '제어 측정 준비물; 최종 C9 p95 판정 불가', samples: [], apiReads: [], networkReads: [], validation: [], bootstrap: [], assets: [], concurrentReads: [], forbiddenMutations: [], blockedExternalRequests: [], pageErrors: [], db: null };
@@ -582,11 +582,9 @@ async function main() {
   await save();
   console.log(JSON.stringify({ status: result.status, sourceSha: env.git.sourceSha, rawSamples: result.samples.length, apiReads: result.apiReads.length, productionMutationDelta: result.db.productionMutationDelta, resultPath, finalP95Qualified: false }));
 }
-main().catch(async (error) => {
-  result.status = 'failed'; result.failedStage = stage; result.failure = { errorType: error.name, errorCode: error.code ?? null, validation: error.c9SafeMessage ?? null, note: 'cookie/password/signed URL/원고·외부 응답 본문·stack는 기록하지 않음' }; result.finishedAt = new Date().toISOString();
-  await persistAndReportFailure(save, (persistenceFailure) => {
+main().catch((error) => reportBrowserFailure({ error, result, stage, resultPath, persist: save,
+  report: (summary) => {
     process.exitCode = 1;
-    console.error(JSON.stringify({ status: 'failed', stage, originalFailureStage: result.originalFailureStage ?? null, errorType: error.name, errorCode: error.code ?? null, validation: error.c9SafeMessage ?? null, resultPath: resultPath ?? null,
-      failureRecordSaved: persistenceFailure === null, persistenceFailure }));
-  });
-});
+    console.error(JSON.stringify(summary));
+  },
+}));
