@@ -6,7 +6,7 @@ import { COUNTS, artifactEvidence, assertCounts, check, digest, gitEvidence, hos
 import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
 import { actualState, restoreActorContext, verifyActorSession, verifyActualProjectRead } from './actual-input.mjs';
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
-import { assertNativeDnt, launchPrivateDntBrowser, reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
+import { assertNativeDnt, launchPrivateDntBrowser, reportBrowserFailure, runWithOwnedBrowser, runWithOwnedContexts } from './browser-finalization.mjs';
 import { prepareLocalQaTls } from './local-qa-tls.mjs';
 
 let stage = 'config';
@@ -447,9 +447,11 @@ async function concurrentReads(browser, env, state) {
   if (!env.config.concurrentReads.enabled) return;
   check(Number.isInteger(env.config.concurrentReads.iterations) && env.config.concurrentReads.iterations >= 1, '동시 GET 반복 횟수를 명시하세요.');
   const contexts = [];
-  try {
+  const ownedContexts = [];
+  await runWithOwnedContexts(ownedContexts, async () => {
     for (const actor of env.actors) {
       const context = await restoreActorContext(browser, { storageState: actorStorageStates.get(actor.id), webOrigin: env.webOrigin, actorId: actor.id });
+      ownedContexts.push(context);
       contexts.push({ actor, context });
       result.authentication.push({ actorRole: actor.role, phase: 'concurrent-session-get-verified', passwordLoginRepeated: false });
     }
@@ -471,7 +473,7 @@ async function concurrentReads(browser, env, state) {
       result.concurrentReads.push({ iteration, distinctActualActors: contexts.length, roundElapsedMs, rows, transport: 'host APIRequestContext HTTP; CDP CPU/network throttling 미적용; 모든 응답 완료 뒤 검증; UI 동시 편집·다수 팀원 proof 아님' });
       await save();
     }
-  } finally { for (const entry of contexts) await entry.context.close(); }
+  });
 }
 function summarize(config, actualInput = null) {
   const groups = new Map();

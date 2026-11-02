@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
-import { assertNativeDnt, launchPrivateDntBrowser, persistAndReportFailure, reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
+import { assertNativeDnt, launchPrivateDntBrowser, persistAndReportFailure, reportBrowserFailure, runWithOwnedBrowser, runWithOwnedContexts } from './browser-finalization.mjs';
 
 function blankPage({ doNotTrack = '1', ownProperty = false, url = 'about:blank', evaluatedUrl = url, evaluationError = null, closeError = null } = {}) {
   const calls = [];
@@ -123,6 +123,49 @@ test('브라우저 시작 실패는 원인을 보존하고 프로필 설정을 �
   assert.equal(launches, 1);
   const [profile] = await readdir(outputDir);
   assert.deepEqual(JSON.parse(await readFile(join(outputDir, profile, 'Default', 'Preferences'), 'utf8')), { enable_do_not_track: true });
+});
+
+test('context 실행 실패와 복수 종료 실패를 최초 원인부터 보존하고 모든 종료를 시도한다', async () => {
+  const failures = [new Error('세션 확인 실패'), new Error('첫 context 종료 실패'), new Error('마지막 context 종료 실패')];
+  const calls = [], contexts = [];
+  await assert.rejects(runWithOwnedContexts(contexts, async () => {
+    contexts.push({ close: async () => { calls.push('first'); throw failures[1]; } });
+    contexts.push({ close: async () => { calls.push('middle'); } });
+    contexts.push({ close: async () => { calls.push('last'); throw failures[2]; } });
+    throw failures[0];
+  }), (error) => error instanceof AggregateError && error.cause === failures[0]
+    && error.errors.length === failures.length && error.errors.every((entry, index) => entry === failures[index]));
+  assert.deepEqual(calls, ['first', 'middle', 'last']);
+});
+
+test('실행이 성공해도 첫 context 종료 실패 뒤 남은 context를 모두 닫는다', async () => {
+  const failure = new Error('첫 context 종료 실패'), calls = [];
+  const contexts = [
+    { close: async () => { calls.push('first'); throw failure; } },
+    { close: async () => { calls.push('second'); } },
+    { close: async () => { calls.push('third'); } },
+  ];
+  await assert.rejects(runWithOwnedContexts(contexts, async () => '측정 완료'), (error) => error === failure);
+  assert.deepEqual(calls, ['first', 'second', 'third']);
+});
+
+test('정상 실행 값은 실행 중 등록한 context 종료를 마친 뒤 그대로 반환한다', async () => {
+  const contexts = [], calls = [], expected = { completed: true };
+  const value = await runWithOwnedContexts(contexts, async () => {
+    calls.push('run');
+    contexts.push({ close: async () => { calls.push('close'); } });
+    return expected;
+  });
+  assert.equal(value, expected);
+  assert.deepEqual(calls, ['run', 'close']);
+});
+
+test('context 종료가 성공하면 실행의 원래 오류 객체를 그대로 전달한다', async () => {
+  const failure = new Error('실제 계정 확인 실패'); let closed = 0;
+  await assert.rejects(runWithOwnedContexts([{ close: async () => { closed++; } }], async () => {
+    throw failure;
+  }), (error) => error === failure);
+  assert.equal(closed, 1);
 });
 
 test('첫 running 결과 저장이 실패해도 브라우저 종료와 DB 후속 확인을 수행한다', async () => {

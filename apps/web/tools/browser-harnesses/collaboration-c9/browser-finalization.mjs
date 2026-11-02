@@ -65,6 +65,19 @@ class BrowserFinalizationError extends AggregateError {
   }
 }
 
+/** 실행 중 등록한 context를 모두 닫고 최초 실행 실패와 정리 실패를 순서대로 보존한다. */
+export async function runWithOwnedContexts(contexts, run) {
+  const failures = [];
+  let value;
+  try { value = await run(); } catch (error) { failures.push(error); }
+  for (const context of contexts) {
+    try { await context.close(); } catch (error) { failures.push(error); }
+  }
+  if (failures.length === 1) throw failures[0];
+  if (failures.length > 1) throw new AggregateError(failures, '실행과 소유 context 종료의 모든 실패를 함께 보존합니다.', { cause: failures[0] });
+  return value;
+}
+
 /** 시작 결과 저장도 포함해, 소유 브라우저의 모든 종료 단계를 시도한다. */
 export async function runWithOwnedBrowser(browser, run, afterClose) {
   const failures = [];
