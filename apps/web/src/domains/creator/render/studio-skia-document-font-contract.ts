@@ -9,7 +9,7 @@ import {
   findStudioPresetFont,
 } from "../studio-preset-font-loading";
 
-export const STUDIO_SKIA_PRETENDARD_FONT_URL = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2/PretendardVariable.woff2";
+export const STUDIO_SKIA_PRETENDARD_FONT_URL = "/fonts/pretendard/v1.3.9/PretendardVariable.woff2";
 
 function cssFontSource(
   family: string,

@@ -1,4 +1,5 @@
 import type { SkiaDocumentFontSource } from "@toonstudio/studio-engine-skia";
+import { STUDIO_SKIA_PRETENDARD_FONT_URL } from "./studio-skia-document-font-contract";
 import {
   getProductStudioCustomFontRepository,
   STUDIO_CUSTOM_FONT_MAX_COMPATIBILITY_ENTRIES,
@@ -49,7 +50,30 @@ async function readBounded(
   return bytes;
 }
 
+function isLocalDefaultFontUrl(url: URL): boolean {
+  const origin = globalThis.location?.origin;
+  const protocolAllowed = url.protocol === "https:"
+    || (url.protocol === "http:"
+      && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname));
+  return Boolean(origin && origin !== "null"
+    && protocolAllowed && url.origin === origin
+    && url.pathname === STUDIO_SKIA_PRETENDARD_FONT_URL
+    && !url.username && !url.password && !url.search && !url.hash);
+}
+
+function resolveFontUrl(value: string): URL {
+  if (value === STUDIO_SKIA_PRETENDARD_FONT_URL) {
+    const origin = globalThis.location?.origin;
+    if (!origin || origin === "null") {
+      throw new Error("local GPU font requires a browser origin");
+    }
+    return assertFontUrl(new URL(value, origin));
+  }
+  return assertFontUrl(new URL(value));
+}
+
 function assertFontUrl(url: URL): URL {
+  if (isLocalDefaultFontUrl(url)) return url;
   if (url.protocol !== "https:" || !ALLOWED_FONT_HOSTS.has(url.hostname)) {
     throw new Error(`untrusted GPU font host: ${url.hostname}`);
   }
@@ -96,7 +120,9 @@ async function loadCssFont(
   let total = 0;
   for (const source of urls) {
     const bytes = await readBounded(
-      await fetch(source, { signal, credentials: "omit" }),
+      await fetch(source, isLocalDefaultFontUrl(source)
+        ? { signal, credentials: "omit", redirect: "error" }
+        : { signal, credentials: "omit" }),
       FONT_BYTE_LIMIT - total,
       signal,
     );
@@ -132,9 +158,12 @@ export async function loadStudioSkiaDocumentFontData(
 ): Promise<readonly Uint8Array[]> {
   signal.throwIfAborted();
   if (font.key.startsWith("font:")) {
-    const url = assertFontUrl(new URL(font.key.slice(5)));
+    const url = resolveFontUrl(font.key.slice(5));
     return [await readBounded(
-      await fetch(url, { signal, credentials: "omit" }),
+      // 로컬 고정 자산의 redirect를 따라가 허용 범위를 넓히지 않는다.
+      await fetch(url, isLocalDefaultFontUrl(url)
+        ? { signal, credentials: "omit", redirect: "error" }
+        : { signal, credentials: "omit" }),
       FONT_BYTE_LIMIT,
       signal,
     )];
