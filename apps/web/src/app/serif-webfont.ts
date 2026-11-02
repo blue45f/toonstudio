@@ -16,11 +16,12 @@
 import { isImmersiveMobileRoute } from "./routes/immersive-mobile-route";
 
 export const SERIF_WEBFONT_LINK_ID = "app-serif-webfont";
+// 기존 export 이름은 유지하며, 원본 CSS2의 같은 분할 글꼴을 로컬에서 제공한다.
 export const SERIF_WEBFONT_CSS2_URL =
-  "https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap";
+  "/fonts/nanum-myeongjo/v31/nanum-myeongjo.css";
 
 /** 멱등 주입 — 이미 있으면 아무 것도 하지 않는다(StudioPage.tsx STUDIO_FONTS_LINK_ID 와 동일한
- *  id-가드 패턴). `display=swap` 은 URL 에 이미 들어 있어 도착 전에는 폴백 세리프로 그려진다. */
+ *  id-가드 패턴). 보존한 CSS 의 `font-display: swap` 덕분에 도착 전에는 폴백 세리프로 그려진다. */
 export function ensureSerifWebFont(doc: Document): void {
   if (doc.getElementById(SERIF_WEBFONT_LINK_ID)) return;
   const link = doc.createElement("link");

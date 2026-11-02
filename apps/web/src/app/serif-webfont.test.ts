@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -26,7 +29,7 @@ describe("ensureSerifWebFontForRoute", () => {
     },
   );
 
-  it.each(["/", "/explore", "/fortune", "/reviews", "/design"])(
+  it.each(["/", "/explore", "/fortune", "/reviews", "/design", "/production/projects/example/review"])(
     "%s 에서는 명조 스타일시트를 주입한다",
     (pathname) => {
       ensureSerifWebFontForRoute(pathname, document);
@@ -41,12 +44,19 @@ describe("ensureSerifWebFontForRoute", () => {
     expect(injectedHrefs()).toHaveLength(1);
   });
 
-  it("스튜디오 전용 글꼴은 이 스타일시트에 섞이지 않는다", () => {
-    // 명조만 담아야 index.html 에서 뺀 만큼이 그대로 지연 로드로 옮겨진다.
-    expect(SERIF_WEBFONT_CSS2_URL).toContain("family=Nanum+Myeongjo:wght@400;700");
-    expect(SERIF_WEBFONT_CSS2_URL).toContain("display=swap");
-    for (const studioOnly of ["Black+Han+Sans", "Jua", "Gaegu", "Space+Grotesk"]) {
-      expect(SERIF_WEBFONT_CSS2_URL).not.toContain(studioOnly);
+  it("같은 명조 400·700의 분할 CSS만 로컬에서 지연 로드한다", () => {
+    expect(SERIF_WEBFONT_CSS2_URL).toBe("/fonts/nanum-myeongjo/v31/nanum-myeongjo.css");
+    const css = readFileSync(join(process.cwd(), "apps/web/public", SERIF_WEBFONT_CSS2_URL), "utf8");
+    const faces = [...css.matchAll(/@font-face\s*\{([^{}]+)\}/gu)].map((match) => match[1]!);
+    expect(faces).toHaveLength(184);
+    expect(new Set(faces.map((face) => face.match(/font-weight:\s*(\d+)\s*;/u)?.[1])))
+      .toEqual(new Set(["400", "700"]));
+    for (const face of faces) {
+      expect(face).toContain("font-family: 'Nanum Myeongjo';");
+      expect(face).toContain("font-display: swap;");
+      expect(face).toContain("unicode-range:");
+      expect(face).toMatch(/src:\s*url\(\/fonts\/nanum-myeongjo\/v31\//u);
     }
+    expect(css).not.toMatch(/https?:\/\//u);
   });
 });

@@ -117,8 +117,10 @@ describe("vite migration", () => {
     const main = readFileSync(join(process.cwd(), "apps/web/src/app/main.tsx"), "utf8");
     const app = readFileSync(join(process.cwd(), "apps/web/src/app/App.tsx"), "utf8");
 
-    expect(serif).toContain("family=Nanum+Myeongjo:wght@400;700");
-    expect(serif).toContain("display=swap");
+    expect(serif).toContain('"/fonts/nanum-myeongjo/v31/nanum-myeongjo.css"');
+    const serifCss = readFileSync(join(process.cwd(), "apps/web/public/fonts/nanum-myeongjo/v31/nanum-myeongjo.css"), "utf8");
+    expect(serifCss).toContain("font-family: 'Nanum Myeongjo';");
+    expect(serifCss).toContain("font-display: swap;");
     // The route rule lives in one place so /studio can never pick this link up.
     expect(serif).toContain("isImmersiveMobileRoute");
     expect(main).toContain("ensureSerifWebFontForRoute");
