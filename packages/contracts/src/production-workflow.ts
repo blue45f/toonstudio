@@ -105,6 +105,8 @@ export const PRODUCTION_WORKFLOW_PRESETS = {
   "monochrome-manga": "흑백 만화",
   "background-split": "배경 분리 제작",
   "proof-heavy": "검수 강화 연재",
+  "specialized-assistant-division": "세분화 어시 분업 연재",
+  "story-adaptation-collaboration": "원작·각색·보조작가 협업",
 } as const;
 export type ProductionWorkflowPreset = keyof typeof PRODUCTION_WORKFLOW_PRESETS;
 interface ProductionWorkflowPresetStage {
@@ -162,6 +164,39 @@ const PRODUCTION_WORKFLOW_PRESET_STAGES: Record<
       { key: "proof-revision", name: "수정 반영", defaultRole: "assistant", estimateHours: 4, dependsOn: ["first-proof"] },
       { key: "final-proof", name: "최종 검수", defaultRole: "editor", estimateHours: 3, dependsOn: ["proof-revision"], reviewRequired: true },
       { key: "publication", name: "납품 준비", defaultRole: "producer", estimateHours: 2, dependsOn: ["final-proof"] },
+    ],
+  },
+  // 선화·배경·밑색·명암·이펙트·식자 전문 어시스턴트와 보조작가가 분업하는 현대 웹툰 스튜디오 흐름.
+  "specialized-assistant-division": {
+    scale: "studio",
+    stages: [
+      { key: "story-lock", name: "스토리·대본 잠금", defaultRole: "writer", estimateHours: 6, dependsOn: [] },
+      { key: "adaptation-script", name: "웹툰 각색·컷 대본", defaultRole: "adaptation-writer", estimateHours: 6, dependsOn: ["story-lock"] },
+      { key: "storyboard", name: "콘티·연출", defaultRole: "storyboard-artist", estimateHours: 10, dependsOn: ["adaptation-script"] },
+      { key: "rough-sketch", name: "러프·데생 보조", defaultRole: "associate-artist", estimateHours: 8, dependsOn: ["storyboard"] },
+      { key: "line-art", name: "메인 선화", defaultRole: "line-artist", estimateHours: 12, dependsOn: ["rough-sketch"] },
+      { key: "line-cleanup", name: "선화 클린업·펜터치 어시", defaultRole: "line-assistant", estimateHours: 6, dependsOn: ["line-art"] },
+      { key: "background-3d", name: "배경·3D 어시", defaultRole: "background-assistant", estimateHours: 10, dependsOn: ["storyboard"] },
+      { key: "flat-color", name: "밑색·색분할 어시", defaultRole: "flat-color-assistant", estimateHours: 6, dependsOn: ["line-cleanup"] },
+      { key: "shading", name: "명암·채색 어시", defaultRole: "shading-assistant", estimateHours: 8, dependsOn: ["flat-color", "background-3d"] },
+      { key: "effect-post", name: "후보정·이펙트 어시", defaultRole: "effect-assistant", estimateHours: 4, dependsOn: ["shading"] },
+      { key: "lettering-assist", name: "식자·효과음 어시", defaultRole: "lettering-assistant", estimateHours: 3, dependsOn: ["effect-post"] },
+      { key: "joint-proof", name: "최종 통합 교정", defaultRole: "editor", estimateHours: 3, dependsOn: ["lettering-assist"], reviewRequired: true },
+      { key: "publication", name: "납품 준비", defaultRole: "producer", estimateHours: 2, dependsOn: ["joint-proof"] },
+    ],
+  },
+  // 원작·보조 글작가·각색 작가가 서사 정본을 분담하는 협업 흐름.
+  "story-adaptation-collaboration": {
+    scale: "team",
+    stages: [
+      { key: "research-canon", name: "자료조사·설정 대조", defaultRole: "associate-writer", estimateHours: 5, dependsOn: [] },
+      { key: "story-lock", name: "회차 원안·플롯", defaultRole: "writer", estimateHours: 6, dependsOn: ["research-canon"] },
+      { key: "adaptation-script", name: "각색·콘티 대본", defaultRole: "adaptation-writer", estimateHours: 6, dependsOn: ["story-lock"], reviewRequired: true },
+      { key: "storyboard", name: "콘티", defaultRole: "storyboard-artist", estimateHours: 10, dependsOn: ["adaptation-script"] },
+      { key: "line-art", name: "선화", defaultRole: "line-artist", estimateHours: 14, dependsOn: ["storyboard"] },
+      { key: "color", name: "채색", defaultRole: "colorist", estimateHours: 12, dependsOn: ["line-art"] },
+      { key: "lettering", name: "식자", defaultRole: "letterer", estimateHours: 4, dependsOn: ["color"] },
+      { key: "joint-proof", name: "최종 교정", defaultRole: "editor", estimateHours: 3, dependsOn: ["lettering"], reviewRequired: true },
     ],
   },
 };

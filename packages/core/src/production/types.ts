@@ -58,7 +58,9 @@ export const PRODUCTION_ROLE_TYPES = [
   "story-lead",
   "writer",
   "adaptation-writer",
+  "associate-writer",
   "storyboard-artist",
+  "associate-artist",
   "art-lead",
   "line-artist",
   "colorist",
@@ -69,6 +71,12 @@ export const PRODUCTION_ROLE_TYPES = [
   "producer",
   "rights-reviewer",
   "assistant",
+  "line-assistant",
+  "flat-color-assistant",
+  "shading-assistant",
+  "background-assistant",
+  "effect-assistant",
+  "lettering-assistant",
   "vendor",
 ] as const;
 export type ProductionRoleType = (typeof PRODUCTION_ROLE_TYPES)[number];

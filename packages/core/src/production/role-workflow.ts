@@ -3,6 +3,7 @@ import { scopeContains } from "./scope";
 import type {
   ProductionProjectAggregate,
   ProductionRoleType,
+  ProductionScopeKind,
   ProductionTask,
   ProductionTaskStatus,
   RoleAssignment,
@@ -44,7 +45,9 @@ export const PRODUCTION_ROLE_LABELS: Readonly<Record<ProductionRoleType, string>
   "story-lead": "스토리 리드",
   writer: "글 작가",
   "adaptation-writer": "각색 작가",
+  "associate-writer": "보조 글작가",
   "storyboard-artist": "콘티 작가",
+  "associate-artist": "보조 그림작가",
   "art-lead": "작화 리드",
   "line-artist": "선화 작가",
   colorist: "채색 작가",
@@ -55,6 +58,12 @@ export const PRODUCTION_ROLE_LABELS: Readonly<Record<ProductionRoleType, string>
   producer: "프로듀서",
   "rights-reviewer": "권리 검수",
   assistant: "작화 어시스턴트",
+  "line-assistant": "선화 어시스턴트",
+  "flat-color-assistant": "밑색 어시스턴트",
+  "shading-assistant": "명암·채색 어시스턴트",
+  "background-assistant": "배경·3D 어시스턴트",
+  "effect-assistant": "후보정·이펙트 어시스턴트",
+  "lettering-assistant": "식자·효과음 어시스턴트",
   vendor: "외부 파트너",
 });
 
@@ -65,7 +74,7 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     shortLabel: "스토리",
     description: "시놉시스, 회차 대본, 대사와 StoryLock 정본을 관리합니다.",
     order: 10,
-    primaryRoleTypes: ["story-lead", "writer", "adaptation-writer"],
+    primaryRoleTypes: ["story-lead", "writer", "adaptation-writer", "associate-writer"],
     reviewerRoleTypes: ["story-lead", "editor", "producer"],
     processAliases: ["story", "script", "scenario", "plot", "dialogue", "adaptation", "story-lock"],
     defaultCompletionCriteria: ["회차 의도와 정보 공개 순서 반영", "대사·복선·연속성 자체 검수", "StoryLock 입력 revision 고정"],
@@ -76,7 +85,7 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     shortLabel: "콘티",
     description: "컷 분할, 세로 리듬, 카메라와 감정 연출을 설계합니다.",
     order: 20,
-    primaryRoleTypes: ["storyboard-artist", "art-lead"],
+    primaryRoleTypes: ["storyboard-artist", "associate-artist", "art-lead"],
     reviewerRoleTypes: ["art-lead", "story-lead", "editor", "producer"],
     processAliases: ["storyboard", "thumbnail", "conte", "layout", "scroll-rhythm"],
     defaultCompletionCriteria: ["전체 컷과 스크롤 리듬 배치", "대사 안전영역 확인", "핵심 정보 공개 순서 검수"],
@@ -87,7 +96,7 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     shortLabel: "선화",
     description: "캐릭터 작화, 펜선, 표정과 포즈의 정합성을 책임집니다.",
     order: 30,
-    primaryRoleTypes: ["line-artist", "art-lead", "assistant"],
+    primaryRoleTypes: ["line-artist", "art-lead", "associate-artist", "assistant", "line-assistant"],
     reviewerRoleTypes: ["art-lead", "editor"],
     processAliases: ["line-art", "lineart", "inking", "pencil", "character-art", "character"],
     defaultCompletionCriteria: ["캐릭터 모델·의상 연속성 통과", "확대 기준 선 품질 확인", "배경·채색 인계 레이어 정리"],
@@ -98,7 +107,7 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     shortLabel: "배경",
     description: "공간, 원근, 3D 블로킹과 광원 기준을 제작합니다.",
     order: 40,
-    primaryRoleTypes: ["background-artist", "vendor", "assistant"],
+    primaryRoleTypes: ["background-artist", "background-assistant", "vendor", "assistant"],
     reviewerRoleTypes: ["art-lead", "editor", "rights-reviewer"],
     processAliases: ["background", "environment", "bg", "3d", "location", "set"],
     defaultCompletionCriteria: ["원근·광원 continuity 통과", "캐릭터와 분리된 레이어", "에셋 라이선스와 출처 첨부"],
@@ -109,7 +118,7 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     shortLabel: "채색",
     description: "밑색, 명암, 이펙트와 회차 색채 기준을 완성합니다.",
     order: 50,
-    primaryRoleTypes: ["colorist", "art-lead", "assistant"],
+    primaryRoleTypes: ["colorist", "art-lead", "assistant", "flat-color-assistant", "shading-assistant", "effect-assistant"],
     reviewerRoleTypes: ["art-lead", "editor"],
     processAliases: ["color", "colour", "coloring", "lighting", "render", "effect"],
     defaultCompletionCriteria: ["캐릭터 팔레트와 조명 기준 일치", "컷 간 색 연결 검수", "플랫폼 색공간·명암 기준 확인"],
@@ -120,7 +129,7 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     shortLabel: "식자",
     description: "말풍선, 폰트, 효과음과 읽기 순서를 편집합니다.",
     order: 60,
-    primaryRoleTypes: ["letterer"],
+    primaryRoleTypes: ["letterer", "lettering-assistant"],
     reviewerRoleTypes: ["editor", "story-lead", "producer"],
     processAliases: ["lettering", "typeset", "typesetting", "sfx", "balloon", "speech"],
     defaultCompletionCriteria: ["대사 정본과 텍스트 일치", "모바일 가독성과 읽기 순서 확인", "폰트·효과음 라이선스 확인"],
@@ -169,12 +178,15 @@ export const PRODUCTION_DEPARTMENTS: readonly ProductionDepartmentDefinition[] =
     processAliases: ["rights", "credit", "compliance", "license", "contract", "provenance"],
     defaultCompletionCriteria: ["기여·크레딧 정합성 확인", "라이선스·AI 사용 증빙 확인", "게시·2차 이용 권리 범위 확인"],
   }),
-]);const DEPARTMENT_BY_KEY = new Map(PRODUCTION_DEPARTMENTS.map((entry) => [entry.key, entry]));
+]);
+const DEPARTMENT_BY_KEY = new Map(PRODUCTION_DEPARTMENTS.map((entry) => [entry.key, entry]));
 const ROLE_DEPARTMENT: Readonly<Record<ProductionRoleType, ProductionDepartmentKey>> = Object.freeze({
   "story-lead": "story",
   writer: "story",
   "adaptation-writer": "story",
+  "associate-writer": "story",
   "storyboard-artist": "storyboard",
+  "associate-artist": "storyboard",
   "art-lead": "line-art",
   "line-artist": "line-art",
   colorist: "color",
@@ -185,8 +197,144 @@ const ROLE_DEPARTMENT: Readonly<Record<ProductionRoleType, ProductionDepartmentK
   producer: "production",
   "rights-reviewer": "rights",
   assistant: "line-art",
+  "line-assistant": "line-art",
+  "flat-color-assistant": "color",
+  "shading-assistant": "color",
+  "background-assistant": "background",
+  "effect-assistant": "color",
+  "lettering-assistant": "lettering",
   vendor: "production",
 });
+
+export type ProductionRoleCategory =
+  | "lead"
+  | "specialist"
+  | "associate"
+  | "assistant"
+  | "management"
+  | "external";
+
+export type ProductionCanonWriteAccess = "full" | "propose-only" | "read-only";
+
+export interface ProductionRolePermissionProfile {
+  readonly roleType: ProductionRoleType;
+  readonly category: ProductionRoleCategory;
+  readonly recommendedScopeKind: ProductionScopeKind;
+  readonly defaultCapabilities: readonly string[];
+  readonly allowedLayerGroups: readonly string[];
+  readonly canonWriteAccess: ProductionCanonWriteAccess;
+  readonly requiresLeadReview: boolean;
+  readonly canApproveDepartment: boolean;
+  readonly summaryKo: string;
+}
+
+function definePermissionProfile(
+  profile: ProductionRolePermissionProfile,
+): ProductionRolePermissionProfile {
+  return Object.freeze({
+    ...profile,
+    defaultCapabilities: Object.freeze([...profile.defaultCapabilities]),
+    allowedLayerGroups: Object.freeze([...profile.allowedLayerGroups]),
+  });
+}
+
+export const PRODUCTION_ROLE_PERMISSION_PROFILES: Readonly<
+  Record<ProductionRoleType, ProductionRolePermissionProfile>
+> = Object.freeze({
+  "story-lead": definePermissionProfile({ roleType: "story-lead", category: "lead", recommendedScopeKind: "project", defaultCapabilities: ["story.write", "canon.write", "story-lock.approve", "handoff.publish", "review.approve"], allowedLayerGroups: ["story-notes", "dialogue-draft"], canonWriteAccess: "full", requiresLeadReview: false, canApproveDepartment: true, summaryKo: "작품 설정집·대본 정본(StoryLock) 확정 및 스토리 인계 승인 권한을 가집니다." }),
+  writer: definePermissionProfile({ roleType: "writer", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["story.write", "dialogue.write", "canon.propose", "handoff.prepare"], allowedLayerGroups: ["story-notes", "dialogue-draft"], canonWriteAccess: "propose-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "회차 시놉시스·대본·대사를 집필하며 설정집 변경은 제안(Propose)을 통해 반영합니다." }),
+  "adaptation-writer": definePermissionProfile({ roleType: "adaptation-writer", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["story.adapt", "scene-beat.write", "dialogue.write", "pacing.adjust", "handoff.prepare"], allowedLayerGroups: ["story-notes", "dialogue-draft", "pacing-guide"], canonWriteAccess: "propose-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "원작 서사를 웹툰 씬·컷 비트와 세로 스크롤 호흡 대본으로 각색합니다. 원작 정본은 읽기 전용으로 보호됩니다." }),
+  "associate-writer": definePermissionProfile({ roleType: "associate-writer", category: "associate", recommendedScopeKind: "episode", defaultCapabilities: ["research.write", "sub-episode.draft", "continuity.check", "canon.propose"], allowedLayerGroups: ["story-notes", "research-board"], canonWriteAccess: "propose-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "자료조사, 서브 에피소드 초안, 설정·대사 연속성 대조를 수행하며 StoryLock 직접 잠금은 제한됩니다." }),
+  "storyboard-artist": definePermissionProfile({ roleType: "storyboard-artist", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["storyboard.write", "panel-cut.edit", "camera.layout", "scroll-rhythm.edit"], allowedLayerGroups: ["storyboard", "panel-frame", "camera-guide", "dialogue-placement"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "컷 분할, 카메라 구도, 세로 스크롤 리듬과 말풍선 더미 배치를 설계합니다." }),
+  "associate-artist": definePermissionProfile({ roleType: "associate-artist", category: "associate", recommendedScopeKind: "scene", defaultCapabilities: ["rough-sketch.write", "anatomy-pose.draft", "sub-character.sketch", "prop.sketch"], allowedLayerGroups: ["rough-sketch", "pose-guide", "sub-character-draft"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "러프 데생, 인체·포즈 잡기, 서브 캐릭터·소품 스케치를 담당하며 메인 펜선 확정 전 작화 리드 검수를 거칩니다." }),
+  "art-lead": definePermissionProfile({ roleType: "art-lead", category: "lead", recommendedScopeKind: "project", defaultCapabilities: ["art.write", "style-guide.write", "thumbnail-lock.approve", "layer-lock.override", "review.approve"], allowedLayerGroups: ["all-visual-layers"], canonWriteAccess: "propose-only", requiresLeadReview: false, canApproveDepartment: true, summaryKo: "작화 스타일 정본, 콘티·선화·채색 최종 승인 및 어시스턴트 레이어 병합 권한을 가집니다." }),
+  "line-artist": definePermissionProfile({ roleType: "line-artist", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["lineart.write", "character-acting.draw", "ink.finalize"], allowedLayerGroups: ["main-lineart", "character-lineart", "expression-detail"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "주연 캐릭터 작화, 감정 연기, 메인 펜선 원화를 책임집니다." }),
+  colorist: definePermissionProfile({ roleType: "colorist", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["color.write", "palette.manage", "lighting.render", "mood.grade"], allowedLayerGroups: ["flat-color", "shading", "lighting-grade", "color-hold"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "회차 색채 설계, 캐릭터 팔레트 정합성, 명암·조명 연출을 총괄합니다." }),
+  "background-artist": definePermissionProfile({ roleType: "background-artist", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["background.write", "three-d.layout", "perspective.setup", "environment.light"], allowedLayerGroups: ["background-3d", "background-line", "background-paint", "environment-light"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "배경 아트워크, 3D 세트 배치, 투시 그리드와 공간 조명을 설계합니다." }),
+  letterer: definePermissionProfile({ roleType: "letterer", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["lettering.write", "balloon.edit", "sfx.design", "typography.style"], allowedLayerGroups: ["balloon", "dialogue-text", "sfx-typography"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "말풍선 조판, 대사 타이포그래피, 효과음(SFX) 디자인과 모바일 가독성을 책임집니다." }),
+  localizer: definePermissionProfile({ roleType: "localizer", category: "specialist", recommendedScopeKind: "episode", defaultCapabilities: ["translation.write", "glossary.propose", "locale-lettering.edit"], allowedLayerGroups: ["locale-dialogue-text", "locale-sfx"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "다국어 번역, 문화권별 대사 현지화 및 지역별 식자 레이어를 편집합니다." }),
+  editor: definePermissionProfile({ roleType: "editor", category: "management", recommendedScopeKind: "project", defaultCapabilities: ["review.approve", "proof.annotate", "continuity.audit", "handoff.mediate"], allowedLayerGroups: ["review-annotation", "proof-overlay"], canonWriteAccess: "propose-only", requiresLeadReview: false, canApproveDepartment: true, summaryKo: "회차 기획·대본·작화·식자 통합 교정 및 검수 승인, 수정 요청(Redline) 권한을 가집니다." }),
+  producer: definePermissionProfile({ roleType: "producer", category: "management", recommendedScopeKind: "project", defaultCapabilities: ["schedule.manage", "assignment.manage", "workflow.configure", "release.package", "review.approve"], allowedLayerGroups: ["review-annotation"], canonWriteAccess: "read-only", requiresLeadReview: false, canApproveDepartment: true, summaryKo: "일정·인력 배정, 공정 파이프라인 설정, 위험 관리 및 게시 패키지 출고를 총괄합니다." }),
+  "rights-reviewer": definePermissionProfile({ roleType: "rights-reviewer", category: "management", recommendedScopeKind: "project", defaultCapabilities: ["rights.audit", "credit.verify", "license.verify", "ai-provenance.audit", "review.approve"], allowedLayerGroups: ["review-annotation"], canonWriteAccess: "read-only", requiresLeadReview: false, canApproveDepartment: true, summaryKo: "저작권, 외부 에셋·폰트 라이선스, AI 이력 및 크레딧 정합성을 감사·승인합니다." }),
+  assistant: definePermissionProfile({ roleType: "assistant", category: "assistant", recommendedScopeKind: "cut", defaultCapabilities: ["assistant.layer-write", "cleanup.edit", "flat-color.fill"], allowedLayerGroups: ["assistant-line", "assistant-flat-color", "assistant-tone"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "배정된 컷·씬 범위 안에서 보조 레이어(선화 정리·밑색·톤)만 편집하며 메인 원화 레이어는 잠금 보호됩니다." }),
+  "line-assistant": definePermissionProfile({ roleType: "line-assistant", category: "assistant", recommendedScopeKind: "cut", defaultCapabilities: ["line-cleanup.write", "sub-ink.draw", "gap-close.edit"], allowedLayerGroups: ["assistant-line", "sub-character-ink", "prop-ink"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "선화 클린업, 잔선 제거, 끊긴 선 연결, 모브·소품 펜터치 레이어만 편집하며 주연 원화 레이어는 보호됩니다." }),
+  "flat-color-assistant": definePermissionProfile({ roleType: "flat-color-assistant", category: "assistant", recommendedScopeKind: "cut", defaultCapabilities: ["flat-color.fill", "color-mask.separate", "palette.apply-locked"], allowedLayerGroups: ["flat-color", "color-mask"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "선화 참조 기반 밑색 채우기와 파츠별(피부·의상·머리카락) 색분할 마스크 레이어만 편집하며 지정 팔레트 임의 변경이 제한됩니다." }),
+  "shading-assistant": definePermissionProfile({ roleType: "shading-assistant", category: "assistant", recommendedScopeKind: "cut", defaultCapabilities: ["shading.write", "cell-shadow.paint", "rim-light.paint"], allowedLayerGroups: ["shading", "highlight", "ambient-occlusion"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "고정된 밑색 클리핑 마스크 위에서 셀 명암, 림라이트, 재질 하이라이트 레이어만 편집합니다." }),
+  "background-assistant": definePermissionProfile({ roleType: "background-assistant", category: "assistant", recommendedScopeKind: "scene", defaultCapabilities: ["three-d.blockout", "line-extract.run", "background-tone.apply", "prop-asset.place"], allowedLayerGroups: ["background-3d", "background-line", "background-tone"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "3D 에셋 배치, 투시선 정합, LT 선화·톤 추출 및 원경 정리 레이어를 담당하며 에셋 라이선스 자동 검증이 적용됩니다." }),
+  "effect-assistant": definePermissionProfile({ roleType: "effect-assistant", category: "assistant", recommendedScopeKind: "cut", defaultCapabilities: ["fx-layer.write", "speedline.draw", "color-grade.propose", "atmosphere.render"], allowedLayerGroups: ["fx-overlay", "speedline", "particles", "post-grade"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "집중선·스피드선, 광학 플레어·파티클, 비·안개 대기와 후보정 필터 레이어만 비파괴 방식으로 편집합니다." }),
+  "lettering-assistant": definePermissionProfile({ roleType: "lettering-assistant", category: "assistant", recommendedScopeKind: "episode", defaultCapabilities: ["balloon.place", "dialogue-text.flow", "sfx-brush.place"], allowedLayerGroups: ["balloon", "dialogue-text", "sfx-typography"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "StoryLock 대사 정본을 말풍선·더미 텍스트에 흘려 넣고 효과음 배치를 보조하며 대사 원문 임의 수정은 차단됩니다." }),
+  vendor: definePermissionProfile({ roleType: "vendor", category: "external", recommendedScopeKind: "episode", defaultCapabilities: ["deliverable.submit", "scope-package.read"], allowedLayerGroups: ["vendor-deliverable"], canonWriteAccess: "read-only", requiresLeadReview: true, canApproveDepartment: false, summaryKo: "계약된 발주 패키지(ScopePackage) 범위 안에서만 산출물을 제출하며 내부 설정집 접근이 격리됩니다." }),
+});
+
+export function productionRolePermissionProfile(
+  roleType: ProductionRoleType,
+): ProductionRolePermissionProfile {
+  return PRODUCTION_ROLE_PERMISSION_PROFILES[roleType];
+}
+
+export interface RoleAssignmentPermissionGuardrailEvaluation {
+  readonly roleType: ProductionRoleType;
+  readonly profile: ProductionRolePermissionProfile;
+  readonly overPrivilegedScope: boolean;
+  readonly leadFlagMismatch: boolean;
+  readonly unrecommendedCapabilities: readonly string[];
+  readonly missingDefaultCapabilities: readonly string[];
+  readonly warnings: readonly string[];
+}
+
+export function evaluateRoleAssignmentPermissionGuardrails(
+  assignment: Pick<RoleAssignment, "roleType" | "scope" | "capabilities" | "lead">,
+): RoleAssignmentPermissionGuardrailEvaluation {
+  const profile = productionRolePermissionProfile(assignment.roleType);
+  const warnings: string[] = [];
+  const isAssistantOrExternal =
+    profile.category === "assistant" || profile.category === "external" || profile.category === "associate";
+  const overPrivilegedScope =
+    isAssistantOrExternal && (assignment.scope.kind === "project" || assignment.scope.kind === "season");
+  if (overPrivilegedScope) {
+    warnings.push(
+      `${PRODUCTION_ROLE_LABELS[assignment.roleType]} 직군에 작품·시즌 전체 범위가 부여되었습니다. 최소권한 원칙에 따라 '${profile.recommendedScopeKind}' 범위로 축소하는 것을 권장합니다.`,
+    );
+  }
+  const leadFlagMismatch =
+    (profile.category === "assistant" || profile.category === "external") && assignment.lead;
+  if (leadFlagMismatch) {
+    warnings.push(
+      `${PRODUCTION_ROLE_LABELS[assignment.roleType]} 직군은 리드 승인자가 될 수 없습니다. 부서 리드 지정을 해제하세요.`,
+    );
+  }
+  const defaultSet = new Set(profile.defaultCapabilities);
+  const HIGH_PRIVILEGE_CAPABILITIES = new Set([
+    "canon.write",
+    "story-lock.approve",
+    "thumbnail-lock.approve",
+    "layer-lock.override",
+    "review.approve",
+    "assignment.manage",
+    "workflow.configure",
+  ]);
+  const unrecommendedCapabilities = assignment.capabilities.filter(
+    (capability) => !defaultSet.has(capability) && (isAssistantOrExternal || HIGH_PRIVILEGE_CAPABILITIES.has(capability)),
+  );
+  if (unrecommendedCapabilities.length > 0) {
+    warnings.push(
+      `직군 표준 범위를 벗어난 고위험 권한(${unrecommendedCapabilities.join(", ")})이 포함되어 있습니다.`,
+    );
+  }
+  const currentSet = new Set(assignment.capabilities);
+  const missingDefaultCapabilities = profile.defaultCapabilities.filter(
+    (capability) => !currentSet.has(capability),
+  );
+  return Object.freeze({
+    roleType: assignment.roleType,
+    profile,
+    overPrivilegedScope,
+    leadFlagMismatch,
+    unrecommendedCapabilities: Object.freeze(unrecommendedCapabilities),
+    missingDefaultCapabilities: Object.freeze(missingDefaultCapabilities),
+    warnings: Object.freeze(warnings),
+  });
+}
 
 export interface ProductionPipelineStageDefinition {
   readonly key: string;
@@ -202,54 +350,14 @@ function definePipelineStage(
 }
 
 export const WEBTOON_PRODUCTION_PIPELINE: readonly ProductionPipelineStageDefinition[] = Object.freeze([
-  definePipelineStage({
-    key: "story-lock",
-    label: "대본 잠금",
-    departmentKey: "story",
-    dependsOnDepartmentKeys: [],
-  }),
-  definePipelineStage({
-    key: "storyboard",
-    label: "콘티·연출",
-    departmentKey: "storyboard",
-    dependsOnDepartmentKeys: ["story"],
-  }),
-  definePipelineStage({
-    key: "line-art",
-    label: "캐릭터·선화",
-    departmentKey: "line-art",
-    dependsOnDepartmentKeys: ["storyboard"],
-  }),
-  definePipelineStage({
-    key: "background",
-    label: "배경·3D",
-    departmentKey: "background",
-    dependsOnDepartmentKeys: ["storyboard"],
-  }),
-  definePipelineStage({
-    key: "color",
-    label: "채색·이펙트",
-    departmentKey: "color",
-    dependsOnDepartmentKeys: ["line-art", "background"],
-  }),
-  definePipelineStage({
-    key: "lettering",
-    label: "식자·효과음",
-    departmentKey: "lettering",
-    dependsOnDepartmentKeys: ["color"],
-  }),
-  definePipelineStage({
-    key: "joint-proof",
-    label: "통합 교정",
-    departmentKey: "editorial",
-    dependsOnDepartmentKeys: ["lettering"],
-  }),
-  definePipelineStage({
-    key: "publication",
-    label: "게시 패키지",
-    departmentKey: "production",
-    dependsOnDepartmentKeys: ["editorial", "rights"],
-  }),
+  definePipelineStage({ key: "story-lock", label: "대본 잠금", departmentKey: "story", dependsOnDepartmentKeys: [] }),
+  definePipelineStage({ key: "storyboard", label: "콘티·연출", departmentKey: "storyboard", dependsOnDepartmentKeys: ["story"] }),
+  definePipelineStage({ key: "line-art", label: "캐릭터·선화", departmentKey: "line-art", dependsOnDepartmentKeys: ["storyboard"] }),
+  definePipelineStage({ key: "background", label: "배경·3D", departmentKey: "background", dependsOnDepartmentKeys: ["storyboard"] }),
+  definePipelineStage({ key: "color", label: "채색·이펙트", departmentKey: "color", dependsOnDepartmentKeys: ["line-art", "background"] }),
+  definePipelineStage({ key: "lettering", label: "식자·효과음", departmentKey: "lettering", dependsOnDepartmentKeys: ["color"] }),
+  definePipelineStage({ key: "joint-proof", label: "통합 교정", departmentKey: "editorial", dependsOnDepartmentKeys: ["lettering"] }),
+  definePipelineStage({ key: "publication", label: "게시 패키지", departmentKey: "production", dependsOnDepartmentKeys: ["editorial", "rights"] }),
 ]);
 
 const CLOSED_TASK_STATUSES = new Set<ProductionTaskStatus>(["done", "cancelled", "out-of-scope"]);

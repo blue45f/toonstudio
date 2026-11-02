@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PRODUCTION_ROLE_LABELS,
+  PRODUCTION_ROLE_PERMISSION_PROFILES,
+  PRODUCTION_ROLE_TYPES,
   buildProductionRoleWorkcellBoard,
   createProductionProjectAggregate,
+  departmentForRole,
   eligibleAssignmentsForTask,
   episodeScope,
   evaluateProductionTaskGate,
+  evaluateRoleAssignmentPermissionGuardrails,
   inferProductionTaskDepartment,
+  productionRolePermissionProfile,
   projectScope,
   type ProductionProjectAggregate,
   type ProductionTask,
@@ -226,5 +232,57 @@ describe("production role workcells", () => {
       kind: "reviewer",
       at: AT,
     }).map((entry) => entry.id)).toEqual([editor.id]);
+  });
+
+  it("maps all 23 granular production roles to departments and least-privilege RBAC profiles", () => {
+    expect(PRODUCTION_ROLE_TYPES).toHaveLength(23);
+    for (const roleType of PRODUCTION_ROLE_TYPES) {
+      expect(PRODUCTION_ROLE_LABELS[roleType]).toBeTruthy();
+      expect(departmentForRole(roleType)).toBeTruthy();
+      const profile = productionRolePermissionProfile(roleType);
+      expect(profile).toBe(PRODUCTION_ROLE_PERMISSION_PROFILES[roleType]);
+      expect(profile.roleType).toBe(roleType);
+      expect(profile.defaultCapabilities.length).toBeGreaterThan(0);
+      expect(profile.allowedLayerGroups.length).toBeGreaterThan(0);
+      expect(profile.summaryKo.length).toBeGreaterThan(10);
+    }
+    expect(departmentForRole("associate-writer")).toBe("story");
+    expect(departmentForRole("associate-artist")).toBe("storyboard");
+    expect(departmentForRole("line-assistant")).toBe("line-art");
+    expect(departmentForRole("flat-color-assistant")).toBe("color");
+    expect(departmentForRole("shading-assistant")).toBe("color");
+    expect(departmentForRole("background-assistant")).toBe("background");
+    expect(departmentForRole("effect-assistant")).toBe("color");
+    expect(departmentForRole("lettering-assistant")).toBe("lettering");
+  });
+
+  it("enforces least-privilege guardrails for specialized assistants and associates", () => {
+    const overPrivilegedAssistant = evaluateRoleAssignmentPermissionGuardrails({
+      roleType: "flat-color-assistant",
+      scope: project,
+      capabilities: ["flat-color.fill", "canon.write"],
+      lead: true,
+    });
+    expect(overPrivilegedAssistant.overPrivilegedScope).toBe(true);
+    expect(overPrivilegedAssistant.leadFlagMismatch).toBe(true);
+    expect(overPrivilegedAssistant.unrecommendedCapabilities).toContain("canon.write");
+    expect(overPrivilegedAssistant.warnings.length).toBeGreaterThanOrEqual(3);
+
+    const scopedAssistant = evaluateRoleAssignmentPermissionGuardrails({
+      roleType: "line-assistant",
+      scope: {
+        kind: "cut",
+        id: "cut-3",
+        ancestors: [
+          { kind: "project", id: "project-role-workflow" },
+          { kind: "episode", id: "episode-12" },
+        ],
+      },
+      capabilities: ["line-cleanup.write", "sub-ink.draw", "gap-close.edit"],
+      lead: false,
+    });
+    expect(scopedAssistant.overPrivilegedScope).toBe(false);
+    expect(scopedAssistant.leadFlagMismatch).toBe(false);
+    expect(scopedAssistant.warnings).toEqual([]);
   });
 });

@@ -46,22 +46,7 @@ export type CreatorRoleOnboardingStatus = (typeof CREATOR_ROLE_ONBOARDING_STATUS
 export type CreatorRoleOnboardingStep = 1 | 2 | 3 | 4;
 
 export const CREATOR_ROLE_IDS = [
-  "creator",
-  "story",
-  "planner",
-  "storyboard",
-  "line-art",
-  "background",
-  "color",
-  "lettering",
-  "character",
-  "three-d",
-  "educator",
-  "assistant",
-  "editor",
-  "producer",
-  "localization",
-  "reviewer",
+  "creator", "story", "adaptation", "associate-writer", "planner", "storyboard", "associate-artist", "line-art", "background", "color", "lettering", "character", "three-d", "educator", "assistant", "line-assistant", "flat-color-assistant", "shading-assistant", "background-assistant", "effect-assistant", "lettering-assistant", "editor", "producer", "localization", "reviewer",
 ] as const;
 
 export type CreatorRoleId = (typeof CREATOR_ROLE_IDS)[number];
@@ -97,34 +82,7 @@ export const CREATOR_COLLABORATION_STATUSES = ["available", "limited", "unavaila
 export type CreatorCollaborationStatus = (typeof CREATOR_COLLABORATION_STATUSES)[number];
 
 export const CREATOR_SPECIALTY_IDS = [
-  "world-building",
-  "plot",
-  "dialogue",
-  "adaptation",
-  "episode-planning",
-  "storyboard",
-  "scroll-direction",
-  "composition",
-  "character-design",
-  "line-art",
-  "inking",
-  "background-2d",
-  "background-3d",
-  "prop-design",
-  "flat-color",
-  "rendering",
-  "effects",
-  "retouching",
-  "lettering",
-  "balloon",
-  "sound-effects",
-  "production-schedule",
-  "budget",
-  "quality-control",
-  "editing",
-  "proofing",
-  "localization",
-  "file-cleanup",
+  "world-building", "plot", "dialogue", "adaptation", "episode-planning", "storyboard", "scroll-direction", "composition", "character-design", "line-art", "inking", "background-2d", "background-3d", "prop-design", "flat-color", "rendering", "effects", "retouching", "lettering", "balloon", "sound-effects", "production-schedule", "budget", "quality-control", "editing", "proofing", "localization", "file-cleanup",
 ] as const;
 
 export type CreatorSpecialtyId = (typeof CREATOR_SPECIALTY_IDS)[number];
@@ -252,11 +210,8 @@ export const CREATOR_STAGE_LABELS: Readonly<Record<CreatorStage, LocalizedCreato
 
 export const CREATOR_ROLE_DEFINITIONS = [
   {
-    id: "creator",
-    group: "art",
-    lens: "art",
-    label: text("1인 웹툰 작가", "Solo webtoon creator"),
-    shortLabel: text("1인 작가", "Solo creator"),
+    id: "creator", group: "art", lens: "art",
+    label: text("1인 웹툰 작가", "Solo webtoon creator"), shortLabel: text("1인 작가", "Solo creator"),
     description: text("기획·스토리·그림·연재를 한 사람이 연결합니다.", "Connect planning, story, art and publishing in one workflow."),
     workspaceTitle: text("혼자서도 전체 제작 흐름을 놓치지 않게", "Keep the full production flow visible while working solo"),
     workspaceSummary: text("다음 회차, 원고 작업, 검수와 게시 준비를 한 화면에서 이어갑니다.", "Continue the next episode, artwork, review and publishing preparation from one place."),
@@ -268,11 +223,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "story",
-    group: "story",
-    lens: "story",
-    label: text("글작가", "Story writer"),
-    shortLabel: text("글작가", "Writer"),
+    id: "story", group: "story", lens: "story",
+    label: text("글작가", "Story writer"), shortLabel: text("글작가", "Writer"),
     description: text("세계관, 플롯, 장면과 대사를 설계합니다.", "Design worldbuilding, plot, scenes and dialogue."),
     workspaceTitle: text("대본과 설정의 연결을 중심으로", "Center the workspace on scripts and canon"),
     workspaceSummary: text("미완성 장면, 설정 충돌, 피드백과 다음 회차 기획을 먼저 보여줍니다.", "Prioritize unfinished scenes, canon conflicts, feedback and next-episode planning."),
@@ -284,11 +236,34 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "planner",
-    group: "story",
-    lens: "story",
-    label: text("기획자", "Planner"),
-    shortLabel: text("기획", "Planning"),
+    id: "adaptation", group: "story", lens: "story",
+    label: text("각색·콘티 대본 작가", "Adaptation · script writer"), shortLabel: text("각색작가", "Adaptation"),
+    description: text("원작 소설·시나리오를 웹툰 스크롤 호흡과 컷 단위 연출 대본으로 각색합니다.", "Adapt source novels and stories into webtoon scroll pacing and panel scripts."),
+    workspaceTitle: text("원작 서사에서 웹툰 컷 호흡으로 자연스럽게", "Bridge source narrative into webtoon panel pacing"),
+    workspaceSummary: text("원작 대조, 회차별 끊기(클리프행어), 컷 대사 압축과 콘티 인계를 우선합니다.", "Prioritize source comparison, episode cliffhangers, dialogue compression and storyboard handoff."),
+    recommendedSpecialties: ["adaptation", "episode-planning", "dialogue", "scroll-direction"],
+    actions: [
+      action("/story-lab", "각색·콘티 대본 열기", "Open adaptation scripts", "원작 비교와 컷 단위 각색 대본을 작성합니다.", "Write panel-level adaptation scripts alongside source text."),
+      action("/production", "각색 공정·인계 확인", "Review adaptation handoff", "원작자·콘티 작가와의 인계 기준을 확인합니다.", "Check handoff criteria with original writers and storyboard artists."),
+      action("/studio/new?kind=webtoon&template=webtoon-vertical", "세로 연출 대본 시작", "Start vertical script board", "웹툰 스크롤 호흡에 맞춰 장면을 배치합니다.", "Lay out scenes for vertical webtoon scroll pacing."),
+    ],
+  },
+  {
+    id: "associate-writer", group: "story", lens: "story",
+    label: text("보조 글작가·자료조사", "Associate writer · research"), shortLabel: text("보조 글작가", "Assoc. writer"),
+    description: text("자료조사·고증, 서브 에피소드 초안, 배경 대사와 설정집 정리를 지원합니다.", "Support research, sub-episode drafts, ambient dialogue and canon documentation."),
+    workspaceTitle: text("세계관 정본을 보호하며 자료조사와 초안을 빠르게", "Draft scenes and research safely while protecting locked canon"),
+    workspaceSummary: text("담당 리서치 과제, 대사 초안 제안, 설정 아카이브와 메인 작가 피드백을 먼저 보여줍니다.", "Surface assigned research, dialogue draft proposals, lore archives and lead writer feedback."),
+    recommendedSpecialties: ["world-building", "dialogue", "plot", "proofing"],
+    actions: [
+      action("/story-lab", "자료조사·보조 대본 열기", "Open research & draft lab", "고증 자료와 서브 장면 초안을 정리합니다.", "Organize research notes and sub-scene drafts."),
+      action("/production", "보조 집필 작업 목록", "Associate writing queue", "메인 글작가가 배정한 리서치·초안 과제를 확인합니다.", "Review research and drafting tasks assigned by the lead writer."),
+      action("/studio", "참고 원고 열기", "Open reference manuscripts", "기존 회차 연출과 대사 톤을 참고합니다.", "Inspect existing episodes for pacing and dialogue tone."),
+    ],
+  },
+  {
+    id: "planner", group: "story", lens: "story",
+    label: text("기획자", "Planner"), shortLabel: text("기획", "Planning"),
     description: text("작품 콘셉트, 타깃, 세계관과 시즌 구조를 설계합니다.", "Define concept, audience, canon and season structure."),
     workspaceTitle: text("작품의 기준과 결정 이력을 먼저", "Put creative foundations and decisions first"),
     workspaceSummary: text("기획 기준선, 시즌·회차 구조, 열린 위험과 결정 대기를 한눈에 봅니다.", "See planning baselines, season structure, open risks and pending decisions at a glance."),
@@ -300,11 +275,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "storyboard",
-    group: "art",
-    lens: "art",
-    label: text("콘티 작가", "Storyboard artist"),
-    shortLabel: text("콘티", "Storyboard"),
+    id: "storyboard", group: "art", lens: "art",
+    label: text("콘티 작가", "Storyboard artist"), shortLabel: text("콘티", "Storyboard"),
     description: text("대본을 컷, 구도, 시선 흐름과 스크롤 리듬으로 번역합니다.", "Translate scripts into panels, composition, eye flow and scroll rhythm."),
     workspaceTitle: text("대본에서 컷으로 넘어가는 지점을 선명하게", "Make the script-to-panel handoff explicit"),
     workspaceSummary: text("스토리 의도, 차단 질문, 콘티 검수와 다음 작화 입력을 우선합니다.", "Prioritize narrative intent, blocking questions, storyboard review and art handoff inputs."),
@@ -316,11 +288,21 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "line-art",
-    group: "art",
-    lens: "art",
-    label: text("그림작가·선화", "Illustrator · line art"),
-    shortLabel: text("그림작가", "Illustrator"),
+    id: "associate-artist", group: "art", lens: "art",
+    label: text("보조 그림작가·데생", "Associate artist · breakdown"), shortLabel: text("보조 그림작가", "Assoc. artist"),
+    description: text("메인 작화가의 화풍 기준에 맞춰 데생·러프 브레이크다운과 서브 인물·의상 작화를 담당합니다.", "Handle rough breakdowns, anatomy drawing and secondary character/costume art in the lead style."),
+    workspaceTitle: text("화풍 가이드와 데생·러프 담당 컷을 한눈에", "Keep style guides and assigned rough/breakdown panels together"),
+    workspaceSummary: text("캐릭터 모델 시트, 콘티 인계본, 담당 데생 컷과 메인 작가 피드백을 우선합니다.", "Prioritize character model sheets, storyboard inputs, assigned breakdown cuts and lead feedback."),
+    recommendedSpecialties: ["character-design", "line-art", "composition", "storyboard"],
+    actions: [
+      action("/studio", "보조 작화 원고 열기", "Open breakdown artwork", "배정된 데생·러프 및 서브 작화 컷을 이어갑니다.", "Continue assigned breakdown and secondary character panels."),
+      action("/studio/assets?tab=characters&action=openVault", "캐릭터 화풍 시트", "Character style sheets", "비율·표정·의상 정본 가이드를 확인합니다.", "Check proportion, expression and costume model sheets."),
+      action("/production", "보조 작화 작업 목록", "Associate art queue", "담당 컷과 메인 작가 검수 상태를 확인합니다.", "Check assigned panels and lead artist review status."),
+    ],
+  },
+  {
+    id: "line-art", group: "art", lens: "art",
+    label: text("그림작가·선화", "Illustrator · line art"), shortLabel: text("그림작가", "Illustrator"),
     description: text("캐릭터 연기, 선화와 최종 작화 품질을 책임집니다.", "Own character acting, line art and final drawing quality."),
     workspaceTitle: text("캔버스와 오늘의 작화 작업을 가장 먼저", "Put the canvas and today's art tasks first"),
     workspaceSummary: text("담당 컷, 콘티 입력, 브러시·레퍼런스와 검수 대기를 빠르게 엽니다.", "Open assigned panels, storyboard inputs, brushes, references and review queues quickly."),
@@ -332,11 +314,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "background",
-    group: "art",
-    lens: "art",
-    label: text("배경 작가", "Background artist"),
-    shortLabel: text("배경", "Background"),
+    id: "background", group: "art", lens: "art",
+    label: text("배경 작가", "Background artist"), shortLabel: text("배경", "Background"),
     description: text("공간, 소품, 원근과 2D·3D 배경 자산을 제작합니다.", "Create environments, props, perspective and 2D/3D background assets."),
     workspaceTitle: text("장면 요구와 배경 자산을 함께", "Keep scene requirements and environment assets together"),
     workspaceSummary: text("필요 장소, 카메라 구도, 3D 패스와 재사용 가능한 배경을 중심으로 구성합니다.", "Focus on required locations, camera composition, 3D passes and reusable environments."),
@@ -348,11 +327,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "color",
-    group: "art",
-    lens: "art",
-    label: text("채색·후보정 작가", "Color · finishing artist"),
-    shortLabel: text("채색", "Color"),
+    id: "color", group: "art", lens: "art",
+    label: text("채색·후보정 작가", "Color · finishing artist"), shortLabel: text("채색", "Color"),
     description: text("밑색, 명암, 효과와 최종 화면 톤을 완성합니다.", "Complete flats, rendering, effects and final visual tone."),
     workspaceTitle: text("색 기준과 통합 원고를 빠르게", "Reach color standards and integrated pages quickly"),
     workspaceSummary: text("팔레트, 선화 정본, 담당 컷과 후보정 검수 대기를 우선합니다.", "Prioritize palettes, approved line art, assigned panels and finishing review queues."),
@@ -364,11 +340,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "lettering",
-    group: "art",
-    lens: "art",
-    label: text("식자·편집 작가", "Lettering artist"),
-    shortLabel: text("식자", "Lettering"),
+    id: "lettering", group: "art", lens: "art",
+    label: text("식자·편집 작가", "Lettering artist"), shortLabel: text("식자", "Lettering"),
     description: text("말풍선, 대사, 효과음과 최종 읽기 흐름을 정리합니다.", "Refine balloons, dialogue, sound effects and reading flow."),
     workspaceTitle: text("대사와 최종 원고 규격을 함께", "Keep dialogue and final-page requirements together"),
     workspaceSummary: text("확정 대본, 말풍선 충돌, 효과음과 플랫폼 규격 검수를 중심으로 보여줍니다.", "Focus on locked scripts, balloon collisions, sound effects and platform preflight."),
@@ -380,11 +353,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "character",
-    group: "art",
-    lens: "art",
-    label: text("캐릭터 디자이너", "Character designer"),
-    shortLabel: text("캐릭터", "Character"),
+    id: "character", group: "art", lens: "art",
+    label: text("캐릭터 디자이너", "Character designer"), shortLabel: text("캐릭터", "Character"),
     description: text("캐릭터 외형, 표정, 의상과 반복 사용 기준을 설계합니다.", "Design appearance, expressions, costumes and reusable character standards."),
     workspaceTitle: text("캐릭터 기준과 반복 제작 자산을 중심으로", "Center character standards and reusable assets"),
     workspaceSummary: text("캐릭터 시트, 표정·의상 변형과 회차별 등장 요구를 연결합니다.", "Connect character sheets, expression and costume variants with episode requirements."),
@@ -396,11 +366,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "three-d",
-    group: "art",
-    lens: "art",
-    label: text("3D 아티스트", "3D artist"),
-    shortLabel: text("3D", "3D"),
+    id: "three-d", group: "art", lens: "art",
+    label: text("3D 아티스트", "3D artist"), shortLabel: text("3D", "3D"),
     description: text("배경, 소품, 카메라와 렌더 패스를 제작합니다.", "Create environments, props, cameras and render passes."),
     workspaceTitle: text("3D 장면과 원고 연결을 안전하게", "Connect 3D scenes to artwork safely"),
     workspaceSummary: text("카메라, 장면 자산, 렌더 패스와 최종 PNG 연결 상태를 우선합니다.", "Prioritize cameras, scene assets, render passes and final PNG linkage."),
@@ -412,11 +379,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "educator",
-    group: "support",
-    lens: "story",
-    label: text("강사·교육자", "Instructor · educator"),
-    shortLabel: text("교육", "Educator"),
+    id: "educator", group: "support", lens: "story",
+    label: text("강사·교육자", "Instructor · educator"), shortLabel: text("교육", "Educator"),
     description: text("웹툰 제작 과정을 가르치고 실습·과제·피드백을 운영합니다.", "Teach webtoon production and manage practice, assignments and feedback."),
     workspaceTitle: text("수업과 실습, 피드백을 하나의 흐름으로", "Connect lessons, practice and feedback in one flow"),
     workspaceSummary: text("교육 자료, 학생 과제, 실습 작업실과 작품 피드백을 우선해서 보여줍니다.", "Prioritize learning resources, assignments, practice workspaces and critique."),
@@ -428,11 +392,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "assistant",
-    group: "support",
-    lens: "art",
-    label: text("어시스턴트", "Assistant"),
-    shortLabel: text("어시", "Assistant"),
+    id: "assistant", group: "support", lens: "art",
+    label: text("어시스턴트", "Assistant"), shortLabel: text("어시", "Assistant"),
     description: text("배정된 컷과 보조 공정을 납품 기준에 맞게 수행합니다.", "Complete assigned panels and support tasks to the delivery standard."),
     workspaceTitle: text("오늘 맡은 일과 완료 기준만 선명하게", "Make today's assigned work and completion criteria unmistakable"),
     workspaceSummary: text("담당 작업, 입력 파일, 레이어 규칙, 수정 요청과 마감을 우선해서 보여줍니다.", "Prioritize assigned tasks, input files, layer rules, change requests and deadlines."),
@@ -444,11 +405,86 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "editor",
-    group: "production",
-    lens: "producer",
-    label: text("편집자", "Editor"),
-    shortLabel: text("편집", "Editor"),
+    id: "line-assistant", group: "support", lens: "art",
+    label: text("선화·펜터치 어시스턴트", "Line-art & inking assistant"), shortLabel: text("선화 어시", "Line assist"),
+    description: text("지정된 브러시와 선 두께 규칙에 맞춰 펜터치·선화 클린업과 벡터 선 정리를 전담합니다.", "Specialize in inking, line cleanup and vector stroke refinement under brush standards."),
+    workspaceTitle: text("선화 레이어와 펜터치 규칙에만 집중할 수 있게", "Focus strictly on line-art layers and inking standards"),
+    workspaceSummary: text("배정 컷의 러프 입력, 지정 펜 브러시, 선 교차 정리와 선화 납품 체크리스트를 우선합니다.", "Prioritize rough inputs, designated ink brushes, vector intersection cleanup and line delivery checks."),
+    recommendedSpecialties: ["line-art", "inking", "file-cleanup", "character-design"],
+    actions: [
+      action("/studio", "선화 배정 원고 열기", "Open assigned line-art", "선화·펜터치가 배정된 컷을 바로 엽니다.", "Open panels assigned for inking and cleanup."),
+      action("/studio/brushes", "지정 펜·선화 브러시", "Designated ink brushes", "작품 표준 펜선·지우개 프리셋을 불러옵니다.", "Load project-standard ink and eraser presets."),
+      action("/production", "선화 어시 작업 큐", "Line assistant queue", "배정된 컷 범위와 선화 검수 피드백을 확인합니다.", "Review assigned panel scopes and line review feedback."),
+    ],
+  },
+  {
+    id: "flat-color-assistant", group: "support", lens: "art",
+    label: text("밑색·색분할 어시스턴트", "Flat-color assistant"), shortLabel: text("밑색 어시", "Flat color"),
+    description: text("선화 참조 폐쇄 영역 채우기, 부위별 레이어 색상 분리(색분할)와 캐릭터 지정색 매핑을 전담합니다.", "Specialize in reference-line close-and-fill, part-by-part color separation and character palette mapping."),
+    workspaceTitle: text("빈틈없는 밑색 채우기와 레이어 색분할을 가장 빠르게", "Accelerate gap-free flat filling and layer color separation"),
+    workspaceSummary: text("승인된 선화 참조 레이어, 캐릭터 지정 팔레트, 틈새 닫기 채우기와 삐침 검사를 우선합니다.", "Prioritize approved reference line layers, character palettes, close-and-fill tools and bleed checks."),
+    recommendedSpecialties: ["flat-color", "file-cleanup", "character-design", "quality-control"],
+    actions: [
+      action("/studio", "밑색 배정 원고 열기", "Open flat-color pages", "선화가 완료된 밑색 담당 컷을 엽니다.", "Open panels with approved line art ready for flatting."),
+      action("/studio/assets", "캐릭터 지정 팔레트", "Character color palettes", "인물·의상·시간대별 표준 밑색 팔레트를 확인합니다.", "Check standard flat-color palettes per character and scene."),
+      action("/production", "밑색 어시 작업 큐", "Flat-color queue", "담당 컷의 레이어 분리 규칙과 마감 시간을 확인합니다.", "Review layer separation rules and deadlines for assigned cuts."),
+    ],
+  },
+  {
+    id: "shading-assistant", group: "support", lens: "art",
+    label: text("명암·채색 어시스턴트", "Shading & rendering assistant"), shortLabel: text("명암 어시", "Shading assist"),
+    description: text("밑색 클리핑 마스크 위에서 셀식·브러시 명암, 광원 방향, 피부·의상 재질 렌더링을 수행합니다.", "Apply cel and soft shading, directional lighting and material rendering over flat-color masks."),
+    workspaceTitle: text("광원 가이드와 명암 클리핑 레이어 작업을 직관적으로", "Streamline lighting guides and clipped shading layer workflows"),
+    workspaceSummary: text("밑색 정본, 장면별 광원 방향, 1차·2차 명암 팔레트와 재질 하이라이트 기준을 우선합니다.", "Prioritize approved flats, scene light direction, primary/secondary shadow palettes and highlight rules."),
+    recommendedSpecialties: ["rendering", "flat-color", "effects", "retouching"],
+    actions: [
+      action("/studio", "명암 배정 원고 열기", "Open shading pages", "밑색이 완료된 명암·채색 담당 컷을 엽니다.", "Open flat-colored panels assigned for shading."),
+      action("/studio/assets", "광원·명암 프리셋", "Lighting & shadow presets", "시간대별 그림자 색과 재질 브러시를 확인합니다.", "Inspect shadow tint presets and material brushes."),
+      action("/production", "명암 어시 작업 큐", "Shading assistant queue", "배정된 컷과 채색 감독 피드백을 확인합니다.", "Check assigned panels and color lead feedback."),
+    ],
+  },
+  {
+    id: "background-assistant", group: "support", lens: "art",
+    label: text("배경·3D 어시스턴트", "Background & 3D assistant"), shortLabel: text("배경 어시", "BG · 3D assist"),
+    description: text("콘티 앵글에 맞춘 3D 배경·소품 배치, LT 선화/음영 추출과 원근 보정 합성을 전담합니다.", "Place 3D sets and props to match storyboard angles, extract LT lines/tones and composite backgrounds."),
+    workspaceTitle: text("콘티 카메라 매칭과 3D 배경 LT 추출을 한 흐름으로", "Unify storyboard camera matching and 3D LT background extraction"),
+    workspaceSummary: text("장면별 필요 로케이션, 카메라 화각(FOV), LT 선화·음영 분리 패스와 라이선스 검증을 우선합니다.", "Prioritize required scene locations, camera FOV, LT line/tone passes and asset license checks."),
+    recommendedSpecialties: ["background-3d", "background-2d", "prop-design", "file-cleanup"],
+    actions: [
+      action("/studio/bg3d", "3D 배경 배치 열기", "Open 3D background stage", "콘티 컷에 맞춰 3D 공간과 카메라를 배치합니다.", "Stage 3D environments and cameras to match storyboard cuts."),
+      action("/studio/assets", "배경·소품 카탈로그", "Environment & prop catalog", "허가된 3D 배경·소품 에셋을 검색합니다.", "Search licensed 3D environment and prop assets."),
+      action("/production", "배경 어시 작업 큐", "Background assistant queue", "담당 씬·컷의 로케이션 지시와 납품 패스를 확인합니다.", "Review location briefs and required render passes."),
+    ],
+  },
+  {
+    id: "effect-assistant", group: "support", lens: "art",
+    label: text("후보정·이펙트 어시스턴트", "Retouch & VFX assistant"), shortLabel: text("후보정·이펙트 어시", "VFX · retouch"),
+    description: text("액션 집중선·속도선·마법 이펙트 드로잉과 그라데이션 맵·블룸·색수차 등 최종 후보정을 전담합니다.", "Create speed lines, action/magic VFX and final color grading, bloom and atmospheric retouching."),
+    workspaceTitle: text("타격감 있는 이펙트와 회차 톤앤매너 후보정을 정밀하게", "Deliver impactful VFX and consistent episode-wide color grading"),
+    workspaceSummary: text("이펙트 레이어 그룹, LUT·그라데이션 맵, 블룸·글로우 강도와 회차 간 색감 일관성을 우선합니다.", "Prioritize VFX layer groups, LUT/gradient maps, bloom intensity and cross-panel tone consistency."),
+    recommendedSpecialties: ["effects", "retouching", "rendering", "quality-control"],
+    actions: [
+      action("/studio", "후보정·이펙트 원고 열기", "Open VFX & retouch pages", "채색이 완료된 컷의 이펙트와 후보정을 진행합니다.", "Apply VFX and final grading to colored panels."),
+      action("/studio/assets", "이펙트·LUT 소재함", "VFX & LUT library", "액션 이펙트 브러시와 후보정 필터 프리셋을 엽니다.", "Open action VFX brushes and color-grading presets."),
+      action("/production", "후보정 어시 작업 큐", "VFX assistant queue", "담당 컷의 연출 지시와 마감 검수를 확인합니다.", "Check directing notes and finishing review status."),
+    ],
+  },
+  {
+    id: "lettering-assistant", group: "support", lens: "art",
+    label: text("식자·효과음 어시스턴트", "Lettering & SFX assistant"), shortLabel: text("식자 어시", "Lettering assist"),
+    description: text("확정 대본의 말풍선 식자 배치, 폰트 스타일 규칙 적용, 효과음(SFX) 레터링과 오탈자 교정을 전담합니다.", "Place approved dialogue into balloons, apply font rules, letter sound effects and proofread copy."),
+    workspaceTitle: text("확정 대사 대조와 말풍선·효과음 배치를 오차 없이", "Align locked script copy with balloon and SFX placement accurately"),
+    workspaceSummary: text("확정 대본 라인, 캐릭터별 폰트 프리셋, 말풍선 여백·안전영역과 효과음 레이어 분리를 우선합니다.", "Prioritize locked script lines, character font presets, balloon safe margins and SFX layer separation."),
+    recommendedSpecialties: ["lettering", "balloon", "sound-effects", "proofing"],
+    actions: [
+      action("/studio", "식자 배정 원고 열기", "Open lettering pages", "말풍선과 효과음 레이어를 편집합니다.", "Edit speech balloons and SFX layers on assigned pages."),
+      action("/story-lab", "확정 대사·용어집 확인", "Check locked script & glossary", "최종 승인된 대사와 고유명사 표기를 대조합니다.", "Cross-check approved dialogue and glossary terms."),
+      action("/studio?view=exports", "식자 안전영역 검사", "Run lettering safe-area check", "모바일 가독성과 말풍선 잘림 여부를 사전 검사합니다.", "Preflight mobile readability and balloon clipping."),
+    ],
+  },
+  {
+    id: "editor", group: "production", lens: "producer",
+    label: text("편집자", "Editor"), shortLabel: text("편집", "Editor"),
     description: text("작품 방향, 원고 품질, 피드백과 연재 준비를 조율합니다.", "Coordinate direction, manuscript quality, feedback and release readiness."),
     workspaceTitle: text("검수 대기와 결정이 필요한 항목부터", "Start with review queues and decisions"),
     workspaceSummary: text("수정 요청, 승인 대기, 대본·원고 일치와 게시 전 검수를 우선합니다.", "Prioritize change requests, approvals, script-art alignment and pre-publish review."),
@@ -460,11 +496,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "producer",
-    group: "production",
-    lens: "producer",
-    label: text("프로듀서·웹툰 PD", "Producer · webtoon PD"),
-    shortLabel: text("프로듀서", "Producer"),
+    id: "producer", group: "production", lens: "producer",
+    label: text("프로듀서·웹툰 PD", "Producer · webtoon PD"), shortLabel: text("프로듀서", "Producer"),
     description: text("일정, 인력, 위험, 검수와 연재 운영을 총괄합니다.", "Coordinate schedule, staffing, risk, review and publishing operations."),
     workspaceTitle: text("마감 위험과 팀 병목을 가장 먼저", "Surface deadline risk and team bottlenecks first"),
     workspaceSummary: text("회차 진척, 미배정 작업, 지연 위험, 승인 대기와 연재 일정을 한눈에 봅니다.", "See episode progress, unassigned work, delay risk, pending approvals and publishing dates at a glance."),
@@ -476,11 +509,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "localization",
-    group: "production",
-    lens: "producer",
-    label: text("번역·현지화 담당", "Localization specialist"),
-    shortLabel: text("현지화", "Localization"),
+    id: "localization", group: "production", lens: "producer",
+    label: text("번역·현지화 담당", "Localization specialist"), shortLabel: text("현지화", "Localization"),
     description: text("번역, 문화권 조정, 식자와 플랫폼별 현지화를 담당합니다.", "Handle translation, cultural adaptation, lettering and platform localization."),
     workspaceTitle: text("확정 원문과 현지화 산출물을 나란히", "Keep locked source text beside localized deliverables"),
     workspaceSummary: text("원문 버전, 번역 대기, 식자 반영과 언어별 검수 상태를 우선합니다.", "Prioritize source revisions, translation queues, lettering updates and language review."),
@@ -492,11 +522,8 @@ export const CREATOR_ROLE_DEFINITIONS = [
     ],
   },
   {
-    id: "reviewer",
-    group: "production",
-    lens: "producer",
-    label: text("검수 담당", "Reviewer"),
-    shortLabel: text("검수", "Reviewer"),
+    id: "reviewer", group: "production", lens: "producer",
+    label: text("검수 담당", "Reviewer"), shortLabel: text("검수", "Reviewer"),
     description: text("설정, 작화, 규격과 권리 기준에 따라 결과물을 검수합니다.", "Review deliverables against canon, art, format and rights requirements."),
     workspaceTitle: text("승인 대기와 검수 근거를 한 화면에", "Keep pending approvals and review evidence together"),
     workspaceSummary: text("검수 lane, 필수 수정, 근거 자료와 승인된 정본을 중심으로 구성합니다.", "Focus on review lanes, required changes, evidence and approved revisions."),
@@ -541,36 +568,12 @@ export const CREATOR_SPECIALTY_DEFINITIONS = [
 ] as const satisfies readonly CreatorSpecialtyDefinition[];
 
 export const CREATOR_USAGE_PURPOSE_DEFINITIONS = [
-  {
-    id: "personal-project",
-    label: text("개인 작품 제작", "Personal project"),
-    description: text("혼자 작품을 만들고 연재 준비까지 이어갑니다.", "Create independently and prepare for publishing."),
-  },
-  {
-    id: "team-production",
-    label: text("팀 프로젝트 참여", "Team production"),
-    description: text("역할을 나누고 인수인계와 검수를 함께 관리합니다.", "Coordinate assignments, handoffs and reviews with a team."),
-  },
-  {
-    id: "serialization",
-    label: text("연재 작품 관리", "Serialized production"),
-    description: text("회차 마감, 비축분과 플랫폼 납품을 관리합니다.", "Manage episode deadlines, buffers and platform delivery."),
-  },
-  {
-    id: "freelance",
-    label: text("외주 작업", "Freelance work"),
-    description: text("작업 범위, 납품 기준과 수정 요청을 명확히 합니다.", "Clarify scope, delivery requirements and revisions."),
-  },
-  {
-    id: "portfolio",
-    label: text("포트폴리오 제작", "Portfolio"),
-    description: text("작업 과정과 결과물을 정리해 공개합니다.", "Organize and present process and finished work."),
-  },
-  {
-    id: "studio-operations",
-    label: text("제작사 운영", "Studio operations"),
-    description: text("여러 프로젝트의 일정, 인력과 위험을 관리합니다.", "Manage schedules, staffing and risk across projects."),
-  },
+  { id: "personal-project", label: text("개인 작품 제작", "Personal project"), description: text("혼자 작품을 만들고 연재 준비까지 이어갑니다.", "Create independently and prepare for publishing.") },
+  { id: "team-production", label: text("팀 프로젝트 참여", "Team production"), description: text("역할을 나누고 인수인계와 검수를 함께 관리합니다.", "Coordinate assignments, handoffs and reviews with a team.") },
+  { id: "serialization", label: text("연재 작품 관리", "Serialized production"), description: text("회차 마감, 비축분과 플랫폼 납품을 관리합니다.", "Manage episode deadlines, buffers and platform delivery.") },
+  { id: "freelance", label: text("외주 작업", "Freelance work"), description: text("작업 범위, 납품 기준과 수정 요청을 명확히 합니다.", "Clarify scope, delivery requirements and revisions.") },
+  { id: "portfolio", label: text("포트폴리오 제작", "Portfolio"), description: text("작업 과정과 결과물을 정리해 공개합니다.", "Organize and present process and finished work.") },
+  { id: "studio-operations", label: text("제작사 운영", "Studio operations"), description: text("여러 프로젝트의 일정, 인력과 위험을 관리합니다.", "Manage schedules, staffing and risk across projects.") },
 ] as const satisfies readonly CreatorUsagePurposeDefinition[];
 
 export const CREATOR_EXPERIENCE_LABELS: Readonly<Record<CreatorExperienceLevel, LocalizedCreatorText>> = {
@@ -1113,19 +1116,14 @@ export function creatorRoleOperationalLens(
   role: CreatorRoleId | null | undefined,
 ): CreatorRoleOperationalLens {
   switch (role) {
-    case "story": return "story";
+    case "story": case "adaptation": case "associate-writer": case "educator": return "story";
     case "planner": return "planning";
     case "storyboard": return "storyboard";
-    case "line-art":
-    case "character":
-    case "creator": return "drawing";
-    case "background":
-    case "three-d": return "background";
-    case "color": return "color-finishing";
-    case "lettering":
-    case "localization": return "lettering";
-    case "reviewer":
-    case "editor": return "review";
+    case "associate-artist": case "line-art": case "character": case "assistant": case "line-assistant": case "creator": return "drawing";
+    case "background": case "three-d": case "background-assistant": return "background";
+    case "color": case "flat-color-assistant": case "shading-assistant": case "effect-assistant": return "color-finishing";
+    case "lettering": case "lettering-assistant": case "localization": return "lettering";
+    case "reviewer": case "editor": return "review";
     default: return "production";
   }
 }

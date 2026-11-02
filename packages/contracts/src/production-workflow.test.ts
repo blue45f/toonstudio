@@ -386,11 +386,32 @@ describe("웹툰 유형 프리셋", () => {
     ["monochrome-manga", 8],
     ["background-split", 9],
     ["proof-heavy", 10],
+    ["specialized-assistant-division", 13],
+    ["story-adaptation-collaboration", 8],
   ] as const)("%s 프리셋이 검증을 통과하는 프로필을 만든다", (preset, count) => {
     const profile = createProductionWorkflowPresetProfile("p", preset, at);
     expect(profile.name).toBe(PRODUCTION_WORKFLOW_PRESETS[preset]);
     expect(profile.steps).toHaveLength(count);
     expect(validateProductionWorkflowProfile(base(), profile)).toEqual([]);
+  });
+  it("세분화 어시 분업 프리셋은 각색·러프·선화어시·밑색어시·명암어시·이펙트어시·식자어시 단계를 연결한다", () => {
+    const steps = createProductionWorkflowPresetProfile("p", "specialized-assistant-division", at).steps;
+    expect(steps.map((s) => s.defaultRole)).toEqual([
+      "writer",
+      "adaptation-writer",
+      "storyboard-artist",
+      "associate-artist",
+      "line-artist",
+      "line-assistant",
+      "background-assistant",
+      "flat-color-assistant",
+      "shading-assistant",
+      "effect-assistant",
+      "lettering-assistant",
+      "editor",
+      "producer",
+    ]);
+    expect(steps.find((s) => s.key === "shading")?.dependsOn).toEqual(["flat-color", "background-3d"]);
   });
   it("흑백 만화 프리셋은 채색 대신 톤 공정을 둔다", () => {
     const keys = createProductionWorkflowPresetProfile("p", "monochrome-manga", at).steps.map((step) => step.key);
