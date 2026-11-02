@@ -3,14 +3,14 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { StudioColorWorkspaceProvider } from "./color/StudioColorWorkspaceContext";
-import { LazyStudioColorPopover } from "./StudioLazyColorPopover";
+import { StudioColorWorkspaceProvider } from "./StudioColorWorkspaceContext";
+import { LazyStudioColorPopover } from "../StudioLazyColorPopover";
 
-vi.mock("./studio-page-lazy-ui", async () => {
-  const { StudioColorPopover } = await import("./StudioColorPopover");
+vi.mock("../studio-page-lazy-ui", async () => {
+  const { StudioColorPopover } = await import("../StudioColorPopover");
   return { StudioColorPopoverContent: StudioColorPopover, preloadStudioColorPopover: vi.fn() };
 });
-vi.mock("./StudioPaletteLibraryPanel", () => ({
+vi.mock("../StudioPaletteLibraryPanel", () => ({
   StudioPaletteLibraryPanel: () => <div>내 팔레트 저장소</div>,
 }));
 
