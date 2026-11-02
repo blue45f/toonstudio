@@ -292,4 +292,3 @@ export function applySync(
 ): void {
   Y.applyUpdate(target, syncBytes(sync));
 }
-
