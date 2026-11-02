@@ -9,10 +9,6 @@ import {
   attachStudioGeneric3dWorkflowMetadata,
   parseStudioGeneric3dWorkflowMetadata,
 } from "../studio-generic-3d-workflow-metadata";
-import {
-  validateStudioScene3dShotVersionCollection,
-  type StudioScene3dVersionedCut,
-} from "../scene3d/studio-scene3d-shot-versions";
 
 import {
   STUDIO_BG3D_CAMERA_DEFAULT_NEAR_CLIP,
@@ -30,8 +26,9 @@ import {
   normalizeStudioBg3dDocumentText as normalizedText,
   normalizeStudioBg3dHierarchyParents,
   normalizeStudioBg3dNodeOrganization,
-  normalizeStudioBg3dSceneMeta, normalizeStudioBg3dSceneRecipeEnvelope,
   normalizeStudioBg3dTags,
+  normalizeStudioBg3dSceneOptionalFields,
+  assertStudioBg3dSceneMeasurementsInput, StudioBg3dSceneMeasurementsValidationError,
   withStudioBg3dHiddenTags,
 } from "./studio-bg3d-hierarchy";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
@@ -272,7 +269,7 @@ function isExplicitUnversionedLegacyRoot(
   return (
     isRecord(value) &&
     !hasOwn(value, "kind") &&
-    !hasOwn(value, "version") &&
+    !hasOwn(value, "version") && !hasOwn(value, "measurements") &&
     value.tool === "bg3d" &&
     Array.isArray(value.primitives) &&
     (value.customModels === undefined || Array.isArray(value.customModels)) &&
@@ -296,6 +293,7 @@ function decodeBoundedJson(
       }
       return JSON.parse(raw) as unknown;
     }
+    assertStudioBg3dSceneMeasurementsInput(raw);
     const serialized = JSON.stringify(raw);
     if (
       typeof serialized !== "string" ||
@@ -313,7 +311,7 @@ function decodeBoundedJson(
     // Reparse to detach prototypes, accessors, symbols, functions, and non-JSON object identity.
     return JSON.parse(serialized) as unknown;
   } catch (cause) {
-    if (cause instanceof StudioBg3dSceneDocumentBudgetError) throw cause;
+    if (cause instanceof StudioBg3dSceneDocumentBudgetError || (cause instanceof StudioBg3dSceneMeasurementsValidationError && budgetFailureMode === "throw")) throw cause;
     return null;
   }
 }
@@ -1467,20 +1465,8 @@ function normalizeDecodedCurrentDocument(
     const shots = includesShots ? normalizeShots(value.shots, nodeIds) : undefined;
     const shotIds = new Set(shots?.map((shot) => shot.id) ?? []);
     const activeShotId = normalizedId(value.activeShotId);
-    let pinnedVersionedCut: StudioScene3dVersionedCut | undefined;
-    if (hasOwn(value, "pinnedVersionedCut")) {
-      try {
-        pinnedVersionedCut = validateStudioScene3dShotVersionCollection({
-          version: 1,
-          cuts: [value.pinnedVersionedCut],
-        }).cuts[0];
-      } catch {
-        // 손상된 승인/원본 정보를 조용히 지운 정상 장면으로 취급하지 않는다.
-        if (rootMode === "lenient") throw new Error("고정 컷 원본이 손상되어 장면을 변경하지 않았습니다.");
-        return null;
-      }
-    }
-    const meta = normalizeStudioBg3dSceneMeta(value.meta); const sceneRecipe = normalizeStudioBg3dSceneRecipeEnvelope(value.sceneRecipe);
+    const optionalFields = normalizeStudioBg3dSceneOptionalFields(value, rootMode);
+    if (!optionalFields) return null;
     const normalized: StudioBg3dSceneDocument = {
       kind: STUDIO_BG3D_SCENE_DOCUMENT_KIND,
       version: STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
@@ -1495,8 +1481,7 @@ function normalizeDecodedCurrentDocument(
       nodes,
       ...(shots ? { shots } : {}),
       ...(activeShotId && shotIds.has(activeShotId) ? { activeShotId } : {}),
-      ...(pinnedVersionedCut ? { pinnedVersionedCut } : {}),
-      ...(meta ? { meta } : {}), ...(sceneRecipe ? { sceneRecipe } : {}),
+      ...optionalFields,
     };
     if (canonicalDocumentByteLength(normalized) > STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES) {
       failBudget("document-byte-budget-exceeded");
@@ -1691,7 +1676,7 @@ function migrateDecodedSchemaV2Document(value: unknown): StudioBg3dSceneDocument
     )) ||
     hasOwn(value, "shots") ||
     hasOwn(value, "activeShotId") ||
-    hasOwn(value, "meta") || hasOwn(value, "sceneRecipe")
+    hasOwn(value, "meta") || hasOwn(value, "sceneRecipe") || hasOwn(value, "measurements")
   ) {
     return null;
   }
@@ -1713,7 +1698,7 @@ function migrateDecodedSchemaV1Document(value: unknown): StudioBg3dSceneDocument
     )) ||
     hasOwn(value, "shots") ||
     hasOwn(value, "activeShotId") ||
-    hasOwn(value, "meta") || hasOwn(value, "sceneRecipe")
+    hasOwn(value, "meta") || hasOwn(value, "sceneRecipe") || hasOwn(value, "measurements")
   ) {
     return null;
   }
@@ -1743,7 +1728,7 @@ function migrateDecodedSchemaPanoramaDocument(
       || hasCompleteRootShapeForVersion(value, STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION)
     ) ||
     !isRecord(value.background) ||
-    !hasOwn(value.background, "panoramaUrl") ||
+    !hasOwn(value.background, "panoramaUrl") || hasOwn(value, "measurements") ||
     typeof value.background.panoramaUrl !== "string"
   ) {
     return null;

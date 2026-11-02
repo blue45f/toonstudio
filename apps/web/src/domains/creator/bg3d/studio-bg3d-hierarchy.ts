@@ -7,6 +7,11 @@
  * 편집 동작(태그 붙이기·숨기기·묶기 계획)은 이 모듈이 아니라 지연 로드되는 studio-bg3d-scene-organization 쪽에 있다.
  */
 
+import {
+  parseStudioSpatialMeasurementDocument,
+  serializeStudioSpatialMeasurementDocument,
+} from "@toonstudio/studio-project-model/spatial-measurement";
+import { validateStudioScene3dShotVersionCollection } from "../scene3d/studio-scene3d-shot-versions";
 import { failBudget } from "./studio-bg3d-scene-document-types";
 
 import type {
@@ -586,4 +591,78 @@ export function withStudioBg3dHiddenTags(
 ): StudioBg3dSceneMeta | undefined {
   const { hiddenTags: _previous, ...rest } = meta ?? {};
   return normalizeStudioBg3dSceneMeta({ ...rest, hiddenTags }, "truncate");
+}
+
+/** 선택 측정 필드가 손상됐을 때 기존 문서를 조용히 덮어쓰지 않는 오류 계약. */
+export class StudioBg3dSceneMeasurementsValidationError extends Error {
+  readonly code = "invalid-scene-measurements";
+
+  constructor() {
+    super("측정 가이드가 손상되었거나 저장 한도를 넘어 장면을 변경하지 않았습니다.");
+    this.name = "StudioBg3dSceneMeasurementsValidationError";
+  }
+}
+
+/** JSON 변환이 undefined·함수·접근자 또는 명시 필드를 지우기 전에 검증한다. */
+export function assertStudioBg3dSceneMeasurementsInput(raw: unknown): void {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(raw, "measurements");
+    if (!descriptor) return;
+    if (!("value" in descriptor) || !descriptor.enumerable || "toJSON" in raw ||
+      serializeStudioSpatialMeasurementDocument(descriptor.value) === null) {
+      throw new StudioBg3dSceneMeasurementsValidationError();
+    }
+  } catch {
+    throw new StudioBg3dSceneMeasurementsValidationError();
+  }
+}
+
+/** 중첩 문서 코덱만 동기로 사용하며 가이드가 없는 키는 결과에도 만들지 않는다. */
+export function normalizeStudioBg3dSceneMeasurementsField(
+  value: Record<string, unknown>,
+): Pick<StudioBg3dSceneDocument, "measurements"> {
+  const descriptor = Object.getOwnPropertyDescriptor(value, "measurements");
+  if (!descriptor) return {};
+  assertStudioBg3dSceneMeasurementsInput(value);
+  const serialized = serializeStudioSpatialMeasurementDocument(descriptor.value);
+  const measurements = serialized === null ? null : parseStudioSpatialMeasurementDocument(serialized);
+  if (!measurements) throw new StudioBg3dSceneMeasurementsValidationError();
+  return { measurements };
+}
+
+type SceneOptionalFields = Pick<StudioBg3dSceneDocument,
+  "pinnedVersionedCut" | "meta" | "sceneRecipe" | "measurements"
+>;
+
+/** 기존 선택 루트 필드의 키 순서와 오류 계약을 유지한다. */
+export function normalizeStudioBg3dSceneOptionalFields(
+  value: Record<string, unknown>,
+  rootMode: "lenient" | "strict",
+): SceneOptionalFields | null {
+  let pinnedVersionedCut: StudioBg3dSceneDocument["pinnedVersionedCut"];
+  if (Object.prototype.hasOwnProperty.call(value, "pinnedVersionedCut")) {
+    try {
+      pinnedVersionedCut = validateStudioScene3dShotVersionCollection({
+        version: 1,
+        cuts: [value.pinnedVersionedCut],
+      }).cuts[0];
+    } catch {
+      if (rootMode === "lenient") throw new Error("고정 컷 원본이 손상되어 장면을 변경하지 않았습니다.");
+      return null;
+    }
+  }
+  const meta = normalizeStudioBg3dSceneMeta(value.meta);
+  const sceneRecipe = normalizeStudioBg3dSceneRecipeEnvelope(value.sceneRecipe);
+  try {
+    return {
+      ...(pinnedVersionedCut ? { pinnedVersionedCut } : {}),
+      ...(meta ? { meta } : {}),
+      ...(sceneRecipe ? { sceneRecipe } : {}),
+      ...normalizeStudioBg3dSceneMeasurementsField(value),
+    };
+  } catch (cause) {
+    if (rootMode === "strict") return null;
+    throw cause;
+  }
 }

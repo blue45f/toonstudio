@@ -1,42 +1,49 @@
 /**
- * Renderer-independent SketchUp-style Tape Measure and inference-guide core.
- *
- * Viewport adapters own ray casting and line/label rendering. This module only accepts bounded
- * world points, performs deterministic vector math, and persists a small canonical guide document.
- * No Three.js/WebGPU/WebGL class, DOM value, runtime handle, URL, or asset identifier crosses this
- * boundary.
+ * 렌더러 중립 측정·길이 잠금·추론 도구. 저장 문서의 타입과 엄격 코덱은 Studio 문서 IR을 재사용한다.
+ * 포인터·Three·GPU·DOM 객체는 이 경계를 넘지 않는다.
  */
-
 import {
-  STUDIO_BG3D_TRANSFORM_SNAP_MAX_WORLD_COORDINATE,
-  type StudioBg3dTransformSnapVec3,
-} from "./studio-bg3d-transform-snap-planner";
+  canonicalizeStudioSpatialMeasurementGuide as canonicalGuide,
+  canonicalizeStudioSpatialMeasurementDocument as canonicalDocument,
+  isStudioSpatialMeasurementGuideId as validGuideId,
+  isStudioSpatialMeasurementUnit as isUnit,
+  serializeStudioSpatialMeasurementDocument as serializeStudioBg3dMeasurementDocument,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_WORLD_COORDINATE as STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_GUIDES as STUDIO_BG3D_MEASUREMENT_MAX_GUIDES,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_BYTES as STUDIO_BG3D_MEASUREMENT_MAX_BYTES,
+  STUDIO_SPATIAL_MEASUREMENT_MIN_SEGMENT_METERS as MIN_DIRECTION_LENGTH,
+  STUDIO_SPATIAL_MEASUREMENT_MIN_LOCKED_LENGTH_METERS as MIN_LOCKED_LENGTH_METERS,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_LOCKED_LENGTH_METERS as MAX_LOCKED_LENGTH_METERS,
+  type StudioSpatialMeasurementVec3 as StudioBg3dMeasurementVec3,
+  type StudioSpatialMeasurementUnit as StudioBg3dMeasurementUnit,
+  type StudioSpatialMeasurementGuide as StudioBg3dMeasurementGuide,
+  type StudioSpatialMeasurementDocument as StudioBg3dMeasurementDocument,
+} from "@toonstudio/studio-project-model/spatial-measurement";
 
-export type StudioBg3dMeasurementVec3 = StudioBg3dTransformSnapVec3;
-export type StudioBg3dMeasurementUnit = "mm" | "cm" | "m";
+export {
+  STUDIO_SPATIAL_MEASUREMENT_DOCUMENT_KIND as STUDIO_BG3D_MEASUREMENT_DOCUMENT_KIND,
+  STUDIO_SPATIAL_MEASUREMENT_DOCUMENT_VERSION as STUDIO_BG3D_MEASUREMENT_DOCUMENT_VERSION,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_WORLD_COORDINATE as STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_GUIDES as STUDIO_BG3D_MEASUREMENT_MAX_GUIDES,
+  STUDIO_SPATIAL_MEASUREMENT_MAX_BYTES as STUDIO_BG3D_MEASUREMENT_MAX_BYTES,
+  STUDIO_SPATIAL_MEASUREMENT_GUIDE_ID_MAX_LENGTH as STUDIO_BG3D_MEASUREMENT_GUIDE_ID_MAX_LENGTH,
+  DEFAULT_STUDIO_SPATIAL_MEASUREMENT_DOCUMENT as DEFAULT_STUDIO_BG3D_MEASUREMENT_DOCUMENT,
+  createStudioSpatialMeasurementDocument as createStudioBg3dMeasurementDocument,
+  parseStudioSpatialMeasurementDocument as parseStudioBg3dMeasurementDocument,
+  serializeStudioSpatialMeasurementDocument as serializeStudioBg3dMeasurementDocument,
+  type StudioSpatialMeasurementVec3 as StudioBg3dMeasurementVec3,
+  type StudioSpatialMeasurementUnit as StudioBg3dMeasurementUnit,
+  type StudioSpatialMeasurementGuide as StudioBg3dMeasurementGuide,
+  type StudioSpatialMeasurementDocument as StudioBg3dMeasurementDocument,
+} from "@toonstudio/studio-project-model/spatial-measurement";
+
 export type StudioBg3dMeasurementAxis = "x" | "y" | "z";
-
-export const STUDIO_BG3D_MEASUREMENT_DOCUMENT_KIND =
-  "toonstudio.bg3d-measurements" as const;
-export const STUDIO_BG3D_MEASUREMENT_DOCUMENT_VERSION = 1 as const;
-export const STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE =
-  STUDIO_BG3D_TRANSFORM_SNAP_MAX_WORLD_COORDINATE;
-export const STUDIO_BG3D_MEASUREMENT_MAX_GUIDES = 256;
 export const STUDIO_BG3D_MEASUREMENT_MAX_REFERENCES = 128;
-export const STUDIO_BG3D_MEASUREMENT_MAX_BYTES = 64 * 1024;
 export const STUDIO_BG3D_MEASUREMENT_DEFAULT_TOLERANCE_DEGREES = 3;
 export const STUDIO_BG3D_MEASUREMENT_MAX_TOLERANCE_DEGREES = 15;
-export const STUDIO_BG3D_MEASUREMENT_GUIDE_ID_MAX_LENGTH = 80;
 
-const MIN_DIRECTION_LENGTH = 1e-9;
-const MIN_LOCKED_LENGTH_METERS = 1e-6;
-const MAX_LOCKED_LENGTH_METERS =
-  STUDIO_BG3D_MEASUREMENT_MAX_WORLD_COORDINATE * Math.sqrt(12);
-const GUIDE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:~-]{0,79}$/u;
-const FORBIDDEN_ID_SET = new Set(["__proto__", "constructor", "prototype"]);
 const ALLOCATED_GUIDE_ID_PATTERN = /^measure-guide-(\d{4,10})$/u;
 const MAX_ALLOCATED_GUIDE_SEQUENCE = 9_999_999_999;
-const UTF8_ENCODER = new TextEncoder();
 const UNIT_SCALE: Readonly<Record<StudioBg3dMeasurementUnit, number>> = Object.freeze({
   mm: 1_000,
   cm: 100,
@@ -139,26 +146,6 @@ export interface StudioBg3dMeasurementInferenceSuccess {
 export type StudioBg3dMeasurementInferenceResult =
   | StudioBg3dMeasurementInferenceSuccess
   | StudioBg3dMeasurementFailure;
-
-export interface StudioBg3dMeasurementGuide {
-  readonly id: string;
-  readonly kind: "distance";
-  readonly startWorld: StudioBg3dMeasurementVec3;
-  readonly endWorld: StudioBg3dMeasurementVec3;
-  /**
-   * Null means the guide records a free measurement. A number means its segment was created from
-   * an exact numeric length lock and must still agree with the measured endpoint distance.
-   */
-  readonly lockedLengthMeters: number | null;
-  readonly visible: boolean;
-}
-
-export interface StudioBg3dMeasurementDocument {
-  readonly kind: typeof STUDIO_BG3D_MEASUREMENT_DOCUMENT_KIND;
-  readonly version: typeof STUDIO_BG3D_MEASUREMENT_DOCUMENT_VERSION;
-  readonly unit: StudioBg3dMeasurementUnit;
-  readonly guides: readonly StudioBg3dMeasurementGuide[];
-}
 
 export interface StudioBg3dResolvedMeasurementGuide {
   readonly guide: StudioBg3dMeasurementGuide;
@@ -289,17 +276,6 @@ function normalizeDirection(value: unknown): StudioBg3dMeasurementVec3 | null {
   return tuple([vector[0] / length, vector[1] / length, vector[2] / length]);
 }
 
-function validGuideId(value: unknown): value is string {
-  return typeof value === "string"
-    && value.length <= STUDIO_BG3D_MEASUREMENT_GUIDE_ID_MAX_LENGTH
-    && GUIDE_ID_PATTERN.test(value)
-    && !FORBIDDEN_ID_SET.has(value.toLowerCase());
-}
-
-function isUnit(value: unknown): value is StudioBg3dMeasurementUnit {
-  return value === "mm" || value === "cm" || value === "m";
-}
-
 function deepFreeze<T>(value: T): T {
   if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value;
   for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child);
@@ -315,17 +291,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     return !!descriptor && "value" in descriptor && descriptor.enumerable;
   });
-}
-
-function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
-  const actual = Object.keys(value).sort();
-  const sorted = [...expected].sort();
-  return actual.length === sorted.length
-    && actual.every((key, index) => key === sorted[index]);
-}
-
-function utf8ByteLength(value: string): number {
-  return UTF8_ENCODER.encode(value).byteLength;
 }
 
 /** Computes exact world delta, midpoint, Euclidean distance, and a unit direction when non-zero. */
@@ -693,78 +658,8 @@ export function allocateStudioBg3dMeasurementGuideId(
   return null;
 }
 
-export function createStudioBg3dMeasurementDocument(
-  unit: StudioBg3dMeasurementUnit = "m",
-): StudioBg3dMeasurementDocument {
-  const safeUnit = isUnit(unit) ? unit : "m";
-  return deepFreeze({
-    kind: STUDIO_BG3D_MEASUREMENT_DOCUMENT_KIND,
-    version: STUDIO_BG3D_MEASUREMENT_DOCUMENT_VERSION,
-    unit: safeUnit,
-    guides: [],
-  });
-}
-
-export const DEFAULT_STUDIO_BG3D_MEASUREMENT_DOCUMENT =
-  createStudioBg3dMeasurementDocument();
-
-function canonicalGuide(value: unknown): StudioBg3dMeasurementGuide | null {
-  if (
-    !isPlainRecord(value)
-    || !hasExactKeys(value, [
-      "endWorld",
-      "id",
-      "kind",
-      "lockedLengthMeters",
-      "startWorld",
-      "visible",
-    ])
-    || value.kind !== "distance"
-    || typeof value.visible !== "boolean"
-  ) return null;
-  const created = createStudioBg3dMeasurementGuide({
-    id: typeof value.id === "string" ? value.id : "",
-    startWorld: value.startWorld,
-    endWorld: value.endWorld,
-    lockedLengthMeters:
-      value.lockedLengthMeters === null || typeof value.lockedLengthMeters === "number"
-        ? value.lockedLengthMeters
-        : Number.NaN,
-    visible: value.visible,
-  });
-  return created.ok ? created.guide : null;
-}
-
-function canonicalDocument(value: unknown): StudioBg3dMeasurementDocument | null {
-  if (
-    !isPlainRecord(value)
-    || !hasExactKeys(value, ["guides", "kind", "unit", "version"])
-    || value.kind !== STUDIO_BG3D_MEASUREMENT_DOCUMENT_KIND
-    || value.version !== STUDIO_BG3D_MEASUREMENT_DOCUMENT_VERSION
-    || !isUnit(value.unit)
-    || !Array.isArray(value.guides)
-    || value.guides.length > STUDIO_BG3D_MEASUREMENT_MAX_GUIDES
-  ) return null;
-  const guides: StudioBg3dMeasurementGuide[] = [];
-  const ids = new Set<string>();
-  for (let index = 0; index < value.guides.length; index += 1) {
-    const descriptor = Object.getOwnPropertyDescriptor(value.guides, String(index));
-    if (!descriptor || !("value" in descriptor)) return null;
-    const guide = canonicalGuide(descriptor.value);
-    if (!guide || ids.has(guide.id)) return null;
-    ids.add(guide.id);
-    guides.push(guide);
-  }
-  return deepFreeze({
-    kind: STUDIO_BG3D_MEASUREMENT_DOCUMENT_KIND,
-    version: STUDIO_BG3D_MEASUREMENT_DOCUMENT_VERSION,
-    unit: value.unit,
-    guides,
-  });
-}
-
 function withinSerializedBudget(document: StudioBg3dMeasurementDocument): boolean {
-  return utf8ByteLength(JSON.stringify(document)) <= STUDIO_BG3D_MEASUREMENT_MAX_BYTES;
+  return serializeStudioBg3dMeasurementDocument(document) !== null;
 }
 
 export function addStudioBg3dMeasurementGuide(
@@ -857,32 +752,4 @@ export function setStudioBg3dMeasurementUnit(
     ok: true,
     document: deepFreeze({ ...canonical, unit }),
   });
-}
-
-/** Strict canonical persistence: unsupported fields, duplicate IDs, and lossy repair are rejected. */
-export function parseStudioBg3dMeasurementDocument(
-  raw: string,
-): StudioBg3dMeasurementDocument | null {
-  if (typeof raw !== "string" || utf8ByteLength(raw) > STUDIO_BG3D_MEASUREMENT_MAX_BYTES) {
-    return null;
-  }
-  try {
-    const document = canonicalDocument(JSON.parse(raw) as unknown);
-    return document && withinSerializedBudget(document) ? document : null;
-  } catch {
-    return null;
-  }
-}
-
-export function serializeStudioBg3dMeasurementDocument(raw: unknown): string | null {
-  const document = canonicalDocument(raw);
-  if (!document) return null;
-  try {
-    const serialized = JSON.stringify(document);
-    return utf8ByteLength(serialized) <= STUDIO_BG3D_MEASUREMENT_MAX_BYTES
-      ? serialized
-      : null;
-  } catch {
-    return null;
-  }
 }

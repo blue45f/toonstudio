@@ -30,6 +30,10 @@ import { readStudioBg3dTemplateStaticModelWorldBounds } from "./studio-bg3d-temp
 import { formatNumber } from "@toonstudio/core/format";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { createStudioBg3dGeneratedPartsCommand } from "./studio-bg3d-generated-parts-command";
+import {
+  hasStudioBg3dTemplateContent, prepareStudioBg3dTemplateSave,
+} from "./studio-bg3d-measurement-template";
+import type { StudioBg3dRuntimeToDocumentResult } from "./studio-bg3d-scene-runtime";
 
 export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
   const {
@@ -277,32 +281,21 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
   h.generateId = generateId;
   const handleSaveSceneAsTemplate = async (): Promise<boolean> => {
     if (
-      primitives.length === 0 && customModels.length === 0 ||
       applyingTemplateId !== null ||
       isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)
     ) return false;
     const session = modalAssetSessionRef.current;
     if (!session || !isModalAssetSessionCurrent(session)) return false;
-    const currentView = viewportApiRef.current?.readView() ?? sceneBaseDocument.camera;
-    const adaptation = tryAdaptStudioBg3dRuntimeToDocument({
-      primitives,
-      customModels,
-      attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
-      baseDocument: { ...sceneBaseDocument, camera: currentView },
-    });
-    if (!adaptation.ok) {
-      setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.budgetExceeded", "현재 장면이 안전 예산을 초과해 템플릿 저장을 시작하지 않았습니다. 장면을 나누거나 일부 오브젝트를 정리해 주세요."));
-      return false;
-    }
-    const adapted = adaptation.value;
-    if (
-      adapted.diagnostics.length > 0 ||
-      adapted.omittedDiagnosticCount > 0 ||
-      adapted.counts.droppedPrimitives > 0 ||
-      adapted.counts.droppedCustomModels > 0 ||
-      adapted.counts.emittedPrimitives !== primitives.length ||
-      adapted.counts.emittedCustomModels !== customModels.length
-    ) {
+    let adapted: StudioBg3dRuntimeToDocumentResult;
+    try {
+      const snapshot = physicsRuntimeSourceRef.current;
+      if (!hasStudioBg3dTemplateContent(snapshot)) return false;
+      adapted = prepareStudioBg3dTemplateSave({
+        snapshot,
+        camera: viewportApiRef.current?.readView() ?? snapshot.document.camera,
+        attachmentByStorageModelId: attachmentByStorageModelIdRef.current,
+      });
+    } catch {
       setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.losslessSourceUnavailable", "현재 장면을 손실 없는 템플릿 원본으로 만들 수 없습니다. 문제가 있는 도형이나 모델을 확인해 주세요."));
       return false;
     }

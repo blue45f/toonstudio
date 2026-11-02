@@ -42,7 +42,7 @@ REA 증거와 실제 구현 증거는 [조사·통합 기록](../reports/sketchu
 | SK11 | 그룹·컴포넌트 정의·인스턴스·Make Unique·Explode | 부분: 실제 parent·component 표시 묶음·linked clone 외형 동기화·독립 source 재편집; 공유 geometry 정의 편집은 미연결 | 정의 공유 편집·고유화·해체·중첩 편집·파일 왕복 검증 |
 | SK12 | Dynamic Components 수식·속성·상호작용·Live Components | 미완료: raw properties는 실제 manifest/GLB에 보관; 별도 추론·수식 helper의 importer 소비와 실행/재생성은 미연결 | 실제 원본 속성 전달·수식 평가·상호작용·재생성·의존성 저장 검증 |
 | SK13 | 앞뒷면 재질·Paint Bucket·텍스처·UV 위치/사영·PBR | 부분: 실제 GLB 재질/이미지와 표면 페인트 | 앞뒷면·4핀·사영·컴포넌트 재질 상속의 실제 편집/왕복 검증 |
-| SK14 | 줄자·유한/무한 보조선·각도기·축 변경 | 부분: 실제 줄자 pick·추론·길이 잠금·가이드 UI; 별도 측정 state는 장면 history/저장에 미연결 | 정본 엔티티로 생성·선택·정확한 단위·변환·저장·복원 검증 |
+| SK14 | 줄자·유한/무한 보조선·각도기·축 변경 | 부분: 실제 줄자 pick·추론·길이 잠금·가이드 UI. [측정 가이드 정본·이력·템플릿 연결](bg3d-measurement-guides.md)을 별도 브랜치에서 구현 중이며 실행 검증과 main 반영은 미완료 | 정본 엔티티로 생성·선택·정확한 단위·변환·저장·복원, 반무한·무한선·각도기·축 변경의 전체 계약 검증 |
 | SK15 | 선형/반경 치수·텍스트·3D Text | 확인 중: 치수·문자 계산 모듈 존재 | 실제 장면 엔티티·동적 치수 참조·텍스트 메시·저장 검증 |
 | SK16 | 태그·폴더·Outliner·가시성·잠금 | 부분: ToonStudio 정본 태그·계층 UI | SKP membership·폴더·숨김 상태와 중첩 instance 표시의 일치 검증 |
 | SK17 | Scene/Page·카메라·스타일·단면·환경·그림자 상태 | 부분: 실제 BG3D shots·북마크, SKP Page 보관·조회와 파서 평행 카메라 값 적용 | 원근 카메라·원본 Page의 상태 플래그·순서·애니메이션·전체 저장 검증 |

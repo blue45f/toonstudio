@@ -6,12 +6,15 @@
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { Bg3dTemplateLibraryEntry, Bg3dVerifiedStoredRecord, BgCustomModelInstance, BgPrimitive, ModelRootCacheEntry, StudioBg3dModalSession, StudioBg3dPlacementPointerTarget, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dSceneDocument, StudioGeneric3dSourceFormat } from "./studio-bg3d-editor-runtime-bindings";
 import {
-  allocateStudioBg3dTemplateInstanceNodeIds,
   orderStudioBg3dHierarchySelectionRootsFirst,
 } from "./studio-bg3d-template-instance";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { loadStudioBg3dMetricAttachment, scaleStudioBg3dMetricPlacementAsset, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
 import { copyStudioBg3dMetricInstanceScale, StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
+import {
+  allocateStudioBg3dMeasurementTemplateNodeIds, assertStudioBg3dTemplateHydration,
+  mergeStudioBg3dTemplateAttachmentMaps, prepareStudioBg3dMeasurementTemplateInsertion,
+} from "./studio-bg3d-measurement-template";
 
 export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
   const {
@@ -626,7 +629,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             throw new Error("physics-transient");
           }
           const live = physicsRuntimeSourceRef.current;
-          const destinationDocument = sceneBaseDocument;
+          const destinationDocument = live.document;
           const nodeLimit = Math.min(
             STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES,
             destinationDocument.budgets.complexity.maxNodes,
@@ -638,20 +641,18 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             ...live.primitives.map((primitive: BgPrimitive) => primitive.id),
             ...live.customModels.map((model: BgCustomModelInstance) => model.id),
           ]);
-          const templateInstanceAllocation = allocateStudioBg3dTemplateInstanceNodeIds({
-            sourceKind: "user",
+          const templateNodeIds = allocateStudioBg3dMeasurementTemplateNodeIds({
+            document: entry.document,
             sourceId: entry.id,
-            insertionOffset: 0,
-            nodeCount: entry.document.nodes.length,
             occupiedNodeIds,
             createSeed: () => generateId(),
           });
-          if (!templateInstanceAllocation) throw new Error("template-instance-id");
+          if (!templateNodeIds) throw new Error("template-instance-id");
           let templateNodeOrdinal = 0;
           const instantiated = await instantiateBg3dTemplateDocument(
             entry.document,
             occupiedNodeIds,
-            () => templateInstanceAllocation.nodeIds[templateNodeOrdinal++] ?? "",
+            () => templateNodeIds[templateNodeOrdinal++] ?? "",
           );
           if (!instantiated) throw new Error("template-instantiation");
 
@@ -716,27 +717,14 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             document: instantiated.document,
             storageModelIdByAttachmentId: nextStorageIdByAttachment,
           });
-          const expectedPrimitives = instantiated.document.nodes.filter(
-            (node: StudioBg3dSceneDocument["nodes"][number]) => node.kind === "primitive",
-          ).length;
-          const expectedCustomModels = instantiated.document.nodes.length - expectedPrimitives;
-          if (
-            !hydrated.ok ||
-            hydrated.diagnostics.length > 0 ||
-            hydrated.omittedDiagnosticCount > 0 ||
-            hydrated.counts.droppedPrimitives > 0 ||
-            hydrated.counts.droppedCustomModels > 0 ||
-            hydrated.counts.emittedPrimitives !== expectedPrimitives ||
-            hydrated.counts.emittedCustomModels !== expectedCustomModels
-          ) {
-            throw new Error("template-hydration");
-          }
+          assertStudioBg3dTemplateHydration(instantiated.document, hydrated);
           return {
             primitives: hydrated.primitives,
             customModels: hydrated.customModels,
             nextAttachmentByStorageId,
             nextStorageIdByAttachment,
             nodeLimit,
+            templateDocument: instantiated.document,
           };
         },
         (prepared: any) => {
@@ -763,32 +751,43 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             throw new Error("template-node-collision");
           }
 
-          const preparedAttachments = prepared.customModels.map((model: BgCustomModelInstance) => {
-            const attachment = prepared.nextAttachmentByStorageId.get(model.modelId);
-            if (!attachment) throw new Error("template-attachment-binding");
-            return attachment;
+          const bindings = mergeStudioBg3dTemplateAttachmentMaps({
+            currentAttachments: attachmentByStorageModelIdRef.current,
+            currentStorageIds: storageModelIdByAttachmentIdRef.current,
+            templateAttachments: prepared.nextAttachmentByStorageId,
+            insertedModels: prepared.customModels,
           });
           assertStudioBg3dModelAttachmentAdmission({
             models: current.customModels,
-            attachments: prepared.nextAttachmentByStorageId,
-            candidateAttachments: preparedAttachments,
+            attachments: bindings.attachments,
+            candidateAttachments: bindings.candidates,
             maximumAttachments: STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS,
             maximumCumulativeBytes: current.document.budgets.complexity.maxModelBytes,
           });
+          const next = prepareStudioBg3dMeasurementTemplateInsertion({
+            current, template: prepared.templateDocument,
+            insertedPrimitives: prepared.primitives, insertedModels: prepared.customModels,
+            attachmentByStorageModelId: bindings.attachments,
+          });
+          if (captureInFlightRef.current) throw new Error("template-capture-in-flight");
+          if (next.includesMeasurements) {
+            h.commitImmediateHistoryTransition(next.primitives, next.customModels, next.document, next.before, {
+              commandId: "studio.bg3d.measurements.apply-template", label: "측정 안내선과 템플릿 적용", source: "menu",
+            });
+          }
 
           attachmentByStorageModelIdRef.current.clear();
           storageModelIdByAttachmentIdRef.current.clear();
-          for (const [storageId, attachment] of prepared.nextAttachmentByStorageId) {
+          for (const [storageId, attachment] of bindings.attachments) {
             attachmentByStorageModelIdRef.current.set(storageId, attachment);
           }
-          for (const [attachmentId, storageId] of prepared.nextStorageIdByAttachment) {
+          for (const [attachmentId, storageId] of bindings.storageIds) {
             storageModelIdByAttachmentIdRef.current.set(attachmentId, storageId);
           }
-          const nextPrimitives = [...current.primitives, ...prepared.primitives];
-          const nextCustomModels = [...current.customModels, ...prepared.customModels];
           replaceCanonicalDocumentState({
-            primitives: nextPrimitives,
-            customModels: nextCustomModels,
+            primitives: next.primitives,
+            customModels: next.customModels,
+            ...(next.includesMeasurements ? { document: next.document } : {}),
           });
           if (insertedIds.length > 0) {
             const insertedEntities = [...prepared.primitives, ...prepared.customModels];

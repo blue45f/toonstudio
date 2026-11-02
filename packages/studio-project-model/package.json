@@ -29,6 +29,11 @@
       "import": "./src/graph/work-session.ts",
       "default": "./src/graph/work-session.ts"
     },
+    "./spatial-measurement": {
+      "types": "./src/ir/spatial-measurement.ts",
+      "import": "./src/ir/spatial-measurement.ts",
+      "default": "./src/ir/spatial-measurement.ts"
+    },
     "./frame-clip": {
       "types": "./src/frame-clip.ts",
       "import": "./src/frame-clip.ts",
@@ -84,6 +89,7 @@
   "typesVersions": {
     "*": {
       "frame-clip": ["src/frame-clip.ts"],
+      "spatial-measurement": ["src/ir/spatial-measurement.ts"],
       "work-session": [
         "src/graph/work-session.ts"
       ],

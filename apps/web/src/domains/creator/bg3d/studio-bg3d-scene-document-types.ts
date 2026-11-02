@@ -6,6 +6,7 @@
 
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
+import type { StudioSpatialMeasurementDocument as StudioBg3dMeasurementDocument } from "@toonstudio/studio-project-model/spatial-measurement";
 import type { StudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
 import type { StudioBg3dSceneRecipeEnvelope, StudioBg3dSurfaceRef } from "./studio-bg3d-scene-surface-types";
 
@@ -775,4 +776,6 @@ export interface StudioBg3dSceneDocument {
   readonly meta?: StudioBg3dSceneMeta;
   /** 장면 레시피 봉투(재편집 의도, 렌더 정본은 노드). 읽기 단계는 경계 검사 후 보존만 한다. 없으면 키를 만들지 않는다. */
   readonly sceneRecipe?: StudioBg3dSceneRecipeEnvelope;
+  /** 측정 가이드와 표시 단위. 없는 기존 v3 문서는 이 키를 생성하지 않아 저장 바이트를 보존한다. */
+  readonly measurements?: StudioBg3dMeasurementDocument;
 }
