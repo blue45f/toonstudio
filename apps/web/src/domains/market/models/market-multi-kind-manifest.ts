@@ -162,7 +162,10 @@ export function buildMarketMultiKindManifest(
           mode: "builtin-ref",
           runtimeRef,
           byteSize: 0,
-          sha256: sha256Hex(runtimeRef),
+          sha256: sha256Hex(canonicalizeCreatorMarketplaceJson({
+            mode: "builtin-ref",
+            runtimeRef,
+          })),
         },
       };
     } else {

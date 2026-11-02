@@ -131,7 +131,10 @@ function loadCachedChannelTexture(
       studioBg3dCc0Repeat: [repeat[0], repeat[1]],
     }),
   };
-  texture.needsUpdate = true;
+  // TextureLoader는 실제 이미지를 할당한 뒤 업로드를 예약한다. 빈 비동기 Texture를
+  // 먼저 갱신하면 WebGPU가 null 이미지의 complete를 읽으므로 pending version 0을 유지한다.
+  // 이미지를 동기 제공하는 factory의 색공간·반복 설정 갱신은 기존처럼 반영한다.
+  if (texture.image !== null && texture.image !== undefined) texture.needsUpdate = true;
   textureByUrlCache.set(cacheKey, texture);
   return texture;
 }

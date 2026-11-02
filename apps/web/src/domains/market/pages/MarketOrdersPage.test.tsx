@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { CommerceOrderPublicEntry } from "@toonstudio/core/commerce";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -45,7 +46,102 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+function buyerSession(id: string) {
+  return { ready: true, status: "authenticated", data: { user: { id } } };
+}
+
+function buyerOrder(orderId: string, productName: string): CommerceOrderPublicEntry {
+  return {
+    orderId,
+    productType: "market-resource",
+    productId: `resource-${orderId}`,
+    productName,
+    amount: 12000,
+    balanceAmount: 12000,
+    currency: "KRW",
+    provider: "toss",
+    providerMode: "test",
+    status: "DONE",
+    method: "card",
+    receiptUrl: `https://receipt.example.com/${orderId}`,
+    approvedAt: "2026-10-20T09:00:00.000Z",
+    canceledAt: null,
+  };
+}
+
+function pendingOrders() {
+  let resolve!: (value: { items: CommerceOrderPublicEntry[] }) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<{ items: CommerceOrderPublicEntry[] }>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}
+
+function ordersPage() {
+  return <MemoryRouter><MarketOrdersPage /></MemoryRouter>;
+}
+
 describe("MarketOrdersPage", () => {
+  it("계정 전환 뒤 새 주문 조회가 실패해도 이전 계정 주문과 영수증을 표시하지 않는다", async () => {
+    mocks.useSession.mockReturnValue(buyerSession("buyer-a"));
+    mocks.listMyCommerceOrders
+      .mockResolvedValueOnce({ items: [buyerOrder("order-a", "A 계정 전용 주문")] })
+      .mockRejectedValueOnce(new Error("B 계정 주문 조회 실패"));
+    const view = render(ordersPage());
+    await screen.findByText("A 계정 전용 주문");
+
+    mocks.useSession.mockReturnValue(buyerSession("buyer-b"));
+    view.rerender(ordersPage());
+    expect(screen.queryByText("A 계정 전용 주문")).toBeNull();
+    await screen.findByText("B 계정 주문 조회 실패");
+    expect(screen.queryByText("A 계정 전용 주문")).toBeNull();
+    expect(screen.queryByRole("link", { name: /영수증/ })).toBeNull();
+  });
+
+  it("새 계정 주문이 표시된 뒤 이전 계정의 늦은 성공 응답을 무시한다", async () => {
+    const previous = pendingOrders();
+    mocks.useSession.mockReturnValue(buyerSession("buyer-a"));
+    mocks.listMyCommerceOrders
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce({ items: [buyerOrder("order-b", "B 계정 전용 주문")] });
+    const view = render(ordersPage());
+    mocks.useSession.mockReturnValue(buyerSession("buyer-b"));
+    view.rerender(ordersPage());
+    await screen.findByText("B 계정 전용 주문");
+
+    await act(async () => {
+      previous.resolve({ items: [buyerOrder("order-a", "A 계정 전용 주문")] });
+      await previous.promise;
+    });
+    expect(screen.getByText("B 계정 전용 주문")).toBeTruthy();
+    expect(screen.queryByText("A 계정 전용 주문")).toBeNull();
+    expect(screen.getByRole("link", { name: /영수증/ }).getAttribute("href")).toBe(
+      "https://receipt.example.com/order-b",
+    );
+  });
+
+  it("이전 계정의 늦은 실패가 새 계정 주문 화면에 오류를 덮어쓰지 않는다", async () => {
+    const previous = pendingOrders();
+    mocks.useSession.mockReturnValue(buyerSession("buyer-a"));
+    mocks.listMyCommerceOrders
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce({ items: [buyerOrder("order-b", "B 계정 전용 주문")] });
+    const view = render(ordersPage());
+    mocks.useSession.mockReturnValue(buyerSession("buyer-b"));
+    view.rerender(ordersPage());
+    await screen.findByText("B 계정 전용 주문");
+
+    await act(async () => {
+      previous.reject(new Error("A 계정 전용 오류"));
+      await Promise.resolve();
+    });
+    expect(screen.getByText("B 계정 전용 주문")).toBeTruthy();
+    expect(screen.queryByText("A 계정 전용 오류")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("로그인 계정의 주문 원장·영수증·상태 필터를 표시한다", async () => {
     mocks.useSession.mockReturnValue({
       ready: true,

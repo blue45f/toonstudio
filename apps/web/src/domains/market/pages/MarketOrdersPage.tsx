@@ -12,7 +12,7 @@ import {
   ShieldAlert,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getCommerceConfig, listMyCommerceOrders, type CommerceConfigResponse } from "../commerce-api";
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -31,6 +31,22 @@ import {
 } from "@/shared/seo/use-document-title";
 
 type OrderFilterGroup = "all" | "completed" | "pending" | "canceled";
+
+interface MarketOrdersState {
+  readonly ownerId: string | null;
+  readonly orders: readonly CommerceOrderPublicEntry[];
+  readonly config: CommerceConfigResponse | null;
+  readonly loading: boolean;
+  readonly error: string | null;
+}
+
+const EMPTY_ORDERS_STATE: MarketOrdersState = {
+  ownerId: null,
+  orders: [],
+  config: null,
+  loading: false,
+  error: null,
+};
 
 const PAYMENT_METHOD_LABELS: Readonly<Record<string, readonly [string, string]>> = {
   card: ["신용·체크카드", "Card"],
@@ -69,44 +85,59 @@ export function MarketOrdersPage() {
   const { data: session, ready, status: sessionStatus } = useSession();
   const userId = ready && sessionStatus === "authenticated" ? (session.user.id ?? null) : null;
 
-  const [orders, setOrders] = useState<readonly CommerceOrderPublicEntry[]>([]);
-  const [config, setConfig] = useState<CommerceConfigResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [orderState, setOrderState] = useState<MarketOrdersState>(EMPTY_ORDERS_STATE);
+  const requestGenerationRef = useRef(0);
+  // 계정 전환 렌더부터 이전 계정의 주문·영수증·오류를 가린다.
+  const { orders, config, loading, error } = orderState.ownerId === userId
+    ? orderState
+    : { ...EMPTY_ORDERS_STATE, loading: userId !== null };
   const [filterGroup, setFilterGroup] = useState<OrderFilterGroup>("all");
   const [search, setSearch] = useState("");
 
   const loadOrders = useCallback(async () => {
+    const generation = ++requestGenerationRef.current;
     if (!userId) {
-      setOrders([]);
-      setError(null);
+      setOrderState(EMPTY_ORDERS_STATE);
       return;
     }
-    setLoading(true);
-    setError(null);
+    setOrderState((current) => ({
+      ...(current.ownerId === userId ? current : EMPTY_ORDERS_STATE),
+      ownerId: userId,
+      loading: true,
+      error: null,
+    }));
     try {
       const [ordersRes, configRes] = await Promise.all([
         listMyCommerceOrders(),
         getCommerceConfig().catch(() => null),
       ]);
-      setOrders(Array.isArray(ordersRes.items) ? ordersRes.items : []);
-      setConfig(configRes);
+      if (requestGenerationRef.current !== generation) return;
+      setOrderState({
+        ownerId: userId,
+        orders: Array.isArray(ordersRes.items) ? ordersRes.items : [],
+        config: configRes,
+        loading: false,
+        error: null,
+      });
     } catch (caught) {
-      setError(
-        caught instanceof Error && caught.message
+      if (requestGenerationRef.current !== generation) return;
+      setOrderState((current) => ({
+        ...current,
+        loading: false,
+        error: caught instanceof Error && caught.message
           ? caught.message
           : t("주문 내역을 불러오지 못했습니다.", "Could not load your orders."),
-      );
-    } finally {
-      setLoading(false);
+      }));
     }
   }, [t, userId]);
 
   useEffect(() => {
-    if (ready && userId) {
-      void loadOrders();
-    }
-  }, [loadOrders, ready, userId]);
+    void loadOrders();
+    return () => {
+      // 이전 계정·새로고침·마운트의 늦은 응답은 현재 화면을 갱신하지 못한다.
+      requestGenerationRef.current += 1;
+    };
+  }, [loadOrders]);
 
   const summary = useMemo(() => {
     let completedCount = 0;

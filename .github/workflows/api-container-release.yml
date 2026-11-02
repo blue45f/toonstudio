@@ -64,7 +64,8 @@ jobs:
           pnpm --filter @webtoon-nest/api deploy --legacy --prod .release/api-package
           mkdir -p .release/image/apps/api
           cp .release/api-package/package.json .release/image/apps/api/package.json
-          cp -a .release/api-package/node_modules .release/image/apps/api/node_modules
+          # 같은 파일시스템에서 옮겨 배포 의존성의 중복 저장을 막는다.
+          mv .release/api-package/node_modules .release/image/apps/api/node_modules
           cp -a apps/api/dist .release/image/apps/api/dist
           cp -a apps/api/data .release/image/apps/api/data
           mkdir -p .release/image/deploy/trust
