@@ -275,6 +275,12 @@ function observeProfileRequestOrder(page) {
 
 test.describe("로컬 실계정 프로필의 경로 왕복 초안 복구", () => {
   test.skip(!enabled, "격리 로컬 DB 전용입니다.");
+  test.beforeEach(async ({ context }) => {
+    // 실제 로컬 API는 그대로 사용하고 운영·외부 서비스 요청은 보내지 않는다.
+    await context.route("**/*", (route) => new URL(route.request().url()).origin === origin()
+      ? route.continue()
+      : route.abort("blockedbyclient"));
+  });
   for (const width of [390, 1440]) {
     test(`${width}px: 설정 이동·뒤로가기 후 초안과 최신 서버 이름을 함께 보존한다`, async ({ page }, info) => {
       await page.setViewportSize({ width, height: 900 }); await login(page);
@@ -314,6 +320,7 @@ test.describe("로컬 실계정 프로필의 경로 왕복 초안 복구", () =>
         await page.goBack();
         await expect(form.locator("#profile-bio")).toHaveValue(stored.bio);
         await expect(form.getByRole("button", { name: "초안 버리기", exact: true })).toHaveCount(0);
+        await form.screenshot({ path: info.outputPath(`profile-draft-saved-${width}.png`), animations: "disabled" });
       } finally {
         diagnostic.stop();
         try {
@@ -322,7 +329,7 @@ test.describe("로컬 실계정 프로필의 경로 왕복 초안 복구", () =>
       }
     });
 
-    test(`${width}px: 복구한 초안을 키보드로 버리고 서버 값으로 돌아간다`, async ({ page }) => {
+    test(`${width}px: 복구한 초안을 키보드로 버리고 서버 값으로 돌아간다`, async ({ page }, info) => {
       await page.setViewportSize({ width, height: 900 }); await login(page);
       const original = await readProfile(page);
       const form = await openProfile(page);
@@ -334,6 +341,7 @@ test.describe("로컬 실계정 프로필의 경로 왕복 초안 복구", () =>
       await page.goBack();
       const discard = form.getByRole("button", { name: "초안 버리기", exact: true });
       await expect(discard).toBeVisible();
+      await form.screenshot({ path: info.outputPath(`profile-draft-to-discard-${width}.png`), animations: "disabled" });
       await discard.focus(); await discard.press("Enter");
       await expect(form.locator("#profile-name")).toBeFocused();
       await expect(form.locator("#profile-bio")).toHaveValue(original.bio ?? "");
@@ -346,6 +354,7 @@ test.describe("로컬 실계정 프로필의 경로 왕복 초안 복구", () =>
       await page.goBack();
       await expect(form.locator("#profile-bio")).toHaveValue(original.bio ?? "");
       await expect(discard).toHaveCount(0);
+      await form.screenshot({ path: info.outputPath(`profile-draft-discarded-${width}.png`), animations: "disabled" });
     });
   }
 });
