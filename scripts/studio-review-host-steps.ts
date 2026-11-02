@@ -99,7 +99,10 @@ export async function authorStudioReviewHostSketches(page: Page, output: string)
   const authoredGestures = [];
   for (let ordinal = 0; ordinal < 2; ordinal++) {
     await selectStudioReviewHostPage(page, ordinal);
-    await page.waitForFunction((index) => document.querySelector(`[data-testid="studio-page-item"][data-page-index="${index}"] button[aria-current="page"]`) !== null, ordinal);
+    await page.waitForFunction((index) => document.querySelector([
+      `[data-testid="studio-page-item"][data-page-index="${index}"] button[aria-current="page"]`,
+      `button[data-studio-page-sequence-item="true"][aria-label^="${index + 1}번 페이지"][aria-current="page"]`,
+    ].join(", ")) !== null, ordinal);
     const initialLayerCount = await page.locator('[data-studio-layer-row="true"]').count();
     await page.keyboard.press("Escape");
     await page.keyboard.press("b");
