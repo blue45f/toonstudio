@@ -1,0 +1,159 @@
+{
+  "schema_version": "6.0.0",
+  "generated_at": "2026-11-02",
+  "title": "ToonStudio 전수 경쟁사 REA 역공학 통합 분석 및 세분화 직군·맞춤 메뉴·최소권한 RBAC 고도화 증거 원장",
+  "toolchain": {
+    "mcp_server": "rea",
+    "provider_browser": "rea-cdp-browser",
+    "cdp_endpoint": "http://127.0.0.1:9223",
+    "operations": [
+      "list_browser_targets",
+      "inspect_web_page",
+      "capture_browser_scenario",
+      "export_web_scripts",
+      "analyze_javascript_application"
+    ],
+    "native_binary_policy": "ghidra_only_no_hopper"
+  },
+  "live_session_captures_20261102": {
+    "target_discovery_evidence_ids": [
+      "ev_4f482dc25118259033311442a38c03f2a241deb26b116ee40be9f3b420a4aad9",
+      "ev_a0cb13abc012fcf76cf40b57e90d48d6a7935d5128ac8624d813b13d5e795de5"
+    ],
+    "targets": [
+      {
+        "id": "clip-studio-paint-functions",
+        "name": "Clip Studio Paint EX / PRO (Celsys)",
+        "url": "https://www.clipstudio.net/en/functions/",
+        "evidence_id": "ev_68c2adf355106848f099fefe77ba6e991535ec1c581740f26ee41243d357c0f9",
+        "predicate_type": "rea.web-page-inspection",
+        "domain_role": "웹툰·만화 8단계 공정 도구셋(콘티·선화·밑색·명암·3D배경·후보정·말풍선/식자), 멀티페이지 팀워크(Teamwork) 페이지/레이어 잠금 분업 및 보조 도구 워크스페이스 프리셋",
+        "observed_metrics": {
+          "a11y_node_count": 1274,
+          "script_count": 28,
+          "storage_usage_bytes": 21293,
+          "local_storage_keys_count": 15,
+          "session_storage_keys_count": 6
+        }
+      },
+      {
+        "id": "cgwire-kitsu",
+        "name": "CGWire Kitsu",
+        "url": "https://www.cg-wire.com/kitsu/",
+        "evidence_id": "ev_8213b75228375857009ed2a9b36da2ba9595072f4c8a17dbd3c30fe0daabf2f3",
+        "predicate_type": "rea.web-page-inspection",
+        "domain_role": "애니메이션·웹툰 스튜디오 파이프라인 관리, 세분화 부서(Department) 및 아티스트/어시스턴트 직무별 Task 큐, 감독/리드 승인(Review & Playlist) 게이트",
+        "observed_metrics": {
+          "a11y_node_count": 544,
+          "script_count": 11,
+          "storage_usage_bytes": 0
+        }
+      },
+      {
+        "id": "celtx-script-storyboard",
+        "name": "Celtx",
+        "url": "https://www.celtx.com/",
+        "evidence_id": "ev_d59b92495272d5ac27e3b6f44a95b4b606cadb49aa43c568d4016b81b9d02776",
+        "predicate_type": "rea.web-page-inspection",
+        "domain_role": "원작 시나리오(글작가)·각색/콘티 대본(각색작가)·보조 글작가 공동 집필, 비트시트·에피소드 대본·스토리보드 연동 및 대본 리비전 잠금",
+        "observed_metrics": {
+          "a11y_node_count": 415,
+          "script_count": 3,
+          "local_storage_keys_count": 10,
+          "session_storage_keys_count": 1
+        }
+      },
+      {
+        "id": "milanote-creative-boards",
+        "name": "Milanote",
+        "url": "https://milanote.com/",
+        "evidence_id": "ev_d35003893d3f2f9fcce8cd4eb23f5910d5de485f66c589357ff7e2c9ffc27d63",
+        "predicate_type": "rea.web-page-inspection",
+        "domain_role": "스토리보드·세계관 레퍼런스 보드, 보조 글작가 자료조사 보드 및 보조 그림작가 캐릭터/배경 무드보드 협업",
+        "observed_metrics": {
+          "a11y_node_count": 481,
+          "script_count": 2,
+          "local_storage_keys_count": 5,
+          "session_storage_keys_count": 7
+        }
+      },
+      {
+        "id": "figma-multiplayer-permissions",
+        "name": "Figma",
+        "url": "https://www.figma.com/ko-kr/",
+        "evidence_id": "ev_02066fbf71b534ea69d50acceb6662db472157aeef40ef207f8a70aa16f50a6e",
+        "predicate_type": "rea.web-page-inspection",
+        "domain_role": "역할 기반 캔버스 좌석·섹션 권한 제어(Can Edit / Can View / Branch Propose), 컨텍스트 도구 모음 및 직무별 인스펙터 전환",
+        "observed_metrics": {
+          "a11y_node_count": 961,
+          "script_count": 108,
+          "storage_usage_bytes": 1369,
+          "indexed_db_names": [
+            "sentry-offline"
+          ]
+        }
+      },
+      {
+        "id": "campfire-writing-canon",
+        "name": "Campfire Writing",
+        "url": "https://www.campfirewriting.com/",
+        "evidence_id": "ev_c2603a5fa111d2ab4558b2deff967600663b2d4759ffe566cc26e589897c0121",
+        "predicate_type": "rea.web-page-inspection",
+        "domain_role": "세계관 바이블(Canon)·캐릭터 시트·타임라인·용어집 모듈형 집필 및 메인 글작가/각색작가/보조 글작가 권한 분리",
+        "observed_metrics": {
+          "a11y_node_count": 420,
+          "script_count": 136,
+          "storage_usage_bytes": 3264,
+          "indexed_db_names": [
+            "mixpanelBrowserDb",
+            "mixpanelFlagsDb"
+          ]
+        }
+      }
+    ]
+  },
+  "integrated_evidence_ledgers": [
+    "docs/evidence/rea-collaboration-division-of-labor-20261027.json",
+    "docs/evidence/rea-webtoon-ai-assist-15-platforms-20261026.json",
+    "docs/evidence/rea-pms-collaboration-benchmark-20261026.json",
+    "docs/evidence/rea-competitor-benchmark-20261026.json",
+    "docs/evidence/rea-photoshop-benchmark-20261026.json",
+    "docs/evidence/rea-sketchup-asset-marketplace-20261026.json"
+  ],
+  "internalized_role_and_permission_modules": {
+    "creator_roles_count": 25,
+    "production_roles_count": 20,
+    "granular_roles_added": [
+      "adaptation",
+      "associate-writer",
+      "associate-artist",
+      "line-assistant",
+      "flat-color-assistant",
+      "shading-assistant",
+      "background-assistant",
+      "effect-assistant",
+      "lettering-assistant"
+    ],
+    "core_and_contracts": [
+      "packages/core/src/creator-role.ts",
+      "packages/core/src/production/types.ts",
+      "packages/core/src/production/role-workflow.ts",
+      "packages/contracts/src/creator-role-contract.ts",
+      "packages/contracts/src/creator-role-workspace-contract.ts",
+      "packages/contracts/src/production-workflow.ts"
+    ],
+    "web_surfaces_upgraded": [
+      "apps/web/src/domains/creator/studio-main-menu-presentation.ts",
+      "apps/web/src/domains/creator/StudioMenubarContent.tsx",
+      "apps/web/src/domains/creator/StudioMainMenu.tsx",
+      "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
+      "apps/web/src/domains/creator/studio-workspaces.ts",
+      "apps/web/src/shared/lib/creator-role-experience.ts",
+      "apps/web/src/domains/account/CreatorRoleProfileEditor.tsx",
+      "apps/web/src/domains/creator/studio-shell/StudioRolePersonalizationCenter.tsx",
+      "apps/web/src/domains/creator/production-hub/ProductionCollaborationRoleEditor.tsx",
+      "apps/web/src/domains/creator/production-hub/ProductionScopedWritePanel.tsx",
+      "apps/web/src/domains/creator/production-hub/ProductionTeamSurface.tsx"
+    ]
+  }
+}
