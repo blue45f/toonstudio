@@ -411,6 +411,9 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
           if (isRebuildCurrent()) setRefTick((tick: number) => tick + 1);
         } finally {
           if (isRebuildCurrent()) setIsRestoringScene(false);
+          if (sceneRestoreAbortRef.current === rebuildController) {
+            sceneRestoreAbortRef.current = null;
+          }
         }
       })();
       return () => {
