@@ -1,12 +1,17 @@
 import {
   AlertTriangle,
   ArrowUpRight,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  FlaskConical,
   GitCompareArrows,
+  Heart,
   Layers,
   PackageSearch,
   Palette,
+  Plus,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -20,15 +25,27 @@ import {
   MARKET_COMPARE_MAX_ITEMS,
   useMarketCompare,
 } from "../hooks/use-market-compare";
+import { useMarketWishlist } from "../hooks/use-market-wishlist";
 import {
   createMarketComparisonRows,
   summarizeMarketComparison,
+  type MarketComparisonRow,
 } from "../models/market-comparison";
 import {
   formatMarketByteSize,
   marketKindMeta,
   marketLicenseMeta,
 } from "../models/market-kind";
+import {
+  DEFAULT_MARKET_PRODUCTION_PROFILE,
+  MARKET_PRODUCTION_PROFILE_STORAGE_KEY,
+  evaluateMarketProductionFit,
+  marketProductionFitReasonLine,
+  parseMarketProductionProfile,
+} from "../models/market-production-fit";
+import { marketStudioResourceHref } from "../models/market-studio-handoff";
+
+import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -40,6 +57,35 @@ import {
   useMetaDescription,
 } from "@/shared/seo/use-document-title";
 
+function readStoredProductionProfile() {
+  if (typeof window === "undefined") return DEFAULT_MARKET_PRODUCTION_PROFILE;
+  try {
+    const raw = localStorage.getItem(MARKET_PRODUCTION_PROFILE_STORAGE_KEY);
+    return raw
+      ? parseMarketProductionProfile(JSON.parse(raw) as unknown)
+      : DEFAULT_MARKET_PRODUCTION_PROFILE;
+  } catch {
+    return DEFAULT_MARKET_PRODUCTION_PROFILE;
+  }
+}
+
+function escapeMarkdownCell(value: string): string {
+  return value.replace(/\|/gu, "\\|").replace(/\r?\n/gu, " / ");
+}
+
+function buildComparisonMarkdown(
+  items: readonly CreatorMarketplaceResourceRecord[],
+  rows: readonly MarketComparisonRow[],
+  headerLabel: string,
+): string {
+  const header = `| ${escapeMarkdownCell(headerLabel)} | ${items.map((item) => escapeMarkdownCell(item.name)).join(" | ")} |`;
+  const divider = `| --- | ${items.map(() => "---").join(" | ")} |`;
+  const body = rows.map(
+    (row) => `| ${escapeMarkdownCell(row.label)} | ${row.values.map((val) => escapeMarkdownCell(val)).join(" | ")} |`,
+  );
+  return [header, divider, ...body].join("\n");
+}
+
 export function MarketComparePage() {
   const t = useBilingual("MarketComparePage");
   useDocumentTitle(t("에셋 비교 · 창작 마켓", "Compare assets · Creator Market"));
@@ -50,18 +96,42 @@ export function MarketComparePage() {
     ),
   );
 
+  const compare = useMarketCompare();
   const {
     compareItems,
     compareCount,
     removeCompare,
     clearCompare,
-  } = useMarketCompare();
+  } = compare;
+  const toggleCompare = "toggleCompare" in compare && typeof compare.toggleCompare === "function"
+    ? compare.toggleCompare
+    : null;
+  const { wishlistItems } = useMarketWishlist();
   const [onlyDiffs, setOnlyDiffs] = useState(false);
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
   const tableViewportRef = useRef<HTMLDivElement>(null);
-  const rows = useMemo(
-    () => createMarketComparisonRows(compareItems),
-    [compareItems],
-  );
+  const productionProfile = useMemo(() => readStoredProductionProfile(), []);
+  const rows = useMemo(() => {
+    const baseRows = createMarketComparisonRows(compareItems);
+    if (compareItems.length === 0) return baseRows;
+    const fitValues = compareItems.map((record) => {
+      const evaluation = evaluateMarketProductionFit(record, productionProfile);
+      const reason = marketProductionFitReasonLine(evaluation);
+      const statusBadge = evaluation.status === "ready"
+        ? t("조건 일치", "Ready")
+        : evaluation.status === "review"
+          ? t("확인 필요", "Review")
+          : t("적용 차단", "Blocked");
+      return `${statusBadge} (${evaluation.passCount}/${evaluation.checks.length}) · ${reason.text}`;
+    });
+    const fitRow: MarketComparisonRow = {
+      key: "production-fit",
+      label: t("내 작업 프로필 적합성", "My production profile fit"),
+      values: fitValues,
+      different: new Set(fitValues).size > 1,
+    };
+    return [fitRow, ...baseRows];
+  }, [compareItems, productionProfile, t]);
   const visibleRows = useMemo(
     () => (onlyDiffs ? rows.filter((row) => row.different) : rows),
     [onlyDiffs, rows],
@@ -70,6 +140,25 @@ export function MarketComparePage() {
     () => summarizeMarketComparison(compareItems),
     [compareItems],
   );
+  const wishlistCandidates = useMemo(
+    () => wishlistItems.filter((item) => !compareItems.some((compared) => compared.id === item.id)),
+    [compareItems, wishlistItems],
+  );
+
+  async function handleCopyMarkdown(): Promise<void> {
+    if (compareItems.length === 0) return;
+    const md = buildComparisonMarkdown(
+      compareItems,
+      visibleRows,
+      t("비교 항목", "Compared items"),
+    );
+    try {
+      await navigator.clipboard?.writeText(md);
+      setCopiedMarkdown(true);
+    } catch {
+      setCopiedMarkdown(false);
+    }
+  }
 
   function scrollComparison(direction: -1 | 1): void {
     const viewport = tableViewportRef.current;
@@ -99,18 +188,31 @@ export function MarketComparePage() {
           </p>
         </div>
         {compareCount > 0 ? (
-          <button
-            type="button"
-            onClick={clearCompare}
-            className={buttonClass({
-              variant: "outline",
-              size: "sm",
-              className: "gap-1.5 text-fg-2",
-            })}
-          >
-            <Trash2 className="size-3.5" aria-hidden="true" />
-            {t("전체 비우기", "Clear all")}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/market/fit-lab"
+              className={buttonClass({
+                variant: "outline",
+                size: "sm",
+                className: "gap-1.5 text-fg-2",
+              })}
+            >
+              <FlaskConical className="size-3.5 text-accent" aria-hidden="true" />
+              {t("적합성 프로필 설정", "Configure fit profile")}
+            </Link>
+            <button
+              type="button"
+              onClick={clearCompare}
+              className={buttonClass({
+                variant: "outline",
+                size: "sm",
+                className: "gap-1.5 text-fg-2",
+              })}
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+              {t("전체 비우기", "Clear all")}
+            </button>
+          </div>
         ) : null}
       </header>
 
@@ -185,7 +287,7 @@ export function MarketComparePage() {
                       <ArrowUpRight className="size-3" aria-hidden="true" />
                     </Link>
                     <Link
-                      href={`/studio?installMarketResource=${record.id}&assetMarket=community`}
+                      href={marketStudioResourceHref(record.id)}
                       className={buttonClass({
                         variant: "solid",
                         size: "sm",
@@ -245,7 +347,39 @@ export function MarketComparePage() {
             </div>
           </section>
 
-          <section className="mt-5 rounded-xl border border-line bg-card">
+          {compareCount < MARKET_COMPARE_MAX_ITEMS && toggleCompare && wishlistCandidates.length > 0 ? (
+            <section
+              aria-label={t("찜 목록에서 비교 추가", "Quick-add from wishlist")}
+              className="mt-4 rounded-xl border border-line bg-panel/60 p-3.5"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg-2">
+                  <Heart className="size-3.5 text-accent" aria-hidden="true" />
+                  {t("찜한 에셋 바로 비교에 추가:", "Quick-add wishlisted assets:")}
+                </span>
+                {wishlistCandidates.slice(0, 6).map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    onClick={() => {
+                      setCopiedMarkdown(false);
+                      toggleCompare(candidate);
+                    }}
+                    className={buttonClass({
+                      variant: "outline",
+                      size: "sm",
+                      className: "min-h-8 gap-1 text-xs",
+                    })}
+                  >
+                    <Plus className="size-3" aria-hidden="true" />
+                    {candidate.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="@container/compare mt-5 rounded-xl border border-line bg-card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xs text-fg-3">{t("표가 넓으면 이동 버튼으로 다른 열을 확인하세요.", "If the table is wide, use the move buttons to see other columns.")}</p>
@@ -253,7 +387,10 @@ export function MarketComparePage() {
                   type="button"
                   aria-pressed={onlyDiffs}
                   data-testid="market-compare-diff-toggle"
-                  onClick={() => setOnlyDiffs((prev) => !prev)}
+                  onClick={() => {
+                    setCopiedMarkdown(false);
+                    setOnlyDiffs((prev) => !prev);
+                  }}
                   className={buttonClass({
                     variant: onlyDiffs ? "solid" : "outline",
                     size: "sm",
@@ -263,6 +400,24 @@ export function MarketComparePage() {
                   {onlyDiffs
                     ? t("전체 항목 보기", "Show all rows")
                     : t("차이점만 강조 보기", "Show differences only")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyMarkdown()}
+                  className={buttonClass({
+                    variant: "outline",
+                    size: "sm",
+                    className: "min-h-9 gap-1.5 text-xs",
+                  })}
+                >
+                  {copiedMarkdown ? (
+                    <Check className="size-3.5 text-good" aria-hidden="true" />
+                  ) : (
+                    <Copy className="size-3.5" aria-hidden="true" />
+                  )}
+                  {copiedMarkdown
+                    ? t("비교표 복사됨", "Table copied")
+                    : t("비교표 Markdown 복사", "Copy Markdown table")}
                 </button>
               </div>
               <div className="flex gap-2">
@@ -302,11 +457,11 @@ export function MarketComparePage() {
                 </caption>
                 <thead>
                   <tr className="border-b border-line bg-panel/70">
-                    <th scope="col" className="sticky left-0 z-10 w-44 bg-panel px-4 py-3 font-bold text-fg">
+                    <th scope="col" className="sticky left-0 top-0 z-20 w-36 bg-panel px-4 py-3 font-bold text-fg @[42rem]/compare:w-48">
                       {t("비교 항목", "Compared items")}
                     </th>
                     {compareItems.map((record) => (
-                      <th key={record.id} scope="col" className="min-w-52 px-4 py-3 font-bold text-fg">
+                      <th key={record.id} scope="col" className="sticky top-0 z-10 min-w-52 bg-panel/95 px-4 py-3 font-bold text-fg">
                         {record.name}
                       </th>
                     ))}
@@ -317,7 +472,7 @@ export function MarketComparePage() {
                     <tr key={comparisonRow.key} className={comparisonRow.different ? "bg-accent/[0.035]" : undefined}>
                       <th
                         scope="row"
-                        className="sticky left-0 z-10 bg-card px-4 py-3 font-semibold text-fg-2"
+                        className="sticky left-0 z-10 w-36 bg-card px-4 py-3 font-semibold text-fg-2 @[42rem]/compare:w-48"
                       >
                         {comparisonRow.label}
                         {comparisonRow.different ? (

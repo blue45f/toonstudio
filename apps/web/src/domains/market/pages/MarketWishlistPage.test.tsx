@@ -81,3 +81,33 @@ it("캐시로 복구한 소재는 현재 공개 상태 미확인임을 알린다
   fireEvent.click(screen.getByRole("button", { name: "다시 확인" }));
   expect(reload).toHaveBeenCalledOnce();
 });
+
+it("프로젝트 무드보드 컬렉션을 만들고 공정 준비도·제작 메모를 관리한다", () => {
+  const source = CREATOR_MARKETPLACE_STARTER_RECORDS[0]!;
+  detail.mockReturnValue({
+    ...absent,
+    notFound: false,
+    record: { ...source, id: "mood-item-1", name: "황궁 3D 연회장" },
+  });
+
+  mount(["mood-item-1"]);
+
+  expect(screen.getByTestId("market-wishlist-moodboard-panel")).toBeTruthy();
+  expect(screen.getByText(/회차 에피소드 키트 공정 준비도/)).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "새 무드보드 만들기" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "새 무드보드 이름" }), {
+    target: { value: "로판 1화 연회장" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "생성" }));
+
+  expect(screen.getByRole("tab", { name: /로판 1화 연회장/ }).getAttribute("aria-selected")).toBe("true");
+
+  fireEvent.click(screen.getByRole("button", { name: "제작 메모 추가" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "황궁 3D 연회장 제작 메모" }), {
+    target: { value: "1화 12컷 샹들리에 역광" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "메모 저장" }));
+  expect(screen.getByText(/1화 12컷 샹들리에 역광/)).toBeTruthy();
+});
+

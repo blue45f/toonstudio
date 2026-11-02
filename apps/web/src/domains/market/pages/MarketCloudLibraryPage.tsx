@@ -2,16 +2,20 @@ import {
   Archive,
   ArchiveRestore,
   ArrowRight,
+  ArrowUpCircle,
+  Check,
   Cloud,
+  Copy,
   FolderOpen,
   LoaderCircle,
   Palette,
+  ReceiptText,
   RefreshCw,
   ShieldAlert,
   SearchX,
   Undo2,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { MarketAccountEntryActions } from "../components/MarketAccountEntryActions";
 import { MarketDeviceInstallStatus } from "../components/MarketDeviceInstallStatus";
@@ -89,6 +93,33 @@ type MarketCloudLibraryCatalogHead = Extract<
   { readonly state: "available" }
 >["head"];
 
+function hasNewerCatalogRelease(item: CreatorMarketplaceCloudLibraryItem): boolean {
+  if (item.catalog.state !== "available") return false;
+  const head = item.catalog.head;
+  return (
+    head.releaseOrdinal > item.addedFrom.releaseOrdinal
+    || head.manifestHash !== item.addedFrom.manifestHash
+  );
+}
+
+function buildLibraryCreditsManifestText(
+  items: readonly CreatorMarketplaceCloudLibraryItem[],
+): string {
+  const lines = [
+    "# ToonStudio 보유 소재 출처·명세서",
+    "",
+    ...items.map((entry) => {
+      const kind = marketKindMeta(entry.kind);
+      const head = entry.catalog.state === "available" ? entry.catalog.head : null;
+      const versionLabel = head
+        ? `소장 v${entry.addedFrom.resourceVersion} / 최신 v${head.resourceVersion}`
+        : `소장 v${entry.addedFrom.resourceVersion} (현재 카탈로그 비공개)`;
+      return `- ${entry.name} (${entry.packageId}) · ${kind.label} · ${versionLabel} · 추가일 ${entry.addedAt.slice(0, 10)}`;
+    }),
+  ];
+  return lines.join("\n");
+}
+
 function MarketCloudLibraryDeviceAction({
   logicalPackId,
   record,
@@ -137,6 +168,8 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
     : null;
   const [view, setView] = useState<CreatorMarketplaceCloudLibraryView>("active");
   const [filters, setFilters] = useState<MarketLibraryFilters>(DEFAULT_LIBRARY_FILTERS);
+  const [onlyNewerRelease, setOnlyNewerRelease] = useState(false);
+  const [copiedCredits, setCopiedCredits] = useState(false);
   const [layout, setLayout] = useState<MarketLayout>("grid");
   const tabId = useId();
   const tabsRef = useRef<HTMLDivElement | null>(null);
@@ -161,6 +194,8 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
   useEffect(() => {
     setMessage(null);
     setUndoAction(null);
+    setOnlyNewerRelease(false);
+    setCopiedCredits(false);
   }, [contextKey]);
 
   useEffect(() => {
@@ -218,9 +253,34 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
     };
   }, [contextKey, ready, reloadToken, userId, view, t]);
 
-  const visibleItems = loadedContextKey === contextKey ? items : [];
+  const visibleItems = useMemo(
+    () => (loadedContextKey === contextKey ? items : []),
+    [contextKey, items, loadedContextKey],
+  );
   const exploredItems = exploreMarketLibrary(visibleItems, filters);
+  const newerReleaseCount = useMemo(
+    () => visibleItems.filter((entry) => hasNewerCatalogRelease(entry)).length,
+    [visibleItems],
+  );
+  const displayedItems = useMemo(
+    () => (onlyNewerRelease
+      ? exploredItems.filter((entry) => hasNewerCatalogRelease(entry))
+      : exploredItems),
+    [exploredItems, onlyNewerRelease],
+  );
   const visibleUndo = undoAction?.contextKey === contextKey ? undoAction : null;
+
+  async function handleCopyLibraryManifest(): Promise<void> {
+    const sourceItems = displayedItems.length > 0 ? displayedItems : visibleItems;
+    if (sourceItems.length === 0) return;
+    const text = buildLibraryCreditsManifestText(sourceItems);
+    try {
+      await navigator.clipboard?.writeText(text);
+      setCopiedCredits(true);
+    } catch {
+      setCopiedCredits(false);
+    }
+  }
   const visibleLoadState: LoadState = !userId
     ? "idle"
     : loadedContextKey === contextKey
@@ -324,10 +384,32 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
             {t("찾아둔 재료를 다음 작품으로 이어가세요. 소재를 검색하고 정리한 뒤, 종류에 맞는 Studio 작업 공간에서 사용할 수 있습니다.", "Carry the materials you've found into your next work. Search and organize materials, then use them in the Studio workspace that fits their kind.")}
           </p>
         </div>
-        <Link href="/market/browse" className={buttonClass({ variant: "outline", size: "sm" })}>
-          {t("에셋 더 찾기", "Find more assets")}
-          <ArrowRight className="size-3.5" aria-hidden="true" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {userId && visibleItems.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => void handleCopyLibraryManifest()}
+              className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            >
+              {copiedCredits ? (
+                <Check className="size-3.5 text-good" aria-hidden="true" />
+              ) : (
+                <Copy className="size-3.5" aria-hidden="true" />
+              )}
+              {copiedCredits
+                ? t("출처·명세서 복사됨", "Manifest copied")
+                : t("보유 소재 출처·명세서 복사", "Copy owned material manifest")}
+            </button>
+          ) : null}
+          <Link href="/market/orders" className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}>
+            <ReceiptText className="size-3.5" aria-hidden="true" />
+            {t("구매·영수증 내역", "Orders & receipts")}
+          </Link>
+          <Link href="/market/browse" className={buttonClass({ variant: "outline", size: "sm" })}>
+            {t("에셋 더 찾기", "Find more assets")}
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
       </header>
       <details className="market-library-explainer">
         <summary>{t("소장 · 기기 설치 · 보관은 어떻게 다른가요?", "How do owning, device install, and archiving differ?")}</summary>
@@ -392,9 +474,45 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
           </div>
 
           <section role="tabpanel" id={`${tabId}-panel`} aria-labelledby={`${tabId}-${view}`} tabIndex={0} className="market-library-panel">
-          {visibleLoadState === "ready" ? <MarketLibraryExplorerToolbar
-            items={visibleItems} resultCount={exploredItems.length} hasMore={hasMore}
-            filters={filters} onChange={setFilters} layout={layout} onLayoutChange={setLayout} /> : null}
+          {visibleLoadState === "ready" ? (
+            <>
+              <MarketLibraryExplorerToolbar
+                items={visibleItems}
+                resultCount={displayedItems.length}
+                hasMore={hasMore}
+                filters={filters}
+                onChange={(nextFilters) => {
+                  setCopiedCredits(false);
+                  setFilters(nextFilters);
+                }}
+                layout={layout}
+                onLayoutChange={setLayout}
+              />
+              {visibleItems.length > 0 ? (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={onlyNewerRelease}
+                    onClick={() => {
+                      setCopiedCredits(false);
+                      setOnlyNewerRelease((prev) => !prev);
+                    }}
+                    className={buttonClass({
+                      variant: onlyNewerRelease ? "solid" : "outline",
+                      size: "sm",
+                      className: "min-h-9 gap-1.5 text-xs",
+                    })}
+                  >
+                    <ArrowUpCircle className="size-3.5" aria-hidden="true" />
+                    {t("새 릴리스 있는 에셋만", "Only newer releases")}
+                    <span className="numeral tnum rounded-full bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-bold">
+                      {newerReleaseCount}
+                    </span>
+                  </button>
+                </div>
+              ) : null}
+            </>
+          ) : null}
           {message ? <div role="status" className="mt-4 rounded-xl border border-good/40 bg-good/10 px-4 py-3 text-sm text-good">
             <p>{message}</p>
             {visibleUndo ? <button type="button" disabled={pendingItemId !== null || visibleLoadState === "loading"}
@@ -422,20 +540,29 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
               primary={{ href: "/market", label: t("마켓 둘러보기", "Browse the market") }}
               className="mt-8"
             />
-          ) : exploredItems.length === 0 ? (
+          ) : displayedItems.length === 0 ? (
             <div className="market-library-empty">
               <SearchX className="mx-auto size-9 text-fg-3" aria-hidden="true" />
               <h2>{t("불러온 에셋에서 일치하는 소재를 찾지 못했어요", "No matching materials in the loaded assets")}</h2>
               <p>{hasMore ? t("아직 확인하지 않은 에셋이 있습니다. 아래에서 더 불러오거나 검색 조건을 줄여보세요.", "There are assets you haven't checked yet. Load more below or loosen your search filters.") : t("이름을 짧게 입력하거나 종류·상태 필터를 해제해 보세요.", "Try a shorter name or clear the kind and status filters.")}</p>
-              <button type="button" onClick={() => setFilters(DEFAULT_LIBRARY_FILTERS)}
-                className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}>{t("검색 조건 모두 해제", "Clear all search filters")}</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters(DEFAULT_LIBRARY_FILTERS);
+                  setOnlyNewerRelease(false);
+                }}
+                className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}
+              >
+                {t("검색 조건 모두 해제", "Clear all search filters")}
+              </button>
             </div>
           ) : (
             <ul aria-label={t("내 에셋 목록", "My assets list")} className={`market-library-results market-library-results--${layout}`}>
-              {exploredItems.map((item, index) => {
+              {displayedItems.map((item, index) => {
                 const kind = marketKindMeta(item.kind);
                 const KindIcon = kind.icon;
                 const head = item.catalog.state === "available" ? item.catalog.head : null;
+                const newerRelease = hasNewerCatalogRelease(item);
                 return (
                   <li key={item.id} className="market-library-card" {...introItemProps(index)}>
                     <div className="market-library-card__cover" aria-hidden="true">
@@ -466,6 +593,17 @@ export function MarketCloudLibraryPage({ embedded = false }: { readonly embedded
                         <dt className="text-fg-3">{t("추가한 버전", "Added version")}</dt>
                         <dd className="numeral tnum text-right font-medium text-fg">v{item.addedFrom.resourceVersion}</dd>
                       </div>
+                      {head && newerRelease ? (
+                        <div className="flex justify-between gap-3">
+                          <dt className="text-fg-3">{t("소장 이후 변경", "Since acquired")}</dt>
+                          <dd className="numeral tnum text-right font-semibold text-accent">
+                            {t(
+                              `소장 당시 대비 새 릴리스 (v${item.addedFrom.resourceVersion} → v${head.resourceVersion})`,
+                              `Newer release since acquired (v${item.addedFrom.resourceVersion} → v${head.resourceVersion})`,
+                            )}
+                          </dd>
+                        </div>
+                      ) : null}
                       <div className="flex justify-between gap-3">
                         <dt className="text-fg-3">{t("현재 상태", "Current status")}</dt>
                         <dd className="text-right font-medium text-fg">{catalogMessage(item, t)}</dd>

@@ -1,4 +1,4 @@
-import { Store } from "lucide-react";
+import { ArrowUpRight, Calculator, PackageCheck, Store, Wand2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { MarketGroupBuyCard } from "../components/MarketGroupBuyCard";
@@ -9,6 +9,10 @@ import { MarketSellerDashboard } from "../components/MarketSellerDashboard";
 import { MarketSellerListingCard } from "../components/MarketSellerListingCard";
 import { useMarketGroupBuy } from "../hooks/use-market-group-buy";
 import { useMarketSeller } from "../hooks/use-market-seller";
+import {
+  MarketCreatorRevenueCalculator,
+  type CreatorTier,
+} from "../models/market-creator-revenue-calculator";
 import "../components/market-library-experience.css";
 
 import {
@@ -22,6 +26,7 @@ import { deriveNowCard } from "@/shared/components/layout/now-card-model";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import Link from "@/shared/navigation/router-link";
 import {
   useDocumentTitle,
   useMetaDescription,
@@ -55,6 +60,19 @@ export function MarketSellerPage() {
   const seller = useMarketSeller();
   const groupBuy = useMarketGroupBuy();
   const [revision, setRevision] = useState(0);
+  const [simPriceKrw, setSimPriceKrw] = useState(15_000);
+  const [simTier, setSimTier] = useState<CreatorTier>("standard-creator");
+  const [simBoostTipKrw, setSimBoostTipKrw] = useState(0);
+  const revenueCalculator = useMemo(() => new MarketCreatorRevenueCalculator(), []);
+  const settlementBreakdown = useMemo(
+    () =>
+      revenueCalculator.calculate({
+        priceKrw: simPriceKrw,
+        creatorTier: simTier,
+        boostTipKrw: simBoostTipKrw,
+      }),
+    [revenueCalculator, simBoostTipKrw, simPriceKrw, simTier],
+  );
   const refreshAll = useCallback(() => {
     seller.refresh();
     groupBuy.refresh();
@@ -149,6 +167,31 @@ export function MarketSellerPage() {
             "This is the first tab of the seller center: a counter where creators list materials directly in this browser and trade them for activity points, plus group buys. Assets published to the server live in the Register asset and Package management tabs. No cash payments or withdrawals.",
           )}
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link
+            href="/market/publish"
+            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+          >
+            <Wand2 className="size-3.5 text-accent" aria-hidden="true" />
+            {bt("7종 시각 매니페스트 빌더 열기", "Open 7-kind visual manifest builder")}
+          </Link>
+          <Link
+            href="/market/manage"
+            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+          >
+            <PackageCheck className="size-3.5 text-accent" aria-hidden="true" />
+            {bt("서버 게시 패키지·버전 관리", "Manage server-published packages & versions")}
+          </Link>
+          {viewerId ? (
+            <Link
+              href={`/market/creator/${encodeURIComponent(viewerId)}`}
+              className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            >
+              {bt("내 배급자 스토어 보기", "View my publisher storefront")}
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       {nowCard ? (
@@ -233,6 +276,149 @@ export function MarketSellerPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section
+        id="seller-revenue-simulator"
+        aria-label={bt("유료 전환 시 창작자 정산 시뮬레이터", "Creator payout simulator for paid mode")}
+        className="mt-10 rounded-2xl border border-line bg-card p-5 sm:p-6"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Calculator className="size-4 text-accent" aria-hidden="true" />
+              <h2 className="text-base font-bold text-fg sm:text-lg">
+                {bt("유료 운영 전환 시 예상 정산 시뮬레이터", "Creator payout simulator for paid operation")}
+              </h2>
+            </div>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-fg-3">
+              {bt(
+                "현재 기본 운영은 무료·활동 포인트 체제입니다. 향후 유료 마켓 전환 시 플랫폼 수수료, PG 결제대행 수수료(3.3%), 원천징수 세액(3.3%)을 투명하게 반영한 예상 실수령액을 미리 시뮬레이션할 수 있습니다.",
+                "Default operation currently uses free and activity-point exchange. Simulate net creator payouts after platform fee, 3.3% PG fee, and 3.3% withholding tax when paid mode is enabled.",
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {([5_000, 15_000, 35_000, 59_000] as const).map((presetPrice) => (
+              <button
+                key={presetPrice}
+                type="button"
+                aria-pressed={simPriceKrw === presetPrice}
+                onClick={() => setSimPriceKrw(presetPrice)}
+                className={buttonClass({
+                  variant: simPriceKrw === presetPrice ? "solid" : "outline",
+                  size: "sm",
+                  className: "min-h-8 text-xs",
+                })}
+              >
+                {revenueCalculator.formatKrw(presetPrice)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <label className="block rounded-xl border border-line bg-panel/60 p-3.5 text-xs font-semibold text-fg">
+            {bt("시뮬레이션 판매가 (원)", "Simulated listing price (KRW)")}
+            <input
+              type="number"
+              min={0}
+              max={10_000_000}
+              step={500}
+              value={simPriceKrw}
+              onChange={(event) =>
+                setSimPriceKrw(Math.max(0, Math.min(10_000_000, Math.floor(Number(event.target.value) || 0))))
+              }
+              className="numeral tnum mt-2 min-h-10 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg"
+            />
+          </label>
+
+          <div className="rounded-xl border border-line bg-panel/60 p-3.5">
+            <p className="text-xs font-semibold text-fg">{bt("창작자 수수료 등급", "Creator fee tier")}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                aria-pressed={simTier === "standard-creator"}
+                onClick={() => setSimTier("standard-creator")}
+                className={buttonClass({
+                  variant: simTier === "standard-creator" ? "solid" : "outline",
+                  size: "sm",
+                  className: "min-h-10 text-xs",
+                })}
+              >
+                {bt("일반 (수수료 20%)", "Standard (20%)")}
+              </button>
+              <button
+                type="button"
+                aria-pressed={simTier === "pro-partner"}
+                onClick={() => setSimTier("pro-partner")}
+                className={buttonClass({
+                  variant: simTier === "pro-partner" ? "solid" : "outline",
+                  size: "sm",
+                  className: "min-h-10 text-xs",
+                })}
+              >
+                {bt("프로 파트너 (10%)", "Pro Partner (10%)")}
+              </button>
+            </div>
+          </div>
+
+          <label className="block rounded-xl border border-line bg-panel/60 p-3.5 text-xs font-semibold text-fg">
+            {bt("팬 응원 팁 · Creator Boost (원)", "Fan boost tip (KRW)")}
+            <input
+              type="number"
+              min={0}
+              max={1_000_000}
+              step={1000}
+              value={simBoostTipKrw}
+              onChange={(event) =>
+                setSimBoostTipKrw(Math.max(0, Math.min(1_000_000, Math.floor(Number(event.target.value) || 0))))
+              }
+              className="numeral tnum mt-2 min-h-10 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg"
+            />
+          </label>
+        </div>
+
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-accent/40 bg-accent/10 p-3.5">
+            <dt className="text-xs font-semibold text-fg-2">
+              {bt("예상 창작자 실수령액", "Estimated net creator payout")}
+            </dt>
+            <dd className="numeral tnum mt-1 text-lg font-extrabold text-fg" data-testid="seller-sim-net-payout">
+              {revenueCalculator.formatKrw(settlementBreakdown.netCreatorPayoutKrw)}
+            </dd>
+            <p className="numeral tnum mt-0.5 text-[0.7rem] font-semibold text-accent">
+              {bt(
+                `실효 정산율 ${settlementBreakdown.creatorEffectiveTakeRatePercent}%`,
+                `Effective take rate ${settlementBreakdown.creatorEffectiveTakeRatePercent}%`,
+              )}
+            </p>
+          </div>
+          <div className="rounded-xl border border-line bg-panel/40 p-3.5">
+            <dt className="text-xs font-semibold text-fg-3">
+              {bt(`플랫폼 수수료 (${settlementBreakdown.platformFeeRatePercent}%)`, `Platform fee (${settlementBreakdown.platformFeeRatePercent}%)`)}
+            </dt>
+            <dd className="numeral tnum mt-1 text-sm font-bold text-fg">
+              -{revenueCalculator.formatKrw(settlementBreakdown.platformFeeKrw)}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-line bg-panel/40 p-3.5">
+            <dt className="text-xs font-semibold text-fg-3">
+              {bt("PG 결제대행 수수료 (3.3%)", "PG processing fee (3.3%)")}
+            </dt>
+            <dd className="numeral tnum mt-1 text-sm font-bold text-fg">
+              -{revenueCalculator.formatKrw(settlementBreakdown.pgFeeKrw)}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-line bg-panel/40 p-3.5">
+            <dt className="text-xs font-semibold text-fg-3">
+              {bt("원천징수 세액 (3.3%)", "Withholding tax (3.3%)")}
+            </dt>
+            <dd className="numeral tnum mt-1 text-sm font-bold text-fg">
+              -{revenueCalculator.formatKrw(settlementBreakdown.withholdingTaxKrw)}
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <section

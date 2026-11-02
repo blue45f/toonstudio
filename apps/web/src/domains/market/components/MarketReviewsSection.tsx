@@ -13,6 +13,7 @@ import {
 import { useMemo, useState, type FormEvent } from "react";
 
 import { useMarketSocial } from "../hooks/use-market-social";
+import { marketStudioResourceHref } from "../models/market-studio-handoff";
 
 import type {
   CreatorMarketplaceSocialAuthorBadge,
@@ -30,7 +31,7 @@ interface MarketReviewsSectionProps {
   resourceId: string;
 }
 
-type ReviewSort = "helpful" | "newest" | "rating";
+type ReviewSort = "helpful" | "newest" | "rating" | "ratingAsc";
 
 const ROLE_TAGS = [
   "현역 웹툰 작가",
@@ -129,6 +130,11 @@ function sortReviews(
         || right.helpfulCount - left.helpfulCount
         || right.createdAt.localeCompare(left.createdAt);
     }
+    if (sort === "ratingAsc") {
+      return left.rating - right.rating
+        || right.helpfulCount - left.helpfulCount
+        || right.createdAt.localeCompare(left.createdAt);
+    }
     if (sort === "newest") return right.createdAt.localeCompare(left.createdAt);
     return right.helpfulCount - left.helpfulCount
       || right.createdAt.localeCompare(left.createdAt);
@@ -149,6 +155,8 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
     authenticated ? session.data.user.id : "guest",
   );
   const [sort, setSort] = useState<ReviewSort>("helpful");
+  const [starFilter, setStarFilter] = useState<number | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>("");
   const [formOpen, setFormOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState("");
@@ -157,7 +165,14 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
   const [tags, setTags] = useState<string[]>([]);
 
   const reviews = social.data?.reviews ?? NO_REVIEWS;
-  const displayed = useMemo(() => sortReviews(reviews, sort), [reviews, sort]);
+  const displayed = useMemo(() => {
+    const filtered = reviews.filter((review) => {
+      if (starFilter !== null && Math.round(review.rating) !== starFilter) return false;
+      if (roleFilter && review.roleTag !== roleFilter) return false;
+      return true;
+    });
+    return sortReviews(filtered, sort);
+  }, [reviews, roleFilter, sort, starFilter]);
   const mine = social.data?.viewer.myReviewId
     ? reviews.find((review) => review.id === social.data?.viewer.myReviewId) ?? null
     : null;
@@ -252,19 +267,32 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
           <Stars value={stats.average} size="size-4" />
           <span className="mt-1 text-xs text-fg-2">{stats.totalCount}개 검증 평가 · {stats.recommendPercentage}% 추천</span>
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {([5, 4, 3, 2, 1] as const).map((star) => {
             const key = String(star) as "1" | "2" | "3" | "4" | "5";
             const count = stats.distribution[key];
             const width = stats.totalCount ? Math.round((count / stats.totalCount) * 100) : 0;
+            const active = starFilter === star;
             return (
-              <div key={star} className="flex items-center gap-2 text-xs">
-                <span className="w-6 text-fg-3">{star}★</span>
+              <button
+                key={star}
+                type="button"
+                aria-pressed={active}
+                aria-label={`${star}점 리뷰 필터 (${count}개)`}
+                onClick={() => setStarFilter((prev) => (prev === star ? null : star))}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-1.5 py-0.5 text-left text-xs transition-colors",
+                  active
+                    ? "bg-accent/15 font-semibold text-accent"
+                    : "hover:bg-raised/70",
+                )}
+              >
+                <span className={cn("w-6", active ? "text-accent" : "text-fg-3")}>{star}★</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-raised">
                   <div className="h-full rounded-full bg-accent" style={{ width: `${width}%` }} />
                 </div>
                 <span className="numeral tnum w-8 text-right text-fg-3">{count}</span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -302,7 +330,7 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
             <>
               <Palette className="size-4 text-accent" aria-hidden="true" />
               <span>Studio에서 실제 설치를 완료하면 리뷰가 열립니다.</span>
-              <Link href={`/studio?installMarketResource=${resourceId}&assetMarket=community`} className="ml-auto font-semibold text-accent hover:underline">
+              <Link href={marketStudioResourceHref(resourceId)} className="ml-auto font-semibold text-accent hover:underline">
                 Studio에서 설치
               </Link>
             </>
@@ -370,13 +398,41 @@ export function MarketReviewsSection({ resourceId }: MarketReviewsSectionProps) 
         </div>
       ) : null}
 
-      <div className="mt-5 flex items-center justify-between gap-2">
-        <strong className="text-xs text-fg-2">검증된 사용자 리뷰</strong>
-        <select value={sort} onChange={(event) => setSort(event.target.value as ReviewSort)} aria-label="리뷰 정렬" className="h-8 rounded-lg border border-line bg-panel px-2 text-xs text-fg">
-          <option value="helpful">도움순</option>
-          <option value="newest">최신순</option>
-          <option value="rating">평점 높은순</option>
-        </select>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <strong className="text-xs text-fg-2">검증된 사용자 리뷰</strong>
+          {starFilter !== null || roleFilter ? (
+            <button
+              type="button"
+              onClick={() => {
+                setStarFilter(null);
+                setRoleFilter("");
+              }}
+              className="rounded-md border border-accent/40 bg-accent/10 px-2 py-0.5 text-[11px] font-semibold text-accent hover:bg-accent/20"
+            >
+              리뷰 필터 초기화
+            </button>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+            aria-label="작업 역할 필터"
+            className="h-8 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
+          >
+            <option value="">전체 역할</option>
+            {ROLE_TAGS.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
+          <select value={sort} onChange={(event) => setSort(event.target.value as ReviewSort)} aria-label="리뷰 정렬" className="h-8 rounded-lg border border-line bg-panel px-2 text-xs text-fg">
+            <option value="helpful">도움순</option>
+            <option value="newest">최신순</option>
+            <option value="rating">평점 높은순</option>
+            <option value="ratingAsc">평점 낮은순</option>
+          </select>
+        </div>
       </div>
 
       <div className="mt-3 space-y-3.5">

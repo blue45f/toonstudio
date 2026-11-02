@@ -7,16 +7,19 @@ import {
   PackageSearch,
   Plus,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
   Store,
   Upload,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketMaterialPreview } from "../components/MarketMaterialPreview";
+import { MarketQuickPreviewDialog } from "../components/MarketQuickPreviewDialog";
+import { MarketRecentlyViewedStrip } from "../components/MarketRecentlyViewedStrip";
 import { MarketResourceCard } from "../components/MarketResourceCard";
 import { MarketResourceFamilyExplorer } from "../components/MarketResourceFamilyExplorer";
 import { StaleNoticeBar } from "../components/StaleNoticeBar";
@@ -39,6 +42,7 @@ import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/Sit
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import {
@@ -110,11 +114,53 @@ export function MarketHomePage() {
   const materials3D = latest.items.filter(
     (item) => item.kind === "3d-asset" || item.kind === "3d-preset",
   );
-  const recentMore = useMobileShowMore(latest.items.length, MOBILE_RECENT_LIMIT);
   const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>("all");
+  const [quickPreviewRecord, setQuickPreviewRecord] =
+    useState<CreatorMarketplaceResourceRecord | null>(null);
   const activePreset =
     MARKET_ECOSYSTEM_PRESETS.find((preset) => preset.id === activePresetId) ??
     MARKET_ECOSYSTEM_PRESETS[0];
+
+  const presetFilteredItems = useMemo(() => {
+    if (activePresetId === "all") return latest.items;
+    const matched = latest.items.filter((item) => {
+      if (activePresetId === "brush-2d") return item.kind === "brush";
+      if (activePresetId === "bg-3d") return item.kind === "3d-asset";
+      if (activePresetId === "char-pose-3d") {
+        return item.kind === "3d-preset" || item.kind === "template";
+      }
+      if (activePresetId === "tone-sfx") {
+        return item.kind === "palette" || item.kind === "filter" || item.kind === "asset";
+      }
+      return true;
+    });
+    return matched.length > 0 ? matched : latest.items;
+  }, [activePresetId, latest.items]);
+
+  const recentMore = useMobileShowMore(presetFilteredItems.length, MOBILE_RECENT_LIMIT);
+
+  const featuredPublishers = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; name: string; count: number; noAiCount: number }
+    >();
+    for (const item of latest.items) {
+      const pub = item.publisher;
+      if (!pub?.id || !pub.name) continue;
+      const existing = map.get(pub.id) ?? {
+        id: pub.id,
+        name: pub.name,
+        count: 0,
+        noAiCount: 0,
+      };
+      map.set(pub.id, {
+        ...existing,
+        count: existing.count + 1,
+        noAiCount: existing.noAiCount + (item.containsAi === false ? 1 : 0),
+      });
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 4);
+  }, [latest.items]);
 
   return (
     <div>
@@ -290,9 +336,13 @@ export function MarketHomePage() {
                       </div>
                     </li>
                   ))
-                : latest.items.map((record, index) => (
+                : presetFilteredItems.map((record, index) => (
                     <li key={record.id} {...introItemProps(index)} className={recentMore.hiddenOnMobile(index) ? "max-sm:hidden" : undefined}>
-                      <MarketResourceCard record={record} className="h-full" />
+                      <MarketResourceCard
+                        record={record}
+                        onQuickPreview={setQuickPreviewRecord}
+                        className="h-full"
+                      />
                     </li>
                   ))}
             </ul>
@@ -492,12 +542,120 @@ export function MarketHomePage() {
           <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {materials3D.slice(0, 4).map((record, index) => (
               <li key={record.id} {...introItemProps(index)}>
-                <MarketResourceCard record={record} className="h-full" />
+                <MarketResourceCard
+                  record={record}
+                  onQuickPreview={setQuickPreviewRecord}
+                  className="h-full"
+                />
               </li>
             ))}
           </ul>
         </Container>
       ) : null}
+
+      <Container size="wide" className="pb-10 sm:pb-12">
+        <section
+          aria-label={t("안심 연재·호환 엔진 및 배급자 스토어 탐색", "Rights-verified shelves & creator storefronts")}
+          className="rounded-2xl border border-line bg-card/75 p-4 sm:p-5"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p className="eyebrow text-accent">VERIFIED WORKFLOW & CREATORS</p>
+              <h2 className="mt-1 text-base font-bold text-fg sm:text-lg">
+                {t("안심 연재 조건 & 배급자 스토어 바로가기", "Commercial No-AI picks & creator storefronts")}
+              </h2>
+            </div>
+            <Link
+              href="/market/browse?containsAi=false&commercial=true"
+              className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-accent hover:underline"
+            >
+              {t("No-AI 상업 허용 전체 보기", "Browse all No-AI commercial")}
+              <ArrowRight size={13} aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                titleKo: "AI 미포함 · 상업 연재 허용",
+                titleEn: "No-AI · Commercial serial OK",
+                descKo: "containsAi=false 및 상업 이용 허용 사용권만 선별",
+                descEn: "Manifests disclosed as No-AI with commercial rights",
+                href: "/market/browse?containsAi=false&commercial=true",
+              },
+              {
+                titleKo: "CC0 퍼블릭 도메인 소재",
+                titleEn: "CC0 1.0 Public Domain",
+                descKo: "출처 표기 부담 없이 원고에 즉시 투입 가능한 공개 소재",
+                descEn: "Zero-attribution public domain production assets",
+                href: "/market/browse?license=cc0-1.0",
+              },
+              {
+                titleKo: "Three.js 3D 회전 공간·프리셋",
+                titleEn: "Three.js 3D Orbitable Stages",
+                descKo: "카메라 구도를 자유롭게 잡아 선화·배경으로 쓰는 3D 에셋",
+                descEn: "3D environments & camera presets ready for Studio",
+                href: "/market/browse?engine=three&commercial=true",
+              },
+              {
+                titleKo: "작가 직접 창작 원본 (Original)",
+                titleEn: "Author-created Originals",
+                descKo: "배급자가 직접 제작해 서명·공개한 오리지널 패키지",
+                descEn: "Original packages authored directly by the publisher",
+                href: "/market/browse?origin=original&containsAi=false",
+              },
+            ].map((shelf) => (
+              <Link
+                key={shelf.href}
+                href={shelf.href}
+                className="group flex flex-col justify-between rounded-xl border border-line bg-panel p-3.5 transition-colors hover:border-accent/50 hover:bg-raised"
+              >
+                <div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-good">
+                    <ShieldCheck className="size-3.5" aria-hidden="true" />
+                    MANIFEST VERIFIED
+                  </span>
+                  <h3 className="mt-1 text-sm font-bold text-fg group-hover:text-accent">
+                    {t(shelf.titleKo, shelf.titleEn)}
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-fg-2">
+                    {t(shelf.descKo, shelf.descEn)}
+                  </p>
+                </div>
+                <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-accent">
+                  {t("조건으로 탐색", "Filter catalog")}
+                  <ArrowRight className="size-3" aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          {featuredPublishers.length > 0 ? (
+            <div className="mt-4 border-t border-line/70 pt-3.5">
+              <p className="text-xs font-bold text-fg-3">
+                {t("최근 활동 배급자 스토어", "Active publisher storefronts")}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {featuredPublishers.map((pub) => (
+                  <Link
+                    key={pub.id}
+                    href={`/market/creator/${encodeURIComponent(pub.id)}`}
+                    className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:text-accent"
+                  >
+                    <Store className="size-3.5 text-accent" aria-hidden="true" />
+                    <span>{pub.name}</span>
+                    <span className="numeral tnum rounded bg-raised px-1.5 py-0.5 text-[11px] text-fg-2">
+                      {t(`패키지 ${pub.count}개`, `${pub.count} pkgs`)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <MarketRecentlyViewedStrip className="mt-5" />
+      </Container>
 
       {popularTags.length >= 3 ? (
         <Container size="wide" className="pb-10 sm:pb-12">
@@ -596,6 +754,10 @@ export function MarketHomePage() {
         </SiteDisclosure>
       </Container>
       </div>
+      <MarketQuickPreviewDialog
+        record={quickPreviewRecord}
+        onClose={() => setQuickPreviewRecord(null)}
+      />
     </div>
   );
 }

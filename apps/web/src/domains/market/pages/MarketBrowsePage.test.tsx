@@ -395,3 +395,46 @@ it("웹툰 제작 공정별 원클릭 프리셋 필터 바로 종류와 사용�
   expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("");
 });
 
+it("AI 미포함·상업 연재 허용·렌더러 서버 패싯과 필터 프리셋 저장을 URL 쿼리와 연동한다", () => {
+  localStorage.clear();
+  useResources.mockReturnValue(marketPage());
+  render(
+    <MemoryRouter initialEntries={["/market/browse"]}>
+      <MarketBrowsePage />
+      <LocationProbe />
+    </MemoryRouter>,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "AI 미포함만" }));
+  fireEvent.click(screen.getByRole("button", { name: "상업 연재 허용" }));
+  fireEvent.click(screen.getByRole("button", { name: "Canvas 2D 호환" }));
+
+  const params = new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "");
+  expect(Object.fromEntries(params)).toEqual({
+    containsAi: "false",
+    commercial: "true",
+    engine: "canvas2d",
+  });
+  expect(useResources).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      containsAi: false,
+      commercial: true,
+      engine: "canvas2d",
+    }),
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "필터 프리셋 저장" }));
+  fireEvent.click(screen.getByRole("button", { name: "조건 초기화" }));
+  expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("");
+
+  fireEvent.click(screen.getByRole("button", { name: "No-AI · 상업허용 · canvas2d" }));
+  const restored = new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "");
+  expect(Object.fromEntries(restored)).toEqual({
+    containsAi: "false",
+    commercial: "true",
+    engine: "canvas2d",
+  });
+  localStorage.clear();
+});
+
+

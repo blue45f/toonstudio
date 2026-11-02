@@ -59,6 +59,7 @@ const CURATED_TRAILS: Record<string, AppBreadcrumbItem[]> = {
   "/market/library": trail(MARKET, "내 보관함", "Library"),
   "/market/wishlist": trail(MARKET, "찜 목록", "Wishlist"),
   "/market/compare": trail(MARKET, "비교", "Compare"),
+  "/market/orders": trail(MARKET, "주문·결제 내역", "Orders"),
   "/community/cafes": trail(COMMUNITY, "장르 카페", "Cafes"),
   "/community/events": trail(COMMUNITY, "이벤트", "Events"),
   "/community/promote": trail(COMMUNITY, "홍보 게시판", "Promote"),

@@ -95,4 +95,39 @@ describe("parseMarketBrowseQuery", () => {
       expect.objectContaining({ param: "sort", code: "invalid" }),
     ]);
   });
+
+  it("No-AI·상업 이용·엔진·제작 출처 URL 필터를 파싱하고 잘못된 값은 거절한다", () => {
+    const valid = parseMarketBrowseQuery(new URLSearchParams({
+      containsAi: " false ",
+      engine: " webgpu ",
+      commercial: " true ",
+      origin: " original ",
+    }));
+
+    expect(valid.issues).toEqual([]);
+    expect(valid.values).toMatchObject({
+      containsAi: false,
+      engine: "webgpu",
+      commercial: true,
+      origin: "original",
+    });
+
+    const invalid = parseMarketBrowseQuery(new URLSearchParams({
+      containsAi: "no",
+      engine: "vulkan",
+      commercial: "1",
+      origin: "third-party",
+    }));
+
+    expect(invalid.values.containsAi).toBeUndefined();
+    expect(invalid.values.engine).toBeUndefined();
+    expect(invalid.values.commercial).toBeUndefined();
+    expect(invalid.values.origin).toBeUndefined();
+    expect(invalid.issues.map(({ param, code }) => [param, code])).toEqual([
+      ["containsAi", "invalid"],
+      ["engine", "invalid"],
+      ["commercial", "invalid"],
+      ["origin", "invalid"],
+    ]);
+  });
 });

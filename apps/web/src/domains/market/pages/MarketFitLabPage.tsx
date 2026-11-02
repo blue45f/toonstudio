@@ -18,6 +18,7 @@ import { MarketProductionProfileEditor } from "../components/MarketProductionPro
 import { MarketResourceCard } from "../components/MarketResourceCard";
 import { StaleNoticeBar } from "../components/StaleNoticeBar";
 import { useMarketProductionProfile } from "../hooks/use-market-production-profile";
+import { useMarketResourceDetail } from "../hooks/use-market-resource-detail";
 import { useMarketResources } from "../hooks/use-market-resources";
 import {
   evaluateAndSortMarketProductionRecords,
@@ -33,6 +34,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
 import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS,
+  CreatorMarketplaceResourcePublisherQuerySchema,
 } from "@/shared/lib/creator-marketplace-resource-contract";
 import { cn } from "@/shared/lib/utils";
 import {
@@ -90,6 +92,27 @@ export function MarketFitLabPage() {
     persistenceAvailable,
   } = useMarketProductionProfile();
   const page = useMarketResources({ limit: PAGE_SIZE, sort: "newest" });
+  const missingPreviewSlug = useMemo(() => {
+    if (!previewId) return undefined;
+    if (
+      page.items.some(
+        (item) => item.id === previewId || item.packageId === previewId,
+      )
+    ) {
+      return undefined;
+    }
+    return CreatorMarketplaceResourcePublisherQuerySchema.safeParse(previewId).success
+      ? previewId
+      : undefined;
+  }, [page.items, previewId]);
+  const deepLinkedDetail = useMarketResourceDetail(missingPreviewSlug);
+  const candidateItems = useMemo(() => {
+    if (!deepLinkedDetail.record) return page.items;
+    if (page.items.some((item) => item.id === deepLinkedDetail.record?.id)) {
+      return page.items;
+    }
+    return [deepLinkedDetail.record, ...page.items];
+  }, [deepLinkedDetail.record, page.items]);
 
   useDocumentTitle(t("제작 적합성 랩", "Production Fit Lab"));
   useMetaDescription(marketFitDescription);
@@ -100,8 +123,8 @@ export function MarketFitLabPage() {
   });
 
   const evaluated = useMemo(
-    () => evaluateAndSortMarketProductionRecords(page.items, profile, fitTranslate),
-    [page.items, profile, fitTranslate],
+    () => evaluateAndSortMarketProductionRecords(candidateItems, profile, fitTranslate),
+    [candidateItems, profile, fitTranslate],
   );
   const counts = useMemo(() => ({
     all: evaluated.length,
@@ -115,7 +138,11 @@ export function MarketFitLabPage() {
     return normalizedSearch.length === 0
       || marketProductionFitSearchText(record).includes(normalizedSearch);
   }), [evaluated, fitFilter, normalizedSearch]);
-  const selectedFit = evaluated.find((item) => item.record.id === previewId)
+  const selectedFit =
+    evaluated.find(
+      (item) =>
+        item.record.id === previewId || item.record.packageId === previewId,
+    )
     ?? visible[0]
     ?? evaluated[0];
 

@@ -1,9 +1,11 @@
 import type {
+  CreatorMarketplaceResourceEngine,
   CreatorMarketplaceResourceKind,
   CreatorMarketplaceResourceLicense,
   CreatorMarketplaceResourceManifest,
   CreatorMarketplacePackageModerationState,
   CreatorMarketplaceResourceModerationAction,
+  CreatorMarketplaceResourceProvenanceOrigin,
   CreatorMarketplaceResourceReportEvidence,
   CreatorMarketplaceResourceReportReason,
   CreatorMarketplaceResourceReportStatus,
@@ -38,6 +40,10 @@ export interface CreatorMarketplaceResourceListInput {
   tag?: string;
   kind?: CreatorMarketplaceResourceKind;
   license?: CreatorMarketplaceResourceLicense;
+  containsAi?: boolean;
+  engine?: CreatorMarketplaceResourceEngine;
+  commercial?: boolean;
+  origin?: CreatorMarketplaceResourceProvenanceOrigin;
 }
 
 export interface CreatorMarketplaceOwnedHeadListInput

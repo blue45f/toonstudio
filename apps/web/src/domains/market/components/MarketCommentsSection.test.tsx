@@ -120,4 +120,27 @@ describe("MarketCommentsSection", () => {
       });
     });
   });
+
+  it("filters Q&A threads by publisher answer status and keyword search", () => {
+    render(
+      <SessionContext.Provider value={session}>
+        <MarketCommentsSection
+          resourceId="11111111-1111-4111-8111-111111111111"
+          publisherId="publisher-1"
+        />
+      </SessionContext.Provider>,
+    );
+
+    expect(screen.getByText("브러시 크기는 10px 전후를 권장합니다.")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "답변 대기" }));
+    expect(screen.queryByText("브러시 크기는 10px 전후를 권장합니다.")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "배급자 답변 완료" }));
+    expect(screen.getByText("브러시 크기는 10px 전후를 권장합니다.")).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText("질문·답글 검색"), {
+      target: { value: "존재하지않는키워드" },
+    });
+    expect(screen.queryByText("브러시 크기는 10px 전후를 권장합니다.")).toBeNull();
+  });
 });

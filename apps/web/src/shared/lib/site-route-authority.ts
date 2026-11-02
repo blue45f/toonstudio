@@ -113,6 +113,7 @@ export const SITE_ROUTE_ALIASES = {
   "/creator-support": "/support-creators",
   "/make": "/create",
   "/market/fit-lab": "/market/fit",
+  "/marketplace": "/market",
   "/more": "/sitemap",
   "/music": "/studio/assets/audio",
   "/new": "/create",

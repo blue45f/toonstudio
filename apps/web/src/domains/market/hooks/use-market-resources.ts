@@ -10,8 +10,10 @@ import {
 import { listCreatorMarketplaceResources } from "../remotes/market-resource-remote";
 
 import type {
+  CreatorMarketplaceResourceEngine,
   CreatorMarketplaceResourceKind,
   CreatorMarketplaceResourceLicense,
+  CreatorMarketplaceResourceProvenanceOrigin,
   CreatorMarketplaceResourceRecord,
   CreatorMarketplaceResourceSort,
 } from "@/shared/lib/creator-marketplace-resource-contract";
@@ -23,6 +25,10 @@ export interface MarketResourceQuery {
   readonly license?: CreatorMarketplaceResourceLicense;
   readonly tag?: string;
   readonly publisher?: string;
+  readonly containsAi?: boolean;
+  readonly engine?: CreatorMarketplaceResourceEngine;
+  readonly commercial?: boolean;
+  readonly origin?: CreatorMarketplaceResourceProvenanceOrigin;
   readonly sort: CreatorMarketplaceResourceSort;
   readonly limit: number;
 }
@@ -60,6 +66,10 @@ function remoteQuery(
     license: query.license,
     tag: query.tag,
     publisher: query.publisher,
+    ...(query.containsAi !== undefined ? { containsAi: query.containsAi } : {}),
+    ...(query.engine !== undefined ? { engine: query.engine } : {}),
+    ...(query.commercial !== undefined ? { commercial: query.commercial } : {}),
+    ...(query.origin !== undefined ? { origin: query.origin } : {}),
     sort: query.sort,
     cursor,
   };

@@ -8,11 +8,14 @@ import {
   CREATOR_MARKETPLACE_RESOURCE_CURSOR_MAX_CHARACTERS,
   CREATOR_MARKETPLACE_RESOURCE_MAX_PAGE_SIZE,
   CREATOR_MARKETPLACE_RESOURCE_REPORT_DETAILS_MAX_CHARACTERS,
+  CreatorMarketplaceResourceBooleanQuerySchema,
+  CreatorMarketplaceResourceEngineSchema,
   CreatorMarketplaceResourceModerationActionSchema,
   CreatorMarketplaceResourceKindSchema,
   CreatorMarketplaceResourceLicenseSchema,
   CreatorMarketplaceResourceManifestSchema,
   CreatorMarketplaceResourcePackageIdSchema,
+  CreatorMarketplaceResourceProvenanceOriginSchema,
   CreatorMarketplaceResourcePublisherQuerySchema,
   CreatorMarketplaceResourceReportReasonSchema,
   CreatorMarketplaceResourceReportStatusSchema,
@@ -46,8 +49,12 @@ export const CreatorMarketplaceResourceListQuerySchema = z
     tag: CreatorMarketplaceResourceTagQuerySchema.optional(),
     kind: CreatorMarketplaceResourceKindSchema.optional(),
     license: CreatorMarketplaceResourceLicenseSchema.optional(),
-    // 공개 카탈로그의 배급자 필터. viewer-agnostic URL 상태라 엣지 캐시와 충돌하지 않는다.
+    // 공개 카탈로그의 배급자·제작 패싯 필터. viewer-agnostic URL 상태라 엣지 캐시와 충돌하지 않는다.
     publisher: CreatorMarketplaceResourcePublisherQuerySchema.optional(),
+    containsAi: CreatorMarketplaceResourceBooleanQuerySchema.optional(),
+    engine: CreatorMarketplaceResourceEngineSchema.optional(),
+    commercial: CreatorMarketplaceResourceBooleanQuerySchema.optional(),
+    origin: CreatorMarketplaceResourceProvenanceOriginSchema.optional(),
     sort: CreatorMarketplaceResourceSortSchema.optional(),
   })
   .strict()

@@ -398,4 +398,41 @@ describe("계정 라이브러리에서 원래 원고로 복귀", () => {
       .toBe("/studio/assets?view=essentials");
     expect(api.list).not.toHaveBeenCalled();
   });
+
+  it("소장 당시 대비 새 릴리스 필터링과 출처·명세서 복사 및 영수증 링크를 제공한다", async () => {
+    const newer = item("신버전 출시 소재");
+    const sameHead = {
+      ...item("동일 버전 소재"),
+      addedFrom: {
+        releaseId: "123e4567-e89b-42d3-a456-426614174002",
+        resourceVersion: "2.0.0",
+        releaseOrdinal: 2,
+        manifestHash: "2".repeat(64),
+      },
+    };
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    api.list.mockResolvedValue(page([newer, sameHead]));
+    render(view());
+
+    expect(await screen.findByRole("heading", { name: "신버전 출시 소재" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "동일 버전 소재" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "구매·영수증 내역" }).getAttribute("href")).toBe("/market/orders");
+    expect(screen.getByText(/소장 당시 대비 새 릴리스 \(v1\.0\.0 → v2\.0\.0\)/u)).toBeTruthy();
+
+    const newerToggle = screen.getByRole("button", { name: /새 릴리스 있는 에셋만/u });
+    expect(newerToggle.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(newerToggle);
+    expect(newerToggle.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("heading", { name: "신버전 출시 소재" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "동일 버전 소재" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "보유 소재 출처·명세서 복사" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(String(writeText.mock.calls[0]?.[0] ?? "")).toContain("신버전 출시 소재");
+    expect(screen.getByRole("button", { name: "출처·명세서 복사됨" })).toBeTruthy();
+  });
 });

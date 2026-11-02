@@ -106,6 +106,7 @@ const SIGN_IN_ROUTES = [
   "/library",
   "/market/library",
   "/market/manage",
+  "/market/orders",
   "/market/publish",
   "/market/wishlist",
   "/me",

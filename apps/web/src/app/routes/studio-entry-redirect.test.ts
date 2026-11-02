@@ -6,6 +6,7 @@ describe("market editor entry", () => {
   it.each([
     "?installMarketResource=release-1&assetMarket=community",
     "?assetMarket=community&installMarketResource=release-2",
+    "?assetMarket=community&communityView=share",
     "?tool=draw", "?id=existing-work&mode=edit",
   ])("preserves the complete editor query: %s", search => {
     expect(legacyStudioEditorHref("/studio", search)).toBe(`${STUDIO_DRAFT_CANVAS_PATHNAME}${search}`);

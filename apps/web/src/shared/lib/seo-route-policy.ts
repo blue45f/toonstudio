@@ -26,6 +26,7 @@ const PRIVATE_PREFIXES = [
   "/market/checkout",
   "/market/library",
   "/market/manage",
+  "/market/orders",
   "/market/publish",
   "/market/wishlist",
 ] as const;
@@ -104,6 +105,7 @@ const INDEXABLE_PREFIXES = [
 
 const INDEXABLE_DETAIL_ROUTES = [
   /^\/market\/resource\/[^/]+$/u,
+  /^\/market\/creator\/[^/]+$/u,
   /^\/title\/[^/]+$/u,
 ] as const;
 

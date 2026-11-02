@@ -69,9 +69,11 @@ import {
   CreatorMarketplaceResourceRecordSchema,
   CreatorMarketplaceResourceHistoryPageSchema,
   CreatorMarketplaceResourceIdentitySchema,
+  CreatorMarketplaceResourceEngineSchema,
   CreatorMarketplaceResourceKindSchema,
   CreatorMarketplaceResourceLicenseSchema,
   CreatorMarketplaceResourcePackageIdSchema,
+  CreatorMarketplaceResourceProvenanceOriginSchema,
   CreatorMarketplaceResourceSearchQuerySchema,
   CreatorMarketplaceResourceSortSchema,
   CreatorMarketplaceResourceTagQuerySchema,
@@ -149,6 +151,10 @@ const CreatorMarketplaceOwnedHeadListParamsSchema = z
     kind: CreatorMarketplaceResourceKindSchema.optional(),
     license: CreatorMarketplaceResourceLicenseSchema.optional(),
     sort: CreatorMarketplaceResourceSortSchema.optional(),
+    containsAi: z.boolean().optional(),
+    engine: CreatorMarketplaceResourceEngineSchema.optional(),
+    commercial: z.boolean().optional(),
+    origin: CreatorMarketplaceResourceProvenanceOriginSchema.optional(),
   })
   .strict()
   .superRefine((query, context) => {
@@ -192,6 +198,10 @@ export async function listCreatorMarketplaceResources(
         license: params.license,
         publisher: params.publisher,
         sort: params.sort,
+        ...(params.containsAi !== undefined ? { containsAi: params.containsAi } : {}),
+        ...(params.engine !== undefined ? { engine: params.engine } : {}),
+        ...(params.commercial !== undefined ? { commercial: params.commercial } : {}),
+        ...(params.origin !== undefined ? { origin: params.origin } : {}),
       },
       signal,
     });
@@ -215,6 +225,10 @@ export async function listMyCreatorMarketplaceResources(
         kind: params.kind,
         license: params.license,
         sort: params.sort,
+        ...(params.containsAi !== undefined ? { containsAi: params.containsAi } : {}),
+        ...(params.engine !== undefined ? { engine: params.engine } : {}),
+        ...(params.commercial !== undefined ? { commercial: params.commercial } : {}),
+        ...(params.origin !== undefined ? { origin: params.origin } : {}),
       },
       signal,
     });
@@ -380,6 +394,10 @@ export async function listCreatorMarketplaceOwnedHeads(
         kind: query.kind,
         license: query.license,
         sort: query.sort,
+        ...(query.containsAi !== undefined ? { containsAi: query.containsAi } : {}),
+        ...(query.engine !== undefined ? { engine: query.engine } : {}),
+        ...(query.commercial !== undefined ? { commercial: query.commercial } : {}),
+        ...(query.origin !== undefined ? { origin: query.origin } : {}),
       },
       signal,
     });

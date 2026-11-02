@@ -6,14 +6,19 @@ import {
   Library,
   PackagePlus,
   Palette,
+  ReceiptText,
   Search,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
+import { useMarketCompare } from "../hooks/use-market-compare";
+import { useMarketWishlist } from "../hooks/use-market-wishlist";
+
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
@@ -49,28 +54,29 @@ const SELECTION_TOOLS: ReadonlyArray<{
 ];
 
 /** 현재 경로가 어느 마켓 장소에 속하는지 — 강조 표시(active)와 정확한 현재 위치(current)를 나눈다. */
-function marketPlaceState(id: MarketPlaceId, pathname: string, findingAsset: boolean) {
+function marketPlaceState(id: MarketPlaceId, canonicalPath: string, findingAsset: boolean) {
   switch (id) {
     case "find":
-      return { active: findingAsset, current: pathname === "/market/browse" };
+      return { active: findingAsset, current: canonicalPath === "/market/browse" };
     case "library":
-      return { active: pathname === "/market/library", current: pathname === "/market/library" };
+      return { active: canonicalPath === "/market/library", current: canonicalPath === "/market/library" };
     case "wishlist":
-      return { active: pathname === "/market/wishlist", current: pathname === "/market/wishlist" };
+      return { active: canonicalPath === "/market/wishlist", current: canonicalPath === "/market/wishlist" };
     case "seller": {
       const selling =
-        pathname === "/market/manage" || pathname === "/market/publish" || pathname === "/market/seller";
+        canonicalPath === "/market/manage" || canonicalPath === "/market/publish" || canonicalPath === "/market/seller";
       return { active: selling, current: selling };
     }
   }
 }
 
-function isFindingAsset(pathname: string): boolean {
-  return pathname === "/market"
-    || pathname === "/market/browse"
-    || pathname === "/market/fit"
-    || pathname === "/market/compare"
-    || pathname.startsWith("/market/resource");
+function isFindingAsset(canonicalPath: string): boolean {
+  return canonicalPath === "/market"
+    || canonicalPath === "/market/browse"
+    || canonicalPath === "/market/fit"
+    || canonicalPath === "/market/compare"
+    || canonicalPath.startsWith("/market/resource")
+    || canonicalPath.startsWith("/market/creator");
 }
 
 /**
@@ -80,23 +86,43 @@ function isFindingAsset(pathname: string): boolean {
 export function MarketNavHeader({ className }: MarketNavHeaderProps) {
   const bt = useBilingual("MarketNavHeader");
   const { pathname } = useLocation();
-  const findingAsset = isFindingAsset(pathname);
+  const canonicalPath = canonicalSitePath(pathname);
+  const findingAsset = isFindingAsset(canonicalPath);
+  const { wishlistCount } = useMarketWishlist();
+  const { compareCount } = useMarketCompare();
 
   return (
     <nav aria-label={bt("마켓 주요 내비게이션", "Market navigation")} className={cn("mb-6 border-b border-line/70 pb-4 pt-1", className)}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-line/60 pb-2">
         <Link href="/market" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold tracking-[.08em] text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />{bt("TOONSTUDIO / 웹툰 소재 작업실", "TOONSTUDIO / WEBTOON MATERIALS")}</Link>
-        <div className="flex items-center gap-4 text-xs text-fg-2"><Link href="/research/assets" className="inline-flex min-h-11 items-center hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{bt("장면 레퍼런스", "Scene references")}</Link><Link href="/learn" className="inline-flex min-h-11 items-center hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{bt("제작 강좌 ↗", "Production lessons ↗")}</Link></div>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-fg-2">
+          <Link
+            href="/market/orders"
+            aria-current={canonicalPath === "/market/orders" ? "page" : undefined}
+            className={cn(
+              "inline-flex min-h-11 items-center gap-1 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              canonicalPath === "/market/orders" && "font-bold text-accent",
+            )}
+          >
+            <ReceiptText className="size-3.5" aria-hidden="true" />
+            {bt("주문·결제 내역", "Orders")}
+          </Link>
+          <Link href="/research/assets" className="inline-flex min-h-11 items-center hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{bt("장면 레퍼런스", "Scene references")}</Link>
+          <Link href="/learn" className="inline-flex min-h-11 items-center hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{bt("제작 강좌 ↗", "Production lessons ↗")}</Link>
+        </div>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         <div className="grid grid-cols-4 gap-1.5 sm:flex sm:items-center">
           {MARKET_PLACES.map((place) => {
             const Icon = place.icon;
-            const { active, current } = marketPlaceState(place.id, pathname, findingAsset);
+            const { active, current } = marketPlaceState(place.id, canonicalPath, findingAsset);
+            const labelText = bt(...place.label);
+            const badgeCount = place.id === "wishlist" ? wishlistCount : 0;
             return (
               <Link
                 key={place.id}
                 href={place.href}
+                aria-label={labelText}
                 aria-current={current ? "page" : undefined}
                 className={cn(
                   "inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 whitespace-nowrap rounded-xl px-1.5 text-xs font-bold transition-colors",
@@ -106,7 +132,18 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
                 )}
               >
                 <Icon className="size-4 shrink-0 sm:size-3.5" aria-hidden="true" />
-                {bt(...place.label)}
+                <span>{labelText}</span>
+                {badgeCount > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "numeral tnum hidden rounded-full px-1.5 py-0.5 text-[0.65rem] font-extrabold leading-none sm:inline-block",
+                      active ? "bg-on-accent/20 text-on-accent" : "bg-accent/15 text-accent",
+                    )}
+                  >
+                    {badgeCount}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -117,11 +154,14 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
             <div className="grid flex-1 grid-cols-2 gap-2 sm:hidden">
               {SELECTION_TOOLS.map((tool) => {
                 const Icon = tool.icon;
-                const current = pathname === tool.href;
+                const current = canonicalPath === tool.href;
+                const shortText = bt(...tool.shortLabel);
+                const toolBadge = tool.href === "/market/compare" ? compareCount : 0;
                 return (
                   <Link
                     key={tool.href}
                     href={tool.href}
+                    aria-label={shortText}
                     aria-current={current ? "page" : undefined}
                     className={cn(
                       "inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-xs font-bold",
@@ -129,7 +169,12 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
                     )}
                   >
                     <Icon className="size-3.5" aria-hidden="true" />
-                    {bt(...tool.shortLabel)}
+                    <span>{shortText}</span>
+                    {toolBadge > 0 ? (
+                      <span aria-hidden="true" className="numeral tnum rounded-full bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-extrabold text-accent">
+                        {toolBadge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}
@@ -145,7 +190,12 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
                 )}
               >
                 <Boxes className="size-3.5" aria-hidden="true" />
-                {bt("선택 도구", "Selection tools")}
+                <span>{bt("선택 도구", "Selection tools")}</span>
+                {compareCount > 0 ? (
+                  <span aria-hidden="true" className="numeral tnum rounded-full bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-extrabold text-accent">
+                    {compareCount}
+                  </span>
+                ) : null}
                 <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
               <div className="absolute right-0 z-30 mt-1 w-64 rounded-2xl border border-line bg-panel p-2 shadow-xl">
@@ -154,15 +204,25 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
                 </p>
                 {SELECTION_TOOLS.map((tool) => {
                   const Icon = tool.icon;
+                  const fullLabel = bt(...tool.label);
+                  const toolBadge = tool.href === "/market/compare" ? compareCount : 0;
                   return (
                     <Link
                       key={tool.href}
                       href={tool.href}
-                      aria-current={pathname === tool.href ? "page" : undefined}
-                      className="flex min-h-11 items-center gap-2 rounded-xl px-2 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
+                      aria-label={fullLabel}
+                      aria-current={canonicalPath === tool.href ? "page" : undefined}
+                      className="flex min-h-11 items-center justify-between gap-2 rounded-xl px-2 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
                     >
-                      <Icon className="size-4 text-accent" aria-hidden="true" />
-                      {bt(...tool.label)}
+                      <span className="flex items-center gap-2">
+                        <Icon className="size-4 text-accent" aria-hidden="true" />
+                        <span>{fullLabel}</span>
+                      </span>
+                      {toolBadge > 0 ? (
+                        <span aria-hidden="true" className="numeral tnum rounded-full bg-accent/15 px-1.5 py-0.5 text-[0.65rem] font-extrabold text-accent">
+                          {toolBadge}
+                        </span>
+                      ) : null}
                     </Link>
                   );
                 })}

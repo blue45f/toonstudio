@@ -226,4 +226,22 @@ describe("MarketSellerPage", () => {
     expect(screen.getByText(/참여 중이에요/)).toBeTruthy();
     expect(getMarketSaleRecords()).toHaveLength(0);
   });
+
+  it("창작자 예상 정산 시뮬레이터와 내 배급자 스토어 바로가기를 제공한다", () => {
+    signIn(SELLER);
+    mount();
+
+    expect(screen.getByRole("link", { name: "내 배급자 스토어 보기" }).getAttribute("href"))
+      .toBe(`/market/creator/${SELLER}`);
+    expect(screen.getByRole("link", { name: "서버 게시 패키지·버전 관리" }).getAttribute("href"))
+      .toBe("/market/manage");
+
+    const netBefore = screen.getByTestId("seller-sim-net-payout").textContent;
+    fireEvent.click(screen.getByRole("button", { name: "프로 파트너 (10%)" }));
+    const netAfterPro = screen.getByTestId("seller-sim-net-payout").textContent;
+    expect(netAfterPro).not.toBe(netBefore);
+
+    fireEvent.change(screen.getByLabelText("시뮬레이션 판매가 (원)"), { target: { value: "30000" } });
+    expect(screen.getByTestId("seller-sim-net-payout").textContent).toContain("원");
+  });
 });

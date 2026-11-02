@@ -196,6 +196,33 @@ describe("creator marketplace client", () => {
 
     expect(() => normalizeCreatorMarketplaceListParams({ sort: "relevance" }))
       .toThrow(InvalidCreatorMarketplaceListQueryError);
+
+    expect(normalizeCreatorMarketplaceListParams({
+      containsAi: false,
+      engine: " three " as never,
+      commercial: true,
+      origin: " original " as never,
+    })).toMatchObject({
+      containsAi: false,
+      engine: "three",
+      commercial: true,
+      origin: "original",
+    });
+
+    for (const [field, params] of [
+      ["containsAi", { containsAi: "false" }],
+      ["engine", { engine: "vulkan" }],
+      ["commercial", { commercial: 1 }],
+      ["origin", { origin: "unknown" }],
+    ] as const) {
+      try {
+        normalizeCreatorMarketplaceListParams(params as never);
+        throw new Error("expected invalid query");
+      } catch (error) {
+        expect(error).toBeInstanceOf(InvalidCreatorMarketplaceListQueryError);
+        expect((error as InvalidCreatorMarketplaceListQueryError).field).toBe(field);
+      }
+    }
   });
 
   it("invalid list filters fail before the network chunk can issue an unfiltered request", async () => {
