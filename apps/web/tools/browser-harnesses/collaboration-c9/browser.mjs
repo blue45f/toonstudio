@@ -4,13 +4,15 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { COUNTS, artifactEvidence, assertCounts, check, digest, gitEvidence, hostEvidence, loadConfig, readJson, requireAt, sha256, snapshotDb, stats, unchangedDb, validateProfile } from './shared.mjs';
 import { distAssetPath, verifyAssetBytes } from './asset-contract.mjs';
-import { actualState, verifyActualProjectRead } from './actual-input.mjs';
+import { actualState, restoreActorContext, verifyActorSession, verifyActualProjectRead } from './actual-input.mjs';
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
-import { assertNativeDnt, launchPrivateDntBrowser, reportBrowserFailure, runWithOwnedBrowser } from './browser-finalization.mjs';
+import { assertNativeDnt, launchPrivateDntBrowser, reportBrowserFailure, runWithOwnedBrowser, runWithOwnedContexts } from './browser-finalization.mjs';
 import { prepareLocalQaTls } from './local-qa-tls.mjs';
 
 let stage = 'config';
 const result = { schemaVersion: 2, status: 'not-started', verdict: '제어 측정 준비물; 최종 C9 p95 판정 불가', samples: [], apiReads: [], networkReads: [], validation: [], bootstrap: [], assets: [], concurrentReads: [], forbiddenMutations: [], blockedExternalRequests: [], pageErrors: [], db: null };
+// 쿠키·토큰은 실행 중 메모리에만 보관하고 결과·로그·파일에는 쓰지 않는다.
+const actorStorageStates = new Map();
 let resultPath;
 let saveQueue = Promise.resolve();
 async function save() {
@@ -76,11 +78,11 @@ async function measure(page, meta, action, completion, { navigation = false, sta
 }
 async function login(context, env, actor) {
   const response = await context.request.post(`${env.webOrigin}/api/auth/login`, { data: { email: actor.email, password: actor.password }, headers: { Origin: env.webOrigin, 'x-toonstudio-csrf': '1' } });
+  result.authentication ??= [];
+  result.authentication.push({ actorRole: actor.role, phase: 'actual-password-login', status: response.status() });
   check(response.status() === 201 || response.status() === 200, '실제 인증 로그인 실패');
-  const session = await context.request.get(`${env.webOrigin}/api/auth/session`);
-  check(session.ok(), '실제 인증 세션 GET 실패');
-  const data = await session.json();
-  check(data.authenticated === true && data.user?.id === actor.id, '실제 독립 계정의 세션 ID가 다릅니다.');
+  await verifyActorSession(context, env.webOrigin, actor.id);
+  actorStorageStates.set(actor.id, await context.storageState());
   check((await context.cookies()).some((cookie) => cookie.httpOnly), 'HttpOnly 세션 쿠키를 확인하지 못했습니다.');
 }
 function verifyReadBytes(bytes, state, actorRole) {
@@ -445,11 +447,13 @@ async function concurrentReads(browser, env, state) {
   if (!env.config.concurrentReads.enabled) return;
   check(Number.isInteger(env.config.concurrentReads.iterations) && env.config.concurrentReads.iterations >= 1, '동시 GET 반복 횟수를 명시하세요.');
   const contexts = [];
-  try {
+  const ownedContexts = [];
+  await runWithOwnedContexts(ownedContexts, async () => {
     for (const actor of env.actors) {
-      const context = await browser.newContext({ serviceWorkers: 'block' });
+      const context = await restoreActorContext(browser, { storageState: actorStorageStates.get(actor.id), webOrigin: env.webOrigin, actorId: actor.id });
+      ownedContexts.push(context);
       contexts.push({ actor, context });
-      await login(context, env, actor);
+      result.authentication.push({ actorRole: actor.role, phase: 'concurrent-session-get-verified', passwordLoginRepeated: false });
     }
     for (let iteration = 1; iteration <= env.config.concurrentReads.iterations; iteration++) {
       const roundStart = performance.now();
@@ -469,7 +473,7 @@ async function concurrentReads(browser, env, state) {
       result.concurrentReads.push({ iteration, distinctActualActors: contexts.length, roundElapsedMs, rows, transport: 'host APIRequestContext HTTP; CDP CPU/network throttling 미적용; 모든 응답 완료 뒤 검증; UI 동시 편집·다수 팀원 proof 아님' });
       await save();
     }
-  } finally { for (const entry of contexts) await entry.context.close(); }
+  });
 }
 function summarize(config, actualInput = null) {
   const groups = new Map();

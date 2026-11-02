@@ -18,6 +18,30 @@ const check = (value, message) => {
     throw error;
   }
 };
+
+/** 로그인으로 얻은 실제 계정의 세션을 서버 GET으로 다시 확인한다. */
+export async function verifyActorSession(context, webOrigin, actorId) {
+  check(identifier(actorId), '실제 세션을 확인할 계정 식별자가 필요합니다.');
+  const response = await context.request.get(`${webOrigin}/api/auth/session`);
+  check(response.ok(), '실제 인증 세션 GET 실패');
+  const data = await response.json();
+  check(data.authenticated === true && data.user?.id === actorId, '실제 독립 계정의 세션 ID가 다릅니다.');
+}
+
+/** 역할마다 별도 context에 그 계정의 세션만 복원하며 비밀번호 로그인을 반복하지 않는다. */
+export async function restoreActorContext(browser, { storageState, webOrigin, actorId }) {
+  check(storageState && Array.isArray(storageState.cookies) && Array.isArray(storageState.origins), '실제 로그인으로 얻은 계정별 세션이 필요합니다.');
+  const context = await browser.newContext({ serviceWorkers: 'block', storageState });
+  try {
+    await verifyActorSession(context, webOrigin, actorId);
+    return context;
+  } catch (error) {
+    const failures = [error];
+    try { await context.close(); } catch (cleanupError) { failures.push(cleanupError); }
+    if (failures.length > 1) throw new AggregateError(failures, '계정 세션 확인과 context 종료 실패를 함께 보존합니다.', { cause: error });
+    throw error;
+  }
+}
 function stable(value) {
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
   if (value !== null && typeof value === 'object') return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(',')}}`;
