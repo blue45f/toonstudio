@@ -8,6 +8,9 @@ import { normalizeStudioBg3dSceneDocument, DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } 
 import { tryAdaptStudioBg3dRuntimeToDocument } from "./studio-bg3d-scene-runtime";
 import { createSceneGlbFixture, deferredSceneGlb, disposeSceneGlbFixtures } from "./studio-bg3d-scene-glb.test-fixture";
 import { useStudioBg3dEditorRestoreEffects } from "./useStudioBg3dEditorRestoreEffects";
+import { commitStudioBg3dMeasurementEditorDocument, type StudioBg3dMeasurementEditorHost } from "./studio-bg3d-measurement-editor-host";
+import { setStudioBg3dMeasurementUnit } from "./studio-bg3d-measurement";
+import { readStudioBg3dSceneMeasurements } from "./studio-bg3d-scene-measurements";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
@@ -16,6 +19,8 @@ import type { StudioBg3dHistoryCommandRefs } from "./studio-bg3d-history-command
 import type { StudioBg3dModelRootCacheEntry } from "./studio-bg3d-model-runtime-admission";
 import type { StudioBg3dPrimitiveEditRuntime } from "./studio-bg3d-primitive-edit-source";
 import type { StudioBg3dModelAttachment, StudioBg3dSceneDocument } from "./studio-bg3d-scene-document-types";
+import type { StudioBg3dMeasurementCommandHost } from "./studio-bg3d-measurement-command";
+import type { StudioBg3dCanonicalDocumentMutation } from "./useStudioBg3dCanonicalDocumentState";
 
 const ports = vi.hoisted(() => ({ wait: vi.fn<() => Promise<void>>(),
   resolve: vi.fn<typeof import("./bg3d-model-library")["resolveBg3dModelHashV12"]>(),
@@ -66,7 +71,7 @@ function useRestoreFixture(props: RestoreProps) {
     setPrimitives, setCustomModels, setSceneBaseDocument, setIsRestoringScene: setBusy, setSceneRecoveryError: setError, setError: vi.fn(),
     setSelectedIds, setCanUndo, setCanRedo, setRefTick });
   useStudioBg3dEditorRestoreEffects(host.current);
-  return { primitives, customModels, document, base, busy, error, canUndo, history,
+  return { primitives, customModels, document, base, busy, error, canUndo, history, restoreAbort, attachments,
     editX(x: number) {
       setPrimitives((current) => current.map((primitive, index) => index === 0 ? { ...primitive, position: [x, primitive.position[1], primitive.position[2]] } : primitive));
       setSceneBaseDocument(normalizeStudioBg3dSceneDocument({ ...document,
@@ -97,6 +102,72 @@ beforeEach(() => {
 afterEach(() => { cleanup(); disposeSceneGlbFixtures(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("실제 restore hook의 초기 renderer 교체", () => {
+  it("renderer 재생성 완료 뒤 자기 복원 잠금을 해제해 실제 측정 단위 명령을 커밋한다", async () => {
+    const f = await fourNodeFixture(), session = {}, firstRenderer = {}, nextRenderer = {};
+    const view = renderHook(useRestoreFixture, { initialProps: { renderer: firstRenderer, session, initialScene: f.initialScene } });
+    await flush();
+    const lane = deferredSceneGlb<void>();
+    ports.wait.mockReturnValueOnce(lane.promise);
+    view.rerender({ renderer: nextRenderer, session, initialScene: f.initialScene });
+    await flush();
+    expect(view.result.current.busy).toBe(true);
+    expect(view.result.current.restoreAbort.current).toBeInstanceOf(AbortController);
+    await act(async () => { lane.resolve(); await lane.promise; });
+    await flush();
+    expect(view.result.current.busy).toBe(false);
+    expect(view.result.current.restoreAbort.current).toBeNull();
+
+    // 실제 복원 결과와 controller ref를 실제 측정 command/codec에 연결한다.
+    const restored = view.result.current;
+    const live = { current: { primitives: restored.primitives, customModels: restored.customModels, document: restored.document, revision: 0 } };
+    const commit = vi.fn<StudioBg3dMeasurementCommandHost["commitImmediateHistoryTransition"]>();
+    const replace = vi.fn((mutation: StudioBg3dCanonicalDocumentMutation) => {
+      live.current = { ...live.current, document: mutation.document ?? live.current.document, revision: live.current.revision + 1 };
+      return live.current;
+    });
+    const host: StudioBg3dMeasurementEditorHost = {
+      open: true, modelRenderer: nextRenderer, isRestoringScene: restored.busy,
+      isCapturing: false, isBatchRenderingShots: false, physicsInteractionLocked: false,
+      sceneRestoreAbortRef: restored.restoreAbort, captureInFlightRef: { current: false },
+      modalAssetSessionRef: { current: session }, physicsRuntimeSourceRef: live,
+      attachmentByStorageModelIdRef: restored.attachments,
+      commitImmediateHistoryTransition: commit, replaceCanonicalDocumentState: replace,
+    };
+    const current = readStudioBg3dSceneMeasurements(live.current.document);
+    const next = setStudioBg3dMeasurementUnit(current, "mm");
+    if (!next.ok) throw Error("측정 단위 변경 입력이 필요합니다.");
+    expect(commitStudioBg3dMeasurementEditorDocument(host, next.document, current))
+      .toMatchObject({ ok: true, changed: true, document: { unit: "mm" } });
+    expect(commit).toHaveBeenCalledOnce();expect(replace).toHaveBeenCalledOnce();
+    expect(readStudioBg3dSceneMeasurements(live.current.document).unit).toBe("mm");
+  });
+
+  it("늦게 끝난 이전 renderer 재생성은 새 renderer의 복원 controller와 잠금을 해제하지 않는다", async () => {
+    const f = await fourNodeFixture(), session = {};
+    const view = renderHook(useRestoreFixture, { initialProps: { renderer: {}, session, initialScene: f.initialScene } });
+    await flush();
+    const previous = deferredSceneGlb<void>(), latest = deferredSceneGlb<void>();
+    ports.wait.mockReturnValueOnce(previous.promise).mockReturnValueOnce(latest.promise);
+    view.rerender({ renderer: {}, session, initialScene: f.initialScene });
+    await flush();
+    const previousController = view.result.current.restoreAbort.current;
+    expect(previousController).toBeInstanceOf(AbortController);
+    view.rerender({ renderer: {}, session, initialScene: f.initialScene });
+    await flush();
+    const latestController = view.result.current.restoreAbort.current;
+    expect(latestController).toBeInstanceOf(AbortController);
+    expect(latestController).not.toBe(previousController);
+    await act(async () => { previous.resolve(); await previous.promise; });
+    await flush();
+    expect(view.result.current.restoreAbort.current).toBe(latestController);
+    expect(latestController?.signal.aborted).toBe(false);
+    expect(view.result.current.busy).toBe(true);
+    await act(async () => { latest.resolve(); await latest.promise; });
+    await flush();
+    expect(view.result.current.restoreAbort.current).toBeNull();
+    expect(view.result.current.busy).toBe(false);
+  });
+
   it("pending 원본 4node를 새 renderer에서 다시 hydrate하고 늦은 이전 요청은 완료를 발행하지 않는다", async () => {
     const f = await fourNodeFixture(), old = deferredSceneGlb<Bg3dModelHashResolution>(), session = {}, gpu = {}, webgl = {};
     ports.resolve.mockReturnValueOnce(old.promise); vi.useFakeTimers();
