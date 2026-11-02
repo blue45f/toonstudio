@@ -1,4 +1,51 @@
 import { createHash } from 'node:crypto';
+import { chmod, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+function privacyPrecondition(code) {
+  return Object.assign(new Error(code), { code });
+}
+
+/** 탐색 전의 호출자 소유 페이지에서 기본 DNT 값을 읽는다. 페이지나 navigator를 바꾸지 않는다. */
+export async function assertNativeDnt(page) {
+  if (page.url() !== 'about:blank') throw privacyPrecondition('C9_DNT_BLANK_PAGE_REQUIRED');
+  const value = await page.evaluate(() => ({
+    url: location.href,
+    doNotTrack: navigator.doNotTrack ?? null,
+    navigatorOwnProperty: Object.prototype.hasOwnProperty.call(navigator, 'doNotTrack'),
+  }));
+  if (value.url !== 'about:blank') throw privacyPrecondition('C9_DNT_BLANK_PAGE_REQUIRED');
+  if (value.doNotTrack !== '1' || value.navigatorOwnProperty !== false) {
+    throw privacyPrecondition('C9_NATIVE_DNT_REQUIRED');
+  }
+  return { doNotTrack: value.doNotTrack, navigatorOwnProperty: value.navigatorOwnProperty };
+}
+
+/** 매번 새 프로필의 실제 Chrome 설정을 사용한다. 기존 프로필·속성 주입·대체 실행은 사용하지 않는다. */
+export async function launchPrivateDntBrowser({ chromium, outputDir, launchOptions }) {
+  const userDataDir = await mkdtemp(join(outputDir, 'c9-native-dnt-'));
+  await chmod(userDataDir, 0o700);
+  const defaultProfile = join(userDataDir, 'Default');
+  await mkdir(defaultProfile, { mode: 0o700 });
+  await writeFile(join(defaultProfile, 'Preferences'), `${JSON.stringify({ enable_do_not_track: true })}\n`, { flag: 'wx', mode: 0o600 });
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(userDataDir, launchOptions);
+    const browser = context.browser();
+    if (browser === null) throw privacyPrecondition('C9_PERSISTENT_BROWSER_REQUIRED');
+    const page = context.pages()[0] ?? await context.newPage();
+    const native = await assertNativeDnt(page);
+    await page.close();
+    return { browser, privacy: { method: 'native-chrome-profile-preference', ...native, userDataDir } };
+  } catch (error) {
+    const failures = [error];
+    if (context) {
+      try { await context.close(); } catch (cleanupError) { failures.push(cleanupError); }
+    }
+    if (failures.length > 1) throw new AggregateError(failures, 'DNT 확인 실패와 소유 브라우저 종료 실패를 함께 보존합니다.', { cause: error });
+    throw error;
+  }
+}
 
 function errorIdentity(error) {
   return {
