@@ -20,6 +20,7 @@ import {
   buildMangakaBg3dSceneBridgePlan,
   buildMangakaMovingToonTimelineSpec,
   compileStoryboarderShotDirective,
+  computeMangakaMinimapScrollHeatmap,
   createMangakaCharacterCastLock,
   evaluateMangakaStripRules,
   MANGAKA_IDEA_PEOPLE_MAX,
@@ -281,6 +282,11 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
     [castLockResult.acceptedCast.length],
   );
 
+  const scrollHeatmap = useMemo(
+    () => computeMangakaMinimapScrollHeatmap(stagedStrip),
+    [stagedStrip],
+  );
+
   return (
     <div
       data-testid="higgsfield-mangaka-section"
@@ -453,6 +459,12 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
               안전 절단 구간: {stagedStrip.safeSliceIntervals.length}개 · 대사{" "}
               {stagedStrip.letters.length}개
             </div>
+          </div>
+          <div
+            data-testid="mangaka-scroll-heatmap-summary"
+            className="mt-1 font-mono text-[0.58rem] text-fg-2"
+          >
+            {scrollHeatmap.summaryKo}
           </div>
         </div>
 

@@ -385,6 +385,113 @@
     "externalEvidenceReplayedInThisReview": false,
     "descriptionsProveRuntimeIntegration": false
   },
+  "currentServiceAndUiUxBenchmarkEvidence": {
+    "targetListEvidenceId": "ev_b6644ba8e79cabacdd1e02830630494b3fc5330639b642aa7265f9db67591eec",
+    "localCreatorAstEvidenceId": "ev_8c8e7dcfe69029fd67a822ce7279c95c613b4768eb6267c224cd2e75eebe0c50",
+    "pageByPageDomainAstEvidenceIds": {
+      "creator": "ev_8c8e7dcfe69029fd67a822ce7279c95c613b4768eb6267c224cd2e75eebe0c50",
+      "market": "ev_545db38e759059e4a8a20333eec1f2275486b0941c3a31e2391ab590fa3cd332",
+      "community": "ev_460fb65b8abbd9ffc743fda47d1dd253bcb1bc257612300b8718ca428bfa15e6",
+      "catalog": "ev_c95d4f67aaa83a0ad9b1e5fc22a8fd99aaf5d10bff2d12a7d384856df7b0800b",
+      "collaboration": "ev_cdc9736fef499a16704137731877a520c99660be41f516091f003c46880949fa",
+      "cuts": "ev_a03da97248c9e08cf5a5fbbb06f4f64705162bc5a9f029b42348f4dc6067e546",
+      "learn": "ev_b17bfe3e720ac57474802d3d5c03d7ed4ad346d5af99213d0b84583ff3428b2f"
+    },
+    "localCreatorAstMetrics": {
+      "dataFlowRelations": 2781,
+      "objectFlowRelations": 378,
+      "closureRelations": 372,
+      "callFlowRelations": 169,
+      "boundaryRelations": 8
+    },
+    "currentToonStudioTargets": [
+      {
+        "id": "toonstudio-landing-home",
+        "url": "https://www.toonstudio.cloud/",
+        "evidenceId": "ev_f53dfdda55b15e6897bf8d58152239ee4dcf570e8f319950166d3ea41b4a89bb",
+        "totalDomNodes": 2404,
+        "accessibilityNodes": 924,
+        "resourceCount": 206,
+        "localStorageKeysCount": 28,
+        "indexedDbCount": 3,
+        "serviceWorkerCachesCount": 8
+      },
+      {
+        "id": "toonstudio-role-workspace-settings",
+        "url": "https://www.toonstudio.cloud/settings/role?tab=workspace",
+        "evidenceId": "ev_54688ebc1b1581a6f684c4b2aa5a1522c4448ff986f04444caa960f0cb1e53b9",
+        "totalDomNodes": 736,
+        "accessibilityNodes": 344,
+        "resourceCount": 135
+      },
+      {
+        "id": "toonstudio-studio-canvas-live",
+        "url": "https://www.toonstudio.cloud/studio/canvas?roleWorkspace=illustration-line",
+        "evidenceId": "ev_10da481ffe068eccebdaa36dc9d38a77ce8b3f1ce2e830fbbcf9042c3a1bcce8",
+        "totalDomNodes": 3524,
+        "accessibilityNodes": 1125,
+        "resourceCount": 683,
+        "workerCount": 2
+      }
+    ],
+    "uiUxBenchmarkTargets": [
+      {
+        "id": "figma-contextual-ui",
+        "url": "https://www.figma.com/ko-kr/design/",
+        "evidenceId": "ev_12e35379638fad3f6dd5629c9e78fcaf95727940d644149db64b6c75afb32526",
+        "totalDomNodes": 2284,
+        "accessibilityNodes": 1278,
+        "uxPatterns": [
+          "Contextual Right Property Inspector",
+          "Floating Bottom Canvas Toolbar",
+          "Universal Command Palette (Cmd+K)"
+        ]
+      },
+      {
+        "id": "procreate-zen-canvas",
+        "url": "https://procreate.com/procreate",
+        "evidenceId": "ev_b50f89740fe6f9582e25e0e40f0e0b634ee17d309837367d7aef6ef7be9b46d4",
+        "totalDomNodes": 870,
+        "accessibilityNodes": 411,
+        "uxPatterns": [
+          "Zero-Chrome 86% Canvas Viewport Ratio",
+          "2-Finger Undo / 3-Finger Redo / 4-Finger Zen Mode",
+          "Radial QuickMenu"
+        ]
+      },
+      {
+        "id": "photopea-compact-browser-dock",
+        "url": "https://www.photopea.com/",
+        "evidenceId": "ev_8332e21b0e832922bbb6fbc7e567642994215b38ed93b02d54dd802b9a3b8839",
+        "totalDomNodes": 403,
+        "accessibilityNodes": 258,
+        "uxPatterns": [
+          "Ultra-Compact 403-Node Browser Workspace",
+          "Single-Column Left Tool Rail + Collapsible Right Layer Stack"
+        ]
+      },
+      {
+        "id": "spline-3d-browser-outliner",
+        "url": "https://spline.design/",
+        "evidenceId": "ev_f645280134f76287118d570d821007c1f10d1ac7a15fcfd430c9d9235674d732",
+        "totalDomNodes": 1916,
+        "accessibilityNodes": 1202,
+        "uxPatterns": [
+          "Left 3D Scene Outliner + Right Camera/Lighting State Inspector"
+        ]
+      },
+      {
+        "id": "canva-comic-progressive-onboarding",
+        "url": "https://www.canva.com/create/comic-strips/",
+        "evidenceId": "ev_947c5c10cd80b7ef07245d00931b93ffa3359ff49d5f9409554aa5d441d562a4",
+        "totalDomNodes": 2318,
+        "accessibilityNodes": 1330,
+        "uxPatterns": [
+          "1-Click Starter Template to Pro Layer Progressive Disclosure"
+        ]
+      }
+    ]
+  },
   "currentImplementationScope": {
     "rolePipeline": "local planning and permission examples; no server authorization or document mutation",
     "genrePresets": "local strip calculation inputs",

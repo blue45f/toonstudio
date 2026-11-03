@@ -120,4 +120,20 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(plan.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByText(/Reference workflows help you choose a layout/u)).toBeTruthy();
   });
+
+  it("REA 기반 3단계 UI/UX 밀도·직관성 설계 모드를 한·영으로 전환한다", () => {
+    const { rerender } = render(<StudioCompetitorCapabilityPanel locale="ko" />);
+    expect(screen.getByTestId("competitor-uiux-ergonomics-blueprint")).toBeTruthy();
+    expect(screen.getByTestId("competitor-uiux-metrics-badge").textContent).toContain("76%");
+
+    fireEvent.click(screen.getByTestId("competitor-uiux-mode-canvas-focus-zen"));
+    expect(screen.getByTestId("competitor-uiux-mode-canvas-focus-zen").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("competitor-uiux-metrics-badge").textContent).toContain("86%");
+    expect(screen.getByTestId("competitor-uiux-ergonomics-blueprint").textContent).toContain("Photopea(403 DOM)");
+
+    rerender(<StudioCompetitorCapabilityPanel locale="en" />);
+    const enBlueprint = screen.getByTestId("competitor-uiux-ergonomics-blueprint");
+    expect(enBlueprint.textContent).toContain("Photopea (403 DOM)");
+    expect(enBlueprint.textContent).not.toMatch(/[가-힣]/u);
+  });
 });
