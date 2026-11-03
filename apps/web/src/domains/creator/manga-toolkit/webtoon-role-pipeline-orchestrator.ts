@@ -640,3 +640,132 @@ export function executeOneClickStageHandoff(
     }],
   };
 }
+
+export interface ParallelRoleCollaborationResult {
+  readonly conflictFree: boolean;
+  readonly overlappingLayerGroups: readonly WebtoonCanonicalLayerGroupId[];
+  readonly summaryKo: string;
+  readonly summaryEn: string;
+}
+
+/**
+ * 두 세부 직군이 동일 페이지/컷에서 동시 협업할 때 레이어 그룹 충돌 여부를 계산한다.
+ */
+export function evaluateParallelRoleCollaborationPair(
+  primaryRoleId: CreatorRoleId,
+  partnerRoleId: CreatorRoleId,
+): ParallelRoleCollaborationResult {
+  const primaryPreset = resolveRolePipelinePreset(primaryRoleId);
+  const partnerPreset = resolveRolePipelinePreset(partnerRoleId);
+  const partnerSet = new Set(partnerPreset.allowedLayerGroups);
+  const overlappingLayerGroups = primaryPreset.allowedLayerGroups.filter((group) =>
+    partnerSet.has(group),
+  );
+  const conflictFree = overlappingLayerGroups.length === 0;
+  return {
+    conflictFree,
+    overlappingLayerGroups,
+    summaryKo: conflictFree
+      ? `[병렬 협업 가능] ${primaryPreset.roleLabelKo} + ${partnerPreset.roleLabelKo} 직군은 담당 레이어 그룹이 겹치지 않아 무충돌 동시 작업이 가능합니다.`
+      : `[동시 편집 조율 필요] 겹치는 레이어 그룹(${overlappingLayerGroups.join(", ")})이 ${overlappingLayerGroups.length}개 있어 선점 잠금 조율이 필요합니다.`,
+    summaryEn: conflictFree
+      ? `Parallel ready: ${primaryRoleId} and ${partnerRoleId} have disjoint planned layer groups.`
+      : `Coordination needed: ${overlappingLayerGroups.length} overlapping layer groups (${overlappingLayerGroups.join(", ")}).`,
+  };
+}
+
+const STAGE_DELIVERABLE_CHECKLIST_KO: Readonly<
+  Record<WebtoonPipelineStageId, readonly string[]>
+> = {
+  "story-script": [
+    "인물 대사 호흡(풍선당 24단어 이하) 검증",
+    "씬별 설정(배경·시간대·소품) 태그 명시",
+    "클리프행어 엔딩 비트 점검",
+  ],
+  "storyboard-conte": [
+    "1600px 화면당 1.0~2.5컷 스크롤 밀도 준수",
+    "말풍선 얼굴 가림 0% 안전 여백 확보",
+    "180° 카메라 대화 시선 축 고정",
+  ],
+  "bg3d-spatial": [
+    "2점 투시(Two-Point) 수직선 왜곡 0° 잠금",
+    "실내 단면 컷어웨이 외부 채광 그림자 보존",
+    "6패스 LT 레이어 분리 배치",
+  ],
+  "line-art-ink": [
+    "벡터 교차점 지우개 마감 누락 점검",
+    "주연 캐릭터 외곽선 필압·두께 일관성",
+    "채색용 폐곡선(Gap-Closing) 틈새 확인",
+  ],
+  "flat-color-mask": [
+    "캐릭터 파츠별(피부·헤어·의상) 마스크 분리",
+    "안티에일리어싱 경계 미채색 픽셀 0건",
+    "캐릭터 시트 기준 HEX 팔레트 고정",
+  ],
+  "shading-fx-post": [
+    "밑색 그룹 클리핑 마스크 결합 유지",
+    "시간대별 태양광 방향과 셀 명암 일치",
+    "효과음·집중선 별도 레이어 분리",
+  ],
+  "lettering-sfx": [
+    "모바일 최소 가독성(22px 이상) 준수",
+    "말풍선 안전 여백(좌우 20px) 확보",
+    "다국어 번역 식자 레이어 독립 유지",
+  ],
+  "pd-editorial-review": [
+    "WT-* 41개 웹툰 품질 규칙 전수 통과",
+    "포털별(Naver 690px / Webtoon 800px) 안전 절단선 검증",
+    "최종 승인 후 전 레이어 동결(Freeze) 확인",
+  ],
+};
+
+export function resolveStageDeliverableChecklist(
+  stageId: WebtoonPipelineStageId,
+): readonly string[] {
+  return STAGE_DELIVERABLE_CHECKLIST_KO[stageId] ?? [];
+}
+
+export interface KritaMediBangRoleWorkflowGuide {
+  readonly stageId: WebtoonPipelineStageId;
+  readonly kritaFeaturePresetKo: string;
+  readonly mediBangCloudRuleKo: string;
+  readonly summaryKo: string;
+  readonly summaryEn: string;
+}
+
+/**
+ * Krita (Colorize Mask / Wrap-around / Halftone) & MediBang Paint (Cloud Page Lock / Team Project) 직군별 레퍼런스 가이드
+ */
+export function resolveKritaColorizeAndMediBangCloudWorkflowGuide(
+  stageId: WebtoonPipelineStageId,
+): KritaMediBangRoleWorkflowGuide {
+  const kritaByStage: Readonly<Record<WebtoonPipelineStageId, string>> = {
+    "story-script": "Krita Comic Project Manager (페이지·대본 메타데이터 구조화)",
+    "storyboard-conte": "Krita Storyboard Docker (컷별 보드 메모·재생 시간 큐)",
+    "bg3d-spatial": "Krita Wrap-Around Mode (타일링 벽지·바닥 텍스처 이음매 제거)",
+    "line-art-ink": "Krita Weighted Stabilizer & Vector Layer (무결점 펜선 보정)",
+    "flat-color-mask": "Krita Colorize Mask (선화 틈새 자동 닫기 + 스트로크 힌트 밑색 분리)",
+    "shading-fx-post": "Krita Halftone Screentone & Tangential Brush (그라데이션 망점·이펙트)",
+    "lettering-sfx": "Krita SVG Text & Speech Bubble Vector Library (비파괴 대사 편집)",
+    "pd-editorial-review": "Krita Exporter Batch Slice & Color Profile Guard (sRGB 색역 고정)",
+  };
+  const mediBangByStage: Readonly<Record<WebtoonPipelineStageId, string>> = {
+    "story-script": "MediBang Team Cloud 스토리 노트 버전 이력 보존",
+    "storyboard-conte": "MediBang Comic Panel Divide (직선·대각선 칸 나누기 여백 규격화)",
+    "bg3d-spatial": "MediBang Perspective Snap Guide (1·2·3점 및 어안 소실점 스냅)",
+    "line-art-ink": "MediBang Page Check-Out Lock (선화 담당자 단독 체크아웃 잠금)",
+    "flat-color-mask": "MediBang Reference Layer Fill (주선화 참조 레이어 기반 영역 채우기)",
+    "shading-fx-post": "MediBang 1000+ Cloud Screentones (배경·감정 톤 클라우드 동기화)",
+    "lettering-sfx": "MediBang Manga Font Cloud (대사·독백·외침 전용 서체 프리셋)",
+    "pd-editorial-review": "MediBang Team Project Lead Review (편집자/PD 검수 승인 전 병합 잠금)",
+  };
+  const kritaFeaturePresetKo = kritaByStage[stageId];
+  const mediBangCloudRuleKo = mediBangByStage[stageId];
+  return {
+    stageId,
+    kritaFeaturePresetKo,
+    mediBangCloudRuleKo,
+    summaryKo: `${kritaFeaturePresetKo} · ${mediBangCloudRuleKo}`,
+    summaryEn: `Krita (${stageId}) & MediBang Cloud page lock workflow preset`,
+  };
+}

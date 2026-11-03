@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
 import { StudioBlankComicProDrawingSubPanel } from "./StudioBlankComicProDrawingSubPanel";
 import { StudioHiggsfieldMangakaPanel } from "./StudioHiggsfieldMangakaPanel";
 import {
+  buildCampfireEpisodeLorebookBeatMatrix,
   buildMangakaBg3dSceneBridgePlan,
+  buildMangakaMovingToonTimelineSpec,
   classifyMangakaGapPx,
   classifyMangakaPanelWidth,
+  compileStoryboarderShotDirective,
   computeMangakaDeterministicGapPx,
   computeMangakaSafeSliceIntervals,
   countMangakaWordsCjkAware,
@@ -27,6 +30,10 @@ import {
 
 describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
   beforeEach(() => useI18n.setState({ lang: "ko" }));
+  afterEach(() => {
+    cleanup();
+    useI18n.setState({ lang: "ko" });
+  });
   it("exposes 4 visual styles and 8 publishing portal specifications", () => {
     expect(Object.keys(MANGAKA_STYLE_CONFIGS)).toEqual([
       "manga-bw",
@@ -251,5 +258,37 @@ describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
     const rolePipelineTabBtn = screen.getByTestId("pro-drawing-tab-role-pipeline");
     fireEvent.click(rolePipelineTabBtn);
     expect(screen.getByTestId("webtoon-role-pipeline-section")).toBeTruthy();
+  });
+
+  it("compiles Storyboarder 3D shot directives, Rive/Spine moving-toon timelines, and Campfire lorebook matrices", () => {
+    const shot = compileStoryboarderShotDirective(
+      { pageId: "ep1-p1-hook", role: "hook", aspect: "9:16", keyBeat: true },
+      45,
+    );
+    expect(shot.lensFocalLengthMm).toBe(24);
+    expect(shot.framingCode).toBe("WS");
+    expect(shot.cameraAngleLabel).toBe("dutch-tension");
+    expect(shot.ruleOfThirdsAnchor).toBe("top-left");
+
+    const parallax = buildMangakaMovingToonTimelineSpec("scroll-parallax", 6000);
+    expect(parallax.parallaxDepthMultipliers.bg3dLayer).toBe(0.35);
+    expect(parallax.spineMeshDeformVertices).toBe(32);
+
+    const shake = buildMangakaMovingToonTimelineSpec("tap-shake", 6000);
+    expect(shake.springStiffness).toBe(420);
+
+    const campfire = buildCampfireEpisodeLorebookBeatMatrix(
+      [{ pageId: "p1", sceneId: "s1", role: "cliffhanger", aspect: "9:16" }],
+      3,
+    );
+    expect(campfire.episodeArcPhase).toBe("cliffhanger-turn");
+    expect(campfire.linkedLoreEntitiesCount).toBe(5);
+
+    render(<StudioHiggsfieldMangakaPanel />);
+    expect(screen.getByTestId("mangaka-storyboarder-shot-directive").textContent).toContain("24mm");
+    expect(screen.getByTestId("mangaka-campfire-lorebook-matrix").textContent).toContain("Campfire 로어북");
+    expect(screen.getByTestId("mangaka-moving-toon-timeline-metrics").textContent).toContain("Scroll Parallax");
+    fireEvent.click(screen.getByTestId("mangaka-moving-toon-sfx-bounce"));
+    expect(screen.getByTestId("mangaka-moving-toon-timeline-metrics").textContent).toContain("SFX Elastic Bounce");
   });
 });

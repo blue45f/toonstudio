@@ -11,10 +11,13 @@ import { studioSegmentChipClass } from "../studio-panel-ui";
 
 import {
   createInitialRolePipelineHandoffState,
+  evaluateParallelRoleCollaborationPair,
   evaluateRoleLayerEditGuard,
   evaluateRolePipelineHandoff,
   executeOneClickStageHandoff,
+  resolveKritaColorizeAndMediBangCloudWorkflowGuide,
   resolveRolePipelinePreset,
+  resolveStageDeliverableChecklist,
   WEBTOON_CANONICAL_LAYER_GROUPS,
   WEBTOON_E2E_ROLE_PIPELINE_STAGES,
   type WebtoonCanonicalLayerGroupId,
@@ -71,8 +74,21 @@ export function StudioWebtoonRolePipelineSubPanel(): ReactElement {
   );
   const [selectedLayerGroup, setSelectedLayerGroup] =
     useState<WebtoonCanonicalLayerGroupId>("story-notes");
+  const [partnerRoleId, setPartnerRoleId] = useState<CreatorRoleId>("line-art");
   const [handoffState, setHandoffState] = useState(createInitialRolePipelineHandoffState);
   const rolePreset = useMemo(() => resolveRolePipelinePreset(selectedRoleId), [selectedRoleId]);
+  const deliverableChecklist = useMemo(
+    () => resolveStageDeliverableChecklist(rolePreset.stage.id),
+    [rolePreset.stage.id],
+  );
+  const kritaMediBangGuide = useMemo(
+    () => resolveKritaColorizeAndMediBangCloudWorkflowGuide(rolePreset.stage.id),
+    [rolePreset.stage.id],
+  );
+  const parallelPair = useMemo(
+    () => evaluateParallelRoleCollaborationPair(selectedRoleId, partnerRoleId),
+    [selectedRoleId, partnerRoleId],
+  );
   const guardFor = (group: WebtoonCanonicalLayerGroupId) => evaluateRoleLayerEditGuard({
     roleId: selectedRoleId,
     targetLayerGroup: group,
@@ -130,6 +146,18 @@ export function StudioWebtoonRolePipelineSubPanel(): ReactElement {
             {bi("추천 작업공간 예시", "Workspace example")}: [{rolePreset.workspaceId}] · {bi("도구 슬롯 예시", "Command examples")}: {rolePreset.recommendedCommandBarSlots.join(" → ")}
           </div>
           <div className="mt-0.5 text-[0.6rem] text-fg-3">{bi("참고 도구", "Reference tools")}: {rolePreset.familiarTools.join(" · ")}</div>
+          <div
+            data-testid="role-pipeline-deliverable-checklist"
+            className="mt-1.5 rounded border border-line bg-card/80 p-1.5 font-mono text-[0.57rem] text-fg-2"
+          >
+            {bi("인계 전 체크리스트", "Pre-handoff checklist")}: {deliverableChecklist.join(" · ")}
+          </div>
+          <div
+            data-testid="role-pipeline-krita-medibang-workflow"
+            className="mt-1 rounded border border-line bg-card/60 p-1.5 font-mono text-[0.56rem] text-fg-3"
+          >
+            {bi(kritaMediBangGuide.summaryKo, kritaMediBangGuide.summaryEn)}
+          </div>
         </div>
         <div className="rounded border border-line bg-raised/40 p-2">
           <div className="flex flex-wrap items-center justify-between gap-1">
@@ -211,6 +239,33 @@ export function StudioWebtoonRolePipelineSubPanel(): ReactElement {
             )} ({bi("계획상 동결 그룹", "Groups frozen in plan")} {handoffState.frozenLayerGroups.length})
           </div>
         ) : null}
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1.5 rounded border border-line bg-card/60 p-1.5">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="font-bold text-fg">
+              {bi("⑤ 동시 협업 직군 레이어 충돌 시뮬레이션", "5. Parallel role layer conflict check")}
+            </span>
+            {(["background", "line-art", "flat-color-assistant", "lettering"] as const).map(
+              (candidate) => (
+                <button
+                  key={candidate}
+                  type="button"
+                  data-testid={`role-parallel-partner-${candidate}`}
+                  aria-pressed={partnerRoleId === candidate}
+                  onClick={() => setPartnerRoleId(candidate)}
+                  className={studioSegmentChipClass(partnerRoleId === candidate)}
+                >
+                  + {candidate}
+                </button>
+              ),
+            )}
+          </div>
+          <span
+            data-testid="role-pipeline-parallel-pair-status"
+            className={`font-mono text-[0.57rem] ${parallelPair.conflictFree ? "text-success" : "text-danger"}`}
+          >
+            {bi(parallelPair.summaryKo, parallelPair.summaryEn)}
+          </span>
+        </div>
       </div>
     </section>
   );

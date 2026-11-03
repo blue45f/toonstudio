@@ -19,6 +19,7 @@ import {
   buildDynamicComponentArticulatedPrimitives,
   buildSketchUpWebtoonSixPassLtRecipe,
   commitSketchUpDirectModelingToPrimitives,
+  computeAbleAtmosphericPostProcessAndGreasePencilGuide,
   computeShadowPreservingRoomCutawayPlan,
   generateDynamicComponentActionShotSequence,
   panSketchUpTwoPointPerspectiveLockedCamera,
@@ -227,6 +228,11 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
     [],
   );
 
+  const ableAndGreasePencilGuide = useMemo(
+    () => computeAbleAtmosphericPostProcessAndGreasePencilGuide(solarPresetId, twoPointCamera),
+    [solarPresetId, twoPointCamera],
+  );
+
   return (
     <details
       open
@@ -290,6 +296,12 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
             </div>
           </div>
           <p className="mt-1.5 text-fg-2">{t(ROLE_LENS_COPY.scope)}</p>
+          <p
+            data-testid="sketchup-able-grease-pencil-summary"
+            className="mt-1 font-mono text-[0.58rem] text-fg-2"
+          >
+            {ableAndGreasePencilGuide.summaryKo}
+          </p>
         </div>
 
         {/* 1. Direct Modeling + Axis Inference + Array Commit */}

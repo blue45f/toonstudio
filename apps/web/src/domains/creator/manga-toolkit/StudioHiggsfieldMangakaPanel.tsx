@@ -16,7 +16,10 @@ import { useT } from "@/shared/lib/i18n";
 import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
+  buildCampfireEpisodeLorebookBeatMatrix,
   buildMangakaBg3dSceneBridgePlan,
+  buildMangakaMovingToonTimelineSpec,
+  compileStoryboarderShotDirective,
   createMangakaCharacterCastLock,
   evaluateMangakaStripRules,
   MANGAKA_IDEA_PEOPLE_MAX,
@@ -263,6 +266,21 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
     [style, cameraYawDeg],
   );
 
+  const shotDirective = useMemo(
+    () => compileStoryboarderShotDirective(DEFAULT_DEMO_PANELS[0], cameraYawDeg),
+    [cameraYawDeg],
+  );
+
+  const movingToonTimeline = useMemo(
+    () => buildMangakaMovingToonTimelineSpec(movingToonTrigger, stagedStrip.height),
+    [movingToonTrigger, stagedStrip.height],
+  );
+
+  const campfireMatrix = useMemo(
+    () => buildCampfireEpisodeLorebookBeatMatrix(DEFAULT_DEMO_PANELS, castLockResult.acceptedCast.length),
+    [castLockResult.acceptedCast.length],
+  );
+
   return (
     <div
       data-testid="higgsfield-mangaka-section"
@@ -467,6 +485,9 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
               {bg3dBridgePlan.solarTimePresetId}] · 캐릭터 시트 앵글 [
               {bg3dBridgePlan.characterAnchorAnglesByPanel["ep1-p1-hook"]}]
             </div>
+            <div data-testid="mangaka-storyboarder-shot-directive">
+              Storyboarder 샷 디렉티브: {shotDirective.summaryKo}
+            </div>
           </div>
         </div>
       </div>
@@ -488,6 +509,9 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
             </div>
             <div>
               {DEFAULT_DEMO_PANELS.length} · {t(COPY.panelPlan)}
+            </div>
+            <div data-testid="mangaka-campfire-lorebook-matrix">
+              {campfireMatrix.summaryKo}
             </div>
           </div>
         </div>
@@ -521,6 +545,12 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
           </div>
           <div className="mt-1 font-mono text-[0.58rem] text-fg-2">
             [{movingToonTrigger}] · {t(COPY.effectScope)}
+          </div>
+          <div
+            data-testid="mangaka-moving-toon-timeline-metrics"
+            className="mt-0.5 font-mono text-[0.58rem] text-fg-2"
+          >
+            {movingToonTimeline.summaryKo}
           </div>
         </div>
       </div>

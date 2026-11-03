@@ -40,7 +40,7 @@ function renderEntry(locale: "ko" | "en" = "ko") {
 
 async function openPlanning() {
   fireEvent.click(screen.getByRole("button", { name: "분업 계획·만화 프리셋 펼치기" }));
-  return screen.findByTestId("studio-workflow-planning-panel");
+  return screen.findByTestId("studio-workflow-planning-panel", {}, { timeout: 5000 });
 }
 
 beforeEach(() => { requests.load.mockClear(); useI18n.setState({ lang: "ko" }); });

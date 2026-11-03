@@ -732,3 +732,58 @@ export function buildSketchUpWebtoonSixPassLtRecipe(options?: {
 
   return layers;
 }
+
+export interface AbleHybridPostProcessAndGreasePencilPlan {
+  readonly fogNearMeters: number;
+  readonly fogFarMeters: number;
+  readonly fogTintHex: string;
+  readonly aoCreaseIntensity: number;
+  readonly greasePencilPlanesMeters: {
+    readonly foregroundSilhouette: number;
+    readonly midgroundActorPlane: number;
+    readonly backgroundSkyDome: number;
+  };
+  readonly summaryKo: string;
+}
+
+/**
+ * 8. ACON3D ABLE 스타일 대기원근(Z-Depth Fog)·AO 후보정 및 Blender Grease Pencil 2D-3D 카메라 평면 투영 계산
+ */
+export function computeAbleAtmosphericPostProcessAndGreasePencilGuide(
+  solarPresetId: WebtoonSolarPresetId,
+  camera: StudioBg3dCameraSettings,
+): AbleHybridPostProcessAndGreasePencilPlan {
+  const dx = camera.target[0] - camera.position[0];
+  const dy = camera.target[1] - camera.position[1];
+  const dz = camera.target[2] - camera.position[2];
+  const targetDist = Math.max(1.2, Math.hypot(dx, dy, dz));
+  const fogTintBySolar: Readonly<Record<WebtoonSolarPresetId, string>> = {
+    "golden-hour-morning": "#e0f2fe",
+    "noon-clear": "#f8fafc",
+    "golden-hour-sunset": "#fed7aa",
+    "blue-hour-dusk": "#c7d2fe",
+    "night-moonlight": "#1e293b",
+  };
+  const aoBySolar: Readonly<Record<WebtoonSolarPresetId, number>> = {
+    "golden-hour-morning": 0.42,
+    "noon-clear": 0.35,
+    "golden-hour-sunset": 0.58,
+    "blue-hour-dusk": 0.64,
+    "night-moonlight": 0.72,
+  };
+  const midPlane = Number(targetDist.toFixed(2));
+  const fgPlane = Number(Math.max(0.8, targetDist * 0.45).toFixed(2));
+  const bgPlane = Number((targetDist * 2.6).toFixed(2));
+  return {
+    fogNearMeters: Number((targetDist * 0.75).toFixed(2)),
+    fogFarMeters: Number((targetDist * 4.2).toFixed(2)),
+    fogTintHex: fogTintBySolar[solarPresetId],
+    aoCreaseIntensity: aoBySolar[solarPresetId],
+    greasePencilPlanesMeters: {
+      foregroundSilhouette: fgPlane,
+      midgroundActorPlane: midPlane,
+      backgroundSkyDome: bgPlane,
+    },
+    summaryKo: `ABLE 대기원근(${fogTintBySolar[solarPresetId]}) · AO ${Math.round(aoBySolar[solarPresetId] * 100)}% · 2D-3D 작화 평면(${fgPlane}m/${midPlane}m/${bgPlane}m)`,
+  };
+}
