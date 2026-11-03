@@ -1515,7 +1515,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
           ) : null}
           {workspacePersistence.ownerScope === currentWorkspaceOwnerScope ? (
             <StudioWorkspaceMenuGate
-              key={`${currentWorkspaceOwnerScope}:${workspaceMenuEpoch}`}
+              key={`${currentWorkspaceOwnerScope}:${workspaceMenuEpoch}`} creatorRole={activeRole}
               state={workspaceState}
               liveLayout={liveWorkspaceLayout}
               resolveDeviceKind={resolveWorkspaceDeviceKind}
