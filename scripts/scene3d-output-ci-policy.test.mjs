@@ -16,6 +16,18 @@ const manifests = [
 ];
 
 describe("Scene3D output CI inputs", () => {
+  it("Scene3D도 Core와 같은 전체 웹·API 타입 검사 명령을 사용한다", () => {
+    const scene = workflow("studio-scene3d-next.yml").jobs["scene3d-contracts"];
+    const core = workflow("ci.yml").jobs.typecheck;
+    expect(scene.steps.some((step) => step.run === "pnpm run typecheck")).toBe(true);
+    expect(core.steps.some((step) => step.run?.includes("pnpm run typecheck"))).toBe(true);
+    expect(scene["timeout-minutes"]).toBe(20);
+    const command = JSON.parse(readFileSync(new URL("package.json", repoRoot), "utf8")).scripts.typecheck;
+    expect(command).toContain("verify-workspace-package-links.mjs");
+    expect(command).toContain("tsc -p tsconfig.json --incremental false");
+    expect(command).toContain("pnpm --filter @webtoon-nest/api run typecheck");
+  });
+
   it("keeps imported environment manifests in the real sparse checkout without downloading model binaries", () => {
     const lint = workflow("ci.yml").jobs.lint;
     const checkout = lint.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
