@@ -875,9 +875,9 @@ test("ToonStudio session validation shares one setup and delegates full gates to
   assert.doesNotMatch(session, /lint:quick|pnpm (?:run )?build(?:\s|$)|pnpm exec tsc/);
 });
 
-test("PR 깊이 2의 filtered merge checkout은 추가 인증 없이 기준 tree와 현재 변경 경로를 읽는다", () => {
+test("PR 전체 이력의 filtered merge checkout은 추가 인증 없이 기준 tree와 현재 변경 경로를 읽는다", () => {
   const focused = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
-  assert.ok(focused.includes("fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 1 }}"));
+  assert.ok(focused.includes("fetch-depth: ${{ github.event_name != 'pull_request' && 1 || 0 }}"));
   assert.match(focused, /persist-credentials: false/u);
   assert.doesNotMatch(focused, /git fetch/u, "인증이 끝난 뒤 원격에서 기준 커밋을 다시 받으면 안 됩니다.");
   const steps = focused.split(/(?=^ {6}- )/mu);
