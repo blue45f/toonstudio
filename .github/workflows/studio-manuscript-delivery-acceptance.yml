@@ -59,6 +59,25 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/**/*.glb
+            !/apps/web/public/**/*.vrm
+            !/apps/web/public/**/*.mp4
+            !/apps/web/public/assets/3d/**/*.jpg
+            !/apps/web/public/assets/3d/**/*.png
+            !/apps/web/public/assets/3d/**/*.webp
+            !/apps/web/public/assets/3d/**/*.hdr
+            !/apps/web/public/assets/studio/**/*.jpg
+            !/apps/web/public/assets/studio/**/*.png
+            !/apps/web/public/assets/studio/**/*.webp
+            !/apps/web/public/assets/studio/**/*.hdr
+            !/apps/web/public/assets/virtual-studio/**/*.jpg
+            !/apps/web/public/assets/virtual-studio/**/*.png
+            !/apps/web/public/assets/virtual-studio/**/*.webp
+            !/apps/web/public/assets/virtual-studio/**/*.hdr
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
