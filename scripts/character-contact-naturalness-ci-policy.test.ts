@@ -18,16 +18,16 @@ describe("Character contact naturalness CI bootstrap", () => {
     expect(actionSteps.slice(0, 3).map((step) => step.uses)).toEqual([
       "actions/checkout@v7",
       "pnpm/action-setup@v6",
-      "actions/setup-node@v6",
+      "actions/setup-node@v7",
     ]);
 
-    const setupNode = actionSteps.find((step) => step.uses === "actions/setup-node@v6");
+    const setupNode = actionSteps.find((step) => step.uses === "actions/setup-node@v7");
     expect(setupNode?.with?.cache).toBe("pnpm");
   });
 
   it("does not defer pnpm availability until after setup-node", () => {
     const steps = workflow.jobs?.["character-hand-visual"]?.steps ?? [];
-    const setupNodeIndex = steps.findIndex((step) => step.uses === "actions/setup-node@v6");
+    const setupNodeIndex = steps.findIndex((step) => step.uses === "actions/setup-node@v7");
     const pnpmSetupIndex = steps.findIndex((step) => step.uses === "pnpm/action-setup@v6");
 
     expect(pnpmSetupIndex).toBeGreaterThan(-1);
