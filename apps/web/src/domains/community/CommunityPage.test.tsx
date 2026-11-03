@@ -54,6 +54,9 @@ describe("CommunityPage", () => {
     // 홍보 공간은 텍스트 화살표 대신 같은 카드 문법으로 이어진다.
     expect(screen.getByRole("link", { name: /트레일러 상영관/ }).getAttribute("href")).toBe("/community/promote?kind=trailer");
     expect(screen.getByTestId("community-quick-guide")).toBeTruthy();
+    expect(screen.getByTestId("community-rea-creator-showcase-bar").textContent).toContain(
+      "CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE",
+    );
     // 이모지 아이콘을 쓰지 않는다(사이트 공통 아이콘 문법).
     expect(document.body.textContent).not.toMatch(/[📚🖋☕🫧]/u);
   });

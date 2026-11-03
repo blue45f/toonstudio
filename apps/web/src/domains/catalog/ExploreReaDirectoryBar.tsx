@@ -128,6 +128,55 @@ export function ExploreReaDirectoryBar({
           );
         })}
       </div>
+
+      <div
+        role="group"
+        aria-label={bt("글로벌 포털 열독 템포·연재 호흡 프리셋", "Global portal reading tempo presets")}
+        data-testid="explore-rea-reading-tempo-bar"
+        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-3 text-[11px]"
+      >
+        <span className="mr-1 font-bold text-fg-3">
+          {bt("포털 호흡 벤치마크:", "Portal Pacing:")}
+        </span>
+        {[
+          {
+            id: "naver-weekly-long",
+            ko: "네이버·카카오 주간 정통 (65~80컷)",
+            en: "Naver/Kakao Weekly (65-80 cuts)",
+            status: ["ongoing"] as SerialStatus[],
+            sortKey: "popular" as SortKey,
+          },
+          {
+            id: "tapas-bite-sized",
+            ko: "Tapas·WEBTOON 스낵 스크롤 (30~45컷)",
+            en: "Tapas/WEBTOON Bite-size (30-45 cuts)",
+            status: ["ongoing"] as SerialStatus[],
+            sortKey: "newest" as SortKey,
+          },
+          {
+            id: "lezhin-binge-complete",
+            ko: "리디·레진 완결 정주행 (전회차 몰아보기)",
+            en: "Ridi/Lezhin Completed Binge",
+            status: ["completed"] as SerialStatus[],
+            sortKey: "rating" as SortKey,
+          },
+        ].map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            data-testid={`explore-tempo-preset-${preset.id}`}
+            onClick={() => {
+              runSameDocumentViewTransition(() => {
+                onApplyFilters({ ...filters, status: preset.status });
+                onChangeSort(preset.sortKey);
+              });
+            }}
+            className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel/60 px-2.5 py-1 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+          >
+            {bt(preset.ko, preset.en)}
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

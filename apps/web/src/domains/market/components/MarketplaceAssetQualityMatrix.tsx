@@ -130,6 +130,12 @@ export function MarketplaceAssetQualityMatrix({
         <div className="min-w-28 rounded-xl border border-line bg-card px-3 py-2 text-right">
           <span className="block text-[10px] uppercase tracking-wider text-fg-3">필수 계획</span>
           <strong className="text-xl tabular-nums text-fg">{completion}%</strong>
+          <span
+            data-testid="market-asset-preflight-readiness"
+            className="mt-0.5 block text-[10px] font-bold text-accent"
+          >
+            {completion === 100 ? "ACON3D·BOOTH 출고 기준 충족" : `필수 ${requiredSelected}/${required.length} 점검`}
+          </span>
         </div>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

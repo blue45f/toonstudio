@@ -139,6 +139,32 @@ export function WebtoonProcessToolchain() {
             "ToonStudio is not here to replace the tools above. When planning docs, boards, line art, and color files scatter across tools, versions tangle and feedback gets lost. ToonStudio connects the stages into one production flow for the title — and the badged built-in features above are where that flow continues without leaving ToonStudio.",
           )}
         </p>
+        <div
+          data-testid="learn-rea-toolchain-coverage-bar"
+          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-card/85 px-3.5 py-2.5 text-xs"
+        >
+          <span className="font-bold text-fg-2">
+            {bt(
+              `REA 공정 도구 카탈로그 · 총 ${WEBTOON_PROCESS_TOOLCHAIN.length}단계 공정 · 내장/외부 도구 브리지 연결 완료`,
+              `REA Process Toolchain · ${WEBTOON_PROCESS_TOOLCHAIN.length} stages · Built-in & external tool bridges connected`,
+            )}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/studio/canvas"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full bg-accent/15 px-3 py-1 font-bold text-accent hover:bg-accent hover:text-on-accent"
+            >
+              {bt("스튜디오 실습 캔버스 열기", "Open Studio Practice Canvas")}
+              <ArrowUpRight aria-hidden="true" size={13} />
+            </Link>
+            <Link
+              to="/settings/role?tab=workspace"
+              className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-panel px-3 py-1 font-semibold text-fg-2 hover:border-accent/45 hover:text-accent"
+            >
+              {bt("15개 세부직무 맞춤 배치 설정", "15-Sub-Role Workspace Setup")}
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

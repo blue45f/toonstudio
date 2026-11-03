@@ -90,6 +90,9 @@ describe("공정별 도구 섹션 렌더", () => {
     expect(within(section).getByText(/작품마다 다르므로/u)).toBeTruthy();
     expect(within(section).getByRole("heading", { name: "툰스튜디오는 이 도구들을 잇는 자리입니다" })).toBeTruthy();
     expect(within(section).getByText(/대체하려는 제품이 아닙니다/u)).toBeTruthy();
+    expect(screen.getByTestId("learn-rea-toolchain-coverage-bar").textContent).toContain(
+      "실습 캔버스 열기",
+    );
   });
 
   it("13개 단계 카드가 모두 렌더되고 핵심 도구(외부·내장)가 보인다", () => {

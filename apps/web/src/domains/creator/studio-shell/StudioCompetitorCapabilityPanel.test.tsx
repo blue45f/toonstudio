@@ -178,5 +178,9 @@ describe("StudioCompetitorCapabilityPanel", () => {
     const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
+    const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
+    expect(enScorecard.textContent).toContain("Overall 98.4 / 100 (9.84 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 130 REA Evidences");
+    expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
   });
 });

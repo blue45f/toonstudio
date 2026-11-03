@@ -374,6 +374,30 @@ export function CutsStudioPage() {
 
       <Stepper step={step} />
 
+      <div
+        data-testid="cuts-rea-movingtoon-preset-bar"
+        className="my-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-extrabold text-accent">
+            {t("RIVE · SPINE · LIVE2D · CASCADEUR 무빙툰 연출 프리셋:", "RIVE · SPINE · LIVE2D · CASCADEUR Moving-Toon Presets:")}
+          </span>
+          {[
+            t("스크롤 패럴랙스 깊이 루프 (2.5D)", "Scroll Parallax Depth Loop (2.5D)"),
+            t("대사·말풍선 탄성 바운스", "Dialogue & Balloon Elastic Bounce"),
+            t("Cascadeur 액션 타격 카메라 셰이크", "Cascadeur Action Camera Shake"),
+            t("9:16 숏폼 상하단 UI 안전영역 가이드", "9:16 Shortform Safe-Zone Guide"),
+          ].map((presetLabel) => (
+            <span
+              key={presetLabel}
+              className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold text-fg-2"
+            >
+              {presetLabel}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {remixParamInvalid ? (
         <p className="cuts-studio__notice" role="note">
           {t(

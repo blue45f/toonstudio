@@ -81,6 +81,32 @@ export function RoleWorkspaceSettingsPage() {
         }
       />
 
+      <div
+        data-testid="role-workspace-rea-ergonomics-bar"
+        className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-accent/25 bg-accent/5 px-4 py-2.5 text-xs text-fg-2"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-md bg-accent/15 px-2 py-0.5 font-bold text-accent">
+            {bi("15개 세부직무 인지부하 47~58% 절감", "15 Sub-Role Cognitive Load -47~58%")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
+            {bi("Affinity 페르소나 (캔버스 76%)", "Affinity Persona (76% Canvas)")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
+            {bi("Procreate Zen 몰입 (캔버스 86%)", "Procreate Zen Focus (86% Canvas)")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-medium text-fg">
+            {bi("CSP·Krita 풀 도크 (캔버스 68%)", "CSP/Krita Full Dock (68% Canvas)")}
+          </span>
+        </div>
+        <Link
+          to="/studio/canvas"
+          className="font-semibold text-accent underline underline-offset-4 hover:text-fg"
+        >
+          {bi("스튜디오 캔버스에서 바로 열기 →", "Open in Studio Canvas →")}
+        </Link>
+      </div>
+
       <div role="tablist" aria-label={bi("직군·작업환경 설정", "Role and workspace settings")} className="mb-6 flex flex-wrap gap-2">
         {ROLE_SETTINGS_TABS.map((item) => (
           <button
