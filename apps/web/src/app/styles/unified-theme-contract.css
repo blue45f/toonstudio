@@ -405,7 +405,7 @@ h1[data-type-variant="editorial"],
   scrollbar-color: color-mix(in oklch, var(--color-accent) 52%, transparent) transparent;
 }
 :root[data-design-theme] :is(.workspace-search-trigger, .workspace-focused-search) {
-  border-color: var(--color-line) !important;
+  border-color: var(--color-control-border) !important;
   background: var(--color-card) !important;
   color: var(--color-fg-2) !important;
 }
@@ -415,7 +415,7 @@ h1[data-type-variant="editorial"],
   color: var(--color-fg) !important;
 }
 :root[data-design-theme] .workspace-task-route-content :where(input, textarea, select) {
-  border-color: var(--color-line) !important;
+  border-color: var(--color-control-border) !important;
   background: var(--color-card) !important;
   color: var(--color-fg) !important;
   box-shadow: inset 0 1px color-mix(in oklch, var(--color-fg) 5%, transparent);
