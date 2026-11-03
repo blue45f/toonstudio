@@ -110,7 +110,8 @@ describe("손가락·사진·웹캠 UI 입력의 V3 연결", () => {
       return { authoring, input: useCharacterAuthoringInputs(f.host, authoring, true) };
     });
     await waitFor(() => expect(restored.result.current.authoring.hydrated).toBe(true));
-    expect(restored.result.current.authoring.snapshot.document.pose).toEqual(edited);
+    // JSON 저장은 -0을 0으로 정규화하므로 저장 형식 전체를 비교한다.
+    expect(JSON.stringify(restored.result.current.authoring.snapshot.document.pose)).toBe(JSON.stringify(edited));
     expect(readStudioVrmFingerCurlDegrees(restored.result.current.input.fingerEdits, "left", "index")).toBe(35);
   });
   it("같은 값과 잠긴 손가락은 이력을 만들지 않고 새 편집은 redo를 지운다", async () => {
