@@ -192,6 +192,7 @@ describe("웹툰 직군별 메뉴·권한 예시와 지역 인계 계획", () =>
     render(<StudioWebtoonRolePipelineSubPanel />);
     expect(screen.getByTestId("role-pipeline-deliverable-checklist").textContent).toContain("24단어 이하");
     expect(screen.getByTestId("role-pipeline-krita-medibang-workflow").textContent).toContain("Krita");
+    expect(screen.getByTestId("role-pipeline-cognitive-load-badge").textContent).toContain("인지 부하");
     expect(screen.getByTestId("role-pipeline-parallel-pair-status").textContent).toContain("병렬 협업 가능");
     fireEvent.click(screen.getByTestId("role-pipeline-select-line-assistant"));
     fireEvent.click(screen.getByTestId("role-parallel-partner-line-art"));

@@ -698,3 +698,32 @@ export function buildCampfireEpisodeLorebookBeatMatrix(
 }
 
 export type CampfireLorebookEpisodeBeatMatrixResult = CampfireLorebookEpisodeBeatSummary;
+
+export interface MangakaMinimapScrollHeatmapSummary {
+  readonly pacingBand: "breathable" | "optimal" | "dense";
+  readonly maxLinesPerBalloonObserved: number;
+  readonly balloonReadabilityWithin4Lines: boolean;
+  readonly summaryKo: string;
+}
+
+/**
+ * 세로 스크롤 1600px 뷰포트당 컷 밀도 히트맵 및 말풍선 4줄 이하 가독성 게이지 계산기
+ */
+export function computeMangakaMinimapScrollHeatmap(
+  strip: ReturnType<typeof stageMangakaEpisodeStrip>,
+): MangakaMinimapScrollHeatmapSummary {
+  const pps = strip.metrics.panelsPerScreen;
+  const pacingBand: MangakaMinimapScrollHeatmapSummary["pacingBand"] =
+    pps < 1.0 ? "breathable" : pps <= 2.5 ? "optimal" : "dense";
+  const maxLinesPerBalloonObserved = strip.letters.reduce(
+    (maxL, item) => Math.max(maxL, item.lineCount),
+    0,
+  );
+  const balloonReadabilityWithin4Lines = maxLinesPerBalloonObserved <= 4;
+  return {
+    pacingBand,
+    maxLinesPerBalloonObserved,
+    balloonReadabilityWithin4Lines,
+    summaryKo: `스크롤 히트맵(${pacingBand} · ${pps}컷/화면) · 말풍선 최대 ${maxLinesPerBalloonObserved}줄 (${balloonReadabilityWithin4Lines ? "가독성 적정" : "줄바꿈 과밀"})`,
+  };
+}

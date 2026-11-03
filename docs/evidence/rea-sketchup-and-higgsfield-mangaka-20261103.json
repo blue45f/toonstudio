@@ -385,6 +385,113 @@
     "externalEvidenceReplayedInThisReview": false,
     "descriptionsProveRuntimeIntegration": false
   },
+  "currentServiceAndUiUxBenchmarkEvidence": {
+    "targetListEvidenceId": "ev_b6644ba8e79cabacdd1e02830630494b3fc5330639b642aa7265f9db67591eec",
+    "localCreatorAstEvidenceId": "ev_8c8e7dcfe69029fd67a822ce7279c95c613b4768eb6267c224cd2e75eebe0c50",
+    "pageByPageDomainAstEvidenceIds": {
+      "creator": "ev_8c8e7dcfe69029fd67a822ce7279c95c613b4768eb6267c224cd2e75eebe0c50",
+      "market": "ev_545db38e759059e4a8a20333eec1f2275486b0941c3a31e2391ab590fa3cd332",
+      "community": "ev_460fb65b8abbd9ffc743fda47d1dd253bcb1bc257612300b8718ca428bfa15e6",
+      "catalog": "ev_c95d4f67aaa83a0ad9b1e5fc22a8fd99aaf5d10bff2d12a7d384856df7b0800b",
+      "collaboration": "ev_cdc9736fef499a16704137731877a520c99660be41f516091f003c46880949fa",
+      "cuts": "ev_a03da97248c9e08cf5a5fbbb06f4f64705162bc5a9f029b42348f4dc6067e546",
+      "learn": "ev_b17bfe3e720ac57474802d3d5c03d7ed4ad346d5af99213d0b84583ff3428b2f"
+    },
+    "localCreatorAstMetrics": {
+      "dataFlowRelations": 2781,
+      "objectFlowRelations": 378,
+      "closureRelations": 372,
+      "callFlowRelations": 169,
+      "boundaryRelations": 8
+    },
+    "currentToonStudioTargets": [
+      {
+        "id": "toonstudio-landing-home",
+        "url": "https://www.toonstudio.cloud/",
+        "evidenceId": "ev_f53dfdda55b15e6897bf8d58152239ee4dcf570e8f319950166d3ea41b4a89bb",
+        "totalDomNodes": 2404,
+        "accessibilityNodes": 924,
+        "resourceCount": 206,
+        "localStorageKeysCount": 28,
+        "indexedDbCount": 3,
+        "serviceWorkerCachesCount": 8
+      },
+      {
+        "id": "toonstudio-role-workspace-settings",
+        "url": "https://www.toonstudio.cloud/settings/role?tab=workspace",
+        "evidenceId": "ev_54688ebc1b1581a6f684c4b2aa5a1522c4448ff986f04444caa960f0cb1e53b9",
+        "totalDomNodes": 736,
+        "accessibilityNodes": 344,
+        "resourceCount": 135
+      },
+      {
+        "id": "toonstudio-studio-canvas-live",
+        "url": "https://www.toonstudio.cloud/studio/canvas?roleWorkspace=illustration-line",
+        "evidenceId": "ev_10da481ffe068eccebdaa36dc9d38a77ce8b3f1ce2e830fbbcf9042c3a1bcce8",
+        "totalDomNodes": 3524,
+        "accessibilityNodes": 1125,
+        "resourceCount": 683,
+        "workerCount": 2
+      }
+    ],
+    "uiUxBenchmarkTargets": [
+      {
+        "id": "figma-contextual-ui",
+        "url": "https://www.figma.com/ko-kr/design/",
+        "evidenceId": "ev_12e35379638fad3f6dd5629c9e78fcaf95727940d644149db64b6c75afb32526",
+        "totalDomNodes": 2284,
+        "accessibilityNodes": 1278,
+        "uxPatterns": [
+          "Contextual Right Property Inspector",
+          "Floating Bottom Canvas Toolbar",
+          "Universal Command Palette (Cmd+K)"
+        ]
+      },
+      {
+        "id": "procreate-zen-canvas",
+        "url": "https://procreate.com/procreate",
+        "evidenceId": "ev_b50f89740fe6f9582e25e0e40f0e0b634ee17d309837367d7aef6ef7be9b46d4",
+        "totalDomNodes": 870,
+        "accessibilityNodes": 411,
+        "uxPatterns": [
+          "Zero-Chrome 86% Canvas Viewport Ratio",
+          "2-Finger Undo / 3-Finger Redo / 4-Finger Zen Mode",
+          "Radial QuickMenu"
+        ]
+      },
+      {
+        "id": "photopea-compact-browser-dock",
+        "url": "https://www.photopea.com/",
+        "evidenceId": "ev_8332e21b0e832922bbb6fbc7e567642994215b38ed93b02d54dd802b9a3b8839",
+        "totalDomNodes": 403,
+        "accessibilityNodes": 258,
+        "uxPatterns": [
+          "Ultra-Compact 403-Node Browser Workspace",
+          "Single-Column Left Tool Rail + Collapsible Right Layer Stack"
+        ]
+      },
+      {
+        "id": "spline-3d-browser-outliner",
+        "url": "https://spline.design/",
+        "evidenceId": "ev_f645280134f76287118d570d821007c1f10d1ac7a15fcfd430c9d9235674d732",
+        "totalDomNodes": 1916,
+        "accessibilityNodes": 1202,
+        "uxPatterns": [
+          "Left 3D Scene Outliner + Right Camera/Lighting State Inspector"
+        ]
+      },
+      {
+        "id": "canva-comic-progressive-onboarding",
+        "url": "https://www.canva.com/create/comic-strips/",
+        "evidenceId": "ev_947c5c10cd80b7ef07245d00931b93ffa3359ff49d5f9409554aa5d441d562a4",
+        "totalDomNodes": 2318,
+        "accessibilityNodes": 1330,
+        "uxPatterns": [
+          "1-Click Starter Template to Pro Layer Progressive Disclosure"
+        ]
+      }
+    ]
+  },
   "currentImplementationScope": {
     "rolePipeline": "local planning and permission examples; no server authorization or document mutation",
     "genrePresets": "local strip calculation inputs",
@@ -392,5 +499,463 @@
     "movingToon": "local trigger planning selection; document and export unchanged",
     "bg3dRoleLens": "local settings; explicit existing camera/insertion ports; rejected insertion not reported as success",
     "verificationResults": "recorded separately in the exact PR and local QA receipts"
+  },
+  "expanded_global_competitor_and_page_inspections_20261104": {
+    "total_rea_evidence_records": 83,
+    "toonstudio_live_routes_inspected": 10,
+    "toonstudio_local_domain_asts_inspected": 7,
+    "external_competitor_and_reference_platforms_inspected": 66,
+    "records": [
+      {
+        "evidence_id": "ev_e35666ed2150aecd9fa8499afa94e50e309996b9f74e012a1b0a60b55eb1ada6",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/ranking",
+        "title": "통합 랭킹 · 툰스튜디오",
+        "dom_nodes": 19064,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:20.992Z"
+      },
+      {
+        "evidence_id": "ev_b5a186c51bbddd771744e5631580103f6f1485832fb5675ba9eabf0799170638",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/market",
+        "title": "소재 마켓 · 툰스튜디오",
+        "dom_nodes": 3358,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:24.477Z"
+      },
+      {
+        "evidence_id": "ev_5a1988c7e160d0d48ea40b7cd850437d5dc0e5b5c16ea034db9fe2ffd0181753",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/community",
+        "title": "커뮤니티 · 웹툰을 함께 읽고 그리는 곳 · 툰스튜디오",
+        "dom_nodes": 1665,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:27.177Z"
+      },
+      {
+        "evidence_id": "ev_44f38f0cc4fa85b1db55783da675ea3e2c1f4b4fd3cdb54cfa6c7ad8bc973c7e",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://comic.naver.com/index",
+        "title": "네이버 웹툰",
+        "dom_nodes": 3325,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:29.545Z"
+      },
+      {
+        "evidence_id": "ev_99f346dd08278421fe035e89b8807d6ac73d68effbf9ba6be17b495ec74cca99",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://tapas.io/",
+        "title": "Home | Spotlight",
+        "dom_nodes": 1247,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:32.046Z"
+      },
+      {
+        "evidence_id": "ev_281b44bc21d91800fdefd3e1d9a1bfd92a0ecab5a20089725818936eecf2fd30",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.webtoons.com/en/",
+        "title": "WEBTOON - Read Comics, Manga &amp; Manhwa",
+        "dom_nodes": 2961,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:34.755Z"
+      },
+      {
+        "evidence_id": "ev_4103d26aa8be7ce38614b3c2b6626607d70bada55140e93a96b8efe20748fe39",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://assets.clip-studio.com/en-us",
+        "title": "CLIP STUDIO ASSETS",
+        "dom_nodes": 5163,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:36.918Z"
+      },
+      {
+        "evidence_id": "ev_e5b91c621b6f102d4825fafd1429a3b0b5de9d4c7b4aeaf49d61ef5165d9b2d8",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://sketchfab.com/",
+        "title": "Sketchfab - The best 3D viewer on the web",
+        "dom_nodes": 2216,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:39.906Z"
+      },
+      {
+        "evidence_id": "ev_afe5ca870ee20eed4883bc63ba1f2e1b775a7491212d3d596c7f69033747020b",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://polyhaven.com/",
+        "title": "Poly Haven",
+        "dom_nodes": 2087,
+        "accessibility_nodes": 0,
+        "captured_at": "2026-11-03T17:51:42.586Z"
+      },
+      {
+        "evidence_id": "ev_dba1814d6fa6fe3ea4f4c653212493325075d06571e9266cfaaaa34416c26e03",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonboom.com/products/harmony",
+        "title": "Toon Boom Harmony | 2D Animation Software",
+        "dom_nodes": 2785,
+        "accessibility_nodes": 907,
+        "captured_at": "2026-11-03T17:54:10.977Z"
+      },
+      {
+        "evidence_id": "ev_10c7b9b40ec36df4b158b362f82c7ac1731d739490fcf0debddf3efc6c058869",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://cascadeur.com/",
+        "title": "Cascadeur - the easiest way to animate AI-assisted keyframe animation software",
+        "dom_nodes": 3953,
+        "accessibility_nodes": 219,
+        "captured_at": "2026-11-03T17:54:13.936Z"
+      },
+      {
+        "evidence_id": "ev_ae4d93bc42cf8a22f82c9e416e79fe3065b8faed35d739958098e06d90fc30e8",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.mixamo.com/#/",
+        "title": "Mixamo",
+        "dom_nodes": 241,
+        "accessibility_nodes": 114,
+        "captured_at": "2026-11-03T17:54:17.297Z"
+      },
+      {
+        "evidence_id": "ev_90e27c995b98185140773f967601f44cdc8beaf9b637cc527b06bb4f5ea6459a",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.live2d.com/ko/",
+        "title": "Live2D Cubism | 일러스트에 생명이 깃드는 감동을.",
+        "dom_nodes": 3398,
+        "accessibility_nodes": 804,
+        "captured_at": "2026-11-03T17:54:19.287Z"
+      },
+      {
+        "evidence_id": "ev_bc78cd7f888260c10f426ed8dac7cc72223676c44fb84d93bb36cfd637f7765b",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://vroid.com/en/studio",
+        "title": "VRoid Studio",
+        "dom_nodes": 682,
+        "accessibility_nodes": 407,
+        "captured_at": "2026-11-03T17:54:21.425Z"
+      },
+      {
+        "evidence_id": "ev_5bb4d5921b6f1cae23787401d8647aaf45f1376d0be5dab36d6b15806b0b714b",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://penpot.app/",
+        "title": "Penpot: The open-source design platform for teams.",
+        "dom_nodes": 1084,
+        "accessibility_nodes": 385,
+        "captured_at": "2026-11-03T17:54:24.075Z"
+      },
+      {
+        "evidence_id": "ev_01e30845496ac1e4f594431acc75cafca6c68f8dc12a64b6d2d8fde695eeea62",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://excalidraw.com/",
+        "title": "Excalidraw Whiteboard",
+        "dom_nodes": 383,
+        "accessibility_nodes": 122,
+        "captured_at": "2026-11-03T17:54:26.826Z"
+      },
+      {
+        "evidence_id": "ev_e71ec95d9129185a4e77905e2673ce43fc75fdc2f86c062c2d0d208b7d8d06b9",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.tldraw.com/",
+        "title": "tldraw • very good free whiteboard",
+        "dom_nodes": 582,
+        "accessibility_nodes": 105,
+        "captured_at": "2026-11-03T17:55:09.779Z"
+      },
+      {
+        "evidence_id": "ev_75de5c45a00af47e20eaf8799a1184fef4702f6e6ed9e8082d365240d84e80bf",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://concepts.app/en/",
+        "title": "Concepts App • Infinite, Flexible Sketching",
+        "dom_nodes": 1089,
+        "accessibility_nodes": 615,
+        "captured_at": "2026-11-03T17:55:12.451Z"
+      },
+      {
+        "evidence_id": "ev_273169bcbb4c8fbba33ed86477ab217498895163e6b1827cd9be4bdd342b1323",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.aseprite.org/",
+        "title": "Aseprite - Animated sprite editor &amp; pixel art tool",
+        "dom_nodes": 754,
+        "accessibility_nodes": 507,
+        "captured_at": "2026-11-03T17:55:14.637Z"
+      },
+      {
+        "evidence_id": "ev_80d1f3037fce4a7f2954eede43f0c9ce46a5c5104570c07ad93e7ed181b2994d",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.escapemotions.com/products/rebelle/about",
+        "title": "Rebelle | real media paint software",
+        "dom_nodes": 5274,
+        "accessibility_nodes": 2413,
+        "captured_at": "2026-11-03T17:55:16.926Z"
+      },
+      {
+        "evidence_id": "ev_3004e740eff8aeaad3b1ddc728c51476d3ced703b70af03078a0f1e3b76db92f",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.affinity.studio/graphic-design-software",
+        "title": "Graphic &amp; Vector Design Software | Creative Freedom | Affinity",
+        "dom_nodes": 2591,
+        "accessibility_nodes": 893,
+        "captured_at": "2026-11-03T17:55:19.276Z"
+      },
+      {
+        "evidence_id": "ev_098b42d93d17824e563ccbe6b6d1a3423f4dc4521db4d5d8110ba11cf5a20772",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.wacom.com/en-us/products/pen-displays",
+        "title": "Interactive Pen Displays &amp; Touch Screen Tablets",
+        "dom_nodes": 3550,
+        "accessibility_nodes": 978,
+        "captured_at": "2026-11-03T17:55:22.115Z"
+      },
+      {
+        "evidence_id": "ev_acd615b88a7259a5e33fd5a9e410cc16e4bc95da6408a708e8932dc0ed57518a",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://ibispaint.com/",
+        "title": "ibisPaint - 그리는 즐거움을 공유하세요",
+        "dom_nodes": 1704,
+        "accessibility_nodes": 529,
+        "captured_at": "2026-11-03T17:55:24.816Z"
+      },
+      {
+        "evidence_id": "ev_ac1a8bedf715feee34fc78e49e9889e4ddb538a7b340a9fd4ec3cfbdf494de5f",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonboom.com/products/storyboard-pro",
+        "title": "Toon Boom Storyboard Pro | Professional Storyboard Solution",
+        "dom_nodes": 2634,
+        "accessibility_nodes": 871,
+        "captured_at": "2026-11-03T17:55:53.796Z"
+      },
+      {
+        "evidence_id": "ev_2974a8262674405273a508ba250407bb79c328aafdba5d1f1174ddc5d04853cb",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://threejs.org/",
+        "title": "Three.js – JavaScript 3D Library",
+        "dom_nodes": 1320,
+        "accessibility_nodes": 609,
+        "captured_at": "2026-11-03T17:55:56.695Z"
+      },
+      {
+        "evidence_id": "ev_3e6fc27d6abbd3061bc42412393ccb29ad5a40121213a5d818f8d46528e16ab3",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.babylonjs.com/",
+        "title": "Babylon.js: Powerful, Beautiful, Simple, Open - Web-Based 3D At Its Best",
+        "dom_nodes": 1689,
+        "accessibility_nodes": 506,
+        "captured_at": "2026-11-03T17:55:58.966Z"
+      },
+      {
+        "evidence_id": "ev_b9a6034600b5acbe42632656180d5c4b3ca72230d4bc8cfb8ba77867ee97ab27",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.marvelousdesigner.com/",
+        "title": "The Ultimate Digital Cloth Creation Tool - Marvelous Designer",
+        "dom_nodes": 1200,
+        "accessibility_nodes": 406,
+        "captured_at": "2026-11-03T17:56:01.196Z"
+      },
+      {
+        "evidence_id": "ev_3396f0a9b2c343f2f52d88af1e68a1500cb7f7086f0a3d67c7161ee35ed8ab59",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.literatureandlatte.com/scrivener/overview",
+        "title": "#1 Novel &amp; Book Writing Software For Writers",
+        "dom_nodes": 2772,
+        "accessibility_nodes": 808,
+        "captured_at": "2026-11-03T17:56:03.546Z"
+      },
+      {
+        "evidence_id": "ev_49410d76fb18003ec35615f80facd80ddcaac22bf7ef97a415924a0b98e19626",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://milanote.com/",
+        "title": "Milanote - the tool for organizing creative projects",
+        "dom_nodes": 1022,
+        "accessibility_nodes": 320,
+        "captured_at": "2026-11-03T17:56:05.866Z"
+      },
+      {
+        "evidence_id": "ev_a42d46ea256ad71deb3c59d5f84806478f5872517e6bde814af65faea1373f3f",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://plottr.com/",
+        "title": "Plottr - Bring your story to life in a weekend",
+        "dom_nodes": 6215,
+        "accessibility_nodes": 1922,
+        "captured_at": "2026-11-03T17:56:08.006Z"
+      },
+      {
+        "evidence_id": "ev_4d9e4b9b15e9d038064adaac6e72ed22d3a49e37f020cc4a596aa0909ea7110c",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.worldanvil.com/",
+        "title": "World Anvil Worldbuilding tools &amp; RPG Campaign Manager | World Anvil",
+        "dom_nodes": 3158,
+        "accessibility_nodes": 1496,
+        "captured_at": "2026-11-03T17:56:20.876Z"
+      },
+      {
+        "evidence_id": "ev_d5caa1bad68f48ab3967868a242bf8b1947c039119f950f0faf28e51008c066f",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://novelai.net/",
+        "title": "NovelAI - AI Anime Image Generator &amp; Storyteller",
+        "dom_nodes": 855,
+        "accessibility_nodes": 478,
+        "captured_at": "2026-11-03T17:56:23.666Z"
+      },
+      {
+        "evidence_id": "ev_22c9a910c38e67b9c570f493e54760b76658bca0fdbbccaebdd09bbe141fc525",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://civitai.com/",
+        "title": "Civitai | Discover and Create AI Art",
+        "dom_nodes": 9926,
+        "accessibility_nodes": 3936,
+        "captured_at": "2026-11-03T17:56:26.799Z"
+      },
+      {
+        "evidence_id": "ev_56061db225728e9bda078ba607bcb70265371028950f59c1be7ec64c06ab3e65",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://cara.app/explore",
+        "title": "Cara | Artist Social &amp; Portfolio Platform",
+        "dom_nodes": 3014,
+        "accessibility_nodes": 1819,
+        "captured_at": "2026-11-03T17:56:30.127Z"
+      },
+      {
+        "evidence_id": "ev_30fb56263f7f60bbdf2f4f441a0f9686b15dfd65ad9d82075e44ee48950e411d",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://linear.app/",
+        "title": "Linear – The system for product development",
+        "dom_nodes": 5946,
+        "accessibility_nodes": 1146,
+        "captured_at": "2026-11-03T17:56:32.857Z"
+      },
+      {
+        "evidence_id": "ev_3da5efd8bfc78c260a51c4bff3b3b1c174aa13d7ccf3a75989736ce5c0bbe1fa",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.cg-wire.com/kitsu?tab=2D",
+        "title": "CGWire | Give Superpowers To Your Teams",
+        "dom_nodes": 998,
+        "accessibility_nodes": 331,
+        "captured_at": "2026-11-03T17:56:35.427Z"
+      },
+      {
+        "evidence_id": "ev_ce6b200f7270743919a8e680c2b8cad060305f25ef77c1dd3306d4f62feb79fc",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.pixiv.net/",
+        "title": "일러스트·만화·소설 작품 커뮤니케이션 서비스 [pixiv(픽시브)]",
+        "dom_nodes": 372,
+        "accessibility_nodes": 70,
+        "captured_at": "2026-11-03T17:57:23.697Z"
+      },
+      {
+        "evidence_id": "ev_7e85b9b084c40dd491f776acfa5626a67c013e3a318b56563f9a0232887bac5a",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.artstation.com/?sort_by=community&dimension=all",
+        "title": "ArtStation - All Channels",
+        "dom_nodes": 4237,
+        "accessibility_nodes": 1507,
+        "captured_at": "2026-11-03T17:57:26.635Z"
+      },
+      {
+        "evidence_id": "ev_59c29712580c8c2d1115885db8db7d572f76f66d0e2d3baf1e5614b465a23f83",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://booth.pm/en",
+        "title": "BOOTH - The International Indie Art Marketplace",
+        "dom_nodes": 2320,
+        "accessibility_nodes": 1245,
+        "captured_at": "2026-11-03T17:57:29.486Z"
+      },
+      {
+        "evidence_id": "ev_2df16380a8f1f6b8fbc6fb4f8e3d7fb4d07cf6358509275a02b4cb8df4006a04",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.daz3d.com/",
+        "title": "Daz 3D - 3D Models and 3D Software | Daz 3D",
+        "dom_nodes": 1696,
+        "accessibility_nodes": 487,
+        "captured_at": "2026-11-03T17:57:32.486Z"
+      },
+      {
+        "evidence_id": "ev_946ab7cf8a5f5be121c7e7ee0834e3ecda56c81f26eb1c4ebe1bc2a11c1620e0",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://rive.app/",
+        "title": "Rive: agent-native 2D and 3D engine for games, apps, and UI",
+        "dom_nodes": 4077,
+        "accessibility_nodes": 2067,
+        "captured_at": "2026-11-03T17:57:35.236Z"
+      },
+      {
+        "evidence_id": "ev_276b6a8f4af35741e582f5818605dafcdd2ec7b4c4d6e6be7c06c9ad0bee834c",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://lottiefiles.com/",
+        "title": "LottieFiles: Download Free lightweight animations for website &amp; apps.",
+        "dom_nodes": 2298,
+        "accessibility_nodes": 1479,
+        "captured_at": "2026-11-03T17:57:37.865Z"
+      },
+      {
+        "evidence_id": "ev_2025a8b7892b17d531fd99025930ea684133d67a23e03dbbf8d288cab1258384",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.framer.com/",
+        "title": "Framer: Free website builder and AI design agent",
+        "dom_nodes": 5313,
+        "accessibility_nodes": 3112,
+        "captured_at": "2026-11-03T17:57:40.835Z"
+      },
+      {
+        "evidence_id": "ev_1842efce4f96590323b5e983075dca91ad541780c1cfca910b4b6669e1272fd3",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/catalog",
+        "title": "툰스튜디오",
+        "dom_nodes": 329,
+        "accessibility_nodes": 75,
+        "captured_at": "2026-11-03T17:58:08.950Z"
+      },
+      {
+        "evidence_id": "ev_8cc995d978ee372c6fc173322cfbe97db3162b893701afe2c32e5de026329838",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/collaboration",
+        "title": "툰스튜디오",
+        "dom_nodes": 312,
+        "accessibility_nodes": 64,
+        "captured_at": "2026-11-03T17:58:10.926Z"
+      },
+      {
+        "evidence_id": "ev_ccc63c67bd1d2d89db18ccf7ec30b5904f5392c9789f5fc31d4af947c6ec10c5",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/cuts",
+        "title": "컷츠 · 툰스튜디오",
+        "dom_nodes": 866,
+        "accessibility_nodes": 278,
+        "captured_at": "2026-11-03T17:58:13.077Z"
+      },
+      {
+        "evidence_id": "ev_b2c1de295db8e528573598b64cb93d2442bbe6fa880a5cdf038ff076aa55a094",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.toonstudio.cloud/learn",
+        "title": "배우기 · 툰스튜디오",
+        "dom_nodes": 1796,
+        "accessibility_nodes": 768,
+        "captured_at": "2026-11-03T17:58:16.257Z"
+      },
+      {
+        "evidence_id": "ev_2a034bb96f22a79e3e40cf70ccc9446a7d5ea34dfee9eda0e56f0c47f640e3f6",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://miro.com/ko/",
+        "title": "AI 이노베이션 워크스페이스 | Miro",
+        "dom_nodes": 2355,
+        "accessibility_nodes": 932,
+        "captured_at": "2026-11-03T17:58:18.386Z"
+      },
+      {
+        "evidence_id": "ev_fa7206b87e42150a0d3fa8c6285e73f46cfa9fb89e6a63508d3226e0ea39b501",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.notion.com/ko",
+        "title": "나만을 위한 AI 워크스페이스 | Notion (노션)",
+        "dom_nodes": 1148,
+        "accessibility_nodes": 332,
+        "captured_at": "2026-11-03T17:58:21.827Z"
+      },
+      {
+        "evidence_id": "ev_db7b35ea06a50a4dee5669d7ddd38ee78c1cfbbf802ff819eac22b6717bc7831",
+        "predicate_type": "rea.web-page-inspection",
+        "url": "https://www.behance.net/",
+        "title": "작품 전시, 발견, 크리에이터 채용 :: Behance",
+        "dom_nodes": 7243,
+        "accessibility_nodes": 1165,
+        "captured_at": "2026-11-03T17:58:23.777Z"
+      }
+    ]
   }
 }
