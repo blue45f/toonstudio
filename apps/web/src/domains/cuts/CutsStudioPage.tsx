@@ -379,6 +379,16 @@ export function CutsStudioPage() {
         className="my-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
       >
         <div className="flex flex-wrap items-center gap-1.5">
+          <img
+            src="/assets/site-experience/site-art-v1/motion-previews/atelier-interactive-stage-640.webp"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            width={56}
+            height={32}
+            className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
+          />
           <span className="font-extrabold text-accent">
             {t("RIVE · SPINE · LIVE2D · CASCADEUR 무빙툰 연출 프리셋:", "RIVE · SPINE · LIVE2D · CASCADEUR Moving-Toon Presets:")}
           </span>

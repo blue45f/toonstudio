@@ -82,6 +82,8 @@ describe("route purpose scene", () => {
     expect(region.getAttribute("data-route-visual-kind")).toBe("discover");
     expect(screen.getByText("작품·정보 탐색")).not.toBeNull();
     expect(screen.getByText("작품·소재·정보를 찾아 다음 작업에 활용합니다.")).not.toBeNull();
+    expect(screen.getByTestId("route-purpose-quick-flow").textContent).toContain("1.");
+    expect(screen.getByTestId("route-purpose-kinetic-vector")).not.toBeNull();
     expect(result.container.querySelectorAll(".route-purpose-scene__card")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "페이지 모션 일시정지" })).not.toBeNull();
   });

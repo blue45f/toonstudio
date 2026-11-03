@@ -261,6 +261,16 @@ export function CollaborationCrewDivisionPlanner({
         className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-raised/75 px-4 py-3 text-xs text-fg-2"
       >
         <div className="flex flex-wrap items-center gap-1.5">
+          <img
+            src="/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            width={56}
+            height={32}
+            className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
+          />
           <span className="font-extrabold text-accent">
             {bt("KITSU · LINEAR · FRAME.IO · MIRO 인계 SLA:", "KITSU · LINEAR · FRAME.IO · MIRO SLA:")}
           </span>

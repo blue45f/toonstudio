@@ -502,6 +502,53 @@ export function StudioCompetitorCapabilityPanel({
                 </li>
               ))}
             </ul>
+            <div
+              data-testid="competitor-visual-motion-strip"
+              className="mt-2.5 grid gap-2 rounded-lg border border-accent/25 bg-card/90 p-2 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
+            >
+              <div className="relative h-20 overflow-hidden rounded-md border border-line bg-panel" aria-hidden="true">
+                <img
+                  src={
+                    pageDomainId === "cuts-movingtoon" || pageDomainId === "asset-market"
+                      ? "/assets/site-experience/site-art-v1/motion-previews/atelier-interactive-stage-640.webp"
+                      : "/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
+                  }
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
+                  width={320}
+                  height={179}
+                  className="size-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col justify-between text-[0.62rem]">
+                <div className="font-bold text-accent">
+                  {locale === "ko"
+                    ? "한눈에 이해되는 3단계 시각 플로우 & 아틀리에 톤앤매너 통일"
+                    : "3-Step Instant Visual Flow & Unified Atelier Tone-and-Manner"}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-fg-2">
+                  <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
+                    {locale === "ko"
+                      ? "① STAGE 배지·키네틱 모션 목적 인지"
+                      : "1. STAGE Badge & Kinetic Motion"}
+                  </span>
+                  <span aria-hidden="true" className="text-accent">→</span>
+                  <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
+                    {locale === "ko"
+                      ? "② 1-Click 직무 프리셋·스마트 AI 실행"
+                      : "2. 1-Click Role Preset & Smart AI"}
+                  </span>
+                  <span aria-hidden="true" className="text-accent">→</span>
+                  <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
+                    {locale === "ko"
+                      ? "③ 다음 제작 공정 무손실 연결"
+                      : "3. Lossless Next-Stage Link"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div
