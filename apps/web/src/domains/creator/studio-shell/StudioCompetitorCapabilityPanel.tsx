@@ -20,6 +20,9 @@ import {
 } from "../studio-platform/studio-competitor-capability-evidence";
 import {
   matchStudioCompetitorWorkflowPreset,
+  resolveStudioPageReaBenchmark,
+  STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
+  type StudioPageDomainId,
 } from "../studio-workspace-recommendation";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
@@ -137,7 +140,10 @@ export function StudioCompetitorCapabilityPanel({
   const [roleFilter, setRoleFilter] = useState<"all" | CreatorRoleId>("all");
   const [densityMode, setDensityMode] =
     useState<StudioUiUxDensityModeId>("role-contextual-dock");
+  const [pageDomainId, setPageDomainId] =
+    useState<StudioPageDomainId>("studio-role-workspace");
   const activeDensitySpec = STUDIO_UIUX_ERGONOMICS_MODES[densityMode];
+  const activePageBenchmark = resolveStudioPageReaBenchmark(pageDomainId);
   const matchedWorkflows = useMemo(() => {
     const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
     if (roleFilter === "all") return byQuery;
@@ -422,6 +428,78 @@ export function StudioCompetitorCapabilityPanel({
                 ? `핵심 단축키·제스처: ${activeDensitySpec.keyShortcutsKo}`
                 : `Shortcuts & gestures: ${activeDensitySpec.keyShortcutsEn}`}
             </div>
+          </div>
+
+          <div
+            data-testid="competitor-page-by-page-matrix"
+            className="mt-3 rounded-xl border border-line bg-panel/60 p-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-1.5 text-[0.68rem]">
+              <span className="font-black text-fg">
+                {locale === "ko"
+                  ? "7대 페이지 도메인별 66+ 글로벌 유사 서비스 REA 벤치마크·내재화 매트릭스"
+                  : "Page-by-page 66+ global service REA benchmark & internalization matrix"}
+              </span>
+              <span
+                data-testid="competitor-page-dom-budget-badge"
+                className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-accent"
+              >
+                {locale === "ko"
+                  ? `${activePageBenchmark.routePath} · 관측 ${activePageBenchmark.observedDomNodes} DOM → 목표 ${activePageBenchmark.targetDomBudgetNodes} DOM`
+                  : `${activePageBenchmark.routePath} · Observed ${activePageBenchmark.observedDomNodes} DOM -> Target ${activePageBenchmark.targetDomBudgetNodes} DOM`}
+              </span>
+            </div>
+            <div
+              role="group"
+              aria-label={
+                locale === "ko"
+                  ? "페이지 도메인별 REA 벤치마크 선택"
+                  : "Select page domain REA benchmark"
+              }
+              className="mt-2 flex flex-wrap gap-1.5"
+            >
+              {STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS.map((pageItem) => {
+                const active = pageDomainId === pageItem.id;
+                return (
+                  <button
+                    key={pageItem.id}
+                    type="button"
+                    data-testid={`competitor-page-tab-${pageItem.id}`}
+                    aria-pressed={active}
+                    onClick={() => setPageDomainId(pageItem.id)}
+                    className={cn(
+                      "rounded-lg border px-2 py-1 text-[0.64rem] font-bold transition-colors",
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2 hover:border-accent/40 hover:text-fg",
+                    )}
+                  >
+                    {locale === "ko" ? pageItem.labelKo : pageItem.labelEn}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {activePageBenchmark.competitorServices.map((svc) => (
+                <span
+                  key={svc}
+                  className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2"
+                >
+                  {svc}
+                </span>
+              ))}
+            </div>
+            <ul className="mt-2 space-y-1 text-[0.64rem] leading-4 text-fg-2">
+              {(locale === "ko"
+                ? activePageBenchmark.internalizedCapabilitiesKo
+                : activePageBenchmark.internalizedCapabilitiesEn
+              ).map((cap) => (
+                <li key={cap} className="flex items-start gap-1.5">
+                  <span className="mt-0.5 text-accent">•</span>
+                  <span>{cap}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       ) : null}
