@@ -26,6 +26,93 @@ beforeEach(() => { vi.clearAllMocks(); window.sessionStorage.clear(); useI18n.se
   mocks.revision = 1; mocks.load.mockReset(); mocks.load.mockResolvedValue(record());
   mocks.save.mockReset(); mocks.save.mockResolvedValue({ aggregate: record("project-a", 2).aggregate }); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); window.sessionStorage.clear(); vi.useRealTimers(); });
+
+describe("공개 인증 세션 준비 경계", () => {
+  it("캐시된 계정이 있어도 준비 전에는 조회·poll·저장을 시작하지 않고 준비 후 한 번 읽는다", async () => {
+    const intervals = vi.spyOn(window, "setInterval");
+    const { result, rerender } = renderHook(({ ready }) => useProductionProjectSession("project-a", "owner", demo, { authReady: ready }),
+      { initialProps: { ready: false } });
+    expect(result.current.loading).toBe(true);
+    expect(result.current.error).toBeNull();
+    expect(result.current.aggregate).toBeNull();
+    expect(result.current.access.view).toBe(false);
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      document.dispatchEvent(new Event("visibilitychange"));
+      window.dispatchEvent(new Event("online"));
+      await result.current.refresh();
+      await expect(result.current.executeStrict(command, "저장")).rejects.toThrow();
+    });
+    expect(mocks.load).not.toHaveBeenCalled();
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(intervals).not.toHaveBeenCalled();
+    rerender({ ready: true });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(mocks.load).toHaveBeenCalledExactlyOnceWith("project-a");
+    expect(result.current.aggregate?.projectId).toBe("project-a");
+  });
+
+  it("준비를 기다리는 동안 프로젝트·계정이 바뀌면 마지막 scope만 처음 조회한다", async () => {
+    const { result, rerender } = renderHook(({ projectId, actor, ready }) => useProductionProjectSession(projectId, actor, demo, { authReady: ready }),
+      { initialProps: { projectId: "project-a", actor: "owner", ready: false } });
+    act(() => {
+      mocks.actor = "another-user"; mocks.revision += 1;
+      for (const notify of mocks.listeners) notify();
+      rerender({ projectId: "project-b", actor: "another-user", ready: false });
+    });
+    expect(result.current.loading).toBe(true);
+    expect(result.current.error).toBeNull();
+    expect(mocks.load).not.toHaveBeenCalled();
+    mocks.load.mockResolvedValue(record("project-b", 4));
+    rerender({ projectId: "project-b", actor: "another-user", ready: true });
+    await waitFor(() => expect(result.current.aggregate?.projectId).toBe("project-b"));
+    expect(mocks.load).toHaveBeenCalledExactlyOnceWith("project-b");
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  it("샘플은 인증 준비와 무관하게 편집되고 ready 전환에도 편집 상태를 유지한다", async () => {
+    const { result, rerender } = renderHook(({ ready }) => useProductionProjectSession("sample-project", "owner", demo, { authReady: ready }),
+      { initialProps: { ready: false } });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const initialRevision = result.current.aggregate?.revision;
+    if (initialRevision === undefined) throw new Error("샘플 프로젝트가 준비되지 않았습니다.");
+    await act(async () => result.current.executeStrict(command, "샘플 편집"));
+    expect(result.current.aggregate?.revision).toBe(initialRevision + 1);
+    rerender({ ready: true });
+    expect(result.current.aggregate?.revision).toBe(initialRevision + 1);
+    expect(mocks.load).not.toHaveBeenCalled();
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  it("같은 ID로 재로그인한 뒤 새로 읽고 이전 세대의 늦은 응답은 폐기한다", async () => {
+    const oldRead = deferred<ProductionProjectRecord>();
+    mocks.load.mockReturnValueOnce(oldRead.promise);
+    const { result, rerender } = renderHook(({ actor, ready }) => useProductionProjectSession("project-a", actor, demo, { authReady: ready }),
+      { initialProps: { actor: "owner" as string | null, ready: true } });
+    expect(mocks.load).toHaveBeenCalledTimes(1);
+    act(() => {
+      mocks.actor = null; mocks.revision += 1;
+      for (const notify of mocks.listeners) notify();
+      rerender({ actor: null, ready: false });
+    });
+    act(() => {
+      mocks.actor = "owner"; mocks.revision += 1;
+      for (const notify of mocks.listeners) notify();
+      rerender({ actor: "owner", ready: false });
+    });
+    expect(mocks.load).toHaveBeenCalledTimes(1);
+    expect(result.current.loading).toBe(true);
+    expect(result.current.aggregate).toBeNull();
+    mocks.load.mockResolvedValueOnce({ ...record("project-a", 5), access: { ...access, edit: false, manage: false } });
+    rerender({ actor: "owner", ready: true });
+    await waitFor(() => expect(result.current.aggregate?.revision).toBe(5));
+    expect(mocks.load).toHaveBeenCalledTimes(2);
+    await act(async () => oldRead.resolve(record("project-a", 99)));
+    expect(result.current.aggregate?.revision).toBe(5);
+    expect(result.current.access.edit).toBe(false);
+  });
+});
+
 describe("프로젝트·계정별 협업 요청 수명", () => {
   it("비로그인 실제 프로젝트는 조회하지 않고 권한을 닫는다", () => {
     const { result } = renderHook(() => useProductionProjectSession("project-a", null, demo));

@@ -214,6 +214,12 @@ export function persistClientSession(value: unknown, now: number = Date.now()): 
   return boundedSession;
 }
 
+/** 이전 클라이언트가 남긴 localStorage 세션 키만 조건부로 지운다. */
+export function clearLegacyLocalSessionStorage(): void {
+  const legacy = readStorage("local", SESSION_KEY);
+  if (legacy !== undefined && legacy !== null) removeStorage("local", SESSION_KEY);
+}
+
 export function clearClientSessionStorage(): void {
   removeStorage("session", SESSION_KEY);
   removeStorage("local", SESSION_KEY);

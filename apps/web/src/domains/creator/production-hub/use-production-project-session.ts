@@ -55,15 +55,16 @@ interface DemoAdapter {
   readonly create: () => ProductionProjectAggregate;
   readonly reduce: (current: ProductionProjectAggregate, command: ProductionClientCommand, translate?: ProductionDemoTranslate) => ProductionProjectAggregate;
 }
-export function useProductionProjectSession(projectId: string | undefined, actorId: string | null, demo: DemoAdapter) {
+export function useProductionProjectSession(projectId: string | undefined, actorId: string | null, demo: DemoAdapter, options: { readonly authReady?: boolean } = {}) {
   const t = useT();
   const inputs = useRef({ t, demo });
   inputs.current = { t, demo };
   const demoTranslate: ProductionDemoTranslate = useCallback((key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback), [t]);
   const staleMessage = t("productionHub.session.stale", "계정이나 프로젝트가 변경되어 요청을 중지했습니다. 현재 화면에서 다시 시도하세요.");
   const isDemo = !projectId || projectId === "sample-project";
+  const authReady = isDemo || options.authReady !== false;
   const authRevision = useSyncExternalStore(subscribeToSession, getAuthSessionRevision, getAuthSessionRevision);
-  const scope = JSON.stringify([projectId, actorId, authRevision]);
+  const scope = JSON.stringify([projectId, actorId, authRevision, authReady]);
   const empty: Snapshot = { scope, record: null, loading: true, refreshing: false, error: null, notice: null, saveState: "idle" };
   const [snapshot, setSnapshot] = useState<Snapshot>(empty);
   const state = snapshot.scope === scope ? snapshot : empty;
@@ -80,6 +81,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
   const refreshRef = useRef<() => Promise<void>>(async () => undefined);
   useEffect(() => {
     const epoch = ++generation.current;
+    refreshRef.current = async () => undefined;
     const translate = (key: string, fallback?: string) => inputs.current.t(key, fallback);
     const inMemory = getAuthSession()?.user.id === actorId && previousActor.current === actorId && previousProject.current === projectId ? unconfirmedWrite.current : null;
     if (previousActor.current && previousActor.current !== actorId) clearProductionCommandRecoveriesForActor(previousActor.current);
@@ -97,6 +99,11 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       authority.current = record;
       setSnapshot({ scope, record, loading: false, refreshing: false, error: null, notice: null, saveState: "idle" });
       return () => { generation.current += 1; authority.current = null; };
+    }
+    // 캐시된 계정 ID만으로 조회하지 않고 공개 세션의 초기 확인을 기다린다.
+    if (!authReady) {
+      setSnapshot({ scope, record: null, loading: true, refreshing: false, error: null, notice: null, saveState: "idle" });
+      return () => { generation.current += 1; reads.current += 1; authority.current = null; };
     }
     setSnapshot({ scope, record: null, loading: Boolean(actorId), refreshing: false,
       error: actorId ? null : "로그인 후 제작 프로젝트를 열어 주세요.", notice: null, saveState: "idle" });
@@ -193,12 +200,12 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       window.removeEventListener("beforeunload", warn);
       channel.current?.close(); channel.current = null;
     };
-  }, [scope, projectId, actorId, authRevision, isDemo]);
+  }, [scope, projectId, actorId, authRevision, isDemo, authReady]);
   const queueCommand = useCallback((command: ProductionClientCommand, message: string, strict: boolean, options?: ProductionCommandExecutionOptions): Promise<void> => {
     const capturedCommand = command.type === "configure-collaboration" ? structuredClone(command) : command;
     const requestedRevision = options?.expectedRevision;
     const epoch = generation.current, session = getAuthSessionRevision(), batch = queueEpoch.current;
-    const current = () => authorityScope.current === scope && generation.current === epoch && getAuthSessionRevision() === session && session === authRevision;
+    const current = () => authReady && authorityScope.current === scope && generation.current === epoch && getAuthSessionRevision() === session && session === authRevision;
     const run = async () => {
       if (!current()) { if (strict) throw new Error(staleMessage); return; }
       if (batch !== queueEpoch.current) { if (strict) throw new Error(t("productionHub.session.previousSaveFailed", "이전 저장이 실패하여 대기 중인 변경을 적용하지 않았습니다. 최신 내용을 확인한 뒤 다시 저장하세요.")); return; }
@@ -278,7 +285,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
     const operation = queue.current.then(run, run);
     queue.current = operation.catch(() => undefined);
     return operation;
-  }, [scope, authRevision, isDemo, projectId, actorId, demo, demoTranslate, staleMessage, t]);
+  }, [scope, authRevision, isDemo, authReady, projectId, actorId, demo, demoTranslate, staleMessage, t]);
   const execute = useCallback((command: ProductionClientCommand, message: string) => queueCommand(command, message, false), [queueCommand]);
   const executeStrict = useCallback((command: ProductionClientCommand, message: string, options?: ProductionCommandExecutionOptions) => queueCommand(command, message, true, options), [queueCommand]);
   const refresh = useCallback(() => refreshRef.current(), []);

@@ -15,6 +15,7 @@ import type { ProductionProjectSurface } from "./production-project-surfaces";
 import { usePreferredRoleLens } from "./use-preferred-role-lens";
 import { useProductionProjectSession } from "./use-production-project-session";
 
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { SitePageArt } from "@/domains/legal/public/site-page-art";
@@ -106,7 +107,8 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
   const actorId = useApp((state) => state.userId);
-  const project = useProductionProjectSession(projectId, actorId, productionDemoAdapter);
+  const { ready: authReady } = useSession();
+  const project = useProductionProjectSession(projectId, actorId, productionDemoAdapter, { authReady });
   const [roleLens, setRoleLens] = usePreferredRoleLens("producer");
   const bt = useBilingual("ProductionProjectPage");
 
