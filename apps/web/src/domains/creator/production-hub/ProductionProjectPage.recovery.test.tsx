@@ -6,6 +6,7 @@ import { ProductionProjectPage } from "./ProductionHubPage";
 import { createProductionDemoProject } from "./production-demo";
 import type { ScopeRef } from "@toonstudio/core/production";
 import { useApp } from "@/shared/lib/store";
+import { SessionContext } from "@/domains/auth/public/session/auth-session-store";
 
 const mocks = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn() }));
 vi.mock("./production-api", async (load) => ({ ...await load<typeof import("./production-api")>(),
@@ -34,11 +35,27 @@ const project = { aggregate: { ...original, projectId: actualProjectId,
 beforeAll(async () => { await import("./ProductionReviewSurface"); });
 beforeEach(() => { vi.clearAllMocks(); useApp.setState({ userId: "local-test-owner" }); mocks.load.mockResolvedValue(project); });
 afterEach(() => { cleanup(); useApp.setState({ userId: null }); });
-function mount() {
-  return render(<MemoryRouter initialEntries={["/production/projects/actual-route-project/review"]}><Routes>
+function RecoveryRoute({ authReady = true }: { readonly authReady?: boolean }) {
+  const userId = useApp((state) => state.userId);
+  return <SessionContext.Provider value={userId
+    ? { data: { user: { id: userId } }, ready: authReady, status: "authenticated", update: async () => null }
+    : { data: null, ready: authReady, status: "unauthenticated", update: async () => null }}>
+    <MemoryRouter initialEntries={["/production/projects/actual-route-project/review"]}><Routes>
     <Route path="/production/projects/:projectId/review" element={<ProductionProjectPage surface="review" />} />
-  </Routes></MemoryRouter>);
+    </Routes></MemoryRouter>
+  </SessionContext.Provider>;
 }
+function mount() { return render(<RecoveryRoute />); }
+it("인증 준비 전에는 실제 프로젝트를 조회하지 않고 준비 뒤 한 번 조회한다", async () => {
+  const view = render(<RecoveryRoute authReady={false} />);
+  await act(async () => {});
+  expect(screen.getByRole("status").getAttribute("data-route-pending")).toBe("production-project");
+  expect(screen.queryByRole("textbox", { name: "검수 질문" })).toBeNull();
+  expect(mocks.load).not.toHaveBeenCalled();
+  view.rerender(<RecoveryRoute />);
+  await screen.findByRole("textbox", { name: "검수 질문" });
+  expect(mocks.load).toHaveBeenCalledTimes(1);
+});
 it("실제 검수 페이지 연결에서 저장 실패는 초안을 삭제하지 않는다", async () => {
   mocks.save.mockRejectedValue(new Error("검수 저장 서버 오류"));
   mount();
