@@ -1,0 +1,52 @@
+# 손가락 편집 실행 취소 연결 — 2026-11-03
+
+- 상태: current, 이번 변경과 실제 검증 기록
+- 기준 main: `295432ac0` (보안 PR #2675 포함)
+- 손가락 축 수정 PR #2676과 별도 브랜치·변경이다.
+- 클라우드 `/workspace/toonstudio`에서 작업했으며 운영 배포·유료 서비스 변경은 없다.
+
+## 원인과 변경
+
+셰이퍼의 실행 취소 버튼은 V3 문서 authority의 이력을 읽는다.
+반면 손가락 슬라이더는 기존 호스트의 `updateFingerCurl`을 직접 호출했다.
+이 경로는 호스트 상태만 바꾸고 V3 문서 명령을 만들지 않아 실행 취소가 활성화되지 않았다.
+
+기존 `useCharacterAuthoringInputs`의 사진·웹캠 입력 경로와 같은 방식으로 손가락 입력을
+분리 뼈대에서 선계산하고 V3 명령 한 건으로 확정한다. 같은 값은 이력을 만들지 않으며
+잠긴 관절, 사용 불가능한 상태, 웹캠 추적 중에는 원본을 변경하지 않는다.
+
+표시값도 V3 포즈에서 읽는다. 기존 변형 저장이 옛 호스트 값을 저장하지 않도록
+모델 축의 Quaternion을 저작 축 Euler로 역변환해 호환 호스트 상태에 반영한다.
+이는 문서의 재생 결과이며 별도 실행 취소 이력을 만들지 않는다.
+엄지 내전·모델별 굽힘 방향과 기존 실행기의 XYZ 순서를 동일하게 적용한다.
+손가락이 생략된 이전 V3로 undo하면 해당 모델 세션의 원래 호스트 값을 복원한다.
+웹캠 추적 중에는 이 동기화를 중지해 실시간 미리보기를 덮어쓰지 않는다.
+
+## 검증
+
+관련 Vitest 5개 파일 23개 검사 통과:
+
+- `use-character-authoring-inputs.test.tsx`: 슬라이더 명령, 한 건의 이력, 연속 편집,
+  undo·redo, 새 편집의 redo 무효화, 잠금, 같은 값, 저장·복원, 이전 V3의 호환 상태,
+  웹캠 미리보기 보존과 사용 불가 상태.
+  새 이력 문구는 기존 `useBilingual` 경로로 한글·영어 원문과 안정된 번역 키를 등록하며,
+  영어 문구가 이력에 표시되는 것도 확인했다.
+- `character-finger-authoring-projection.test.ts`: 기본 8개 실제 VRM의 양손·엄지를
+  포함한 저작 축 왕복, 실제 모델 불변, 이전 문서의 fallback 보존.
+- `character-pose-authoring-input.test.ts`, `use-character-normalized-fingers.test.tsx`,
+  `use-character-authoring-authority.test.tsx`: 기존 포즈·정규화 재생·authority 회귀 검사.
+
+실제 Chromium + SwiftShader에서 `/studio/character`를 열고 다음을 확인했다.
+
+1. 왼손 검지 초기값 19도 → 35도 입력 후 실행 취소 버튼 활성화.
+2. 실행 취소 한 번으로 19도, 다시 실행 한 번으로 35도 복원.
+3. 변형 저장 후 SQLite/OPFS의 `leftIndexProximal`은
+   `[0, 0, -0.6108652381980153]`으로 35도와 일치.
+4. 새로고침 후 셰이퍼의 왼손 검지 값도 35도 유지.
+5. 브라우저 `pageerror` 없음. 개발 API 서버 미기동에 따른 상태 요청 502는 존재한다.
+
+화면과 성공 로그는 `/workspace/vrm-finger-history-evidence/`에 보관한다.
+`pnpm harness:verify`의 하네스·lint·시크릿·아키텍처·전체 웹 및 API 타입 검사도 통과했다.
+이전 작업에서 확인한 환경 설정대로 개발 서버를 종료하고 디스크 기반 패키지 캐시와
+14,500MiB Node 힙을 사용했다. 검사나 훅을 우회하지 않았다.
+실제 GPU·모바일·모든 고급 편집 조합과 모든 업로드 모델은 이번 검증 범위 밖이다.
