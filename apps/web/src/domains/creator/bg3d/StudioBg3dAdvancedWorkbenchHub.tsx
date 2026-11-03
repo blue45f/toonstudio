@@ -273,9 +273,10 @@ export function StudioBg3dAdvancedWorkbenchHub({
   };
 
   const handleApplySceneCamera = (camera: StudioBg3dCameraSettings, labelKo: string) => {
+    if (disabled || (!proSuiteRuntime && !onApplySceneCamera)) return;
     proSuiteRuntime?.onApplyCameraView(camera);
-    setLastActionSummary(labelKo);
     onApplySceneCamera?.(camera, labelKo);
+    setLastActionSummary(labelKo);
   };
 
   const handleSyncSceneLineArt = (enabled: boolean, summaryKo: string) => {
@@ -483,7 +484,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
             }
             onStatusChange={setLastActionSummary}
             onInsertScenePrimitives={handleInsertScenePrimitives}
-            onApplySceneCamera={handleApplySceneCamera}
+            onApplySceneCamera={proSuiteRuntime || onApplySceneCamera ? handleApplySceneCamera : undefined}
             onSyncSceneLineArt={handleSyncSceneLineArt}
           />
         ) : null}
@@ -603,7 +604,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
               sceneGlbExportUnavailableReason={sceneGlbExportUnavailableReason}
               onExportCurrentSceneGlb={onExportCurrentSceneGlb}
             onExecuteSelectionArray={onExecuteSelectionArray ? handleExecuteSelectionArray : undefined}
-            onApplySceneCamera={handleApplySceneCamera}
+            onApplySceneCamera={proSuiteRuntime || onApplySceneCamera ? handleApplySceneCamera : undefined}
           />
         ) : null}
 

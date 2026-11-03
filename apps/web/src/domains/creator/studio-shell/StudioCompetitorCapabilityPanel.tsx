@@ -11,6 +11,10 @@ import { useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 
 import {
+  WEBTOON_E2E_ROLE_PIPELINE_STAGES,
+  type WebtoonPipelineStageId,
+} from "../manga-toolkit/webtoon-role-pipeline-orchestrator";
+import {
   STUDIO_COMPETITOR_CAPABILITY_EVALUATION,
   STUDIO_COMPETITOR_CAPABILITY_RECORDS,
 } from "../studio-platform/studio-competitor-capability-evidence";
@@ -19,7 +23,35 @@ import {
 } from "../studio-workspace-recommendation";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
+import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
+
 export type StudioCompetitorCapabilityLocale = "ko" | "en";
+
+const COMPETITOR_ROLE_FILTER_CHIPS: readonly {
+  readonly id: "all" | CreatorRoleId;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly roles: readonly CreatorRoleId[];
+}[] = Object.freeze([
+  { id: "all", labelKo: "전체 직군", labelEn: "All roles", roles: [] },
+  { id: "story", labelKo: "글·각색·콘티", labelEn: "Story & Board", roles: ["story", "adaptation", "associate-writer", "planner", "storyboard"] },
+  { id: "background", labelKo: "3D 배경·어시", labelEn: "3D Background", roles: ["background", "background-assistant", "three-d"] },
+  { id: "line-art", labelKo: "메인 선화·선화 어시", labelEn: "Line Art", roles: ["line-art", "line-assistant", "associate-artist", "character", "assistant"] },
+  { id: "color", labelKo: "밑색·명암·후보정", labelEn: "Color & FX", roles: ["color", "flat-color-assistant", "shading-assistant", "effect-assistant"] },
+  { id: "lettering", labelKo: "식자·효과음", labelEn: "Lettering", roles: ["lettering", "lettering-assistant", "localization"] },
+  { id: "producer", labelKo: "편집자·PD 검수", labelEn: "PD Review", roles: ["editor", "producer", "reviewer", "educator"] },
+]);
+
+const PIPELINE_STAGE_EN: Readonly<Record<WebtoonPipelineStageId, { readonly label: string; readonly summary: string }>> = {
+  "story-script": { label: "Story & adaptation", summary: "Plan the script, worldbuilding and dialogue." },
+  "storyboard-conte": { label: "Storyboard", summary: "Plan panel composition and scroll pacing." },
+  "bg3d-spatial": { label: "3D backgrounds", summary: "Plan scenery, camera framing and lighting." },
+  "line-art-ink": { label: "Line art & cleanup", summary: "Divide lead artwork and assistant cleanup tasks." },
+  "flat-color-mask": { label: "Flat color", summary: "Plan part colors and masking tasks." },
+  "shading-fx-post": { label: "Shading & effects", summary: "Plan lighting, finishing and motion references." },
+  "lettering-sfx": { label: "Lettering & SFX", summary: "Plan dialogue, balloons and sound-effect lettering." },
+  "pd-editorial-review": { label: "Editorial review", summary: "Review the work and prepare delivery checks." },
+};
 
 export function StudioCompetitorCapabilityPanel({
   locale,
@@ -37,10 +69,13 @@ export function StudioCompetitorCapabilityPanel({
     (record) => record.externalValidationRequired,
   );
   const [toolQuery, setToolQuery] = useState("");
-  const matchedWorkflows = useMemo(
-    () => matchStudioCompetitorWorkflowPreset(toolQuery),
-    [toolQuery],
-  );
+  const [roleFilter, setRoleFilter] = useState<"all" | CreatorRoleId>("all");
+  const matchedWorkflows = useMemo(() => {
+    const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
+    if (roleFilter === "all") return byQuery;
+    const selectedRoles = COMPETITOR_ROLE_FILTER_CHIPS.find((chip) => chip.id === roleFilter)?.roles ?? [];
+    return byQuery.filter((item) => item.recommendedRoles.some((role) => selectedRoles.includes(role)));
+  }, [toolQuery, roleFilter]);
 
   const handleSelectWorkspace = (workspaceId: StudioDefaultWorkspaceId) => {
     onSelectWorkspacePreset?.(workspaceId);
@@ -131,6 +166,38 @@ export function StudioCompetitorCapabilityPanel({
               />
             </label>
           </div>
+          <p className="mt-2 text-[0.7rem] leading-4 text-fg-3">
+            {locale === "ko"
+              ? "아래는 외부 도구에서 참고한 작업 방식입니다. 배치를 선택한 뒤 작업실에서 제공되는 도구를 확인하세요."
+              : "Reference workflows help you choose a layout. Check the tools available in the workspace before starting."}
+          </p>
+          <div
+            data-testid="competitor-role-filter-bar"
+            className="mt-2.5 flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={locale === "ko" ? "직군별 작업공간 필터" : "Filter workspaces by role"}
+          >
+            {COMPETITOR_ROLE_FILTER_CHIPS.map((chip) => {
+              const active = roleFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  data-testid={`competitor-role-filter-${chip.id}`}
+                  aria-pressed={active}
+                  onClick={() => setRoleFilter(chip.id)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-[0.68rem] font-bold transition-colors",
+                    active
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
+                  )}
+                >
+                  {locale === "ko" ? chip.labelKo : chip.labelEn}
+                </button>
+              );
+            })}
+          </div>
           {matchedWorkflows.length === 0 ? <p role="status" className="mt-3 text-sm text-fg-2">{locale === "ko" ? "일치하는 작업공간이 없습니다." : "No matching workspace."}</p> : null}
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {matchedWorkflows.map((item) => {
@@ -157,6 +224,9 @@ export function StudioCompetitorCapabilityPanel({
                     <p className="mt-1.5 text-[0.7rem] leading-4 text-fg-2">
                       {locale === "ko" ? item.summary : "Suggested layout; review the available tools before switching."}
                     </p>
+                    {locale === "ko" && item.keyCapabilities.length > 0 ? (
+                      <p className="mt-2 text-[0.62rem] font-semibold text-fg-3">참고한 외부 작업 방식</p>
+                    ) : null}
                     <div className="mt-2 flex flex-wrap gap-1">
                       {(locale === "ko" ? item.keyCapabilities.slice(0, 3) : []).map((cap) => (
                         <span
@@ -187,6 +257,43 @@ export function StudioCompetitorCapabilityPanel({
                 </div>
               );
             })}
+          </div>
+          <div
+            data-testid="competitor-role-pipeline-bridge"
+            className="mt-3 rounded-xl border border-line bg-panel/60 p-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-1 text-[0.68rem]">
+              <span className="font-black text-fg">
+                {locale === "ko"
+                  ? "8단계 웹툰 직군 작업분담·인계 계획"
+                  : "8-stage webtoon role work and handoff plan"}
+              </span>
+              <span className="font-mono text-[0.62rem] text-accent">
+                {locale === "ko"
+                  ? "글·각색 → 콘티 → 3D 배경 → 선화·어시 → 밑색 → 명암·효과 → 식자 → PD 검수"
+                  : "Script → Storyboard → 3D BG → Line/Assist → Flat → Shade/FX → Lettering → PD"}
+              </span>
+            </div>
+            <p className="mt-1 text-[0.65rem] leading-4 text-fg-3">
+              {locale === "ko"
+                ? "공정과 담당 레이어를 정리하는 미리보기입니다. 개인 직무 선택으로 프로젝트 권한이나 실제 레이어 잠금이 바뀌지 않습니다."
+                : "Preview production stages and layer assignments. Choosing a personal role does not change project permissions or actual layer locks."}
+            </p>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-8">
+              {WEBTOON_E2E_ROLE_PIPELINE_STAGES.map((stg) => (
+                <div
+                  key={stg.id}
+                  className="rounded-lg border border-line bg-card px-2 py-1 text-[0.62rem]"
+                >
+                  <div className="font-bold text-fg">
+                    {locale === "ko" ? stg.labelKo : `${stg.stepNumber}. ${PIPELINE_STAGE_EN[stg.id].label}`}
+                  </div>
+                  <div className="mt-0.5 truncate text-[0.58rem] text-fg-3">
+                    {locale === "ko" ? stg.summaryKo : PIPELINE_STAGE_EN[stg.id].summary}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}

@@ -12,6 +12,7 @@ import { useMemo, useState, type ReactElement } from "react";
 import { studioSegmentChipClass } from "../studio-panel-ui";
 
 import { StudioHiggsfieldMangakaPanel } from "./StudioHiggsfieldMangakaPanel";
+import { StudioWebtoonRolePipelineSubPanel } from "./StudioWebtoonRolePipelineSubPanel";
 import {
   BLANKCOMIC_12_PANEL_SHAPES,
   BLANKCOMIC_30_PANEL_TEMPLATES,
@@ -37,7 +38,8 @@ type ProSuiteMode =
   | "csp-v5"
   | "medibang-paletta"
   | "canva-strip"
-  | "higgsfield-mangaka";
+  | "higgsfield-mangaka"
+  | "role-pipeline";
 
 export function StudioBlankComicProDrawingSubPanel(): ReactElement {
   const [mode, setMode] = useState<ProSuiteMode>("blankcomic");
@@ -154,6 +156,7 @@ export function StudioBlankComicProDrawingSubPanel(): ReactElement {
             { id: "medibang-paletta", label: "메디방 & 팔레타 (클라우드 협업/제스처)" },
             { id: "canva-strip", label: "캔바 만화 메이커 (4컷 템플릿/폰트)" },
             { id: "higgsfield-mangaka", label: "Higgsfield Mangaka (캐스트시트·WT-* 스테이징)" },
+            { id: "role-pipeline", label: "직군별 분업 계획·권한 예시" },
           ] as const
         ).map((item) => (
           <button
@@ -381,6 +384,7 @@ export function StudioBlankComicProDrawingSubPanel(): ReactElement {
       ) : null}
 
       {mode === "higgsfield-mangaka" ? <StudioHiggsfieldMangakaPanel /> : null}
+      {mode === "role-pipeline" ? <StudioWebtoonRolePipelineSubPanel /> : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2, Sparkles } from "lu
 import { useEffect, useMemo, useState } from "react";
 
 import { creatorRoleWorkspacePreset } from "../creator-role-workspace-presets";
+import { resolveRolePipelinePreset, type WebtoonPipelineStageId } from "../manga-toolkit/webtoon-role-pipeline-orchestrator";
 
 import { updateMyProfile, type MeProfile } from "@/platform/me-client";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -83,6 +84,17 @@ const ONBOARDING_ROLE_CATEGORIES: readonly {
 ];
 
 const STEP_LABELS = ["직무", "전문 분야", "사용 목적", "공개 범위"] as const;
+const ROLE_WORK_PLAN_MENUS_EN: Readonly<Record<WebtoonPipelineStageId, readonly string[]>> = {
+  "story-script": ["Script and worldbuilding notes", "Character reference sheets", "Dialogue length review", "Source and adaptation comparison"],
+  "storyboard-conte": ["Vertical panel staging", "Panel spacing and rhythm", "Camera shot planning", "Balloon placement planning"],
+  "bg3d-spatial": ["Openings and molding", "Two-point camera framing", "Interior cutaway planning", "Line and tone pass planning"],
+  "line-art-ink": ["Lead artwork protection planning", "Line cleanup", "Stroke stabilization", "Reference review"],
+  "flat-color-mask": ["Line-reference fill planning", "Character color references", "Part mask planning", "Unpainted-area review"],
+  "shading-fx-post": ["Clipped shading", "Light and atmosphere references", "Focus and speed-line planning", "Motion reference planning"],
+  "lettering-sfx": ["Balloon placement review", "Text readability checks", "Genre font references", "Localized dialogue planning"],
+  "pd-editorial-review": ["Preflight checklist", "Panel feedback notes", "Delivery slice review", "Approval and protection planning"],
+};
+
 function patchProfile(
   profile: CreatorRoleProfile,
   patch: Partial<CreatorRoleProfile>,
@@ -126,6 +138,11 @@ export function CreatorRoleOnboarding({
     () => creatorRoleWorkspacePreset(draft.primaryRole),
     [draft.primaryRole],
   );
+  const selectedRolePipeline = useMemo(
+    () => (draft.primaryRole ? resolveRolePipelinePreset(draft.primaryRole) : null),
+    [draft.primaryRole],
+  );
+  const selectedRoleDefinition = creatorRoleDefinition(draft.primaryRole);
 
   const persist = async (next: CreatorRoleProfile, dismiss: boolean) => {
     const previous = profile;
@@ -311,11 +328,44 @@ export function CreatorRoleOnboarding({
                   {locale === "ko" ? "선택한 직무의 추천 환경" : "Suggested workspace for your role"}
                 </p>
                 <p className="mt-1 text-xs font-bold text-fg">
-                  {selectedRolePreset.reason}
+                  {locale === "ko"
+                    ? selectedRolePreset.reason
+                    : selectedRoleDefinition ? creatorText(selectedRoleDefinition.description, locale) : "Review the suggested workspace for this role."}
                 </p>
                 <p className="mt-1 text-[0.72rem] text-fg-2">
                   {locale === "ko" ? "참고 도구: " : "Reference tools: "}{selectedRolePreset.familiarTools.join(" · ")}
                 </p>
+                {selectedRolePipeline ? (
+                  <div
+                    data-testid="onboarding-role-rbac-preview"
+                    className="mt-2 rounded-xl border border-line bg-card/80 p-2.5 text-[0.7rem]"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+                      <span>{locale === "ko" ? "직무별 작업분담 미리보기" : "Role work plan preview"}</span>
+                      <span className="font-mono text-[0.65rem] text-accent">
+                        {locale === "ko"
+                          ? `담당 그룹 예시 ${selectedRolePipeline.allowedLayerGroups.length}개 · 다른 담당 그룹 ${selectedRolePipeline.lockedLayerGroups.length}개`
+                          : `${selectedRolePipeline.allowedLayerGroups.length} suggested ${selectedRolePipeline.allowedLayerGroups.length === 1 ? "group" : "groups"} · ${selectedRolePipeline.lockedLayerGroups.length} other groups`}
+                      </span>
+                    </div>
+                    <p className="mt-1 leading-4 text-fg-2">
+                      {locale === "ko"
+                        ? "개인 직무는 추천 환경을 정하는 데 사용합니다. 실제 편집 권한과 레이어 잠금은 프로젝트의 팀 설정에서 확인하세요."
+                        : "Your personal role guides workspace suggestions. Check the project's team settings for actual edit permissions and layer locks."}
+                    </p>
+                    <p className="mt-2 text-fg-3">{locale === "ko" ? "계획할 업무 항목" : "Tasks to plan"}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(locale === "ko" ? selectedRolePipeline.tailoredMenusKo : ROLE_WORK_PLAN_MENUS_EN[selectedRolePipeline.stage.id]).map((menu) => (
+                        <span
+                          key={menu}
+                          className="rounded border border-accent/30 bg-accent-soft/40 px-1.5 py-0.5 text-[0.64rem] font-semibold text-fg"
+                        >
+                          {menu}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             <label className="mt-3 block text-xs font-semibold text-fg-2">

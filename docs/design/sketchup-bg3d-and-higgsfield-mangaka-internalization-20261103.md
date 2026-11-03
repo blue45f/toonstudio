@@ -2,6 +2,8 @@
 
 ## 1. 개요 및 역공학 근거 (`current`)
 
+상태 구분: 1~3절은 기존 구현과 외부 관측을 기록한 이력이다. 아래 Evidence ID와 외부 서비스의 현재 기능·규격을 이번 후속 검토에서 다시 관측했다고 주장하지 않는다. 새 15파일의 실제 동작 범위는 4절이 정본이며, 외부 제품의 기능 설명을 ToonStudio의 구현·렌더 통합 검증 결과로 간주하지 않는다.
+
 본 문서는 `rea` MCP 서버(CDP 엔드포인트 `http://127.0.0.1:9223` 및 정적 JS 애플리케이션 그래프 분석기)를 사용하여 **SketchUp 3D 배경 제작·연출 생태계(SketchUp for Web, 3D Warehouse, ACON3D, Section Planes, Real-World Shadows, Scenes, Styles, Push/Pull, Tags, Outliner)**와 **Higgsfield Mangaka (`https://higgsfield.ai/mangaka`)**를 역공학하고 툰스튜디오(`apps/web/src/domains/creator/`)에 내재화한 설계 및 구현 내역을 기록한다.
 
 - **증거 레지스트리**: `docs/evidence/rea-sketchup-and-higgsfield-mangaka-20261103.json`
@@ -53,3 +55,46 @@
 - `apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-webtoon-staging-bridge.ts`
 - `apps/web/src/domains/creator/bg3d/StudioBg3dSketchUpWebtoonStagingSection.tsx`
 - `apps/web/src/domains/creator/bg3d/StudioBg3dSpatialModelerSections.tsx`
+
+---
+
+## 4. 직무별 공정 계획과 프리셋 후속 검토
+
+### 4.1 기존 외부 참고 기록 (`legacy exception`)
+
+다음 목록은 보존 커밋 `55c8afa11955a32819977598f474f87dac685a06`에 포함된 참고 대상과 관측 ID다. 원본 값은 보존하며, 이번 검토의 새 REA 실행이나 현재 사이트 사양 검증, 해당 기능의 제품 통합 증거로 보고하지 않는다.
+- **Clip Studio Paint EX (`ev_865bd9f8...`)**: 3D LT 선·톤 추출, Sub View 레퍼런스 컬러 피커, Story Editor 멀티페이지 대본 동기화, TeamWork 페이지 잠금.
+- **Wonder Unit Storyboarder (`ev_42478694...`)**: 3D Shot Generator 카메라 지시문, 대사·액션 노트 스트립 매핑.
+- **Blender Story Artist Grease Pencil (`ev_5467d629...`)**: 3D 카메라 평면 위 2D 드로잉 하이브리드 레이아웃.
+- **ACON3D ABLE (`ev_e8700e1d...`)**: 웹툰 3D 배경 후보정(대기원근 Z-Depth 안개, AO 그림자 소프트니스) 및 직군별 3D 렌즈 분리.
+- **WEBTOON Canvas Creators 101 (`ev_908441f5...`)**: 800×1280px 세로 스크롤 슬라이스 검증 및 8단계 웹툰 전문 직군 분업 체계.
+- **Rive (`ev_ea91a96e...`)**: 인터랙티브 무빙툰 상태머신 트리거(`scroll-parallax`, `tap-shake`, `sfx-bounce`).
+
+### 4.2 현재 구현 (`current`)
+
+`webtoon-role-pipeline-orchestrator.ts`와 `StudioWebtoonRolePipelineSubPanel.tsx`는 **분업 계획·권한 예시**다. 18개 그룹은 정적 레이어 분류이며 실제 원고에 18개 잠금 레이어를 만드는 기능이 아니다. 화면에서 고른 개인 직무는 인증 증거가 아니며, 실제 편집 권한은 기존 서버의 문서 접근 권한과 팀 설정을 따른다.
+
+공정 순서는 실제 `WEBTOON_E2E_ROLE_PIPELINE_STAGES`와 같다.
+
+| 단계 | 계획 공정 | 예시 그룹 |
+| --- | --- | --- |
+| 1 | 글·각색 대본 | `story-notes`, `dialogue-draft` |
+| 2 | 콘티·연출 | `storyboard`, `panel-frame`, `camera-guide` |
+| 3 | 3D 배경·LT | `background-3d`, `background-line`, `background-tone` |
+| 4 | 메인 선화·보조 펜터치 | `main-lineart`, `assistant-line` |
+| 5 | 밑색·마스크 | `flat-color`, `color-mask` |
+| 6 | 명암·효과 | `shading`, `fx-overlay` |
+| 7 | 식자·효과음 | `balloon`, `dialogue-text`, `sfx-typography` |
+| 8 | 편집·PD 검수 | `review-annotation` |
+
+- 계획 안의 인계는 현재 공정의 담당 직무와 총괄 직무를 검사하고 누적 동결 그룹을 예시 판정에 반영한다. 최종 동결 이후 반복 실행은 새 이력을 만들지 않는다. 이 검사는 서버 인가를 대신하지 않는다.
+- 계획의 직무·단계·인계 기록은 패널 안의 지역 상태다. 탭을 떠나면 초기화되며 실제 원고, 저장 데이터, 담당자와 작업공간을 바꾸지 않는다.
+- 기존 독립 온보딩 컴포넌트는 직무별 작업분담을 미리 보여 주고 자체 프로필 저장 계약을 유지한다. 현재 설정 화면에 중복 프로필 편집기를 새로 마운트하지 않으며 해당 컴포넌트의 검증은 단위 범위로 구분한다.
+- 공개 진입점은 `/settings/role?tab=workspace`의 **분업 계획·만화 프리셋 펼치기**다. 사용자 의도 시점에만 도구 청크를 불러오며 계획·만화 예제 탭을 전환할 수 있다. 경쟁사 참고 패널은 직군과 검색어를 함께 필터링하고, 선택은 기존 `/studio/canvas?roleWorkspace=<검증한 배치 ID>`로 정상 이동한다. 실제 메뉴와 참고 패널은 검색 별칭을 공유한다.
+- Mangaka의 장르 프리셋은 스타일·포털·폭·여백·글자 크기를 바꾸어 **패널 안의 스트립 계산**을 갱신한다. 포털 참조 너비는 로컬 `MANGAKA_PORTAL_SPECS`에서 읽으며 현재 외부 포털 제출 규격의 보증이 아니다. 기존 계산 엔진은 800px 정규화 캔버스를 사용하므로 포털 선택만으로 계산 캔버스의 너비를 바꾸거나 출고 파일을 생성하지 않는다.
+- 로어북은 샘플 대본 참조이고 무빙툰 트리거는 계획 선택이다. 외부 로어북 동기화, Rive·Spine·Live2D 연결, 실제 원고·카메라·내보내기 효과 적용은 실행하지 않는다.
+- BG3D 렌즈는 스타일·태그·카메라·태양광 설정 프리셋이다. 장면 배치와 카메라 변경은 기존 명시적 적용 버튼을 사용한다. 삽입 콜백이 `false`를 반환하면 성공으로 표시하지 않는다. 편집 권한, 동선 잠금, AO 또는 Grease Pencil 통합을 새로 수행하지 않는다.
+
+### 4.3 후속 통합 대상 (`target`)
+
+실제 문서 레이어 권한, 서버 담당자 인계·승인·영속성, 외부 로어북과 무빙툰 렌더 연결은 별도의 권한·저장·동시 편집 계약 검토가 필요한 후속 범위다. 이 변경은 해당 경로를 미리 활성화하거나 새 권한 정본을 만들지 않는다. 검증 결과는 해당 PR의 정확한 코드 입력과 로컬 영수증에 별도 기록한다.

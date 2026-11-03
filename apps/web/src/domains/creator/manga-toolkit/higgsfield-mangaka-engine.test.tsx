@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 import { StudioBlankComicProDrawingSubPanel } from "./StudioBlankComicProDrawingSubPanel";
 import { StudioHiggsfieldMangakaPanel } from "./StudioHiggsfieldMangakaPanel";
@@ -24,6 +26,7 @@ import {
 } from "./higgsfield-mangaka-engine";
 
 describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
+  beforeEach(() => useI18n.setState({ lang: "ko" }));
   it("exposes 4 visual styles and 8 publishing portal specifications", () => {
     expect(Object.keys(MANGAKA_STYLE_CONFIGS)).toEqual([
       "manga-bw",
@@ -180,23 +183,73 @@ describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
     expect(bridge.characterAnchorAnglesByPanel["p-est"]).toBe("left-34");
   });
 
-  it("renders StudioHiggsfieldMangakaPanel and integrates into StudioBlankComicProDrawingSubPanel", () => {
+  it("장르 프리셋이 실제 스트립 계산 입력과 선택 상태를 함께 바꾼다", () => {
     render(<StudioHiggsfieldMangakaPanel />);
+    for (const preset of [
+      { id: "kr-romance-fantasy", style: "webtoon", portal: "naver", width: "auto", gutter: "white", cap: "26", pixels: 690 },
+      { id: "kr-action-noir", style: "webtoon", portal: "daum", width: "full", gutter: "dark", cap: "28", pixels: 760 },
+      { id: "jp-shonen-bw", style: "manga-bw", portal: "line", width: "mixed", gutter: "white", cap: "24", pixels: 800 },
+      { id: "us-superhero", style: "comics", portal: "tapas", width: "full", gutter: "dark", cap: "27", pixels: 940 },
+    ]) {
+      const button = screen.getByTestId(`mangaka-genre-preset-${preset.id}`);
+      fireEvent.click(button);
+      expect(button.getAttribute("aria-pressed")).toBe("true");
+      expect(button.textContent).toContain(`${preset.pixels}px`);
+      expect(screen.getByTestId("mangaka-style-select")).toHaveProperty("value", preset.style);
+      expect(screen.getByTestId("mangaka-portal-select")).toHaveProperty("value", preset.portal);
+      expect(screen.getByLabelText("Mangaka 패널 폭 스타일")).toHaveProperty("value", preset.width);
+      expect(screen.getByLabelText("Mangaka 여백 배경색")).toHaveProperty("value", preset.gutter);
+      expect(screen.getByLabelText("Mangaka 대사 폰트 크기")).toHaveProperty("value", preset.cap);
+      expect(screen.getByText(/^포털 참조 설정:/).textContent).toContain(`${preset.pixels}px`);
+      expect(screen.getByText(/총 스트립 높이:/).textContent).toContain("800×");
+    }
+  });
+
+  it("효과 선택은 계획 상태만 바꾸고 계산된 스트립을 변경하지 않는다", () => {
+    render(<StudioHiggsfieldMangakaPanel />);
+    const before = screen.getByText(/총 스트립 높이:/).textContent;
+    fireEvent.click(screen.getByTestId("mangaka-moving-toon-tap-shake"));
+    expect(screen.getByTestId("mangaka-moving-toon-tap-shake").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("mangaka-moving-toon-scroll-parallax").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByText(/총 스트립 높이:/).textContent).toBe(before);
+    expect(screen.getByText(/현재 원고·카메라·내보내기에는 적용되지 않습니다/)).toBeTruthy();
+    expect(screen.queryByText("Lorebook Synced")).toBeNull();
+  });
+
+  it("영어 모드의 새 샘플·효과 계획 안내에 번역 기본값이 있다", () => {
+    useI18n.setState({ lang: "en" });
+    render(<StudioHiggsfieldMangakaPanel />);
+    expect(screen.getByText("Sample script and lore reference")).toBeTruthy();
+    expect(screen.getByText(/They do not sync the current work/)).toBeTruthy();
+    expect(screen.getByText(/It is not applied to the current document/)).toBeTruthy();
+    expect(screen.getByTestId("mangaka-genre-preset-kr-romance-fantasy").textContent).toContain("690px");
+  });
+
+  it("renders StudioHiggsfieldMangakaPanel and integrates into StudioBlankComicProDrawingSubPanel", () => {
+    const panel = render(<StudioHiggsfieldMangakaPanel />);
     expect(screen.getByTestId("higgsfield-mangaka-section")).toBeTruthy();
     expect(screen.getByTestId("mangaka-qa-score-badge").textContent).toContain("WT-* QA");
+    expect(screen.getByTestId("mangaka-one-click-preset-bar")).toBeTruthy();
+    expect(screen.getByTestId("mangaka-dual-pane-script-lore")).toBeTruthy();
+    expect(screen.getByTestId("mangaka-moving-toon-state-machine")).toBeTruthy();
 
-    fireEvent.change(screen.getByTestId("mangaka-style-select"), {
-      target: { value: "manga-bw" },
-    });
+    fireEvent.click(screen.getByTestId("mangaka-genre-preset-jp-shonen-bw"));
     expect(
       (screen.getByTestId("mangaka-style-select") as HTMLSelectElement).value,
     ).toBe("manga-bw");
 
+    fireEvent.click(screen.getByTestId("mangaka-moving-toon-tap-shake"));
+    expect(screen.getByTestId("mangaka-moving-toon-state-machine").textContent).toContain(
+      "tap-shake",
+    );
+
+    panel.unmount();
     render(<StudioBlankComicProDrawingSubPanel />);
     const mangakaTabBtn = screen.getByTestId("pro-drawing-tab-higgsfield-mangaka");
     fireEvent.click(mangakaTabBtn);
-    expect(screen.getAllByTestId("higgsfield-mangaka-section").length).toBeGreaterThanOrEqual(
-      1,
-    );
+    expect(screen.getByTestId("higgsfield-mangaka-section")).toBeTruthy();
+    const rolePipelineTabBtn = screen.getByTestId("pro-drawing-tab-role-pipeline");
+    fireEvent.click(rolePipelineTabBtn);
+    expect(screen.getByTestId("webtoon-role-pipeline-section")).toBeTruthy();
   });
 });
