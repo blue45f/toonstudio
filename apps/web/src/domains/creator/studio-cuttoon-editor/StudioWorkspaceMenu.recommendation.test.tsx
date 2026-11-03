@@ -5,10 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_STUDIO_WORKSPACE_STATE,
+  STUDIO_DEFAULT_WORKSPACES,
   normalizeStudioWorkspaceLayout,
   type StudioWorkspaceLayout,
   type StudioWorkspaceState,
 } from "../studio-workspaces";
+import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
 import { StudioWorkspaceMenu } from "../StudioWorkspaceMenu";
 
 const persisted = { status: "persisted", failure: null } as const;
@@ -137,4 +139,48 @@ describe("StudioWorkspaceMenu friendly recommendation", () => {
     expect(onStateChange).not.toHaveBeenCalled();
   });
 
+});
+
+function roleMenuFixture() {
+  const storyboard = STUDIO_DEFAULT_WORKSPACES.find((workspace) => workspace.id === "storyboard");
+  if (!storyboard) throw new Error("스토리보드 작업공간이 필요합니다.");
+  const state: StudioWorkspaceState = { ...DEFAULT_STUDIO_WORKSPACE_STATE, activeWorkspaceId: "storyboard", liveLayout: storyboard.layout };
+  const onStateChange = vi.fn((_state: StudioWorkspaceState) => persisted);
+  const onApplyLayout = vi.fn();
+  const menu = (creatorRole: CreatorRoleId | null) => (
+    <StudioWorkspaceMenu initialOpen state={state} liveLayout={state.liveLayout} creatorRole={creatorRole}
+      persistence={persisted} onStateChange={onStateChange} onApplyLayout={onApplyLayout} />
+  );
+  return { menu, onStateChange, onApplyLayout };
+}
+
+it("직무 추천은 선택 전 배치를 바꾸지 않고 한 번의 클릭으로 선화 배치를 적용한다", () => {
+  const { menu, onStateChange, onApplyLayout } = roleMenuFixture();
+  render(menu("line-assistant"));
+  expect(screen.getByText("내 직무에 맞춘 추천")).toBeTruthy();
+  const action = screen.getByRole("button", { name: "선화 작업공간으로 전환" });
+  expect(action.getAttribute("data-workspace-recommendation-action")).toBe("true");
+  expect(action.getAttribute("data-workspace-id")).toBe("lineart");
+  expect(onApplyLayout).not.toHaveBeenCalled();
+  expect(onStateChange).not.toHaveBeenCalled();
+  fireEvent.click(action);
+  expect(onApplyLayout).toHaveBeenCalledTimes(1);
+  expect(onApplyLayout).toHaveBeenCalledWith(expect.any(Object), "lineart");
+  expect(onStateChange).toHaveBeenCalledTimes(1);
+  expect(onStateChange.mock.calls[0]?.[0].activeWorkspaceId).toBe("lineart");
+});
+
+it("메뉴의 직무 변경과 미설정 상태가 이전 추천을 남기지 않는다", () => {
+  const { menu, onApplyLayout, onStateChange } = roleMenuFixture();
+  const view = render(menu("line-assistant"));
+  const action = () => screen.getByTestId("studio-workspace-recommendation").querySelector("button");
+  expect(action()?.getAttribute("data-workspace-id")).toBe("lineart");
+  view.rerender(menu("background-assistant"));
+  expect(action()?.getAttribute("data-workspace-id")).toBe("pose-3d");
+  view.rerender(menu(null));
+  expect(action()?.getAttribute("data-workspace-id")).toBe("quick-sketch");
+  expect(screen.getByText("처음이라면 추천")).toBeTruthy();
+  expect(screen.queryByText("내 직무에 맞춘 추천")).toBeNull();
+  expect(onApplyLayout).not.toHaveBeenCalled();
+  expect(onStateChange).not.toHaveBeenCalled();
 });

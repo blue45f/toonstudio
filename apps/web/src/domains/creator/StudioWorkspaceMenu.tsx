@@ -88,7 +88,7 @@ import {
   type StudioWorkspaceState,
 } from "./studio-workspaces";
 import { StudioWorkspaceRecommendation } from "./StudioWorkspaceRecommendation";
-
+import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
 import { SwitchIndicator } from "@/shared/components/ui/switch";
 import { cn } from "@/shared/lib/utils";
 
@@ -99,6 +99,8 @@ export interface StudioWorkspaceMenuProps {
   onInitialOpenReady?: (ready: true) => void;
   /** Persisted workspace catalog and preferences. */
   state: StudioWorkspaceState;
+  /** 현재 인증 세대의 개인 직무이며 프로젝트 권한과는 분리한다. */
+  readonly creatorRole?: CreatorRoleId | null;
   /**
    * Authoritative layout currently rendered by StudioPage, in authored form.
    *
@@ -125,18 +127,15 @@ export interface StudioWorkspaceMenuProps {
     workspaceId?: StudioWorkspaceId,
   ) => void;
 }
-
 export type StudioWorkspacePersistenceSnapshot = Pick<
   StudioWorkspaceSaveResult,
   "status" | "failure"
 >;
-
 export interface StudioWorkspaceSearchEntry {
   readonly id?: string;
   readonly name: string;
   readonly description?: string;
 }
-
 const DEFAULT_WORKSPACE_ICONS: Record<StudioDefaultWorkspaceId, LucideIcon> = {
   storyboard: LayoutPanelTop,
   lineart: PenTool,
@@ -471,6 +470,7 @@ export function StudioWorkspaceMenu({
   initialOpen = false,
   onInitialOpenReady,
   state,
+  creatorRole,
   liveLayout,
   resolveDeviceKind,
   persistence,
@@ -565,7 +565,8 @@ export function StudioWorkspaceMenu({
   const workspaceRecommendation = query.trim().length === 0
     ? resolveStudioWorkspaceRecommendation(
         STUDIO_DEFAULT_WORKSPACES,
-        syncedState.activeWorkspaceId
+        syncedState.activeWorkspaceId,
+        creatorRole
       )
     : null;
   const builtinListExpanded = query.trim().length > 0 || builtinsExpanded;
@@ -576,7 +577,6 @@ export function StudioWorkspaceMenu({
       ? filteredCustom.length
       : filteredBuiltins.length + filteredCustom.length;
   const effectivePersistence = persistence;
-
   function commitState(next: StudioWorkspaceState): StudioWorkspacePersistenceSnapshot {
     const result = onStateChange(next);
     if (result.failure === "owner-mismatch") {

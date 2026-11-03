@@ -28,3 +28,14 @@ describe("StudioWorkspaceRecommendation", () => {
     expect(html).toContain("min-h-11");
   });
 });
+
+it("직무 추천 카드가 모델의 직무 표시와 보존 안내를 그대로 렌더한다", () => {
+  const recommendation = resolveStudioWorkspaceRecommendation(STUDIO_DEFAULT_WORKSPACES, "storyboard", "line-assistant");
+  if (!recommendation) throw new Error("직무 추천이 필요합니다.");
+  const html = renderToStaticMarkup(<StudioWorkspaceRecommendation recommendation={recommendation} onSelect={vi.fn()} />);
+  expect(html).toContain(recommendation.badgeLabel);
+  expect(html).toContain(recommendation.notice);
+  expect(html).toContain("내 직무에 맞춘 추천");
+  expect(html).not.toContain("처음이라면 추천");
+  expect(html).toContain('data-workspace-id="lineart"');
+});

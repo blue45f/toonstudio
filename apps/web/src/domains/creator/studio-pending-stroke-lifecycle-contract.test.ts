@@ -92,7 +92,7 @@ describe("pending stroke lifecycle source contract", () => {
     );
     const remoteFrontier = sourceBetween(
       "const applyFrontier = (",
-      "applyFrontier({"
+      "applyFrontier(studioOfflineHost.studioOfflineDocumentFrontier("
     );
     const hydratedAssets = sourceBetween(
       "const referenceSources = readyStudioWorkAssetImageSources(studioWorkAssetHydrator);",
