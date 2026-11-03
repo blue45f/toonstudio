@@ -1719,7 +1719,7 @@ export function StudioBrushLibrarySheet({
                           <span
                             className={cn(
                               "block truncate text-[0.58rem] font-medium leading-tight",
-                              active ? "text-on-accent/75" : "text-fg-3"
+                              active ? "text-on-accent" : "text-fg-3"
                             )}
                           >
                             {profile.engineFamilyLabel} · {primaryTrait} · {kindLabel} ·{" "}
@@ -1749,7 +1749,7 @@ export function StudioBrushLibrarySheet({
                           "flex min-w-0 items-center justify-between gap-1 text-[0.6rem] leading-tight",
                           compact && "hidden",
                           "[@media(max-height:32rem)]:hidden",
-                          active ? "text-on-accent/75" : "text-fg-3"
+                          active ? "text-on-accent" : "text-fg-3"
                         )}
                       >
                         <span className="truncate">

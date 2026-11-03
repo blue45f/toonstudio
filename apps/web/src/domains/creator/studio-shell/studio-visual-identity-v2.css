@@ -71,8 +71,9 @@
 [data-studio-editor="true"] :where([data-studio-brush-profile-card],[data-studio-brush-chip],[data-studio-layer-row])[aria-selected="true"],
 [data-studio-editor="true"] :where([data-studio-brush-profile-card],[data-studio-brush-chip],[data-studio-layer-row])[data-studio-layer-selected="true"]{border-color:rgba(145,120,255,.7)!important;background:linear-gradient(135deg,rgba(130,104,255,.22),rgba(52,220,255,.07))!important;box-shadow:0 0 0 3px rgba(130,104,255,.09),0 12px 25px rgba(0,0,0,.18)!important}
 [data-studio-editor="true"] [data-studio-brush-preview]{border-radius:12px!important;background:linear-gradient(145deg,rgba(7,9,20,.9),rgba(18,22,43,.94))!important}
-[data-studio-editor="true"] [data-studio-layer-kind-badge],
-[data-studio-editor="true"] [data-studio-brush-kind-badge]{border-color:rgba(166,177,255,.17)!important;background:rgba(130,104,255,.12)!important;color:#d8d3ff!important}
+[data-studio-editor="true"] [data-studio-layer-kind-badge]{border-color:rgba(166,177,255,.17)!important;background:rgba(130,104,255,.12)!important;color:#d8d3ff!important}
+/* 브러시 분류는 선택 카드의 강조색과 분리해 모든 테마에서 읽을 수 있게 한다. */
+[data-studio-editor="true"] [data-studio-brush-kind-badge]{border-color:var(--color-line)!important;background:var(--color-card)!important;color:var(--color-fg)!important}
 [data-studio-editor="true"] [data-studio-layer-list-header],
 [data-studio-editor="true"] [data-studio-inspector-primary]{border-color:rgba(166,177,255,.14)!important;background:linear-gradient(110deg,rgba(16,20,39,.92),rgba(10,13,28,.88))!important}
 [data-studio-editor="true"] [data-studio-status-bar]{border-color:rgba(166,177,255,.15)!important;background:rgba(9,12,26,.9)!important;backdrop-filter:blur(18px)}
