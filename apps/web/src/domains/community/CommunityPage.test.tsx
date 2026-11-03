@@ -51,6 +51,8 @@ describe("CommunityPage", () => {
     expect(screen.getByTestId("fan-cafe-panel").textContent).toBe("통합 커뮤니티 피드");
     expect(screen.getByRole("region", { name: "통합 커뮤니티 피드" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /창작자 갤러리/ }).getAttribute("href")).toBe("/showcase");
+    // 공개 구인 진입은 로그인 후 인재·지원 관리 화면과 구분한다.
+    expect(screen.getByRole("link", { name: "스튜디오·어시스턴트 구인 매칭" }).getAttribute("href")).toBe("/collaborate");
     // 홍보 공간은 텍스트 화살표 대신 같은 카드 문법으로 이어진다.
     expect(screen.getByRole("link", { name: /트레일러 상영관/ }).getAttribute("href")).toBe("/community/promote?kind=trailer");
     expect(screen.getByTestId("community-quick-guide")).toBeTruthy();

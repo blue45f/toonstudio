@@ -44,7 +44,7 @@ jobs:
         with:
           persist-credentials: false
           # main이 앞선 merge ref에도 이벤트 기준 커밋이 남도록 blob 없이 이력 메타데이터를 확보한다.
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name != 'pull_request' && 1 || 0 }}
           filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |

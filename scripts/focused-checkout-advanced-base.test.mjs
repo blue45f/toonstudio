@@ -10,7 +10,7 @@ const { test } = process.env.VITEST ? await import("vitest") : await import("nod
 test("PR 이벤트 뒤 main이 앞서도 인증 종료 후 기준 커밋을 추가 전송 없이 읽는다", () => {
   const workflow = parse(readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8"));
   const checkout = workflow.jobs["focused-validation"].steps.find((s) => s.uses?.startsWith("actions/checkout@"));
-  assert.equal(checkout.with["fetch-depth"], 0);
+  assert.equal(checkout.with["fetch-depth"], "${{ github.event_name != 'pull_request' && 1 || 0 }}");
   assert.equal(checkout.with.filter, "blob:none");
   assert.equal(checkout.with["persist-credentials"], false);
   const root = mkdtempSync(join(tmpdir(), "focused-advanced-base-"));
