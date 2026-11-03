@@ -710,7 +710,7 @@ export interface MangakaMinimapScrollHeatmapSummary {
  * 세로 스크롤 1600px 뷰포트당 컷 밀도 히트맵 및 말풍선 4줄 이하 가독성 게이지 계산기
  */
 export function computeMangakaMinimapScrollHeatmap(
-  strip: MangakaStagedStripResult,
+  strip: ReturnType<typeof stageMangakaEpisodeStrip>,
 ): MangakaMinimapScrollHeatmapSummary {
   const pps = strip.metrics.panelsPerScreen;
   const pacingBand: MangakaMinimapScrollHeatmapSummary["pacingBand"] =
