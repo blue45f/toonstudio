@@ -758,15 +758,15 @@ export function computeAbleAtmosphericPostProcessAndGreasePencilGuide(
   const dz = camera.target[2] - camera.position[2];
   const targetDist = Math.max(1.2, Math.hypot(dx, dy, dz));
   const fogTintBySolar: Readonly<Record<WebtoonSolarPresetId, string>> = {
-    "morning-commute": "#e0f2fe",
-    "high-noon-clear": "#f8fafc",
+    "golden-hour-morning": "#e0f2fe",
+    "noon-clear": "#f8fafc",
     "golden-hour-sunset": "#fed7aa",
     "blue-hour-dusk": "#c7d2fe",
     "night-moonlight": "#1e293b",
   };
   const aoBySolar: Readonly<Record<WebtoonSolarPresetId, number>> = {
-    "morning-commute": 0.42,
-    "high-noon-clear": 0.35,
+    "golden-hour-morning": 0.42,
+    "noon-clear": 0.35,
     "golden-hour-sunset": 0.58,
     "blue-hour-dusk": 0.64,
     "night-moonlight": 0.72,
