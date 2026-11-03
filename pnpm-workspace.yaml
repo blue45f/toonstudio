@@ -47,6 +47,14 @@ allowBuilds:
   iso-constants: false
 
 overrides:
+  # glob 7의 callback API는 유지하고 Promise API를 쓰는 rimraf 4/6 경로만 올린다.
+  'glob@>=9.0.0 <14.0.2': 14.0.2
+  # 구형 API를 유지하며 공식 수정의 증폭·쌍별 처리 제한을 백포트한다.
+  'minimatch@<4': 'file:patches/minimatch-3-security'
+  'minimatch@>=4 <11': 'file:patches/minimatch-10-security'
+  'minimatch@>=11.0.0 <11.0.1': 11.0.1
+  # GHSA-mrwp-f3q8-3g9p: 다른 realm에서 생성한 민감 헤더 목록도 리다이렉트에 적용한다.
+  'follow-redirects@>=1.16.0 <1.16.2': 1.16.2
   handlebars: '>=4.7.10'
   multer: '>=2.5.0'
   undici: '7.30.1'
@@ -69,7 +77,6 @@ overrides:
   # 의존성(4.8.4)과 두 벌이 되면 IoAdapter 의 Server 타입이 서로 호환되지 않아 api
   # 빌드가 깨진다. 단일 버전으로 수렴시킨다.
   socket.io: '4.8.4'
-  'minimatch@3.1.5>brace-expansion': 5.0.12
   'brace-expansion@>=3.0.0 <5.0.12': 5.0.12
   'node-forge': '>=1.4.0'
   # GHSA-vfj7-8cjw-p6xm(CVE-2026-93687): braces <=3.0.3의 재귀 AST 워커에 깊이 가드가 없고
@@ -86,11 +93,7 @@ overrides:
   # last CommonJS-compatible patched major for GHSA-w5hq-g745-h8pq.
   'uuid@<11.1.1': 11.1.1
   'sharp@<0.35.5': 0.35.5
-  # 이전에 루트 package.json 의 npm 전용 "overrides" 에 있던 핀. pnpm 워크스페이스는 그 블록을
-  # 읽지 않으므로 실제 의존성 트리를 수정 버전의 tar로 수렴시킨다.
-  # (동일 블록의 minimatch 핀은 옮기지 않는다 — 아래 patchedDependencies 의 minimatch@3.1.5
-  #  패치와 'minimatch@3.1.5>brace-expansion' 핀, scripts/minimatch-security-compat.test.mjs
-  #  회귀 테스트가 3.1.5 의 존재를 전제하므로 전역 ^10 핀은 그것들을 깨뜨린다.)
+  # npm 전용 overrides 대신 실제 pnpm 의존 트리에 수정판을 적용한다.
   tar: '^7.5.18'
   # 각 소비자가 요구하는 라우터 API를 유지한다. 전역 8.x 강제는 Express 4의
   # callable API와 Wrangler의 6.x pathToRegexp 반환 계약을 깨뜨린다.
@@ -108,7 +111,7 @@ overrides:
   babylonjs-gltf2interface: '9.19.0'
   'nanoid@>=3.0.0 <3.3.18': 3.3.18
   # 취약한 버전 범위만 해당 major의 수정 릴리스로 올린다. minimatch 3의
-  # callable CommonJS 패치와 이미 더 높은 버전을 쓰는 의존 경로는 보존한다.
+  # callable CommonJS 계약과 이미 더 높은 버전을 쓰는 의존 경로는 보존한다.
   'browserslist@>=4.0.0 <4.28.7': 4.28.7
   'smol-toml@>=1.0.0 <1.7.1': 1.7.1
   '@tootallnate/once@>=2.0.0 <2.0.1': 2.0.1
@@ -156,6 +159,5 @@ patchedDependencies:
   ag-psd@31.0.1: patches/ag-psd@31.0.1.patch
   ktx2-encoder@0.6.0: patches/ktx2-encoder@0.6.0.patch
   manifold-3d@3.5.1: patches/manifold-3d@3.5.1.patch
-  'minimatch@3.1.5': patches/minimatch@3.1.5.patch
   openskp@1.3.0: patches/openskp@1.3.0.patch
   p5.brush@2.2.1: patches/p5.brush@2.2.1.patch
