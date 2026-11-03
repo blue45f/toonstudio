@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -9,6 +9,7 @@ import {
   buildDynamicComponentArticulatedPrimitives,
   buildSketchUpWebtoonSixPassLtRecipe,
   commitSketchUpDirectModelingToPrimitives,
+  computeAbleAtmosphericPostProcessAndGreasePencilGuide,
   computeShadowPreservingRoomCutawayPlan,
   generateDynamicComponentActionShotSequence,
   panSketchUpTwoPointPerspectiveLockedCamera,
@@ -18,6 +19,10 @@ import {
 
 describe("SketchUp 3D Background Webtoon Staging Bridge (REA Reverse-Engineered)", () => {
   beforeEach(() => useI18n.setState({ lang: "ko" }));
+  afterEach(() => {
+    cleanup();
+    useI18n.setState({ lang: "ko" });
+  });
   it("commits Push/Pull through-hole wall opening, Offset frame, Follow-Me molding, and *N array to BgPrimitive[]", () => {
     const res = commitSketchUpDirectModelingToPrimitives({
       wallWidthMeters: 3.6,
@@ -203,5 +208,20 @@ describe("SketchUp 3D Background Webtoon Staging Bridge (REA Reverse-Engineered)
     expect(screen.getByText("Role-based style, tag, and camera setting presets")).toBeTruthy();
     expect(screen.getByText(/They do not change editing permissions/)).toBeTruthy();
     expect(screen.getByTestId("sketchup-direct-modeling-commit-btn")).toHaveProperty("disabled", true);
+  });
+
+  it("computes ABLE atmospheric depth fog, AO crease intensity, and Blender Grease Pencil 2D-in-3D planes", () => {
+    const guide = computeAbleAtmosphericPostProcessAndGreasePencilGuide("golden-hour-sunset", {
+      position: [0, 1.65, 4.0],
+      target: [0, 1.65, 0],
+      up: [0, 1, 0],
+      fovDegrees: 38,
+      projection: "perspective",
+    });
+    expect(guide.fogTintHex).toBe("#fed7aa");
+    expect(guide.aoCreaseIntensity).toBe(0.58);
+    expect(guide.greasePencilPlanesMeters.midgroundActorPlane).toBe(4);
+    render(<StudioBg3dSketchUpWebtoonStagingSection />);
+    expect(screen.getByTestId("sketchup-able-grease-pencil-summary").textContent).toContain("ABLE 대기원근");
   });
 });

@@ -519,3 +519,182 @@ function placePanelLettersAndFaces(
     });
   }
 }
+
+export interface StoryboarderShotDirectiveSpec {
+  readonly panelId: string;
+  readonly lensFocalLengthMm: 18 | 24 | 35 | 50 | 85;
+  readonly framingCode: "EWS" | "WS" | "MS" | "CU" | "ECU";
+  readonly cameraAngleLabel: "low-heroic" | "eye-level" | "high-overview" | "dutch-tension";
+  readonly ruleOfThirdsAnchor: "top-left" | "top-right" | "center" | "bottom-third";
+  readonly summaryKo: string;
+}
+
+/**
+ * Wonder Unit Storyboarder 3D Shot Generator + Clip Studio 컷 연출 카메라 디렉티브 컴파일러
+ */
+export function compileStoryboarderShotDirective(
+  panel: Pick<MangakaPanelInputSpec, "pageId" | "role" | "aspect" | "keyBeat">,
+  cameraYawDeg: number,
+): StoryboarderShotDirectiveSpec {
+  const normalizedYaw = ((cameraYawDeg % 360) + 360) % 360;
+  const lensByRole: Readonly<Record<MangakaPanelInputSpec["role"], 18 | 24 | 35 | 50 | 85>> = {
+    hook: 24,
+    establishing: 18,
+    action: 24,
+    impact: 18,
+    reveal: 35,
+    dialogue: 50,
+    reaction: 85,
+    insert: 85,
+    vignette: 50,
+    cliffhanger: 24,
+    textOnly: 35,
+  };
+  const framingByRole: Readonly<
+    Record<MangakaPanelInputSpec["role"], StoryboarderShotDirectiveSpec["framingCode"]>
+  > = {
+    hook: "WS",
+    establishing: "EWS",
+    action: "MS",
+    impact: "CU",
+    reveal: "WS",
+    dialogue: "MS",
+    reaction: "CU",
+    insert: "ECU",
+    vignette: "MS",
+    cliffhanger: "CU",
+    textOnly: "MS",
+  };
+  const lensFocalLengthMm = lensByRole[panel.role];
+  const framingCode = framingByRole[panel.role];
+  const cameraAngleLabel: StoryboarderShotDirectiveSpec["cameraAngleLabel"] =
+    panel.role === "establishing"
+      ? "high-overview"
+      : panel.role === "impact" || panel.role === "cliffhanger"
+        ? "low-heroic"
+        : panel.keyBeat
+          ? "dutch-tension"
+          : "eye-level";
+  const ruleOfThirdsAnchor: StoryboarderShotDirectiveSpec["ruleOfThirdsAnchor"] =
+    normalizedYaw >= 180 ? "top-right" : normalizedYaw >= 45 ? "top-left" : "center";
+
+  return {
+    panelId: panel.pageId,
+    lensFocalLengthMm,
+    framingCode,
+    cameraAngleLabel,
+    ruleOfThirdsAnchor,
+    summaryKo: `${panel.pageId}: ${lensFocalLengthMm}mm (${framingCode}) · ${cameraAngleLabel} · 3분할(${ruleOfThirdsAnchor})`,
+  };
+}
+
+export interface MangakaMovingToonTimelineSpec {
+  readonly triggerId: "scroll-parallax" | "tap-shake" | "sfx-bounce";
+  readonly durationMs: number;
+  readonly springStiffness: number;
+  readonly dampingRatio: number;
+  readonly spineMeshDeformVertices: number;
+  readonly parallaxDepthMultipliers: {
+    readonly bg3dLayer: number;
+    readonly characterMidLayer: number;
+    readonly sfxForegroundLayer: number;
+  };
+  readonly summaryKo: string;
+}
+
+/**
+ * Rive Interactive State Machine & Spine 2.5D 무빙툰 스크롤 패럴랙스·진동·바운스 타임라인 계산기
+ */
+export function buildMangakaMovingToonTimelineSpec(
+  triggerId: "scroll-parallax" | "tap-shake" | "sfx-bounce",
+  stripHeightPx: number,
+): MangakaMovingToonTimelineSpec {
+  const clampedHeight = Math.max(800, stripHeightPx);
+  if (triggerId === "scroll-parallax") {
+    const durationMs = Math.min(2400, Math.round(clampedHeight / 6));
+    return {
+      triggerId,
+      durationMs,
+      springStiffness: 180,
+      dampingRatio: 0.86,
+      spineMeshDeformVertices: 32,
+      parallaxDepthMultipliers: {
+        bg3dLayer: 0.35,
+        characterMidLayer: 1.0,
+        sfxForegroundLayer: 1.45,
+      },
+      summaryKo: `Scroll Parallax (${durationMs}ms · BG 0.35x / Actor 1.0x / SFX 1.45x · Spine 32v)`,
+    };
+  }
+  if (triggerId === "tap-shake") {
+    return {
+      triggerId,
+      durationMs: 420,
+      springStiffness: 420,
+      dampingRatio: 0.48,
+      spineMeshDeformVertices: 24,
+      parallaxDepthMultipliers: {
+        bg3dLayer: 0.6,
+        characterMidLayer: 1.25,
+        sfxForegroundLayer: 1.65,
+      },
+      summaryKo: "Tap Camera Shake (420ms · Stiffness 420 · Damping 0.48 · Spine 24v)",
+    };
+  }
+  return {
+    triggerId,
+    durationMs: 560,
+    springStiffness: 340,
+    dampingRatio: 0.55,
+    spineMeshDeformVertices: 18,
+    parallaxDepthMultipliers: {
+      bg3dLayer: 0.25,
+      characterMidLayer: 1.05,
+      sfxForegroundLayer: 1.85,
+    },
+    summaryKo: "SFX Elastic Bounce (560ms · SFX Scale 1.85x · Damping 0.55 · Spine 18v)",
+  };
+}
+
+export interface CampfireLorebookEpisodeBeatSummary {
+  readonly episodeArcPhase: "opening-hook" | "world-establishment" | "rising-conflict" | "cliffhanger-turn";
+  readonly linkedLoreEntitiesCount: number;
+  readonly activeRelationshipEdges: readonly string[];
+  readonly totalWordBudgetCjk: number;
+  readonly summaryKo: string;
+}
+
+/**
+ * Campfire Writing / NovelAI 세계관 로어북·인물 관계도·에피소드 비트 매트릭스 계산기
+ */
+export function buildCampfireEpisodeLorebookBeatMatrix(
+  panels: readonly MangakaPanelInputSpec[],
+  castCount: number,
+): CampfireLorebookEpisodeBeatMatrixResult {
+  const totalWordBudgetCjk = panels.reduce(
+    (acc, panel) =>
+      acc +
+      (panel.lines ?? []).reduce((lineAcc, line) => lineAcc + countMangakaWordsCjkAware(line.text), 0),
+    0,
+  );
+  const hasCliffhanger = panels.some((p) => p.role === "cliffhanger");
+  const episodeArcPhase: CampfireLorebookEpisodeBeatSummary["episodeArcPhase"] = hasCliffhanger
+    ? "cliffhanger-turn"
+    : panels.length >= 3
+      ? "rising-conflict"
+      : "opening-hook";
+  const linkedLoreEntitiesCount = Math.max(1, castCount) + 2;
+  const activeRelationshipEdges = Object.freeze([
+    "Mira ↔ Captain Krail (추격·경계)",
+    "Mira ↔ Old Bram (은신처 조력)",
+  ]);
+  return {
+    episodeArcPhase,
+    linkedLoreEntitiesCount,
+    activeRelationshipEdges,
+    totalWordBudgetCjk,
+    summaryKo: `Campfire 로어북(${linkedLoreEntitiesCount}항목) · 관계선 ${activeRelationshipEdges.length}개 · 대사량 ${totalWordBudgetCjk}어절 (${episodeArcPhase})`,
+  };
+}
+
+export type CampfireLorebookEpisodeBeatMatrixResult = CampfireLorebookEpisodeBeatSummary;

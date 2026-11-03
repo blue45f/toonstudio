@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { StudioBlankComicProDrawingSubPanel } from "./StudioBlankComicProDrawingSubPanel";
 import { StudioWebtoonRolePipelineSubPanel } from "./StudioWebtoonRolePipelineSubPanel";
 import {
   createInitialRolePipelineHandoffState,
+  evaluateParallelRoleCollaborationPair,
   evaluateRoleLayerEditGuard,
   evaluateRolePipelineHandoff,
   executeOneClickStageHandoff,
+  resolveKritaColorizeAndMediBangCloudWorkflowGuide,
   resolveRolePipelinePreset,
+  resolveStageDeliverableChecklist,
   WEBTOON_CANONICAL_LAYER_GROUPS,
   WEBTOON_E2E_ROLE_PIPELINE_STAGES,
 } from "./webtoon-role-pipeline-orchestrator";
@@ -17,6 +20,10 @@ import {
 import { useI18n } from "@/shared/lib/i18n";
 
 beforeEach(() => useI18n.setState({ lang: "ko" }));
+afterEach(() => {
+  cleanup();
+  useI18n.setState({ lang: "ko" });
+});
 
 describe("웹툰 직군별 메뉴·권한 예시와 지역 인계 계획", () => {
   it("8개 공정과 18개 그룹의 제작 계획을 제공한다", () => {
@@ -166,5 +173,28 @@ describe("웹툰 직군별 메뉴·권한 예시와 지역 인계 계획", () =>
     expect(screen.getByTestId("role-pipeline-handoff-btn").textContent).toContain("Plan next stage");
     view.unmount();
     act(() => useI18n.setState({ lang: "ko" }));
+  });
+
+  it("evaluates parallel role layer conflicts, stage checklists, and Krita/MediBang presets", () => {
+    const disjoint = evaluateParallelRoleCollaborationPair("background", "line-art");
+    expect(disjoint.conflictFree).toBe(true);
+    expect(disjoint.overlappingLayerGroups).toHaveLength(0);
+
+    const overlapping = evaluateParallelRoleCollaborationPair("line-art", "line-assistant");
+    expect(overlapping.conflictFree).toBe(false);
+    expect(overlapping.overlappingLayerGroups).toContain("assistant-line");
+
+    expect(resolveStageDeliverableChecklist("flat-color-mask")).toHaveLength(3);
+    const guide = resolveKritaColorizeAndMediBangCloudWorkflowGuide("flat-color-mask");
+    expect(guide.kritaFeaturePresetKo).toContain("Colorize Mask");
+    expect(guide.mediBangCloudRuleKo).toContain("MediBang");
+
+    render(<StudioWebtoonRolePipelineSubPanel />);
+    expect(screen.getByTestId("role-pipeline-deliverable-checklist").textContent).toContain("24단어 이하");
+    expect(screen.getByTestId("role-pipeline-krita-medibang-workflow").textContent).toContain("Krita");
+    expect(screen.getByTestId("role-pipeline-parallel-pair-status").textContent).toContain("병렬 협업 가능");
+    fireEvent.click(screen.getByTestId("role-pipeline-select-line-assistant"));
+    fireEvent.click(screen.getByTestId("role-parallel-partner-line-art"));
+    expect(screen.getByTestId("role-pipeline-parallel-pair-status").textContent).toContain("동시 편집 조율 필요");
   });
 });

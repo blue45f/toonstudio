@@ -333,8 +333,53 @@
         ],
         "originalClassification": "internalizedCapabilities",
         "currentRuntimeIntegrationVerifiedByThisRecord": false
+      },
+      {
+        "id": "krita-colorize-mask-and-wrap-around",
+        "url": "https://krita.org/en/features/",
+        "evidenceId": "ev_1e31fdd65af387d18b081c38383ec8cd723a540ebfd241a4c4d6d04fc1066143",
+        "referenceCapabilities": [
+          "Colorize Mask Gap-Closing Flat Color Hints",
+          "Wrap-Around Seamless Background Texture Mode",
+          "Comic Project Manager & Storyboard Docker"
+        ],
+        "originalClassification": "internalizedCapabilities",
+        "currentRuntimeIntegrationVerifiedByThisRecord": false
+      },
+      {
+        "id": "medibang-paint-team-cloud",
+        "url": "https://medibangpaint.com/en/",
+        "evidenceId": "ev_1bf5a671aaccd10dd67879cef415ec34a0c9b4e136c23b0d9a76acd124ac2528",
+        "referenceCapabilities": [
+          "Team Cloud Page Check-Out Lock & Lead Review Gate",
+          "Reference Layer Fill & 1000+ Cloud Screentones"
+        ],
+        "originalClassification": "internalizedCapabilities",
+        "currentRuntimeIntegrationVerifiedByThisRecord": false
+      },
+      {
+        "id": "spine-2d-mesh-deformation",
+        "url": "https://ko.esotericsoftware.com/spine-in-depth",
+        "evidenceId": "ev_fef427c633a0b2ff2b126d0479f05ec47474da3f6bbad76683d13b81a6fa3406",
+        "referenceCapabilities": [
+          "2.5D Mesh Deformation & Bone-Weighted Moving-Toon Parallax"
+        ],
+        "originalClassification": "internalizedCapabilities",
+        "currentRuntimeIntegrationVerifiedByThisRecord": false
+      },
+      {
+        "id": "campfire-writing-lorebook-matrix",
+        "url": "https://www.campfirewriting.com/",
+        "evidenceId": "ev_0835ba8884a1606a52432392d888a352ac90dee563390afa0036c3ef7f92c94c",
+        "referenceCapabilities": [
+          "Worldbuilding Lorebook Modules & Character Relationship Graph",
+          "Episode Arc Beat Matrix & CJK Word Budget"
+        ],
+        "originalClassification": "internalizedCapabilities",
+        "currentRuntimeIntegrationVerifiedByThisRecord": false
       }
     ],
+    "phase3TargetListEvidenceId": "ev_6559e0ccd38b8a0c26ba0e49d8e576e32ef6c9040b49397e8ead24a5a89c3907",
     "status": "inherited-reference-record",
     "preservedSourceCommit": "55c8afa11955a32819977598f474f87dac685a06",
     "externalEvidenceReplayedInThisReview": false,
