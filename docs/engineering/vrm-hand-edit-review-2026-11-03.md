@@ -87,5 +87,10 @@ Chromium `/usr/bin/chromium`과 SwiftShader로
 - `pnpm harness:verify`의 하네스·lint·시크릿·아키텍처·파일 크기·진입 그래프 검사는
   통과했으나 전체 타입 검사에서 클라우드 메모리 한도로 종료 코드 137이 발생했다.
   Vite도 함께 종료됐으며, 손 비교 화면만 여는 최소 설정으로 WebGL 검증은 복구했다.
+- 다른 서버를 종료하고 `node --max-old-space-size=10000 node_modules/typescript/bin/tsc
+  -p tsconfig.json --incremental false`로 같은 루트 타입 검사를 다시 실행했으나
+  JavaScript heap out of memory로 종료됐다. API 타입 검사 단계도 실행되지 못했다.
+  필수 전체 타입 검사와 pre-push 게이트를 우회하지 않으므로 원격 푸시·PR 생성·main 병합은
+  완료하지 않았다. 메모리가 더 큰 클라우드 환경에서 전체 검증 후 이어서 처리해야 한다.
 - 기본 8개 이외의 모든 배포 모델, 사용자 모델, 실제 GPU·모바일·웹캠은 미검증이다.
 - 테마 개선이나 보안 변경과 파일을 공유하지 않는다. 운영 배포·유료 서비스 변경은 없다.
