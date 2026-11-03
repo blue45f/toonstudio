@@ -120,6 +120,9 @@ describe("CreatorRoleOnboarding", () => {
     const preview = screen.getByTestId("onboarding-role-environment-preview");
     expect(preview.textContent).toContain("선화 클린업·잔선 제거·펜터치 보조 도구를 위한 작업공간을 추천합니다.");
     expect(preview.textContent).toContain("Clip Studio Paint");
+    const rbacPreview = screen.getByTestId("onboarding-role-rbac-preview");
+    expect(rbacPreview.textContent).toContain("편집 권한 레이어");
+    expect(rbacPreview.textContent).toContain("주연 원화 보호 잠금");
     expect(updateMyProfile).not.toHaveBeenCalled();
   });
 });

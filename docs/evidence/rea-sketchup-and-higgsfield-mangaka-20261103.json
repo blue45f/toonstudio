@@ -190,11 +190,76 @@
     }
   },
   "internalizedModules": [
+    "apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-types.ts",
     "apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-engine.ts",
+    "apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-qa.ts",
     "apps/web/src/domains/creator/manga-toolkit/StudioHiggsfieldMangakaPanel.tsx",
     "apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-engine.test.tsx",
+    "apps/web/src/domains/creator/manga-toolkit/webtoon-role-pipeline-orchestrator.ts",
+    "apps/web/src/domains/creator/manga-toolkit/StudioWebtoonRolePipelineSubPanel.tsx",
+    "apps/web/src/domains/creator/manga-toolkit/webtoon-role-pipeline-orchestrator.test.tsx",
     "apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-webtoon-staging-bridge.ts",
     "apps/web/src/domains/creator/bg3d/StudioBg3dSketchUpWebtoonStagingSection.tsx",
     "apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-webtoon-staging-bridge.test.tsx"
-  ]
+  ],
+  "competitorEcosystemExpansionEvidence": {
+    "targetListEvidenceId": "ev_e2b33b07a02eaed5ecbcd057cfb1f8c615d3f381ea0b08366ad9d76390cbe7a1",
+    "inspectedTargets": [
+      {
+        "id": "clip-studio-paint-ex-functions",
+        "url": "https://www.clipstudio.net/en/functions/",
+        "evidenceId": "ev_865bd9f8d1df7dc4644a33492814dc4fad413a546ac592ee3d7e3124d337c8ad",
+        "internalizedCapabilities": [
+          "3D LT Line/Tone Extraction",
+          "Sub View Reference Picker",
+          "Story Editor Multi-Page Management",
+          "TeamWork Cloud Page Lock & Role Handoff"
+        ]
+      },
+      {
+        "id": "wonderunit-storyboarder",
+        "url": "https://wonderunit.com/storyboarder/",
+        "evidenceId": "ev_424786942ac7c7ec19478cfdca91617d57361c01d148bf9efdccd542446b568a",
+        "internalizedCapabilities": [
+          "3D Shot Generator Camera Directive Sync",
+          "Dialogue & Action Note Strip Mapping"
+        ]
+      },
+      {
+        "id": "blender-story-artist-grease-pencil",
+        "url": "https://www.blender.org/features/story-artist/",
+        "evidenceId": "ev_5467d62957b611cdaf086132ec9a97f858b909a8878d4428551882783f39fd0b",
+        "internalizedCapabilities": [
+          "2D-in-3D Hybrid Grease Pencil Camera Plane Sketching",
+          "Full Production Pipeline Story-to-Final Layout"
+        ]
+      },
+      {
+        "id": "acon3d-able-webtoon",
+        "url": "https://www.acon3d.com/en/toon",
+        "evidenceId": "ev_e8700e1d8da47816fa6051040a8a735232d7aeacd608d99d4c3bdff901144b89",
+        "internalizedCapabilities": [
+          "Webtoon 3D Background Role Lens",
+          "ABLE Atmospheric Depth & Ambient Occlusion Post-Processing"
+        ]
+      },
+      {
+        "id": "webtoon-canvas-creators-101",
+        "url": "https://www.webtoons.com/en/creators101/webtoon-canvas",
+        "evidenceId": "ev_908441f5f3352f60d077bb8655d67080ee5b51b7b3be27d5483294b3740c2dc6",
+        "internalizedCapabilities": [
+          "800x1280px Vertical Scroll Slice Validation",
+          "8-Stage Webtoon Specialist Role Division Pipeline"
+        ]
+      },
+      {
+        "id": "rive-interactive-state-machine",
+        "url": "https://rive.app/",
+        "evidenceId": "ev_ea91a96e7d38b5c58fe7b315c75f1deabbc15ca442366541749ae6feb9ede667",
+        "internalizedCapabilities": [
+          "Scroll Parallax / Tap Shake / SFX Bounce State Machine Triggers"
+        ]
+      }
+    ]
+  }
 }

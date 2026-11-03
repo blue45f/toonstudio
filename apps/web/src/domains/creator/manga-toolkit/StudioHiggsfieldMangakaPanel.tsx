@@ -166,6 +166,39 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
   const [gutter, setGutter] = useState<MangakaGutterFillId>("auto");
   const [capPx, setCapPx] = useState<number>(26);
   const [cameraYawDeg, setCameraYawDeg] = useState<number>(42);
+  const [movingToonTrigger, setMovingToonTrigger] = useState<
+    "scroll-parallax" | "tap-shake" | "sfx-bounce"
+  >("scroll-parallax");
+
+  const applyOneClickGenrePreset = (
+    presetId: "kr-romance-fantasy" | "kr-action-noir" | "jp-shonen-bw" | "us-superhero",
+  ) => {
+    if (presetId === "kr-romance-fantasy") {
+      setStyle("webtoon");
+      setPortal("naver");
+      setWidthStyle("auto");
+      setGutter("white");
+      setCapPx(26);
+    } else if (presetId === "kr-action-noir") {
+      setStyle("webtoon");
+      setPortal("daum");
+      setWidthStyle("full");
+      setGutter("dark");
+      setCapPx(28);
+    } else if (presetId === "jp-shonen-bw") {
+      setStyle("manga-bw");
+      setPortal("line");
+      setWidthStyle("mixed");
+      setGutter("white");
+      setCapPx(24);
+    } else {
+      setStyle("comics");
+      setPortal("tapas");
+      setWidthStyle("full");
+      setGutter("dark");
+      setCapPx(27);
+    }
+  };
 
   const activeStyleConfig = MANGAKA_STYLE_CONFIGS[style];
   const activePortalSpec = MANGAKA_PORTAL_SPECS[portal];
@@ -227,6 +260,42 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
       data-testid="higgsfield-mangaka-section"
       className="space-y-2.5 text-[0.66rem] text-fg"
     >
+      {/* 1-Click 장르·연출 퀵 프리셋 바 */}
+      <div
+        data-testid="mangaka-one-click-preset-bar"
+        className="flex flex-wrap items-center justify-between gap-1.5 rounded border border-accent/30 bg-accent-soft/20 px-2.5 py-1.5"
+      >
+        <span className="font-bold text-fg">
+          ⚡ 1-Click 장르·포털 원클릭 연출 프리셋
+        </span>
+        <div className="flex flex-wrap gap-1">
+          {[
+            { id: "kr-romance-fantasy", label: "KR 로판 (네이버 800px·White 여백)" },
+            { id: "kr-action-noir", label: "KR 액션 느와르 (카카오 720px·Dark 여백)" },
+            { id: "jp-shonen-bw", label: "JP 소년만화 (LINE 800px·흑백 G펜·망점)" },
+            { id: "us-superhero", label: "US 코믹스 (Tapas 940px·풀와이드 Dark)" },
+          ].map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              data-testid={`mangaka-genre-preset-${preset.id}`}
+              onClick={() =>
+                applyOneClickGenrePreset(
+                  preset.id as
+                    | "kr-romance-fantasy"
+                    | "kr-action-noir"
+                    | "jp-shonen-bw"
+                    | "us-superhero",
+                )
+              }
+              className="rounded border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg hover:border-accent hover:text-accent"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
         <label className="flex flex-col gap-0.5">
           <span className="font-semibold text-fg-2">만화/웹툰 비주얼 스타일</span>
@@ -402,6 +471,58 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
               {bg3dBridgePlan.solarTimePresetId}] · 캐릭터 시트 앵글 [
               {bg3dBridgePlan.characterAnchorAnglesByPanel["ep1-p1-hook"]}]
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NovelAI / Scrivener 듀얼페인 대본·로어북 시트 & Rive / Spine 무빙툰 상태머신 */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div
+          data-testid="mangaka-dual-pane-script-lore"
+          className="rounded border border-line bg-raised/40 p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span>글·각색 듀얼페인 로어북 & 콘티 비트 동기화 (Celtx · Scrivener · NovelAI)</span>
+            <span className="font-mono text-[0.58rem] text-accent">Lorebook Synced</span>
+          </div>
+          <div className="mt-1 font-mono text-[0.58rem] text-fg-2">
+            <div>
+              세계관 앵커: Hollowmere Canal (황혼 안개 · 황동 가스등) · 감정 곡선: 긴박(Hook) → 충격(Impact) → 서스펜스(Cliffhanger)
+            </div>
+            <div>
+              3D Shot Generator 카메라 지시문: {DEFAULT_DEMO_PANELS.length}컷 대사·지문 ↔ 컷별 종횡비 자동 매핑 완료
+            </div>
+          </div>
+        </div>
+
+        <div
+          data-testid="mangaka-moving-toon-state-machine"
+          className="rounded border border-line bg-raised/40 p-2"
+        >
+          <div className="flex items-center justify-between font-bold text-fg">
+            <span>인터랙티브 무빙툰 상태머신 바인딩 (Rive · Spine · Live2D)</span>
+            <div className="flex gap-1">
+              {(
+                [
+                  { id: "scroll-parallax", label: "스크롤 패럴랙스" },
+                  { id: "tap-shake", label: "임팩트 셰이크" },
+                  { id: "sfx-bounce", label: "효과음 바운스" },
+                ] as const
+              ).map((trig) => (
+                <button
+                  key={trig.id}
+                  type="button"
+                  data-testid={`mangaka-moving-toon-${trig.id}`}
+                  onClick={() => setMovingToonTrigger(trig.id)}
+                  className={studioSegmentChipClass(movingToonTrigger === trig.id)}
+                >
+                  {trig.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-1 font-mono text-[0.58rem] text-fg-2">
+            활성 트리거 [{movingToonTrigger}] · 전경/중경/배경 Z-Depth 3단 분리 + KeyBeat 컷 자동 카메라 진동 연결
           </div>
         </div>
       </div>

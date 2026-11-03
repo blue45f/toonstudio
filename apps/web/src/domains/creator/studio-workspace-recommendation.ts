@@ -59,7 +59,10 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceId: "csp-migration",
       workspaceName: "클립 스튜디오 이주",
       summary: "페이지·레이어와 만화 작업 도구를 찾기 위한 작업공간 추천입니다.",
-      keyCapabilities: [],
+      keyCapabilities: [
+        "벡터 선화 · 3D LT 선추출 · 스마트폰 뷰포트 & 세로 슬라이스",
+        "Sub View 레퍼런스 피커 · Colorize 힌트 채색 · TeamWork 페이지 잠금",
+      ],
       recommendedRoles: ["creator", "line-art", "line-assistant", "assistant"],
       searchAliases: STUDIO_CLIP_WORKSPACE_RECOMMENDATION.searchAliases,
     },
@@ -69,9 +72,12 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceId: "mobile-draw",
       workspaceName: "모바일 드로잉",
       summary: "작은 화면에서 드로잉을 시작할 작업공간을 추천합니다.",
-      keyCapabilities: [],
+      keyCapabilities: [
+        "QuickShape 도형 보정 · ColorDrop 임계치 채우기 · 2/3핑거 제스처",
+        "4단계 손떨림 보정 · 참조 창 분리 · 타임랩스 리플레이",
+      ],
       recommendedRoles: ["line-art", "associate-artist", "character"],
-      searchAliases: ["Procreate", "프로크리에이트", "ibisPaint", "이비스페인트", "아이패드", "태블릿"],
+      searchAliases: ["Procreate", "프로크리에이트", "ibisPaint", "이비스페인트", "아이패드", "태블릿", "메디방", "MediBang"],
     },
     {
       id: "photoshop-krita-color-workflow",
@@ -79,9 +85,12 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceId: "photo-edit",
       workspaceName: "사진·보정 편집",
       summary: "사진과 색상 보정 작업을 위한 배치를 추천합니다.",
-      keyCapabilities: [],
+      keyCapabilities: [
+        "Colorize Mask 틈새 닫기 밑색 · 비파괴 조정 레이어 · 클리핑 마스크",
+        "선화 참조 버킷 채우기 · 림라이트/역광 대기원근 그라데이션 맵",
+      ],
       recommendedRoles: ["color", "flat-color-assistant", "shading-assistant", "effect-assistant"],
-      searchAliases: ["Photoshop", "포토샵", "Krita", "크리타", "Affinity Photo", "Photopea", "보정"],
+      searchAliases: ["Photoshop", "포토샵", "Krita", "크리타", "Affinity Photo", "Photopea", "보정", "Rebelle", "리벨"],
     },
     {
       id: "sketchup-acon-3d-workflow",
@@ -92,6 +101,7 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       keyCapabilities: [
         "Push/Pull 관통 개구부 · Offset 창틀 · Follow-Me 몰딩",
         "2점 투시 수직 고정 · 실내 그림자 보존 단면 · 6패스 LT 추출",
+        "ACON3D ABLE 툰 후보정 · Blender Grease Pencil 2D-3D 하이브리드",
       ],
       recommendedRoles: ["background", "background-assistant", "three-d"],
       searchAliases: [
@@ -100,10 +110,13 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
         "3D Warehouse",
         "ACON3D",
         "에이콘3D",
+        "ABLE",
+        "에이블",
         "Snaptoon",
         "스냅툰",
         "Blender",
         "블렌더",
+        "Grease Pencil",
         "VRoid",
       ],
     },
@@ -116,6 +129,7 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       keyCapabilities: [
         "Higgsfield Mangaka 6인 캐릭터 시트 잠금 & 대본→세로 스트립 스테이징",
         "WT-* 41개 웹툰 연출·식자 QA 규칙 및 8대 포털 슬라이스 규격",
+        "Storyboarder 3D Shot Generator · NovelAI/Scrivener 듀얼 로어북",
       ],
       recommendedRoles: ["story", "adaptation", "associate-writer", "storyboard"],
       searchAliases: [
@@ -128,6 +142,11 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
         "Mangaka",
         "힉스필드",
         "망가카",
+        "Storyboarder",
+        "NovelAI",
+        "Scrivener",
+        "스크리브너",
+        "로어북",
         "대본",
         "각색",
         "콘티",
@@ -139,9 +158,12 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceId: "vector-design",
       workspaceName: "벡터·타이포 디자인",
       summary: "벡터와 타이포그래피 작업을 위한 배치를 추천합니다.",
-      keyCapabilities: [],
+      keyCapabilities: [
+        "다이아몬드 행갈이 식자 · 말풍선/꼬리/효과음 벡터 아크 변형",
+        "다국어 로컬라이제이션 식자 레이어 분리 · 폰트 페어링",
+      ],
       recommendedRoles: ["lettering", "lettering-assistant", "localization", "planner"],
-      searchAliases: ["Figma", "피그마", "Illustrator", "일러스트레이터", "Concepts", "tldraw", "Milanote"],
+      searchAliases: ["Figma", "피그마", "Illustrator", "일러스트레이터", "Concepts", "tldraw", "Milanote", "식자"],
     },
     {
       id: "rive-harmony-animation-workflow",
@@ -149,9 +171,12 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceId: "animation",
       workspaceName: "애니메이션",
       summary: "애니메이션 작업을 시작할 배치를 추천합니다.",
-      keyCapabilities: [],
+      keyCapabilities: [
+        "Rive 상태머신 스크롤/탭 트리거 · Spine/Live2D 2.5D 메쉬 디폼",
+        "카메라 셰이크 · 패럴랙스 깊이 루프 · 효과음 모션 바운스",
+      ],
       recommendedRoles: ["effect-assistant", "character", "three-d"],
-      searchAliases: ["Rive", "Toon Boom", "Moho", "Live2D", "Procreate Dreams", "무빙툰"],
+      searchAliases: ["Rive", "Toon Boom", "Moho", "Live2D", "Spine", "스파인", "Procreate Dreams", "무빙툰"],
     },
     {
       id: "kitsu-linear-review-workflow",
@@ -159,9 +184,12 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceId: "review",
       workspaceName: "검수·피드백",
       summary: "검수와 피드백 작업을 위한 배치를 추천합니다.",
-      keyCapabilities: [],
+      keyCapabilities: [
+        "8단계 웹툰 직군 파이프라인 인계 게이트 · 레이어 RBAC 잠금 감사",
+        "컷 핀포인트 레드라인 주석 · 8대 포털 출고 규격 프리플라이트",
+      ],
       recommendedRoles: ["editor", "producer", "reviewer", "planner"],
-      searchAliases: ["Kitsu", "Linear", "리니어", "Frame.io", "검수", "피드백", "PD"],
+      searchAliases: ["Kitsu", "Linear", "리니어", "Frame.io", "검수", "피드백", "PD", "편집자"],
     },
   ] as const satisfies readonly StudioCompetitorWorkflowQuickMatch[]);
 

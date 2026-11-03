@@ -11,6 +11,9 @@ import { useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 
 import {
+  WEBTOON_E2E_ROLE_PIPELINE_STAGES,
+} from "../manga-toolkit/webtoon-role-pipeline-orchestrator";
+import {
   STUDIO_COMPETITOR_CAPABILITY_EVALUATION,
   STUDIO_COMPETITOR_CAPABILITY_RECORDS,
 } from "../studio-platform/studio-competitor-capability-evidence";
@@ -19,7 +22,23 @@ import {
 } from "../studio-workspace-recommendation";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
+import type { CreatorRoleId } from "@/shared/lib/creator-role-contract";
+
 export type StudioCompetitorCapabilityLocale = "ko" | "en";
+
+const COMPETITOR_ROLE_FILTER_CHIPS: readonly {
+  readonly id: "all" | CreatorRoleId;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}[] = Object.freeze([
+  { id: "all", labelKo: "전체 직군", labelEn: "All roles" },
+  { id: "story", labelKo: "글·각색·콘티", labelEn: "Story & Board" },
+  { id: "background", labelKo: "3D 배경·어시", labelEn: "3D Background" },
+  { id: "line-art", labelKo: "메인 선화·선화 어시", labelEn: "Line Art" },
+  { id: "color", labelKo: "밑색·명암·후보정", labelEn: "Color & FX" },
+  { id: "lettering", labelKo: "식자·효과음", labelEn: "Lettering" },
+  { id: "producer", labelKo: "편집자·PD 검수", labelEn: "PD Review" },
+]);
 
 export function StudioCompetitorCapabilityPanel({
   locale,
@@ -37,10 +56,12 @@ export function StudioCompetitorCapabilityPanel({
     (record) => record.externalValidationRequired,
   );
   const [toolQuery, setToolQuery] = useState("");
-  const matchedWorkflows = useMemo(
-    () => matchStudioCompetitorWorkflowPreset(toolQuery),
-    [toolQuery],
-  );
+  const [roleFilter, setRoleFilter] = useState<"all" | CreatorRoleId>("all");
+  const matchedWorkflows = useMemo(() => {
+    const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
+    if (roleFilter === "all") return byQuery;
+    return byQuery.filter((item) => item.recommendedRoles.includes(roleFilter));
+  }, [toolQuery, roleFilter]);
 
   const handleSelectWorkspace = (workspaceId: StudioDefaultWorkspaceId) => {
     onSelectWorkspacePreset?.(workspaceId);
@@ -131,6 +152,33 @@ export function StudioCompetitorCapabilityPanel({
               />
             </label>
           </div>
+          <div
+            data-testid="competitor-role-filter-bar"
+            className="mt-2.5 flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={locale === "ko" ? "직군별 작업공간 필터" : "Filter workspaces by role"}
+          >
+            {COMPETITOR_ROLE_FILTER_CHIPS.map((chip) => {
+              const active = roleFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  data-testid={`competitor-role-filter-${chip.id}`}
+                  aria-pressed={active}
+                  onClick={() => setRoleFilter(chip.id)}
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-[0.68rem] font-bold transition-colors",
+                    active
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
+                  )}
+                >
+                  {locale === "ko" ? chip.labelKo : chip.labelEn}
+                </button>
+              );
+            })}
+          </div>
           {matchedWorkflows.length === 0 ? <p role="status" className="mt-3 text-sm text-fg-2">{locale === "ko" ? "일치하는 작업공간이 없습니다." : "No matching workspace."}</p> : null}
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {matchedWorkflows.map((item) => {
@@ -187,6 +235,38 @@ export function StudioCompetitorCapabilityPanel({
                 </div>
               );
             })}
+          </div>
+          <div
+            data-testid="competitor-role-pipeline-bridge"
+            className="mt-3 rounded-xl border border-line bg-panel/60 p-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-1 text-[0.68rem]">
+              <span className="font-black text-fg">
+                {locale === "ko"
+                  ? "8단계 웹툰 직군 분업 파이프라인 & 레이어 잠금 인계 체인"
+                  : "8-Stage Webtoon Role Pipeline & Layer-Lock Handoff Chain"}
+              </span>
+              <span className="font-mono text-[0.62rem] text-accent">
+                {locale === "ko"
+                  ? "글·각색 → 콘티 → 3D배경 → 메인선화 → 선화어시 → 밑색 → 명암·효과 → 식자·PD"
+                  : "Script → Storyboard → 3D BG → Main Line → Assist Line → Flat → Shade/FX → Letter/PD"}
+              </span>
+            </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-8">
+              {WEBTOON_E2E_ROLE_PIPELINE_STAGES.map((stg) => (
+                <div
+                  key={stg.id}
+                  className="rounded-lg border border-line bg-card px-2 py-1 text-[0.62rem]"
+                >
+                  <div className="font-bold text-fg">
+                    {stg.labelKo}
+                  </div>
+                  <div className="mt-0.5 truncate text-[0.58rem] text-fg-3">
+                    {stg.summaryKo}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}

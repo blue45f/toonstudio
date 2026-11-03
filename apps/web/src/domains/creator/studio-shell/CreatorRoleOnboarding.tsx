@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2, Sparkles } from "lu
 import { useEffect, useMemo, useState } from "react";
 
 import { creatorRoleWorkspacePreset } from "../creator-role-workspace-presets";
+import { resolveRolePipelinePreset } from "../manga-toolkit/webtoon-role-pipeline-orchestrator";
 
 import { updateMyProfile, type MeProfile } from "@/platform/me-client";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -124,6 +125,10 @@ export function CreatorRoleOnboarding({
   );
   const selectedRolePreset = useMemo(
     () => creatorRoleWorkspacePreset(draft.primaryRole),
+    [draft.primaryRole],
+  );
+  const selectedRolePipeline = useMemo(
+    () => (draft.primaryRole ? resolveRolePipelinePreset(draft.primaryRole) : null),
     [draft.primaryRole],
   );
 
@@ -316,6 +321,30 @@ export function CreatorRoleOnboarding({
                 <p className="mt-1 text-[0.72rem] text-fg-2">
                   {locale === "ko" ? "참고 도구: " : "Reference tools: "}{selectedRolePreset.familiarTools.join(" · ")}
                 </p>
+                {selectedRolePipeline ? (
+                  <div
+                    data-testid="onboarding-role-rbac-preview"
+                    className="mt-2 rounded-xl border border-line bg-card/80 p-2.5 text-[0.7rem]"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+                      <span>{selectedRolePipeline.permissionBadgeKo}</span>
+                      <span className="font-mono text-[0.65rem] text-accent">
+                        편집 권한 레이어 {selectedRolePipeline.allowedLayerGroups.length}개 · 자동 잠금{" "}
+                        {selectedRolePipeline.lockedLayerGroups.length}개
+                      </span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {selectedRolePipeline.tailoredMenusKo.map((menu) => (
+                        <span
+                          key={menu}
+                          className="rounded border border-accent/30 bg-accent-soft/40 px-1.5 py-0.5 text-[0.64rem] font-semibold text-fg"
+                        >
+                          {menu}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             <label className="mt-3 block text-xs font-semibold text-fg-2">
