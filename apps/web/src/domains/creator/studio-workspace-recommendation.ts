@@ -32,12 +32,139 @@ export const STUDIO_CLIP_WORKSPACE_RECOMMENDATION = Object.freeze({
   searchAliases: Object.freeze([
     "CSP",
     "Clip Studio",
-    "클립스튜디오",    "클립 스튜디오",
+    "클립스튜디오",
+    "클립 스튜디오",
     "클튜",
     "이주",
     "전환",
   ]),
 } as const);
+
+export interface StudioCompetitorWorkflowQuickMatch {
+  readonly id: string;
+  readonly competitorFamily: string;
+  readonly workspaceId: StudioDefaultWorkspaceId;
+  readonly workspaceName: string;
+  readonly summary: string;
+  readonly keyCapabilities: readonly string[];
+  readonly recommendedRoles: readonly CreatorRoleId[];
+  readonly searchAliases: readonly string[];
+}
+
+export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitorWorkflowQuickMatch[] =
+  Object.freeze([
+    {
+      id: "csp-comic-workflow",
+      competitorFamily: "Clip Studio Paint EX / PRO",
+      workspaceId: "csp-migration",
+      workspaceName: "클립 스튜디오 이주",
+      summary: "페이지·레이어와 만화 작업 도구를 찾기 위한 작업공간 추천입니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["creator", "line-art", "line-assistant", "assistant"],
+      searchAliases: STUDIO_CLIP_WORKSPACE_RECOMMENDATION.searchAliases,
+    },
+    {
+      id: "procreate-minimal-workflow",
+      competitorFamily: "Procreate · ibisPaint",
+      workspaceId: "mobile-draw",
+      workspaceName: "모바일 드로잉",
+      summary: "작은 화면에서 드로잉을 시작할 작업공간을 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["line-art", "associate-artist", "character"],
+      searchAliases: ["Procreate", "프로크리에이트", "ibisPaint", "이비스페인트", "아이패드", "태블릿"],
+    },
+    {
+      id: "photoshop-krita-color-workflow",
+      competitorFamily: "Adobe Photoshop · Krita",
+      workspaceId: "photo-edit",
+      workspaceName: "사진·보정 편집",
+      summary: "사진과 색상 보정 작업을 위한 배치를 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["color", "flat-color-assistant", "shading-assistant", "effect-assistant"],
+      searchAliases: ["Photoshop", "포토샵", "Krita", "크리타", "Affinity Photo", "Photopea", "보정"],
+    },
+    {
+      id: "sketchup-acon-3d-workflow",
+      competitorFamily: "SketchUp · ACON3D · Snaptoon",
+      workspaceId: "pose-3d",
+      workspaceName: "3D 포즈·배경",
+      summary: "3D 포즈와 배경 작업을 시작할 배치를 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["background", "background-assistant", "three-d"],
+      searchAliases: ["SketchUp", "스케치업", "ACON3D", "에이콘3D", "Snaptoon", "스냅툰", "Blender", "블렌더", "VRoid"],
+    },
+    {
+      id: "celtx-obsidian-story-workflow",
+      competitorFamily: "Celtx · Campfire · Obsidian",
+      workspaceId: "storyboard",
+      workspaceName: "스토리보드",
+      summary: "대본과 콘티 작업을 위한 배치를 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["story", "adaptation", "associate-writer", "storyboard"],
+      searchAliases: ["Celtx", "셀텍스", "Campfire", "Obsidian", "옵시디언", "대본", "각색", "콘티"],
+    },
+    {
+      id: "figma-tldraw-vector-workflow",
+      competitorFamily: "Figma · Concepts · tldraw",
+      workspaceId: "vector-design",
+      workspaceName: "벡터·타이포 디자인",
+      summary: "벡터와 타이포그래피 작업을 위한 배치를 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["lettering", "lettering-assistant", "localization", "planner"],
+      searchAliases: ["Figma", "피그마", "Illustrator", "일러스트레이터", "Concepts", "tldraw", "Milanote"],
+    },
+    {
+      id: "rive-harmony-animation-workflow",
+      competitorFamily: "Rive · Toon Boom · Live2D",
+      workspaceId: "animation",
+      workspaceName: "애니메이션",
+      summary: "애니메이션 작업을 시작할 배치를 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["effect-assistant", "character", "three-d"],
+      searchAliases: ["Rive", "Toon Boom", "Moho", "Live2D", "Procreate Dreams", "무빙툰"],
+    },
+    {
+      id: "kitsu-linear-review-workflow",
+      competitorFamily: "CGWire Kitsu · Linear",
+      workspaceId: "review",
+      workspaceName: "검수·피드백",
+      summary: "검수와 피드백 작업을 위한 배치를 추천합니다.",
+      keyCapabilities: [],
+      recommendedRoles: ["editor", "producer", "reviewer", "planner"],
+      searchAliases: ["Kitsu", "Linear", "리니어", "Frame.io", "검수", "피드백", "PD"],
+    },
+  ] as const satisfies readonly StudioCompetitorWorkflowQuickMatch[]);
+
+const WORKSPACE_COMPETITOR_ALIAS_MAP: Readonly<
+  Partial<Record<StudioDefaultWorkspaceId, readonly string[]>>
+> = Object.freeze({
+  "csp-migration": STUDIO_CLIP_WORKSPACE_RECOMMENDATION.searchAliases,
+  "quick-sketch": ["간편", "간단", "초보", "처음", "스케치", "집중", "simple", "quick"],
+  storyboard: ["Celtx", "셀텍스", "Campfire", "Obsidian", "옵시디언", "대본", "각색", "콘티"],
+  "mobile-draw": ["Procreate", "프로크리에이트", "ibisPaint", "이비스페인트", "아이패드", "태블릿"],
+  "photo-edit": ["Photoshop", "포토샵", "Krita", "크리타", "Affinity Photo", "Photopea", "보정"],
+  "pose-3d": ["SketchUp", "스케치업", "ACON3D", "에이콘3D", "Snaptoon", "스냅툰", "Blender", "블렌더", "VRoid"],
+  "vector-design": ["Figma", "피그마", "Illustrator", "일러스트레이터", "Concepts", "tldraw", "Milanote"],
+  animation: ["Rive", "Toon Boom", "Moho", "Live2D", "Procreate Dreams", "무빙툰"],
+  review: ["Kitsu", "Linear", "리니어", "Frame.io", "검수", "피드백", "PD"],
+});
+
+export function matchStudioCompetitorWorkflowPreset(
+  query: string,
+): readonly StudioCompetitorWorkflowQuickMatch[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES;
+  return STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES.filter((item) => {
+    const haystacks = [
+      item.competitorFamily,
+      item.workspaceName,
+      item.summary,
+      ...item.keyCapabilities,
+      ...item.searchAliases,
+    ];
+    return haystacks.some((text) => text.toLowerCase().includes(normalized));
+  });
+}
 
 export interface ResolvedStudioWorkspaceRecommendation {
   readonly id: string;
@@ -53,11 +180,11 @@ export interface ResolvedStudioWorkspaceRecommendation {
 
 /** Search vocabulary stays presentation-only; persisted workspace records remain unchanged. */
 export function studioWorkspaceSearchAliases(workspaceId: string): readonly string[] {
-  return workspaceId === STUDIO_CLIP_WORKSPACE_RECOMMENDATION.workspaceId
-    ? STUDIO_CLIP_WORKSPACE_RECOMMENDATION.searchAliases
-    : workspaceId === STUDIO_SIMPLE_WORKSPACE_RECOMMENDATION.workspaceId
-      ? ["간편", "간단", "초보", "처음", "스케치", "집중", "simple", "quick"]
-      : [];
+  // 상속된 속성을 작업공간 별칭으로 반환하지 않는다.
+  if (!Object.prototype.hasOwnProperty.call(WORKSPACE_COMPETITOR_ALIAS_MAP, workspaceId)) {
+    return [];
+  }
+  return WORKSPACE_COMPETITOR_ALIAS_MAP[workspaceId as StudioDefaultWorkspaceId] ?? [];
 }
 
 function resolveRoleRecommendation(

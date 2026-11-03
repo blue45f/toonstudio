@@ -1,0 +1,271 @@
+{
+  "status": "target",
+  "auditDate": "2026-11-03",
+  "verificationStatus": "원본 보존본에서 회수한 자체 보고. raw 반환·원문 해시 미확보로 독립 검증 미완료",
+  "limitations": [
+    "홈페이지 관찰은 편집기 기능·성능·호환성 검증이 아니다",
+    "evidence ID만으로 실행 또는 ToonStudio 기능 동등성을 입증하지 않는다",
+    "reportedData의 수치와 완료 주장은 검증된 결과로 사용하지 않는다"
+  ],
+  "reportedData": {
+    "schema_version": "7.0.0",
+    "generated_at": "2026-11-02",
+    "title": "ToonStudio 전 영역 경쟁·참조 제품 REA 역공학 벤치마크 및 초직관 UI/UX 내재화 증거 원장",
+    "toolchain": {
+      "mcp_server": "rea",
+      "provider_browser": "rea-cdp-browser",
+      "cdp_endpoint": "http://127.0.0.1:9223",
+      "operations": [
+        "list_browser_targets",
+        "inspect_web_page",
+        "capture_browser_scenario",
+        "export_web_scripts",
+        "analyze_javascript_application"
+      ],
+      "native_binary_policy": "ghidra_only_no_hopper"
+    },
+    "target_discovery_evidence_ids": [
+      "ev_4f482dc25118259033311442a38c03f2a241deb26b116ee40be9f3b420a4aad9",
+      "ev_a0cb13abc012fcf76cf40b57e90d48d6a7935d5128ac8624d813b13d5e795de5",
+      "ev_d3cb7c28e35df5cfa3770ffd32150f758e9f352d62a6d21268625a0ddbad25af"
+    ],
+    "live_inspected_reference_products": [
+      {
+        "id": "krita",
+        "name": "Krita",
+        "category": "natural-media",
+        "url": "https://krita.org/en/",
+        "evidence_id": "ev_804daeb38853c4fb666bd635ecf12a2246dffc088810cc1ae76ce83cb9960545",
+        "a11y_node_count": 682,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "우클릭 팝업 팔레트(Pop-up Palette)로 캔버스 시선 이동 없이 브러시·색상·각도 즉시 변경",
+          "Task-specific Workspace Switcher(Drawing, Animation, Storyboard, Big Paint) 1클릭 전환",
+          "소실점·어안·평행선 Painting Assistants 자석 가이드"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "painting-focus",
+          "command_bar_role_recommendation": "color",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
+          ]
+        }
+      },
+      {
+        "id": "procreate",
+        "name": "Procreate",
+        "category": "mobile-drawing",
+        "url": "https://procreate.com/procreate",
+        "evidence_id": "ev_8185f75109a632517805285e8cdff72f1cb01e3b18685d2825e22bee1d307d69",
+        "a11y_node_count": 411,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "캔버스 몰입도를 극대화하는 초절제 상단 8슬롯 액션바 + QuickMenu 방사형 단축 동작",
+          "QuickShape 도형/직선 자동 스냅 및 StreamLine 실시간 필압·손떨림 보정",
+          "ColorDrop 기준선 참조 채우기와 직관적인 2핑거 Undo / 3핑거 Redo 제스처"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "tablet-touch",
+          "command_bar_role_recommendation": "line-art",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts"
+          ]
+        }
+      },
+      {
+        "id": "concepts",
+        "name": "Concepts",
+        "category": "vector-infinite-canvas",
+        "url": "https://concepts.app/en/",
+        "evidence_id": "ev_356c21264b39d2ad33d16512fcf062cccf765019a78b08d299d84eaba495f57e",
+        "a11y_node_count": 1038,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "무한 캔버스 위 벡터-래스터 하이브리드 스트로크(Nudge, Slice, Select) 비파괴 편집",
+          "1점·2점·3점 원근 그리드 및 정밀 각도/비율 가이드 오버레이",
+          "콘티·러프 스케치 단계에서 캔버스 크기 제약 없이 에피소드 흐름을 확장하는 레이아웃"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "storyboard-focus",
+          "command_bar_role_recommendation": "storyboard",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
+          ]
+        }
+      },
+      {
+        "id": "tldraw",
+        "name": "tldraw",
+        "category": "vector-infinite-canvas",
+        "url": "https://www.tldraw.com/",
+        "evidence_id": "ev_f0cabd898d2d797afa3c20084a8cf98cd591cf291a61d4c5126ded5bf921f168",
+        "a11y_node_count": 127,
+        "script_count": 2,
+        "storage_usage_bytes": 3489,
+        "indexed_db_names": [
+          "TLDRAW_DOCUMENT_v2tldraw_document_v3_NrAXHZ9iDw96RA5Y9BI0b"
+        ],
+        "key_ux_patterns": [
+          "설명서가 필요 없는 단일 하단/상단 플로팅 미니멀 툴바와 즉각적인 도형·화살표 바인딩",
+          "IndexedDB 기반 로컬-퍼스트 즉시 저장(Zero-setup Persistence)과 멀티플레이어 커서 팔로우",
+          "복잡한 설정 패널을 숨기고 선택 시에만 나타나는 컨텍스트 스타일 팝오버"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "canvas-focus",
+          "command_bar_role_recommendation": "planner",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/CreatorRoleOnboarding.tsx"
+          ]
+        }
+      },
+      {
+        "id": "blender",
+        "name": "Blender (Grease Pencil & Viewport)",
+        "category": "3d-dcc",
+        "url": "https://www.blender.org/",
+        "evidence_id": "ev_8ac1572fcdc897a18b9dfccc80aa10c581df75ecb9ee3781911ca0174a86fefc",
+        "a11y_node_count": 899,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "상단 워크스페이스 탭(Layout, Modeling, 2D Animation, Shading, Compositing) 1클릭 전환",
+          "3D 씬/카메라 위에 2D 스트로크를 직접 그리는 Grease Pencil 하이브리드 파이프라인",
+          "뷰포트 우측 상단 기즈모 및 셰이딩 모드(Wireframe / Solid / Material / Rendered) 즉시 전환"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "three-d-stage",
+          "command_bar_role_recommendation": "three-d",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
+          ]
+        }
+      },
+      {
+        "id": "sketchup",
+        "name": "SketchUp",
+        "category": "3d-dcc",
+        "url": "https://sketchup.trimble.com/en",
+        "evidence_id": "ev_31e073e893701017ac9c30c553865302f39175946f2fd47cf821a1301948213c",
+        "a11y_node_count": 1200,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "웹툰 배경 어시스턴트 표준 워크플로: 카메라 씬(Scene Tabs) 저장·단면(Section Plane)·은선(Hidden Line) 추출",
+          "3D Warehouse 연동 3D 소품 즉시 배치 및 그림자 시간대/계절 슬라이더 직관 조작",
+          "Outliner 계층 트리에서 방문·창문 등 동적 컴포넌트 토글"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "three-d-stage",
+          "command_bar_role_recommendation": "background-assistant",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts"
+          ]
+        }
+      },
+      {
+        "id": "acon3d",
+        "name": "ACON3D",
+        "category": "material-marketplace",
+        "url": "https://www.acon3d.com/ko",
+        "evidence_id": "ev_875b504d4a89d3fda10a1305b3b3c822af819021d8101b585173c454350c3d7e",
+        "a11y_node_count": 3840,
+        "script_count": 2,
+        "storage_usage_bytes": 207532,
+        "indexed_db_names": [
+          "notifly"
+        ],
+        "key_ux_patterns": [
+          "장르·시대·공간별 웹툰 3D 배경·브러시·소재 큐레이션과 즉시 프리뷰 카드",
+          "개인 작가 vs 스튜디오/에이전시 공동 사용 라이선스 범위 배지 직관 표시",
+          "작업 중인 에피소드·캔버스로 소재를 바로 호출하는 소재함 연동 흐름"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "three-d-stage",
+          "command_bar_role_recommendation": "background",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
+          ]
+        }
+      },
+      {
+        "id": "linear",
+        "name": "Linear",
+        "category": "collaboration-design",
+        "url": "https://linear.app/",
+        "evidence_id": "ev_3de6c6e1f562abe8e345e8d0d849efa5d63285b3bfce599e19b2a81686a9da1a",
+        "a11y_node_count": 2713,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "Cmd/Ctrl+K 단일 커맨드 팔레트로 모든 상태 변경·담당자 배정·뷰 전환을 즉시 수행",
+          "고밀도·저피로 타이포그래피와 직무/담당자별 포커스 뷰(My Issues / Active Cycle / Triage)",
+          "복잡한 모달 없이 인라인 칩 클릭만으로 공정 상태·우선순위를 전환하는 초경량 조작성"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "review-desk",
+          "command_bar_role_recommendation": "producer",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/CreatorRoleOnboarding.tsx"
+          ]
+        }
+      },
+      {
+        "id": "rive",
+        "name": "Rive",
+        "category": "rigging-avatar",
+        "url": "https://rive.app/",
+        "evidence_id": "ev_ea371abb3f7a38376e8bbb89907cf54cb6abb7ed7511758a9d2db17e4d8e3f77",
+        "a11y_node_count": 3717,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "Design 모드와 Animate/State Machine 모드를 상단 토글 하나로 전환하는 일관된 단일 에디터",
+          "본(Bone)·메시 디포메이션과 상태 전이 그래프를 실시간 프리뷰하며 조작하는 인터랙티브 타임라인",
+          "무빙툰·인터랙티브 컷 연출에 바로 적용 가능한 경량 런타임 상태 머신"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "animation-desk",
+          "command_bar_role_recommendation": "compositing",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
+          ]
+        }
+      },
+      {
+        "id": "obsidian",
+        "name": "Obsidian",
+        "category": "storyboard",
+        "url": "https://obsidian.md/",
+        "evidence_id": "ev_f9d0291928ecd65e80536a8d2bb202983d89e228024023e11a6a4f17d48e82e0",
+        "a11y_node_count": 448,
+        "script_count": 2,
+        "storage_usage_bytes": 0,
+        "key_ux_patterns": [
+          "양방향 문서 링크([[WikiLink]])와 그래프 뷰를 통한 세계관 설정·인물·사건 연결망 시각화",
+          "Canvas 보드 위에서 노트·이미지·타임라인 카드를 자유롭게 묶는 스토리 아키텍처",
+          "글작가·각색작가·보조 글작가가 원고 집필 중 우측 사이드바에서 캐릭터/세계관 시트를 즉시 참조하는 분할 뷰"
+        ],
+        "toonstudio_internalization": {
+          "workspace_preset": "story-outline",
+          "command_bar_role_recommendation": "story",
+          "modules": [
+            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts"
+          ]
+        }
+      }
+    ]
+  }
+}

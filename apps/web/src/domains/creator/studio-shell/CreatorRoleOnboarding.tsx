@@ -1,6 +1,8 @@
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { creatorRoleWorkspacePreset } from "../creator-role-workspace-presets";
+
 import { updateMyProfile, type MeProfile } from "@/platform/me-client";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import {
@@ -23,8 +25,63 @@ import {
 import { cn } from "@/shared/lib/utils";
 
 const FEATURED_ROLES: readonly CreatorRoleId[] = [
-  "story", "line-art", "assistant", "planner", "producer", "creator",
+  "story",
+  "adaptation",
+  "line-art",
+  "associate-artist",
+  "assistant",
+  "planner",
+  "producer",
+  "creator",
 ];
+
+type OnboardingRoleCategoryId =
+  | "featured"
+  | "story"
+  | "art"
+  | "assistant"
+  | "production";
+
+const ONBOARDING_ROLE_CATEGORIES: readonly {
+  readonly id: OnboardingRoleCategoryId;
+  readonly label: { readonly ko: string; readonly en: string };
+  readonly roles: readonly CreatorRoleId[];
+}[] = [
+  {
+    id: "featured",
+    label: { ko: "주요 추천", en: "Featured" },
+    roles: FEATURED_ROLES,
+  },
+  {
+    id: "story",
+    label: { ko: "글·각색·기획", en: "Story & Adaptation" },
+    roles: ["story", "adaptation", "associate-writer", "planner", "storyboard"],
+  },
+  {
+    id: "art",
+    label: { ko: "작화·보조작가", en: "Art & Associate" },
+    roles: ["line-art", "associate-artist", "character", "color", "background", "three-d", "lettering"],
+  },
+  {
+    id: "assistant",
+    label: { ko: "전문 어시스턴트", en: "Specialist Assistants" },
+    roles: [
+      "assistant",
+      "line-assistant",
+      "flat-color-assistant",
+      "shading-assistant",
+      "background-assistant",
+      "effect-assistant",
+      "lettering-assistant",
+    ],
+  },
+  {
+    id: "production",
+    label: { ko: "편집·PD·검수", en: "Editorial & PD" },
+    roles: ["creator", "producer", "editor", "reviewer", "localization", "educator"],
+  },
+];
+
 const STEP_LABELS = ["직무", "전문 분야", "사용 목적", "공개 범위"] as const;
 function patchProfile(
   profile: CreatorRoleProfile,
@@ -49,6 +106,7 @@ export function CreatorRoleOnboarding({
     : 1;
   const [draft, setDraft] = useState(profile.creatorRoleProfile);
   const [step, setStep] = useState(initialStep);
+  const [roleCategory, setRoleCategory] = useState<OnboardingRoleCategoryId>("featured");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +115,16 @@ export function CreatorRoleOnboarding({
   const recommended = useMemo(
     () => new Set(recommendedCreatorSpecialties(selectedRoles)),
     [selectedRoles],
+  );
+  const activeCategoryRoles = useMemo(
+    () =>
+      ONBOARDING_ROLE_CATEGORIES.find((category) => category.id === roleCategory)?.roles
+      ?? FEATURED_ROLES,
+    [roleCategory],
+  );
+  const selectedRolePreset = useMemo(
+    () => creatorRoleWorkspacePreset(draft.primaryRole),
+    [draft.primaryRole],
   );
 
   const persist = async (next: CreatorRoleProfile, dismiss: boolean) => {
@@ -179,9 +247,36 @@ export function CreatorRoleOnboarding({
         {step === 1 ? (
           <div>
             <h3 className="text-base font-black text-fg">지금 주로 어떤 일을 하나요?</h3>
-            <p className="mt-1 text-xs leading-5 text-fg-2">대표 직무 하나를 먼저 선택합니다. 언제든 다시 바꿀 수 있습니다.</p>
+            <p className="mt-1 text-xs leading-5 text-fg-2">
+              {locale === "ko" ? "직군을 선택해 추천 작업 환경을 미리 확인하세요. 다음 단계에서 프로필을 저장합니다." : "Choose a role to preview a suggested workspace. Your profile is saved in the next step."}
+            </p>
+            <div
+              className="mt-3 flex flex-wrap gap-1.5"
+              role="group"
+              aria-label={locale === "ko" ? "온보딩 직군 분류 필터" : "Onboarding role category filter"}
+            >
+              {ONBOARDING_ROLE_CATEGORIES.map((category) => {
+                const active = roleCategory === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setRoleCategory(category.id)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-panel text-fg-2 hover:border-accent/40 hover:text-fg",
+                    )}
+                  >
+                    {creatorText(category.label, locale)}
+                  </button>
+                );
+              })}
+            </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURED_ROLES.map((role) => {
+              {activeCategoryRoles.map((role) => {
                 const definition = creatorRoleDefinition(role);
                 if (!definition) return null;
                 const selected = draft.primaryRole === role;
@@ -207,8 +302,24 @@ export function CreatorRoleOnboarding({
                 );
               })}
             </div>
+            {draft.primaryRole && selectedRolePreset ? (
+              <div
+                className="mt-4 rounded-2xl border border-accent/30 bg-accent-soft/25 p-3.5"
+                data-testid="onboarding-role-environment-preview"
+              >
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-accent">
+                  {locale === "ko" ? "선택한 직무의 추천 환경" : "Suggested workspace for your role"}
+                </p>
+                <p className="mt-1 text-xs font-bold text-fg">
+                  {selectedRolePreset.reason}
+                </p>
+                <p className="mt-1 text-[0.72rem] text-fg-2">
+                  {locale === "ko" ? "참고 도구: " : "Reference tools: "}{selectedRolePreset.familiarTools.join(" · ")}
+                </p>
+              </div>
+            ) : null}
             <label className="mt-3 block text-xs font-semibold text-fg-2">
-              {locale === "ko" ? "다른 직무 찾기" : "Choose another role"}
+              {locale === "ko" ? "전체 직무 목록에서 바로 선택" : "Choose from all roles"}
               <select
                 value={draft.primaryRole ?? ""}
                 onChange={(event) => selectRole(event.target.value as CreatorRoleId)}
