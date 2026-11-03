@@ -42,6 +42,9 @@ describe("MarketplaceAssetQualityMatrix", () => {
     expect(state).toContain("brush-pressure");
     expect(state).toContain("brush-crossing");
     expect(screen.getByText("필수 계획").parentElement?.textContent).toContain("100%");
+    expect(screen.getByTestId("market-asset-preflight-readiness").textContent).toContain(
+      "ACON3D·BOOTH 출고 기준 충족",
+    );
   });
 
   it("switches to type-specific 3D validation scenarios", () => {

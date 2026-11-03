@@ -62,6 +62,9 @@ describe("내 직군 · 작업환경 설정 (R-3)", () => {
     renderPage();
     expect(screen.getByText("로그인이 필요합니다")).toBeTruthy();
     expect(screen.getByRole("link", { name: "로그인하기" }).getAttribute("href")).toBe("/auth/login");
+    expect(screen.getByTestId("role-workspace-rea-ergonomics-bar").textContent).toContain(
+      "15개 세부직무 인지부하 47~58% 절감",
+    );
     expect(getMyProfile).not.toHaveBeenCalled();
   });
 

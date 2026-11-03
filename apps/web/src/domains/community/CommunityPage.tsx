@@ -450,6 +450,30 @@ export function CommunityPage() {
             cta={t(COPY.promoteNew)}
           />
         </div>
+        <div
+          data-testid="community-rea-creator-showcase-bar"
+          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-extrabold text-accent">
+              CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE
+            </span>
+            {[
+              { href: "/community/timelapse", ko: "직무별 WIP 타임랩스 (선화·채색·3D배경)", en: "Role WIP Timelapses" },
+              { href: "/community?provenance=human-verified", ko: "인간 순수 창작 (Human-Verified)", en: "Human-Verified Art" },
+              { href: "/community?provenance=ai-assisted", ko: "AI 보조 투명성 명시 (Provenance)", en: "AI-Assisted Provenance" },
+              { href: "/team/recruiting", ko: "스튜디오·어시스턴트 구인 매칭", en: "Studio & Assistant Recruiting" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+              >
+                {item.ko}
+              </Link>
+            ))}
+          </div>
+        </div>
       </Section>
       ) : null}
     </Container>
