@@ -134,6 +134,37 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
       </div>
 
       {/* 휴대폰은 옆으로 넘기는 한 줄(작업군 5장), 넓은 화면은 격자 — 제작 순서(템플릿 → 2D → 3D → 브러시 → 색·보정)를 유지한다. */}
+      <div
+        data-testid="market-rea-compatibility-bar"
+        className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-extrabold text-accent">
+            {bt("REA 글로벌 에셋 호환 규격:", "REA Global Asset Specs:")}
+          </span>
+          {[
+            bt("ACON3D·SketchUp (.skp/.glb 2점투시)", "ACON3D·SketchUp (.skp/.glb 2-pt)"),
+            bt("Clip Studio·Krita·Procreate 브러시", "CSP·Krita·Procreate Brushes"),
+            bt("VRoid·Daz3D·Marvelous 포즈/의상", "VRoid·Daz3D·Marvelous Pose/Cloth"),
+            bt("Poly Haven·Sketchfab PBR/HDRI", "Poly Haven·Sketchfab PBR/HDRI"),
+            bt("BOOTH 1인·스튜디오 상업 라이선스 검증", "BOOTH Solo/Studio License Verified"),
+          ].map((badge) => (
+            <span
+              key={badge}
+              className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold text-fg-2"
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
+        <Link
+          href="/studio/canvas"
+          className="inline-flex min-h-8 items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-[11px] font-bold text-accent hover:bg-accent hover:text-on-accent"
+        >
+          {bt("스튜디오 캔버스 1-Click 연동", "1-Click Studio Canvas Inject")}
+        </Link>
+      </div>
+
       <SiteRail
         label={bt("리소스 작업군", "Resource families")}
         ordered
