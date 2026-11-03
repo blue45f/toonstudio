@@ -1,0 +1,8 @@
+{
+  "package": "minimatch",
+  "version": "3.1.5",
+  "tarball": "https://registry.npmjs.org/minimatch/-/minimatch-3.1.5.tgz",
+  "sha256": "d81817ecf72de3c8c5d3724407752d943c9e1a42af5c437d9cb923be8a72c648",
+  "advisory": "GHSA-g3hv-75wg-m249",
+  "fixCommit": "77a0f5c4b80bdc641c3c930a1d9edf5ad2db57f8"
+}
