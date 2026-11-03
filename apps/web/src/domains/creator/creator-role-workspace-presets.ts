@@ -117,7 +117,7 @@ const ROLE_WORKSPACE_PRESETS: Readonly<
     operationalLens: "storyboard",
     reason: "컷 구성과 스크롤 흐름에 집중합니다.",
     recommendedCommandBarSlots: STORY_LETTERING_COMMAND_BAR_SLOTS,
-    familiarTools: ["Storyboard Pro", "Concepts", "Storyboarder"],
+    familiarTools: ["Storyboard Pro", "Higgsfield Mangaka", "Concepts", "Storyboarder"],
   },
   "associate-artist": {
     workspaceId: "lineart",

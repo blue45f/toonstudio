@@ -1,0 +1,200 @@
+{
+  "schema": "toonstudio.rea-competitor-evidence/1",
+  "capturedAt": "2026-11-03T20:52:00+09:00",
+  "cdpEndpoint": "http://127.0.0.1:9223",
+  "browser": {
+    "product": "Chrome/156.0.8078.80",
+    "protocolVersion": "1.3",
+    "jsVersion": "15.6.75.27"
+  },
+  "targetListEvidenceId": "ev_cd7ff2e9f8fbd4d59efed4eb0fa97e8da87343bf305de6262cb8700285aea083",
+  "sketchUp3dBackgroundTargets": [
+    {
+      "id": "sketchup-for-web",
+      "url": "https://sketchup.trimble.com/en/products/sketchup-for-web",
+      "title": "SketchUp for Web | Online 3D Modeling | Browser Based Design | Trimble",
+      "evidenceId": "ev_a57c83ab33f2bb207dd687a8eda60bf9bd27288f6529a3bf89cd4af8f5fd93f7",
+      "scriptCount": 2,
+      "resourceCount": 74,
+      "headings": [
+        "Flexible tools at your fingertips",
+        "Powered by the web",
+        "Looking for SketchUp for Desktop?",
+        "SketchUp for Web"
+      ]
+    },
+    {
+      "id": "sketchup-3d-warehouse",
+      "url": "https://3dwarehouse.sketchup.com/",
+      "title": "3D Warehouse",
+      "evidenceId": "ev_6eb7a7b9a898a1de62e96ef866c5817773350b20a7b8a21eba1e6b8f11278d37",
+      "scriptCount": 2,
+      "resourceCount": 28,
+      "headings": [
+        "Curated for quality",
+        "Find almost anything",
+        "Realism that sells"
+      ]
+    },
+    {
+      "id": "sketchup-section-planes",
+      "url": "https://help.sketchup.com/en/sketchup/slicing-model-peer-inside",
+      "title": "Creating and Using Section Planes",
+      "evidenceId": "ev_dcb6092584624db698dff8ea9569dbedce43478b6cdfe01af9d02cade76d46d6",
+      "scriptCount": 2,
+      "resourceCount": 15,
+      "headings": [
+        "Creating and Using Section Planes",
+        "Creating a Section Plane",
+        "Filling Empty Space",
+        "Hiding Section Planes and Cuts",
+        "Exporting Section Cuts"
+      ]
+    },
+    {
+      "id": "sketchup-real-world-shadows",
+      "url": "https://help.sketchup.com/en/sketchup/casting-real-world-shadows",
+      "title": "Casting Real-World Shadows",
+      "evidenceId": "ev_139ab8710501ec5706ed3e506c412d853c996efd0c479fb8a40815e8db79bcc4",
+      "scriptCount": 2,
+      "resourceCount": 15,
+      "headings": [
+        "Casting Real-World Shadows"
+      ]
+    },
+    {
+      "id": "sketchup-creating-scenes",
+      "url": "https://help.sketchup.com/en/sketchup/creating-scenes",
+      "title": "Creating Scenes",
+      "evidenceId": "ev_ccc4d33d4d410abb6eaf1a879b859bd3f7edb72a4c78cf6142a160481a28cda1",
+      "scriptCount": 2,
+      "resourceCount": 15,
+      "headings": [
+        "Creating Scenes",
+        "Adding a Scene",
+        "Managing Scene Properties",
+        "Managing Scenes"
+      ]
+    },
+    {
+      "id": "sketchup-choosing-style",
+      "url": "https://help.sketchup.com/en/sketchup/choosing-style",
+      "title": "Choosing a Style",
+      "evidenceId": "ev_3714961a8f0736ef6eac9882997747568bb9f47b067eda2ef1dee25c119e59af",
+      "scriptCount": 2,
+      "resourceCount": 18,
+      "headings": [
+        "Choosing a Style",
+        "Using the Styles Panel",
+        "More Style Options"
+      ]
+    },
+    {
+      "id": "sketchup-push-pull-3d",
+      "url": "https://help.sketchup.com/en/sketchup/pushing-and-pulling-shapes-3d",
+      "title": "Pushing and Pulling Shapes into 3D",
+      "evidenceId": "ev_38a304255486542b26f2e6cf6efe464a818acd504f43c6bee87cf2e223580f65",
+      "scriptCount": 2,
+      "resourceCount": 15,
+      "headings": [
+        "Pushing and Pulling Shapes into 3D",
+        "Pulling a 3D shape from a face",
+        "Cutting a 3D shape out of your model"
+      ]
+    },
+    {
+      "id": "sketchup-visibility-tags",
+      "url": "https://help.sketchup.com/en/sketchup/controlling-visibility-tags",
+      "title": "Controlling Visibility with Tags",
+      "evidenceId": "ev_972305f4810ca0d1412def8019552781a6bdea432a891b4b5290669f69b37bee",
+      "scriptCount": 2,
+      "resourceCount": 15,
+      "headings": [
+        "Controlling Visibility with Tags",
+        "Navigating the Tags Panel",
+        "Tag Visibility",
+        "Using the Tag Tool",
+        "Working with Tag Folders"
+      ]
+    },
+    {
+      "id": "sketchup-outliner-hierarchies",
+      "url": "https://help.sketchup.com/en/sketchup/working-hierarchies-outliner",
+      "title": "Hierarchies in the Outliner",
+      "evidenceId": "ev_a0d43a3a4517edab58a5db13e1096fa0c380c16b099ab506e3b8c72cfd673c63",
+      "scriptCount": 2,
+      "resourceCount": 18,
+      "headings": [
+        "Hierarchies in the Outliner",
+        "Using the Outliner Panel",
+        "Searching and Organizing",
+        "Renaming Entities",
+        "Controlling Visibility",
+        "Identifying Entity Status"
+      ]
+    },
+    {
+      "id": "acon3d-store",
+      "url": "https://www.acon3d.com/en",
+      "title": "ACON - Digital Asset Store for All Creators",
+      "evidenceId": "ev_13d5f54ca9e07e565251cf5c6ec93ae70ea002f60253c1b712a9c5eba2d19158",
+      "scriptCount": 2,
+      "resourceCount": 28
+    }
+  ],
+  "higgsfieldMangakaEvidence": {
+    "url": "https://higgsfield.ai/mangaka",
+    "pageInspectionEvidenceIds": [
+      "ev_0dcc3daa84481125df000669b793f8b273caa0c2e4852ea6352cbdde363146c1",
+      "ev_f97498bed76663082cf7a1d3f20fc4e700ce57738b75326f3f5214d1899d575b",
+      "ev_316988be337ecf47638c50ac386ddd7390e5111afe704d6a74990782a9bb8009",
+      "ev_c2fd39e05257a55857e911db95bf55cede404370ff48a0161e6750fec66bbbcb"
+    ],
+    "scriptExportEvidenceId": "ev_68c1c1bb7e2b96b0afc80b3467ac9b04b44ec35ab9523faa4422d1db77440ec1",
+    "javascriptBundleAnalysisEvidenceId": "ev_38830a55ec4ee1475619f0f3c2d66499208903db559d9d8a97c71de7050ab423",
+    "rootArtifactSha256": "0c512536b9b5e868bf047a2640f6f6547221737491a481a2b29b9f5a9e4f4548",
+    "analyzedRouteBundles": [
+      "6e23fedf-55xKJrLdJnW9cUub.js",
+      "6e23fedf--76lF2DRAQbQZUR_.js",
+      "6e23fedf-eDKB83rwytOLjazD.js",
+      "6e23fedf-G7OJL620HCeJ0lCw.js",
+      "6e23fedf-K40_LlU0E0PePe1t.js",
+      "6e23fedf-_Cv-MQy65RP6H60s.js",
+      "6e23fedf-_g9o7S6LMP_XgDu6.js",
+      "6e23fedf-h1a0JFWblGzjA9au.js"
+    ],
+    "astMetrics": {
+      "parsedJavaScriptFiles": 8,
+      "textBytesRead": 332009,
+      "visitedAstNodes": 102236,
+      "findings": 1150,
+      "dataFlowRelations": 40457,
+      "closureRelations": 7333,
+      "callFlowRelations": 3678
+    },
+    "recoveredDomainConstants": {
+      "ideaPeopleMax": 6,
+      "visualStyles": ["manga-bw", "manga-color", "comics", "webtoon"],
+      "portalProfiles": ["webtoon", "tapas", "line", "naver", "comico", "daum", "kr700", "kr720"],
+      "panelAspectRatios": ["16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16", "16:27", "21:9"],
+      "panelRoles": ["hook", "establishing", "action", "impact", "reveal", "dialogue", "reaction", "insert", "vignette", "cliffhanger", "textOnly"],
+      "gapClasses": {
+        "action": [120, 200, 160],
+        "beat": [240, 400, 300],
+        "pause": [400, 600, 480],
+        "scene": [600, 1000, 800],
+        "reveal": [800, 1000, 900],
+        "timeSkip": [1000, 1600, 1200]
+      },
+      "wtChecksCount": 41
+    }
+  },
+  "internalizedModules": [
+    "apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-engine.ts",
+    "apps/web/src/domains/creator/manga-toolkit/StudioHiggsfieldMangakaPanel.tsx",
+    "apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-engine.test.tsx",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-webtoon-staging-bridge.ts",
+    "apps/web/src/domains/creator/bg3d/StudioBg3dSketchUpWebtoonStagingSection.tsx",
+    "apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-webtoon-staging-bridge.test.tsx"
+  ]
+}

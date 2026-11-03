@@ -384,6 +384,33 @@
         "three-d-render"
       ],
       "implementationNotes": "Provide fast 3D anatomy, hand, and focal-length reference presets for figure drawing."
+    },
+    {
+      "id": "higgsfield-mangaka",
+      "name": "Higgsfield Mangaka",
+      "region": "US-global",
+      "stage": "production-ai-suite",
+      "category": "ai-manga-and-webtoon-series-studio",
+      "officialUrl": "https://higgsfield.ai/mangaka",
+      "watchUrl": "https://higgsfield.ai/mangaka",
+      "priority": "P0",
+      "evidenceAsOf": "2026-11-03",
+      "reaEvidenceId": "ev_38830a55ec4ee1475619f0f3c2d66499208903db559d9d8a97c71de7050ab423",
+      "focus": [
+        "photo-to-manga-character-cast-lock",
+        "script-to-staged-vertical-strip",
+        "wt-41-rule-pacing-and-lettering-qa",
+        "eight-portal-slice-profiles",
+        "safe-slice-interval-finder",
+        "cjk-aware-word-budget"
+      ],
+      "laneHints": [
+        "storyboard-camera-audio",
+        "comic-pages-panels",
+        "structured-ai",
+        "three-d-render"
+      ],
+      "implementationNotes": "Internalized in apps/web/src/domains/creator/manga-toolkit/higgsfield-mangaka-engine.ts and StudioHiggsfieldMangakaPanel.tsx with full 4-style config, 8 portal slice profiles, 6-character sheet lock, deterministic FNV-1a gap staging, safe slice intervals, WT-* QA validator, and SketchUp 3D background scene bridge."
     }
   ]
 }
