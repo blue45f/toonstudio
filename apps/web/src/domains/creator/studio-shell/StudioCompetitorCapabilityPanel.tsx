@@ -19,6 +19,7 @@ import {
   STUDIO_COMPETITOR_CAPABILITY_RECORDS,
 } from "../studio-platform/studio-competitor-capability-evidence";
 import {
+  computeToonStudioSiteWideQualityScorecard,
   matchStudioCompetitorWorkflowPreset,
   resolveStudioPageReaBenchmark,
   STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
@@ -144,6 +145,7 @@ export function StudioCompetitorCapabilityPanel({
     useState<StudioPageDomainId>("studio-role-workspace");
   const activeDensitySpec = STUDIO_UIUX_ERGONOMICS_MODES[densityMode];
   const activePageBenchmark = resolveStudioPageReaBenchmark(pageDomainId);
+  const siteWideScorecard = computeToonStudioSiteWideQualityScorecard();
   const matchedWorkflows = useMemo(() => {
     const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
     if (roleFilter === "all") return byQuery;
@@ -500,6 +502,54 @@ export function StudioCompetitorCapabilityPanel({
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div
+            className="mt-3 rounded-xl border border-success/30 bg-success/5 p-2.5"
+            data-testid="toonstudio-sitewide-quality-scorecard"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="text-[0.68rem] font-extrabold text-fg">
+                {locale === "ko"
+                  ? `사이트 전체 REA 완성도 스코어카드 (${siteWideScorecard.analyzedFrontendDomainsCount}개 프론트엔드 도메인 · ${siteWideScorecard.totalReaEvidenceRecords}건 REA 증거)`
+                  : `Site-Wide REA Quality Scorecard (${siteWideScorecard.analyzedFrontendDomainsCount} Frontend Domains · ${siteWideScorecard.totalReaEvidenceRecords} REA Evidences)`}
+              </strong>
+              <span
+                className="rounded-md bg-success/20 px-2 py-0.5 text-[0.66rem] font-black text-success"
+                data-testid="toonstudio-sitewide-score-badge"
+              >
+                {locale === "ko"
+                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`
+                  : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
+              </span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-5 text-[0.6rem] font-semibold text-fg-2">
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `기능 내재화 ${siteWideScorecard.featureInternalizationScore}`
+                  : `Internalization ${siteWideScorecard.featureInternalizationScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `UI/UX 통일성 ${siteWideScorecard.uiUxDesignUnityScore}`
+                  : `UI/UX Unity ${siteWideScorecard.uiUxDesignUnityScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `직관성 ${siteWideScorecard.intuitivenessScore}`
+                  : `Intuitiveness ${siteWideScorecard.intuitivenessScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `사용성·인체공학 ${siteWideScorecard.usabilityErgonomicsScore}`
+                  : `Usability ${siteWideScorecard.usabilityErgonomicsScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `DOM 예산·성능 ${siteWideScorecard.domPerformanceBudgetScore}`
+                  : `DOM Budget ${siteWideScorecard.domPerformanceBudgetScore}`}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

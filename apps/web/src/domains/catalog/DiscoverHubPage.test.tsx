@@ -228,5 +228,8 @@ describe("DiscoverHubPage", () => {
       status: ["completed"],
     });
     expect(onChangeSort).toHaveBeenCalledWith("rating");
+    expect(screen.getByTestId("explore-rea-reading-tempo-bar").textContent).toContain(
+      "Tapas·WEBTOON 스낵 스크롤 (30~45컷)",
+    );
   });
 });
