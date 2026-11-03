@@ -23,7 +23,7 @@ function installedRequire(name, version) {
 }
 
 describe("수정판 minimatch의 구형 소비자 호환", () => {
-  it("jsx-a11y의 callable API를 공식 수정판 엔진에 연결한다", () => {
+  it("jsx-a11y의 callable API와 기존 정규식 API를 유지한다", () => {
     expect(typeof minimatch).toBe("function");
     expect(importXRequire("minimatch/package.json").version).toBe("10.2.6-toonstudio.1");
     expect(minimatch("Dialog.Close", "{Button,Dialog.*}")).toBe(true);
