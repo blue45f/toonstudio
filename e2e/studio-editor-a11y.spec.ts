@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { readBrushTextContrast } from "./helpers/studio-brush-contrast";
 import {
   auditAccessibleNames,
   compareTabDirections,
@@ -230,4 +231,26 @@ test.describe("열린 편집기 접근성 — 모바일 390×844", () => {
       open: async () => page.keyboard.press("Enter"),
     });
   });
+});
+
+
+test.describe("브러시 목록의 작은 글자 대비", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+  for (const theme of ["light", "starlight"] as const) {
+    test(`${theme}: 선택·비선택 분류와 브러시 수치는 4.5:1 이상이다`, async ({ page }) => {
+      await page.addInitScript((preference) => {
+        localStorage.setItem("toonstudio-theme", JSON.stringify({
+          state: { preference, studioPreference: preference }, version: 0,
+        }));
+      }, theme);
+      await openGuestEditor(page);
+      const rows = await readBrushTextContrast(page);
+      expect(rows.filter((row) => row.kind === "badge").length).toBeGreaterThanOrEqual(2);
+      expect(rows.filter((row) => row.kind === "details").length).toBeGreaterThanOrEqual(1);
+      for (const row of rows) {
+        expect(row.ratio, `${theme} ${row.kind} ${row.text}: ${JSON.stringify(row)}`)
+          .toBeGreaterThanOrEqual(4.5);
+      }
+    });
+  }
 });
