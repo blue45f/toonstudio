@@ -1,5 +1,6 @@
 import {
   clientTokenExpiresAt,
+  clearLegacyLocalSessionStorage,
   normalizeClientSession,
   persistClientSession,
   readClientSession,
@@ -191,9 +192,17 @@ export function mergeCurrentSessionProfile(
   if (!current || profile.id !== current.user.id) return current;
 
   const user = { ...current.user };
-  for (const key of ["name", "email", "image", "role"] as const) {
+  const profileKeys = ["name", "email", "image", "role"] as const;
+  for (const key of profileKeys) {
     const value = profile[key];
     if (typeof value === "string" || value === null) user[key] = value;
+  }
+  const normalized = normalizeClientSession({ user, token: null });
+  // 같은 프로필 재수신은 인증 세대를 바꾸지 않는다. 남은 legacy token은 계속 정리한다.
+  if (current.token === null && normalized
+    && profileKeys.every((key) => normalized.user[key] === current.user[key])) {
+    clearLegacyLocalSessionStorage();
+    return current;
   }
   persistSession({ user, token: null });
   return getAuthSession();

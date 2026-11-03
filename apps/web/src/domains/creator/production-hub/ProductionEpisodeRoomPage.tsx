@@ -59,6 +59,7 @@ import { ProductionAvatar, ProductionEmptyState, ProductionPill, ProductionSecti
 import { usePreferredRoleLens } from "./use-preferred-role-lens";
 import { useProductionProjectSession } from "./use-production-project-session";
 
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { FlowProgress } from "@/shared/components/layout/FlowProgress";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -88,7 +89,8 @@ function RoomState({ children, kind }: { readonly children: ReactNode; readonly 
 export function ProductionEpisodeRoomPage() {
   const params = useParams<{ projectId: string; episodeId: string }>();
   const actorId = useApp((state) => state.userId);
-  const project = useProductionProjectSession(params.projectId, actorId, productionDemoAdapter);
+  const { ready: authReady } = useSession();
+  const project = useProductionProjectSession(params.projectId, actorId, productionDemoAdapter, { authReady });
   const [roleLens, setRoleLens] = usePreferredRoleLens("art");
   const [planningOpen, setPlanningOpen] = useState(false);
   const bt = useBilingual("ProductionEpisodeRoomPage");
