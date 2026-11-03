@@ -1,3 +1,4 @@
+import type { StudioVirtualStageKind } from "../office2d/studio-virtual-space-stage-mode";
 import { Ear, Footprints, Hand, Handshake, MessageCircle } from "lucide-react";
 import { memo } from "react";
 
@@ -42,10 +43,11 @@ const NPC_PREFIX = /^NPC\s*·\s*/u;
  * NPC 카드는 'NPC' 배지와 다른 테두리를 쓰고, 온라인 인원 수에는 넣지 않는다.
  */
 export const SpaceProximityStrip = memo(function SpaceProximityStrip({
-  people, npcs, artStyle, socialDisabled, followingPeerId, whisperPeerId = null, onWave, onTalk, onFollow, onWhisper, onNpcTalk, onCowork,
+  people, npcs, artStyle, stageKind, socialDisabled, followingPeerId, whisperPeerId = null, onWave, onTalk, onFollow, onWhisper, onNpcTalk, onCowork,
 }: {
   readonly people: readonly SpaceNearbyPerson[];
   readonly npcs: readonly SpaceNearbyNpcCard[];
+  readonly stageKind?: StudioVirtualStageKind;
   readonly artStyle: StudioVirtualArtStyleKey;
   /** 요청을 보낼 수 없는 이유(집중 모드·연결 없음 등). 있으면 사람 카드 버튼을 비활성으로 둔다. */
   readonly socialDisabled: string | null;
@@ -76,7 +78,7 @@ export const SpaceProximityStrip = memo(function SpaceProximityStrip({
       const whisperReason = whispering ? null : reason;
       return <article key={person.id} className="space-proximity__card" data-kind="person"
         data-in-conversation={person.inConversation || whispering || undefined} data-whispering={whispering || undefined}>
-        <SpaceAvatar identity={person.id} activity={person.activity} avatarIndex={person.avatarIndex} appearance={person.appearance} size="md" />
+        <SpaceAvatar stageKind={stageKind} artStyle={artStyle} identity={person.id} activity={person.activity} avatarIndex={person.avatarIndex} appearance={person.appearance} size="md" />
         <div className="space-proximity__text">
           <strong>{person.name}</strong>
           <small><span className="space-status-dot" data-activity={person.activity} data-status={status.id} aria-hidden />
