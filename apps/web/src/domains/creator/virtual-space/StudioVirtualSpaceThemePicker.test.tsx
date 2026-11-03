@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceThemePicker } from "./StudioVirtualSpaceThemePicker";
+import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
 import { STUDIO_SPACE_THEMES } from "./studio-virtual-space-theme";
 
 afterEach(() => cleanup());
@@ -22,6 +23,19 @@ describe("StudioVirtualSpaceThemePicker", () => {
     expect(screen.getByRole("button", { name: /모던 오피스/ }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: /웹툰 원고 아틀리에/ }).getAttribute("aria-pressed")).toBe("false");
     expect(screen.getByRole("button", { name: /네온 나이트/ }).getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("모든 테마 카드가 실제 추천 캐릭터의 이름과 스프라이트를 함께 제안한다", () => {
+    const { container } = render(<StudioVirtualSpaceThemePicker value="modern-office" onChange={vi.fn()} />);
+    for (const theme of STUDIO_SPACE_THEMES) {
+      const button = container.querySelector<HTMLButtonElement>(`[data-space-theme="${theme.key}"]`);
+      const first = STUDIO_CHARACTER_SKINS.find((skin) => skin.key === theme.recommendedCharacterKeys[0]);
+      if (!button || !first) throw new Error(`테마 추천 자산이 없습니다: ${theme.key}`);
+      expect(within(button).getByText(new RegExp(`추천 캐릭터 · ${first.labelKo}`))).toBeTruthy();
+      const preview = button.querySelector(`[data-atelier-cast-preview="${theme.key}"] .studio-character-preview`);
+      expect(preview).not.toBeNull();
+      expect(preview?.tagName.toLowerCase()).toBe(first.nativeArtStyle || first.pixelArt ? "svg" : "img");
+    }
   });
 
   it("테마를 누르면 해당 키로 onChange가 호출된다", () => {

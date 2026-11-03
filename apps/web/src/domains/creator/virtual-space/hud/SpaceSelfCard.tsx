@@ -1,3 +1,5 @@
+import type { StudioVirtualStageKind } from "../office2d/studio-virtual-space-stage-mode";
+import type { StudioVirtualArtStyleKey } from "../studio-virtual-space-art-style";
 import { memo } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -22,10 +24,12 @@ import {
 
 /** 참가자 탭 맨 위의 내 카드: 얼굴·이름·상태·현재 위치·동행 펫(WorkAdventure)·긴급도(oVice)·상태 모자(Teemyco)·창작 툴(Tandem)과 캐릭터 바꾸기. */
 export const SpaceSelfCard = memo(function SpaceSelfCard({
-  identity, name, self, zoneLabelKo, zoneLabelEn, onEditCharacter, roleLabelKo, roleLabelEn, companionId, statusUrgency, statusHatId, activeDccId,
+  identity, name, self, artStyle, stageKind, zoneLabelKo, zoneLabelEn, onEditCharacter, roleLabelKo, roleLabelEn, companionId, statusUrgency, statusHatId, activeDccId,
 }: {
   readonly identity: string;
   readonly name: string;
+  readonly stageKind?: StudioVirtualStageKind;
+  readonly artStyle?: StudioVirtualArtStyleKey;
   readonly self: Pick<StudioVirtualSpacePresenceState, "activity" | "avatarIndex" | "appearance" | "userStatus">;
   readonly zoneLabelKo: string;
   readonly zoneLabelEn: string;
@@ -45,7 +49,7 @@ export const SpaceSelfCard = memo(function SpaceSelfCard({
   const hat = spaceStatusHatOptionById(statusHatId ?? readSpaceStatusHatId());
   const dcc = spaceActiveDccOptionById(activeDccId ?? readSpaceActiveDccId());
   return <section className="space-panel-section space-self-card" aria-label={bt("나", "Me")}>
-    <SpaceAvatar identity={identity} activity={self.activity} avatarIndex={self.avatarIndex} appearance={self.appearance} self size="lg" />
+    <SpaceAvatar stageKind={stageKind} artStyle={artStyle} identity={identity} activity={self.activity} avatarIndex={self.avatarIndex} appearance={self.appearance} self size="lg" />
     <div>
       <strong>{name} · {bt("나", "Me")}{roleLabelKo ? <span className="space-self-card__role">{bt(roleLabelKo, roleLabelEn ?? roleLabelKo)}</span> : null}</strong>
       <small><span className="space-status-dot" data-activity={self.activity} data-status={status.id} aria-hidden />{bt(status.labelKo, status.labelEn)}

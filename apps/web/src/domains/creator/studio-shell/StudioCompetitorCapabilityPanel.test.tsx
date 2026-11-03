@@ -120,4 +120,63 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(plan.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByText(/Reference workflows help you choose a layout/u)).toBeTruthy();
   });
+
+  it("REA 기반 3단계 UI/UX 밀도·직관성 설계 모드를 한·영으로 전환한다", () => {
+    const { rerender } = render(<StudioCompetitorCapabilityPanel locale="ko" />);
+    expect(screen.getByTestId("competitor-uiux-ergonomics-blueprint")).toBeTruthy();
+    expect(screen.getByTestId("competitor-uiux-metrics-badge").textContent).toContain("76%");
+
+    fireEvent.click(screen.getByTestId("competitor-uiux-mode-canvas-focus-zen"));
+    expect(screen.getByTestId("competitor-uiux-mode-canvas-focus-zen").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("competitor-uiux-metrics-badge").textContent).toContain("86%");
+    expect(screen.getByTestId("competitor-uiux-ergonomics-blueprint").textContent).toContain("Photopea(403 DOM)");
+
+    rerender(<StudioCompetitorCapabilityPanel locale="en" />);
+    const enBlueprint = screen.getByTestId("competitor-uiux-ergonomics-blueprint");
+    expect(enBlueprint.textContent).toContain("Photopea (403 DOM)");
+    expect(enBlueprint.textContent).not.toMatch(/[가-힣]/u);
+  });
+
+  it("7대 페이지 도메인별 66+ 글로벌 유사 서비스 REA 벤치마크 매트릭스와 검색 별칭을 제공한다", () => {
+    const { rerender } = render(<StudioCompetitorCapabilityPanel locale="ko" />);
+    expect(screen.getByTestId("competitor-page-by-page-matrix")).toBeTruthy();
+    expect(screen.getByTestId("competitor-page-dom-budget-badge").textContent).toContain(
+      "관측 616 DOM → 목표 950 DOM",
+    );
+
+    fireEvent.click(screen.getByTestId("competitor-page-tab-catalog-ranking"));
+    expect(
+      screen.getByTestId("competitor-page-tab-catalog-ranking").getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByTestId("competitor-page-dom-budget-badge").textContent).toContain(
+      "관측 19064 DOM → 목표 3200 DOM",
+    );
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "Naver Webtoon",
+    );
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "Tapas",
+    );
+
+    fireEvent.click(screen.getByTestId("competitor-page-tab-asset-market"));
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "BOOTH",
+    );
+
+    const searchInput = screen.getByRole("searchbox", {
+      name: "익숙한 도구 또는 작업 검색",
+    });
+    fireEvent.change(searchInput, { target: { value: "Cascadeur" } });
+    expect(screen.getByText("Rive · Toon Boom · Live2D")).toBeTruthy();
+
+    fireEvent.change(searchInput, { target: { value: "Plottr" } });
+    expect(
+      screen.getByText("Celtx · Campfire · Obsidian · Higgsfield Mangaka"),
+    ).toBeTruthy();
+
+    rerender(<StudioCompetitorCapabilityPanel locale="en" />);
+    const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
+    expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
+    expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
+  });
 });

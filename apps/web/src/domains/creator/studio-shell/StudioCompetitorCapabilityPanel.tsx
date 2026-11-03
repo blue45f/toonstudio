@@ -20,6 +20,9 @@ import {
 } from "../studio-platform/studio-competitor-capability-evidence";
 import {
   matchStudioCompetitorWorkflowPreset,
+  resolveStudioPageReaBenchmark,
+  STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
+  type StudioPageDomainId,
 } from "../studio-workspace-recommendation";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
@@ -53,6 +56,71 @@ const PIPELINE_STAGE_EN: Readonly<Record<WebtoonPipelineStageId, { readonly labe
   "pd-editorial-review": { label: "Editorial review", summary: "Review the work and prepare delivery checks." },
 };
 
+export type StudioUiUxDensityModeId =
+  | "canvas-focus-zen"
+  | "role-contextual-dock"
+  | "full-production-workbench";
+
+export interface StudioUiUxErgonomicsSpec {
+  readonly id: StudioUiUxDensityModeId;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly benchmarkSummaryKo: string;
+  readonly benchmarkSummaryEn: string;
+  readonly canvasViewportRatioPct: number;
+  readonly targetDomNodeBudget: number;
+  readonly activeDockColumns: number;
+  readonly keyShortcutsKo: string;
+  readonly keyShortcutsEn: string;
+}
+
+const STUDIO_UIUX_ERGONOMICS_MODES: Readonly<
+  Record<StudioUiUxDensityModeId, StudioUiUxErgonomicsSpec>
+> = Object.freeze({
+  "canvas-focus-zen": {
+    id: "canvas-focus-zen",
+    labelKo: "몰입형 Zen 캔버스 (Procreate · Photopea 형)",
+    labelEn: "Zen Canvas Focus (Procreate · Photopea style)",
+    benchmarkSummaryKo:
+      "Photopea(403 DOM)·Procreate(870 DOM) 벤치마크: 캔버스 면적 86% 확보, 상하단 크롬 최소화 및 플로팅 퀵메뉴 중심 배치",
+    benchmarkSummaryEn:
+      "Photopea (403 DOM) & Procreate (870 DOM) benchmark: 86% canvas viewport ratio, minimal chrome and radial quick menu",
+    canvasViewportRatioPct: 86,
+    targetDomNodeBudget: 850,
+    activeDockColumns: 1,
+    keyShortcutsKo: "Tab(패널 숨김) · 2핑거 실행취소 · 3핑거 다시실행 · Space(팬)",
+    keyShortcutsEn: "Tab (Hide docks) · 2-finger Undo · 3-finger Redo · Space (Pan)",
+  },
+  "role-contextual-dock": {
+    id: "role-contextual-dock",
+    labelKo: "직무 문맥형 인스펙터 (Figma · Clip Studio 형)",
+    labelEn: "Role Contextual Inspector (Figma · Clip Studio style)",
+    benchmarkSummaryKo:
+      "Figma(2,284 DOM)·현재 역할 설정(736 DOM) 벤치마크: 선택한 직군·레이어에 필요한 4~5개 핵심 슬롯만 노출하는 점진적 공개(Progressive Disclosure)",
+    benchmarkSummaryEn:
+      "Figma (2,284 DOM) & role settings (736 DOM) benchmark: progressive disclosure showing only 4-5 role-relevant command slots",
+    canvasViewportRatioPct: 76,
+    targetDomNodeBudget: 1650,
+    activeDockColumns: 2,
+    keyShortcutsKo: "⌘K(통합 명령 검색) · Alt+드래그(스포이드/복제) · 1~5(직무 슬롯)",
+    keyShortcutsEn: "Cmd+K (Command palette) · Alt+Drag (Eyedropper/Duplicate) · 1-5 (Role slots)",
+  },
+  "full-production-workbench": {
+    id: "full-production-workbench",
+    labelKo: "올인원 프로덕션 워크벤치 (Spline · Kitsu · Studio 기본형)",
+    labelEn: "Full Production Workbench (Spline · Kitsu · Studio default)",
+    benchmarkSummaryKo:
+      "Spline(1,916 DOM)·현재 Studio 캔버스(3,524 DOM, 2 Workers) 기준: 3D 아웃라이너·18종 레이어 트리·컷 타임라인 동시 도킹",
+    benchmarkSummaryEn:
+      "Spline (1,916 DOM) & current Studio canvas (3,524 DOM, 2 Workers): simultaneous 3D outliner, 18-group layer tree and timeline docks",
+    canvasViewportRatioPct: 64,
+    targetDomNodeBudget: 3524,
+    activeDockColumns: 3,
+    keyShortcutsKo: "Shift+1~8(8단계 공정 뷰 전환) · L(레이어 잠금 점검) · P(2점 투시)",
+    keyShortcutsEn: "Shift+1-8 (8-stage view switch) · L (Layer lock check) · P (2-point perspective)",
+  },
+});
+
 export function StudioCompetitorCapabilityPanel({
   locale,
   compact = false,
@@ -70,6 +138,12 @@ export function StudioCompetitorCapabilityPanel({
   );
   const [toolQuery, setToolQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | CreatorRoleId>("all");
+  const [densityMode, setDensityMode] =
+    useState<StudioUiUxDensityModeId>("role-contextual-dock");
+  const [pageDomainId, setPageDomainId] =
+    useState<StudioPageDomainId>("studio-role-workspace");
+  const activeDensitySpec = STUDIO_UIUX_ERGONOMICS_MODES[densityMode];
+  const activePageBenchmark = resolveStudioPageReaBenchmark(pageDomainId);
   const matchedWorkflows = useMemo(() => {
     const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
     if (roleFilter === "all") return byQuery;
@@ -294,6 +368,138 @@ export function StudioCompetitorCapabilityPanel({
                 </div>
               ))}
             </div>
+          </div>
+          <div
+            data-testid="competitor-uiux-ergonomics-blueprint"
+            className="mt-3 rounded-xl border border-line bg-panel/60 p-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-1.5 text-[0.68rem]">
+              <span className="font-black text-fg">
+                {locale === "ko"
+                  ? "REA 기반 3단계 UI/UX 밀도·직관성·사용성 설계 모드"
+                  : "REA 3-tier UI/UX density and usability modes"}
+              </span>
+              <span
+                data-testid="competitor-uiux-metrics-badge"
+                className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-accent"
+              >
+                {locale === "ko"
+                  ? `캔버스 면적 ${activeDensitySpec.canvasViewportRatioPct}% · 목표 DOM ${activeDensitySpec.targetDomNodeBudget} · 도크 ${activeDensitySpec.activeDockColumns}열`
+                  : `Canvas ${activeDensitySpec.canvasViewportRatioPct}% · DOM budget ${activeDensitySpec.targetDomNodeBudget} · Docks ${activeDensitySpec.activeDockColumns}`}
+              </span>
+            </div>
+            <div
+              role="group"
+              aria-label={
+                locale === "ko"
+                  ? "UI/UX 밀도 설계 모드"
+                  : "UI/UX density design modes"
+              }
+              className="mt-2 flex flex-wrap gap-1.5"
+            >
+              {Object.values(STUDIO_UIUX_ERGONOMICS_MODES).map((mode) => {
+                const active = densityMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    data-testid={`competitor-uiux-mode-${mode.id}`}
+                    aria-pressed={active}
+                    onClick={() => setDensityMode(mode.id)}
+                    className={cn(
+                      "rounded-lg border px-2.5 py-1 text-[0.65rem] font-bold transition-colors",
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2 hover:border-accent/40 hover:text-fg",
+                    )}
+                  >
+                    {locale === "ko" ? mode.labelKo : mode.labelEn}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[0.65rem] leading-4 text-fg-2">
+              {locale === "ko"
+                ? activeDensitySpec.benchmarkSummaryKo
+                : activeDensitySpec.benchmarkSummaryEn}
+            </p>
+            <div className="mt-1 font-mono text-[0.6rem] text-fg-3">
+              {locale === "ko"
+                ? `핵심 단축키·제스처: ${activeDensitySpec.keyShortcutsKo}`
+                : `Shortcuts & gestures: ${activeDensitySpec.keyShortcutsEn}`}
+            </div>
+          </div>
+
+          <div
+            data-testid="competitor-page-by-page-matrix"
+            className="mt-3 rounded-xl border border-line bg-panel/60 p-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-1.5 text-[0.68rem]">
+              <span className="font-black text-fg">
+                {locale === "ko"
+                  ? "7대 페이지 도메인별 66+ 글로벌 유사 서비스 REA 벤치마크·내재화 매트릭스"
+                  : "Page-by-page 66+ global service REA benchmark & internalization matrix"}
+              </span>
+              <span
+                data-testid="competitor-page-dom-budget-badge"
+                className="rounded bg-accent/15 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-accent"
+              >
+                {locale === "ko"
+                  ? `${activePageBenchmark.routePath} · 관측 ${activePageBenchmark.observedDomNodes} DOM → 목표 ${activePageBenchmark.targetDomBudgetNodes} DOM`
+                  : `${activePageBenchmark.routePath} · Observed ${activePageBenchmark.observedDomNodes} DOM -> Target ${activePageBenchmark.targetDomBudgetNodes} DOM`}
+              </span>
+            </div>
+            <div
+              role="group"
+              aria-label={
+                locale === "ko"
+                  ? "페이지 도메인별 REA 벤치마크 선택"
+                  : "Select page domain REA benchmark"
+              }
+              className="mt-2 flex flex-wrap gap-1.5"
+            >
+              {STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS.map((pageItem) => {
+                const active = pageDomainId === pageItem.id;
+                return (
+                  <button
+                    key={pageItem.id}
+                    type="button"
+                    data-testid={`competitor-page-tab-${pageItem.id}`}
+                    aria-pressed={active}
+                    onClick={() => setPageDomainId(pageItem.id)}
+                    className={cn(
+                      "rounded-lg border px-2 py-1 text-[0.64rem] font-bold transition-colors",
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg-2 hover:border-accent/40 hover:text-fg",
+                    )}
+                  >
+                    {locale === "ko" ? pageItem.labelKo : pageItem.labelEn}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {activePageBenchmark.competitorServices.map((svc) => (
+                <span
+                  key={svc}
+                  className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.58rem] font-semibold text-fg-2"
+                >
+                  {svc}
+                </span>
+              ))}
+            </div>
+            <ul className="mt-2 space-y-1 text-[0.64rem] leading-4 text-fg-2">
+              {(locale === "ko"
+                ? activePageBenchmark.internalizedCapabilitiesKo
+                : activePageBenchmark.internalizedCapabilitiesEn
+              ).map((cap) => (
+                <li key={cap} className="flex items-start gap-1.5">
+                  <span className="mt-0.5 text-accent">•</span>
+                  <span>{cap}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       ) : null}

@@ -287,6 +287,7 @@ describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
     render(<StudioHiggsfieldMangakaPanel />);
     expect(screen.getByTestId("mangaka-storyboarder-shot-directive").textContent).toContain("24mm");
     expect(screen.getByTestId("mangaka-campfire-lorebook-matrix").textContent).toContain("Campfire 로어북");
+    expect(screen.getByTestId("mangaka-scroll-heatmap-summary").textContent).toContain("스크롤 히트맵");
     expect(screen.getByTestId("mangaka-moving-toon-timeline-metrics").textContent).toContain("Scroll Parallax");
     fireEvent.click(screen.getByTestId("mangaka-moving-toon-sfx-bounce"));
     expect(screen.getByTestId("mangaka-moving-toon-timeline-metrics").textContent).toContain("SFX Elastic Bounce");

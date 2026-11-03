@@ -1602,7 +1602,7 @@ export function VirtualSpaceExperience({
   const renderPanel = (): ReactNode => {
     switch (panel) {
       case "people": return <>
-        <SpaceSelfCard identity={fallbackIdentity} name={localName} self={snapshot.self}
+        <SpaceSelfCard stageKind={stageKind} artStyle={artStyle} identity={fallbackIdentity} name={localName} self={snapshot.self}
           zoneLabelKo={locationZone.labelKo} zoneLabelEn={locationZone.labelEn} onEditCharacter={() => setPanel("build")} roleLabelKo={spaceRole.definition ? (spaceRole.customRoleLabel ?? spaceRole.definition.shortLabel.ko) : null} roleLabelEn={spaceRole.definition ? (spaceRole.customRoleLabel ?? spaceRole.definition.shortLabel.en) : null} />
         {personal ? <p className="space-panel-note">{bt(
           "개인 스튜디오에는 나만 있어요. 동네를 오가는 NPC는 도우미이며 접속 인원에 포함되지 않아요.",
@@ -1877,7 +1877,7 @@ export function VirtualSpaceExperience({
   };
   const coach = worldReady && tourOpen ? <StudioVirtualSpaceMiniTour progress={tourProgress} touch={touch} onDone={finishMiniTour} /> : null;
   const dock = desktop
-    ? <SpaceDock self={selfDock} media={dockMedia} panel={panel} mapOpen={mapOpen}
+    ? <SpaceDock stageKind={stageKind} artStyle={artStyle} self={selfDock} media={dockMedia} panel={panel} mapOpen={mapOpen}
       peopleBadge={peopleBadge} popover={dockPopover} moreItems={moreItems} workLauncher={workLauncher} panelId={SIDE_PANEL_ID}
       dockRef={desktopDockRef} proximityRange={proximityRange} onProximityRange={setProximityRange}
       statusExpiryMinutes={statusExpiryMinutes} onStatusExpiry={setStatusExpiryMinutes}
@@ -1944,7 +1944,7 @@ export function VirtualSpaceExperience({
           <SpaceProximityVideo phase={proximity.phase} snapshot={proximity.snapshot} busy={proximity.busy} scopeNames={proximityScopeNames}
             selfName={localName} waitingReason={proximityWaitingReason}
             onToggleCamera={proximity.toggleCamera} onToggleMic={toggleMicByUser} onToggleScreen={proximity.toggleScreen} onStop={proximity.stop} />
-          {worldReady ? <SpaceProximityStrip people={nearbyPeopleCards} npcs={nearbyNpcCards} artStyle={artStyle}
+          {worldReady ? <SpaceProximityStrip stageKind={stageKind} people={nearbyPeopleCards} npcs={nearbyNpcCards} artStyle={artStyle}
             socialDisabled={socialDisabledReason} followingPeerId={followingPeerId} whisperPeerId={whisperPeerId}
             onCowork={(id) => openCowork(id)} onWhisper={toggleWhisper}
             onWave={waveTo} onTalk={(id) => requestActivity(id, "talk")}
@@ -2039,7 +2039,7 @@ export function VirtualSpaceExperience({
       </SpacePopover>
       <SpacePopover open={coworkOpen} sheet={!desktop} onClose={() => { setCoworkOpen(false); engineBridge.focusWorld(); }}
         title={bt("같이 작업하기", "Work together")} className="space-popover--cowork">
-        <SpaceCoworkSheet peers={personal ? [] : coworkPeers} targetId={coworkTargetId} disabledReason={socialDisabledReason}
+        <SpaceCoworkSheet stageKind={stageKind} artStyle={artStyle} peers={personal ? [] : coworkPeers} targetId={coworkTargetId} disabledReason={socialDisabledReason}
           links={coworkLinks} onSelectTarget={setCoworkTargetId} onRequest={requestCowork}
           onApproach={(id) => { setCoworkOpen(false); approachOfficePeer(id); }}
           onOpenTeam={() => { setCoworkOpen(false); setPanel(personal ? "people" : "team"); }} />
