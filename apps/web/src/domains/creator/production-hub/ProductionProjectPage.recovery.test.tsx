@@ -6,6 +6,11 @@ import { ProductionProjectPage } from "./ProductionHubPage";
 import { createProductionDemoProject } from "./production-demo";
 import type { ScopeRef } from "@toonstudio/core/production";
 import { useApp } from "@/shared/lib/store";
+import { SessionContext, persistSession, type Session } from "@/domains/auth/public/session/auth-session-store";
+
+const verifiedSession: NonNullable<Session> = {
+  user: { id: "local-test-owner", name: "검수 담당", email: "review@example.test", image: null, role: "creator" }, token: null,
+};
 
 const mocks = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn() }));
 vi.mock("./production-api", async (load) => ({ ...await load<typeof import("./production-api")>(),
@@ -32,12 +37,12 @@ const project = { aggregate: { ...original, projectId: actualProjectId,
 
 // 실제 지연 모듈의 최초 변환을 기다려 저장 계약 검증을 컴파일 시간과 분리한다.
 beforeAll(async () => { await import("./ProductionReviewSurface"); });
-beforeEach(() => { vi.clearAllMocks(); useApp.setState({ userId: "local-test-owner" }); mocks.load.mockResolvedValue(project); });
-afterEach(() => { cleanup(); useApp.setState({ userId: null }); });
+beforeEach(() => { vi.clearAllMocks(); persistSession(verifiedSession); useApp.setState({ userId: "local-test-owner" }); mocks.load.mockResolvedValue(project); });
+afterEach(() => { cleanup(); persistSession(null); useApp.setState({ userId: null }); });
 function mount() {
-  return render(<MemoryRouter initialEntries={["/production/projects/actual-route-project/review"]}><Routes>
+  return render(<SessionContext value={{ data: verifiedSession, ready: true, status: "authenticated", update: async () => verifiedSession }}><MemoryRouter initialEntries={["/production/projects/actual-route-project/review"]}><Routes>
     <Route path="/production/projects/:projectId/review" element={<ProductionProjectPage surface="review" />} />
-  </Routes></MemoryRouter>);
+  </Routes></MemoryRouter></SessionContext>);
 }
 it("실제 검수 페이지 연결에서 저장 실패는 초안을 삭제하지 않는다", async () => {
   mocks.save.mockRejectedValue(new Error("검수 저장 서버 오류"));
@@ -57,7 +62,7 @@ it("실제 검수 페이지 연결에서 저장 실패는 초안을 삭제하지
 });
 it("계정 해제 시 실제 라우트의 비공개 원고·질문 화면을 제거한다", async () => {
   mount(); await screen.findByRole("textbox", { name: "검수 질문" });
-  act(() => useApp.setState({ userId: null }));
+  act(() => { persistSession(null); useApp.setState({ userId: null }); });
   await waitFor(() => expect(screen.queryByRole("textbox", { name: "검수 질문" })).toBeNull());
   expect(screen.getByRole("alert").textContent).toContain("로그인");
 });

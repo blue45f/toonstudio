@@ -87,7 +87,7 @@ describe("StudioDraftSaveCenter reload-safe outbox", () => {
     }));
     render(<StudioDraftSaveCenter {...defaultProps} onSaveDraft={onSaveDraft} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 r7 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" }));
     const saveButton = screen.getByRole("button", { name: "지금 서버에 저장" });
     fireEvent.click(saveButton);
     fireEvent.click(saveButton);

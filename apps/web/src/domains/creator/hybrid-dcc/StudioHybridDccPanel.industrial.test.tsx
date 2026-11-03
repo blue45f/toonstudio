@@ -111,12 +111,13 @@ describe("StudioHybridDccPanel industrial wiring", () => {
       />,
     );
 
-    const status = screen.getByRole("status");
-    expect(status.getAttribute("data-studio-hybrid-dcc-persistence")).toBe("saved");
-    expect(status.getAttribute("data-studio-hybrid-dcc-persistence-sequence")).toBe("7");
-    expect(status.getAttribute("data-studio-hybrid-dcc-persistence-source-hash"))
+    const status = screen.getAllByRole("status").find((element) => element.hasAttribute("data-studio-hybrid-dcc-persistence"));
+    expect(status).toBeDefined();
+    expect(status?.getAttribute("data-studio-hybrid-dcc-persistence")).toBe("saved");
+    expect(status?.getAttribute("data-studio-hybrid-dcc-persistence-sequence")).toBe("7");
+    expect(status?.getAttribute("data-studio-hybrid-dcc-persistence-source-hash"))
       .toBe(`sha256:${"a".repeat(64)}`);
-    expect(status.getAttribute("data-studio-hybrid-dcc-persistence-document-state-hash"))
+    expect(status?.getAttribute("data-studio-hybrid-dcc-persistence-document-state-hash"))
       .toBe("state-hash-7");
     expect(document.querySelector('[data-studio-hybrid-dcc-state-hash]')).not.toBeNull();
   });
