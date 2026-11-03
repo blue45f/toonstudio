@@ -18,7 +18,8 @@ describe("connected public destinations", () => {
     expect(nextPublicDestinations(path)).toEqual([]);
   });
   it("avoids partial prefix matches", () => {
-    expect(activePublicJourney("/marketplace")).toBeUndefined();
+    expect(activePublicJourney("/marketplace")).toBe("market");
+    expect(activePublicJourney("/marketplaces")).toBeUndefined();
     expect(activePublicJourney("/learning")).toBeUndefined();
   });
   it.each(["/discover", "/learn", "/market", "/showcase", "/help", "/about"])("offers three distinct real destinations at %s", (path) => {
