@@ -140,7 +140,7 @@ describe("database integration runner CI policy", () => {
     // The bundle-only build the browser gates use must be exactly the `vite build` half of
     // `build`: tsc is `noEmit`, so the dist is byte-identical and `typecheck` proves the types.
     expect(packageManifest.scripts?.build).toBe(
-      "NODE_OPTIONS='--max-old-space-size=12288' tsc -p tsconfig.json && NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
+      "NODE_OPTIONS='--max-old-space-size=16384' tsc -p tsconfig.json --incremental false && NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
     );
     expect(packageManifest.scripts?.["build:bundle"]).toBe(
       "NODE_OPTIONS='--max-old-space-size=12288' vite build --config apps/web/vite.config.ts",
