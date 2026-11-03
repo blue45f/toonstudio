@@ -22,7 +22,7 @@ vi.mock("./production-api", () => ({
   executeProductionCommand: server.save,
   recoverProductionCommand: server.recover,
 }));
-const cachedUser = { id: "owner-auth-bootstrap", name: "작가", email: "author@example.test", image: null, role: "owner" };
+const cachedUser = { id: "owner-auth-bootstrap", name: "작가", email: "author@example.test", image: null, role: "creator" };
 const projectId = "project-auth-bootstrap";
 function record(): ProductionProjectRecord {
   return {
