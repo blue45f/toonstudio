@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 // PR 이벤트의 기준 SHA와 체크아웃한 병합 커밋의 현재 main 부모가 다를 때를 재현한다.
 test("main이 전진해도 filtered PR checkout에 이전 기준 커밋과 tree가 남는다", () => {
