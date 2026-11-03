@@ -1,3 +1,5 @@
+import type { StudioVirtualStageKind } from "../office2d/studio-virtual-space-stage-mode";
+import type { StudioVirtualArtStyleKey } from "../studio-virtual-space-art-style";
 import { ClipboardCheck, Footprints, LayoutGrid, MessageCircle, Navigation, UserPlus } from "lucide-react";
 import { useId, useRef, type KeyboardEvent } from "react";
 
@@ -50,7 +52,9 @@ const ACTIONS: readonly { readonly id: SpaceCoworkAction; readonly icon: typeof 
  * '같이 작업하기' 요청 흐름. 팀원을 고르고(근처 우선) 무엇을 함께 할지 고르면 기존 요청을 보낸다.
  * 상대가 수락하기 전에는 아무것도 시작되지 않고, 회차 보드·검수함 바로 가기를 함께 둔다.
  */
-export function SpaceCoworkSheet({ peers, targetId, disabledReason, links, onSelectTarget, onRequest, onApproach, onOpenTeam }: {
+export function SpaceCoworkSheet({ peers, artStyle, stageKind, targetId, disabledReason, links, onSelectTarget, onRequest, onApproach, onOpenTeam }: {
+  readonly stageKind?: StudioVirtualStageKind;
+  readonly artStyle?: StudioVirtualArtStyleKey;
   readonly peers: readonly SpaceCoworkPeer[];
   readonly targetId: string | null;
   /** 지금 요청을 보낼 수 없는 이유(연결 확인 중·집중 중 등). */
@@ -100,7 +104,7 @@ export function SpaceCoworkSheet({ peers, targetId, disabledReason, links, onSel
         return <button key={peer.id} type="button" role="radio" aria-checked={peer.id === target.id} className="space-cowork__person"
           data-cowork-peer={peer.id} tabIndex={peer.id === tabbableId ? 0 : -1}
           onClick={() => onSelectTarget(peer.id)} onKeyDown={(event) => onPersonKeyDown(event, index)}>
-          <SpaceAvatar identity={peer.id} activity={peer.activity} avatarIndex={peer.avatarIndex} appearance={peer.appearance} size="sm" />
+          <SpaceAvatar stageKind={stageKind} artStyle={artStyle} identity={peer.id} activity={peer.activity} avatarIndex={peer.avatarIndex} appearance={peer.appearance} size="sm" />
           <span><strong>{peer.name}</strong><small>
             <span className="space-status-dot" data-activity={peer.activity} data-status={peerStatus.id} aria-hidden />
             {bt(peerStatus.labelKo, peerStatus.labelEn)} · {peer.near ? bt("근처", "Nearby") : bt("멀리 있음", "Far away")}

@@ -1,3 +1,5 @@
+import type { StudioVirtualStageKind } from "../office2d/studio-virtual-space-stage-mode";
+import type { StudioVirtualArtStyleKey } from "../studio-virtual-space-art-style";
 import {
   Camera,
   CameraOff,
@@ -98,10 +100,12 @@ function DockButton({ icon: Icon, label, shortcut, pressed, expanded, controls, 
  * [나·상태] | [마이크][카메라][화면 공유] | [리액션] | [대화][참가자][지도][꾸미기] | [⋯] | [작업 시작] | [나가기]
  */
 export const SpaceDock = memo(function SpaceDock({
-  self, media, panel, mapOpen, peopleBadge, popover, moreItems, workLauncher, panelId, dockRef,
+  self, artStyle, stageKind, media, panel, mapOpen, peopleBadge, popover, moreItems, workLauncher, panelId, dockRef,
   proximityRange = "standard", onProximityRange, statusExpiryMinutes = null, onStatusExpiry,
   onPopover, onStatus, onEditCharacter, onEmote, onTogglePanel, onToggleMap, onExit,
 }: {
+  readonly stageKind?: StudioVirtualStageKind;
+  readonly artStyle?: StudioVirtualArtStyleKey;
   readonly self: SpaceDockSelf;
   readonly media: SpaceDockMedia;
   readonly panel: StudioVirtualWorkspacePanel | null;
@@ -141,7 +145,7 @@ export const SpaceDock = memo(function SpaceDock({
     <div ref={meRef} className="space-dock__group space-dock__anchor">
       <button type="button" className="space-dock__me" aria-haspopup="dialog" aria-expanded={popover === "me"}
         onClick={() => toggle("me")} aria-label={bt(`내 상태: ${status.labelKo} · ${self.name}`, `My status: ${status.labelEn} · ${self.name}`)}>
-        <SpaceAvatar identity={self.identity} activity={self.activity} avatarIndex={self.avatarIndex} appearance={self.appearance} self size="sm" />
+        <SpaceAvatar stageKind={stageKind} artStyle={artStyle} identity={self.identity} activity={self.activity} avatarIndex={self.avatarIndex} appearance={self.appearance} self size="sm" />
         <span className="space-dock__me-text" aria-hidden>
           <strong>{self.name}</strong>
           <small><span className="space-status-dot" data-activity={self.activity} data-status={status.id}
