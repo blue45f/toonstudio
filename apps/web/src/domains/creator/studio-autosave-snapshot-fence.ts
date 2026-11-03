@@ -17,3 +17,13 @@ export function createStudioAutosaveSnapshotFence(
       && scheduled.session === current.session;
   };
 }
+
+/** 첫 체크포인트의 세대가 0이거나 영수증이 늦어도, 편집으로 비운 원고는 내구 tombstone이 필요하다. */
+export function studioEmptyAutosaveNeedsTombstone(
+  durable: Pick<StudioAutosaveSnapshotFrontier, "generation" | "pendingFingerprint">,
+  editGeneration: number,
+): boolean {
+  return durable.generation > 0
+    || durable.pendingFingerprint !== ""
+    || editGeneration > durable.generation;
+}

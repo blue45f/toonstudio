@@ -18,7 +18,7 @@ import { createOriginalSample } from "./ecosystem/ecosystem-content";
 import { resolvePixelSelectionSceneTarget } from "./studio-pixel-selection-scene-target";
 import { selectStudioLiveStrokeMedia, studioHokusaiLiveStrokeSelected } from "./live/studio-live-stroke-media-selection";
 import { useStudioMaterialBrushRequest } from "./brush/useStudioMaterialBrushRequest";
-import { createStudioAutosaveSnapshotFence } from "./studio-autosave-snapshot-fence";
+import { createStudioAutosaveSnapshotFence, studioEmptyAutosaveNeedsTombstone } from "./studio-autosave-snapshot-fence";
 import { useStudioAdjustmentLayerCommands } from "./useStudioAdjustmentLayerCommands";
 import { StudioColorProofProvider } from "./color/StudioColorProofContext";
 import { applyStudioBundleSourcePatch, createStudio2dCanvasImage, studioBundleFrameBackgroundPatch } from "./studio-2d-source-size";
@@ -7385,7 +7385,7 @@ export function StudioCuttoonEditor({
       buildCurrentStudioProjectFileSnapshot(durablePages, "content-check"),
       { canvasWidth: CANVAS_W }
     );
-    let hasExistingAutosaveAuthority = studioLifecycleDurableGenerationRef.current > 0;
+    let hasExistingAutosaveAuthority = studioEmptyAutosaveNeedsTombstone({ generation: studioLifecycleDurableGenerationRef.current, pendingFingerprint: studioLifecycleDurablePendingFingerprintRef.current }, studioRevisionProjectGenerationRef.current);
     if (!hasMeaningfulAutosaveContent && !hasExistingAutosaveAuthority) {
       try {
         hasExistingAutosaveAuthority = globalThis.localStorage.getItem(autosaveKey) !== null;
@@ -7601,7 +7601,7 @@ export function StudioCuttoonEditor({
     autosaveOpfsSessionRef,
     autosaveSqliteStoreRef,
     buildCurrentStudioProjectFileSnapshot,
-    pages,
+    pages, pagesHistory,
     master,
     characterBible,
     writerRoom,
