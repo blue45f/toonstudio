@@ -511,14 +511,13 @@ function isBoundedRecipeValue(value: unknown, depth: number): boolean {
  * 하나라도 어기면 봉투 전체를 버린다(레시피를 고쳐 쓰지 않는다 — 고친 레시피는 사용자가 만든 것이 아니다).
  */
 export function normalizeStudioBg3dSceneRecipeEnvelope(value: unknown): StudioBg3dSceneRecipeEnvelope | undefined {
-  const limits = STUDIO_BG3D_SCENE_RECIPE_LIMITS;
   if (
     !isOrganizationRecord(value) ||
     value.kind !== STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND ||
     value.version !== STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION ||
     !Array.isArray(value.recipes) ||
     value.recipes.length < 1 ||
-    value.recipes.length > limits.maxRecipes
+    value.recipes.length > STUDIO_BG3D_SCENE_RECIPE_LIMITS.maxRecipes
   ) {
     return undefined;
   }
@@ -542,7 +541,7 @@ export function normalizeStudioBg3dSceneRecipeEnvelope(value: unknown): StudioBg
     version: STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION,
     recipes,
   };
-  return utf8ByteLength(JSON.stringify(envelope)) <= limits.maxEnvelopeBytes ? envelope : undefined;
+  return utf8ByteLength(JSON.stringify(envelope)) <= STUDIO_BG3D_SCENE_RECIPE_LIMITS.maxEnvelopeBytes ? envelope : undefined;
 }
 
 /**
