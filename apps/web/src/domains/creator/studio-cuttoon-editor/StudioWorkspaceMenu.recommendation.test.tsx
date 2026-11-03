@@ -97,6 +97,29 @@ describe("StudioWorkspaceMenu friendly recommendation", () => {
     expect(onApplyLayout).toHaveBeenCalledWith(expect.any(Object), "storyboard");
   });
 
+  it.each([
+    { query: "MediBang", workspaceId: "mobile-draw" },
+    { query: "Rebelle", workspaceId: "photo-edit" },
+    { query: "ABLE", workspaceId: "pose-3d" },
+    { query: "Spine", workspaceId: "animation" },
+    { query: "NovelAI", workspaceId: "storyboard" },
+  ])("실제 메뉴도 경쟁사 안내와 같은 $query 별칭으로 배치를 찾고 적용한다", ({ query, workspaceId }) => {
+    const { onApplyLayout, onStateChange } = renderWorkspaceMenu();
+    fireEvent.change(screen.getByRole("searchbox", { name: "작업공간 검색" }), {
+      target: { value: query },
+    });
+    const result = document.querySelector<HTMLButtonElement>(`button[data-workspace-id="${workspaceId}"]`);
+    if (!result) throw new Error(`${query} 작업공간 검색 결과가 없습니다.`);
+    expect(result.getAttribute("data-workspace-kind")).toBe("builtin");
+    expect(onApplyLayout).not.toHaveBeenCalled();
+    expect(onStateChange).not.toHaveBeenCalled();
+    fireEvent.click(result);
+    expect(onApplyLayout).toHaveBeenCalledTimes(1);
+    expect(onApplyLayout).toHaveBeenCalledWith(expect.any(Object), workspaceId);
+    expect(onStateChange).toHaveBeenCalledTimes(1);
+    expect(onStateChange.mock.calls[0]?.[0].activeWorkspaceId).toBe(workspaceId);
+  });
+
   it("keeps unsaved layout changes behind the existing switch guard", () => {
     const dirtyLayout = normalizeStudioWorkspaceLayout({
       ...DEFAULT_STUDIO_WORKSPACE_STATE.liveLayout,

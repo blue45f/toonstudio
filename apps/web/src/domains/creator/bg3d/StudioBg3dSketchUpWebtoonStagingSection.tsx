@@ -13,7 +13,6 @@
 import { Camera, Layers, SunMedium, WandSparkles } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
-import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import { STUDIO_SKETCHUP_STYLE_PRESETS } from "./studio-bg3d-sketchup-styles-uv-engine";
 import {
@@ -34,6 +33,20 @@ import {
 } from "./studio-bg3d-sketchup-webtoon-staging-bridge";
 import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 
+import { useT } from "@/shared/lib/i18n";
+import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+
+const ROLE_LENS_COPY = {
+  title: defineBilingualText("Bg3dRoleLens", "title", "직무별 스타일·태그·카메라 설정 프리셋", "Role-based style, tag, and camera setting presets"),
+  scope: defineBilingualText("Bg3dRoleLens", "scope", "프리셋은 아래 설정을 선택합니다. 장면 배치와 카메라 적용은 각각의 적용 버튼으로 실행하며, 편집 권한이나 동선 잠금을 변경하지 않습니다.", "Presets select the settings below. Use the insertion or camera button to apply them to the scene. They do not change editing permissions or lock actor paths."),
+  main: defineBilingualText("Bg3dRoleLens", "main", "배경 메인 · 텍스처·정리 태그", "Background lead · textures and clean tags"),
+  assist: defineBilingualText("Bg3dRoleLens", "assist", "배경 보조 · 선 스타일·소품 숨김", "Background assistant · lines and hidden props"),
+  camera: defineBilingualText("Bg3dRoleLens", "camera", "콘티 · 와이어·배우 태그·카메라 시프트", "Storyboard · wireframe, actor tags, and camera shift"),
+  lighting: defineBilingualText("Bg3dRoleLens", "lighting", "명암 · 단색·황혼 태양광", "Shading · monochrome and dusk sunlight"),
+  rejected: defineBilingualText("Bg3dRoleLens", "rejected", "현재 장면에 배치하지 못했습니다. 장면 잠금과 삽입 가능 상태를 확인해 주세요.", "The scene rejected the insertion. Check the scene lock and insertion availability."),
+  cameraRequest: defineBilingualText("Bg3dRoleLens", "cameraRequest", "2점 투시 수직 고정 카메라 적용 요청", "Request a two-point perspective camera"),
+};
+
 export interface StudioBg3dSketchUpWebtoonStagingSectionProps {
   readonly disabled?: boolean;
   readonly onStatusChange?: (messageKo: string) => void;
@@ -47,6 +60,8 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
   onInsertScenePrimitives,
   onApplySceneCamera,
 }: StudioBg3dSketchUpWebtoonStagingSectionProps): React.JSX.Element {
+  const t = useT();
+  useBilingualI18nRevision();
   // 1. Direct Modeling + Axis Inference + Array state
   const [axisLock, setAxisLock] = useState<SketchUpAxisLockId>("red-x");
   const [arrayToken, setArrayToken] = useState<string>("*2");
@@ -63,7 +78,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
 
   // 5. Style Builder + Outliner Tag Visibility Preset state
   const [stylePresetId, setStylePresetId] =
-    useState<StudioSketchUpStylePresetId>("shaded-with-textures");
+    useState<StudioSketchUpStylePresetId>("skp-shaded-with-textures");
   const [tagPresetId, setTagPresetId] =
     useState<WebtoonOutlinerTagPresetId>("interior-clean-line");
 
@@ -81,19 +96,19 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
   ) => {
     setRoleLensId(lens);
     if (lens === "background-main") {
-      setStylePresetId("shaded-with-textures");
+      setStylePresetId("skp-shaded-with-textures");
       setTagPresetId("interior-clean-line");
       setPreserveExteriorShadows(true);
     } else if (lens === "background-assist") {
-      setStylePresetId("hidden-line");
+      setStylePresetId("skp-hidden-line-webtoon");
       setTagPresetId("hide-small-props");
       setPreserveExteriorShadows(true);
     } else if (lens === "storyboard-camera") {
-      setStylePresetId("wireframe");
+      setStylePresetId("skp-xray-wire");
       setTagPresetId("actor-blocking-clear");
       setLensShiftY(0.15);
     } else {
-      setStylePresetId("monochrome");
+      setStylePresetId("skp-monochrome-inspect");
       setSolarPresetId("blue-hour-dusk");
       setShadowSoftness(0.7);
     }
@@ -223,14 +238,14 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
       </summary>
 
       <div className="mt-2.5 space-y-2.5 text-[0.65rem] text-fg">
-        {/* 직군별 3D 권한 렌즈 & 하이브리드 후보정 원클릭 브리지 */}
+        {/* 직무별 로컬 설정 프리셋. 장면 변경은 기존 명시적 명령 경계를 사용한다. */}
         <div
           data-testid="sketchup-role-lens-bar"
           className="rounded-lg border border-accent/30 bg-accent-soft/20 p-2"
         >
           <div className="flex flex-wrap items-center justify-between gap-1.5">
             <span className="font-bold text-fg">
-              직군별 3D 배경 작업 렌즈 & 하이브리드 후보정 (ACON3D ABLE · CSP EX · Grease Pencil)
+              {t(ROLE_LENS_COPY.title)}
             </span>
             <div
               data-testid="sketchup-hybrid-competitor-presets"
@@ -240,19 +255,19 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                 [
                   {
                     id: "background-main",
-                    label: "3D 배경 메인 (매스 모델링·6패스 LT)",
+                    label: ROLE_LENS_COPY.main,
                   },
                   {
                     id: "background-assist",
-                    label: "배경 어시 (Outliner 소품·잉크 펜선)",
+                    label: ROLE_LENS_COPY.assist,
                   },
                   {
                     id: "storyboard-camera",
-                    label: "콘티 작가 (2점 투시 앵글·동선 잠금)",
+                    label: ROLE_LENS_COPY.camera,
                   },
                   {
                     id: "color-lighting",
-                    label: "명암·후보정 (ABLE 대기원근·AO 채광)",
+                    label: ROLE_LENS_COPY.lighting,
                   },
                 ] as const
               ).map((lens) => (
@@ -262,17 +277,19 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                   disabled={disabled}
                   data-testid={`sketchup-role-lens-${lens.id}`}
                   onClick={() => applyRoleLensPreset(lens.id)}
+                  aria-pressed={roleLensId === lens.id}
                   className={
                     roleLensId === lens.id
                       ? "rounded border border-accent bg-accent px-2 py-0.5 text-[0.6rem] font-bold text-on-accent"
                       : "rounded border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 hover:border-accent/50"
                   }
                 >
-                  {lens.label}
+                  {t(lens.label)}
                 </button>
               ))}
             </div>
           </div>
+          <p className="mt-1.5 text-fg-2">{t(ROLE_LENS_COPY.scope)}</p>
         </div>
 
         {/* 1. Direct Modeling + Axis Inference + Array Commit */}
@@ -283,14 +300,14 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
             </span>
             <button
               type="button"
-              disabled={disabled}
+              disabled={disabled || !onInsertScenePrimitives}
               data-testid="sketchup-direct-modeling-commit-btn"
               onClick={() => {
-                onStatusChange?.(directModelingCommit.summaryKo);
-                onInsertScenePrimitives?.(
-                  directModelingCommit.primitives as BgPrimitive[],
+                const inserted = onInsertScenePrimitives?.(
+                  directModelingCommit.primitives,
                   directModelingCommit.summaryKo,
                 );
+                onStatusChange?.(inserted === true ? directModelingCommit.summaryKo : t(ROLE_LENS_COPY.rejected));
               }}
               className="inline-flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 text-[0.65rem] font-bold text-on-accent hover:bg-accent/90"
             >
@@ -367,12 +384,12 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
               </span>
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled || !onApplySceneCamera}
                 data-testid="sketchup-two-point-apply-btn"
                 onClick={() => {
-                  const msg = `2점 투시 수직 고정 카메라 적용 (LensShiftY ${twoPointCamera.lensShift?.[1]?.toFixed(2)})`;
-                  onStatusChange?.(msg);
+                  const msg = `${t(ROLE_LENS_COPY.cameraRequest)} (LensShiftY ${twoPointCamera.lensShift?.[1]?.toFixed(2)})`;
                   onApplySceneCamera?.(twoPointCamera, msg);
+                  onStatusChange?.(msg);
                 }}
                 className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[0.6rem] font-bold text-on-accent"
               >
@@ -494,15 +511,15 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
               </span>
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled || !onInsertScenePrimitives}
                 data-testid="sketchup-dc-spawn-btn"
                 onClick={() => {
                   const msg = `동적 구성요소(문 ${doorSwingDeg}° · 창문 ${(windowSlideMeters * 100).toFixed(0)}cm · 서랍 ${(drawerPullMeters * 100).toFixed(0)}cm) 씬 배치 완료`;
-                  onStatusChange?.(msg);
-                  onInsertScenePrimitives?.(
-                    dynamicComponentPrimitives as BgPrimitive[],
+                  const inserted = onInsertScenePrimitives?.(
+                    dynamicComponentPrimitives,
                     msg,
                   );
+                  onStatusChange?.(inserted === true ? msg : t(ROLE_LENS_COPY.rejected));
                 }}
                 className="rounded bg-accent px-2 py-0.5 text-[0.6rem] font-bold text-on-accent"
               >

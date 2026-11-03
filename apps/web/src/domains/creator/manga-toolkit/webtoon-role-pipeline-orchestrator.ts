@@ -3,8 +3,8 @@
  *
  * REA 역공학 기반 웹툰·만화 8단계 직군 세분화(글작가·각색작가·보조 글작가·콘티작가·3D 배경작가·
  * 배경 어시스턴트·선화작가·선화 어시스턴트·밑색 어시스턴트·명암 어시스턴트·효과/무빙툰 어시스턴트·
- * 식자 디자이너·식자 어시스턴트·편집자/PD), 직군별 맞춤 메뉴 구성, 레이어 그룹 최소권한(RBAC) 잠금
- * 및 원클릭 공정 인계(1-Click Stage Handoff) 오케스트레이터.
+ * 식자 디자이너·식자 어시스턴트·편집자/PD), 직군별 메뉴·권한 예시와 공정 인계 계획을 계산한다.
+ * 실제 문서·서버 접근 권한·담당자·작업공간을 변경하는 인증 경로가 아니다.
  */
 
 import { creatorRoleWorkspacePreset } from "../creator-role-workspace-presets";
@@ -376,36 +376,41 @@ const ASSISTANT_PROPOSE_ROLES: ReadonlySet<CreatorRoleId> = new Set([
 export function resolveRolePipelinePreset(roleId: CreatorRoleId): ResolvedRolePipelinePreset {
   const stageId = ROLE_TO_STAGE_MAP[roleId] ?? "storyboard-conte";
   const stageIdx = WEBTOON_E2E_ROLE_PIPELINE_STAGES.findIndex((s) => s.id === stageId);
-  const stage = WEBTOON_E2E_ROLE_PIPELINE_STAGES[Math.max(0, stageIdx)]!;
+  const stage = WEBTOON_E2E_ROLE_PIPELINE_STAGES[Math.max(0, stageIdx)];
+  if (!stage) throw new Error("분업 계획의 기본 공정이 정의되지 않았습니다.");
   const nextStage =
     stageIdx >= 0 && stageIdx + 1 < WEBTOON_E2E_ROLE_PIPELINE_STAGES.length
-      ? WEBTOON_E2E_ROLE_PIPELINE_STAGES[stageIdx + 1]!
+      ? WEBTOON_E2E_ROLE_PIPELINE_STAGES[stageIdx + 1] ?? null
       : null;
 
   const wsPreset = creatorRoleWorkspacePreset(roleId);
   const def = creatorRoleDefinition(roleId);
   const roleLabelKo = def ? creatorText(def.label, "ko") : roleId;
-  const allowedLayerGroups = ROLE_ALLOWED_LAYER_GROUPS[roleId] ?? stage.ownedLayerGroups;
+  const isLead = LEAD_OR_MAIN_ROLES.has(roleId);
+  const isAssistant = ASSISTANT_PROPOSE_ROLES.has(roleId);
+  const canonWriteAccess = isLead ? "full" : isAssistant ? "propose-only" : "read-only";
+  const allowedLayerGroups = canonWriteAccess === "read-only"
+    ? []
+    : ROLE_ALLOWED_LAYER_GROUPS[roleId] ?? stage.ownedLayerGroups;
   const allowedSet = new Set<WebtoonCanonicalLayerGroupId>(allowedLayerGroups);
   const lockedLayerGroups = WEBTOON_CANONICAL_LAYER_GROUPS.map((g) => g.id).filter(
     (id) => !allowedSet.has(id),
   );
 
-  const isLead = LEAD_OR_MAIN_ROLES.has(roleId);
-  const isAssistant = ASSISTANT_PROPOSE_ROLES.has(roleId);
-  const canonWriteAccess = isLead ? "full" : isAssistant ? "propose-only" : "read-only";
   const requiresLeadReview = isAssistant;
   const canApproveDepartment =
     roleId === "creator" || roleId === "editor" || roleId === "producer";
 
-  const permissionBadgeKo =
+  const permissionBadgeKo = "권한 예시 · " + (
     roleId === "creator"
-      ? "총괄 작가 · 전체 18개 레이어 그룹 편집 및 공정 승인"
+      ? "총괄 작가 · 전체 18개 그룹 및 공정 승인 계획"
       : canApproveDepartment
-        ? `총괄 검수 · 승인 동결 및 피드백 권한 (허용 레이어 ${allowedLayerGroups.length}종)`
-        : isAssistant
-          ? `전문 어시스턴트 최소권한 · 담당 레이어 ${allowedLayerGroups.length}종만 편집 (원화·대본 잠금 보호)`
-          : `파트 메인 작가 · 담당 레이어 ${allowedLayerGroups.length}종 정본 편집 권한`;
+        ? `총괄 검수 · 승인 동결 및 피드백 계획 (허용 레이어 ${allowedLayerGroups.length}종)`
+        : canonWriteAccess === "read-only"
+          ? "읽기 전용 검토 · 원고 편집·승인 권한을 부여하지 않음"
+          : isAssistant
+            ? `전문 어시스턴트 · 담당 레이어 ${allowedLayerGroups.length}종 편집 제안 (책임자 검토 필요)`
+            : `파트 메인 작가 · 담당 레이어 ${allowedLayerGroups.length}종 편집 계획`);
 
   return {
     roleId,
@@ -432,18 +437,21 @@ export interface RoleLayerEditGuardResult {
   readonly code:
     | "allowed"
     | "blocked-approved-freeze"
+    | "blocked-upstream-freeze"
     | "blocked-other-user-lock"
     | "blocked-role-rbac";
   readonly reasonKo: string;
+  readonly reasonEn: string;
 }
 
 /**
- * 직군별 레이어 그룹 편집 시도 시 최소권한(RBAC)·최종 승인 동결·타 작업자 선점 여부를 판정
+ * 계획 화면의 직군·동결·선점 예시를 판정한다. 실제 편집 권한은 서버 계약이 정본이다.
  */
 export function evaluateRoleLayerEditGuard(params: {
   readonly roleId: CreatorRoleId;
   readonly targetLayerGroup: WebtoonCanonicalLayerGroupId;
   readonly isApprovedFrozen?: boolean;
+  readonly frozenLayerGroups?: readonly WebtoonCanonicalLayerGroupId[];
   readonly lockedByOtherUser?: string | null;
 }): RoleLayerEditGuardResult {
   const preset = resolveRolePipelinePreset(params.roleId);
@@ -452,11 +460,21 @@ export function evaluateRoleLayerEditGuard(params: {
   );
   const layerLabel = layerSpec?.labelKo ?? params.targetLayerGroup;
 
-  if (params.isApprovedFrozen && !preset.canApproveDepartment) {
+  if (params.isApprovedFrozen) {
     return {
       allowed: false,
       code: "blocked-approved-freeze",
-      reasonKo: `[최종 승인 동결 보호] '${layerLabel}' 레이어는 PD/편집자 최종 승인 상태이므로 ${preset.roleLabelKo} 권한으로 수정할 수 없습니다.`,
+      reasonKo: `[계획상 최종 동결] '${layerLabel}' 그룹은 ${preset.roleLabelKo}의 편집 계획에서 제외됩니다.`,
+      reasonEn: `Final freeze preview: ${params.targetLayerGroup} is excluded from this role's edit plan.`,
+    };
+  }
+
+  if (params.frozenLayerGroups?.includes(params.targetLayerGroup)) {
+    return {
+      allowed: false,
+      code: "blocked-upstream-freeze",
+      reasonKo: `[계획상 이전 공정 동결] '${layerLabel}' 그룹은 이미 인계한 공정에 속합니다.`,
+      reasonEn: `Upstream freeze preview: ${params.targetLayerGroup} belongs to an earlier handed-off stage.`,
     };
   }
 
@@ -464,7 +482,8 @@ export function evaluateRoleLayerEditGuard(params: {
     return {
       allowed: false,
       code: "blocked-other-user-lock",
-      reasonKo: `[동시 작업 선점 잠금] '${layerLabel}' 레이어는 현재 '${params.lockedByOtherUser}' 작업자가 편집 중입니다.`,
+      reasonKo: `[선점 잠금 예시] '${layerLabel}' 그룹을 '${params.lockedByOtherUser}' 작업자가 편집하는 조건입니다.`,
+      reasonEn: `Lock preview: ${params.targetLayerGroup} is assigned to another worker.`,
     };
   }
 
@@ -472,14 +491,20 @@ export function evaluateRoleLayerEditGuard(params: {
     return {
       allowed: false,
       code: "blocked-role-rbac",
-      reasonKo: `[직군 RBAC 보호] ${preset.roleLabelKo} 직군은 '${layerLabel}' 레이어를 수정할 수 없습니다 (허용: ${preset.allowedLayerGroups.join(", ")}).`,
+      reasonKo: `[권한 예시상 제외] ${preset.roleLabelKo}의 담당 그룹에 '${layerLabel}'이 없습니다.`,
+      reasonEn: `Permission preview: ${params.targetLayerGroup} is outside this role's planned groups.`,
     };
   }
 
   return {
     allowed: true,
     code: "allowed",
-    reasonKo: `[편집 허용] ${preset.roleLabelKo} 직군 권한으로 '${layerLabel}' 레이어를 안전하게 편집할 수 있습니다.`,
+    reasonKo: preset.requiresLeadReview
+      ? `[계획상 제안 가능] '${layerLabel}' 그룹의 편집 제안은 책임자 검토가 필요합니다.`
+      : `[계획상 편집 가능] '${layerLabel}' 그룹이 ${preset.roleLabelKo}의 담당 예시에 포함됩니다.`,
+    reasonEn: preset.requiresLeadReview
+      ? `Proposal preview: edits to ${params.targetLayerGroup} require lead review.`
+      : `Edit preview: ${params.targetLayerGroup} is included in this role's planned groups.`,
   };
 }
 
@@ -509,70 +534,109 @@ export function createInitialRolePipelineHandoffState(): WebtoonPipelineHandoffS
   };
 }
 
-/**
- * 원클릭 다음 공정 인계(`executeOneClickStageHandoff`) — 완료된 이전 공정의 레이어를 자동 잠금하고
- * 다음 담당 직군과 추천 작업공간으로 안전하게 인계합니다.
- */
+export interface RolePipelineHandoffGuardResult {
+  readonly allowed: boolean;
+  readonly code: "allowed" | "blocked-invalid-state" | "blocked-completed" | "blocked-role" | "blocked-final-approval";
+  readonly reasonKo: string;
+  readonly reasonEn: string;
+}
+
+/** 저장·전송 권한이 아닌, 지역 분업 계획의 순서와 선택 직군을 검증한다. */
+export function evaluateRolePipelineHandoff(
+  state: WebtoonPipelineHandoffState,
+  actorRoleId: CreatorRoleId,
+): RolePipelineHandoffGuardResult {
+  const invalidState: RolePipelineHandoffGuardResult = {
+    allowed: false, code: "blocked-invalid-state",
+    reasonKo: "공정·담당·동결 이력이 일치하지 않아 계획을 진행하지 않았습니다. 초기화 후 다시 선택해 주세요.",
+    reasonEn: "Stage, assignee and freeze history do not match. Reset this local plan before continuing.",
+  };
+  if (!state || !Array.isArray(state.frozenLayerGroups) || !Array.isArray(state.handoffHistory)) return invalidState;
+  const frozenGroups: readonly WebtoonCanonicalLayerGroupId[] = state.frozenLayerGroups;
+  const history: readonly WebtoonPipelineHandoffLogEntry[] = state.handoffHistory;
+  const currentIndex = WEBTOON_E2E_ROLE_PIPELINE_STAGES.findIndex((stage) => stage.id === state.activeStageId);
+  const current = WEBTOON_E2E_ROLE_PIPELINE_STAGES[currentIndex];
+  const expectedFrozen = state.isEpisodeApprovedFrozen
+    ? WEBTOON_CANONICAL_LAYER_GROUPS.map((group) => group.id)
+    : WEBTOON_E2E_ROLE_PIPELINE_STAGES.slice(0, currentIndex).flatMap((stage) => stage.ownedLayerGroups);
+  const frozen = new Set(frozenGroups);
+  const invalid = !current || !current.primaryRoles.includes(state.activeAssigneeRoleId)
+    || typeof state.isEpisodeApprovedFrozen !== "boolean"
+    || frozen.size !== state.frozenLayerGroups.length || frozen.size !== expectedFrozen.length
+    || expectedFrozen.some((group) => !frozen.has(group))
+    || state.handoffHistory.length !== currentIndex + Number(state.isEpisodeApprovedFrozen)
+    || (state.isEpisodeApprovedFrozen && currentIndex !== WEBTOON_E2E_ROLE_PIPELINE_STAGES.length - 1)
+    || !Object.hasOwn(ROLE_TO_STAGE_MAP, actorRoleId);
+  const invalidHistory = history.some((entry, index) => {
+    const from = WEBTOON_E2E_ROLE_PIPELINE_STAGES[index];
+    const to = WEBTOON_E2E_ROLE_PIPELINE_STAGES[index + 1] ?? from;
+    if (!entry || !from || !to || !Object.hasOwn(ROLE_TO_STAGE_MAP, entry.actorRoleId)
+      || !Array.isArray(entry.lockedUpstreamLayerGroups) || typeof entry.noteKo !== "string") return true;
+    const lockedGroups: readonly WebtoonCanonicalLayerGroupId[] = entry.lockedUpstreamLayerGroups;
+    const actor = resolveRolePipelinePreset(entry.actorRoleId);
+    return entry.fromStageId !== from.id || entry.toStageId !== to.id
+      || lockedGroups.length !== from.ownedLayerGroups.length
+      || new Set(lockedGroups).size !== from.ownedLayerGroups.length
+      || lockedGroups.some((group) => !from.ownedLayerGroups.includes(group))
+      || (!actor.canApproveDepartment && (actor.canonWriteAccess === "read-only" || !from.primaryRoles.includes(entry.actorRoleId)))
+      || (index === WEBTOON_E2E_ROLE_PIPELINE_STAGES.length - 1 && !actor.canApproveDepartment);
+  });
+  if (invalid || invalidHistory || !current) return invalidState;
+  if (state.isEpisodeApprovedFrozen) return {
+    allowed: false, code: "blocked-completed",
+    reasonKo: "최종 동결 계획이 완료됐습니다. 실제 원고 승인이나 권한 변경은 수행하지 않았습니다.",
+    reasonEn: "The final freeze plan is complete. No manuscript approval or permissions were changed.",
+  };
+  const preset = resolveRolePipelinePreset(actorRoleId);
+  if (currentIndex === WEBTOON_E2E_ROLE_PIPELINE_STAGES.length - 1 && !preset.canApproveDepartment) return {
+    allowed: false, code: "blocked-final-approval",
+    reasonKo: "최종 동결 계획은 총괄 작가·편집자·PD 예시 직군을 선택해야 진행할 수 있습니다.",
+    reasonEn: "Select the creator, editor or producer preview role to plan the final freeze.",
+  };
+  if ((preset.canonWriteAccess === "read-only" || !current.primaryRoles.includes(actorRoleId)) && !preset.canApproveDepartment) return {
+    allowed: false, code: "blocked-role",
+    reasonKo: "현재 공정의 담당 직군 또는 총괄 예시 직군을 선택해야 인계 계획을 진행할 수 있습니다.",
+    reasonEn: "Select a role from the current stage or a lead preview role to plan this handoff.",
+  };
+  return {
+    allowed: true, code: "allowed",
+    reasonKo: "이 탭의 인계 계획만 다음 단계로 이동합니다. 실제 담당자와 작업공간은 바뀌지 않습니다.",
+    reasonEn: "Only this tab's handoff plan advances. Actual assignees and workspaces remain unchanged.",
+  };
+}
+
+/** 공정·행위 직군이 맞을 때만 지역 계획을 이동한다. 거절·완료 상태는 그대로 보존한다. */
 export function executeOneClickStageHandoff(
   state: WebtoonPipelineHandoffState,
-  params?: {
-    readonly actorRoleId?: CreatorRoleId;
-    readonly noteKo?: string;
-  },
+  params?: { readonly actorRoleId?: CreatorRoleId; readonly noteKo?: string },
 ): WebtoonPipelineHandoffState {
-  const currentIdx = WEBTOON_E2E_ROLE_PIPELINE_STAGES.findIndex(
-    (s) => s.id === state.activeStageId,
-  );
-  const currentStage = WEBTOON_E2E_ROLE_PIPELINE_STAGES[Math.max(0, currentIdx)]!;
-  const actorRole = params?.actorRoleId ?? state.activeAssigneeRoleId;
-
-  const mergedFrozen = Array.from(
-    new Set<WebtoonCanonicalLayerGroupId>([
-      ...state.frozenLayerGroups,
-      ...currentStage.ownedLayerGroups,
-    ]),
-  );
-
-  // 마지막 8단계에서 인계/승인 실행 시 에피소드 전체 승인 동결
-  if (currentIdx + 1 >= WEBTOON_E2E_ROLE_PIPELINE_STAGES.length) {
-    return {
-      ...state,
-      frozenLayerGroups: WEBTOON_CANONICAL_LAYER_GROUPS.map((g) => g.id),
-      isEpisodeApprovedFrozen: true,
-      handoffHistory: [
-        ...state.handoffHistory,
-        {
-          fromStageId: currentStage.id,
-          toStageId: currentStage.id,
-          actorRoleId: actorRole,
-          lockedUpstreamLayerGroups: currentStage.ownedLayerGroups,
-          noteKo:
-            params?.noteKo ??
-            `${currentStage.labelKo} 최종 검수 완료 및 전 레이어 승인 동결(Freeze)`,
-        },
-      ],
-    };
-  }
-
-  const nextStage = WEBTOON_E2E_ROLE_PIPELINE_STAGES[currentIdx + 1]!;
-  const nextAssignee = nextStage.primaryRoles[0]!;
-
+  const actorRole = params?.actorRoleId ?? state?.activeAssigneeRoleId;
+  if (!actorRole || !evaluateRolePipelineHandoff(state, actorRole).allowed) return state;
+  const currentIndex = WEBTOON_E2E_ROLE_PIPELINE_STAGES.findIndex((stage) => stage.id === state.activeStageId);
+  const currentStage = WEBTOON_E2E_ROLE_PIPELINE_STAGES[currentIndex];
+  if (!currentStage) return state;
+  const nextStage = WEBTOON_E2E_ROLE_PIPELINE_STAGES[currentIndex + 1];
+  if (!nextStage) return {
+    ...state,
+    frozenLayerGroups: WEBTOON_CANONICAL_LAYER_GROUPS.map((group) => group.id),
+    isEpisodeApprovedFrozen: true,
+    handoffHistory: [...state.handoffHistory, {
+      fromStageId: currentStage.id, toStageId: currentStage.id, actorRoleId: actorRole,
+      lockedUpstreamLayerGroups: currentStage.ownedLayerGroups,
+      noteKo: params?.noteKo ?? `${currentStage.labelKo} 최종 동결 계획 완료 (실제 원고 미적용)`,
+    }],
+  };
+  const nextAssignee = nextStage.primaryRoles[0];
+  if (!nextAssignee) return state;
   return {
     activeStageId: nextStage.id,
     activeAssigneeRoleId: nextAssignee,
-    frozenLayerGroups: mergedFrozen,
+    frozenLayerGroups: Array.from(new Set([...state.frozenLayerGroups, ...currentStage.ownedLayerGroups])),
     isEpisodeApprovedFrozen: false,
-    handoffHistory: [
-      ...state.handoffHistory,
-      {
-        fromStageId: currentStage.id,
-        toStageId: nextStage.id,
-        actorRoleId: actorRole,
-        lockedUpstreamLayerGroups: currentStage.ownedLayerGroups,
-        noteKo:
-          params?.noteKo ??
-          `${currentStage.labelKo} → ${nextStage.labelKo} 인계 완료 (상위 레이어 ${currentStage.ownedLayerGroups.length}종 잠금 보호)`,
-      },
-    ],
+    handoffHistory: [...state.handoffHistory, {
+      fromStageId: currentStage.id, toStageId: nextStage.id, actorRoleId: actorRole,
+      lockedUpstreamLayerGroups: currentStage.ownedLayerGroups,
+      noteKo: params?.noteKo ?? `${currentStage.labelKo} → ${nextStage.labelKo} 인계 계획 (이전 공정 ${currentStage.ownedLayerGroups.length}개 그룹 동결 예시)`,
+    }],
   };
 }

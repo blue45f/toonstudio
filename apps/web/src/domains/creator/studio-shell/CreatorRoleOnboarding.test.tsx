@@ -9,6 +9,7 @@ import type { MeProfile } from "@/platform/me-client";
 import {
   CREATOR_ROLE_PROFILE_VERSION,
   normalizeCreatorRoleProfile,
+  type CreatorRoleLocale,
 } from "@/shared/lib/creator-role-contract";
 
 const { updateMyProfile } = vi.hoisted(() => ({
@@ -31,13 +32,13 @@ const initialProfile: MeProfile = {
   creatorRoleProfile: normalizeCreatorRoleProfile(null),
 };
 
-function Harness({ onDismiss }: { readonly onDismiss: () => void }) {
+function Harness({ onDismiss, locale = "ko" }: { readonly onDismiss: () => void; readonly locale?: CreatorRoleLocale }) {
   const [profile, setProfile] = useState(initialProfile);
   return (
     <>
       <CreatorRoleOnboarding
         profile={profile}
-        locale="ko"
+        locale={locale}
         onProfileChange={setProfile}
         onDismiss={onDismiss}
       />
@@ -121,8 +122,26 @@ describe("CreatorRoleOnboarding", () => {
     expect(preview.textContent).toContain("선화 클린업·잔선 제거·펜터치 보조 도구를 위한 작업공간을 추천합니다.");
     expect(preview.textContent).toContain("Clip Studio Paint");
     const rbacPreview = screen.getByTestId("onboarding-role-rbac-preview");
-    expect(rbacPreview.textContent).toContain("편집 권한 레이어");
-    expect(rbacPreview.textContent).toContain("주연 원화 보호 잠금");
+    expect(rbacPreview.textContent).toContain("직무별 작업분담 미리보기");
+    expect(rbacPreview.textContent).toContain("담당 그룹 예시 1개");
+    expect(rbacPreview.textContent).toContain("실제 편집 권한과 레이어 잠금은 프로젝트의 팀 설정에서 확인하세요");
+    expect(rbacPreview.textContent).not.toContain("자동 잠금");
+    expect(rbacPreview.textContent).not.toContain("편집 권한 레이어");
+    expect(readRoleProfile().primaryRole).toBeNull();
+    expect(updateMyProfile).not.toHaveBeenCalled();
+  });
+
+  it("영문 직무 미리보기도 작업 계획과 실제 프로젝트 권한을 구분한다", () => {
+    render(<Harness locale="en" onDismiss={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox", { name: /Choose from all roles/u }), {
+      target: { value: "line-assistant" },
+    });
+    const preview = screen.getByTestId("onboarding-role-environment-preview");
+    expect(preview.textContent).toContain("Role work plan preview");
+    expect(preview.textContent).toContain("1 suggested group");
+    expect(preview.textContent).toContain("team settings for actual edit permissions and layer locks");
+    expect(preview.textContent).toContain("Lead artwork protection planning");
+    expect(preview.textContent).not.toMatch(/[가-힣]/u);
     expect(updateMyProfile).not.toHaveBeenCalled();
   });
 });

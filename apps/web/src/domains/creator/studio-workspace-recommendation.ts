@@ -46,6 +46,7 @@ export interface StudioCompetitorWorkflowQuickMatch {
   readonly workspaceId: StudioDefaultWorkspaceId;
   readonly workspaceName: string;
   readonly summary: string;
+  /** 외부 도구에서 참고한 작업 방식이며 제품 구현·검증 보증과는 구분한다. */
   readonly keyCapabilities: readonly string[];
   readonly recommendedRoles: readonly CreatorRoleId[];
   readonly searchAliases: readonly string[];
@@ -185,7 +186,7 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       workspaceName: "검수·피드백",
       summary: "검수와 피드백 작업을 위한 배치를 추천합니다.",
       keyCapabilities: [
-        "8단계 웹툰 직군 파이프라인 인계 게이트 · 레이어 RBAC 잠금 감사",
+        "8단계 직무별 작업분담·인계 계획 · 레이어 보호 항목 검토",
         "컷 핀포인트 레드라인 주석 · 8대 포털 출고 규격 프리플라이트",
       ],
       recommendedRoles: ["editor", "producer", "reviewer", "planner"],
@@ -266,7 +267,11 @@ export function studioWorkspaceSearchAliases(workspaceId: string): readonly stri
   if (!Object.prototype.hasOwnProperty.call(WORKSPACE_COMPETITOR_ALIAS_MAP, workspaceId)) {
     return [];
   }
-  return WORKSPACE_COMPETITOR_ALIAS_MAP[workspaceId as StudioDefaultWorkspaceId] ?? [];
+  const legacyAliases = WORKSPACE_COMPETITOR_ALIAS_MAP[workspaceId as StudioDefaultWorkspaceId] ?? [];
+  const workflowAliases = STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES
+    .filter((workflow) => workflow.workspaceId === workspaceId)
+    .flatMap((workflow) => workflow.searchAliases);
+  return [...new Set([...legacyAliases, ...workflowAliases])];
 }
 
 function resolveRoleRecommendation(

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 import { StudioBg3dSketchUpWebtoonStagingSection } from "./StudioBg3dSketchUpWebtoonStagingSection";
 import {
@@ -15,6 +17,7 @@ import {
 } from "./studio-bg3d-sketchup-webtoon-staging-bridge";
 
 describe("SketchUp 3D Background Webtoon Staging Bridge (REA Reverse-Engineered)", () => {
+  beforeEach(() => useI18n.setState({ lang: "ko" }));
   it("commits Push/Pull through-hole wall opening, Offset frame, Follow-Me molding, and *N array to BgPrimitive[]", () => {
     const res = commitSketchUpDirectModelingToPrimitives({
       wallWidthMeters: 3.6,
@@ -133,7 +136,7 @@ describe("SketchUp 3D Background Webtoon Staging Bridge (REA Reverse-Engineered)
   });
 
   it("renders StudioBg3dSketchUpWebtoonStagingSection and dispatches primitive/camera callbacks", () => {
-    const onInsert = vi.fn();
+    const onInsert = vi.fn(() => true);
     const onCamera = vi.fn();
     const onStatus = vi.fn();
 
@@ -156,6 +159,49 @@ describe("SketchUp 3D Background Webtoon Staging Bridge (REA Reverse-Engineered)
 
     expect(screen.getByTestId("sketchup-role-lens-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("sketchup-role-lens-background-assist"));
-    expect(screen.getByTestId("sketchup-hybrid-competitor-presets")).toBeTruthy();
+    expect(screen.getByLabelText("SketchUp 스타일 프리셋")).toHaveProperty("value", "skp-hidden-line-webtoon");
+    expect(screen.getByLabelText("Outliner 태그 가시성 프리셋")).toHaveProperty("value", "hide-small-props");
+    expect(onInsert).toHaveBeenCalledTimes(2);
+    expect(onCamera).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId("sketchup-role-lens-storyboard-camera"));
+    expect(screen.getByTestId("sketchup-role-lens-storyboard-camera").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByTestId("sketchup-two-point-apply-btn"));
+    expect(onCamera).toHaveBeenLastCalledWith(expect.objectContaining({ lensShift: [0, 0.15] }), expect.any(String));
+    fireEvent.click(screen.getByTestId("sketchup-role-lens-color-lighting"));
+    expect(screen.getByTestId("sketchup-solar-preset-select")).toHaveProperty("value", "blue-hour-dusk");
+    expect(screen.getByLabelText("그림자 소프트니스")).toHaveProperty("value", "0.7");
+  });
+
+  it("장면 삽입이 거절되면 완료 상태를 표시하지 않는다", () => {
+    const insert = vi.fn(() => false);
+    const status = vi.fn();
+    render(<StudioBg3dSketchUpWebtoonStagingSection onInsertScenePrimitives={insert} onStatusChange={status} />);
+    fireEvent.click(screen.getByTestId("sketchup-direct-modeling-commit-btn"));
+    fireEvent.click(screen.getByTestId("sketchup-dc-spawn-btn"));
+    expect(insert).toHaveBeenCalledTimes(2);
+    expect(status.mock.calls.map(([message]) => message)).toEqual([
+      "현재 장면에 배치하지 못했습니다. 장면 잠금과 삽입 가능 상태를 확인해 주세요.",
+      "현재 장면에 배치하지 못했습니다. 장면 잠금과 삽입 가능 상태를 확인해 주세요.",
+    ]);
+  });
+
+  it("비활성 상태에서는 프리셋과 명시적 장면 명령을 실행하지 않는다", () => {
+    const insert = vi.fn(() => true);
+    const camera = vi.fn();
+    render(<StudioBg3dSketchUpWebtoonStagingSection disabled onInsertScenePrimitives={insert} onApplySceneCamera={camera} />);
+    fireEvent.click(screen.getByTestId("sketchup-role-lens-background-assist"));
+    expect(screen.getByLabelText("SketchUp 스타일 프리셋")).toHaveProperty("value", "skp-shaded-with-textures");
+    fireEvent.click(screen.getByTestId("sketchup-direct-modeling-commit-btn"));
+    fireEvent.click(screen.getByTestId("sketchup-two-point-apply-btn"));
+    expect(insert).not.toHaveBeenCalled();
+    expect(camera).not.toHaveBeenCalled();
+  });
+
+  it("영어 모드에서 새 프리셋의 적용 범위를 영어로 안내한다", () => {
+    useI18n.setState({ lang: "en" });
+    render(<StudioBg3dSketchUpWebtoonStagingSection />);
+    expect(screen.getByText("Role-based style, tag, and camera setting presets")).toBeTruthy();
+    expect(screen.getByText(/They do not change editing permissions/)).toBeTruthy();
+    expect(screen.getByTestId("sketchup-direct-modeling-commit-btn")).toHaveProperty("disabled", true);
   });
 });

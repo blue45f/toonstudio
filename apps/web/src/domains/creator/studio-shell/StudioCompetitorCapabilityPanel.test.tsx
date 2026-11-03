@@ -74,12 +74,12 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(screen.getByText("구현 누락")).toBeTruthy();
   });
 
-  it("filters competitor presets by specialist role chip and renders the 8-stage role pipeline bridge", () => {
+  it("직무별 필터와 8단계 작업분담 계획을 표시한다", () => {
     render(<StudioCompetitorCapabilityPanel locale="ko" />);
 
     expect(screen.getByTestId("competitor-role-filter-bar")).toBeTruthy();
     expect(screen.getByTestId("competitor-role-pipeline-bridge").textContent).toContain(
-      "8단계 웹툰 직군 분업 파이프라인",
+      "8단계 웹툰 직군 작업분담·인계 계획",
     );
 
     fireEvent.click(screen.getByTestId("competitor-role-filter-background"));
@@ -88,5 +88,36 @@ describe("StudioCompetitorCapabilityPanel", () => {
 
     fireEvent.click(screen.getByTestId("competitor-role-filter-all"));
     expect(screen.getByText("CGWire Kitsu · Linear")).toBeTruthy();
+  });
+
+  it("밑색·명암·효과 그룹은 효과 어시스턴트의 애니메이션 배치도 검색하고 선택한다", () => {
+    const onSelectWorkspacePreset = vi.fn();
+    render(<StudioCompetitorCapabilityPanel locale="ko" onSelectWorkspacePreset={onSelectWorkspacePreset} />);
+    const colorFilter = screen.getByTestId("competitor-role-filter-color");
+    fireEvent.click(colorFilter);
+    expect(colorFilter.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("Adobe Photoshop · Krita")).toBeTruthy();
+    expect(screen.getByText("Rive · Toon Boom · Live2D")).toBeTruthy();
+    expect(onSelectWorkspacePreset).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Rive" } });
+    expect(screen.queryByText("Adobe Photoshop · Krita")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "애니메이션 배치 선택" }));
+    expect(onSelectWorkspacePreset).toHaveBeenCalledTimes(1);
+    expect(onSelectWorkspacePreset).toHaveBeenCalledWith("animation");
+    fireEvent.click(screen.getByTestId("competitor-role-filter-producer"));
+    expect(screen.getByRole("status").textContent).toBe("일치하는 작업공간이 없습니다.");
+    fireEvent.click(screen.getByTestId("competitor-role-filter-all"));
+    expect(screen.getByText("Rive · Toon Boom · Live2D")).toBeTruthy();
+  });
+
+  it("영문 공정 안내는 계획 범위를 표시하며 레이어 잠금이 적용됐다고 보장하지 않는다", () => {
+    render(<StudioCompetitorCapabilityPanel locale="en" />);
+    const plan = screen.getByTestId("competitor-role-pipeline-bridge");
+    expect(plan.textContent).toContain("8-stage webtoon role work and handoff plan");
+    expect(plan.textContent).toContain("does not change project permissions or actual layer locks");
+    expect(plan.textContent).toContain("4. Line art & cleanup");
+    expect(plan.textContent).toContain("8. Editorial review");
+    expect(plan.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByText(/Reference workflows help you choose a layout/u)).toBeTruthy();
   });
 });
