@@ -109,4 +109,17 @@ describe("CreatorRoleOnboarding", () => {
     });
     expect(updateMyProfile).toHaveBeenCalledTimes(4);
   });
+
+  it("직군 선택은 추천 환경만 미리 보여 주고 프로필을 저장하지 않는다", () => {
+    const onDismiss = vi.fn();
+    render(<Harness onDismiss={onDismiss} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "전문 어시스턴트" }));
+    fireEvent.click(screen.getByRole("button", { name: /선화·펜터치 어시스턴트/ }));
+
+    const preview = screen.getByTestId("onboarding-role-environment-preview");
+    expect(preview.textContent).toContain("선화 클린업·잔선 제거·펜터치 보조 도구를 위한 작업공간을 추천합니다.");
+    expect(preview.textContent).toContain("Clip Studio Paint");
+    expect(updateMyProfile).not.toHaveBeenCalled();
+  });
 });

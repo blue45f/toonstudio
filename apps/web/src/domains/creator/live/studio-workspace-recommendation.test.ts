@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   STUDIO_CLIP_WORKSPACE_RECOMMENDATION,
+  STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES,
   STUDIO_SIMPLE_WORKSPACE_RECOMMENDATION,
+  matchStudioCompetitorWorkflowPreset,
   resolveStudioWorkspaceRecommendation,
   studioWorkspaceSearchAliases,
 } from "../studio-workspace-recommendation";
@@ -21,6 +23,24 @@ describe("Studio workspace recommendation model", () => {
     expect(
       studioWorkspaceSearchAliases(STUDIO_CLIP_WORKSPACE_RECOMMENDATION.workspaceId),
     ).toEqual(expect.arrayContaining(["CSP", "Clip Studio", "클튜"]));
+    expect(studioWorkspaceSearchAliases("pose-3d")).toEqual(
+      expect.arrayContaining(["SketchUp", "ACON3D", "Blender"]),
+    );
+    expect(studioWorkspaceSearchAliases("photo-edit")).toEqual(
+      expect.arrayContaining(["Photoshop", "Krita"]),
+    );
+    expect(studioWorkspaceSearchAliases("storyboard")).toEqual(
+      expect.arrayContaining(["Celtx", "Campfire", "Obsidian"]),
+    );
+  });
+
+  it("matches familiar competitor workflows to built-in ToonStudio workspaces", () => {
+    expect(STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES.length).toBeGreaterThanOrEqual(8);
+    const sketchupMatches = matchStudioCompetitorWorkflowPreset("SketchUp");
+    expect(sketchupMatches.map((item) => item.workspaceId)).toContain("pose-3d");
+
+    const kitsuMatches = matchStudioCompetitorWorkflowPreset("Kitsu");
+    expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
   it("does not compete with the current-workspace summary after activation", () => {
@@ -32,8 +52,15 @@ describe("Studio workspace recommendation model", () => {
     ).toBeNull();
   });
 
+  it.each(["toString", "constructor", "__proto__", "unknown"])(
+    "알 수 없거나 상속된 작업공간 ID %s는 빈 별칭을 반환한다",
+    (workspaceId) => {
+      expect(studioWorkspaceSearchAliases(workspaceId)).toEqual([]);
+    },
+  );
+
   it("fails closed if the referenced built-in is unavailable", () => {
     expect(resolveStudioWorkspaceRecommendation([], "storyboard")).toBeNull();
-    expect(studioWorkspaceSearchAliases("storyboard")).toEqual([]);
+    expect(studioWorkspaceSearchAliases("unknown")).toEqual([]);
   });
 });

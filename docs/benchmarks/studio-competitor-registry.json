@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-02",
+  "updatedAt": "2026-11-02",
   "purpose": "Official-source registry for ongoing ToonStudio Studio competitive benchmarking. Product capabilities, algorithms, workflows, quality targets, accessible source code, assets, model weights, trademark materials, and UI resources may be analyzed or reused under the repository owner's campaign-wide attestation; every exact integration must still pin the real source, immutable version, SHA-256, destination, and required notices in the third-party reuse registry.",
   "priorities": {
     "P0": "Audit every release and convert material gaps into implementation-ready issues.",
@@ -565,6 +565,78 @@
       "watchUrl": "https://github.com/tldraw/tldraw/releases",
       "priority": "P1",
       "focus": ["infinite-canvas", "editor-sdk", "collaboration", "shape", "persistence"]
+    },
+    {
+      "id": "celtx",
+      "name": "Celtx",
+      "category": "storyboard",
+      "officialUrl": "https://www.celtx.com/",
+      "watchUrl": "https://www.celtx.com/blog/",
+      "priority": "P0",
+      "focus": ["script", "storyboard", "shot-list", "beat-sheet", "collaboration"]
+    },
+    {
+      "id": "campfire-writing",
+      "name": "Campfire Writing",
+      "category": "storyboard",
+      "officialUrl": "https://www.campfirewriting.com/",
+      "watchUrl": "https://www.campfirewriting.com/learn",
+      "priority": "P1",
+      "focus": ["worldbuilding", "character-sheet", "timeline", "manuscript", "canon"]
+    },
+    {
+      "id": "obsidian",
+      "name": "Obsidian",
+      "category": "storyboard",
+      "officialUrl": "https://obsidian.md/",
+      "watchUrl": "https://obsidian.md/changelog/",
+      "priority": "P1",
+      "focus": ["knowledge-graph", "wikilink", "canvas-board", "markdown", "local-first"]
+    },
+    {
+      "id": "milanote",
+      "name": "Milanote",
+      "category": "collaboration-design",
+      "officialUrl": "https://milanote.com/",
+      "watchUrl": "https://milanote.com/product/whats-new",
+      "priority": "P1",
+      "focus": ["moodboard", "story-map", "reference", "visual-notes", "collaboration"]
+    },
+    {
+      "id": "cgwire-kitsu",
+      "name": "CGWire Kitsu",
+      "category": "collaboration-design",
+      "officialUrl": "https://www.cg-wire.com/kitsu/",
+      "watchUrl": "https://github.com/cgwire/kitsu/releases",
+      "priority": "P0",
+      "focus": ["production-tracker", "task-queue", "review-playlist", "department-role", "open-source"]
+    },
+    {
+      "id": "linear",
+      "name": "Linear",
+      "category": "collaboration-design",
+      "officialUrl": "https://linear.app/",
+      "watchUrl": "https://linear.app/changelog",
+      "priority": "P1",
+      "focus": ["command-palette", "keyboard-first", "issue-tracking", "cycle-planning", "triage"]
+    },
+    {
+      "id": "vroid-studio",
+      "name": "VRoid Studio",
+      "category": "rigging-avatar",
+      "officialUrl": "https://vroid.com/en/studio",
+      "watchUrl": "https://vroid.com/en/news",
+      "priority": "P1",
+      "focus": ["vrm-avatar", "character-creator", "hair-preset", "expression", "pose-export"]
+    },
+    {
+      "id": "penpot",
+      "name": "Penpot",
+      "category": "collaboration-design",
+      "officialUrl": "https://penpot.app/",
+      "watchUrl": "https://github.com/penpot/penpot/releases",
+      "priority": "P1",
+      "focus": ["open-source", "multiplayer", "design-tokens", "components", "inspect"]
     }
   ]
 }

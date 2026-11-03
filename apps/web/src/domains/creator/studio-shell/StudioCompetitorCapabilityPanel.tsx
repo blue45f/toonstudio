@@ -1,9 +1,12 @@
 import {
   CheckCircle2,
   ChevronDown,
+  Compass,
   FlaskConical,
+  Search,
   ShieldCheck,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -11,20 +14,37 @@ import {
   STUDIO_COMPETITOR_CAPABILITY_EVALUATION,
   STUDIO_COMPETITOR_CAPABILITY_RECORDS,
 } from "../studio-platform/studio-competitor-capability-evidence";
+import {
+  matchStudioCompetitorWorkflowPreset,
+} from "../studio-workspace-recommendation";
+import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 
 export type StudioCompetitorCapabilityLocale = "ko" | "en";
 
 export function StudioCompetitorCapabilityPanel({
   locale,
   compact = false,
+  onSelectWorkspacePreset,
+  activeWorkspaceId,
 }: {
   readonly locale: StudioCompetitorCapabilityLocale;
   readonly compact?: boolean;
+  readonly activeWorkspaceId?: StudioDefaultWorkspaceId;
+  readonly onSelectWorkspacePreset?: (workspaceId: StudioDefaultWorkspaceId) => void;
 }) {
   const evaluation = STUDIO_COMPETITOR_CAPABILITY_EVALUATION;
   const pending = STUDIO_COMPETITOR_CAPABILITY_RECORDS.filter(
     (record) => record.externalValidationRequired,
   );
+  const [toolQuery, setToolQuery] = useState("");
+  const matchedWorkflows = useMemo(
+    () => matchStudioCompetitorWorkflowPreset(toolQuery),
+    [toolQuery],
+  );
+
+  const handleSelectWorkspace = (workspaceId: StudioDefaultWorkspaceId) => {
+    onSelectWorkspacePreset?.(workspaceId);
+  };
 
   return (
     <section
@@ -72,6 +92,104 @@ export function StudioCompetitorCapabilityPanel({
           />
         </div>
       </div>
+
+      {!compact ? (
+        <div
+          className="mt-4 rounded-xl border border-line bg-card/85 p-3.5"
+          data-testid="competitor-workflow-quick-match"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Compass size={15} className="text-accent" aria-hidden="true" />
+              <h3 className="text-xs font-black text-fg">
+                {locale === "ko"
+                  ? "익숙한 도구로 작업공간 찾기"
+                  : "Find a workspace by familiar tool"}
+              </h3>
+            </div>
+            <label className="relative flex w-full min-w-0 items-center sm:w-56">
+              <Search
+                size={13}
+                className="pointer-events-none absolute left-2.5 text-fg-3"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={toolQuery}
+                onChange={(event) => setToolQuery(event.target.value)}
+                aria-label={
+                  locale === "ko"
+                    ? "익숙한 도구 또는 작업 검색"
+                    : "Search familiar tool or workflow"
+                }
+                placeholder={
+                  locale === "ko"
+                    ? "예: 클튜, Procreate, 포토샵, SketchUp, Kitsu..."
+                    : "e.g. Clip Studio, Procreate, SketchUp, Kitsu..."
+                }
+                className="min-h-8 w-full rounded-lg border border-line bg-panel pl-7 pr-2.5 text-xs text-fg placeholder:text-fg-3"
+              />
+            </label>
+          </div>
+          {matchedWorkflows.length === 0 ? <p role="status" className="mt-3 text-sm text-fg-2">{locale === "ko" ? "일치하는 작업공간이 없습니다." : "No matching workspace."}</p> : null}
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {matchedWorkflows.map((item) => {
+              const isSelected = activeWorkspaceId === item.workspaceId;
+              return (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "flex flex-col justify-between rounded-xl border p-3 transition-colors",
+                    isSelected
+                      ? "border-accent bg-accent-soft/35"
+                      : "border-line bg-panel/70 hover:border-accent/40",
+                  )}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="text-xs font-black text-fg">
+                        {item.competitorFamily}
+                      </span>
+                      <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[0.65rem] font-bold text-accent">
+                        {item.workspaceName}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[0.7rem] leading-4 text-fg-2">
+                      {locale === "ko" ? item.summary : "Suggested layout; review the available tools before switching."}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {(locale === "ko" ? item.keyCapabilities.slice(0, 3) : []).map((cap) => (
+                        <span
+                          key={cap}
+                          className="rounded border border-line bg-card px-1.5 py-0.5 text-[0.62rem] text-fg-3"
+                        >
+                          {cap}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    disabled={!onSelectWorkspacePreset || isSelected}
+                    onClick={() => handleSelectWorkspace(item.workspaceId)}
+                    className={cn(
+                      "mt-2.5 min-h-8 w-full rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors",
+                      isSelected
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line bg-card text-fg hover:border-accent/50 hover:text-accent",
+                    )}
+                  >
+                    {isSelected
+                      ? (locale === "ko" ? `${item.workspaceName} 사용 중` : `${item.workspaceId} active`)
+                      : (locale === "ko" ? `${item.workspaceName} 배치 선택` : `Choose ${item.workspaceId}`)}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {!compact && pending.length > 0 ? (
         <details className="group mt-4 rounded-xl border border-line bg-card/75">
