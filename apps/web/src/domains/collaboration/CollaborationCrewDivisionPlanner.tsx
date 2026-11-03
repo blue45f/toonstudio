@@ -255,6 +255,42 @@ export function CollaborationCrewDivisionPlanner({
           </tbody>
         </table>
       </div>
+
+      <div
+        data-testid="collaboration-rea-handoff-sla-bar"
+        className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-raised/75 px-4 py-3 text-xs text-fg-2"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <img
+            src="/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            width={56}
+            height={32}
+            className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
+          />
+          <span className="font-extrabold text-accent">
+            {bt("KITSU · LINEAR · FRAME.IO · MIRO 인계 SLA:", "KITSU · LINEAR · FRAME.IO · MIRO SLA:")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
+            {bt("18개 레이어 RBAC 잠금 보호", "18-Layer RBAC Lock Guard")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
+            {bt("동시 분업 레이어 충돌 0건 검증", "Zero-Conflict Parallel Layer Check")}
+          </span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold">
+            {bt("8단계 공정 핀포인트 레드라인 검수", "8-Stage Pinpoint Redline Review")}
+          </span>
+        </div>
+        <span className="font-mono text-[11px] font-bold text-good">
+          {bt(
+            `병목 공정(${simulation.bottleneckTrack.labelKo}) 우선 인계 권장`,
+            `Priority handoff: ${simulation.bottleneckTrack.labelEn}`,
+          )}
+        </span>
+      </div>
     </section>
   );
 }

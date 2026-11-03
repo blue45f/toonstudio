@@ -84,6 +84,51 @@ export function SiteArtSurfaceSpotlight({
             height={360}
             className="nb-site-spotlight__img"
           />
+          <div
+            className="nb-site-kinetic-overlay"
+            data-testid="nb-site-kinetic-motion-overlay"
+            data-kinetic-domain={card.domain}
+            data-active-step={String(activeLensIndex + 1)}
+            aria-hidden="true"
+          >
+            <svg
+              className="nb-site-kinetic-svg"
+              viewBox="0 0 320 180"
+              fill="none"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <ellipse
+                className="nb-site-kinetic-svg__orbit"
+                cx="160"
+                cy="90"
+                rx="114"
+                ry="44"
+              />
+              <path
+                className="nb-site-kinetic-svg__spline"
+                d="M 24 138 C 96 42, 204 148, 296 38"
+              />
+              <circle
+                className="nb-site-kinetic-svg__node nb-site-kinetic-svg__node--1"
+                cx="48"
+                cy="118"
+                r={activeLensIndex === 0 ? 6.5 : 4.5}
+              />
+              <circle
+                className="nb-site-kinetic-svg__node nb-site-kinetic-svg__node--2"
+                cx="160"
+                cy="88"
+                r={activeLensIndex === 1 ? 6.5 : 4.5}
+              />
+              <circle
+                className="nb-site-kinetic-svg__node nb-site-kinetic-svg__node--3"
+                cx="276"
+                cy="48"
+                r={activeLensIndex === 2 ? 6.5 : 4.5}
+              />
+            </svg>
+          </div>
           <span className="nb-site-spotlight__visual-step">
             <span className="nb-site-spotlight__visual-dot" />
             <span>
@@ -131,6 +176,41 @@ export function SiteArtSurfaceSpotlight({
               {pick(activeLens.headline)}
             </p>
             <p className="nb-site-spotlight__detail">{pick(activeLens.detail)}</p>
+
+            <div
+              className="nb-site-glance-flow"
+              data-testid="nb-site-glance-flow-bar"
+              aria-label={
+                isEn
+                  ? "At-a-glance 3-step workflow summary"
+                  : "한눈에 이해하는 3단계 사용 흐름"
+              }
+            >
+              <span className="nb-site-glance-flow__pill">
+                <strong className="nb-site-glance-flow__step">
+                  {isEn ? "1. PURPOSE" : "1. 페이지 역할"}
+                </strong>
+                <span>{pick(card.subtitle)}</span>
+              </span>
+              <span className="nb-site-glance-flow__arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="nb-site-glance-flow__pill">
+                <strong className="nb-site-glance-flow__step">
+                  {isEn ? "2. FOCUS" : "2. 핵심 작업"}
+                </strong>
+                <span>{pick(activeLens.label)}</span>
+              </span>
+              <span className="nb-site-glance-flow__arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="nb-site-glance-flow__pill">
+                <strong className="nb-site-glance-flow__step">
+                  {isEn ? "3. NEXT" : "3. 바로 시작"}
+                </strong>
+                <span>{pick(activeLens.ctaLabel)}</span>
+              </span>
+            </div>
 
             <div className="nb-site-spotlight__step-grid" aria-hidden="true">
               {card.lenses.map((lens, idx) => {

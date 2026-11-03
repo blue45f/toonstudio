@@ -52,6 +52,12 @@ describe("SiteArtSurfaceSpotlight", () => {
     const stepCards = container.querySelectorAll(".nb-site-spotlight__step-card");
     expect(stepCards).toHaveLength(3);
 
+    // Kinetic motion overlay and 1-glance 3-step flow bar are rendered
+    const kineticOverlay = screen.getByTestId("nb-site-kinetic-motion-overlay");
+    expect(kineticOverlay.getAttribute("data-kinetic-domain")).toBe("discover");
+    expect(kineticOverlay.getAttribute("data-active-step")).toBe("1");
+    expect(screen.getByTestId("nb-site-glance-flow-bar").textContent).toContain("1. 페이지 역할");
+
     // In-Service Smart AI Assist bar is rendered and updates with the active lens
     const aiAssist = container.querySelector(".nb-site-spotlight__ai-assist");
     expect(aiAssist?.textContent).toContain("✦ 스마트 AI 보조");

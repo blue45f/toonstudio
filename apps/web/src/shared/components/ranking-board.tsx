@@ -74,6 +74,8 @@ const axisIcons: Record<RankAxis, ComponentType<{ size?: number; className?: str
   rookie: Sprout,
 };
 const RANKING_DEFAULT_LIMIT = "200";
+const RANKING_INITIAL_WINDOW_SIZE = 40;
+const RANKING_WINDOW_STEP = 40;
 // 진입 스태거의 마지막 지연 — 캡 마지막 행(11번째)이 기존 수제 스태거와 같은
 // 시점에 등장하도록 (캡-1)×간격으로 고정한다.
 const RANK_ENTRY_STAGGER_MAX_DELAY_MS =
@@ -130,6 +132,7 @@ export function RankingBoard({
   const [showFilters, setShowFilters] = useState(false);
   const savedIds = useSavedTitleIds();
   const [view, setView] = useState<View>("list");
+  const [windowLimit, setWindowLimit] = useState<number>(RANKING_INITIAL_WINDOW_SIZE);
   const [ranked, setRanked] = useState<RankedTitle[]>([]);
   const [rankingMeta, setRankingMeta] = useState<RankingMeta | null>(null);
   const [insights, setInsights] = useState<RankingInsights | null>(null);
@@ -239,6 +242,10 @@ export function RankingBoard({
   const visibleRanked = useMemo(
     () => (clientFilterCount > 0 ? ranked.filter((r) => visibleIds.has(r.title.id)) : ranked),
     [ranked, visibleIds, clientFilterCount]
+  );
+  const windowedRanked = useMemo(
+    () => visibleRanked.slice(0, windowLimit),
+    [visibleRanked, windowLimit]
   );
 
   return (
@@ -554,7 +561,7 @@ export function RankingBoard({
           limit={RANK_ENTRY_STAGGER_CAP}
           itemClassName="mb-2 last:mb-0"
         >
-          {visibleRanked.map((r, i) => (
+          {windowedRanked.map((r, i) => (
             <RankRow key={r.title.id} ranked={r} axis={axis} metric={metric} entryIndex={i} />
           ))}
         </StaggerReveal>
@@ -566,7 +573,7 @@ export function RankingBoard({
           limit={RANK_ENTRY_STAGGER_CAP}
         >
           {/* 진입 스태거 — TitleCard API는 그대로 두고 StaggerReveal 래퍼에 지연만 입힌다(캡 밖은 즉시). */}
-          {visibleRanked.map((r) => (
+          {windowedRanked.map((r) => (
             <TitleCard key={r.title.id} title={r.title} rank={r.rank} />
           ))}
         </StaggerReveal>
@@ -577,7 +584,7 @@ export function RankingBoard({
           maxDelayMs={RANK_ENTRY_STAGGER_MAX_DELAY_MS}
           limit={RANK_ENTRY_STAGGER_CAP}
         >
-          {visibleRanked.map((r) => {
+          {windowedRanked.map((r) => {
             const mm = metric(r.title);
             // 별점 축은 RatingInline이 ≈를 붙이므로 지표 컬럼 중복 표기를 피한다.
             const mmEstimated = statsAreEstimated(r.title) && axis !== "rating" && axis !== "hidden";
@@ -615,6 +622,36 @@ export function RankingBoard({
           })}
         </StaggerReveal>
       )}
+      {!isLoading && state !== "error" && visibleRanked.length > windowLimit ? (
+        <div
+          data-testid="ranking-dom-windowing-bar"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs text-fg-2"
+        >
+          <span>
+            뷰포트 DOM 예산 최적화 가동 중 · 전체{" "}
+            <strong className="numeral font-bold text-fg">{visibleRanked.length}</strong>편 중 상위{" "}
+            <strong className="numeral font-bold text-accent">{windowedRanked.length}</strong>편 표시
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setWindowLimit((prev) => Math.min(visibleRanked.length, prev + RANKING_WINDOW_STEP))
+              }
+              className="inline-flex min-h-9 items-center rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+            >
+              {Math.min(RANKING_WINDOW_STEP, visibleRanked.length - windowLimit)}편 더 보기
+            </button>
+            <button
+              type="button"
+              onClick={() => setWindowLimit(visibleRanked.length)}
+              className="inline-flex min-h-9 items-center rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-fg"
+            >
+              전체 {visibleRanked.length}편 펼치기
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

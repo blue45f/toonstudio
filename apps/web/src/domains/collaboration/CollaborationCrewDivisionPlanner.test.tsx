@@ -53,5 +53,8 @@ describe("CollaborationCrewDivisionPlanner", () => {
     const filterButtons = screen.getAllByRole("button", { name: /이 공정 파트너 공고 보기/ });
     fireEvent.click(filterButtons[2]);
     expect(onSelectRoleFilter).toHaveBeenCalledWith("ink");
+    expect(screen.getByTestId("collaboration-rea-handoff-sla-bar").textContent).toContain(
+      "18개 레이어 RBAC 잠금 보호",
+    );
   });
 });

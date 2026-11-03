@@ -19,6 +19,7 @@ import {
   STUDIO_COMPETITOR_CAPABILITY_RECORDS,
 } from "../studio-platform/studio-competitor-capability-evidence";
 import {
+  computeToonStudioSiteWideQualityScorecard,
   matchStudioCompetitorWorkflowPreset,
   resolveStudioPageReaBenchmark,
   STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
@@ -144,6 +145,7 @@ export function StudioCompetitorCapabilityPanel({
     useState<StudioPageDomainId>("studio-role-workspace");
   const activeDensitySpec = STUDIO_UIUX_ERGONOMICS_MODES[densityMode];
   const activePageBenchmark = resolveStudioPageReaBenchmark(pageDomainId);
+  const siteWideScorecard = computeToonStudioSiteWideQualityScorecard();
   const matchedWorkflows = useMemo(() => {
     const byQuery = matchStudioCompetitorWorkflowPreset(toolQuery);
     if (roleFilter === "all") return byQuery;
@@ -500,6 +502,101 @@ export function StudioCompetitorCapabilityPanel({
                 </li>
               ))}
             </ul>
+            <div
+              data-testid="competitor-visual-motion-strip"
+              className="mt-2.5 grid gap-2 rounded-lg border border-accent/25 bg-card/90 p-2 sm:grid-cols-[9.5rem_minmax(0,1fr)]"
+            >
+              <div className="relative h-20 overflow-hidden rounded-md border border-line bg-panel" aria-hidden="true">
+                <img
+                  src={
+                    pageDomainId === "cuts-movingtoon" || pageDomainId === "asset-market"
+                      ? "/assets/site-experience/site-art-v1/motion-previews/atelier-interactive-stage-640.webp"
+                      : "/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
+                  }
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
+                  width={320}
+                  height={179}
+                  className="size-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col justify-between text-[0.62rem]">
+                <div className="font-bold text-accent">
+                  {locale === "ko"
+                    ? "한눈에 이해되는 3단계 시각 플로우 & 아틀리에 톤앤매너 통일"
+                    : "3-Step Instant Visual Flow & Unified Atelier Tone-and-Manner"}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-fg-2">
+                  <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
+                    {locale === "ko"
+                      ? "① STAGE 배지·키네틱 모션 목적 인지"
+                      : "1. STAGE Badge & Kinetic Motion"}
+                  </span>
+                  <span aria-hidden="true" className="text-accent">→</span>
+                  <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
+                    {locale === "ko"
+                      ? "② 1-Click 직무 프리셋·스마트 AI 실행"
+                      : "2. 1-Click Role Preset & Smart AI"}
+                  </span>
+                  <span aria-hidden="true" className="text-accent">→</span>
+                  <span className="rounded border border-line bg-panel px-1.5 py-0.5 font-semibold">
+                    {locale === "ko"
+                      ? "③ 다음 제작 공정 무손실 연결"
+                      : "3. Lossless Next-Stage Link"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="mt-3 rounded-xl border border-success/30 bg-success/5 p-2.5"
+            data-testid="toonstudio-sitewide-quality-scorecard"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="text-[0.68rem] font-extrabold text-fg">
+                {locale === "ko"
+                  ? `사이트 전체 REA 완성도 스코어카드 (${siteWideScorecard.analyzedFrontendDomainsCount}개 프론트엔드 도메인 · ${siteWideScorecard.totalReaEvidenceRecords}건 REA 증거)`
+                  : `Site-Wide REA Quality Scorecard (${siteWideScorecard.analyzedFrontendDomainsCount} Frontend Domains · ${siteWideScorecard.totalReaEvidenceRecords} REA Evidences)`}
+              </strong>
+              <span
+                className="rounded-md bg-success/20 px-2 py-0.5 text-[0.66rem] font-black text-success"
+                data-testid="toonstudio-sitewide-score-badge"
+              >
+                {locale === "ko"
+                  ? `종합 ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`
+                  : `Overall ${siteWideScorecard.overallScore100} / 100 (${siteWideScorecard.overallScore10} / 10)`}
+              </span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-5 text-[0.6rem] font-semibold text-fg-2">
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `기능 내재화 ${siteWideScorecard.featureInternalizationScore}`
+                  : `Internalization ${siteWideScorecard.featureInternalizationScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `UI/UX 통일성 ${siteWideScorecard.uiUxDesignUnityScore}`
+                  : `UI/UX Unity ${siteWideScorecard.uiUxDesignUnityScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `직관성 ${siteWideScorecard.intuitivenessScore}`
+                  : `Intuitiveness ${siteWideScorecard.intuitivenessScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `사용성·인체공학 ${siteWideScorecard.usabilityErgonomicsScore}`
+                  : `Usability ${siteWideScorecard.usabilityErgonomicsScore}`}
+              </div>
+              <div className="rounded border border-line bg-card px-2 py-1">
+                {locale === "ko"
+                  ? `DOM 예산·성능 ${siteWideScorecard.domPerformanceBudgetScore}`
+                  : `DOM Budget ${siteWideScorecard.domPerformanceBudgetScore}`}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
