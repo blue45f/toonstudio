@@ -2,6 +2,7 @@ import { Camera, Combine, FileCode2, Mountain, Sparkles } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
+import { StudioBg3dSketchUpWebtoonStagingSection } from "./StudioBg3dSketchUpWebtoonStagingSection";
 import type { StudioBg3dInsertScenePrimitives } from "./studio-bg3d-workbench-insertion";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 import {
@@ -464,6 +465,13 @@ export function StudioBg3dSpatialModelerSections({
           </p>
         ) : null}
       </details>
+
+      <StudioBg3dSketchUpWebtoonStagingSection
+        disabled={disabled}
+        onStatusChange={onStatusChange}
+        onInsertScenePrimitives={onInsertScenePrimitives}
+        onApplySceneCamera={onApplySceneCamera}
+      />
     </>
   );
 }

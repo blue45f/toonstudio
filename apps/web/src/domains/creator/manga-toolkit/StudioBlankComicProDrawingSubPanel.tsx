@@ -11,6 +11,7 @@ import { useMemo, useState, type ReactElement } from "react";
 
 import { studioSegmentChipClass } from "../studio-panel-ui";
 
+import { StudioHiggsfieldMangakaPanel } from "./StudioHiggsfieldMangakaPanel";
 import {
   BLANKCOMIC_12_PANEL_SHAPES,
   BLANKCOMIC_30_PANEL_TEMPLATES,
@@ -31,7 +32,12 @@ import {
   type CspScreentoneDotShape,
 } from "./blankcomic-canva-medibang-suite";
 
-type ProSuiteMode = "blankcomic" | "csp-v5" | "medibang-paletta" | "canva-strip";
+type ProSuiteMode =
+  | "blankcomic"
+  | "csp-v5"
+  | "medibang-paletta"
+  | "canva-strip"
+  | "higgsfield-mangaka";
 
 export function StudioBlankComicProDrawingSubPanel(): ReactElement {
   const [mode, setMode] = useState<ProSuiteMode>("blankcomic");
@@ -147,6 +153,7 @@ export function StudioBlankComicProDrawingSubPanel(): ReactElement {
             { id: "csp-v5", label: "클립스튜디오 v5.1.5 (.clip/스마트폰뷰/망점톤)" },
             { id: "medibang-paletta", label: "메디방 & 팔레타 (클라우드 협업/제스처)" },
             { id: "canva-strip", label: "캔바 만화 메이커 (4컷 템플릿/폰트)" },
+            { id: "higgsfield-mangaka", label: "Higgsfield Mangaka (캐스트시트·WT-* 스테이징)" },
           ] as const
         ).map((item) => (
           <button
@@ -372,6 +379,8 @@ export function StudioBlankComicProDrawingSubPanel(): ReactElement {
           </div>
         </div>
       ) : null}
+
+      {mode === "higgsfield-mangaka" ? <StudioHiggsfieldMangakaPanel /> : null}
     </div>
   );
 }

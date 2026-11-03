@@ -45,10 +45,11 @@
           "소실점·어안·평행선 Painting Assistants 자석 가이드"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "painting-focus",
+          "workspace_preset": "photo-edit",
           "command_bar_role_recommendation": "color",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
+            "apps/web/src/domains/creator/studio-workspace-recommendation.ts",
             "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
           ]
         }
@@ -68,11 +69,11 @@
           "ColorDrop 기준선 참조 채우기와 직관적인 2핑거 Undo / 3핑거 Redo 제스처"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "tablet-touch",
+          "workspace_preset": "mobile-draw",
           "command_bar_role_recommendation": "line-art",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
-            "apps/web/src/domains/creator/creator-role-workspace-presets.ts"
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
+            "apps/web/src/domains/creator/studio-workspace-recommendation.ts"
           ]
         }
       },
@@ -91,10 +92,10 @@
           "콘티·러프 스케치 단계에서 캔버스 크기 제약 없이 에피소드 흐름을 확장하는 레이아웃"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "storyboard-focus",
+          "workspace_preset": "vector-design",
           "command_bar_role_recommendation": "storyboard",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
             "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
           ]
         }
@@ -117,10 +118,10 @@
           "복잡한 설정 패널을 숨기고 선택 시에만 나타나는 컨텍스트 스타일 팝오버"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "canvas-focus",
+          "workspace_preset": "quick-sketch",
           "command_bar_role_recommendation": "planner",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/studio-workspace-recommendation.ts",
             "apps/web/src/domains/creator/studio-shell/CreatorRoleOnboarding.tsx"
           ]
         }
@@ -140,10 +141,10 @@
           "뷰포트 우측 상단 기즈모 및 셰이딩 모드(Wireframe / Solid / Material / Rendered) 즉시 전환"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "three-d-stage",
+          "workspace_preset": "pose-3d",
           "command_bar_role_recommendation": "three-d",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
             "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
           ]
         }
@@ -163,11 +164,11 @@
           "Outliner 계층 트리에서 방문·창문 등 동적 컴포넌트 토글"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "three-d-stage",
+          "workspace_preset": "pose-3d",
           "command_bar_role_recommendation": "background-assistant",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
-            "apps/web/src/domains/creator/creator-role-workspace-presets.ts"
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
+            "apps/web/src/domains/creator/studio-workspace-recommendation.ts"
           ]
         }
       },
@@ -189,10 +190,10 @@
           "작업 중인 에피소드·캔버스로 소재를 바로 호출하는 소재함 연동 흐름"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "three-d-stage",
+          "workspace_preset": "pose-3d",
           "command_bar_role_recommendation": "background",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
             "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
           ]
         }
@@ -212,10 +213,10 @@
           "복잡한 모달 없이 인라인 칩 클릭만으로 공정 상태·우선순위를 전환하는 초경량 조작성"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "review-desk",
+          "workspace_preset": "review",
           "command_bar_role_recommendation": "producer",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
             "apps/web/src/domains/creator/studio-shell/CreatorRoleOnboarding.tsx"
           ]
         }
@@ -235,10 +236,10 @@
           "무빙툰·인터랙티브 컷 연출에 바로 적용 가능한 경량 런타임 상태 머신"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "animation-desk",
-          "command_bar_role_recommendation": "compositing",
+          "workspace_preset": "animation",
+          "command_bar_role_recommendation": "effect-assistant",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
             "apps/web/src/domains/creator/studio-shell/StudioCompetitorCapabilityPanel.tsx"
           ]
         }
@@ -258,11 +259,11 @@
           "글작가·각색작가·보조 글작가가 원고 집필 중 우측 사이드바에서 캐릭터/세계관 시트를 즉시 참조하는 분할 뷰"
         ],
         "toonstudio_internalization": {
-          "workspace_preset": "story-outline",
+          "workspace_preset": "storyboard",
           "command_bar_role_recommendation": "story",
           "modules": [
-            "apps/web/src/domains/creator/studio-workspaces.ts",
-            "apps/web/src/domains/creator/creator-role-workspace-presets.ts"
+            "apps/web/src/domains/creator/creator-role-workspace-presets.ts",
+            "apps/web/src/domains/creator/studio-workspace-recommendation.ts"
           ]
         }
       }
