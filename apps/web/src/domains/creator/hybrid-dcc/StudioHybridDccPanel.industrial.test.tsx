@@ -111,7 +111,7 @@ describe("StudioHybridDccPanel industrial wiring", () => {
       />,
     );
 
-    const status = screen.getByRole("status");
+    const status = screen.getByText("자동 저장됨", { selector: '[role="status"]' });
     expect(status.getAttribute("data-studio-hybrid-dcc-persistence")).toBe("saved");
     expect(status.getAttribute("data-studio-hybrid-dcc-persistence-sequence")).toBe("7");
     expect(status.getAttribute("data-studio-hybrid-dcc-persistence-source-hash"))

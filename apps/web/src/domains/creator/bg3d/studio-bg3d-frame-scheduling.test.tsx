@@ -44,14 +44,14 @@ describe("BG3D event-driven frame quality sampling", () => {
     expect(report.mock.calls.every(([value]) => value === null)).toBe(true);
   });
 
-  it("continues adapting resolution when a real continuous animation is overloaded", () => {
+  it("연속 과부하를 계측하면서 기본 해상도 보존 정책을 유지한다", () => {
     const scale = vi.fn();
     const report = vi.fn();
     render(<BgAdaptiveDprController targetFps={60} paused={false}
       onScaleChange={scale} onFrameTimeChange={report} />);
     advance("always", 0);
-    expect(scale).toHaveBeenCalledWith(0.85);
-    expect(report.mock.calls.some(([value]) => typeof value === "number" && value > 16)).toBe(true);
+    expect(scale).toHaveBeenCalledExactlyOnceWith(1);
+    expect(report).toHaveBeenLastCalledWith(80);
   });
 
   it("keeps resolution fixed during a paused gesture even if animation requires continuous frames", () => {
