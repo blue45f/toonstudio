@@ -36,6 +36,6 @@ describe("buttonClass touch targets", () => {
   it("still composes variant and caller classes", () => {
     const composed = buttonClass({ size: "sm", variant: "outline", className: "gap-1.5" });
     expect(composed).toContain("gap-1.5");
-    expect(composed).toContain("border-line-strong/90");
+    expect(composed.split(/\s+/u)).toContain("border-line-strong");
   });
 });
