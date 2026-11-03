@@ -86,6 +86,16 @@ export function RoleWorkspaceSettingsPage() {
         className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-accent/25 bg-accent/5 px-4 py-2.5 text-xs text-fg-2"
       >
         <div className="flex flex-wrap items-center gap-2">
+          <img
+            src="/assets/site-experience/site-art-v1/motion-previews/atelier-pipeline-motion-640.webp"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            width={56}
+            height={32}
+            className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
+          />
           <span className="rounded-md bg-accent/15 px-2 py-0.5 font-bold text-accent">
             {bi("15개 세부직무 인지부하 47~58% 절감", "15 Sub-Role Cognitive Load -47~58%")}
           </span>

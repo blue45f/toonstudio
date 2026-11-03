@@ -162,6 +162,9 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
       "BOOTH",
     );
+    expect(screen.getByTestId("competitor-visual-motion-strip").textContent).toContain(
+      "한눈에 이해되는 3단계 시각 플로우",
+    );
 
     const searchInput = screen.getByRole("searchbox", {
       name: "익숙한 도구 또는 작업 검색",

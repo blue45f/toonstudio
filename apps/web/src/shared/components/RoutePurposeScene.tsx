@@ -1,37 +1,12 @@
 import { WORKFLOW_BY_ROUTE_KIND } from "./site-experience/workflow-route-art";
 import { workflowIllustrationSource, workflowIllustrationSources } from "./site-experience/workflow-illustration";
-import {
-  BadgeCheck,
-  Box,
-  Boxes,
-  Brush,
-  CalendarClock,
-  Compass,
-  FolderKanban,
-  Gamepad2,
-  GraduationCap,
-  Layers3,
-  MessageCircleMore,
-  Pause,
-  Play,
-  ScanSearch,
-  ShieldCheck,
-  Sparkles,
-  Workflow,
-  type LucideIcon,
-} from "lucide-react";
+import { BadgeCheck, Box, Boxes, Brush, CalendarClock, Compass, FolderKanban, Gamepad2, GraduationCap, Layers3, MessageCircleMore, Pause, Play, ScanSearch, ShieldCheck, Sparkles, Workflow, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
 import { useAtelierMotion } from "./site-experience/use-atelier-motion";
 import { useT } from "@/shared/lib/i18n";
 import { useTheme } from "@/shared/lib/theme";
-
 import type { SiteRouteExperience } from "@/shared/lib/site-route-experience";
-import type {
-  SiteRouteVisualKind,
-  SiteRouteVisualProfile,
-} from "@/shared/lib/site-route-visual";
-
+import type { SiteRouteVisualKind, SiteRouteVisualProfile } from "@/shared/lib/site-route-visual";
 import "./route-purpose-scene.css";
 import "./site-experience/site-art-ui.css";
 
@@ -52,40 +27,22 @@ const ROUTE_STAGE_PILLS: Record<SiteRouteVisualKind, readonly [string, string, s
   play: ["nb-play-fortune", "STAGE 04 · 플레이 & 운세", "STAGE 04 · INTERACTIVE PLAY"],
 };
 
-function toBilingualLocale(locale: string): "ko" | "en" {
-  return locale.toLowerCase().split(/[-_]/u)[0] === "ko" ? "ko" : "en";
-}
+const toBilingualLocale = (locale: string): "ko" | "en" => (locale.toLowerCase().split(/[-_]/u)[0] === "ko" ? "ko" : "en");
 
 const ICONS: Record<SiteRouteVisualKind, LucideIcon> = {
-  workflow: Workflow,
-  discover: Compass,
-  create: Brush,
-  planning: Layers3,
-  spatial: Box,
-  assets: Boxes,
-  production: CalendarClock,
-  review: ScanSearch,
-  publish: BadgeCheck,
-  learn: GraduationCap,
-  connect: MessageCircleMore,
-  manage: FolderKanban,
-  trust: ShieldCheck,
-  play: Gamepad2,
+  workflow: Workflow, discover: Compass, create: Brush, planning: Layers3, spatial: Box, assets: Boxes,
+  production: CalendarClock, review: ScanSearch, publish: BadgeCheck, learn: GraduationCap,
+  connect: MessageCircleMore, manage: FolderKanban, trust: ShieldCheck, play: Gamepad2,
 };
 
 const CONTEXT_LABELS: Record<SiteRouteExperience["contextLevel"], { ko: string; en: string }> = {
-  global: { ko: "전체 서비스", en: "Global" },
-  project: { ko: "작품 단위", en: "Project" },
-  episode: { ko: "회차 단위", en: "Episode" },
-  scene: { ko: "장면 단위", en: "Scene" },
-  cut: { ko: "컷 단위", en: "Panel" },
+  global: { ko: "전체 서비스", en: "Global" }, project: { ko: "작품 단위", en: "Project" },
+  episode: { ko: "회차 단위", en: "Episode" }, scene: { ko: "장면 단위", en: "Scene" }, cut: { ko: "컷 단위", en: "Panel" },
 };
 
 const MOBILE_LABELS: Record<SiteRouteExperience["mobilePolicy"], { ko: string; en: string }> = {
-  full: { ko: "모바일 전체 지원", en: "Mobile ready" },
-  review: { ko: "모바일 검토 지원", en: "Mobile review" },
-  preview: { ko: "모바일 미리보기", en: "Mobile preview" },
-  "desktop-required": { ko: "큰 화면 권장", en: "Large screen" },
+  full: { ko: "모바일 전체 지원", en: "Mobile ready" }, review: { ko: "모바일 검토 지원", en: "Mobile review" },
+  preview: { ko: "모바일 미리보기", en: "Mobile preview" }, "desktop-required": { ko: "큰 화면 권장", en: "Large screen" },
 };
 
 function responsiveAtelierSrcSet(image: string): string | undefined {
@@ -176,14 +133,13 @@ export function RoutePurposeScene({
     if (running) void video.play().catch(() => setVideoFailed(true));
   };
 
+  const stagePill = ROUTE_STAGE_PILLS[profile.kind] ?? ROUTE_STAGE_PILLS.workflow;
+  const toggleLabel = paused
+    ? copyLocale === "ko" ? "페이지 모션 재생" : "Play page motion"
+    : copyLocale === "ko" ? "페이지 모션 일시정지" : "Pause page motion";
+
   return (
-    <div
-      ref={hostRef}
-      className="route-purpose-scene-shell"
-      data-slot="route-introduction"
-      data-route-visual-shell="true"
-      data-density={profile.density}
-    >
+    <div ref={hostRef} className="route-purpose-scene-shell" data-slot="route-introduction" data-route-visual-shell="true" data-density={profile.density}>
       <section
         key={experience.canonicalPath}
         className="route-purpose-scene"
@@ -194,10 +150,7 @@ export function RoutePurposeScene({
         aria-label={copyLocale === "ko" ? `${title} 화면 안내` : `${title} page guide`}
       >
         <div className="route-purpose-scene__copy">
-          <p className="route-purpose-scene__eyebrow">
-            <Sparkles size={14} aria-hidden="true" />
-            {profile.eyebrow[copyLocale]}
-          </p>
+          <p className="route-purpose-scene__eyebrow"><Sparkles size={14} aria-hidden="true" />{profile.eyebrow[copyLocale]}</p>
           <h2>{title}</h2>
           <p className="route-purpose-scene__purpose">{purpose}</p>
           <div className="route-purpose-scene__meta" aria-label={copyLocale === "ko" ? "페이지 사용 범위" : "Page scope"}>
@@ -205,11 +158,13 @@ export function RoutePurposeScene({
             <span>{mobile}</span>
             {action ? <strong>{copyLocale === "ko" ? "다음: " : "Next: "}{action}</strong> : null}
           </div>
-          <p
-            className="nb-site-purpose-pill"
-            data-atelier-card={(ROUTE_STAGE_PILLS[profile.kind] ?? ROUTE_STAGE_PILLS.workflow)[0]}
-          >
-            <span>{(ROUTE_STAGE_PILLS[profile.kind] ?? ROUTE_STAGE_PILLS.workflow)[copyLocale === "ko" ? 1 : 2]}</span>
+          <div className="route-purpose-scene__quick-flow" data-testid="route-purpose-quick-flow">
+            {profile.layers.map((layer, index) => (
+              <span key={layer.en} className="route-purpose-scene__quick-step">{`${index + 1}. ${layer[copyLocale]}`}</span>
+            ))}
+          </div>
+          <p className="nb-site-purpose-pill" data-atelier-card={stagePill[0]}>
+            <span>{stagePill[copyLocale === "ko" ? 1 : 2]}</span>
           </p>
         </div>
 
@@ -247,15 +202,18 @@ export function RoutePurposeScene({
                 <source src={profile.video.src} type="video/mp4" />
               </video>
             ) : null}
+            <svg className="route-purpose-scene__kinetic-vector" data-testid="route-purpose-kinetic-vector" viewBox="0 0 360 220" fill="none" aria-hidden="true" focusable="false">
+              <path className="route-purpose-scene__kinetic-path" d="M 28 168 C 118 56, 224 172, 332 48" />
+              <circle className="route-purpose-scene__kinetic-node" cx="62" cy="138" r="5" />
+              <circle className="route-purpose-scene__kinetic-node" cx="182" cy="112" r="5.5" />
+              <circle className="route-purpose-scene__kinetic-node" cx="304" cy="64" r="5" />
+            </svg>
             <span className="route-purpose-scene__scan" />
           </div>
           <span className="route-purpose-scene__focus-ring"><Icon size={24} /></span>
           <div className="route-purpose-scene__cards">
             {profile.layers.map((layer, index) => (
-              <span className="route-purpose-scene__card" data-card={index + 1} key={layer.en}>
-                <i />
-                <b>{layer[copyLocale]}</b>
-              </span>
+              <span className="route-purpose-scene__card" data-card={index + 1} key={layer.en}><i /><b>{layer[copyLocale]}</b></span>
             ))}
           </div>
           <span className="route-purpose-scene__orbit"><i /><i /><i /></span>
@@ -266,18 +224,12 @@ export function RoutePurposeScene({
             type="button"
             className="route-purpose-scene__motion-toggle"
             aria-pressed={paused}
-            aria-label={paused
-              ? copyLocale === "ko" ? "페이지 모션 재생" : "Play page motion"
-              : copyLocale === "ko" ? "페이지 모션 일시정지" : "Pause page motion"}
+            aria-label={toggleLabel}
             onClick={() => setPaused(!paused)}
-            title={paused
-              ? copyLocale === "ko" ? "페이지 모션 재생" : "Play page motion"
-              : copyLocale === "ko" ? "페이지 모션 일시정지" : "Pause page motion"}
+            title={toggleLabel}
           >
             {paused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
-            <span className="route-purpose-scene__motion-label" aria-hidden="true">{paused
-              ? copyLocale === "ko" ? "재생" : "Play"
-              : copyLocale === "ko" ? "정지" : "Pause"}</span>
+            <span className="route-purpose-scene__motion-label" aria-hidden="true">{paused ? (copyLocale === "ko" ? "재생" : "Play") : (copyLocale === "ko" ? "정지" : "Pause")}</span>
           </button>
         ) : null}
       </section>
