@@ -153,5 +153,9 @@ describe("SketchUp 3D Background Webtoon Staging Bridge (REA Reverse-Engineered)
 
     fireEvent.click(screen.getByTestId("sketchup-dc-spawn-btn"));
     expect(onInsert).toHaveBeenCalledTimes(2);
+
+    expect(screen.getByTestId("sketchup-role-lens-bar")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("sketchup-role-lens-background-assist"));
+    expect(screen.getByTestId("sketchup-hybrid-competitor-presets")).toBeTruthy();
   });
 });

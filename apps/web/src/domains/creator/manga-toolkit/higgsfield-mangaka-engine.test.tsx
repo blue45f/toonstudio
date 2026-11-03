@@ -184,13 +184,19 @@ describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
     render(<StudioHiggsfieldMangakaPanel />);
     expect(screen.getByTestId("higgsfield-mangaka-section")).toBeTruthy();
     expect(screen.getByTestId("mangaka-qa-score-badge").textContent).toContain("WT-* QA");
+    expect(screen.getByTestId("mangaka-one-click-preset-bar")).toBeTruthy();
+    expect(screen.getByTestId("mangaka-dual-pane-script-lore")).toBeTruthy();
+    expect(screen.getByTestId("mangaka-moving-toon-state-machine")).toBeTruthy();
 
-    fireEvent.change(screen.getByTestId("mangaka-style-select"), {
-      target: { value: "manga-bw" },
-    });
+    fireEvent.click(screen.getByTestId("mangaka-genre-preset-jp-shonen-bw"));
     expect(
       (screen.getByTestId("mangaka-style-select") as HTMLSelectElement).value,
     ).toBe("manga-bw");
+
+    fireEvent.click(screen.getByTestId("mangaka-moving-toon-tap-shake"));
+    expect(screen.getByTestId("mangaka-moving-toon-state-machine").textContent).toContain(
+      "tap-shake",
+    );
 
     render(<StudioBlankComicProDrawingSubPanel />);
     const mangakaTabBtn = screen.getByTestId("pro-drawing-tab-higgsfield-mangaka");
@@ -198,5 +204,8 @@ describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
     expect(screen.getAllByTestId("higgsfield-mangaka-section").length).toBeGreaterThanOrEqual(
       1,
     );
+    const rolePipelineTabBtn = screen.getByTestId("pro-drawing-tab-role-pipeline");
+    fireEvent.click(rolePipelineTabBtn);
+    expect(screen.getByTestId("webtoon-role-pipeline-section")).toBeTruthy();
   });
 });

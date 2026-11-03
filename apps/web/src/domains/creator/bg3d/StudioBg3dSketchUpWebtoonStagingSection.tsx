@@ -72,6 +72,32 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
   const [windowSlideMeters, setWindowSlideMeters] = useState<number>(0.45);
   const [drawerPullMeters, setDrawerPullMeters] = useState<number>(0.25);
   const [ceilingLightOn, setCeilingLightOn] = useState<boolean>(true);
+  const [roleLensId, setRoleLensId] = useState<
+    "background-main" | "background-assist" | "storyboard-camera" | "color-lighting"
+  >("background-main");
+
+  const applyRoleLensPreset = (
+    lens: "background-main" | "background-assist" | "storyboard-camera" | "color-lighting",
+  ) => {
+    setRoleLensId(lens);
+    if (lens === "background-main") {
+      setStylePresetId("shaded-with-textures");
+      setTagPresetId("interior-clean-line");
+      setPreserveExteriorShadows(true);
+    } else if (lens === "background-assist") {
+      setStylePresetId("hidden-line");
+      setTagPresetId("hide-small-props");
+      setPreserveExteriorShadows(true);
+    } else if (lens === "storyboard-camera") {
+      setStylePresetId("wireframe");
+      setTagPresetId("actor-blocking-clear");
+      setLensShiftY(0.15);
+    } else {
+      setStylePresetId("monochrome");
+      setSolarPresetId("blue-hour-dusk");
+      setShadowSoftness(0.7);
+    }
+  };
 
   const directModelingCommit = useMemo(
     () =>
@@ -197,6 +223,58 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
       </summary>
 
       <div className="mt-2.5 space-y-2.5 text-[0.65rem] text-fg">
+        {/* 직군별 3D 권한 렌즈 & 하이브리드 후보정 원클릭 브리지 */}
+        <div
+          data-testid="sketchup-role-lens-bar"
+          className="rounded-lg border border-accent/30 bg-accent-soft/20 p-2"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <span className="font-bold text-fg">
+              직군별 3D 배경 작업 렌즈 & 하이브리드 후보정 (ACON3D ABLE · CSP EX · Grease Pencil)
+            </span>
+            <div
+              data-testid="sketchup-hybrid-competitor-presets"
+              className="flex flex-wrap gap-1"
+            >
+              {(
+                [
+                  {
+                    id: "background-main",
+                    label: "3D 배경 메인 (매스 모델링·6패스 LT)",
+                  },
+                  {
+                    id: "background-assist",
+                    label: "배경 어시 (Outliner 소품·잉크 펜선)",
+                  },
+                  {
+                    id: "storyboard-camera",
+                    label: "콘티 작가 (2점 투시 앵글·동선 잠금)",
+                  },
+                  {
+                    id: "color-lighting",
+                    label: "명암·후보정 (ABLE 대기원근·AO 채광)",
+                  },
+                ] as const
+              ).map((lens) => (
+                <button
+                  key={lens.id}
+                  type="button"
+                  disabled={disabled}
+                  data-testid={`sketchup-role-lens-${lens.id}`}
+                  onClick={() => applyRoleLensPreset(lens.id)}
+                  className={
+                    roleLensId === lens.id
+                      ? "rounded border border-accent bg-accent px-2 py-0.5 text-[0.6rem] font-bold text-on-accent"
+                      : "rounded border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-2 hover:border-accent/50"
+                  }
+                >
+                  {lens.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* 1. Direct Modeling + Axis Inference + Array Commit */}
         <div className="rounded-lg border border-line bg-panel p-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">

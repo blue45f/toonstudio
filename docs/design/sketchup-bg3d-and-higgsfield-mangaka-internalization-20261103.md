@@ -53,3 +53,34 @@
 - `apps/web/src/domains/creator/bg3d/studio-bg3d-sketchup-webtoon-staging-bridge.ts`
 - `apps/web/src/domains/creator/bg3d/StudioBg3dSketchUpWebtoonStagingSection.tsx`
 - `apps/web/src/domains/creator/bg3d/StudioBg3dSpatialModelerSections.tsx`
+
+---
+
+## 4. 전 공정 경쟁사 추가 역공학 및 15개 세분화 직군·레이어 RBAC·8단계 인계 내재화
+
+### 4.1 추가 REA 역공학 증거 (`ev_e2b33b07...`)
+- **Clip Studio Paint EX (`ev_865bd9f8...`)**: 3D LT 선·톤 추출, Sub View 레퍼런스 컬러 피커, Story Editor 멀티페이지 대본 동기화, TeamWork 페이지 잠금.
+- **Wonder Unit Storyboarder (`ev_42478694...`)**: 3D Shot Generator 카메라 지시문, 대사·액션 노트 스트립 매핑.
+- **Blender Story Artist Grease Pencil (`ev_5467d629...`)**: 3D 카메라 평면 위 2D 드로잉 하이브리드 레이아웃.
+- **ACON3D ABLE (`ev_e8700e1d...`)**: 웹툰 3D 배경 후보정(대기원근 Z-Depth 안개, AO 그림자 소프트니스) 및 직군별 3D 렌즈 분리.
+- **WEBTOON Canvas Creators 101 (`ev_908441f5...`)**: 800×1280px 세로 스크롤 슬라이스 검증 및 8단계 웹툰 전문 직군 분업 체계.
+- **Rive (`ev_ea91a96e...`)**: 인터랙티브 무빙툰 상태머신 트리거(`scroll-parallax`, `tap-shake`, `sfx-bounce`).
+
+### 4.2 15개 세분화 직군 특화 메뉴·18종 레이어 RBAC·8단계 원클릭 인계 (`webtoon-role-pipeline-orchestrator.ts`)
+1. **8단계 웹툰 표준 제작 공정(`WEBTOON_E2E_ROLE_PIPELINE_STAGES`)**:
+   - `1. 글·각색·기획` (`story`, `adaptation`, `associate-writer`, `planner`)
+   - `2. 콘티·연출·카메라` (`storyboard`)
+   - `3. 3D 배경·소품 배치` (`background`, `background-assistant`, `three-d`)
+   - `4. 메인 선화·원화` (`line-art`, `character`, `associate-artist`)
+   - `5. 선화 클린업·펜터치 어시` (`line-assistant`, `assistant`)
+   - `6. 밑색·마스킹 어시` (`flat-color-assistant`, `color`)
+   - `7. 명암·후보정·무빙툰` (`shading-assistant`, `effect-assistant`)
+   - `8. 식자·효과음·PD 검수` (`lettering`, `lettering-assistant`, `localization`, `editor`, `producer`, `reviewer`)
+2. **18종 표준 레이어 그룹(`WEBTOON_CANONICAL_LAYER_GROUPS`) 최소권한(Least-Privilege) RBAC 가드**:
+   - 각 전문 어시스턴트가 본인의 담당 레이어 그룹만 편집할 수 있고, 주연 원화(`main-lineart`), 대본(`script-beat`), 콘티(`rough-storyboard`), 3D 카메라 앵커(`bg3d-camera`)는 자동으로 잠금(`locked-by-role-rbac`) 처리되어 원화 훼손 사고를 원천 차단한다.
+3. **UI/UX 직관성 및 원클릭 프리셋 허브 연동**:
+   - `StudioWebtoonRolePipelineSubPanel.tsx`: 15개 직군 원클릭 전환, 직군별 특화 메뉴·단축 도구 모음 미리보기, 18종 레이어 그룹 편집 허용/차단 실시간 시뮬레이터, 8단계 공정 원클릭 잠금 인계 및 PD 최종 승인 동결(`approved-frozen`).
+   - `StudioCompetitorCapabilityPanel.tsx`: 직군별 필터 바(`competitor-role-filter-bar`) 및 8단계 직군 분업 파이프라인 브리지(`competitor-role-pipeline-bridge`).
+   - `CreatorRoleOnboarding.tsx`: 온보딩 1단계 직군 선택 시 해당 직군의 최소권한 RBAC 배지·허용/잠금 레이어 수·특화 메뉴 칩 실시간 프리뷰(`onboarding-role-rbac-preview`).
+   - `StudioHiggsfieldMangakaPanel.tsx`: 1-Click 장르·포털 연출 프리셋 바(`mangaka-one-click-preset-bar`), 듀얼페인 로어북 시트(`mangaka-dual-pane-script-lore`), 무빙툰 상태머신 바인딩(`mangaka-moving-toon-state-machine`).
+   - `StudioBg3dSketchUpWebtoonStagingSection.tsx`: 직군별 3D 배경 렌즈 프리셋(`sketchup-role-lens-bar`).
