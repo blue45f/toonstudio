@@ -1,3 +1,6 @@
+import { Office2dCharacterPreview } from "../office2d/Office2dAvatarPreview";
+import { office2dCharacterForNpc } from "../office2d/office2d-sprite-catalog";
+import type { StudioVirtualStageKind } from "../office2d/studio-virtual-space-stage-mode";
 import { memo } from "react";
 
 import { StudioVirtualCharacterPreview } from "../StudioVirtualCharacterPreview";
@@ -11,7 +14,8 @@ import type { SpaceNpcExpression } from "./space-npc-portrait";
  * 표정은 아트를 바꾸지 않고 data-expression + CSS 몸짓(bounce/pop/tilt)으로만 전한다.
  * alt는 'NPC 초상화'가 아니라 이름·역할이다.
  */
-export const SpaceNpcPortrait = memo(function SpaceNpcPortrait({ skinKey, expression, alt, artStyle, size = "lg" }: {
+export const SpaceNpcPortrait = memo(function SpaceNpcPortrait({ skinKey, expression, alt, artStyle, stageKind, size = "lg" }: {
+  readonly stageKind?: StudioVirtualStageKind;
   readonly skinKey: string;
   readonly expression: SpaceNpcExpression;
   readonly alt: string;
@@ -19,6 +23,6 @@ export const SpaceNpcPortrait = memo(function SpaceNpcPortrait({ skinKey, expres
   readonly size?: "sm" | "md" | "lg";
 }) {
   return <span className="space-npc-portrait" data-size={size} data-expression={expression}>
-    <StudioVirtualCharacterPreview skin={studioNpcCastSkinByKey(skinKey, artStyle)} crop="bust" alt={alt} className="space-npc-portrait__bust" />
+    {stageKind === "office2d" ? <Office2dCharacterPreview character={office2dCharacterForNpc(skinKey)} crop="bust" alt={alt} className="space-npc-portrait__bust" /> : <StudioVirtualCharacterPreview skin={studioNpcCastSkinByKey(skinKey, artStyle)} crop="bust" alt={alt} className="space-npc-portrait__bust" />}
   </span>;
 });
