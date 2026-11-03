@@ -462,7 +462,7 @@ export function CommunityPage() {
               { href: "/community/timelapse", ko: "직무별 WIP 타임랩스 (선화·채색·3D배경)", en: "Role WIP Timelapses" },
               { href: "/community?provenance=human-verified", ko: "인간 순수 창작 (Human-Verified)", en: "Human-Verified Art" },
               { href: "/community?provenance=ai-assisted", ko: "AI 보조 투명성 명시 (Provenance)", en: "AI-Assisted Provenance" },
-              { href: "/collaboration", ko: "스튜디오·어시스턴트 구인 매칭", en: "Studio & Assistant Recruiting" },
+              { href: "/collaborate", ko: "스튜디오·어시스턴트 구인 매칭", en: "Studio & Assistant Recruiting" },
             ].map((item) => (
               <Link
                 key={item.href}
