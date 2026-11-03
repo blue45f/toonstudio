@@ -73,4 +73,20 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(screen.queryByTestId("competitor-workflow-quick-match")).toBeNull();
     expect(screen.getByText("구현 누락")).toBeTruthy();
   });
+
+  it("filters competitor presets by specialist role chip and renders the 8-stage role pipeline bridge", () => {
+    render(<StudioCompetitorCapabilityPanel locale="ko" />);
+
+    expect(screen.getByTestId("competitor-role-filter-bar")).toBeTruthy();
+    expect(screen.getByTestId("competitor-role-pipeline-bridge").textContent).toContain(
+      "8단계 웹툰 직군 분업 파이프라인",
+    );
+
+    fireEvent.click(screen.getByTestId("competitor-role-filter-background"));
+    expect(screen.getByText("SketchUp · ACON3D · Snaptoon")).toBeTruthy();
+    expect(screen.queryByText("CGWire Kitsu · Linear")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("competitor-role-filter-all"));
+    expect(screen.getByText("CGWire Kitsu · Linear")).toBeTruthy();
+  });
 });
