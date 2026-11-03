@@ -10,6 +10,7 @@ import {
   Param,
   Post,
   Query,
+  UseInterceptors,
 } from "@nestjs/common";
 
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
@@ -24,6 +25,7 @@ import {
   SubmitProductionExternalReviewDto,
 } from "./production-collaboration.dto";
 import { ProductionCollaborationService } from "./production-collaboration.service";
+import { ProductionProjectReadCompressionInterceptor } from "./production-project-read-compression.interceptor";
 
 function authenticatedProductionUserId(userId: string | undefined): string {
   if (!userId) throw new ForbiddenException("로그인이 필요해요.");
@@ -94,6 +96,7 @@ export class ProductionCollaborationController {
 
   @Get("/projects/:projectId")
   @Header("Cache-Control", "private, no-store, max-age=0")
+  @UseInterceptors(ProductionProjectReadCompressionInterceptor)
   getProject(
     @Param(new ZodValidationPipe(ProductionProjectParamsDto))
     params: ProductionProjectParamsDto,
@@ -107,6 +110,7 @@ export class ProductionCollaborationController {
 
   @Get("/works/:workId/project")
   @Header("Cache-Control", "private, no-store, max-age=0")
+  @UseInterceptors(ProductionProjectReadCompressionInterceptor)
   getProjectByWork(
     @Param(new ZodValidationPipe(ProductionProjectByWorkParamsDto))
     params: ProductionProjectByWorkParamsDto,
