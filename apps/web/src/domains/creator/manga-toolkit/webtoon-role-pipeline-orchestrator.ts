@@ -769,3 +769,21 @@ export function resolveKritaColorizeAndMediBangCloudWorkflowGuide(
     summaryEn: `Krita (${stageId}) & MediBang Cloud page lock workflow preset`,
   };
 }
+
+export function computeRoleCognitiveLoadReductionMetrics(roleId: CreatorRoleId): {
+  readonly hiddenNonOwnedGroupsCount: number;
+  readonly cognitiveLoadReductionPct: number;
+  readonly summaryKo: string;
+  readonly summaryEn: string;
+} {
+  const preset = resolveRolePipelinePreset(roleId);
+  const totalGroups = WEBTOON_CANONICAL_LAYER_GROUPS.length;
+  const hiddenNonOwnedGroupsCount = Math.max(0, totalGroups - preset.allowedLayerGroups.length);
+  const cognitiveLoadReductionPct = Math.round((hiddenNonOwnedGroupsCount / totalGroups) * 100);
+  return {
+    hiddenNonOwnedGroupsCount,
+    cognitiveLoadReductionPct,
+    summaryKo: `직무 문맥 필터: 비담당 ${hiddenNonOwnedGroupsCount}/${totalGroups}그룹 자동 접힘 (인지 부하 ${cognitiveLoadReductionPct}% 절감)`,
+    summaryEn: `Role contextual filter: ${hiddenNonOwnedGroupsCount}/${totalGroups} non-owned groups collapsed (${cognitiveLoadReductionPct}% cognitive load reduction)`,
+  };
+}

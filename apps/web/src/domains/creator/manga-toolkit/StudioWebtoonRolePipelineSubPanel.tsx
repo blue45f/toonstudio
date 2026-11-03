@@ -10,6 +10,7 @@ import { useId, useMemo, useState, type ReactElement } from "react";
 import { studioSegmentChipClass } from "../studio-panel-ui";
 
 import {
+  computeRoleCognitiveLoadReductionMetrics,
   createInitialRolePipelineHandoffState,
   evaluateParallelRoleCollaborationPair,
   evaluateRoleLayerEditGuard,
@@ -89,6 +90,10 @@ export function StudioWebtoonRolePipelineSubPanel(): ReactElement {
     () => evaluateParallelRoleCollaborationPair(selectedRoleId, partnerRoleId),
     [selectedRoleId, partnerRoleId],
   );
+  const cognitiveLoadMetrics = useMemo(
+    () => computeRoleCognitiveLoadReductionMetrics(selectedRoleId),
+    [selectedRoleId],
+  );
   const guardFor = (group: WebtoonCanonicalLayerGroupId) => evaluateRoleLayerEditGuard({
     roleId: selectedRoleId,
     targetLayerGroup: group,
@@ -157,6 +162,12 @@ export function StudioWebtoonRolePipelineSubPanel(): ReactElement {
             className="mt-1 rounded border border-line bg-card/60 p-1.5 font-mono text-[0.56rem] text-fg-3"
           >
             {bi(kritaMediBangGuide.summaryKo, kritaMediBangGuide.summaryEn)}
+          </div>
+          <div
+            data-testid="role-pipeline-cognitive-load-badge"
+            className="mt-1 font-mono text-[0.56rem] text-accent"
+          >
+            {bi(cognitiveLoadMetrics.summaryKo, cognitiveLoadMetrics.summaryEn)}
           </div>
         </div>
         <div className="rounded border border-line bg-raised/40 p-2">
