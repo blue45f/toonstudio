@@ -8,6 +8,7 @@ import { actualState, restoreActorContext, verifyActorSession, verifyActualProje
 import { createManuscriptSession, observeManuscriptImageDecode, captureManuscriptMilestones } from './manuscript-browser.mjs';
 import { assertNativeDnt, launchPrivateDntBrowser, reportBrowserFailure, runWithOwnedBrowser, runWithOwnedContexts } from './browser-finalization.mjs';
 import { prepareLocalQaTls } from './local-qa-tls.mjs';
+import { consumeCompletedResponse } from './request-lifecycle.mjs';
 
 let stage = 'config';
 const result = { schemaVersion: 2, status: 'not-started', verdict: '제어 측정 준비물; 최종 C9 p95 판정 불가', samples: [], apiReads: [], networkReads: [], validation: [], bootstrap: [], assets: [], concurrentReads: [], forbiddenMutations: [], blockedExternalRequests: [], pageErrors: [], db: null };
@@ -237,23 +238,26 @@ async function actorProfile(browser, env, state, actor, profile) {
     // JSON/count/digest/body copy/hash는 semantic 완료 뒤의 별도 phase에서만 한다.
     while (pendingReads.length) {
       const { response, meta } = pendingReads.shift();
-      await response.finished();
       const request = response.request();
-      const bodyStart = performance.now();
-      const bytes = await response.body();
-      const transferElapsedMs = performance.now() - bodyStart;
-      const signal = requestFinishedSignals.get(request);
-      if (signal) await signal.promise;
-      const finished = requestFinishes.get(request);
-      check(finished && !finished.failed, '실제 GET requestfinished 시각이 없거나 요청이 실패했습니다.');
-      result.apiReads.push({ ...meta, ...finished, kind: apiKind(response.url(), state.projectId), status: response.status(), durationMs: finished.finishedHostMs - meta.hostStartMs, browserRequestTiming: request.timing(), responseBodyBytes: bytes.length, bodyCopyElapsedMs: transferElapsedMs, bodyMetric: 'decoded Playwright body bytes; wire transfer bytes 아님', timingMetric: 'request/response/requestfinished driver 이벤트 및 browser request.timing; body copy·검증 시간은 제외' });
-      if (apiKind(response.url(), state.projectId) === 'project-aggregate') {
-        const startedAt = new Date().toISOString(); const start = performance.now();
-        check(response.ok(), '실제 프로젝트 GET 실패');
-        verifyReadBytes(bytes, state, actor.role);
-        result.validation.push({ ...meta, kind: 'project-aggregate-json-count-digest-acl', startedAt, finishedAt: new Date().toISOString(), elapsedMs: performance.now() - start, responseBodyBytes: bytes.length, bodyCopyElapsedMs: transferElapsedMs, timed: false, passed: true });
-        validatedReads.add(response);
-      }
+      await consumeCompletedResponse({
+        response,
+        terminalSignal: requestFinishedSignals.get(request)?.promise,
+        readTerminal: () => requestFinishes.get(request),
+        timeoutMs: config.actionTimeoutMs,
+        consume: async (finished) => {
+          const bodyStart = performance.now();
+          const bytes = await response.body();
+          const transferElapsedMs = performance.now() - bodyStart;
+          result.apiReads.push({ ...meta, ...finished, kind: apiKind(response.url(), state.projectId), status: response.status(), durationMs: finished.finishedHostMs - meta.hostStartMs, browserRequestTiming: request.timing(), responseBodyBytes: bytes.length, bodyCopyElapsedMs: transferElapsedMs, bodyMetric: 'decoded Playwright body bytes; wire transfer bytes 아님', timingMetric: 'request/response/requestfinished driver 이벤트 및 browser request.timing; body copy·검증 시간은 제외' });
+          if (apiKind(response.url(), state.projectId) === 'project-aggregate') {
+            const startedAt = new Date().toISOString(); const start = performance.now();
+            check(response.ok(), '실제 프로젝트 GET 실패');
+            verifyReadBytes(bytes, state, actor.role);
+            result.validation.push({ ...meta, kind: 'project-aggregate-json-count-digest-acl', startedAt, finishedAt: new Date().toISOString(), elapsedMs: performance.now() - start, responseBodyBytes: bytes.length, bodyCopyElapsedMs: transferElapsedMs, timed: false, passed: true });
+            validatedReads.add(response);
+          }
+        },
+      });
     }
     if (manuscript) {
       await manuscript.validatePendingPreviews();
@@ -269,7 +273,7 @@ async function actorProfile(browser, env, state, actor, profile) {
       await validateAsset(request, env, meta, manifestFiles);
     }
   }
-  try {
+  return runWithOwnedContexts([context], async () => {
     await instrumentation(context);
     // C9 조회 계측에는 WS가 필요하지 않다. 서버 연결 없이 시도만 기록하고 닫는다.
     await context.routeWebSocket('**/*', async (socket) => {
@@ -471,12 +475,10 @@ async function actorProfile(browser, env, state, actor, profile) {
       gitEvidence(config);
       await save();
     }
-  } finally {
-    try {
-      await drainValidation();
-      if (manuscript) { result.manuscripts ??= []; result.manuscripts.push({ actorRole: actor.role, profile: profile.id, ...manuscript.safeEvidence }); }
-    } finally { await context.close(); }
-  }
+    // 실패하면 아래 검증을 다시 기다리지 않고 helper가 소유 context를 종료한다.
+    await drainValidation();
+    if (manuscript) { result.manuscripts ??= []; result.manuscripts.push({ actorRole: actor.role, profile: profile.id, ...manuscript.safeEvidence }); }
+  });
 }
 async function concurrentReads(browser, env, state) {
   if (!env.config.concurrentReads.enabled) return;

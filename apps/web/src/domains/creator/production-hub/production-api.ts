@@ -237,12 +237,16 @@ export function getProductionPersonalInbox(): Promise<ProductionPersonalInboxRes
   return api.get("/production/inbox");
 }
 
+// 전체 aggregate는 느린 연결에서 본문만 12초를 넘을 수 있다. 별도 attempt 상한만 끄고
+// 헤더·기존 GET 재시도·본문을 합친 30초 총예산과 호출부 취소 계약은 유지한다.
+const PRODUCTION_PROJECT_READ_OPTIONS = { timeout: false, totalTimeout: 30_000 } as const;
+
 export function getProductionProject(projectId: string): Promise<ProductionProjectRecord> {
-  return api.get(`/production/projects/${encodeURIComponent(projectId)}`);
+  return api.get(`/production/projects/${encodeURIComponent(projectId)}`, PRODUCTION_PROJECT_READ_OPTIONS);
 }
 
 export function getProductionProjectByWork(workId: string): Promise<ProductionProjectRecord> {
-  return api.get(`/production/works/${encodeURIComponent(workId)}/project`);
+  return api.get(`/production/works/${encodeURIComponent(workId)}/project`, PRODUCTION_PROJECT_READ_OPTIONS);
 }
 
 export interface ProductionRiskListResponse {
