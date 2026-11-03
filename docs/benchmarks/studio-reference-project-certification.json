@@ -40,7 +40,7 @@
           "id": "publish-package",
           "label": "Approved output package and manifest",
           "evidence": [
-            "apps/web/src/domains/creator/studio-publish-package.test.ts"
+            "apps/web/src/domains/creator/export/studio-publish-package.test.ts"
           ]
         }
       ]
@@ -118,7 +118,7 @@
           "id": "workspace-interchange",
           "label": "Loss-aware workspace interchange",
           "evidence": [
-            "apps/web/src/domains/creator/studio-workspace-interchange.test.ts"
+            "apps/web/src/domains/creator/live/studio-workspace-interchange.test.ts"
           ]
         }
       ]
@@ -139,7 +139,7 @@
           "id": "project-archive",
           "label": "Linked 3D pass survives project archive and restore",
           "evidence": [
-            "apps/web/src/domains/creator/studio-linked-3d-pass-project-archive.test.ts"
+            "apps/web/src/domains/creator/scene3d/studio-linked-3d-pass-project-archive.test.ts"
           ]
         },
         {
