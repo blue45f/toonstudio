@@ -4,6 +4,8 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
+import { office2dCharacterForAvatarSkin } from "./office2d/office2d-avatar-role";
+import { office2dCharacterUrl } from "./office2d/office2d-sprite-catalog";
 
 afterEach(cleanup);
 
@@ -31,6 +33,16 @@ describe("StudioVirtualSpaceEntryLobby resume (W-2)", () => {
 });
 
 describe("StudioVirtualSpaceEntryLobby", () => {
+  it("기본 2D 입장 미리보기와 선택 카드가 실제 월드와 같은 직군 원본을 표시한다", () => {
+    const identity = "space:review-project", character = office2dCharacterForAvatarSkin(0, identity);
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby stageKind="office2d" identity={identity} avatarIndex={0} nickname="작가" returning={false}
+      projectName="review-project" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()} /></MemoryRouter>);
+    const preview = view.container.querySelector(".space-lobby__character");
+    expect(preview?.getAttribute("data-office-character")).toBe(character);
+    expect(preview?.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
+    const selected = screen.getByRole("button", { name: "하늘 캐릭터 선택" });
+    expect(selected.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
+  });
   it("requires a direct character choice before entering without requesting media", async () => {
     const choose = vi.fn();
     const chooseStyle = vi.fn();

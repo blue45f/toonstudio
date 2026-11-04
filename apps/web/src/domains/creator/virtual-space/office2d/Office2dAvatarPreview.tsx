@@ -5,12 +5,13 @@ import { OFFICE2D_CHARACTER_CELL, OFFICE2D_CHARACTER_ROWS, office2dCharacterUrl,
 import type { StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
 
 /** 기본 2D 월드와 같은 직군 배정·원본 atlas에서 정지 프레임 하나만 표시한다. */
-export function Office2dAvatarPreview({ avatarIndex, identity, facing = "down" }: {
+export function Office2dAvatarPreview({ avatarIndex, identity, facing = "down", className }: {
   readonly avatarIndex: number;
   readonly identity: string;
   readonly facing?: StudioVirtualSpaceFacing;
+  readonly className?: string;
 }) {
-  return <Office2dCharacterPreview character={office2dCharacterForAvatarSkin(avatarIndex, identity)} facing={facing} />;
+  return <Office2dCharacterPreview character={office2dCharacterForAvatarSkin(avatarIndex, identity)} facing={facing} className={className} />;
 }
 
 /** 사용자·NPC가 월드에서 공유하는 직군 원본을 상태창과 대화창에서도 재사용한다. */

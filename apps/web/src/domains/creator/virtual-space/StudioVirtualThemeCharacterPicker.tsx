@@ -8,6 +8,8 @@ import { STUDIO_VIRTUAL_ART_STYLES, type StudioVirtualArtStyleKey } from "./stud
 import { STUDIO_CHARACTER_SKINS, studioCharacterSkinForArtStyle } from "./studio-virtual-space-character-skins";
 import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
 import { studioSpaceTheme, type StudioSpaceThemeKey } from "./studio-virtual-space-theme";
+import { Office2dAvatarPreview } from "./office2d/Office2dAvatarPreview";
+import type { StudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
 
 type CharacterFilter = "all" | "theme-match" | "base" | StudioVirtualArtStyleKey;
 
@@ -20,9 +22,11 @@ const THEME_CHARACTERS = CHARACTERS.filter(({ skin }) => skin.selectionOnly && s
  * - all: 기본·테마 캐릭터를 한 격자에 모으고 스타일 필터 칩으로 좁힌다. 로비와 꾸미기 탭이 같은 선택기를 쓴다.
  * 선택은 사용자의 명시적 클릭만 onSelect(avatarIndex)로 알린다.
  */
-export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, avatarIndex, onSelect, mode = "theme", includeAuto = false }: {
+export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, stageKind, identity = "preview", avatarIndex, onSelect, mode = "theme", includeAuto = false }: {
   readonly artStyle: StudioVirtualArtStyleKey;
   readonly spaceTheme?: StudioSpaceThemeKey;
+  readonly stageKind?: StudioVirtualStageKind;
+  readonly identity?: string;
   readonly avatarIndex: number;
   readonly onSelect: (index: number) => void;
   readonly mode?: "theme" | "all";
@@ -45,7 +49,7 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, avatar
           const matchesTheme = skin.nativeArtStyle === artStyle || recommendedKeys.has(skin.key);
           return <button type="button" key={skin.key} className="studio-vspace-theme-character" aria-pressed={avatarIndex === index}
             aria-label={bt(`${skin.labelKo} 테마 캐릭터 선택`, `Select ${skin.labelEn} theme character`)} onClick={() => onSelect(index)}>
-            <span className="studio-vspace-theme-character__preview"><StudioVirtualCharacterPreview skin={skin} /></span>
+            <span className="studio-vspace-theme-character__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPreview skin={skin} />}</span>
             <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
             {theme ? <small>{bt(theme.labelKo, theme.labelEn)}</small> : null}
             {matchesTheme ? <em>{bt("현재 테마와 어울려요", "Matches your theme")}</em> : null}
@@ -85,7 +89,7 @@ export function StudioVirtualThemeCharacterPicker({ artStyle, spaceTheme, avatar
         return <button key={skin.key} type="button" className="studio-vspace-character-picker__item"
           data-theme-recommended={recommended || undefined} aria-pressed={selected}
           aria-label={bt(`${skin.labelKo} 캐릭터 선택`, `Select ${skin.labelEn} character`)} onClick={() => onSelect(index)}>
-          <span className="studio-vspace-character-picker__preview"><StudioVirtualCharacterPreview skin={presented} /></span>
+          <span className="studio-vspace-character-picker__preview">{stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={index} identity={identity} /> : <StudioVirtualCharacterPreview skin={presented} />}</span>
           <strong>{bt(skin.labelKo, skin.labelEn)}</strong>
           {recommended ? <small className="studio-vspace-character-picker__badge">{bt("테마 추천", "Theme pick")}</small> : null}
           {selected ? <b className="studio-vspace-character-picker__check" aria-hidden><Check size={12} /></b> : null}

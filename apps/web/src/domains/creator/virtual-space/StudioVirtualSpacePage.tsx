@@ -1732,7 +1732,7 @@ export function VirtualSpaceExperience({
           <Suspense fallback={<p role="status">{bt("3D 아바타 목록을 불러오는 중…", "Loading 3D avatars…")}</p>}>
             <LazyVirtualThreeAvatarPicker avatarIndex={avatarIndex} onSelect={selectAvatar} />
           </Suspense></> : <section className="space-panel-section" aria-label={bt("내 캐릭터", "My character")}>
-          <StudioVirtualThemeCharacterPicker mode="all" includeAuto artStyle={artStyle} spaceTheme={spaceTheme} avatarIndex={avatarIndex} onSelect={selectAvatar} />
+          <StudioVirtualThemeCharacterPicker mode="all" includeAuto stageKind={stageKind} identity={fallbackIdentity} artStyle={artStyle} spaceTheme={spaceTheme} avatarIndex={avatarIndex} onSelect={selectAvatar} />
           <p className="space-panel-note">{personal ? bt("캐릭터 선택은 이 브라우저에 저장됩니다.", "Your character choice is saved in this browser.")
             : bt("이 선택은 이 브라우저에만 저장되고 P2P로 팀원에게 공유됩니다.", "This choice stays in this browser and is shared with teammates over P2P.")}</p>
         </section>}

@@ -48,6 +48,7 @@ import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
 import type { StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { VirtualSpaceExperience } from "./StudioVirtualSpacePage";
 import { useStudioWorldPublication } from "./world-publication/use-studio-world-publication";
+import { readStudioVirtualStageMode, resolveStudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
 
 function decodeProjectId(projectId: string): string {
   try {
@@ -303,7 +304,10 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
 
   if (entryOpen || resumeGate) {
     const guestMode = isGuest;
+    const stageKind = resolveStudioVirtualStageKind({ engineMode: readStudioVirtualStageMode(location.search) === "3d" ? "3d" : "2d",
+      authoringMode: new URLSearchParams(location.search).get("worldEdit") === "1" && !isGuest, search: location.search });
     return <StudioVirtualSpaceEntryLobby
+      stageKind={stageKind} identity={`space:${decodedProjectId}`}
       avatarIndex={guestMode ? 0 : entryAvatarIndex}
       artStyle={entryArtStyle}
       nickname={entryNickname}

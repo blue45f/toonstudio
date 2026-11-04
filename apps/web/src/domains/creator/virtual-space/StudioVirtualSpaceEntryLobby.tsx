@@ -15,6 +15,8 @@ import {
   type StudioVirtualArtStyleKey,
 } from "./studio-virtual-space-art-style";
 import { StudioVirtualCharacterPreview } from "./StudioVirtualCharacterPreview";
+import { Office2dAvatarPreview } from "./office2d/Office2dAvatarPreview";
+import type { StudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
 import { STUDIO_ENTRY_CODE_PANEL_ID } from "./studio-virtual-space-entry-code";
 import { StudioVirtualSpaceEntryCodePanel, type StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
@@ -47,6 +49,8 @@ function LobbyChip({ icon, children }: { readonly icon: ReactNode; readonly chil
  */
 export function StudioVirtualSpaceEntryLobby({
   avatarIndex,
+  stageKind,
+  identity = "preview",
   artStyle = DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   nickname,
   returning,
@@ -69,6 +73,8 @@ export function StudioVirtualSpaceEntryLobby({
   onRetryAccess,
 }: {
   readonly avatarIndex: number;
+  readonly stageKind?: StudioVirtualStageKind;
+  readonly identity?: string;
   readonly artStyle?: StudioVirtualArtStyleKey;
   readonly nickname: string;
   readonly returning: boolean;
@@ -196,7 +202,7 @@ export function StudioVirtualSpaceEntryLobby({
             <strong>{normalizedNickname ?? bt("닉네임을 입력하세요", "Enter a nickname")}</strong>
           </p>
           {selectedCharacter
-            ? <StudioVirtualCharacterPreview key={selectedCharacter.key} skin={selectedCharacter} className="space-lobby__character" />
+            ? stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={guestMode ? 0 : avatarIndex} identity={identity} className="space-lobby__character" /> : <StudioVirtualCharacterPreview key={selectedCharacter.key} skin={selectedCharacter} className="space-lobby__character" />
             : <span className="space-lobby__placeholder"><UserRound size={44} aria-hidden /><small>{bt("캐릭터를 골라 주세요", "Choose a character")}</small></span>}
           <span className="space-lobby__floor" aria-hidden />
         </div>
@@ -272,7 +278,7 @@ export function StudioVirtualSpaceEntryLobby({
 
         {!guestMode ? <>
           <div className="space-lobby__picker">
-            <StudioVirtualThemeCharacterPicker mode="all" artStyle={artStyle} avatarIndex={avatarIndex} onSelect={onAvatarIndex} />
+            <StudioVirtualThemeCharacterPicker mode="all" stageKind={stageKind} identity={identity} artStyle={artStyle} avatarIndex={avatarIndex} onSelect={onAvatarIndex} />
           </div>
           {/* LPC 픽셀 캐릭터도 이 전체 목록에서 고른다. 고르는 자리에서 바로 출처·라이선스 전문(CREDITS.md)에 닿도록 꾸미기 탭과 같은 크레딧 표면을 캐릭터 선택 바로 아래에 둔다. */}
           <StudioLpcCreditsNotice />

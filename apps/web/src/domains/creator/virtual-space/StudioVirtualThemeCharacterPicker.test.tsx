@@ -5,10 +5,34 @@ import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacter
 import { STUDIO_VIRTUAL_ART_STYLES } from "./studio-virtual-space-art-style";
 import { STUDIO_CHARACTER_SKINS } from "./studio-virtual-space-character-skins";
 import { STUDIO_VIRTUAL_SPACE_AUTO_AVATAR } from "./studio-virtual-space-model";
+import { office2dCharacterForAvatarSkin } from "./office2d/office2d-avatar-role";
+import { office2dCharacterUrl } from "./office2d/office2d-sprite-catalog";
 
 afterEach(cleanup);
 
 describe("StudioVirtualThemeCharacterPicker", () => {
+  it("기본 2D 선택 카드는 작화와 관계없이 실제 월드의 직군 원본을 보여 준다", () => {
+    const onSelect = vi.fn(), identity = "preview-owner";
+    const view = render(<StudioVirtualThemeCharacterPicker mode="all" stageKind="office2d" identity={identity} artStyle="neon" avatarIndex={0} onSelect={onSelect} />);
+    for (const [index, skin] of STUDIO_CHARACTER_SKINS.entries()) {
+      const button = screen.getByRole("button", { name: `${skin.labelKo} 캐릭터 선택` });
+      const character = office2dCharacterForAvatarSkin(index, identity);
+      expect(button.querySelector("svg")?.getAttribute("data-office-character")).toBe(character);
+      expect(button.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
+      expect(button.getAttribute("aria-pressed")).toBe(String(index === 0));
+    }
+    const next = STUDIO_CHARACTER_SKINS[1];
+    if (!next) throw new Error("두 번째 캐릭터가 필요합니다.");
+    fireEvent.click(screen.getByRole("button", { name: `${next.labelKo} 캐릭터 선택` }));
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith(1);
+    view.rerender(<StudioVirtualThemeCharacterPicker mode="all" stageKind="office2d" identity={identity} artStyle="retro" avatarIndex={0} onSelect={onSelect} />);
+    expect(view.container.querySelectorAll("[data-office-character]")).toHaveLength(STUDIO_CHARACTER_SKINS.length);
+  });
+  it.each(["legacy", "three"] as const)("%s에서는 기존 작화 캐릭터를 유지한다", (stageKind) => {
+    const view = render(<StudioVirtualThemeCharacterPicker mode="all" stageKind={stageKind} artStyle="neon" avatarIndex={0} onSelect={vi.fn()} />);
+    expect(view.container.querySelector("[data-office-character]")).toBeNull();
+    expect(view.container.querySelector(".studio-vspace-character-picker__item[aria-pressed=true] .studio-character-preview")).toBeTruthy();
+  });
   it("6개 테마를 명시적으로 선택하며 추천 테마가 바뀌어도 기존 캐릭터를 유지한다", () => {
     const onSelect = vi.fn();
     const neonIndex = STUDIO_CHARACTER_SKINS.findIndex((skin) => skin.nativeArtStyle === "neon");
