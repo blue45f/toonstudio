@@ -1035,6 +1035,7 @@ jobs:
           apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts
           apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts
           apps/api/src/modules/creator/studio-role-pipeline-migration.integration.test.ts
+          apps/api/src/modules/creator/studio-work-asset.repository.integration.test.ts
 
   core:
     name: core

@@ -1,7 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { Pool } from "pg";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { sql } from "drizzle-orm";
+import { buildCreatorAssetObjectStorageRuntimeAclSql, buildMembershipRuntimeAclSql } from "../../../../../scripts/run-production-database-migrations.mjs";
+import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
 
 import type {
   DrizzleStudioWorkAssetRepository,
@@ -116,6 +119,7 @@ describeWithDirectPostgres(
       if (!INTEGRATION_URL) {
         throw new Error("integration URL was not provided");
       }
+      validatePostgresIntegrationUrl(INTEGRATION_URL);
       previousDatabaseUrl = process.env.DATABASE_URL;
       process.env.DATABASE_URL = INTEGRATION_URL;
       observerPool = new Pool({
@@ -204,6 +208,92 @@ describeWithDirectPostgres(
         [workId, [backgroundAssetId, foregroundAssetId]],
       );
       expect(stored.rows).toEqual([]);
+    });
+
+    it("비소유 runtime은 정본 허용 열로 source·derived를 저장하고 서버 기본 열의 명시 INSERT는 거절한다", async () => {
+      if (!observerPool || !databaseRuntime) throw new Error("PostgreSQL 저장소가 준비되지 않았습니다.");
+      const owner = observerPool, runtime = databaseRuntime, role = `work_asset_test_${randomUUID().replaceAll("-", "")}`;
+      const relations = ["creator_asset_storage_object", "creator_work_asset_storage_reference", "creator_work_publication_media"];
+      const aclSnapshot = async () => (await owner.query(`SELECT r.relname,r.relowner::text AS owner,
+        COALESCE((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantee,a.privilege_type,a.is_grantable)
+          FROM aclexplode(COALESCE(r.relacl,acldefault('r',r.relowner))) a),'[]'::jsonb) AS acl
+        FROM pg_class r JOIN pg_namespace n ON n.oid=r.relnamespace
+        WHERE n.nspname='public' AND r.relname=ANY($1::text[]) ORDER BY r.relname`, [relations])).rows;
+      const beforeAcl = await aclSnapshot(), userId = randomUUID(), workId = randomUUID(), assetId = randomUUID();
+      const payload = new TextEncoder().encode(randomUUID()), sha256 = createHash("sha256").update(payload).digest("hex");
+      const base = imageWrite(workId, assetId, 1), source: StudioWorkAssetWrite = { ...base, payload, sha256,
+        storageObject: { ...base.storageObject, digest: `sha256:${sha256}`, objectPath: `sha256/${sha256.slice(0, 2)}/${sha256}`, byteLength: payload.byteLength } };
+      const derived = { workId, sourceAssetId: assetId, referenceId: randomUUID(), object: generatedObject("derived", new TextEncoder().encode(randomUUID())) };
+      const digests = [source.storageObject.digest, derived.object.digest];
+      expect((await owner.query('SELECT digest FROM creator_asset_storage_object WHERE digest=ANY($1::text[])', [digests])).rows).toEqual([]);
+      await owner.query(`CREATE ROLE "${role}" NOLOGIN`);
+      let restoreTransaction: (() => void) | undefined;
+      try {
+        await owner.query(`GRANT USAGE ON SCHEMA public TO "${role}";
+          GRANT SELECT ON TABLE public."user",public.creator_work,public.creator_draft_collaboration_room,
+            public.creator_work_scoped_write_policy,public.creator_work_asset,public.creator_work_asset_tombstone,
+            public.creator_work_raster_asset TO "${role}";
+          GRANT UPDATE (name) ON TABLE public."user" TO "${role}";
+          GRANT UPDATE ("updatedAt") ON TABLE public.creator_work,public.creator_draft_collaboration_room TO "${role}";
+          GRANT INSERT ON TABLE public.creator_work_asset TO "${role}";`);
+        await owner.query(buildMembershipRuntimeAclSql(role));
+        await owner.query(buildCreatorAssetObjectStorageRuntimeAclSql(role));
+        const privileges = await owner.query(`SELECT r.relname,
+          pg_has_role($1,r.relowner,'USAGE') AS owns,
+          has_table_privilege($1,r.oid,'INSERT') AS unrestricted,
+          has_column_privilege($1,r.oid,'createdAt','INSERT') AS managed
+          FROM pg_class r JOIN pg_namespace n ON n.oid=r.relnamespace
+          WHERE n.nspname='public' AND r.relname=ANY($2::text[]) ORDER BY r.relname`, [role, relations]);
+        expect(privileges.rows).toHaveLength(3);
+        for (const row of privileges.rows) expect(row).toMatchObject({ owns: false, unrestricted: false, managed: false });
+        await owner.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [userId, "실제 비소유 원고 에셋 회귀"]);
+        userIds.push(userId);
+        await owner.query('INSERT INTO creator_work (id,"userId",title) VALUES ($1,$2,$3)', [workId, userId, "runtime 열 권한 보존"]);
+        const originalTransaction = runtime.db.transaction.bind(runtime.db);
+        const asRuntime: typeof runtime.db.transaction = (action, config) => originalTransaction(async (transaction) => {
+          await transaction.execute(sql.raw(`SET LOCAL ROLE "${role}"`));
+          expect((await transaction.execute(sql`SELECT current_user`)).rows[0]?.current_user).toBe(role);
+          return action(transaction);
+        }, config);
+        const transactionSpy = vi.spyOn(runtime.db, "transaction").mockImplementation(asRuntime);
+        restoreTransaction = () => transactionSpy.mockRestore();
+        // 기존 ORM 호출이 생략 열의 DEFAULT까지 나열해 거절되는 조건을 같은 role로 재현한다.
+        await expect(runtime.db.transaction((transaction) => transaction.insert(runtime.creatorAssetStorageObjects).values({
+          purpose: source.storageObject.purpose, digest: source.storageObject.digest, contractVersion: source.storageObject.contractVersion,
+          providerId: source.storageObject.providerId, objectPath: source.storageObject.objectPath, byteLength: source.storageObject.byteLength,
+          contentType: source.storageObject.contentType,
+        }).onConflictDoNothing())).rejects.toMatchObject({ cause: { code: "42501" } });
+        await expect(repository.upsert(userId, source)).resolves.toMatchObject({ assetId, sha256 });
+        await expect(repository.registerGeneratedStorageReference(userId, derived, false)).resolves.toMatchObject(derived);
+        const storedRows = async () => ({
+          objects: (await owner.query('SELECT * FROM creator_asset_storage_object WHERE digest=ANY($1::text[]) ORDER BY purpose,digest', [digests])).rows,
+          references: (await owner.query('SELECT * FROM creator_work_asset_storage_reference WHERE "workId"=$1 ORDER BY purpose,"referenceId"', [workId])).rows,
+        });
+        const stored = await storedRows();
+        expect(stored.objects).toHaveLength(2); expect(stored.references).toHaveLength(2);
+        await expect(repository.upsert(userId, source)).resolves.toMatchObject({ assetId, sha256 });
+        await expect(repository.registerGeneratedStorageReference(userId, derived, false)).resolves.toMatchObject(derived);
+        const client = await owner.connect();
+        try {
+          for (const relation of relations.slice(0, 2)) {
+            await client.query("BEGIN"); await client.query(`SET LOCAL ROLE "${role}"`);
+            // DEFAULT도 명시 열이면 INSERT 권한이 필요하므로 기존 Drizzle 회귀를 실제 PostgreSQL로 잡는다.
+            await expect(client.query(`INSERT INTO public."${relation}" ("createdAt") VALUES (DEFAULT)`)).rejects.toMatchObject({ code: "42501" });
+            await client.query("ROLLBACK");
+          }
+        } finally { await client.query("ROLLBACK"); client.release(); }
+        expect(await storedRows()).toEqual(stored);
+      } finally {
+        restoreTransaction?.();
+        await cleanupTrackedUsers();
+        await owner.query('DELETE FROM creator_asset_storage_object WHERE digest=ANY($1::text[])', [digests]);
+        await owner.query(`DROP OWNED BY "${role}"`); await owner.query(`DROP ROLE "${role}"`);
+      }
+      expect(await aclSnapshot()).toEqual(beforeAcl);
+      expect((await owner.query('SELECT id FROM "user" WHERE id=$1', [userId])).rows).toEqual([]);
+      expect((await owner.query('SELECT id FROM creator_work WHERE id=$1', [workId])).rows).toEqual([]);
+      expect((await owner.query('SELECT digest FROM creator_asset_storage_object WHERE digest=ANY($1::text[])', [digests])).rows).toEqual([]);
+      expect((await owner.query('SELECT rolname FROM pg_roles WHERE rolname=$1', [role])).rows).toEqual([]);
     });
 
     it("keeps source immutable and drives shared generated references through a durable delete state", async () => {
