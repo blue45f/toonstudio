@@ -84,6 +84,7 @@ export function MarketFitLabPage() {
   const [search, setSearch] = useState("");
   const [fitFilter, setFitFilter] = useState<FitFilter>("all");
   const [previewId, setPreviewId] = useState<string | null>(initialSlug);
+  const [rigPreset, setRigPreset] = useState<"ipad-m2-webgpu" | "wacom-cintiq-desktop" | "vrm-humanoid-rig" | "c2pa-commercial-audit">("ipad-m2-webgpu");
   const previewSectionRef = useRef<HTMLDivElement | null>(null);
   const {
     profile,
@@ -212,6 +213,46 @@ export function MarketFitLabPage() {
           onReset={resetProfile}
           persistenceAvailable={persistenceAvailable}
         />
+
+        <section
+          aria-label={t("REA 하드웨어 및 렌더 파이프라인 스트레스 벤치마크", "REA Hardware & Render Pipeline Stress Benchmark")}
+          data-testid="market-fit-rea-benchmark-bar"
+          className="mt-5 rounded-2xl border border-line bg-card/85 p-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-extrabold text-fg">
+              {t("ACON3D · BOOTH · Vket Store · CLO 3D · Fontworks 실기기·파이프라인 적합성 시뮬레이터", "ACON3D / BOOTH / Vket Store / CLO 3D / Fontworks Hardware & Pipeline Fit Simulator")}
+            </span>
+            <span data-testid="market-fit-rea-benchmark-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+              {rigPreset === "ipad-m2-webgpu"
+                ? t("iPad Pro M2 8GB · WebGPU 60fps · 6-Pass LT 0.38s 통과", "iPad Pro M2 8GB · WebGPU 60fps · 6-Pass LT 0.38s Pass")
+                : rigPreset === "wacom-cintiq-desktop"
+                  ? t("Cintiq Pro 24 · 800×24,000px 통원고 · 350DPI CMYK 통과", "Cintiq Pro 24 · 800×24,000px Strip · 350DPI CMYK Pass")
+                  : rigPreset === "vrm-humanoid-rig"
+                    ? t("VRM 1.0 · Mixamo 52 ARKit BlendShape · SpringBone 충돌 0건", "VRM 1.0 · Mixamo 52 ARKit BlendShape · 0 SpringBone Collisions")
+                    : t("C2PA 서명 매니페스트 · Cara No-AI · 상업/동인 재배포 무결성 통과", "C2PA Manifest · Cara No-AI · Commercial/Doujin Clearance Pass")}
+            </span>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-label={t("하드웨어 및 파이프라인 벤치마크 프리셋", "Hardware and pipeline benchmark presets")}>
+            {([
+              ["ipad-m2-webgpu", t("iPad Pro M2 (WebGPU · 6-Pass LT)", "iPad Pro M2 (WebGPU · 6-Pass LT)")],
+              ["wacom-cintiq-desktop", t("Cintiq Pro 24 (24,000px · 350DPI CMYK)", "Cintiq Pro 24 (24,000px · 350DPI CMYK)")],
+              ["vrm-humanoid-rig", t("VRM 1.0 · Mixamo 52 표정/본 리깅", "VRM 1.0 · Mixamo 52 BlendShape Rig")],
+              ["c2pa-commercial-audit", t("C2PA · No-AI 상업 연재 감리", "C2PA · No-AI Commercial Audit")],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                data-testid={`market-fit-rea-preset-${id}`}
+                aria-pressed={rigPreset === id}
+                onClick={() => setRigPreset(id)}
+                className={filterClass(rigPreset === id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
 
         {!page.loading && selectedFit ? (
           <div ref={previewSectionRef} className="mt-6 scroll-mt-6">

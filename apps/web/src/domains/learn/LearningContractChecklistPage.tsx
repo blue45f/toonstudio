@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { LazyContractReviewChecklist } from "@/shared/components/contract-review/LazyContractReviewChecklist";
@@ -12,6 +13,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
  */
 export function LearningContractChecklistPage() {
   const bt = useBilingual("LearningContractChecklistPage");
+  const [clauseFocus, setClauseFocus] = useState<"mg-recoup-net" | "secondary-ip-split" | "hiatus-welfare">("mg-recoup-net");
+  const [rsSplitRatio, setRsSplitRatio] = useState<"70-30" | "60-40" | "50-50">("70-30");
   return (
     <section className="mx-auto max-w-4xl space-y-6 px-4 py-8 text-fg sm:px-6 sm:py-10" aria-labelledby="learn-contract-checklist-title">
       <header>
@@ -32,6 +35,58 @@ export function LearningContractChecklistPage() {
           </Link>
         </p>
       </header>
+      <section
+        aria-label={bt("REA 표준계약서 MG·RS 손익분기 및 2차 저작물 권리 시뮬레이터", "REA Standard Contract MG/RS Break-Even & Secondary IP Simulator")}
+        data-testid="contract-rea-mg-rs-simulator"
+        className="rounded-2xl border border-line bg-card/85 p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-extrabold text-fg">
+            {bt("문체부 만화 표준계약서 · KOCCA · Author's Guild · 일본 프리랜서 신법 공정 조항 시뮬레이터", "MCST Standard Contract / KOCCA / Author's Guild / Japan Freelance Act Clause Simulator")}
+          </span>
+          <span data-testid="contract-rea-mg-rs-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {clauseFocus === "mg-recoup-net"
+              ? bt(`작가:플랫폼 RS ${rsSplitRatio.replace("-", ":")} · 당월 MG 미회수분 이월 금지(비누적 차감) 권장`, `Creator:Platform RS ${rsSplitRatio.replace("-", ":")} · Non-cumulative monthly MG recoupment`)
+              : clauseFocus === "secondary-ip-split"
+                ? bt(`2차적 저작물(드라마·게임·굿즈) 별도 서면 합의 필수 · 작가 몫 ${rsSplitRatio.split("-")[0]}% 기준`, `Secondary IP (drama/game/merch) requires separate written agreement · Creator ${rsSplitRatio.split("-")[0]}%`)
+                : bt(`50화당 유급 건강 휴재권(2~4주) 보장 · 계약 종료/해지 시 전송권 즉시 반환 (${rsSplitRatio.replace("-", ":")})`, `Paid health hiatus (2-4 wks per 50 eps) · Immediate rights reversion on termination (${rsSplitRatio.replace("-", ":")})`)}
+          </span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("핵심 계약 조항 시뮬레이션", "Contract clause simulation")}>
+            {([
+              ["mg-recoup-net", bt("MG 차감 방식 & 총매출(Gross) RS", "MG Recoupment & Gross RS")],
+              ["secondary-ip-split", bt("2차적 저작물(영상·게임·굿즈) 별도 합의", "Secondary IP Separate Agreement")],
+              ["hiatus-welfare", bt("50화 건강 휴재권 & 해지 시 권리 반환", "50-Ep Health Hiatus & Rights Reversion")],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                data-testid={`contract-rea-clause-${id}`}
+                aria-pressed={clauseFocus === id}
+                onClick={() => setClauseFocus(id)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${clauseFocus === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5" role="group" aria-label={bt("RS 배분 비율", "RS split ratio")}>
+            {(["70-30", "60-40", "50-50"] as const).map((ratio) => (
+              <button
+                key={ratio}
+                type="button"
+                data-testid={`contract-rea-rs-${ratio}`}
+                aria-pressed={rsSplitRatio === ratio}
+                onClick={() => setRsSplitRatio(ratio)}
+                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${rsSplitRatio === ratio ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+              >
+                {bt(`RS ${ratio.replace("-", ":")}`, `RS ${ratio.replace("-", ":")}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
       <LazyContractReviewChecklist headingLevel={2} />
     </section>
   );

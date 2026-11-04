@@ -150,6 +150,7 @@ function OverviewContent({
   readonly onProfileChange: (profile: StudioToolchainProfileId) => void;
 }) {
   const bt = useBilingual("StudioProductionToolchainPage.overview");
+  const [bridgeTrack, setBridgeTrack] = useState<"flamenco-render-queue" | "comfy-deterministic-seed" | "natron-opentoonz-comp" | "scribus-cmyk-preflight">("flamenco-render-queue");
   const groups = useMemo(() => groupStudioProductionTools(profile), [profile]);
   const states = useToolStates(profile, connection);
   const admittedCount = groups.reduce((sum, group) => sum + group.tools.length, 0);
@@ -174,6 +175,49 @@ function OverviewContent({
           </>
         )}
       />
+
+      <section
+        aria-label={bt("REA 로컬 실행기 파이프라인 및 재현 영수증 인스펙터", "REA Local Runner Pipeline & Reproducible Receipt Inspector")}
+        data-testid="toolchain-rea-pipeline-receipt-bar"
+        className="rounded-2xl border border-line bg-card/85 p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-extrabold text-fg">
+            {bt("Blender Flamenco · ComfyUI · OpenToonz/Natron · Scribus/Vivliostyle 재현 영수증 인스펙터", "Blender Flamenco / ComfyUI / OpenToonz·Natron / Scribus·Vivliostyle Receipt Inspector")}
+          </span>
+          <span data-testid="toolchain-rea-pipeline-receipt-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {bridgeTrack === "flamenco-render-queue"
+              ? bt("Flamenco·Deadline 분산 3D/6-Pass LT 배치 큐 · 원본 비파괴 격리 보장", "Flamenco/Deadline distributed 3D & 6-Pass LT queue · Non-destructive isolation")
+              : bridgeTrack === "comfy-deterministic-seed"
+                ? bt("ComfyUI·InvokeAI 시드/체크포인트 SHA-256 재현 영수증 + C2PA 매니페스트", "ComfyUI/InvokeAI seed & checkpoint SHA-256 receipt + C2PA manifest")
+                : bridgeTrack === "natron-opentoonz-comp"
+                  ? bt("OpenToonz·Tahoma2D·Natron·G'MIC 멀티패스 EXR/레이어 비파괴 합성", "OpenToonz/Tahoma2D/Natron/G'MIC multi-pass EXR non-destructive comp")
+                  : bt("Scribus·Vivliostyle·Potrace·VTracer PDF/X-4 350DPI CMYK 인쇄 영수증", "Scribus/Vivliostyle/Potrace/VTracer PDF/X-4 350DPI CMYK print receipt")}
+          </span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-label={bt("로컬 실행기 파이프라인 트랙", "Local runner pipeline tracks")}>
+          {([
+            ["flamenco-render-queue", bt("Flamenco · Deadline 3D/LT 렌더 큐", "Flamenco · Deadline 3D/LT Queue")],
+            ["comfy-deterministic-seed", bt("ComfyUI · InvokeAI 재현 영수증", "ComfyUI · InvokeAI Seed Receipt")],
+            ["natron-opentoonz-comp", bt("OpenToonz · Natron · G'MIC 합성", "OpenToonz · Natron · G'MIC Comp")],
+            ["scribus-cmyk-preflight", bt("Scribus · Vivliostyle CMYK 조판", "Scribus · Vivliostyle CMYK Print")],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              data-testid={`toolchain-rea-track-${id}`}
+              aria-pressed={bridgeTrack === id}
+              onClick={() => setBridgeTrack(id)}
+              className={cn(
+                "rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors",
+                bridgeTrack === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <ToolchainStartSteps projectId={projectId} connected={connection.connected} readyCount={readyCount} />
 
