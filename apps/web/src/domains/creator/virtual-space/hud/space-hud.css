@@ -574,7 +574,7 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 .space-minimap__zone[data-active] rect { fill: color-mix(in srgb, var(--space-zone-tone) 38%, transparent); stroke: var(--space-zone-tone); stroke-width: 2px; }
 .space-minimap__zone[data-role-recommended] rect { stroke: var(--color-accent); stroke-width: 2px; }
 .space-minimap__role-marker { fill: var(--color-accent); stroke: var(--color-canvas); stroke-width: 1px; vector-effect: non-scaling-stroke; }
-.space-minimap__zone text { fill: var(--color-fg); font-family: var(--font-sans); font-weight: 900; letter-spacing: .04em; pointer-events: none; paint-order: stroke; stroke: color-mix(in srgb, var(--color-canvas) 55%, transparent); stroke-width: 4px; }
+.space-minimap__zone text { fill: var(--color-fg); font-family: var(--font-sans); font-weight: 900; letter-spacing: .04em; pointer-events: none; paint-order: stroke; stroke: color-mix(in srgb, var(--color-canvas) 86%, transparent); stroke-width: 5px; stroke-linejoin: round; }
 .space-minimap__illustration { pointer-events: none; }
 .space-minimap[data-illustrated] .space-minimap__zone:not([data-active]) rect { fill: transparent; }
 .space-minimap__gate { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent-2) 75%, transparent)); }
