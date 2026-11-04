@@ -1,6 +1,14 @@
-// 마케팅 라우트 그룹의 lazy 페이지 선언. marketing.routes.tsx 가 route-group 줄 수 상한
-// (studio-host-architecture-ratchet)을 넘지 않도록 선언만 이 파일로 분리했다. 경로·id·element 는 그대로 routes 파일이 소유한다.
+// 마케팅 페이지를 지연 로드한다. 경로·id·element는 marketing.routes.tsx가 소유한다.
+import type { ComponentType } from "react";
+
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+
+// 이름이 지정된 export를 한 번만 감싸되 import는 실제 페이지 진입까지 지연한다.
+function lazyPage<K extends string, M extends Record<K, ComponentType>>(
+  load: () => Promise<M>, name: K,
+) {
+  return lazyRetry(() => load().then((module) => ({ default: module[name] })), name);
+}
 
 export const WorkspaceHomeRoute = lazyRetry(
   () => import("@/domains/creator/workspace/WorkspaceHomeRoute").then((module) => ({
@@ -9,72 +17,44 @@ export const WorkspaceHomeRoute = lazyRetry(
   "WorkspaceHomeRoute",
 );
 
-export const ComicIntroHost = lazyRetry(
-  () => import("@/domains/marketing/comic-intro/ComicIntroHost").then((module) => ({
-    default: module.ComicIntroHost,
-  })),
-  "ComicIntroHost",
+export const ComicIntroHost = lazyPage(
+  () => import("@/domains/marketing/comic-intro/ComicIntroHost"), "ComicIntroHost",
 );
 
-export const ProductTourPage = lazyRetry(
-  () => import("@/domains/marketing/ProductTourPage").then((module) => ({
-    default: module.ProductTourPage,
-  })),
-  "ProductTourPage",
+export const ProductTourPage = lazyPage(
+  () => import("@/domains/marketing/ProductTourPage"), "ProductTourPage",
 );
 
-export const BrandFilmPage = lazyRetry(
-  () => import("@/domains/marketing/BrandFilmPage").then((module) => ({
-    default: module.BrandFilmPage,
-  })),
-  "BrandFilmPage",
+export const BrandFilmPage = lazyPage(
+  () => import("@/domains/marketing/BrandFilmPage"), "BrandFilmPage",
 );
 
-export const PromoVideoLibraryPage = lazyRetry(
-  () => import("@/domains/marketing/PromoVideoLibraryPage").then((module) => ({
-    default: module.PromoVideoLibraryPage,
-  })),
-  "PromoVideoLibraryPage",
+export const PromoVideoLibraryPage = lazyPage(
+  () => import("@/domains/marketing/PromoVideoLibraryPage"), "PromoVideoLibraryPage",
 );
 
-export const MembershipPolicyPage = lazyRetry(
-  () => import("@/domains/marketing/MembershipPolicyPage").then((module) => ({
-    default: module.MembershipPolicyPage,
-  })),
-  "MembershipPolicyPage",
+export const MembershipPolicyPage = lazyPage(
+  () => import("@/domains/marketing/MembershipPolicyPage"), "MembershipPolicyPage",
 );
 
-export const PricingPage = lazyRetry(
-  () => import("@/app/routes/pricing-page").then((module) => ({
-    default: module.PricingPage,
-  })),
-  "PricingPage",
+export const PricingPage = lazyPage(
+  () => import("@/app/routes/pricing-page"), "PricingPage",
 );
 
-export const FeaturesOverviewPage = lazyRetry(
-  () => import("@/domains/marketing/FeaturesOverviewPage").then((module) => ({
-    default: module.FeaturesOverviewPage,
-  })),
-  "FeaturesOverviewPage",
+export const FeaturesOverviewPage = lazyPage(
+  () => import("@/domains/marketing/FeaturesOverviewPage"), "FeaturesOverviewPage",
 );
 
-export const EventsHubPage = lazyRetry(
-  () => import("@/domains/marketing/events/EventsHubPage").then((module) => ({
-    default: module.EventsHubPage,
-  })),
-  "EventsHubPage",
+export const EventsHubPage = lazyPage(
+  () => import("@/domains/marketing/events/EventsHubPage"), "EventsHubPage",
 );
 
-export const BetaOpenEventPage = lazyRetry(
-  () => import("@/domains/marketing/events/BetaOpenEventPage").then((module) => ({
-    default: module.BetaOpenEventPage,
-  })),
-  "BetaOpenEventPage",
+export const BetaOpenEventPage = lazyPage(
+  () => import("@/domains/marketing/events/BetaOpenEventPage"), "BetaOpenEventPage",
 );
 
-export const StudioWorkspacePage = lazyRetry(
-  () => import("@/domains/creator/workspace/StudioWorkspacePage").then((module) => ({ default: module.StudioWorkspacePage })),
-  "StudioWorkspacePage",
+export const StudioWorkspacePage = lazyPage(
+  () => import("@/domains/creator/workspace/StudioWorkspacePage"), "StudioWorkspacePage",
 );
 
 export const StudioIntroductionPage = lazyRetry(
@@ -82,23 +62,14 @@ export const StudioIntroductionPage = lazyRetry(
   "StudioIntroductionPage",
 );
 
-export const IrPitchPage = lazyRetry(
-  () => import("@/domains/marketing/IrPitchPage").then((module) => ({
-    default: module.IrPitchPage,
-  })),
-  "IrPitchPage",
+export const IrPitchPage = lazyPage(
+  () => import("@/domains/marketing/IrPitchPage"), "IrPitchPage",
 );
 
-export const IrPresentPage = lazyRetry(
-  () => import("@/domains/marketing/IrPresentPage").then((module) => ({
-    default: module.IrPresentPage,
-  })),
-  "IrPresentPage",
+export const IrPresentPage = lazyPage(
+  () => import("@/domains/marketing/IrPresentPage"), "IrPresentPage",
 );
 
-export const BusinessPlanPage = lazyRetry(
-  () => import("@/domains/marketing/BusinessPlanPage").then((module) => ({
-    default: module.BusinessPlanPage,
-  })),
-  "BusinessPlanPage",
+export const BusinessPlanPage = lazyPage(
+  () => import("@/domains/marketing/BusinessPlanPage"), "BusinessPlanPage",
 );

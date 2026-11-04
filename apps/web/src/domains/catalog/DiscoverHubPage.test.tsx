@@ -228,8 +228,14 @@ describe("DiscoverHubPage", () => {
       status: ["completed"],
     });
     expect(onChangeSort).toHaveBeenCalledWith("rating");
-    expect(screen.getByTestId("explore-rea-reading-tempo-bar").textContent).toContain(
-      "Tapas·WEBTOON 스낵 스크롤 (30~45컷)",
-    );
+    const readingTempoBar = screen.getByTestId("explore-rea-reading-tempo-bar");
+    fireEvent.click(within(readingTempoBar).getByRole("button", {
+      name: "Tapas·WEBTOON·MANGA Plus 글로벌 동시연재 (30~45컷)",
+    }));
+    expect(onApplyFilters).toHaveBeenLastCalledWith({
+      ...EMPTY_TITLE_FILTERS,
+      status: ["ongoing"],
+    });
+    expect(onChangeSort).toHaveBeenLastCalledWith("newest");
   });
 });

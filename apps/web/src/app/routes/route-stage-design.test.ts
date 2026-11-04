@@ -46,6 +46,7 @@ describe("전체 경로의 시각 분류 계약", () => {
     ["/community/cafes/atelier/manage", "community", "project-romance"],
     ["/title/long-story", "catalog", "project-crimson"],
     ["/about/technology/guides", "learn", "background-city"],
+    ["/business-plan", "learn", "background-city"],
     ["/settings/integrations", "account", "character-blue"],
     ["/production/projects/project-1/episodes/episode-2", "production", "canvas-noir"],
     ["/privacy", "system", "hero"],
