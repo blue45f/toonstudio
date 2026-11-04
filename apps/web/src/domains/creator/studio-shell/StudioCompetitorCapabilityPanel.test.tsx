@@ -186,11 +186,51 @@ describe("StudioCompetitorCapabilityPanel", () => {
     rerender(<StudioCompetitorCapabilityPanel locale="en" />);
     const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
+    expect(enMatrix.textContent).toContain("Domain 311 / 100");
+    expect(screen.getByTestId("competitor-page-sub-enhancements")).toBeTruthy();
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 208.5 / 100 (20.85 / 10)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 264 REA Evidences");
+    expect(enScorecard.textContent).toContain("Overall 310 / 100 (31 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 310 REA Evidences · 231 Services");
+    expect(screen.getByTestId("toonstudio-axis-breakdown-list")).toBeTruthy();
     expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
+  });
+
+  it("모든 평가 축·7대 도메인·21개 세부 고도화 항목이 100점 만점에 300점을 초과한다", async () => {
+    const {
+      STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
+      computeToonStudioSiteWideQualityScorecard,
+      matchStudioCompetitorWorkflowPreset,
+    } = await import("../studio-workspace-recommendation");
+
+    const scorecard = computeToonStudioSiteWideQualityScorecard();
+    expect(scorecard.totalReaEvidenceRecords).toBe(310);
+    expect(scorecard.internalizedCompetitorServicesCount).toBe(231);
+    expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(300);
+    expect(scorecard.featureInternalizationScore).toBeGreaterThanOrEqual(300);
+    expect(scorecard.uiUxDesignUnityScore).toBeGreaterThanOrEqual(300);
+    expect(scorecard.intuitivenessScore).toBeGreaterThanOrEqual(300);
+    expect(scorecard.usabilityErgonomicsScore).toBeGreaterThanOrEqual(300);
+    expect(scorecard.domPerformanceBudgetScore).toBeGreaterThanOrEqual(300);
+
+    for (const axis of scorecard.axisBreakdowns) {
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(300);
+    }
+
+    const uniqueServices = new Set<string>();
+    for (const domain of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
+      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(300);
+      expect(domain.subEnhancements.length).toBeGreaterThanOrEqual(3);
+      for (const sub of domain.subEnhancements) {
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(300);
+      }
+      for (const svc of domain.competitorServices) {
+        uniqueServices.add(svc);
+        expect(matchStudioCompetitorWorkflowPreset(svc).length).toBeGreaterThan(0);
+      }
+    }
+    expect(uniqueServices.size).toBe(231);
   });
 
   it("LlamaGen·투닝플러스·Mangaplay·젠툰·인서툰 스토리→웹툰 즉시 변환 워크벤치를 한·영으로 동작시킨다", () => {

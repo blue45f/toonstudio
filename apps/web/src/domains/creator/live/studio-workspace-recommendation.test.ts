@@ -45,23 +45,32 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 189개 글로벌·국내 스타트업 서비스 전수가 검색 매칭되고 DOM 예산 및 208.5/100 스코어를 충족한다", () => {
+  it("7대 도메인 231개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·세부 고도화 항목이 300/100을 초과한다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(264);
+    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(310);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
-    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(189);
-    expect(scorecard.overallScore100).toBeGreaterThan(200);
-    expect(scorecard.overallScore10).toBeGreaterThan(20);
+    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(231);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(300);
+    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(30);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
     expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
+    expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
 
-    for (const alias of ["투닝플러스", "튜닝플러스", "Mangaplay", "LlamaGen.AI", "젠툰", "인서툰", "봄툰", "크레페", "팬딩", "콜로소"]) {
+    for (const axis of scorecard.axisBreakdowns) {
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(300);
+    }
+
+    for (const alias of ["투닝플러스", "튜닝플러스", "Mangaplay", "LlamaGen.AI", "젠툰", "인서툰", "봄툰", "크레페", "팬딩", "콜로소", "레터웍스", "letr.ai", "메챠코믹", "산돌구름"]) {
       expect(matchStudioCompetitorWorkflowPreset(alias).length).toBeGreaterThan(0);
     }
 
     for (const benchmark of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
+      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(300);
       expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);
       expect(benchmark.liveEvidenceIds.length).toBeGreaterThan(0);
+      for (const sub of benchmark.subEnhancements) {
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(300);
+      }
       for (const serviceName of benchmark.competitorServices) {
         const matches = matchStudioCompetitorWorkflowPreset(serviceName);
         expect(matches.length, `Missing workflow preset alias for ${serviceName}`).toBeGreaterThan(0);
