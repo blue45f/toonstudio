@@ -9,8 +9,8 @@ import { describe, expect, it } from "vitest";
  *
  * 2026-10-08 이전에는 스크립트가 `TOONSPECTRUM_APPROVED_MAIN_SHA`(소문자 40자리 SHA, main, 깨끗한
  * 작업 트리, HEAD 일치)를 요구하는데 배포 명령을 적은 문서는 승인 문구만 적어 그대로 따라 하면 배포가
- * 중단되었다. 또 DEPLOY.md 일부는 Neon 을 운영 원장처럼 적었다(정본은 Supabase PostgreSQL 이 현재 권위,
- * Neon 은 legacy 보존 — docs/operations/canonical-database-topology.md). 읽기 전용 파일 대조이며
+ * 중단되었다. 현재 DB·API 권위는 2026-10-23 컷오버와 인프라 지도의 onpod 행을 따른다.
+ * 퇴역 제공자의 기록과 현재 운영 표를 구분한다. 읽기 전용 파일 대조이며
  * 배포 명령을 실행하지 않는다.
  */
 
@@ -66,17 +66,24 @@ describe.each(DEPLOY_COMMAND_DOCS)("%s", (file) => {
 describe.each(DATABASE_AUTHORITY_DOCS)("%s 의 운영 DB 서술", (file) => {
   const text = read(file);
 
-  it("Supabase PostgreSQL 을 현재 권위로 적는다", () => {
-    expect(text).toMatch(/Supabase PostgreSQL/u);
+  it("현재 API·DB 권위 행은 정본 인프라 지도의 onpod 컷오버와 일치한다", () => {
+    const map = read("docs/operations/infrastructure-map.md");
+    expect(map).toContain("문서 상태: **current**");
+    expect(map).toContain("`toonstudio-api`");
+    expect(map).toContain("`toonstudio-db`");
+    const rows = text.split("\n");
+    expect(rows.find((line) => /^\|\s*Core API\s*\|/u.test(line))).toContain("onpod `toonstudio-api`");
+    expect(rows.find((line) => /^\|\s*(?:DB|PostgreSQL 원장)\s*\|/u.test(line))).toContain("onpod `toonstudio-db`");
+    expect(text).toContain("infrastructure-map.md");
     expect(text).not.toContain("Neon/호환");
     expect(text).not.toMatch(/Neon 또는 호환/u);
   });
 
-  it("Neon 을 말하는 모든 줄은 legacy 보존 또는 과거 기준임을 함께 밝힌다", () => {
+  it("Neon 언급은 legacy·과거·퇴역·삭제 상태를 명시한다", () => {
     const offenders = text
       .split("\n")
       .map((line, index) => ({ line, number: index + 1 }))
-      .filter(({ line }) => /Neon/u.test(line) && !/legacy|과거/u.test(line))
+      .filter(({ line }) => /Neon/u.test(line) && !/legacy|과거|퇴역|삭제/u.test(line))
       .map(({ line, number }) => `${file}:${number} ${line.trim()}`);
     expect(offenders).toEqual([]);
   });

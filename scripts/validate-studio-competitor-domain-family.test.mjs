@@ -17,6 +17,6 @@ test("the expanded committed competitor registry is internally valid", () => {
   const registry = JSON.parse(fs.readFileSync(STUDIO_COMPETITOR_REGISTRY_PATH, "utf8"));
   assert.deepEqual(validateStudioCompetitorRegistry(registry), []);
   const summary = summarizeStudioCompetitorRegistry(registry);
-  assert.equal(summary.productCount, 62);
+  assert.equal(summary.productCount, 70);
   assert.ok(Object.values(summary.byCategory).every((count) => count > 0));
 });

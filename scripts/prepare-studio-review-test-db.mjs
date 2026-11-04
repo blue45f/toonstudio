@@ -34,6 +34,7 @@ try {
     "0019_studio_ai_request_receipt.sql",
     "0060_studio_ai_free_provider_expansion.sql",
     "0064_studio_project_graph_v3.sql",
+    "0067_creator_role_workspace_personalization.sql",
     "0077_membership_operations.sql",
     "0082_studio_review_policy.sql",
     "0083_studio_review_vote_epoch.sql",

@@ -2,11 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import { BRUSH_PRESETS } from "../studio-brush";
 
-import { filterStudioBrushCatalogItems, studioBrushCatalogItemById } from "./studio-brush-catalog";
+import { filterStudioBrushCatalogItems, studioBrushCatalogItemById, STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS } from "./studio-brush-catalog";
 import { STUDIO_BRUSH_DISCOVERY } from "./studio-brush-discovery";
 import { STUDIO_SUB_TOOL_PALETTE_CATEGORIES } from "./studio-sub-tool-palette-data";
 
 describe("brush discovery without destructive catalogue migration", () => {
+  it("distinguishes every paint choice by its visible accessible name", () => {
+    const names = STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS.map((item) => item.name);
+    expect(new Set(names).size).toBe(names.length);
+    const matches = filterStudioBrushCatalogItems({ query: "교차 해칭", includeV6: true });
+    expect(matches.map((item) => item.id)).toEqual(expect.arrayContaining(["web-cross-hatch-pen", "v6:hatching-crosshatch"]));
+    expect(studioBrushCatalogItemById("v6:hatching-crosshatch")?.name).toBe("문서 고정 교차 해칭 펜");
+  });
   it("offers 18 genuinely named shortcut choices in six usable categories", () => {
     const tools = STUDIO_SUB_TOOL_PALETTE_CATEGORIES.flatMap((group) => group.tools);
     expect(tools).toHaveLength(18);

@@ -643,7 +643,8 @@ test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 c
     "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
     "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
     "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp",
-    "/apps/web/public/vrm/LICENSES.md", ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
+    "/apps/web/public/vrm/LICENSES.md",
+    ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   ];
   const owned = {
     product: ["/docs/", ...[

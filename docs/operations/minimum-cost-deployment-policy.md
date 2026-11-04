@@ -3,6 +3,11 @@
 결정일: 2026-09-15 · 결정자: 저장소 소유자 · 범위: ToonStudio 운영 인프라 전체.
 이 문서는 과거의 main 자동 배포, `[deploy]` 예외, Vercel 중심 릴리스 지침을 대체한다.
 
+> **2026-10-23 컷오버 반영:** Core API·PostgreSQL 원장은 onpod 서울로 옮겼다.
+> 현재 리소스·실행 절차와 승인 경계는 [인프라 지도](./infrastructure-map.md)를 따른다.
+> 아래 Render 제공자 전용 명령·비밀 저장 위치는 과거 기록이며 현재 onpod에 적용하지 않는다.
+> 자동 배포 금지·단일 쓰기 권위·유료 자동 승격 금지 원칙은 유지한다.
+
 ## 운영 권위
 
 | 배포 단위 | 기본 운영 권위 | 비고 |
@@ -10,9 +15,9 @@
 | SPA·정적 카탈로그·일반 에셋 | Cloudflare Static Assets | 정적 요청은 Worker 실행량을 사용하지 않는다. |
 | 동적 경로 게이트웨이·edge liveness | Cloudflare Worker | `/api/health/live`는 Core API를 깨우지 않는다. |
 | 대형 불변 파일 | 압축 Static Assets + R2 | Range 요청만 R2 원본을 사용한다. |
-| Core API | Render `toonspectrum-core-api` | `API_RUNTIME_ROLE=full`, 수동 release, scale-to-zero. |
+| Core API | onpod `toonstudio-api`(서울) | `API_RUNTIME_ROLE=full`, 이미지 지정 수동 릴리스. 승인 경계는 인프라 지도 참조. |
 | 임시 실시간 조정 | Cloudflare Durable Objects | presence·cursor·comment·signaling. |
-| PostgreSQL 원장 | Supabase PostgreSQL (현재 권위, Neon은 legacy 보존) | migration은 별도 승인형 single writer. 정본은 [`canonical-database-topology.md`](./canonical-database-topology.md). |
+| PostgreSQL 원장 | onpod `toonstudio-db`(서울; 과거 Supabase 미사용·Neon 삭제) | migration은 별도 승인형 single writer. 정본은 [`canonical-database-topology.md`](./canonical-database-topology.md)의 컷오버 기록과 인프라 지도. |
 
 ## 변하지 않는 기본 원칙
 

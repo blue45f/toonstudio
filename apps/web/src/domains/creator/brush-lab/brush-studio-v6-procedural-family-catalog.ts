@@ -116,7 +116,7 @@ const DESCRIPTORS: readonly ProceduralDescriptor[] = [
       unit("reservoir", "채움 농도"), unit("relief", "윤곽선 두께")],
     tuning: { size: 24, spacing: 0.12, opacity: 1, flow: 1, patternDensity: 0.5, patternJitter: 0, reservoir: 0.9, relief: 0.25,
       primaryColor: "#7c3aed", secondaryColor: "#1e1b4b" } },
-  { model: "hatching", id: "carrier-cpu-hatching-v1", recipeId: "hatching-crosshatch", group: "만화·해칭 톤", label: "교차 해칭 펜",
+  { model: "hatching", id: "carrier-cpu-hatching-v1", recipeId: "hatching-crosshatch", group: "만화·해칭 톤", label: "문서 고정 교차 해칭 펜",
     description: "Krita 공개 매뉴얼의 해칭 브러시 개념을 재구현했습니다. 문서에 고정된 평행선을 붓 범위 안에서만 드러내고, 필압으로 교차 해칭 층을 더합니다.",
     controls: [unit("patternJitter", "해칭 각도"), scale("선 간격"), unit("patternDensity", "교차 해칭 단계"), unit("relief", "선 두께")],
     tuning: { size: 36, spacing: 0.1, flow: 0.9, patternJitter: 0.2, patternScale: 1, patternDensity: 0.4, relief: 0.4,

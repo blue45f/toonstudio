@@ -344,6 +344,10 @@ test("new project flow explains a disabled start action and preserves the chosen
   await expect(page.getByRole("heading", { name: "완성할 콘텐츠를 선택하세요", exact: true })).toBeVisible();
   await expect(page.locator('[data-studio-create-format="vertical-webtoon"]')).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("combobox", { name: "시작 템플릿", exact: true })).toHaveValue("webtoon-vertical");
+  const preview = page.locator('[data-studio-create-preview="true"]');
+  await expect(preview).toHaveJSProperty("open", false);
+  await preview.locator("summary").click();
+  await expect(preview).toHaveJSProperty("open", true);
   await expect(page.locator('[data-studio-format-preview="vertical-webtoon"]')).toBeVisible();
   await expect(page.locator('[data-studio-mode-preview="webtoon"]')).toBeVisible();
   await expect(page.locator('[data-studio-auxiliary-workspaces="true"]')).not.toHaveAttribute("open", "");
@@ -352,7 +356,11 @@ test("new project flow explains a disabled start action and preserves the chosen
   await projectName.fill("");
   const startButton = page.locator('button[aria-describedby*="studio-create-disabled-reason"]');
   await expect(startButton).toBeDisabled();
-  await expect(page.getByText("프로젝트 이름을 입력해 주세요.", { exact: true })).toBeVisible();
+  const reason = page.locator("#studio-create-disabled-reason");
+  await expect(reason).toBeVisible();
+  await expect(reason).toContainText("프로젝트 이름을 입력해 주세요.");
+  await reason.getByRole("button", { name: "이름 입력하기", exact: true }).click();
+  await expect(projectName).toBeFocused();
 
   await projectName.fill("별빛 식당 1화");
   await expect(startButton).toHaveCount(0);

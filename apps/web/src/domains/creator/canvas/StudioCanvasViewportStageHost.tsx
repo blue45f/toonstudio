@@ -786,7 +786,7 @@ export function StudioCanvasViewportStageHost({
                 selected,
                 selectionLockState,
                 selectionRotatable,
-                singleDrawFreeScale,
+                singleDrawFreeScale: singleDrawFreeScale && !viewport.nodeEditArmed,
                 singleObjectDragLayerRef: interaction.singleObjectDragLayerRef,
                 liveTransformDraftStore,
                 liveTransformDraftScope,

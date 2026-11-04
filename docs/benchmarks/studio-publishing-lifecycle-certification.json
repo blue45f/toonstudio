@@ -26,8 +26,8 @@
       "title": "Reader visibility and community policy",
       "outcome": "Public, link-only and private publication policies control reader access, comments, remix and public metadata consistently.",
       "evidence": [
-        "apps/web/src/domains/creator/creator-publication-reader.test.ts",
-        "apps/web/src/domains/creator/creator-publication-page-meta.test.tsx",
+        "apps/web/src/domains/creator/studio-cuttoon-editor/creator-publication-reader.test.ts",
+        "apps/web/src/domains/creator/export/creator-publication-page-meta.test.tsx",
         "apps/web/src/shared/lib/creator-community-publication-contract.test.ts"
       ]
     },
@@ -36,9 +36,9 @@
       "title": "Generic, WEBTOON and Tapas delivery packages",
       "outcome": "Destination packages are deterministic, privacy-safe, policy-versioned, finalized with hashes, and checked against committed goldens.",
       "evidence": [
-        "apps/web/src/domains/creator/studio-publication-preflight.test.ts",
-        "apps/web/src/domains/creator/studio-publish-package.test.ts",
-        "apps/web/src/domains/creator/studio-publish-package-renderer.test.ts",
+        "apps/web/src/domains/creator/scene3d/studio-publication-preflight.test.ts",
+        "apps/web/src/domains/creator/export/studio-publish-package.test.ts",
+        "apps/web/src/domains/creator/export/studio-publish-package-renderer.test.ts",
         "scripts/verify-studio-publish-package-goldens.test.ts"
       ]
     },
@@ -56,7 +56,7 @@
       "title": "Privacy-preserving publication analytics",
       "outcome": "User-supplied CSV and manual observations are bounded, normalized and compared locally without claiming remote platform telemetry.",
       "evidence": [
-        "apps/web/src/domains/creator/studio-publication-analytics.test.ts",
+        "apps/web/src/domains/creator/studio-cuttoon-editor/studio-publication-analytics.test.ts",
         "apps/web/src/domains/creator/studio-publication-analytics-loader.test.ts"
       ]
     }
