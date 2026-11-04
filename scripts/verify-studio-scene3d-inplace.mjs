@@ -38,12 +38,10 @@ const csp = production
       ?.trim()
   : null;
 if (production && !csp) throw new Error("Production CSP is missing.");
-// 제품은 Creator Bundle 테마 팩 카탈로그를 정적 자산으로 서빙하고, 모델 라이브러리는 해시로 모델을 찾을 때
-// 이 파일을 fetch 한다(bg3d-model-library.ts → loadStudioBg3dBundleThemePackRecordByHash). publicDir:false
-// 하니스는 이 URL 이 404 라 콘솔 오류 3건이 생겨 바깥 게이트가 실패했다. 오류를 제외하지 않고, 공개 폴더
-// 전체가 아니라 정확히 이 파일 하나만 같은 URL 로 서빙해 제품과 같은 응답을 준다. 프로덕션 워커 모드(CI)는
-// 아래 /assets/ 분기가 dist 의 같은 파일을 서빙하므로 이 파일을 쓰지 않는다.
-const THEME_PACKS_PATH = "/assets/3d/environments/bundle-v1/theme-packs.json";
+// 제품과 같은 릴리스의 해시 카탈로그를 서빙한다. 이전 고정 파일명은 제품 요청과 달라 404가 난다.
+// 프로덕션 worker 모드에서는 아래 /assets/ 분기가 dist의 실제 카탈로그를 서빙한다.
+const THEME_PACKS_PATH = JSON.parse(readFileSync(join(REPO_ROOT,
+  "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-release.generated.json"), "utf8")).catalog.url;
 const themePacksFile = join(WEB_PUBLIC, THEME_PACKS_PATH);
 if (!production && !existsSync(themePacksFile))
   throw new Error(
