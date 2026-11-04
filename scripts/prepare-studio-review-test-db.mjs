@@ -47,11 +47,12 @@ try {
     "0116_studio_review_comment_pen_strokes.sql",
     "0117_studio_scoped_write_policy.sql",
     "0119_studio_review_voice_note_guard_schema.sql",
+    "0121_studio_bg3d_six_pass_bundle.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }
   const triggers = await pool.query("SELECT tgname FROM pg_trigger WHERE NOT tgisinternal AND tgname LIKE 'studio_%'");
-  for (const required of ["studio_revision_immutable_update", "studio_revision_topology_revision", "studio_revision_topology_parent", "studio_artifact_revision_pointer_check", "studio_review_snapshot_check", "studio_review_reviewer_check", "studio_review_comment_anchor_check", "studio_review_comment_strokes_check", "studio_review_policy_guard_trigger", "studio_review_policy_event_guard_trigger", "studio_review_group_approval_check", "studio_pinned_review_share_immutable_update", "studio_pinned_review_feedback_immutable_update", "studio_review_delivery_guard_update", "studio_review_delivery_event_immutable_update", "studio_review_voice_note_guard_update"]) {
+  for (const required of ["studio_revision_immutable_update", "studio_revision_topology_revision", "studio_revision_topology_parent", "studio_artifact_revision_pointer_check", "studio_review_snapshot_check", "studio_review_reviewer_check", "studio_review_comment_anchor_check", "studio_review_comment_strokes_check", "studio_review_policy_guard_trigger", "studio_review_policy_event_guard_trigger", "studio_review_group_approval_check", "studio_pinned_review_share_immutable_update", "studio_pinned_review_feedback_immutable_update", "studio_review_delivery_guard_update", "studio_review_delivery_event_immutable_update", "studio_review_voice_note_guard_update", "studio_bg3d_revision_guard", "studio_bg3d_artifact_guard"]) {
     assert(triggers.rows.some((row) => row.tgname === required), `Missing database invariant: ${required}`);
   }
   console.log(`Prepared fresh review test schema with ${triggers.rows.length} Studio invariant triggers.`);

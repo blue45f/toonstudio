@@ -214,7 +214,11 @@ describe("prepareCreatorPublicationSharedDocumentPatch", () => {
 });
 
 describe("실제 Creator 협업 provider의 제한 저장 문맥", () => {
-  it.each(["viewer", "commenter", "editor"] as const)("%s의 제한 저장 문맥을 그대로 전달하고 기존 게시 정책은 보호한다", async (role) => {
+  const cases = (["viewer", "commenter", "editor"] as const).flatMap((role) => [
+    { role, reader: "기본 reader", capabilities: undefined },
+    { role, reader: "6패스 reader", capabilities: ["bg3d-sixpass-bundle.v1"] },
+  ]);
+  it.each(cases)("$role의 $reader 문맥을 그대로 전달하고 기존 게시 정책은 보호한다", async ({ role, capabilities }) => {
     const current = completeDirective({ visibility: "unlisted", comments: "closed", allowRemix: false });
     const shared: CreatorSharedDocument = { ...sharedDocument({ role, doc: writeCreatorPublicationDirective({ original: true }, current) }),
       workId: "work-1", status: "active", capabilities: { view: true, edit: role === "editor" },
@@ -232,10 +236,14 @@ describe("실제 Creator 협업 provider의 제한 저장 문맥", () => {
       // CreatorModule과 같은 factory와 주입 토큰 타입으로 호출해 실제 override를 통과한다.
       const repository: CreatorCollaborationRepository = creatorPublicationCollaborationRepositoryProvider.useFactory(new MembershipOperationsService());
       expect(repository).toBeInstanceOf(CreatorPublicationCollaborationRepository);
-      await expect(repository.saveSharedDocument("actor-1", "work-1", 4, 9n, patch, scoped)).resolves.toEqual(response);
+      const operation = capabilities
+        ? repository.saveSharedDocument("actor-1", "work-1", 4, 9n, patch, scoped, capabilities)
+        : repository.saveSharedDocument("actor-1", "work-1", 4, 9n, patch, scoped);
+      await expect(operation).resolves.toEqual(response);
       expect(read).toHaveBeenCalledExactlyOnceWith("actor-1", "work-1");
-      expect(save).toHaveBeenCalledExactlyOnceWith("actor-1", "work-1", 4, 9n, expect.objectContaining({ doc: expect.any(Object) }), scoped);
+      expect(save).toHaveBeenCalledExactlyOnceWith("actor-1", "work-1", 4, 9n, expect.objectContaining({ doc: expect.any(Object) }), scoped, capabilities ?? []);
       expect(save.mock.calls[0]?.[5]).toBe(scoped);
+      if (capabilities) expect(save.mock.calls[0]?.[6]).toBe(capabilities);
       const forwardedPatch = save.mock.calls[0]?.[4];
       expect(forwardedPatch?.doc).toMatchObject({ changedContent: true });
       expect(readCreatorPublicationDirective(forwardedPatch?.doc)).toMatchObject({ visibility: "unlisted", comments: "closed", allowRemix: false });

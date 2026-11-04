@@ -37,7 +37,7 @@ jobs:
       # Related tests validate tracked documentation evidence; retain docs.
       # 환경 팩·VRM 카탈로그·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, 캐릭터 썸네일, 해당 VRM 폴더)을 함께 받는다. 전체 VRM 폴더 같은 무관한 자산 트리는 받지 않는다.
       # 일러스트 팩 무결성 시험(studio-illustration-pack)은 원본 PNG·SOURCE.json·PROMPTS.json 을 디스크에서 읽는다(약 33 MB).
-      # Creator Bundle 테마 팩·권리 원장 시험은 공개 JSON 두 개(theme-packs.json, 공식 81팩 카탈로그 manifest.json)를 디스크에서 읽는다.
+      # Creator Bundle 시험은 공개 JSON·권리 원장을 읽고, PR Nature 시험은 정본 hash가 결박된 JSON 원본도 읽는다.
       # PR의 세 파생 팩은 인증이 유효한 최초 체크아웃에 포함하고 수동 검사는 manifest만 유지한다.
       - name: Checkout focused ToonStudio source
         uses: actions/checkout@v7
@@ -60,6 +60,7 @@ jobs:
             /apps/web/public/assets/3d/environments/expansion-v1/thumbnails/library_reading_room.png
             /apps/web/public/assets/3d/environments/mcp-free-v1/
             /apps/web/public/assets/3d/environments/bundle-v1/theme-packs.json
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/bundle-v1/theme-packs.e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4.json' || '' }}
             /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
             /apps/web/public/assets/3d/ENVIRONMENT_LICENSES.md
             /apps/web/public/assets/studio/cc0-20260906/manifest.json
@@ -112,6 +113,10 @@ jobs:
             /apps/web/public/vrm/Darkness_Shibu.vrm
             /apps/web/public/vrm/Jennifer.vrm
             /apps/web/public/vrm/Jimmy.vrm
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Kate.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Erika.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Olivia.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Cyberpal.vrm' || '' }}
             /apps/web/public/vrm/Sakurada_Fumiriya.vrm
             /apps/web/public/vrm/Vivi.vrm
             /apps/web/public/vrm/Victoria_Rubin.vrm

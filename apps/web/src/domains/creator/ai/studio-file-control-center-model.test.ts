@@ -77,9 +77,17 @@ describe("studio file control center model", () => {
   });
 
   it("blocks files that exceed the audited single-file budget", () => {
+    const maxFileBytes = 544 * 1024 * 1024;
+    const boundary = inspectStudioFileCandidate({
+      name: "at-limit.toonproject.zip",
+      size: maxFileBytes,
+    });
+    expect(boundary.maxFileBytes).toBe(maxFileBytes);
+    expect(boundary.withinSizeBudget).toBe(true);
+    expect(boundary.actionId).toBe("archive-recovery");
     const report = inspectStudioFileCandidate({
       name: "too-large.toonproject.zip",
-      size: 281_000_000,
+      size: maxFileBytes + 1,
     });
 
     expect(report.withinSizeBudget).toBe(false);

@@ -1,6 +1,7 @@
 # 실제 6패스 LT 원고 저장·전달 구현과 검증 경계
 
 - 상태: **migration — 승인 범위의 로컬 구현·최종 회귀·화면 왕복 검증 완료, 운영 미반영**
+- 최신 main 결합과 CI 범위: [통합 검증 기록](bg3d-six-pass-main-integration-2026-11-05.md). 아래 결과는 명시한 원본 검증 시점의 기록이다.
 - 작성일: 2026-11-05
 - 기준 SHA: `fa68e24ef8b100f8971fbd402714e5d7c3287d4e`
 - 작업트리: `codex/bg3d-six-pass-handoff-20261104`
@@ -174,7 +175,7 @@ page error·자동화 명령 오류·외부 HTTP 요청이 모두 0이며 이전
   전체 기능과 동등하다는 의미가 아니다. Higgsfield 외부 서비스 실행은 검증하지 않았다.
 
 
-## 6. 최종 산출물과 적용 상태
+## 6. 원본 검증 시점의 산출물과 적용 상태
 
 - 브라우저 최종 실행·픽셀 비교: `handoff-v5-final-clean-summary.json`,
   `handoff-v5-final-clean-verification.json`. 실패한 이전 실행과 결과를 합산하지 않았다.
@@ -182,7 +183,7 @@ page error·자동화 명령 오류·외부 HTTP 요청이 모두 0이며 이전
   실제 원고 PNG: `handoff-v5-final-clean-webtoon-2x.png`.
 - 브라우저 production 소스 9,660개와 최종 검증 대상 변경 파일 235개의 SHA-256이
   실제 테스트 후 파일과 일치했다. 전체 Git 변경과 검증 로그는 별도 evidence index·patch로 보존한다.
-- 작업 브랜치: `codex/bg3d-six-pass-handoff-20261104`, 기준 HEAD
+- 원본 검증 당시 작업 브랜치: `codex/bg3d-six-pass-handoff-20261104`, 기준 HEAD
   `fa68e24ef8b100f8971fbd402714e5d7c3287d4e` 위의 검토 가능한 미커밋 변경이다.
   이 후속 작업에서 새 커밋·push·PR·병합·운영 migration·배포는 실행하지 않았다.
 - 사업계획서에 사용할 수 있는 범위는 “내부 기본 도형 기반의 3D 배경을 실제 6개 LT 래스터

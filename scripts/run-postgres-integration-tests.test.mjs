@@ -242,15 +242,16 @@ describe("PostgreSQL integration test runner", () => {
     ).toBe("true");
   });
 
-  it("등록된 PostgreSQL 통합 스위트 27개를 직렬 실행한다", () => {
-    expect(POSTGRES_INTEGRATION_SUITES).toHaveLength(27);
+  it("등록된 PostgreSQL 통합 스위트 28개를 직렬 실행한다", () => {
+    expect(POSTGRES_INTEGRATION_SUITES).toHaveLength(28);
+    expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/creator/studio-bg3d-bundle.repository.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/creator/studio-role-pipeline-migration.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("scripts/production-release-compatibility.integration.test.mjs");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts");
-    expect(new Set(POSTGRES_INTEGRATION_SUITES)).toHaveProperty("size", 27);
+    expect(new Set(POSTGRES_INTEGRATION_SUITES)).toHaveProperty("size", 28);
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/platform/database/admin-schema.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts");

@@ -66,11 +66,15 @@ test("통합 테스트 위치를 허용하면서 경로 이탈과 명령 인자�
   const targets = [
     ...REQUIRED_VITEST_TARGETS,
     "tests/integration/web-api/studio-history-regression.test.ts",
+    "tests/unit/contracts/synthetic-contract.test.ts",
   ].sort();
   assert.doesNotThrow(() => assertShardManifest(targets));
   for (const unsafe of [
     "tests/integration/../../outside.test.ts",
     "tests/fixtures/ignored.test.ts",
+    "tests/unit/other/case.test.ts",
+    "tests/unit/contracts-sibling/case.test.ts",
+    "tests/unit/contracts/../outside.test.ts",
     "--run",
     "tests/integration/case.test.ts;exit",
   ]) {
@@ -489,4 +493,21 @@ test("필수 목록의 시험 파일은 루트 Vitest 설정이 제외하지 않
   ]);
   assert.ok(excluded.has("scripts/local-test-stack.test.mjs"), "제외 목록 파서가 파일 항목을 읽지 못했습니다.");
   assert.deepEqual(REQUIRED_VITEST_TARGETS.filter((target) => excluded.has(target)), []);
+});
+
+
+test("6패스 원본 계약·GPU 계산·문서 복구·실제 DB 경계를 각각 필수 실행한다", () => {
+  const execution = executionTargetsByShard();
+  const files = Object.fromEntries(SHARD_NAMES.map((name) => [name, resolveRequiredTargets(expandGlobTargets(execution[name]))]));
+  const nativePg = "apps/api/src/modules/creator/studio-bg3d-bundle.repository.integration.test.ts";
+  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(nativePg));
+  assert.ok(buildShardVitestArgs(expandGlobTargets(execution.product)).includes(nativePg));
+  for (const [name, targets] of Object.entries({
+    product: ["apps/api/src/modules/creator/studio-bg3d-linked-pass-admission.test.ts", "apps/api/src/modules/creator/studio-crdt-bg3d-reader-gate.test.ts"],
+    "studio-3d": ["apps/web/src/domains/creator/bg3d/studio-bg3d-canvas-renderer-admission.test.tsx", "apps/web/src/domains/creator/bg3d/studio-bg3d-three-six-pass-capture.test.ts", "apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-project-archive.test.ts"],
+    "studio-foundation": ["tests/unit/contracts/studio-bg3d-six-pass-bundle.test.ts", "tests/integration/api-web/api/modules/creator/studio-crdt-bg3d-native-history.test.ts", "apps/web/src/domains/creator/scene3d/bg3d-six-pass/studio-bg3d-six-pass-cloud-project.test.ts", "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-history-retention.test.ts"],
+  })) for (const target of targets) {
+    assert.equal(shardForTarget(target), name, target);
+    assert.deepEqual(SHARD_NAMES.filter((owner) => files[owner].includes(target)), [name], `6패스 회귀 실행 소유 누락·중복: ${target}`);
+  }
 });
