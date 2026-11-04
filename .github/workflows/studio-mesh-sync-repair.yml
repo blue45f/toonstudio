@@ -24,7 +24,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  collaboration-sync:
+  macos-sync-contracts:
+    name: macOS 동기화 계약
     runs-on: macos-14
     timeout-minutes: 25
     env:
@@ -45,5 +46,58 @@ jobs:
         run: pnpm exec vitest run apps/web/src/domains/creator/live/studio-crdt-room-binding.test.ts apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.test.ts apps/web/src/domains/creator/live/studio-live-p2p-reconnect.test.ts apps/web/src/domains/creator/live/studio-live-collaboration-transport.test.ts apps/web/src/domains/creator/live/studio-live-signaling-server-transport.test.ts apps/web/src/domains/creator/live/studio-live-collaboration-room.ink.test.ts apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts apps/web/src/domains/creator/live/studio-mesh-sync-regression.test.ts
       - name: Lint collaboration changes
         run: pnpm exec eslint apps/web/src/domains/creator/live/studio-crdt-room-binding.ts apps/web/src/domains/creator/live/studio-live-p2p-overlay-transport.ts apps/web/src/domains/creator/live/studio-live-p2p-channel-lifecycle.ts apps/web/src/domains/creator/live/studio-live-p2p-reconnect.test.ts apps/web/src/domains/creator/live/studio-mesh-sync-regression.test.ts
-      - name: Check application types
+  application-typecheck:
+    name: 전체 웹·API 타입 검사
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/assets/
+            /apps/web/public/assets/virtual-studio/world/
+            /apps/web/public/assets/3d/environments/refined-v6/manifest.json
+            /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
+            /apps/web/public/assets/3d/environments/expansion-v1/manifest.json
+            /apps/web/public/assets/3d/environments/webtoon-v7/manifest.json
+            /apps/web/public/assets/3d/environments/mcp-free-v1/manifest.json
+            /apps/web/public/assets/3d/environments/authored-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
+            /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
+            /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
+            !/apps/web/public/vrm/
+            !/artifacts/
+            !/docs/
+            /docs/AGENTS.md
+            /docs/operations/agent-harness.md
+            !/tests/benchmarks/results/
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 전체 타입 입력과 두 플랫폼 집계 계약 검사
+        run: node --test scripts/studio-mesh-sync-typecheck-policy.test.mjs
+      - name: 웹·API 전체 타입 검사
         run: pnpm run typecheck
+
+  collaboration-sync:
+    needs: [macos-sync-contracts, application-typecheck]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: macOS 동기화와 전체 타입 검사 모두 성공해야 통과
+        env:
+          MACOS_RESULT: ${{ needs['macos-sync-contracts'].result }}
+          TYPECHECK_RESULT: ${{ needs['application-typecheck'].result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$MACOS_RESULT" = success
+          test "$TYPECHECK_RESULT" = success
