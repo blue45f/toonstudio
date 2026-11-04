@@ -16,7 +16,7 @@ export function StudioVirtualSpaceSilentZoneBadge({ zone, mutedByZone }: StudioV
   const bt = useBilingual("StudioVirtualSpaceSilentZoneBadge");
   if (!zone) return null;
   return (
-    <div role="status" aria-label={bt("조용한 구역", "Silent zone")}>
+    <div className="space-silent-zone-badge" role="status" aria-label={bt("조용한 구역", "Silent zone")}>
       <strong>{bt("조용한 구역", "Silent zone")}</strong>
       <span> · {zone.name}</span>
       {mutedByZone ? (

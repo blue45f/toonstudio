@@ -2361,6 +2361,82 @@ button.space-location__pulse:hover {
   .space-joystick .studio-vspace-joystick { width: 5.75rem; height: 5.75rem; }
 }
 
+/* 조용한 구역 안내: 예전에는 스타일이 없어 월드 위에 글자만 떠 있었고(대비 부족), 공정 바와도 겹쳤다. 다른 칩처럼 유리 알약 위에 둔다. */
+.space-silent-zone-badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 4px;
+  max-width: min(100%, 360px);
+  padding: 7px 12px;
+  border: 1px solid var(--space-border);
+  border-radius: 14px;
+  background: var(--space-surface);
+  box-shadow: var(--space-shadow);
+  backdrop-filter: blur(12px);
+  color: var(--color-fg);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.space-silent-zone-badge strong { font-weight: 800; }
+.space-silent-zone-badge small { flex-basis: 100%; color: var(--color-fg-2); font-size: 11px; }
+
+/* 상단 왼쪽 칸에서 위치 칩·상태 칩 아래로 쌓이는 카드(첫 방문 안내·구역 작업 바·조용한 구역 안내)는 공정 바(둘째 줄) 아래에서 시작한다.
+   바가 같은 칸 위로 겹쳐 앞 카드의 첫 줄을 가리던 문제를 막는다. 상태 칩 자리(.space-status-slot) 바로 다음 요소 하나만 내리면 나머지는 그 아래로 이어진다. */
+@media (min-width: 1024px) and (min-height: 521px) {
+  .space-hud:has(.studio-office2d-pipeline) .space-hud__slot--top-left > .space-status-slot + * { margin-top: 58px; }
+  .space-hud:has(.studio-office2d-schematic-banner) .space-hud__slot--top-left > .space-status-slot + * { margin-top: 100px; }
+}
+@media (max-width: 1023.98px) and (min-height: 521px) {
+  .space-hud:has(.studio-office2d-pipeline) .space-hud__slot--top-left > .space-status-slot + * { margin-top: 64px; }
+  .space-hud:has(.studio-office2d-pipeline):has(.space-status-slot:not(:empty)) .space-hud__slot--top-left > .space-status-slot + * { margin-top: 82px; }
+  .space-hud:has(.studio-office2d-schematic-banner) .space-hud__slot--top-left > .space-status-slot + * { margin-top: 106px; }
+  .space-hud:has(.studio-office2d-schematic-banner):has(.space-status-slot:not(:empty)) .space-hud__slot--top-left > .space-status-slot + * { margin-top: 124px; }
+  .space-hud:has(.space-silent-zone-badge) .space-hud__slot--top-center { top: calc(var(--space-safe-top, 0px) + 72px + 58px); }
+  .space-hud:has(.space-status-slot:not(:empty)):has(.space-silent-zone-badge) .space-hud__slot--top-center { top: calc(var(--space-safe-top, 0px) + 72px + 44px + 58px); }
+  .space-hud:has(.studio-office2d-pipeline):has(.space-silent-zone-badge) .space-hud__slot--top-center { top: calc(var(--space-safe-top, 0px) + 74px + 60px + 58px); }
+  .space-hud:has(.studio-office2d-pipeline):has(.space-status-slot:not(:empty)):has(.space-silent-zone-badge) .space-hud__slot--top-center { top: calc(var(--space-safe-top, 0px) + 74px + 60px + 64px + 58px); }
+}
+
+/* 데스크톱 하단 프롬프트 줄은 왼쪽 '말 걸기' 알약(약 91px)과 오른쪽 배율 막대(빠른 배율 포함 약 300px, 접히면 약 142px)와 같은 높이에 놓인다.
+   좌우 여백을 비워 두어 집중 제안·상호작용 카드가 배율 막대나 말풍선 버튼과 겹치지 않게 하고, 좁은 화면에서는 카드 안쪽 버튼 줄이 아래로 내려가게 한다. */
+.space-context-suggestion {
+  flex-wrap: wrap;
+}
+.space-context-suggestion__text {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .space-hud__prompts {
+    box-sizing: border-box;
+    width: 100%;
+    padding-inline: 104px 312px;
+  }
+  .space-hud[data-panel-open] .space-zoom__presets {
+    display: none;
+  }
+  .space-hud[data-panel-open] .space-hud__prompts {
+    padding-inline: 104px 156px;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .space-zoom__presets {
+    display: none;
+  }
+  .space-hud__prompts {
+    padding-inline: 104px 156px;
+  }
+}
+@media (max-width: 1023.98px) {
+  .space-hud:has(.space-status-chip, .space-focus-chip) .space-chat {
+    bottom: calc(var(--immersive-dock-clearance, var(--space-dock-fallback)) + var(--space-safe-bottom) + 74px);
+  }
+  .space-hud:has(.space-context-suggestion) .space-chat--closed {
+    visibility: hidden;
+  }
+}
+
 /* 데스크톱 최소 폭(1024~1179px)에서 오른쪽 패널이 열리면 지도가 패널 왼쪽으로 밀려와 위치 칩 오른쪽(3D 전환·빠른 찾기)을 135px가량 덮었다.
    칩이 지도 앞에서 끝나도록 폭을 제한하고, 부가 알약(공간명·펄스·연결 상태·버튼 글자)을 접어 나가기·현재 구역·엔진 전환·찾기만 남긴다.
    접힌 버튼은 aria-label·title로 이름을 유지한다. */

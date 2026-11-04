@@ -43,14 +43,20 @@ API가 없는 로컬 상태라 서버 협업·실시간 음성은 "연결 중"�
 | 패널이 열린 1024~1179px에서 근접 NPC 카드가 지도 위로 삐져나옴 | 상단 가운데 칸의 시작점이 위치 칩 폭(548px) 오른쪽이라 칸 너비가 음수 | 이 폭에서만 칸을 왼쪽 끝에서 시작해 공정 바 아래 칸 안에 둠 |
 | 공정 바가 가로로 밀어야 하는데 더 있다는 표시가 없음 | 1024px 패널 열림에서 도구 버튼 4개가 스크롤 끝에 숨음 | 스크롤 위치에 맞춰 잘린 가장자리를 옅게 지움(스크롤 연동 애니메이션 미지원 브라우저는 건너뜀) |
 | 지도 구역 이름이 세밀한 아트 위에서 묻힘 | 2배율 화면에서 작은 구역 | 글자 외곽선을 55% 4px에서 86% 5px로 |
+| 조용한 구역 안내(`StudioVirtualSpaceSilentZoneBadge`)가 스타일 없이 공정 바와 겹침 | 집중 부스 진입 시 좌상단 슬롯(데스크톱·모바일) | `.space-silent-zone-badge` 유리 알약 스타일을 부여하고, 공정 바·평면도 배너 유무에 맞춰 좌상단/상단 중앙 슬롯 여백을 확보 |
+| 평면도 오버뷰 배너(`.studio-office2d-schematic-banner`)가 지도·근접 카드와 겹침 | 평면도 켜짐 + 1280px 패널 열림 또는 근접 NPC 표시 | 공정 바와 동일한 `--office2d-rail-inset-start`/`--office2d-rail-inset-end` 빈 띠 배치를 적용하고 상단 중앙 슬롯을 44px(모바일 42px) 추가 하강 |
+| 집중 제안 카드(`.space-context-suggestion`)가 데스크톱 줌 막대·3D 조명 칩·모바일 '말 걸기' 버튼과 겹침 | 집중 부스 착석 시 1024px 데스크톱, 1280px 3D 패널 열림, 500px 모바일 | 데스크톱 `.space-hud__prompts` 좌우 여백(`104px 312px` / 패널 열림·좁은 폭 `104px 156px`) 확보, 카드 내부 줄바꿈(`flex-wrap: wrap`) 허용, 3D 조명 칩 상향(`+84px` 데스크톱 / `+136px` 모바일), 모바일 제안 표시 중 닫힌 채팅 알약 숨김 |
+| 빠른 찾기(`SpacePopover` 모달 `<dialog>`)를 `Esc`나 닫기로 닫을 때 월드 캔버스로 초점이 돌아오지 않음 | `K` 팔레트 열기 후 `Esc` 또는 닫기 클릭 | `showModal()`의 비활성(inert) 잠금을 먼저 풀도록 `dialog.close()`를 `onClose()`(`focusWorld()`)보다 먼저 호출하고 `<dialog>` `Escape` 키 입력도 동일하게 연결 |
 
-- 새 시험: 테마 색 매핑(기본 테마 불변, 비기본 12개가 재질마다 6가지 이상 서로 다른 색), CSS 계약(스크롤 힌트, 좁은 폭 상단 가운데 칸).
-- 브라우저: 네온 나이트·벚꽃 캠퍼스에서 바닥·벽 색 변화와 가구·캐릭터 가독성을 확인했다. 나머지 비기본 테마 10종은 색 매핑 시험으로만 확인했고 월드 화면은 눈으로 보지 않았다.
-- 이번 후속에서는 REA(경쟁 서비스 번들 분석)를 새로 돌리지 않았다. 앞선 1~4차 REA 근거를 그대로 쓴다.
+- 새 시험: 테마 색 매핑(기본 테마 불변, 비기본 12개가 재질마다 6가지 이상 서로 다른 색), CSS 계약(스크롤 힌트, 좁은 폭 상단 가운데 칸, 평면도 배너·조용한 구역 알약·하단 프롬프트 여백), `StudioVirtualSpaceSilentZoneBadge` 클래스 검증, `SpacePopover` 모달 초점 복원 순서 검증(`SpacePopover.test.tsx`).
+- 브라우저 전수 확인:
+  - 2D 공간 테마 13종(`modern-office`, `webtoon-atelier`, `celestial-observatory`, `cinema-screening`, `cozy-wood`, `neon-night`, `garden-terrace`, `library`, `sakura-campus`, `sunset-harbor`, `forest-atelier`, `orbital-observatory`, `tidal-atelier`) 모두 실제 브라우저에서 전환하며 캔버스 픽셀 샘플(`sampleRgb`)과 이름표·방 번호판·미니맵 가독성, HUD 무겹침(`hits: []`)을 확인했다.
+  - 앱 디자인 테마 9종(`dark`, `light`, `starlight`, `aurora`, `contrast`, `sunset`, `paper`, `matcha`, `mono`) 전환 시 HUD 표면·글자 대비 및 가로 넘침 0건을 확인했다.
+  - 3D 스테이지(`3D 공간`) 전환 후 3D 공간 테마 9종(`VirtualThreeThemePicker`)과 3D VRM 아바타 9종, 조명·시점 프리셋 칩을 데스크톱(1280×720 패널 열림·닫힘)과 모바일(500×844)에서 모두 순환하며 `hits: []`, `offscreen: []`를 확인했다.
+  - 2D 협업창(`StudioVirtualSpaceWorkstationLiveModal`), 평면도 오버뷰(`평면도`), 빠른 찾기 팔레트(`K` → `Escape` 시 `CANVAS.studio-office2d__canvas`로 초점 즉시 복귀) 동작을 검증했다.
 
 ## 남은 범위(미확인·미수정)
 
 - 1024~1319px에서 패널이 열린 상태는 공정 바 도구 버튼(협업창·내 자리·평면도·공간음)이 가로 스크롤 끝에 있다. 가장자리 페이드로 더 있음은 알리지만 버튼을 앞으로 당기지는 않았다.
-- 공간 테마 13종과 일러스트 쇼케이스 12종의 월드별 충돌·좌석·애니메이션은 전수 확인하지 못했다.
 - 실제 두 기기 통화, 화면 공유, 서버 동기화는 API가 없는 로컬에서 확인하지 못했다.
 - 이동 가속(1900px/s²)·감속(2600px/s²)은 손대지 않았다. 순간 이동 전환만 추가했다.
