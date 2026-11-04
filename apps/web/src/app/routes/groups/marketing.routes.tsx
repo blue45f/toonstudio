@@ -8,6 +8,7 @@ import {
   FeaturesOverviewPage,
   IrPitchPage,
   IrPresentPage,
+  BusinessPlanPage,
   MembershipPolicyPage,
   PricingPage,
   ProductTourPage,
@@ -36,6 +37,9 @@ export const marketingRoutes = defineAppRoutes([
   // IR 발표 플레이어: 24씬 풀스크린 슬라이드 + 씬별 내레이션·배경음. /ir 본문의 발표 모드(10씬 요약)와 달리
   // 발표 전용 전체판이라 별도 경로로 두고, 진입은 /ir 페이지가 소유한다.
   { id: "marketing-ir-present", path: "/ir/present", element: <IrPresentPage /> },
+  // 사업계획서 전용 페이지: IR 발표 플레이어와 달리 2026-11-04 고도화 초안 v11의
+  // Q1–Q4와 붙임을 문항 순서대로 읽는 별도 페이지. 제출용 docx가 아니다.
+  { id: "marketing-business-plan", path: "/business-plan", element: <BusinessPlanPage /> },
   { id: "marketing-membership", path: "/membership", element: <MembershipPolicyPage /> },
   // 내비게이션 팀이 헤더/푸터에서 연결할 공개 요금제 안내. 상세 한도는 /membership이 소유한다.
   { id: "marketing-pricing", path: "/pricing", element: <PricingPage /> },

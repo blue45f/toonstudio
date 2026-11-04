@@ -95,3 +95,10 @@ export const IrPresentPage = lazyRetry(
   })),
   "IrPresentPage",
 );
+
+export const BusinessPlanPage = lazyRetry(
+  () => import("@/domains/marketing/BusinessPlanPage").then((module) => ({
+    default: module.BusinessPlanPage,
+  })),
+  "BusinessPlanPage",
+);
