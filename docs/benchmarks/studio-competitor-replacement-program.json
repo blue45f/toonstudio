@@ -391,7 +391,7 @@
       "state": "implemented",
       "evidence": [
         "packages/studio-project-model/src/ir/asset-metadata.ts",
-        "apps/web/src/domains/creator/studio-community-asset-license.test.ts"
+        "apps/web/src/domains/creator/assets/studio-community-asset-license.test.ts"
       ]
     },
     {

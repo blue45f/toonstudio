@@ -8,6 +8,7 @@ on:
       - "apps/web/src/app/routes/groups/**"
       - "apps/web/src/domains/creator/**"
       - "scripts/verify-toonstudio-feature-reachability.mjs"
+      - "scripts/feature-reachability-checkout.test.mjs"
       - ".github/workflows/toonstudio-feature-reachability.yml"
 
 permissions:
@@ -23,12 +24,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
         with:
-          version: 11.4.0
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /apps/web/src/
+            /scripts/verify-toonstudio-feature-reachability.mjs
+            /.github/workflows/toonstudio-feature-reachability.yml
+            /scripts/feature-reachability-checkout.test.mjs
       - uses: actions/setup-node@v7
         with:
           node-version: 24.16.0
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
       - run: node scripts/verify-toonstudio-feature-reachability.mjs
+      - run: node --test scripts/feature-reachability-checkout.test.mjs

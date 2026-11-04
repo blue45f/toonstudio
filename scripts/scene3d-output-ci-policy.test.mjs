@@ -16,6 +16,37 @@ const manifests = [
 ];
 
 describe("Scene3D output CI inputs", () => {
+  it("실제 3D browser 검사도 검증된 SDK 안전 경계로 체크아웃 전 공간을 확보한다", () => {
+    const scene = workflow("studio-scene3d-next.yml");
+    const cleanup = workflow("ci.yml").jobs.build.steps[0];
+    for (const [name, minutes] of [["scene3d-specialists-browser", 20], ["scene3d-tiled-browser", 25]]) {
+      const job = scene.jobs[name];
+      expect(job["runs-on"]).toBe("ubuntu-24.04");
+      expect(job["timeout-minutes"]).toBe(minutes);
+      expect(job.steps[0]).toEqual(cleanup);
+      expect(job.steps[1].uses).toBe("actions/checkout@v7");
+      expect(job.steps.some((step) => step.run === "pnpm run build:bundle")).toBe(true);
+      expect(job.steps.some((step) => step.run === "pnpm exec playwright install --with-deps chromium")).toBe(true);
+    }
+    const specialist = scene.jobs["scene3d-specialists-browser"].steps;
+    for (const command of ["pnpm run verify:studio-3d-specialists:browser", "pnpm run verify:studio-3d-inplace:browser", "node scripts/verify-studio-scene3d-recipe-reuse.mjs"]) {
+      expect(specialist.some((step) => step.run === command), command).toBe(true);
+    }
+    expect(scene.jobs["scene3d-tiled-browser"].steps.some((step) => step.run === "pnpm run verify:studio-3d-tiled:browser")).toBe(true);
+  });
+
+  it("Scene3D도 Core와 같은 전체 웹·API 타입 검사 명령을 사용한다", () => {
+    const scene = workflow("studio-scene3d-next.yml").jobs["scene3d-contracts"];
+    const core = workflow("ci.yml").jobs.typecheck;
+    expect(scene.steps.some((step) => step.run === "pnpm run typecheck")).toBe(true);
+    expect(core.steps.some((step) => step.run?.includes("pnpm run typecheck"))).toBe(true);
+    expect(scene["timeout-minutes"]).toBe(20);
+    const command = JSON.parse(readFileSync(new URL("package.json", repoRoot), "utf8")).scripts.typecheck;
+    expect(command).toContain("verify-workspace-package-links.mjs");
+    expect(command).toContain("tsc -p tsconfig.json --incremental false");
+    expect(command).toContain("pnpm --filter @webtoon-nest/api run typecheck");
+  });
+
   it("keeps imported environment manifests in the real sparse checkout without downloading model binaries", () => {
     const lint = workflow("ci.yml").jobs.lint;
     const checkout = lint.steps.find((step) => step.uses?.startsWith("actions/checkout@"));

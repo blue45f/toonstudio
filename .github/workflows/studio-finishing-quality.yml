@@ -13,13 +13,14 @@ on:
       - 'apps/web/vite.config.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'apps/web/src/domains/creator/studio-quality-*.ts'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/studio-quality-*.ts'
       - 'apps/web/src/domains/creator/studio-finish-quality*.ts'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/studio-finish-quality*.ts'
       - 'apps/web/src/domains/creator/StudioContinuityPanel*.tsx'
-      - 'apps/web/src/domains/creator/StudioFinishQualityView*.tsx'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/StudioFinishQualityView*.tsx'
       - 'apps/web/src/domains/creator/StudioLazyPanelStack*.tsx'
       - 'apps/web/src/domains/creator/StudioMenubarContent*.tsx'
-      - 'apps/web/src/domains/creator/StudioMenubarContent.test-fixture.ts'
+      - 'apps/web/src/domains/creator/StudioMenubarContent.test-fixture.tsx'
       - 'apps/web/src/domains/creator/studio-main-menu-items-production.ts'
       - 'apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccCameraRig*.tsx'
       - 'scripts/verify-studio-menus.mts'
@@ -43,13 +44,14 @@ on:
       - 'apps/web/vite.config.ts'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - 'apps/web/src/domains/creator/studio-quality-*.ts'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/studio-quality-*.ts'
       - 'apps/web/src/domains/creator/studio-finish-quality*.ts'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/studio-finish-quality*.ts'
       - 'apps/web/src/domains/creator/StudioContinuityPanel*.tsx'
-      - 'apps/web/src/domains/creator/StudioFinishQualityView*.tsx'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/StudioFinishQualityView*.tsx'
       - 'apps/web/src/domains/creator/StudioLazyPanelStack*.tsx'
       - 'apps/web/src/domains/creator/StudioMenubarContent*.tsx'
-      - 'apps/web/src/domains/creator/StudioMenubarContent.test-fixture.ts'
+      - 'apps/web/src/domains/creator/StudioMenubarContent.test-fixture.tsx'
       - 'apps/web/src/domains/creator/studio-main-menu-items-production.ts'
       - 'apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccCameraRig*.tsx'
       - 'scripts/verify-studio-menus.mts'
@@ -138,13 +140,13 @@ jobs:
           set -euo pipefail
           node --test scripts/studio-quality-bundle-leaves.test.mjs 2>&1 | tee "$RUNNER_TEMP/finishing-quality/bundle-models.log"
           pnpm exec vitest run \
-            apps/web/src/domains/creator/studio-quality-inspection.test.ts \
-            apps/web/src/domains/creator/studio-quality-inspection-hardening.test.ts \
-            apps/web/src/domains/creator/studio-quality-raster-inspection.test.ts \
-            apps/web/src/domains/creator/studio-quality-finish-bridge.test.ts \
-            apps/web/src/domains/creator/studio-finish-quality.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-quality-inspection.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-quality-inspection-hardening.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-quality-raster-inspection.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-quality-finish-bridge.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-finish-quality.test.ts \
             apps/web/src/domains/creator/studio-finish-quality-integration.test.ts \
-            apps/web/src/domains/creator/StudioFinishQualityView.test.tsx \
+            apps/web/src/domains/creator/studio-cuttoon-editor/StudioFinishQualityView.test.tsx \
             apps/web/src/domains/creator/StudioContinuityPanel.test.tsx \
             apps/web/src/domains/creator/StudioContinuityPanel.hardening.test.tsx \
             apps/web/src/domains/creator/StudioLazyPanelStack.test.tsx \
@@ -153,7 +155,7 @@ jobs:
             apps/web/src/domains/creator/StudioToolBeltContent.hints.test.ts \
             apps/web/src/domains/creator/studio-router/StudioRouteCollaborationGateway.test.tsx \
             apps/web/src/domains/creator/studio-router/studio-production-command-center-boundary.test.ts \
-            apps/web/src/domains/creator/studio-adjustment-stack.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-adjustment-stack.test.ts \
             apps/web/src/domains/creator/studio-ux-convergence-boundary.test.ts \
             apps/web/src/domains/creator/hybrid-dcc/StudioHybridDccCameraRig.test.tsx \
             --reporter=verbose 2>&1 | tee "$RUNNER_TEMP/finishing-quality/tests.log"

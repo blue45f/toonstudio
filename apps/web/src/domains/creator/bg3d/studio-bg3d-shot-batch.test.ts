@@ -695,7 +695,7 @@ describe("Studio BG3D shot batch archive", () => {
     }])).rejects.toMatchObject({ code: "pngItemUnsafeFormatOrBudget", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },
-      { ...image("shot-a"), pass: "depth", width: 321 },
+      { ...image("shot-a"), pass: "depth", width: 321, png: new Blob([pngHeader(321, 180)], { type: "image/png" }) },
     ])).rejects.toMatchObject({ code: "sameShotPassShapeMismatch", errorKind: "type" });
     await expect(buildStudioBg3dShotBatchArchive([
       { ...image("shot-a"), pass: "beauty" },

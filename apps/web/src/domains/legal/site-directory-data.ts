@@ -387,6 +387,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/market/manage", "판매·배포 관리", "Manage listings", "등록한 에셋과 배포 상태 관리", "Manage published assets and distribution"),
       destination("/market/seller", "포인트 판매·공동구매", "Point sales & group buys", "활동 포인트로 창작자 리스팅을 사고파고 공동구매로 함께 확정", "Buy and sell creator listings with activity points, or confirm together through group buys"),
       destination("/market/library", "내 에셋", "My assets", "획득한 리소스 관리", "Manage acquired resources"),
+      destination("/market/orders", "구매·주문 내역", "Orders", "에셋 주문과 구매 내역 확인", "Review asset orders and purchase history"),
       destination("/market/wishlist", "찜한 에셋", "Saved assets", "나중에 사용할 리소스", "Keep resources for later"),
       destination("/market/compare", "에셋 비교", "Compare assets", "후보 리소스의 차이 비교", "Compare shortlisted resources"),
     ],
