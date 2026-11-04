@@ -17,6 +17,7 @@ export const CREATOR_RESOURCE_TITLES: Record<string, string> = {
   "/promo-library": "홍보 영상 자료실",
   "/ir": "툰스튜디오 IR · 투자 소개",
   "/ir/present": "툰스튜디오 IR · 발표 플레이어",
+  "/business-plan": "툰스튜디오 사업계획서",
   "/events": "이벤트",
   "/events/beta-open": "베타 오픈 이벤트",
   "/accessibility": "접근성",
