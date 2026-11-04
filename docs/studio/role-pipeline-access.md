@@ -91,6 +91,11 @@ management receipt를 재사용하며, 전체 편집자의 저장은 기존 일�
 - 실제 PostgreSQL/HTTP: 소유자·전체 편집자 우회 차단, 비매핑 일반 저장, 명시 grant 저장,
   실제 승인·인계·재작업, 재로그인과 회수, transaction 불변성.
 - migration: 빈 DB, 기존 119개 상태의 120 업그레이드, 멱등 재실행, 기존 행 재작성 없음.
-- 브라우저: 실제 관리자 설정과 담당자의 조회·재로그인을 로컬 Nest API에 전달해 검사한다.
-  이 통합 화면 검증의 외부 메일과 object storage는 테스트 port이며, 운영 클라우드 저장소나
-  다중 브라우저의 동시 캔버스 획 수렴을 검증한 것으로 확대하지 않는다.
+- 브라우저: 실제 두 계정으로 editor/viewer 기존 ACL과 creator binding 두 경우의 Canvas pointer·
+  live ACK·REST 저장·새로고침, 타인 보호 범위 차단·비매핑 편집 보존, 검수 승인 API·인계 UI와
+  양 계정 logout/login 후 동결 유지를 로컬 full AppModule·PostgreSQL에서 2/2 PASS로 확인했다.
+  원고 baseline은 정본 serializer와 OFF owner guarded 저장으로 준비했다. 외부 메일과 object
+  storage는 테스트 port이고 검수 preview는 명시 PNG fixture다. 15직군·18그룹 전체 UI 전수,
+  운영 클라우드 저장소나 다중 브라우저의 동시 pointer 충돌·다중 API 노드 수렴 검증은 아니다.
+  실행 기준·최소 보정·보존 및 잔존 데이터·개발 재현은
+  [2026-11-05 실제 Canvas 회귀 보고서](../reports/role-pipeline-rbac-canvas-regression-2026-11-05.md)를 본다.
