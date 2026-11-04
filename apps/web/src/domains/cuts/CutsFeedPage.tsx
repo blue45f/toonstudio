@@ -376,7 +376,7 @@ export function CutsFeedPage() {
     const currentIndex = visibleClips.findIndex((clip) => clip.id === activeId);
     const nextIndex = Math.min(
       visibleClips.length - 1,
-      Math.max(0, (currentIndex < 0 ? 0 : currentIndex) + direction),
+      Math.max(0, currentIndex < 0 ? 0 : currentIndex + direction),
     );
     const element = itemRefs.current.get(visibleClips[nextIndex]?.id ?? "");
     element?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -460,16 +460,16 @@ export function CutsFeedPage() {
           </Link>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-5xl px-4 pt-3">
+      <div className="mx-auto w-full max-w-5xl snap-end px-4 pt-3">
         <SiteContextualSubNav pathnameOverride="/cuts" />
         <section
           data-testid="cuts-rea-interactive-motion-dub-bar"
-          aria-label={t("무빙툰 모션 엔진 및 130개국어 더빙·립싱크 제어 바", "Moving-Toon Motion Engine & 130-Language Dubbing Control Bar")}
+          aria-label={t("무빙툰 모션·더빙·립싱크 구성 미리보기", "Moving-Toon Motion, Dubbing & Lip-Sync Configuration Preview")}
           className="mt-2 rounded-2xl border border-white/15 bg-black/55 px-3.5 py-2.5 text-xs text-white/90 backdrop-blur-sm"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 엔진 선택", "Motion Engine Selection")}>
-              <span className="font-extrabold text-amber-300">{t("모션 엔진:", "Motion Engine:")}</span>
+              <span className="bg-card font-extrabold text-warn">{t("모션 엔진:", "Motion Engine:")}</span>
               {([
                 { id: "rive-statemachine", ko: "Rive 60fps 상태머신·Spine 2.5D", en: "Rive 60fps State Machine & Spine 2.5D" },
                 { id: "kling-pikaframes", ko: "Kling 1.6 모션브러시·Pikaframes", en: "Kling 1.6 Motion Brush & Pikaframes" },
@@ -490,7 +490,7 @@ export function CutsFeedPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("더빙 및 음향 마스터링", "Dubbing & Audio Mastering")}>
-              <span className="font-extrabold text-sky-300">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
+              <span className="bg-card font-extrabold text-cool">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
               {([
                 { id: "rask-heygen-130lang", ko: "Rask·HeyGen 130개국어 보이스클로닝", en: "Rask/HeyGen 130-Lang Voice Clone" },
                 { id: "audio2face-rhubarb", ko: "Audio2Face·Rhubarb 6음소 립싱크", en: "Audio2Face/Rhubarb 6-Viseme Lip-Sync" },
@@ -513,8 +513,8 @@ export function CutsFeedPage() {
           </div>
           <p data-testid="cuts-rea-active-engine-summary" className="mt-1.5 text-[11px] text-white/75">
             {t(
-              `[실시간 파이프라인] ${motionEngine === "rive-statemachine" ? "Rive 스크롤/탭 상태머신 + Spine/Live2D 60fps WebGL2 패럴랙스" : motionEngine === "kling-pikaframes" ? "Kling 1.6 모션브러시 궤적 + Pikaframes/Runway Act-One 표정 전이" : "ToonCrafter·CACANi·TVPaint 원화 간 벡터 동화(Inbetween) 자동 보간"} · ${dubbingMode === "rask-heygen-130lang" ? "Rask AI·Papercup·HeyGen 130개국어 화자 음색 보존 더빙 + OpusClip/Submagic 키네틱 자막" : dubbingMode === "audio2face-rhubarb" ? "NVIDIA Audio2Face + Rhubarb 6음소(A~F) 60fps 입모양 동기화" : "Krisp·Adobe Podcast 노이즈 제거 + -14 LUFS 음압 정규화 & 대사 발화 시 BGM -12dB 감쇠"}`,
-              `[Live Pipeline] ${motionEngine} + ${dubbingMode} · 9:16 Insertoon/CapCut Reels packager ready`,
+              `[구성 미리보기] ${motionEngine === "rive-statemachine" ? "Rive 스크롤/탭 상태머신 + Spine/Live2D 60fps WebGL2 패럴랙스" : motionEngine === "kling-pikaframes" ? "Kling 1.6 모션브러시 궤적 + Pikaframes/Runway Act-One 표정 전이" : "ToonCrafter·CACANi·TVPaint 원화 간 벡터 동화(Inbetween) 자동 보간"} · ${dubbingMode === "rask-heygen-130lang" ? "Rask AI·Papercup·HeyGen 130개국어 화자 음색 보존 더빙 + OpusClip/Submagic 키네틱 자막" : dubbingMode === "audio2face-rhubarb" ? "NVIDIA Audio2Face + Rhubarb 6음소(A~F) 60fps 입모양 동기화" : "Krisp·Adobe Podcast 노이즈 제거 + -14 LUFS 음압 정규화 & 대사 발화 시 BGM -12dB 감쇠"} · 영상·음성 생성 실행 전 구성 예시입니다.`,
+              `[Configuration Preview] ${motionEngine} + ${dubbingMode} · A configuration example before video or audio generation.`,
             )}
           </p>
         </section>
