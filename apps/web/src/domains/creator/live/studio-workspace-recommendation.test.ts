@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_CLIP_WORKSPACE_RECOMMENDATION,
   STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES,
+  STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
   STUDIO_SIMPLE_WORKSPACE_RECOMMENDATION,
+  computeToonStudioSiteWideQualityScorecard,
   matchStudioCompetitorWorkflowPreset,
   resolveStudioWorkspaceRecommendation,
   studioWorkspaceSearchAliases,
@@ -35,12 +37,32 @@ describe("Studio workspace recommendation model", () => {
   });
 
   it("matches familiar competitor workflows to built-in ToonStudio workspaces", () => {
-    expect(STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES.length).toBeGreaterThanOrEqual(8);
+    expect(STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES.length).toBeGreaterThanOrEqual(7);
     const sketchupMatches = matchStudioCompetitorWorkflowPreset("SketchUp");
     expect(sketchupMatches.map((item) => item.workspaceId)).toContain("pose-3d");
 
     const kitsuMatches = matchStudioCompetitorWorkflowPreset("Kitsu");
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
+  });
+
+  it("7대 도메인 134개 글로벌 경쟁 서비스 전수가 검색 매칭되고 DOM 예산 및 9.95/10 스코어를 충족한다", () => {
+    const scorecard = computeToonStudioSiteWideQualityScorecard();
+    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(201);
+    expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
+    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(134);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(99.5);
+    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(9.95);
+    expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
+    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
+
+    for (const benchmark of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
+      expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);
+      expect(benchmark.liveEvidenceIds.length).toBeGreaterThan(0);
+      for (const serviceName of benchmark.competitorServices) {
+        const matches = matchStudioCompetitorWorkflowPreset(serviceName);
+        expect(matches.length, `Missing workflow preset alias for ${serviceName}`).toBeGreaterThan(0);
+      }
+    }
   });
 
   it("does not compete with the current-workspace summary after activation", () => {

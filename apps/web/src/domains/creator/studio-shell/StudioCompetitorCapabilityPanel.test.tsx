@@ -149,18 +149,24 @@ describe("StudioCompetitorCapabilityPanel", () => {
       screen.getByTestId("competitor-page-tab-catalog-ranking").getAttribute("aria-pressed"),
     ).toBe("true");
     expect(screen.getByTestId("competitor-page-dom-budget-badge").textContent).toContain(
-      "관측 19064 DOM → 목표 3200 DOM",
+      "관측 2840 DOM → 목표 3200 DOM",
     );
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
       "Naver Webtoon",
     );
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
-      "Tapas",
+      "Piccoma",
+    );
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "MANGA Plus by SHUEISHA",
     );
 
     fireEvent.click(screen.getByTestId("competitor-page-tab-asset-market"));
     expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
       "BOOTH",
+    );
+    expect(screen.getByTestId("competitor-page-by-page-matrix").textContent).toContain(
+      "VRoid Hub",
     );
     expect(screen.getByTestId("competitor-visual-motion-strip").textContent).toContain(
       "한눈에 이해되는 3단계 시각 플로우",
@@ -182,8 +188,8 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 98.4 / 100 (9.84 / 10)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 130 REA Evidences");
+    expect(enScorecard.textContent).toContain("Overall 99.5 / 100 (9.95 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 201 REA Evidences");
     expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
   });
 });

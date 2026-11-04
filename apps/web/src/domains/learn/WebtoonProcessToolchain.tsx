@@ -145,8 +145,8 @@ export function WebtoonProcessToolchain() {
         >
           <span className="font-bold text-fg-2">
             {bt(
-              `REA 공정 도구 카탈로그 · 총 ${WEBTOON_PROCESS_TOOLCHAIN.length}단계 공정 · 내장/외부 도구 브리지 연결 완료`,
-              `REA Process Toolchain · ${WEBTOON_PROCESS_TOOLCHAIN.length} stages · Built-in & external tool bridges connected`,
+              `REA 공정 도구 카탈로그 · 총 ${WEBTOON_PROCESS_TOOLCHAIN.length}단계 공정 · Posemaniacs/Line of Action/Quickposes 30초 크로키 · Arc Studio 비트보드 · PureRef/Coolors 연동 완료`,
+              `REA Process Toolchain · ${WEBTOON_PROCESS_TOOLCHAIN.length} stages · Posemaniacs/Line of Action/Quickposes 30s croquis · Arc Studio beatboard · PureRef/Coolors connected`,
             )}
           </span>
           <div className="flex flex-wrap items-center gap-2">
