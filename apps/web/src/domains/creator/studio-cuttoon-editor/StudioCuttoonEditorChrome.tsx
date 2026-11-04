@@ -573,7 +573,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
             ref={marketplaceCloudSyncStatusRef}
             role="status"
             tabIndex={-1}
-            className={cn("my-1 flex items-start justify-between gap-2 rounded-lg border border-accent/35 bg-panel px-2.5 py-1.5 text-xs text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent", !mobileImmersive && "absolute inset-x-2 top-0 z-[59]")}
+            className={cn("my-1 flex items-start justify-between gap-2 rounded-lg border border-accent/35 bg-panel px-2.5 py-1.5 text-xs text-fg-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent", !mobileImmersive && !error && "absolute inset-x-2 top-0 z-[59]")}
           >
             <span className="min-w-0 break-words">{studioStatusNotice}</span>
             <button
