@@ -191,7 +191,7 @@ export const SCENE_NODES_A: ReactNode[] = [
     <div className="scene-inner" key="s06">
       <p className="kicker rv">Roles</p>
       <h2 className="headline rv">화면은 역할마다 다르게,<br />작품 정보는 <em>하나로</em></h2>
-      <p className="lede rv">같이 일한다고 다 똑같은 화면을 볼 필요는 없어요. 각자 자기 일에만 집중하면 되고, 데이터는 하나로 붙어 있으니까요.</p>
+      <p className="lede rv">같이 일한다고 다 똑같은 화면을 볼 필요는 없어요. 각자 자기 일에만 집중하면 되고, 데이터는 하나로 붙어 있으니까요. 대상은 작가 지망생 이상 전문가와 제작팀입니다. 취미 창작자·일반인은 이 제품의 대상이 아니며, 일반인용은 나중에 별도로 만드는 문제입니다.</p>
       <div className="roles">
         <article className="role r1 rv">
           <span className="tag">글작가 · 기획자</span>
@@ -269,6 +269,16 @@ export const SCENE_NODES_A: ReactNode[] = [
         <div className="bar" style={{ height: "100%" }}><span>약 427억~453억 달러</span><b>2030년 전망</b></div>
       </div>
       <p className="source-line rv">글로벌 전망은 조사기관마다 추정치가 다릅니다 — Research and Markets 약 451.7억 달러, Grand View Research 약 453억 달러, Global Industry Analysts 약 427억 달러 (모두 2030년 전망). 특정 기관의 단일 수치가 아니라 범위로 표기했습니다.</p>
+      <h3 className="sub-head rv" style={{ marginTop: 40 }}>해외 동시 오픈 — 번역된 언어 기준</h3>
+      <p className="lede rv">해외는 번역된 언어 기준으로 심플하게 동시 오픈하는 방향입니다. 다만 동시 오픈이 규정 준수를 대신하지 않으므로, 유료 기능은 아래 검토가 끝난 언어군부터 엽니다. 아래는 구축 완료가 아니라 계획입니다.</p>
+      <div className="ops-grid rv">
+        <div className="ops-item"><b>국가별 결제</b><span>앱스토어 결제는 스토어가 대행해 부담이 줄고, 웹 결제는 국가별 대표 수단부터 단계적으로 붙입니다</span></div>
+        <div className="ops-item"><b>국가별 세금·조세 협약</b><span>언어군별 세율·신고 방식을 정리하고, 세무 검토를 전제로 둡니다</span></div>
+        <div className="ops-item"><b>해외 QC·고객지원</b><span>번역 도움말·템플릿으로 1차 대응하고, 문의량을 측정한 뒤에 지원 인력을 늘립니다</span></div>
+        <div className="ops-item"><b>인프라 비용 (크레딧 0원 전제)</b><span>언어군별 사용량을 측정한 뒤 지역·용량을 단계적으로 열고, 무료 범위와 AI 크레딧 상한을 해외에도 동일하게 적용합니다</span></div>
+        <div className="ops-item"><b>해외 유료 서비스 법규</b><span>약관·환불·개인정보를 번역 언어로 제공하고, 검토가 끝난 언어군부터 유료 기능을 엽니다. 도메인만 열어 두는 것으로 법규 준수를 대신하지 않습니다</span></div>
+        <div className="ops-item"><b>현지 언어의 깊이</b><span>웹툰 제작 용어를 언어군별로 정리한 용어집으로 화면·도움말·고객응대에 같은 용어를 씁니다</span></div>
+      </div>
     </div>
   ),
   /* 09 외산 독과점 */
@@ -277,6 +287,7 @@ export const SCENE_NODES_A: ReactNode[] = [
       <p className="kicker rv">Foreign Monopoly</p>
       <h2 className="headline rv">그런데 이 산업의 제작 도구 코어는<br /><em>전부 외산</em>입니다</h2>
       <p className="lede rv">웹툰은 한국이 만든 산업이에요. 그런데 그 작품들을 실제로 그리는 표준 도구는 일본산이, 이미지 편집의 표준은 미국산이 쥐고 있습니다. 대표 사례가 일본 셀시스(Celsys)의 <strong>클립스튜디오 페인트</strong>예요.</p>
+      <p className="lede rv">왜 웹툰인가 — 첫째, 웹툰 제작 툴 시장은 클립스튜디오가 거의 독과점하고 있는 시장입니다. 클립스튜디오 하나와 경쟁할 수 있으면 어느 정도 시장 경쟁력을 확보할 수 있다고 봅니다. 둘째, 웹툰은 분업화가 잘 된 산업이라 툴과 플랫폼의 사용성이 들어가기 좋습니다.</p>
       <div className="core-panel rv">
         <p><b>클립스튜디오 페인트</b>는 전 세계 누적 이용 5,000만 부를 넘긴, 사실상 전 세계 만화·웹툰 제작의 표준 도구예요. 구독 전환 이후에는 매달 구독료가 쌓이는 구조가 됐고, 창작자의 브러시 설정·단축키·작업 파일이 그 안에 쌓일수록 다른 도구로 옮기기 어려워지는 <b>구독 잠금(lock-in)</b>이 강해집니다. 포토샵(미국 어도비)도 같은 구조로 이미지 편집 코어를 점유하고 있어요.</p>
         <div className="core-stats">

@@ -28,7 +28,7 @@ export const SCENE_NODES_B: ReactNode[] = [
           <ul>
             <li>협업의 위치 — 제작 흐름의 <b>안</b>, 도구 자체에 내장</li>
             <li>드로잉 엔진·3D 배경·AI 보조까지 제작 도구 포함</li>
-            <li>개인 창작자부터 소규모 팀의 제작 자체를 하나로</li>
+            <li>지망생 이상 전문 창작자부터 소규모 팀의 제작 자체를 하나로</li>
           </ul>
         </article>
       </div>
@@ -70,10 +70,10 @@ export const SCENE_NODES_B: ReactNode[] = [
     <div className="scene-inner" key="s15">
       <p className="kicker rv">Scale</p>
       <h2 className="headline rv">1인 제작부터 스튜디오까지 —<br />규모가 달라도 <em>같은 구조</em></h2>
-      <p className="lede rv">커버하는 규모는 넓게 잡되, 표기는 정직하게 구분해요. 지금 실제로 쓸 수 있는 범위와, 지원하도록 설계된 범위, 앞으로 검증할 목표는 서로 다르니까요.</p>
+      <p className="lede rv">커버하는 규모는 넓게 잡되, 표기는 정직하게 구분해요. 지금 실제로 쓸 수 있는 범위와, 지원하도록 설계된 범위, 앞으로 검증할 목표는 서로 다르니까요. 대상은 작가 지망생 이상 전문가와 제작팀입니다. 취미 창작자·일반인은 대상이 아니며, 일반인용은 나중에 별도로 만드는 문제입니다.</p>
       <div className="scale-rows">
         <div className="scale-row rv">
-          <span className="s-name">1인 창작자</span>
+          <span className="s-name">1인 전문 창작자</span>
           <p>기획부터 연재·운영까지 혼자서도 전 공정을 오갈 수 있어요. 도구를 오가는 전환 비용이 사라지는 게 가장 먼저 체감되는 규모입니다.</p>
           <span className="tags"><span className="status-tag now">현재 제공</span></span>
         </div>
@@ -242,22 +242,22 @@ export const SCENE_NODES_B: ReactNode[] = [
     <div className="scene-inner" key="s21">
       <p className="kicker rv">Business Model</p>
       <h2 className="headline rv">무료로 시작해, 팀으로 확장하고,<br />에셋 마켓까지 <em>이어지는</em> 구조</h2>
-      <p className="lede rv">요금제는 아직 확정된 게 아니에요. 적어 둔 가격은 <strong>전부 예시(미확정)</strong>이고, 실제 창작자 검증을 거쳐 정합니다. 서비스도 아직 베타라, 쓰면서 다듬어 가는 중이에요.</p>
+      <p className="lede rv">가격 정책은 심플하게, <strong>기본 무료 + AI 크레딧 중심</strong>입니다. 팀 가격은 지금 정하지 않고, 사용자가 늘어난 뒤에 정합니다. 적어 둔 가격은 <strong>전부 예시(미확정)</strong>이고, 실제 창작자 검증을 거쳐 정합니다. 서비스도 아직 베타라, 쓰면서 다듬어 가는 중이에요.</p>
       <div className="tiers rv">
         <div className="tier">
           <div className="t-name">Free<small>개인 창작자 누구나</small></div>
-          <p>기획부터 드로잉·협업의 핵심 흐름을 무료로 제공해요. 먼저 "흐름이 끊기지 않는 경험"을 만드는 게 목표입니다.</p>
+          <p>기획부터 드로잉·협업의 핵심 흐름을 무료로 제공해요. AI 기능은 크레딧 범위 안에서 씁니다. 먼저 "흐름이 끊기지 않는 경험"을 만드는 게 목표입니다.</p>
           <div className="price">₩0</div>
         </div>
         <div className="tier hot">
           <div className="t-name">Pro<small>본격 연재 창작자</small></div>
           <p>대용량 원고, 고급 브러시·3D 에셋, 버전 관리 등 연재 생산성을 높이는 기능을 묶은 개인 유료 플랜이에요. 회원 1만 명 달성 이후, 유료화 시점에 켭니다.</p>
-          <div className="price">월 19,900원<small>유료화 시점 예시 가격 — 미확정</small></div>
+          <div className="price">월 19,900원<small>유료화 시점 예시 가격 — 미확정, 개인 플랜 예시이며 팀 가격이 아님</small></div>
         </div>
         <div className="tier">
           <div className="t-name">Team · Education<small>스튜디오 · 학원 · 학교</small></div>
-          <p>역할 기반 권한, 검수·승인 흐름, 팀 자산 관리를 묶은 조직용 플랜과 교육기관용 플랜을 준비 중이에요.</p>
-          <div className="price">도입 문의</div>
+          <p>역할 기반 권한, 검수·승인 흐름, 팀 자산 관리를 묶은 조직용 플랜과 교육기관용 플랜을 준비 중이에요. 팀 가격은 지금 정하지 않고, 사용자가 늘어난 뒤에 정합니다.</p>
+          <div className="price">미결정<small>팀 가격 미결정 — 사용자가 늘어난 뒤에 정함</small></div>
         </div>
         <div className="tier">
           <div className="t-name">Asset Marketplace<small>창작 마켓</small></div>
@@ -275,7 +275,7 @@ export const SCENE_NODES_B: ReactNode[] = [
         <div className="mp-step hot">
           <span className="mp-tag">회원 1만 명 달성 이후</span>
           <b>유료화 전환</b>
-          <p>그때부터 Pro 같은 유료 플랜을 켜요. 월 19,900원은 그 시점의 예시 가격이고, 아직 확정은 아닙니다.</p>
+          <p>그때부터 Pro 같은 유료 플랜을 켜요. 월 19,900원은 그 시점의 개인 플랜 예시 가격이고, 아직 확정은 아니며 팀 가격이 아닙니다.</p>
         </div>
       </div>
     </div>
@@ -285,7 +285,7 @@ export const SCENE_NODES_B: ReactNode[] = [
     <div className="scene-inner" key="s22">
       <p className="kicker rv">Roadmap</p>
       <h2 className="headline rv">검증 로드맵 <span className="hypo">전부 목표입니다</span></h2>
-      <p className="lede rv">아래 숫자는 성과가 아니라, 앞으로 검증할 계획이에요. 순서대로 가설을 하나씩 확인해 나갑니다.</p>
+      <p className="lede rv">아래 숫자는 성과가 아니라, 앞으로 검증할 계획이에요. 순서대로 가설을 하나씩 확인해 나갑니다. 해외는 번역된 언어 기준으로 심플하게 동시 오픈하는 방향입니다. 걸림돌(국가별 결제·세금·QC·인프라·법규)은 8번 씬의 표를 보고, 유료 기능은 검토가 끝난 언어군부터 엽니다.</p>
       <div className="road-steps rv">
         <div className="road-step">
           <div className="when">PHASE 1</div>
@@ -300,7 +300,7 @@ export const SCENE_NODES_B: ReactNode[] = [
         <div className="road-step">
           <div className="when">PHASE 3</div>
           <div className="goal-num">3–6<small>개월</small><span className="goal-tag">목표</span></div>
-          <p>Pro 예시 가격(월 19,900원 · 미확정)을 실제 결제 의사로 검증하는 유료 검증 기간을 운영해요.</p>
+          <p>Pro 예시 가격(월 19,900원 · 미확정, 개인 플랜 예시이며 팀 가격이 아님)을 실제 결제 의사로 검증하는 유료 검증 기간을 운영해요.</p>
         </div>
       </div>
       <h3 className="sub-head rv" style={{ marginTop: 46 }}>고객 확보 — <em>어떻게 1만 명까지</em> 갈 것인가</h3>
@@ -319,7 +319,7 @@ export const SCENE_NODES_B: ReactNode[] = [
         <div className="road-step">
           <div className="when">GTM 3 · 점진적 확장</div>
           <div className="gtm-title">작은 팀에서 큰 스튜디오로</div>
-          <p>소규모 아마추어 팀에서 시작해 사용 검증이 쌓이면 대형 스튜디오로 고객층을 넓혀요. 규모별 지원 구조도 그 순서에 맞춰 짜여 있습니다.</p>
+          <p>소규모 전문 팀에서 시작해 사용 검증이 쌓이면 대형 스튜디오로 고객층을 넓혀요. 규모별 지원 구조도 그 순서에 맞춰 짜여 있습니다.</p>
         </div>
       </div>
     </div>
@@ -340,16 +340,18 @@ export const SCENE_NODES_B: ReactNode[] = [
             <span>주요 경력 <b>배달의민족 · 스마일게이트 스토브 · 삼쩜삼 · 카카오 · 엔씨소프트</b></span>
             <span>공개 소스코드 <b>github.com/blue45f/toonstudio</b></span>
             <span>베타 공개 중 <b>toonstudio.cloud</b></span>
+            <span>채용 예정 역할 <b>영업·마케팅 · 고객지원 · 엔지니어 · 도메인 리드 (이름·채용 시기 미확정)</b></span>
           </div>
         </article>
         <div className="ask-card rv">
           <h3>지금 필요한 도움 — Ask</h3>
           <ul className="ask-list">
             <li><span className="n">1</span><div><b>초기 창작자 코호트 연결</b><span>무료 베타 30명 검증에 함께할 웹툰 창작자·스튜디오와의 연결</span></div></li>
-            <li><span className="n">2</span><div><b>BM 검증 자문</b><span>Pro 예시 가격과 Team·Education 도입 방식에 대한 검증 피드백</span></div></li>
+            <li><span className="n">2</span><div><b>BM 검증 자문</b><span>Pro 예시 가격과 Team·Education 도입 방식(팀 가격 미결정)에 대한 검증 피드백</span></div></li>
             <li><span className="n">3</span><div><b>콘텐츠 산업 네트워크</b><span>플랫폼·CP·교육기관 등 웹툰 산업 현장과의 접점</span></div></li>
             <li><span className="n">4</span><div><b>후속 투자 자문</b><span>검증 결과 이후의 투자 유치 전략과 준비에 대한 조언</span></div></li>
           </ul>
+          <p style={{ marginTop: 16 }}>확정된 투자 제안은 없습니다. 참고용 시드 시나리오 틀(추정치·가정)만 둡니다: 3~5억 원, 배분 개발 40% · 영업·마케팅 30% · AI·인프라 20% · 운영·법무 10%. 이 배분은 사업계획서 시나리오 틀이며, 확정 배분이 아닙니다.</p>
           <div className="ask-actions">
             <a className="btn btn-primary" href="/" target="_blank" rel="noopener">제품 직접 보기</a>
             <a className="btn btn-ghost" href="https://github.com/blue45f/toonstudio" target="_blank" rel="noopener">소스코드 확인하기</a>
