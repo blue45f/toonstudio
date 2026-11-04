@@ -90,8 +90,8 @@ jobs:
         run: pnpm run verify:studio-3d-specialists
       - name: Verify selected-object transactions, storage and history
         run: pnpm run verify:studio-3d-inplace
-      - name: Type-check web workspace
-        run: pnpm exec tsc -p tsconfig.json --noEmit
+      - name: 웹·API 전체 타입 검사
+        run: pnpm run typecheck
 
 
   scene3d-specialists-browser:
