@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SearchPage } from "@/domains/catalog/SearchPage";
+import { SearchPage } from "./SearchPage";
 
 vi.mock("@/shared/components/unified-search-sections", () => ({ UnifiedSearchSections: () => null }));
 vi.mock("@/shared/components/site-contextual-subnav", () => ({ SiteContextualSubNav: () => null }));

@@ -116,6 +116,7 @@ apps/web/src/domains/account/UserProfilePage.test.tsx
 apps/web/src/domains/admin/components/AdminBusinessInquiries.test.tsx
 apps/web/src/domains/auth/components/in-app-browser-notice.test.tsx
 apps/web/src/domains/catalog/DiscoverHubPage.test.tsx
+apps/web/src/domains/catalog/SearchPage.query-lifecycle.test.tsx
 apps/web/src/domains/catalog/memory-finder/MemoryFinderSection.test.tsx
 apps/web/src/domains/catalog/memory-finder/memory-finder-model.test.ts
 apps/web/src/domains/character-chat/CharacterChatSpeech.test.tsx
