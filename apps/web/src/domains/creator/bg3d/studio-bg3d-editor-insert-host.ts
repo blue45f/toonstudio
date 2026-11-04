@@ -325,6 +325,8 @@ export function attachStudioBg3dEditorInsertHost(h: Record<string, any>) {
   } = { ...R, ...h } as typeof R & Record<string, any>;
 
   async function handleInsert() {
+    if (h.sceneBaseDocument.output.sixPassLt && h.sixPassLtUnavailableReason) { setError(h.sixPassLtUnavailableReason); return; }
+    if (h.sceneBaseDocument.output.sixPassLt && (customModels.length > 0)) { setError("6패스 묶음 v1은 기본 도형 장면만 저장할 수 있습니다. 외부 모델 원본 보관은 아직 지원하지 않습니다."); return; }
     if (
       captureInFlightRef.current || isCapturing ||
       destructiveMutationGuardRef.current.blocksClose

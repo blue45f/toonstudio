@@ -416,6 +416,16 @@
       "types": "./src/studio-scoped-write-effects.ts",
       "import": "./src/studio-scoped-write-effects.ts",
       "default": "./src/studio-scoped-write-effects.ts"
+    },
+    "./studio-bg3d-six-pass-bundle": {
+      "types": "./src/studio-bg3d-six-pass-bundle.ts",
+      "import": "./src/studio-bg3d-six-pass-bundle.ts",
+      "default": "./src/studio-bg3d-six-pass-bundle.ts"
+    },
+    "./studio-bg3d-six-pass-reference": {
+      "types": "./src/studio-bg3d-six-pass-reference.ts",
+      "import": "./src/studio-bg3d-six-pass-reference.ts",
+      "default": "./src/studio-bg3d-six-pass-reference.ts"
     }
   },
   "dependencies": {

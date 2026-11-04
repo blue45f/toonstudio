@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 /**
  * A bounded presentation lease for Studio raster sources.
  *
@@ -26,7 +27,7 @@ export const STUDIO_RASTER_SOURCE_DEFAULT_MAX_RESIDENT_BYTES = 256 * 1024 * 1024
 export const STUDIO_RASTER_SOURCE_MAX_CONCURRENT_LOADS = 2;
 const STUDIO_RASTER_SOURCE_MAX_PENDING_LOADS = 512;
 
-const RESERVED_SOURCE_PATTERN = /^studio-opfs-cas:/iu;
+const RESERVED_SOURCE_PATTERN = /^(?:studio-opfs-cas:|bg3d-lt-artifact:)/iu;
 const SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const PNG_MIME = "image/png" as const;
 
@@ -60,6 +61,8 @@ export interface StudioRasterSourceBudgetRequest {
 }
 
 export interface StudioRasterSourceBudgetReservation {
+  /** 이미 해제한 임시 표면만 차감한다. 이 연산으로 기존 예약을 늘릴 수 없다. */
+  shrinkToResidentBytes?(bytes: number): boolean;
   release(): void;
 }
 
@@ -216,13 +219,18 @@ export function createStudioRasterSourceResidentBudget(
         return null;
       }
       reservedBytes += requestedBytes;
+      let retainedBytes = requestedBytes;
       activeReservationCount += 1;
       let released = false;
       return Object.freeze({
+        shrinkToResidentBytes(bytes: number): boolean {
+          if (released || !positiveSafeInteger(bytes) || bytes > retainedBytes) return false;
+          reservedBytes -= retainedBytes - bytes; retainedBytes = bytes; return true;
+        },
         release(): void {
           if (released) return;
           released = true;
-          reservedBytes = Math.max(0, reservedBytes - requestedBytes);
+          reservedBytes = Math.max(0, reservedBytes - retainedBytes);
           activeReservationCount = Math.max(0, activeReservationCount - 1);
         },
       });
@@ -580,6 +588,8 @@ async function reserveBudget(
   }
 }
 
+export { reserveBudget as reserveStudioRasterSourceBudget };
+
 async function reserveResidentBudgets(
   scopedBudget: StudioRasterSourceBudget | undefined,
   request: StudioRasterSourceBudgetRequest,
@@ -671,7 +681,8 @@ export async function acquireStudioRasterSourceLease(
     throw leaseError("invalid-source", "Raster source가 비어 있습니다.");
   }
   if (options.signal?.aborted) throw abortError();
-  const contentHash = parseStudioLinked3dPassLocator(source);
+  const bundleHash = parseStudioBg3dSixPassArtifactSourceUri(source);
+  const contentHash = bundleHash ?? parseStudioLinked3dPassLocator(source);
   if (!contentHash) {
     if (RESERVED_SOURCE_PATTERN.test(source.trimStart())) {
       throw leaseError("malformed-reserved-source", "예약된 raster source locator가 잘못되었습니다.");
@@ -695,14 +706,15 @@ export async function acquireStudioRasterSourceLease(
 
   let authority: StudioRasterSourceAuthority;
   try {
-    authority = options.authority
-      ?? await waitForSignal(
+    authority = options.authority ?? (bundleHash
+      ? await waitForSignal(import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority").then(({ acquireStudioBg3dSixPassBundleProductAuthority }) => acquireStudioBg3dSixPassBundleProductAuthority()), options.signal)
+      : await waitForSignal(
         import("../studio-linked-3d-pass-product-authority").then(
           ({ acquireStudioLinked3dPassProductAuthority }) =>
             acquireStudioLinked3dPassProductAuthority(),
         ),
         options.signal,
-      );
+      ));
   } catch (error) {
     if (error instanceof StudioRasterSourceLeaseError) throw error;
     throw leaseError("opfs-unavailable", "Raster source OPFS authority를 열지 못했습니다.");

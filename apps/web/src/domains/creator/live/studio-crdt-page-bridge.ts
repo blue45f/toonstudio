@@ -1,3 +1,5 @@
+import { STUDIO_CRDT_BG3D_IMAGE_KEYS, validateStudioCrdtBg3dImageReference } from "./studio-crdt-bg3d-image-reference";
+import type { StudioBg3dSixPassBundleState } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import type { StudioBrushEngineProgramSet } from "../brush/studio-brush-engine-program-set";
 import { createStudioCrdtPageReconciler } from "@toonstudio/contracts/studio-crdt-authoring/page-reconcile";
 import { projectStudioCrdtDrawStroke, projectStudioCrdtSceneElement, projectStudioCrdtLayerGroup } from "@toonstudio/contracts/studio-crdt-authoring/element-projection";
@@ -87,6 +89,7 @@ export interface StudioCrdtCompatibleElement {
 export interface StudioCrdtCompatiblePage<TElement extends StudioCrdtCompatibleElement> {
   id: string;
   elements: TElement[];
+  bg3dLtBundles?: StudioBg3dSixPassBundleState;
 }
 
 export interface StudioCrdtCompatibleLayerGroup {
@@ -331,7 +334,14 @@ export function studioElementToCrdtSceneElement(
     if (typeof source.frameClipId !== "string" || !source.frameClipId || source.frameClipId.length > 160 || /\p{Cc}/u.test(source.frameClipId)) throw new Error("원고 컷 클립 ID가 올바르지 않습니다.");
     props.frameClipId = source.frameClipId;
   }
-  if (isStudioCrdtAdmittedWorkAssetElement(element)) {
+  const bundle = element.type === "image" && source.bg3dLtBundleReference !== undefined;
+  if (bundle) {
+    for (const key of STUDIO_CRDT_BG3D_IMAGE_KEYS) {
+      const normalized = jsonValue(source[key]); if (normalized !== undefined) props[key] = normalized;
+    }
+    validateStudioCrdtBg3dImageReference(props);
+  }
+  if (bundle || isStudioCrdtAdmittedWorkAssetElement(element)) {
     for (const key of STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS) {
       const normalized = jsonValue(source[key]);
       if (normalized !== undefined) props[key] = normalized;

@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { retainStudioBg3dSixPassHistory } from "./bg3d-six-pass/studio-bg3d-six-pass-history-retention";
 
 import {
   shouldSeedStudioLiveSharedBootstrapPage,
@@ -29,7 +30,7 @@ export function useStudioPageHistorySnapshots({
   initialPageCount = 1,
   initialPage,
 }: UseStudioPageHistorySnapshotsOptions) {
-  const [pagesHistory, setPagesHistoryState] = useState<PageState[][]>(() => {
+  const [pagesHistory, setRawPagesHistoryState] = useState<PageState[][]>(() => {
     const pageCount = workId === null
       ? Math.min(Math.max(1, Math.floor(initialPageCount)), 200)
       : 1;
@@ -50,6 +51,18 @@ export function useStudioPageHistorySnapshots({
     });
     return [pages];
   });
+  const pagesHistoryRef = useRef(pagesHistory);
+  pagesHistoryRef.current = pagesHistory;
+  const normalizedHistoryRef = useRef(pagesHistory.slice());
+  normalizedHistoryRef.current = pagesHistory.slice();
+  const setPagesHistoryState = useCallback((action: Parameters<typeof setRawPagesHistoryState>[0]) => {
+    const previous = pagesHistoryRef.current;
+    const next = typeof action === "function" ? action(previous) : action;
+    const retained = retainStudioBg3dSixPassHistory(normalizedHistoryRef.current, next);
+    normalizedHistoryRef.current = retained.slice();
+    pagesHistoryRef.current = retained;
+    setRawPagesHistoryState(retained);
+  }, []);
   const setPagesHistory = (next: Parameters<typeof setPagesHistoryState>[0]) => {
     if (!markStudioDocumentChanged()) return;
     setPagesHistoryState(next);
@@ -62,8 +75,6 @@ export function useStudioPageHistorySnapshots({
   };
   const pagesHiRef = useRef(pagesHi);
   pagesHiRef.current = pagesHi;
-  const pagesHistoryRef = useRef(pagesHistory);
-  pagesHistoryRef.current = pagesHistory;
 
   return {
     pages: pagesHistory[pagesHi],

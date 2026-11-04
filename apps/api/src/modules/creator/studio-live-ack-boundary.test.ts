@@ -50,10 +50,10 @@ describe("studio live ACK ownership boundary", () => {
     expect(updateStart).toBeGreaterThan(-1);
     expect(updateHandler).toContain("await this.studioCrdtService.applyUpdate({");
     expect(updateHandler).toContain("reply(ack, response);");
-    expect(updateHandler).toContain('.emit("studio:crdt:update", remote);');
+    expect(updateHandler).toContain('await broadcastStudioBg3dReaderSafe(this, client, studioLiveRoom(parsed.data.workId), "studio:crdt:update", remote, applied.requiredReaderCapabilities);');
     expect(updateHandler.indexOf("await this.studioCrdtService.applyUpdate({"))
       .toBeLessThan(updateHandler.indexOf("reply(ack, response);"));
     expect(updateHandler.indexOf("reply(ack, response);"))
-      .toBeLessThan(updateHandler.indexOf('.emit("studio:crdt:update", remote);'));
+      .toBeLessThan(updateHandler.indexOf('await broadcastStudioBg3dReaderSafe(this, client, studioLiveRoom(parsed.data.workId), "studio:crdt:update", remote, applied.requiredReaderCapabilities);'));
   });
 });

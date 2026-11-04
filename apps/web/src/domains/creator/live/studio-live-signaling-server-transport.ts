@@ -82,6 +82,7 @@ export function createStudioLiveSignalingServerTransport(
     },
     ...(local
       ? {
+          originArtifactScope: local.originArtifactScope,
           requestCrdtSync: local.requestCrdtSync?.bind(local),
           respondCrdtSync: local.respondCrdtSync?.bind(local),
           publishCrdtUpdate: local.publishCrdtUpdate?.bind(local),

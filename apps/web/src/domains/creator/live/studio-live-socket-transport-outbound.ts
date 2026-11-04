@@ -1,3 +1,4 @@
+import { studioCrdtRemoteReaderRequest } from "./studio-live-bg3d-reader-capability";
 /** Implementation helpers for `StudioLiveSocketTransport`; not a public entry. */
 import {
   createStudioCrdtBinarySyncRequest,
@@ -85,7 +86,7 @@ export function requestCrdtSync(this: StudioLiveSocketTransportHost, request: St
     try {
       return this.emitCrdtWithAck(
         STUDIO_LIVE_CRDT_BINARY_SYNC_EVENT,
-        createStudioCrdtBinarySyncRequest(parsed),
+        createStudioCrdtBinarySyncRequest(studioCrdtRemoteReaderRequest(parsed)),
         parseStudioCrdtBinarySyncResponse,
         "requestId",
         true
@@ -100,7 +101,7 @@ export function requestCrdtSync(this: StudioLiveSocketTransportHost, request: St
   }
   return this.emitCrdtWithAck(
     "studio:crdt:sync",
-    parsed,
+    studioCrdtRemoteReaderRequest(parsed),
     parseStudioCrdtSyncResponse,
     "requestId"
   );
@@ -122,7 +123,7 @@ export function publishCrdtUpdate(this: StudioLiveSocketTransportHost, request: 
     try {
       operation = this.emitCrdtWithAck(
         STUDIO_LIVE_CRDT_BINARY_UPDATE_EVENT,
-        createStudioCrdtBinaryUpdateRequest(parsed),
+        createStudioCrdtBinaryUpdateRequest(studioCrdtRemoteReaderRequest(parsed)),
         parseStudioCrdtBinaryUpdateAck,
         "updateId",
         true

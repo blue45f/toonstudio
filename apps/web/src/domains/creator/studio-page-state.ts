@@ -12,6 +12,7 @@ import type { StudioLinked3dRenderDocument } from "./studio-linked-3d-render-doc
 import type { PageGrade } from "./studio-page-grade";
 import type { PageReviewState } from "./studio-page-review";
 import type { StudioShared3dStagePersistedState } from "./studio-shared-3d-stage-collection";
+import type { StudioBg3dSixPassBundleState } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 
 export interface PageState {
   id: string;
@@ -54,4 +55,6 @@ export interface PageState {
   shared3dStage?: StudioShared3dStagePersistedState;
   /** 실제 Canvas LT 레이어를 canonical Scene Shot에 잇는 ref-only 교차참조 영수증. */
   linked3dRender?: StudioLinked3dRenderDocument;
+  /** 비활성 revision도 undo·복구를 위해 보존하는 여섯 본문의 작은 manifest. */
+  bg3dLtBundles?: StudioBg3dSixPassBundleState;
 }

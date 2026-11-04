@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from "react";
-import { offlineConflictText } from "../offline-branch/studio-offline-conflict-i18n";
 import type { StudioOfflineBranchResolveInput, StudioOfflineBranchRuntime } from "../offline-branch/studio-offline-branch-runtime";
 import type { StudioCrdtDocument } from "./studio-crdt-document";
 import type { StudioCrdtRoomBinding } from "./studio-crdt-room-binding";
@@ -58,7 +57,10 @@ export function useStudioOfflineConflictSession(guard: ConflictGuard) {
         && currentGuard.canEdit && currentGuard.terminal === null && !currentGuard.blocked();
     };
     if (!belongsToCurrentRoom()) return null;
-    const module = await import("../offline-branch/studio-offline-branch-runtime");
+    const [module, { offlineConflictText }] = await Promise.all([
+      import("../offline-branch/studio-offline-branch-runtime"),
+      import("../offline-branch/studio-offline-conflict-i18n"),
+    ]);
     if (!belongsToCurrentRoom()) return null;
     const runtime = await module.StudioOfflineBranchRuntime.create({
       workId: options.room.workId,
@@ -141,7 +143,10 @@ export function useStudioOfflineConflictSession(guard: ConflictGuard) {
     && view.session.scopeKey === guard.scopeKey && view.snapshot.workId === guard.workId
     && guard.canEdit && guard.terminal === null && !guard.blocked() ? view : null;
   const resolveOfflineConflict = useCallback(async (input: StudioOfflineBranchResolveInput) => {
-    if (!visible || currentRef.current !== visible.session) throw new Error(offlineConflictText("unavailable"));
+    if (!visible || currentRef.current !== visible.session) {
+      const { offlineConflictText } = await import("../offline-branch/studio-offline-conflict-i18n");
+      throw new Error(offlineConflictText("unavailable"));
+    }
     await visible.session.resolve(input);
   }, [visible]);
   return { offlineBranch: visible?.snapshot ?? null, resolveOfflineConflict, openOfflineSession };

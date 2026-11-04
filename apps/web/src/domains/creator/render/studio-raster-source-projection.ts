@@ -50,7 +50,7 @@ export async function withStudioRasterSourceProjection<
   try {
     const reservedSources = input.values
       .map(({ src }) => src)
-      .filter((source) => source.startsWith("studio-opfs-cas:"));
+      .filter((source) => source.startsWith("studio-opfs-cas:") || source.startsWith("bg3d-lt-artifact:"));
     for (const source of new Set(reservedSources)) {
       throwIfAborted(input.signal);
       const lease = await acquire(source, {

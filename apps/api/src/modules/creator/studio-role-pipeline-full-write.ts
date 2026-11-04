@@ -1,5 +1,6 @@
 import { ForbiddenException, HttpException } from "@nestjs/common";
 import { sql } from "drizzle-orm";
+import { assertStudioBg3dRestDocumentInTransaction } from "./studio-bg3d-bundle-rest-gate";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 import type { db } from "../../platform/database";
 import type { CreatorSharedDocumentPatch } from "./creator-collaboration.persistence-contract";
@@ -13,12 +14,13 @@ import { authorizeStudioScopedWrite, loadStudioScopedPolicy, lockStudioScopedWor
 export async function withStudioRolePipelineFullDocumentUpdate<T extends { readonly revision: number }>(
   executor: DrizzleStudioCrdtTransaction | typeof db,
   input: { readonly actorUserId: string; readonly workId: string; readonly baseRevision: number;
-    readonly patch: CreatorSharedDocumentPatch; readonly updatedAt: Date;
+    readonly patch: CreatorSharedDocumentPatch; readonly updatedAt: Date; readonly readerCapabilities?: readonly string[];
     readonly scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint } },
   update: () => Promise<readonly T[]>,
 ): Promise<T | null> {
   if (!("rollback" in executor)) throw new Error("원고 저장에는 같은 transaction의 권한 검사가 필요합니다.");
   const { actorUserId, workId, baseRevision, patch, updatedAt, scoped } = input;
+  await assertStudioBg3dRestDocumentInTransaction(executor, workId, patch.doc, input.readerCapabilities ?? []);
   const mapped = Object.hasOwn(patch, "doc") ? await admitStudioRolePipelineFullDocument(executor, actorUserId, workId, patch.doc, scoped?.writeContext) : null;
   const saved = (await update())[0];
   if (saved && mapped && scoped) await recordStudioScopedReceipt(studioScopedDrizzle(executor), mapped.authorization,
@@ -33,7 +35,7 @@ export function isStudioRolePipelineBoundaryError(error: unknown): error is Http
   if (!(error instanceof HttpException)) return false;
   const response = error.getResponse();
   return response !== null && typeof response === "object" && "code" in response
-    && typeof response.code === "string" && response.code.startsWith("studio_scoped_");
+    && typeof response.code === "string" && (response.code.startsWith("studio_scoped_") || response.code.startsWith("studio_bg3d_"));
 }
 
 /** 호출자는 원고 advisory/work 잠금을 먼저 보유한다. 전체 편집의 실제 매핑 구역만 재검사한다. */

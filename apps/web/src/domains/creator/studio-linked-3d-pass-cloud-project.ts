@@ -1,4 +1,5 @@
 import { hasStudioLinked3dPassProjectArchiveReferences } from "./studio-linked-3d-pass-project-archive";
+import { hasStudioBg3dSixPassProjectBundles } from "./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract";
 
 import type { StudioLinked3dPassCloudUploadReceipt } from "./studio-linked-3d-pass-cloud-sync";
 import type { StudioProjectFile } from "./studio-project-file";
@@ -21,6 +22,10 @@ export async function ensureStudioLinked3dPassCloudProject(input: {
 }): Promise<readonly StudioLinked3dPassCloudUploadReceipt[]> {
   if (!hasStudioLinked3dPassProjectArchiveReferences(input.project)) {
     return Object.freeze([]);
+  }
+  if (hasStudioBg3dSixPassProjectBundles(input.project)) {
+    const { ensureStudioBg3dSixPassCloudProject } = await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-cloud-project");
+    await ensureStudioBg3dSixPassCloudProject(input);
   }
   const [
     { ensureStudioLinked3dPassCloudArtifacts },
@@ -63,11 +68,13 @@ export async function hydrateStudioLinked3dPassCloudProject<T>(input: {
     import("./studio-linked-3d-pass-cloud-sync"),
     import("./studio-linked-3d-pass-product-authority"),
   ]);
-  return await hydrateStudioLinked3dPassCloudArtifacts({
-    workId: input.workId,
-    project: input.project,
-    authority: await acquireStudioLinked3dPassProductAuthority(),
-    apply: input.apply,
-    signal: input.signal,
+  const authority = await acquireStudioLinked3dPassProductAuthority();
+  const hydrateLegacy = async (project: StudioProjectFile) => await hydrateStudioLinked3dPassCloudArtifacts({
+    ...input, project, authority,
   });
+  if (hasStudioBg3dSixPassProjectBundles(input.project)) {
+    const { hydrateStudioBg3dSixPassCloudProject } = await import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-cloud-project");
+    return await hydrateStudioBg3dSixPassCloudProject({ ...input, apply: hydrateLegacy });
+  }
+  return await hydrateLegacy(input.project);
 }

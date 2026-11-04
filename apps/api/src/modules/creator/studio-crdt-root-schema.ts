@@ -1,8 +1,9 @@
+import { isBoundedStudioCrdtId } from "./studio-crdt-identifiers";
+import { STUDIO_BG3D_IMAGE_PROPERTIES, hasValidStudioBg3dImageReferenceProps, isValidStudioBg3dImageReferenceCandidate, hasValidStudioCrdtBg3dBundleRoots } from "./studio-crdt-bg3d-bundle";
 import { hasValidStudioBrushEngineProgramExtension, STUDIO_BRUSH_ENGINE_PROGRAM_STROKE_VERSION } from "@toonstudio/contracts/studio-brush-material-program-contract";
 import * as Y from "yjs";
 
 import {
-  normalizeStudioBrushR8TextureGrainSource,
   serializeStudioBrushR8TextureGrainSourceCanonical,
 } from "@toonstudio/contracts/studio-brush-r8-grain-asset-contract";
 import { readStudioCrdtRasterDocument } from "@toonstudio/contracts/studio-crdt-raster-document-contract";
@@ -29,8 +30,12 @@ import {
   studioWorkAssetReferenceKey, hasValidStudioBundleSceneCredit,
 } from "@toonstudio/contracts/studio-work-asset-contract";
 
-import type { StudioBrushR8TextureGrainSource } from "@toonstudio/contracts/studio-brush-r8-grain-asset-contract";
 import type { StudioWorkAssetReference } from "@toonstudio/contracts/studio-work-asset-contract";
+
+export { isBoundedStudioCrdtId } from "./studio-crdt-identifiers";
+
+export { snapshotStudioCrdtDeletionRoots, preservesStudioCrdtDeletionRoots } from "./studio-crdt-deletion-roots";
+export type { StudioCrdtDeletionRootSnapshot } from "./studio-crdt-deletion-roots";
 
 export const STUDIO_CRDT_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const STUDIO_CRDT_STROKE_SAMPLE_MAX_COUNT = 100_000;
@@ -416,7 +421,7 @@ const STUDIO_CRDT_SCENE_KEYS_BY_TYPE = {
   reference: new Set([
     "elementType",
     ...STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS,
-    ...STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS,
+    ...STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS, ...STUDIO_BG3D_IMAGE_PROPERTIES,
   ]),
 } as const;
 
@@ -480,14 +485,6 @@ const STUDIO_CRDT_PAPER_SURFACE_KEYS = new Set(["kind", "seed"]);
 const STUDIO_CRDT_PAPER_SURFACE_MAX_SEED = 0xffff_ffff;
 
 const STUDIO_CRDT_LAYER_GROUP_KEYS = new Set(["name", "hidden", "locked"]);
-export function isBoundedStudioCrdtId(value: unknown): value is string {
-  if (typeof value !== "string" || value.length === 0 || value.length > 160) return false;
-  for (const character of value) {
-    const codePoint = character.codePointAt(0) ?? 0;
-    if (codePoint <= 31 || (codePoint >= 127 && codePoint <= 159)) return false;
-  }
-  return true;
-}
 
 function hasOnlyKeys(value: Y.Map<unknown>, allowed: ReadonlySet<string>): boolean {
   for (const key of value.keys()) {
@@ -1758,6 +1755,8 @@ function isValidStudioWorkAssetReferenceCandidate(
   property: string,
   value: unknown
 ): boolean {
+  const bg3d = isValidStudioBg3dImageReferenceCandidate(property, value);
+  if (bg3d !== undefined) return bg3d;
   if (property === "elementType") {
     return isValidLegacyStudioCrdtReferenceType(value);
   }
@@ -1849,6 +1848,8 @@ function hasValidStudioWorkAssetReferenceProps(
   id: string,
   props: Record<string, unknown>
 ): boolean {
+  const bg3d = hasValidStudioBg3dImageReferenceProps(id, props);
+  if (bg3d !== undefined) return bg3d;
   if (hasTopologyStudioCrdtReferenceProps(props)) return true;
   const { elementType, ...referenceProps } = props;
   const filterMaskProps = studioFilterMaskReferenceProps(props);
@@ -1913,58 +1914,7 @@ export interface StudioCrdtWorkAssetReferenceSnapshot {
   activeCount: number;
 }
 
-export interface StudioCrdtR8GrainReferenceSnapshot {
-  /** Canonical immutable source keyed by the durable stroke identity that owns it. */
-  byStrokeId: ReadonlyMap<string, Readonly<StudioBrushR8TextureGrainSource>>;
-  /** One canonical source per durable work-asset identity. */
-  byAssetId: ReadonlyMap<string, Readonly<StudioBrushR8TextureGrainSource>>;
-  /** True when one asset ID was poisoned with two different canonical content identities. */
-  hasConflictingAssetId: boolean;
-}
-
-/**
- * Snapshots every canonical renderer-significant R8 source from the durable stroke map.
- *
- * Root-schema validation runs before callers consume this snapshot, but this helper still
- * normalizes independently and ignores malformed candidates so it is safe to use while comparing
- * a pre-update document with a candidate update.
- */
-export function snapshotStudioCrdtR8GrainReferences(
-  doc: Y.Doc
-): StudioCrdtR8GrainReferenceSnapshot {
-  const byStrokeId = new Map<string, Readonly<StudioBrushR8TextureGrainSource>>();
-  const byAssetId = new Map<string, Readonly<StudioBrushR8TextureGrainSource>>();
-  let hasConflictingAssetId = false;
-  const strokes = materializeExistingMapRoot(doc, "strokes");
-  if (!(strokes instanceof Y.Map)) {
-    return { byStrokeId, byAssetId, hasConflictingAssetId };
-  }
-  for (const [strokeId, value] of strokes) {
-    if (!isBoundedStudioCrdtId(strokeId) || !(value instanceof Y.Map)) continue;
-    const brushDynamics = value.get("brushDynamics");
-    if (!brushDynamics || typeof brushDynamics !== "object" || Array.isArray(brushDynamics)) {
-      continue;
-    }
-    const grain = (brushDynamics as Record<string, unknown>).grain;
-    if (!grain || typeof grain !== "object" || Array.isArray(grain)) continue;
-    const source = normalizeStudioBrushR8TextureGrainSource(
-      (grain as Record<string, unknown>).source
-    );
-    if (!source) continue;
-    byStrokeId.set(strokeId, source);
-    const existing = byAssetId.get(source.asset.assetId);
-    if (
-      existing
-      && serializeStudioBrushR8TextureGrainSourceCanonical(existing)
-        !== serializeStudioBrushR8TextureGrainSourceCanonical(source)
-    ) {
-      hasConflictingAssetId = true;
-      continue;
-    }
-    byAssetId.set(source.asset.assetId, source);
-  }
-  return { byStrokeId, byAssetId, hasConflictingAssetId };
-}
+export { snapshotStudioCrdtR8GrainReferences, type StudioCrdtR8GrainReferenceSnapshot } from "./studio-crdt-r8-reference-snapshot";
 
 /** Returns every materialized identity plus the non-tombstoned count in a valid document. */
 export function snapshotStudioWorkAssetReferences(
@@ -1996,7 +1946,7 @@ export function snapshotStudioWorkAssetReferences(
     if (!isValidLegacyStudioCrdtReferenceType(elementType)) continue;
     identities.set(id, elementType);
     if (
-      hasTopologyStudioCrdtReferenceProps(props) ||
+      hasTopologyStudioCrdtReferenceProps(props) || props.bg3dLtBundleReference !== undefined ||
       !STUDIO_WORK_ASSET_TYPE_SET.has(elementType)
     ) continue;
     const reference = {
@@ -2175,37 +2125,6 @@ function validateStudioCrdtDeletionRoots(doc: Y.Doc): boolean {
   return true;
 }
 
-export interface StudioCrdtDeletionRootSnapshot {
-  operations: ReadonlyMap<string, unknown>;
-  acknowledgements: ReadonlyMap<string, unknown>;
-}
-
-export function snapshotStudioCrdtDeletionRoots(doc: Y.Doc): StudioCrdtDeletionRootSnapshot | null {
-  const operations = materializeExistingMapRoot(doc, STUDIO_CRDT_DELETION_OPS_ROOT);
-  const acknowledgements = materializeExistingMapRoot(doc, STUDIO_CRDT_DELETION_ACKS_ROOT);
-  if (operations === null || acknowledgements === null) return null;
-  return {
-    operations: new Map(operations ?? []),
-    acknowledgements: new Map(acknowledgements ?? []),
-  };
-}
-
-export function preservesStudioCrdtDeletionRoots(
-  snapshot: StudioCrdtDeletionRootSnapshot | null,
-  doc: Y.Doc
-): boolean {
-  if (!snapshot) return false;
-  const operations = materializeExistingMapRoot(doc, STUDIO_CRDT_DELETION_OPS_ROOT);
-  const acknowledgements = materializeExistingMapRoot(doc, STUDIO_CRDT_DELETION_ACKS_ROOT);
-  if (operations === null || acknowledgements === null) return false;
-  for (const [operationId, target] of snapshot.operations) {
-    if (!operations || operations.get(operationId) !== target) return false;
-  }
-  for (const [operationId, target] of snapshot.acknowledgements) {
-    if (!acknowledgements || acknowledgements.get(operationId) !== target) return false;
-  }
-  return true;
-}
 
 function validateSceneElementRoot(id: string, record: Y.Map<unknown>): boolean {
   const metadataKeys = new Set(["id", "pageId", "layerId", "payloadVersion", "type", "deleted"]);
@@ -3079,7 +2998,7 @@ export function hasValidStudioCrdtRootSchema(doc: Y.Doc): boolean {
       validatePageRoot
     ) ||
     !validateTrackedLayerGroupRoots(doc) ||
-    !validateStudioCrdtShared3dStageRoots(doc)
+    !validateStudioCrdtShared3dStageRoots(doc) || !hasValidStudioCrdtBg3dBundleRoots(doc)
   ) {
     return false;
   }

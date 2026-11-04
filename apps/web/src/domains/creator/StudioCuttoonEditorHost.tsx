@@ -229,7 +229,7 @@ import {
   useStudioSharedDocumentRevalidation,
 } from "./studio-cuttoon-editor/runtime/useStudioSharedDocumentRevalidation";
 import { useStudioBg3dRoutedEntry } from "./studio-cuttoon-editor/runtime/useStudioBg3dRoutedEntry";
-import { remapStudioBg3dLtCopiedBundles } from "./bg3d/studio-bg3d-lt-copy-remap";
+import { remapStudioBg3dLtCopiedBundles } from "./bg3d/studio-bg3d-lt-copy-remap"; import { studioBg3dSixPassCopyUnavailableReason } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-copy-guard";
 import { useStudioPageClipboard } from "./studio-page-clipboard-controller";
 import { useStudioPageViewControls } from "./canvas/studio-page-view-controller";
 import { studioPageSequenceOpenByDefault, useStudioPageManagement } from "./page/studio-page-management-controller";
@@ -448,7 +448,6 @@ import {
 import { useStudioCollaborationWiring } from "./live/studio-collaboration-wiring";
 import { studioDrawElementToCrdtStroke } from "./live/studio-crdt-draw-bridge";
 import { StudioCrdtLiveStrokePublisher } from "./live/studio-crdt-live-stroke-publisher";
-import { STUDIO_CRDT_ORIGIN_LOCAL } from "./live/studio-crdt-protocol";
 import { creatorWorkSnapshotToStudioProject } from "./studio-creator-work-project";
 import { initialCropRect, isCropRectNoop, planCropApply } from "./studio-crop";
 import {
@@ -1396,7 +1395,6 @@ import type {
   StudioDialogueInterchangeDocument,
 } from "./lettering/studio-dialogue-interchange";
 import type { StudioCrdtDocument } from "./live/studio-crdt-document";
-import type { StudioCrdtSceneGraphChangedIds, StudioCrdtSceneGraphFrontier } from "./live/studio-crdt-history";
 import type { StudioRasterOverlaySourceElement } from "./live/studio-crdt-raster-ui-bridge";
 import type { StudioCommentPinClickPayload } from "./live/StudioLiveCanvasOverlay";
 import type { StudioLivePressureStore } from "./live/StudioLiveInkHosts";
@@ -2243,64 +2241,24 @@ export function StudioCuttoonEditor({
     studioWorkAssetHydrator,
   ]);
   useLayoutEffect(() => {
-    if (!studioCrdtDocument || sourceHydrationPending) return;
-    const subscribedRuntime = studioCrdtSceneRuntimeRef.current;
-    let reconciliationActive = true;
-    const applyFrontier = (
-      frontier: StudioCrdtSceneGraphFrontier,
-      changedIds: StudioCrdtSceneGraphChangedIds | null,
-      forceOfflineProjection = false
-    ) => {
-      if (!editorMountedRef.current) return;
-      const runtime = studioCrdtSceneRuntimeRef.current;
-      if (!reconciliationActive || !runtime || runtime !== subscribedRuntime) return;
-      const currentHistory = pagesHistoryRef.current;
-      const currentIndex = Math.max(
-        0,
-        Math.min(pagesHiRef.current, Math.max(0, currentHistory.length - 1))
-      );
-      const reconciled = studioOfflineHost.reconcileStudioOfflineCrdtFrontier({
-        runtime,
-        document: studioCrdtDocument, reportError: setError,
-        currentHistory,
-        currentIndex,
-        frontier,
-        changedIds,
-        forceOfflineProjection,
-        referenceSources: readyStudioWorkAssetImageSources(studioWorkAssetHydrator),
-      });
-      if (!reconciled) return;
-      studioRevisionProjectGenerationRef.current += 1;
-      collaborationAccessRef.current = {
-        ...collaborationAccessRef.current,
-        documentGeneration: collaborationAccessRef.current.documentGeneration + 1,
-      };
-      pagesHistoryRef.current = reconciled.history;
-      pagesHiRef.current = currentIndex;
-      rebaseStudioHistoryJournal(
-        reconciled.currentPages,
-        currentIndex,
-        "remote CRDT reconciliation"
-      );
-      setPagesHistoryState(reconciled.history);
-    };
-    applyFrontier(studioOfflineHost.studioOfflineDocumentFrontier(studioCrdtDocument), null);
-    // layout effect 안의 history update와 같은 commit 전 배치로 처리한다. 따라서 stale 로컬
-    // 캔버스가 한 프레임 먼저 활성화되는 구간 없이 frontier가 반영된 다음 편집이 열린다.
-    setStudioCrdtReconciledDocument(studioCrdtDocument);
-    const unsubscribeDocument = studioOfflineHost.subscribeStudioOfflineDocumentFrontier(
-      studioCrdtDocument, STUDIO_CRDT_ORIGIN_LOCAL, applyFrontier
-    );
-    // 마지막 로컬 제안을 제외해 Yjs 이벤트가 없어도 공유본과 history를 다시 일치시킨다.
-    const unsubscribeOffline = studioCrdtSceneRuntimeRef.current?.offlineBranch?.subscribeProjection(() => {
-      applyFrontier(studioOfflineHost.studioOfflineDocumentFrontier(studioCrdtDocument), null, true);
+    const runtime = studioCrdtSceneRuntimeRef.current;
+    if (!studioCrdtDocument || sourceHydrationPending || !runtime) return;
+    return runtime.bindFrontierReconciliation({
+      document: studioCrdtDocument,
+      runtimeRef: studioCrdtSceneRuntimeRef,
+      mountedRef: editorMountedRef,
+      pagesHistoryRef, pagesHiRef,
+      revisionRef: studioRevisionProjectGenerationRef,
+      accessRef: collaborationAccessRef,
+      hydrator: studioWorkAssetHydrator,
+      workId: authorizedWorkAssetScopeId ?? null,
+      reportError: setError,
+      rebase: rebaseStudioHistoryJournal,
+      setHistory: setPagesHistoryState,
+      setReconciled: setStudioCrdtReconciledDocument,
     });
-    return () => {
-      reconciliationActive = false;
-      unsubscribeDocument();
-      unsubscribeOffline?.();
-    };
   }, [
+    authorizedWorkAssetScopeId,
     collaborationAccessRef,
     editorMountedRef,
     pagesHiRef,
@@ -14623,7 +14581,7 @@ const puppetWarpArmed =
         // Optional sidecars settle before the single hydration mutation; route teardown invalidates every result before React state.
         if (!alive || controller.signal.aborted) return;
         const parsedProject = creatorWorkSnapshotToStudioProject(w);
-        const hasLinked3dRender = parsedProject.pagesList.some((page) => page.linked3dRender !== undefined);
+        const hasLinked3dRender = parsedProject.pagesList.some((page) => page.linked3dRender !== undefined || page.bg3dLtBundles !== undefined);
         if (remixId && hasLinked3dRender) {
           setWorkHydrationFailed(true);
           setError(
@@ -17251,7 +17209,7 @@ const puppetWarpArmed =
     patchEl,
     canvasH,
     addEl,
-    isRealtimeTeamSession,
+    isRealtimeTeamSession, scopedWriteRuntime,
     elements,
     activePage,
     bg3dDccSourceRef,
@@ -20030,7 +19988,7 @@ const puppetWarpArmed =
   // 클립을 캔버스에 삽입 — 새 id·새 그룹으로 화면 중앙 부근에 배치.
   function insertClip(clip: StudioClip) {
     const clipElements = clip.els as El[];
-    if (clipElements.length === 0) return;
+    if (clipElements.length === 0) return; const unavailable = studioBg3dSixPassCopyUnavailableReason(clipElements); if (unavailable) { setError(unavailable); return; }
     const clipBounds = unionBounds(clipElements.map((element) => elBounds(element)));
     const [cx, cy] = spawnCenter({
       width: clipBounds.w,

@@ -345,7 +345,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
               <span>현재 3D 씬에 개구부 벽체·몰딩 배열 배치 ({directModelingCommit.primitives.length}개)</span>
             </button>
           </div>
-          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-2">
             <label className="flex flex-col gap-0.5">
               <span className="font-semibold text-fg-2">Axis Inference 잠금</span>
               <select
@@ -390,7 +390,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
         </div>
 
         {/* 2 & 3. 2-Point Perspective + Shadow-Preserving Room Cutaway */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-2">
           <div className="rounded-lg border border-line bg-panel p-2.5">
             <div className="flex items-center justify-between font-bold text-fg">
               <span>② 2점 투시(Two-Point) 수직선 고정 & 렌즈 시프트</span>
@@ -453,7 +453,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
         </div>
 
         {/* 4 & 5. Solar Shadow Calculator + Style & Outliner Tag Presets */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-2">
           <div className="rounded-lg border border-line bg-panel p-2.5">
             <div className="flex items-center justify-between font-bold text-fg">
               <span className="inline-flex items-center gap-1">
@@ -536,9 +536,9 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
         </div>
 
         {/* 6 & 7. Dynamic Components Articulation + 1-Click 6-Pass LT Recipe */}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <div className="rounded-lg border border-line bg-panel p-2.5">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-2">
+          <div className="min-w-0 rounded-lg border border-line bg-panel p-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="font-bold text-fg">
                 ⑥ 동적 구성요소(문·창문·서랍·조명) & 3컷 연속 시퀀스
               </span>
@@ -570,7 +570,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                   step={15}
                   value={doorSwingDeg}
                   onChange={(e) => setDoorSwingDeg(Number(e.target.value))}
-                  className="accent-accent"
+                  className="min-w-0 w-full accent-accent"
                 />
               </label>
               <label className="flex flex-col">
@@ -583,7 +583,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                   step={0.1}
                   value={windowSlideMeters}
                   onChange={(e) => setWindowSlideMeters(Number(e.target.value))}
-                  className="accent-accent"
+                  className="min-w-0 w-full accent-accent"
                 />
               </label>
               <label className="flex flex-col">
@@ -596,7 +596,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                   step={0.05}
                   value={drawerPullMeters}
                   onChange={(e) => setDrawerPullMeters(Number(e.target.value))}
-                  className="accent-accent"
+                  className="min-w-0 w-full accent-accent"
                 />
               </label>
             </div>
@@ -617,8 +617,8 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
             <p className="mt-1 text-fg-2">{t(ROLE_LENS_COPY.dynamicScope)}</p>
           </div>
 
-          <div className="rounded-lg border border-line bg-panel p-2.5">
-            <div className="flex items-center justify-between font-bold text-fg">
+          <div className="min-w-0 rounded-lg border border-line bg-panel p-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
               <span className="inline-flex items-center gap-1">
                 <Layers className="size-3.5 text-accent" aria-hidden />
                 <span>{t(ROLE_LENS_COPY.ltTitle)}</span>

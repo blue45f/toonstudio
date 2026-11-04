@@ -132,3 +132,8 @@ tools 같은 수명주기 권위를 기준으로 구성한다. 기존 focused en
 - Admin 기능 이전 완료와 Web Admin 잔여 0
 - API 레거시 source-layout 예산 0 또는 명시적으로 승인된 새 구조
 - 문서, ratchet, 테스트와 실제 tree가 같은 상태
+
+2026-11-05 상태: **migration — 실제 6패스 저장 계약**. 명시 승인한 추가형 migration
+`0121_studio_bg3d_six_pass_bundle.sql` 한 파일을 위해 API DB 파일 상한을 173에서 174로
+기록한다. Drizzle 정의는 기존 Studio raster schema에 함께 두며 다른 파일·경계 상한은
+변경하지 않는다. 운영 DB 적용과 배포는 이번 코드 구현 승인에 포함되지 않는다.

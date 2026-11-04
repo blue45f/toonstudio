@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassBundleImageReference } from "../studio-bg3d-six-pass-reference";
 /** 브라우저와 서버가 같은 순서·삭제·원본 자산 보존 규칙을 사용한다. 의미 검증은 각 admission 경계가 소유한다. */
 export interface StudioCrdtCompatibleElement { id: string; type: string }
 export interface StudioCrdtCompatibleLayerGroup { id: string; name: string; hidden?: boolean; locked?: boolean; collapsed?: boolean }
@@ -11,7 +12,7 @@ export interface StudioCrdtAuthoringSceneRecord extends StudioCrdtAuthoringRecor
 }
 export interface StudioCrdtAuthoringPageRecord {
   id: string; deleted: boolean; orderIndex: number; payload: { props: Record<string, unknown> };
-  shared3dStageManaged?: boolean; shared3dStage?: unknown;
+  shared3dStageManaged?: boolean; shared3dStage?: unknown; bg3dLtBundles?: unknown; linked3dRender?: unknown;
 }
 export interface StudioCrdtAuthoringGroupRecord {
   id: string; pageId: string; deleted: boolean;
@@ -270,6 +271,9 @@ function reconcileStudioCrdtSceneGraphPages<
       id: record.id,
       elements: source?.elements ?? [],
     } as TPage & { shared3dStage?: StudioShared3dStagePersistedState };
+    if (record.bg3dLtBundles !== undefined) {
+      Object.assign(materialized, { bg3dLtBundles: record.bg3dLtBundles, linked3dRender: record.linked3dRender });
+    }
     // An absent synchronized preset field is authoritative too, including remote removal.
     if (!Object.hasOwn(record.payload.props, "layerComps")) delete materialized.layerComps;
     if (!Object.hasOwn(record.payload.props, "colorProof")) delete materialized.colorProof;
@@ -422,12 +426,17 @@ function reconcileStudioCrdtSceneGraphPages<
         : null;
     const topologyReference = record.payload.type === "reference" &&
       isStudioCrdtTopologyReferencePayload(record.payload);
+    const currentBundleRef = parseStudioBg3dSixPassBundleImageReference(record.payload.props.bg3dLtBundleReference);
+    const localBundleRef = localSource ? parseStudioBg3dSixPassBundleImageReference(Reflect.get(localSource.element, "bg3dLtBundleReference")) : null;
+    const exactLocalBundle = currentBundleRef && localBundleRef && currentBundleRef.elementId === record.id
+      && currentBundleRef.bundleId === localBundleRef.bundleId && currentBundleRef.role === localBundleRef.role
+      && currentBundleRef.renderRevisionId === localBundleRef.renderRevisionId && currentBundleRef.manifestHash === localBundleRef.manifestHash;
     const canonicalLocalSource =
       expectedReferenceType &&
       localSource?.element.id === record.id && localSource.element.type === expectedReferenceType &&
       (topologyReference || (
         STUDIO_WORK_ASSET_TYPE_SET.has(expectedReferenceType) &&
-        isStudioCrdtAdmittedWorkAssetElement(localSource.element)
+        (currentBundleRef ? exactLocalBundle : isStudioCrdtAdmittedWorkAssetElement(localSource.element))
       ))
         ? localSource
         : undefined;

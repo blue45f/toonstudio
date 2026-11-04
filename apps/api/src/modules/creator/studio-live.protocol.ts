@@ -1,16 +1,15 @@
-import { z } from "zod";
-import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
-import { STUDIO_ACOUSTIC_RESOURCE_PREFIX } from "@toonstudio/studio-project-model/world-acoustic";
-
-import {
+import { decodeStudioCrdtBinaryEnvelope,
   STUDIO_CRDT_BINARY_HEADER_BYTES,
   STUDIO_CRDT_BINARY_SYNC_MAX_BYTES,
   STUDIO_CRDT_BINARY_SYNC_MAX_FRAGMENTS,
   copyStudioCrdtBinaryBytes,
-  decodeStudioCrdtBinaryEnvelope,
-  reassembleStudioCrdtBinarySyncEnvelope,
-  type StudioCrdtBinaryEnvelopeKind,
-} from "@toonstudio/contracts/studio-crdt-binary-envelope";
+  reassembleStudioCrdtBinarySyncEnvelope } from "@toonstudio/contracts/studio-crdt-binary-envelope";
+import { encodedBase64, decodedBinaryEnvelope } from "./studio-live-crdt-wire-schema";
+import { StudioBg3dReaderCapabilitiesSchema } from "./studio-bg3d-reader-capability";
+import { z } from "zod";
+import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
+import { STUDIO_ACOUSTIC_RESOURCE_PREFIX } from "@toonstudio/studio-project-model/world-acoustic";
+
 import {
   verifyStudioLiveAdmissionTicket,
   type VerifiedSessionToken,
@@ -99,39 +98,9 @@ const StudioCrdtBinaryWireFormatSchema = z.literal(STUDIO_CRDT_BINARY_WIRE_FORMA
 const StudioCrdtRequestIdSchema = boundedIdentifier(160);
 const StudioCrdtUpdateIdSchema = z.uuid();
 export const StudioLiveCrdtWireSelectionEpochSchema = z.uuid();
-const STUDIO_CRDT_BASE64_PATTERN =
-  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
-
-const encodedBase64 = (maximumDecodedBytes: number) =>
-  z
-    .string()
-    .min(4)
-    .max(Math.ceil(maximumDecodedBytes / 3) * 4)
-    .regex(STUDIO_CRDT_BASE64_PATTERN)
-    .refine(
-      (value) => Buffer.from(value, "base64").toString("base64") === value,
-      "base64 must use its canonical encoding"
-    );
-
-const decodedBinaryEnvelope = (kind: StudioCrdtBinaryEnvelopeKind) =>
-  z.unknown().transform((value, context): Uint8Array => {
-    try {
-      return decodeStudioCrdtBinaryEnvelope(value, kind).bytes;
-    } catch (error) {
-      context.addIssue({
-        code: "custom",
-        message:
-          error instanceof Error
-            ? error.message
-            : `invalid ${kind} CRDT binary envelope`,
-      });
-      return z.NEVER;
-    }
-  });
-
 export const StudioLiveJoinSchema = z
   .object({
-    workId: WorkIdSchema,
+    workId: WorkIdSchema, readerCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     clientInstanceId: ClientInstanceIdSchema,
   })
   .strict();
@@ -573,7 +542,7 @@ export const StudioLiveInterServerRelayResponseSchema = z
 export const StudioLiveCrdtSyncSchema = z
   .object({
     protocolVersion: StudioCrdtProtocolVersionSchema,
-    workId: WorkIdSchema,
+    workId: WorkIdSchema, readerCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     requestId: StudioCrdtRequestIdSchema,
     stateVector: encodedBase64(STUDIO_CRDT_STATE_VECTOR_MAX_BYTES),
   })
@@ -582,7 +551,7 @@ export const StudioLiveCrdtSyncSchema = z
 export const StudioLiveCrdtUpdateSchema = z
   .object({
     protocolVersion: StudioCrdtProtocolVersionSchema,
-    workId: WorkIdSchema,
+    workId: WorkIdSchema, readerCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     updateId: StudioCrdtUpdateIdSchema,
     clientSequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
     update: encodedBase64(STUDIO_CRDT_UPDATE_MAX_BYTES), writeContext: StudioScopedWriteContextSchema.optional(),
@@ -599,7 +568,7 @@ export const StudioLiveCrdtBinarySelectSchema = z
   .object({
     protocolVersion: StudioCrdtProtocolVersionSchema,
     wireVersion: StudioCrdtBinaryWireVersionSchema,
-    workId: WorkIdSchema,
+    workId: WorkIdSchema, readerCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     format: StudioCrdtBinaryWireFormatSchema,
     selectionEpoch: StudioLiveCrdtWireSelectionEpochSchema,
   })
@@ -620,7 +589,7 @@ export const StudioLiveCrdtBinarySyncSchema = z
   .object({
     protocolVersion: StudioCrdtProtocolVersionSchema,
     wireVersion: StudioCrdtBinaryWireVersionSchema,
-    workId: WorkIdSchema,
+    workId: WorkIdSchema, readerCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     requestId: StudioCrdtRequestIdSchema,
     stateVector: decodedBinaryEnvelope("state-vector"),
   })
@@ -630,7 +599,7 @@ export const StudioLiveCrdtBinaryUpdateSchema = z
   .object({
     protocolVersion: StudioCrdtProtocolVersionSchema,
     wireVersion: StudioCrdtBinaryWireVersionSchema,
-    workId: WorkIdSchema,
+    workId: WorkIdSchema, readerCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     updateId: StudioCrdtUpdateIdSchema,
     clientSequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
     update: decodedBinaryEnvelope("update"), writeContext: StudioScopedWriteContextSchema.optional(),
@@ -654,6 +623,7 @@ export const StudioLiveCrdtBinarySyncResultSchema = z
     totalBytes: z.number().int().min(1).max(STUDIO_CRDT_BINARY_SYNC_MAX_BYTES),
     serverStateVector: z.unknown(),
     serverSequence: StudioCrdtServerSequenceSchema,
+    requiredReaderCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
   })
   .strict()
   .transform((value, context) => {
@@ -730,6 +700,7 @@ export const StudioLiveCrdtBinaryUpdateAckSchema = z
     workId: WorkIdSchema,
     updateId: StudioCrdtUpdateIdSchema,
     serverSequence: StudioCrdtServerSequenceSchema,
+    requiredReaderCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     duplicate: z.boolean(),
   })
   .strict();
@@ -741,6 +712,7 @@ export const StudioLiveCrdtBinaryRemoteUpdateSchema = z
     workId: WorkIdSchema,
     updateId: StudioCrdtUpdateIdSchema,
     serverSequence: StudioCrdtServerSequenceSchema,
+    requiredReaderCapabilities: StudioBg3dReaderCapabilitiesSchema.optional(),
     update: decodedBinaryEnvelope("update"),
   })
   .strict();
@@ -1016,6 +988,7 @@ export interface StudioLiveCrdtSyncResult {
   totalBytes: number;
   serverStateVector: string;
   serverSequence: string;
+  requiredReaderCapabilities?: readonly string[];
 }
 
 export interface StudioLiveCrdtUpdateAck {
@@ -1023,6 +996,7 @@ export interface StudioLiveCrdtUpdateAck {
   workId: string;
   updateId: string;
   serverSequence: string;
+  requiredReaderCapabilities?: readonly string[];
   serverStateVector: string;
   duplicate: boolean;
 }
@@ -1032,6 +1006,7 @@ export interface StudioLiveCrdtRemoteUpdate {
   workId: string;
   updateId: string;
   serverSequence: string;
+  requiredReaderCapabilities?: readonly string[];
   update: string;
 }
 
@@ -1081,11 +1056,13 @@ export type StudioLiveFailureCode =
   | "lock_limit"
   | "peer_unavailable"
   | "temporarily_unavailable"
+  | "reader_upgrade_required"
   | "storage_corruption"
   | "internal_error";
 export type StudioLiveFailure = {
   ok: false;
   code: StudioLiveFailureCode;
+  requiredReaderCapabilities?: readonly string[];
   message: string;
 };
 export type StudioLiveAck<T> = StudioLiveSuccess<T> | StudioLiveFailure;
@@ -1150,6 +1127,7 @@ export type StudioLiveLockUpdate =
     };
 
 export interface StudioLiveJoinResult {
+  requiredReaderCapabilities?: readonly string[];
   lockProtocolVersion: typeof STUDIO_LIVE_LOCK_PROTOCOL_VERSION;
   lockRevisionVersion: typeof STUDIO_LIVE_LOCK_REVISION_VERSION;
   lockSnapshotRevision: string;
@@ -1176,6 +1154,8 @@ export interface StudioLiveIdentityClaim {
 }
 
 export interface StudioLiveSocketData {
+  studioReaderCapabilities?: readonly string[];
+  studioBg3dReaderRoom?: string;
   /**
    * Shared Socket.IO adapters expose `socket.data` through `fetchSockets()`, so this discovery
    * surface contains only public presence plus a comparison-only HMAC identity claim. Never place

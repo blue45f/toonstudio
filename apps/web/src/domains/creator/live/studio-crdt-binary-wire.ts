@@ -1,3 +1,4 @@
+import { studioCrdtReaderMetadataKeys, validStudioCrdtReaderMetadata, studioCrdtReaderMetadata, type StudioCrdtReaderMetadata } from "./studio-crdt-reader-capability";
 import {
   decodeStudioCrdtStateVector,
   decodeStudioCrdtUpdate,
@@ -54,7 +55,7 @@ export interface StudioCrdtBinarySelectionRequest {
   selectionEpoch: string;
 }
 
-export interface StudioCrdtBinarySyncRequest {
+export interface StudioCrdtBinarySyncRequest extends StudioCrdtReaderMetadata {
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   wireVersion: typeof STUDIO_CRDT_BINARY_WIRE_VERSION;
   workId: string;
@@ -62,7 +63,7 @@ export interface StudioCrdtBinarySyncRequest {
   stateVector: Uint8Array;
 }
 
-export interface StudioCrdtBinaryUpdateRequest {
+export interface StudioCrdtBinaryUpdateRequest extends StudioCrdtReaderMetadata {
   writeContext?: StudioScopedWriteContext;
   protocolVersion: typeof STUDIO_CRDT_PROTOCOL_VERSION;
   wireVersion: typeof STUDIO_CRDT_BINARY_WIRE_VERSION;
@@ -169,6 +170,7 @@ export function createStudioCrdtBinarySyncRequest(
     wireVersion: STUDIO_CRDT_BINARY_WIRE_VERSION,
     workId: request.workId,
     requestId: request.requestId,
+    ...(request.readerCapabilities ? { readerCapabilities: request.readerCapabilities } : {}),
     stateVector: encodeStudioCrdtBinaryEnvelope(
       "state-vector",
       decodeStudioCrdtStateVector(request.stateVector)
@@ -193,9 +195,9 @@ export function parseStudioCrdtBinarySyncResponse(
       "wireBytes",
       "totalBytes",
       "serverStateVector",
-      "serverSequence",
+      "serverSequence", ...studioCrdtReaderMetadataKeys(value),
     ]) ||
-    !hasBinaryCommonContract(value, options.expectedWorkId) ||
+    !hasBinaryCommonContract(value, options.expectedWorkId) || !validStudioCrdtReaderMetadata(value) ||
     !Array.isArray(value.fragments) ||
     typeof value.fragmentCount !== "number" ||
     !Number.isSafeInteger(value.fragmentCount) ||
@@ -231,6 +233,7 @@ export function parseStudioCrdtBinarySyncResponse(
         totalBytes: diff.byteLength,
         serverStateVector: encodeStudioCrdtStateVector(serverStateVector),
         serverSequence: value.serverSequence,
+        ...studioCrdtReaderMetadata(value as StudioCrdtReaderMetadata),
       },
       options
     );
@@ -247,6 +250,7 @@ export function createStudioCrdtBinaryUpdateRequest(
     wireVersion: STUDIO_CRDT_BINARY_WIRE_VERSION,
     workId: request.workId,
     updateId: request.updateId,
+    ...(request.readerCapabilities ? { readerCapabilities: request.readerCapabilities } : {}),
     clientSequence: request.clientSequence,
     ...(request.writeContext ? { writeContext: structuredClone(request.writeContext) } : {}),
     update: encodeStudioCrdtBinaryEnvelope(
@@ -267,10 +271,10 @@ export function parseStudioCrdtBinaryUpdateAck(
       "wireVersion",
       "workId",
       "updateId",
-      "serverSequence",
+      "serverSequence", ...studioCrdtReaderMetadataKeys(value),
       "duplicate",
     ]) ||
-    !hasBinaryCommonContract(value, options.expectedWorkId)
+    !hasBinaryCommonContract(value, options.expectedWorkId) || !validStudioCrdtReaderMetadata(value)
   ) {
     return null;
   }
@@ -280,6 +284,7 @@ export function parseStudioCrdtBinaryUpdateAck(
       workId: value.workId,
       updateId: value.updateId,
       serverSequence: value.serverSequence,
+      ...studioCrdtReaderMetadata(value as StudioCrdtReaderMetadata),
       serverStateVector: null,
       duplicate: value.duplicate,
     },
@@ -298,10 +303,10 @@ export function parseStudioCrdtBinaryRemoteUpdate(
       "wireVersion",
       "workId",
       "updateId",
-      "serverSequence",
+      "serverSequence", ...studioCrdtReaderMetadataKeys(value),
       "update",
     ]) ||
-    !hasBinaryCommonContract(value, options.expectedWorkId)
+    !hasBinaryCommonContract(value, options.expectedWorkId) || !validStudioCrdtReaderMetadata(value)
   ) {
     return null;
   }
@@ -313,6 +318,7 @@ export function parseStudioCrdtBinaryRemoteUpdate(
         workId: value.workId,
         updateId: value.updateId,
         serverSequence: value.serverSequence,
+        ...studioCrdtReaderMetadata(value as StudioCrdtReaderMetadata),
         update: encodeStudioCrdtUpdate(update),
       },
       options

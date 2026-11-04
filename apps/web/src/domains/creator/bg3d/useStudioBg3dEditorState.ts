@@ -20,7 +20,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     onSeedObjectInsertConsumed, sharedSceneSession, sharedStageResolution, sharedStageSessionScopeKey,
     sharedCharactersLinkedToOtherBackgroundCount = 0, operation = "insert", recoveryScope,
     validateRecoveryAccess, onWebXrCleanupPendingChange, onClose, onInsert, onUseAsAiMethodReference,
-    documentCanvasSize,
+    documentCanvasSize, sixPassLtUnavailableReason,
   } = props;
   const {
     useState, useRef, useCallback, useStudioBg3dSharedCharacterStatus,
@@ -798,7 +798,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     onClose,
     onInsert,
     onUseAsAiMethodReference,
-    documentCanvasSize,
+    documentCanvasSize, sixPassLtUnavailableReason,
   });
   return h;
 }

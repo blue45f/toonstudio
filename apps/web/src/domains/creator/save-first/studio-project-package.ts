@@ -1,3 +1,4 @@
+import { hasStudioBg3dSixPassAutosaveMarkers } from "../studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import {
   ensureFileHandlePermission,
   loadStoredFileHandle,
@@ -214,6 +215,12 @@ export function buildStudioProjectPackage(input: {
   ];
 
   for (const [name, value] of Object.entries(input.additionalEntries ?? {})) {
+    if (name.endsWith(".autosave.json")) {
+      const text = typeof value === "string" ? value : new TextDecoder("utf-8", { fatal: true }).decode(value);
+      if (hasStudioBg3dSixPassAutosaveMarkers(JSON.parse(text))) {
+        throw new Error("6패스 묶음 원고는 .toonstudio 형식으로 보관할 수 없습니다. 원고 메뉴에서 .toonproject.zip으로 내보내 주세요.");
+      }
+    }
     if (!/^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}$/u.test(name) || name.includes("..")) continue;
     entries.push({ name: `workspace/${name}`, bytes: typeof value === "string" ? encoder.encode(value) : value });
   }

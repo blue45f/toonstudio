@@ -1,8 +1,11 @@
+import { extractStudioBg3dLinkedPassRequirementsInTransaction } from "./studio-bg3d-linked-pass-admission";
 import { BadRequestException, ConflictException, ForbiddenException } from "@nestjs/common";
 import { sql } from "drizzle-orm";
+import { assertStudioBg3dBundleReaderInTransaction } from "./studio-bg3d-bundle.repository";
+import { assertStudioBg3dRestDocumentInTransaction } from "./studio-bg3d-bundle-rest-gate";
 import { z } from "zod";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
-import { assertStudioLinked3dPassAssetRows, extractStudioLinked3dPassAssetRequirements } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
+import { assertStudioLinked3dPassAssetRows } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import { creatorWorks, db } from "../../platform/database";
 import { CREATOR_WORK_REVISION_MAX, createCreatorWorkRevisionSnapshot, creatorWorkRevisionRetentionCutoff } from "../../server/creator-work-revisions";
 import { DrizzleCreatorCollaborationUnitOfWork } from "./creator-collaboration.drizzle-persistence";
@@ -28,12 +31,13 @@ export async function loadStudioScopedRestAuthority(transaction: DrizzleStudioCr
 export async function saveStudioScopedRestDocument(input: {
   readonly actorUserId: string; readonly workId: string; readonly baseRevision: number;
   readonly crdtServerSequence: bigint; readonly patch: CreatorSharedDocumentPatch;
-  readonly scoped: StudioScopedRestWriteInput;
+  readonly scoped: StudioScopedRestWriteInput; readonly readerCapabilities?: readonly string[];
 }): Promise<z.infer<typeof savedSchema> | null> {
   try {
     return await db.transaction(async (transaction) => {
       await transaction.execute(studioCrdtWorkAdvisoryLockQuery(input.workId));
       const query = studioScopedDrizzle(transaction), work = await lockStudioScopedWork(query, input.workId, input.actorUserId, true);
+      await assertStudioBg3dBundleReaderInTransaction(transaction, input.workId, input.readerCapabilities ?? []);
       const requestHash = studioScopedRequestHash({ baseRevision: input.baseRevision, crdtServerSequence: input.crdtServerSequence.toString(),
         patch: input.patch, writeContext: input.scoped.writeContext });
       const receipt = await loadStudioScopedReceipt(query, work, "rest", input.scoped.mutationId, requestHash);
@@ -53,12 +57,14 @@ export async function saveStudioScopedRestDocument(input: {
         throw new BadRequestException({ code: "studio_scoped_document_only", message: "담당 원고는 문서 저장을 사용하세요. 표지·납품 이미지·작품 설정은 제작 관리자 권한입니다." });
       }
       const beforeDocument = await loadStudioScopedRestAuthority(transaction, input.workId, work.document);
+      await assertStudioBg3dRestDocumentInTransaction(transaction, input.workId, input.patch.doc, input.readerCapabilities ?? [], beforeDocument);
       const admission = admitStudioScopedWriteEffects({ before: projectStudioScopedAuthoringDocument(beforeDocument),
         after: projectStudioScopedAuthoringDocument(input.patch.doc), context: authorization.context,
         targets: authorization.targets, ownership: new Map(Object.entries(authorization.policy.ownership)) });
       const current = await unit.findAccessibleDocument(input.actorUserId, input.workId);
       if (!current) throw new ForbiddenException("이 원고를 저장할 수 없습니다.");
-      const requirements = extractStudioLinked3dPassAssetRequirements({ cover: current.cover, pages: current.pages, doc: input.patch.doc });
+      const requirements = await extractStudioBg3dLinkedPassRequirementsInTransaction(transaction, input.workId,
+        { cover: current.cover, pages: current.pages, doc: input.patch.doc }, input.readerCapabilities ?? [], beforeDocument);
       if (requirements.length) assertStudioLinked3dPassAssetRows({ workId: input.workId, requirements,
         rows: await unit.findStudioLinked3dPassAssets(input.workId, requirements.map((requirement) => requirement.assetId)) });
       // 이 primitive는 검증한 authorization과 같은 transaction 안에만 존재한다. boolean 우회 입력은 없다.

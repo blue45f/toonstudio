@@ -10,7 +10,7 @@
  * 키보드/터치 대체 수단은 기존 이동 버튼(위/아래/맨위/맨아래)을 그대로 유지한다(a11y).
  */
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
-import { useEffect, useRef, useState, type ReactElement, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement, type RefObject } from "react";
 
 import { CANVAS_W } from "./studio-assets";
 import {
@@ -25,6 +25,8 @@ import {
   type ThumbNode,
   type ThumbPageLike,
 } from "./studio-page-thumbs";
+import { studioThumbnailNativeBlends, type StudioThumbnailNativeBlend } from "./render/studio-thumbnail-native-blend";
+import { useStudioThumbnailPixelScale } from "./render/use-studio-thumbnail-pixel-scale";
 import { useStudioRasterSourcePresentation } from "./use-studio-raster-source-presentation";
 
 import { parseStudioWorkAssetSourceUri } from "@/shared/lib/studio-work-asset-contract";
@@ -36,35 +38,48 @@ export type { StudioPageDnd, StudioPageDndItemProps } from "./studio-page-dnd";
 
 type StudioThumbImageNode = Extract<ThumbNode, { readonly kind: "image" }>;
 
-function StudioThumbImage({ node }: { readonly node: StudioThumbImageNode }): ReactElement {
-  const presentation = useStudioRasterSourcePresentation(node.src, {
+function StudioThumbImage({ node, pixelScale, nativeBlend }: { readonly node: StudioThumbImageNode; readonly pixelScale: number | null; readonly nativeBlend?: StudioThumbnailNativeBlend }): ReactElement {
+  const width = pixelScale === null ? null : Math.max(1, Math.ceil(node.w * pixelScale));
+  const height = pixelScale === null ? null : Math.max(1, Math.ceil(node.h * pixelScale));
+  const acquire = useMemo(() => width === null || height === null ? undefined :
+    async (source: string, options: import("./render/studio-raster-source-lease").StudioRasterSourceLeaseOptions) => {
+      const { acquireStudioRasterThumbnailSourceLease } = await import("./render/studio-raster-thumbnail-source");
+      return await acquireStudioRasterThumbnailSourceLease(source, { ...options, displayWidth: width, displayHeight: height });
+    }, [width, height]);
+  const unsupportedBlend = nativeBlend?.css === null;
+  const reserved = node.src.startsWith("studio-opfs-cas:") || node.src.startsWith("bg3d-lt-artifact:");
+  const presentation = useStudioRasterSourcePresentation(unsupportedBlend || (reserved && !acquire) ? null : node.src, { acquire,
     consumer: "studio-page-thumbnail",
   });
   const transform = node.transform ?? undefined;
-  if (parseStudioWorkAssetSourceUri(node.src) || presentation.src === null) {
+  if (unsupportedBlend || parseStudioWorkAssetSourceUri(node.src) || presentation.src === null) {
     return (
       <g
         data-raster-source-placeholder="true"
+        data-raster-blend-unsupported={unsupportedBlend ? nativeBlend?.mode : undefined}
         data-work-asset-placeholder={parseStudioWorkAssetSourceUri(node.src) ? "true" : undefined}
         transform={transform}
         opacity={node.opacity}
       >
-        <title>{r3c07StatusText("studio.panelStatus.r3c07.pageThumbnails.loadingImageBytes", "검증된 이미지 바이트를 안전하게 불러오는 중")}</title>
+        <title>{unsupportedBlend ? "이 레이어의 합성은 원고 캔버스에서 확인해 주세요." : r3c07StatusText("studio.panelStatus.r3c07.pageThumbnails.loadingImageBytes", "검증된 이미지 바이트를 안전하게 불러오는 중")}</title>
         <rect
           x={node.x}
           y={node.y}
           width={node.w}
           height={node.h}
           rx={10}
-          fill="rgb(99 102 241 / 0.08)"
-          stroke="rgb(99 102 241 / 0.55)"
+          fill="var(--color-accent)"
+          fillOpacity={0.08}
+          stroke="var(--color-accent)"
+          strokeOpacity={0.55}
           strokeWidth={3}
           strokeDasharray="12 8"
         />
         <path
           d={`M ${node.x + node.w * 0.2} ${node.y + node.h * 0.62} L ${node.x + node.w * 0.42} ${node.y + node.h * 0.4} L ${node.x + node.w * 0.56} ${node.y + node.h * 0.54} L ${node.x + node.w * 0.78} ${node.y + node.h * 0.3}`}
           fill="none"
-          stroke="rgb(99 102 241 / 0.7)"
+          stroke="var(--color-accent)"
+          strokeOpacity={0.7}
           strokeWidth={Math.max(3, Math.min(node.w, node.h) * 0.025)}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -80,14 +95,14 @@ function StudioThumbImage({ node }: { readonly node: StudioThumbImageNode }): Re
       width={node.w}
       height={node.h}
       preserveAspectRatio={node.cover ? "xMidYMid slice" : "none"}
-      style={node.filterCss ? { filter: node.filterCss } : undefined}
+      style={node.filterCss || nativeBlend?.css ? { filter: node.filterCss ?? undefined, mixBlendMode: nativeBlend?.css ?? undefined } : undefined}
       transform={transform}
       opacity={node.opacity}
     />
   );
 }
 
-function renderThumbNode(node: ThumbNode): ReactElement {
+function renderThumbNode(node: ThumbNode, pixelScale: number | null, nativeBlend?: StudioThumbnailNativeBlend): ReactElement {
   const transform = node.transform ?? undefined;
   switch (node.kind) {
     case "rect":
@@ -165,7 +180,7 @@ function renderThumbNode(node: ThumbNode): ReactElement {
         />
       );
     case "image":
-      return <StudioThumbImage key={node.key} node={node} />;
+      return <StudioThumbImage key={node.key} node={node} pixelScale={pixelScale} nativeBlend={nativeBlend} />;
     case "text":
       return (
         <text
@@ -230,10 +245,12 @@ export function StudioPageThumbnail({
 }): ReactElement {
   const { nearViewport, rootRef } = useStudioThumbnailPresentationWindow();
   const { nodes, skipped } = buildThumbNodes(page);
+  const nativeBlends = studioThumbnailNativeBlends(page.elements);
   const grade = normalizePageGrade(page.grade as Partial<PageGrade> | undefined);
   const gradeFilter = pageGradeToCssFilter(grade);
   const hasGrade = !isDefaultPageGrade(grade);
   const canvasH = page.canvasH > 0 ? page.canvasH : 1080;
+  const pixelScale = useStudioThumbnailPixelScale(rootRef, CANVAS_W, canvasH);
   const hasGradient = Array.isArray(page.bgGrad) && page.bgGrad.length >= 2;
   // useId 는 특수문자(«») id 를 만들 수 있어 url(#…) 참조가 불안정 — 페이지 uuid 기반 id 사용.
   const gradientId = `studio-page-thumb-grad-${page.id}`;
@@ -249,7 +266,7 @@ export function StudioPageThumbnail({
         className="h-full w-full"
         aria-hidden="true"
         focusable="false"
-        style={hasGrade && gradeFilter ? { filter: gradeFilter } : undefined}
+        style={nativeBlends.size > 0 || (hasGrade && gradeFilter) ? { filter: hasGrade && gradeFilter ? gradeFilter : undefined, isolation: nativeBlends.size > 0 ? "isolate" : undefined } : undefined}
       >
         {hasGradient ? (
           <defs>
@@ -262,7 +279,7 @@ export function StudioPageThumbnail({
         <rect x={0} y={0} width={CANVAS_W} height={canvasH} fill={hasGradient ? `url(#${gradientId})` : page.bg} />
         {nodes.map((node) => node.kind === "image" && !nearViewport
           ? null
-          : renderThumbNode(node))}
+          : renderThumbNode(node, pixelScale, nativeBlends.get(node.key)))}
       </svg>
       {hasGrade && grade.vignette > 0 ? (
         <div

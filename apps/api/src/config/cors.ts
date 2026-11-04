@@ -29,6 +29,7 @@ export const API_CORS_HEADERS = [
   "Content-Type",
   "x-user-id",
   "Idempotency-Key",
+  "x-studio-reader-capabilities",
   TOONSPECTRUM_CSRF_HEADER,
 ] as const;
 
@@ -68,6 +69,7 @@ export function createCorsOptions(env: NodeJS.ProcessEnv = process.env): CorsOpt
     },
     methods: [...API_CORS_METHODS],
     allowedHeaders: [...API_CORS_HEADERS],
+    exposedHeaders: ["x-studio-required-reader-capabilities"],
     // Cookie-authenticated API calls are allowed only from the exact Origin
     // allowlist above. Never combine this with a wildcard Origin.
     credentials: true,

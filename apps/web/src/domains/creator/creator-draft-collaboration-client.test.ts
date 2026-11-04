@@ -219,6 +219,7 @@ describe("creator draft collaboration client", () => {
           expectedWorkRevision: 2,
           finalStatus: "published",
           clientMutationId: PROMOTION_MUTATION_ID,
+          readerCapabilities: ["bg3d-sixpass-bundle.v1"],
         },
       })
     );

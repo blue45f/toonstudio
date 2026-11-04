@@ -73,6 +73,7 @@ export async function captureStudioBg3dThreeSixPassPlanes(input: {
   readonly scene: THREE.Scene;
   readonly camera: THREE.Camera;
   readonly request: StudioBg3dCaptureRequest;
+  readonly submit?: (submitSync: () => Promise<Uint8ClampedArray>) => Promise<Uint8ClampedArray>;
   readonly captureColor: (request: StudioBg3dCaptureRequest) => Promise<Uint8ClampedArray>;
 }): Promise<StudioBg3dThreeSixPassPlanes> {
   const { scene, renderer, request } = input;
@@ -151,19 +152,11 @@ export async function captureStudioBg3dThreeSixPassPlanes(input: {
         ? { color: "#000000", alpha: 0 } : request.background });
     } finally { restore(); }
   };
-  const pending: Promise<Uint8ClampedArray>[] = [];
-  let failure: unknown;
   try {
-    try { pending.push(submit(false)); pending.push(submit(true)); }
-    catch (error) { failure = error; }
-    const results = await Promise.allSettled(pending);
-    if (failure !== undefined) throw failure;
-    const rejected = results.find((result) => result.status === "rejected");
-    if (rejected?.status === "rejected") throw rejected.reason;
-    const flat = results[0];
-    const shadow = results[1];
-    if (flat?.status !== "fulfilled" || shadow?.status !== "fulfilled") throw new Error("6패스 LT GPU 읽기가 완료되지 않았습니다.");
-    return { flatColorRgba: flat.value, shadowRgba: shadow.value };
+    const next = (shadow: boolean) => input.submit ? input.submit(() => submit(shadow)) : submit(shadow);
+    const flatColorRgba = await next(false);
+    const shadowRgba = await next(true);
+    return { flatColorRgba, shadowRgba };
   } finally {
     for (const material of allocated) material.dispose();
   }

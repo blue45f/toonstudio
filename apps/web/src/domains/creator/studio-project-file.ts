@@ -1,9 +1,11 @@
+import { hasStudioBg3dSixPassImageMarker } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import { parseStudioPsdSource } from "./export/studio-psd-source";
 import { canonicalizeStudioBundleCreditElement } from "./catalog/studio-bundle-source-credit";
 import { parseStudioSavedSelectionLibrary } from "./studio-saved-selections";
 import { canonicalizeStudioLiveAdjustmentElement } from "./contracts/studio-live-adjustment-contract";
 import { parseStudioColorProofDocument } from "./color/studio-color-proof-document";
 import { z } from "zod";
+import { hasStudioBg3dSixPassBundleStateEnvelope } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 
 import { hydrateStudioAiImageReferenceDocument } from "./ai/studio-ai-image-reference-roles";
 import {
@@ -28,7 +30,7 @@ import { resolveStudioLinked3dError } from "./status-i18n/studio-producer-error-
 import { normalizePageReviewState } from "./studio-page-review";
 import { parseStudioLayerComps } from "./layer/studio-layer-comps-document";
 import { studioPageToCrdtPage } from "./live/studio-crdt-page-payload";
-import { resolveStudioProjectFileVersion } from "./studio-project-version";
+import { minimumStudioProjectFileVersion, resolveStudioProjectFileVersion } from "./studio-project-version";
 import { parseStudioReferenceBoardDocument } from "./studio-reference-board";
 import { migrateStudioShared3dStageCollectionDocument } from "./studio-shared-3d-stage-collection";
 import {
@@ -92,7 +94,7 @@ const CommonProjectSchema = z.object({
 });
 
 const CurrentProjectSchema = CommonProjectSchema.extend({
-  version: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+  version: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   savedAt: z.string().optional(),
   pagesList: z.array(ProjectPageSchema).min(1).max(STUDIO_PROJECT_MAX_PAGES),
 }).passthrough();
@@ -177,6 +179,12 @@ function canonicalizeBg3dSceneElements(value: unknown): unknown {
 
 function canonicalizeProjectBg3dScenes(project: StudioProjectFile): StudioProjectFile {
   const pagesList = project.pagesList.map((page) => {
+    if (page.elements.some(hasStudioBg3dSixPassImageMarker) && minimumStudioProjectFileVersion([page], null) !== 5) {
+      throw new Error("6패스 묶음 레이어에 보존된 v5 manifest가 없습니다.");
+    }
+    if (page.bg3dLtBundles !== undefined && !hasStudioBg3dSixPassBundleStateEnvelope(page.bg3dLtBundles)) {
+      throw new Error("6패스 묶음의 보존 계약이 손상되었거나 지원하지 않는 버전입니다.");
+    }
     const elements = page.elements.map(canonicalizeStudio3dSceneElement);
     const review = "review" in page
       ? normalizePageReviewState(page.review)
@@ -260,6 +268,9 @@ function canonicalizeProjectBg3dScenes(project: StudioProjectFile): StudioProjec
         return { ...project.master, elements };
       })()
     : project.master;
+  if (isRecord(master) && master.bg3dLtBundles !== undefined) {
+    throw new Error("6패스 묶음은 문서 마스터에 저장할 수 없습니다.");
+  }
   const referenceBoard = project.referenceBoard === undefined
     ? undefined
     : parseStudioReferenceBoardDocument(project.referenceBoard);

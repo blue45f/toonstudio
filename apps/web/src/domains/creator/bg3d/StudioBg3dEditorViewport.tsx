@@ -4,7 +4,6 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import { TriangleAlert } from "lucide-react";
-
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
 import { StudioBg3dCompositionOverlay } from "./StudioBg3dCompositionOverlay";
@@ -13,6 +12,7 @@ import { StudioBg3dEngineRecoveryActions } from "./StudioBg3dEngineRecoveryActio
 import { StudioBg3dInferenceHud } from "./StudioBg3dInferenceHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";
 import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
+import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
@@ -384,7 +384,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     <div ref={viewRightRef} className="relative w-full h-full" />
                   </div>
                 )}
-                {engineRuntime.phase === "probing" ? (
+                {engineRuntime.phase === "probing" || isStudioBg3dCanvasFactoryPending(engineRuntime) ? (
                   <div
                     role="status"
                     data-testid="studio-bg3d-engine-probing"

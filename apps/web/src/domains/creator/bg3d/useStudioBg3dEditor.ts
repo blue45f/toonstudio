@@ -4,6 +4,7 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { studioBg3dSixPassUnavailableReason } from "./studio-bg3d-six-pass-availability";
 import { useStudioBg3dInplaceTools } from "./useStudioBg3dInplaceTools";
 import { useStudioBg3dModelMaterialLease } from "./useStudioBg3dModelMaterialLease";
 import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
@@ -43,6 +44,8 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
     planStudioBg3dSceneEntityRemoval,
   } = R;
   const h = useStudioBg3dEditorState(props);
+  h.sixPassLtUnavailableReason = studioBg3dSixPassUnavailableReason(props.sixPassLtUnavailableReason, Boolean(h.captureRef.current?.adapter?.sixPassProfile));
+  h.sixPassLtInsertUnavailableReason = h.sceneBaseDocument.output.sixPassLt ? h.sixPassLtUnavailableReason : null;
   bindStudioBg3dEditorViewModel(h);
   const materialBackend = h.engineRuntime?.plan?.backend === "webgpu" ? "webgpu" : "webgl";
   h.materialBackend = materialBackend;

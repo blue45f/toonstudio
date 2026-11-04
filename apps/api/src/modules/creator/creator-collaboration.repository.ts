@@ -1,10 +1,7 @@
+import { assertStudioLinkedPassUnitAssets } from "./studio-linked-pass-asset-admission";
 import { randomUUID } from "node:crypto";
 import { saveStudioScopedRestDocument, type StudioScopedRestWriteInput } from "./studio-scoped-write-rest";
 
-import {
-  assertStudioLinked3dPassAssetRows,
-  extractStudioLinked3dPassAssetRequirements,
-} from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import {
   publicCreatorRoleProfile,
   type PublicCreatorRoleProfile,
@@ -779,7 +776,7 @@ export class CreatorCollaborationRepository {
 
   async saveSharedDocument(
     actorUserId: string, workId: string, baseRevision: number, crdtServerSequence: bigint,
-    patch: CreatorSharedDocumentPatch, scoped?: StudioScopedRestWriteInput
+    patch: CreatorSharedDocumentPatch, scoped?: StudioScopedRestWriteInput, readerCapabilities: readonly string[] = []
   ): Promise<CreatorSharedDocumentSaveResponse> {
     if (
       !Number.isInteger(baseRevision) ||
@@ -793,7 +790,7 @@ export class CreatorCollaborationRepository {
     ) {
       throw new Error("invalid creator shared document mutation");
     }
-    if (scoped) { const saved = await saveStudioScopedRestDocument({ actorUserId, workId, baseRevision, crdtServerSequence, patch, scoped }); if (saved) return saved; }
+    if (scoped) { const saved = await saveStudioScopedRestDocument({ actorUserId, workId, baseRevision, crdtServerSequence, patch, scoped, readerCapabilities }); if (saved) return saved; }
     return this.persistence.transaction(async (unit) => {
       // CRDT append/compaction uses this same transaction-scoped per-work lock. It must be the
       // first lock in this transaction so no CRDT commit can slip between the client's final sync
@@ -842,22 +839,11 @@ export class CreatorCollaborationRepository {
       if (current.revision >= CREATOR_WORK_REVISION_MAX) {
         throw new Error("creator work revision limit reached");
       }
-      const linkedPassRequirements = extractStudioLinked3dPassAssetRequirements({
+      await assertStudioLinkedPassUnitAssets({ workId, features: readerCapabilities ?? [], envelope: {
         cover: Object.hasOwn(patch, "cover") ? patch.cover : current.cover,
         pages: Object.hasOwn(patch, "pages") ? patch.pages : current.pages,
         doc: Object.hasOwn(patch, "doc") ? patch.doc : current.doc,
-      });
-      if (linkedPassRequirements.length > 0) {
-        const rows = await unit.findStudioLinked3dPassAssets(
-          workId,
-          linkedPassRequirements.map(({ assetId }) => assetId)
-        );
-        assertStudioLinked3dPassAssetRows({
-          workId,
-          requirements: linkedPassRequirements,
-          rows,
-        });
-      }
+      }, extract: unit.extractStudioLinked3dPassRequirements?.bind(unit), read: unit.findStudioLinked3dPassAssets.bind(unit) });
 
       const now = this.now();
       const updated = await unit.updateAccessibleDocument(
@@ -866,7 +852,7 @@ export class CreatorCollaborationRepository {
         baseRevision,
         patch,
         now,
-        scoped ? { ...scoped, crdtServerSequence } : undefined
+        scoped ? { ...scoped, crdtServerSequence } : undefined, readerCapabilities
       );
       if (!updated) {
         const latest = await unit.findAccessibleDocument(actorUserId, workId);

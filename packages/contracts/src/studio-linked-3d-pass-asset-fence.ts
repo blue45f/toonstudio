@@ -132,6 +132,18 @@ interface LinkedArtifactReceipt {
   readonly requirement: StudioLinked3dPassAssetRequirement;
   readonly elementPath: string;
   readonly artifactPath: string;
+  readonly nativeAdmitted: boolean;
+}
+
+/** 서버가 같은 작품 transaction에서 봉인 원본과 문서 결박을 검증한 main-line만 전달한다. */
+export interface StudioLinked3dPassNativeAdmission {
+  readonly pageId: string;
+  readonly bundleId: string;
+  readonly elementId: string;
+  readonly contentHash: string;
+  readonly byteSize: number;
+  readonly width: number;
+  readonly height: number;
 }
 
 function fenceError(
@@ -246,7 +258,7 @@ function collectReservedOccurrences(value: unknown): readonly ReservedOccurrence
   return Object.freeze(occurrences);
 }
 
-function parseArtifactRequirement(value: unknown): StudioLinked3dPassAssetRequirement {
+function parseArtifactRequirement(value: unknown, native?: StudioLinked3dPassNativeAdmission): StudioLinked3dPassAssetRequirement {
   if (!isRecord(value) || !hasExactKeys(value, ARTIFACT_KEYS)) {
     fenceError("receipt-mismatch", "linked 3D pass artifact receipt is not exact");
   }
@@ -267,7 +279,8 @@ function parseArtifactRequirement(value: unknown): StudioLinked3dPassAssetRequir
     || !contentHashMatch
     || locatorMatch[1] !== contentHashMatch[1]
     || !finitePositiveInteger(value.byteSize)
-    || value.byteSize > STUDIO_WORK_ASSET_MAX_BYTES_BY_TYPE.image
+    || (native ? value.contentHash !== native.contentHash || value.byteSize !== native.byteSize
+      || value.width !== native.width || value.height !== native.height : value.byteSize > STUDIO_WORK_ASSET_MAX_BYTES_BY_TYPE.image)
     || !finitePositiveInteger(value.width)
     || !finitePositiveInteger(value.height)
     || value.width > STUDIO_WORK_ASSET_MAX_IMAGE_AXIS
@@ -314,6 +327,7 @@ function assertPassRevisionShape(value: unknown): asserts value is Record<string
 
 function parsePageReceipts(
   doc: Record<string, unknown>,
+  admissions: readonly StudioLinked3dPassNativeAdmission[],
 ): readonly LinkedArtifactReceipt[] {
   if (!Array.isArray(doc.pagesList)) {
     fenceError("receipt-mismatch", "reserved linked 3D locators require a pagesList");
@@ -388,7 +402,9 @@ function parsePageReceipts(
       if (link.passRevision.sourceHash !== link.stageSourceHash) {
         fenceError("receipt-mismatch", "linked 3D stage and pass source hashes differ");
       }
-      const requirement = parseArtifactRequirement(link.passRevision.artifact);
+      const native = admissions.find((admission) => admission.pageId === page.id
+        && admission.bundleId === link.bundleId && admission.elementId === mainLineElementId);
+      const requirement = parseArtifactRequirement(link.passRevision.artifact, native);
       const elementIndexes = elementIndexesById.get(mainLineElementId);
       if (elementIndexes?.length !== 1) {
         fenceError("receipt-mismatch", "linked 3D main-line element is missing or duplicated");
@@ -407,6 +423,7 @@ function parsePageReceipts(
         elementPath: `/doc/pagesList/${pageIndex}/elements/${elementIndex}/src`,
         artifactPath:
           `/doc/pagesList/${pageIndex}/linked3dRender/links/${linkIndex}/passRevision/artifact/locator`,
+        nativeAdmitted: native !== undefined,
       }));
     }
   }
@@ -434,13 +451,14 @@ function sameRequirement(
  */
 export function extractStudioLinked3dPassAssetRequirements(
   envelope: CreatorWorkLinked3dJsonEnvelope,
+  verifiedNativeMainLines: readonly StudioLinked3dPassNativeAdmission[] = [],
 ): readonly StudioLinked3dPassAssetRequirement[] {
   const occurrences = collectReservedOccurrences(envelope);
   if (occurrences.length === 0) return Object.freeze([]);
   if (!isRecord(envelope.doc)) {
     fenceError("invalid-reserved-locator", "reserved linked 3D locator is outside a Studio document");
   }
-  const receipts = parsePageReceipts(envelope.doc);
+  const receipts = parsePageReceipts(envelope.doc, verifiedNativeMainLines);
   const allowed = new Map<string, string>();
   const byAssetId = new Map<string, StudioLinked3dPassAssetRequirement>();
   for (const receipt of receipts) {
@@ -449,6 +467,7 @@ export function extractStudioLinked3dPassAssetRequirements(
     }
     allowed.set(receipt.elementPath, receipt.requirement.locator);
     allowed.set(receipt.artifactPath, receipt.requirement.locator);
+    if (receipt.nativeAdmitted) continue;
     const existing = byAssetId.get(receipt.requirement.assetId);
     if (existing && !sameRequirement(existing, receipt.requirement)) {
       fenceError("receipt-mismatch", "one linked 3D content hash has conflicting receipts");

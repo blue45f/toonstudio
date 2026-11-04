@@ -27,11 +27,11 @@ export function connectErrorCode(error: unknown): string | null {
 }
 
 export function isTerminalConnectErrorCode(code: string | null): boolean {
-  return code === "unauthenticated" || code === "forbidden" || code === "access_revoked";
+  return code === "reader_upgrade_required" || code === "unauthenticated" || code === "forbidden" || code === "access_revoked";
 }
 
 export function isNonRecoverable(code: string): boolean {
-  return code === "unauthenticated" || code === "forbidden";
+  return code === "reader_upgrade_required" || code === "unauthenticated" || code === "forbidden";
 }
 
 export function parseScreenAnnouncement(value: unknown): ServerActiveScreenShare | null {

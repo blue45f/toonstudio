@@ -53,3 +53,11 @@ describe("studio project package", () => {
     expect(studioPackageCrc32(new TextEncoder().encode("123456789"))).toBe(0xcbf43926);
   });
 });
+
+
+it("6패스 묶음 원고는 불완전한 구형 package를 만들지 않고 실제 본문 ZIP 경로를 안내한다", () => {
+  expect(() => buildStudioProjectPackage({ project, documents: [], profile: createDefaultStudioSaveProfile(project.id),
+    additionalEntries: { "documents/document-0001.autosave.json": JSON.stringify({ pagesList: [{ id: "p", elements: [], bg3dLtBundles: {} }] }) } })).toThrow(/\.toonproject\.zip/);
+  expect(() => buildStudioProjectPackage({ project, documents: [], profile: createDefaultStudioSaveProfile(project.id),
+    additionalEntries: { "documents/document-0001.autosave.json": JSON.stringify({ pagesList: [{ id: "p", note: "bg3dLtBundles 사용 설명", elements: [] }] }) } })).not.toThrow();
+});

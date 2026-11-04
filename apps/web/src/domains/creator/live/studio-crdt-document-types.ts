@@ -1,3 +1,5 @@
+import type { StudioCrdtBg3dBundlePageReferences } from "./studio-crdt-bg3d-bundle-refs";
+import type { StudioBg3dSixPassBundleState } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import type { StudioCrdtStrokePayloadVersion } from "./studio-crdt-protocol";
 import type {
   StudioCrdtJsonObject,
@@ -122,6 +124,9 @@ export interface StudioCrdtPageInput {
 }
 
 export interface StudioCrdtPageRecord extends StudioCrdtPageInput {
+  bg3dLtBundleReferences?: StudioCrdtBg3dBundlePageReferences;
+  bg3dLtBundles?: StudioBg3dSixPassBundleState;
+  linked3dRender?: import("../studio-linked-3d-render-document").StudioLinked3dRenderDocument;
   deleted: boolean;
   orderIndex: number;
   /** True when the per-entry Shared 3D Stage sidecar owns this page, including tombstone-only pages. */

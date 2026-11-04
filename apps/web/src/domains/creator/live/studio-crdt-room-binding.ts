@@ -1,3 +1,4 @@
+import { studioCrdtBg3dReaderMetadata, studioCrdtBg3dPublishedRequest, studioCrdtPeerSyncResponse, prepareStudioCrdtBg3dReaderAdmission, prepareStudioCrdtBg3dSyncAdmission } from "./studio-crdt-bg3d-reader-fence";
 import {
   classifyStudioCrdtFailure,
   shouldRetainNonAuthoritativePendingUpdate,
@@ -15,8 +16,6 @@ import {
   STUDIO_CRDT_PROTOCOL_VERSION,
   decodeStudioCrdtStateVector,
   decodeStudioCrdtUpdate,
-  encodeStudioCrdtStateVector,
-  encodeStudioCrdtSyncChunks,
   encodeStudioCrdtUpdate,
   type StudioCrdtSyncRequest,
   type StudioCrdtUpdateAck,
@@ -130,6 +129,7 @@ export interface StudioCrdtRoomBindingOptions {
   recoveryVault?: StudioCrdtRecoveryVault;
   randomId?: () => string;
   onStatus?: (status: StudioCrdtBindingStatus) => void;
+  bg3dBundleArtifactScope?: () => "origin" | "work";
   /** Bounds a wedged SQLite/OPFS outbox call before the authoritative server fallback. */
   persistenceTimeoutMs?: number;
   setTimeout?: (handler: () => void, delay: number) => unknown;
@@ -199,6 +199,7 @@ export class StudioCrdtRoomBinding {
   private readonly recoveryVault: StudioCrdtRecoveryVault;
   private readonly randomId: () => string;
   private readonly onStatus?: (status: StudioCrdtBindingStatus) => void;
+  private readonly bg3dBundleArtifactScope?: () => "origin" | "work";
   private readonly persistenceTimeoutMs: number;
   private readonly scheduleTimeout: (handler: () => void, delay: number) => unknown;
   private readonly cancelTimeout: (handle: unknown) => void;
@@ -234,6 +235,7 @@ export class StudioCrdtRoomBinding {
   private transportGeneration = 0;
 
   constructor(options: StudioCrdtRoomBindingOptions) {
+    this.bg3dBundleArtifactScope = options.bg3dBundleArtifactScope;
     this.document = options.document;
     this.room = options.room;
     this.canEdit = options.canEdit ?? true;
@@ -630,6 +632,7 @@ export class StudioCrdtRoomBinding {
       workId: this.room.workId,
       requestId: this.randomId(),
       stateVector: this.document.getStateVectorBase64(),
+      ...studioCrdtBg3dReaderMetadata(this.document, this.bg3dBundleArtifactScope),
     };
     this.activeSyncRequestId = request.requestId;
     const transport = this.captureTransport();
@@ -644,6 +647,9 @@ export class StudioCrdtRoomBinding {
     if (this.closed || this.recoveryState) return;
     if (!this.isCurrentTransport(transport)) throw this.transportChangedError();
     if (response) {
+      const admission = prepareStudioCrdtBg3dSyncAdmission(this.document, response, this.room.workId, this.hasAuthoritativeServer());
+      if (admission) await admission;
+      if (!this.isCurrentTransport(transport)) throw this.transportChangedError();
       this.document.applySyncResponse(response);
       this.advanceAuthoritativeSequenceAfterSync(response.serverSequence);
       if (this.hasAuthoritativeServer()) {
@@ -697,6 +703,7 @@ export class StudioCrdtRoomBinding {
       updateId,
       clientSequence: ++this.clientSequence,
       update: encoded,
+      ...studioCrdtBg3dReaderMetadata(this.document, this.bg3dBundleArtifactScope),
       ...(writeContext ? { writeContext } : {}),
     };
     const pending: PendingUpdate = {
@@ -895,7 +902,7 @@ export class StudioCrdtRoomBinding {
       const transport = this.captureTransport();
       pending.inFlight = true;
       try {
-        const acknowledgement = await this.room.publishCrdtUpdate(pending.request);
+        const acknowledgement = await this.room.publishCrdtUpdate(studioCrdtBg3dPublishedRequest(this.document, pending.request, this.bg3dBundleArtifactScope));
         if (!this.isCurrentTransport(transport)) {
           this.scheduleSyncRetry();
           return;
@@ -1044,12 +1051,15 @@ export class StudioCrdtRoomBinding {
     });
   }
 
-  private onCrdtEvent(event: StudioLiveCrdtRoomEvent): void {
+  private async onCrdtEvent(event: StudioLiveCrdtRoomEvent): Promise<void> {
     if (this.closed || this.recoveryState) return;
     if (event.type === "update") {
       const sequenceState = this.classifyAuthoritativeSequence(event.update.serverSequence);
       if (sequenceState === "stale") return;
       try {
+        const admission = prepareStudioCrdtBg3dReaderAdmission(this.document, decodeStudioCrdtUpdate(event.update.update), event.update, this.room.workId, this.hasAuthoritativeServer());
+        if (admission) await admission;
+        if (this.closed || this.recoveryState) return;
         this.document.applyUpdateBase64(event.update.update, STUDIO_CRDT_ORIGIN_REMOTE);
         if (sequenceState === "contiguous") {
           this.authoritativeServerSequence = BigInt(event.update.serverSequence);
@@ -1169,25 +1179,9 @@ export class StudioCrdtRoomBinding {
 
   private respondToPeerSync(request: StudioCrdtSyncRequest, senderSessionId: string): void {
     try {
-      const diff = this.document.encodeStateAsUpdate(
-        decodeStudioCrdtStateVector(request.stateVector)
-      );
-      const chunks = encodeStudioCrdtSyncChunks(diff);
-      this.localServerSequence += 1;
-      this.room.respondCrdtSync(
-        {
-          protocolVersion: STUDIO_CRDT_PROTOCOL_VERSION,
-          workId: this.room.workId,
-          requestId: request.requestId,
-          transferId: this.randomId(),
-          chunks,
-          chunkCount: chunks.length,
-          totalBytes: diff.byteLength,
-          serverStateVector: encodeStudioCrdtStateVector(this.document.encodeStateVector()),
-          serverSequence: String(this.localServerSequence),
-        },
-        senderSessionId
-      );
+      const response = studioCrdtPeerSyncResponse({ document: this.document, request, workId: this.room.workId,
+        transferId: this.randomId(), sequence: ++this.localServerSequence, scope: this.bg3dBundleArtifactScope });
+      if (response) this.room.respondCrdtSync(response, senderSessionId);
     } catch (error) {
       this.emitStatus({ state: "error", message: statusMessageFrom(error, "peer-sync-respond-failed") });
     }
@@ -1543,3 +1537,5 @@ export class StudioCrdtRoomBinding {
       : status.code ? resolveStudioCrdtOutboxError({ code: status.code, params: status.params }) : status.message;
   }
 }
+
+export { studioCrdtBg3dBundleArtifactScope } from "./studio-crdt-bg3d-reader-fence";

@@ -17,8 +17,10 @@ export function studioLinked3dPassDestructiveEditReason(
 ): string | null {
   return element?.type === "image"
     && typeof element.src === "string"
-    && element.src.startsWith("studio-opfs-cas:")
-    ? STUDIO_LINKED_3D_PASS_DESTRUCTIVE_EDIT_REASON
+    && (element.src.startsWith("studio-opfs-cas:") || element.src.startsWith("bg3d-lt-artifact:"))
+    ? element.src.startsWith("bg3d-lt-artifact:")
+      ? "6패스 원본은 장면·역할·봉인 영수증과 함께 관리됩니다. 픽셀을 바꾸려면 편집 가능한 정적 복사본을 먼저 만드세요."
+      : STUDIO_LINKED_3D_PASS_DESTRUCTIVE_EDIT_REASON
     : null;
 }
 
@@ -40,5 +42,6 @@ export function studioLinked3dPassSourceReplacementReason(
 export function isStudioLinked3dReservedRasterSource(value: unknown): value is string {
   return typeof value === "string"
     && (value.startsWith("studio-opfs-cas:")
+      || value.startsWith("bg3d-lt-artifact:")
       || value.startsWith(STUDIO_LINKED_3D_PASS_LOCATOR_PREFIX));
 }

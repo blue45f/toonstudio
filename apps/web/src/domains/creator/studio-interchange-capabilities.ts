@@ -211,11 +211,11 @@ const STUDIO_INTERCHANGE_CAPABILITY_DEFINITIONS: readonly StudioInterchangeCapab
     roundTrip: "lossless",
     lossModel: [],
     runtimeRequirement: ["Web Crypto SHA-256", "Blob", "UTF-8 ZIP32 store subset"],
-    sizeBudget: { maxFileBytes: 280_000_000, maxDecodedBytes: 256_000_000, maxFiles: 514 },
+    sizeBudget: { maxFileBytes: 544 * 1024 * 1024, maxDecodedBytes: 512 * 1024 * 1024, maxFiles: 514 },
     status: "available",
     notes: [
       "프로젝트 JSON과 래스터·마스크·참고 이미지·VRM/GLB·오디오를 해시 기반으로 묶습니다.",
-      "현재 writer가 만든 비압축 deterministic ZIP subset만 가져오며 일반 ZIP은 받지 않습니다.",
+      "현재 writer의 deterministic ZIP subset만 가져옵니다. 새 6패스 v5는 544 MiB/첨부 512 MiB, 기존 v2·v3·v4는 280 MB/256 MB 한도를 유지합니다.",
     ],
   },
   {

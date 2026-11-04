@@ -1,3 +1,4 @@
+import { hasStudioBg3dSixPassAutosaveMarkers } from "../studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-persistence-markers";
 import { createSecureRandomUuid } from "@/shared/lib/secure-random-id";
 
 import {
@@ -251,6 +252,9 @@ async function parseStudioProjectPackage(file: File): Promise<ParsedProjectPacka
     const bytes = await archive.readEntry(path);
     const snapshot = parseStudioAutosave(decoder.decode(bytes));
     if (!snapshot) throw new Error(`ToonStudio 원고 스냅샷이 손상되었습니다: ${path}`);
+    if (hasStudioBg3dSixPassAutosaveMarkers(snapshot)) {
+      throw new Error("6패스 묶음의 본문을 포함하지 않는 .toonstudio 파일은 가져올 수 없습니다. 원본 원고에서 .toonproject.zip으로 내보낸 파일을 사용해 주세요.");
+    }
     snapshots.set(item.documentId, snapshot);
   }
   return Object.freeze({

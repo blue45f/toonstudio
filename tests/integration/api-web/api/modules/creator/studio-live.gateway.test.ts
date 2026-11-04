@@ -420,7 +420,7 @@ function createHarness(
       };
     }),
   };
-  const crdtService = {
+  const crdtService = { assertReaderCapability: vi.fn(async () => undefined), requiredReaderCapabilities: vi.fn(async () => [] as readonly string[]),
     sync: vi.fn(async () => ({
       chunks: ["AA=="],
       chunkCount: 1,

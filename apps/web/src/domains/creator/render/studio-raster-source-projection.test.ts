@@ -116,3 +116,14 @@ describe("withStudioRasterSourceProjection", () => {
     expect(release).toHaveBeenCalledTimes(2);
   });
 });
+
+it("6패스 source도 임시 raster projection에서만 검증 lease로 바꾸고 반환 후 해제한다", async () => {
+  const source = `bg3d-lt-artifact://sha256/${"a".repeat(64)}`, release = vi.fn();
+  const acquire = vi.fn<StudioRasterSourceProjectionAcquire>(async () => ({ kind: "linked-3d-cas", src: "blob:sixpass",
+    blob: new Blob(["png"]), receipt: { contentHash: `sha256:${"a".repeat(64)}`, byteSize: 3, mime: "image/png", width: 1, height: 1 }, release }));
+  const values = [{ src: source }];
+  await withStudioRasterSourceProjection({ values, acquire, consumer: "sixpass-export", run: async (projected) => {
+    expect(projected[0].src).toBe("blob:sixpass"); expect(release).not.toHaveBeenCalled();
+  } });
+  expect(values[0].src).toBe(source); expect(release).toHaveBeenCalledOnce();
+});

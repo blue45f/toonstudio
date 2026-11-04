@@ -574,9 +574,9 @@ export class CreatorService {
     }
   }
 
-  async restoreWorkRevision(userId: string, id: string, revision: number, baseRevision: number) {
+  async restoreWorkRevision(userId: string, id: string, revision: number, baseRevision: number, readerCapabilities?: readonly string[]) {
     try {
-      return await restoreWorkRevision(userId, id, revision, baseRevision);
+      return await restoreWorkRevision(userId, id, revision, baseRevision, readerCapabilities);
     } catch (error) {
       if (error instanceof CreatorWorkRevisionConflictError) {
         throw new ConflictException({
@@ -648,7 +648,7 @@ export class CreatorService {
           expectedGraphRevision: validated.expectedGraphRevision,
           expectedWorkRevision: validated.expectedWorkRevision,
           finalStatus: validated.finalStatus,
-          clientMutationId: validated.clientMutationId,
+          clientMutationId: validated.clientMutationId, ...(validated.readerCapabilities ? { readerCapabilities: validated.readerCapabilities } : {}),
         })
       );
     } catch (error) {
@@ -730,7 +730,7 @@ export class CreatorService {
           baseRevision,
           BigInt(crdtServerSequence),
           patch, validated.writeContext && validated.mutationId
-            ? { writeContext: validated.writeContext, mutationId: validated.mutationId } : undefined
+            ? { writeContext: validated.writeContext, mutationId: validated.mutationId } : undefined, validated.readerCapabilities
         )
       )
     );
@@ -1210,6 +1210,7 @@ export class CreatorService {
     operation: "provision" | "promote",
     error: unknown
   ): never {
+    if (isStudioRolePipelineBoundaryError(error)) throw error;
     if (error instanceof CreatorDraftCollaborationRateLimitError) {
       throw new HttpException(
         {
@@ -1284,7 +1285,6 @@ export class CreatorService {
         currentGraphRevision: error.currentGraphRevision,
       });
     }
-
     const errorType =
       error instanceof Error
         ? error.name.replace(/[^A-Za-z0-9_$.-]/g, "?").slice(0, 80)

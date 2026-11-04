@@ -148,7 +148,7 @@ const updateFields = CreatorWorkMutableFieldsSchema.omit({ remixFromId: true }).
 const updateFieldNames = Object.keys(updateFields.shape);
 
 export const UpdateCreatorWorkSchema = updateFields
-  .extend({ baseRevision: CreatorWorkRevisionSchema.optional() })
+  .extend({ baseRevision: CreatorWorkRevisionSchema.optional(), readerCapabilities: z.array(z.string().min(1).max(96)).max(32).optional() })
   .strict()
   .superRefine((value, context) => {
     if (!updateFieldNames.some((field) => Object.hasOwn(value, field))) {
@@ -180,6 +180,7 @@ export const UpdateCreatorSharedDocumentSchema = CreatorSharedDocumentMutableFie
   .extend({
     baseRevision: CreatorWorkRevisionSchema,
     crdtServerSequence: CreatorCrdtServerSequenceSchema,
+    readerCapabilities: z.array(z.string().min(1).max(96)).max(32).optional(),
     mutationId: z.uuid().optional(),
     writeContext: StudioScopedWriteContextSchema.optional(),
   })
@@ -309,7 +310,7 @@ export const CreatorSharedWorksListQuerySchema = z
   });
 
 export const RestoreCreatorWorkRevisionSchema = z
-  .object({ baseRevision: CreatorWorkRevisionSchema })
+  .object({ baseRevision: CreatorWorkRevisionSchema, readerCapabilities: z.array(z.string().min(1).max(96)).max(32).optional() })
   .strict();
 
 export const CreatorTeamWorkParamsSchema = z
@@ -378,6 +379,7 @@ export const CreatorDraftCollaborationRoomParamsSchema = z
 
 export const PromoteCreatorDraftCollaborationRoomSchema = z
   .object({
+    readerCapabilities: z.array(z.string().min(1).max(96)).max(32).optional(),
     draftDocumentId: CreatorDraftCollaborationDraftIdSchema,
     ownerScopeKey: CreatorCollaborationUserIdSchema,
     targetWorkId: CreatorCollaborationUserIdSchema,

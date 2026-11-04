@@ -49,6 +49,8 @@ export interface StudioBackground3DProps {
   sharedCharactersLinkedToOtherBackgroundCount?: number;
   /** Whether the result creates a new canvas element or replaces an existing one. */
   operation?: "insert" | "update";
+  /** 수신 문서가 실제 6패스 분리 레이어를 보관할 수 없을 때의 capability 안내. */
+  sixPassLtUnavailableReason?: string | null;
   recoveryScope: StudioBg3dShotBatchRecoveryScope | null;
   validateRecoveryAccess: (
     scope: StudioBg3dShotBatchRecoveryScope,

@@ -215,6 +215,17 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(host.handleInsert).toHaveBeenCalledOnce();
   });
 
+  it("가져온 6패스의 수신 문서 제한을 적용 버튼 앞에 표시하고 캡처를 시작하지 않는다", () => {
+    const host = createHost({ primitives: [{ id: "scene" }], sixPassLtInsertUnavailableReason: "이 원고는 6패스 분리 출력을 지원하지 않습니다." });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "장면 제작 단계" })).getByRole("button", { name: "4. 작화 적용" }));
+    expect(screen.getByRole("alert").textContent).toContain("6패스 분리 출력을 지원하지 않습니다");
+    const apply = screen.getByRole("button", { name: "현재 컷에 적용" });
+    expect(apply).toHaveProperty("disabled", true);
+    fireEvent.click(apply);
+    expect(host.handleInsert).not.toHaveBeenCalled();
+  });
+
   it("opens the professional workspace only as an explicit progressive disclosure", () => {
     const openProfessional = vi.fn();
     render(

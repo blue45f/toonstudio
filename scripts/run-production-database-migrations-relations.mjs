@@ -221,6 +221,8 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "studio_review_policy_event",
   "studio_review_reviewer",
   "studio_review_voice_note",
+  "studio_bg3d_bundle_revision",
+  "studio_bg3d_bundle_artifact",
   "studio_revision",
   "studio_revision_blob",
   "studio_revision_parent",

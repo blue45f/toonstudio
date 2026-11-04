@@ -50,7 +50,8 @@ describe("GPU document /studio product wiring and retained Vello comparison boun
     );
     expect(viewportSource).toContain('velloHubAuthority.status === "unavailable"');
     expect(viewportSource).toContain('data-studio-vello-unavailable="true"');
-    expect(viewportSource).toContain("같은 작업을 다른 엔진으로 재실행하지 않았습니다");
+    expect(viewportSource).toContain("studio.brushCanvasStatus.canvas.gpuNotSwitched");
+    expect(viewportSource).toContain("onClick={() => setRendererAttempt((value) => value + 1)}");
     expect(canvasTargetSource).toContain(
       'dataset.studioVelloHubPrimary = "true"',
     );

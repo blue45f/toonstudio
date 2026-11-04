@@ -134,6 +134,7 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
     crdtServerSequence: bigint,
     patch: CreatorSharedDocumentPatch,
     scoped?: StudioScopedRestWriteInput,
+    readerCapabilities: readonly string[] = [],
   ): Promise<CreatorSharedDocumentSaveResponse> {
     const shared = await super.getSharedDocument(actorUserId, workId);
     const protectedPatch = prepareCreatorPublicationSharedDocumentPatch({
@@ -147,6 +148,7 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
       crdtServerSequence,
       protectedPatch,
       scoped,
+      readerCapabilities,
     );
   }
 }

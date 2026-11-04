@@ -67,6 +67,8 @@ export interface StudioPackageArchiveBuildOptions {
   modifiedAt?: Date | number | string;
   /** Callers may lower, but never raise, the fixed browser-safety limits. */
   limits?: Partial<StudioPackageArchiveLimits>;
+  /** 정본 v5 묶음 검증을 마친 프로젝트 writer만 선택한다. 기본 패키지 한도는 유지한다. */
+  sizeProfile?: "bg3d-sixpass-project-v5";
   onProgress?: (progress: StudioPackageArchiveProgress) => void;
   /** Blob output only. Use application/zip or a product-specific +zip media type. */
   mimeType?: string;
@@ -184,8 +186,10 @@ function resolveLimit(
 }
 
 function resolveLimits(
-  value: Partial<StudioPackageArchiveLimits> | undefined
+  value: Partial<StudioPackageArchiveLimits> | undefined,
+  profile?: StudioPackageArchiveBuildOptions["sizeProfile"],
 ): StudioPackageArchiveLimits {
+  const extended = profile === "bg3d-sixpass-project-v5";
   return {
     maxFiles: resolveLimit(value?.maxFiles, STUDIO_PACKAGE_ARCHIVE_LIMITS.maxFiles, "maxFiles"),
     maxEntryBytes: resolveLimit(
@@ -195,12 +199,12 @@ function resolveLimits(
     ),
     maxTotalBytes: resolveLimit(
       value?.maxTotalBytes,
-      STUDIO_PACKAGE_ARCHIVE_LIMITS.maxTotalBytes,
+      extended ? 544 * 1024 * 1024 : STUDIO_PACKAGE_ARCHIVE_LIMITS.maxTotalBytes,
       "maxTotalBytes"
     ),
     maxArchiveBytes: resolveLimit(
       value?.maxArchiveBytes,
-      STUDIO_PACKAGE_ARCHIVE_LIMITS.maxArchiveBytes,
+      extended ? 544 * 1024 * 1024 : STUDIO_PACKAGE_ARCHIVE_LIMITS.maxArchiveBytes,
       "maxArchiveBytes"
     ),
     maxPathBytes: resolveLimit(
@@ -480,7 +484,7 @@ function planArchive(
   if (entries.length > ZIP16_MAX) {
     throw archiveError("ZIP32_OVERFLOW", "ZIP32는 최대 65,535개 파일만 포함할 수 있습니다.");
   }
-  const limits = resolveLimits(options.limits);
+  const limits = resolveLimits(options.limits, options.sizeProfile);
   if (entries.length > limits.maxFiles) {
     throw archiveError(
       "ENTRY_COUNT_LIMIT",

@@ -18,6 +18,7 @@ import {
   type StudioLinked3dPassCasAuthority,
 } from "./studio-linked-3d-pass-transaction";
 import { sha256HexPortable } from "./studio-sha256";
+import { collectStudioBg3dSixPassProjectBundles } from "./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract";
 import {
   deleteUnreferencedStudioWorkAssetUpload,
   downloadStudioWorkAsset,
@@ -223,7 +224,7 @@ function sameArtifact(
     && left.locator === right.locator;
 }
 
-function plansForProject(project: StudioProjectFile): readonly StudioLinked3dPassCloudPlan[] {
+async function plansForProject(project: StudioProjectFile): Promise<readonly StudioLinked3dPassCloudPlan[]> {
   let references: readonly StudioLinked3dPassProjectArchiveReference[];
   try {
     references = collectStudioLinked3dPassProjectArchiveReferences(project);
@@ -231,11 +232,14 @@ function plansForProject(project: StudioProjectFile): readonly StudioLinked3dPas
     if (cause instanceof StudioLinked3dPassCloudSyncError) throw cause;
     cloudError("invalid-project", "cloud 동기화할 연결형 3D pass receipt가 손상되었습니다.", cause);
   }
+  const nativeBundles = new Set((await collectStudioBg3dSixPassProjectBundles(project)).flatMap(({ pageId, state }) =>
+    state.bundles.map(({ bundleId }) => JSON.stringify([pageId, bundleId]))));
   const grouped = new Map<`sha256:${string}`, {
     artifact: StudioLinked3dPassArtifactDescriptor;
     ownerIds: Set<string>;
   }>();
   for (const archiveReference of references) {
+    if (nativeBundles.has(JSON.stringify([archiveReference.pageId, archiveReference.bundleId]))) continue;
     const artifact = artifactFromReference(archiveReference);
     assertCloudEligibleArtifact(artifact);
     const current = grouped.get(artifact.contentHash);
@@ -493,7 +497,7 @@ export async function ensureStudioLinked3dPassCloudArtifacts(input: {
   if (!input.workId.trim()) cloudError("invalid-input", "cloud 동기화 작품 ID가 비어 있습니다.");
   assertProductAuthority(input.authority);
   throwIfAborted(input.signal);
-  const plans = plansForProject(input.project);
+  const plans = await plansForProject(input.project);
   const upload = input.upload ?? uploadStudioWorkAsset;
   const cleanup = input.cleanup ?? (input.upload
     ? async () => false
@@ -611,7 +615,7 @@ export async function hydrateStudioLinked3dPassCloudArtifacts<T>(input: {
   if (!input.workId.trim()) cloudError("invalid-input", "cloud 복원 작품 ID가 비어 있습니다.");
   assertProductAuthority(input.authority);
   throwIfAborted(input.signal);
-  const plans = plansForProject(input.project);
+  const plans = await plansForProject(input.project);
   const download = input.download ?? downloadStudioWorkAsset;
   await mapBounded(
     plans,

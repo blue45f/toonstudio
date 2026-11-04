@@ -1,4 +1,5 @@
 import type { StudioSavedSelectionLibrary } from "./studio-saved-selections";
+import type { StudioBg3dSixPassBundleImageReference } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import type { StudioBundleSourceCredit } from "./catalog/studio-bundle-source-credit";
 import type { StudioLiveAdjustmentMetadata } from "./contracts/studio-live-adjustment-contract";
 import type { StudioTextAiProvenance } from "./ai/studio-ai-client";
@@ -88,6 +89,8 @@ import type { StudioFilterMaskSurfaceId } from "@/shared/lib/studio-filter-mask-
 import type { StudioInkInputContract } from "@/shared/lib/studio-ink-input-contract";
 
 export interface ImageEl {
+  /** 여섯 본문·원본 장면을 봉인한 immutable 묶음의 역할 결박. */
+  bg3dLtBundleReference?: StudioBg3dSixPassBundleImageReference;
   /** 검증된 번들 렌더의 출처·원장 권리·콘텐츠 해시를 문서와 함께 보존한다. */
   bundleSourceCredit?: StudioBundleSourceCredit;
   /** 이미지에 귀속되어 자동저장 및 프로젝트 아카이브에 함께 보존되는 이름 있는 선택. */

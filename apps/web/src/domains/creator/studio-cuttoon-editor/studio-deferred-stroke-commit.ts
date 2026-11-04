@@ -1,7 +1,7 @@
 
 import { requireStudioDrawingPointerTransport } from "../brush/studio-drawing-pointer-transport";
 import { admitStudioScopedPagesCommit } from "../studio-collab/studio-scoped-write-mutation";
-import { studioLayerCompPageAdmissionError } from "../layer/studio-layer-comp-page-admission";
+import { studioPageSetCommitAdmissionError, studioPageContentCommitAdmissionError } from "../page/studio-page-set-commit-admission";
 import {
   releaseStudioGpuPendingAuthorityPrefix,
   type StudioGpuPendingDrawAuthority,
@@ -32,7 +32,6 @@ import {
 } from "../studio-pending-stroke-durability";
 import {
   STUDIO_PROJECT_MAX_CANVAS_HEIGHT,
-  STUDIO_PROJECT_MAX_PAGES,
 } from "../studio-project-file";
 import {
   reconcileStudioShared3dStageVisibilityReceiptsAfterElementMutation,
@@ -401,9 +400,9 @@ export function createStudioDeferredStrokeCommitEngine(
       return false;
     }
     if (commitTargetPage) {
-      const admissionError = studioLayerCompPageAdmissionError(
+      const admissionError = studioPageContentCommitAdmissionError(
         commitTargetPage,
-        { ...commitTargetPage, ...extraPatch },
+        { ...commitTargetPage, ...extraPatch, elements: nextElements }, studioCrdtSceneRuntimeRef.current?.admitNativePageMutation,
       );
       if (admissionError) {
         setError(admissionError);
@@ -595,9 +594,9 @@ export function createStudioDeferredStrokeCommitEngine(
       setError(frozenStatus6Text("studio.frozenStatus6.deferred.reviewLocked", "이 페이지는 검토 잠금 상태예요. 페이지 검토에서 잠금을 해제한 뒤 편집해 주세요."));
       return;
     }
-    const admissionError = studioLayerCompPageAdmissionError(
+    const admissionError = studioPageContentCommitAdmissionError(
       commitTargetPage,
-      { ...commitTargetPage, elements: resolved },
+      { ...commitTargetPage, elements: resolved }, studioCrdtSceneRuntimeRef.current?.admitNativePageMutation,
     );
     if (admissionError) {
       setError(admissionError);
@@ -964,17 +963,9 @@ export function createStudioDeferredStrokeCommitEngine(
     } = {}
   ): boolean {
     if (!editorMountedRef.current) return false;
-    if (nextPages.length === 0 || nextPages.length > STUDIO_PROJECT_MAX_PAGES) {
-      setError(frozenStatus6Text("studio.frozenStatus6.deferred.pageCountRange", { max: STUDIO_PROJECT_MAX_PAGES }, `프로젝트는 1–${STUDIO_PROJECT_MAX_PAGES}페이지 범위에서 편집할 수 있어요.`));
-      return false;
-    }
-    const invalidCanvasPage = nextPages.find((page) => (
-      !Number.isFinite(page.canvasH) ||
-      page.canvasH <= 0 ||
-      page.canvasH > STUDIO_PROJECT_MAX_CANVAS_HEIGHT
-    ));
-    if (invalidCanvasPage) {
-      setError(frozenStatus6Text("studio.frozenStatus6.deferred.canvasHeightRange", { max: STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR") }, `페이지 높이는 1–${STUDIO_PROJECT_MAX_CANVAS_HEIGHT.toLocaleString("ko-KR")}px 범위여야 저장할 수 있어요.`));
+    const pageSetError = studioPageSetCommitAdmissionError(pagesHistoryRef.current[pagesHiRef.current] ?? pages, nextPages);
+    if (pageSetError) {
+      setError(pageSetError);
       return false;
     }
     if (documentSaveInFlightRef.current) {
@@ -990,9 +981,9 @@ export function createStudioDeferredStrokeCommitEngine(
     // changes element bodies only, so this is the same metadata that the final page set will carry.
     const pagesBeforeFlush = pagesHistoryRef.current[pagesHiRef.current] ?? pages;
     for (const nextPage of nextPages) {
-      const admissionError = studioLayerCompPageAdmissionError(
+      const admissionError = studioPageContentCommitAdmissionError(
         pagesBeforeFlush.find((page) => page.id === nextPage.id),
-        nextPage,
+        nextPage, studioCrdtSceneRuntimeRef.current?.admitNativePageMutation,
       );
       if (admissionError) {
         setError(admissionError);

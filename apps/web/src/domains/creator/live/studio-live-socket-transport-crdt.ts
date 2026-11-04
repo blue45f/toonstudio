@@ -1,3 +1,4 @@
+import { studioLiveRequiredReaderFailure } from "./studio-live-bg3d-reader-capability";
 /** Implementation helpers for `StudioLiveSocketTransport`; not a public entry. */
 import {
   parseStudioCrdtBinaryRemoteUpdate,
@@ -38,6 +39,7 @@ import type { StudioLiveSocketTransportHost } from "./studio-live-socket-transpo
 
 export function onCrdtSync(this: StudioLiveSocketTransportHost, value: unknown) {
   if (!this.ready) return;
+  const readerFailure = studioLiveRequiredReaderFailure(value); if (readerFailure) { this.handleFailure(readerFailure); return; }
   const response = parseStudioCrdtSyncResponse(value, {
     expectedWorkId: this.context.workId,
   });
@@ -47,6 +49,7 @@ export function onCrdtSync(this: StudioLiveSocketTransportHost, value: unknown) 
 
 export function onCrdtUpdate(this: StudioLiveSocketTransportHost, value: unknown) {
   if (!this.ready) return;
+  const readerFailure = studioLiveRequiredReaderFailure(value); if (readerFailure) { this.handleFailure(readerFailure); return; }
   const update = parseStudioCrdtRemoteUpdate(value, {
     expectedWorkId: this.context.workId,
   });
@@ -62,6 +65,7 @@ export function onCrdtBinaryUpdate(this: StudioLiveSocketTransportHost, value: u
   ) {
     return;
   }
+  const readerFailure = studioLiveRequiredReaderFailure(value); if (readerFailure) { this.handleFailure(readerFailure); return; }
   const update = parseStudioCrdtBinaryRemoteUpdate(value, {
     expectedWorkId: this.context.workId,
   });
@@ -253,6 +257,8 @@ export function emitCrdtWithAck<T>(this: StudioLiveSocketTransportHost,
         reject(error);
         return;
       }
+      const readerFailure = studioLiveRequiredReaderFailure(value.data);
+      if (readerFailure) { this.handleFailure(readerFailure); reject(createStudioCrdtServerAckError(readerFailure.code, readerFailure.message)); return; }
       const parsed = parse(value.data, { expectedWorkId: this.context.workId });
       if (!parsed) {
         const error = failClosed

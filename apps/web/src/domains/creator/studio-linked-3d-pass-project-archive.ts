@@ -13,6 +13,8 @@ import {
   type StudioLinked3dPassCasAuthority,
 } from "./studio-linked-3d-pass-transaction";
 import { parseStudioLinked3dRenderDocument } from "./studio-linked-3d-render-document";
+import { hasStudioBg3dSixPassProjectBundles } from "./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-contract";
+import type { StudioOpfsAssetStore } from "./studio-opfs-asset-store";
 import { sha256HexPortable } from "./studio-sha256";
 
 import type {
@@ -158,6 +160,7 @@ function positiveBoundedLimit(
 
 function resolveArchiveLimits(
   value: Partial<StudioLinked3dPassArchiveLimits> | undefined,
+  bundleV5 = false,
 ): StudioLinked3dPassArchiveLimits {
   return Object.freeze({
     maxAttachmentBytes: positiveBoundedLimit(
@@ -172,7 +175,7 @@ function resolveArchiveLimits(
     ),
     maxTotalAttachmentBytes: positiveBoundedLimit(
       value?.maxTotalAttachmentBytes,
-      LINKED_3D_PASS_ARCHIVE_HARD_LIMITS.maxTotalAttachmentBytes,
+      bundleV5 ? 512 * 1024 * 1024 : LINKED_3D_PASS_ARCHIVE_HARD_LIMITS.maxTotalAttachmentBytes,
       "연결형 3D pass attachment 합계 한도",
     ),
   });
@@ -370,7 +373,7 @@ export function collectStudioLinked3dPassProjectArchiveReferences(
 }
 
 export function hasStudioLinked3dPassProjectArchiveReferences(project: StudioProjectFile): boolean {
-  return collectStudioLinked3dPassProjectArchiveReferences(project).length > 0;
+  return hasStudioBg3dSixPassProjectBundles(project) || collectStudioLinked3dPassProjectArchiveReferences(project).length > 0;
 }
 
 function evidenceByHash(
@@ -410,7 +413,7 @@ export function assertStudioLinked3dPassProjectArchiveEvidence(
   return coveredLocatorPointers;
 }
 
-export async function prepareStudioLinked3dPassProjectArchiveExport(input: {
+async function prepareLegacyStudioLinked3dPassProjectArchiveExport(input: {
   readonly project: StudioProjectFile;
   readonly authority: StudioLinked3dPassCasAuthority & Partial<
     StudioLinked3dPassArchiveStatAuthority
@@ -435,7 +438,7 @@ export async function prepareStudioLinked3dPassProjectArchiveExport(input: {
       "연결형 3D line pass를 내보내려면 receipt를 사전 검증할 수 있는 OPFS CAS가 필요합니다.",
     );
   }
-  const limits = resolveArchiveLimits(input.limits);
+  const limits = resolveArchiveLimits(input.limits, hasStudioBg3dSixPassProjectBundles(input.project));
   const consumedAttachmentBytes = nonNegativeSafeInteger(
     input.consumedAttachmentBytes,
     "이미 준비된 attachment byte 수",
@@ -564,7 +567,7 @@ async function lockOwners<T>(
 }
 
 /** Restore authenticated archive PNGs and apply the document under the same owner-ref fence. */
-export async function restoreStudioLinked3dPassProjectArchiveImport<T>(input: {
+async function restoreLegacyStudioLinked3dPassProjectArchiveImport<T>(input: {
   readonly archive: Pick<ImportStudioProjectArchiveResult, "project" | "attachments">;
   readonly authority: StudioLinked3dPassCasAuthority;
   readonly apply: (project: StudioProjectFile) => T | false | Promise<T | false>;
@@ -654,4 +657,56 @@ export function studioLinked3dPassArchiveEvidenceFromManifest(
   attachments: readonly StudioProjectArchiveManifestAttachment[],
 ): readonly StudioLinked3dPassProjectArchiveEvidence[] {
   return attachments;
+}
+
+
+/** 기존 line 권위와 새 묶음 권위를 각각 확인하고, 동일 digest 첨부는 한 번만 전달한다. */
+export async function prepareStudioLinked3dPassProjectArchiveExport(input:
+  Parameters<typeof prepareLegacyStudioLinked3dPassProjectArchiveExport>[0] & {
+    readonly bundleAuthority?: StudioOpfsAssetStore;
+  }): Promise<readonly StudioProjectArchiveAttachmentInput[]> {
+  if (!hasStudioBg3dSixPassProjectBundles(input.project)) return await prepareLegacyStudioLinked3dPassProjectArchiveExport(input);
+  const [{ prepareStudioBg3dSixPassProjectArchiveExport, preflightStudioBg3dSixPassProjectArchiveExport }, product] = await Promise.all([
+    import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive"), import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority"),
+  ]);
+  const embedded = embeddedRasterAttachmentBudget(input.project, resolveArchiveLimits(input.limits, true));
+  const bundleInput = { project: input.project, limits: input.limits,
+    authority: input.bundleAuthority ?? await product.acquireStudioBg3dSixPassBundleProductAuthority(),
+    reservedArtifacts: collectStudioLinked3dPassProjectArchiveReferences(input.project),
+    consumedAttachmentBytes: (input.consumedAttachmentBytes ?? 0) + embedded.bytes,
+    consumedAttachmentCount: (input.consumedAttachmentCount ?? 0) + embedded.count,
+    signal: input.signal, isCurrent: input.isCurrent ? () => input.isCurrent!({ phase: "before-return" }) : undefined };
+  await preflightStudioBg3dSixPassProjectArchiveExport(bundleInput);
+  const legacy = await prepareLegacyStudioLinked3dPassProjectArchiveExport(input);
+  const bundles = await prepareStudioBg3dSixPassProjectArchiveExport(bundleInput);
+  const hashes = [...new Set(collectStudioLinked3dPassProjectArchiveReferences(input.project).map((entry) => entry.contentHash))].sort();
+  const output = [...legacy];
+  for (const attachment of bundles) {
+    const index = hashes.indexOf(attachment.contentHash);
+    if (index < 0) output.push(attachment);
+    else output[index] = { ...output[index], documentReferences: [
+      ...(output[index].documentReferences ?? []), ...(attachment.documentReferences ?? []),
+    ] };
+  }
+  return output;
+}
+
+/** 두 CAS 복원이 모두 끝나야 원고를 한 번 반영하며, 거부 시 양쪽 owner 참조를 보상한다. */
+export async function restoreStudioLinked3dPassProjectArchiveImport<T>(input: {
+  readonly archive: Pick<ImportStudioProjectArchiveResult, "project" | "attachments">;
+  readonly authority: StudioLinked3dPassCasAuthority;
+  readonly bundleAuthority?: StudioOpfsAssetStore;
+  readonly runBundleOwnerExclusive?: <Result>(owner: string, task: () => Promise<Result>) => Promise<Result>;
+  readonly apply: (project: StudioProjectFile) => T | false | Promise<T | false>;
+}): Promise<T> {
+  if (!hasStudioBg3dSixPassProjectBundles(input.archive.project)) return await restoreLegacyStudioLinked3dPassProjectArchiveImport(input);
+  const [{ restoreStudioBg3dSixPassProjectArchiveImport }, product] = await Promise.all([
+    import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-project-archive"), import("./scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-product-authority"),
+  ]);
+  const bundleAuthority = input.bundleAuthority ?? await product.acquireStudioBg3dSixPassBundleProductAuthority();
+  return await restoreLegacyStudioLinked3dPassProjectArchiveImport({ ...input,
+    apply: async () => await restoreStudioBg3dSixPassProjectArchiveImport({ archive: input.archive,
+      authority: bundleAuthority, runOwnerExclusive: input.runBundleOwnerExclusive ?? product.runStudioBg3dSixPassBundleMutationExclusive,
+      apply: input.apply }),
+  });
 }

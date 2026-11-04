@@ -72,7 +72,7 @@ export interface StudioBg3dSceneAssistantHost {
   readonly sharedStageUpdateBlockedReason?: string | null;
   readonly groundSelectionDisabledReason?: string | null;
   readonly focusSelectionDisabledReason?: string | null;
-  readonly error?: string | null;
+  readonly error?: string | null; readonly sixPassLtInsertUnavailableReason?: string | null;
   readonly librarySaveNotice?: string | null;
   readonly addSceneTemplate: (templateId: string) => boolean;
   readonly addCustomModelToScene: (modelId: string) => void | Promise<void>;
@@ -144,7 +144,7 @@ function readAssistantHostSnapshot(h: StudioBg3dSceneAssistantHost): string {
     h.placementSession?.phase ?? "",
     h.groundSelectionDisabledReason ?? "",
     h.focusSelectionDisabledReason ?? "",
-    h.error ?? "",
+    h.error ?? h.sixPassLtInsertUnavailableReason ?? "",
   ].join("|");
 }
 
@@ -727,7 +727,7 @@ export function StudioBg3dSceneAssistantWorkspace({
     || busy
     || Boolean(h.insertBlocked)
     || Boolean(h.immersiveSceneActive)
-    || Boolean(h.sharedStageUpdateBlockedReason);
+    || Boolean(h.sharedStageUpdateBlockedReason) || Boolean(h.sixPassLtInsertUnavailableReason);
   const selectableSceneIds = [
     ...(h.primitives ?? []).map((node) => node.id),
     ...(h.customModels ?? []).map((node) => node.id),
@@ -961,9 +961,9 @@ export function StudioBg3dSceneAssistantWorkspace({
             {h.librarySaveNotice}
           </div>
         ) : null}
-        {h.error || h.sharedStageUpdateBlockedReason ? (
+        {h.error || h.sharedStageUpdateBlockedReason || h.sixPassLtInsertUnavailableReason ? (
           <div className="scene-assistant__notice" role="alert">
-            {h.error ?? h.sharedStageUpdateBlockedReason}
+            {h.error ?? h.sharedStageUpdateBlockedReason ?? h.sixPassLtInsertUnavailableReason}
           </div>
         ) : null}
 

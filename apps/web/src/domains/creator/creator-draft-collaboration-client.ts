@@ -11,6 +11,7 @@ import {
 } from "./studio-draft-collaboration";
 
 import { api, apiPath } from "@/platform/api";
+import { withStudioReaderCapabilities } from "@/platform/studio-reader-capabilities";
 
 const DRAFT_COLLABORATION_ROOMS_PATH = "/creator/draft-collaboration/rooms";
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
@@ -661,7 +662,7 @@ export function createCreatorDraftCollaborationClient(
       );
       const room = await execute(
         `${DRAFT_COLLABORATION_ROOMS_PATH}/${encodeURIComponent(parsed.roomId)}/promote`,
-        body,
+        withStudioReaderCapabilities(body),
         parsed.clientMutationId,
         options
       );

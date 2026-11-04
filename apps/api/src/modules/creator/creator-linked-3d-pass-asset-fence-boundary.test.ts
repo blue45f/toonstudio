@@ -88,7 +88,10 @@ describe("creator server linked-pass asset transaction boundary", () => {
     const assertion = functionSource("assertCreatorWorkLinked3dPassAssetsInTransaction");
 
     expect(assertion).toContain("transaction");
-    expect(assertion).toContain(".from(creatorWorkAssets)");
+    expect(assertion).toContain("readStudioLinkedPassAssetRows(transaction, workId");
+    const reader = readFileSync(new URL("./studio-linked-pass-asset-admission.ts", import.meta.url), "utf8");
+    expect(reader).toContain(".from(creatorWorkAssets)");
+    expect(reader).not.toContain("await db.");
     expect(assertion).toContain("assertStudioLinked3dPassAssetRows({ workId, requirements, rows })");
     expect(assertion).not.toContain("await db.");
   });

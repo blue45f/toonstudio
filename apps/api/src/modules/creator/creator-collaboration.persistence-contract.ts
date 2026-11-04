@@ -2,7 +2,7 @@ import type {
   CreatorCollaborationRole,
   CreatorCollaborationStatus,
 } from "./creator-collaboration.policy";
-import type { StudioLinked3dPassAssetRow } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
+import type { StudioLinked3dPassAssetRow, StudioLinked3dPassAssetRequirement, CreatorWorkLinked3dJsonEnvelope } from "@toonstudio/contracts/studio-linked-3d-pass-asset-fence";
 import type { CreatorWorkRevisionSnapshot } from "../../server/creator-work-revisions";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
@@ -243,6 +243,7 @@ export interface CreatorCollaborationUnitOfWork {
     workId: string
   ): Promise<CreatorSharedDocumentMetaRecord | null>;
   /** Called only after the transaction has acquired the creator_work row lock. */
+  extractStudioLinked3dPassRequirements?(workId: string, envelope: CreatorWorkLinked3dJsonEnvelope, readerCapabilities: readonly string[]): Promise<readonly StudioLinked3dPassAssetRequirement[]>;
   findStudioLinked3dPassAssets(
     workId: string,
     assetIds: readonly string[]
@@ -253,7 +254,7 @@ export interface CreatorCollaborationUnitOfWork {
     baseRevision: number,
     patch: CreatorSharedDocumentPatch,
     updatedAt: Date,
-    scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint }
+    scoped?: { readonly mutationId: string; readonly writeContext: StudioScopedWriteContext; readonly crdtServerSequence: bigint }, readerCapabilities?: readonly string[]
   ): Promise<CreatorSharedDocumentMutationRecord | null>;
   appendWorkRevision(
     workId: string,

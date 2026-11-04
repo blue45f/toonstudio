@@ -15,9 +15,11 @@ import { captureStudioBg3dThreeNormals } from "./studio-bg3d-three-normal-captur
 import { hideStudioBg3dCaptureExcludedObjects, hideStudioBg3dDepthExcludedObjects } from "./studio-bg3d-capture-exclusion";
 import { captureStudioBg3dThreeDepth } from "./studio-bg3d-lt-three-depth";
 import { normalizeStudioBg3dRgbaReadback } from "./studio-bg3d-readback-normalize";
+import { createStudioBg3dThreeSixPassSceneGuard } from "./studio-bg3d-three-six-pass-scene-current";
+import { snapshotStudioBg3dCaptureCamera } from "./studio-bg3d-tile-camera";
 import { createStudioBg3dStraightAlphaOutputPass } from "./studio-bg3d-straight-alpha-output-pass";
 import { assertStudioBg3dThreeSixPassScene, captureStudioBg3dThreeSixPassPlanes,
-  linearizeStudioBg3dSixPassDepth, type StudioBg3dThreeSixPassPlanes } from "./studio-bg3d-three-six-pass-capture";
+  linearizeStudioBg3dSixPassDepth } from "./studio-bg3d-three-six-pass-capture";
 
 import type {
   StudioBg3dCaptureAdapter,
@@ -176,20 +178,54 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
 
   async function capture(request: StudioBg3dCaptureRequest, captureCamera = camera): Promise<StudioBg3dCapturedRaster> {
     assertStudioBg3dCaptureRequest(request);
+    if (request.includeSixPass) {
+      if (renderer.capabilities?.reversedDepthBuffer || renderer.capabilities?.logarithmicDepthBuffer) {
+        throw new Error("6패스 LT는 역방향·로그 깊이 렌더러를 지원하지 않습니다.");
+      }
+      const frozenCamera = snapshotStudioBg3dCaptureCamera(captureCamera);
+      const withCaptureScene = <Value>(submitSync: () => Value): Value => {
+        const restoreExcluded = hideStudioBg3dCaptureExcludedObjects(scene);
+        const restoreDepthExcluded = hideStudioBg3dDepthExcludedObjects(scene);
+        try { return submitSync(); }
+        finally { restoreDepthExcluded(); restoreExcluded(); }
+      };
+      const assertCurrent = withCaptureScene(() => {
+        assertStudioBg3dThreeSixPassScene(scene);
+        return createStudioBg3dThreeSixPassSceneGuard(scene, renderer);
+      });
+      const submit = async <Value>(submitSync: () => Promise<Value>): Promise<Value> => {
+        // 각 패스가 동기 draw/copy를 제출한 뒤 즉시 helper·재질·렌더 상태를 복원한다.
+        let pending: Promise<Value> | undefined;
+        let failure: { readonly error: unknown } | undefined;
+        try { withCaptureScene(() => { assertCurrent(); pending = submitSync(); }); }
+        catch (error) { failure = { error }; }
+        // 상태 복원 자체가 실패해도 이미 제출한 fence를 먼저 배수한다.
+        const results = await Promise.allSettled(pending ? [pending] : []);
+        if (failure) throw failure.error;
+        const result = results[0];
+        if (result?.status === "rejected") throw result.reason;
+        if (result?.status !== "fulfilled") throw new Error("6패스 LT GPU 제출이 완료되지 않았습니다.");
+        withCaptureScene(assertCurrent);
+        return result.value;
+      };
+      // 한 패스의 fence와 임시 target 정리가 끝나야 다음 패스를 할당한다.
+      const rgba = await submit(() => captureStudioBg3dThreeWebglColor({ renderer, scene, camera: frozenCamera, request }));
+      const depth = await submit(() => captureStudioBg3dThreeDepth({ renderer, scene, camera: frozenCamera,
+        width: request.width, height: request.height }));
+      const normalRgba = request.includeNormals ? await submit(() => captureStudioBg3dThreeNormals({ renderer, scene,
+        camera: frozenCamera, width: request.width, height: request.height })) : undefined;
+      const sixPass = await withCaptureScene(() => captureStudioBg3dThreeSixPassPlanes({ renderer, scene,
+        camera: frozenCamera, request, submit,
+        captureColor: (passRequest) => captureStudioBg3dThreeWebglColor({ renderer, scene,
+          camera: frozenCamera, request: passRequest }) }));
+      return { width: request.width, height: request.height, rgba, depth,
+        ...(normalRgba ? { normalRgba } : {}), ...sixPass, ...linearizeStudioBg3dSixPassDepth(depth, frozenCamera) };
+    }
     const restoreCaptureExcludedObjects = hideStudioBg3dCaptureExcludedObjects(scene);
-    const restoreSixPassExcludedObjects = request.includeSixPass ? hideStudioBg3dDepthExcludedObjects(scene) : () => {};
     let colorReadback: Promise<Uint8ClampedArray>;
     let depthReadback: Promise<Float32Array> | undefined;
     let normalReadback: Promise<Uint8ClampedArray> | undefined;
-    let sixPassReadback: Promise<StudioBg3dThreeSixPassPlanes> | undefined;
-    const depthCamera = request.includeSixPass ? captureCamera.clone() : null;
     try {
-      if (request.includeSixPass) {
-        if (renderer.capabilities?.reversedDepthBuffer || renderer.capabilities?.logarithmicDepthBuffer) {
-          throw new Error("6패스 LT는 역방향·로그 깊이 렌더러를 지원하지 않습니다.");
-        }
-        assertStudioBg3dThreeSixPassScene(scene);
-      }
       colorReadback = captureStudioBg3dThreeWebglColor({ camera: captureCamera, renderer, request, scene });
       if (request.includeDepth) {
         depthReadback = captureStudioBg3dThreeDepth({
@@ -204,26 +240,19 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
         normalReadback = captureStudioBg3dThreeNormals({ renderer, scene, camera: captureCamera,
           width: request.width, height: request.height });
       }
-      if (request.includeSixPass) {
-        sixPassReadback = captureStudioBg3dThreeSixPassPlanes({ renderer, scene, camera: captureCamera, request,
-          captureColor: (passRequest) => captureStudioBg3dThreeWebglColor({ camera: captureCamera,
-            renderer, request: passRequest, scene }) });
-      }
     } finally {
       // All GPU passes submit their readback work before their first await and restore renderer
       // state themselves. Keep viewport-only objects hidden through both submissions, then restore
       // their exact original visibility while the GPU fence(s) are pending.
-      restoreSixPassExcludedObjects();
       restoreCaptureExcludedObjects();
     }
     // Drain every submitted copy before propagating failure; never abandon a GPU fence.
-    const results = await Promise.allSettled([colorReadback!, depthReadback, normalReadback, sixPassReadback]);
+    const results = await Promise.allSettled([colorReadback!, depthReadback, normalReadback]);
     const rejected = results.find((result) => result.status === "rejected");
     if (rejected?.status === "rejected") throw rejected.reason;
     const rgba = results[0].status === "fulfilled" ? results[0].value : undefined;
     const depth = results[1].status === "fulfilled" ? results[1].value : undefined;
     const normalRgba = results[2].status === "fulfilled" ? results[2].value : undefined;
-    const sixPass = results[3].status === "fulfilled" ? results[3].value : undefined;
     if (!rgba) throw new Error("Missing WebGL color capture.");
     return {
       width: request.width,
@@ -231,8 +260,6 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
       rgba,
       ...(depth ? { depth } : {}),
       ...(normalRgba ? { normalRgba } : {}),
-      ...(sixPass && depth && depthCamera ? { ...sixPass,
-        ...linearizeStudioBg3dSixPassDepth(depth, depthCamera) } : {}),
     };
   }
 
@@ -241,8 +268,8 @@ export function createStudioBg3dThreeWebglCaptureAdapter(
     engineId: "three" as const,
     engineVersion: String(THREE.REVISION).toLowerCase(),
     implementationRevision: renderer.extensions?.has("EXT_color_buffer_float")
-      ? "studio-three-webgl-capture-adapter-v6-hdr-six-pass"
-      : "studio-three-webgl-capture-adapter-v6-ldr-six-pass",
+      ? "studio-three-webgl-capture-adapter-v7-hdr-six-pass-sequential"
+      : "studio-three-webgl-capture-adapter-v7-ldr-six-pass-sequential",
     normalProfile: STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1,
     ...(!renderer.capabilities?.reversedDepthBuffer && !renderer.capabilities?.logarithmicDepthBuffer
       ? { sixPassProfile: STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1 } as const : {}),

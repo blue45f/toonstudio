@@ -1,5 +1,6 @@
 // 작품 리비전 이력 — 목록/조회/비교/복원(낙관적 동시성 포함).
 import { and, desc, eq, lte, sql } from "drizzle-orm";
+import { assertStudioBg3dRestDocumentInTransaction } from "./studio-bg3d-bundle-rest-gate";
 
 import { withDatabaseCapability } from "../../platform/http/service-availability";
 import { creatorWorkRevisions, creatorWorks, db } from "../../platform/database";
@@ -146,7 +147,7 @@ export async function restoreWorkRevision(
   userId: string,
   workId: string,
   revisionValue: unknown,
-  baseRevisionValue: unknown
+  baseRevisionValue: unknown, readerCapabilities: readonly string[] = []
 ): Promise<CreatorWorkMutationResult> {
   return withWorkRevisionCapability("creator.work-revisions.write", async () => {
     const targetRevision = parseCreatorWorkRevision(revisionValue);
@@ -156,7 +157,7 @@ export async function restoreWorkRevision(
   const restored = await db.transaction(async (tx) => {
     await tx.execute(studioCrdtWorkAdvisoryLockQuery(workId));
     const [current] = await tx
-      .select({ ownerId: creatorWorks.userId, revision: creatorWorks.revision })
+      .select({ ownerId: creatorWorks.userId, revision: creatorWorks.revision, document: creatorWorks.doc })
       .from(creatorWorks)
       .where(eq(creatorWorks.id, workId))
       .limit(1)
@@ -182,11 +183,12 @@ export async function restoreWorkRevision(
       target.snapshot as CreatorWorkRevisionSnapshotSource
     );
     await admitStudioRolePipelineFullDocument(tx, userId, workId, snapshot.doc);
+    await assertStudioBg3dRestDocumentInTransaction(tx, workId, snapshot.doc, readerCapabilities, current.document);
     await assertCreatorWorkLinked3dPassAssetsInTransaction(tx, workId, {
       cover: snapshot.cover,
       pages: snapshot.pages,
       doc: snapshot.doc,
-    });
+    }, readerCapabilities);
 
     const [row] = await tx
       .update(creatorWorks)

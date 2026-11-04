@@ -1,6 +1,8 @@
+import { resetStudioBg3dReaderRoom, joinStudioBg3dReaderRoom } from "./studio-live-bg3d-reader-fence";
+import { isStudioBg3dReaderUpgradeRequired } from "./studio-bg3d-reader-capability";
+import { mapStudioLiveCrdtFailure, replyStudioLiveAck as reply, studioLiveFailure as failure  } from "./studio-live-ack";
 import { studioLivePrincipalFingerprint } from "../../server/session";
 
-import { replyStudioLiveAck as reply, studioLiveFailure as failure } from "./studio-live-ack";
 import {
   STUDIO_LIVE_ADAPTER_DISCOVERY_TIMEOUT_MS,
   STUDIO_LIVE_CONNECTION_LIMIT_MESSAGE,
@@ -90,6 +92,8 @@ export async function performJoin(
     ) {
       return reply(ack, failure("forbidden", "이 작품의 실시간 작업실에 참여할 권한이 없습니다."));
     }
+    await this.studioCrdtService.assertReaderCapability(input.workId, input.readerCapabilities);
+    if (input.readerCapabilities) client.data.studioReaderCapabilities = input.readerCapabilities; else delete client.data.studioReaderCapabilities;
     const authorizationExpiresAt = studioLiveAuthorizationExpiresAt(
       team.authorizationExpiresAt
     );
@@ -118,6 +122,8 @@ export async function performJoin(
         return reply(ack, failure("rate_limited", "작업실 정원은 최대 30명입니다."));
       }
     }
+
+    if (!(await resetStudioBg3dReaderRoom(this, client, transitionSequence))) return reply(ack, failure("not_joined", "기능 원본의 수신 방을 안전하게 전환하지 못했습니다."));
 
     // Join the adapter room before committing authoritative in-memory state. The coordinator
     // owns only adapter I/O and rollback ordering; socket/generation policy remains here.
@@ -356,6 +362,11 @@ export async function performJoin(
       return reply(ack, failure("not_joined", "더 최신 작업실 상태로 대체되었습니다."));
     }
 
+    await this.studioCrdtService.assertReaderCapability(input.workId, input.readerCapabilities);
+    const required = await this.studioCrdtService.requiredReaderCapabilities(input.workId);
+    if (!(await joinStudioBg3dReaderRoom(this, client, nextRoom, transitionSequence))) return reply(ack, failure("not_joined", "최신 작업실 참가 정보로 다시 연결해 주세요."));
+    if (!this.isCurrentJoinTransition(client, transitionSequence) || this.participantsBySocket.get(client.id) !== participant) return reply(ack, failure("not_joined", "더 최신 작업실 참가 요청으로 대체되었습니다."));
+    if (!this.isSocketPrincipalCurrent(client, principal, userId) || !isStudioLiveAuthorizationLeaseCurrent(participant.authorizationExpiresAt)) return rejectInvalidSession();
     const crdtWireSelectionEpoch = crypto.randomUUID();
     this.crdtBinarySelectionBySocket.set(client.id, {
       socket: client,
@@ -368,6 +379,7 @@ export async function performJoin(
     return reply(ack, {
       ok: true,
       data: {
+        ...(required.length ? { requiredReaderCapabilities: required } : {}),
         lockProtocolVersion: STUDIO_LIVE_LOCK_PROTOCOL_VERSION,
         lockRevisionVersion: STUDIO_LIVE_LOCK_REVISION_VERSION,
         lockSnapshotRevision: lockSnapshot.revision,
@@ -380,7 +392,11 @@ export async function performJoin(
         screenShares,
       },
     });
-  } catch {
+  } catch (error) {
+    if (isStudioBg3dReaderUpgradeRequired(error)) {
+      const response = mapStudioLiveCrdtFailure(error, input.workId, "sync").response;
+      reply(ack, response); client.emit("studio:error", response); this.disconnectInvalidJoinSession(client); return response;
+    }
     if (pendingIdentityClaim) {
       await this.rollbackPendingIdentityClaim(client, pendingIdentityClaim);
     }

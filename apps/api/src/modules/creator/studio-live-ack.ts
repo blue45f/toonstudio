@@ -1,4 +1,5 @@
-import { HttpException } from "@nestjs/common";
+import { StudioBg3dReaderUpgradeRequiredError, isStudioBg3dReaderUpgradeRequired } from "./studio-bg3d-reader-capability";
+import { isStudioLiveHttpAuthorizationDenied } from "./studio-live-http-failure";
 import { StudioScopedWriteDeniedError } from "./studio-scoped-write-effects";
 import { StudioLiveOpIdConflictError } from "./studio-live-op";
 import {
@@ -64,7 +65,8 @@ export function mapStudioLiveCrdtFailure(
   workId: string,
   operation: StudioLiveCrdtOperation
 ): StudioLiveCrdtFailureMapping {
-  if (error instanceof StudioScopedWriteDeniedError || (error instanceof HttpException && [403, 409].includes(error.getStatus()))) {
+  if (isStudioBg3dReaderUpgradeRequired(error)) return { response: { ...studioLiveFailure("reader_upgrade_required", "보존된 6패스를 읽을 수 있는 앱으로 업데이트해 주세요."), requiredReaderCapabilities: new StudioBg3dReaderUpgradeRequiredError().requiredReaderCapabilities }, diagnostic: null };
+  if (error instanceof StudioScopedWriteDeniedError || isStudioLiveHttpAuthorizationDenied(error)) {
     return { response: studioLiveFailure("forbidden", "현재 편집 배정이나 권한을 확인할 수 없습니다. 초안을 보존하고 배정을 다시 확인하세요."), diagnostic: null };
   }
   if (error instanceof StudioCrdtBackpressureError) {

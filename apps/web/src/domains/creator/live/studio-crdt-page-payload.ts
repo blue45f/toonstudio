@@ -52,6 +52,7 @@ const TEXT_ENCODER = new TextEncoder();
 export interface StudioCrdtCompatibleOrderedPage<
   TElement extends StudioCrdtCompatibleElement,
 > extends StudioCrdtCompatiblePage<TElement> {
+  bg3dLtBundles?: import("@toonstudio/contracts/studio-bg3d-six-pass-bundle").StudioBg3dSixPassBundleState;
   bg: string;
   bgGrad: string[] | null;
   canvasH: number;

@@ -74,3 +74,13 @@ describe("projectStudioLinked3dRasterSourcesForPortableExport", () => {
     expect(release).toHaveBeenCalledTimes(1);
   });
 });
+
+it("6패스 digest URI는 portable PNG로만 내보내고 손상된 예약 URI는 거부한다", async () => {
+  const src = `bg3d-lt-artifact://sha256/${"a".repeat(64)}`, release = vi.fn();
+  const acquire = vi.fn<StudioPortableRasterLeaseAcquirer>(async () => ({ kind: "linked-3d-cas", src: "blob:sixpass",
+    blob: new Blob(["png"], { type: "image/png" }), receipt: null, release }));
+  const input = [{ type: "image", src }];
+  const projected = await projectStudioLinked3dRasterSourcesForPortableExport(input, { acquire, encode: async () => "data:image/png;base64,cG5n" });
+  expect(projected[0].src).toBe("data:image/png;base64,cG5n"); expect(input[0].src).toBe(src); expect(release).toHaveBeenCalledOnce();
+  await expect(projectStudioLinked3dRasterSourcesForPortableExport([{ type: "image", src: "bg3d-lt-artifact://bad" }], { acquire })).rejects.toThrow(/손상/);
+});

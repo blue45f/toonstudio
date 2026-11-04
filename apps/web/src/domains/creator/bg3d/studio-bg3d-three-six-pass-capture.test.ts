@@ -53,6 +53,7 @@ describe("6패스 LT 분리 캡처", () => {
     const pending = captureStudioBg3dThreeSixPassPlanes({ scene, renderer, camera: new THREE.PerspectiveCamera(),
       request: { width: 1, height: 1, includeDepth: true, includeSixPass: true, background: { color: "#ffffff", alpha: 0 } },
       captureColor });
+    expect(captureColor).toHaveBeenCalledTimes(1);
     expect(mesh.material).toBe(material);
     expect(scene.fog).toBe(fog);
     expect(renderer.toneMapping).toBe(THREE.ACESFilmicToneMapping);

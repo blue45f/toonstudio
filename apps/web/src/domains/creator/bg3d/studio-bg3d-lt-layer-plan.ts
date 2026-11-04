@@ -7,6 +7,7 @@
  * next arrays; a failed result contains no partial state.
  */
 
+import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { createLayerGroup, type LayerGroup } from "../studio-layers";
 import type { StudioBg3dLtLayerPresentation } from "../scene-3d/studio-3d-insert-contract";
 import { makeStudioBg3dLtLayerElement as makeLayerElement } from "../contracts/studio-bg3d-lt-layer-element";
@@ -324,7 +325,7 @@ function isStudioBg3dLtPersistedLayerSource(
   value: unknown,
   role: unknown,
 ): value is string {
-  return isStudioBg3dLtPngDataUrl(value)
+  return isStudioBg3dLtPngDataUrl(value) || (role !== "main-line" && parseStudioBg3dSixPassArtifactSourceUri(value) !== null)
     || (
       role === "main-line"
       && typeof value === "string"

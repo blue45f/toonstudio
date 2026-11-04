@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassBundleImageReference } from "../studio-bg3d-six-pass-reference";
 import { STUDIO_FILTER_MASK_REFERENCE_EDIT_KEYS, isStudioFilterMaskReferenceProps } from "../studio-filter-mask-surface-contract";
 import { STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS, STUDIO_WORK_ASSET_TYPES, parseStudioWorkAssetSourceUri, studioWorkAssetSourceUri } from "../studio-work-asset-contract";
 
@@ -65,7 +66,9 @@ export function projectStudioCrdtSceneElement(record: StudioCrdtAuthoringSceneRe
   const referenceProps = { ...record.payload.props }; delete referenceProps.elementType; delete referenceProps.bundleSourceCredit;
   const topology = isStudioCrdtProjectionTopologyReference(record.payload);
   const result: StudioCrdtProjectedElement = { ...referenceSource, ...referenceProps, id: record.id, type: referenceSource.type };
-  if (!topology) {
+  const bg3d = parseStudioBg3dSixPassBundleImageReference(referenceProps.bg3dLtBundleReference);
+  if (bg3d && (referenceSource.type !== "image" || bg3d.elementId !== record.id)) fail("6패스 요소 참조가 다릅니다.");
+  if (!topology && !bg3d) {
     if (!(STUDIO_WORK_ASSET_TYPES as readonly string[]).includes(referenceSource.type)) fail("지원하지 않는 자산 참조입니다.");
     result.src = studioWorkAssetSourceUri({ assetId: record.id, elementType: referenceSource.type as typeof STUDIO_WORK_ASSET_TYPES[number] });
     for (const key of STUDIO_WORK_ASSET_REFERENCE_EDIT_KEYS) if (key !== "bundleSourceCredit" && !Object.hasOwn(referenceProps, key)) delete result[key];
