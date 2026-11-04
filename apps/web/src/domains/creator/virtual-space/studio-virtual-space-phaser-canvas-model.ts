@@ -69,6 +69,8 @@ export interface StudioVirtualSpacePhaserCanvasProps {
   readonly onNearbyInteractionChange?: (interaction: StudioWorldInteractionDefinition | null) => void;
   readonly onPeerSelect: (sessionId: string) => void;
   readonly onCancelFollow: () => void;
+  /** H 키의 페이지 자리 동작. 제공되면 서버 좌석·검색 상태의 권한은 호출자가 유지한다. */
+  readonly onDeskShortcut?: () => void;
   readonly onPortal?: (portal: StudioWorldPortalDefinition) => void;
   /** roomId나 privateZone이 바뀔 때만 호출한다. 준비 직후 1회는 reason "initial". */
   readonly onZoneChange?: (zone: StudioVirtualSpaceZoneChange) => void;
