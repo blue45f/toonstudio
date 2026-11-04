@@ -751,11 +751,18 @@ test("번들 sparse checkout은 작은 manifest와 실제 회귀가 읽는 래�
   ];
   assert.equal(new Set(rasters).size, rasters.length);
   const metadata = ["3d/environments/bundle-v1/theme-packs.json", "virtual-studio/bundle-v1/manifest.json"].map((path) => prefix + path);
+  const relatedOriginalInputs = [
+    `${prefix}3d/environments/bundle-v1/theme-packs.e855c272c15db1f75a7a398c93f01c9ce6ff27342f2b10b2707e4daf9abe3ce4.json`,
+    ...["Kate", "Erika", "Olivia", "Cyberpal"].map((id) => `apps/web/public/vrm/${id}.vrm`),
+  ];
+  for (const file of relatedOriginalInputs) assert.match(file,
+    /^apps\/web\/public\/(?:assets\/3d\/environments\/bundle-v1\/theme-packs\.[a-f0-9]{64}\.json|vrm\/[A-Za-z]+\.vrm)$/u);
+
   for (const file of [...manifests, ...metadata, ...rasters]) {
     assert.match(file, /^apps\/web\/public\/assets\/[A-Za-z0-9_/-]+\.(?:json|webp)$/u,
       `임시 Git fixture 밖의 경로는 허용하지 않습니다: ${file}`);
   }
-  const excluded = ["studio/bundle-v2/private-model.glb", "studio/unrelated/large.webp", "3d/unrelated/model.glb"].map((path) => prefix + path);
+  const excluded = [...["studio/bundle-v2/private-model.glb", "studio/unrelated/large.webp", "3d/unrelated/model.glb", "3d/environments/bundle-v1/unrelated-large.glb"].map((path) => prefix + path), "apps/web/public/vrm/unrelated.vrm"];
   const requiredPatterns = roots.map((root) => `/${prefix}${root}/`);
   const foundationPatterns = sparsePatterns(job("static"), { shard: "studio-foundation" });
   for (const path of requiredPatterns) assert.ok(foundationPatterns.includes(path), `초기 번들 본문 누락: ${path}`);
@@ -771,7 +778,7 @@ test("번들 sparse checkout은 작은 manifest와 실제 회귀가 읽는 래�
   };
   try {
     git("init", "--quiet");
-    for (const file of [...manifests, ...metadata, ...rasters, ...excluded, "package.json"]) {
+    for (const file of [...manifests, ...metadata, ...rasters, ...relatedOriginalInputs, ...excluded, "package.json"]) {
       mkdirSync(dirname(join(scratch, file)), { recursive: true }); writeFileSync(join(scratch, file), "fixture\n");
     }
     git("add", ".");
@@ -786,10 +793,10 @@ test("번들 sparse checkout은 작은 manifest와 실제 회귀가 읽는 래�
     for (const file of [...manifests, ...metadata, ...rasters]) assert.ok(existsSync(join(scratch, file)), `foundation 입력 누락 ${file}`);
     const focused = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
     apply(focused);
-    for (const file of rasters) assert.equal(existsSync(join(scratch, file)), false, `manual smoke의 불필요한 번들 본문 ${file}`);
+    for (const file of [...rasters, ...relatedOriginalInputs]) assert.equal(existsSync(join(scratch, file)), false, `manual smoke의 불필요한 번들 본문 ${file}`);
     assert.doesNotMatch(focused, /git sparse-checkout add/u, "PR 본문도 인증 범위 안에서 최초 checkout해야 합니다.");
     apply(focused, { eventName: "pull_request" });
-    for (const file of [...manifests, ...metadata, ...rasters]) assert.ok(existsSync(join(scratch, file)), `related 테스트 입력 누락 ${file}`);
+    for (const file of [...manifests, ...metadata, ...rasters, ...relatedOriginalInputs]) assert.ok(existsSync(join(scratch, file)), `related 테스트 입력 누락 ${file}`);
     for (const file of excluded) assert.equal(existsSync(join(scratch, file)), false, `무관한 모델·래스터 복원 ${file}`);
   } finally { rmSync(scratch, { recursive: true, force: true }); }
 });

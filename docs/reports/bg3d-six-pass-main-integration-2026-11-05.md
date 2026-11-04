@@ -6,7 +6,8 @@
 - 수신 main: `2fbf6c3160e5f9f8b19df0576079e0b96fa6a296`
 - 기존 통합 커밋: `f774af067082c48499007862ee14539b6e312167` — 위 두 SHA를 부모로 한 일반 merge.
 - 추가 수신 main: `ac6a0a8e8b7e3f55ea08ee58427f654cf69c871f` — PR #2710의 6패스 squash와 PR #2709의 후속 UI를 포함한다.
-- 작업 위치: `codex/bg3d-six-pass-main-20261105`의 독립 작업트리.
+- 최초 작업 위치: `codex/bg3d-six-pass-main-20261105`의 독립 작업트리.
+- 복구 작업 위치: `/Users/hjunkim/WebstormProjects/toonstudio-bg3d-integration-20261105`, `codex/bg3d-six-pass-recovered-20261105`.
 - 승인 범위: 충돌 해결·회귀·CI 확인·PR 병합. **운영 DB 적용·배포는 별도 승인**이다.
 
 ## 1. 기존 작업 보존과 충돌 판정
@@ -47,6 +48,16 @@ Studio 정적 그래프 한도를 지킨다. 파일 크기·eager graph 기준�
 - native PG fixture는 공유 `plan:free` 정책을 생성·삭제하지 않는다. 테스트 계정의 usage event로
   quota를 소진하고, 계정 FK 정리와 공유 정책의 전후 불변을 검사한다.
 
+PR #2710의 실제 CI 로그에서 정규 테스트 DB의 `studio_bg3d_bundle_guard()` 부재와
+이전 migration 목록·reader capability 기대값의 불일치를 확인했다. 위 DB 준비 경계와 함께
+정확한 0121 추가·project 최대 지원 버전 5·아카이브 544 MiB·capture adapter v7·번역 5키를
+기대값에 반영한다. 크기 경계의 정확한 한도와 +1 거부, 미래 버전 6 거부, 원래 단일 캡처의
+허용·거부·dispose 검증을 유지한다. sparse checkout은 기존 원본 자산 다섯 경로만 추가한다.
+
+다른 채팅이 담당한 `a23e4dd8bcded2c82ebf17020fa503f8a897b66e`도 일반 merge로 받았다.
+Creator hub Web 타입 검사에 정본 16 GiB Node heap을 적용하는 두 줄이며, 검사 범위·runner·
+권한·보호 규칙은 변경하지 않는다. 별도 중복 PR은 만들지 않도록 조율했다.
+
 ## 3. 로컬 통합 검증
 
 아래 결과는 수신 main과 6패스 변경을 결합한 후보에서 실제 실행한 결과다. 명령 로그와
@@ -59,6 +70,9 @@ Studio 정적 그래프 한도를 지킨다. 파일 크기·eager graph 기준�
 - 새 빈 PostgreSQL DB에서 정규 준비 명령 **exit 0**, Studio invariant trigger **23개 확인**.
 - 동일한 준비 DB에서 native 저장·복구·승격 11개와 main의 일반 asset·Graph 비소유 runtime/
   권한 회수 6개, 합계 **3파일 17개 통과**. 공유 정책과 테스트 계정의 잔존 행은 없다.
+- 복구 뒤 정규 CI DB 명령 전체 **17파일 319개 통과·기존 조건부 skip 1개**.
+  별도 stale 기대값 회귀 **3파일 19개**, MToon·번역 **2파일 65개**, migration·공개 원본
+  **5파일 58개**, sparse checkout·CI 정책 Node **43개**를 통과했다. 서로 겹치는 실행은 합산하지 않는다.
 - 실제 제품 UI에서 GPU 캡처 1회로 22개 객체→6층/1그룹·8 native 본문→두 탭→undo/redo→
   ZIP v5→새 문맥 재열기→22개 객체·38°·lens shift 0.12 재편집→2배 PNG 출력을 확인했다.
   5개 시점의 native/Stage 원본 픽셀·장면·설정·선화 index가 동일했고 page error와 외부 HTTP는 0이다.
@@ -69,6 +83,20 @@ Studio 정적 그래프 한도를 지킨다. 파일 크기·eager graph 기준�
 
 정상 push 전 검사와 `pnpm harness:verify`, 정확한 PR head의 `core`·`verify` 및 하위 실행
 lane이 모두 성공한 것을 확인한 뒤 병합한다. 과거 PR·다른 SHA의 성공을 대체 근거로 쓰지 않는다.
+
+### 검증 환경 중단과 복구
+
+2026-11-05 04:44 KST 무렵 `.codex/worktrees` 아래 원본·보존·후보 작업트리의 경로와
+등록이 사라졌다. 이 채팅은 삭제·정리 명령을 실행하지 않았으며 원인은 확정하지 못했다.
+실행 중이던 최종 하네스와 새 ZIP 재열기 검증은 중단으로 기록했고, DB 17파일 재실행은
+Vite 설정을 읽는 단계에서 종료되어 suite를 하나도 실행하지 않았다. 이를 성공으로 세지 않는다.
+
+Git 객체 `e8ea1cfc7`, `f774af067`, `5b86681ec`는 남아 있어 별도 보존 ref를 다시 만들고,
+`5b86681ec`의 정확한 tree를 위 새 작업트리에 복구했다. 기준 `fa68e24ef`가 필요한 증분
+Git bundle도 생성·검증했다. 새 작업트리는 진행 중 정리를 막도록 잠갔고 의존성을 offline·
+frozen lockfile로 재설치했다. 기존 canonical main의 미발행 세 커밋은 변경하지 않았다.
+복구 뒤 하네스·정규 CI DB 명령·최종 원고 재열기를 새 환경에서 다시 검증하며 원래 로그와
+중단 로그를 모두 보존한다. 이후 실행 결과는 PR의 검증 기록에 추가한다.
 
 ## 4. 운영과 기능 범위
 
