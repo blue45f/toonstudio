@@ -78,8 +78,9 @@ describe("구인·의뢰 게시판 상태", () => {
     expect(screen.getByTestId("collaborate-rea-interactive-vcs-sla-bar")).toBeTruthy();
     fireEvent.click(screen.getByTestId("collaborate-rea-vcs-diversion-branch"));
     expect(screen.getByTestId("collaborate-rea-active-vcs-summary").textContent).toContain(
-      "Diversion·Unity VCS 무손실 아티스트 브랜치 병합",
+      "[구성 미리보기] Diversion·Unity VCS 아티스트 브랜치 병합",
     );
+    expect(screen.getByTestId("collaborate-rea-active-vcs-summary").textContent).toContain("실제 편집 권한은 프로젝트의 계정·직군·공정 정책을 따릅니다.");
 
     fireEvent.click(within(chipGroup).getByRole("button", { name: "선화·펜선" }));
     await waitFor(() => expect(list).toHaveBeenLastCalledWith({ role: "ink" }, expect.any(AbortSignal)));

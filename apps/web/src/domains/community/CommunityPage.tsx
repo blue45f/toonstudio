@@ -48,6 +48,11 @@ import { useT } from "@/shared/lib/i18n";
 const SCOPES = ["title", "author", "pencafe"] as const;
 
 const COPY = {
+  configurationPreview: defineBilingualText("communityPage", "configurationPreview", "구성 미리보기:", "Configuration preview:"),
+  commissionPreview: defineBilingualText("communityPage", "commissionPreview", "Skeb 무수정 리퀘스트 + VGen·크레페 캐릭터 시트 슬롯 예약 구성 예시", "Skeb requests + VGen/Crepe character sheet booking configuration example"),
+  tierPreview: defineBilingualText("communityPage", "tierPreview", "텀블벅·와디즈 달성률 게이지 + 팬딩·DLsite·Fantia PSD 티어 배포 구성 예시", "Tumblbug/Wadiz funding progress + Fanding/DLsite/Fantia PSD tier distribution configuration example"),
+  boothPreview: defineBilingualText("communityPage", "boothPreview", "코미케 써클컷 + 멜론북스·suzuri 300DPI CMYK 3mm 재단선 검토 예시", "Comiket booth artwork + Melonbooks/suzuri 300DPI CMYK 3mm bleed review example"),
+  protectionPreview: defineBilingualText("communityPage", "protectionPreview", "Cara No-AI 타임랩스 + C2PA 서명 매니페스트 + Glaze/Nightshade 보호 방식 검토 예시", "Cara No-AI timelapse + C2PA signature manifest + Glaze/Nightshade protection approach review example"),
   docTitle: defineBilingualText(
     "communityPage",
     "docTitle",
@@ -480,7 +485,7 @@ export function CommunityPage() {
             className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/5 px-3 py-2"
           >
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="크리에이터 수익화·부스·출처증명 시뮬레이터">
-              <span className="text-[11px] font-extrabold text-accent">REA 워크벤치:</span>
+              <span className="text-[11px] font-extrabold text-accent">{t(COPY.configurationPreview)}</span>
               {([
                 { id: "skeb-vgen-commission", label: "Skeb·VGen·크레페 무수정 커미션 슬롯" },
                 { id: "tumblbug-fantia-tier", label: "텀블벅·팬딩·DLsite·Fantia 티어 보상" },
@@ -505,12 +510,12 @@ export function CommunityPage() {
             </div>
             <span data-testid="community-rea-active-track-summary" className="text-[11px] font-semibold text-fg-2">
               {activeReaTrack === "skeb-vgen-commission"
-                ? "Skeb 무수정 리퀘스트 + VGen·크레페 캐릭터 시트 슬롯 예약 활성"
+                ? t(COPY.commissionPreview)
                 : activeReaTrack === "tumblbug-fantia-tier"
-                  ? "텀블벅·와디즈 달성률 게이지 + 팬딩·DLsite·Fantia PSD 티어 배포 활성"
+                  ? t(COPY.tierPreview)
                   : activeReaTrack === "comiket-booth-cut"
-                    ? "코미케 써클컷 + 멜론북스·suzuri 300DPI CMYK 3mm 재단선 검증 통과"
-                    : "Cara No-AI 타임랩스 + C2PA 서명 매니페스트 + Glaze/Nightshade 보호 활성"}
+                    ? t(COPY.boothPreview)
+                    : t(COPY.protectionPreview)}
             </span>
           </div>
         </div>
