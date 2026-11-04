@@ -162,10 +162,17 @@ export function ExploreReaDirectoryBar({
           },
           {
             id: "munpia-novelpia-watcha",
-            ko: "문피아·조아라·노벨피아 노벨코믹스 & 왓챠피디아 고별점 픽",
-            en: "Munpia/Joara/Novelpia Novel-Comics & Watcha Pedia Top Rated",
+            ko: "문피아·조아라·노벨피아·교보eBook·밀리의서재 노벨코믹스 & 왓챠피디아 고별점 픽",
+            en: "Munpia/Joara/Novelpia/Kyobo/Millie Novel-Comics & Watcha Pedia Top Rated",
             status: ["ongoing"] as SerialStatus[],
             sortKey: "rating" as SortKey,
+          },
+          {
+            id: "bilibili-kuaikan-comicdays",
+            ko: "빌리빌리 만화·콰이칸·코믹데이즈·선데이웨브리·Wattpad·Royal Road 아시아/글로벌 인기작",
+            en: "Bilibili/Kuaikan/Comic Days/Sunday Webry/Wattpad/Royal Road Global Hits",
+            status: ["ongoing"] as SerialStatus[],
+            sortKey: "popular" as SortKey,
           },
         ].map((preset) => (
           <button

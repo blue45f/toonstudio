@@ -8,7 +8,8 @@ import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
 export type StoryToWebtoonEngineModeId =
   | "llamagen-tooning-ai"
   | "mangaplay-fountain-markup"
-  | "insertoon-shorts-packager";
+  | "insertoon-shorts-packager"
+  | "mantra-ichigo-ocr-typesetter";
 
 export type StoryToWebtoonLayoutFormatId =
   | "vertical-webtoon-scroll"
@@ -259,9 +260,10 @@ export function StudioStoryToWebtoonStartupWorkbench({
   const [layoutFormat, setLayoutFormat] = useState<StoryToWebtoonLayoutFormatId>("vertical-webtoon-scroll");
   const [selectedPresetId, setSelectedPresetId] = useState<string>(STORY_PRESETS[0].id);
   const [characterDnaLocked, setCharacterDnaLocked] = useState<boolean>(true);
+  const [provenanceShieldLocked, setProvenanceShieldLocked] = useState<boolean>(true);
   const [inpaintedCutIndex, setInpaintedCutIndex] = useState<number | null>(null);
   const [customScript, setCustomScript] = useState<string>("");
-  const [simulreleaseLang, setSimulreleaseLang] = useState<"KO" | "EN" | "JA">("KO");
+  const [simulreleaseLang, setSimulreleaseLang] = useState<"KO" | "EN" | "JA" | "ZH" | "ES" | "FR">("KO");
 
   const activePreset = useMemo(
     () => STORY_PRESETS.find((p) => p.id === selectedPresetId) ?? STORY_PRESETS[0],
@@ -304,29 +306,43 @@ export function StudioStoryToWebtoonStartupWorkbench({
           <Wand2 size={14} className="text-accent" aria-hidden="true" />
           <span className="text-[0.7rem] font-black text-fg">
             {ko
-              ? "스토리 → 웹툰 즉시 변환 & 실시간 마크업 콘티 워크벤치 (LlamaGen · 투닝플러스 · Mangaplay · 젠툰 · 인서툰 내재화)"
-              : "Story-to-Webtoon Instant Converter & Live Markup Storyboard (LlamaGen · Tooning Plus · Mangaplay · GenToon · Insertoon)"}
+              ? "스토리 → 웹툰 즉시 변환 & 실시간 마크업·다국어 식자 워크벤치 (LlamaGen · 투닝플러스 · Mangaplay · 젠툰 · 인서툰 · Mantra · Ichigo 내재화)"
+              : "Story-to-Webtoon Instant Converter & Live Markup / OCR Workbench (LlamaGen · Tooning Plus · Mangaplay · GenToon · Insertoon · Mantra · Ichigo)"}
           </span>
         </div>
-        <span
-          data-testid="story-to-webtoon-dna-badge"
-          className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[0.6rem] font-bold text-accent"
-        >
-          <Lock size={11} aria-hidden="true" />
-          {characterDnaLocked
-            ? ko
-              ? "캐릭터 DNA 시드 고정 ON (20컷+ 얼굴·의상 일관성 유지)"
-              : "Character DNA Seed Lock ON (20+ Panel Identity Consistency)"
-            : ko
-              ? "캐릭터 자유 변형 모드"
-              : "Free Character Variation Mode"}
-        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            data-testid="story-to-webtoon-dna-badge"
+            className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[0.6rem] font-bold text-accent"
+          >
+            <Lock size={11} aria-hidden="true" />
+            {characterDnaLocked
+              ? ko
+                ? "캐릭터 DNA 시드 고정 ON (20컷+ 얼굴·의상 일관성 유지)"
+                : "Character DNA Seed Lock ON (20+ Panel Identity Consistency)"
+              : ko
+                ? "캐릭터 자유 변형 모드"
+                : "Free Character Variation Mode"}
+          </span>
+          <span
+            data-testid="story-to-webtoon-provenance-badge"
+            className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-0.5 font-mono text-[0.6rem] font-bold text-success"
+          >
+            {provenanceShieldLocked
+              ? ko
+                ? "Glaze · Nightshade · C2PA 화풍·출처 보호 ON"
+                : "Glaze · Nightshade · C2PA Style & Provenance Shield ON"
+              : ko
+                ? "C2PA · Glaze 보호 일시 해제"
+                : "C2PA · Glaze Shield Paused"}
+          </span>
+        </div>
       </div>
 
       <p className="mt-1 text-[0.64rem] leading-4 text-fg-2">
         {ko
-          ? "한 줄 줄거리(LlamaGen·투닝플러스 Stories)나 100% AI-Free 코믹 마크업 대본(Mangaplay Fountain)을 입력하면 3D 카메라·포즈 연출, 캐릭터 일관성 시드(젠툰·KomikoAI), 말풍선·효과음 배치 및 숏폼 릴스 타임코드(오노마AI 인서툰)까지 즉시 웹툰 컷으로 변환합니다."
-          : "Enter a story logline (LlamaGen / Tooning Plus Stories) or 100% AI-free comic markup (Mangaplay Fountain) to instantly generate webtoon panels with 3D camera/pose framing, Character DNA locks (GenToon / KomikoAI), speech bubbles, and Shorts/Reels timecodes (Onoma AI Insertoon)."}
+          ? "한 줄 줄거리(LlamaGen·투닝플러스 Stories)나 100% AI-Free 코믹 마크업 대본(Mangaplay Fountain)을 입력하면 3D 카메라·포즈 연출, 캐릭터 일관성 시드(젠툰·KomikoAI), 6개국어 OCR/식자(Mantra·Ichigo·Mokuro·letr.ai) 및 숏폼 릴스 타임코드(오노마AI 인서툰)까지 즉시 웹툰 컷으로 변환합니다."
+          : "Enter a story logline (LlamaGen / Tooning Plus Stories) or 100% AI-free comic markup (Mangaplay Fountain) to instantly generate webtoon panels with 3D camera/pose framing, Character DNA locks (GenToon / KomikoAI), 6-language OCR typesetting (Mantra / Ichigo / Mokuro / LETR AI), and Shorts/Reels timecodes (Onoma AI Insertoon)."}
       </p>
 
       {/* Engine Mode Selector */}
@@ -395,6 +411,26 @@ export function StudioStoryToWebtoonStartupWorkbench({
             ? "③ 웹툰 → SNS 릴스·쇼츠 자동 변환 (오노마AI 인서툰 · 브루 · 타입캐스트)"
             : "3. Webtoon-to-Shorts/Reels Packager (Onoma AI Insertoon · Vrew · Typecast)"}
         </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-mantra-ichigo-ocr-typesetter"
+          aria-pressed={engineMode === "mantra-ichigo-ocr-typesetter"}
+          onClick={() => {
+            setEngineMode("mantra-ichigo-ocr-typesetter");
+            setSimulreleaseLang("EN");
+          }}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors",
+            engineMode === "mantra-ichigo-ocr-typesetter"
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line bg-card text-fg-2 hover:border-accent/40",
+          )}
+        >
+          <Wand2 size={12} aria-hidden="true" />
+          {ko
+            ? "④ 6개국어 AI OCR·말풍선 인페인팅 식자 (Mantra · Ichigo · Mokuro · letr.ai)"
+            : "4. 6-Language AI OCR & Balloon Typesetter (Mantra · Ichigo · Mokuro · LETR AI)"}
+        </button>
       </div>
 
       {/* Story Genre Presets + Format & DNA Controls */}
@@ -432,12 +468,21 @@ export function StudioStoryToWebtoonStartupWorkbench({
           >
             {ko ? "DNA 시드 잠금 전환" : "Toggle DNA Lock"}
           </button>
+          <button
+            type="button"
+            data-testid="story-to-webtoon-provenance-toggle"
+            aria-pressed={provenanceShieldLocked}
+            onClick={() => setProvenanceShieldLocked((prev) => !prev)}
+            className="rounded-md border border-line bg-card px-2 py-0.5 text-[0.6rem] font-bold text-fg-2 hover:border-accent/40"
+          >
+            {ko ? "C2PA·Glaze 보호 전환" : "Toggle C2PA/Glaze Shield"}
+          </button>
           <div
             role="group"
             aria-label={ko ? "다국어 식자 동시 조판 언어" : "Multilingual lettering language"}
             className="inline-flex items-center gap-0.5 rounded-md border border-line bg-card p-0.5"
           >
-            {(["KO", "EN", "JA"] as const).map((lang) => (
+            {(["KO", "EN", "JA", "ZH", "ES", "FR"] as const).map((lang) => (
               <button
                 key={lang}
                 type="button"

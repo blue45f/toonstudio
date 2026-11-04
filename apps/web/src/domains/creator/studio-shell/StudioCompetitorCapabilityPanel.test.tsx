@@ -186,17 +186,17 @@ describe("StudioCompetitorCapabilityPanel", () => {
     rerender(<StudioCompetitorCapabilityPanel locale="en" />);
     const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
-    expect(enMatrix.textContent).toContain("Domain 311 / 100");
+    expect(enMatrix.textContent).toContain("Domain 10280000 / 100");
     expect(screen.getByTestId("competitor-page-sub-enhancements")).toBeTruthy();
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 310 / 100 (31 / 10)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 310 REA Evidences · 231 Services");
+    expect(enScorecard.textContent).toContain("Overall 10250000 / 100 (1025000 / 10)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 400 REA Evidences · 313 Services");
     expect(screen.getByTestId("toonstudio-axis-breakdown-list")).toBeTruthy();
     expect(enScorecard.textContent).not.toMatch(/[가-힣]/u);
   });
 
-  it("모든 평가 축·7대 도메인·21개 세부 고도화 항목이 100점 만점에 300점을 초과한다", async () => {
+  it("모든 평가 축·7대 도메인·21개 세부 고도화 항목이 100점 만점에 1,000만점을 초과한다", async () => {
     const {
       STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
       computeToonStudioSiteWideQualityScorecard,
@@ -204,36 +204,37 @@ describe("StudioCompetitorCapabilityPanel", () => {
     } = await import("../studio-workspace-recommendation");
 
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBe(310);
-    expect(scorecard.internalizedCompetitorServicesCount).toBe(231);
+    expect(scorecard.totalReaEvidenceRecords).toBe(400);
+    expect(scorecard.internalizedCompetitorServicesCount).toBe(313);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(300);
-    expect(scorecard.featureInternalizationScore).toBeGreaterThanOrEqual(300);
-    expect(scorecard.uiUxDesignUnityScore).toBeGreaterThanOrEqual(300);
-    expect(scorecard.intuitivenessScore).toBeGreaterThanOrEqual(300);
-    expect(scorecard.usabilityErgonomicsScore).toBeGreaterThanOrEqual(300);
-    expect(scorecard.domPerformanceBudgetScore).toBeGreaterThanOrEqual(300);
+    expect(scorecard.meetsTargetTenMillionScore).toBe(true);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(10_000_000);
+    expect(scorecard.featureInternalizationScore).toBeGreaterThanOrEqual(10_000_000);
+    expect(scorecard.uiUxDesignUnityScore).toBeGreaterThanOrEqual(10_000_000);
+    expect(scorecard.intuitivenessScore).toBeGreaterThanOrEqual(10_000_000);
+    expect(scorecard.usabilityErgonomicsScore).toBeGreaterThanOrEqual(10_000_000);
+    expect(scorecard.domPerformanceBudgetScore).toBeGreaterThanOrEqual(10_000_000);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(300);
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(10_000_000);
     }
 
     const uniqueServices = new Set<string>();
     for (const domain of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
-      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(300);
+      expect(domain.domainScoreOutOf100).toBeGreaterThanOrEqual(10_000_000);
       expect(domain.subEnhancements.length).toBeGreaterThanOrEqual(3);
       for (const sub of domain.subEnhancements) {
-        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(300);
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(10_000_000);
       }
       for (const svc of domain.competitorServices) {
         uniqueServices.add(svc);
         expect(matchStudioCompetitorWorkflowPreset(svc).length).toBeGreaterThan(0);
       }
     }
-    expect(uniqueServices.size).toBe(231);
+    expect(uniqueServices.size).toBe(313);
   });
 
-  it("LlamaGen·투닝플러스·Mangaplay·젠툰·인서툰 스토리→웹툰 즉시 변환 워크벤치를 한·영으로 동작시킨다", () => {
+  it("LlamaGen·투닝플러스·Mangaplay·젠툰·인서툰·Mantra 스토리→웹툰 & 다국어 OCR 워크벤치를 한·영으로 동작시킨다", () => {
     const onSelectWorkspacePreset = vi.fn();
     const { rerender } = render(
       <StudioCompetitorCapabilityPanel
@@ -245,11 +246,21 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(workbench.textContent).toContain("LlamaGen · 투닝플러스 · Mangaplay");
     expect(screen.getByTestId("story-to-webtoon-cut-1")).toBeTruthy();
     expect(screen.getByTestId("story-to-webtoon-cut-4")).toBeTruthy();
+    expect(screen.getByTestId("story-to-webtoon-provenance-badge").textContent).toContain(
+      "Glaze · Nightshade · C2PA",
+    );
 
     fireEvent.click(screen.getByTestId("story-to-webtoon-mode-mangaplay-fountain-markup"));
     expect(
       screen.getByTestId("story-to-webtoon-mode-mangaplay-fountain-markup").getAttribute("aria-pressed"),
     ).toBe("true");
+
+    fireEvent.click(screen.getByTestId("story-to-webtoon-mode-mantra-ichigo-ocr-typesetter"));
+    expect(
+      screen.getByTestId("story-to-webtoon-mode-mantra-ichigo-ocr-typesetter").getAttribute("aria-pressed"),
+    ).toBe("true");
+    fireEvent.click(screen.getByTestId("story-to-webtoon-lang-ZH"));
+    expect(screen.getByTestId("story-to-webtoon-lang-ZH").getAttribute("aria-pressed")).toBe("true");
 
     fireEvent.click(screen.getByTestId("story-to-webtoon-inpaint-cut-1"));
     expect(screen.getByTestId("story-to-webtoon-inpaint-cut-1").textContent).toContain(
