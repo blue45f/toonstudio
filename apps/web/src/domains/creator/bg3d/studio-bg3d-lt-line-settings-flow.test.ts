@@ -283,10 +283,10 @@ describe("편집기 삽입과 멀티패스 내보내기의 선 설정 공유", (
     );
   });
 
-  it("asks for the depth capture through the same predicate in the editor insert, the batch plan, and the export run", () => {
+  it("편집기와 배치의 선 깊이 조건을 보존하고 6패스 필수 깊이를 추가한다", () => {
     const read = (name: string) => readFileSync(new URL(`./${name}`, import.meta.url), "utf8");
     expect(read("studio-bg3d-editor-insert-host.ts")).toContain(
-      "includeDepth: studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),",
+      "includeDepth: Boolean(ltSettingsSnapshot.sixPassLt) || studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),",
     );
     expect(read("studio-bg3d-shot-batch-export-run.ts")).toContain(
       "includeDepth: studioBg3dShotBatchNeedsDepth(applied.output.line, selectedShotBatchPasses),",
