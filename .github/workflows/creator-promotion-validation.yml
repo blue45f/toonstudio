@@ -65,6 +65,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
       - name: Web typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=16384
         run: pnpm exec tsc --noEmit --pretty false
       - name: API typecheck
         run: pnpm exec tsc -p apps/api/tsconfig.json --noEmit --pretty false

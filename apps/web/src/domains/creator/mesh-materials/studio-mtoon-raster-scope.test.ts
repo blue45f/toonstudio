@@ -224,7 +224,7 @@ describe("MToon 타일 제출의 실제 재질·clock 소유권(CPU, GPU 픽셀 
       : createStudioBg3dThreeWebGpuCaptureAdapter({ renderer: recorder as unknown as WebGPURenderer, scene: f.scene, camera });
     releases.push(() => adapter.dispose?.());
     expect(adapter.implementationRevision).toBe(backend === "webgl"
-      ? "studio-three-webgl-capture-adapter-v6-ldr-six-pass"
+      ? "studio-three-webgl-capture-adapter-v7-ldr-six-pass-sequential"
       : "studio-three-webgpu-capture-adapter-v5-mtoon-scope-hdr-mrt-normals");
     const capturing = adapter.capture({ ...request, width: 2, height: 2 });
     const verification = finish === "reject" || (finish === "dispose" && backend === "webgpu")

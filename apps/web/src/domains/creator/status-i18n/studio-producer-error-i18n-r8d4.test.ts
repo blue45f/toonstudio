@@ -208,11 +208,12 @@ describe("D4 pilot — display-side resolution keeps ko copy identical", () => {
     // R20: customFont 47(패널 병기용 detail 사전 — 템플릿 48종에서 중복 ID 템플릿 병합분 −1, operationFailed의 {detail} 슬롯만 잔존) + filterWorker 25(클라이언트 고유 20 + protocol assert 5, 프로토콜 선택 필드 운반)가 더해졌다 — 전체 누적 2,352키.
     // R21: gateway 23(형식 게이트웨이 파서 코드 kpp 6 + krita-bundle 6 + csp 8 + myb 3 — brush-pack causeCode 2단 해석용, csp:aborted는 표시 제외라 키 없음)이 더해졌다 — 전체 누적 2,375키.
     // R22: exports 에 SVG 젖은 종이 굽기 작업량 한도 근사 1키(wetPaperBakeBudget)가 더해졌다 — 전체 누적 2,376키.
+    // R23: 6패스 shadow·depth 레이어명 2 + 컷 배치 미지원 1 + archive 장면 JSON 읽기·검증 2가 더해졌다 — 전체 누적 2,381키.
     const accumulated: Record<string, string[]> = { ko: [], en: [] };
     for (const match of source.matchAll(/registerI18nLocaleEntries\("(ko|en)", \{([\s\S]*?)\}\);/g)) {
       accumulated[match[1] ?? ""]!.push(...[...(match[2] ?? "").matchAll(/"(studio\.producerError\.[^"]+)":/g)].map((m) => m[1] ?? ""));
     }
-    expect(accumulated.ko).toHaveLength(2376);
+    expect(accumulated.ko).toHaveLength(2381);
     expect(accumulated.en).toEqual(accumulated.ko);
   });
 });

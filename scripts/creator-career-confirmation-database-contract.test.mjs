@@ -4,9 +4,11 @@ import { expect, test } from 'vitest';
 import { CAREER_CONFIRMATION_FUNCTIONS, CAREER_CONFIRMATION_RELATIONS, buildCareerConfirmationCapabilitySql, buildCareerConfirmationRuntimeAclSql } from './creator-career-confirmation-database-contract.mjs';
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const sql = read('../apps/api/src/platform/database/migrations/0080_creator_career_confirmation.sql');
-test('정본 0080은 120개 migration과 원본0078을 보존하며 원자성을 유지한다', () => {
+test('정본 0080은 0121까지 121개 migration과 원본0078을 보존하며 원자성을 유지한다', () => {
   expect(sql).toMatch(/\nBEGIN;[\s\S]*COMMIT;\s*$/u);
-  expect(readdirSync(new URL('../apps/api/src/platform/database/migrations/', import.meta.url)).filter((f) => /^\d{4}_.+\.sql$/u.test(f))).toHaveLength(120);
+  const migrations = readdirSync(new URL('../apps/api/src/platform/database/migrations/', import.meta.url)).filter((f) => /^\d{4}_.+\.sql$/u.test(f)).sort();
+  expect(migrations).toHaveLength(121);
+  expect(migrations.at(-1)).toBe('0121_studio_bg3d_six_pass_bundle.sql');
   expect(createHash('sha256').update(read('../apps/api/src/platform/database/migrations/0078_creator_hiring_workspace.sql')).digest('hex')).toBe('c8094e53ce497dfd8f0649adb3e51ad67ae4a67f27d4547b5863484d2e8e2085');
   expect([...sql.matchAll(/CREATE TABLE (\w+)/gu)].map((m) => m[1]).sort()).toEqual(CAREER_CONFIRMATION_RELATIONS.map((r) => r.relation).sort());
   expect([...sql.matchAll(/CREATE FUNCTION (\w+)/gu)].map((m) => m[1]).sort()).toEqual([...CAREER_CONFIRMATION_FUNCTIONS].sort());

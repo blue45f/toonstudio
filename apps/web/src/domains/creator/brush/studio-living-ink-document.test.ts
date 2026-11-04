@@ -130,7 +130,7 @@ describe("Living Ink document transaction", () => {
     const second = createStudioLivingInkCanonicalTransaction({
       elements: [...first.transaction.nextElements, secondSource] as El[],
       sourceElementId: "stroke-2",
-      canonicalImageId: "ignored-new-id",
+      canonicalImageId: first.transaction.canonicalImageId,
       result: canonical("page-1", "route-2"),
     });
     expect(second.ok).toBe(true);

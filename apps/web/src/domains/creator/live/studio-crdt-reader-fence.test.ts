@@ -11,6 +11,7 @@ import { StudioCrdtLocalReaderFence } from "./studio-crdt-local-reader-fence";
 import { createStudioCrdtLocalWireMessage, encodeStudioCrdtUpdate, parseStudioCrdtLocalWireMessage, STUDIO_CRDT_PROTOCOL_VERSION,
   type StudioCrdtTransportMessage } from "./studio-crdt-protocol";
 import type { StudioLiveRoom } from "./studio-live-collaboration-room";
+import { createStudioScopedWriteFixture } from "../studio-collab/studio-scoped-write.test-fixture";
 
 const CAP = "bg3d-sixpass-bundle.v1";
 const meta = { readerCapabilities: [CAP], requiredReaderCapabilities: [CAP], artifactScope: "origin" as const };
@@ -43,18 +44,20 @@ describe("구 reader와 신규 6패스 reader 경계", () => {
 describe("실제 binding의 native 본문 입장 전 CRDT 교체 차단", () => {
   beforeEach(() => vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: 1, height: 1, close: vi.fn() }))));
   afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
-  async function setup(missing: boolean) {
+  async function setup(missing: boolean, scoped?: ReturnType<typeof createStudioScopedWriteFixture>) {
     const f = await createBg3dBundleProjectFixture(missing), source = new StudioCrdtDocument(), target = new StudioCrdtDocument(), empty = new StudioCrdtDocument();
     publishStudioCrdtSceneGraphDiff(source, [], f.project.pagesList);
     vi.spyOn(product, "acquireStudioBg3dSixPassBundleProductAuthority").mockResolvedValue(missing ? createBg3dBundleTestAuthority() : f.authority);
     vi.spyOn(product, "runStudioBg3dSixPassBundleMutationExclusive").mockImplementation(async <T>(_scope: string, task: () => Promise<T>) => await task());
     vi.spyOn(line, "acquireStudioLinked3dPassProductAuthority").mockResolvedValue(f.authority);
     const room = new FakeRoom(empty, "local"), statuses: { state: string }[] = [];
-    const binding = new StudioCrdtRoomBinding({ document: target, room: room as unknown as StudioLiveRoom, canEdit: false, onStatus: (status) => statuses.push(status) });
+    if (scoped) room.workId = scoped.authority.workId;
+    const binding = new StudioCrdtRoomBinding({ document: target, room: room as unknown as StudioLiveRoom, canEdit: false,
+      scopedWrite: scoped?.authority, onStatus: (status) => statuses.push(status) });
     await binding.start();
     const send = (metadata: typeof meta | Record<string, never>) => {
       const event: StudioCrdtTransportMessage = { type: "update", senderSessionId: "peer", update: { ...update,
-        update: encodeStudioCrdtUpdate(source.encodeStateAsUpdate()), ...metadata } };
+        workId: room.workId, update: encodeStudioCrdtUpdate(source.encodeStateAsUpdate()), ...metadata } };
       for (const listener of room.crdtListeners) listener(event);
     };
     return { f, source, target, empty, binding, statuses, send, close: () => { binding.close(); source.destroy(); target.destroy(); empty.destroy(); } };
@@ -73,6 +76,24 @@ describe("실제 binding의 native 본문 입장 전 CRDT 교체 차단", () => 
       f.send(meta); expect(f.target.getSceneElements()).toEqual([]);
       await vi.waitFor(() => expect(f.target.getSceneElements()).toHaveLength(6));
       expect(f.target.getPages()[0].bg3dLtBundleReferences?.active["bundle-1"]).toBe("rev-1");
+      expect(f.statuses.filter((entry) => entry.state === "error")).toEqual([]);
+    } finally { f.close(); }
+  });
+  it("native 본문 입장 뒤에만 현재 room의 여섯 역할·그룹을 권한의 실재 ID로 조회한다", async () => {
+    const scoped = createStudioScopedWriteFixture(); scoped.choose();
+    const f = await setup(false, scoped);
+    const page = f.f.project.pagesList[0];
+    try {
+      for (const element of page.elements) expect(scoped.authority.hasCurrentLiveEntity("element", element.id)).toBe(false);
+      f.send(meta);
+      await vi.waitFor(() => expect(f.target.getSceneElements()).toHaveLength(6));
+      for (const element of page.elements) {
+        expect(scoped.authority.hasCurrentLiveEntity("element", element.id)).toBe(true);
+        expect(scoped.authority.hasCurrentLiveEntity("element", element.id, "target-2")).toBe(false);
+      }
+      expect(scoped.authority.hasCurrentLiveEntity("group", f.f.manifest.groupId)).toBe(true);
+      f.binding.close();
+      for (const element of page.elements) expect(scoped.authority.hasCurrentLiveEntity("element", element.id)).toBe(false);
       expect(f.statuses.filter((entry) => entry.state === "error")).toEqual([]);
     } finally { f.close(); }
   });
