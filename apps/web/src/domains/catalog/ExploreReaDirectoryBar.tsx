@@ -169,8 +169,8 @@ export function ExploreReaDirectoryBar({
           },
           {
             id: "bilibili-kuaikan-comicdays",
-            ko: "빌리빌리 만화·콰이칸·코믹데이즈·선데이웨브리·Wattpad·Royal Road 아시아/글로벌 인기작",
-            en: "Bilibili/Kuaikan/Comic Days/Sunday Webry/Wattpad/Royal Road Global Hits",
+            ko: "빌리빌리·콰이칸·동만·코믹데이즈·망가원·GANMA!·코미코·TapRead·GoodNovel·Radish 아시아/글로벌 인기작",
+            en: "Bilibili/Kuaikan/Dongman/Comic Days/Manga One/GANMA!/Comico/TapRead/GoodNovel/Radish Global Hits",
             status: ["ongoing"] as SerialStatus[],
             sortKey: "popular" as SortKey,
           },

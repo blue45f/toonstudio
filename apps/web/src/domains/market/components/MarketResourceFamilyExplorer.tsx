@@ -143,12 +143,12 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
             {bt("REA 글로벌 에셋 호환 규격:", "REA Global Asset Specs:")}
           </span>
           {[
-            bt("ACON3D·SketchUp·Shapr3D·Plasticity·KitBash3D (.skp/.glb 2점투시)", "ACON3D·SketchUp·Shapr3D·Plasticity·KitBash3D (.skp/.glb)"),
-            bt("Clip Studio·Krita·Procreate·Paintstorm·TrueGrit·RetroSupply 브러시", "CSP·Krita·Procreate·Paintstorm·TrueGrit·RetroSupply Brushes"),
-            bt("VRoid Hub·Nomad Sculpt·Womp·World Labs·Postshot 3DGS·ZBrush 3D", "VRoid Hub·Nomad Sculpt·Womp·World Labs·Postshot 3DGS·ZBrush"),
+            bt("ACON3D·Fab·Quixel Megascans·Substance 3D·Superhive·3dsky (.skp/.glb/.sbsar)", "ACON3D·Fab·Quixel Megascans·Substance 3D·Superhive·3dsky (.skp/.glb/.sbsar)"),
+            bt("Clip Studio·Krita·SAI2·Procreate·TrueGrit·RetroSupply·FlippedNormals 브러시", "CSP·Krita·SAI2·Procreate·TrueGrit·RetroSupply·FlippedNormals Brushes"),
+            bt("VRoid Hub·Nomad Sculpt·Shapr3D·Plasticity·World Labs·Postshot 3DGS·ZBrush 3D", "VRoid Hub·Nomad Sculpt·Shapr3D·Plasticity·World Labs·Postshot 3DGS·ZBrush"),
             bt("Poly Haven·ambientCG·Sketchfab·Blockade Labs Skybox CC0 PBR/HDRI", "Poly Haven·ambientCG·Sketchfab·Blockade Skybox PBR/HDRI"),
-            bt("눈누·산돌구름·폰트코·FontForge 식자폰트 & 뮤팟·Artlist·Splice·Pixabay 음원", "Noonnu·Sandoll·Fontco Fonts & Mewpot/Artlist/Splice/Pixabay Audio"),
-            bt("BOOTH·Unity·CGTrader 1인·스튜디오 상업 라이선스 검증", "BOOTH·Unity·CGTrader License Verified"),
+            bt("눈누·산돌구름·폰트코·리왕·FontForge 식자폰트 & 뮤팟·Artlist·Splice·Envato 음원", "Noonnu·Sandoll·Fontco·Riwang Fonts & Mewpot/Artlist/Splice/Envato Audio"),
+            bt("BOOTH·ArtStation·Cubebrush·Gumroad 1인·스튜디오 상업 라이선스 검증", "BOOTH·ArtStation·Cubebrush·Gumroad License Verified"),
           ].map((badge) => (
             <span
               key={badge}

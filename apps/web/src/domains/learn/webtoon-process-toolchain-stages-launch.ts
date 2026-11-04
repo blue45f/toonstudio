@@ -290,10 +290,10 @@ export const TOOLCHAIN_STAGES_LAUNCH: readonly ProcessToolchainStage[] = [
         kind: "external",
       },
       {
-        name: { ko: "Mantra Engine / Ichigo Reader / Mokuro / BallonsTranslator", en: "Mantra Engine / Ichigo Reader / Mokuro / BallonsTranslator" },
+        name: { ko: "Mantra Engine / Ichigo Reader / Mokuro / BallonsTranslator / cotrans", en: "Mantra Engine / Ichigo Reader / Mokuro / BallonsTranslator / cotrans" },
         role: {
-          ko: "일본·글로벌 만화 출판사 표준 AI 다국어 번역·말풍선 인페인팅 엔진(Mantra·Ichigo)과 오픈소스 만화 OCR·식자 도구(Mokuro·BallonsTranslator)",
-          en: "Publisher-grade manga AI localization and balloon inpainting engines (Mantra, Ichigo) plus open-source manga OCR/typesetting tools (Mokuro, BallonsTranslator)",
+          ko: "일본·글로벌 만화 출판사 표준 AI 다국어 번역·말풍선 인페인팅 엔진(Mantra·Ichigo)과 오픈소스 만화 OCR·식자·다중 말풍선 마스킹 도구(Mokuro·BallonsTranslator·manga-image-translator cotrans)",
+          en: "Publisher-grade manga AI localization and balloon inpainting engines (Mantra, Ichigo) plus open-source manga OCR, typesetting, and multi-bubble masking tools (Mokuro, BallonsTranslator, cotrans)",
         },
         kind: "external",
         pricing: "freemium",

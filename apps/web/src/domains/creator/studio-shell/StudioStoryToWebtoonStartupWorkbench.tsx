@@ -9,7 +9,8 @@ export type StoryToWebtoonEngineModeId =
   | "llamagen-tooning-ai"
   | "mangaplay-fountain-markup"
   | "insertoon-shorts-packager"
-  | "mantra-ichigo-ocr-typesetter";
+  | "mantra-ichigo-ocr-typesetter"
+  | "domoai-vidu-cavalry-motion";
 
 export type StoryToWebtoonLayoutFormatId =
   | "vertical-webtoon-scroll"
@@ -428,8 +429,28 @@ export function StudioStoryToWebtoonStartupWorkbench({
         >
           <Wand2 size={12} aria-hidden="true" />
           {ko
-            ? "④ 6개국어 AI OCR·말풍선 인페인팅 식자 (Mantra · Ichigo · Mokuro · letr.ai)"
-            : "4. 6-Language AI OCR & Balloon Typesetter (Mantra · Ichigo · Mokuro · LETR AI)"}
+            ? "④ 6개국어 AI OCR·말풍선 인페인팅 식자 (Mantra · Ichigo · Mokuro · cotrans · letr.ai)"
+            : "4. 6-Language AI OCR & Balloon Typesetter (Mantra · Ichigo · Mokuro · cotrans · LETR AI)"}
+        </button>
+        <button
+          type="button"
+          data-testid="story-to-webtoon-mode-domoai-vidu-cavalry-motion"
+          aria-pressed={engineMode === "domoai-vidu-cavalry-motion"}
+          onClick={() => {
+            setEngineMode("domoai-vidu-cavalry-motion");
+            setLayoutFormat("instatoon-4cut-reels");
+          }}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[0.64rem] font-bold transition-colors",
+            engineMode === "domoai-vidu-cavalry-motion"
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line bg-card text-fg-2 hover:border-accent/40",
+          )}
+        >
+          <Clapperboard size={12} aria-hidden="true" />
+          {ko
+            ? "⑤ 애니메 스타일 모션 & 2D 음소 립싱크 (DomoAI · Vidu · Rhubarb · Cavalry 2D)"
+            : "5. Anime Style Motion & 2D Phoneme Lip-Sync (DomoAI · Vidu · Rhubarb · Cavalry 2D)"}
         </button>
       </div>
 

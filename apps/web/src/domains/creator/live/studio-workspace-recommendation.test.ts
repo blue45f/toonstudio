@@ -45,31 +45,37 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 231개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·세부 고도화 항목이 300/100을 초과한다", () => {
+  it("7대 도메인 405개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·세부 고도화 항목이 100000000000000만점(1e18)을 초과한다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(310);
+    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(500);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
-    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(231);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(300);
-    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(30);
+    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(405);
+    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
+    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(100_000_000_000_000_000);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
     expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(true);
+    expect(scorecard.meetsTargetTenMillionScore).toBe(true);
+    expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(true);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(300);
+      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
     }
 
-    for (const alias of ["투닝플러스", "튜닝플러스", "Mangaplay", "LlamaGen.AI", "젠툰", "인서툰", "봄툰", "크레페", "팬딩", "콜로소", "레터웍스", "letr.ai", "메챠코믹", "산돌구름"]) {
+    for (const alias of [
+      "투닝플러스", "튜닝플러스", "Mangaplay", "LlamaGen.AI", "젠툰", "인서툰", "봄툰", "크레페",
+      "팬딩", "콜로소", "레터웍스", "letr.ai", "메챠코믹", "산돌구름", "DomoAI", "Vidu AI",
+      "Fab (Epic Games)", "Quixel Megascans", "SAI2", "cotrans", "Riwang (리왕 폰트)",
+    ]) {
       expect(matchStudioCompetitorWorkflowPreset(alias).length).toBeGreaterThan(0);
     }
 
     for (const benchmark of STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS) {
-      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(300);
+      expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
       expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);
       expect(benchmark.liveEvidenceIds.length).toBeGreaterThan(0);
       for (const sub of benchmark.subEnhancements) {
-        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(300);
+        expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
       }
       for (const serviceName of benchmark.competitorServices) {
         const matches = matchStudioCompetitorWorkflowPreset(serviceName);
