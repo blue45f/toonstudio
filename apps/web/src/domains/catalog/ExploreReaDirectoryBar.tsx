@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { SortKey } from "@/shared/lib/search";
 import type { SerialStatus } from "@/shared/lib/types";
 import type { TitleFilterState } from "@/shared/lib/title-filters";
@@ -37,6 +38,8 @@ export function ExploreReaDirectoryBar({
   onChangeSort,
 }: ExploreReaDirectoryBarProps) {
   const bt = useBilingual("ExplorePage");
+  const [readerViewMode, setReaderViewMode] = useState<"vertical" | "koma-swipe" | "spread-rtl" | "alt-text-a11y">("vertical");
+  const [danmakuHeatmapOn, setDanmakuHeatmapOn] = useState<boolean>(true);
 
   const isModeActive = (mode: ExploreDirectoryMode): boolean => {
     const mapped = mapStatusFilter(mode.statusValue);
@@ -190,6 +193,47 @@ export function ExploreReaDirectoryBar({
             {bt(preset.ko, preset.en)}
           </button>
         ))}
+      </div>
+      <div
+        role="group"
+        aria-label={bt("글로벌 리더 뷰포트 & 접근성 시뮬레이터", "Global reader viewport and accessibility simulator")}
+        data-testid="explore-rea-reader-simulator-bar"
+        className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-3 text-[11px]"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-bold text-accent">{bt("리더 뷰포트·접근성 모드:", "Reader & A11y Mode:")}</span>
+          {([
+            { id: "vertical", ko: "네이버·카카오 세로 스크롤", en: "Vertical Scroll" },
+            { id: "koma-swipe", ko: "메챠코믹 코마뷰 (1컷 스와이프)", en: "Mecha Comic Koma-View" },
+            { id: "spread-rtl", ko: "점프+·ComicFuz 좌우 양면(RTL)", en: "Jump+/ComicFuz Spread (RTL)" },
+            { id: "alt-text-a11y", ko: "Corona EX·Sylph 스크린리더 대사색인", en: "Corona EX/Sylph Screen-Reader Alt-Text" },
+          ] as const).map((rm) => (
+            <button
+              key={rm.id}
+              type="button"
+              aria-pressed={readerViewMode === rm.id}
+              data-testid={`explore-reader-mode-${rm.id}`}
+              onClick={() => setReaderViewMode(rm.id)}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 font-semibold transition-colors",
+                readerViewMode === rm.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel/60 text-fg-2 hover:border-accent/40",
+              )}
+            >
+              {bt(rm.ko, rm.en)}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          aria-pressed={danmakuHeatmapOn}
+          data-testid="explore-danmaku-heatmap-toggle"
+          onClick={() => setDanmakuHeatmapOn((v) => !v)}
+          className="rounded-full border border-line bg-panel px-2.5 py-0.5 font-mono text-[10px] font-bold text-success hover:border-accent/40"
+        >
+          {danmakuHeatmapOn
+            ? bt("빌리빌리·콰이칸 컷별 탄막 히트맵 ON · 75개 언어 동시연재", "Bilibili/Kuaikan Danmaku Heatmap ON · 75-Lang Simulpub")
+            : bt("탄막 히트맵 OFF (클린 리더)", "Danmaku Heatmap OFF (Clean Reader)")}
+        </button>
       </div>
     </section>
   );
