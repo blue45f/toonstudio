@@ -1,6 +1,7 @@
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { getOverlayBadgeStyle, type ProjectedOverlayItem, type StudioThreeLightingPreset } from "./studio-virtual-space-three-dioramas";
+import "./studio-virtual-space-three-hud.css";
 
 interface StudioVirtualSpaceThreeHudProps {
   readonly overlays: readonly ProjectedOverlayItem[];
@@ -21,7 +22,8 @@ export function StudioVirtualSpaceThreeHud({
     {assetFailureCount > 0 ? <p role="status" style={{ position: "absolute", left: 16, top: 48, zIndex: 3 }}>{bt("일부 3D 장비를 불러오지 못했어요. 다른 장비와 공간은 계속 이용할 수 있어요.", "Some 3D equipment could not load. Other equipment and rooms are still available.")}</p> : null}
     <div
       className="studio-vspace-three-lighting-hud"
-      style={{ position: "absolute", right: 76, bottom: 16, zIndex: 3, display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 8px", borderRadius: 999, background: "rgba(15, 23, 42, 0.84)", border: "1px solid rgba(148, 163, 184, 0.32)", backdropFilter: "blur(10px)" }}
+      role="group"
+      aria-label={bt("조명과 시점", "Lighting and view")}
     >
       {([
         { id: "day", ko: "자연광 HDRI", en: "Day HDRI" },
@@ -32,12 +34,11 @@ export function StudioVirtualSpaceThreeHud({
         type="button"
         aria-pressed={lightingPreset === option.id}
         onClick={() => onLightingPresetChange(option.id)}
-        style={{ border: "none", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: lightingPreset === option.id ? "#0f172a" : "#e2e8f0", background: lightingPreset === option.id ? "#38bdf8" : "transparent" }}
       >{bt(option.ko, option.en)}</button>)}
       <button
         type="button"
+        className="studio-vspace-three-lighting-hud__reset"
         onClick={onResetCamera}
-        style={{ border: "1px solid rgba(148, 163, 184, 0.35)", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 700, cursor: "pointer", color: "#bae6fd", background: "rgba(30, 41, 59, 0.72)" }}
       >{bt("시점 리셋 [C]", "Reset View [C]")}</button>
     </div>
     <div className="studio-vspace-three-overlays" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 2 }}>
