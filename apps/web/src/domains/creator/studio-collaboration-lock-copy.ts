@@ -40,7 +40,7 @@ export function describeStudioCollaborationLock(
     return "검토 전용 권한입니다. 원고와 댓글 작성은 읽기 전용이며 기존 피드백을 확인할 수 있어요.";
   }
   if (input.sharedDocument.role === "viewer") {
-    return "열람 전용 권한입니다. 원고 편집과 저장은 할 수 없지만 스크롤과 내보내기는 계속 사용할 수 있어요.";
+    return "열람 전용 권한입니다. 기본 편집은 잠겨 있어요. 서버가 허용한 담당 범위가 있으면 그 범위를 선택해 편집·공동 저장할 수 있어요.";
   }
   return "현재 서버 권한이 열람 전용입니다. 원고 편집과 저장은 할 수 없지만 스크롤과 내보내기는 계속 사용할 수 있어요.";
 }
