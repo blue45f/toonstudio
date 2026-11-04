@@ -12,6 +12,7 @@ import {
 } from "../../src/domains/creator/bg3d/studio-bg3d-history-command-adapter";
 import { studioBg3dModalOperationCoordinator } from "../../src/domains/creator/bg3d/studio-bg3d-modal-operation-coordinator";
 import { loadStudioBg3dModelLibraryModule } from "../../src/domains/creator/bg3d/studio-bg3d-model-library-loader";
+import { readStudioBg3dModelCacheEntry, resolveStudioBg3dMaterialBackend } from "../../src/domains/creator/bg3d/studio-bg3d-model-material-variant";
 import { admitAndCacheStudioBg3dModel } from "../../src/domains/creator/bg3d/studio-bg3d-model-runtime-admission";
 import {
   createDefaultStudioBg3dSceneDocument,
@@ -83,6 +84,7 @@ async function mount() {
     };
   }
   const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const backend = resolveStudioBg3dMaterialBackend({ renderer });
   renderer.setSize(560, 300);
   renderer.setClearColor(0x253040);
   renderer.setPixelRatio(1);
@@ -165,7 +167,7 @@ async function mount() {
     group = new THREE.Group();
     scene.add(group);
     for (const item of models) {
-      const root = cache.get(item.modelId)?.root;
+      const root = readStudioBg3dModelCacheEntry(cache, item.modelId, backend)?.root;
       assert(root, "Missing real model cache.");
       const parent = new THREE.Group();
       parent.position.set(...item.position);
@@ -245,7 +247,8 @@ async function mount() {
             shared.modelId === record.id,
             "Shared unselected instance changed.",
           );
-          const derived = cache.get(selected.modelId)!;
+          const derived = readStudioBg3dModelCacheEntry(cache, selected.modelId, backend);
+          assert(derived, "Missing real derivative model cache.");
           const compressedTextures = new Set<THREE.Texture>();
           derived.root.traverse((object) => {
             const mesh = object as THREE.Mesh;
