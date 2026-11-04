@@ -44,7 +44,7 @@ describe("BG3D event-driven frame quality sampling", () => {
     expect(report.mock.calls.every(([value]) => value === null)).toBe(true);
   });
 
-  it("연속 과부하를 계측하면서 기본 해상도 보존 정책을 유지한다", () => {
+  it("연속 애니메이션 과부하를 계측해도 기본 해상도 보존 정책을 유지한다", () => {
     const scale = vi.fn();
     const report = vi.fn();
     render(<BgAdaptiveDprController targetFps={60} paused={false}

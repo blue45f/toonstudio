@@ -38,7 +38,7 @@ test("the workflow runs the complete delivery evidence gate", () => {
   assert.match(workflow, /StudioPinnedReviewPanel\.test\.tsx/u);
   assert.match(workflow, /verify-production-manuscript-workspace\.mjs/u);
   assert.match(workflow, /production-manuscript-workspace/u);
-  assert.match(workflow, /actions\/upload-artifact@v4/u);
+  assert.match(workflow, /^[ \t]+uses: actions\/upload-artifact@v7$/mu);
 });
 
 test("the workflow is retriggered by every authority boundary it validates", () => {

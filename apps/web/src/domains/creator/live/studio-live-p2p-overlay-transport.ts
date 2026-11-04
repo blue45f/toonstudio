@@ -1031,7 +1031,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         this.relayPeerSessionIds.add(sessionId);
       }
     };
-    if (!shouldOfferMesh(this.context.participant.sessionId, sessionId)) return;
+    if (!shouldOfferMesh(this.transportSessionId?.(this.context.participant.sessionId) ?? this.context.participant.sessionId, sessionId)) return;
     try {
       this.bindChannel(link, connection.createDataChannel(STUDIO_LIVE_P2P_CHANNEL_LABEL));
     } catch {

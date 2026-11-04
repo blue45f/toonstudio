@@ -587,7 +587,7 @@ test("product 초기 checkout은 문서 정본을 포함하고 대형 아트는 
   assert.doesNotMatch(job("static"), /Restore documentation authority for product regressions/u);
 });
 
-test("다섯 shard는 기존 48개와 foundation 추가 54개 선언을 최초 checkout에서 정확히 보존한다", () => {
+test("다섯 shard는 기존 48개와 foundation 추가 63개 선언을 최초 checkout에서 정확히 보존한다", () => {
   const asset = "/apps/web/public/assets/";
   const foundationInputs = [
     "/apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json",
@@ -643,7 +643,7 @@ test("다섯 shard는 기존 48개와 foundation 추가 54개 선언을 최초 c
     "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-left.webp",
     "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-right.webp",
     "/apps/web/public/assets/virtual-studio/studio-art-v14/walk/creator-walk-up.webp",
-    "/apps/web/public/vrm/LICENSES.md",
+    "/apps/web/public/vrm/LICENSES.md", ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   ];
   const owned = {
     product: ["/docs/", ...[
@@ -663,15 +663,15 @@ test("다섯 shard는 기존 48개와 foundation 추가 54개 선언을 최초 c
     "studio-3d": [`${asset}3d/environments/authored-v1/`],
     "studio-character": ["Sendagaya_Shibu", "Sendagaya_Shino", "Sakurada_Fumiriya", "AliciaSolid", "Darkness_Shibu", "Jimmy", "Jennifer"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   };
-  assert.equal(foundationInputs.length, 54);
-  assert.equal(new Set(foundationInputs).size, 54);
+  assert.equal(foundationInputs.length, 63);
+  assert.equal(new Set(foundationInputs).size, 63);
   assert.ok(foundationInputs.every((path) => !path.endsWith("/")), "추가 입력은 개별 파일이어야 합니다.");
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 81, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 90, 0, 1, 7]);
   const declarations = [...job("static").matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(job("static"), /persist-credentials: false/u);
   assert.match(job("static"), /sparse-checkout-cone-mode: false/u);
-  assert.equal(declarations.length, 102, "기존 48개와 foundation 54개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 101, "VRM 라이선스만 product와 foundation에서 공유합니다.");
+  assert.equal(declarations.length, 111, "기존 48개와 foundation 63개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 106, "라이선스와 character도 검사하는 네 VRM만 shard 사이에 공유합니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }

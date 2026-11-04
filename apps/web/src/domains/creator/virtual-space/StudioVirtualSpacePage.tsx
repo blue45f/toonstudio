@@ -2068,7 +2068,7 @@ export function VirtualSpaceExperience({
         modal={!desktop}
       /> : null}
       {dialogueNpc ? <StudioVirtualSpaceNpcDialoguePanel
-        npc={dialogueNpc}
+        npc={dialogueNpc} stageKind={stageKind}
         room={roomById.get(dialogueNpc.roomId)}
         operations={operations.snapshot}
         peers={snapshot.peers}
