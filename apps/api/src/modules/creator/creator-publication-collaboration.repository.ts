@@ -11,6 +11,7 @@ import {
 } from "@toonstudio/contracts/creator-publication-contract";
 
 import { MembershipOperationsService } from "../membership-operations/membership-operations.service";
+import type { StudioScopedRestWriteInput } from "./studio-scoped-write-rest";
 import {
   CreatorCollaborationRepository,
   type CreatorSharedDocument,
@@ -132,6 +133,7 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
     baseRevision: number,
     crdtServerSequence: bigint,
     patch: CreatorSharedDocumentPatch,
+    scoped?: StudioScopedRestWriteInput,
   ): Promise<CreatorSharedDocumentSaveResponse> {
     const shared = await super.getSharedDocument(actorUserId, workId);
     const protectedPatch = prepareCreatorPublicationSharedDocumentPatch({
@@ -144,6 +146,7 @@ export class CreatorPublicationCollaborationRepository extends CreatorCollaborat
       baseRevision,
       crdtServerSequence,
       protectedPatch,
+      scoped,
     );
   }
 }
