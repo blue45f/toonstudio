@@ -68,6 +68,8 @@ export function CutsRewardsPage() {
   const [settlements, setSettlements] = useState<ReadonlyMap<string, RewardSettlement>>(new Map());
   const [periodId, setPeriodId] = useState<string | null>(null);
   const [recipientChoice, setRecipientChoice] = useState<string | null>(null);
+  const [payoutModel, setPayoutModel] = useState<"toonstudio-70-30" | "tiktok-creator-rewards" | "youtube-shorts-rpm" | "webtoon-superlike">("toonstudio-70-30");
+  const [retentionTier, setRetentionTier] = useState<"qualified-50" | "completion-75" | "loop-100">("qualified-50");
 
   // 피드를 거치지 않고 바로 들어와도 데모 작품으로 정산이 보이게 시드를 채운다.
   // publishClip은 앞에 붙이므로, 시드 순서를 유지하려면 뒤집어 넣어야 한다.
@@ -175,6 +177,66 @@ export function CutsRewardsPage() {
           "Monthly fund payouts follow qualified views on your Cuts. Only views past the halfway mark count, and fan remix views split 70% to the fan and 30% to the original creator.",
         )}
       </p>
+
+      <section
+        aria-label={t("REA 숏폼 멀티플랫폼 RPM 및 팬 리믹스 정산 시뮬레이터", "REA Short-Form Multi-Platform RPM & Remix Split Simulator")}
+        data-testid="cuts-rewards-rea-rpm-simulator"
+        className="mb-5 rounded-2xl border border-line bg-card/85 p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-extrabold text-fg">
+            {t("ToonStudio 70:30 · TikTok Creator Rewards · YouTube Shorts · Super Like 정산 시뮬레이터", "ToonStudio 70:30 / TikTok Creator Rewards / YouTube Shorts / Super Like Payout Simulator")}
+          </span>
+          <span data-testid="cuts-rewards-rea-rpm-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {payoutModel === "toonstudio-70-30"
+              ? t(`팬 리믹스 70% · 원작자 30% 자동 귀속 (${retentionTier === "qualified-50" ? "50%+ 적격 조회 ×1.0" : retentionTier === "completion-75" ? "75%+ 완주 부스트 ×1.35" : "100% 루프 리플레이 ×1.60"})`, `Fan 70% · Original 30% split (${retentionTier})`)
+              : payoutModel === "tiktok-creator-rewards"
+                ? t(`TikTok Creator Rewards 60초+ 고보존율 RPM 가중치 (${retentionTier})`, `TikTok Creator Rewards 60s+ retention RPM (${retentionTier})`)
+                : payoutModel === "youtube-shorts-rpm"
+                  ? t(`YouTube Shorts 크리에이터 풀 + 음원/더빙 라이선스 분배 (${retentionTier})`, `YouTube Shorts Creator Pool + Audio Split (${retentionTier})`)
+                  : t(`Webtoon Super Like 후원 + 본편 미리보기 전환 보너스 +28% (${retentionTier})`, `Webtoon Super Like + Fast-Pass Conversion Bonus +28% (${retentionTier})`)}
+          </span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("정산 모델 프리셋", "Payout model presets")}>
+            {([
+              ["toonstudio-70-30", t("ToonStudio 70:30 리믹스 표준", "ToonStudio 70:30 Remix")],
+              ["tiktok-creator-rewards", t("TikTok Creator Rewards RPM", "TikTok Creator Rewards RPM")],
+              ["youtube-shorts-rpm", t("YouTube Shorts 음원 풀 정산", "YouTube Shorts Audio Pool")],
+              ["webtoon-superlike", t("Super Like · 본편 전환 보너스", "Super Like · Episode Bonus")],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                data-testid={`cuts-rewards-rea-model-${id}`}
+                aria-pressed={payoutModel === id}
+                onClick={() => setPayoutModel(id)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${payoutModel === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5" role="group" aria-label={t("시청 유지율 구간", "View retention tier")}>
+            {([
+              ["qualified-50", t("50%+ 적격", "50%+ Qualified")],
+              ["completion-75", t("75%+ 완주(×1.35)", "75%+ Complete (×1.35)")],
+              ["loop-100", t("100% 루프(×1.6)", "100% Loop (×1.6)")],
+            ] as const).map(([tierId, tierLabel]) => (
+              <button
+                key={tierId}
+                type="button"
+                data-testid={`cuts-rewards-rea-tier-${tierId}`}
+                aria-pressed={retentionTier === tierId}
+                onClick={() => setRetentionTier(tierId)}
+                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${retentionTier === tierId ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+              >
+                {tierLabel}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {!actorId ? (
         <div className="cuts-studio__notice cuts-rewards__guest" role="note">

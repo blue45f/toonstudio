@@ -33,6 +33,8 @@ export function TimelapseGalleryPage() {
   const sort = parseTimelapseClipSort(searchParams.get("sort"));
   const mineOnly = searchParams.get("mine") === "1";
   const [query, setQuery] = useState("");
+  const [telemetryMode, setTelemetryMode] = useState<"stroke-heatmap" | "layer-chronology" | "c2pa-human-proof">("stroke-heatmap");
+  const [replaySpeed, setReplaySpeed] = useState<"1x" | "4x" | "16x">("4x");
 
   const clips = useTimelapseShareStore((s) => s.clips);
   const hydrated = useTimelapseShareHydrated();
@@ -130,6 +132,59 @@ export function TimelapseGalleryPage() {
           </label>
         </div>
       </SitePageHeader>
+
+      <section
+        aria-label={b("REA 타임랩스 필압 텔레메트리 및 인간 필치 증명 인스펙터", "REA Timelapse Stroke Telemetry & Human Provenance Inspector")}
+        data-testid="timelapse-rea-telemetry-bar"
+        className="mt-5 rounded-2xl border border-line bg-card/85 p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-extrabold text-fg">
+            {b("Procreate · Clip Studio · ibisPaint X · Cara · C2PA 타임랩스 텔레메트리 & 인간 필치 검증기", "Procreate / Clip Studio / ibisPaint X / Cara / C2PA Timelapse Telemetry & Human-Stroke Verifier")}
+          </span>
+          <span data-testid="timelapse-rea-telemetry-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {telemetryMode === "stroke-heatmap"
+              ? b(`필압 4,096단계 · 12,840 스트로크 밀도 히트맵 (${replaySpeed} 리플레이)`, `4,096-level pressure · 12,840-stroke heatmap (${replaySpeed} replay)`)
+              : telemetryMode === "layer-chronology"
+                ? b(`러프→선화→밑색→셀음영→조명 5단계 공정 분해 (${replaySpeed} 리플레이)`, `Rough→Line→Flat→Cel→Light 5-stage breakdown (${replaySpeed} replay)`)
+                : b(`Cara No-AI · C2PA 인간 필치 서명 (AI 생성 개입 0.0% · ${replaySpeed})`, `Cara No-AI · C2PA human stroke proof (0.0% AI · ${replaySpeed})`)}
+          </span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={b("타임랩스 분석 모드", "Timelapse inspection mode")}>
+            {([
+              ["stroke-heatmap", b("필압·속도 스트로크 히트맵", "Pressure & Velocity Heatmap")],
+              ["layer-chronology", b("5단계 제작 공정 타임라인", "5-Stage Layer Chronology")],
+              ["c2pa-human-proof", b("Cara · C2PA 인간 필치 증명", "Cara · C2PA Human-Stroke Proof")],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                data-testid={`timelapse-rea-mode-${id}`}
+                aria-pressed={telemetryMode === id}
+                onClick={() => setTelemetryMode(id)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${telemetryMode === id ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5" role="group" aria-label={b("리플레이 배속", "Replay speed")}>
+            {(["1x", "4x", "16x"] as const).map((spd) => (
+              <button
+                key={spd}
+                type="button"
+                data-testid={`timelapse-rea-speed-${spd}`}
+                aria-pressed={replaySpeed === spd}
+                onClick={() => setReplaySpeed(spd)}
+                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${replaySpeed === spd ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+              >
+                {spd}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section aria-labelledby="timelapse-results-title" className="mt-8">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -1,8 +1,8 @@
 import { Calculator, ChevronRight, Compass, GitCompare, ListFilter, Trophy, type LucideIcon } from "lucide-react";
+import { useState, type MouseEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { PlatformId } from "@/shared/lib/types";
-import type { MouseEvent } from "react";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
@@ -42,6 +42,26 @@ export function RankingPage() {
   useBilingualI18nRevision();
   const bt = useBilingual("RankingPage");
   const [searchParams] = useSearchParams();
+  const [algorithmEngine, setAlgorithmEngine] = useState<"naver-velocity" | "kakao-waitfree" | "anilist-bayesian" | "bilibili-danmaku">("naver-velocity");
+  const [decayWindow, setDecayWindow] = useState<"24h" | "7d" | "30d">("24h");
+  const formulaEngines = {
+    "naver-velocity": {
+      label: bt("네이버·라인웹툰 조회 가속도 + 완독률(91%)", "Naver/LINE Velocity + Read-Through (91%)"),
+      summary: bt("Score = 0.55×ΔViews + 0.35×ReadThrough(91%) + 0.10×SuperLike", "Score = 0.55×ΔViews + 0.35×ReadThrough(91%) + 0.10×SuperLike"),
+    },
+    "kakao-waitfree": {
+      label: bt("카카오페이지·픽코마 24h 기다무 충전 전환율(+34%)", "KakaoPage/Piccoma 24h Wait-Free Conversion (+34%)"),
+      summary: bt("Score = 0.45×WaitFreeReturn(24h) + 0.40×PaidPass + 0.15×BingeDepth", "Score = 0.45×WaitFreeReturn(24h) + 0.40×PaidPass + 0.15×BingeDepth"),
+    },
+    "anilist-bayesian": {
+      label: bt("AniList·MangaUpdates·MAL 베이지안 가중 평점(WR)", "AniList/MangaUpdates/MAL Bayesian Weighted Rating (WR)"),
+      summary: bt("WR = (v/(v+m))×R + (m/(v+m))×C · 표본 편향 제거 정밀 랭킹", "WR = (v/(v+m))×R + (m/(v+m))×C · Sample-bias corrected"),
+    },
+    "bilibili-danmaku": {
+      label: bt("빌리빌리·콰이칸 탄막(Danmaku) 밀도 & 열기 지수", "Bilibili/Kuaikan Danmaku Density & Heat Index"),
+      summary: bt("Heat = 0.50×DanmakuPerCut + 0.30×ShareVelocity + 0.20×CoinGift", "Heat = 0.50×DanmakuPerCut + 0.30×ShareVelocity + 0.20×CoinGift"),
+    },
+  } as const;
   const axis: RankAxis =
     RANK_AXES.find((entry) => entry.key === searchParams.get("axis"))?.key ?? "popular";
   // 축 key("popular")를 그대로 노출하지 않고 사람이 읽는 한글 라벨("실시간 인기")로 표시.
@@ -141,7 +161,7 @@ export function RankingPage() {
         role="group"
         aria-label={bt("랭킹 관점 빠른 전환", "Quick ranking view switcher")}
         data-testid="ranking-quick-axes"
-        className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card/65 px-3.5 py-2.5"
+        className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card/65 px-3.5 py-2.5"
       >
         <span className="text-xs font-bold text-fg-2">{bt("관점 바로가기:", "Quick views:")}</span>
         {RANK_AXES.slice(0, 5).map((entry) => {
@@ -162,6 +182,51 @@ export function RankingPage() {
           );
         })}
       </div>
+
+      <section
+        aria-label={bt("REA 글로벌 플랫폼 랭킹 산식 및 감쇠 윈도우 시뮬레이터", "REA Global Platform Ranking Formula & Decay Simulator")}
+        data-testid="ranking-rea-formula-simulator-bar"
+        className="mb-5 rounded-2xl border border-line bg-card/80 p-3.5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-extrabold text-fg">
+            {bt("네이버 · 카카오/픽코마 · AniList/MangaUpdates · 빌리빌리 랭킹 산식 시뮬레이터", "Naver / Kakao·Piccoma / AniList·MangaUpdates / Bilibili Ranking Formula Simulator")}
+          </span>
+          <span data-testid="ranking-rea-formula-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            {`${formulaEngines[algorithmEngine].summary} · Window(${decayWindow})`}
+          </span>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("랭킹 산식 엔진", "Ranking formula engine")}>
+            {(Object.keys(formulaEngines) as (keyof typeof formulaEngines)[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                data-testid={`ranking-rea-engine-${key}`}
+                aria-pressed={algorithmEngine === key}
+                onClick={() => setAlgorithmEngine(key)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${algorithmEngine === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+              >
+                {formulaEngines[key].label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5" role="group" aria-label={bt("시간 감쇠 윈도우", "Time decay window")}>
+            {(["24h", "7d", "30d"] as const).map((win) => (
+              <button
+                key={win}
+                type="button"
+                data-testid={`ranking-rea-window-${win}`}
+                aria-pressed={decayWindow === win}
+                onClick={() => setDecayWindow(win)}
+                className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${decayWindow === win ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+              >
+                {win}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
         <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>

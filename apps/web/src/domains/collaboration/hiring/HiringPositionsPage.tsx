@@ -166,7 +166,17 @@ function PositionsUnavailable({ message, onRetry }: { message: string; onRetry: 
 
 export function HiringPositionsPage() {
   const bt = useBilingual(SCOPE);
+  const [rolePreset, setRolePreset] = useState<"lineart-assist" | "flat-colorist" | "bg3d-lt-artist" | "jp-en-typesetter">("lineart-assist");
+  const [cutCountBudget, setCutCountBudget] = useState<60 | 70 | 85>(70);
   useDocumentTitle(bt("모집 조건으로 찾기 · 구인·의뢰", "Find by hiring terms · Gigs"));
+  const roleRates = {
+    "lineart-assist": { ko: "선화·펜터치 어시 (평균 12,000원/컷)", en: "Line-art assist (avg 12,000 KRW/cut)", unitKrw: 12000 },
+    "flat-colorist": { ko: "밑색·채색 어시 (평균 9,000원/컷)", en: "Flat/color assist (avg 9,000 KRW/cut)", unitKrw: 9000 },
+    "bg3d-lt-artist": { ko: "3D 배경·6-Pass LT 배치 (평균 11,000원/컷)", en: "3D BG & 6-Pass LT (avg 11,000 KRW/cut)", unitKrw: 11000 },
+    "jp-en-typesetter": { ko: "한·일·영 다국어 식자·리드로잉 (평균 6,500원/컷)", en: "KR/JP/EN Typesetting (avg 6,500 KRW/cut)", unitKrw: 6500 },
+  } as const;
+  const activeRate = roleRates[rolePreset];
+  const episodeTotalKrw = activeRate.unitKrw * cutCountBudget;
   return <Container className="space-y-6 py-8 sm:py-12">
     <header className="rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel to-canvas p-6 sm:p-8">
       <Link href="/collaborate" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent underline-offset-4 hover:underline"><ArrowLeft size={16} aria-hidden="true" />{bt("구인·의뢰 게시판", "Gigs board")}</Link>
@@ -174,6 +184,50 @@ export function HiringPositionsPage() {
       <p className="mt-3 max-w-2xl text-sm leading-7 text-fg-2 sm:text-base">{bt("공고의 각 모집 자리를 역할·도구·보수로 찾아보세요. 공개 중인 자리만 표시하며 기존 공고에서 지원합니다.", "Search open seats by role, tools, and compensation. Only public seats are shown; apply from the original post.")}</p>
       <div className="mt-5 flex flex-wrap gap-3"><Link href="/collaborate/new" className={collabPrimary}><Plus size={17} aria-hidden="true" />{bt("모집 글 올리기", "Post a gig")}</Link></div>
     </header>
+    <section
+      aria-label={bt("REA 직무별 표준 단가 및 3단계 에스크로 시뮬레이터", "REA Role Rate & 3-Stage Escrow Simulator")}
+      data-testid="hiring-rea-rate-escrow-bar"
+      className="rounded-2xl border border-line bg-card/85 p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-extrabold text-fg">
+          {bt("ArtStation · Wantedly · Contra · 크레페 · KOCCA 표준 직무 단가 & 3단계 에스크로 계산기", "ArtStation / Wantedly / Contra / Crepe / KOCCA Standard Rate & 3-Stage Escrow Calculator")}
+        </span>
+        <span data-testid="hiring-rea-rate-escrow-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+          {bt(`${cutCountBudget}컷 총액 ${episodeTotalKrw.toLocaleString("ko-KR")}원 · 착수30%(${(episodeTotalKrw * 0.3).toLocaleString("ko-KR")}원)/검수30%/납품40%`, `${cutCountBudget} cuts total ${episodeTotalKrw.toLocaleString("en-US")} KRW · 30%/30%/40% Escrow`)}
+        </span>
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("직무 단가 프리셋", "Role rate presets")}>
+          {(Object.keys(roleRates) as (keyof typeof roleRates)[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              data-testid={`hiring-rea-role-${key}`}
+              aria-pressed={rolePreset === key}
+              onClick={() => setRolePreset(key)}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${rolePreset === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
+            >
+              {bt(roleRates[key].ko, roleRates[key].en)}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1.5" role="group" aria-label={bt("회차 기준 컷수", "Episode cut count")}>
+          {([60, 70, 85] as const).map((cnt) => (
+            <button
+              key={cnt}
+              type="button"
+              data-testid={`hiring-rea-cuts-${cnt}`}
+              aria-pressed={cutCountBudget === cnt}
+              onClick={() => setCutCountBudget(cnt)}
+              className={`rounded-lg border px-2 py-1 text-xs font-bold transition-colors ${cutCountBudget === cnt ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
+            >
+              {bt(`${cnt}컷`, `${cnt} cuts`)}
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
     <HiringPublicPositions />
     <WebtoonAssistantOutsourcingSuite />
     <CollaborationStepConfirmSpecSuite />
