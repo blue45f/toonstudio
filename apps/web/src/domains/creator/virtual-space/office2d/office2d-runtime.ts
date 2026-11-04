@@ -360,7 +360,7 @@ export class Office2dRuntime {
     // 몸짓이 있는 이모트는 서서 멈춘 동안 작업 자세 시트의 제스처 프레임으로도 보인다(걷기 시작하면 바로 끊긴다).
     const gesture = office2dGestureForEmote(kind);
     actor.gesture = gesture ? { kind: gesture, until: nowMs + 2200 } : null;
-    this.particles.emit("confetti", actor.x, actor.y - 60, 10, 0.7);
+    this.particles.emitComboBurst("emote", actor.x, actor.y, 0.85);
   }
 
   /** 한 프레임 진행(초 단위 경과). */
@@ -434,13 +434,8 @@ export class Office2dRuntime {
       const other = this.physics.getBody(impact.a === SELF_BODY ? impact.b : impact.a);
       const point = other ?? this.physics.getBody(impact.a);
       if (point && impact.impactSpeed > 75) {
-        this.particles.emit(
-          impact.impactSpeed > 230 ? "spark" : "dust",
-          impact.contactX ?? point.x,
-          impact.contactY ?? point.y,
-          Math.min(10, impact.impactSpeed / 36),
-          Math.min(2, impact.impactSpeed / 190),
-        );
+        this.particles.emit(impact.impactSpeed > 230 ? "spark" : "dust", impact.contactX ?? point.x, impact.contactY ?? point.y,
+          Math.min(10, impact.impactSpeed / 36), Math.min(2, impact.impactSpeed / 190));
       }
       if (involvesSelf && other?.kind === "dynamic" && body) {
         this.self.squash = Math.max(-0.085, this.self.squash - Math.min(0.06, impact.impactSpeed / 3200));
@@ -451,8 +446,10 @@ export class Office2dRuntime {
       }
     }
     if (body) advanceOffice2dActor(this.self, body.x, body.y, dt);
-    if (this.self.moving && sprint && !this.options.getReducedMotion() && Math.floor(this.self.stride / 26) !== Math.floor((this.self.stride - speed * dt) / 26)) {
-      this.particles.emit("dust", this.self.x, this.self.y, 2, 0.6);
+    if (this.self.footstepTriggered && !this.options.getReducedMotion()) {
+      const footX = this.self.x + this.self.footstepSide * 5;
+      if (sprint) this.particles.emitComboBurst("sprint", footX, this.self.y, 0.8);
+      else this.particles.emit("dust", footX, this.self.y, 1, 0.45);
     }
     for (const { state, actor } of this.npcs) {
       const npcBody = this.physics.getBody(`npc:${state.definition.id}`);
