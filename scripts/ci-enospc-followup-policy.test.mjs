@@ -8,6 +8,7 @@ const title = "체크아웃 전 미사용 SDK 정리와 디스크 여유 확인"
 const approved = parse(read("ci")).jobs.build.steps.find((step) => step.name === title);
 for (const [workflow, jobId, timeout, runner = "ubuntu-24.04"] of [
   ["studio-production-integrity", "production-integrity", 25],
+  ["lighthouse-ci", "lighthouse", 30],
   ["full-test-diagnostic", "full-test", 90],
   ["studio-finishing-quality", "quality-static", 25],
   ["studio-finishing-quality", "finishing-quality", 30],
