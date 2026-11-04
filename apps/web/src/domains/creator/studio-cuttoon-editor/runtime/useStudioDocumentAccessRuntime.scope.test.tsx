@@ -11,13 +11,17 @@ import { useStudioDocumentAccessRuntime } from "./useStudioDocumentAccessRuntime
 const services = vi.hoisted(() => ({
   draft: vi.fn(() => ({ draftCollaboration: null })),
   collaboration: vi.fn(() => ({ collaborationDocumentLocked: false })),
-  mutation: vi.fn(() => ({ markStudioDocumentChanged: () => true })),
-  scopedWrite: vi.fn(() => ({ authority: null, policy: null, loading: false, error: null, refresh: async () => null })),
+  mutation: vi.fn((options: { studioAuthUserId: string | null; workId: string | null }) => ({
+    markStudioDocumentChanged: () => true,
+    collaborationAccessRef: { current: { authScopeKey: options.studioAuthUserId, workId: options.workId,
+      locked: false, accessGeneration: 0, documentGeneration: 0 } },
+  })),
+  scoped: vi.fn(() => ({ authority: null, policy: null, loading: false, error: null, refresh: async () => null })),
 }));
 vi.mock("./useStudioDraftCollaborationRuntime", () => ({ useStudioDraftCollaborationRuntime: services.draft }));
 vi.mock("./useStudioCollaborationAccessRuntime", () => ({ useStudioCollaborationAccessRuntime: services.collaboration }));
 vi.mock("./useStudioMutationAuthorityRuntime", () => ({ useStudioMutationAuthorityRuntime: services.mutation }));
-vi.mock("./useStudioScopedWriteRuntime", () => ({ useStudioScopedWriteRuntime: services.scopedWrite }));
+vi.mock("./useStudioScopedWriteRuntime", () => ({ useStudioScopedWriteRuntime: services.scoped }));
 vi.mock("./useStudioLayerLiftRuntime", () => ({ useStudioLayerLiftRuntime: () => ({}) }));
 
 type Options = Parameters<typeof useStudioDocumentAccessRuntime>[0];
@@ -58,7 +62,8 @@ describe("document persistence and source access wiring", () => {
     expect(services.draft).toHaveBeenLastCalledWith(expect.objectContaining({ workId: null, autosaveKey: studioAutosaveKey(previousScope) }));
     expect(services.collaboration).toHaveBeenLastCalledWith(expect.objectContaining({ workId: null }));
     expect(services.mutation).toHaveBeenLastCalledWith(expect.objectContaining({ workId: null }));
-    expect(services.scopedWrite).toHaveBeenLastCalledWith(expect.objectContaining({ actorId: "owner-1", workId: null }));
+    expect(services.scoped).toHaveBeenLastCalledWith(expect.objectContaining({ actorId: "owner-1", workId: null,
+      accessRef: { current: expect.objectContaining({ authScopeKey: "owner-1", workId: null }) } }));
   });
 
   it.each([
@@ -71,6 +76,7 @@ describe("document persistence and source access wiring", () => {
     expect(result.current.autosaveKey).toBe(studioAutosaveKey(scope));
     expect(result.current.checkpointKey).toBe(studioCheckpointKey(scope));
     expect(services.collaboration).toHaveBeenLastCalledWith(expect.objectContaining({ workId, remixId }));
-    expect(services.scopedWrite).toHaveBeenLastCalledWith(expect.objectContaining({ actorId: "owner-1", workId }));
+    expect(services.scoped).toHaveBeenLastCalledWith(expect.objectContaining({ actorId: "owner-1", workId,
+      accessRef: { current: expect.objectContaining({ authScopeKey: "owner-1", workId }) } }));
   });
 });

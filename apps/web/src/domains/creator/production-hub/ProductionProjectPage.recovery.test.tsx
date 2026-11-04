@@ -75,3 +75,19 @@ it("첫 조회 실패 뒤 페이지를 떠나지 않고 다시 불러와 복구�
   expect(screen.queryByRole("alert")).toBeNull();
   expect(mocks.load).toHaveBeenCalledTimes(2);
 });
+
+it("인증 준비 전에는 실제 프로젝트를 조회하지 않고 준비 뒤 한 번 조회한다", async () => {
+  const route = (ready: boolean) => <SessionContext value={{ data: verifiedSession, ready, status: "authenticated", update: async () => verifiedSession }}>
+    <MemoryRouter initialEntries={["/production/projects/actual-route-project/review"]}><Routes>
+      <Route path="/production/projects/:projectId/review" element={<ProductionProjectPage surface="review" />} />
+    </Routes></MemoryRouter>
+  </SessionContext>;
+  const view = render(route(false));
+  await act(async () => {});
+  expect(screen.getByRole("status").getAttribute("data-route-pending")).toBe("production-project");
+  expect(screen.queryByRole("textbox", { name: "검수 질문" })).toBeNull();
+  expect(mocks.load).not.toHaveBeenCalled();
+  view.rerender(route(true));
+  await screen.findByRole("textbox", { name: "검수 질문" });
+  expect(mocks.load).toHaveBeenCalledTimes(1);
+});
