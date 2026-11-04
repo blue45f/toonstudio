@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { SpaceNpcPortrait } from "../../src/domains/creator/virtual-space/hud/SpaceNpcPortrait";
+import { useSpaceShortcuts } from "../../src/domains/creator/virtual-space/hud/use-space-shortcuts";
 import { studioVirtualToonHqManifest } from "../../src/domains/creator/virtual-space/office2d/hq/toon-hq-manifest";
 import { StudioOffice2dCanvas } from "../../src/domains/creator/virtual-space/office2d/StudioOffice2dCanvas";
 import { StudioVirtualSpaceEngineBridge } from "../../src/domains/creator/virtual-space/studio-virtual-space-engine-bridge";
@@ -13,6 +14,14 @@ import type { StudioWorldNpcDefinition } from "../../src/domains/creator/virtual
 import "../../src/app/styles/globals.css";
 import "../../src/domains/creator/virtual-space/hud/space-hud.css";
 
+// 실제 HUD와 캔버스가 동시에 듣는 키의 소유권을 관찰한다. 서버·좌석 권한 검증은 아니다.
+function ShortcutProbe({ onDesk, enabled }: { readonly onDesk: () => void; readonly enabled: boolean }) {
+  useSpaceShortcuts({ onEmote: () => undefined, onToggleMap: () => undefined,
+    onTogglePeople: () => undefined, onHelp: () => undefined, onEscape: () => false,
+    onDesk }, enabled);
+  return null;
+}
+
 // 실제 2D 엔진·월드·기존 자산을 실행한다. 합성 로컬 presence이며 서버 회의·협업 검증은 아니다.
 function Fixture() {
   const bridge = useMemo(() => new StudioVirtualSpaceEngineBridge(), []);
@@ -20,6 +29,10 @@ function Fixture() {
   const [theme, setTheme] = useState<StudioSpaceThemeKey>("modern-office");
   const [state, setState] = useState<StudioVirtualSpaceEngineLocalState>({ point: { x: 336, y: 1470 }, facing: "down", moving: false, zoneId: "hq-lobby" });
   const [npc, setNpc] = useState<StudioWorldNpcDefinition | null>(null);
+  const withHud = new URLSearchParams(location.search).get("hud") === "1";
+  const [deskActions, setDeskActions] = useState(0);
+  const [deskPaused, setDeskPaused] = useState(false);
+  const requestDesk = () => { if (!deskPaused) setDeskActions((value) => value + 1); };
   const snapshot: StudioVirtualSpaceSnapshot = {
     self: { ...state.point, facing: state.facing, moving: state.moving, zoneId: state.zoneId, activity: "available", avatarIndex: 0 },
     peers: [], nearbyPeers: [], selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null,
@@ -33,11 +46,14 @@ function Fixture() {
       if (selected) setTheme(selected.key);
     }}>{STUDIO_SPACE_THEMES.map((item) => <option key={item.key} value={item.key}>{item.labelKo}</option>)}</select></label>
     <label>텍스트 입력<input aria-label="키보드 충돌 검증 입력" /></label>
+    {withHud ? <><ShortcutProbe onDesk={requestDesk} enabled={!deskPaused} />
+      <output data-review-hud-desks={deskActions}>페이지 자리 동작: {deskActions}</output>
+      <label><input type="checkbox" checked={deskPaused} onChange={(event) => setDeskPaused(event.target.checked)} />자리 단축키 일시 중지</label></> : null}
     <output data-review-position data-x={state.point.x} data-y={state.point.y}>{Math.round(state.point.x)}, {Math.round(state.point.y)}</output>
     <div style={{ position: "relative", height: "70vh", minHeight: 400 }}>
       <StudioOffice2dCanvas manifest={manifest} snapshot={snapshot} bridge={bridge} selfIdentity="runtime-review" selfDisplayName="검증 사용자"
         spaceTheme={theme} onLocalState={setState} onInteract={() => undefined} onPeerSelect={() => undefined} onCancelFollow={() => undefined}
-        onNpcInteract={(_, selected) => setNpc(selected)} />
+        onNpcInteract={(_, selected) => setNpc(selected)} onDeskShortcut={withHud ? requestDesk : undefined} />
     </div>
     {npc ? <section data-review-npc={npc.skinKey}><h2>{npc.id}</h2><SpaceNpcPortrait skinKey={npc.skinKey} expression="default" alt={npc.id} artStyle="webtoon" stageKind="office2d" /></section> : null}
   </main>;

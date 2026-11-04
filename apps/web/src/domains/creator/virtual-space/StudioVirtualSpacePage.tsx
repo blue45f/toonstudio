@@ -1348,16 +1348,16 @@ export function VirtualSpaceExperience({
     acousticZones: worldManifest.acousticZones, blockedIds: socialSnapshot.blockedPeerIds,
     fallbackPeerLabel: bt("팀원", "Teammate"), onExpireStatus: setPresenceStatus,
   });
+  const handleDeskShortcut = () => { if (worldReady && !searchOpen) { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); } };
   useSpaceShortcuts({
-    onEmote: emote,
-    onToggleMap: toggleMap,
+    onEmote: emote, onToggleMap: toggleMap,
     onTogglePeople: () => togglePanel("people"),
     onHelp: () => { setDockPopover(null); setHelpOpen((current) => !current); },
     onChat: () => setChatOpen(true),
     onSearch: () => { setDockPopover(null); setSearchOpen(true); },
     onEscape: closeTopLayer,
     onZoom: userZoom.available ? (action) => engineBridge.userZoom.apply(action) : undefined,
-    onDesk: () => { if (preferredSlotId && !personal) slots.requestSlot(preferredSlotId); else openOfficeSeats(); },
+    onDesk: handleDeskShortcut,
     onLocate: () => engineBridge.cameraPan.recenter(),
     onToggleQuietMode: toggleQuietMode,
   }, worldReady && !searchOpen);
@@ -1907,7 +1907,7 @@ export function VirtualSpaceExperience({
           guideTourRequest, onGuideTourChange: updateGuideTour, debugWorld: authoringMode,
           atmosphere: activity === "focused" || activity === "away" ? "focus" : atmosphere,
           artStyle, spaceTheme, decorations, experiencePreference, environmentPreference,
-          onPeerSelect: handleEnginePeerSelect, onCancelFollow: cancelFollowing, onStuckChange: setStuck,
+          onPeerSelect: handleEnginePeerSelect, onCancelFollow: cancelFollowing, onStuckChange: setStuck, onDeskShortcut: handleDeskShortcut,
           onGhostModeChange: setGhostMode, onSpaceUiEvent: spaceUi.handleSpaceUiEvent,
           onSelfImpact: (vx, vy) => controllerRef.current?.sendImpact(vx, vy),
           onObjectStateChange: change => controllerRef.current?.sendObjectState(change.objectId, change.stateKey, change.stateChangedAt),
