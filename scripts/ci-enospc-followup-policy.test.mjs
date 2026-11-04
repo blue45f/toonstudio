@@ -8,8 +8,10 @@ const approved = parse(read("ci")).jobs.build.steps.find((step) => step.name ===
 for (const [workflow, jobId, timeout] of [
   ["studio-production-integrity", "production-integrity", 25],
   ["full-test-diagnostic", "full-test", 90],
+  ["studio-finishing-quality", "quality-static", 25],
+  ["studio-finishing-quality", "finishing-quality", 30],
 ]) {
-  test(`${workflow}는 기존 Core SDK 정리 안전 경계를 체크아웃 전에 사용한다`, () => {
+  test(`${workflow}/${jobId}는 기존 Core SDK 정리 안전 경계를 체크아웃 전에 사용한다`, () => {
     const job = parse(read(workflow)).jobs[jobId];
     assert.equal(job["runs-on"], "ubuntu-24.04");
     assert.equal(job["timeout-minutes"], timeout);
