@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStudioBg3dModelAttachment, parseV12ModelManifest, readStudioBg3dModelSourceSnapshotV12 } from "./bg3d-model-library";
 import { resetStudioBg3dBundleThemePacksCache } from "./studio-bg3d-bundle-theme-packs";
-import * as bundleRelease from "./studio-bg3d-bundle-release";
-import { releaseFixture } from "./studio-bg3d-bundle-release.test-fixture";
+import { bindConsumerReleaseFixture, consumerReleaseFixture } from "./studio-bg3d-bundle-release-consumer.test-fixture";
 import { readStudioBg3dEffectiveModelSourceRestriction } from "./studio-bg3d-model-source-restriction";
 import { studioBg3dModelCacheKey } from "./studio-bg3d-model-material-variant";
 import { createStudioBg3dSceneGlbArtifact } from "./studio-bg3d-scene-glb-artifact";
@@ -22,7 +21,8 @@ const signal = () => new AbortController().signal;
 const catalogFetch = vi.fn<typeof fetch>();
 beforeEach(() => {
   resetStudioBg3dBundleThemePacksCache();
-  catalogFetch.mockReset().mockImplementation(async () => new Response(JSON.stringify(emptySceneGlbFixtureBundleCatalog())));
+  bindConsumerReleaseFixture(emptySceneGlbFixtureBundleCatalog);
+  catalogFetch.mockReset().mockImplementation(async () => consumerReleaseFixture(emptySceneGlbFixtureBundleCatalog()).catalogResponse());
   vi.stubGlobal("fetch", catalogFetch);
 });
 afterEach(() => { disposeSceneGlbFixtures(); resetStudioBg3dBundleThemePacksCache(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -209,7 +209,8 @@ describe("현재 표시 장면 GLB의 실제 출처 권위 연결", () => {
     catalogFetch.mockResolvedValueOnce(new Response("catalog unavailable", { status: 503 }));
     const result = await exportStudioBg3dCurrentSceneGlb(f.host, { name: "출처 조회 실패", signal: signal() }, deps);
     expect(result).toMatchObject({ ok: false, code: "rights-unavailable" });
-    expect(catalogFetch).toHaveBeenCalledWith(bundleRelease.getBuildFixedStudioBg3dBundleRelease().catalog.url, expect.any(Object));
+    expect(catalogFetch).toHaveBeenCalledWith(consumerReleaseFixture(emptySceneGlbFixtureBundleCatalog()).release.catalog.url,
+      expect.objectContaining({ cache: "force-cache", credentials: "same-origin", redirect: "error" }));
     expect(missing.authorityReads.snapshot).toHaveBeenCalledOnce();
     expect(deps.prepare).not.toHaveBeenCalled(); expect(deps.createObjectUrl).not.toHaveBeenCalled(); expect(deps.triggerDownload).not.toHaveBeenCalled();
     noSceneWrites(f); noSceneWrites(missing);
@@ -226,12 +227,11 @@ describe("현재 표시 장면 GLB의 실제 출처 권위 연결", () => {
         deferred: { fbx: 0, gltf: 0, blend: 0, overBudget: {} }, rights: { serve: "allow", ...rights }, note: null }],
       assets: [{ id, pack: 0, path: "test/box.glb", bytes: bytes.byteLength, sha256: sha256.slice(7), tris: f.record.validatorMetrics.triangles }],
       totals: { packs: 1, placeableAssets: 1, presets: 0, crowdGlbAssets: 0, deferredAssets: 0 } };
-    const release = releaseFixture(sha256.slice(7), { bytes: bytes.byteLength, objectBytes: bytes.byteLength }, (raw) => { Object.assign(raw, catalog); });
-    vi.spyOn(bundleRelease, "getBuildFixedStudioBg3dBundleRelease").mockReturnValue(release.release);
+    bindConsumerReleaseFixture(() => catalog);
+    const release = consumerReleaseFixture(catalog);
     catalogFetch.mockImplementation(async (input) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-      if (url === release.release.catalog.url) return release.response("catalog");
-      if (url === release.release.index.url || release.completionNonce(input) !== null) return release.response("index");
+      if (url === release.release.catalog.url) return release.catalogResponse();
       if (url === assetUrl) return new Response(Uint8Array.from(bytes).buffer, { headers: { "Content-Type": "model/gltf-binary" } });
       return new Response("fixture에 없는 URL", { status: 404 });
     });

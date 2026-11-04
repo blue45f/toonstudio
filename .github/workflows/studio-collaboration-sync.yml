@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/studio-collaboration-sync.yml"
       - "scripts/verify-studio-collaboration-sync.mts"
+      - "scripts/studio-collaboration-workflow-paths.test.mjs"
       - "scripts/verify-studio-drawing-sync-ui.mts"
       - "scripts/verify-studio-service-recovery.mts"
       - "scripts/lib/studio-collaboration-readiness*"
@@ -17,7 +18,7 @@ on:
       - "scripts/generate-studio-canvas-previews.py"
       - "apps/web/public/brand/studio-canvas-previews/**"
       - "apps/web/tools/browser-harnesses/drawing-sync-safety.*"
-      - "apps/web/src/domains/creator/StudioDraftOperationSyncAssistant*"
+      - "apps/web/src/domains/creator/live/StudioDraftOperationSyncAssistant*"
       - "apps/web/src/domains/creator/canvas/StudioCinematicCanvasWelcome*"
       - "scripts/verify-studio-collaboration-entry.test.ts"
       - "scripts/lib/studio-collaboration-preview-session.ts"
@@ -35,6 +36,7 @@ on:
     paths:
       - ".github/workflows/studio-collaboration-sync.yml"
       - "scripts/verify-studio-collaboration-sync.mts"
+      - "scripts/studio-collaboration-workflow-paths.test.mjs"
       - "scripts/verify-studio-drawing-sync-ui.mts"
       - "scripts/verify-studio-service-recovery.mts"
       - "scripts/lib/studio-collaboration-readiness*"
@@ -45,7 +47,7 @@ on:
       - "scripts/generate-studio-canvas-previews.py"
       - "apps/web/public/brand/studio-canvas-previews/**"
       - "apps/web/tools/browser-harnesses/drawing-sync-safety.*"
-      - "apps/web/src/domains/creator/StudioDraftOperationSyncAssistant*"
+      - "apps/web/src/domains/creator/live/StudioDraftOperationSyncAssistant*"
       - "apps/web/src/domains/creator/canvas/StudioCinematicCanvasWelcome*"
       - "scripts/verify-studio-collaboration-entry.test.ts"
       - "scripts/lib/studio-collaboration-preview-session.ts"
@@ -84,6 +86,8 @@ jobs:
           node-version: 24
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: 협업 검사 입력 경로 확인
+        run: node --test scripts/studio-collaboration-workflow-paths.test.mjs
       - name: Verify presence/document readiness policy and transport contracts
         run: >-
           pnpm exec vitest run

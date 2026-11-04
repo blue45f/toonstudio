@@ -180,6 +180,72 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
+            fi
+          done
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
+            fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
+          fi
       - name: Checkout focused source tree
         uses: actions/checkout@v7
         with:
