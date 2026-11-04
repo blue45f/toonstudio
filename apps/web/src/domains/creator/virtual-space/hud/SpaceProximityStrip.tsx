@@ -116,7 +116,7 @@ export const SpaceProximityStrip = memo(function SpaceProximityStrip({
     {people.length > PERSON_LIMIT ? <span className="space-proximity__more">{bt(`외 ${people.length - PERSON_LIMIT}명 더 가까이 있어요`, `${people.length - PERSON_LIMIT} more nearby`)}</span> : null}
     {shownNpcs.map((npc) => <article key={npc.id} className="space-proximity__card" data-kind="npc">
       <span className="space-avatar space-avatar--md space-avatar--npc space-avatar--portrait" aria-hidden>
-        <SpaceNpcPortrait skinKey={npc.skinKey} expression="default" alt="" artStyle={artStyle} size="sm" />
+        <SpaceNpcPortrait stageKind={stageKind} skinKey={npc.skinKey} expression="default" alt="" artStyle={artStyle} size="sm" />
       </span>
       <div className="space-proximity__text">
         <strong><span className="space-proximity__npc-badge">NPC</span>{bt(npc.labelKo.replace(NPC_PREFIX, ""), npc.labelEn.replace(NPC_PREFIX, ""))}</strong>

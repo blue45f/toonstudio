@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 1 }}
+          fetch-depth: ${{ github.event_name != 'pull_request' && 1 || 0 }}
           filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |
@@ -63,6 +63,7 @@ jobs:
             /apps/web/public/assets/virtual-studio/bundle-v1/manifest.json
             /apps/web/public/assets/3d/ENVIRONMENT_LICENSES.md
             /apps/web/public/assets/studio/cc0-20260906/manifest.json
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/studio/cc0-20260906/' || '' }}
             /apps/web/public/assets/studio/bundle-renders-v1/manifest.json
             /apps/web/public/assets/studio/bundle-scenes-v1/manifest.json
             /apps/web/public/assets/virtual-studio/bundle-decor-v1/manifest.json
@@ -195,11 +196,9 @@ jobs:
             echo "No changed ToonStudio source files require related tests."
             exit 0
           fi
-          # 이 focused 체크아웃은 대용량 자산(studio/cc0-20260906, 약 1.7GB)을 내려받지 않는다.
-          # 이 테스트는 전체 체크아웃을 쓰는 market-cc0-delivery.yml이 계속 실행하므로 여기서만 뺀다.
+          # PR related 검사가 읽는 CC0 실물 자산도 최초 인증 checkout에 포함한다.
           # vrm-library.test.ts 는 번들된 모든 VRM 파일(약 414MB)을 읽어 크기를 확인하는 시험이라 이 부분 체크아웃에서는 뺀다. 전체 체크아웃으로 도는 Full pnpm test 가 계속 실행한다.
           pnpm exec vitest related "${files[@]}" --run --pool=forks --maxWorkers=2 \
-            --exclude '**/studio-marketplace-cc0-catalog.test.ts' \
             --exclude '**/vrm-library.test.ts'
 
       - name: Run manual focused smoke suite
