@@ -578,8 +578,16 @@ describe.skipIf(!url)("공개 HTTP producer로 배정한 제한 원고의 Postgr
       await manager.reload({ waitUntil: "domcontentloaded" });
       const restored = await panel(manager); expect(await restored.getByRole("status").textContent()).toContain("켜짐");
       await mkdir(".qa/role-pipeline", { recursive: true });
-      await restored.locator("h3").scrollIntoViewIfNeeded();
+      await restored.evaluate((element) => element.scrollIntoView({ block: "start", behavior: "instant" }));
       await manager.screenshot({ path: ".qa/role-pipeline/manager-enabled.png" });
+      const { default: AxeBuilder } = await import("@axe-core/playwright");
+      const audit = await new AxeBuilder({ page: manager }).include('[aria-label="실제 직군별 원고 보호"]')
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+      expect(audit.violations.map((entry) => entry.id)).toEqual([]);
+      await manager.setViewportSize({ width: 390, height: 900 });
+      expect(await restored.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+      await restored.evaluate((element) => element.scrollIntoView({ block: "start", behavior: "instant" }));
+      await manager.screenshot({ path: ".qa/role-pipeline/manager-mobile.png" });
       const worker = await open(f.actor), restricted = await panel(worker);
       expect(await restricted.getByRole("button", { name: "이 프로젝트의 보호 끄기", exact: true }).count()).toBe(0);
       expect(await restricted.getByRole("listbox").count()).toBe(0);
