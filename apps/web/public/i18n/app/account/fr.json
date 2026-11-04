@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biographie",
   "account.profile.bioPlaceholder": "Parlez-nous de vous en une seule ligne.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Vos modifications effectuées avant de quitter cette page ont été restaurées. Elles n'ont pas encore été enregistrées sur le serveur.",
+  "account.profile.discardDraft": "Ignorer le brouillon",
+  "account.profile.draftRestored": "Le brouillon non enregistré de votre profil a été restauré.",
   "account.profile.saveButton": "Enregistrer le profil",
   "account.profile.saving": "Enregistrement…",
   "account.profile.saved": "Enregistré",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "Mon compte",
   "account.page.title": "Mon profil",
   "account.page.subtitle": "Consultez vos publications et votre activité, et gérez votre profil.",
-  "account.page.tabsAria": "Onglets du profil",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Onglets du profil"
 }

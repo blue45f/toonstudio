@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografia",
   "account.profile.bioPlaceholder": "Parlaci di te in una riga.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Le modifiche effettuate prima di lasciare questa pagina sono state ripristinate. Non sono ancora state salvate sul server.",
+  "account.profile.discardDraft": "Scarta bozza",
+  "account.profile.draftRestored": "La bozza non salvata del tuo profilo è stata ripristinata.",
   "account.profile.saveButton": "Salva profilo",
   "account.profile.saving": "Salvataggio…",
   "account.profile.saved": "Salvato",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "IL MIO ACCOUNT",
   "account.page.title": "Il mio profilo",
   "account.page.subtitle": "Controlla i tuoi post e le tue attività, e gestisci i dettagli del tuo profilo.",
-  "account.page.tabsAria": "Tab di profilo",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Tab di profilo"
 }

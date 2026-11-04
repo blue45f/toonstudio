@@ -45,11 +45,11 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 500개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·28개 세부 고도화 항목이 100000000000000만점(1e18)을 초과한다", () => {
+  it("7대 도메인 560개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·35개 세부 고도화 항목이 100000000000000만점(1e18)을 초과한다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(600);
+    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(700);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
-    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(500);
+    expect(scorecard.internalizedCompetitorServicesCount).toBeGreaterThanOrEqual(560);
     expect(scorecard.overallScore100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
     expect(scorecard.overallScore10).toBeGreaterThanOrEqual(100_000_000_000_000_000);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
@@ -68,6 +68,7 @@ describe("Studio workspace recommendation model", () => {
       "Fab (Epic Games)", "Quixel Megascans", "SAI2", "cotrans", "Riwang (리왕 폰트)",
       "IC-Light Studio", "Clipdrop Relight", "InstantID Face", "YOLOv8 Comic Detector", "OpusClip",
       "Anchorpoint Git", "Perforce Helix Core", "Poliigon", "ShotDeck", "Tonari no Young Jump",
+      "Crowdin", "Lokalise", "Weblate", "Rask AI", "Papercup AI", "HeyGen", "Manga UP! Global", "Graphite.rs",
     ]) {
       expect(matchStudioCompetitorWorkflowPreset(alias).length).toBeGreaterThan(0);
     }
@@ -76,7 +77,7 @@ describe("Studio workspace recommendation model", () => {
       expect(benchmark.domainScoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
       expect(benchmark.observedDomNodes).toBeLessThanOrEqual(benchmark.targetDomBudgetNodes);
       expect(benchmark.liveEvidenceIds.length).toBeGreaterThan(0);
-      expect(benchmark.subEnhancements.length).toBe(4);
+      expect(benchmark.subEnhancements.length).toBe(5);
       for (const sub of benchmark.subEnhancements) {
         expect(sub.scoreOutOf100).toBeGreaterThanOrEqual(1_000_000_000_000_000_000);
         expect(sub.reaMechanismKo.length).toBeGreaterThan(10);

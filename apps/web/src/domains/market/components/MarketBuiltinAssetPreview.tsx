@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
-import type { StudioMarketplaceAssetPreview } from "@/domains/creator/public/marketplace-asset-access";
+import {
+  resolveStudioMarketplaceAssetPreview,
+  type StudioMarketplaceAssetPreview,
+} from "@/domains/creator/public/marketplace-asset-access";
 import { useT } from "@/shared/lib/i18n";
 
 export function MarketBuiltinAssetPreview({ runtimeRef }: { readonly runtimeRef: string }) {
@@ -8,13 +11,7 @@ export function MarketBuiltinAssetPreview({ runtimeRef }: { readonly runtimeRef:
   const [resolved, setResolved] = useState<{ ref: string; preview: StudioMarketplaceAssetPreview | null } | null>(null);
   const [failedSource, setFailedSource] = useState<string | null>(null);
   useEffect(() => {
-    let active = true;
-    void import("@/domains/creator/public/marketplace-asset-access").then(({ resolveStudioMarketplaceAssetPreview }) => {
-      if (active) setResolved({ ref: runtimeRef, preview: resolveStudioMarketplaceAssetPreview(runtimeRef) });
-    }).catch(() => {
-      if (active) setResolved({ ref: runtimeRef, preview: null });
-    });
-    return () => { active = false; };
+    setResolved({ ref: runtimeRef, preview: resolveStudioMarketplaceAssetPreview(runtimeRef) });
   }, [runtimeRef]);
   const preview = resolved?.ref === runtimeRef ? resolved.preview : null;
   if (!preview) return null;

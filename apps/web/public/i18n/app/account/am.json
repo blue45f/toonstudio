@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "ባዮ",
   "account.profile.bioPlaceholder": "በአንድ መስመር ውስጥ ስለ ራስህ ንገረን.",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "ከዚህ ገጽ ከመውጣትዎ በፊት ያደረጓቸው ለውጦች ተመልሰዋል። በአገልጋዩ ላይ አልተቀመጡም።",
+  "account.profile.discardDraft": "ረቂቅ አስወግድ",
+  "account.profile.draftRestored": "ያልተቀመጠ የመገለጫ ረቂቅዎ ተመልሷል።",
   "account.profile.saveButton": "መገለጫ አስቀምጥ",
   "account.profile.saving": "በማስቀመጥ ላይ…",
   "account.profile.saved": "የተቀመጠ",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "የእኔ መለያ",
   "account.page.title": "የእኔ መገለጫ",
   "account.page.subtitle": "ልጥፎችዎን እና እንቅስቃሴዎን ይፈትሹ እና የመገለጫ ዝርዝሮችዎን ያቀናብሩ ።",
-  "account.page.tabsAria": "የመገለጫ ትርዎች",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "የመገለጫ ትርዎች"
 }

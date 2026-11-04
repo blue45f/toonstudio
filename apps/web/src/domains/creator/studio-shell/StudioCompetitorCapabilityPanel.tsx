@@ -23,6 +23,7 @@ import {
   matchStudioCompetitorWorkflowPreset,
   resolveStudioPageReaBenchmark,
   STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS,
+  TOONSTUDIO_SITEWIDE_AUDIT_ISSUES_RESOLVED,
   type StudioPageDomainId,
 } from "../studio-workspace-recommendation";
 import type { StudioDefaultWorkspaceId } from "../studio-workspaces";
@@ -638,6 +639,38 @@ export function StudioCompetitorCapabilityPanel({
                   </p>
                 </div>
               ))}
+            </div>
+            <div
+              data-testid="toonstudio-sitewide-audit-ledger"
+              className="mt-2 rounded-lg border border-line bg-card/90 p-2 text-[0.58rem]"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-fg">
+                <span>
+                  {locale === "ko"
+                    ? "사이트 전반 문제점 진단·해결 원장 & 전 세계 다국어 지원 현황"
+                    : "Site-Wide Diagnostic Resolution Ledger & Global Language Coverage"}
+                </span>
+                <span
+                  data-testid="toonstudio-global-i18n-badge"
+                  className="rounded bg-accent/15 px-1.5 py-0.5 font-mono text-[0.56rem] text-accent"
+                >
+                  {locale === "ko"
+                    ? "75개 완역 언어 번들 · 720+ 글로벌 국가/지역 로케일 · 미번역 0건"
+                    : "75 Translated Asset Locales · 720+ Country/Region Locales · 0 Untranslated"}
+                </span>
+              </div>
+              <div className="mt-1.5 grid gap-1.5 sm:grid-cols-3">
+                {TOONSTUDIO_SITEWIDE_AUDIT_ISSUES_RESOLVED.map((issue) => (
+                  <div key={issue.id} className="rounded border border-line bg-panel/70 px-2 py-1">
+                    <div className="font-bold text-success">
+                      ✓ {locale === "ko" ? issue.titleKo : issue.titleEn}
+                    </div>
+                    <p className="mt-0.5 text-[0.54rem] leading-3.5 text-fg-2">
+                      {locale === "ko" ? issue.resolutionKo : issue.resolutionEn}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

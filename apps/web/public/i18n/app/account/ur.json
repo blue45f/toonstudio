@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "بایو",
   "account.profile.bioPlaceholder": "ہمیں اپنے بارے میں ایک سطر میں بتائیں۔",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "اس صفحے سے جانے سے پہلے آپ کی کی گئی تبدیلیاں بحال کر دی گئی ہیں۔ انہیں ابھی سرور پر محفوظ نہیں کیا گیا ہے۔",
+  "account.profile.discardDraft": "مسودہ ضائع کریں",
+  "account.profile.draftRestored": "آپ کا غیر محفوظ شدہ پروفائل مسودہ بحال کر دیا گیا ہے۔",
   "account.profile.saveButton": "پروفائل محفوظ کریں",
   "account.profile.saving": "محفوظ کیا جا رہا ہے…",
   "account.profile.saved": "محفوظ ہو گیا",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "میرا اکاؤنٹ",
   "account.page.title": "میرا پروفائل",
   "account.page.subtitle": "اپنی پوسٹوں اور سرگرمیوں کو چیک کریں، اور اپنے پروفائل کی تفصیلات کا انتظام کریں.",
-  "account.page.tabsAria": "پروفائل ٹیبز",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "پروفائل ٹیبز"
 }

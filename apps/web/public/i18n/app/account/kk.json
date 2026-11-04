@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Өзі туралы",
   "account.profile.bioPlaceholder": "Өзіңіз туралы бір жолмен айтып беріңіз.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Осы беттен шығар алдындағы өзгерістеріңіз қалпына келтірілді. Олар әлі серверде сақталған жоқ.",
+  "account.profile.discardDraft": "Жобаны жою",
+  "account.profile.draftRestored": "Сақталмаған профиль жобасы қалпына келтірілді.",
   "account.profile.saveButton": "Профильді сақтау",
   "account.profile.saving": "Сақталуда…",
   "account.profile.saved": "Сақталды",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "МЕНІҢ ТІРКЕЛГІМ",
   "account.page.title": "Менің профилім",
   "account.page.subtitle": "Жазбаларыңыз бен белсенділігіңізді тексеріп, профиль деректеріңізді басқарыңыз.",
-  "account.page.tabsAria": "Профиль қойындылары",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Профиль қойындылары"
 }

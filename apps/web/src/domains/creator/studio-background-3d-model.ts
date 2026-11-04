@@ -6,7 +6,6 @@ import * as THREE from "three";
 import { applyStudioBg3dCc0PbrMapsToStandardMaterial } from "./bg3d/studio-bg3d-cc0-pbr-texture-loader";
 import { applyBg3dFallbackMaterial, loadBg3dCustomModelFromBlob } from "./bg3d/studio-bg3d-custom-model-blob";
 import { restoreStudioBg3dPrimitiveEditDepthBias } from "./bg3d/studio-bg3d-primitive-edit-material-runtime";
-import { prepareVerifiedStudioBg3dGltfLoader } from "./bg3d/studio-bg3d-gltf-loader";
 import type { StudioBg3dMaterialBackend } from "./bg3d/studio-bg3d-model-material-variant";
 import { synchronizeStudioMToonMaterialOverride, updateStudioMToonInstanceMaterials } from "./mesh-materials/studio-mtoon-instance-materials";
 import { computeStudioBg3dAutoFitScale, STUDIO_BG3D_AUTO_FIT_TARGET_SIZE } from "./bg3d/studio-bg3d-model-scale-contract";
@@ -1175,6 +1174,7 @@ export async function loadVerifiedStudioBg3dGlbWithThree(
     return threeFailure("ktx2-renderer-unavailable");
   }
 
+  const { prepareVerifiedStudioBg3dGltfLoader } = await import("./bg3d/studio-bg3d-gltf-loader");
   const prepared = await prepareVerifiedStudioBg3dGltfLoader({
     renderer: options.renderer, materialBackend: options.materialBackend, requiresBasisTextures: verification.requiresBasisTextures,
   });

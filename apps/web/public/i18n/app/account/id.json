@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografi",
   "account.profile.bioPlaceholder": "Ceritakan tentang diri Anda dalam satu baris.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Perubahan Anda sebelum meninggalkan halaman ini telah dipulihkan. Perubahan tersebut belum disimpan ke server.",
+  "account.profile.discardDraft": "Buang draf",
+  "account.profile.draftRestored": "Draf profil Anda yang belum disimpan telah dipulihkan.",
   "account.profile.saveButton": "Simpan profil",
   "account.profile.saving": "Menyimpan...",
   "account.profile.saved": "Tersimpan",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "Akunku",
   "account.page.title": "Profilku",
   "account.page.subtitle": "Periksa posting dan aktivitas Anda, serta kelola rincian profil Anda.",
-  "account.page.tabsAria": "Tab profil",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Tab profil"
 }

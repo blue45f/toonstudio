@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Byt till Studioläge",
+  "studio.modeSwitch.toSimple": "Byt till Enkelt läge",
+  "studio.modeSwitch.studioMode": "Studioläge",
+  "studio.modeSwitch.simpleMode": "Enkelt läge"
 }

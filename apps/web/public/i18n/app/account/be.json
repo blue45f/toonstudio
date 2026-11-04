@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Біяграфія",
   "account.profile.bioPlaceholder": "Раскажыце пра сябе ў адным радку.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Вашы змены, зробленыя перад выхадам з гэтай старонкі, былі адноўлены. Яны яшчэ не захаваны на серверы.",
+  "account.profile.discardDraft": "Адхіліць чарнавік",
+  "account.profile.draftRestored": "Ваш незахаваны чарнавік профілю адноўлены.",
   "account.profile.saveButton": "Захаваць профіль",
   "account.profile.saving": "Захаванне…",
   "account.profile.saved": "Захавана",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "МОЙ АКАЎНТ",
   "account.page.title": "Мой профіль",
   "account.page.subtitle": "Правярайце свае допісы і дзейнасць, а таксама кіруйце данымі профілю.",
-  "account.page.tabsAria": "Укладкі профілю",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Укладкі профілю"
 }

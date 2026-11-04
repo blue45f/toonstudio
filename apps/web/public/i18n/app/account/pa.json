@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "ਜਾਣ-ਪਛਾਣ",
   "account.profile.bioPlaceholder": "ਆਪਣੇ ਬਾਰੇ ਇੱਕ ਲਾਈਨ ਵਿੱਚ ਦੱਸੋ।",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "ਇਸ ਪੰਨੇ ਨੂੰ ਛੱਡਣ ਤੋਂ ਪਹਿਲਾਂ ਤੁਹਾਡੇ ਵੱਲੋਂ ਕੀਤੀਆਂ ਤਬਦੀਲੀਆਂ ਬਹਾਲ ਕਰ ਦਿੱਤੀਆਂ ਗਈਆਂ ਹਨ। ਉਹਨਾਂ ਨੂੰ ਅਜੇ ਸਰਵਰ 'ਤੇ ਸੇਵ ਨਹੀਂ ਕੀਤਾ ਗਿਆ ਹੈ।",
+  "account.profile.discardDraft": "ਡਰਾਫਟ ਰੱਦ ਕਰੋ",
+  "account.profile.draftRestored": "ਤੁਹਾਡਾ ਅਣਸੇਵ ਕੀਤਾ ਪ੍ਰੋਫਾਈਲ ਡਰਾਫਟ ਬਹਾਲ ਕਰ ਦਿੱਤਾ ਗਿਆ ਹੈ।",
   "account.profile.saveButton": "ਪ੍ਰੋਫਾਈਲ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰੋ",
   "account.profile.saving": "ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ…",
   "account.profile.saved": "ਸੁਰੱਖਿਅਤ ਕੀਤਾ ਗਿਆ",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "ਮੇਰਾ ਖਾਤਾ",
   "account.page.title": "ਮੇਰੀ ਪ੍ਰੋਫਾਈਲ",
   "account.page.subtitle": "ਆਪਣੀਆਂ ਪੋਸਟਾਂ ਅਤੇ ਗਤੀਵਿਧੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ, ਅਤੇ ਆਪਣੇ ਪ੍ਰੋਫਾਈਲ ਵੇਰਵਿਆਂ ਦਾ ਪ੍ਰਬੰਧਨ ਕਰੋ।",
-  "account.page.tabsAria": "ਪ੍ਰੋਫਾਈਲ ਟੈਬ",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "ਪ੍ਰੋਫਾਈਲ ਟੈਬ"
 }

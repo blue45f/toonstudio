@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografija",
   "account.profile.bioPlaceholder": "Predstavite se u jednoj rečenici.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Vaše promjene prije napuštanja ove stranice su vraćene. Još nisu sačuvane na serveru.",
+  "account.profile.discardDraft": "Odbaci nacrt",
+  "account.profile.draftRestored": "Vaš nesačuvani nacrt profila je vraćen.",
   "account.profile.saveButton": "Sačuvaj profil",
   "account.profile.saving": "Čuvanje…",
   "account.profile.saved": "Sačuvano",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MOJ RAČUN",
   "account.page.title": "Moj profil",
   "account.page.subtitle": "Provjerite svoje objave i aktivnosti te upravljajte detaljima profila.",
-  "account.page.tabsAria": "Profilni tabovi",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profilni tabovi"
 }

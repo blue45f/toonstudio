@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Переключиться в режим Студии",
+  "studio.modeSwitch.toSimple": "Переключиться в Простой режим",
+  "studio.modeSwitch.studioMode": "Режим Студии",
+  "studio.modeSwitch.simpleMode": "Простой режим"
 }

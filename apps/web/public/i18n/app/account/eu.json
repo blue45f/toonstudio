@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografia",
   "account.profile.bioPlaceholder": "Kontatu zeure buruaz lerro batean.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Orri honetatik irten aurretik egindako aldaketak leheneratu dira. Oraindik ez dira zerbitzarian gorde.",
+  "account.profile.discardDraft": "Baztertu zirriborroa",
+  "account.profile.draftRestored": "Gorde gabeko zure profilaren zirriborroa leheneratu da.",
   "account.profile.saveButton": "Gorde profila",
   "account.profile.saving": "Gordetzen…",
   "account.profile.saved": "Gordeta",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "NIRE KONTUA",
   "account.page.title": "Nire profila",
   "account.page.subtitle": "Begiratu zure argitalpenak eta jarduera, eta kudeatu zure profileko datuak.",
-  "account.page.tabsAria": "Profilaren fitxak",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profilaren fitxak"
 }

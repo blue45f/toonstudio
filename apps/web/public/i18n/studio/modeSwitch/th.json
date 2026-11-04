@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "สลับเป็นโหมดสตูดิโอ",
+  "studio.modeSwitch.toSimple": "สลับเป็นโหมดอย่างง่าย",
+  "studio.modeSwitch.studioMode": "โหมดสตูดิโอ",
+  "studio.modeSwitch.simpleMode": "โหมดอย่างง่าย"
 }

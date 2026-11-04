@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Пребаци у Студио режим",
+  "studio.modeSwitch.toSimple": "Пребаци у Једноставни режим",
+  "studio.modeSwitch.studioMode": "Студио режим",
+  "studio.modeSwitch.simpleMode": "Једноставни режим"
 }

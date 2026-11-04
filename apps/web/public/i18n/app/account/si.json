@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "හැඳින්වීම",
   "account.profile.bioPlaceholder": "ඔබ ගැන එක පේළියකින් හඳුන්වා දෙන්න.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "ඔබ මෙම පිටුවෙන් පිටවීමට පෙර සිදු කළ වෙනස්කම් ප්‍රතිසාධනය කර ඇත. ඒවා තවමත් සේවාදායකයේ සුරැකී නැත.",
+  "account.profile.discardDraft": "කෙටුම්පත ඉවතලන්න",
+  "account.profile.draftRestored": "ඔබගේ සුරැකි නොකළ පැතිකඩ කෙටුම්පත ප්‍රතිසාධනය කර ඇත.",
   "account.profile.saveButton": "පැතිකඩ සුරකින්න",
   "account.profile.saving": "සුරකිමින්…",
   "account.profile.saved": "සුරකින ලදී",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "මගේ ගිණුම",
   "account.page.title": "මගේ පැතිකඩ",
   "account.page.subtitle": "ඔබේ සටහන් සහ ක්‍රියාකාරකම් පරීක්ෂා කර ඔබේ පැතිකඩ විස්තර කළමනාකරණය කරන්න.",
-  "account.page.tabsAria": "පැතිකඩ ටැබ්",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "පැතිකඩ ටැබ්"
 }

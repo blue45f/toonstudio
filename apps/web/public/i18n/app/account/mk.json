@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Био",
   "account.profile.bioPlaceholder": "Опишете се во еден ред.",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "Вашите промени пред да ја напуштите оваа страница се вратени. Сè уште не се зачувани на серверот.",
+  "account.profile.discardDraft": "Отфрли нацрт",
+  "account.profile.draftRestored": "Вашиот незачуван нацрт на профилот е вратен.",
   "account.profile.saveButton": "Зачувајте профил",
   "account.profile.saving": "Се зачувува…",
   "account.profile.saved": "Зачувано",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "Мојата сметка",
   "account.page.title": "Мојот профил",
   "account.page.subtitle": "Проверете ги вашите постови и активности, и управувајте ги деталите на вашиот профил.",
-  "account.page.tabsAria": "Јазичиња на профилот",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Јазичиња на профилот"
 }

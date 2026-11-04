@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografía",
   "account.profile.bioPlaceholder": "Preséntese nunha liña.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Restauráronse os cambios realizados antes de saír desta páxina. Aínda non se gardaron no servidor.",
+  "account.profile.discardDraft": "Descartar borrador",
+  "account.profile.draftRestored": "Restaurouse o borrador non gardado do teu perfil.",
   "account.profile.saveButton": "Gardar perfil",
   "account.profile.saving": "Gardando…",
   "account.profile.saved": "Gardado",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "A miña conta",
   "account.page.title": "O meu perfil",
   "account.page.subtitle": "Consulte as súas publicacións e a súa actividade e xestione o seu perfil.",
-  "account.page.tabsAria": "Pestanas do perfil",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Pestanas do perfil"
 }

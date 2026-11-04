@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografia",
   "account.profile.bioPlaceholder": "Na tregoni për veten tuaj në një rresht.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Ndryshimet tuaja para se të largoheshit nga kjo faqe janë rikthyer. Ato ende nuk janë ruajtur në server.",
+  "account.profile.discardDraft": "Hidh poshtë draftin",
+  "account.profile.draftRestored": "Drafti i paruajtur i profilit tuaj është rikthyer.",
   "account.profile.saveButton": "Ruaj profilin",
   "account.profile.saving": "Po ruan…",
   "account.profile.saved": "U ruajt",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "LLOGARIA IME",
   "account.page.title": "Profili im",
   "account.page.subtitle": "Kontrolloni postimet dhe aktivitetin tuaj dhe menaxhoni detajet e profilit tuaj.",
-  "account.page.tabsAria": "Skedat e profilit",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Skedat e profilit"
 }

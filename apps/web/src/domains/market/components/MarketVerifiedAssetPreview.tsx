@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   findGeneratedStudio2dAsset,
   findStudioMarketplaceCc0Asset,
+  findStudioOriginalFreeAsset,
   studioCc0AssetUrl,
   type StudioCc0Asset,
 } from "@/domains/creator/public/marketplace-asset-access";
@@ -59,12 +60,21 @@ export function MarketVerifiedAssetPreview({ reference, compact = false }: {
       });
       return () => { current = false; };
     }
-    void import("@/domains/creator/public/marketplace-asset-access").then(({ findStudioOriginalFreeAsset }) => {
-      const asset = findStudioOriginalFreeAsset(normalizedReference);
-      if (current && asset) setPreview({ reference, src: `data:image/svg+xml,${encodeURIComponent(asset.svg)}`,
-        download: `data:image/svg+xml,${encodeURIComponent(asset.svg)}`, name: asset.name,
-        width: asset.width, height: asset.height, fileName: `${asset.id}.svg`, note: "실제 원본 SVG 미리보기 · 확대 가능한 벡터 · CC0" });
-    }).catch(() => { if (current) setFailedReference(reference); });
+    const asset = findStudioOriginalFreeAsset(normalizedReference);
+    if (current && asset) {
+      setPreview({
+        reference,
+        src: `data:image/svg+xml,${encodeURIComponent(asset.svg)}`,
+        download: `data:image/svg+xml,${encodeURIComponent(asset.svg)}`,
+        name: asset.name,
+        width: asset.width,
+        height: asset.height,
+        fileName: `${asset.id}.svg`,
+        note: "실제 원본 SVG 미리보기 · 확대 가능한 벡터 · CC0",
+      });
+    } else if (current) {
+      setFailedReference(reference);
+    }
     return () => { current = false; };
   }, [reference, compact]);
   if (!preview || preview.reference !== reference) return null;

@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Qisqacha maʻlumot",
   "account.profile.bioPlaceholder": "Oʻzingiz haqingizda bir qatorda ayting.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Ushbu sahifadan chiqishdan oldin kiritgan oʻzgarishlaringiz tiklandi. Ular hali serverda saqlanmagan.",
+  "account.profile.discardDraft": "Qoralamani bekor qilish",
+  "account.profile.draftRestored": "Saqlanmagan profil qoralamangiz tiklandi.",
   "account.profile.saveButton": "Profilni saqlash",
   "account.profile.saving": "Saqlanmoqda…",
   "account.profile.saved": "Saqlandi",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MENING HISOBIM",
   "account.page.title": "Mening profilim",
   "account.page.subtitle": "Postlaringiz va faoliyatingizni koʻring hamda profilingizni boshqaring.",
-  "account.page.tabsAria": "Profil tablari",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profil tablari"
 }

@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Chuyển sang Chế độ Studio",
+  "studio.modeSwitch.toSimple": "Chuyển sang Chế độ Đơn giản",
+  "studio.modeSwitch.studioMode": "Chế độ Studio",
+  "studio.modeSwitch.simpleMode": "Chế độ Đơn giản"
 }

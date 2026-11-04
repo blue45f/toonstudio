@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "அறிமுகம்",
   "account.profile.bioPlaceholder": "உங்களைப் பற்றி ஒரு வரியில் சொல்லுங்கள்.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "இந்தப் பக்கத்தை விட்டு வெளியேறும் முன் நீங்கள் செய்த மாற்றங்கள் மீட்டமைக்கப்பட்டன. அவை இன்னும் சர்வரில் சேமிக்கப்படவில்லை.",
+  "account.profile.discardDraft": "வரைவை நிராகரி",
+  "account.profile.draftRestored": "சேமிக்கப்படாத உங்கள் சுயவிவர வரைவு மீட்டமைக்கப்பட்டது.",
   "account.profile.saveButton": "சுயவிவரத்தை சேமி",
   "account.profile.saving": "சேமிக்கிறது…",
   "account.profile.saved": "சேமிக்கப்பட்டது",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "என் கணக்கு",
   "account.page.title": "என் சுயவிவரம்",
   "account.page.subtitle": "உங்கள் பதிவுகள் மற்றும் செயல்பாடுகளை சரிபார்த்து, உங்கள் சுயவிவர விவரங்களை நிர்வகிக்கவும்.",
-  "account.page.tabsAria": "சுயவிவர தாவல்கள்",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "சுயவிவர தாவல்கள்"
 }

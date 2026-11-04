@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Bio",
   "account.profile.bioPlaceholder": "Povedzte nám o sebe v jednom riadku.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Vaše zmeny pred opustením tejto stránky boli obnovené. Zatiaľ neboli uložené na server.",
+  "account.profile.discardDraft": "Zahodiť koncept",
+  "account.profile.draftRestored": "Váš neuložený koncept profilu bol obnovený.",
   "account.profile.saveButton": "Uložiť profil",
   "account.profile.saving": "Ukladá sa…",
   "account.profile.saved": "Uložené",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "MÔJ ÚČET",
   "account.page.title": "Môj profil",
   "account.page.subtitle": "Pozrite si svoje príspevky a aktivitu a spravujte údaje svojho profilu.",
-  "account.page.tabsAria": "Karty profilu",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Karty profilu"
 }

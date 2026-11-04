@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Bio",
   "account.profile.bioPlaceholder": "Fortæl os om dig selv i én linje.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "Dine ændringer fra før du forlod denne side er blevet gendannet. De er ikke gemt på serveren endnu.",
+  "account.profile.discardDraft": "Kassér kladde",
+  "account.profile.draftRestored": "Din ikke-gemte profilkladde er blevet gendannet.",
   "account.profile.saveButton": "Gem profil",
   "account.profile.saving": "Gemmer…",
   "account.profile.saved": "Gemt",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "Min konto",
   "account.page.title": "Min profil",
   "account.page.subtitle": "Tjek dine indlæg og aktiviteter, og administrer dine profiloplysninger.",
-  "account.page.tabsAria": "Profilfaner",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Profilfaner"
 }

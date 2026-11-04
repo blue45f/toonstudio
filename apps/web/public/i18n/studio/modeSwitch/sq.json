@@ -1,6 +1,6 @@
 {
-  "studio.modeSwitch.toStudio": "Switch to Studio Mode",
-  "studio.modeSwitch.toSimple": "Switch to Simple Mode",
-  "studio.modeSwitch.studioMode": "Studio Mode",
-  "studio.modeSwitch.simpleMode": "Simple Mode"
+  "studio.modeSwitch.toStudio": "Kalo në modalitetin Studio",
+  "studio.modeSwitch.toSimple": "Kalo në modalitetin e Thjeshtë",
+  "studio.modeSwitch.studioMode": "Modaliteti Studio",
+  "studio.modeSwitch.simpleMode": "Modaliteti i Thjeshtë"
 }

@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Βιογραφικό",
   "account.profile.bioPlaceholder": "Πείτε μας για τον εαυτό σας σε μία γραμμή.",
   "account.profile.bioLength": "{length} /280",
+  "account.profile.draftRecovered": "Οι αλλαγές σας πριν φύγετε από αυτήν τη σελίδα αποκαταστάθηκαν. Δεν έχουν αποθηκευτεί ακόμη στον διακομιστή.",
+  "account.profile.discardDraft": "Απόρριψη προσχεδίου",
+  "account.profile.draftRestored": "Το μη αποθηκευμένο προσχέδιο του προφίλ σας αποκαταστάθηκε.",
   "account.profile.saveButton": "Αποθήκευση προφίλ",
   "account.profile.saving": "Αποθήκευση…",
   "account.profile.saved": "Αποθηκευμένο",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "Ο λογαριασμός μου",
   "account.page.title": "Το προφίλ μου",
   "account.page.subtitle": "Ελέγξτε τις δημοσιεύσεις και τις δραστηριότητές σας, και διαχειρίστε τα στοιχεία του προφίλ σας.",
-  "account.page.tabsAria": "Καρτέλες προφίλ",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Καρτέλες προφίλ"
 }

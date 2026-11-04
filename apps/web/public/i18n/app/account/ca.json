@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "Biografia",
   "account.profile.bioPlaceholder": "Explica'ns qui ets en una línia.",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "S'han restaurat els canvis que havíeu fet abans de sortir d'aquesta pàgina. Encara no s'han desat al servidor.",
+  "account.profile.discardDraft": "Descarta l'esborrany",
+  "account.profile.draftRestored": "S'ha restaurat l'esborrany no desat del perfil.",
   "account.profile.saveButton": "Desa el perfil",
   "account.profile.saving": "S'està desant…",
   "account.profile.saved": "Desat",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "El meu compte",
   "account.page.title": "El meu perfil",
   "account.page.subtitle": "Consulta les teves publicacions i la teva activitat, i gestiona el teu perfil.",
-  "account.page.tabsAria": "Pestanyes del perfil",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "Pestanyes del perfil"
 }

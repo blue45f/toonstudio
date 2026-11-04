@@ -28,6 +28,9 @@
   "account.profile.bioLabel": "জীৱনী",
   "account.profile.bioPlaceholder": "এটা শাৰীতে আপোনাৰ বিষয়ে আমাক কওক।",
   "account.profile.bioLength": "{length}/280",
+  "account.profile.draftRecovered": "আপুনি এই পৃষ্ঠাটো এৰি যোৱাৰ আগৰ পৰিৱৰ্তনসমূহ পুনৰুদ্ধাৰ কৰা হৈছে। সেইবোৰ এতিয়াও চাৰ্ভাৰত সংৰক্ষণ কৰা হোৱা নাই।",
+  "account.profile.discardDraft": "খচৰা বাতিল কৰক",
+  "account.profile.draftRestored": "আপোনাৰ অসংৰক্ষিত প্ৰ'ফাইল খচৰা পুনৰুদ্ধাৰ কৰা হৈছে।",
   "account.profile.saveButton": "প্ৰফাইল সংৰক্ষণ কৰক",
   "account.profile.saving": "সংৰক্ষণ কৰা হৈ আছে…",
   "account.profile.saved": "সংৰক্ষিত",
@@ -42,8 +45,5 @@
   "account.page.eyebrow": "মোৰ একাউণ্ট",
   "account.page.title": "মোৰ প্ৰফাইল",
   "account.page.subtitle": "আপোনাৰ পোষ্ট আৰু কাৰ্যকলাপ পৰীক্ষা কৰক আৰু আপোনাৰ প্ৰফাইলৰ তথ্য পৰিচালনা কৰক।",
-  "account.page.tabsAria": "প্ৰফাইল ট্যাবসমূহ",
-  "account.profile.draftRecovered": "Your changes from before you left this page have been restored. They have not been saved to the server.",
-  "account.profile.discardDraft": "Discard draft",
-  "account.profile.draftRestored": "Your unsaved profile draft has been restored."
+  "account.page.tabsAria": "প্ৰফাইল ট্যাবসমূহ"
 }

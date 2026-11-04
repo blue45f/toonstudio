@@ -265,7 +265,9 @@ export function StudioStoryToWebtoonStartupWorkbench({
   const [provenanceShieldLocked, setProvenanceShieldLocked] = useState<boolean>(true);
   const [inpaintedCutIndex, setInpaintedCutIndex] = useState<number | null>(null);
   const [customScript, setCustomScript] = useState<string>("");
-  const [simulreleaseLang, setSimulreleaseLang] = useState<"KO" | "EN" | "JA" | "ZH" | "ES" | "FR">("KO");
+  const [simulreleaseLang, setSimulreleaseLang] = useState<
+    "KO" | "EN" | "JA" | "ZH" | "ZH-TW" | "ES" | "FR" | "DE" | "PT" | "ID" | "TH" | "VI" | "AR" | "HI" | "RU" | "TR" | "IT" | "PL"
+  >("KO");
 
   const activePreset = useMemo(
     () => STORY_PRESETS.find((p) => p.id === selectedPresetId) ?? STORY_PRESETS[0],
@@ -522,9 +524,11 @@ export function StudioStoryToWebtoonStartupWorkbench({
           <div
             role="group"
             aria-label={ko ? "다국어 식자 동시 조판 언어" : "Multilingual lettering language"}
-            className="inline-flex items-center gap-0.5 rounded-md border border-line bg-card p-0.5"
+            className="inline-flex flex-wrap items-center gap-0.5 rounded-md border border-line bg-card p-0.5"
           >
-            {(["KO", "EN", "JA", "ZH", "ES", "FR"] as const).map((lang) => (
+            {(
+              ["KO", "EN", "JA", "ZH", "ZH-TW", "ES", "FR", "DE", "PT", "ID", "TH", "VI", "AR", "HI", "RU", "TR", "IT", "PL"] as const
+            ).map((lang) => (
               <button
                 key={lang}
                 type="button"
