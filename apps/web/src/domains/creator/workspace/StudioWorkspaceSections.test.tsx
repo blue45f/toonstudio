@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceExploreContent, WorkspaceTeamContent } from "./StudioWorkspaceSections";
@@ -11,12 +11,13 @@ function team(tab: string) {
   return render(<MemoryRouter initialEntries={[`/team?tab=${tab}&project=private-project`]}><WorkspaceTeamContent project={null} links={workspaceProjectLinks(null, null)} /></MemoryRouter>);
 }
 describe("workspace exposes one purpose-led collaboration journey without granting project access", () => {
-  it("keeps the unified team area navigation visible on the team home", () => {
-    team("overview");
-    const navigation = screen.getByRole("navigation", { name: "협업 영역" });
-    expect(within(navigation).getByRole("link", { name: /협업 홈/u }).getAttribute("aria-current")).toBe("page");
-    expect(within(navigation).getByRole("link", { name: /사람·권한/u }).getAttribute("href")).toBe("/team/people");
-    expect(within(navigation).getByRole("link", { name: /인재·지원/u }).getAttribute("href")).toBe("/team/recruiting");
+  it("페이지 소유의 협업 영역 메뉴를 중복하지 않고 팀 업무 선택을 유지한다", () => {
+    team("members");
+    expect(screen.queryByRole("navigation", { name: "협업 영역" })).toBeNull();
+    expect(screen.getByRole("group", { name: "팀 업무 선택" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "멤버·권한" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "모집·의뢰" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "대화·면접 준비" })).toBeTruthy();
   });
 
   it("separates team membership from project access", () => {

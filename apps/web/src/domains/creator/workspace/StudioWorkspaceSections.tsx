@@ -1,7 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import Link from "@/shared/navigation/router-link";
-import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-reader";
 import { workspaceTab, type workspaceProjectLinks } from "./studio-workspace-model";
@@ -47,7 +46,6 @@ export function WorkspaceTeamContent({ project, links }: {
   };
   const group = groups[tab];
   return <div className="workspace-section-content">
-    <TeamAreaNavigation compact className="mb-5" />
     <div className="workspace-tabs" role="group" aria-label={bt("팀 업무 선택", "Choose team activity")}>
       {tabs.map(([key, text]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => select(key)}>{text}</button>)}
     </div>

@@ -121,6 +121,28 @@ describe("studio workspace continuity and safe recovery", () => {
   });
 });
 
+describe("협업 영역 메뉴의 단일 소유권", () => {
+  it.each(["members", "recruit", "sessions"])("%s 업무에서도 메뉴를 한 번만 렌더링한다", (tab) => {
+    render(<App entries={[`/team?project=older&tab=${tab}`]} />);
+    const navigation = screen.getByRole("navigation", { name: "협업 영역" });
+    expect(screen.getAllByRole("navigation", { name: "협업 영역" })).toHaveLength(1);
+    expect(within(navigation).getByRole("link", { name: /협업 홈/u }).getAttribute("aria-current")).toBe("page");
+    expect(within(navigation).getByRole("link", { name: /사람·권한/u }).getAttribute("href")).toBe("/team/people");
+    expect(within(navigation).getByRole("link", { name: /인재·지원/u }).getAttribute("href")).toBe("/team/recruiting");
+  });
+
+  it.each(["loading", "error", "missing"] as const)("%s 상태에서도 협업 메뉴를 유지한다", (status) => {
+    state.loaded = status !== "loading";
+    state.error = status === "error" ? "저장 공간 오류" : null;
+    const projectId = status === "missing" ? "missing" : "older";
+    render(<App entries={[`/team?project=${projectId}`]} />);
+    expect(document.querySelector(`[data-workspace-state="${status}"]`)).toBeTruthy();
+    const navigation = screen.getByRole("navigation", { name: "협업 영역" });
+    expect(screen.getAllByRole("navigation", { name: "협업 영역" })).toHaveLength(1);
+    expect(within(navigation).getByRole("link", { name: /사람·권한/u }).getAttribute("href")).toBe("/team/people");
+  });
+});
+
 describe("workspace search switching integration", () => {
   it("switches exact work in the same team category and Back returns without reopening the picker", async () => {
     render(<App entries={["/team?project=older&tab=recruit"]} />);
