@@ -18,6 +18,9 @@ const PROFILES = [
   },
 ] as const;
 
+// 재시도 없이 실패한 첫 실행의 진단을 남기되 자동 화면 캡처 부하는 피한다.
+test.use({ trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true } });
+
 // 프로필마다 독립된 테스트 예산과 fixture 정리를 보장한다.
 for (const profile of PROFILES) {
   test.describe(profile.id, () => {
@@ -127,9 +130,13 @@ for (const profile of PROFILES) {
       expect(geometry.undersizedButtons, `${profile.id} touch targets`).toEqual([]);
       expect(pageErrors, `${profile.id} page errors`).toEqual([]);
 
-      await page.screenshot({
-        path: `test-results/marketplace-authoring-${profile.id}.png`,
-        fullPage: true,
+      await test.step("전체 페이지 화면 증거 저장", async () => {
+        await page.screenshot({
+          path: `test-results/marketplace-authoring-${profile.id}.png`,
+          fullPage: true,
+          // DPR 2 동작 검증은 유지하고 Linux 전체 페이지 캡처의 출력 픽셀만 ¼로 줄인다.
+          scale: "css",
+        });
       });
     });
   });
