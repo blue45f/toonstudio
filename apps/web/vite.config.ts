@@ -10,6 +10,7 @@ import { createWebReactCompilerPlugin } from "./vite-react-compiler-filter";
 import react from "@vitejs/plugin-react";
 import { build as viteBuild, createLogger, defineConfig, type Logger, type Plugin } from "vite";
 
+import { compactBootstrapAssets } from "./config/compact-bootstrap-assets";
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
 import { STUDIO_I18N_NAMESPACES } from "./src/shared/lib/i18n-asset-manifest";
 import {
@@ -449,6 +450,8 @@ function studioServiceWorkerPlugin(): Plugin {
       const manifestPath = path.join(outDir, ".vite", "manifest.json");
       // Only the app build emits a manifest; any nested/library build skips.
       if (!existsSync(manifestPath)) return;
+
+      await compactBootstrapAssets(outDir);
 
       const manifest = JSON.parse(
         readFileSync(manifestPath, "utf8"),

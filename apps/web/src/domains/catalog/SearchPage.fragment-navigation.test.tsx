@@ -6,10 +6,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SearchPage } from "./SearchPage";
 
 vi.mock("@/shared/components/search-explorer", async () => {
-  const { useState } = await import("react");
+  const { useSearchQueryDraft } = await import("@/shared/components/use-search-query-draft");
   return {
     SearchExplorer: function Explorer({ initialQuery, initialFree }: { initialQuery: string; initialFree: boolean }) {
-      const [query, setQuery] = useState(initialQuery);
+      const { q: query, setQ: setQuery } = useSearchQueryDraft(initialQuery);
       return <><input aria-label="explorer query" value={query} onChange={(event) => setQuery(event.target.value)} /><output aria-label="free filter">{String(initialFree)}</output></>;
     },
   };

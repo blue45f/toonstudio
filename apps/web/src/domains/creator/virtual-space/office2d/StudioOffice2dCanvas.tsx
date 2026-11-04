@@ -26,6 +26,7 @@ import {
   resolveOffice2dWorkstation,
 } from "./office2d-backdrop-art";
 import { office2dBaseZoom } from "./office2d-camera";
+import { bindOffice2dDeskShortcut } from "./bind-office2d-desk-shortcut";
 import { createOffice2dDecorAssetLoader, type Office2dDecorAssetLoader } from "./office2d-decor-assets";
 import { Office2dResolutionGovernor } from "./office2d-quality";
 import { office2dSceneFor, office2dSceneSpriteKeys } from "./office2d-scene";
@@ -290,16 +291,13 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
         playOffice2dSpatialCue("emote", { muted: soundMutedRef.current, roomId: roomIdRef.current });
         return;
       }
-      if (event.code === "KeyH" && !event.repeat) {
-        myDeskActionRef.current();
-        return;
-      }
       if (!WORLD_KEY_CODES.has(event.code)) return;
       if (PREVENT_DEFAULT_CODES.has(event.code)) event.preventDefault();
       if (!event.repeat) runtime.keyDown(event.code);
     };
     const handleKeyUp = (event: KeyboardEvent) => runtime.keyUp(event.code);
     const handleBlur = () => runtime.releaseKeys();
+    const unbindDeskShortcut = bindOffice2dDeskShortcut(canvas, () => (latest.current.onDeskShortcut ?? myDeskActionRef.current)());
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
@@ -454,6 +452,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       observer?.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", handleKeyDown);
+      unbindDeskShortcut();
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
       unbindCameraGestures();

@@ -13,10 +13,10 @@ vi.mock("@/shared/lib/i18n", () => ({
   registerI18nEnglishSourceEntries: (_entries: Readonly<Record<string, string>>) => undefined,
 }));
 vi.mock("@/shared/components/search-explorer", async () => {
-  const { useState } = await import("react");
+  const { useSearchQueryDraft } = await import("@/shared/components/use-search-query-draft");
   return {
     SearchExplorer: function StatefulExplorer({ initialQuery }: { initialQuery: string }) {
-      const [query, setQuery] = useState(initialQuery);
+      const { q: query, setQ: setQuery } = useSearchQueryDraft(initialQuery);
       return <input aria-label="Explorer query" value={query} onChange={(event) => setQuery(event.target.value)} />;
     },
   };

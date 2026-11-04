@@ -1,4 +1,16 @@
 @import "tailwindcss";
+@source not "../../../../../docs";
+@source not "../../../../../openwiki";
+@source not "../../../../../scripts";
+@source not "../../../../../tools";
+@source not "../../../../../tests";
+@source not "../../../../../apps/api";
+@source not "../../../../../apps/admin-web";
+@source not "../../../../../apps/character-lab";
+@source not "../../../../../apps/brush-lab";
+@source not "../../../../../.claude-flow";
+@source not "../../../../../.remember";
+@source not "../../../../../.swarm";
 
 /* 스튜디오 전용 규칙은 이 파일에 두지 않는다 — `studio-route.css`가 정본이고 스튜디오 라우트
    청크에서만 로드된다(공개 페이지 첫 페인트의 렌더 차단 CSS에서 제외). 근거·예산:

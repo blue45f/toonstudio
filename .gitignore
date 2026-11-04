@@ -140,6 +140,10 @@ crates/**/target/
 # Local AI assistant sessions & configs
 /.continue/
 /.omo/
+/.claude-flow/
+/**/.claude-flow/
+/.remember/
+/.swarm/
 
 
 # tsc --generateTrace output (pnpm run typecheck:trace); regenerated, never committed
