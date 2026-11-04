@@ -6,6 +6,22 @@
 
 권위 문서: 루트 `AGENTS.md`
 
+## 다른 LLM의 공통 진입 경로
+
+도구 종류와 관계없이 다음 순서로 문맥을 읽는다. 어댑터에는 정책을 복제하지 않는다.
+
+1. 루트 [`AGENTS.md`](../../AGENTS.md)와 수정 대상에 가장 가까운 `AGENTS.md`: 언어·Git·검증·보안·배포 계약.
+2. [`ARCHITECTURE.md`](../../ARCHITECTURE.md), [`문서 안내`](../README.md), 대상 앱·패키지 README: 현재 구현과 목표·역사 기록 구분. 사실 판정은 소스·테스트를 우선한다.
+3. 인프라 작업은 [`인프라 지도`](infrastructure-map.md) → [`배포 안내`](../../DEPLOY.md) → [`배포 단위 인덱스`](../../deploy/README.md): 공급자·연결·승인·롤백 확인.
+
+실행 위치는 저장소 루트다. Node·pnpm 버전은 `package.json`의 `engines`·`packageManager`를 확인하고 `pnpm install --frozen-lockfile`로 준비한다. 시작 상태는 `git status --short --branch`, `git worktree list`, `pnpm harness:doctor`로 확인한다. 검증 명령과 변경별 최소 기준은 아래 명령 절과 루트 AGENTS 5절을 따른다. 문서 링크·권위 검사는 `pnpm validate:documentation`이다.
+
+인프라 지도에는 2026-10-23 onpod 서울 Core API·PostgreSQL 컷오버와 2026-10-29 조회가 기록돼 있다. 프런트·엣지·공개 R2 에셋·실시간·분석은 Cloudflare다. onpod는 RunPod가 아니며, 저장소 설정이나 과거 조회를 현재 원격 가동의 증거로 확대하지 않는다. GPU 추론은 [`별도 서비스 README`](../../services/creator-inference/README.md)의 CPU 시험·GPU 검증·운영 배포 구분을 따른다.
+
+환경변수의 이름·기본 계약은 루트 `.env.example`·`.env.production.example`과 해당 기능·배포 단위의 `*.env.example`을 확인한다. 실제 비밀값 위치·동기화·변경 영향은 인프라 지도 5·6절이 정본이다. 예제 이름은 활성 기능이나 키 유효성을 증명하지 않으며, 실제 값을 문서·로그·결과에 복사하지 않는다.
+
+필수 계약은 실패를 숨기지 않는 검증, 앱 간 import 경계, 인증·권한·시크릿 보호, 승인 범위와 정확한 릴리스 SHA·롤백이다. CI·보안 검사·보호 설정과 상시 승인 범위는 문서 정리로 약화하거나 확대하지 않는다. 실행하지 못한 검사와 미확인 운영 상태는 결과에 구분한다.
+
 ## 목적
 
 ToonStudio은 사람과 여러 코딩 에이전트가 많은 worktree에서 동시에 작업한다. 이 하네스는 도구별

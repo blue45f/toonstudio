@@ -6,6 +6,8 @@ import { dirname, join, matchesGlob } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
+import { fixtureGitEnvironment } from "./ci-checkout-test-helpers.mjs";
+
 const repoRoot = new URL("../", import.meta.url);
 const workflow = (name) => parse(readFileSync(new URL(`.github/workflows/${name}`, repoRoot), "utf8"));
 const manifests = [
@@ -16,25 +18,6 @@ const manifests = [
 ];
 
 describe("Scene3D output CI inputs", () => {
-  it("실제 3D browser 검사도 검증된 SDK 안전 경계로 체크아웃 전 공간을 확보한다", () => {
-    const scene = workflow("studio-scene3d-next.yml");
-    const cleanup = workflow("ci.yml").jobs.build.steps[0];
-    for (const [name, minutes] of [["scene3d-specialists-browser", 20], ["scene3d-tiled-browser", 25]]) {
-      const job = scene.jobs[name];
-      expect(job["runs-on"]).toBe("ubuntu-24.04");
-      expect(job["timeout-minutes"]).toBe(minutes);
-      expect(job.steps[0]).toEqual(cleanup);
-      expect(job.steps[1].uses).toBe("actions/checkout@v7");
-      expect(job.steps.some((step) => step.run === "pnpm run build:bundle")).toBe(true);
-      expect(job.steps.some((step) => step.run === "pnpm exec playwright install --with-deps chromium")).toBe(true);
-    }
-    const specialist = scene.jobs["scene3d-specialists-browser"].steps;
-    for (const command of ["pnpm run verify:studio-3d-specialists:browser", "pnpm run verify:studio-3d-inplace:browser", "node scripts/verify-studio-scene3d-recipe-reuse.mjs"]) {
-      expect(specialist.some((step) => step.run === command), command).toBe(true);
-    }
-    expect(scene.jobs["scene3d-tiled-browser"].steps.some((step) => step.run === "pnpm run verify:studio-3d-tiled:browser")).toBe(true);
-  });
-
   it("Scene3D도 Core와 같은 전체 웹·API 타입 검사 명령을 사용한다", () => {
     const scene = workflow("studio-scene3d-next.yml").jobs["scene3d-contracts"];
     const core = workflow("ci.yml").jobs.typecheck;
@@ -73,6 +56,25 @@ describe("Scene3D output CI inputs", () => {
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }
+  });
+
+  it("실제 3D browser 검사도 검증된 SDK 안전 경계로 체크아웃 전 공간을 확보한다", () => {
+    const scene = workflow("studio-scene3d-next.yml");
+    const cleanup = workflow("ci.yml").jobs.build.steps[0];
+    for (const [name, minutes] of [["scene3d-specialists-browser", 20], ["scene3d-tiled-browser", 25]]) {
+      const job = scene.jobs[name];
+      expect(job["runs-on"]).toBe("ubuntu-24.04");
+      expect(job["timeout-minutes"]).toBe(minutes);
+      expect(job.steps[0]).toEqual(cleanup);
+      expect(job.steps[1].uses).toBe("actions/checkout@v7");
+      expect(job.steps.some((step) => step.run === "pnpm run build:bundle")).toBe(true);
+      expect(job.steps.some((step) => step.run === "pnpm exec playwright install --with-deps chromium")).toBe(true);
+    }
+    const specialist = scene.jobs["scene3d-specialists-browser"].steps;
+    for (const command of ["pnpm run verify:studio-3d-specialists:browser", "pnpm run verify:studio-3d-inplace:browser", "node scripts/verify-studio-scene3d-recipe-reuse.mjs"]) {
+      expect(specialist.some((step) => step.run === command), command).toBe(true);
+    }
+    expect(scene.jobs["scene3d-tiled-browser"].steps.some((step) => step.run === "pnpm run verify:studio-3d-tiled:browser")).toBe(true);
   });
 
   it("runs normal/Worker/capture regressions when their source changes", () => {
@@ -148,4 +150,53 @@ it("keeps the real source/result comparison proof in the Scene3D CI dependency b
   expect(script).toContain('verifyScene3dReview(page, scratch, "lod-comparison"');
   expect(script).toContain('verifyScene3dReview(page, scratch, "texture-comparison"');
   expect(scene.jobs["scene3d-specialists-browser"].steps.some((step) => step.run === "pnpm run verify:studio-3d-specialists:browser")).toBe(true);
+});
+
+it("specialists 실제 checkout은 Worker·해시 카탈로그·폰트를 보존하고 대형 공개 미디어를 제외한다", () => {
+  const lane = workflow("studio-scene3d-next.yml").jobs["scene3d-specialists-browser"];
+  const checkout = lane.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
+  expect(checkout.with.filter).toBe("blob:none");
+  expect(checkout.with["sparse-checkout-cone-mode"]).toBe(false);
+  const release = JSON.parse(readFileSync(new URL("apps/web/src/domains/creator/bg3d/studio-bg3d-bundle-release.generated.json", repoRoot), "utf8"));
+  const kept = [
+    "package.json", "scripts/verify-studio-scene3d-inplace.mjs",
+    "apps/web/tools/browser-harnesses/studio-scene3d-inplace.tsx",
+    "apps/web/src/domains/creator/scene3d/specialists/specialist.worker.ts",
+    `apps/web/public${release.catalog.url}`,
+    "apps/web/public/fonts/pretendard/v1.3.9/PretendardVariable.woff2",
+    "apps/web/public/vendor/codec.wasm",
+  ];
+  const omitted = [
+    "apps/web/public/assets/3d/environments/unused.glb",
+    "apps/web/public/assets/3d/avatars/unused.vrm",
+    "apps/web/public/brand/unused.mp4",
+    "apps/web/public/assets/3d/environments/unused.hdr",
+    "apps/web/public/assets/studio/backgrounds/unused.png",
+    "apps/web/public/assets/virtual-studio/backgrounds/unused.webp",
+  ];
+  const scratch = mkdtempSync(join(tmpdir(), "scene3d-specialist-checkout-"));
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: scratch, encoding: "utf8", env: fixtureGitEnvironment(scratch) });
+    expect(result.status, result.stderr).toBe(0);
+    return result.stdout.trim();
+  };
+  try {
+    git("init", "--quiet", "--template=");
+    for (const file of [...kept, ...omitted]) {
+      const path = join(scratch, file);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, "fixture\n");
+    }
+    git("add", ".");
+    const tree = git("write-tree");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    mkdirSync(join(scratch, ".git/info"), { recursive: true });
+    writeFileSync(join(scratch, ".git/info/sparse-checkout"), checkout.with["sparse-checkout"]);
+    git("read-tree", "-mu", tree);
+    for (const file of kept) expect(existsSync(join(scratch, file)), file).toBe(true);
+    for (const file of omitted) expect(existsSync(join(scratch, file)), file).toBe(false);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
 });
