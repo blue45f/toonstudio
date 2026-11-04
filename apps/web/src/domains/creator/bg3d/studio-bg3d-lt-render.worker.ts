@@ -49,6 +49,13 @@ scope.addEventListener("message", (event: MessageEvent<unknown>) => {
       width: request.input.width,
       height: request.input.height,
       rgba: new Uint8Array(request.input.rgbaBuffer),
+      ...(request.input.flatColorBuffer ? { flatColorRgba: new Uint8Array(request.input.flatColorBuffer) } : {}),
+      ...(request.input.shadowBuffer ? { shadowRgba: new Uint8Array(request.input.shadowBuffer) } : {}),
+      ...(request.input.linearDepthBuffer ? {
+        linearDepth: new Float32Array(request.input.linearDepthBuffer),
+        linearDepthNearMeters: request.input.linearDepthNearMeters,
+        linearDepthFarMeters: request.input.linearDepthFarMeters,
+      } : {}),
       ...(request.input.normalBuffer ? { normalRgba: new Uint8Array(request.input.normalBuffer) } : {}),
       ...(request.input.depthBuffer
         ? { depth: new Float32Array(request.input.depthBuffer) }
@@ -60,11 +67,15 @@ scope.addEventListener("message", (event: MessageEvent<unknown>) => {
       requestId: request.requestId,
       width: result.width,
       height: result.height,
+      ...(result.sixPassLtVersion ? { sixPassLtVersion: result.sixPassLtVersion } : {}),
       layers: result.layers.map((layer) => ({
         role: layer.role,
         width: layer.width,
         height: layer.height,
         dataBuffer: layer.data.buffer as ArrayBuffer,
+        ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}),
+        ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
+        ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
       })),
     };
     post(response);

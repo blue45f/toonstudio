@@ -72,6 +72,8 @@ function separated(
     "main-line": PNG.main,
     "texture-line": PNG.texture,
     tone: PNG.tone,
+    shadow: PNG.tone,
+    depth: PNG.tone,
   };
   return {
     kind: "separated",
@@ -135,6 +137,8 @@ function bundleImage(
     "main-line": PNG.main,
     "texture-line": PNG.texture,
     tone: PNG.tone,
+    shadow: PNG.tone,
+    depth: PNG.tone,
   };
   return image({
     id,

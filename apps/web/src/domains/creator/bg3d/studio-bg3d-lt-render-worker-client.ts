@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassLtSettings } from "../contracts/studio-bg3d-six-pass-settings";
 import {
   STUDIO_BG3D_LT_RENDER_MAX_PIXELS,
   type StudioBg3dLtRasterInput,
@@ -80,8 +81,10 @@ function snapshotPayload(
   settingsValue: StudioBg3dLtRenderSettings,
 ): SnapshottedPayload | null {
   try {
-    if (!exactEnumerableKeys(inputValue, ["width", "height", "rgba"], ["depth", "normalRgba"])) return null;
-    if (!exactEnumerableKeys(settingsValue, ["line", "tone"])) return null;
+    if (!exactEnumerableKeys(inputValue, ["width", "height", "rgba"], ["depth", "normalRgba", "flatColorRgba", "shadowRgba", "linearDepth", "linearDepthNearMeters", "linearDepthFarMeters"])) return null;
+    if (!exactEnumerableKeys(settingsValue, ["line", "tone"], ["sixPassLt"])) return null;
+    const sixPassLt = settingsValue.sixPassLt === undefined ? undefined : parseStudioBg3dSixPassLtSettings(settingsValue.sixPassLt);
+    if (sixPassLt === null) return null;
     const lineValue = settingsValue.line;
     const toneValue = settingsValue.tone;
     if (!exactEnumerableKeys(lineValue, [
@@ -134,7 +137,24 @@ function snapshotPayload(
         || !(sourceNormal.buffer instanceof ArrayBuffer) || sourceNormal.length !== pixels * 4) return null;
       normalBuffer = new Uint8Array(sourceNormal).buffer;
     }
+    let sixPassInput: Partial<StudioBg3dLtRenderWorkerRequest["input"]> = {};
+    if (sixPassLt) {
+      const flat = inputValue.flatColorRgba;
+      const shadow = inputValue.shadowRgba;
+      const linear = inputValue.linearDepth;
+      if (!(flat instanceof Uint8Array || flat instanceof Uint8ClampedArray) || !(flat.buffer instanceof ArrayBuffer) || flat.length !== pixels * 4
+        || !(shadow instanceof Uint8Array || shadow instanceof Uint8ClampedArray) || !(shadow.buffer instanceof ArrayBuffer) || shadow.length !== pixels * 4
+        || !(linear instanceof Float32Array) || !(linear.buffer instanceof ArrayBuffer) || linear.length !== pixels) return null;
+      sixPassInput = {
+        flatColorBuffer: new Uint8Array(flat).buffer,
+        shadowBuffer: new Uint8Array(shadow).buffer,
+        linearDepthBuffer: new Float32Array(linear).buffer,
+        linearDepthNearMeters: inputValue.linearDepthNearMeters,
+        linearDepthFarMeters: inputValue.linearDepthFarMeters,
+      };
+    } else if ([inputValue.flatColorRgba, inputValue.shadowRgba, inputValue.linearDepth, inputValue.linearDepthNearMeters, inputValue.linearDepthFarMeters].some((value) => value !== undefined)) return null;
     const settings: StudioBg3dLtRenderSettings = Object.freeze({
+      ...(sixPassLt ? { sixPassLt } : {}),
       line: Object.freeze({
         enabled: lineValue.enabled,
         layerType: lineValue.layerType,
@@ -177,6 +197,7 @@ function snapshotPayload(
         rgbaBuffer: rgba.buffer as ArrayBuffer,
         ...(depthBuffer ? { depthBuffer } : {}),
         ...(normalBuffer ? { normalBuffer } : {}),
+        ...sixPassInput,
       }),
       settings,
     });
@@ -227,7 +248,10 @@ function resultFromResponse(
   request: StudioBg3dLtRenderWorkerRequest,
 ): StudioBg3dLtRenderResult | null {
   if (response.width !== request.input.width || response.height !== request.input.height) return null;
+  const sixPass = request.settings.sixPassLt !== undefined;
+  if (sixPass !== (response.sixPassLtVersion === 1)) return null;
   const allowedRoles = new Set<StudioBg3dLtRasterLayer["role"]>();
+  if (sixPass) for (const role of ["color", "tone", "shadow", "depth", "texture-line", "main-line"] as const) allowedRoles.add(role);
   const lineEnabled = request.settings.line.enabled && request.settings.line.strength > 0;
   const toneEnabled = request.settings.tone.mode !== "none" && request.settings.tone.opacity > 0;
   if (toneEnabled) {
@@ -251,11 +275,15 @@ function resultFromResponse(
       width: layer.width,
       height: layer.height,
       data,
+      ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}),
+      ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
+      ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
     }));
   }
   return Object.freeze({
     width: response.width,
     height: response.height,
+    ...(sixPass ? { sixPassLtVersion: 1 as const } : {}),
     layers: Object.freeze(layers),
   });
 }

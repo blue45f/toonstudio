@@ -128,7 +128,7 @@ export const STUDIO_COMPETITOR_WORKFLOW_QUICK_MATCHES: readonly StudioCompetitor
       summary: "3D 포즈와 배경 작업을 시작할 배치를 추천합니다.",
       keyCapabilities: [
         "Push/Pull 관통 개구부 · Offset 창틀 · Follow-Me 몰딩",
-        "2점 투시 수직 고정 · 실내 그림자 보존 단면 · 6패스 LT 추출",
+        "2점 투시 적용 · 실내 단면 계산 · 6패스 LT 출력 (WebGL·일반 페이지)",
         "ACON3D ABLE · Fab/Quixel Megascans/Poliigon/Architextures/BlenderKit · Nomad/Shapr3D/World Labs 3DGS",
       ],
       recommendedRoles: ["background", "background-assistant", "three-d"],

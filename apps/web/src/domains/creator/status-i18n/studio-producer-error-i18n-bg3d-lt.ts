@@ -84,6 +84,8 @@ registerI18nLocaleEntries("ko", {
   "studio.producerError.bg3dLt.template-aspect-mismatch.aspectMismatch": "이미지 템플릿과 3D LT 렌더의 화면 비율이 달라요.",
   "studio.producerError.bg3dLt.layerName.color": "3D LT · 컬러 렌더",
   "studio.producerError.bg3dLt.layerName.tone": "3D LT · 톤",
+  "studio.producerError.bg3dLt.layerName.shadow": "3D LT · 태양 그림자",
+  "studio.producerError.bg3dLt.layerName.depth": "3D LT · 공기원근 안개",
   "studio.producerError.bg3dLt.layerName.texture-line": "3D LT · 질감선",
   "studio.producerError.bg3dLt.layerName.main-line": "3D LT · 주선",
 });
@@ -137,6 +139,8 @@ registerI18nLocaleEntries("en", {
   "studio.producerError.bg3dLt.template-aspect-mismatch.aspectMismatch": "The image template and the 3D LT render have different aspect ratios.",
   "studio.producerError.bg3dLt.layerName.color": "3D LT · Color render",
   "studio.producerError.bg3dLt.layerName.tone": "3D LT · Tone",
+  "studio.producerError.bg3dLt.layerName.shadow": "3D LT · Sun shadow",
+  "studio.producerError.bg3dLt.layerName.depth": "3D LT · Depth fog",
   "studio.producerError.bg3dLt.layerName.texture-line": "3D LT · Texture line",
   "studio.producerError.bg3dLt.layerName.main-line": "3D LT · Main line",
 });
@@ -305,6 +309,8 @@ const BG3D_LT_ERROR_KO: Readonly<Record<StudioBg3dLtLayerPlanFailure["code"], st
 const BG3D_LT_LAYER_NAME_KEYS: Readonly<Record<StudioBg3dLtLayerRole, string>> = {
   color: "studio.producerError.bg3dLt.layerName.color",
   tone: "studio.producerError.bg3dLt.layerName.tone",
+  shadow: "studio.producerError.bg3dLt.layerName.shadow",
+  depth: "studio.producerError.bg3dLt.layerName.depth",
   "texture-line": "studio.producerError.bg3dLt.layerName.texture-line",
   "main-line": "studio.producerError.bg3dLt.layerName.main-line",
 };
@@ -313,6 +319,8 @@ const BG3D_LT_LAYER_NAME_KEYS: Readonly<Record<StudioBg3dLtLayerRole, string>> =
 const BG3D_LT_LAYER_NAME_KO: Readonly<Record<StudioBg3dLtLayerRole, string>> = {
   color: "3D LT · 컬러 렌더",
   tone: "3D LT · 톤",
+  shadow: "3D LT · 태양 그림자",
+  depth: "3D LT · 공기원근 안개",
   "texture-line": "3D LT · 질감선",
   "main-line": "3D LT · 주선",
 };

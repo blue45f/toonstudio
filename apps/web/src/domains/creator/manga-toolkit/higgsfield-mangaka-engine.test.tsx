@@ -230,11 +230,14 @@ describe("Higgsfield Mangaka Engine (REA Reverse-Engineered)", () => {
     expect(screen.getByText(/They do not sync the current work/)).toBeTruthy();
     expect(screen.getByText(/It is not applied to the current document/)).toBeTruthy();
     expect(screen.getByTestId("mangaka-genre-preset-kr-romance-fantasy").textContent).toContain("690px");
+    expect(screen.getByTestId("mangaka-planning-scope").textContent).toContain("external Higgsfield execution are not connected");
   });
 
   it("renders StudioHiggsfieldMangakaPanel and integrates into StudioBlankComicProDrawingSubPanel", () => {
     const panel = render(<StudioHiggsfieldMangakaPanel />);
     expect(screen.getByTestId("higgsfield-mangaka-section")).toBeTruthy();
+    expect(screen.getByTestId("mangaka-planning-scope").textContent).toContain("현재 원고의 레이어 생성·저장");
+    expect(screen.queryByText(/실사 사진 → 만화 캐릭터 변환/)).toBeNull();
     expect(screen.getByTestId("mangaka-qa-score-badge").textContent).toContain("WT-* QA");
     expect(screen.getByTestId("mangaka-one-click-preset-bar")).toBeTruthy();
     expect(screen.getByTestId("mangaka-dual-pane-script-lore")).toBeTruthy();

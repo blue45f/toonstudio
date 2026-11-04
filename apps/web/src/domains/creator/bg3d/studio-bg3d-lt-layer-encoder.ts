@@ -37,7 +37,9 @@ export function encodeStudioBg3dLtLayers(
     imageData.data.set(layer.data);
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-    compositeContext.drawImage(canvas, 0, 0);
+    compositeContext.globalAlpha = layer.opacity ?? 1;
+    compositeContext.globalCompositeOperation = layer.blendMode === "normal" || !layer.blendMode ? "source-over" : layer.blendMode;
+    if (layer.visible !== false) compositeContext.drawImage(canvas, 0, 0);
     const pngDataUrl = canvas.toDataURL("image/png").split("#", 1)[0];
     if (!pngDataUrl.startsWith("data:image/png;base64,")) {
       throw new Error("LT layer PNG encoding failed.");
@@ -47,6 +49,9 @@ export function encodeStudioBg3dLtLayers(
       pngDataUrl,
       width,
       height,
+      ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}),
+      ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
+      ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
     });
   });
   const compositePngDataUrl = compositeCanvas.toDataURL("image/png").split("#", 1)[0];

@@ -20,7 +20,8 @@ import {
   resolveStudioBg3dCameraUpVector,
   readStudioBg3dOrthographicHeightField, StudioBg3dCameraHeightValidationError,
 } from "./studio-bg3d-camera-orientation";
-import { normalizeStudioBg3dCaptureAspectRatio } from "./studio-bg3d-capture-frame-geometry";
+import { normalizeStudioBg3dOutput } from "../contracts/studio-bg3d-output-settings";
+import { parseStudioBg3dSixPassLtSettings, studioBg3dDocumentRequiresSixPassReader } from "../contracts/studio-bg3d-six-pass-settings";
 import {
   containsStudioBg3dControlCharacter as containsControlCharacter,
   normalizeStudioBg3dDocumentText as normalizedText,
@@ -55,6 +56,7 @@ import {
   STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES,
   STUDIO_BG3D_SCENE_DOCUMENT_MAX_SHOTS,
   STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION,
   STUDIO_BG3D_SCHEMA_V2_SCENE_DOCUMENT_VERSION,
   STUDIO_BG3D_SHOT_ID_MAX_LENGTH,
   STUDIO_BG3D_SHOT_MAX_NODE_VISIBILITY_OVERRIDES,
@@ -126,6 +128,7 @@ export {
   STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES,
   STUDIO_BG3D_SCENE_DOCUMENT_MAX_SHOTS,
   STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION,
   STUDIO_BG3D_SHOT_ID_MAX_LENGTH,
   STUDIO_BG3D_SHOT_MAX_NODE_VISIBILITY_OVERRIDES,
   STUDIO_BG3D_SHOT_NAME_MAX_LENGTH,
@@ -160,6 +163,7 @@ export {
   type StudioBg3dMorphLayer, type StudioBg3dNodeOrganization, type StudioBg3dComponentRef, type StudioBg3dSceneMeta,
   type StudioBg3dMorphWeightOverride,
   type StudioBg3dOutputSettings,
+  type StudioBg3dSixPassLtSettings,
   type StudioBg3dParsedGlbMetrics,
   type StudioBg3dPoseLayer,
   type StudioBg3dPostParseBudgetRequest,
@@ -260,7 +264,7 @@ function hasCompleteRootShapeForVersion(
 function hasCompleteCurrentRootShape(
   value: unknown,
 ): value is Record<string, unknown> & { readonly nodes: readonly unknown[] } {
-  return hasCompleteRootShapeForVersion(value, STUDIO_BG3D_SCENE_DOCUMENT_VERSION);
+  return hasCompleteRootShapeForVersion(value, STUDIO_BG3D_SCENE_DOCUMENT_VERSION) || hasCompleteRootShapeForVersion(value, STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION);
 }
 
 function isExplicitUnversionedLegacyRoot(
@@ -644,30 +648,7 @@ export const normalizeStudioBg3dLineOutputSettings = (value: unknown): StudioBg3
 export const normalizeStudioBg3dShotLineOutputOverride = (value: unknown): StudioBg3dShotLineOutputOverride =>
   normalizeLineFields(value, true) as StudioBg3dShotLineOutputOverride;
 
-function normalizeOutput(value: unknown): StudioBg3dOutputSettings {
-  const candidate = isRecord(value) ? value : {};
-  const tone = isRecord(candidate.tone) ? candidate.tone : {};
-  // 렌즈 시프트와 같은 선택 필드 규약: 값이 있을 때만 기록한다. 없는 문서는 자동(뷰포트 추종)으로
-  // 남아 예전 삽입 결과와 바이트 단위로 동일하고, strict 왕복도 그대로 통과한다.
-  const exportAspectRatio = hasOwn(candidate, "exportAspectRatio")
-    ? normalizeStudioBg3dCaptureAspectRatio(candidate.exportAspectRatio)
-    : null;
-  return {
-    transparentBackground: normalizedBoolean(candidate.transparentBackground, false),
-    exportHeight: boundedInteger(candidate.exportHeight, 640, 256, 4096),
-    ...(exportAspectRatio === null ? {} : { exportAspectRatio }),
-    line: normalizeStudioBg3dLineOutputSettings(candidate.line),
-    tone: {
-      mode: normalizedEnum(tone.mode, TONE_MODE_SET, "flat"),
-      type: normalizedEnum(tone.type, TONE_OUTPUT_TYPE_SET, "color"),
-      pattern: normalizedEnum(tone.pattern, TONE_PATTERN_SET, "dot"),
-      levels: boundedInteger(tone.levels, 4, 2, 8),
-      opacity: boundedNumber(tone.opacity, 1, 0, 1),
-      frequency: boundedNumber(tone.frequency, 60, 1, 200),
-      angleDegrees: boundedNumber(tone.angleDegrees, 45, -180, 180),
-    },
-  };
-}
+const normalizeOutput = (value: unknown): StudioBg3dOutputSettings => normalizeStudioBg3dOutput(value, normalizeStudioBg3dLineOutputSettings);
 
 function normalizeShotCameraOverride(value: unknown): StudioBg3dShotCameraOverride {
   const candidate = isRecord(value) ? value : {};
@@ -862,6 +843,7 @@ function normalizeShotOutputOverride(value: unknown): StudioBg3dShotOutputOverri
   if (hasOwn(candidate, "tone")) {
     result.tone = normalizeShotToneOutputOverride(candidate.tone);
   }
+  if (hasOwn(candidate, "sixPassLt")) { const settings = parseStudioBg3dSixPassLtSettings(candidate.sixPassLt); if (!settings) throw new TypeError("6패스 LT 컷 설정이 손상되었습니다."); result.sixPassLt = settings; }
   return result as StudioBg3dShotOutputOverride;
 }
 
@@ -1448,7 +1430,7 @@ function normalizeDecodedCurrentDocument(
     if (
       !isRecord(value) ||
       value.kind !== STUDIO_BG3D_SCENE_DOCUMENT_KIND ||
-      value.version !== STUDIO_BG3D_SCENE_DOCUMENT_VERSION ||
+      (value.version !== STUDIO_BG3D_SCENE_DOCUMENT_VERSION && value.version !== STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION) ||
       (rootMode === "strict" && !hasCompleteCurrentRootShape(value))
     ) {
       return null;
@@ -1469,7 +1451,7 @@ function normalizeDecodedCurrentDocument(
     if (!optionalFields) return null;
     const normalized: StudioBg3dSceneDocument = {
       kind: STUDIO_BG3D_SCENE_DOCUMENT_KIND,
-      version: STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
+      version: studioBg3dDocumentRequiresSixPassReader(value) ? STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION : STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
       camera: normalizeCamera(value.camera),
       render: normalizeRender(value.render),
       background: normalizeBackground(value.background),
@@ -1489,7 +1471,7 @@ function normalizeDecodedCurrentDocument(
     if (rootMode === "strict" && !jsonStructuresEqual(withoutRedundantSuppressionFields(value), normalized)) return null;
     return deepFreeze(normalized);
   } catch (cause) {
-    if (cause instanceof StudioBg3dCameraHeightValidationError && rootMode === "strict") return null;
+    if ((cause instanceof StudioBg3dCameraHeightValidationError || cause instanceof TypeError) && rootMode === "strict") return null;
     if (cause instanceof StudioBg3dSceneDocumentBudgetError && budgetFailureMode === "null") {
       return null;
     }

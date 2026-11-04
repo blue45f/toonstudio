@@ -6,7 +6,7 @@
  * 이 파일을 계획 본체와 분리한 이유: 표시 지점(export-run)이 계획 모듈 전체를
  * 런타임 import하지 않고 이 경량 클래스만으로 코드를 운반하기 위해서다.
  */
-export type StudioBg3dShotBatchPlanErrorSubcode = "passFormat" | "emptyPasses" | "unsupportedPass" | "duplicatePass" | "shotsOutOfBounds" | "duplicateShotId" | "revisionFormat" | "revisionNotCanonical" | "revisionMismatch" | "scopeInvalid" | "psdOptions" | "contactSheetOptions" | "fixedHeight" | "planInvalid" | "budgetExceeded" | "applyFailed" | "resolutionMismatch" | "depthMismatch" | "backgroundMismatch" | "aspectMismatch" | "duplicateCaptureShot" | "captureMismatch" | "captureMissing" | "selectionFormat" | "emptySelection" | "duplicateSelection" | "unknownSelection" | "fileBudget" | "planDigest" | "recoveryScopeDigest";
+export type StudioBg3dShotBatchPlanErrorSubcode = "sixPassUnsupported" | "passFormat" | "emptyPasses" | "unsupportedPass" | "duplicatePass" | "shotsOutOfBounds" | "duplicateShotId" | "revisionFormat" | "revisionNotCanonical" | "revisionMismatch" | "scopeInvalid" | "psdOptions" | "contactSheetOptions" | "fixedHeight" | "planInvalid" | "budgetExceeded" | "applyFailed" | "resolutionMismatch" | "depthMismatch" | "backgroundMismatch" | "aspectMismatch" | "duplicateCaptureShot" | "captureMismatch" | "captureMissing" | "selectionFormat" | "emptySelection" | "duplicateSelection" | "unknownSelection" | "fileBudget" | "planDigest" | "recoveryScopeDigest";
 
 export class StudioBg3dShotBatchPlanError extends Error {
   readonly subcode: StudioBg3dShotBatchPlanErrorSubcode;

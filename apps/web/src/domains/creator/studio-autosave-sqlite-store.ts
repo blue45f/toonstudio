@@ -1,5 +1,5 @@
 import {
-  readStudioAutosave,
+  readStudioAutosave, assertStudioAutosaveReaderSupported, StudioAutosaveUnsupportedVersionError,
   serializeStudioAutosave,
   studioAutosaveHasContent,
   type StudioAutosavePayload,
@@ -85,6 +85,7 @@ function encodeEnvelope(
 }
 
 function decodeEnvelope(raw: string, key: string): StudioAutosaveSqliteReadResult {
+  assertStudioAutosaveReaderSupported(raw);
   let value: unknown;
   try {
     value = JSON.parse(raw) as unknown;
@@ -154,6 +155,9 @@ async function archiveCurrentEnvelope(
   isCurrent: () => boolean,
 ): Promise<void> {
   const raw = await database.kvGet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key);
+  if (!isCurrent()) return;
+  assertStudioAutosaveReaderSupported(raw);
+  assertStudioAutosaveReaderSupported(await database.kvGet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, studioAutosaveSqliteLastKnownGoodKey(key)));
   if (raw === null || !isCurrent()) return;
 
   try {
@@ -165,7 +169,8 @@ async function archiveCurrentEnvelope(
       studioAutosaveSqliteLastKnownGoodKey(key),
       raw,
     );
-  } catch {
+  } catch (cause) {
+    if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
     // The newest primary write is more important than rotating an optional recovery generation.
     // The outer write still reports its own failure through the existing save reliability path.
   }
@@ -177,6 +182,7 @@ export function createStudioAutosaveSqliteStore(
   type Mutation = Readonly<{ completion: Promise<void> }>;
   type MutationGroup = { latest: Mutation; pending: number };
   const mutations = new Map<string, MutationGroup>();
+  const unsupportedKeys = new Map<string, StudioAutosaveUnsupportedVersionError>();
 
   function mutate(key: string, execute: (isCurrent: () => boolean) => Promise<void>): Promise<void> {
     let resolveCompletion!: () => void;
@@ -225,15 +231,16 @@ export function createStudioAutosaveSqliteStore(
   return Object.freeze({
     async read(key: string) {
       const raw = await database.kvGet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key);
-      if (raw === null) return readLastKnownGood(database, key);
-
       try {
+        if (raw === null) return await readLastKnownGood(database, key);
         return decodeEnvelope(raw, key);
       } catch (primaryCause) {
+        if (primaryCause instanceof StudioAutosaveUnsupportedVersionError) { unsupportedKeys.set(key, primaryCause); throw primaryCause; }
         try {
           const recovered = await readLastKnownGood(database, key);
           if (recovered !== null) return recovered;
         } catch (recoveryCause) {
+          if (recoveryCause instanceof StudioAutosaveUnsupportedVersionError) { unsupportedKeys.set(key, recoveryCause); throw recoveryCause; }
           throw new AggregateError(
             [primaryCause, recoveryCause],
             "SQLite 자동저장 주 저장본과 마지막 정상 저장본이 모두 손상되었습니다.",
@@ -258,8 +265,10 @@ export function createStudioAutosaveSqliteStore(
       // the existing recovery generation until a normal write rotates it. Success still requires
       // the primary commit below; dispatch alone is not a durability receipt.
       return mutate(key, async (isCurrent) => {
+        if (unsupportedKeys.has(key)) throw unsupportedKeys.get(key);
         if (options?.mode !== "emergency") {
-          await archiveCurrentEnvelope(database, key, isCurrent);
+          try { await archiveCurrentEnvelope(database, key, isCurrent); }
+          catch (cause) { if (cause instanceof StudioAutosaveUnsupportedVersionError) unsupportedKeys.set(key, cause); throw cause; }
         }
         if (!isCurrent()) return;
         await database.kvSet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key, envelope);
@@ -272,6 +281,10 @@ export function createStudioAutosaveSqliteStore(
       // while the primary snapshot remains intact; acknowledging success would allow that older
       // recovery generation to resurrect after a later primary-row failure.
       return mutate(key, async (isCurrent) => {
+        if (unsupportedKeys.has(key)) throw unsupportedKeys.get(key);
+        const existing = await Promise.all([key, studioAutosaveSqliteLastKnownGoodKey(key)].map((candidate) => database.kvGet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, candidate)));
+        for (const raw of existing) assertStudioAutosaveReaderSupported(raw);
+        if (!isCurrent()) return;
         await database.kvSet(
           STUDIO_AUTOSAVE_SQLITE_NAMESPACE,
           studioAutosaveSqliteLastKnownGoodKey(key),

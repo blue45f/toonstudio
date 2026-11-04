@@ -98,7 +98,7 @@ function isRuntimeArray(value: unknown): boolean {
   return Array.isArray(value);
 }
 
-const ROLE_ORDER: Readonly<Record<StudioBg3dLtRasterLayer["role"], number>> = {
+const ROLE_ORDER: Readonly<Partial<Record<StudioBg3dLtRasterLayer["role"], number>>> = {
   color: 0,
   tone: 0,
   "texture-line": 1,
@@ -131,12 +131,13 @@ function snapshotRequest(
         throw new TypeError("invalid layer shape");
       }
       const role = layer.role;
+      const roleOrder = ROLE_ORDER[role];
       const layerWidth = layer.width;
       const layerHeight = layer.height;
       const source = layer.data;
       if (
         typeof role !== "string" || !Object.prototype.hasOwnProperty.call(ROLE_ORDER, role) ||
-        roles.has(role) || ROLE_ORDER[role] <= previousRoleOrder
+        roles.has(role) || roleOrder === undefined || roleOrder <= previousRoleOrder
       ) throw new TypeError("invalid layer order");
       if (
         layerWidth !== width || layerHeight !== height ||
@@ -144,7 +145,7 @@ function snapshotRequest(
         !(source.buffer instanceof ArrayBuffer) || source.length !== pixels * 4
       ) throw new TypeError("invalid layer storage");
       roles.add(role);
-      previousRoleOrder = ROLE_ORDER[role];
+      previousRoleOrder = roleOrder;
       const data = new Uint8ClampedArray(source.length);
       data.set(source);
       return Object.freeze({

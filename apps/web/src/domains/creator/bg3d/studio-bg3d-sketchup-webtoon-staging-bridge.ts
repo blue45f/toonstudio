@@ -112,10 +112,8 @@ export function commitSketchUpDirectModelingToPrimitives(
     wallThicknessMeters: wallT,
   });
 
-  const frameOffsetResult = offsetSketchUpPolygon2D(
-    openingLoop,
-    Math.max(0.03, spec.frameOffsetMeters),
-  );
+  const frameOffsetMeters = Math.max(0.03, spec.frameOffsetMeters);
+  const frameOffsetResult = offsetSketchUpPolygon2D(openingLoop, frameOffsetMeters);
   const frameOuter = frameOffsetResult.offsetLoop;
 
   const moldingResult = spec.includeCrownMolding
@@ -198,20 +196,28 @@ export function commitSketchUpDirectModelingToPrimitives(
         color: "#cbd5e1",
       });
     }
-    // Offset (F) 창틀 프레임
+    // 개구부 안쪽은 비우고 바깥 테두리 네 변에만 창틀을 배치한다.
     const frameW = Math.max(
-      openHalfW * 2 + spec.frameOffsetMeters * 2,
+      openHalfW * 2 + frameOffsetMeters * 2,
       Math.abs((frameOuter[1]?.[0] ?? openHalfW) - (frameOuter[0]?.[0] ?? -openHalfW)),
     );
-    primitives.push({
-      id: `skp-dm-offset-frame-${copyIdx}`,
-      name: `Offset(F) 창문 프레임${suffix}`,
-      kind: "box",
-      position: [offsetX, offsetY + (sillY + headY) / 2, offsetZ],
-      rotation: [0, 0, 0],
-      scale: [frameW, headY - sillY + spec.frameOffsetMeters * 2, wallT + 0.04],
-      color: "#475569",
-    });
+    const frameSegments = [
+      { id: "left", label: "좌측", x: -openHalfW - frameOffsetMeters / 2, y: (sillY + headY) / 2, width: frameOffsetMeters, height: headY - sillY },
+      { id: "right", label: "우측", x: openHalfW + frameOffsetMeters / 2, y: (sillY + headY) / 2, width: frameOffsetMeters, height: headY - sillY },
+      { id: "top", label: "상부", x: 0, y: headY + frameOffsetMeters / 2, width: frameW, height: frameOffsetMeters },
+      { id: "bottom", label: "하부", x: 0, y: sillY - frameOffsetMeters / 2, width: frameW, height: frameOffsetMeters },
+    ];
+    for (const segment of frameSegments) {
+      primitives.push({
+        id: `skp-dm-offset-frame-${segment.id}-${copyIdx}`,
+        name: `Offset(F) ${segment.label} 창문 프레임${suffix}`,
+        kind: "box",
+        position: [offsetX + segment.x, offsetY + segment.y, offsetZ],
+        rotation: [0, 0, 0],
+        scale: [segment.width, segment.height, wallT + 0.04],
+        color: "#475569",
+      });
+    }
     // Follow-Me 상부 몰딩
     if (spec.includeCrownMolding) {
       primitives.push({
@@ -578,7 +584,7 @@ export function buildDynamicComponentArticulatedPrimitives(
       name: `DC 여닫이문 (${clampedAngle.toFixed(0)}° 개폐)`,
       kind: "box",
       position: [Math.round(centerX * 1000) / 1000, 1.05, Math.round(centerZ * 1000) / 1000],
-      rotation: [0, -clampedAngle, 0],
+      rotation: [0, -rad, 0],
       scale: [doorWidth, 2.1, 0.05],
       color: "#8b5cf6",
     },

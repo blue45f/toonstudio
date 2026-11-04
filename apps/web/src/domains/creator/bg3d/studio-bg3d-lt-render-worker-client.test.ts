@@ -19,6 +19,7 @@ import {
   type StudioBg3dLtRenderWorkerRequest,
   type StudioBg3dLtRenderWorkerResponse,
 } from "./studio-bg3d-lt-render-worker-protocol";
+import { DEFAULT_STUDIO_BG3D_SIX_PASS_LT } from "../contracts/studio-bg3d-six-pass-settings";
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 
 interface MessageEventLike { readonly data: unknown }
@@ -81,6 +82,13 @@ class DeterministicRenderWorker extends FakeWorker {
         width: message.input.width,
         height: message.input.height,
         rgba: new Uint8Array(message.input.rgbaBuffer),
+        ...(message.input.flatColorBuffer ? { flatColorRgba: new Uint8Array(message.input.flatColorBuffer) } : {}),
+        ...(message.input.shadowBuffer ? { shadowRgba: new Uint8Array(message.input.shadowBuffer) } : {}),
+        ...(message.input.linearDepthBuffer ? {
+          linearDepth: new Float32Array(message.input.linearDepthBuffer),
+          linearDepthNearMeters: message.input.linearDepthNearMeters,
+          linearDepthFarMeters: message.input.linearDepthFarMeters,
+        } : {}),
         ...(message.input.normalBuffer ? { normalRgba: new Uint8Array(message.input.normalBuffer) } : {}),
         ...(message.input.depthBuffer
           ? { depth: new Float32Array(message.input.depthBuffer) }
@@ -144,11 +152,15 @@ function responseFor(
     requestId: request.requestId,
     width: result.width,
     height: result.height,
+    ...(result.sixPassLtVersion ? { sixPassLtVersion: result.sixPassLtVersion } : {}),
     layers: result.layers.map((layer) => ({
       role: layer.role,
       width: layer.width,
       height: layer.height,
       dataBuffer: layer.data.buffer as ArrayBuffer,
+      ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}),
+      ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
+      ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
     })),
   };
 }
@@ -597,5 +609,51 @@ describe("내부선 억제 선택 필드가 Worker 경계를 건넌다", () => {
     expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionStrength: 1.01 }))).toBe(false);
     expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionEnabled: 1 }))).toBe(false);
     expect(isStudioBg3dLtRenderWorkerRequest(request({ interiorSuppressionStrenght: 0.5 }))).toBe(false);
+  });
+});
+
+
+describe("6패스 LT 워커 경계", () => {
+  function sixPassCapture(): StudioBg3dLtRasterInput {
+    const input = raster();
+    return { ...input, flatColorRgba: new Uint8Array(input.rgba), shadowRgba: new Uint8Array(input.rgba.length),
+      linearDepth: new Float32Array(input.width * input.height).fill(0.5), linearDepthNearMeters: 0.1, linearDepthFarMeters: 50 };
+  }
+
+  it("별도 캡처를 복사해 전송하고 여섯 패스와 합성 설정을 보존한다", async () => {
+    const input = sixPassCapture();
+    const before = structuredClone(input);
+    const config = { ...settings(), sixPassLt: { ...DEFAULT_STUDIO_BG3D_SIX_PASS_LT } };
+    const worker = new DeterministicRenderWorker();
+    const result = await renderStudioBg3dLtLayersInWorker(input, config, { workerFactory: () => worker });
+    expect(result).toEqual(renderStudioBg3dLtLayers(input, config));
+    expect(result.layers).toHaveLength(6);
+    expect(worker.transfers[0]).toHaveLength(5);
+    expect(worker.requests[0].input.flatColorBuffer).not.toBe(input.flatColorRgba?.buffer);
+    expect(worker.requests[0].input.shadowBuffer).not.toBe(input.shadowRgba?.buffer);
+    expect(worker.requests[0].input.linearDepthBuffer).not.toBe(input.linearDepth?.buffer);
+    expect(input).toEqual(before);
+    expect(worker.terminateCalls).toBe(1);
+  });
+
+  it("6패스 표식 없는 기존 워커 응답은 최대 세 레이어 제한을 유지한다", () => {
+    const input = sixPassCapture();
+    const config = { ...settings(), sixPassLt: DEFAULT_STUDIO_BG3D_SIX_PASS_LT };
+    const result = renderStudioBg3dLtLayers(input, config);
+    const response = { version: STUDIO_BG3D_LT_RENDER_WORKER_PROTOCOL_VERSION, kind: "result", requestId: 1,
+      width: result.width, height: result.height, layers: result.layers.map((layer) => ({ role: layer.role,
+        width: layer.width, height: layer.height, dataBuffer: layer.data.buffer,
+        blendMode: layer.blendMode, opacity: layer.opacity, visible: layer.visible })) };
+    expect(isStudioBg3dLtRenderWorkerResponse(response)).toBe(false);
+    expect(isStudioBg3dLtRenderWorkerResponse({ ...response, sixPassLtVersion: 1 })).toBe(true);
+    expect(isStudioBg3dLtRenderWorkerResponse({ ...response, sixPassLtVersion: 1, layers: response.layers.slice(0, 5) })).toBe(false);
+    expect(isStudioBg3dLtRenderWorkerResponse({ ...response, sixPassLtVersion: 1, layers: [...response.layers].reverse() })).toBe(false);
+  });
+
+  it("물리 그림자 캡처가 빠지면 워커 생성 전에 거부한다", async () => {
+    const workerFactory = vi.fn(() => new DeterministicRenderWorker());
+    await expect(renderStudioBg3dLtLayersInWorker({ ...sixPassCapture(), shadowRgba: undefined },
+      { ...settings(), sixPassLt: DEFAULT_STUDIO_BG3D_SIX_PASS_LT }, { workerFactory })).rejects.toMatchObject({ code: "invalid-request" });
+    expect(workerFactory).not.toHaveBeenCalled();
   });
 });

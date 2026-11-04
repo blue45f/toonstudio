@@ -22,6 +22,7 @@ export function assertStudioBg3dCaptureBudget(input: {
   readonly height: number;
   readonly includeDepth: boolean;
   readonly includeNormals?: boolean;
+  readonly includeSixPass?: boolean;
 }): void {
   if (!Number.isSafeInteger(input.width) || input.width < 1
     || !Number.isSafeInteger(input.height) || input.height < 1
@@ -31,8 +32,13 @@ export function assertStudioBg3dCaptureBudget(input: {
     || (input.includeNormals === true && !input.includeDepth)) {
     throw new RangeError("3D capture dimensions must fit the bounded raster budget.");
   }
+  if ((input.includeSixPass !== undefined && typeof input.includeSixPass !== "boolean")
+    || (input.includeSixPass && !input.includeDepth)) {
+    throw new RangeError("6패스 LT 캡처에는 깊이 캡처가 필요합니다.");
+  }
   const pixels = input.width * input.height;
-  const maximum = input.includeNormals ? STUDIO_BG3D_NORMAL_CAPTURE_MAX_PIXELS : input.includeDepth ? STUDIO_BG3D_DEPTH_CAPTURE_MAX_PIXELS : STUDIO_BG3D_COLOR_CAPTURE_MAX_PIXELS;
+  // 6패스는 추가 밑색·그림자·선형 깊이와 소유 복사본을 포함해 128 B/px, 최대 512 MiB로 제한한다.
+  const maximum = input.includeSixPass ? Math.floor(512 * 1024 * 1024 / 128) : input.includeNormals ? STUDIO_BG3D_NORMAL_CAPTURE_MAX_PIXELS : input.includeDepth ? STUDIO_BG3D_DEPTH_CAPTURE_MAX_PIXELS : STUDIO_BG3D_COLOR_CAPTURE_MAX_PIXELS;
   if (!Number.isSafeInteger(pixels) || pixels > maximum) {
     throw new RangeError("3D capture exceeds the raster pixel budget.");
   }

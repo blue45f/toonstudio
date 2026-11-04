@@ -18,7 +18,7 @@ import {
 export const STUDIO_PROJECT_DOCUMENT_FORMAT_ID =
   "toonstudio.studio-project" as const;
 export const STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE = "project" as const;
-export const STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION = 3 as const;
+export const STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION = 4 as const;
 const LEGACY_PROJECT_DOCUMENT_VERSION = 2;
 
 export interface StudioProjectDocumentMetadata {
@@ -273,15 +273,17 @@ const legacyProjectDocumentRegistry = createStudioDocumentMigratorRegistry([
 ]);
 
 // V3 changes the minimum reader for V4 brush snapshots, not the bytes of existing V2 envelopes.
-const studioProjectDocumentRegistry = createStudioDocumentMigratorRegistry([
-  {
+function projectReaderRegistry(version: 3 | 4) {
+  return createStudioDocumentMigratorRegistry([{
     formatId: STUDIO_PROJECT_DOCUMENT_FORMAT_ID,
     payloadType: STUDIO_PROJECT_DOCUMENT_PAYLOAD_TYPE,
-    minimumVersion: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION,
-    currentVersion: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION,
+    minimumVersion: version,
+    currentVersion: version,
     migrators: [],
-  },
-]);
+  }]);
+}
+const studioProjectDocumentRegistry = projectReaderRegistry(3);
+const sixPassProjectDocumentRegistry = projectReaderRegistry(4);
 
 export function createStudioProjectDocumentEnvelope(
   value: unknown,
@@ -386,7 +388,10 @@ export async function parseStudioProjectDocument(
   const usesNewReader = isRecord(decoded) && isRecord(decoded.format)
     && typeof decoded.format.version === "number"
     && decoded.format.version > LEGACY_PROJECT_DOCUMENT_VERSION;
-  const registry = usesNewReader ? studioProjectDocumentRegistry : legacyProjectDocumentRegistry;
+  const registry = usesNewReader
+    ? isRecord(decoded) && isRecord(decoded.format) && decoded.format.version === 4
+      ? sixPassProjectDocumentRegistry : studioProjectDocumentRegistry
+    : legacyProjectDocumentRegistry;
   const migrated = await registry.migrate(decoded);
   if (!migrated.ok) {
     throw new StudioProjectDocumentError(

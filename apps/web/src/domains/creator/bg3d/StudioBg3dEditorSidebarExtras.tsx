@@ -502,7 +502,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 professionalReadiness={professionalRuntimeReadiness}
                 inplaceTools={h.inplaceTools}
                 onEnginePreferenceChange={engineRuntime.setPreference}
-                onSetCaptureAspectRatio={updateLtExportAspectRatio}
+                onSetCaptureAspectRatio={updateLtExportAspectRatio} onSetSixPassLt={h.updateSixPassLt} sixPassLtUnavailableReason={h.captureRef.current?.adapter?.sixPassProfile ? null : "six-pass-unsupported-renderer"}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
                 {...createStudioBg3dWorkbenchHostPorts(h)}
                 {...createStudioBg3dPrimitiveEditHostPorts(h)} {...createStudioBg3dSceneGlbHostPorts(h)}

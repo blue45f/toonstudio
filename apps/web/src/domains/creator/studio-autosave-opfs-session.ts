@@ -1,5 +1,5 @@
 import {
-  parseStudioAutosave,
+  parseStudioAutosave, assertStudioAutosaveReaderSupported, StudioAutosaveUnsupportedVersionError,
   readStudioAutosave,
   serializeStudioAutosave,
   studioAutosaveHasContent,
@@ -255,6 +255,7 @@ function decodeStudioAutosaveOpfsEnvelope(
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_AUTOSAVE_BYTES) {
     throw new StudioAutosaveOpfsError("checkpointTooLarge");
   }
+  assertStudioAutosaveReaderSupported(TEXT_DECODER.decode(bytes));
   let value: unknown;
   try {
     value = JSON.parse(TEXT_DECODER.decode(bytes));
@@ -447,6 +448,7 @@ export class StudioAutosaveOpfsSession {
     return this.#enqueue(async () => {
       const scan = await this.#journal.scan({ signal });
       const current = latestDocumentEntry(scan);
+      if (current) assertStudioAutosaveReaderSupported(TEXT_DECODER.decode(await collectEntryBytes(this.#journal, current, signal)));
       const revision = (current?.revision ?? 0) + 1;
       if (!Number.isSafeInteger(revision) || revision < 1) {
         throw new StudioAutosaveOpfsError("revisionLimit");
@@ -481,12 +483,7 @@ export class StudioAutosaveOpfsSession {
           revision: entry.revision,
         });
       } finally {
-        // A navigation does not run React cleanup. Keep the journal lease only for the write
-        // transaction when a separate Web Lock already guards the whole document lifetime;
-        // otherwise a completed checkpoint strands a 30-second disk lease after reload.
-        // Callers without that document lock retain the existing expiry/fencing discipline.
-        // Admission may close while an already-started checkpoint drains. Its owned disk writer
-        // still needs release even though the document handle now reports a follower role.
+        // 문서 Web Lock을 소유한 쓰기 또는 acquisition 중 leadership을 잃은 쓰기의 lease를 반납한다.
         if (lostLeadershipDuringAcquisition || (
           this.#documentLease && this.#documentLease.basis !== "locks-unavailable"
         )) {
@@ -670,15 +667,7 @@ export async function reopenStudioAutosaveDocumentSessionForLeadership(input: {
   });
 }
 
-/**
- * Withholds the second persistence authority from a follower tab.
- *
- * `persistStudioAutosaveWithOpfsPrimary` already fails closed on a busy document, but the emergency
- * pagehide path and the empty-document tombstone path write to SQLite *in parallel* with OPFS. A
- * follower reaching SQLite on its own writes a newer row than the leader's OPFS checkpoint, and the
- * next reconcile promotes it — the same fork, through a side door. Callers pass their acquired port
- * through this guard so a follower simply has no second authority to reach.
- */
+/** 팔로워는 병렬 pagehide·빈 문서 정리에서도 SQLite 우회로 leader의 복구본을 덮어쓸 수 없다. */
 export function withStudioAutosaveDocumentLeadership(
   sqlite: StudioAutosaveSqlitePort | null,
   lease: Pick<StudioAutosaveDocumentLease, "role"> | null,
@@ -706,6 +695,7 @@ function discardAutosaveBrowserCompatibility(
   key: string,
 ): void {
   try {
+    assertStudioAutosaveReaderSupported(storage.getItem(key)); assertStudioAutosaveReaderSupported(storage.getItem(studioLifecycleAutosaveSidecarKey(key)));
     storage.removeItem(key);
     storage.removeItem(studioLifecycleAutosaveSidecarKey(key));
   } catch {
@@ -752,6 +742,7 @@ export async function persistStudioAutosaveWithOpfsPrimary(input: {
       if (snapshotIsCurrent()) discardAutosaveBrowserCompatibility(input.storage, input.key);
       return receipt;
     } catch (cause: unknown) {
+      if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
       if (studioAutosaveDocumentBusy(cause)) {
         // 다른 탭이 이 원고의 leader다. SQLite 우회는 포크를 만든다. Jam 팔로워에게는
         // 예상된 상태이므로 저장 실패 배너를 올리지 않고 busy만 전파한다.
@@ -810,7 +801,8 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
       input.key,
       input.allowLegacy ?? false,
     ));
-  } catch {
+  } catch (cause) {
+    if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
     // Browser storage is a compatibility input only. Its denial must never hide OPFS/SQLite data.
   }
   type Candidate = Readonly<{
@@ -839,7 +831,8 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
           revision: null,
         }));
       }
-    } catch {
+    } catch (cause) {
+      if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
       // 손상/개방 실패 SQLite 행은 덮어쓰지 않고 다른 권위로 복구한다.
     }
   }
@@ -859,7 +852,8 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
           revision: durable.revision,
         }));
       }
-    } catch {
+    } catch (cause) {
+      if (cause instanceof StudioAutosaveUnsupportedVersionError) throw cause;
       // SQLite와 브라우저 슬롯을 계속 평가한다.
     }
   }

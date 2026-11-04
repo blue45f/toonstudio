@@ -15,6 +15,7 @@ export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;
 // 올리면 저장된 v3 데이터(고정 컷 sourceHash, 템플릿 sceneJson 등)를 함께 옮겨야 한다. 소유자 판정 대기:
 // docs/features/bg3d-components-tags-scenes.md "버전을 올리지 않은 이유와 대가".
 export const STUDIO_BG3D_SCENE_DOCUMENT_VERSION = 3 as const;
+export const STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION = 4 as const;
 export const STUDIO_BG3D_SCHEMA_V2_SCENE_DOCUMENT_VERSION = 2 as const;
 export const STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION = 1 as const;
 // Schema v3 adds an explicit `twoBoneIks` collection to every constrained model. Keeping the old
@@ -398,6 +399,16 @@ export interface StudioBg3dToneOutputSettings {
   readonly angleDegrees: number;
 }
 
+/** 6패스가 있는 문서만 scene v4와 project v4 reader를 요구한다. */
+export interface StudioBg3dSixPassLtSettings {
+  readonly version: 1;
+  readonly shadowOpacity: number;
+  readonly depthFogOpacity: number;
+  readonly fogNearMeters: number;
+  readonly fogFarMeters: number;
+  readonly fogTintHex: string;
+}
+
 export interface StudioBg3dOutputSettings {
   readonly transparentBackground: boolean;
   readonly exportHeight: number;
@@ -410,6 +421,7 @@ export interface StudioBg3dOutputSettings {
   readonly exportAspectRatio?: number;
   readonly line: StudioBg3dLineOutputSettings;
   readonly tone: StudioBg3dToneOutputSettings;
+  readonly sixPassLt?: StudioBg3dSixPassLtSettings;
 }
 
 export interface StudioBg3dComplexityBudget {
@@ -729,6 +741,7 @@ export interface StudioBg3dShotOutputOverride {
   readonly exportHeight?: number;
   readonly line?: StudioBg3dShotLineOutputOverride;
   readonly tone?: StudioBg3dShotToneOutputOverride;
+  readonly sixPassLt?: StudioBg3dSixPassLtSettings;
 }
 
 export interface StudioBg3dShotNodeVisibilityOverride {
@@ -756,7 +769,7 @@ export interface StudioBg3dShotCreateRequest {
 
 export interface StudioBg3dSceneDocument {
   readonly kind: typeof STUDIO_BG3D_SCENE_DOCUMENT_KIND;
-  readonly version: typeof STUDIO_BG3D_SCENE_DOCUMENT_VERSION;
+  readonly version: typeof STUDIO_BG3D_SCENE_DOCUMENT_VERSION | typeof STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION;
   readonly camera: StudioBg3dCameraSettings;
   readonly render: StudioBg3dRenderSettings;
   readonly background: StudioBg3dBackgroundSettings;

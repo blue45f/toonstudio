@@ -10,6 +10,7 @@ import { STUDIO_BG3D_TILED_OUTPUT_MAX_PIXELS } from "./studio-bg3d-tile-plan";
  * dimensions/background/depth request recorded here instead of re-deriving them after a restart.
  */
 
+import { studioBg3dDocumentRequiresSixPassReader } from "../contracts/studio-bg3d-six-pass-settings";
 import { compareStudioValidationStrings } from "../studio-validation-string-order";
 
 import { getStudioBg3dCaptureBackendIdentity } from "./studio-bg3d-capture-adapter";
@@ -70,8 +71,6 @@ export function resolveStudioBg3dShotBatchCaptureSize(input: {
 }
 
 export { resolveStudioBg3dShotCaptureSize };
-
-
 export interface StudioBg3dShotBatchSourceShot {
   readonly id: string;
   readonly name: string;
@@ -751,7 +750,7 @@ export async function verifyStudioBg3dShotBatchSourceRevision(
 ): Promise<boolean> {
   if (!isStudioBg3dShotBatchPlan(plan) || typeof sourceRevision !== "string") return false;
   const parsed = parseStudioBg3dSceneDocument(sourceRevision);
-  if (!parsed || serializeStudioBg3dSceneDocument(parsed) !== sourceRevision) return false;
+  if (!parsed || studioBg3dDocumentRequiresSixPassReader(parsed) || serializeStudioBg3dSceneDocument(parsed) !== sourceRevision) return false;
   return await sha256Hex(sourceRevision) === plan.sourceDigest;
 }
 
@@ -789,6 +788,7 @@ export async function createStudioBg3dShotBatchPlan(
   ) {
     return failure("invalid-source-revision", "revisionNotCanonical");
   }
+  if (studioBg3dDocumentRequiresSixPassReader(parsedSourceRevision)) return failure("invalid-pass", "sixPassUnsupported");
   const revisionShots = parsedSourceRevision.shots ?? [];
   if (
     revisionShots.length !== shots.length ||

@@ -41,6 +41,8 @@ export const STUDIO_BG3D_THREE_WEBGL_CAPTURE_IMPLEMENTATION_V1 =
 
 /** Optional additive surface-normal output; RGB encodes view-space normals, alpha is coverage. */
 export const STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1 = "studio-view-normal-rgba8-topdown-v1";
+/** 조명 없는 밑색, 실제 그림자 가림률, 선형 카메라 깊이를 함께 캡처한다. */
+export const STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1 = "studio-albedo-shadow-rgba8-depth-linear-v1";
 
 export interface StudioBg3dCaptureSize {
   readonly width: number;
@@ -55,6 +57,7 @@ export interface StudioBg3dCaptureRequest extends StudioBg3dCaptureSize {
   readonly includeDepth: boolean;
   /** Requires depth and an adapter with the normalProfile capability. */
   readonly includeNormals?: boolean;
+  readonly includeSixPass?: boolean;
 }
 
 export interface StudioBg3dCapturedRaster extends StudioBg3dCaptureSize {
@@ -64,6 +67,14 @@ export interface StudioBg3dCapturedRaster extends StudioBg3dCaptureSize {
   readonly depth?: Float32Array;
   /** View-space interpolated vertex normals, [-1,1] mapped to RGB8; alpha=0 means no surface. */
   readonly normalRgba?: Uint8Array | Uint8ClampedArray;
+  /** 조명·그림자가 곱해지지 않은 sRGB 밑색. */
+  readonly flatColorRgba?: Uint8Array | Uint8ClampedArray;
+  /** 검정 RGB, alpha=실제 광원 shadow map의 가림률. */
+  readonly shadowRgba?: Uint8Array | Uint8ClampedArray;
+  /** near/far 사이의 선형 거리. 기존 depth의 장치 깊이 의미는 유지한다. */
+  readonly linearDepth?: Float32Array;
+  readonly linearDepthNearMeters?: number;
+  readonly linearDepthFarMeters?: number;
 }
 
 export interface StudioBg3dCaptureAdapter {
@@ -74,6 +85,7 @@ export interface StudioBg3dCaptureAdapter {
   readonly graphicsApi: StudioBg3dCaptureGraphicsApi;
   readonly profileId: typeof STUDIO_BG3D_CAPTURE_PROFILE_RGBA8_DEPTH_V1;
   readonly normalProfile?: typeof STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1;
+  readonly sixPassProfile?: typeof STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1;
   /** Explicit same-renderer tile capability; session freezes the current projection. */
   createTiledCapture?(): StudioBg3dTiledCaptureSession;
   getSourceSize(): StudioBg3dCaptureSize;
@@ -290,8 +302,15 @@ export function assertStudioBg3dCaptureRequest(request: unknown): asserts reques
   if (candidate.includeNormals && !candidate.includeDepth) {
     throw new TypeError("3D surface normals require the matching depth raster.");
   }
+  if (candidate.includeSixPass !== undefined && typeof candidate.includeSixPass !== "boolean") {
+    throw new TypeError("3D capture includeSixPass must be a boolean.");
+  }
+  if (candidate.includeSixPass && !candidate.includeDepth) {
+    throw new TypeError("6패스 LT에는 일치하는 깊이 캡처가 필요합니다.");
+  }
   assertStudioBg3dCaptureBudget({ width: request.width, height: request.height,
-    includeDepth: candidate.includeDepth, includeNormals: candidate.includeNormals });
+    includeDepth: candidate.includeDepth, includeNormals: candidate.includeNormals,
+    includeSixPass: candidate.includeSixPass });
   if (!candidate.background || typeof candidate.background !== "object") {
     throw new TypeError("3D capture background must be an object.");
   }
@@ -348,6 +367,21 @@ function assertCapturedRaster(
       }
     }
   }
+  const sixPassArrays = [candidate.flatColorRgba, candidate.shadowRgba];
+  if (request.includeSixPass) {
+    if (sixPassArrays.some((value) => !(value instanceof Uint8Array || value instanceof Uint8ClampedArray)
+      || value.length !== pixels * 4)) throw new TypeError("6패스 밑색·그림자 캡처가 필요합니다.");
+    if (!(candidate.linearDepth instanceof Float32Array) || candidate.linearDepth.length !== pixels
+      || candidate.linearDepth.some((value) => !Number.isFinite(value) || value < 0 || value > 1)
+      || typeof candidate.linearDepthNearMeters !== "number" || !Number.isFinite(candidate.linearDepthNearMeters)
+      || candidate.linearDepthNearMeters < 0 || typeof candidate.linearDepthFarMeters !== "number"
+      || !Number.isFinite(candidate.linearDepthFarMeters) || candidate.linearDepthFarMeters <= candidate.linearDepthNearMeters) {
+      throw new TypeError("6패스 선형 깊이와 카메라 near/far가 필요합니다.");
+    }
+  } else if (sixPassArrays.some((value) => value !== undefined) || candidate.linearDepth !== undefined
+    || candidate.linearDepthNearMeters !== undefined || candidate.linearDepthFarMeters !== undefined) {
+    throw new TypeError("요청하지 않은 6패스 캡처가 반환되었습니다.");
+  }
 }
 
 export function getStudioBg3dCaptureSourceSize(adapter: StudioBg3dCaptureAdapter): StudioBg3dCaptureSize {
@@ -367,11 +401,15 @@ export async function captureStudioBg3dRaster(
   if (request.includeNormals && adapter.normalProfile !== STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1) {
     throw new TypeError("3D capture adapter does not support the requested normal profile.");
   }
+  if (request.includeSixPass && adapter.sixPassProfile !== STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1) {
+    throw new TypeError("현재 렌더 엔진은 6패스 LT 캡처를 지원하지 않습니다. Three WebGL2를 선택해 주세요.");
+  }
   const requestSnapshot = Object.freeze({
     width: request.width,
     height: request.height,
     includeDepth: request.includeDepth,
     ...(request.includeNormals !== undefined ? { includeNormals: request.includeNormals } : {}),
+    ...(request.includeSixPass !== undefined ? { includeSixPass: request.includeSixPass } : {}),
     background: Object.freeze({ ...request.background }),
   });
   throwIfCaptureOperationAborted(options.signal);
@@ -394,6 +432,11 @@ export async function captureStudioBg3dRaster(
     rgba: new Uint8ClampedArray(captured.rgba),
     ...(captured.depth ? { depth: new Float32Array(captured.depth) } : {}),
     ...(captured.normalRgba ? { normalRgba: new Uint8ClampedArray(captured.normalRgba) } : {}),
+    ...(captured.flatColorRgba ? { flatColorRgba: new Uint8ClampedArray(captured.flatColorRgba) } : {}),
+    ...(captured.shadowRgba ? { shadowRgba: new Uint8ClampedArray(captured.shadowRgba) } : {}),
+    ...(captured.linearDepth ? { linearDepth: new Float32Array(captured.linearDepth),
+      linearDepthNearMeters: captured.linearDepthNearMeters,
+      linearDepthFarMeters: captured.linearDepthFarMeters } : {}),
   });
   if (environmentReceipt) attachStudioBg3dCaptureEnvironmentReceipt(owned, environmentReceipt);
   return owned;

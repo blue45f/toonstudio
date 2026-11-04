@@ -8,8 +8,10 @@
  */
 
 import { createLayerGroup, type LayerGroup } from "../studio-layers";
+import type { StudioBg3dLtLayerPresentation } from "../scene-3d/studio-3d-insert-contract";
+import { makeStudioBg3dLtLayerElement as makeLayerElement } from "../contracts/studio-bg3d-lt-layer-element";
 
-export const STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "texture-line", "main-line"] as const;
+export const STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "shadow", "depth", "texture-line", "main-line"] as const;
 
 /** Back-to-front order. The last available role is the editable-scene anchor. */
 export type StudioBg3dLtLayerRole = (typeof STUDIO_BG3D_LT_LAYER_ROLES)[number];
@@ -22,6 +24,8 @@ export const STUDIO_BG3D_LT_LAYER_NAMES: Readonly<Record<StudioBg3dLtLayerRole, 
     "main-line": "3D LT · 주선",
     "texture-line": "3D LT · 질감선",
     tone: "3D LT · 톤",
+    shadow: "3D LT · 태양 그림자",
+    depth: "3D LT · 공기원근 안개",
   });
 
 export const STUDIO_BG3D_LT_MAX_RASTER_EDGE = 32_768;
@@ -62,7 +66,7 @@ export interface StudioBg3dLtImageElementLike<TScene = unknown>
   readonly bg3dLtRenderMode?: StudioBg3dLtRenderMode;
 }
 
-export interface StudioBg3dLtSeparatedRaster {
+export interface StudioBg3dLtSeparatedRaster extends StudioBg3dLtLayerPresentation {
   readonly role: StudioBg3dLtLayerRole;
   readonly pngDataUrl: string;
   readonly width: number;
@@ -236,7 +240,7 @@ export function preserveStudioBg3dLtSceneAnchorAfterRemoval<
   return next;
 }
 
-interface NormalizedRaster {
+interface NormalizedRaster extends StudioBg3dLtLayerPresentation {
   readonly role: StudioBg3dLtLayerRole;
   readonly pngDataUrl: string;
 }
@@ -403,7 +407,13 @@ function normalizeRender<TScene>(
       if (!isStudioBg3dLtPngDataUrl(layer.pngDataUrl)) {
         return failure("invalid-png-data-url.layerPng");
       }
-      byRole.set(layer.role, { role: layer.role, pngDataUrl: layer.pngDataUrl });
+      if ((layer.opacity !== undefined && (!Number.isFinite(layer.opacity) || layer.opacity < 0 || layer.opacity > 1))
+        || (layer.visible !== undefined && typeof layer.visible !== "boolean")
+        || (layer.blendMode !== undefined && !["normal", "multiply", "screen", "soft-light"].includes(layer.blendMode))) return failure("invalid-render-mode.renderResultFormat");
+      byRole.set(layer.role, { role: layer.role, pngDataUrl: layer.pngDataUrl,
+        ...(layer.opacity !== undefined ? { opacity: layer.opacity } : {}),
+        ...(layer.visible !== undefined ? { visible: layer.visible } : {}),
+        ...(layer.blendMode !== undefined ? { blendMode: layer.blendMode } : {}) });
     }
 
     const layers = STUDIO_BG3D_LT_LAYER_ROLES.flatMap((role) => {
@@ -507,57 +517,6 @@ function sameGeometry(left: CommonGeometry, right: CommonGeometry): boolean {
 
 function hasOwn(value: object, key: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(value, key);
-}
-
-function setOptionalTransform(
-  record: Record<string, unknown>,
-  key: "flipped" | "flippedY" | "skewX" | "skewY",
-  value: boolean | number,
-  identity: boolean | number
-): void {
-  if (value === identity) {
-    Reflect.deleteProperty(record, key);
-  } else {
-    record[key] = value;
-  }
-}
-
-function makeLayerElement<
-  TElement extends StudioBg3dLtPageElementLike,
-  TScene,
->(
-  base: TElement & StudioBg3dLtImageElementLike<TScene>,
-  layer: NormalizedRaster,
-  elementId: string,
-  bundleId: string,
-  groupId: string,
-  mode: StudioBg3dLtRenderMode,
-  geometry: CommonGeometry,
-  anchorRole: StudioBg3dLtLayerRole,
-  scene: TScene
-): TElement {
-  const next = { ...base } as unknown as Record<string, unknown>;
-  Reflect.deleteProperty(next, "bg3dScene");
-  next.id = elementId;
-  next.type = "image";
-  next.src = layer.pngDataUrl;
-  next.x = geometry.x;
-  next.y = geometry.y;
-  next.width = geometry.width;
-  next.height = geometry.height;
-  next.rotation = geometry.rotation;
-  setOptionalTransform(next, "flipped", geometry.flipped, false);
-  setOptionalTransform(next, "flippedY", geometry.flippedY, false);
-  setOptionalTransform(next, "skewX", geometry.skewX, 0);
-  setOptionalTransform(next, "skewY", geometry.skewY, 0);
-  next.groupId = groupId;
-  next.name = STUDIO_BG3D_LT_LAYER_NAMES[layer.role];
-  next.layerRole = layer.role === "color" ? "color" : layer.role === "tone" ? "tone" : "lineart";
-  next.bg3dLtBundleId = bundleId;
-  next.bg3dLtRole = layer.role;
-  next.bg3dLtRenderMode = mode;
-  if (layer.role === anchorRole) next.bg3dScene = scene;
-  return next as unknown as TElement;
 }
 
 function firstDuplicateId(values: readonly string[]): string | null {
@@ -845,7 +804,8 @@ export function planStudioBg3dLtLayers<
       normalized.mode,
       commonGeometry!,
       normalized.anchorRole,
-      normalized.bg3dScene
+      normalized.bg3dScene,
+      STUDIO_BG3D_LT_LAYER_NAMES[layer.role], !existing
     );
   });
 

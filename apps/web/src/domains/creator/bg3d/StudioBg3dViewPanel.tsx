@@ -11,6 +11,7 @@ import { composeStudioBg3dLens } from "./studio-bg3d-lens-composition";
 import { StudioBg3dSpatialStoryboardLauncher } from "./StudioBg3dSpatialStoryboardLauncher";
 
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import "../studio-bg3d-panel-status-i18n";
 import { StudioBg3dWebglRecoveryNotice } from "./StudioBg3dWebglRecoveryNotice";
 import { StudioBg3dViewPanel as StudioBg3dViewPanelContent } from "./StudioBg3dViewPanelContent";
@@ -46,8 +47,14 @@ function normalizeSelectedPasses(
  * avoids duplicating shot state and keeps every director and batch action on the editor's undo,
  * recovery and archive-integrity paths.
  */
-export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
+export type StudioBg3dViewPanelBridgeProps = StudioBg3dViewPanelProps & {
+  readonly onSetSixPassLt?: StudioBg3dProSuiteRuntimeValue["onSetSixPassLt"];
+  readonly sixPassLtUnavailableReason?: string | null;
+};
+
+export function StudioBg3dViewPanel(props: StudioBg3dViewPanelBridgeProps) {
   const t = useT();
+  const bt = useBilingual("Bg3dSixPass");
   const { context } = props;
   const disabled =
     context.isCapturing ||
@@ -145,6 +152,11 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
       return reason;
     },
     onApplyCameraView: (camera) => context.updateCameraLens(() => camera),
+    sixPassLt: context.sceneBaseDocument.output.sixPassLt,
+    onSetSixPassLt: props.onSetSixPassLt,
+    sixPassLtUnavailableReason: props.sixPassLtUnavailableReason === "six-pass-unsupported-renderer"
+      ? bt("현재 렌더러는 6패스 분리 캡처를 지원하지 않습니다. Three.js WebGL 렌더러가 필요합니다.", "This renderer does not support six-pass capture. Select the Three.js WebGL renderer.")
+      : props.sixPassLtUnavailableReason,
     onPreviewCameraView: (camera) => context.previewCameraLens(() => camera),
     onFinishCameraViewPreview: context.finishCameraLensGesture,
     onCaptureCurrentShot: context.captureCurrentShot,

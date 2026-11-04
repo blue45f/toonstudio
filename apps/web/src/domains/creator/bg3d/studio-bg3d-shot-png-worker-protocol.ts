@@ -64,7 +64,7 @@ const UNAVAILABLE_KEYS = ["version", "kind", "code"] as const;
 const RESULT_KEYS = ["version", "kind", "requestId", "width", "height", "png"] as const;
 const ERROR_KEYS = ["version", "kind", "requestId", "code"] as const;
 
-const ROLE_ORDER: Readonly<Record<StudioBg3dLtRasterLayerRole, number>> = {
+const ROLE_ORDER: Readonly<Partial<Record<StudioBg3dLtRasterLayerRole, number>>> = {
   color: 0,
   tone: 0,
   "texture-line": 1,
@@ -133,6 +133,7 @@ export function isStudioBg3dShotPngWorkerRequest(
     for (const layer of value.layers) {
       if (!isLayer(layer, shape.width, shape.height) || roles.has(layer.role)) return false;
       const order = ROLE_ORDER[layer.role];
+      if (order === undefined) return false;
       if (order <= previousOrder) return false;
       roles.add(layer.role);
       previousOrder = order;

@@ -15,7 +15,7 @@ import {
 import { parseStudioLayerComps } from "./layer/studio-layer-comps-document";
 import { normalizeStudioPublishPackageSettings } from "./studio-publish-package";
 import { normalizeStudioPublishPackSettings } from "./studio-publish-preflight";
-import { minimumStudioProjectFileVersion, type StudioProjectFileVersion } from "./studio-project-version";
+import { resolveStudioProjectFileVersion, type StudioProjectFileVersion } from "./studio-project-version";
 import {
   normalizeStudioReferenceBoardDocument,
   studioReferenceBoardHasContent,
@@ -26,6 +26,39 @@ import { migrateStudioShared3dStageCollectionDocument } from "./studio-shared-3d
 export const LEGACY_STUDIO_AUTOSAVE_KEY = "toonstudio-studio-autosave";
 const STUDIO_AUTOSAVE_PREFIX = "toonstudio-studio-autosave:v12";
 const TAPER_SPACING_AUTOSAVE_KIND = "studio-taper-spacing-autosave";
+const SIX_PASS_AUTOSAVE_KIND = "studio-six-pass-lt-autosave";
+
+export class StudioAutosaveUnsupportedVersionError extends Error {
+  constructor(readonly version: number) {
+    super("더 새로운 ToonStudio에서 저장한 복구 문서입니다. 앱을 업데이트해 주세요.");
+    this.name = "StudioAutosaveUnsupportedVersionError";
+  }
+}
+
+/** wrapper와 lifecycle journal 후보까지 검사해 미지원 원본의 재직렬화를 막는다. */
+function futureAutosaveVersion(raw: string | null): number | null {
+  if (!raw) return null;
+  try {
+    const pending: unknown[] = [JSON.parse(raw)];
+    while (pending.length > 0) {
+      const value = pending.pop();
+      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+      const record = value as Record<string, unknown>;
+      const durableEnvelope = record.kind === "toonspectrum:studio-autosave-sqlite" || record.kind === "toonspectrum:studio-autosave-opfs-checkpoint";
+      const maximum = record.kind === "toonstudio-lifecycle-recovery-journal" || durableEnvelope ? 1 : 4;
+      if (typeof record.version === "number" && Number.isSafeInteger(record.version) && record.version > maximum) return record.version;
+      if (record.payload && typeof record.payload === "object") pending.push(record.payload);
+      if (durableEnvelope && typeof record.payload === "string") { try { pending.push(JSON.parse(record.payload)); } catch { /* 손상 판정은 기존 envelope parser가 담당한다. */ } }
+      if (record.kind === "toonstudio-lifecycle-recovery-journal" && Array.isArray(record.candidates)) { for (const candidate of record.candidates) pending.push(candidate); }
+    }
+    return null;
+  } catch { return null; }
+}
+
+export function assertStudioAutosaveReaderSupported(raw: string | null): void {
+  const version = futureAutosaveVersion(raw);
+  if (version !== null) throw new StudioAutosaveUnsupportedVersionError(version);
+}
 
 export interface StudioAutosaveStorage {
   getItem(key: string): string | null;
@@ -244,13 +277,14 @@ export function parseStudioAutosave(raw: string | null): StudioAutosavePayload |
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== "object") return null;
     let record = value as Record<string, unknown>;
-    if (record.kind === TAPER_SPACING_AUTOSAVE_KIND) {
+    if (record.kind === TAPER_SPACING_AUTOSAVE_KIND || record.kind === SIX_PASS_AUTOSAVE_KIND) {
+      const requiredVersion = record.kind === SIX_PASS_AUTOSAVE_KIND ? 4 : 3;
       const payload = record.payload;
-      if (record.version !== 3 || !payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+      if (record.version !== requiredVersion || !payload || typeof payload !== "object" || Array.isArray(payload)) return null;
       record = payload as Record<string, unknown>;
-      if (record.version !== 3) return null;
+      if (record.version !== requiredVersion) return null;
     }
-    if (typeof record.version === "number" && record.version > 3) return null;
+    if (typeof record.version === "number" && record.version > 4) return null;
     if (!Array.isArray(record.pagesList) || record.pagesList.length === 0) return null;
     const pagesList = record.pagesList.map((page) => {
       if (!page || typeof page !== "object" || Array.isArray(page)) return page;
@@ -274,7 +308,7 @@ export function parseStudioAutosave(raw: string | null): StudioAutosavePayload |
       };
     }) as StudioAutosavePayload["pagesList"];
     return {
-      version: record.version === 3 ? 3 : minimumStudioProjectFileVersion(pagesList, record.master),
+      version: resolveStudioProjectFileVersion(pagesList, record.master, record.version),
       savedAt: typeof record.savedAt === "string" ? record.savedAt : new Date(0).toISOString(),
       pagesList,
       master: record.master,
@@ -367,7 +401,7 @@ function normalizedStudioAutosavePayload(payload: StudioAutosavePayload) {
   });
   return {
     ...payload,
-    version: payload.version === 3 ? 3 : minimumStudioProjectFileVersion(pagesList, payload.master),
+    version: resolveStudioProjectFileVersion(pagesList, payload.master, payload.version),
     pagesList,
     ...(payload.referenceBoard === undefined
       ? {}
@@ -385,7 +419,9 @@ export function serializeStudioAutosave(payload: StudioAutosavePayload): string 
   const safePayload = normalizedStudioAutosavePayload(payload);
   // Historical recovery readers ignore a top-level version, but require pagesList. Keep new
   // brush snapshots behind an envelope they cannot silently interpret as an old drawing.
-  return JSON.stringify(safePayload.version === 3
+  return JSON.stringify(safePayload.version === 4
+    ? { kind: SIX_PASS_AUTOSAVE_KIND, version: 4, payload: safePayload }
+    : safePayload.version === 3
     ? { kind: TAPER_SPACING_AUTOSAVE_KIND, version: 3, payload: safePayload }
     : safePayload);
 }
@@ -568,12 +604,15 @@ export function writeStudioLifecycleAutosave(
   payload: StudioAutosavePayload,
   options: { preservePrimary: boolean }
 ): StudioLifecycleAutosaveWriteResult {
-  const primary = parseStudioAutosave(storage.getItem(primaryKey));
+  const sidecarRaw = storage.getItem(studioLifecycleAutosaveSidecarKey(primaryKey));
+  assertStudioAutosaveReaderSupported(sidecarRaw);
+  const primaryRaw = storage.getItem(primaryKey);
+  const primary = parseStudioAutosave(primaryRaw);
   const preservePrimary =
-    options.preservePrimary && primary !== null && studioAutosaveHasContent(primary);
+    futureAutosaveVersion(primaryRaw) !== null || (options.preservePrimary && primary !== null && studioAutosaveHasContent(primary));
   const key = preservePrimary ? studioLifecycleAutosaveSidecarKey(primaryKey) : primaryKey;
   if (preservePrimary) {
-    const journal = parseStudioLifecycleAutosaveJournal(storage.getItem(key));
+    const journal = parseStudioLifecycleAutosaveJournal(sidecarRaw);
     // The journal is append-only until explicit restore/clear. Thus a recovery that was itself
     // selected from the sidecar can never be overwritten by edits from a later unresolved visit.
     storage.setItem(key, serializeStudioLifecycleAutosaveJournal([...journal, payload]));
@@ -597,9 +636,13 @@ export function readStudioAutosave(
   key: string,
   allowLegacy = false
 ): { key: string; payload: StudioAutosavePayload } | null {
-  const current = parseStudioAutosave(storage.getItem(key));
+  const raw = storage.getItem(key);
+  assertStudioAutosaveReaderSupported(raw);
+  const current = parseStudioAutosave(raw);
   const sidecarKey = studioLifecycleAutosaveSidecarKey(key);
-  const sidecarCandidates = parseStudioLifecycleAutosaveJournal(storage.getItem(sidecarKey));
+  const sidecarRaw = storage.getItem(sidecarKey);
+  assertStudioAutosaveReaderSupported(sidecarRaw);
+  const sidecarCandidates = parseStudioLifecycleAutosaveJournal(sidecarRaw);
   const sidecar = sidecarCandidates.reduce<StudioAutosavePayload | null>(
     (latest, candidate) =>
       latest === null || autosaveTimestamp(candidate) >= autosaveTimestamp(latest)
@@ -621,7 +664,9 @@ export function readStudioAutosave(
   if (currentCandidate) return currentCandidate;
   if (sidecarCandidate) return sidecarCandidate;
   if (!allowLegacy) return null;
-  const legacy = parseStudioAutosave(storage.getItem(LEGACY_STUDIO_AUTOSAVE_KEY));
+  const legacyRaw = storage.getItem(LEGACY_STUDIO_AUTOSAVE_KEY);
+  assertStudioAutosaveReaderSupported(legacyRaw);
+  const legacy = parseStudioAutosave(legacyRaw);
   return legacy && studioAutosaveHasContent(legacy)
     ? { key: LEGACY_STUDIO_AUTOSAVE_KEY, payload: legacy }
     : null;

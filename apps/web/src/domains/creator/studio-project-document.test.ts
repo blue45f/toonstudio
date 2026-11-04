@@ -328,7 +328,7 @@ describe("studio project canonical document boundary", () => {
     const rawPrompt = "비공개 미래 AI 프롬프트 · 절대 오류 로그에 남기지 않기";
     const privateContact = "future-creator-private@example.invalid";
     const future = {
-      version: 4,
+      version: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION + 1,
       format: "cuttoon",
       title: "미래 프로젝트",
       pagesList: [page()],
@@ -359,7 +359,7 @@ describe("studio project canonical document boundary", () => {
         code: "UNKNOWN_FUTURE_VERSION",
         recoverable: true,
         recovery: "upgrade-client",
-        actualVersion: 4,
+        actualVersion: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION + 1,
         currentVersion: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION,
       },
     });
@@ -396,7 +396,7 @@ describe("studio project canonical document boundary", () => {
     expect(exposedSurfaces).not.toContain(futureSource);
   });
 
-  it.each(["4.0", "4.1"])(
+  it.each([`${STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION + 1}.0`, `${STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION + 1}.1`])(
     "fails closed and preserves future string-version raw projects (%s)",
     async (version) => {
       const futureSource = JSON.stringify({
@@ -409,7 +409,7 @@ describe("studio project canonical document boundary", () => {
       await expect(parseStudioProjectDocument(futureSource)).rejects.toMatchObject({
         diagnostic: {
           code: "UNKNOWN_FUTURE_VERSION",
-          actualVersion: 4,
+          actualVersion: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION + 1,
           currentVersion: STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION,
           recoverable: true,
         },

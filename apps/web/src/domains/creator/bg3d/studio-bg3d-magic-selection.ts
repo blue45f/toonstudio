@@ -120,7 +120,7 @@ function isCanonicalDocumentRoot(
   try {
     return (
       value.kind === STUDIO_BG3D_SCENE_DOCUMENT_KIND &&
-      value.version === STUDIO_BG3D_SCENE_DOCUMENT_VERSION &&
+      (value.version === STUDIO_BG3D_SCENE_DOCUMENT_VERSION || value.version === 4) &&
       Array.isArray(value.attachments) &&
       Array.isArray(value.nodes) &&
       value.nodes.length <= STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES

@@ -84,6 +84,9 @@ export interface StudioBg3dProSuiteRuntimeValue {
   /** 캡처 프레임 비율을 바꾼다(null = 자동). 값은 문서 정규화가 한도 안으로 누른다. */
   readonly onSetCaptureAspectRatio?: ((ratio: number | null) => void) | undefined;
   readonly onApplyCameraView: (camera: StudioBg3dCameraSettings) => void;
+  readonly sixPassLt?: import("./studio-bg3d-scene-document-types").StudioBg3dSixPassLtSettings;
+  readonly sixPassLtUnavailableReason?: string | null;
+  readonly onSetSixPassLt?: (settings: import("./studio-bg3d-scene-document-types").StudioBg3dSixPassLtSettings | null) => boolean;
   readonly onPreviewCameraView?: (camera: StudioBg3dCameraSettings) => void;
   readonly onFinishCameraViewPreview?: () => void;
   readonly onCaptureCurrentShot: () => void;

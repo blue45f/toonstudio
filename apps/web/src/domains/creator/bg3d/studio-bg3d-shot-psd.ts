@@ -8,7 +8,7 @@ import {
 
 import type { StudioBg3dLtRasterLayer } from "./studio-bg3d-lt-render";
 
-const LAYER_NAMES: Readonly<Record<StudioBg3dLtRasterLayer["role"], string>> = Object.freeze({
+const LAYER_NAMES: Readonly<Partial<Record<StudioBg3dLtRasterLayer["role"], string>>> = Object.freeze({
   color: "3D LT · 컬러 렌더",
   tone: "3D LT · 톤",
   "texture-line": "3D LT · 질감선",
@@ -28,18 +28,22 @@ export function buildStudioBg3dShotLayeredPsd(
     seenRoles.add(layer.role);
   }
   // LT uses back-to-front paint order; PSD children use panel top-to-bottom order.
-  const children: Layer[] = [...layers].reverse().map((layer) => ({
-    name: LAYER_NAMES[layer.role],
-    top: 0,
-    left: 0,
-    bottom: admission.height,
-    right: admission.width,
-    imageData: {
-      width: admission.width,
-      height: admission.height,
-      data: layer.data,
-    },
-  }));
+  const children: Layer[] = [...layers].reverse().map((layer) => {
+    const name = LAYER_NAMES[layer.role];
+    if (!name) throw new TypeError("컷 배치 PSD는 이 LT 레이어 역할을 지원하지 않습니다.");
+    return {
+      name,
+      top: 0,
+      left: 0,
+      bottom: admission.height,
+      right: admission.width,
+      imageData: {
+        width: admission.width,
+        height: admission.height,
+        data: layer.data,
+      },
+    };
+  });
   const psd: Psd = { width: admission.width, height: admission.height, children };
   const bytes = writePsdUint8Array(psd, {
     noBackground: true,

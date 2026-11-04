@@ -180,12 +180,12 @@ export const WEBTOON_E2E_ROLE_PIPELINE_STAGES: readonly WebtoonPipelineStageSpec
       id: "bg3d-spatial",
       stepNumber: 3,
       labelKo: "3단계 · 3D 공간 배경·LT 추출",
-      summaryKo: "3D 배경작가·배경 어시스턴트가 2점 투시·단면 컷어웨이·태양광과 6패스 LT를 추출합니다.",
+      summaryKo: "3D 배경작가·배경 어시스턴트가 도형·2점 투시와 6패스 LT 출력을 적용합니다. 6패스는 WebGL·일반 원고 페이지를 지원하며, 단면·태양광은 계산 미리보기입니다.",
       primaryRoles: ["background", "three-d", "background-assistant"],
       workspaceId: "pose-3d",
       ownedLayerGroups: ["background-3d", "background-line", "background-tone"],
       competitorBenchmarks: ["SketchUp", "ACON3D", "Snaptoon", "Blender Grease Pencil"],
-      tailoredMenusKo: ["Push/Pull 개구부·몰딩", "2점 투시 수직 잠금", "그림자 보존 실내 단면", "1-Click 6패스 LT 추출"],
+      tailoredMenusKo: ["Push/Pull 개구부·몰딩", "2점 투시 수직 잠금", "그림자 보존 실내 단면 계산", "6패스 LT 출력 설정 (WebGL·일반 페이지)"],
     },
     {
       id: "line-art-ink",
@@ -665,7 +665,7 @@ const STAGE_DELIVERABLE_CHECKLIST_KO: Readonly<
   "bg3d-spatial": [
     "2점 투시(Two-Point) 수직선 왜곡 0° 잠금",
     "실내 단면 컷어웨이 외부 채광 그림자 보존",
-    "6패스 LT 레이어 분리 배치",
+    "6패스 LT 레이어 확인 (WebGL·일반 원고 페이지)",
   ],
   "line-art-ink": [
     "벡터 교차점 지우개 마감 누락 점검",

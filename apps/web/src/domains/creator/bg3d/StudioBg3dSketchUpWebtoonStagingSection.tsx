@@ -14,6 +14,8 @@ import { Camera, Layers, SunMedium, WandSparkles } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
+import { DEFAULT_STUDIO_BG3D_SIX_PASS_LT_SETTINGS } from "../contracts/studio-bg3d-six-pass-settings";
+import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
 import { STUDIO_SKETCHUP_STYLE_PRESETS } from "./studio-bg3d-sketchup-styles-uv-engine";
 import {
   buildDynamicComponentArticulatedPrimitives,
@@ -38,6 +40,17 @@ import { useT } from "@/shared/lib/i18n";
 import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 
 const ROLE_LENS_COPY = {
+  workbench: defineBilingualText("Bg3dRoleLens", "workbench", "공간 모델러 3D 배경 제작·연출 도구", "Spatial modeler · 3D background authoring and staging"),
+  scopeNotice: defineBilingualText("Bg3dRoleLens", "scopeNotice", "도형 배치·2점 투시 적용은 현재 장면을 편집합니다. 단면·태양광·스타일·태그·연속 컷은 계산 미리보기이며 장면이나 원고에 적용·저장되지 않습니다. 6패스 LT는 아래에서 출력 설정을 적용한 뒤 하단 배경 추가로 원고에 전달합니다.", "Insertion and the two-point camera edit the current scene. Cutaway, sunlight, style, tags, and shot sequence are calculated previews and are not saved to the scene or manuscript. Enable six-pass output below, then use Add Background to insert it into the manuscript."),
+  previewOnly: defineBilingualText("Bg3dRoleLens", "previewOnly", "계산 미리보기 · 장면 미적용", "Calculated preview · not applied to scene"),
+  sequencePreview: defineBilingualText("Bg3dRoleLens", "sequencePreview", "연속 컷 구성 미리보기:", "Shot sequence preview:"),
+  dynamicScope: defineBilingualText("Bg3dRoleLens", "dynamicScope", "배치 버튼은 현재 각도의 도형을 새로 추가합니다. 조명 ON은 도형 색상을 바꾸며 실제 광원을 추가하지 않습니다.", "Insert adds new shapes at the current angles. Light ON changes the shape color; it does not add a light source."),
+  ltTitle: defineBilingualText("Bg3dRoleLens", "ltTitle", "⑦ 웹툰 6패스 LT 출력 설정", "⑦ Webtoon six-pass LT output settings"),
+  ltScope: defineBilingualText("Bg3dRoleLens", "ltScope", "출력 설정을 적용하면 밑색·톤·그림자·Depth·질감선·주선을 별도로 생성합니다. 하단 배경 추가로 현재 원고에 저장하며, 기존 장면은 6패스를 적용할 때만 새 버전으로 저장합니다.", "Enable output to create separate color, tone, shadow, depth, texture-line, and main-line layers. Use Add Background to save them to the manuscript. Existing scenes use the new version only when six-pass output is enabled."),
+  ltEnable: defineBilingualText("Bg3dRoleLens", "ltEnable", "6패스 LT 출력 설정 적용", "Enable six-pass LT output"),
+  ltDisable: defineBilingualText("Bg3dRoleLens", "ltDisable", "일반 LT 출력으로 전환", "Use standard LT output"),
+  ltApplied: defineBilingualText("Bg3dRoleLens", "ltApplied", "6패스 LT 설정 적용됨 · 하단 배경 추가로 저장", "Six-pass LT enabled · use Add Background to save"),
+  ltCount: defineBilingualText("Bg3dRoleLens", "ltCount", "6개 구성 항목", "6 recipe entries"),
   title: defineBilingualText("Bg3dRoleLens", "title", "직무별 스타일·태그·카메라 설정 프리셋", "Role-based style, tag, and camera setting presets"),
   scope: defineBilingualText("Bg3dRoleLens", "scope", "프리셋은 아래 설정을 선택합니다. 장면 배치와 카메라 적용은 각각의 적용 버튼으로 실행하며, 편집 권한이나 동선 잠금을 변경하지 않습니다.", "Presets select the settings below. Use the insertion or camera button to apply them to the scene. They do not change editing permissions or lock actor paths."),
   main: defineBilingualText("Bg3dRoleLens", "main", "배경 메인 · 텍스처·정리 태그", "Background lead · textures and clean tags"),
@@ -62,6 +75,8 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
   onApplySceneCamera,
 }: StudioBg3dSketchUpWebtoonStagingSectionProps): React.JSX.Element {
   const t = useT();
+  const runtime = useStudioBg3dProSuiteRuntime();
+  const sixPassEnabled = runtime?.sixPassLt !== undefined;
   useBilingualI18nRevision();
   // 1. Direct Modeling + Axis Inference + Array state
   const [axisLock, setAxisLock] = useState<SketchUpAxisLockId>("red-x");
@@ -240,10 +255,13 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
       className="rounded-xl border border-line bg-card p-3"
     >
       <summary className="cursor-pointer font-bold text-fg">
-        공간 모델러 3D 웹툰 배경 연출·스테이징 통합 워크벤치 (REA Verified)
+        {t(ROLE_LENS_COPY.workbench)}
       </summary>
 
       <div className="mt-2.5 space-y-2.5 text-[0.65rem] text-fg">
+        <p data-testid="sketchup-staging-scope-notice" className="text-fg-2">
+          {t(ROLE_LENS_COPY.scopeNotice)}
+        </p>
         {/* 직무별 로컬 설정 프리셋. 장면 변경은 기존 명시적 명령 경계를 사용한다. */}
         <div
           data-testid="sketchup-role-lens-bar"
@@ -424,6 +442,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                 <span>창틀 그림자 보존</span>
               </label>
             </div>
+            <p className="mt-1 text-fg-2">{t(ROLE_LENS_COPY.previewOnly)}</p>
             <p
               data-testid="sketchup-shadow-preserving-cutaway-summary"
               className="mt-1.5 font-mono text-[0.6rem] text-fg-2"
@@ -445,6 +464,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                 {(shadowSoftness * 100).toFixed(0)}% Soft
               </span>
             </div>
+            <p className="mt-1 text-fg-2">{t(ROLE_LENS_COPY.previewOnly)}</p>
             <div className="mt-1.5 flex gap-1.5">
               <select
                 aria-label="웹툰 태양광 시간대 프리셋"
@@ -477,6 +497,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
             <div className="font-bold text-fg">
               ⑤ 공간 모델러 스타일(6종) + Outliner 태그 가시성 프리셋
             </div>
+            <p className="mt-1 text-fg-2">{t(ROLE_LENS_COPY.previewOnly)}</p>
             <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               <select
                 aria-label="SketchUp 스타일 프리셋"
@@ -581,7 +602,7 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
             </div>
             <div className="mt-1 flex items-center justify-between font-mono text-[0.58rem] text-fg-2">
               <span>
-                연속 연출 탭: {actionShotSequence.map((s) => s.labelKo).join(" → ")}
+                {t(ROLE_LENS_COPY.sequencePreview)} {actionShotSequence.map((s) => s.labelKo).join(" → ")}
               </span>
               <label className="flex items-center gap-1">
                 <input
@@ -593,16 +614,28 @@ export function StudioBg3dSketchUpWebtoonStagingSection({
                 <span>조명 ON</span>
               </label>
             </div>
+            <p className="mt-1 text-fg-2">{t(ROLE_LENS_COPY.dynamicScope)}</p>
           </div>
 
           <div className="rounded-lg border border-line bg-panel p-2.5">
             <div className="flex items-center justify-between font-bold text-fg">
               <span className="inline-flex items-center gap-1">
                 <Layers className="size-3.5 text-accent" aria-hidden />
-                <span>⑦ 1-Click 웹툰 6패스 LT 레이어 스택 (Color+Tone+Shadow+Depth)</span>
+                <span>{t(ROLE_LENS_COPY.ltTitle)}</span>
               </span>
-              <span className="font-mono text-accent">{sixPassLtRecipe.length} Layers</span>
+              <span className="font-mono text-accent">{t(ROLE_LENS_COPY.ltCount)}</span>
             </div>
+            <p data-testid="sketchup-lt-recipe-scope" className="mt-1 text-fg-2">
+              {t(ROLE_LENS_COPY.ltScope)}
+            </p>
+            <button type="button" data-testid="sketchup-lt-apply-btn" aria-pressed={sixPassEnabled}
+              disabled={disabled || runtime?.disabled || !runtime?.onSetSixPassLt || (!sixPassEnabled && Boolean(runtime?.sixPassLtUnavailableReason))}
+              className="mt-2 rounded bg-accent px-2 py-1 font-bold text-on-accent disabled:opacity-50"
+              onClick={() => runtime?.onSetSixPassLt?.(sixPassEnabled ? null : DEFAULT_STUDIO_BG3D_SIX_PASS_LT_SETTINGS)}>
+              {t(sixPassEnabled ? ROLE_LENS_COPY.ltDisable : ROLE_LENS_COPY.ltEnable)}
+            </button>
+            {sixPassEnabled ? <p role="status" className="mt-1">{t(ROLE_LENS_COPY.ltApplied)}</p> : null}
+            {runtime?.sixPassLtUnavailableReason ? <p className="mt-1 text-fg-2">{runtime.sixPassLtUnavailableReason}</p> : null}
             <div className="mt-1.5 flex flex-wrap gap-1">
               {sixPassLtRecipe.map((layer) => (
                 <span

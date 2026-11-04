@@ -1,3 +1,4 @@
+import { parseStudioBg3dSixPassLtSettings } from "../contracts/studio-bg3d-six-pass-settings";
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "./studio-bg3d-lt-render";
 
 import type {
@@ -17,6 +18,11 @@ export interface StudioBg3dLtRenderWorkerInput {
   /** Optional normalized Float32 depth storage owned by this request. */
   readonly depthBuffer?: ArrayBuffer;
   readonly normalBuffer?: ArrayBuffer;
+  readonly flatColorBuffer?: ArrayBuffer;
+  readonly shadowBuffer?: ArrayBuffer;
+  readonly linearDepthBuffer?: ArrayBuffer;
+  readonly linearDepthNearMeters?: number;
+  readonly linearDepthFarMeters?: number;
 }
 
 export interface StudioBg3dLtRenderWorkerRequest {
@@ -33,6 +39,9 @@ export interface StudioBg3dLtRenderWorkerLayer {
   readonly height: number;
   /** Fresh, tightly packed RGBA8 storage. SharedArrayBuffer is forbidden. */
   readonly dataBuffer: ArrayBuffer;
+  readonly blendMode?: "normal" | "multiply" | "screen" | "soft-light";
+  readonly opacity?: number;
+  readonly visible?: boolean;
 }
 
 export type StudioBg3dLtRenderWorkerResponse =
@@ -43,6 +52,7 @@ export type StudioBg3dLtRenderWorkerResponse =
       readonly width: number;
       readonly height: number;
       readonly layers: readonly StudioBg3dLtRenderWorkerLayer[];
+      readonly sixPassLtVersion?: 1;
     }
   | {
       readonly version: typeof STUDIO_BG3D_LT_RENDER_WORKER_PROTOCOL_VERSION;
@@ -53,7 +63,7 @@ export type StudioBg3dLtRenderWorkerResponse =
 
 const REQUEST_KEYS = ["version", "kind", "requestId", "input", "settings"] as const;
 const INPUT_KEYS = ["width", "height", "rgbaBuffer"] as const;
-const INPUT_OPTIONAL_KEYS = ["depthBuffer", "normalBuffer"] as const;
+const INPUT_OPTIONAL_KEYS = ["depthBuffer", "normalBuffer", "flatColorBuffer", "shadowBuffer", "linearDepthBuffer", "linearDepthNearMeters", "linearDepthFarMeters"] as const;
 const SETTINGS_KEYS = ["line", "tone"] as const;
 const LINE_KEYS = [
   "enabled",
@@ -94,9 +104,11 @@ const TONE_TYPES = new Set(["color", "grayscale", "pattern"]);
 const TONE_PATTERNS = new Set(["dot", "line", "crosshatch", "noise"]);
 const LAYER_ROLE_ORDER: Readonly<Record<StudioBg3dLtRasterLayerRole, number>> = {
   color: 0,
-  tone: 0,
-  "texture-line": 1,
-  "main-line": 2,
+  tone: 1,
+  shadow: 2,
+  depth: 3,
+  "texture-line": 4,
+  "main-line": 5,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -185,7 +197,8 @@ function isToneSettings(value: unknown): boolean {
 }
 
 function isSettings(value: unknown): value is StudioBg3dLtRenderSettings {
-  return isRecord(value) && hasExactKeys(value, SETTINGS_KEYS) &&
+  return isRecord(value) && hasExactKeys(value, SETTINGS_KEYS, ["sixPassLt"]) &&
+    (!hasOwn(value, "sixPassLt") || parseStudioBg3dSixPassLtSettings(value.sixPassLt) !== null) &&
     isLineSettings(value.line) && isToneSettings(value.tone);
 }
 
@@ -212,6 +225,20 @@ function isWorkerInput(
   return true;
 }
 
+function isSixPassInput(value: StudioBg3dLtRenderWorkerInput, enabled: boolean, scan: boolean): boolean {
+  const extra = [value.flatColorBuffer, value.shadowBuffer, value.linearDepthBuffer, value.linearDepthNearMeters, value.linearDepthFarMeters];
+  if (!enabled) return extra.every((field) => field === undefined);
+  const pixels = value.width * value.height;
+  if (!isOwnedArrayBuffer(value.flatColorBuffer, pixels * 4) || !isOwnedArrayBuffer(value.shadowBuffer, pixels * 4)
+    || !isOwnedArrayBuffer(value.linearDepthBuffer, pixels * 4)
+    || !isFiniteRange(value.linearDepthNearMeters, 0, 100_000)
+    || !isFiniteRange(value.linearDepthFarMeters, 0, 100_000) || value.linearDepthFarMeters <= value.linearDepthNearMeters) return false;
+  if (scan) for (const sample of new Float32Array(value.linearDepthBuffer)) {
+    if (!Number.isFinite(sample) || sample < 0 || sample > 1) return false;
+  }
+  return true;
+}
+
 function isWorkerRequest(
   value: unknown,
   validateDepthSamples: boolean,
@@ -219,7 +246,8 @@ function isWorkerRequest(
   return isRecord(value) && hasExactKeys(value, REQUEST_KEYS) &&
     value.version === STUDIO_BG3D_LT_RENDER_WORKER_PROTOCOL_VERSION &&
     value.kind === "render" && isRequestId(value.requestId) &&
-    isWorkerInput(value.input, validateDepthSamples) && isSettings(value.settings);
+    isWorkerInput(value.input, validateDepthSamples) && isSettings(value.settings)
+    && isSixPassInput(value.input, value.settings.sixPassLt !== undefined, validateDepthSamples);
 }
 
 /**
@@ -248,7 +276,10 @@ export function isStudioBg3dLtRenderWorkerRequest(
 }
 
 function isLayer(value: unknown, resultWidth: number, resultHeight: number): value is StudioBg3dLtRenderWorkerLayer {
-  if (!isRecord(value) || !hasExactKeys(value, LAYER_KEYS)) return false;
+  if (!isRecord(value) || !hasExactKeys(value, LAYER_KEYS, ["blendMode", "opacity", "visible"])) return false;
+  if (hasOwn(value, "blendMode") && !["normal", "multiply", "screen", "soft-light"].includes(value.blendMode as string)) return false;
+  if (hasOwn(value, "opacity") && !isFiniteRange(value.opacity, 0, 1)) return false;
+  if (hasOwn(value, "visible") && typeof value.visible !== "boolean") return false;
   const role = value.role;
   return typeof role === "string" && hasOwn(LAYER_ROLE_ORDER, role) &&
     value.width === resultWidth && value.height === resultHeight &&
@@ -273,16 +304,23 @@ export function isStudioBg3dLtRenderWorkerResponse(
       return hasExactKeys(value, ERROR_KEYS) &&
         (value.code === "protocol" || value.code === "render-failed");
     }
-    if (value.kind !== "result" || !hasExactKeys(value, RESULT_KEYS)) return false;
+    if (value.kind !== "result" || !hasExactKeys(value, RESULT_KEYS, ["sixPassLtVersion"])) return false;
+    if (hasOwn(value, "sixPassLtVersion") && value.sixPassLtVersion !== 1) return false;
+    const sixPass = value.sixPassLtVersion === 1;
     const shape = dimensions(value);
-    if (!shape || !Array.isArray(value.layers) || value.layers.length > STUDIO_BG3D_LT_RENDER_WORKER_MAX_LAYERS) {
+    if (!shape || !Array.isArray(value.layers) || value.layers.length > (sixPass ? 6 : STUDIO_BG3D_LT_RENDER_WORKER_MAX_LAYERS)) {
       return false;
     }
+    if (sixPass && value.layers.length !== 6) return false;
     let previousRoleOrder = -1;
     const roles = new Set<StudioBg3dLtRasterLayerRole>();
     for (const layer of value.layers) {
       if (!isLayer(layer, shape.width, shape.height)) return false;
+      if (sixPass ? layer.blendMode === undefined || layer.opacity === undefined || layer.visible === undefined
+        : layer.blendMode !== undefined || layer.opacity !== undefined || layer.visible !== undefined) return false;
       if (roles.has(layer.role)) return false;
+      if (!sixPass && (["shadow", "depth"].includes(layer.role)
+        || (layer.role === "tone" && roles.has("color")))) return false;
       const order = LAYER_ROLE_ORDER[layer.role];
       if (order <= previousRoleOrder) return false;
       roles.add(layer.role);
@@ -299,7 +337,10 @@ export function studioBg3dLtRenderWorkerRequestTransfers(
 ): Transferable[] {
   return [request.input.rgbaBuffer,
     ...(request.input.depthBuffer ? [request.input.depthBuffer] : []),
-    ...(request.input.normalBuffer ? [request.input.normalBuffer] : [])];
+    ...(request.input.normalBuffer ? [request.input.normalBuffer] : []),
+    ...(request.input.flatColorBuffer ? [request.input.flatColorBuffer] : []),
+    ...(request.input.shadowBuffer ? [request.input.shadowBuffer] : []),
+    ...(request.input.linearDepthBuffer ? [request.input.linearDepthBuffer] : [])];
 }
 
 export function studioBg3dLtRenderWorkerResponseTransfers(

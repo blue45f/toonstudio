@@ -21,6 +21,8 @@ import type { StudioBg3dRasterWindow } from "./studio-bg3d-tile-plan";
 import { STUDIO_BG3D_LT_DEPTH_EDGE_MAX_PIXELS } from "./studio-bg3d-lt-depth-edges";
 import { renderStudioBg3dLtLineResponses } from "./studio-bg3d-lt-line-response";
 import { byteAt, clamp01 } from "./studio-bg3d-lt-raster-math";
+import { assembleStudioBg3dSixPassLtLayers, assertStudioBg3dSixPassLtInput } from "./studio-bg3d-six-pass-lt-render";
+import type { StudioBg3dSixPassLtSettings } from "./studio-bg3d-scene-document-types";
 
 import type {
   StudioBg3dLineOutputSettings,
@@ -41,6 +43,12 @@ export interface StudioBg3dLtRasterInput {
   /** Optional linear or device depth normalized to [0, 1], one value per pixel. */
   readonly depth?: Float32Array;
   readonly normalRgba?: Uint8Array | Uint8ClampedArray;
+  readonly flatColorRgba?: Uint8Array | Uint8ClampedArray;
+  readonly shadowRgba?: Uint8Array | Uint8ClampedArray;
+  /** 카메라 near/far 사이를 선형화한 깊이. 기존 device depth와 구분한다. */
+  readonly linearDepth?: Float32Array;
+  readonly linearDepthNearMeters?: number;
+  readonly linearDepthFarMeters?: number;
 }
 
 export interface StudioBg3dThreeRgbaDepthInput {
@@ -55,6 +63,7 @@ export interface StudioBg3dThreeRgbaDepthInput {
 export interface StudioBg3dLtRenderSettings {
   readonly line: StudioBg3dLineOutputSettings;
   readonly tone: StudioBg3dToneOutputSettings;
+  readonly sixPassLt?: StudioBg3dSixPassLtSettings;
 }
 
 export interface StudioBg3dLtRasterLayer {
@@ -63,6 +72,9 @@ export interface StudioBg3dLtRasterLayer {
   readonly height: number;
   /** Fresh, tightly packed, non-premultiplied RGBA bytes. */
   readonly data: Uint8ClampedArray;
+  readonly blendMode?: "normal" | "multiply" | "screen" | "soft-light";
+  readonly opacity?: number;
+  readonly visible?: boolean;
 }
 
 export interface StudioBg3dLtRenderResult {
@@ -70,6 +82,7 @@ export interface StudioBg3dLtRenderResult {
   readonly height: number;
   /** Stable paint order. Empty/disabled layers are omitted. */
   readonly layers: readonly StudioBg3dLtRasterLayer[];
+  readonly sixPassLtVersion?: 1;
 }
 
 interface ValidatedInput {
@@ -434,6 +447,7 @@ export function renderStudioBg3dLtLayers(
   const input = validateInput(rasterInput);
   validateLineSettings(settings.line);
   validateToneSettings(settings.tone);
+  if (settings.sixPassLt !== undefined) assertStudioBg3dSixPassLtInput(rasterInput, settings.sixPassLt);
   const luminance = buildLuminance(input);
   let mainLayer: StudioBg3dLtRasterLayer | null = null;
   let textureLayer: StudioBg3dLtRasterLayer | null = null;
@@ -454,5 +468,15 @@ export function renderStudioBg3dLtLayers(
   if (fillLayer) layers.push(fillLayer);
   if (textureLayer) layers.push(textureLayer);
   if (mainLayer) layers.push(mainLayer);
+  if (settings.sixPassLt !== undefined) {
+    const toneInput = { ...input, rgba: rasterInput.flatColorRgba ?? input.rgba };
+    const toneLayer = renderFillLayer(toneInput, buildLuminance(toneInput), { ...settings.tone, mode: "screentone", type: "pattern", opacity: 1 });
+    return {
+      width: input.width,
+      height: input.height,
+      sixPassLtVersion: 1,
+      layers: assembleStudioBg3dSixPassLtLayers(rasterInput, settings.sixPassLt, { mainLayer, textureLayer, toneLayer }),
+    };
+  }
   return { width: input.width, height: input.height, layers };
 }

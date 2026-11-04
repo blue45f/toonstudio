@@ -426,6 +426,7 @@ export function attachStudioBg3dEditorInsertHost(h: Record<string, any>) {
     const ltSettingsSnapshot: StudioBg3dLtRenderSettings = Object.freeze({
       line: Object.freeze({ ...adapted.document.output.line }),
       tone: Object.freeze({ ...adapted.document.output.tone }),
+      ...(adapted.document.output.sixPassLt ? { sixPassLt: Object.freeze({ ...adapted.document.output.sixPassLt }) } : {}),
     });
     ltInsertAbortRef.current?.abort();
     const insertController = new AbortController();
@@ -534,7 +535,8 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         width: captureSize.width,
         height: captureSize.height,
         background: studioBg3dCaptureBackgroundRequestFromSnapshot(backgroundSnapshot),
-        includeDepth: studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),
+        includeDepth: Boolean(ltSettingsSnapshot.sixPassLt) || studioBg3dLineNeedsDepth(ltSettingsSnapshot.line),
+        ...(ltSettingsSnapshot.sixPassLt ? { includeSixPass: true } : {}),
         ...(captureAdapter.normalProfile && ltSettingsSnapshot.line.depthEnabled && !ltSettingsSnapshot.line.depthOutlineOnly
           ? { includeNormals: true } : {}),
       }, { signal: insertController.signal, timeoutMs: 30_000, expectedEnvironmentFingerprint })
@@ -547,6 +549,10 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         rgba: captured.rgba,
         ...(captured.depth ? { depth: captured.depth } : {}),
         ...(captured.normalRgba ? { normalRgba: captured.normalRgba } : {}),
+        ...(captured.flatColorRgba ? { flatColorRgba: captured.flatColorRgba } : {}),
+        ...(captured.shadowRgba ? { shadowRgba: captured.shadowRgba } : {}),
+        ...(captured.linearDepth ? { linearDepth: captured.linearDepth,
+          linearDepthNearMeters: captured.linearDepthNearMeters, linearDepthFarMeters: captured.linearDepthFarMeters } : {}),
       });
       const rendered = await renderStudioBg3dLtLayersInWorker(
         ltRenderInput,

@@ -35,6 +35,8 @@ import {
 } from "./higgsfield-mangaka-engine";
 
 const COPY = {
+  scope: defineBilingualText("MangakaPlanning", "scope", "예제 데이터로 스트립·캐스트·3D 카메라 연동 구성을 검토하는 미리보기입니다. 현재 원고의 레이어 생성·저장, 실제 3D 카메라 적용, 이미지 변환이나 외부 Higgsfield 실행은 연결되지 않았습니다.", "This preview uses example data to review strip, cast, and 3D camera bridge plans. Manuscript layer creation and saving, live 3D camera application, image conversion, and external Higgsfield execution are not connected."),
+  castScope: defineBilingualText("MangakaPlanning", "castScope", "예제 캐릭터 시트·룩 시트 구성", "Example character and look sheet plan"),
   presets: defineBilingualText("MangakaPlanning", "presets", "장르별 스트립 설정 프리셋", "Genre strip setting presets"),
   romance: defineBilingualText("MangakaPlanning", "romance", "로맨스 판타지 · Naver · 흰 여백", "Romance fantasy · Naver · white gutters"),
   noir: defineBilingualText("MangakaPlanning", "noir", "액션 느와르 · Daum · 어두운 여백", "Action noir · Daum · dark gutters"),
@@ -292,6 +294,7 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
       data-testid="higgsfield-mangaka-section"
       className="min-w-0 space-y-2.5 text-[0.66rem] text-fg"
     >
+      <p data-testid="mangaka-planning-scope" className="text-fg-2">{t(COPY.scope)}</p>
       {/* 1-Click 장르·연출 퀵 프리셋 바 */}
       <div
         data-testid="mangaka-one-click-preset-bar"
@@ -400,7 +403,7 @@ export function StudioHiggsfieldMangakaPanel(): ReactElement {
       <div className="rounded border border-line bg-raised/40 p-2">
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-bold text-fg">
-            캐릭터 시트 & 룩 시트 잠금 ({castLockResult.acceptedCast.length}/{MANGAKA_IDEA_PEOPLE_MAX}명 · 실사 사진 → 만화 캐릭터 변환)
+            {t(COPY.castScope)} ({castLockResult.acceptedCast.length}/{MANGAKA_IDEA_PEOPLE_MAX})
           </span>
           <span className="font-mono text-[0.6rem] text-accent">
             레지스터: {activeStyleConfig.registers.join(" · ")}

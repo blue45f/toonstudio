@@ -10,7 +10,7 @@ import {
   StudioLinked3dPassAuthorityError,
   type StudioLinked3dPassCasAuthority,
 } from "./studio-linked-3d-pass-transaction";
-import { createStudioOpfsAssetStore } from "./studio-opfs-asset-store";
+import { createStudioOpfsAssetStore, type StudioOpfsAssetStore } from "./studio-opfs-asset-store";
 import {
   createStudioOpfsNativeFileSystem,
   StudioOpfsError,
@@ -30,10 +30,12 @@ interface BrowserLockManagerLike {
   ): Promise<T>;
 }
 
-let productAuthorityPromise: Promise<StudioLinked3dPassCasAuthority> | null = null;
+export type StudioLinked3dPassProductAuthority = StudioLinked3dPassCasAuthority & Pick<StudioOpfsAssetStore, "stat">;
+
+let productAuthorityPromise: Promise<StudioLinked3dPassProductAuthority> | null = null;
 
 export async function acquireStudioLinked3dPassProductAuthority(): Promise<
-  StudioLinked3dPassCasAuthority
+  StudioLinked3dPassProductAuthority
 > {
   productAuthorityPromise ??= (async () => {
     const navigatorValue = globalThis.navigator as Navigator & {
@@ -77,6 +79,7 @@ export async function acquireStudioLinked3dPassProductAuthority(): Promise<
       kind: store.kind,
       put: store.put.bind(store),
       get: store.get.bind(store),
+      stat: store.stat.bind(store),
       ownerRefs: store.ownerRefs.bind(store),
       setOwnerRefs: store.setOwnerRefs.bind(store),
       runOwnerMutationExclusive<T>(owner: string, task: () => Promise<T>) {

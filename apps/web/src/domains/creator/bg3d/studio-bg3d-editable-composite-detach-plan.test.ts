@@ -80,6 +80,8 @@ function bundleImage(
   const srcByRole: Record<StudioBg3dLtLayerRole, string> = {
     color: PNG.color,
     tone: PNG.tone,
+    shadow: PNG.tone,
+    depth: PNG.tone,
     "texture-line": PNG.texture,
     "main-line": PNG.main,
   };

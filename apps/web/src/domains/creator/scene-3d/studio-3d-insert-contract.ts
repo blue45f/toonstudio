@@ -10,9 +10,15 @@ import type { StudioBg3dSharedStageInsertProjection } from "../studio-shared-3d-
 import type { StudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
 
 export type StudioBg3dLtRasterLayerRole =
-  | "color" | "main-line" | "texture-line" | "tone";
+  | "color" | "main-line" | "texture-line" | "tone" | "shadow" | "depth";
 
-export interface StudioBackground3DLtLayer {
+export interface StudioBg3dLtLayerPresentation {
+  readonly blendMode?: "normal" | "multiply" | "screen" | "soft-light";
+  readonly opacity?: number;
+  readonly visible?: boolean;
+}
+
+export interface StudioBackground3DLtLayer extends StudioBg3dLtLayerPresentation {
   readonly role: StudioBg3dLtRasterLayerRole;
   readonly pngDataUrl: string;
   readonly width: number;

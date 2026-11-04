@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 
-import type { StudioBg3dViewPanelProps } from "./StudioBg3dViewPanelContent";
+import type { StudioBg3dViewPanelBridgeProps } from "./StudioBg3dViewPanel";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
 
@@ -11,7 +11,7 @@ const ViewPanel = lazy(() =>
 );
 
 /** Load on first use, then retain the mounted panel across tab switches. */
-export function StudioBg3dViewPanel(props: StudioBg3dViewPanelProps) {
+export function StudioBg3dViewPanel(props: StudioBg3dViewPanelBridgeProps) {
   const t = useT();
   const [activated, setActivated] = useState(!props.hidden);
   // A guarded update of this component records the first visible render without an effect or

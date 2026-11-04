@@ -68,6 +68,11 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
   ): Promise<boolean> {
     setError(null);
     setStatusNotice(null);
+    if ((isRealtimeTeamSession || masterEditMode)
+      && (result.bg3dScene.output.sixPassLt || result.layers.some(({ role }) => role === "shadow" || role === "depth"))) {
+      setError("6패스 LT의 분리 레이어는 일반 페이지에서만 저장할 수 있습니다. 실시간 공동 편집이나 문서 마스터에서 병합 결과로 자동 전환하지 않습니다.");
+      return false;
+    }
     const anchorLayer = result.layers.at(-1);
     if (!anchorLayer) {
       setError("삽입할 3D LT 레이어가 없습니다.");
@@ -233,6 +238,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
         elementIds: {
           color: uid(),
           tone: uid(),
+          shadow: uid(),
+          depth: uid(),
           "texture-line": uid(),
           "main-line": uid(),
         },

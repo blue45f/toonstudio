@@ -5,6 +5,9 @@ import { encodeStudioBg3dLtLayers } from "./studio-bg3d-lt-layer-encoder";
 import type { StudioBg3dLtRasterLayer } from "./studio-bg3d-lt-render";
 
 class FakeCanvasContext {
+  globalAlpha = 1;
+  globalCompositeOperation = "source-over";
+  readonly drawStates: { alpha: number; blend: string }[] = [];
   readonly putImages: Uint8ClampedArray[] = [];
   readonly drawnCanvases: FakeCanvas[] = [];
 
@@ -20,6 +23,7 @@ class FakeCanvasContext {
 
   drawImage(canvas: FakeCanvas) {
     this.drawnCanvases.push(canvas);
+    this.drawStates.push({ alpha: this.globalAlpha, blend: this.globalCompositeOperation });
   }
 }
 
@@ -62,6 +66,22 @@ afterEach(() => {
 });
 
 describe("encodeStudioBg3dLtLayers", () => {
+  it("6패스의 합성 모드·불투명도·가시성을 PNG 계약과 합성 미리보기에 적용한다", () => {
+    const layerCanvas = new FakeCanvas("layer");
+    const compositeCanvas = new FakeCanvas("composite");
+    const canvases = [layerCanvas, compositeCanvas];
+    vi.stubGlobal("document", { createElement: vi.fn(() => canvases.shift()) });
+    const shadow = { ...layer("shadow", [0, 0, 0, 255, 0, 0, 0, 128]), blendMode: "multiply" as const, opacity: 0.68, visible: true };
+    const depth = { ...layer("depth", [254, 215, 170, 100, 254, 215, 170, 255]), blendMode: "screen" as const, opacity: 0.32, visible: true };
+    const hidden = { ...layer("main-line", [0, 0, 0, 255, 0, 0, 0, 255]), blendMode: "normal" as const, opacity: 1, visible: false };
+    const encoded = encodeStudioBg3dLtLayers([shadow, depth, hidden]);
+    expect(encoded.layers.map(({ blendMode, opacity, visible }) => ({ blendMode, opacity, visible }))).toEqual([
+      { blendMode: "multiply", opacity: 0.68, visible: true }, { blendMode: "screen", opacity: 0.32, visible: true },
+      { blendMode: "normal", opacity: 1, visible: false },
+    ]);
+    expect(compositeCanvas.context.drawStates).toEqual([{ alpha: 0.68, blend: "multiply" }, { alpha: 0.32, blend: "screen" }]);
+  });
+
   it("encodes each raster in paint order and returns a frozen composite contract", () => {
     const layerCanvas = new FakeCanvas("layer");
     const compositeCanvas = new FakeCanvas("composite");

@@ -28,7 +28,7 @@ import { resolveStudioLinked3dError } from "./status-i18n/studio-producer-error-
 import { normalizePageReviewState } from "./studio-page-review";
 import { parseStudioLayerComps } from "./layer/studio-layer-comps-document";
 import { studioPageToCrdtPage } from "./live/studio-crdt-page-payload";
-import { minimumStudioProjectFileVersion } from "./studio-project-version";
+import { resolveStudioProjectFileVersion } from "./studio-project-version";
 import { parseStudioReferenceBoardDocument } from "./studio-reference-board";
 import { migrateStudioShared3dStageCollectionDocument } from "./studio-shared-3d-stage-collection";
 import {
@@ -92,7 +92,7 @@ const CommonProjectSchema = z.object({
 });
 
 const CurrentProjectSchema = CommonProjectSchema.extend({
-  version: z.union([z.literal(2), z.literal(3)]),
+  version: z.union([z.literal(2), z.literal(3), z.literal(4)]),
   savedAt: z.string().optional(),
   pagesList: z.array(ProjectPageSchema).min(1).max(STUDIO_PROJECT_MAX_PAGES),
 }).passthrough();
@@ -270,7 +270,7 @@ function canonicalizeProjectBg3dScenes(project: StudioProjectFile): StudioProjec
     ...project,
     // Old readers accept arbitrary V2 elements and would discard the unknown V4 brush program.
     // Upgrade only documents carrying that program; keep historical V2/V3 stroke files intact.
-    version: project.version === 3 ? 3 : minimumStudioProjectFileVersion(pagesList, master),
+    version: resolveStudioProjectFileVersion(pagesList, master, project.version),
     pagesList,
     master,
     ...(referenceBoard ? { referenceBoard } : {}),

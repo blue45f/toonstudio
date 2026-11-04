@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   STUDIO_BG3D_CAPTURE_PROFILE_RGBA8_DEPTH_V1,
   STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1,
+  STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1,
   STUDIO_BG3D_THREE_WEBGL_CAPTURE_IMPLEMENTATION_V1,
   acquireStudioBg3dCaptureAdapterAfterViewTransition,
   captureStudioBg3dRaster,
@@ -362,4 +363,29 @@ it("rejects oversized normal capture before invoking any renderer allocation", a
   const source = { ...adapter(capture), normalProfile: STUDIO_BG3D_CAPTURE_NORMAL_PROFILE_V1 } as const;
   await expect(captureStudioBg3dRaster(source, { ...REQUEST, width: 4096, height: 2048, includeDepth: true, includeNormals: true })).rejects.toThrow(/budget/);
   expect(capture).not.toHaveBeenCalled();
+});
+
+describe("6패스 캡처 계약", () => {
+  it("미지원 엔진과 깊이 없는 요청을 GPU 호출 전에 거부한다", async () => {
+    const capture = vi.fn(async () => validRaster());
+    await expect(captureStudioBg3dRaster(adapter(capture), { ...REQUEST, includeSixPass: true }))
+      .rejects.toThrow(/렌더 엔진/);
+    await expect(captureStudioBg3dRaster({ ...adapter(capture), sixPassProfile: STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1 },
+      { ...REQUEST, includeDepth: false, includeSixPass: true })).rejects.toThrow(/깊이/);
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it("분리 패스와 선형 깊이를 소유 복사하고 누락·범위 오류를 거부한다", async () => {
+    const planes = { flatColorRgba: new Uint8Array(16).fill(120), shadowRgba: new Uint8Array(16),
+      linearDepth: Float32Array.from([0, .2, .8, 1]), linearDepthNearMeters: .1, linearDepthFarMeters: 100 };
+    const source: StudioBg3dCaptureAdapter = { ...adapter(async () => ({ ...validRaster(), ...planes })), sixPassProfile: STUDIO_BG3D_CAPTURE_SIX_PASS_PROFILE_V1 };
+    const result = await captureStudioBg3dRaster(source, { ...REQUEST, includeSixPass: true });
+    planes.flatColorRgba.fill(0); planes.linearDepth.fill(0);
+    expect(result.flatColorRgba?.[0]).toBe(120);
+    expect(result.linearDepth?.[3]).toBe(1);
+    await expect(captureStudioBg3dRaster({ ...source, capture: async () => validRaster() },
+      { ...REQUEST, includeSixPass: true })).rejects.toThrow(/밑색/);
+    await expect(captureStudioBg3dRaster({ ...source, capture: async () => ({ ...validRaster(), ...planes, linearDepthFarMeters: 0 }) },
+      { ...REQUEST, includeSixPass: true })).rejects.toThrow(/카메라/);
+  });
 });
