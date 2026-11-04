@@ -100,7 +100,7 @@ export function registerStudioScopedDerivedEntity(owner: object, sourceStrokeId:
 
 /** 실제 pointer가 만든 ID를 첫 픽셀·Y 변경 전에 명시 target에 연결한다. */
 export function admitStudioScopedDrawStart(owner: AccessOwner, pageId: string, elements: readonly El[], stroke: DrawEl): DrawEl {
-  const mapped = mappedStudioDrawAuthority(owner, pageId, stroke);
+  const mapped = mappedStudioDrawAuthority(owner, pageId, stroke, elements);
   if (!owner.current.locked && !mapped) return stroke;
   const authority = mapped ?? studioScopedWriteAuthority(owner), target = authority?.currentTarget;
   if (!authority || !target) throw new Error("그리기 전에 현재 담당 원고 범위를 선택하세요.");

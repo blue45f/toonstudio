@@ -1,6 +1,7 @@
-import { admitStudioScopedWriteEffects, projectStudioScopedAuthoringDocument, scopedEntityKey } from "@toonstudio/contracts/studio-scoped-write-effects";
+import { admitStudioScopedWriteEffects, projectStudioScopedAuthoringDocument, scopedEntityKey, studioScopedEntityTouchesTarget } from "@toonstudio/contracts/studio-scoped-write-effects";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
-import type { DrawEl } from "../studio-element-model";
+import type { DrawEl, El } from "../studio-element-model";
+import { containingPanel } from "../studio-element-geometry";
 import { studioScopedWriteAuthority, type StudioScopedWriteAuthority } from "./studio-scoped-write-authority";
 
 type Owner = { readonly current: { readonly locked: boolean } };
@@ -51,15 +52,29 @@ export function admitStudioMappedPagesCommit(input: { readonly owner: Owner; rea
 }
 
 /** 실제 시작점·그리기 레이어를 대조하고 보호 범위 밖의 일반 그리기는 보존한다. */
-export function mappedStudioDrawAuthority(owner: Owner, pageId: string, stroke: DrawEl): StudioScopedWriteAuthority | null {
+export function mappedStudioDrawAuthority(owner: Owner, pageId: string, stroke: DrawEl, elements: readonly El[]): StudioScopedWriteAuthority | null {
   const authority = studioScopedWriteAuthority(owner);
   if (!authority?.mappedFullEdit) return null;
   if (!authority.mappedPolicyVerified) throw failure();
-  const affected = authority.controlledTargets.filter(({ definition }) => definition.pageId === pageId
-    && (definition.layerId !== null ? definition.layerId === (stroke.groupId ?? "page-root")
-      : definition.frameId !== null ? definition.frameId === stroke.frameClipId : true));
+  const targets = authority.controlledTargets.filter(({ definition }) => definition.pageId === pageId);
+  if (!targets.length) return null;
+  const frames = elements.filter((element) => element.type === "frame");
+  const state = projectStudioScopedAuthoringDocument({ pagesList: [{ id: pageId, elements: [...frames, stroke] }] });
+  const entity = state.entities.get(scopedEntityKey("stroke", stroke.id));
+  if (!entity) throw failure();
+  // 기하는 보호 경계만 분류한다. 실제 귀속과 권한은 아래의 명시 선택·현재 grant가 결정한다.
+  const panel = stroke.frameClipId === undefined && stroke.noClip !== true ? containingPanel(stroke, frames) : null;
+  if (panel) {
+    const tied = frames.filter((candidate) => candidate.width * candidate.height === panel.width * panel.height
+      && containingPanel(stroke, [candidate])?.id === candidate.id);
+    if (tied.length > 1 && targets.some((target) => target.definition.layerId === null && target.definition.frameId !== null && tied.some((frame) => frame.id === target.definition.frameId)
+      && studioScopedEntityTouchesTarget({ ...entity, value: { ...entity.value, frameClipId: target.definition.frameId } }, target, state))) throw failure();
+  }
+  const affected = targets.filter((target) => target.definition.layerId !== null ? target.definition.layerId === (stroke.groupId ?? "page-root")
+    : studioScopedEntityTouchesTarget(entity, target, state) || (target.definition.frameId !== null && target.definition.frameId === stroke.frameClipId));
   if (!affected.length) return null;
-  if (affected.length !== 1 || authority.targetId !== affected[0]?.definition.id || !authority.drawingAllowed) throw failure();
+  if (affected.length !== 1 || authority.targetId !== affected[0]?.definition.id || !authority.drawingAllowed
+    || (stroke.noClip === true && affected.some((target) => target.definition.frameId !== null))) throw failure();
   return authority;
 }
 
